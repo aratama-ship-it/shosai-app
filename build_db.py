@@ -121,6 +121,106 @@ CATEGORY_EXPECTATIONS = {
 }
 
 
+# 演出構造の横断レンズ: 正本の既存メモに明示された文だけから導出する。
+# これは作品の本質を分類する正本項目ではなく、資料棚をめくるための「見方」。
+# 根拠文もそのまま出力し、推測で補わない。
+STAGING_LENS_RULES = [
+    {
+        "id": "opening",
+        "label": "開幕をつくる",
+        "description": "最初の数分で、世界・儀礼・ルールを置く",
+        "pattern": r"opening ceremony|\bopening\b|開幕",
+        "fields": ("show_type", "structure", "signature_scenes"),
+    },
+    {
+        "id": "entrance",
+        "label": "登場を設計する",
+        "description": "人物・物・集団を、現れ方そのものとして見せる",
+        "pattern": r"\bentrance\b|\benter(?:s|ed|ing)?\b|\bemerge(?:s|d|ing)?\b|\breveal(?:s|ed|ing)?\b|登場|出現|暗闇から.*現れ|霧の中から.*現れ",
+        "fields": ("structure", "signature_scenes", "set_mechanics", "lighting_features"),
+    },
+    {
+        "id": "surface",
+        "label": "場を変える",
+        "description": "舞台・氷面・競技面を、別の世界として扱う",
+        "pattern": r"舞台を変|空間を変|氷面|競技面|コート面|\bice rink\b|\bcourt\b|\bfloor\b|projection.*(?:stage|ice|rink|court|floor)|(?:stage|ice|rink|court|floor).*projection",
+        "fields": ("structure", "signature_scenes", "set_mechanics", "lighting_features"),
+    },
+    {
+        "id": "audience",
+        "label": "観客を巻き込む",
+        "description": "観るだけでない役割を、客席へ明示的に渡す",
+        "pattern": r"audience participation|\bparticipatory\b|\binteractive\b|\binvit(?:e|es|ed|ing|ation)\b.*\baudience\b|\baudience\b.*\binvit|観客参加|参加型|観客.*(?:招|誘)|客席.*(?:招|誘|参加)|観衆.*(?:招|誘|参加)",
+        "fields": ("structure", "signature_scenes", "audience_experience"),
+    },
+    {
+        "id": "closing",
+        "label": "終わりを残す",
+        "description": "終幕・別れ・余韻を、最後の場面として設計する",
+        "pattern": r"closing ceremony|\bclosing\b|\bfinale\b|\bfarewell\b|閉会|終演",
+        "fields": ("show_type", "structure", "signature_scenes"),
+    },
+]
+
+FIELD_LABELS = {
+    "show_type": "作品種別",
+    "structure": "構造",
+    "signature_scenes": "象徴的な場面",
+    "set_mechanics": "装置・機構",
+    "lighting_features": "照明",
+    "audience_experience": "観客体験",
+}
+
+# 「参加形式は未確認」のような注意書きは、参加の根拠には使わない。
+NON_EVIDENCE_TEXT = re.compile(
+    r"未確認|未調査|not confirmed|unknown|明記しない|確定しない|根拠にはしない|同一視しない|登録しない|有無.*(?:確定|不明)",
+    re.IGNORECASE,
+)
+
+
+def staging_lenses_for(work):
+    """既存の正本メモから、根拠付きの横断レンズを作る。"""
+    lenses = []
+    for rule in STAGING_LENS_RULES:
+        matcher = re.compile(rule["pattern"], re.IGNORECASE)
+        evidence = []
+        for field in rule["fields"]:
+            value = work.get(field)
+            values = value if isinstance(value, list) else [value]
+            for text in values:
+                if not text:
+                    continue
+                text = str(text)
+                if matcher.search(text) and not NON_EVIDENCE_TEXT.search(text):
+                    evidence.append({"field": field, "label": FIELD_LABELS[field], "text": text})
+        if evidence:
+            lenses.append({
+                "id": rule["id"],
+                # 一作品に同種の記述が多数ある場合も、詳細で読める量に絞る。
+                "evidence": evidence[:2],
+            })
+    return lenses
+
+
+def validate_staging_lenses(works):
+    allowed = {rule["id"] for rule in STAGING_LENS_RULES}
+    counts = {lens_id: 0 for lens_id in allowed}
+    for work in works:
+        for lens in work.get("staging_lenses", []):
+            if lens["id"] not in allowed:
+                raise ValueError(f"unknown staging lens: {lens['id']}")
+            if not lens.get("evidence"):
+                raise ValueError(f"staging lens without evidence: {work['id']} / {lens['id']}")
+            for item in lens["evidence"]:
+                if item.get("field") not in FIELD_LABELS or not item.get("text"):
+                    raise ValueError(f"invalid staging evidence: {work['id']} / {lens['id']}")
+            counts[lens["id"]] += 1
+    missing = [lens_id for lens_id, count in counts.items() if count == 0]
+    if missing:
+        raise ValueError("staging lens validation failed: no matches for " + ", ".join(missing))
+    return counts
+
+
 def validate_categories(works):
     by_id = {w["id"]: w for w in works}
     errors = []
@@ -169,8 +269,10 @@ def main():
                 for k in ("genre", "show_type", "media_type", "company", "venue_type", "tour_or_resident")
             ).lower()
             w["subcategory"] = subcategorize(hay)
+        w["staging_lenses"] = staging_lenses_for(w)
 
     validate_categories(works)
+    staging_lens_counts = validate_staging_lenses(works)
 
     from collections import Counter
     cat_dist = Counter(w["category"] for w in works)
@@ -181,6 +283,9 @@ def main():
     print("circus subcategory distribution:")
     for c, n in sub_dist.most_common():
         print(f"  {n:3d}  {c}")
+    print("staging lens coverage (source-backed notes only):")
+    for rule in STAGING_LENS_RULES:
+        print(f"  {staging_lens_counts[rule['id']]:3d}  {rule['label']}")
 
     elements = [
         {
@@ -229,6 +334,15 @@ def main():
             "features": len(sf.get("features", [])),
             "persons": len(persons),
         },
+        "staging_lenses": [
+            {
+                "id": rule["id"],
+                "label": rule["label"],
+                "description": rule["description"],
+                "works_count": staging_lens_counts[rule["id"]],
+            }
+            for rule in STAGING_LENS_RULES
+        ],
         "works": works,
         "work_relations": ri.get("relations", []),
         "elements": elements,

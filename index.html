@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=14">
+<link rel="stylesheet" href="style.css?v=15">
 </head>
 <body>
 
@@ -27,6 +27,17 @@
     <div class="db-wrap">
       <section class="db-list-pane" aria-label="作品一覧">
         <div class="db-search">
+          <section class="db-lenses" aria-labelledby="db-lenses-title">
+            <div class="db-lenses-head">
+              <div>
+                <p class="db-lenses-kicker">演出の型からめくる</p>
+                <h2 id="db-lenses-title">同じ問いを、別の場所で読む</h2>
+              </div>
+              <button type="button" class="db-lens-clear" id="db-lens-clear" hidden>型を外す</button>
+            </div>
+            <p class="db-lenses-note">正本メモに明示された手がかりのある作品だけを束ねます。型は事実の分類ではなく、制作のための読み方です。</p>
+            <div class="db-lens-list" id="db-lens-list"></div>
+          </section>
           <input type="text" id="db-search" placeholder="全文検索（例: シャンデリア、傘、雨、反復）"
                  aria-label="作品を全文検索">
           <select id="db-type" aria-label="種別で絞り込む"></select>
@@ -171,8 +182,8 @@
   </div>
 </div>
 
-  <script src="db.js?v=41"></script>
+  <script src="db.js?v=42"></script>
 <script src="data.js?v=13"></script>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>

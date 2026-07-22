@@ -778,13 +778,14 @@
 
   // ---------- 資料棚（作品データベース・正本読み取り） ----------
   const DB = typeof SHOSAI_DB !== "undefined" ? SHOSAI_DB : null;
-  const dbState = { query: "", type: "", company: "", person: "", sort: "company", selected: null };
-  let workMap, elMap, featMap, elsByWork;
+  const dbState = { query: "", type: "", company: "", person: "", lens: "", sort: "company", selected: null };
+  let workMap, elMap, featMap, elsByWork, lensMap;
 
   function buildDbMaps() {
     workMap = new Map(DB.works.map((w) => [w.id, w]));
     elMap = new Map(DB.elements.map((e) => [e.id, e]));
     featMap = new Map(DB.features.map((f) => [f.feature_id, f]));
+    lensMap = new Map((DB.staging_lenses || []).map((lens) => [lens.id, lens]));
     elsByWork = new Map();
     for (const e of DB.elements)
       for (const l of e.work_links || []) {
@@ -846,6 +847,11 @@
         const ft = featMap.get(f.feature_id);
         return `${ft ? `${ft.label_ja} ${ft.description || ""}` : f.feature_id} ${f.note || ""}`;
       }));
+      add("演出の型", (w.staging_lenses || []).flatMap((lens) => {
+        const meta = lensMap.get(lens.id);
+        return [meta ? `${meta.label} ${meta.description || ""}` : lens.id]
+          .concat((lens.evidence || []).map((item) => `${item.label || ""} ${item.text || ""}`));
+      }));
       add("要素", (elsByWork.get(w.id) || []).map(
         (e) => `${e.label || ""} ${e.label_ja || ""} ${e.subtype || ""} ${e.summary || ""}`));
       searchIdx.set(w.id, { fields, hay: fields.map((f) => f.text).join("\n").toLowerCase() });
@@ -880,6 +886,8 @@
       }
       if (dbState.company && (w.company || "") !== dbState.company) return false;
       if (dbState.person && !(w.people || []).some((p) => p.person_id === dbState.person))
+        return false;
+      if (dbState.lens && !(w.staging_lenses || []).some((lens) => lens.id === dbState.lens))
         return false;
       if (!q) return true;
       const idx = searchIdx.get(w.id);
@@ -916,8 +924,9 @@
 
   function renderDbList() {
     const list = dbSort(dbFilter());
+    const lens = lensMap.get(dbState.lens);
     $("#db-count").textContent =
-      `${DB.works.length}件中 ${list.length}件 ・ 索引生成 ${DB.generated}（正本は読み取りのみ）`;
+      `${DB.works.length}件中 ${list.length}件${lens ? ` ・ 型: ${lens.label}` : ""} ・ 索引生成 ${DB.generated}（正本は読み取りのみ）`;
     const q = dbState.query.trim().toLowerCase();
     $("#db-list").innerHTML = list
       .map((w) => {
@@ -933,6 +942,23 @@
     $$("[data-work]", $("#db-list")).forEach((b) =>
       b.addEventListener("click", () => {
         location.hash = "#db/" + encodeURIComponent(b.dataset.work);
+      }));
+  }
+
+  function renderStagingLenses() {
+    const lenses = DB.staging_lenses || [];
+    $("#db-lens-list").innerHTML = lenses.map((lens, index) => `
+      <button type="button" class="db-lens" data-lens="${esc(lens.id)}" aria-pressed="${dbState.lens === lens.id}">
+        <span class="db-lens-index">${String(index + 1).padStart(2, "0")}</span>
+        <span class="db-lens-copy"><span class="db-lens-label">${esc(lens.label)}</span><span class="db-lens-desc">${esc(lens.description || "")}</span></span>
+        <span class="db-lens-count">${esc(lens.works_count)}件</span>
+      </button>`).join("");
+    $("#db-lens-clear").hidden = !dbState.lens;
+    $$('[data-lens]', $("#db-lens-list")).forEach((button) =>
+      button.addEventListener("click", () => {
+        dbState.lens = dbState.lens === button.dataset.lens ? "" : button.dataset.lens;
+        renderStagingLenses();
+        renderDbList();
       }));
   }
 
@@ -1068,6 +1094,17 @@
       .map((x) => `<span>${esc(x)}</span>`)
       .join("");
 
+    const lensHtml = (w.staging_lenses || [])
+      .map((lens) => {
+        const meta = lensMap.get(lens.id);
+        if (!meta) return "";
+        const evidence = (lens.evidence || [])
+          .map((item) => `<p><span class="dbd-lens-field">${esc(item.label || "根拠")}</span>${esc(item.text || "")}</p>`)
+          .join("");
+        return `<div class="dbd-lens-item"><h4>${esc(meta.label)}</h4>${evidence}</div>`;
+      })
+      .join("");
+
     $("#db-detail").innerHTML = `
       <header class="dbd-head">
         <p class="dbd-kicker">${esc(w.category || "")}${w.subcategory ? " ／ " + esc(w.subcategory) : ""} ・ ${esc(w.media_type || "")} ・ ${esc(w.id)}</p>
@@ -1100,6 +1137,7 @@
       ${listSec("装置・機構", w.set_mechanics)}
       ${listSec("衣装", w.costume_features)}
       ${listSec("照明", w.lighting_features)}
+      ${lensHtml ? sec("横断の手がかり（正本メモからの抽出）", `<p class="dbd-lens-note">ここにある型は、既存の構造・場面・観客体験などの記述を手がかりにした資料棚上の読み方です。作品の因果や意図を新たに断定するものではありません。</p>${lensHtml}`) : ""}
       ${peopleHtml ? sec(`人（${(w.people || []).length}）`, `<ul>${peopleHtml}</ul>`) : ""}
       ${sfHtml ? sec(`演出特徴（${(w.staging_features || []).length}）`, sfHtml) : ""}
       ${elHtml ? sec(`関連表現 — この作品の要素（${els.length}）`, elHtml) : ""}
@@ -1133,6 +1171,7 @@
     }
     buildDbMaps();
     buildSearchIndex();
+    renderStagingLenses();
     // ジャンル大分類（build_db.pyで生成）: 件数の多い順。サーカスはサブ分類を字下げで続ける
     const catCount = new Map();
     const subCount = new Map();
@@ -1195,6 +1234,11 @@
     bindSelect("#db-company", "company");
     bindSelect("#db-person", "person");
     bindSelect("#db-sort", "sort");
+    $("#db-lens-clear").addEventListener("click", () => {
+      dbState.lens = "";
+      renderStagingLenses();
+      renderDbList();
+    });
     renderDbList();
   }
 
