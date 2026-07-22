@@ -8,6 +8,7 @@
 
 import json
 import datetime
+import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -47,10 +48,40 @@ CATEGORY_RULES = [
 ]
 
 
+# サーカス内サブ分類（先勝ち）。該当なしは「その他サーカス」
+CIRCUS_SUB_RULES = [
+    ("クルーズ・カジノ常設", ["cruise", "casino"]),
+    ("キャバレー・バラエティ系", ["cabaret", "variety", "revue", "dinner"]),
+    ("屋外・ストリート", ["outdoor", "street", "public_space", "site_specific", "urban", "promenade"]),
+    ("ジャグリング・オブジェクト", ["juggling", "diabolo", "gandini", "defracto", "jay gilligan"]),
+    ("綱・ワイヤー系", ["highwire", "tightwire", "colporteurs", "funambul"]),
+    ("ビッグトップ・大規模", [
+        "big_top", "chapiteau", "arena", "resident", "stadium", "cirque du soleil", "dragone",
+    ]),
+    ("現代サーカス", [
+        "contemporary", "nouveau", "fingers", "éloize", "eloize", "putyka", "akoreacro",
+        "baro d'evel", "recirquel", "machine de cirque", "flip fabrique", "circa", "casus",
+        "barely methodical", "nofit", "inextremiste", "phare", "upswing", "mimbre",
+        "compagnie 111", "gravity & other myths", "company 2",
+    ]),
+]
+
+
+def subcategorize(hay):
+    for label, keys in CIRCUS_SUB_RULES:
+        if any(k in hay for k in keys):
+            return label
+    return "その他サーカス"
+
+
 def categorize(w):
     hay = " ".join(
-        str(w.get(k) or "") for k in ("genre", "show_type", "media_type", "company", "venue_type")
+        str(w.get(k) or "")
+        for k in ("genre", "show_type", "media_type", "company", "venue_type", "tour_or_resident")
     ).lower()
+    # opera house / operation / cooperation 等を「オペラ」と誤認しない
+    hay = hay.replace("opera_house", "").replace("opera house", "")
+    hay = re.sub(r"\S*operat\S*", " ", hay)
     if not hay.strip():
         return "その他・未分類"
     # genre自体がミュージカル（かつサーカスでない）なら、会社等の語より優先する
@@ -73,11 +104,21 @@ def main():
     works = ri["references"]  # 全項目そのまま（表示が目的のため削らない）
     for w in works:
         w["category"] = categorize(w)
+        if w["category"] == "サーカス・アクロバット":
+            hay = " ".join(
+                str(w.get(k) or "")
+                for k in ("genre", "show_type", "media_type", "company", "venue_type", "tour_or_resident")
+            ).lower()
+            w["subcategory"] = subcategorize(hay)
 
     from collections import Counter
     cat_dist = Counter(w["category"] for w in works)
     print("category distribution:")
     for c, n in cat_dist.most_common():
+        print(f"  {n:3d}  {c}")
+    sub_dist = Counter(w.get("subcategory") for w in works if w.get("subcategory"))
+    print("circus subcategory distribution:")
+    for c, n in sub_dist.most_common():
         print(f"  {n:3d}  {c}")
 
     elements = [
