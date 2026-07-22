@@ -24,6 +24,7 @@ def load(name):
 # ジャンル大分類: genre/show_type/media_type/company のキーワードから導出（先勝ち）
 # 正本には書き戻さない。分類はUI絞り込み用の便宜であり、確定情報ではない。
 CATEGORY_RULES = [
+    ("ミュージックビデオ", ["music_video"]),
     ("映画・映像", ["film", "documentary", "movie"]),
     ("メディアアート・テクノロジー", ["media_art", "rhizomatiks", "elevenplay", "tech_driven", "audiovisual", "teamlab", "digital_art"]),
     ("展示・インスタレーション", ["exhibition", "installation"]),
@@ -87,6 +88,9 @@ def categorize(w):
     hay = re.sub(r"\S*operat\S*", " ", hay)
     if not hay.strip():
         return "その他・未分類"
+    # MVは楽曲・映像・振付を含むため、映画や音楽カテゴリより先に独立させる。
+    if "music_video" in str(w.get("media_type") or "").lower():
+        return "ミュージックビデオ"
     # genre自体がミュージカル（かつサーカスでない）なら、会社等の語より優先する
     g = str(w.get("genre") or "").lower()
     show_type = str(w.get("show_type") or "").lower()
@@ -110,6 +114,8 @@ CATEGORY_EXPECTATIONS = {
     "show_finzi_sochi_olympic_closing": "式典・イベントショー",
     "show_finzi_turin_olympic_closing": "式典・イベントショー",
     "show_eloize_effervescence": "サーカス・アクロバット",
+    "show_mv_perfume_fake_it": "ミュージックビデオ",
+    "show_mv_valentino_khan_deep_down_low": "ミュージックビデオ",
 }
 
 

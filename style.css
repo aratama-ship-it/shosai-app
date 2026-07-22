@@ -230,7 +230,10 @@ textarea, input[type="text"] {
   line-height: 1.65;
 }
 
-.db-detail { min-width: 0; }
+.db-detail {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 
 .dbd-head {
   background: var(--desk-2);
@@ -267,6 +270,7 @@ textarea, input[type="text"] {
 }
 
 .dbd-tags span {
+  min-width: 0;
   font-size: 11px;
   color: var(--milk-dim);
   border: 1px solid var(--line-dark);
@@ -317,6 +321,7 @@ textarea, input[type="text"] {
 .dbd-sec ul { list-style: none; display: grid; gap: 6px; }
 
 .dbd-sec li {
+  min-width: 0;
   font-size: 13.5px;
   line-height: 1.85;
   color: var(--milk);
