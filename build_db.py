@@ -44,7 +44,7 @@ CATEGORY_RULES = [
     ("式典・イベントショー", ["ceremony", "olympic", "paralympic", "festival", "anniversary", "halftime", "super_bowl"]),
     ("ダンス・舞踊", ["ballet", "butoh", "dance", "danza", "tanztheater"]),
     ("マジック・イリュージョン", ["magic", "illusion", "mindfreak"]),
-    ("水上・氷上ショー", ["aquatic", "water", "on_ice", "ice_show"]),
+    ("水上・氷上ショー", ["aquatic", "water", "on_ice", "ice_show", "figure_skating", "ice_dance"]),
     ("没入型・体験", ["immersive", "site_specific", "participatory"]),
     ("音楽・コンサート", ["concert", "music_tribute", "song"]),
     ("演劇", ["theatre", "theater", "drama", "_play", "comedy", "teatro"]),
@@ -102,6 +102,8 @@ def categorize(w):
     event_keys = ("ceremon", "olympic", "paralympic", "world_cup", "fifa", "halftime", "super_bowl")
     if any(k in event_hay for k in event_keys) and "circus" not in g and "cirque" not in g:
         return "式典・イベントショー"
+    if "figure_skating" in g or "ice_dance" in g or "ice_show" in g:
+        return "水上・氷上ショー"
     for label, keys in CATEGORY_RULES:
         if any(k in hay for k in keys):
             return label
