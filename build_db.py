@@ -104,6 +104,9 @@ def categorize(w):
         return "式典・イベントショー"
     if "figure_skating" in g or "ice_dance" in g or "ice_show" in g:
         return "水上・氷上ショー"
+    # ライブ公演は会場説明に immersive / sphere 等を含んでも、作品の主形式を優先する。
+    if g.startswith(("stadium_concert", "arena_concert", "concert_residency")):
+        return "音楽・コンサート"
     for label, keys in CATEGORY_RULES:
         if any(k in hay for k in keys):
             return label
@@ -118,6 +121,7 @@ CATEGORY_EXPECTATIONS = {
     "show_eloize_effervescence": "サーカス・アクロバット",
     "show_mv_perfume_fake_it": "ミュージックビデオ",
     "show_mv_valentino_khan_deep_down_low": "ミュージックビデオ",
+    "show_live_u2_uv_sphere_2023": "音楽・コンサート",
 }
 
 
@@ -145,6 +149,7 @@ STAGING_LENS_RULES = [
         "description": "舞台・氷面・競技面を、別の世界として扱う",
         "pattern": r"舞台を変|空間を変|氷面|競技面|コート面|\bice rink\b|\bcourt\b|\bfloor\b|projection.*(?:stage|ice|rink|court|floor)|(?:stage|ice|rink|court|floor).*projection",
         "fields": ("structure", "signature_scenes", "set_mechanics", "lighting_features"),
+        "feature_ids": ("transforming-stage-surface",),
     },
     {
         "id": "audience",
@@ -169,6 +174,7 @@ FIELD_LABELS = {
     "set_mechanics": "装置・機構",
     "lighting_features": "照明",
     "audience_experience": "観客体験",
+    "staging_features": "演出特徴",
 }
 
 # 「参加形式は未確認」のような注意書きは、参加の根拠には使わない。
@@ -193,6 +199,12 @@ def staging_lenses_for(work):
                 text = str(text)
                 if matcher.search(text) and not NON_EVIDENCE_TEXT.search(text):
                     evidence.append({"field": field, "label": FIELD_LABELS[field], "text": text})
+        for assignment in work.get("staging_features", []):
+            if assignment.get("feature_id") not in rule.get("feature_ids", ()):
+                continue
+            text = str(assignment.get("note") or "")
+            if text and not NON_EVIDENCE_TEXT.search(text):
+                evidence.append({"field": "staging_features", "label": FIELD_LABELS["staging_features"], "text": text})
         if evidence:
             lenses.append({
                 "id": rule["id"],
