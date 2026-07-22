@@ -102,8 +102,24 @@ def main():
     pi = load("person_index.json")
 
     works = ri["references"]  # 全項目そのまま（表示が目的のため削らない）
+
+    def extract_links(obj, out):
+        # 正本の全文字列からURLを拾う（現状0件だが、将来追記されたら自動で表示に乗る）
+        if isinstance(obj, str):
+            out.extend(re.findall(r"https?://[^\s\"'）)】>]+", obj))
+        elif isinstance(obj, list):
+            for x in obj:
+                extract_links(x, out)
+        elif isinstance(obj, dict):
+            for x in obj.values():
+                extract_links(x, out)
+
     for w in works:
         w["category"] = categorize(w)
+        urls = []
+        extract_links(w, urls)
+        if urls:
+            w["links"] = sorted(set(urls))
         if w["category"] == "サーカス・アクロバット":
             hay = " ".join(
                 str(w.get(k) or "")

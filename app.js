@@ -1075,6 +1075,15 @@
         ${w.original_title && w.original_title !== w.title ? `<p class="dbd-orig">${esc(w.original_title)}</p>` : ""}
         <p class="dbd-meta">${esc(w.company || "会社不明")} ・ ${esc(w.year || "年不明")}</p>
         ${metaRow ? `<div class="dbd-tags">${metaRow}</div>` : ""}
+        <div class="dbd-links">
+          ${(w.links || [])
+            .map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener" class="src">出典内リンク: ${esc(u.replace(/^https?:\/\//, "").slice(0, 40))}${u.length > 48 ? "…" : ""}</a>`)
+            .join("")}
+          <a href="https://www.youtube.com/results?search_query=${encodeURIComponent([w.title, (w.company || "").split("/")[0].trim()].filter(Boolean).join(" "))}"
+             target="_blank" rel="noopener">▶ YouTubeで動画を探す</a>
+          <a href="https://www.google.com/search?q=${encodeURIComponent([w.title, (w.company || "").split("/")[0].trim()].filter(Boolean).join(" "))}"
+             target="_blank" rel="noopener">公式サイトを探す（Google）</a>
+        </div>
       </header>
       ${listSec("概要", w.summary)}
       ${listSec("テーマ", w.themes)}
