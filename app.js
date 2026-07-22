@@ -803,6 +803,73 @@
   const arr = (v) => (v == null ? [] : Array.isArray(v) ? v : [v]);
   const ul = (v) => arr(v).filter(Boolean).map((x) => `<li>${esc(x)}</li>`).join("");
 
+  // 全文検索索引: 作品の全項目＋人名＋演出特徴＋リンクされた要素まで対象にする
+  let searchIdx;
+
+  function buildSearchIndex() {
+    searchIdx = new Map();
+    for (const w of DB.works) {
+      const fields = [];
+      const add = (label, v) => {
+        const items = arr(v).filter(Boolean).map(String);
+        if (items.length) fields.push({ label, text: items.join("　") });
+      };
+      add("基本情報", [w.title, w.original_title, w.company, w.genre, w.media_type,
+        w.year, w.show_type, w.venue_type, w.tour_or_resident, w.status, w.id]);
+      add("概要", w.summary);
+      add("テーマ", w.themes);
+      add("世界観", w.worldview);
+      add("トーン", w.tone);
+      add("構造", w.structure);
+      add("観客体験", w.audience_experience);
+      add("象徴的な場面", w.signature_scenes);
+      add("種目・道具", w.apparatus_or_disciplines);
+      add("規模", w.cast_scale);
+      add("アクロバット", w.acrobatics_role);
+      add("クラウン", w.clown_or_comedy_role);
+      add("音楽", w.music_style);
+      add("装置・機構", w.set_mechanics);
+      add("衣装", w.costume_features);
+      add("照明", w.lighting_features);
+      add("使える点", w.useful_for);
+      add("既視感リスク", w.risk_of_cliche);
+      add("学び", w.production_learning);
+      add("出典メモ", w.source_notes);
+      add("未確認事項", w.unverified_notes);
+      add("解釈メモ", w.interpretation_notes);
+      add("キーワード", w.similarity_keywords);
+      add("人", (w.people || []).map((p) => {
+        const per = DB.persons[p.person_id];
+        return `${per ? `${per.name || ""} ${per.name_ja || ""}` : p.person_id} ${p.credit_label || p.role || ""}`;
+      }));
+      add("演出特徴", (w.staging_features || []).map((f) => {
+        const ft = featMap.get(f.feature_id);
+        return `${ft ? `${ft.label_ja} ${ft.description || ""}` : f.feature_id} ${f.note || ""}`;
+      }));
+      add("要素", (elsByWork.get(w.id) || []).map(
+        (e) => `${e.label || ""} ${e.label_ja || ""} ${e.subtype || ""} ${e.summary || ""}`));
+      searchIdx.set(w.id, { fields, hay: fields.map((f) => f.text).join("\n").toLowerCase() });
+    }
+  }
+
+  // 一致した場所のスニペット（タイトル・会社での一致は自明なので出さない）
+  function matchSnippet(w, q) {
+    const term = q.split(/\s+/)[0];
+    if (!term) return "";
+    if ((w.title || "").toLowerCase().includes(term) ||
+        (w.company || "").toLowerCase().includes(term)) return "";
+    const idx = searchIdx.get(w.id);
+    for (const f of idx.fields) {
+      const pos = f.text.toLowerCase().indexOf(term);
+      if (pos >= 0) {
+        const start = Math.max(0, pos - 14);
+        const end = Math.min(f.text.length, pos + term.length + 26);
+        return `${f.label}: ${start > 0 ? "…" : ""}${f.text.slice(start, end)}${end < f.text.length ? "…" : ""}`;
+      }
+    }
+    return "";
+  }
+
   function dbFilter() {
     const q = dbState.query.trim().toLowerCase();
     return DB.works.filter((w) => {
@@ -811,14 +878,8 @@
       if (dbState.person && !(w.people || []).some((p) => p.person_id === dbState.person))
         return false;
       if (!q) return true;
-      const names = (w.people || []).map((p) => {
-        const per = DB.persons[p.person_id];
-        return per ? `${per.name || ""} ${per.name_ja || ""}` : "";
-      });
-      const hay = [w.title, w.original_title, w.company, w.genre, w.summary,
-        ...(w.themes || []), ...(w.similarity_keywords || []), ...names]
-        .filter(Boolean).join(" ").toLowerCase();
-      return q.split(/\s+/).every((t) => hay.includes(t));
+      const idx = searchIdx.get(w.id);
+      return q.split(/\s+/).every((t) => idx.hay.includes(t));
     });
   }
 
@@ -853,13 +914,17 @@
     const list = dbSort(dbFilter());
     $("#db-count").textContent =
       `${DB.works.length}件中 ${list.length}件 ・ 索引生成 ${DB.generated}（正本は読み取りのみ）`;
+    const q = dbState.query.trim().toLowerCase();
     $("#db-list").innerHTML = list
-      .map(
-        (w) => `
+      .map((w) => {
+        const snippet = q ? matchSnippet(w, q) : "";
+        return `
       <button type="button" class="db-row${dbState.selected === w.id ? " selected" : ""}" data-work="${esc(w.id)}">
         <span class="t">${esc(w.title)}</span>
         <span class="m">${esc(w.company || "会社不明")} ・ ${esc(w.year || "年不明")} ・ ${esc(w.media_type || "")}</span>
-      </button>`)
+        ${snippet ? `<span class="hit">${esc(snippet)}</span>` : ""}
+      </button>`;
+      })
       .join("");
     $$("[data-work]", $("#db-list")).forEach((b) =>
       b.addEventListener("click", () => {
@@ -1054,6 +1119,7 @@
       return;
     }
     buildDbMaps();
+    buildSearchIndex();
     const types = [...new Set(DB.works.map((w) => w.media_type).filter(Boolean))].sort();
     $("#db-type").innerHTML =
       `<option value="">すべての種別（${DB.works.length}）</option>` +
