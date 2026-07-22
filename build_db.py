@@ -20,6 +20,49 @@ def load(name):
         return json.load(f)
 
 
+# ジャンル大分類: genre/show_type/media_type/company のキーワードから導出（先勝ち）
+# 正本には書き戻さない。分類はUI絞り込み用の便宜であり、確定情報ではない。
+CATEGORY_RULES = [
+    ("映画・映像", ["film", "documentary", "movie"]),
+    ("展示・インスタレーション", ["exhibition", "installation"]),
+    ("オペラ", ["opera"]),
+    ("伝統芸能", ["kabuki", "noh_", "bunraku", "rakugo"]),
+    ("クラウン・道化", ["clown"]),
+    ("サーカス・アクロバット", [
+        "circus", "cirque", "cirk", "circo", "big_top", "acrobat", "juggling",
+        "diabolo", "aerial", "highwire", "tightwire", "trapeze",
+        "fingers", "gandini", "akoreacro", "baro d'evel", "recirquel",
+        "machine de cirque", "flip fabrique", "circa", "defracto", "colporteurs",
+        "upswing", "mimbre", "compagnie 111",
+    ]),
+    ("ミュージカル", ["musical", "broadway", "takarazuka", "宝塚"]),
+    ("式典・セレモニー", ["ceremony", "olympic", "paralympic", "festival", "anniversary"]),
+    ("ダンス・舞踊", ["ballet", "butoh", "dance", "danza", "tanztheater"]),
+    ("マジック・イリュージョン", ["magic", "illusion", "mindfreak"]),
+    ("水上・氷上ショー", ["aquatic", "water", "on_ice", "ice_show"]),
+    ("没入型・体験", ["immersive", "site_specific", "participatory"]),
+    ("音楽・コンサート", ["concert", "music_tribute", "song"]),
+    ("演劇", ["theatre", "theater", "drama", "_play", "comedy", "teatro"]),
+    ("バラエティ・キャバレー", ["cabaret", "variety", "revue"]),
+]
+
+
+def categorize(w):
+    hay = " ".join(
+        str(w.get(k) or "") for k in ("genre", "show_type", "media_type", "company", "venue_type")
+    ).lower()
+    if not hay.strip():
+        return "その他・未分類"
+    # genre自体がミュージカル（かつサーカスでない）なら、会社等の語より優先する
+    g = str(w.get("genre") or "").lower()
+    if "musical" in g and "circus" not in g and "cirque" not in g:
+        return "ミュージカル"
+    for label, keys in CATEGORY_RULES:
+        if any(k in hay for k in keys):
+            return label
+    return "その他・未分類"
+
+
 def main():
     ri = load("reference_index.json")
     ei = load("element_index.json")
@@ -28,6 +71,14 @@ def main():
     pi = load("person_index.json")
 
     works = ri["references"]  # 全項目そのまま（表示が目的のため削らない）
+    for w in works:
+        w["category"] = categorize(w)
+
+    from collections import Counter
+    cat_dist = Counter(w["category"] for w in works)
+    print("category distribution:")
+    for c, n in cat_dist.most_common():
+        print(f"  {n:3d}  {c}")
 
     elements = [
         {

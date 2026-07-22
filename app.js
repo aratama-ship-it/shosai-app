@@ -814,7 +814,7 @@
         const items = arr(v).filter(Boolean).map(String);
         if (items.length) fields.push({ label, text: items.join("　") });
       };
-      add("基本情報", [w.title, w.original_title, w.company, w.genre, w.media_type,
+      add("基本情報", [w.title, w.original_title, w.company, w.genre, w.category, w.media_type,
         w.year, w.show_type, w.venue_type, w.tour_or_resident, w.status, w.id]);
       add("概要", w.summary);
       add("テーマ", w.themes);
@@ -873,7 +873,7 @@
   function dbFilter() {
     const q = dbState.query.trim().toLowerCase();
     return DB.works.filter((w) => {
-      if (dbState.type && w.media_type !== dbState.type) return false;
+      if (dbState.type && w.category !== dbState.type) return false;
       if (dbState.company && (w.company || "") !== dbState.company) return false;
       if (dbState.person && !(w.people || []).some((p) => p.person_id === dbState.person))
         return false;
@@ -921,7 +921,7 @@
         return `
       <button type="button" class="db-row${dbState.selected === w.id ? " selected" : ""}" data-work="${esc(w.id)}">
         <span class="t">${esc(w.title)}</span>
-        <span class="m">${esc(w.company || "会社不明")} ・ ${esc(w.year || "年不明")} ・ ${esc(w.media_type || "")}</span>
+        <span class="m">${esc(w.company || "会社不明")} ・ ${esc(w.year || "年不明")} ・ ${esc(w.category || w.media_type || "")}</span>
         ${snippet ? `<span class="hit">${esc(snippet)}</span>` : ""}
       </button>`;
       })
@@ -1066,7 +1066,7 @@
 
     $("#db-detail").innerHTML = `
       <header class="dbd-head">
-        <p class="dbd-kicker">${esc(w.media_type || "")} ・ ${esc(w.id)}</p>
+        <p class="dbd-kicker">${esc(w.category || "")} ・ ${esc(w.media_type || "")} ・ ${esc(w.id)}</p>
         <h2 class="dbd-title">${esc(w.title)}</h2>
         ${w.original_title && w.original_title !== w.title ? `<p class="dbd-orig">${esc(w.original_title)}</p>` : ""}
         <p class="dbd-meta">${esc(w.company || "会社不明")} ・ ${esc(w.year || "年不明")}</p>
@@ -1120,12 +1120,14 @@
     }
     buildDbMaps();
     buildSearchIndex();
-    const types = [...new Set(DB.works.map((w) => w.media_type).filter(Boolean))].sort();
+    // ジャンル大分類（build_db.pyで生成）: 件数の多い順
+    const catCount = new Map();
+    for (const w of DB.works)
+      if (w.category) catCount.set(w.category, (catCount.get(w.category) || 0) + 1);
+    const cats = [...catCount.entries()].sort((a, b) => b[1] - a[1]);
     $("#db-type").innerHTML =
-      `<option value="">すべての種別（${DB.works.length}）</option>` +
-      types
-        .map((t) => `<option value="${esc(t)}">${esc(t)}（${DB.works.filter((w) => w.media_type === t).length}）</option>`)
-        .join("");
+      `<option value="">すべてのジャンル（${DB.works.length}）</option>` +
+      cats.map(([c, n]) => `<option value="${esc(c)}">${esc(c)}（${n}）</option>`).join("");
 
     // 会社: 作品数の多い順
     const compCount = new Map();
