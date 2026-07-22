@@ -164,7 +164,15 @@ textarea, input[type="text"] {
   min-width: 0;
 }
 
-.db-search { display: grid; gap: 8px; margin-bottom: 10px; }
+.db-search {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.db-search input, .db-search .db-count { grid-column: 1 / -1; }
+.db-search select { min-width: 0; }
 
 .db-search input, .db-search select {
   background: var(--desk-2);
@@ -179,7 +187,7 @@ textarea, input[type="text"] {
 .db-search input::placeholder { color: rgba(240,231,214,0.32); }
 .db-search input:focus, .db-search select:focus { outline: none; border-color: var(--brass); }
 
-.db-count { font-size: 10.5px; color: var(--milk-dim); letter-spacing: 0.04em; }
+.db-count { font-size: 10.5px; color: var(--milk-dim); letter-spacing: 0.04em; grid-column: 1 / -1; }
 
 .db-list {
   max-height: calc(100vh - 230px);

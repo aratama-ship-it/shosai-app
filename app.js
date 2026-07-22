@@ -778,7 +778,7 @@
 
   // ---------- 資料棚（作品データベース・正本読み取り） ----------
   const DB = typeof SHOSAI_DB !== "undefined" ? SHOSAI_DB : null;
-  const dbState = { query: "", type: "", selected: null };
+  const dbState = { query: "", type: "", company: "", person: "", sort: "company", selected: null };
   let workMap, elMap, featMap, elsByWork;
 
   function buildDbMaps() {
@@ -807,21 +807,50 @@
     const q = dbState.query.trim().toLowerCase();
     return DB.works.filter((w) => {
       if (dbState.type && w.media_type !== dbState.type) return false;
+      if (dbState.company && (w.company || "") !== dbState.company) return false;
+      if (dbState.person && !(w.people || []).some((p) => p.person_id === dbState.person))
+        return false;
       if (!q) return true;
+      const names = (w.people || []).map((p) => {
+        const per = DB.persons[p.person_id];
+        return per ? `${per.name || ""} ${per.name_ja || ""}` : "";
+      });
       const hay = [w.title, w.original_title, w.company, w.genre, w.summary,
-        ...(w.themes || []), ...(w.similarity_keywords || [])]
+        ...(w.themes || []), ...(w.similarity_keywords || []), ...names]
         .filter(Boolean).join(" ").toLowerCase();
       return q.split(/\s+/).every((t) => hay.includes(t));
     });
   }
 
+  function dbSort(list) {
+    const yearNum = (w) => {
+      const n = parseInt(w.year, 10);
+      return isNaN(n) ? null : n;
+    };
+    const byTitle = (a, b) => String(a.title).localeCompare(String(b.title), "ja");
+    if (dbState.sort === "title") {
+      list.sort(byTitle);
+    } else if (dbState.sort === "year_desc" || dbState.sort === "year_asc") {
+      const dir = dbState.sort === "year_desc" ? -1 : 1;
+      list.sort((a, b) => {
+        const ya = yearNum(a), yb = yearNum(b);
+        if (ya == null && yb == null) return byTitle(a, b);
+        if (ya == null) return 1;   // 年不明は常に最後
+        if (yb == null) return -1;
+        return (ya - yb) * dir || byTitle(a, b);
+      });
+    } else {
+      list.sort(
+        (a, b) =>
+          String(a.company || "～").localeCompare(String(b.company || "～"), "ja") ||
+          String(a.year || "9999").localeCompare(String(b.year || "9999")) ||
+          byTitle(a, b));
+    }
+    return list;
+  }
+
   function renderDbList() {
-    const list = dbFilter();
-    list.sort(
-      (a, b) =>
-        String(a.company || "～").localeCompare(String(b.company || "～"), "ja") ||
-        String(a.year || "9999").localeCompare(String(b.year || "9999")) ||
-        String(a.title).localeCompare(String(b.title), "ja"));
+    const list = dbSort(dbFilter());
     $("#db-count").textContent =
       `${DB.works.length}件中 ${list.length}件 ・ 索引生成 ${DB.generated}（正本は読み取りのみ）`;
     $("#db-list").innerHTML = list
@@ -1031,14 +1060,47 @@
       types
         .map((t) => `<option value="${esc(t)}">${esc(t)}（${DB.works.filter((w) => w.media_type === t).length}）</option>`)
         .join("");
+
+    // 会社: 作品数の多い順
+    const compCount = new Map();
+    for (const w of DB.works)
+      if (w.company) compCount.set(w.company, (compCount.get(w.company) || 0) + 1);
+    const comps = [...compCount.entries()].sort(
+      (a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]), "ja"));
+    $("#db-company").innerHTML =
+      `<option value="">すべての会社（${comps.length}）</option>` +
+      comps.map(([c, n]) => `<option value="${esc(c)}">${esc(c)}（${n}）</option>`).join("");
+
+    // 人: 2作品以上に関わる人だけ、作品数の多い順（ディレクター・デザイナー等）
+    const perCount = new Map();
+    for (const w of DB.works)
+      for (const p of new Set((w.people || []).map((x) => x.person_id)))
+        perCount.set(p, (perCount.get(p) || 0) + 1);
+    const pers = [...perCount.entries()]
+      .filter(([, n]) => n >= 2)
+      .sort((a, b) => b[1] - a[1] || personName(a[0]).localeCompare(personName(b[0]), "ja"));
+    $("#db-person").innerHTML =
+      `<option value="">すべての人（2作品以上: ${pers.length}名）</option>` +
+      pers
+        .map(([pid, n]) => {
+          const roles = (DB.persons[pid] ? DB.persons[pid].roles : []).slice(0, 2).join("・");
+          return `<option value="${esc(pid)}">${esc(personName(pid))}（${n}）${roles ? " — " + esc(roles) : ""}</option>`;
+        })
+        .join("");
+
     $("#db-search").addEventListener("input", (e) => {
       dbState.query = e.target.value;
       renderDbList();
     });
-    $("#db-type").addEventListener("change", (e) => {
-      dbState.type = e.target.value;
-      renderDbList();
-    });
+    const bindSelect = (sel, key) =>
+      $(sel).addEventListener("change", (e) => {
+        dbState[key] = e.target.value;
+        renderDbList();
+      });
+    bindSelect("#db-type", "type");
+    bindSelect("#db-company", "company");
+    bindSelect("#db-person", "person");
+    bindSelect("#db-sort", "sort");
     renderDbList();
   }
 

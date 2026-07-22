@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 
@@ -27,9 +27,17 @@
     <div class="db-wrap">
       <section class="db-list-pane" aria-label="作品一覧">
         <div class="db-search">
-          <input type="text" id="db-search" placeholder="作品名・会社・テーマ・キーワードで検索"
+          <input type="text" id="db-search" placeholder="作品名・会社・人・テーマで検索"
                  aria-label="作品を検索">
           <select id="db-type" aria-label="種別で絞り込む"></select>
+          <select id="db-company" aria-label="会社で絞り込む"></select>
+          <select id="db-person" aria-label="人で絞り込む"></select>
+          <select id="db-sort" aria-label="並び順">
+            <option value="company">並び順: 会社 → 年</option>
+            <option value="year_desc">並び順: 年が新しい</option>
+            <option value="year_asc">並び順: 年が古い</option>
+            <option value="title">並び順: 作品名</option>
+          </select>
           <p class="db-count" id="db-count"></p>
         </div>
         <div class="db-list" id="db-list"></div>
@@ -164,7 +172,7 @@
 </div>
 
 <script src="db.js?v=1"></script>
-<script src="data.js?v=8"></script>
-<script src="app.js?v=8"></script>
+<script src="data.js?v=9"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>
