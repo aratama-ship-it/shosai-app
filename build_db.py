@@ -99,7 +99,7 @@ def categorize(w):
     # 式典自体は制作会社や技法より優先する。ただし opening ceremony を含む
     # サーカス作品（Effervescence等）はサーカスとして残す。
     event_hay = f"{g} {show_type}"
-    event_keys = ("ceremony", "olympic", "paralympic", "world_cup", "fifa", "halftime", "super_bowl")
+    event_keys = ("ceremon", "olympic", "paralympic", "world_cup", "fifa", "halftime", "super_bowl")
     if any(k in event_hay for k in event_keys) and "circus" not in g and "cirque" not in g:
         return "式典・イベントショー"
     for label, keys in CATEGORY_RULES:
