@@ -25,9 +25,12 @@ def load(name):
 # 正本には書き戻さない。分類はUI絞り込み用の便宜であり、確定情報ではない。
 CATEGORY_RULES = [
     ("映画・映像", ["film", "documentary", "movie"]),
+    ("メディアアート・テクノロジー", ["media_art", "rhizomatiks", "elevenplay", "tech_driven", "audiovisual", "teamlab", "digital_art"]),
     ("展示・インスタレーション", ["exhibition", "installation"]),
     ("オペラ", ["opera"]),
     ("伝統芸能", ["kabuki", "noh_", "bunraku", "rakugo"]),
+    # `conte` は contemporary に部分一致するため使わない。
+    ("コント・お笑い", ["sketch_comedy", "rahmens", "ラーメンズ", "お笑い", "kajalla", "potsunen"]),
     ("クラウン・道化", ["clown"]),
     ("サーカス・アクロバット", [
         "circus", "cirque", "cirk", "circo", "big_top", "acrobat", "juggling",
@@ -37,7 +40,7 @@ CATEGORY_RULES = [
         "upswing", "mimbre", "compagnie 111",
     ]),
     ("ミュージカル", ["musical", "broadway", "takarazuka", "宝塚"]),
-    ("式典・セレモニー", ["ceremony", "olympic", "paralympic", "festival", "anniversary"]),
+    ("式典・イベントショー", ["ceremony", "olympic", "paralympic", "festival", "anniversary", "halftime", "super_bowl"]),
     ("ダンス・舞踊", ["ballet", "butoh", "dance", "danza", "tanztheater"]),
     ("マジック・イリュージョン", ["magic", "illusion", "mindfreak"]),
     ("水上・氷上ショー", ["aquatic", "water", "on_ice", "ice_show"]),
@@ -86,12 +89,44 @@ def categorize(w):
         return "その他・未分類"
     # genre自体がミュージカル（かつサーカスでない）なら、会社等の語より優先する
     g = str(w.get("genre") or "").lower()
+    show_type = str(w.get("show_type") or "").lower()
     if "musical" in g and "circus" not in g and "cirque" not in g:
         return "ミュージカル"
+    # 式典自体は制作会社や技法より優先する。ただし opening ceremony を含む
+    # サーカス作品（Effervescence等）はサーカスとして残す。
+    event_hay = f"{g} {show_type}"
+    event_keys = ("ceremony", "olympic", "paralympic", "world_cup", "fifa", "halftime", "super_bowl")
+    if any(k in event_hay for k in event_keys) and "circus" not in g and "cirque" not in g:
+        return "式典・イベントショー"
     for label, keys in CATEGORY_RULES:
         if any(k in hay for k in keys):
             return label
     return "その他・未分類"
+
+
+# 分類規則の変更で既知作品が大移動しないための最小回帰チェック。
+CATEGORY_EXPECTATIONS = {
+    "show_cds_kooza": "サーカス・アクロバット",
+    "show_finzi_sochi_olympic_closing": "式典・イベントショー",
+    "show_finzi_turin_olympic_closing": "式典・イベントショー",
+    "show_eloize_effervescence": "サーカス・アクロバット",
+}
+
+
+def validate_categories(works):
+    by_id = {w["id"]: w for w in works}
+    errors = []
+    for work_id, expected in CATEGORY_EXPECTATIONS.items():
+        if work_id not in by_id:
+            continue
+        actual = by_id[work_id].get("category")
+        if actual != expected:
+            errors.append(f"{work_id}: expected {expected}, got {actual}")
+    comedy_count = sum(w.get("category") == "コント・お笑い" for w in works)
+    if comedy_count > 50:
+        errors.append(f"コント・お笑いが{comedy_count}件。部分一致による誤分類の可能性")
+    if errors:
+        raise ValueError("category validation failed: " + "; ".join(errors))
 
 
 def main():
@@ -126,6 +161,8 @@ def main():
                 for k in ("genre", "show_type", "media_type", "company", "venue_type", "tour_or_resident")
             ).lower()
             w["subcategory"] = subcategorize(hay)
+
+    validate_categories(works)
 
     from collections import Counter
     cat_dist = Counter(w["category"] for w in works)
