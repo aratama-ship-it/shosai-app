@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=22">
+<link rel="stylesheet" href="style.css?v=24">
 </head>
 <body>
 
@@ -115,9 +115,14 @@
           <p class="seeds-sub">0→1は配らせる。拾う・育てるに集中する。</p>
           <button type="button" class="btn-quiet" id="btn-deal">種火を7枚配る</button>
         </div>
+        <div class="seed-source-mode" role="group" aria-label="種火の出どころ">
+          <button type="button" data-seed-mode="db" aria-pressed="true">資料由来 30種</button>
+          <button type="button" data-seed-mode="all" aria-pressed="false">自由生成を含む 60種</button>
+        </div>
+        <p class="seed-pool-status" id="seed-pool-status"></p>
         <div class="seed-kept" id="seed-kept"></div>
         <div class="seed-dealt" id="seed-dealt"></div>
-        <p class="seeds-note">Phase 0: 固定サンプル18種から、近い3・少し遠い2・異物2を配ります。流した種火はこのセッション中は再配されません。Phase 2でAIが正本DBと過去の断片から生成し、流した種火は別レシピで変形して再配します。</p>
+        <p class="seeds-note">Phase 0: 既定は正本DBにある実在作品を2件以上参照し、その機能を変形した固定30種です。自由生成を含む全60種にも切り替えられます。どちらも近い3・少し遠い2・異物2を配り、同じセッションでは未登場を優先します。「資料からの変形」で参照作品と解釈を分けて確認できます。</p>
       </section>
     </section>
   </main>
@@ -201,7 +206,7 @@
 </div>
 
   <script src="db.js?v=58"></script>
-<script src="data.js?v=14"></script>
-<script src="app.js?v=21"></script>
+<script src="data.js?v=16"></script>
+<script src="app.js?v=24"></script>
 </body>
 </html>

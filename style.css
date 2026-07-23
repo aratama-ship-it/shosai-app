@@ -1017,6 +1017,53 @@ textarea, input[type="text"] {
   min-width: 0;
 }
 
+.seed-source-mode {
+  display: flex;
+  align-items: stretch;
+  width: fit-content;
+  max-width: 100%;
+  border-top: 1px solid var(--line-dark);
+  border-bottom: 1px solid var(--line-dark);
+  margin: -7px 0 8px;
+}
+
+.seed-source-mode button {
+  position: relative;
+  min-height: 38px;
+  padding: 7px 14px 8px;
+  color: var(--milk-dim);
+  border-right: 1px solid var(--line-dark);
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-align: left;
+}
+
+.seed-source-mode button:first-child { border-left: 1px solid var(--line-dark); }
+.seed-source-mode button:hover { color: var(--milk); background: rgba(255,255,255,0.025); }
+
+.seed-source-mode button[aria-pressed="true"] {
+  color: var(--paper);
+  background: rgba(179,143,77,0.09);
+}
+
+.seed-source-mode button[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  left: 13px;
+  right: 13px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--rust);
+}
+
+.seed-pool-status {
+  color: var(--brass);
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+  padding-top: 2px;
+  margin: 0 0 13px;
+}
+
 .seed-dealt {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1046,6 +1093,87 @@ textarea, input[type="text"] {
   color: var(--milk);
   flex: 1;
 }
+
+.seed-provenance {
+  margin-top: 12px;
+  border-top: 1px solid var(--line-dark);
+  border-bottom: 1px solid var(--line-dark);
+}
+
+.seed-provenance summary {
+  position: relative;
+  padding: 9px 20px 9px 0;
+  color: var(--brass);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  list-style: none;
+}
+
+.seed-provenance summary::-webkit-details-marker { display: none; }
+
+.seed-provenance summary::after {
+  content: "＋";
+  position: absolute;
+  right: 1px;
+  color: var(--milk-dim);
+}
+
+.seed-provenance[open] summary::after { content: "−"; }
+
+.seed-provenance-body {
+  border-top: 1px dashed var(--line-dark);
+  padding: 10px 0 11px 11px;
+}
+
+.seed-provenance-label,
+.seed-transform span {
+  display: block;
+  color: var(--slate);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  margin-bottom: 5px;
+}
+
+.seed-provenance ul {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 11px;
+}
+
+.seed-provenance li {
+  display: grid;
+  gap: 2px;
+  padding-left: 9px;
+  border-left: 1px solid rgba(179,143,77,0.42);
+}
+
+.seed-provenance li a {
+  width: fit-content;
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: 12.5px;
+  line-height: 1.5;
+  text-decoration: underline;
+  text-decoration-color: rgba(179,143,77,0.45);
+  text-underline-offset: 3px;
+}
+
+.seed-provenance li a:hover { color: var(--brass); text-decoration-color: var(--brass); }
+
+.seed-provenance li span {
+  color: var(--milk-dim);
+  font-size: 9.5px;
+  line-height: 1.45;
+}
+
+.seed-transform {
+  color: var(--milk-dim);
+  font-size: 11px;
+  line-height: 1.75;
+}
+
+.seed-source-missing { color: var(--rust) !important; }
 
 .seed-actions {
   display: flex;
@@ -1113,6 +1241,16 @@ textarea, input[type="text"] {
 
 .seed-chip .seed-return { color: var(--ink-soft); }
 .seed-chip .seed-return:hover { color: var(--ink); }
+
+.seed-chip .seed-provenance { border-color: rgba(0,0,0,0.2); }
+.seed-chip .seed-provenance-body { border-color: rgba(0,0,0,0.18); }
+.seed-chip .seed-provenance summary { color: var(--rust-deep); }
+.seed-chip .seed-provenance summary::after,
+.seed-chip .seed-provenance li span,
+.seed-chip .seed-transform { color: var(--ink-soft); }
+.seed-chip .seed-provenance li a { color: var(--ink); }
+.seed-chip .seed-provenance-label,
+.seed-chip .seed-transform span { color: var(--rust-deep); }
 
 .seeds-note {
   margin-top: 16px;
@@ -2346,6 +2484,10 @@ textarea, input[type="text"] {
 }
 
 @media (max-width: 430px) {
+  .seed-source-mode { width: 100%; }
+  .seed-source-mode button { flex: 1 1 0; padding-left: 10px; padding-right: 10px; }
+  .seed-source-mode button[aria-pressed="true"]::after { left: 9px; right: 9px; }
+  .seed-dealt { grid-template-columns: 1fr; }
   .db-lens-list { grid-template-columns: 1fr; }
   .db-search { grid-template-columns: 1fr; }
   .db-search input,

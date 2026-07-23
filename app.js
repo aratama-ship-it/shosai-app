@@ -89,9 +89,11 @@
   // ---------- 種火（0→1の配り） ----------
   // 配りは 近い3 / 少し遠い2 / 異物2 の計7枚。得意な方向だけに寄らないよう異物枠は必ず残す。
   const seedState = {
+    sourceMode: "db", // db=正本DB由来の30種 / all=自由生成を含む全60種
     dealt: [],      // いま机に配られている種火
     kept: [],       // 拾った種火（紙側へ移る）
     discarded: new Set(), // このセッション中に流した種火（再配しない）
+    seen: new Set(), // このセッション中に一度でも配った種火（未登場を優先する）
   };
 
   function shuffle(arr) {
@@ -103,15 +105,51 @@
     return a;
   }
 
+  function seedCatalog() {
+    return seedState.sourceMode === "db"
+      ? SHOSAI.seeds.filter((s) => Array.isArray(s.sources) && s.sources.length)
+      : SHOSAI.seeds;
+  }
+
+  function seedProvenanceHtml(seed) {
+    if (!Array.isArray(seed.sources) || !seed.sources.length) return "";
+    const sourceLinks = seed.sources
+      .map((id) => {
+        const work = DB && DB.works.find((w) => w.id === id);
+        if (!work) return `<li><span class="seed-source-missing">${esc(id)}（正本内で未解決）</span></li>`;
+        const meta = [work.company, work.year].filter(Boolean).join(" / ");
+        return `<li>
+          <a href="#db/${encodeURIComponent(work.id)}">${esc(work.title)}</a>
+          ${meta ? `<span>${esc(meta)}</span>` : ""}
+        </li>`;
+      })
+      .join("");
+    return `
+      <details class="seed-provenance">
+        <summary>資料からの変形を見る</summary>
+        <div class="seed-provenance-body">
+          <p class="seed-provenance-label">参照作品（正本DB）</p>
+          <ul>${sourceLinks}</ul>
+          <p class="seed-transform"><span>変形メモ（解釈）</span>${esc(seed.inspiration || "変形メモは未記入です。")}</p>
+        </div>
+      </details>`;
+  }
+
   function dealSeeds() {
-    const pool = (dist) =>
-      shuffle(SHOSAI.seeds.filter(
+    const catalog = seedCatalog();
+    const pool = (dist, needed) => {
+      const eligible = catalog.filter(
         (s) => s.dist === dist && !seedState.discarded.has(s.text) &&
-               !seedState.kept.some((k) => k.text === s.text)));
-    const near = pool("near").slice(0, 3);
-    const mid = pool("mid").slice(0, 2);
-    const alien = pool("alien").slice(0, 2);
+               !seedState.kept.some((k) => k.text === s.text));
+      const unseen = shuffle(eligible.filter((s) => !seedState.seen.has(s.text)));
+      const alreadySeen = shuffle(eligible.filter((s) => seedState.seen.has(s.text)));
+      return unseen.concat(alreadySeen).slice(0, needed);
+    };
+    const near = pool("near", 3);
+    const mid = pool("mid", 2);
+    const alien = pool("alien", 2);
     seedState.dealt = shuffle(near.concat(mid, alien));
+    seedState.dealt.forEach((s) => seedState.seen.add(s.text));
     renderSeeds();
   }
 
@@ -119,16 +157,30 @@
     const wrap = $("#seed-dealt");
     const keptWrap = $("#seed-kept");
     const dealBtn = $("#btn-deal");
+    const status = $("#seed-pool-status");
+    const catalog = seedCatalog();
+    const catalogTexts = new Set(catalog.map((s) => s.text));
 
     dealBtn.textContent = seedState.dealt.length ? "配り直す" : "種火を7枚配る";
+    const eligible = catalog.filter(
+      (s) => !seedState.discarded.has(s.text) &&
+             !seedState.kept.some((k) => k.text === s.text));
+    const unseenCount = eligible.filter((s) => !seedState.seen.has(s.text)).length;
+    const keptCount = seedState.kept.filter((s) => catalogTexts.has(s.text)).length;
+    const discardedCount = [...seedState.discarded].filter((text) => catalogTexts.has(text)).length;
+    $$("[data-seed-mode]").forEach((button) =>
+      button.setAttribute("aria-pressed", button.dataset.seedMode === seedState.sourceMode ? "true" : "false"));
+    status.textContent =
+      `${seedState.sourceMode === "db" ? "資料由来" : "全"}${catalog.length}種 ・ 未登場 ${unseenCount} ・ 拾った ${keptCount} ・ 流した ${discardedCount}`;
 
     wrap.innerHTML = seedState.dealt.length
       ? seedState.dealt
           .map(
             (s, i) => `
-            <article class="seed-card">
+            <article class="seed-card" data-seed-dist="${esc(s.dist)}">
               <p class="seed-recipe">${esc(s.recipe)}</p>
               <p class="seed-text">${esc(s.text)}</p>
+              ${seedProvenanceHtml(s)}
               <div class="seed-actions">
                 <button type="button" class="seed-keep" data-keep="${i}">拾う</button>
                 <button type="button" class="seed-pass" data-pass="${i}">流す</button>
@@ -144,6 +196,7 @@
             (s, i) => `
             <div class="seed-chip">
               <p class="seed-chip-text">${esc(s.text)}</p>
+              ${seedProvenanceHtml(s)}
               <div class="seed-actions">
                 <button type="button" class="seed-start" data-start="${i}">机に置いて始める</button>
                 <button type="button" class="seed-return" data-return="${i}">戻す</button>
@@ -343,6 +396,13 @@
   // ---------- 机（ホーム） ----------
   function initDesk() {
     $("#btn-deal").addEventListener("click", dealSeeds);
+    $$("[data-seed-mode]").forEach((button) =>
+      button.addEventListener("click", () => {
+        if (button.dataset.seedMode === seedState.sourceMode) return;
+        seedState.sourceMode = button.dataset.seedMode;
+        seedState.dealt = [];
+        dealSeeds();
+      }));
     renderSeeds();
     renderMondo();
     const thumbs = $("#desk-thumbs");
