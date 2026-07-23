@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=18">
 </head>
 <body>
 
@@ -43,12 +43,14 @@
           <select id="db-type" aria-label="種別で絞り込む"></select>
           <select id="db-company" aria-label="会社で絞り込む"></select>
           <select id="db-person" aria-label="人で絞り込む"></select>
+          <select id="db-depth" aria-label="調査レベルで絞り込む"></select>
           <select id="db-sort" aria-label="並び順">
             <option value="company">並び順: 会社 → 年</option>
             <option value="year_desc">並び順: 年が新しい</option>
             <option value="year_asc">並び順: 年が古い</option>
             <option value="title">並び順: 作品名</option>
           </select>
+          <p class="db-depth-note">調査レベル1は概要中心、2は出典と作品骨格・複数の制作項目、3は人物・演出特徴・再利用要素まで広く接続した状態です。作品の価値を表すものではありません。</p>
           <p class="db-count" id="db-count"></p>
         </div>
         <div class="db-list" id="db-list"></div>
@@ -182,8 +184,8 @@
   </div>
 </div>
 
-  <script src="db.js?v=46"></script>
+  <script src="db.js?v=54"></script>
 <script src="data.js?v=13"></script>
-<script src="app.js?v=14"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>

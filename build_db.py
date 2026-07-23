@@ -12,7 +12,8 @@ import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-DATA = HERE.parent / "show-reference" / "data"
+REFERENCE_ROOT = HERE.parent / "show-reference"
+DATA = REFERENCE_ROOT / "data"
 OUT = HERE / "db.js"
 
 
@@ -99,7 +100,7 @@ def categorize(w):
     # 式典自体は制作会社や技法より優先する。ただし opening ceremony を含む
     # サーカス作品（Effervescence等）はサーカスとして残す。
     event_hay = f"{g} {show_type}"
-    event_keys = ("ceremon", "olympic", "paralympic", "world_cup", "fifa", "halftime", "super_bowl", "cruise_ship")
+    event_keys = ("ceremon", "olympic", "paralympic", "world_cup", "fifa", "halftime", "super_bowl", "cruise_ship", "event_show")
     if any(k in event_hay for k in event_keys) and "circus" not in g and "cirque" not in g:
         return "式典・イベントショー"
     if "figure_skating" in g or "ice_dance" in g or "ice_show" in g:
@@ -133,7 +134,7 @@ STAGING_LENS_RULES = [
         "id": "opening",
         "label": "開幕をつくる",
         "description": "最初の数分で、世界・儀礼・ルールを置く",
-        "pattern": r"opening ceremony|\bopening\b|開幕",
+        "pattern": r"opening[_ -]ceremony|\bopening\b|開幕|開会式",
         "fields": ("show_type", "structure", "signature_scenes"),
     },
     {
@@ -162,7 +163,7 @@ STAGING_LENS_RULES = [
         "id": "closing",
         "label": "終わりを残す",
         "description": "終幕・別れ・余韻を、最後の場面として設計する",
-        "pattern": r"closing ceremony|\bclosing\b|\bfinale\b|\bfarewell\b|閉会|終演",
+        "pattern": r"closing[_ -]ceremony|\bclosing\b|\bfinale\b|\bfarewell\b|閉会|閉会式|終演",
         "fields": ("show_type", "structure", "signature_scenes"),
     },
 ]
@@ -249,6 +250,197 @@ def validate_categories(works):
         raise ValueError("category validation failed: " + "; ".join(errors))
 
 
+RESEARCH_DEPTH_LEVELS = {
+    "deep": {"label": "深掘り済み", "min_score": 10},
+    "detailed": {"label": "詳細調査済み", "min_score": 9},
+    "standard": {"label": "基本調査済み", "min_score": 6},
+    "outline": {"label": "概要中心", "min_score": 0},
+    "source_gap": {"label": "出典要確認", "min_score": 0},
+}
+
+RESEARCH_AMOUNT_LEVELS = {
+    3: {
+        "label": "調査レベル3",
+        "description": "人物・演出特徴・再利用要素まで広く接続",
+        "min_score": 9,
+    },
+    2: {
+        "label": "調査レベル2",
+        "description": "出典と作品骨格・複数の制作項目を記録",
+        "min_score": 6,
+    },
+    1: {
+        "label": "調査レベル1",
+        "description": "概要・基礎情報を中心に記録",
+        "min_score": 0,
+    },
+}
+
+
+def research_amount_level_for(score):
+    for amount_level in (3, 2, 1):
+        if score >= RESEARCH_AMOUNT_LEVELS[amount_level]["min_score"]:
+            return amount_level
+    return 1
+
+
+def has_content(work, field):
+    value = work.get(field)
+    if isinstance(value, list):
+        return any(bool(item) for item in value)
+    return bool(value)
+
+
+def research_depth_for(work, element_count):
+    """DB内の調査記録の厚みを示す。作品価値や外部情報量の評価ではない。"""
+    source_file = work.get("source_file")
+    source_resolves = bool(source_file and (REFERENCE_ROOT / source_file).exists())
+    source_url_count = len(work.get("source_urls", []))
+    confidence = str(work.get("confidence") or "").lower()
+    primary_evidence = bool(re.search(
+        r"official|primary|interview|press|program|report",
+        confidence,
+        re.IGNORECASE,
+    ))
+    technical_fields = [
+        "set_mechanics",
+        "costume_features",
+        "lighting_features",
+        "music_style",
+        "cast_scale",
+        "apparatus_or_disciplines",
+    ]
+    analysis_fields = [
+        "useful_for",
+        "risk_of_cliche",
+        "production_learning",
+        "interpretation_notes",
+    ]
+    technical_count = sum(has_content(work, field) for field in technical_fields)
+    analysis_count = sum(has_content(work, field) for field in analysis_fields)
+    people_count = len(work.get("people", []))
+    feature_count = len(work.get("staging_features", []))
+
+    signals = {
+        "source_file": source_resolves,
+        "source_url": source_url_count > 0,
+        "primary_evidence": primary_evidence,
+        "structure": has_content(work, "structure"),
+        "signature_scenes": has_content(work, "signature_scenes"),
+        "people": people_count > 0,
+        "staging_features": feature_count > 0,
+        "elements": element_count > 0,
+        "technical_breadth": technical_count >= 2,
+        "creative_analysis": analysis_count >= 2,
+        "uncertainty": has_content(work, "unverified_notes"),
+    }
+    score = sum(signals.values())
+    amount_level = research_amount_level_for(score)
+
+    explicit_source_constraint_text = " ".join([
+        confidence,
+        " ".join(map(str, work.get("source_notes", []))),
+        " ".join(map(str, work.get("unverified_notes", []))),
+    ])
+    public_source_constraint = bool(re.search(
+        r"unpublished|not published|公開されていない|公開情報.{0,8}(少ない|限定)|"
+        r"(個人|制作|全)クレジット.{0,8}未公開",
+        explicit_source_constraint_text,
+        re.IGNORECASE,
+    ))
+
+    if not source_resolves:
+        level = "source_gap"
+        reason = "深掘り元として指定されたファイルが見つかりません。外部情報が無いという判定ではなく、DB側の参照切れです。"
+        next_step = "参照ファイルを復元または正しい出典へ接続してから、深さを再評価する。"
+        cause = "参照先の欠損"
+    else:
+        if score >= RESEARCH_DEPTH_LEVELS["deep"]["min_score"]:
+            level = "deep"
+        elif score >= RESEARCH_DEPTH_LEVELS["detailed"]["min_score"]:
+            level = "detailed"
+        elif score >= RESEARCH_DEPTH_LEVELS["standard"]["min_score"]:
+            level = "standard"
+        else:
+            level = "outline"
+
+        missing = []
+        if not source_url_count:
+            missing.append("個別出典URL")
+        if not people_count:
+            missing.append("制作人物")
+        if not feature_count:
+            missing.append("演出特徴")
+        if not element_count:
+            missing.append("再利用要素")
+        if technical_count < 2:
+            missing.append("装置・照明・衣装・音楽などの制作項目")
+        if analysis_count < 2:
+            missing.append("制作分析")
+
+        if level == "deep":
+            reason = "出典、構造、制作項目、人物・演出特徴・再利用要素、未確認事項が広く接続されています。"
+        elif level == "detailed":
+            reason = "複数の制作項目と根拠が接続され、調査レベル3に達しています。人物や演出要素には追加調査の余地があります。"
+        elif level == "standard":
+            reason = "作品の骨格と出典はありますが、制作工程やクレジット、演出要素のどこかが薄い状態です。"
+        else:
+            reason = "題名・概要・基本的な出典が中心で、制作方法を読むための記録はまだ少ない状態です。"
+
+        if public_source_constraint:
+            cause = "公開資料に制約"
+            next_step = "公式公開が限定されている項目は断定せず、制作会社資料や信頼できるインタビューを追加探索する。"
+        else:
+            cause = "十分な記録" if level == "deep" else "追加調査余地"
+            next_step = (
+                "次に補う: " + "、".join(missing[:3]) + "。"
+                if missing else
+                "版差、全キュー、技術仕様など、一次資料で確認できる範囲をさらに詰める。"
+            )
+
+    return {
+        "level": level,
+        "label": RESEARCH_AMOUNT_LEVELS[amount_level]["label"],
+        "amount_level": amount_level,
+        "amount_label": RESEARCH_AMOUNT_LEVELS[amount_level]["label"],
+        "amount_description": RESEARCH_AMOUNT_LEVELS[amount_level]["description"],
+        "score": score,
+        "max_score": len(signals),
+        "cause": cause,
+        "reason": reason,
+        "next_step": next_step,
+        "public_source_constraint": public_source_constraint,
+        "basis": {
+            "source_file_resolves": source_resolves,
+            "source_url_count": source_url_count,
+            "people_count": people_count,
+            "staging_feature_count": feature_count,
+            "element_count": element_count,
+            "technical_field_count": technical_count,
+            "analysis_field_count": analysis_count,
+        },
+    }
+
+
+def validate_research_depth(works):
+    allowed = set(RESEARCH_DEPTH_LEVELS)
+    errors = []
+    for work in works:
+        depth = work.get("research_depth")
+        if not depth or depth.get("level") not in allowed:
+            errors.append(f"{work['id']}: missing or invalid research_depth")
+            continue
+        if depth.get("max_score") != 11 or not 0 <= depth.get("score", -1) <= 11:
+            errors.append(f"{work['id']}: invalid research_depth score")
+        expected_amount_level = research_amount_level_for(depth.get("score", 0))
+        if depth.get("amount_level") != expected_amount_level:
+            errors.append(f"{work['id']}: invalid research amount level")
+        if depth["level"] == "source_gap" and depth["basis"]["source_file_resolves"]:
+            errors.append(f"{work['id']}: source_gap despite resolved source file")
+    if errors:
+        raise ValueError("research depth validation failed: " + "; ".join(errors[:10]))
+
+
 def main():
     ri = load("reference_index.json")
     ei = load("element_index.json")
@@ -257,6 +449,12 @@ def main():
     pi = load("person_index.json")
 
     works = ri["references"]  # 全項目そのまま（表示が目的のため削らない）
+    element_counts = {}
+    for element in ei.get("elements", []):
+        for link in element.get("work_links", []):
+            work_id = link.get("work_id")
+            if work_id:
+                element_counts[work_id] = element_counts.get(work_id, 0) + 1
 
     def extract_links(obj, out):
         # 正本の全文字列からURLを拾う（現状0件だが、将来追記されたら自動で表示に乗る）
@@ -282,9 +480,11 @@ def main():
             ).lower()
             w["subcategory"] = subcategorize(hay)
         w["staging_lenses"] = staging_lenses_for(w)
+        w["research_depth"] = research_depth_for(w, element_counts.get(w["id"], 0))
 
     validate_categories(works)
     staging_lens_counts = validate_staging_lenses(works)
+    validate_research_depth(works)
 
     from collections import Counter
     cat_dist = Counter(w["category"] for w in works)
@@ -298,6 +498,12 @@ def main():
     print("staging lens coverage (source-backed notes only):")
     for rule in STAGING_LENS_RULES:
         print(f"  {staging_lens_counts[rule['id']]:3d}  {rule['label']}")
+    depth_dist = Counter(w["research_depth"]["level"] for w in works)
+    amount_dist = Counter(w["research_depth"]["amount_level"] for w in works)
+    print("research amount distribution (DB record coverage, not work quality):")
+    for amount_level in (3, 2, 1):
+        print(f"  {amount_dist[amount_level]:3d}  {RESEARCH_AMOUNT_LEVELS[amount_level]['label']}")
+    print(f"  {depth_dist['source_gap']:3d}  出典要確認（調査量とは別の警告）")
 
     elements = [
         {
@@ -354,6 +560,15 @@ def main():
                 "works_count": staging_lens_counts[rule["id"]],
             }
             for rule in STAGING_LENS_RULES
+        ],
+        "research_depth_levels": [
+            {
+                "id": str(amount_level),
+                "label": meta["label"],
+                "description": meta["description"],
+                "works_count": amount_dist[amount_level],
+            }
+            for amount_level, meta in RESEARCH_AMOUNT_LEVELS.items()
         ],
         "works": works,
         "work_relations": ri.get("relations", []),

@@ -778,7 +778,17 @@
 
   // ---------- 資料棚（作品データベース・正本読み取り） ----------
   const DB = typeof SHOSAI_DB !== "undefined" ? SHOSAI_DB : null;
-  const dbState = { query: "", type: "", company: "", person: "", lens: "", sort: "company", selected: null };
+  const dbState = {
+    query: "",
+    type: "",
+    company: "",
+    person: "",
+    depth: "",
+    lens: "",
+    sort: "company",
+    selected: null,
+    detailMode: "work"
+  };
   let workMap, elMap, featMap, elsByWork, lensMap;
 
   function buildDbMaps() {
@@ -803,6 +813,25 @@
   const featLabel = (fid) => (featMap.get(fid) ? featMap.get(fid).label_ja : fid);
   const arr = (v) => (v == null ? [] : Array.isArray(v) ? v : [v]);
   const ul = (v) => arr(v).filter(Boolean).map((x) => `<li>${esc(x)}</li>`).join("");
+  const depthMeta = (w) => w.research_depth || {
+    level: "outline",
+    label: "状態未生成",
+    amount_level: 1,
+    amount_label: "調査レベル1",
+    amount_description: "概要・基礎情報を中心に記録",
+    cause: "再生成が必要",
+    reason: "調査レベルがまだ生成されていません。",
+    next_step: "build_db.pyを再実行する。",
+    score: 0,
+    max_score: 11,
+    basis: {},
+  };
+  const depthBadge = (w) => {
+    const d = depthMeta(w);
+    const amountLevel = d.amount_level || (d.score >= 9 ? 3 : d.score >= 6 ? 2 : 1);
+    const amountLabel = d.amount_label || `調査レベル${amountLevel}`;
+    return `<span class="db-depth-mark research-level-${esc(amountLevel)} depth-${esc(d.level)}" title="${esc(`${d.cause} — ${d.reason}`)}">${esc(amountLabel)}</span>`;
+  };
 
   // 全文検索索引: 作品の全項目＋人名＋演出特徴＋リンクされた要素まで対象にする
   let searchIdx;
@@ -839,6 +868,13 @@
       add("未確認事項", w.unverified_notes);
       add("解釈メモ", w.interpretation_notes);
       add("キーワード", w.similarity_keywords);
+      add("調査レベル", [
+        depthMeta(w).amount_label,
+        depthMeta(w).amount_description,
+        depthMeta(w).cause,
+        depthMeta(w).reason,
+        depthMeta(w).next_step,
+      ]);
       add("人", (w.people || []).map((p) => {
         const per = DB.persons[p.person_id];
         return `${per ? `${per.name || ""} ${per.name_ja || ""}` : p.person_id} ${p.credit_label || p.role || ""}`;
@@ -887,6 +923,7 @@
       if (dbState.company && (w.company || "") !== dbState.company) return false;
       if (dbState.person && !(w.people || []).some((p) => p.person_id === dbState.person))
         return false;
+      if (dbState.depth && String(depthMeta(w).amount_level) !== dbState.depth) return false;
       if (dbState.lens && !(w.staging_lenses || []).some((lens) => lens.id === dbState.lens))
         return false;
       if (!q) return true;
@@ -922,18 +959,32 @@
     return list;
   }
 
+  function openDbWork(id) {
+    const nextHash = "#db/" + encodeURIComponent(id);
+    if (location.hash === nextHash) selectWork(id);
+    else location.hash = nextHash;
+  }
+
+  function syncLensQuery(lensId) {
+    const url = new URL(location.href);
+    if (lensId) url.searchParams.set("lens", lensId);
+    else url.searchParams.delete("lens");
+    history.replaceState(null, "", url);
+  }
+
   function renderDbList() {
     const list = dbSort(dbFilter());
     const lens = lensMap.get(dbState.lens);
+    const depth = (DB.research_depth_levels || []).find((item) => item.id === dbState.depth);
     $("#db-count").textContent =
-      `${DB.works.length}件中 ${list.length}件${lens ? ` ・ 型: ${lens.label}` : ""} ・ 索引生成 ${DB.generated}（正本は読み取りのみ）`;
+      `${DB.works.length}件中 ${list.length}件${lens ? ` ・ 型: ${lens.label}` : ""}${depth ? ` ・ ${depth.label}` : ""} ・ 索引生成 ${DB.generated}（正本は読み取りのみ）`;
     const q = dbState.query.trim().toLowerCase();
     $("#db-list").innerHTML = list
       .map((w) => {
         const snippet = q ? matchSnippet(w, q) : "";
         return `
       <button type="button" class="db-row${dbState.selected === w.id ? " selected" : ""}" data-work="${esc(w.id)}">
-        <span class="t">${esc(w.title)}</span>
+        <span class="db-row-titleline"><span class="t">${esc(w.title)}</span>${depthBadge(w)}</span>
         <span class="m">${esc(w.company || "会社不明")} ・ ${esc(w.year || "年不明")} ・ ${esc(w.subcategory || w.category || w.media_type || "")}</span>
         ${snippet ? `<span class="hit">${esc(snippet)}</span>` : ""}
       </button>`;
@@ -941,7 +992,7 @@
       .join("");
     $$("[data-work]", $("#db-list")).forEach((b) =>
       b.addEventListener("click", () => {
-        location.hash = "#db/" + encodeURIComponent(b.dataset.work);
+        openDbWork(b.dataset.work);
       }));
   }
 
@@ -956,9 +1007,65 @@
     $("#db-lens-clear").hidden = !dbState.lens;
     $$('[data-lens]', $("#db-lens-list")).forEach((button) =>
       button.addEventListener("click", () => {
-        dbState.lens = dbState.lens === button.dataset.lens ? "" : button.dataset.lens;
+        dbState.lens = button.dataset.lens;
+        dbState.detailMode = "lens";
+        syncLensQuery(dbState.lens);
         renderStagingLenses();
         renderDbList();
+        renderLensDigest();
+        if (window.matchMedia("(max-width: 899px)").matches)
+          $("#db-detail").scrollIntoView({ block: "start" });
+        else window.scrollTo(0, 0);
+      }));
+  }
+
+  function renderLensDigest() {
+    const lens = lensMap.get(dbState.lens);
+    if (!lens) return;
+
+    const works = dbSort(dbFilter());
+    const excerptCount = works.reduce((total, w) => {
+      const match = (w.staging_lenses || []).find((item) => item.id === lens.id);
+      return total + (match ? (match.evidence || []).length : 0);
+    }, 0);
+
+    const rows = works.map((w, index) => {
+      const match = (w.staging_lenses || []).find((item) => item.id === lens.id);
+      const evidence = match ? match.evidence || [] : [];
+      const evidenceHtml = evidence.map((item) => `
+        <p class="db-lens-result-evidence">
+          <span>${esc(item.label || "根拠")}</span>
+          ${esc(item.text || "")}
+        </p>`).join("");
+      return `
+        <article class="db-lens-result">
+          <div class="db-lens-result-index">${String(index + 1).padStart(2, "0")}</div>
+          <div class="db-lens-result-body">
+            <button type="button" class="db-lens-result-title" data-work="${esc(w.id)}">
+              <span>${esc(w.title)}<span aria-hidden="true"> →</span></span>${depthBadge(w)}
+            </button>
+            <p class="db-lens-result-meta">${esc(w.company || "会社不明")} ・ ${esc(w.year || "年不明")}</p>
+            ${evidenceHtml}
+          </div>
+        </article>`;
+    }).join("");
+
+    $("#db-detail").setAttribute("aria-label", `${lens.label} 関連記述一覧`);
+    $("#db-detail").innerHTML = `
+      <header class="db-lens-digest-head">
+        <p class="dbd-kicker">演出の型からめくる ／ 正本メモの該当箇所</p>
+        <h2 class="db-lens-digest-title">${esc(lens.label)}</h2>
+        <p class="db-lens-digest-desc">${esc(lens.description || "")}</p>
+        <p class="db-lens-digest-count">${works.length}作品 ・ ${excerptCount}箇所</p>
+      </header>
+      <p class="db-lens-digest-note">各作品の正本にある関連記述だけを抜き出しています。作品名を押すと、その作品の全データへ移動します。</p>
+      <div class="db-lens-results">
+        ${rows || `<p class="evidence-empty">現在の検索・絞り込み条件に該当する作品はありません。</p>`}
+      </div>`;
+
+    $$("[data-work]", $("#db-detail")).forEach((button) =>
+      button.addEventListener("click", () => {
+        openDbWork(button.dataset.work);
       }));
   }
 
@@ -1014,6 +1121,7 @@
     const w = workMap.get(id);
     if (!w) return;
     dbState.selected = id;
+    dbState.detailMode = "work";
     renderDbList();
     renderDbDetail(w);
     if (window.matchMedia("(max-width: 899px)").matches)
@@ -1105,12 +1213,40 @@
       })
       .join("");
 
+    const lensReturn = dbState.lens && lensMap.has(dbState.lens)
+      ? `<button type="button" class="dbd-lens-return" id="dbd-lens-return">← ${esc(lensMap.get(dbState.lens).label)}の一覧へ</button>`
+      : "";
+    const depth = depthMeta(w);
+    const amountLevel = depth.amount_level || (depth.score >= 9 ? 3 : depth.score >= 6 ? 2 : 1);
+    const amountLabel = depth.amount_label || `調査レベル${amountLevel}`;
+    const depthBasis = depth.basis || {};
+    const depthBasisText = [
+      `個別URL ${depthBasis.source_url_count || 0}`,
+      `人物 ${depthBasis.people_count || 0}`,
+      `演出特徴 ${depthBasis.staging_feature_count || 0}`,
+      `再利用要素 ${depthBasis.element_count || 0}`,
+      `制作項目 ${depthBasis.technical_field_count || 0}/6`,
+      `分析項目 ${depthBasis.analysis_field_count || 0}/4`,
+    ].join(" ・ ");
+
+    $("#db-detail").setAttribute("aria-label", "作品データ");
     $("#db-detail").innerHTML = `
+      ${lensReturn}
       <header class="dbd-head">
         <p class="dbd-kicker">${esc(w.category || "")}${w.subcategory ? " ／ " + esc(w.subcategory) : ""} ・ ${esc(w.media_type || "")} ・ ${esc(w.id)}</p>
         <h2 class="dbd-title">${esc(w.title)}</h2>
         ${w.original_title && w.original_title !== w.title ? `<p class="dbd-orig">${esc(w.original_title)}</p>` : ""}
         <p class="dbd-meta">${esc(w.company || "会社不明")} ・ ${esc(w.year || "年不明")}</p>
+        <section class="dbd-depth research-level-${esc(amountLevel)} depth-${esc(depth.level)}" aria-label="この作品の調査レベル">
+          <div class="dbd-depth-head">
+            <p class="dbd-depth-label">${esc(amountLabel)}</p>
+            <p class="dbd-depth-score">調査記録 ${esc(depth.score)}/${esc(depth.max_score)} ・ ${esc(depth.cause)}</p>
+          </div>
+          <p class="dbd-depth-reason">${esc(depth.reason)}</p>
+          <p class="dbd-depth-next">${esc(depth.next_step)}</p>
+          <p class="dbd-depth-basis">${esc(depthBasisText)}</p>
+          <p class="dbd-depth-caveat">※ 作品の価値や外部情報の総量ではなく、このDB内で確認・接続できている記録の厚みです。</p>
+        </section>
         ${metaRow ? `<div class="dbd-tags">${metaRow}</div>` : ""}
         <div class="dbd-links">
           ${(w.links || [])
@@ -1159,8 +1295,13 @@
 
     $$("[data-work]", $("#db-detail")).forEach((b) =>
       b.addEventListener("click", () => {
-        location.hash = "#db/" + encodeURIComponent(b.dataset.work);
+        openDbWork(b.dataset.work);
       }));
+    if (lensReturn)
+      $("#dbd-lens-return").addEventListener("click", () => {
+        dbState.detailMode = "lens";
+        renderLensDigest();
+      });
   }
 
   function initDb() {
@@ -1171,6 +1312,11 @@
     }
     buildDbMaps();
     buildSearchIndex();
+    const initialLens = new URLSearchParams(location.search).get("lens") || "";
+    if (lensMap.has(initialLens)) {
+      dbState.lens = initialLens;
+      dbState.detailMode = "lens";
+    }
     renderStagingLenses();
     // ジャンル大分類（build_db.pyで生成）: 件数の多い順。サーカスはサブ分類を字下げで続ける
     const catCount = new Map();
@@ -1221,25 +1367,44 @@
         })
         .join("");
 
+    $("#db-depth").innerHTML =
+      `<option value="">すべての調査レベル（${DB.works.length}）</option>` +
+      (DB.research_depth_levels || [])
+        .map((level) => `<option value="${esc(level.id)}">${esc(level.label)}｜${esc(level.description)}（${level.works_count}）</option>`)
+        .join("");
+
     $("#db-search").addEventListener("input", (e) => {
       dbState.query = e.target.value;
       renderDbList();
+      if (dbState.detailMode === "lens") renderLensDigest();
     });
     const bindSelect = (sel, key) =>
       $(sel).addEventListener("change", (e) => {
         dbState[key] = e.target.value;
         renderDbList();
+        if (dbState.detailMode === "lens") renderLensDigest();
       });
     bindSelect("#db-type", "type");
     bindSelect("#db-company", "company");
     bindSelect("#db-person", "person");
+    bindSelect("#db-depth", "depth");
     bindSelect("#db-sort", "sort");
     $("#db-lens-clear").addEventListener("click", () => {
       dbState.lens = "";
+      dbState.detailMode = "work";
+      syncLensQuery("");
       renderStagingLenses();
       renderDbList();
+      if (dbState.selected && workMap.has(dbState.selected))
+        renderDbDetail(workMap.get(dbState.selected));
+      else {
+        $("#db-detail").setAttribute("aria-label", "作品データ");
+        $("#db-detail").innerHTML =
+          `<p class="evidence-empty">一覧から作品を選ぶと、正本データと、関連作品・関連表現がここに出ます。</p>`;
+      }
     });
     renderDbList();
+    if (dbState.detailMode === "lens") renderLensDigest();
   }
 
   // ---------- 初期化 ----------
