@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=18">
+<link rel="stylesheet" href="style.css?v=22">
 </head>
 <body>
 
@@ -26,6 +26,13 @@
   <main id="view-db" class="view" hidden>
     <div class="db-wrap">
       <section class="db-list-pane" aria-label="作品一覧">
+        <header class="db-shelf-intro">
+          <p class="db-shelf-kicker">REFERENCE SHELF</p>
+          <div>
+            <h1>資料棚</h1>
+            <p>作品を探し、演出の手がかりから読み直す。</p>
+          </div>
+        </header>
         <div class="db-search">
           <section class="db-lenses" aria-labelledby="db-lenses-title">
             <div class="db-lenses-head">
@@ -35,22 +42,31 @@
               </div>
               <button type="button" class="db-lens-clear" id="db-lens-clear" hidden>型を外す</button>
             </div>
-            <p class="db-lenses-note">正本メモに明示された手がかりのある作品だけを束ねます。型は事実の分類ではなく、制作のための読み方です。</p>
+            <p class="db-lenses-note">事実の分類ではなく、制作のための読み方です。</p>
             <div class="db-lens-list" id="db-lens-list"></div>
           </section>
+          <p class="db-filter-label">作品を探す</p>
           <input type="text" id="db-search" placeholder="全文検索（例: シャンデリア、傘、雨、反復）"
                  aria-label="作品を全文検索">
           <select id="db-type" aria-label="種別で絞り込む"></select>
-          <select id="db-company" aria-label="会社で絞り込む"></select>
-          <select id="db-person" aria-label="人で絞り込む"></select>
-          <select id="db-depth" aria-label="調査レベルで絞り込む"></select>
-          <select id="db-sort" aria-label="並び順">
-            <option value="company">並び順: 会社 → 年</option>
-            <option value="year_desc">並び順: 年が新しい</option>
-            <option value="year_asc">並び順: 年が古い</option>
-            <option value="title">並び順: 作品名</option>
-          </select>
-          <p class="db-depth-note">調査レベル1は概要中心、2は出典と作品骨格・複数の制作項目、3は人物・演出特徴・再利用要素まで広く接続した状態です。作品の価値を表すものではありません。</p>
+          <details class="db-filter-more">
+            <summary>会社・人物・調査レベル・並び順</summary>
+            <div>
+              <select id="db-company" aria-label="会社で絞り込む"></select>
+              <select id="db-person" aria-label="人で絞り込む"></select>
+              <select id="db-depth" aria-label="調査レベルで絞り込む"></select>
+              <select id="db-sort" aria-label="並び順">
+                <option value="company">並び順: 会社 → 年</option>
+                <option value="year_desc">並び順: 年が新しい</option>
+                <option value="year_asc">並び順: 年が古い</option>
+                <option value="title">並び順: 作品名</option>
+              </select>
+            </div>
+          </details>
+          <details class="db-depth-guide">
+            <summary>調査レベルの見方</summary>
+            <p>1は概要中心、2は出典と作品骨格・複数の制作項目、3は人物・演出特徴・再利用要素まで広く接続した状態です。作品の価値を表すものではありません。</p>
+          </details>
           <p class="db-count" id="db-count"></p>
         </div>
         <div class="db-list" id="db-list"></div>
@@ -115,7 +131,7 @@
           <p class="seeds-sub">答えてから、実例を開く。採点はしない。</p>
         </div>
         <div id="mondo-body"></div>
-        <p class="seeds-note">Phase 0: 固定3問。出題は実在の演出から再構成しており、因果には推測を含みます（各出典に明記）。Phase 1で問答帳（蓄積）、Phase 2でAI出題と照合支援を追加します。</p>
+        <p class="seeds-note">Phase 0: 固定10問。出題は実在の演出から再構成しており、因果には推測を含みます（各出典に明記）。Phase 1で問答帳（蓄積）、Phase 2でAI出題と照合支援を追加します。</p>
       </section>
     </section>
   </main>
@@ -184,8 +200,8 @@
   </div>
 </div>
 
-  <script src="db.js?v=57"></script>
-<script src="data.js?v=13"></script>
-<script src="app.js?v=19"></script>
+  <script src="db.js?v=58"></script>
+<script src="data.js?v=14"></script>
+<script src="app.js?v=21"></script>
 </body>
 </html>

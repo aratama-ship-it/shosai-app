@@ -207,8 +207,11 @@
       .map((s, i) => {
         const src = s.source;
         const sourceLine = src.work
-          ? `${esc(src.work)} ・ ${esc(src.company)} ・ ${esc(src.year)}`
+          ? [src.work, src.company, src.year].filter((item) => item != null && item !== "").map(esc).join(" ・ ")
           : "（特定作品に帰属しない）";
+        const sourceWork = src.workId
+          ? `<a class="mondo-source-work" href="#db/${encodeURIComponent(src.workId)}">${sourceLine}<span>資料棚で読む →</span></a>`
+          : `<span>${sourceLine}</span>`;
         return `
         <article class="mondo-sol" data-sol="${i}">
           <p class="mondo-sol-label">参照実例 ${i + 1}</p>
@@ -221,7 +224,7 @@
             <div class="vm"><b>成立条件</b><span>${esc(s.conditions)}</span></div>
           </div>
           <div class="mondo-sol-more" data-stage="src" hidden>
-            <div class="vm"><b>出典</b><span>${sourceLine}</span></div>
+            <div class="vm"><b>出典</b>${sourceWork}</div>
             <div class="vm"><b>注記</b><span>${esc(src.note)}</span></div>
             <div class="vm"><b>確信度</b><span>${esc(src.confidence)}</span></div>
             ${src.reconstructed ? `<p class="mondo-recon">※ 資料を基に再構成した出題（因果は推測を含む）</p>` : `<p class="mondo-recon ok">確認済みの実例</p>`}
@@ -235,6 +238,11 @@
       .join("");
 
     wrap.innerHTML = `
+      <nav class="mondo-map" aria-label="場面問答を選ぶ">
+        ${SHOSAI.mondo.map((item, index) => `
+          <button type="button" data-mondo-index="${index}" aria-pressed="${index === mondoState.index}"
+                  title="${esc(item.title)}">${String(index + 1).padStart(2, "0")}</button>`).join("")}
+      </nav>
       <article class="mondo-q">
         <p class="mondo-type">${esc(q.type)} ・ 第${mondoState.index + 1}問／${SHOSAI.mondo.length}問</p>
         <h3 class="mondo-title">${esc(q.title)}</h3>
@@ -243,6 +251,7 @@
           ${q.hard.map((h) => `<span class="chip-dark hard">${esc(h)}<span class="k">固定</span></span>`).join("")}
           <span class="chip-dark conflict">${esc(q.conflict)}<span class="k">衝突</span></span>
         </div>
+        ${q.basis ? `<p class="mondo-basis"><span>比較の根拠</span>${esc(q.basis)}</p>` : ""}
         <p class="mondo-assumption">出題用仮定: ${esc(q.assumption)}</p>
       </article>
 
@@ -294,6 +303,16 @@
       mondoState.answers = {};
       renderMondo();
     });
+
+    $$("[data-mondo-index]", wrap).forEach((button) =>
+      button.addEventListener("click", () => {
+        const nextIndex = Number(button.dataset.mondoIndex);
+        if (nextIndex === mondoState.index) return;
+        mondoState.index = nextIndex;
+        mondoState.revealed = false;
+        mondoState.answers = {};
+        renderMondo();
+      }));
 
     $$("[data-open-cond]", wrap).forEach((b) =>
       b.addEventListener("click", () => {
@@ -1052,6 +1071,7 @@
 
     $("#db-detail").setAttribute("aria-label", `${lens.label} 関連記述一覧`);
     $("#db-detail").innerHTML = `
+      <button type="button" class="db-mobile-back" id="db-mobile-back">← 作品一覧へ戻る</button>
       <header class="db-lens-digest-head">
         <p class="dbd-kicker">演出の型からめくる ／ 正本メモの該当箇所</p>
         <h2 class="db-lens-digest-title">${esc(lens.label)}</h2>
@@ -1067,6 +1087,8 @@
       button.addEventListener("click", () => {
         openDbWork(button.dataset.work);
       }));
+    $("#db-mobile-back").addEventListener("click", () =>
+      $(".db-list-pane").scrollIntoView({ block: "start" }));
   }
 
   function relatedWorks(w) {
@@ -1231,9 +1253,10 @@
 
     $("#db-detail").setAttribute("aria-label", "作品データ");
     $("#db-detail").innerHTML = `
+      <button type="button" class="db-mobile-back" id="db-mobile-back">← 作品一覧へ戻る</button>
       ${lensReturn}
       <header class="dbd-head">
-        <p class="dbd-kicker">${esc(w.category || "")}${w.subcategory ? " ／ " + esc(w.subcategory) : ""} ・ ${esc(w.media_type || "")} ・ ${esc(w.id)}</p>
+        <p class="dbd-kicker">${esc(w.category || "")}${w.subcategory ? " ／ " + esc(w.subcategory) : ""}${w.media_type ? " ・ " + esc(w.media_type) : ""}</p>
         <h2 class="dbd-title">${esc(w.title)}</h2>
         ${w.original_title && w.original_title !== w.title ? `<p class="dbd-orig">${esc(w.original_title)}</p>` : ""}
         <p class="dbd-meta">${esc(w.company || "会社不明")} ・ ${esc(w.year || "年不明")}</p>
@@ -1247,17 +1270,22 @@
           <p class="dbd-depth-basis">${esc(depthBasisText)}</p>
           <p class="dbd-depth-caveat">※ 作品の価値や外部情報の総量ではなく、このDB内で確認・接続できている記録の厚みです。</p>
         </section>
-        ${metaRow ? `<div class="dbd-tags">${metaRow}</div>` : ""}
+        <details class="dbd-technical">
+          <summary>分類・データ情報</summary>
+          ${metaRow ? `<div class="dbd-tags">${metaRow}</div>` : ""}
+          <p>データID: ${esc(w.id)}</p>
+        </details>
         <div class="dbd-links">
           ${(w.links || [])
-            .map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener" class="src">出典内リンク: ${esc(u.replace(/^https?:\/\//, "").slice(0, 40))}${u.length > 48 ? "…" : ""}</a>`)
+            .map((u, index) => `<a href="${esc(u)}" target="_blank" rel="noopener" class="src">出典${(w.links || []).length > 1 ? ` ${index + 1}` : ""}を開く<span>${esc(u.replace(/^https?:\/\//, "").replace(/\/.*$/, ""))}</span></a>`)
             .join("")}
-          <a href="https://www.youtube.com/results?search_query=${encodeURIComponent([w.title, (w.company || "").split("/")[0].trim()].filter(Boolean).join(" "))}"
-             target="_blank" rel="noopener">▶ YouTubeで動画を探す</a>
-          <a href="https://www.google.com/search?q=${encodeURIComponent([w.title, (w.company || "").split("/")[0].trim()].filter(Boolean).join(" "))}"
-             target="_blank" rel="noopener">公式サイトを探す（Google）</a>
+          <a class="utility" href="https://www.youtube.com/results?search_query=${encodeURIComponent([w.title, (w.company || "").split("/")[0].trim()].filter(Boolean).join(" "))}"
+             target="_blank" rel="noopener">YouTubeで探す</a>
+          <a class="utility" href="https://www.google.com/search?q=${encodeURIComponent([w.title, (w.company || "").split("/")[0].trim()].filter(Boolean).join(" "))}"
+             target="_blank" rel="noopener">公式情報を探す</a>
         </div>
       </header>
+      <div class="dbd-reading-mark" aria-hidden="true"><span>READING NOTES</span><i></i></div>
       ${listSec("概要", w.summary)}
       ${listSec("テーマ", w.themes)}
       ${listSec("世界観", w.worldview)}
@@ -1297,6 +1325,8 @@
       b.addEventListener("click", () => {
         openDbWork(b.dataset.work);
       }));
+    $("#db-mobile-back").addEventListener("click", () =>
+      $(".db-list-pane").scrollIntoView({ block: "start" }));
     if (lensReturn)
       $("#dbd-lens-return").addEventListener("click", () => {
         dbState.detailMode = "lens";
