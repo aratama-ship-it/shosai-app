@@ -261,7 +261,7 @@ RESEARCH_DEPTH_LEVELS = {
 RESEARCH_AMOUNT_LEVELS = {
     3: {
         "label": "調査レベル3",
-        "description": "人物・演出特徴・再利用要素まで広く接続",
+        "description": "人物・演出特徴・再利用要素のうち複数まで接続",
         "min_score": 9,
     },
     2: {
@@ -277,10 +277,21 @@ RESEARCH_AMOUNT_LEVELS = {
 }
 
 
-def research_amount_level_for(score):
-    for amount_level in (3, 2, 1):
-        if score >= RESEARCH_AMOUNT_LEVELS[amount_level]["min_score"]:
-            return amount_level
+def research_amount_level_for(score, people_count=0, feature_count=0, element_count=0):
+    """調査量を3段階で返す。
+
+    レベル3は総合点だけでなく、作品から外部の制作知識へ広く接続されている
+    状態を示すため、人物・演出特徴・再利用要素のうち2種類以上を必要とする。
+    """
+    linked_dimensions = sum((
+        people_count > 0,
+        feature_count > 0,
+        element_count > 0,
+    ))
+    if score >= RESEARCH_AMOUNT_LEVELS[3]["min_score"] and linked_dimensions >= 2:
+        return 3
+    if score >= RESEARCH_AMOUNT_LEVELS[2]["min_score"]:
+        return 2
     return 1
 
 
@@ -335,7 +346,12 @@ def research_depth_for(work, element_count):
         "uncertainty": has_content(work, "unverified_notes"),
     }
     score = sum(signals.values())
-    amount_level = research_amount_level_for(score)
+    amount_level = research_amount_level_for(
+        score,
+        people_count=people_count,
+        feature_count=feature_count,
+        element_count=element_count,
+    )
 
     explicit_source_constraint_text = " ".join([
         confidence,
@@ -378,12 +394,12 @@ def research_depth_for(work, element_count):
         if analysis_count < 2:
             missing.append("制作分析")
 
-        if level == "deep":
+        if amount_level == 3 and level == "deep":
             reason = "出典、構造、制作項目、人物・演出特徴・再利用要素、未確認事項が広く接続されています。"
-        elif level == "detailed":
-            reason = "複数の制作項目と根拠が接続され、調査レベル3に達しています。人物や演出要素には追加調査の余地があります。"
-        elif level == "standard":
-            reason = "作品の骨格と出典はありますが、制作工程やクレジット、演出要素のどこかが薄い状態です。"
+        elif amount_level == 3:
+            reason = "複数の制作項目に加え、人物・演出特徴・再利用要素のうち複数が接続されています。"
+        elif amount_level == 2:
+            reason = "出典と作品の骨格、複数の制作項目を記録しています。人物や再利用要素には追加調査の余地があります。"
         else:
             reason = "題名・概要・基本的な出典が中心で、制作方法を読むための記録はまだ少ない状態です。"
 
@@ -391,7 +407,7 @@ def research_depth_for(work, element_count):
             cause = "公開資料に制約"
             next_step = "公式公開が限定されている項目は断定せず、制作会社資料や信頼できるインタビューを追加探索する。"
         else:
-            cause = "十分な記録" if level == "deep" else "追加調査余地"
+            cause = "十分な記録" if amount_level == 3 and level == "deep" else "追加調査余地"
             next_step = (
                 "次に補う: " + "、".join(missing[:3]) + "。"
                 if missing else
@@ -432,7 +448,13 @@ def validate_research_depth(works):
             continue
         if depth.get("max_score") != 11 or not 0 <= depth.get("score", -1) <= 11:
             errors.append(f"{work['id']}: invalid research_depth score")
-        expected_amount_level = research_amount_level_for(depth.get("score", 0))
+        basis = depth.get("basis") or {}
+        expected_amount_level = research_amount_level_for(
+            depth.get("score", 0),
+            people_count=basis.get("people_count", 0),
+            feature_count=basis.get("staging_feature_count", 0),
+            element_count=basis.get("element_count", 0),
+        )
         if depth.get("amount_level") != expected_amount_level:
             errors.append(f"{work['id']}: invalid research amount level")
         if depth["level"] == "source_gap" and depth["basis"]["source_file_resolves"]:
