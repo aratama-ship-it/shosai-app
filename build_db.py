@@ -26,6 +26,7 @@ def load(name):
 # 正本には書き戻さない。分類はUI絞り込み用の便宜であり、確定情報ではない。
 CATEGORY_RULES = [
     ("ミュージックビデオ", ["music_video"]),
+    ("ファッションショー", ["fashion_show", "fashion_runway", "runway_show", "catwalk_show", "haute_couture_runway"]),
     ("映画・映像", ["film", "documentary", "movie"]),
     ("メディアアート・テクノロジー", ["media_art", "rhizomatiks", "elevenplay", "tech_driven", "audiovisual", "teamlab", "digital_art"]),
     ("展示・インスタレーション", ["exhibition", "installation"]),
@@ -123,6 +124,10 @@ CATEGORY_EXPECTATIONS = {
     "show_mv_perfume_fake_it": "ミュージックビデオ",
     "show_mv_valentino_khan_deep_down_low": "ミュージックビデオ",
     "show_live_u2_uv_sphere_2023": "音楽・コンサート",
+    "show_mimbre_dior_dream_parade": "ファッションショー",
+    "show_kabuki_tokaido_yotsuya_kaidan": "伝統芸能",
+    "show_noh_izutsu": "伝統芸能",
+    "show_rakugo_shibahama": "伝統芸能",
 }
 
 

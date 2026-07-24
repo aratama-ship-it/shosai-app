@@ -825,6 +825,328 @@ textarea, input[type="text"] {
   padding-top: 0;
 }
 
+/* ============ 舞台スケッチ（2Dの構図習作） ============ */
+
+#view-stage {
+  min-height: calc(100vh - 49px);
+  padding: 26px 24px 64px 68px;
+}
+
+.stage-sketch {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.stage-sketch-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--line-dark);
+  padding: 0 0 18px;
+  margin-bottom: 18px;
+}
+
+.stage-sketch-kicker {
+  color: var(--rust);
+  font-size: 9.5px;
+  letter-spacing: 0.28em;
+  margin-bottom: 4px;
+}
+
+.stage-sketch-head h1 {
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: clamp(24px, 3vw, 33px);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+}
+
+.stage-sketch-head > div:first-child > p:last-child {
+  color: var(--milk-dim);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  margin-top: 3px;
+}
+
+.stage-history-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.stage-history-actions button,
+.stage-history-actions a,
+.stage-tool-grid button,
+.stage-piece-buttons button,
+.stage-layer-actions button,
+.stage-minor-action,
+.stage-delete {
+  min-height: 38px;
+  border: 1px solid var(--line-dark);
+  color: var(--milk-dim);
+  padding: 6px 11px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-decoration: none;
+}
+
+.stage-history-actions button:hover,
+.stage-history-actions a:hover,
+.stage-tool-grid button:hover,
+.stage-piece-buttons button:hover,
+.stage-layer-actions button:hover,
+.stage-minor-action:hover {
+  color: var(--milk);
+  border-color: var(--brass);
+}
+
+.stage-history-actions button:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.stage-history-actions .stage-export {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--paper);
+  border-color: var(--rust);
+  background: var(--rust-deep);
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.stage-history-actions .stage-export:hover { background: var(--rust); }
+
+.stage-sketch-grid {
+  display: grid;
+  grid-template-columns: 220px minmax(430px, 1fr) 210px;
+  grid-template-areas: "tools board inspector";
+  gap: 18px;
+  align-items: start;
+}
+
+.stage-toolbox {
+  grid-area: tools;
+  min-width: 0;
+}
+
+.stage-board-column {
+  grid-area: board;
+  min-width: 0;
+}
+
+.stage-inspector {
+  grid-area: inspector;
+  min-width: 0;
+}
+
+.stage-tool-section,
+.stage-save-note {
+  border-top: 1px solid var(--line-dark);
+  padding: 13px 0 16px;
+}
+
+.stage-tool-section:first-child { border-top-color: var(--brass); }
+
+.stage-tool-section h2,
+.stage-save-note h2 {
+  color: var(--brass);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  margin-bottom: 9px;
+}
+
+.stage-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stage-tool-grid button + button { border-left: 0; }
+
+.stage-tool-grid button[aria-pressed="true"] {
+  color: var(--paper);
+  border-color: var(--rust);
+  background: rgba(168,75,38,0.27);
+}
+
+.stage-tool-hint {
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  line-height: 1.65;
+  margin-top: 8px;
+}
+
+.stage-piece-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.stage-piece-buttons button {
+  min-height: 42px;
+  padding: 6px;
+}
+
+.stage-control-label {
+  display: block;
+  color: var(--milk-dim);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  margin: 9px 0 5px;
+}
+
+.stage-range-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stage-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-color-row input[type="color"],
+#stage-selected-color {
+  width: 42px;
+  height: 34px;
+  flex: 0 0 42px;
+  border: 1px solid var(--line-dark);
+  background: transparent;
+  padding: 2px;
+}
+
+.stage-swatches {
+  display: flex;
+  gap: 5px;
+}
+
+.stage-swatches button {
+  width: 30px;
+  min-height: 30px;
+  border: 1px solid rgba(240,231,214,0.32);
+  background: var(--stage-swatch);
+}
+
+.stage-swatches button:hover { border-color: var(--paper); }
+
+#stage-brush-size,
+#stage-piece-size {
+  width: 100%;
+  accent-color: var(--rust);
+}
+
+.stage-minor-action {
+  width: 100%;
+  margin-top: 10px;
+  text-align: left;
+}
+
+.stage-board-frame {
+  position: relative;
+  border: 1px solid rgba(156,130,63,0.7);
+  background: #0d0c0b;
+  box-shadow: 0 12px 34px rgba(0,0,0,0.28);
+}
+
+#stage-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  touch-action: none;
+  user-select: none;
+}
+
+#stage-canvas[data-tool="select"] { cursor: grab; }
+#stage-canvas[data-dragging="true"] { cursor: grabbing; }
+#stage-canvas[data-tool="paint"] { cursor: crosshair; }
+#stage-canvas[data-tool="erase"] { cursor: cell; }
+
+.stage-depth-label {
+  position: absolute;
+  z-index: 2;
+  left: 13px;
+  pointer-events: none;
+  color: rgba(239,231,214,0.42);
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.75);
+}
+
+.stage-depth-back { top: 9px; }
+.stage-depth-front { bottom: 8px; }
+
+.stage-canvas-help {
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  line-height: 1.7;
+  margin-top: 8px;
+}
+
+.stage-selection-empty {
+  color: var(--milk-dim);
+  font-size: 11px;
+  line-height: 1.75;
+}
+
+.stage-selected-name {
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px dashed var(--line-dark);
+}
+
+.stage-layer-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 12px;
+}
+
+.stage-layer-actions button + button { border-left: 0; }
+
+.stage-delete {
+  width: 100%;
+  color: rgba(231,150,120,0.82);
+  border-color: rgba(168,75,38,0.5);
+  margin-top: 5px;
+  text-align: left;
+}
+
+.stage-delete:hover {
+  color: var(--paper);
+  border-color: var(--rust);
+  background: rgba(168,75,38,0.18);
+}
+
+.stage-save-note p {
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  line-height: 1.7;
+}
+
+.stage-boundary-note {
+  color: rgba(240,231,214,0.38);
+  font-size: 10.5px;
+  line-height: 1.8;
+  border-top: 1px solid var(--line-dark);
+  margin-top: 18px;
+  padding-top: 11px;
+}
+
 /* ============ 机（ホーム） ============ */
 
 #view-desk {
@@ -1932,6 +2254,20 @@ textarea, input[type="text"] {
   letter-spacing: 0.05em;
 }
 
+.visual-stage-link {
+  margin-left: auto;
+  color: var(--brass);
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(156,130,63,0.45);
+}
+
+.visual-stage-link:hover {
+  color: var(--paper);
+  border-bottom-color: var(--paper);
+}
+
 .visual-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -2381,6 +2717,13 @@ textarea, input[type="text"] {
 @media (max-width: 1119px) {
   .studio-grid { grid-template-columns: 1fr; }
 
+  .stage-sketch-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "board board"
+      "tools inspector";
+  }
+
   .placed-list {
     flex-direction: row;
     flex-wrap: wrap;
@@ -2459,7 +2802,24 @@ textarea, input[type="text"] {
   #view-desk { padding: 7vh 20px 56px; }
   #view-studio { padding-left: 0; }
   #view-db { padding-left: 0; }
+  #view-stage { padding: 14px 16px 56px; }
   #view-seeds, #view-mondo { padding: 8px 16px 56px; }
+
+  .stage-sketch-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .stage-history-actions { justify-content: flex-start; }
+
+  .stage-sketch-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "board"
+      "tools"
+      "inspector";
+  }
 
   .sheet { padding: 24px 20px 30px; }
 
@@ -2484,6 +2844,13 @@ textarea, input[type="text"] {
 }
 
 @media (max-width: 430px) {
+  .topnav a { padding-left: 8px; padding-right: 8px; font-size: 11.5px; }
+  .stage-history-actions { width: 100%; }
+  .stage-history-actions button,
+  .stage-history-actions a { flex: 1 1 auto; }
+  .stage-history-actions .stage-export { flex-basis: 100%; }
+  .stage-piece-buttons { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .stage-piece-buttons button { font-size: 10px; }
   .seed-source-mode { width: 100%; }
   .seed-source-mode button { flex: 1 1 0; padding-left: 10px; padding-right: 10px; }
   .seed-source-mode button[aria-pressed="true"]::after { left: 9px; right: 9px; }

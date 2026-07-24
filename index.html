@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=24">
+<link rel="stylesheet" href="style.css?v=26">
 </head>
 <body>
 
@@ -14,10 +14,11 @@
   <nav aria-label="主要画面">
     <a href="#db" data-nav="db">資料棚</a>
     <a href="#desk" data-nav="desk">制作机</a>
+    <a href="#stage" data-nav="stage">舞台スケッチ</a>
     <a href="#seeds" data-nav="seeds">種火</a>
     <a href="#mondo" data-nav="mondo">場面問答</a>
   </nav>
-  <p class="topnav-note">Phase 0 — 資料棚は正本データ読み取り。制作系は固定サンプル・保存なし。</p>
+  <p class="topnav-note">Phase 0 — 資料棚は正本読み取り。舞台スケッチはこの端末だけに保存。</p>
 </header>
 
 <div id="app">
@@ -106,6 +107,128 @@
     </section>
   </main>
 
+  <!-- 舞台スケッチ: 構図・色・距離感を試す2Dのビジュアルスタディ -->
+  <main id="view-stage" class="view" hidden>
+    <section class="stage-sketch" aria-labelledby="stage-sketch-title">
+      <header class="stage-sketch-head">
+        <div>
+          <p class="stage-sketch-kicker">STAGE IMAGE STUDY</p>
+          <h1 id="stage-sketch-title">舞台スケッチ</h1>
+          <p>コマを置き、背景を塗り、舞台の構図と距離感を先に目で考える。</p>
+        </div>
+        <div class="stage-history-actions">
+          <button type="button" id="stage-undo" disabled>一つ戻す</button>
+          <button type="button" id="stage-redo" disabled>やり直す</button>
+          <a class="stage-export" id="stage-export" href="#" download>画像を書き出す</a>
+        </div>
+      </header>
+
+      <div class="stage-sketch-grid">
+        <aside class="stage-toolbox" aria-label="舞台スケッチの道具">
+          <section class="stage-tool-section">
+            <h2>操作</h2>
+            <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
+              <button type="button" data-stage-tool="select" aria-pressed="true">動かす</button>
+              <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
+              <button type="button" data-stage-tool="erase" aria-pressed="false">塗りを消す</button>
+            </div>
+            <p class="stage-tool-hint" id="stage-tool-hint">コマを選び、ステージ上で動かします。</p>
+          </section>
+
+          <section class="stage-tool-section">
+            <h2>コマを置く</h2>
+            <div class="stage-piece-buttons">
+              <button type="button" data-stage-add="performer">人物コマ</button>
+              <button type="button" data-stage-add="block">台・物</button>
+              <button type="button" data-stage-add="ring">円形の物</button>
+              <button type="button" data-stage-add="light">光の位置</button>
+            </div>
+            <label class="stage-control-label" for="stage-new-color">新しいコマの色</label>
+            <div class="stage-color-row">
+              <input type="color" id="stage-new-color" value="#a84b26" aria-label="新しいコマの色">
+              <div class="stage-swatches" aria-label="コマの色見本">
+                <button type="button" data-stage-piece-color="#a84b26" style="--stage-swatch:#a84b26" aria-label="錆色"></button>
+                <button type="button" data-stage-piece-color="#efe7d6" style="--stage-swatch:#efe7d6" aria-label="生成り"></button>
+                <button type="button" data-stage-piece-color="#77865f" style="--stage-swatch:#77865f" aria-label="苔色"></button>
+                <button type="button" data-stage-piece-color="#8b98a1" style="--stage-swatch:#8b98a1" aria-label="青灰色"></button>
+              </div>
+            </div>
+          </section>
+
+          <section class="stage-tool-section">
+            <h2>背景</h2>
+            <label class="stage-control-label" for="stage-bg-color">地の色</label>
+            <div class="stage-color-row">
+              <input type="color" id="stage-bg-color" value="#40362d" aria-label="背景の地の色">
+              <div class="stage-swatches" aria-label="背景の色見本">
+                <button type="button" data-stage-bg="#40362d" style="--stage-swatch:#40362d" aria-label="焦げ茶"></button>
+                <button type="button" data-stage-bg="#1c2630" style="--stage-swatch:#1c2630" aria-label="夜の青"></button>
+                <button type="button" data-stage-bg="#6d6657" style="--stage-swatch:#6d6657" aria-label="灰褐色"></button>
+                <button type="button" data-stage-bg="#d7c9ad" style="--stage-swatch:#d7c9ad" aria-label="明るい生成り"></button>
+              </div>
+            </div>
+            <label class="stage-control-label" for="stage-paint-color">塗る色</label>
+            <div class="stage-color-row">
+              <input type="color" id="stage-paint-color" value="#efe7d6" aria-label="背景を塗る色">
+              <div class="stage-swatches" aria-label="筆の色見本">
+                <button type="button" data-stage-paint-color="#efe7d6" style="--stage-swatch:#efe7d6" aria-label="生成り"></button>
+                <button type="button" data-stage-paint-color="#a84b26" style="--stage-swatch:#a84b26" aria-label="錆色"></button>
+                <button type="button" data-stage-paint-color="#77865f" style="--stage-swatch:#77865f" aria-label="苔色"></button>
+                <button type="button" data-stage-paint-color="#202b34" style="--stage-swatch:#202b34" aria-label="濃い青灰色"></button>
+              </div>
+            </div>
+            <label class="stage-control-label stage-range-label" for="stage-brush-size">
+              筆の太さ <span id="stage-brush-value">42</span>
+            </label>
+            <input type="range" id="stage-brush-size" min="12" max="120" step="2" value="42">
+            <button type="button" class="stage-minor-action" id="stage-clear-paint">背景の塗りだけ消す</button>
+          </section>
+        </aside>
+
+        <section class="stage-board-column" aria-label="舞台面">
+          <div class="stage-board-frame">
+            <div class="stage-depth-label stage-depth-back">奥・背景</div>
+            <canvas id="stage-canvas" width="1280" height="720" tabindex="0"
+                    role="img" aria-label="人物コマと物を配置し、背景を塗れる正面から見た舞台"></canvas>
+            <div class="stage-depth-label stage-depth-front">手前・客席側</div>
+          </div>
+          <p class="stage-canvas-help">コマは上下で奥行き、左右で立ち位置を決めます。選択中は矢印キーでも動かせます。</p>
+        </section>
+
+        <aside class="stage-inspector" aria-label="選んだコマ">
+          <section class="stage-tool-section">
+            <h2>選んだコマ</h2>
+            <p class="stage-selection-empty" id="stage-selection-empty">舞台上のコマを選ぶと、色・大きさ・重なりを調整できます。</p>
+            <div id="stage-selection-controls" hidden>
+              <p class="stage-selected-name" id="stage-selected-name"></p>
+              <label class="stage-control-label" for="stage-selected-color">色</label>
+              <input type="color" id="stage-selected-color" value="#a84b26">
+              <label class="stage-control-label stage-range-label" for="stage-piece-size">
+                大きさ <span id="stage-size-value">100</span>
+              </label>
+              <input type="range" id="stage-piece-size" min="55" max="180" step="5" value="100">
+              <div class="stage-layer-actions">
+                <button type="button" id="stage-send-back">後ろへ</button>
+                <button type="button" id="stage-bring-front">前へ</button>
+              </div>
+              <button type="button" class="stage-minor-action" id="stage-duplicate">複製する</button>
+              <button type="button" class="stage-delete" id="stage-delete">このコマを外す</button>
+            </div>
+          </section>
+
+          <section class="stage-save-note">
+            <h2>保存</h2>
+            <p id="stage-save-status">変更はこの端末のブラウザ内へ自動保存します。</p>
+            <button type="button" class="stage-minor-action" id="stage-clear">舞台を空にする</button>
+          </section>
+        </aside>
+      </div>
+
+      <p class="stage-boundary-note">これは構図・色・距離感を考えるための2D習作です。舞台機構、リギング、安全距離、施工寸法を決める図面ではありません。</p>
+      <p class="visually-hidden" id="stage-live" aria-live="polite"></p>
+    </section>
+  </main>
+
   <!-- 種火（サブ）: 0→1の配り -->
   <main id="view-seeds" class="view" hidden>
     <section class="desk-inner">
@@ -169,6 +292,7 @@
         <div class="visuals-head">
           <h2>ビジュアルスタディ</h2>
           <p class="hint">方向別（時間順ではない） ・ 画像を選ぶと大きく比較できます</p>
+          <a class="visual-stage-link" href="#stage">舞台スケッチで組む →</a>
         </div>
         <div class="visual-grid" id="visual-grid"></div>
       </section>
@@ -205,8 +329,9 @@
   </div>
 </div>
 
-  <script src="db.js?v=58"></script>
+<script src="db.js?v=58"></script>
 <script src="data.js?v=16"></script>
-<script src="app.js?v=24"></script>
+<script src="app.js?v=25"></script>
+<script src="stage-sketch.js?v=3"></script>
 </body>
 </html>

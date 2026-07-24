@@ -1,6 +1,6 @@
 /* 制作の書斎 — Phase 0 プロトタイプ
    触れるのは画面遷移・資料を置く・根拠を開く・画像比較・判断の記録（メモリ上のみ）。
-   検索・AI・保存・共有は未実装。 */
+   検索・AI・共有は未実装。舞台スケッチだけは別ファイルで端末内保存する。 */
 
 (function () {
   "use strict";
@@ -832,7 +832,7 @@
   }
 
   // ---------- 画面切り替え（ハッシュルーター） ----------
-  const VIEWS = ["db", "desk", "seeds", "mondo"];
+  const VIEWS = ["db", "desk", "stage", "seeds", "mondo"];
 
   function showView(name) {
     $$(".view").forEach((v) => (v.hidden = true));
