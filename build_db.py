@@ -93,6 +93,10 @@ def categorize(w):
     # MVは楽曲・映像・振付を含むため、映画や音楽カテゴリより先に独立させる。
     if "music_video" in str(w.get("media_type") or "").lower():
         return "ミュージックビデオ"
+    # 映画ミュージカルは、舞台ミュージカルと分けて映画棚で読めるようにする。
+    # genre内の musical より、正本の media_type=film を優先する。
+    if str(w.get("media_type") or "").lower() == "film":
+        return "映画・映像"
     # genre自体がミュージカル（かつサーカスでない）なら、会社等の語より優先する
     g = str(w.get("genre") or "").lower()
     show_type = str(w.get("show_type") or "").lower()
@@ -124,6 +128,7 @@ CATEGORY_EXPECTATIONS = {
     "show_mv_perfume_fake_it": "ミュージックビデオ",
     "show_mv_valentino_khan_deep_down_low": "ミュージックビデオ",
     "show_live_u2_uv_sphere_2023": "音楽・コンサート",
+    "show_moulin_rouge_film_2001": "映画・映像",
     "show_mimbre_dior_dream_parade": "ファッションショー",
     "show_kabuki_tokaido_yotsuya_kaidan": "伝統芸能",
     "show_noh_izutsu": "伝統芸能",

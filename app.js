@@ -86,14 +86,125 @@
     svgC,
   };
 
-  // ---------- 種火（0→1の配り） ----------
-  // 配りは 近い3 / 少し遠い2 / 異物2 の計7枚。得意な方向だけに寄らないよう異物枠は必ず残す。
+  // ---------- スクラップブック（0→1の配りと端末内のページ保存） ----------
+  // 配りは 近い3 / 少し遠い2 / 異物2 の計7枚。気になったものを12枚まで紙面へ貼り、
+  // 1〜3枚を材料として、本人の補足とともに次の「場面の問い」へ組み立てる。
+  const SCRAPBOOK_STORAGE_KEY = "shosai-scrapbook-v1";
+  const SCRAPBOOK_PAGES_STORAGE_KEY = "shosai-scrapbook-pages-v1";
+  const SCRAPBOOK_MAX_CARDS = 12;
+
+  function defaultScrapbookTitle() {
+    const d = new Date();
+    return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日の紙面`;
+  }
+
+  function normalizeScrapbookClip(item) {
+    if (!item || typeof item.id !== "string" || typeof item.text !== "string") return null;
+    return {
+      id: item.id,
+      kind: item.kind === "build" ? "build" : "seed",
+      title: typeof item.title === "string" ? item.title : "",
+      recipe: typeof item.recipe === "string" ? item.recipe : "",
+      text: item.text,
+      // 紙面で本文を直しても、資料由来の元の種火は重複配布防止のため残す。
+      sourceText: typeof item.sourceText === "string" ? item.sourceText : item.text,
+      note: typeof item.note === "string" ? item.note : "",
+      sources: Array.isArray(item.sources) ? item.sources.filter((id) => typeof id === "string") : [],
+      inspiration: typeof item.inspiration === "string" ? item.inspiration : "",
+      createdAt: typeof item.createdAt === "string" ? item.createdAt : "",
+    };
+  }
+
+  function cloneScrapbookItems(items) {
+    return items.map((item) => ({ ...item, sources: [...(item.sources || [])] }));
+  }
+
+  function loadScrapbook() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(SCRAPBOOK_STORAGE_KEY) || "{}");
+      const items = Array.isArray(saved.items)
+        ? saved.items.map(normalizeScrapbookClip).filter(Boolean)
+        : [];
+      return {
+        title: typeof saved.title === "string" && saved.title.trim() ? saved.title : defaultScrapbookTitle(),
+        pageNote: typeof saved.pageNote === "string" ? saved.pageNote : "",
+        activeSessionId: typeof saved.activeSessionId === "string" ? saved.activeSessionId : null,
+        selectedIds: Array.isArray(saved.selectedIds) ? saved.selectedIds.filter((id) => typeof id === "string") : [],
+        items,
+      };
+    } catch (_) {
+      return {
+        title: defaultScrapbookTitle(),
+        pageNote: "",
+        activeSessionId: null,
+        selectedIds: [],
+        items: [],
+      };
+    }
+  }
+
+  function loadScrapbookPages() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(SCRAPBOOK_PAGES_STORAGE_KEY) || "{}");
+      if (!Array.isArray(saved.pages)) return [];
+      return saved.pages
+        .filter((page) => page && typeof page.id === "string")
+        .map((page) => ({
+          id: page.id,
+          title: typeof page.title === "string" && page.title.trim() ? page.title : "無題の紙面",
+          pageNote: typeof page.pageNote === "string" ? page.pageNote : "",
+          items: Array.isArray(page.items) ? page.items.map(normalizeScrapbookClip).filter(Boolean) : [],
+          selectedIds: Array.isArray(page.selectedIds) ? page.selectedIds.filter((id) => typeof id === "string") : [],
+          createdAt: typeof page.createdAt === "string" ? page.createdAt : "",
+          updatedAt: typeof page.updatedAt === "string" ? page.updatedAt : "",
+        }));
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function persistScrapbook() {
+    try {
+      localStorage.setItem(SCRAPBOOK_STORAGE_KEY, JSON.stringify({
+        version: 2,
+        title: seedState.pageTitle,
+        pageNote: seedState.pageNote,
+        activeSessionId: seedState.activeSessionId,
+        selectedIds: [...seedState.selected],
+        items: seedState.kept,
+      }));
+    } catch (_) {
+      // ブラウザ保存が使えない場合も、開いている間の操作は続ける。
+    }
+  }
+
+  function persistScrapbookPages() {
+    try {
+      localStorage.setItem(SCRAPBOOK_PAGES_STORAGE_KEY, JSON.stringify({
+        version: 1,
+        pages: seedState.pages,
+      }));
+    } catch (_) {
+      // 保存済みページの一覧に書き込めない場合も、現在の紙面は開いている間は使える。
+    }
+  }
+
+  function clipId(prefix) {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  const loadedScrapbook = loadScrapbook();
   const seedState = {
-    sourceMode: "db", // db=正本DB由来の30種 / all=自由生成を含む全60種
-    dealt: [],      // いま机に配られている種火
-    kept: [],       // 拾った種火（紙側へ移る）
+    dealt: [],      // いま左側にめくられているカード
+    kept: loadedScrapbook.items, // 右側の紙面。端末内に保存する。
     discarded: new Set(), // このセッション中に流した種火（再配しない）
-    seen: new Set(), // このセッション中に一度でも配った種火（未登場を優先する）
+    selected: new Set(loadedScrapbook.selectedIds.filter((id) => loadedScrapbook.items.some((item) => item.id === id)).slice(0, 3)),
+    pageTitle: loadedScrapbook.title,
+    pageNote: loadedScrapbook.pageNote,
+    activeSessionId: loadedScrapbook.activeSessionId,
+    pages: loadScrapbookPages(),
+    newClipId: null,
+    notice: "",
   };
 
   function shuffle(arr) {
@@ -105,10 +216,81 @@
     return a;
   }
 
+  // 資料棚の現在の正本を横断し、出典へ戻れる「未完成の場面」を200件つくる。
+  // 各文面は事実の要約ではなく、テーマ・トーンを制作条件として読み替えた提案。
+  const EXPANDED_SEED_COUNT = 200;
+  let expandedSeedCache = null;
+
+  function seedKeyword(work, offset) {
+    const choices = []
+      .concat(Array.isArray(work.themes) ? work.themes : [])
+      .concat(Array.isArray(work.tone) ? work.tone : [])
+      .concat(Array.isArray(work.useful_for) ? work.useful_for : [])
+      .map((value) => String(value || "").replace(/\s+/g, " ").trim())
+      .filter((value) => value && value.length <= 52);
+    return choices.length
+      ? choices[offset % choices.length]
+      : (work.category || work.genre || "まだ名のない条件");
+  }
+
+  function expandedSeedCatalog() {
+    if (expandedSeedCache) return expandedSeedCache;
+    const sourceDb = typeof SHOSAI_DB !== "undefined" ? SHOSAI_DB : null;
+    const works = sourceDb && Array.isArray(sourceDb.works)
+      ? sourceDb.works
+          .filter((work) => work && work.id && work.title && Array.isArray(work.themes) && work.themes.length)
+          .slice()
+          .sort((a, b) => String(a.id).localeCompare(String(b.id)))
+      : [];
+    if (!works.length) return [];
+
+    const recipes = [
+      "二つの世界を交差させる",
+      "場の規則を少しずつ書き換える",
+      "観客の読みを遅らせる",
+      "物を時間の記録にする",
+      "役割を途中で交換する",
+      "祝祭の裏側を残す",
+      "空間をもう一人の出演者にする",
+      "音を身体へ引き渡す",
+      "終わりの像から遡る",
+      "見えないものに反応させる",
+    ];
+    const templates = [
+      (a, b) => `「${a}」を最初の合図にする。「${b}」が現れるたび、舞台の規則を一つだけ書き換え、最後に残す規則は稽古で決める。`,
+      (a, b) => `最初は「${a}」だけが見えている。途中から「${b}」が同じ出来事の別の理由として現れ、どちらを信じるかを観客へ渡す。`,
+      (a, b) => `「${a}」のために置いた物が、後半には「${b}」を引き起こす装置へ役割を変える。変化の瞬間だけは隠さない。`,
+      (a, b) => `出演者全員が「${a}」を守ろうとするが、たった一人だけが「${b}」を選ぶ。その選択が群れの動きをどこまで変えるかを残す。`,
+      (a, b) => `客席には「${a}」として届き、舞台上では「${b}」として処理される。同じ行為に二つの読みが並ぶ時間を一度だけ作る。`,
+      (a, b) => `「${a}」が増えるほど「${b}」は小さくなる。最後に小さくなった側が全体を止めるか、止めないかは決めずに置く。`,
+      (a, b) => `舞台の端に「${a}」だけの場所を作る。誰かがそこへ入ると「${b}」の場面が始まり、出ると何事もなかったように戻る。`,
+      (a, b) => `一度起きた「${a}」を、次は「${b}」としてやり直す。手順は同じまま、観客が感じる責任だけを反転させる。`,
+      (a, b) => `「${a}」を待つために全員が止まる。その沈黙の間に「${b}」だけが進み、再開時には舞台の時間が少しずれている。`,
+      (a, b) => `「${a}」の痕跡を集めるほど、「${b}」が最初からそこにあったように見えてくる。集める人が誰かは上演ごとに変えられる。`,
+    ];
+    const distCycle = ["near", "near", "near", "near", "near", "mid", "mid", "mid", "alien", "alien"];
+
+    expandedSeedCache = Array.from({ length: EXPANDED_SEED_COUNT }, (_, index) => {
+      const first = works[(index * 37 + 13) % works.length];
+      let second = works[(index * 149 + 71) % works.length];
+      if (second.id === first.id) second = works[(index * 149 + 72) % works.length];
+      const firstKeyword = seedKeyword(first, index * 3 + 1);
+      const secondKeyword = seedKeyword(second, index * 5 + 2);
+      const recipe = recipes[index % recipes.length];
+      return {
+        id: `expanded-seed-${String(index + 1).padStart(3, "0")}`,
+        recipe,
+        dist: distCycle[index % distCycle.length],
+        text: templates[index % templates.length](firstKeyword, secondKeyword),
+        sources: [first.id, second.id],
+        inspiration: `資料棚の「${first.title}」にある「${firstKeyword}」と、「${second.title}」にある「${secondKeyword}」を手がかりにした制作上の変形案。出典の具体的な場面を再現せず、「${recipe}」の条件として組み替えた。`,
+      };
+    });
+    return expandedSeedCache;
+  }
+
   function seedCatalog() {
-    return seedState.sourceMode === "db"
-      ? SHOSAI.seeds.filter((s) => Array.isArray(s.sources) && s.sources.length)
-      : SHOSAI.seeds;
+    return (Array.isArray(SHOSAI.seeds) ? SHOSAI.seeds : []).concat(expandedSeedCatalog());
   }
 
   function seedProvenanceHtml(seed) {
@@ -135,22 +317,209 @@
       </details>`;
   }
 
+  function addToScrapbook(seed, notice) {
+    if (!seed || !seed.text) return null;
+    const existing = seedState.kept.find((item) => item.kind === "seed" && (item.sourceText || item.text) === seed.text);
+    if (existing) {
+      seedState.selected.add(existing.id);
+      seedState.notice = "すでに紙面にあります。材料として選びました。";
+      persistScrapbook();
+      return { id: existing.id, existing: true };
+    }
+    if (seedState.kept.length >= SCRAPBOOK_MAX_CARDS) {
+      seedState.notice = "この紙面は12枚までです。不要な付箋を外すか、新しいページを始めてください。";
+      return null;
+    }
+    const clip = {
+      id: clipId("clip"),
+      kind: "seed",
+      title: "",
+      recipe: seed.recipe || "資料から変形したアイデア",
+      text: seed.text,
+      sourceText: seed.text,
+      note: "",
+      sources: Array.isArray(seed.sources) ? seed.sources : [],
+      inspiration: seed.inspiration || "",
+      createdAt: new Date().toISOString(),
+    };
+    seedState.kept.unshift(clip);
+    seedState.selected.add(clip.id);
+    seedState.notice = notice || "紙面へ貼りました。材料として選ばれています。";
+    persistScrapbook();
+    return { id: clip.id, existing: false };
+  }
+
+  function flashScrapbookCard(id) {
+    if (!id) return;
+    seedState.newClipId = id;
+    const card = $$('[data-scrap-card]').find((item) => item.dataset.scrapCard === id);
+    if (card) card.classList.add("is-new");
+    window.setTimeout(() => {
+      const current = $$('[data-scrap-card]').find((item) => item.dataset.scrapCard === id);
+      if (current) current.classList.remove("is-new");
+      if (seedState.newClipId === id) seedState.newClipId = null;
+    }, 720);
+  }
+
+  function sessionDateLabel(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "日時未記録";
+    return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  }
+
+  function saveScrapbookPage() {
+    const now = new Date().toISOString();
+    const title = seedState.pageTitle.trim() || defaultScrapbookTitle();
+    const current = seedState.pages.find((page) => page.id === seedState.activeSessionId);
+    const page = {
+      id: current ? current.id : clipId("page"),
+      title,
+      pageNote: seedState.pageNote,
+      items: cloneScrapbookItems(seedState.kept),
+      selectedIds: [...seedState.selected],
+      createdAt: current ? current.createdAt : now,
+      updatedAt: now,
+    };
+    const index = seedState.pages.findIndex((item) => item.id === page.id);
+    if (index >= 0) seedState.pages.splice(index, 1, page);
+    else seedState.pages.unshift(page);
+    seedState.activeSessionId = page.id;
+    seedState.pageTitle = title;
+    seedState.notice = `「${title}」を保存しました。`;
+    persistScrapbook();
+    persistScrapbookPages();
+    renderSeeds();
+  }
+
+  function openScrapbookPage(id) {
+    const page = seedState.pages.find((item) => item.id === id);
+    if (!page) return;
+    seedState.kept = cloneScrapbookItems(page.items).slice(0, SCRAPBOOK_MAX_CARDS);
+    seedState.selected = new Set(page.selectedIds.filter((item) => seedState.kept.some((clip) => clip.id === item)).slice(0, 3));
+    seedState.pageTitle = page.title;
+    seedState.pageNote = page.pageNote;
+    seedState.activeSessionId = page.id;
+    seedState.dealt = [];
+    seedState.notice = `保存済みページ「${page.title}」を開きました。`;
+    persistScrapbook();
+    renderSeeds();
+  }
+
+  function startNewScrapbookPage() {
+    seedState.kept = [];
+    seedState.selected = new Set();
+    seedState.pageTitle = defaultScrapbookTitle();
+    seedState.pageNote = "";
+    seedState.activeSessionId = null;
+    seedState.dealt = [];
+    seedState.notice = "新しい空の紙面を始めました。前のページは保存済み一覧から開けます。";
+    persistScrapbook();
+    renderSeeds();
+  }
+
+  function deleteScrapbookPage(id) {
+    const page = seedState.pages.find((item) => item.id === id);
+    if (!page) return;
+    seedState.pages = seedState.pages.filter((item) => item.id !== id);
+    if (seedState.activeSessionId === id) seedState.activeSessionId = null;
+    seedState.notice = `保存済みページ「${page.title}」を一覧から外しました。現在の紙面は残っています。`;
+    persistScrapbook();
+    persistScrapbookPages();
+    renderSeeds();
+  }
+
+  function selectedScrapbookItems() {
+    return seedState.kept.filter((item) => seedState.selected.has(item.id));
+  }
+
+  function toggleScrapbookMaterial(id, checked) {
+    if (checked && !seedState.selected.has(id) && seedState.selected.size >= 3) {
+      seedState.notice = "一度に組める材料は3枚までです。";
+      renderSeeds();
+      return;
+    }
+    if (checked) seedState.selected.add(id);
+    else seedState.selected.delete(id);
+    seedState.notice = "";
+    renderSeeds();
+  }
+
+  function buildScrapbookIdea() {
+    const materials = selectedScrapbookItems();
+    if (!materials.length) return;
+    if (seedState.kept.length >= SCRAPBOOK_MAX_CARDS) {
+      seedState.notice = "この紙面は12枚までです。組み立てた問いを貼るには、付箋を一枚外してください。";
+      renderSeeds();
+      return;
+    }
+    const note = $("#scrapbook-build-note").value.trim();
+    const materialTexts = materials.map((item) => `「${item.text}」`);
+    const question = `${materialTexts.join("と")}を同じ場面に置く。${note || "二つの条件が同時に変わる瞬間をつくる。"}`;
+    const sources = [...new Set(materials.flatMap((item) => item.sources || []))];
+    const built = {
+      id: clipId("build"),
+      kind: "build",
+      title: `${materials.length}枚から組んだ場面の問い`,
+      recipe: "スクラップブックから組み立て",
+      text: question,
+      sourceText: "",
+      note: "",
+      sources,
+      inspiration: `材料: ${materials.map((item) => item.text).join(" / ")}`,
+      createdAt: new Date().toISOString(),
+    };
+    seedState.kept.unshift(built);
+    seedState.selected = new Set([built.id]);
+    seedState.notice = "新しい場面の問いを紙面へ加えました。さらに材料にして育てられます。";
+    $("#scrapbook-build-note").value = "";
+    persistScrapbook();
+    renderSeeds();
+    flashScrapbookCard(built.id);
+  }
+
   function dealSeeds() {
     const catalog = seedCatalog();
     const pool = (dist, needed) => {
       const eligible = catalog.filter(
-        (s) => s.dist === dist && !seedState.discarded.has(s.text) &&
-               !seedState.kept.some((k) => k.text === s.text));
-      const unseen = shuffle(eligible.filter((s) => !seedState.seen.has(s.text)));
-      const alreadySeen = shuffle(eligible.filter((s) => seedState.seen.has(s.text)));
-      return unseen.concat(alreadySeen).slice(0, needed);
+        (s) => s.dist === dist && !seedState.discarded.has(s.text));
+      return shuffle(eligible).slice(0, needed);
     };
     const near = pool("near", 3);
     const mid = pool("mid", 2);
     const alien = pool("alien", 2);
     seedState.dealt = shuffle(near.concat(mid, alien));
-    seedState.dealt.forEach((s) => seedState.seen.add(s.text));
     renderSeeds();
+  }
+
+  function resetDiscardedSeeds() {
+    const count = seedState.discarded.size;
+    if (!count) {
+      seedState.notice = "まだ流した種火はありません。";
+      renderSeeds();
+      return;
+    }
+    seedState.discarded.clear();
+    seedState.notice = `流した${count}件を種火の束へ戻しました。次の7枚から、また出てきます。`;
+    renderSeeds();
+  }
+
+  function scrapbookTone(item) {
+    const sum = [...item.id].reduce((total, char) => total + char.charCodeAt(0), 0);
+    return ["amber", "rose", "moss", "blue"][sum % 4];
+  }
+
+  function moveDealtSeedToScrapbook(index, notice) {
+    const seed = seedState.dealt[index];
+    if (!seed) return;
+    const result = addToScrapbook(seed, notice);
+    if (!result) {
+      renderSeeds();
+      return;
+    }
+    seedState.dealt.splice(index, 1);
+    persistScrapbook();
+    renderSeeds();
+    flashScrapbookCard(result.id);
   }
 
   function renderSeeds() {
@@ -160,73 +529,180 @@
     const status = $("#seed-pool-status");
     const catalog = seedCatalog();
     const catalogTexts = new Set(catalog.map((s) => s.text));
+    const boardItems = seedState.kept.slice(0, SCRAPBOOK_MAX_CARDS);
 
-    dealBtn.textContent = seedState.dealt.length ? "配り直す" : "種火を7枚配る";
-    const eligible = catalog.filter(
-      (s) => !seedState.discarded.has(s.text) &&
-             !seedState.kept.some((k) => k.text === s.text));
-    const unseenCount = eligible.filter((s) => !seedState.seen.has(s.text)).length;
-    const keptCount = seedState.kept.filter((s) => catalogTexts.has(s.text)).length;
+    dealBtn.textContent = seedState.dealt.length ? "別の7枚をめくる" : "アイデアを7枚めくる";
     const discardedCount = [...seedState.discarded].filter((text) => catalogTexts.has(text)).length;
-    $$("[data-seed-mode]").forEach((button) =>
-      button.setAttribute("aria-pressed", button.dataset.seedMode === seedState.sourceMode ? "true" : "false"));
+    $("#btn-reset-seed-history").disabled = discardedCount === 0;
     status.textContent =
-      `${seedState.sourceMode === "db" ? "資料由来" : "全"}${catalog.length}種 ・ 未登場 ${unseenCount} ・ 拾った ${keptCount} ・ 流した ${discardedCount}`;
+      `資料棚を横断した ${catalog.length}種 ・ 同じ種火も何度でも配る ・ 紙面 ${boardItems.length}/12 ・ 流した ${discardedCount}`;
 
     wrap.innerHTML = seedState.dealt.length
       ? seedState.dealt
           .map(
             (s, i) => `
-            <article class="seed-card" data-seed-dist="${esc(s.dist)}">
+            <article class="seed-card" draggable="true" data-seed-index="${i}" data-seed-dist="${esc(s.dist)}">
               <p class="seed-recipe">${esc(s.recipe)}</p>
               <p class="seed-text">${esc(s.text)}</p>
               ${seedProvenanceHtml(s)}
               <div class="seed-actions">
-                <button type="button" class="seed-keep" data-keep="${i}">拾う</button>
+                <button type="button" class="seed-keep" data-keep="${i}">付箋で貼る</button>
                 <button type="button" class="seed-pass" data-pass="${i}">流す</button>
               </div>
             </article>`)
           .join("")
-      : `<p class="seed-empty">まだ配られていません。0→1はここに任せて、拾う・育てるに集中します。</p>`;
+      : `<p class="seed-empty">まだめくられていません。気になる案だけを12枚の紙面に残し、組み立てることに集中します。</p>`;
 
-    keptWrap.innerHTML = seedState.kept.length
-      ? `<p class="rail-heading">拾った種火</p>` +
-        seedState.kept
-          .map(
-            (s, i) => `
-            <div class="seed-chip">
-              <p class="seed-chip-text">${esc(s.text)}</p>
-              ${seedProvenanceHtml(s)}
-              <div class="seed-actions">
-                <button type="button" class="seed-start" data-start="${i}">机に置いて始める</button>
-                <button type="button" class="seed-return" data-return="${i}">戻す</button>
-              </div>
-            </div>`)
-          .join("")
-      : "";
+    keptWrap.innerHTML = Array.from({ length: SCRAPBOOK_MAX_CARDS }, (_, index) => {
+      const item = boardItems[index];
+      if (!item) {
+        return `<div class="scrapbook-slot" aria-hidden="true"><span>${String(index + 1).padStart(2, "0")}</span><p>ここへ付箋を貼る</p></div>`;
+      }
+      const textId = `scrap-text-${item.id}`;
+      const noteId = `scrap-note-${item.id}`;
+      return `
+        <article class="seed-chip scrapbook-clip sticky-note sticky-note-${scrapbookTone(item)} ${item.kind === "build" ? "scrapbook-built" : ""} ${seedState.newClipId === item.id ? "is-new" : ""}" data-scrap-card="${esc(item.id)}">
+          <div class="scrapbook-clip-head">
+            <p class="seed-recipe">${esc(item.recipe || "スクラップ")}</p>
+            <label class="scrapbook-select">
+              <input type="checkbox" data-scrap-select="${esc(item.id)}" ${seedState.selected.has(item.id) ? "checked" : ""}>
+              <span>材料にする</span>
+            </label>
+          </div>
+          ${item.title ? `<h4>${esc(item.title)}</h4>` : ""}
+          <label class="scrapbook-card-text" for="${esc(textId)}"><span>付箋の本文</span>
+            <textarea id="${esc(textId)}" rows="3" data-scrap-text="${esc(item.id)}" aria-label="付箋の本文を編集">${esc(item.text)}</textarea>
+          </label>
+          <label class="scrapbook-card-note" for="${esc(noteId)}"><span>自分のメモ</span>
+            <textarea id="${esc(noteId)}" rows="2" data-scrap-note="${esc(item.id)}" placeholder="気づき、組み合わせ、次に試すこと…">${esc(item.note || "")}</textarea>
+          </label>
+          ${seedProvenanceHtml(item)}
+          <div class="seed-actions">
+            <button type="button" class="seed-start" data-start-scrap="${esc(item.id)}">制作机で続ける</button>
+            <button type="button" class="seed-return" data-remove-scrap="${esc(item.id)}">紙面から外す</button>
+          </div>
+        </article>`;
+    }).join("");
 
-    $$("[data-keep]", wrap).forEach((b) =>
-      b.addEventListener("click", () => {
-        const s = seedState.dealt.splice(Number(b.dataset.keep), 1)[0];
-        seedState.kept.push(s);
+    $("#scrapbook-board-count").textContent = `${boardItems.length} / ${SCRAPBOOK_MAX_CARDS} 枚`;
+    $("#scrapbook-board-title").textContent = seedState.pageTitle.trim() || "いま開いているページ";
+    $("#scrapbook-page-title").value = seedState.pageTitle;
+    $("#scrapbook-page-note").value = seedState.pageNote;
+    const activePage = seedState.pages.find((page) => page.id === seedState.activeSessionId);
+    $("#scrapbook-save-status").textContent = activePage
+      ? `保存済み: ${sessionDateLabel(activePage.updatedAt)}。変更後は「このページを保存」で更新します。`
+      : "いまの紙面はこのブラウザに下書き保存中です。残したい状態で「このページを保存」してください。";
+
+    const selected = selectedScrapbookItems();
+    const buildStatus = $("#scrapbook-build-status");
+    const materialsWrap = $("#scrapbook-materials");
+    const buildButton = $("#scrapbook-build");
+    buildStatus.textContent = seedState.notice || (selected.length
+      ? `${selected.length}枚を材料に選択中。補足を書いて、次の場面の問いにします。`
+      : "付箋を1〜3枚、材料として選んでください。");
+    materialsWrap.innerHTML = selected.length
+      ? selected.map((item) => `<span>${esc(item.title || item.text)}</span>`).join("")
+      : `<span class="scrapbook-materials-empty">材料を選ぶと、ここに並びます。</span>`;
+    buildButton.disabled = !selected.length;
+
+    const sessionWrap = $("#scrapbook-sessions");
+    sessionWrap.innerHTML = seedState.pages.length
+      ? seedState.pages.map((page, index) => `
+          <article class="scrapbook-session ${page.id === seedState.activeSessionId ? "is-active" : ""}">
+            <button type="button" class="scrapbook-page-open" data-open-session="${esc(page.id)}" ${page.id === seedState.activeSessionId ? "aria-current=\"page\"" : ""}>
+              <span class="scrapbook-page-number">${String(index + 1).padStart(2, "0")}</span>
+              <span class="scrapbook-page-tab-copy">
+                <strong>${esc(page.title)}</strong>
+                <small>${esc(sessionDateLabel(page.updatedAt))} ・ 付箋 ${Math.min(page.items.length, SCRAPBOOK_MAX_CARDS)}枚</small>
+              </span>
+            </button>
+            <button type="button" class="scrapbook-page-delete" data-delete-session="${esc(page.id)}" aria-label="${esc(page.title)} の保存を外す">×</button>
+          </article>`).join("")
+      : `<p class="scrapbook-sessions-empty">保存したページは、ここに本の見出しとして並びます。</p>`;
+
+    $$("[data-keep]", wrap).forEach((button) =>
+      button.addEventListener("click", () =>
+        moveDealtSeedToScrapbook(Number(button.dataset.keep), "付箋を紙面へ貼りました。材料として選ばれています。")));
+    $$("[data-pass]", wrap).forEach((button) =>
+      button.addEventListener("click", () => {
+        const seed = seedState.dealt.splice(Number(button.dataset.pass), 1)[0];
+        if (seed) seedState.discarded.add(seed.text);
         renderSeeds();
       }));
-    $$("[data-pass]", wrap).forEach((b) =>
-      b.addEventListener("click", () => {
-        const s = seedState.dealt.splice(Number(b.dataset.pass), 1)[0];
-        seedState.discarded.add(s.text);
+    $$("[data-seed-index]", wrap).forEach((card) => {
+      card.addEventListener("dragstart", (event) => {
+        event.dataTransfer.effectAllowed = "copy";
+        event.dataTransfer.setData("application/x-shosai-seed-index", card.dataset.seedIndex);
+        card.classList.add("is-dragging");
+      });
+      card.addEventListener("dragend", () => card.classList.remove("is-dragging"));
+    });
+    $$("[data-scrap-select]", keptWrap).forEach((input) =>
+      input.addEventListener("change", () =>
+        toggleScrapbookMaterial(input.dataset.scrapSelect, input.checked)));
+    $$("[data-scrap-note]", keptWrap).forEach((input) =>
+      input.addEventListener("input", () => {
+        const item = seedState.kept.find((clip) => clip.id === input.dataset.scrapNote);
+        if (!item) return;
+        item.note = input.value;
+        persistScrapbook();
+      }));
+    $$("[data-scrap-text]", keptWrap).forEach((input) =>
+      input.addEventListener("input", () => {
+        const item = seedState.kept.find((clip) => clip.id === input.dataset.scrapText);
+        if (!item) return;
+        item.text = input.value;
+        persistScrapbook();
+      }));
+    $$("[data-start-scrap]", keptWrap).forEach((button) =>
+      button.addEventListener("click", () => {
+        const item = seedState.kept.find((clip) => clip.id === button.dataset.startScrap);
+        if (item) openProject(buildNewProject(item.text));
+      }));
+    $$("[data-remove-scrap]", keptWrap).forEach((button) =>
+      button.addEventListener("click", () => {
+        seedState.kept = seedState.kept.filter((item) => item.id !== button.dataset.removeScrap);
+        seedState.selected.delete(button.dataset.removeScrap);
+        seedState.notice = "付箋を紙面から外しました。";
+        persistScrapbook();
         renderSeeds();
       }));
-    $$("[data-start]", keptWrap).forEach((b) =>
-      b.addEventListener("click", () => {
-        const s = seedState.kept[Number(b.dataset.start)];
-        openProject(buildNewProject(s.text));
-      }));
-    $$("[data-return]", keptWrap).forEach((b) =>
-      b.addEventListener("click", () => {
-        seedState.kept.splice(Number(b.dataset.return), 1);
-        renderSeeds();
-      }));
+    $$("[data-open-session]", sessionWrap).forEach((button) =>
+      button.addEventListener("click", () => openScrapbookPage(button.dataset.openSession)));
+    $$("[data-delete-session]", sessionWrap).forEach((button) =>
+      button.addEventListener("click", () => deleteScrapbookPage(button.dataset.deleteSession)));
+  }
+
+  function initScrapbook() {
+    const drop = $("#scrapbook-drop");
+    drop.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+      drop.classList.add("is-dragover");
+    });
+    drop.addEventListener("dragleave", () => drop.classList.remove("is-dragover"));
+    drop.addEventListener("drop", (event) => {
+      event.preventDefault();
+      drop.classList.remove("is-dragover");
+      const index = Number(event.dataTransfer.getData("application/x-shosai-seed-index"));
+      if (!Number.isInteger(index) || !seedState.dealt[index]) return;
+      moveDealtSeedToScrapbook(index, "ドラッグして付箋を紙面へ貼りました。材料として選ばれています。");
+    });
+    $("#scrapbook-builder").addEventListener("submit", (event) => {
+      event.preventDefault();
+      buildScrapbookIdea();
+    });
+    $("#scrapbook-page-title").addEventListener("input", (event) => {
+      seedState.pageTitle = event.target.value;
+      $("#scrapbook-board-title").textContent = seedState.pageTitle.trim() || "いま開いているページ";
+      persistScrapbook();
+    });
+    $("#scrapbook-page-note").addEventListener("input", (event) => {
+      seedState.pageNote = event.target.value;
+      persistScrapbook();
+    });
+    $("#btn-scrapbook-save").addEventListener("click", saveScrapbookPage);
+    $("#btn-scrapbook-new").addEventListener("click", startNewScrapbookPage);
   }
 
   // ---------- 場面問答（判断のエクササイズ） ----------
@@ -329,7 +805,7 @@
           <label class="mondo-field"><span>自分と実例は、どの軸が違うか（一行）</span><textarea rows="1" data-mf="axis"></textarea></label>
           <label class="mondo-field"><span>実例にない、自分の案の部分</span><textarea rows="1" data-mf="mine"></textarea></label>
           <div class="seed-actions">
-            <button type="button" class="seed-keep" id="mondo-to-seed">この答えを種火として拾う</button>
+            <button type="button" class="seed-keep" id="mondo-to-seed">この答えをスクラップブックに貼る</button>
           </div>
           <p class="save-note-dark">Phase 0: 問答はこの画面の間だけ保持され、保存されません。</p>
         </div>
@@ -386,9 +862,16 @@
       toSeed.addEventListener("click", () => {
         const text = mondoAnswerText();
         if (!text) return;
-        seedState.kept.push({ recipe: `場面問答「${q.title}」の自分の答え`, dist: "near", text });
+        const result = addToScrapbook({
+          recipe: `場面問答「${q.title}」の自分の答え`,
+          text,
+          sources: [],
+          inspiration: "場面問答で記した本人の答え。",
+        }, "場面問答の答えをスクラップブックへ貼りました。");
         renderSeeds();
-        toSeed.textContent = "拾いました（上の種火欄へ）";
+        if (!result) return;
+        flashScrapbookCard(result.id);
+        toSeed.textContent = "貼りました（スクラップブックへ）";
         toSeed.disabled = true;
       });
   }
@@ -396,13 +879,8 @@
   // ---------- 机（ホーム） ----------
   function initDesk() {
     $("#btn-deal").addEventListener("click", dealSeeds);
-    $$("[data-seed-mode]").forEach((button) =>
-      button.addEventListener("click", () => {
-        if (button.dataset.seedMode === seedState.sourceMode) return;
-        seedState.sourceMode = button.dataset.seedMode;
-        seedState.dealt = [];
-        dealSeeds();
-      }));
+    $("#btn-reset-seed-history").addEventListener("click", resetDiscardedSeeds);
+    initScrapbook();
     renderSeeds();
     renderMondo();
     const thumbs = $("#desk-thumbs");

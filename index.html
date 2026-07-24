@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=26">
+<link rel="stylesheet" href="style.css?v=32">
 </head>
 <body>
 
@@ -15,7 +15,7 @@
     <a href="#db" data-nav="db">資料棚</a>
     <a href="#desk" data-nav="desk">制作机</a>
     <a href="#stage" data-nav="stage">舞台スケッチ</a>
-    <a href="#seeds" data-nav="seeds">種火</a>
+    <a href="#seeds" data-nav="seeds">スクラップブック</a>
     <a href="#mondo" data-nav="mondo">場面問答</a>
   </nav>
   <p class="topnav-note">Phase 0 — 資料棚は正本読み取り。舞台スケッチはこの端末だけに保存。</p>
@@ -229,23 +229,82 @@
     </section>
   </main>
 
-  <!-- 種火（サブ）: 0→1の配り -->
+  <!-- スクラップブック（サブ）: アイデアを拾い、組み立てる -->
   <main id="view-seeds" class="view" hidden>
     <section class="desk-inner">
-      <section class="seeds" aria-label="種火">
+      <section class="seeds scrapbook" aria-label="スクラップブック">
         <div class="seeds-head">
-          <h2>種火</h2>
-          <p class="seeds-sub">0→1は配らせる。拾う・育てるに集中する。</p>
-          <button type="button" class="btn-quiet" id="btn-deal">種火を7枚配る</button>
+          <h2>スクラップブック</h2>
+          <p class="seeds-sub">資料から拾った断片を貼り、書き込み、ページとして残す。</p>
+          <button type="button" class="btn-quiet seed-history-reset" id="btn-reset-seed-history">流した種火を戻す</button>
         </div>
-        <div class="seed-source-mode" role="group" aria-label="種火の出どころ">
-          <button type="button" data-seed-mode="db" aria-pressed="true">資料由来 30種</button>
-          <button type="button" data-seed-mode="all" aria-pressed="false">自由生成を含む 60種</button>
+        <section class="scrapbook-page-index" aria-labelledby="scrapbook-pages-title">
+          <header class="scrapbook-index-head">
+            <div>
+              <p class="scrapbook-kicker">PAGE INDEX</p>
+              <h3 id="scrapbook-pages-title">保存したページ</h3>
+            </div>
+            <p>タイトルを選ぶと、その時点の付箋と書き込みを開けます。</p>
+          </header>
+          <div id="scrapbook-sessions" class="scrapbook-session-list" aria-live="polite"></div>
+        </section>
+        <p class="seed-catalog-note">資料棚を横断して組み立てた200件を含む、ひとつの種火の束です。各カードから参照作品へ戻れます。</p>
+        <section class="scrapbook-page-controls" aria-label="スクラップブックのページ操作">
+          <label for="scrapbook-page-title">
+            <span>ページ名</span>
+            <input id="scrapbook-page-title" type="text" maxlength="80" placeholder="例: 光がほどける場面">
+          </label>
+          <div class="scrapbook-page-actions">
+            <button type="button" class="seed-start" id="btn-scrapbook-save">このページを保存</button>
+            <button type="button" class="seed-return" id="btn-scrapbook-new">新しいページ</button>
+          </div>
+          <p id="scrapbook-save-status" aria-live="polite"></p>
+        </section>
+        <div class="scrapbook-workspace">
+          <section class="scrapbook-deck" aria-label="めくったアイデア">
+            <div class="scrapbook-deck-head">
+              <div class="scrapbook-deck-actions">
+                <button type="button" class="btn-quiet" id="btn-deal">アイデアを7枚めくる</button>
+                <p class="seed-pool-status" id="seed-pool-status"></p>
+              </div>
+              <p class="scrapbook-drag-hint">気になったカードを右の付箋ボードへドラッグ。ボタンでも貼れます。</p>
+            </div>
+            <div class="seed-dealt" id="seed-dealt"></div>
+          </section>
+
+          <aside class="scrapbook-book" aria-label="スクラップブックの見開き">
+            <div class="scrapbook-book-spine" aria-hidden="true"><span>IDEA NOTES</span></div>
+            <div class="scrapbook-board-pane" aria-label="スクラップブックの紙面">
+            <header class="scrapbook-board-head">
+              <div>
+                <p class="scrapbook-kicker">CURRENT PAGE</p>
+                <h3 id="scrapbook-board-title">いま開いているページ</h3>
+              </div>
+              <p id="scrapbook-board-count">0 / 12 枚</p>
+            </header>
+            <div class="scrapbook-board" id="scrapbook-drop" tabindex="0"
+                 aria-label="ここへアイデアをドラッグして12枚のスクラップブックに貼る">
+              <div class="seed-kept scrapbook-board-grid" id="seed-kept"></div>
+            </div>
+            <label class="scrapbook-page-note" for="scrapbook-page-note">
+              <span>このページ全体のメモ</span>
+              <textarea id="scrapbook-page-note" rows="3" placeholder="例: 光は人物を照らすのでなく、観客の視線を少し遅らせる役にする。"></textarea>
+            </label>
+            <form class="scrapbook-builder" id="scrapbook-builder">
+              <div class="scrapbook-builder-head">
+                <p class="scrapbook-kicker">COMBINE</p>
+                <h3>次のアイデアを組む</h3>
+                <p id="scrapbook-build-status">右のカードを1〜3枚、材料として選んでください。</p>
+              </div>
+              <div class="scrapbook-materials" id="scrapbook-materials" aria-live="polite"></div>
+              <label for="scrapbook-build-note">この材料のあいだで、何を起こしたい？</label>
+              <textarea id="scrapbook-build-note" rows="3" placeholder="例: 水の動きが止まったときだけ、人の声が聞こえる。"></textarea>
+              <button type="submit" class="seed-start" id="scrapbook-build" disabled>場面の問いに組み立てる</button>
+            </form>
+            </div>
+          </aside>
         </div>
-        <p class="seed-pool-status" id="seed-pool-status"></p>
-        <div class="seed-kept" id="seed-kept"></div>
-        <div class="seed-dealt" id="seed-dealt"></div>
-        <p class="seeds-note">Phase 0: 既定は正本DBにある実在作品を2件以上参照し、その機能を変形した固定30種です。自由生成を含む全60種にも切り替えられます。どちらも近い3・少し遠い2・異物2を配り、同じセッションでは未登場を優先します。「資料からの変形」で参照作品と解釈を分けて確認できます。</p>
+        <p class="seeds-note">初期の固定種火と、現在の資料棚を横断して組み立てた種火を、同じ束として配ります。後者はすべて参照作品を2件添え、事実の複製ではなく制作のための変形案として扱います。流した種火は「流した種火を戻す」で戻せます。ページ・付箋メモ・保存済みページは、この端末のこのブラウザ内にのみ保存されます。</p>
       </section>
     </section>
   </main>
@@ -331,7 +390,7 @@
 
 <script src="db.js?v=58"></script>
 <script src="data.js?v=16"></script>
-<script src="app.js?v=25"></script>
+<script src="app.js?v=26"></script>
 <script src="stage-sketch.js?v=3"></script>
 </body>
 </html>

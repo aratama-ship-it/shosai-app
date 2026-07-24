@@ -812,7 +812,7 @@ textarea, input[type="text"] {
   line-height: 1.6;
 }
 
-/* サブ画面（種火・場面問答）の枠 */
+/* サブ画面（スクラップブック・場面問答）の枠 */
 #view-seeds, #view-mondo {
   display: flex;
   justify-content: center;
@@ -824,6 +824,8 @@ textarea, input[type="text"] {
   border-top: none;
   padding-top: 0;
 }
+
+#view-seeds .desk-inner { max-width: 1480px; }
 
 /* ============ 舞台スケッチ（2Dの構図習作） ============ */
 
@@ -1307,7 +1309,32 @@ textarea, input[type="text"] {
 
 .btn-quiet:hover { border-color: var(--brass); color: var(--milk); }
 
-/* ============ 種火 ============ */
+.seed-history-reset {
+  color: var(--milk-dim);
+  border-color: rgba(179,143,77,0.42);
+  padding-left: 13px;
+  padding-right: 13px;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+}
+
+.seed-history-reset:disabled {
+  border-color: rgba(255,255,255,0.1);
+  color: rgba(240,231,214,0.3);
+  cursor: not-allowed;
+}
+
+.seed-catalog-note {
+  max-width: 70em;
+  margin: -6px 0 16px;
+  color: var(--brass);
+  font-family: var(--serif);
+  font-size: 11px;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+}
+
+/* ============ スクラップブック ============ */
 
 .seeds {
   margin-top: 64px;
@@ -1339,45 +1366,6 @@ textarea, input[type="text"] {
   min-width: 0;
 }
 
-.seed-source-mode {
-  display: flex;
-  align-items: stretch;
-  width: fit-content;
-  max-width: 100%;
-  border-top: 1px solid var(--line-dark);
-  border-bottom: 1px solid var(--line-dark);
-  margin: -7px 0 8px;
-}
-
-.seed-source-mode button {
-  position: relative;
-  min-height: 38px;
-  padding: 7px 14px 8px;
-  color: var(--milk-dim);
-  border-right: 1px solid var(--line-dark);
-  font-size: 10.5px;
-  letter-spacing: 0.09em;
-  text-align: left;
-}
-
-.seed-source-mode button:first-child { border-left: 1px solid var(--line-dark); }
-.seed-source-mode button:hover { color: var(--milk); background: rgba(255,255,255,0.025); }
-
-.seed-source-mode button[aria-pressed="true"] {
-  color: var(--paper);
-  background: rgba(179,143,77,0.09);
-}
-
-.seed-source-mode button[aria-pressed="true"]::after {
-  content: "";
-  position: absolute;
-  left: 13px;
-  right: 13px;
-  bottom: -1px;
-  height: 2px;
-  background: var(--rust);
-}
-
 .seed-pool-status {
   color: var(--brass);
   font-size: 9.5px;
@@ -1392,6 +1380,124 @@ textarea, input[type="text"] {
   gap: 12px;
 }
 
+.scrapbook-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.9fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.scrapbook-deck { min-width: 0; }
+
+.scrapbook-deck-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px 18px;
+  flex-wrap: wrap;
+}
+
+.scrapbook-deck-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px 13px;
+  flex-wrap: wrap;
+}
+
+.scrapbook-deck-actions .btn-quiet {
+  border-color: rgba(179,143,77,0.62);
+  background: rgba(179,143,77,0.07);
+}
+
+.scrapbook-deck-actions .btn-quiet:hover {
+  background: rgba(168,75,38,0.22);
+  border-color: var(--rust);
+}
+
+.scrapbook-deck-actions .seed-pool-status { margin: 0; }
+
+.scrapbook-drag-hint {
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  margin: 0 0 13px;
+}
+
+.scrapbook-rail {
+  position: sticky;
+  top: 70px;
+  background: var(--paper-2);
+  color: var(--ink);
+  border: 1px solid rgba(0,0,0,0.55);
+  box-shadow: 5px 6px 0 rgba(0,0,0,0.2);
+  padding: 18px 16px 16px;
+}
+
+.scrapbook-rail-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  padding-bottom: 13px;
+  border-bottom: 1px solid rgba(0,0,0,0.24);
+}
+
+.scrapbook-kicker {
+  color: var(--rust-deep);
+  font-size: 9px;
+  letter-spacing: 0.21em;
+  line-height: 1.35;
+}
+
+.scrapbook-rail h3,
+.scrapbook-builder h3 {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+}
+
+.scrapbook-rail-count {
+  color: var(--ink-soft);
+  font-size: 10px;
+  line-height: 1.45;
+  max-width: 11em;
+  text-align: right;
+}
+
+.scrapbook-drop {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 8px;
+  align-items: center;
+  min-height: 68px;
+  margin: 13px 0 12px;
+  padding: 10px 12px;
+  border: 1px dashed rgba(43,38,32,0.52);
+  color: var(--ink-soft);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.scrapbook-drop span {
+  color: var(--rust-deep);
+  font-family: var(--serif);
+  font-size: 23px;
+  line-height: 1;
+  text-align: center;
+}
+
+.scrapbook-drop p {
+  font-family: var(--serif);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.scrapbook-drop.is-dragover {
+  background: rgba(168,75,38,0.11);
+  border-color: var(--rust-deep);
+}
+
 .seed-card {
   background: var(--desk-2);
   border: 1px solid var(--line-dark);
@@ -1400,6 +1506,10 @@ textarea, input[type="text"] {
   display: flex;
   flex-direction: column;
 }
+
+.seed-card[draggable="true"] { cursor: grab; }
+.seed-card[draggable="true"]:active { cursor: grabbing; }
+.seed-card.is-dragging { opacity: 0.42; transform: rotate(-1deg); }
 
 .seed-recipe {
   font-size: 10.5px;
@@ -1535,7 +1645,7 @@ textarea, input[type="text"] {
   line-height: 1.9;
 }
 
-/* 拾った種火は本人の側＝紙になる */
+/* 拾ったアイデアは本人の側＝紙になる */
 .seed-kept { display: grid; gap: 10px; margin-bottom: 14px; }
 
 .seed-chip {
@@ -1574,11 +1684,799 @@ textarea, input[type="text"] {
 .seed-chip .seed-provenance-label,
 .seed-chip .seed-transform span { color: var(--rust-deep); }
 
+.scrapbook-rail .seed-kept { gap: 12px; margin-bottom: 12px; }
+
+.rail-heading {
+  color: var(--ink-soft);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  margin: 0 0 -3px;
+}
+
+.scrapbook-rail-empty {
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-size: 12.5px;
+  line-height: 1.85;
+  padding: 2px 0 8px;
+}
+
+.scrapbook-clip { position: relative; }
+.scrapbook-clip:nth-of-type(2n) { transform: rotate(0.25deg); }
+.scrapbook-clip:nth-of-type(3n) { transform: rotate(-0.18deg); }
+
+.scrapbook-clip-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.scrapbook-clip .seed-recipe {
+  color: var(--rust-deep);
+  margin-bottom: 8px;
+}
+
+.scrapbook-clip h4 {
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  margin: -1px 0 7px;
+}
+
+.scrapbook-select {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 4px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 9px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.scrapbook-select input { accent-color: var(--rust-deep); }
+
+.scrapbook-built {
+  border-top: 3px double var(--rust-deep);
+  background: #f4ecdc;
+}
+
+.scrapbook-builder {
+  margin-top: 17px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(0,0,0,0.3);
+}
+
+.scrapbook-builder-head { margin-bottom: 9px; }
+.scrapbook-build-status {
+  color: var(--ink-soft);
+  font-size: 10.5px;
+  line-height: 1.65;
+  margin: 8px 0 9px;
+}
+
+.scrapbook-materials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 24px;
+  margin: 0 0 11px;
+}
+
+.scrapbook-materials span {
+  border: 1px solid rgba(143,62,30,0.55);
+  color: var(--rust-deep);
+  font-family: var(--serif);
+  font-size: 10.5px;
+  line-height: 1.4;
+  padding: 3px 6px;
+}
+
+.scrapbook-materials .scrapbook-materials-empty {
+  border-color: rgba(0,0,0,0.18);
+  color: var(--ink-soft);
+}
+
+.scrapbook-builder label {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 10.5px;
+  line-height: 1.55;
+  margin-bottom: 5px;
+}
+
+.scrapbook-builder textarea {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  background: rgba(255,255,255,0.27);
+  border: 1px solid rgba(0,0,0,0.3);
+  border-radius: 0;
+  color: var(--ink);
+  line-height: 1.65;
+  padding: 8px 9px;
+}
+
+.scrapbook-builder textarea:focus { outline: none; border-color: var(--rust-deep); }
+
+.scrapbook-builder .seed-start {
+  display: block;
+  width: 100%;
+  margin-top: 9px;
+}
+
+.scrapbook-builder .seed-start[disabled] {
+  border-color: rgba(0,0,0,0.22);
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: not-allowed;
+}
+
+/* 本の目次。保存済みの紙面は、下の一覧でなく最初にページ見出しとして現す。 */
+.scrapbook-page-index {
+  margin: 18px 0 14px;
+  padding: 15px 16px 14px;
+  border: 1px solid var(--line-dark);
+  background:
+    linear-gradient(90deg, rgba(179,143,77,0.09), transparent 32%),
+    #1a1612;
+  box-shadow: 4px 5px 0 rgba(0,0,0,0.16);
+}
+
+.scrapbook-index-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px 22px;
+  margin-bottom: 10px;
+}
+
+.scrapbook-index-head h3 {
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+}
+
+.scrapbook-index-head > p {
+  max-width: 31em;
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  line-height: 1.6;
+  text-align: right;
+}
+
+.scrapbook-page-index .scrapbook-session-list {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 3px 2px 5px;
+  scrollbar-color: rgba(179,143,77,0.45) transparent;
+}
+
+.scrapbook-page-index .scrapbook-session {
+  --tab-paper: #d8c88c;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 min(252px, 61vw);
+  min-width: 170px;
+  margin-right: -1px;
+  padding: 0;
+  border: 1px solid rgba(13,11,9,0.74);
+  border-top: 4px solid var(--tab-paper);
+  background: #2a241d;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.16);
+}
+
+.scrapbook-page-index .scrapbook-session:nth-child(4n + 2) { --tab-paper: #c9b48c; }
+.scrapbook-page-index .scrapbook-session:nth-child(4n + 3) { --tab-paper: #ae9278; }
+.scrapbook-page-index .scrapbook-session:nth-child(4n) { --tab-paper: #a6b1a0; }
+
+.scrapbook-page-index .scrapbook-session.is-active {
+  z-index: 1;
+  border-color: var(--brass);
+  background: #352d23;
+  transform: translateY(-3px);
+}
+
+.scrapbook-page-open {
+  display: grid;
+  grid-template-columns: 29px minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  color: var(--milk);
+  background: transparent;
+  padding: 10px 8px 10px 10px;
+  text-align: left;
+}
+
+.scrapbook-page-open:hover,
+.scrapbook-page-open:focus-visible { background: rgba(255,255,255,0.045); outline: none; }
+
+.scrapbook-page-number {
+  color: var(--tab-paper);
+  font-family: var(--serif);
+  font-size: 17px;
+  letter-spacing: 0.05em;
+}
+
+.scrapbook-page-tab-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.scrapbook-page-tab-copy strong {
+  overflow: hidden;
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scrapbook-page-tab-copy small {
+  overflow: hidden;
+  color: var(--milk-dim);
+  font-size: 8.5px;
+  letter-spacing: 0.05em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scrapbook-page-delete {
+  align-self: stretch;
+  width: 27px;
+  flex: 0 0 27px;
+  color: rgba(240,231,214,0.48);
+  font-size: 17px;
+  line-height: 1;
+}
+
+.scrapbook-page-delete:hover,
+.scrapbook-page-delete:focus-visible { color: var(--rust); outline: none; }
+
+.scrapbook-page-index .scrapbook-sessions-empty {
+  padding: 8px 4px;
+}
+
+/* スクラップブック: 画面では「右に貼る」ことが主役になる、3列×4段の紙面。 */
+.scrapbook-page-controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1.25fr);
+  align-items: end;
+  gap: 14px 18px;
+  max-width: 100%;
+  margin: 0 0 22px;
+  padding: 13px 15px 12px 19px;
+  border: 1px solid var(--line-dark);
+  border-left: 4px double rgba(179,143,77,0.7);
+  background: rgba(255,255,255,0.025);
+}
+
+.scrapbook-page-controls label {
+  display: grid;
+  gap: 3px;
+  color: var(--milk-dim);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+}
+
+.scrapbook-page-controls input {
+  width: 100%;
+  min-height: 34px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--brass);
+  border-radius: 0;
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  padding: 3px 1px 5px;
+}
+
+.scrapbook-page-controls input:focus { outline: none; border-bottom-color: var(--rust); }
+
+.scrapbook-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.scrapbook-page-actions .seed-start,
+.scrapbook-page-actions .seed-return { white-space: nowrap; }
+
+#scrapbook-save-status {
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  line-height: 1.6;
+  padding-bottom: 5px;
+}
+
+.scrapbook-workspace {
+  grid-template-columns: minmax(285px, 0.7fr) minmax(700px, 1.3fr);
+  gap: 26px;
+}
+
+.scrapbook-deck {
+  position: sticky;
+  top: 64px;
+  padding: 13px 0 18px;
+}
+
+.scrapbook-book {
+  position: relative;
+  min-width: 0;
+  padding: 10px 9px 15px 38px;
+  background: linear-gradient(90deg, #3f3023 0 34px, transparent 34px);
+}
+
+.scrapbook-book::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 15px;
+  right: 0;
+  bottom: 7px;
+  left: 44px;
+  border-right: 7px solid #b9ad98;
+  border-bottom: 7px solid #b9ad98;
+  box-shadow: 7px 8px 0 rgba(0,0,0,0.22);
+}
+
+.scrapbook-book-spine {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 43px;
+  color: rgba(245,231,199,0.78);
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.13), transparent 22%, transparent 78%, rgba(0,0,0,0.36)),
+    #543a29;
+  border-right: 1px solid rgba(20,13,8,0.72);
+  box-shadow: inset -3px 0 5px rgba(0,0,0,0.24), 3px 0 3px rgba(0,0,0,0.2);
+}
+
+.scrapbook-book-spine::before {
+  content: "";
+  position: absolute;
+  inset: 20px 9px;
+  background: repeating-linear-gradient(0deg, transparent 0 22px, rgba(232,211,163,0.44) 22px 24px, transparent 24px 45px);
+}
+
+.scrapbook-book-spine span {
+  position: relative;
+  font-family: var(--serif);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  writing-mode: vertical-rl;
+}
+
+.scrapbook-board-pane {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  background:
+    linear-gradient(90deg, rgba(91,66,42,0.12), transparent 42px),
+    repeating-linear-gradient(0deg, rgba(116,97,68,0.035) 0 1px, transparent 1px 5px),
+    var(--paper-2);
+  color: var(--ink);
+  border: 1px solid rgba(0,0,0,0.58);
+  box-shadow: inset 13px 0 17px rgba(73,49,30,0.08), 2px 2px 0 rgba(0,0,0,0.12);
+  padding: 21px 23px 25px 49px;
+}
+
+.scrapbook-board-pane::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 29px;
+  bottom: 29px;
+  left: 16px;
+  width: 17px;
+  border-right: 1px solid rgba(77,54,34,0.26);
+  background: radial-gradient(circle, rgba(70,49,31,0.42) 0 3px, transparent 3.5px) center top / 17px 38px repeat-y;
+  opacity: 0.64;
+  pointer-events: none;
+}
+
+.scrapbook-board-pane > * { position: relative; z-index: 1; }
+
+.scrapbook-board-pane::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 11px;
+  bottom: 0;
+  width: 1px;
+  background: rgba(80,54,34,0.14);
+  pointer-events: none;
+}
+
+.scrapbook-board-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 12px;
+  padding: 0 2px 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.25);
+}
+
+.scrapbook-board-head h3,
+.scrapbook-pages h3 {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+}
+
+#scrapbook-board-count {
+  color: var(--rust-deep);
+  font-family: var(--serif);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.scrapbook-board {
+  position: relative;
+  margin: 13px 0 15px;
+  padding: 13px;
+  border: 1px solid rgba(43,38,32,0.36);
+  background-color: #e1d2b7;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 30px,
+    rgba(95,78,50,0.08) 30px,
+    rgba(95,78,50,0.08) 31px
+  );
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.28), 0 1px 3px rgba(43,38,32,0.14);
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.scrapbook-board::before {
+  content: "DRAG A CARD HERE";
+  position: absolute;
+  right: 16px;
+  top: 8px;
+  color: rgba(43,38,32,0.3);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+}
+
+.scrapbook-board.is-dragover {
+  background-color: #e7bf8d;
+  border-color: var(--rust-deep);
+}
+
+.scrapbook-board-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(174px, auto));
+  gap: 12px;
+  margin: 0;
+}
+
+.scrapbook-slot {
+  display: grid;
+  place-content: center;
+  min-height: 174px;
+  border: 1px dashed rgba(43,38,32,0.26);
+  color: rgba(43,38,32,0.42);
+  text-align: center;
+}
+
+.scrapbook-slot span {
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.scrapbook-slot p { font-size: 10px; margin-top: 2px; }
+
+.scrapbook-board-grid .scrapbook-clip {
+  min-width: 0;
+  min-height: 174px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: 1px 3px 5px rgba(43,38,32,0.27);
+  padding: 13px 12px 9px;
+  transform: rotate(var(--scrap-tilt, -0.45deg));
+}
+
+.scrapbook-board-grid .scrapbook-clip:nth-of-type(2n) { --scrap-tilt: 0.42deg; }
+.scrapbook-board-grid .scrapbook-clip:nth-of-type(3n) { --scrap-tilt: -0.22deg; }
+
+.sticky-note::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 31%;
+  top: -6px;
+  width: 38%;
+  height: 12px;
+  background: rgba(235,220,177,0.68);
+  box-shadow: 0 1px 1px rgba(43,38,32,0.11);
+  transform: rotate(-2deg);
+}
+
+.sticky-note-amber { background: #f3dc94; }
+.sticky-note-rose { background: #efc7bd; }
+.sticky-note-moss { background: #ced9ae; }
+.sticky-note-blue { background: #bfd6df; }
+.scrapbook-board-grid .scrapbook-built { background: #f2c58d; border-top: 3px double var(--rust-deep); }
+
+@keyframes scrapbook-stick {
+  0% { opacity: 0; transform: translateY(-28px) rotate(5deg) scale(1.09); }
+  62% { opacity: 1; transform: translateY(3px) rotate(var(--scrap-tilt, -0.45deg)) scale(0.985); }
+  100% { opacity: 1; transform: translateY(0) rotate(var(--scrap-tilt, -0.45deg)) scale(1); }
+}
+
+.scrapbook-board-grid .scrapbook-clip.is-new { animation: scrapbook-stick 640ms cubic-bezier(.18,.74,.31,1) both; }
+
+.scrapbook-board-grid .seed-recipe {
+  color: rgba(43,38,32,0.67);
+  font-size: 8.5px;
+  line-height: 1.35;
+  letter-spacing: 0.13em;
+  margin-bottom: 5px;
+}
+
+.scrapbook-board-grid .seed-chip-text {
+  color: var(--ink);
+  font-size: 12.5px;
+  line-height: 1.62;
+}
+
+.scrapbook-board-grid .scrapbook-select {
+  color: rgba(43,38,32,0.74);
+  font-size: 8px;
+}
+
+.scrapbook-card-text {
+  display: grid;
+  gap: 2px;
+  margin-top: 5px;
+}
+
+.scrapbook-card-text > span {
+  color: rgba(43,38,32,0.62);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+}
+
+.scrapbook-card-text textarea {
+  width: 100%;
+  min-height: 58px;
+  resize: vertical;
+  background: rgba(255,255,255,0.16);
+  border: 0;
+  border-bottom: 1px dashed rgba(43,38,32,0.38);
+  border-radius: 0;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 12.5px;
+  line-height: 1.62;
+  padding: 2px 1px 4px;
+}
+
+.scrapbook-card-text textarea:focus {
+  outline: 1px solid rgba(143,62,30,0.52);
+  outline-offset: 2px;
+  border-bottom-color: var(--rust-deep);
+}
+
+.scrapbook-card-note {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.scrapbook-card-note > span {
+  color: rgba(43,38,32,0.62);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+}
+
+.scrapbook-card-note textarea {
+  width: 100%;
+  min-height: 42px;
+  resize: vertical;
+  background: rgba(255,255,255,0.27);
+  border: 1px solid rgba(43,38,32,0.28);
+  border-radius: 0;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 11px;
+  line-height: 1.45;
+  padding: 4px 5px;
+}
+
+.scrapbook-card-note textarea:focus { outline: none; border-color: var(--rust-deep); }
+
+.scrapbook-board-grid .seed-provenance {
+  margin-top: 7px;
+  border-color: rgba(43,38,32,0.23);
+}
+
+.scrapbook-board-grid .seed-provenance summary {
+  color: var(--ink-soft);
+  font-size: 8.5px;
+  padding: 5px 16px 5px 0;
+}
+
+.scrapbook-board-grid .seed-actions {
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.scrapbook-board-grid .seed-start,
+.scrapbook-board-grid .seed-return {
+  min-height: 28px;
+  padding: 3px 6px;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+}
+
+.scrapbook-board-grid .seed-return { color: var(--ink-soft); }
+
+.scrapbook-page-note {
+  display: grid;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.scrapbook-page-note > span {
+  color: var(--ink-soft);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+}
+
+.scrapbook-page-note textarea {
+  width: 100%;
+  resize: vertical;
+  background: rgba(255,255,255,0.28);
+  border: 1px solid rgba(43,38,32,0.32);
+  border-radius: 0;
+  color: var(--ink);
+  font-family: var(--serif);
+  line-height: 1.65;
+  padding: 8px 9px;
+}
+
+.scrapbook-page-note textarea:focus { outline: none; border-color: var(--rust-deep); }
+
+.scrapbook-board-pane .scrapbook-builder { margin-top: 15px; }
+
+.scrapbook-pages {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-dark);
+}
+
+.scrapbook-pages header {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr);
+  gap: 1px 14px;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.scrapbook-pages header .scrapbook-kicker { grid-row: 1 / span 2; }
+
+.scrapbook-pages header h3 {
+  color: var(--milk);
+  font-size: 16px;
+}
+
+.scrapbook-pages header > p:last-child {
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+.scrapbook-session-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.scrapbook-session {
+  border: 1px solid var(--line-dark);
+  background: rgba(255,255,255,0.025);
+  padding: 11px 12px 9px;
+}
+
+.scrapbook-session.is-active { border-color: rgba(156,130,63,0.75); }
+
+.scrapbook-session > p:first-child {
+  color: var(--brass);
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+}
+
+.scrapbook-session h4 {
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  margin: 3px 0 5px;
+}
+
+.scrapbook-session-note {
+  color: var(--milk-dim);
+  display: -webkit-box;
+  font-size: 10.5px;
+  line-height: 1.55;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.scrapbook-session .seed-actions { margin-top: 7px; }
+.scrapbook-session .seed-start,
+.scrapbook-session .seed-return { min-height: 30px; padding: 3px 7px; font-size: 10px; }
+
+.scrapbook-sessions-empty {
+  color: var(--milk-dim);
+  font-family: var(--serif);
+  font-size: 12px;
+  padding: 12px 0;
+}
+
 .seeds-note {
   margin-top: 16px;
   font-size: 11px;
   color: rgba(240,231,214,0.38);
   line-height: 1.9;
+}
+
+/* 横幅を使える画面では12枚を一枚の紙面として保ち、狭くなる時だけ段を増やす。 */
+@media (max-width: 1099px) {
+  .scrapbook-workspace { grid-template-columns: 1fr; }
+  .scrapbook-deck { position: static; padding-top: 4px; }
+}
+
+@media (max-width: 720px) {
+  .scrapbook-index-head { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .scrapbook-index-head > p { text-align: left; }
+  .scrapbook-page-index .scrapbook-session { flex-basis: min(238px, 76vw); }
+  .scrapbook-page-controls { grid-template-columns: 1fr auto; }
+  #scrapbook-save-status { grid-column: 1 / -1; padding-bottom: 0; }
+  .scrapbook-session-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .scrapbook-board { padding: 10px; }
+  .scrapbook-board-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(6, minmax(168px, auto));
+  }
+}
+
+@media (max-width: 560px) {
+  .scrapbook-page-controls { grid-template-columns: 1fr; }
+  .scrapbook-page-actions { width: 100%; }
+  .scrapbook-page-actions button { flex: 1 1 0; }
+  .scrapbook-session-list { grid-template-columns: 1fr; }
 }
 
 /* ============ 場面問答 ============ */
@@ -2757,6 +3655,9 @@ textarea, input[type="text"] {
 }
 
 @media (max-width: 899px) {
+  .scrapbook-workspace { grid-template-columns: 1fr; gap: 22px; }
+  .scrapbook-rail { position: static; }
+
   .db-wrap {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -2851,10 +3752,22 @@ textarea, input[type="text"] {
   .stage-history-actions .stage-export { flex-basis: 100%; }
   .stage-piece-buttons { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .stage-piece-buttons button { font-size: 10px; }
-  .seed-source-mode { width: 100%; }
-  .seed-source-mode button { flex: 1 1 0; padding-left: 10px; padding-right: 10px; }
-  .seed-source-mode button[aria-pressed="true"]::after { left: 9px; right: 9px; }
   .seed-dealt { grid-template-columns: 1fr; }
+  .scrapbook-rail { margin-left: -2px; margin-right: -2px; padding: 15px 13px; }
+  .scrapbook-rail-head { align-items: baseline; }
+  .scrapbook-rail-count { max-width: 9.5em; }
+  .scrapbook-page-index { margin-left: -2px; margin-right: -2px; padding: 13px 11px; }
+  .scrapbook-book { padding-left: 31px; }
+  .scrapbook-book-spine { width: 34px; }
+  .scrapbook-board-pane { margin-left: -2px; margin-right: -2px; padding: 15px 12px 18px 39px; }
+  .scrapbook-board-pane::before { left: 12px; }
+  .scrapbook-board-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(12, minmax(166px, auto));
+  }
+  .scrapbook-clip .seed-actions { align-items: stretch; flex-direction: column; }
+  .scrapbook-clip .seed-start,
+  .scrapbook-clip .seed-return { width: 100%; }
   .db-lens-list { grid-template-columns: 1fr; }
   .db-search { grid-template-columns: 1fr; }
   .db-search input,
