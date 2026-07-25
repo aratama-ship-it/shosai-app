@@ -706,17 +706,22 @@
       target.stroke();
     });
 
-    // ビッグトップのリング（床に描かれた円）
+    // ビッグトップのリングは舞台面に描かれた円なので、床の台形の中に収める。
+    // 幅は最前列基準の pxPerM ではなく、リングが置かれる奥行きでの舞台幅から出す。
+    // 縦は奥行き方向の潰れ方に従う（低い席ほど扁平になる）。
     if (L.size.ring) {
-      const ringW = L.size.ring * L.pxPerM;
+      const vRing = 0.5;
+      const center = place(0.5, vRing, L);
+      const widthAtRing = L.backW + vRing * (L.frontW - L.backW);
+      const rx = (L.size.ring / L.size.width) * widthAtRing / 2;
+      const ry = (L.size.ring / L.size.depth) * (L.bottomY - L.floorY) / 2;
       target.save();
       target.strokeStyle = "rgba(168,75,38,0.5)";
       target.lineWidth = 3;
       target.beginPath();
-      target.ellipse(L.centerX + (L.shift || 0) * 0.45, L.floorY + (L.bottomY - L.floorY) * 0.55,
-        ringW / 2, ringW / 9, 0, 0, Math.PI * 2);
+      target.ellipse(center.x, center.y, rx, ry, 0, 0, Math.PI * 2);
       target.stroke();
-      label(target, `リング 直径${L.size.ring}m`, L.centerX, L.bottomY - 16);
+      label(target, `リング 直径${L.size.ring}m`, center.x, Math.min(center.y + ry + 17, H - 12));
       target.restore();
     }
 
