@@ -5143,3 +5143,85 @@ textarea, input[type="text"] {
 .stage-col .stage-scene-meta { grid-template-columns: 1fr; }
 
 .stage-col .stage-scene-actions { margin-bottom: 8px; }
+
+/* ===== 舞台スケッチ: 文字を詰める =====
+   道具の数が多く、パネルを畳んで縦を稼ぐ設計なので、
+   ボタンの字も詰めて1行に収める。折り返しは作らない。 */
+
+.stage-panel button,
+.stage-panel .btn-quiet,
+.stage-panel label,
+.stage-seat-strip button,
+.stage-center-bar button {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.stage-panel .btn-quiet {
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.stage-io-row .btn-quiet,
+.stage-io-row .stage-import-label {
+  padding: 7px 6px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.stage-version-row .btn-quiet { padding: 7px 12px; }
+
+/* 操作・コマを置く・重なり操作のボタン */
+.stage-tool-grid button,
+.stage-piece-buttons button,
+.stage-layer-actions button,
+.stage-minor-action,
+.stage-delete {
+  min-height: 34px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 5px 6px;
+}
+
+/* 場面の操作は数が多いので、さらに詰める */
+.stage-scene-actions button {
+  min-height: 28px;
+  padding: 3px 9px;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.stage-seat-strip .stage-seat {
+  min-height: 28px;
+  padding: 3px 10px;
+  font-size: 10px;
+}
+
+.stage-seat-strip .stage-compare {
+  min-height: 28px;
+  font-size: 10px;
+  padding: 4px 10px;
+}
+
+.stage-center-bar button { min-height: 27px; padding: 3px 10px; font-size: 10px; }
+
+/* 入力欄も同じ調子に揃える */
+.stage-panel .stage-text-input,
+.stage-panel .stage-select {
+  min-height: 32px;
+  font-size: 11.5px;
+  padding: 5px 8px;
+}
+
+.stage-panel .stage-toggle {
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.stage-panel .stage-field-label,
+.stage-panel .stage-control-label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
