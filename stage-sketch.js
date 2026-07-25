@@ -214,8 +214,9 @@
     const plan = state.view === "plan";
 
     if (plan) {
-      // 平面図: 上が奥、下が客席側。舞台の縦横比を保って収める
-      const pad = 96;
+      // 平面図: 上が奥、下が客席側。舞台の縦横比を保って収める。
+      // 全周形式は客席が四方に要るので、舞台の取り分を減らす。
+      const pad = v.audience === "round" ? 176 : 104;
       const availW = W - pad * 2;
       const availH = H - pad * 2;
       const ratio = size.depth / size.width;
@@ -749,15 +750,15 @@
     } else if (v.audience === "round") {
       const cx = s.x + s.w / 2;
       const cy = s.y + s.h / 2;
-      const outer = Math.max(s.w, s.h) / 2 + 96;
+      const base = Math.max(s.w, s.h) / 2;
       target.strokeStyle = "rgba(239,231,214,0.12)";
       target.lineWidth = 1;
       for (let i = 1; i <= 5; i += 1) {
         target.beginPath();
-        target.arc(cx, cy, Math.max(s.w, s.h) / 2 + i * 19, 0, Math.PI * 2);
+        target.arc(cx, cy, base + i * 19, 0, Math.PI * 2);
         target.stroke();
       }
-      label(target, "客席が全周を囲む", cx, cy + outer + 4);
+      label(target, "客席が全周を囲む", cx, Math.min(cy + base + 5 * 19 + 16, H - 44));
     }
     target.restore();
 
@@ -836,8 +837,7 @@
     // 距離の目安は言葉で添える。
     if (v.audience !== "none") {
       const limit = VENUES.sightLimits[0];
-      label(target, `客席の広がりは方向を示すもので、実際の距離ではありません（${limit.m}mで${limit.label}）`,
-        W / 2, H - 18);
+      label(target, `客席の広がりは方向の目安です（${limit.m}mで${limit.label}）`, W / 2, H - 16);
     }
   }
 
