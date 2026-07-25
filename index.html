@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=49">
+<link rel="stylesheet" href="style.css?v=50">
 </head>
 <body>
 
@@ -196,9 +196,9 @@
       </header>
 
       <div class="stage-sketch-grid">
-        <aside class="stage-toolbox" aria-label="舞台スケッチの道具">
-          <section class="stage-tool-section stage-project-section">
-            <h2>ショー</h2>
+        <aside class="stage-toolbox stage-col" data-col="left" id="stage-col-left" aria-label="左の道具列">
+          <section class="stage-panel stage-project-section" data-panel="project" data-title="ショー">
+            <div class="stage-panel-body">
             <input id="stage-project-title" class="stage-text-input" type="text"
                    maxlength="60" placeholder="無題のショー" aria-label="ショーの名前">
             <div class="stage-version-row">
@@ -213,10 +213,11 @@
                 読み込む<input type="file" id="stage-import-json" accept="application/json" hidden>
               </label>
             </div>
+            </div>
           </section>
 
-          <section class="stage-tool-section stage-venue-section">
-            <h2>劇場を選ぶ</h2>
+          <section class="stage-panel stage-venue-section" data-panel="venue" data-title="劇場を選ぶ">
+            <div class="stage-panel-body">
             <div class="stage-field-row">
               <label class="stage-field-label" for="stage-venue-select">形式</label>
               <select id="stage-venue-select" class="stage-select"></select>
@@ -227,10 +228,11 @@
             </div>
             <p class="stage-venue-note" id="stage-venue-note"></p>
             <p class="stage-venue-scale" id="stage-venue-scale"></p>
+            </div>
           </section>
 
-          <section class="stage-tool-section">
-            <h2>見る向き</h2>
+          <section class="stage-panel" data-panel="views" data-title="見る向き">
+            <div class="stage-panel-body">
             <div class="stage-view-toggles" role="group" aria-label="表示する視点">
               <label class="stage-toggle">
                 <input type="checkbox" id="stage-show-front" checked>
@@ -246,27 +248,22 @@
               <input type="checkbox" id="stage-show-names" checked>
               <span>コマの名前を出す</span>
             </label>
+            </div>
           </section>
 
-          <section class="stage-tool-section" id="stage-seat-section">
-            <h2>どの席から見るか</h2>
-            <div class="stage-seat-list" id="stage-seat-list" role="group" aria-label="客席の位置"></div>
-            <p class="stage-seat-note" id="stage-seat-note"></p>
-            <button type="button" class="stage-compare" id="stage-compare">4つの席を並べて書き出す</button>
-          </section>
-
-          <section class="stage-tool-section">
-            <h2>操作</h2>
+          <section class="stage-panel" data-panel="tools" data-title="操作">
+            <div class="stage-panel-body">
             <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
               <button type="button" data-stage-tool="select" aria-pressed="true">動かす</button>
               <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
               <button type="button" data-stage-tool="erase" aria-pressed="false">塗りを消す</button>
             </div>
             <p class="stage-tool-hint" id="stage-tool-hint">コマを選び、ステージ上で動かします。</p>
+            </div>
           </section>
 
-          <section class="stage-tool-section">
-            <h2>コマを置く</h2>
+          <section class="stage-panel" data-panel="pieces" data-title="コマを置く">
+            <div class="stage-panel-body">
             <div class="stage-piece-buttons">
               <button type="button" data-stage-add="performer">人物コマ</button>
               <button type="button" data-stage-add="block">台・物</button>
@@ -283,10 +280,11 @@
                 <button type="button" data-stage-piece-color="#8b98a1" style="--stage-swatch:#8b98a1" aria-label="青灰色"></button>
               </div>
             </div>
+            </div>
           </section>
 
-          <section class="stage-tool-section" id="stage-bg-section">
-            <h2>背景</h2>
+          <section class="stage-panel" data-panel="background" data-title="背景" id="stage-bg-section">
+            <div class="stage-panel-body">
             <label class="stage-control-label" for="stage-bg-color">地の色</label>
             <div class="stage-color-row">
               <input type="color" id="stage-bg-color" value="#40362d" aria-label="背景の地の色">
@@ -312,13 +310,13 @@
             </label>
             <input type="range" id="stage-brush-size" min="12" max="120" step="2" value="42">
             <button type="button" class="stage-minor-action" id="stage-clear-paint">背景の塗りだけ消す</button>
+            </div>
           </section>
         </aside>
 
-        <section class="stage-board-column" aria-label="舞台面">
-          <section class="stage-scenes" aria-label="場面の一覧">
-            <div class="stage-scenes-head">
-              <h2>場面</h2>
+        <section class="stage-board-column stage-col-center" data-col="center" id="stage-col-center" aria-label="舞台面">
+          <section class="stage-panel stage-scenes" data-panel="scenes" data-title="場面" aria-label="場面の一覧">
+            <div class="stage-panel-body">
               <div class="stage-scene-actions">
                 <button type="button" id="stage-scene-add" class="btn-quiet">場面を足す</button>
                 <button type="button" id="stage-scene-dup" class="btn-quiet">複製</button>
@@ -336,16 +334,33 @@
             </div>
           </section>
 
+          <div class="stage-center-bar">
+            <button type="button" id="stage-swap-center" class="btn-quiet">正面と平面を入れ替える</button>
+          </div>
           <div class="stage-canvas-stack" id="stage-canvas-stack">
             <div class="stage-board-frame" id="stage-front-cell">
-              <p class="stage-canvas-caption" id="stage-front-caption">正面</p>
+              <div class="stage-canvas-bar">
+                <p class="stage-canvas-caption" id="stage-front-caption">正面</p>
+                <button type="button" class="stage-canvas-close" data-close-view="front"
+                        aria-label="正面の絵を閉じる">✕</button>
+              </div>
+              <section class="stage-seat-strip" id="stage-seat-section">
+              <div class="stage-seat-list" id="stage-seat-list" role="group" aria-label="客席の位置"></div>
+              <p class="stage-seat-note" id="stage-seat-note"></p>
+              <button type="button" class="stage-compare" id="stage-compare">4つの席を並べて書き出す</button>
+          </section>
+
               <div class="stage-depth-label stage-depth-back" id="stage-depth-back">奥・背景</div>
               <canvas id="stage-canvas" width="1280" height="720" tabindex="0"
                       role="img" aria-label="人物コマと物を配置し、背景を塗れる正面から見た舞台"></canvas>
               <div class="stage-depth-label stage-depth-front" id="stage-depth-front">手前・客席側</div>
             </div>
             <div class="stage-board-frame" id="stage-plan-cell" hidden>
-              <p class="stage-canvas-caption">平面（上から）</p>
+              <div class="stage-canvas-bar">
+                <p class="stage-canvas-caption">平面（上から）</p>
+                <button type="button" class="stage-canvas-close" data-close-view="plan"
+                        aria-label="平面の絵を閉じる">✕</button>
+              </div>
               <div class="stage-depth-label stage-depth-back">奥（背面）</div>
               <canvas id="stage-plan-canvas" width="1280" height="720" tabindex="0"
                       role="img" aria-label="舞台と客席を上から見た平面図"></canvas>
@@ -355,9 +370,9 @@
           <p class="stage-canvas-help">コマは上下で奥行き、左右で立ち位置を決めます。選択中は矢印キーでも動かせます。</p>
         </section>
 
-        <aside class="stage-inspector" aria-label="選んだコマ">
-          <section class="stage-tool-section">
-            <h2>選んだコマ</h2>
+        <aside class="stage-inspector stage-col" data-col="right" id="stage-col-right" aria-label="右の道具列">
+          <section class="stage-panel" data-panel="inspector" data-title="選んだコマ">
+            <div class="stage-panel-body">
             <p class="stage-selection-empty" id="stage-selection-empty">舞台上のコマを選ぶと、色・大きさ・重なりを調整できます。</p>
             <div id="stage-selection-controls" hidden>
               <p class="stage-selected-name" id="stage-selected-name"></p>
@@ -377,9 +392,11 @@
               <button type="button" class="stage-minor-action" id="stage-duplicate">複製する</button>
               <button type="button" class="stage-delete" id="stage-delete">このコマを外す</button>
             </div>
+            </div>
           </section>
 
-          <section class="stage-save-note">
+          <section class="stage-panel stage-save-note" data-panel="save" data-title="保存">
+            <div class="stage-panel-body">
             <h2>保存</h2>
             <p id="stage-save-status">変更はこの端末のブラウザ内へ自動保存します。</p>
             <button type="button" class="stage-minor-action" id="stage-clear">舞台を空にする</button>
@@ -562,7 +579,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=3"></script>
-<script src="stage-sketch.js?v=15"></script>
+<script src="stage-sketch.js?v=16"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

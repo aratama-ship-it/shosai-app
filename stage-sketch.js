@@ -163,10 +163,51 @@
       showPlan: false,
       showNames: true,
       seat: "center",
+      // パネルの置き場所と開閉。中央は絵の順序だけを持つ
+      layout: defaultLayout(),
       pieceColor: "#a84b26",
       paintColor: "#efe7d6",
       brushSize: 42,
     };
+  }
+
+  /* ---------- パネルの配置 ----------
+     どの道具をどちら側へ置くかは人によって違う。列を移せるようにし、
+     使わないものは畳めるようにする。中央は絵だけで、上下の入れ替えのみ。 */
+  const PANELS = ["project", "venue", "views", "tools", "pieces", "background", "scenes", "inspector", "save"];
+
+  function defaultLayout() {
+    return {
+      // 場面は絵のすぐ右に置く（順番を見ながら描くため）
+      cols: {
+        project: "left", venue: "left", views: "left", tools: "left", pieces: "left", background: "left",
+        scenes: "right", inspector: "right", save: "right",
+      },
+      order: {
+        project: 0, venue: 1, views: 2, tools: 3, pieces: 4, background: 5,
+        scenes: 0, inspector: 1, save: 2,
+      },
+      collapsed: {},
+      centerOrder: ["front", "plan"],
+    };
+  }
+
+  function normalizeLayout(raw) {
+    const base = defaultLayout();
+    if (!raw || typeof raw !== "object") return base;
+    const cols = {};
+    const order = {};
+    const collapsed = {};
+    PANELS.forEach((id) => {
+      const c = raw.cols && raw.cols[id];
+      cols[id] = c === "left" || c === "right" ? c : base.cols[id];
+      const o = raw.order && Number(raw.order[id]);
+      order[id] = Number.isFinite(o) ? o : base.order[id];
+      collapsed[id] = Boolean(raw.collapsed && raw.collapsed[id]);
+    });
+    const co = Array.isArray(raw.centerOrder) ? raw.centerOrder.filter((x) => x === "front" || x === "plan") : [];
+    const centerOrder = co.length === 2 ? co : base.centerOrder;
+    return { cols, order, collapsed, centerOrder };
   }
 
   // いま開いている場面
@@ -278,6 +319,7 @@
       showFront: raw.showFront === undefined ? raw.view !== "plan" : Boolean(raw.showFront),
       showPlan: raw.showPlan === undefined ? raw.view === "plan" : Boolean(raw.showPlan),
       showNames: raw.showNames === undefined ? true : Boolean(raw.showNames),
+      layout: normalizeLayout(raw.layout),
       seat: VENUES.seatById(typeof raw.seat === "string" ? raw.seat : "").id,
       pieceColor: validColor(raw.pieceColor, fallback.pieceColor),
       paintColor: validColor(raw.paintColor, fallback.paintColor),
@@ -414,6 +456,7 @@
     state = normalizeState(JSON.parse(value));
     if (!sc().pieces.some((piece) => piece.id === selectedId)) selectedId = null;
     syncInputs();
+    applyLayout();
     renderScenes();
     renderVenueControls();
     updateInspector();
@@ -1092,6 +1135,152 @@
 
   /* ---------- 劇場のUI ---------- */
 
+  /* ---------- パネルの組み立てと並べ替え ---------- */
+
+  const colEls = {
+    left: document.getElementById("stage-col-left"),
+    right: document.getElementById("stage-col-right"),
+    center: document.getElementById("stage-col-center"),
+  };
+  let dragging = null;
+
+  function panelEl(id) {
+    return document.querySelector(`[data-panel="${id}"]`);
+  }
+
+  // 各パネルの頭にタイトル・畳むボタン・つまみを付ける（初回だけ）
+  function buildPanelHeads() {
+    PANELS.forEach((id) => {
+      const el = panelEl(id);
+      if (!el || el.querySelector(".stage-panel-head")) return;
+      const head = document.createElement("button");
+      head.type = "button";
+      head.className = "stage-panel-head";
+      head.dataset.panelHead = id;
+      head.setAttribute("aria-expanded", "true");
+
+      const grip = document.createElement("span");
+      grip.className = "stage-panel-grip";
+      grip.textContent = "⠿";
+      grip.setAttribute("aria-hidden", "true");
+
+      const title = document.createElement("span");
+      title.className = "stage-panel-title";
+      title.textContent = el.dataset.title || id;
+
+      const mark = document.createElement("span");
+      mark.className = "stage-panel-mark";
+      mark.setAttribute("aria-hidden", "true");
+
+      head.append(grip, title, mark);
+      head.addEventListener("click", () => togglePanel(id));
+      el.prepend(head);
+
+      // つまみからドラッグする。パネル全体を掴むと中の操作ができなくなる
+      el.draggable = false;
+      grip.draggable = true;
+      grip.addEventListener("dragstart", (e) => {
+        dragging = id;
+        el.classList.add("is-dragging");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", id);
+      });
+      grip.addEventListener("dragend", () => {
+        dragging = null;
+        el.classList.remove("is-dragging");
+        document.querySelectorAll(".stage-col").forEach((c) => c.classList.remove("is-over"));
+      });
+    });
+  }
+
+  function togglePanel(id) {
+    state.layout.collapsed[id] = !state.layout.collapsed[id];
+    applyLayout();
+    persistSoon();
+  }
+
+  // 状態に従って、パネルを列へ並べ直す
+  function applyLayout() {
+    const L = state.layout;
+    ["left", "right"].forEach((col) => {
+      const ids = PANELS.filter((id) => L.cols[id] === col).sort((a, b) => L.order[a] - L.order[b]);
+      ids.forEach((id) => {
+        const el = panelEl(id);
+        if (el && colEls[col]) colEls[col].append(el);
+      });
+    });
+    PANELS.forEach((id) => {
+      const el = panelEl(id);
+      if (!el) return;
+      const collapsed = Boolean(L.collapsed[id]);
+      el.classList.toggle("is-collapsed", collapsed);
+      const head = el.querySelector(".stage-panel-head");
+      if (head) head.setAttribute("aria-expanded", String(!collapsed));
+      const body = el.querySelector(".stage-panel-body");
+      if (body) body.hidden = collapsed;
+    });
+    // 中央は絵の順序だけ
+    const stack = els.canvasStack;
+    if (stack) {
+      L.centerOrder.forEach((which) => {
+        const cell = which === "front" ? els.frontCell : els.planCell;
+        if (cell) stack.append(cell);
+      });
+    }
+  }
+
+  function setupDropZones() {
+    Object.entries(colEls).forEach(([col, el]) => {
+      if (!el || col === "center") return;
+      el.addEventListener("dragover", (e) => {
+        if (!dragging) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        el.classList.add("is-over");
+      });
+      el.addEventListener("dragleave", () => el.classList.remove("is-over"));
+      el.addEventListener("drop", (e) => {
+        if (!dragging) return;
+        e.preventDefault();
+        el.classList.remove("is-over");
+        const id = dragging;
+        // 落とした位置から、その列での順番を決める
+        const siblings = PANELS
+          .filter((x) => x !== id && state.layout.cols[x] === col)
+          .map((x) => ({ id: x, el: panelEl(x) }))
+          .filter((x) => x.el);
+        let index = siblings.length;
+        for (let i = 0; i < siblings.length; i += 1) {
+          const r = siblings[i].el.getBoundingClientRect();
+          if (e.clientY < r.top + r.height / 2) { index = i; break; }
+        }
+        state.layout.cols[id] = col;
+        const reordered = siblings.map((x) => x.id);
+        reordered.splice(index, 0, id);
+        reordered.forEach((x, i) => { state.layout.order[x] = i; });
+        applyLayout();
+        persistSoon();
+        announce(`${panelEl(id).dataset.title}を${col === "left" ? "左" : "右"}の列へ移しました。`);
+      });
+    });
+
+    // 中央の絵は上下の入れ替えだけ
+    [els.frontCell, els.planCell].filter(Boolean).forEach((cell) => {
+      cell.addEventListener("dragover", (e) => {
+        if (!dragging) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "none";
+      });
+    });
+  }
+
+  function swapCenter() {
+    state.layout.centerOrder = state.layout.centerOrder.slice().reverse();
+    applyLayout();
+    persistSoon();
+    announce(`${state.layout.centerOrder[0] === "front" ? "正面" : "平面"}を上にしました。`);
+  }
+
   /* ---------- 場面とプロジェクト ---------- */
 
   function renderScenes() {
@@ -1678,6 +1867,12 @@
   if (els.venueSelect) {
     els.venueSelect.addEventListener("change", (e) => setVenue(e.target.value));
   }
+  document.querySelectorAll("[data-close-view]").forEach((button) => {
+    button.addEventListener("click", () => setViewShown(button.dataset.closeView, false));
+  });
+  const swapBtn = document.getElementById("stage-swap-center");
+  if (swapBtn) swapBtn.addEventListener("click", swapCenter);
+
   if (els.showNames) {
     els.showNames.addEventListener("change", (e) => {
       state.showNames = e.target.checked;
@@ -1930,6 +2125,9 @@
     });
   }
 
+  buildPanelHeads();
+  setupDropZones();
+  applyLayout();
   syncInputs();
   renderScenes();
   renderVenueControls();
