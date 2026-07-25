@@ -18,7 +18,11 @@
   const VENUES = window.SHOSAI_VENUES;
   if (!VENUES) return;
 
+  const planCanvas = document.getElementById("stage-plan-canvas");
   const ctx = canvas.getContext("2d", { alpha: false });
+  const planCtx = planCanvas ? planCanvas.getContext("2d", { alpha: false }) : null;
+  // どちらのキャンバスがどの視点かを引く
+  const viewOf = (el) => (el === planCanvas ? "plan" : "front");
   const paintCanvas = document.createElement("canvas");
   paintCanvas.width = canvas.width;
   paintCanvas.height = canvas.height;
@@ -71,11 +75,16 @@
     clear: document.getElementById("stage-clear"),
     saveStatus: document.getElementById("stage-save-status"),
     live: document.getElementById("stage-live"),
-    venueList: document.getElementById("stage-venue-list"),
-    sizeList: document.getElementById("stage-size-list"),
+    venueSelect: document.getElementById("stage-venue-select"),
+    sizeSelect: document.getElementById("stage-size-select"),
+    showFront: document.getElementById("stage-show-front"),
+    showPlan: document.getElementById("stage-show-plan"),
+    frontCell: document.getElementById("stage-front-cell"),
+    planCell: document.getElementById("stage-plan-cell"),
+    canvasStack: document.getElementById("stage-canvas-stack"),
+    frontCaption: document.getElementById("stage-front-caption"),
     venueNote: document.getElementById("stage-venue-note"),
     venueScale: document.getElementById("stage-venue-scale"),
-    viewButtons: document.querySelectorAll("[data-stage-view]"),
     seatSection: document.getElementById("stage-seat-section"),
     seatList: document.getElementById("stage-seat-list"),
     seatNote: document.getElementById("stage-seat-note"),
@@ -100,7 +109,8 @@
       version: 2,
       venue: "proscenium",
       venueSize: "mid",
-      view: "front",
+      showFront: true,
+      showPlan: false,
       seat: "center",
       background: "#40362d",
       pieceColor: "#a84b26",
@@ -175,7 +185,9 @@
       version: 2,
       venue: venue.id,
       venueSize: size.id,
-      view: raw.view === "plan" ? "plan" : "front",
+      // 旧版は view: "front"|"plan" の排他だった。少なくとも片方は必ず開く
+      showFront: raw.showFront === undefined ? raw.view !== "plan" : Boolean(raw.showFront),
+      showPlan: raw.showPlan === undefined ? raw.view === "plan" : Boolean(raw.showPlan),
       seat: VENUES.seatById(typeof raw.seat === "string" ? raw.seat : "").id,
       background: validColor(raw.background, fallback.background),
       pieceColor: validColor(raw.pieceColor, fallback.pieceColor),
@@ -214,10 +226,10 @@
   /* ---------- レイアウト ----------
      舞台は常に画面いっぱいに描く。実寸の違いは「人の小ささ」として出る。 */
 
-  function layout() {
+  function layout(view) {
     const v = venue();
     const size = venueSize();
-    const plan = state.view === "plan";
+    const plan = view === "plan";
 
     if (plan) {
       // 平面図: 上が奥、下が客席側。舞台の縦横比を保って収める。
@@ -863,8 +875,8 @@
     }
   }
 
-  function drawStage(target, showSelection) {
-    const L = layout();
+  function drawStage(target, showSelection, view) {
+    const L = layout(view);
     buildPaintLayer(L);
     target.save();
     target.clearRect(0, 0, W, H);
@@ -905,17 +917,31 @@
   }
 
   function render() {
-    drawStage(ctx, true);
     const v = venue();
     const size = venueSize();
     const counts = Object.keys(PIECE_TYPES)
       .map((type) => `${PIECE_TYPES[type]}${state.pieces.filter((piece) => piece.type === type).length}`)
       .join("、");
-    canvas.setAttribute(
-      "aria-label",
-      `${v.label}（${size.label}）を${state.view === "plan" ? "上から見た平面図" : VENUES.seatById(state.seat).label + "から見た正面図"}。${counts}。背景の線${state.strokes.length}本。`);
-    if (els.depthLabelBack) els.depthLabelBack.textContent = state.view === "plan" ? "奥（背面）" : "奥・背景";
-    if (els.depthLabelFront) els.depthLabelFront.textContent = state.view === "plan" ? "手前（客席側）" : "手前・客席側";
+
+    if (els.frontCell) els.frontCell.hidden = !state.showFront;
+    if (els.planCell) els.planCell.hidden = !state.showPlan;
+    if (els.canvasStack) {
+      els.canvasStack.dataset.both = String(state.showFront && state.showPlan);
+    }
+
+    if (state.showFront) {
+      drawStage(ctx, true, "front");
+      canvas.setAttribute("aria-label",
+        `${v.label}（${size.label}）を${VENUES.seatById(state.seat).label}から見た正面図。${counts}。背景の線${state.strokes.length}本。`);
+    }
+    if (state.showPlan && planCtx) {
+      drawStage(planCtx, true, "plan");
+      planCanvas.setAttribute("aria-label",
+        `${v.label}（${size.label}）を上から見た平面図。${counts}。`);
+    }
+    if (els.frontCaption) {
+      els.frontCaption.textContent = `正面 — ${VENUES.seatById(state.seat).label}`;
+    }
   }
 
   /* ---------- 劇場のUI ---------- */
@@ -924,36 +950,26 @@
     const current = venue();
     const size = venueSize();
 
-    if (els.venueList) {
-      els.venueList.innerHTML = "";
+    if (els.venueSelect && !els.venueSelect.options.length) {
       VENUES.list.forEach((v) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "stage-venue";
-        button.setAttribute("aria-pressed", String(v.id === current.id));
-        const name = document.createElement("span");
-        name.className = "stage-venue-name";
-        name.textContent = v.label;
-        const sub = document.createElement("span");
-        sub.className = "stage-venue-sub";
-        sub.textContent = v.short;
-        button.append(name, sub);
-        button.addEventListener("click", () => setVenue(v.id));
-        els.venueList.append(button);
+        const opt = document.createElement("option");
+        opt.value = v.id;
+        opt.textContent = `${v.label}（${v.short}）`;
+        els.venueSelect.append(opt);
       });
     }
+    if (els.venueSelect) els.venueSelect.value = current.id;
 
-    if (els.sizeList) {
-      els.sizeList.innerHTML = "";
-      current.sizes.forEach((s) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "stage-size";
-        button.setAttribute("aria-pressed", String(s.id === size.id));
-        button.textContent = s.label;
-        button.addEventListener("click", () => setVenueSize(s.id));
-        els.sizeList.append(button);
+    if (els.sizeSelect) {
+      els.sizeSelect.innerHTML = "";
+      current.sizes.forEach((s2) => {
+        const opt = document.createElement("option");
+        opt.value = s2.id;
+        const bits = s2.ring ? `リング${s2.ring}m` : `${s2.width}×${s2.depth}m`;
+        opt.textContent = `${s2.label} — ${bits}`;
+        els.sizeSelect.append(opt);
       });
+      els.sizeSelect.value = size.id;
     }
 
     if (els.venueNote) els.venueNote.textContent = current.note;
@@ -966,13 +982,12 @@
       els.venueScale.textContent = bits.join(" ・ ") + `（${current.source}）`;
     }
 
-    els.viewButtons.forEach((button) => {
-      button.setAttribute("aria-pressed", String(button.dataset.stageView === state.view));
-    });
+    if (els.showFront) els.showFront.checked = state.showFront;
+    if (els.showPlan) els.showPlan.checked = state.showPlan;
 
-    // 席は正面図のときだけ意味を持つ（平面図に「どこから見るか」は無い）
+    // 席は正面図を出しているときだけ意味を持つ
     const seat = VENUES.seatById(state.seat);
-    if (els.seatSection) els.seatSection.hidden = state.view === "plan";
+    if (els.seatSection) els.seatSection.hidden = !state.showFront;
     if (els.seatList) {
       els.seatList.innerHTML = "";
       VENUES.seats.forEach((s2) => {
@@ -997,6 +1012,27 @@
     announce(`${VENUES.seatById(id).label}から見た絵に切り替えました。配置は変わりません。`);
   }
 
+  // 正面と平面はそれぞれ独立に開閉する。ただし両方閉じることはできない
+  function setViewShown(which, shown) {
+    const other = which === "front" ? "showPlan" : "showFront";
+    const key = which === "front" ? "showFront" : "showPlan";
+    if (!shown && !state[other]) {
+      renderVenueControls();
+      announce("どちらか一方は開いたままにします。");
+      return;
+    }
+    state[key] = shown;
+    if (!state.showFront && tool !== "select") setTool("select");
+    selectedId = null;
+    renderVenueControls();
+    updateInspector();
+    render();
+    persistSoon();
+    announce(shown
+      ? `${which === "front" ? "正面" : "平面"}を開きました。`
+      : `${which === "front" ? "正面" : "平面"}を閉じました。`);
+  }
+
   function setVenue(id) {
     if (state.venue === id) return;
     checkpoint();
@@ -1018,21 +1054,12 @@
     announce(`規模を${venueSize().label}にしました。`);
   }
 
-  function setView(next) {
-    if (state.view === next) return;
-    state.view = next;
-    selectedId = null;
-    renderVenueControls();
-    updateInspector();
-    render();
-    persistSoon();
-    announce(next === "plan" ? "上から見た平面図へ切り替えました。" : "客席から見た正面図へ切り替えました。");
-  }
 
   /* ---------- 操作 ---------- */
 
   function pointFromEvent(event) {
-    const rect = canvas.getBoundingClientRect();
+    const el = event.currentTarget;
+    const rect = el.getBoundingClientRect();
     return {
       x: (event.clientX - rect.left) * (W / rect.width),
       y: (event.clientY - rect.top) * (H / rect.height),
@@ -1060,8 +1087,8 @@
   }
 
   function setTool(nextTool) {
-    if (state.view === "plan" && nextTool !== "select") {
-      announce("背景の塗りは正面図で行います。");
+    if (!state.showFront && nextTool !== "select") {
+      announce("背景の塗りは正面図で行います。正面を開いてください。");
       return;
     }
     tool = nextTool;
@@ -1153,17 +1180,20 @@
 
   function finishPointer(event) {
     if (!pointerAction || pointerAction.pointerId !== event.pointerId) return;
-    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    const el = pointerAction.el || canvas;
+    if (el.hasPointerCapture(event.pointerId)) el.releasePointerCapture(event.pointerId);
     const changed = pointerAction.kind === "stroke" || pointerAction.moved;
     pointerAction = null;
-    canvas.dataset.dragging = "false";
+    el.dataset.dragging = "false";
     if (changed) persistSoon();
   }
 
-  canvas.addEventListener("pointerdown", (event) => {
-    const L = layout();
+  function onPointerDown(event) {
+    const el = event.currentTarget;
+    const view = viewOf(el);
+    const L = layout(view);
     const point = pointFromEvent(event);
-    canvas.focus();
+    el.focus();
 
     if (tool === "select") {
       const hit = hitTest(point, L);
@@ -1172,13 +1202,19 @@
       render();
       if (!hit) return;
       const pos = place(hit.u, hit.v, L);
-      canvas.setPointerCapture(event.pointerId);
-      canvas.dataset.dragging = "true";
+      el.setPointerCapture(event.pointerId);
+      el.dataset.dragging = "true";
       pointerAction = {
-        kind: "drag", pointerId: event.pointerId, id: hit.id,
+        kind: "drag", pointerId: event.pointerId, id: hit.id, el, view,
         offsetX: point.x - pos.x, offsetY: point.y - pos.y,
         before: snapshot(), moved: false,
       };
+      return;
+    }
+
+    // 背景の塗りは正面図だけ（平面図に背景面は無い）
+    if (view === "plan") {
+      announce("背景の塗りは正面図で行います。");
       return;
     }
 
@@ -1195,14 +1231,14 @@
       points: [{ u: (point.x - rect.x) / rect.w, v: (point.y - rect.y) / rect.h }],
     };
     state.strokes.push(stroke);
-    canvas.setPointerCapture(event.pointerId);
-    pointerAction = { kind: "stroke", pointerId: event.pointerId, stroke, moved: true };
+    el.setPointerCapture(event.pointerId);
+    pointerAction = { kind: "stroke", pointerId: event.pointerId, stroke, el, view, moved: true };
     render();
-  });
+  }
 
-  canvas.addEventListener("pointermove", (event) => {
+  function onPointerMove(event) {
     if (!pointerAction || pointerAction.pointerId !== event.pointerId) return;
-    const L = layout();
+    const L = layout(pointerAction.view);
     const point = pointFromEvent(event);
 
     if (pointerAction.kind === "drag") {
@@ -1231,12 +1267,9 @@
       points.push(bounded);
       render();
     }
-  });
+  }
 
-  canvas.addEventListener("pointerup", finishPointer);
-  canvas.addEventListener("pointercancel", finishPointer);
-
-  canvas.addEventListener("keydown", (event) => {
+  function onKeyDown(event) {
     const piece = selectedPiece();
     if (!piece) return;
     if (event.key === "Delete" || event.key === "Backspace") {
@@ -1254,6 +1287,14 @@
     piece.v = clamp(piece.v + moves[event.key][1] * amount, 0, 1);
     render();
     persistSoon();
+  }
+
+  [canvas, planCanvas].filter(Boolean).forEach((el) => {
+    el.addEventListener("pointerdown", onPointerDown);
+    el.addEventListener("pointermove", onPointerMove);
+    el.addEventListener("pointerup", finishPointer);
+    el.addEventListener("pointercancel", finishPointer);
+    el.addEventListener("keydown", onKeyDown);
   });
 
   document.querySelectorAll("[data-stage-tool]").forEach((button) => {
@@ -1262,9 +1303,18 @@
   document.querySelectorAll("[data-stage-add]").forEach((button) => {
     button.addEventListener("click", () => addPiece(button.dataset.stageAdd));
   });
-  els.viewButtons.forEach((button) => {
-    button.addEventListener("click", () => setView(button.dataset.stageView));
-  });
+  if (els.showFront) {
+    els.showFront.addEventListener("change", (e) => setViewShown("front", e.target.checked));
+  }
+  if (els.showPlan) {
+    els.showPlan.addEventListener("change", (e) => setViewShown("plan", e.target.checked));
+  }
+  if (els.venueSelect) {
+    els.venueSelect.addEventListener("change", (e) => setVenue(e.target.value));
+  }
+  if (els.sizeSelect) {
+    els.sizeSelect.addEventListener("change", (e) => setVenueSize(e.target.value));
+  }
 
   document.querySelectorAll("[data-stage-piece-color]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -1365,7 +1415,10 @@
   els.clear.addEventListener("click", () => {
     if (!window.confirm("コマと背景の塗りをすべて消し、舞台を空にしますか？")) return;
     checkpoint();
-    const keep = { venue: state.venue, venueSize: state.venueSize, view: state.view };
+    const keep = {
+      venue: state.venue, venueSize: state.venueSize, seat: state.seat,
+      showFront: state.showFront, showPlan: state.showPlan,
+    };
     state = Object.assign(baseState(false), keep);
     selectedId = null;
     syncInputs();
@@ -1380,7 +1433,7 @@
     const output = document.createElement("canvas");
     output.width = W;
     output.height = H;
-    drawStage(output.getContext("2d", { alpha: false }), false);
+    drawStage(output.getContext("2d", { alpha: false }), false, state.showFront ? "front" : "plan");
     const now = new Date();
     const stamp = [
       now.getFullYear(),
@@ -1390,9 +1443,9 @@
       String(now.getMinutes()).padStart(2, "0"),
     ].join("");
     els.export.href = output.toDataURL("image/png");
-    els.export.download = state.view === "plan"
-      ? `stage-${state.venue}-plan-${stamp}.png`
-      : `stage-${state.venue}-${state.seat}-${stamp}.png`;
+    els.export.download = state.showFront
+      ? `stage-${state.venue}-${state.seat}-${stamp}.png`
+      : `stage-${state.venue}-plan-${stamp}.png`;
     announce("舞台スケッチをPNG画像として書き出しました。");
   });
 
@@ -1400,8 +1453,8 @@
   // 席を変えて描き直すだけなので、状態は一時的に借りて必ず戻す。
   if (els.compare) {
     els.compare.addEventListener("click", () => {
-      if (state.view === "plan") {
-        announce("席の比較は正面図で行います。");
+      if (!state.showFront) {
+        announce("席の比較は正面図で行います。正面を開いてください。");
         return;
       }
       const original = state.seat;
@@ -1422,7 +1475,7 @@
       try {
         VENUES.seats.forEach((seat, i) => {
           state.seat = seat.id;
-          drawStage(tileCtx, false);
+          drawStage(tileCtx, false, "front");
           const x = (i % cols) * W;
           const y = Math.floor(i / cols) * H;
           g.drawImage(tile, x, y);
