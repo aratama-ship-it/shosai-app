@@ -495,7 +495,7 @@ def validate_research_depth(works):
 # 項目を落とす。ガード条件としては別途 risk_of_cliche を使う。
 HEDGE_RE = re.compile(
     r"未確認|未詳|未調査|確認しない|確認できない|not_checked|not_applicable|unconfirmed"
-    r"|主張しない|にしない|へ拡張しない|公式は.*(案内|説明)する$"
+    r"|しない|仕様|公式"
 )
 
 # 1語タグ（"dance" "war" "journey"）に退化した項目を落とす閾値。
