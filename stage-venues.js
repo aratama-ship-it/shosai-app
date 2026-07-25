@@ -107,9 +107,11 @@
       backY: 150, floorY: 470, bottomY: 674, backW: 0.62, frontW: 0.94, shift: 0, rise: 0,
     },
     {
+      // 舞台面はふつう客席床から0.9〜1.2m上がり、座った目線とほぼ同じ高さに来る。
+      // だから最前列では床がほとんど見えず、演者を足元から見上げることになる。
       id: "front", label: "1階 最前列", short: "最前",
-      note: "見上げる位置。床が潰れて奥行きが読めず、舞台の奥は隠れる。",
-      backY: 104, floorY: 548, bottomY: 700, backW: 0.78, frontW: 1.12, shift: 0, rise: -0.16,
+      note: "舞台の床がほぼ見えない位置。演者を足元から見上げ、頭上に空間が伸びる。",
+      backY: 34, floorY: 606, bottomY: 700, backW: 0.86, frontW: 1.2, shift: 0, rise: 0.3,
     },
     {
       id: "side", label: "1階 左右席", short: "左右",
@@ -119,7 +121,7 @@
     {
       id: "balcony", label: "2階席", short: "2階",
       note: "見下ろす位置。床の絵が主役になり、立ち位置の関係がよく読める。",
-      backY: 206, floorY: 392, bottomY: 658, backW: 0.5, frontW: 0.9, shift: 0, rise: 0.2,
+      backY: 206, floorY: 392, bottomY: 658, backW: 0.5, frontW: 0.9, shift: 0, rise: -0.12,
     },
   ];
 

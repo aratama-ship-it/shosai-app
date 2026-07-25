@@ -263,16 +263,20 @@
         x: L.stage.x + u * L.stage.w,
         y: L.stage.y + v * L.stage.h,
         scale: 1,
+        stretch: 1,
       };
     }
     const y = L.floorY + v * (L.bottomY - L.floorY);
     const halfW = (L.backW + v * (L.frontW - L.backW)) / 2;
     // 横の席では、奥ほど横へ流れる。手前は席の正面なのでずれない
     const slide = (L.shift || 0) * (1 - v);
+    const rise = (L.seat && L.seat.rise) || 0;
     return {
       x: L.centerX + slide + (u - 0.5) * halfW * 2,
       y,
       scale: (L.backW + v * (L.frontW - L.backW)) / L.frontW,
+      // 煽りも見下ろしも、近いものほど強く効く。正で縦に伸び、負で縦に詰まる
+      stretch: 1 + rise * v,
     };
   }
 
@@ -413,7 +417,7 @@
   function drawPerformer(target, piece, pos, scale) {
     target.save();
     target.translate(pos.x, pos.y);
-    target.scale(scale, scale);
+    target.scale(scale, scale * (pos.stretch || 1));
     target.fillStyle = "rgba(0,0,0,0.28)";
     target.beginPath();
     target.ellipse(0, 7, 55, 14, 0, 0, Math.PI * 2);
@@ -439,9 +443,10 @@
   }
 
   function drawBlock(target, piece, pos, scale) {
+    const stretch = pos.stretch || 1;
     const width = 112 * scale;
-    const height = 66 * scale;
-    const depth = 18 * scale;
+    const height = 66 * scale * stretch;
+    const depth = 18 * scale * stretch;
     target.save();
     target.fillStyle = "rgba(0,0,0,0.3)";
     target.beginPath();
@@ -464,6 +469,7 @@
   }
 
   function drawRing(target, piece, pos, scale) {
+    const stretch = pos.stretch || 1;
     const radius = 52 * scale;
     target.save();
     target.fillStyle = "rgba(0,0,0,0.28)";
@@ -473,12 +479,12 @@
     target.strokeStyle = piece.color;
     target.lineWidth = Math.max(5, 11 * scale);
     target.beginPath();
-    target.arc(pos.x, pos.y - radius - 7 * scale, radius, 0, Math.PI * 2);
+    target.ellipse(pos.x, pos.y - (radius + 7 * scale) * stretch, radius, radius * stretch, 0, 0, Math.PI * 2);
     target.stroke();
     target.strokeStyle = rgba(piece.color, 0.62);
     target.lineWidth = Math.max(2, 3 * scale);
     target.beginPath();
-    target.moveTo(pos.x, pos.y - 8 * scale);
+    target.moveTo(pos.x, pos.y - 8 * scale * stretch);
     target.lineTo(pos.x, pos.y);
     target.stroke();
     target.restore();
@@ -561,10 +567,11 @@
       const r = Math.max(10, 30 * scale);
       return { x: pos.x - r, y: pos.y - r, w: r * 2, h: r * 2 };
     }
+    const st = pos.stretch || 1;
     if (piece.type === "light") return { x: pos.x - 78 * scale, y: pos.y - 35 * scale, w: 156 * scale, h: 70 * scale };
-    if (piece.type === "block") return { x: pos.x - 66 * scale, y: pos.y - 92 * scale, w: 132 * scale, h: 103 * scale };
-    if (piece.type === "ring") return { x: pos.x - 66 * scale, y: pos.y - 128 * scale, w: 132 * scale, h: 139 * scale };
-    return { x: pos.x - 60 * scale, y: pos.y - 143 * scale, w: 120 * scale, h: 154 * scale };
+    if (piece.type === "block") return { x: pos.x - 66 * scale, y: pos.y - 92 * scale * st, w: 132 * scale, h: 103 * scale * st };
+    if (piece.type === "ring") return { x: pos.x - 66 * scale, y: pos.y - 128 * scale * st, w: 132 * scale, h: 139 * scale * st };
+    return { x: pos.x - 60 * scale, y: pos.y - 143 * scale * st, w: 120 * scale, h: 154 * scale * st };
   }
 
   function drawSelection(target, piece, L) {
