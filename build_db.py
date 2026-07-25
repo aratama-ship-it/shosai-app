@@ -632,10 +632,16 @@ def main():
     }
 
     body = json.dumps(db, ensure_ascii=False, separators=(",", ":"))
+    # オブジェクトリテラルではなく JSON.parse で渡す。索引が数MB規模になると、
+    # JSエンジンの汎用パーサーより JSON 専用パーサーの方が明確に速い。
+    # json.dumps の出力はそのまま JS の文字列リテラルとして有効だが、
+    # U+2028/U+2029 だけは古い環境で行終端子と解釈されるためエスケープする。
+    literal = json.dumps(body, ensure_ascii=False)
+    literal = literal.replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
     OUT.write_text(
         "// 自動生成ファイル。手で編集しない。再生成: python3 build_db.py\n"
         "// 正本: show-reference/data/*.json（本アプリからは読み取りのみ）\n"
-        f"const SHOSAI_DB = {body};\n",
+        f"const SHOSAI_DB = JSON.parse({literal});\n",
         encoding="utf-8",
     )
     print(f"wrote {OUT.name}: {OUT.stat().st_size/1024/1024:.2f} MB, counts={db['counts']}")
