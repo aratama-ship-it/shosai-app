@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=51">
+<link rel="stylesheet" href="style.css?v=52">
 </head>
 <body>
 
@@ -186,7 +186,7 @@
         <div>
           <p class="stage-sketch-kicker">STAGE IMAGE STUDY</p>
           <h1 id="stage-sketch-title">舞台スケッチ</h1>
-          <p>コマを置き、背景を塗り、舞台の構図と距離感を先に目で考える。</p>
+          <p>人物と物を置き、背景を塗り、舞台の構図と距離感を先に目で考える。</p>
         </div>
         <div class="stage-history-actions">
           <button type="button" id="stage-undo" disabled>一つ戻す</button>
@@ -230,24 +230,19 @@
             <p class="stage-venue-scale" id="stage-venue-scale"></p>
             </div>
           </section>
-
-          <section class="stage-panel" data-panel="views" data-title="見る向き">
+          <section class="stage-panel" data-panel="cast" data-title="人物">
             <div class="stage-panel-body">
-            <div class="stage-view-toggles" role="group" aria-label="表示する視点">
-              <label class="stage-toggle">
-                <input type="checkbox" id="stage-show-front" checked>
-                <span>正面（客席から）</span>
+              <p class="stage-cast-hint">このショーに出る人を登録します。場面ごとに、舞台の上か裏かが決まります。</p>
+              <div class="stage-cast-add">
+                <input id="stage-cast-name" class="stage-text-input" type="text" maxlength="24"
+                       placeholder="名前を入れて追加" aria-label="人物の名前">
+                <button type="button" id="stage-cast-add" class="btn-quiet">追加</button>
+              </div>
+              <div class="stage-cast-list" id="stage-cast-list"></div>
+              <label class="stage-toggle stage-name-toggle">
+                <input type="checkbox" id="stage-show-names" checked>
+                <span>名前を舞台に出す</span>
               </label>
-              <label class="stage-toggle">
-                <input type="checkbox" id="stage-show-plan">
-                <span>平面（上から）</span>
-              </label>
-            </div>
-            <p class="stage-view-hint">両方に印を付けると、並べて見比べられます。</p>
-            <label class="stage-toggle stage-name-toggle">
-              <input type="checkbox" id="stage-show-names" checked>
-              <span>コマの名前を出す</span>
-            </label>
             </div>
           </section>
 
@@ -258,22 +253,22 @@
               <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
               <button type="button" data-stage-tool="erase" aria-pressed="false">塗りを消す</button>
             </div>
-            <p class="stage-tool-hint" id="stage-tool-hint">コマを選び、ステージ上で動かします。</p>
+            <p class="stage-tool-hint" id="stage-tool-hint">人物や物を選び、舞台の上で動かします。</p>
             </div>
           </section>
 
-          <section class="stage-panel" data-panel="pieces" data-title="コマを置く">
+          <section class="stage-panel" data-panel="pieces" data-title="人物と物を置く">
             <div class="stage-panel-body">
             <div class="stage-piece-buttons">
-              <button type="button" data-stage-add="performer">人物コマ</button>
+              <button type="button" data-stage-add="performer">人物</button>
               <button type="button" data-stage-add="block">台・物</button>
               <button type="button" data-stage-add="ring">円形の物</button>
               <button type="button" data-stage-add="light">光の位置</button>
             </div>
-            <label class="stage-control-label" for="stage-new-color">新しいコマの色</label>
+            <label class="stage-control-label" for="stage-new-color">新しく置く色</label>
             <div class="stage-color-row">
-              <input type="color" id="stage-new-color" value="#a84b26" aria-label="新しいコマの色">
-              <div class="stage-swatches" aria-label="コマの色見本">
+              <input type="color" id="stage-new-color" value="#a84b26" aria-label="新しく置く色">
+              <div class="stage-swatches" aria-label="置くものの色見本">
                 <button type="button" data-stage-piece-color="#a84b26" style="--stage-swatch:#a84b26" aria-label="錆色"></button>
                 <button type="button" data-stage-piece-color="#efe7d6" style="--stage-swatch:#efe7d6" aria-label="生成り"></button>
                 <button type="button" data-stage-piece-color="#77865f" style="--stage-swatch:#77865f" aria-label="苔色"></button>
@@ -341,9 +336,10 @@
             <div class="stage-board-frame" id="stage-front-cell">
               <div class="stage-canvas-bar">
                 <p class="stage-canvas-caption" id="stage-front-caption">正面</p>
-                <button type="button" class="stage-canvas-close" data-close-view="front"
+                <button type="button" class="stage-canvas-close" data-toggle-view="front"
                         aria-label="正面の絵を閉じる">✕</button>
               </div>
+              <div class="stage-canvas-inner" id="stage-front-inner">
               <section class="stage-seat-strip" id="stage-seat-section">
               <div class="stage-seat-list" id="stage-seat-list" role="group" aria-label="客席の位置"></div>
               <p class="stage-seat-note" id="stage-seat-note"></p>
@@ -352,28 +348,31 @@
 
               <div class="stage-depth-label stage-depth-back" id="stage-depth-back">奥・背景</div>
               <canvas id="stage-canvas" width="1280" height="720" tabindex="0"
-                      role="img" aria-label="人物コマと物を配置し、背景を塗れる正面から見た舞台"></canvas>
+                      role="img" aria-label="人物と物を配置し、背景を塗れる正面から見た舞台"></canvas>
               <div class="stage-depth-label stage-depth-front" id="stage-depth-front">手前・客席側</div>
+              </div>
             </div>
             <div class="stage-board-frame" id="stage-plan-cell" hidden>
               <div class="stage-canvas-bar">
                 <p class="stage-canvas-caption">平面（上から）</p>
-                <button type="button" class="stage-canvas-close" data-close-view="plan"
+                <button type="button" class="stage-canvas-close" data-toggle-view="plan"
                         aria-label="平面の絵を閉じる">✕</button>
               </div>
+              <div class="stage-canvas-inner" id="stage-plan-inner">
               <div class="stage-depth-label stage-depth-back">奥（背面）</div>
               <canvas id="stage-plan-canvas" width="1280" height="720" tabindex="0"
                       role="img" aria-label="舞台と客席を上から見た平面図"></canvas>
               <div class="stage-depth-label stage-depth-front">手前（客席側）</div>
+              </div>
             </div>
           </div>
-          <p class="stage-canvas-help">コマは上下で奥行き、左右で立ち位置を決めます。選択中は矢印キーでも動かせます。</p>
+          <p class="stage-canvas-help">上下で奥行き、左右で立ち位置を決めます。選択中は矢印キーでも動かせます。</p>
         </section>
 
         <aside class="stage-inspector stage-col" data-col="right" id="stage-col-right" aria-label="右の道具列">
-          <section class="stage-panel" data-panel="inspector" data-title="選んだコマ">
+          <section class="stage-panel" data-panel="inspector" data-title="選んだもの">
             <div class="stage-panel-body">
-            <p class="stage-selection-empty" id="stage-selection-empty">舞台上のコマを選ぶと、色・大きさ・重なりを調整できます。</p>
+            <p class="stage-selection-empty" id="stage-selection-empty">舞台の上で人物や物を選ぶと、色・大きさ・重なりを調整できます。</p>
             <div id="stage-selection-controls" hidden>
               <p class="stage-selected-name" id="stage-selected-name"></p>
               <label class="stage-control-label" for="stage-piece-name">名前</label>
@@ -390,7 +389,7 @@
                 <button type="button" id="stage-bring-front">前へ</button>
               </div>
               <button type="button" class="stage-minor-action" id="stage-duplicate">複製する</button>
-              <button type="button" class="stage-delete" id="stage-delete">このコマを外す</button>
+              <button type="button" class="stage-delete" id="stage-delete">舞台から外す</button>
             </div>
             </div>
           </section>
@@ -579,7 +578,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=3"></script>
-<script src="stage-sketch.js?v=16"></script>
+<script src="stage-sketch.js?v=17"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

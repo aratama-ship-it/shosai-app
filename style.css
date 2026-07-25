@@ -5225,3 +5225,105 @@ textarea, input[type="text"] {
   font-size: 9px;
   letter-spacing: 0.14em;
 }
+
+/* ===== 舞台スケッチ: 登場人物 ===== */
+
+.stage-cast-hint {
+  color: var(--milk-dim);
+  font-size: 10px;
+  line-height: 1.7;
+  margin-bottom: 8px;
+}
+
+.stage-cast-add {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px;
+  margin-bottom: 9px;
+}
+
+.stage-cast-add .stage-text-input { margin-bottom: 0; }
+
+.stage-cast-list {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.stage-cast-empty {
+  color: rgba(240, 231, 214, 0.34);
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.stage-cast-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 5px;
+}
+
+.stage-cast-color {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--line-dark);
+  background: none;
+  cursor: pointer;
+}
+
+.stage-cast-name-input {
+  min-width: 0;
+  min-height: 28px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--milk);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  padding: 3px 5px;
+}
+
+.stage-cast-name-input:hover { border-color: var(--line-dark); }
+.stage-cast-name-input:focus { border-color: var(--brass); background: var(--desk-2); }
+
+/* 舞台上か舞台裏かは、この場面での状態 */
+.stage-cast-status {
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px solid var(--line-dark);
+  background: none;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.stage-cast-status.is-on {
+  color: var(--paper);
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.3);
+}
+
+.stage-cast-status.is-off { color: rgba(240, 231, 214, 0.4); }
+.stage-cast-status:hover { border-color: var(--brass); }
+
+.stage-cast-remove {
+  min-width: 22px;
+  min-height: 22px;
+  border: 0;
+  background: none;
+  color: rgba(240, 231, 214, 0.3);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.stage-cast-remove:hover { color: var(--rust); }
+
+/* 絵を閉じてもバーは残す */
+.stage-board-frame.is-closed {
+  box-shadow: none;
+  border-color: var(--line-dark);
+}
+
+.stage-board-frame.is-closed .stage-canvas-bar { padding: 9px 10px; }

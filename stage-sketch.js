@@ -5,7 +5,7 @@
    切り替えられる。形式ごとに客席の位置が変わり、それが構図の条件になる。
 
    座標は正規化して持つ（u: 左右 0-1、v: 奥行き 0-1）。形式や規模を変えても
-   コマの配置が保たれ、同じ配置を別の劇場で見直せるようにするため。
+   配置が保たれ、同じ配置を別の劇場で見直せるようにするため。
 
    規模は「舞台を画面いっぱいに描き、人の大きさを舞台に対する比率で決める」形で
    表す。18mの舞台では人が小さく見える。寸法そのものは編集させない（設計計画書 8.5節）。 */
@@ -33,7 +33,7 @@
   const STORAGE_KEY = "shosai-stage-sketch-v1";
   const HISTORY_LIMIT = 36;
   const PIECE_TYPES = {
-    performer: "人物コマ",
+    performer: "人物",
     block: "台・物",
     ring: "円形の物",
     light: "光の位置",
@@ -46,7 +46,7 @@
     light: 2.5,
   };
   const TOOL_HINTS = {
-    select: "コマを選び、舞台の上で動かします。",
+    select: "人物や物を選び、舞台の上で動かします。",
     paint: "奥の背景面を指やマウスで塗ります。",
     erase: "背景に描いた線だけを消します。",
   };
@@ -105,6 +105,11 @@
     sceneTitle: document.getElementById("stage-scene-title"),
     sceneNote: document.getElementById("stage-scene-note"),
     pieceName: document.getElementById("stage-piece-name"),
+    castList: document.getElementById("stage-cast-list"),
+    castName: document.getElementById("stage-cast-name"),
+    castAdd: document.getElementById("stage-cast-add"),
+    frontInner: document.getElementById("stage-front-inner"),
+    planInner: document.getElementById("stage-plan-inner"),
     showNames: document.getElementById("stage-show-names"),
     depthLabelBack: document.getElementById("stage-depth-back"),
     depthLabelFront: document.getElementById("stage-depth-front"),
@@ -155,6 +160,8 @@
         createdAt: nowIso(),
         venue: "proscenium",
         venueSize: "mid",
+        // このショーに出る人。場面ごとの在／不在は pieces 側で決まる
+        cast: [],
         scenes: [scene],
         activeSceneId: scene.id,
       },
@@ -174,17 +181,17 @@
   /* ---------- パネルの配置 ----------
      どの道具をどちら側へ置くかは人によって違う。列を移せるようにし、
      使わないものは畳めるようにする。中央は絵だけで、上下の入れ替えのみ。 */
-  const PANELS = ["project", "venue", "views", "tools", "pieces", "background", "scenes", "inspector", "save"];
+  const PANELS = ["project", "venue", "cast", "tools", "pieces", "background", "scenes", "inspector", "save"];
 
   function defaultLayout() {
     return {
       // 場面は絵のすぐ右に置く（順番を見ながら描くため）
       cols: {
-        project: "left", venue: "left", views: "left", tools: "left", pieces: "left", background: "left",
+        project: "left", venue: "left", cast: "left", tools: "left", pieces: "left", background: "left",
         scenes: "right", inspector: "right", save: "right",
       },
       order: {
-        project: 0, venue: 1, views: 2, tools: 3, pieces: 4, background: 5,
+        project: 0, venue: 1, cast: 2, tools: 3, pieces: 4, background: 5,
         scenes: 0, inspector: 1, save: 2,
       },
       collapsed: {},
@@ -208,6 +215,15 @@
     const co = Array.isArray(raw.centerOrder) ? raw.centerOrder.filter((x) => x === "front" || x === "plan") : [];
     const centerOrder = co.length === 2 ? co : base.centerOrder;
     return { cols, order, collapsed, centerOrder };
+  }
+
+  // 舞台に出す名前。登録した人物なら名簿から引き、そうでなければ個別の名前
+  function pieceLabel(piece) {
+    if (piece.castId) {
+      const member = state.project.cast.find((c) => c.id === piece.castId);
+      if (member) return member.name;
+    }
+    return piece.name || "";
   }
 
   // いま開いている場面
@@ -239,6 +255,7 @@
       size: clamp(finite(piece.size, 100), 55, 180),
       color: validColor(piece.color, "#a84b26"),
       name: typeof piece.name === "string" ? piece.name.slice(0, 24) : "",
+      castId: typeof piece.castId === "string" ? piece.castId : null,
     };
   }
 
@@ -313,6 +330,13 @@
         createdAt: typeof rawProject.createdAt === "string" ? rawProject.createdAt : nowIso(),
         venue: venue.id,
         venueSize: size.id,
+        cast: Array.isArray(rawProject.cast)
+          ? rawProject.cast.slice(0, 60).map((c, i) => ({
+              id: typeof c.id === "string" ? c.id : rid("cast"),
+              name: typeof c.name === "string" && c.name.trim() ? c.name.slice(0, 24) : `人物 ${i + 1}`,
+              color: validColor(c.color, "#a84b26"),
+            }))
+          : [],
         scenes,
         activeSceneId: activeId,
       },
@@ -432,7 +456,7 @@
     return { u: clamp((x - L.centerX - slide) / (halfW * 2) + 0.5, 0, 1), v };
   }
 
-  // コマの実寸（m）から画面上の高さを出す。size は基準に対する倍率
+  // 実寸（m）から画面上の高さを出す。size は基準に対する倍率
   function pieceScale(piece, pos, L) {
     const meters = PIECE_METERS[piece.type] * (piece.size / 100);
     const px = meters * L.pxPerM * (L.plan ? 1 : pos.scale);
@@ -458,6 +482,7 @@
     syncInputs();
     applyLayout();
     renderScenes();
+    renderCast();
     renderVenueControls();
     updateInspector();
     render();
@@ -573,7 +598,7 @@
     paintCtx.globalCompositeOperation = "source-over";
   }
 
-  /* ---------- コマの描画 ---------- */
+  /* ---------- 人物と物の描画 ---------- */
 
   function drawPerformer(target, piece, pos, scale) {
     target.save();
@@ -693,7 +718,7 @@
     target.restore();
   }
 
-  // 平面図でのコマ。上から見るので、輪郭と向きだけを示す
+  // 平面図。上から見るので、輪郭と向きだけを示す
   function drawPlanPiece(target, piece, pos, scale) {
     const r = Math.max(6, 26 * scale);
     target.save();
@@ -1037,7 +1062,7 @@
     }
 
     // 客席は「どちらを向いているか」を示すためのもので、実距離では描いていない
-    // （20m先まで実寸で描くと舞台が小さくなりすぎ、コマを置けなくなる）。
+    // （20m先まで実寸で描くと舞台が小さくなりすぎ、置けなくなる）。
     // 距離の目安は言葉で添える。
     if (v.audience !== "none") {
       const limit = VENUES.sightLimits[0];
@@ -1056,7 +1081,7 @@
     if (L.plan) drawPlanVenue(target, L);
     else drawFrontVenue(target, L);
 
-    // コマ。光は先に（奥に）描く
+    // 人物と物。光は先に（奥に）描く
     const draw = (piece) => {
       const pos = place(piece.u, piece.v, L);
       const scale = pieceScale(piece, pos, L);
@@ -1067,14 +1092,15 @@
       if (piece.type === "ring") return drawRing(target, piece, pos, scale);
     };
     sc().pieces.filter((p) => p.type === "light").forEach(draw);
-    // 正面図では奥のコマから描く（重なりが自然になる）
+    // 正面図では奥から描く（重なりが自然になる）
     const solid = sc().pieces.filter((p) => p.type !== "light");
     (L.plan ? solid : solid.slice().sort((a, b) => a.v - b.v)).forEach(draw);
 
-    // コマの名前。頭上（平面では点の脇）に小さく置く
+    // 名前。頭上（平面では点の脇）に小さく置く
     if (state.showNames) {
       sc().pieces.forEach((piece) => {
-        if (!piece.name) return;
+        const labelText = pieceLabel(piece);
+        if (!labelText) return;
         const pos = place(piece.u, piece.v, L);
         const scale = pieceScale(piece, pos, L);
         const b = selectionBounds(piece, L);
@@ -1084,11 +1110,11 @@
         target.font = `${Math.max(10, Math.round(13 * (L.plan ? 1 : Math.min(1.4, scale))))}px 'Hiragino Kaku Gothic ProN', sans-serif`;
         target.textAlign = "center";
         target.textBaseline = "bottom";
-        const w = target.measureText(piece.name).width;
+        const w = target.measureText(labelText).width;
         target.fillStyle = "rgba(13,12,11,0.66)";
         target.fillRect(x - w / 2 - 6, y - 15, w + 12, 18);
         target.fillStyle = "rgba(239,231,214,0.9)";
-        target.fillText(piece.name, x, y);
+        target.fillText(labelText, x, y);
         target.restore();
       });
     }
@@ -1115,8 +1141,16 @@
       .map((type) => `${PIECE_TYPES[type]}${sc().pieces.filter((piece) => piece.type === type).length}`)
       .join("、");
 
-    if (els.frontCell) els.frontCell.hidden = !state.showFront;
-    if (els.planCell) els.planCell.hidden = !state.showPlan;
+    // 閉じてもバーは残す。ここから開き直せるので「見る向き」の項目は要らない
+    if (els.frontInner) els.frontInner.hidden = !state.showFront;
+    if (els.planInner) els.planInner.hidden = !state.showPlan;
+    if (els.frontCell) els.frontCell.classList.toggle("is-closed", !state.showFront);
+    if (els.planCell) els.planCell.classList.toggle("is-closed", !state.showPlan);
+    document.querySelectorAll("[data-toggle-view]").forEach((b) => {
+      const open = b.dataset.toggleView === "front" ? state.showFront : state.showPlan;
+      b.textContent = open ? "✕" : "＋";
+      b.setAttribute("aria-label", `${b.dataset.toggleView === "front" ? "正面" : "平面"}の絵を${open ? "閉じる" : "開く"}`);
+    });
 
     if (state.showFront) {
       drawStage(ctx, true, "front");
@@ -1281,6 +1315,144 @@
     announce(`${state.layout.centerOrder[0] === "front" ? "正面" : "平面"}を上にしました。`);
   }
 
+  /* ---------- 登場人物 ----------
+     ショーに出る人を名簿で持ち、場面ごとに舞台の上か裏かが決まる。
+     名簿で名前を直すと、その人が出ている全場面の表示が変わる。 */
+
+  function castOnStage(castId) {
+    return sc().pieces.some((piece) => piece.castId === castId);
+  }
+
+  function renderCast() {
+    if (!els.castList) return;
+    const cast = state.project.cast;
+    els.castList.innerHTML = "";
+    if (!cast.length) {
+      const empty = document.createElement("p");
+      empty.className = "stage-cast-empty";
+      empty.textContent = "まだ誰も登録していません。名前を入れて追加してください。";
+      els.castList.append(empty);
+      return;
+    }
+    cast.forEach((member) => {
+      const row = document.createElement("div");
+      row.className = "stage-cast-row";
+
+      const swatch = document.createElement("input");
+      swatch.type = "color";
+      swatch.className = "stage-cast-color";
+      swatch.value = member.color;
+      swatch.setAttribute("aria-label", `${member.name}の色`);
+      swatch.addEventListener("input", () => {
+        member.color = swatch.value;
+        // 舞台に出ている分にも色を反映する
+        state.project.scenes.forEach((scene) => {
+          scene.pieces.forEach((piece) => {
+            if (piece.castId === member.id) piece.color = member.color;
+          });
+        });
+        render();
+        persistSoon();
+      });
+
+      const name = document.createElement("input");
+      name.type = "text";
+      name.className = "stage-cast-name-input";
+      name.value = member.name;
+      name.maxLength = 24;
+      name.setAttribute("aria-label", "人物の名前");
+      name.addEventListener("input", () => {
+        member.name = name.value.slice(0, 24);
+        render();
+        persistSoon();
+      });
+
+      const onStage = castOnStage(member.id);
+      const status = document.createElement("button");
+      status.type = "button";
+      status.className = `stage-cast-status ${onStage ? "is-on" : "is-off"}`;
+      status.textContent = onStage ? "舞台上" : "舞台裏";
+      status.title = onStage ? "押すと舞台から引っ込めます" : "押すとこの場面の舞台へ出します";
+      status.addEventListener("click", () => toggleCastOnStage(member.id));
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "stage-cast-remove";
+      remove.textContent = "✕";
+      remove.setAttribute("aria-label", `${member.name}を名簿から外す`);
+      remove.addEventListener("click", () => removeCastMember(member.id));
+
+      row.append(swatch, name, status, remove);
+      els.castList.append(row);
+    });
+  }
+
+  function addCastMember() {
+    const raw = (els.castName && els.castName.value || "").trim();
+    if (!raw) {
+      announce("名前を入れてから追加してください。");
+      if (els.castName) els.castName.focus();
+      return;
+    }
+    checkpoint();
+    state.project.cast.push({ id: rid("cast"), name: raw.slice(0, 24), color: state.pieceColor });
+    if (els.castName) els.castName.value = "";
+    renderCast();
+    persistSoon();
+    announce(`${raw}を名簿へ加えました。舞台裏の状態です。`);
+  }
+
+  function toggleCastOnStage(castId) {
+    checkpoint();
+    const scene = sc();
+    const existing = scene.pieces.find((piece) => piece.castId === castId);
+    const member = state.project.cast.find((c) => c.id === castId);
+    if (existing) {
+      scene.pieces = scene.pieces.filter((piece) => piece.id !== existing.id);
+      if (selectedId === existing.id) selectedId = null;
+      announce(`${member ? member.name : "この人"}を舞台から引っ込めました。`);
+    } else {
+      const count = scene.pieces.filter((p) => p.type === "performer").length;
+      const piece = {
+        id: nextId(), type: "performer", castId,
+        u: clamp(0.5 + ((count % 5) - 2) * 0.09, 0.06, 0.94),
+        v: clamp(0.6 + (count % 3) * 0.07, 0.05, 0.95),
+        size: 100, color: member ? member.color : state.pieceColor, name: "",
+      };
+      scene.pieces.push(piece);
+      selectedId = piece.id;
+      announce(`${member ? member.name : "この人"}を舞台へ出しました。`);
+    }
+    renderCast();
+    renderScenes();
+    updateInspector();
+    render();
+    persistSoon();
+  }
+
+  function removeCastMember(castId) {
+    const member = state.project.cast.find((c) => c.id === castId);
+    if (!member) return;
+    const scenesWith = state.project.scenes.filter((scene) =>
+      scene.pieces.some((piece) => piece.castId === castId)).length;
+    const warning = scenesWith
+      ? `「${member.name}」を名簿から外します。${scenesWith}つの場面から、この人も消えます。`
+      : `「${member.name}」を名簿から外します。`;
+    if (!window.confirm(warning)) return;
+    checkpoint();
+    state.project.cast = state.project.cast.filter((c) => c.id !== castId);
+    state.project.scenes.forEach((scene) => {
+      scene.pieces = scene.pieces.filter((piece) => piece.castId !== castId);
+    });
+    selectedId = null;
+    renderCast();
+    renderScenes();
+    updateInspector();
+    render();
+    persistSoon();
+    announce(`${member.name}を名簿から外しました。`);
+  }
+
   /* ---------- 場面とプロジェクト ---------- */
 
   function renderScenes() {
@@ -1327,6 +1499,7 @@
     state.project.activeSceneId = id;
     selectedId = null;
     renderScenes();
+    renderCast();
     updateInspector();
     render();
     persistSoon();
@@ -1384,7 +1557,7 @@
     const p = state.project;
     if (p.scenes.length <= 1) return;
     const cur = sc();
-    if (!window.confirm(`「${cur.title}」を削除します。この場面のコマと塗りは戻せません。`)) return;
+    if (!window.confirm(`「${cur.title}」を削除します。この場面に置いたものと塗りは戻せません。`)) return;
     checkpoint();
     const i = p.scenes.indexOf(cur);
     p.scenes.splice(i, 1);
@@ -1516,9 +1689,6 @@
       els.venueScale.textContent = bits.join(" ・ ") + `（${current.source}）`;
     }
 
-    if (els.showFront) els.showFront.checked = state.showFront;
-    if (els.showPlan) els.showPlan.checked = state.showPlan;
-
     // 背景の壁が無い形式では、塗りの道具立てを畳む
     const hasWall = current.audience !== "round";
     if (els.bgSection) els.bgSection.hidden = !hasWall;
@@ -1584,7 +1754,7 @@
     renderVenueControls();
     render();
     persistSoon();
-    announce(`${venue().label}へ切り替えました。コマの配置はそのまま残ります。`);
+    announce(`${venue().label}へ切り替えました。配置はそのまま残ります。`);
   }
 
   function setVenueSize(id) {
@@ -1658,7 +1828,12 @@
     els.selectedColor.value = piece.color;
     els.pieceSize.value = String(piece.size);
     els.sizeValue.textContent = String(piece.size);
-    if (els.pieceName && document.activeElement !== els.pieceName) els.pieceName.value = piece.name || "";
+    if (els.pieceName && document.activeElement !== els.pieceName) {
+      const member = piece.castId ? state.project.cast.find((c) => c.id === piece.castId) : null;
+      els.pieceName.value = member ? member.name : (piece.name || "");
+      els.pieceName.disabled = Boolean(member);
+      els.pieceName.placeholder = member ? "名前は人物パネルで直します" : "例: 演台、ディアボロ";
+    }
   }
 
   function syncInputs() {
@@ -1701,6 +1876,7 @@
     selectedId = null;
     updateInspector();
     renderScenes();
+    renderCast();
     render();
     persistSoon();
     announce(`${PIECE_TYPES[piece.type]}を舞台から外しました。`);
@@ -1730,7 +1906,7 @@
     sc().pieces.splice(nextIndex, 0, piece);
     render();
     persistSoon();
-    announce(direction > 0 ? "コマを一つ前へ出しました。" : "コマを一つ後ろへ送りました。");
+    announce(direction > 0 ? "一つ前へ出しました。" : "一つ後ろへ送りました。");
   }
 
   function finishPointer(event) {
@@ -1867,8 +2043,12 @@
   if (els.venueSelect) {
     els.venueSelect.addEventListener("change", (e) => setVenue(e.target.value));
   }
-  document.querySelectorAll("[data-close-view]").forEach((button) => {
-    button.addEventListener("click", () => setViewShown(button.dataset.closeView, false));
+  document.querySelectorAll("[data-toggle-view]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const which = button.dataset.toggleView;
+      const open = which === "front" ? state.showFront : state.showPlan;
+      setViewShown(which, !open);
+    });
   });
   const swapBtn = document.getElementById("stage-swap-center");
   if (swapBtn) swapBtn.addEventListener("click", swapCenter);
@@ -1885,9 +2065,16 @@
     els.pieceName.addEventListener("input", (e) => {
       const piece = selectedPiece();
       if (!piece) return;
+      if (piece.castId) return;  // 名簿の人は人物パネルで直す
       piece.name = e.target.value.slice(0, 24);
       render();
       persistSoon();
+    });
+  }
+  if (els.castAdd) els.castAdd.addEventListener("click", addCastMember);
+  if (els.castName) {
+    els.castName.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); addCastMember(); }
     });
   }
   if (els.sceneAdd) els.sceneAdd.addEventListener("click", addScene);
@@ -2029,7 +2216,7 @@
   els.redo.addEventListener("click", redo);
 
   els.clear.addEventListener("click", () => {
-    if (!window.confirm(`「${sc().title}」のコマと背景の塗りをすべて消しますか？（他の場面はそのままです）`)) return;
+    if (!window.confirm(`「${sc().title}」に置いたものと背景の塗りをすべて消しますか？（他の場面はそのままです）`)) return;
     checkpoint();
     const cur = sc();
     cur.pieces = [];
@@ -2130,6 +2317,7 @@
   applyLayout();
   syncInputs();
   renderScenes();
+  renderCast();
   renderVenueControls();
   setTool("select");
   updateInspector();
