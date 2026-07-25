@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=43">
+<link rel="stylesheet" href="style.css?v=44">
 </head>
 <body>
 
@@ -197,6 +197,23 @@
 
       <div class="stage-sketch-grid">
         <aside class="stage-toolbox" aria-label="舞台スケッチの道具">
+          <section class="stage-tool-section stage-venue-section">
+            <h2>劇場を選ぶ</h2>
+            <div class="stage-venue-list" id="stage-venue-list" role="group" aria-label="劇場の形式"></div>
+            <p class="stage-venue-note" id="stage-venue-note"></p>
+            <h3 class="stage-sub-label">規模</h3>
+            <div class="stage-size-list" id="stage-size-list" role="group" aria-label="舞台の規模"></div>
+            <p class="stage-venue-scale" id="stage-venue-scale"></p>
+          </section>
+
+          <section class="stage-tool-section">
+            <h2>見る向き</h2>
+            <div class="stage-tool-grid stage-view-grid" role="group" aria-label="視点を選ぶ">
+              <button type="button" data-stage-view="front" aria-pressed="true">正面（客席から）</button>
+              <button type="button" data-stage-view="plan" aria-pressed="false">平面（上から）</button>
+            </div>
+          </section>
+
           <section class="stage-tool-section">
             <h2>操作</h2>
             <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
@@ -259,10 +276,10 @@
 
         <section class="stage-board-column" aria-label="舞台面">
           <div class="stage-board-frame">
-            <div class="stage-depth-label stage-depth-back">奥・背景</div>
+            <div class="stage-depth-label stage-depth-back" id="stage-depth-back">奥・背景</div>
             <canvas id="stage-canvas" width="1280" height="720" tabindex="0"
                     role="img" aria-label="人物コマと物を配置し、背景を塗れる正面から見た舞台"></canvas>
-            <div class="stage-depth-label stage-depth-front">手前・客席側</div>
+            <div class="stage-depth-label stage-depth-front" id="stage-depth-front">手前・客席側</div>
           </div>
           <p class="stage-canvas-help">コマは上下で奥行き、左右で立ち位置を決めます。選択中は矢印キーでも動かせます。</p>
         </section>
@@ -470,7 +487,8 @@
 <script src="db.js?v=77"></script>
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
-<script src="stage-sketch.js?v=3"></script>
+<script src="stage-venues.js?v=1"></script>
+<script src="stage-sketch.js?v=4"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
