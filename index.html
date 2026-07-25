@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=52">
+<link rel="stylesheet" href="style.css?v=53">
 </head>
 <body>
 
@@ -186,7 +186,7 @@
         <div>
           <p class="stage-sketch-kicker">STAGE IMAGE STUDY</p>
           <h1 id="stage-sketch-title">舞台スケッチ</h1>
-          <p>人物と物を置き、背景を塗り、舞台の構図と距離感を先に目で考える。</p>
+          <p>演者と物を置き、背景を塗り、舞台の構図と距離感を先に目で考える。</p>
         </div>
         <div class="stage-history-actions">
           <button type="button" id="stage-undo" disabled>一つ戻す</button>
@@ -230,12 +230,12 @@
             <p class="stage-venue-scale" id="stage-venue-scale"></p>
             </div>
           </section>
-          <section class="stage-panel" data-panel="cast" data-title="人物">
+          <section class="stage-panel" data-panel="cast" data-title="演者">
             <div class="stage-panel-body">
-              <p class="stage-cast-hint">このショーに出る人を登録します。場面ごとに、舞台の上か裏かが決まります。</p>
+              <p class="stage-cast-hint">このショーに出る演者を登録します。場面ごとに、舞台の上か裏かが決まります。</p>
               <div class="stage-cast-add">
                 <input id="stage-cast-name" class="stage-text-input" type="text" maxlength="24"
-                       placeholder="名前を入れて追加" aria-label="人物の名前">
+                       placeholder="名前を入れて追加" aria-label="演者の名前">
                 <button type="button" id="stage-cast-add" class="btn-quiet">追加</button>
               </div>
               <div class="stage-cast-list" id="stage-cast-list"></div>
@@ -253,14 +253,14 @@
               <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
               <button type="button" data-stage-tool="erase" aria-pressed="false">塗りを消す</button>
             </div>
-            <p class="stage-tool-hint" id="stage-tool-hint">人物や物を選び、舞台の上で動かします。</p>
+            <p class="stage-tool-hint" id="stage-tool-hint">演者や物を選び、舞台の上で動かします。</p>
             </div>
           </section>
 
-          <section class="stage-panel" data-panel="pieces" data-title="人物と物を置く">
+          <section class="stage-panel" data-panel="pieces" data-title="演者と物を置く">
             <div class="stage-panel-body">
             <div class="stage-piece-buttons">
-              <button type="button" data-stage-add="performer">人物</button>
+              <button type="button" data-stage-add="performer">演者</button>
               <button type="button" data-stage-add="block">台・物</button>
               <button type="button" data-stage-add="ring">円形の物</button>
               <button type="button" data-stage-add="light">光の位置</button>
@@ -346,10 +346,12 @@
               <p class="stage-seat-note" id="stage-seat-note"></p>
           </section>
 
-              <div class="stage-depth-label stage-depth-back" id="stage-depth-back">奥・背景</div>
-              <canvas id="stage-canvas" width="1280" height="720" tabindex="0"
-                      role="img" aria-label="人物と物を配置し、背景を塗れる正面から見た舞台"></canvas>
-              <div class="stage-depth-label stage-depth-front" id="stage-depth-front">手前・客席側</div>
+              <div class="stage-canvas-wrap">
+                <div class="stage-depth-label stage-depth-back" id="stage-depth-back">奥・背景</div>
+                <canvas id="stage-canvas" width="1280" height="720" tabindex="0"
+                        role="img" aria-label="演者と物を配置し、背景を塗れる正面から見た舞台"></canvas>
+                <div class="stage-depth-label stage-depth-front" id="stage-depth-front">手前・客席側</div>
+              </div>
               </div>
             </div>
             <div class="stage-board-frame" id="stage-plan-cell">
@@ -359,10 +361,12 @@
                         aria-label="平面の絵を閉じる">✕</button>
               </div>
               <div class="stage-canvas-inner" id="stage-plan-inner">
-              <div class="stage-depth-label stage-depth-back">奥（背面）</div>
-              <canvas id="stage-plan-canvas" width="1280" height="720" tabindex="0"
-                      role="img" aria-label="舞台と客席を上から見た平面図"></canvas>
-              <div class="stage-depth-label stage-depth-front">手前（客席側）</div>
+              <div class="stage-canvas-wrap">
+                <div class="stage-depth-label stage-depth-back">奥（背面）</div>
+                <canvas id="stage-plan-canvas" width="1280" height="720" tabindex="0"
+                        role="img" aria-label="舞台と客席を上から見た平面図"></canvas>
+                <div class="stage-depth-label stage-depth-front">手前（客席側）</div>
+              </div>
               </div>
             </div>
           </div>
@@ -372,7 +376,7 @@
         <aside class="stage-inspector stage-col" data-col="right" id="stage-col-right" aria-label="右の道具列">
           <section class="stage-panel" data-panel="inspector" data-title="選んだもの">
             <div class="stage-panel-body">
-            <p class="stage-selection-empty" id="stage-selection-empty">舞台の上で人物や物を選ぶと、色・大きさ・重なりを調整できます。</p>
+            <p class="stage-selection-empty" id="stage-selection-empty">舞台の上で演者や物を選ぶと、色・大きさ・重なりを調整できます。</p>
             <div id="stage-selection-controls" hidden>
               <p class="stage-selected-name" id="stage-selected-name"></p>
               <label class="stage-control-label" for="stage-piece-name">名前</label>
@@ -380,6 +384,10 @@
                      placeholder="例: 演者A、ディアボロ台">
               <label class="stage-control-label" for="stage-selected-color">色</label>
               <input type="color" id="stage-selected-color" value="#a84b26">
+              <label class="stage-control-label stage-range-label" for="stage-piece-facing">
+                体の向き <span id="stage-facing-value">客席</span>
+              </label>
+              <input type="range" id="stage-piece-facing" min="0" max="345" step="15" value="0">
               <label class="stage-control-label stage-range-label" for="stage-piece-size">
                 大きさ <span id="stage-size-value">100</span>
               </label>
@@ -574,11 +582,38 @@
   </div>
 </div>
 
+<!-- 演者プロフィール -->
+<div class="stage-modal-backdrop" id="stage-profile-backdrop" hidden></div>
+<div class="stage-modal" id="stage-profile" role="dialog" aria-modal="true"
+     aria-labelledby="stage-profile-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-profile-title">演者プロフィール</h2>
+    <button type="button" class="stage-modal-close" id="stage-profile-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <label class="stage-control-label" for="stage-profile-name">名前</label>
+    <input id="stage-profile-name" class="stage-text-input" type="text" maxlength="24">
+
+    <label class="stage-control-label" for="stage-profile-height">
+      身長 <span id="stage-profile-height-value">165</span> cm
+    </label>
+    <input type="range" id="stage-profile-height" min="120" max="210" step="1" value="165">
+    <p class="stage-profile-hint">舞台の上での見え方に効きます。同じ舞台でも、身長が違えば大きさが変わります。</p>
+
+    <label class="stage-control-label" for="stage-profile-color">色</label>
+    <input type="color" id="stage-profile-color" value="#a84b26">
+
+    <label class="stage-control-label" for="stage-profile-note">メモ</label>
+    <textarea id="stage-profile-note" class="stage-text-input" rows="3" maxlength="200"
+              placeholder="役どころ、得意な技、注意点など"></textarea>
+  </div>
+</div>
+
 <script src="db.js?v=77"></script>
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=3"></script>
-<script src="stage-sketch.js?v=19"></script>
+<script src="stage-sketch.js?v=20"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

@@ -33,20 +33,23 @@
   const STORAGE_KEY = "shosai-stage-sketch-v1";
   const HISTORY_LIMIT = 36;
   const PIECE_TYPES = {
-    performer: "人物",
+    performer: "演者",
     block: "台・物",
     ring: "円形の物",
     light: "光の位置",
   };
   // 実寸の目安（m）。人を基準に置くと、舞台の規模が見た目に出る
   const PIECE_METERS = {
-    performer: 1.7,
+    performer: 1.65,
     block: 1.2,
     ring: 1.2,
     light: 2.5,
   };
+  const DEFAULT_HEIGHT_CM = 165;
+  // 肩幅は身長のおよそ1/4。向きが変わると見かけの幅がこの間で動く
+  const SHOULDER_RATIO = 0.25;
   const TOOL_HINTS = {
-    select: "人物や物を選び、舞台の上で動かします。",
+    select: "演者や物を選び、舞台の上で動かします。",
     paint: "奥の背景面を指やマウスで塗ります。",
     erase: "背景に描いた線だけを消します。",
   };
@@ -106,6 +109,16 @@
     sceneNote: document.getElementById("stage-scene-note"),
     pieceName: document.getElementById("stage-piece-name"),
     castList: document.getElementById("stage-cast-list"),
+    pieceFacing: document.getElementById("stage-piece-facing"),
+    facingValue: document.getElementById("stage-facing-value"),
+    profile: document.getElementById("stage-profile"),
+    profileBackdrop: document.getElementById("stage-profile-backdrop"),
+    profileClose: document.getElementById("stage-profile-close"),
+    profileName: document.getElementById("stage-profile-name"),
+    profileHeight: document.getElementById("stage-profile-height"),
+    profileHeightValue: document.getElementById("stage-profile-height-value"),
+    profileColor: document.getElementById("stage-profile-color"),
+    profileNote: document.getElementById("stage-profile-note"),
     castName: document.getElementById("stage-cast-name"),
     castAdd: document.getElementById("stage-cast-add"),
     frontInner: document.getElementById("stage-front-inner"),
@@ -256,6 +269,8 @@
       color: validColor(piece.color, "#a84b26"),
       name: typeof piece.name === "string" ? piece.name.slice(0, 24) : "",
       castId: typeof piece.castId === "string" ? piece.castId : null,
+      // 体の向き（度）。0=客席を向く、90=上手を向く、180=背中
+      facing: clamp(finite(piece.facing, 0), 0, 359),
     };
   }
 
@@ -333,8 +348,10 @@
         cast: Array.isArray(rawProject.cast)
           ? rawProject.cast.slice(0, 60).map((c, i) => ({
               id: typeof c.id === "string" ? c.id : rid("cast"),
-              name: typeof c.name === "string" && c.name.trim() ? c.name.slice(0, 24) : `人物 ${i + 1}`,
+              name: typeof c.name === "string" && c.name.trim() ? c.name.slice(0, 24) : `演者 ${i + 1}`,
               color: validColor(c.color, "#a84b26"),
+              heightCm: clamp(finite(c.heightCm, DEFAULT_HEIGHT_CM), 120, 210),
+              note: typeof c.note === "string" ? c.note.slice(0, 200) : "",
             }))
           : [],
         scenes,
@@ -458,7 +475,7 @@
 
   // 実寸（m）から画面上の高さを出す。size は基準に対する倍率
   function pieceScale(piece, pos, L) {
-    const meters = PIECE_METERS[piece.type] * (piece.size / 100);
+    const meters = pieceHeightM(piece) * (piece.size / 100);
     const px = meters * L.pxPerM * (L.plan ? 1 : pos.scale);
     // 元の描画は「人物=約155px」で描かれているので、それに合わせる
     return px / (piece.type === "performer" ? 155 : piece.type === "block" ? 84 : piece.type === "ring" ? 118 : 170);
@@ -598,33 +615,60 @@
     paintCtx.globalCompositeOperation = "source-over";
   }
 
-  /* ---------- 人物と物の描画 ---------- */
+  /* ---------- 演者と物の描画 ---------- */
 
+  // 正面から見た演者。身長165cmを基準に、肩幅で体の向きを表す。
+  // 正面向きは肩が広く、真横は肩が消えて奥行きの厚みだけになる。
   function drawPerformer(target, piece, pos, scale) {
+    const rad = ((piece.facing || 0) * Math.PI) / 180;
+    // 見かけの肩幅。真横（90/270度）で最小、正面・背面で最大
+    const across = Math.abs(Math.cos(rad));
+    const depth = Math.abs(Math.sin(rad));
+    const widthK = 0.34 + across * 0.66;     // 真横でも体の厚みが残る
+    const back = Math.cos(rad) < 0;          // 背中を向けている
+
     target.save();
     target.translate(pos.x, pos.y);
     target.scale(scale, scale * (pos.stretch || 1));
+
+    // 影は向きに関わらず足元に落ちる
     target.fillStyle = "rgba(0,0,0,0.28)";
     target.beginPath();
-    target.ellipse(0, 7, 55, 14, 0, 0, Math.PI * 2);
+    target.ellipse(0, 7, 46 * (0.7 + widthK * 0.3), 13, 0, 0, Math.PI * 2);
     target.fill();
+
     target.fillStyle = piece.color;
     target.strokeStyle = rgba(piece.color, 0.35);
     target.lineWidth = 2;
+
+    // 胴。肩の張り出しを widthK で縮める
+    const sh = 52 * widthK;      // 肩の半幅
+    const waist = 30 * widthK;
     target.beginPath();
-    target.arc(0, -112, 22, 0, Math.PI * 2);
-    target.fill();
-    target.stroke();
-    target.beginPath();
-    target.moveTo(-11, -88);
-    target.bezierCurveTo(-40, -75, -43, -52, -28, -31);
-    target.lineTo(-52, -2);
-    target.quadraticCurveTo(0, 12, 52, -2);
-    target.lineTo(28, -31);
-    target.bezierCurveTo(43, -52, 40, -75, 11, -88);
+    target.moveTo(-11 * widthK, -88);
+    target.bezierCurveTo(-sh * 0.78, -75, -sh * 0.83, -52, -waist, -31);
+    target.lineTo(-sh, -2);
+    target.quadraticCurveTo(0, 12, sh, -2);
+    target.lineTo(waist, -31);
+    target.bezierCurveTo(sh * 0.83, -52, sh * 0.78, -75, 11 * widthK, -88);
     target.closePath();
     target.fill();
     target.stroke();
+
+    // 頭。横を向くほど楕円になる
+    target.beginPath();
+    target.ellipse(0, -112, 22 * (0.72 + across * 0.28), 22, 0, 0, Math.PI * 2);
+    target.fill();
+    target.stroke();
+
+    // 顔の向き。正面側を向いているときだけ小さな印を出す
+    if (!back) {
+      const nose = Math.sin(rad) * 15 * (0.4 + depth * 0.6);
+      target.fillStyle = rgba("#0d0c0b", 0.5);
+      target.beginPath();
+      target.arc(nose, -112, 3.2, 0, Math.PI * 2);
+      target.fill();
+    }
     target.restore();
   }
 
@@ -718,25 +762,42 @@
     target.restore();
   }
 
-  // 平面図。上から見るので、輪郭と向きだけを示す
-  function drawPlanPiece(target, piece, pos, scale) {
-    const r = Math.max(6, 26 * scale);
+  // 平面図。上から見るので、肩幅と向きが読めるように描く。
+  // 実寸で描く: 肩幅は身長のおよそ1/4、厚みはその半分ほど。
+  function drawPlanPiece(target, piece, pos, scale, L) {
     target.save();
     if (piece.type === "performer") {
+      const shoulderM = pieceHeightM(piece) * SHOULDER_RATIO * (piece.size / 100);
+      const halfW = (shoulderM * L.pxPerM) / 2;
+      const halfD = halfW * 0.52;
+      const rad = ((piece.facing || 0) * Math.PI) / 180;
+      target.translate(pos.x, pos.y);
+      // 0度＝客席（画面の下）を向く
+      target.rotate(rad);
       target.fillStyle = piece.color;
+      target.strokeStyle = "rgba(0,0,0,0.4)";
+      target.lineWidth = 1.4;
       target.beginPath();
-      target.arc(pos.x, pos.y, r * 0.62, 0, Math.PI * 2);
+      target.ellipse(0, 0, halfW, halfD, 0, 0, Math.PI * 2);
       target.fill();
-      target.strokeStyle = "rgba(0,0,0,0.35)";
-      target.lineWidth = 1.5;
       target.stroke();
+      // 向きの印。体の前側へ出す
+      target.fillStyle = "rgba(13,12,11,0.55)";
+      target.beginPath();
+      target.moveTo(-halfW * 0.34, halfD * 0.35);
+      target.lineTo(halfW * 0.34, halfD * 0.35);
+      target.lineTo(0, halfD * 1.5);
+      target.closePath();
+      target.fill();
     } else if (piece.type === "block") {
+      const r = Math.max(6, 26 * scale);
       target.fillStyle = piece.color;
       target.fillRect(pos.x - r, pos.y - r * 0.6, r * 2, r * 1.2);
       target.strokeStyle = "rgba(0,0,0,0.3)";
       target.lineWidth = 1.5;
       target.strokeRect(pos.x - r, pos.y - r * 0.6, r * 2, r * 1.2);
     } else if (piece.type === "ring") {
+      const r = Math.max(6, 26 * scale);
       target.strokeStyle = piece.color;
       target.lineWidth = Math.max(3, r * 0.3);
       target.beginPath();
@@ -750,7 +811,9 @@
     const pos = place(piece.u, piece.v, L);
     const scale = pieceScale(piece, pos, L);
     if (L.plan) {
-      const r = Math.max(10, 30 * scale);
+      const r = piece.type === "performer"
+        ? Math.max(11, (pieceHeightM(piece) * SHOULDER_RATIO * (piece.size / 100) * L.pxPerM) / 2 + 4)
+        : Math.max(10, 30 * scale);
       return { x: pos.x - r, y: pos.y - r, w: r * 2, h: r * 2 };
     }
     const st = pos.stretch || 1;
@@ -1081,12 +1144,12 @@
     if (L.plan) drawPlanVenue(target, L);
     else drawFrontVenue(target, L);
 
-    // 人物と物。光は先に（奥に）描く
+    // 演者と物。光は先に（奥に）描く
     const draw = (piece) => {
       const pos = place(piece.u, piece.v, L);
       const scale = pieceScale(piece, pos, L);
       if (piece.type === "light") return drawLight(target, piece, pos, scale, L);
-      if (L.plan) return drawPlanPiece(target, piece, pos, scale);
+      if (L.plan) return drawPlanPiece(target, piece, pos, scale, L);
       if (piece.type === "performer") return drawPerformer(target, piece, pos, scale);
       if (piece.type === "block") return drawBlock(target, piece, pos, scale);
       if (piece.type === "ring") return drawRing(target, piece, pos, scale);
@@ -1319,7 +1382,7 @@
   }
 
   /* ---------- 登場人物 ----------
-     ショーに出る人を名簿で持ち、場面ごとに舞台の上か裏かが決まる。
+     ショーに出る演者を名簿で持ち、場面ごとに舞台の上か裏かが決まる。
      名簿で名前を直すと、その人が出ている全場面の表示が変わる。 */
 
   function castOnStage(castId) {
@@ -1363,7 +1426,7 @@
       name.className = "stage-cast-name-input";
       name.value = member.name;
       name.maxLength = 24;
-      name.setAttribute("aria-label", "人物の名前");
+      name.setAttribute("aria-label", "演者の名前");
       name.addEventListener("input", () => {
         member.name = name.value.slice(0, 24);
         render();
@@ -1378,6 +1441,14 @@
       status.title = onStage ? "押すと舞台から引っ込めます" : "押すとこの場面の舞台へ出します";
       status.addEventListener("click", () => toggleCastOnStage(member.id));
 
+      const profile = document.createElement("button");
+      profile.type = "button";
+      profile.className = "stage-cast-profile";
+      profile.textContent = "…";
+      profile.title = `${member.name}のプロフィール（身長など）`;
+      profile.setAttribute("aria-label", `${member.name}のプロフィールを開く`);
+      profile.addEventListener("click", () => openProfile(member.id));
+
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "stage-cast-remove";
@@ -1385,7 +1456,7 @@
       remove.setAttribute("aria-label", `${member.name}を名簿から外す`);
       remove.addEventListener("click", () => removeCastMember(member.id));
 
-      row.append(swatch, name, status, remove);
+      row.append(swatch, name, status, profile, remove);
       els.castList.append(row);
     });
   }
@@ -1398,7 +1469,10 @@
       return;
     }
     checkpoint();
-    state.project.cast.push({ id: rid("cast"), name: raw.slice(0, 24), color: state.pieceColor });
+    state.project.cast.push({
+      id: rid("cast"), name: raw.slice(0, 24), color: state.pieceColor,
+      heightCm: DEFAULT_HEIGHT_CM, note: "",
+    });
     if (els.castName) els.castName.value = "";
     renderCast();
     persistSoon();
@@ -1455,6 +1529,76 @@
     persistSoon();
     announce(`${member.name}を名簿から外しました。`);
   }
+
+  /* ---------- 演者プロフィール ---------- */
+
+  let profileId = null;
+
+  function openProfile(castId) {
+    const member = state.project.cast.find((c) => c.id === castId);
+    if (!member || !els.profile) return;
+    profileId = castId;
+    els.profileName.value = member.name;
+    els.profileHeight.value = String(member.heightCm || DEFAULT_HEIGHT_CM);
+    els.profileHeightValue.textContent = String(member.heightCm || DEFAULT_HEIGHT_CM);
+    els.profileColor.value = member.color;
+    els.profileNote.value = member.note || "";
+    els.profile.hidden = false;
+    els.profileBackdrop.hidden = false;
+    els.profileName.focus();
+  }
+
+  function closeProfile() {
+    profileId = null;
+    if (els.profile) els.profile.hidden = true;
+    if (els.profileBackdrop) els.profileBackdrop.hidden = true;
+  }
+
+  function profileMember() {
+    return profileId ? state.project.cast.find((c) => c.id === profileId) : null;
+  }
+
+  // 身長が変わると、その演者が出ている場面すべてで見え方が変わる
+  function applyProfileChange(fn) {
+    const member = profileMember();
+    if (!member) return;
+    fn(member);
+    renderCast();
+    render();
+    persistSoon();
+  }
+
+  if (els.profileClose) els.profileClose.addEventListener("click", closeProfile);
+  if (els.profileBackdrop) els.profileBackdrop.addEventListener("click", closeProfile);
+  if (els.profileName) {
+    els.profileName.addEventListener("input", (e) =>
+      applyProfileChange((m) => { m.name = e.target.value.slice(0, 24); }));
+  }
+  if (els.profileHeight) {
+    els.profileHeight.addEventListener("input", (e) => {
+      els.profileHeightValue.textContent = e.target.value;
+      applyProfileChange((m) => { m.heightCm = clamp(Number(e.target.value), 120, 210); });
+    });
+  }
+  if (els.profileColor) {
+    els.profileColor.addEventListener("input", (e) => {
+      applyProfileChange((m) => {
+        m.color = e.target.value;
+        state.project.scenes.forEach((scene) => {
+          scene.pieces.forEach((piece) => {
+            if (piece.castId === m.id) piece.color = m.color;
+          });
+        });
+      });
+    });
+  }
+  if (els.profileNote) {
+    els.profileNote.addEventListener("input", (e) =>
+      applyProfileChange((m) => { m.note = e.target.value.slice(0, 200); }));
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && profileId) closeProfile();
+  });
 
   /* ---------- 場面とプロジェクト ---------- */
 
@@ -1834,6 +1978,14 @@
     els.selectedColor.value = piece.color;
     els.pieceSize.value = String(piece.size);
     els.sizeValue.textContent = String(piece.size);
+    if (els.pieceFacing) {
+      const isPerformer = piece.type === "performer";
+      els.pieceFacing.value = String(piece.facing || 0);
+      els.pieceFacing.disabled = !isPerformer;
+      if (els.facingValue) {
+        els.facingValue.textContent = isPerformer ? facingLabel(piece.facing) : "演者のみ";
+      }
+    }
     if (els.pieceName && document.activeElement !== els.pieceName) {
       const member = piece.castId ? state.project.cast.find((c) => c.id === piece.castId) : null;
       els.pieceName.value = member ? member.name : (piece.name || "");
@@ -2067,6 +2219,15 @@
       announce(e.target.checked ? "コマの名前を出しました。" : "コマの名前を隠しました。");
     });
   }
+  if (els.pieceFacing) {
+    els.pieceFacing.addEventListener("input", (e) => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== "performer") return;
+      piece.facing = Number(e.target.value);
+      if (els.facingValue) els.facingValue.textContent = facingLabel(piece.facing);
+      render();
+    });
+  }
   if (els.pieceName) {
     els.pieceName.addEventListener("input", (e) => {
       const piece = selectedPiece();
@@ -2175,7 +2336,7 @@
     persistSoon();
   }
 
-  [els.background, els.selectedColor, els.pieceSize].forEach((control) => {
+  [els.background, els.selectedColor, els.pieceSize, els.pieceFacing].filter(Boolean).forEach((control) => {
     control.addEventListener("pointerdown", beginControlEdit);
     control.addEventListener("focus", beginControlEdit);
     control.addEventListener("change", finishControlEdit);

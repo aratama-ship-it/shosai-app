@@ -5327,3 +5327,108 @@ textarea, input[type="text"] {
 }
 
 .stage-board-frame.is-closed .stage-canvas-bar { padding: 9px 10px; }
+
+/* 奥・手前のラベルは canvas の縁に置く。
+   バーを常設したので、フレーム基準のままだと見出しと重なる。 */
+.stage-canvas-wrap { position: relative; }
+
+/* ===== 演者プロフィール ===== */
+
+.stage-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 7, 6, 0.72);
+  z-index: 40;
+}
+
+.stage-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(380px, calc(100vw - 40px));
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  background: var(--desk-2);
+  border: 1px solid var(--line-dark);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  z-index: 41;
+}
+
+.stage-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--line-dark);
+}
+
+.stage-modal-head h2 {
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.stage-modal-close {
+  border: 1px solid var(--line-dark);
+  background: none;
+  color: var(--milk-dim);
+  min-width: 26px;
+  min-height: 24px;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.stage-modal-close:hover { color: var(--milk); border-color: var(--rust); }
+
+.stage-modal-body { padding: 14px 16px 18px; }
+
+.stage-modal-body .stage-control-label {
+  display: block;
+  color: var(--milk-dim);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  margin: 10px 0 4px;
+}
+
+.stage-modal-body .stage-control-label:first-child { margin-top: 0; }
+
+.stage-modal-body .stage-text-input {
+  min-height: 34px;
+  font-size: 12px;
+  margin-bottom: 0;
+}
+
+.stage-modal-body textarea.stage-text-input {
+  min-height: 62px;
+  resize: vertical;
+  line-height: 1.7;
+}
+
+.stage-modal-body input[type="range"] { width: 100%; }
+.stage-modal-body input[type="color"] { width: 46px; height: 28px; padding: 0; border: 1px solid var(--line-dark); background: none; }
+
+.stage-profile-hint {
+  color: rgba(240, 231, 214, 0.36);
+  font-size: 9.5px;
+  line-height: 1.65;
+  margin-top: 5px;
+}
+
+/* 名簿の行にプロフィールを開くボタンを足したので、列を1つ増やす */
+.stage-cast-row { grid-template-columns: 20px minmax(0, 1fr) auto auto auto; }
+
+.stage-cast-profile {
+  min-width: 22px;
+  min-height: 22px;
+  border: 1px solid var(--line-dark);
+  background: none;
+  color: rgba(240, 231, 214, 0.45);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.stage-cast-profile:hover { color: var(--milk); border-color: var(--brass); }
