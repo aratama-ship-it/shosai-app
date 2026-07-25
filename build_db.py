@@ -31,7 +31,7 @@ CATEGORY_RULES = [
     ("メディアアート・テクノロジー", ["media_art", "rhizomatiks", "elevenplay", "tech_driven", "audiovisual", "teamlab", "digital_art"]),
     ("展示・インスタレーション", ["exhibition", "installation"]),
     ("オペラ", ["opera"]),
-    ("伝統芸能", ["kabuki", "noh_", "bunraku", "rakugo"]),
+    ("伝統芸能", ["kabuki", "noh_", "bunraku", "rakugo", "traditional_performing_arts", "intangible_heritage"]),
     # `conte` は contemporary に部分一致するため使わない。
     ("コント・お笑い", ["sketch_comedy", "rahmens", "ラーメンズ", "お笑い", "kajalla", "potsunen"]),
     ("クラウン・道化", ["clown"]),
@@ -100,6 +100,23 @@ def categorize(w):
     # genre自体がミュージカル（かつサーカスでない）なら、会社等の語より優先する
     g = str(w.get("genre") or "").lower()
     show_type = str(w.get("show_type") or "").lower()
+    # フェスティバルは会場・流通経路であって個別作品の形式ではない。
+    # 公式が複合ジャンルとして載せた索引は、その複合棚を保ち、式典棚へ誤分類しない。
+    if g.startswith("festival_programme_dance_physical_circus_"):
+        return "ダンス・フィジカルシアター・サーカス"
+    # festival は流通経路であって個別作品の主形式ではない。選定作品は、
+    # 正本の genre に記録した形式を優先して、それぞれの棚に置く。
+    if g.endswith(("_festival_showcase", "_festival_listing")):
+        if "circus" in g or "cirque" in g:
+            return "サーカス・アクロバット"
+        if "dance" in g:
+            return "ダンス・舞踊"
+        if "physical_theatre" in g:
+            return "演劇"
+    # 会場名に Festival を含んでも、コンテンポラリーダンスの個別作品を
+    # 式典・イベント棚へ送らない。circus を明示する複合作品はサーカス棚を優先する。
+    if (g.startswith("contemporary_dance_") and "circus" not in g) or g.startswith("ambulatory_dance_"):
+        return "ダンス・舞踊"
     if "musical" in g and "circus" not in g and "cirque" not in g:
         return "ミュージカル"
     # 式典自体は制作会社や技法より優先する。ただし opening ceremony を含む
@@ -479,6 +496,7 @@ def main():
     er = load("element_relations.json")
     sf = load("staging_features.json")
     pi = load("person_index.json")
+    event_company_radar = load("event_show_company_radar.json")
 
     works = ri["references"]  # 全項目そのまま（表示が目的のため削らない）
     element_counts = {}
@@ -583,6 +601,7 @@ def main():
             "element_relations": len(element_relations),
             "features": len(sf.get("features", [])),
             "persons": len(persons),
+            "event_show_companies": len(event_company_radar.get("companies", [])),
         },
         "staging_lenses": [
             {
@@ -609,6 +628,7 @@ def main():
         "features": sf.get("features", []),
         "feature_categories": sf.get("categories", []),
         "persons": persons,
+        "event_show_company_radar": event_company_radar,
     }
 
     body = json.dumps(db, ensure_ascii=False, separators=(",", ":"))
