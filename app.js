@@ -1337,7 +1337,7 @@
   }
 
   // ---------- 画面切り替え（ハッシュルーター） ----------
-  const VIEWS = ["db", "companies", "desk", "stage", "seeds", "mondo"];
+  const VIEWS = ["db", "companies", "roster", "desk", "stage", "seeds", "mondo"];
 
   function showView(name) {
     $$(".view").forEach((v) => (v.hidden = true));

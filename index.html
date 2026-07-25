@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=36">
+<link rel="stylesheet" href="style.css?v=37">
 </head>
 <body>
 
@@ -14,6 +14,7 @@
   <nav aria-label="主要画面">
     <a href="#db" data-nav="db">資料棚</a>
     <a href="#companies" data-nav="companies">制作会社</a>
+    <a href="#roster" data-nav="roster">名簿</a>
     <a href="#desk" data-nav="desk">制作机</a>
     <a href="#stage" data-nav="stage">舞台スケッチ</a>
     <a href="#seeds" data-nav="seeds">スクラップブック</a>
@@ -100,6 +101,50 @@
         </section>
         <section id="company-radar-detail" class="company-radar-detail" aria-label="制作会社の公開情報">
           <p class="evidence-empty">制作会社を選ぶと、公式に確認した制作範囲と、次に追う作品の入口が出ます。</p>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <!-- 名簿: スカウティングレポートの演者名簿。データは同一オリジンの暗号化ファイルを読む -->
+  <main id="view-roster" class="view" hidden>
+    <section class="roster" aria-labelledby="roster-title">
+      <header class="roster-head">
+        <p class="roster-kicker">PERFORMER ROSTER</p>
+        <h1 id="roster-title">名簿から、人をたどる</h1>
+        <p>スカウティングレポートに集めた演者を、書斎と同じ手つきで読む。検索と並べ替えだけを持ち、編集はしない。</p>
+        <p class="roster-boundary">個人情報のため、この名簿は暗号化したまま置いてある。合言葉を知らなければ中身は読めない。</p>
+      </header>
+
+      <div id="roster-gate" class="roster-gate">
+        <form id="roster-gate-form" class="roster-gate-form">
+          <label for="roster-pass">合言葉</label>
+          <input id="roster-pass" type="password" autocomplete="current-password"
+                 placeholder="スカウティングレポートと同じ合言葉">
+          <button type="submit" id="roster-unlock" class="btn-quiet">名簿を開く</button>
+        </form>
+        <p id="roster-gate-note" class="roster-gate-note" aria-live="polite"></p>
+        <p class="roster-gate-help">
+          スカウティングレポートで解錠済みの端末なら、そのまま開きます。
+          <a id="roster-app-link" href="#" target="_blank" rel="noopener noreferrer">元のアプリを開く ↗</a>
+        </p>
+      </div>
+
+      <div id="roster-workspace" class="roster-layout" hidden>
+        <section class="roster-list-pane" aria-label="演者一覧">
+          <div class="roster-controls">
+            <div id="roster-bases" class="roster-bases" aria-label="カテゴリで絞り込む"></div>
+            <label class="roster-search-label" for="roster-search">名前・スキル・備考を探す</label>
+            <input id="roster-search" type="search" placeholder="例: aerial, juggling, 東京" autocomplete="off">
+            <label class="roster-search-label" for="roster-sort">並べ替え</label>
+            <select id="roster-sort" class="roster-sort"></select>
+            <p id="roster-count" class="roster-count"></p>
+            <p id="roster-stamp" class="roster-stamp"></p>
+          </div>
+          <div id="roster-list" class="roster-list"></div>
+        </section>
+        <section id="roster-detail" class="roster-detail" aria-label="演者の登録内容">
+          <p class="evidence-empty">一覧から選ぶと、登録内容と調べた紹介文がここに出ます。</p>
         </section>
       </div>
     </section>
@@ -424,7 +469,8 @@
 
 <script src="db.js?v=73"></script>
 <script src="data.js?v=16"></script>
-<script src="app.js?v=30"></script>
+<script src="app.js?v=31"></script>
 <script src="stage-sketch.js?v=3"></script>
+<script src="roster.js?v=1"></script>
 </body>
 </html>
