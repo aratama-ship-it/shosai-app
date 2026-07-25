@@ -534,6 +534,7 @@ def main():
     sf = load("staging_features.json")
     pi = load("person_index.json")
     event_company_radar = load("event_show_company_radar.json")
+    company_catalogs = load("company_catalogs.json")
 
     works = ri["references"]  # 全項目そのまま（表示が目的のため削らない）
     element_counts = {}
@@ -612,6 +613,34 @@ def main():
         for e in ei.get("elements", [])
     ]
 
+    # 会社ID → 資料棚にある作品ID。参照切れは配信しない（正本側の整備で気づけるよう数える）。
+    work_ids = {w.get("id") for w in works}
+    company_links = {}
+    broken_links = 0
+    for entry in company_catalogs.get("entries", []):
+        cid = entry.get("company_id")
+        if not cid:
+            continue
+        for rid in entry.get("reference_ids", []):
+            if rid in work_ids:
+                company_links.setdefault(cid, [])
+                if rid not in company_links[cid]:
+                    company_links[cid].append(rid)
+            else:
+                broken_links += 1
+    company_meta = {c.get("id"): c for c in company_catalogs.get("companies", [])}
+    company_links = {
+        cid: {
+            "name": (company_meta.get(cid) or {}).get("name") or cid,
+            "expected": (company_meta.get(cid) or {}).get("expected_catalog_entries"),
+            "work_ids": ids,
+        }
+        for cid, ids in company_links.items()
+    }
+    print(f"company catalog links: {len(company_links)} companies, "
+          f"{sum(len(v['work_ids']) for v in company_links.values())} works"
+          + (f", {broken_links} broken (配信しない)" if broken_links else ""))
+
     element_relations = [
         {
             "relation_type": r.get("relation_type"),
@@ -670,6 +699,9 @@ def main():
         "feature_categories": sf.get("categories", []),
         "persons": persons,
         "event_show_company_radar": event_company_radar,
+        # 制作会社レーダーの existing_catalog_company_id から作品へ降りるための索引。
+        # 会社IDと作品IDだけを配信し、公式カタログの件数は会社の網羅度を示すために残す。
+        "company_catalog_links": company_links,
     }
 
     body = json.dumps(db, ensure_ascii=False, separators=(",", ":"))

@@ -4547,3 +4547,77 @@ textarea, input[type="text"] {
 @media (max-width: 720px) {
   #view-roster { padding-left: 0; }
 }
+
+/* ===== この問いの出どころ（種火から制作机へ渡ったとき） =====
+   紙面（本人の制作）の上に置くが、資料側の情報なので紙の色を薄く敷いて区別する。
+   リスク3（実在作品の模倣へ寄る）の防波堤なので、畳まず常に見える位置に出す。 */
+
+.origin {
+  margin: 20px 0 4px;
+  padding: 14px 16px 13px;
+  background: rgba(43, 38, 32, 0.055);
+  border-left: 2px solid var(--rust);
+}
+
+.origin-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--rust-deep);
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  margin-bottom: 9px;
+}
+
+.origin-recipe {
+  color: var(--ink-soft);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(43, 38, 32, 0.22);
+  padding: 1px 7px;
+}
+
+.origin-works {
+  display: grid;
+  gap: 5px;
+  list-style: none;
+  margin: 0 0 9px;
+}
+
+.origin-works li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.origin-works a {
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 13.5px;
+  text-decoration: underline;
+  text-decoration-color: rgba(168, 75, 38, 0.4);
+  text-underline-offset: 3px;
+}
+
+.origin-works span {
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.origin-none,
+.origin-memo {
+  color: var(--ink-soft);
+  font-size: 11.5px;
+  line-height: 1.85;
+}
+
+.origin-memo { margin-bottom: 8px; }
+
+.origin-caution {
+  color: var(--rust-deep);
+  font-size: 10.5px;
+  line-height: 1.7;
+  padding-top: 8px;
+  border-top: 1px solid rgba(43, 38, 32, 0.12);
+}

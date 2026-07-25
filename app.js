@@ -131,6 +131,8 @@
         pageNote: typeof saved.pageNote === "string" ? saved.pageNote : "",
         activeSessionId: typeof saved.activeSessionId === "string" ? saved.activeSessionId : null,
         selectedIds: Array.isArray(saved.selectedIds) ? saved.selectedIds.filter((id) => typeof id === "string") : [],
+        // 流した種火は「眠らせる」ものなので、開き直しても眠ったままにする
+        discarded: Array.isArray(saved.discarded) ? saved.discarded.filter((t) => typeof t === "string") : [],
         items,
       };
     } catch (_) {
@@ -139,6 +141,7 @@
         pageNote: "",
         activeSessionId: null,
         selectedIds: [],
+        discarded: [],
         items: [],
       };
     }
@@ -172,6 +175,7 @@
         pageNote: seedState.pageNote,
         activeSessionId: seedState.activeSessionId,
         selectedIds: [...seedState.selected],
+        discarded: [...seedState.discarded],
         items: seedState.kept,
       }));
     } catch (_) {
@@ -198,7 +202,7 @@
   const seedState = {
     dealt: [],      // いま左側にめくられているカード
     kept: loadedScrapbook.items, // 右側の紙面。端末内に保存する。
-    discarded: new Set(), // このセッション中に流した種火（再配しない）
+    discarded: new Set(loadedScrapbook.discarded), // 流した種火。眠らせたまま保存する
     selected: new Set(loadedScrapbook.selectedIds.filter((id) => loadedScrapbook.items.some((item) => item.id === id)).slice(0, 3)),
     pageTitle: loadedScrapbook.title,
     pageNote: loadedScrapbook.pageNote,
@@ -782,7 +786,21 @@
     renderSeeds();
   }
 
+  // 保存していない紙面が消えるときだけ確認する。空の紙面や保存済みの紙面では聞かない。
+  function scrapbookHasUnsavedWork() {
+    if (!seedState.kept.length) return false;
+    const saved = seedState.pages.find((page) => page.id === seedState.activeSessionId);
+    if (!saved) return true; // 一度も保存していない
+    return JSON.stringify(saved.items) !== JSON.stringify(seedState.kept)
+      || saved.title !== seedState.pageTitle
+      || saved.pageNote !== seedState.pageNote;
+  }
+
   function startNewScrapbookPage() {
+    if (scrapbookHasUnsavedWork()
+      && !window.confirm(`いまの紙面（付箋${seedState.kept.length}枚）は保存されていません。\n新しいページを始めると、この紙面は消えます。`)) {
+      return;
+    }
     seedState.kept = [];
     seedState.selected = new Set();
     seedState.pageTitle = defaultScrapbookTitle();
@@ -798,6 +816,7 @@
   function deleteScrapbookPage(id) {
     const page = seedState.pages.find((item) => item.id === id);
     if (!page) return;
+    if (!window.confirm(`保存済みページ「${page.title}」（付箋${page.items.length}枚）を一覧から削除します。\nこの操作は元に戻せません。`)) return;
     seedState.pages = seedState.pages.filter((item) => item.id !== id);
     if (seedState.activeSessionId === id) seedState.activeSessionId = null;
     seedState.notice = `保存済みページ「${page.title}」を一覧から外しました。現在の紙面は残っています。`;
@@ -877,6 +896,7 @@
       return;
     }
     seedState.discarded.clear();
+    persistScrapbook();
     seedState.notice = `流した${count}件を種火の束へ戻しました。次の7枚から、また出てきます。`;
     renderSeeds();
   }
@@ -1009,7 +1029,10 @@
     $$("[data-pass]", wrap).forEach((button) =>
       button.addEventListener("click", () => {
         const seed = seedState.dealt.splice(Number(button.dataset.pass), 1)[0];
-        if (seed) seedState.discarded.add(seed.text);
+        if (seed) {
+          seedState.discarded.add(seed.text);
+          persistScrapbook(); // 眠りを持ち越す
+        }
         renderSeeds();
       }));
     $$("[data-seed-index]", wrap).forEach((card) => {
@@ -1040,7 +1063,13 @@
     $$("[data-start-scrap]", keptWrap).forEach((button) =>
       button.addEventListener("click", () => {
         const item = seedState.kept.find((clip) => clip.id === button.dataset.startScrap);
-        if (item) openProject(buildNewProject(item.text));
+        if (item) {
+          openProject(buildNewProject(item.text, {
+            recipe: item.recipe,
+            sources: item.sources,
+            inspiration: item.inspiration,
+          }));
+        }
       }));
     $$("[data-remove-scrap]", keptWrap).forEach((button) =>
       button.addEventListener("click", () => {
@@ -1303,17 +1332,19 @@
     return fixedProject;
   }
 
-  function buildNewProject(text) {
+  function buildNewProject(text, origin) {
     return {
       kind: "new",
       data: {
         title: text.length > 14 ? text.slice(0, 14) + "…" : text,
-        subtitle: "新しい問い",
+        subtitle: origin ? "種火から始めた問い" : "新しい問い",
         question: { previous: null, current: text },
         sceneLine: null,
         constraints: [],
         scene: null,
         transformation: null,
+        // 元にした作品・レシピ・変形メモ。ここで捨てると出どころを辿れなくなる
+        origin: origin || null,
       },
     };
   }
@@ -1428,7 +1459,31 @@
       <p class="scene-line">${p.sceneLine ? esc(p.sceneLine) : "（まだ書かれていない — ブリーフ前にここを言い切る）"}</p>
       <div class="question-shift">${shift}</div>
       <div class="constraints" aria-label="制約ピン">${chips}</div>
+      ${originHtml(p.origin)}
       ${body}`;
+  }
+
+  // 種火から始めた問いには、元にした作品と変形の理由を必ず添える。
+  // ここを落とすと、元作品を知らないまま場面が育ち、表面をなぞる危険に気づけなくなる
+  // （設計計画書 リスク3）。スクラップブックから制作机へ渡す唯一の開示点。
+  function originHtml(origin) {
+    if (!origin) return "";
+    const works = (origin.sources || [])
+      .map((id) => (DB ? DB.works.find((w) => w.id === id) : null))
+      .filter(Boolean);
+    const links = works.length
+      ? `<ul class="origin-works">${works.map((w) => {
+          const meta = [w.company, w.year].filter(Boolean).join(" / ");
+          return `<li><a href="#db/${encodeURIComponent(w.id)}">${esc(w.title)}</a>${meta ? `<span>${esc(meta)}</span>` : ""}</li>`;
+        }).join("")}</ul>`
+      : `<p class="origin-none">元にした作品は記録されていません（手で書いた種火、または場面問答の答え）。</p>`;
+    return `
+      <section class="origin" aria-label="この問いの出どころ">
+        <p class="origin-head">この問いの出どころ${origin.recipe ? ` <span class="origin-recipe">${esc(origin.recipe)}</span>` : ""}</p>
+        ${links}
+        ${origin.inspiration ? `<p class="origin-memo">${esc(origin.inspiration)}</p>` : ""}
+        <p class="origin-caution">参照した作品の意匠・キャラクター・象徴をそのまま持ち込まない。使うのは仕組みと関係だけ。</p>
+      </section>`;
   }
 
   // ---------- 置いた資料（左レール） ----------
@@ -1783,11 +1838,24 @@
       detail.innerHTML = `<p class="evidence-empty">現在の条件に該当する制作会社はありません。</p>`;
       return;
     }
-    const connectedWorks = (company.catalog_work_ids || [])
+    // このレーダーから直接つないだ作品と、既にある会社台帳（company_catalogs）から
+    // 引ける作品を合わせて出す。台帳を持つ会社に「接続なし」と表示していたのを直した。
+    const catalog = (DB.company_catalog_links || {})[company.existing_catalog_company_id];
+    const workIds = (company.catalog_work_ids || []).concat(catalog ? catalog.work_ids : []);
+    const connectedWorks = Array.from(new Set(workIds))
       .map((id) => DB.works.find((work) => work.id === id))
-      .filter(Boolean);
+      .filter(Boolean)
+      .sort((a, b) => (Number(a.year) || 9999) - (Number(b.year) || 9999));
+    const CATALOG_PREVIEW = 12;
+    const shown = connectedWorks.slice(0, CATALOG_PREVIEW);
+    const rest = connectedWorks.length - shown.length;
+    const catalogNote = catalog
+      ? `<p class="company-dossier-muted">会社台帳から ${connectedWorks.length}件（公式カタログの想定 ${esc(String(catalog.expected ?? "—"))}件）。`
+        + (rest > 0 ? `下に${CATALOG_PREVIEW}件だけ出しています。` : "")
+        + `資料棚の会社で絞り込むと全件を読めます。</p>`
+      : "";
     const connectedWorksHtml = connectedWorks.length
-      ? `<ul class="company-dossier-work-list">${connectedWorks.map((work) => `
+      ? catalogNote + `<ul class="company-dossier-work-list">${shown.map((work) => `
           <li><a class="company-dossier-work" href="#db/${encodeURIComponent(work.id)}">${esc(work.title)} <small>${esc(String(work.year || "年未確認"))} ↗</small></a></li>`).join("")}</ul>`
       : `<p class="company-dossier-muted">このレーダーから新規に接続した作品はまだありません。外部の公式ページを確認してから追加します。</p>`;
     detail.innerHTML = `
