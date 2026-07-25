@@ -4621,3 +4621,13 @@ textarea, input[type="text"] {
   padding-top: 8px;
   border-top: 1px solid rgba(43, 38, 32, 0.12);
 }
+
+/* 作品 → 制作会社レーダーへの逆リンク。会社から作品へ降りた道を、逆にも通す */
+.dbd-radar-link {
+  color: var(--brass);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-decoration: underline;
+  text-decoration-color: rgba(156, 130, 63, 0.45);
+  text-underline-offset: 3px;
+}

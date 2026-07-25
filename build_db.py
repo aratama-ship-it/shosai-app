@@ -527,6 +527,40 @@ def seed_facets(facets):
     return kept or None
 
 
+def validate_company_radar(radar, catalogs, works):
+    """制作会社レーダーの参照先が実在するかを確かめる。
+
+    この索引は手で書き足していくので、作品IDの打ち間違いや、types/catalog_statuses に
+    無い値が入っても画面上は静かに壊れる（作品が出ない、ラベルがIDのまま出る）。
+    正本を直す手がかりになるよう、ビルド時に落とす。
+    """
+    errors = []
+    work_ids = {w.get("id") for w in works}
+    type_ids = {t.get("id") for t in radar.get("types", [])}
+    status_keys = set(radar.get("catalog_statuses", {}))
+    catalog_ids = {c.get("id") for c in catalogs.get("companies", [])}
+
+    for company in radar.get("companies", []):
+        cid = company.get("id") or "(id無し)"
+        if company.get("type_id") not in type_ids:
+            errors.append(f"{cid}: 未定義の type_id {company.get('type_id')!r}")
+        if company.get("catalog_status") not in status_keys:
+            errors.append(f"{cid}: 未定義の catalog_status {company.get('catalog_status')!r}")
+        for wid in company.get("catalog_work_ids", []):
+            if wid not in work_ids:
+                errors.append(f"{cid}: catalog_work_ids に無い作品 {wid}")
+        existing = company.get("existing_catalog_company_id")
+        if existing and existing not in catalog_ids:
+            errors.append(f"{cid}: company_catalogs に無い会社 {existing}")
+        for key in ("official_url", "next_collection_url"):
+            url = company.get(key) or ""
+            if url and not url.startswith("https://"):
+                errors.append(f"{cid}: {key} が https でない（{url[:40]}）")
+
+    if errors:
+        raise ValueError("company radar validation failed: " + "; ".join(errors[:10]))
+
+
 def main():
     ri = load("reference_index.json")
     ei = load("element_index.json")
@@ -573,6 +607,7 @@ def main():
     validate_categories(works)
     staging_lens_counts = validate_staging_lenses(works)
     validate_research_depth(works)
+    validate_company_radar(event_company_radar, company_catalogs, works)
 
     from collections import Counter
     cat_dist = Counter(w["category"] for w in works)

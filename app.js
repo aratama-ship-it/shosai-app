@@ -203,6 +203,7 @@
     dealt: [],      // いま左側にめくられているカード
     kept: loadedScrapbook.items, // 右側の紙面。端末内に保存する。
     discarded: new Set(loadedScrapbook.discarded), // 流した種火。眠らせたまま保存する
+    wakePool: new Set(), // 眠りから起こした資料の「別の読み方」。次の配布で先に配る
     selected: new Set(loadedScrapbook.selectedIds.filter((id) => loadedScrapbook.items.some((item) => item.id === id)).slice(0, 3)),
     pageTitle: loadedScrapbook.title,
     pageNote: loadedScrapbook.pageNote,
@@ -879,25 +880,59 @@
     const pool = (dist, needed) => {
       const eligible = catalog.filter(
         (s) => s.dist === dist && !seedState.discarded.has(s.text));
-      return shuffle(eligible).slice(0, needed);
+      // 眠りから起こした資料の「別の読み方」を先に配る（resetDiscardedSeeds）
+      const woken = shuffle(eligible.filter((s) => seedState.wakePool.has(s.text)));
+      const rest = shuffle(eligible.filter((s) => !seedState.wakePool.has(s.text)));
+      return woken.concat(rest).slice(0, needed);
     };
     const near = pool("near", 3);
     const mid = pool("mid", 2);
     const alien = pool("alien", 2);
     seedState.dealt = shuffle(near.concat(mid, alien));
+    // 配った分は優先枠から外す。次は通常の束から引く
+    seedState.dealt.forEach((s) => seedState.wakePool.delete(s.text));
     renderSeeds();
   }
 
+  // 眠らせた種火を起こす。同じ文面で戻すと、同じ理由でまた流されるだけなので
+  // （設計計画書 リスク8）、まず「同じ資料を別のレシピで読んだ種火」を探して、
+  // そちらを次の配布へ回す。元の形は眠らせたままにする。
   function resetDiscardedSeeds() {
-    const count = seedState.discarded.size;
-    if (!count) {
+    const asleep = [...seedState.discarded];
+    if (!asleep.length) {
       seedState.notice = "まだ流した種火はありません。";
       renderSeeds();
       return;
     }
-    seedState.discarded.clear();
+    const catalog = seedCatalog();
+    const byText = new Map(catalog.map((seed) => [seed.text, seed]));
+
+    // 眠っていた種火が見ていた資料と、その読み方（レシピ）
+    const sources = new Set();
+    const recipes = new Set();
+    asleep.forEach((text) => {
+      const seed = byText.get(text);
+      if (!seed) return;
+      (seed.sources || []).forEach((id) => sources.add(id));
+      if (seed.recipe) recipes.add(seed.recipe);
+    });
+
+    // 同じ資料を、違う読み方で組み立てた種火
+    const transformed = catalog.filter((seed) =>
+      !seedState.discarded.has(seed.text)
+      && !recipes.has(seed.recipe)
+      && (seed.sources || []).some((id) => sources.has(id)));
+
+    if (transformed.length) {
+      seedState.wakePool = new Set(transformed.map((seed) => seed.text));
+      seedState.notice = `流した${asleep.length}件はそのままにして、同じ資料を別のレシピで読んだ${transformed.length}件を次の7枚へ回します。`;
+    } else {
+      // 別の読み方が残っていない資料は、そのまま起こす
+      seedState.discarded.clear();
+      seedState.wakePool = new Set();
+      seedState.notice = `流した${asleep.length}件を束へ戻しました。別の読み方が残っていないため、同じ形で戻ります。`;
+    }
     persistScrapbook();
-    seedState.notice = `流した${count}件を種火の束へ戻しました。次の7枚から、また出てきます。`;
     renderSeeds();
   }
 
@@ -2320,6 +2355,36 @@
     else window.scrollTo(0, 0);
   }
 
+  // 作品 → 制作会社レーダーへの逆リンク。会社から作品へは降りられるのに、作品から
+  // 会社の全体像へ戻る道が無かった。works に company_id は無いので、会社台帳の
+  // 作品ID索引から逆引きする（会社名の文字列は表記揺れがあり照合に使えない）。
+  let workToRadarCache = null;
+
+  function workToRadar() {
+    if (workToRadarCache) return workToRadarCache;
+    workToRadarCache = new Map();
+    const links = (DB && DB.company_catalog_links) || {};
+    const radar = companyRadarCompanies();
+    Object.keys(links).forEach((catalogId) => {
+      const company = radar.find((c) => c.existing_catalog_company_id === catalogId);
+      if (!company) return;
+      links[catalogId].work_ids.forEach((wid) => workToRadarCache.set(wid, company));
+    });
+    // レーダーから直接つないだ作品も辿れるようにする
+    radar.forEach((company) => {
+      (company.catalog_work_ids || []).forEach((wid) => {
+        if (!workToRadarCache.has(wid)) workToRadarCache.set(wid, company);
+      });
+    });
+    return workToRadarCache;
+  }
+
+  function companyRadarLink(w) {
+    const company = workToRadar().get(w.id);
+    if (!company) return "";
+    return ` ・ <a class="dbd-radar-link" href="#companies/${encodeURIComponent(company.id)}">制作会社をたどる ↗</a>`;
+  }
+
   function renderDbDetail(w) {
     const sec = (title, inner, cls) =>
       inner ? `<section class="dbd-sec ${cls || ""}"><h3>${title}</h3>${inner}</section>` : "";
@@ -2428,7 +2493,7 @@
         <p class="dbd-kicker">${esc(w.category || "")}${w.subcategory ? " ／ " + esc(w.subcategory) : ""}${w.media_type ? " ・ " + esc(w.media_type) : ""}</p>
         <h2 class="dbd-title">${esc(w.title)}</h2>
         ${w.original_title && w.original_title !== w.title ? `<p class="dbd-orig">${esc(w.original_title)}</p>` : ""}
-        <p class="dbd-meta">${esc(w.company || "会社不明")} ・ ${esc(w.year || "年不明")}</p>
+        <p class="dbd-meta">${esc(w.company || "会社不明")} ・ ${esc(w.year || "年不明")}${companyRadarLink(w)}</p>
         <section class="dbd-depth research-level-${esc(amountLevel)} depth-${esc(depth.level)}" aria-label="この作品の調査レベル">
           <div class="dbd-depth-head">
             <p class="dbd-depth-label">${esc(amountLabel)}</p>
