@@ -490,6 +490,43 @@ def validate_research_depth(works):
         raise ValueError("research depth validation failed: " + "; ".join(errors[:10]))
 
 
+# 正本の具体系フィールドには「〜は未確認」「official ... unconfirmed」等の断り書きが
+# 付随する（事実と解釈を分ける方針のため）。種火の素材として読むときは、断り書きだけの
+# 項目を落とす。ガード条件としては別途 risk_of_cliche を使う。
+HEDGE_RE = re.compile(
+    r"未確認|未詳|未調査|確認しない|確認できない|not_checked|not_applicable|unconfirmed"
+    r"|主張しない|にしない|へ拡張しない|公式は.*(案内|説明)する$"
+)
+
+# 1語タグ（"dance" "war" "journey"）に退化した項目を落とす閾値。
+# draft_web_researched の要素はこの退化が多く、文字数が実質の品質ゲートになる。
+SEED_FACET_MIN = {"movement": 12, "visual_grammar": 10}
+
+
+def usable_seed_items(values, min_len):
+    """像として使える項目だけを返す。断り書き・1語タグ・重複を除く。"""
+    out = []
+    for v in values or []:
+        s = str(v or "").replace("\n", " ").strip()
+        if len(s) < min_len or HEDGE_RE.search(s):
+            continue
+        if s not in out:
+            out.append(s)
+    return out
+
+
+def seed_facets(facets):
+    """種火の素材になる facets だけを残す。何も残らなければ None（配信しない）。"""
+    if not isinstance(facets, dict):
+        return None
+    kept = {}
+    for key, min_len in SEED_FACET_MIN.items():
+        items = usable_seed_items(facets.get(key), min_len)
+        if items:
+            kept[key] = items
+    return kept or None
+
+
 def main():
     ri = load("reference_index.json")
     ei = load("element_index.json")
@@ -567,6 +604,10 @@ def main():
             "feature_ids": e.get("feature_ids", []),
             "confidence": e.get("confidence"),
             "status": e.get("status"),
+            # 物（visual_grammar）と動き（movement）だけを通す。種火の素材として、
+            # 正本の中でここだけが具体的な像を構造的に分けて持っている。
+            # affect / style_axis 等は統制語彙で像を持たないため配信しない。
+            "facets": seed_facets(e.get("facets")),
         }
         for e in ei.get("elements", [])
     ]

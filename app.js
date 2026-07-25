@@ -217,75 +217,411 @@
     return a;
   }
 
-  // 資料棚の現在の正本を横断し、出典へ戻れる「未完成の場面」を200件つくる。
-  // 各文面は事実の要約ではなく、テーマ・トーンを制作条件として読み替えた提案。
-  const EXPANDED_SEED_COUNT = 200;
+  /* ---------- 種火の自動生成 ----------
+   *
+   * 設計計画書 5節の10レシピを、実際の変換として実装する。以前はテーマ語（"記憶"
+   * "childhood" 等の概念名詞）をテンプレートへ流し込んでいたため、どのレシピも同じ
+   * 穴埋め文になっていた。レシピ名がラベルにすぎない状態だった。
+   *
+   * 素材を具体的な像へ入れ替えた。正本の中で像を持つのは次の4つ:
+   *   elements[].facets.movement       身体の動き。「→」で手順を書いたものが特に強い
+   *   elements[].facets.visual_grammar 物・視覚
+   *   works[].signature_scenes         すでに一行場面の形をしている
+   *   works[].set_mechanics            物と機構。数値・部材名まで入る
+   * テーマ・トーン・useful_for は概念語しか持たないので使わない。
+   *
+   * 各レシピは異なる素材と異なる操作を持つ。文末には必ず介入の余白を1か所残す
+   * （完成させない。本人が「ここを変えたい」と入れる場所を作る）。
+   * 生成は決定論的にする（同じ正本なら同じ種火。再現できないと出どころを辿れない）。
+   */
   let expandedSeedCache = null;
 
-  function seedKeyword(work, offset) {
-    const choices = []
-      .concat(Array.isArray(work.themes) ? work.themes : [])
-      .concat(Array.isArray(work.tone) ? work.tone : [])
-      .concat(Array.isArray(work.useful_for) ? work.useful_for : [])
-      .map((value) => String(value || "").replace(/\s+/g, " ").trim())
-      .filter((value) => value && value.length <= 52);
-    return choices.length
-      ? choices[offset % choices.length]
-      : (work.category || work.genre || "まだ名のない条件");
+  // 正本は事実と解釈を分ける方針なので、具体系フィールドにも「〜は未確認」「公式の入口」
+  // のような索引側のメタ記述が混ざる。像ではないので種火の素材からは落とす。
+  const SEED_HEDGE = new RegExp([
+    "未確認", "未詳", "未調査", "確認しない", "確認できない", "確定できない",
+    "not_checked", "not_applicable", "unconfirmed", "official",
+    "公式", "推定しない", "特定しない", "固定しない", "にしない",
+    "分けて記録", "として記録", "本索引", "credit", "記述はない", "になし", "は不明",
+  ].join("|"));
+
+  // 索引としての補足（「（…はMDになし）」「（Michel Crête）」）が末尾に付く項目がある。
+  // 場面の像ではないので、長い括弧書きは落としてから使う。短い括弧は意味を担うので残す。
+  const stripAside = (s) => s.replace(/[（(][^）)]{12,}[）)]/g, "").replace(/\s{2,}/g, " ").trim();
+
+  // 日本語の文へ埋める素材なので、日本語を含まない統制語彙（"dance" "noh acting"
+  // "opera staging"）は落とす。そのまま埋めると読める文にならない。
+  const HAS_JA = /[ぁ-んァ-ヶ一-龠]/;
+
+  // 正本には配列で入る項目とまれに文字列で入る項目が混在する（set_mechanics 等）。
+  // 生成側で吸収する。正本は読み取り専用なので、こちらで直す。
+  const asList = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+
+  function seedUsable(value, minLen) {
+    const s = stripAside(String(value || "").replace(/\s+/g, " ").trim());
+    if (s.length < minLen || s.length > 120) return "";
+    if (!HAS_JA.test(s)) return "";
+    return SEED_HEDGE.test(s) ? "" : s;
+  }
+
+  // 「→」手順の一段として自立しているか。断片や英語だけの段は組み替えに使えない
+  const usableStep = (s) => s.length >= 4 && s.length <= 60 && HAS_JA.test(s) && !SEED_HEDGE.test(s);
+
+  // 物を扱うレシピ（素材起点・機能の継承・制約強化・関係再配線）は、触れる物が
+  // 見えていないと成立しない。「サーカスと劇場の接続」のような関係の要約ではなく、
+  // 「100脚のデッキチェア」の側だけを通すための足切り。
+  const OBJECT_WORD = new RegExp([
+    "椅子", "机", "テーブル", "台", "板", "箱", "扉", "窓", "壁", "床", "天井", "階段",
+    "水", "水面", "布", "糸", "紐", "縄", "ロープ", "網", "鏡", "梯子", "はしご", "棒", "ポール",
+    "球", "ボール", "輪", "車", "紙", "石", "砂", "火", "煙", "霧", "雪", "羽", "花",
+    "木", "鉄", "金属", "ガラス", "陶", "人形", "パペット", "楽器", "食器", "皿", "鍋",
+    "ベッド", "パイプ", "歯車", "機械", "装置", "ブランコ", "スイング", "プール", "噴水",
+    "衣装", "帽子", "靴", "傘", "旗", "本", "手紙", "写真", "照明", "灯", "ランプ", "幕",
+  ].join("|"));
+
+  // 決定論的に配列から選ぶ。index と塩で散らす
+  const pick = (arr, i, salt) => arr[(i * 31 + salt * 17) % arr.length];
+
+  // 文末の介入余白。ここを本人が触る前提で開けておく
+  const OPENINGS = [
+    "何で見せるかは決めていない。",
+    "どちらを本体として残すかは決めていない。",
+    "終わりをどう閉じるかは稽古で探す。",
+    "人数は未決定。1人でも成立させたい。",
+    "観客がどこで気づくかは、まだ動かせる。",
+    "この物を別の物へ置き換えてもよい。",
+  ];
+
+  function seedMaterials() {
+    const db = typeof SHOSAI_DB !== "undefined" ? SHOSAI_DB : null;
+    if (!db || !Array.isArray(db.works)) return null;
+
+    const workById = new Map(db.works.map((w) => [w.id, w]));
+    const byId = (id) => workById.get(id);
+    // 要素から参照作品を引く（出どころを必ず辿れるようにする）
+    const elementWork = (el) => {
+      const links = asList(el.work_links);
+      for (const l of links) {
+        const w = byId(l.work_id);
+        if (w) return w;
+      }
+      return null;
+    };
+
+    const els = (Array.isArray(db.elements) ? db.elements : [])
+      .filter((e) => e && e.facets)
+      .slice()
+      .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+
+    const withMovement = [];
+    const withArrow = [];   // 「→」で手順が書かれたもの。時間の組み替えに直結する
+    const withObject = [];
+    const withThing = [];   // 触れる物が見えているもの
+    els.forEach((e) => {
+      const w = elementWork(e);
+      if (!w) return;
+      const mv = asList(e.facets.movement).map((v) => seedUsable(v, 12)).filter(Boolean);
+      const vg = asList(e.facets.visual_grammar).map((v) => seedUsable(v, 10)).filter(Boolean);
+      const label = e.label_ja || e.label || "";
+      if (mv.length) {
+        const entry = { el: e, work: w, label, mv, vg, type: e.type };
+        // 手順（→）は時間の組み替え専用にする。単発の動きと混ぜると文が長くなりすぎる
+        if (mv.some((m) => m.includes("→"))) withArrow.push(entry);
+        else withMovement.push(entry);
+      }
+      if (vg.length) withObject.push({ el: e, work: w, label, mv, vg, type: e.type });
+
+      // 触れる物が見えている記述を、物を扱うレシピへ回す。
+      // visual_grammar は英語の統制語彙が多く日本語のものが少ないため、要素の概要
+      // （日本語で書かれ、物と動作を含む）も同じ資格で拾う。
+      const summary = seedUsable(e.summary, 16);
+      const thing = vg.find((v) => OBJECT_WORD.test(v))
+        || (summary && OBJECT_WORD.test(summary) ? summary : "");
+      if (thing) {
+        withThing.push({
+          el: e, work: w, label, mv, type: e.type,
+          vg: [thing].concat(vg.filter((v) => v !== thing)),
+        });
+      }
+    });
+
+    const scenes = [];      // すでに一行場面の形をしている
+    const mechanics = [];   // 物と機構
+    const apparatus = [];   // 器具・技法の名詞
+    const learnings = [];   // 変換規則として使える操作の指示
+    db.works.forEach((w) => {
+      if (!w || !w.id || !w.title) return;
+      asList(w.signature_scenes).forEach((v) => {
+        const s = seedUsable(v, 24);
+        if (s) scenes.push({ work: w, text: s });
+      });
+      asList(w.set_mechanics).forEach((v) => {
+        const s = seedUsable(v, 20);
+        if (s && OBJECT_WORD.test(s)) mechanics.push({ work: w, text: s });
+      });
+      asList(w.apparatus_or_disciplines).forEach((v) => {
+        const s = seedUsable(v, 4);
+        if (s && s.length <= 40) apparatus.push({ work: w, text: s });
+      });
+      asList(w.production_learning).forEach((v) => {
+        const s = seedUsable(v, 20);
+        if (s) learnings.push({ work: w, text: s });
+      });
+    });
+
+    const rel = (Array.isArray(db.element_relations) ? db.element_relations : [])
+      .filter((r) => r && r.different_axes && r.different_axes.length)
+      .map((r) => {
+        const from = els.find((e) => e.id === r.from) || null;
+        const to = els.find((e) => e.id === r.to) || null;
+        return { r, from, to };
+      })
+      .filter((x) => x.from && x.to && elementWork(x.from) && elementWork(x.to));
+
+    return { withMovement, withArrow, withObject, withThing, scenes, mechanics, apparatus, learnings, rel, elementWork };
+  }
+
+  // 10レシピ。各要素は { name, stock, make }。make は素材から1件の種火を作る
+  function seedRecipes(m) {
+    // 「→」の手順を段へ分ける。自立していない段が混じる行は使わない（組み替えると
+    // 日本語が壊れるため）。2段未満になった時点で捨てる。
+    const arrowSteps = (entry) => {
+      const line = entry.mv.find((x) => x.includes("→")) || "";
+      const raw = line.split("→").map((s) => s.trim()).filter(Boolean);
+      if (raw.length < 2 || !raw.every(usableStep)) throw new Error("skip");
+      return raw;
+    };
+
+    return [
+      {
+        // 観客に起こす効果だけ残し、手段を別作品の器具へ交換する
+        name: "機能保存・手段交換",
+        dist: "near",
+        stock: () => Math.min(m.scenes.length, m.withThing.length),
+        make: (i) => {
+          const s = pick(m.scenes, i, 1);
+          let a = pick(m.withThing, i, 7);
+          if (a.work.id === s.work.id) a = pick(m.withThing, i + 1, 7);
+          return {
+            text: `${s.text} — この場面が観客へ起こすことだけを残し、手段は「${a.vg[0]}」へ交換する。元の意匠は持ち込まない。${pick(OPENINGS, i, 2)}`,
+            sources: [s.work.id, a.work.id],
+            inspiration: `「${s.work.title}」の場面から、観客に起こる効果だけを抽出した。手段は「${a.work.title}」の${a.label}が持つ物の側へ交換している。`,
+          };
+        },
+      },
+      {
+        // 対照軸を1つだけ反転する。どの軸かを明記する
+        name: "軸反転",
+        dist: "alien",
+        stock: () => m.rel.length,
+        make: (i) => {
+          const x = pick(m.rel, i, 3);
+          const wa = m.elementWork(x.from);
+          const wb = m.elementWork(x.to);
+          // 「〈作品名〉は〜」の形は軸ではなく作品の説明なので、軸として引用しない
+          const axis = asList(x.r.different_axes)
+            .map((v) => stripAside(String(v || "").replace(/\s+/g, " ").trim()).slice(0, 90))
+            .find((v) => usableStep(v) && !v.includes(wa.title) && !v.includes(wb.title));
+          if (!axis) throw new Error("skip");
+          const la = stripAside(x.from.label_ja || x.from.label || "");
+          const lb = stripAside(x.to.label_ja || x.to.label || "");
+          if (!la || !lb) throw new Error("skip");
+          return {
+            text: `「${la}」と「${lb}」は、次の点で反対側にいる — ${axis}。この違いだけを反転させ、他は動かさずに一場面を作る。${pick(OPENINGS, i, 4)}`,
+            sources: [wa.id, wb.id],
+            inspiration: `正本の要素関係（${x.r.relation_type}）が記録している対照軸を、そのまま反転の指示に読み替えた。反転するのはこの軸1本だけで、人数・空間・道具は据え置く。`,
+          };
+        },
+      },
+      {
+        // 共通の動詞を橋にして、二つの動きを衝突させる
+        name: "異種衝突",
+        dist: "alien",
+        stock: () => Math.floor(m.withMovement.length / 2),
+        make: (i) => {
+          const a = pick(m.withMovement, i, 5);
+          let b = pick(m.withMovement, i, 23);
+          if (b.work.id === a.work.id) b = pick(m.withMovement, i + 1, 23);
+          return {
+            text: `「${a.mv[0]}」と「${b.mv[0]}」を、同じ一つの動作の中で同時に起こす。片方が進むほどもう片方が壊れる関係にする。${pick(OPENINGS, i, 1)}`,
+            sources: [a.work.id, b.work.id],
+            inspiration: `「${a.work.title}」の${a.label}と「${b.work.title}」の${b.label}から、動きだけを取り出して衝突させた。作品の世界観や意匠は引き継がない。`,
+          };
+        },
+      },
+      {
+        // 極端な制約を課し、その制約が何を生むかまで出す
+        name: "制約強化",
+        dist: "mid",
+        stock: () => m.withThing.length,
+        make: (i) => {
+          const a = pick(m.withThing, i, 11);
+          const limits = [
+            "床から足を離さない",
+            "音を一切出さない",
+            "同じ場所から動かない",
+            "両手を使えない",
+            "明かりは一つだけ",
+            "観客に背を向けたまま",
+          ];
+          return {
+            text: `${a.vg[0]}。この条件で、${pick(limits, i, 9)}という制約を課す。制約があるために生まれる見え方を、一番の見せ場にする。${pick(OPENINGS, i, 5)}`,
+            sources: [a.work.id],
+            inspiration: `「${a.work.title}」の${a.label}が持つ物の配置を、極端な制約の下に置いた。制約を克服する話ではなく、制約が生む見え方を主役にする。`,
+          };
+        },
+      },
+      {
+        // 観客の誤解から始め、遅れて意味が反転する
+        name: "認識遅延",
+        dist: "mid",
+        stock: () => m.scenes.length,
+        make: (i) => {
+          const s = pick(m.scenes, i, 13);
+          const delays = [
+            "終わってから",
+            "二度目に同じことが起きたとき",
+            "誰かが退場した後",
+            "明かりが変わった瞬間",
+          ];
+          return {
+            text: `${s.text} — 観客は最初これを別の意味で読む。${pick(delays, i, 3)}、意味が反転する。${pick(OPENINGS, i, 3)}`,
+            sources: [s.work.id],
+            inspiration: `「${s.work.title}」の場面の構造だけを借り、観客の理解が遅れて反転する形へ組み替えた。元の物語や人物は使わない。`,
+          };
+        },
+      },
+      {
+        // 見た目ではなく、物の挙動から始める
+        name: "素材起点",
+        dist: "near",
+        stock: () => m.mechanics.length,
+        make: (i) => {
+          const k = pick(m.mechanics, i, 17);
+          return {
+            text: `${k.text} — この物の挙動だけを出発点にして、寸法も規模も変える。物が何をするかが場面の筋になる。${pick(OPENINGS, i, 0)}`,
+            sources: [k.work.id],
+            inspiration: `「${k.work.title}」の舞台機構から、物がどう振る舞うかだけを抽出した。同じ規模・同じ形で作ることは目的にしない。`,
+          };
+        },
+      },
+      {
+        // 「AがBを操る」を組み替える
+        name: "関係再配線",
+        dist: "alien",
+        stock: () => m.withThing.length,
+        make: (i) => {
+          const e = pick(m.withThing, i, 19);
+          const wires = [
+            "操っていた側が操られる側へ入れ替わる",
+            "第三のものを介してしか触れられなくなる",
+            "観客の動きがその関係を決める",
+            "関係が一方向にしか進まなくなる",
+          ];
+          return {
+            text: `${e.vg[0]}。ここにある関係を組み替え、${pick(wires, i, 7)}ようにする。${pick(OPENINGS, i, 4)}`,
+            sources: [e.work.id],
+            inspiration: `「${e.work.title}」の${e.label}が持つ物と身体の配置から、関係の線だけを取り出して繋ぎ直した。`,
+          };
+        },
+      },
+      {
+        // 同じ手順を、遅延・反復・逆順・欠落で組み直す
+        name: "時間再編集",
+        dist: "near",
+        stock: () => m.withArrow.length,
+        make: (i) => {
+          const e = pick(m.withArrow, i, 29);
+          const steps = arrowSteps(e);
+          // 逆順は3段以上でないと意味が壊れるので、2段の素材には出さない
+          const edits = [
+            () => `${steps.join(" → ")}。この順を保ったまま、途中の一つだけを毎回欠落させる。何が欠けたかは言わない。`,
+            () => `${steps.join(" → ")}。これを5回繰り返し、回ごとに一つずつ遅らせて、最後は全部がずれている。`,
+            () => (steps.length >= 3
+              ? `${steps.slice().reverse().join(" → ")}。手順を逆から進め、原因が最後に来る。`
+              : `${steps.join(" → ")}。この二つの間を、必要以上に引き伸ばす。待っている時間の方を本体にする。`),
+            () => `${steps.join(" → ")}。全体を10秒に圧縮し、同じことを次は3分かけてやる。`,
+          ];
+          return {
+            text: `${pick(edits, i, 5)()} ${pick(OPENINGS, i, 2)}`,
+            sources: [e.work.id],
+            inspiration: `「${e.work.title}」の${e.label}に記録された手順を、時間の操作だけで組み直した。動作そのものは変えていない。`,
+          };
+        },
+      },
+      {
+        // 中心要素を1つ消し、その役割を別のものへ引き継がせる
+        name: "機能の継承",
+        dist: "mid",
+        stock: () => m.withThing.length,
+        make: (i) => {
+          const e = pick(m.withThing, i, 31);
+          const heirs = ["身体", "光", "音", "床", "布", "他の出演者の視線"];
+          return {
+            text: `${e.vg[0]} — この物を舞台から消し、同じ役割を${pick(heirs, i, 11)}に引き継がせる。無くなったことに触れない。${pick(OPENINGS, i, 5)}`,
+            sources: [e.work.id],
+            inspiration: `「${e.work.title}」の${e.label}から中心の物を取り除き、その機能だけを別の担い手へ移した。`,
+          };
+        },
+      },
+      {
+        // 痕跡や結果を先に見せ、原因を後から発見させる
+        name: "結果先出し",
+        dist: "mid",
+        stock: () => m.withArrow.length,
+        make: (i) => {
+          const e = pick(m.withArrow, i, 37);
+          const steps = arrowSteps(e);
+          const last = steps[steps.length - 1];
+          const first = steps[0];
+          return {
+            text: `「${last}」の後の景色から始める。観客はそれが済んだ後だと知らない。あとから「${first}」が起き、順番が分かる。${pick(OPENINGS, i, 1)}`,
+            sources: [e.work.id],
+            inspiration: `「${e.work.title}」の${e.label}の手順から、結果を先頭へ、原因を後半へ入れ替えた。`,
+          };
+        },
+      },
+    ];
   }
 
   function expandedSeedCatalog() {
     if (expandedSeedCache) return expandedSeedCache;
-    const sourceDb = typeof SHOSAI_DB !== "undefined" ? SHOSAI_DB : null;
-    const works = sourceDb && Array.isArray(sourceDb.works)
-      ? sourceDb.works
-          .filter((work) => work && work.id && work.title && Array.isArray(work.themes) && work.themes.length)
-          .slice()
-          .sort((a, b) => String(a.id).localeCompare(String(b.id)))
-      : [];
-    if (!works.length) return [];
+    const m = seedMaterials();
+    if (!m) return (expandedSeedCache = []);
+    const recipes = seedRecipes(m);
 
-    const recipes = [
-      "二つの世界を交差させる",
-      "場の規則を少しずつ書き換える",
-      "観客の読みを遅らせる",
-      "物を時間の記録にする",
-      "役割を途中で交換する",
-      "祝祭の裏側を残す",
-      "空間をもう一人の出演者にする",
-      "音を身体へ引き渡す",
-      "終わりの像から遡る",
-      "見えないものに反応させる",
-    ];
-    const templates = [
-      (a, b) => `「${a}」を最初の合図にする。「${b}」が現れるたび、舞台の規則を一つだけ書き換え、最後に残す規則は稽古で決める。`,
-      (a, b) => `最初は「${a}」だけが見えている。途中から「${b}」が同じ出来事の別の理由として現れ、どちらを信じるかを観客へ渡す。`,
-      (a, b) => `「${a}」のために置いた物が、後半には「${b}」を引き起こす装置へ役割を変える。変化の瞬間だけは隠さない。`,
-      (a, b) => `出演者全員が「${a}」を守ろうとするが、たった一人だけが「${b}」を選ぶ。その選択が群れの動きをどこまで変えるかを残す。`,
-      (a, b) => `客席には「${a}」として届き、舞台上では「${b}」として処理される。同じ行為に二つの読みが並ぶ時間を一度だけ作る。`,
-      (a, b) => `「${a}」が増えるほど「${b}」は小さくなる。最後に小さくなった側が全体を止めるか、止めないかは決めずに置く。`,
-      (a, b) => `舞台の端に「${a}」だけの場所を作る。誰かがそこへ入ると「${b}」の場面が始まり、出ると何事もなかったように戻る。`,
-      (a, b) => `一度起きた「${a}」を、次は「${b}」としてやり直す。手順は同じまま、観客が感じる責任だけを反転させる。`,
-      (a, b) => `「${a}」を待つために全員が止まる。その沈黙の間に「${b}」だけが進み、再開時には舞台の時間が少しずれている。`,
-      (a, b) => `「${a}」の痕跡を集めるほど、「${b}」が最初からそこにあったように見えてくる。集める人が誰かは上演ごとに変えられる。`,
-    ];
-    const distCycle = ["near", "near", "near", "near", "near", "mid", "mid", "mid", "alien", "alien"];
+    // レシピごとに、素材の在庫に応じて作る。素材が薄いレシピは無理に埋めない。
+    const PER_RECIPE_MAX = 22;
+    const out = [];
+    recipes.forEach((recipe, ri) => {
+      const stock = recipe.stock();
+      const n = Math.max(0, Math.min(PER_RECIPE_MAX, stock));
+      for (let i = 0; i < n; i++) {
+        let built = null;
+        try {
+          built = recipe.make(i * 3 + ri);
+        } catch (e) {
+          built = null; // 素材の形が想定と違うものは黙って飛ばす
+        }
+        if (!built || !built.text) continue;
+        const sources = (built.sources || []).filter(Boolean);
+        out.push({
+          id: `expanded-seed-${String(ri + 1).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`,
+          recipe: recipe.name,
+          dist: recipe.dist,
+          text: built.text.replace(/\s+/g, " ").trim(),
+          sources: Array.from(new Set(sources)),
+          inspiration: built.inspiration,
+        });
+      }
+    });
 
-    expandedSeedCache = Array.from({ length: EXPANDED_SEED_COUNT }, (_, index) => {
-      const first = works[(index * 37 + 13) % works.length];
-      let second = works[(index * 149 + 71) % works.length];
-      if (second.id === first.id) second = works[(index * 149 + 72) % works.length];
-      const firstKeyword = seedKeyword(first, index * 3 + 1);
-      const secondKeyword = seedKeyword(second, index * 5 + 2);
-      const recipe = recipes[index % recipes.length];
-      return {
-        id: `expanded-seed-${String(index + 1).padStart(3, "0")}`,
-        recipe,
-        dist: distCycle[index % distCycle.length],
-        text: templates[index % templates.length](firstKeyword, secondKeyword),
-        sources: [first.id, second.id],
-        inspiration: `資料棚の「${first.title}」にある「${firstKeyword}」と、「${second.title}」にある「${secondKeyword}」を手がかりにした制作上の変形案。出典の具体的な場面を再現せず、「${recipe}」の条件として組み替えた。`,
-      };
+    // 同じ文面が二度配られないようにする
+    const seen = new Set();
+    expandedSeedCache = out.filter((s) => {
+      if (seen.has(s.text)) return false;
+      seen.add(s.text);
+      return true;
     });
     return expandedSeedCache;
   }
