@@ -689,8 +689,10 @@
     target.fillStyle = "#11100f";
     target.fillRect(0, 0, W, rect.y);
     if (v.frame) {
-      target.fillRect(0, 0, rect.x, H);
-      target.fillRect(rect.x + rect.w, 0, W - rect.x - rect.w, H);
+      // 額縁は舞台面の上と左右まで。床（エプロン側）は隠さない。
+      // ここを床まで下ろすと、手前へ出したコマが枠の外に消えてしまう。
+      target.fillRect(0, 0, rect.x, L.floorY);
+      target.fillRect(rect.x + rect.w, 0, W - rect.x - rect.w, L.floorY);
       target.strokeStyle = "rgba(156,130,63,0.42)";
       target.lineWidth = 3;
       target.strokeRect(rect.x, rect.y, rect.w, L.floorY - rect.y);
