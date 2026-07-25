@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=48">
+<link rel="stylesheet" href="style.css?v=49">
 </head>
 <body>
 
@@ -197,6 +197,24 @@
 
       <div class="stage-sketch-grid">
         <aside class="stage-toolbox" aria-label="舞台スケッチの道具">
+          <section class="stage-tool-section stage-project-section">
+            <h2>ショー</h2>
+            <input id="stage-project-title" class="stage-text-input" type="text"
+                   maxlength="60" placeholder="無題のショー" aria-label="ショーの名前">
+            <div class="stage-version-row">
+              <input id="stage-version-label" class="stage-text-input stage-version-input" type="text"
+                     maxlength="16" placeholder="v1" aria-label="バージョン名">
+              <button type="button" id="stage-version-copy" class="btn-quiet">複製</button>
+            </div>
+            <p class="stage-version-note" id="stage-version-note"></p>
+            <div class="stage-io-row">
+              <button type="button" id="stage-export-json" class="btn-quiet">書き出す</button>
+              <label class="btn-quiet stage-import-label">
+                読み込む<input type="file" id="stage-import-json" accept="application/json" hidden>
+              </label>
+            </div>
+          </section>
+
           <section class="stage-tool-section stage-venue-section">
             <h2>劇場を選ぶ</h2>
             <div class="stage-field-row">
@@ -224,6 +242,10 @@
               </label>
             </div>
             <p class="stage-view-hint">両方に印を付けると、並べて見比べられます。</p>
+            <label class="stage-toggle stage-name-toggle">
+              <input type="checkbox" id="stage-show-names" checked>
+              <span>コマの名前を出す</span>
+            </label>
           </section>
 
           <section class="stage-tool-section" id="stage-seat-section">
@@ -294,6 +316,26 @@
         </aside>
 
         <section class="stage-board-column" aria-label="舞台面">
+          <section class="stage-scenes" aria-label="場面の一覧">
+            <div class="stage-scenes-head">
+              <h2>場面</h2>
+              <div class="stage-scene-actions">
+                <button type="button" id="stage-scene-add" class="btn-quiet">場面を足す</button>
+                <button type="button" id="stage-scene-dup" class="btn-quiet">複製</button>
+                <button type="button" id="stage-scene-left" class="btn-quiet" aria-label="前へ移動">←</button>
+                <button type="button" id="stage-scene-right" class="btn-quiet" aria-label="後へ移動">→</button>
+                <button type="button" id="stage-scene-del" class="btn-quiet">削除</button>
+              </div>
+            </div>
+            <div class="stage-scene-list" id="stage-scene-list"></div>
+            <div class="stage-scene-meta">
+              <input id="stage-scene-title" class="stage-text-input" type="text" maxlength="40"
+                     placeholder="場面の名前" aria-label="場面の名前">
+              <input id="stage-scene-note" class="stage-text-input" type="text" maxlength="120"
+                     placeholder="この場面のメモ（何が起きるか）" aria-label="場面のメモ">
+            </div>
+          </section>
+
           <div class="stage-canvas-stack" id="stage-canvas-stack">
             <div class="stage-board-frame" id="stage-front-cell">
               <p class="stage-canvas-caption" id="stage-front-caption">正面</p>
@@ -319,6 +361,9 @@
             <p class="stage-selection-empty" id="stage-selection-empty">舞台上のコマを選ぶと、色・大きさ・重なりを調整できます。</p>
             <div id="stage-selection-controls" hidden>
               <p class="stage-selected-name" id="stage-selected-name"></p>
+              <label class="stage-control-label" for="stage-piece-name">名前</label>
+              <input id="stage-piece-name" class="stage-text-input" type="text" maxlength="24"
+                     placeholder="例: 演者A、ディアボロ台">
               <label class="stage-control-label" for="stage-selected-color">色</label>
               <input type="color" id="stage-selected-color" value="#a84b26">
               <label class="stage-control-label stage-range-label" for="stage-piece-size">
@@ -517,7 +562,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=3"></script>
-<script src="stage-sketch.js?v=13"></script>
+<script src="stage-sketch.js?v=14"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

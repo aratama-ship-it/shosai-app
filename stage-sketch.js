@@ -90,6 +90,22 @@
     seatList: document.getElementById("stage-seat-list"),
     seatNote: document.getElementById("stage-seat-note"),
     compare: document.getElementById("stage-compare"),
+    projectTitle: document.getElementById("stage-project-title"),
+    versionLabel: document.getElementById("stage-version-label"),
+    versionCopy: document.getElementById("stage-version-copy"),
+    versionNote: document.getElementById("stage-version-note"),
+    exportJson: document.getElementById("stage-export-json"),
+    importJson: document.getElementById("stage-import-json"),
+    sceneList: document.getElementById("stage-scene-list"),
+    sceneAdd: document.getElementById("stage-scene-add"),
+    sceneDup: document.getElementById("stage-scene-dup"),
+    sceneLeft: document.getElementById("stage-scene-left"),
+    sceneRight: document.getElementById("stage-scene-right"),
+    sceneDel: document.getElementById("stage-scene-del"),
+    sceneTitle: document.getElementById("stage-scene-title"),
+    sceneNote: document.getElementById("stage-scene-note"),
+    pieceName: document.getElementById("stage-piece-name"),
+    showNames: document.getElementById("stage-show-names"),
     depthLabelBack: document.getElementById("stage-depth-back"),
     depthLabelFront: document.getElementById("stage-depth-front"),
   };
@@ -105,27 +121,58 @@
     return `stage-piece-${Date.now().toString(36)}-${idCounter.toString(36)}`;
   }
 
-  function baseState(withExample) {
+  const nowIso = () => new Date().toISOString();
+  const rid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+
+  function newScene(title, withExample) {
     return {
-      version: 2,
-      venue: "proscenium",
-      venueSize: "mid",
-      showFront: true,
-      showPlan: false,
-      seat: "center",
+      id: rid("scene"),
+      title: title || "場面 1",
+      note: "",
       background: "#40362d",
-      pieceColor: "#a84b26",
-      paintColor: "#efe7d6",
-      brushSize: 42,
       pieces: withExample
         ? [
-            { id: "stage-sample-performer-1", type: "performer", u: 0.36, v: 0.62, size: 105, color: "#a84b26" },
-            { id: "stage-sample-performer-2", type: "performer", u: 0.66, v: 0.48, size: 92, color: "#77865f" },
-            { id: "stage-sample-block-1", type: "block", u: 0.51, v: 0.7, size: 88, color: "#efe7d6" },
+            { id: "stage-sample-performer-1", type: "performer", u: 0.36, v: 0.62, size: 105, color: "#a84b26", name: "演者A" },
+            { id: "stage-sample-performer-2", type: "performer", u: 0.66, v: 0.48, size: 92, color: "#77865f", name: "演者B" },
+            { id: "stage-sample-block-1", type: "block", u: 0.51, v: 0.7, size: 88, color: "#efe7d6", name: "台" },
           ]
         : [],
       strokes: [],
     };
+  }
+
+  function baseState(withExample) {
+    const scene = newScene("場面 1", withExample);
+    return {
+      version: 3,
+      // ショー一つ分。劇場はショー単位で共通に持つ
+      project: {
+        id: rid("proj"),
+        title: "無題のショー",
+        versionLabel: "v1",
+        parentVersionId: null,
+        branchReason: "",
+        createdAt: nowIso(),
+        venue: "proscenium",
+        venueSize: "mid",
+        scenes: [scene],
+        activeSceneId: scene.id,
+      },
+      // 画面の状態。プロジェクトの内容ではないので、共有や書き出しには含めない
+      showFront: true,
+      showPlan: false,
+      showNames: true,
+      seat: "center",
+      pieceColor: "#a84b26",
+      paintColor: "#efe7d6",
+      brushSize: 42,
+    };
+  }
+
+  // いま開いている場面
+  function sc() {
+    const p = state.project;
+    return p.scenes.find((x) => x.id === p.activeSceneId) || p.scenes[0];
   }
 
   // v1（画面ピクセル座標）で保存されたものを、正規化座標へ引き上げる
@@ -150,6 +197,7 @@
       v: clamp(finite(legacy ? legacy.v : piece.v, 0.6), 0, 1),
       size: clamp(finite(piece.size, 100), 55, 180),
       color: validColor(piece.color, "#a84b26"),
+      name: typeof piece.name === "string" ? piece.name.slice(0, 24) : "",
     };
   }
 
@@ -177,27 +225,63 @@
     };
   }
 
-  function normalizeState(raw) {
-    if (!raw || typeof raw !== "object") return baseState(true);
-    const fallback = baseState(false);
-    const venue = VENUES.byId(typeof raw.venue === "string" ? raw.venue : fallback.venue);
-    const size = VENUES.sizeById(venue, typeof raw.venueSize === "string" ? raw.venueSize : "");
+  function normalizeScene(raw, index) {
+    const fallbackBg = "#40362d";
     return {
-      version: 2,
-      venue: venue.id,
-      venueSize: size.id,
-      // 旧版は view: "front"|"plan" の排他だった。少なくとも片方は必ず開く
-      showFront: raw.showFront === undefined ? raw.view !== "plan" : Boolean(raw.showFront),
-      showPlan: raw.showPlan === undefined ? raw.view === "plan" : Boolean(raw.showPlan),
-      seat: VENUES.seatById(typeof raw.seat === "string" ? raw.seat : "").id,
-      background: validColor(raw.background, fallback.background),
-      pieceColor: validColor(raw.pieceColor, fallback.pieceColor),
-      paintColor: validColor(raw.paintColor, fallback.paintColor),
-      brushSize: clamp(finite(raw.brushSize, fallback.brushSize), 12, 120),
+      id: typeof raw.id === "string" ? raw.id : rid("scene"),
+      title: typeof raw.title === "string" && raw.title.trim() ? raw.title : `場面 ${index + 1}`,
+      note: typeof raw.note === "string" ? raw.note : "",
+      background: validColor(raw.background, fallbackBg),
       pieces: Array.isArray(raw.pieces) ? raw.pieces.slice(-80).map(normalizePiece) : [],
       strokes: Array.isArray(raw.strokes)
         ? raw.strokes.slice(-240).map(normalizeStroke).filter((stroke) => stroke.points.length)
         : [],
+    };
+  }
+
+  function normalizeState(raw) {
+    if (!raw || typeof raw !== "object") return baseState(true);
+    const fallback = baseState(false);
+
+    // v2以前は「1枚のスケッチ」だった。1場面のプロジェクトとして引き上げる
+    const legacyFlat = !raw.project && (Array.isArray(raw.pieces) || raw.version === 2 || raw.version === 1);
+    const rawProject = legacyFlat
+      ? {
+          title: "無題のショー",
+          venue: raw.venue, venueSize: raw.venueSize,
+          scenes: [{ title: "場面 1", background: raw.background, pieces: raw.pieces, strokes: raw.strokes }],
+        }
+      : (raw.project && typeof raw.project === "object" ? raw.project : fallback.project);
+
+    const venue = VENUES.byId(typeof rawProject.venue === "string" ? rawProject.venue : fallback.project.venue);
+    const size = VENUES.sizeById(venue, typeof rawProject.venueSize === "string" ? rawProject.venueSize : "");
+    let scenes = Array.isArray(rawProject.scenes) ? rawProject.scenes.slice(0, 60).map(normalizeScene) : [];
+    if (!scenes.length) scenes = [newScene("場面 1", false)];
+    const activeId = scenes.some((x) => x.id === rawProject.activeSceneId)
+      ? rawProject.activeSceneId : scenes[0].id;
+
+    return {
+      version: 3,
+      project: {
+        id: typeof rawProject.id === "string" ? rawProject.id : rid("proj"),
+        title: typeof rawProject.title === "string" && rawProject.title.trim() ? rawProject.title : "無題のショー",
+        versionLabel: typeof rawProject.versionLabel === "string" && rawProject.versionLabel.trim()
+          ? rawProject.versionLabel : "v1",
+        parentVersionId: typeof rawProject.parentVersionId === "string" ? rawProject.parentVersionId : null,
+        branchReason: typeof rawProject.branchReason === "string" ? rawProject.branchReason : "",
+        createdAt: typeof rawProject.createdAt === "string" ? rawProject.createdAt : nowIso(),
+        venue: venue.id,
+        venueSize: size.id,
+        scenes,
+        activeSceneId: activeId,
+      },
+      showFront: raw.showFront === undefined ? raw.view !== "plan" : Boolean(raw.showFront),
+      showPlan: raw.showPlan === undefined ? raw.view === "plan" : Boolean(raw.showPlan),
+      showNames: raw.showNames === undefined ? true : Boolean(raw.showNames),
+      seat: VENUES.seatById(typeof raw.seat === "string" ? raw.seat : "").id,
+      pieceColor: validColor(raw.pieceColor, fallback.pieceColor),
+      paintColor: validColor(raw.paintColor, fallback.paintColor),
+      brushSize: clamp(finite(raw.brushSize, fallback.brushSize), 12, 120),
     };
   }
 
@@ -221,8 +305,8 @@
   let saveTimer = null;
   let controlBefore = null;
 
-  const venue = () => VENUES.byId(state.venue);
-  const venueSize = () => VENUES.sizeById(venue(), state.venueSize);
+  const venue = () => VENUES.byId(state.project.venue);
+  const venueSize = () => VENUES.sizeById(venue(), state.project.venueSize);
 
   /* ---------- レイアウト ----------
      舞台は常に画面いっぱいに描く。実寸の違いは「人の小ささ」として出る。 */
@@ -328,8 +412,9 @@
 
   function restore(value) {
     state = normalizeState(JSON.parse(value));
-    if (!state.pieces.some((piece) => piece.id === selectedId)) selectedId = null;
+    if (!sc().pieces.some((piece) => piece.id === selectedId)) selectedId = null;
     syncInputs();
+    renderScenes();
     renderVenueControls();
     updateInspector();
     render();
@@ -420,7 +505,7 @@
     paintCtx.lineCap = "round";
     paintCtx.lineJoin = "round";
 
-    state.strokes.forEach((stroke) => {
+    sc().strokes.forEach((stroke) => {
       if (!stroke.points.length) return;
       const pt = (p) => ({ x: rect.x + p.u * rect.w, y: rect.y + p.v * rect.h });
       paintCtx.globalCompositeOperation = stroke.erase ? "destination-out" : "source-over";
@@ -642,7 +727,7 @@
 
     // ---- 奥 ----
     if (wall) {
-      target.fillStyle = state.background;
+      target.fillStyle = sc().background;
       target.fillRect(wall.x, wall.y, wall.w, wall.h);
       target.drawImage(paintCanvas, 0, 0);
 
@@ -938,13 +1023,35 @@
       if (piece.type === "block") return drawBlock(target, piece, pos, scale);
       if (piece.type === "ring") return drawRing(target, piece, pos, scale);
     };
-    state.pieces.filter((p) => p.type === "light").forEach(draw);
+    sc().pieces.filter((p) => p.type === "light").forEach(draw);
     // 正面図では奥のコマから描く（重なりが自然になる）
-    const solid = state.pieces.filter((p) => p.type !== "light");
+    const solid = sc().pieces.filter((p) => p.type !== "light");
     (L.plan ? solid : solid.slice().sort((a, b) => a.v - b.v)).forEach(draw);
 
+    // コマの名前。頭上（平面では点の脇）に小さく置く
+    if (state.showNames) {
+      sc().pieces.forEach((piece) => {
+        if (!piece.name) return;
+        const pos = place(piece.u, piece.v, L);
+        const scale = pieceScale(piece, pos, L);
+        const b = selectionBounds(piece, L);
+        const x = L.plan ? pos.x : pos.x;
+        const y = L.plan ? b.y - 9 : b.y - 10;
+        target.save();
+        target.font = `${Math.max(10, Math.round(13 * (L.plan ? 1 : Math.min(1.4, scale))))}px 'Hiragino Kaku Gothic ProN', sans-serif`;
+        target.textAlign = "center";
+        target.textBaseline = "bottom";
+        const w = target.measureText(piece.name).width;
+        target.fillStyle = "rgba(13,12,11,0.66)";
+        target.fillRect(x - w / 2 - 6, y - 15, w + 12, 18);
+        target.fillStyle = "rgba(239,231,214,0.9)";
+        target.fillText(piece.name, x, y);
+        target.restore();
+      });
+    }
+
     if (showSelection) {
-      const selected = state.pieces.find((piece) => piece.id === selectedId);
+      const selected = sc().pieces.find((piece) => piece.id === selectedId);
       if (selected) drawSelection(target, selected, L);
     }
 
@@ -962,7 +1069,7 @@
     const v = venue();
     const size = venueSize();
     const counts = Object.keys(PIECE_TYPES)
-      .map((type) => `${PIECE_TYPES[type]}${state.pieces.filter((piece) => piece.type === type).length}`)
+      .map((type) => `${PIECE_TYPES[type]}${sc().pieces.filter((piece) => piece.type === type).length}`)
       .join("、");
 
     if (els.frontCell) els.frontCell.hidden = !state.showFront;
@@ -971,7 +1078,7 @@
     if (state.showFront) {
       drawStage(ctx, true, "front");
       canvas.setAttribute("aria-label",
-        `${v.label}（${size.label}）を${VENUES.seatById(state.seat).label}から見た正面図。${counts}。背景の線${state.strokes.length}本。`);
+        `${v.label}（${size.label}）を${VENUES.seatById(state.seat).label}から見た正面図。${counts}。背景の線${sc().strokes.length}本。`);
     }
     if (state.showPlan && planCtx) {
       drawStage(planCtx, true, "plan");
@@ -984,6 +1091,205 @@
   }
 
   /* ---------- 劇場のUI ---------- */
+
+  /* ---------- 場面とプロジェクト ---------- */
+
+  function renderScenes() {
+    const p = state.project;
+    if (els.sceneList) {
+      els.sceneList.innerHTML = "";
+      p.scenes.forEach((scene, i) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "stage-scene-chip";
+        button.setAttribute("aria-pressed", String(scene.id === p.activeSceneId));
+        const num = document.createElement("span");
+        num.className = "stage-scene-num";
+        num.textContent = String(i + 1).padStart(2, "0");
+        const name = document.createElement("span");
+        name.className = "stage-scene-name";
+        name.textContent = scene.title;
+        const count = document.createElement("span");
+        count.className = "stage-scene-count";
+        count.textContent = `${scene.pieces.length}`;
+        button.append(num, name, count);
+        button.addEventListener("click", () => openScene(scene.id));
+        els.sceneList.append(button);
+      });
+    }
+    const cur = sc();
+    if (els.sceneTitle && document.activeElement !== els.sceneTitle) els.sceneTitle.value = cur.title;
+    if (els.sceneNote && document.activeElement !== els.sceneNote) els.sceneNote.value = cur.note;
+    if (els.projectTitle && document.activeElement !== els.projectTitle) els.projectTitle.value = p.title;
+    if (els.versionLabel && document.activeElement !== els.versionLabel) els.versionLabel.value = p.versionLabel;
+    if (els.versionNote) {
+      els.versionNote.textContent = p.parentVersionId
+        ? `${p.branchReason || "別バージョンとして複製"}（元の版から派生）`
+        : "このショーの最初の版です。";
+    }
+    if (els.sceneDel) els.sceneDel.disabled = p.scenes.length <= 1;
+    const idx = p.scenes.findIndex((x) => x.id === p.activeSceneId);
+    if (els.sceneLeft) els.sceneLeft.disabled = idx <= 0;
+    if (els.sceneRight) els.sceneRight.disabled = idx < 0 || idx >= p.scenes.length - 1;
+  }
+
+  function openScene(id) {
+    if (state.project.activeSceneId === id) return;
+    state.project.activeSceneId = id;
+    selectedId = null;
+    renderScenes();
+    updateInspector();
+    render();
+    persistSoon();
+    announce(`${sc().title}を開きました。`);
+  }
+
+  function addScene() {
+    checkpoint();
+    const p = state.project;
+    const scene = newScene(`場面 ${p.scenes.length + 1}`, false);
+    // 劇場は変えず、いまの背景色だけ引き継ぐ
+    scene.background = sc().background;
+    p.scenes.push(scene);
+    p.activeSceneId = scene.id;
+    selectedId = null;
+    renderScenes();
+    updateInspector();
+    render();
+    persistSoon();
+    announce(`${scene.title}を足しました。`);
+  }
+
+  function duplicateScene() {
+    checkpoint();
+    const p = state.project;
+    const cur = sc();
+    const copy = JSON.parse(JSON.stringify(cur));
+    copy.id = rid("scene");
+    copy.title = `${cur.title} の複製`;
+    copy.pieces = copy.pieces.map((piece) => ({ ...piece, id: nextId() }));
+    p.scenes.splice(p.scenes.indexOf(cur) + 1, 0, copy);
+    p.activeSceneId = copy.id;
+    selectedId = null;
+    renderScenes();
+    updateInspector();
+    render();
+    persistSoon();
+    announce(`${cur.title}を複製しました。前の場面から少しずつ動かすときに使えます。`);
+  }
+
+  function moveScene(direction) {
+    const p = state.project;
+    const i = p.scenes.findIndex((x) => x.id === p.activeSceneId);
+    const j = i + direction;
+    if (i < 0 || j < 0 || j >= p.scenes.length) return;
+    checkpoint();
+    const [scene] = p.scenes.splice(i, 1);
+    p.scenes.splice(j, 0, scene);
+    renderScenes();
+    persistSoon();
+    announce(`${scene.title}を${direction < 0 ? "前" : "後"}へ動かしました。`);
+  }
+
+  function deleteScene() {
+    const p = state.project;
+    if (p.scenes.length <= 1) return;
+    const cur = sc();
+    if (!window.confirm(`「${cur.title}」を削除します。この場面のコマと塗りは戻せません。`)) return;
+    checkpoint();
+    const i = p.scenes.indexOf(cur);
+    p.scenes.splice(i, 1);
+    p.activeSceneId = p.scenes[Math.min(i, p.scenes.length - 1)].id;
+    selectedId = null;
+    renderScenes();
+    updateInspector();
+    render();
+    persistSoon();
+    announce(`${cur.title}を削除しました。`);
+  }
+
+  // バージョン複製: いまのプロジェクトを丸ごと写し、別の版として続ける。
+  // 設計計画書6.5節の派生（親ID＋一行の理由）に合わせ、完全な版管理は作らない。
+  function duplicateVersion() {
+    const reason = window.prompt(
+      "別バージョンとして複製します。何を変えるための版か、一行で残してください。",
+      "");
+    if (reason === null) return;
+    checkpoint();
+    const p = state.project;
+    const copy = JSON.parse(JSON.stringify(p));
+    copy.id = rid("proj");
+    copy.parentVersionId = p.id;
+    copy.branchReason = reason.trim();
+    copy.createdAt = nowIso();
+    copy.versionLabel = nextVersionLabel(p.versionLabel);
+    copy.scenes = copy.scenes.map((scene) => ({
+      ...scene,
+      id: rid("scene"),
+      pieces: scene.pieces.map((piece) => ({ ...piece, id: nextId() })),
+    }));
+    copy.activeSceneId = copy.scenes[0].id;
+    state.project = copy;
+    selectedId = null;
+    renderScenes();
+    renderVenueControls();
+    updateInspector();
+    render();
+    persistSoon();
+    announce(`${copy.versionLabel}として複製しました。元の版は書き出したファイルの中に残ります。`);
+  }
+
+  // v1 → v2 のように末尾の数を繰り上げる。数が無ければ「 の改訂」を足す
+  function nextVersionLabel(label) {
+    const m = String(label || "").match(/^(.*?)(\d+)$/);
+    if (m) return `${m[1]}${Number(m[2]) + 1}`;
+    return `${label || "v1"} の改訂`;
+  }
+
+  function exportProject() {
+    const data = JSON.stringify({ kind: "shosai-stage-sketch", version: 3, project: state.project }, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    const safe = (state.project.title || "show").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 40);
+    link.download = `${safe}-${state.project.versionLabel}.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+    announce("このショーをファイルへ書き出しました。チームへ渡せます。");
+  }
+
+  function importProject(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      let parsed = null;
+      try {
+        parsed = JSON.parse(String(reader.result));
+      } catch (_) {
+        announce("読み込めませんでした。書き出したJSONファイルを選んでください。");
+        return;
+      }
+      const incoming = parsed && parsed.project ? parsed : { project: parsed };
+      if (!incoming.project || !Array.isArray(incoming.project.scenes)) {
+        announce("このファイルには場面が入っていません。");
+        return;
+      }
+      if (!window.confirm("いま開いているショーを、読み込んだ内容で置き換えます。よろしいですか？")) return;
+      checkpoint();
+      const next = normalizeState({ project: incoming.project, seat: state.seat,
+        showFront: state.showFront, showPlan: state.showPlan, showNames: state.showNames });
+      state = next;
+      selectedId = null;
+      syncInputs();
+      renderScenes();
+      renderVenueControls();
+      updateInspector();
+      render();
+      persistSoon();
+      announce(`${state.project.title}（${state.project.versionLabel}）を読み込みました。`);
+    };
+    reader.readAsText(file);
+  }
 
   function renderVenueControls() {
     const current = venue();
@@ -1081,10 +1387,10 @@
   }
 
   function setVenue(id) {
-    if (state.venue === id) return;
+    if (state.project.venue === id) return;
     checkpoint();
-    state.venue = id;
-    state.venueSize = VENUES.sizeById(VENUES.byId(id), state.venueSize).id;
+    state.project.venue = id;
+    state.project.venueSize = VENUES.sizeById(VENUES.byId(id), state.project.venueSize).id;
     if (venue().audience === "round" && tool !== "select") setTool("select");
     renderVenueControls();
     render();
@@ -1093,9 +1399,9 @@
   }
 
   function setVenueSize(id) {
-    if (state.venueSize === id) return;
+    if (state.project.venueSize === id) return;
     checkpoint();
-    state.venueSize = id;
+    state.project.venueSize = id;
     renderVenueControls();
     render();
     persistSoon();
@@ -1122,8 +1428,8 @@
   }
 
   function hitTest(point, L) {
-    for (let i = state.pieces.length - 1; i >= 0; i -= 1) {
-      const piece = state.pieces[i];
+    for (let i = sc().pieces.length - 1; i >= 0; i -= 1) {
+      const piece = sc().pieces[i];
       const b = selectionBounds(piece, L);
       if (point.x >= b.x && point.x <= b.x + b.w && point.y >= b.y && point.y <= b.y + b.h) return piece;
     }
@@ -1131,7 +1437,7 @@
   }
 
   function selectedPiece() {
-    return state.pieces.find((piece) => piece.id === selectedId) || null;
+    return sc().pieces.find((piece) => piece.id === selectedId) || null;
   }
 
   function setTool(nextTool) {
@@ -1158,24 +1464,26 @@
     els.selectionEmpty.hidden = Boolean(piece);
     els.selectionControls.hidden = !piece;
     if (!piece) return;
-    const sameType = state.pieces.filter((candidate) => candidate.type === piece.type);
+    const sameType = sc().pieces.filter((candidate) => candidate.type === piece.type);
     els.selectedName.textContent = `${PIECE_TYPES[piece.type]} ${sameType.indexOf(piece) + 1}`;
     els.selectedColor.value = piece.color;
     els.pieceSize.value = String(piece.size);
     els.sizeValue.textContent = String(piece.size);
+    if (els.pieceName && document.activeElement !== els.pieceName) els.pieceName.value = piece.name || "";
   }
 
   function syncInputs() {
     els.newColor.value = state.pieceColor;
-    els.background.value = state.background;
+    els.background.value = sc().background;
     els.paintColor.value = state.paintColor;
     els.brushSize.value = String(state.brushSize);
     els.brushValue.textContent = String(state.brushSize);
+    if (els.showNames) els.showNames.checked = state.showNames;
   }
 
   function addPiece(type) {
     checkpoint();
-    const count = state.pieces.length;
+    const count = sc().pieces.length;
     const piece = {
       id: nextId(),
       type,
@@ -1183,8 +1491,9 @@
       v: clamp(0.55 + (count % 3) * 0.08, 0.05, 0.95),
       size: type === "light" ? 115 : 100,
       color: state.pieceColor,
+      name: "",
     };
-    state.pieces.push(piece);
+    sc().pieces.push(piece);
     selectedId = piece.id;
     setTool("select");
     updateInspector();
@@ -1198,7 +1507,7 @@
     const piece = selectedPiece();
     if (!piece) return;
     checkpoint();
-    state.pieces = state.pieces.filter((candidate) => candidate.id !== piece.id);
+    sc().pieces = sc().pieces.filter((candidate) => candidate.id !== piece.id);
     selectedId = null;
     updateInspector();
     render();
@@ -1211,7 +1520,7 @@
     if (!piece) return;
     checkpoint();
     const copy = { ...piece, id: nextId(), u: clamp(piece.u + 0.06, 0, 1), v: clamp(piece.v + 0.04, 0, 1) };
-    state.pieces.push(copy);
+    sc().pieces.push(copy);
     selectedId = copy.id;
     updateInspector();
     render();
@@ -1220,13 +1529,13 @@
   }
 
   function moveLayer(direction) {
-    const index = state.pieces.findIndex((piece) => piece.id === selectedId);
+    const index = sc().pieces.findIndex((piece) => piece.id === selectedId);
     if (index < 0) return;
-    const nextIndex = clamp(index + direction, 0, state.pieces.length - 1);
+    const nextIndex = clamp(index + direction, 0, sc().pieces.length - 1);
     if (index === nextIndex) return;
     checkpoint();
-    const [piece] = state.pieces.splice(index, 1);
-    state.pieces.splice(nextIndex, 0, piece);
+    const [piece] = sc().pieces.splice(index, 1);
+    sc().pieces.splice(nextIndex, 0, piece);
     render();
     persistSoon();
     announce(direction > 0 ? "コマを一つ前へ出しました。" : "コマを一つ後ろへ送りました。");
@@ -1284,7 +1593,7 @@
       erase: tool === "erase",
       points: [{ u: (point.x - rect.x) / rect.w, v: (point.y - rect.y) / rect.h }],
     };
-    state.strokes.push(stroke);
+    sc().strokes.push(stroke);
     el.setPointerCapture(event.pointerId);
     pointerAction = { kind: "stroke", pointerId: event.pointerId, stroke, el, view, moved: true };
     render();
@@ -1296,7 +1605,7 @@
     const point = pointFromEvent(event);
 
     if (pointerAction.kind === "drag") {
-      const piece = state.pieces.find((candidate) => candidate.id === pointerAction.id);
+      const piece = sc().pieces.find((candidate) => candidate.id === pointerAction.id);
       if (!piece) return;
       if (!pointerAction.moved) {
         recordBefore(pointerAction.before);
@@ -1366,6 +1675,61 @@
   if (els.venueSelect) {
     els.venueSelect.addEventListener("change", (e) => setVenue(e.target.value));
   }
+  if (els.showNames) {
+    els.showNames.addEventListener("change", (e) => {
+      state.showNames = e.target.checked;
+      render();
+      persistSoon();
+      announce(e.target.checked ? "コマの名前を出しました。" : "コマの名前を隠しました。");
+    });
+  }
+  if (els.pieceName) {
+    els.pieceName.addEventListener("input", (e) => {
+      const piece = selectedPiece();
+      if (!piece) return;
+      piece.name = e.target.value.slice(0, 24);
+      render();
+      persistSoon();
+    });
+  }
+  if (els.sceneAdd) els.sceneAdd.addEventListener("click", addScene);
+  if (els.sceneDup) els.sceneDup.addEventListener("click", duplicateScene);
+  if (els.sceneLeft) els.sceneLeft.addEventListener("click", () => moveScene(-1));
+  if (els.sceneRight) els.sceneRight.addEventListener("click", () => moveScene(1));
+  if (els.sceneDel) els.sceneDel.addEventListener("click", deleteScene);
+  if (els.sceneTitle) {
+    els.sceneTitle.addEventListener("input", (e) => {
+      sc().title = e.target.value.slice(0, 40);
+      renderScenes();
+      persistSoon();
+    });
+  }
+  if (els.sceneNote) {
+    els.sceneNote.addEventListener("input", (e) => {
+      sc().note = e.target.value.slice(0, 120);
+      persistSoon();
+    });
+  }
+  if (els.projectTitle) {
+    els.projectTitle.addEventListener("input", (e) => {
+      state.project.title = e.target.value.slice(0, 60);
+      persistSoon();
+    });
+  }
+  if (els.versionLabel) {
+    els.versionLabel.addEventListener("input", (e) => {
+      state.project.versionLabel = e.target.value.slice(0, 16);
+      persistSoon();
+    });
+  }
+  if (els.versionCopy) els.versionCopy.addEventListener("click", duplicateVersion);
+  if (els.exportJson) els.exportJson.addEventListener("click", exportProject);
+  if (els.importJson) {
+    els.importJson.addEventListener("change", (e) => {
+      importProject(e.target.files && e.target.files[0]);
+      e.target.value = "";
+    });
+  }
   if (els.sizeSelect) {
     els.sizeSelect.addEventListener("change", (e) => setVenueSize(e.target.value));
   }
@@ -1380,10 +1744,10 @@
 
   document.querySelectorAll("[data-stage-bg]").forEach((button) => {
     button.addEventListener("click", () => {
-      if (state.background === button.dataset.stageBg) return;
+      if (sc().background === button.dataset.stageBg) return;
       checkpoint();
-      state.background = button.dataset.stageBg;
-      els.background.value = state.background;
+      sc().background = button.dataset.stageBg;
+      els.background.value = sc().background;
       render();
       persistSoon();
     });
@@ -1430,7 +1794,7 @@
   });
 
   els.background.addEventListener("input", (event) => {
-    state.background = event.target.value;
+    sc().background = event.target.value;
     render();
   });
   els.selectedColor.addEventListener("input", (event) => {
@@ -1448,12 +1812,12 @@
   });
 
   els.clearPaint.addEventListener("click", () => {
-    if (!state.strokes.length) {
+    if (!sc().strokes.length) {
       announce("消す背景の塗りはありません。");
       return;
     }
     checkpoint();
-    state.strokes = [];
+    sc().strokes = [];
     render();
     persistSoon();
     announce("背景の塗りを消しました。");
@@ -1467,13 +1831,11 @@
   els.redo.addEventListener("click", redo);
 
   els.clear.addEventListener("click", () => {
-    if (!window.confirm("コマと背景の塗りをすべて消し、舞台を空にしますか？")) return;
+    if (!window.confirm(`「${sc().title}」のコマと背景の塗りをすべて消しますか？（他の場面はそのままです）`)) return;
     checkpoint();
-    const keep = {
-      venue: state.venue, venueSize: state.venueSize, seat: state.seat,
-      showFront: state.showFront, showPlan: state.showPlan,
-    };
-    state = Object.assign(baseState(false), keep);
+    const cur = sc();
+    cur.pieces = [];
+    cur.strokes = [];
     selectedId = null;
     syncInputs();
     renderVenueControls();
@@ -1498,8 +1860,8 @@
     ].join("");
     els.export.href = output.toDataURL("image/png");
     els.export.download = state.showFront
-      ? `stage-${state.venue}-${state.seat}-${stamp}.png`
-      : `stage-${state.venue}-plan-${stamp}.png`;
+      ? `stage-${state.project.venue}-${state.seat}-${stamp}.png`
+      : `stage-${state.project.venue}-plan-${stamp}.png`;
     announce("舞台スケッチをPNG画像として書き出しました。");
   });
 
@@ -1558,13 +1920,14 @@
       ].join("");
       const link = document.createElement("a");
       link.href = out.toDataURL("image/png");
-      link.download = `stage-${state.venue}-seats-${stamp}.png`;
+      link.download = `stage-${state.project.venue}-seats-${stamp}.png`;
       link.click();
       announce("4つの席から見た絵を1枚に並べて書き出しました。");
     });
   }
 
   syncInputs();
+  renderScenes();
   renderVenueControls();
   setTool("select");
   updateInspector();

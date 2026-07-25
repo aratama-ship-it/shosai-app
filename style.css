@@ -4857,3 +4857,149 @@ textarea, input[type="text"] {
   letter-spacing: 0.18em;
   margin-bottom: 5px;
 }
+
+/* ===== 舞台スケッチ: ショーと場面 ===== */
+
+.stage-text-input {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+  color: var(--milk);
+  font-family: var(--sans);
+  font-size: 12px;
+  padding: 6px 9px;
+  margin-bottom: 7px;
+}
+
+.stage-text-input:focus { border-color: var(--brass); }
+.stage-text-input::placeholder { color: rgba(240, 231, 214, 0.3); }
+
+.stage-version-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: start;
+}
+
+.stage-version-input { margin-bottom: 0; }
+
+.stage-version-note {
+  color: rgba(240, 231, 214, 0.36);
+  font-size: 9.5px;
+  line-height: 1.65;
+  margin: 6px 0 9px;
+}
+
+.stage-io-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.stage-import-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* 場面の帯。順番が見えることが大事なので横に並べる */
+.stage-scenes {
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+  padding: 13px 15px 14px;
+  margin-bottom: 16px;
+}
+
+.stage-scenes-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.stage-scenes-head h2 {
+  color: var(--brass);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  font-weight: 400;
+}
+
+.stage-scene-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.stage-scene-actions button {
+  min-height: 30px;
+  padding: 4px 11px;
+  font-size: 10.5px;
+}
+
+.stage-scene-list {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+}
+
+.stage-scene-chip {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  min-width: 150px;
+  padding: 6px 11px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk);
+  color: var(--milk-dim);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.stage-scene-chip:hover { background: var(--desk-3); color: var(--milk); }
+
+.stage-scene-chip[aria-pressed="true"] {
+  border-color: var(--rust);
+  background: var(--desk-3);
+  color: var(--milk);
+  box-shadow: inset 3px 0 0 var(--rust);
+}
+
+.stage-scene-num {
+  color: var(--rust);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.stage-scene-name {
+  font-family: var(--serif);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stage-scene-count {
+  color: rgba(240, 231, 214, 0.34);
+  font-size: 9px;
+}
+
+.stage-scene-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 8px;
+}
+
+.stage-scene-meta .stage-text-input { margin-bottom: 0; }
+
+.stage-name-toggle { margin-top: 7px; }
+
+@media (max-width: 760px) {
+  .stage-scene-meta { grid-template-columns: 1fr; }
+}
