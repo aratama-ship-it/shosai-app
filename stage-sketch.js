@@ -969,27 +969,32 @@
     floorPath();
     target.fill();
 
-    // 床の目盛りは床の内側にだけ引く
+    // 床の目盛りは実寸1mごと。平面図と同じ刻みにして、二つの図で同じ枡を数えられるようにする。
+    // 広い舞台では線が混むので2mごとに間引く（平面図と同じ判断）。
     floorPath();
     target.clip();
     target.strokeStyle = "rgba(239,231,214,0.09)";
     target.lineWidth = 1;
-    [0.25, 0.5, 0.75].forEach((ratio) => {
-      const a = place(0, ratio, L);
-      const b = place(1, ratio, L);
+    const stepW = L.size.width > 14 ? 2 : 1;
+    const stepD = L.size.depth > 14 ? 2 : 1;
+    for (let m = stepD; m < L.size.depth; m += stepD) {   // 奥行きの線（横に走る）
+      const v = m / L.size.depth;
+      const a = place(0, v, L);
+      const b = place(1, v, L);
       target.beginPath();
       target.moveTo(a.x, a.y);
       target.lineTo(b.x, b.y);
       target.stroke();
-    });
-    [0.2, 0.4, 0.6, 0.8].forEach((u) => {
+    }
+    for (let m = stepW; m < L.size.width; m += stepW) {   // 間口の線（奥へ走る）
+      const u = m / L.size.width;
       const a = place(u, 0, L);
       const b = place(u, 1, L);
       target.beginPath();
       target.moveTo(a.x, a.y);
       target.lineTo(b.x, b.y);
       target.stroke();
-    });
+    }
     target.restore();
 
     // リングの縁
