@@ -925,9 +925,6 @@
 
     if (els.frontCell) els.frontCell.hidden = !state.showFront;
     if (els.planCell) els.planCell.hidden = !state.showPlan;
-    if (els.canvasStack) {
-      els.canvasStack.dataset.both = String(state.showFront && state.showPlan);
-    }
 
     if (state.showFront) {
       drawStage(ctx, true, "front");

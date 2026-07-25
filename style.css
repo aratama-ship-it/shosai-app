@@ -4844,14 +4844,11 @@ textarea, input[type="text"] {
   line-height: 1.65;
 }
 
-/* 2面を並べる。両方開いているときだけ横に割る */
+/* 2面は縦に積む。横に割ると1面あたりが半分になり、
+   煽りや床の潰れといった細部が読めなくなる。 */
 .stage-canvas-stack {
   display: grid;
-  gap: 18px;
-}
-
-.stage-canvas-stack[data-both="true"] {
-  grid-template-columns: 1fr 1fr;
+  gap: 22px;
 }
 
 .stage-canvas-caption {
@@ -4859,8 +4856,4 @@ textarea, input[type="text"] {
   font-size: 9.5px;
   letter-spacing: 0.18em;
   margin-bottom: 5px;
-}
-
-@media (max-width: 1100px) {
-  .stage-canvas-stack[data-both="true"] { grid-template-columns: 1fr; }
 }
