@@ -241,13 +241,16 @@
   const SEED_HEDGE = new RegExp([
     "未確認", "未詳", "未調査", "確認しない", "確認できない", "確定できない",
     "not_checked", "not_applicable", "unconfirmed", "official",
-    "公式", "しない", "仕様",
+    "公式", "しない", "仕様", "はない", "は無い",
     "分けて記録", "として記録", "本索引", "credit", "記述はない", "になし", "は不明",
   ].join("|"));
 
   // 索引としての補足（「（…はMDになし）」「（Michel Crête）」）が末尾に付く項目がある。
   // 場面の像ではないので、長い括弧書きは落としてから使う。短い括弧は意味を担うので残す。
-  const stripAside = (s) => s.replace(/[（(][^）)]{12,}[）)]/g, "").replace(/\s{2,}/g, " ").trim();
+  const stripAside = (s) => s
+    .replace(/[（(][^）)]{12,}[）)]/g, "")
+    .replace(/^[A-Za-z][A-Za-z ]{2,}[:：]\s*/, "")   // "Structure: ..." のような索引側のラベル
+    .replace(/\s{2,}/g, " ").trim();
 
   // 日本語の文へ埋める素材なので、日本語を含まない統制語彙（"dance" "noh acting"
   // "opera staging"）は落とす。そのまま埋めると読める文にならない。
@@ -257,10 +260,14 @@
   // 生成側で吸収する。正本は読み取り専用なので、こちらで直す。
   const asList = (v) => (Array.isArray(v) ? v : v ? [v] : []);
 
+  // 日本語の中に英語句がまとまって残っている素材（"授賞式telecastをunderground
+  // clubへ変える"）は、日本語の一行場面として読めない。固有名詞程度なら残す。
+  const LONG_ENGLISH = /[A-Za-z][A-Za-z ]{9,}/;
+
   function seedUsable(value, minLen) {
     const s = stripAside(String(value || "").replace(/\s+/g, " ").trim());
     if (s.length < minLen || s.length > 120) return "";
-    if (!HAS_JA.test(s)) return "";
+    if (!HAS_JA.test(s) || LONG_ENGLISH.test(s)) return "";
     return SEED_HEDGE.test(s) ? "" : s;
   }
 
@@ -283,14 +290,43 @@
   const pick = (arr, i, salt) => arr[(i * 31 + salt * 17) % arr.length];
 
   // 文末の介入余白。ここを本人が触る前提で開けておく
+  // 文末に足す介入の余白。付箋に収める前提なので短く保つ。
+  // 入る余地があるときだけ足す（fit）。文自体が既に未完成なら無くてよい。
   const OPENINGS = [
-    "何で見せるかは決めていない。",
-    "どちらを本体として残すかは決めていない。",
-    "終わりをどう閉じるかは稽古で探す。",
-    "人数は未決定。1人でも成立させたい。",
-    "観客がどこで気づくかは、まだ動かせる。",
-    "この物を別の物へ置き換えてもよい。",
+    "何で見せるかは未定。",
+    "どちらを残すかは未定。",
+    "終わり方は未定。",
+    "人数は未定。",
+    "物は替えてよい。",
+    "気づく位置は動かせる。",
   ];
+
+  // 付箋の本文欄はおよそ3行。手書きの種火60件も27〜68字（中央58字）に収まっている。
+  // 同じ幅に合わせる。長い素材は句読点で切り、細部を落として抽象度を上げる。
+  const SEED_MAX = 70;
+
+  // 長い素材は句読点の位置で詰める。日本語は語の途中で切ると壊れる（「互いへ近。」
+  // 「持ちながらを反転させる」）ので、切れる位置が無ければその素材は使わない。
+  // 素材の在庫は足りているので、無理に詰めるより捨てた方がよい。
+  // 読点で切ると助詞で終わることがある（「新曲を」「準備と」）。名詞止めへ直す。
+  const trim助詞 = (s) => s.replace(/[。、：:・]+$/, "").replace(/[とをがはへでにもや]$/, "");
+
+  function brief(text, max) {
+    const t = trim助詞(String(text || "").replace(/\s+/g, " ").trim());
+    if (t.length <= max) return t;
+    const head = t.slice(0, max + 1);
+    const at = Math.max(head.lastIndexOf("。"), head.lastIndexOf("、"));
+    if (at < Math.floor(max * 0.5)) throw new Error("skip");
+    const cut = trim助詞(t.slice(0, at));
+    if (cut.length < Math.floor(max * 0.4)) throw new Error("skip");
+    return cut;
+  }
+
+  // 余白句は、足しても付箋からはみ出さないときだけ付ける
+  const fit = (body, opening) => {
+    const b = String(body).replace(/\s+/g, " ").trim();
+    return opening && b.length + opening.length <= SEED_MAX ? `${b}${opening}` : b;
+  };
 
   function seedMaterials() {
     const db = typeof SHOSAI_DB !== "undefined" ? SHOSAI_DB : null;
@@ -382,9 +418,11 @@
   }
 
   // 10レシピ。各要素は { name, stock, make }。make は素材から1件の種火を作る
+  // 10レシピ。各要素は { name, dist, stock, make }。make は素材から1件の種火を作る。
+  // 文は付箋に収める（SEED_MAX）。レシピ名はカード上に別途出るので、文中で操作を
+  // 長く説明しない。素材は brief で詰め、細部を落として想像の余地を残す。
   function seedRecipes(m) {
-    // 「→」の手順を段へ分ける。自立していない段が混じる行は使わない（組み替えると
-    // 日本語が壊れるため）。2段未満になった時点で捨てる。
+    // 「→」の手順を段へ分ける。自立していない段が混じる行は使わない
     const arrowSteps = (entry) => {
       const line = entry.mv.find((x) => x.includes("→")) || "";
       const raw = line.split("→").map((s) => s.trim()).filter(Boolean);
@@ -394,7 +432,7 @@
 
     return [
       {
-        // 観客に起こす効果だけ残し、手段を別作品の器具へ交換する
+        // 観客に起こす効果だけ残し、手段を別作品の物へ交換する
         name: "機能保存・手段交換",
         dist: "near",
         stock: () => Math.min(m.scenes.length, m.withThing.length),
@@ -403,14 +441,14 @@
           let a = pick(m.withThing, i, 7);
           if (a.work.id === s.work.id) a = pick(m.withThing, i + 1, 7);
           return {
-            text: `${s.text} — この場面が観客へ起こすことだけを残し、手段は「${a.vg[0]}」へ交換する。元の意匠は持ち込まない。${pick(OPENINGS, i, 2)}`,
+            text: fit(`${brief(s.text, 32)}。効果だけ残し、${brief(a.vg[0], 16)}へ替える。`, pick(OPENINGS, i, 2)),
             sources: [s.work.id, a.work.id],
-            inspiration: `「${s.work.title}」の場面から、観客に起こる効果だけを抽出した。手段は「${a.work.title}」の${a.label}が持つ物の側へ交換している。`,
+            inspiration: `「${s.work.title}」の場面から観客に起こる効果だけを抽出し、手段を「${a.work.title}」の${a.label}が持つ物の側へ交換した。`,
           };
         },
       },
       {
-        // 対照軸を1つだけ反転する。どの軸かを明記する
+        // 対照軸を1つだけ反転する
         name: "軸反転",
         dist: "alien",
         stock: () => m.rel.length,
@@ -418,23 +456,22 @@
           const x = pick(m.rel, i, 3);
           const wa = m.elementWork(x.from);
           const wb = m.elementWork(x.to);
-          // 「〈作品名〉は〜」の形は軸ではなく作品の説明なので、軸として引用しない
           const axis = asList(x.r.different_axes)
-            .map((v) => stripAside(String(v || "").replace(/\s+/g, " ").trim()).slice(0, 90))
+            .map((v) => stripAside(String(v || "").replace(/\s+/g, " ").trim()))
             .find((v) => usableStep(v) && !v.includes(wa.title) && !v.includes(wb.title));
           if (!axis) throw new Error("skip");
-          const la = stripAside(x.from.label_ja || x.from.label || "");
-          const lb = stripAside(x.to.label_ja || x.to.label || "");
+          const la = brief(stripAside(x.from.label_ja || x.from.label || ""), 16);
+          const lb = brief(stripAside(x.to.label_ja || x.to.label || ""), 16);
           if (!la || !lb) throw new Error("skip");
           return {
-            text: `「${la}」と「${lb}」は、次の点で反対側にいる — ${axis}。この違いだけを反転させ、他は動かさずに一場面を作る。${pick(OPENINGS, i, 4)}`,
+            text: fit(`「${la}」と「${lb}」。${brief(axis, 24)}を反転させる。`, pick(OPENINGS, i, 4)),
             sources: [wa.id, wb.id],
             inspiration: `正本の要素関係（${x.r.relation_type}）が記録している対照軸を、そのまま反転の指示に読み替えた。反転するのはこの軸1本だけで、人数・空間・道具は据え置く。`,
           };
         },
       },
       {
-        // 共通の動詞を橋にして、二つの動きを衝突させる
+        // 共通の動作の中で二つの動きを衝突させる
         name: "異種衝突",
         dist: "alien",
         stock: () => Math.floor(m.withMovement.length / 2),
@@ -443,29 +480,25 @@
           let b = pick(m.withMovement, i, 23);
           if (b.work.id === a.work.id) b = pick(m.withMovement, i + 1, 23);
           return {
-            text: `「${a.mv[0]}」と「${b.mv[0]}」を、同じ一つの動作の中で同時に起こす。片方が進むほどもう片方が壊れる関係にする。${pick(OPENINGS, i, 1)}`,
+            text: `${brief(a.mv[0], 22)}と${brief(b.mv[0], 22)}を同時に起こす。片方が進むと片方が壊れる。`,
             sources: [a.work.id, b.work.id],
             inspiration: `「${a.work.title}」の${a.label}と「${b.work.title}」の${b.label}から、動きだけを取り出して衝突させた。作品の世界観や意匠は引き継がない。`,
           };
         },
       },
       {
-        // 極端な制約を課し、その制約が何を生むかまで出す
+        // 極端な制約を課し、制約が生む見え方を主役にする
         name: "制約強化",
         dist: "mid",
         stock: () => m.withThing.length,
         make: (i) => {
           const a = pick(m.withThing, i, 11);
           const limits = [
-            "床から足を離さない",
-            "音を一切出さない",
-            "同じ場所から動かない",
-            "両手を使えない",
-            "明かりは一つだけ",
-            "観客に背を向けたまま",
+            "床から足を離さない", "音を出さない", "同じ場所から動かない",
+            "両手を使えない", "明かりは一つ", "背を向けたまま",
           ];
           return {
-            text: `${a.vg[0]}。この条件で、${pick(limits, i, 9)}という制約を課す。制約があるために生まれる見え方を、一番の見せ場にする。${pick(OPENINGS, i, 5)}`,
+            text: fit(`${brief(a.vg[0], 30)}。ただし${pick(limits, i, 9)}。`, pick(OPENINGS, i, 5)),
             sources: [a.work.id],
             inspiration: `「${a.work.title}」の${a.label}が持つ物の配置を、極端な制約の下に置いた。制約を克服する話ではなく、制約が生む見え方を主役にする。`,
           };
@@ -478,28 +511,23 @@
         stock: () => m.scenes.length,
         make: (i) => {
           const s = pick(m.scenes, i, 13);
-          const delays = [
-            "終わってから",
-            "二度目に同じことが起きたとき",
-            "誰かが退場した後",
-            "明かりが変わった瞬間",
-          ];
+          const delays = ["終わった後", "二度目", "誰かが去った後", "明かりが変わる瞬間"];
           return {
-            text: `${s.text} — 観客は最初これを別の意味で読む。${pick(delays, i, 3)}、意味が反転する。${pick(OPENINGS, i, 3)}`,
+            text: fit(`${brief(s.text, 36)}。意味が反転するのは${pick(delays, i, 3)}。`, pick(OPENINGS, i, 3)),
             sources: [s.work.id],
             inspiration: `「${s.work.title}」の場面の構造だけを借り、観客の理解が遅れて反転する形へ組み替えた。元の物語や人物は使わない。`,
           };
         },
       },
       {
-        // 見た目ではなく、物の挙動から始める
+        // 見た目ではなく物の挙動から始める
         name: "素材起点",
         dist: "near",
         stock: () => m.mechanics.length,
         make: (i) => {
           const k = pick(m.mechanics, i, 17);
           return {
-            text: `${k.text} — この物の挙動だけを出発点にして、寸法も規模も変える。物が何をするかが場面の筋になる。${pick(OPENINGS, i, 0)}`,
+            text: fit(`${brief(k.text, 40)}。この挙動だけから始める。`, pick(OPENINGS, i, 0)),
             sources: [k.work.id],
             inspiration: `「${k.work.title}」の舞台機構から、物がどう振る舞うかだけを抽出した。同じ規模・同じ形で作ることは目的にしない。`,
           };
@@ -513,13 +541,13 @@
         make: (i) => {
           const e = pick(m.withThing, i, 19);
           const wires = [
-            "操っていた側が操られる側へ入れ替わる",
-            "第三のものを介してしか触れられなくなる",
-            "観客の動きがその関係を決める",
-            "関係が一方向にしか進まなくなる",
+            "操る側と操られる側を入れ替える",
+            "第三のものを介してしか触れられなくする",
+            "観客の動きが関係を決める",
+            "関係を一方向にしか進ませない",
           ];
           return {
-            text: `${e.vg[0]}。ここにある関係を組み替え、${pick(wires, i, 7)}ようにする。${pick(OPENINGS, i, 4)}`,
+            text: fit(`${brief(e.vg[0], 28)}。${pick(wires, i, 7)}。`, pick(OPENINGS, i, 4)),
             sources: [e.work.id],
             inspiration: `「${e.work.title}」の${e.label}が持つ物と身体の配置から、関係の線だけを取り出して繋ぎ直した。`,
           };
@@ -532,33 +560,33 @@
         stock: () => m.withArrow.length,
         make: (i) => {
           const e = pick(m.withArrow, i, 29);
-          const steps = arrowSteps(e);
-          // 逆順は3段以上でないと意味が壊れるので、2段の素材には出さない
+          const steps = arrowSteps(e).map((x) => brief(x, 20));
+          const seq = steps.join(" → ");
           const edits = [
-            () => `${steps.join(" → ")}。この順を保ったまま、途中の一つだけを毎回欠落させる。何が欠けたかは言わない。`,
-            () => `${steps.join(" → ")}。これを5回繰り返し、回ごとに一つずつ遅らせて、最後は全部がずれている。`,
+            () => `${seq}。毎回どれか一つが欠ける。何が欠けたかは言わない。`,
+            () => `${seq}。5回繰り返し、回ごとに一つずつ遅れていく。`,
             () => (steps.length >= 3
-              ? `${steps.slice().reverse().join(" → ")}。手順を逆から進め、原因が最後に来る。`
-              : `${steps.join(" → ")}。この二つの間を、必要以上に引き伸ばす。待っている時間の方を本体にする。`),
-            () => `${steps.join(" → ")}。全体を10秒に圧縮し、同じことを次は3分かけてやる。`,
+              ? `${steps.slice().reverse().join(" → ")}。逆から進み、原因が最後に来る。`
+              : `${seq}。この間を引き伸ばし、待つ時間を本体にする。`),
+            () => `${seq}。10秒に圧縮し、次は3分かけて同じことをする。`,
           ];
           return {
-            text: `${pick(edits, i, 5)()} ${pick(OPENINGS, i, 2)}`,
+            text: pick(edits, i, 5)(),
             sources: [e.work.id],
             inspiration: `「${e.work.title}」の${e.label}に記録された手順を、時間の操作だけで組み直した。動作そのものは変えていない。`,
           };
         },
       },
       {
-        // 中心要素を1つ消し、その役割を別のものへ引き継がせる
+        // 中心の物を消し、役割を別の担い手へ渡す
         name: "機能の継承",
         dist: "mid",
         stock: () => m.withThing.length,
         make: (i) => {
           const e = pick(m.withThing, i, 31);
-          const heirs = ["身体", "光", "音", "床", "布", "他の出演者の視線"];
+          const heirs = ["身体", "光", "音", "床", "布", "視線"];
           return {
-            text: `${e.vg[0]} — この物を舞台から消し、同じ役割を${pick(heirs, i, 11)}に引き継がせる。無くなったことに触れない。${pick(OPENINGS, i, 5)}`,
+            text: fit(`${brief(e.vg[0], 30)}を消し、役割を${pick(heirs, i, 11)}へ渡す。無くなったことに触れない。`, ""),
             sources: [e.work.id],
             inspiration: `「${e.work.title}」の${e.label}から中心の物を取り除き、その機能だけを別の担い手へ移した。`,
           };
@@ -572,10 +600,8 @@
         make: (i) => {
           const e = pick(m.withArrow, i, 37);
           const steps = arrowSteps(e);
-          const last = steps[steps.length - 1];
-          const first = steps[0];
           return {
-            text: `「${last}」の後の景色から始める。観客はそれが済んだ後だと知らない。あとから「${first}」が起き、順番が分かる。${pick(OPENINGS, i, 1)}`,
+            text: fit(`「${brief(steps[steps.length - 1], 20)}」の後から始める。原因の「${brief(steps[0], 18)}」は後で起きる。`, pick(OPENINGS, i, 1)),
             sources: [e.work.id],
             inspiration: `「${e.work.title}」の${e.label}の手順から、結果を先頭へ、原因を後半へ入れ替えた。`,
           };
@@ -591,28 +617,32 @@
     const recipes = seedRecipes(m);
 
     // レシピごとに、素材の在庫に応じて作る。素材が薄いレシピは無理に埋めない。
+    // 詰められない素材（句読点が無く語の途中でしか切れないもの）は捨てて次を試すため、
+    // 目標に届くまで別の素材を引き直す。上限を置いて空回りを防ぐ。
     const PER_RECIPE_MAX = 22;
     const out = [];
     recipes.forEach((recipe, ri) => {
       const stock = recipe.stock();
-      const n = Math.max(0, Math.min(PER_RECIPE_MAX, stock));
-      for (let i = 0; i < n; i++) {
+      const target = Math.max(0, Math.min(PER_RECIPE_MAX, stock));
+      let made = 0;
+      for (let i = 0; made < target && i < target * 8 + 40; i++) {
         let built = null;
         try {
           built = recipe.make(i * 3 + ri);
         } catch (e) {
-          built = null; // 素材の形が想定と違うものは黙って飛ばす
+          continue; // 詰められない・形が想定と違う素材は飛ばして次を引く
         }
         if (!built || !built.text) continue;
         const sources = (built.sources || []).filter(Boolean);
         out.push({
-          id: `expanded-seed-${String(ri + 1).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`,
+          id: `expanded-seed-${String(ri + 1).padStart(2, "0")}-${String(made + 1).padStart(2, "0")}`,
           recipe: recipe.name,
           dist: recipe.dist,
           text: built.text.replace(/\s+/g, " ").trim(),
           sources: Array.from(new Set(sources)),
           inspiration: built.inspiration,
         });
+        made++;
       }
     });
 
