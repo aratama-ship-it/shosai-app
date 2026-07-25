@@ -230,7 +230,29 @@
     return { cols, order, collapsed, centerOrder };
   }
 
-  // 舞台に出す名前。登録した人物なら名簿から引き、そうでなければ個別の名前
+  // 向きを言葉にする。角度そのものより、どちらを向いているかが読みたい
+  function facingLabel(deg) {
+    const d = ((Number(deg) || 0) % 360 + 360) % 360;
+    if (d < 23 || d >= 338) return "客席";
+    if (d < 68) return "客席・上手寄り";
+    if (d < 113) return "上手";
+    if (d < 158) return "奥・上手寄り";
+    if (d < 203) return "奥（背中）";
+    if (d < 248) return "奥・下手寄り";
+    if (d < 293) return "下手";
+    return "客席・下手寄り";
+  }
+
+  // その演者の身長（m）。名簿に登録があればそれを使う。
+  // 身長は演者の持ちもので、同じ舞台でも人によって見え方が変わる。
+  function pieceHeightM(piece) {
+    if (piece.type !== "performer") return PIECE_METERS[piece.type];
+    const member = piece.castId ? state.project.cast.find((c) => c.id === piece.castId) : null;
+    const cm = member && Number(member.heightCm) ? Number(member.heightCm) : DEFAULT_HEIGHT_CM;
+    return cm / 100;
+  }
+
+  // 舞台に出す名前。登録した演者なら名簿から引き、そうでなければ個別の名前
   function pieceLabel(piece) {
     if (piece.castId) {
       const member = state.project.cast.find((c) => c.id === piece.castId);
