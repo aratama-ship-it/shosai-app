@@ -92,6 +92,7 @@
   const SCRAPBOOK_STORAGE_KEY = "shosai-scrapbook-v1";
   const SCRAPBOOK_PAGES_STORAGE_KEY = "shosai-scrapbook-pages-v1";
   const SCRAPBOOK_MAX_CARDS = 12;
+  const SCRAPBOOK_INITIAL_SLOTS = 6;
 
   function defaultScrapbookTitle() {
     const d = new Date();
@@ -367,6 +368,15 @@
     return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
   }
 
+  function setScrapbookPagePicker(open, focusToggle = false) {
+    const picker = $("#scrapbook-page-picker");
+    const toggle = $("#btn-scrapbook-pages");
+    if (!picker || !toggle) return;
+    picker.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+    if (focusToggle) toggle.focus();
+  }
+
   function saveScrapbookPage() {
     const now = new Date().toISOString();
     const title = seedState.pageTitle.trim() || defaultScrapbookTitle();
@@ -401,6 +411,7 @@
     seedState.activeSessionId = page.id;
     seedState.dealt = [];
     seedState.notice = `保存済みページ「${page.title}」を開きました。`;
+    setScrapbookPagePicker(false);
     persistScrapbook();
     renderSeeds();
   }
@@ -413,6 +424,7 @@
     seedState.activeSessionId = null;
     seedState.dealt = [];
     seedState.notice = "新しい空の紙面を始めました。前のページは保存済み一覧から開けます。";
+    setScrapbookPagePicker(false);
     persistScrapbook();
     renderSeeds();
   }
@@ -530,6 +542,9 @@
     const catalog = seedCatalog();
     const catalogTexts = new Set(catalog.map((s) => s.text));
     const boardItems = seedState.kept.slice(0, SCRAPBOOK_MAX_CARDS);
+    const visibleSlots = boardItems.length >= SCRAPBOOK_INITIAL_SLOTS
+      ? SCRAPBOOK_MAX_CARDS
+      : SCRAPBOOK_INITIAL_SLOTS;
 
     dealBtn.textContent = seedState.dealt.length ? "別の7枚をめくる" : "アイデアを7枚めくる";
     const discardedCount = [...seedState.discarded].filter((text) => catalogTexts.has(text)).length;
@@ -553,7 +568,8 @@
           .join("")
       : `<p class="seed-empty">まだめくられていません。気になる案だけを12枚の紙面に残し、組み立てることに集中します。</p>`;
 
-    keptWrap.innerHTML = Array.from({ length: SCRAPBOOK_MAX_CARDS }, (_, index) => {
+    keptWrap.classList.toggle("is-expanded", visibleSlots > SCRAPBOOK_INITIAL_SLOTS);
+    keptWrap.innerHTML = Array.from({ length: visibleSlots }, (_, index) => {
       const item = boardItems[index];
       if (!item) {
         return `<div class="scrapbook-slot" aria-hidden="true"><span>${String(index + 1).padStart(2, "0")}</span><p>ここへ付箋を貼る</p></div>`;
@@ -586,6 +602,7 @@
 
     $("#scrapbook-board-count").textContent = `${boardItems.length} / ${SCRAPBOOK_MAX_CARDS} 枚`;
     $("#scrapbook-board-title").textContent = seedState.pageTitle.trim() || "いま開いているページ";
+    $("#scrapbook-saved-count").textContent = String(seedState.pages.length);
     $("#scrapbook-page-title").value = seedState.pageTitle;
     $("#scrapbook-page-note").value = seedState.pageNote;
     const activePage = seedState.pages.find((page) => page.id === seedState.activeSessionId);
@@ -618,7 +635,7 @@
             </button>
             <button type="button" class="scrapbook-page-delete" data-delete-session="${esc(page.id)}" aria-label="${esc(page.title)} の保存を外す">×</button>
           </article>`).join("")
-      : `<p class="scrapbook-sessions-empty">保存したページは、ここに本の見出しとして並びます。</p>`;
+      : `<p class="scrapbook-sessions-empty">まだ保存したページはありません。紙面を残したい時に「このページを保存」を選んでください。</p>`;
 
     $$("[data-keep]", wrap).forEach((button) =>
       button.addEventListener("click", () =>
@@ -703,6 +720,16 @@
     });
     $("#btn-scrapbook-save").addEventListener("click", saveScrapbookPage);
     $("#btn-scrapbook-new").addEventListener("click", startNewScrapbookPage);
+    $("#btn-scrapbook-pages").addEventListener("click", () => {
+      const picker = $("#scrapbook-page-picker");
+      setScrapbookPagePicker(picker.hidden);
+    });
+    $("#btn-scrapbook-pages-close").addEventListener("click", () => setScrapbookPagePicker(false, true));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !$("#scrapbook-page-picker").hidden) {
+        setScrapbookPagePicker(false, true);
+      }
+    });
   }
 
   // ---------- 場面問答（判断のエクササイズ） ----------
@@ -1310,7 +1337,7 @@
   }
 
   // ---------- 画面切り替え（ハッシュルーター） ----------
-  const VIEWS = ["db", "desk", "stage", "seeds", "mondo"];
+  const VIEWS = ["db", "companies", "desk", "stage", "seeds", "mondo"];
 
   function showView(name) {
     $$(".view").forEach((v) => (v.hidden = true));
@@ -1329,12 +1356,182 @@
       selectWork(decodeURIComponent(h.slice(4)));
       return;
     }
+    if (h.startsWith("#companies/")) {
+      showView("companies");
+      selectCompanyRadar(decodeURIComponent(h.slice(11)));
+      return;
+    }
     const name = h.slice(1);
     showView(VIEWS.includes(name) ? name : "db");
   }
 
   // ---------- 資料棚（作品データベース・正本読み取り） ----------
   const DB = typeof SHOSAI_DB !== "undefined" ? SHOSAI_DB : null;
+  const companyRadarData = DB && DB.event_show_company_radar ? DB.event_show_company_radar : null;
+  const companyRadarState = {
+    query: "",
+    type: "",
+    selected: null,
+  };
+
+  function companyRadarTypes() {
+    return companyRadarData && Array.isArray(companyRadarData.types) ? companyRadarData.types : [];
+  }
+
+  function companyRadarCompanies() {
+    return companyRadarData && Array.isArray(companyRadarData.companies) ? companyRadarData.companies : [];
+  }
+
+  function companyTypeLabel(typeId) {
+    const item = companyRadarTypes().find((type) => type.id === typeId);
+    return item ? item.label : typeId;
+  }
+
+  function companyStatusLabel(status) {
+    return companyRadarData && companyRadarData.catalog_statuses
+      ? companyRadarData.catalog_statuses[status] || status
+      : status;
+  }
+
+  function companyRadarFiltered() {
+    const q = companyRadarState.query.trim().toLowerCase();
+    return companyRadarCompanies().filter((company) => {
+      if (companyRadarState.type && company.type_id !== companyRadarState.type) return false;
+      if (!q) return true;
+      return [company.name, company.research_region, company.evidence_statement, company.domains, companyTypeLabel(company.type_id)]
+        .flatMap((value) => Array.isArray(value) ? value : [value])
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(q));
+    });
+  }
+
+  function openCompanyRadar(id) {
+    const nextHash = "#companies/" + encodeURIComponent(id);
+    if (location.hash === nextHash) selectCompanyRadar(id);
+    else location.hash = nextHash;
+  }
+
+  function renderCompanyRadarDetail(company) {
+    const detail = $("#company-radar-detail");
+    if (!company) {
+      detail.innerHTML = `<p class="evidence-empty">現在の条件に該当する制作会社はありません。</p>`;
+      return;
+    }
+    const connectedWorks = (company.catalog_work_ids || [])
+      .map((id) => DB.works.find((work) => work.id === id))
+      .filter(Boolean);
+    const connectedWorksHtml = connectedWorks.length
+      ? `<ul class="company-dossier-work-list">${connectedWorks.map((work) => `
+          <li><a class="company-dossier-work" href="#db/${encodeURIComponent(work.id)}">${esc(work.title)} <small>${esc(String(work.year || "年未確認"))} ↗</small></a></li>`).join("")}</ul>`
+      : `<p class="company-dossier-muted">このレーダーから新規に接続した作品はまだありません。外部の公式ページを確認してから追加します。</p>`;
+    detail.innerHTML = `
+      <article class="company-dossier">
+        <header class="company-dossier-head">
+          <p class="company-dossier-kicker">COMPANY DOSSIER ／ ${esc(companyTypeLabel(company.type_id))}</p>
+          <h2>${esc(company.name)}</h2>
+          <p class="company-dossier-meta">探索上の地域: ${esc(company.research_region)} ・ 優先度 ${esc(company.priority)}</p>
+        </header>
+        <div class="company-dossier-grid">
+          <section class="company-dossier-wide">
+            <h3>公式に確認した制作範囲</h3>
+            <p>${esc(company.evidence_statement)}</p>
+          </section>
+          <section>
+            <h3>探索する領域</h3>
+            <ul class="company-domain-list">${(company.domains || []).map((domain) => `<li>${esc(domain)}</li>`).join("")}</ul>
+          </section>
+          <section>
+            <h3>台帳の状態</h3>
+            <p class="company-dossier-status">${esc(companyStatusLabel(company.catalog_status))}</p>
+          </section>
+          <section>
+            <h3>会社の公式根拠</h3>
+            <a class="company-dossier-link" href="${esc(company.official_url)}" target="_blank" rel="noopener noreferrer">
+              ${esc(company.source_label)} <small>外部サイト ↗</small>
+            </a>
+          </section>
+          <section>
+            <h3>次に追う作品</h3>
+            <a class="company-dossier-link" href="${esc(company.next_collection_url)}" target="_blank" rel="noopener noreferrer">
+              ${esc(company.next_collection_label)} <small>外部サイト ↗</small>
+            </a>
+          </section>
+          <section class="company-dossier-wide">
+            <h3>書斎に接続済みの作品</h3>
+            ${connectedWorksHtml}
+          </section>
+        </div>
+      </article>`;
+  }
+
+  function renderCompanyRadar() {
+    if (!companyRadarData) return;
+    const companies = companyRadarCompanies();
+    const visible = companyRadarFiltered();
+    const typeCounts = new Map(companyRadarTypes().map((type) => [
+      type.id,
+      companies.filter((company) => company.type_id === type.id).length,
+    ]));
+    $("#company-radar-boundary").textContent = companyRadarData.boundary || "";
+    $("#company-radar-types").innerHTML = `
+      <button type="button" class="company-radar-type" data-company-type="" aria-pressed="${!companyRadarState.type}">
+        <span>すべて</span><span class="company-radar-type-count">${companies.length}社</span>
+      </button>` + companyRadarTypes().map((type) => `
+      <button type="button" class="company-radar-type" data-company-type="${esc(type.id)}" aria-pressed="${companyRadarState.type === type.id}">
+        <span>${esc(type.label)}</span><span class="company-radar-type-count">${typeCounts.get(type.id) || 0}社</span>
+      </button>`).join("");
+    $("#company-radar-count").textContent = `${companies.length}社中 ${visible.length}社 ・ 公式に公開された制作範囲を入口にした索引`;
+    $("#company-radar-list").innerHTML = visible.map((company, index) => `
+      <button type="button" class="company-radar-row${companyRadarState.selected === company.id ? " selected" : ""}" data-company-radar="${esc(company.id)}">
+        <span class="company-radar-row-index">${String(index + 1).padStart(2, "0")}</span>
+        <span>
+          <span class="company-radar-row-name">${esc(company.name)}</span>
+          <span class="company-radar-row-meta">${esc(companyTypeLabel(company.type_id))} ・ ${esc(company.research_region)}</span>
+        </span>
+      </button>`).join("") || `<p class="evidence-empty">該当する会社はありません。</p>`;
+    $$("[data-company-type]", $("#company-radar-types")).forEach((button) =>
+      button.addEventListener("click", () => {
+        companyRadarState.type = button.dataset.companyType;
+        const nextVisible = companyRadarFiltered();
+        if (!nextVisible.some((company) => company.id === companyRadarState.selected))
+          companyRadarState.selected = nextVisible[0] ? nextVisible[0].id : null;
+        renderCompanyRadar();
+        renderCompanyRadarDetail(nextVisible.find((company) => company.id === companyRadarState.selected));
+      }));
+    $$("[data-company-radar]", $("#company-radar-list")).forEach((button) =>
+      button.addEventListener("click", () => openCompanyRadar(button.dataset.companyRadar)));
+  }
+
+  function selectCompanyRadar(id) {
+    if (!companyRadarData) return;
+    const company = companyRadarCompanies().find((item) => item.id === id);
+    if (!company) return;
+    companyRadarState.selected = id;
+    renderCompanyRadar();
+    renderCompanyRadarDetail(company);
+    if (window.matchMedia("(max-width: 899px)").matches)
+      $("#company-radar-detail").scrollIntoView({ block: "start" });
+    else window.scrollTo(0, 0);
+  }
+
+  function initCompanyRadar() {
+    if (!companyRadarData) {
+      $("#company-radar-list").innerHTML = `<p class="evidence-empty">制作会社レーダーの正本が読み込めません。</p>`;
+      return;
+    }
+    companyRadarState.selected = companyRadarCompanies()[0] ? companyRadarCompanies()[0].id : null;
+    $("#company-radar-search").addEventListener("input", (event) => {
+      companyRadarState.query = event.target.value;
+      const visible = companyRadarFiltered();
+      if (!visible.some((company) => company.id === companyRadarState.selected))
+        companyRadarState.selected = visible[0] ? visible[0].id : null;
+      renderCompanyRadar();
+      renderCompanyRadarDetail(visible.find((company) => company.id === companyRadarState.selected));
+    });
+    renderCompanyRadar();
+    renderCompanyRadarDetail(companyRadarCompanies().find((company) => company.id === companyRadarState.selected));
+  }
+
   const dbState = {
     query: "",
     type: "",
@@ -1979,6 +2176,7 @@
   function init() {
     initDesk();
     initDb();
+    initCompanyRadar();
     window.addEventListener("hashchange", route);
     route();
 

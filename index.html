@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=32">
+<link rel="stylesheet" href="style.css?v=36">
 </head>
 <body>
 
@@ -13,6 +13,7 @@
 <header class="topnav">
   <nav aria-label="主要画面">
     <a href="#db" data-nav="db">資料棚</a>
+    <a href="#companies" data-nav="companies">制作会社</a>
     <a href="#desk" data-nav="desk">制作机</a>
     <a href="#stage" data-nav="stage">舞台スケッチ</a>
     <a href="#seeds" data-nav="seeds">スクラップブック</a>
@@ -76,6 +77,32 @@
         <p class="evidence-empty">一覧から作品を選ぶと、正本データと、関連作品・関連表現がここに出ます。</p>
       </section>
     </div>
+  </main>
+
+  <!-- 制作会社: 個別作品をたどる前の、公式根拠付きの探索地図 -->
+  <main id="view-companies" class="view" hidden>
+    <section class="company-radar" aria-labelledby="company-radar-title">
+      <header class="company-radar-head">
+        <p class="company-radar-kicker">EVENT SHOW COMPANY RADAR</p>
+        <h1 id="company-radar-title">制作会社から、ショーをたどる</h1>
+        <p>まず制作主体の公開領域を確かめ、次に作品・式典・常設体験を一件ずつ追う。会社の格付けではなく、探索の入口です。</p>
+        <p class="company-radar-boundary" id="company-radar-boundary"></p>
+      </header>
+      <div class="company-radar-layout">
+        <section class="company-radar-list-pane" aria-label="制作会社一覧">
+          <div class="company-radar-controls">
+            <div id="company-radar-types" class="company-radar-types" aria-label="制作領域で絞り込む"></div>
+            <label class="company-radar-search-label" for="company-radar-search">会社を探す</label>
+            <input id="company-radar-search" type="search" placeholder="例: 式典、クルーズ、映像、常設" autocomplete="off">
+            <p id="company-radar-count" class="company-radar-count"></p>
+          </div>
+          <div id="company-radar-list" class="company-radar-list"></div>
+        </section>
+        <section id="company-radar-detail" class="company-radar-detail" aria-label="制作会社の公開情報">
+          <p class="evidence-empty">制作会社を選ぶと、公式に確認した制作範囲と、次に追う作品の入口が出ます。</p>
+        </section>
+      </div>
+    </section>
   </main>
 
   <!-- 制作机（ホーム）: 機能一覧ではなく「制作へ戻る」場所 -->
@@ -238,16 +265,6 @@
           <p class="seeds-sub">資料から拾った断片を貼り、書き込み、ページとして残す。</p>
           <button type="button" class="btn-quiet seed-history-reset" id="btn-reset-seed-history">流した種火を戻す</button>
         </div>
-        <section class="scrapbook-page-index" aria-labelledby="scrapbook-pages-title">
-          <header class="scrapbook-index-head">
-            <div>
-              <p class="scrapbook-kicker">PAGE INDEX</p>
-              <h3 id="scrapbook-pages-title">保存したページ</h3>
-            </div>
-            <p>タイトルを選ぶと、その時点の付箋と書き込みを開けます。</p>
-          </header>
-          <div id="scrapbook-sessions" class="scrapbook-session-list" aria-live="polite"></div>
-        </section>
         <p class="seed-catalog-note">資料棚を横断して組み立てた200件を含む、ひとつの種火の束です。各カードから参照作品へ戻れます。</p>
         <section class="scrapbook-page-controls" aria-label="スクラップブックのページ操作">
           <label for="scrapbook-page-title">
@@ -280,8 +297,25 @@
                 <p class="scrapbook-kicker">CURRENT PAGE</p>
                 <h3 id="scrapbook-board-title">いま開いているページ</h3>
               </div>
-              <p id="scrapbook-board-count">0 / 12 枚</p>
+              <div class="scrapbook-board-tools">
+                <button type="button" class="scrapbook-pages-toggle" id="btn-scrapbook-pages"
+                        aria-expanded="false" aria-controls="scrapbook-page-picker">
+                  保存ページ <span id="scrapbook-saved-count">0</span>
+                </button>
+                <p id="scrapbook-board-count">0 / 12 枚</p>
+              </div>
             </header>
+            <section class="scrapbook-page-picker" id="scrapbook-page-picker" aria-labelledby="scrapbook-page-picker-title" hidden>
+              <header class="scrapbook-page-picker-head">
+                <div>
+                  <p class="scrapbook-kicker">PAGE SHELF</p>
+                  <h4 id="scrapbook-page-picker-title">保存したページ</h4>
+                </div>
+                <button type="button" class="scrapbook-pages-close" id="btn-scrapbook-pages-close" aria-label="保存ページを閉じる">閉じる</button>
+              </header>
+              <p class="scrapbook-page-picker-note">タイトルを選ぶと、その時点の付箋と書き込みを開けます。</p>
+              <div id="scrapbook-sessions" class="scrapbook-session-list" aria-live="polite"></div>
+            </section>
             <div class="scrapbook-board" id="scrapbook-drop" tabindex="0"
                  aria-label="ここへアイデアをドラッグして12枚のスクラップブックに貼る">
               <div class="seed-kept scrapbook-board-grid" id="seed-kept"></div>
@@ -388,9 +422,9 @@
   </div>
 </div>
 
-<script src="db.js?v=58"></script>
+<script src="db.js?v=72"></script>
 <script src="data.js?v=16"></script>
-<script src="app.js?v=26"></script>
+<script src="app.js?v=30"></script>
 <script src="stage-sketch.js?v=3"></script>
 </body>
 </html>

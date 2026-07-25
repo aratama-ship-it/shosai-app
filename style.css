@@ -144,6 +144,330 @@ textarea, input[type="text"] {
   color: rgba(240, 231, 214, 0.35);
 }
 
+/* ============ 制作会社レーダー ============ */
+
+#view-companies { padding-left: 44px; }
+
+.company-radar {
+  max-width: 1460px;
+  margin: 0 auto;
+  padding: 30px 34px 48px;
+}
+
+.company-radar-head {
+  max-width: 880px;
+  padding: 2px 0 22px;
+  border-bottom: 1px solid var(--line-dark);
+}
+
+.company-radar-kicker {
+  color: var(--rust);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  margin-bottom: 8px;
+}
+
+.company-radar-head h1 {
+  color: var(--milk);
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(26px, 3vw, 38px);
+  letter-spacing: 0.09em;
+  line-height: 1.35;
+}
+
+.company-radar-head > p:not(.company-radar-kicker) {
+  color: var(--milk-dim);
+  max-width: 720px;
+  font-size: 13px;
+  line-height: 1.9;
+  margin-top: 10px;
+}
+
+.company-radar-head .company-radar-boundary {
+  color: rgba(240, 231, 214, 0.42);
+  font-size: 10.5px;
+  padding-left: 11px;
+  border-left: 2px solid var(--brass);
+}
+
+.company-radar-layout {
+  display: grid;
+  grid-template-columns: minmax(290px, 360px) minmax(0, 1fr);
+  gap: 34px;
+  align-items: start;
+  margin-top: 24px;
+}
+
+.company-radar-list-pane {
+  position: sticky;
+  top: 72px;
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+  padding-right: 10px;
+}
+
+.company-radar-controls {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--line-dark);
+}
+
+.company-radar-types {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--line-dark);
+  border-left: 1px solid var(--line-dark);
+  margin-bottom: 15px;
+}
+
+.company-radar-type {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  border-right: 1px solid var(--line-dark);
+  border-bottom: 1px solid var(--line-dark);
+  color: var(--milk-dim);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-align: left;
+  padding: 8px 10px;
+  line-height: 1.45;
+}
+
+.company-radar-type:hover,
+.company-radar-type[aria-pressed="true"] {
+  color: var(--milk);
+  background: var(--desk-2);
+  box-shadow: inset 3px 0 0 var(--rust);
+}
+
+.company-radar-type .company-radar-type-count {
+  color: var(--brass);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.company-radar-search-label {
+  display: block;
+  color: var(--milk-dim);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  margin-bottom: 4px;
+}
+
+#company-radar-search {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+  color: var(--milk);
+  font-family: var(--sans);
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+#company-radar-search::placeholder { color: rgba(240, 231, 214, 0.34); }
+
+.company-radar-count {
+  color: var(--milk-dim);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  margin-top: 8px;
+}
+
+.company-radar-list { padding-top: 5px; }
+
+.company-radar-row {
+  position: relative;
+  width: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr);
+  gap: 7px;
+  padding: 13px 8px 13px 0;
+  border-bottom: 1px solid var(--line-dark);
+  color: var(--milk);
+  text-align: left;
+}
+
+.company-radar-row:hover,
+.company-radar-row.selected { background: var(--desk-2); }
+.company-radar-row.selected { box-shadow: inset 3px 0 0 var(--rust); padding-left: 8px; }
+
+.company-radar-row-index {
+  color: var(--rust);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  padding-top: 2px;
+}
+
+.company-radar-row-name {
+  display: block;
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
+}
+
+.company-radar-row-meta {
+  display: block;
+  color: var(--milk-dim);
+  font-size: 9.5px;
+  line-height: 1.5;
+  margin-top: 3px;
+}
+
+.company-radar-detail {
+  min-width: 0;
+  max-width: 850px;
+  overflow-wrap: anywhere;
+}
+
+.company-dossier {
+  border-top: 3px solid var(--rust);
+  background: var(--desk-2);
+}
+
+.company-dossier-head {
+  padding: 24px 26px 20px;
+  border-bottom: 1px solid var(--line-dark);
+}
+
+.company-dossier-kicker {
+  color: var(--rust);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  margin-bottom: 7px;
+}
+
+.company-dossier-head h2 {
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: clamp(23px, 3vw, 33px);
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  line-height: 1.35;
+}
+
+.company-dossier-meta {
+  color: var(--milk-dim);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  margin-top: 8px;
+}
+
+.company-dossier-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(210px, 0.75fr);
+  gap: 1px;
+  background: var(--line-dark);
+}
+
+.company-dossier-grid > section {
+  background: var(--desk-2);
+  padding: 19px 22px 21px;
+}
+
+.company-dossier-grid > section.company-dossier-wide { grid-column: 1 / -1; }
+
+.company-dossier h3 {
+  color: var(--brass);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  margin-bottom: 8px;
+}
+
+.company-dossier p {
+  color: rgba(240, 231, 214, 0.82);
+  font-size: 12.5px;
+  line-height: 1.85;
+}
+
+.company-domain-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+}
+
+.company-domain-list li {
+  color: var(--milk-dim);
+  border: 1px solid var(--line-dark);
+  font-size: 10px;
+  line-height: 1.35;
+  padding: 5px 7px;
+}
+
+.company-dossier-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--brass);
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.55;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(156,130,63,0.48);
+}
+
+.company-dossier-link:hover { color: var(--milk); border-bottom-color: var(--milk); }
+
+.company-dossier-link small {
+  color: var(--milk-dim);
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.company-dossier-work-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.company-dossier-work {
+  display: block;
+  border: 1px solid var(--line-dark);
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: 14px;
+  line-height: 1.45;
+  padding: 10px 12px;
+  text-decoration: none;
+}
+
+.company-dossier-work:hover {
+  background: rgba(240, 231, 214, 0.06);
+  border-color: var(--brass);
+}
+
+.company-dossier-work small {
+  color: var(--brass);
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.company-dossier-muted {
+  color: var(--milk-dim);
+  font-size: 11px;
+  line-height: 1.75;
+  margin: 0;
+}
+
+.company-dossier-status {
+  color: var(--moss) !important;
+  font-size: 10.5px !important;
+}
+
 /* ============ 資料棚（作品データベース） ============ */
 
 #view-db { padding-left: 44px; }
@@ -1816,96 +2140,153 @@ textarea, input[type="text"] {
   cursor: not-allowed;
 }
 
-/* 本の目次。保存済みの紙面は、下の一覧でなく最初にページ見出しとして現す。 */
-.scrapbook-page-index {
-  margin: 18px 0 14px;
-  padding: 15px 16px 14px;
-  border: 1px solid var(--line-dark);
-  background:
-    linear-gradient(90deg, rgba(179,143,77,0.09), transparent 32%),
-    #1a1612;
-  box-shadow: 4px 5px 0 rgba(0,0,0,0.16);
+/* 保存済みのページは、作業中の紙面から必要な時だけめくる。 */
+.scrapbook-board-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
-.scrapbook-index-head {
+.scrapbook-pages-toggle,
+.scrapbook-pages-close {
+  border: 1px solid rgba(75, 51, 31, 0.62);
+  border-radius: 0;
+  color: var(--ink);
+  font-family: var(--serif);
+  letter-spacing: 0.05em;
+}
+
+.scrapbook-pages-toggle {
+  min-height: 28px;
+  padding: 4px 7px 4px 9px;
+  background: rgba(179,143,77,0.15);
+  font-size: 10px;
+}
+
+.scrapbook-pages-toggle:hover,
+.scrapbook-pages-toggle:focus-visible {
+  background: rgba(168,75,38,0.15);
+  border-color: var(--rust-deep);
+  outline: none;
+}
+
+.scrapbook-pages-toggle[aria-expanded="true"] {
+  background: #4b3324;
+  border-color: #4b3324;
+  color: var(--paper-2);
+}
+
+#scrapbook-saved-count {
+  display: inline-block;
+  min-width: 1.55em;
+  margin-left: 4px;
+  color: var(--rust-deep);
+  font-size: 11px;
+  text-align: center;
+}
+
+.scrapbook-pages-toggle[aria-expanded="true"] #scrapbook-saved-count { color: #ead9b7; }
+
+.scrapbook-page-picker {
+  margin: 0 2px 14px;
+  padding: 12px 13px 13px;
+  border: 1px solid rgba(31,22,15,0.76);
+  border-top: 4px solid #816143;
+  background:
+    linear-gradient(90deg, rgba(179,143,77,0.1), transparent 36%),
+    #252019;
+  box-shadow: 3px 4px 0 rgba(42,28,16,0.2);
+  color: var(--milk);
+}
+
+.scrapbook-page-picker[hidden] { display: none; }
+
+.scrapbook-page-picker-head {
   display: flex;
   align-items: end;
   justify-content: space-between;
-  gap: 14px 22px;
-  margin-bottom: 10px;
+  gap: 12px;
 }
 
-.scrapbook-index-head h3 {
+.scrapbook-page-picker-head h4 {
   color: var(--milk);
   font-family: var(--serif);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 500;
   letter-spacing: 0.08em;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
-.scrapbook-index-head > p {
-  max-width: 31em;
+.scrapbook-pages-close {
+  min-height: 26px;
+  padding: 3px 8px;
+  background: transparent;
   color: var(--milk-dim);
-  font-size: 10.5px;
-  line-height: 1.6;
-  text-align: right;
+  font-size: 9.5px;
 }
 
-.scrapbook-page-index .scrapbook-session-list {
-  display: flex;
-  gap: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 3px 2px 5px;
-  scrollbar-color: rgba(179,143,77,0.45) transparent;
+.scrapbook-pages-close:hover,
+.scrapbook-pages-close:focus-visible { border-color: var(--brass); color: var(--milk); outline: none; }
+
+.scrapbook-page-picker-note {
+  margin: 5px 0 10px;
+  color: var(--milk-dim);
+  font-size: 10px;
+  line-height: 1.55;
 }
 
-.scrapbook-page-index .scrapbook-session {
+.scrapbook-page-picker .scrapbook-session-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  max-height: min(43vh, 350px);
+  overflow-y: auto;
+  padding: 2px;
+  scrollbar-color: rgba(179,143,77,0.5) transparent;
+}
+
+.scrapbook-page-picker .scrapbook-session {
   --tab-paper: #d8c88c;
   position: relative;
   display: flex;
   align-items: stretch;
-  flex: 0 0 min(252px, 61vw);
-  min-width: 170px;
-  margin-right: -1px;
+  min-width: 0;
   padding: 0;
-  border: 1px solid rgba(13,11,9,0.74);
-  border-top: 4px solid var(--tab-paper);
-  background: #2a241d;
-  box-shadow: 2px 2px 0 rgba(0,0,0,0.16);
+  border: 1px solid rgba(8,7,6,0.82);
+  border-left: 4px solid var(--tab-paper);
+  background: #31291f;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
 }
 
-.scrapbook-page-index .scrapbook-session:nth-child(4n + 2) { --tab-paper: #c9b48c; }
-.scrapbook-page-index .scrapbook-session:nth-child(4n + 3) { --tab-paper: #ae9278; }
-.scrapbook-page-index .scrapbook-session:nth-child(4n) { --tab-paper: #a6b1a0; }
+.scrapbook-page-picker .scrapbook-session:nth-child(4n + 2) { --tab-paper: #c9b48c; }
+.scrapbook-page-picker .scrapbook-session:nth-child(4n + 3) { --tab-paper: #ae9278; }
+.scrapbook-page-picker .scrapbook-session:nth-child(4n) { --tab-paper: #a6b1a0; }
 
-.scrapbook-page-index .scrapbook-session.is-active {
-  z-index: 1;
+.scrapbook-page-picker .scrapbook-session.is-active {
   border-color: var(--brass);
-  background: #352d23;
-  transform: translateY(-3px);
+  background: #3c3226;
 }
 
-.scrapbook-page-open {
+.scrapbook-page-picker .scrapbook-page-open {
   display: grid;
-  grid-template-columns: 29px minmax(0, 1fr);
+  grid-template-columns: 25px minmax(0, 1fr);
   align-items: center;
   width: 100%;
   min-width: 0;
-  color: var(--milk);
+  padding: 8px 5px 8px 7px;
   background: transparent;
-  padding: 10px 8px 10px 10px;
+  color: var(--milk);
   text-align: left;
 }
 
-.scrapbook-page-open:hover,
-.scrapbook-page-open:focus-visible { background: rgba(255,255,255,0.045); outline: none; }
+.scrapbook-page-picker .scrapbook-page-open:hover,
+.scrapbook-page-picker .scrapbook-page-open:focus-visible { background: rgba(255,255,255,0.05); outline: none; }
 
-.scrapbook-page-number {
+.scrapbook-page-picker .scrapbook-page-number {
   color: var(--tab-paper);
   font-family: var(--serif);
-  font-size: 17px;
+  font-size: 15px;
   letter-spacing: 0.05em;
 }
 
@@ -1915,40 +2296,40 @@ textarea, input[type="text"] {
   gap: 2px;
 }
 
-.scrapbook-page-tab-copy strong {
+.scrapbook-page-picker .scrapbook-page-tab-copy strong {
   overflow: hidden;
   color: var(--milk);
   font-family: var(--serif);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.scrapbook-page-tab-copy small {
+.scrapbook-page-picker .scrapbook-page-tab-copy small {
   overflow: hidden;
   color: var(--milk-dim);
-  font-size: 8.5px;
-  letter-spacing: 0.05em;
+  font-size: 8px;
+  letter-spacing: 0.04em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.scrapbook-page-delete {
+.scrapbook-page-picker .scrapbook-page-delete {
   align-self: stretch;
-  width: 27px;
-  flex: 0 0 27px;
-  color: rgba(240,231,214,0.48);
-  font-size: 17px;
+  width: 26px;
+  flex: 0 0 26px;
+  color: rgba(240,231,214,0.5);
+  font-size: 16px;
   line-height: 1;
 }
 
-.scrapbook-page-delete:hover,
-.scrapbook-page-delete:focus-visible { color: var(--rust); outline: none; }
+.scrapbook-page-picker .scrapbook-page-delete:hover,
+.scrapbook-page-picker .scrapbook-page-delete:focus-visible { color: var(--rust); outline: none; }
 
-.scrapbook-page-index .scrapbook-sessions-empty {
-  padding: 8px 4px;
+.scrapbook-page-picker .scrapbook-sessions-empty {
+  padding: 7px 3px;
 }
 
 /* スクラップブック: 画面では「右に貼る」ことが主役になる、3列×4段の紙面。 */
@@ -2169,7 +2550,7 @@ textarea, input[type="text"] {
 .scrapbook-board-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: repeat(4, minmax(174px, auto));
+  grid-auto-rows: minmax(174px, auto);
   gap: 12px;
   margin: 0;
 }
@@ -2459,16 +2840,13 @@ textarea, input[type="text"] {
 }
 
 @media (max-width: 720px) {
-  .scrapbook-index-head { align-items: flex-start; flex-direction: column; gap: 5px; }
-  .scrapbook-index-head > p { text-align: left; }
-  .scrapbook-page-index .scrapbook-session { flex-basis: min(238px, 76vw); }
   .scrapbook-page-controls { grid-template-columns: 1fr auto; }
   #scrapbook-save-status { grid-column: 1 / -1; padding-bottom: 0; }
-  .scrapbook-session-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .scrapbook-page-picker .scrapbook-session-list { grid-template-columns: 1fr; }
   .scrapbook-board { padding: 10px; }
   .scrapbook-board-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(6, minmax(168px, auto));
+    grid-auto-rows: minmax(168px, auto);
   }
 }
 
@@ -2476,7 +2854,8 @@ textarea, input[type="text"] {
   .scrapbook-page-controls { grid-template-columns: 1fr; }
   .scrapbook-page-actions { width: 100%; }
   .scrapbook-page-actions button { flex: 1 1 0; }
-  .scrapbook-session-list { grid-template-columns: 1fr; }
+  .scrapbook-board-tools { gap: 5px; }
+  .scrapbook-pages-toggle { padding-left: 7px; padding-right: 6px; }
 }
 
 /* ============ 場面問答 ============ */
@@ -3658,6 +4037,11 @@ textarea, input[type="text"] {
   .scrapbook-workspace { grid-template-columns: 1fr; gap: 22px; }
   .scrapbook-rail { position: static; }
 
+  .company-radar { padding: 22px 18px 40px; }
+  .company-radar-layout { grid-template-columns: 1fr; gap: 22px; }
+  .company-radar-list-pane { position: static; max-height: none; overflow: visible; padding-right: 0; }
+  .company-radar-list { max-height: 46vh; overflow: auto; }
+
   .db-wrap {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -3703,6 +4087,15 @@ textarea, input[type="text"] {
   #view-desk { padding: 7vh 20px 56px; }
   #view-studio { padding-left: 0; }
   #view-db { padding-left: 0; }
+  #view-companies { padding-left: 0; }
+
+  .company-radar-head h1 { font-size: 25px; }
+  .company-radar-types { grid-template-columns: 1fr; }
+  .company-dossier-work-list { grid-template-columns: 1fr; }
+  .company-dossier-grid { grid-template-columns: 1fr; }
+  .company-dossier-grid > section.company-dossier-wide { grid-column: auto; }
+  .company-dossier-head { padding: 20px 18px 17px; }
+  .company-dossier-grid > section { padding: 17px 18px; }
   #view-stage { padding: 14px 16px 56px; }
   #view-seeds, #view-mondo { padding: 8px 16px 56px; }
 
@@ -3756,14 +4149,13 @@ textarea, input[type="text"] {
   .scrapbook-rail { margin-left: -2px; margin-right: -2px; padding: 15px 13px; }
   .scrapbook-rail-head { align-items: baseline; }
   .scrapbook-rail-count { max-width: 9.5em; }
-  .scrapbook-page-index { margin-left: -2px; margin-right: -2px; padding: 13px 11px; }
   .scrapbook-book { padding-left: 31px; }
   .scrapbook-book-spine { width: 34px; }
   .scrapbook-board-pane { margin-left: -2px; margin-right: -2px; padding: 15px 12px 18px 39px; }
   .scrapbook-board-pane::before { left: 12px; }
   .scrapbook-board-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: repeat(12, minmax(166px, auto));
+    grid-auto-rows: minmax(166px, auto);
   }
   .scrapbook-clip .seed-actions { align-items: stretch; flex-direction: column; }
   .scrapbook-clip .seed-start,
