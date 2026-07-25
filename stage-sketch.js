@@ -92,7 +92,6 @@
     seatSection: document.getElementById("stage-seat-section"),
     seatList: document.getElementById("stage-seat-list"),
     seatNote: document.getElementById("stage-seat-note"),
-    compare: document.getElementById("stage-compare"),
     projectTitle: document.getElementById("stage-project-title"),
     versionLabel: document.getElementById("stage-version-label"),
     versionCopy: document.getElementById("stage-version-copy"),
@@ -2502,67 +2501,6 @@
       : `stage-${state.project.venue}-plan-${stamp}.png`;
     announce("舞台スケッチをPNG画像として書き出しました。");
   });
-
-  // 同じ配置を4つの席から見た絵を、1枚に並べて書き出す。
-  // 席を変えて描き直すだけなので、状態は一時的に借りて必ず戻す。
-  if (els.compare) {
-    els.compare.addEventListener("click", () => {
-      if (!state.showFront) {
-        announce("席の比較は正面図で行います。正面を開いてください。");
-        return;
-      }
-      const original = state.seat;
-      const cols = 2;
-      const rows = Math.ceil(VENUES.seats.length / cols);
-      const out = document.createElement("canvas");
-      out.width = W * cols;
-      out.height = H * rows;
-      const g = out.getContext("2d", { alpha: false });
-      g.fillStyle = "#0d0c0b";
-      g.fillRect(0, 0, out.width, out.height);
-
-      const tile = document.createElement("canvas");
-      tile.width = W;
-      tile.height = H;
-      const tileCtx = tile.getContext("2d", { alpha: false });
-
-      try {
-        VENUES.seats.forEach((seat, i) => {
-          state.seat = seat.id;
-          drawStage(tileCtx, false, "front");
-          const x = (i % cols) * W;
-          const y = Math.floor(i / cols) * H;
-          g.drawImage(tile, x, y);
-          g.save();
-          g.fillStyle = "rgba(13,12,11,0.72)";
-          g.fillRect(x + 22, y + 20, 268, 52);
-          g.fillStyle = "rgba(239,231,214,0.85)";
-          g.font = "26px 'Hiragino Mincho ProN', serif";
-          g.textBaseline = "middle";
-          g.fillText(seat.label, x + 40, y + 47);
-          g.strokeStyle = "rgba(156,130,63,0.3)";
-          g.lineWidth = 2;
-          g.strokeRect(x + 1, y + 1, W - 2, H - 2);
-          g.restore();
-        });
-      } finally {
-        state.seat = original;
-        render();
-      }
-
-      const now = new Date();
-      const stamp = [
-        now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"),
-        String(now.getDate()).padStart(2, "0"), "-",
-        String(now.getHours()).padStart(2, "0"), String(now.getMinutes()).padStart(2, "0"),
-      ].join("");
-      const link = document.createElement("a");
-      link.href = out.toDataURL("image/png");
-      link.download = `stage-${state.project.venue}-seats-${stamp}.png`;
-      link.click();
-      announce("4つの席から見た絵を1枚に並べて書き出しました。");
-    });
-  }
 
   buildPanelHeads();
   setupDropZones();
