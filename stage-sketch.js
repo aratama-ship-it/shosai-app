@@ -247,12 +247,13 @@
     };
   }
 
-  // 正規化座標 → 画面座標。奥行き v で幅とスケールが変わる
+  // 正規化座標 → 画面座標。奥行き v で幅とスケールが変わる。
+  // v=0 が最奥、v=1 が最前。正面図でも平面図でも「画面の下ほど手前」で揃える。
   function place(u, v, L) {
     if (L.plan) {
       return {
         x: L.stage.x + u * L.stage.w,
-        y: L.stage.y + (1 - v) * L.stage.h,  // v=1(手前) が下
+        y: L.stage.y + v * L.stage.h,
         scale: 1,
       };
     }
@@ -269,7 +270,7 @@
     if (L.plan) {
       return {
         u: clamp((x - L.stage.x) / L.stage.w, 0, 1),
-        v: clamp(1 - (y - L.stage.y) / L.stage.h, 0, 1),
+        v: clamp((y - L.stage.y) / L.stage.h, 0, 1),
       };
     }
     const v = clamp((y - L.floorY) / (L.bottomY - L.floorY), 0, 1);
@@ -1202,8 +1203,8 @@
     checkpoint();
     const amount = event.shiftKey ? 0.05 : 0.016;
     piece.u = clamp(piece.u + moves[event.key][0] * amount, 0, 1);
-    // 上キーは「奥へ」。正面図でも平面図でも同じ向きになるようにする
-    piece.v = clamp(piece.v - moves[event.key][1] * amount, 0, 1);
+    // 上キーで画面の上＝奥へ。正面図でも平面図でも同じ向きになる
+    piece.v = clamp(piece.v + moves[event.key][1] * amount, 0, 1);
     render();
     persistSoon();
   });
