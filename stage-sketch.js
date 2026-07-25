@@ -167,7 +167,7 @@
       },
       // 画面の状態。プロジェクトの内容ではないので、共有や書き出しには含めない
       showFront: true,
-      showPlan: false,
+      showPlan: true,
       showNames: true,
       seat: "center",
       // パネルの置き場所と開閉。中央は絵の順序だけを持つ
@@ -340,8 +340,8 @@
         scenes,
         activeSceneId: activeId,
       },
-      showFront: raw.showFront === undefined ? raw.view !== "plan" : Boolean(raw.showFront),
-      showPlan: raw.showPlan === undefined ? raw.view === "plan" : Boolean(raw.showPlan),
+      showFront: raw.showFront === undefined ? true : Boolean(raw.showFront),
+      showPlan: raw.showPlan === undefined ? true : Boolean(raw.showPlan),
       showNames: raw.showNames === undefined ? true : Boolean(raw.showNames),
       layout: normalizeLayout(raw.layout),
       seat: VENUES.seatById(typeof raw.seat === "string" ? raw.seat : "").id,
@@ -1141,7 +1141,10 @@
       .map((type) => `${PIECE_TYPES[type]}${sc().pieces.filter((piece) => piece.type === type).length}`)
       .join("、");
 
-    // 閉じてもバーは残す。ここから開き直せるので「見る向き」の項目は要らない
+    // 閉じてもバーは残す。ここから開き直せるので「見る向き」の項目は要らない。
+    // セル自体は隠さない（隠すとバーごと消え、開き直す入口が無くなる）
+    if (els.frontCell) els.frontCell.hidden = false;
+    if (els.planCell) els.planCell.hidden = false;
     if (els.frontInner) els.frontInner.hidden = !state.showFront;
     if (els.planInner) els.planInner.hidden = !state.showPlan;
     if (els.frontCell) els.frontCell.classList.toggle("is-closed", !state.showFront);
