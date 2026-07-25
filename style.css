@@ -2646,9 +2646,9 @@ textarea, input[type="text"] {
 
 .scrapbook-card-text textarea {
   width: 100%;
-  /* 種火は最長70字。付箋の幅ではおよそ5行になるので、スクロールせずに全文が見える
+  /* 種火は最長62字。付箋の幅ではおよそ5行になるので、スクロールせずに全文が見える
      高さを取る。読むために貼るものなので、隠れているとページの意味がなくなる。 */
-  min-height: 96px;
+  min-height: 112px;
   resize: vertical;
   background: rgba(255,255,255,0.16);
   border: 0;

@@ -303,7 +303,7 @@
 
   // 付箋の本文欄はおよそ3行。手書きの種火60件も27〜68字（中央58字）に収まっている。
   // 同じ幅に合わせる。長い素材は句読点で切り、細部を落として抽象度を上げる。
-  const SEED_MAX = 70;
+  const SEED_MAX = 62;
 
   // 長い素材は句読点の位置で詰める。日本語は語の途中で切ると壊れる（「互いへ近。」
   // 「持ちながらを反転させる」）ので、切れる位置が無ければその素材は使わない。
@@ -441,7 +441,7 @@
           let a = pick(m.withThing, i, 7);
           if (a.work.id === s.work.id) a = pick(m.withThing, i + 1, 7);
           return {
-            text: fit(`${brief(s.text, 32)}。効果だけ残し、${brief(a.vg[0], 16)}へ替える。`, pick(OPENINGS, i, 2)),
+            text: fit(`${brief(s.text, 28)}。効果だけ残し、${brief(a.vg[0], 14)}へ替える。`, pick(OPENINGS, i, 2)),
             sources: [s.work.id, a.work.id],
             inspiration: `「${s.work.title}」の場面から観客に起こる効果だけを抽出し、手段を「${a.work.title}」の${a.label}が持つ物の側へ交換した。`,
           };
@@ -480,7 +480,7 @@
           let b = pick(m.withMovement, i, 23);
           if (b.work.id === a.work.id) b = pick(m.withMovement, i + 1, 23);
           return {
-            text: `${brief(a.mv[0], 22)}と${brief(b.mv[0], 22)}を同時に起こす。片方が進むと片方が壊れる。`,
+            text: `${brief(a.mv[0], 20)}と${brief(b.mv[0], 20)}を同時に起こす。片方が進むと片方が壊れる。`,
             sources: [a.work.id, b.work.id],
             inspiration: `「${a.work.title}」の${a.label}と「${b.work.title}」の${b.label}から、動きだけを取り出して衝突させた。作品の世界観や意匠は引き継がない。`,
           };
@@ -513,7 +513,7 @@
           const s = pick(m.scenes, i, 13);
           const delays = ["終わった後", "二度目", "誰かが去った後", "明かりが変わる瞬間"];
           return {
-            text: fit(`${brief(s.text, 36)}。意味が反転するのは${pick(delays, i, 3)}。`, pick(OPENINGS, i, 3)),
+            text: fit(`${brief(s.text, 32)}。意味が反転するのは${pick(delays, i, 3)}。`, pick(OPENINGS, i, 3)),
             sources: [s.work.id],
             inspiration: `「${s.work.title}」の場面の構造だけを借り、観客の理解が遅れて反転する形へ組み替えた。元の物語や人物は使わない。`,
           };
@@ -527,7 +527,7 @@
         make: (i) => {
           const k = pick(m.mechanics, i, 17);
           return {
-            text: fit(`${brief(k.text, 40)}。この挙動だけから始める。`, pick(OPENINGS, i, 0)),
+            text: fit(`${brief(k.text, 36)}。この挙動だけから始める。`, pick(OPENINGS, i, 0)),
             sources: [k.work.id],
             inspiration: `「${k.work.title}」の舞台機構から、物がどう振る舞うかだけを抽出した。同じ規模・同じ形で作ることは目的にしない。`,
           };
@@ -586,7 +586,7 @@
           const e = pick(m.withThing, i, 31);
           const heirs = ["身体", "光", "音", "床", "布", "視線"];
           return {
-            text: fit(`${brief(e.vg[0], 30)}を消し、役割を${pick(heirs, i, 11)}へ渡す。無くなったことに触れない。`, ""),
+            text: fit(`${brief(e.vg[0], 26)}を消し、役割を${pick(heirs, i, 11)}へ渡す。無くなったことに触れない。`, ""),
             sources: [e.work.id],
             inspiration: `「${e.work.title}」の${e.label}から中心の物を取り除き、その機能だけを別の担い手へ移した。`,
           };
@@ -601,7 +601,7 @@
           const e = pick(m.withArrow, i, 37);
           const steps = arrowSteps(e);
           return {
-            text: fit(`「${brief(steps[steps.length - 1], 20)}」の後から始める。原因の「${brief(steps[0], 18)}」は後で起きる。`, pick(OPENINGS, i, 1)),
+            text: fit(`「${brief(steps[steps.length - 1], 18)}」の後から始める。原因の「${brief(steps[0], 16)}」は後で起きる。`, pick(OPENINGS, i, 1)),
             sources: [e.work.id],
             inspiration: `「${e.work.title}」の${e.label}の手順から、結果を先頭へ、原因を後半へ入れ替えた。`,
           };
