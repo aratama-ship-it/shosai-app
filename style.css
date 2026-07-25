@@ -1383,9 +1383,12 @@ textarea, input[type="text"] {
   border: 1px solid rgba(156,130,63,0.7);
   background: #0d0c0b;
   box-shadow: 0 12px 34px rgba(0,0,0,0.28);
+  /* グリッドの列に入るので、canvas の固有幅で押し広げられないようにする */
+  min-width: 0;
 }
 
-#stage-canvas {
+#stage-canvas,
+#stage-plan-canvas {
   display: block;
   width: 100%;
   height: auto;
@@ -1394,8 +1397,10 @@ textarea, input[type="text"] {
   user-select: none;
 }
 
-#stage-canvas[data-tool="select"] { cursor: grab; }
-#stage-canvas[data-dragging="true"] { cursor: grabbing; }
+#stage-canvas[data-tool="select"],
+#stage-plan-canvas[data-tool="select"] { cursor: grab; }
+#stage-canvas[data-dragging="true"],
+#stage-plan-canvas[data-dragging="true"] { cursor: grabbing; }
 #stage-canvas[data-tool="paint"] { cursor: crosshair; }
 #stage-canvas[data-tool="erase"] { cursor: cell; }
 

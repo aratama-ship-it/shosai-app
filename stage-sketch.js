@@ -1093,6 +1093,7 @@
     }
     tool = nextTool;
     canvas.dataset.tool = tool;
+    if (planCanvas) planCanvas.dataset.tool = "select";  // 平面は動かす専用
     document.querySelectorAll("[data-stage-tool]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.stageTool === tool));
     });
