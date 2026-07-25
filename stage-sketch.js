@@ -76,6 +76,10 @@
     venueNote: document.getElementById("stage-venue-note"),
     venueScale: document.getElementById("stage-venue-scale"),
     viewButtons: document.querySelectorAll("[data-stage-view]"),
+    seatSection: document.getElementById("stage-seat-section"),
+    seatList: document.getElementById("stage-seat-list"),
+    seatNote: document.getElementById("stage-seat-note"),
+    compare: document.getElementById("stage-compare"),
     depthLabelBack: document.getElementById("stage-depth-back"),
     depthLabelFront: document.getElementById("stage-depth-front"),
   };
@@ -97,6 +101,7 @@
       venue: "proscenium",
       venueSize: "mid",
       view: "front",
+      seat: "center",
       background: "#40362d",
       pieceColor: "#a84b26",
       paintColor: "#efe7d6",
@@ -171,6 +176,7 @@
       venue: venue.id,
       venueSize: size.id,
       view: raw.view === "plan" ? "plan" : "front",
+      seat: VENUES.seatById(typeof raw.seat === "string" ? raw.seat : "").id,
       background: validColor(raw.background, fallback.background),
       pieceColor: validColor(raw.pieceColor, fallback.pieceColor),
       paintColor: validColor(raw.paintColor, fallback.paintColor),
@@ -232,18 +238,20 @@
       };
     }
 
-    // 正面図: 奥のラインと手前のラインの間で擬似パースを作る
-    const backY = 150;
-    const floorY = 470;
-    const bottomY = H - 46;
-    const backW = W * 0.62;
-    const frontW = W * 0.94;
+    // 正面図: 奥のラインと手前のラインの間で擬似パースを作る。
+    // 客席の位置（席）によって、床の厚み・幅の開き・消失点の左右が変わる。
+    const seat = VENUES.seatById(state.seat);
     return {
-      plan: false, venue: v, size,
-      backY, floorY, bottomY, backW, frontW,
+      plan: false, venue: v, size, seat,
+      backY: seat.backY,
+      floorY: seat.floorY,
+      bottomY: seat.bottomY,
+      backW: W * seat.backW,
+      frontW: W * seat.frontW,
+      shift: (seat.shift || 0) * W * 0.5,
       centerX: W / 2,
       // 最前列の実寸幅を基準に、1mあたりのpxを出す
-      pxPerM: frontW / size.width,
+      pxPerM: (W * seat.frontW) / size.width,
     };
   }
 
@@ -259,8 +267,10 @@
     }
     const y = L.floorY + v * (L.bottomY - L.floorY);
     const halfW = (L.backW + v * (L.frontW - L.backW)) / 2;
+    // 横の席では、奥ほど横へ流れる。手前は席の正面なのでずれない
+    const slide = (L.shift || 0) * (1 - v);
     return {
-      x: L.centerX + (u - 0.5) * halfW * 2,
+      x: L.centerX + slide + (u - 0.5) * halfW * 2,
       y,
       scale: (L.backW + v * (L.frontW - L.backW)) / L.frontW,
     };
@@ -275,7 +285,8 @@
     }
     const v = clamp((y - L.floorY) / (L.bottomY - L.floorY), 0, 1);
     const halfW = (L.backW + v * (L.frontW - L.backW)) / 2;
-    return { u: clamp((x - L.centerX) / (halfW * 2) + 0.5, 0, 1), v };
+    const slide = (L.shift || 0) * (1 - v);
+    return { u: clamp((x - L.centerX - slide) / (halfW * 2) + 0.5, 0, 1), v };
   }
 
   // コマの実寸（m）から画面上の高さを出す。size は基準に対する倍率
@@ -357,7 +368,8 @@
   function backdropRect(L) {
     if (L.plan) return null;
     const halfBack = L.backW / 2;
-    return { x: L.centerX - halfBack, y: L.backY, w: L.backW, h: L.floorY - L.backY };
+    // 奥の面は消失点と一緒に動く（横の席からは背景も斜めに見える）
+    return { x: L.centerX + (L.shift || 0) - halfBack, y: L.backY, w: L.backW, h: L.floorY - L.backY };
   }
 
   function buildPaintLayer(L) {
@@ -647,8 +659,9 @@
     // 床（台形）
     target.fillStyle = "#211b17";
     target.beginPath();
-    target.moveTo(L.centerX - L.backW / 2, L.floorY);
-    target.lineTo(L.centerX + L.backW / 2, L.floorY);
+    const shiftBack = L.shift || 0;
+    target.moveTo(L.centerX + shiftBack - L.backW / 2, L.floorY);
+    target.lineTo(L.centerX + shiftBack + L.backW / 2, L.floorY);
     target.lineTo(L.centerX + L.frontW / 2, L.bottomY);
     target.lineTo(L.centerX - L.frontW / 2, L.bottomY);
     target.closePath();
@@ -681,7 +694,8 @@
       target.strokeStyle = "rgba(168,75,38,0.5)";
       target.lineWidth = 3;
       target.beginPath();
-      target.ellipse(L.centerX, L.floorY + (L.bottomY - L.floorY) * 0.55, ringW / 2, ringW / 9, 0, 0, Math.PI * 2);
+      target.ellipse(L.centerX + (L.shift || 0) * 0.45, L.floorY + (L.bottomY - L.floorY) * 0.55,
+        ringW / 2, ringW / 9, 0, 0, Math.PI * 2);
       target.stroke();
       label(target, `リング 直径${L.size.ring}m`, L.centerX, L.bottomY - 16);
       target.restore();
@@ -723,8 +737,8 @@
     target.strokeStyle = "rgba(239,231,214,0.18)";
     target.lineWidth = 1;
     target.beginPath();
-    target.moveTo(L.centerX - L.backW / 2, L.floorY);
-    target.lineTo(L.centerX + L.backW / 2, L.floorY);
+    target.moveTo(L.centerX + (L.shift || 0) - L.backW / 2, L.floorY);
+    target.lineTo(L.centerX + (L.shift || 0) + L.backW / 2, L.floorY);
     target.stroke();
   }
 
@@ -892,7 +906,7 @@
       .join("、");
     canvas.setAttribute(
       "aria-label",
-      `${v.label}（${size.label}）を${state.view === "plan" ? "上から見た平面図" : "客席から見た正面図"}。${counts}。背景の線${state.strokes.length}本。`);
+      `${v.label}（${size.label}）を${state.view === "plan" ? "上から見た平面図" : VENUES.seatById(state.seat).label + "から見た正面図"}。${counts}。背景の線${state.strokes.length}本。`);
     if (els.depthLabelBack) els.depthLabelBack.textContent = state.view === "plan" ? "奥（背面）" : "奥・背景";
     if (els.depthLabelFront) els.depthLabelFront.textContent = state.view === "plan" ? "手前（客席側）" : "手前・客席側";
   }
@@ -948,6 +962,32 @@
     els.viewButtons.forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.stageView === state.view));
     });
+
+    // 席は正面図のときだけ意味を持つ（平面図に「どこから見るか」は無い）
+    const seat = VENUES.seatById(state.seat);
+    if (els.seatSection) els.seatSection.hidden = state.view === "plan";
+    if (els.seatList) {
+      els.seatList.innerHTML = "";
+      VENUES.seats.forEach((s2) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "stage-seat";
+        button.setAttribute("aria-pressed", String(s2.id === seat.id));
+        button.textContent = s2.label;
+        button.addEventListener("click", () => setSeat(s2.id));
+        els.seatList.append(button);
+      });
+    }
+    if (els.seatNote) els.seatNote.textContent = seat.note;
+  }
+
+  function setSeat(id) {
+    if (state.seat === id) return;
+    state.seat = id;
+    renderVenueControls();
+    render();
+    persistSoon();
+    announce(`${VENUES.seatById(id).label}から見た絵に切り替えました。配置は変わりません。`);
   }
 
   function setVenue(id) {
@@ -1343,9 +1383,72 @@
       String(now.getMinutes()).padStart(2, "0"),
     ].join("");
     els.export.href = output.toDataURL("image/png");
-    els.export.download = `stage-${state.venue}-${state.view}-${stamp}.png`;
+    els.export.download = state.view === "plan"
+      ? `stage-${state.venue}-plan-${stamp}.png`
+      : `stage-${state.venue}-${state.seat}-${stamp}.png`;
     announce("舞台スケッチをPNG画像として書き出しました。");
   });
+
+  // 同じ配置を4つの席から見た絵を、1枚に並べて書き出す。
+  // 席を変えて描き直すだけなので、状態は一時的に借りて必ず戻す。
+  if (els.compare) {
+    els.compare.addEventListener("click", () => {
+      if (state.view === "plan") {
+        announce("席の比較は正面図で行います。");
+        return;
+      }
+      const original = state.seat;
+      const cols = 2;
+      const rows = Math.ceil(VENUES.seats.length / cols);
+      const out = document.createElement("canvas");
+      out.width = W * cols;
+      out.height = H * rows;
+      const g = out.getContext("2d", { alpha: false });
+      g.fillStyle = "#0d0c0b";
+      g.fillRect(0, 0, out.width, out.height);
+
+      const tile = document.createElement("canvas");
+      tile.width = W;
+      tile.height = H;
+      const tileCtx = tile.getContext("2d", { alpha: false });
+
+      try {
+        VENUES.seats.forEach((seat, i) => {
+          state.seat = seat.id;
+          drawStage(tileCtx, false);
+          const x = (i % cols) * W;
+          const y = Math.floor(i / cols) * H;
+          g.drawImage(tile, x, y);
+          g.save();
+          g.fillStyle = "rgba(13,12,11,0.72)";
+          g.fillRect(x + 22, y + 20, 268, 52);
+          g.fillStyle = "rgba(239,231,214,0.85)";
+          g.font = "26px 'Hiragino Mincho ProN', serif";
+          g.textBaseline = "middle";
+          g.fillText(seat.label, x + 40, y + 47);
+          g.strokeStyle = "rgba(156,130,63,0.3)";
+          g.lineWidth = 2;
+          g.strokeRect(x + 1, y + 1, W - 2, H - 2);
+          g.restore();
+        });
+      } finally {
+        state.seat = original;
+        render();
+      }
+
+      const now = new Date();
+      const stamp = [
+        now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0"), "-",
+        String(now.getHours()).padStart(2, "0"), String(now.getMinutes()).padStart(2, "0"),
+      ].join("");
+      const link = document.createElement("a");
+      link.href = out.toDataURL("image/png");
+      link.download = `stage-${state.venue}-seats-${stamp}.png`;
+      link.click();
+      announce("4つの席から見た絵を1枚に並べて書き出しました。");
+    });
+  }
 
   syncInputs();
   renderVenueControls();

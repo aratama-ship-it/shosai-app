@@ -92,6 +92,37 @@
     { m: 35, label: "身体の動きが読める限界", note: "ミュージカル・オペラでおよそ30〜38m" },
   ];
 
+  /* 客席のどこから見るか。同じ配置でも、席が変われば見えるものが変わる。
+   * 実務では「サイトライン」と呼ぶ検討で、Vectorworks はカメラを客席へ置いて確かめる。
+   * ここでは擬似パースのパラメータを席ごとに持つ。
+   *   floorY..bottomY  床の帯の厚み。低い席ほど床が浅く（潰れて）見える
+   *   backW..frontW    奥と手前の幅の差。高い席ほど差が開き、奥まで見通せる
+   *   shift            消失点の左右ずれ。横の席ほど舞台が斜めに見える
+   *   rise             舞台面をどれだけ見上げる／見下ろすか（0=水平）
+   */
+  const SEATS = [
+    {
+      id: "center", label: "1階 中央", short: "中央",
+      note: "設計の基準になる席。奥行きも高さも素直に見える。",
+      backY: 150, floorY: 470, bottomY: 674, backW: 0.62, frontW: 0.94, shift: 0, rise: 0,
+    },
+    {
+      id: "front", label: "1階 最前列", short: "最前",
+      note: "見上げる位置。床が潰れて奥行きが読めず、舞台の奥は隠れる。",
+      backY: 104, floorY: 548, bottomY: 700, backW: 0.78, frontW: 1.12, shift: 0, rise: -0.16,
+    },
+    {
+      id: "side", label: "1階 左右席", short: "左右",
+      note: "斜めから見る位置。片側の袖が見え、正面向きの構図は崩れる。",
+      backY: 150, floorY: 470, bottomY: 674, backW: 0.62, frontW: 0.94, shift: 0.3, rise: 0,
+    },
+    {
+      id: "balcony", label: "2階席", short: "2階",
+      note: "見下ろす位置。床の絵が主役になり、立ち位置の関係がよく読める。",
+      backY: 206, floorY: 392, bottomY: 658, backW: 0.5, frontW: 0.9, shift: 0, rise: 0.2,
+    },
+  ];
+
   // 屋外だけは客席ではなく距離で空間が決まる
   const OUTDOOR_MARKS = [
     { ratio: 0.12, label: "柵", note: "ステージ前端から1.8〜3.7m。撮影と警備の帯" },
@@ -102,6 +133,8 @@
     list: VENUES,
     byId: (id) => VENUES.find((v) => v.id === id) || VENUES[0],
     sizeById: (venue, sizeId) => (venue.sizes.find((s) => s.id === sizeId) || venue.sizes[0]),
+    seats: SEATS,
+    seatById: (id) => SEATS.find((s) => s.id === id) || SEATS[0],
     sightLimits: SIGHT_LIMITS,
     outdoorMarks: OUTDOOR_MARKS,
   };

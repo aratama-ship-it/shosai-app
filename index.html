@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=44">
+<link rel="stylesheet" href="style.css?v=45">
 </head>
 <body>
 
@@ -212,6 +212,13 @@
               <button type="button" data-stage-view="front" aria-pressed="true">正面（客席から）</button>
               <button type="button" data-stage-view="plan" aria-pressed="false">平面（上から）</button>
             </div>
+          </section>
+
+          <section class="stage-tool-section" id="stage-seat-section">
+            <h2>どの席から見るか</h2>
+            <div class="stage-seat-list" id="stage-seat-list" role="group" aria-label="客席の位置"></div>
+            <p class="stage-seat-note" id="stage-seat-note"></p>
+            <button type="button" class="stage-compare" id="stage-compare">4つの席を並べて書き出す</button>
           </section>
 
           <section class="stage-tool-section">
@@ -487,8 +494,8 @@
 <script src="db.js?v=77"></script>
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
-<script src="stage-venues.js?v=1"></script>
-<script src="stage-sketch.js?v=7"></script>
+<script src="stage-venues.js?v=2"></script>
+<script src="stage-sketch.js?v=8"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
