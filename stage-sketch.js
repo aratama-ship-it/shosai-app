@@ -1516,6 +1516,7 @@
     p.activeSceneId = scene.id;
     selectedId = null;
     renderScenes();
+    renderCast();
     updateInspector();
     render();
     persistSoon();
@@ -1534,6 +1535,7 @@
     p.activeSceneId = copy.id;
     selectedId = null;
     renderScenes();
+    renderCast();
     updateInspector();
     render();
     persistSoon();
@@ -1564,6 +1566,7 @@
     p.activeSceneId = p.scenes[Math.min(i, p.scenes.length - 1)].id;
     selectedId = null;
     renderScenes();
+    renderCast();
     updateInspector();
     render();
     persistSoon();
