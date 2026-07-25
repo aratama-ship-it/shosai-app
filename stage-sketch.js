@@ -452,8 +452,11 @@
       frontW: W * seat.frontW,
       shift: (seat.shift || 0) * W * 0.5,
       centerX: W / 2,
-      // 最前列の実寸幅を基準に、1mあたりのpxを出す
+      // 横の尺: 最前列の実寸幅を基準にした 1mあたりのpx
       pxPerM: (W * seat.frontW) / size.width,
+      // 縦の尺: 舞台の高さは奥の面の高さに対応する。横の尺とは倍率が違うので分ける。
+      // 人の背丈をこちらで描かないと、間口の尺で伸びて2倍以上の大きさになる。
+      pxPerMv: (seat.floorY - seat.backY) / (size.height || 8),
     };
   }
 
@@ -498,7 +501,9 @@
   // 実寸（m）から画面上の高さを出す。size は基準に対する倍率
   function pieceScale(piece, pos, L) {
     const meters = pieceHeightM(piece) * (piece.size / 100);
-    const px = meters * L.pxPerM * (L.plan ? 1 : pos.scale);
+    // 平面は間口の尺、正面は舞台の高さの尺で測る
+    const perM = L.plan ? L.pxPerM : L.pxPerMv;
+    const px = meters * perM * (L.plan ? 1 : pos.scale);
     // 元の描画は「人物=約155px」で描かれているので、それに合わせる
     return px / (piece.type === "performer" ? 155 : piece.type === "block" ? 84 : piece.type === "ring" ? 118 : 170);
   }
