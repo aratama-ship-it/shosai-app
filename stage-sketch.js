@@ -85,6 +85,7 @@
     frontCaption: document.getElementById("stage-front-caption"),
     venueNote: document.getElementById("stage-venue-note"),
     venueScale: document.getElementById("stage-venue-scale"),
+    bgSection: document.getElementById("stage-bg-section"),
     seatSection: document.getElementById("stage-seat-section"),
     seatList: document.getElementById("stage-seat-list"),
     seatNote: document.getElementById("stage-seat-note"),
@@ -381,11 +382,31 @@
 
   /* ---------- 背景の塗り ---------- */
 
-  function backdropRect(L) {
+  // 舞台の奥に当たる領域。背景を描くにも客席を描くにも使う
+  function backAreaRect(L) {
     if (L.plan) return null;
     const halfBack = L.backW / 2;
-    // 奥の面は消失点と一緒に動く（横の席からは背景も斜めに見える）
+    // 奥は消失点と一緒に動く（横の席からは奥も斜めに見える）
     return { x: L.centerX + (L.shift || 0) - halfBack, y: L.backY, w: L.backW, h: L.floorY - L.backY };
+  }
+
+  // 筆で塗れる背景の壁。全周形式（ビッグトップ）は奥も客席なので壁が無い
+  function backdropRect(L) {
+    if (L.plan || L.venue.audience === "round") return null;
+    return backAreaRect(L);
+  }
+
+  // リングの楕円。舞台面に描かれた円なので、床の台形の中に収まる
+  function ringEllipse(L) {
+    if (!L.size.ring) return null;
+    const vRing = 0.5;
+    const center = place(0.5, vRing, L);
+    const widthAtRing = L.backW + vRing * (L.frontW - L.backW);
+    return {
+      x: center.x, y: center.y,
+      rx: (L.size.ring / L.size.width) * widthAtRing / 2,
+      ry: (L.size.ring / L.size.depth) * (L.bottomY - L.floorY) / 2,
+    };
   }
 
   function buildPaintLayer(L) {
@@ -614,52 +635,61 @@
 
   function drawFrontVenue(target, L) {
     const v = L.venue;
-    const rect = backdropRect(L);
+    const back = backAreaRect(L);
+    const wall = backdropRect(L);          // 塗れる背景の壁。全周形式には無い
+    const ring = ringEllipse(L);
+    const roundHouse = v.audience === "round";
 
-    // 奥の面（背景）
-    target.fillStyle = state.background;
-    target.fillRect(rect.x, rect.y, rect.w, rect.h);
-    target.drawImage(paintCanvas, 0, 0);
+    // ---- 奥 ----
+    if (wall) {
+      target.fillStyle = state.background;
+      target.fillRect(wall.x, wall.y, wall.w, wall.h);
+      target.drawImage(paintCanvas, 0, 0);
 
-    const wallShade = target.createLinearGradient(rect.x, 0, rect.x + rect.w, 0);
-    wallShade.addColorStop(0, "rgba(0,0,0,0.18)");
-    wallShade.addColorStop(0.18, "rgba(0,0,0,0)");
-    wallShade.addColorStop(0.82, "rgba(0,0,0,0)");
-    wallShade.addColorStop(1, "rgba(0,0,0,0.18)");
-    target.fillStyle = wallShade;
-    target.fillRect(rect.x, rect.y, rect.w, rect.h);
+      const wallShade = target.createLinearGradient(wall.x, 0, wall.x + wall.w, 0);
+      wallShade.addColorStop(0, "rgba(0,0,0,0.18)");
+      wallShade.addColorStop(0.18, "rgba(0,0,0,0)");
+      wallShade.addColorStop(0.82, "rgba(0,0,0,0)");
+      wallShade.addColorStop(1, "rgba(0,0,0,0.18)");
+      target.fillStyle = wallShade;
+      target.fillRect(wall.x, wall.y, wall.w, wall.h);
 
-    // 屋外は奥が空になる
-    if (v.audience === "none") {
-      const sky = target.createLinearGradient(0, rect.y, 0, L.floorY);
-      sky.addColorStop(0, "rgba(28,38,48,0.85)");
-      sky.addColorStop(1, "rgba(28,38,48,0)");
-      target.fillStyle = sky;
-      target.fillRect(rect.x, rect.y, rect.w, rect.h);
+      // 屋外は奥が空になる
+      if (v.audience === "none") {
+        const sky = target.createLinearGradient(0, wall.y, 0, L.floorY);
+        sky.addColorStop(0, "rgba(28,38,48,0.85)");
+        sky.addColorStop(1, "rgba(28,38,48,0)");
+        target.fillStyle = sky;
+        target.fillRect(wall.x, wall.y, wall.w, wall.h);
+      }
     }
 
-    // ビッグトップは奥にも客席の段が見える（全周だから）
-    if (v.audience === "round") {
+    // 全周形式は奥も客席。背景の壁を持たないので、客席の段だけを描く
+    if (roundHouse) {
       target.save();
-      target.fillStyle = "rgba(20,17,14,0.72)";
-      target.fillRect(rect.x, rect.y + rect.h * 0.44, rect.w, rect.h * 0.56);
-      target.strokeStyle = "rgba(239,231,214,0.13)";
+      target.fillStyle = "rgba(18,15,13,0.95)";
+      target.fillRect(0, back.y, W, L.floorY - back.y);
+      target.strokeStyle = "rgba(239,231,214,0.1)";
       target.lineWidth = 1;
-      for (let i = 1; i <= 6; i += 1) {
-        const y = rect.y + rect.h * 0.44 + (rect.h * 0.56 / 6) * i;
+      const rows = 7;
+      for (let i = 1; i <= rows; i += 1) {
+        const t = i / rows;
+        const y = back.y + (L.floorY - back.y) * t;
+        // 奥の段ほど幅が狭い（すり鉢状に見せる）
+        const inset = (1 - t) * W * 0.16;
         target.beginPath();
-        target.moveTo(rect.x, y);
-        target.lineTo(rect.x + rect.w, y);
+        target.moveTo(inset, y);
+        target.lineTo(W - inset, y);
         target.stroke();
       }
-      label(target, "向こう側の客席", L.centerX, rect.y + rect.h * 0.62);
+      label(target, "向こう側の客席", L.centerX, back.y + (L.floorY - back.y) * 0.34);
       // テントの傾斜
-      target.strokeStyle = "rgba(156,130,63,0.34)";
+      target.strokeStyle = "rgba(156,130,63,0.3)";
       target.lineWidth = 2;
       target.beginPath();
-      target.moveTo(rect.x - 40, rect.y + 34);
-      target.lineTo(L.centerX, rect.y - 74);
-      target.lineTo(rect.x + rect.w + 40, rect.y + 34);
+      target.moveTo(back.x - 60, back.y + 40);
+      target.lineTo(L.centerX, back.y - 80);
+      target.lineTo(back.x + back.w + 60, back.y + 40);
       target.stroke();
       target.restore();
     }
@@ -668,25 +698,37 @@
     if (v.audience === "three") {
       target.save();
       target.fillStyle = "rgba(20,17,14,0.55)";
-      target.fillRect(0, L.floorY - 30, rect.x - 4, H - L.floorY + 30);
-      target.fillRect(rect.x + rect.w + 4, L.floorY - 30, W - rect.x - rect.w, H - L.floorY + 30);
-      label(target, "客席", rect.x / 2, L.floorY + 90);
-      label(target, "客席", rect.x + rect.w + (W - rect.x - rect.w) / 2, L.floorY + 90);
+      target.fillRect(0, L.floorY - 30, back.x - 4, H - L.floorY + 30);
+      target.fillRect(back.x + back.w + 4, L.floorY - 30, W - back.x - back.w, H - L.floorY + 30);
+      label(target, "客席", back.x / 2, L.floorY + 90);
+      label(target, "客席", back.x + back.w + (W - back.x - back.w) / 2, L.floorY + 90);
       target.restore();
     }
 
-    // 床（台形）
+    // ---- 床 ----
+    // 全周形式の舞台面はリングの内側だけ。その外は客席なので床を敷かない。
+    const floorPath = () => {
+      target.beginPath();
+      if (roundHouse && ring) {
+        target.ellipse(ring.x, ring.y, ring.rx, ring.ry, 0, 0, Math.PI * 2);
+      } else {
+        const shiftBack = L.shift || 0;
+        target.moveTo(L.centerX + shiftBack - L.backW / 2, L.floorY);
+        target.lineTo(L.centerX + shiftBack + L.backW / 2, L.floorY);
+        target.lineTo(L.centerX + L.frontW / 2, L.bottomY);
+        target.lineTo(L.centerX - L.frontW / 2, L.bottomY);
+        target.closePath();
+      }
+    };
+
+    target.save();
     target.fillStyle = "#211b17";
-    target.beginPath();
-    const shiftBack = L.shift || 0;
-    target.moveTo(L.centerX + shiftBack - L.backW / 2, L.floorY);
-    target.lineTo(L.centerX + shiftBack + L.backW / 2, L.floorY);
-    target.lineTo(L.centerX + L.frontW / 2, L.bottomY);
-    target.lineTo(L.centerX - L.frontW / 2, L.bottomY);
-    target.closePath();
+    floorPath();
     target.fill();
 
-    // 奥行きの目盛り
+    // 床の目盛りは床の内側にだけ引く
+    floorPath();
+    target.clip();
     target.strokeStyle = "rgba(239,231,214,0.09)";
     target.lineWidth = 1;
     [0.25, 0.5, 0.75].forEach((ratio) => {
@@ -705,45 +747,37 @@
       target.lineTo(b.x, b.y);
       target.stroke();
     });
+    target.restore();
 
-    // ビッグトップのリングは舞台面に描かれた円なので、床の台形の中に収める。
-    // 幅は最前列基準の pxPerM ではなく、リングが置かれる奥行きでの舞台幅から出す。
-    // 縦は奥行き方向の潰れ方に従う（低い席ほど扁平になる）。
-    if (L.size.ring) {
-      const vRing = 0.5;
-      const center = place(0.5, vRing, L);
-      const widthAtRing = L.backW + vRing * (L.frontW - L.backW);
-      const rx = (L.size.ring / L.size.width) * widthAtRing / 2;
-      const ry = (L.size.ring / L.size.depth) * (L.bottomY - L.floorY) / 2;
+    // リングの縁
+    if (ring) {
       target.save();
-      target.strokeStyle = "rgba(168,75,38,0.5)";
+      target.strokeStyle = "rgba(168,75,38,0.55)";
       target.lineWidth = 3;
       target.beginPath();
-      target.ellipse(center.x, center.y, rx, ry, 0, 0, Math.PI * 2);
+      target.ellipse(ring.x, ring.y, ring.rx, ring.ry, 0, 0, Math.PI * 2);
       target.stroke();
-      label(target, `リング 直径${L.size.ring}m`, center.x, Math.min(center.y + ry + 17, H - 12));
+      label(target, `リング 直径${L.size.ring}m`, ring.x, Math.min(ring.y + ring.ry + 17, H - 12));
       target.restore();
     }
 
-    // 画面の外側を塗り、額縁を描く
+    // ---- 枠 ----
     target.fillStyle = "#11100f";
-    target.fillRect(0, 0, W, rect.y);
+    target.fillRect(0, 0, W, back.y);
     if (v.frame) {
       // 額縁は舞台面の上と左右まで。床（エプロン側）は隠さない。
-      // ここを床まで下ろすと、手前へ出したコマが枠の外に消えてしまう。
-      target.fillRect(0, 0, rect.x, L.floorY);
-      target.fillRect(rect.x + rect.w, 0, W - rect.x - rect.w, L.floorY);
+      target.fillRect(0, 0, back.x, L.floorY);
+      target.fillRect(back.x + back.w, 0, W - back.x - back.w, L.floorY);
       target.strokeStyle = "rgba(156,130,63,0.42)";
       target.lineWidth = 3;
-      target.strokeRect(rect.x, rect.y, rect.w, L.floorY - rect.y);
-    } else {
+      target.strokeRect(back.x, back.y, back.w, L.floorY - back.y);
+    } else if (!roundHouse) {
       target.strokeStyle = "rgba(156,130,63,0.2)";
       target.lineWidth = 1;
-      target.strokeRect(rect.x, rect.y, rect.w, L.floorY - rect.y);
+      target.strokeRect(back.x, back.y, back.w, L.floorY - back.y);
     }
 
-    // 屋外は前端の外側に柵がある。正面図では奥行きを描けないので、境界の線1本と
-    // 注記にとどめる。柵と音響卓の距離関係は平面図で見る。
+    // 屋外は前端の外側に柵がある。奥行きを描けないので境界の線1本と注記にとどめる。
     if (v.audience === "none") {
       target.save();
       target.strokeStyle = "rgba(168,75,38,0.4)";
@@ -758,12 +792,15 @@
       target.restore();
     }
 
-    target.strokeStyle = "rgba(239,231,214,0.18)";
-    target.lineWidth = 1;
-    target.beginPath();
-    target.moveTo(L.centerX + (L.shift || 0) - L.backW / 2, L.floorY);
-    target.lineTo(L.centerX + (L.shift || 0) + L.backW / 2, L.floorY);
-    target.stroke();
+    // 舞台面の奥のライン。全周形式はリングが境界なので引かない
+    if (!roundHouse) {
+      target.strokeStyle = "rgba(239,231,214,0.18)";
+      target.lineWidth = 1;
+      target.beginPath();
+      target.moveTo(L.centerX + (L.shift || 0) - L.backW / 2, L.floorY);
+      target.lineTo(L.centerX + (L.shift || 0) + L.backW / 2, L.floorY);
+      target.stroke();
+    }
   }
 
   function drawPlanVenue(target, L) {
@@ -987,6 +1024,14 @@
     if (els.showFront) els.showFront.checked = state.showFront;
     if (els.showPlan) els.showPlan.checked = state.showPlan;
 
+    // 背景の壁が無い形式では、塗りの道具立てを畳む
+    const hasWall = current.audience !== "round";
+    if (els.bgSection) els.bgSection.hidden = !hasWall;
+    document.querySelectorAll('[data-stage-tool="paint"], [data-stage-tool="erase"]').forEach((b) => {
+      b.disabled = !hasWall;
+      b.title = hasWall ? "" : `${current.label}には背景の壁がありません`;
+    });
+
     // 席は正面図を出しているときだけ意味を持つ
     const seat = VENUES.seatById(state.seat);
     if (els.seatSection) els.seatSection.hidden = !state.showFront;
@@ -1040,6 +1085,7 @@
     checkpoint();
     state.venue = id;
     state.venueSize = VENUES.sizeById(VENUES.byId(id), state.venueSize).id;
+    if (venue().audience === "round" && tool !== "select") setTool("select");
     renderVenueControls();
     render();
     persistSoon();
@@ -1091,6 +1137,11 @@
   function setTool(nextTool) {
     if (!state.showFront && nextTool !== "select") {
       announce("背景の塗りは正面図で行います。正面を開いてください。");
+      return;
+    }
+    // 全周形式には塗れる背景の壁が無い（奥も客席）
+    if (venue().audience === "round" && nextTool !== "select") {
+      announce(`${venue().label}には背景の壁がありません。奥も客席です。`);
       return;
     }
     tool = nextTool;
