@@ -4088,6 +4088,7 @@ textarea, input[type="text"] {
   #view-studio { padding-left: 0; }
   #view-db { padding-left: 0; }
   #view-companies { padding-left: 0; }
+  /* #view-roster の打ち消しは、名簿セクションがこれより後に来るため末尾に置く */
 
   .company-radar-head h1 { font-size: 25px; }
   .company-radar-types { grid-template-columns: 1fr; }
@@ -4174,6 +4175,9 @@ textarea, input[type="text"] {
 /* ===== 名簿（スカウティングレポート） =====
    資料棚・制作会社と同じ2ペインの読み方を踏襲する。名簿は編集しないので、
    操作は探すことと並べ替えることに絞る。 */
+
+/* 背表紙は position: fixed で左44pxを占める。他のビューと同じだけ本文を逃がす */
+#view-roster { padding-left: 44px; }
 
 .roster {
   max-width: 1460px;
@@ -4529,9 +4533,15 @@ textarea, input[type="text"] {
   border-left: 2px solid var(--brass);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899px) {
   .roster { padding: 22px 18px 40px; }
   .roster-layout { grid-template-columns: minmax(0, 1fr); gap: 26px; }
   .roster-list-pane { position: static; max-height: none; overflow: visible; padding-right: 0; }
   .roster-card-head { flex-wrap: wrap; gap: 14px; }
+}
+
+/* 背表紙が消える幅では、名簿も本文を左端まで戻す。
+   この打ち消しは 720px のブロック本体より後に置く必要がある（同詳細度は後勝ちのため）。 */
+@media (max-width: 720px) {
+  #view-roster { padding-left: 0; }
 }
