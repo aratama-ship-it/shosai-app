@@ -1009,6 +1009,59 @@
       target.restore();
     }
 
+    // ---- 舞台袖 ----
+    // 額縁のある劇場には、左右から袖幕（レッグ）が対で垂れ、その奥が袖の空間になる。
+    // 客席から見ると、奥の対ほど内側に寄って小さく見える。演者はこれより手前に立つ
+    // ので、ここでは背景の一部として床の上に描く。
+    if (v.frame) {
+      const pairs = 3;
+      const wingU = 0.13;          // 袖幕が舞台に食い込む幅（左右それぞれ）
+      for (let i = 0; i < pairs; i += 1) {
+        const vAt = 0.08 + i * 0.3;          // i=0 が最も奥。奥から手前の順に描く
+        const floorAt = place(0, vAt, L).y;  // その奥行きでの床の高さ
+        const shade = 0.66 + i * 0.12;       // 手前の対ほど濃い（奥は暗がりに霞む）
+
+        [-1, 1].forEach((side) => {
+          const outerU = side < 0 ? 0 : 1;
+          const innerU = side < 0 ? wingU : 1 - wingU;
+          const outer = place(outerU, vAt, L).x;
+          const inner = place(innerU, vAt, L).x;
+
+          // 袖の奥の暗がり。袖幕の外はここから先が見えない
+          target.fillStyle = `rgba(9,8,7,${0.55 * shade})`;
+          target.fillRect(Math.min(outer, inner) - (side < 0 ? 120 : 0), back.y,
+            Math.abs(inner - outer) + 120, floorAt - back.y);
+
+          // 袖幕そのもの。縦の布なので、内側の縁だけ明るくして厚みを出す
+          const grad = target.createLinearGradient(outer, 0, inner, 0);
+          grad.addColorStop(0, `rgba(17,15,13,${0.96 * shade})`);
+          grad.addColorStop(0.72, `rgba(24,20,17,${0.94 * shade})`);
+          grad.addColorStop(1, `rgba(38,32,27,${0.9 * shade})`);
+          target.fillStyle = grad;
+          target.fillRect(Math.min(outer, inner), back.y, Math.abs(inner - outer), floorAt - back.y);
+
+          // 布の縦じわ
+          target.strokeStyle = `rgba(0,0,0,${0.28 * shade})`;
+          target.lineWidth = 1;
+          const folds = 4;
+          for (let f = 1; f < folds; f += 1) {
+            const x = outer + (inner - outer) * (f / folds);
+            target.beginPath();
+            target.moveTo(x, back.y);
+            target.lineTo(x, floorAt);
+            target.stroke();
+          }
+
+          // 裾の線。床との接地を見せる
+          target.strokeStyle = `rgba(0,0,0,${0.5 * shade})`;
+          target.beginPath();
+          target.moveTo(Math.min(outer, inner), floorAt);
+          target.lineTo(Math.max(outer, inner), floorAt);
+          target.stroke();
+        });
+      }
+    }
+
     // ---- 枠 ----
     target.fillStyle = "#11100f";
     target.fillRect(0, 0, W, back.y);
