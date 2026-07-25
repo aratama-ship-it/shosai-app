@@ -1497,6 +1497,7 @@
     selectedId = piece.id;
     setTool("select");
     updateInspector();
+    renderScenes();
     render();
     persistSoon();
     announce(`${PIECE_TYPES[type]}を舞台へ置きました。`);
@@ -1510,6 +1511,7 @@
     sc().pieces = sc().pieces.filter((candidate) => candidate.id !== piece.id);
     selectedId = null;
     updateInspector();
+    renderScenes();
     render();
     persistSoon();
     announce(`${PIECE_TYPES[piece.type]}を舞台から外しました。`);
@@ -1523,6 +1525,7 @@
     sc().pieces.push(copy);
     selectedId = copy.id;
     updateInspector();
+    renderScenes();
     render();
     persistSoon();
     announce(`${PIECE_TYPES[piece.type]}を複製しました。`);
@@ -1838,6 +1841,7 @@
     cur.strokes = [];
     selectedId = null;
     syncInputs();
+    renderScenes();
     renderVenueControls();
     updateInspector();
     render();
