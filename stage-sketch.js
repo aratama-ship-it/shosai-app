@@ -65,6 +65,11 @@
     ["sphere", "dia", "dimDia"], ["sphere", "lift", "dimLift"],
   ];
   const DEFAULT_HEIGHT_CM = 165;
+  // 名簿や舞台セットへ加えたときの色。順に配って、色でも見分けられるようにする
+  const PIECE_PALETTE = ["#a84b26", "#efe7d6", "#77865f", "#8b98a1", "#d3ac59", "#6d6657"];
+  function nextPieceColor(index) {
+    return PIECE_PALETTE[((index % PIECE_PALETTE.length) + PIECE_PALETTE.length) % PIECE_PALETTE.length];
+  }
   // 肩幅は身長のおよそ1/4。向きが変わると見かけの幅がこの間で動く
   const SHOULDER_RATIO = 0.25;
   // 体の厚み（前後）は肩幅のおよそ0.68倍。真横を向いたときの見かけの幅になる
@@ -229,7 +234,7 @@
       seat: "center",
       // パネルの置き場所と開閉。中央は絵の順序だけを持つ
       layout: defaultLayout(),
-      pieceColor: "#a84b26",
+      pieceColor: "#d3ac59",
       paintColor: "#efe7d6",
       brushSize: 42,
     };
@@ -238,18 +243,18 @@
   /* ---------- パネルの配置 ----------
      どの道具をどちら側へ置くかは人によって違う。列を移せるようにし、
      使わないものは畳めるようにする。中央は絵だけで、上下の入れ替えのみ。 */
-  const PANELS = ["project", "venue", "cast", "sets", "tools", "pieces", "background", "scenes", "inspector", "save"];
+  const PANELS = ["project", "venue", "cast", "sets", "tools", "light", "background", "scenes", "inspector", "save"];
 
   function defaultLayout() {
     return {
       // 場面は絵のすぐ右に置く（順番を見ながら描くため）
       cols: {
-        project: "left", venue: "left", cast: "left", sets: "left", tools: "left", pieces: "left",
+        project: "left", venue: "left", cast: "left", sets: "left", tools: "left", light: "left",
         background: "left",
         scenes: "right", inspector: "right", save: "right",
       },
       order: {
-        project: 0, venue: 1, cast: 2, sets: 3, tools: 4, pieces: 5, background: 6,
+        project: 0, venue: 1, cast: 2, sets: 3, tools: 4, light: 5, background: 6,
         scenes: 0, inspector: 1, save: 2,
       },
       collapsed: {},
@@ -833,40 +838,44 @@
     target.restore();
   }
 
-  /* 奥行きの見かけ。正面図では、舞台の奥へ1m進むと、画面上では
-   * 少し右上へずれて見える。その1mぶんのベクトルを返す。 */
-  function depthVector(per) {
-    return { x: per.x * 0.34, y: -per.y * 0.26 };
+  /* 舞台の床の上のある一点を、画面のどこに置くかを実寸で引く。
+   * 駒の中心 (u,v) から、間口方向へ dw メートル、奥方向へ dd メートル
+   * ずれた床の点を返す。place() をそのまま通すので、床の1m枡と必ず一致する。
+   * 以前は固定の斜めベクトル一本で奥行きを表していたため、舞台の左右どちらに
+   * 置いても同じ角度に倒れてしまい、平面図と食い違っていた。 */
+  function floorPoint(piece, dw, dd, L) {
+    const u = piece.u + dw / L.size.width;
+    const v = piece.v - dd / L.size.depth;      // 奥へ行くほど v は小さい
+    return place(u, v, L);
   }
 
   // 台・箱。幅・奥行き・高さを実寸（m）で持つ直方体。向きを変えられる。
-  // 回すと、正面から見た幅も、天板と側面の見え方も一緒に変わる。
+  // 四隅をそれぞれ床の点として引くので、置く位置によって傾きが変わる（遠近が合う）。
   function drawBlock(target, piece, pos, scale, L) {
     const dim = pieceDims(piece);
-    const per = perMetre(pos, L);
-    const dv = depthVector(per);
     const rad = ((piece.facing || 0) * Math.PI) / 180;
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
-    const hh = dim.h * per.y;
-
-    // 底面の4隅。まず真上から見た座標で回してから、画面へ移す
-    const corner = (ux, uy) => {
-      const X = ux * cos - uy * sin;
-      const Y = ux * sin + uy * cos;
-      return { x: pos.x + X * per.x + Y * dv.x, y: pos.y + Y * dv.y, depth: Y };
-    };
     const hw = dim.w / 2;
     const hd = dim.d / 2;
+
+    // 真上から見た四隅を回してから、それぞれ床の点として画面へ移す
+    const corner = (ux, uy) => {
+      const dw = ux * cos - uy * sin;
+      const dd = ux * sin + uy * cos;
+      const p = floorPoint(piece, dw, dd, L);
+      const per = perMetre(p, L);
+      return { x: p.x, y: p.y, top: p.y - dim.h * per.y, depth: dd };
+    };
     const base = [corner(-hw, -hd), corner(hw, -hd), corner(hw, hd), corner(-hw, hd)];
-    const top = base.map((c) => ({ x: c.x, y: c.y - hh, depth: c.depth }));
+    const top = base.map((c) => ({ x: c.x, y: c.top }));
 
     target.save();
 
     // 影は底面の形そのまま
     target.fillStyle = "rgba(0,0,0,0.3)";
     target.beginPath();
-    base.forEach((c, i) => (i ? target.lineTo(c.x, c.y + 6) : target.moveTo(c.x, c.y + 6)));
+    base.forEach((c, i) => (i ? target.lineTo(c.x, c.y + 4) : target.moveTo(c.x, c.y + 4)));
     target.closePath();
     target.fill();
 
@@ -884,7 +893,7 @@
       const ey = base[j].depth - base[i].depth;
       const len = Math.hypot(ex, ey) || 1;
       const lit = ex / len;                       // 1=真正面、0=真横、負=裏
-      if (lit <= 0.001) continue;                 // 裏を向いた面は見えない
+      if (lit <= 0.001) continue;
       faces.push({ i, j, lit, mid: (base[i].depth + base[j].depth) / 2 });
     }
     faces.sort((a, b) => b.mid - a.mid);          // 奥の面から先に塗る
@@ -1093,22 +1102,18 @@
     if (piece.type === "light") return { x: pos.x - 78 * scale, y: pos.y - 35 * scale, w: 156 * scale, h: 70 * scale };
     const per = perMetre(pos, L);
     if (piece.type === "block") {
-      // 回すと正面から見た幅が変わる。四隅を実際に回して外接矩形を取る
+      // 描画と同じ手順で四隅を引き、その外接矩形を枠にする
       const rad = ((piece.facing || 0) * Math.PI) / 180;
       const cos = Math.cos(rad);
       const sin = Math.sin(rad);
-      const dv = depthVector(per);
       const xs = [];
       const ys = [];
       [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sy]) => {
         const ux = (sx * dim.w) / 2;
         const uy = (sy * dim.d) / 2;
-        const X = ux * cos - uy * sin;
-        const Y = ux * sin + uy * cos;
-        const px = pos.x + X * per.x + Y * dv.x;
-        const py = pos.y + Y * dv.y;
-        xs.push(px);
-        ys.push(py, py - dim.h * per.y);
+        const p = floorPoint(piece, ux * cos - uy * sin, ux * sin + uy * cos, L);
+        xs.push(p.x);
+        ys.push(p.y, p.y - dim.h * perMetre(p, L).y);
       });
       const x0 = Math.min(...xs);
       const y0 = Math.min(...ys);
@@ -1911,7 +1916,7 @@
     }
     checkpoint();
     state.project.cast.push({
-      id: rid("cast"), name: raw.slice(0, 24), color: state.pieceColor,
+      id: rid("cast"), name: raw.slice(0, 24), color: nextPieceColor(state.project.cast.length),
       heightCm: DEFAULT_HEIGHT_CM, note: "",
     });
     if (els.castName) els.castName.value = "";
@@ -2062,7 +2067,15 @@
       remove.setAttribute("aria-label", `${item.name}を舞台セットから外す`);
       remove.addEventListener("click", () => removeSetItem(item.id));
 
-      row.append(swatch, name, dims, status, detail, remove);
+      // 1段目に色と名前、2段目に寸法と操作を置く。名前が切れないようにするため
+      const head = document.createElement("div");
+      head.className = "stage-set-head";
+      head.append(swatch, name);
+      const foot = document.createElement("div");
+      foot.className = "stage-set-foot";
+      foot.append(dims, status, detail, remove);
+      row.className = "stage-set-row";
+      row.append(head, foot);
       els.setList.append(row);
     });
   }
@@ -2078,7 +2091,7 @@
     checkpoint();
     state.project.sets.push({
       id: rid("set"), kind, name: raw.slice(0, 24),
-      color: kind === "sphere" ? "#d3ac59" : "#8b98a1",
+      color: nextPieceColor(state.project.sets.length + 2),
       dims: normalizeDims(kind, {}), note: "",
     });
     if (els.setName) els.setName.value = "";
@@ -2845,9 +2858,9 @@
   document.querySelectorAll("[data-stage-tool]").forEach((button) => {
     button.addEventListener("click", () => setTool(button.dataset.stageTool));
   });
-  document.querySelectorAll("[data-stage-add]").forEach((button) => {
-    button.addEventListener("click", () => addPiece(button.dataset.stageAdd));
-  });
+  // 演者と台は名簿・舞台セットから出し入れするので、直接置くのは光だけ
+  const addLight = document.getElementById("stage-add-light");
+  if (addLight) addLight.addEventListener("click", () => addPiece("light"));
   if (els.showFront) {
     els.showFront.addEventListener("change", (e) => setViewShown("front", e.target.checked));
   }

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=56">
+<link rel="stylesheet" href="style.css?v=57">
 </head>
 <body>
 
@@ -273,24 +273,20 @@
             </div>
           </section>
 
-          <section class="stage-panel" data-panel="pieces" data-title="演者と物を置く">
+          <section class="stage-panel" data-panel="light" data-title="光">
             <div class="stage-panel-body">
-            <div class="stage-piece-buttons">
-              <button type="button" data-stage-add="performer">演者</button>
-              <button type="button" data-stage-add="block">台・物</button>
-              <button type="button" data-stage-add="sphere">球</button>
-              <button type="button" data-stage-add="light">光の位置</button>
-            </div>
-            <label class="stage-control-label" for="stage-new-color">新しく置く色</label>
-            <div class="stage-color-row">
-              <input type="color" id="stage-new-color" value="#a84b26" aria-label="新しく置く色">
-              <div class="stage-swatches" aria-label="置くものの色見本">
-                <button type="button" data-stage-piece-color="#a84b26" style="--stage-swatch:#a84b26" aria-label="錆色"></button>
-                <button type="button" data-stage-piece-color="#efe7d6" style="--stage-swatch:#efe7d6" aria-label="生成り"></button>
-                <button type="button" data-stage-piece-color="#77865f" style="--stage-swatch:#77865f" aria-label="苔色"></button>
-                <button type="button" data-stage-piece-color="#8b98a1" style="--stage-swatch:#8b98a1" aria-label="青灰色"></button>
+              <p class="stage-cast-hint">明かりの当たる位置を置きます。演者と台は、左の「演者」「舞台セット」から出し入れします。</p>
+              <button type="button" id="stage-add-light" class="btn-quiet stage-add-light">光を置く</button>
+              <label class="stage-control-label" for="stage-new-color">光の色</label>
+              <div class="stage-color-row">
+                <input type="color" id="stage-new-color" value="#d3ac59" aria-label="光の色">
+                <div class="stage-swatches" aria-label="光の色見本">
+                  <button type="button" data-stage-piece-color="#d3ac59" style="--stage-swatch:#d3ac59" aria-label="電球色"></button>
+                  <button type="button" data-stage-piece-color="#efe7d6" style="--stage-swatch:#efe7d6" aria-label="生成り"></button>
+                  <button type="button" data-stage-piece-color="#8b98a1" style="--stage-swatch:#8b98a1" aria-label="青灰色"></button>
+                  <button type="button" data-stage-piece-color="#a84b26" style="--stage-swatch:#a84b26" aria-label="錆色"></button>
+                </div>
               </div>
-            </div>
             </div>
           </section>
 
@@ -702,7 +698,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=9"></script>
-<script src="stage-sketch.js?v=41"></script>
+<script src="stage-sketch.js?v=42"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

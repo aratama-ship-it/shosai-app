@@ -1337,6 +1337,42 @@ textarea, input[type="text"] {
   gap: 8px;
 }
 
+/* 舞台セットの一覧は2段。名前は幅いっぱいに取り、寸法と操作を下の段へ回す。
+   1段に詰めると名前が「テー…」のように切れて、どれがどれか分からなくなる。 */
+.stage-add-light {
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.stage-set-row {
+  display: grid;
+  gap: 4px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(240, 231, 214, 0.07);
+}
+
+.stage-set-row:last-child { border-bottom: none; }
+
+.stage-set-head {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+
+.stage-set-foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 5px;
+  padding-left: 26px;
+}
+
+.stage-set-foot .stage-set-dims {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* 舞台セットの一覧で、寸法を一目で読ませる */
 .stage-set-dims {
   flex: 0 0 auto;
@@ -4897,7 +4933,8 @@ textarea, input[type="text"] {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 6px;
-  align-items: start;
+  /* stretch にしないと、ボタンだけ字の高さぶんになって入力欄と段差ができる */
+  align-items: stretch;
 }
 
 .stage-version-input { margin-bottom: 0; }
@@ -5185,7 +5222,13 @@ textarea, input[type="text"] {
   white-space: nowrap;
 }
 
-.stage-version-row .btn-quiet { padding: 7px 12px; }
+.stage-version-row .btn-quiet {
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
 
 /* 操作・コマを置く・重なり操作のボタン */
 .stage-tool-grid button,
