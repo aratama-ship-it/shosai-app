@@ -183,7 +183,7 @@
     return (id) => {
       if (cache[id]) return cache[id];
       const j = poseById(id).joints;
-      const pad = 0.03;
+      const pad = 0.05;   // 手足の太さと胴の厚みぶん
       let x0 = Infinity; let x1 = -Infinity; let y1 = -Infinity; let z0 = Infinity; let z1 = -Infinity;
       Object.keys(j).forEach((k) => {
         x0 = Math.min(x0, j[k][0]); x1 = Math.max(x1, j[k][0]);
@@ -200,12 +200,30 @@
     };
   })();
 
+  /* 点の集まりの外周。胴は箱なので、8点を投影した外側をなぞれば
+   * どの向きでも正しい輪郭になる（単調鎖法）。 */
+  function convexHull(points) {
+    const pts = points.slice().sort((a, b) => (a.x - b.x) || (a.y - b.y));
+    if (pts.length < 3) return pts;
+    const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+    const build = (list) => {
+      const out = [];
+      list.forEach((p) => {
+        while (out.length >= 2 && cross(out[out.length - 2], out[out.length - 1], p) <= 0) out.pop();
+        out.push(p);
+      });
+      out.pop();
+      return out;
+    };
+    return build(pts).concat(build(pts.slice().reverse()));
+  }
+
   // 体の部位。太さは身長に対する割合。奥にあるものから塗るために z も見る
   const LIMBS = [
-    { pts: ["hipL", "knL", "anL", "toL"], w: 0.052 },
-    { pts: ["hipR", "knR", "anR", "toR"], w: 0.052 },
-    { pts: ["shL", "elL", "wrL"], w: 0.038 },
-    { pts: ["shR", "elR", "wrR"], w: 0.038 },
+    { pts: ["hipL", "knL", "anL", "toL"], w: 0.062 },
+    { pts: ["hipR", "knR", "anR", "toR"], w: 0.062 },
+    { pts: ["shL", "elL", "wrL"], w: 0.046 },
+    { pts: ["shR", "elR", "wrR"], w: 0.046 },
   ];
 
   const SOLID_TYPES = { block: true, table: true, chair: true };
@@ -229,6 +247,9 @@
   const SHOULDER_RATIO = 0.25;
   // 体の厚み（前後）は肩幅のおよそ0.68倍。真横を向いたときの見かけの幅になる
   const BODY_DEPTH_RATIO = 0.68;
+  // 胴の前後の張り出し（身長に対する割合）。胸のほうが腰より厚い
+  const BODY_CHEST = 0.068;
+  const BODY_WAIST = 0.058;
   const TOOL_HINTS = {
     select: "演者や物を選び、舞台の上で動かします。",
     paint: "奥の背景面を指やマウスで塗ります。",
@@ -973,17 +994,31 @@
      * 見分けがつかない。傾きの量は床の1m枡と同じ尺から取る。 */
     const zDrop = L.plan ? 0 : ((L.bottomY - L.floorY) / (L.size.depth || 9)) * H;
     const joints = poseById(piece.pose).joints;
+    const project = (jx, jy, jz) => {
+      const wz = -jx * sin + jz * cos;
+      return {
+        x: pos.x + (jx * cos + jz * sin) * ux,
+        y: pos.y - jy * uy + wz * zDrop,
+        z: wz,
+      };
+    };
     const P = {};
     Object.keys(joints).forEach((k) => {
       const j = joints[k];
-      const wz = -j[0] * sin + j[2] * cos;
-      P[k] = {
-        x: pos.x + (j[0] * cos + j[2] * sin) * ux,
-        y: pos.y - j[1] * uy + wz * zDrop,
-        z: wz,
-      };
+      P[k] = project(j[0], j[1], j[2]);
     });
-    return { P, ux, uy, cos, sin, H, per };
+
+    /* 胴の厚み。人の胸は前後にもおよそ0.22m（身長の0.13倍）ある。
+     * 平たい面として描くと、真横を向いた瞬間に紙のように薄くなる。
+     * 肩と腰にそれぞれ前後の角を作り、その8点の外側をなぞって胴にする。 */
+    const box = [];
+    [["shL", BODY_CHEST], ["shR", BODY_CHEST], ["hipR", BODY_WAIST], ["hipL", BODY_WAIST]]
+      .forEach(([k, rz]) => {
+        const j = joints[k];
+        box.push(project(j[0], j[1], j[2] + rz));
+        box.push(project(j[0], j[1], j[2] - rz));
+      });
+    return { P, box, ux, uy, cos, sin, H, per };
   }
 
   /* 正面から見た演者。骨格から描くので、姿勢を変えても向きを変えても
@@ -1032,20 +1067,18 @@
         return;
       }
       if (part.kind === "torso") {
+        const hull = convexHull(rig.box);
         target.fillStyle = piece.color;
         target.strokeStyle = piece.color;
-        target.lineWidth = line(0.055);
+        target.lineWidth = line(0.03);
         target.lineJoin = "round";
         target.beginPath();
-        target.moveTo(P.shL.x, P.shL.y);
-        target.lineTo(P.shR.x, P.shR.y);
-        target.lineTo(P.hipR.x, P.hipR.y);
-        target.lineTo(P.hipL.x, P.hipL.y);
+        hull.forEach((q, i) => (i ? target.lineTo(q.x, q.y) : target.moveTo(q.x, q.y)));
         target.closePath();
         target.stroke();
         target.fill();
         // 首
-        target.lineWidth = line(0.042);
+        target.lineWidth = line(0.05);
         target.lineCap = "round";
         target.beginPath();
         target.moveTo((P.shL.x + P.shR.x) / 2, (P.shL.y + P.shR.y) / 2);
@@ -1408,8 +1441,11 @@
       const halfD = Math.max(4, ext.halfZ * H * L.pxPerM);
       const rad = ((piece.facing || 0) * Math.PI) / 180;
       target.translate(pos.x, pos.y);
-      // 0度＝客席（画面の下）を向く
-      target.rotate(rad);
+      /* 0度＝客席（画面の下）を向く。
+       * 平面は「上が奥・下が客席」なので、正面図と同じ回り方にするには符号が逆になる。
+       * rotate(+θ) にすると、向き90°の演者が正面図では右を向くのに
+       * 平面図の三角は左を指す。 */
+      target.rotate(-rad);
       target.translate(ext.cx * H * L.pxPerM, ext.cz * H * L.pxPerM);
       target.fillStyle = piece.color;
       target.strokeStyle = "rgba(0,0,0,0.4)";
@@ -1432,16 +1468,16 @@
       const w = Math.max(5, foot.w * L.pxPerM);
       const d = Math.max(5, foot.d * L.pxPerM);
       target.translate(pos.x, pos.y);
-      target.rotate(((piece.facing || 0) * Math.PI) / 180);
+      target.rotate(-((piece.facing || 0) * Math.PI) / 180);   // 演者と同じ回り方にそろえる
       target.fillStyle = piece.color;
       target.fillRect(-w / 2, -d / 2, w, d);
       target.strokeStyle = "rgba(0,0,0,0.3)";
       target.lineWidth = 1.5;
       target.strokeRect(-w / 2, -d / 2, w, d);
-      // 椅子は背もたれの側を濃くして、座る向きを分かるようにする
+      // 椅子は背もたれの側を濃くして、座る向きを分かるようにする。背は正面の反対側
       if (piece.type === "chair") {
         target.fillStyle = "rgba(13,12,11,0.4)";
-        target.fillRect(-w / 2, d / 2 - d * 0.2, w, d * 0.2);
+        target.fillRect(-w / 2, -d / 2, w, d * 0.2);
       }
       // どちらが正面かの印
       target.fillStyle = "rgba(13,12,11,0.45)";
