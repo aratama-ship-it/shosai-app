@@ -1388,13 +1388,37 @@ textarea, input[type="text"] {
 
 .stage-scene-row:hover .stage-scene-grip { color: var(--brass); }
 
+/* 開いている場面は、見出しとメモをまとめて一つの枠で囲う。
+   見出しだけに枠が付いていると、メモがどの場面のものか読み取りにくい。 */
+.stage-scene-row.is-open {
+  border: 1px solid var(--rust);
+  background: rgba(168, 75, 38, 0.07);
+  padding: 3px;
+}
+
+.stage-scene-row.is-open .stage-scene-chip {
+  border-color: transparent;
+  background: rgba(168, 75, 38, 0.14);
+}
+
+.stage-scene-row.is-open .stage-scene-chip.is-open::before { display: none; }
+
 .stage-scene-body {
   display: grid;
   gap: 5px;
-  padding: 7px 8px 8px 20px;
-  border: 1px solid rgba(168, 75, 38, 0.3);
-  border-top: 0;
-  background: rgba(168, 75, 38, 0.06);
+  padding: 5px 2px 2px 20px;
+}
+
+/* 名前はその場で書き換える */
+.stage-scene-rename {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--brass);
+  background: var(--desk-2);
+  color: var(--paper);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 2px 5px;
 }
 
 .stage-scene-body .stage-text-input {
@@ -5414,11 +5438,18 @@ body.is-panel-dragging {
   margin-bottom: 0;
 }
 
+/* 場面の欄は下の縁を掴んで高さを変えられる。
+   入れ子が深くなると320pxでは足りず、狭い窓の中を延々と繰るはめになる。 */
 .stage-col .stage-scene-list {
   flex-direction: column;
   overflow-x: visible;
-  max-height: 320px;
+  height: 320px;
+  min-height: 120px;
+  max-height: 80vh;
   overflow-y: auto;
+  resize: vertical;
+  padding-right: 2px;
+  border-bottom: 1px solid rgba(240, 231, 214, 0.12);
 }
 
 .stage-col .stage-scene-chip { min-width: 0; width: 100%; }

@@ -175,15 +175,18 @@
      * 体は丸まっているので、腕は脛を抱え、腿は胸へ折り畳む。
      * y の原点は床のままなので、重心が0.95Hあたりに来るように全体を持ち上げる。 */
     makePose("tuck", "抱え込み宙返り", {
-      head: [0, 0.98, 0.30], neck: [0, 0.99, 0.22],
-      shL: [-0.115, 1.00, 0.16], shR: [0.115, 1.00, 0.16],
-      elL: [-0.135, 0.90, 0.02], elR: [0.135, 0.90, 0.02],
-      wrL: [-0.10, 0.80, -0.06], wrR: [0.10, 0.80, -0.06],
-      hipL: [-0.058, 0.99, -0.16], hipR: [0.058, 0.99, -0.16],
-      knL: [-0.075, 0.86, 0.02], knR: [0.075, 0.86, 0.02],
-      anL: [-0.07, 0.74, -0.12], anR: [0.07, 0.74, -0.12],
-      toL: [-0.068, 0.70, -0.19], toR: [0.068, 0.70, -0.19],
-    }, { face: [0, -0.2, 1] }),
+      // 背骨から頭までが床と水平。背中が床側を向き、胸と膝は天井側
+      head: [0, 1.00, 0.30], neck: [0, 0.975, 0.22],
+      shL: [-0.115, 0.96, 0.14], shR: [0.115, 0.96, 0.14],
+      hipL: [-0.058, 0.95, -0.18], hipR: [0.058, 0.95, -0.18],
+      // 膝を胸へ抱え込む。腿は天井側へ折り畳まれる
+      knL: [-0.078, 1.17, 0.02], knR: [0.078, 1.17, 0.02],
+      anL: [-0.072, 1.10, -0.17], anR: [0.072, 1.10, -0.17],
+      toL: [-0.07, 1.05, -0.23], toR: [0.07, 1.05, -0.23],
+      // 腕は脛を抱える
+      elL: [-0.15, 1.02, 0.00], elR: [0.15, 1.02, 0.00],
+      wrL: [-0.105, 1.10, -0.10], wrR: [0.105, 1.10, -0.10],
+    }, { face: [0, 1, 0.25] }),
     /* 寝姿。本人の正面（z+）が頭側なので、向きを真横にすると寝姿がはっきり読める。
      * うつ伏せ・仰向け・横向きは、腕と脚の置き方と顔の向きで見分ける。 */
     makePose("lie", "うつ伏せ", {
@@ -1447,11 +1450,19 @@
         target.fill();
         return;
       }
+      /* 頭は首から頭への向きに沿った楕円。立っているときだけ縦長にしていたので、
+       * 寝たり抱え込んだりすると形が崩れていた。長い方は顎から頭頂、
+       * 短い方は耳から耳。首と頭がほぼ重なる姿勢では、そのまま立てておく。 */
+      const nx = P.head.x - P.neck.x;
+      const ny = P.head.y - P.neck.y;
+      const len = Math.hypot(nx, ny);
+      const angle = len > 0.4 ? Math.atan2(ny, nx) : -Math.PI / 2;
       target.fillStyle = color;
       target.strokeStyle = rgba(color, 0.35);
       target.lineWidth = Math.max(0.6, uy / 110);
       target.beginPath();
-      target.ellipse(P.head.x, P.head.y, Math.max(1.2, 0.05 * ux), Math.max(1.2, 0.066 * uy), 0, 0, Math.PI * 2);
+      target.ellipse(P.head.x, P.head.y,
+        Math.max(1.2, 0.066 * ux), Math.max(1.2, 0.05 * ux), angle, 0, Math.PI * 2);
       target.fill();
       target.stroke();
       // 顔の印。顔がこちら側を向いているときだけ出す
@@ -3676,6 +3687,11 @@
           : `${scene.pieces.length}`;
 
         button.append(num, name, count);
+        // 名前は行をダブルクリックして直す。欄を常に置くと一段ぶん場所を取るため
+        button.addEventListener("dblclick", (e) => {
+          e.preventDefault();
+          startRename(scene, name, button);
+        });
         button.addEventListener("click", () => {
           if (scene.kind === "section") {
             if (state.cursorRowId === scene.id) {
@@ -3693,36 +3709,21 @@
 
         /* 開いている場面だけ、名前とメモをその場で開く。
          * 閉じている行は名前だけ。並びを見渡すときに邪魔にならない。 */
-        if (isOpen || (scene.kind === "section" && isCursor)) {
+        if (isOpen && scene.kind === "scene") {
           const body = document.createElement("div");
           body.className = "stage-scene-body";
-          const title = document.createElement("input");
-          title.type = "text";
-          title.className = "stage-text-input";
-          title.maxLength = 40;
-          title.value = scene.title;
-          title.placeholder = scene.kind === "section" ? "セクションの名前" : "場面の名前";
-          title.setAttribute("aria-label", "名前");
-          title.addEventListener("input", () => {
-            scene.title = title.value.slice(0, 40);
-            name.textContent = scene.title;
+          const note = document.createElement("textarea");
+          note.className = "stage-text-input";
+          note.rows = 2;
+          note.maxLength = 200;
+          note.value = scene.note || "";
+          note.placeholder = "この場面のメモ（何が起きるか）";
+          note.setAttribute("aria-label", "場面のメモ");
+          note.addEventListener("input", () => {
+            scene.note = note.value.slice(0, 200);
             persistSoon();
           });
-          body.append(title);
-          if (scene.kind === "scene") {
-            const note = document.createElement("textarea");
-            note.className = "stage-text-input";
-            note.rows = 2;
-            note.maxLength = 200;
-            note.value = scene.note || "";
-            note.placeholder = "この場面のメモ（何が起きるか）";
-            note.setAttribute("aria-label", "場面のメモ");
-            note.addEventListener("input", () => {
-              scene.note = note.value.slice(0, 200);
-              persistSoon();
-            });
-            body.append(note);
-          }
+          body.append(note);
           row.append(body);
         }
         els.sceneList.append(row);
@@ -3746,6 +3747,39 @@
     if (els.sceneIn) {
       els.sceneIn.disabled = idx <= 0 || p.scenes[idx].depth > p.scenes[idx - 1].depth;
     }
+  }
+
+  // 行の名前をその場で書き換える。押している間だけ入力欄になる
+  function startRename(scene, nameEl, button) {
+    if (button.querySelector(".stage-scene-rename")) return;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "stage-scene-rename";
+    input.maxLength = 40;
+    input.value = scene.title;
+    nameEl.replaceWith(input);
+    input.focus();
+    input.select();
+    /* 書き終わったら、一覧を作り直さずにその場で名前へ戻す。
+     * 作り直すと、まだ書いている入力欄が取り残されて宙に浮く。 */
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      const next = input.value.trim().slice(0, 40) || scene.title;
+      const changed = next !== scene.title;
+      scene.title = next;
+      nameEl.textContent = scene.title;
+      input.replaceWith(nameEl);
+      if (changed) persistSoon();
+    };
+    input.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter") { e.preventDefault(); finish(); }
+      if (e.key === "Escape") { e.preventDefault(); input.value = scene.title; finish(); }
+    });
+    input.addEventListener("click", (e) => e.stopPropagation());
+    input.addEventListener("blur", finish, { once: true });
   }
 
   /* ---------- 場面を掴んで並べ替える ----------
@@ -4312,9 +4346,10 @@
     const sameType = sc().pieces.filter((candidate) => candidate.type === piece.type);
     els.selectedName.textContent = `${PIECE_TYPES[piece.type]} ${sameType.indexOf(piece) + 1}`;
     els.selectedColor.value = piece.color;
-    els.pieceSize.value = String(piece.size);
-    // 演者にしか出ないつまみなので、割合ではなく実際の身長で見せる
-    els.sizeValue.textContent = cmText(pieceHeightM(piece) * (piece.size / 100));
+    // 演者にしか出ないつまみなので、割合ではなく実際の身長そのものを動かす
+    const cm = Math.round(pieceHeightM(piece) * (piece.size / 100) * 100);
+    els.pieceSize.value = String(clamp(cm, 140, 200));
+    els.sizeValue.textContent = `${clamp(cm, 140, 200)}cm`;
     if (els.sizeLabel) els.sizeLabel.firstChild.nodeValue = "身長 ";
     // 台と球は実寸で持つので、倍率のつまみは出さない。
     // 舞台セットに登録したものは、寸法の正本がそちらにあるので個別に触らせない
@@ -4836,8 +4871,12 @@
   els.pieceSize.addEventListener("input", (event) => {
     const piece = selectedPiece();
     if (!piece) return;
-    piece.size = Number(event.target.value);
-    els.sizeValue.textContent = cmText(pieceHeightM(piece) * (piece.size / 100));
+    /* つまみは身長(cm)そのもの。保存は基準身長（名簿の身長、無ければ165cm）に
+     * 対する割合のままにするので、名簿側で身長を直しても関係が保たれる。 */
+    const want = clamp(Number(event.target.value), 140, 200);
+    const base = pieceHeightM(piece) * 100 || DEFAULT_HEIGHT_CM;
+    piece.size = clamp((want / base) * 100, 40, 260);
+    els.sizeValue.textContent = `${want}cm`;
     render();
     persistSoon();
   });
