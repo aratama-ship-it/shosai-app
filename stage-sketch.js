@@ -1564,10 +1564,9 @@
       target.fillRect(0, 0, Math.max(0, archX), L.bottomY);
       const rightX = archX + archW;
       if (rightX < W) target.fillRect(rightX, 0, W - rightX, L.bottomY);
-      // 額縁の輪郭は、額縁そのものが視野に収まっている席でだけ引く。
-      // 最前列のように額縁の内側まで入り込んだ席で引くと、背景の幕が
-      // 「奥にあるドア」に見えてしまう。
-      if (!(L.seat && L.seat.apron) && archX > 2) {
+      // 額縁の輪郭は、額縁そのものが画面に収まっているときだけ引く。
+      // 最前列のように額縁の外まで入り込んだ席では、引いても画面の外になる。
+      if (archX > 2) {
         target.strokeStyle = "rgba(156,130,63,0.42)";
         target.lineWidth = 3;
         const frameTop = Math.max(back.y, -4);
