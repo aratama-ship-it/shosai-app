@@ -996,6 +996,31 @@
     }
     target.restore();
 
+    // ---- 舞台の立ち上がりとピット ----
+    // 目線が床と同じ高さの席では、床が線に潰れるぶん、視界の下半分を
+    // 舞台の立ち上がり（エプロンの前面）とその下の暗がりが占める。
+    // ここを描かないと「床の上に人が並んだ絵」になり、見上げている感じが出ない。
+    const apron = (L.seat && L.seat.apron) || 0;
+    if (apron > 0 && !roundHouse) {
+      const faceBottom = Math.min(H, L.bottomY + apron);
+      const face = target.createLinearGradient(0, L.bottomY, 0, faceBottom);
+      face.addColorStop(0, "#1b1512");
+      face.addColorStop(1, "#0c0908");
+      target.fillStyle = face;
+      target.fillRect(0, L.bottomY, W, faceBottom - L.bottomY);
+      target.strokeStyle = "rgba(239,231,214,0.18)";
+      target.lineWidth = 2;
+      target.beginPath();
+      target.moveTo(0, L.bottomY);
+      target.lineTo(W, L.bottomY);
+      target.stroke();
+      if (faceBottom < H - 2) {
+        target.fillStyle = "#070606";
+        target.fillRect(0, faceBottom, W, H - faceBottom);
+      }
+      label(target, "舞台の立ち上がり", 96, Math.min(faceBottom - 16, H - 14));
+    }
+
     // リングの縁
     if (ring) {
       target.save();
@@ -1062,15 +1087,22 @@
     }
 
     // ---- 枠 ----
+    // 近い席では奥の面が画面の上へ抜ける（back.y が負）。その場合は天を塗らない。
     target.fillStyle = "#11100f";
-    target.fillRect(0, 0, W, back.y);
+    if (back.y > 0) target.fillRect(0, 0, W, back.y);
     if (v.frame) {
       // 額縁は舞台面の上と左右まで。床（エプロン側）は隠さない。
       target.fillRect(0, 0, back.x, L.floorY);
       target.fillRect(back.x + back.w, 0, W - back.x - back.w, L.floorY);
-      target.strokeStyle = "rgba(156,130,63,0.42)";
-      target.lineWidth = 3;
-      target.strokeRect(back.x, back.y, back.w, L.floorY - back.y);
+      // 額縁の輪郭は、額縁そのものが視野に収まっている席でだけ引く。
+      // 最前列のように額縁の内側まで入り込んだ席で引くと、背景の幕が
+      // 「奥にあるドア」に見えてしまう。
+      if (!(L.seat && L.seat.apron)) {
+        target.strokeStyle = "rgba(156,130,63,0.42)";
+        target.lineWidth = 3;
+        const frameTop = Math.max(back.y, -4);
+        target.strokeRect(back.x, frameTop, back.w, L.floorY - frameTop);
+      }
     } else if (!roundHouse) {
       target.strokeStyle = "rgba(156,130,63,0.2)";
       target.lineWidth = 1;
@@ -1228,15 +1260,32 @@
     if (L.plan) drawPlanVenue(target, L);
     else drawFrontVenue(target, L);
 
+    // 煽りの席では、垂直だったはずの線が画面の上へ向かって集まる（三点透視）。
+    // 見上げていることが絵として伝わるのは、人を大きく描くからではなく、この傾きによる。
+    // 画面の中心から離れた演者ほど、頭が内側へ倒れる。
+    const leanAt = (pos) => {
+      const tilt = (L.seat && L.seat.tilt) || 0;
+      if (!tilt || L.plan) return 0;
+      return tilt * ((pos.x - L.centerX) / (W / 2));
+    };
+
     // 演者と物。光は先に（奥に）描く
     const draw = (piece) => {
       const pos = place(piece.u, piece.v, L);
       const scale = pieceScale(piece, pos, L);
-      if (piece.type === "light") return drawLight(target, piece, pos, scale, L);
-      if (L.plan) return drawPlanPiece(target, piece, pos, scale, L);
-      if (piece.type === "performer") return drawPerformer(target, piece, pos, scale);
-      if (piece.type === "block") return drawBlock(target, piece, pos, scale);
-      if (piece.type === "ring") return drawRing(target, piece, pos, scale);
+      const lean = leanAt(pos);
+      if (lean) {
+        target.save();
+        target.translate(pos.x, pos.y);
+        target.transform(1, 0, lean, 1, 0, 0);   // 足元を軸に、上へ行くほど内側へ
+        target.translate(-pos.x, -pos.y);
+      }
+      if (piece.type === "light") drawLight(target, piece, pos, scale, L);
+      else if (L.plan) drawPlanPiece(target, piece, pos, scale, L);
+      else if (piece.type === "performer") drawPerformer(target, piece, pos, scale);
+      else if (piece.type === "block") drawBlock(target, piece, pos, scale);
+      else if (piece.type === "ring") drawRing(target, piece, pos, scale);
+      if (lean) target.restore();
     };
     sc().pieces.filter((p) => p.type === "light").forEach(draw);
     // 正面図では奥から描く（重なりが自然になる）
