@@ -1360,6 +1360,38 @@ textarea, input[type="text"] {
   gap: 6px;
 }
 
+/* 場面は入れ子にできる。字下げで親子を見せ、セクションは入れ物として区別する */
+.stage-scene-row { display: block; }
+.stage-scene-row .stage-scene-chip { width: 100%; }
+
+/* 開いている場面は、起点の印とは別に細い線で示す */
+.stage-scene-chip.is-open .stage-scene-name { color: var(--paper); }
+.stage-scene-chip.is-open::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--rust);
+}
+.stage-scene-chip { position: relative; }
+
+.stage-scene-chip.is-section {
+  background: rgba(156, 130, 63, 0.08);
+  border-color: rgba(156, 130, 63, 0.32);
+}
+
+.stage-scene-chip.is-section .stage-scene-name {
+  color: var(--brass);
+  letter-spacing: 0.08em;
+}
+
+.stage-scene-chip.is-section .stage-scene-num {
+  color: var(--brass);
+  font-size: 11px;
+}
+
 /* 舞台が一度に入らない席では、掴んで視線を振れる */
 #stage-canvas[data-pannable="true"] { cursor: grab; }
 #stage-canvas[data-pannable="true"][data-dragging="true"] { cursor: grabbing; }

@@ -441,6 +441,9 @@
     rigName: document.getElementById("stage-rig-name"),
     rigSave: document.getElementById("stage-rig-save"),
     sceneAddRig: document.getElementById("stage-scene-add-rig"),
+    sceneSection: document.getElementById("stage-scene-section"),
+    sceneOut: document.getElementById("stage-scene-out"),
+    sceneIn: document.getElementById("stage-scene-in"),
     lightName: document.getElementById("stage-light-name"),
     lightAdd: document.getElementById("stage-light-add"),
     setName: document.getElementById("stage-set-name"),
@@ -476,9 +479,17 @@
   const nowIso = () => new Date().toISOString();
   const rid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
 
-  function newScene(title, withExample) {
+  /* 場面の並びは「順番＋字下げ」で持つ。親のidを持たせるより、前後の入れ替えと
+   * 入れ子の付け外しが素直に書ける（箇条書きと同じ考え方）。
+   * 親は「自分より前にある、自分より浅い最初の行」。
+   * kind:"section" は入れ物だけで、絵は持たない。 */
+  const MAX_DEPTH = 4;
+
+  function newScene(title, withExample, kind, depth) {
     return {
-      id: rid("scene"),
+      id: rid(kind === "section" ? "sect" : "scene"),
+      kind: kind === "section" ? "section" : "scene",
+      depth: clamp(finite(depth, 0), 0, MAX_DEPTH),
       title: title || "場面 1",
       note: "",
       background: "#40362d",
@@ -522,8 +533,13 @@
       showNames: true,
       // 正面図の隅に「客席のどこから見ているか」の小図を出すか
       showSeatMap: true,
-      // 最前列など、舞台が一度に入らない席での見回し（-1〜1）
+      // 舞台が一度に入らない席での見回し（-1〜1）。左右と上下
       frontPan: 0,
+      frontPanY: 0,
+      // 畳んだセクション（idごと）。場面の入れ子を折りたたむのに使う
+      closedSections: {},
+      // 並べ替えや追加の起点になる行。セクションも起点になれる
+      cursorRowId: null,
       seat: "center",
       // パネルの置き場所と開閉。中央は絵の順序だけを持つ
       layout: defaultLayout(),
@@ -750,6 +766,8 @@
     const fallbackBg = "#40362d";
     return {
       id: typeof raw.id === "string" ? raw.id : rid("scene"),
+      kind: raw.kind === "section" ? "section" : "scene",
+      depth: clamp(finite(raw.depth, 0), 0, MAX_DEPTH),
       title: typeof raw.title === "string" && raw.title.trim() ? raw.title : `場面 ${index + 1}`,
       note: typeof raw.note === "string" ? raw.note : "",
       background: validColor(raw.background, fallbackBg),
@@ -778,8 +796,15 @@
     const size = VENUES.sizeById(venue, typeof rawProject.venueSize === "string" ? rawProject.venueSize : "");
     let scenes = Array.isArray(rawProject.scenes) ? rawProject.scenes.slice(0, 60).map(normalizeScene) : [];
     if (!scenes.length) scenes = [newScene("場面 1", false)];
-    const activeId = scenes.some((x) => x.id === rawProject.activeSceneId)
-      ? rawProject.activeSceneId : scenes[0].id;
+    // 字下げは「前の行より2段以上深い」ことがないように詰める
+    let prevDepth = -1;
+    scenes.forEach((scene) => {
+      scene.depth = Math.min(scene.depth, prevDepth + 1);
+      prevDepth = scene.depth;
+    });
+    if (!scenes.some((x) => x.kind === "scene")) scenes.push(newScene("場面 1", false));
+    const wanted = scenes.find((x) => x.id === rawProject.activeSceneId && x.kind === "scene");
+    const activeId = wanted ? wanted.id : scenes.find((x) => x.kind === "scene").id;
 
     return {
       version: 3,
@@ -832,6 +857,10 @@
       showNames: raw.showNames === undefined ? true : Boolean(raw.showNames),
       showSeatMap: raw.showSeatMap === undefined ? true : Boolean(raw.showSeatMap),
       frontPan: clamp(finite(raw.frontPan, 0), -1, 1),
+      frontPanY: clamp(finite(raw.frontPanY, 0), -1, 1),
+      closedSections: (raw.closedSections && typeof raw.closedSections === "object" && !Array.isArray(raw.closedSections))
+        ? raw.closedSections : {},
+      cursorRowId: typeof raw.cursorRowId === "string" ? raw.cursorRowId : null,
       layout: normalizeLayout(raw.layout),
       seat: VENUES.seatById(typeof raw.seat === "string" ? raw.seat : "").id,
       pieceColor: validColor(raw.pieceColor, fallback.pieceColor),
@@ -910,20 +939,31 @@
     const pxPerM = Math.min(byWidth, byHeight);
     const frontW = pxPerM * size.width;
 
-    /* 手前の間口が画面より広い席（最前列）は、舞台全体が一度に入らない。
-     * そういう席では、掴んで左右に振ることで視線を動かせるようにする。
-     * 振れる幅は「はみ出したぶんの半分」。それ以上振っても舞台の外しか映らない。 */
+    /* 舞台が一度に画面へ入らない席では、掴んで視線を動かせるようにする。
+     *  左右 … 手前の間口が画面よりはみ出したぶんの半分まで
+     *  上下 … 手前の尺で見た舞台の天は、たいてい画面の上へ抜けている。
+     *         吊り物や空中の演目はそこにあるので、そこまで見上げられるようにする。
+     *         見下ろす側は舞台の立ち上がりまでで、それ以上は暗がりしかない。 */
     const panRange = Math.max(0, (frontW - W) / 2);
+    const height = size.height || 8;
+    const upRoom = Math.max(0, height * pxPerM - seat.floorY);
+    const downRoom = Math.max(150, seat.bottomY + (seat.apron || 0) - H);
+    const panY = clamp(state.frontPanY || 0, -1, 1);
+    const offsetY = panY > 0 ? panY * upRoom : panY * downRoom;
+
     return {
       plan: false, venue: v, size, seat,
-      backY: seat.floorY - ((size.height || 8) * pxPerM) / span,
-      floorY: seat.floorY,
-      bottomY: seat.bottomY,
+      backY: seat.floorY - (height * pxPerM) / span + offsetY,
+      floorY: seat.floorY + offsetY,
+      bottomY: seat.bottomY + offsetY,
       backW: frontW / span,
       frontW,
       shift: (seat.shift || 0) * W * 0.5,
       centerX: W / 2 + clamp(state.frontPan || 0, -1, 1) * panRange,
       panRange,
+      panRangeY: Math.max(upRoom, downRoom),
+      upRoom,
+      downRoom,
       pxPerM,
       pxPerMv: pxPerM,   // 縦横で同じ。名前は呼び出し側の互換のために残す
     };
@@ -2388,7 +2428,7 @@
     }
     if (els.frontCaption) {
       const L = layout("front");
-      const pannable = L.panRange > 0;
+      const pannable = L.panRange > 0 || L.panRangeY > 0;
       els.frontCaption.textContent = `正面 — ${VENUES.seatById(state.seat).label}`
         + (pannable ? "（何もない所を掴むと視線を振れます）" : "");
       canvas.dataset.pannable = pannable ? "true" : "false";
@@ -3329,27 +3369,92 @@
 
   /* ---------- 場面とプロジェクト ---------- */
 
+  /* 並べ替え・追加・削除の起点になる行。セクションを押したときは、
+   * 絵を持たないので「開く」ことはできないが、操作の起点にはなる。 */
+  function cursorIndex() {
+    const list = state.project.scenes;
+    const byCursor = list.findIndex((x) => x.id === state.cursorRowId);
+    if (byCursor >= 0) return byCursor;
+    return list.findIndex((x) => x.id === state.project.activeSceneId);
+  }
+
+  // その行に属する子（自分より深い行が続くあいだ）
+  function sceneChildren(index) {
+    const list = state.project.scenes;
+    const base = list[index].depth;
+    let end = index + 1;
+    while (end < list.length && list[end].depth > base) end += 1;
+    return list.slice(index + 1, end);
+  }
+
+  // 畳んだセクションの中にいるか
+  function sceneHidden(index) {
+    const list = state.project.scenes;
+    for (let i = index - 1; i >= 0; i -= 1) {
+      if (list[i].depth < list[index].depth) {
+        if (list[i].kind === "section" && state.closedSections[list[i].id]) return true;
+        if (sceneHidden(i)) return true;
+        return false;
+      }
+    }
+    return false;
+  }
+
   function renderScenes() {
     const p = state.project;
     if (els.sceneList) {
       els.sceneList.innerHTML = "";
+      let sceneNo = 0;
       p.scenes.forEach((scene, i) => {
+        if (scene.kind === "scene") sceneNo += 1;
+        if (sceneHidden(i)) return;
+        const row = document.createElement("div");
+        row.className = "stage-scene-row";
+        row.style.paddingLeft = `${scene.depth * 14}px`;
+
         const button = document.createElement("button");
         button.type = "button";
-        button.className = "stage-scene-chip";
-        button.setAttribute("aria-pressed", String(scene.id === p.activeSceneId));
+        button.className = `stage-scene-chip${scene.kind === "section" ? " is-section" : ""}`;
+        const isCursor = scene.id === (state.cursorRowId || p.activeSceneId);
+        button.setAttribute("aria-pressed", String(isCursor));
+        if (scene.kind === "scene" && scene.id === p.activeSceneId) button.classList.add("is-open");
+
         const num = document.createElement("span");
         num.className = "stage-scene-num";
-        num.textContent = String(i + 1).padStart(2, "0");
+        if (scene.kind === "section") {
+          const shut = Boolean(state.closedSections[scene.id]);
+          num.textContent = shut ? "▸" : "▾";
+          button.setAttribute("aria-expanded", String(!shut));
+        } else {
+          num.textContent = String(sceneNo).padStart(2, "0");
+        }
+
         const name = document.createElement("span");
         name.className = "stage-scene-name";
         name.textContent = scene.title;
+
         const count = document.createElement("span");
         count.className = "stage-scene-count";
-        count.textContent = `${scene.pieces.length}`;
+        count.textContent = scene.kind === "section"
+          ? `${sceneChildren(i).filter((x) => x.kind === "scene").length}`
+          : `${scene.pieces.length}`;
+
         button.append(num, name, count);
-        button.addEventListener("click", () => openScene(scene.id));
-        els.sceneList.append(button);
+        button.addEventListener("click", () => {
+          if (scene.kind === "section") {
+            // 絵は持たないので開けない。押したら開閉して、操作の起点にする
+            if (state.cursorRowId === scene.id) {
+              state.closedSections[scene.id] = !state.closedSections[scene.id];
+            }
+            state.cursorRowId = scene.id;
+            renderScenes();
+            persistSoon();
+            return;
+          }
+          openScene(scene.id);
+        });
+        row.append(button);
+        els.sceneList.append(row);
       });
     }
     const cur = sc();
@@ -3362,14 +3467,43 @@
         ? `${p.branchReason || "別バージョンとして複製"}（元の版から派生）`
         : "このショーの最初の版です。";
     }
-    if (els.sceneDel) els.sceneDel.disabled = p.scenes.length <= 1;
-    const idx = p.scenes.findIndex((x) => x.id === p.activeSceneId);
+    const idx = cursorIndex();
+    if (els.sceneDel) els.sceneDel.disabled = p.scenes.filter((x) => x.kind === "scene").length <= 1;
     if (els.sceneLeft) els.sceneLeft.disabled = idx <= 0;
-    if (els.sceneRight) els.sceneRight.disabled = idx < 0 || idx >= p.scenes.length - 1;
+    if (els.sceneRight) {
+      const block = idx < 0 ? 0 : 1 + sceneChildren(idx).length;
+      els.sceneRight.disabled = idx < 0 || idx + block >= p.scenes.length;
+    }
+    if (els.sceneOut) els.sceneOut.disabled = idx < 0 || p.scenes[idx].depth <= 0;
+    if (els.sceneIn) {
+      els.sceneIn.disabled = idx <= 0 || p.scenes[idx].depth > p.scenes[idx - 1].depth;
+    }
   }
 
+  /* 字下げを変える。連れている子も同じだけ動かす。
+   * 前の行より2段以上深くはできない（宙に浮いた入れ子になるため）。 */
+  function indentScene(step) {
+    const p = state.project;
+    const i = cursorIndex();
+    if (i < 0) return;
+    const scene = p.scenes[i];
+    const next = scene.depth + step;
+    if (next < 0 || next > MAX_DEPTH) return;
+    // 前の行より2段以上は深くできない。宙に浮いた入れ子になるため
+    if (step > 0 && (i === 0 || next > p.scenes[i - 1].depth + 1)) return;
+    checkpoint();
+    const kids = sceneChildren(i);
+    scene.depth = next;
+    kids.forEach((kid) => { kid.depth = clamp(kid.depth + step, 0, MAX_DEPTH); });
+    renderScenes();
+    persistSoon();
+    announce(`${scene.title}を${step > 0 ? "一段内側" : "一段外側"}へ動かしました。`);
+  }
+
+  // 前後へ動かす。セクションは中身ごと、同じ深さの隣と入れ替える
   function openScene(id) {
-    if (state.project.activeSceneId === id) return;
+    state.cursorRowId = id;
+    if (state.project.activeSceneId === id) { renderScenes(); return; }
     state.project.activeSceneId = id;
     selectedId = null;
     renderScenes();
@@ -3387,13 +3521,18 @@
     checkpoint();
     const p = state.project;
     const carried = carryRig ? currentRigPieces().map(copyPiece) : [];
-    const scene = newScene(`場面 ${p.scenes.length + 1}`, false);
-    // 劇場は変えず、いまの背景色だけ引き継ぐ
-    scene.background = sc().background;
-    // 「装置ごと足す」のときは、演者以外をそのまま新しい場面へ写す
+    const i = cursorIndex();
+    // セクションを起点にしたときは、その中身として一段内側へ入れる
+    const depth = i >= 0 ? p.scenes[i].depth + (p.scenes[i].kind === "section" ? 1 : 0) : 0;
+    const count = p.scenes.filter((x) => x.kind === "scene").length;
+    const scene = newScene(`場面 ${count + 1}`, false, "scene", depth);
+    scene.background = sc().background;      // 劇場は変えず、いまの背景色だけ引き継ぐ
     carried.forEach((piece) => scene.pieces.push(piece));
-    p.scenes.push(scene);
+    // いまの行（とその中身）のすぐ後ろへ入れる
+    const at = i >= 0 ? i + 1 + sceneChildren(i).length : p.scenes.length;
+    p.scenes.splice(at, 0, scene);
     p.activeSceneId = scene.id;
+    state.cursorRowId = scene.id;
     selectedId = null;
     renderScenes();
     renderCast();
@@ -3406,16 +3545,42 @@
     announce(`${scene.title}を足しました。`);
   }
 
-  function duplicateScene() {
+  /* セクションを足す。いまの行のすぐ後ろへ、同じ深さで入れる。
+   * 入れ物だけなので絵は持たず、押すと開閉する。 */
+  function addSection() {
     checkpoint();
     const p = state.project;
-    const cur = sc();
-    const copy = JSON.parse(JSON.stringify(cur));
-    copy.id = rid("scene");
-    copy.title = `${cur.title} の複製`;
-    copy.pieces = copy.pieces.map((piece) => ({ ...piece, id: nextId() }));
-    p.scenes.splice(p.scenes.indexOf(cur) + 1, 0, copy);
-    p.activeSceneId = copy.id;
+    const i = cursorIndex();
+    const depth = i >= 0 ? p.scenes[i].depth : 0;
+    const count = p.scenes.filter((x) => x.kind === "section").length;
+    const section = newScene(`セクション ${count + 1}`, false, "section", depth);
+    const at = i >= 0 ? i + 1 + sceneChildren(i).length : p.scenes.length;
+    p.scenes.splice(at, 0, section);
+    state.cursorRowId = section.id;
+    renderScenes();
+    persistSoon();
+    announce(`${section.title}を足しました。下の場面を一段内側へ入れると、中身になります。`);
+  }
+
+  // セクションを起点にしたときは、中身ごと複製する
+  function duplicateScene() {
+    const p = state.project;
+    const i = cursorIndex();
+    if (i < 0) return;
+    checkpoint();
+    const cur = p.scenes[i];
+    const block = [cur].concat(sceneChildren(i));
+    const copies = block.map((row) => {
+      const copy = JSON.parse(JSON.stringify(row));
+      copy.id = rid(row.kind === "section" ? "sect" : "scene");
+      copy.pieces = (copy.pieces || []).map((piece) => ({ ...piece, id: nextId() }));
+      return copy;
+    });
+    copies[0].title = `${cur.title} の複製`;
+    p.scenes.splice(i + block.length, 0, ...copies);
+    const firstScene = copies.find((x) => x.kind === "scene");
+    if (firstScene) p.activeSceneId = firstScene.id;
+    state.cursorRowId = copies[0].id;
     selectedId = null;
     renderScenes();
     renderCast();
@@ -3430,26 +3595,42 @@
 
   function moveScene(direction) {
     const p = state.project;
-    const i = p.scenes.findIndex((x) => x.id === p.activeSceneId);
-    const j = i + direction;
-    if (i < 0 || j < 0 || j >= p.scenes.length) return;
+    const i = cursorIndex();
+    if (i < 0) return;
+    const block = 1 + sceneChildren(i).length;
+    const target = direction < 0
+      ? (() => { for (let k = i - 1; k >= 0; k -= 1) if (p.scenes[k].depth <= p.scenes[i].depth) return k; return -1; })()
+      : i + block;
+    if (target < 0 || target > p.scenes.length) return;
     checkpoint();
-    const [scene] = p.scenes.splice(i, 1);
-    p.scenes.splice(j, 0, scene);
+    const moving = p.scenes.splice(i, block);
+    const at = direction < 0 ? target : target - block + (1 + sceneChildren(target - block).length);
+    p.scenes.splice(Math.max(0, Math.min(p.scenes.length, at)), 0, ...moving);
     renderScenes();
     persistSoon();
-    announce(`${scene.title}を${direction < 0 ? "前" : "後"}へ動かしました。`);
+    announce(`${moving[0].title}を${direction < 0 ? "前" : "後"}へ動かしました。`);
   }
 
+
+  // セクションを消すときは、中に入れた場面ごと消える
   function deleteScene() {
     const p = state.project;
-    if (p.scenes.length <= 1) return;
-    const cur = sc();
-    if (!window.confirm(`「${cur.title}」を削除します。この場面に置いたものと塗りは戻せません。`)) return;
+    const i = cursorIndex();
+    if (i < 0) return;
+    const cur = p.scenes[i];
+    const kids = sceneChildren(i);
+    const kidScenes = kids.filter((x) => x.kind === "scene").length;
+    if (p.scenes.filter((x) => x.kind === "scene").length - 1 - kidScenes < 1) return;
+    const warn = kids.length
+      ? `「${cur.title}」を、中に入れた${kids.length}件ごと削除します。置いたものと塗りは戻せません。`
+      : `「${cur.title}」を削除します。この場面に置いたものと塗りは戻せません。`;
+    if (!window.confirm(warn)) return;
     checkpoint();
-    const i = p.scenes.indexOf(cur);
-    p.scenes.splice(i, 1);
-    p.activeSceneId = p.scenes[Math.min(i, p.scenes.length - 1)].id;
+    p.scenes.splice(i, 1 + kids.length);
+    const nextScene = p.scenes.slice(i).find((x) => x.kind === "scene")
+      || p.scenes.slice(0, i).reverse().find((x) => x.kind === "scene");
+    p.activeSceneId = nextScene.id;
+    state.cursorRowId = nextScene.id;
     selectedId = null;
     renderScenes();
     renderCast();
@@ -3532,7 +3713,8 @@
       checkpoint();
       const next = normalizeState({ project: incoming.project, seat: state.seat,
         showFront: state.showFront, showPlan: state.showPlan, showNames: state.showNames,
-        showSeatMap: state.showSeatMap, frontPan: state.frontPan });
+        showSeatMap: state.showSeatMap, frontPan: state.frontPan, frontPanY: state.frontPanY,
+        closedSections: state.closedSections, cursorRowId: state.cursorRowId });
       state = next;
       selectedId = null;
       syncInputs();
@@ -3865,12 +4047,14 @@
       render();
       if (!hit) {
         // 舞台が一度に入らない席では、何もない所を掴むと視線を左右に振れる
-        if (view === "front" && L.panRange > 0) {
+        if (view === "front" && (L.panRange > 0 || L.panRangeY > 0)) {
           capture(el, event.pointerId);
           el.dataset.dragging = "true";
           pointerAction = {
             kind: "pan", pointerId: event.pointerId, el, view,
-            startX: point.x, startPan: state.frontPan || 0, range: L.panRange,
+            startX: point.x, startY: point.y,
+            startPan: state.frontPan || 0, startPanY: state.frontPanY || 0,
+            range: L.panRange, up: L.upRoom, down: L.downRoom,
           };
         }
         return;
@@ -3916,9 +4100,16 @@
     const point = pointFromEvent(event);
 
     if (pointerAction.kind === "pan") {
-      // 掴んだ絵がついてくる向き。右へ引けば、舞台の左側が見えてくる
-      const moved = (point.x - pointerAction.startX) / pointerAction.range;
-      state.frontPan = clamp(pointerAction.startPan + moved, -1, 1);
+      // 掴んだ絵がついてくる向き。右へ引けば舞台の下手側が、下へ引けば上の方が見えてくる
+      if (pointerAction.range > 0) {
+        const moved = (point.x - pointerAction.startX) / pointerAction.range;
+        state.frontPan = clamp(pointerAction.startPan + moved, -1, 1);
+      }
+      const dy = point.y - pointerAction.startY;
+      const room = dy > 0 ? pointerAction.up : pointerAction.down;
+      if (room > 0) {
+        state.frontPanY = clamp(pointerAction.startPanY + dy / room, -1, 1);
+      }
       render();
       return;
     }
@@ -4105,6 +4296,9 @@
   }
   if (els.sceneAdd) els.sceneAdd.addEventListener("click", () => addScene(false));
   if (els.sceneAddRig) els.sceneAddRig.addEventListener("click", () => addScene(true));
+  if (els.sceneSection) els.sceneSection.addEventListener("click", addSection);
+  if (els.sceneOut) els.sceneOut.addEventListener("click", () => indentScene(-1));
+  if (els.sceneIn) els.sceneIn.addEventListener("click", () => indentScene(1));
   if (els.rigSave) els.rigSave.addEventListener("click", saveRig);
   if (els.rigName) {
     els.rigName.addEventListener("keydown", (e) => {

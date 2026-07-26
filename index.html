@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=67">
+<link rel="stylesheet" href="style.css?v=69">
 </head>
 <body>
 
@@ -320,9 +320,12 @@
               <div class="stage-scene-actions">
                 <button type="button" id="stage-scene-add" class="btn-quiet">場面を足す</button>
                 <button type="button" id="stage-scene-add-rig" class="btn-quiet">装置ごと足す</button>
+                <button type="button" id="stage-scene-section" class="btn-quiet">セクション</button>
                 <button type="button" id="stage-scene-dup" class="btn-quiet">複製</button>
-                <button type="button" id="stage-scene-left" class="btn-quiet" aria-label="前へ移動">←</button>
-                <button type="button" id="stage-scene-right" class="btn-quiet" aria-label="後へ移動">→</button>
+                <button type="button" id="stage-scene-left" class="btn-quiet" aria-label="前へ移動">↑</button>
+                <button type="button" id="stage-scene-right" class="btn-quiet" aria-label="後へ移動">↓</button>
+                <button type="button" id="stage-scene-out" class="btn-quiet" aria-label="一段外側へ">⇤</button>
+                <button type="button" id="stage-scene-in" class="btn-quiet" aria-label="一段内側へ">⇥</button>
                 <button type="button" id="stage-scene-del" class="btn-quiet">削除</button>
               </div>
             </div>
@@ -677,7 +680,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=13"></script>
-<script src="stage-sketch.js?v=66"></script>
+<script src="stage-sketch.js?v=69"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
