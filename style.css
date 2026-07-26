@@ -1487,6 +1487,35 @@ textarea, input[type="text"] {
 canvas[data-tool="route"] { cursor: crosshair; }
 #stage-canvas[data-pannable="true"][data-dragging="true"] { cursor: grabbing; }
 
+/* 書き出しの選び方 */
+.stage-export-modal { width: min(420px, calc(100vw - 40px)); }
+
+.stage-export-scope {
+  display: grid;
+  gap: 5px;
+}
+
+.stage-export-scope button {
+  min-height: 34px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk);
+  color: var(--milk-dim);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.stage-export-scope button:hover { border-color: var(--brass); color: var(--milk); }
+
+.stage-export-scope button[aria-pressed="true"],
+.stage-modal .stage-tool-grid button[aria-pressed="true"] {
+  color: var(--paper);
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.27);
+}
+
+#stage-export-run { margin-top: 12px; }
+
 /* ショーの棚。端末に置いた全部を並べ、押すと切り替わる */
 .stage-shows-modal { width: min(520px, calc(100vw - 40px)); }
 

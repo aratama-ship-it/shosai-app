@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=75">
+<link rel="stylesheet" href="style.css?v=76">
 </head>
 <body>
 
@@ -190,7 +190,7 @@
         <div class="stage-history-actions">
           <button type="button" id="stage-undo" disabled>一つ戻す</button>
           <button type="button" id="stage-redo" disabled>やり直す</button>
-          <a class="stage-export" id="stage-export" href="#" download>画像を書き出す</a>
+          <button type="button" class="stage-export" id="stage-export">画像を書き出す</button>
         </div>
       </header>
 
@@ -633,6 +633,33 @@
   </div>
 </div>
 
+<div class="stage-modal-backdrop" id="stage-export-backdrop" hidden></div>
+<div class="stage-modal stage-export-modal" id="stage-export-modal" role="dialog" aria-modal="true"
+     aria-labelledby="stage-export-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-export-title">画像を書き出す</h2>
+    <button type="button" class="stage-modal-close" id="stage-export-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <label class="stage-control-label">どの絵を</label>
+    <div class="stage-tool-grid" role="group" aria-label="どの絵を書き出すか">
+      <button type="button" data-export-view="front" aria-pressed="true">正面</button>
+      <button type="button" data-export-view="plan" aria-pressed="false">平面</button>
+      <button type="button" data-export-view="both" aria-pressed="false">両方</button>
+    </div>
+
+    <label class="stage-control-label">どの場面を</label>
+    <div class="stage-export-scope" role="group" aria-label="どの場面を書き出すか">
+      <button type="button" data-export-scope="current" aria-pressed="true">いまの場面</button>
+      <button type="button" data-export-scope="section" aria-pressed="false">このセクションの中</button>
+      <button type="button" data-export-scope="all" aria-pressed="false">全部の場面</button>
+    </div>
+
+    <p class="stage-profile-hint" id="stage-export-note"></p>
+    <button type="button" class="stage-minor-action" id="stage-export-run">書き出す</button>
+  </div>
+</div>
+
 <div class="stage-modal-backdrop" id="stage-shows-backdrop" hidden></div>
 <div class="stage-modal stage-shows-modal" id="stage-shows" role="dialog" aria-modal="true"
      aria-labelledby="stage-shows-title" hidden>
@@ -686,7 +713,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=80"></script>
+<script src="stage-sketch.js?v=81"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

@@ -388,6 +388,11 @@
     undo: document.getElementById("stage-undo"),
     redo: document.getElementById("stage-redo"),
     export: document.getElementById("stage-export"),
+    exportModal: document.getElementById("stage-export-modal"),
+    exportBackdrop: document.getElementById("stage-export-backdrop"),
+    exportClose: document.getElementById("stage-export-close"),
+    exportRun: document.getElementById("stage-export-run"),
+    exportNote: document.getElementById("stage-export-note"),
     toolHint: document.getElementById("stage-tool-hint"),
     background: document.getElementById("stage-bg-color"),
     paintColor: document.getElementById("stage-paint-color"),
@@ -5071,24 +5076,130 @@
     announce("舞台を空にしました。");
   });
 
-  els.export.addEventListener("click", () => {
-    const output = document.createElement("canvas");
-    output.width = W;
-    output.height = H;
-    drawStage(output.getContext("2d", { alpha: false }), false, state.showFront ? "front" : "plan");
+  /* ---------- 画像の書き出し ----------
+     正面と平面のどちらを、どの範囲の場面ぶん出すかを選んでから書き出す。
+     複数になるときは1枚ずつ続けて落とす（束ねる形式を持たない代わりに、
+     名前へ場面の番号と絵の種類を入れて並び順が分かるようにする）。 */
+
+  let exportView = "front";
+  let exportScope = "current";
+
+  function exportTargets() {
+    const p = state.project;
+    const i = p.scenes.findIndex((x) => x.id === p.activeSceneId);
+    if (exportScope === "all") return p.scenes.filter((x) => x.kind === "scene");
+    if (exportScope === "section") {
+      // いまの場面が入っているいちばん内側のセクションと、その中身
+      for (let k = i - 1; k >= 0; k -= 1) {
+        if (p.scenes[k].depth < p.scenes[i].depth) {
+          if (p.scenes[k].kind === "section") {
+            return sceneChildren(k).filter((x) => x.kind === "scene");
+          }
+          break;
+        }
+      }
+      return [p.scenes[i]];
+    }
+    return [p.scenes[i]];
+  }
+
+  function exportViews() {
+    return exportView === "both" ? ["front", "plan"] : [exportView];
+  }
+
+  function updateExportNote() {
+    document.querySelectorAll("[data-export-view]").forEach((b) => {
+      b.setAttribute("aria-pressed", String(b.dataset.exportView === exportView));
+    });
+    document.querySelectorAll("[data-export-scope]").forEach((b) => {
+      b.setAttribute("aria-pressed", String(b.dataset.exportScope === exportScope));
+    });
+    if (!els.exportNote) return;
+    const scenes = exportTargets().length;
+    const views = exportViews().length;
+    const total = scenes * views;
+    els.exportNote.textContent = total > 1
+      ? `${scenes}場面 × ${views === 2 ? "正面と平面" : "1枚"} ＝ 合計${total}枚を続けて落とします。`
+      : "1枚を落とします。";
+  }
+
+  function stampNow() {
     const now = new Date();
-    const stamp = [
+    return [
       now.getFullYear(),
       String(now.getMonth() + 1).padStart(2, "0"),
       String(now.getDate()).padStart(2, "0"), "-",
       String(now.getHours()).padStart(2, "0"),
       String(now.getMinutes()).padStart(2, "0"),
     ].join("");
-    els.export.href = output.toDataURL("image/png");
-    els.export.download = state.showFront
-      ? `stage-${state.project.venue}-${state.seat}-${stamp}.png`
-      : `stage-${state.project.venue}-plan-${stamp}.png`;
-    announce("舞台スケッチをPNG画像として書き出しました。");
+  }
+
+  const safeName = (text) => String(text || "").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 24) || "scene";
+
+  function runExport() {
+    const scenes = exportTargets();
+    const views = exportViews();
+    if (!scenes.length) { announce("書き出す場面がありません。"); return; }
+    const keepScene = state.project.activeSceneId;
+    const keepSelected = selectedId;
+    const stamp = stampNow();
+    const jobs = [];
+    scenes.forEach((scene, index) => {
+      views.forEach((view) => jobs.push({ scene, view, index }));
+    });
+
+    selectedId = null;
+    jobs.forEach((job, k) => {
+      // 場面を切り替えて描く。描き終えたら元の場面へ戻す
+      state.project.activeSceneId = job.scene.id;
+      const output = document.createElement("canvas");
+      output.width = W;
+      output.height = H;
+      drawStage(output.getContext("2d", { alpha: false }), false, job.view);
+      const link = document.createElement("a");
+      link.href = output.toDataURL("image/png");
+      const no = String(job.index + 1).padStart(2, "0");
+      link.download = `${safeName(state.project.title)}-${no}_${safeName(job.scene.title)}`
+        + `-${job.view === "front" ? VENUES.seatById(state.seat).short : "平面"}-${stamp}.png`;
+      // 続けて落とすと弾く browser があるので、少しずつ間を置く
+      setTimeout(() => { link.click(); }, k * 220);
+    });
+
+    setTimeout(() => {
+      state.project.activeSceneId = keepScene;
+      selectedId = keepSelected;
+      renderScenes();
+      updateInspector();
+      render();
+    }, jobs.length * 220 + 60);
+
+    closeExport();
+    announce(`${jobs.length}枚を書き出しました。`);
+  }
+
+  function openExport() {
+    if (!els.exportModal) return;
+    if (!state.showFront && exportView !== "plan") exportView = "plan";
+    if (!state.showPlan && exportView === "plan") exportView = "front";
+    updateExportNote();
+    els.exportModal.hidden = false;
+    els.exportBackdrop.hidden = false;
+  }
+
+  function closeExport() {
+    if (els.exportModal) els.exportModal.hidden = true;
+    if (els.exportBackdrop) els.exportBackdrop.hidden = true;
+  }
+
+  els.export.addEventListener("click", openExport);
+  if (els.exportClose) els.exportClose.addEventListener("click", closeExport);
+  if (els.exportBackdrop) els.exportBackdrop.addEventListener("click", closeExport);
+  if (els.exportRun) els.exportRun.addEventListener("click", runExport);
+  document.querySelectorAll("[data-export-view]").forEach((b) => {
+    b.addEventListener("click", () => { exportView = b.dataset.exportView; updateExportNote(); });
+  });
+  document.querySelectorAll("[data-export-scope]").forEach((b) => {
+    b.addEventListener("click", () => { exportScope = b.dataset.exportScope; updateExportNote(); });
   });
 
   buildPanelHeads();
