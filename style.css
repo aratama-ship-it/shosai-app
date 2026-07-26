@@ -5051,7 +5051,28 @@ textarea, input[type="text"] {
   margin-bottom: 0;
 }
 
-.stage-panel.is-dragging { opacity: 0.45; }
+/* 掴んでいるパネル。指について動くので、浮いていることを影と傾きで示す */
+.stage-panel.is-dragging {
+  opacity: 0.97;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.6);
+  background: var(--desk);
+  border-top-color: var(--brass);
+  cursor: grabbing;
+  will-change: left, top;
+}
+
+/* 掴んだ跡の空き。ここが動くことで、残りのパネルが滑って隙間を空ける */
+.stage-panel-hole {
+  border: 1px dashed rgba(156, 130, 63, 0.4);
+  background: rgba(156, 130, 63, 0.05);
+  box-sizing: border-box;
+}
+
+body.is-panel-dragging {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
+}
 
 /* パネルの頭。ここを押すと畳み、つまみを掴むと列を移せる */
 .stage-panel-head {
@@ -5077,6 +5098,9 @@ textarea, input[type="text"] {
 }
 
 .stage-panel-grip:active { cursor: grabbing; }
+
+/* つまみの上では、指の動きを画面のスクロールに取られないようにする */
+.stage-panel-grip { touch-action: none; }
 .stage-panel-head:hover .stage-panel-grip { color: var(--brass); }
 
 .stage-panel-title {

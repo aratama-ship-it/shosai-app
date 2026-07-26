@@ -1929,7 +1929,6 @@
     right: document.getElementById("stage-col-right"),
     center: document.getElementById("stage-col-center"),
   };
-  let dragging = null;
 
   function panelEl(id) {
     return document.querySelector(`[data-panel="${id}"]`);
@@ -1960,24 +1959,187 @@
       mark.setAttribute("aria-hidden", "true");
 
       head.append(grip, title, mark);
-      head.addEventListener("click", () => togglePanel(id));
+      head.addEventListener("click", (e) => {
+        // 掴んで動かした直後は、指を離した勢いで畳まないようにする
+        if (justDragged) { e.preventDefault(); return; }
+        togglePanel(id);
+      });
       el.prepend(head);
 
-      // つまみからドラッグする。パネル全体を掴むと中の操作ができなくなる
+      // つまみからドラッグする。パネル全体を掴むと中の操作ができなくなる。
+      // HTML5のドラッグはタッチで動かないので、ポインタイベントで自前に持つ。
       el.draggable = false;
-      grip.draggable = true;
-      grip.addEventListener("dragstart", (e) => {
-        dragging = id;
-        el.classList.add("is-dragging");
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", id);
-      });
-      grip.addEventListener("dragend", () => {
-        dragging = null;
-        el.classList.remove("is-dragging");
-        document.querySelectorAll(".stage-col").forEach((c) => c.classList.remove("is-over"));
+      grip.draggable = false;
+      grip.addEventListener("pointerdown", (e) => startGrip(e, id, el));
+    });
+  }
+
+  /* ---------- パネルの並べ替え ----------
+     iPhoneのアイコン移動と同じ手触りにする。掴んだパネルは指について動き、
+     残りはその場で滑って隙間を空ける。掴んだ跡には同じ高さの空き（hole）を
+     差し込み、それを動かすことで他のパネルが動く。
+     動きは FLIP で出す——並べ替える前の位置を控え、並べ替えた後に
+     「元の位置へ戻す transform」を当ててから外すと、差分だけが滑って見える。 */
+
+  let drag = null;
+  let justDragged = false;
+
+  function flipMove(mutate, skip) {
+    const items = [...document.querySelectorAll("[data-panel], .stage-panel-hole")]
+      .filter((el) => el !== skip);
+    const before = new Map(items.map((el) => [el, el.getBoundingClientRect()]));
+    mutate();
+    items.forEach((el) => {
+      const b = before.get(el);
+      const a = el.getBoundingClientRect();
+      const dx = b.left - a.left;
+      const dy = b.top - a.top;
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+      el.style.transition = "none";
+      el.style.transform = `translate(${dx}px, ${dy}px)`;
+      requestAnimationFrame(() => {
+        el.style.transition = "transform 170ms cubic-bezier(0.2, 0.7, 0.3, 1)";
+        el.style.transform = "";
       });
     });
+  }
+
+  function clearFlip(el) {
+    const done = (e) => {
+      if (e.propertyName !== "transform") return;
+      el.style.transition = "";
+      el.style.transform = "";
+      el.removeEventListener("transitionend", done);
+    };
+    el.addEventListener("transitionend", done);
+  }
+
+  function startGrip(e, id, el) {
+    if (e.button !== undefined && e.button > 0) return;
+    const sx = e.clientX;
+    const sy = e.clientY;
+    let active = false;
+    const move = (ev) => {
+      if (!active) {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return;
+        active = true;
+        beginDrag(id, el, ev);
+      }
+      ev.preventDefault();
+      moveDrag(ev);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      if (active) endDrag();
+    };
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+  }
+
+  function beginDrag(id, el, ev) {
+    const rect = el.getBoundingClientRect();
+    const hole = document.createElement("div");
+    hole.className = "stage-panel-hole";
+    hole.style.height = `${rect.height}px`;
+    el.parentElement.insertBefore(hole, el);
+
+    drag = { id, el, hole, dx: ev.clientX - rect.left, dy: ev.clientY - rect.top };
+    el.classList.add("is-dragging");
+    el.style.transition = "";
+    el.style.transform = "";
+    el.style.width = `${rect.width}px`;
+    el.style.position = "fixed";
+    el.style.left = `${rect.left}px`;
+    el.style.top = `${rect.top}px`;
+    el.style.zIndex = "600";
+    el.style.pointerEvents = "none";
+    document.body.classList.add("is-panel-dragging");
+  }
+
+  // 指の位置がどちらの列にあるか。列から離れすぎていたら動かさない
+  function columnAt(x) {
+    let best = null;
+    let near = Infinity;
+    ["left", "right"].forEach((col) => {
+      const host = colEls[col];
+      if (!host) return;
+      const r = host.getBoundingClientRect();
+      const d = x < r.left ? r.left - x : (x > r.right ? x - r.right : 0);
+      if (d < near) { near = d; best = col; }
+    });
+    return near > 240 ? null : best;
+  }
+
+  // その列で、いまの高さならどのパネルの前へ入るか
+  function insertionRef(host, y) {
+    const kids = [...host.children].filter((el) =>
+      el.dataset && el.dataset.panel && el !== drag.el);
+    for (let i = 0; i < kids.length; i += 1) {
+      const r = kids[i].getBoundingClientRect();
+      if (y < r.top + r.height / 2) return kids[i];
+    }
+    return null;
+  }
+
+  function moveDrag(ev) {
+    if (!drag) return;
+    drag.el.style.left = `${ev.clientX - drag.dx}px`;
+    drag.el.style.top = `${ev.clientY - drag.dy}px`;
+    const col = columnAt(ev.clientX);
+    if (!col || !colEls[col]) return;
+    const host = colEls[col];
+    const ref = insertionRef(host, ev.clientY);
+    if (drag.hole.parentElement === host && drag.hole.nextElementSibling === ref) return;
+    flipMove(() => host.insertBefore(drag.hole, ref), drag.el);
+  }
+
+  function endDrag() {
+    if (!drag) return;
+    const { el, hole, id } = drag;
+    const from = el.getBoundingClientRect();
+    hole.parentElement.insertBefore(el, hole);
+    hole.remove();
+
+    el.classList.remove("is-dragging");
+    ["position", "left", "top", "width", "zIndex", "pointerEvents"].forEach((k) => {
+      el.style[k] = "";
+    });
+    document.body.classList.remove("is-panel-dragging");
+
+    // 指を離した場所から、収まる場所へ滑らせる
+    const to = el.getBoundingClientRect();
+    el.style.transition = "none";
+    el.style.transform = `translate(${from.left - to.left}px, ${from.top - to.top}px)`;
+    requestAnimationFrame(() => {
+      el.style.transition = "transform 170ms cubic-bezier(0.2, 0.7, 0.3, 1)";
+      el.style.transform = "";
+    });
+    clearFlip(el);
+
+    const col = el.parentElement === colEls.right ? "right" : "left";
+    drag = null;
+    justDragged = true;
+    setTimeout(() => { justDragged = false; }, 60);
+    commitLayoutFromDom();
+    announce(`${el.dataset.title || id}を${col === "left" ? "左" : "右"}の列へ移しました。`);
+  }
+
+  // 並びの正本は画面。動かし終えたら、そのまま状態へ書き戻す
+  function commitLayoutFromDom() {
+    ["left", "right"].forEach((col) => {
+      const host = colEls[col];
+      if (!host) return;
+      [...host.children]
+        .filter((el) => el.dataset && el.dataset.panel)
+        .forEach((el, i) => {
+          state.layout.cols[el.dataset.panel] = col;
+          state.layout.order[el.dataset.panel] = i;
+        });
+    });
+    persistSoon();
   }
 
   function togglePanel(id) {
@@ -2014,51 +2176,6 @@
         if (cell) stack.append(cell);
       });
     }
-  }
-
-  function setupDropZones() {
-    Object.entries(colEls).forEach(([col, el]) => {
-      if (!el || col === "center") return;
-      el.addEventListener("dragover", (e) => {
-        if (!dragging) return;
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-        el.classList.add("is-over");
-      });
-      el.addEventListener("dragleave", () => el.classList.remove("is-over"));
-      el.addEventListener("drop", (e) => {
-        if (!dragging) return;
-        e.preventDefault();
-        el.classList.remove("is-over");
-        const id = dragging;
-        // 落とした位置から、その列での順番を決める
-        const siblings = PANELS
-          .filter((x) => x !== id && state.layout.cols[x] === col)
-          .map((x) => ({ id: x, el: panelEl(x) }))
-          .filter((x) => x.el);
-        let index = siblings.length;
-        for (let i = 0; i < siblings.length; i += 1) {
-          const r = siblings[i].el.getBoundingClientRect();
-          if (e.clientY < r.top + r.height / 2) { index = i; break; }
-        }
-        state.layout.cols[id] = col;
-        const reordered = siblings.map((x) => x.id);
-        reordered.splice(index, 0, id);
-        reordered.forEach((x, i) => { state.layout.order[x] = i; });
-        applyLayout();
-        persistSoon();
-        announce(`${panelEl(id).dataset.title}を${col === "left" ? "左" : "右"}の列へ移しました。`);
-      });
-    });
-
-    // 中央の絵は上下の入れ替えだけ
-    [els.frontCell, els.planCell].filter(Boolean).forEach((cell) => {
-      cell.addEventListener("dragover", (e) => {
-        if (!dragging) return;
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "none";
-      });
-    });
   }
 
   function swapCenter() {
@@ -3424,7 +3541,6 @@
   });
 
   buildPanelHeads();
-  setupDropZones();
   applyLayout();
   syncInputs();
   renderScenes();
