@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=59">
+<link rel="stylesheet" href="style.css?v=60">
 </head>
 <body>
 
@@ -226,7 +226,6 @@
               <label class="stage-field-label" for="stage-size-select">規模</label>
               <select id="stage-size-select" class="stage-select"></select>
             </div>
-            <p class="stage-venue-note" id="stage-venue-note"></p>
             <p class="stage-venue-scale" id="stage-venue-scale"></p>
             </div>
           </section>
@@ -334,6 +333,10 @@
               <input type="checkbox" id="stage-show-names" checked>
               <span>名前を出す</span>
             </label>
+            <label class="stage-toggle stage-name-toggle">
+              <input type="checkbox" id="stage-show-seatmap" checked>
+              <span>見る位置の図</span>
+            </label>
             <button type="button" id="stage-swap-center" class="btn-quiet">正面と平面を入れ替える</button>
           </div>
           <div class="stage-canvas-stack" id="stage-canvas-stack">
@@ -346,7 +349,6 @@
               <div class="stage-canvas-inner" id="stage-front-inner">
               <section class="stage-seat-strip" id="stage-seat-section">
               <div class="stage-seat-list" id="stage-seat-list" role="group" aria-label="客席の位置"></div>
-              <p class="stage-seat-note" id="stage-seat-note"></p>
           </section>
 
               <div class="stage-canvas-wrap">
@@ -643,8 +645,8 @@
 <script src="db.js?v=77"></script>
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
-<script src="stage-venues.js?v=9"></script>
-<script src="stage-sketch.js?v=48"></script>
+<script src="stage-venues.js?v=10"></script>
+<script src="stage-sketch.js?v=50"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

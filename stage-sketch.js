@@ -141,12 +141,10 @@
     planCell: document.getElementById("stage-plan-cell"),
     canvasStack: document.getElementById("stage-canvas-stack"),
     frontCaption: document.getElementById("stage-front-caption"),
-    venueNote: document.getElementById("stage-venue-note"),
     venueScale: document.getElementById("stage-venue-scale"),
     bgSection: document.getElementById("stage-bg-section"),
     seatSection: document.getElementById("stage-seat-section"),
     seatList: document.getElementById("stage-seat-list"),
-    seatNote: document.getElementById("stage-seat-note"),
     projectTitle: document.getElementById("stage-project-title"),
     versionLabel: document.getElementById("stage-version-label"),
     versionCopy: document.getElementById("stage-version-copy"),
@@ -193,6 +191,7 @@
     frontInner: document.getElementById("stage-front-inner"),
     planInner: document.getElementById("stage-plan-inner"),
     showNames: document.getElementById("stage-show-names"),
+    showSeatMap: document.getElementById("stage-show-seatmap"),
     depthLabelBack: document.getElementById("stage-depth-back"),
     depthLabelFront: document.getElementById("stage-depth-front"),
   };
@@ -253,6 +252,8 @@
       showFront: true,
       showPlan: true,
       showNames: true,
+      // 正面図の隅に「客席のどこから見ているか」の小図を出すか
+      showSeatMap: true,
       seat: "center",
       // パネルの置き場所と開閉。中央は絵の順序だけを持つ
       layout: defaultLayout(),
@@ -545,6 +546,7 @@
       showFront: raw.showFront === undefined ? true : Boolean(raw.showFront),
       showPlan: raw.showPlan === undefined ? true : Boolean(raw.showPlan),
       showNames: raw.showNames === undefined ? true : Boolean(raw.showNames),
+      showSeatMap: raw.showSeatMap === undefined ? true : Boolean(raw.showSeatMap),
       layout: normalizeLayout(raw.layout),
       seat: VENUES.seatById(typeof raw.seat === "string" ? raw.seat : "").id,
       pieceColor: validColor(raw.pieceColor, fallback.pieceColor),
@@ -1017,6 +1019,95 @@
       return parts;
     }
     return null;
+  }
+
+  /* 正面図の右上に、客席のどこから見ているかを小さな平面で出す。
+   * 正面の絵だけでは「どこから見た絵か」が字でしか分からないので、図で示す。
+   * 額縁のある劇場（客席が正面だけ）でのみ意味を持つので、そこに限る。 */
+  function drawSeatMap(target, L) {
+    const seat = L.seat;
+    if (!seat || !seat.plan) return;
+    const pad = 22;
+    const w = 214;
+    const h = 152;
+    const x = W - w - pad;
+    const y = pad;
+
+    target.save();
+    // 下の絵が透けないよう、いったん敷く
+    target.fillStyle = "rgba(9,8,7,0.82)";
+    target.fillRect(x, y, w, h);
+    target.strokeStyle = "rgba(156,130,63,0.34)";
+    target.lineWidth = 1;
+    target.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+
+    const inX = x + 14;
+    const inW = w - 28;
+    const stageH = 30;
+    const stageY = y + 14;
+    const houseY = stageY + stageH + 8;
+    const balconyH = 26;
+    const houseH = h - (houseY - y) - balconyH - 20;
+
+    // 舞台
+    target.fillStyle = "rgba(168,75,38,0.3)";
+    target.fillRect(inX, stageY, inW, stageH);
+    target.strokeStyle = "rgba(168,75,38,0.55)";
+    target.strokeRect(inX + 0.5, stageY + 0.5, inW - 1, stageH - 1);
+    target.fillStyle = "rgba(239,231,214,0.62)";
+    target.font = "11px 'Hiragino Kaku Gothic ProN', sans-serif";
+    target.textAlign = "center";
+    target.textBaseline = "middle";
+    target.fillText("舞台", inX + inW / 2, stageY + stageH / 2);
+
+    // 1階席と2階席
+    target.fillStyle = "rgba(239,231,214,0.06)";
+    target.fillRect(inX, houseY, inW, houseH);
+    target.strokeStyle = "rgba(239,231,214,0.16)";
+    target.strokeRect(inX + 0.5, houseY + 0.5, inW - 1, houseH - 1);
+    const balconyY = houseY + houseH + 6;
+    target.fillStyle = "rgba(239,231,214,0.04)";
+    target.fillRect(inX, balconyY, inW, balconyH);
+    target.strokeRect(inX + 0.5, balconyY + 0.5, inW - 1, balconyH - 1);
+    target.fillStyle = "rgba(239,231,214,0.3)";
+    target.font = "9.5px 'Hiragino Kaku Gothic ProN', sans-serif";
+    target.fillText("2階", inX + inW / 2, balconyY + balconyH / 2);
+
+    // 見ている位置
+    const onBalcony = seat.plan.tier === "balcony";
+    const px = inX + seat.plan.x * inW;
+    const py = onBalcony
+      ? balconyY + balconyH / 2
+      : houseY + seat.plan.y * houseH;
+
+    // 視線。舞台の中心へ向かう三角で、どちらを向いているかを出す
+    const tx = inX + inW / 2;
+    const ty = stageY + stageH / 2;
+    const ang = Math.atan2(ty - py, tx - px);
+    const spread = 0.34;
+    const reach = Math.hypot(tx - px, ty - py);
+    const cone = target.createLinearGradient(px, py, tx, ty);
+    cone.addColorStop(0, "rgba(211,172,89,0.3)");
+    cone.addColorStop(1, "rgba(211,172,89,0.02)");
+    target.fillStyle = cone;
+    target.beginPath();
+    target.moveTo(px, py);
+    target.lineTo(px + Math.cos(ang - spread) * reach, py + Math.sin(ang - spread) * reach);
+    target.lineTo(px + Math.cos(ang + spread) * reach, py + Math.sin(ang + spread) * reach);
+    target.closePath();
+    target.fill();
+
+    target.fillStyle = "#d3ac59";
+    target.beginPath();
+    target.arc(px, py, 4.5, 0, Math.PI * 2);
+    target.fill();
+
+    // 席の名前
+    target.fillStyle = "rgba(239,231,214,0.72)";
+    target.font = "10.5px 'Hiragino Kaku Gothic ProN', sans-serif";
+    target.textBaseline = "top";
+    target.fillText(seat.label, x + w / 2, balconyY + balconyH + 5);
+    target.restore();
   }
 
   // 台・テーブル・椅子。部品を奥から順に塗る
@@ -1780,6 +1871,8 @@
       edgeShade.addColorStop(1, "rgba(0,0,0,0.3)");
       target.fillStyle = edgeShade;
       target.fillRect(0, 0, W, H);
+      // 見る位置の小図。客席が正面だけの劇場でしか意味を持たない
+      if (state.showSeatMap && L.venue.audience === "front") drawSeatMap(target, L);
     }
     target.restore();
   }
@@ -2612,7 +2705,8 @@
       if (!window.confirm("いま開いているショーを、読み込んだ内容で置き換えます。よろしいですか？")) return;
       checkpoint();
       const next = normalizeState({ project: incoming.project, seat: state.seat,
-        showFront: state.showFront, showPlan: state.showPlan, showNames: state.showNames });
+        showFront: state.showFront, showPlan: state.showPlan, showNames: state.showNames,
+        showSeatMap: state.showSeatMap });
       state = next;
       selectedId = null;
       syncInputs();
@@ -2652,7 +2746,6 @@
       els.sizeSelect.value = size.id;
     }
 
-    if (els.venueNote) els.venueNote.textContent = current.note;
     if (els.venueScale) {
       const bits = [`間口 ${size.width}m`, `奥行 ${size.depth}m`];
       if (size.height) bits.push(`高さ ${size.height}m`);
@@ -2660,6 +2753,12 @@
       if (size.seats) bits.push(`客席 約${size.seats}席`);
       if (size.crowd) bits.push(`観客 〜${size.crowd.toLocaleString()}人`);
       els.venueScale.textContent = bits.join(" ・ ") + `（${current.source}）`;
+    }
+
+    // 見る位置の小図は、客席が正面だけの劇場でしか意味を持たない
+    if (els.showSeatMap) {
+      const box = els.showSeatMap.closest("label");
+      if (box) box.hidden = current.audience !== "front";
     }
 
     // 背景の壁が無い形式では、塗りの道具立てを畳む
@@ -2685,7 +2784,6 @@
         els.seatList.append(button);
       });
     }
-    if (els.seatNote) els.seatNote.textContent = seat.note;
   }
 
   function setSeat(id) {
@@ -2832,6 +2930,7 @@
     els.brushSize.value = String(state.brushSize);
     els.brushValue.textContent = String(state.brushSize);
     if (els.showNames) els.showNames.checked = state.showNames;
+    if (els.showSeatMap) els.showSeatMap.checked = state.showSeatMap;
   }
 
   function addPiece(type) {
@@ -3047,7 +3146,15 @@
       state.showNames = e.target.checked;
       render();
       persistSoon();
-      announce(e.target.checked ? "コマの名前を出しました。" : "コマの名前を隠しました。");
+      announce(e.target.checked ? "名前を出しました。" : "名前を隠しました。");
+    });
+  }
+  if (els.showSeatMap) {
+    els.showSeatMap.addEventListener("change", (e) => {
+      state.showSeatMap = e.target.checked;
+      render();
+      persistSoon();
+      announce(e.target.checked ? "見る位置の図を出しました。" : "見る位置の図を隠しました。");
     });
   }
   if (els.pieceFacing) {

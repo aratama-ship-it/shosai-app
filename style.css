@@ -4750,14 +4750,6 @@ textarea, input[type="text"] {
 
 .stage-venue[aria-pressed="true"] .stage-venue-sub { color: var(--brass); }
 
-.stage-venue-note {
-  color: var(--milk-dim);
-  font-size: 10.5px;
-  line-height: 1.75;
-  margin-bottom: 12px;
-  padding-left: 9px;
-  border-left: 2px solid rgba(156, 130, 63, 0.4);
-}
 
 .stage-sub-label {
   color: var(--milk-dim);
@@ -4825,14 +4817,6 @@ textarea, input[type="text"] {
   color: var(--milk);
 }
 
-.stage-seat-note {
-  color: var(--milk-dim);
-  font-size: 10.5px;
-  line-height: 1.75;
-  margin-bottom: 10px;
-  padding-left: 9px;
-  border-left: 2px solid rgba(156, 130, 63, 0.4);
-}
 
 
 
@@ -5139,11 +5123,7 @@ textarea, input[type="text"] {
   font-size: 10.5px;
 }
 
-.stage-seat-strip .stage-seat-note {
-  margin-bottom: 0;
-  font-size: 10px;
-}
-
+.stage-seat-strip 
 
 /* 絵の見出しと閉じるボタン */
 .stage-canvas-bar {

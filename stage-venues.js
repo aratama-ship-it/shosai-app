@@ -102,11 +102,14 @@
    *   rise             舞台面をどれだけ見上げる／見下ろすか（0=水平）
    *   tilt             三点透視の強さ。垂直線が画面の上へ収束する度合い（煽りの正体）
    *   apron            床の線より下に見える、舞台の立ち上がりとピットの高さ(px)
+   *   plan             客席を上から見たときの居場所。正面図の隅に出す小図で使う
    */
   const SEATS = [
     {
       id: "center", label: "1階 中央", short: "中央",
       note: "設計の基準になる席。奥行きも高さも素直に見える。",
+      // 客席を上から見たときの居場所。x=0.5が中央、y=0が舞台際、1が最後方
+      plan: { x: 0.5, y: 0.44, tier: "stalls" },
       floorY: 470, bottomY: 674, backW: 0.62, frontW: 0.94, shift: 0, rise: 0,
     },
     {
@@ -126,16 +129,19 @@
        */
       id: "front", label: "1階 最前列", short: "最前",
       note: "目線が床とほぼ同じ高さ。強く見上げ、手前と奥の大きさが極端に開く（超広角の見え方）。",
+      plan: { x: 0.5, y: 0.06, tier: "stalls" },
       floorY: 490, bottomY: 532, backW: 0.45, frontW: 1.75, shift: 0, rise: 0.15, apron: 150, tilt: 0.13,
     },
     {
       id: "side", label: "1階 左右席", short: "左右",
       note: "斜めから見る位置。片側の袖が見え、正面向きの構図は崩れる。",
+      plan: { x: 0.14, y: 0.4, tier: "stalls" },
       floorY: 470, bottomY: 674, backW: 0.62, frontW: 0.94, shift: 0.3, rise: 0,
     },
     {
       id: "balcony", label: "2階席", short: "2階",
       note: "見下ろす位置。床の絵が主役になり、立ち位置の関係がよく読める。",
+      plan: { x: 0.5, y: 0.5, tier: "balcony" },
       floorY: 392, bottomY: 658, backW: 0.5, frontW: 0.9, shift: 0, rise: -0.12,
     },
   ];
