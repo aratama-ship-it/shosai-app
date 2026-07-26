@@ -67,6 +67,8 @@
   const DEFAULT_HEIGHT_CM = 165;
   // 肩幅は身長のおよそ1/4。向きが変わると見かけの幅がこの間で動く
   const SHOULDER_RATIO = 0.25;
+  // 体の厚み（前後）は肩幅のおよそ0.68倍。真横を向いたときの見かけの幅になる
+  const BODY_DEPTH_RATIO = 0.68;
   const TOOL_HINTS = {
     select: "演者や物を選び、舞台の上で動かします。",
     paint: "奥の背景面を指やマウスで塗ります。",
@@ -753,56 +755,79 @@
 
   /* ---------- 演者と物の描画 ---------- */
 
-  // 正面から見た演者。身長165cmを基準に、肩幅で体の向きを表す。
-  // 正面向きは肩が広く、真横は肩が消えて奥行きの厚みだけになる。
-  function drawPerformer(target, piece, pos, scale) {
+  /* 正面から見た演者。すべて実寸（m）で描く。
+   * 以前は「身長=155単位」という別の物差しで形を持っていたため、
+   * 肩幅が1.1m、頭の幅が0.5mになっていて、平面図（肩幅0.41m）と2.7倍ずれていた。
+   * 床の1m枡でどちらも検算できるように、比率はここに一本化する。
+   *
+   * 身長Hに対する比率（実測の人体比に寄せてある）
+   *   頭の高さ 0.13H ／ 頭の幅 0.10H ／ 肩の高さ 0.82H
+   *   肩幅 SHOULDER_RATIO(0.25H) ← 平面図と同じ値を使う
+   *   腰 0.17H ／ 足元 0.19H（わずかに末広がりにして立ち姿に見せる）
+   */
+  function drawPerformer(target, piece, pos, scale, L) {
     const rad = ((piece.facing || 0) * Math.PI) / 180;
     // 見かけの肩幅。真横（90/270度）で最小、正面・背面で最大
     const across = Math.abs(Math.cos(rad));
     const depth = Math.abs(Math.sin(rad));
-    const widthK = 0.34 + across * 0.66;     // 真横でも体の厚みが残る
+    // 真横を向いても、体の厚み（肩幅の約0.68倍＝0.28m）は残る
+    const widthK = BODY_DEPTH_RATIO + across * (1 - BODY_DEPTH_RATIO);
     const back = Math.cos(rad) < 0;          // 背中を向けている
+
+    const H = pieceHeightM(piece) * (piece.size / 100);
+    const per = perMetre(pos, L);
+    const ux = H * per.x;                    // 身長1つぶんの横の画素
+    const uy = H * per.y;                    // 同じく縦
+
+    // 曲線は制御点まで届かないので、実際に描かれる幅が肩幅になるよう少し外へ出す
+    const shoulder = (SHOULDER_RATIO / 2) * 1.17 * widthK * ux;
+    const waist = 0.085 * widthK * ux;
+    const hem = 0.095 * widthK * ux;
+    const neck = 0.026 * widthK * ux;
+    const headRx = 0.05 * (0.72 + across * 0.28) * ux;
+    const headRy = 0.065 * uy;
+    const headCy = -0.935 * uy;
 
     target.save();
     target.translate(pos.x, pos.y);
-    target.scale(scale, scale * (pos.stretch || 1));
 
     // 影は向きに関わらず足元に落ちる
     target.fillStyle = "rgba(0,0,0,0.28)";
     target.beginPath();
-    target.ellipse(0, 7, 46 * (0.7 + widthK * 0.3), 13, 0, 0, Math.PI * 2);
+    target.ellipse(0, 0.012 * uy, Math.max(2, hem * 1.5), Math.max(1.2, 0.022 * uy), 0, 0, Math.PI * 2);
     target.fill();
 
     target.fillStyle = piece.color;
     target.strokeStyle = rgba(piece.color, 0.35);
-    target.lineWidth = 2;
+    target.lineWidth = Math.max(0.6, Math.min(2, uy / 90));
 
-    // 胴。肩の張り出しを widthK で縮める
-    const sh = 52 * widthK;      // 肩の半幅
-    const waist = 30 * widthK;
+    // 首から肩へ張り出し、腰でくびれて、足元へわずかに広がる
+    const yNeck = -0.855 * uy;
+    const ySh = -0.8 * uy;
+    const yWaist = -0.52 * uy;
     target.beginPath();
-    target.moveTo(-11 * widthK, -88);
-    target.bezierCurveTo(-sh * 0.78, -75, -sh * 0.83, -52, -waist, -31);
-    target.lineTo(-sh, -2);
-    target.quadraticCurveTo(0, 12, sh, -2);
-    target.lineTo(waist, -31);
-    target.bezierCurveTo(sh * 0.83, -52, sh * 0.78, -75, 11 * widthK, -88);
+    target.moveTo(-neck, yNeck);
+    target.bezierCurveTo(-shoulder * 0.94, ySh, -shoulder, yWaist * 0.82, -waist, yWaist);
+    target.lineTo(-hem, -0.012 * uy);
+    target.quadraticCurveTo(0, 0.02 * uy, hem, -0.012 * uy);
+    target.lineTo(waist, yWaist);
+    target.bezierCurveTo(shoulder, yWaist * 0.82, shoulder * 0.94, ySh, neck, yNeck);
     target.closePath();
     target.fill();
     target.stroke();
 
-    // 頭。横を向くほど楕円になる
+    // 頭。横を向くほど細い楕円になる
     target.beginPath();
-    target.ellipse(0, -112, 22 * (0.72 + across * 0.28), 22, 0, 0, Math.PI * 2);
+    target.ellipse(0, headCy, Math.max(1.2, headRx), Math.max(1.2, headRy), 0, 0, Math.PI * 2);
     target.fill();
     target.stroke();
 
     // 顔の向き。正面側を向いているときだけ小さな印を出す
-    if (!back) {
-      const nose = Math.sin(rad) * 15 * (0.4 + depth * 0.6);
+    if (!back && headRx > 3) {
+      const nose = Math.sin(rad) * headRx * 0.62;
       target.fillStyle = rgba("#0d0c0b", 0.5);
       target.beginPath();
-      target.arc(nose, -112, 3.2, 0, Math.PI * 2);
+      target.arc(nose, headCy, Math.max(1, headRx * 0.2), 0, Math.PI * 2);
       target.fill();
     }
     target.restore();
@@ -978,7 +1003,7 @@
     if (piece.type === "performer") {
       const shoulderM = pieceHeightM(piece) * SHOULDER_RATIO * (piece.size / 100);
       const halfW = (shoulderM * L.pxPerM) / 2;
-      const halfD = halfW * 0.52;
+      const halfD = halfW * BODY_DEPTH_RATIO;
       const rad = ((piece.facing || 0) * Math.PI) / 180;
       target.translate(pos.x, pos.y);
       // 0度＝客席（画面の下）を向く
@@ -1095,7 +1120,11 @@
       const top = pos.y - dim.lift * per.y - ry * 2;
       return { x: pos.x - rx, y: top, w: rx * 2, h: pos.y - top };
     }
-    return { x: pos.x - 60 * scale, y: pos.y - 143 * scale * st, w: 120 * scale, h: 154 * scale * st };
+    // 演者。身長と肩幅の実寸から出す（描画と同じ比率）
+    const H = pieceHeightM(piece) * (piece.size / 100);
+    const halfW = Math.max(7, (SHOULDER_RATIO / 2) * 1.15 * H * per.x);
+    const top = pos.y - H * per.y;
+    return { x: pos.x - halfW, y: top, w: halfW * 2, h: pos.y - top };
   }
 
   function drawSelection(target, piece, L) {
@@ -1561,7 +1590,7 @@
       }
       if (piece.type === "light") drawLight(target, piece, pos, scale, L);
       else if (L.plan) drawPlanPiece(target, piece, pos, scale, L);
-      else if (piece.type === "performer") drawPerformer(target, piece, pos, scale);
+      else if (piece.type === "performer") drawPerformer(target, piece, pos, scale, L);
       else if (piece.type === "block") drawBlock(target, piece, pos, scale, L);
       else if (piece.type === "sphere") drawSphere(target, piece, pos, scale, L);
       if (lean) target.restore();
