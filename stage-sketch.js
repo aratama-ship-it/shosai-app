@@ -200,6 +200,69 @@
     };
   })();
 
+  const norm3 = (v) => {
+    const n = Math.hypot(v[0], v[1], v[2]) || 1;
+    return [v[0] / n, v[1] / n, v[2] / n];
+  };
+  const cross3 = (a, b) => [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+
+  // 多角形の角を丸めて閉じる。辺の中点を通る二次曲線にすると、
+  // 頂点が丸まって、体のような柔らかい輪郭になる
+  function softClosedPath(target, pts) {
+    if (pts.length < 3) return;
+    const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    const first = mid(pts[pts.length - 1], pts[0]);
+    target.beginPath();
+    target.moveTo(first.x, first.y);
+    for (let i = 0; i < pts.length; i += 1) {
+      const cur = pts[i];
+      const nxt = pts[(i + 1) % pts.length];
+      const m = mid(cur, nxt);
+      target.quadraticCurveTo(cur.x, cur.y, m.x, m.y);
+    }
+    target.closePath();
+  }
+
+  // 付け根から先へ細くなる手足。節ごとに台形を置き、関節を丸で埋める
+  function taperedChain(target, pts, radii) {
+    for (let i = 0; i < pts.length - 1; i += 1) {
+      const a = pts[i];
+      const b = pts[i + 1];
+      const ra = radii[i];
+      const rb = radii[i + 1];
+      const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+      const nx = -(b.y - a.y) / len;
+      const ny = (b.x - a.x) / len;
+      target.beginPath();
+      target.moveTo(a.x + nx * ra, a.y + ny * ra);
+      target.lineTo(b.x + nx * rb, b.y + ny * rb);
+      target.lineTo(b.x - nx * rb, b.y - ny * rb);
+      target.lineTo(a.x - nx * ra, a.y - ny * ra);
+      target.closePath();
+      target.fill();
+    }
+    pts.forEach((q, i) => {
+      target.beginPath();
+      target.arc(q.x, q.y, radii[i], 0, Math.PI * 2);
+      target.fill();
+    });
+  }
+
+  // 色を地の暗さへ寄せる。奥の手足を沈ませるのに使う（重ね塗りで濃くならないよう、
+  // 半透明ではなく色そのものを混ぜる）
+  function mixToward(hex, t) {
+    const c = hex.replace("#", "");
+    const n = parseInt(c.length === 3 ? c.split("").map((x) => x + x).join("") : c, 16);
+    const r = Math.round(((n >> 16) & 255) * (1 - t) + 13 * t);
+    const g = Math.round(((n >> 8) & 255) * (1 - t) + 12 * t);
+    const b = Math.round((n & 255) * (1 - t) + 11 * t);
+    return `rgb(${r},${g},${b})`;
+  }
+
   /* 点の集まりの外周。胴は箱なので、8点を投影した外側をなぞれば
    * どの向きでも正しい輪郭になる（単調鎖法）。 */
   function convexHull(points) {
@@ -220,10 +283,10 @@
 
   // 体の部位。太さは身長に対する割合。奥にあるものから塗るために z も見る
   const LIMBS = [
-    { pts: ["hipL", "knL", "anL", "toL"], w: 0.062 },
-    { pts: ["hipR", "knR", "anR", "toR"], w: 0.062 },
-    { pts: ["shL", "elL", "wrL"], w: 0.046 },
-    { pts: ["shR", "elR", "wrR"], w: 0.046 },
+    { pts: ["hipL", "knL", "anL", "toL"], kind: "leg" },
+    { pts: ["hipR", "knR", "anR", "toR"], kind: "leg" },
+    { pts: ["shL", "elL", "wrL"], kind: "arm" },
+    { pts: ["shR", "elR", "wrR"], kind: "arm" },
   ];
 
   const SOLID_TYPES = { block: true, table: true, chair: true };
@@ -247,9 +310,20 @@
   const SHOULDER_RATIO = 0.25;
   // 体の厚み（前後）は肩幅のおよそ0.68倍。真横を向いたときの見かけの幅になる
   const BODY_DEPTH_RATIO = 0.68;
-  // 胴の前後の張り出し（身長に対する割合）。胸のほうが腰より厚い
-  const BODY_CHEST = 0.068;
-  const BODY_WAIST = 0.058;
+  /* 胴の断面。肩・くびれ・腰の3段で持つ。すべて身長に対する割合。
+   * halfX=左右の半幅、rz=前後の半分の厚み。実測（身長165cm）でいうと
+   * 肩幅0.38m・胴の厚み0.19m・腰幅0.32mあたり。
+   * 肩と腰だけの2段だと台形になって、上半身が四角く見える。 */
+  const TORSO_RINGS = [
+    { t: 0, halfX: 0.115, rz: 0.056 },
+    { t: 0.46, halfX: 0.081, rz: 0.044 },
+    { t: 1, halfX: 0.097, rz: 0.05 },
+  ];
+  // 手足の半径。付け根から先へ細くなる
+  const LIMB_TAPER = {
+    leg: [0.052, 0.038, 0.026, 0.019],   // 腿の付け根 → 膝 → 足首 → つま先
+    arm: [0.034, 0.026, 0.018],          // 肩 → 肘 → 手首
+  };
   const TOOL_HINTS = {
     select: "演者や物を選び、舞台の上で動かします。",
     paint: "奥の背景面を指やマウスで塗ります。",
@@ -1008,16 +1082,34 @@
       P[k] = project(j[0], j[1], j[2]);
     });
 
-    /* 胴の厚み。人の胸は前後にもおよそ0.22m（身長の0.13倍）ある。
-     * 平たい面として描くと、真横を向いた瞬間に紙のように薄くなる。
-     * 肩と腰にそれぞれ前後の角を作り、その8点の外側をなぞって胴にする。 */
+    /* 胴の厚み。平たい面として描くと、真横を向いた瞬間に紙のように薄くなる。
+     * 肩・くびれ・腰の3段の断面を体の軸に沿って積み、その角を全部投影して
+     * 外側をなぞる。断面の面は体の軸に直交させるので、寝ている姿勢では
+     * 厚みが上下方向に出る（横になった胴は縦に厚い）。 */
+    const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+    const shMid = mid(joints.shL, joints.shR);
+    const hipMid = mid(joints.hipL, joints.hipR);
+    const axis = norm3([hipMid[0] - shMid[0], hipMid[1] - shMid[1], hipMid[2] - shMid[2]]);
+    // 左右の向きは体のx軸。軸に対して直交させてから使う
+    const dot = axis[0];
+    let wide = norm3([1 - axis[0] * dot, -axis[1] * dot, -axis[2] * dot]);
+    if (!isFinite(wide[0])) wide = [0, 0, 1];
+    const deep = norm3(cross3(axis, wide));
+
     const box = [];
-    [["shL", BODY_CHEST], ["shR", BODY_CHEST], ["hipR", BODY_WAIST], ["hipL", BODY_WAIST]]
-      .forEach(([k, rz]) => {
-        const j = joints[k];
-        box.push(project(j[0], j[1], j[2] + rz));
-        box.push(project(j[0], j[1], j[2] - rz));
-      });
+    TORSO_RINGS.forEach((ring) => {
+      const c = [
+        shMid[0] + (hipMid[0] - shMid[0]) * ring.t,
+        shMid[1] + (hipMid[1] - shMid[1]) * ring.t,
+        shMid[2] + (hipMid[2] - shMid[2]) * ring.t,
+      ];
+      [-1, 1].forEach((sw) => [-1, 1].forEach((sd) => {
+        box.push(project(
+          c[0] + wide[0] * ring.halfX * sw + deep[0] * ring.rz * sd,
+          c[1] + wide[1] * ring.halfX * sw + deep[1] * ring.rz * sd,
+          c[2] + wide[2] * ring.halfX * sw + deep[2] * ring.rz * sd));
+      }));
+    });
     return { P, box, ux, uy, cos, sin, H, per };
   }
 
@@ -1029,7 +1121,6 @@
     const P = rig.P;
     const ux = rig.ux;
     const uy = rig.uy;
-    const line = (w) => Math.max(1.2, w * ux);
 
     target.save();
 
@@ -1057,33 +1148,20 @@
       if (part.kind === "limb") {
         // 奥の手足は少し沈ませて、前後を読めるようにする
         const far = part.z < -0.02;
-        target.strokeStyle = far ? rgba(piece.color, 0.72) : piece.color;
-        target.lineWidth = line(part.limb.w);
-        target.lineCap = "round";
-        target.lineJoin = "round";
-        target.beginPath();
-        part.limb.pts.forEach((k, i) => (i ? target.lineTo(P[k].x, P[k].y) : target.moveTo(P[k].x, P[k].y)));
-        target.stroke();
+        target.fillStyle = far ? mixToward(piece.color, 0.26) : piece.color;
+        const taper = LIMB_TAPER[part.limb.kind];
+        taperedChain(target, part.limb.pts.map((k) => P[k]),
+          taper.map((r) => Math.max(0.8, r * ux)));
         return;
       }
       if (part.kind === "torso") {
-        const hull = convexHull(rig.box);
+        // 首。胴より先に置いて、肩に埋め込む
         target.fillStyle = piece.color;
-        target.strokeStyle = piece.color;
-        target.lineWidth = line(0.03);
-        target.lineJoin = "round";
-        target.beginPath();
-        hull.forEach((q, i) => (i ? target.lineTo(q.x, q.y) : target.moveTo(q.x, q.y)));
-        target.closePath();
-        target.stroke();
+        taperedChain(target,
+          [{ x: (P.shL.x + P.shR.x) / 2, y: (P.shL.y + P.shR.y) / 2 }, P.neck],
+          [Math.max(0.8, 0.036 * ux), Math.max(0.8, 0.03 * ux)]);
+        softClosedPath(target, convexHull(rig.box));
         target.fill();
-        // 首
-        target.lineWidth = line(0.05);
-        target.lineCap = "round";
-        target.beginPath();
-        target.moveTo((P.shL.x + P.shR.x) / 2, (P.shL.y + P.shR.y) / 2);
-        target.lineTo(P.neck.x, P.neck.y);
-        target.stroke();
         return;
       }
       // 頭
