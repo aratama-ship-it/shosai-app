@@ -1455,6 +1455,40 @@ textarea, input[type="text"] {
 #stage-canvas[data-pannable="true"] { cursor: grab; }
 #stage-canvas[data-pannable="true"][data-dragging="true"] { cursor: grabbing; }
 
+/* ショーの棚。端末に置いた全部を並べ、押すと切り替わる */
+.stage-shows-modal { width: min(520px, calc(100vw - 40px)); }
+
+.stage-show-list { display: grid; gap: 6px; margin-top: 10px; }
+
+.stage-show-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.stage-show-open {
+  display: grid;
+  gap: 3px;
+  padding: 9px 11px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk);
+  color: var(--milk-dim);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stage-show-open:hover { border-color: var(--brass); color: var(--milk); }
+
+.stage-show-row.is-current .stage-show-open {
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.14);
+  color: var(--paper);
+}
+
+.stage-show-title { font-size: 13px; letter-spacing: 0.04em; }
+.stage-show-meta { font-size: 10px; color: rgba(240, 231, 214, 0.42); }
+
 /* 姿勢は名前だけでは違いが伝わらないので、形を並べて選ぶ */
 .stage-pose-button {
   display: flex;

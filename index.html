@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=70">
+<link rel="stylesheet" href="style.css?v=71">
 </head>
 <body>
 
@@ -207,6 +207,10 @@
               <button type="button" id="stage-version-copy" class="btn-quiet">複製</button>
             </div>
             <p class="stage-version-note" id="stage-version-note"></p>
+            <div class="stage-io-row">
+              <button type="button" id="stage-shows-open" class="btn-quiet">ショー一覧</button>
+              <button type="button" id="stage-show-new" class="btn-quiet">新しいショー</button>
+            </div>
             <div class="stage-io-row">
               <button type="button" id="stage-export-json" class="btn-quiet">書き出す</button>
               <label class="btn-quiet stage-import-label">
@@ -638,6 +642,19 @@
   </div>
 </div>
 
+<div class="stage-modal-backdrop" id="stage-shows-backdrop" hidden></div>
+<div class="stage-modal stage-shows-modal" id="stage-shows" role="dialog" aria-modal="true"
+     aria-labelledby="stage-shows-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-shows-title">ショー一覧</h2>
+    <button type="button" class="stage-modal-close" id="stage-shows-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <p class="stage-profile-hint">この端末のブラウザに置いてあるショーです。保存は自動。別の端末へ持っていくときは「書き出す」を使ってください。</p>
+    <div class="stage-show-list" id="stage-show-list"></div>
+  </div>
+</div>
+
 <div class="stage-modal-backdrop" id="stage-pose-backdrop" hidden></div>
 <div class="stage-modal stage-pose-modal" id="stage-pose" role="dialog" aria-modal="true"
      aria-labelledby="stage-pose-title" hidden>
@@ -678,7 +695,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=73"></script>
+<script src="stage-sketch.js?v=74"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

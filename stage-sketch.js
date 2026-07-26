@@ -30,7 +30,8 @@
 
   const W = canvas.width;
   const H = canvas.height;
-  const STORAGE_KEY = "shosai-stage-sketch-v1";
+  const STORAGE_KEY = "shosai-stage-sketch-v1";          // いま開いているショー
+  const SHOWS_KEY = "shosai-stage-shows-v1";              // 端末に置いた全ショー
   const HISTORY_LIMIT = 36;
   const PIECE_TYPES = {
     performer: "演者",
@@ -438,6 +439,12 @@
     poseBackdrop: document.getElementById("stage-pose-backdrop"),
     poseClose: document.getElementById("stage-pose-close"),
     poseGrid: document.getElementById("stage-pose-grid"),
+    showsOpen: document.getElementById("stage-shows-open"),
+    showNew: document.getElementById("stage-show-new"),
+    showsModal: document.getElementById("stage-shows"),
+    showsBackdrop: document.getElementById("stage-shows-backdrop"),
+    showsClose: document.getElementById("stage-shows-close"),
+    showList: document.getElementById("stage-show-list"),
     facingValue: document.getElementById("stage-facing-value"),
     profile: document.getElementById("stage-profile"),
     profileBackdrop: document.getElementById("stage-profile-backdrop"),
@@ -897,6 +904,46 @@
     return { value: baseState(true), restored: false };
   }
 
+  /* ---------- ショーの棚 ----------
+     ショーは端末の中に何本でも置ける。いま開いているものは STORAGE_KEY に、
+     全ての控えは SHOWS_KEY に「id → 中身」で持つ。開き直すときは控えから戻す。
+     保存は自動。ファイルへ出したいときは従来どおり「書き出す」。 */
+
+  function readShows() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(SHOWS_KEY) || "{}");
+      return (raw && typeof raw === "object" && !Array.isArray(raw)) ? raw : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function writeShows(shows) {
+    try { localStorage.setItem(SHOWS_KEY, JSON.stringify(shows)); } catch (_) { /* 入りきらないときは諦める */ }
+  }
+
+  // いまのショーを棚へ書き戻す。保存のたびに呼ぶので、一覧は常に最新になる
+  function shelveCurrent() {
+    const shows = readShows();
+    shows[state.project.id] = {
+      savedAt: nowIso(),
+      state: JSON.parse(snapshot()),
+    };
+    writeShows(shows);
+  }
+
+  function showSummary(entry) {
+    const pj = entry && entry.state && entry.state.project;
+    if (!pj) return null;
+    return {
+      id: pj.id,
+      title: pj.title || "無題のショー",
+      version: pj.versionLabel || "v1",
+      scenes: (pj.scenes || []).filter((x) => x.kind !== "section").length,
+      savedAt: entry.savedAt || "",
+    };
+  }
+
   const loaded = loadState();
   let state = loaded.value;
   let tool = "select";
@@ -1123,7 +1170,8 @@
     saveTimer = setTimeout(() => {
       try {
         localStorage.setItem(STORAGE_KEY, snapshot());
-        els.saveStatus.textContent = "この端末のブラウザ内へ保存しました。";
+        shelveCurrent();
+        els.saveStatus.textContent = `「${state.project.title}」を保存しました。`;
       } catch (_) {
         els.saveStatus.textContent = "この端末へ保存できませんでした。画像を書き出して残してください。";
       }
@@ -3109,6 +3157,118 @@
     announce(`${item.name}を舞台セットから外しました。`);
   }
 
+  /* ---------- ショーの新規・切り替え ---------- */
+
+  function applyLoadedState(next, message) {
+    state = next;
+    selectedId = null;
+    history.length = 0;
+    future.length = 0;
+    renderVenueControls();
+    renderScenes();
+    renderCast();
+    renderSets();
+    renderLights();
+    renderRigs();
+    syncInputs();
+    applyLayout();
+    updateInspector();
+    updateHistoryButtons();
+    render();
+    persistSoon();
+    announce(message);
+  }
+
+  function newShow() {
+    if (!window.confirm("新しいショーを作ります。いま開いているショーは一覧に残ります。")) return;
+    shelveCurrent();
+    const fresh = baseState(false);
+    fresh.project.title = "無題のショー";
+    fresh.layout = state.layout;                 // 道具の並びは持ち越す
+    applyLoadedState(normalizeState(fresh), "新しいショーを作りました。");
+    closeShows();
+    renderShows();
+  }
+
+  function openShow(id) {
+    const shows = readShows();
+    const entry = shows[id];
+    if (!entry) return;
+    if (id === state.project.id) { closeShows(); return; }
+    shelveCurrent();
+    const next = normalizeState(entry.state);
+    next.layout = state.layout;
+    applyLoadedState(next, `${next.project.title}を開きました。`);
+    closeShows();
+  }
+
+  function deleteShow(id) {
+    const shows = readShows();
+    const info = showSummary(shows[id]);
+    if (!info) return;
+    if (id === state.project.id) {
+      window.alert("いま開いているショーは消せません。別のショーへ切り替えてから消してください。");
+      return;
+    }
+    if (!window.confirm(`「${info.title}」を端末から消します。戻せません。`)) return;
+    delete shows[id];
+    writeShows(shows);
+    renderShows();
+    announce(`${info.title}を消しました。`);
+  }
+
+  function renderShows() {
+    if (!els.showList) return;
+    const shows = readShows();
+    shelveCurrent();                              // いまのショーも必ず一覧へ出す
+    const rows = Object.keys(readShows())
+      .map((id) => showSummary(readShows()[id]))
+      .filter(Boolean)
+      .sort((a, b) => (b.savedAt || "").localeCompare(a.savedAt || ""));
+    els.showList.innerHTML = "";
+    rows.forEach((info) => {
+      const row = document.createElement("div");
+      row.className = `stage-show-row${info.id === state.project.id ? " is-current" : ""}`;
+
+      const open = document.createElement("button");
+      open.type = "button";
+      open.className = "stage-show-open";
+      const title = document.createElement("span");
+      title.className = "stage-show-title";
+      title.textContent = info.title;
+      const meta = document.createElement("span");
+      meta.className = "stage-show-meta";
+      const when = info.savedAt ? info.savedAt.slice(0, 10).replace(/-/g, "/") : "";
+      meta.textContent = `${info.version}・${info.scenes}場面${when ? `・${when}` : ""}`
+        + (info.id === state.project.id ? "・開いています" : "");
+      open.append(title, meta);
+      open.addEventListener("click", () => openShow(info.id));
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "stage-cast-remove";
+      remove.textContent = "✕";
+      remove.setAttribute("aria-label", `${info.title}を消す`);
+      remove.disabled = info.id === state.project.id;
+      remove.addEventListener("click", () => deleteShow(info.id));
+
+      row.append(open, remove);
+      els.showList.append(row);
+    });
+  }
+
+  function openShows() {
+    if (!els.showsModal) return;
+    renderShows();
+    els.showsModal.hidden = false;
+    els.showsBackdrop.hidden = false;
+  }
+
+  function closeShows() {
+    if (els.showsModal) els.showsModal.hidden = true;
+    if (els.showsBackdrop) els.showsBackdrop.hidden = true;
+  }
+
   /* ---------- 姿勢を選ぶ ----------
      名前だけでは「片膝立ち」と「しゃがむ」の違いが伝わらないので、
      実際の形を小さく描いて並べる。舞台の絵と同じ骨格・同じ塗りを通すので、
@@ -4466,6 +4626,10 @@
     });
   }
   if (els.piecePose) els.piecePose.addEventListener("click", openPoseModal);
+  if (els.showsOpen) els.showsOpen.addEventListener("click", openShows);
+  if (els.showNew) els.showNew.addEventListener("click", newShow);
+  if (els.showsClose) els.showsClose.addEventListener("click", closeShows);
+  if (els.showsBackdrop) els.showsBackdrop.addEventListener("click", closeShows);
   if (els.poseClose) els.poseClose.addEventListener("click", closePoseModal);
   if (els.poseBackdrop) els.poseBackdrop.addEventListener("click", closePoseModal);
   if (els.pieceFacing) {
