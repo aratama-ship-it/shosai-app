@@ -34,36 +34,63 @@
   const HISTORY_LIMIT = 36;
   const PIECE_TYPES = {
     performer: "演者",
-    block: "台・物",
+    block: "台・箱",
+    table: "テーブル",
+    chair: "椅子",
     sphere: "球",
-    light: "光の位置",
+    light: "光",
   };
   // 実寸の目安（m）。人を基準に置くと、舞台の規模が見た目に出る
   const PIECE_METERS = {
     performer: 1.65,
     block: 1.2,
+    table: 0.72,
+    chair: 0.9,
     sphere: 1.2,
     light: 2.5,
   };
-  // 台と球は実寸（m）で持つ。人だけが身長で決まるのに対し、
+  // 台・テーブル・椅子・球・光は実寸（m）で持つ。人だけが身長で決まるのに対し、
   // セットは幅・奥行き・高さがそれぞれ意味を持つので、一つの倍率では表せない。
   const PIECE_DIMS = {
     block: { w: 2.04, d: 0.66, h: 1.2 },   // 平台1枚ぶんの見当
+    table: { w: 1.6, d: 0.8, h: 0.72 },    // 一般的なダイニングテーブル
+    chair: { h: 0.9 },                     // 背もたれの上端まで。幅と奥行きはここから決まる
     sphere: { dia: 1.2, lift: 0 },         // 直径と、床からの高さ
+    light: { dia: 4 },                     // 床に落ちる明かりの差し渡し
   };
-  const DIM_LIMITS = {
-    w: [0.2, 12], d: [0.2, 12], h: [0.1, 8], dia: [0.3, 8], lift: [0, 10],
+  /* 寸法つまみの仕様。項目は種類ごとに違うので、画面はここから組み立てる。
+   * HTMLへ固定で並べると、種類を足すたびに二箇所直すことになる。 */
+  const DIM_META = {
+    w: { label: "幅", min: 0.2, max: 12, step: 0.05 },
+    d: { label: "奥行き", min: 0.2, max: 12, step: 0.05 },
+    h: { label: "高さ", min: 0.1, max: 8, step: 0.05 },
+    dia: { label: "直径", min: 0.3, max: 20, step: 0.1 },
+    lift: { label: "床からの高さ", min: 0, max: 10, step: 0.1 },
   };
-  // 舞台セットのモーダルにある寸法つまみ
-  const SETINFO_FIELDS = [
-    ["block", "w", "stage-setinfo-w"], ["block", "d", "stage-setinfo-d"], ["block", "h", "stage-setinfo-h"],
-    ["sphere", "dia", "stage-setinfo-dia"], ["sphere", "lift", "stage-setinfo-lift"],
-  ];
-  // 寸法のつまみ。種類ごとに出し分け、値は m で表示する
-  const DIM_FIELDS = [
-    ["block", "w", "dimW"], ["block", "d", "dimD"], ["block", "h", "dimH"],
-    ["sphere", "dia", "dimDia"], ["sphere", "lift", "dimLift"],
-  ];
+  // 種類によって言い方を変えたいものだけ上書きする
+  const DIM_LABELS = {
+    chair: { h: "大きさ（背もたれの上端まで）" },
+    light: { dia: "明かりの差し渡し" },
+  };
+  function dimLabel(kind, key) {
+    return (DIM_LABELS[kind] && DIM_LABELS[kind][key]) || DIM_META[key].label;
+  }
+  // 椅子は大きさ一つで決まる。幅と奥行きはそこから割り出す
+  /* 舞台セットに登録できる形。光もここに含める。登録・出し入れ・寸法の
+   * 仕組みが同じなので同じ入れ物に置き、一覧だけ「光」パネルへ分けて出す。 */
+  const SET_KINDS = { block: "台・箱", table: "テーブル", chair: "椅子", sphere: "球", light: "光" };
+  const SET_KIND_ORDER = ["block", "table", "chair", "sphere"];
+  const SOLID_TYPES = { block: true, table: true, chair: true };
+  const CHAIR_W = 0.5;
+  const CHAIR_D = 0.55;
+  // その駒が床でどれだけの面積を取るか（m）。平面図と当たり判定で使う
+  function pieceFootprint(piece) {
+    const d = pieceDims(piece);
+    if (!d) return null;
+    if (piece.type === "chair") return { w: d.h * CHAIR_W, d: d.h * CHAIR_D };
+    if (d.dia !== undefined) return { w: d.dia, d: d.dia };
+    return { w: d.w, d: d.d };
+  }
   const DEFAULT_HEIGHT_CM = 165;
   // 名簿や舞台セットへ加えたときの色。順に配って、色でも見分けられるようにする
   const PIECE_PALETTE = ["#a84b26", "#efe7d6", "#77865f", "#8b98a1", "#d3ac59", "#6d6657"];
@@ -85,7 +112,6 @@
     redo: document.getElementById("stage-redo"),
     export: document.getElementById("stage-export"),
     toolHint: document.getElementById("stage-tool-hint"),
-    newColor: document.getElementById("stage-new-color"),
     background: document.getElementById("stage-bg-color"),
     paintColor: document.getElementById("stage-paint-color"),
     brushSize: document.getElementById("stage-brush-size"),
@@ -97,13 +123,7 @@
     selectedColor: document.getElementById("stage-selected-color"),
     pieceSize: document.getElementById("stage-piece-size"),
     sizeRow: document.getElementById("stage-size-row"),
-    dimsBlock: document.getElementById("stage-dims-block"),
-    dimsRing: document.getElementById("stage-dims-ring"),
-    dimW: document.getElementById("stage-dim-w"),
-    dimD: document.getElementById("stage-dim-d"),
-    dimH: document.getElementById("stage-dim-h"),
-    dimDia: document.getElementById("stage-dim-dia"),
-    dimLift: document.getElementById("stage-dim-lift"),
+    dims: document.getElementById("stage-dims"),
     dimsFromSet: document.getElementById("stage-dims-from-set"),
     sizeValue: document.getElementById("stage-size-value"),
     sendBack: document.getElementById("stage-send-back"),
@@ -156,6 +176,9 @@
     castName: document.getElementById("stage-cast-name"),
     castAdd: document.getElementById("stage-cast-add"),
     setList: document.getElementById("stage-set-list"),
+    lightList: document.getElementById("stage-light-list"),
+    lightName: document.getElementById("stage-light-name"),
+    lightAdd: document.getElementById("stage-light-add"),
     setName: document.getElementById("stage-set-name"),
     setKind: document.getElementById("stage-set-kind"),
     setAdd: document.getElementById("stage-set-add"),
@@ -164,8 +187,7 @@
     setInfoClose: document.getElementById("stage-setinfo-close"),
     setInfoTitle: document.getElementById("stage-setinfo-title"),
     setInfoName: document.getElementById("stage-setinfo-name"),
-    setInfoBlock: document.getElementById("stage-setinfo-block"),
-    setInfoRing: document.getElementById("stage-setinfo-ring"),
+    setInfoDims: document.getElementById("stage-setinfo-dims"),
     setInfoColor: document.getElementById("stage-setinfo-color"),
     setInfoNote: document.getElementById("stage-setinfo-note"),
     frontInner: document.getElementById("stage-front-inner"),
@@ -234,7 +256,8 @@
       seat: "center",
       // パネルの置き場所と開閉。中央は絵の順序だけを持つ
       layout: defaultLayout(),
-      pieceColor: "#d3ac59",
+      // 名簿にも舞台セットにも属さない駒を置いたときの色
+      pieceColor: "#a84b26",
       paintColor: "#efe7d6",
       brushSize: 42,
     };
@@ -303,11 +326,14 @@
   }
 
   // 舞台に出す名前。登録した演者なら名簿から引き、そうでなければ個別の名前
+  // 頭上に出す名前。名簿・舞台セットに登録したものは、そちらの名前を引く
   function pieceLabel(piece) {
     if (piece.castId) {
       const member = state.project.cast.find((c) => c.id === piece.castId);
       if (member) return member.name;
     }
+    const registered = pieceSet(piece);
+    if (registered) return registered.name;
     return piece.name || "";
   }
 
@@ -359,15 +385,50 @@
     const k = clamp(finite(piece && piece.size, 100), 55, 180) / 100;
     const out = {};
     Object.keys(base).forEach((key) => {
-      const lim = DIM_LIMITS[key];
+      const meta = DIM_META[key];
       const fallback = key === "lift" ? base[key] : base[key] * k;
-      out[key] = clamp(finite(old ? old[key] : fallback, base[key]), lim[0], lim[1]);
+      out[key] = clamp(finite(old ? old[key] : fallback, base[key]), meta.min, meta.max);
     });
     return out;
   }
 
   // 寸法の正本。舞台セットに登録したものは、そちらを引く。
   // 登録側を直せば、置いてある全ての場面の見え方が同時に変わる。
+  /* 寸法つまみを組み立てる。項目は種類ごとに違うので、HTMLへ固定で並べず
+   * ここから作る。dims オブジェクトへ直に書き込むので、
+   * 「駒そのもの」でも「舞台セットの正本」でも同じ関数で使える。 */
+  function buildDimControls(host, prefix, kind, dims, onChange) {
+    if (!host) return;
+    host.innerHTML = "";
+    if (!dims) return;
+    Object.keys(dims).forEach((key) => {
+      const meta = DIM_META[key];
+      if (!meta) return;
+      const label = document.createElement("label");
+      label.className = "stage-control-label stage-range-label";
+      label.htmlFor = `${prefix}-${key}`;
+      const name = document.createElement("span");
+      name.textContent = dimLabel(kind, key);
+      const value = document.createElement("span");
+      value.textContent = `${dims[key].toFixed(2)}m`;
+      label.append(name, value);
+
+      const input = document.createElement("input");
+      input.type = "range";
+      input.id = `${prefix}-${key}`;
+      input.min = String(meta.min);
+      input.max = String(meta.max);
+      input.step = String(meta.step);
+      input.value = String(dims[key]);
+      input.addEventListener("input", () => {
+        dims[key] = clamp(Number(input.value), meta.min, meta.max);
+        value.textContent = `${dims[key].toFixed(2)}m`;
+        onChange();
+      });
+      host.append(label, input);
+    });
+  }
+
   function pieceDims(piece) {
     const registered = pieceSet(piece);
     if (registered) return registered.dims;
@@ -467,7 +528,7 @@
           : [],
         sets: Array.isArray(rawProject.sets)
           ? rawProject.sets.slice(0, 60).map((t, i) => {
-              const kind = t && (t.kind === "sphere" || t.kind === "ring") ? "sphere" : "block";
+              const kind = SET_KINDS[t && t.kind] ? t.kind : (t && t.kind === "ring" ? "sphere" : "block");
               return {
                 id: typeof t.id === "string" ? t.id : rid("set"),
                 kind,
@@ -643,6 +704,7 @@
     renderScenes();
     renderCast();
     renderSets();
+    renderLights();
     renderVenueControls();
     updateInspector();
     render();
@@ -849,43 +911,39 @@
     return place(u, v, L);
   }
 
-  // 台・箱。幅・奥行き・高さを実寸（m）で持つ直方体。向きを変えられる。
-  // 四隅をそれぞれ床の点として引くので、置く位置によって傾きが変わる（遠近が合う）。
-  function drawBlock(target, piece, pos, scale, L) {
-    const dim = pieceDims(piece);
+  /* 直方体の部品をひとつ塗る。部品の中心は駒の中心から (ox, oz) メートルずれ、
+   * 床から lift メートル浮いた位置に、幅 w・奥行き d・高さ h で立つ。
+   * 四隅は place() で床の点として引くので、床の1m枡と遠近が一致する。 */
+  function paintBox(target, piece, L, part) {
     const rad = ((piece.facing || 0) * Math.PI) / 180;
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
-    const hw = dim.w / 2;
-    const hd = dim.d / 2;
-
-    // 真上から見た四隅を回してから、それぞれ床の点として画面へ移す
-    const corner = (ux, uy) => {
-      const dw = ux * cos - uy * sin;
-      const dd = ux * sin + uy * cos;
+    const at = (ux, uy) => {
+      const lx = part.ox + ux;
+      const ly = part.oz + uy;
+      const dw = lx * cos - ly * sin;
+      const dd = lx * sin + ly * cos;
       const p = floorPoint(piece, dw, dd, L);
       const per = perMetre(p, L);
-      return { x: p.x, y: p.y, top: p.y - dim.h * per.y, depth: dd };
+      return {
+        x: p.x,
+        y: p.y - part.lift * per.y,
+        top: p.y - (part.lift + part.h) * per.y,
+        depth: dd,
+      };
     };
-    const base = [corner(-hw, -hd), corner(hw, -hd), corner(hw, hd), corner(-hw, hd)];
+    const hw = part.w / 2;
+    const hd = part.d / 2;
+    const base = [at(-hw, -hd), at(hw, -hd), at(hw, hd), at(-hw, hd)];
     const top = base.map((c) => ({ x: c.x, y: c.top }));
+    const tint = part.tint === undefined ? 1 : part.tint;
 
-    target.save();
-
-    // 影は底面の形そのまま
-    target.fillStyle = "rgba(0,0,0,0.3)";
-    target.beginPath();
-    base.forEach((c, i) => (i ? target.lineTo(c.x, c.y + 4) : target.moveTo(c.x, c.y + 4)));
-    target.closePath();
-    target.fill();
-
-    target.strokeStyle = rgba(piece.color, 0.28);
-    target.lineWidth = 2;
+    target.strokeStyle = rgba(piece.color, 0.28 * tint);
+    target.lineWidth = 1.5;
 
     /* 側面のうち、客席へ顔を向けている面だけを塗る。
      * 面 i→j の外向き法線は、辺ベクトル e に対して (e.y, -e.x)。
-     * その y 成分が負（＝客席側を向く）なら見えている。
-     * 真横を向いた面は暗く、正面を向いた面は明るくする。 */
+     * その y 成分が負（＝客席側を向く）なら見えている。 */
     const faces = [];
     for (let i = 0; i < 4; i += 1) {
       const j = (i + 1) % 4;
@@ -899,7 +957,7 @@
     faces.sort((a, b) => b.mid - a.mid);          // 奥の面から先に塗る
 
     faces.forEach((f) => {
-      target.fillStyle = rgba(piece.color, 0.46 + f.lit * 0.54);
+      target.fillStyle = rgba(piece.color, (0.46 + f.lit * 0.54) * tint);
       target.beginPath();
       target.moveTo(base[f.i].x, base[f.i].y);
       target.lineTo(base[f.j].x, base[f.j].y);
@@ -910,13 +968,82 @@
       target.stroke();
     });
 
-    // 天板
-    target.fillStyle = rgba(piece.color, 0.78);
+    // 天面
+    target.fillStyle = rgba(piece.color, 0.78 * tint);
     target.beginPath();
     top.forEach((c, i) => (i ? target.lineTo(c.x, c.y) : target.moveTo(c.x, c.y)));
     target.closePath();
     target.fill();
     target.stroke();
+  }
+
+  /* 台・テーブル・椅子は、直方体の部品の組み合わせとして持つ。
+   * 部品はそれぞれ実寸なので、天板の厚みや脚の太さも寸法に連動して変わる。 */
+  function pieceParts(piece) {
+    const d = pieceDims(piece);
+    if (!d) return null;
+    if (piece.type === "block") {
+      return [{ ox: 0, oz: 0, w: d.w, d: d.d, h: d.h, lift: 0, tint: 1 }];
+    }
+    if (piece.type === "table") {
+      const top = clamp(d.h * 0.09, 0.03, 0.08);              // 天板の厚み
+      const leg = clamp(Math.min(d.w, d.d) * 0.07, 0.04, 0.1); // 脚の太さ
+      const inset = leg * 1.2;
+      const parts = [];
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => parts.push({
+        ox: sx * (d.w / 2 - inset - leg / 2),
+        oz: sy * (d.d / 2 - inset - leg / 2),
+        w: leg, d: leg, h: Math.max(0.05, d.h - top), lift: 0, tint: 0.7,
+      }));
+      parts.push({ ox: 0, oz: 0, w: d.w, d: d.d, h: top, lift: Math.max(0, d.h - top), tint: 1 });
+      return parts;
+    }
+    if (piece.type === "chair") {
+      const H = d.h;                       // 背もたれの上端まで
+      const w = H * CHAIR_W;
+      const dp = H * CHAIR_D;
+      const seatH = H * 0.5;               // 座面の高さ
+      const slab = clamp(H * 0.055, 0.025, 0.06);
+      const leg = clamp(H * 0.05, 0.022, 0.055);
+      const parts = [];
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => parts.push({
+        ox: sx * (w / 2 - leg / 2), oz: sy * (dp / 2 - leg / 2),
+        w: leg, d: leg, h: Math.max(0.05, seatH - slab), lift: 0, tint: 0.66,
+      }));
+      // 座面
+      parts.push({ ox: 0, oz: 0, w, d: dp, h: slab, lift: Math.max(0, seatH - slab), tint: 0.95 });
+      // 背もたれ。facing=0 で客席を向くので、背は奥側（oz が正）へ置く
+      parts.push({ ox: 0, oz: dp / 2 - slab / 2, w, d: slab, h: Math.max(0.05, H - seatH), lift: seatH, tint: 0.84 });
+      return parts;
+    }
+    return null;
+  }
+
+  // 台・テーブル・椅子。部品を奥から順に塗る
+  function drawSolid(target, piece, pos, scale, L) {
+    const parts = pieceParts(piece);
+    if (!parts) return;
+    target.save();
+
+    // 影は床の占有面積そのまま
+    const foot = pieceFootprint(piece);
+    if (foot) {
+      const rad = ((piece.facing || 0) * Math.PI) / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      target.fillStyle = "rgba(0,0,0,0.3)";
+      target.beginPath();
+      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sy], i) => {
+        const lx = (sx * foot.w) / 2;
+        const ly = (sy * foot.d) / 2;
+        const p = floorPoint(piece, lx * cos - ly * sin, lx * sin + ly * cos, L);
+        if (i) target.lineTo(p.x, p.y + 3); else target.moveTo(p.x, p.y + 3);
+      });
+      target.closePath();
+      target.fill();
+    }
+
+    parts.forEach((part) => paintBox(target, piece, L, part));
     target.restore();
   }
 
@@ -964,8 +1091,11 @@
   }
 
   function drawLight(target, piece, pos, scale, L) {
-    const spread = 138 * scale;
-    const topWidth = 28 * scale;
+    // 明かりの差し渡しを実寸（m）で持つ。床の1m枡で広さを読めるようにするため
+    const dim = pieceDims(piece);
+    const per = perMetre(pos, L);
+    const spread = Math.max(6, ((dim && dim.dia) || 4) / 2 * per.x);
+    const topWidth = Math.max(3, spread * 0.2);
     const topY = L.plan ? pos.y - spread : L.backY;
     if (L.plan) {
       // 平面では光は「床に落ちる円」として見える
@@ -1032,11 +1162,11 @@
       target.lineTo(0, halfD * 1.5);
       target.closePath();
       target.fill();
-    } else if (piece.type === "block") {
+    } else if (SOLID_TYPES[piece.type]) {
       // 真上から見るので、幅と奥行きがそのまま床の占有面積になる。向きも効く
-      const dim = pieceDims(piece);
-      const w = Math.max(5, dim.w * L.pxPerM);
-      const d = Math.max(5, dim.d * L.pxPerM);
+      const foot = pieceFootprint(piece);
+      const w = Math.max(5, foot.w * L.pxPerM);
+      const d = Math.max(5, foot.d * L.pxPerM);
       target.translate(pos.x, pos.y);
       target.rotate(((piece.facing || 0) * Math.PI) / 180);
       target.fillStyle = piece.color;
@@ -1044,6 +1174,11 @@
       target.strokeStyle = "rgba(0,0,0,0.3)";
       target.lineWidth = 1.5;
       target.strokeRect(-w / 2, -d / 2, w, d);
+      // 椅子は背もたれの側を濃くして、座る向きを分かるようにする
+      if (piece.type === "chair") {
+        target.fillStyle = "rgba(13,12,11,0.4)";
+        target.fillRect(-w / 2, d / 2 - d * 0.2, w, d * 0.2);
+      }
       // どちらが正面かの印
       target.fillStyle = "rgba(13,12,11,0.45)";
       target.beginPath();
@@ -1081,10 +1216,11 @@
     const scale = pieceScale(piece, pos, L);
     const dim = pieceDims(piece);
     if (L.plan) {
-      if (piece.type === "block") {
+      if (SOLID_TYPES[piece.type]) {
         const rad = ((piece.facing || 0) * Math.PI) / 180;
-        const w = dim.w * L.pxPerM;
-        const d = dim.d * L.pxPerM;
+        const foot = pieceFootprint(piece);
+        const w = foot.w * L.pxPerM;
+        const d = foot.d * L.pxPerM;
         const ex = (Math.abs(w * Math.cos(rad)) + Math.abs(d * Math.sin(rad))) / 2;
         const ey = (Math.abs(w * Math.sin(rad)) + Math.abs(d * Math.cos(rad))) / 2;
         return { x: pos.x - ex, y: pos.y - ey, w: Math.max(12, ex * 2), h: Math.max(12, ey * 2) };
@@ -1095,25 +1231,30 @@
       }
       const r = piece.type === "performer"
         ? Math.max(11, (pieceHeightM(piece) * SHOULDER_RATIO * (piece.size / 100) * L.pxPerM) / 2 + 4)
-        : Math.max(10, 30 * scale);
+        : Math.max(10, (((dim && dim.dia) || 2) / 2) * L.pxPerM);
       return { x: pos.x - r, y: pos.y - r, w: r * 2, h: r * 2 };
     }
     const st = pos.stretch || 1;
-    if (piece.type === "light") return { x: pos.x - 78 * scale, y: pos.y - 35 * scale, w: 156 * scale, h: 70 * scale };
     const per = perMetre(pos, L);
-    if (piece.type === "block") {
+    if (piece.type === "light") {
+      const r = Math.max(10, (((dim && dim.dia) || 4) / 2) * per.x);
+      return { x: pos.x - r, y: pos.y - r * 0.32, w: r * 2, h: r * 0.64 };
+    }
+    if (SOLID_TYPES[piece.type]) {
       // 描画と同じ手順で四隅を引き、その外接矩形を枠にする
+      const foot = pieceFootprint(piece);
+      const height = dim.h;
       const rad = ((piece.facing || 0) * Math.PI) / 180;
       const cos = Math.cos(rad);
       const sin = Math.sin(rad);
       const xs = [];
       const ys = [];
       [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sy]) => {
-        const ux = (sx * dim.w) / 2;
-        const uy = (sy * dim.d) / 2;
+        const ux = (sx * foot.w) / 2;
+        const uy = (sy * foot.d) / 2;
         const p = floorPoint(piece, ux * cos - uy * sin, ux * sin + uy * cos, L);
         xs.push(p.x);
-        ys.push(p.y, p.y - dim.h * perMetre(p, L).y);
+        ys.push(p.y, p.y - height * perMetre(p, L).y);
       });
       const x0 = Math.min(...xs);
       const y0 = Math.min(...ys);
@@ -1596,7 +1737,7 @@
       if (piece.type === "light") drawLight(target, piece, pos, scale, L);
       else if (L.plan) drawPlanPiece(target, piece, pos, scale, L);
       else if (piece.type === "performer") drawPerformer(target, piece, pos, scale, L);
-      else if (piece.type === "block") drawBlock(target, piece, pos, scale, L);
+      else if (SOLID_TYPES[piece.type]) drawSolid(target, piece, pos, scale, L);
       else if (piece.type === "sphere") drawSphere(target, piece, pos, scale, L);
       if (lean) target.restore();
     };
@@ -1922,6 +2063,7 @@
     if (els.castName) els.castName.value = "";
     renderCast();
     renderSets();
+    renderLights();
     persistSoon();
     announce(`${raw}を名簿へ加えました。舞台裏の状態です。`);
   }
@@ -1949,6 +2091,8 @@
     }
     renderCast();
     renderSets();
+    renderLights();
+    renderLights();
     renderScenes();
     updateInspector();
     render();
@@ -1972,6 +2116,8 @@
     selectedId = null;
     renderCast();
     renderSets();
+    renderLights();
+    renderLights();
     renderScenes();
     updateInspector();
     render();
@@ -1981,7 +2127,6 @@
 
   /* ---------- 舞台セット ---------- */
 
-  const SET_KINDS = { block: "台・物", sphere: "球" };
 
   function setOnStage(setId) {
     return sc().pieces.some((piece) => piece.setId === setId);
@@ -1993,18 +2138,30 @@
     if (item.kind === "sphere") {
       return d.lift > 0.05 ? `⌀${d.dia.toFixed(1)}m ／ 床上${d.lift.toFixed(1)}m` : `⌀${d.dia.toFixed(1)}m`;
     }
-    return `${d.w.toFixed(1)}×${d.d.toFixed(1)}×${d.h.toFixed(1)}m`;
+    if (item.kind === "light") return `⌀${d.dia.toFixed(1)}m`;
+    if (item.kind === "chair") return `高さ${d.h.toFixed(2)}m`;
+    return `${d.w.toFixed(1)}×${d.d.toFixed(1)}×${d.h.toFixed(2)}m`;
   }
 
   function renderSets() {
-    if (!els.setList) return;
-    const sets = state.project.sets || [];
-    els.setList.innerHTML = "";
+    renderSetList(els.setList, (item) => item.kind !== "light",
+      "まだ何も登録していません。名前と形を選んで追加してください。");
+  }
+
+  function renderLights() {
+    renderSetList(els.lightList, (item) => item.kind === "light",
+      "まだ登録していません。名前を入れて追加してください。");
+  }
+
+  function renderSetList(host, keep, emptyText) {
+    if (!host) return;
+    const sets = (state.project.sets || []).filter(keep);
+    host.innerHTML = "";
     if (!sets.length) {
       const empty = document.createElement("p");
       empty.className = "stage-cast-empty";
-      empty.textContent = "まだ何も登録していません。名前と形を選んで追加してください。";
-      els.setList.append(empty);
+      empty.textContent = emptyText;
+      host.append(empty);
       return;
     }
     sets.forEach((item) => {
@@ -2076,28 +2233,28 @@
       foot.append(dims, status, detail, remove);
       row.className = "stage-set-row";
       row.append(head, foot);
-      els.setList.append(row);
+      host.append(row);
     });
   }
 
-  function addSetItem() {
-    const raw = (els.setName && els.setName.value || "").trim();
+  function addSetItem(kind, nameInput) {
+    const raw = (nameInput && nameInput.value || "").trim();
     if (!raw) {
       announce("名前を入れてから追加してください。");
-      if (els.setName) els.setName.focus();
+      if (nameInput) nameInput.focus();
       return;
     }
-    const kind = els.setKind && els.setKind.value === "sphere" ? "sphere" : "block";
     checkpoint();
     state.project.sets.push({
       id: rid("set"), kind, name: raw.slice(0, 24),
-      color: nextPieceColor(state.project.sets.length + 2),
+      color: kind === "light" ? "#d3ac59" : nextPieceColor(state.project.sets.length + 2),
       dims: normalizeDims(kind, {}), note: "",
     });
-    if (els.setName) els.setName.value = "";
+    if (nameInput) nameInput.value = "";
     renderSets();
+    renderLights();
     persistSoon();
-    announce(`${raw}を舞台セットへ加えました。舞台裏の状態です。`);
+    announce(`${raw}を${kind === "light" ? "光" : "舞台セット"}へ加えました。舞台裏の状態です。`);
   }
 
   function toggleSetOnStage(setId) {
@@ -2122,6 +2279,7 @@
       announce(`${item ? item.name : "これ"}を舞台へ出しました。`);
     }
     renderSets();
+    renderLights();
     renderScenes();
     updateInspector();
     render();
@@ -2144,6 +2302,7 @@
     });
     selectedId = null;
     renderSets();
+    renderLights();
     renderScenes();
     updateInspector();
     render();
@@ -2167,14 +2326,11 @@
     els.setInfoName.value = item.name;
     els.setInfoColor.value = item.color;
     els.setInfoNote.value = item.note || "";
-    els.setInfoBlock.hidden = item.kind !== "block";
-    els.setInfoRing.hidden = item.kind !== "sphere";
-    SETINFO_FIELDS.forEach(([owner, key, id]) => {
-      const input = document.getElementById(id);
-      if (!input || owner !== item.kind || item.dims[key] === undefined) return;
-      input.value = String(item.dims[key]);
-      const out = document.getElementById(id + "-value");
-      if (out) out.textContent = `${item.dims[key].toFixed(1)}m`;
+    buildDimControls(els.setInfoDims, "stage-setinfo", item.kind, item.dims, () => {
+      renderSets();
+      renderLights();
+      render();
+      persistSoon();
     });
     els.setInfo.hidden = false;
     els.setInfoBackdrop.hidden = false;
@@ -2222,6 +2378,7 @@
     fn(member);
     renderCast();
     renderSets();
+    renderLights();
     render();
     persistSoon();
   }
@@ -2306,6 +2463,7 @@
     renderScenes();
     renderCast();
     renderSets();
+    renderLights();
     updateInspector();
     render();
     persistSoon();
@@ -2324,6 +2482,7 @@
     renderScenes();
     renderCast();
     renderSets();
+    renderLights();
     updateInspector();
     render();
     persistSoon();
@@ -2344,6 +2503,7 @@
     renderScenes();
     renderCast();
     renderSets();
+    renderLights();
     updateInspector();
     render();
     persistSoon();
@@ -2376,6 +2536,7 @@
     renderScenes();
     renderCast();
     renderSets();
+    renderLights();
     updateInspector();
     render();
     persistSoon();
@@ -2645,7 +2806,7 @@
     syncDimControls(piece);
     if (els.pieceFacing) {
       // 向きは演者と台に効く。球は回しても見た目が変わらない
-      const isPerformer = piece.type === "performer" || piece.type === "block";
+      const isPerformer = piece.type === "performer" || Boolean(SOLID_TYPES[piece.type]);
       // フェーダーは中央が客席向き。保存は0〜359なので、180を超える分は負へ折り返す
       const deg = ((Number(piece.facing) || 0) % 360 + 360) % 360;
       els.pieceFacing.value = String(deg > 180 ? deg - 360 : deg);
@@ -2656,14 +2817,16 @@
     }
     if (els.pieceName && document.activeElement !== els.pieceName) {
       const member = piece.castId ? state.project.cast.find((c) => c.id === piece.castId) : null;
-      els.pieceName.value = member ? member.name : (piece.name || "");
-      els.pieceName.disabled = Boolean(member);
-      els.pieceName.placeholder = member ? "名前は人物パネルで直します" : "例: 演台、ディアボロ";
+      const registered = pieceSet(piece);
+      const owner = member || registered;
+      els.pieceName.value = owner ? owner.name : (piece.name || "");
+      els.pieceName.disabled = Boolean(owner);
+      els.pieceName.placeholder = member ? "名前は演者パネルで直します"
+        : registered ? "名前は登録した一覧で直します" : "例: 演台、ディアボロ";
     }
   }
 
   function syncInputs() {
-    els.newColor.value = state.pieceColor;
     els.background.value = sc().background;
     els.paintColor.value = state.paintColor;
     els.brushSize.value = String(state.brushSize);
@@ -2704,6 +2867,7 @@
     renderScenes();
     renderCast();
     renderSets();
+    renderLights();
     render();
     persistSoon();
     announce(`${PIECE_TYPES[piece.type]}を舞台から外しました。`);
@@ -2858,9 +3022,7 @@
   document.querySelectorAll("[data-stage-tool]").forEach((button) => {
     button.addEventListener("click", () => setTool(button.dataset.stageTool));
   });
-  // 演者と台は名簿・舞台セットから出し入れするので、直接置くのは光だけ
-  const addLight = document.getElementById("stage-add-light");
-  if (addLight) addLight.addEventListener("click", () => addPiece("light"));
+  // 演者・台・光はすべて、それぞれの一覧から舞台へ出し入れする
   if (els.showFront) {
     els.showFront.addEventListener("change", (e) => setViewShown("front", e.target.checked));
   }
@@ -2891,7 +3053,7 @@
   if (els.pieceFacing) {
     els.pieceFacing.addEventListener("input", (e) => {
       const piece = selectedPiece();
-      if (!piece || (piece.type !== "performer" && piece.type !== "block")) return;
+      if (!piece || (piece.type !== "performer" && !SOLID_TYPES[piece.type])) return;
       piece.facing = ((Number(e.target.value) % 360) + 360) % 360;   // フェーダーは-180〜180
       if (els.facingValue) els.facingValue.textContent = facingLabel(piece.facing);
       render();
@@ -2907,10 +3069,18 @@
       persistSoon();
     });
   }
-  if (els.setAdd) els.setAdd.addEventListener("click", addSetItem);
+  const addSelectedSet = () => addSetItem(
+    SET_KINDS[els.setKind && els.setKind.value] ? els.setKind.value : "block", els.setName);
+  if (els.setAdd) els.setAdd.addEventListener("click", addSelectedSet);
   if (els.setName) {
     els.setName.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); addSetItem(); }
+      if (e.key === "Enter") { e.preventDefault(); addSelectedSet(); }
+    });
+  }
+  if (els.lightAdd) els.lightAdd.addEventListener("click", () => addSetItem("light", els.lightName));
+  if (els.lightName) {
+    els.lightName.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); addSetItem("light", els.lightName); }
     });
   }
   if (els.setInfoClose) els.setInfoClose.addEventListener("click", closeSetInfo);
@@ -2921,6 +3091,7 @@
       if (!item) return;
       item.name = e.target.value.slice(0, 24);
       renderSets();
+      renderLights();
       render();
       persistSoon();
     });
@@ -2936,6 +3107,7 @@
         });
       });
       renderSets();
+      renderLights();
       render();
       persistSoon();
     });
@@ -2946,23 +3118,6 @@
       if (item) { item.note = e.target.value.slice(0, 200); persistSoon(); }
     });
   }
-  // 登録側の寸法を直すと、置いてある全ての場面へ同時に効く
-  SETINFO_FIELDS.forEach(([owner, key, id]) => {
-    const input = document.getElementById(id);
-    if (!input) return;
-    input.addEventListener("input", (e) => {
-      const item = currentSetItem();
-      if (!item || item.kind !== owner) return;
-      const lim = DIM_LIMITS[key];
-      item.dims[key] = clamp(Number(e.target.value), lim[0], lim[1]);
-      const out = document.getElementById(id + "-value");
-      if (out) out.textContent = `${item.dims[key].toFixed(1)}m`;
-      renderSets();
-      render();
-      persistSoon();
-    });
-  });
-
   if (els.castAdd) els.castAdd.addEventListener("click", addCastMember);
   if (els.castName) {
     els.castName.addEventListener("keydown", (e) => {
@@ -3011,14 +3166,6 @@
     els.sizeSelect.addEventListener("change", (e) => setVenueSize(e.target.value));
   }
 
-  document.querySelectorAll("[data-stage-piece-color]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.pieceColor = button.dataset.stagePieceColor;
-      els.newColor.value = state.pieceColor;
-      persistSoon();
-    });
-  });
-
   document.querySelectorAll("[data-stage-bg]").forEach((button) => {
     button.addEventListener("click", () => {
       if (sc().background === button.dataset.stageBg) return;
@@ -3038,10 +3185,6 @@
     });
   });
 
-  els.newColor.addEventListener("input", (event) => {
-    state.pieceColor = event.target.value;
-    persistSoon();
-  });
   els.paintColor.addEventListener("input", (event) => {
     state.paintColor = event.target.value;
     persistSoon();
@@ -3083,37 +3226,25 @@
   function syncDimControls(piece) {
     const type = piece && piece.type;
     const registered = pieceSet(piece);
-    if (els.sizeRow) els.sizeRow.hidden = type === "block" || type === "sphere";
-    if (els.dimsBlock) els.dimsBlock.hidden = type !== "block" || Boolean(registered);
-    if (els.dimsRing) els.dimsRing.hidden = type !== "sphere" || Boolean(registered);
+    const own = piece && piece.dims;
+    // 実寸を持つものは倍率のつまみを出さない。
+    // 登録済みのものは、寸法の正本が舞台セット側にあるので個別に触らせない
+    if (els.sizeRow) els.sizeRow.hidden = Boolean(own) || Boolean(registered);
     if (els.dimsFromSet) {
       els.dimsFromSet.hidden = !registered;
       if (registered) {
-        els.dimsFromSet.textContent = `寸法は舞台セット「${registered.name}」で決まっています（${setDimLabel(registered)}）。`;
+        els.dimsFromSet.textContent = `寸法は「${registered.name}」で決まっています（${setDimLabel(registered)}）。`;
       }
     }
-    const dim = pieceDims(piece);
-    if (!dim || registered) return;
-    DIM_FIELDS.forEach(([owner, key, ref]) => {
-      if (owner !== type || !els[ref] || dim[key] === undefined) return;
-      els[ref].value = String(dim[key]);
-      const out = document.getElementById(els[ref].id + "-value");
-      if (out) out.textContent = `${dim[key].toFixed(1)}m`;
+    if (registered || !own) {
+      if (els.dims) els.dims.innerHTML = "";
+      return;
+    }
+    buildDimControls(els.dims, "stage-dim", type, own, () => {
+      render();
+      persistSoon();
     });
   }
-
-  DIM_FIELDS.forEach(([owner, key, ref]) => {
-    if (!els[ref]) return;
-    els[ref].addEventListener("input", (event) => {
-      const piece = selectedPiece();
-      if (!piece || piece.type !== owner || !piece.dims) return;
-      const lim = DIM_LIMITS[key];
-      piece.dims[key] = clamp(Number(event.target.value), lim[0], lim[1]);
-      const out = document.getElementById(event.target.id + "-value");
-      if (out) out.textContent = `${piece.dims[key].toFixed(1)}m`;
-      render();
-    });
-  });
 
   els.pieceSize.addEventListener("input", (event) => {
     const piece = selectedPiece();
@@ -3185,6 +3316,7 @@
   renderScenes();
   renderCast();
   renderSets();
+  renderLights();
   renderVenueControls();
   setTool("select");
   updateInspector();

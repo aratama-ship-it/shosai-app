@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=57">
+<link rel="stylesheet" href="style.css?v=58">
 </head>
 <body>
 
@@ -253,7 +253,9 @@
                 <input id="stage-set-name" class="stage-text-input" type="text" maxlength="24"
                        placeholder="名前を入れて追加" aria-label="舞台セットの名前">
                 <select id="stage-set-kind" class="stage-select" aria-label="形">
-                  <option value="block">台・物</option>
+                  <option value="block">台・箱</option>
+                  <option value="table">テーブル</option>
+                  <option value="chair">椅子</option>
                   <option value="sphere">球</option>
                 </select>
                 <button type="button" id="stage-set-add" class="btn-quiet">追加</button>
@@ -275,18 +277,13 @@
 
           <section class="stage-panel" data-panel="light" data-title="光">
             <div class="stage-panel-body">
-              <p class="stage-cast-hint">明かりの当たる位置を置きます。演者と台は、左の「演者」「舞台セット」から出し入れします。</p>
-              <button type="button" id="stage-add-light" class="btn-quiet stage-add-light">光を置く</button>
-              <label class="stage-control-label" for="stage-new-color">光の色</label>
-              <div class="stage-color-row">
-                <input type="color" id="stage-new-color" value="#d3ac59" aria-label="光の色">
-                <div class="stage-swatches" aria-label="光の色見本">
-                  <button type="button" data-stage-piece-color="#d3ac59" style="--stage-swatch:#d3ac59" aria-label="電球色"></button>
-                  <button type="button" data-stage-piece-color="#efe7d6" style="--stage-swatch:#efe7d6" aria-label="生成り"></button>
-                  <button type="button" data-stage-piece-color="#8b98a1" style="--stage-swatch:#8b98a1" aria-label="青灰色"></button>
-                  <button type="button" data-stage-piece-color="#a84b26" style="--stage-swatch:#a84b26" aria-label="錆色"></button>
-                </div>
+              <p class="stage-cast-hint">このショーで使う明かりを登録します。差し渡しを変えると、置いてある全ての場面に反映されます。</p>
+              <div class="stage-cast-add">
+                <input id="stage-light-name" class="stage-text-input" type="text" maxlength="24"
+                       placeholder="名前を入れて追加" aria-label="明かりの名前">
+                <button type="button" id="stage-light-add" class="btn-quiet">追加</button>
               </div>
+              <div class="stage-cast-list" id="stage-light-list"></div>
             </div>
           </section>
 
@@ -406,31 +403,8 @@
                 </label>
                 <input type="range" id="stage-piece-size" min="55" max="180" step="5" value="100">
               </div>
-              <div id="stage-dims-block" hidden>
-                <label class="stage-control-label stage-range-label" for="stage-dim-w">
-                  幅 <span id="stage-dim-w-value">2.0m</span>
-                </label>
-                <input type="range" id="stage-dim-w" min="0.2" max="12" step="0.1" value="2">
-                <label class="stage-control-label stage-range-label" for="stage-dim-d">
-                  奥行き <span id="stage-dim-d-value">0.7m</span>
-                </label>
-                <input type="range" id="stage-dim-d" min="0.2" max="12" step="0.1" value="0.7">
-                <label class="stage-control-label stage-range-label" for="stage-dim-h">
-                  高さ <span id="stage-dim-h-value">1.2m</span>
-                </label>
-                <input type="range" id="stage-dim-h" min="0.1" max="8" step="0.1" value="1.2">
-              </div>
+              <div id="stage-dims"></div>
               <p class="stage-dims-note" id="stage-dims-from-set" hidden></p>
-              <div id="stage-dims-ring" hidden>
-                <label class="stage-control-label stage-range-label" for="stage-dim-dia">
-                  直径 <span id="stage-dim-dia-value">1.2m</span>
-                </label>
-                <input type="range" id="stage-dim-dia" min="0.3" max="8" step="0.1" value="1.2">
-                <label class="stage-control-label stage-range-label" for="stage-dim-lift">
-                  床からの高さ <span id="stage-dim-lift-value">0.0m</span>
-                </label>
-                <input type="range" id="stage-dim-lift" min="0" max="10" step="0.1" value="0">
-              </div>
               <div class="stage-layer-actions">
                 <button type="button" id="stage-send-back">後ろへ</button>
                 <button type="button" id="stage-bring-front">前へ</button>
@@ -659,30 +633,7 @@
     <label class="stage-control-label" for="stage-setinfo-name">名前</label>
     <input id="stage-setinfo-name" class="stage-text-input" type="text" maxlength="24">
 
-    <div id="stage-setinfo-block" hidden>
-      <label class="stage-control-label stage-range-label" for="stage-setinfo-w">
-        幅 <span id="stage-setinfo-w-value">2.0m</span>
-      </label>
-      <input type="range" id="stage-setinfo-w" min="0.2" max="12" step="0.1" value="2">
-      <label class="stage-control-label stage-range-label" for="stage-setinfo-d">
-        奥行き <span id="stage-setinfo-d-value">0.7m</span>
-      </label>
-      <input type="range" id="stage-setinfo-d" min="0.2" max="12" step="0.1" value="0.7">
-      <label class="stage-control-label stage-range-label" for="stage-setinfo-h">
-        高さ <span id="stage-setinfo-h-value">1.2m</span>
-      </label>
-      <input type="range" id="stage-setinfo-h" min="0.1" max="8" step="0.1" value="1.2">
-    </div>
-    <div id="stage-setinfo-ring" hidden>
-      <label class="stage-control-label stage-range-label" for="stage-setinfo-dia">
-        直径 <span id="stage-setinfo-dia-value">1.2m</span>
-      </label>
-      <input type="range" id="stage-setinfo-dia" min="0.3" max="8" step="0.1" value="1.2">
-      <label class="stage-control-label stage-range-label" for="stage-setinfo-lift">
-        床からの高さ <span id="stage-setinfo-lift-value">0.0m</span>
-      </label>
-      <input type="range" id="stage-setinfo-lift" min="0" max="10" step="0.1" value="0">
-    </div>
+    <div id="stage-setinfo-dims"></div>
     <p class="stage-profile-hint">寸法は実寸です。床の1m枡と同じものさしで描かれます。</p>
 
     <label class="stage-control-label" for="stage-setinfo-color">色</label>
@@ -698,7 +649,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=9"></script>
-<script src="stage-sketch.js?v=42"></script>
+<script src="stage-sketch.js?v=47"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
