@@ -171,23 +171,22 @@
       anL: [-0.078, 1.18, 0.03], anR: [0.046, 1.19, -0.06],
       toL: [-0.08, 1.25, 0.06], toR: [0.044, 1.26, -0.09],
     }),
-    /* 抱え込み宙返り。空中で膝を胸へ抱え、背中から頭にかけてが床と水平になる瞬間。
-     * 体は丸まっているので、腕は脛を抱え、腿は胸へ折り畳む。
-     * y の原点は床のままなので、重心が0.95Hあたりに来るように全体を持ち上げる。 */
-    /* 抱え込み宙返り。空中で身体をひとつの塊に丸めた形。
-     * 背中が床側、膝が天井側。膝は胸へ、踵は尻へ引き寄せ、
-     * 腕は脛を抱え、顎は胸へ引く（頭は伸ばさない）。
-     * 背骨から頭までを伸ばすと、ただの「仰向けで浮いた人」になってしまう。 */
+    /* 抱え込み宙返り。空中で身体をひとつの塊に丸めた形。背中が床側、膝が天井側。
+     * ★首は「丸める側」へ曲げる。肩より下へ出すと顎が上がった格好になり、
+     *   宙返りではなく仰向けで浮いた人になる。頭は肩の上、膝の側へ。
+     * ★膝はおよそ直角（本人指定）。踵を尻まで引くほど畳むと、
+     *   絵として脚が消えて塊が読めなくなる。腿と脛は同じ長さで持つ。
+     * 腕は脛を抱える。y の原点は床のままなので、塊ごと1m前後の高さへ浮かせる。 */
     makePose("tuck", "抱え込み宙返り", {
-      hipL: [-0.055, 0.90, -0.15], hipR: [0.055, 0.90, -0.15],
-      shL: [-0.105, 0.95, 0.10], shR: [0.105, 0.95, 0.10],
-      neck: [0, 0.93, 0.16],
-      head: [0, 0.87, 0.21],                      // 顎を胸へ。頭は膝の側へ丸め込む
-      knL: [-0.082, 1.10, 0.04], knR: [0.082, 1.10, 0.04],
-      anL: [-0.076, 1.00, -0.13], anR: [0.076, 1.00, -0.13],
-      toL: [-0.072, 0.95, -0.19], toR: [0.072, 0.95, -0.19],
-      elL: [-0.15, 1.00, 0.03], elR: [0.15, 1.00, 0.03],
-      wrL: [-0.10, 1.05, -0.05], wrR: [0.10, 1.05, -0.05],
+      hipL: [-0.055, 0.88, -0.16], hipR: [0.055, 0.88, -0.16],
+      shL: [-0.105, 0.97, 0.09], shR: [0.105, 0.97, 0.09],
+      neck: [0, 1.005, 0.08],
+      head: [0, 1.07, 0.095],                     // 顎を胸へ。頭は肩の真上へ丸め込む
+      knL: [-0.082, 1.08, 0.02], knR: [0.082, 1.08, 0.02],
+      anL: [-0.075, 0.93, 0.22], anR: [0.075, 0.93, 0.22],
+      toL: [-0.072, 0.888, 0.278], toR: [0.072, 0.888, 0.278],
+      elL: [-0.20, 0.90, 0.16], elR: [0.20, 0.90, 0.16],
+      wrL: [-0.085, 0.95, 0.19], wrR: [0.085, 0.95, 0.19],
     }, { face: [0, 0.5, 0.85] }),
     /* 寝姿。本人の正面（z+）が頭側なので、向きを真横にすると寝姿がはっきり読める。
      * うつ伏せ・仰向け・横向きは、腕と脚の置き方と顔の向きで見分ける。 */
@@ -382,6 +381,7 @@
     paint: "奥の背景面を指やマウスで塗ります。",
     erase: "背景に描いた線だけを消します。",
     route: "平面図で演者を掴み、離した所が行き先になります。真ん中の丸を引くと道が曲がります。",
+    note: "絵の上を押すとメモを貼れます。演者や物の上なら、その駒についてまわります。",
   };
 
   const els = {
@@ -405,6 +405,13 @@
     dimsFromSet: document.getElementById("stage-dims-from-set"),
     openSetInfo: document.getElementById("stage-open-setinfo"),
     routeClear: document.getElementById("stage-route-clear"),
+    planRoute: document.getElementById("stage-plan-route"),
+    rename: document.getElementById("stage-rename"),
+    renameBackdrop: document.getElementById("stage-rename-backdrop"),
+    renameInput: document.getElementById("stage-rename-input"),
+    renameOk: document.getElementById("stage-rename-ok"),
+    renameClose: document.getElementById("stage-rename-close"),
+    renameTitle: document.getElementById("stage-rename-title"),
     sendBack: document.getElementById("stage-send-back"),
     bringFront: document.getElementById("stage-bring-front"),
     duplicate: document.getElementById("stage-duplicate"),
@@ -521,6 +528,7 @@
       title: title || "場面 1",
       note: "",
       background: "#40362d",
+      notes: [],
       pieces: withExample
         ? [
             { id: "stage-sample-performer-1", type: "performer", u: 0.36, v: 0.62, size: 105, color: "#a84b26", name: "演者A" },
@@ -706,6 +714,23 @@
 
   // 台と球の実寸。dims を持たない古い保存は、size（倍率）から見た目が
   // 変わらないように割り戻す。それ以外の種類は寸法を持たない。
+  /* 付箋。舞台の絵の上へ貼る覚え書き。
+   * 演者や物に紐づけると、その駒を動かしたとき一緒についてくる（ずれを持つ）。
+   * 紐づけないものは、その絵の上の決まった場所に留まる。
+   * 場所は 1280×720 の絵の中の画素で持つ（絵の大きさは変わらないので素直）。 */
+  function normalizeNote(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const text = typeof raw.text === "string" ? raw.text.slice(0, 200) : "";
+    return {
+      id: typeof raw.id === "string" ? raw.id : rid("note"),
+      view: raw.view === "plan" ? "plan" : "front",
+      x: clamp(finite(raw.x, 100), -200, 1480),
+      y: clamp(finite(raw.y, 100), -200, 920),
+      pieceId: typeof raw.pieceId === "string" ? raw.pieceId : null,
+      text,
+    };
+  }
+
   function normalizeRoute(raw) {
     if (!raw || typeof raw !== "object") return null;
     const u = clamp(finite(raw.u, 0.5), 0, 1);
@@ -819,6 +844,7 @@
       note: typeof raw.note === "string" ? raw.note : "",
       background: validColor(raw.background, fallbackBg),
       pieces: Array.isArray(raw.pieces) ? raw.pieces.slice(-80).map(normalizePiece) : [],
+      notes: Array.isArray(raw.notes) ? raw.notes.slice(0, 60).map(normalizeNote).filter(Boolean) : [],
       strokes: Array.isArray(raw.strokes)
         ? raw.strokes.slice(-240).map(normalizeStroke).filter((stroke) => stroke.points.length)
         : [],
@@ -972,6 +998,7 @@
   let state = loaded.value;
   let tool = "select";
   let selectedId = null;
+  let selectedNoteId = null;
   let pointerAction = null;
   let history = [];
   let future = [];
@@ -1154,6 +1181,7 @@
   function restore(value) {
     state = normalizeState(JSON.parse(value));
     if (!sc().pieces.some((piece) => piece.id === selectedId)) selectedId = null;
+    detachOrphanNotes();
     syncInputs();
     applyLayout();
     renderScenes();
@@ -2020,10 +2048,19 @@
    * 曲がり具合は真ん中の control 点ひとつで決まる。直線から始めて、
    * 掴んで曲げれば回り込みになる——舞台で人が動く道はたいてい弧を描く。 */
   function routePoints(piece, L) {
-    const from = place(piece.u, piece.v, L);
+    const at = place(piece.u, piece.v, L);
     const to = place(piece.route.u, piece.route.v, L);
     const ctrl = place(piece.route.bu, piece.route.bv, L);
-    return { from, to, ctrl };
+    /* 演者の足元からいきなり線を出すと、駒と矢印がくっついて読みにくい。
+     * 出だしの向きへ少しだけ離してから引き始める。 */
+    const gap = 13;
+    const dx = ctrl.x - at.x;
+    const dy = ctrl.y - at.y;
+    const len = Math.hypot(dx, dy);
+    const from = len > gap * 1.6
+      ? { x: at.x + (dx / len) * gap, y: at.y + (dy / len) * gap }
+      : at;
+    return { from, to, ctrl, at };
   }
 
   // 二次曲線の上の点。矢の向きを出すのに使う
@@ -2042,8 +2079,9 @@
       const picked = showSelection && piece.id === selectedId;
       target.save();
       target.strokeStyle = rgba(piece.color, picked ? 0.95 : 0.62);
-      target.lineWidth = picked ? 2.6 : 2;
-      target.setLineDash(picked ? [] : [7, 5]);
+      target.lineWidth = picked ? 4 : 3.2;
+      target.lineCap = "round";
+      target.setLineDash(picked ? [] : [9, 6]);
       target.beginPath();
       target.moveTo(from.x, from.y);
       target.quadraticCurveTo(ctrl.x, ctrl.y, to.x, to.y);
@@ -2053,7 +2091,7 @@
       // 矢。終点の少し手前の向きで向きを決める
       const near = quadAt(from, ctrl, to, 0.94);
       const ang = Math.atan2(to.y - near.y, to.x - near.x);
-      const head = picked ? 13 : 11;
+      const head = picked ? 17 : 15;
       target.fillStyle = rgba(piece.color, picked ? 0.95 : 0.66);
       target.beginPath();
       target.moveTo(to.x, to.y);
@@ -2087,6 +2125,166 @@
     if (Math.hypot(point.x - mid.x, point.y - mid.y) <= 11) return "bend";
     if (Math.hypot(point.x - to.x, point.y - to.y) <= 11) return "end";
     return null;
+  }
+
+  /* ---------- 付箋 ---------- */
+
+  const NOTE_W = 188;
+  const NOTE_PAD = 11;
+  const NOTE_LINE = 19;
+
+  // 紐づけた駒があれば、その駒の位置を足して置き場所を出す
+  function notePos(note, L) {
+    if (!note.pieceId) return { x: note.x, y: note.y };
+    const piece = sc().pieces.find((p) => p.id === note.pieceId);
+    if (!piece) return { x: note.x, y: note.y };
+    const pos = placePiece(piece, L);
+    return { x: pos.x + note.x, y: pos.y + note.y };
+  }
+
+  // 幅で折り返した行。書いた改行も活かす
+  function noteLines(target, text) {
+    const out = [];
+    const limit = NOTE_W - NOTE_PAD * 2;
+    String(text || "").split("\n").forEach((paragraph) => {
+      if (!paragraph) { out.push(""); return; }
+      let line = "";
+      for (const ch of paragraph) {
+        const next = line + ch;
+        if (target.measureText(next).width > limit && line) { out.push(line); line = ch; }
+        else line = next;
+      }
+      out.push(line);
+    });
+    return out.slice(0, 8);
+  }
+
+  function noteBox(target, note, L) {
+    target.font = "13px 'Hiragino Kaku Gothic ProN', sans-serif";
+    const lines = noteLines(target, note.text || "メモ");
+    const pos = notePos(note, L);
+    return {
+      x: pos.x, y: pos.y, w: NOTE_W,
+      h: NOTE_PAD * 2 + Math.max(1, lines.length) * NOTE_LINE,
+      lines,
+    };
+  }
+
+  function drawNotes(target, L, view, showSelection) {
+    const notes = (sc().notes || []).filter((note) => note.view === view);
+    notes.forEach((note) => {
+      const box = noteBox(target, note, L);
+      const picked = showSelection && note.id === selectedNoteId;
+      target.save();
+      // 紐づけた駒とは細い線でつなぐ。どれについての覚え書きかが読めるように
+      if (note.pieceId) {
+        const piece = sc().pieces.find((p) => p.id === note.pieceId);
+        if (piece) {
+          const at = placePiece(piece, L);
+          target.strokeStyle = "rgba(211,172,89,0.42)";
+          target.lineWidth = 1;
+          target.setLineDash([4, 4]);
+          target.beginPath();
+          target.moveTo(at.x, at.y);
+          target.lineTo(box.x + box.w / 2, box.y + box.h / 2);
+          target.stroke();
+          target.setLineDash([]);
+        }
+      }
+      target.fillStyle = picked ? "#f3e6bd" : "#e9dcb4";
+      target.strokeStyle = picked ? "#a84b26" : "rgba(13,12,11,0.45)";
+      target.lineWidth = picked ? 2.4 : 1.4;
+      target.beginPath();
+      target.rect(box.x, box.y, box.w, box.h);
+      target.fill();
+      target.stroke();
+      // 上辺だけ濃くして付箋らしくする
+      target.fillStyle = "rgba(168,75,38,0.24)";
+      target.fillRect(box.x, box.y, box.w, 4);
+
+      target.fillStyle = "#231d16";
+      target.font = "13px 'Hiragino Kaku Gothic ProN', sans-serif";
+      target.textAlign = "left";
+      target.textBaseline = "top";
+      box.lines.forEach((line, i) => {
+        target.fillText(line, box.x + NOTE_PAD, box.y + NOTE_PAD + i * NOTE_LINE);
+      });
+      target.restore();
+    });
+  }
+
+  function noteAt(point, L, view) {
+    const notes = (sc().notes || []).filter((note) => note.view === view);
+    for (let i = notes.length - 1; i >= 0; i -= 1) {
+      const box = noteBox(ctx, notes[i], L);
+      if (point.x >= box.x && point.x <= box.x + box.w
+        && point.y >= box.y && point.y <= box.y + box.h) return notes[i];
+    }
+    return null;
+  }
+
+  /* メモの中身を書く小窓。絵の上の付箋と同じ場所へ重ねて出すので、
+   * 「どの付箋を書いているか」を探さなくて済む。書いた端から絵にも反映する。 */
+  let noteEditor = null;
+
+  function closeNoteEditor() {
+    if (!noteEditor) return;
+    noteEditor.remove();
+    noteEditor = null;
+  }
+
+  function removeNote(id) {
+    checkpoint();
+    sc().notes = (sc().notes || []).filter((note) => note.id !== id);
+    if (selectedNoteId === id) selectedNoteId = null;
+    closeNoteEditor();
+    render();
+    persistSoon();
+  }
+
+  function openNoteEditor(note, view) {
+    closeNoteEditor();
+    const host = view === "plan" ? planCanvas : canvas;
+    if (!host || !host.parentElement) return;
+    const box = noteBox(ctx, note, layout(view));
+    const wrap = document.createElement("div");
+    wrap.className = "stage-note-editor";
+    wrap.style.left = `${(box.x / W) * 100}%`;
+    wrap.style.top = `${(box.y / H) * 100}%`;
+    wrap.style.width = `${(NOTE_W / W) * 100}%`;
+
+    const area = document.createElement("textarea");
+    area.rows = 3;
+    area.value = note.text || "";
+    area.placeholder = "覚え書き";
+    area.addEventListener("input", () => {
+      note.text = area.value.slice(0, 200);
+      render();
+      persistSoon();
+    });
+    area.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") { event.preventDefault(); closeNoteEditor(); host.focus(); }
+    });
+
+    const bar = document.createElement("div");
+    bar.className = "stage-note-editor-bar";
+    const drop = document.createElement("button");
+    drop.type = "button";
+    drop.className = "btn-quiet";
+    drop.textContent = "はがす";
+    drop.addEventListener("click", () => removeNote(note.id));
+    const done = document.createElement("button");
+    done.type = "button";
+    done.className = "btn-quiet";
+    done.textContent = "閉じる";
+    done.addEventListener("click", () => { closeNoteEditor(); host.focus(); });
+    bar.append(drop, done);
+
+    wrap.append(area, bar);
+    host.parentElement.appendChild(wrap);
+    noteEditor = wrap;
+    area.focus();
+    area.setSelectionRange(area.value.length, area.value.length);
   }
 
   function drawSelection(target, piece, L) {
@@ -2595,6 +2793,7 @@
 
     // 動線は平面図だけ。上から見た床の上の道筋なので、正面図には出しようがない
     if (L.plan) drawRoutes(target, L, showSelection);
+    drawNotes(target, L, view, showSelection);
 
     if (showSelection) {
       const selected = sc().pieces.find((piece) => piece.id === selectedId);
@@ -3788,11 +3987,12 @@
           : `${scene.pieces.length}`;
 
         button.append(num, name, count);
-        // 名前は行をダブルクリックして直す。欄を常に置くと一段ぶん場所を取るため
-        button.title = "ダブルクリックで名前を変えられます";
+        /* 名前を直す入口は鉛筆。行そのものを入力欄にすると、
+         * 掴んで並べ替える手つきと取り合いになる（実際に効かなくなっていた）。 */
+        button.title = scene.kind === "section" ? "押すと開閉します" : "押すと開きます";
         button.addEventListener("dblclick", (e) => {
           e.preventDefault();
-          startRename(scene, head, button);
+          openRename(scene);
         });
         button.addEventListener("click", () => {
           if (scene.kind === "section") {
@@ -3807,6 +4007,17 @@
           openScene(scene.id);
         });
         head.append(grip, button);
+        // 鉛筆は選んでいる行にだけ。全行に出すと並びが読みにくくなる
+        if (isCursor) {
+          const pen = document.createElement("button");
+          pen.type = "button";
+          pen.className = "stage-scene-pen";
+          pen.textContent = "✎";
+          pen.title = "名前を変える";
+          pen.setAttribute("aria-label", `${scene.title} の名前を変える`);
+          pen.addEventListener("click", (e) => { e.stopPropagation(); openRename(scene); });
+          head.append(pen);
+        }
         row.append(head);
 
         /* 開いている場面だけ、名前とメモをその場で開く。
@@ -3825,7 +4036,14 @@
             scene.note = note.value.slice(0, 200);
             persistSoon();
           });
-          body.append(note);
+          const apply = document.createElement("button");
+          apply.type = "button";
+          apply.className = "btn-quiet stage-scene-apply";
+          apply.textContent = "動線の先へ動かした場面を作る";
+          apply.title = "この場面を写し、動線を引いた演者を行き先へ移した場面を次に作ります";
+          apply.disabled = !(scene.pieces || []).some((piece) => piece.route);
+          apply.addEventListener("click", () => applyRoutes(scene));
+          body.append(note, apply);
           row.append(body);
         }
         els.sceneList.append(row);
@@ -3854,36 +4072,48 @@
   /* 行の名前をその場で書き換える。
    * 入力欄はボタンの外へ出す。ボタンの中へ入れると、押した先がボタンに
    * 吸われて文字を打てない（実際それで動かなかった）。 */
-  function startRename(scene, head, button) {
-    if (head.querySelector(".stage-scene-rename")) return;
-    const input = document.createElement("input");
-    input.type = "text";
-    input.className = "stage-scene-rename";
-    input.maxLength = 40;
-    input.value = scene.title;
-    input.setAttribute("aria-label", "名前");
-    button.hidden = true;
-    head.append(input);
-    input.focus();
-    input.select();
+  /* 名前を変える小窓。場面にもセクションにも同じものを使う。 */
+  let renameTarget = null;
 
-    let done = false;
-    const finish = (keep) => {
-      if (done) return;
-      done = true;
-      const next = keep === false ? scene.title : (input.value.trim().slice(0, 40) || scene.title);
-      const changed = next !== scene.title;
-      scene.title = next;
-      input.remove();
-      button.hidden = false;
-      if (changed) { renderScenes(); persistSoon(); }
-    };
-    input.addEventListener("keydown", (e) => {
+  function openRename(scene) {
+    if (!scene || !els.rename) return;
+    renameTarget = scene;
+    els.renameTitle.textContent = scene.kind === "section" ? "セクションの名前" : "場面の名前";
+    els.renameInput.value = scene.title;
+    els.rename.hidden = false;
+    els.renameBackdrop.hidden = false;
+    els.renameInput.focus();
+    els.renameInput.select();
+  }
+
+  function closeRename() {
+    renameTarget = null;
+    if (!els.rename) return;
+    els.rename.hidden = true;
+    els.renameBackdrop.hidden = true;
+  }
+
+  function commitRename() {
+    if (!renameTarget) return;
+    const next = els.renameInput.value.trim().slice(0, 40);
+    if (next && next !== renameTarget.title) {
+      checkpoint();
+      renameTarget.title = next;
+      renderScenes();
+      persistSoon();
+    }
+    closeRename();
+  }
+
+  if (els.renameOk) els.renameOk.addEventListener("click", commitRename);
+  if (els.renameClose) els.renameClose.addEventListener("click", closeRename);
+  if (els.renameBackdrop) els.renameBackdrop.addEventListener("click", closeRename);
+  if (els.renameInput) {
+    els.renameInput.addEventListener("keydown", (e) => {
       e.stopPropagation();
-      if (e.key === "Enter") { e.preventDefault(); finish(true); }
-      if (e.key === "Escape") { e.preventDefault(); finish(false); }
+      if (e.key === "Enter") { e.preventDefault(); commitRename(); }
+      if (e.key === "Escape") { e.preventDefault(); closeRename(); }
     });
-    input.addEventListener("blur", () => finish(true), { once: true });
   }
 
   /* ---------- 場面を掴んで並べ替える ----------
@@ -4046,6 +4276,8 @@
 
   // 前後へ動かす。セクションは中身ごと、同じ深さの隣と入れ替える
   function openScene(id) {
+    closeNoteEditor();
+    selectedNoteId = null;
     state.cursorRowId = id;
     if (state.project.activeSceneId === id) { renderScenes(); return; }
     state.project.activeSceneId = id;
@@ -4107,6 +4339,65 @@
   }
 
   // セクションを起点にしたときは、中身ごと複製する
+  /* 場面をまるごと写す。駒には新しい札を配り、
+   * 付箋が指している駒の札も新しい方へ付け替える（付け替えないと写した瞬間に紐が切れる）。 */
+  function cloneScene(row) {
+    const copy = JSON.parse(JSON.stringify(row));
+    copy.id = rid(row.kind === "section" ? "sect" : "scene");
+    const swap = new Map();
+    copy.pieces = (copy.pieces || []).map((piece) => {
+      const id = nextId();
+      swap.set(piece.id, id);
+      return { ...piece, id };
+    });
+    copy.notes = (copy.notes || []).map((note) => ({
+      ...note,
+      id: rid("note"),
+      pieceId: note.pieceId ? (swap.get(note.pieceId) || null) : null,
+    }));
+    return copy;
+  }
+
+  /* 動線の先へ演者を動かした場面を、この場面の次に作る。
+   * 「引いた線のとおりに動いた後」を確かめるのが動線を引く目的なので、
+   * 手で置き直させない。写した先では動線は消える（もう済んだ動きなので）。 */
+  function applyRoutes(scene) {
+    const p = state.project;
+    const i = p.scenes.indexOf(scene);
+    if (i < 0) return;
+    if (!(scene.pieces || []).some((piece) => piece.route)) {
+      announce("この場面には動線がありません。平面図で行き先を引いてください。");
+      return;
+    }
+    checkpoint();
+    const copy = cloneScene(scene);
+    copy.title = `${scene.title} の続き`;
+    copy.note = "";
+    let moved = 0;
+    copy.pieces.forEach((piece) => {
+      if (!piece.route) return;
+      piece.u = clamp(piece.route.u, 0, 1);
+      piece.v = clamp(piece.route.v, 0, 1);
+      piece.route = null;
+      moved += 1;
+    });
+    p.scenes.splice(i + 1, 0, copy);
+    p.activeSceneId = copy.id;
+    state.cursorRowId = copy.id;
+    selectedId = null;
+    selectedNoteId = null;
+    closeNoteEditor();
+    renderScenes();
+    renderCast();
+    renderSets();
+    renderLights();
+    renderRigs();
+    updateInspector();
+    render();
+    persistSoon();
+    announce(`${moved}名（点）を動線の先へ動かした場面を作りました。`);
+  }
+
   function duplicateScene() {
     const p = state.project;
     const i = cursorIndex();
@@ -4114,12 +4405,7 @@
     checkpoint();
     const cur = p.scenes[i];
     const block = [cur].concat(sceneChildren(i));
-    const copies = block.map((row) => {
-      const copy = JSON.parse(JSON.stringify(row));
-      copy.id = rid(row.kind === "section" ? "sect" : "scene");
-      copy.pieces = (copy.pieces || []).map((piece) => ({ ...piece, id: nextId() }));
-      return copy;
-    });
+    const copies = block.map((row) => cloneScene(row));
     copies[0].title = `${cur.title} の複製`;
     p.scenes.splice(i + block.length, 0, ...copies);
     const firstScene = copies.find((x) => x.kind === "scene");
@@ -4420,6 +4706,24 @@
     return null;
   }
 
+  /* 紐づけていた駒が消えたメモは、消さずにその場へ置き直す。
+   * 覚え書きを勝手に捨てない。ただし持ち主が居ないので、絵の内側へ寄せておく */
+  function detachOrphanNotes() {
+    state.scenes.forEach((scene) => {
+      (scene.notes || []).forEach((note) => {
+        if (!note.pieceId) return;
+        if (scene.pieces.some((piece) => piece.id === note.pieceId)) return;
+        note.pieceId = null;
+        note.x = clamp(note.x, 20, W - NOTE_W - 20);
+        note.y = clamp(note.y, 20, H - 80);
+      });
+    });
+  }
+
+  function selectedNote() {
+    return (sc().notes || []).find((note) => note.id === selectedNoteId) || null;
+  }
+
   function selectedPiece() {
     return sc().pieces.find((piece) => piece.id === selectedId) || null;
   }
@@ -4442,11 +4746,12 @@
     tool = nextTool;
     canvas.dataset.tool = tool;
     // 平面図で使うのは「動かす」と「動線」だけ
-    if (planCanvas) planCanvas.dataset.tool = tool === "route" ? "route" : "select";
+    if (planCanvas) planCanvas.dataset.tool = tool === "route" || tool === "note" ? tool : "select";
     document.querySelectorAll("[data-stage-tool]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.stageTool === tool));
     });
     els.toolHint.textContent = TOOL_HINTS[tool];
+    if (els.planRoute) els.planRoute.setAttribute("aria-pressed", String(tool === "route"));
   }
 
   function updateInspector() {
@@ -4564,9 +4869,19 @@
     try { if (el.hasPointerCapture(event.pointerId)) el.releasePointerCapture(event.pointerId); } catch (_) { /* 同上 */ }
     const changed = pointerAction.kind === "stroke" || pointerAction.kind === "pan"
       || pointerAction.kind === "route" || pointerAction.moved;
+    const tapped = pointerAction.kind === "note" && !pointerAction.moved
+      ? { id: pointerAction.id, view: pointerAction.view } : null;
+    const drewRoute = pointerAction.kind === "route";
     pointerAction = null;
     el.dataset.dragging = "false";
     if (changed) persistSoon();
+    // 動線を引き終えたら、場面の欄の「動線の先へ動かした場面を作る」が押せるようになる
+    if (drewRoute) renderScenes();
+    // 掴んだだけで離した＝書き直したい、と読む
+    if (tapped) {
+      const note = (sc().notes || []).find((candidate) => candidate.id === tapped.id);
+      if (note) openNoteEditor(note, tapped.view);
+    }
   }
 
   // 掴みの捕捉。取り損ねても操作は続けられるので、例外で止めない
@@ -4575,11 +4890,37 @@
   }
 
   function onPointerDown(event) {
+    closeNoteEditor();
     const el = event.currentTarget;
     const view = viewOf(el);
     const L = layout(view);
     const point = pointFromEvent(event);
     el.focus();
+
+    /* メモを貼る。駒の上で押したらその駒に紐づく（駒を動かすと一緒に動く）。
+     * 何もない所なら、その絵の上のその場所に留まる。 */
+    if (tool === "note") {
+      const hit = hitTest(point, L);
+      checkpoint();
+      const note = normalizeNote({ view, x: point.x + 16, y: point.y - 34, text: "" });
+      if (hit) {
+        const pos = placePiece(hit, L);
+        note.pieceId = hit.id;
+        note.x = point.x - pos.x + 16;
+        note.y = point.y - pos.y - 34;
+      } else {
+        note.x = clamp(note.x, 8, W - NOTE_W - 8);
+        note.y = clamp(note.y, 8, H - 60);
+      }
+      sc().notes.push(note);
+      selectedId = null;
+      selectedNoteId = note.id;
+      updateInspector();
+      render();
+      openNoteEditor(note, view);
+      persistSoon();
+      return;
+    }
 
     /* 動線を引く。平面図で駒を掴んで、離した所が行き先になる。
      * 曲がり具合は真ん中に置いて直線から始める。あとから掴んで曲げられる。 */
@@ -4602,6 +4943,24 @@
     }
 
     if (tool === "select") {
+      // メモは絵の一番上に乗っているので、駒より先に拾う
+      const note = noteAt(point, L, view);
+      if (note) {
+        selectedId = null;
+        selectedNoteId = note.id;
+        const base = notePos(note, L);
+        capture(el, event.pointerId);
+        el.dataset.dragging = "true";
+        pointerAction = {
+          kind: "note", pointerId: event.pointerId, id: note.id, el, view,
+          offsetX: point.x - base.x, offsetY: point.y - base.y,
+          before: snapshot(), moved: false,
+        };
+        updateInspector();
+        render();
+        return;
+      }
+      selectedNoteId = null;
       // 選んでいる駒の動線の取っ手は、駒そのものより先に拾う
       const current = selectedPiece();
       const handle = view === "plan" ? routeHandleAt(point, current, L) : null;
@@ -4708,6 +5067,28 @@
       return;
     }
 
+    if (pointerAction.kind === "note") {
+      const note = (sc().notes || []).find((candidate) => candidate.id === pointerAction.id);
+      if (!note) return;
+      if (!pointerAction.moved) {
+        recordBefore(pointerAction.before);
+        pointerAction.moved = true;
+      }
+      const x = point.x - pointerAction.offsetX;
+      const y = point.y - pointerAction.offsetY;
+      if (note.pieceId) {
+        const piece = sc().pieces.find((candidate) => candidate.id === note.pieceId);
+        const at = piece ? placePiece(piece, L) : { x: 0, y: 0 };
+        note.x = x - at.x;
+        note.y = y - at.y;
+      } else {
+        note.x = clamp(x, -60, W - 40);
+        note.y = clamp(y, -20, H - 30);
+      }
+      render();
+      return;
+    }
+
     if (pointerAction.kind === "drag") {
       const piece = sc().pieces.find((candidate) => candidate.id === pointerAction.id);
       if (!piece) return;
@@ -4738,6 +5119,12 @@
   }
 
   function onKeyDown(event) {
+    const note = selectedNote();
+    if (note && (event.key === "Delete" || event.key === "Backspace")) {
+      event.preventDefault();
+      removeNote(note.id);
+      return;
+    }
     const piece = selectedPiece();
     if (!piece) return;
     if (event.key === "Delete" || event.key === "Backspace") {
@@ -4843,6 +5230,10 @@
       if (e.key === "Enter") { e.preventDefault(); addSetItem("light", els.lightName); }
     });
   }
+  // 平面図のバーからも動線の入り切りができる。平面を見ながら手を伸ばす距離を短くする
+  if (els.planRoute) {
+    els.planRoute.addEventListener("click", () => setTool(tool === "route" ? "select" : "route"));
+  }
   if (els.routeClear) {
     els.routeClear.addEventListener("click", () => {
       const piece = selectedPiece();
@@ -4850,6 +5241,7 @@
       checkpoint();
       piece.route = null;
       updateInspector();
+      renderScenes();
       render();
       persistSoon();
       announce("動線を消しました。");

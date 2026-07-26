@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=76">
+<link rel="stylesheet" href="style.css?v=78">
 </head>
 <body>
 
@@ -342,6 +342,7 @@
               <button type="button" data-stage-tool="select" aria-pressed="true">動かす</button>
               <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
               <button type="button" data-stage-tool="route" aria-pressed="false">動きを描く</button>
+              <button type="button" data-stage-tool="note" aria-pressed="false">メモを貼る</button>
               <button type="button" data-stage-tool="erase" aria-pressed="false">塗りを消す</button>
             </div>
             <p class="stage-tool-hint" id="stage-tool-hint">演者や物を選び、舞台の上で動かします。</p>
@@ -382,6 +383,8 @@
             <div class="stage-board-frame" id="stage-plan-cell">
               <div class="stage-canvas-bar">
                 <p class="stage-canvas-caption">平面（上から）</p>
+                <button type="button" class="stage-canvas-tool" id="stage-plan-route"
+                        aria-pressed="false">動きを描く</button>
                 <button type="button" class="stage-canvas-close" data-toggle-view="plan"
                         aria-expanded="true" aria-label="平面の絵を閉じる">▾</button>
               </div>
@@ -660,6 +663,20 @@
   </div>
 </div>
 
+<div class="stage-modal-backdrop" id="stage-rename-backdrop" hidden></div>
+<div class="stage-modal stage-rename-modal" id="stage-rename" role="dialog" aria-modal="true"
+     aria-labelledby="stage-rename-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-rename-title">名前を変える</h2>
+    <button type="button" class="stage-modal-close" id="stage-rename-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <label class="stage-control-label" for="stage-rename-input">名前</label>
+    <input id="stage-rename-input" class="stage-text-input" type="text" maxlength="40">
+    <button type="button" class="stage-minor-action" id="stage-rename-ok">この名前にする</button>
+  </div>
+</div>
+
 <div class="stage-modal-backdrop" id="stage-shows-backdrop" hidden></div>
 <div class="stage-modal stage-shows-modal" id="stage-shows" role="dialog" aria-modal="true"
      aria-labelledby="stage-shows-title" hidden>
@@ -713,7 +730,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=81"></script>
+<script src="stage-sketch.js?v=83"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

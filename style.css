@@ -1373,10 +1373,40 @@ textarea, input[type="text"] {
 
 .stage-scene-head {
   display: grid;
-  grid-template-columns: 16px minmax(0, 1fr);
+  /* 取っ手・名前・鉛筆。鉛筆は選んでいる行にだけ出るので、
+     出ていないときは3列目を畳んで幅を無駄にしない */
+  grid-template-columns: 16px minmax(0, 1fr) auto;
   align-items: center;
   gap: 4px;
 }
+
+.stage-scene-pen {
+  border: 1px solid transparent;
+  background: none;
+  color: rgba(240, 231, 214, 0.5);
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 5px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.stage-scene-pen:hover,
+.stage-scene-pen:focus-visible {
+  color: var(--brass);
+  border-color: rgba(211, 172, 89, 0.45);
+}
+
+.stage-rename-modal { max-width: 380px; }
+
+/* 動線の先へ動かした場面を作るボタン。場面の枠の中に置く */
+.stage-scene-apply {
+  width: 100%;
+  margin-top: 6px;
+  font-size: 0.76rem;
+}
+
+.stage-scene-apply:disabled { opacity: 0.4; cursor: default; }
 
 .stage-scene-head .stage-scene-chip { width: 100%; min-width: 0; }
 
@@ -1485,6 +1515,51 @@ textarea, input[type="text"] {
 /* 舞台が一度に入らない席では、掴んで視線を振れる */
 #stage-canvas[data-pannable="true"] { cursor: grab; }
 canvas[data-tool="route"] { cursor: crosshair; }
+canvas[data-tool="note"] { cursor: copy; }
+
+/* メモの書き込み窓。舞台の絵の上、その付箋の位置へ重ねて出す */
+.stage-note-editor {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: #f3e6bd;
+  border: 2px solid #a84b26;
+  border-radius: 3px;
+  box-shadow: 0 10px 24px rgba(13, 12, 11, 0.45);
+  min-width: 168px;
+}
+
+.stage-note-editor textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid rgba(13, 12, 11, 0.3);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.55);
+  color: #231d16;
+  font: 13px/1.45 'Hiragino Kaku Gothic ProN', sans-serif;
+  padding: 6px 7px;
+}
+
+.stage-note-editor textarea:focus {
+  outline: 2px solid rgba(168, 75, 38, 0.55);
+  outline-offset: 1px;
+}
+
+.stage-note-editor-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.stage-note-editor-bar .btn-quiet {
+  padding: 3px 9px;
+  font-size: 0.74rem;
+  color: #3a2f24;
+  border-color: rgba(13, 12, 11, 0.32);
+}
 #stage-canvas[data-pannable="true"][data-dragging="true"] { cursor: grabbing; }
 
 /* 書き出しの選び方 */
@@ -5401,11 +5476,34 @@ body.is-panel-dragging {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   padding: 7px 10px 6px;
 }
 
+.stage-canvas-bar .stage-canvas-caption { flex: 1 1 auto; min-width: 0; }
+
 .stage-canvas-bar .stage-canvas-caption { margin-bottom: 0; }
+
+/* 絵のバーに置く道具の入り切り */
+.stage-canvas-tool {
+  border: 1px solid var(--line-dark);
+  background: none;
+  color: var(--milk-dim);
+  min-height: 26px;
+  padding: 3px 10px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stage-canvas-tool:hover { color: var(--milk); border-color: var(--brass); }
+
+.stage-canvas-tool[aria-pressed="true"] {
+  color: var(--paper);
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.27);
+}
 
 /* 開閉のつまみ。✕は「消す」に見えるので三角にして、開いているかどうかを
    向きで示す（▾=開いている／▸=閉じている）。右上に置く。 */
