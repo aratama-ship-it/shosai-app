@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=63">
+<link rel="stylesheet" href="style.css?v=64">
 </head>
 <body>
 
@@ -259,6 +259,18 @@
             </div>
           </section>
 
+          <section class="stage-panel" data-panel="rigs" data-title="装置の型">
+            <div class="stage-panel-body">
+              <p class="stage-cast-hint">いまの舞台装置の並びに名前をつけて残します。別の場面で呼び出したり、いまの並びへ足したりできます。演者は含みません。</p>
+              <div class="stage-cast-add">
+                <input id="stage-rig-name" class="stage-text-input" type="text" maxlength="24"
+                       placeholder="名前を入れて残す" aria-label="装置の型の名前">
+                <button type="button" id="stage-rig-save" class="btn-quiet">残す</button>
+              </div>
+              <div class="stage-cast-list" id="stage-rig-list"></div>
+            </div>
+          </section>
+
           <section class="stage-panel" data-panel="light" data-title="光">
             <div class="stage-panel-body">
               <p class="stage-cast-hint">このショーで使う明かりを登録します。差し渡しを変えると、置いてある全ての場面に反映されます。</p>
@@ -307,6 +319,7 @@
             <div class="stage-panel-body">
               <div class="stage-scene-actions">
                 <button type="button" id="stage-scene-add" class="btn-quiet">場面を足す</button>
+                <button type="button" id="stage-scene-add-rig" class="btn-quiet">装置ごと足す</button>
                 <button type="button" id="stage-scene-dup" class="btn-quiet">複製</button>
                 <button type="button" id="stage-scene-left" class="btn-quiet" aria-label="前へ移動">←</button>
                 <button type="button" id="stage-scene-right" class="btn-quiet" aria-label="後へ移動">→</button>
@@ -649,7 +662,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=13"></script>
-<script src="stage-sketch.js?v=61"></script>
+<script src="stage-sketch.js?v=62"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

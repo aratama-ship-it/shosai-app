@@ -405,6 +405,10 @@
     castAdd: document.getElementById("stage-cast-add"),
     setList: document.getElementById("stage-set-list"),
     lightList: document.getElementById("stage-light-list"),
+    rigList: document.getElementById("stage-rig-list"),
+    rigName: document.getElementById("stage-rig-name"),
+    rigSave: document.getElementById("stage-rig-save"),
+    sceneAddRig: document.getElementById("stage-scene-add-rig"),
     lightName: document.getElementById("stage-light-name"),
     lightAdd: document.getElementById("stage-light-add"),
     setName: document.getElementById("stage-set-name"),
@@ -475,6 +479,8 @@
         cast: [],
         // このショーで使う台や道具。寸法はここが正本で、置いた分はこれを参照する
         sets: [],
+        // 舞台装置の並びを、名前をつけて残したもの。場面をまたいで使い回す
+        rigs: [],
         scenes: [scene],
         activeSceneId: scene.id,
       },
@@ -497,18 +503,18 @@
   /* ---------- パネルの配置 ----------
      どの道具をどちら側へ置くかは人によって違う。列を移せるようにし、
      使わないものは畳めるようにする。中央は絵だけで、上下の入れ替えのみ。 */
-  const PANELS = ["project", "venue", "cast", "sets", "light", "background", "scenes", "inspector", "save"];
+  const PANELS = ["project", "venue", "cast", "sets", "rigs", "light", "background", "scenes", "inspector", "save"];
 
   function defaultLayout() {
     return {
       // 場面は絵のすぐ右に置く（順番を見ながら描くため）
       cols: {
-        project: "left", venue: "left", cast: "left", sets: "left", light: "left",
-        background: "left",
+        project: "left", venue: "left", cast: "left", sets: "left", rigs: "left",
+        light: "left", background: "left",
         scenes: "right", inspector: "right", save: "right",
       },
       order: {
-        project: 0, venue: 1, cast: 2, sets: 3, light: 4, background: 5,
+        project: 0, venue: 1, cast: 2, sets: 3, rigs: 4, light: 5, background: 6,
         scenes: 0, inspector: 1, save: 2,
       },
       collapsed: {},
@@ -775,6 +781,15 @@
               };
             })
           : [],
+        rigs: Array.isArray(rawProject.rigs)
+          ? rawProject.rigs.slice(0, 40).map((r, i) => ({
+              id: typeof r.id === "string" ? r.id : rid("rig"),
+              name: typeof r.name === "string" && r.name.trim() ? r.name.slice(0, 24) : `装置の型 ${i + 1}`,
+              pieces: Array.isArray(r.pieces)
+                ? r.pieces.slice(0, 120).map((piece, k) => normalizePiece(piece, k))
+                : [],
+            }))
+          : [],
         scenes,
         activeSceneId: activeId,
       },
@@ -942,6 +957,7 @@
     renderCast();
     renderSets();
     renderLights();
+    renderRigs();
     renderVenueControls();
     updateInspector();
     render();
@@ -2683,6 +2699,7 @@
     renderCast();
     renderSets();
     renderLights();
+    renderRigs();
     persistSoon();
     announce(`${raw}を名簿へ加えました。舞台裏の状態です。`);
   }
@@ -2711,6 +2728,7 @@
     renderCast();
     renderSets();
     renderLights();
+    renderRigs();
     renderLights();
     renderScenes();
     updateInspector();
@@ -2736,6 +2754,7 @@
     renderCast();
     renderSets();
     renderLights();
+    renderRigs();
     renderLights();
     renderScenes();
     updateInspector();
@@ -2929,6 +2948,154 @@
     announce(`${item.name}を舞台セットから外しました。`);
   }
 
+  /* ---------- 装置の型 ----------
+     舞台装置の並びに名前をつけて残し、別の場面で呼び出す。
+     残すのは演者以外。演者は場面ごとに出入りするものなので、装置と一緒に
+     持ち回すと「前の場面の人がそのまま立っている」ことになる。 */
+
+  const isRigPiece = (piece) => piece.type !== "performer";
+
+  // 型に入れる／型から出すときの写し。id は必ず作り直す（同じ場面に二重で置けるように）
+  function copyPiece(piece) {
+    const clone = JSON.parse(JSON.stringify(piece));
+    clone.id = nextId();
+    clone.base = 0;
+    clone.supportId = null;
+    return clone;
+  }
+
+  function renderRigs() {
+    if (!els.rigList) return;
+    const rigs = state.project.rigs || [];
+    els.rigList.innerHTML = "";
+    if (!rigs.length) {
+      const empty = document.createElement("p");
+      empty.className = "stage-cast-empty";
+      empty.textContent = "まだ残していません。並べ終えたら名前をつけて残してください。";
+      els.rigList.append(empty);
+      return;
+    }
+    rigs.forEach((rig) => {
+      const row = document.createElement("div");
+      row.className = "stage-set-row";
+
+      const head = document.createElement("div");
+      head.className = "stage-set-head stage-rig-head";
+      const name = document.createElement("input");
+      name.type = "text";
+      name.className = "stage-cast-name-input";
+      name.value = rig.name;
+      name.maxLength = 24;
+      name.setAttribute("aria-label", "装置の型の名前");
+      name.addEventListener("input", () => {
+        rig.name = name.value.slice(0, 24);
+        persistSoon();
+      });
+      head.append(name);
+
+      const foot = document.createElement("div");
+      foot.className = "stage-set-foot stage-rig-foot";
+      const count = document.createElement("span");
+      count.className = "stage-set-dims";
+      count.textContent = `${rig.pieces.length}点`;
+
+      const swap = document.createElement("button");
+      swap.type = "button";
+      swap.className = "stage-cast-status is-off";
+      swap.textContent = "置き換え";
+      swap.title = "いまの場面の装置を、この型にそっくり入れ替えます";
+      swap.addEventListener("click", () => applyRig(rig.id, "replace"));
+
+      const plus = document.createElement("button");
+      plus.type = "button";
+      plus.className = "stage-cast-status is-off";
+      plus.textContent = "足す";
+      plus.title = "いまの場面へ、この型の装置を足します";
+      plus.addEventListener("click", () => applyRig(rig.id, "add"));
+
+      const update = document.createElement("button");
+      update.type = "button";
+      update.className = "stage-cast-profile";
+      update.textContent = "↺";
+      update.title = "いまの並びで、この型を上書きします";
+      update.setAttribute("aria-label", `${rig.name}をいまの並びで上書き`);
+      update.addEventListener("click", () => overwriteRig(rig.id));
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "stage-cast-remove";
+      remove.textContent = "✕";
+      remove.setAttribute("aria-label", `${rig.name}を消す`);
+      remove.addEventListener("click", () => removeRig(rig.id));
+
+      foot.append(count, swap, plus, update, remove);
+      row.append(head, foot);
+      els.rigList.append(row);
+    });
+  }
+
+  function currentRigPieces() {
+    return sc().pieces.filter(isRigPiece);
+  }
+
+  function saveRig() {
+    const raw = (els.rigName && els.rigName.value || "").trim();
+    if (!raw) {
+      announce("名前を入れてから残してください。");
+      if (els.rigName) els.rigName.focus();
+      return;
+    }
+    const pieces = currentRigPieces();
+    if (!pieces.length) {
+      announce("舞台に装置がありません。");
+      return;
+    }
+    checkpoint();
+    state.project.rigs.push({ id: rid("rig"), name: raw.slice(0, 24), pieces: pieces.map(copyPiece) });
+    if (els.rigName) els.rigName.value = "";
+    renderRigs();
+    persistSoon();
+    announce(`${raw}として${pieces.length}点を残しました。`);
+  }
+
+  function overwriteRig(rigId) {
+    const rig = (state.project.rigs || []).find((r) => r.id === rigId);
+    if (!rig) return;
+    const pieces = currentRigPieces();
+    if (!window.confirm(`「${rig.name}」を、いまの並び（${pieces.length}点）で上書きしますか。`)) return;
+    checkpoint();
+    rig.pieces = pieces.map(copyPiece);
+    renderRigs();
+    persistSoon();
+    announce(`${rig.name}を上書きしました。`);
+  }
+
+  function applyRig(rigId, mode) {
+    const rig = (state.project.rigs || []).find((r) => r.id === rigId);
+    if (!rig) return;
+    checkpoint();
+    const scene = sc();
+    if (mode === "replace") scene.pieces = scene.pieces.filter((piece) => !isRigPiece(piece));
+    rig.pieces.forEach((piece) => scene.pieces.push(copyPiece(piece)));
+    selectedId = null;
+    renderScenes();
+    updateInspector();
+    render();
+    persistSoon();
+    announce(`${rig.name}の${rig.pieces.length}点を${mode === "replace" ? "置き換えました" : "足しました"}。`);
+  }
+
+  function removeRig(rigId) {
+    const rig = (state.project.rigs || []).find((r) => r.id === rigId);
+    if (!rig) return;
+    if (!window.confirm(`「${rig.name}」を消します。置いてある装置はそのままです。`)) return;
+    checkpoint();
+    state.project.rigs = state.project.rigs.filter((r) => r.id !== rigId);
+    renderRigs();
+    persistSoon();
+    announce(`${rig.name}を消しました。`);
+  }
+
   /* ---------- 舞台セットの寸法（モーダル） ---------- */
 
   let setInfoId = null;
@@ -2998,6 +3165,7 @@
     renderCast();
     renderSets();
     renderLights();
+    renderRigs();
     render();
     persistSoon();
   }
@@ -3083,18 +3251,22 @@
     renderCast();
     renderSets();
     renderLights();
+    renderRigs();
     updateInspector();
     render();
     persistSoon();
     announce(`${sc().title}を開きました。`);
   }
 
-  function addScene() {
+  function addScene(carryRig) {
     checkpoint();
     const p = state.project;
+    const carried = carryRig ? currentRigPieces().map(copyPiece) : [];
     const scene = newScene(`場面 ${p.scenes.length + 1}`, false);
     // 劇場は変えず、いまの背景色だけ引き継ぐ
     scene.background = sc().background;
+    // 「装置ごと足す」のときは、演者以外をそのまま新しい場面へ写す
+    carried.forEach((piece) => scene.pieces.push(piece));
     p.scenes.push(scene);
     p.activeSceneId = scene.id;
     selectedId = null;
@@ -3102,6 +3274,7 @@
     renderCast();
     renderSets();
     renderLights();
+    renderRigs();
     updateInspector();
     render();
     persistSoon();
@@ -3123,6 +3296,7 @@
     renderCast();
     renderSets();
     renderLights();
+    renderRigs();
     updateInspector();
     render();
     persistSoon();
@@ -3156,6 +3330,7 @@
     renderCast();
     renderSets();
     renderLights();
+    renderRigs();
     updateInspector();
     render();
     persistSoon();
@@ -3511,6 +3686,7 @@
     renderCast();
     renderSets();
     renderLights();
+    renderRigs();
     render();
     persistSoon();
     announce(`${PIECE_TYPES[piece.type]}を舞台から外しました。`);
@@ -3794,7 +3970,14 @@
       if (e.key === "Enter") { e.preventDefault(); addCastMember(); }
     });
   }
-  if (els.sceneAdd) els.sceneAdd.addEventListener("click", addScene);
+  if (els.sceneAdd) els.sceneAdd.addEventListener("click", () => addScene(false));
+  if (els.sceneAddRig) els.sceneAddRig.addEventListener("click", () => addScene(true));
+  if (els.rigSave) els.rigSave.addEventListener("click", saveRig);
+  if (els.rigName) {
+    els.rigName.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); saveRig(); }
+    });
+  }
   if (els.sceneDup) els.sceneDup.addEventListener("click", duplicateScene);
   if (els.sceneLeft) els.sceneLeft.addEventListener("click", () => moveScene(-1));
   if (els.sceneRight) els.sceneRight.addEventListener("click", () => moveScene(1));
@@ -3989,6 +4172,7 @@
   renderCast();
   renderSets();
   renderLights();
+  renderRigs();
   renderVenueControls();
   setTool("select");
   updateInspector();

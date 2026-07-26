@@ -1360,6 +1360,11 @@ textarea, input[type="text"] {
   gap: 6px;
 }
 
+/* 装置の型は寸法を持たないので、名前を1行、操作を1行に */
+.stage-rig-head { grid-template-columns: minmax(0, 1fr); }
+.stage-rig-foot { padding-left: 0; }
+.stage-rig-foot .stage-cast-status { font-size: 10px; padding: 3px 7px; }
+
 .stage-set-foot {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto auto;
