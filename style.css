@@ -1360,6 +1360,64 @@ textarea, input[type="text"] {
   gap: 6px;
 }
 
+/* 舞台が一度に入らない席では、掴んで視線を振れる */
+#stage-canvas[data-pannable="true"] { cursor: grab; }
+#stage-canvas[data-pannable="true"][data-dragging="true"] { cursor: grabbing; }
+
+/* 姿勢は名前だけでは違いが伝わらないので、形を並べて選ぶ */
+.stage-pose-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk);
+  color: var(--milk);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.stage-pose-button:hover { border-color: var(--brass); }
+
+.stage-pose-modal { width: min(640px, calc(100vw - 40px)); }
+
+.stage-pose-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.stage-pose-tile {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 8px 4px 10px;
+  border: 1px solid var(--line-dark);
+  background: rgba(13, 12, 11, 0.5);
+  color: var(--milk-dim);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.stage-pose-tile canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.stage-pose-tile:hover { border-color: var(--brass); color: var(--milk); }
+
+.stage-pose-tile.is-on {
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.16);
+  color: var(--paper);
+}
+
 /* 装置の型は寸法を持たないので、名前を1行、操作を1行に */
 .stage-rig-head { grid-template-columns: minmax(0, 1fr); }
 .stage-rig-foot { padding-left: 0; }

@@ -104,7 +104,12 @@
     anL: [-0.058, 0.04, 0], anR: [0.058, 0.04, 0],
     toL: [-0.058, 0.012, 0.075], toR: [0.058, 0.012, 0.075],
   };
-  const makePose = (id, label, over) => ({ id, label, joints: Object.assign({}, BASE_JOINTS, over) });
+  /* wide … 胴の断面の「幅」がどちらを向くか（体の座標）。既定は左右。
+   *        横向きに寝ると肩の並びが縦になるので、そこだけ上下にする。
+   * face … 顔がどちらを向くか。うつ伏せと仰向けを見分けるのに使う。 */
+  const makePose = (id, label, over, extra) => Object.assign(
+    { id, label, joints: Object.assign({}, BASE_JOINTS, over), wide: [1, 0, 0], face: [0, 0, 1] },
+    extra || {});
 
   const POSES = [
     makePose("stand", "立つ", {}),
@@ -165,17 +170,39 @@
       anL: [-0.078, 1.18, 0.03], anR: [0.046, 1.19, -0.06],
       toL: [-0.08, 1.25, 0.06], toR: [0.044, 1.26, -0.09],
     }),
-    // 本人の正面（z+）が頭側。横向きにすると寝姿がはっきり読める
-    makePose("lie", "寝る", {
-      head: [0, 0.075, 0.50], neck: [0, 0.07, 0.42],
+    /* 寝姿。本人の正面（z+）が頭側なので、向きを真横にすると寝姿がはっきり読める。
+     * うつ伏せ・仰向け・横向きは、腕と脚の置き方と顔の向きで見分ける。 */
+    makePose("lie", "うつ伏せ", {
+      head: [0, 0.09, 0.50], neck: [0, 0.078, 0.42],
       shL: [-0.115, 0.07, 0.36], shR: [0.115, 0.07, 0.36],
-      elL: [-0.14, 0.06, 0.21], elR: [0.14, 0.06, 0.21],
-      wrL: [-0.14, 0.055, 0.05], wrR: [0.14, 0.055, 0.05],
+      elL: [-0.20, 0.06, 0.35], elR: [0.20, 0.06, 0.35],
+      wrL: [-0.185, 0.06, 0.49], wrR: [0.185, 0.06, 0.49],
       hipL: [-0.058, 0.07, 0.06], hipR: [0.058, 0.07, 0.06],
       knL: [-0.06, 0.07, -0.22], knR: [0.06, 0.07, -0.22],
       anL: [-0.058, 0.06, -0.48], anR: [0.058, 0.06, -0.48],
       toL: [-0.058, 0.03, -0.55], toR: [0.058, 0.03, -0.55],
-    }),
+    }, { face: [0, -1, 0.35] }),
+    makePose("supine", "仰向け", {
+      head: [0, 0.075, 0.50], neck: [0, 0.07, 0.42],
+      shL: [-0.115, 0.07, 0.36], shR: [0.115, 0.07, 0.36],
+      elL: [-0.145, 0.06, 0.21], elR: [0.145, 0.06, 0.21],
+      wrL: [-0.14, 0.055, 0.05], wrR: [0.14, 0.055, 0.05],
+      hipL: [-0.058, 0.07, 0.06], hipR: [0.058, 0.07, 0.06],
+      knL: [-0.06, 0.095, -0.21], knR: [0.06, 0.095, -0.21],
+      anL: [-0.058, 0.06, -0.47], anR: [0.058, 0.06, -0.47],
+      toL: [-0.058, 0.11, -0.52], toR: [0.058, 0.11, -0.52],
+    }, { face: [0, 1, 0.35] }),
+    // 横向きは肩が縦に重なる。胴の断面の幅も上下向きにする
+    makePose("sidelie", "横向き", {
+      head: [0, 0.115, 0.47], neck: [0, 0.105, 0.39],
+      shL: [0.012, 0.175, 0.34], shR: [-0.012, 0.055, 0.34],
+      elL: [0.02, 0.14, 0.19], elR: [-0.005, 0.045, 0.21],
+      wrL: [0.02, 0.10, 0.06], wrR: [-0.005, 0.04, 0.08],
+      hipL: [0.012, 0.145, 0.04], hipR: [-0.012, 0.055, 0.04],
+      knL: [0.022, 0.13, -0.19], knR: [-0.004, 0.055, -0.18],
+      anL: [0.022, 0.075, -0.41], anR: [-0.004, 0.045, -0.40],
+      toL: [0.022, 0.05, -0.48], toR: [-0.004, 0.04, -0.47],
+    }, { wide: [0, 1, 0], face: [0, 0.25, 1] }),
   ];
   const poseById = (id) => POSES.find((p) => p.id === id) || POSES[0];
 
@@ -392,6 +419,11 @@
     castList: document.getElementById("stage-cast-list"),
     pieceFacing: document.getElementById("stage-piece-facing"),
     piecePose: document.getElementById("stage-piece-pose"),
+    poseLabel: document.getElementById("stage-pose-label"),
+    poseModal: document.getElementById("stage-pose"),
+    poseBackdrop: document.getElementById("stage-pose-backdrop"),
+    poseClose: document.getElementById("stage-pose-close"),
+    poseGrid: document.getElementById("stage-pose-grid"),
     facingValue: document.getElementById("stage-facing-value"),
     profile: document.getElementById("stage-profile"),
     profileBackdrop: document.getElementById("stage-profile-backdrop"),
@@ -490,6 +522,8 @@
       showNames: true,
       // 正面図の隅に「客席のどこから見ているか」の小図を出すか
       showSeatMap: true,
+      // 最前列など、舞台が一度に入らない席での見回し（-1〜1）
+      frontPan: 0,
       seat: "center",
       // パネルの置き場所と開閉。中央は絵の順序だけを持つ
       layout: defaultLayout(),
@@ -797,6 +831,7 @@
       showPlan: raw.showPlan === undefined ? true : Boolean(raw.showPlan),
       showNames: raw.showNames === undefined ? true : Boolean(raw.showNames),
       showSeatMap: raw.showSeatMap === undefined ? true : Boolean(raw.showSeatMap),
+      frontPan: clamp(finite(raw.frontPan, 0), -1, 1),
       layout: normalizeLayout(raw.layout),
       seat: VENUES.seatById(typeof raw.seat === "string" ? raw.seat : "").id,
       pieceColor: validColor(raw.pieceColor, fallback.pieceColor),
@@ -875,6 +910,10 @@
     const pxPerM = Math.min(byWidth, byHeight);
     const frontW = pxPerM * size.width;
 
+    /* 手前の間口が画面より広い席（最前列）は、舞台全体が一度に入らない。
+     * そういう席では、掴んで左右に振ることで視線を動かせるようにする。
+     * 振れる幅は「はみ出したぶんの半分」。それ以上振っても舞台の外しか映らない。 */
+    const panRange = Math.max(0, (frontW - W) / 2);
     return {
       plan: false, venue: v, size, seat,
       backY: seat.floorY - ((size.height || 8) * pxPerM) / span,
@@ -883,7 +922,8 @@
       backW: frontW / span,
       frontW,
       shift: (seat.shift || 0) * W * 0.5,
-      centerX: W / 2,
+      centerX: W / 2 + clamp(state.frontPan || 0, -1, 1) * panRange,
+      panRange,
       pxPerM,
       pxPerMv: pxPerM,   // 縦横で同じ。名前は呼び出し側の互換のために残す
     };
@@ -1168,44 +1208,33 @@
    *   画面横 = x·cosθ + z·sinθ
    *   奥行き = -x·sinθ + z·cosθ （大きいほど客席に近い。重なりの順に使う）
    * θ=0 で客席を向く。 */
-  function performerRig(piece, pos, L) {
-    const rad = ((piece.facing || 0) * Math.PI) / 180;
-    const cos = Math.cos(rad);
-    const sin = Math.sin(rad);
-    const H = pieceHeightM(piece) * (piece.size / 100);
-    const per = perMetre(pos, L);
-    const ux = H * per.x;
-    const uy = H * per.y;
-    /* 体の奥行きにも、床と同じ傾きを与える。客席側へ出た部位は少し下に来る。
-     * これが無いと、正面を向いた「座る」で腿が一点に潰れて、立っているのと
-     * 見分けがつかない。傾きの量は床の1m枡と同じ尺から取る。 */
-    const zDrop = L.plan ? 0 : ((L.bottomY - L.floorY) / (L.size.depth || 9)) * H;
-    const joints = poseById(piece.pose).joints;
+  /* 骨格を画面の座標へ落とす。姿勢・向き・尺・原点を渡せば、舞台の絵でも
+   * 見本の絵でも同じ手順で組める。
+   *   画面横 = x·cosθ + z·sinθ
+   *   奥行き = -x·sinθ + z·cosθ （大きいほど手前。重なりの順に使う）
+   * zDrop は「手前へ出た部位ほど少し下に来る」ぶん。舞台では床と同じ傾きを使う。 */
+  function buildRig(poseId, originX, originY, ux, uy, yaw, zDrop) {
+    const pose = poseById(poseId);
+    const joints = pose.joints;
+    const cos = Math.cos(yaw);
+    const sin = Math.sin(yaw);
     const project = (jx, jy, jz) => {
       const wz = -jx * sin + jz * cos;
-      return {
-        x: pos.x + (jx * cos + jz * sin) * ux,
-        y: pos.y - jy * uy + wz * zDrop,
-        z: wz,
-      };
+      return { x: originX + (jx * cos + jz * sin) * ux, y: originY - jy * uy + wz * zDrop, z: wz };
     };
     const P = {};
-    Object.keys(joints).forEach((k) => {
-      const j = joints[k];
-      P[k] = project(j[0], j[1], j[2]);
-    });
+    Object.keys(joints).forEach((k) => { P[k] = project(joints[k][0], joints[k][1], joints[k][2]); });
 
-    /* 胴の厚み。平たい面として描くと、真横を向いた瞬間に紙のように薄くなる。
-     * 肩・くびれ・腰の3段の断面を体の軸に沿って積み、その角を全部投影して
-     * 外側をなぞる。断面の面は体の軸に直交させるので、寝ている姿勢では
-     * 厚みが上下方向に出る（横になった胴は縦に厚い）。 */
+    /* 胴の厚み。肩・くびれ・腰の3段の断面を体の軸に沿って積み、その角を全部
+     * 投影して外側をなぞる。断面の面は体の軸に直交させるので、寝ている姿勢では
+     * 厚みが上下方向に出る。幅がどちらを向くかは姿勢が持つ（横向きは上下）。 */
     const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
     const shMid = mid(joints.shL, joints.shR);
     const hipMid = mid(joints.hipL, joints.hipR);
     const axis = norm3([hipMid[0] - shMid[0], hipMid[1] - shMid[1], hipMid[2] - shMid[2]]);
-    // 左右の向きは体のx軸。軸に対して直交させてから使う
-    const dot = axis[0];
-    let wide = norm3([1 - axis[0] * dot, -axis[1] * dot, -axis[2] * dot]);
+    const w0 = pose.wide;
+    const dot = w0[0] * axis[0] + w0[1] * axis[1] + w0[2] * axis[2];
+    let wide = norm3([w0[0] - axis[0] * dot, w0[1] - axis[1] * dot, w0[2] - axis[2] * dot]);
     if (!isFinite(wide[0])) wide = [0, 0, 1];
     const deep = norm3(cross3(axis, wide));
 
@@ -1223,32 +1252,33 @@
           c[2] + wide[2] * ring.halfX * sw + deep[2] * ring.rz * sd));
       }));
     });
-    return { P, box, ux, uy, cos, sin, H, per };
+
+    // 顔の印を出す先。頭から顔の向きへ少しだけ進んだところ
+    const f = pose.face;
+    const head = joints.head;
+    const faceAt = project(head[0] + f[0] * 0.05, head[1] + f[1] * 0.05, head[2] + f[2] * 0.05);
+    return { P, box, ux, uy, faceAt, facing: f };
   }
 
-  /* 正面から見た演者。骨格から描くので、姿勢を変えても向きを変えても
-   * 同じ道具で成立する。棒だけだと痩せて見えるので、手足は丸い端の太い線、
-   * 胴は肩と腰を結んだ面として塗る。 */
-  function drawPerformer(target, piece, pos, scale, L) {
-    const rig = performerRig(piece, pos, L);
+  function performerRig(piece, pos, L) {
+    const H = pieceHeightM(piece) * (piece.size / 100);
+    const per = perMetre(pos, L);
+    const zDrop = L.plan ? 0 : ((L.bottomY - L.floorY) / (L.size.depth || 9)) * H;
+    const rig = buildRig(piece.pose, pos.x, pos.y, H * per.x, H * per.y,
+      ((piece.facing || 0) * Math.PI) / 180, zDrop);
+    rig.per = per;
+    rig.H = H;
+    return rig;
+  }
+
+  /* 骨格から体を塗る。手足は付け根から先へ細くなる線、胴は肩・くびれ・腰の
+   * 断面を積んだ立体の外周。奥にあるものから塗り、奥の手足は色を沈ませる。
+   * 舞台の絵でも姿勢の見本でも、ここを通す。 */
+  function paintBody(target, rig, color) {
     const P = rig.P;
     const ux = rig.ux;
     const uy = rig.uy;
 
-    target.save();
-
-    // 影。足元（いちばん低い関節）の真下へ落とす
-    const low = Object.keys(P).reduce((m, k) => (P[k].y > m.y ? P[k] : m), P.anL);
-    let minX = Infinity;
-    let maxX = -Infinity;
-    Object.keys(P).forEach((k) => { minX = Math.min(minX, P[k].x); maxX = Math.max(maxX, P[k].x); });
-    target.fillStyle = "rgba(0,0,0,0.26)";
-    target.beginPath();
-    target.ellipse((minX + maxX) / 2, low.y + 0.012 * uy,
-      Math.max(3, (maxX - minX) / 2 + 0.03 * ux), Math.max(1.2, 0.022 * uy), 0, 0, Math.PI * 2);
-    target.fill();
-
-    // 奥にあるものから塗る。手前の腕が胴に重なって見えるようにするため
     const parts = LIMBS.map((limb) => ({
       kind: "limb", limb,
       z: limb.pts.reduce((t, k) => t + P[k].z, 0) / limb.pts.length,
@@ -1259,17 +1289,14 @@
 
     parts.forEach((part) => {
       if (part.kind === "limb") {
-        // 奥の手足は少し沈ませて、前後を読めるようにする
         const far = part.z < -0.02;
-        target.fillStyle = far ? mixToward(piece.color, 0.26) : piece.color;
+        target.fillStyle = far ? mixToward(color, 0.26) : color;
         const taper = LIMB_TAPER[part.limb.kind];
-        taperedChain(target, part.limb.pts.map((k) => P[k]),
-          taper.map((r) => Math.max(0.8, r * ux)));
+        taperedChain(target, part.limb.pts.map((k) => P[k]), taper.map((r) => Math.max(0.8, r * ux)));
         return;
       }
       if (part.kind === "torso") {
-        // 首。胴より先に置いて、肩に埋め込む
-        target.fillStyle = piece.color;
+        target.fillStyle = color;
         taperedChain(target,
           [{ x: (P.shL.x + P.shR.x) / 2, y: (P.shL.y + P.shR.y) / 2 }, P.neck],
           [Math.max(0.8, 0.036 * ux), Math.max(0.8, 0.03 * ux)]);
@@ -1277,24 +1304,48 @@
         target.fill();
         return;
       }
-      // 頭
-      target.fillStyle = piece.color;
-      target.strokeStyle = rgba(piece.color, 0.35);
+      target.fillStyle = color;
+      target.strokeStyle = rgba(color, 0.35);
       target.lineWidth = Math.max(0.6, uy / 110);
       target.beginPath();
       target.ellipse(P.head.x, P.head.y, Math.max(1.2, 0.05 * ux), Math.max(1.2, 0.066 * uy), 0, 0, Math.PI * 2);
       target.fill();
       target.stroke();
-      // 顔の向き。こちらを向いているときだけ小さな印を出す
-      if (rig.cos > -0.2 && 0.05 * ux > 3) {
+      // 顔の印。顔がこちら側を向いているときだけ出す
+      if (rig.faceAt.z >= P.head.z - 0.002 && 0.05 * ux > 3) {
         target.fillStyle = rgba("#0d0c0b", 0.5);
         target.beginPath();
-        target.arc(P.head.x + rig.sin * 0.032 * ux, P.head.y, Math.max(1, 0.011 * ux), 0, Math.PI * 2);
+        target.arc(rig.faceAt.x, rig.faceAt.y, Math.max(1, 0.012 * ux), 0, Math.PI * 2);
         target.fill();
       }
     });
+  }
+
+  // 正面から見た演者
+  function drawPerformer(target, piece, pos, scale, L) {
+    const rig = performerRig(piece, pos, L);
+    const P = rig.P;
+    target.save();
+
+    // 影。いちばん低い関節の真下へ落とす
+    let low = -Infinity;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    Object.keys(P).forEach((k) => {
+      low = Math.max(low, P[k].y);
+      minX = Math.min(minX, P[k].x);
+      maxX = Math.max(maxX, P[k].x);
+    });
+    target.fillStyle = "rgba(0,0,0,0.26)";
+    target.beginPath();
+    target.ellipse((minX + maxX) / 2, low + 0.012 * rig.uy,
+      Math.max(3, (maxX - minX) / 2 + 0.03 * rig.ux), Math.max(1.2, 0.022 * rig.uy), 0, 0, Math.PI * 2);
+    target.fill();
+
+    paintBody(target, rig, piece.color);
     target.restore();
   }
+
 
   /* 舞台の床の上のある一点を、画面のどこに置くかを実寸で引く。
    * 駒の中心 (u,v) から、間口方向へ dw メートル、奥方向へ dd メートル
@@ -1478,8 +1529,10 @@
       ? balconyY + balconyH / 2
       : houseY + seat.plan.y * houseH;
 
-    // 視線。舞台の中心へ向かう三角で、どちらを向いているかを出す
-    const tx = inX + inW / 2;
+    // 視線。舞台の中心へ向かう三角で、どちらを向いているかを出す。
+    // 見回している席では、振ったぶんだけ狙いをずらす
+    const aim = L.panRange > 0 ? -clamp(state.frontPan || 0, -1, 1) : 0;
+    const tx = inX + inW * (0.5 + aim * 0.42);
     const ty = stageY + stageH / 2;
     const ang = Math.atan2(ty - py, tx - px);
     const spread = 0.34;
@@ -2334,7 +2387,11 @@
         `${v.label}（${size.label}）を上から見た平面図。${counts}。`);
     }
     if (els.frontCaption) {
-      els.frontCaption.textContent = `正面 — ${VENUES.seatById(state.seat).label}`;
+      const L = layout("front");
+      const pannable = L.panRange > 0;
+      els.frontCaption.textContent = `正面 — ${VENUES.seatById(state.seat).label}`
+        + (pannable ? "（何もない所を掴むと視線を振れます）" : "");
+      canvas.dataset.pannable = pannable ? "true" : "false";
     }
   }
 
@@ -2948,6 +3005,74 @@
     announce(`${item.name}を舞台セットから外しました。`);
   }
 
+  /* ---------- 姿勢を選ぶ ----------
+     名前だけでは「片膝立ち」と「しゃがむ」の違いが伝わらないので、
+     実際の形を小さく描いて並べる。舞台の絵と同じ骨格・同じ塗りを通すので、
+     見本と本番がずれない。 */
+
+  function drawPosePreview(canvas, poseId, color) {
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const yaw = Math.PI * 0.24;          // 斜め前から。前後と左右の両方が読める
+
+    // まず等倍で組んで、外に出る範囲を測る
+    const probe = buildRig(poseId, 0, 0, 1, 1, yaw, 0);
+    let x0 = Infinity; let x1 = -Infinity; let y0 = Infinity; let y1 = -Infinity;
+    const scan = (q) => {
+      x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x);
+      y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y);
+    };
+    Object.keys(probe.P).forEach((k) => scan(probe.P[k]));
+    probe.box.forEach(scan);
+
+    const pad = 14;
+    const bw = Math.max(0.001, x1 - x0);
+    const bh = Math.max(0.001, y1 - y0);
+    const s = Math.min((w - pad * 2) / bw, (h - pad * 2) / bh);
+    const ox = pad - x0 * s + ((w - pad * 2) - bw * s) / 2;
+    const oy = pad - y0 * s + ((h - pad * 2) - bh * s) / 2;
+    paintBody(ctx, buildRig(poseId, ox, oy, s, s, yaw, 0), color);
+  }
+
+  function openPoseModal() {
+    const piece = selectedPiece();
+    if (!piece || piece.type !== "performer" || !els.poseModal) return;
+    const grid = els.poseGrid;
+    grid.innerHTML = "";
+    POSES.forEach((pose) => {
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = `stage-pose-tile${pose.id === piece.pose ? " is-on" : ""}`;
+      tile.setAttribute("aria-pressed", String(pose.id === piece.pose));
+      const canvas = document.createElement("canvas");
+      canvas.width = 132;
+      canvas.height = 148;
+      const label = document.createElement("span");
+      label.textContent = pose.label;
+      tile.append(canvas, label);
+      grid.append(tile);
+      drawPosePreview(canvas, pose.id, piece.color);
+      tile.addEventListener("click", () => {
+        checkpoint();
+        piece.pose = pose.id;
+        closePoseModal();
+        updateInspector();
+        render();
+        persistSoon();
+        announce(`姿勢を「${pose.label}」にしました。`);
+      });
+    });
+    els.poseModal.hidden = false;
+    els.poseBackdrop.hidden = false;
+  }
+
+  function closePoseModal() {
+    if (els.poseModal) els.poseModal.hidden = true;
+    if (els.poseBackdrop) els.poseBackdrop.hidden = true;
+  }
+
   /* ---------- 装置の型 ----------
      舞台装置の並びに名前をつけて残し、別の場面で呼び出す。
      残すのは演者以外。演者は場面ごとに出入りするものなので、装置と一緒に
@@ -3407,7 +3532,7 @@
       checkpoint();
       const next = normalizeState({ project: incoming.project, seat: state.seat,
         showFront: state.showFront, showPlan: state.showPlan, showNames: state.showNames,
-        showSeatMap: state.showSeatMap });
+        showSeatMap: state.showSeatMap, frontPan: state.frontPan });
       state = next;
       selectedId = null;
       syncInputs();
@@ -3607,18 +3732,10 @@
     syncDimControls(piece);
     if (els.piecePose) {
       const isPerformer = piece.type === "performer";
-      if (!els.piecePose.options.length) {
-        POSES.forEach((po) => {
-          const opt = document.createElement("option");
-          opt.value = po.id;
-          opt.textContent = po.label;
-          els.piecePose.append(opt);
-        });
-      }
-      els.piecePose.value = piece.pose || "stand";
+      if (els.poseLabel) els.poseLabel.textContent = poseById(piece.pose).label;
       els.piecePose.disabled = !isPerformer;
-      const row = els.piecePose.previousElementSibling;
       els.piecePose.hidden = !isPerformer;
+      const row = els.piecePose.previousElementSibling;
       if (row) row.hidden = !isPerformer;
     }
     if (els.pieceFacing) {
@@ -3722,11 +3839,16 @@
   function finishPointer(event) {
     if (!pointerAction || pointerAction.pointerId !== event.pointerId) return;
     const el = pointerAction.el || canvas;
-    if (el.hasPointerCapture(event.pointerId)) el.releasePointerCapture(event.pointerId);
-    const changed = pointerAction.kind === "stroke" || pointerAction.moved;
+    try { if (el.hasPointerCapture(event.pointerId)) el.releasePointerCapture(event.pointerId); } catch (_) { /* 同上 */ }
+    const changed = pointerAction.kind === "stroke" || pointerAction.kind === "pan" || pointerAction.moved;
     pointerAction = null;
     el.dataset.dragging = "false";
     if (changed) persistSoon();
+  }
+
+  // 掴みの捕捉。取り損ねても操作は続けられるので、例外で止めない
+  function capture(el, pointerId) {
+    try { el.setPointerCapture(pointerId); } catch (_) { /* 取れなくても支障はない */ }
   }
 
   function onPointerDown(event) {
@@ -3741,9 +3863,20 @@
       selectedId = hit ? hit.id : null;
       updateInspector();
       render();
-      if (!hit) return;
-      const pos = place(hit.u, hit.v, L);
-      el.setPointerCapture(event.pointerId);
+      if (!hit) {
+        // 舞台が一度に入らない席では、何もない所を掴むと視線を左右に振れる
+        if (view === "front" && L.panRange > 0) {
+          capture(el, event.pointerId);
+          el.dataset.dragging = "true";
+          pointerAction = {
+            kind: "pan", pointerId: event.pointerId, el, view,
+            startX: point.x, startPan: state.frontPan || 0, range: L.panRange,
+          };
+        }
+        return;
+      }
+      const pos = placePiece(hit, L);
+      capture(el, event.pointerId);
       el.dataset.dragging = "true";
       pointerAction = {
         kind: "drag", pointerId: event.pointerId, id: hit.id, el, view,
@@ -3772,7 +3905,7 @@
       points: [{ u: (point.x - rect.x) / rect.w, v: (point.y - rect.y) / rect.h }],
     };
     sc().strokes.push(stroke);
-    el.setPointerCapture(event.pointerId);
+    capture(el, event.pointerId);
     pointerAction = { kind: "stroke", pointerId: event.pointerId, stroke, el, view, moved: true };
     render();
   }
@@ -3781,6 +3914,14 @@
     if (!pointerAction || pointerAction.pointerId !== event.pointerId) return;
     const L = layout(pointerAction.view);
     const point = pointFromEvent(event);
+
+    if (pointerAction.kind === "pan") {
+      // 掴んだ絵がついてくる向き。右へ引けば、舞台の左側が見えてくる
+      const moved = (point.x - pointerAction.startX) / pointerAction.range;
+      state.frontPan = clamp(pointerAction.startPan + moved, -1, 1);
+      render();
+      return;
+    }
 
     if (pointerAction.kind === "drag") {
       const piece = sc().pieces.find((candidate) => candidate.id === pointerAction.id);
@@ -3879,17 +4020,9 @@
       announce(e.target.checked ? "見る位置の図を出しました。" : "見る位置の図を隠しました。");
     });
   }
-  if (els.piecePose) {
-    els.piecePose.addEventListener("change", (e) => {
-      const piece = selectedPiece();
-      if (!piece || piece.type !== "performer") return;
-      checkpoint();
-      piece.pose = poseById(e.target.value).id;
-      render();
-      persistSoon();
-      announce(`姿勢を「${poseById(piece.pose).label}」にしました。`);
-    });
-  }
+  if (els.piecePose) els.piecePose.addEventListener("click", openPoseModal);
+  if (els.poseClose) els.poseClose.addEventListener("click", closePoseModal);
+  if (els.poseBackdrop) els.poseBackdrop.addEventListener("click", closePoseModal);
   if (els.pieceFacing) {
     els.pieceFacing.addEventListener("input", (e) => {
       const piece = selectedPiece();

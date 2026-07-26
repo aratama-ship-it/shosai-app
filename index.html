@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=64">
+<link rel="stylesheet" href="style.css?v=67">
 </head>
 <body>
 
@@ -403,7 +403,9 @@
               <label class="stage-control-label" for="stage-selected-color">色</label>
               <input type="color" id="stage-selected-color" value="#a84b26">
               <label class="stage-control-label" for="stage-piece-pose">姿勢</label>
-              <select id="stage-piece-pose" class="stage-select" aria-label="演者の姿勢"></select>
+              <button type="button" id="stage-piece-pose" class="stage-pose-button">
+                <span id="stage-pose-label">立つ</span><span aria-hidden="true">▸</span>
+              </button>
               <label class="stage-control-label stage-range-label" for="stage-piece-facing">
                 向き <span id="stage-facing-value">客席</span>
               </label>
@@ -635,6 +637,19 @@
   </div>
 </div>
 
+<div class="stage-modal-backdrop" id="stage-pose-backdrop" hidden></div>
+<div class="stage-modal stage-pose-modal" id="stage-pose" role="dialog" aria-modal="true"
+     aria-labelledby="stage-pose-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-pose-title">姿勢を選ぶ</h2>
+    <button type="button" class="stage-modal-close" id="stage-pose-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <p class="stage-profile-hint">絵は斜め前から見たところです。舞台での見え方は、向きによって変わります。</p>
+    <div class="stage-pose-grid" id="stage-pose-grid"></div>
+  </div>
+</div>
+
 <div class="stage-modal-backdrop" id="stage-setinfo-backdrop" hidden></div>
 <div class="stage-modal" id="stage-setinfo" role="dialog" aria-modal="true"
      aria-labelledby="stage-setinfo-title" hidden>
@@ -662,7 +677,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=13"></script>
-<script src="stage-sketch.js?v=62"></script>
+<script src="stage-sketch.js?v=66"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
