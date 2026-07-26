@@ -949,8 +949,10 @@
 
     // ---- 床 ----
     // 全周形式の舞台面はリングの内側だけ。その外は客席なので床を敷かない。
-    const floorPath = () => {
-      target.beginPath();
+    // fresh=false のときは今のパスへ足すだけにする（切り抜きの内側として使うため）。
+    // ここで beginPath を呼ぶと、外枠ごと捨てて領域が反転してしまう。
+    const floorPath = (fresh = true) => {
+      if (fresh) target.beginPath();
       if (roundHouse && ring) {
         target.ellipse(ring.x, ring.y, ring.rx, ring.ry, 0, 0, Math.PI * 2);
       } else {
@@ -1033,59 +1035,6 @@
       target.restore();
     }
 
-    // ---- 舞台袖 ----
-    // 額縁のある劇場には、左右から袖幕（レッグ）が対で垂れ、その奥が袖の空間になる。
-    // 客席から見ると、奥の対ほど内側に寄って小さく見える。演者はこれより手前に立つ
-    // ので、ここでは背景の一部として床の上に描く。
-    if (v.frame) {
-      const pairs = 3;
-      const wingU = 0.13;          // 袖幕が舞台に食い込む幅（左右それぞれ）
-      for (let i = 0; i < pairs; i += 1) {
-        const vAt = 0.08 + i * 0.3;          // i=0 が最も奥。奥から手前の順に描く
-        const floorAt = place(0, vAt, L).y;  // その奥行きでの床の高さ
-        const shade = 0.66 + i * 0.12;       // 手前の対ほど濃い（奥は暗がりに霞む）
-
-        [-1, 1].forEach((side) => {
-          const outerU = side < 0 ? 0 : 1;
-          const innerU = side < 0 ? wingU : 1 - wingU;
-          const outer = place(outerU, vAt, L).x;
-          const inner = place(innerU, vAt, L).x;
-
-          // 袖の奥の暗がり。袖幕の外はここから先が見えない
-          target.fillStyle = `rgba(9,8,7,${0.55 * shade})`;
-          target.fillRect(Math.min(outer, inner) - (side < 0 ? 120 : 0), back.y,
-            Math.abs(inner - outer) + 120, floorAt - back.y);
-
-          // 袖幕そのもの。縦の布なので、内側の縁だけ明るくして厚みを出す
-          const grad = target.createLinearGradient(outer, 0, inner, 0);
-          grad.addColorStop(0, `rgba(17,15,13,${0.96 * shade})`);
-          grad.addColorStop(0.72, `rgba(24,20,17,${0.94 * shade})`);
-          grad.addColorStop(1, `rgba(38,32,27,${0.9 * shade})`);
-          target.fillStyle = grad;
-          target.fillRect(Math.min(outer, inner), back.y, Math.abs(inner - outer), floorAt - back.y);
-
-          // 布の縦じわ
-          target.strokeStyle = `rgba(0,0,0,${0.28 * shade})`;
-          target.lineWidth = 1;
-          const folds = 4;
-          for (let f = 1; f < folds; f += 1) {
-            const x = outer + (inner - outer) * (f / folds);
-            target.beginPath();
-            target.moveTo(x, back.y);
-            target.lineTo(x, floorAt);
-            target.stroke();
-          }
-
-          // 裾の線。床との接地を見せる
-          target.strokeStyle = `rgba(0,0,0,${0.5 * shade})`;
-          target.beginPath();
-          target.moveTo(Math.min(outer, inner), floorAt);
-          target.lineTo(Math.max(outer, inner), floorAt);
-          target.stroke();
-        });
-      }
-    }
-
     // ---- 枠 ----
     // 近い席では奥の面が画面の上へ抜ける（back.y が負）。その場合は天を塗らない。
     target.fillStyle = "#11100f";
@@ -1107,6 +1056,87 @@
       target.strokeStyle = "rgba(156,130,63,0.2)";
       target.lineWidth = 1;
       target.strokeRect(back.x, back.y, back.w, L.floorY - back.y);
+    }
+
+    // 袖は額縁より後に描く。額縁の塗りは奥の壁の幅で引いてあるため、
+    // 先に描くと間口の外にある袖幕がそのまま覆われて見えなくなる。
+    // ---- 舞台袖 ----
+    // 袖は舞台の外側の空間。袖幕（レッグ）は間口の縁から外へ向かって垂れ、
+    // その陰に舞台裏を隠す。内側の縁が間口の縁（u=0 と u=1）にそろうので、
+    // 舞台の上に置いた演者が袖幕に食われることはない。
+    // 幕は宙から吊るもので、天はボーダー幕に隠れて見えない。高さを奥行きごとに
+    // 測って途中で切ると、床から生えた柱に見えてしまう。
+    if (v.frame) {
+      // 舞台の床にも背景の幕にも一切かからないようにする。
+      // 画面全体から床の台形と奥の幕を抜いた残り＝袖の空間、が描画範囲になる。
+      target.save();
+      target.beginPath();
+      target.rect(0, 0, W, H);
+      floorPath(false);
+      target.rect(back.x, back.y, back.w, L.floorY - back.y);
+      target.clip("evenodd");
+
+      const legTop = Math.min(back.y, L.floorY) - 2;
+      const wingU = 2.2 / L.size.width;      // 袖幕1枚の見かけの幅は約2.2m
+
+      // 袖の空間。作業灯がわずかに回る程度の明るさで、外へ行くほど闇に沈む
+      [-1, 1].forEach((side) => {
+        const edge = side < 0 ? 0 : W;
+        const space = target.createLinearGradient(L.centerX, 0, edge, 0);
+        space.addColorStop(0, "rgba(62,52,42,0.95)");
+        space.addColorStop(0.55, "rgba(26,22,18,0.95)");
+        space.addColorStop(1, "rgba(10,9,8,0.95)");
+        target.fillStyle = space;
+        target.fillRect(Math.min(L.centerX, edge), legTop, Math.abs(edge - L.centerX), L.bottomY - legTop);
+      });
+
+      // 袖幕。奥の対から順に重ね、手前の対が奥の対を隠していく。
+      // 残った内側の縁が階段状に並び、それが袖の奥行きになる。
+      for (let i = 0; i < 3; i += 1) {
+        const vAt = 0.1 + i * 0.32;          // i=0 が最も奥
+        const floorAt = place(0, vAt, L).y;  // その奥行きでの裾
+        const shade = 0.72 + i * 0.14;       // 手前の対ほど濃い（奥は暗がりに霞む）
+
+        [-1, 1].forEach((side) => {
+          const inner = place(side < 0 ? 0 : 1, vAt, L).x;              // 間口の縁
+          const outer = place(side < 0 ? -wingU : 1 + wingU, vAt, L).x; // その外側
+
+          const cloth = target.createLinearGradient(outer, 0, inner, 0);
+          cloth.addColorStop(0, `rgba(11,10,9,${0.97 * shade})`);
+          cloth.addColorStop(0.7, `rgba(16,14,12,${0.95 * shade})`);
+          cloth.addColorStop(1, `rgba(31,26,22,${0.93 * shade})`);
+          target.fillStyle = cloth;
+          target.fillRect(Math.min(outer, inner), legTop, Math.abs(inner - outer), floorAt - legTop);
+
+          // 布の縦じわ
+          target.strokeStyle = `rgba(0,0,0,${0.3 * shade})`;
+          target.lineWidth = 1;
+          for (let f = 1; f < 4; f += 1) {
+            const x = outer + (inner - outer) * (f / 4);
+            target.beginPath();
+            target.moveTo(x, legTop);
+            target.lineTo(x, floorAt);
+            target.stroke();
+          }
+
+          // 内側の縁。舞台の明かりを拾って光るので、ここだけが袖の輪郭になる
+          target.strokeStyle = `rgba(196,172,132,${0.16 + i * 0.06})`;
+          target.lineWidth = 2;
+          target.beginPath();
+          target.moveTo(inner, legTop);
+          target.lineTo(inner, floorAt);
+          target.stroke();
+
+          // 裾。床との接地を見せる
+          target.strokeStyle = `rgba(0,0,0,${0.55 * shade})`;
+          target.lineWidth = 1;
+          target.beginPath();
+          target.moveTo(Math.min(outer, inner), floorAt);
+          target.lineTo(Math.max(outer, inner), floorAt);
+          target.stroke();
+        });
+      }
+      target.restore();
     }
 
     // 屋外は前端の外側に柵がある。奥行きを描けないので境界の線1本と注記にとどめる。
@@ -2113,7 +2143,9 @@
     els.sizeValue.textContent = String(piece.size);
     if (els.pieceFacing) {
       const isPerformer = piece.type === "performer";
-      els.pieceFacing.value = String(piece.facing || 0);
+      // フェーダーは中央が客席向き。保存は0〜359なので、180を超える分は負へ折り返す
+      const deg = ((Number(piece.facing) || 0) % 360 + 360) % 360;
+      els.pieceFacing.value = String(deg > 180 ? deg - 360 : deg);
       els.pieceFacing.disabled = !isPerformer;
       if (els.facingValue) {
         els.facingValue.textContent = isPerformer ? facingLabel(piece.facing) : "演者のみ";
@@ -2356,7 +2388,7 @@
     els.pieceFacing.addEventListener("input", (e) => {
       const piece = selectedPiece();
       if (!piece || piece.type !== "performer") return;
-      piece.facing = Number(e.target.value);
+      piece.facing = ((Number(e.target.value) % 360) + 360) % 360;   // フェーダーは-180〜180
       if (els.facingValue) els.facingValue.textContent = facingLabel(piece.facing);
       render();
     });

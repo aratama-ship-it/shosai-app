@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=54">
+<link rel="stylesheet" href="style.css?v=55">
 </head>
 <body>
 
@@ -386,7 +386,8 @@
               <label class="stage-control-label stage-range-label" for="stage-piece-facing">
                 体の向き <span id="stage-facing-value">客席</span>
               </label>
-              <input type="range" id="stage-piece-facing" min="0" max="345" step="15" value="0">
+              <input type="range" id="stage-piece-facing" min="-180" max="180" step="15" value="0">
+              <p class="stage-range-scale"><span>背中</span><span>客席</span><span>背中</span></p>
               <label class="stage-control-label stage-range-label" for="stage-piece-size">
                 大きさ <span id="stage-size-value">100</span>
               </label>
@@ -612,7 +613,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=8"></script>
-<script src="stage-sketch.js?v=29"></script>
+<script src="stage-sketch.js?v=34"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

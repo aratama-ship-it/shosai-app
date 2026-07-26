@@ -1337,6 +1337,20 @@ textarea, input[type="text"] {
   gap: 8px;
 }
 
+/* 向きのフェーダーの目盛り。中央が客席向きであることを字で示す */
+.stage-range-scale {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 0 0;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: rgba(239, 231, 214, 0.34);
+}
+
+.stage-range-scale span:nth-child(2) {
+  color: rgba(239, 231, 214, 0.62);
+}
+
 .stage-color-row {
   display: flex;
   align-items: center;
