@@ -61,12 +61,16 @@
   /* 寸法つまみの仕様。項目は種類ごとに違うので、画面はここから組み立てる。
    * HTMLへ固定で並べると、種類を足すたびに二箇所直すことになる。 */
   const DIM_META = {
-    w: { label: "幅", min: 0.2, max: 12, step: 0.05 },
-    d: { label: "奥行き", min: 0.2, max: 12, step: 0.05 },
-    h: { label: "高さ", min: 0.1, max: 8, step: 0.05 },
-    dia: { label: "直径", min: 0.3, max: 20, step: 0.1 },
-    lift: { label: "床からの高さ", min: 0, max: 10, step: 0.1 },
+    w: { label: "幅", min: 0.2, max: 12, step: 0.01 },
+    d: { label: "奥行き", min: 0.2, max: 12, step: 0.01 },
+    h: { label: "高さ", min: 0.1, max: 8, step: 0.01 },
+    dia: { label: "直径", min: 0.3, max: 20, step: 0.01 },
+    lift: { label: "床からの高さ", min: 0, max: 10, step: 0.01 },
   };
+  /* 表示はcm。内部はmのまま。
+   * 家具や人の寸法は「1.6m」より「160cm」のほうが体に入る。
+   * 劇場の間口は m のままにする（そちらは m で語る寸法なので）。 */
+  const cmText = (m) => `${Math.round(m * 100)}cm`;
   // 種類によって言い方を変えたいものだけ上書きする
   const DIM_LABELS = {
     chair: { h: "大きさ（背もたれの上端まで）" },
@@ -348,7 +352,9 @@
     sizeRow: document.getElementById("stage-size-row"),
     dims: document.getElementById("stage-dims"),
     dimsFromSet: document.getElementById("stage-dims-from-set"),
+    openSetInfo: document.getElementById("stage-open-setinfo"),
     sizeValue: document.getElementById("stage-size-value"),
+    sizeLabel: document.querySelector('label[for="stage-piece-size"]'),
     sendBack: document.getElementById("stage-send-back"),
     bringFront: document.getElementById("stage-bring-front"),
     duplicate: document.getElementById("stage-duplicate"),
@@ -600,6 +606,8 @@
       dims: normalizeDims(type, piece),
       // 姿勢。用意したものの中から選ぶ（形そのものは編集させない）
       pose: POSES.some((p) => p.id === piece.pose) ? piece.pose : "stand",
+      // 床からの高さ(m)。置き場所から毎回引き直す派生値
+      base: clamp(finite(piece.base, 0), 0, 12),
     };
   }
 
@@ -637,7 +645,7 @@
       const name = document.createElement("span");
       name.textContent = dimLabel(kind, key);
       const value = document.createElement("span");
-      value.textContent = `${dims[key].toFixed(2)}m`;
+      value.textContent = cmText(dims[key]);
       label.append(name, value);
 
       const input = document.createElement("input");
@@ -649,7 +657,7 @@
       input.value = String(dims[key]);
       input.addEventListener("input", () => {
         dims[key] = clamp(Number(input.value), meta.min, meta.max);
-        value.textContent = `${dims[key].toFixed(2)}m`;
+        value.textContent = cmText(dims[key]);
         onChange();
       });
       host.append(label, input);
@@ -1049,6 +1057,56 @@
   }
 
   /* ---------- 演者と物の描画 ---------- */
+
+  /* ---------- 物の上に乗る ----------
+     台やテーブルの上へ置いたものは、その上面の高さから立ち上がる。
+     床からの高さ（base, m）は置き場所から決まる派生値なので、状態として
+     持ち回さず、描く前に毎回引き直す。 */
+
+  // その台の「上面」の高さ（自分の足元から）。椅子は座面
+  function supportTopLocal(piece) {
+    const d = pieceDims(piece);
+    if (!d) return 0;
+    if (piece.type === "chair") return d.h * 0.5;
+    return d.h;
+  }
+
+  /* (u,v) の真下にある台のうち、いちばん高い上面。
+   * 候補は「自分より先に置いてあるもの」だけに限る。
+   * 互いを支えにすると高さが際限なく積み上がるため。
+   * 重なりの順（後ろへ／前へ）がそのまま「どちらが上に乗るか」になる。 */
+  function supportUnder(piece, size, candidates) {
+    let top = 0;
+    candidates.forEach((other) => {
+      if (other === piece || !SOLID_TYPES[other.type]) return;
+      const foot = pieceFootprint(other);
+      if (!foot) return;
+      const rad = ((other.facing || 0) * Math.PI) / 180;
+      const dw = (piece.u - other.u) * size.width;
+      const dd = -(piece.v - other.v) * size.depth;   // 奥へ行くほど v は小さい
+      const lx = dw * Math.cos(rad) + dd * Math.sin(rad);
+      const ly = -dw * Math.sin(rad) + dd * Math.cos(rad);
+      if (Math.abs(lx) > foot.w / 2 || Math.abs(ly) > foot.d / 2) return;
+      top = Math.max(top, (other.base || 0) + supportTopLocal(other));
+    });
+    return top;
+  }
+
+  // 全部の駒の床からの高さを引き直す。先に置いたものから順に決めるので一巡で足りる
+  function refreshBases(size) {
+    const pieces = sc().pieces;
+    pieces.forEach((piece, i) => {
+      piece.base = piece.type === "light" ? 0 : supportUnder(piece, size, pieces.slice(0, i));
+    });
+  }
+
+  // 駒の足元の画面位置。台に乗っていればその分だけ持ち上げる
+  function placePiece(piece, L) {
+    const pos = place(piece.u, piece.v, L);
+    const base = piece.base || 0;
+    if (!base || L.plan) return pos;
+    return Object.assign({}, pos, { y: pos.y - base * perMetre(pos, L).y });
+  }
 
   /* 演者の関節を、画面の座標へ落とす。
    * 向きの角度だけ鉛直軸まわりに回してから、正射影で潰す。
@@ -1590,7 +1648,7 @@
   }
 
   function selectionBounds(piece, L) {
-    const pos = place(piece.u, piece.v, L);
+    const pos = placePiece(piece, L);
     const scale = pieceScale(piece, pos, L);
     const dim = pieceDims(piece);
     if (L.plan) {
@@ -2101,6 +2159,7 @@
 
   function drawStage(target, showSelection, view) {
     const L = layout(view);
+    refreshBases(L.size);
     buildPaintLayer(L);
     target.save();
     target.clearRect(0, 0, W, H);
@@ -2121,7 +2180,7 @@
 
     // 演者と物。光は先に（奥に）描く
     const draw = (piece) => {
-      const pos = place(piece.u, piece.v, L);
+      const pos = placePiece(piece, L);
       const scale = pieceScale(piece, pos, L);
       const lean = leanAt(pos);
       if (lean) {
@@ -2147,7 +2206,7 @@
       sc().pieces.forEach((piece) => {
         const labelText = pieceLabel(piece);
         if (!labelText) return;
-        const pos = place(piece.u, piece.v, L);
+        const pos = placePiece(piece, L);
         const scale = pieceScale(piece, pos, L);
         const b = selectionBounds(piece, L);
         const x = L.plan ? pos.x : pos.x;
@@ -2653,11 +2712,11 @@
   function setDimLabel(item) {
     const d = item.dims;
     if (item.kind === "sphere") {
-      return d.lift > 0.05 ? `⌀${d.dia.toFixed(1)}m ／ 床上${d.lift.toFixed(1)}m` : `⌀${d.dia.toFixed(1)}m`;
+      return d.lift > 0.05 ? `⌀${cmText(d.dia)} ／ 床上${cmText(d.lift)}` : `⌀${cmText(d.dia)}`;
     }
-    if (item.kind === "light") return `⌀${d.dia.toFixed(1)}m`;
-    if (item.kind === "chair") return `高さ${d.h.toFixed(2)}m`;
-    return `${d.w.toFixed(1)}×${d.d.toFixed(1)}×${d.h.toFixed(2)}m`;
+    if (item.kind === "light") return `⌀${cmText(d.dia)}`;
+    if (item.kind === "chair") return `高さ${cmText(d.h)}`;
+    return `${Math.round(d.w * 100)}×${Math.round(d.d * 100)}×${Math.round(d.h * 100)}cm`;
   }
 
   function renderSets() {
@@ -3322,7 +3381,9 @@
     els.selectedName.textContent = `${PIECE_TYPES[piece.type]} ${sameType.indexOf(piece) + 1}`;
     els.selectedColor.value = piece.color;
     els.pieceSize.value = String(piece.size);
-    els.sizeValue.textContent = String(piece.size);
+    // 演者にしか出ないつまみなので、割合ではなく実際の身長で見せる
+    els.sizeValue.textContent = cmText(pieceHeightM(piece) * (piece.size / 100));
+    if (els.sizeLabel) els.sizeLabel.firstChild.nodeValue = "身長 ";
     // 台と球は実寸で持つので、倍率のつまみは出さない。
     // 舞台セットに登録したものは、寸法の正本がそちらにあるので個別に触らせない
     syncDimControls(piece);
@@ -3641,6 +3702,12 @@
       if (e.key === "Enter") { e.preventDefault(); addSetItem("light", els.lightName); }
     });
   }
+  if (els.openSetInfo) {
+    els.openSetInfo.addEventListener("click", () => {
+      const registered = pieceSet(selectedPiece());
+      if (registered) openSetInfo(registered.id);
+    });
+  }
   if (els.setInfoClose) els.setInfoClose.addEventListener("click", closeSetInfo);
   if (els.setInfoBackdrop) els.setInfoBackdrop.addEventListener("click", closeSetInfo);
   if (els.setInfoName) {
@@ -3794,6 +3861,8 @@
         els.dimsFromSet.textContent = `寸法は「${registered.name}」で決まっています（${setDimLabel(registered)}）。`;
       }
     }
+    // 舞台の上で選んだところから、登録側の寸法へ直接入れるようにする
+    if (els.openSetInfo) els.openSetInfo.hidden = !registered;
     if (registered || !own) {
       if (els.dims) els.dims.innerHTML = "";
       return;
@@ -3808,8 +3877,9 @@
     const piece = selectedPiece();
     if (!piece) return;
     piece.size = Number(event.target.value);
-    els.sizeValue.textContent = event.target.value;
+    els.sizeValue.textContent = cmText(pieceHeightM(piece) * (piece.size / 100));
     render();
+    persistSoon();
   });
 
   els.clearPaint.addEventListener("click", () => {

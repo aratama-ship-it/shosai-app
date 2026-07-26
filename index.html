@@ -398,12 +398,13 @@
               <p class="stage-range-scale"><span>背中</span><span>客席</span><span>背中</span></p>
               <div id="stage-size-row">
                 <label class="stage-control-label stage-range-label" for="stage-piece-size">
-                  大きさ <span id="stage-size-value">100</span>
+                  身長 <span id="stage-size-value">165cm</span>
                 </label>
-                <input type="range" id="stage-piece-size" min="55" max="180" step="5" value="100">
+                <input type="range" id="stage-piece-size" min="55" max="180" step="1" value="100">
               </div>
               <div id="stage-dims"></div>
               <p class="stage-dims-note" id="stage-dims-from-set" hidden></p>
+              <button type="button" class="stage-minor-action" id="stage-open-setinfo" hidden>寸法を変える</button>
               <div class="stage-layer-actions">
                 <button type="button" id="stage-send-back">後ろへ</button>
                 <button type="button" id="stage-bring-front">前へ</button>
@@ -648,7 +649,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=13"></script>
-<script src="stage-sketch.js?v=57"></script>
+<script src="stage-sketch.js?v=59"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
