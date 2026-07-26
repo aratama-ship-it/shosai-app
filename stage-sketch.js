@@ -606,8 +606,9 @@
       dims: normalizeDims(type, piece),
       // 姿勢。用意したものの中から選ぶ（形そのものは編集させない）
       pose: POSES.some((p) => p.id === piece.pose) ? piece.pose : "stand",
-      // 床からの高さ(m)。置き場所から毎回引き直す派生値
-      base: clamp(finite(piece.base, 0), 0, 12),
+      // 床からの高さ(m)と、支えている駒。どちらも置き場所から毎回引き直す派生値
+      base: clamp(finite(piece.base, 0), 0, 40),
+      supportId: null,
     };
   }
 
@@ -1063,41 +1064,79 @@
      床からの高さ（base, m）は置き場所から決まる派生値なので、状態として
      持ち回さず、描く前に毎回引き直す。 */
 
-  // その台の「上面」の高さ（自分の足元から）。椅子は座面
-  function supportTopLocal(piece) {
+  /* その駒の「上面」の高さ（自分の足元から、m）。
+   * 何の上にでも物を置けるようにするので、演者の頭の上も上面として扱う。 */
+  function pieceTopLocal(piece) {
+    if (piece.type === "light") return 0;
+    if (piece.type === "performer") {
+      return poseExtent(piece.pose).top * pieceHeightM(piece) * (piece.size / 100);
+    }
     const d = pieceDims(piece);
     if (!d) return 0;
-    if (piece.type === "chair") return d.h * 0.5;
+    if (piece.type === "chair") return d.h * 0.5;      // 座面
+    if (piece.type === "sphere") return d.lift + d.dia;
     return d.h;
   }
 
-  /* (u,v) の真下にある台のうち、いちばん高い上面。
-   * 候補は「自分より先に置いてあるもの」だけに限る。
-   * 互いを支えにすると高さが際限なく積み上がるため。
-   * 重なりの順（後ろへ／前へ）がそのまま「どちらが上に乗るか」になる。 */
+  // 床でどれだけの面積を取るか（m）。中心のずれも返す（寝ている演者などで効く）
+  function supportFootprint(piece) {
+    if (piece.type === "light") return null;
+    if (piece.type === "performer") {
+      const H = pieceHeightM(piece) * (piece.size / 100);
+      const ext = poseExtent(piece.pose);
+      return { w: ext.halfX * 2 * H, d: ext.halfZ * 2 * H, cx: ext.cx * H, cz: ext.cz * H };
+    }
+    const foot = pieceFootprint(piece);
+    return foot ? { w: foot.w, d: foot.d, cx: 0, cz: 0 } : null;
+  }
+
+  /* (u,v) の真下にあるもののうち、いちばん高い上面。
+   * 候補は「自分より先に並んでいるもの」だけ。互いを支えにすると高さが
+   * 際限なく積み上がるので、並び順で循環を断つ。
+   * 動かしている駒は並びの最後へ回すので、必ず重なった相手の上に乗る。 */
   function supportUnder(piece, size, candidates) {
     let top = 0;
+    let holder = null;
     candidates.forEach((other) => {
-      if (other === piece || !SOLID_TYPES[other.type]) return;
-      const foot = pieceFootprint(other);
+      if (other === piece) return;
+      const foot = supportFootprint(other);
       if (!foot) return;
       const rad = ((other.facing || 0) * Math.PI) / 180;
       const dw = (piece.u - other.u) * size.width;
       const dd = -(piece.v - other.v) * size.depth;   // 奥へ行くほど v は小さい
-      const lx = dw * Math.cos(rad) + dd * Math.sin(rad);
-      const ly = -dw * Math.sin(rad) + dd * Math.cos(rad);
+      const lx = dw * Math.cos(rad) + dd * Math.sin(rad) - foot.cx;
+      const ly = -dw * Math.sin(rad) + dd * Math.cos(rad) - foot.cz;
       if (Math.abs(lx) > foot.w / 2 || Math.abs(ly) > foot.d / 2) return;
-      top = Math.max(top, (other.base || 0) + supportTopLocal(other));
+      const t = (other.base || 0) + pieceTopLocal(other);
+      if (t > top) { top = t; holder = other.id; }
     });
-    return top;
+    return { top, holder };
   }
 
-  // 全部の駒の床からの高さを引き直す。先に置いたものから順に決めるので一巡で足りる
+  // 全部の駒の床からの高さを引き直す。先に並んでいるものから順に決めるので一巡で足りる
   function refreshBases(size) {
     const pieces = sc().pieces;
     pieces.forEach((piece, i) => {
-      piece.base = piece.type === "light" ? 0 : supportUnder(piece, size, pieces.slice(0, i));
+      if (piece.type === "light") { piece.base = 0; piece.supportId = null; return; }
+      const found = supportUnder(piece, size, pieces.slice(0, i));
+      piece.base = found.top;
+      piece.supportId = found.holder;
     });
+  }
+
+  /* 動かし始めた駒を並びのいちばん後ろへ回す。重なった相手の上に乗るため。
+   * ただし、その駒に乗っているものは一緒に連れていく。
+   * 連れていかないと、下の台をずらしただけで台が上の演者へ乗ってしまう。 */
+  function bringToTop(piece) {
+    const arr = sc().pieces;
+    const carried = new Set([piece.id]);
+    const load = [];
+    arr.forEach((p) => {
+      if (p === piece) return;
+      if (p.supportId && carried.has(p.supportId)) { carried.add(p.id); load.push(p); }
+    });
+    const rest = arr.filter((p) => p !== piece && !carried.has(p.id));
+    sc().pieces = rest.concat([piece], load);
   }
 
   // 駒の足元の画面位置。台に乗っていればその分だけ持ち上げる
@@ -1249,7 +1288,11 @@
   function floorPoint(piece, dw, dd, L) {
     const u = piece.u + dw / L.size.width;
     const v = piece.v - dd / L.size.depth;      // 奥へ行くほど v は小さい
-    return place(u, v, L);
+    const p = place(u, v, L);
+    // 台の上に乗っていれば、四隅ごとその高さから立ち上げる
+    const base = piece.base || 0;
+    if (!base || L.plan) return p;
+    return Object.assign({}, p, { y: p.y - base * perMetre(p, L).y });
   }
 
   /* 直方体の部品をひとつ塗る。部品の中心は駒の中心から (ox, oz) メートルずれ、
@@ -3569,6 +3612,7 @@
       if (!pointerAction.moved) {
         recordBefore(pointerAction.before);
         pointerAction.moved = true;
+        bringToTop(piece);   // 動かしたものが、重なった相手の上に乗る
       }
       const next = fromScreen(point.x - pointerAction.offsetX, point.y - pointerAction.offsetY, L);
       piece.u = next.u;
@@ -3604,6 +3648,7 @@
     event.preventDefault();
     checkpoint();
     const amount = event.shiftKey ? 0.05 : 0.016;
+    bringToTop(piece);   // 動かしたものが、重なった相手の上に乗る
     piece.u = clamp(piece.u + moves[event.key][0] * amount, 0, 1);
     // 上キーで画面の上＝奥へ。正面図でも平面図でも同じ向きになる
     piece.v = clamp(piece.v + moves[event.key][1] * amount, 0, 1);
