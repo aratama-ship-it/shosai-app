@@ -381,6 +381,7 @@
     select: "演者や物を選び、舞台の上で動かします。",
     paint: "奥の背景面を指やマウスで塗ります。",
     erase: "背景に描いた線だけを消します。",
+    route: "平面図で演者を掴み、離した所が行き先になります。真ん中の丸を引くと道が曲がります。",
   };
 
   const els = {
@@ -398,6 +399,7 @@
     selectedName: document.getElementById("stage-selected-name"),
     dimsFromSet: document.getElementById("stage-dims-from-set"),
     openSetInfo: document.getElementById("stage-open-setinfo"),
+    routeClear: document.getElementById("stage-route-clear"),
     sendBack: document.getElementById("stage-send-back"),
     bringFront: document.getElementById("stage-bring-front"),
     duplicate: document.getElementById("stage-duplicate"),
@@ -687,6 +689,10 @@
       dims: normalizeDims(type, piece),
       // 姿勢。用意したものの中から選ぶ（形そのものは編集させない）
       pose: POSES.some((p) => p.id === piece.pose) ? piece.pose : "stand",
+      /* 動線。この場面のあいだに、その駒がどこへ動くか。
+       * 始点は駒そのものなので持たない（駒を動かせば矢印もついてくる）。
+       * u,v が行き先、bu,bv が曲がり具合の control 点。真ん中に置けば直線になる。 */
+      route: normalizeRoute(piece && piece.route),
       // 床からの高さ(m)と、支えている駒。どちらも置き場所から毎回引き直す派生値
       base: clamp(finite(piece.base, 0), 0, 40),
       supportId: null,
@@ -695,6 +701,17 @@
 
   // 台と球の実寸。dims を持たない古い保存は、size（倍率）から見た目が
   // 変わらないように割り戻す。それ以外の種類は寸法を持たない。
+  function normalizeRoute(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const u = clamp(finite(raw.u, 0.5), 0, 1);
+    const v = clamp(finite(raw.v, 0.5), 0, 1);
+    return {
+      u, v,
+      bu: clamp(finite(raw.bu, 0.5), -0.2, 1.2),
+      bv: clamp(finite(raw.bv, 0.5), -0.2, 1.2),
+    };
+  }
+
   function normalizeDims(type, piece) {
     const base = PIECE_DIMS[type];
     if (!base) return null;
@@ -1994,6 +2011,79 @@
     return { x: x0 - padX, y: y0 - padY, w: Math.max(12, x1 - x0 + padX * 2), h: Math.max(12, y1 - y0 + padY * 2) };
   }
 
+  /* 動線。始点（駒）から行き先へ、二次曲線で引いて先に矢を付ける。
+   * 曲がり具合は真ん中の control 点ひとつで決まる。直線から始めて、
+   * 掴んで曲げれば回り込みになる——舞台で人が動く道はたいてい弧を描く。 */
+  function routePoints(piece, L) {
+    const from = place(piece.u, piece.v, L);
+    const to = place(piece.route.u, piece.route.v, L);
+    const ctrl = place(piece.route.bu, piece.route.bv, L);
+    return { from, to, ctrl };
+  }
+
+  // 二次曲線の上の点。矢の向きを出すのに使う
+  function quadAt(a, c, b, t) {
+    const k = 1 - t;
+    return {
+      x: k * k * a.x + 2 * k * t * c.x + t * t * b.x,
+      y: k * k * a.y + 2 * k * t * c.y + t * t * b.y,
+    };
+  }
+
+  function drawRoutes(target, L, showSelection) {
+    sc().pieces.forEach((piece) => {
+      if (!piece.route) return;
+      const { from, to, ctrl } = routePoints(piece, L);
+      const picked = showSelection && piece.id === selectedId;
+      target.save();
+      target.strokeStyle = rgba(piece.color, picked ? 0.95 : 0.62);
+      target.lineWidth = picked ? 2.6 : 2;
+      target.setLineDash(picked ? [] : [7, 5]);
+      target.beginPath();
+      target.moveTo(from.x, from.y);
+      target.quadraticCurveTo(ctrl.x, ctrl.y, to.x, to.y);
+      target.stroke();
+      target.setLineDash([]);
+
+      // 矢。終点の少し手前の向きで向きを決める
+      const near = quadAt(from, ctrl, to, 0.94);
+      const ang = Math.atan2(to.y - near.y, to.x - near.x);
+      const head = picked ? 13 : 11;
+      target.fillStyle = rgba(piece.color, picked ? 0.95 : 0.66);
+      target.beginPath();
+      target.moveTo(to.x, to.y);
+      target.lineTo(to.x - Math.cos(ang - 0.42) * head, to.y - Math.sin(ang - 0.42) * head);
+      target.lineTo(to.x - Math.cos(ang + 0.42) * head, to.y - Math.sin(ang + 0.42) * head);
+      target.closePath();
+      target.fill();
+
+      // 選んでいるあいだは、曲げる取っ手と行き先の取っ手を出す
+      if (picked) {
+        const mid = quadAt(from, ctrl, to, 0.5);
+        [[mid, 6.5, "曲げる"], [to, 5.5, "行き先"]].forEach(([pt, r]) => {
+          target.fillStyle = "#0d0c0b";
+          target.strokeStyle = "#d3ac59";
+          target.lineWidth = 2;
+          target.beginPath();
+          target.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+          target.fill();
+          target.stroke();
+        });
+      }
+      target.restore();
+    });
+  }
+
+  // 動線の取っ手に当たっているか。曲げる取っ手を優先する
+  function routeHandleAt(point, piece, L) {
+    if (!piece || !piece.route || !L.plan) return null;
+    const { from, to, ctrl } = routePoints(piece, L);
+    const mid = quadAt(from, ctrl, to, 0.5);
+    if (Math.hypot(point.x - mid.x, point.y - mid.y) <= 11) return "bend";
+    if (Math.hypot(point.x - to.x, point.y - to.y) <= 11) return "end";
+    return null;
+  }
+
   function drawSelection(target, piece, L) {
     const b = selectionBounds(piece, L);
     target.save();
@@ -2497,6 +2587,9 @@
         target.restore();
       });
     }
+
+    // 動線は平面図だけ。上から見た床の上の道筋なので、正面図には出しようがない
+    if (L.plan) drawRoutes(target, L, showSelection);
 
     if (showSelection) {
       const selected = sc().pieces.find((piece) => piece.id === selectedId);
@@ -4327,18 +4420,24 @@
   }
 
   function setTool(nextTool) {
-    if (!state.showFront && nextTool !== "select") {
+    const painting = nextTool === "paint" || nextTool === "erase";
+    if (!state.showFront && painting) {
       announce("背景の塗りは正面図で行います。正面を開いてください。");
       return;
     }
     // 全周形式には塗れる背景の壁が無い（奥も客席）
-    if (venue().audience === "round" && nextTool !== "select") {
+    if (venue().audience === "round" && painting) {
       announce(`${venue().label}には背景の壁がありません。奥も客席です。`);
+      return;
+    }
+    if (nextTool === "route" && !state.showPlan) {
+      announce("動線は平面図で引きます。平面を開いてください。");
       return;
     }
     tool = nextTool;
     canvas.dataset.tool = tool;
-    if (planCanvas) planCanvas.dataset.tool = "select";  // 平面は動かす専用
+    // 平面図で使うのは「動かす」と「動線」だけ
+    if (planCanvas) planCanvas.dataset.tool = tool === "route" ? "route" : "select";
     document.querySelectorAll("[data-stage-tool]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.stageTool === tool));
     });
@@ -4458,7 +4557,8 @@
     if (!pointerAction || pointerAction.pointerId !== event.pointerId) return;
     const el = pointerAction.el || canvas;
     try { if (el.hasPointerCapture(event.pointerId)) el.releasePointerCapture(event.pointerId); } catch (_) { /* 同上 */ }
-    const changed = pointerAction.kind === "stroke" || pointerAction.kind === "pan" || pointerAction.moved;
+    const changed = pointerAction.kind === "stroke" || pointerAction.kind === "pan"
+      || pointerAction.kind === "route" || pointerAction.moved;
     pointerAction = null;
     el.dataset.dragging = "false";
     if (changed) persistSoon();
@@ -4476,7 +4576,37 @@
     const point = pointFromEvent(event);
     el.focus();
 
+    /* 動線を引く。平面図で駒を掴んで、離した所が行き先になる。
+     * 曲がり具合は真ん中に置いて直線から始める。あとから掴んで曲げられる。 */
+    if (tool === "route") {
+      if (view !== "plan") {
+        announce("動線は平面図で引きます。");
+        return;
+      }
+      const hit = hitTest(point, L);
+      if (!hit) { announce("動かしたい演者か物を掴んでください。"); return; }
+      selectedId = hit.id;
+      checkpoint();
+      hit.route = { u: hit.u, v: hit.v, bu: hit.u, bv: hit.v };
+      capture(el, event.pointerId);
+      el.dataset.dragging = "true";
+      pointerAction = { kind: "route", pointerId: event.pointerId, id: hit.id, el, view, moved: true, handle: "end" };
+      updateInspector();
+      render();
+      return;
+    }
+
     if (tool === "select") {
+      // 選んでいる駒の動線の取っ手は、駒そのものより先に拾う
+      const current = selectedPiece();
+      const handle = view === "plan" ? routeHandleAt(point, current, L) : null;
+      if (handle) {
+        checkpoint();
+        capture(el, event.pointerId);
+        el.dataset.dragging = "true";
+        pointerAction = { kind: "route", pointerId: event.pointerId, id: current.id, el, view, moved: true, handle };
+        return;
+      }
       const hit = hitTest(point, L);
       selectedId = hit ? hit.id : null;
       updateInspector();
@@ -4544,6 +4674,31 @@
       // 上下は首の角度。画面の高さいっぱいの引きで、振れる角度いっぱいになる
       const dy = point.y - pointerAction.startY;
       state.frontPanY = clamp(pointerAction.startPanY + dy / (H * 0.55), -1, 1);
+      render();
+      return;
+    }
+
+    if (pointerAction.kind === "route") {
+      const piece = sc().pieces.find((candidate) => candidate.id === pointerAction.id);
+      if (!piece || !piece.route) return;
+      const next = fromScreen(point.x, point.y, L);
+      if (pointerAction.handle === "end") {
+        // 行き先を動かすあいだは、曲がり具合を真ん中に保って直線のままにする
+        const straight = piece.route.bu === (piece.u + piece.route.u) / 2
+          && piece.route.bv === (piece.v + piece.route.v) / 2;
+        piece.route.u = next.u;
+        piece.route.v = next.v;
+        if (straight || pointerAction.fresh !== false) {
+          piece.route.bu = (piece.u + next.u) / 2;
+          piece.route.bv = (piece.v + next.v) / 2;
+        }
+      } else {
+        /* 掴んだ所が曲線の真ん中を通るように control 点を置く。
+         * 二次曲線の t=0.5 は control 点そのものではなく、
+         * 始点・control・終点の平均に寄るので、その分を戻す。 */
+        piece.route.bu = clamp(2 * next.u - (piece.u + piece.route.u) / 2, -0.2, 1.2);
+        piece.route.bv = clamp(2 * next.v - (piece.v + piece.route.v) / 2, -0.2, 1.2);
+      }
       render();
       return;
     }
@@ -4681,6 +4836,18 @@
   if (els.lightName) {
     els.lightName.addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); addSetItem("light", els.lightName); }
+    });
+  }
+  if (els.routeClear) {
+    els.routeClear.addEventListener("click", () => {
+      const piece = selectedPiece();
+      if (!piece || !piece.route) return;
+      checkpoint();
+      piece.route = null;
+      updateInspector();
+      render();
+      persistSoon();
+      announce("動線を消しました。");
     });
   }
   if (els.openSetInfo) {
@@ -4860,6 +5027,7 @@
           : `名前・色・身長は「${member.name}」で決めます（${member.heightCm}cm）。`;
       }
     }
+    if (els.routeClear) els.routeClear.hidden = !(piece && piece.route);
     if (els.openSetInfo) {
       els.openSetInfo.hidden = !owner;
       els.openSetInfo.textContent = registered ? "寸法を開く" : "プロフィールを開く";

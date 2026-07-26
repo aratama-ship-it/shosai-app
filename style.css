@@ -1484,6 +1484,7 @@ textarea, input[type="text"] {
 
 /* 舞台が一度に入らない席では、掴んで視線を振れる */
 #stage-canvas[data-pannable="true"] { cursor: grab; }
+canvas[data-tool="route"] { cursor: crosshair; }
 #stage-canvas[data-pannable="true"][data-dragging="true"] { cursor: grabbing; }
 
 /* ショーの棚。端末に置いた全部を並べ、押すと切り替わる */
@@ -5413,7 +5414,7 @@ body.is-panel-dragging {
 
 .stage-center-bar .stage-tool-grid {
   flex: 0 0 auto;
-  grid-template-columns: repeat(3, auto);
+  grid-template-columns: repeat(4, auto);
 }
 
 .stage-center-bar .stage-tool-hint {
