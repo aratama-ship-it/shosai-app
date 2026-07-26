@@ -5168,13 +5168,45 @@ textarea, input[type="text"] {
 
 .stage-canvas-close:hover { color: var(--milk); border-color: var(--rust); }
 
+/* 中央列の一番上に置く一本のバー。
+   操作の切り替えと「名前を出す」は、演者や舞台セットの持ち物ではなく
+   絵そのものの見え方を決めるものなので、絵のすぐ上に集める。 */
 .stage-center-bar {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 9px;
+  padding: 7px 9px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk);
+}
+
+.stage-center-bar .stage-tool-grid {
+  flex: 0 0 auto;
+  grid-template-columns: repeat(3, auto);
+}
+
+.stage-center-bar .stage-tool-hint {
+  flex: 1 1 140px;
+  min-width: 0;
+  margin: 0;
+}
+
+.stage-center-bar .stage-name-toggle {
+  flex: 0 0 auto;
+  margin: 0;
+  min-height: 30px;
+}
+
+.stage-center-bar #stage-swap-center { flex: 0 0 auto; }
+
+@media (max-width: 900px) {
+  .stage-center-bar .stage-tool-hint { flex-basis: 100%; order: 9; }
 }
 
 .stage-center-bar button { min-height: 30px; font-size: 10.5px; padding: 4px 12px; }
+.stage-center-bar .stage-tool-grid button { padding: 4px 10px; letter-spacing: 0.04em; }
 
 /* 場面は右列で縦に積む */
 .stage-col .stage-scenes {
@@ -5259,6 +5291,7 @@ textarea, input[type="text"] {
 
 
 .stage-center-bar button { min-height: 27px; padding: 3px 10px; font-size: 10px; }
+.stage-center-bar .stage-name-toggle { min-height: 27px; padding: 3px 8px; font-size: 10px; }
 
 /* 入力欄も同じ調子に揃える */
 .stage-panel .stage-text-input,

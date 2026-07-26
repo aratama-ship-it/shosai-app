@@ -266,18 +266,18 @@
   /* ---------- パネルの配置 ----------
      どの道具をどちら側へ置くかは人によって違う。列を移せるようにし、
      使わないものは畳めるようにする。中央は絵だけで、上下の入れ替えのみ。 */
-  const PANELS = ["project", "venue", "cast", "sets", "tools", "light", "background", "scenes", "inspector", "save"];
+  const PANELS = ["project", "venue", "cast", "sets", "light", "background", "scenes", "inspector", "save"];
 
   function defaultLayout() {
     return {
       // 場面は絵のすぐ右に置く（順番を見ながら描くため）
       cols: {
-        project: "left", venue: "left", cast: "left", sets: "left", tools: "left", light: "left",
+        project: "left", venue: "left", cast: "left", sets: "left", light: "left",
         background: "left",
         scenes: "right", inspector: "right", save: "right",
       },
       order: {
-        project: 0, venue: 1, cast: 2, sets: 3, tools: 4, light: 5, background: 6,
+        project: 0, venue: 1, cast: 2, sets: 3, light: 4, background: 5,
         scenes: 0, inspector: 1, save: 2,
       },
       collapsed: {},

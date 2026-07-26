@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=58">
+<link rel="stylesheet" href="style.css?v=59">
 </head>
 <body>
 
@@ -239,10 +239,6 @@
                 <button type="button" id="stage-cast-add" class="btn-quiet">追加</button>
               </div>
               <div class="stage-cast-list" id="stage-cast-list"></div>
-              <label class="stage-toggle stage-name-toggle">
-                <input type="checkbox" id="stage-show-names" checked>
-                <span>名前を舞台に出す</span>
-              </label>
             </div>
           </section>
 
@@ -261,17 +257,6 @@
                 <button type="button" id="stage-set-add" class="btn-quiet">追加</button>
               </div>
               <div class="stage-cast-list" id="stage-set-list"></div>
-            </div>
-          </section>
-
-          <section class="stage-panel" data-panel="tools" data-title="操作">
-            <div class="stage-panel-body">
-            <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
-              <button type="button" data-stage-tool="select" aria-pressed="true">動かす</button>
-              <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
-              <button type="button" data-stage-tool="erase" aria-pressed="false">塗りを消す</button>
-            </div>
-            <p class="stage-tool-hint" id="stage-tool-hint">演者や物を選び、舞台の上で動かします。</p>
             </div>
           </section>
 
@@ -339,6 +324,16 @@
           </section>
 
           <div class="stage-center-bar">
+            <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
+              <button type="button" data-stage-tool="select" aria-pressed="true">動かす</button>
+              <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
+              <button type="button" data-stage-tool="erase" aria-pressed="false">塗りを消す</button>
+            </div>
+            <p class="stage-tool-hint" id="stage-tool-hint">演者や物を選び、舞台の上で動かします。</p>
+            <label class="stage-toggle stage-name-toggle">
+              <input type="checkbox" id="stage-show-names" checked>
+              <span>名前を出す</span>
+            </label>
             <button type="button" id="stage-swap-center" class="btn-quiet">正面と平面を入れ替える</button>
           </div>
           <div class="stage-canvas-stack" id="stage-canvas-stack">
@@ -649,7 +644,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=9"></script>
-<script src="stage-sketch.js?v=47"></script>
+<script src="stage-sketch.js?v=48"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
