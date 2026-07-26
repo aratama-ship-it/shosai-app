@@ -174,19 +174,21 @@
     /* 抱え込み宙返り。空中で膝を胸へ抱え、背中から頭にかけてが床と水平になる瞬間。
      * 体は丸まっているので、腕は脛を抱え、腿は胸へ折り畳む。
      * y の原点は床のままなので、重心が0.95Hあたりに来るように全体を持ち上げる。 */
+    /* 抱え込み宙返り。空中で身体をひとつの塊に丸めた形。
+     * 背中が床側、膝が天井側。膝は胸へ、踵は尻へ引き寄せ、
+     * 腕は脛を抱え、顎は胸へ引く（頭は伸ばさない）。
+     * 背骨から頭までを伸ばすと、ただの「仰向けで浮いた人」になってしまう。 */
     makePose("tuck", "抱え込み宙返り", {
-      // 背骨から頭までが床と水平。背中が床側を向き、胸と膝は天井側
-      head: [0, 1.00, 0.30], neck: [0, 0.975, 0.22],
-      shL: [-0.115, 0.96, 0.14], shR: [0.115, 0.96, 0.14],
-      hipL: [-0.058, 0.95, -0.18], hipR: [0.058, 0.95, -0.18],
-      // 膝を胸へ抱え込む。腿は天井側へ折り畳まれる
-      knL: [-0.078, 1.17, 0.02], knR: [0.078, 1.17, 0.02],
-      anL: [-0.072, 1.10, -0.17], anR: [0.072, 1.10, -0.17],
-      toL: [-0.07, 1.05, -0.23], toR: [0.07, 1.05, -0.23],
-      // 腕は脛を抱える
-      elL: [-0.15, 1.02, 0.00], elR: [0.15, 1.02, 0.00],
-      wrL: [-0.105, 1.10, -0.10], wrR: [0.105, 1.10, -0.10],
-    }, { face: [0, 1, 0.25] }),
+      hipL: [-0.055, 0.90, -0.15], hipR: [0.055, 0.90, -0.15],
+      shL: [-0.105, 0.95, 0.10], shR: [0.105, 0.95, 0.10],
+      neck: [0, 0.93, 0.16],
+      head: [0, 0.87, 0.21],                      // 顎を胸へ。頭は膝の側へ丸め込む
+      knL: [-0.082, 1.10, 0.04], knR: [0.082, 1.10, 0.04],
+      anL: [-0.076, 1.00, -0.13], anR: [0.076, 1.00, -0.13],
+      toL: [-0.072, 0.95, -0.19], toR: [0.072, 0.95, -0.19],
+      elL: [-0.15, 1.00, 0.03], elR: [0.15, 1.00, 0.03],
+      wrL: [-0.10, 1.05, -0.05], wrR: [0.10, 1.05, -0.05],
+    }, { face: [0, 0.5, 0.85] }),
     /* 寝姿。本人の正面（z+）が頭側なので、向きを真横にすると寝姿がはっきり読める。
      * うつ伏せ・仰向け・横向きは、腕と脚の置き方と顔の向きで見分ける。 */
     makePose("lie", "うつ伏せ", {
@@ -394,14 +396,8 @@
     selectionEmpty: document.getElementById("stage-selection-empty"),
     selectionControls: document.getElementById("stage-selection-controls"),
     selectedName: document.getElementById("stage-selected-name"),
-    selectedColor: document.getElementById("stage-selected-color"),
-    pieceSize: document.getElementById("stage-piece-size"),
-    sizeRow: document.getElementById("stage-size-row"),
-    dims: document.getElementById("stage-dims"),
     dimsFromSet: document.getElementById("stage-dims-from-set"),
     openSetInfo: document.getElementById("stage-open-setinfo"),
-    sizeValue: document.getElementById("stage-size-value"),
-    sizeLabel: document.querySelector('label[for="stage-piece-size"]'),
     sendBack: document.getElementById("stage-send-back"),
     bringFront: document.getElementById("stage-bring-front"),
     duplicate: document.getElementById("stage-duplicate"),
@@ -428,12 +424,12 @@
     exportJson: document.getElementById("stage-export-json"),
     importJson: document.getElementById("stage-import-json"),
     sceneList: document.getElementById("stage-scene-list"),
+    sceneResize: document.getElementById("stage-scene-resize"),
     sceneAdd: document.getElementById("stage-scene-add"),
     sceneDup: document.getElementById("stage-scene-dup"),
     sceneLeft: document.getElementById("stage-scene-left"),
     sceneRight: document.getElementById("stage-scene-right"),
     sceneDel: document.getElementById("stage-scene-del"),
-    pieceName: document.getElementById("stage-piece-name"),
     castList: document.getElementById("stage-cast-list"),
     pieceFacing: document.getElementById("stage-piece-facing"),
     piecePose: document.getElementById("stage-piece-pose"),
@@ -567,6 +563,8 @@
       closedSections: {},
       // 並べ替えや追加の起点になる行。セクションも起点になれる
       cursorRowId: null,
+      // 場面の欄の高さ(px)。引いて変えたら覚えておく
+      sceneListHeight: 320,
       seat: "center",
       // パネルの置き場所と開閉。中央は絵の順序だけを持つ
       layout: defaultLayout(),
@@ -889,6 +887,7 @@
       closedSections: (raw.closedSections && typeof raw.closedSections === "object" && !Array.isArray(raw.closedSections))
         ? raw.closedSections : {},
       cursorRowId: typeof raw.cursorRowId === "string" ? raw.cursorRowId : null,
+      sceneListHeight: clamp(finite(raw.sceneListHeight, 320), 120, 1200),
       layout: normalizeLayout(raw.layout),
       seat: VENUES.seatById(typeof raw.seat === "string" ? raw.seat : "").id,
       pieceColor: validColor(raw.pieceColor, fallback.pieceColor),
@@ -3639,9 +3638,13 @@
     const p = state.project;
     if (els.sceneList) {
       els.sceneList.innerHTML = "";
-      let sceneNo = 0;
+      /* 番号は入れ子に沿って振る。セクションの中の場面は「4-1」のようになる。
+       * 深さごとの数え札を持ち、浅い所へ戻ったら深い側は捨てる。 */
+      const counters = [];
       p.scenes.forEach((scene, i) => {
-        if (scene.kind === "scene") sceneNo += 1;
+        counters[scene.depth] = (counters[scene.depth] || 0) + 1;
+        counters.length = scene.depth + 1;
+        const numberText = counters.join("-");
         if (sceneHidden(i)) return;
         const isCursor = scene.id === (state.cursorRowId || p.activeSceneId);
         const isOpen = scene.kind === "scene" && scene.id === p.activeSceneId;
@@ -3670,10 +3673,10 @@
         num.className = "stage-scene-num";
         if (scene.kind === "section") {
           const shut = Boolean(state.closedSections[scene.id]);
-          num.textContent = shut ? "▸" : "▾";
+          num.textContent = `${shut ? "▸" : "▾"} ${numberText}`;
           button.setAttribute("aria-expanded", String(!shut));
         } else {
-          num.textContent = String(sceneNo).padStart(2, "0");
+          num.textContent = numberText;
         }
 
         const name = document.createElement("span");
@@ -3688,9 +3691,10 @@
 
         button.append(num, name, count);
         // 名前は行をダブルクリックして直す。欄を常に置くと一段ぶん場所を取るため
+        button.title = "ダブルクリックで名前を変えられます";
         button.addEventListener("dblclick", (e) => {
           e.preventDefault();
-          startRename(scene, name, button);
+          startRename(scene, head, button);
         });
         button.addEventListener("click", () => {
           if (scene.kind === "section") {
@@ -3749,37 +3753,39 @@
     }
   }
 
-  // 行の名前をその場で書き換える。押している間だけ入力欄になる
-  function startRename(scene, nameEl, button) {
-    if (button.querySelector(".stage-scene-rename")) return;
+  /* 行の名前をその場で書き換える。
+   * 入力欄はボタンの外へ出す。ボタンの中へ入れると、押した先がボタンに
+   * 吸われて文字を打てない（実際それで動かなかった）。 */
+  function startRename(scene, head, button) {
+    if (head.querySelector(".stage-scene-rename")) return;
     const input = document.createElement("input");
     input.type = "text";
     input.className = "stage-scene-rename";
     input.maxLength = 40;
     input.value = scene.title;
-    nameEl.replaceWith(input);
+    input.setAttribute("aria-label", "名前");
+    button.hidden = true;
+    head.append(input);
     input.focus();
     input.select();
-    /* 書き終わったら、一覧を作り直さずにその場で名前へ戻す。
-     * 作り直すと、まだ書いている入力欄が取り残されて宙に浮く。 */
+
     let done = false;
-    const finish = () => {
+    const finish = (keep) => {
       if (done) return;
       done = true;
-      const next = input.value.trim().slice(0, 40) || scene.title;
+      const next = keep === false ? scene.title : (input.value.trim().slice(0, 40) || scene.title);
       const changed = next !== scene.title;
       scene.title = next;
-      nameEl.textContent = scene.title;
-      input.replaceWith(nameEl);
-      if (changed) persistSoon();
+      input.remove();
+      button.hidden = false;
+      if (changed) { renderScenes(); persistSoon(); }
     };
     input.addEventListener("keydown", (e) => {
       e.stopPropagation();
-      if (e.key === "Enter") { e.preventDefault(); finish(); }
-      if (e.key === "Escape") { e.preventDefault(); input.value = scene.title; finish(); }
+      if (e.key === "Enter") { e.preventDefault(); finish(true); }
+      if (e.key === "Escape") { e.preventDefault(); finish(false); }
     });
-    input.addEventListener("click", (e) => e.stopPropagation());
-    input.addEventListener("blur", finish, { once: true });
+    input.addEventListener("blur", () => finish(true), { once: true });
   }
 
   /* ---------- 場面を掴んで並べ替える ----------
@@ -4155,7 +4161,8 @@
         showFront: state.showFront, showPlan: state.showPlan, showNames: state.showNames,
         showSetNames: state.showSetNames,
         showSeatMap: state.showSeatMap, frontPan: state.frontPan, frontPanY: state.frontPanY,
-        closedSections: state.closedSections, cursorRowId: state.cursorRowId });
+        closedSections: state.closedSections, cursorRowId: state.cursorRowId,
+        sceneListHeight: state.sceneListHeight });
       state = next;
       selectedId = null;
       syncInputs();
@@ -4345,14 +4352,6 @@
     if (!piece) return;
     const sameType = sc().pieces.filter((candidate) => candidate.type === piece.type);
     els.selectedName.textContent = `${PIECE_TYPES[piece.type]} ${sameType.indexOf(piece) + 1}`;
-    els.selectedColor.value = piece.color;
-    // 演者にしか出ないつまみなので、割合ではなく実際の身長そのものを動かす
-    const cm = Math.round(pieceHeightM(piece) * (piece.size / 100) * 100);
-    els.pieceSize.value = String(clamp(cm, 140, 200));
-    els.sizeValue.textContent = `${clamp(cm, 140, 200)}cm`;
-    if (els.sizeLabel) els.sizeLabel.firstChild.nodeValue = "身長 ";
-    // 台と球は実寸で持つので、倍率のつまみは出さない。
-    // 舞台セットに登録したものは、寸法の正本がそちらにあるので個別に触らせない
     syncDimControls(piece);
     if (els.piecePose) {
       const isPerformer = piece.type === "performer";
@@ -4373,18 +4372,12 @@
         els.facingValue.textContent = isPerformer ? facingLabel(piece.facing) : "―";
       }
     }
-    if (els.pieceName && document.activeElement !== els.pieceName) {
-      const member = piece.castId ? state.project.cast.find((c) => c.id === piece.castId) : null;
-      const registered = pieceSet(piece);
-      const owner = member || registered;
-      els.pieceName.value = owner ? owner.name : (piece.name || "");
-      els.pieceName.disabled = Boolean(owner);
-      els.pieceName.placeholder = member ? "名前は演者パネルで直します"
-        : registered ? "名前は登録した一覧で直します" : "例: 演台、ディアボロ";
-    }
   }
 
   function syncInputs() {
+    if (els.sceneList && state.sceneListHeight) {
+      els.sceneList.style.height = `${state.sceneListHeight}px`;
+    }
     els.background.value = sc().background;
     els.paintColor.value = state.paintColor;
     els.brushSize.value = String(state.brushSize);
@@ -4676,16 +4669,6 @@
       render();
     });
   }
-  if (els.pieceName) {
-    els.pieceName.addEventListener("input", (e) => {
-      const piece = selectedPiece();
-      if (!piece) return;
-      if (piece.castId) return;  // 名簿の人は人物パネルで直す
-      piece.name = e.target.value.slice(0, 24);
-      render();
-      persistSoon();
-    });
-  }
   const addSelectedSet = () => addSetItem(
     SET_KINDS[els.setKind && els.setKind.value] ? els.setKind.value : "block", els.setName);
   if (els.setAdd) els.setAdd.addEventListener("click", addSelectedSet);
@@ -4702,8 +4685,10 @@
   }
   if (els.openSetInfo) {
     els.openSetInfo.addEventListener("click", () => {
-      const registered = pieceSet(selectedPiece());
-      if (registered) openSetInfo(registered.id);
+      const piece = selectedPiece();
+      const registered = pieceSet(piece);
+      if (registered) { openSetInfo(registered.id); return; }
+      if (piece && piece.castId) openProfile(piece.castId);
     });
   }
   if (els.setInfoClose) els.setInfoClose.addEventListener("click", closeSetInfo);
@@ -4749,6 +4734,28 @@
   }
   if (els.sceneAdd) els.sceneAdd.addEventListener("click", () => addScene(false));
   if (els.sceneAddRig) els.sceneAddRig.addEventListener("click", () => addScene(true));
+  /* 場面の欄の高さ。下の取っ手を引いて変える。
+     ブラウザ既定の掴み手は地の色に沈んで見えないので、自前で持つ。 */
+  if (els.sceneResize && els.sceneList) {
+    els.sceneResize.addEventListener("pointerdown", (e) => {
+      const startY = e.clientY;
+      const startH = els.sceneList.getBoundingClientRect().height;
+      const move = (ev) => {
+        ev.preventDefault();
+        const next = clamp(startH + (ev.clientY - startY), 120, window.innerHeight * 0.8);
+        els.sceneList.style.height = `${Math.round(next)}px`;
+        state.sceneListHeight = Math.round(next);
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        persistSoon();
+      };
+      window.addEventListener("pointermove", move, { passive: false });
+      window.addEventListener("pointerup", up);
+    });
+  }
+
   if (els.sceneSection) els.sceneSection.addEventListener("click", addSection);
   if (els.sceneOut) els.sceneOut.addEventListener("click", () => indentScene(-1));
   if (els.sceneIn) els.sceneIn.addEventListener("click", () => indentScene(1));
@@ -4824,7 +4831,7 @@
     persistSoon();
   }
 
-  [els.background, els.selectedColor, els.pieceSize, els.pieceFacing].filter(Boolean).forEach((control) => {
+  [els.background, els.pieceFacing].filter(Boolean).forEach((control) => {
     control.addEventListener("pointerdown", beginControlEdit);
     control.addEventListener("focus", beginControlEdit);
     control.addEventListener("change", finishControlEdit);
@@ -4837,49 +4844,29 @@
     sc().background = event.target.value;
     render();
   });
-  els.selectedColor.addEventListener("input", (event) => {
-    const piece = selectedPiece();
-    if (!piece) return;
-    piece.color = event.target.value;
-    render();
-  });
+  /* 選んだものの欄は「ショーの中で動くもの」だけを持つ。
+   * 名前・色・寸法・身長はショーを通して変わらないので、
+   * 演者／舞台セット／光の一覧側で決める。ここからはそこへ飛べるようにする。 */
   function syncDimControls(piece) {
-    const type = piece && piece.type;
     const registered = pieceSet(piece);
-    const own = piece && piece.dims;
-    // 実寸を持つものは倍率のつまみを出さない。
-    // 登録済みのものは、寸法の正本が舞台セット側にあるので個別に触らせない
-    if (els.sizeRow) els.sizeRow.hidden = Boolean(own) || Boolean(registered);
+    const member = piece && piece.castId
+      ? state.project.cast.find((c) => c.id === piece.castId) : null;
+    const owner = registered || member;
     if (els.dimsFromSet) {
-      els.dimsFromSet.hidden = !registered;
-      if (registered) {
-        els.dimsFromSet.textContent = `寸法は「${registered.name}」で決まっています（${setDimLabel(registered)}）。`;
+      els.dimsFromSet.hidden = !owner;
+      if (owner) {
+        els.dimsFromSet.textContent = registered
+          ? `名前・色・寸法は「${registered.name}」で決めます（${setDimLabel(registered)}）。`
+          : `名前・色・身長は「${member.name}」で決めます（${member.heightCm}cm）。`;
       }
     }
-    // 舞台の上で選んだところから、登録側の寸法へ直接入れるようにする
-    if (els.openSetInfo) els.openSetInfo.hidden = !registered;
-    if (registered || !own) {
-      if (els.dims) els.dims.innerHTML = "";
-      return;
+    if (els.openSetInfo) {
+      els.openSetInfo.hidden = !owner;
+      els.openSetInfo.textContent = registered ? "寸法を開く" : "プロフィールを開く";
     }
-    buildDimControls(els.dims, "stage-dim", type, own, () => {
-      render();
-      persistSoon();
-    });
   }
 
-  els.pieceSize.addEventListener("input", (event) => {
-    const piece = selectedPiece();
-    if (!piece) return;
-    /* つまみは身長(cm)そのもの。保存は基準身長（名簿の身長、無ければ165cm）に
-     * 対する割合のままにするので、名簿側で身長を直しても関係が保たれる。 */
-    const want = clamp(Number(event.target.value), 140, 200);
-    const base = pieceHeightM(piece) * 100 || DEFAULT_HEIGHT_CM;
-    piece.size = clamp((want / base) * 100, 40, 260);
-    els.sizeValue.textContent = `${want}cm`;
-    render();
-    persistSoon();
-  });
+
 
   els.clearPaint.addEventListener("click", () => {
     if (!sc().strokes.length) {

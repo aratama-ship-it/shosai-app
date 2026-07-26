@@ -1362,9 +1362,13 @@ textarea, input[type="text"] {
 
 /* 場面は入れ子にできる。字下げで親子を見せ、セクションは入れ物として区別する。
    選んでいる場面だけ開いて、名前とメモをその場に持つ。 */
+/* 枠と余白は開いていない行にも同じだけ持たせる。開いた行だけ内側へ寄ると、
+   同じ深さなのに一段内側にいるように見えてしまう。 */
 .stage-scene-row {
   display: block;
   margin-bottom: 4px;
+  padding: 3px;
+  border: 1px solid transparent;
 }
 
 .stage-scene-head {
@@ -1391,9 +1395,8 @@ textarea, input[type="text"] {
 /* 開いている場面は、見出しとメモをまとめて一つの枠で囲う。
    見出しだけに枠が付いていると、メモがどの場面のものか読み取りにくい。 */
 .stage-scene-row.is-open {
-  border: 1px solid var(--rust);
+  border-color: var(--rust);
   background: rgba(168, 75, 38, 0.07);
-  padding: 3px;
 }
 
 .stage-scene-row.is-open .stage-scene-chip {
@@ -1409,16 +1412,20 @@ textarea, input[type="text"] {
   padding: 5px 2px 2px 20px;
 }
 
-/* 名前はその場で書き換える */
+/* 名前をその場で書き換えているあいだ。入力中だとはっきり分かる見た目にする */
 .stage-scene-rename {
   min-width: 0;
   width: 100%;
+  min-height: 40px;
   border: 1px solid var(--brass);
   background: var(--desk-2);
   color: var(--paper);
   font: inherit;
-  font-size: 12.5px;
-  padding: 2px 5px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  padding: 6px 10px;
+  outline: 2px solid rgba(211, 172, 89, 0.35);
+  outline-offset: -1px;
 }
 
 .stage-scene-body .stage-text-input {
@@ -5449,8 +5456,35 @@ body.is-panel-dragging {
   overflow-y: auto;
   resize: vertical;
   padding-right: 2px;
-  border-bottom: 1px solid rgba(240, 231, 214, 0.12);
 }
+
+/* 高さを変える取っ手。既定の描き方は地に沈んで見えないので、明るく描き直す */
+.stage-col .stage-scene-list::-webkit-resizer {
+  background:
+    linear-gradient(135deg, transparent 46%, rgba(240, 231, 214, 0.85) 46%, rgba(240, 231, 214, 0.85) 54%, transparent 54%),
+    linear-gradient(135deg, transparent 70%, rgba(240, 231, 214, 0.85) 70%, rgba(240, 231, 214, 0.85) 78%, transparent 78%);
+}
+
+/* 取っ手の場所が分かるように、下の縁へ明るい線を引く */
+.stage-scene-resize {
+  height: 9px;
+  margin: -2px 0 8px;
+  border-top: 1px solid rgba(240, 231, 214, 0.5);
+  cursor: ns-resize;
+  touch-action: none;
+  display: grid;
+  place-items: center;
+}
+
+.stage-scene-resize::after {
+  content: "";
+  width: 34px;
+  height: 2px;
+  background: rgba(240, 231, 214, 0.5);
+  border-radius: 2px;
+}
+
+.stage-scene-resize:hover::after { background: var(--brass); }
 
 .stage-col .stage-scene-chip { min-width: 0; width: 100%; }
 
