@@ -45,6 +45,20 @@
     ring: 1.2,
     light: 2.5,
   };
+  // 台と円形の物は実寸（m）で持つ。人だけが身長で決まるのに対し、
+  // セットは幅・奥行き・高さがそれぞれ意味を持つので、一つの倍率では表せない。
+  const PIECE_DIMS = {
+    block: { w: 2.04, d: 0.66, h: 1.2 },   // 平台1枚ぶんの見当
+    ring: { dia: 1.2, lift: 0 },           // 直径と、床からの高さ
+  };
+  const DIM_LIMITS = {
+    w: [0.2, 12], d: [0.2, 12], h: [0.1, 8], dia: [0.3, 8], lift: [0, 10],
+  };
+  // 寸法のつまみ。種類ごとに出し分け、値は m で表示する
+  const DIM_FIELDS = [
+    ["block", "w", "dimW"], ["block", "d", "dimD"], ["block", "h", "dimH"],
+    ["ring", "dia", "dimDia"], ["ring", "lift", "dimLift"],
+  ];
   const DEFAULT_HEIGHT_CM = 165;
   // 肩幅は身長のおよそ1/4。向きが変わると見かけの幅がこの間で動く
   const SHOULDER_RATIO = 0.25;
@@ -70,6 +84,14 @@
     selectedName: document.getElementById("stage-selected-name"),
     selectedColor: document.getElementById("stage-selected-color"),
     pieceSize: document.getElementById("stage-piece-size"),
+    sizeRow: document.getElementById("stage-size-row"),
+    dimsBlock: document.getElementById("stage-dims-block"),
+    dimsRing: document.getElementById("stage-dims-ring"),
+    dimW: document.getElementById("stage-dim-w"),
+    dimD: document.getElementById("stage-dim-d"),
+    dimH: document.getElementById("stage-dim-h"),
+    dimDia: document.getElementById("stage-dim-dia"),
+    dimLift: document.getElementById("stage-dim-lift"),
     sizeValue: document.getElementById("stage-size-value"),
     sendBack: document.getElementById("stage-send-back"),
     bringFront: document.getElementById("stage-bring-front"),
@@ -292,7 +314,34 @@
       castId: typeof piece.castId === "string" ? piece.castId : null,
       // 体の向き（度）。0=客席を向く、90=上手を向く、180=背中
       facing: clamp(finite(piece.facing, 0), 0, 359),
+      dims: normalizeDims(type, piece),
     };
+  }
+
+  // 台と円形の物の実寸。dims を持たない古い保存は、size（倍率）から見た目が
+  // 変わらないように割り戻す。それ以外の種類は寸法を持たない。
+  function normalizeDims(type, piece) {
+    const base = PIECE_DIMS[type];
+    if (!base) return null;
+    const old = piece && piece.dims ? piece.dims : null;
+    const k = clamp(finite(piece && piece.size, 100), 55, 180) / 100;
+    const out = {};
+    Object.keys(base).forEach((key) => {
+      const lim = DIM_LIMITS[key];
+      const fallback = key === "lift" ? base[key] : base[key] * k;
+      out[key] = clamp(finite(old ? old[key] : fallback, base[key]), lim[0], lim[1]);
+    });
+    return out;
+  }
+
+  function pieceDims(piece) {
+    return (piece && piece.dims) || PIECE_DIMS[piece && piece.type] || null;
+  }
+
+  // その奥行きでの「実寸1mあたりの画素」。横と縦で尺が違う（正面図のみ）
+  function perMetre(pos, L) {
+    if (L.plan) return { x: L.pxPerM, y: L.pxPerM };
+    return { x: L.pxPerM * pos.scale, y: L.pxPerMv * pos.scale * (pos.stretch || 1) };
   }
 
   function normalizeStroke(stroke) {
@@ -442,20 +491,34 @@
     // 正面図: 奥のラインと手前のラインの間で擬似パースを作る。
     // 客席の位置（席）によって、床の厚み・幅の開き・消失点の左右が変わる。
     const seat = VENUES.seatById(state.seat);
+
+    /* 尺は縦と横で同じにする。
+     * 床の1m枡、演者の身長、セットの実寸が同じものさしで測られていないと、
+     * 寸法を持たせた意味がない（幅1m×高さ2.4mの塔が正方形に見える）。
+     * 以前は横を間口から、縦を奥の壁の高さから別々に取っていたため、
+     * 同じ1mが2.5倍ずれていた。
+     *
+     * 尺は「間口が画面に収まる値」と「舞台の高さが収まる値」の小さい方。
+     * seat.backW / seat.frontW は絶対値ではなく、手前と奥の倍率差として使う。
+     */
+    const span = seat.frontW / seat.backW;              // 手前は奥の何倍に見えるか
+    const headroom = Math.max(24, seat.floorY - 22);     // 奥の壁の上に残す余白
+    const byWidth = (W * seat.frontW) / size.width;
+    const byHeight = headroom / ((size.height || 8) / span);
+    const pxPerM = Math.min(byWidth, byHeight);
+    const frontW = pxPerM * size.width;
+
     return {
       plan: false, venue: v, size, seat,
-      backY: seat.backY,
+      backY: seat.floorY - ((size.height || 8) * pxPerM) / span,
       floorY: seat.floorY,
       bottomY: seat.bottomY,
-      backW: W * seat.backW,
-      frontW: W * seat.frontW,
+      backW: frontW / span,
+      frontW,
       shift: (seat.shift || 0) * W * 0.5,
       centerX: W / 2,
-      // 横の尺: 最前列の実寸幅を基準にした 1mあたりのpx
-      pxPerM: (W * seat.frontW) / size.width,
-      // 縦の尺: 舞台の高さは奥の面の高さに対応する。横の尺とは倍率が違うので分ける。
-      // 人の背丈をこちらで描かないと、間口の尺で伸びて2倍以上の大きさになる。
-      pxPerMv: (seat.floorY - seat.backY) / (size.height || 8),
+      pxPerM,
+      pxPerMv: pxPerM,   // 縦横で同じ。名前は呼び出し側の互換のために残す
     };
   }
 
@@ -500,9 +563,8 @@
   // 実寸（m）から画面上の高さを出す。size は基準に対する倍率
   function pieceScale(piece, pos, L) {
     const meters = pieceHeightM(piece) * (piece.size / 100);
-    // 平面は間口の尺、正面は舞台の高さの尺で測る
-    const perM = L.plan ? L.pxPerM : L.pxPerMv;
-    const px = meters * perM * (L.plan ? 1 : pos.scale);
+    // 尺は縦横で同じ。床の1m枡と同じものさしで測る
+    const px = meters * L.pxPerM * (L.plan ? 1 : pos.scale);
     // 元の描画は「人物=約155px」で描かれているので、それに合わせる
     return px / (piece.type === "performer" ? 155 : piece.type === "block" ? 84 : piece.type === "ring" ? 118 : 170);
   }
@@ -698,50 +760,83 @@
     target.restore();
   }
 
-  function drawBlock(target, piece, pos, scale) {
-    const stretch = pos.stretch || 1;
-    const width = 112 * scale;
-    const height = 66 * scale * stretch;
-    const depth = 18 * scale * stretch;
+  // 台・物。幅・奥行き・高さをそれぞれ実寸（m）で持つ直方体。
+  // 奥行きは天板の見かけのずれとして出す（真上から見た平面図と対で読む）。
+  function drawBlock(target, piece, pos, scale, L) {
+    const dim = pieceDims(piece);
+    const per = perMetre(pos, L);
+    const width = dim.w * per.x;
+    const height = dim.h * per.y;
+    const lean = dim.d * per.x * 0.34;               // 天板が奥へずれる量
+    const rise = dim.d * per.y * 0.26;               // そのぶん上へ持ち上がる量
+
     target.save();
     target.fillStyle = "rgba(0,0,0,0.3)";
     target.beginPath();
-    target.ellipse(pos.x, pos.y + 7, width * 0.58, 12 * scale, 0, 0, Math.PI * 2);
+    target.ellipse(pos.x, pos.y + 7, Math.max(6, width * 0.58), Math.max(3, 12 * scale), 0, 0, Math.PI * 2);
     target.fill();
+
+    // 正面
     target.fillStyle = piece.color;
     target.strokeStyle = rgba(piece.color, 0.28);
     target.lineWidth = 2;
     target.fillRect(pos.x - width / 2, pos.y - height, width, height);
     target.strokeRect(pos.x - width / 2, pos.y - height, width, height);
+
+    // 天板
     target.fillStyle = rgba(piece.color, 0.74);
     target.beginPath();
     target.moveTo(pos.x - width / 2, pos.y - height);
-    target.lineTo(pos.x - width / 2 + depth, pos.y - height - depth);
-    target.lineTo(pos.x + width / 2 + depth, pos.y - height - depth);
+    target.lineTo(pos.x - width / 2 + lean, pos.y - height - rise);
+    target.lineTo(pos.x + width / 2 + lean, pos.y - height - rise);
     target.lineTo(pos.x + width / 2, pos.y - height);
+    target.closePath();
+    target.fill();
+
+    // 側面。奥行きがあることを一目で分からせる
+    target.fillStyle = rgba(piece.color, 0.5);
+    target.beginPath();
+    target.moveTo(pos.x + width / 2, pos.y - height);
+    target.lineTo(pos.x + width / 2 + lean, pos.y - height - rise);
+    target.lineTo(pos.x + width / 2 + lean, pos.y - rise);
+    target.lineTo(pos.x + width / 2, pos.y);
     target.closePath();
     target.fill();
     target.restore();
   }
 
-  function drawRing(target, piece, pos, scale) {
-    const stretch = pos.stretch || 1;
-    const radius = 52 * scale;
+  // 円形の物。直径と、床からの高さを実寸（m）で持つ。
+  // 床から離れている場合は、どれだけ浮いているかを破線の目安で示す。
+  function drawRing(target, piece, pos, scale, L) {
+    const dim = pieceDims(piece);
+    const per = perMetre(pos, L);
+    const rx = (dim.dia / 2) * per.x;
+    const ry = (dim.dia / 2) * per.y;
+    const lift = dim.lift * per.y;
+    const cy = pos.y - lift - ry;
+
     target.save();
     target.fillStyle = "rgba(0,0,0,0.28)";
     target.beginPath();
-    target.ellipse(pos.x, pos.y + 5, radius * 1.12, 10 * scale, 0, 0, Math.PI * 2);
+    target.ellipse(pos.x, pos.y + 5, Math.max(5, rx * 1.12), Math.max(3, 10 * scale), 0, 0, Math.PI * 2);
     target.fill();
+
+    // 浮いているぶんの目安
+    if (dim.lift > 0.05) {
+      target.strokeStyle = rgba(piece.color, 0.34);
+      target.lineWidth = 1.5;
+      target.setLineDash([5, 5]);
+      target.beginPath();
+      target.moveTo(pos.x, pos.y);
+      target.lineTo(pos.x, cy + ry);
+      target.stroke();
+      target.setLineDash([]);
+    }
+
     target.strokeStyle = piece.color;
-    target.lineWidth = Math.max(5, 11 * scale);
+    target.lineWidth = Math.max(3, Math.min(rx, ry) * 0.19);
     target.beginPath();
-    target.ellipse(pos.x, pos.y - (radius + 7 * scale) * stretch, radius, radius * stretch, 0, 0, Math.PI * 2);
-    target.stroke();
-    target.strokeStyle = rgba(piece.color, 0.62);
-    target.lineWidth = Math.max(2, 3 * scale);
-    target.beginPath();
-    target.moveTo(pos.x, pos.y - 8 * scale * stretch);
-    target.lineTo(pos.x, pos.y);
+    target.ellipse(pos.x, cy, Math.max(4, rx), Math.max(4, ry), 0, 0, Math.PI * 2);
     target.stroke();
     target.restore();
   }
@@ -816,19 +911,33 @@
       target.closePath();
       target.fill();
     } else if (piece.type === "block") {
-      const r = Math.max(6, 26 * scale);
+      // 真上から見るので、幅と奥行きがそのまま床の占有面積になる
+      const dim = pieceDims(piece);
+      const w = Math.max(5, dim.w * L.pxPerM);
+      const d = Math.max(5, dim.d * L.pxPerM);
       target.fillStyle = piece.color;
-      target.fillRect(pos.x - r, pos.y - r * 0.6, r * 2, r * 1.2);
+      target.fillRect(pos.x - w / 2, pos.y - d / 2, w, d);
       target.strokeStyle = "rgba(0,0,0,0.3)";
       target.lineWidth = 1.5;
-      target.strokeRect(pos.x - r, pos.y - r * 0.6, r * 2, r * 1.2);
+      target.strokeRect(pos.x - w / 2, pos.y - d / 2, w, d);
     } else if (piece.type === "ring") {
-      const r = Math.max(6, 26 * scale);
+      const dim = pieceDims(piece);
+      const r = Math.max(5, (dim.dia / 2) * L.pxPerM);
       target.strokeStyle = piece.color;
-      target.lineWidth = Math.max(3, r * 0.3);
+      target.lineWidth = Math.max(2.5, r * 0.24);
       target.beginPath();
       target.arc(pos.x, pos.y, r, 0, Math.PI * 2);
       target.stroke();
+      // 浮いている輪は、床に落ちる位置だけを点線で示す
+      if (dim.lift > 0.05) {
+        target.strokeStyle = rgba(piece.color, 0.4);
+        target.lineWidth = 1;
+        target.setLineDash([4, 4]);
+        target.beginPath();
+        target.arc(pos.x, pos.y, r * 1.28, 0, Math.PI * 2);
+        target.stroke();
+        target.setLineDash([]);
+      }
     }
     target.restore();
   }
@@ -836,7 +945,17 @@
   function selectionBounds(piece, L) {
     const pos = place(piece.u, piece.v, L);
     const scale = pieceScale(piece, pos, L);
+    const dim = pieceDims(piece);
     if (L.plan) {
+      if (piece.type === "block") {
+        const w = Math.max(12, dim.w * L.pxPerM);
+        const d = Math.max(12, dim.d * L.pxPerM);
+        return { x: pos.x - w / 2, y: pos.y - d / 2, w, h: d };
+      }
+      if (piece.type === "ring") {
+        const r = Math.max(10, (dim.dia / 2) * L.pxPerM);
+        return { x: pos.x - r, y: pos.y - r, w: r * 2, h: r * 2 };
+      }
       const r = piece.type === "performer"
         ? Math.max(11, (pieceHeightM(piece) * SHOULDER_RATIO * (piece.size / 100) * L.pxPerM) / 2 + 4)
         : Math.max(10, 30 * scale);
@@ -844,8 +963,18 @@
     }
     const st = pos.stretch || 1;
     if (piece.type === "light") return { x: pos.x - 78 * scale, y: pos.y - 35 * scale, w: 156 * scale, h: 70 * scale };
-    if (piece.type === "block") return { x: pos.x - 66 * scale, y: pos.y - 92 * scale * st, w: 132 * scale, h: 103 * scale * st };
-    if (piece.type === "ring") return { x: pos.x - 66 * scale, y: pos.y - 128 * scale * st, w: 132 * scale, h: 139 * scale * st };
+    const per = perMetre(pos, L);
+    if (piece.type === "block") {
+      const w = Math.max(14, dim.w * per.x + dim.d * per.x * 0.34);
+      const h = Math.max(14, dim.h * per.y + dim.d * per.y * 0.26);
+      return { x: pos.x - dim.w * per.x / 2, y: pos.y - h, w, h };
+    }
+    if (piece.type === "ring") {
+      const rx = Math.max(7, (dim.dia / 2) * per.x);
+      const ry = Math.max(7, (dim.dia / 2) * per.y);
+      const top = pos.y - dim.lift * per.y - ry * 2;
+      return { x: pos.x - rx, y: top, w: rx * 2, h: pos.y - top };
+    }
     return { x: pos.x - 60 * scale, y: pos.y - 143 * scale * st, w: 120 * scale, h: 154 * scale * st };
   }
 
@@ -1313,8 +1442,8 @@
       if (piece.type === "light") drawLight(target, piece, pos, scale, L);
       else if (L.plan) drawPlanPiece(target, piece, pos, scale, L);
       else if (piece.type === "performer") drawPerformer(target, piece, pos, scale);
-      else if (piece.type === "block") drawBlock(target, piece, pos, scale);
-      else if (piece.type === "ring") drawRing(target, piece, pos, scale);
+      else if (piece.type === "block") drawBlock(target, piece, pos, scale, L);
+      else if (piece.type === "ring") drawRing(target, piece, pos, scale, L);
       if (lean) target.restore();
     };
     sc().pieces.filter((p) => p.type === "light").forEach(draw);
@@ -2141,6 +2270,8 @@
     els.selectedColor.value = piece.color;
     els.pieceSize.value = String(piece.size);
     els.sizeValue.textContent = String(piece.size);
+    // 台と円形の物は実寸で持つので、倍率のつまみは出さない
+    syncDimControls(piece);
     if (els.pieceFacing) {
       const isPerformer = piece.type === "performer";
       // フェーダーは中央が客席向き。保存は0〜359なので、180を超える分は負へ折り返す
@@ -2520,6 +2651,34 @@
     piece.color = event.target.value;
     render();
   });
+  function syncDimControls(piece) {
+    const type = piece && piece.type;
+    if (els.sizeRow) els.sizeRow.hidden = type === "block" || type === "ring";
+    if (els.dimsBlock) els.dimsBlock.hidden = type !== "block";
+    if (els.dimsRing) els.dimsRing.hidden = type !== "ring";
+    const dim = pieceDims(piece);
+    if (!dim) return;
+    DIM_FIELDS.forEach(([owner, key, ref]) => {
+      if (owner !== type || !els[ref] || dim[key] === undefined) return;
+      els[ref].value = String(dim[key]);
+      const out = document.getElementById(els[ref].id + "-value");
+      if (out) out.textContent = `${dim[key].toFixed(1)}m`;
+    });
+  }
+
+  DIM_FIELDS.forEach(([owner, key, ref]) => {
+    if (!els[ref]) return;
+    els[ref].addEventListener("input", (event) => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== owner || !piece.dims) return;
+      const lim = DIM_LIMITS[key];
+      piece.dims[key] = clamp(Number(event.target.value), lim[0], lim[1]);
+      const out = document.getElementById(event.target.id + "-value");
+      if (out) out.textContent = `${piece.dims[key].toFixed(1)}m`;
+      render();
+    });
+  });
+
   els.pieceSize.addEventListener("input", (event) => {
     const piece = selectedPiece();
     if (!piece) return;

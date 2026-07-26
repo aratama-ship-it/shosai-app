@@ -96,7 +96,8 @@
    * 実務では「サイトライン」と呼ぶ検討で、Vectorworks はカメラを客席へ置いて確かめる。
    * ここでは擬似パースのパラメータを席ごとに持つ。
    *   floorY..bottomY  床の帯の厚み。低い席ほど床が浅く（潰れて）見える
-   *   backW..frontW    奥と手前の幅の差。高い席ほど差が開き、奥まで見通せる
+   *   backW..frontW    奥と手前の幅の比。絶対値ではなく倍率差として使う
+   *                    （実際の px は、間口と高さが画面に収まる尺から導く）
    *   shift            消失点の左右ずれ。横の席ほど舞台が斜めに見える
    *   rise             舞台面をどれだけ見上げる／見下ろすか（0=水平）
    *   tilt             三点透視の強さ。垂直線が画面の上へ収束する度合い（煽りの正体）
@@ -106,7 +107,7 @@
     {
       id: "center", label: "1階 中央", short: "中央",
       note: "設計の基準になる席。奥行きも高さも素直に見える。",
-      backY: 150, floorY: 470, bottomY: 674, backW: 0.62, frontW: 0.94, shift: 0, rise: 0,
+      floorY: 470, bottomY: 674, backW: 0.62, frontW: 0.94, shift: 0, rise: 0,
     },
     {
       /* 舞台面はふつう客席床から0.9〜1.2m上がり、座った目線は床面とほぼ同じ高さに来る。
@@ -125,17 +126,17 @@
        */
       id: "front", label: "1階 最前列", short: "最前",
       note: "目線が床とほぼ同じ高さ。強く見上げ、手前と奥の大きさが極端に開く（超広角の見え方）。",
-      backY: -574, floorY: 490, bottomY: 532, backW: 0.45, frontW: 1.75, shift: 0, rise: 0.9, apron: 150, tilt: 0.13,
+      floorY: 490, bottomY: 532, backW: 0.45, frontW: 1.75, shift: 0, rise: 0.15, apron: 150, tilt: 0.13,
     },
     {
       id: "side", label: "1階 左右席", short: "左右",
       note: "斜めから見る位置。片側の袖が見え、正面向きの構図は崩れる。",
-      backY: 150, floorY: 470, bottomY: 674, backW: 0.62, frontW: 0.94, shift: 0.3, rise: 0,
+      floorY: 470, bottomY: 674, backW: 0.62, frontW: 0.94, shift: 0.3, rise: 0,
     },
     {
       id: "balcony", label: "2階席", short: "2階",
       note: "見下ろす位置。床の絵が主役になり、立ち位置の関係がよく読める。",
-      backY: 206, floorY: 392, bottomY: 658, backW: 0.5, frontW: 0.9, shift: 0, rise: -0.12,
+      floorY: 392, bottomY: 658, backW: 0.5, frontW: 0.9, shift: 0, rise: -0.12,
     },
   ];
 

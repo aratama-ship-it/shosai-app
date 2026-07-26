@@ -388,10 +388,36 @@
               </label>
               <input type="range" id="stage-piece-facing" min="-180" max="180" step="15" value="0">
               <p class="stage-range-scale"><span>背中</span><span>客席</span><span>背中</span></p>
-              <label class="stage-control-label stage-range-label" for="stage-piece-size">
-                大きさ <span id="stage-size-value">100</span>
-              </label>
-              <input type="range" id="stage-piece-size" min="55" max="180" step="5" value="100">
+              <div id="stage-size-row">
+                <label class="stage-control-label stage-range-label" for="stage-piece-size">
+                  大きさ <span id="stage-size-value">100</span>
+                </label>
+                <input type="range" id="stage-piece-size" min="55" max="180" step="5" value="100">
+              </div>
+              <div id="stage-dims-block" hidden>
+                <label class="stage-control-label stage-range-label" for="stage-dim-w">
+                  幅 <span id="stage-dim-w-value">2.0m</span>
+                </label>
+                <input type="range" id="stage-dim-w" min="0.2" max="12" step="0.1" value="2">
+                <label class="stage-control-label stage-range-label" for="stage-dim-d">
+                  奥行き <span id="stage-dim-d-value">0.7m</span>
+                </label>
+                <input type="range" id="stage-dim-d" min="0.2" max="12" step="0.1" value="0.7">
+                <label class="stage-control-label stage-range-label" for="stage-dim-h">
+                  高さ <span id="stage-dim-h-value">1.2m</span>
+                </label>
+                <input type="range" id="stage-dim-h" min="0.1" max="8" step="0.1" value="1.2">
+              </div>
+              <div id="stage-dims-ring" hidden>
+                <label class="stage-control-label stage-range-label" for="stage-dim-dia">
+                  直径 <span id="stage-dim-dia-value">1.2m</span>
+                </label>
+                <input type="range" id="stage-dim-dia" min="0.3" max="8" step="0.1" value="1.2">
+                <label class="stage-control-label stage-range-label" for="stage-dim-lift">
+                  床からの高さ <span id="stage-dim-lift-value">0.0m</span>
+                </label>
+                <input type="range" id="stage-dim-lift" min="0" max="10" step="0.1" value="0">
+              </div>
               <div class="stage-layer-actions">
                 <button type="button" id="stage-send-back">後ろへ</button>
                 <button type="button" id="stage-bring-front">前へ</button>
@@ -612,8 +638,8 @@
 <script src="db.js?v=77"></script>
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
-<script src="stage-venues.js?v=8"></script>
-<script src="stage-sketch.js?v=34"></script>
+<script src="stage-venues.js?v=9"></script>
+<script src="stage-sketch.js?v=36"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
