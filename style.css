@@ -5123,9 +5123,7 @@ textarea, input[type="text"] {
   font-size: 10.5px;
 }
 
-.stage-seat-strip 
-
-/* 絵の見出しと閉じるボタン */
+/* 絵の見出しと開閉のつまみ */
 .stage-canvas-bar {
   display: flex;
   align-items: center;
@@ -5136,17 +5134,25 @@ textarea, input[type="text"] {
 
 .stage-canvas-bar .stage-canvas-caption { margin-bottom: 0; }
 
+/* 開閉のつまみ。✕は「消す」に見えるので三角にして、開いているかどうかを
+   向きで示す（▾=開いている／▸=閉じている）。右上に置く。 */
 .stage-canvas-close {
   border: 1px solid var(--line-dark);
   background: none;
   color: var(--milk-dim);
-  min-width: 28px;
-  min-height: 26px;
-  font-size: 11px;
+  min-width: 36px;
+  min-height: 28px;
+  font-size: 12px;
   line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
 }
 
 .stage-canvas-close:hover { color: var(--milk); border-color: var(--rust); }
+
+.stage-canvas-close[aria-expanded="false"] {
+  color: var(--brass);
+  border-color: rgba(156, 130, 63, 0.45);
+}
 
 /* 中央列の一番上に置く一本のバー。
    操作の切り替えと「名前を出す」は、演者や舞台セットの持ち物ではなく

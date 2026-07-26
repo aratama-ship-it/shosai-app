@@ -1555,17 +1555,23 @@
     target.fillStyle = "#11100f";
     if (back.y > 0) target.fillRect(0, 0, W, back.y);
     if (v.frame) {
-      // 額縁は舞台面の上と左右まで。床（エプロン側）は隠さない。
-      target.fillRect(0, 0, back.x, L.floorY);
-      target.fillRect(back.x + back.w, 0, W - back.x - back.w, L.floorY);
+      /* 額縁はいちばん手前（v=1）の面にある。奥の壁の幅で描いていたころは、
+       * 横の席にすると床が額縁の外へはみ出して、絵として破綻していた。
+       * 手前の間口いっぱいに開いた枠として描く。横にずれる席でも、
+       * 額縁だけは動かない（動くのは奥の壁と床の奥側）。 */
+      const archX = L.centerX - L.frontW / 2;
+      const archW = L.frontW;
+      target.fillRect(0, 0, Math.max(0, archX), L.bottomY);
+      const rightX = archX + archW;
+      if (rightX < W) target.fillRect(rightX, 0, W - rightX, L.bottomY);
       // 額縁の輪郭は、額縁そのものが視野に収まっている席でだけ引く。
       // 最前列のように額縁の内側まで入り込んだ席で引くと、背景の幕が
       // 「奥にあるドア」に見えてしまう。
-      if (!(L.seat && L.seat.apron)) {
+      if (!(L.seat && L.seat.apron) && archX > 2) {
         target.strokeStyle = "rgba(156,130,63,0.42)";
         target.lineWidth = 3;
         const frameTop = Math.max(back.y, -4);
-        target.strokeRect(back.x, frameTop, back.w, L.floorY - frameTop);
+        target.strokeRect(archX, frameTop, archW, L.bottomY - frameTop);
       }
     } else if (!roundHouse) {
       target.strokeStyle = "rgba(156,130,63,0.2)";
@@ -1894,7 +1900,9 @@
     if (els.planCell) els.planCell.classList.toggle("is-closed", !state.showPlan);
     document.querySelectorAll("[data-toggle-view]").forEach((b) => {
       const open = b.dataset.toggleView === "front" ? state.showFront : state.showPlan;
-      b.textContent = open ? "✕" : "＋";
+      // 開閉であることが記号で分かるように三角にする（✕だと消去に見える）
+      b.textContent = open ? "▾" : "▸";
+      b.setAttribute("aria-expanded", String(open));
       b.setAttribute("aria-label", `${b.dataset.toggleView === "front" ? "正面" : "平面"}の絵を${open ? "閉じる" : "開く"}`);
     });
 

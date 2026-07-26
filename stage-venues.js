@@ -135,8 +135,12 @@
     {
       id: "side", label: "1階 左右席", short: "左右",
       note: "斜めから見る位置。片側の袖が見え、正面向きの構図は崩れる。",
-      plan: { x: 0.14, y: 0.4, tier: "stalls" },
-      floorY: 470, bottomY: 674, backW: 0.62, frontW: 0.94, shift: 0.3, rise: 0,
+      /* 客席の下手（画面の左）に座る想定。
+       * 左に座ると、奥行きの消失点も左へ寄るので、奥の壁は手前の間口より
+       * 「左へ」ずれて見える。shift は奥のずれ幅なので負になる。
+       * ここを正にすると、平面の小図が示す位置と絵が左右逆になる。 */
+      plan: { x: 0.16, y: 0.4, tier: "stalls" },
+      floorY: 470, bottomY: 674, backW: 0.62, frontW: 0.94, shift: -0.28, rise: 0,
     },
     {
       id: "balcony", label: "2階席", short: "2階",
