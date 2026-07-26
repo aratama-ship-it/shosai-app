@@ -170,6 +170,19 @@
       anL: [-0.078, 1.18, 0.03], anR: [0.046, 1.19, -0.06],
       toL: [-0.08, 1.25, 0.06], toR: [0.044, 1.26, -0.09],
     }),
+    /* 抱え込み宙返り。空中で膝を胸へ抱え、背中から頭にかけてが床と水平になる瞬間。
+     * 体は丸まっているので、腕は脛を抱え、腿は胸へ折り畳む。
+     * y の原点は床のままなので、重心が0.95Hあたりに来るように全体を持ち上げる。 */
+    makePose("tuck", "抱え込み宙返り", {
+      head: [0, 0.98, 0.30], neck: [0, 0.99, 0.22],
+      shL: [-0.115, 1.00, 0.16], shR: [0.115, 1.00, 0.16],
+      elL: [-0.135, 0.90, 0.02], elR: [0.135, 0.90, 0.02],
+      wrL: [-0.10, 0.80, -0.06], wrR: [0.10, 0.80, -0.06],
+      hipL: [-0.058, 0.99, -0.16], hipR: [0.058, 0.99, -0.16],
+      knL: [-0.075, 0.86, 0.02], knR: [0.075, 0.86, 0.02],
+      anL: [-0.07, 0.74, -0.12], anR: [0.07, 0.74, -0.12],
+      toL: [-0.068, 0.70, -0.19], toR: [0.068, 0.70, -0.19],
+    }, { face: [0, -0.2, 1] }),
     /* 寝姿。本人の正面（z+）が頭側なので、向きを真横にすると寝姿がはっきり読める。
      * うつ伏せ・仰向け・横向きは、腕と脚の置き方と顔の向きで見分ける。 */
     makePose("lie", "うつ伏せ", {
@@ -416,8 +429,6 @@
     sceneLeft: document.getElementById("stage-scene-left"),
     sceneRight: document.getElementById("stage-scene-right"),
     sceneDel: document.getElementById("stage-scene-del"),
-    sceneTitle: document.getElementById("stage-scene-title"),
-    sceneNote: document.getElementById("stage-scene-note"),
     pieceName: document.getElementById("stage-piece-name"),
     castList: document.getElementById("stage-cast-list"),
     pieceFacing: document.getElementById("stage-piece-facing"),
@@ -463,6 +474,7 @@
     frontInner: document.getElementById("stage-front-inner"),
     planInner: document.getElementById("stage-plan-inner"),
     showNames: document.getElementById("stage-show-names"),
+    showSetNames: document.getElementById("stage-show-set-names"),
     showSeatMap: document.getElementById("stage-show-seatmap"),
     depthLabelBack: document.getElementById("stage-depth-back"),
     depthLabelFront: document.getElementById("stage-depth-front"),
@@ -534,6 +546,8 @@
       showFront: true,
       showPlan: true,
       showNames: true,
+      // 名前は演者と舞台装置で別々に出し入れする
+      showSetNames: true,
       // 正面図の隅に「客席のどこから見ているか」の小図を出すか
       showSeatMap: true,
       // 舞台が一度に入らない席での見回し（-1〜1）。左右と上下
@@ -858,6 +872,7 @@
       showFront: raw.showFront === undefined ? true : Boolean(raw.showFront),
       showPlan: raw.showPlan === undefined ? true : Boolean(raw.showPlan),
       showNames: raw.showNames === undefined ? true : Boolean(raw.showNames),
+      showSetNames: raw.showSetNames === undefined ? true : Boolean(raw.showSetNames),
       showSeatMap: raw.showSeatMap === undefined ? true : Boolean(raw.showSeatMap),
       frontPan: clamp(finite(raw.frontPan, 0), -1, 1),
       frontPanY: clamp(finite(raw.frontPanY, 0), -1, 1),
@@ -2400,9 +2415,11 @@
     const solid = sc().pieces.filter((p) => p.type !== "light");
     (L.plan ? solid : solid.slice().sort((a, b) => a.v - b.v)).forEach(draw);
 
-    // 名前。頭上（平面では点の脇）に小さく置く
-    if (state.showNames) {
+    // 名前。頭上（平面では点の脇）に小さく置く。演者と装置は別々に出し入れする
+    if (state.showNames || state.showSetNames) {
       sc().pieces.forEach((piece) => {
+        const wanted = piece.type === "performer" ? state.showNames : state.showSetNames;
+        if (!wanted) return;
         const labelText = pieceLabel(piece);
         if (!labelText) return;
         const pos = placePiece(piece, L);
@@ -3455,16 +3472,28 @@
       p.scenes.forEach((scene, i) => {
         if (scene.kind === "scene") sceneNo += 1;
         if (sceneHidden(i)) return;
+        const isCursor = scene.id === (state.cursorRowId || p.activeSceneId);
+        const isOpen = scene.kind === "scene" && scene.id === p.activeSceneId;
+
         const row = document.createElement("div");
-        row.className = "stage-scene-row";
-        row.style.paddingLeft = `${scene.depth * 14}px`;
+        row.className = `stage-scene-row${isOpen ? " is-open" : ""}`;
+        row.dataset.sceneId = scene.id;
+        row.style.marginLeft = `${scene.depth * 14}px`;
+
+        const head = document.createElement("div");
+        head.className = "stage-scene-head";
+
+        // 掴んで動かす取っ手。行そのものを掴むと中の編集ができなくなる
+        const grip = document.createElement("span");
+        grip.className = "stage-scene-grip";
+        grip.textContent = "⠿";
+        grip.setAttribute("aria-hidden", "true");
+        grip.addEventListener("pointerdown", (e) => startSceneDrag(e, scene.id, row));
 
         const button = document.createElement("button");
         button.type = "button";
-        button.className = `stage-scene-chip${scene.kind === "section" ? " is-section" : ""}`;
-        const isCursor = scene.id === (state.cursorRowId || p.activeSceneId);
+        button.className = `stage-scene-chip${scene.kind === "section" ? " is-section" : ""}${isOpen ? " is-open" : ""}`;
         button.setAttribute("aria-pressed", String(isCursor));
-        if (scene.kind === "scene" && scene.id === p.activeSceneId) button.classList.add("is-open");
 
         const num = document.createElement("span");
         num.className = "stage-scene-num";
@@ -3489,7 +3518,6 @@
         button.append(num, name, count);
         button.addEventListener("click", () => {
           if (scene.kind === "section") {
-            // 絵は持たないので開けない。押したら開閉して、操作の起点にする
             if (state.cursorRowId === scene.id) {
               state.closedSections[scene.id] = !state.closedSections[scene.id];
             }
@@ -3500,13 +3528,46 @@
           }
           openScene(scene.id);
         });
-        row.append(button);
+        head.append(grip, button);
+        row.append(head);
+
+        /* 開いている場面だけ、名前とメモをその場で開く。
+         * 閉じている行は名前だけ。並びを見渡すときに邪魔にならない。 */
+        if (isOpen || (scene.kind === "section" && isCursor)) {
+          const body = document.createElement("div");
+          body.className = "stage-scene-body";
+          const title = document.createElement("input");
+          title.type = "text";
+          title.className = "stage-text-input";
+          title.maxLength = 40;
+          title.value = scene.title;
+          title.placeholder = scene.kind === "section" ? "セクションの名前" : "場面の名前";
+          title.setAttribute("aria-label", "名前");
+          title.addEventListener("input", () => {
+            scene.title = title.value.slice(0, 40);
+            name.textContent = scene.title;
+            persistSoon();
+          });
+          body.append(title);
+          if (scene.kind === "scene") {
+            const note = document.createElement("textarea");
+            note.className = "stage-text-input";
+            note.rows = 2;
+            note.maxLength = 200;
+            note.value = scene.note || "";
+            note.placeholder = "この場面のメモ（何が起きるか）";
+            note.setAttribute("aria-label", "場面のメモ");
+            note.addEventListener("input", () => {
+              scene.note = note.value.slice(0, 200);
+              persistSoon();
+            });
+            body.append(note);
+          }
+          row.append(body);
+        }
         els.sceneList.append(row);
       });
     }
-    const cur = sc();
-    if (els.sceneTitle && document.activeElement !== els.sceneTitle) els.sceneTitle.value = cur.title;
-    if (els.sceneNote && document.activeElement !== els.sceneNote) els.sceneNote.value = cur.note;
     if (els.projectTitle && document.activeElement !== els.projectTitle) els.projectTitle.value = p.title;
     if (els.versionLabel && document.activeElement !== els.versionLabel) els.versionLabel.value = p.versionLabel;
     if (els.versionNote) {
@@ -3525,6 +3586,144 @@
     if (els.sceneIn) {
       els.sceneIn.disabled = idx <= 0 || p.scenes[idx].depth > p.scenes[idx - 1].depth;
     }
+  }
+
+  /* ---------- 場面を掴んで並べ替える ----------
+     写真の道具でレイヤーを入れ替えるのと同じ手つき。掴んだ行は指について動き、
+     残りは滑って隙間を空ける。落とす場所は「どの行の間か」と「どの深さか」の
+     二つで決まる。横へ引くと深さが変わり、セクションの中へ入る。 */
+
+  let sceneDrag = null;
+
+  function startSceneDrag(e, id, row) {
+    if (e.button !== undefined && e.button > 0) return;
+    const sx = e.clientX;
+    const sy = e.clientY;
+    let active = false;
+    const move = (ev) => {
+      if (!active) {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return;
+        active = true;
+        beginSceneDrag(id, row, ev);
+      }
+      ev.preventDefault();
+      moveSceneDrag(ev);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      if (active) endSceneDrag();
+    };
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+  }
+
+  function beginSceneDrag(id, row, ev) {
+    const list = state.project.scenes;
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    const rect = row.getBoundingClientRect();
+    const hole = document.createElement("div");
+    hole.className = "stage-scene-hole";
+    hole.style.height = `${rect.height}px`;
+    row.parentElement.insertBefore(hole, row);
+    sceneDrag = {
+      id, row, hole, index: i,
+      block: 1 + sceneChildren(i).length,
+      baseDepth: list[i].depth,
+      dx: ev.clientX - rect.left,
+      dy: ev.clientY - rect.top,
+      startX: ev.clientX,
+      before: snapshot(),
+    };
+    row.classList.add("is-dragging");
+    row.style.width = `${rect.width}px`;
+    row.style.position = "fixed";
+    row.style.left = `${rect.left}px`;
+    row.style.top = `${rect.top}px`;
+    row.style.zIndex = "600";
+    row.style.pointerEvents = "none";
+    document.body.classList.add("is-panel-dragging");
+  }
+
+  function moveSceneDrag(ev) {
+    if (!sceneDrag) return;
+    const row = sceneDrag.row;
+    row.style.left = `${ev.clientX - sceneDrag.dx}px`;
+    row.style.top = `${ev.clientY - sceneDrag.dy}px`;
+
+    const host = els.sceneList;
+    if (!host) return;
+    const kids = [...host.children].filter((el) => el !== row);
+    let ref = null;
+    for (let k = 0; k < kids.length; k += 1) {
+      if (kids[k] === sceneDrag.hole) continue;
+      const r = kids[k].getBoundingClientRect();
+      if (ev.clientY < r.top + r.height / 2) { ref = kids[k]; break; }
+    }
+    if (sceneDrag.hole.nextElementSibling !== ref) {
+      flipMove(() => host.insertBefore(sceneDrag.hole, ref), row);
+    }
+    // 横へ引いた量で深さを決める。セクションの中へ入れるための操作
+    const step = Math.round((ev.clientX - sceneDrag.startX) / 22);
+    const want = clamp(sceneDrag.baseDepth + step, 0, MAX_DEPTH);
+    if (want !== sceneDrag.depth) {
+      sceneDrag.depth = want;
+      sceneDrag.hole.style.marginLeft = `${want * 14}px`;
+    }
+  }
+
+  function endSceneDrag() {
+    if (!sceneDrag) return;
+    const { row, hole, id, block } = sceneDrag;
+    const host = els.sceneList;
+    // 落とした場所が、並びの何番目に当たるか
+    // 掴んでいる行そのものは並びの数に入れない（浮いているだけで場所は取っていない）
+    const order = [...host.children].filter((el) => (el.dataset.sceneId && el !== row) || el === hole);
+    const at = order.indexOf(hole);
+    hole.remove();
+    row.classList.remove("is-dragging");
+    ["position", "left", "top", "width", "zIndex", "pointerEvents"].forEach((k) => { row.style[k] = ""; });
+    document.body.classList.remove("is-panel-dragging");
+
+    const list = state.project.scenes;
+    const from = list.findIndex((x) => x.id === id);
+    if (from >= 0 && at >= 0) {
+      recordBefore(sceneDrag.before);
+      const moving = list.splice(from, block);
+      // 見えている行の並びから、実際の差し込み位置を割り出す
+      let target = list.length;
+      let seen = 0;
+      for (let k = 0; k < list.length; k += 1) {
+        if (sceneHiddenIn(list, k)) continue;
+        if (seen === at) { target = k; break; }
+        seen += 1;
+      }
+      const diff = clamp(sceneDrag.depth === undefined ? sceneDrag.baseDepth : sceneDrag.depth, 0, MAX_DEPTH)
+        - moving[0].depth;
+      moving.forEach((m) => { m.depth = clamp(m.depth + diff, 0, MAX_DEPTH); });
+      list.splice(target, 0, ...moving);
+      // 前の行より2段以上深くならないよう詰める
+      let prev = -1;
+      list.forEach((sceneRow) => { sceneRow.depth = Math.min(sceneRow.depth, prev + 1); prev = sceneRow.depth; });
+      state.cursorRowId = id;
+    }
+    sceneDrag = null;
+    renderScenes();
+    persistSoon();
+  }
+
+  // 与えられた配列の上で「畳んだセクションの中か」を見る
+  function sceneHiddenIn(list, index) {
+    for (let i = index - 1; i >= 0; i -= 1) {
+      if (list[i].depth < list[index].depth) {
+        if (list[i].kind === "section" && state.closedSections[list[i].id]) return true;
+        return sceneHiddenIn(list, i);
+      }
+    }
+    return false;
   }
 
   /* 字下げを変える。連れている子も同じだけ動かす。
@@ -3760,6 +3959,7 @@
       checkpoint();
       const next = normalizeState({ project: incoming.project, seat: state.seat,
         showFront: state.showFront, showPlan: state.showPlan, showNames: state.showNames,
+        showSetNames: state.showSetNames,
         showSeatMap: state.showSeatMap, frontPan: state.frontPan, frontPanY: state.frontPanY,
         closedSections: state.closedSections, cursorRowId: state.cursorRowId });
       state = next;
@@ -3995,6 +4195,7 @@
     els.brushSize.value = String(state.brushSize);
     els.brushValue.textContent = String(state.brushSize);
     if (els.showNames) els.showNames.checked = state.showNames;
+    if (els.showSetNames) els.showSetNames.checked = state.showSetNames;
     if (els.showSeatMap) els.showSeatMap.checked = state.showSeatMap;
   }
 
@@ -4245,7 +4446,15 @@
       state.showNames = e.target.checked;
       render();
       persistSoon();
-      announce(e.target.checked ? "名前を出しました。" : "名前を隠しました。");
+      announce(e.target.checked ? "演者名を出しました。" : "演者名を隠しました。");
+    });
+  }
+  if (els.showSetNames) {
+    els.showSetNames.addEventListener("change", (e) => {
+      state.showSetNames = e.target.checked;
+      render();
+      persistSoon();
+      announce(e.target.checked ? "装置名を出しました。" : "装置名を隠しました。");
     });
   }
   if (els.showSeatMap) {
@@ -4354,19 +4563,6 @@
   if (els.sceneLeft) els.sceneLeft.addEventListener("click", () => moveScene(-1));
   if (els.sceneRight) els.sceneRight.addEventListener("click", () => moveScene(1));
   if (els.sceneDel) els.sceneDel.addEventListener("click", deleteScene);
-  if (els.sceneTitle) {
-    els.sceneTitle.addEventListener("input", (e) => {
-      sc().title = e.target.value.slice(0, 40);
-      renderScenes();
-      persistSoon();
-    });
-  }
-  if (els.sceneNote) {
-    els.sceneNote.addEventListener("input", (e) => {
-      sc().note = e.target.value.slice(0, 120);
-      persistSoon();
-    });
-  }
   if (els.projectTitle) {
     els.projectTitle.addEventListener("input", (e) => {
       state.project.title = e.target.value.slice(0, 60);

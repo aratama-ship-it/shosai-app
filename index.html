@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=69">
+<link rel="stylesheet" href="style.css?v=70">
 </head>
 <body>
 
@@ -330,12 +330,6 @@
               </div>
             </div>
             <div class="stage-scene-list" id="stage-scene-list"></div>
-            <div class="stage-scene-meta">
-              <input id="stage-scene-title" class="stage-text-input" type="text" maxlength="40"
-                     placeholder="場面の名前" aria-label="場面の名前">
-              <input id="stage-scene-note" class="stage-text-input" type="text" maxlength="120"
-                     placeholder="この場面のメモ（何が起きるか）" aria-label="場面のメモ">
-            </div>
           </section>
 
           <div class="stage-center-bar">
@@ -347,7 +341,11 @@
             <p class="stage-tool-hint" id="stage-tool-hint">演者や物を選び、舞台の上で動かします。</p>
             <label class="stage-toggle stage-name-toggle">
               <input type="checkbox" id="stage-show-names" checked>
-              <span>名前を出す</span>
+              <span>演者名</span>
+            </label>
+            <label class="stage-toggle stage-name-toggle">
+              <input type="checkbox" id="stage-show-set-names" checked>
+              <span>装置名</span>
             </label>
             <label class="stage-toggle stage-name-toggle">
               <input type="checkbox" id="stage-show-seatmap" checked>
@@ -680,7 +678,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=70"></script>
+<script src="stage-sketch.js?v=73"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

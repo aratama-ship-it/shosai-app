@@ -1360,9 +1360,68 @@ textarea, input[type="text"] {
   gap: 6px;
 }
 
-/* 場面は入れ子にできる。字下げで親子を見せ、セクションは入れ物として区別する */
-.stage-scene-row { display: block; }
-.stage-scene-row .stage-scene-chip { width: 100%; }
+/* 場面は入れ子にできる。字下げで親子を見せ、セクションは入れ物として区別する。
+   選んでいる場面だけ開いて、名前とメモをその場に持つ。 */
+.stage-scene-row {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.stage-scene-head {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+}
+
+.stage-scene-head .stage-scene-chip { width: 100%; min-width: 0; }
+
+.stage-scene-grip {
+  color: rgba(240, 231, 214, 0.28);
+  font-size: 12px;
+  line-height: 1;
+  text-align: center;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.stage-scene-row:hover .stage-scene-grip { color: var(--brass); }
+
+.stage-scene-body {
+  display: grid;
+  gap: 5px;
+  padding: 7px 8px 8px 20px;
+  border: 1px solid rgba(168, 75, 38, 0.3);
+  border-top: 0;
+  background: rgba(168, 75, 38, 0.06);
+}
+
+.stage-scene-body .stage-text-input {
+  min-height: 30px;
+  margin-bottom: 0;
+  font-size: 11.5px;
+}
+
+.stage-scene-body textarea.stage-text-input {
+  min-height: 46px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+/* 掴んで動かしている行と、その跡の空き */
+.stage-scene-row.is-dragging {
+  opacity: 0.97;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+  cursor: grabbing;
+}
+
+.stage-scene-hole {
+  border: 1px dashed rgba(168, 75, 38, 0.5);
+  background: rgba(168, 75, 38, 0.07);
+  box-sizing: border-box;
+  margin-bottom: 4px;
+}
 
 /* 開いている場面は、起点の印とは別に細い線で示す */
 .stage-scene-chip.is-open .stage-scene-name { color: var(--paper); }
