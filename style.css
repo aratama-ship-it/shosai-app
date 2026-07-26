@@ -1337,6 +1337,22 @@ textarea, input[type="text"] {
   gap: 8px;
 }
 
+/* 舞台セットの一覧で、寸法を一目で読ませる */
+.stage-set-dims {
+  flex: 0 0 auto;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: rgba(239, 231, 214, 0.46);
+  white-space: nowrap;
+}
+
+.stage-dims-note {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(211, 172, 89, 0.72);
+}
+
 /* 向きのフェーダーの目盛り。中央が客席向きであることを字で示す */
 .stage-range-scale {
   display: flex;
