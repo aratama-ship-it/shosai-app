@@ -320,6 +320,9 @@
     { pts: ["shR", "elR", "wrR"], kind: "arm" },
   ];
 
+  // 首を振れる角度。見上げる側を大きく取る（吊り物や空中の演目はそこにある）
+  const TILT_UP = 34;
+  const TILT_DOWN = 16;
   const SOLID_TYPES = { block: true, table: true, chair: true };
   const CHAIR_W = 0.5;
   const CHAIR_D = 0.55;
@@ -940,30 +943,61 @@
     const frontW = pxPerM * size.width;
 
     /* 舞台が一度に画面へ入らない席では、掴んで視線を動かせるようにする。
-     *  左右 … 手前の間口が画面よりはみ出したぶんの半分まで
-     *  上下 … 手前の尺で見た舞台の天は、たいてい画面の上へ抜けている。
-     *         吊り物や空中の演目はそこにあるので、そこまで見上げられるようにする。
-     *         見下ろす側は舞台の立ち上がりまでで、それ以上は暗がりしかない。 */
+     *
+     * 左右は像をずらす（客席の中で少し身体をずらす感じ）。
+     * 上下は「その場で首を上げ下げする」。像を平行移動させるのではなく、
+     * 目の位置は変えずに視線の角度だけ変える。見上げれば足元が詰まって
+     * 頭上が伸びる——これは平行移動では出ない。
+     *
+     * やり方は、いったん水平に見たときの画面をこしらえてから、
+     * それをピンホールの式で傾け直す。目の高さ（＝床の線）を原点に取り、
+     *   t  = (y - 目の高さ) / 焦点距離
+     *   y' = 目の高さ + 焦点距離 ×(t·cosφ + sinφ) / (cosφ − t·sinφ)
+     * 焦点距離は「舞台までの距離 × 1mあたりの画素」。席が近いほど
+     * 焦点距離が長くなり、同じ角度でも見え方が大きく動く。 */
     const panRange = Math.max(0, (frontW - W) / 2);
     const height = size.height || 8;
-    const upRoom = Math.max(0, height * pxPerM - seat.floorY);
-    const downRoom = Math.max(150, seat.bottomY + (seat.apron || 0) - H);
+    const horizon = seat.floorY;
+    const focal = Math.max(120, (seat.eye || 10) * pxPerM);
     const panY = clamp(state.frontPanY || 0, -1, 1);
-    const offsetY = panY > 0 ? panY * upRoom : panY * downRoom;
+    const phi = (panY > 0 ? panY * TILT_UP : panY * TILT_DOWN) * Math.PI / 180;
+    const cs = Math.cos(phi);
+    const sn = Math.sin(phi);
+
+    const tilt = (y) => {
+      if (!phi) return y;
+      const t = (y - horizon) / focal;
+      const den = cs - t * sn;
+      // 地平線の向こうへ回り込んだ点は、画面の外へ飛ばす
+      if (den <= 0.02) return sn > 0 ? -1e5 : 1e5;
+      return horizon + (focal * (t * cs + sn)) / den;
+    };
+    const untilt = (y) => {
+      if (!phi) return y;
+      const u = (y - horizon) / focal;
+      const den = cs + u * sn;
+      if (Math.abs(den) < 1e-4) return y;
+      return horizon + (focal * (u * cs - sn)) / den;
+    };
 
     return {
       plan: false, venue: v, size, seat,
-      backY: seat.floorY - (height * pxPerM) / span + offsetY,
-      floorY: seat.floorY + offsetY,
-      bottomY: seat.bottomY + offsetY,
+      // 傾けた後の位置。舞台の枠や床の帯はこれを見る
+      backY: tilt(seat.floorY - (height * pxPerM) / span),
+      floorY: tilt(seat.floorY),
+      bottomY: tilt(seat.bottomY),
+      apronBottom: tilt(seat.bottomY + (seat.apron || 0)),
+      // 傾ける前の位置。駒はここから実寸で積み上げてから傾ける
+      rawFloorY: seat.floorY,
+      rawBottomY: seat.bottomY,
+      tilt,
+      untilt,
       backW: frontW / span,
       frontW,
       shift: (seat.shift || 0) * W * 0.5,
       centerX: W / 2 + clamp(state.frontPan || 0, -1, 1) * panRange,
       panRange,
-      panRangeY: Math.max(upRoom, downRoom),
-      upRoom,
-      downRoom,
+      panRangeY: 1,
       pxPerM,
       pxPerMv: pxPerM,   // 縦横で同じ。名前は呼び出し側の互換のために残す
     };
@@ -980,14 +1014,16 @@
         stretch: 1,
       };
     }
-    const y = L.floorY + v * (L.bottomY - L.floorY);
+    // 首振りは最後にかける。実寸を積み上げるのは「傾ける前」の座標の上で行う
+    const rawY = L.rawFloorY + v * (L.rawBottomY - L.rawFloorY);
     const halfW = (L.backW + v * (L.frontW - L.backW)) / 2;
     // 横の席では、奥ほど横へ流れる。手前は席の正面なのでずれない
     const slide = (L.shift || 0) * (1 - v);
     const rise = (L.seat && L.seat.rise) || 0;
     return {
       x: L.centerX + slide + (u - 0.5) * halfW * 2,
-      y,
+      y: L.tilt(rawY),
+      rawY,
       scale: (L.backW + v * (L.frontW - L.backW)) / L.frontW,
       // 煽りも見下ろしも、近いものほど強く効く。正で縦に伸び、負で縦に詰まる
       stretch: 1 + rise * v,
@@ -1001,7 +1037,8 @@
         v: clamp((y - L.stage.y) / L.stage.h, 0, 1),
       };
     }
-    const v = clamp((y - L.floorY) / (L.bottomY - L.floorY), 0, 1);
+    const raw = L.untilt(y);
+    const v = clamp((raw - L.rawFloorY) / (L.rawBottomY - L.rawFloorY), 0, 1);
     const halfW = (L.backW + v * (L.frontW - L.backW)) / 2;
     const slide = (L.shift || 0) * (1 - v);
     return { u: clamp((x - L.centerX - slide) / (halfW * 2) + 0.5, 0, 1), v };
@@ -1240,7 +1277,8 @@
     const pos = place(piece.u, piece.v, L);
     const base = piece.base || 0;
     if (!base || L.plan) return pos;
-    return Object.assign({}, pos, { y: pos.y - base * perMetre(pos, L).y });
+    const rawY = pos.rawY - base * perMetre(pos, L).y;
+    return Object.assign({}, pos, { rawY, y: L.tilt(rawY) });
   }
 
   /* 演者の関節を、画面の座標へ落とす。
@@ -1253,14 +1291,16 @@
    *   画面横 = x·cosθ + z·sinθ
    *   奥行き = -x·sinθ + z·cosθ （大きいほど手前。重なりの順に使う）
    * zDrop は「手前へ出た部位ほど少し下に来る」ぶん。舞台では床と同じ傾きを使う。 */
-  function buildRig(poseId, originX, originY, ux, uy, yaw, zDrop) {
+  function buildRig(poseId, originX, originY, ux, uy, yaw, zDrop, tilt) {
+    const bend = tilt || ((y) => y);
     const pose = poseById(poseId);
     const joints = pose.joints;
     const cos = Math.cos(yaw);
     const sin = Math.sin(yaw);
     const project = (jx, jy, jz) => {
       const wz = -jx * sin + jz * cos;
-      return { x: originX + (jx * cos + jz * sin) * ux, y: originY - jy * uy + wz * zDrop, z: wz };
+      // 実寸ぶんを積み上げてから傾ける。順を逆にすると、見上げても人の丈が変わらない
+      return { x: originX + (jx * cos + jz * sin) * ux, y: bend(originY - jy * uy + wz * zDrop), z: wz };
     };
     const P = {};
     Object.keys(joints).forEach((k) => { P[k] = project(joints[k][0], joints[k][1], joints[k][2]); });
@@ -1304,8 +1344,8 @@
     const H = pieceHeightM(piece) * (piece.size / 100);
     const per = perMetre(pos, L);
     const zDrop = L.plan ? 0 : ((L.bottomY - L.floorY) / (L.size.depth || 9)) * H;
-    const rig = buildRig(piece.pose, pos.x, pos.y, H * per.x, H * per.y,
-      ((piece.facing || 0) * Math.PI) / 180, zDrop);
+    const rig = buildRig(piece.pose, pos.x, pos.rawY === undefined ? pos.y : pos.rawY,
+      H * per.x, H * per.y, ((piece.facing || 0) * Math.PI) / 180, zDrop, L.plan ? null : L.tilt);
     rig.per = per;
     rig.H = H;
     return rig;
@@ -1399,7 +1439,8 @@
     // 台の上に乗っていれば、四隅ごとその高さから立ち上げる
     const base = piece.base || 0;
     if (!base || L.plan) return p;
-    return Object.assign({}, p, { y: p.y - base * perMetre(p, L).y });
+    const rawY = p.rawY - base * perMetre(p, L).y;
+    return Object.assign({}, p, { rawY, y: L.tilt(rawY) });
   }
 
   /* 直方体の部品をひとつ塗る。部品の中心は駒の中心から (ox, oz) メートルずれ、
@@ -1416,10 +1457,12 @@
       const dd = lx * sin + ly * cos;
       const p = floorPoint(piece, dw, dd, L);
       const per = perMetre(p, L);
+      const bend = L.plan ? ((y) => y) : L.tilt;
+      const raw = p.rawY === undefined ? p.y : p.rawY;
       return {
         x: p.x,
-        y: p.y - part.lift * per.y,
-        top: p.y - (part.lift + part.h) * per.y,
+        y: bend(raw - part.lift * per.y),
+        top: bend(raw - (part.lift + part.h) * per.y),
         depth: dd,
       };
     };
@@ -1634,9 +1677,13 @@
   function drawSphere(target, piece, pos, scale, L) {
     const dim = pieceDims(piece);
     const per = perMetre(pos, L);
+    const bend = L.plan ? ((y) => y) : L.tilt;
+    const raw = pos.rawY === undefined ? pos.y : pos.rawY;
     const rx = Math.max(4, (dim.dia / 2) * per.x);
     const ry = Math.max(4, (dim.dia / 2) * per.y);
-    const cy = pos.y - dim.lift * per.y - ry;
+    // 中心の高さを傾ける前に決めてから傾ける。上下の半径は傾け後の差から取る
+    const cy = bend(raw - dim.lift * per.y - ry);
+    const ryTilt = Math.max(3, Math.abs(bend(raw - dim.lift * per.y) - cy));
 
     target.save();
     target.fillStyle = "rgba(0,0,0,0.3)";
@@ -1650,15 +1697,15 @@
       target.setLineDash([5, 5]);
       target.beginPath();
       target.moveTo(pos.x, pos.y);
-      target.lineTo(pos.x, cy + ry);
+      target.lineTo(pos.x, cy + ryTilt);
       target.stroke();
       target.setLineDash([]);
     }
 
     // 丸みは陰影で出す。左上から光が当たっているものとして、右下へ落とす
     const shade = target.createRadialGradient(
-      pos.x - rx * 0.36, cy - ry * 0.4, Math.max(1, rx * 0.08),
-      pos.x, cy, Math.max(rx, ry));
+      pos.x - rx * 0.36, cy - ryTilt * 0.4, Math.max(1, rx * 0.08),
+      pos.x, cy, Math.max(rx, ryTilt));
     shade.addColorStop(0, rgba(piece.color, 1));
     shade.addColorStop(0.55, rgba(piece.color, 0.88));
     shade.addColorStop(1, rgba(piece.color, 0.42));
@@ -1666,7 +1713,7 @@
     target.strokeStyle = rgba(piece.color, 0.3);
     target.lineWidth = 1.5;
     target.beginPath();
-    target.ellipse(pos.x, cy, rx, ry, 0, 0, Math.PI * 2);
+    target.ellipse(pos.x, cy, rx, ryTilt, 0, 0, Math.PI * 2);
     target.fill();
     target.stroke();
     target.restore();
@@ -2029,7 +2076,7 @@
     // ここを描かないと「床の上に人が並んだ絵」になり、見上げている感じが出ない。
     const apron = (L.seat && L.seat.apron) || 0;
     if (apron > 0 && !roundHouse) {
-      const faceBottom = Math.min(H, L.bottomY + apron);
+      const faceBottom = Math.min(H, L.apronBottom);
       const face = target.createLinearGradient(0, L.bottomY, 0, faceBottom);
       face.addColorStop(0, "#1b1512");
       face.addColorStop(1, "#0c0908");
@@ -3058,7 +3105,7 @@
     const yaw = Math.PI * 0.24;          // 斜め前から。前後と左右の両方が読める
 
     // まず等倍で組んで、外に出る範囲を測る
-    const probe = buildRig(poseId, 0, 0, 1, 1, yaw, 0);
+    const probe = buildRig(poseId, 0, 0, 1, 1, yaw, 0, null);
     let x0 = Infinity; let x1 = -Infinity; let y0 = Infinity; let y1 = -Infinity;
     const scan = (q) => {
       x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x);
@@ -3073,7 +3120,7 @@
     const s = Math.min((w - pad * 2) / bw, (h - pad * 2) / bh);
     const ox = pad - x0 * s + ((w - pad * 2) - bw * s) / 2;
     const oy = pad - y0 * s + ((h - pad * 2) - bh * s) / 2;
-    paintBody(ctx, buildRig(poseId, ox, oy, s, s, yaw, 0), color);
+    paintBody(ctx, buildRig(poseId, ox, oy, s, s, yaw, 0, null), color);
   }
 
   function openPoseModal() {
@@ -4054,7 +4101,7 @@
             kind: "pan", pointerId: event.pointerId, el, view,
             startX: point.x, startY: point.y,
             startPan: state.frontPan || 0, startPanY: state.frontPanY || 0,
-            range: L.panRange, up: L.upRoom, down: L.downRoom,
+            range: L.panRange,
           };
         }
         return;
@@ -4105,11 +4152,9 @@
         const moved = (point.x - pointerAction.startX) / pointerAction.range;
         state.frontPan = clamp(pointerAction.startPan + moved, -1, 1);
       }
+      // 上下は首の角度。画面の高さいっぱいの引きで、振れる角度いっぱいになる
       const dy = point.y - pointerAction.startY;
-      const room = dy > 0 ? pointerAction.up : pointerAction.down;
-      if (room > 0) {
-        state.frontPanY = clamp(pointerAction.startPanY + dy / room, -1, 1);
-      }
+      state.frontPanY = clamp(pointerAction.startPanY + dy / (H * 0.55), -1, 1);
       render();
       return;
     }
