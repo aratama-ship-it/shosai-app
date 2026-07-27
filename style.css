@@ -5510,6 +5510,22 @@ canvas[data-tool="note"] { cursor: copy; }
 
 .stage-panel.is-collapsed .stage-panel-help { display: none; }
 
+/* 言語の切り替え。書き出しの隣に、控えめな枠で置く */
+.stage-lang {
+  min-height: 34px;
+  padding: 5px 12px;
+  border: 1px solid var(--line-dark);
+  background: none;
+  color: var(--milk-dim);
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.stage-lang:hover { color: var(--milk); border-color: var(--brass); }
+.stage-lang[aria-pressed="true"] { color: var(--paper); border-color: var(--brass); }
+
 /* 中央のバーの「?」。項目の「?」と同じ形にして、役目をそろえる */
 .stage-hint-help {
   flex: 0 0 auto;

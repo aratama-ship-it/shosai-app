@@ -124,8 +124,25 @@
     light: { dia: "直径（床に落ちる円の広さ）" },
   };
   function dimLabel(kind, key) {
+    if (isEn()) {
+      return tm("dimBy", `${kind}.${key}`, null) || tm("dim", key, DIM_META[key].label);
+    }
     return (DIM_LABELS[kind] && DIM_LABELS[kind][key]) || DIM_META[key].label;
   }
+
+  // 姿勢・道具・駒・明かりの名前。言語を見て選ぶ
+  const poseName = (pose) => (pose ? tm("pose", pose.id, pose.label) : "");
+  const setKindName = (kind) => tm("setKind", kind, SET_KINDS[kind] || kind);
+  const pieceTypeName = (type) => tm("pieceType", type, PIECE_TYPES[type] || type);
+  const lightKindName = (key) => tm("lightKind", key, LIGHT_KINDS[key].label);
+  const lightKindNote = (key) => tm("lightNote", key, LIGHT_KINDS[key].note);
+  const venueName = (v) => tm("venue", v.id, v.label);
+  const venueShortName = (v) => tm("venueShort", v.id, v.short);
+  const venueNoteText = (v) => tm("venueNote", v.id, v.note);
+  const sizeName = (z) => tm("size", z.id, z.label);
+  const seatName = (seat) => tm("seat", seat.id, seat.label);
+  const seatShortName = (seat) => tm("seatShort", seat.id, seat.short);
+  const seatNoteText = (seat) => tm("seatNote", seat.id, seat.note);
   // 椅子は大きさ一つで決まる。幅と奥行きはそこから割り出す
   /* 舞台セットに登録できる形。光もここに含める。登録・出し入れ・寸法の
    * 仕組みが同じなので同じ入れ物に置き、一覧だけ「光」パネルへ分けて出す。 */
@@ -707,6 +724,7 @@
     undo: document.getElementById("stage-undo"),
     redo: document.getElementById("stage-redo"),
     export: document.getElementById("stage-export"),
+    lang: document.getElementById("stage-lang"),
     exportModal: document.getElementById("stage-export-modal"),
     exportBackdrop: document.getElementById("stage-export-backdrop"),
     exportClose: document.getElementById("stage-export-close"),
@@ -857,6 +875,21 @@
     depthLabelFront: document.getElementById("stage-depth-front"),
   };
 
+  const LANG_KEY = "shosai-stage-lang";
+
+  /* ---------- 言語 ----------
+     日本語が正本。英語は stage-i18n.js の対訳から引く。
+     画面に固定で置いてある文言は、切り替えのときだけ文字を差し替える
+     （静的な文言は書き換わらないので、これで足りる）。
+     中で組み立てる名前（姿勢・道具・劇場・席）は、作るたびに言語を見て選ぶ。 */
+  const I18N = window.SHOSAI_I18N || { text: {}, maps: {} };
+  let lang = "ja";
+  const isEn = () => lang === "en";
+  // 固定文言。日本語そのものを鍵にする
+  const tx = (ja) => (isEn() && I18N.text[ja]) || ja;
+  // 組み立てる名前。id を鍵にする
+  const tm = (group, id, ja) => (isEn() && I18N.maps[group] && I18N.maps[group][id]) || ja;
+
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const validColor = (value, fallback) =>
     typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
@@ -996,15 +1029,20 @@
   // 向きを言葉にする。角度そのものより、どちらを向いているかが読みたい
   function facingLabel(deg) {
     const d = ((Number(deg) || 0) % 360 + 360) % 360;
-    if (d < 23 || d >= 338) return "客席";
-    if (d < 68) return "客席・上手寄り";
-    if (d < 113) return "上手";
-    if (d < 158) return "奥・上手寄り";
-    if (d < 203) return "奥（背中）";
-    if (d < 248) return "奥・下手寄り";
-    if (d < 293) return "下手";
-    return "客席・下手寄り";
+    const ja = ["客席", "客席・上手寄り", "上手", "奥・上手寄り", "奥（背中）", "奥・下手寄り", "下手", "客席・下手寄り"];
+    const en = ["house", "house / stage left", "stage left", "upstage / stage left",
+      "upstage (back)", "upstage / stage right", "stage right", "house / stage right"];
+    const words = isEn() ? en : ja;
+    if (d < 23 || d >= 338) return words[0];
+    if (d < 68) return words[1];
+    if (d < 113) return words[2];
+    if (d < 158) return words[3];
+    if (d < 203) return words[4];
+    if (d < 248) return words[5];
+    if (d < 293) return words[6];
+    return words[7];
   }
+
 
   // その演者の身長（m）。名簿に登録があればそれを使う。
   // 身長は演者の持ちもので、同じ舞台でも人によって見え方が変わる。
@@ -2468,7 +2506,7 @@
     target.fillStyle = "rgba(239,231,214,0.72)";
     target.font = "10.5px 'Hiragino Kaku Gothic ProN', sans-serif";
     target.textBaseline = "top";
-    target.fillText(seat.label, x + w / 2, balconyY + balconyH + 5);
+    target.fillText(seatName(seat), x + w / 2, balconyY + balconyH + 5);
     target.restore();
   }
 
@@ -3698,8 +3736,8 @@
     if (els.frontCaption) {
       const L = layout("front");
       const pannable = L.panRange > 0 || L.panRangeY > 0;
-      els.frontCaption.textContent = `正面 — ${VENUES.seatById(state.seat).label}`
-        + (pannable ? "（何もない所を掴むと視線を振れます）" : "");
+      els.frontCaption.textContent = `${tx("正面")} — ${seatName(VENUES.seatById(state.seat))}`
+        + (pannable ? (isEn() ? " (drag an empty spot to look around)" : "（何もない所を掴むと視線を振れます）") : "");
       canvas.dataset.pannable = pannable ? "true" : "false";
     }
   }
@@ -4008,7 +4046,9 @@
     if (!cast.length) {
       const empty = document.createElement("p");
       empty.className = "stage-cast-empty";
-      empty.textContent = "まだ誰も登録していません。名前を入れて追加してください。";
+      empty.textContent = isEn()
+        ? "No one registered yet. Enter a name and add them."
+        : "まだ誰も登録していません。名前を入れて追加してください。";
       els.castList.append(empty);
       return;
     }
@@ -4036,7 +4076,7 @@
       const status = document.createElement("button");
       status.type = "button";
       status.className = `stage-cast-status ${onStage ? "is-on" : "is-off"}`;
-      status.textContent = onStage ? "舞台上" : "舞台裏";
+      status.textContent = onStage ? tm("misc", "onStage", "舞台上") : tm("misc", "offStage", "舞台裏");
       status.title = onStage ? "押すと舞台から引っ込めます" : "押すとこの場面の舞台へ出します";
       status.addEventListener("click", () => toggleCastOnStage(member.id));
 
@@ -4267,7 +4307,8 @@
 
   function renderSets() {
     renderSetList(els.setList, (item) => item.kind !== "light",
-      "まだ何も登録していません。名前と形を選んで追加してください。");
+      isEn() ? "Nothing registered yet. Enter a name, pick a kind, and add it."
+        : "まだ何も登録していません。名前と形を選んで追加してください。");
     syncRosterGroups();
   }
 
@@ -4281,7 +4322,9 @@
     if (!lights.length) {
       const empty = document.createElement("p");
       empty.className = "stage-cast-empty";
-      empty.textContent = "まだ登録していません。種類を選び、名前を入れて追加してください。";
+      empty.textContent = isEn()
+        ? "No lights yet. Pick a type, enter a name, and add it."
+        : "まだ登録していません。種類を選び、名前を入れて追加してください。";
       host.append(empty);
       syncRosterGroups();
       return;
@@ -4290,8 +4333,8 @@
       if (!lights.some((item) => lightKindOf(item) === key)) return;
       const head = document.createElement("p");
       head.className = "stage-roster-head";
-      head.textContent = LIGHT_KINDS[key].label;
-      head.title = LIGHT_KINDS[key].note;
+      head.textContent = lightKindName(key);
+      head.title = lightKindNote(key);
       const box = document.createElement("div");
       box.className = "stage-cast-list";
       host.append(head, box);
@@ -4346,8 +4389,8 @@
       /* 寸法は行に出さず、行の title と「…」の窓へ回す。
        * 狭い列で名前と寸法を並べると、どちらも数文字で切れて読めなくなる。 */
       const summary = item.kind === "light"
-        ? `${LIGHT_KINDS[lightKindOf(item)].label}（${LIGHT_KINDS[lightKindOf(item)].note}）／${setDimLabel(item)}`
-        : `${SET_KINDS[item.kind]}／${setDimLabel(item)}`;
+        ? `${lightKindName(lightKindOf(item))}（${lightKindNote(lightKindOf(item))}）／${setDimLabel(item)}`
+        : `${setKindName(item.kind)}／${setDimLabel(item)}`;
 
       const onStage = setOnStage(item.id);
       const light = item.kind === "light";
@@ -4442,7 +4485,7 @@
   // 明かりは「舞台の上か裏か」ではなく、点いているか消えているかで言う
   const onStageWord = (item, on) => (item && item.kind === "light"
     ? (on ? "ON" : "OFF")
-    : (on ? "舞台上" : "舞台裏"));
+    : (on ? tm("misc", "onStage", "舞台上") : tm("misc", "offStage", "舞台裏")));
 
   function toggleSetOnStage(setId) {
     checkpoint();
@@ -4653,7 +4696,7 @@
       canvas.width = 132;
       canvas.height = 148;
       const label = document.createElement("span");
-      label.textContent = pose.label;
+      label.textContent = poseName(pose);
       tile.append(canvas, label);
       grid.append(tile);
       drawPosePreview(canvas, pose.id, piece.color);
@@ -4699,7 +4742,9 @@
     if (!rigs.length) {
       const empty = document.createElement("p");
       empty.className = "stage-cast-empty";
-      empty.textContent = "まだ残していません。並べ終えたら名前をつけて残してください。";
+      empty.textContent = isEn()
+        ? "Nothing saved yet. Lay out the set, then save it under a name."
+        : "まだ残していません。並べ終えたら名前をつけて残してください。";
       els.rigList.append(empty);
       return;
     }
@@ -4836,7 +4881,7 @@
     const item = (state.project.sets || []).find((t) => t.id === setId);
     if (!item || !els.setInfo) return;
     setInfoId = setId;
-    els.setInfoTitle.textContent = `${item.name}（${SET_KINDS[item.kind]}）`;
+    els.setInfoTitle.textContent = `${item.name}（${setKindName(item.kind)}）`;
     els.setInfoName.value = item.name;
     els.setInfoColor.value = item.color;
     if (els.setInfoKindRow) {
@@ -5085,7 +5130,7 @@
           note.rows = 2;
           note.maxLength = 200;
           note.value = scene.note || "";
-          note.placeholder = "この場面のメモ（何が起きるか）";
+          note.placeholder = tm("misc", "sceneNoteHint", "この場面のメモ（何が起きるか）");
           note.setAttribute("aria-label", "場面のメモ");
           note.addEventListener("input", () => {
             scene.note = note.value.slice(0, 200);
@@ -5094,7 +5139,7 @@
           const apply = document.createElement("button");
           apply.type = "button";
           apply.className = "btn-quiet stage-scene-apply";
-          apply.textContent = "動線の先へ動かした場面を作る";
+          apply.textContent = tm("misc", "applyRoute", "動線の先へ動かした場面を作る");
           apply.title = "この場面を写し、動線を引いた演者を行き先へ移した場面を次に作ります";
           apply.disabled = !(scene.pieces || []).some((piece) => piece.route);
           apply.addEventListener("click", () => applyRoutes(scene));
@@ -5108,8 +5153,9 @@
     if (els.versionLabel && document.activeElement !== els.versionLabel) els.versionLabel.value = p.versionLabel;
     if (els.versionNote) {
       els.versionNote.textContent = p.parentVersionId
-        ? `${p.branchReason || "別バージョンとして複製"}（元の版から派生）`
-        : "このショーの最初の版です。";
+        ? (isEn() ? `${p.branchReason || "Duplicated as another version"} (derived from an earlier version)`
+          : `${p.branchReason || "別バージョンとして複製"}（元の版から派生）`)
+        : (isEn() ? "The first version of this show." : "このショーの最初の版です。");
     }
     const idx = cursorIndex();
     if (els.sceneDel) els.sceneDel.disabled = p.scenes.filter((x) => x.kind === "scene").length <= 1;
@@ -5678,11 +5724,14 @@
     const current = venue();
     const size = venueSize();
 
-    if (els.venueSelect && !els.venueSelect.options.length) {
+    /* 形式の選択肢は毎回組み直す。一度だけ作る作りだと、
+     * 言語を変えても中の名前が日本語のまま残る。 */
+    if (els.venueSelect) {
+      els.venueSelect.innerHTML = "";
       VENUES.list.forEach((v) => {
         const opt = document.createElement("option");
         opt.value = v.id;
-        opt.textContent = `${v.label}（${v.short}）`;
+        opt.textContent = isEn() ? `${venueName(v)} (${venueShortName(v)})` : `${venueName(v)}（${venueShortName(v)}）`;
         els.venueSelect.append(opt);
       });
     }
@@ -5694,7 +5743,7 @@
         const opt = document.createElement("option");
         opt.value = s2.id;
         const bits = s2.ring ? `リング${s2.ring}m` : `${s2.width}×${s2.depth}m`;
-        opt.textContent = `${s2.label} — ${bits}`;
+        opt.textContent = `${sizeName(s2)} — ${bits}`;
         els.sizeSelect.append(opt);
       });
       els.sizeSelect.value = size.id;
@@ -5703,7 +5752,11 @@
     /* 実寸の欄。円形は一つの数（直径）で決まるので、奥行きの欄は畳む。 */
     if (els.venueW) {
       const round = current.audience === "round";
-      if (els.venueWLabel) els.venueWLabel.textContent = round ? "直径" : "間口";
+      if (els.venueWLabel) {
+        els.venueWLabel.textContent = round
+          ? (isEn() ? "Diameter" : "直径")
+          : (isEn() ? "Width" : "間口");
+      }
       if (els.venueDCell) els.venueDCell.hidden = round;
       const put = (input, value) => {
         if (input && document.activeElement !== input) input.value = String(value);
@@ -5715,13 +5768,14 @@
     }
 
     if (els.venueScale) {
+      const en = isEn();
       const bits = current.audience === "round"
-        ? [`直径 ${size.width}m`]
-        : [`間口 ${size.width}m`, `奥行 ${size.depth}m`];
-      if (size.height) bits.push(`高さ ${size.height}m`);
-      if (size.seats) bits.push(`客席 約${size.seats}席`);
-      if (size.crowd) bits.push(`観客 〜${size.crowd.toLocaleString()}人`);
-      els.venueScale.textContent = bits.join(" ・ ") + `（${current.source}）`;
+        ? [`${en ? "Diameter" : "直径"} ${size.width}m`]
+        : [`${en ? "Width" : "間口"} ${size.width}m`, `${en ? "Depth" : "奥行"} ${size.depth}m`];
+      if (size.height) bits.push(`${en ? "Height" : "高さ"} ${size.height}m`);
+      if (size.seats) bits.push(en ? `about ${size.seats} seats` : `客席 約${size.seats}席`);
+      if (size.crowd) bits.push(en ? `up to ${size.crowd.toLocaleString()} people` : `観客 〜${size.crowd.toLocaleString()}人`);
+      els.venueScale.textContent = bits.join(" ・ ") + (en ? "" : `（${current.source}）`);
     }
 
     // 見る位置の小図は、客席が正面だけの劇場でしか意味を持たない
@@ -5748,7 +5802,7 @@
         button.type = "button";
         button.className = "stage-seat";
         button.setAttribute("aria-pressed", String(s2.id === seat.id));
-        button.textContent = s2.label;
+        button.textContent = seatName(s2);
         button.addEventListener("click", () => setSeat(s2.id));
         els.seatList.append(button);
       });
@@ -5887,13 +5941,14 @@
   function sideText(u) {
     const width = venueSize().width || 12;
     const off = (u - 0.5) * width;
-    if (Math.abs(off) < 0.15) return "中央";
+    if (Math.abs(off) < 0.15) return tm("misc", "centre", "中央");
+    if (isEn()) return `${Math.abs(off).toFixed(1)} m ${off > 0 ? "stage left" : "stage right"}`;
     return `${off > 0 ? "上手" : "下手"}へ${Math.abs(off).toFixed(1)}m`;
   }
 
   function depthText(v) {
     const depth = venueSize().depth || 9;
-    return `奥から${(v * depth).toFixed(1)}m`;
+    return isEn() ? `${(v * depth).toFixed(1)} m from upstage` : `奥から${(v * depth).toFixed(1)}m`;
   }
 
   function selectedNote() {
@@ -5907,7 +5962,7 @@
     const owner = lockOwner(piece);
     if (owner && owner.name) return owner.name;
     if (piece && piece.name) return piece.name;
-    return piece ? PIECE_TYPES[piece.type] : "これ";
+    return piece ? pieceTypeName(piece.type) : "これ";
   }
 
   function lockOwner(piece) {
@@ -5959,7 +6014,7 @@
     document.querySelectorAll("[data-stage-tool]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.stageTool === tool));
     });
-    els.toolHint.textContent = TOOL_HINTS[tool];
+    els.toolHint.textContent = tm("tool", tool, TOOL_HINTS[tool]);
     if (els.planRoute) els.planRoute.setAttribute("aria-pressed", String(tool === "route"));
     [els.planNote, els.frontNote].forEach((button) => {
       if (button) button.setAttribute("aria-pressed", String(tool === "note"));
@@ -5973,11 +6028,11 @@
     els.selectionControls.hidden = !piece;
     if (!piece) return;
     const sameType = sc().pieces.filter((candidate) => candidate.type === piece.type);
-    els.selectedName.textContent = `${PIECE_TYPES[piece.type]} ${sameType.indexOf(piece) + 1}`;
+    els.selectedName.textContent = `${pieceTypeName(piece.type)} ${sameType.indexOf(piece) + 1}`;
     syncDimControls(piece);
     if (els.piecePose) {
       const isPerformer = piece.type === "performer";
-      if (els.poseLabel) els.poseLabel.textContent = poseById(piece.pose).label;
+      if (els.poseLabel) els.poseLabel.textContent = poseName(poseById(piece.pose));
       els.piecePose.disabled = !isPerformer;
       els.piecePose.hidden = !isPerformer;
       const row = els.piecePose.previousElementSibling;
@@ -6994,13 +7049,13 @@
         if (document.activeElement !== els.beamFrom) els.beamFrom.value = String(b.h);
         if (document.activeElement !== els.beamTo) els.beamTo.value = String(b.toH);
         els.beamFromValue.textContent = `${b.h.toFixed(1)}m`;
-        els.beamToValue.textContent = b.toH < 0.05 ? "床" : `${b.toH.toFixed(1)}m`;
+        els.beamToValue.textContent = b.toH < 0.05 ? tm("misc", "floor", "床") : `${b.toH.toFixed(1)}m`;
       }
     }
     if (els.delete) {
       // 明かりを舞台から外すのは「消す」こと。道具立てを片づける話ではない
       const light = Boolean(piece && piece.type === "light");
-      els.delete.textContent = light ? "TURN OFF" : "舞台から外す";
+      els.delete.textContent = light ? "TURN OFF" : tx("舞台から外す");
       els.delete.title = light ? "この場面ではこの明かりを消します" : "";
     }
     if (els.routeClear) els.routeClear.hidden = !(piece && piece.route);
@@ -7090,7 +7145,7 @@
     }
     if (els.openSetInfo) {
       els.openSetInfo.hidden = !owner;
-      els.openSetInfo.textContent = registered ? "寸法" : "身長";
+      els.openSetInfo.textContent = registered ? tm("misc", "dims", "寸法") : tm("misc", "profile", "身長");
       els.openSetInfo.title = registered
         ? `「${registered.name}」の寸法を開く`
         : (member ? `「${member.name}」のプロフィールを開く` : "");
@@ -7113,6 +7168,73 @@
 
   els.duplicate.addEventListener("click", duplicateSelected);
   els.delete.addEventListener("click", removeSelected);
+  /* 画面に固定で置いてある文言を、まとめて差し替える。
+   * 対訳表は日本語そのものを鍵にしているので、元の日本語を各要素へ覚えさせておき、
+   * 日本語へ戻すときはそれを書き戻す（訳し戻しの表を持たずに済む）。 */
+  function applyLang() {
+    /* 文字そのものを差し替える。要素ではなく文字の節（テキストノード）を回すので、
+     * 「向き <span>客席</span>」のように中に別の要素を抱えた札も拾える。
+     * 元の日本語は節に覚えさせておき、戻すときはそれを書き戻す。 */
+    const swapText = (root) => {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      nodes.forEach((node) => {
+        if (node.parentNode && node.parentNode.closest("[data-no-i18n]")) return;
+        const raw = node.__ja === undefined ? node.nodeValue : node.__ja;
+        // HTMLの改行や字下げで空白が入るので、鍵を引くときは詰めてから照らす
+        const key = raw.trim().replace(/\s+/g, " ");
+        if (!key || !I18N.text[key]) return;
+        if (node.__ja === undefined) node.__ja = raw;
+        node.nodeValue = isEn() ? I18N.text[key] : raw;
+      });
+    };
+    const swapAttr = (root, attr, store) => {
+      root.querySelectorAll(`[${attr}]`).forEach((el) => {
+        if (!el.dataset[store]) {
+          const now = el.getAttribute(attr);
+          if (!now || !now.trim()) return;
+          el.dataset[store] = now;
+        }
+        const ja = el.dataset[store];
+        el.setAttribute(attr, isEn() ? (I18N.text[ja.trim()] || ja) : ja);
+      });
+    };
+    const roots = [document.getElementById("view-stage"), ...document.querySelectorAll(".stage-modal")]
+      .filter(Boolean);
+    roots.forEach((root) => {
+      swapText(root);
+      swapAttr(root, "placeholder", "jaPh");
+      swapAttr(root, "title", "jaTitle");
+      swapAttr(root, "aria-label", "jaAria");
+    });
+    if (els.lang) {
+      els.lang.textContent = isEn() ? "日本語" : "EN";
+      els.lang.setAttribute("aria-pressed", String(isEn()));
+    }
+    document.documentElement.lang = isEn() ? "en" : "ja";
+  }
+
+  // 言語を変えると、中で組み立てている名前も作り直す必要がある
+  function setLang(next) {
+    lang = next === "en" ? "en" : "ja";
+    try { localStorage.setItem(LANG_KEY, lang); } catch (_) { /* 保存できなくても動く */ }
+    applyLang();
+    renderVenueControls();
+    renderScenes();
+    renderCast();
+    renderSets();
+    renderLights();
+    renderRigs();
+    updateInspector();
+    setTool(tool);
+    render();
+  }
+
+  if (els.lang) {
+    els.lang.addEventListener("click", () => setLang(isEn() ? "ja" : "en"));
+  }
+
   els.undo.addEventListener("click", undo);
   els.redo.addEventListener("click", redo);
 
@@ -7280,6 +7402,8 @@
   });
 
   buildPanelHeads();
+  // 前に選んだ言語で開く。パネルの見出しを作ったあとに当てる
+  try { lang = localStorage.getItem(LANG_KEY) === "en" ? "en" : "ja"; } catch (_) { lang = "ja"; }
   applyLayout();
   syncInputs();
   renderScenes();
@@ -7295,4 +7419,5 @@
   els.saveStatus.textContent = loaded.restored
     ? "この端末に保存した前回のスケッチを開きました。"
     : "変更はこの端末のブラウザ内へ自動保存します。";
+  applyLang();
 })();
