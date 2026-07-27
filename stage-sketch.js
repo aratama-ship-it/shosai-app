@@ -84,6 +84,39 @@
   /* 舞台セットに登録できる形。光もここに含める。登録・出し入れ・寸法の
    * 仕組みが同じなので同じ入れ物に置き、一覧だけ「光」パネルへ分けて出す。 */
   const SET_KINDS = { block: "台・箱", table: "テーブル", chair: "椅子", sphere: "球", light: "光" };
+  /* 明かりの種類。仕込む場所と当てる高さが種類ごとに決まっているので、
+   * 舞台へ出したときの既定値をここに持つ（出したあとは自由に動かせる）。
+   *   hang  … 吊り。バトンから真下へ落とす
+   *   ss    … サイドスポット。袖のスタンドから、舞台を横切って体へ
+   *   front … 前明かり。客席の上から、顔の高さへ
+   *   floor … 転がし。床置きで、下から体へ
+   * dia は床（または当たる高さ）での明かりの直径。 */
+  const LIGHT_KINDS = {
+    hang: {
+      label: "吊り", note: "バトンから真下へ",
+      dia: 4, h: 6, toH: 0,
+      source: (u, v) => ({ u, v }),
+    },
+    ss: {
+      label: "SS（横から）", note: "袖のスタンドから舞台を横切って",
+      dia: 2.6, h: 1.7, toH: 1.3,
+      // 近い側の袖から。反対側から当てたいときは左右のつまみで振る
+      source: (u, v) => ({ u: u <= 0.5 ? -0.06 : 1.06, v }),
+    },
+    front: {
+      label: "前明かり", note: "客席の上から顔へ",
+      dia: 3.4, h: 8, toH: 1.5,
+      source: (u) => ({ u, v: 1.35 }),
+    },
+    floor: {
+      label: "転がし", note: "床置きから下向きに体へ",
+      dia: 3, h: 0.18, toH: 1.6,
+      // 舞台のツラ（手前の端）に置く。奥に置くときは奥行きのつまみで送る
+      source: (u) => ({ u, v: 1 }),
+    },
+  };
+  const LIGHT_KIND_ORDER = ["hang", "ss", "front", "floor"];
+  const lightKindOf = (item) => (item && LIGHT_KINDS[item.lightKind] ? item.lightKind : "hang");
   const SET_KIND_ORDER = ["block", "table", "chair", "sphere"];
   /* ---------- 演者の骨格と姿勢 ----------
    * 関節を3次元（x=左右／y=上下／z=本人の正面向き）で持ち、向きの角度だけ
@@ -512,6 +545,7 @@
     groupSets: document.getElementById("stage-group-sets"),
     lightName: document.getElementById("stage-light-name"),
     lightAdd: document.getElementById("stage-light-add"),
+    lightKind: document.getElementById("stage-light-kind"),
     beamControls: document.getElementById("stage-beam-controls"),
     beamDia: document.getElementById("stage-beam-dia"),
     beamDiaValue: document.getElementById("stage-beam-dia-value"),
@@ -541,6 +575,8 @@
     setInfoDims: document.getElementById("stage-setinfo-dims"),
     setInfoColor: document.getElementById("stage-setinfo-color"),
     setInfoNote: document.getElementById("stage-setinfo-note"),
+    setInfoKind: document.getElementById("stage-setinfo-kind"),
+    setInfoKindRow: document.getElementById("stage-setinfo-lightkind"),
     frontInner: document.getElementById("stage-front-inner"),
     planInner: document.getElementById("stage-plan-inner"),
     showNames: document.getElementById("stage-show-names"),
@@ -1007,6 +1043,7 @@
                 dims: normalizeDims(kind, t),
                 note: typeof t.note === "string" ? t.note.slice(0, 200) : "",
                 locked: Boolean(t.locked),
+                lightKind: kind === "light" && LIGHT_KINDS[t && t.lightKind] ? t.lightKind : "hang",
               };
             })
           : [],
@@ -3372,17 +3409,9 @@
         persistSoon();
       });
 
-      const name = document.createElement("input");
-      name.type = "text";
-      name.className = "stage-cast-name-input";
-      name.value = member.name;
-      name.maxLength = 24;
-      name.setAttribute("aria-label", "演者の名前");
-      name.addEventListener("input", () => {
-        member.name = name.value.slice(0, 24);
-        render();
-        persistSoon();
-      });
+      const name = nameButton(member.name,
+        () => pickOnStage((piece) => piece.castId === member.id, member.name),
+        () => openProfile(member.id));
 
       const onStage = castOnStage(member.id);
       const status = document.createElement("button");
@@ -3448,6 +3477,34 @@
     });
     wrap.append(glyph, input);
     return wrap;
+  }
+
+  /* 一覧の名前。押すと舞台の上のそれを選び、二度押しで詳しい窓を開く。
+   * 以前は名前が入力欄で、選ぶつもりで押すと文字を打つ構えになっていた。
+   * 名前を直すのは詳しい窓（プロフィール／寸法）の中でできる。 */
+  function nameButton(label, onPick, onOpen) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "stage-cast-name";
+    button.textContent = label;
+    button.title = "押すと舞台の上で選びます。二度押しで詳しい窓が開きます";
+    button.addEventListener("click", onPick);
+    button.addEventListener("dblclick", (e) => { e.preventDefault(); onOpen(); });
+    return button;
+  }
+
+  /* 一覧から舞台の上のものを選ぶ。舞台裏なら選べないので、その旨だけ伝える。 */
+  function pickOnStage(findPiece, name) {
+    const piece = sc().pieces.find(findPiece);
+    if (!piece) { announce(`${name}はいま舞台裏です。「舞台裏」を押すと舞台へ出ます。`); return; }
+    selectedId = piece.id;
+    selectedNoteId = null;
+    // 明かりは光の道具、それ以外は動かす道具でないと掴めない
+    const want = piece.type === "light" ? "light" : "select";
+    if ((tool === "light") !== (want === "light")) setTool(want);
+    updateInspector();
+    render();
+    announce(`${name}を選びました。`);
   }
 
   function lockButton(item, label) {
@@ -3580,9 +3637,32 @@
     syncRosterGroups();
   }
 
+  /* 光の一覧は種類ごとに枠を分ける。吊りとSSと前明かりと転がしは、
+   * 仕込む場所も役目も別物なので、ひと続きに並べると読み分けられない。 */
   function renderLights() {
-    renderSetList(els.lightList, (item) => item.kind === "light",
-      "まだ登録していません。名前を入れて追加してください。");
+    const host = els.lightList;
+    if (!host) return;
+    host.innerHTML = "";
+    const lights = (state.project.sets || []).filter((item) => item.kind === "light");
+    if (!lights.length) {
+      const empty = document.createElement("p");
+      empty.className = "stage-cast-empty";
+      empty.textContent = "まだ登録していません。種類を選び、名前を入れて追加してください。";
+      host.append(empty);
+      syncRosterGroups();
+      return;
+    }
+    LIGHT_KIND_ORDER.forEach((key) => {
+      if (!lights.some((item) => lightKindOf(item) === key)) return;
+      const head = document.createElement("p");
+      head.className = "stage-roster-head";
+      head.textContent = LIGHT_KINDS[key].label;
+      head.title = LIGHT_KINDS[key].note;
+      const box = document.createElement("div");
+      box.className = "stage-cast-list";
+      host.append(head, box);
+      renderSetList(box, (item) => item.kind === "light" && lightKindOf(item) === key, "");
+    });
     syncRosterGroups();
   }
 
@@ -3625,21 +3705,15 @@
         persistSoon();
       });
 
-      const name = document.createElement("input");
-      name.type = "text";
-      name.className = "stage-cast-name-input";
-      name.value = item.name;
-      name.maxLength = 24;
-      name.setAttribute("aria-label", "舞台セットの名前");
-      name.addEventListener("input", () => {
-        item.name = name.value.slice(0, 24);
-        render();
-        persistSoon();
-      });
+      const name = nameButton(item.name,
+        () => pickOnStage((piece) => piece.setId === item.id, item.name),
+        () => openSetInfo(item.id));
 
       /* 寸法は行に出さず、行の title と「…」の窓へ回す。
        * 狭い列で名前と寸法を並べると、どちらも数文字で切れて読めなくなる。 */
-      const summary = `${SET_KINDS[item.kind]}／${setDimLabel(item)}`;
+      const summary = item.kind === "light"
+        ? `${LIGHT_KINDS[lightKindOf(item)].label}（${LIGHT_KINDS[lightKindOf(item)].note}）／${setDimLabel(item)}`
+        : `${SET_KINDS[item.kind]}／${setDimLabel(item)}`;
 
       const onStage = setOnStage(item.id);
       const status = document.createElement("button");
@@ -3674,7 +3748,7 @@
     });
   }
 
-  function addSetItem(kind, nameInput) {
+  function addSetItem(kind, nameInput, lightKind) {
     const raw = (nameInput && nameInput.value || "").trim();
     if (!raw) {
       announce("名前を入れてから追加してください。");
@@ -3682,16 +3756,19 @@
       return;
     }
     checkpoint();
+    const lk = kind === "light" && LIGHT_KINDS[lightKind] ? lightKind : "hang";
+    const dims = normalizeDims(kind, {});
+    if (kind === "light") dims.dia = LIGHT_KINDS[lk].dia;
     state.project.sets.push({
       id: rid("set"), kind, name: raw.slice(0, 24),
       color: kind === "light" ? "#d3ac59" : nextPieceColor(state.project.sets.length + 2),
-      dims: normalizeDims(kind, {}), note: "", locked: false,
+      dims, note: "", locked: false, lightKind: lk,
     });
     if (nameInput) nameInput.value = "";
     renderSets();
     renderLights();
     persistSoon();
-    announce(`${raw}を${kind === "light" ? "光" : "舞台セット"}へ加えました。舞台裏の状態です。`);
+    announce(`${raw}を${kind === "light" ? LIGHT_KINDS[lk].label : "舞台セット"}へ加えました。舞台裏の状態です。`);
   }
 
   function toggleSetOnStage(setId) {
@@ -3713,6 +3790,12 @@
         v: clamp(0.5 + (count % 3) * 0.09, 0.05, 0.95),
         size: 100, color: item ? item.color : state.pieceColor, name: "", facing: 0,
       }, 0);
+      // 明かりは種類ごとの仕込み位置から始める。出したあとは自由に動かせる
+      if (piece.type === "light") {
+        const spec = LIGHT_KINDS[lightKindOf(item)];
+        const src = spec.source(piece.u, piece.v);
+        piece.beam = normalizeBeam({ u: src.u, v: src.v, h: spec.h, toH: spec.toH }, piece);
+      }
       scene.pieces.push(piece);
       selectedId = piece.id;
       announce(`${item ? item.name : "これ"}を舞台へ出しました。`);
@@ -4096,6 +4179,10 @@
     els.setInfoTitle.textContent = `${item.name}（${SET_KINDS[item.kind]}）`;
     els.setInfoName.value = item.name;
     els.setInfoColor.value = item.color;
+    if (els.setInfoKindRow) {
+      els.setInfoKindRow.hidden = item.kind !== "light";
+      if (item.kind === "light" && els.setInfoKind) els.setInfoKind.value = lightKindOf(item);
+    }
     els.setInfoNote.value = item.note || "";
     buildDimControls(els.setInfoDims, "stage-setinfo", item.kind, item.dims, () => {
       renderSets();
@@ -5717,10 +5804,11 @@
     addSetItem(SET_KINDS[kind] ? kind : "block", els.rosterName);
   };
   if (els.rosterAdd) els.rosterAdd.addEventListener("click", addFromRoster);
-  if (els.lightAdd) els.lightAdd.addEventListener("click", () => addSetItem("light", els.lightName));
+  const addLight = () => addSetItem("light", els.lightName, els.lightKind && els.lightKind.value);
+  if (els.lightAdd) els.lightAdd.addEventListener("click", addLight);
   if (els.lightName) {
     els.lightName.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); addSetItem("light", els.lightName); }
+      if (e.key === "Enter") { e.preventDefault(); addLight(); }
     });
   }
   if (els.rosterName) {
@@ -5856,6 +5944,17 @@
       renderLights();
       render();
       persistSoon();
+    });
+  }
+  if (els.setInfoKind) {
+    els.setInfoKind.addEventListener("change", (e) => {
+      const item = currentSetItem();
+      if (!item || item.kind !== "light") return;
+      checkpoint();
+      item.lightKind = LIGHT_KINDS[e.target.value] ? e.target.value : "hang";
+      renderLights();
+      persistSoon();
+      announce(`${item.name}を${LIGHT_KINDS[item.lightKind].label}にしました。`);
     });
   }
   if (els.setInfoColor) {

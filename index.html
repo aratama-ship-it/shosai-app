@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=85">
+<link rel="stylesheet" href="style.css?v=86">
 </head>
 <body>
 
@@ -290,10 +290,17 @@
           <section class="stage-panel" data-panel="light" data-title="光">
             <div class="stage-panel-body">
               <p class="stage-cast-hint">明かりは、どこから出てどこへ落ちるかを持ちます。
+                種類ごとに仕込む場所と当てる高さの既定値が入ります。
                 「光を動かす」に切り替えると、灯体の丸い印と、当たる輪をそれぞれ掴んで動かせます。</p>
-              <div class="stage-cast-add">
+              <div class="stage-cast-add stage-roster-add">
                 <input id="stage-light-name" class="stage-text-input" type="text" maxlength="24"
                        placeholder="名前を入れて追加" aria-label="明かりの名前">
+                <select id="stage-light-kind" class="stage-select" aria-label="明かりの種類">
+                  <option value="hang">吊り（バトンから真下へ）</option>
+                  <option value="ss">SS（袖から横切って）</option>
+                  <option value="front">前明かり（客席の上から顔へ）</option>
+                  <option value="floor">転がし（床置きから体へ）</option>
+                </select>
                 <button type="button" id="stage-light-add" class="btn-quiet">追加</button>
               </div>
               <div class="stage-cast-list" id="stage-light-list"></div>
@@ -756,6 +763,17 @@
     <label class="stage-control-label" for="stage-setinfo-name">名前</label>
     <input id="stage-setinfo-name" class="stage-text-input" type="text" maxlength="24">
 
+    <div id="stage-setinfo-lightkind" hidden>
+      <label class="stage-control-label" for="stage-setinfo-kind">種類</label>
+      <select id="stage-setinfo-kind" class="stage-select">
+        <option value="hang">吊り（バトンから真下へ）</option>
+        <option value="ss">SS（袖から横切って）</option>
+        <option value="front">前明かり（客席の上から顔へ）</option>
+        <option value="floor">転がし（床置きから体へ）</option>
+      </select>
+      <p class="stage-profile-hint">種類を変えると、これから舞台へ出す分の仕込み位置が変わります。すでに出ているものはそのままです。</p>
+    </div>
+
     <div id="stage-setinfo-dims"></div>
     <p class="stage-profile-hint">寸法は実寸です。床の1m枡と同じものさしで描かれます。</p>
 
@@ -772,7 +790,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=97"></script>
+<script src="stage-sketch.js?v=98"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
