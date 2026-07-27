@@ -381,7 +381,7 @@
     paint: "奥の背景面を指やマウスで塗ります。",
     erase: "背景に描いた線だけを消します。",
     route: "平面図で演者を掴み、離した所が行き先になります。真ん中の丸を引くと道が曲がります。",
-    note: "絵の上を押すとメモを貼れます。演者や物の上なら、その駒についてまわります。",
+    note: "何もない所を押すとメモを貼れます。貼ったメモは掴んで動かせます。",
   };
 
   const els = {
@@ -715,8 +715,9 @@
   // 台と球の実寸。dims を持たない古い保存は、size（倍率）から見た目が
   // 変わらないように割り戻す。それ以外の種類は寸法を持たない。
   /* 付箋。舞台の絵の上へ貼る覚え書き。
-   * 演者や物に紐づけると、その駒を動かしたとき一緒についてくる（ずれを持つ）。
-   * 紐づけないものは、その絵の上の決まった場所に留まる。
+   * 貼る場所はその絵の上の一点で、掴んで動かす。
+   * pieceId は前の版で駒に紐づけて貼れたときの名残。いま作るものは持たないが、
+   * すでに貼ってあるものは駒についてまわる（勝手に置き場所を変えない）。
    * 場所は 1280×720 の絵の中の画素で持つ（絵の大きさは変わらないので素直）。 */
   function normalizeNote(raw) {
     if (!raw || typeof raw !== "object") return null;
@@ -2134,7 +2135,11 @@
   const NOTE_LINE = 19;
 
   // 紐づけた駒があれば、その駒の位置を足して置き場所を出す
+  /* 付箋の置き場所。数でない値が一度でも入ると絵から消えて二度と掴めなくなるので、
+   * ここで必ず数に均す（画面が組まれる前に押されたときなどに起きる）。 */
   function notePos(note, L) {
+    note.x = finite(note.x, 100);
+    note.y = finite(note.y, 100);
     if (!note.pieceId) return { x: note.x, y: note.y };
     const piece = sc().pieces.find((p) => p.id === note.pieceId);
     if (!piece) return { x: note.x, y: note.y };
@@ -4869,7 +4874,8 @@
     try { if (el.hasPointerCapture(event.pointerId)) el.releasePointerCapture(event.pointerId); } catch (_) { /* 同上 */ }
     const changed = pointerAction.kind === "stroke" || pointerAction.kind === "pan"
       || pointerAction.kind === "route" || pointerAction.moved;
-    const tapped = pointerAction.kind === "note" && !pointerAction.moved
+    const tapped = pointerAction.kind === "note"
+      && (pointerAction.fresh || !pointerAction.moved)
       ? { id: pointerAction.id, view: pointerAction.view } : null;
     const drewRoute = pointerAction.kind === "route";
     pointerAction = null;
@@ -4889,6 +4895,22 @@
     try { el.setPointerCapture(pointerId); } catch (_) { /* 取れなくても支障はない */ }
   }
 
+  // メモを掴む。道具が「動かす」でも「メモ」でも同じ手つきで動かせる
+  function grabNote(note, point, L, el, event, fresh) {
+    const base = notePos(note, L);
+    selectedId = null;
+    selectedNoteId = note.id;
+    capture(el, event.pointerId);
+    el.dataset.dragging = "true";
+    pointerAction = {
+      kind: "note", pointerId: event.pointerId, id: note.id, el, view: viewOf(el),
+      offsetX: point.x - base.x, offsetY: point.y - base.y,
+      before: snapshot(), moved: Boolean(fresh), fresh: Boolean(fresh),
+    };
+    updateInspector();
+    render();
+  }
+
   function onPointerDown(event) {
     closeNoteEditor();
     const el = event.currentTarget;
@@ -4897,27 +4919,20 @@
     const point = pointFromEvent(event);
     el.focus();
 
-    /* メモを貼る。駒の上で押したらその駒に紐づく（駒を動かすと一緒に動く）。
-     * 何もない所なら、その絵の上のその場所に留まる。 */
+    /* メモ。何もない所を押すと、そこに付箋が生まれてすぐ書ける。
+     * すでに貼ってある付箋を押したときは、作らずにそれを掴んで動かす。 */
     if (tool === "note") {
-      const hit = hitTest(point, L);
+      const existing = noteAt(point, L, view);
+      if (existing) { grabNote(existing, point, L, el, event, false); return; }
       checkpoint();
-      const note = normalizeNote({ view, x: point.x + 16, y: point.y - 34, text: "" });
-      if (hit) {
-        const pos = placePiece(hit, L);
-        note.pieceId = hit.id;
-        note.x = point.x - pos.x + 16;
-        note.y = point.y - pos.y - 34;
-      } else {
-        note.x = clamp(note.x, 8, W - NOTE_W - 8);
-        note.y = clamp(note.y, 8, H - 60);
-      }
+      const note = normalizeNote({
+        view,
+        x: clamp(point.x + 16, 8, W - NOTE_W - 8),
+        y: clamp(point.y - 34, 8, H - 60),
+        text: "",
+      });
       sc().notes.push(note);
-      selectedId = null;
-      selectedNoteId = note.id;
-      updateInspector();
-      render();
-      openNoteEditor(note, view);
+      grabNote(note, point, L, el, event, true);
       persistSoon();
       return;
     }
@@ -4945,21 +4960,7 @@
     if (tool === "select") {
       // メモは絵の一番上に乗っているので、駒より先に拾う
       const note = noteAt(point, L, view);
-      if (note) {
-        selectedId = null;
-        selectedNoteId = note.id;
-        const base = notePos(note, L);
-        capture(el, event.pointerId);
-        el.dataset.dragging = "true";
-        pointerAction = {
-          kind: "note", pointerId: event.pointerId, id: note.id, el, view,
-          offsetX: point.x - base.x, offsetY: point.y - base.y,
-          before: snapshot(), moved: false,
-        };
-        updateInspector();
-        render();
-        return;
-      }
+      if (note) { grabNote(note, point, L, el, event, false); return; }
       selectedNoteId = null;
       // 選んでいる駒の動線の取っ手は、駒そのものより先に拾う
       const current = selectedPiece();
@@ -5074,8 +5075,8 @@
         recordBefore(pointerAction.before);
         pointerAction.moved = true;
       }
-      const x = point.x - pointerAction.offsetX;
-      const y = point.y - pointerAction.offsetY;
+      const x = finite(point.x - pointerAction.offsetX, note.x);
+      const y = finite(point.y - pointerAction.offsetY, note.y);
       if (note.pieceId) {
         const piece = sc().pieces.find((candidate) => candidate.id === note.pieceId);
         const at = piece ? placePiece(piece, L) : { x: 0, y: 0 };
