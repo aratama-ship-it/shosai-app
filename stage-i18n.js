@@ -8,7 +8,8 @@
  *           作るたびに言語を見て名前を選ぶので、一覧を組み直せば追随する。
  *
  * 訳語の方針: サーカス／劇場の現場で通じる語を採る。
- *   吊物=flown、転がし=footlight、SS=side light、前明かり=front light、
+ *   吊物=flown、転がし=floor light（footlightは前端の列だけを指すので使わない）、
+ *   SS=side light、前明かり=front light、
  *   間口=proscenium width、袖=wing、ツラ=downstage edge。
  */
 (function () {
@@ -17,13 +18,16 @@
   const TEXT = {
     /* ---- 見出し・パネル ---- */
     "舞台スケッチ": "Stage Sketch",
+    // 単独ページ（stage.html）の一行目。テスターが最初に読む
+    "舞台スケッチ（テスト版） — 描いたものはこの端末のブラウザにだけ保存されます。":
+      "Stage Sketch (test build) — everything you draw stays in this browser, on this device.",
     "ショー": "Show",
     "劇場を選ぶ": "Venue",
     "出るもの": "Cast & set",
     "装置の型": "Set presets",
     "照明": "Lights",
     "背景": "Backdrop",
-    "場面スタディ": "SceneStudy",
+    "場面スタディ": "Scene study",
     "場面": "Scenes",
     "選んだもの": "Selection",
     "保存": "Saving",
@@ -31,7 +35,7 @@
     "右の道具列": "Right column",
     "舞台面": "Stage",
     "場面の一覧": "Scene list",
-    "固定の場面スタディを読み込んでいます。": "Loading the fixed SceneStudy.",
+    "固定の場面スタディを読み込んでいます。": "Loading the fixed scene study.",
 
     /* ---- 上部 ---- */
     "使い方": "Guide",
@@ -95,7 +99,7 @@
     "吊り（バトンから真下へ）": "Overhead (straight down from the bar)",
     "SS（袖から横切って）": "Side light (across from the wing)",
     "前明かり（客席の上から顔へ）": "Front light (from over the house)",
-    "転がし（床置きから体へ）": "Footlight (from the floor)",
+    "転がし（床置きから体へ）": "Floor light (from the floor)",
     "まだ何も登録していません。名前と種類を選んで追加してください。":
       "Nothing registered yet. Enter a name, pick a kind, and add it.",
     "この舞台に出る演者と舞台セットを、まとめてここに登録します。 寸法や色はここで決め、場面ごとに舞台の上か裏かを切り替えます。明かりは別の項目です。追加したものはその場面の舞台に出ます。":
@@ -159,13 +163,43 @@
     "場面の欄の高さを変える": "Resize the scene list",
     "上下に引くと高さが変わります": "Drag up or down to resize",
 
+    /* ---- 中で組み立てる札・説明（tx() を通る）---- */
+    "この項目の説明": "About this panel",
+    "押すと舞台から引っ込めます": "Press to take it off stage",
+    "押すとこの場面の舞台へ出します": "Press to put it on stage in this scene",
+    "押すとこの場面では消します": "Press to switch it off in this scene",
+    "押すとこの場面で点けます": "Press to switch it on in this scene",
+    "押すと舞台から下げます": "Press to take it off stage",
+    "押すと舞台の上で選びます。二度押しで詳しい窓が開きます": "Press to select it on stage. Press twice for details",
+    "この場面ではこの明かりを消します": "Switches this light off in this scene",
+    "錠を外す": "Unlock",
+    "押すと開きます": "Press to open",
+    "押すと開閉します": "Press to open or close",
+    "場面のメモ": "Scene note",
+    "この場面を写し、動線を引いた演者を行き先へ移した場面を次に作ります":
+      "Copies this scene and creates the next one with routed performers moved to their destinations",
+
+    /* ---- 絵の中に描く字（label / fillText を通る）----
+       DOMと違ってあとから差し替えられないので、描くたびにここを引く。 */
+    "舞台": "Stage",
+    "2階": "Balcony",
+    "舞台の立ち上がり": "Stage face",
+    "向こう側の客席": "House on the far side",
+    "客席が全周を囲む": "The house wraps all the way around",
+    "この先は柵と観客エリア（客席という囲いは無い）":
+      "Beyond here: barrier and standing area (no fixed house)",
+    "柵": "Barrier",
+    "音響卓": "FOH desk",
+    "表情が見える限界": "the limit for reading a face",
+    "身体の動きが読める限界": "the limit for reading body movement",
+
     /* ---- 選んだもの ---- */
     "姿勢": "Pose",
     "向き": "Facing",
     "客席": "House",
     "背中": "Back",
     "地上高": "Trim height",
-    "照明の直径": "Beam diameter",
+    "照明の直径": "Pool diameter",
     "照明の位置": "Fixture position",
     "左右": "Across",
     "奥行き": "Depth",
@@ -279,7 +313,7 @@
       car: "Car", light: "Light",
     },
     lightKind: {
-      hang: "Overhead", ss: "Side light", front: "Front light", floor: "Footlight",
+      hang: "Overhead", ss: "Side light", front: "Front light", floor: "Floor light",
     },
     lightNote: {
       hang: "straight down from the bar",
@@ -354,5 +388,103 @@
     },
   };
 
-  window.SHOSAI_I18N = { text: TEXT, maps: MAPS };
+  /* 操作のたびに出る一言（announce / 状態行）。文の「枠」を正規表現で訳し、
+   * 名前や数は捕捉して埋め直す。★上から順に最初に合った一つだけが使われるので、
+   * 具体的な文を先に、`〜を…にしました` のような広い網を後に置くこと。
+   * 名前そのもの（姿勢・席・劇場など）は呼び出し側が訳語ヘルパーで既に選んでいる。 */
+  const SAY = [
+    // 固定文
+    [/^一つ前の状態へ戻しました。$/, "Went back one step."],
+    [/^やり直しました。$/, "Redone."],
+    [/^このショーをファイルへ書き出しました。チームへ渡せます。$/, "Exported this show to a file. You can hand it to your team."],
+    [/^このファイルには場面が入っていません。$/, "This file has no scenes in it."],
+    [/^この場面には動線がありません。平面図で行き先を引いてください。$/, "This scene has no routes. Draw destinations in the plan first."],
+    [/^どちらか一方は開いたままにします。$/, "One view always stays open."],
+    [/^動かしたい演者・物・明かりを掴んでください。$/, "Grab the performer, object or light you want to move."],
+    [/^動線は平面図で引きます。平面を開いてください。$/, "Routes are drawn in the plan. Open the plan view."],
+    [/^動線は平面図で引きます。$/, "Routes are drawn in the plan."],
+    [/^動線を消しました。$/, "Route cleared."],
+    [/^名前を入れてから残してください。$/, "Enter a name before saving."],
+    [/^場面がひとつしかありません。$/, "There is only one scene."],
+    [/^書き出す場面がありません。$/, "There are no scenes to export."],
+    [/^消す背景の塗りはありません。$/, "There are no painted strokes to erase."],
+    [/^真上から床へ落とす明かりに戻しました。$/, "Reset to a light falling straight down."],
+    [/^背景の塗りは正面図で行います。正面を開いてください。$/, "Backdrop painting happens in the front view. Open the front view."],
+    [/^背景の塗りは正面図で行います。$/, "Backdrop painting happens in the front view."],
+    [/^背景の塗りを消しました。$/, "Painted strokes erased."],
+    [/^背景の枠内から塗り始めてください。$/, "Start painting inside the backdrop area."],
+    [/^舞台に装置がありません。$/, "There is no set on stage."],
+    [/^舞台を空にしました。$/, "Stage cleared."],
+    [/^読み込めませんでした。書き出したJSONファイルを選んでください。$/, "Could not import. Choose a JSON file exported from here."],
+    [/^最後の場面です。$/, "This is the last scene."],
+    [/^最初の場面です。$/, "This is the first scene."],
+    [/^演者名を出しました。$/, "Performer names shown."],
+    [/^演者名を隠しました。$/, "Performer names hidden."],
+    [/^装置名を出しました。$/, "Set names shown."],
+    [/^装置名を隠しました。$/, "Set names hidden."],
+    [/^見る位置の図を出しました。$/, "Seat map shown."],
+    [/^見る位置の図を隠しました。$/, "Seat map hidden."],
+    [/^場面転換を動かします。$/, "Scene changes will animate."],
+    [/^場面転換は動かしません。$/, "Scene changes will not animate."],
+    [/^平面にも吊物を出します。$/, "Flown pieces are shown in the plan."],
+    [/^平面では吊物を隠します。$/, "Flown pieces are hidden in the plan."],
+    [/^正面を開きました。$/, "Front view opened."],
+    [/^正面を閉じました。$/, "Front view closed."],
+    [/^平面を開きました。$/, "Plan view opened."],
+    [/^平面を閉じました。$/, "Plan view closed."],
+    [/^正面を上にしました。$/, "Front view is now on top."],
+    [/^平面を上にしました。$/, "Plan view is now on top."],
+
+    // 名前・数入り（具体的な枠から先に）
+    [/^(.+)を複製しました。前の場面から少しずつ動かすときに使えます。$/, "Duplicated $1. Useful for moving things a little at a time."],
+    [/^(.+)として複製しました。元の版は書き出したファイルの中に残ります。$/, "Duplicated as $1. The earlier version stays in exported files."],
+    [/^(.+)を足しました。下の場面を一段内側へ入れると、中身になります。$/, "Added $1. Indent the scenes below to put them inside it."],
+    [/^(.+)を名簿へ加え、この場面の舞台へ出しました。$/, "Added $1 to the cast and put them on stage."],
+    [/^(.+)を舞台セットへ加え、この場面の舞台へ出しました。$/, "Added $1 to the set and put it on stage."],
+    [/^(.+)を(.+)へ加えてONにしました。$/, "Added $1 as $2 and switched it ON."],
+    [/^(.+)はこの場面ではOFFです。「OFF」を押すと点きます。$/, "$1 is OFF in this scene. Press OFF to switch it on."],
+    [/^(.+)はいま舞台裏です。「舞台裏」を押すと舞台へ出ます。$/, "$1 is off stage. Press Off stage to bring it on."],
+    [/^(.+)には錠が掛かっています。動かすには錠を外してください。$/, "$1 is locked. Unlock it to move it."],
+    [/^(.+)には錠が掛かっています。$/, "$1 is locked."],
+    [/^(.+)に錠を掛けました。$/, "Locked $1."],
+    [/^(.+)の錠を外しました。$/, "Unlocked $1."],
+    [/^(.+)から見た絵に切り替えました。配置は変わりません。$/, "Now viewing from $1. Nothing moved."],
+    [/^(.+)へ切り替えました。配置はそのまま残ります。$/, "Switched to $1. Your layout is kept."],
+    [/^(.+)には背景の壁がありません。奥も客席です。$/, "$1 has no back wall — upstage is audience too."],
+    [/^(.+)の寸法に戻しました。$/, "Reset to the preset sizes of $1."],
+    [/^規模を(.+)にしました。$/, "Size set to $1."],
+    [/^姿勢を「(.+)」にしました。$/, "Pose set to “$1”."],
+    [/^(.+)として(\d+)点を残しました。$/, "Saved $2 pieces as $1."],
+    [/^(.+)の(\d+)点を置き換えました。$/, "Replaced the layout with the $2 pieces of $1."],
+    [/^(.+)の(\d+)点を足しました。$/, "Added the $2 pieces of $1."],
+    [/^(.+)を上書きしました。$/, "Overwrote $1."],
+    [/^(\d+)名（点）を動線の先へ動かした場面を作りました。$/, "Made the next scene with $1 pieces moved along their routes."],
+    [/^(\d+)枚を書き出しました。$/, "Exported $1 images."],
+    [/^(.+)（(.+)）を読み込みました。$/, "Imported $1 ($2)."],
+    [/^(.+)を左の列へ移しました。$/, "Moved $1 to the left column."],
+    [/^(.+)を右の列へ移しました。$/, "Moved $1 to the right column."],
+    [/^(.+)を舞台から引っ込めました。$/, "Took $1 off stage."],
+    [/^(.+)を舞台から下げました。$/, "Took $1 off stage."],
+    [/^(.+)を舞台から外しました。$/, "Removed $1 from the stage."],
+    [/^(.+)を舞台セットから外しました。$/, "Removed $1 from the set list."],
+    [/^(.+)を名簿から外しました。$/, "Removed $1 from the cast."],
+    [/^(.+)を舞台へ出しました。$/, "Put $1 on stage."],
+    [/^(.+)を舞台へ置きました。$/, "Placed $1 on stage."],
+    [/^(.+)を選びました。$/, "Selected $1."],
+    [/^(.+)を開きました。$/, "Opened $1."],
+    [/^(.+)を足しました。$/, "Added $1."],
+    [/^(.+)を消しました。$/, "Removed $1."],
+    [/^(.+)を削除しました。$/, "Deleted $1."],
+    [/^(.+)を複製しました。$/, "Duplicated $1."],
+    [/^(.+)を吊物にしました。$/, "$1 is now flown."],
+    [/^(.+)を床置きに戻しました。$/, "$1 is back on the floor."],
+    [/^(.+)をフレーム（穴の空いた壁）にしました。$/, "$1 is now a frame (a wall with an opening)."],
+    [/^(.+)を壁にしました。$/, "$1 is now a solid wall."],
+    [/^(.+)をONにしました。$/, "$1 is ON."],
+    [/^(.+)をOFFにしました。$/, "$1 is OFF."],
+    // 広い網は最後
+    [/^(.+)を(.+)にしました。$/, "$1 is now $2."],
+  ];
+
+  window.SHOSAI_I18N = { text: TEXT, maps: MAPS, say: SAY };
 })();

@@ -44,12 +44,19 @@
     "shosai-stage-tour-v1", "shosai-stage-lang",
   ];
   const openArgs = new URLSearchParams(window.location.search);
+  /* ?lang=en / ?lang=ja … 開いた時点の言語を決める。
+     英語圏の人へ「開いたら英語で、案内も英語で始まる」一本のURLとして渡せるように。
+     ★選び直しは上の EN／日本語でいつでもできる。URLの指定は開くたびに効くので、
+       配るリンクは常にその言語で開く（人に渡す道具なので、開き方が揺れない方を採る）。 */
+  const askedLang = (openArgs.get("lang") || "").toLowerCase();
+  const openLang = askedLang === "en" || askedLang === "ja" ? askedLang : "";
   if (openArgs.has("fresh")) {
     STAGE_KEYS.forEach((key) => {
       try { localStorage.removeItem(key); } catch (_) { /* 消せなくても続ける */ }
     });
-    // ?fresh を落としたところへ入り直す（読み直すたびに消えるのを避ける）
-    window.location.replace(window.location.pathname);
+    // ?fresh を落としたところへ入り直す（読み直すたびに消えるのを避ける）。
+    // 言語の指定だけは持ち越す。消したあとも英語で開いてほしいため
+    window.location.replace(window.location.pathname + (openLang ? `?lang=${openLang}` : ""));
     return;
   }
 
@@ -956,6 +963,18 @@
   // 組み立てる名前。id を鍵にする
   const tm = (group, id, ja) => (isEn() && I18N.maps[group] && I18N.maps[group][id]) || ja;
 
+  /* ★開く言語はここで決める。loadState() より前であること——
+   * 初めて開いた人へ出す見本の駒と場面の名前を、その言語で作るため。
+   * あとから決めると「Performer A」であるべき駒が「演者A」で焼き付く。 */
+  try { lang = localStorage.getItem(LANG_KEY) === "en" ? "en" : "ja"; } catch (_) { lang = "ja"; }
+  if (openLang) {
+    lang = openLang;
+    try { localStorage.setItem(LANG_KEY, lang); } catch (_) { /* 覚えられなくても動く */ }
+  }
+  // 見本と場面の名前。作った時点の言語で決まり、そのまま持ち物として残る
+  const sceneTitle = (n) => (isEn() ? `Scene ${n}` : `場面 ${n}`);
+  const untitledShow = () => (isEn() ? "Untitled show" : "無題のショー");
+
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const validColor = (value, fallback) =>
     typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
@@ -981,15 +1000,15 @@
       id: rid(kind === "section" ? "sect" : "scene"),
       kind: kind === "section" ? "section" : "scene",
       depth: clamp(finite(depth, 0), 0, MAX_DEPTH),
-      title: title || "場面 1",
+      title: title || sceneTitle(1),
       note: "",
       background: "#40362d",
       notes: [],
       pieces: withExample
         ? [
-            { id: "stage-sample-performer-1", type: "performer", u: 0.36, v: 0.62, size: 105, color: "#a84b26", name: "演者A" },
-            { id: "stage-sample-performer-2", type: "performer", u: 0.66, v: 0.48, size: 92, color: "#77865f", name: "演者B" },
-            { id: "stage-sample-block-1", type: "block", u: 0.51, v: 0.7, size: 88, color: "#efe7d6", name: "台" },
+            { id: "stage-sample-performer-1", type: "performer", u: 0.36, v: 0.62, size: 105, color: "#a84b26", name: isEn() ? "Performer A" : "演者A" },
+            { id: "stage-sample-performer-2", type: "performer", u: 0.66, v: 0.48, size: 92, color: "#77865f", name: isEn() ? "Performer B" : "演者B" },
+            { id: "stage-sample-block-1", type: "block", u: 0.51, v: 0.7, size: 88, color: "#efe7d6", name: isEn() ? "Platform" : "台" },
           ]
         : [],
       strokes: [],
@@ -997,13 +1016,13 @@
   }
 
   function baseState(withExample) {
-    const scene = newScene("場面 1", withExample);
+    const scene = newScene(sceneTitle(1), withExample);
     return {
       version: 3,
       // ショー一つ分。劇場はショー単位で共通に持つ
       project: {
         id: rid("proj"),
-        title: "無題のショー",
+        title: untitledShow(),
         versionLabel: "v1",
         parentVersionId: null,
         branchReason: "",
@@ -1357,7 +1376,7 @@
       id: typeof raw.id === "string" ? raw.id : rid("scene"),
       kind: raw.kind === "section" ? "section" : "scene",
       depth: clamp(finite(raw.depth, 0), 0, MAX_DEPTH),
-      title: typeof raw.title === "string" && raw.title.trim() ? raw.title : `場面 ${index + 1}`,
+      title: typeof raw.title === "string" && raw.title.trim() ? raw.title : sceneTitle(index + 1),
       studyBeatId: typeof raw.studyBeatId === "string" ? raw.studyBeatId : null,
       note: typeof raw.note === "string" ? raw.note : "",
       background: validColor(raw.background, fallbackBg),
@@ -1377,23 +1396,23 @@
     const legacyFlat = !raw.project && (Array.isArray(raw.pieces) || raw.version === 2 || raw.version === 1);
     const rawProject = legacyFlat
       ? {
-          title: "無題のショー",
+          title: untitledShow(),
           venue: raw.venue, venueSize: raw.venueSize,
-          scenes: [{ title: "場面 1", background: raw.background, pieces: raw.pieces, strokes: raw.strokes }],
+          scenes: [{ title: sceneTitle(1), background: raw.background, pieces: raw.pieces, strokes: raw.strokes }],
         }
       : (raw.project && typeof raw.project === "object" ? raw.project : fallback.project);
 
     const venue = VENUES.byId(typeof rawProject.venue === "string" ? rawProject.venue : fallback.project.venue);
     const size = VENUES.sizeById(venue, typeof rawProject.venueSize === "string" ? rawProject.venueSize : "");
     let scenes = Array.isArray(rawProject.scenes) ? rawProject.scenes.slice(0, 60).map(normalizeScene) : [];
-    if (!scenes.length) scenes = [newScene("場面 1", false)];
+    if (!scenes.length) scenes = [newScene(sceneTitle(1), false)];
     // 字下げは「前の行より2段以上深い」ことがないように詰める
     let prevDepth = -1;
     scenes.forEach((scene) => {
       scene.depth = Math.min(scene.depth, prevDepth + 1);
       prevDepth = scene.depth;
     });
-    if (!scenes.some((x) => x.kind === "scene")) scenes.push(newScene("場面 1", false));
+    if (!scenes.some((x) => x.kind === "scene")) scenes.push(newScene(sceneTitle(1), false));
     const wanted = scenes.find((x) => x.id === rawProject.activeSceneId && x.kind === "scene");
     const activeId = wanted ? wanted.id : scenes.find((x) => x.kind === "scene").id;
 
@@ -1401,7 +1420,7 @@
       version: 3,
       project: {
         id: typeof rawProject.id === "string" ? rawProject.id : rid("proj"),
-        title: typeof rawProject.title === "string" && rawProject.title.trim() ? rawProject.title : "無題のショー",
+        title: typeof rawProject.title === "string" && rawProject.title.trim() ? rawProject.title : untitledShow(),
         versionLabel: typeof rawProject.versionLabel === "string" && rawProject.versionLabel.trim()
           ? rawProject.versionLabel : "v1",
         parentVersionId: typeof rawProject.parentVersionId === "string" ? rawProject.parentVersionId : null,
@@ -1532,7 +1551,7 @@
     if (!pj) return null;
     return {
       id: pj.id,
-      title: pj.title || "無題のショー",
+      title: pj.title || untitledShow(),
       version: pj.versionLabel || "v1",
       scenes: (pj.scenes || []).filter((x) => x.kind !== "section").length,
       savedAt: entry.savedAt || "",
@@ -2013,19 +2032,30 @@
 
   function persistSoon() {
     clearTimeout(saveTimer);
-    els.saveStatus.textContent = "変更を保存しています…";
+    els.saveStatus.textContent = isEn() ? "Saving\u2026" : "変更を保存しています…";
     saveTimer = setTimeout(() => {
       try {
         localStorage.setItem(STORAGE_KEY, snapshot());
         shelveCurrent();
-        els.saveStatus.textContent = `「${state.project.title}」を保存しました。`;
+        els.saveStatus.textContent = isEn() ? `Saved \u201c${state.project.title}\u201d.` : `「${state.project.title}」を保存しました。`;
       } catch (_) {
-        els.saveStatus.textContent = "この端末へ保存できませんでした。画像を書き出して残してください。";
+        els.saveStatus.textContent = isEn()
+          ? "Could not save on this device. Export an image to keep your work."
+          : "この端末へ保存できませんでした。画像を書き出して残してください。";
       }
     }, 180);
   }
 
   function announce(message) {
+    /* 英語モードでは、文の「枠」を型変換表（stage-i18n.js の say）で訳す。
+     * 名前や数は捕捉して埋め直す。呼び出し77箇所へ三項演算子を撒くより、
+     * 出口一箇所で変える方が漏れが出ない。合わない文はそのまま出す
+     * （日本語が出たら、それが「表に無い」という印になる）。 */
+    if (isEn() && I18N.say) {
+      for (const [re, en] of I18N.say) {
+        if (re.test(message)) { message = message.replace(re, en); break; }
+      }
+    }
     els.live.textContent = "";
     requestAnimationFrame(() => { els.live.textContent = message; });
   }
@@ -2767,7 +2797,7 @@
     target.font = "11px 'Hiragino Kaku Gothic ProN', sans-serif";
     target.textAlign = "center";
     target.textBaseline = "middle";
-    target.fillText("舞台", inX + inW / 2, stageY + stageH / 2);
+    target.fillText(tx("舞台"), inX + inW / 2, stageY + stageH / 2);
 
     // 1階席と2階席
     target.fillStyle = "rgba(239,231,214,0.06)";
@@ -2780,7 +2810,7 @@
     target.strokeRect(inX + 0.5, balconyY + 0.5, inW - 1, balconyH - 1);
     target.fillStyle = "rgba(239,231,214,0.3)";
     target.font = "9.5px 'Hiragino Kaku Gothic ProN', sans-serif";
-    target.fillText("2階", inX + inW / 2, balconyY + balconyH / 2);
+    target.fillText(tx("2階"), inX + inW / 2, balconyY + balconyH / 2);
 
     // 見ている位置
     const onBalcony = seat.plan.tier === "balcony";
@@ -2792,12 +2822,14 @@
     // 視線。舞台の中心へ向かう三角で、どちらを向いているかを出す。
     // 見回している席では、振ったぶんだけ狙いをずらす
     const aim = L.panRange > 0 ? -clamp(state.frontPan || 0, -1, 1) : 0;
-    const tx = inX + inW * (0.5 + aim * 0.42);
-    const ty = stageY + stageH / 2;
-    const ang = Math.atan2(ty - py, tx - px);
+    /* ★aimX を tx と名付けてはいけない。外の tx（訳語引き）を関数まるごと
+     * 影で隠し、上の fillText(tx("舞台")) がTDZで落ちる（実際に落とした）。 */
+    const aimX = inX + inW * (0.5 + aim * 0.42);
+    const aimY = stageY + stageH / 2;
+    const ang = Math.atan2(aimY - py, aimX - px);
     const spread = 0.34;
-    const reach = Math.hypot(tx - px, ty - py);
-    const cone = target.createLinearGradient(px, py, tx, ty);
+    const reach = Math.hypot(aimX - px, aimY - py);
+    const cone = target.createLinearGradient(px, py, aimX, aimY);
     cone.addColorStop(0, "rgba(211,172,89,0.3)");
     cone.addColorStop(1, "rgba(211,172,89,0.02)");
     target.fillStyle = cone;
@@ -3512,13 +3544,20 @@
     target.restore();
   }
 
+  /* 絵の中へ組み立てて描く文。語順が言語で変わるので、鍵引きでは足りない。 */
+  const ringLabel = (dia) => (isEn() ? `Ring — ${dia}m across` : `リング 直径${dia}m`);
+  const sightLabel = (limit) => (isEn()
+    ? `The house shows direction, not distance (${limit.m}m ≈ ${tx(limit.label)})`
+    : `客席の広がりは方向の目安です（${limit.m}mで${limit.label}）`);
+
   function label(target, text, x, y, align) {
     target.save();
     target.fillStyle = "rgba(239,231,214,0.5)";
     target.font = "13px 'Hiragino Kaku Gothic ProN', sans-serif";
     target.textAlign = align || "center";
     target.textBaseline = "middle";
-    target.fillText(text, x, y);
+    // 絵の中の字はあとから差し替えられないので、描くときに言語を見る
+    target.fillText(tx(text), x, y);
     target.restore();
   }
 
@@ -3680,7 +3719,7 @@
       target.beginPath();
       target.ellipse(ring.x, ring.y, ring.rx, ring.ry, 0, 0, Math.PI * 2);
       target.stroke();
-      label(target, `リング 直径${L.size.ring}m`, ring.x, Math.min(ring.y + ring.ry + 17, H - 12));
+      label(target, ringLabel(L.size.ring), ring.x, Math.min(ring.y + ring.ry + 17, H - 12));
       target.restore();
     }
 
@@ -3870,7 +3909,7 @@
         target.beginPath();
         target.arc(cx, cy, (L.size.ring * L.pxPerM) / 2, 0, Math.PI * 2);
         target.stroke();
-        label(target, `リング 直径${L.size.ring}m`, cx, cy + (L.size.ring * L.pxPerM) / 2 + 18);
+        label(target, ringLabel(L.size.ring), cx, cy + (L.size.ring * L.pxPerM) / 2 + 18);
       }
     } else {
       target.fillStyle = "#241d18";
@@ -3903,8 +3942,8 @@
     target.restore();
 
     // 寸法の目安
-    label(target, `間口 ${L.size.width}m`, s.x + s.w / 2, s.y - 22);
-    label(target, `奥行 ${L.size.depth}m`, s.x - 46, s.y + s.h / 2);
+    label(target, `${tx("間口")} ${L.size.width}m`, s.x + s.w / 2, s.y - 22);
+    label(target, `${tx("奥行")} ${L.size.depth}m`, s.x - 46, s.y + s.h / 2);
 
     // 屋外は柵とFOHの距離
     if (v.audience === "none") {
@@ -3929,7 +3968,7 @@
     // 距離の目安は言葉で添える。
     if (v.audience !== "none") {
       const limit = VENUES.sightLimits[0];
-      label(target, `客席の広がりは方向の目安です（${limit.m}mで${limit.label}）`, W / 2, H - 16);
+      label(target, sightLabel(limit), W / 2, H - 16);
     }
   }
 
@@ -4036,8 +4075,8 @@
     const v = venue();
     const size = venueSize();
     const counts = Object.keys(PIECE_TYPES)
-      .map((type) => `${PIECE_TYPES[type]}${sc().pieces.filter((piece) => piece.type === type).length}`)
-      .join("、");
+      .map((type) => `${pieceTypeName(type)} ${sc().pieces.filter((piece) => piece.type === type).length}`)
+      .join(isEn() ? ", " : "、");
 
     // 閉じてもバーは残す。ここから開き直せるので「見る向き」の項目は要らない。
     // セル自体は隠さない（隠すとバーごと消え、開き直す入口が無くなる）
@@ -4052,18 +4091,22 @@
       // 開閉であることが記号で分かるように三角にする（✕だと消去に見える）
       b.textContent = open ? "▾" : "▸";
       b.setAttribute("aria-expanded", String(open));
-      b.setAttribute("aria-label", `${b.dataset.toggleView === "front" ? "正面" : "平面"}の絵を${open ? "閉じる" : "開く"}`);
+      b.setAttribute("aria-label", isEn()
+        ? `${open ? "Close" : "Open"} the ${b.dataset.toggleView === "front" ? "front" : "plan"} view`
+        : `${b.dataset.toggleView === "front" ? "正面" : "平面"}の絵を${open ? "閉じる" : "開く"}`);
     });
 
     if (state.showFront) {
       drawStage(ctx, true, "front");
-      canvas.setAttribute("aria-label",
-        `${v.label}（${size.label}）を${VENUES.seatById(state.seat).label}から見た正面図。${counts}。背景の線${sc().strokes.length}本。`);
+      canvas.setAttribute("aria-label", isEn()
+        ? `Front view of ${venueName(v)} (${sizeName(size)}) from ${seatName(VENUES.seatById(state.seat))}. ${counts}. ${sc().strokes.length} backdrop strokes.`
+        : `${v.label}（${size.label}）を${VENUES.seatById(state.seat).label}から見た正面図。${counts}。背景の線${sc().strokes.length}本。`);
     }
     if (state.showPlan && planCtx) {
       drawStage(planCtx, true, "plan");
-      planCanvas.setAttribute("aria-label",
-        `${v.label}（${size.label}）を上から見た平面図。${counts}。`);
+      planCanvas.setAttribute("aria-label", isEn()
+        ? `Plan view of ${venueName(v)} (${sizeName(size)}) from above. ${counts}.`
+        : `${v.label}（${size.label}）を上から見た平面図。${counts}。`);
     }
     if (els.frontCaption) {
       const L = layout("front");
@@ -4132,8 +4175,8 @@
         help.className = "stage-panel-help";
         help.textContent = "?";
         help.setAttribute("aria-pressed", "false");
-        help.setAttribute("aria-label", `${el.dataset.title || id}の説明を出す`);
-        help.title = "この項目の説明";
+        help.setAttribute("aria-label", isEn() ? `About ${tx(el.dataset.title || id)}` : `${el.dataset.title || id}の説明を出す`);
+        help.title = tx("この項目の説明");
         help.addEventListener("click", (e) => {
           e.stopPropagation();
           const show = hints[0].hidden;
@@ -4409,22 +4452,22 @@
       status.type = "button";
       status.className = `stage-cast-status ${onStage ? "is-on" : "is-off"}`;
       status.textContent = onStage ? tm("misc", "onStage", "舞台上") : tm("misc", "offStage", "舞台裏");
-      status.title = onStage ? "押すと舞台から引っ込めます" : "押すとこの場面の舞台へ出します";
+      status.title = tx(onStage ? "押すと舞台から引っ込めます" : "押すとこの場面の舞台へ出します");
       status.addEventListener("click", () => toggleCastOnStage(member.id));
 
       const profile = document.createElement("button");
       profile.type = "button";
       profile.className = "stage-cast-profile";
       profile.textContent = "…";
-      profile.title = `${member.name}のプロフィール（身長など）`;
-      profile.setAttribute("aria-label", `${member.name}のプロフィールを開く`);
+      profile.title = isEn() ? `${member.name} — profile (height and notes)` : `${member.name}のプロフィール（身長など）`;
+      profile.setAttribute("aria-label", isEn() ? `Open ${member.name}\u2019s profile` : `${member.name}のプロフィールを開く`);
       profile.addEventListener("click", () => openProfile(member.id));
 
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "stage-cast-remove";
       remove.textContent = "✕";
-      remove.setAttribute("aria-label", `${member.name}を名簿から外す`);
+      remove.setAttribute("aria-label", isEn() ? `Remove ${member.name} from the cast` : `${member.name}を名簿から外す`);
       remove.addEventListener("click", () => removeCastMember(member.id));
 
       row.append(swatch, name, status, lockButton(member, member.name), profile, remove);
@@ -4452,7 +4495,7 @@
   function kindSwatch(item, kind, label, onPick) {
     const wrap = document.createElement("label");
     wrap.className = "stage-kind-swatch";
-    wrap.title = `${label}の色を変える`;
+    wrap.title = isEn() ? `Change the colour of ${label}` : `${label}の色を変える`;
     wrap.style.color = item.color;
     const glyph = document.createElement("span");
     glyph.className = "stage-kind-glyph";
@@ -4461,7 +4504,7 @@
     input.type = "color";
     input.className = "stage-kind-input";
     input.value = item.color;
-    input.setAttribute("aria-label", `${label}の色`);
+    input.setAttribute("aria-label", isEn() ? `Colour of ${label}` : `${label}の色`);
     input.addEventListener("input", () => {
       wrap.style.color = input.value;
       onPick(input.value);
@@ -4478,7 +4521,7 @@
     button.type = "button";
     button.className = "stage-cast-name";
     button.textContent = label;
-    button.title = "押すと舞台の上で選びます。二度押しで詳しい窓が開きます";
+    button.title = tx("押すと舞台の上で選びます。二度押しで詳しい窓が開きます");
     button.addEventListener("click", onPick);
     button.addEventListener("dblclick", (e) => { e.preventDefault(); onOpen(); });
     return button;
@@ -4509,9 +4552,9 @@
     button.className = "stage-cast-lock";
     button.textContent = item.locked ? "🔒" : "🔓";
     button.setAttribute("aria-pressed", String(Boolean(item.locked)));
-    button.title = item.locked
-      ? `${label}の錠を外す（動かせるようになります）`
-      : `${label}に錠を掛ける（動かなくなります）`;
+    button.title = isEn()
+      ? (item.locked ? `Unlock ${label} (it can move again)` : `Lock ${label} (it stops moving)`)
+      : (item.locked ? `${label}の錠を外す（動かせるようになります）` : `${label}に錠を掛ける（動かなくなります）`);
     button.setAttribute("aria-label", button.title);
     button.addEventListener("click", () => {
       checkpoint();
@@ -4536,9 +4579,11 @@
     const used = new Set();
     (state.project.cast || []).forEach((c) => used.add(c.name));
     (state.project.sets || []).forEach((s) => used.add(s.name));
+    // 英語では語と数字の間に空白を入れる（Performer 2）。日本語は詰める（演者2）
+    const join = (n) => (isEn() ? `${head} ${n}` : `${head}${n}`);
     let n = 1;
-    while (used.has(head + n)) n += 1;
-    return head + n;
+    while (used.has(join(n))) n += 1;
+    return join(n);
   }
 
   function addCastMember(nameInput) {
@@ -4744,25 +4789,27 @@
       status.type = "button";
       status.className = `stage-cast-status ${onStage ? "is-on" : "is-off"}`;
       status.textContent = onStageWord(item, onStage);
-      status.title = light
+      status.title = tx(light
         ? (onStage ? "押すとこの場面では消します" : "押すとこの場面で点けます")
-        : (onStage ? "押すと舞台から下げます" : "押すとこの場面の舞台へ出します");
+        : (onStage ? "押すと舞台から下げます" : "押すとこの場面の舞台へ出します"));
       status.addEventListener("click", () => toggleSetOnStage(item.id));
 
       const detail = document.createElement("button");
       detail.type = "button";
       detail.className = "stage-cast-profile";
       detail.textContent = "…";
-      const what = item.kind === "light" ? "直径" : "寸法";
-      detail.title = `${item.name}の${what}を変える（いまは ${setDimLabel(item)}）`;
-      detail.setAttribute("aria-label", `${item.name}の${what}を開く`);
+      const what = item.kind === "light" ? tx("直径") : tx("寸法");
+      detail.title = isEn()
+        ? `Change the ${item.kind === "light" ? "pool diameter" : "size"} of ${item.name} (now ${setDimLabel(item)})`
+        : `${item.name}の${what}を変える（いまは ${setDimLabel(item)}）`;
+      detail.setAttribute("aria-label", isEn() ? `Open the size of ${item.name}` : `${item.name}の${what}を開く`);
       detail.addEventListener("click", () => openSetInfo(item.id));
 
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "stage-cast-remove";
       remove.textContent = "✕";
-      remove.setAttribute("aria-label", `${item.name}を舞台セットから外す`);
+      remove.setAttribute("aria-label", isEn() ? `Remove ${item.name} from the set list` : `${item.name}を舞台セットから外す`);
       remove.addEventListener("click", () => removeSetItem(item.id));
 
       /* 一段にまとめる。名前の右へ寸法を小さく置き、名前が長ければそちらを詰める。
@@ -4906,7 +4953,7 @@
     if (!window.confirm("新しいショーを作ります。いま開いているショーは一覧に残ります。")) return;
     shelveCurrent();
     const fresh = baseState(false);
-    fresh.project.title = "無題のショー";
+    fresh.project.title = untitledShow();
     fresh.layout = state.layout;                 // 道具の並びは持ち越す
     applyLoadedState(normalizeState(fresh), "新しいショーを作りました。");
     closeShows();
@@ -5177,7 +5224,7 @@
         updateInspector();
         render();
         persistSoon();
-        announce(`姿勢を「${pose.label}」にしました。`);
+        announce(`姿勢を「${poseName(pose)}」にしました。`);
       });
     });
     els.poseModal.hidden = false;
@@ -5559,7 +5606,7 @@
         button.append(num, name, count);
         /* 名前を直す入口は鉛筆。行そのものを入力欄にすると、
          * 掴んで並べ替える手つきと取り合いになる（実際に効かなくなっていた）。 */
-        button.title = scene.kind === "section" ? "押すと開閉します" : "押すと開きます";
+        button.title = tx(scene.kind === "section" ? "押すと開閉します" : "押すと開きます");
         button.addEventListener("dblclick", (e) => {
           e.preventDefault();
           openRename(scene);
@@ -5583,8 +5630,8 @@
           pen.type = "button";
           pen.className = "stage-scene-pen";
           pen.textContent = "✎";
-          pen.title = "名前を変える";
-          pen.setAttribute("aria-label", `${scene.title} の名前を変える`);
+          pen.title = tx("名前を変える");
+          pen.setAttribute("aria-label", isEn() ? `Rename ${scene.title}` : `${scene.title} の名前を変える`);
           pen.addEventListener("click", (e) => { e.stopPropagation(); openRename(scene); });
           head.append(pen);
         }
@@ -5601,7 +5648,7 @@
           note.maxLength = 200;
           note.value = scene.note || "";
           note.placeholder = tm("misc", "sceneNoteHint", "この場面のメモ（何が起きるか）");
-          note.setAttribute("aria-label", "場面のメモ");
+          note.setAttribute("aria-label", tx("場面のメモ"));
           note.addEventListener("input", () => {
             scene.note = note.value.slice(0, 200);
             persistSoon();
@@ -5610,7 +5657,7 @@
           apply.type = "button";
           apply.className = "btn-quiet stage-scene-apply";
           apply.textContent = tm("misc", "applyRoute", "動線の先へ動かした場面を作る");
-          apply.title = "この場面を写し、動線を引いた演者を行き先へ移した場面を次に作ります";
+          apply.title = tx("この場面を写し、動線を引いた演者を行き先へ移した場面を次に作ります");
           apply.disabled = !(scene.pieces || []).some((piece) => piece.route);
           apply.addEventListener("click", () => applyRoutes(scene));
           body.append(note, apply);
@@ -5948,7 +5995,7 @@
     // セクションを起点にしたときは、その中身として一段内側へ入れる
     const depth = i >= 0 ? p.scenes[i].depth + (p.scenes[i].kind === "section" ? 1 : 0) : 0;
     const count = p.scenes.filter((x) => x.kind === "scene").length;
-    const scene = newScene(`場面 ${count + 1}`, false, "scene", depth);
+    const scene = newScene(sceneTitle(count + 1), false, "scene", depth);
     scene.background = sc().background;      // 劇場は変えず、いまの背景色だけ引き継ぐ
     carried.forEach((piece) => scene.pieces.push(piece));
     // いまの行（とその中身）のすぐ後ろへ入れる
@@ -5976,7 +6023,7 @@
     const i = cursorIndex();
     const depth = i >= 0 ? p.scenes[i].depth : 0;
     const count = p.scenes.filter((x) => x.kind === "section").length;
-    const section = newScene(`セクション ${count + 1}`, false, "section", depth);
+    const section = newScene(isEn() ? `Section ${count + 1}` : `セクション ${count + 1}`, false, "section", depth);
     const at = i >= 0 ? i + 1 + sceneChildren(i).length : p.scenes.length;
     p.scenes.splice(at, 0, section);
     state.cursorRowId = section.id;
@@ -6265,7 +6312,7 @@
       if (size.height) bits.push(`${en ? "Height" : "高さ"} ${size.height}m`);
       if (size.seats) bits.push(en ? `about ${size.seats} seats` : `客席 約${size.seats}席`);
       if (size.crowd) bits.push(en ? `up to ${size.crowd.toLocaleString()} people` : `観客 〜${size.crowd.toLocaleString()}人`);
-      els.venueScale.textContent = bits.join(" ・ ") + (en ? "" : `（${current.source}）`);
+      els.venueScale.textContent = bits.join(en ? " · " : " ・ ") + (en ? "" : `（${current.source}）`);
     }
 
     // 見る位置の小図は、客席が正面だけの劇場でしか意味を持たない
@@ -6305,7 +6352,7 @@
     renderVenueControls();
     render();
     persistSoon();
-    announce(`${VENUES.seatById(id).label}から見た絵に切り替えました。配置は変わりません。`);
+    announce(`${seatName(VENUES.seatById(id))}から見た絵に切り替えました。配置は変わりません。`);
   }
 
   // 正面と平面はそれぞれ独立に開閉する。ただし両方閉じることはできない
@@ -6347,7 +6394,7 @@
     syncSeatMapToggle();
     render();
     persistSoon();
-    announce(`${venue().label}へ切り替えました。配置はそのまま残ります。`);
+    announce(`${venueName(venue())}へ切り替えました。配置はそのまま残ります。`);
   }
 
   function setVenueSize(id) {
@@ -6372,7 +6419,7 @@
     renderVenueControls();
     render();
     persistSoon();
-    announce(`規模を${venueSize().label}にしました。`);
+    announce(`規模を${sizeName(venueSize())}にしました。`);
   }
 
 
@@ -6503,7 +6550,7 @@
     }
     // 全周形式には塗れる背景の壁が無い（奥も客席）
     if (venue().audience === "round" && painting) {
-      announce(`${venue().label}には背景の壁がありません。奥も客席です。`);
+      announce(`${venueName(venue())}には背景の壁がありません。奥も客席です。`);
       return;
     }
     if (nextTool === "route" && !state.showPlan) {
@@ -6598,7 +6645,7 @@
     renderScenes();
     render();
     persistSoon();
-    announce(`${PIECE_TYPES[type]}を舞台へ置きました。`);
+    announce(`${pieceTypeName(type)}を舞台へ置きました。`);
     canvas.focus();
   }
 
@@ -6618,7 +6665,7 @@
     persistSoon();
     announce(piece.type === "light"
       ? `${pieceLabel(piece)}をOFFにしました。`
-      : `${PIECE_TYPES[piece.type]}を舞台から外しました。`);
+      : `${pieceTypeName(piece.type)}を舞台から外しました。`);
   }
 
   function duplicateSelected() {
@@ -6632,7 +6679,7 @@
     renderScenes();
     render();
     persistSoon();
-    announce(`${PIECE_TYPES[piece.type]}を複製しました。`);
+    announce(`${pieceTypeName(piece.type)}を複製しました。`);
   }
 
   /* 重なりの上下を手で入れ替える仕組みは置かない。
@@ -7185,7 +7232,7 @@
       renderVenueControls();
       render();
       persistSoon();
-      announce(`${venueSize().label}の寸法に戻しました。`);
+      announce(`${sizeName(venueSize())}の寸法に戻しました。`);
     });
   }
 
@@ -7442,7 +7489,7 @@
       item.lightKind = LIGHT_KINDS[e.target.value] ? e.target.value : "hang";
       renderLights();
       persistSoon();
-      announce(`${item.name}を${LIGHT_KINDS[item.lightKind].label}にしました。`);
+      announce(`${item.name}を${lightKindName(item.lightKind)}にしました。`);
     });
   }
   if (els.setInfoFlown) {
@@ -7682,8 +7729,12 @@
       els.dimsFromSet.hidden = !owner;
       if (owner) {
         els.dimsFromSet.textContent = registered
-          ? `名前・色・寸法は「${registered.name}」で決めます（${setDimLabel(registered)}）。`
-          : `名前・色・身長は「${member.name}」で決めます（${member.heightCm}cm）。`;
+          ? (isEn()
+            ? `Name, colour and size come from \u201c${registered.name}\u201d (${setDimLabel(registered)}).`
+            : `名前・色・寸法は「${registered.name}」で決めます（${setDimLabel(registered)}）。`)
+          : (isEn()
+            ? `Name, colour and height come from \u201c${member.name}\u201d (${member.heightCm}cm).`
+            : `名前・色・身長は「${member.name}」で決めます（${member.heightCm}cm）。`);
       }
     }
     if (els.liftControls) {
@@ -7719,7 +7770,7 @@
       // 明かりを舞台から外すのは「消す」こと。道具立てを片づける話ではない
       const light = Boolean(piece && piece.type === "light");
       els.delete.textContent = light ? "TURN OFF" : tx("舞台から外す");
-      els.delete.title = light ? "この場面ではこの明かりを消します" : "";
+      els.delete.title = light ? tx("この場面ではこの明かりを消します") : "";
     }
     if (els.routeClear) els.routeClear.hidden = !(piece && piece.route);
     /* 照明の直径。登録した明かりそのものの寸法なので、置いてある全ての場面に効く
@@ -7800,18 +7851,22 @@
        * 何ができるかは、押す前に触れたとき（title）と読み上げで伝える。 */
       els.pieceLock.setAttribute("aria-pressed", String(locked));
       els.pieceLock.textContent = locked ? "🔒" : "🔓";
-      const lockWord = locked ? "錠を外す" : "動かないようにする";
+      const lockWord = locked ? tx("錠を外す") : tx("動かないようにする");
       els.pieceLock.setAttribute("aria-label", lockWord);
-      els.pieceLock.title = owner
-        ? `${lockWord}（「${owner.name}」の錠。掛けているあいだ、どの場面でも動きません）`
-        : `${lockWord}（掛けているあいだ、掴んでも動きません）`;
+      els.pieceLock.title = isEn()
+        ? (owner
+          ? `${lockWord} (the lock of \u201c${owner.name}\u201d. While locked it will not move in any scene)`
+          : `${lockWord} (while locked, dragging will not move it)`)
+        : (owner
+          ? `${lockWord}（「${owner.name}」の錠。掛けているあいだ、どの場面でも動きません）`
+          : `${lockWord}（掛けているあいだ、掴んでも動きません）`);
     }
     if (els.openSetInfo) {
       els.openSetInfo.hidden = !owner;
       els.openSetInfo.textContent = registered ? tm("misc", "dims", "寸法") : tm("misc", "profile", "身長");
-      els.openSetInfo.title = registered
-        ? `「${registered.name}」の寸法を開く`
-        : (member ? `「${member.name}」のプロフィールを開く` : "");
+      els.openSetInfo.title = isEn()
+        ? (registered ? `Open the size of \u201c${registered.name}\u201d` : (member ? `Open \u201c${member.name}\u201d\u2019s profile` : ""))
+        : (registered ? `「${registered.name}」の寸法を開く` : (member ? `「${member.name}」のプロフィールを開く` : ""));
     }
   }
 
@@ -7863,8 +7918,15 @@
         el.setAttribute(attr, isEn() ? (I18N.text[ja.trim()] || ja) : ja);
       });
     };
-    const roots = [document.getElementById("view-stage"), ...document.querySelectorAll(".stage-modal")]
-      .filter(Boolean);
+    /* 単独ページ（stage.html）の一行目は view-stage の外にある。
+       テスターが最初に読む文なので、ここも一緒に差し替える。 */
+    const roots = [
+      document.getElementById("view-stage"),
+      document.querySelector(".stage-standalone-note"),
+      ...document.querySelectorAll(".stage-modal"),
+    ].filter(Boolean);
+    // 読み上げや行分けのために、文書そのものの言語も合わせる
+    document.documentElement.lang = isEn() ? "en" : "ja";
     roots.forEach((root) => {
       swapText(root);
       swapAttr(root, "placeholder", "jaPh");
@@ -7967,7 +8029,7 @@
       begin: () => { tourMark.light = lightCount(); },
       done: () => lightCount() > tourMark.light,
       ja: ["照明を足す", "「照明」に名前を入れて〈追加〉。吊り・SS・前明かり・転がしの4種類から選べます。道具を〈照明を動かす〉に替えると、灯体と当たる場所を別々に掴めます。"],
-      en: ["Add a light", "Enter a name under Lights and press Add. Four types: overhead, side, front, footlight. Switch the tool to Move lights to drag the fixture and the pool separately."],
+      en: ["Add a light", "Enter a name under Lights and press Add. Four types: overhead, side, front, floor. Switch the tool to Move lights to drag the fixture and the pool separately."],
     },
     {
       at: "#stage-front-note",
@@ -8315,8 +8377,7 @@
 
   buildPanelHeads();
   syncViewSwitch();
-  // 前に選んだ言語で開く。パネルの見出しを作ったあとに当てる
-  try { lang = localStorage.getItem(LANG_KEY) === "en" ? "en" : "ja"; } catch (_) { lang = "ja"; }
+  // 言語は loadState() より前に決めてある（見本の駒の名前がそこで決まるため）
   applyLayout();
   syncInputs();
   renderScenes();
