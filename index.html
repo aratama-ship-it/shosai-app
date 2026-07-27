@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=92">
+<link rel="stylesheet" href="style.css?v=94">
 </head>
 <body>
 
@@ -374,14 +374,13 @@
             <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
               <button type="button" data-stage-tool="select" aria-pressed="true">動かす</button>
               <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
-              <button type="button" data-stage-tool="route" aria-pressed="false">動線を描く</button>
               <button type="button" data-stage-tool="light" aria-pressed="false">光を動かす</button>
               <button type="button" data-stage-tool="erase" aria-pressed="false">塗りを消す</button>
             </div>
             <button type="button" class="stage-hint-help" id="stage-tool-help"
                     aria-pressed="false" aria-label="いまの道具の説明を出す" title="いまの道具の説明">?</button>
             <p class="stage-tool-hint" id="stage-tool-hint" hidden>演者や物を選び、舞台の上で動かします。</p>
-            <label class="stage-toggle stage-name-toggle">
+            <label class="stage-toggle stage-name-toggle stage-bar-right">
               <input type="checkbox" id="stage-show-names" checked>
               <span>演者名</span>
             </label>

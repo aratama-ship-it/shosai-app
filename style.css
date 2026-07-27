@@ -5723,8 +5723,12 @@ body.is-panel-dragging {
   grid-template-columns: repeat(4, auto);
 }
 
+/* 名前の入り切りから右は、絵の見え方の設定。道具の列とは役目が違うので右へ寄せる
+   （実際の指定は .stage-name-toggle の margin リセットより後ろにある） */
+
 .stage-center-bar .stage-tool-hint {
   flex: 1 1 140px;
+  order: 9;
   min-width: 0;
   margin: 0;
 }
@@ -5734,6 +5738,9 @@ body.is-panel-dragging {
   margin: 0;
   min-height: 30px;
 }
+
+/* 右寄せは、上の margin:0 より後に置く（先に書くと打ち消される） */
+.stage-center-bar .stage-bar-right { margin-left: auto; }
 
 .stage-center-bar #stage-swap-center { flex: 0 0 auto; }
 
