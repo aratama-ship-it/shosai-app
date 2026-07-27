@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=87">
+<link rel="stylesheet" href="style.css?v=89">
 </head>
 <body>
 
@@ -341,6 +341,14 @@
         <section class="stage-board-column stage-col-center" data-col="center" id="stage-col-center" aria-label="舞台面">
           <section class="stage-panel stage-scenes" data-panel="scenes" data-title="場面" aria-label="場面の一覧">
             <div class="stage-panel-body">
+              <div class="stage-scene-move">
+                <button type="button" id="stage-scene-prev" class="btn-quiet" title="前の場面へ（↑）">◀ 前の場面</button>
+                <button type="button" id="stage-scene-next" class="btn-quiet" title="次の場面へ（↓）">次の場面 ▶</button>
+                <label class="stage-toggle stage-anim-toggle" title="場面が変わるとき、動線に沿って動かして見せます">
+                  <input type="checkbox" id="stage-anim-scenes" checked>
+                  <span>転換を動かす</span>
+                </label>
+              </div>
               <div class="stage-scene-actions">
                 <button type="button" id="stage-scene-add" class="btn-quiet">場面を足す</button>
                 <button type="button" id="stage-scene-add-rig" class="btn-quiet">装置ごと足す</button>
@@ -792,7 +800,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=102"></script>
+<script src="stage-sketch.js?v=104"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

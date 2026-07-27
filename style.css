@@ -5332,6 +5332,31 @@ canvas[data-tool="note"] { cursor: copy; }
   font-weight: 400;
 }
 
+/* 場面を送る列。作る・並べ替える道具とは役目が違うので、上に一段分ける */
+.stage-scene-move {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+
+.stage-scene-move button { min-height: 30px; padding: 4px 12px; }
+
+.stage-anim-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  user-select: none;
+}
+
+.stage-anim-toggle input { width: 12px; height: 12px; margin: 0; accent-color: var(--rust); }
+.stage-anim-toggle:hover { color: var(--milk); }
+
 .stage-scene-actions {
   display: flex;
   flex-wrap: wrap;
@@ -5411,10 +5436,43 @@ canvas[data-tool="note"] { cursor: copy; }
 /* ===== 舞台スケッチ: パネルの並べ替えと折りたたみ ===== */
 
 .stage-panel {
+  position: relative;
   border-top: 1px solid var(--line-dark);
   padding: 0 0 14px;
   margin-bottom: 0;
 }
+
+/* 説明を引き出す「?」。見出しの右、畳むしるしの手前に置く。
+   見出しはボタンなので、その中には入れられない（ボタンの入れ子は作れない） */
+.stage-panel-help {
+  position: absolute;
+  top: 10px;
+  right: 22px;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-dark);
+  border-radius: 50%;
+  background: none;
+  color: rgba(240, 231, 214, 0.42);
+  font-size: 10px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.stage-panel-help:hover { color: var(--milk); border-color: var(--brass); }
+
+.stage-panel-help[aria-pressed="true"] {
+  color: var(--paper);
+  border-color: var(--brass);
+  background: rgba(211, 172, 89, 0.2);
+}
+
+.stage-panel.is-collapsed .stage-panel-help { display: none; }
 
 /* 掴んでいるパネル。指について動くので、浮いていることを影と傾きで示す */
 .stage-panel.is-dragging {

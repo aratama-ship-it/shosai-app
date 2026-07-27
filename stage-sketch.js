@@ -514,6 +514,9 @@
     sceneLeft: document.getElementById("stage-scene-left"),
     sceneRight: document.getElementById("stage-scene-right"),
     sceneDel: document.getElementById("stage-scene-del"),
+    scenePrev: document.getElementById("stage-scene-prev"),
+    sceneNext: document.getElementById("stage-scene-next"),
+    animScenes: document.getElementById("stage-anim-scenes"),
     castList: document.getElementById("stage-cast-list"),
     pieceFacing: document.getElementById("stage-piece-facing"),
     piecePose: document.getElementById("stage-piece-pose"),
@@ -658,6 +661,8 @@
       showSetNames: true,
       // 正面図の隅に「客席のどこから見ているか」の小図を出すか
       showSeatMap: true,
+      // 場面が変わるとき、動線に沿って動かして見せるか
+      animateScenes: true,
       // 舞台が一度に入らない席での見回し（-1〜1）。左右と上下
       frontPan: 0,
       frontPanY: 0,
@@ -816,6 +821,10 @@
       name: typeof piece.name === "string" ? piece.name.slice(0, 24) : "",
       castId: typeof piece.castId === "string" ? piece.castId : null,
       setId: typeof piece.setId === "string" ? piece.setId : null,
+      /* 写したもとの駒の札。場面を写すと札は配り直されるので、
+       * 登録の無い駒（最初から置いてある例など）は、これが無いと
+       * 前の場面の自分と結び付けられない（転換で動かせない）。 */
+      originId: typeof piece.originId === "string" ? piece.originId : null,
       // 体の向き（度）。0=客席を向く、90=上手を向く、180=背中
       facing: clamp(finite(piece.facing, 0), 0, 359),
       dims: normalizeDims(type, piece),
@@ -1064,6 +1073,7 @@
       showNames: raw.showNames === undefined ? true : Boolean(raw.showNames),
       showSetNames: raw.showSetNames === undefined ? true : Boolean(raw.showSetNames),
       showSeatMap: raw.showSeatMap === undefined ? true : Boolean(raw.showSeatMap),
+      animateScenes: raw.animateScenes === undefined ? true : Boolean(raw.animateScenes),
       frontPan: clamp(finite(raw.frontPan, 0), -1, 1),
       frontPanY: clamp(finite(raw.frontPanY, 0), -1, 1),
       closedSections: (raw.closedSections && typeof raw.closedSections === "object" && !Array.isArray(raw.closedSections))
@@ -1532,7 +1542,11 @@
 
   // 駒の足元の画面位置。台に乗っていればその分だけ持ち上げる
   function placePiece(piece, L) {
-    const pos = place(piece.u, piece.v, L);
+    /* 転換の途中は、その駒の「いまの居場所」で描く。
+     * 保存されるのは行き先の値なので、ここだけ差し替える。 */
+    const pos = place(
+      piece.animU === undefined ? piece.u : piece.animU,
+      piece.animV === undefined ? piece.v : piece.animV, L);
     const base = piece.base || 0;
     if (!base || L.plan) return pos;
     const rawY = pos.rawY - base * perMetre(pos, L).y;
@@ -3151,6 +3165,29 @@
       });
       el.prepend(head);
 
+      /* 説明文は畳んでおき、「?」を押したときだけ出す。
+       * 道具の数が多く、説明が常に見えていると、道具そのものが下へ押し出される。
+       * 初めて触るときだけ要る文章なので、要るときに引き出せればよい。 */
+      // 説明として畳むもの。状態を伝える文（保存の様子など）は畳まない
+      const hints = [...el.querySelectorAll(".stage-cast-hint, .stage-selection-empty")];
+      if (hints.length) {
+        hints.forEach((hint) => { hint.hidden = true; });
+        const help = document.createElement("button");
+        help.type = "button";
+        help.className = "stage-panel-help";
+        help.textContent = "?";
+        help.setAttribute("aria-pressed", "false");
+        help.setAttribute("aria-label", `${el.dataset.title || id}の説明を出す`);
+        help.title = "この項目の説明";
+        help.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const show = hints[0].hidden;
+          hints.forEach((hint) => { hint.hidden = !show; });
+          help.setAttribute("aria-pressed", String(show));
+        });
+        el.append(help);
+      }
+
       // つまみからドラッグする。パネル全体を掴むと中の操作ができなくなる。
       // HTML5のドラッグはタッチで動かないので、ポインタイベントで自前に持つ。
       el.draggable = false;
@@ -4685,11 +4722,94 @@
   }
 
   // 前後へ動かす。セクションは中身ごと、同じ深さの隣と入れ替える
+  /* ---------- 場面転換の動き ----------
+     前の場面で同じものが居た場所から、次の場面の場所へ動かして見せる。
+     前の場面で動線を引いてあれば、その曲線に沿って動く（引いた線のとおりに動く）。
+     保存されるのは行き先の値だけ。途中の位置は animU/animV に持ち、
+     終わったら消す（途中で保存されても、絵の途中の位置は残らない）。 */
+  const SCENE_ANIM_MS = 620;
+  let sceneAnim = null;
+
+  const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+  // 前の場面の同じもの。登録があればその札で、無ければ駒の札で照合する
+  function twinOf(piece, pieces) {
+    if (piece.castId) return pieces.find((p) => p.castId === piece.castId) || null;
+    if (piece.setId) return pieces.find((p) => p.setId === piece.setId) || null;
+    const mine = piece.originId || piece.id;
+    return pieces.find((p) => (p.originId || p.id) === mine) || null;
+  }
+
+  function stopSceneAnim() {
+    if (!sceneAnim) return;
+    cancelAnimationFrame(sceneAnim.raf);
+    sceneAnim.pieces.forEach((entry) => {
+      delete entry.piece.animU;
+      delete entry.piece.animV;
+    });
+    sceneAnim = null;
+  }
+
+  function beginSceneAnim(fromScene) {
+    stopSceneAnim();
+    if (!state.animateScenes || !fromScene) return;
+    const pieces = [];
+    sc().pieces.forEach((piece) => {
+      const twin = twinOf(piece, fromScene.pieces || []);
+      if (!twin) return;
+      if (Math.abs(twin.u - piece.u) < 0.004 && Math.abs(twin.v - piece.v) < 0.004) return;
+      /* 動線があれば、その二次曲線をたどる。行き先が動線の終点と違っていても、
+       * 曲がり方だけ借りて向かう（曲線の形は残しつつ、着地は次の場面の場所）。 */
+      const route = twin.route;
+      pieces.push({
+        piece,
+        from: { u: twin.u, v: twin.v },
+        ctrl: route ? { u: route.bu, v: route.bv } : null,
+        to: { u: piece.u, v: piece.v },
+      });
+    });
+    if (!pieces.length) return;
+    const start = performance.now();
+    const step = (now) => {
+      const t = clamp((now - start) / SCENE_ANIM_MS, 0, 1);
+      const e = easeInOut(t);
+      pieces.forEach((entry) => {
+        if (entry.ctrl) {
+          const k = 1 - e;
+          entry.piece.animU = k * k * entry.from.u + 2 * k * e * entry.ctrl.u + e * e * entry.to.u;
+          entry.piece.animV = k * k * entry.from.v + 2 * k * e * entry.ctrl.v + e * e * entry.to.v;
+        } else {
+          entry.piece.animU = entry.from.u + (entry.to.u - entry.from.u) * e;
+          entry.piece.animV = entry.from.v + (entry.to.v - entry.from.v) * e;
+        }
+      });
+      render();
+      if (t < 1) { sceneAnim.raf = requestAnimationFrame(step); return; }
+      stopSceneAnim();
+      render();
+    };
+    sceneAnim = { pieces, raf: requestAnimationFrame(step) };
+  }
+
+  // 場面を前後へ送る。上下キーの割り当て先でもある
+  function stepScene(dir) {
+    const rows = state.project.scenes.filter((row) => row.kind === "scene");
+    if (rows.length < 2) { announce("場面がひとつしかありません。"); return; }
+    const at = rows.findIndex((row) => row.id === state.project.activeSceneId);
+    const next = rows[clamp((at < 0 ? 0 : at) + dir, 0, rows.length - 1)];
+    if (!next || next.id === state.project.activeSceneId) {
+      announce(dir > 0 ? "最後の場面です。" : "最初の場面です。");
+      return;
+    }
+    openScene(next.id);
+  }
+
   function openScene(id) {
     closeNoteEditor();
     selectedNoteId = null;
     state.cursorRowId = id;
     if (state.project.activeSceneId === id) { renderScenes(); return; }
+    const before = sc();
     state.project.activeSceneId = id;
     selectedId = null;
     renderScenes();
@@ -4699,6 +4819,7 @@
     renderRigs();
     updateInspector();
     render();
+    beginSceneAnim(before);
     persistSoon();
     announce(`${sc().title}を開きました。`);
   }
@@ -4758,7 +4879,7 @@
     copy.pieces = (copy.pieces || []).map((piece) => {
       const id = nextId();
       swap.set(piece.id, id);
-      return { ...piece, id };
+      return { ...piece, id, originId: piece.originId || piece.id };
     });
     copy.notes = (copy.notes || []).map((note) => ({
       ...note,
@@ -5259,7 +5380,8 @@
 
   function updateInspector() {
     const piece = selectedPiece();
-    els.selectionEmpty.hidden = Boolean(piece);
+    /* 「何も選んでいないときの案内」は説明文なので「?」の側で出し入れする。
+     * ここで勝手に出すと、畳んだはずの文が選ぶたびに戻ってくる。 */
     els.selectionControls.hidden = !piece;
     if (!piece) return;
     const sameType = sc().pieces.filter((candidate) => candidate.type === piece.type);
@@ -5299,6 +5421,7 @@
     if (els.showNames) els.showNames.checked = state.showNames;
     if (els.showSetNames) els.showSetNames.checked = state.showSetNames;
     if (els.showSeatMap) els.showSeatMap.checked = state.showSeatMap;
+    if (els.animScenes) els.animScenes.checked = state.animateScenes;
     syncSeatMapToggle();
   }
 
@@ -5371,11 +5494,14 @@
       && (pointerAction.fresh || !pointerAction.moved)
       ? { id: pointerAction.id, view: pointerAction.view } : null;
     const drewRoute = pointerAction.kind === "route";
+    // 動線は一本引けば用が済む。引いたらそのまま動かす手に戻す
+    const backToSelect = Boolean(pointerAction.fromRouteTool);
     pointerAction = null;
     el.dataset.dragging = "false";
     if (changed) persistSoon();
     // 動線を引き終えたら、場面の欄の「動線の先へ動かした場面を作る」が押せるようになる
     if (drewRoute) renderScenes();
+    if (backToSelect) setTool("select");
     // 掴んだだけで離した＝書き直したい、と読む
     if (tapped) {
       const note = (sc().notes || []).find((candidate) => candidate.id === tapped.id);
@@ -5444,7 +5570,10 @@
       hit.route = { u: hit.u, v: hit.v, bu: hit.u, bv: hit.v };
       capture(el, event.pointerId);
       el.dataset.dragging = "true";
-      pointerAction = { kind: "route", pointerId: event.pointerId, id: hit.id, el, view, moved: true, handle: "end" };
+      pointerAction = {
+        kind: "route", pointerId: event.pointerId, id: hit.id, el, view,
+        moved: true, handle: "end", fromRouteTool: true,
+      };
       updateInspector();
       render();
       return;
@@ -6015,6 +6144,32 @@
       if (item) { item.note = e.target.value.slice(0, 200); persistSoon(); }
     });
   }
+  if (els.scenePrev) els.scenePrev.addEventListener("click", () => stepScene(-1));
+  if (els.sceneNext) els.sceneNext.addEventListener("click", () => stepScene(1));
+  if (els.animScenes) {
+    els.animScenes.addEventListener("change", (e) => {
+      state.animateScenes = e.target.checked;
+      if (!state.animateScenes) { stopSceneAnim(); render(); }
+      persistSoon();
+      announce(state.animateScenes ? "場面転換を動かします。" : "場面転換は動かしません。");
+    });
+  }
+
+  /* 上下キーで場面を送る。ただし
+   *  ・文字を打っている最中は触らない
+   *  ・絵の上で駒を選んでいるときは、駒の微調整が先（そちらが既に受け取っている）
+   * の二つは守る。 */
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    if (event.defaultPrevented) return;
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    const view = document.getElementById("view-stage");
+    if (!view || view.hidden) return;
+    if (isTyping(event.target)) return;
+    event.preventDefault();
+    stepScene(event.key === "ArrowDown" ? 1 : -1);
+  });
+
   if (els.sceneAdd) els.sceneAdd.addEventListener("click", () => addScene(false));
   if (els.sceneAddRig) els.sceneAddRig.addEventListener("click", () => addScene(true));
   /* 場面の欄の高さ。下の取っ手を引いて変える。
