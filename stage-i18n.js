@@ -23,6 +23,7 @@
     "装置の型": "Set presets",
     "照明": "Lights",
     "背景": "Backdrop",
+    "場面スタディ": "SceneStudy",
     "場面": "Scenes",
     "選んだもの": "Selection",
     "保存": "Saving",
@@ -30,8 +31,11 @@
     "右の道具列": "Right column",
     "舞台面": "Stage",
     "場面の一覧": "Scene list",
+    "固定の場面スタディを読み込んでいます。": "Loading the fixed SceneStudy.",
 
     /* ---- 上部 ---- */
+    "使い方": "Guide",
+    "使い方をひととおり見る": "Take the quick tour",
     "一つ戻す": "Undo",
     "やり直す": "Redo",
     "画像を書き出す": "Export image",

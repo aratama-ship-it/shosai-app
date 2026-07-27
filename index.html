@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=100">
+<link rel="stylesheet" href="style.css?v=103">
 </head>
 <body>
 
@@ -79,6 +79,8 @@
       </section>
     </div>
   </main>
+
+
 
   <!-- 制作会社: 個別作品をたどる前の、公式根拠付きの探索地図 -->
   <main id="view-companies" class="view" hidden>
@@ -190,6 +192,7 @@
         <div class="stage-history-actions">
           <button type="button" id="stage-undo" title="⌘Z（WindowsはCtrl+Z）" disabled>一つ戻す</button>
           <button type="button" id="stage-redo" title="⇧⌘Z（WindowsはCtrl+Shift+Z）" disabled>やり直す</button>
+          <button type="button" class="stage-lang" id="stage-tour-start" title="使い方をひととおり見る">使い方</button>
           <button type="button" class="stage-lang" id="stage-lang" aria-pressed="false"
                   title="日本語 / English">EN</button>
           <button type="button" class="stage-export" id="stage-export">画像を書き出す</button>
@@ -546,7 +549,7 @@
           <p class="seeds-sub">資料から拾った断片を貼り、書き込み、ページとして残す。</p>
           <button type="button" class="btn-quiet seed-history-reset" id="btn-reset-seed-history">流した種火を戻す</button>
         </div>
-        <p class="seed-catalog-note">手で書いた種火と、資料棚の具体的な像から10のレシピで組み立てた種火が、一つの束になっています。各カードから参照作品へ戻れます。</p>
+        <p class="seed-catalog-note">手で書いた種火、資料棚から組み立てた種火、自炊本の確認済み要約から変形した種火が、一つの束になっています。出典のあるカードは変形の過程を開けます。</p>
         <section class="scrapbook-page-controls" aria-label="スクラップブックのページ操作">
           <label for="scrapbook-page-title">
             <span>ページ名</span>
@@ -619,7 +622,7 @@
             </div>
           </aside>
         </div>
-        <p class="seeds-note">初期の固定種火と、現在の資料棚を横断して組み立てた種火を、同じ束として配ります。後者はすべて参照作品を2件添え、事実の複製ではなく制作のための変形案として扱います。流した種火は「流した種火を戻す」で戻せます。ページ・付箋メモ・保存済みページは、この端末のこのブラウザ内にのみ保存されます。</p>
+        <p class="seeds-note">初期の固定種火、現在の資料棚から組み立てた種火、自炊本25冊から変形した100件を、同じ束として配ります。出典のある種火には参照作品または書名と変形メモを添え、本文の複製ではなく制作のための抽象化として扱います。流した種火は「流した種火を戻す」で戻せます。ページ・付箋メモ・保存済みページは、この端末のこのブラウザ内にのみ保存されます。</p>
       </section>
     </section>
   </main>
@@ -704,6 +707,22 @@
 </div>
 
 <!-- 演者プロフィール -->
+<!-- 使い方の案内。舞台スケッチの上に重ねて出す -->
+<div class="stage-tour" id="stage-tour" hidden>
+  <div class="stage-tour-ring" id="stage-tour-ring" aria-hidden="true"></div>
+  <div class="stage-tour-card" id="stage-tour-card" role="dialog" aria-modal="false"
+       aria-labelledby="stage-tour-title">
+    <p class="stage-tour-step" id="stage-tour-step">1 / 7</p>
+    <h2 id="stage-tour-title">見出し</h2>
+    <p id="stage-tour-body">説明</p>
+    <div class="stage-tour-actions">
+      <button type="button" class="btn-quiet" id="stage-tour-close">閉じる</button>
+      <button type="button" class="btn-quiet" id="stage-tour-prev">戻る</button>
+      <button type="button" class="stage-minor-action" id="stage-tour-next">次へ</button>
+    </div>
+  </div>
+</div>
+
 <div class="stage-modal-backdrop" id="stage-profile-backdrop" hidden></div>
 <div class="stage-modal" id="stage-profile" role="dialog" aria-modal="true"
      aria-labelledby="stage-profile-title" hidden>
@@ -850,10 +869,11 @@
 
 <script src="db.js?v=77"></script>
 <script src="data.js?v=16"></script>
-<script src="app.js?v=37"></script>
+<script src="book-seeds.js?v=1"></script>
+<script src="app.js?v=38"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=2"></script>
-<script src="stage-sketch.js?v=116"></script>
+<script src="stage-i18n.js?v=3"></script>
+<script src="stage-sketch.js?v=117"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

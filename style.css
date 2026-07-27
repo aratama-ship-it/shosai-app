@@ -2354,12 +2354,17 @@ canvas[data-tool="note"] { cursor: copy; }
   border-left: 1px solid rgba(179,143,77,0.42);
 }
 
-.seed-provenance li a {
+.seed-provenance li a,
+.seed-provenance li strong {
   width: fit-content;
   color: var(--milk);
   font-family: var(--serif);
   font-size: 12.5px;
   line-height: 1.5;
+  font-weight: 400;
+}
+
+.seed-provenance li a {
   text-decoration: underline;
   text-decoration-color: rgba(179,143,77,0.45);
   text-underline-offset: 3px;
@@ -2454,7 +2459,8 @@ canvas[data-tool="note"] { cursor: copy; }
 .seed-chip .seed-provenance summary::after,
 .seed-chip .seed-provenance li span,
 .seed-chip .seed-transform { color: var(--ink-soft); }
-.seed-chip .seed-provenance li a { color: var(--ink); }
+.seed-chip .seed-provenance li a,
+.seed-chip .seed-provenance li strong { color: var(--ink); }
 .seed-chip .seed-provenance-label,
 .seed-chip .seed-transform span { color: var(--rust-deep); }
 
@@ -5044,10 +5050,15 @@ canvas[data-tool="note"] { cursor: copy; }
   gap: 9px;
 }
 
-.origin-works a {
+.origin-works a,
+.origin-works strong {
   color: var(--ink);
   font-family: var(--serif);
   font-size: 13.5px;
+  font-weight: 400;
+}
+
+.origin-works a {
   text-decoration: underline;
   text-decoration-color: rgba(168, 75, 38, 0.4);
   text-underline-offset: 3px;
@@ -5324,6 +5335,203 @@ canvas[data-tool="note"] { cursor: copy; }
   cursor: pointer;
 }
 
+/* ===== 舞台スケッチ: 固定 SceneStudy =====
+ * 汎用のカード一覧ではなく、稽古場で横へ書き足す実験記録の欄として見せる。
+ * 8ビートの番号を同じ幅で並べ、配置を切り替える手を最短にする。 */
+.stage-study-panel .stage-panel-body {
+  border-left: 2px solid rgba(211, 172, 89, 0.62);
+  padding-left: 10px;
+}
+
+.stage-study-status {
+  margin: 0 0 7px;
+  color: var(--rust);
+  font-size: 8.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.15em;
+  line-height: 1.5;
+}
+
+.stage-study-title {
+  margin: 0 0 9px;
+  color: var(--paper);
+  font-family: var(--serif);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+
+.stage-study-input,
+.stage-study-empty,
+.stage-study-save-note,
+.stage-study-source,
+.stage-study-fallback {
+  margin: 0 0 9px;
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  line-height: 1.72;
+}
+
+.stage-study-open {
+  width: 100%;
+  min-height: 42px;
+  margin: 2px 0 8px;
+  padding: 7px 9px;
+  border: 1px solid var(--rust);
+  background: rgba(168, 75, 38, 0.2);
+  color: var(--paper);
+  font-family: var(--serif);
+  line-height: 1.45;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.stage-study-open:hover,
+.stage-study-open:focus-visible {
+  border-color: var(--brass);
+  background: rgba(168, 75, 38, 0.32);
+  outline: none;
+}
+
+.stage-study-rail {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin: 9px 0 12px;
+}
+
+.stage-study-rail::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: 5%;
+  right: 5%;
+  top: 50%;
+  height: 1px;
+  background: rgba(211, 172, 89, 0.28);
+}
+
+.stage-study-beat-button {
+  position: relative;
+  z-index: 1;
+  min-height: 28px;
+  padding: 3px 2px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk);
+  color: rgba(240, 231, 214, 0.52);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.stage-study-beat-button:hover { border-color: var(--brass); color: var(--milk); }
+
+.stage-study-beat-button[aria-pressed="true"] {
+  border-color: var(--rust);
+  background: var(--rust-deep);
+  color: var(--paper);
+  box-shadow: inset 0 -2px 0 var(--brass);
+}
+
+.stage-study-beat-button:disabled { opacity: 0.28; cursor: default; }
+
+.stage-study-beat-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 9px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(240, 231, 214, 0.14);
+}
+
+.stage-study-beat-number {
+  color: var(--rust);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+}
+
+.stage-study-beat-head h4 {
+  color: var(--paper);
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.stage-study-field {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(240, 231, 214, 0.08);
+}
+
+.stage-study-field > span,
+.stage-study-minihead {
+  color: var(--brass);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  line-height: 1.55;
+}
+
+.stage-study-field p {
+  margin: 0;
+  color: var(--milk);
+  font-size: 10.5px;
+  line-height: 1.68;
+}
+
+.stage-study-detail {
+  margin-top: 9px;
+  border-top: 1px solid rgba(211, 172, 89, 0.28);
+}
+
+.stage-study-detail summary {
+  padding: 8px 0 5px;
+  color: var(--milk-dim);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.stage-study-detail[open] summary { color: var(--brass); }
+.stage-study-detail-body { padding: 3px 0 5px; }
+.stage-study-minihead { margin: 8px 0 4px; }
+
+.stage-study-list,
+.stage-study-card-list {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0 0 0 15px;
+  color: var(--milk-dim);
+  font-size: 9.8px;
+  line-height: 1.58;
+}
+
+.stage-study-card-list li::marker { color: var(--rust); }
+
+.stage-study-source {
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+  color: rgba(240, 231, 214, 0.38);
+  font-size: 8.8px;
+}
+
+.stage-study-save-note {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(240, 231, 214, 0.09);
+  color: rgba(240, 231, 214, 0.48);
+  font-size: 9.5px;
+}
+
 /* 場面の帯。順番が見えることが大事なので横に並べる */
 .stage-scenes {
   border: 1px solid var(--line-dark);
@@ -5544,6 +5752,77 @@ canvas[data-tool="note"] { cursor: copy; }
 
 /* 拡大しているときだけ出る、等倍へ戻す札 */
 .stage-zoom-reset[hidden] { display: none; }
+
+/* ===== 使い方の案内 =====
+   画面を暗くして閉じ込めるのではなく、見てほしい場所へ枠を当てて、
+   隅にカードを置くだけにする。触りながら読めるようにするため。 */
+.stage-tour[hidden] { display: none; }
+
+.stage-tour-ring {
+  position: fixed;
+  z-index: 60;
+  border: 2px solid var(--brass);
+  box-shadow: 0 0 0 9999px rgba(13, 12, 11, 0.42);
+  pointer-events: none;
+  transition: left 0.18s ease, top 0.18s ease, width 0.18s ease, height 0.18s ease;
+}
+
+.stage-tour-card {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 61;
+  width: min(360px, calc(100vw - 40px));
+  padding: 16px 18px 14px;
+  background: var(--desk-2);
+  border: 1px solid var(--brass);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.55);
+}
+
+.stage-tour-step {
+  margin: 0 0 6px;
+  color: var(--brass);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+
+.stage-tour-card h2 {
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  color: var(--paper);
+}
+
+.stage-tour-card p:not(.stage-tour-step) {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--milk);
+}
+
+.stage-tour-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* 三つ並べても折り返さないように、字を詰めて余白を切る */
+.stage-tour-actions button {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 34px;
+  padding: 6px 14px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.stage-tour-actions button:disabled { opacity: 0.35; cursor: default; }
+.stage-tour-actions #stage-tour-close { margin-right: auto; }
+
+@media (max-width: 720px) {
+  .stage-tour-card { right: 12px; left: 12px; bottom: 12px; width: auto; }
+}
 
 /* 言語の切り替え。書き出しの隣に、控えめな枠で置く */
 .stage-lang {

@@ -17,6 +17,9 @@
   if (!canvas) return;
   const VENUES = window.SHOSAI_VENUES;
   if (!VENUES) return;
+  const SCENE_STUDIES = Array.isArray(window.SHOSAI_SCENE_STUDIES)
+    ? window.SHOSAI_SCENE_STUDIES
+    : [];
 
   const planCanvas = document.getElementById("stage-plan-canvas");
   const ctx = canvas.getContext("2d", { alpha: false });
@@ -725,6 +728,16 @@
     redo: document.getElementById("stage-redo"),
     export: document.getElementById("stage-export"),
     lang: document.getElementById("stage-lang"),
+    tour: document.getElementById("stage-tour"),
+    tourRing: document.getElementById("stage-tour-ring"),
+    tourCard: document.getElementById("stage-tour-card"),
+    tourStep: document.getElementById("stage-tour-step"),
+    tourTitle: document.getElementById("stage-tour-title"),
+    tourBody: document.getElementById("stage-tour-body"),
+    tourPrev: document.getElementById("stage-tour-prev"),
+    tourNext: document.getElementById("stage-tour-next"),
+    tourClose: document.getElementById("stage-tour-close"),
+    tourStart: document.getElementById("stage-tour-start"),
     exportModal: document.getElementById("stage-export-modal"),
     exportBackdrop: document.getElementById("stage-export-backdrop"),
     exportClose: document.getElementById("stage-export-close"),
@@ -785,6 +798,7 @@
     versionNote: document.getElementById("stage-version-note"),
     exportJson: document.getElementById("stage-export-json"),
     importJson: document.getElementById("stage-import-json"),
+    studyBody: document.getElementById("stage-study-body"),
     sceneList: document.getElementById("stage-scene-list"),
     sceneResize: document.getElementById("stage-scene-resize"),
     sceneAdd: document.getElementById("stage-scene-add"),
@@ -1015,18 +1029,18 @@
      使わないものは畳めるようにする。中央は絵だけで、上下の入れ替えのみ。 */
   /* 演者・舞台セット・光は「出るもの」一枚にまとめた（cast）。
    * 登録・出し入れ・寸法の仕組みが同じものを三つに割ると、目が三度行き来する。 */
-  const PANELS = ["project", "venue", "cast", "rigs", "light", "background", "scenes", "inspector", "save"];
+  const PANELS = ["project", "venue", "cast", "rigs", "light", "background", "study", "scenes", "inspector", "save"];
 
   function defaultLayout() {
     return {
       // 場面は絵のすぐ右に置く（順番を見ながら描くため）
       cols: {
         project: "left", venue: "left", cast: "left", rigs: "left", light: "left", background: "left",
-        scenes: "right", inspector: "right", save: "right",
+        study: "right", scenes: "right", inspector: "right", save: "right",
       },
       order: {
         project: 0, venue: 1, cast: 2, rigs: 3, light: 4, background: 5,
-        scenes: 0, inspector: 1, save: 2,
+        study: -1, scenes: 0, inspector: 1, save: 2,
       },
       collapsed: {},
       centerOrder: ["front", "plan"],
@@ -1317,6 +1331,7 @@
       kind: raw.kind === "section" ? "section" : "scene",
       depth: clamp(finite(raw.depth, 0), 0, MAX_DEPTH),
       title: typeof raw.title === "string" && raw.title.trim() ? raw.title : `場面 ${index + 1}`,
+      studyBeatId: typeof raw.studyBeatId === "string" ? raw.studyBeatId : null,
       note: typeof raw.note === "string" ? raw.note : "",
       background: validColor(raw.background, fallbackBg),
       pieces: Array.isArray(raw.pieces) ? raw.pieces.slice(-80).map(normalizePiece) : [],
@@ -1365,6 +1380,9 @@
         parentVersionId: typeof rawProject.parentVersionId === "string" ? rawProject.parentVersionId : null,
         branchReason: typeof rawProject.branchReason === "string" ? rawProject.branchReason : "",
         createdAt: typeof rawProject.createdAt === "string" ? rawProject.createdAt : nowIso(),
+        sceneStudyId: typeof rawProject.sceneStudyId === "string" ? rawProject.sceneStudyId : null,
+        sceneStudySourceVersion: typeof rawProject.sceneStudySourceVersion === "string"
+          ? rawProject.sceneStudySourceVersion : null,
         venue: venue.id,
         venueSize: size.id,
         /* 規模の実寸。選んだ規模の値を土台に、ここで上書きした分だけ差し替える。
@@ -1504,6 +1522,247 @@
   let future = [];
   let saveTimer = null;
   let controlBefore = null;
+
+  /* ---------- 固定 SceneStudy ----------
+   * 知識ベース全体とは接続しない。同梱した固定データだけを読み、
+   * 8ビートを通常の「場面」へ変換する。配置は初期仮説で、以後は
+   * 他のショーと同じく端末内で編集・保存される。 */
+
+  const studyById = (id) => SCENE_STUDIES.find((item) => item.id === id) || null;
+  const currentStudy = () => studyById(state.project.sceneStudyId);
+
+  function studyNode(tag, className, textValue) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (textValue !== undefined) node.textContent = textValue;
+    return node;
+  }
+
+  function studyDetail(summaryText, className) {
+    const details = studyNode("details", className || "stage-study-detail");
+    const summary = studyNode("summary", "", summaryText);
+    const body = studyNode("div", "stage-study-detail-body");
+    details.append(summary, body);
+    return { details, body };
+  }
+
+  function appendStudyList(host, heading, items) {
+    host.append(studyNode("p", "stage-study-minihead", heading));
+    const list = studyNode("ul", "stage-study-list");
+    items.forEach((item) => list.append(studyNode("li", "", item)));
+    host.append(list);
+  }
+
+  function renderSceneStudy() {
+    if (!els.studyBody) return;
+    els.studyBody.innerHTML = "";
+    const available = SCENE_STUDIES[0];
+    if (!available) {
+      els.studyBody.append(studyNode("p", "stage-study-empty",
+        isEn() ? "No fixed SceneStudy is bundled." : "同梱された固定SceneStudyはありません。"));
+      return;
+    }
+
+    const study = currentStudy();
+    if (!study) {
+      els.studyBody.append(
+        studyNode("p", "stage-study-status",
+          isEn()
+            ? `FIXED STUDY / ${available.scope.targetDurationSeconds}s / ${available.scope.performers} performer`
+            : `固定スタディ / ${available.scope.targetDurationSeconds}秒 / ${available.scope.performers}人`),
+        studyNode("h3", "stage-study-title", available.title),
+        studyNode("p", "stage-study-input", available.fixedInput)
+      );
+      const button = studyNode("button", "stage-study-open",
+        isEn() ? "Open the 8 beats as another show" : "8ビートを別ショーとして開く");
+      button.type = "button";
+      button.addEventListener("click", () => openFixedSceneStudy(available));
+      els.studyBody.append(button);
+      els.studyBody.append(studyNode("p", "stage-study-save-note",
+        isEn()
+          ? "Your current show stays in All shows. The study opens separately and saves only in this browser."
+          : "現在のショーは一覧に残します。固定案は別ショーで開き、配置変更はこのブラウザ内だけに保存します。"));
+
+      const source = studyDetail(isEn() ? "What is fixed?" : "何が固定されているか");
+      appendStudyList(source.body,
+        isEn() ? "FROM THE EXISTING PLAN" : "既存計画から",
+        available.factsFromExistingPlan);
+      source.body.append(studyNode("p", "stage-study-source",
+        isEn() ? `Bundled from: ${available.sourceJson}` : `同梱元: ${available.sourceJson}`));
+      els.studyBody.append(source.details);
+      return;
+    }
+
+    const activeScene = sc();
+    const activeBeat = study.beats.find((beat) => beat.id === activeScene.studyBeatId) || null;
+    const scenesByBeat = new Map(
+      state.project.scenes
+        .filter((scene) => scene.kind === "scene" && scene.studyBeatId)
+        .map((scene) => [scene.studyBeatId, scene])
+    );
+
+    els.studyBody.append(
+      studyNode("p", "stage-study-status",
+        isEn()
+          ? `FIXED STUDY / ${study.scope.targetDurationSeconds}s / PLACEMENT DRAFT`
+          : `固定案 / ${study.scope.targetDurationSeconds}秒 / 配置は初期仮説`),
+      studyNode("h3", "stage-study-title", study.title)
+    );
+
+    const rail = studyNode("div", "stage-study-rail");
+    rail.setAttribute("role", "group");
+    rail.setAttribute("aria-label", isEn() ? "Switch study beat" : "スタディのビートを切り替える");
+    study.beats.forEach((beat) => {
+      const scene = scenesByBeat.get(beat.id);
+      const button = studyNode("button", "stage-study-beat-button", beat.id);
+      button.type = "button";
+      button.disabled = !scene;
+      button.title = `${beat.label} / ${beat.durationSeconds}${isEn() ? "s" : "秒"}`;
+      button.setAttribute("aria-pressed", String(Boolean(activeBeat && activeBeat.id === beat.id)));
+      if (scene) button.addEventListener("click", () => openScene(scene.id));
+      rail.append(button);
+    });
+    els.studyBody.append(rail);
+
+    if (!activeBeat) {
+      els.studyBody.append(studyNode("p", "stage-study-empty",
+        isEn()
+          ? "This scene is outside the fixed 8 beats. Choose a beat above to return."
+          : "この場面は固定8ビートの外です。上の番号を押すとスタディへ戻れます。"));
+    } else {
+      const heading = studyNode("div", "stage-study-beat-head");
+      const number = studyNode("span", "stage-study-beat-number",
+        `${activeBeat.id} / ${study.beats.length}　${activeBeat.durationSeconds}${isEn() ? "s" : "秒"}`);
+      heading.append(number, studyNode("h4", "", activeBeat.label));
+      els.studyBody.append(heading);
+
+      [
+        [isEn() ? "ACTION" : "行為", activeBeat.action],
+        [isEn() ? "VISIBLE RULE" : "観客に見える規則", activeBeat.visibleRule],
+        [isEn() ? "CHANGE" : "このビートで変わること", activeBeat.change],
+      ].forEach(([label, value]) => {
+        const field = studyNode("div", "stage-study-field");
+        field.append(studyNode("span", "", label), studyNode("p", "", value));
+        els.studyBody.append(field);
+      });
+
+      const cards = studyDetail(
+        isEn()
+          ? `Direction cards (${activeBeat.appliedCardIds.length})`
+          : `適用した演出カード（${activeBeat.appliedCardIds.length}件）`
+      );
+      const cardList = studyNode("ul", "stage-study-card-list");
+      activeBeat.appliedCardIds.forEach((id) => {
+        const item = studyNode("li", "", study.cardTitles[id] || id);
+        item.title = id;
+        cardList.append(item);
+      });
+      cards.body.append(cardList);
+      els.studyBody.append(cards.details);
+    }
+
+    const boundary = studyDetail(isEn() ? "Facts, interpretation, open choices" : "事実・解釈・未決定");
+    appendStudyList(boundary.body,
+      isEn() ? "FROM THE EXISTING PLAN" : "既存計画から",
+      study.factsFromExistingPlan);
+    appendStudyList(boundary.body,
+      isEn() ? "CREATIVE INTERPRETATION" : "今回の制作解釈",
+      [
+        `目的: ${study.creativeInterpretation.objective}`,
+        `障害: ${study.creativeInterpretation.obstacle}`,
+        `葛藤: ${study.creativeInterpretation.conflict}`,
+      ]);
+    appendStudyList(boundary.body,
+      isEn() ? "OPEN" : "本人確認待ち",
+      study.unknownsForUserReview);
+    els.studyBody.append(boundary.details);
+
+    els.studyBody.append(studyNode("p", "stage-study-save-note",
+      isEn()
+        ? "Switch beats to compare positions. Every beat is a separate scene; edits auto-save only in this browser."
+        : "番号を切り替えて配置差を見ます。各ビートは別場面で、変更はこのブラウザ内へ自動保存されます。"));
+  }
+
+  function openFixedSceneStudy(study) {
+    if (!study || !Array.isArray(study.beats) || !study.beats.length) return;
+    shelveCurrent();
+
+    const fresh = baseState(false);
+    const researcherId = `study-${study.id}-researcher`;
+    const tableId = `study-${study.id}-table`;
+    const noteId = `study-${study.id}-note`;
+    const diaboloId = `study-${study.id}-diabolo`;
+    const poses = {
+      "4-1": "stand", "4-2": "stand", "4-3": "reach", "4-4": "open",
+      "4-5": "reach", "4-6": "open", "4-7": "stand", "4-8": "walk",
+    };
+
+    fresh.project.title = "時をほどく研究室：未来サンプル";
+    fresh.project.versionLabel = "Study A";
+    fresh.project.sceneStudyId = study.id;
+    fresh.project.sceneStudySourceVersion = study.schemaVersion;
+    fresh.project.cast = [
+      {
+        id: researcherId,
+        name: "研究者",
+        color: "#a84b26",
+        heightCm: DEFAULT_HEIGHT_CM,
+        note: "固定SceneStudyの1人版。配置と姿勢は稽古前の初期仮説。",
+        locked: false,
+      },
+    ];
+    fresh.project.sets = [
+      {
+        id: tableId, kind: "table", name: "実験机", color: "#766a59",
+        dims: { w: 1.4, d: 0.7, h: 0.72 }, note: "", locked: false,
+        flown: false, wires: 2, framed: false,
+      },
+      {
+        id: noteId, kind: "block", name: "ノート（位置札）", color: "#efe7d6",
+        dims: { w: 0.3, d: 0.22, h: 0.05 }, note: "実物形状ではなく位置を比較する札。", locked: false,
+        flown: false, wires: 2, framed: false,
+      },
+      {
+        id: diaboloId, kind: "sphere", name: "ディアボロ（位置札）", color: "#77865f",
+        dims: { dia: 0.3, lift: 0 }, note: "実物形状ではなく位置を比較する札。", locked: false,
+        flown: false, wires: 2, framed: false,
+      },
+    ];
+    fresh.project.scenes = study.beats.map((beat) => {
+      const placement = beat.placement;
+      const scene = newScene(beat.label, false);
+      scene.studyBeatId = beat.id;
+      scene.note = `${beat.action}\n変化: ${beat.change}`.slice(0, 200);
+      scene.pieces = [
+        {
+          id: nextId(), type: "performer", castId: researcherId,
+          u: placement.performer[0], v: placement.performer[1],
+          facing: placement.performer[2], pose: poses[beat.id] || "stand",
+          size: 100, color: "#a84b26", name: "",
+        },
+        {
+          id: nextId(), type: "table", setId: tableId,
+          u: placement.table[0], v: placement.table[1],
+          facing: 0, size: 100, color: "#766a59", name: "",
+        },
+        {
+          id: nextId(), type: "block", setId: noteId,
+          u: placement.note[0], v: placement.note[1],
+          facing: 0, size: 100, color: "#efe7d6", name: "",
+        },
+        {
+          id: nextId(), type: "sphere", setId: diaboloId,
+          u: placement.diabolo[0], v: placement.diabolo[1],
+          facing: 0, size: 100, color: "#77865f", name: "",
+        },
+      ];
+      return scene;
+    });
+    fresh.project.activeSceneId = fresh.project.scenes[0].id;
+    fresh.layout = state.layout;
+    applyLoadedState(normalizeState(fresh),
+      "固定SceneStudyを別ショーとして開きました。8ビートの配置は自由に直せます。");
+  }
 
   const venue = () => VENUES.byId(state.project.venue);
   /* 実効の寸法。選んだ規模に、手で入れた実寸を重ねたもの。
@@ -5104,7 +5363,7 @@
           num.textContent = `${shut ? "▸" : "▾"} ${numberText}`;
           button.setAttribute("aria-expanded", String(!shut));
         } else {
-          num.textContent = numberText;
+          num.textContent = scene.studyBeatId || numberText;
         }
 
         const name = document.createElement("span");
@@ -5190,6 +5449,7 @@
     }
     const idx = cursorIndex();
     if (els.sceneDel) els.sceneDel.disabled = p.scenes.filter((x) => x.kind === "scene").length <= 1;
+    renderSceneStudy();
     /* 並べ替えと入れ子は、掴んで動かす方に一本化した。
      * 矢印のボタンは同じことを二通りに増やすだけなので置かない。 */
   }
@@ -7418,6 +7678,114 @@
     els.lang.addEventListener("click", () => setLang(isEn() ? "ja" : "en"));
   }
 
+  /* ---------- 使い方の案内 ----------
+     読ませるのではなく、7つの場所を順に見せて「何ができるか」を掴んでもらう。
+     操作は強制しない（次へはいつでも押せる）。初めて開いたときだけ自動で出し、
+     あとは上の「使い方」からいつでも呼べる。
+     ★勝手にデータを作らない。いま置いてあるものの上で説明する。 */
+  const TOUR_KEY = "shosai-stage-tour-v1";
+  const TOUR = [
+    {
+      at: "#stage-canvas-stack",
+      ja: ["正面と平面は同じ舞台", "上が客席から見た絵、下が真上から見た図です。同じ一つの舞台を二通りに見ています。片方で駒を動かすと、もう片方も一緒に動きます。"],
+      en: ["Two views of one stage", "The top is what the house sees; the bottom is the same stage from above. Move a piece in one and it moves in the other."],
+    },
+    {
+      at: '[data-panel="venue"]',
+      ja: ["劇場を選ぶ", "形式と規模を選びます。寸法は人の大きさに出ます（同じ演者が、大劇場では小さく見えます）。規模の一番下の「カスタム」で実寸を入れられます。"],
+      en: ["Pick the venue", "Choose the form and the size. Scale shows up as how small a person looks. The last entry, Custom, lets you type real dimensions."],
+    },
+    {
+      at: "#stage-seat-list",
+      ja: ["どの席から見るか", "同じ配置でも、見る席が変われば絵が変わります。最前列は強く見上げ、2階席は床が主役になります。押して見比べてください。"],
+      en: ["Which seat you watch from", "The same arrangement reads differently from different seats. The front row looks steeply up; the balcony makes the floor the picture. Try them."],
+    },
+    {
+      at: '[data-panel="cast"]',
+      ja: ["出るものを登録する", "名前と種類を入れて追加すると、そのままこの場面の舞台に出ます。演者を選ぶと姿勢を30種類から選べます（宙返り、シルホイール、一輪車など）。"],
+      en: ["Register what appears", "Enter a name, pick a kind, add it — and it goes on stage in this scene. Select a performer to choose from 30 poses (somersault, Cyr wheel, unicycle and more)."],
+    },
+    {
+      at: '[data-panel="light"]',
+      ja: ["照明はどこから出てどこへ落ちるか", "吊り・SS・前明かり・転がしの4種類。追加したらONです。道具を「照明を動かす」に替えると、灯体の丸い印と、当たる輪を別々に掴めます。"],
+      en: ["A light has a source and a target", "Four types: overhead, side, front and footlight. Added lights are ON. Switch the tool to Move lights to drag the fixture dot and the pool separately."],
+    },
+    {
+      at: '[data-panel="scenes"]',
+      ja: ["場面をつなぐ", "平面図の「動線を描く」で行き先を引き、「動線の先へ動かした場面を作る」を押すと次の場面ができます。↑↓で場面を送ると、その動きが再生されます。"],
+      en: ["Link the scenes", "Draw a route in the plan, then press “Make a scene at the end of the routes”. Move between scenes with ↑↓ and the change plays out."],
+    },
+    {
+      at: "#stage-export",
+      ja: ["持ち出す", "「画像を書き出す」で、正面・平面・全場面をまとめて画像にできます。作ったものはこの端末のブラウザにだけ保存されます。別の端末へ渡すときは「書き出す／読み込む」を使ってください。"],
+      en: ["Take it with you", "Export image saves the front view, the plan, or every scene as pictures. Your work lives only in this browser; use Export / Import to move it to another device."],
+    },
+  ];
+
+  let tourAt = -1;
+
+  function tourTarget(step) {
+    const el = document.querySelector(step.at);
+    return el && el.offsetParent !== null ? el : null;
+  }
+
+  function placeTour() {
+    if (tourAt < 0 || !els.tourRing) return;
+    const target = tourTarget(TOUR[tourAt]);
+    if (!target) { els.tourRing.hidden = true; return; }
+    const r = target.getBoundingClientRect();
+    els.tourRing.hidden = false;
+    els.tourRing.style.left = `${r.left - 6}px`;
+    els.tourRing.style.top = `${r.top - 6}px`;
+    els.tourRing.style.width = `${r.width + 12}px`;
+    els.tourRing.style.height = `${r.height + 12}px`;
+  }
+
+  function showTour(index) {
+    if (!els.tour) return;
+    tourAt = clamp(index, 0, TOUR.length - 1);
+    const step = TOUR[tourAt];
+    const words = isEn() ? step.en : step.ja;
+    els.tour.hidden = false;
+    els.tourStep.textContent = `${tourAt + 1} / ${TOUR.length}`;
+    els.tourTitle.textContent = words[0];
+    els.tourBody.textContent = words[1];
+    els.tourPrev.disabled = tourAt === 0;
+    els.tourNext.textContent = tourAt === TOUR.length - 1
+      ? (isEn() ? "Done" : "はじめる")
+      : (isEn() ? "Next" : "次へ");
+    els.tourClose.textContent = isEn() ? "Close" : "閉じる";
+    els.tourPrev.textContent = isEn() ? "Back" : "戻る";
+    const target = tourTarget(step);
+    if (target) target.scrollIntoView({ block: "center", behavior: "smooth" });
+    // 巻き終わるのを待ってから枠を当てる
+    setTimeout(placeTour, 260);
+    placeTour();
+  }
+
+  function endTour() {
+    if (!els.tour) return;
+    els.tour.hidden = true;
+    tourAt = -1;
+    try { localStorage.setItem(TOUR_KEY, "done"); } catch (_) { /* 覚えられなくても動く */ }
+  }
+
+  if (els.tourStart) els.tourStart.addEventListener("click", () => showTour(0));
+  if (els.tourClose) els.tourClose.addEventListener("click", endTour);
+  if (els.tourPrev) els.tourPrev.addEventListener("click", () => showTour(tourAt - 1));
+  if (els.tourNext) {
+    els.tourNext.addEventListener("click", () => {
+      if (tourAt >= TOUR.length - 1) { endTour(); return; }
+      showTour(tourAt + 1);
+    });
+  }
+  window.addEventListener("resize", placeTour);
+  window.addEventListener("scroll", placeTour, { passive: true });
+  document.addEventListener("keydown", (event) => {
+    if (tourAt < 0) return;
+    if (event.key === "Escape") { event.preventDefault(); endTour(); }
+  });
+
   els.undo.addEventListener("click", undo);
   els.redo.addEventListener("click", redo);
 
@@ -7609,4 +7977,10 @@
     ? "この端末に保存した前回のスケッチを開きました。"
     : "変更はこの端末のブラウザ内へ自動保存します。";
   applyLang();
+
+  /* 初めて開いた人には、こちらから声をかける。
+   * 一度でも見た（または閉じた）ら、次からは上の「使い方」からだけ。 */
+  let seenTour = true;
+  try { seenTour = localStorage.getItem(TOUR_KEY) === "done"; } catch (_) { seenTour = true; }
+  if (!seenTour) setTimeout(() => showTour(0), 700);
 })();

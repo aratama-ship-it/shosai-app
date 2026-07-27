@@ -40,6 +40,11 @@ view = html[start:end]
 # 単独ページでは常に開いている
 view = view.replace('<main id="view-stage" class="view" hidden>', '<main id="view-stage" class="view">', 1)
 
+# --- 使い方の案内。窓の手前に置いてある ---
+tour_start = html.index('<div class="stage-tour" id="stage-tour"')
+tour_end = html.index('<div class="stage-modal-backdrop"', tour_start)
+tour = html[tour_start:tour_end].rstrip()
+
 # --- 窓（モーダル）。</main> より後ろに並んでいる ---
 tail = html[end:]
 modals = re.findall(
@@ -81,6 +86,8 @@ page = f"""<!DOCTYPE html>
 
 {view}
 
+{tour}
+
 {modal_html}
 
 <script src="{ver('stage-venues.js')}"></script>
@@ -106,7 +113,10 @@ js = (HERE / "stage-sketch.js").read_text(encoding="utf-8")
 ids = sorted(set(re.findall(r'getElementById\("([^"]+)"\)', js)))
 missing = [i for i in ids if f'id="{i}"' not in page]
 # 舞台スケッチが「あれば使う」だけの id は、無くても構わない
-known_optional = {"stage-show-front", "stage-show-plan"}
+# あれば使うだけの id。無くても舞台スケッチは動く
+#   stage-show-front / stage-show-plan … 旧い開閉のつまみ
+#   stage-study-body … 場面問答の欄（舞台スケッチとは別の画面のもの）
+known_optional = {"stage-show-front", "stage-show-plan", "stage-study-body"}
 missing = [i for i in missing if i not in known_optional]
 
 print(f"stage.html を書き出しました（{len(page)} 文字）")
