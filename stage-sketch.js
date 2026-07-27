@@ -5339,7 +5339,9 @@
     renderRigs();
     render();
     persistSoon();
-    announce(`${PIECE_TYPES[piece.type]}を舞台から外しました。`);
+    announce(piece.type === "light"
+      ? `${pieceLabel(piece)}をOFFにしました。`
+      : `${PIECE_TYPES[piece.type]}を舞台から外しました。`);
   }
 
   function duplicateSelected() {
@@ -6160,6 +6162,12 @@
         els.beamFromValue.textContent = `${b.h.toFixed(1)}m`;
         els.beamToValue.textContent = b.toH < 0.05 ? "床" : `${b.toH.toFixed(1)}m`;
       }
+    }
+    if (els.delete) {
+      // 明かりを舞台から外すのは「消す」こと。道具立てを片づける話ではない
+      const light = Boolean(piece && piece.type === "light");
+      els.delete.textContent = light ? "TURN OFF" : "舞台から外す";
+      els.delete.title = light ? "この場面ではこの明かりを消します" : "";
     }
     if (els.routeClear) els.routeClear.hidden = !(piece && piece.route);
     /* 明かりの直径。登録した明かりそのものの寸法なので、置いてある全ての場面に効く
