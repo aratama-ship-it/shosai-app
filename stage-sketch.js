@@ -512,8 +512,6 @@
     sceneResize: document.getElementById("stage-scene-resize"),
     sceneAdd: document.getElementById("stage-scene-add"),
     sceneDup: document.getElementById("stage-scene-dup"),
-    sceneLeft: document.getElementById("stage-scene-left"),
-    sceneRight: document.getElementById("stage-scene-right"),
     sceneDel: document.getElementById("stage-scene-del"),
     scenePrev: document.getElementById("stage-scene-prev"),
     sceneNext: document.getElementById("stage-scene-next"),
@@ -571,8 +569,6 @@
     rigSave: document.getElementById("stage-rig-save"),
     sceneAddRig: document.getElementById("stage-scene-add-rig"),
     sceneSection: document.getElementById("stage-scene-section"),
-    sceneOut: document.getElementById("stage-scene-out"),
-    sceneIn: document.getElementById("stage-scene-in"),
     setInfo: document.getElementById("stage-setinfo"),
     setInfoBackdrop: document.getElementById("stage-setinfo-backdrop"),
     setInfoClose: document.getElementById("stage-setinfo-close"),
@@ -4515,15 +4511,8 @@
     }
     const idx = cursorIndex();
     if (els.sceneDel) els.sceneDel.disabled = p.scenes.filter((x) => x.kind === "scene").length <= 1;
-    if (els.sceneLeft) els.sceneLeft.disabled = idx <= 0;
-    if (els.sceneRight) {
-      const block = idx < 0 ? 0 : 1 + sceneChildren(idx).length;
-      els.sceneRight.disabled = idx < 0 || idx + block >= p.scenes.length;
-    }
-    if (els.sceneOut) els.sceneOut.disabled = idx < 0 || p.scenes[idx].depth <= 0;
-    if (els.sceneIn) {
-      els.sceneIn.disabled = idx <= 0 || p.scenes[idx].depth > p.scenes[idx - 1].depth;
-    }
+    /* 並べ替えと入れ子は、掴んで動かす方に一本化した。
+     * 矢印のボタンは同じことを二通りに増やすだけなので置かない。 */
   }
 
   /* 行の名前をその場で書き換える。
@@ -4711,27 +4700,6 @@
     return false;
   }
 
-  /* 字下げを変える。連れている子も同じだけ動かす。
-   * 前の行より2段以上深くはできない（宙に浮いた入れ子になるため）。 */
-  function indentScene(step) {
-    const p = state.project;
-    const i = cursorIndex();
-    if (i < 0) return;
-    const scene = p.scenes[i];
-    const next = scene.depth + step;
-    if (next < 0 || next > MAX_DEPTH) return;
-    // 前の行より2段以上は深くできない。宙に浮いた入れ子になるため
-    if (step > 0 && (i === 0 || next > p.scenes[i - 1].depth + 1)) return;
-    checkpoint();
-    const kids = sceneChildren(i);
-    scene.depth = next;
-    kids.forEach((kid) => { kid.depth = clamp(kid.depth + step, 0, MAX_DEPTH); });
-    renderScenes();
-    persistSoon();
-    announce(`${scene.title}を${step > 0 ? "一段内側" : "一段外側"}へ動かしました。`);
-  }
-
-  // 前後へ動かす。セクションは中身ごと、同じ深さの隣と入れ替える
   /* ---------- 場面転換の動き ----------
      前の場面で同じものが居た場所から、次の場面の場所へ動かして見せる。
      前の場面で動線を引いてあれば、その曲線に沿って動く（引いた線のとおりに動く）。
@@ -4983,24 +4951,6 @@
     render();
     persistSoon();
     announce(`${cur.title}を複製しました。前の場面から少しずつ動かすときに使えます。`);
-  }
-
-  function moveScene(direction) {
-    const p = state.project;
-    const i = cursorIndex();
-    if (i < 0) return;
-    const block = 1 + sceneChildren(i).length;
-    const target = direction < 0
-      ? (() => { for (let k = i - 1; k >= 0; k -= 1) if (p.scenes[k].depth <= p.scenes[i].depth) return k; return -1; })()
-      : i + block;
-    if (target < 0 || target > p.scenes.length) return;
-    checkpoint();
-    const moving = p.scenes.splice(i, block);
-    const at = direction < 0 ? target : target - block + (1 + sceneChildren(target - block).length);
-    p.scenes.splice(Math.max(0, Math.min(p.scenes.length, at)), 0, ...moving);
-    renderScenes();
-    persistSoon();
-    announce(`${moving[0].title}を${direction < 0 ? "前" : "後"}へ動かしました。`);
   }
 
 
@@ -6254,8 +6204,6 @@
   }
 
   if (els.sceneSection) els.sceneSection.addEventListener("click", addSection);
-  if (els.sceneOut) els.sceneOut.addEventListener("click", () => indentScene(-1));
-  if (els.sceneIn) els.sceneIn.addEventListener("click", () => indentScene(1));
   if (els.rigSave) els.rigSave.addEventListener("click", saveRig);
   if (els.rigName) {
     els.rigName.addEventListener("keydown", (e) => {
@@ -6263,8 +6211,6 @@
     });
   }
   if (els.sceneDup) els.sceneDup.addEventListener("click", duplicateScene);
-  if (els.sceneLeft) els.sceneLeft.addEventListener("click", () => moveScene(-1));
-  if (els.sceneRight) els.sceneRight.addEventListener("click", () => moveScene(1));
   if (els.sceneDel) els.sceneDel.addEventListener("click", deleteScene);
   if (els.projectTitle) {
     els.projectTitle.addEventListener("input", (e) => {
