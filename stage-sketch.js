@@ -3322,7 +3322,11 @@
 
   const NOTE_W = 188;
   const NOTE_PAD = 11;
-  const NOTE_LINE = 19;
+  const NOTE_LINE = 22;
+  /* 付箋の字。絵の上に小さく置くものだが、13pxでは読むのに近寄る必要があった。
+   * ★行の高さも一緒に上げること。字だけ上げると行が重なる。
+   * 書き込み窓（.stage-note-editor textarea）も同じ大きさに揃えてある。 */
+  const NOTE_FONT = "15px 'Hiragino Kaku Gothic ProN', sans-serif";
 
   // 紐づけた駒があれば、その駒の位置を足して置き場所を出す
   /* 付箋の置き場所。数でない値が一度でも入ると絵から消えて二度と掴めなくなるので、
@@ -3355,7 +3359,7 @@
   }
 
   function noteBox(target, note, L) {
-    target.font = "13px 'Hiragino Kaku Gothic ProN', sans-serif";
+    target.font = NOTE_FONT;
     const lines = noteLines(target, note.text || "メモ");
     const pos = notePos(note, L);
     return {
@@ -3401,7 +3405,7 @@
       target.fillRect(box.x, box.y, box.w, 2);
 
       target.fillStyle = "rgba(240,231,214,0.86)";
-      target.font = "13px 'Hiragino Kaku Gothic ProN', sans-serif";
+      target.font = NOTE_FONT;
       target.textAlign = "left";
       target.textBaseline = "top";
       box.lines.forEach((line, i) => {
@@ -4523,14 +4527,23 @@
     return button;
   }
 
+  /* 名前を入れずに〈追加〉したときの名。「演者3」のように種類＋番号にする。
+   * 番号は空いている一番小さいものを採るので、消して足し直しても被らない。
+   * 名前は思いついてから付ければよく、そこで手を止めさせないため。
+   * 「台・箱」のような並びの名は先頭だけ使う（「台・箱1」は読みにくい）。 */
+  function autoName(base) {
+    const head = String(base).split(/[・/]/)[0].trim() || base;
+    const used = new Set();
+    (state.project.cast || []).forEach((c) => used.add(c.name));
+    (state.project.sets || []).forEach((s) => used.add(s.name));
+    let n = 1;
+    while (used.has(head + n)) n += 1;
+    return head + n;
+  }
+
   function addCastMember(nameInput) {
     const input = nameInput || els.rosterName;
-    const raw = (input && input.value || "").trim();
-    if (!raw) {
-      announce("名前を入れてから追加してください。");
-      if (input) input.focus();
-      return;
-    }
+    const raw = (input && input.value || "").trim() || autoName(pieceTypeName("performer"));
     checkpoint();
     const member = {
       id: rid("cast"), name: raw.slice(0, 24), color: nextPieceColor(state.project.cast.length),
@@ -4762,12 +4775,7 @@
   }
 
   function addSetItem(kind, nameInput, lightKind) {
-    const raw = (nameInput && nameInput.value || "").trim();
-    if (!raw) {
-      announce("名前を入れてから追加してください。");
-      if (nameInput) nameInput.focus();
-      return;
-    }
+    const raw = (nameInput && nameInput.value || "").trim() || autoName(setKindName(kind));
     checkpoint();
     const lk = kind === "light" && LIGHT_KINDS[lightKind] ? lightKind : "hang";
     const dims = normalizeDims(kind, {});

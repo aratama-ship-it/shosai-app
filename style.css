@@ -1581,7 +1581,9 @@ canvas[data-tool="note"] { cursor: copy; }
   border: 1px solid var(--line-dark);
   background: var(--desk);
   color: var(--milk);
-  font: 13px/1.45 'Hiragino Kaku Gothic ProN', sans-serif;
+  /* 絵の上の付箋（NOTE_FONT）と同じ大きさ。ここだけ小さいと、
+     書いているときと貼り終えたときで字の大きさが変わって見える */
+  font: 15px/1.45 'Hiragino Kaku Gothic ProN', sans-serif;
   padding: 6px 7px;
 }
 
