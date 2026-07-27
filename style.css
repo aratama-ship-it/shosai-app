@@ -1432,6 +1432,9 @@ textarea, input[type="text"] {
 
 .stage-dim-cell input:focus { border-color: var(--brass); outline: none; }
 
+/* 決め打ちの規模を選んでいるあいだは、寸法の欄は読むだけ */
+.stage-dim-cell input:disabled { opacity: 0.42; cursor: default; }
+
 .stage-dim-cell i {
   font-style: normal;
   font-size: 9.5px;

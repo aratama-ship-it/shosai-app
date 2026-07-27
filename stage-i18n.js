@@ -21,7 +21,7 @@
     "劇場を選ぶ": "Venue",
     "出るもの": "Cast & set",
     "装置の型": "Set presets",
-    "光": "Lights",
+    "照明": "Lights",
     "背景": "Backdrop",
     "場面": "Scenes",
     "選んだもの": "Selection",
@@ -82,8 +82,8 @@
     "トランポリン": "Trampoline",
     "ハンドバランス用cane": "Handbalancing canes",
     "車": "Car",
-    "明かりの名前": "Light name",
-    "明かりの種類": "Light type",
+    "照明の名前": "Light name",
+    "照明の種類": "Light type",
     "吊り（バトンから真下へ）": "Overhead (straight down from the bar)",
     "SS（袖から横切って）": "Side light (across from the wing)",
     "前明かり（客席の上から顔へ）": "Front light (from over the house)",
@@ -94,7 +94,7 @@
       "Register the performers and set pieces for this show here. Sizes and colours are decided here; each scene decides what is on stage. Lights have their own panel. Anything you add goes on stage in the current scene.",
     "いまの舞台装置の並びに名前をつけて残します。別の場面で呼び出したり、いまの並びへ足したりできます。演者は含みません。":
       "Save the current set layout under a name. You can recall it in another scene, or add it to what is already there. Performers are not included.",
-    "明かりは、どこから出てどこへ落ちるかを持ちます。 種類ごとに仕込む場所と当てる高さの既定値が入ります。 「光を動かす」に切り替えると、灯体の丸い印と、当たる輪をそれぞれ掴んで動かせます。動線を引くと、灯体はそのままで当たる先だけが動きます。":
+    "照明は、どこから出てどこへ落ちるかを持ちます。 種類ごとに仕込む場所と当てる高さの既定値が入ります。 「照明を動かす」に切り替えると、灯体の丸い印と、当たる輪をそれぞれ掴んで動かせます。動線を引くと、灯体はそのままで当たる先だけが動きます。":
       "A light holds where it comes from and where it lands. Each type starts from its usual rig position and target height. Switch to “Move lights” to drag the fixture dot and the pool ring separately. Draw a route and the fixture stays put while the target travels.",
     "装置の型の名前": "Preset name",
 
@@ -102,7 +102,7 @@
     "操作を選ぶ": "Choose a tool",
     "動かす": "Move",
     "背景を塗る": "Paint backdrop",
-    "光を動かす": "Move lights",
+    "照明を動かす": "Move lights",
     "塗りを消す": "Erase paint",
     "メモを貼る": "Add note",
     "動線を描く": "Draw route",
@@ -157,8 +157,8 @@
     "客席": "House",
     "背中": "Back",
     "地上高": "Trim height",
-    "明かりの直径": "Beam diameter",
-    "光源の位置": "Fixture position",
+    "照明の直径": "Beam diameter",
+    "照明の位置": "Fixture position",
     "左右": "Across",
     "奥行き": "Depth",
     "灯体の高さ": "Fixture height",

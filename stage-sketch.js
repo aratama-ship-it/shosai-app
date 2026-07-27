@@ -54,7 +54,7 @@
     cane: "ハンドバランス用cane",
     car: "車",
     sphere: "球",
-    light: "光",
+    light: "照明",
   };
   // 実寸の目安（m）。人を基準に置くと、舞台の規模が見た目に出る
   const PIECE_METERS = {
@@ -153,7 +153,7 @@
     teeter: "ティーターボード", tissue: "エアリアルティシュー", wire: "綱渡り",
     suitcase: "スーツケース", trampoline: "トランポリン", cane: "ハンドバランス用cane",
     car: "車",
-    light: "光",
+    light: "照明",
   };
   // 吊物にしかならない道具。床に置く形を持たない
   const FLOWN_ONLY = { trapeze: true, tissue: true };
@@ -164,7 +164,7 @@
    *   ss    … サイドスポット。袖のスタンドから、舞台を横切って体へ
    *   front … 前明かり。客席の上から、顔の高さへ
    *   floor … 転がし。床置きで、下から体へ
-   * dia は床（または当たる高さ）での明かりの直径。 */
+   * dia は床（または当たる高さ）での照明の直径。 */
   const LIGHT_KINDS = {
     hang: {
       label: "吊り", note: "バトンから真下へ",
@@ -717,7 +717,7 @@
     erase: "背景に描いた線だけを消します。",
     route: "平面図で演者や物、明かりを掴み、離した所が行き先になります。真ん中の丸を引くと動線が曲がります。",
     note: "何もない所を押すとメモを貼れます。貼ったメモは掴んで動かせます。",
-    light: "明かりだけを動かします。丸い印が灯体、明るい輪が当たる場所です。",
+    light: "照明だけを動かします。丸い印が灯体、明るい輪が当たる場所です。",
   };
 
   const els = {
@@ -2702,7 +2702,7 @@
   }
 
   function drawLight(target, piece, pos, scale, L) {
-    // 明かりの円の直径を実寸（m）で持つ。床の1m枡で広さを読めるようにするため
+    // 照明の円の直径を実寸（m）で持つ。床の1m枡で広さを読めるようにするため
     const dim = pieceDims(piece);
     const per = perMetre(pos, L);
     const spread = Math.max(6, ((dim && dim.dia) || 4) / 2 * per.x);
@@ -4194,7 +4194,7 @@
     }
     selectedId = piece.id;
     selectedNoteId = null;
-    // 明かりは光の道具、それ以外は動かす道具でないと掴めない
+    // 照明は照明の道具、それ以外は動かす道具でないと掴めない
     const want = piece.type === "light" ? "light" : "select";
     if ((tool === "light") !== (want === "light")) setTool(want);
     updateInspector();
@@ -4343,7 +4343,7 @@
     syncRosterGroups();
   }
 
-  /* 光の一覧は種類ごとに枠を分ける。吊りとSSと前明かりと転がしは、
+  /* 照明の一覧は種類ごとに枠を分ける。吊りとSSと前明かりと転がしは、
    * 仕込む場所も役目も別物なので、ひと続きに並べると読み分けられない。 */
   function renderLights() {
     const host = els.lightList;
@@ -4486,7 +4486,7 @@
     renderLights();
     persistSoon();
     announce(kind === "light"
-      ? `${raw}を${LIGHT_KINDS[lk].label}へ加えてONにしました。`
+      ? `${raw}を${lightKindName(lk)}へ加えてONにしました。`
       : `${raw}を舞台セットへ加え、この場面の舞台へ出しました。`);
   }
 
@@ -5773,15 +5773,34 @@
       current.sizes.forEach((s2) => {
         const opt = document.createElement("option");
         opt.value = s2.id;
-        const bits = s2.ring ? `リング${s2.ring}m` : `${s2.width}×${s2.depth}m`;
+        const bits = current.audience === "round"
+          ? (isEn() ? `⌀${s2.width}m` : `直径${s2.width}m`)
+          : `${s2.width}×${s2.depth}m`;
         opt.textContent = `${sizeName(s2)} — ${bits}`;
         els.sizeSelect.append(opt);
       });
-      els.sizeSelect.value = size.id;
+      /* 決め打ちの規模と同じ並びに「カスタム」を置く。
+       * 実寸を手で入れることは、規模を選ぶことと同じ層の決めごとなので、
+       * 別の欄へ追い出さない。 */
+      const custom = document.createElement("option");
+      custom.value = "custom";
+      const dims = state.project.venueDims;
+      const bits = dims
+        ? (current.audience === "round"
+          ? (isEn() ? `⌀${size.width}m` : `直径${size.width}m`)
+          : `${size.width}×${size.depth}m`)
+        : (isEn() ? "enter sizes" : "寸法を入れる");
+      custom.textContent = `${isEn() ? "Custom" : "カスタム"} — ${bits}`;
+      els.sizeSelect.append(custom);
+      els.sizeSelect.value = state.project.venueDims ? "custom" : size.id;
     }
 
     /* 実寸の欄。円形は一つの数（直径）で決まるので、奥行きの欄は畳む。 */
     if (els.venueW) {
+      const custom = Boolean(state.project.venueDims);
+      [els.venueW, els.venueD, els.venueH].forEach((input) => {
+        if (input) input.disabled = !custom;
+      });
       const round = current.audience === "round";
       if (els.venueWLabel) {
         els.venueWLabel.textContent = round
@@ -5892,7 +5911,20 @@
   }
 
   function setVenueSize(id) {
-    if (state.project.venueSize === id) return;
+    if (id === "custom") {
+      // いまの見た目のまま手入力へ移る。数字が飛ばないように、いまの値を写す
+      if (state.project.venueDims) return;
+      checkpoint();
+      const now = venueSize();
+      state.project.venueDims = normalizeVenueDims(
+        { width: now.width, depth: now.depth, height: now.height }, now);
+      renderVenueControls();
+      render();
+      persistSoon();
+      announce(isEn() ? "Custom sizes. Enter the numbers." : "カスタムにしました。寸法を入れてください。");
+      return;
+    }
+    if (state.project.venueSize === id && !state.project.venueDims) return;
     checkpoint();
     state.project.venueSize = id;
     // 規模を選び直したら、手で入れた実寸は捨てる（選んだ規模の値が出るべき）
@@ -5926,7 +5958,7 @@
 
   /* 拾えるものは道具で変わる。明かりは物と重なって置くのが普通なので、
    * 同じ手つきで両方を掴めるようにすると、狙ったほうが取れない。
-   * 「動かす」では物だけ、「光を動かす」では明かりだけを拾う。 */
+   * 「動かす」では物だけ、「照明を動かす」では照明だけを拾う。 */
   function hitTest(point, L) {
     const wantLight = tool === "light";
     /* 動線は明かりにも引ける。灯体はその場に残したまま、
@@ -6800,7 +6832,7 @@
   [els.planNote, els.frontNote].forEach((button) => {
     if (button) button.addEventListener("click", () => setTool(tool === "note" ? "select" : "note"));
   });
-  /* 明かりの直径。登録した明かりそのものの寸法なので、置いてある全ての場面に効く
+  /* 照明の直径。登録した明かりそのものの寸法なので、置いてある全ての場面に効く
    * （「…」の窓と同じ値を、選んだ場所からも触れるようにしたもの）。 */
   if (els.beamDia) {
     els.beamDia.addEventListener("input", (e) => {
@@ -7160,7 +7192,7 @@
   });
   /* 選んだものの欄は「ショーの中で動くもの」だけを持つ。
    * 名前・色・寸法・身長はショーを通して変わらないので、
-   * 演者／舞台セット／光の一覧側で決める。ここからはそこへ飛べるようにする。 */
+   * 演者／舞台セット／照明の一覧側で決める。ここからはそこへ飛べるようにする。 */
   function syncDimControls(piece) {
     const registered = pieceSet(piece);
     const member = piece && piece.castId
@@ -7210,7 +7242,7 @@
       els.delete.title = light ? "この場面ではこの明かりを消します" : "";
     }
     if (els.routeClear) els.routeClear.hidden = !(piece && piece.route);
-    /* 明かりの直径。登録した明かりそのものの寸法なので、置いてある全ての場面に効く
+    /* 照明の直径。登録した明かりそのものの寸法なので、置いてある全ての場面に効く
    * （「…」の窓と同じ値を、選んだ場所からも触れるようにしたもの）。 */
   if (els.beamDia) {
     els.beamDia.addEventListener("input", (e) => {
