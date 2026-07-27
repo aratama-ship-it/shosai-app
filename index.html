@@ -260,6 +260,7 @@
                   <option value="table">テーブル</option>
                   <option value="chair">椅子</option>
                   <option value="bench">ベンチ</option>
+                  <option value="stool">スツール</option>
                   <option value="wall">壁</option>
                   <option value="sphere">球</option>
                 </select>
@@ -802,6 +803,10 @@
       <span>吊物（天井から吊る）</span>
     </label>
     <p class="stage-profile-hint" id="stage-setinfo-flown-note" hidden>吊物は何かの上に乗りません。高さは地上高で決めます。平面図では既定で隠れます。</p>
+    <label class="stage-toggle stage-flown-toggle" id="stage-setinfo-framed-row" hidden>
+      <input type="checkbox" id="stage-setinfo-framed">
+      <span>フレームにする（穴の空いた壁）</span>
+    </label>
     <div id="stage-setinfo-wires-row" hidden>
       <label class="stage-control-label" for="stage-setinfo-wires">ワイヤーの本数</label>
       <select id="stage-setinfo-wires" class="stage-select">
@@ -826,7 +831,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=111"></script>
+<script src="stage-sketch.js?v=112"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

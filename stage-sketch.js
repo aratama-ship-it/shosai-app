@@ -41,6 +41,7 @@
     table: "テーブル",
     chair: "椅子",
     bench: "ベンチ",
+    stool: "スツール",
     wall: "壁",
     sphere: "球",
     light: "光",
@@ -52,6 +53,7 @@
     table: 0.72,
     chair: 0.9,
     bench: 0.45,
+    stool: 0.62,
     wall: 2.5,
     sphere: 1.2,
     light: 2.5,
@@ -63,6 +65,7 @@
     table: { w: 1.6, d: 0.8, h: 0.72 },    // 一般的なダイニングテーブル
     chair: { h: 0.9 },                     // 背もたれの上端まで。幅と奥行きはここから決まる
     bench: { w: 1.8, d: 0.4, h: 0.45 },    // 横長のベンチ。座面までの高さ
+    stool: { w: 0.36, d: 0.36, h: 0.62 },  // スツール。座面までの高さ
     // 壁は厚みを固定で持つ（舞台の壁は建て込みの板なので、厚みは決まっている）
     wall: { w: 3, d: 0.3, h: 2.5 },
     sphere: { dia: 1.2, lift: 0 },         // 直径と、床からの高さ
@@ -86,6 +89,7 @@
     chair: { h: "大きさ（背もたれの上端まで）" },
     wall: { w: "幅", h: "高さ" },
     bench: { h: "座面までの高さ" },
+    stool: { h: "座面までの高さ" },
     light: { dia: "直径（床に落ちる円の広さ）" },
   };
   function dimLabel(kind, key) {
@@ -95,7 +99,7 @@
   /* 舞台セットに登録できる形。光もここに含める。登録・出し入れ・寸法の
    * 仕組みが同じなので同じ入れ物に置き、一覧だけ「光」パネルへ分けて出す。 */
   const SET_KINDS = {
-    block: "台・箱", table: "テーブル", chair: "椅子", bench: "ベンチ", wall: "壁",
+    block: "台・箱", table: "テーブル", chair: "椅子", bench: "ベンチ", stool: "スツール", wall: "壁",
     sphere: "球", light: "光",
   };
   const WALL_THICKNESS = 0.3;   // 壁の厚み（m）。触らせず固定で持つ
@@ -132,7 +136,7 @@
   };
   const LIGHT_KIND_ORDER = ["hang", "ss", "front", "floor"];
   const lightKindOf = (item) => (item && LIGHT_KINDS[item.lightKind] ? item.lightKind : "hang");
-  const SET_KIND_ORDER = ["block", "table", "chair", "bench", "wall", "sphere"];
+  const SET_KIND_ORDER = ["block", "table", "chair", "bench", "stool", "wall", "sphere"];
   /* ---------- 演者の骨格と姿勢 ----------
    * 関節を3次元（x=左右／y=上下／z=本人の正面向き）で持ち、向きの角度だけ
    * 鉛直軸まわりに回して画面へ落とす。こうすると、向きの変化・座る・逆立ちが
@@ -219,6 +223,36 @@
       anL: [-0.078, 1.18, 0.03], anR: [0.046, 1.19, -0.06],
       toL: [-0.08, 1.25, 0.06], toR: [0.044, 1.26, -0.09],
     }),
+    makePose("run", "走る", {
+      // 歩くより深く。前の膝を高く上げ、体をやや前へ倒す
+      knR: [0.07, 0.44, 0.26], anR: [0.075, 0.24, 0.16], toR: [0.075, 0.20, 0.26],
+      knL: [-0.07, 0.24, -0.20], anL: [-0.075, 0.06, -0.38], toL: [-0.075, 0.02, -0.46],
+      hipL: [-0.055, 0.52, 0.02], hipR: [0.055, 0.52, 0.02],
+      shL: [-0.115, 0.81, 0.05], shR: [0.115, 0.81, 0.05],
+      elL: [-0.15, 0.66, 0.20], wrL: [-0.13, 0.74, 0.36],
+      elR: [0.15, 0.64, -0.14], wrR: [0.13, 0.56, -0.30],
+      neck: [0, 0.85, 0.06], head: [0, 0.93, 0.10],
+    }),
+    /* バク転の途中。腰が頂点にあり、手はまだ床に着いていない。
+     * 背中側へ反っているので、胸は上を向く。 */
+    makePose("backflip", "バク転", {
+      wrL: [-0.13, 0.10, -0.46], wrR: [0.13, 0.10, -0.46],
+      elL: [-0.14, 0.34, -0.40], elR: [0.14, 0.34, -0.40],
+      shL: [-0.115, 0.58, -0.28], shR: [0.115, 0.58, -0.28],
+      neck: [0, 0.50, -0.34], head: [0, 0.40, -0.40],
+      hipL: [-0.055, 0.86, 0.04], hipR: [0.055, 0.86, 0.04],
+      knL: [-0.08, 0.96, 0.34], knR: [0.08, 0.98, 0.30],
+      anL: [-0.085, 0.86, 0.62], anR: [0.085, 0.90, 0.58],
+      toL: [-0.085, 0.82, 0.70], toR: [0.085, 0.86, 0.66],
+    }, { face: [0, 0.7, -0.7], sideView: true }),
+    makePose("hat", "帽子をかぶる", {
+      // 立ち姿で、片手をつばへ添える
+      elR: [0.17, 0.64, 0.06], wrR: [0.12, 0.82, 0.14],
+      elL: [-0.13, 0.63, 0.015], wrL: [-0.14, 0.45, 0.03],
+    }, { props: [
+      { kind: "ring", c: [0, 0.985, 0], r: 0.15, w: 0.03, tone: "dark", plane: "xz" },
+      { kind: "dot", c: [0, 1.01, 0], r: 0.075, tone: "dark" },
+    ] }),
     /* ---------- 芸と音楽の姿勢 ----------
      * 道具を持つものは、姿勢が小道具を一緒に持つ（人だけでは何をしているか読めない）。
      * 道具の位置は手や足の関節に合わせてあるので、向きを変えても手から離れない。 */
@@ -568,7 +602,7 @@
   // 首を振れる角度。見上げる側を大きく取る（吊り物や空中の演目はそこにある）
   const TILT_UP = 34;
   const TILT_DOWN = 16;
-  const SOLID_TYPES = { block: true, table: true, chair: true, bench: true, wall: true };
+  const SOLID_TYPES = { block: true, table: true, chair: true, bench: true, stool: true, wall: true };
   const CHAIR_W = 0.5;
   const CHAIR_D = 0.55;
   // その駒が床でどれだけの面積を取るか（m）。平面図と当たり判定で使う
@@ -748,6 +782,8 @@
     setInfoFlownRow: document.getElementById("stage-setinfo-flown-row"),
     setInfoFlownNote: document.getElementById("stage-setinfo-flown-note"),
     setInfoWires: document.getElementById("stage-setinfo-wires"),
+    setInfoFramed: document.getElementById("stage-setinfo-framed"),
+    setInfoFramedRow: document.getElementById("stage-setinfo-framed-row"),
     setInfoWiresRow: document.getElementById("stage-setinfo-wires-row"),
     liftControls: document.getElementById("stage-lift-controls"),
     pieceLift: document.getElementById("stage-piece-lift"),
@@ -1248,6 +1284,8 @@
                 flown: Boolean(t.flown),
                 // 吊りのワイヤーの本数。1本なら中央から、2本なら両端から
                 wires: t && Number(t.wires) === 1 ? 1 : 2,
+                // 壁を枠にする（穴の空いた壁＝フレーム）
+                framed: Boolean(t.framed),
                 lightKind: kind === "light" && LIGHT_KINDS[t && t.lightKind] ? t.lightKind : "hang",
               };
             })
@@ -1840,10 +1878,10 @@
             out.pts = [];
             for (let i = 0; i <= steps; i += 1) {
               const a = (i / steps) * Math.PI * 2;
-              out.pts.push(project(
-                prop.c[0] + Math.cos(a) * prop.r,
-                prop.c[1] + Math.sin(a) * prop.r,
-                prop.c[2]));
+              // 既定は体の正面の面に立つ輪。plane:"xz" は床と平行な輪（帽子のつばなど）
+              out.pts.push(prop.plane === "xz"
+                ? project(prop.c[0] + Math.cos(a) * prop.r, prop.c[1], prop.c[2] + Math.sin(a) * prop.r)
+                : project(prop.c[0] + Math.cos(a) * prop.r, prop.c[1] + Math.sin(a) * prop.r, prop.c[2]));
             }
           }
         }
@@ -2126,6 +2164,22 @@
     if (piece.type === "block") {
       return [{ ox: 0, oz: 0, w: d.w, d: d.d, h: d.h, lift: 0, tint: 1 }];
     }
+    if (piece.type === "wall") {
+      const owner = pieceSet(piece);
+      /* フレーム＝穴の空いた壁。上下と左右の4本の枠で作る。
+       * 中を人がくぐれる大きさにしたいので、枠は幅・高さの2割ほどに収める。 */
+      if (owner && owner.framed) {
+        const b = clamp(Math.min(d.w, d.h) * 0.16, 0.08, 0.5);
+        const inner = Math.max(0.1, d.h - b * 2);
+        return [
+          { ox: 0, oz: 0, w: d.w, d: d.d, h: b, lift: 0, tint: 0.9 },
+          { ox: 0, oz: 0, w: d.w, d: d.d, h: b, lift: Math.max(0, d.h - b), tint: 1 },
+          { ox: -(d.w - b) / 2, oz: 0, w: b, d: d.d, h: inner, lift: b, tint: 0.95 },
+          { ox: (d.w - b) / 2, oz: 0, w: b, d: d.d, h: inner, lift: b, tint: 0.95 },
+        ];
+      }
+      return [{ ox: 0, oz: 0, w: d.w, d: d.d, h: d.h, lift: 0, tint: 1 }];
+    }
     if (piece.type === "table") {
       const top = clamp(d.h * 0.09, 0.03, 0.08);              // 天板の厚み
       const leg = clamp(Math.min(d.w, d.d) * 0.07, 0.04, 0.1); // 脚の太さ
@@ -2134,6 +2188,18 @@
       [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => parts.push({
         ox: sx * (d.w / 2 - inset - leg / 2),
         oz: sy * (d.d / 2 - inset - leg / 2),
+        w: leg, d: leg, h: Math.max(0.05, d.h - top), lift: 0, tint: 0.7,
+      }));
+      parts.push({ ox: 0, oz: 0, w: d.w, d: d.d, h: top, lift: Math.max(0, d.h - top), tint: 1 });
+      return parts;
+    }
+    if (piece.type === "stool") {
+      // 丸い座面と3本の脚。椅子より小さく、背もたれを持たない
+      const top = clamp(d.h * 0.09, 0.025, 0.06);
+      const leg = clamp(d.w * 0.14, 0.03, 0.06);
+      const parts = [];
+      [[0, -1], [-0.87, 0.5], [0.87, 0.5]].forEach(([sx, sy]) => parts.push({
+        ox: sx * (d.w / 2 - leg), oz: sy * (d.d / 2 - leg),
         w: leg, d: leg, h: Math.max(0.05, d.h - top), lift: 0, tint: 0.7,
       }));
       parts.push({ ox: 0, oz: 0, w: d.w, d: d.d, h: top, lift: Math.max(0, d.h - top), tint: 1 });
@@ -4144,7 +4210,7 @@
     const item = {
       id: rid("set"), kind, name: raw.slice(0, 24),
       color: kind === "light" ? "#d3ac59" : nextPieceColor(state.project.sets.length + 2),
-      dims, note: "", locked: false, flown: false, wires: 2, lightKind: lk,
+      dims, note: "", locked: false, flown: false, wires: 2, framed: false, lightKind: lk,
     };
     state.project.sets.push(item);
     placeSetPiece(item);
@@ -4590,6 +4656,10 @@
       els.setInfoFlownRow.hidden = !canFly;
       if (els.setInfoFlownNote) els.setInfoFlownNote.hidden = !canFly || !item.flown;
       if (els.setInfoFlown) els.setInfoFlown.checked = Boolean(item.flown);
+      if (els.setInfoFramedRow) {
+        els.setInfoFramedRow.hidden = item.kind !== "wall";
+        if (els.setInfoFramed) els.setInfoFramed.checked = Boolean(item.framed);
+      }
       if (els.setInfoWiresRow) els.setInfoWiresRow.hidden = !canFly || !item.flown;
       if (els.setInfoWires) els.setInfoWires.value = String(Number(item.wires) === 1 ? 1 : 2);
     }
@@ -6470,6 +6540,17 @@
       render();
       persistSoon();
       announce(`${item.name}を${item.flown ? "吊物にしました" : "床置きに戻しました"}。`);
+    });
+  }
+  if (els.setInfoFramed) {
+    els.setInfoFramed.addEventListener("change", (e) => {
+      const item = currentSetItem();
+      if (!item || item.kind !== "wall") return;
+      checkpoint();
+      item.framed = e.target.checked;
+      render();
+      persistSoon();
+      announce(`${item.name}を${item.framed ? "フレーム（穴の空いた壁）" : "壁"}にしました。`);
     });
   }
   if (els.setInfoWires) {
