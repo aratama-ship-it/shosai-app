@@ -2083,22 +2083,19 @@
      * ★帯の裾は「光の進む向きと直角」ではなく、床に落ちた円の左右の端へ着ける。
      *   直角に取ると、斜めから差し込むほど裾が床の下へ潜り込み、
      *   光が床を突き抜けたり、逆に床まで届いていないように見える。 */
-    const dx = hit.x - src.x;
-    const dy = hit.y - src.y;
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = -dy / len;
-    const ny = dx / len;
-    const topWidth = Math.max(3, spread * 0.18);
+    /* 灯体は点として扱い、そこから床の円の左右の端へ広がる三角で描く。
+     * ★灯体側にも幅を持たせて四角で描くと、光源側の左右と床側の左右が
+     *   逆に繋がる角度があり、面が捻れて✗の形になっていた。
+     *   点から広がる三角なら、どの角度でも捻れようがない。 */
     const gradient = target.createLinearGradient(src.x, src.y, hit.x, hit.y);
-    gradient.addColorStop(0, rgba(piece.color, 0.08));
-    gradient.addColorStop(0.72, rgba(piece.color, 0.14));
+    gradient.addColorStop(0, rgba(piece.color, 0.1));
+    gradient.addColorStop(0.72, rgba(piece.color, 0.15));
     gradient.addColorStop(1, rgba(piece.color, 0.28));
     target.save();
     target.globalCompositeOperation = "screen";
     target.fillStyle = gradient;
     target.beginPath();
-    target.moveTo(src.x - nx * topWidth, src.y - ny * topWidth);
-    target.lineTo(src.x + nx * topWidth, src.y + ny * topWidth);
+    target.moveTo(src.x, src.y);
     target.lineTo(hit.x + spread, hit.y);
     target.lineTo(hit.x - spread, hit.y);
     target.closePath();
