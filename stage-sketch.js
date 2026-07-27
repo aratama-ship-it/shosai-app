@@ -2011,12 +2011,12 @@
     }
 
     /* 正面では、灯体から当たる場所へ広がる帯として描く。
-     * 真上からとは限らないので、帯は「灯体の小さな幅」から
-     * 「当たる場所の広がり」へ、傾いたまま伸びる。 */
+     * ★帯の裾は「光の進む向きと直角」ではなく、床に落ちた円の左右の端へ着ける。
+     *   直角に取ると、斜めから差し込むほど裾が床の下へ潜り込み、
+     *   光が床を突き抜けたり、逆に床まで届いていないように見える。 */
     const dx = hit.x - src.x;
     const dy = hit.y - src.y;
     const len = Math.hypot(dx, dy) || 1;
-    // 帯の幅は光の進む向きと直角に取る
     const nx = -dy / len;
     const ny = dx / len;
     const topWidth = Math.max(3, spread * 0.18);
@@ -2030,8 +2030,8 @@
     target.beginPath();
     target.moveTo(src.x - nx * topWidth, src.y - ny * topWidth);
     target.lineTo(src.x + nx * topWidth, src.y + ny * topWidth);
-    target.lineTo(hit.x + nx * spread, hit.y + ny * spread);
-    target.lineTo(hit.x - nx * spread, hit.y - ny * spread);
+    target.lineTo(hit.x + spread, hit.y);
+    target.lineTo(hit.x - spread, hit.y);
     target.closePath();
     target.fill();
     const pool = target.createRadialGradient(hit.x, hit.y, 0, hit.x, hit.y, spread);
