@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=78">
+<link rel="stylesheet" href="style.css?v=81">
 </head>
 <body>
 
@@ -232,33 +232,36 @@
             <p class="stage-venue-scale" id="stage-venue-scale"></p>
             </div>
           </section>
-          <section class="stage-panel" data-panel="cast" data-title="演者">
+          <section class="stage-panel" data-panel="cast" data-title="出るもの">
             <div class="stage-panel-body">
-              <p class="stage-cast-hint">このショーに出る演者を登録します。場面ごとに、舞台の上か裏かが決まります。</p>
-              <div class="stage-cast-add">
-                <input id="stage-cast-name" class="stage-text-input" type="text" maxlength="24"
-                       placeholder="名前を入れて追加" aria-label="演者の名前">
-                <button type="button" id="stage-cast-add" class="btn-quiet">追加</button>
-              </div>
-              <div class="stage-cast-list" id="stage-cast-list"></div>
-            </div>
-          </section>
-
-          <section class="stage-panel" data-panel="sets" data-title="舞台セット">
-            <div class="stage-panel-body">
-              <p class="stage-cast-hint">このショーで使う台や道具を、寸法つきで登録します。ここで寸法を変えると、置いてある全ての場面に反映されます。</p>
-              <div class="stage-cast-add">
-                <input id="stage-set-name" class="stage-text-input" type="text" maxlength="24"
-                       placeholder="名前を入れて追加" aria-label="舞台セットの名前">
-                <select id="stage-set-kind" class="stage-select" aria-label="形">
+              <p class="stage-cast-hint">この舞台に出る演者・舞台セット・明かりを、まとめてここに登録します。
+                寸法や色はここで決め、場面ごとに舞台の上か裏かを切り替えます。</p>
+              <div class="stage-cast-add stage-roster-add">
+                <input id="stage-roster-name" class="stage-text-input" type="text" maxlength="24"
+                       placeholder="名前を入れて追加" aria-label="名前">
+                <select id="stage-roster-kind" class="stage-select" aria-label="種類">
+                  <option value="performer">演者</option>
                   <option value="block">台・箱</option>
                   <option value="table">テーブル</option>
                   <option value="chair">椅子</option>
                   <option value="sphere">球</option>
+                  <option value="light">光</option>
                 </select>
-                <button type="button" id="stage-set-add" class="btn-quiet">追加</button>
+                <button type="button" id="stage-roster-add" class="btn-quiet">追加</button>
               </div>
-              <div class="stage-cast-list" id="stage-set-list"></div>
+              <p class="stage-cast-empty" id="stage-roster-empty">まだ何も登録していません。名前と種類を選んで追加してください。</p>
+              <div class="stage-roster-group" id="stage-group-cast">
+                <p class="stage-roster-head">演者</p>
+                <div class="stage-cast-list" id="stage-cast-list"></div>
+              </div>
+              <div class="stage-roster-group" id="stage-group-sets">
+                <p class="stage-roster-head">舞台セット</p>
+                <div class="stage-cast-list" id="stage-set-list"></div>
+              </div>
+              <div class="stage-roster-group" id="stage-group-light">
+                <p class="stage-roster-head">光</p>
+                <div class="stage-cast-list" id="stage-light-list"></div>
+              </div>
             </div>
           </section>
 
@@ -271,18 +274,6 @@
                 <button type="button" id="stage-rig-save" class="btn-quiet">残す</button>
               </div>
               <div class="stage-cast-list" id="stage-rig-list"></div>
-            </div>
-          </section>
-
-          <section class="stage-panel" data-panel="light" data-title="光">
-            <div class="stage-panel-body">
-              <p class="stage-cast-hint">このショーで使う明かりを登録します。差し渡しを変えると、置いてある全ての場面に反映されます。</p>
-              <div class="stage-cast-add">
-                <input id="stage-light-name" class="stage-text-input" type="text" maxlength="24"
-                       placeholder="名前を入れて追加" aria-label="明かりの名前">
-                <button type="button" id="stage-light-add" class="btn-quiet">追加</button>
-              </div>
-              <div class="stage-cast-list" id="stage-light-list"></div>
             </div>
           </section>
 
@@ -354,16 +345,16 @@
               <input type="checkbox" id="stage-show-set-names" checked>
               <span>装置名</span>
             </label>
-            <label class="stage-toggle stage-name-toggle">
-              <input type="checkbox" id="stage-show-seatmap" checked>
-              <span>見る位置の図</span>
-            </label>
             <button type="button" id="stage-swap-center" class="btn-quiet">正面と平面を入れ替える</button>
           </div>
           <div class="stage-canvas-stack" id="stage-canvas-stack">
             <div class="stage-board-frame" id="stage-front-cell">
               <div class="stage-canvas-bar">
                 <p class="stage-canvas-caption" id="stage-front-caption">正面</p>
+                <label class="stage-canvas-toggle" id="stage-seatmap-toggle">
+                  <input type="checkbox" id="stage-show-seatmap" checked>
+                  <span>見る位置の図</span>
+                </label>
                 <button type="button" class="stage-canvas-close" data-toggle-view="front"
                         aria-expanded="true" aria-label="正面の絵を閉じる">▾</button>
               </div>
@@ -404,7 +395,7 @@
         <aside class="stage-inspector stage-col" data-col="right" id="stage-col-right" aria-label="右の道具列">
           <section class="stage-panel" data-panel="inspector" data-title="選んだもの">
             <div class="stage-panel-body">
-            <p class="stage-selection-empty" id="stage-selection-empty">舞台の上で選ぶと、姿勢・向き・重なりを変えられます。名前・色・寸法は、演者／舞台セット／光の一覧で決めます。</p>
+            <p class="stage-selection-empty" id="stage-selection-empty">舞台の上で選ぶと、姿勢・向き・重なりを変えられます。名前・色・寸法は「出るもの」の一覧で決めます。</p>
             <div id="stage-selection-controls" hidden>
               <p class="stage-selected-name" id="stage-selected-name"></p>
               <label class="stage-control-label" for="stage-piece-pose">姿勢</label>
@@ -417,6 +408,8 @@
               <input type="range" id="stage-piece-facing" min="-180" max="180" step="15" value="0">
               <p class="stage-range-scale"><span>背中</span><span>客席</span><span>背中</span></p>
               <p class="stage-dims-note" id="stage-dims-from-set" hidden></p>
+              <button type="button" class="stage-minor-action stage-lock-action" id="stage-piece-lock"
+                      aria-pressed="false">動かないようにする</button>
               <button type="button" class="stage-minor-action" id="stage-route-clear" hidden>動線を消す</button>
               <button type="button" class="stage-minor-action" id="stage-open-setinfo" hidden>登録を開く</button>
               <div class="stage-layer-actions">
@@ -730,7 +723,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=85"></script>
+<script src="stage-sketch.js?v=87"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

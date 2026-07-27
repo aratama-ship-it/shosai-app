@@ -57,7 +57,7 @@
     table: { w: 1.6, d: 0.8, h: 0.72 },    // 一般的なダイニングテーブル
     chair: { h: 0.9 },                     // 背もたれの上端まで。幅と奥行きはここから決まる
     sphere: { dia: 1.2, lift: 0 },         // 直径と、床からの高さ
-    light: { dia: 4 },                     // 床に落ちる明かりの差し渡し
+    light: { dia: 4 },                     // 床に落ちる明かりの円の直径
   };
   /* 寸法つまみの仕様。項目は種類ごとに違うので、画面はここから組み立てる。
    * HTMLへ固定で並べると、種類を足すたびに二箇所直すことになる。 */
@@ -75,7 +75,7 @@
   // 種類によって言い方を変えたいものだけ上書きする
   const DIM_LABELS = {
     chair: { h: "大きさ（背もたれの上端まで）" },
-    light: { dia: "明かりの差し渡し" },
+    light: { dia: "直径（床に落ちる円の広さ）" },
   };
   function dimLabel(kind, key) {
     return (DIM_LABELS[kind] && DIM_LABELS[kind][key]) || DIM_META[key].label;
@@ -405,6 +405,7 @@
     dimsFromSet: document.getElementById("stage-dims-from-set"),
     openSetInfo: document.getElementById("stage-open-setinfo"),
     routeClear: document.getElementById("stage-route-clear"),
+    pieceLock: document.getElementById("stage-piece-lock"),
     planRoute: document.getElementById("stage-plan-route"),
     rename: document.getElementById("stage-rename"),
     renameBackdrop: document.getElementById("stage-rename-backdrop"),
@@ -467,8 +468,13 @@
     profileHeightValue: document.getElementById("stage-profile-height-value"),
     profileColor: document.getElementById("stage-profile-color"),
     profileNote: document.getElementById("stage-profile-note"),
-    castName: document.getElementById("stage-cast-name"),
-    castAdd: document.getElementById("stage-cast-add"),
+    rosterName: document.getElementById("stage-roster-name"),
+    rosterKind: document.getElementById("stage-roster-kind"),
+    rosterAdd: document.getElementById("stage-roster-add"),
+    rosterEmpty: document.getElementById("stage-roster-empty"),
+    groupCast: document.getElementById("stage-group-cast"),
+    groupSets: document.getElementById("stage-group-sets"),
+    groupLight: document.getElementById("stage-group-light"),
     setList: document.getElementById("stage-set-list"),
     lightList: document.getElementById("stage-light-list"),
     rigList: document.getElementById("stage-rig-list"),
@@ -478,11 +484,6 @@
     sceneSection: document.getElementById("stage-scene-section"),
     sceneOut: document.getElementById("stage-scene-out"),
     sceneIn: document.getElementById("stage-scene-in"),
-    lightName: document.getElementById("stage-light-name"),
-    lightAdd: document.getElementById("stage-light-add"),
-    setName: document.getElementById("stage-set-name"),
-    setKind: document.getElementById("stage-set-kind"),
-    setAdd: document.getElementById("stage-set-add"),
     setInfo: document.getElementById("stage-setinfo"),
     setInfoBackdrop: document.getElementById("stage-setinfo-backdrop"),
     setInfoClose: document.getElementById("stage-setinfo-close"),
@@ -496,6 +497,7 @@
     showNames: document.getElementById("stage-show-names"),
     showSetNames: document.getElementById("stage-show-set-names"),
     showSeatMap: document.getElementById("stage-show-seatmap"),
+    seatMapToggle: document.getElementById("stage-seatmap-toggle"),
     depthLabelBack: document.getElementById("stage-depth-back"),
     depthLabelFront: document.getElementById("stage-depth-front"),
   };
@@ -593,18 +595,19 @@
   /* ---------- パネルの配置 ----------
      どの道具をどちら側へ置くかは人によって違う。列を移せるようにし、
      使わないものは畳めるようにする。中央は絵だけで、上下の入れ替えのみ。 */
-  const PANELS = ["project", "venue", "cast", "sets", "rigs", "light", "background", "scenes", "inspector", "save"];
+  /* 演者・舞台セット・光は「出るもの」一枚にまとめた（cast）。
+   * 登録・出し入れ・寸法の仕組みが同じものを三つに割ると、目が三度行き来する。 */
+  const PANELS = ["project", "venue", "cast", "rigs", "background", "scenes", "inspector", "save"];
 
   function defaultLayout() {
     return {
       // 場面は絵のすぐ右に置く（順番を見ながら描くため）
       cols: {
-        project: "left", venue: "left", cast: "left", sets: "left", rigs: "left",
-        light: "left", background: "left",
+        project: "left", venue: "left", cast: "left", rigs: "left", background: "left",
         scenes: "right", inspector: "right", save: "right",
       },
       order: {
-        project: 0, venue: 1, cast: 2, sets: 3, rigs: 4, light: 5, background: 6,
+        project: 0, venue: 1, cast: 2, rigs: 3, background: 4,
         scenes: 0, inspector: 1, save: 2,
       },
       collapsed: {},
@@ -709,6 +712,10 @@
       // 床からの高さ(m)と、支えている駒。どちらも置き場所から毎回引き直す派生値
       base: clamp(finite(piece.base, 0), 0, 40),
       supportId: null,
+      /* 錠。掛けているあいだは掴んでも動かない。
+       * 登録のあるもの（演者・セット・光）は登録側で持つので、ここは
+       * 登録を持たない駒（最初から置いてある例など）のための控え。 */
+      locked: Boolean(piece && piece.locked),
     };
   }
 
@@ -899,6 +906,7 @@
               color: validColor(c.color, "#a84b26"),
               heightCm: clamp(finite(c.heightCm, DEFAULT_HEIGHT_CM), 120, 210),
               note: typeof c.note === "string" ? c.note.slice(0, 200) : "",
+              locked: Boolean(c.locked),
             }))
           : [],
         sets: Array.isArray(rawProject.sets)
@@ -911,6 +919,7 @@
                 color: validColor(t.color, "#8b98a1"),
                 dims: normalizeDims(kind, t),
                 note: typeof t.note === "string" ? t.note.slice(0, 200) : "",
+                locked: Boolean(t.locked),
               };
             })
           : [],
@@ -1844,7 +1853,7 @@
   }
 
   function drawLight(target, piece, pos, scale, L) {
-    // 明かりの差し渡しを実寸（m）で持つ。床の1m枡で広さを読めるようにするため
+    // 明かりの円の直径を実寸（m）で持つ。床の1m枡で広さを読めるようにするため
     const dim = pieceDims(piece);
     const per = perMetre(pos, L);
     const spread = Math.max(6, ((dim && dim.dia) || 4) / 2 * per.x);
@@ -2294,15 +2303,24 @@
 
   function drawSelection(target, piece, L) {
     const b = selectionBounds(piece, L);
+    const locked = isLocked(piece);
     target.save();
-    target.strokeStyle = "#d3ac59";
+    // 錠が掛かっているものは掴んでも動かない。掴む前に分かるよう、枠の色でも示す
+    target.strokeStyle = locked ? "rgba(211,172,89,0.5)" : "#d3ac59";
     target.lineWidth = 2;
-    target.setLineDash([8, 7]);
+    target.setLineDash(locked ? [3, 6] : [8, 7]);
     target.strokeRect(b.x - 7, b.y - 7, b.w + 14, b.h + 14);
     target.setLineDash([]);
-    target.fillStyle = "#d3ac59";
-    [[b.x - 7, b.y - 7], [b.x + b.w + 7, b.y - 7], [b.x - 7, b.y + b.h + 7], [b.x + b.w + 7, b.y + b.h + 7]]
-      .forEach(([x, y]) => target.fillRect(x - 3, y - 3, 6, 6));
+    if (locked) {
+      target.font = "15px 'Hiragino Kaku Gothic ProN', sans-serif";
+      target.textAlign = "left";
+      target.textBaseline = "bottom";
+      target.fillText("🔒", b.x - 6, b.y - 11);
+    } else {
+      target.fillStyle = "#d3ac59";
+      [[b.x - 7, b.y - 7], [b.x + b.w + 7, b.y - 7], [b.x - 7, b.y + b.h + 7], [b.x + b.w + 7, b.y + b.h + 7]]
+        .forEach(([x, y]) => target.fillRect(x - 3, y - 3, 6, 6));
+    }
     target.restore();
   }
 
@@ -3133,6 +3151,7 @@
   }
 
   function renderCast() {
+    syncRosterGroups();
     if (!els.castList) return;
     const cast = state.project.cast;
     els.castList.innerHTML = "";
@@ -3199,24 +3218,51 @@
       remove.setAttribute("aria-label", `${member.name}を名簿から外す`);
       remove.addEventListener("click", () => removeCastMember(member.id));
 
-      row.append(swatch, name, status, profile, remove);
+      row.append(swatch, name, status, lockButton(member, member.name), profile, remove);
       els.castList.append(row);
     });
   }
 
-  function addCastMember() {
-    const raw = (els.castName && els.castName.value || "").trim();
+  /* 一覧の錠。掛けているあいだ、そのものは舞台の上で掴んでも動かない。
+   * 「置き場所は決まったので、もう触りたくない」ときに使う。 */
+  function lockButton(item, label) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "stage-cast-lock";
+    button.textContent = item.locked ? "🔒" : "🔓";
+    button.setAttribute("aria-pressed", String(Boolean(item.locked)));
+    button.title = item.locked
+      ? `${label}の錠を外す（動かせるようになります）`
+      : `${label}に錠を掛ける（動かなくなります）`;
+    button.setAttribute("aria-label", button.title);
+    button.addEventListener("click", () => {
+      checkpoint();
+      item.locked = !item.locked;
+      renderCast();
+      renderSets();
+      renderLights();
+      updateInspector();
+      render();
+      persistSoon();
+      announce(`${label}${item.locked ? "に錠を掛けました。" : "の錠を外しました。"}`);
+    });
+    return button;
+  }
+
+  function addCastMember(nameInput) {
+    const input = nameInput || els.rosterName;
+    const raw = (input && input.value || "").trim();
     if (!raw) {
       announce("名前を入れてから追加してください。");
-      if (els.castName) els.castName.focus();
+      if (input) input.focus();
       return;
     }
     checkpoint();
     state.project.cast.push({
       id: rid("cast"), name: raw.slice(0, 24), color: nextPieceColor(state.project.cast.length),
-      heightCm: DEFAULT_HEIGHT_CM, note: "",
+      heightCm: DEFAULT_HEIGHT_CM, note: "", locked: false,
     });
-    if (els.castName) els.castName.value = "";
+    if (input) input.value = "";
     renderCast();
     renderSets();
     renderLights();
@@ -3305,11 +3351,30 @@
   function renderSets() {
     renderSetList(els.setList, (item) => item.kind !== "light",
       "まだ何も登録していません。名前と形を選んで追加してください。");
+    syncRosterGroups();
   }
 
   function renderLights() {
     renderSetList(els.lightList, (item) => item.kind === "light",
       "まだ登録していません。名前を入れて追加してください。");
+    syncRosterGroups();
+  }
+
+  /* 一枚にまとめた以上、空の見出しが三つ並ぶのは邪魔になる。
+   * 中身のある組だけ出し、全部空のときだけ一行の案内を出す。 */
+  function syncRosterGroups() {
+    const sets = state.project.sets || [];
+    const counts = {
+      cast: (state.project.cast || []).length,
+      sets: sets.filter((item) => item.kind !== "light").length,
+      light: sets.filter((item) => item.kind === "light").length,
+    };
+    if (els.groupCast) els.groupCast.hidden = counts.cast === 0;
+    if (els.groupSets) els.groupSets.hidden = counts.sets === 0;
+    if (els.groupLight) els.groupLight.hidden = counts.light === 0;
+    if (els.rosterEmpty) {
+      els.rosterEmpty.hidden = counts.cast + counts.sets + counts.light > 0;
+    }
   }
 
   function renderSetList(host, keep, emptyText) {
@@ -3372,8 +3437,9 @@
       detail.type = "button";
       detail.className = "stage-cast-profile";
       detail.textContent = "…";
-      detail.title = `${item.name}の寸法`;
-      detail.setAttribute("aria-label", `${item.name}の寸法を開く`);
+      const what = item.kind === "light" ? "直径" : "寸法";
+      detail.title = `${item.name}の${what}を変える`;
+      detail.setAttribute("aria-label", `${item.name}の${what}を開く`);
       detail.addEventListener("click", () => openSetInfo(item.id));
 
       const remove = document.createElement("button");
@@ -3389,7 +3455,7 @@
       head.append(swatch, name);
       const foot = document.createElement("div");
       foot.className = "stage-set-foot";
-      foot.append(dims, status, detail, remove);
+      foot.append(dims, status, lockButton(item, item.name), detail, remove);
       row.className = "stage-set-row";
       row.append(head, foot);
       host.append(row);
@@ -3407,7 +3473,7 @@
     state.project.sets.push({
       id: rid("set"), kind, name: raw.slice(0, 24),
       color: kind === "light" ? "#d3ac59" : nextPieceColor(state.project.sets.length + 2),
-      dims: normalizeDims(kind, {}), note: "",
+      dims: normalizeDims(kind, {}), note: "", locked: false,
     });
     if (nameInput) nameInput.value = "";
     renderSets();
@@ -4661,6 +4727,13 @@
       : `${which === "front" ? "正面" : "平面"}を閉じました。`);
   }
 
+  /* 見る位置の小図は、客席が正面だけの劇場でしか描かれない。
+   * 描かれない劇場で入り切りだけ残ると、押しても何も起きない札になる。 */
+  function syncSeatMapToggle() {
+    if (!els.seatMapToggle) return;
+    els.seatMapToggle.hidden = venue().audience !== "front";
+  }
+
   function setVenue(id) {
     if (state.project.venue === id) return;
     checkpoint();
@@ -4668,6 +4741,7 @@
     state.project.venueSize = VENUES.sizeById(VENUES.byId(id), state.project.venueSize).id;
     if (venue().audience === "round" && tool !== "select") setTool("select");
     renderVenueControls();
+    syncSeatMapToggle();
     render();
     persistSoon();
     announce(`${venue().label}へ切り替えました。配置はそのまま残ります。`);
@@ -4727,6 +4801,37 @@
 
   function selectedNote() {
     return (sc().notes || []).find((note) => note.id === selectedNoteId) || null;
+  }
+
+  /* 錠は「そのもの」に掛ける。登録があれば登録側、無ければ駒そのものに持つ。
+   * 二か所に別々の錠を置くと、どちらで外すのか分からなくなる。 */
+  // announce で名指しするときの呼び名。登録名があればそれを使う
+  function pieceLabel(piece) {
+    const owner = lockOwner(piece);
+    if (owner && owner.name) return owner.name;
+    if (piece && piece.name) return piece.name;
+    return piece ? PIECE_TYPES[piece.type] : "これ";
+  }
+
+  function lockOwner(piece) {
+    if (!piece) return null;
+    if (piece.castId) {
+      return (state.project.cast || []).find((c) => c.id === piece.castId) || null;
+    }
+    if (piece.setId) {
+      return (state.project.sets || []).find((t) => t.id === piece.setId) || null;
+    }
+    return null;
+  }
+
+  function isLocked(piece) {
+    const owner = lockOwner(piece);
+    return Boolean(owner ? owner.locked : (piece && piece.locked));
+  }
+
+  function setLocked(piece, value) {
+    const owner = lockOwner(piece);
+    if (owner) owner.locked = value; else if (piece) piece.locked = value;
   }
 
   function selectedPiece() {
@@ -4799,6 +4904,7 @@
     if (els.showNames) els.showNames.checked = state.showNames;
     if (els.showSetNames) els.showSetNames.checked = state.showSetNames;
     if (els.showSeatMap) els.showSeatMap.checked = state.showSeatMap;
+    syncSeatMapToggle();
   }
 
   function addPiece(type) {
@@ -4990,6 +5096,11 @@
         }
         return;
       }
+      // 錠が掛かっているものは選べるが動かない。外す口は一覧と「選んだもの」にある
+      if (isLocked(hit)) {
+        announce(`${pieceLabel(hit)}には錠が掛かっています。動かすには錠を外してください。`);
+        return;
+      }
       const pos = placePiece(hit, L);
       capture(el, event.pointerId);
       el.dataset.dragging = "true";
@@ -5136,6 +5247,10 @@
     const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
     if (!moves[event.key]) return;
     event.preventDefault();
+    if (isLocked(piece)) {
+      announce(`${pieceLabel(piece)}には錠が掛かっています。`);
+      return;
+    }
     checkpoint();
     const amount = event.shiftKey ? 0.05 : 0.016;
     bringToTop(piece);   // 動かしたものが、重なった相手の上に乗る
@@ -5217,23 +5332,38 @@
       render();
     });
   }
-  const addSelectedSet = () => addSetItem(
-    SET_KINDS[els.setKind && els.setKind.value] ? els.setKind.value : "block", els.setName);
-  if (els.setAdd) els.setAdd.addEventListener("click", addSelectedSet);
-  if (els.setName) {
-    els.setName.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); addSelectedSet(); }
-    });
-  }
-  if (els.lightAdd) els.lightAdd.addEventListener("click", () => addSetItem("light", els.lightName));
-  if (els.lightName) {
-    els.lightName.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); addSetItem("light", els.lightName); }
+  /* 追加の口は一つ。種類だけ選ばせる。演者と物と光で入り口を分けると、
+   * 「これはどこから足すのか」を毎回思い出すことになる。 */
+  const addFromRoster = () => {
+    const kind = els.rosterKind && els.rosterKind.value;
+    if (kind === "performer") { addCastMember(els.rosterName); return; }
+    addSetItem(SET_KINDS[kind] ? kind : "block", els.rosterName);
+  };
+  if (els.rosterAdd) els.rosterAdd.addEventListener("click", addFromRoster);
+  if (els.rosterName) {
+    els.rosterName.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); addFromRoster(); }
     });
   }
   // 平面図のバーからも動線の入り切りができる。平面を見ながら手を伸ばす距離を短くする
   if (els.planRoute) {
     els.planRoute.addEventListener("click", () => setTool(tool === "route" ? "select" : "route"));
+  }
+  if (els.pieceLock) {
+    els.pieceLock.addEventListener("click", () => {
+      const piece = selectedPiece();
+      if (!piece) return;
+      checkpoint();
+      const next = !isLocked(piece);
+      setLocked(piece, next);
+      renderCast();
+      renderSets();
+      renderLights();
+      updateInspector();
+      render();
+      persistSoon();
+      announce(`${pieceLabel(piece)}${next ? "に錠を掛けました。" : "の錠を外しました。"}`);
+    });
   }
   if (els.routeClear) {
     els.routeClear.addEventListener("click", () => {
@@ -5289,12 +5419,6 @@
     els.setInfoNote.addEventListener("input", (e) => {
       const item = currentSetItem();
       if (item) { item.note = e.target.value.slice(0, 200); persistSoon(); }
-    });
-  }
-  if (els.castAdd) els.castAdd.addEventListener("click", addCastMember);
-  if (els.castName) {
-    els.castName.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); addCastMember(); }
     });
   }
   if (els.sceneAdd) els.sceneAdd.addEventListener("click", () => addScene(false));
@@ -5426,6 +5550,14 @@
       }
     }
     if (els.routeClear) els.routeClear.hidden = !(piece && piece.route);
+    if (els.pieceLock) {
+      const locked = isLocked(piece);
+      els.pieceLock.setAttribute("aria-pressed", String(locked));
+      els.pieceLock.textContent = locked ? "錠を外す" : "動かないようにする";
+      els.pieceLock.title = owner
+        ? `「${owner.name}」の錠。掛けているあいだ、どの場面でも動きません。`
+        : "掛けているあいだ、掴んでも動きません。";
+    }
     if (els.openSetInfo) {
       els.openSetInfo.hidden = !owner;
       els.openSetInfo.textContent = registered ? "寸法を開く" : "プロフィールを開く";

@@ -5505,6 +5505,31 @@ body.is-panel-dragging {
   background: rgba(168, 75, 38, 0.27);
 }
 
+/* 絵の枠の上に置く入り切り。中央の道具バーではなく、効く絵のすぐ上に置く */
+.stage-canvas-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.stage-canvas-toggle:hover { color: var(--milk); }
+
+.stage-canvas-toggle input {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  accent-color: var(--rust);
+}
+
+.stage-canvas-toggle[hidden] { display: none; }
+
 /* 開閉のつまみ。✕は「消す」に見えるので三角にして、開いているかどうかを
    向きで示す（▾=開いている／▸=閉じている）。右上に置く。 */
 .stage-canvas-close {
@@ -5722,6 +5747,33 @@ body.is-panel-dragging {
 
 .stage-cast-add .stage-text-input { margin-bottom: 0; }
 
+/* 追加の口は一つ。名前は広く、種類と追加は下の段へ回す
+   （左の列は狭いので、三つを一列に詰めると名前が読めなくなる） */
+.stage-roster-add {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.stage-roster-add .stage-text-input { grid-column: 1 / -1; }
+
+.stage-roster-add .stage-select {
+  grid-column: 1;
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.stage-roster-add .btn-quiet { grid-column: 2; }
+
+/* 種類ごとの小見出し。中身のある組だけ出す */
+.stage-roster-group { margin-bottom: 10px; }
+.stage-roster-group[hidden] { display: none; }
+
+.stage-roster-head {
+  margin: 0 0 5px;
+  color: var(--brass);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+
 .stage-cast-list {
   display: grid;
   gap: 4px;
@@ -5896,8 +5948,35 @@ body.is-panel-dragging {
   margin-top: 5px;
 }
 
-/* 名簿の行にプロフィールを開くボタンを足したので、列を1つ増やす */
-.stage-cast-row { grid-template-columns: 20px minmax(0, 1fr) auto auto auto; }
+/* 名簿の行は 色・名前・舞台上/裏・錠・…・✕ の6列 */
+.stage-cast-row { grid-template-columns: 20px minmax(0, 1fr) auto auto auto auto; }
+
+/* 錠。掛けているあいだは舞台の上で掴んでも動かない */
+.stage-cast-lock {
+  min-width: 22px;
+  min-height: 22px;
+  border: 1px solid var(--line-dark);
+  background: none;
+  color: rgba(240, 231, 214, 0.4);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stage-cast-lock:hover { color: var(--milk); border-color: var(--brass); }
+
+.stage-cast-lock[aria-pressed="true"] {
+  color: var(--paper);
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.24);
+}
+
+/* 「選んだもの」側の錠。掛かっているあいだは色を変えて知らせる */
+.stage-lock-action[aria-pressed="true"] {
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.2);
+  color: var(--paper);
+}
 
 .stage-cast-profile {
   min-width: 22px;
