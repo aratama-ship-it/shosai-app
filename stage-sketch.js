@@ -3166,13 +3166,8 @@
       const row = document.createElement("div");
       row.className = "stage-cast-row";
 
-      const swatch = document.createElement("input");
-      swatch.type = "color";
-      swatch.className = "stage-cast-color";
-      swatch.value = member.color;
-      swatch.setAttribute("aria-label", `${member.name}の色`);
-      swatch.addEventListener("input", () => {
-        member.color = swatch.value;
+      const swatch = kindSwatch(member, "performer", member.name, (value) => {
+        member.color = value;
         // 舞台に出ている分にも色を反映する
         state.project.scenes.forEach((scene) => {
           scene.pieces.forEach((piece) => {
@@ -3225,6 +3220,42 @@
 
   /* 一覧の錠。掛けているあいだ、そのものは舞台の上で掴んでも動かない。
    * 「置き場所は決まったので、もう触りたくない」ときに使う。 */
+  /* 種類の絵と色を一つにまとめた見本。押すと色を選べる。
+   * 色だけの四角と種類名の文字を別々に並べると、狭い列で二段になってしまう。
+   * 絵は輪郭ではなく塗りで持つ（小さいので線だと潰れる）。 */
+  const KIND_ICONS = {
+    performer: '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
+      + '<circle cx="8" cy="3.5" r="2.4"/>'
+      + '<path d="M8 6.5c2 0 3.1 1.2 3.3 3l.5 4.4H9.8l-.3-3.1h-.3l-.3 3.1H6.8l-.3-3.1h-.3l-.3 3.1H4.2l.5-4.4c.2-1.8 1.3-3 3.3-3z"/></svg>',
+    light: '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
+      + '<path d="M5.6 1.5h4.8l1 3.1H4.6z"/>'
+      + '<path d="M4.8 5.6h6.4L13.5 14.3H2.5z" opacity=".45"/></svg>',
+    object: '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
+      + '<path d="M8 1.6 14.3 4.9 8 8.2 1.7 4.9z" opacity=".55"/>'
+      + '<path d="M1.7 6 7.4 9v5.4L1.7 11.4zM14.3 6v5.4L8.6 14.4V9z"/></svg>',
+  };
+
+  function kindSwatch(item, kind, label, onPick) {
+    const wrap = document.createElement("label");
+    wrap.className = "stage-kind-swatch";
+    wrap.title = `${label}の色を変える`;
+    wrap.style.color = item.color;
+    const glyph = document.createElement("span");
+    glyph.className = "stage-kind-glyph";
+    glyph.innerHTML = KIND_ICONS[kind] || KIND_ICONS.object;
+    const input = document.createElement("input");
+    input.type = "color";
+    input.className = "stage-kind-input";
+    input.value = item.color;
+    input.setAttribute("aria-label", `${label}の色`);
+    input.addEventListener("input", () => {
+      wrap.style.color = input.value;
+      onPick(input.value);
+    });
+    wrap.append(glyph, input);
+    return wrap;
+  }
+
   function lockButton(item, label) {
     const button = document.createElement("button");
     button.type = "button";
@@ -3392,13 +3423,8 @@
       const row = document.createElement("div");
       row.className = "stage-cast-row";
 
-      const swatch = document.createElement("input");
-      swatch.type = "color";
-      swatch.className = "stage-cast-color";
-      swatch.value = item.color;
-      swatch.setAttribute("aria-label", `${item.name}の色`);
-      swatch.addEventListener("input", () => {
-        item.color = swatch.value;
+      const swatch = kindSwatch(item, item.kind === "light" ? "light" : "object", item.name, (value) => {
+        item.color = value;
         state.project.scenes.forEach((scene) => {
           scene.pieces.forEach((piece) => {
             if (piece.setId === item.id) piece.color = item.color;
@@ -3420,10 +3446,9 @@
         persistSoon();
       });
 
-      const dims = document.createElement("span");
-      dims.className = "stage-set-dims";
-      dims.textContent = setDimLabel(item);
-      dims.title = `${SET_KINDS[item.kind]}／${setDimLabel(item)}`;
+      /* 寸法は行に出さず、行の title と「…」の窓へ回す。
+       * 狭い列で名前と寸法を並べると、どちらも数文字で切れて読めなくなる。 */
+      const summary = `${SET_KINDS[item.kind]}／${setDimLabel(item)}`;
 
       const onStage = setOnStage(item.id);
       const status = document.createElement("button");
@@ -3438,7 +3463,7 @@
       detail.className = "stage-cast-profile";
       detail.textContent = "…";
       const what = item.kind === "light" ? "直径" : "寸法";
-      detail.title = `${item.name}の${what}を変える`;
+      detail.title = `${item.name}の${what}を変える（いまは ${setDimLabel(item)}）`;
       detail.setAttribute("aria-label", `${item.name}の${what}を開く`);
       detail.addEventListener("click", () => openSetInfo(item.id));
 
@@ -3449,15 +3474,11 @@
       remove.setAttribute("aria-label", `${item.name}を舞台セットから外す`);
       remove.addEventListener("click", () => removeSetItem(item.id));
 
-      // 1段目に色と名前、2段目に寸法と操作を置く。名前が切れないようにするため
-      const head = document.createElement("div");
-      head.className = "stage-set-head";
-      head.append(swatch, name);
-      const foot = document.createElement("div");
-      foot.className = "stage-set-foot";
-      foot.append(dims, status, lockButton(item, item.name), detail, remove);
-      row.className = "stage-set-row";
-      row.append(head, foot);
+      /* 一段にまとめる。名前の右へ寸法を小さく置き、名前が長ければそちらを詰める。
+       * 段を分けると、十数個並べたときに一覧が縦に伸びて見渡せなくなる。 */
+      row.className = "stage-cast-row";
+      row.title = summary;
+      row.append(swatch, name, status, lockButton(item, item.name), detail, remove);
       host.append(row);
     });
   }

@@ -1253,7 +1253,7 @@ textarea, input[type="text"] {
 .stage-sketch-grid {
   display: grid;
   /* 右列にも場面など中身のあるパネルが入るので、左右を同じ幅にする */
-  grid-template-columns: 230px minmax(420px, 1fr) 230px;
+  grid-template-columns: 268px minmax(420px, 1fr) 268px;
   grid-template-areas: "tools board inspector";
   gap: 18px;
   align-items: start;
@@ -5948,8 +5948,48 @@ body.is-panel-dragging {
   margin-top: 5px;
 }
 
-/* 名簿の行は 色・名前・舞台上/裏・錠・…・✕ の6列 */
-.stage-cast-row { grid-template-columns: 20px minmax(0, 1fr) auto auto auto auto; }
+/* 一覧の行は 種類つき色見本・名前・舞台上/裏・錠・…・✕ の6列。
+   演者も物も光も同じ形にして、目の高さを揃える */
+.stage-cast-row {
+  grid-template-columns: 24px minmax(0, 1fr) auto auto auto auto;
+  gap: 4px;
+}
+
+/* 種類の絵と色を一つにまとめた見本。押すと色を選べる */
+.stage-kind-swatch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line-dark);
+  background: rgba(240, 231, 214, 0.05);
+  cursor: pointer;
+}
+
+.stage-kind-swatch:hover { border-color: var(--brass); }
+
+.stage-kind-glyph {
+  display: block;
+  width: 15px;
+  height: 15px;
+  color: inherit;
+}
+
+.stage-kind-glyph svg { width: 100%; height: 100%; fill: currentColor; display: block; }
+
+/* 色を選ぶ口そのものは見せない。見本の上に重ねて、押せる範囲だけ borrowing する */
+.stage-kind-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
 
 /* 錠。掛けているあいだは舞台の上で掴んでも動かない */
 .stage-cast-lock {
