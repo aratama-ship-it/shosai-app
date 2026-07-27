@@ -459,6 +459,12 @@
     canvasStack: document.getElementById("stage-canvas-stack"),
     frontCaption: document.getElementById("stage-front-caption"),
     venueScale: document.getElementById("stage-venue-scale"),
+    venueW: document.getElementById("stage-venue-w"),
+    venueD: document.getElementById("stage-venue-d"),
+    venueH: document.getElementById("stage-venue-h"),
+    venueWLabel: document.getElementById("stage-venue-w-label"),
+    venueDCell: document.getElementById("stage-venue-d-cell"),
+    venueReset: document.getElementById("stage-venue-reset"),
     bgSection: document.getElementById("stage-bg-section"),
     seatSection: document.getElementById("stage-seat-section"),
     seatList: document.getElementById("stage-seat-list"),
@@ -745,6 +751,20 @@
     };
   }
 
+  const VENUE_LIMITS = { width: [3, 60], depth: [3, 60], height: [2, 40] };
+
+  function normalizeVenueDims(raw, size) {
+    if (!raw || typeof raw !== "object") return null;
+    const out = {};
+    Object.keys(VENUE_LIMITS).forEach((key) => {
+      if (raw[key] === undefined || raw[key] === null) return;
+      const lim = VENUE_LIMITS[key];
+      const value = clamp(finite(raw[key], size[key] || lim[0]), lim[0], lim[1]);
+      out[key] = Math.round(value * 10) / 10;
+    });
+    return Object.keys(out).length ? out : null;
+  }
+
   function normalizePiece(piece, index) {
     // 「円形の物」は輪なのか円盤なのか読めなかったので球に置き換えた。古い保存を読み替える
     const raw = piece && piece.type === "ring" ? "sphere" : piece && piece.type;
@@ -963,6 +983,9 @@
         createdAt: typeof rawProject.createdAt === "string" ? rawProject.createdAt : nowIso(),
         venue: venue.id,
         venueSize: size.id,
+        /* 規模の実寸。選んだ規模の値を土台に、ここで上書きした分だけ差し替える。
+         * 実際の劇場は「中劇場」で括れない（間口12.4m・高さ7.2mのような値になる）。 */
+        venueDims: normalizeVenueDims(rawProject.venueDims, size),
         cast: Array.isArray(rawProject.cast)
           ? rawProject.cast.slice(0, 60).map((c, i) => ({
               id: typeof c.id === "string" ? c.id : rid("cast"),
@@ -1080,7 +1103,16 @@
   let controlBefore = null;
 
   const venue = () => VENUES.byId(state.project.venue);
-  const venueSize = () => VENUES.sizeById(venue(), state.project.venueSize);
+  /* 実効の寸法。選んだ規模に、手で入れた実寸を重ねたもの。
+   * 円形（リング）は間口・奥行きと同じ値を持たせる（真円なので一つの数で決まる）。 */
+  const venueSize = () => {
+    const base = VENUES.sizeById(venue(), state.project.venueSize);
+    const over = state.project.venueDims;
+    if (!over) return base;
+    const merged = Object.assign({}, base, over);
+    if (base.ring !== undefined) merged.ring = merged.width;
+    return merged;
+  };
 
   /* ---------- レイアウト ----------
      舞台は常に画面いっぱいに描く。実寸の違いは「人の小ささ」として出る。 */
@@ -4843,10 +4875,25 @@
       els.sizeSelect.value = size.id;
     }
 
+    /* 実寸の欄。円形は一つの数（直径）で決まるので、奥行きの欄は畳む。 */
+    if (els.venueW) {
+      const round = current.audience === "round";
+      if (els.venueWLabel) els.venueWLabel.textContent = round ? "直径" : "間口";
+      if (els.venueDCell) els.venueDCell.hidden = round;
+      const put = (input, value) => {
+        if (input && document.activeElement !== input) input.value = String(value);
+      };
+      put(els.venueW, size.width);
+      put(els.venueD, size.depth);
+      put(els.venueH, size.height || 6);
+      if (els.venueReset) els.venueReset.hidden = !state.project.venueDims;
+    }
+
     if (els.venueScale) {
-      const bits = [`間口 ${size.width}m`, `奥行 ${size.depth}m`];
+      const bits = current.audience === "round"
+        ? [`直径 ${size.width}m`]
+        : [`間口 ${size.width}m`, `奥行 ${size.depth}m`];
       if (size.height) bits.push(`高さ ${size.height}m`);
-      if (size.ring) bits.push(`リング ${size.ring}m`);
       if (size.seats) bits.push(`客席 約${size.seats}席`);
       if (size.crowd) bits.push(`観客 〜${size.crowd.toLocaleString()}人`);
       els.venueScale.textContent = bits.join(" ・ ") + `（${current.source}）`;
@@ -4925,6 +4972,7 @@
     checkpoint();
     state.project.venue = id;
     state.project.venueSize = VENUES.sizeById(VENUES.byId(id), state.project.venueSize).id;
+    state.project.venueDims = null;
     if (venue().audience === "round" && tool !== "select") setTool("select");
     renderVenueControls();
     syncSeatMapToggle();
@@ -4937,6 +4985,8 @@
     if (state.project.venueSize === id) return;
     checkpoint();
     state.project.venueSize = id;
+    // 規模を選び直したら、手で入れた実寸は捨てる（選んだ規模の値が出るべき）
+    state.project.venueDims = null;
     renderVenueControls();
     render();
     persistSoon();
@@ -5571,6 +5621,41 @@
   if (els.showPlan) {
     els.showPlan.addEventListener("change", (e) => setViewShown("plan", e.target.checked));
   }
+  /* 実寸の手入力。選んだ規模を土台に、触った値だけ上書きする。
+   * 尺は全部ここから引かれるので、変えた瞬間に人も道具も一緒に縮む。 */
+  [["venueW", "width"], ["venueD", "depth"], ["venueH", "height"]].forEach(([key, field]) => {
+    const input = els[key];
+    if (!input) return;
+    const apply = () => {
+      const size = VENUES.sizeById(venue(), state.project.venueSize);
+      const lim = VENUE_LIMITS[field];
+      const value = Math.round(clamp(finite(input.value, size[field] || lim[0]), lim[0], lim[1]) * 10) / 10;
+      const next = Object.assign({}, state.project.venueDims || {});
+      next[field] = value;
+      state.project.venueDims = normalizeVenueDims(next, size);
+      input.value = String(value);
+      renderVenueControls();
+      render();
+      persistSoon();
+    };
+    input.addEventListener("change", () => { checkpoint(); apply(); });
+    input.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+    });
+  });
+  if (els.venueReset) {
+    els.venueReset.addEventListener("click", () => {
+      if (!state.project.venueDims) return;
+      checkpoint();
+      state.project.venueDims = null;
+      renderVenueControls();
+      render();
+      persistSoon();
+      announce(`${venueSize().label}の寸法に戻しました。`);
+    });
+  }
+
   if (els.venueSelect) {
     els.venueSelect.addEventListener("change", (e) => setVenue(e.target.value));
   }

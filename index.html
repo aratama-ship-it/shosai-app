@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=84">
+<link rel="stylesheet" href="style.css?v=85">
 </head>
 <body>
 
@@ -229,6 +229,21 @@
               <label class="stage-field-label" for="stage-size-select">規模</label>
               <select id="stage-size-select" class="stage-select"></select>
             </div>
+            <div class="stage-dim-row" id="stage-venue-dims">
+              <label class="stage-dim-cell">
+                <span id="stage-venue-w-label">間口</span>
+                <input type="number" id="stage-venue-w" min="3" max="60" step="0.1"><i>m</i>
+              </label>
+              <label class="stage-dim-cell" id="stage-venue-d-cell">
+                <span>奥行</span>
+                <input type="number" id="stage-venue-d" min="3" max="60" step="0.1"><i>m</i>
+              </label>
+              <label class="stage-dim-cell">
+                <span>高さ</span>
+                <input type="number" id="stage-venue-h" min="2" max="40" step="0.1"><i>m</i>
+              </label>
+            </div>
+            <button type="button" class="stage-minor-action" id="stage-venue-reset">規模のとおりに戻す</button>
             <p class="stage-venue-scale" id="stage-venue-scale"></p>
             </div>
           </section>
@@ -757,7 +772,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=96"></script>
+<script src="stage-sketch.js?v=97"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
