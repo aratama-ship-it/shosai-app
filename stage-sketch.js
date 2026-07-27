@@ -382,6 +382,7 @@
     erase: "背景に描いた線だけを消します。",
     route: "平面図で演者を掴み、離した所が行き先になります。真ん中の丸を引くと道が曲がります。",
     note: "何もない所を押すとメモを貼れます。貼ったメモは掴んで動かせます。",
+    light: "明かりだけを動かします。丸い印が灯体、明るい輪が当たる場所です。",
   };
 
   const els = {
@@ -406,6 +407,7 @@
     openSetInfo: document.getElementById("stage-open-setinfo"),
     routeClear: document.getElementById("stage-route-clear"),
     pieceLock: document.getElementById("stage-piece-lock"),
+    facingControls: document.getElementById("stage-facing-controls"),
     planRoute: document.getElementById("stage-plan-route"),
     rename: document.getElementById("stage-rename"),
     renameBackdrop: document.getElementById("stage-rename-backdrop"),
@@ -474,7 +476,14 @@
     rosterEmpty: document.getElementById("stage-roster-empty"),
     groupCast: document.getElementById("stage-group-cast"),
     groupSets: document.getElementById("stage-group-sets"),
-    groupLight: document.getElementById("stage-group-light"),
+    lightName: document.getElementById("stage-light-name"),
+    lightAdd: document.getElementById("stage-light-add"),
+    beamControls: document.getElementById("stage-beam-controls"),
+    beamFrom: document.getElementById("stage-beam-from"),
+    beamFromValue: document.getElementById("stage-beam-from-value"),
+    beamTo: document.getElementById("stage-beam-to"),
+    beamToValue: document.getElementById("stage-beam-to-value"),
+    beamReset: document.getElementById("stage-beam-reset"),
     setList: document.getElementById("stage-set-list"),
     lightList: document.getElementById("stage-light-list"),
     rigList: document.getElementById("stage-rig-list"),
@@ -597,17 +606,17 @@
      使わないものは畳めるようにする。中央は絵だけで、上下の入れ替えのみ。 */
   /* 演者・舞台セット・光は「出るもの」一枚にまとめた（cast）。
    * 登録・出し入れ・寸法の仕組みが同じものを三つに割ると、目が三度行き来する。 */
-  const PANELS = ["project", "venue", "cast", "rigs", "background", "scenes", "inspector", "save"];
+  const PANELS = ["project", "venue", "cast", "rigs", "light", "background", "scenes", "inspector", "save"];
 
   function defaultLayout() {
     return {
       // 場面は絵のすぐ右に置く（順番を見ながら描くため）
       cols: {
-        project: "left", venue: "left", cast: "left", rigs: "left", background: "left",
+        project: "left", venue: "left", cast: "left", rigs: "left", light: "left", background: "left",
         scenes: "right", inspector: "right", save: "right",
       },
       order: {
-        project: 0, venue: 1, cast: 2, rigs: 3, background: 4,
+        project: 0, venue: 1, cast: 2, rigs: 3, light: 4, background: 5,
         scenes: 0, inspector: 1, save: 2,
       },
       collapsed: {},
@@ -685,6 +694,23 @@
     };
   }
 
+  const BEAM_DEFAULT_H = 6;      // 灯体の高さ(m)。中劇場のバトンのおよその高さ
+  const BEAM_MAX_H = 18;
+
+  function normalizeBeam(raw, piece) {
+    const baseU = clamp(finite(piece && piece.u, 0.5), 0, 1);
+    const baseV = clamp(finite(piece && piece.v, 0.6), 0, 1);
+    const src = raw && typeof raw === "object" ? raw : {};
+    return {
+      // 灯体の平面位置。既定は落とす場所の真上（＝直下型）
+      u: clamp(finite(src.u, baseU), -0.3, 1.3),
+      v: clamp(finite(src.v, baseV), -0.3, 1.3),
+      h: clamp(finite(src.h, BEAM_DEFAULT_H), 0, BEAM_MAX_H),
+      // 当たる高さ。0で床。下から上への明かりは、ここを上げて灯体を下げる
+      toH: clamp(finite(src.toH, 0), 0, BEAM_MAX_H),
+    };
+  }
+
   function normalizePiece(piece, index) {
     // 「円形の物」は輪なのか円盤なのか読めなかったので球に置き換えた。古い保存を読み替える
     const raw = piece && piece.type === "ring" ? "sphere" : piece && piece.type;
@@ -712,6 +738,10 @@
       // 床からの高さ(m)と、支えている駒。どちらも置き場所から毎回引き直す派生値
       base: clamp(finite(piece.base, 0), 0, 40),
       supportId: null,
+      /* 明かりの当て方。どこから出て、どこへ落ちるか。
+       * 落ちる場所は駒そのもの（u,v）。ここには灯体の側だけを持つ。
+       * 真上から落とす明かりが既定だが、斜めも、下から上へも同じ形で書ける。 */
+      beam: normalizeBeam(piece && piece.beam, piece),
       /* 錠。掛けているあいだは掴んでも動かない。
        * 登録のあるもの（演者・セット・光）は登録側で持つので、ここは
        * 登録を持たない駒（最初から置いてある例など）のための控え。 */
@@ -1852,27 +1882,72 @@
     target.restore();
   }
 
+  /* 明かりの灯体の位置を画面へ落とす。平面ならその点、正面なら床から h だけ持ち上げる。 */
+  function beamSource(piece, L) {
+    const b = piece.beam || normalizeBeam(null, piece);
+    const p = place(b.u, b.v, L);
+    if (L.plan) return { x: p.x, y: p.y };
+    const per = perMetre(p, L);
+    const rawY = p.rawY - b.h * per.y;
+    return { x: p.x, y: L.tilt(rawY) };
+  }
+
+  // 明かりが当たる点。床とは限らない（下から上への明かりでは宙にある）
+  function beamTarget(piece, pos, L) {
+    const b = piece.beam || normalizeBeam(null, piece);
+    if (L.plan || !b.toH) return { x: pos.x, y: pos.y };
+    const per = perMetre(pos, L);
+    return { x: pos.x, y: L.tilt(pos.rawY - b.toH * per.y) };
+  }
+
   function drawLight(target, piece, pos, scale, L) {
     // 明かりの円の直径を実寸（m）で持つ。床の1m枡で広さを読めるようにするため
     const dim = pieceDims(piece);
     const per = perMetre(pos, L);
     const spread = Math.max(6, ((dim && dim.dia) || 4) / 2 * per.x);
-    const topWidth = Math.max(3, spread * 0.2);
-    const topY = L.plan ? pos.y - spread : L.backY;
+    const src = beamSource(piece, L);
+    const hit = beamTarget(piece, pos, L);
+    const lit = tool === "light";
+    const picked = piece.id === selectedId;
+
     if (L.plan) {
-      // 平面では光は「床に落ちる円」として見える
+      // 平面では、落ちる円と、どこから出ているかの線で読む
       target.save();
-      const pool = target.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, spread);
+      const pool = target.createRadialGradient(hit.x, hit.y, 0, hit.x, hit.y, spread);
       pool.addColorStop(0, rgba(piece.color, 0.34));
       pool.addColorStop(1, rgba(piece.color, 0));
       target.fillStyle = pool;
       target.beginPath();
-      target.arc(pos.x, pos.y, spread, 0, Math.PI * 2);
+      target.arc(hit.x, hit.y, spread, 0, Math.PI * 2);
       target.fill();
+      // 灯体が真上にないときだけ、出どころを見せる（真上なら線が点になる）
+      const off = Math.hypot(src.x - hit.x, src.y - hit.y) > 6;
+      if (off || lit || picked) {
+        target.strokeStyle = rgba(piece.color, lit || picked ? 0.7 : 0.34);
+        target.lineWidth = 1.2;
+        target.setLineDash([5, 5]);
+        target.beginPath();
+        target.moveTo(src.x, src.y);
+        target.lineTo(hit.x, hit.y);
+        target.stroke();
+        target.setLineDash([]);
+        drawFixture(target, src, piece, lit || picked);
+      }
       target.restore();
       return;
     }
-    const gradient = target.createLinearGradient(0, topY, 0, pos.y);
+
+    /* 正面では、灯体から当たる場所へ広がる帯として描く。
+     * 真上からとは限らないので、帯は「灯体の小さな幅」から
+     * 「当たる場所の広がり」へ、傾いたまま伸びる。 */
+    const dx = hit.x - src.x;
+    const dy = hit.y - src.y;
+    const len = Math.hypot(dx, dy) || 1;
+    // 帯の幅は光の進む向きと直角に取る
+    const nx = -dy / len;
+    const ny = dx / len;
+    const topWidth = Math.max(3, spread * 0.18);
+    const gradient = target.createLinearGradient(src.x, src.y, hit.x, hit.y);
     gradient.addColorStop(0, rgba(piece.color, 0.08));
     gradient.addColorStop(0.72, rgba(piece.color, 0.14));
     gradient.addColorStop(1, rgba(piece.color, 0.28));
@@ -1880,20 +1955,34 @@
     target.globalCompositeOperation = "screen";
     target.fillStyle = gradient;
     target.beginPath();
-    target.moveTo(pos.x - topWidth, topY);
-    target.lineTo(pos.x + topWidth, topY);
-    target.lineTo(pos.x + spread, pos.y);
-    target.lineTo(pos.x - spread, pos.y);
+    target.moveTo(src.x - nx * topWidth, src.y - ny * topWidth);
+    target.lineTo(src.x + nx * topWidth, src.y + ny * topWidth);
+    target.lineTo(hit.x + nx * spread, hit.y + ny * spread);
+    target.lineTo(hit.x - nx * spread, hit.y - ny * spread);
     target.closePath();
     target.fill();
-    const pool = target.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, spread);
+    const pool = target.createRadialGradient(hit.x, hit.y, 0, hit.x, hit.y, spread);
     pool.addColorStop(0, rgba(piece.color, 0.33));
     pool.addColorStop(1, rgba(piece.color, 0));
     target.fillStyle = pool;
     target.beginPath();
-    target.ellipse(pos.x, pos.y, spread, 32 * scale, 0, 0, Math.PI * 2);
+    target.ellipse(hit.x, hit.y, spread, 32 * scale, 0, 0, Math.PI * 2);
     target.fill();
     target.globalCompositeOperation = "source-over";
+    if (lit || picked) drawFixture(target, src, piece, true);
+    target.restore();
+  }
+
+  // 灯体そのもの。光を動かすときだけ出す小さな印
+  function drawFixture(target, at, piece, strong) {
+    target.save();
+    target.fillStyle = rgba(piece.color, strong ? 0.9 : 0.45);
+    target.strokeStyle = "rgba(13,12,11,0.65)";
+    target.lineWidth = 1;
+    target.beginPath();
+    target.arc(at.x, at.y, 7, 0, Math.PI * 2);
+    target.fill();
+    target.stroke();
     target.restore();
   }
 
@@ -3313,12 +3402,13 @@
       announce(`${member ? member.name : "この人"}を舞台から引っ込めました。`);
     } else {
       const count = scene.pieces.filter((p) => p.type === "performer").length;
-      const piece = {
+      // 正規化を通す。手で作ると、あとから足した持ち物（明かりの当て方など）が抜ける
+      const piece = normalizePiece({
         id: nextId(), type: "performer", castId,
         u: clamp(0.5 + ((count % 5) - 2) * 0.09, 0.06, 0.94),
         v: clamp(0.6 + (count % 3) * 0.07, 0.05, 0.95),
         size: 100, color: member ? member.color : state.pieceColor, name: "",
-      };
+      }, 0);
       scene.pieces.push(piece);
       selectedId = piece.id;
       announce(`${member ? member.name : "この人"}を舞台へ出しました。`);
@@ -3398,14 +3488,10 @@
     const counts = {
       cast: (state.project.cast || []).length,
       sets: sets.filter((item) => item.kind !== "light").length,
-      light: sets.filter((item) => item.kind === "light").length,
     };
     if (els.groupCast) els.groupCast.hidden = counts.cast === 0;
     if (els.groupSets) els.groupSets.hidden = counts.sets === 0;
-    if (els.groupLight) els.groupLight.hidden = counts.light === 0;
-    if (els.rosterEmpty) {
-      els.rosterEmpty.hidden = counts.cast + counts.sets + counts.light > 0;
-    }
+    if (els.rosterEmpty) els.rosterEmpty.hidden = counts.cast + counts.sets > 0;
   }
 
   function renderSetList(host, keep, emptyText) {
@@ -3514,12 +3600,12 @@
       announce(`${item ? item.name : "これ"}を舞台から下げました。`);
     } else {
       const count = scene.pieces.filter((p) => p.type !== "performer" && p.type !== "light").length;
-      const piece = {
+      const piece = normalizePiece({
         id: nextId(), type: item ? item.kind : "block", setId,
         u: clamp(0.5 + ((count % 5) - 2) * 0.11, 0.06, 0.94),
         v: clamp(0.5 + (count % 3) * 0.09, 0.05, 0.95),
         size: 100, color: item ? item.color : state.pieceColor, name: "", facing: 0,
-      };
+      }, 0);
       scene.pieces.push(piece);
       selectedId = piece.id;
       announce(`${item ? item.name : "これ"}を舞台へ出しました。`);
@@ -4797,11 +4883,26 @@
       point.y >= rect.y && point.y <= rect.y + rect.h;
   }
 
+  /* 拾えるものは道具で変わる。明かりは物と重なって置くのが普通なので、
+   * 同じ手つきで両方を掴めるようにすると、狙ったほうが取れない。
+   * 「動かす」では物だけ、「光を動かす」では明かりだけを拾う。 */
   function hitTest(point, L) {
+    const wantLight = tool === "light";
     for (let i = sc().pieces.length - 1; i >= 0; i -= 1) {
       const piece = sc().pieces[i];
+      if ((piece.type === "light") !== wantLight) continue;
       const b = selectionBounds(piece, L);
       if (point.x >= b.x && point.x <= b.x + b.w && point.y >= b.y && point.y <= b.y + b.h) return piece;
+    }
+    return null;
+  }
+
+  // 灯体の印を掴んだか。当たる場所より先に見る（重なることがあるため）
+  function fixtureAt(point, L) {
+    const lights = sc().pieces.filter((piece) => piece.type === "light");
+    for (let i = lights.length - 1; i >= 0; i -= 1) {
+      const at = beamSource(lights[i], L);
+      if (Math.hypot(point.x - at.x, point.y - at.y) <= 13) return lights[i];
     }
     return null;
   }
@@ -4879,7 +4980,9 @@
     tool = nextTool;
     canvas.dataset.tool = tool;
     // 平面図で使うのは「動かす」と「動線」だけ
-    if (planCanvas) planCanvas.dataset.tool = tool === "route" || tool === "note" ? tool : "select";
+    if (planCanvas) {
+      planCanvas.dataset.tool = tool === "route" || tool === "note" || tool === "light" ? tool : "select";
+    }
     document.querySelectorAll("[data-stage-tool]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.stageTool === tool));
     });
@@ -4910,6 +5013,8 @@
       const deg = ((Number(piece.facing) || 0) % 360 + 360) % 360;
       els.pieceFacing.value = String(deg > 180 ? deg - 360 : deg);
       els.pieceFacing.disabled = !isPerformer;
+      // 効かないつまみは出さない。明かりや球を選ぶたび、灰色の「向き」が場所を取る
+      if (els.facingControls) els.facingControls.hidden = !isPerformer;
       if (els.facingValue) {
         els.facingValue.textContent = isPerformer ? facingLabel(piece.facing) : "―";
       }
@@ -4933,7 +5038,7 @@
   function addPiece(type) {
     checkpoint();
     const count = sc().pieces.length;
-    const piece = {
+    const piece = normalizePiece({
       id: nextId(),
       type,
       u: clamp(0.5 + ((count % 5) - 2) * 0.07, 0.06, 0.94),
@@ -4941,7 +5046,7 @@
       size: type === "light" ? 115 : 100,
       color: state.pieceColor,
       name: "",
-    };
+    }, 0);
     sc().pieces.push(piece);
     selectedId = piece.id;
     setTool("select");
@@ -4994,7 +5099,7 @@
     sc().pieces.splice(nextIndex, 0, piece);
     render();
     persistSoon();
-    announce(direction > 0 ? "一つ前へ出しました。" : "一つ後ろへ送りました。");
+    announce(direction > 0 ? "重なったとき上に乗るようにしました。" : "重なったとき下に潜るようにしました。");
   }
 
   function finishPointer(event) {
@@ -5083,6 +5188,49 @@
       pointerAction = { kind: "route", pointerId: event.pointerId, id: hit.id, el, view, moved: true, handle: "end" };
       updateInspector();
       render();
+      return;
+    }
+
+    /* 明かりを動かす。灯体の印を掴めば出どころが、明るい輪を掴めば当たる場所が動く。
+     * 二つを別々に動かせないと、斜めの明かりも、下から上への明かりも作れない。 */
+    if (tool === "light") {
+      const fixture = fixtureAt(point, L);
+      if (fixture) {
+        selectedId = fixture.id;
+        selectedNoteId = null;
+        capture(el, event.pointerId);
+        el.dataset.dragging = "true";
+        pointerAction = {
+          kind: "beam", pointerId: event.pointerId, id: fixture.id, el, view,
+          before: snapshot(), moved: false,
+        };
+        updateInspector();
+        render();
+        return;
+      }
+      const hit = hitTest(point, L);
+      selectedId = hit ? hit.id : null;
+      selectedNoteId = null;
+      updateInspector();
+      render();
+      if (!hit) return;
+      if (isLocked(hit)) {
+        announce(`${pieceLabel(hit)}には錠が掛かっています。`);
+        return;
+      }
+      const at = beamTarget(hit, placePiece(hit, L), L);
+      capture(el, event.pointerId);
+      el.dataset.dragging = "true";
+      /* 真上から落としている明かりは、灯体と当たる場所が同じ真上・真下にある。
+       * この状態で当たる場所だけ動かすと、掴むたびに勝手に斜めになる。
+       * 真下に落ちているあいだは、灯体も一緒に連れて動かす。 */
+      const b = hit.beam;
+      const linked = Math.abs(b.u - hit.u) < 0.005 && Math.abs(b.v - hit.v) < 0.005;
+      pointerAction = {
+        kind: "drag", pointerId: event.pointerId, id: hit.id, el, view,
+        offsetX: point.x - at.x, offsetY: point.y - at.y,
+        before: snapshot(), moved: false, linked,
+      };
       return;
     }
 
@@ -5224,6 +5372,29 @@
       return;
     }
 
+    if (pointerAction.kind === "beam") {
+      const piece = sc().pieces.find((candidate) => candidate.id === pointerAction.id);
+      if (!piece) return;
+      if (!pointerAction.moved) {
+        recordBefore(pointerAction.before);
+        pointerAction.moved = true;
+      }
+      /* 灯体は宙にあるので、画面の点をそのまま床の座標に読み替えると
+       * 高さのぶんだけ奥へずれる。持ち上げたぶんを戻してから読む。 */
+      const b = piece.beam;
+      let x = point.x;
+      let y = point.y;
+      if (!L.plan) {
+        const guide = place(b.u, b.v, L);
+        y = L.tilt(L.untilt(point.y) + b.h * perMetre(guide, L).y);
+      }
+      const next = fromScreen(x, y, L);
+      b.u = next.u;
+      b.v = next.v;
+      render();
+      return;
+    }
+
     if (pointerAction.kind === "drag") {
       const piece = sc().pieces.find((candidate) => candidate.id === pointerAction.id);
       if (!piece) return;
@@ -5232,9 +5403,21 @@
         pointerAction.moved = true;
         bringToTop(piece);   // 動かしたものが、重なった相手の上に乗る
       }
-      const next = fromScreen(point.x - pointerAction.offsetX, point.y - pointerAction.offsetY, L);
+      let px = point.x - pointerAction.offsetX;
+      let py = point.y - pointerAction.offsetY;
+      if (piece.type === "light" && !L.plan && piece.beam && piece.beam.toH) {
+        // 宙で受けている明かりは、その高さのぶんを戻してから床の座標に読む
+        const guide = placePiece(piece, L);
+        py = L.tilt(L.untilt(py) + piece.beam.toH * perMetre(guide, L).y);
+      }
+      const next = fromScreen(px, py, L);
       piece.u = next.u;
       piece.v = next.v;
+      // 真下に落ちている明かりは、灯体もついてくる
+      if (pointerAction.linked && piece.type === "light" && piece.beam) {
+        piece.beam.u = next.u;
+        piece.beam.v = next.v;
+      }
       render();
       return;
     }
@@ -5363,6 +5546,12 @@
     addSetItem(SET_KINDS[kind] ? kind : "block", els.rosterName);
   };
   if (els.rosterAdd) els.rosterAdd.addEventListener("click", addFromRoster);
+  if (els.lightAdd) els.lightAdd.addEventListener("click", () => addSetItem("light", els.lightName));
+  if (els.lightName) {
+    els.lightName.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); addSetItem("light", els.lightName); }
+    });
+  }
   if (els.rosterName) {
     els.rosterName.addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); addFromRoster(); }
@@ -5371,6 +5560,44 @@
   // 平面図のバーからも動線の入り切りができる。平面を見ながら手を伸ばす距離を短くする
   if (els.planRoute) {
     els.planRoute.addEventListener("click", () => setTool(tool === "route" ? "select" : "route"));
+  }
+  /* 明かりの高さ。灯体を下げて当たる高さを上げれば、下から上への明かりになる。 */
+  if (els.beamFrom) {
+    els.beamFrom.addEventListener("input", (e) => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== "light") return;
+      piece.beam.h = clamp(finite(e.target.value, BEAM_DEFAULT_H), 0, BEAM_MAX_H);
+      els.beamFromValue.textContent = `${piece.beam.h.toFixed(1)}m`;
+      render();
+      persistSoon();
+    });
+    els.beamFrom.addEventListener("pointerdown", checkpoint);
+  }
+  if (els.beamTo) {
+    els.beamTo.addEventListener("input", (e) => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== "light") return;
+      piece.beam.toH = clamp(finite(e.target.value, 0), 0, BEAM_MAX_H);
+      els.beamToValue.textContent = piece.beam.toH < 0.05 ? "床" : `${piece.beam.toH.toFixed(1)}m`;
+      render();
+      persistSoon();
+    });
+    els.beamTo.addEventListener("pointerdown", checkpoint);
+  }
+  if (els.beamReset) {
+    els.beamReset.addEventListener("click", () => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== "light") return;
+      checkpoint();
+      piece.beam.u = piece.u;
+      piece.beam.v = piece.v;
+      piece.beam.toH = 0;
+      piece.beam.h = BEAM_DEFAULT_H;
+      updateInspector();
+      render();
+      persistSoon();
+      announce("真上から床へ落とす明かりに戻しました。");
+    });
   }
   if (els.pieceLock) {
     els.pieceLock.addEventListener("click", () => {
@@ -5572,11 +5799,62 @@
           : `名前・色・身長は「${member.name}」で決めます（${member.heightCm}cm）。`;
       }
     }
+    if (els.beamControls) {
+      const isLight = Boolean(piece && piece.type === "light");
+      els.beamControls.hidden = !isLight;
+      if (isLight) {
+        const b = piece.beam || (piece.beam = normalizeBeam(null, piece));
+        if (document.activeElement !== els.beamFrom) els.beamFrom.value = String(b.h);
+        if (document.activeElement !== els.beamTo) els.beamTo.value = String(b.toH);
+        els.beamFromValue.textContent = `${b.h.toFixed(1)}m`;
+        els.beamToValue.textContent = b.toH < 0.05 ? "床" : `${b.toH.toFixed(1)}m`;
+      }
+    }
     if (els.routeClear) els.routeClear.hidden = !(piece && piece.route);
-    if (els.pieceLock) {
+    /* 明かりの高さ。灯体を下げて当たる高さを上げれば、下から上への明かりになる。 */
+  if (els.beamFrom) {
+    els.beamFrom.addEventListener("input", (e) => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== "light") return;
+      piece.beam.h = clamp(finite(e.target.value, BEAM_DEFAULT_H), 0, BEAM_MAX_H);
+      els.beamFromValue.textContent = `${piece.beam.h.toFixed(1)}m`;
+      render();
+      persistSoon();
+    });
+    els.beamFrom.addEventListener("pointerdown", checkpoint);
+  }
+  if (els.beamTo) {
+    els.beamTo.addEventListener("input", (e) => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== "light") return;
+      piece.beam.toH = clamp(finite(e.target.value, 0), 0, BEAM_MAX_H);
+      els.beamToValue.textContent = piece.beam.toH < 0.05 ? "床" : `${piece.beam.toH.toFixed(1)}m`;
+      render();
+      persistSoon();
+    });
+    els.beamTo.addEventListener("pointerdown", checkpoint);
+  }
+  if (els.beamReset) {
+    els.beamReset.addEventListener("click", () => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== "light") return;
+      checkpoint();
+      piece.beam.u = piece.u;
+      piece.beam.v = piece.v;
+      piece.beam.toH = 0;
+      piece.beam.h = BEAM_DEFAULT_H;
+      updateInspector();
+      render();
+      persistSoon();
+      announce("真上から床へ落とす明かりに戻しました。");
+    });
+  }
+  if (els.pieceLock) {
       const locked = isLocked(piece);
       els.pieceLock.setAttribute("aria-pressed", String(locked));
-      els.pieceLock.textContent = locked ? "錠を外す" : "動かないようにする";
+      const mark = els.pieceLock.querySelector(".stage-lock-mark");
+      if (mark) mark.textContent = locked ? "🔒" : "🔓";
+      els.pieceLock.lastChild.textContent = locked ? "錠を外す" : "動かないようにする";
       els.pieceLock.title = owner
         ? `「${owner.name}」の錠。掛けているあいだ、どの場面でも動きません。`
         : "掛けているあいだ、掴んでも動きません。";

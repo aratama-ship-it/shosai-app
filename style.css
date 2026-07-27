@@ -5939,6 +5939,19 @@ body.is-panel-dragging {
 }
 
 .stage-modal-body input[type="range"] { width: 100%; }
+
+/* パネルの中のつまみ。既定のままだと129pxで、列の半分しか使わない */
+.stage-panel-body input[type="range"] {
+  width: 100%;
+  display: block;
+  margin: 2px 0 4px;
+}
+
+/* 錠は鍵の絵で統一する（一覧の行と同じ形） */
+.stage-lock-mark {
+  margin-right: 6px;
+  font-size: 11px;
+}
 .stage-modal-body input[type="color"] { width: 46px; height: 28px; padding: 0; border: 1px solid var(--line-dark); background: none; }
 
 .stage-profile-hint {
