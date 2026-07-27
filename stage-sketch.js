@@ -43,6 +43,16 @@
     bench: "ベンチ",
     stool: "スツール",
     wall: "壁",
+    trapeze: "トラピーズ",
+    cyrwheel: "シルホイール",
+    pole: "チャイニーズポール",
+    teeter: "ティーターボード",
+    tissue: "エアリアルティシュー",
+    wire: "綱渡り",
+    suitcase: "スーツケース",
+    trampoline: "トランポリン",
+    cane: "ハンドバランス用cane",
+    car: "車",
     sphere: "球",
     light: "光",
   };
@@ -55,6 +65,8 @@
     bench: 0.45,
     stool: 0.62,
     wall: 2.5,
+    trapeze: 0.06, cyrwheel: 1.9, pole: 6, teeter: 0.75, tissue: 7,
+    wire: 1.2, suitcase: 0.44, trampoline: 0.95, cane: 0.75, car: 1.45,
     sphere: 1.2,
     light: 2.5,
   };
@@ -66,6 +78,18 @@
     chair: { h: 0.9 },                     // 背もたれの上端まで。幅と奥行きはここから決まる
     bench: { w: 1.8, d: 0.4, h: 0.45 },    // 横長のベンチ。座面までの高さ
     stool: { w: 0.36, d: 0.36, h: 0.62 },  // スツール。座面までの高さ
+    /* サーカスの道具。寸法は実物のおよその値。
+     * トラピーズは吊りバーの幅、ティシューは布の長さ、綱は張る長さ。 */
+    trapeze: { w: 0.7, d: 0.06, h: 0.06 },
+    cyrwheel: { dia: 1.9 },
+    pole: { w: 0.06, d: 0.06, h: 6 },
+    teeter: { w: 3.6, d: 0.45, h: 0.75 },
+    tissue: { w: 0.3, d: 0.06, h: 7 },
+    wire: { w: 6, d: 0.06, h: 1.2 },
+    suitcase: { w: 0.62, d: 0.24, h: 0.44 },
+    trampoline: { w: 3.05, d: 1.7, h: 0.95 },
+    cane: { w: 0.5, d: 0.3, h: 0.75 },
+    car: { w: 4.3, d: 1.8, h: 1.45 },
     // 壁は厚みを固定で持つ（舞台の壁は建て込みの板なので、厚みは決まっている）
     wall: { w: 3, d: 0.3, h: 2.5 },
     sphere: { dia: 1.2, lift: 0 },         // 直径と、床からの高さ
@@ -90,6 +114,13 @@
     wall: { w: "幅", h: "高さ" },
     bench: { h: "座面までの高さ" },
     stool: { h: "座面までの高さ" },
+    trapeze: { w: "バーの幅" },
+    pole: { h: "ポールの高さ" },
+    teeter: { w: "板の長さ", h: "支点の高さ" },
+    tissue: { h: "布の長さ", w: "布の間隔" },
+    wire: { w: "張る長さ", h: "綱の高さ" },
+    trampoline: { h: "ベッドの高さ" },
+    cane: { w: "左右の間隔", h: "cane の高さ" },
     light: { dia: "直径（床に落ちる円の広さ）" },
   };
   function dimLabel(kind, key) {
@@ -99,9 +130,16 @@
   /* 舞台セットに登録できる形。光もここに含める。登録・出し入れ・寸法の
    * 仕組みが同じなので同じ入れ物に置き、一覧だけ「光」パネルへ分けて出す。 */
   const SET_KINDS = {
-    block: "台・箱", table: "テーブル", chair: "椅子", bench: "ベンチ", stool: "スツール", wall: "壁",
-    sphere: "球", light: "光",
+    block: "台・箱", table: "テーブル", chair: "椅子", bench: "ベンチ", stool: "スツール",
+    wall: "壁", sphere: "球",
+    trapeze: "トラピーズ", cyrwheel: "シルホイール", pole: "チャイニーズポール",
+    teeter: "ティーターボード", tissue: "エアリアルティシュー", wire: "綱渡り",
+    suitcase: "スーツケース", trampoline: "トランポリン", cane: "ハンドバランス用cane",
+    car: "車",
+    light: "光",
   };
+  // 吊物にしかならない道具。床に置く形を持たない
+  const FLOWN_ONLY = { trapeze: true, tissue: true };
   const WALL_THICKNESS = 0.3;   // 壁の厚み（m）。触らせず固定で持つ
   /* 明かりの種類。仕込む場所と当てる高さが種類ごとに決まっているので、
    * 舞台へ出したときの既定値をここに持つ（出したあとは自由に動かせる）。
@@ -136,7 +174,11 @@
   };
   const LIGHT_KIND_ORDER = ["hang", "ss", "front", "floor"];
   const lightKindOf = (item) => (item && LIGHT_KINDS[item.lightKind] ? item.lightKind : "hang");
-  const SET_KIND_ORDER = ["block", "table", "chair", "bench", "stool", "wall", "sphere"];
+  const SET_KIND_ORDER = [
+    "block", "table", "chair", "bench", "stool", "wall", "sphere",
+    "trapeze", "cyrwheel", "pole", "teeter", "tissue", "wire",
+    "suitcase", "trampoline", "cane", "car",
+  ];
   /* ---------- 演者の骨格と姿勢 ----------
    * 関節を3次元（x=左右／y=上下／z=本人の正面向き）で持ち、向きの角度だけ
    * 鉛直軸まわりに回して画面へ落とす。こうすると、向きの変化・座る・逆立ちが
@@ -223,6 +265,17 @@
       anL: [-0.078, 1.18, 0.03], anR: [0.046, 1.19, -0.06],
       toL: [-0.08, 1.25, 0.06], toR: [0.044, 1.26, -0.09],
     }),
+    /* 側方宙返り（サイドフリップ）。体の左右の面で回るので、
+     * 脚は前後ではなく左右へ開く。頭が下、腰が上を通る瞬間を採る。 */
+    makePose("sideflip", "側方宙返り", {
+      head: [-0.34, 0.30, 0], neck: [-0.28, 0.38, 0],
+      shL: [-0.22, 0.46, -0.10], shR: [-0.20, 0.44, 0.10],
+      elL: [-0.34, 0.30, -0.16], elR: [-0.32, 0.28, 0.16],
+      wrL: [-0.44, 0.14, -0.20], wrR: [-0.42, 0.12, 0.20],
+      hipL: [0.02, 0.66, -0.055], hipR: [0.03, 0.65, 0.055],
+      knL: [0.26, 0.60, -0.10], anL: [0.46, 0.52, -0.12], toL: [0.53, 0.49, -0.12],
+      knR: [0.24, 0.78, 0.10], anR: [0.44, 0.86, 0.12], toR: [0.51, 0.89, 0.12],
+    }, { face: [0, -0.4, 0.9] }),
     makePose("run", "走る", {
       // 歩くより深く。前の膝を高く上げ、体をやや前へ倒す
       knR: [0.07, 0.44, 0.26], anR: [0.075, 0.24, 0.16], toR: [0.075, 0.20, 0.26],
@@ -602,7 +655,11 @@
   // 首を振れる角度。見上げる側を大きく取る（吊り物や空中の演目はそこにある）
   const TILT_UP = 34;
   const TILT_DOWN = 16;
-  const SOLID_TYPES = { block: true, table: true, chair: true, bench: true, stool: true, wall: true };
+  const SOLID_TYPES = {
+    block: true, table: true, chair: true, bench: true, stool: true, wall: true,
+    trapeze: true, cyrwheel: true, pole: true, teeter: true, tissue: true, wire: true,
+    suitcase: true, trampoline: true, cane: true, car: true,
+  };
   const CHAIR_W = 0.5;
   const CHAIR_D = 0.55;
   // その駒が床でどれだけの面積を取るか（m）。平面図と当たり判定で使う
@@ -2193,6 +2250,91 @@
       parts.push({ ox: 0, oz: 0, w: d.w, d: d.d, h: top, lift: Math.max(0, d.h - top), tint: 1 });
       return parts;
     }
+    /* ---------- サーカスの道具 ---------- */
+    if (piece.type === "trapeze") {
+      // バー一本。吊りのロープは吊物の描画（drawSolid）が引く
+      return [{ kind: "line", a: [-d.w / 2, 0.03, 0], b: [d.w / 2, 0.03, 0], w: 0.05, tone: "gear" }];
+    }
+    if (piece.type === "tissue") {
+      // 二本の布。天井から下がって床の手前で終わる
+      const drop = d.h;
+      return [
+        { kind: "line", a: [-d.w / 2, 0.02, 0], b: [-d.w / 2, drop, 0], w: 0.14, tone: "cloth" },
+        { kind: "line", a: [d.w / 2, 0.02, 0], b: [d.w / 2, drop, 0], w: 0.14, tone: "cloth" },
+      ];
+    }
+    if (piece.type === "cyrwheel") {
+      // 床に立った輪。転がる道具なので、床に触れる位置に置く
+      const r = d.dia / 2;
+      return [{ kind: "ring", c: [0, r, 0], r, w: 0.05, tone: "gear" }];
+    }
+    if (piece.type === "pole") {
+      // 床から立つ一本のポール。足元だけ台座を持つ
+      return [
+        { ox: 0, oz: 0, w: d.w * 4, d: d.d * 4, h: 0.06, lift: 0, tint: 0.8 },
+        { kind: "line", a: [0, 0.05, 0], b: [0, d.h, 0], w: d.w, tone: "gear" },
+      ];
+    }
+    if (piece.type === "teeter") {
+      // 支点の三角と、その上でかしいだ板
+      const fw = Math.max(0.3, d.w * 0.12);
+      return [
+        { ox: 0, oz: 0, w: fw, d: d.d, h: d.h * 0.8, lift: 0, tint: 0.7 },
+        { kind: "line", a: [-d.w / 2, 0.04, 0], b: [d.w / 2, d.h, 0], w: 0.09, tone: "wood" },
+      ];
+    }
+    if (piece.type === "wire") {
+      // 綱と、両端の支柱
+      return [
+        { kind: "line", a: [-d.w / 2, d.h, 0], b: [d.w / 2, d.h, 0], w: 0.035, tone: "gear" },
+        { kind: "line", a: [-d.w / 2, 0, 0], b: [-d.w / 2, d.h, 0], w: 0.06, tone: "dark" },
+        { kind: "line", a: [d.w / 2, 0, 0], b: [d.w / 2, d.h, 0], w: 0.06, tone: "dark" },
+      ];
+    }
+    if (piece.type === "suitcase") {
+      // 箱と、上の取っ手
+      return [
+        { ox: 0, oz: 0, w: d.w, d: d.d, h: d.h, lift: 0, tint: 1 },
+        { kind: "line", a: [-d.w * 0.16, d.h + 0.09, 0], b: [d.w * 0.16, d.h + 0.09, 0], w: 0.035, tone: "dark" },
+        { kind: "line", a: [-d.w * 0.16, d.h, 0], b: [-d.w * 0.16, d.h + 0.09, 0], w: 0.03, tone: "dark" },
+        { kind: "line", a: [d.w * 0.16, d.h, 0], b: [d.w * 0.16, d.h + 0.09, 0], w: 0.03, tone: "dark" },
+      ];
+    }
+    if (piece.type === "trampoline") {
+      // 枠・ベッド・脚
+      const legH = Math.max(0.1, d.h - 0.1);
+      const parts = [];
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => parts.push({
+        ox: sx * (d.w / 2 - 0.12), oz: sy * (d.d / 2 - 0.12),
+        w: 0.1, d: 0.1, h: legH, lift: 0, tint: 0.65,
+      }));
+      parts.push({ ox: 0, oz: 0, w: d.w, d: d.d, h: 0.1, lift: legH, tint: 1 });
+      return parts;
+    }
+    if (piece.type === "cane") {
+      // 二本の cane。それぞれ台座の上に立つ
+      const parts = [];
+      [-1, 1].forEach((sx) => {
+        parts.push({ ox: sx * d.w / 2, oz: 0, w: 0.16, d: 0.16, h: 0.05, lift: 0, tint: 0.7 });
+        parts.push({ kind: "line", a: [sx * d.w / 2, 0.04, 0], b: [sx * d.w / 2, d.h, 0], w: 0.05, tone: "gear" });
+        parts.push({ kind: "line", a: [sx * d.w / 2 - 0.06, d.h, 0], b: [sx * d.w / 2 + 0.06, d.h, 0], w: 0.05, tone: "gear" });
+      });
+      return parts;
+    }
+    if (piece.type === "car") {
+      // 車体と客室、両側の車輪
+      const bodyH = d.h * 0.52;
+      const wheelR = Math.min(d.h * 0.24, 0.36);
+      const parts = [
+        { ox: 0, oz: 0, w: d.w, d: d.d, h: bodyH, lift: wheelR * 0.6, tint: 1 },
+        { ox: 0, oz: -d.w * 0.04, w: d.w * 0.52, d: d.d * 0.92, h: d.h - bodyH - wheelR * 0.6, lift: bodyH + wheelR * 0.6, tint: 0.8 },
+      ];
+      [-1, 1].forEach((sx) => [-1, 1].forEach((sz) => parts.push({
+        kind: "ring", c: [sx * (d.w / 2 - wheelR * 1.1), wheelR, sz * (d.d / 2 - 0.02)],
+        r: wheelR, w: 0.12, tone: "dark",
+      })));
+      return parts;
+    }
     if (piece.type === "stool") {
       // 丸い座面と3本の脚。椅子より小さく、背もたれを持たない
       const top = clamp(d.h * 0.09, 0.025, 0.06);
@@ -2375,7 +2517,56 @@
       target.fill();
     }
 
-    parts.forEach((part) => paintBox(target, piece, L, part));
+    parts.forEach((part) => {
+      if (part.kind === "line" || part.kind === "ring") paintRigging(target, piece, L, part);
+      else paintBox(target, piece, L, part);
+    });
+    target.restore();
+  }
+
+  /* 駒の座標（左右lx・高さly・奥行きlz、メートル）を画面へ落とす。
+   * 箱の四隅と同じ道（floorPoint）を通るので、床の1m枡と遠近が一致する。 */
+  function riggingPoint(piece, lx, ly, lz, L) {
+    const rad = ((piece.facing || 0) * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const p = floorPoint(piece, lx * cos - lz * sin, lx * sin + lz * cos, L);
+    if (L.plan) return { x: p.x, y: p.y };
+    return { x: p.x, y: L.tilt(p.rawY - ly * perMetre(p, L).y) };
+  }
+
+  /* 綱・ロープ・輪など、箱では表せない部品。
+   * 舞台の道具は板とパイプと布と綱でできているので、箱だけでは足りない。 */
+  function paintRigging(target, piece, L, part) {
+    const per = perMetre(floorPoint(piece, 0, 0, L), L);
+    const width = Math.max(1, (part.w || 0.04) * per.x);
+    const tone = part.tone === "wood" ? "rgba(196,158,104,0.95)"
+      : part.tone === "cloth" ? rgba(piece.color, 0.85)
+      : part.tone === "dark" ? "rgba(38,34,30,0.9)"
+      : "rgba(214,220,226,0.9)";
+    target.save();
+    target.lineCap = part.kind === "ring" ? "butt" : "round";
+    target.lineJoin = "round";
+    target.strokeStyle = tone;
+    target.lineWidth = width;
+    target.beginPath();
+    if (part.kind === "line") {
+      const a = riggingPoint(piece, part.a[0], part.a[1], part.a[2], L);
+      const b = riggingPoint(piece, part.b[0], part.b[1], part.b[2], L);
+      target.moveTo(a.x, a.y);
+      target.lineTo(b.x, b.y);
+    } else {
+      const steps = 32;
+      for (let i = 0; i <= steps; i += 1) {
+        const t = (i / steps) * Math.PI * 2;
+        // 既定は正面に立つ輪。plane:"xz" なら床と平行に寝た輪
+        const q = part.plane === "xz"
+          ? riggingPoint(piece, part.c[0] + Math.cos(t) * part.r, part.c[1], part.c[2] + Math.sin(t) * part.r, L)
+          : riggingPoint(piece, part.c[0] + Math.cos(t) * part.r, part.c[1] + Math.sin(t) * part.r, part.c[2], L);
+        if (i) target.lineTo(q.x, q.y); else target.moveTo(q.x, q.y);
+      }
+    }
+    target.stroke();
     target.restore();
   }
 
@@ -4207,10 +4398,12 @@
     // 吊物にしたときのために、地上高の場所を作っておく（既定は床）
     if (SOLID_TYPES[kind] && dims && dims.lift === undefined) dims.lift = 0;
     if (kind === "light") dims.dia = LIGHT_KINDS[lk].dia;
+    const flownOnly = Boolean(FLOWN_ONLY[kind]);
+    if (flownOnly && dims) dims.lift = kind === "tissue" ? 7.4 : 2.6;
     const item = {
       id: rid("set"), kind, name: raw.slice(0, 24),
       color: kind === "light" ? "#d3ac59" : nextPieceColor(state.project.sets.length + 2),
-      dims, note: "", locked: false, flown: false, wires: 2, framed: false, lightKind: lk,
+      dims, note: "", locked: false, flown: flownOnly, wires: 2, framed: false, lightKind: lk,
     };
     state.project.sets.push(item);
     placeSetPiece(item);
@@ -4653,7 +4846,13 @@
     if (els.setInfoFlownRow) {
       // 吊れるのは形のあるもの（台・テーブル・椅子・壁）だけ
       const canFly = Boolean(SOLID_TYPES[item.kind]);
+      const onlyFlown = Boolean(FLOWN_ONLY[item.kind]);
       els.setInfoFlownRow.hidden = !canFly;
+      if (els.setInfoFlown) {
+        // 吊物にしかならない道具は、床置きへ戻せない
+        els.setInfoFlown.disabled = onlyFlown;
+        els.setInfoFlownRow.title = onlyFlown ? "この道具は吊物にしかなりません" : "";
+      }
       if (els.setInfoFlownNote) els.setInfoFlownNote.hidden = !canFly || !item.flown;
       if (els.setInfoFlown) els.setInfoFlown.checked = Boolean(item.flown);
       if (els.setInfoFramedRow) {
