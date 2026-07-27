@@ -441,7 +441,7 @@
     select: "演者や物を選び、舞台の上で動かします。",
     paint: "奥の背景面を指やマウスで塗ります。",
     erase: "背景に描いた線だけを消します。",
-    route: "平面図で演者を掴み、離した所が行き先になります。真ん中の丸を引くと動線が曲がります。",
+    route: "平面図で演者や物、明かりを掴み、離した所が行き先になります。真ん中の丸を引くと動線が曲がります。",
     note: "何もない所を押すとメモを貼れます。貼ったメモは掴んで動かせます。",
     light: "明かりだけを動かします。丸い印が灯体、明るい輪が当たる場所です。",
   };
@@ -4935,6 +4935,8 @@
     let moved = 0;
     copy.pieces.forEach((piece) => {
       if (!piece.route) return;
+      /* 動かすのは駒の居場所だけ。明かりの場合、これは「当てる先」であって
+       * 灯体（beam.u/v）ではない。灯体はその場に残り、光が振られる。 */
       piece.u = clamp(piece.route.u, 0, 1);
       piece.v = clamp(piece.route.v, 0, 1);
       piece.route = null;
@@ -5287,9 +5289,12 @@
    * 「動かす」では物だけ、「光を動かす」では明かりだけを拾う。 */
   function hitTest(point, L) {
     const wantLight = tool === "light";
+    /* 動線は明かりにも引ける。灯体はその場に残したまま、
+     * 当てる先だけが動く（追い掛ける明かり）。 */
+    const anyKind = tool === "route";
     for (let i = sc().pieces.length - 1; i >= 0; i -= 1) {
       const piece = sc().pieces[i];
-      if ((piece.type === "light") !== wantLight) continue;
+      if (!anyKind && (piece.type === "light") !== wantLight) continue;
       const b = selectionBounds(piece, L);
       if (point.x >= b.x && point.x <= b.x + b.w && point.y >= b.y && point.y <= b.y + b.h) return piece;
     }
@@ -5597,7 +5602,7 @@
         return;
       }
       const hit = hitTest(point, L);
-      if (!hit) { announce("動かしたい演者か物を掴んでください。"); return; }
+      if (!hit) { announce("動かしたい演者・物・明かりを掴んでください。"); return; }
       selectedId = hit.id;
       checkpoint();
       hit.route = { u: hit.u, v: hit.v, bu: hit.u, bv: hit.v };
