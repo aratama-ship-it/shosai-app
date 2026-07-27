@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>舞台スケッチ — 制作の書斎</title>
+<link rel="stylesheet" href="style.css?v=99">
+<style>
+  /* 単独ページでは、他の画面へ行く帯を持たない。
+     その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
+  body { padding-top: 0; }
+  .spine { display: none; }
+  .stage-standalone-note {
+    margin: 0 auto 10px;
+    padding: 8px 18px 0;
+    max-width: 1600px;
+    color: rgba(240, 231, 214, 0.4);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+  }
+</style>
+</head>
+<body class="is-standalone">
+
+<p class="stage-standalone-note">舞台スケッチ（テスト版） — 描いたものはこの端末のブラウザにだけ保存されます。</p>
+
+<main id="view-stage" class="view">
+    <section class="stage-sketch" aria-labelledby="stage-sketch-title">
+      <header class="stage-sketch-head">
+        <div>
+          <p class="stage-sketch-kicker">STAGE IMAGE STUDY</p>
+          <h1 id="stage-sketch-title">舞台スケッチ</h1>
+        </div>
+        <div class="stage-history-actions">
+          <button type="button" id="stage-undo" title="⌘Z（WindowsはCtrl+Z）" disabled>一つ戻す</button>
+          <button type="button" id="stage-redo" title="⇧⌘Z（WindowsはCtrl+Shift+Z）" disabled>やり直す</button>
+          <button type="button" class="stage-lang" id="stage-lang" aria-pressed="false"
+                  title="日本語 / English">EN</button>
+          <button type="button" class="stage-export" id="stage-export">画像を書き出す</button>
+        </div>
+      </header>
+
+      <div class="stage-sketch-grid">
+        <aside class="stage-toolbox stage-col" data-col="left" id="stage-col-left" aria-label="左の道具列">
+          <section class="stage-panel stage-project-section" data-panel="project" data-title="ショー">
+            <div class="stage-panel-body">
+            <input id="stage-project-title" class="stage-text-input" type="text"
+                   maxlength="60" placeholder="無題のショー" aria-label="ショーの名前">
+            <div class="stage-version-row">
+              <input id="stage-version-label" class="stage-text-input stage-version-input" type="text"
+                     maxlength="16" placeholder="v1" aria-label="バージョン名">
+              <button type="button" id="stage-version-copy" class="btn-quiet">複製</button>
+            </div>
+            <p class="stage-version-note" id="stage-version-note"></p>
+            <div class="stage-io-row">
+              <button type="button" id="stage-shows-open" class="btn-quiet">ショー一覧</button>
+              <button type="button" id="stage-show-new" class="btn-quiet">新しいショー</button>
+            </div>
+            <div class="stage-io-row">
+              <button type="button" id="stage-export-json" class="btn-quiet">書き出す</button>
+              <label class="btn-quiet stage-import-label">
+                読み込む<input type="file" id="stage-import-json" accept="application/json" hidden>
+              </label>
+            </div>
+            </div>
+          </section>
+
+          <section class="stage-panel stage-venue-section" data-panel="venue" data-title="劇場を選ぶ">
+            <div class="stage-panel-body">
+            <div class="stage-field-row">
+              <label class="stage-field-label" for="stage-venue-select">形式</label>
+              <select id="stage-venue-select" class="stage-select"></select>
+            </div>
+            <div class="stage-field-row">
+              <label class="stage-field-label" for="stage-size-select">規模</label>
+              <select id="stage-size-select" class="stage-select"></select>
+            </div>
+            <div class="stage-dim-row" id="stage-venue-dims">
+              <label class="stage-dim-cell">
+                <span id="stage-venue-w-label">間口</span>
+                <input type="number" id="stage-venue-w" min="3" max="60" step="0.1"><i>m</i>
+              </label>
+              <label class="stage-dim-cell" id="stage-venue-d-cell">
+                <span>奥行</span>
+                <input type="number" id="stage-venue-d" min="3" max="60" step="0.1"><i>m</i>
+              </label>
+              <label class="stage-dim-cell">
+                <span>高さ</span>
+                <input type="number" id="stage-venue-h" min="2" max="40" step="0.1"><i>m</i>
+              </label>
+            </div>
+            <button type="button" class="stage-minor-action" id="stage-venue-reset">規模のとおりに戻す</button>
+            <p class="stage-venue-scale" id="stage-venue-scale"></p>
+            </div>
+          </section>
+          <section class="stage-panel" data-panel="cast" data-title="出るもの">
+            <div class="stage-panel-body">
+              <p class="stage-cast-hint">この舞台に出る演者と舞台セットを、まとめてここに登録します。
+                寸法や色はここで決め、場面ごとに舞台の上か裏かを切り替えます。明かりは別の項目です。追加したものはその場面の舞台に出ます。</p>
+              <div class="stage-cast-add stage-roster-add">
+                <input id="stage-roster-name" class="stage-text-input" type="text" maxlength="24"
+                       placeholder="名前を入れて追加" aria-label="名前">
+                <select id="stage-roster-kind" class="stage-select" aria-label="種類">
+                  <option value="performer">演者</option>
+                  <option value="block">台・箱</option>
+                  <option value="table">テーブル</option>
+                  <option value="chair">椅子</option>
+                  <option value="bench">ベンチ</option>
+                  <option value="stool">スツール</option>
+                  <option value="trapeze">トラピーズ（吊物）</option>
+                  <option value="cyrwheel">シルホイール</option>
+                  <option value="pole">チャイニーズポール</option>
+                  <option value="teeter">ティーターボード</option>
+                  <option value="tissue">エアリアルティシュー（吊物）</option>
+                  <option value="wire">綱渡り</option>
+                  <option value="suitcase">スーツケース</option>
+                  <option value="trampoline">トランポリン</option>
+                  <option value="cane">ハンドバランス用cane</option>
+                  <option value="car">車</option>
+                  <option value="wall">壁</option>
+                  <option value="sphere">球</option>
+                </select>
+                <button type="button" id="stage-roster-add" class="btn-quiet">追加</button>
+              </div>
+              <p class="stage-cast-empty" id="stage-roster-empty">まだ何も登録していません。名前と種類を選んで追加してください。</p>
+              <div class="stage-roster-group" id="stage-group-cast">
+                <p class="stage-roster-head">演者</p>
+                <div class="stage-cast-list" id="stage-cast-list"></div>
+              </div>
+              <div class="stage-roster-group" id="stage-group-sets">
+                <p class="stage-roster-head">舞台セット</p>
+                <div class="stage-cast-list" id="stage-set-list"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="stage-panel" data-panel="rigs" data-title="装置の型">
+            <div class="stage-panel-body">
+              <p class="stage-cast-hint">いまの舞台装置の並びに名前をつけて残します。別の場面で呼び出したり、いまの並びへ足したりできます。演者は含みません。</p>
+              <div class="stage-cast-add">
+                <input id="stage-rig-name" class="stage-text-input" type="text" maxlength="24"
+                       placeholder="名前を入れて残す" aria-label="装置の型の名前">
+                <button type="button" id="stage-rig-save" class="btn-quiet">残す</button>
+              </div>
+              <div class="stage-cast-list" id="stage-rig-list"></div>
+            </div>
+          </section>
+
+          <section class="stage-panel" data-panel="light" data-title="光">
+            <div class="stage-panel-body">
+              <p class="stage-cast-hint">明かりは、どこから出てどこへ落ちるかを持ちます。
+                種類ごとに仕込む場所と当てる高さの既定値が入ります。
+                「光を動かす」に切り替えると、灯体の丸い印と、当たる輪をそれぞれ掴んで動かせます。動線を引くと、灯体はそのままで当たる先だけが動きます。</p>
+              <div class="stage-cast-add stage-roster-add">
+                <input id="stage-light-name" class="stage-text-input" type="text" maxlength="24"
+                       placeholder="名前を入れて追加" aria-label="明かりの名前">
+                <select id="stage-light-kind" class="stage-select" aria-label="明かりの種類">
+                  <option value="hang">吊り（バトンから真下へ）</option>
+                  <option value="ss">SS（袖から横切って）</option>
+                  <option value="front">前明かり（客席の上から顔へ）</option>
+                  <option value="floor">転がし（床置きから体へ）</option>
+                </select>
+                <button type="button" id="stage-light-add" class="btn-quiet">追加</button>
+              </div>
+              <div class="stage-cast-list" id="stage-light-list"></div>
+            </div>
+          </section>
+
+          <section class="stage-panel" data-panel="background" data-title="背景" id="stage-bg-section">
+            <div class="stage-panel-body">
+            <label class="stage-control-label" for="stage-bg-color">地の色</label>
+            <div class="stage-color-row">
+              <input type="color" id="stage-bg-color" value="#40362d" aria-label="背景の地の色">
+              <div class="stage-swatches" aria-label="背景の色見本">
+                <button type="button" data-stage-bg="#40362d" style="--stage-swatch:#40362d" aria-label="焦げ茶"></button>
+                <button type="button" data-stage-bg="#1c2630" style="--stage-swatch:#1c2630" aria-label="夜の青"></button>
+                <button type="button" data-stage-bg="#6d6657" style="--stage-swatch:#6d6657" aria-label="灰褐色"></button>
+                <button type="button" data-stage-bg="#d7c9ad" style="--stage-swatch:#d7c9ad" aria-label="明るい生成り"></button>
+              </div>
+            </div>
+            <label class="stage-control-label" for="stage-paint-color">塗る色</label>
+            <div class="stage-color-row">
+              <input type="color" id="stage-paint-color" value="#efe7d6" aria-label="背景を塗る色">
+              <div class="stage-swatches" aria-label="筆の色見本">
+                <button type="button" data-stage-paint-color="#efe7d6" style="--stage-swatch:#efe7d6" aria-label="生成り"></button>
+                <button type="button" data-stage-paint-color="#a84b26" style="--stage-swatch:#a84b26" aria-label="錆色"></button>
+                <button type="button" data-stage-paint-color="#77865f" style="--stage-swatch:#77865f" aria-label="苔色"></button>
+                <button type="button" data-stage-paint-color="#202b34" style="--stage-swatch:#202b34" aria-label="濃い青灰色"></button>
+              </div>
+            </div>
+            <label class="stage-control-label stage-range-label" for="stage-brush-size">
+              筆の太さ <span id="stage-brush-value">42</span>
+            </label>
+            <input type="range" id="stage-brush-size" min="12" max="120" step="2" value="42">
+            <button type="button" class="stage-minor-action" id="stage-clear-paint">背景の塗りだけ消す</button>
+            </div>
+          </section>
+        </aside>
+
+        <section class="stage-board-column stage-col-center" data-col="center" id="stage-col-center" aria-label="舞台面">
+          <section class="stage-panel stage-scenes" data-panel="scenes" data-title="場面" aria-label="場面の一覧">
+            <div class="stage-panel-body">
+              <div class="stage-scene-move">
+                <button type="button" id="stage-scene-prev" class="btn-quiet" title="前の場面へ（↑）">◀ 前の場面</button>
+                <button type="button" id="stage-scene-next" class="btn-quiet" title="次の場面へ（↓）">次の場面 ▶</button>
+                <label class="stage-toggle stage-anim-toggle" title="次の場面へ進むとき、動線に沿って動かして見せます">
+                  <input type="checkbox" id="stage-anim-scenes" checked>
+                  <span>転換を動かす</span>
+                </label>
+                <label class="stage-anim-speed" title="転換にかける時間">
+                  <input type="range" id="stage-anim-ms" min="0.2" max="3" step="0.05" value="0.62">
+                  <span id="stage-anim-ms-value">0.6秒</span>
+                </label>
+              </div>
+              <div class="stage-scene-actions">
+                <button type="button" id="stage-scene-add" class="btn-quiet">場面を足す</button>
+                <button type="button" id="stage-scene-add-rig" class="btn-quiet">装置ごと足す</button>
+                <button type="button" id="stage-scene-section" class="btn-quiet">セクション</button>
+                <button type="button" id="stage-scene-dup" class="btn-quiet">複製</button>
+                <button type="button" id="stage-scene-del" class="btn-quiet">削除</button>
+              </div>
+            </div>
+            <div class="stage-scene-list" id="stage-scene-list"></div>
+            <div class="stage-scene-resize" id="stage-scene-resize" role="separator"
+                 aria-label="場面の欄の高さを変える" title="上下に引くと高さが変わります"></div>
+          </section>
+
+          <div class="stage-center-bar">
+            <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
+              <button type="button" data-stage-tool="select" aria-pressed="true">動かす</button>
+              <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
+              <button type="button" data-stage-tool="light" aria-pressed="false">光を動かす</button>
+              <button type="button" data-stage-tool="erase" aria-pressed="false">塗りを消す</button>
+            </div>
+            <button type="button" class="stage-hint-help" id="stage-tool-help"
+                    aria-pressed="false" aria-label="いまの道具の説明を出す" title="いまの道具の説明">?</button>
+            <p class="stage-tool-hint" id="stage-tool-hint" hidden>演者や物を選び、舞台の上で動かします。</p>
+            <div class="stage-view-switch stage-bar-right" role="group" aria-label="どの絵を出すか">
+              <button type="button" data-show-view="front">正面</button>
+              <button type="button" data-show-view="plan">平面</button>
+              <button type="button" data-show-view="both">両方</button>
+            </div>
+            <label class="stage-toggle stage-name-toggle">
+              <input type="checkbox" id="stage-show-names" checked>
+              <span>演者名</span>
+            </label>
+            <label class="stage-toggle stage-name-toggle">
+              <input type="checkbox" id="stage-show-set-names" checked>
+              <span>装置名</span>
+            </label>
+            <button type="button" id="stage-swap-center" class="btn-quiet">正面と平面を入れ替える</button>
+          </div>
+          <div class="stage-canvas-stack" id="stage-canvas-stack">
+            <div class="stage-board-frame" id="stage-front-cell">
+              <div class="stage-canvas-bar">
+                <p class="stage-canvas-caption" id="stage-front-caption">正面</p>
+                <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-front-zoom"
+                        title="等倍に戻す" hidden>1.0× ⟲</button>
+                <button type="button" class="stage-canvas-tool" id="stage-front-note"
+                        aria-pressed="false">メモを貼る</button>
+                <label class="stage-canvas-toggle" id="stage-seatmap-toggle">
+                  <input type="checkbox" id="stage-show-seatmap" checked>
+                  <span>見る位置の図</span>
+                </label>
+                <button type="button" class="stage-canvas-close" data-toggle-view="front"
+                        aria-expanded="true" aria-label="正面の絵を閉じる">▾</button>
+              </div>
+              <div class="stage-canvas-inner" id="stage-front-inner">
+              <section class="stage-seat-strip" id="stage-seat-section">
+              <div class="stage-seat-list" id="stage-seat-list" role="group" aria-label="客席の位置"></div>
+          </section>
+
+              <div class="stage-canvas-wrap">
+                <div class="stage-depth-label stage-depth-back" id="stage-depth-back">奥・背景</div>
+                <canvas id="stage-canvas" width="1280" height="720" tabindex="0"
+                        role="img" aria-label="演者と物を配置し、背景を塗れる正面から見た舞台"></canvas>
+                <div class="stage-depth-label stage-depth-front" id="stage-depth-front">手前・客席側</div>
+              </div>
+              </div>
+            </div>
+            <div class="stage-board-frame" id="stage-plan-cell">
+              <div class="stage-canvas-bar">
+                <p class="stage-canvas-caption">平面（上から）</p>
+                <button type="button" class="stage-canvas-tool" id="stage-plan-route"
+                        aria-pressed="false">動線を描く</button>
+                <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-plan-zoom"
+                        title="等倍に戻す" hidden>1.0× ⟲</button>
+                <button type="button" class="stage-canvas-tool" id="stage-plan-note"
+                        aria-pressed="false">メモを貼る</button>
+                <label class="stage-canvas-toggle" title="宙に吊ってあるものも平面に出す">
+                  <input type="checkbox" id="stage-show-flown">
+                  <span>吊物</span>
+                </label>
+                <button type="button" class="stage-canvas-tool" id="stage-route-clear" hidden>動線を消す</button>
+                <button type="button" class="stage-canvas-close" data-toggle-view="plan"
+                        aria-expanded="true" aria-label="平面の絵を閉じる">▾</button>
+              </div>
+              <div class="stage-canvas-inner" id="stage-plan-inner">
+              <div class="stage-canvas-wrap">
+                <div class="stage-depth-label stage-depth-back">奥（背面）</div>
+                <canvas id="stage-plan-canvas" width="1280" height="720" tabindex="0"
+                        role="img" aria-label="舞台と客席を上から見た平面図"></canvas>
+                <div class="stage-depth-label stage-depth-front">手前（客席側）</div>
+              </div>
+              </div>
+            </div>
+          </div>
+          <p class="stage-canvas-help" hidden>上下で奥行き、左右で立ち位置を決めます。選択中は矢印キーでも動かせます。</p>
+        </section>
+
+        <aside class="stage-inspector stage-col" data-col="right" id="stage-col-right" aria-label="右の道具列">
+          <section class="stage-panel" data-panel="inspector" data-title="選んだもの">
+            <div class="stage-panel-body">
+            <p class="stage-selection-empty" id="stage-selection-empty">舞台の上で選ぶと、姿勢・向き・重なりを変えられます。名前・色・寸法は「出るもの」の一覧で決めます。</p>
+            <div id="stage-selection-controls" hidden>
+              <p class="stage-selected-name" id="stage-selected-name"></p>
+              <label class="stage-control-label" for="stage-piece-pose">姿勢</label>
+              <button type="button" id="stage-piece-pose" class="stage-pose-button">
+                <span id="stage-pose-label">立つ</span><span aria-hidden="true">▸</span>
+              </button>
+              <div id="stage-facing-controls">
+                <label class="stage-control-label stage-range-label" for="stage-piece-facing">
+                  向き <span id="stage-facing-value">客席</span>
+                </label>
+                <input type="range" id="stage-piece-facing" min="-180" max="180" step="15" value="0">
+                <p class="stage-range-scale"><span>背中</span><span>客席</span><span>背中</span></p>
+              </div>
+              <div id="stage-lift-controls" hidden>
+                <label class="stage-control-label stage-range-label" for="stage-piece-lift">
+                  地上高 <span id="stage-piece-lift-value">250cm</span>
+                </label>
+                <input type="range" id="stage-piece-lift" min="0" max="10" step="0.05" value="2.5">
+              </div>
+              <div id="stage-beam-controls" hidden>
+                <label class="stage-control-label stage-range-label" for="stage-beam-dia">
+                  明かりの直径 <span id="stage-beam-dia-value">400cm</span>
+                </label>
+                <input type="range" id="stage-beam-dia" min="0.3" max="20" step="0.05" value="4">
+                <p class="stage-range-scale"><span>光源の位置</span></p>
+                <label class="stage-control-label stage-range-label" for="stage-beam-u">
+                  左右 <span id="stage-beam-u-value">中央</span>
+                </label>
+                <input type="range" id="stage-beam-u" min="-0.2" max="1.2" step="0.005" value="0.5">
+                <label class="stage-control-label stage-range-label" for="stage-beam-v">
+                  奥行き <span id="stage-beam-v-value">奥から4.5m</span>
+                </label>
+                <input type="range" id="stage-beam-v" min="-0.2" max="1.2" step="0.005" value="0.6">
+                <label class="stage-control-label stage-range-label" for="stage-beam-from">
+                  灯体の高さ <span id="stage-beam-from-value">6.0m</span>
+                </label>
+                <input type="range" id="stage-beam-from" min="0" max="18" step="0.1" value="6">
+                <label class="stage-control-label stage-range-label" for="stage-beam-to">
+                  当たる高さ <span id="stage-beam-to-value">床</span>
+                </label>
+                <input type="range" id="stage-beam-to" min="0" max="18" step="0.1" value="0">
+                <button type="button" class="stage-minor-action" id="stage-beam-reset">真上から落とす</button>
+              </div>
+              <p class="stage-dims-note" id="stage-dims-from-set" hidden></p>
+              <div class="stage-action-row">
+                <button type="button" class="stage-icon-action stage-lock-action" id="stage-piece-lock"
+                        aria-pressed="false" aria-label="動かないようにする">🔓</button>
+                <button type="button" class="stage-icon-action" id="stage-duplicate">複製</button>
+                <button type="button" class="stage-icon-action" id="stage-open-setinfo" hidden>寸法</button>
+              </div>
+              <button type="button" class="stage-delete" id="stage-delete">舞台から外す</button>
+            </div>
+            </div>
+          </section>
+
+          <section class="stage-panel stage-save-note" data-panel="save" data-title="保存">
+            <div class="stage-panel-body">
+            <h2>保存</h2>
+            <p id="stage-save-status">変更はこの端末のブラウザ内へ自動保存します。</p>
+            <button type="button" class="stage-minor-action" id="stage-clear">舞台を空にする</button>
+          </section>
+        </aside>
+      </div>
+
+      <p class="stage-boundary-note">これは構図・色・距離感を考えるための2D習作です。舞台機構、リギング、安全距離、施工寸法を決める図面ではありません。</p>
+      <p class="visually-hidden" id="stage-live" aria-live="polite"></p>
+    </section>
+  </main>
+
+<div class="stage-modal-backdrop" id="stage-profile-backdrop" hidden></div>
+<div class="stage-modal" id="stage-profile" role="dialog" aria-modal="true"
+     aria-labelledby="stage-profile-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-profile-title">演者プロフィール</h2>
+    <button type="button" class="stage-modal-close" id="stage-profile-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <label class="stage-control-label" for="stage-profile-name">名前</label>
+    <input id="stage-profile-name" class="stage-text-input" type="text" maxlength="24">
+
+    <label class="stage-control-label" for="stage-profile-height">
+      身長 <span id="stage-profile-height-value">165</span> cm
+    </label>
+    <input type="range" id="stage-profile-height" min="140" max="200" step="1" value="165">
+    <p class="stage-profile-hint">舞台の上での見え方に効きます。同じ舞台でも、身長が違えば大きさが変わります。</p>
+
+    <label class="stage-control-label" for="stage-profile-color">色</label>
+    <input type="color" id="stage-profile-color" value="#a84b26">
+
+    <label class="stage-control-label" for="stage-profile-note">メモ</label>
+    <textarea id="stage-profile-note" class="stage-text-input" rows="3" maxlength="200"
+              placeholder="役どころ、得意な技、注意点など"></textarea>
+  </div>
+</div>
+
+<div class="stage-modal-backdrop" id="stage-export-backdrop" hidden></div>
+<div class="stage-modal stage-export-modal" id="stage-export-modal" role="dialog" aria-modal="true"
+     aria-labelledby="stage-export-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-export-title">画像を書き出す</h2>
+    <button type="button" class="stage-modal-close" id="stage-export-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <label class="stage-control-label">どの絵を</label>
+    <div class="stage-tool-grid" role="group" aria-label="どの絵を書き出すか">
+      <button type="button" data-export-view="front" aria-pressed="true">正面</button>
+      <button type="button" data-export-view="plan" aria-pressed="false">平面</button>
+      <button type="button" data-export-view="both" aria-pressed="false">両方</button>
+    </div>
+
+    <label class="stage-control-label">どの場面を</label>
+    <div class="stage-export-scope" role="group" aria-label="どの場面を書き出すか">
+      <button type="button" data-export-scope="current" aria-pressed="true">いまの場面</button>
+      <button type="button" data-export-scope="section" aria-pressed="false">このセクションの中</button>
+      <button type="button" data-export-scope="all" aria-pressed="false">全部の場面</button>
+    </div>
+
+    <p class="stage-profile-hint" id="stage-export-note"></p>
+    <button type="button" class="stage-minor-action" id="stage-export-run">書き出す</button>
+  </div>
+</div>
+
+<div class="stage-modal-backdrop" id="stage-rename-backdrop" hidden></div>
+<div class="stage-modal stage-rename-modal" id="stage-rename" role="dialog" aria-modal="true"
+     aria-labelledby="stage-rename-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-rename-title">名前を変える</h2>
+    <button type="button" class="stage-modal-close" id="stage-rename-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <label class="stage-control-label" for="stage-rename-input">名前</label>
+    <input id="stage-rename-input" class="stage-text-input" type="text" maxlength="40">
+    <button type="button" class="stage-minor-action" id="stage-rename-ok">この名前にする</button>
+  </div>
+</div>
+
+<div class="stage-modal-backdrop" id="stage-shows-backdrop" hidden></div>
+<div class="stage-modal stage-shows-modal" id="stage-shows" role="dialog" aria-modal="true"
+     aria-labelledby="stage-shows-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-shows-title">ショー一覧</h2>
+    <button type="button" class="stage-modal-close" id="stage-shows-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <p class="stage-profile-hint">この端末のブラウザに置いてあるショーです。保存は自動。別の端末へ持っていくときは「書き出す」を使ってください。</p>
+    <div class="stage-show-list" id="stage-show-list"></div>
+  </div>
+</div>
+
+<div class="stage-modal-backdrop" id="stage-pose-backdrop" hidden></div>
+<div class="stage-modal stage-pose-modal" id="stage-pose" role="dialog" aria-modal="true"
+     aria-labelledby="stage-pose-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-pose-title">姿勢を選ぶ</h2>
+    <button type="button" class="stage-modal-close" id="stage-pose-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <p class="stage-profile-hint">絵は斜め前から見たところです。舞台での見え方は、向きによって変わります。</p>
+    <div class="stage-pose-grid" id="stage-pose-grid"></div>
+  </div>
+</div>
+
+<div class="stage-modal-backdrop" id="stage-setinfo-backdrop" hidden></div>
+<div class="stage-modal" id="stage-setinfo" role="dialog" aria-modal="true"
+     aria-labelledby="stage-setinfo-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-setinfo-title">舞台セット</h2>
+    <button type="button" class="stage-modal-close" id="stage-setinfo-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <label class="stage-control-label" for="stage-setinfo-name">名前</label>
+    <input id="stage-setinfo-name" class="stage-text-input" type="text" maxlength="24">
+
+    <div id="stage-setinfo-lightkind" hidden>
+      <label class="stage-control-label" for="stage-setinfo-kind">種類</label>
+      <select id="stage-setinfo-kind" class="stage-select">
+        <option value="hang">吊り（バトンから真下へ）</option>
+        <option value="ss">SS（袖から横切って）</option>
+        <option value="front">前明かり（客席の上から顔へ）</option>
+        <option value="floor">転がし（床置きから体へ）</option>
+      </select>
+      <p class="stage-profile-hint">種類を変えると、これから舞台へ出す分の仕込み位置が変わります。すでに出ているものはそのままです。</p>
+    </div>
+
+    <label class="stage-toggle stage-flown-toggle" id="stage-setinfo-flown-row">
+      <input type="checkbox" id="stage-setinfo-flown">
+      <span>吊物（天井から吊る）</span>
+    </label>
+    <p class="stage-profile-hint" id="stage-setinfo-flown-note" hidden>吊物は何かの上に乗りません。高さは地上高で決めます。平面図では既定で隠れます。</p>
+    <label class="stage-toggle stage-flown-toggle" id="stage-setinfo-framed-row" hidden>
+      <input type="checkbox" id="stage-setinfo-framed">
+      <span>フレームにする（穴の空いた壁）</span>
+    </label>
+    <div id="stage-setinfo-wires-row" hidden>
+      <label class="stage-control-label" for="stage-setinfo-wires">ワイヤーの本数</label>
+      <select id="stage-setinfo-wires" class="stage-select">
+        <option value="1">1本（中央から吊る）</option>
+        <option value="2">2本（両端から吊る）</option>
+      </select>
+    </div>
+
+    <div id="stage-setinfo-dims"></div>
+    <p class="stage-profile-hint">寸法は実寸です。床の1m枡と同じものさしで描かれます。</p>
+
+    <label class="stage-control-label" for="stage-setinfo-color">色</label>
+    <input type="color" id="stage-setinfo-color" value="#8b98a1">
+
+    <label class="stage-control-label" for="stage-setinfo-note">メモ</label>
+    <textarea id="stage-setinfo-note" class="stage-text-input" rows="3" maxlength="200"
+              placeholder="出し入れの段取り、重さ、注意点など"></textarea>
+  </div>
+</div>
+
+<script src="stage-venues.js?v=14"></script>
+<script src="stage-i18n.js?v=1"></script>
+<script src="stage-sketch.js?v=115"></script>
+</body>
+</html>
