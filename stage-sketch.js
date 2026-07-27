@@ -3491,9 +3491,14 @@
   }
 
   /* 一覧から舞台の上のものを選ぶ。舞台裏なら選べないので、その旨だけ伝える。 */
-  function pickOnStage(findPiece, name) {
+  function pickOnStage(findPiece, name, light) {
     const piece = sc().pieces.find(findPiece);
-    if (!piece) { announce(`${name}はいま舞台裏です。「舞台裏」を押すと舞台へ出ます。`); return; }
+    if (!piece) {
+      announce(light
+        ? `${name}はこの場面ではOFFです。「OFF」を押すと点きます。`
+        : `${name}はいま舞台裏です。「舞台裏」を押すと舞台へ出ます。`);
+      return;
+    }
     selectedId = piece.id;
     selectedNoteId = null;
     // 明かりは光の道具、それ以外は動かす道具でないと掴めない
@@ -3537,17 +3542,36 @@
       return;
     }
     checkpoint();
-    state.project.cast.push({
+    const member = {
       id: rid("cast"), name: raw.slice(0, 24), color: nextPieceColor(state.project.cast.length),
       heightCm: DEFAULT_HEIGHT_CM, note: "", locked: false,
-    });
+    };
+    state.project.cast.push(member);
+    // 登録したものは、そのままこの場面の舞台へ出す（出すのが普通で、裏に置くのが例外）
+    placeCastPiece(member);
     if (input) input.value = "";
     renderCast();
     renderSets();
     renderLights();
     renderRigs();
     persistSoon();
-    announce(`${raw}を名簿へ加えました。舞台裏の状態です。`);
+    announce(`${raw}を名簿へ加え、この場面の舞台へ出しました。`);
+  }
+
+  // 演者をこの場面の舞台へ置く。登録した直後にも、あとから出すときにも通す
+  function placeCastPiece(member) {
+    const scene = sc();
+    const count = scene.pieces.filter((p) => p.type === "performer").length;
+    // 正規化を通す。手で作ると、あとから足した持ち物（明かりの当て方など）が抜ける
+    const piece = normalizePiece({
+      id: nextId(), type: "performer", castId: member.id,
+      u: clamp(0.5 + ((count % 5) - 2) * 0.09, 0.06, 0.94),
+      v: clamp(0.6 + (count % 3) * 0.07, 0.05, 0.95),
+      size: 100, color: member.color || state.pieceColor, name: "",
+    }, 0);
+    scene.pieces.push(piece);
+    selectedId = piece.id;
+    return piece;
   }
 
   function toggleCastOnStage(castId) {
@@ -3559,18 +3583,9 @@
       scene.pieces = scene.pieces.filter((piece) => piece.id !== existing.id);
       if (selectedId === existing.id) selectedId = null;
       announce(`${member ? member.name : "この人"}を舞台から引っ込めました。`);
-    } else {
-      const count = scene.pieces.filter((p) => p.type === "performer").length;
-      // 正規化を通す。手で作ると、あとから足した持ち物（明かりの当て方など）が抜ける
-      const piece = normalizePiece({
-        id: nextId(), type: "performer", castId,
-        u: clamp(0.5 + ((count % 5) - 2) * 0.09, 0.06, 0.94),
-        v: clamp(0.6 + (count % 3) * 0.07, 0.05, 0.95),
-        size: 100, color: member ? member.color : state.pieceColor, name: "",
-      }, 0);
-      scene.pieces.push(piece);
-      selectedId = piece.id;
-      announce(`${member ? member.name : "この人"}を舞台へ出しました。`);
+    } else if (member) {
+      placeCastPiece(member);
+      announce(`${member.name}を舞台へ出しました。`);
     }
     renderCast();
     renderSets();
@@ -3703,7 +3718,7 @@
       });
 
       const name = nameButton(item.name,
-        () => pickOnStage((piece) => piece.setId === item.id, item.name),
+        () => pickOnStage((piece) => piece.setId === item.id, item.name, light),
         () => openSetInfo(item.id));
 
       /* 寸法は行に出さず、行の title と「…」の窓へ回す。
@@ -3713,11 +3728,14 @@
         : `${SET_KINDS[item.kind]}／${setDimLabel(item)}`;
 
       const onStage = setOnStage(item.id);
+      const light = item.kind === "light";
       const status = document.createElement("button");
       status.type = "button";
       status.className = `stage-cast-status ${onStage ? "is-on" : "is-off"}`;
-      status.textContent = onStage ? "舞台上" : "舞台裏";
-      status.title = onStage ? "押すと舞台から下げます" : "押すとこの場面の舞台へ出します";
+      status.textContent = onStageWord(item, onStage);
+      status.title = light
+        ? (onStage ? "押すとこの場面では消します" : "押すとこの場面で点けます")
+        : (onStage ? "押すと舞台から下げます" : "押すとこの場面の舞台へ出します");
       status.addEventListener("click", () => toggleSetOnStage(item.id));
 
       const detail = document.createElement("button");
@@ -3756,46 +3774,65 @@
     const lk = kind === "light" && LIGHT_KINDS[lightKind] ? lightKind : "hang";
     const dims = normalizeDims(kind, {});
     if (kind === "light") dims.dia = LIGHT_KINDS[lk].dia;
-    state.project.sets.push({
+    const item = {
       id: rid("set"), kind, name: raw.slice(0, 24),
       color: kind === "light" ? "#d3ac59" : nextPieceColor(state.project.sets.length + 2),
       dims, note: "", locked: false, lightKind: lk,
-    });
+    };
+    state.project.sets.push(item);
+    placeSetPiece(item);
     if (nameInput) nameInput.value = "";
     renderSets();
     renderLights();
     persistSoon();
-    announce(`${raw}を${kind === "light" ? LIGHT_KINDS[lk].label : "舞台セット"}へ加えました。舞台裏の状態です。`);
+    announce(kind === "light"
+      ? `${raw}を${LIGHT_KINDS[lk].label}へ加えてONにしました。`
+      : `${raw}を舞台セットへ加え、この場面の舞台へ出しました。`);
   }
+
+  // 舞台セット・明かりをこの場面へ置く。登録した直後にも、あとから出すときにも通す
+  function placeSetPiece(item) {
+    const scene = sc();
+    /* 置き場所を少しずつずらすための数。明かりも数に入れる。
+     * 外していたので、明かりを二つ出すと同じ場所に重なって出ていた。 */
+    const count = scene.pieces.filter((p) => p.type !== "performer").length;
+    const piece = normalizePiece({
+      id: nextId(), type: item.kind, setId: item.id,
+      u: clamp(0.5 + ((count % 5) - 2) * 0.11, 0.06, 0.94),
+      v: clamp(0.5 + (count % 3) * 0.09, 0.05, 0.95),
+      size: 100, color: item.color || state.pieceColor, name: "", facing: 0,
+    }, 0);
+    // 明かりは種類ごとの仕込み位置から始める。出したあとは自由に動かせる
+    if (piece.type === "light") {
+      const spec = LIGHT_KINDS[lightKindOf(item)];
+      const src = spec.source(piece.u, piece.v);
+      piece.beam = normalizeBeam({ u: src.u, v: src.v, h: spec.h, toH: spec.toH }, piece);
+    }
+    scene.pieces.push(piece);
+    selectedId = piece.id;
+    return piece;
+  }
+
+  // 明かりは「舞台の上か裏か」ではなく、点いているか消えているかで言う
+  const onStageWord = (item, on) => (item && item.kind === "light"
+    ? (on ? "ON" : "OFF")
+    : (on ? "舞台上" : "舞台裏"));
 
   function toggleSetOnStage(setId) {
     checkpoint();
     const scene = sc();
     const existing = scene.pieces.find((piece) => piece.setId === setId);
     const item = (state.project.sets || []).find((t) => t.id === setId);
+    const light = item && item.kind === "light";
     if (existing) {
       scene.pieces = scene.pieces.filter((piece) => piece.id !== existing.id);
       if (selectedId === existing.id) selectedId = null;
-      announce(`${item ? item.name : "これ"}を舞台から下げました。`);
-    } else {
-      /* 置き場所を少しずつずらすための数。明かりも数に入れる。
-       * 外していたので、明かりを二つ出すと同じ場所に重なって出ていた。 */
-      const count = scene.pieces.filter((p) => p.type !== "performer").length;
-      const piece = normalizePiece({
-        id: nextId(), type: item ? item.kind : "block", setId,
-        u: clamp(0.5 + ((count % 5) - 2) * 0.11, 0.06, 0.94),
-        v: clamp(0.5 + (count % 3) * 0.09, 0.05, 0.95),
-        size: 100, color: item ? item.color : state.pieceColor, name: "", facing: 0,
-      }, 0);
-      // 明かりは種類ごとの仕込み位置から始める。出したあとは自由に動かせる
-      if (piece.type === "light") {
-        const spec = LIGHT_KINDS[lightKindOf(item)];
-        const src = spec.source(piece.u, piece.v);
-        piece.beam = normalizeBeam({ u: src.u, v: src.v, h: spec.h, toH: spec.toH }, piece);
-      }
-      scene.pieces.push(piece);
-      selectedId = piece.id;
-      announce(`${item ? item.name : "これ"}を舞台へ出しました。`);
+      announce(light
+        ? `${item.name}をOFFにしました。`
+        : `${item ? item.name : "これ"}を舞台から下げました。`);
+    } else if (item) {
+      placeSetPiece(item);
+      announce(light ? `${item.name}をONにしました。` : `${item.name}を舞台へ出しました。`);
     }
     renderSets();
     renderLights();
