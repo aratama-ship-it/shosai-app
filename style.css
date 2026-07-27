@@ -5357,6 +5357,26 @@ canvas[data-tool="note"] { cursor: copy; }
 .stage-anim-toggle input { width: 12px; height: 12px; margin: 0; accent-color: var(--rust); }
 .stage-anim-toggle:hover { color: var(--milk); }
 
+/* 転換にかける時間。入り切りのすぐ隣に置く */
+.stage-anim-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.stage-anim-speed input[type="range"] {
+  width: 74px;
+  margin: 0;
+  accent-color: var(--rust);
+}
+
+.stage-anim-speed input:disabled { opacity: 0.35; cursor: default; }
+.stage-anim-speed span { min-width: 34px; }
+
 .stage-scene-actions {
   display: flex;
   flex-wrap: wrap;

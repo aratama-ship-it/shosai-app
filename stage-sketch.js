@@ -517,6 +517,8 @@
     scenePrev: document.getElementById("stage-scene-prev"),
     sceneNext: document.getElementById("stage-scene-next"),
     animScenes: document.getElementById("stage-anim-scenes"),
+    animMs: document.getElementById("stage-anim-ms"),
+    animMsValue: document.getElementById("stage-anim-ms-value"),
     castList: document.getElementById("stage-cast-list"),
     pieceFacing: document.getElementById("stage-piece-facing"),
     piecePose: document.getElementById("stage-piece-pose"),
@@ -661,8 +663,9 @@
       showSetNames: true,
       // 正面図の隅に「客席のどこから見ているか」の小図を出すか
       showSeatMap: true,
-      // 場面が変わるとき、動線に沿って動かして見せるか
+      // 場面が変わるとき、動線に沿って動かして見せるか。秒数も持つ
       animateScenes: true,
+      sceneAnimMs: 620,
       // 舞台が一度に入らない席での見回し（-1〜1）。左右と上下
       frontPan: 0,
       frontPanY: 0,
@@ -1074,6 +1077,7 @@
       showSetNames: raw.showSetNames === undefined ? true : Boolean(raw.showSetNames),
       showSeatMap: raw.showSeatMap === undefined ? true : Boolean(raw.showSeatMap),
       animateScenes: raw.animateScenes === undefined ? true : Boolean(raw.animateScenes),
+      sceneAnimMs: clamp(finite(raw.sceneAnimMs, 620), 200, 3000),
       frontPan: clamp(finite(raw.frontPan, 0), -1, 1),
       frontPanY: clamp(finite(raw.frontPanY, 0), -1, 1),
       closedSections: (raw.closedSections && typeof raw.closedSections === "object" && !Array.isArray(raw.closedSections))
@@ -4727,7 +4731,6 @@
      前の場面で動線を引いてあれば、その曲線に沿って動く（引いた線のとおりに動く）。
      保存されるのは行き先の値だけ。途中の位置は animU/animV に持ち、
      終わったら消す（途中で保存されても、絵の途中の位置は残らない）。 */
-  const SCENE_ANIM_MS = 620;
   let sceneAnim = null;
 
   const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -4750,9 +4753,15 @@
     sceneAnim = null;
   }
 
+  /* 動かすのは「次へ進むとき」だけ。前の場面へ戻るのは、作っている途中に
+   * 見比べる動きなので、そのたびに動かれると邪魔になる（本人の指定）。 */
   function beginSceneAnim(fromScene) {
     stopSceneAnim();
     if (!state.animateScenes || !fromScene) return;
+    const rows = state.project.scenes.filter((row) => row.kind === "scene");
+    const wasAt = rows.findIndex((row) => row.id === fromScene.id);
+    const nowAt = rows.findIndex((row) => row.id === state.project.activeSceneId);
+    if (wasAt < 0 || nowAt < 0 || nowAt <= wasAt) return;
     const pieces = [];
     sc().pieces.forEach((piece) => {
       const twin = twinOf(piece, fromScene.pieces || []);
@@ -4769,9 +4778,10 @@
       });
     });
     if (!pieces.length) return;
+    const span = clamp(finite(state.sceneAnimMs, 620), 200, 3000);
     const start = performance.now();
     const step = (now) => {
-      const t = clamp((now - start) / SCENE_ANIM_MS, 0, 1);
+      const t = clamp((now - start) / span, 0, 1);
       const e = easeInOut(t);
       pieces.forEach((entry) => {
         if (entry.ctrl) {
@@ -5422,6 +5432,11 @@
     if (els.showSetNames) els.showSetNames.checked = state.showSetNames;
     if (els.showSeatMap) els.showSeatMap.checked = state.showSeatMap;
     if (els.animScenes) els.animScenes.checked = state.animateScenes;
+    if (els.animMs) {
+      if (document.activeElement !== els.animMs) els.animMs.value = String(state.sceneAnimMs / 1000);
+      els.animMs.disabled = !state.animateScenes;
+      if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}秒`;
+    }
     syncSeatMapToggle();
   }
 
@@ -6150,8 +6165,17 @@
     els.animScenes.addEventListener("change", (e) => {
       state.animateScenes = e.target.checked;
       if (!state.animateScenes) { stopSceneAnim(); render(); }
+      if (els.animMs) els.animMs.disabled = !state.animateScenes;
       persistSoon();
       announce(state.animateScenes ? "場面転換を動かします。" : "場面転換は動かしません。");
+    });
+  }
+
+  if (els.animMs) {
+    els.animMs.addEventListener("input", (e) => {
+      state.sceneAnimMs = clamp(finite(e.target.value, 0.62) * 1000, 200, 3000);
+      if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}秒`;
+      persistSoon();
     });
   }
 
