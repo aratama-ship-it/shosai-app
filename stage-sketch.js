@@ -7879,7 +7879,7 @@
      ★勝手にデータを作らない。いま置いてあるものの上で説明する。 */
   /* ★テスターの感想の送り先。Googleフォームのアドレスをここへ入れる。
    * 空のあいだは、押しても開かず、その旨だけ伝える（黙って何も起きないより良い）。 */
-  const FEEDBACK_URL = "";
+  const FEEDBACK_URL = "https://docs.google.com/forms/d/e/1FAIpQLSc-ibjOBVL5HbPC9xpjmcD-TTK3VoCmVJiGA6ouCZvGR9rW4Q/viewform";
 
   const TOUR_KEY = "shosai-stage-tour-v1";
 
