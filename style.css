@@ -1684,13 +1684,23 @@ canvas[data-tool="note"] { cursor: copy; }
 
 .stage-pose-button:hover { border-color: var(--brass); }
 
-.stage-pose-modal { width: min(640px, calc(100vw - 40px)); }
+/* 姿勢の窓は横へ広く取る。縦一列に近い並びだと、13種類を見るのに
+   窓の中をずっと繰ることになる（横へ6つ並べれば二段で収まる） */
+.stage-pose-modal { width: min(1020px, calc(100vw - 40px)); }
 
 .stage-pose-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
   margin-top: 10px;
+}
+
+@media (max-width: 1080px) {
+  .stage-pose-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .stage-pose-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 .stage-pose-tile {
@@ -6067,6 +6077,12 @@ body.is-panel-dragging {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
   z-index: 41;
 }
+
+/* ★窓ごとの幅は .stage-modal より後ろに置く。前に書くと、同じ強さの
+   後出しに負けて既定の380pxに戻る（実際に姿勢の窓がそうなっていた）。 */
+.stage-modal.stage-pose-modal { width: min(1020px, calc(100vw - 40px)); }
+.stage-modal.stage-shows-modal { width: min(520px, calc(100vw - 40px)); }
+.stage-modal.stage-export-modal { width: min(420px, calc(100vw - 40px)); }
 
 .stage-modal-head {
   display: flex;

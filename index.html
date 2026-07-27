@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=94">
+<link rel="stylesheet" href="style.css?v=97">
 </head>
 <body>
 
@@ -259,6 +259,8 @@
                   <option value="block">台・箱</option>
                   <option value="table">テーブル</option>
                   <option value="chair">椅子</option>
+                  <option value="bench">ベンチ</option>
+                  <option value="wall">壁</option>
                   <option value="sphere">球</option>
                 </select>
                 <button type="button" id="stage-roster-add" class="btn-quiet">追加</button>
@@ -419,6 +421,10 @@
                         aria-pressed="false">動線を描く</button>
                 <button type="button" class="stage-canvas-tool" id="stage-plan-note"
                         aria-pressed="false">メモを貼る</button>
+                <label class="stage-canvas-toggle" title="宙に吊ってあるものも平面に出す">
+                  <input type="checkbox" id="stage-show-flown">
+                  <span>吊物</span>
+                </label>
                 <button type="button" class="stage-canvas-tool" id="stage-route-clear" hidden>動線を消す</button>
                 <button type="button" class="stage-canvas-close" data-toggle-view="plan"
                         aria-expanded="true" aria-label="平面の絵を閉じる">▾</button>
@@ -785,6 +791,12 @@
       <p class="stage-profile-hint">種類を変えると、これから舞台へ出す分の仕込み位置が変わります。すでに出ているものはそのままです。</p>
     </div>
 
+    <label class="stage-toggle stage-flown-toggle" id="stage-setinfo-flown-row">
+      <input type="checkbox" id="stage-setinfo-flown">
+      <span>吊物（天井から吊る）</span>
+    </label>
+    <p class="stage-profile-hint" id="stage-setinfo-flown-note" hidden>吊物は何かの上に乗りません。高さは地上高で決めます。平面図では既定で隠れます。</p>
+
     <div id="stage-setinfo-dims"></div>
     <p class="stage-profile-hint">寸法は実寸です。床の1m枡と同じものさしで描かれます。</p>
 
@@ -801,7 +813,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=109"></script>
+<script src="stage-sketch.js?v=110"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

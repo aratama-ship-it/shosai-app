@@ -33,11 +33,15 @@
   const STORAGE_KEY = "shosai-stage-sketch-v1";          // いま開いているショー
   const SHOWS_KEY = "shosai-stage-shows-v1";              // 端末に置いた全ショー
   const HISTORY_LIMIT = 36;
+  /* 舞台に置ける駒の型。★舞台セットの種類（SET_KINDS）を足したら、
+   * ここにも足すこと。無い型は「演者」に落とされる（実際に踏んだ）。 */
   const PIECE_TYPES = {
     performer: "演者",
     block: "台・箱",
     table: "テーブル",
     chair: "椅子",
+    bench: "ベンチ",
+    wall: "壁",
     sphere: "球",
     light: "光",
   };
@@ -47,6 +51,8 @@
     block: 1.2,
     table: 0.72,
     chair: 0.9,
+    bench: 0.45,
+    wall: 2.5,
     sphere: 1.2,
     light: 2.5,
   };
@@ -56,6 +62,9 @@
     block: { w: 2.04, d: 0.66, h: 1.2 },   // 平台1枚ぶんの見当
     table: { w: 1.6, d: 0.8, h: 0.72 },    // 一般的なダイニングテーブル
     chair: { h: 0.9 },                     // 背もたれの上端まで。幅と奥行きはここから決まる
+    bench: { w: 1.8, d: 0.4, h: 0.45 },    // 横長のベンチ。座面までの高さ
+    // 壁は厚みを固定で持つ（舞台の壁は建て込みの板なので、厚みは決まっている）
+    wall: { w: 3, d: 0.3, h: 2.5 },
     sphere: { dia: 1.2, lift: 0 },         // 直径と、床からの高さ
     light: { dia: 4 },                     // 床に落ちる明かりの円の直径
   };
@@ -75,6 +84,8 @@
   // 種類によって言い方を変えたいものだけ上書きする
   const DIM_LABELS = {
     chair: { h: "大きさ（背もたれの上端まで）" },
+    wall: { w: "幅", h: "高さ" },
+    bench: { h: "座面までの高さ" },
     light: { dia: "直径（床に落ちる円の広さ）" },
   };
   function dimLabel(kind, key) {
@@ -83,7 +94,11 @@
   // 椅子は大きさ一つで決まる。幅と奥行きはそこから割り出す
   /* 舞台セットに登録できる形。光もここに含める。登録・出し入れ・寸法の
    * 仕組みが同じなので同じ入れ物に置き、一覧だけ「光」パネルへ分けて出す。 */
-  const SET_KINDS = { block: "台・箱", table: "テーブル", chair: "椅子", sphere: "球", light: "光" };
+  const SET_KINDS = {
+    block: "台・箱", table: "テーブル", chair: "椅子", bench: "ベンチ", wall: "壁",
+    sphere: "球", light: "光",
+  };
+  const WALL_THICKNESS = 0.3;   // 壁の厚み（m）。触らせず固定で持つ
   /* 明かりの種類。仕込む場所と当てる高さが種類ごとに決まっているので、
    * 舞台へ出したときの既定値をここに持つ（出したあとは自由に動かせる）。
    *   hang  … 吊り。バトンから真下へ落とす
@@ -117,7 +132,7 @@
   };
   const LIGHT_KIND_ORDER = ["hang", "ss", "front", "floor"];
   const lightKindOf = (item) => (item && LIGHT_KINDS[item.lightKind] ? item.lightKind : "hang");
-  const SET_KIND_ORDER = ["block", "table", "chair", "sphere"];
+  const SET_KIND_ORDER = ["block", "table", "chair", "bench", "wall", "sphere"];
   /* ---------- 演者の骨格と姿勢 ----------
    * 関節を3次元（x=左右／y=上下／z=本人の正面向き）で持ち、向きの角度だけ
    * 鉛直軸まわりに回して画面へ落とす。こうすると、向きの変化・座る・逆立ちが
@@ -402,7 +417,7 @@
   // 首を振れる角度。見上げる側を大きく取る（吊り物や空中の演目はそこにある）
   const TILT_UP = 34;
   const TILT_DOWN = 16;
-  const SOLID_TYPES = { block: true, table: true, chair: true };
+  const SOLID_TYPES = { block: true, table: true, chair: true, bench: true, wall: true };
   const CHAIR_W = 0.5;
   const CHAIR_D = 0.55;
   // その駒が床でどれだけの面積を取るか（m）。平面図と当たり判定で使う
@@ -578,6 +593,10 @@
     setInfoColor: document.getElementById("stage-setinfo-color"),
     setInfoNote: document.getElementById("stage-setinfo-note"),
     setInfoKind: document.getElementById("stage-setinfo-kind"),
+    setInfoFlown: document.getElementById("stage-setinfo-flown"),
+    setInfoFlownRow: document.getElementById("stage-setinfo-flown-row"),
+    setInfoFlownNote: document.getElementById("stage-setinfo-flown-note"),
+    showFlown: document.getElementById("stage-show-flown"),
     setInfoKindRow: document.getElementById("stage-setinfo-lightkind"),
     frontInner: document.getElementById("stage-front-inner"),
     planInner: document.getElementById("stage-plan-inner"),
@@ -660,6 +679,8 @@
       showSetNames: true,
       // 正面図の隅に「客席のどこから見ているか」の小図を出すか
       showSeatMap: true,
+      // 平面図で吊物（宙に吊ってあるもの）まで出すか
+      showFlown: false,
       // 場面が変わるとき、動線に沿って動かして見せるか。秒数も持つ
       animateScenes: true,
       sceneAnimMs: 620,
@@ -882,6 +903,7 @@
   function normalizeDims(type, piece) {
     const base = PIECE_DIMS[type];
     if (!base) return null;
+    const fixed = type === "wall" ? { d: WALL_THICKNESS } : null;
     const old = piece && piece.dims ? piece.dims : null;
     const k = clamp(finite(piece && piece.size, 100), 55, 180) / 100;
     const out = {};
@@ -890,6 +912,7 @@
       const fallback = key === "lift" ? base[key] : base[key] * k;
       out[key] = clamp(finite(old ? old[key] : fallback, base[key]), meta.min, meta.max);
     });
+    if (fixed) Object.assign(out, fixed);
     return out;
   }
 
@@ -898,13 +921,17 @@
   /* 寸法つまみを組み立てる。項目は種類ごとに違うので、HTMLへ固定で並べず
    * ここから作る。dims オブジェクトへ直に書き込むので、
    * 「駒そのもの」でも「舞台セットの正本」でも同じ関数で使える。 */
-  function buildDimControls(host, prefix, kind, dims, onChange) {
+  function buildDimControls(host, prefix, kind, dims, onChange, flown) {
     if (!host) return;
     host.innerHTML = "";
     if (!dims) return;
     Object.keys(dims).forEach((key) => {
       const meta = DIM_META[key];
       if (!meta) return;
+      // 壁の厚みは固定。触らせないので、つまみも出さない
+      if (kind === "wall" && key === "d") return;
+      // 地上高は、吊っているものと浮いている球にだけ意味がある
+      if (key === "lift" && SOLID_TYPES[kind] && !flown) return;
       const label = document.createElement("label");
       label.className = "stage-control-label stage-range-label";
       label.htmlFor = `${prefix}-${key}`;
@@ -1049,9 +1076,20 @@
                 kind,
                 name: typeof t.name === "string" && t.name.trim() ? t.name.slice(0, 24) : `セット ${i + 1}`,
                 color: validColor(t.color, "#8b98a1"),
-                dims: normalizeDims(kind, t),
+                dims: (() => {
+                  const d = normalizeDims(kind, t);
+                  // 吊物にできる形は、地上高の置き場を必ず持つ
+                  if (d && SOLID_TYPES[kind] && d.lift === undefined) {
+                    d.lift = clamp(finite(t && t.dims && t.dims.lift, 0), 0, 10);
+                  }
+                  return d;
+                })(),
                 note: typeof t.note === "string" ? t.note.slice(0, 200) : "",
                 locked: Boolean(t.locked),
+                /* 吊物。天井からワイヤーで吊り下がっているもの。
+                 * 何かの上に乗ることも、何かを乗せることもない。
+                 * 代わりに地上高（dims.lift）で高さを決める。 */
+                flown: Boolean(t.flown),
                 lightKind: kind === "light" && LIGHT_KINDS[t && t.lightKind] ? t.lightKind : "hang",
               };
             })
@@ -1073,6 +1111,7 @@
       showNames: raw.showNames === undefined ? true : Boolean(raw.showNames),
       showSetNames: raw.showSetNames === undefined ? true : Boolean(raw.showSetNames),
       showSeatMap: raw.showSeatMap === undefined ? true : Boolean(raw.showSeatMap),
+      showFlown: Boolean(raw.showFlown),
       animateScenes: raw.animateScenes === undefined ? true : Boolean(raw.animateScenes),
       sceneAnimMs: clamp(finite(raw.sceneAnimMs, 620), 200, 3000),
       frontPan: clamp(finite(raw.frontPan, 0), -1, 1),
@@ -1516,11 +1555,27 @@
   }
 
   // 全部の駒の床からの高さを引き直す。先に並んでいるものから順に決めるので一巡で足りる
+  /* 吊物か。天井からワイヤーで吊り下がっているものは、
+   * 何かの上に乗ることも、何かを乗せることもない。高さは地上高で決まる。 */
+  function isFlown(piece) {
+    if (!piece || !SOLID_TYPES[piece.type]) return false;
+    const owner = pieceSet(piece);
+    return Boolean(owner ? owner.flown : piece.flown);
+  }
+
+  function flownLift(piece) {
+    const dims = pieceDims(piece);
+    return clamp(finite(dims && dims.lift, 0), 0, 10);
+  }
+
   function refreshBases(size) {
     const pieces = sc().pieces;
     pieces.forEach((piece, i) => {
       if (piece.type === "light") { piece.base = 0; piece.supportId = null; return; }
-      const found = supportUnder(piece, size, pieces.slice(0, i));
+      if (isFlown(piece)) { piece.base = flownLift(piece); piece.supportId = null; return; }
+      // 吊っているものの上には乗れない（宙に浮いた板の上に立たせない）
+      const candidates = pieces.slice(0, i).filter((p) => !isFlown(p));
+      const found = supportUnder(piece, size, candidates);
       piece.base = found.top;
       piece.supportId = found.holder;
     });
@@ -1854,6 +1909,19 @@
       parts.push({ ox: 0, oz: 0, w: d.w, d: d.d, h: top, lift: Math.max(0, d.h - top), tint: 1 });
       return parts;
     }
+    if (piece.type === "bench") {
+      // 横長の座面と、両端に寄せた脚。背もたれは持たない
+      const top = clamp(d.h * 0.14, 0.03, 0.07);
+      const leg = clamp(Math.min(d.w, d.d) * 0.12, 0.04, 0.09);
+      const parts = [];
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => parts.push({
+        ox: sx * (d.w / 2 - leg * 1.6),
+        oz: sy * (d.d / 2 - leg * 0.9),
+        w: leg, d: leg, h: Math.max(0.05, d.h - top), lift: 0, tint: 0.7,
+      }));
+      parts.push({ ox: 0, oz: 0, w: d.w, d: d.d, h: top, lift: Math.max(0, d.h - top), tint: 1 });
+      return parts;
+    }
     if (piece.type === "chair") {
       const H = d.h;                       // 背もたれの上端まで
       const w = H * CHAIR_W;
@@ -1970,10 +2038,29 @@
   function drawSolid(target, piece, pos, scale, L) {
     const parts = pieceParts(piece);
     if (!parts) return;
+    const flown = isFlown(piece);
     target.save();
 
-    // 影は床の占有面積そのまま
-    const foot = pieceFootprint(piece);
+    /* 吊物はワイヤーで天井から下がっている。上へ伸びる2本の線で吊りを示す。
+     * 影は落とさない（床に触れていないので、接地の影は嘘になる）。 */
+    if (flown && !L.plan) {
+      const dim = pieceDims(piece);
+      const centre = floorPoint(piece, 0, 0, L);
+      const per = perMetre(centre, L);
+      const topY = L.tilt(centre.rawY - (dim.h || 0) * per.y);
+      const halfW = Math.max(6, ((dim.w || 1) / 2) * per.x * 0.62);
+      target.strokeStyle = "rgba(226,232,238,0.5)";
+      target.lineWidth = 1;
+      [-halfW, halfW].forEach((dx) => {
+        target.beginPath();
+        target.moveTo(centre.x + dx, topY);
+        target.lineTo(centre.x + dx * 0.55, Math.max(0, L.backY - 6));
+        target.stroke();
+      });
+    }
+
+    // 影は床の占有面積そのまま。吊物には落とさない
+    const foot = flown ? null : pieceFootprint(piece);
     if (foot) {
       const rad = ((piece.facing || 0) * Math.PI) / 180;
       const cos = Math.cos(rad);
@@ -3033,13 +3120,16 @@
       if (lean) target.restore();
     };
     sc().pieces.filter((p) => p.type === "light").forEach(draw);
+    /* 平面図は「床に何がどう置いてあるか」の図なので、宙に吊ってあるものは
+     * 既定では出さない。要るときだけ出せるように入り切りを持つ。 */
+    const shown = sc().pieces.filter((p) => !(L.plan && !state.showFlown && isFlown(p)));
     // 正面図では奥から描く（重なりが自然になる）
-    const solid = sc().pieces.filter((p) => p.type !== "light");
+    const solid = shown.filter((p) => p.type !== "light");
     (L.plan ? solid : solid.slice().sort((a, b) => a.v - b.v)).forEach(draw);
 
     // 名前。頭上（平面では点の脇）に小さく置く。演者と装置は別々に出し入れする
     if (state.showNames || state.showSetNames) {
-      sc().pieces.forEach((piece) => {
+      shown.forEach((piece) => {
         const wanted = piece.type === "performer" ? state.showNames : state.showSetNames;
         if (!wanted) return;
         const labelText = pieceLabel(piece);
@@ -3816,11 +3906,13 @@
     checkpoint();
     const lk = kind === "light" && LIGHT_KINDS[lightKind] ? lightKind : "hang";
     const dims = normalizeDims(kind, {});
+    // 吊物にしたときのために、地上高の場所を作っておく（既定は床）
+    if (SOLID_TYPES[kind] && dims && dims.lift === undefined) dims.lift = 0;
     if (kind === "light") dims.dia = LIGHT_KINDS[lk].dia;
     const item = {
       id: rid("set"), kind, name: raw.slice(0, 24),
       color: kind === "light" ? "#d3ac59" : nextPieceColor(state.project.sets.length + 2),
-      dims, note: "", locked: false, lightKind: lk,
+      dims, note: "", locked: false, flown: false, lightKind: lk,
     };
     state.project.sets.push(item);
     placeSetPiece(item);
@@ -4260,13 +4352,20 @@
       els.setInfoKindRow.hidden = item.kind !== "light";
       if (item.kind === "light" && els.setInfoKind) els.setInfoKind.value = lightKindOf(item);
     }
+    if (els.setInfoFlownRow) {
+      // 吊れるのは形のあるもの（台・テーブル・椅子・壁）だけ
+      const canFly = Boolean(SOLID_TYPES[item.kind]);
+      els.setInfoFlownRow.hidden = !canFly;
+      if (els.setInfoFlownNote) els.setInfoFlownNote.hidden = !canFly || !item.flown;
+      if (els.setInfoFlown) els.setInfoFlown.checked = Boolean(item.flown);
+    }
     els.setInfoNote.value = item.note || "";
     buildDimControls(els.setInfoDims, "stage-setinfo", item.kind, item.dims, () => {
       renderSets();
       renderLights();
       render();
       persistSoon();
-    });
+    }, Boolean(item.flown));
     els.setInfo.hidden = false;
     els.setInfoBackdrop.hidden = false;
     els.setInfoName.focus();
@@ -5246,6 +5345,8 @@
     for (let i = sc().pieces.length - 1; i >= 0; i -= 1) {
       const piece = sc().pieces[i];
       if (!anyKind && (piece.type === "light") !== wantLight) continue;
+      // 平面図で隠している吊物は掴めない（見えないものを掴むことになるため）
+      if (L.plan && !state.showFlown && isFlown(piece)) continue;
       const b = selectionBounds(piece, L);
       if (point.x >= b.x && point.x <= b.x + b.w && point.y >= b.y && point.y <= b.y + b.h) return piece;
     }
@@ -5405,6 +5506,7 @@
     if (els.showNames) els.showNames.checked = state.showNames;
     if (els.showSetNames) els.showSetNames.checked = state.showSetNames;
     if (els.showSeatMap) els.showSeatMap.checked = state.showSeatMap;
+    if (els.showFlown) els.showFlown.checked = state.showFlown;
     if (els.animScenes) els.animScenes.checked = state.animateScenes;
     if (els.animMs) {
       if (document.activeElement !== els.animMs) els.animMs.value = String(state.sceneAnimMs / 1000);
@@ -6120,6 +6222,28 @@
       renderLights();
       persistSoon();
       announce(`${item.name}を${LIGHT_KINDS[item.lightKind].label}にしました。`);
+    });
+  }
+  if (els.setInfoFlown) {
+    els.setInfoFlown.addEventListener("change", (e) => {
+      const item = currentSetItem();
+      if (!item || !SOLID_TYPES[item.kind]) return;
+      checkpoint();
+      item.flown = e.target.checked;
+      if (item.flown && !(item.dims.lift > 0)) item.dims.lift = 2.5;   // まずは頭より上へ
+      openSetInfo(item.id);   // 地上高のつまみを出し直す
+      renderSets();
+      render();
+      persistSoon();
+      announce(`${item.name}を${item.flown ? "吊物にしました" : "床置きに戻しました"}。`);
+    });
+  }
+  if (els.showFlown) {
+    els.showFlown.addEventListener("change", (e) => {
+      state.showFlown = e.target.checked;
+      render();
+      persistSoon();
+      announce(state.showFlown ? "平面にも吊物を出します。" : "平面では吊物を隠します。");
     });
   }
   if (els.setInfoColor) {
