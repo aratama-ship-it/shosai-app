@@ -1545,12 +1545,14 @@
   }
 
   // 駒の足元の画面位置。台に乗っていればその分だけ持ち上げる
+  /* 描くときの居場所。転換の途中は途中の値を返す。
+   * ★絵を描くところは全部ここを通す。駒の u/v を直に読むと、
+   *   その経路だけ転換で瞬間移動する（実際に正面図の台がそうなっていた）。 */
+  const pieceU = (piece) => (piece && piece.animU !== undefined ? piece.animU : piece.u);
+  const pieceV = (piece) => (piece && piece.animV !== undefined ? piece.animV : piece.v);
+
   function placePiece(piece, L) {
-    /* 転換の途中は、その駒の「いまの居場所」で描く。
-     * 保存されるのは行き先の値なので、ここだけ差し替える。 */
-    const pos = place(
-      piece.animU === undefined ? piece.u : piece.animU,
-      piece.animV === undefined ? piece.v : piece.animV, L);
+    const pos = place(pieceU(piece), pieceV(piece), L);
     const base = piece.base || 0;
     if (!base || L.plan) return pos;
     const rawY = pos.rawY - base * perMetre(pos, L).y;
@@ -1756,8 +1758,8 @@
    * 以前は固定の斜めベクトル一本で奥行きを表していたため、舞台の左右どちらに
    * 置いても同じ角度に倒れてしまい、平面図と食い違っていた。 */
   function floorPoint(piece, dw, dd, L) {
-    const u = piece.u + dw / L.size.width;
-    const v = piece.v - dd / L.size.depth;      // 奥へ行くほど v は小さい
+    const u = pieceU(piece) + dw / L.size.width;
+    const v = pieceV(piece) - dd / L.size.depth;      // 奥へ行くほど v は小さい
     const p = place(u, v, L);
     // 台の上に乗っていれば、四隅ごとその高さから立ち上げる
     const base = piece.base || 0;
@@ -2045,7 +2047,10 @@
   /* 明かりの灯体の位置を画面へ落とす。平面ならその点、正面なら床から h だけ持ち上げる。 */
   function beamSource(piece, L) {
     const b = piece.beam || normalizeBeam(null, piece);
-    const p = place(b.u, b.v, L);
+    // 転換の途中は灯体も一緒に動かす。当たる場所だけ動くと光が伸び縮みして見える
+    const p = place(
+      piece.animBeamU === undefined ? b.u : piece.animBeamU,
+      piece.animBeamV === undefined ? b.v : piece.animBeamV, L);
     if (L.plan) return { x: p.x, y: p.y };
     const per = perMetre(p, L);
     const rawY = p.rawY - b.h * per.y;
@@ -2304,7 +2309,7 @@
    * 曲がり具合は真ん中の control 点ひとつで決まる。直線から始めて、
    * 掴んで曲げれば回り込みになる——舞台で人が動く道はたいてい弧を描く。 */
   function routePoints(piece, L) {
-    const at = place(piece.u, piece.v, L);
+    const at = place(pieceU(piece), pieceV(piece), L);
     const to = place(piece.route.u, piece.route.v, L);
     const ctrl = place(piece.route.bu, piece.route.bv, L);
     /* 演者の足元からいきなり線を出すと、駒と矢印がくっついて読みにくい。
@@ -4749,6 +4754,8 @@
     sceneAnim.pieces.forEach((entry) => {
       delete entry.piece.animU;
       delete entry.piece.animV;
+      delete entry.piece.animBeamU;
+      delete entry.piece.animBeamV;
     });
     sceneAnim = null;
   }
@@ -4766,7 +4773,10 @@
     sc().pieces.forEach((piece) => {
       const twin = twinOf(piece, fromScene.pieces || []);
       if (!twin) return;
-      if (Math.abs(twin.u - piece.u) < 0.004 && Math.abs(twin.v - piece.v) < 0.004) return;
+      const sameSpot = Math.abs(twin.u - piece.u) < 0.004 && Math.abs(twin.v - piece.v) < 0.004;
+      const sameBeam = !(piece.type === "light" && piece.beam && twin.beam)
+        || (Math.abs(twin.beam.u - piece.beam.u) < 0.004 && Math.abs(twin.beam.v - piece.beam.v) < 0.004);
+      if (sameSpot && sameBeam) return;
       /* 動線があれば、その二次曲線をたどる。行き先が動線の終点と違っていても、
        * 曲がり方だけ借りて向かう（曲線の形は残しつつ、着地は次の場面の場所）。 */
       const route = twin.route;
@@ -4775,6 +4785,10 @@
         from: { u: twin.u, v: twin.v },
         ctrl: route ? { u: route.bu, v: route.bv } : null,
         to: { u: piece.u, v: piece.v },
+        // 明かりは灯体の側も動かす（当たる場所だけ動くと光が伸び縮みして見える）
+        beam: piece.type === "light" && piece.beam && twin.beam
+          ? { from: { u: twin.beam.u, v: twin.beam.v }, to: { u: piece.beam.u, v: piece.beam.v } }
+          : null,
       });
     });
     if (!pieces.length) return;
@@ -4791,6 +4805,10 @@
         } else {
           entry.piece.animU = entry.from.u + (entry.to.u - entry.from.u) * e;
           entry.piece.animV = entry.from.v + (entry.to.v - entry.from.v) * e;
+        }
+        if (entry.beam) {
+          entry.piece.animBeamU = entry.beam.from.u + (entry.beam.to.u - entry.beam.from.u) * e;
+          entry.piece.animBeamV = entry.beam.from.v + (entry.beam.to.v - entry.beam.from.v) * e;
         }
       });
       render();
