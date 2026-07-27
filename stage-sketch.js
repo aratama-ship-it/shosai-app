@@ -4809,10 +4809,12 @@
   /* 紐づけていた駒が消えたメモは、消さずにその場へ置き直す。
    * 覚え書きを勝手に捨てない。ただし持ち主が居ないので、絵の内側へ寄せておく */
   function detachOrphanNotes() {
-    state.scenes.forEach((scene) => {
+    // 場面は state.project.scenes にある。ここを取り違えると restore() が
+    // 途中で落ち、「戻す」が黙って効かなくなる（実際にそうなっていた）
+    (state.project.scenes || []).forEach((scene) => {
       (scene.notes || []).forEach((note) => {
         if (!note.pieceId) return;
-        if (scene.pieces.some((piece) => piece.id === note.pieceId)) return;
+        if ((scene.pieces || []).some((piece) => piece.id === note.pieceId)) return;
         note.pieceId = null;
         note.x = clamp(note.x, 20, W - NOTE_W - 20);
         note.y = clamp(note.y, 20, H - 80);
@@ -5605,6 +5607,27 @@
   els.delete.addEventListener("click", removeSelected);
   els.undo.addEventListener("click", undo);
   els.redo.addEventListener("click", redo);
+
+  /* ⌘Z で戻す、⇧⌘Z でやり直す（WindowsではCtrl）。
+   * 絵を描く道具なので、手が離れないことが効く。ただし
+   *  ・舞台スケッチを開いていないときは何もしない（他のタブの邪魔をしない）
+   *  ・名前やメモを打っている最中は、ブラウザ本来の文字の取り消しに任せる
+   * の二つは必ず守る。取り違えると、打っている文章ではなく舞台の配置が消える。 */
+  function isTyping(el) {
+    if (!el) return false;
+    const tag = el.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "z" && event.key !== "Z") return;
+    if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+    const view = document.getElementById("view-stage");
+    if (!view || view.hidden) return;
+    if (isTyping(event.target)) return;
+    event.preventDefault();
+    if (event.shiftKey) redo(); else undo();
+  });
 
   els.clear.addEventListener("click", () => {
     if (!window.confirm(`「${sc().title}」に置いたものと背景の塗りをすべて消しますか？（他の場面はそのままです）`)) return;
