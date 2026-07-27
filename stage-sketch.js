@@ -33,6 +33,26 @@
 
   const W = canvas.width;
   const H = canvas.height;
+  /* ---------- 初期化（テスト用） ----------
+     ?fresh を付けて開くと、舞台スケッチの持ちものだけ消して開き直す。
+     初めて来た人とまったく同じ状態（案内も自動で出る）を作れるので、
+     チュートリアルの通し確認や、人に見せる前の仕切り直しに使う。
+     ★消すのは舞台スケッチの4つだけ。他の画面のものは触らない。
+     ?tour を付けると、消さずに案内だけ出す。 */
+  const STAGE_KEYS = [
+    "shosai-stage-sketch-v1", "shosai-stage-shows-v1",
+    "shosai-stage-tour-v1", "shosai-stage-lang",
+  ];
+  const openArgs = new URLSearchParams(window.location.search);
+  if (openArgs.has("fresh")) {
+    STAGE_KEYS.forEach((key) => {
+      try { localStorage.removeItem(key); } catch (_) { /* 消せなくても続ける */ }
+    });
+    // ?fresh を落としたところへ入り直す（読み直すたびに消えるのを避ける）
+    window.location.replace(window.location.pathname);
+    return;
+  }
+
   const STORAGE_KEY = "shosai-stage-sketch-v1";          // いま開いているショー
   const SHOWS_KEY = "shosai-stage-shows-v1";              // 端末に置いた全ショー
   const HISTORY_LIMIT = 36;
@@ -8227,5 +8247,5 @@
    * 一度でも見た（または閉じた）ら、次からは上の「使い方」からだけ。 */
   let seenTour = true;
   try { seenTour = localStorage.getItem(TOUR_KEY) === "done"; } catch (_) { seenTour = true; }
-  if (!seenTour) setTimeout(() => showTour(0), 700);
+  if (!seenTour || openArgs.has("tour")) setTimeout(() => showTour(0), 700);
 })();
