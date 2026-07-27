@@ -5500,6 +5500,35 @@ canvas[data-tool="note"] { cursor: copy; }
 
 .stage-panel.is-collapsed .stage-panel-help { display: none; }
 
+/* 中央のバーの「?」。項目の「?」と同じ形にして、役目をそろえる */
+.stage-hint-help {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-dark);
+  border-radius: 50%;
+  background: none;
+  color: rgba(240, 231, 214, 0.42);
+  font-size: 10px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.stage-hint-help:hover { color: var(--milk); border-color: var(--brass); }
+
+.stage-hint-help[aria-pressed="true"] {
+  color: var(--paper);
+  border-color: var(--brass);
+  background: rgba(211, 172, 89, 0.2);
+}
+
+.stage-tool-hint[hidden] { display: none; }
+
 /* 掴んでいるパネル。指について動くので、浮いていることを影と傾きで示す */
 .stage-panel.is-dragging {
   opacity: 0.97;

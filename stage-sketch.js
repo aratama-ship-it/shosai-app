@@ -456,6 +456,7 @@
     exportRun: document.getElementById("stage-export-run"),
     exportNote: document.getElementById("stage-export-note"),
     toolHint: document.getElementById("stage-tool-hint"),
+    toolHelp: document.getElementById("stage-tool-help"),
     background: document.getElementById("stage-bg-color"),
     paintColor: document.getElementById("stage-paint-color"),
     brushSize: document.getElementById("stage-brush-size"),
@@ -5956,6 +5957,17 @@
       setViewShown(which, !open);
     });
   });
+  /* 道具の説明も畳んでおき、「?」で出す。中央のバーは道具そのものが並ぶ場所なので、
+   * 説明が居座ると道具の列が押し出される（項目の説明と同じ扱いにそろえる）。 */
+  if (els.toolHelp) {
+    els.toolHelp.addEventListener("click", () => {
+      const texts = [els.toolHint, ...document.querySelectorAll(".stage-canvas-help")].filter(Boolean);
+      const show = texts[0].hidden;
+      texts.forEach((el) => { el.hidden = !show; });
+      els.toolHelp.setAttribute("aria-pressed", String(show));
+    });
+  }
+
   const swapBtn = document.getElementById("stage-swap-center");
   if (swapBtn) swapBtn.addEventListener("click", swapCenter);
 

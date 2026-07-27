@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=91">
+<link rel="stylesheet" href="style.css?v=92">
 </head>
 <body>
 
@@ -378,7 +378,9 @@
               <button type="button" data-stage-tool="light" aria-pressed="false">光を動かす</button>
               <button type="button" data-stage-tool="erase" aria-pressed="false">塗りを消す</button>
             </div>
-            <p class="stage-tool-hint" id="stage-tool-hint">演者や物を選び、舞台の上で動かします。</p>
+            <button type="button" class="stage-hint-help" id="stage-tool-help"
+                    aria-pressed="false" aria-label="いまの道具の説明を出す" title="いまの道具の説明">?</button>
+            <p class="stage-tool-hint" id="stage-tool-hint" hidden>演者や物を選び、舞台の上で動かします。</p>
             <label class="stage-toggle stage-name-toggle">
               <input type="checkbox" id="stage-show-names" checked>
               <span>演者名</span>
@@ -436,7 +438,7 @@
               </div>
             </div>
           </div>
-          <p class="stage-canvas-help">上下で奥行き、左右で立ち位置を決めます。選択中は矢印キーでも動かせます。</p>
+          <p class="stage-canvas-help" hidden>上下で奥行き、左右で立ち位置を決めます。選択中は矢印キーでも動かせます。</p>
         </section>
 
         <aside class="stage-inspector stage-col" data-col="right" id="stage-col-right" aria-label="右の道具列">
@@ -804,7 +806,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=107"></script>
+<script src="stage-sketch.js?v=108"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
