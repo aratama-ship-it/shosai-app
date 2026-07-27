@@ -4535,6 +4535,11 @@
     renderSets();
     renderLights();
     renderRigs();
+    /* ★絵と場面の欄も描き直す。ここを忘れると、データには入っているのに
+     * 舞台に出てこない（札は「舞台上」なのに姿がない、という食い違いになる）。 */
+    renderScenes();
+    updateInspector();
+    render();
     persistSoon();
     announce(`${raw}を名簿へ加え、この場面の舞台へ出しました。`);
   }
@@ -4772,6 +4777,10 @@
     if (nameInput) nameInput.value = "";
     renderSets();
     renderLights();
+    // 同上。登録しただけで絵が変わらないと、置いたことが伝わらない
+    renderScenes();
+    updateInspector();
+    render();
     persistSoon();
     announce(kind === "light"
       ? `${raw}を${lightKindName(lk)}へ加えてONにしました。`
