@@ -6244,17 +6244,22 @@
   }
   if (els.pieceLock) {
       const locked = isLocked(piece);
+      /* 錠は鍵の絵だけ。並ぶボタンが全部同じ長さの文字だと、目が滑って読めない。
+       * 何ができるかは、押す前に触れたとき（title）と読み上げで伝える。 */
       els.pieceLock.setAttribute("aria-pressed", String(locked));
-      const mark = els.pieceLock.querySelector(".stage-lock-mark");
-      if (mark) mark.textContent = locked ? "🔒" : "🔓";
-      els.pieceLock.lastChild.textContent = locked ? "錠を外す" : "動かないようにする";
+      els.pieceLock.textContent = locked ? "🔒" : "🔓";
+      const lockWord = locked ? "錠を外す" : "動かないようにする";
+      els.pieceLock.setAttribute("aria-label", lockWord);
       els.pieceLock.title = owner
-        ? `「${owner.name}」の錠。掛けているあいだ、どの場面でも動きません。`
-        : "掛けているあいだ、掴んでも動きません。";
+        ? `${lockWord}（「${owner.name}」の錠。掛けているあいだ、どの場面でも動きません）`
+        : `${lockWord}（掛けているあいだ、掴んでも動きません）`;
     }
     if (els.openSetInfo) {
       els.openSetInfo.hidden = !owner;
-      els.openSetInfo.textContent = registered ? "寸法を開く" : "プロフィールを開く";
+      els.openSetInfo.textContent = registered ? "寸法" : "身長";
+      els.openSetInfo.title = registered
+        ? `「${registered.name}」の寸法を開く`
+        : (member ? `「${member.name}」のプロフィールを開く` : "");
     }
   }
 

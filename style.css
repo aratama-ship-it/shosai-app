@@ -6010,10 +6010,34 @@ body.is-panel-dragging {
   margin: 2px 0 4px;
 }
 
-/* 錠は鍵の絵で統一する（一覧の行と同じ形） */
-.stage-lock-mark {
-  margin-right: 6px;
-  font-size: 11px;
+/* 選んだものの操作は一列にまとめる。縦に積むと、つまみより
+   ボタンの方が場所を取って、何を触る欄なのか分からなくなる */
+.stage-action-row {
+  display: grid;
+  grid-template-columns: 38px repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.stage-icon-action {
+  min-height: 32px;
+  border: 1px solid var(--line-dark);
+  background: none;
+  color: var(--milk-dim);
+  font-family: var(--sans);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+.stage-icon-action:hover { color: var(--milk); border-color: var(--brass); }
+.stage-icon-action[hidden] { display: none; }
+
+.stage-icon-action[aria-pressed="true"] {
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.22);
+  color: var(--paper);
 }
 .stage-modal-body input[type="color"] { width: 46px; height: 28px; padding: 0; border: 1px solid var(--line-dark); background: none; }
 

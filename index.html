@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=86">
+<link rel="stylesheet" href="style.css?v=87">
 </head>
 <body>
 
@@ -469,10 +469,12 @@
                 <button type="button" class="stage-minor-action" id="stage-beam-reset">真上から落とす</button>
               </div>
               <p class="stage-dims-note" id="stage-dims-from-set" hidden></p>
-              <button type="button" class="stage-minor-action stage-lock-action" id="stage-piece-lock"
-                      aria-pressed="false"><span class="stage-lock-mark" aria-hidden="true">🔓</span>動かないようにする</button>
-              <button type="button" class="stage-minor-action" id="stage-open-setinfo" hidden>登録を開く</button>
-              <button type="button" class="stage-minor-action" id="stage-duplicate">複製する</button>
+              <div class="stage-action-row">
+                <button type="button" class="stage-icon-action stage-lock-action" id="stage-piece-lock"
+                        aria-pressed="false" aria-label="動かないようにする">🔓</button>
+                <button type="button" class="stage-icon-action" id="stage-duplicate">複製</button>
+                <button type="button" class="stage-icon-action" id="stage-open-setinfo" hidden>寸法</button>
+              </div>
               <button type="button" class="stage-delete" id="stage-delete">舞台から外す</button>
             </div>
             </div>
@@ -790,7 +792,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=101"></script>
+<script src="stage-sketch.js?v=102"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
