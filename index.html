@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=98">
+<link rel="stylesheet" href="style.css?v=99">
 </head>
 <body>
 
@@ -391,7 +391,12 @@
             <button type="button" class="stage-hint-help" id="stage-tool-help"
                     aria-pressed="false" aria-label="いまの道具の説明を出す" title="いまの道具の説明">?</button>
             <p class="stage-tool-hint" id="stage-tool-hint" hidden>演者や物を選び、舞台の上で動かします。</p>
-            <label class="stage-toggle stage-name-toggle stage-bar-right">
+            <div class="stage-view-switch stage-bar-right" role="group" aria-label="どの絵を出すか">
+              <button type="button" data-show-view="front">正面</button>
+              <button type="button" data-show-view="plan">平面</button>
+              <button type="button" data-show-view="both">両方</button>
+            </div>
+            <label class="stage-toggle stage-name-toggle">
               <input type="checkbox" id="stage-show-names" checked>
               <span>演者名</span>
             </label>
@@ -405,6 +410,8 @@
             <div class="stage-board-frame" id="stage-front-cell">
               <div class="stage-canvas-bar">
                 <p class="stage-canvas-caption" id="stage-front-caption">正面</p>
+                <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-front-zoom"
+                        title="等倍に戻す" hidden>1.0× ⟲</button>
                 <button type="button" class="stage-canvas-tool" id="stage-front-note"
                         aria-pressed="false">メモを貼る</button>
                 <label class="stage-canvas-toggle" id="stage-seatmap-toggle">
@@ -432,6 +439,8 @@
                 <p class="stage-canvas-caption">平面（上から）</p>
                 <button type="button" class="stage-canvas-tool" id="stage-plan-route"
                         aria-pressed="false">動線を描く</button>
+                <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-plan-zoom"
+                        title="等倍に戻す" hidden>1.0× ⟲</button>
                 <button type="button" class="stage-canvas-tool" id="stage-plan-note"
                         aria-pressed="false">メモを貼る</button>
                 <label class="stage-canvas-toggle" title="宙に吊ってあるものも平面に出す">
@@ -844,7 +853,7 @@
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
 <script src="stage-i18n.js?v=1"></script>
-<script src="stage-sketch.js?v=114"></script>
+<script src="stage-sketch.js?v=115"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

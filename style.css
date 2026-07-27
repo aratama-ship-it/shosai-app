@@ -4443,11 +4443,14 @@ canvas[data-tool="note"] { cursor: copy; }
 @media (max-width: 1119px) {
   .studio-grid { grid-template-columns: 1fr; }
 
+  /* 画面が狭いときは、右の列も左の一列へ流し込む。
+     二列に割ると、どちらの列も道具が縦に伸びて絵が押し下げられる。 */
   .stage-sketch-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "board board"
-      "tools inspector";
+      "board"
+      "tools"
+      "inspector";
   }
 
   .placed-list {
@@ -5509,6 +5512,35 @@ canvas[data-tool="note"] { cursor: copy; }
 }
 
 .stage-panel.is-collapsed .stage-panel-help { display: none; }
+
+/* 正面と平面の出し分け。狭い画面では一枚ずつ見る */
+.stage-view-switch {
+  display: inline-flex;
+  border: 1px solid var(--line-dark);
+}
+
+.stage-view-switch button {
+  min-height: 30px;
+  padding: 4px 11px;
+  border: 0;
+  background: none;
+  color: var(--milk-dim);
+  font-family: var(--sans);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.stage-view-switch button + button { border-left: 1px solid var(--line-dark); }
+.stage-view-switch button:hover { color: var(--milk); }
+
+.stage-view-switch button[aria-pressed="true"] {
+  color: var(--paper);
+  background: rgba(168, 75, 38, 0.28);
+}
+
+/* 拡大しているときだけ出る、等倍へ戻す札 */
+.stage-zoom-reset[hidden] { display: none; }
 
 /* 言語の切り替え。書き出しの隣に、控えめな枠で置く */
 .stage-lang {

@@ -748,6 +748,8 @@
     planRoute: document.getElementById("stage-plan-route"),
     planNote: document.getElementById("stage-plan-note"),
     frontNote: document.getElementById("stage-front-note"),
+    frontZoom: document.getElementById("stage-front-zoom"),
+    planZoom: document.getElementById("stage-plan-zoom"),
     rename: document.getElementById("stage-rename"),
     renameBackdrop: document.getElementById("stage-rename-backdrop"),
     renameInput: document.getElementById("stage-rename-input"),
@@ -876,6 +878,29 @@
   };
 
   const LANG_KEY = "shosai-stage-lang";
+
+  /* ---------- 拡大（二本指） ----------
+     絵そのものを拡大する。舞台の作りは変えず、見ている窓だけを動かす。
+     描くときは canvas へ一枚の変換をかけ、掴むときはその逆をかける。
+     ここを別々に持つと、指の下と駒がずれる。
+     覚えておく必要のない一時の状態なので、保存はしない。 */
+  const zoomState = {
+    front: { z: 1, ox: 0, oy: 0 },
+    plan: { z: 1, ox: 0, oy: 0 },
+  };
+  const ZOOM_MIN = 1;
+  const ZOOM_MAX = 5;
+
+  const zoomOf = (view) => zoomState[view === "plan" ? "plan" : "front"];
+
+  // 拡大しても、絵の外側が見えないように寄せ幅を丸める
+  function clampZoom(zs) {
+    zs.z = clamp(zs.z, ZOOM_MIN, ZOOM_MAX);
+    const maxX = W - W / zs.z;
+    const maxY = H - H / zs.z;
+    zs.ox = clamp(zs.ox, 0, Math.max(0, maxX));
+    zs.oy = clamp(zs.oy, 0, Math.max(0, maxY));
+  }
 
   /* ---------- 言語 ----------
      日本語が正本。英語は stage-i18n.js の対訳から引く。
@@ -3612,9 +3637,15 @@
     refreshBases(L.size);
     buildPaintLayer(L);
     target.save();
+    target.setTransform(1, 0, 0, 1, 0, 0);
     target.clearRect(0, 0, W, H);
     target.fillStyle = "#0d0c0b";
     target.fillRect(0, 0, W, H);
+    // 二本指で拡大しているぶんを、ここで一度だけかける
+    const zs = zoomOf(view);
+    if (zs.z !== 1 || zs.ox || zs.oy) {
+      target.setTransform(zs.z, 0, 0, zs.z, -zs.ox * zs.z, -zs.oy * zs.z);
+    }
 
     if (L.plan) drawPlanVenue(target, L);
     else drawFrontVenue(target, L);
@@ -5876,11 +5907,13 @@
   /* ---------- 操作 ---------- */
 
   function pointFromEvent(event) {
-    const el = event.currentTarget;
+    const el = event.currentTarget || event.target;
     const rect = el.getBoundingClientRect();
+    const zs = zoomOf(viewOf(el));
+    // 画面の点 → 絵の中の点。拡大しているぶんを戻す
     return {
-      x: (event.clientX - rect.left) * (W / rect.width),
-      y: (event.clientY - rect.top) * (H / rect.height),
+      x: (event.clientX - rect.left) * (W / rect.width) / zs.z + zs.ox,
+      y: (event.clientY - rect.top) * (H / rect.height) / zs.z + zs.oy,
     };
   }
 
@@ -6134,6 +6167,10 @@
    * 動かしている駒が、重なった相手の上に乗る（bringToTop）で決まるため。 */
 
   function finishPointer(event) {
+    if (touches.has(event.pointerId)) {
+      touches.delete(event.pointerId);
+      if (pinch && touches.size < 2) pinch = null;
+    }
     if (!pointerAction || pointerAction.pointerId !== event.pointerId) return;
     const el = pointerAction.el || canvas;
     try { if (el.hasPointerCapture(event.pointerId)) el.releasePointerCapture(event.pointerId); } catch (_) { /* 同上 */ }
@@ -6179,10 +6216,86 @@
     render();
   }
 
+  /* ---------- 二本指 ----------
+     二本置かれたら、その間の距離で拡大率、真ん中の動きで寄せ幅を決める。
+     一本目の操作（駒を掴んでいるなど）は取り消してから始める。 */
+  const touches = new Map();   // pointerId → { view, x, y }
+  let pinch = null;
+
+  function pinchPair(view) {
+    const list = [...touches.values()].filter((t) => t.view === view);
+    return list.length >= 2 ? list.slice(0, 2) : null;
+  }
+
+  function beginPinch(view) {
+    const pair = pinchPair(view);
+    if (!pair) return;
+    const zs = zoomOf(view);
+    pinch = {
+      view,
+      dist: Math.hypot(pair[0].x - pair[1].x, pair[0].y - pair[1].y) || 1,
+      cx: (pair[0].x + pair[1].x) / 2,
+      cy: (pair[0].y + pair[1].y) / 2,
+      z: zs.z, ox: zs.ox, oy: zs.oy,
+    };
+    // 駒を掴んでいたら手を離す（二本目が置かれた時点で、拡大の操作へ移る）
+    if (pointerAction) {
+      pointerAction.el.dataset.dragging = "false";
+      pointerAction = null;
+    }
+  }
+
+  function movePinch(view) {
+    if (!pinch || pinch.view !== view) return;
+    const pair = pinchPair(view);
+    if (!pair) return;
+    const zs = zoomOf(view);
+    const dist = Math.hypot(pair[0].x - pair[1].x, pair[0].y - pair[1].y) || 1;
+    const cx = (pair[0].x + pair[1].x) / 2;
+    const cy = (pair[0].y + pair[1].y) / 2;
+    const next = clamp(pinch.z * (dist / pinch.dist), ZOOM_MIN, ZOOM_MAX);
+    /* 指の真ん中に来ている絵の点を、動かさずに保つ。
+     * 保たないと、拡げるたびに絵が指から逃げていく。 */
+    const worldX = pinch.ox + pinch.cx / pinch.z;
+    const worldY = pinch.oy + pinch.cy / pinch.z;
+    zs.z = next;
+    zs.ox = worldX - cx / next;
+    zs.oy = worldY - cy / next;
+    clampZoom(zs);
+    render();
+    syncZoomButtons();
+  }
+
+  function resetZoom(view) {
+    const zs = zoomOf(view);
+    zs.z = 1; zs.ox = 0; zs.oy = 0;
+    render();
+    syncZoomButtons();
+  }
+
+  function syncZoomButtons() {
+    [["front", els.frontZoom], ["plan", els.planZoom]].forEach(([view, button]) => {
+      if (!button) return;
+      const zs = zoomOf(view);
+      const on = zs.z > 1.01;
+      button.hidden = !on;
+      button.textContent = `${zs.z.toFixed(1)}× ⟲`;
+    });
+  }
+
   function onPointerDown(event) {
     closeNoteEditor();
     const el = event.currentTarget;
     const view = viewOf(el);
+    if (event.pointerType === "touch") {
+      const rect = el.getBoundingClientRect();
+      touches.set(event.pointerId, {
+        view,
+        x: (event.clientX - rect.left) * (W / rect.width),
+        y: (event.clientY - rect.top) * (H / rect.height),
+      });
+      if (touches.size >= 2) { beginPinch(view); return; }
+    }
     const L = layout(view);
     const point = pointFromEvent(event);
     el.focus();
@@ -6345,6 +6458,16 @@
   }
 
   function onPointerMove(event) {
+    if (event.pointerType === "touch" && touches.has(event.pointerId)) {
+      const el = event.currentTarget;
+      const rect = el.getBoundingClientRect();
+      touches.set(event.pointerId, {
+        view: viewOf(el),
+        x: (event.clientX - rect.left) * (W / rect.width),
+        y: (event.clientY - rect.top) * (H / rect.height),
+      });
+      if (pinch) { movePinch(viewOf(el)); return; }
+    }
     if (!pointerAction || pointerAction.pointerId !== event.pointerId) return;
     const L = layout(pointerAction.view);
     const point = pointFromEvent(event);
@@ -6565,6 +6688,7 @@
       const which = button.dataset.toggleView;
       const open = which === "front" ? state.showFront : state.showPlan;
       setViewShown(which, !open);
+      syncViewSwitch();
     });
   });
   /* 道具の説明も畳んでおき、「?」で出す。中央のバーは道具そのものが並ぶ場所なので、
@@ -6575,6 +6699,33 @@
       const show = texts[0].hidden;
       texts.forEach((el) => { el.hidden = !show; });
       els.toolHelp.setAttribute("aria-pressed", String(show));
+    });
+  }
+
+  if (els.frontZoom) els.frontZoom.addEventListener("click", () => resetZoom("front"));
+  if (els.planZoom) els.planZoom.addEventListener("click", () => resetZoom("plan"));
+
+  /* 正面と平面の出し分け。狭い画面では二つ並べると絵が小さくなるので、
+   * タップで一枚ずつ見られるようにする。 */
+  document.querySelectorAll("[data-show-view]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const which = button.dataset.showView;
+      if (which === "both") { state.showFront = true; state.showPlan = true; }
+      else { state.showFront = which === "front"; state.showPlan = which === "plan"; }
+      applyLayout();
+      syncViewSwitch();
+      render();
+      persistSoon();
+    });
+  });
+
+  function syncViewSwitch() {
+    document.querySelectorAll("[data-show-view]").forEach((button) => {
+      const which = button.dataset.showView;
+      const on = which === "both"
+        ? (state.showFront && state.showPlan)
+        : (which === "front" ? state.showFront && !state.showPlan : state.showPlan && !state.showFront);
+      button.setAttribute("aria-pressed", String(on));
     });
   }
 
@@ -7354,7 +7505,12 @@
       const output = document.createElement("canvas");
       output.width = W;
       output.height = H;
+      /* 書き出しは等倍。手元で拡大して見ていても、渡すのは絵の全体。 */
+      const zs = zoomOf(job.view);
+      const keep = { z: zs.z, ox: zs.ox, oy: zs.oy };
+      zs.z = 1; zs.ox = 0; zs.oy = 0;
       drawStage(output.getContext("2d", { alpha: false }), false, job.view);
+      Object.assign(zs, keep);
       const link = document.createElement("a");
       link.href = output.toDataURL("image/png");
       const no = String(job.index + 1).padStart(2, "0");
@@ -7402,6 +7558,7 @@
   });
 
   buildPanelHeads();
+  syncViewSwitch();
   // 前に選んだ言語で開く。パネルの見出しを作ったあとに当てる
   try { lang = localStorage.getItem(LANG_KEY) === "en" ? "en" : "ja"; } catch (_) { lang = "ja"; }
   applyLayout();
