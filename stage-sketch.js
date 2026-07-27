@@ -219,6 +219,157 @@
       anL: [-0.078, 1.18, 0.03], anR: [0.046, 1.19, -0.06],
       toL: [-0.08, 1.25, 0.06], toR: [0.044, 1.26, -0.09],
     }),
+    /* ---------- 芸と音楽の姿勢 ----------
+     * 道具を持つものは、姿勢が小道具を一緒に持つ（人だけでは何をしているか読めない）。
+     * 道具の位置は手や足の関節に合わせてあるので、向きを変えても手から離れない。 */
+    makePose("sing", "歌う（マイク）", {
+      // 片手をマイクへ、もう片方は開く
+      elR: [0.16, 0.62, 0.08], wrR: [0.10, 0.79, 0.12],
+      elL: [-0.19, 0.60, -0.02], wrL: [-0.24, 0.44, 0.02],
+      head: [0, 0.945, 0.02],
+    }, { props: [
+      { kind: "line", a: [0.10, 0.79, 0.12], b: [0.055, 0.90, 0.10], w: 0.022, tone: "gear" },
+      { kind: "dot", c: [0.05, 0.915, 0.10], r: 0.028, tone: "dark" },
+    ] }),
+    makePose("juggle", "ジャグリング", {
+      // 両手を胸の前へ開き、玉が弧を描いて上がっている
+      elL: [-0.20, 0.60, 0.10], elR: [0.20, 0.60, 0.10],
+      wrL: [-0.20, 0.72, 0.20], wrR: [0.20, 0.72, 0.20],
+    }, { props: [
+      { kind: "dot", c: [-0.20, 0.80, 0.20], r: 0.035, tone: "ball" },
+      { kind: "dot", c: [0, 1.16, 0.16], r: 0.035, tone: "ball" },
+      { kind: "dot", c: [0.20, 0.80, 0.20], r: 0.035, tone: "ball" },
+    ] }),
+    makePose("guitar", "ギターを弾く", {
+      // 左手は棹の上、右手は胴の前
+      elL: [-0.22, 0.63, 0.10], wrL: [-0.30, 0.72, 0.14],
+      elR: [0.17, 0.60, 0.14], wrR: [0.06, 0.60, 0.20],
+    }, { props: [
+      { kind: "line", a: [-0.34, 0.75, 0.15], b: [0.06, 0.58, 0.19], w: 0.028, tone: "wood" },
+      { kind: "dot", c: [0.10, 0.565, 0.20], r: 0.11, tone: "wood" },
+    ] }),
+    makePose("trumpet", "トランペットを吹く", {
+      // 両手を口元へ。ラッパは斜め上へ向く
+      elL: [-0.19, 0.63, 0.10], wrL: [-0.10, 0.76, 0.16],
+      elR: [0.19, 0.63, 0.10], wrR: [0.03, 0.76, 0.20],
+    }, { props: [
+      { kind: "line", a: [-0.02, 0.855, 0.10], b: [0.09, 0.90, 0.30], w: 0.03, tone: "gear" },
+      { kind: "dot", c: [0.11, 0.91, 0.33], r: 0.06, tone: "gear" },
+    ] }),
+    /* 踊り。形の違いが読めることを第一にする（腕の高さ・脚の開き・体の傾きを
+     * それぞれ変える）。細かな流派の再現ではなく、絵として見分けがつくこと。 */
+    makePose("dance1", "踊る・両手を斜め上へ", {
+      elL: [-0.24, 0.90, 0.02], wrL: [-0.34, 1.06, 0.04],
+      elR: [0.24, 0.90, 0.02], wrR: [0.34, 1.06, 0.04],
+      knL: [-0.10, 0.27, 0.05], anL: [-0.13, 0.04, 0.06],
+      knR: [0.10, 0.27, 0.05], anR: [0.13, 0.04, 0.06],
+    }),
+    makePose("dance2", "踊る・踏み込む", {
+      // 前へ大きく踏み込み、後ろ手を引く
+      hipL: [-0.055, 0.50, 0.02], hipR: [0.055, 0.50, 0.02],
+      knR: [0.09, 0.30, 0.26], anR: [0.10, 0.05, 0.42], toR: [0.10, 0.02, 0.50],
+      knL: [-0.08, 0.28, -0.16], anL: [-0.08, 0.05, -0.30], toL: [-0.08, 0.02, -0.36],
+      elR: [0.20, 0.66, 0.20], wrR: [0.24, 0.80, 0.34],
+      elL: [-0.18, 0.60, -0.16], wrL: [-0.22, 0.48, -0.30],
+    }),
+    makePose("dance3", "踊る・腰を落として開く", {
+      hipL: [-0.07, 0.44, 0], hipR: [0.07, 0.44, 0],
+      knL: [-0.22, 0.25, 0.06], anL: [-0.30, 0.04, 0.04],
+      knR: [0.22, 0.25, 0.06], anR: [0.30, 0.04, 0.04],
+      shL: [-0.115, 0.75, 0], shR: [0.115, 0.75, 0],
+      elL: [-0.26, 0.66, 0.06], wrL: [-0.34, 0.56, 0.12],
+      elR: [0.26, 0.66, 0.06], wrR: [0.34, 0.56, 0.12],
+      neck: [0, 0.79, 0], head: [0, 0.87, 0.01],
+    }),
+    makePose("dance4", "踊る・跳ぶ", {
+      // 床から離れ、脚を左右へ開く
+      hipL: [-0.055, 0.66, 0], hipR: [0.055, 0.66, 0],
+      knL: [-0.24, 0.50, 0.04], anL: [-0.38, 0.36, 0.02], toL: [-0.44, 0.31, 0.04],
+      knR: [0.24, 0.50, 0.04], anR: [0.38, 0.36, 0.02], toR: [0.44, 0.31, 0.04],
+      shL: [-0.115, 0.96, 0], shR: [0.115, 0.96, 0],
+      elL: [-0.24, 1.06, 0.02], wrL: [-0.30, 1.20, 0.04],
+      elR: [0.24, 1.06, 0.02], wrR: [0.30, 1.20, 0.04],
+      neck: [0, 1.00, 0], head: [0, 1.08, 0.01],
+    }),
+    makePose("dance5", "踊る・体をひねる", {
+      // 上半身をひねり、腕を胸の前で交差させる
+      shL: [-0.10, 0.82, 0.06], shR: [0.12, 0.81, -0.06],
+      elL: [-0.10, 0.66, 0.18], wrL: [0.10, 0.62, 0.14],
+      elR: [0.20, 0.66, 0.04], wrR: [0.02, 0.70, 0.16],
+      hipL: [-0.06, 0.51, -0.02], hipR: [0.05, 0.52, 0.02],
+      knL: [-0.08, 0.28, 0.06], anL: [-0.09, 0.04, 0.02],
+      knR: [0.07, 0.28, -0.04], anR: [0.08, 0.05, -0.10], toR: [0.08, 0.02, -0.17],
+      neck: [0, 0.86, 0.02], head: [0, 0.94, 0.06],
+    }),
+    /* ウィンドミル。背中と肩で床を受け、脚を大きく開いて回る。
+     * 体はほぼ水平で、腰が浮いている瞬間を採る。 */
+    makePose("windmill", "ウィンドミル", {
+      head: [-0.16, 0.13, 0.18], neck: [-0.10, 0.16, 0.12],
+      shL: [-0.06, 0.20, 0.02], shR: [-0.02, 0.14, -0.10],
+      elL: [-0.10, 0.06, 0.16], wrL: [-0.14, 0.03, 0.28],
+      elR: [0.10, 0.10, -0.16], wrR: [0.18, 0.05, -0.24],
+      hipL: [0.10, 0.30, 0.04], hipR: [0.14, 0.26, -0.06],
+      knL: [0.28, 0.46, 0.20], anL: [0.40, 0.62, 0.34], toL: [0.44, 0.68, 0.40],
+      knR: [0.30, 0.34, -0.22], anR: [0.42, 0.24, -0.40], toR: [0.46, 0.20, -0.47],
+    }, { wide: [0, 1, 0], face: [0, 0.2, 0.9], sideView: true }),
+    makePose("skate", "ローラースケート", {
+      // 滑る姿勢。膝を軽く曲げ、体をやや前へ倒す
+      hipL: [-0.055, 0.50, 0.02], hipR: [0.055, 0.50, 0.02],
+      knL: [-0.07, 0.28, 0.10], anL: [-0.075, 0.075, 0.12],
+      knR: [0.07, 0.28, -0.02], anR: [0.075, 0.075, 0.00],
+      shL: [-0.115, 0.80, 0.06], shR: [0.115, 0.80, 0.06],
+      elL: [-0.18, 0.64, 0.14], wrL: [-0.20, 0.52, 0.24],
+      elR: [0.18, 0.64, 0.14], wrR: [0.20, 0.52, 0.24],
+      neck: [0, 0.84, 0.06], head: [0, 0.92, 0.09],
+    }, { props: [
+      { kind: "line", a: [-0.075, 0.035, 0.05], b: [-0.075, 0.035, 0.19], w: 0.035, tone: "dark" },
+      { kind: "line", a: [0.075, 0.035, -0.07], b: [0.075, 0.035, 0.07], w: 0.035, tone: "dark" },
+    ] }),
+    makePose("unicycle", "一輪車", {
+      // サドルに座り、脚はペダルへ。腕は左右へ開いて釣り合いを取る
+      hipL: [-0.055, 0.66, 0], hipR: [0.055, 0.66, 0],
+      knL: [-0.10, 0.50, 0.22], anL: [-0.10, 0.34, 0.10], toL: [-0.10, 0.31, 0.18],
+      knR: [0.10, 0.46, 0.14], anR: [0.10, 0.30, -0.06], toR: [0.10, 0.27, 0.02],
+      shL: [-0.115, 0.96, 0], shR: [0.115, 0.96, 0],
+      elL: [-0.26, 0.94, 0.02], wrL: [-0.40, 0.98, 0.04],
+      elR: [0.26, 0.94, 0.02], wrR: [0.40, 0.98, 0.04],
+      neck: [0, 1.00, 0], head: [0, 1.08, 0.01],
+    }, { props: [
+      { kind: "line", a: [0, 0.62, 0], b: [0, 0.30, 0], w: 0.03, tone: "gear" },
+      { kind: "ring", c: [0, 0.30, 0], r: 0.30, w: 0.035, tone: "dark" },
+      { kind: "dot", c: [0, 0.30, 0], r: 0.03, tone: "gear" },
+    ] }),
+    makePose("skateboard", "スケートボード", {
+      // 板の上に横向きで乗る。膝を曲げ、腕で釣り合いを取る
+      hipL: [-0.055, 0.50, -0.06], hipR: [0.055, 0.50, 0.06],
+      knL: [-0.09, 0.28, -0.14], anL: [-0.09, 0.10, -0.20], toL: [-0.09, 0.07, -0.27],
+      knR: [0.09, 0.28, 0.14], anR: [0.09, 0.10, 0.20], toR: [0.09, 0.07, 0.27],
+      elL: [-0.22, 0.66, -0.06], wrL: [-0.30, 0.74, -0.14],
+      elR: [0.22, 0.66, 0.10], wrR: [0.30, 0.74, 0.18],
+      neck: [0, 0.86, 0.02], head: [0, 0.94, 0.04],
+    }, { props: [
+      { kind: "line", a: [0, 0.05, -0.36], b: [0, 0.05, 0.36], w: 0.05, tone: "dark" },
+      { kind: "dot", c: [0, 0.025, -0.24], r: 0.028, tone: "gear" },
+      { kind: "dot", c: [0, 0.025, 0.24], r: 0.028, tone: "gear" },
+    ] }),
+    makePose("bicycle", "自転車", {
+      // 前傾してハンドルを握る。脚はペダルの上下へ
+      hipL: [-0.055, 0.62, -0.10], hipR: [0.055, 0.62, -0.10],
+      knL: [-0.09, 0.44, 0.14], anL: [-0.09, 0.26, 0.06], toL: [-0.09, 0.23, 0.14],
+      knR: [0.09, 0.40, 0.04], anR: [0.09, 0.22, -0.10], toR: [0.09, 0.19, -0.02],
+      shL: [-0.11, 0.86, 0.06], shR: [0.11, 0.86, 0.06],
+      elL: [-0.16, 0.80, 0.24], wrL: [-0.18, 0.78, 0.40],
+      elR: [0.16, 0.80, 0.24], wrR: [0.18, 0.78, 0.40],
+      neck: [0, 0.90, 0.10], head: [0, 0.96, 0.16],
+    }, { props: [
+      { kind: "ring", c: [0, 0.33, 0.50], r: 0.33, w: 0.03, tone: "dark" },
+      { kind: "ring", c: [0, 0.33, -0.52], r: 0.33, w: 0.03, tone: "dark" },
+      { kind: "line", a: [0, 0.33, -0.52], b: [0, 0.62, -0.12], w: 0.025, tone: "gear" },
+      { kind: "line", a: [0, 0.62, -0.12], b: [0, 0.30, 0.04], w: 0.025, tone: "gear" },
+      { kind: "line", a: [0, 0.30, 0.04], b: [0, 0.33, 0.50], w: 0.025, tone: "gear" },
+      { kind: "line", a: [0, 0.62, -0.12], b: [0, 0.78, 0.40], w: 0.025, tone: "gear" },
+      { kind: "line", a: [-0.20, 0.78, 0.40], b: [0.20, 0.78, 0.40], w: 0.025, tone: "gear" },
+    ] }),
     /* シルホイール。輪の中に人が入り、両手両足で輪をとらえて回る道具。
      * 動力は人力だけで、輪と接しているのは両手と両足の四点。
      * 輪の直径は演者の身長＋十数cm（身長165cmで1.85m前後）が実物の目安。
@@ -596,6 +747,11 @@
     setInfoFlown: document.getElementById("stage-setinfo-flown"),
     setInfoFlownRow: document.getElementById("stage-setinfo-flown-row"),
     setInfoFlownNote: document.getElementById("stage-setinfo-flown-note"),
+    setInfoWires: document.getElementById("stage-setinfo-wires"),
+    setInfoWiresRow: document.getElementById("stage-setinfo-wires-row"),
+    liftControls: document.getElementById("stage-lift-controls"),
+    pieceLift: document.getElementById("stage-piece-lift"),
+    pieceLiftValue: document.getElementById("stage-piece-lift-value"),
     showFlown: document.getElementById("stage-show-flown"),
     setInfoKindRow: document.getElementById("stage-setinfo-lightkind"),
     frontInner: document.getElementById("stage-front-inner"),
@@ -1090,6 +1246,8 @@
                  * 何かの上に乗ることも、何かを乗せることもない。
                  * 代わりに地上高（dims.lift）で高さを決める。 */
                 flown: Boolean(t.flown),
+                // 吊りのワイヤーの本数。1本なら中央から、2本なら両端から
+                wires: t && Number(t.wires) === 1 ? 1 : 2,
                 lightKind: kind === "light" && LIGHT_KINDS[t && t.lightKind] ? t.lightKind : "hang",
               };
             })
@@ -1663,6 +1821,36 @@
       }));
     });
 
+    /* 小道具。関節と同じ変換に通すので、向きを変えれば道具も一緒に回る。
+     *   line … 2点を結ぶ棒（マイク、ギターの棹、自転車の骨組み）
+     *   ring … 体の正面の面に立つ輪（車輪、フープ）
+     *   dot  … 玉（ジャグリングの玉、車輪の芯）
+     * 位置は関節と同じ体の座標（x=左右／y=上下／z=正面向き）。 */
+    let props = null;
+    if (pose.props && pose.props.length) {
+      props = pose.props.map((prop) => {
+        const out = { kind: prop.kind, r: prop.r || 0, w: prop.w || 0.02, tone: prop.tone || "gear" };
+        if (prop.kind === "line") {
+          out.a = project(prop.a[0], prop.a[1], prop.a[2]);
+          out.b = project(prop.b[0], prop.b[1], prop.b[2]);
+        } else {
+          out.c = project(prop.c[0], prop.c[1], prop.c[2]);
+          if (prop.kind === "ring") {
+            const steps = 28;
+            out.pts = [];
+            for (let i = 0; i <= steps; i += 1) {
+              const a = (i / steps) * Math.PI * 2;
+              out.pts.push(project(
+                prop.c[0] + Math.cos(a) * prop.r,
+                prop.c[1] + Math.sin(a) * prop.r,
+                prop.c[2]));
+            }
+          }
+        }
+        return out;
+      });
+    }
+
     /* 道具の輪。体の正面の面（z=0）に立つ円なので、向きを変えると
      * 楕円につぶれ、真横からは一本の線になる。関節と同じ変換に通す。 */
     let wheel = null;
@@ -1679,7 +1867,7 @@
     const f = pose.face;
     const head = joints.head;
     const faceAt = project(head[0] + f[0] * 0.05, head[1] + f[1] * 0.05, head[2] + f[2] * 0.05);
-    return { P, box, ux, uy, faceAt, facing: f, wheel };
+    return { P, box, ux, uy, faceAt, facing: f, wheel, props };
   }
 
   function performerRig(piece, pos, L) {
@@ -1755,6 +1943,48 @@
     });
 
     if (rig.wheel) paintWheel(target, rig, "near");
+    if (rig.props) paintProps(target, rig);
+  }
+
+  /* 小道具。人の色ではなく道具の色で描く（人と持ち物を見分けるため）。
+   * 玉だけは投げているものなので、少し明るく置く。 */
+  const PROP_TONES = {
+    gear: "rgba(214,220,226,0.85)",     // 金属・器具
+    wood: "rgba(196,158,104,0.9)",      // 木・ギター
+    ball: "rgba(233,220,180,0.95)",     // 投げている玉
+    dark: "rgba(38,34,30,0.85)",        // タイヤ・板
+  };
+
+  function paintProps(target, rig) {
+    const ux = rig.ux;
+    target.save();
+    target.lineCap = "round";
+    target.lineJoin = "round";
+    rig.props.forEach((prop) => {
+      const tone = PROP_TONES[prop.tone] || PROP_TONES.gear;
+      if (prop.kind === "line") {
+        target.strokeStyle = tone;
+        target.lineWidth = Math.max(1.2, prop.w * ux);
+        target.beginPath();
+        target.moveTo(prop.a.x, prop.a.y);
+        target.lineTo(prop.b.x, prop.b.y);
+        target.stroke();
+        return;
+      }
+      if (prop.kind === "ring") {
+        target.strokeStyle = tone;
+        target.lineWidth = Math.max(1.2, prop.w * ux);
+        target.beginPath();
+        prop.pts.forEach((p, i) => { if (i) target.lineTo(p.x, p.y); else target.moveTo(p.x, p.y); });
+        target.stroke();
+        return;
+      }
+      target.fillStyle = tone;
+      target.beginPath();
+      target.arc(prop.c.x, prop.c.y, Math.max(1.5, prop.r * ux), 0, Math.PI * 2);
+      target.fill();
+    });
+    target.restore();
   }
 
   /* 輪（シルホイール）。金属の輪なので人の色ではなく鈍い銀で描く。
@@ -2049,9 +2279,11 @@
       const per = perMetre(centre, L);
       const topY = L.tilt(centre.rawY - (dim.h || 0) * per.y);
       const halfW = Math.max(6, ((dim.w || 1) / 2) * per.x * 0.62);
+      const owner = pieceSet(piece);
+      const wires = owner && Number(owner.wires) === 1 ? 1 : 2;
       target.strokeStyle = "rgba(226,232,238,0.5)";
       target.lineWidth = 1;
-      [-halfW, halfW].forEach((dx) => {
+      (wires === 1 ? [0] : [-halfW, halfW]).forEach((dx) => {
         target.beginPath();
         target.moveTo(centre.x + dx, topY);
         target.lineTo(centre.x + dx * 0.55, Math.max(0, L.backY - 6));
@@ -3912,7 +4144,7 @@
     const item = {
       id: rid("set"), kind, name: raw.slice(0, 24),
       color: kind === "light" ? "#d3ac59" : nextPieceColor(state.project.sets.length + 2),
-      dims, note: "", locked: false, flown: false, lightKind: lk,
+      dims, note: "", locked: false, flown: false, wires: 2, lightKind: lk,
     };
     state.project.sets.push(item);
     placeSetPiece(item);
@@ -4358,6 +4590,8 @@
       els.setInfoFlownRow.hidden = !canFly;
       if (els.setInfoFlownNote) els.setInfoFlownNote.hidden = !canFly || !item.flown;
       if (els.setInfoFlown) els.setInfoFlown.checked = Boolean(item.flown);
+      if (els.setInfoWiresRow) els.setInfoWiresRow.hidden = !canFly || !item.flown;
+      if (els.setInfoWires) els.setInfoWires.value = String(Number(item.wires) === 1 ? 1 : 2);
     }
     els.setInfoNote.value = item.note || "";
     buildDimControls(els.setInfoDims, "stage-setinfo", item.kind, item.dims, () => {
@@ -6238,6 +6472,33 @@
       announce(`${item.name}を${item.flown ? "吊物にしました" : "床置きに戻しました"}。`);
     });
   }
+  if (els.setInfoWires) {
+    els.setInfoWires.addEventListener("change", (e) => {
+      const item = currentSetItem();
+      if (!item) return;
+      checkpoint();
+      item.wires = Number(e.target.value) === 1 ? 1 : 2;
+      render();
+      persistSoon();
+    });
+  }
+  /* 地上高は「選んだもの」からも触れる。吊り位置は場面の中で動くものなので、
+   * 一覧の窓を開き直さずに合わせられた方がよい（値は登録側に効く）。 */
+  if (els.pieceLift) {
+    els.pieceLift.addEventListener("input", (e) => {
+      const piece = selectedPiece();
+      if (!piece || !isFlown(piece)) return;
+      const value = clamp(finite(e.target.value, 2.5), 0, 10);
+      const owner = pieceSet(piece);
+      const dims = owner ? owner.dims : piece.dims;
+      if (dims) dims.lift = value;
+      if (els.pieceLiftValue) els.pieceLiftValue.textContent = cmText(value);
+      renderSets();
+      render();
+      persistSoon();
+    });
+    els.pieceLift.addEventListener("pointerdown", checkpoint);
+  }
   if (els.showFlown) {
     els.showFlown.addEventListener("change", (e) => {
       state.showFlown = e.target.checked;
@@ -6425,6 +6686,15 @@
         els.dimsFromSet.textContent = registered
           ? `名前・色・寸法は「${registered.name}」で決めます（${setDimLabel(registered)}）。`
           : `名前・色・身長は「${member.name}」で決めます（${member.heightCm}cm）。`;
+      }
+    }
+    if (els.liftControls) {
+      const flown = Boolean(piece && isFlown(piece));
+      els.liftControls.hidden = !flown;
+      if (flown) {
+        const lift = flownLift(piece);
+        if (document.activeElement !== els.pieceLift) els.pieceLift.value = String(lift);
+        if (els.pieceLiftValue) els.pieceLiftValue.textContent = cmText(lift);
       }
     }
     if (els.beamControls) {

@@ -459,6 +459,12 @@
                 <input type="range" id="stage-piece-facing" min="-180" max="180" step="15" value="0">
                 <p class="stage-range-scale"><span>背中</span><span>客席</span><span>背中</span></p>
               </div>
+              <div id="stage-lift-controls" hidden>
+                <label class="stage-control-label stage-range-label" for="stage-piece-lift">
+                  地上高 <span id="stage-piece-lift-value">250cm</span>
+                </label>
+                <input type="range" id="stage-piece-lift" min="0" max="10" step="0.05" value="2.5">
+              </div>
               <div id="stage-beam-controls" hidden>
                 <label class="stage-control-label stage-range-label" for="stage-beam-dia">
                   明かりの直径 <span id="stage-beam-dia-value">400cm</span>
@@ -796,6 +802,13 @@
       <span>吊物（天井から吊る）</span>
     </label>
     <p class="stage-profile-hint" id="stage-setinfo-flown-note" hidden>吊物は何かの上に乗りません。高さは地上高で決めます。平面図では既定で隠れます。</p>
+    <div id="stage-setinfo-wires-row" hidden>
+      <label class="stage-control-label" for="stage-setinfo-wires">ワイヤーの本数</label>
+      <select id="stage-setinfo-wires" class="stage-select">
+        <option value="1">1本（中央から吊る）</option>
+        <option value="2">2本（両端から吊る）</option>
+      </select>
+    </div>
 
     <div id="stage-setinfo-dims"></div>
     <p class="stage-profile-hint">寸法は実寸です。床の1m枡と同じものさしで描かれます。</p>
@@ -813,7 +826,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=110"></script>
+<script src="stage-sketch.js?v=111"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
