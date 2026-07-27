@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=106">
+<link rel="stylesheet" href="style.css?v=107">
 </head>
 <body>
 
@@ -694,6 +694,11 @@
 <!-- 演者プロフィール -->
 <!-- 使い方の案内。舞台スケッチの上に重ねて出す -->
 <div class="stage-tour" id="stage-tour" hidden>
+  <!-- 暗幕。穴を二つ以上あけるので、影ではなく一枚の図形で描く。
+       枠の中だけでなく、手を動かす絵の面もいつも明るいままにするため。 -->
+  <svg class="stage-tour-shade" id="stage-tour-shade" aria-hidden="true" focusable="false">
+    <path id="stage-tour-shade-path" d=""></path>
+  </svg>
   <div class="stage-tour-ring" id="stage-tour-ring" aria-hidden="true"></div>
   <div class="stage-tour-card" id="stage-tour-card" role="dialog" aria-modal="false"
        aria-labelledby="stage-tour-title">
@@ -871,7 +876,7 @@
 <script src="app.js?v=38"></script>
 <script src="stage-venues.js?v=14"></script>
 <script src="stage-i18n.js?v=4"></script>
-<script src="stage-sketch.js?v=123"></script>
+<script src="stage-sketch.js?v=124"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

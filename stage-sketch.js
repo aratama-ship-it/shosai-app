@@ -750,6 +750,7 @@
     lang: document.getElementById("stage-lang"),
     tour: document.getElementById("stage-tour"),
     tourRing: document.getElementById("stage-tour-ring"),
+    tourShadePath: document.getElementById("stage-tour-shade-path"),
     tourCard: document.getElementById("stage-tour-card"),
     tourStep: document.getElementById("stage-tour-step"),
     tourTitle: document.getElementById("stage-tour-title"),
@@ -7982,16 +7983,49 @@
     return el && el.offsetParent !== null ? el : null;
   }
 
+  /* 暗幕にあける穴。外枠は時計回り、穴は反時計回りに描く。
+   * 同じ向きで描くと穴にならず、evenodd では穴どうしの重なりが塞がる。 */
+  function shadePath(holes) {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    let d = `M0 0 H${w} V${h} H0 Z`;
+    holes.forEach((r) => {
+      const l = Math.max(0, r.left);
+      const t = Math.max(0, r.top);
+      const rr = Math.min(w, r.right);
+      const b = Math.min(h, r.bottom);
+      if (rr <= l || b <= t) return;
+      d += ` M${l} ${t} V${b} H${rr} V${t} Z`;
+    });
+    return d;
+  }
+
+  function padRect(el, pad) {
+    const r = el.getBoundingClientRect();
+    return { left: r.left - pad, top: r.top - pad, right: r.right + pad, bottom: r.bottom + pad };
+  }
+
   function placeTour() {
     if (tourAt < 0 || !els.tourRing) return;
     const target = tourTarget(TOUR[tourAt]);
-    if (!target) { els.tourRing.hidden = true; return; }
-    const r = target.getBoundingClientRect();
-    els.tourRing.hidden = false;
-    els.tourRing.style.left = `${r.left - 6}px`;
-    els.tourRing.style.top = `${r.top - 6}px`;
-    els.tourRing.style.width = `${r.width + 12}px`;
-    els.tourRing.style.height = `${r.height + 12}px`;
+    const holes = [];
+    if (target) {
+      const r = padRect(target, 6);
+      els.tourRing.hidden = false;
+      els.tourRing.style.left = `${r.left}px`;
+      els.tourRing.style.top = `${r.top}px`;
+      els.tourRing.style.width = `${r.right - r.left}px`;
+      els.tourRing.style.height = `${r.bottom - r.top}px`;
+      holes.push(r);
+    } else {
+      els.tourRing.hidden = true;
+    }
+    /* 絵の面はいつも明るいままにする。案内の多くは「欄のボタンを押して、
+     * そのあと絵の上で手を動かす」形なので、絵が暗いと肝心の所が見えない。 */
+    if (els.canvasStack && els.canvasStack.offsetParent !== null) {
+      holes.push(padRect(els.canvasStack, 4));
+    }
+    if (els.tourShadePath) els.tourShadePath.setAttribute("d", shadePath(holes));
   }
 
   function watchTour() {

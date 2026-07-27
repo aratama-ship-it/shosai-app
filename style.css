@@ -5767,6 +5767,22 @@ canvas[data-tool="note"] { cursor: copy; }
    隅にカードを置くだけにする。触りながら読めるようにするため。 */
 .stage-tour[hidden] { display: none; }
 
+/* 暗幕。穴が一つで済むなら枠の影（0 0 0 9999px）で足りるが、
+   案内の多くは「左の欄のボタンを押して、絵の上で手を動かす」形なので、
+   明るくしておく所が二箇所ある。影では二つ目の穴があけられないので、
+   一枚のパスに穴をあける。★穴は外枠と逆回りに描く（nonzero）。
+   重なっても穴として残る——evenodd だと重なった所が塞がる。 */
+.stage-tour-shade {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 59;
+  pointer-events: none;
+}
+
+.stage-tour-shade path { fill: rgba(9, 12, 14, 0.62); }
+
 /* 注目枠。地の色が錆・真鍮の暖色なので、枠はその補色（青緑）で立てる。
    同系色だと道具立てに溶けて、どこを見ればよいのか分からない。 */
 .stage-tour-ring {
@@ -5774,13 +5790,11 @@ canvas[data-tool="note"] { cursor: copy; }
   z-index: 60;
   border: 3px solid #35d6cf;
   box-shadow:
-    0 0 0 9999px rgba(9, 12, 14, 0.62),
     0 0 0 1px rgba(53, 214, 207, 0.5),
     0 0 22px 4px rgba(53, 214, 207, 0.55),
     inset 0 0 18px rgba(53, 214, 207, 0.22);
   pointer-events: none;
   animation: stage-tour-pulse 1.5s ease-in-out infinite;
-  transition: left 0.18s ease, top 0.18s ease, width 0.18s ease, height 0.18s ease;
 }
 
 @keyframes stage-tour-pulse {
@@ -5798,7 +5812,7 @@ canvas[data-tool="note"] { cursor: copy; }
   position: fixed;
   left: 22px;
   top: 22px;
-  z-index: 61;
+  z-index: 72;
   width: min(360px, calc(100vw - 40px));
   padding: 16px 18px 14px;
   background: var(--desk-2);
@@ -6421,11 +6435,13 @@ body.is-panel-dragging {
 
 /* ===== 演者プロフィール ===== */
 
+/* ★案内の暗幕（59）より上に置く。下に置くと、姿勢の窓のように
+   案内の途中で開く窓が暗幕ごしになって、絵柄が読めなくなる。 */
 .stage-modal-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(8, 7, 6, 0.72);
-  z-index: 40;
+  z-index: 70;
 }
 
 .stage-modal {
@@ -6439,7 +6455,7 @@ body.is-panel-dragging {
   background: var(--desk-2);
   border: 1px solid var(--line-dark);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
-  z-index: 41;
+  z-index: 71;
 }
 
 /* ★窓ごとの幅は .stage-modal より後ろに置く。前に書くと、同じ強さの
