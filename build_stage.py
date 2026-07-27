@@ -13,7 +13,13 @@
 
 抜かないもの: db.js・data.js・app.js・roster.js（他のタブのためのもの）
 
-使い方:  python3 build_stage.py
+使い方:
+    python3 build_stage.py          … 作り直す
+    python3 build_stage.py --check  … 作り直しが要るかだけ見る（要るなら終了コード1）
+
+★JS と CSS は本体と共有なので、直せば単独ページにも即とどく。
+  直し忘れが起きるのは HTML（画面の組み立て）の方だけ。
+  index.html を触ったら、必ずこれを走らせること。
 """
 
 import re
@@ -24,6 +30,7 @@ HERE = Path(__file__).resolve().parent
 SRC = HERE / "index.html"
 OUT = HERE / "stage.html"
 
+CHECK = "--check" in sys.argv
 html = SRC.read_text(encoding="utf-8")
 
 # --- 舞台スケッチの画面 ---
@@ -82,6 +89,14 @@ page = f"""<!DOCTYPE html>
 </body>
 </html>
 """
+
+if CHECK:
+    current = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
+    if current == page:
+        print("stage.html は index.html と揃っています")
+        sys.exit(0)
+    print("！stage.html が古いです。python3 build_stage.py で作り直してください")
+    sys.exit(1)
 
 OUT.write_text(page, encoding="utf-8")
 
