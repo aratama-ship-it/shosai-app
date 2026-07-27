@@ -7934,6 +7934,7 @@
     },
     {
       at: "#stage-plan-route",
+      lit: "#stage-plan-cell",  // 動線は平面図にしか引けない
       begin: () => { tourMark.route = sc().pieces.filter((p) => p.route).length; },
       done: () => sc().pieces.filter((p) => p.route).length > tourMark.route,
       ja: ["動線を引く", "平面図の〈動線を描く〉を押し、動かしたい人を掴んで、行き先で離してください。矢印が出ます。"],
@@ -7962,6 +7963,7 @@
     },
     {
       at: "#stage-front-note",
+      lit: "#stage-front-cell",  // 案内しているのは正面の〈メモを貼る〉
       begin: () => { tourMark.notes = (sc().notes || []).length; },
       done: () => (sc().notes || []).length > tourMark.notes,
       ja: ["メモを貼る", "〈メモを貼る〉を押して、絵の何もない所を押してください。付箋が出て、その場で書けます。演者の脇でも、床の上でも。書き出した画像にも残ります。"],
@@ -7983,19 +7985,48 @@
     return el && el.offsetParent !== null ? el : null;
   }
 
+  /* 穴どうしの重なりを先に取り除く。★塗り方（nonzero も evenodd も）では
+   * 重なった所が塗り戻されて、かえって暗くなる。実際「まず動かしてみる」の段で、
+   * 枠と絵の面が丸ごと重なって中央が暗くなった。
+   * 後から足す矩形を、すでに決まった矩形で削って、重ならない形に分ける。 */
+  function rectMinus(r, cut) {
+    const l = Math.max(r.left, cut.left);
+    const t = Math.max(r.top, cut.top);
+    const rr = Math.min(r.right, cut.right);
+    const b = Math.min(r.bottom, cut.bottom);
+    if (rr <= l || b <= t) return [r];
+    const out = [];
+    if (r.top < t) out.push({ left: r.left, top: r.top, right: r.right, bottom: t });
+    if (b < r.bottom) out.push({ left: r.left, top: b, right: r.right, bottom: r.bottom });
+    if (r.left < l) out.push({ left: r.left, top: t, right: l, bottom: b });
+    if (rr < r.right) out.push({ left: rr, top: t, right: r.right, bottom: b });
+    return out;
+  }
+
+  function mergeHoles(rects) {
+    const out = [];
+    rects.forEach((r) => {
+      let parts = [r];
+      out.forEach((done) => { parts = parts.reduce((all, p) => all.concat(rectMinus(p, done)), []); });
+      parts.forEach((p) => { if (p.right > p.left && p.bottom > p.top) out.push(p); });
+    });
+    return out;
+  }
+
   /* 暗幕にあける穴。外枠は時計回り、穴は反時計回りに描く。
-   * 同じ向きで描くと穴にならず、evenodd では穴どうしの重なりが塞がる。 */
+   * 同じ向きで描くと穴にならない。 */
   function shadePath(holes) {
     const w = window.innerWidth;
     const h = window.innerHeight;
+    const clipped = holes.map((r) => ({
+      left: Math.max(0, r.left),
+      top: Math.max(0, r.top),
+      right: Math.min(w, r.right),
+      bottom: Math.min(h, r.bottom),
+    })).filter((r) => r.right > r.left && r.bottom > r.top);
     let d = `M0 0 H${w} V${h} H0 Z`;
-    holes.forEach((r) => {
-      const l = Math.max(0, r.left);
-      const t = Math.max(0, r.top);
-      const rr = Math.min(w, r.right);
-      const b = Math.min(h, r.bottom);
-      if (rr <= l || b <= t) return;
-      d += ` M${l} ${t} V${b} H${rr} V${t} Z`;
+    mergeHoles(clipped).forEach((r) => {
+      d += ` M${r.left} ${r.top} V${r.bottom} H${r.right} V${r.top} Z`;
     });
     return d;
   }
@@ -8020,11 +8051,12 @@
     } else {
       els.tourRing.hidden = true;
     }
-    /* 絵の面はいつも明るいままにする。案内の多くは「欄のボタンを押して、
-     * そのあと絵の上で手を動かす」形なので、絵が暗いと肝心の所が見えない。 */
-    if (els.canvasStack && els.canvasStack.offsetParent !== null) {
-      holes.push(padRect(els.canvasStack, 4));
-    }
+    /* 手を動かす面も明るいままにする。案内の多くは「欄のボタンを押して、
+     * そのあと絵の上で手を動かす」形なので、絵が暗いと肝心の所が見えない。
+     * ★ただし明るくするのは、その段で本当に触る面だけ。動線は平面図にしか
+     * 引けないので、正面図まで明るくすると触れる所を見誤る。 */
+    const lit = document.querySelector(TOUR[tourAt].lit || "#stage-canvas-stack");
+    if (lit && lit.offsetParent !== null) holes.push(padRect(lit, 4));
     if (els.tourShadePath) els.tourShadePath.setAttribute("d", shadePath(holes));
   }
 
