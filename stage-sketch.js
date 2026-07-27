@@ -3031,25 +3031,33 @@
      * ★灯体側にも幅を持たせて四角で描くと、光源側の左右と床側の左右が
      *   逆に繋がる角度があり、面が捻れて✗の形になっていた。
      *   点から広がる三角なら、どの角度でも捻れようがない。 */
+    /* ★帯と床の円を、一つの輪郭として塗る。
+     * 別々に塗ると、帯の裾の水平な線が円を上下に切ってしまい、
+     * 「半円が二つ繋がっている」ように見えていた（上半分だけ帯が重なるため）。
+     * 帯の裾を円の下半分の弧でつなぎ、帯は着地の手前で薄れさせる。 */
+    const ry = Math.max(3, 32 * scale);
     const gradient = target.createLinearGradient(src.x, src.y, hit.x, hit.y);
-    gradient.addColorStop(0, rgba(piece.color, 0.1));
-    gradient.addColorStop(0.72, rgba(piece.color, 0.15));
-    gradient.addColorStop(1, rgba(piece.color, 0.28));
+    gradient.addColorStop(0, rgba(piece.color, 0.09));
+    gradient.addColorStop(0.72, rgba(piece.color, 0.14));
+    gradient.addColorStop(1, rgba(piece.color, 0.06));
     target.save();
     target.globalCompositeOperation = "screen";
     target.fillStyle = gradient;
     target.beginPath();
     target.moveTo(src.x, src.y);
     target.lineTo(hit.x + spread, hit.y);
-    target.lineTo(hit.x - spread, hit.y);
+    // 円の下半分をなぞって左端へ回り込む。ここで輪郭が一続きになる
+    target.ellipse(hit.x, hit.y, spread, ry, 0, 0, Math.PI);
     target.closePath();
     target.fill();
+    // 明るいのは床に落ちた円そのもの。帯はそこへ吸い込まれる
     const pool = target.createRadialGradient(hit.x, hit.y, 0, hit.x, hit.y, spread);
-    pool.addColorStop(0, rgba(piece.color, 0.33));
+    pool.addColorStop(0, rgba(piece.color, 0.34));
+    pool.addColorStop(0.55, rgba(piece.color, 0.16));
     pool.addColorStop(1, rgba(piece.color, 0));
     target.fillStyle = pool;
     target.beginPath();
-    target.ellipse(hit.x, hit.y, spread, 32 * scale, 0, 0, Math.PI * 2);
+    target.ellipse(hit.x, hit.y, spread, ry, 0, 0, Math.PI * 2);
     target.fill();
     target.globalCompositeOperation = "source-over";
     if (lit || picked) drawFixture(target, src, piece, true);
