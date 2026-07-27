@@ -35,6 +35,10 @@
 
     /* ---- 上部 ---- */
     "使い方": "Guide",
+    "感想を送る": "Send feedback",
+    "使ってみた感想を送る": "Send your impressions",
+    "種類を選ぶ": "Choose a kind",
+    "絵は真横から見た形と、実物のおよその寸法です。": "Drawn from the side, at roughly real proportions.",
     "使い方をひととおり見る": "Take the quick tour",
     "一つ戻す": "Undo",
     "やり直す": "Redo",

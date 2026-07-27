@@ -738,6 +738,7 @@
     tourNext: document.getElementById("stage-tour-next"),
     tourClose: document.getElementById("stage-tour-close"),
     tourStart: document.getElementById("stage-tour-start"),
+    feedback: document.getElementById("stage-feedback"),
     exportModal: document.getElementById("stage-export-modal"),
     exportBackdrop: document.getElementById("stage-export-backdrop"),
     exportClose: document.getElementById("stage-export-close"),
@@ -834,6 +835,11 @@
     profileNote: document.getElementById("stage-profile-note"),
     rosterName: document.getElementById("stage-roster-name"),
     rosterKind: document.getElementById("stage-roster-kind"),
+    rosterKindLabel: document.getElementById("stage-roster-kind-label"),
+    kindModal: document.getElementById("stage-kind"),
+    kindBackdrop: document.getElementById("stage-kind-backdrop"),
+    kindClose: document.getElementById("stage-kind-close"),
+    kindGrid: document.getElementById("stage-kind-grid"),
     rosterAdd: document.getElementById("stage-roster-add"),
     rosterEmpty: document.getElementById("stage-roster-empty"),
     groupCast: document.getElementById("stage-group-cast"),
@@ -3341,7 +3347,7 @@
         const piece = sc().pieces.find((p) => p.id === note.pieceId);
         if (piece) {
           const at = placePiece(piece, L);
-          target.strokeStyle = "rgba(211,172,89,0.42)";
+          target.strokeStyle = "rgba(211,172,89,0.32)";
           target.lineWidth = 1;
           target.setLineDash([4, 4]);
           target.beginPath();
@@ -3351,18 +3357,21 @@
           target.setLineDash([]);
         }
       }
-      target.fillStyle = picked ? "#f3e6bd" : "#e9dcb4";
-      target.strokeStyle = picked ? "#a84b26" : "rgba(13,12,11,0.45)";
-      target.lineWidth = picked ? 2.4 : 1.4;
+      /* 付箋は覚え書きであって、絵の主役ではない。
+       * 明るい紙色だと舞台より先に目へ入るので、道具立てと同じ暗い面に置き、
+       * 選んでいるときだけ縁を起こす。 */
+      target.fillStyle = picked ? "rgba(38,34,30,0.95)" : "rgba(28,25,22,0.88)";
+      target.strokeStyle = picked ? "rgba(211,172,89,0.9)" : "rgba(211,172,89,0.4)";
+      target.lineWidth = picked ? 1.6 : 1;
       target.beginPath();
       target.rect(box.x, box.y, box.w, box.h);
       target.fill();
       target.stroke();
-      // 上辺だけ濃くして付箋らしくする
-      target.fillStyle = "rgba(168,75,38,0.24)";
-      target.fillRect(box.x, box.y, box.w, 4);
+      // 上辺に細い線を一本だけ。付箋の向きが分かればよい
+      target.fillStyle = "rgba(211,172,89,0.32)";
+      target.fillRect(box.x, box.y, box.w, 2);
 
-      target.fillStyle = "#231d16";
+      target.fillStyle = "rgba(240,231,214,0.86)";
       target.font = "13px 'Hiragino Kaku Gothic ProN', sans-serif";
       target.textAlign = "left";
       target.textBaseline = "top";
@@ -4942,6 +4951,95 @@
      実際の形を小さく描いて並べる。舞台の絵と同じ骨格・同じ塗りを通すので、
      見本と本番がずれない。 */
 
+  /* 種類の見本。真横から見た形（高さと幅）だけを描く。
+   * 舞台の絵と同じ部品（pieceParts）から起こすので、
+   * 一覧の絵と実際に置かれる物が食い違わない。 */
+  function drawKindPreview(canvas, kind, color) {
+    const ctx2 = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx2.clearRect(0, 0, w, h);
+    if (kind === "performer") {
+      // 人だけは骨格を持っているので、立ち姿をそのまま使う
+      drawPosePreview(canvas, "stand", color);
+      return;
+    }
+    if (kind === "light") {
+      ctx2.save();
+      ctx2.strokeStyle = color;
+      ctx2.lineWidth = 2;
+      ctx2.beginPath();
+      ctx2.moveTo(w * 0.5, h * 0.16);
+      ctx2.lineTo(w * 0.22, h * 0.8);
+      ctx2.lineTo(w * 0.78, h * 0.8);
+      ctx2.closePath();
+      ctx2.globalAlpha = 0.35;
+      ctx2.fillStyle = color;
+      ctx2.fill();
+      ctx2.globalAlpha = 1;
+      ctx2.stroke();
+      ctx2.restore();
+      return;
+    }
+    const dims = normalizeDims(kind, {});
+    if (kind === "sphere") {
+      // 球は部品を持たない（円ひとつで決まる）ので、ここで描く
+      const r = Math.min(w, h) * 0.32;
+      ctx2.save();
+      ctx2.fillStyle = color;
+      ctx2.beginPath();
+      ctx2.arc(w / 2, h * 0.62, r, 0, Math.PI * 2);
+      ctx2.fill();
+      ctx2.restore();
+      return;
+    }
+    const parts = pieceParts({ type: kind, dims, facing: 0 });
+    if (!parts) return;
+    // 幅と高さの範囲を測る
+    let x0 = Infinity; let x1 = -Infinity; let y0 = Infinity; let y1 = -Infinity;
+    const scan = (x, y) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
+    parts.forEach((part) => {
+      if (part.kind === "line") { scan(part.a[0], part.a[1]); scan(part.b[0], part.b[1]); return; }
+      if (part.kind === "ring") { scan(part.c[0] - part.r, part.c[1] - part.r); scan(part.c[0] + part.r, part.c[1] + part.r); return; }
+      scan(part.ox - part.w / 2, part.lift); scan(part.ox + part.w / 2, part.lift + part.h);
+    });
+    const pad = 14;
+    const bw = Math.max(0.01, x1 - x0);
+    const bh = Math.max(0.01, y1 - y0);
+    const k = Math.min((w - pad * 2) / bw, (h - pad * 2) / bh);
+    const ox = (w - bw * k) / 2 - x0 * k;
+    const oy = h - pad - (0 - y0) * k;          // 床（y=0）を下端に置く
+    const px = (x) => ox + x * k;
+    const py = (y) => oy - y * k;
+
+    ctx2.save();
+    ctx2.lineCap = "round";
+    ctx2.lineJoin = "round";
+    parts.forEach((part) => {
+      if (part.kind === "line") {
+        ctx2.strokeStyle = part.tone === "cloth" ? color : "rgba(214,220,226,0.9)";
+        ctx2.lineWidth = Math.max(1.5, (part.w || 0.04) * k);
+        ctx2.beginPath();
+        ctx2.moveTo(px(part.a[0]), py(part.a[1]));
+        ctx2.lineTo(px(part.b[0]), py(part.b[1]));
+        ctx2.stroke();
+        return;
+      }
+      if (part.kind === "ring") {
+        ctx2.strokeStyle = part.tone === "dark" ? "rgba(60,54,48,0.95)" : "rgba(214,220,226,0.9)";
+        ctx2.lineWidth = Math.max(1.5, (part.w || 0.04) * k);
+        ctx2.beginPath();
+        ctx2.arc(px(part.c[0]), py(part.c[1]), part.r * k, 0, Math.PI * 2);
+        ctx2.stroke();
+        return;
+      }
+      ctx2.fillStyle = part.tint >= 1 ? color : mixToward(color, 1 - (part.tint || 1));
+      ctx2.fillRect(px(part.ox - part.w / 2), py(part.lift + part.h),
+        Math.max(1.5, part.w * k), Math.max(1.5, part.h * k));
+    });
+    ctx2.restore();
+  }
+
   function drawPosePreview(canvas, poseId, color) {
     const ctx = canvas.getContext("2d");
     const w = canvas.width;
@@ -4970,6 +5068,42 @@
     const ox = pad - x0 * s + ((w - pad * 2) - bw * s) / 2;
     const oy = pad - y0 * s + ((h - pad * 2) - bh * s) / 2;
     paintBody(ctx, buildRig(poseId, ox, oy, s, s, yaw, 0, null), color);
+  }
+
+  const ROSTER_KINDS = ["performer"].concat(SET_KIND_ORDER);
+  let rosterKind = "performer";
+
+  function openKindModal() {
+    if (!els.kindModal) return;
+    const grid = els.kindGrid;
+    grid.innerHTML = "";
+    ROSTER_KINDS.forEach((kind) => {
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = `stage-pose-tile${kind === rosterKind ? " is-on" : ""}`;
+      const canvas = document.createElement("canvas");
+      canvas.width = 132;
+      canvas.height = 132;
+      const label = document.createElement("span");
+      label.textContent = kind === "performer" ? tx("演者") : setKindName(kind);
+      tile.append(canvas, label);
+      tile.addEventListener("click", () => {
+        rosterKind = kind;
+        if (els.rosterKindLabel) els.rosterKindLabel.textContent = label.textContent;
+        closeKindModal();
+        if (els.rosterName) els.rosterName.focus();
+      });
+      grid.append(tile);
+      drawKindPreview(canvas, kind, kind === "performer" ? "#a84b26" : "#8b98a1");
+    });
+    els.kindModal.hidden = false;
+    els.kindBackdrop.hidden = false;
+  }
+
+  function closeKindModal() {
+    if (!els.kindModal) return;
+    els.kindModal.hidden = true;
+    els.kindBackdrop.hidden = true;
   }
 
   function openPoseModal() {
@@ -6749,6 +6883,42 @@
     render();
   }
 
+  /* 手の形で「掴める」を伝える。写真の道具と同じ作法。
+   * 触っているものを毎回当てて決めるので、駒の上と何もない所で形が変わる。 */
+  function cursorFor(el, event) {
+    if (pointerAction) return "grabbing";
+    if (tool === "paint") return "crosshair";
+    if (tool === "erase") return "cell";
+    const view = viewOf(el);
+    const L = layout(view);
+    const point = pointFromEvent(event);
+    if (tool === "note") return noteAt(point, L, view) ? "grab" : "copy";
+    if (tool === "route") return hitTest(point, L) ? "crosshair" : "default";
+    if (tool === "light") {
+      if (fixtureAt(point, L)) return "grab";
+      return hitTest(point, L) ? "grab" : "default";
+    }
+    // 動かす道具。メモ→動線の取っ手→駒→（何もなければ）視線を振る
+    if (noteAt(point, L, view)) return "grab";
+    const current = selectedPiece();
+    if (view === "plan" && routeHandleAt(point, current, L)) return "grab";
+    const hit = hitTest(point, L);
+    if (hit) return isLocked(hit) ? "not-allowed" : "grab";
+    if (view === "front" && (L.panRange > 0 || L.panRangeY > 0)) return "grab";
+    return "default";
+  }
+
+  function onHover(event) {
+    if (event.pointerType === "touch") return;
+    const el = event.currentTarget;
+    let next = "default";
+    try { next = cursorFor(el, event); } catch (_) { next = "default"; }
+    if (el.dataset.cursor !== next) {
+      el.dataset.cursor = next;
+      el.style.cursor = next;
+    }
+  }
+
   function onPointerMove(event) {
     if (event.pointerType === "touch" && touches.has(event.pointerId)) {
       const el = event.currentTarget;
@@ -6921,6 +7091,7 @@
 
   [canvas, planCanvas].filter(Boolean).forEach((el) => {
     el.addEventListener("pointerdown", onPointerDown);
+    el.addEventListener("pointermove", onHover);
     el.addEventListener("pointermove", onPointerMove);
     el.addEventListener("pointerup", finishPointer);
     el.addEventListener("pointercancel", finishPointer);
@@ -7067,10 +7238,13 @@
   /* 追加の口は一つ。種類だけ選ばせる。演者と物と光で入り口を分けると、
    * 「これはどこから足すのか」を毎回思い出すことになる。 */
   const addFromRoster = () => {
-    const kind = els.rosterKind && els.rosterKind.value;
-    if (kind === "performer") { addCastMember(els.rosterName); return; }
-    addSetItem(SET_KINDS[kind] ? kind : "block", els.rosterName);
+    if (rosterKind === "performer") { addCastMember(els.rosterName); return; }
+    if (rosterKind === "light") { addSetItem("light", els.rosterName, "hang"); return; }
+    addSetItem(SET_KINDS[rosterKind] ? rosterKind : "block", els.rosterName);
   };
+  if (els.rosterKind) els.rosterKind.addEventListener("click", openKindModal);
+  if (els.kindClose) els.kindClose.addEventListener("click", closeKindModal);
+  if (els.kindBackdrop) els.kindBackdrop.addEventListener("click", closeKindModal);
   if (els.rosterAdd) els.rosterAdd.addEventListener("click", addFromRoster);
   const addLight = () => addSetItem("light", els.lightName, els.lightKind && els.lightKind.value);
   if (els.lightAdd) els.lightAdd.addEventListener("click", addLight);
@@ -7683,46 +7857,88 @@
      操作は強制しない（次へはいつでも押せる）。初めて開いたときだけ自動で出し、
      あとは上の「使い方」からいつでも呼べる。
      ★勝手にデータを作らない。いま置いてあるものの上で説明する。 */
+  /* ★テスターの感想の送り先。Googleフォームのアドレスをここへ入れる。
+   * 空のあいだは、押しても開かず、その旨だけ伝える（黙って何も起きないより良い）。 */
+  const FEEDBACK_URL = "";
+
   const TOUR_KEY = "shosai-stage-tour-v1";
+
+  /* 手を動かしてもらう案内。読ませるより、実際に一場面を作ってもらう。
+   * 各段は「やること」を一つだけ持ち、できたら自分で次へ進む。
+   * できたかどうかは done() で見る（押した瞬間を捕まえるのではなく、
+   * 結果を見に行く。どの入口から操作しても拾えるようにするため）。
+   * 次へはいつでも押せるので、詰まっても止まらない。 */
+  const tourMark = {};
+  const lightCount = () => (state.project.sets || []).filter((x) => x.kind === "light").length;
+  const posSum = () => sc().pieces.reduce((t, p) => t + p.u * 1000 + p.v, 0);
+
   const TOUR = [
     {
       at: "#stage-canvas-stack",
-      ja: ["正面と平面は同じ舞台", "上が客席から見た絵、下が真上から見た図です。同じ一つの舞台を二通りに見ています。片方で駒を動かすと、もう片方も一緒に動きます。"],
-      en: ["Two views of one stage", "The top is what the house sees; the bottom is the same stage from above. Move a piece in one and it moves in the other."],
-    },
-    {
-      at: '[data-panel="venue"]',
-      ja: ["劇場を選ぶ", "形式と規模を選びます。寸法は人の大きさに出ます（同じ演者が、大劇場では小さく見えます）。規模の一番下の「カスタム」で実寸を入れられます。"],
-      en: ["Pick the venue", "Choose the form and the size. Scale shows up as how small a person looks. The last entry, Custom, lets you type real dimensions."],
-    },
-    {
-      at: "#stage-seat-list",
-      ja: ["どの席から見るか", "同じ配置でも、見る席が変われば絵が変わります。最前列は強く見上げ、2階席は床が主役になります。押して見比べてください。"],
-      en: ["Which seat you watch from", "The same arrangement reads differently from different seats. The front row looks steeply up; the balcony makes the floor the picture. Try them."],
+      begin: () => { tourMark.pos = posSum(); },
+      done: () => Math.abs(posSum() - tourMark.pos) > 0.5,
+      ja: ["まず動かしてみる", "上が客席から見た絵、下が真上から見た図で、同じ舞台です。正面図の演者を掴んで、どこかへ動かしてください。平面図でも一緒に動きます。"],
+      en: ["Move something first", "The top is what the house sees; the bottom is the same stage from above. Drag a performer in the front view — it moves in the plan too."],
     },
     {
       at: '[data-panel="cast"]',
-      ja: ["出るものを登録する", "名前と種類を入れて追加すると、そのままこの場面の舞台に出ます。演者を選ぶと姿勢を30種類から選べます（宙返り、シルホイール、一輪車など）。"],
-      en: ["Register what appears", "Enter a name, pick a kind, add it — and it goes on stage in this scene. Select a performer to choose from 30 poses (somersault, Cyr wheel, unicycle and more)."],
+      begin: () => { tourMark.cast = (state.project.cast || []).length; },
+      done: () => (state.project.cast || []).length > tourMark.cast,
+      ja: ["人を足す", "「出るもの」に名前を入れて〈追加〉を押してください。登録するとそのまま舞台に出ます。"],
+      en: ["Add a person", "Type a name in Cast & set and press Add. Registering puts them on stage right away."],
     },
     {
-      at: '[data-panel="light"]',
-      ja: ["照明はどこから出てどこへ落ちるか", "吊り・SS・前明かり・転がしの4種類。追加したらONです。道具を「照明を動かす」に替えると、灯体の丸い印と、当たる輪を別々に掴めます。"],
-      en: ["A light has a source and a target", "Four types: overhead, side, front and footlight. Added lights are ON. Switch the tool to Move lights to drag the fixture dot and the pool separately."],
+      at: "#stage-piece-pose",
+      begin: () => { tourMark.pose = sc().pieces.filter((p) => p.type === "performer" && p.pose !== "stand").length; },
+      done: () => sc().pieces.filter((p) => p.type === "performer" && p.pose !== "stand").length > tourMark.pose,
+      ja: ["姿勢を変える", "いま足した人が選ばれています。〈姿勢〉を押して、30種類から一つ選んでください（宙返り、シルホイール、一輪車など）。"],
+      en: ["Change the pose", "The person you just added is selected. Press Pose and pick one of 30 (somersault, Cyr wheel, unicycle and more)."],
+    },
+    {
+      at: "#stage-plan-route",
+      begin: () => { tourMark.route = sc().pieces.filter((p) => p.route).length; },
+      done: () => sc().pieces.filter((p) => p.route).length > tourMark.route,
+      ja: ["動線を引く", "平面図の〈動線を描く〉を押し、動かしたい人を掴んで、行き先で離してください。矢印が出ます。"],
+      en: ["Draw a route", "Press Draw route above the plan, grab the person you want to move, and let go at the destination. An arrow appears."],
     },
     {
       at: '[data-panel="scenes"]',
-      ja: ["場面をつなぐ", "平面図の「動線を描く」で行き先を引き、「動線の先へ動かした場面を作る」を押すと次の場面ができます。↑↓で場面を送ると、その動きが再生されます。"],
-      en: ["Link the scenes", "Draw a route in the plan, then press “Make a scene at the end of the routes”. Move between scenes with ↑↓ and the change plays out."],
+      begin: () => { tourMark.scenes = state.project.scenes.length; },
+      done: () => state.project.scenes.length > tourMark.scenes,
+      ja: ["次の場面を作る", "場面の欄の〈動線の先へ動かした場面を作る〉を押してください。動線の先へ動いた状態が、次の場面として作られます。"],
+      en: ["Make the next scene", "Press “Make a scene at the end of the routes”. The state after the move becomes the next scene."],
+    },
+    {
+      at: ".stage-scene-move",
+      begin: () => { tourMark.scene = state.project.activeSceneId; },
+      done: () => state.project.activeSceneId !== tourMark.scene,
+      ja: ["転換を見る", "〈◀ 前の場面〉で戻り、〈次の場面 ▶〉で進んでください（↑↓キーでも動きます）。進むときだけ、動線に沿って動いて見えます。"],
+      en: ["Watch the change", "Go back with ◀ Previous and forward with Next ▶ (the ↑↓ keys work too). Moving forward plays the travel along the routes."],
+    },
+    {
+      at: '[data-panel="light"]',
+      begin: () => { tourMark.light = lightCount(); },
+      done: () => lightCount() > tourMark.light,
+      ja: ["照明を足す", "「照明」に名前を入れて〈追加〉。吊り・SS・前明かり・転がしの4種類から選べます。道具を〈照明を動かす〉に替えると、灯体と当たる場所を別々に掴めます。"],
+      en: ["Add a light", "Enter a name under Lights and press Add. Four types: overhead, side, front, footlight. Switch the tool to Move lights to drag the fixture and the pool separately."],
+    },
+    {
+      at: "#stage-front-note",
+      begin: () => { tourMark.notes = (sc().notes || []).length; },
+      done: () => (sc().notes || []).length > tourMark.notes,
+      ja: ["メモを貼る", "〈メモを貼る〉を押して、絵の何もない所を押してください。付箋が出て、その場で書けます。演者の脇でも、床の上でも。書き出した画像にも残ります。"],
+      en: ["Pin a note", "Press Add note, then press an empty spot on the picture. A sticky note appears and you can type right there. It stays in the exported image."],
     },
     {
       at: "#stage-export",
-      ja: ["持ち出す", "「画像を書き出す」で、正面・平面・全場面をまとめて画像にできます。作ったものはこの端末のブラウザにだけ保存されます。別の端末へ渡すときは「書き出す／読み込む」を使ってください。"],
-      en: ["Take it with you", "Export image saves the front view, the plan, or every scene as pictures. Your work lives only in this browser; use Export / Import to move it to another device."],
+      ja: ["持ち出す", "〈画像を書き出す〉で、正面・平面・全場面を画像にできます。作ったものはこの端末のブラウザにだけ保存されます。以上です、あとは自由に。"],
+      en: ["Take it with you", "Export image saves the front view, the plan, or every scene. Your work lives only in this browser. That's it — go ahead."],
     },
   ];
 
   let tourAt = -1;
+  let tourTimer = null;
+
 
   function tourTarget(step) {
     const el = document.querySelector(step.at);
@@ -7741,10 +7957,27 @@
     els.tourRing.style.height = `${r.height + 12}px`;
   }
 
+  function watchTour() {
+    clearInterval(tourTimer);
+    const step = TOUR[tourAt];
+    if (!step || !step.done) return;
+    tourTimer = setInterval(() => {
+      if (tourAt < 0 || !step.done()) return;
+      clearInterval(tourTimer);
+      // できた合図を一息置いてから次へ。押した手応えを消さないため
+      els.tourCard.classList.add("is-done");
+      setTimeout(() => {
+        els.tourCard.classList.remove("is-done");
+        if (tourAt >= 0) showTour(tourAt + 1);
+      }, 620);
+    }, 320);
+  }
+
   function showTour(index) {
     if (!els.tour) return;
     tourAt = clamp(index, 0, TOUR.length - 1);
     const step = TOUR[tourAt];
+    if (step.begin) step.begin();
     const words = isEn() ? step.en : step.ja;
     els.tour.hidden = false;
     els.tourStep.textContent = `${tourAt + 1} / ${TOUR.length}`;
@@ -7761,15 +7994,27 @@
     // 巻き終わるのを待ってから枠を当てる
     setTimeout(placeTour, 260);
     placeTour();
+    watchTour();
   }
 
   function endTour() {
     if (!els.tour) return;
+    clearInterval(tourTimer);
     els.tour.hidden = true;
     tourAt = -1;
     try { localStorage.setItem(TOUR_KEY, "done"); } catch (_) { /* 覚えられなくても動く */ }
   }
 
+  if (els.feedback) {
+    els.feedback.addEventListener("click", () => {
+      if (FEEDBACK_URL) { window.open(FEEDBACK_URL, "_blank", "noopener"); return; }
+      const words = isEn()
+        ? "The feedback form is not set up yet. Please tell the maker directly for now."
+        : "感想の送り先（フォーム）はまだ用意できていません。いまは直接お知らせください。";
+      els.saveStatus.textContent = words;
+      announce(words);
+    });
+  }
   if (els.tourStart) els.tourStart.addEventListener("click", () => showTour(0));
   if (els.tourClose) els.tourClose.addEventListener("click", endTour);
   if (els.tourPrev) els.tourPrev.addEventListener("click", () => showTour(tourAt - 1));

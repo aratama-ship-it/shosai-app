@@ -1569,20 +1569,18 @@ canvas[data-tool="note"] { cursor: copy; }
   flex-direction: column;
   gap: 6px;
   padding: 8px;
-  background: #f3e6bd;
-  border: 2px solid #a84b26;
-  border-radius: 3px;
-  box-shadow: 0 10px 24px rgba(13, 12, 11, 0.45);
+  background: var(--desk-2);
+  border: 1px solid var(--brass);
+  box-shadow: 0 10px 24px rgba(13, 12, 11, 0.55);
   min-width: 168px;
 }
 
 .stage-note-editor textarea {
   width: 100%;
   resize: vertical;
-  border: 1px solid rgba(13, 12, 11, 0.3);
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.55);
-  color: #231d16;
+  border: 1px solid var(--line-dark);
+  background: var(--desk);
+  color: var(--milk);
   font: 13px/1.45 'Hiragino Kaku Gothic ProN', sans-serif;
   padding: 6px 7px;
 }
@@ -1601,8 +1599,8 @@ canvas[data-tool="note"] { cursor: copy; }
 .stage-note-editor-bar .btn-quiet {
   padding: 3px 9px;
   font-size: 0.74rem;
-  color: #3a2f24;
-  border-color: rgba(13, 12, 11, 0.32);
+  color: var(--milk-dim);
+  border-color: var(--line-dark);
 }
 #stage-canvas[data-pannable="true"][data-dragging="true"] { cursor: grabbing; }
 
@@ -1842,8 +1840,9 @@ canvas[data-tool="note"] { cursor: copy; }
   user-select: none;
 }
 
+/* 形は触っているものを当てて決める（cursorFor）。ここでは既定だけ置く */
 #stage-canvas[data-tool="select"],
-#stage-plan-canvas[data-tool="select"] { cursor: grab; }
+#stage-plan-canvas[data-tool="select"] { cursor: default; }
 #stage-canvas[data-dragging="true"],
 #stage-plan-canvas[data-dragging="true"] { cursor: grabbing; }
 #stage-canvas[data-tool="paint"] { cursor: crosshair; }
@@ -5724,6 +5723,16 @@ canvas[data-tool="note"] { cursor: copy; }
 
 .stage-panel.is-collapsed .stage-panel-help { display: none; }
 
+/* 種類を選ぶボタン。見た目は選択欄と揃え、押すと絵の一覧が開く */
+.stage-kind-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  text-align: left;
+  cursor: pointer;
+}
+
 /* 正面と平面の出し分け。狭い画面では一枚ずつ見る */
 .stage-view-switch {
   display: inline-flex;
@@ -5768,9 +5777,11 @@ canvas[data-tool="note"] { cursor: copy; }
 }
 
 .stage-tour-card {
+  /* 左上に置く。絵と道具の両方が右側に広がっているので、
+     ここが一番ものを隠さない。 */
   position: fixed;
-  right: 22px;
-  bottom: 22px;
+  left: 22px;
+  top: 22px;
   z-index: 61;
   width: min(360px, calc(100vw - 40px));
   padding: 16px 18px 14px;
@@ -5820,8 +5831,15 @@ canvas[data-tool="note"] { cursor: copy; }
 .stage-tour-actions button:disabled { opacity: 0.35; cursor: default; }
 .stage-tour-actions #stage-tour-close { margin-right: auto; }
 
+/* できた合図。次へ進む前に一息 */
+.stage-tour-card.is-done { border-color: var(--rust); }
+.stage-tour-card.is-done h2::after {
+  content: " ✓";
+  color: var(--rust);
+}
+
 @media (max-width: 720px) {
-  .stage-tour-card { right: 12px; left: 12px; bottom: 12px; width: auto; }
+  .stage-tour-card { left: 12px; right: 12px; top: 12px; width: auto; }
 }
 
 /* 言語の切り替え。書き出しの隣に、控えめな枠で置く */
