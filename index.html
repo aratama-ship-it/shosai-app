@@ -423,6 +423,19 @@
                 <p class="stage-range-scale"><span>背中</span><span>客席</span><span>背中</span></p>
               </div>
               <div id="stage-beam-controls" hidden>
+                <label class="stage-control-label stage-range-label" for="stage-beam-dia">
+                  明かりの直径 <span id="stage-beam-dia-value">400cm</span>
+                </label>
+                <input type="range" id="stage-beam-dia" min="0.3" max="20" step="0.05" value="4">
+                <p class="stage-range-scale"><span>光源の位置</span></p>
+                <label class="stage-control-label stage-range-label" for="stage-beam-u">
+                  左右 <span id="stage-beam-u-value">中央</span>
+                </label>
+                <input type="range" id="stage-beam-u" min="-0.2" max="1.2" step="0.005" value="0.5">
+                <label class="stage-control-label stage-range-label" for="stage-beam-v">
+                  奥行き <span id="stage-beam-v-value">奥から4.5m</span>
+                </label>
+                <input type="range" id="stage-beam-v" min="-0.2" max="1.2" step="0.005" value="0.6">
                 <label class="stage-control-label stage-range-label" for="stage-beam-from">
                   灯体の高さ <span id="stage-beam-from-value">6.0m</span>
                 </label>
@@ -437,10 +450,6 @@
               <button type="button" class="stage-minor-action stage-lock-action" id="stage-piece-lock"
                       aria-pressed="false"><span class="stage-lock-mark" aria-hidden="true">🔓</span>動かないようにする</button>
               <button type="button" class="stage-minor-action" id="stage-open-setinfo" hidden>登録を開く</button>
-              <div class="stage-layer-actions">
-                <button type="button" id="stage-send-back" title="重なったとき、下に潜らせます">下に潜る</button>
-                <button type="button" id="stage-bring-front" title="重なったとき、上に乗せます">上に乗る</button>
-              </div>
               <button type="button" class="stage-minor-action" id="stage-duplicate">複製する</button>
               <button type="button" class="stage-delete" id="stage-delete">舞台から外す</button>
             </div>
@@ -748,7 +757,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=94"></script>
+<script src="stage-sketch.js?v=95"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

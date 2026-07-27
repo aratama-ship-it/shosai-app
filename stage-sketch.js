@@ -445,8 +445,6 @@
     renameOk: document.getElementById("stage-rename-ok"),
     renameClose: document.getElementById("stage-rename-close"),
     renameTitle: document.getElementById("stage-rename-title"),
-    sendBack: document.getElementById("stage-send-back"),
-    bringFront: document.getElementById("stage-bring-front"),
     duplicate: document.getElementById("stage-duplicate"),
     delete: document.getElementById("stage-delete"),
     clear: document.getElementById("stage-clear"),
@@ -509,6 +507,12 @@
     lightName: document.getElementById("stage-light-name"),
     lightAdd: document.getElementById("stage-light-add"),
     beamControls: document.getElementById("stage-beam-controls"),
+    beamDia: document.getElementById("stage-beam-dia"),
+    beamDiaValue: document.getElementById("stage-beam-dia-value"),
+    beamU: document.getElementById("stage-beam-u"),
+    beamUValue: document.getElementById("stage-beam-u-value"),
+    beamV: document.getElementById("stage-beam-v"),
+    beamVValue: document.getElementById("stage-beam-v-value"),
     beamFrom: document.getElementById("stage-beam-from"),
     beamFromValue: document.getElementById("stage-beam-from-value"),
     beamTo: document.getElementById("stage-beam-to"),
@@ -3668,7 +3672,9 @@
       if (selectedId === existing.id) selectedId = null;
       announce(`${item ? item.name : "これ"}を舞台から下げました。`);
     } else {
-      const count = scene.pieces.filter((p) => p.type !== "performer" && p.type !== "light").length;
+      /* 置き場所を少しずつずらすための数。明かりも数に入れる。
+       * 外していたので、明かりを二つ出すと同じ場所に重なって出ていた。 */
+      const count = scene.pieces.filter((p) => p.type !== "performer").length;
       const piece = normalizePiece({
         id: nextId(), type: item ? item.kind : "block", setId,
         u: clamp(0.5 + ((count % 5) - 2) * 0.11, 0.06, 0.94),
@@ -4996,6 +5002,20 @@
     });
   }
 
+  /* 光源の左右・奥行きを言葉にする。0〜1の割合のままでは場所が読めないので、
+   * 舞台の実寸に直して「中央から◯m」「奥から◯m」で言う。 */
+  function sideText(u) {
+    const width = venueSize().width || 12;
+    const off = (u - 0.5) * width;
+    if (Math.abs(off) < 0.15) return "中央";
+    return `${off > 0 ? "上手" : "下手"}へ${Math.abs(off).toFixed(1)}m`;
+  }
+
+  function depthText(v) {
+    const depth = venueSize().depth || 9;
+    return `奥から${(v * depth).toFixed(1)}m`;
+  }
+
   function selectedNote() {
     return (sc().notes || []).find((note) => note.id === selectedNoteId) || null;
   }
@@ -5165,18 +5185,8 @@
     announce(`${PIECE_TYPES[piece.type]}を複製しました。`);
   }
 
-  function moveLayer(direction) {
-    const index = sc().pieces.findIndex((piece) => piece.id === selectedId);
-    if (index < 0) return;
-    const nextIndex = clamp(index + direction, 0, sc().pieces.length - 1);
-    if (index === nextIndex) return;
-    checkpoint();
-    const [piece] = sc().pieces.splice(index, 1);
-    sc().pieces.splice(nextIndex, 0, piece);
-    render();
-    persistSoon();
-    announce(direction > 0 ? "重なったとき上に乗るようにしました。" : "重なったとき下に潜るようにしました。");
-  }
+  /* 重なりの上下を手で入れ替える仕組みは置かない。
+   * 動かしている駒が、重なった相手の上に乗る（bringToTop）で決まるため。 */
 
   function finishPointer(event) {
     if (!pointerAction || pointerAction.pointerId !== event.pointerId) return;
@@ -5641,6 +5651,40 @@
   [els.planNote, els.frontNote].forEach((button) => {
     if (button) button.addEventListener("click", () => setTool(tool === "note" ? "select" : "note"));
   });
+  /* 明かりの直径。登録した明かりそのものの寸法なので、置いてある全ての場面に効く
+   * （「…」の窓と同じ値を、選んだ場所からも触れるようにしたもの）。 */
+  if (els.beamDia) {
+    els.beamDia.addEventListener("input", (e) => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== "light") return;
+      const dia = clamp(finite(e.target.value, 4), 0.3, 20);
+      const owner = pieceSet(piece);
+      if (owner) owner.dims.dia = dia; else piece.dims = Object.assign({}, piece.dims, { dia });
+      if (els.beamDiaValue) els.beamDiaValue.textContent = cmText(dia);
+      renderLights();
+      render();
+      persistSoon();
+    });
+    els.beamDia.addEventListener("pointerdown", checkpoint);
+  }
+
+  /* 光源の左右と奥行き。斜め上から中央へ差し込む明かりは、
+   * 灯体を上手奥・下手奥へ振り分けて作る。正面図では差し込む角度が変わる。 */
+  [["beamU", "u", "beamUValue", sideText], ["beamV", "v", "beamVValue", depthText]].forEach(
+    ([key, field, labelKey, toText]) => {
+      const input = els[key];
+      if (!input) return;
+      input.addEventListener("input", (e) => {
+        const piece = selectedPiece();
+        if (!piece || piece.type !== "light") return;
+        piece.beam[field] = clamp(finite(e.target.value, 0.5), -0.3, 1.3);
+        if (els[labelKey]) els[labelKey].textContent = toText(piece.beam[field]);
+        render();
+        persistSoon();
+      });
+      input.addEventListener("pointerdown", checkpoint);
+    });
+
   /* 明かりの高さ。灯体を下げて当たる高さを上げれば、下から上への明かりになる。 */
   if (els.beamFrom) {
     els.beamFrom.addEventListener("input", (e) => {
@@ -5884,6 +5928,15 @@
       els.beamControls.hidden = !isLight;
       if (isLight) {
         const b = piece.beam || (piece.beam = normalizeBeam(null, piece));
+        const dim = pieceDims(piece);
+        if (els.beamDia && document.activeElement !== els.beamDia) {
+          els.beamDia.value = String((dim && dim.dia) || 4);
+        }
+        if (els.beamDiaValue) els.beamDiaValue.textContent = cmText((dim && dim.dia) || 4);
+        if (document.activeElement !== els.beamU) els.beamU.value = String(b.u);
+        if (document.activeElement !== els.beamV) els.beamV.value = String(b.v);
+        if (els.beamUValue) els.beamUValue.textContent = sideText(b.u);
+        if (els.beamVValue) els.beamVValue.textContent = depthText(b.v);
         if (document.activeElement !== els.beamFrom) els.beamFrom.value = String(b.h);
         if (document.activeElement !== els.beamTo) els.beamTo.value = String(b.toH);
         els.beamFromValue.textContent = `${b.h.toFixed(1)}m`;
@@ -5891,7 +5944,41 @@
       }
     }
     if (els.routeClear) els.routeClear.hidden = !(piece && piece.route);
-    /* 明かりの高さ。灯体を下げて当たる高さを上げれば、下から上への明かりになる。 */
+    /* 明かりの直径。登録した明かりそのものの寸法なので、置いてある全ての場面に効く
+   * （「…」の窓と同じ値を、選んだ場所からも触れるようにしたもの）。 */
+  if (els.beamDia) {
+    els.beamDia.addEventListener("input", (e) => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== "light") return;
+      const dia = clamp(finite(e.target.value, 4), 0.3, 20);
+      const owner = pieceSet(piece);
+      if (owner) owner.dims.dia = dia; else piece.dims = Object.assign({}, piece.dims, { dia });
+      if (els.beamDiaValue) els.beamDiaValue.textContent = cmText(dia);
+      renderLights();
+      render();
+      persistSoon();
+    });
+    els.beamDia.addEventListener("pointerdown", checkpoint);
+  }
+
+  /* 光源の左右と奥行き。斜め上から中央へ差し込む明かりは、
+   * 灯体を上手奥・下手奥へ振り分けて作る。正面図では差し込む角度が変わる。 */
+  [["beamU", "u", "beamUValue", sideText], ["beamV", "v", "beamVValue", depthText]].forEach(
+    ([key, field, labelKey, toText]) => {
+      const input = els[key];
+      if (!input) return;
+      input.addEventListener("input", (e) => {
+        const piece = selectedPiece();
+        if (!piece || piece.type !== "light") return;
+        piece.beam[field] = clamp(finite(e.target.value, 0.5), -0.3, 1.3);
+        if (els[labelKey]) els[labelKey].textContent = toText(piece.beam[field]);
+        render();
+        persistSoon();
+      });
+      input.addEventListener("pointerdown", checkpoint);
+    });
+
+  /* 明かりの高さ。灯体を下げて当たる高さを上げれば、下から上への明かりになる。 */
   if (els.beamFrom) {
     els.beamFrom.addEventListener("input", (e) => {
       const piece = selectedPiece();
@@ -5959,8 +6046,6 @@
     announce("背景の塗りを消しました。");
   });
 
-  els.sendBack.addEventListener("click", () => moveLayer(-1));
-  els.bringFront.addEventListener("click", () => moveLayer(1));
   els.duplicate.addEventListener("click", duplicateSelected);
   els.delete.addEventListener("click", removeSelected);
   els.undo.addEventListener("click", undo);
