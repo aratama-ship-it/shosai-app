@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=83">
+<link rel="stylesheet" href="style.css?v=84">
 </head>
 <body>
 
@@ -340,9 +340,8 @@
             <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
               <button type="button" data-stage-tool="select" aria-pressed="true">動かす</button>
               <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
-              <button type="button" data-stage-tool="route" aria-pressed="false">動きを描く</button>
+              <button type="button" data-stage-tool="route" aria-pressed="false">動線を描く</button>
               <button type="button" data-stage-tool="light" aria-pressed="false">光を動かす</button>
-              <button type="button" data-stage-tool="note" aria-pressed="false">メモを貼る</button>
               <button type="button" data-stage-tool="erase" aria-pressed="false">塗りを消す</button>
             </div>
             <p class="stage-tool-hint" id="stage-tool-hint">演者や物を選び、舞台の上で動かします。</p>
@@ -360,6 +359,8 @@
             <div class="stage-board-frame" id="stage-front-cell">
               <div class="stage-canvas-bar">
                 <p class="stage-canvas-caption" id="stage-front-caption">正面</p>
+                <button type="button" class="stage-canvas-tool" id="stage-front-note"
+                        aria-pressed="false">メモを貼る</button>
                 <label class="stage-canvas-toggle" id="stage-seatmap-toggle">
                   <input type="checkbox" id="stage-show-seatmap" checked>
                   <span>見る位置の図</span>
@@ -384,7 +385,9 @@
               <div class="stage-canvas-bar">
                 <p class="stage-canvas-caption">平面（上から）</p>
                 <button type="button" class="stage-canvas-tool" id="stage-plan-route"
-                        aria-pressed="false">動きを描く</button>
+                        aria-pressed="false">動線を描く</button>
+                <button type="button" class="stage-canvas-tool" id="stage-plan-note"
+                        aria-pressed="false">メモを貼る</button>
                 <button type="button" class="stage-canvas-tool" id="stage-route-clear" hidden>動線を消す</button>
                 <button type="button" class="stage-canvas-close" data-toggle-view="plan"
                         aria-expanded="true" aria-label="平面の絵を閉じる">▾</button>
@@ -745,7 +748,7 @@
 <script src="data.js?v=16"></script>
 <script src="app.js?v=37"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-sketch.js?v=93"></script>
+<script src="stage-sketch.js?v=94"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

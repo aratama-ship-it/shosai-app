@@ -171,6 +171,22 @@
       anL: [-0.078, 1.18, 0.03], anR: [0.046, 1.19, -0.06],
       toL: [-0.08, 1.25, 0.06], toR: [0.044, 1.26, -0.09],
     }),
+    /* シルホイール。輪の中に人が入り、両手両足で輪をとらえて回る道具。
+     * 動力は人力だけで、輪と接しているのは両手と両足の四点。
+     * 輪の直径は演者の身長＋十数cm（身長165cmで1.85m前後）が実物の目安。
+     * ここでは身長の1.12倍とし、輪は床に接する（中心が半径の高さに来る）。
+     * 手足はきっちり輪の上に置く（四点とも中心から半径ぴったりの位置）。 */
+    makePose("cyr", "シルホイール", {
+      head: [0, 0.945, 0], neck: [0, 0.86, 0],
+      shL: [-0.115, 0.82, 0], shR: [0.115, 0.82, 0],
+      elL: [-0.29, 0.83, 0], elR: [0.29, 0.83, 0],
+      wrL: [-0.459, 0.881, 0], wrR: [0.459, 0.881, 0],     // 輪の上（斜め上）
+      hipL: [-0.055, 0.52, 0], hipR: [0.055, 0.52, 0],
+      knL: [-0.22, 0.33, 0], knR: [0.22, 0.33, 0],
+      anL: [-0.36, 0.131, 0], anR: [0.36, 0.131, 0],       // 輪の上（斜め下）
+      // つま先は輪から外へ出さず、輪に沿わせる（足の裏で輪をとらえている）
+      toL: [-0.306, 0.086, 0.03], toR: [0.306, 0.086, 0.03],
+    }, { wheel: { r: 0.56, cy: 0.56 } }),
     /* 抱え込み宙返り。空中で身体をひとつの塊に丸めた形。背中が床側、膝が天井側。
      * ★首は「丸める側」へ曲げる。肩より下へ出すと顎が上がった格好になり、
      *   宙返りではなく仰向けで浮いた人になる。頭は肩の上、膝の側へ。
@@ -237,7 +253,8 @@
     const cache = {};
     return (id) => {
       if (cache[id]) return cache[id];
-      const j = poseById(id).joints;
+      const pose = poseById(id);
+      const j = pose.joints;
       const pad = 0.05;   // 手足の太さと胴の厚みぶん
       let x0 = Infinity; let x1 = -Infinity; let y1 = -Infinity; let z0 = Infinity; let z1 = -Infinity;
       Object.keys(j).forEach((k) => {
@@ -245,6 +262,11 @@
         y1 = Math.max(y1, j[k][1]);
         z0 = Math.min(z0, j[k][2]); z1 = Math.max(z1, j[k][2]);
       });
+      // 道具を持つ姿勢は、道具の外側までが占める範囲になる（輪は人より大きい）
+      if (pose.wheel) {
+        x0 = Math.min(x0, -pose.wheel.r); x1 = Math.max(x1, pose.wheel.r);
+        y1 = Math.max(y1, pose.wheel.cy + pose.wheel.r);
+      }
       cache[id] = {
         halfX: Math.max(0.07, (x1 - x0) / 2 + pad),
         halfZ: Math.max(0.07, (z1 - z0) / 2 + pad),
@@ -386,7 +408,7 @@
     select: "演者や物を選び、舞台の上で動かします。",
     paint: "奥の背景面を指やマウスで塗ります。",
     erase: "背景に描いた線だけを消します。",
-    route: "平面図で演者を掴み、離した所が行き先になります。真ん中の丸を引くと道が曲がります。",
+    route: "平面図で演者を掴み、離した所が行き先になります。真ん中の丸を引くと動線が曲がります。",
     note: "何もない所を押すとメモを貼れます。貼ったメモは掴んで動かせます。",
     light: "明かりだけを動かします。丸い印が灯体、明るい輪が当たる場所です。",
   };
@@ -415,6 +437,8 @@
     pieceLock: document.getElementById("stage-piece-lock"),
     facingControls: document.getElementById("stage-facing-controls"),
     planRoute: document.getElementById("stage-plan-route"),
+    planNote: document.getElementById("stage-plan-note"),
+    frontNote: document.getElementById("stage-front-note"),
     rename: document.getElementById("stage-rename"),
     renameBackdrop: document.getElementById("stage-rename-backdrop"),
     renameInput: document.getElementById("stage-rename-input"),
@@ -1494,11 +1518,23 @@
       }));
     });
 
+    /* 道具の輪。体の正面の面（z=0）に立つ円なので、向きを変えると
+     * 楕円につぶれ、真横からは一本の線になる。関節と同じ変換に通す。 */
+    let wheel = null;
+    if (pose.wheel) {
+      const steps = 48;
+      wheel = [];
+      for (let i = 0; i <= steps; i += 1) {
+        const a = (i / steps) * Math.PI * 2;
+        wheel.push(project(Math.cos(a) * pose.wheel.r, pose.wheel.cy + Math.sin(a) * pose.wheel.r, 0));
+      }
+    }
+
     // 顔の印を出す先。頭から顔の向きへ少しだけ進んだところ
     const f = pose.face;
     const head = joints.head;
     const faceAt = project(head[0] + f[0] * 0.05, head[1] + f[1] * 0.05, head[2] + f[2] * 0.05);
-    return { P, box, ux, uy, faceAt, facing: f };
+    return { P, box, ux, uy, faceAt, facing: f, wheel };
   }
 
   function performerRig(piece, pos, L) {
@@ -1519,6 +1555,10 @@
     const P = rig.P;
     const ux = rig.ux;
     const uy = rig.uy;
+
+    /* 道具の輪は体より先に、輪の向こう側だけ塗る。手前側は体のあとに塗る。
+     * 一本の線で一度に塗ると、人が輪の手前にいるのか奥にいるのか読めない。 */
+    if (rig.wheel) paintWheel(target, rig, "far");
 
     const parts = LIMBS.map((limb) => ({
       kind: "limb", limb,
@@ -1568,6 +1608,29 @@
         target.fill();
       }
     });
+
+    if (rig.wheel) paintWheel(target, rig, "near");
+  }
+
+  /* 輪（シルホイール）。金属の輪なので人の色ではなく鈍い銀で描く。
+   * 演者と同じ色にすると、人と道具の区別がつかなくなる。 */
+  function paintWheel(target, rig, side) {
+    const pts = rig.wheel;
+    const width = Math.max(1.4, 0.022 * rig.ux);
+    target.save();
+    target.lineCap = "round";
+    target.lineJoin = "round";
+    target.lineWidth = width;
+    target.strokeStyle = side === "far" ? "rgba(198,204,210,0.42)" : "rgba(222,228,234,0.86)";
+    target.beginPath();
+    let drawing = false;
+    pts.forEach((p) => {
+      const here = side === "far" ? p.z < 0 : p.z >= 0;
+      if (!here) { drawing = false; return; }
+      if (!drawing) { target.moveTo(p.x, p.y); drawing = true; } else { target.lineTo(p.x, p.y); }
+    });
+    target.stroke();
+    target.restore();
   }
 
   // 正面から見た演者
@@ -4998,6 +5061,9 @@
     });
     els.toolHint.textContent = TOOL_HINTS[tool];
     if (els.planRoute) els.planRoute.setAttribute("aria-pressed", String(tool === "route"));
+    [els.planNote, els.frontNote].forEach((button) => {
+      if (button) button.setAttribute("aria-pressed", String(tool === "note"));
+    });
   }
 
   function updateInspector() {
@@ -5571,6 +5637,10 @@
   if (els.planRoute) {
     els.planRoute.addEventListener("click", () => setTool(tool === "route" ? "select" : "route"));
   }
+  // メモは正面にも平面にも貼れるので、入り切りは両方の絵の上に置く
+  [els.planNote, els.frontNote].forEach((button) => {
+    if (button) button.addEventListener("click", () => setTool(tool === "note" ? "select" : "note"));
+  });
   /* 明かりの高さ。灯体を下げて当たる高さを上げれば、下から上への明かりになる。 */
   if (els.beamFrom) {
     els.beamFrom.addEventListener("input", (e) => {
