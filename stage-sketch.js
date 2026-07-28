@@ -622,23 +622,58 @@
 
   // 多角形の角を丸めて閉じる。辺の中点を通る二次曲線にすると、
   // 頂点が丸まって、体のような柔らかい輪郭になる
-  function softClosedPath(target, pts) {
-    if (pts.length < 3) return;
-    const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
-    const first = mid(pts[pts.length - 1], pts[0]);
+  /* 与えた点を「通る」なめらかな閉じた輪郭。
+     点の間を結ぶだけの描き方だと角が丸まり、胴のくびれのような浅い凹みが消える。
+     ここは各点を必ず通したいので、前後の点から接線を起こして曲線にする。 */
+  function smoothClosedPath(target, pts, tension) {
+    const n = pts.length;
+    if (n < 3) return;
+    const k = (tension === undefined ? 0.5 : tension) / 3;
     target.beginPath();
-    target.moveTo(first.x, first.y);
-    for (let i = 0; i < pts.length; i += 1) {
-      const cur = pts[i];
-      const nxt = pts[(i + 1) % pts.length];
-      const m = mid(cur, nxt);
-      target.quadraticCurveTo(cur.x, cur.y, m.x, m.y);
+    target.moveTo(pts[0].x, pts[0].y);
+    for (let i = 0; i < n; i += 1) {
+      const p0 = pts[(i - 1 + n) % n];
+      const p1 = pts[i];
+      const p2 = pts[(i + 1) % n];
+      const p3 = pts[(i + 2) % n];
+      target.bezierCurveTo(
+        p1.x + (p2.x - p0.x) * k, p1.y + (p2.y - p0.y) * k,
+        p2.x - (p3.x - p1.x) * k, p2.y - (p3.y - p1.y) * k,
+        p2.x, p2.y);
     }
     target.closePath();
   }
 
+  /* 胴の外周。断面の中心を上から下へたどり、各断面で体の軸に直交する向きへ
+     張り出した点を左右に取る。張り出しは楕円断面としての見かけの半径
+     √((幅·n)² + (厚み·n)²) で、向きを変えると自然に細く見える。 */
+  function torsoOutline(rings) {
+    const right = [];
+    const left = [];
+    rings.forEach((ring, i) => {
+      const prev = rings[Math.max(0, i - 1)].o;
+      const next = rings[Math.min(rings.length - 1, i + 1)].o;
+      let ax = next.x - prev.x;
+      let ay = next.y - prev.y;
+      const len = Math.hypot(ax, ay) || 1;
+      ax /= len; ay /= len;
+      const nx = -ay;                       // 軸に直交する向き
+      const ny = ax;
+      const w = ring.wx * nx + ring.wy * ny;
+      const d = ring.dx * nx + ring.dy * ny;
+      const r = Math.hypot(w, d);
+      right.push({ x: ring.o.x + nx * r, y: ring.o.y + ny * r });
+      left.push({ x: ring.o.x - nx * r, y: ring.o.y - ny * r });
+    });
+    return right.concat(left.reverse());
+  }
+
   // 付け根から先へ細くなる手足。節ごとに台形を置き、関節を丸で埋める
   function taperedChain(target, pts, radii) {
+    /* 節を台形で結び、関節を丸で埋める。★全部を一本の path に入れて
+       最後に一度だけ塗る。節ごとに塗ると、色が半透明のときに重なりが濃く出る。
+       同じ向きに描いた図形どうしは nonzero で溶け合うので、継ぎ目は出ない。 */
+    target.beginPath();
     for (let i = 0; i < pts.length - 1; i += 1) {
       const a = pts[i];
       const b = pts[i + 1];
@@ -647,19 +682,36 @@
       const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
       const nx = -(b.y - a.y) / len;
       const ny = (b.x - a.x) / len;
-      target.beginPath();
+      /* ★点の並べ方（巻き方向）を、下の丸（arc）と必ず同じにする。
+         逆向きだと nonzero で打ち消し合い、関節ごとに穴があく
+         （実際に、手足が数珠つなぎの黒い丸に見えていた）。 */
       target.moveTo(a.x + nx * ra, a.y + ny * ra);
-      target.lineTo(b.x + nx * rb, b.y + ny * rb);
-      target.lineTo(b.x - nx * rb, b.y - ny * rb);
       target.lineTo(a.x - nx * ra, a.y - ny * ra);
+      target.lineTo(b.x - nx * rb, b.y - ny * rb);
+      target.lineTo(b.x + nx * rb, b.y + ny * rb);
       target.closePath();
-      target.fill();
     }
     pts.forEach((q, i) => {
-      target.beginPath();
+      target.moveTo(q.x + radii[i], q.y);
       target.arc(q.x, q.y, radii[i], 0, Math.PI * 2);
-      target.fill();
     });
+    target.fill();
+  }
+
+  // 二点の間を割った点。手足の中間の節（腿やふくらはぎのふくらみ）を作る
+  const lerpPt = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+
+  /* 手足の節を、中間のふくらみを挟んだ列に開く。
+     肩→肘→手首 の3点が 肩→上腕→肘→前腕→手首 の5点になる。 */
+  function limbNodes(pts, kind) {
+    const mids = LIMB_MIDS[kind];
+    const out = [pts[0]];
+    for (let i = 0; i < pts.length - 1; i += 1) {
+      const t = mids[Math.min(i, mids.length - 1)];
+      out.push(lerpPt(pts[i], pts[i + 1], t));
+      out.push(pts[i + 1]);
+    }
+    return out;
   }
 
   // 色を地の暗さへ寄せる。奥の手足を沈ませるのに使う（重ね塗りで濃くならないよう、
@@ -673,30 +725,14 @@
     return `rgb(${r},${g},${b})`;
   }
 
-  /* 点の集まりの外周。胴は箱なので、8点を投影した外側をなぞれば
-   * どの向きでも正しい輪郭になる（単調鎖法）。 */
-  function convexHull(points) {
-    const pts = points.slice().sort((a, b) => (a.x - b.x) || (a.y - b.y));
-    if (pts.length < 3) return pts;
-    const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-    const build = (list) => {
-      const out = [];
-      list.forEach((p) => {
-        while (out.length >= 2 && cross(out[out.length - 2], out[out.length - 1], p) <= 0) out.pop();
-        out.push(p);
-      });
-      out.pop();
-      return out;
-    };
-    return build(pts).concat(build(pts.slice().reverse()));
-  }
-
   // 体の部位。太さは身長に対する割合。奥にあるものから塗るために z も見る
+  /* 手足。足首から先（足）と手首から先（手）は形が違うので別に描く。
+     一本の細くなる線で足の甲まで通すと、足が「とがった棒の先」になる。 */
   const LIMBS = [
-    { pts: ["hipL", "knL", "anL", "toL"], kind: "leg" },
-    { pts: ["hipR", "knR", "anR", "toR"], kind: "leg" },
-    { pts: ["shL", "elL", "wrL"], kind: "arm" },
-    { pts: ["shR", "elR", "wrR"], kind: "arm" },
+    { pts: ["hipL", "knL", "anL"], kind: "leg", tip: ["anL", "toL"] },
+    { pts: ["hipR", "knR", "anR"], kind: "leg", tip: ["anR", "toR"] },
+    { pts: ["shL", "elL", "wrL"], kind: "arm", tip: ["elL", "wrL"] },
+    { pts: ["shR", "elR", "wrR"], kind: "arm", tip: ["elR", "wrR"] },
   ];
 
   // 首を振れる角度。見上げる側を大きく取る（吊り物や空中の演目はそこにある）
@@ -731,16 +767,40 @@
    * halfX=左右の半幅、rz=前後の半分の厚み。実測（身長165cm）でいうと
    * 肩幅0.38m・胴の厚み0.19m・腰幅0.32mあたり。
    * 肩と腰だけの2段だと台形になって、上半身が四角く見える。 */
+  /* 胴の断面。肩の中点(t=0)から腰の中点(t=1)へ向かって積む。
+   * t が負のところは首。halfX は左右の半幅、rz は前後の半厚（身長比）。
+   * ★rz は真横から見たときの太さそのもの。薄いと横向きの姿勢（バク転・側方宙返り）が
+   *   板のように見える。胸の厚み23cm・くびれ18cm・腰21cm（身長165cm）に合わせてある。
+   * ★くびれ(t=0.62)を持たせてあるので、外周は凸包で取ってはいけない。
+   *   凸包は凹みを埋めるので、腰のくびれが消えて胴が樽になる（実際にそうなっていた）。 */
   const TORSO_RINGS = [
-    { t: 0, halfX: 0.115, rz: 0.056 },
-    { t: 0.46, halfX: 0.081, rz: 0.044 },
-    { t: 1, halfX: 0.097, rz: 0.05 },
+    /* t は肩の中点(y=0.82)から腰の中点(y=0.52)へ引いた線の割合なので、
+       0.30 動くと身長の30%動く。頭の下端は y≈0.867 → t≈-0.157。
+       首の上端はそれより少し上（頭の中）まで伸ばして、頭と胴を確実につなぐ。 */
+    { t: -0.20, halfX: 0.033, rz: 0.038 },   // 首（頭の中まで差し込む）
+    { t: -0.10, halfX: 0.046, rz: 0.046 },   // 首
+    { t: -0.03, halfX: 0.086, rz: 0.060 },   // 僧帽筋。ここを飛ばすと肩が角になる
+    { t: 0.03, halfX: 0.104, rz: 0.068 },    // 肩。三角筋の張り出しは腕の側が作る
+    { t: 0.30, halfX: 0.098, rz: 0.071 },    // 胸
+    { t: 0.62, halfX: 0.076, rz: 0.055 },    // くびれ
+    { t: 0.90, halfX: 0.090, rz: 0.064 },    // 腰（骨盤の張り）
+    { t: 1.16, halfX: 0.062, rz: 0.052 },    // 股（y≈0.47）。ここを絞らないと腿が癒着する
   ];
-  // 手足の半径。付け根から先へ細くなる
+
+  /* 手足の太さ（身長比の半径）。関節の間に中間の節を挟み、
+     腿・ふくらはぎ・前腕のふくらみを持たせる。ここが無いと棒に見える。 */
   const LIMB_TAPER = {
-    leg: [0.052, 0.038, 0.026, 0.019],   // 腿の付け根 → 膝 → 足首 → つま先
-    arm: [0.034, 0.026, 0.018],          // 肩 → 肘 → 手首
+    // 腿の付け根 → 腿の中 → 膝 → ふくらはぎ → 足首
+    leg: [0.050, 0.047, 0.033, 0.037, 0.019],
+    // 肩 → 上腕の中 → 肘 → 前腕の太い所 → 手首
+    arm: [0.033, 0.030, 0.023, 0.023, 0.014],
   };
+  // 節の間に挟む中間点の位置（0=手前の関節、1=先の関節）
+  const LIMB_MIDS = { leg: [0.45, 0.35], arm: [0.5, 0.35] };
+  const HAND_LEN = 0.050;      // 手首から指先まで
+  const HAND_R = 0.020;
+  const FOOT_R = 0.020;        // 足の甲の厚み
+  const HEEL_BACK = 0.045;     // 踵がくるぶしより後ろへ出る量
   const TOOL_HINTS = {
     select: "演者や物を選び、舞台の上で動かします。",
     paint: "奥の背景面を指やマウスで塗ります。",
@@ -2467,19 +2527,19 @@
     if (!isFinite(wide[0])) wide = [0, 0, 1];
     const deep = norm3(cross3(axis, wide));
 
-    const box = [];
-    TORSO_RINGS.forEach((ring) => {
+    /* 断面ごとに、中心と「幅」「厚み」の2本を画面へ落とす。
+       外周はこの2本から楕円断面の張り出しとして出す（→ torsoOutline）。 */
+    const rings = TORSO_RINGS.map((ring) => {
       const c = [
         shMid[0] + (hipMid[0] - shMid[0]) * ring.t,
         shMid[1] + (hipMid[1] - shMid[1]) * ring.t,
         shMid[2] + (hipMid[2] - shMid[2]) * ring.t,
       ];
-      [-1, 1].forEach((sw) => [-1, 1].forEach((sd) => {
-        box.push(project(
-          c[0] + wide[0] * ring.halfX * sw + deep[0] * ring.rz * sd,
-          c[1] + wide[1] * ring.halfX * sw + deep[1] * ring.rz * sd,
-          c[2] + wide[2] * ring.halfX * sw + deep[2] * ring.rz * sd));
-      }));
+      const at = (m) => project(c[0] + m[0], c[1] + m[1], c[2] + m[2]);
+      const o = at([0, 0, 0]);
+      const w = at([wide[0] * ring.halfX, wide[1] * ring.halfX, wide[2] * ring.halfX]);
+      const d = at([deep[0] * ring.rz, deep[1] * ring.rz, deep[2] * ring.rz]);
+      return { o, wx: w.x - o.x, wy: w.y - o.y, dx: d.x - o.x, dy: d.y - o.y };
     });
 
     /* 小道具。関節と同じ変換に通すので、向きを変えれば道具も一緒に回る。
@@ -2528,7 +2588,7 @@
     const f = pose.face;
     const head = joints.head;
     const faceAt = project(head[0] + f[0] * 0.05, head[1] + f[1] * 0.05, head[2] + f[2] * 0.05);
-    return { P, box, ux, uy, faceAt, facing: f, wheel, props };
+    return { P, rings, ux, uy, faceAt, facing: f, wheel, props };
   }
 
   function performerRig(piece, pos, L) {
@@ -2567,15 +2627,37 @@
         const far = part.z < -0.02;
         target.fillStyle = far ? mixToward(color, 0.26) : color;
         const taper = LIMB_TAPER[part.limb.kind];
-        taperedChain(target, part.limb.pts.map((k) => P[k]), taper.map((r) => Math.max(0.8, r * ux)));
+        const nodes = limbNodes(part.limb.pts.map((k) => P[k]), part.limb.kind);
+        taperedChain(target, nodes, taper.map((r) => Math.max(0.8, r * ux)));
+        // 手首から先／足首から先
+        const from = P[part.limb.tip[0]];
+        const to = P[part.limb.tip[1]];
+        if (part.limb.kind === "arm") {
+          /* 手。前腕の延長へ短く伸ばす。関節を持たないので、
+             握りの形までは作らず、手のひらの塊として置く。 */
+          const dx = to.x - from.x;
+          const dy = to.y - from.y;
+          const len = Math.hypot(dx, dy) || 1;
+          const tip = { x: to.x + (dx / len) * HAND_LEN * ux, y: to.y + (dy / len) * HAND_LEN * ux };
+          taperedChain(target, [to, lerpPt(to, tip, 0.55), tip],
+            [Math.max(0.8, HAND_R * ux), Math.max(0.8, HAND_R * 1.05 * ux), Math.max(0.6, HAND_R * 0.62 * ux)]);
+        } else {
+          /* 足。踵をくるぶしより後ろへ出す。真正面からはつま先が
+             こちらを向いて短く見え、真横からは足の長さが出る。 */
+          const dx = to.x - from.x;
+          const dy = to.y - from.y;
+          const len = Math.hypot(dx, dy) || 1;
+          const heel = { x: from.x - (dx / len) * HEEL_BACK * ux, y: from.y - (dy / len) * HEEL_BACK * ux * 0.35 };
+          taperedChain(target, [heel, from, to],
+            [Math.max(0.8, FOOT_R * 0.9 * ux), Math.max(0.8, FOOT_R * ux), Math.max(0.6, FOOT_R * 0.62 * ux)]);
+        }
         return;
       }
       if (part.kind === "torso") {
+        /* 胴。首から股まで断面を積んだ外周をそのままなぞる。
+           ★凸包で取ってはいけない（くびれが埋まって樽になる）。 */
         target.fillStyle = color;
-        taperedChain(target,
-          [{ x: (P.shL.x + P.shR.x) / 2, y: (P.shL.y + P.shR.y) / 2 }, P.neck],
-          [Math.max(0.8, 0.036 * ux), Math.max(0.8, 0.03 * ux)]);
-        softClosedPath(target, convexHull(rig.box));
+        smoothClosedPath(target, torsoOutline(rig.rings));
         target.fill();
         return;
       }
@@ -2586,14 +2668,13 @@
       const ny = P.head.y - P.neck.y;
       const len = Math.hypot(nx, ny);
       const angle = len > 0.4 ? Math.atan2(ny, nx) : -Math.PI / 2;
+      /* 頭。長い方が顎から頭頂（身長の13.6%）、短い方が耳から耳（9.2%）。
+         首は胴の一部として描いてあるので、ここに輪郭線は引かない。 */
       target.fillStyle = color;
-      target.strokeStyle = rgba(color, 0.35);
-      target.lineWidth = Math.max(0.6, uy / 110);
       target.beginPath();
       target.ellipse(P.head.x, P.head.y,
-        Math.max(1.2, 0.066 * ux), Math.max(1.2, 0.05 * ux), angle, 0, Math.PI * 2);
+        Math.max(1.2, 0.068 * ux), Math.max(1.1, 0.046 * ux), angle, 0, Math.PI * 2);
       target.fill();
-      target.stroke();
       // 顔の印。顔がこちら側を向いているときだけ出す
       if (rig.faceAt.z >= P.head.z - 0.002 && 0.05 * ux > 3) {
         target.fillStyle = rgba("#0d0c0b", 0.5);
@@ -5350,7 +5431,12 @@
       y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y);
     };
     Object.keys(probe.P).forEach((k) => scan(probe.P[k]));
-    probe.box.forEach(scan);
+    // 胴は断面の中心から左右へ張り出すので、その分も入れて測る
+    probe.rings.forEach((ring) => {
+      const r = Math.hypot(ring.wx, ring.wy) + Math.hypot(ring.dx, ring.dy);
+      scan({ x: ring.o.x - r, y: ring.o.y - r });
+      scan({ x: ring.o.x + r, y: ring.o.y + r });
+    });
 
     const pad = 14;
     const bw = Math.max(0.001, x1 - x0);
