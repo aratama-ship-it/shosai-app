@@ -6744,3 +6744,49 @@ body.is-panel-dragging {
 }
 
 .stage-cast-profile:hover { color: var(--milk); border-color: var(--brass); }
+
+/* ===== 舞台スケッチ: 枠の高さを揃える =====
+   文字欄32px・ボタン44px・シーンの操作31pxと三通りあり、同じ列に縦へ並べると
+   段がそろわなかった。文字欄とボタンのちょうど中間、38pxへ寄せる。
+   ★色見本・一覧の行の小さな印・見出し・「?」は対象外。あれは「枠」ではなく印で、
+     同じ高さにすると行が間延びして、十数個並ぶ一覧が読めなくなる。 */
+.stage-panel .stage-text-input,
+.stage-panel .stage-select,
+.stage-panel .stage-toggle,
+.stage-panel .btn-quiet,
+.stage-panel .stage-minor-action,
+.stage-panel .stage-pose-button,
+.stage-panel .stage-delete,
+.stage-panel .stage-icon-action,
+.stage-panel .stage-color-row input[type="color"],
+.stage-panel .stage-scene-move button,
+.stage-panel .stage-scene-actions button {
+  min-height: 38px;
+}
+
+/* 背景の写真。地の色・塗りと同じ「背景」の項目に続けて置く */
+.stage-photo-block {
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--line-dark);
+}
+
+.stage-photo-block[hidden] { display: none; }
+
+.stage-photo-pick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  cursor: pointer;
+}
+
+.stage-photo-on { margin-top: 9px; }
+
+/* 大きさの目安。容量はこの端末の保存を圧迫するので、黙らずに出す */
+.stage-photo-note {
+  margin: 6px 0 0;
+  color: var(--milk-dim);
+  font-size: 10px;
+  line-height: 1.6;
+}

@@ -779,6 +779,13 @@
     brushSize: document.getElementById("stage-brush-size"),
     brushValue: document.getElementById("stage-brush-value"),
     clearPaint: document.getElementById("stage-clear-paint"),
+    photoBlock: document.getElementById("stage-photo-block"),
+    photoFile: document.getElementById("stage-photo-file"),
+    photoOn: document.getElementById("stage-photo-on"),
+    photoBright: document.getElementById("stage-photo-bright"),
+    photoBrightValue: document.getElementById("stage-photo-bright-value"),
+    photoClear: document.getElementById("stage-photo-clear"),
+    photoNote: document.getElementById("stage-photo-note"),
     selectionEmpty: document.getElementById("stage-selection-empty"),
     selectionControls: document.getElementById("stage-selection-controls"),
     selectedName: document.getElementById("stage-selected-name"),
@@ -1040,6 +1047,7 @@
   function adoptSamples(next) {
     const project = next && next.project;
     if (!project) return next;
+    sweepPhotos(project);
     const pieces = [];
     (project.scenes || []).forEach((scene) => (scene.pieces || []).forEach((p) => pieces.push(p)));
     SAMPLE.cast.forEach((s) => {
@@ -1091,6 +1099,8 @@
         sets: withExample ? sampleSets() : [],
         // 舞台装置の並びを、名前をつけて残したもの。場面をまたいで使い回す
         rigs: [],
+        // 背景に貼った写真の置き場（id → データURL）。シーンは id で指す
+        photos: {},
         scenes: [scene],
         activeSceneId: scene.id,
       },
@@ -1445,7 +1455,47 @@
       strokes: Array.isArray(raw.strokes)
         ? raw.strokes.slice(-240).map(normalizeStroke).filter((stroke) => stroke.points.length)
         : [],
+      photo: normalizePhoto(raw.photo),
     };
+  }
+
+  /* 背景に貼る写真。シーンが持つのは「どの写真か」と明るさだけで、
+   * 画そのものは project.photos に一枚だけ置く。
+   * ★シーンごとに実体を持たせると、同じ写真を使う20シーンで20枚分の
+   *   容量を食い、端末の保存枠（5MB前後）をこれだけで使い切る。 */
+  function normalizePhoto(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const id = typeof raw.id === "string" && raw.id ? raw.id : "";
+    if (!id) return null;
+    return { id, bright: clamp(finite(raw.bright, 100), 20, 180) };
+  }
+
+  const PHOTO_MAX_BYTES = 1.6 * 1024 * 1024;   // 1枚あたりの上限
+  function normalizePhotoStore(raw) {
+    const out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).slice(0, 12).forEach((id) => {
+      const src = raw[id];
+      if (typeof src === "string" && src.startsWith("data:image/") && src.length <= PHOTO_MAX_BYTES) {
+        out[id] = src;
+      }
+    });
+    return out;
+  }
+
+  // どのシーンからも指されなくなった写真は捨てる（外したぶんが残り続けないように）
+  function sweepPhotos(project) {
+    if (!project || !project.photos) return;
+    const used = new Set();
+    (project.scenes || []).forEach((scene) => {
+      if (scene.photo && scene.photo.id) used.add(scene.photo.id);
+    });
+    Object.keys(project.photos).forEach((id) => {
+      if (!used.has(id)) delete project.photos[id];
+    });
+    (project.scenes || []).forEach((scene) => {
+      if (scene.photo && !project.photos[scene.photo.id]) scene.photo = null;
+    });
   }
 
   function normalizeState(raw) {
@@ -1544,6 +1594,7 @@
             }))
           : [],
         scenes,
+        photos: normalizePhotoStore(rawProject.photos),
         activeSceneId: activeId,
       },
       showFront: raw.showFront === undefined ? true : Boolean(raw.showFront),
@@ -2197,6 +2248,38 @@
       rx: (L.size.ring / L.size.width) * widthAtRing / 2,
       ry: (L.size.ring / L.size.depth) * (L.bottomY - L.floorY) / 2,
     };
+  }
+
+  /* 読み込んだ写真の控え。同じデータURLを何度も復号しないため。
+     読み終わった時点で一度だけ描き直す（それまでは地の色のまま出る）。 */
+  const photoCache = new Map();
+  function photoImage(src) {
+    if (!src) return null;
+    const hit = photoCache.get(src);
+    if (hit) return hit.complete && hit.naturalWidth ? hit : null;
+    const img = new Image();
+    img.onload = () => render();
+    img.src = src;
+    photoCache.set(src, img);
+    return null;
+  }
+
+  /* 壁の枠を覆うように置く（縦横比は保ち、はみ出した分は切る）。
+     引き伸ばすと人の顔や柱が歪むので、切る方を選ぶ。 */
+  function paintPhoto(target, rect, photo) {
+    const img = photoImage(state.project.photos && state.project.photos[photo.id]);
+    if (!img) return;
+    const scale = Math.max(rect.w / img.naturalWidth, rect.h / img.naturalHeight);
+    const w = img.naturalWidth * scale;
+    const h = img.naturalHeight * scale;
+    target.save();
+    target.beginPath();
+    target.rect(rect.x, rect.y, rect.w, rect.h);
+    target.clip();
+    const bright = photo.bright / 100;
+    if (bright !== 1) target.filter = `brightness(${bright})`;
+    target.drawImage(img, rect.x + (rect.w - w) / 2, rect.y + (rect.h - h) / 2, w, h);
+    target.restore();
   }
 
   function buildPaintLayer(L) {
@@ -3679,6 +3762,8 @@
     if (wall) {
       target.fillStyle = sc().background;
       target.fillRect(wall.x, wall.y, wall.w, wall.h);
+      // 写真は地の色の上、手描きの塗りの下。塗りは写真への描き込みとして残る
+      if (sc().photo) paintPhoto(target, wall, sc().photo);
       target.drawImage(paintCanvas, 0, 0);
 
       const wallShade = target.createLinearGradient(wall.x, 0, wall.x + wall.w, 0);
@@ -6348,6 +6433,8 @@
   }
 
   function renderVenueControls() {
+    // 形式によっては貼る壁が無い。写真の欄の出入りもここで合わせる
+    syncPhotoControls();
     const current = venue();
     const size = venueSize();
 
@@ -6722,6 +6809,7 @@
       els.sceneList.style.height = `${state.sceneListHeight}px`;
     }
     els.background.value = sc().background;
+    syncPhotoControls();
     els.paintColor.value = state.paintColor;
     els.brushSize.value = String(state.brushSize);
     els.brushValue.textContent = String(state.brushSize);
@@ -7984,6 +8072,96 @@
   }
 
 
+
+  /* 写真の欄。奥に壁のある劇場でだけ出す（全周形式には貼る面が無い）。
+     明るさは描くときに brightness() で掛けるので、元の画は減らさない。 */
+  function syncPhotoControls() {
+    if (!els.photoBlock) return;
+    const wall = Boolean(backdropRect(layout("front")));
+    els.photoBlock.hidden = !wall;
+    const photo = sc().photo;
+    if (els.photoOn) els.photoOn.hidden = !photo;
+    if (photo && els.photoBright) {
+      els.photoBright.value = String(photo.bright);
+      if (els.photoBrightValue) els.photoBrightValue.textContent = `${photo.bright}%`;
+      if (els.photoNote) {
+        const src = (state.project.photos || {})[photo.id] || "";
+        const kb = Math.round(src.length / 1024);
+        els.photoNote.textContent = isEn()
+          ? `About ${kb} KB, kept in this browser with the show.`
+          : `およそ${kb}KB。ショーと一緒にこの端末へ保存されます。`;
+      }
+    }
+  }
+
+  /* 取り込んだ画像は、そのまま持たずに壁の大きさへ縮めて焼き直す。
+     ★写真1枚が数MBあると、端末の保存枠（5MB前後）をこれだけで使い切る。 */
+  const PHOTO_MAX_W = 1400;
+  function loadPhotoFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, PHOTO_MAX_W / img.naturalWidth);
+        const w = Math.max(1, Math.round(img.naturalWidth * scale));
+        const h = Math.max(1, Math.round(img.naturalHeight * scale));
+        const off = document.createElement("canvas");
+        off.width = w; off.height = h;
+        off.getContext("2d").drawImage(img, 0, 0, w, h);
+        const src = off.toDataURL("image/jpeg", 0.82);
+        if (src.length > PHOTO_MAX_BYTES) {
+          announce("この画像は大きすぎます。もう少し小さいものを選んでください。");
+          return;
+        }
+        checkpoint();
+        const store = state.project.photos || (state.project.photos = {});
+        // 同じ画をもう一度選んだときは、置き場のものを使い回す
+        const already = Object.keys(store).find((key) => store[key] === src);
+        const id = already || rid("photo");
+        store[id] = src;
+        sc().photo = { id, bright: sc().photo ? sc().photo.bright : 100 };
+        sweepPhotos(state.project);
+        syncPhotoControls();
+        render();
+        persistSoon();
+        announce("背景に写真を貼りました。");
+      };
+      img.onerror = () => announce("この画像は読み込めませんでした。");
+      img.src = String(reader.result || "");
+    };
+    reader.onerror = () => announce("この画像は読み込めませんでした。");
+    reader.readAsDataURL(file);
+  }
+
+  if (els.photoFile) {
+    els.photoFile.addEventListener("change", (event) => {
+      loadPhotoFile(event.target.files && event.target.files[0]);
+      event.target.value = "";
+    });
+  }
+  if (els.photoBright) {
+    els.photoBright.addEventListener("input", (event) => {
+      const photo = sc().photo;
+      if (!photo) return;
+      photo.bright = clamp(finite(event.target.value, 100), 20, 180);
+      if (els.photoBrightValue) els.photoBrightValue.textContent = `${photo.bright}%`;
+      render();
+      persistSoon();
+    });
+  }
+  if (els.photoClear) {
+    els.photoClear.addEventListener("click", () => {
+      if (!sc().photo) return;
+      checkpoint();
+      sc().photo = null;
+      sweepPhotos(state.project);
+      syncPhotoControls();
+      render();
+      persistSoon();
+      announce("背景の写真を外しました。");
+    });
+  }
 
   els.clearPaint.addEventListener("click", () => {
     if (!sc().strokes.length) {

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>舞台スケッチ — 制作の書斎</title>
-<link rel="stylesheet" href="style.css?v=111">
+<link rel="stylesheet" href="style.css?v=113">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -171,6 +171,23 @@
             </label>
             <input type="range" id="stage-brush-size" min="12" max="120" step="2" value="42">
             <button type="button" class="stage-minor-action" id="stage-clear-paint">背景の塗りだけ消す</button>
+
+            <!-- 写真の背景。奥に壁のある劇場でだけ出す（全周形式には貼る面が無い） -->
+            <div class="stage-photo-block" id="stage-photo-block">
+              <label class="stage-control-label">背景の写真</label>
+              <label class="btn-quiet stage-import-label stage-photo-pick">
+                画像を選ぶ
+                <input type="file" id="stage-photo-file" accept="image/jpeg,image/png,image/webp" hidden>
+              </label>
+              <div class="stage-photo-on" id="stage-photo-on" hidden>
+                <label class="stage-control-label stage-range-label" for="stage-photo-bright">
+                  明るさ <span id="stage-photo-bright-value">100%</span>
+                </label>
+                <input type="range" id="stage-photo-bright" min="20" max="180" step="5" value="100">
+                <button type="button" class="stage-minor-action" id="stage-photo-clear">写真を外す</button>
+                <p class="stage-photo-note" id="stage-photo-note"></p>
+              </div>
+            </div>
             </div>
           </section>
         </aside>
@@ -546,7 +563,7 @@
 </div>
 
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=11"></script>
-<script src="stage-sketch.js?v=134"></script>
+<script src="stage-i18n.js?v=12"></script>
+<script src="stage-sketch.js?v=135"></script>
 </body>
 </html>
