@@ -183,13 +183,19 @@
                 <button type="button" id="stage-scene-next" class="btn-quiet" title="次のシーンへ（↓）">次のシーン ▶</button>
                 <label class="stage-toggle stage-anim-toggle" title="次のシーンへ進むとき、動線に沿って動かして見せます">
                   <input type="checkbox" id="stage-anim-scenes" checked>
-                  <span>転換を動かす</span>
+                  <span>アニメーション</span>
                 </label>
                 <label class="stage-anim-speed" title="転換にかける時間">
                   <input type="range" id="stage-anim-ms" min="0.2" max="3" step="0.05" value="0.62">
                   <span id="stage-anim-ms-value">0.6秒</span>
                 </label>
               </div>
+              <!-- 一覧と高さの取っ手も本体の中に置く。外に出すと、畳んでも一覧だけ残る -->
+              <div class="stage-scene-list" id="stage-scene-list"></div>
+              <div class="stage-scene-resize" id="stage-scene-resize" role="separator"
+                   aria-label="シーンの欄の高さを変える" title="上下に引くと高さが変わります"></div>
+              <!-- 足す・消すは一覧の外（下）へ置く。一覧は中で繰るので、
+                   中に入れるとシーンが増えたときにボタンごと隠れてしまう -->
               <div class="stage-scene-actions">
                 <button type="button" id="stage-scene-add" class="btn-quiet">シーンを足す</button>
                 <button type="button" id="stage-scene-add-rig" class="btn-quiet">装置ごと足す</button>
@@ -197,10 +203,6 @@
                 <button type="button" id="stage-scene-dup" class="btn-quiet">複製</button>
                 <button type="button" id="stage-scene-del" class="btn-quiet">削除</button>
               </div>
-              <!-- 一覧と高さの取っ手も本体の中に置く。外に出すと、畳んでも一覧だけ残る -->
-              <div class="stage-scene-list" id="stage-scene-list"></div>
-              <div class="stage-scene-resize" id="stage-scene-resize" role="separator"
-                   aria-label="シーンの欄の高さを変える" title="上下に引くと高さが変わります"></div>
             </div>
           </section>
 
@@ -544,7 +546,7 @@
 </div>
 
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=10"></script>
-<script src="stage-sketch.js?v=132"></script>
+<script src="stage-i18n.js?v=11"></script>
+<script src="stage-sketch.js?v=133"></script>
 </body>
 </html>

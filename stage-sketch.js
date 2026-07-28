@@ -7645,7 +7645,7 @@
       if (!state.animateScenes) { stopSceneAnim(); render(); }
       if (els.animMs) els.animMs.disabled = !state.animateScenes;
       persistSoon();
-      announce(state.animateScenes ? "シーン転換を動かします。" : "シーン転換は動かしません。");
+      announce(state.animateScenes ? "アニメーションを入れました。" : "アニメーションを切りました。");
     });
   }
 
