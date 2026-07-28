@@ -542,7 +542,10 @@
       // 腕は脛を抱える。肘は身体の外へ張り出す
       elL: [-0.215, 0.885, 0.17], elR: [0.215, 0.885, 0.17],
       wrL: [-0.10, 1.005, 0.015], wrR: [0.10, 1.005, 0.015],
-    }, { face: [0, 0.5, 0.85], sideView: true }),
+      /* ★顔は「上・前」ではなく「下・後ろ」。頭は体のいちばん前(z=0.185)にあり、
+       * 抱えた膝(z=0.068)はその後ろ側にある。宙返りでは顎を引いて膝を見るので、
+       * 顔はそちらを向く。前向きにすると、目だけが体の反対側に付いて見える。 */
+    }, { face: [0, -0.32, -0.95], sideView: true }),
     /* 寝姿。本人の正面（z+）が頭側なので、向きを真横にすると寝姿がはっきり読める。
      * うつ伏せ・仰向け・横向きは、腕と脚の置き方と顔の向きで見分ける。 */
     makePose("lie", "うつ伏せ", {
@@ -777,14 +780,21 @@
     /* t は肩の中点(y=0.82)から腰の中点(y=0.52)へ引いた線の割合なので、
        0.30 動くと身長の30%動く。頭の下端は y≈0.867 → t≈-0.157。
        首の上端はそれより少し上（頭の中）まで伸ばして、頭と胴を確実につなぐ。 */
-    { t: -0.20, halfX: 0.033, rz: 0.038 },   // 首（頭の中まで差し込む）
-    { t: -0.10, halfX: 0.046, rz: 0.046 },   // 首
-    { t: -0.03, halfX: 0.086, rz: 0.060 },   // 僧帽筋。ここを飛ばすと肩が角になる
     { t: 0.03, halfX: 0.104, rz: 0.068 },    // 肩。三角筋の張り出しは腕の側が作る
     { t: 0.30, halfX: 0.098, rz: 0.071 },    // 胸
     { t: 0.62, halfX: 0.076, rz: 0.055 },    // くびれ
     { t: 0.90, halfX: 0.090, rz: 0.064 },    // 腰（骨盤の張り）
     { t: 1.16, halfX: 0.062, rz: 0.052 },    // 股（y≈0.47）。ここを絞らないと腿が癒着する
+  ];
+
+  /* 首の断面。★胴の軸（肩→腰）の延長ではなく、「肩の中点→頭」に沿って積む。
+   * 抱え込み宙返りのように胴が水平に近い姿勢では、軸の延長は前へ伸びるだけで
+   * 頭へ届かず、首が付いていないように見える（実際にそうなっていた）。
+   * s は肩の中点から頭の中心までの割合。1.0を少し切る所で止めて頭の中へ差し込む。 */
+  const NECK_RINGS = [
+    { s: 0.18, halfX: 0.086, rz: 0.060 },   // 僧帽筋。ここを飛ばすと肩が角になる
+    { s: 0.55, halfX: 0.046, rz: 0.046 },   // 首
+    { s: 0.85, halfX: 0.033, rz: 0.038 },   // 頭の中まで差し込む
   ];
 
   /* 手足の太さ（身長比の半径）。関節の間に中間の節を挟み、
@@ -800,7 +810,7 @@
   const HAND_LEN = 0.050;      // 手首から指先まで
   const HAND_R = 0.020;
   const FOOT_R = 0.020;        // 足の甲の厚み
-  const HEEL_BACK = 0.045;     // 踵がくるぶしより後ろへ出る量
+  const HEEL_BACK = 0.026;     // 踵がくるぶしより後ろへ出る量（実寸で約4cm）
   const TOOL_HINTS = {
     select: "演者や物を選び、舞台の上で動かします。",
     paint: "奥の背景面を指やマウスで塗ります。",
@@ -2529,18 +2539,25 @@
 
     /* 断面ごとに、中心と「幅」「厚み」の2本を画面へ落とす。
        外周はこの2本から楕円断面の張り出しとして出す（→ torsoOutline）。 */
-    const rings = TORSO_RINGS.map((ring) => {
-      const c = [
-        shMid[0] + (hipMid[0] - shMid[0]) * ring.t,
-        shMid[1] + (hipMid[1] - shMid[1]) * ring.t,
-        shMid[2] + (hipMid[2] - shMid[2]) * ring.t,
-      ];
+    const ringAt = (c, ring) => {
       const at = (m) => project(c[0] + m[0], c[1] + m[1], c[2] + m[2]);
       const o = at([0, 0, 0]);
       const w = at([wide[0] * ring.halfX, wide[1] * ring.halfX, wide[2] * ring.halfX]);
       const d = at([deep[0] * ring.rz, deep[1] * ring.rz, deep[2] * ring.rz]);
       return { o, wx: w.x - o.x, wy: w.y - o.y, dx: d.x - o.x, dy: d.y - o.y };
-    });
+    };
+    // 首は肩→頭、胴は肩→腰。別々の軸に沿って積み、上から順に並べる
+    const headJ = joints.head;
+    const neckRings = NECK_RINGS.slice().reverse().map((ring) => ringAt([
+      shMid[0] + (headJ[0] - shMid[0]) * ring.s,
+      shMid[1] + (headJ[1] - shMid[1]) * ring.s,
+      shMid[2] + (headJ[2] - shMid[2]) * ring.s,
+    ], ring));
+    const rings = neckRings.concat(TORSO_RINGS.map((ring) => ringAt([
+      shMid[0] + (hipMid[0] - shMid[0]) * ring.t,
+      shMid[1] + (hipMid[1] - shMid[1]) * ring.t,
+      shMid[2] + (hipMid[2] - shMid[2]) * ring.t,
+    ], ring)));
 
     /* 小道具。関節と同じ変換に通すので、向きを変えれば道具も一緒に回る。
      *   line … 2点を結ぶ棒（マイク、ギターの棹、自転車の骨組み）
@@ -2584,11 +2601,18 @@
       }
     }
 
-    // 顔の印を出す先。頭から顔の向きへ少しだけ進んだところ
+    /* 目。顔の向きへ少し進んだ所から、耳と耳を結ぶ向き（wide）へ左右に開く。
+       点を二つ置くと、一つのときより顔の向きがはっきり読める。
+       離れ具合は瞳孔間63mmを身長で割った値（身長165cmで約6.3cm）。 */
     const f = pose.face;
     const head = joints.head;
     const faceAt = project(head[0] + f[0] * 0.05, head[1] + f[1] * 0.05, head[2] + f[2] * 0.05);
-    return { P, rings, ux, uy, faceAt, facing: f, wheel, props };
+    const EYE_SEP = 0.019;
+    const eyes = [-1, 1].map((side) => project(
+      head[0] + f[0] * 0.048 + wide[0] * EYE_SEP * side,
+      head[1] + f[1] * 0.048 + wide[1] * EYE_SEP * side,
+      head[2] + f[2] * 0.048 + wide[2] * EYE_SEP * side));
+    return { P, rings, ux, uy, faceAt, eyes, facing: f, wheel, props };
   }
 
   function performerRig(piece, pos, L) {
@@ -2675,11 +2699,17 @@
       target.ellipse(P.head.x, P.head.y,
         Math.max(1.2, 0.068 * ux), Math.max(1.1, 0.046 * ux), angle, 0, Math.PI * 2);
       target.fill();
-      // 顔の印。顔がこちら側を向いているときだけ出す
-      if (rig.faceAt.z >= P.head.z - 0.002 && 0.05 * ux > 3) {
+      /* 目。こちら側にある方だけ出すので、横を向けば自然に一つになる。
+         小さすぎて点にしか見えない大きさのときは、はじめから描かない。 */
+      if (rig.eyes && 0.05 * ux > 3) {
         target.fillStyle = rgba("#0d0c0b", 0.5);
         target.beginPath();
-        target.arc(rig.faceAt.x, rig.faceAt.y, Math.max(1, 0.012 * ux), 0, Math.PI * 2);
+        rig.eyes.forEach((eye) => {
+          if (eye.z < P.head.z - 0.004) return;
+          const r = Math.max(0.9, 0.0095 * ux);
+          target.moveTo(eye.x + r, eye.y);
+          target.arc(eye.x, eye.y, r, 0, Math.PI * 2);
+        });
         target.fill();
       }
     });
