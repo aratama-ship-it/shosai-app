@@ -1190,6 +1190,31 @@ textarea, input[type="text"] {
   line-height: 1.4;
 }
 
+/* β版の印。囲みではなく、上のキッカーと同じ小さな錆色の字で添える。
+   枠付きの札にすると、題そのものより先に目へ入ってしまう。 */
+.stage-beta {
+  margin-left: 12px;
+  color: var(--rust);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  vertical-align: middle;
+}
+
+/* 保存の注意。題と道具の間、画面の上中央に置く。
+   読ませたいが騒がせたくないので、左に一本の錆色の線だけを引く。 */
+.stage-storage-caution {
+  flex: 0 1 420px;
+  margin: 0 0 3px;
+  padding-left: 11px;
+  border-left: 2px solid rgba(168, 75, 38, 0.65);
+  color: var(--milk-dim);
+  font-size: 11px;
+  line-height: 1.65;
+  letter-spacing: 0.02em;
+}
+
 .stage-sketch-head > div:first-child > p:last-child {
   color: var(--milk-dim);
   font-size: 12px;
@@ -4569,6 +4594,8 @@ canvas[data-tool="note"] { cursor: copy; }
   }
 
   .stage-history-actions { justify-content: flex-start; }
+  /* 縦積みになったら、注意書きは幅いっぱいに伸ばす */
+  .stage-storage-caution { flex: 1 1 auto; }
 
   .stage-sketch-grid {
     grid-template-columns: 1fr;

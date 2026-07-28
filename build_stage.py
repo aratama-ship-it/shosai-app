@@ -70,19 +70,9 @@ page = f"""<!DOCTYPE html>
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
   body {{ padding-top: 0; }}
   .spine {{ display: none; }}
-  .stage-standalone-note {{
-    margin: 0 auto 10px;
-    padding: 8px 18px 0;
-    max-width: 1600px;
-    color: rgba(240, 231, 214, 0.4);
-    font-size: 10.5px;
-    letter-spacing: 0.06em;
-  }}
 </style>
 </head>
 <body class="is-standalone">
-
-<p class="stage-standalone-note">舞台スケッチ（テスト版） — 描いたものはこの端末のブラウザにだけ保存されます。</p>
 
 {view}
 

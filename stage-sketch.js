@@ -7975,11 +7975,8 @@
         el.setAttribute(attr, isEn() ? (I18N.text[ja.trim()] || ja) : ja);
       });
     };
-    /* 単独ページ（stage.html）の一行目は view-stage の外にある。
-       テスターが最初に読む文なので、ここも一緒に差し替える。 */
     const roots = [
       document.getElementById("view-stage"),
-      document.querySelector(".stage-standalone-note"),
       ...document.querySelectorAll(".stage-modal"),
     ].filter(Boolean);
     // 読み上げや行分けのために、文書そのものの言語も合わせる

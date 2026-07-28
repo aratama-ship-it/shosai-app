@@ -18,9 +18,10 @@
   const TEXT = {
     /* ---- 見出し・パネル ---- */
     "舞台スケッチ": "Stage Sketch",
-    // 単独ページ（stage.html）の一行目。テスターが最初に読む
-    "舞台スケッチ（テスト版） — 描いたものはこの端末のブラウザにだけ保存されます。":
-      "Stage Sketch (test build) — everything you draw stays in this browser, on this device.",
+    "β版": "Beta",
+    // 題の右、画面上中央に置く保存の注意
+    "描いたものはこの端末のブラウザにだけ保存されます。設定や容量で消えることがあるので、区切りごとに〈書き出す〉からファイルへ控えを取ってください。":
+      "Everything you draw is saved only in this browser, on this device. It can be lost, so use Export now and then to keep a copy as a file.",
     "ショー": "Show",
     "劇場を選ぶ": "Venue",
     "出るもの": "Cast & set",
