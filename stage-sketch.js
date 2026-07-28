@@ -819,6 +819,7 @@
     venueD: document.getElementById("stage-venue-d"),
     venueH: document.getElementById("stage-venue-h"),
     venueWLabel: document.getElementById("stage-venue-w-label"),
+    venueDimRow: document.getElementById("stage-venue-dims"),
     venueDCell: document.getElementById("stage-venue-d-cell"),
     venueReset: document.getElementById("stage-venue-reset"),
     bgSection: document.getElementById("stage-bg-section"),
@@ -975,7 +976,10 @@
     try { localStorage.setItem(LANG_KEY, lang); } catch (_) { /* 覚えられなくても動く */ }
   }
   // 見本と場面の名前。作った時点の言語で決まり、そのまま持ち物として残る
-  const sceneTitle = (n) => (isEn() ? `Scene ${n}` : `場面 ${n}`);
+  const sceneTitle = (n) => (isEn() ? `Scene ${n}` : `シーン ${n}`);
+  /* 表記を「場面」から「シーン」へ揃えたので、前に自動で付いた名前も直す。
+     手で付けた名前は「場面 3」のような形をしていないので巻き込まない。 */
+  const renameAuto = (title) => String(title).replace(/^場面 (\d+)$/, "シーン $1");
   const untitledShow = () => (isEn() ? "Untitled show" : "無題のショー");
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -1383,7 +1387,7 @@
       id: typeof raw.id === "string" ? raw.id : rid("scene"),
       kind: raw.kind === "section" ? "section" : "scene",
       depth: clamp(finite(raw.depth, 0), 0, MAX_DEPTH),
-      title: typeof raw.title === "string" && raw.title.trim() ? raw.title : sceneTitle(index + 1),
+      title: typeof raw.title === "string" && raw.title.trim() ? renameAuto(raw.title) : sceneTitle(index + 1),
       studyBeatId: typeof raw.studyBeatId === "string" ? raw.studyBeatId : null,
       note: typeof raw.note === "string" ? raw.note : "",
       background: validColor(raw.background, fallbackBg),
@@ -1694,7 +1698,7 @@
       els.studyBody.append(studyNode("p", "stage-study-empty",
         isEn()
           ? "This scene is outside the fixed 8 beats. Choose a beat above to return."
-          : "この場面は固定8ビートの外です。上の番号を押すとスタディへ戻れます。"));
+          : "このシーンは固定8ビートの外です。上の番号を押すとスタディへ戻れます。"));
     } else {
       const heading = studyNode("div", "stage-study-beat-head");
       const number = studyNode("span", "stage-study-beat-number",
@@ -1746,7 +1750,7 @@
     els.studyBody.append(studyNode("p", "stage-study-save-note",
       isEn()
         ? "Switch beats to compare positions. Every beat is a separate scene; edits auto-save only in this browser."
-        : "番号を切り替えて配置差を見ます。各ビートは別場面で、変更はこのブラウザ内へ自動保存されます。"));
+        : "番号を切り替えて配置差を見ます。各ビートは別シーンで、変更はこのブラウザ内へ自動保存されます。"));
   }
 
   function openFixedSceneStudy(study) {
@@ -4504,7 +4508,7 @@
       status.type = "button";
       status.className = `stage-cast-status ${onStage ? "is-on" : "is-off"}`;
       status.textContent = onStage ? tm("misc", "onStage", "舞台上") : tm("misc", "offStage", "舞台裏");
-      status.title = tx(onStage ? "押すと舞台から引っ込めます" : "押すとこの場面の舞台へ出します");
+      status.title = tx(onStage ? "押すと舞台から引っ込めます" : "押すとこのシーンの舞台へ出します");
       status.addEventListener("click", () => toggleCastOnStage(member.id));
 
       const profile = document.createElement("button");
@@ -4584,7 +4588,7 @@
     const piece = sc().pieces.find(findPiece);
     if (!piece) {
       announce(light
-        ? `${name}はこの場面ではOFFです。「OFF」を押すと点きます。`
+        ? `${name}はこのシーンではOFFです。「OFF」を押すと点きます。`
         : `${name}はいま舞台裏です。「舞台裏」を押すと舞台へ出ます。`);
       return;
     }
@@ -4660,7 +4664,7 @@
     updateInspector();
     render();
     persistSoon();
-    announce(`${raw}を名簿へ加え、この場面の舞台へ出しました。`);
+    announce(`${raw}を名簿へ加え、このシーンの舞台へ出しました。`);
   }
 
   // 演者をこの場面の舞台へ置く。登録した直後にも、あとから出すときにも通す
@@ -4709,7 +4713,7 @@
     const scenesWith = state.project.scenes.filter((scene) =>
       scene.pieces.some((piece) => piece.castId === castId)).length;
     const warning = scenesWith
-      ? `「${member.name}」を名簿から外します。${scenesWith}つの場面から、この人も消えます。`
+      ? `「${member.name}」を名簿から外します。${scenesWith}つのシーンから、この人も消えます。`
       : `「${member.name}」を名簿から外します。`;
     if (!window.confirm(warning)) return;
     checkpoint();
@@ -4842,8 +4846,8 @@
       status.className = `stage-cast-status ${onStage ? "is-on" : "is-off"}`;
       status.textContent = onStageWord(item, onStage);
       status.title = tx(light
-        ? (onStage ? "押すとこの場面では消します" : "押すとこの場面で点けます")
-        : (onStage ? "押すと舞台から下げます" : "押すとこの場面の舞台へ出します"));
+        ? (onStage ? "押すとこのシーンでは消します" : "押すとこのシーンで点けます")
+        : (onStage ? "押すと舞台から下げます" : "押すとこのシーンの舞台へ出します"));
       status.addEventListener("click", () => toggleSetOnStage(item.id));
 
       const detail = document.createElement("button");
@@ -4900,7 +4904,7 @@
     persistSoon();
     announce(kind === "light"
       ? `${raw}を${lightKindName(lk)}へ加えてONにしました。`
-      : `${raw}を舞台セットへ加え、この場面の舞台へ出しました。`);
+      : `${raw}を舞台セットへ加え、このシーンの舞台へ出しました。`);
   }
 
   // 舞台セット・明かりをこの場面へ置く。登録した直後にも、あとから出すときにも通す
@@ -4961,7 +4965,7 @@
     const scenesWith = state.project.scenes.filter((scene) =>
       scene.pieces.some((piece) => piece.setId === setId)).length;
     const warning = scenesWith
-      ? `「${item.name}」を舞台セットから外します。${scenesWith}つの場面から、これも消えます。`
+      ? `「${item.name}」を舞台セットから外します。${scenesWith}つのシーンから、これも消えます。`
       : `「${item.name}」を舞台セットから外します。`;
     if (!window.confirm(warning)) return;
     checkpoint();
@@ -5061,7 +5065,7 @@
       const meta = document.createElement("span");
       meta.className = "stage-show-meta";
       const when = info.savedAt ? info.savedAt.slice(0, 10).replace(/-/g, "/") : "";
-      meta.textContent = `${info.version}・${info.scenes}場面${when ? `・${when}` : ""}`
+      meta.textContent = `${info.version}・${info.scenes}シーン${when ? `・${when}` : ""}`
         + (info.id === state.project.id ? "・開いています" : "");
       open.append(title, meta);
       open.addEventListener("click", () => openShow(info.id));
@@ -5345,14 +5349,14 @@
       swap.type = "button";
       swap.className = "stage-cast-status is-off";
       swap.textContent = "置き換え";
-      swap.title = "いまの場面の装置を、この型にそっくり入れ替えます";
+      swap.title = "いまのシーンの装置を、この型にそっくり入れ替えます";
       swap.addEventListener("click", () => applyRig(rig.id, "replace"));
 
       const plus = document.createElement("button");
       plus.type = "button";
       plus.className = "stage-cast-status is-off";
       plus.textContent = "足す";
-      plus.title = "いまの場面へ、この型の装置を足します";
+      plus.title = "いまのシーンへ、この型の装置を足します";
       plus.addEventListener("click", () => applyRig(rig.id, "add"));
 
       const update = document.createElement("button");
@@ -5699,8 +5703,8 @@
           note.rows = 2;
           note.maxLength = 200;
           note.value = scene.note || "";
-          note.placeholder = tm("misc", "sceneNoteHint", "この場面のメモ（何が起きるか）");
-          note.setAttribute("aria-label", tx("場面のメモ"));
+          note.placeholder = tm("misc", "sceneNoteHint", "このシーンのメモ（何が起きるか）");
+          note.setAttribute("aria-label", tx("シーンのメモ"));
           note.addEventListener("input", () => {
             scene.note = note.value.slice(0, 200);
             persistSoon();
@@ -5708,8 +5712,8 @@
           const apply = document.createElement("button");
           apply.type = "button";
           apply.className = "btn-quiet stage-scene-apply";
-          apply.textContent = tm("misc", "applyRoute", "動線の先へ動かした場面を作る");
-          apply.title = tx("この場面を写し、動線を引いた演者を行き先へ移した場面を次に作ります");
+          apply.textContent = tm("misc", "applyRoute", "動線の先へ動かしたシーンを作る");
+          apply.title = tx("このシーンを写し、動線を引いた演者を行き先へ移したシーンを次に作ります");
           apply.disabled = !(scene.pieces || []).some((piece) => piece.route);
           apply.addEventListener("click", () => applyRoutes(scene));
           body.append(note, apply);
@@ -5742,7 +5746,7 @@
   function openRename(scene) {
     if (!scene || !els.rename) return;
     renameTarget = scene;
-    els.renameTitle.textContent = scene.kind === "section" ? "セクションの名前" : "場面の名前";
+    els.renameTitle.textContent = scene.kind === "section" ? "セクションの名前" : "シーンの名前";
     els.renameInput.value = scene.title;
     els.rename.hidden = false;
     els.renameBackdrop.hidden = false;
@@ -6009,11 +6013,11 @@
   // 場面を前後へ送る。上下キーの割り当て先でもある
   function stepScene(dir) {
     const rows = state.project.scenes.filter((row) => row.kind === "scene");
-    if (rows.length < 2) { announce("場面がひとつしかありません。"); return; }
+    if (rows.length < 2) { announce("シーンがひとつしかありません。"); return; }
     const at = rows.findIndex((row) => row.id === state.project.activeSceneId);
     const next = rows[clamp((at < 0 ? 0 : at) + dir, 0, rows.length - 1)];
     if (!next || next.id === state.project.activeSceneId) {
-      announce(dir > 0 ? "最後の場面です。" : "最初の場面です。");
+      announce(dir > 0 ? "最後のシーンです。" : "最初のシーンです。");
       return;
     }
     openScene(next.id);
@@ -6081,7 +6085,7 @@
     state.cursorRowId = section.id;
     renderScenes();
     persistSoon();
-    announce(`${section.title}を足しました。下の場面を一段内側へ入れると、中身になります。`);
+    announce(`${section.title}を足しました。下のシーンを一段内側へ入れると、中身になります。`);
   }
 
   // セクションを起点にしたときは、中身ごと複製する
@@ -6112,7 +6116,7 @@
     const i = p.scenes.indexOf(scene);
     if (i < 0) return;
     if (!(scene.pieces || []).some((piece) => piece.route)) {
-      announce("この場面には動線がありません。平面図で行き先を引いてください。");
+      announce("このシーンには動線がありません。平面図で行き先を引いてください。");
       return;
     }
     checkpoint();
@@ -6143,7 +6147,7 @@
     updateInspector();
     render();
     persistSoon();
-    announce(`${moved}名（点）を動線の先へ動かした場面を作りました。`);
+    announce(`${moved}名（点）を動線の先へ動かしたシーンを作りました。`);
   }
 
   function duplicateScene() {
@@ -6168,7 +6172,7 @@
     updateInspector();
     render();
     persistSoon();
-    announce(`${cur.title}を複製しました。前の場面から少しずつ動かすときに使えます。`);
+    announce(`${cur.title}を複製しました。前のシーンから少しずつ動かすときに使えます。`);
   }
 
 
@@ -6183,7 +6187,7 @@
     if (p.scenes.filter((x) => x.kind === "scene").length - 1 - kidScenes < 1) return;
     const warn = kids.length
       ? `「${cur.title}」を、中に入れた${kids.length}件ごと削除します。置いたものと塗りは戻せません。`
-      : `「${cur.title}」を削除します。この場面に置いたものと塗りは戻せません。`;
+      : `「${cur.title}」を削除します。このシーンに置いたものと塗りは戻せません。`;
     if (!window.confirm(warn)) return;
     checkpoint();
     p.scenes.splice(i, 1 + kids.length);
@@ -6270,7 +6274,7 @@
       }
       const incoming = parsed && parsed.project ? parsed : { project: parsed };
       if (!incoming.project || !Array.isArray(incoming.project.scenes)) {
-        announce("このファイルには場面が入っていません。");
+        announce("このファイルにはシーンが入っていません。");
         return;
       }
       if (!window.confirm("いま開いているショーを、読み込んだ内容で置き換えます。よろしいですか？")) return;
@@ -6338,9 +6342,12 @@
       els.sizeSelect.value = state.project.venueDims ? "custom" : size.id;
     }
 
-    /* 実寸の欄。円形は一つの数（直径）で決まるので、奥行きの欄は畳む。 */
+    /* 実寸の欄。円形は一つの数（直径）で決まるので、奥行きの欄は畳む。
+     * ★プリセットを選んでいるあいだは欄ごと出さない。触れない欄を灰色で
+     *   並べておくより、カスタムを選んだときに現れる方が用が分かる。 */
     if (els.venueW) {
       const custom = Boolean(state.project.venueDims);
+      if (els.venueDimRow) els.venueDimRow.hidden = !custom;
       [els.venueW, els.venueD, els.venueH].forEach((input) => {
         if (input) input.disabled = !custom;
       });
@@ -7638,7 +7645,7 @@
       if (!state.animateScenes) { stopSceneAnim(); render(); }
       if (els.animMs) els.animMs.disabled = !state.animateScenes;
       persistSoon();
-      announce(state.animateScenes ? "場面転換を動かします。" : "場面転換は動かしません。");
+      announce(state.animateScenes ? "シーン転換を動かします。" : "シーン転換は動かしません。");
     });
   }
 
@@ -7827,7 +7834,7 @@
       // 明かりを舞台から外すのは「消す」こと。道具立てを片づける話ではない
       const light = Boolean(piece && piece.type === "light");
       els.delete.textContent = light ? "TURN OFF" : tx("舞台から外す");
-      els.delete.title = light ? tx("この場面ではこの明かりを消します") : "";
+      els.delete.title = light ? tx("このシーンではこの明かりを消します") : "";
     }
     if (els.routeClear) els.routeClear.hidden = !(piece && piece.route);
     /* 照明の直径。登録した明かりそのものの寸法なので、置いてある全ての場面に効く
@@ -7915,7 +7922,7 @@
           ? `${lockWord} (the lock of \u201c${owner.name}\u201d. While locked it will not move in any scene)`
           : `${lockWord} (while locked, dragging will not move it)`)
         : (owner
-          ? `${lockWord}（「${owner.name}」の錠。掛けているあいだ、どの場面でも動きません）`
+          ? `${lockWord}（「${owner.name}」の錠。掛けているあいだ、どのシーンでも動きません）`
           : `${lockWord}（掛けているあいだ、掴んでも動きません）`);
     }
     if (els.openSetInfo) {
@@ -8069,14 +8076,14 @@
       at: '[data-panel="scenes"]',
       begin: () => { tourMark.scenes = state.project.scenes.length; },
       done: () => state.project.scenes.length > tourMark.scenes,
-      ja: ["次の場面を作る", "場面の欄の〈動線の先へ動かした場面を作る〉を押してください。動線の先へ動いた状態が、次の場面として作られます。"],
+      ja: ["次のシーンを作る", "シーンの欄の〈動線の先へ動かしたシーンを作る〉を押してください。動線の先へ動いた状態が、次のシーンとして作られます。"],
       en: ["Make the next scene", "Press “Make a scene at the end of the routes”. The state after the move becomes the next scene."],
     },
     {
       at: ".stage-scene-move",
       begin: () => { tourMark.scene = state.project.activeSceneId; },
       done: () => state.project.activeSceneId !== tourMark.scene,
-      ja: ["転換を見る", "〈◀ 前の場面〉で戻り、〈次の場面 ▶〉で進んでください（↑↓キーでも動きます）。進むときだけ、動線に沿って動いて見えます。"],
+      ja: ["転換を見る", "〈◀ 前のシーン〉で戻り、〈次のシーン ▶〉で進んでください（↑↓キーでも動きます）。進むときだけ、動線に沿って動いて見えます。"],
       en: ["Watch the change", "Go back with ◀ Previous and forward with Next ▶ (the ↑↓ keys work too). Moving forward plays the travel along the routes."],
     },
     {
@@ -8096,7 +8103,7 @@
     },
     {
       at: "#stage-export",
-      ja: ["持ち出す", "〈画像を書き出す〉で、正面・平面・全場面を画像にできます。作ったものはこの端末のブラウザにだけ保存されます。以上です、あとは自由に。"],
+      ja: ["持ち出す", "〈画像を書き出す〉で、正面・平面・全シーンを画像にできます。作ったものはこの端末のブラウザにだけ保存されます。以上です、あとは自由に。"],
       en: ["Take it with you", "Export image saves the front view, the plan, or every scene. Your work lives only in this browser. That's it — go ahead."],
     },
   ];
@@ -8284,7 +8291,7 @@
   });
 
   els.clear.addEventListener("click", () => {
-    if (!window.confirm(`「${sc().title}」に置いたものと背景の塗りをすべて消しますか？（他の場面はそのままです）`)) return;
+    if (!window.confirm(`「${sc().title}」に置いたものと背景の塗りをすべて消しますか？（他のシーンはそのままです）`)) return;
     checkpoint();
     const cur = sc();
     cur.pieces = [];
@@ -8342,7 +8349,7 @@
     const views = exportViews().length;
     const total = scenes * views;
     els.exportNote.textContent = total > 1
-      ? `${scenes}場面 × ${views === 2 ? "正面と平面" : "1枚"} ＝ 合計${total}枚を続けて落とします。`
+      ? `${scenes}シーン × ${views === 2 ? "正面と平面" : "1枚"} ＝ 合計${total}枚を続けて落とします。`
       : "1枚を落とします。";
   }
 
@@ -8362,7 +8369,7 @@
   function runExport() {
     const scenes = exportTargets();
     const views = exportViews();
-    if (!scenes.length) { announce("書き出す場面がありません。"); return; }
+    if (!scenes.length) { announce("書き出すシーンがありません。"); return; }
     const keepScene = state.project.activeSceneId;
     const keepSelected = selectedId;
     const stamp = stampNow();
