@@ -830,7 +830,6 @@
     venueDCell: document.getElementById("stage-venue-d-cell"),
     venueReset: document.getElementById("stage-venue-reset"),
     bgSection: document.getElementById("stage-bg-section"),
-    seatSection: document.getElementById("stage-seat-section"),
     seatList: document.getElementById("stage-seat-list"),
     projectTitle: document.getElementById("stage-project-title"),
     versionLabel: document.getElementById("stage-version-label"),
@@ -4309,8 +4308,9 @@
     if (els.frontCaption) {
       const L = layout("front");
       const pannable = L.panRange > 0 || L.panRangeY > 0;
-      els.frontCaption.textContent = `${tx("正面")} — ${seatName(VENUES.seatById(state.seat))}`
-        + (pannable ? (isEn() ? " (drag an empty spot to look around)" : "（何もない所を掴むと視線を振れます）") : "");
+      /* 席の札が同じ行に並ぶので、見出しは絵の名前だけでよい。
+         「何もない所を掴むと視線を振れる」ことは、掴んだときの手の形（カーソル）で伝える。 */
+      els.frontCaption.textContent = tx("正面");
       canvas.dataset.pannable = pannable ? "true" : "false";
     }
   }
@@ -6538,7 +6538,7 @@
 
     // 席は正面図を出しているときだけ意味を持つ
     const seat = VENUES.seatById(state.seat);
-    if (els.seatSection) els.seatSection.hidden = !state.showFront;
+    if (els.seatList) els.seatList.hidden = !state.showFront;
     if (els.seatList) {
       els.seatList.innerHTML = "";
       VENUES.seats.forEach((s2) => {

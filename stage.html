@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>舞台スケッチ — 制作の書斎</title>
-<link rel="stylesheet" href="style.css?v=113">
+<link rel="stylesheet" href="style.css?v=114">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -237,6 +237,8 @@
               <button type="button" data-show-view="front">正面</button>
               <button type="button" data-show-view="plan">平面</button>
               <button type="button" data-show-view="both">両方</button>
+              <!-- 上下の入れ替え。どの絵を出すかの続きなので、同じ群れに入れる -->
+              <button type="button" id="stage-swap-center" title="正面と平面を入れ替える">入替</button>
             </div>
             <label class="stage-toggle stage-name-toggle">
               <input type="checkbox" id="stage-show-names" checked>
@@ -246,28 +248,30 @@
               <input type="checkbox" id="stage-show-set-names" checked>
               <span>装置名</span>
             </label>
-            <button type="button" id="stage-swap-center" class="btn-quiet">正面と平面を入れ替える</button>
           </div>
           <div class="stage-canvas-stack" id="stage-canvas-stack">
             <div class="stage-board-frame" id="stage-front-cell">
               <div class="stage-canvas-bar">
                 <p class="stage-canvas-caption" id="stage-front-caption">正面</p>
-                <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-front-zoom"
-                        title="等倍に戻す" hidden>1.0× ⟲</button>
-                <button type="button" class="stage-canvas-tool" id="stage-front-note"
-                        aria-pressed="false">メモ</button>
-                <label class="stage-canvas-toggle" id="stage-seatmap-toggle">
-                  <input type="checkbox" id="stage-show-seatmap" checked>
-                  <span>見る位置の図</span>
-                </label>
-                <button type="button" class="stage-canvas-close" data-toggle-view="front"
-                        aria-expanded="true" aria-label="正面の絵を閉じる">▾</button>
+                <!-- 見る席。絵の名前とメモの間に置く。どこから見た絵かは、
+                     絵そのものと同じ行で読めた方が分かりやすい -->
+                <div class="stage-seat-list" id="stage-seat-list" role="group" aria-label="客席の位置"></div>
+                <!-- 右手の道具はひとまとめにする。ばらのまま並べると、
+                     間の余白が均等に割られて、道具どうしが離れてしまう -->
+                <div class="stage-canvas-tools">
+                  <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-front-zoom"
+                          title="等倍に戻す" hidden>1.0× ⟲</button>
+                  <button type="button" class="stage-canvas-tool" id="stage-front-note"
+                          aria-pressed="false">メモ</button>
+                  <label class="stage-canvas-toggle" id="stage-seatmap-toggle">
+                    <input type="checkbox" id="stage-show-seatmap" checked>
+                    <span>見る位置の図</span>
+                  </label>
+                  <button type="button" class="stage-canvas-close" data-toggle-view="front"
+                          aria-expanded="true" aria-label="正面の絵を閉じる">▾</button>
+                </div>
               </div>
               <div class="stage-canvas-inner" id="stage-front-inner">
-              <section class="stage-seat-strip" id="stage-seat-section">
-              <div class="stage-seat-list" id="stage-seat-list" role="group" aria-label="客席の位置"></div>
-          </section>
-
               <div class="stage-canvas-wrap">
                 <div class="stage-depth-label stage-depth-back" id="stage-depth-back">奥・背景</div>
                 <canvas id="stage-canvas" width="1280" height="720" tabindex="0"
@@ -279,19 +283,21 @@
             <div class="stage-board-frame" id="stage-plan-cell">
               <div class="stage-canvas-bar">
                 <p class="stage-canvas-caption">平面（上から）</p>
-                <button type="button" class="stage-canvas-tool" id="stage-plan-route"
-                        aria-pressed="false">動線を描く</button>
-                <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-plan-zoom"
-                        title="等倍に戻す" hidden>1.0× ⟲</button>
-                <button type="button" class="stage-canvas-tool" id="stage-plan-note"
-                        aria-pressed="false">メモ</button>
-                <label class="stage-canvas-toggle" title="宙に吊ってあるものも平面に出す">
-                  <input type="checkbox" id="stage-show-flown">
-                  <span>吊物</span>
-                </label>
-                <button type="button" class="stage-canvas-tool" id="stage-route-clear" hidden>動線を消す</button>
-                <button type="button" class="stage-canvas-close" data-toggle-view="plan"
-                        aria-expanded="true" aria-label="平面の絵を閉じる">▾</button>
+                <div class="stage-canvas-tools">
+                  <button type="button" class="stage-canvas-tool" id="stage-plan-route"
+                          aria-pressed="false">動線を描く</button>
+                  <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-plan-zoom"
+                          title="等倍に戻す" hidden>1.0× ⟲</button>
+                  <button type="button" class="stage-canvas-tool" id="stage-plan-note"
+                          aria-pressed="false">メモ</button>
+                  <label class="stage-canvas-toggle" title="宙に吊ってあるものも平面に出す">
+                    <input type="checkbox" id="stage-show-flown">
+                    <span>吊物</span>
+                  </label>
+                  <button type="button" class="stage-canvas-tool" id="stage-route-clear" hidden>動線を消す</button>
+                  <button type="button" class="stage-canvas-close" data-toggle-view="plan"
+                          aria-expanded="true" aria-label="平面の絵を閉じる">▾</button>
+                </div>
               </div>
               <div class="stage-canvas-inner" id="stage-plan-inner">
               <div class="stage-canvas-wrap">
@@ -563,7 +569,7 @@
 </div>
 
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=14"></script>
-<script src="stage-sketch.js?v=137"></script>
+<script src="stage-i18n.js?v=15"></script>
+<script src="stage-sketch.js?v=138"></script>
 </body>
 </html>

@@ -6790,3 +6790,49 @@ body.is-panel-dragging {
   font-size: 10px;
   line-height: 1.6;
 }
+
+/* 絵のバーは「名前｜（席）｜道具」の三つ。道具をひとまとめにして右へ寄せ、
+   余白は真ん中だけに置く。ばらのまま space-between に任せると、
+   余りが道具の間にも割られて、押す札がとびとびになる。 */
+.stage-canvas-bar .stage-canvas-caption { flex: 0 0 auto; }
+
+.stage-canvas-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.stage-canvas-bar .stage-seat-list {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.stage-canvas-bar .stage-seat-list[hidden] { display: none; }
+
+/* バーの他の札（メモなど）と同じ調子にする */
+.stage-canvas-bar .stage-seat {
+  border: 1px solid var(--line-dark);
+  background: none;
+  color: var(--milk-dim);
+  min-height: 26px;
+  padding: 3px 9px;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stage-canvas-bar .stage-seat:hover { color: var(--milk); border-color: var(--brass); }
+
+.stage-canvas-bar .stage-seat[aria-pressed="true"] {
+  color: var(--milk);
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.16);
+}
+
+/* 入れ替えは「どの絵を出すか」の続き。同じ群れの右端に置く */
+.stage-view-switch #stage-swap-center { border-left: 1px solid var(--line-dark); }

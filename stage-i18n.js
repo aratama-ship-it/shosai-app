@@ -121,6 +121,7 @@
     "動線を消す": "Clear route",
     "演者名": "Performer names",
     "装置名": "Set names",
+    "入替": "Swap",
     "正面と平面を入れ替える": "Swap front and plan",
     "いまの道具の説明": "About this tool",
     "いまの道具の説明を出す": "Show the tool description",
