@@ -275,6 +275,9 @@
 
     /* ---- 保存 ---- */
     "変更はこの端末のブラウザ内へ自動保存します。": "Changes are saved automatically in this browser.",
+    "変更がたまっています。ファイルへ書き出して控えを残しませんか。":
+      "Changes are piling up. Export to a file to keep a copy.",
+    "ファイルへ書き出す": "Export to file",
     "この端末に保存した前回のスケッチを開きました。": "Opened the sketch saved in this browser.",
     "舞台を空にする": "Clear the stage",
     "これは構図・色・距離感を考えるための2D習作です。舞台機構、リギング、安全距離、施工寸法を決める図面ではありません。":

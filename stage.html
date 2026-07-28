@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>舞台スケッチ — 制作の書斎</title>
-<link rel="stylesheet" href="style.css?v=108">
+<link rel="stylesheet" href="style.css?v=109">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -357,6 +357,12 @@
             <div class="stage-panel-body">
             <h2>保存</h2>
             <p id="stage-save-status">変更はこの端末のブラウザ内へ自動保存します。</p>
+            <!-- ブラウザ内の保存は設定・容量次第で消え得る。ファイルへ残した記録を正直に見せる -->
+            <p class="stage-backup-note" id="stage-backup-note"></p>
+            <div class="stage-backup-hint" id="stage-backup-hint" hidden>
+              <p>変更がたまっています。ファイルへ書き出して控えを残しませんか。</p>
+              <button type="button" class="stage-minor-action" id="stage-backup-export">ファイルへ書き出す</button>
+            </div>
             <button type="button" class="stage-minor-action" id="stage-clear">舞台を空にする</button>
           </section>
         </aside>
@@ -545,7 +551,7 @@
 </div>
 
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=7"></script>
-<script src="stage-sketch.js?v=129"></script>
+<script src="stage-i18n.js?v=8"></script>
+<script src="stage-sketch.js?v=130"></script>
 </body>
 </html>

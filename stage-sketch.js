@@ -802,6 +802,9 @@
     delete: document.getElementById("stage-delete"),
     clear: document.getElementById("stage-clear"),
     saveStatus: document.getElementById("stage-save-status"),
+    backupNote: document.getElementById("stage-backup-note"),
+    backupHint: document.getElementById("stage-backup-hint"),
+    backupExport: document.getElementById("stage-backup-export"),
     live: document.getElementById("stage-live"),
     venueSelect: document.getElementById("stage-venue-select"),
     sizeSelect: document.getElementById("stage-size-select"),
@@ -1067,6 +1070,10 @@
       pieceColor: "#a84b26",
       paintColor: "#efe7d6",
       brushSize: 42,
+      /* ファイル書き出しの記録。ブラウザの保存は設定や容量で消え得るので、
+         「最後にファイルへ残したのはいつか」を正直に見せるための持ち物 */
+      lastExportAt: "",
+      editsSinceExport: 0,
     };
   }
 
@@ -1505,6 +1512,8 @@
       pieceColor: validColor(raw.pieceColor, fallback.pieceColor),
       paintColor: validColor(raw.paintColor, fallback.paintColor),
       brushSize: clamp(finite(raw.brushSize, fallback.brushSize), 12, 120),
+      lastExportAt: typeof raw.lastExportAt === "string" ? raw.lastExportAt : "",
+      editsSinceExport: clamp(finite(raw.editsSinceExport, 0), 0, 99999),
     };
   }
 
@@ -1532,8 +1541,19 @@
     }
   }
 
+  /* 棚への保存が入りきらないことがある（localStorageは5MB前後）。
+     ★以前はここで黙って諦めていて、「保存しました」と出るのに棚は古いまま、
+     という嘘の状態が起きていた。成否を返し、表示（persistSoon）で正直に伝える。 */
+  let shelfFailed = false;
   function writeShows(shows) {
-    try { localStorage.setItem(SHOWS_KEY, JSON.stringify(shows)); } catch (_) { /* 入りきらないときは諦める */ }
+    try {
+      localStorage.setItem(SHOWS_KEY, JSON.stringify(shows));
+      shelfFailed = false;
+      return true;
+    } catch (_) {
+      shelfFailed = true;
+      return false;
+    }
   }
 
   // いまのショーを棚へ書き戻す。保存のたびに呼ぶので、一覧は常に最新になる
@@ -1990,7 +2010,12 @@
     updateHistoryButtons();
   }
 
-  function checkpoint() { recordBefore(snapshot()); }
+  function checkpoint() {
+    recordBefore(snapshot());
+    // ファイル書き出しからの変更数。閾値を超えたら保存欄で書き出しを勧める
+    state.editsSinceExport = (state.editsSinceExport || 0) + 1;
+    updateBackupNote();
+  }
 
   function restore(value) {
     state = normalizeState(JSON.parse(value));
@@ -2030,6 +2055,27 @@
     els.redo.disabled = future.length === 0;
   }
 
+  /* ファイル書き出しの記録を保存欄に出す。ブラウザ内の保存は設定・容量次第で
+     消え得るので、「最後にファイルへ残したのはいつか」を常に見せ、
+     変更が一定数たまったら書き出しを勧める。お願いの文章より仕組みで促す。 */
+  const BACKUP_HINT_AFTER = 30;
+  function updateBackupNote() {
+    if (!els.backupNote) return;
+    const n = state.editsSinceExport || 0;
+    if (!state.lastExportAt) {
+      els.backupNote.textContent = isEn()
+        ? "No file export yet."
+        : "ファイルへの書き出しはまだありません。";
+    } else {
+      const at = new Date(state.lastExportAt);
+      const stamp = isNaN(at) ? "?" : `${at.getMonth() + 1}/${at.getDate()} ${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
+      els.backupNote.textContent = isEn()
+        ? `Last file export: ${stamp} (${n} ${n === 1 ? "change" : "changes"} since)`
+        : `最後のファイル書き出し: ${stamp}（それから${n}回の変更）`;
+    }
+    if (els.backupHint) els.backupHint.hidden = n < BACKUP_HINT_AFTER;
+  }
+
   function persistSoon() {
     clearTimeout(saveTimer);
     els.saveStatus.textContent = isEn() ? "Saving\u2026" : "変更を保存しています…";
@@ -2037,7 +2083,13 @@
       try {
         localStorage.setItem(STORAGE_KEY, snapshot());
         shelveCurrent();
-        els.saveStatus.textContent = isEn() ? `Saved \u201c${state.project.title}\u201d.` : `「${state.project.title}」を保存しました。`;
+        /* 現在ショーと棚は別の保存。棚だけ失敗することがあるので分けて伝える */
+        els.saveStatus.textContent = shelfFailed
+          ? (isEn()
+            ? `Saved \u201c${state.project.title}\u201d, but the show shelf is out of space \u2014 export to a file to keep a copy.`
+            : `「${state.project.title}」を保存しましたが、ショー一覧の控えは容量不足で更新できていません。ファイルへ書き出してください。`)
+          : (isEn() ? `Saved \u201c${state.project.title}\u201d.` : `「${state.project.title}」を保存しました。`);
+        updateBackupNote();
       } catch (_) {
         els.saveStatus.textContent = isEn()
           ? "Could not save on this device. Export an image to keep your work."
@@ -6198,6 +6250,10 @@
     link.download = `${safe}-${state.project.versionLabel}.json`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+    state.lastExportAt = nowIso();
+    state.editsSinceExport = 0;
+    persistSoon();
+    updateBackupNote();
     announce("このショーをファイルへ書き出しました。チームへ渡せます。");
   }
 
@@ -7656,6 +7712,7 @@
   }
   if (els.versionCopy) els.versionCopy.addEventListener("click", duplicateVersion);
   if (els.exportJson) els.exportJson.addEventListener("click", exportProject);
+  if (els.backupExport) els.backupExport.addEventListener("click", exportProject);
   if (els.importJson) {
     els.importJson.addEventListener("change", (e) => {
       importProject(e.target.files && e.target.files[0]);
@@ -7937,6 +7994,7 @@
       els.lang.textContent = isEn() ? "日本語" : "EN";
       els.lang.setAttribute("aria-pressed", String(isEn()));
     }
+    updateBackupNote();
     document.documentElement.lang = isEn() ? "en" : "ja";
   }
 
@@ -8389,6 +8447,7 @@
   setTool("select");
   updateInspector();
   updateHistoryButtons();
+  updateBackupNote();
   render();
   els.saveStatus.textContent = loaded.restored
     ? "この端末に保存した前回のスケッチを開きました。"

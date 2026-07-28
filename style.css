@@ -6576,6 +6576,28 @@ body.is-panel-dragging {
 .view input[type="range"]:disabled::-webkit-slider-thumb { background: var(--line-dark); }
 .view input[type="range"]:disabled::-moz-range-thumb { background: var(--line-dark); }
 
+/* ファイル書き出しの記録と勧め。保存欄の中の一行と小さな帯 */
+.stage-backup-note {
+  margin: 4px 0 0;
+  color: rgba(240, 231, 214, 0.45);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+
+.stage-backup-hint {
+  margin: 8px 0 2px;
+  padding: 8px 10px;
+  border: 1px solid rgba(168, 75, 38, 0.55);
+  background: rgba(168, 75, 38, 0.08);
+}
+
+.stage-backup-hint p {
+  margin: 0 0 6px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--milk);
+}
+
 /* 選んだものの操作は一列にまとめる。縦に積むと、つまみより
    ボタンの方が場所を取って、何を触る欄なのか分からなくなる */
 .stage-action-row {
