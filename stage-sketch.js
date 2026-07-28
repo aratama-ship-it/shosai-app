@@ -1002,6 +1002,61 @@
    * kind:"section" は入れ物だけで、絵は持たない。 */
   const MAX_DEPTH = 4;
 
+  /* 最初から置いてある見本。★駒だけでなく「出るもの」にも登録する。
+     一覧に無いものが舞台に出ていると、「追加したものが一覧に載る」という
+     この画面の約束と食い違い、案内の2段目（人を足す）で話が通らなくなる。 */
+  const SAMPLE = {
+    cast: [
+      { id: "stage-sample-cast-1", pieceId: "stage-sample-performer-1",
+        ja: "演者A", en: "Performer A", color: "#a84b26", u: 0.36, v: 0.62, size: 105 },
+      { id: "stage-sample-cast-2", pieceId: "stage-sample-performer-2",
+        ja: "演者B", en: "Performer B", color: "#77865f", u: 0.66, v: 0.48, size: 92 },
+    ],
+    sets: [
+      { id: "stage-sample-set-1", pieceId: "stage-sample-block-1", kind: "block",
+        ja: "台", en: "Platform", color: "#efe7d6", u: 0.51, v: 0.7, size: 88 },
+    ],
+  };
+  const sampleName = (s) => (isEn() ? s.en : s.ja);
+  const sampleCast = () => SAMPLE.cast.map((s) => ({
+    id: s.id, name: sampleName(s), color: s.color,
+    heightCm: DEFAULT_HEIGHT_CM, note: "", locked: false,
+  }));
+  const sampleSets = () => SAMPLE.sets.map((s) => ({
+    id: s.id, kind: s.kind, name: sampleName(s), color: s.color,
+    dims: normalizeDims(s.kind, { size: s.size }), note: "", locked: false,
+    flown: false, wires: 2, framed: false, lightKind: "hang",
+  }));
+  // 並び順は重なりの順でもあるので、演者→装置の順を保つ
+  const samplePieces = () => [
+    ...SAMPLE.cast.map((s) => ({ id: s.pieceId, type: "performer", castId: s.id,
+      u: s.u, v: s.v, size: s.size, color: s.color, name: "" })),
+    ...SAMPLE.sets.map((s) => ({ id: s.pieceId, type: s.kind, setId: s.id,
+      u: s.u, v: s.v, size: s.size, color: s.color, name: "" })),
+  ];
+
+  /* 前の版で作ったスケッチには、見本の駒はあるのに登録が無い。
+     開いたときに結び直す。何度通しても同じ結果になる。 */
+  function adoptSamples(next) {
+    const project = next && next.project;
+    if (!project) return next;
+    const pieces = [];
+    (project.scenes || []).forEach((scene) => (scene.pieces || []).forEach((p) => pieces.push(p)));
+    SAMPLE.cast.forEach((s) => {
+      const hit = pieces.filter((p) => p.id === s.pieceId && !p.castId);
+      if (!hit.length) return;
+      if (!project.cast.some((c) => c.id === s.id)) project.cast.push(sampleCast().find((c) => c.id === s.id));
+      hit.forEach((p) => { p.castId = s.id; p.name = ""; });
+    });
+    SAMPLE.sets.forEach((s) => {
+      const hit = pieces.filter((p) => p.id === s.pieceId && !p.setId);
+      if (!hit.length) return;
+      if (!project.sets.some((x) => x.id === s.id)) project.sets.push(sampleSets().find((x) => x.id === s.id));
+      hit.forEach((p) => { p.setId = s.id; p.name = ""; });
+    });
+    return next;
+  }
+
   function newScene(title, withExample, kind, depth) {
     return {
       id: rid(kind === "section" ? "sect" : "scene"),
@@ -1011,13 +1066,7 @@
       note: "",
       background: "#40362d",
       notes: [],
-      pieces: withExample
-        ? [
-            { id: "stage-sample-performer-1", type: "performer", u: 0.36, v: 0.62, size: 105, color: "#a84b26", name: isEn() ? "Performer A" : "演者A" },
-            { id: "stage-sample-performer-2", type: "performer", u: 0.66, v: 0.48, size: 92, color: "#77865f", name: isEn() ? "Performer B" : "演者B" },
-            { id: "stage-sample-block-1", type: "block", u: 0.51, v: 0.7, size: 88, color: "#efe7d6", name: isEn() ? "Platform" : "台" },
-          ]
-        : [],
+      pieces: withExample ? samplePieces() : [],
       strokes: [],
     };
   }
@@ -1037,9 +1086,9 @@
         venue: "proscenium",
         venueSize: "mid",
         // このショーに出る人。場面ごとの在／不在は pieces 側で決まる
-        cast: [],
+        cast: withExample ? sampleCast() : [],
         // このショーで使う台や道具。寸法はここが正本で、置いた分はこれを参照する
-        sets: [],
+        sets: withExample ? sampleSets() : [],
         // 舞台装置の並びを、名前をつけて残したもの。場面をまたいで使い回す
         rigs: [],
         scenes: [scene],
@@ -1427,7 +1476,7 @@
     const wanted = scenes.find((x) => x.id === rawProject.activeSceneId && x.kind === "scene");
     const activeId = wanted ? wanted.id : scenes.find((x) => x.kind === "scene").id;
 
-    return {
+    return adoptSamples({
       version: 3,
       project: {
         id: typeof rawProject.id === "string" ? rawProject.id : rid("proj"),
@@ -1518,7 +1567,7 @@
       brushSize: clamp(finite(raw.brushSize, fallback.brushSize), 12, 120),
       lastExportAt: typeof raw.lastExportAt === "string" ? raw.lastExportAt : "",
       editsSinceExport: clamp(finite(raw.editsSinceExport, 0), 0, 99999),
-    };
+    });
   }
 
   function loadState() {
