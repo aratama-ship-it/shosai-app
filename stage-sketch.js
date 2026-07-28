@@ -1587,7 +1587,7 @@
         rigs: Array.isArray(rawProject.rigs)
           ? rawProject.rigs.slice(0, 40).map((r, i) => ({
               id: typeof r.id === "string" ? r.id : rid("rig"),
-              name: typeof r.name === "string" && r.name.trim() ? r.name.slice(0, 24) : `装置の型 ${i + 1}`,
+              name: typeof r.name === "string" && r.name.trim() ? r.name.slice(0, 24) : `セット登録 ${i + 1}`,
               pieces: Array.isArray(r.pieces)
                 ? r.pieces.slice(0, 120).map((piece, k) => normalizePiece(piece, k))
                 : [],
@@ -3671,6 +3671,10 @@
     const box = noteBox(ctx, note, layout(view));
     const wrap = document.createElement("div");
     wrap.className = "stage-note-editor";
+    /* ★この窓は自分で訳す。まとめて差し替える方に任せると、
+       対訳表が日本語そのものを鍵にしているせいで「保存」が
+       項目名の Saving に化ける（同じ字で別の意味の語がある）。 */
+    wrap.dataset.noI18n = "";
     wrap.style.left = `${(box.x / W) * 100}%`;
     wrap.style.top = `${(box.y / H) * 100}%`;
     wrap.style.width = `${(NOTE_W / W) * 100}%`;
@@ -3678,7 +3682,7 @@
     const area = document.createElement("textarea");
     area.rows = 3;
     area.value = note.text || "";
-    area.placeholder = "覚え書き";
+    area.placeholder = tm("misc", "notePlaceholder", "覚え書き");
     area.addEventListener("input", () => {
       note.text = area.value.slice(0, 200);
       render();
@@ -3693,12 +3697,16 @@
     const drop = document.createElement("button");
     drop.type = "button";
     drop.className = "btn-quiet";
-    drop.textContent = "はがす";
+    drop.textContent = tm("misc", "noteDrop", "はがす");
     drop.addEventListener("click", () => removeNote(note.id));
     const done = document.createElement("button");
     done.type = "button";
     done.className = "btn-quiet";
-    done.textContent = "閉じる";
+    /* 書いた字は打つそばから保存されているので、この札は本来「閉じる」だが、
+       書き手には保存したのか分からない。押せば残ると読める言葉にする。
+       ★対訳表は日本語そのものを鍵にしていて「保存」は項目名（Saving）で
+         埋まっているので、こちらは id を鍵にする tm() で引く。 */
+    done.textContent = tm("misc", "noteSave", "保存");
     done.addEventListener("click", () => { closeNoteEditor(); host.focus(); });
     bar.append(drop, done);
 
@@ -5426,8 +5434,8 @@
     if (els.poseBackdrop) els.poseBackdrop.hidden = true;
   }
 
-  /* ---------- 装置の型 ----------
-     舞台装置の並びに名前をつけて残し、別の場面で呼び出す。
+  /* ---------- セット登録（画面の名前。コード上は rig） ----------
+     舞台装置の並びに名前をつけて残し、別のシーンで呼び出す。
      残すのは演者以外。演者は場面ごとに出入りするものなので、装置と一緒に
      持ち回すと「前の場面の人がそのまま立っている」ことになる。 */
 
@@ -5466,7 +5474,7 @@
       name.className = "stage-cast-name-input";
       name.value = rig.name;
       name.maxLength = 24;
-      name.setAttribute("aria-label", "装置の型の名前");
+      name.setAttribute("aria-label", tx("セット登録の名前"));
       name.addEventListener("input", () => {
         rig.name = name.value.slice(0, 24);
         persistSoon();
@@ -8322,11 +8330,11 @@
     },
     {
       at: "#stage-front-note",
-      lit: "#stage-front-cell",  // 案内しているのは正面の〈メモを貼る〉
+      lit: "#stage-front-cell",  // 案内しているのは正面の〈メモ〉
       begin: () => { tourMark.notes = (sc().notes || []).length; },
       done: () => (sc().notes || []).length > tourMark.notes,
-      ja: ["メモを貼る", "〈メモを貼る〉を押して、絵の何もない所を押してください。付箋が出て、その場で書けます。演者の脇でも、床の上でも。書き出した画像にも残ります。"],
-      en: ["Pin a note", "Press Add note, then press an empty spot on the picture. A sticky note appears and you can type right there. It stays in the exported image."],
+      ja: ["メモを貼る", "〈メモ〉を押して、絵の何もない所を押してください。付箋が出て、その場で書けます。演者の脇でも、床の上でも。書き出した画像にも残ります。"],
+      en: ["Pin a note", "Press Note, then press an empty spot on the picture. A sticky note appears and you can type right there. It stays in the exported image."],
     },
     {
       at: "#stage-export",

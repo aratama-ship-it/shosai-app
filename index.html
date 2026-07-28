@@ -280,12 +280,12 @@
             </div>
           </section>
 
-          <section class="stage-panel" data-panel="rigs" data-title="装置の型">
+          <section class="stage-panel" data-panel="rigs" data-title="セット登録">
             <div class="stage-panel-body">
               <p class="stage-cast-hint">いまの舞台装置の並びに名前をつけて残します。別のシーンで呼び出したり、いまの並びへ足したりできます。演者は含みません。</p>
               <div class="stage-cast-add">
                 <input id="stage-rig-name" class="stage-text-input" type="text" maxlength="24"
-                       placeholder="名前を入れて残す" aria-label="装置の型の名前">
+                       placeholder="名前を入れて残す" aria-label="セット登録の名前">
                 <button type="button" id="stage-rig-save" class="btn-quiet">残す</button>
               </div>
               <div class="stage-cast-list" id="stage-rig-list"></div>
@@ -393,9 +393,9 @@
 
           <div class="stage-center-bar">
             <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
-              <button type="button" data-stage-tool="select" aria-pressed="true">動かす</button>
-              <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
+              <button type="button" data-stage-tool="select" aria-pressed="true">ものを動かす</button>
               <button type="button" data-stage-tool="light" aria-pressed="false">照明を動かす</button>
+              <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
               <button type="button" data-stage-tool="erase" aria-pressed="false">塗りを消す</button>
             </div>
             <button type="button" class="stage-hint-help" id="stage-tool-help"
@@ -423,7 +423,7 @@
                 <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-front-zoom"
                         title="等倍に戻す" hidden>1.0× ⟲</button>
                 <button type="button" class="stage-canvas-tool" id="stage-front-note"
-                        aria-pressed="false">メモを貼る</button>
+                        aria-pressed="false">メモ</button>
                 <label class="stage-canvas-toggle" id="stage-seatmap-toggle">
                   <input type="checkbox" id="stage-show-seatmap" checked>
                   <span>見る位置の図</span>
@@ -452,7 +452,7 @@
                 <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-plan-zoom"
                         title="等倍に戻す" hidden>1.0× ⟲</button>
                 <button type="button" class="stage-canvas-tool" id="stage-plan-note"
-                        aria-pressed="false">メモを貼る</button>
+                        aria-pressed="false">メモ</button>
                 <label class="stage-canvas-toggle" title="宙に吊ってあるものも平面に出す">
                   <input type="checkbox" id="stage-show-flown">
                   <span>吊物</span>
@@ -903,8 +903,8 @@
 <script src="book-seeds.js?v=1"></script>
 <script src="app.js?v=38"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=12"></script>
-<script src="stage-sketch.js?v=135"></script>
+<script src="stage-i18n.js?v=14"></script>
+<script src="stage-sketch.js?v=137"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
