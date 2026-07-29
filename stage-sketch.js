@@ -5993,7 +5993,17 @@
           apply.title = tx("このシーンを写し、動線を引いた演者を行き先へ移したシーンを次に作ります");
           apply.disabled = !(scene.pieces || []).some((piece) => piece.route);
           apply.addEventListener("click", () => applyRoutes(scene));
-          body.append(note, apply);
+          /* 逆向きの操作。次のシーンで動かしてあるものから動線を起こす。
+             次のシーンが無ければ押せない（押しても何も起きない札を出さない）。 */
+          const derive = document.createElement("button");
+          derive.type = "button";
+          derive.className = "btn-quiet stage-scene-apply";
+          derive.textContent = tm("misc", "deriveRoute", "次のシーンとの差から動線を引く");
+          derive.title = tx("次のシーンで動いているものに、いまの位置から行き先までの動線を引きます");
+          const nextScene = nextSceneOf(scene);
+          derive.disabled = !nextScene || !movedPairs(scene, nextScene).length;
+          derive.addEventListener("click", () => deriveRoutes(scene));
+          body.append(note, apply, derive);
           row.append(body);
         }
         els.sceneList.append(row);
@@ -6388,6 +6398,70 @@
   /* 動線の先へ演者を動かした場面を、この場面の次に作る。
    * 「引いた線のとおりに動いた後」を確かめるのが動線を引く目的なので、
    * 手で置き直させない。写した先では動線は消える（もう済んだ動きなので）。 */
+  /* ---------- 次のシーンから動線を起こす ----------
+     applyRoutes（動線 → 次のシーン）のちょうど逆。
+     先に次のシーンを作ってから並べ替えることの方が多いので、
+     「もう動かしてある差」から動線を引き直せると、置き直す手間が要らない。
+     同じものが次のシーンでどれかは twinOf で照合する（登録の札→写しの元）。 */
+
+  // シーンの並びの中で、その次のシーン。セクションの行は飛ばす
+  function nextSceneOf(scene) {
+    const rows = state.project.scenes.filter((row) => row.kind === "scene");
+    const at = rows.indexOf(scene);
+    return at >= 0 && at + 1 < rows.length ? rows[at + 1] : null;
+  }
+
+  /* これ未満しか動いていないものは、動線を引かない。
+     立ち位置の微調整まで矢印になると、平面図が線だらけで読めなくなる。 */
+  const ROUTE_MIN_M = 0.25;
+
+  function movedPairs(scene, next) {
+    const size = venueSize();
+    const out = [];
+    (scene.pieces || []).forEach((piece) => {
+      const twin = twinOf(piece, next.pieces || []);
+      if (!twin) return;
+      const dx = (twin.u - piece.u) * (size.width || 12);
+      const dz = (twin.v - piece.v) * (size.depth || 9);
+      if (Math.hypot(dx, dz) < ROUTE_MIN_M) return;
+      out.push({ piece, twin });
+    });
+    return out;
+  }
+
+  function deriveRoutes(scene) {
+    const next = nextSceneOf(scene);
+    if (!next) { announce("次のシーンがありません。"); return; }
+    const pairs = movedPairs(scene, next);
+    // すでに引いてある動線は残す。手で曲げた線を黙って捨てない
+    const fresh = pairs.filter((pair) => !pair.piece.route);
+    const kept = pairs.length - fresh.length;
+    if (!fresh.length) {
+      announce(kept
+        ? "動いたものには、すでに動線が引いてあります。"
+        : "次のシーンとの差がありません。向こうで動かしてから引いてください。");
+      return;
+    }
+    checkpoint();
+    fresh.forEach(({ piece, twin }) => {
+      /* 曲がりの制御点は、いまと行き先のちょうど中間。まっすぐな線になる。
+         曲げたいときは、平面図で真ん中の丸を掴んで引く。 */
+      piece.route = {
+        u: clamp(twin.u, 0, 1),
+        v: clamp(twin.v, 0, 1),
+        bu: (piece.u + twin.u) / 2,
+        bv: (piece.v + twin.v) / 2,
+      };
+    });
+    renderScenes();
+    updateInspector();
+    render();
+    persistSoon();
+    announce(kept
+      ? `${fresh.length}本の動線を引きました。${kept}本はすでにあるので残しました。`
+      : `${fresh.length}本の動線を引きました。`);
+  }
+
   function applyRoutes(scene) {
     const p = state.project;
     const i = p.scenes.indexOf(scene);

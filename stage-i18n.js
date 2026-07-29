@@ -177,6 +177,8 @@
     "押すと開きます": "Press to open",
     "押すと開閉します": "Press to open or close",
     "シーンのメモ": "Scene note",
+    "次のシーンで動いているものに、いまの位置から行き先までの動線を引きます":
+      "Draws a route from here to where each piece stands in the next scene",
     "このシーンを写し、動線を引いた演者を行き先へ移したシーンを次に作ります":
       "Copies this scene and creates the next one with routed performers moved to their destinations",
 
@@ -394,6 +396,7 @@
       noteDrop: "Remove",
       notePlaceholder: "Jot it down",
       applyRoute: "Make a scene at the end of the routes",
+      deriveRoute: "Draw routes from the next scene",
       seats: "seats", crowd: "crowd", width: "Width", depth: "Depth", height: "Height",
       diameter: "Diameter", ring: "Ring",
     },
@@ -415,6 +418,13 @@
     [/^動線は平面図で引きます。平面を開いてください。$/, "Routes are drawn in the plan. Open the plan view."],
     [/^動線は平面図で引きます。$/, "Routes are drawn in the plan."],
     [/^動線を消しました。$/, "Route cleared."],
+    [/^次のシーンがありません。$/, "There is no next scene."],
+    [/^次のシーンとの差がありません。向こうで動かしてから引いてください。$/,
+      "Nothing has moved in the next scene. Move things there first, then draw."],
+    [/^動いたものには、すでに動線が引いてあります。$/, "Everything that moved already has a route."],
+    [/^(\d+)本の動線を引きました。(\d+)本はすでにあるので残しました。$/,
+      "Drew $1 routes. $2 already existed and were kept."],
+    [/^(\d+)本の動線を引きました。$/, "Drew $1 routes."],
     [/^名前を入れてから残してください。$/, "Enter a name before saving."],
     [/^シーンがひとつしかありません。$/, "There is only one scene."],
     [/^書き出すシーンがありません。$/, "There are no scenes to export."],
