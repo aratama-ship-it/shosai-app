@@ -1,0 +1,19 @@
+{
+  "name": "stage-sketch-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CodexとClaude Codeから舞台スケッチのJSON下書きを安全に作るローカルMCPサーバー",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "zod": "4.4.3"
+  }
+}
