@@ -2,3 +2,10 @@
 
 # iCloud Drive の同期が作る複製（"app 2.js" など）。中身は履歴側にあるので追跡しない。
 * 2.*
+
+# iCloudの同期競合コピー(「app 2.js」等)は追跡しない
+* [0-9].*
+
+# 舞台スケッチMCPが作る個人用の下書き・履歴・読み込み用JSON
+.stage-sketch-mcp/
+node_modules/

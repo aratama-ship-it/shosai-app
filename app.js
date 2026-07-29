@@ -111,13 +111,20 @@
       sourceText: typeof item.sourceText === "string" ? item.sourceText : item.text,
       note: typeof item.note === "string" ? item.note : "",
       sources: Array.isArray(item.sources) ? item.sources.filter((id) => typeof id === "string") : [],
+      bookSources: Array.isArray(item.bookSources)
+        ? item.bookSources.filter((id) => typeof id === "string")
+        : [],
       inspiration: typeof item.inspiration === "string" ? item.inspiration : "",
       createdAt: typeof item.createdAt === "string" ? item.createdAt : "",
     };
   }
 
   function cloneScrapbookItems(items) {
-    return items.map((item) => ({ ...item, sources: [...(item.sources || [])] }));
+    return items.map((item) => ({
+      ...item,
+      sources: [...(item.sources || [])],
+      bookSources: [...(item.bookSources || [])],
+    }));
   }
 
   function loadScrapbook() {
@@ -662,12 +669,19 @@
   }
 
   function seedCatalog() {
-    return (Array.isArray(SHOSAI.seeds) ? SHOSAI.seeds : []).concat(expandedSeedCatalog());
+    const bookSeeds = typeof SHOSAI_BOOK_SEEDS !== "undefined" && Array.isArray(SHOSAI_BOOK_SEEDS)
+      ? SHOSAI_BOOK_SEEDS
+      : [];
+    return (Array.isArray(SHOSAI.seeds) ? SHOSAI.seeds : [])
+      .concat(bookSeeds, expandedSeedCatalog());
   }
 
   function seedProvenanceHtml(seed) {
-    if (!Array.isArray(seed.sources) || !seed.sources.length) return "";
-    const sourceLinks = seed.sources
+    const workSources = Array.isArray(seed.sources) ? seed.sources : [];
+    const bookSources = Array.isArray(seed.bookSources) ? seed.bookSources : [];
+    if (!workSources.length && !bookSources.length) return "";
+
+    const sourceLinks = workSources
       .map((id) => {
         const work = DB && DB.works.find((w) => w.id === id);
         if (!work) return `<li><span class="seed-source-missing">${esc(id)}（正本内で未解決）</span></li>`;
@@ -678,12 +692,29 @@
         </li>`;
       })
       .join("");
+    const books = typeof SHOSAI_BOOK_SOURCES !== "undefined" ? SHOSAI_BOOK_SOURCES : {};
+    const bookLinks = bookSources
+      .map((id) => {
+        const book = books[id];
+        if (!book) return `<li><span class="seed-source-missing">${esc(id)}（蔵書要約内で未解決）</span></li>`;
+        return `<li>
+          <strong>${esc(book.title)}</strong>
+          <span>${esc(book.category)} / 確認済みの内容要約から抽象化</span>
+        </li>`;
+      })
+      .join("");
+    const workSection = sourceLinks
+      ? `<p class="seed-provenance-label">参照作品（正本DB）</p><ul>${sourceLinks}</ul>`
+      : "";
+    const bookSection = bookLinks
+      ? `<p class="seed-provenance-label">参照した自炊本</p><ul>${bookLinks}</ul>`
+      : "";
     return `
       <details class="seed-provenance">
         <summary>資料からの変形を見る</summary>
         <div class="seed-provenance-body">
-          <p class="seed-provenance-label">参照作品（正本DB）</p>
-          <ul>${sourceLinks}</ul>
+          ${workSection}
+          ${bookSection}
           <p class="seed-transform"><span>変形メモ（解釈）</span>${esc(seed.inspiration || "変形メモは未記入です。")}</p>
         </div>
       </details>`;
@@ -711,6 +742,7 @@
       sourceText: seed.text,
       note: "",
       sources: Array.isArray(seed.sources) ? seed.sources : [],
+      bookSources: Array.isArray(seed.bookSources) ? seed.bookSources : [],
       inspiration: seed.inspiration || "",
       createdAt: new Date().toISOString(),
     };
@@ -854,6 +886,7 @@
     const materialTexts = materials.map((item) => `「${item.text}」`);
     const question = `${materialTexts.join("と")}を同じ場面に置く。${note || "二つの条件が同時に変わる瞬間をつくる。"}`;
     const sources = [...new Set(materials.flatMap((item) => item.sources || []))];
+    const bookSources = [...new Set(materials.flatMap((item) => item.bookSources || []))];
     const built = {
       id: clipId("build"),
       kind: "build",
@@ -863,6 +896,7 @@
       sourceText: "",
       note: "",
       sources,
+      bookSources,
       inspiration: `材料: ${materials.map((item) => item.text).join(" / ")}`,
       createdAt: new Date().toISOString(),
     };
@@ -909,11 +943,13 @@
 
     // 眠っていた種火が見ていた資料と、その読み方（レシピ）
     const sources = new Set();
+    const bookSources = new Set();
     const recipes = new Set();
     asleep.forEach((text) => {
       const seed = byText.get(text);
       if (!seed) return;
       (seed.sources || []).forEach((id) => sources.add(id));
+      (seed.bookSources || []).forEach((id) => bookSources.add(id));
       if (seed.recipe) recipes.add(seed.recipe);
     });
 
@@ -921,7 +957,10 @@
     const transformed = catalog.filter((seed) =>
       !seedState.discarded.has(seed.text)
       && !recipes.has(seed.recipe)
-      && (seed.sources || []).some((id) => sources.has(id)));
+      && (
+        (seed.sources || []).some((id) => sources.has(id))
+        || (seed.bookSources || []).some((id) => bookSources.has(id))
+      ));
 
     if (transformed.length) {
       seedState.wakePool = new Set(transformed.map((seed) => seed.text));
@@ -971,7 +1010,7 @@
     const discardedCount = [...seedState.discarded].filter((text) => catalogTexts.has(text)).length;
     $("#btn-reset-seed-history").disabled = discardedCount === 0;
     status.textContent =
-      `資料棚を横断した ${catalog.length}種 ・ 同じ種火も何度でも配る ・ 紙面 ${boardItems.length}/12 ・ 流した ${discardedCount}`;
+      `資料棚と蔵書を横断した ${catalog.length}種 ・ 同じ種火も何度でも配る ・ 紙面 ${boardItems.length}/12 ・ 流した ${discardedCount}`;
 
     wrap.innerHTML = seedState.dealt.length
       ? seedState.dealt
@@ -1102,6 +1141,7 @@
           openProject(buildNewProject(item.text, {
             recipe: item.recipe,
             sources: item.sources,
+            bookSources: item.bookSources,
             inspiration: item.inspiration,
           }));
         }
@@ -1506,18 +1546,28 @@
     const works = (origin.sources || [])
       .map((id) => (DB ? DB.works.find((w) => w.id === id) : null))
       .filter(Boolean);
-    const links = works.length
+    const bookCatalog = typeof SHOSAI_BOOK_SOURCES !== "undefined" ? SHOSAI_BOOK_SOURCES : {};
+    const books = (origin.bookSources || []).map((id) => bookCatalog[id]).filter(Boolean);
+    const workLinks = works.length
       ? `<ul class="origin-works">${works.map((w) => {
           const meta = [w.company, w.year].filter(Boolean).join(" / ");
           return `<li><a href="#db/${encodeURIComponent(w.id)}">${esc(w.title)}</a>${meta ? `<span>${esc(meta)}</span>` : ""}</li>`;
         }).join("")}</ul>`
-      : `<p class="origin-none">元にした作品は記録されていません（手で書いた種火、または場面問答の答え）。</p>`;
+      : "";
+    const bookLinks = books.length
+      ? `<ul class="origin-works">${books.map((book) =>
+          `<li><strong>${esc(book.title)}</strong><span>${esc(book.category)} / 自炊本の内容要約</span></li>`
+        ).join("")}</ul>`
+      : "";
+    const links = workLinks || bookLinks
+      ? `${workLinks}${bookLinks}`
+      : `<p class="origin-none">元にした資料は記録されていません（手で書いた種火、または場面問答の答え）。</p>`;
     return `
       <section class="origin" aria-label="この問いの出どころ">
         <p class="origin-head">この問いの出どころ${origin.recipe ? ` <span class="origin-recipe">${esc(origin.recipe)}</span>` : ""}</p>
         ${links}
         ${origin.inspiration ? `<p class="origin-memo">${esc(origin.inspiration)}</p>` : ""}
-        <p class="origin-caution">参照した作品の意匠・キャラクター・象徴をそのまま持ち込まない。使うのは仕組みと関係だけ。</p>
+        <p class="origin-caution">参照資料の意匠・文章・キャラクター・象徴をそのまま持ち込まない。使うのは仕組みと関係だけ。</p>
       </section>`;
   }
 
