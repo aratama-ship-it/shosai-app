@@ -303,6 +303,8 @@
     pose: {
       stand: "Stand", walk: "Walk", reach: "Both arms up", open: "Arms open",
       sit: "Sit", crouch: "Crouch", kneel: "Kneel", handstand: "Handstand",
+      floorsit: "Hug knees", agura: "Cross-legged", seiza: "Seiza", longsit: "Long sit",
+      hizadachi: "High kneel", yankee: "Deep squat", allfours: "All fours", dogeza: "Dogeza",
       run: "Run", backflip: "Back handspring", hat: "Wearing a hat",
       sideflip: "Side somersault",
       sing: "Sing (mic)", juggle: "Juggling", guitar: "Guitar", trumpet: "Trumpet",
