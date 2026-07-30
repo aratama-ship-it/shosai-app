@@ -54,9 +54,13 @@
     STAGE_KEYS.forEach((key) => {
       try { localStorage.removeItem(key); } catch (_) { /* 消せなくても続ける */ }
     });
-    // ?fresh を落としたところへ入り直す（読み直すたびに消えるのを避ける）。
-    // 言語の指定だけは持ち越す。消したあとも英語で開いてほしいため
-    window.location.replace(window.location.pathname + (openLang ? `?lang=${openLang}` : ""));
+    /* ?fresh を落としたところへ入り直す（読み直すたびに消えるのを避ける）。
+       言語と見本の指定は持ち越す。消したあとも英語で／見本から開いてほしいため。
+       ★ここを忘れると ?fresh&sample が素の舞台で開く（実際に踏んだ）。 */
+    const carry = [];
+    if (openLang) carry.push(`lang=${openLang}`);
+    if (openArgs.has("sample")) carry.push("sample");
+    window.location.replace(window.location.pathname + (carry.length ? `?${carry.join("&")}` : ""));
     return;
   }
 
@@ -921,6 +925,7 @@
     studyBody: document.getElementById("stage-study-body"),
     sceneList: document.getElementById("stage-scene-list"),
     sceneResize: document.getElementById("stage-scene-resize"),
+    sampleOpen: document.getElementById("stage-sample-open"),
     sceneAdd: document.getElementById("stage-scene-add"),
     sceneDup: document.getElementById("stage-scene-dup"),
     sceneDel: document.getElementById("stage-scene-del"),
@@ -2012,6 +2017,214 @@
     fresh.layout = state.layout;
     applyLoadedState(normalizeState(fresh),
       "固定SceneStudyを別ショーとして開きました。8ビートの配置は自由に直せます。");
+  }
+
+  /* ---------- 同梱の見本のショー ----------
+     テスターへ配るとき、空の舞台では「一本のショーがどう動くか」が見えない。
+     8人・8シーンのサーカスショーを一本入れておく。
+     並び: オープニング → 演目 → 演目 → トランジション → 演劇パート
+           → 演目 → 演目 → エンディング（楽器）
+
+     ★見本の役目は「動きが見えること」なので、袖からの出入りと
+       舞台を横切る移動を意図的に大きく取ってある（最大で間口の8割）。
+       動線は手で書かず、隣り合うシーンの差から起こす（movedPairs を通す）。
+       u=0が上手側の袖、1が下手側。v=0が奥、1が客席側。 */
+  const SAMPLE_CAST = [
+    { key: "mina", name: "ミナ", color: "#a84b26", h: 168 },
+    { key: "riku", name: "リク", color: "#77865f", h: 176 },
+    { key: "kai", name: "カイ", color: "#9c823f", h: 171 },
+    { key: "sora", name: "ソラ", color: "#6d6657", h: 158 },
+    { key: "noa", name: "ノア", color: "#a84b26", h: 163 },
+    { key: "jin", name: "ジン", color: "#77865f", h: 182 },
+    { key: "yuki", name: "ユキ", color: "#9c823f", h: 155 },
+    { key: "ren", name: "レン", color: "#6d6657", h: 174 },
+  ];
+  const SAMPLE_SETS = [
+    { key: "deck", kind: "block", name: "台（1.8×1.0×0.5）", color: "#efe7d6",
+      dims: { w: 1.8, d: 1.0, h: 0.5, lift: 0 } },
+    { key: "wheel", kind: "cyrwheel", name: "シルホイール", color: "#d6dce2",
+      dims: { dia: 1.9, lift: 0 } },
+    { key: "pole", kind: "pole", name: "チャイニーズポール", color: "#766a59",
+      dims: { h: 6, dia: 0.1, lift: 0 } },
+    { key: "trap", kind: "trapeze", name: "トラピーズ", color: "#d6dce2",
+      dims: { w: 0.7, h: 0.06, lift: 4.2 }, flown: true },
+  ];
+  const SAMPLE_LIGHTS = [
+    { key: "wash", kind: "hang", name: "吊り・全体", dia: 7 },
+    { key: "spot", kind: "hang", name: "吊り・ピン", dia: 2.2 },
+    { key: "sideL", kind: "ss", name: "SS 上手", dia: 3 },
+    { key: "sideR", kind: "ss", name: "SS 下手", dia: 3 },
+    { key: "front", kind: "front", name: "前明かり", dia: 5 },
+  ];
+
+  /* 各シーンの中身。居ない人はそのシーンの pieces に入れない（=舞台裏）。
+     人は [u, v, 向き, 姿勢]、装置と照明は [u, v]。 */
+  const SAMPLE_SCENES = [
+    {
+      title: "1 オープニング",
+      note: "全員が袖と奥から現れ、一列で客席を見る。まだ誰の番でもない。",
+      cast: { mina: [0.50, 0.72, 0, "stand"], riku: [0.36, 0.70, 0, "stand"],
+              kai: [0.64, 0.70, 0, "stand"], sora: [0.24, 0.66, 0, "stand"],
+              noa: [0.76, 0.66, 0, "stand"], jin: [0.14, 0.62, 0, "stand"],
+              yuki: [0.86, 0.62, 0, "stand"], ren: [0.50, 0.58, 0, "reach"] },
+      sets: { deck: [0.50, 0.24] },
+      lights: { wash: [0.50, 0.66], front: [0.50, 0.70] },
+    },
+    {
+      title: "2 演目・シルホイール",
+      note: "ミナの輪が上手袖から入り、舞台を横切る。他は袖へ引く。",
+      cast: { mina: [0.16, 0.62, 90, "cyr"], riku: [0.06, 0.34, 0, "stand"],
+              kai: [0.94, 0.34, 0, "stand"] },
+      sets: { deck: [0.50, 0.24], wheel: [0.16, 0.62] },
+      lights: { spot: [0.16, 0.62], sideL: [0.30, 0.60] },
+    },
+    {
+      title: "3 演目・チャイニーズポール",
+      note: "輪が下手へ抜けきる。入れ替わりにポールが立ち、ジンが登る。",
+      cast: { mina: [0.90, 0.64, 90, "cyr"], jin: [0.42, 0.34, 0, "reach"],
+              riku: [0.06, 0.34, 0, "stand"], kai: [0.94, 0.34, 0, "stand"] },
+      sets: { deck: [0.50, 0.24], wheel: [0.90, 0.64], pole: [0.42, 0.34] },
+      lights: { spot: [0.42, 0.30], sideR: [0.42, 0.40] },
+    },
+    {
+      title: "4 トランジション",
+      note: "ポールが残り、四人が交差して通り抜ける。台が奥から客席側へ出てくる。",
+      cast: { sora: [0.10, 0.80, 90, "run"], noa: [0.90, 0.80, 270, "run"],
+              yuki: [0.10, 0.50, 90, "walk"], ren: [0.90, 0.50, 270, "walk"],
+              jin: [0.42, 0.34, 0, "stand"] },
+      sets: { deck: [0.50, 0.24], pole: [0.42, 0.34] },
+      lights: { wash: [0.50, 0.60] },
+    },
+    {
+      title: "5 演劇パート",
+      note: "台の上のレンと、床のソラだけが残る。声で場をつなぐ。前明かりを顔へ。",
+      cast: { ren: [0.50, 0.24, 0, "sing"], sora: [0.62, 0.68, 300, "kneel"] },
+      sets: { deck: [0.50, 0.24], pole: [0.42, 0.34] },
+      lights: { front: [0.54, 0.40], spot: [0.50, 0.24] },
+    },
+    {
+      title: "6 演目・トラピーズ",
+      note: "ポールが退き、トラピーズが降りる。ユキが乗り、下でソラが見る。",
+      cast: { yuki: [0.58, 0.40, 0, "reach"], sora: [0.30, 0.72, 45, "stand"],
+              ren: [0.06, 0.30, 0, "stand"] },
+      sets: { trap: [0.58, 0.40] },
+      lights: { spot: [0.58, 0.36], sideL: [0.44, 0.44] },
+    },
+    {
+      title: "7 演目・群舞",
+      note: "全員が下手側から一斉に入り、舞台いっぱいへ散る。いちばん動く場面。",
+      cast: { mina: [0.30, 0.62, 0, "dance1"], riku: [0.46, 0.70, 0, "dance2"],
+              kai: [0.62, 0.60, 0, "dance4"], sora: [0.20, 0.44, 0, "dance3"],
+              noa: [0.78, 0.46, 0, "dance5"], jin: [0.70, 0.76, 0, "dance1"],
+              yuki: [0.38, 0.42, 0, "dance4"], ren: [0.86, 0.66, 0, "dance2"] },
+      sets: { deck: [0.50, 0.22] },
+      lights: { wash: [0.50, 0.58], sideL: [0.26, 0.56], sideR: [0.74, 0.56] },
+    },
+    {
+      title: "8 エンディング・楽器",
+      note: "台の上でジンがトランペット、レンがギター。残りは半円で座る。吊り一本だけ残す。",
+      cast: { jin: [0.44, 0.24, 0, "trumpet"], ren: [0.58, 0.24, 0, "guitar"],
+              mina: [0.28, 0.60, 20, "sit"], riku: [0.42, 0.66, 10, "sit"],
+              kai: [0.58, 0.66, 350, "sit"], sora: [0.72, 0.60, 340, "sit"],
+              noa: [0.20, 0.50, 30, "sit"], yuki: [0.80, 0.50, 330, "sit"] },
+      sets: { deck: [0.50, 0.24] },
+      lights: { spot: [0.50, 0.26] },
+    },
+  ];
+
+  function buildSampleShow() {
+    const fresh = baseState(false);
+    const p = fresh.project;
+    p.title = "見本: 八人のサーカス";
+    p.versionLabel = "sample";
+    p.venue = "proscenium";
+    p.venueSize = "mid";
+    const castId = {}; const setId = {}; const lightId = {};
+    p.cast = SAMPLE_CAST.map((c) => {
+      castId[c.key] = `sample-cast-${c.key}`;
+      return { id: castId[c.key], name: c.name, color: c.color,
+        heightCm: c.h, note: "", locked: false };
+    });
+    p.sets = SAMPLE_SETS.map((x) => {
+      setId[x.key] = `sample-set-${x.key}`;
+      return { id: setId[x.key], kind: x.kind, name: x.name, color: x.color,
+        dims: normalizeDims(x.kind, { dims: x.dims }), note: "", locked: false,
+        flown: Boolean(x.flown), wires: 2, framed: false, lightKind: "hang" };
+    }).concat(SAMPLE_LIGHTS.map((x) => {
+      lightId[x.key] = `sample-light-${x.key}`;
+      return { id: lightId[x.key], kind: "light", name: x.name, color: "#d3ac59",
+        dims: normalizeDims("light", { dims: { dia: x.dia } }), note: "",
+        locked: false, flown: false, wires: 2, framed: false, lightKind: x.kind };
+    }));
+
+    p.scenes = SAMPLE_SCENES.map((row, i) => {
+      const scene = newScene(row.title, false);
+      scene.note = row.note;
+      const pieces = [];
+      Object.keys(row.cast || {}).forEach((key) => {
+        const [u, v, facing, pose] = row.cast[key];
+        const c = SAMPLE_CAST.find((x) => x.key === key);
+        pieces.push(normalizePiece({ id: `sample-${key}-${i}`, type: "performer",
+          castId: castId[key], originId: `sample-origin-${key}`,
+          u, v, facing, pose, size: 100, color: c.color, name: "" }, 0));
+      });
+      Object.keys(row.sets || {}).forEach((key) => {
+        const [u, v] = row.sets[key];
+        const x = SAMPLE_SETS.find((y) => y.key === key);
+        pieces.push(normalizePiece({ id: `sample-${key}-${i}`, type: x.kind,
+          setId: setId[key], originId: `sample-origin-${key}`,
+          u, v, facing: 0, size: 100, color: x.color, dims: x.dims, name: "" }, 0));
+      });
+      Object.keys(row.lights || {}).forEach((key) => {
+        const [u, v] = row.lights[key];
+        const x = SAMPLE_LIGHTS.find((y) => y.key === key);
+        const spec = LIGHT_KINDS[x.kind];
+        const src = spec.source(u, v);
+        pieces.push(normalizePiece({ id: `sample-${key}-${i}`, type: "light",
+          setId: lightId[key], originId: `sample-origin-${key}`,
+          u, v, facing: 0, size: 100, color: "#d3ac59", name: "",
+          beam: { u: src.u, v: src.v, h: spec.h, toH: spec.toH } }, 0));
+      });
+      scene.pieces = pieces;
+      return scene;
+    });
+    p.activeSceneId = p.scenes[0].id;
+    return normalizeState(fresh);
+  }
+
+  /* 見本の動線。隣り合うシーンの差から起こす（手で書くと位置とずれる）。
+     movedPairs と同じ判定を使うので、0.25m未満の差では引かれない。 */
+  function drawSampleRoutes(next) {
+    const size = VENUES.sizeById(VENUES.byId(next.project.venue), next.project.venueSize);
+    const scenes = next.project.scenes;
+    for (let i = 0; i < scenes.length - 1; i += 1) {
+      (scenes[i].pieces || []).forEach((piece) => {
+        const twin = (scenes[i + 1].pieces || []).find((q) =>
+          (piece.castId && q.castId === piece.castId)
+          || (piece.setId && q.setId === piece.setId));
+        if (!twin) return;
+        const dx = (twin.u - piece.u) * size.width;
+        const dz = (twin.v - piece.v) * size.depth;
+        if (Math.hypot(dx, dz) < 0.25) return;
+        piece.route = { u: twin.u, v: twin.v,
+          bu: (piece.u + twin.u) / 2, bv: (piece.v + twin.v) / 2 };
+      });
+    }
+    return next;
+  }
+
+  // 棚へ入れておく。ショー一覧から開ける（開いた瞬間には出さない）
+  function shelveSample() {
+    const built = drawSampleRoutes(buildSampleShow());
+    const shows = readShows();
+    if (shows[built.project.id]) return;
+    shows[built.project.id] = { savedAt: nowIso(), state: built };
+    writeShows(shows);
+  }
+
+  function openSampleShow() {
+    applyLoadedState(drawSampleRoutes(buildSampleShow()),
+      "見本のショーを開きました。元のショーはショー一覧に残っています。");
   }
 
   const venue = () => VENUES.byId(state.project.venue);
@@ -8906,5 +9119,13 @@
    * 一度でも見た（または閉じた）ら、次からは上の「使い方」からだけ。 */
   let seenTour = true;
   try { seenTour = localStorage.getItem(TOUR_KEY) === "done"; } catch (_) { seenTour = true; }
+  if (els.sampleOpen) els.sampleOpen.addEventListener("click", openSampleShow);
+  /* 初めて開いた端末には、見本のショーを棚へ入れておく（開いているショーは変えない）。
+     ★state を組み終わってから通すこと。let state より前で呼ぶと
+       TDZ で落ち、try/catch が握り潰して「棚に入らない」だけになる（実際に踏んだ）。 */
+  if (!loaded.restored) shelveSample();
+  // ?sample を付けて開くと、見本から始まる（人へ渡すリンク用）
+  if (openArgs.has("sample")) openSampleShow();
+
   if (!seenTour || openArgs.has("tour")) setTimeout(() => showTour(0), 700);
 })();

@@ -60,6 +60,7 @@
     "新しいショー": "New show",
     "書き出す": "Export",
     "読み込む": "Import",
+    "見本のショーを開く": "Open the sample show",
 
     /* ---- 劇場 ---- */
     "形式": "Form",
@@ -424,6 +425,8 @@
     [/^動線は平面図で引きます。平面を開いてください。$/, "Routes are drawn in the plan. Open the plan view."],
     [/^動線は平面図で引きます。$/, "Routes are drawn in the plan."],
     [/^動線を消しました。$/, "Route cleared."],
+    [/^見本のショーを開きました。元のショーはショー一覧に残っています。$/,
+      "Opened the sample show. Your own show is still in All shows."],
     [/^次のシーンがありません。$/, "There is no next scene."],
     [/^次のシーンとの差がありません。向こうで動かしてから引いてください。$/,
       "Nothing has moved in the next scene. Move things there first, then draw."],
