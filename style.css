@@ -6135,9 +6135,12 @@ body.is-panel-dragging {
   background: var(--desk);
 }
 
+/* 道具の帯。区切りの余白を挟むので、桁で数えるgridではなく並べるflexにする
+   （gridのままだと区切りが1桁を食って、札の幅が揃わなくなる） */
 .stage-center-bar .stage-tool-grid {
   flex: 0 0 auto;
-  grid-template-columns: repeat(4, auto);
+  display: flex;
+  align-items: center;
 }
 
 /* 名前の入り切りから右は、絵の見え方の設定。道具の列とは役目が違うので右へ寄せる
@@ -6284,6 +6287,16 @@ body.is-panel-dragging {
   flex: 0 1 auto;
   min-width: 0;
 }
+
+/* 道具の帯の区切り。「動かす」と「背景」は別の仕事なので、
+   線は引かずに余白だけで分ける（線を足すと帯が騒がしくなる） */
+.stage-tool-split {
+  width: 14px;
+  flex: 0 0 auto;
+}
+
+/* 下段（セクション＋・削除）。上段と間を空けず、続きの段として見せる */
+.stage-scene-actions-sub { margin-top: 3px; }
 
 .stage-seat-strip .stage-seat {
   min-height: 28px;

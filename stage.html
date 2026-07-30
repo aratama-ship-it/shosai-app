@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>舞台スケッチ — 制作の書斎</title>
-<link rel="stylesheet" href="style.css?v=115">
+<link rel="stylesheet" href="style.css?v=117">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -213,23 +213,28 @@
                    aria-label="シーンの欄の高さを変える" title="上下に引くと高さが変わります"></div>
               <!-- 足す・消すは一覧の外（下）へ置く。一覧は中で繰るので、
                    中に入れるとシーンが増えたときにボタンごと隠れてしまう -->
+              <!-- 上段=シーンを足す三つ（空／装置ごと／丸ごと）。
+                   下段=入れ物を作るのと消すの。足すのと消すのを段で分ける -->
               <div class="stage-scene-actions">
-                <!-- 足す三兄弟（空/装置ごと/丸ごと）→ セクション → 削除。一列に収める -->
                 <button type="button" id="stage-scene-add" class="btn-quiet" title="空のシーンを足す">新規シーン</button>
                 <button type="button" id="stage-scene-add-rig" class="btn-quiet" title="装置と照明を持ち越して足す（演者は持ち越さない）">+セット</button>
                 <button type="button" id="stage-scene-dup" class="btn-quiet" title="いまのシーンを丸ごと写して足す">+全部</button>
-                <button type="button" id="stage-scene-section" class="btn-quiet">セクション</button>
+              </div>
+              <div class="stage-scene-actions stage-scene-actions-sub">
+                <button type="button" id="stage-scene-section" class="btn-quiet" title="シーンをまとめる入れ物を足す">セクション+</button>
                 <button type="button" id="stage-scene-del" class="btn-quiet">削除</button>
               </div>
             </div>
           </section>
 
           <div class="stage-center-bar">
+            <!-- 「動かす」二つと「背景」二つは別の仕事なので、間を空けて分ける -->
             <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
               <button type="button" data-stage-tool="select" aria-pressed="true">ものを動かす</button>
               <button type="button" data-stage-tool="light" aria-pressed="false">照明を動かす</button>
+              <span class="stage-tool-split" aria-hidden="true"></span>
               <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
-              <button type="button" data-stage-tool="erase" aria-pressed="false">塗りを消す</button>
+              <button type="button" data-stage-tool="erase" aria-pressed="false">背景を消す</button>
             </div>
             <button type="button" class="stage-hint-help" id="stage-tool-help"
                     aria-pressed="false" aria-label="いまの道具の説明を出す" title="いまの道具の説明">?</button>
@@ -570,7 +575,7 @@
 </div>
 
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=17"></script>
+<script src="stage-i18n.js?v=18"></script>
 <script src="stage-sketch.js?v=142"></script>
 </body>
 </html>
