@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>舞台スケッチ — 制作の書斎</title>
-<link rel="stylesheet" href="style.css?v=114">
+<link rel="stylesheet" href="style.css?v=115">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -214,10 +214,11 @@
               <!-- 足す・消すは一覧の外（下）へ置く。一覧は中で繰るので、
                    中に入れるとシーンが増えたときにボタンごと隠れてしまう -->
               <div class="stage-scene-actions">
-                <button type="button" id="stage-scene-add" class="btn-quiet">シーンを足す</button>
-                <button type="button" id="stage-scene-add-rig" class="btn-quiet">装置ごと足す</button>
+                <!-- 足す三兄弟（空/装置ごと/丸ごと）→ セクション → 削除。一列に収める -->
+                <button type="button" id="stage-scene-add" class="btn-quiet" title="空のシーンを足す">新規シーン</button>
+                <button type="button" id="stage-scene-add-rig" class="btn-quiet" title="装置と照明を持ち越して足す（演者は持ち越さない）">+セット</button>
+                <button type="button" id="stage-scene-dup" class="btn-quiet" title="いまのシーンを丸ごと写して足す">+全部</button>
                 <button type="button" id="stage-scene-section" class="btn-quiet">セクション</button>
-                <button type="button" id="stage-scene-dup" class="btn-quiet">複製</button>
                 <button type="button" id="stage-scene-del" class="btn-quiet">削除</button>
               </div>
             </div>
@@ -569,7 +570,7 @@
 </div>
 
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=16"></script>
+<script src="stage-i18n.js?v=17"></script>
 <script src="stage-sketch.js?v=142"></script>
 </body>
 </html>

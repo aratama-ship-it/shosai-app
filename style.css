@@ -6268,13 +6268,21 @@ body.is-panel-dragging {
   padding: 5px 6px;
 }
 
-/* 場面の操作は数が多いので、さらに詰める */
+/* シーンの操作は5つを一列に収める。詰めても折り返しはさせない
+   （二段に折れると「足す三兄弟」の並びが読めなくなる） */
+.stage-scene-actions {
+  flex-wrap: nowrap;
+  gap: 3px;
+}
+
 .stage-scene-actions button {
   min-height: 28px;
-  padding: 3px 9px;
+  padding: 3px 5px;
   font-size: 10px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   white-space: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .stage-seat-strip .stage-seat {
