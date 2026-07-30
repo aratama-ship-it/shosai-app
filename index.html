@@ -361,6 +361,11 @@
         </aside>
 
         <section class="stage-board-column stage-col-center" data-col="center" id="stage-col-center" aria-label="舞台面">
+          <!-- 同梱の見本。stage-scene-study-data.js が入っていれば中身が出る。
+               器だけ置いてあり、組み立ては renderSceneStudy() が受け持つ -->
+          <section class="stage-panel stage-study-panel" data-panel="study" data-title="見本のショー">
+            <div class="stage-panel-body" id="stage-study-body"></div>
+          </section>
           <section class="stage-panel stage-scenes" data-panel="scenes" data-title="シーン" aria-label="シーンの一覧">
             <div class="stage-panel-body">
               <div class="stage-scene-move">
@@ -915,6 +920,7 @@
 <script src="book-seeds.js?v=1"></script>
 <script src="app.js?v=39"></script>
 <script src="stage-venues.js?v=14"></script>
+<script src="stage-scene-study-data.js?v=1"></script>
 <script src="stage-i18n.js?v=18"></script>
 <script src="stage-sketch.js?v=142"></script>
 <script src="roster.js?v=1"></script>
