@@ -8,8 +8,8 @@
 抜くもの:
   ・<main id="view-stage"> … 舞台スケッチの画面そのもの
   ・</main> 以降にある窓（.stage-modal / .stage-modal-backdrop）
-  ・style.css と、舞台スケッチが使う4本のスクリプト
-        stage-venues.js / stage-scene-study-data.js / stage-i18n.js / stage-sketch.js
+  ・style.css と、舞台スケッチが使う3本のスクリプト
+        stage-venues.js / stage-i18n.js / stage-sketch.js
 
 抜かないもの: db.js・data.js・app.js・roster.js（他のタブのためのもの）
 
@@ -81,7 +81,6 @@ page = f"""<!DOCTYPE html>
 {modal_html}
 
 <script src="{ver('stage-venues.js')}"></script>
-<script src="{ver('stage-scene-study-data.js')}"></script>
 <script src="{ver('stage-i18n.js')}"></script>
 <script src="{ver('stage-sketch.js')}"></script>
 </body>
@@ -106,7 +105,9 @@ missing = [i for i in ids if f'id="{i}"' not in page]
 # 舞台スケッチが「あれば使う」だけの id は、無くても構わない
 # あれば使うだけの id。無くても舞台スケッチは動く
 #   stage-show-front / stage-show-plan … 旧い開閉のつまみ
-known_optional = {"stage-show-front", "stage-show-plan"}
+#   stage-study-body … 見本のショーの欄。同梱をボツにしたので、いまはどこにも無い
+#     （stage-scene-study-data.js はCodexの資料として残してあるが、読み込んでいない）
+known_optional = {"stage-show-front", "stage-show-plan", "stage-study-body"}
 missing = [i for i in missing if i not in known_optional]
 
 print(f"stage.html を書き出しました（{len(page)} 文字）")
