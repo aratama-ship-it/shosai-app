@@ -6857,3 +6857,29 @@ body.is-panel-dragging {
 
 /* 入れ替えは「どの絵を出すか」の続き。同じ群れの右端に置く */
 .stage-view-switch #stage-swap-center { border-left: 1px solid var(--line-dark); }
+
+
+/* 平面図の拡大ボタン。右下に小さく重ねる。絵の上の道具なので半透明の地 */
+.stage-zoom-fab {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  z-index: 5;
+}
+
+.stage-zoom-fab button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line-dark);
+  background: rgba(13, 12, 11, 0.82);
+  color: var(--milk);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stage-zoom-fab button:hover { border-color: var(--brass); }
+.stage-zoom-fab button:disabled { color: var(--line-dark); cursor: default; }

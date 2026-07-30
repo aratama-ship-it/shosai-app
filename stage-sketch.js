@@ -974,6 +974,8 @@
     frontNote: document.getElementById("stage-front-note"),
     frontZoom: document.getElementById("stage-front-zoom"),
     planZoom: document.getElementById("stage-plan-zoom"),
+    planZoomIn: document.getElementById("stage-plan-zoom-in"),
+    planZoomOut: document.getElementById("stage-plan-zoom-out"),
     rename: document.getElementById("stage-rename"),
     renameBackdrop: document.getElementById("stage-rename-backdrop"),
     renameInput: document.getElementById("stage-rename-input"),
@@ -1452,8 +1454,9 @@
     return {
       id: typeof piece.id === "string" ? piece.id : `stage-restored-${index}`,
       type,
-      u: clamp(finite(legacy ? legacy.u : piece.u, 0.5), 0, 1),
-      v: clamp(finite(legacy ? legacy.v : piece.v, 0.6), 0, 1),
+      // 袖に置けるので、枠の外も少しだけ許す（実際の枠は fromScreen が締める）
+      u: clamp(finite(legacy ? legacy.u : piece.u, 0.5), -0.5, 1.5),
+      v: clamp(finite(legacy ? legacy.v : piece.v, 0.6), -0.5, 1),
       size: clamp(finite(piece.size, 100), 55, 180),
       color: validColor(piece.color, "#a84b26"),
       name: typeof piece.name === "string" ? piece.name.slice(0, 24) : "",
@@ -1508,8 +1511,8 @@
 
   function normalizeRoute(raw) {
     if (!raw || typeof raw !== "object") return null;
-    const u = clamp(finite(raw.u, 0.5), 0, 1);
-    const v = clamp(finite(raw.v, 0.5), 0, 1);
+    const u = clamp(finite(raw.u, 0.5), -0.5, 1.5);   // 行き先は袖でもよい
+    const v = clamp(finite(raw.v, 0.5), -0.5, 1);
     return {
       u, v,
       bu: clamp(finite(raw.bu, 0.5), -0.2, 1.2),
@@ -2333,6 +2336,23 @@
     return merged;
   };
 
+  /* ---------- 袖（平面図だけにある置き場） ----------
+     舞台の枠の外に、駒を置ける帯を持つ。演者の「はけ」を絵にするための場所。
+     プロセニアム＝左右、スラスト＝奥（左右は客席なので置けない）、
+     それ以外＝当面は左右。正面図には描かない（額縁の外は見えない）。 */
+  const WING_M = 2.5;   // 袖の奥行き（m）
+  function planBounds() {
+    const v = venue();
+    const size = venueSize();
+    const du = WING_M / (size.width || 12);
+    const dv = WING_M / (size.depth || 9);
+    if (v.audience === "three") return { uMin: 0, uMax: 1, vMin: -dv, vMax: 1 };
+    return { uMin: -du, uMax: 1 + du, vMin: 0, vMax: 1 };
+  }
+
+  // 駒が舞台の枠の中に居るか。正面図はこの枠の中だけを描く
+  const onStageArea = (u, v) => u >= -0.02 && u <= 1.02 && v >= -0.02 && v <= 1.02;
+
   /* ---------- レイアウト ----------
      舞台は常に画面いっぱいに描く。実寸の違いは「人の小ささ」として出る。 */
 
@@ -2470,9 +2490,12 @@
 
   function fromScreen(x, y, L) {
     if (L.plan) {
+      /* 平面図では袖まで掴める（SSの灯体や当たる先も舞台の外に置ける）。
+         正面図は舞台の枠までのまま。 */
+      const b = planBounds();
       return {
-        u: clamp((x - L.stage.x) / L.stage.w, 0, 1),
-        v: clamp((y - L.stage.y) / L.stage.h, 0, 1),
+        u: clamp((x - L.stage.x) / L.stage.w, b.uMin, b.uMax),
+        v: clamp((y - L.stage.y) / L.stage.h, b.vMin, b.vMax),
       };
     }
     const raw = L.untilt(y);
@@ -4499,6 +4522,34 @@
     target.fillStyle = "#141210";
     target.fillRect(0, 0, W, H);
 
+    /* 袖。舞台の枠のすぐ外に、駒を置ける帯として描く。
+       濃さは舞台より一段沈め、破線で「舞台面ではない」ことを示す。 */
+    {
+      const b = planBounds();
+      const wingRects = [];
+      if (b.uMin < 0) {
+        const w = -b.uMin * s.w;
+        wingRects.push({ x: s.x - w, y: s.y, w, h: s.h, label: "袖" });
+        wingRects.push({ x: s.x + s.w, y: s.y, w, h: s.h, label: "袖" });
+      }
+      if (b.vMin < 0) {
+        const d = -b.vMin * s.h;
+        wingRects.push({ x: s.x, y: s.y - d, w: s.w, h: d, label: "袖" });
+      }
+      target.save();
+      wingRects.forEach((r) => {
+        target.fillStyle = "rgba(24,20,17,0.9)";
+        target.fillRect(r.x, r.y, r.w, r.h);
+        target.strokeStyle = "rgba(239,231,214,0.16)";
+        target.setLineDash([5, 5]);
+        target.lineWidth = 1;
+        target.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
+        target.setLineDash([]);
+        label(target, r.label, r.x + r.w / 2, r.y + Math.min(r.h - 8, 16));
+      });
+      target.restore();
+    }
+
     // 客席
     target.save();
     target.fillStyle = "rgba(32,27,22,0.9)";
@@ -4635,6 +4686,10 @@
 
     // 演者と物。光は先に（奥に）描く
     const draw = (piece) => {
+      /* 袖に居るものは正面図に出さない。額縁の外は客席から見えない。
+         アニメーション中は動きの途中の値で判定するので、はけていく駒は
+         枠を出た瞬間に消える（＝袖へ入って見えなくなる）。 */
+      if (!L.plan && !onStageArea(pieceU(piece), pieceV(piece))) return;
       const pos = placePiece(piece, L);
       const scale = pieceScale(piece, pos, L);
       const lean = leanAt(pos);
@@ -6308,7 +6363,8 @@
           derive.textContent = tm("misc", "deriveRoute", "次のシーンとの差から動線を引く");
           derive.title = tx("次のシーンで動いているものに、いまの位置から行き先までの動線を引きます");
           const nextScene = nextSceneOf(scene);
-          derive.disabled = !nextScene || !movedPairs(scene, nextScene).length;
+          derive.disabled = !nextScene
+            || (!movedPairs(scene, nextScene).length && !exitPieces(scene, nextScene).length);
           derive.addEventListener("click", () => deriveRoutes(scene));
           body.append(note, apply, derive);
           row.append(body);
@@ -6722,6 +6778,24 @@
      立ち位置の微調整まで矢印になると、平面図が線だらけで読めなくなる。 */
   const ROUTE_MIN_M = 0.25;
 
+  /* 次のシーンに居ない演者。舞台上に居て、向こうでは舞台裏＝はける人。
+     装置は対象にしない（装置は「消える」のが転換として普通のため）。 */
+  function exitPieces(scene, next) {
+    return (scene.pieces || []).filter((piece) => piece.type === "performer"
+      && onStageArea(piece.u, piece.v)
+      && !twinOf(piece, next.pieces || []));
+  }
+
+  // はけ先。近い側の袖の中ほど（スラストは奥の袖）
+  function wingDest(piece) {
+    const b = planBounds();
+    if (b.vMin < 0) return { u: clamp(piece.u, 0.06, 0.94), v: b.vMin * 0.6 };
+    return {
+      u: piece.u <= 0.5 ? b.uMin * 0.6 : 1 + (b.uMax - 1) * 0.6,
+      v: clamp(piece.v, 0.08, 0.92),
+    };
+  }
+
   function movedPairs(scene, next) {
     const size = venueSize();
     const out = [];
@@ -6740,10 +6814,11 @@
     const next = nextSceneOf(scene);
     if (!next) { announce("次のシーンがありません。"); return; }
     const pairs = movedPairs(scene, next);
+    const exits = exitPieces(scene, next).filter((piece) => !piece.route);
     // すでに引いてある動線は残す。手で曲げた線を黙って捨てない
     const fresh = pairs.filter((pair) => !pair.piece.route);
     const kept = pairs.length - fresh.length;
-    if (!fresh.length) {
+    if (!fresh.length && !exits.length) {
       announce(kept
         ? "動いたものには、すでに動線が引いてあります。"
         : "次のシーンとの差がありません。向こうで動かしてから引いてください。");
@@ -6754,19 +6829,28 @@
       /* 曲がりの制御点は、いまと行き先のちょうど中間。まっすぐな線になる。
          曲げたいときは、平面図で真ん中の丸を掴んで引く。 */
       piece.route = {
-        u: clamp(twin.u, 0, 1),
-        v: clamp(twin.v, 0, 1),
+        u: clamp(twin.u, -0.5, 1.5),
+        v: clamp(twin.v, -0.5, 1),
         bu: (piece.u + twin.u) / 2,
         bv: (piece.v + twin.v) / 2,
       };
+    });
+    // 次のシーンで舞台裏の人は、近い側の袖へはける動線にする
+    exits.forEach((piece) => {
+      const dest = wingDest(piece);
+      piece.route = { u: dest.u, v: dest.v,
+        bu: (piece.u + dest.u) / 2, bv: (piece.v + dest.v) / 2 };
     });
     renderScenes();
     updateInspector();
     render();
     persistSoon();
-    announce(kept
-      ? `${fresh.length}本の動線を引きました。${kept}本はすでにあるので残しました。`
-      : `${fresh.length}本の動線を引きました。`);
+    const total = fresh.length + exits.length;
+    announce(exits.length
+      ? `${total}本の動線を引きました。${exits.length}本は袖へのはけです。`
+      : (kept
+        ? `${total}本の動線を引きました。${kept}本はすでにあるので残しました。`
+        : `${total}本の動線を引きました。`));
   }
 
   function applyRoutes(scene) {
@@ -6786,8 +6870,8 @@
       if (!piece.route) return;
       /* 動かすのは駒の居場所だけ。明かりの場合、これは「当てる先」であって
        * 灯体（beam.u/v）ではない。灯体はその場に残り、光が振られる。 */
-      piece.u = clamp(piece.route.u, 0, 1);
-      piece.v = clamp(piece.route.v, 0, 1);
+      piece.u = clamp(piece.route.u, -0.5, 1.5);   // 袖へはける動線もそのまま実る
+      piece.v = clamp(piece.route.v, -0.5, 1);
       piece.route = null;
       moved += 1;
     });
@@ -7409,6 +7493,42 @@
   /* 重なりの上下を手で入れ替える仕組みは置かない。
    * 動かしている駒が、重なった相手の上に乗る（bringToTop）で決まるため。 */
 
+  /* ---------- 前のシーンの動線の追従 ----------
+     前のシーンでこの駒へ引いてあった動線は、駒を動かしたら先も付いてくる。
+     「動線を引いてから、次のシーンで置き直す」手順で、線が置き去りにならないため。
+     ★付いてくるのは、動線の先が「動かす前のこの駒」を指していたときだけ。
+       わざと別の場所へ引いてある線は触らない。その代わり、ずれが大きければ知らせる
+       （知らせるだけ。直すかどうかは本人が決める）。 */
+  const FOLLOW_M = 0.6;   // 「この駒を指していた」とみなす誤差
+  const WARN_M = 2.5;     // これ以上ずれたら知らせる
+  function syncRouteFromPrev(piece, oldU, oldV) {
+    if (oldU === undefined || oldV === undefined) return;
+    const rows = state.project.scenes.filter((r) => r.kind === "scene");
+    const at = rows.findIndex((r) => r.id === state.project.activeSceneId);
+    if (at <= 0) return;
+    const twin = twinOf(piece, rows[at - 1].pieces || []);
+    if (!twin || !twin.route) return;
+    const size = venueSize();
+    const dist = (au, av, bu, bv) => Math.hypot((au - bu) * (size.width || 12), (av - bv) * (size.depth || 9));
+    if (dist(twin.route.u, twin.route.v, oldU, oldV) <= FOLLOW_M) {
+      const straight = Math.abs(twin.route.bu - (twin.u + twin.route.u) / 2) < 0.001
+        && Math.abs(twin.route.bv - (twin.v + twin.route.v) / 2) < 0.001;
+      twin.route.u = piece.u;
+      twin.route.v = piece.v;
+      if (straight) {
+        twin.route.bu = (twin.u + piece.u) / 2;
+        twin.route.bv = (twin.v + piece.v) / 2;
+      }
+      persistSoon();
+      announce("前のシーンの動線も、この位置へ合わせました。");
+      return;
+    }
+    const miss = dist(twin.route.u, twin.route.v, piece.u, piece.v);
+    if (miss >= WARN_M) {
+      announce(`前のシーンの動線の先と${miss.toFixed(1)}mずれています。そのままでも構いません。`);
+    }
+  }
+
   function finishPointer(event) {
     if (touches.has(event.pointerId)) {
       touches.delete(event.pointerId);
@@ -7423,11 +7543,17 @@
       && (pointerAction.fresh || !pointerAction.moved)
       ? { id: pointerAction.id, view: pointerAction.view } : null;
     const drewRoute = pointerAction.kind === "route";
+    const dragSync = pointerAction.kind === "drag" && pointerAction.moved
+      ? { id: pointerAction.id, u: pointerAction.startU, v: pointerAction.startV } : null;
     // 動線は一本引けば用が済む。引いたらそのまま動かす手に戻す
     const backToSelect = Boolean(pointerAction.fromRouteTool);
     pointerAction = null;
     el.dataset.dragging = "false";
     if (changed) persistSoon();
+    if (dragSync) {
+      const piece = sc().pieces.find((candidate) => candidate.id === dragSync.id);
+      if (piece) syncRouteFromPrev(piece, dragSync.u, dragSync.v);
+    }
     // 動線を引き終えたら、場面の欄の「動線の先へ動かした場面を作る」が押せるようになる
     if (drewRoute) renderScenes();
     if (backToSelect) setTool("select");
@@ -7509,6 +7635,21 @@
     syncZoomButtons();
   }
 
+  /* 押しボタンでの拡大。絵の真ん中を保って寄る（ピンチと同じ計算）。 */
+  function zoomBy(view, factor) {
+    const zs = zoomOf(view);
+    const cx = W / 2;
+    const cy = H / 2;
+    const worldX = zs.ox + cx / zs.z;
+    const worldY = zs.oy + cy / zs.z;
+    zs.z = clamp(zs.z * factor, ZOOM_MIN, ZOOM_MAX);
+    zs.ox = worldX - cx / zs.z;
+    zs.oy = worldY - cy / zs.z;
+    clampZoom(zs);
+    render();
+    syncZoomButtons();
+  }
+
   function resetZoom(view) {
     const zs = zoomOf(view);
     zs.z = 1; zs.ox = 0; zs.oy = 0;
@@ -7523,7 +7664,13 @@
       const on = zs.z > 1.01;
       button.hidden = !on;
       button.textContent = `${zs.z.toFixed(1)}× ⟲`;
-    });
+      if (els.planZoomOut) els.planZoomOut.disabled = zoomOf("plan").z <= ZOOM_MIN + 0.001;
+    // 拡大中は、何もない所を掴んで見える場所を動かせる
+    if (planCanvas) planCanvas.dataset.pannable = zoomOf("plan").z > 1.001 ? "true" : "false";
+  });
+    if (els.planZoomOut) els.planZoomOut.disabled = zoomOf("plan").z <= ZOOM_MIN + 0.001;
+    // 拡大中は、何もない所を掴んで見える場所を動かせる
+    if (planCanvas) planCanvas.dataset.pannable = zoomOf("plan").z > 1.001 ? "true" : "false";
   }
 
   function onPointerDown(event) {
@@ -7623,6 +7770,7 @@
         kind: "drag", pointerId: event.pointerId, id: hit.id, el, view,
         offsetX: point.x - at.x, offsetY: point.y - at.y,
         before: snapshot(), moved: false, linked,
+        startU: hit.u, startV: hit.v,
       };
       return;
     }
@@ -7647,6 +7795,20 @@
       updateInspector();
       render();
       if (!hit) {
+        /* 平面図を拡大しているときは、何もない所を掴むと見える場所が動く。
+           等倍では全体が見えているので、掴んでも何も起きない。 */
+        if (view === "plan" && zoomOf("plan").z > 1.001) {
+          const rect = el.getBoundingClientRect();
+          const zs = zoomOf("plan");
+          capture(el, event.pointerId);
+          el.dataset.dragging = "true";
+          pointerAction = {
+            kind: "planpan", pointerId: event.pointerId, el, view,
+            sx: event.clientX, sy: event.clientY, ox: zs.ox, oy: zs.oy,
+            k: (W / rect.width) / zs.z,
+          };
+          return;
+        }
         // 舞台が一度に入らない席では、何もない所を掴むと視線を左右に振れる
         if (view === "front" && (L.panRange > 0 || L.panRangeY > 0)) {
           capture(el, event.pointerId);
@@ -7672,6 +7834,7 @@
         kind: "drag", pointerId: event.pointerId, id: hit.id, el, view,
         offsetX: point.x - pos.x, offsetY: point.y - pos.y,
         before: snapshot(), moved: false,
+        startU: hit.u, startV: hit.v,
       };
       return;
     }
@@ -7722,6 +7885,7 @@
     const hit = hitTest(point, L);
     if (hit) return isLocked(hit) ? "not-allowed" : "grab";
     if (view === "front" && (L.panRange > 0 || L.panRangeY > 0)) return "grab";
+    if (view === "plan" && zoomOf("plan").z > 1.001) return "grab";
     return "default";
   }
 
@@ -7750,6 +7914,15 @@
     if (!pointerAction || pointerAction.pointerId !== event.pointerId) return;
     const L = layout(pointerAction.view);
     const point = pointFromEvent(event);
+
+    if (pointerAction.kind === "planpan") {
+      const zs = zoomOf("plan");
+      zs.ox = pointerAction.ox - (event.clientX - pointerAction.sx) * pointerAction.k;
+      zs.oy = pointerAction.oy - (event.clientY - pointerAction.sy) * pointerAction.k;
+      clampZoom(zs);
+      render();
+      return;
+    }
 
     if (pointerAction.kind === "pan") {
       // 掴んだ絵がついてくる向き。右へ引けば舞台の下手側が、下へ引けば上の方が見えてくる
@@ -7899,9 +8072,13 @@
     checkpoint();
     const amount = event.shiftKey ? 0.05 : 0.016;
     bringToTop(piece);   // 動かしたものが、重なった相手の上に乗る
-    piece.u = clamp(piece.u + moves[event.key][0] * amount, 0, 1);
+    const kb = planBounds();
+    const wasU = piece.u;
+    const wasV = piece.v;
+    piece.u = clamp(piece.u + moves[event.key][0] * amount, kb.uMin, kb.uMax);
     // 上キーで画面の上＝奥へ。正面図でも平面図でも同じ向きになる
-    piece.v = clamp(piece.v + moves[event.key][1] * amount, 0, 1);
+    piece.v = clamp(piece.v + moves[event.key][1] * amount, kb.vMin, kb.vMax);
+    syncRouteFromPrev(piece, wasU, wasV);
     render();
     persistSoon();
   }
@@ -9213,6 +9390,8 @@
    * 一度でも見た（または閉じた）ら、次からは上の「使い方」からだけ。 */
   let seenTour = true;
   try { seenTour = localStorage.getItem(TOUR_KEY) === "done"; } catch (_) { seenTour = true; }
+  if (els.planZoomIn) els.planZoomIn.addEventListener("click", () => zoomBy("plan", 1.35));
+  if (els.planZoomOut) els.planZoomOut.addEventListener("click", () => zoomBy("plan", 1 / 1.35));
   if (els.sampleOpen) els.sampleOpen.addEventListener("click", openSampleShow);
   /* 初めて開いた端末には、見本のショーを棚へ入れておく（開いているショーは変えない）。
      ★state を組み終わってから通すこと。let state より前で呼ぶと

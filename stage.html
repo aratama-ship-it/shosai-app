@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>舞台スケッチ — 制作の書斎</title>
-<link rel="stylesheet" href="style.css?v=117">
+<link rel="stylesheet" href="style.css?v=118">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -312,6 +312,12 @@
                 <div class="stage-depth-label stage-depth-back">奥（背面）</div>
                 <canvas id="stage-plan-canvas" width="1280" height="720" tabindex="0"
                         role="img" aria-label="舞台と客席を上から見た平面図"></canvas>
+                <!-- 拡大の押しボタン。指のピンチが無いPCのための入口。
+                     拡大中は何もない所を掴むと見える場所を動かせる -->
+                <div class="stage-zoom-fab">
+                  <button type="button" id="stage-plan-zoom-in" title="拡大" aria-label="平面図を拡大">＋</button>
+                  <button type="button" id="stage-plan-zoom-out" title="縮小" aria-label="平面図を縮小">−</button>
+                </div>
                 <div class="stage-depth-label stage-depth-front">手前（客席側）</div>
               </div>
               </div>
@@ -577,7 +583,7 @@
 </div>
 
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=20"></script>
-<script src="stage-sketch.js?v=146"></script>
+<script src="stage-i18n.js?v=21"></script>
+<script src="stage-sketch.js?v=147"></script>
 </body>
 </html>
