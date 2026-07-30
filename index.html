@@ -225,8 +225,8 @@
                 読み込む<input type="file" id="stage-import-json" accept="application/json" hidden>
               </label>
             </div>
-            <!-- 同梱の見本。開いた瞬間には出さず、押したときだけ別ショーとして開く -->
-            <button type="button" class="stage-minor-action" id="stage-sample-open">見本のショーを開く</button>
+            <!-- 同梱の見本はショー一覧（棚）から開く。ここに置いていたボタンは
+                 本人の指示で撤去した（?sample のリンクと棚入れはそのまま生きている） -->
             </div>
           </section>
 
@@ -515,6 +515,14 @@
                   握りの高さ <span id="stage-pole-h-value">2.5m</span>
                 </label>
                 <input type="range" id="stage-pole-h" min="0.8" max="5.5" step="0.1" value="2.5">
+              </div>
+              <!-- トラピーズに乗っているときだけ出る乗り方の操作 -->
+              <div id="stage-trap-controls" hidden>
+                <label class="stage-control-label">トラピーズの乗り方</label>
+                <div class="stage-action-row">
+                  <button type="button" id="stage-trap-sit" class="btn-quiet">座る</button>
+                  <button type="button" id="stage-trap-hang" class="btn-quiet">ぶら下がる</button>
+                </div>
               </div>
               <div id="stage-facing-controls">
                 <label class="stage-control-label stage-range-label" for="stage-piece-facing">
@@ -990,9 +998,9 @@
 <script src="book-seeds.js?v=1"></script>
 <script src="app.js?v=39"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=24"></script>
+<script src="stage-i18n.js?v=25"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
-<script src="stage-sketch.js?v=153"></script>
+<script src="stage-sketch.js?v=154"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

@@ -218,6 +218,9 @@
     "左に付く": "Hang left",
     "右に付く": "Hang right",
     "握りの高さ": "Grip height",
+    "トラピーズの乗り方": "On the trapeze",
+    "座る": "Sit",
+    "ぶら下がる": "Hang",
     "向き": "Facing",
     "客席": "House",
     "背中": "Back",
@@ -347,6 +350,7 @@
       skateboard: "Skateboard", bicycle: "Bicycle",
       cyr: "Cyr wheel", tuck: "Tuck somersault",
       lie: "Face down", supine: "Face up", sidelie: "On the side",
+      trapeze_sit: "Sitting on the bar", trapeze_hang: "Hanging from the bar",
     },
     setKind: {
       block: "Platform / box", table: "Table", chair: "Chair", bench: "Bench",

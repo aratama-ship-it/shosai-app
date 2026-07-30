@@ -289,7 +289,28 @@
     wide: [0, 0, 1], face: [0, 0.25, 0.97],
     joints: mirrorJoints(POLE_FLAG_R.joints),
   };
-  const HIDDEN_POSES = [POLE_FLAG_R, POLE_FLAG_L];
+  /* トラピーズに乗る姿勢。一覧には出さず、吊りバーへ乗せたときに自動で使う。
+     原点(y=0)は足先の高さのまま。バーとの位置合わせは refreshBases が
+     base で行う（座る＝握り0.505Hがバー、ぶら下がる＝握り1.15Hがバー）。 */
+  const TRAP_SIT = makePose("trapeze_sit", "ブランコに座る", {
+    // 立ち姿から脚を軽く前へ流し、手は腰の脇でバーを握る
+    elL: [-0.14, 0.65, 0.01], elR: [0.14, 0.65, 0.01],
+    wrL: [-0.13, 0.505, 0.02], wrR: [0.13, 0.505, 0.02],
+    knL: [-0.06, 0.30, 0.10], knR: [0.06, 0.30, 0.10],
+    anL: [-0.058, 0.07, 0.06], anR: [0.058, 0.07, 0.06],
+    toL: [-0.058, 0.03, 0.11], toR: [0.058, 0.03, 0.11],
+  });
+  const TRAP_HANG = makePose("trapeze_hang", "ぶら下がる", {
+    // 両手を肩幅で伸ばして握り、体はまっすぐ、つま先を揃えて下へ
+    elL: [-0.128, 0.99, 0.01], wrL: [-0.125, 1.15, 0.01],
+    elR: [0.128, 0.99, 0.01], wrR: [0.125, 1.15, 0.01],
+    knL: [-0.058, 0.28, 0.005], knR: [0.058, 0.28, 0.005],
+    anL: [-0.056, 0.04, 0], anR: [0.056, 0.04, 0],
+    toL: [-0.056, -0.02, 0.02], toR: [0.056, -0.02, 0.02],
+  });
+  // バーを握る高さ（身長比）。base の計算と姿勢の手の位置で同じ値を使う
+  const TRAP_GRIP = { sit: 0.505, hang: 1.15 };
+  const HIDDEN_POSES = [POLE_FLAG_R, POLE_FLAG_L, TRAP_SIT, TRAP_HANG];
 
   const POSES = [
     makePose("stand", "立つ", {}),
@@ -1066,7 +1087,6 @@
     studyBody: document.getElementById("stage-study-body"),
     sceneList: document.getElementById("stage-scene-list"),
     sceneResize: document.getElementById("stage-scene-resize"),
-    sampleOpen: document.getElementById("stage-sample-open"),
     sceneAdd: document.getElementById("stage-scene-add"),
     sceneDup: document.getElementById("stage-scene-dup"),
     sceneDel: document.getElementById("stage-scene-del"),
@@ -1083,6 +1103,9 @@
     poleRight: document.getElementById("stage-pole-right"),
     poleH: document.getElementById("stage-pole-h"),
     poleHValue: document.getElementById("stage-pole-h-value"),
+    trapControls: document.getElementById("stage-trap-controls"),
+    trapSit: document.getElementById("stage-trap-sit"),
+    trapHang: document.getElementById("stage-trap-hang"),
     poseLabel: document.getElementById("stage-pose-label"),
     poseModal: document.getElementById("stage-pose"),
     poseBackdrop: document.getElementById("stage-pose-backdrop"),
@@ -1543,6 +1566,8 @@
       // ポールに付いたときの持ち場（左右と握りの高さ）。付いていない間も持ち歩く
       poleSide: piece.poleSide === "L" ? "L" : "R",
       poleH: clamp(finite(piece.poleH, 2.5), 0.8, 9),
+      // トラピーズの乗り方（座る／ぶら下がる）。降りている間も持ち歩く
+      trapMode: piece.trapMode === "hang" ? "hang" : "sit",
       // 姿勢。用意したものの中から選ぶ（形そのものは編集させない）
       pose: POSES.some((p) => p.id === piece.pose) ? piece.pose : "stand",
       /* 動線。この場面のあいだに、その駒がどこへ動くか。
@@ -2909,6 +2934,21 @@
         return;
       }
 
+      /* トラピーズ。バーの近く（0.55m以内）へ置いた演者はバーへ乗る。
+         座る＝腰の握り(0.505H)がバー、ぶら下がる＝伸ばした手(1.15H)がバー。
+         バーの地上高は吊りの lift から取る（並び順に依存させない）。
+         低いバーで手が届いてしまう場合は base が0で止まり、
+         床に立ったままバーを握る形になる（それで正しい）。 */
+      const trap = pieces.find((other) => other !== piece && other.type === "trapeze"
+        && Math.hypot((piece.u - other.u) * size.width, (piece.v - other.v) * size.depth) < 0.55);
+      if (trap) {
+        const H = pieceHeightM(piece) * (piece.size / 100);
+        const grip = TRAP_GRIP[piece.trapMode === "hang" ? "hang" : "sit"];
+        piece.supportId = trap.id;
+        piece.base = Math.max(0, flownLift(trap) - grip * H);
+        return;
+      }
+
       /* 椅子。座面の上に「立つ」と背もたれへ足が乗った絵になるので、
          腰が座面へ来る高さまで下げる（座る姿勢は refreshBases では変えず、
          描くときに performerRig が差し替える）。 */
@@ -3082,6 +3122,7 @@
     if (!holder) return null;
     if (holder.type === "pole") return "pole";
     if (holder.type === "chair") return "chair";
+    if (holder.type === "trapeze") return "trapeze";
     return null;
   }
 
@@ -3094,7 +3135,9 @@
     const mount = mountKindOf(piece);
     const poseId = mount === "pole"
       ? (piece.poleSide === "L" ? "poleflag_l" : "poleflag_r")
-      : (mount === "chair" ? "sit" : piece.pose);
+      : mount === "trapeze"
+        ? (piece.trapMode === "hang" ? "trapeze_hang" : "trapeze_sit")
+        : (mount === "chair" ? "sit" : piece.pose);
     const rig = buildRig(poseId, pos.x, pos.rawY === undefined ? pos.y : pos.rawY,
       H * per.x, H * per.y, ((piece.facing || 0) * Math.PI) / 180, zDrop, L.plan ? null : L.tilt);
     rig.per = per;
@@ -3262,8 +3305,9 @@
     const P = rig.P;
     target.save();
 
-    // ポールに付いて宙に浮いている間は、影を落とさない（床に居ないため）
-    if (mountKindOf(piece) === "pole") {
+    // ポールやトラピーズで宙に浮いている間は、影を落とさない（床に居ないため）
+    const mountHere = mountKindOf(piece);
+    if (mountHere === "pole" || mountHere === "trapeze") {
       paintBody(target, rig, piece.color);
       target.restore();
       return;
@@ -3972,6 +4016,29 @@
       target.lineTo(0, halfD * 1.35);
       target.closePath();
       target.fill();
+    } else if (piece.type === "trapeze") {
+      /* 吊りバー。真上からは0.06mの線にしかならず、見えない・掴めないと
+         言われた。バーを太い丸端の線で、ロープの吊り点を両端の丸で描く。 */
+      const foot = pieceFootprint(piece);
+      const w = Math.max(24, foot.w * L.pxPerM);
+      target.translate(pos.x, pos.y);
+      target.rotate(-((piece.facing || 0) * Math.PI) / 180);
+      target.strokeStyle = piece.color;
+      target.lineCap = "round";
+      target.lineWidth = 5;
+      target.beginPath();
+      target.moveTo(-w / 2, 0);
+      target.lineTo(w / 2, 0);
+      target.stroke();
+      target.fillStyle = piece.color;
+      target.strokeStyle = "rgba(0,0,0,0.4)";
+      target.lineWidth = 1.4;
+      [-w / 2, w / 2].forEach((x) => {
+        target.beginPath();
+        target.arc(x, 0, 5, 0, Math.PI * 2);
+        target.fill();
+        target.stroke();
+      });
     } else if (SOLID_TYPES[piece.type]) {
       // 真上から見るので、幅と奥行きがそのまま床の占有面積になる。向きも効く
       const foot = pieceFootprint(piece);
@@ -4031,9 +4098,12 @@
         const foot = pieceFootprint(piece);
         const w = foot.w * L.pxPerM;
         const d = foot.d * L.pxPerM;
-        const ex = (Math.abs(w * Math.cos(rad)) + Math.abs(d * Math.sin(rad))) / 2;
-        const ey = (Math.abs(w * Math.sin(rad)) + Math.abs(d * Math.cos(rad))) / 2;
-        return { x: pos.x - ex, y: pos.y - ey, w: Math.max(12, ex * 2), h: Math.max(12, ey * 2) };
+        /* 細いもの（トラピーズのバー、綱）は箱の中心を保ったまま最小幅まで
+           太らせる。以前は w/h だけ広げていたため、箱が中心から下へずれていた。 */
+        const pad = piece.type === "trapeze" ? 13 : 6;
+        const ex = Math.max(pad, (Math.abs(w * Math.cos(rad)) + Math.abs(d * Math.sin(rad))) / 2);
+        const ey = Math.max(pad, (Math.abs(w * Math.sin(rad)) + Math.abs(d * Math.cos(rad))) / 2);
+        return { x: pos.x - ex, y: pos.y - ey, w: ex * 2, h: ey * 2 };
       }
       if (piece.type === "sphere") {
         const r = Math.max(10, (dim.dia / 2) * L.pxPerM);
@@ -7929,7 +7999,9 @@
       if (els.poseLabel) {
         els.poseLabel.textContent = mount === "pole" ? tx("ポールに付く")
           : mount === "chair" ? tx("椅子に座る")
-          : poseName(poseById(piece.pose));
+          : mount === "trapeze"
+            ? poseName(poseById(piece.trapMode === "hang" ? "trapeze_hang" : "trapeze_sit"))
+            : poseName(poseById(piece.pose));
       }
       els.piecePose.disabled = !isPerformer || Boolean(mount);
       els.piecePose.hidden = !isPerformer;
@@ -7947,6 +8019,14 @@
         els.poleHValue.textContent = `${Number(els.poleH.value).toFixed(1)}m`;
         els.poleLeft.setAttribute("aria-pressed", String(piece.poleSide === "L"));
         els.poleRight.setAttribute("aria-pressed", String(piece.poleSide !== "L"));
+      }
+    }
+    if (els.trapControls) {
+      const onTrap = mount === "trapeze";
+      els.trapControls.hidden = !onTrap;
+      if (onTrap) {
+        els.trapSit.setAttribute("aria-pressed", String(piece.trapMode !== "hang"));
+        els.trapHang.setAttribute("aria-pressed", String(piece.trapMode === "hang"));
       }
     }
     if (els.pieceFacing) {
@@ -10012,9 +10092,23 @@
       persistSoon();
     });
   }
+  if (els.trapSit) {
+    const setTrapMode = (mode) => {
+      const piece = selectedPiece();
+      if (!piece || mountKindOf(piece) !== "trapeze") return;
+      checkpoint();
+      piece.trapMode = mode;
+      updateInspector();
+      render();
+      persistSoon();
+    };
+    els.trapSit.addEventListener("click", () => setTrapMode("sit"));
+    els.trapHang.addEventListener("click", () => setTrapMode("hang"));
+  }
   if (els.planZoomIn) els.planZoomIn.addEventListener("click", () => zoomBy("plan", 1.35));
   if (els.planZoomOut) els.planZoomOut.addEventListener("click", () => zoomBy("plan", 1 / 1.35));
-  if (els.sampleOpen) els.sampleOpen.addEventListener("click", openSampleShow);
+  /* 「見本のショーを開く」ボタンは撤去した（本人の指示）。
+     見本は棚（ショー一覧）と ?sample リンクから開く。 */
   /* 初めて開いた端末には、見本のショーを棚へ入れておく（開いているショーは変えない）。
      ★state を組み終わってから通すこと。let state より前で呼ぶと
        TDZ で落ち、try/catch が握り潰して「棚に入らない」だけになる（実際に踏んだ）。 */
