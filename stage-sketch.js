@@ -1024,6 +1024,20 @@
     backupNote: document.getElementById("stage-backup-note"),
     backupHint: document.getElementById("stage-backup-hint"),
     backupExport: document.getElementById("stage-backup-export"),
+    rehearsalExportOpen: document.getElementById("stage-rehearsal-export-open"),
+    rehearsalExportModal: document.getElementById("stage-rehearsal-export-modal"),
+    rehearsalExportBackdrop: document.getElementById("stage-rehearsal-export-backdrop"),
+    rehearsalExportClose: document.getElementById("stage-rehearsal-export-close"),
+    rehearsalExportRun: document.getElementById("stage-rehearsal-export-run"),
+    rehearsalCheck: document.getElementById("stage-rehearsal-check"),
+    rehearsalDefaults: document.getElementById("stage-rehearsal-defaults"),
+    rehearsalDefaultHold: document.getElementById("stage-rehearsal-default-hold"),
+    rehearsalDefaultTransition: document.getElementById("stage-rehearsal-default-transition"),
+    rehearsalApplyDefaults: document.getElementById("stage-rehearsal-apply-defaults"),
+    rehearsalSoundtrack: document.getElementById("stage-rehearsal-soundtrack"),
+    rehearsalUnsupported: document.getElementById("stage-rehearsal-unsupported"),
+    rehearsalAllowUnsupported: document.getElementById("stage-rehearsal-allow-unsupported"),
+    rehearsalOmittedList: document.getElementById("stage-rehearsal-omitted-list"),
     live: document.getElementById("stage-live"),
     venueSelect: document.getElementById("stage-venue-select"),
     sizeSelect: document.getElementById("stage-size-select"),
@@ -2190,7 +2204,11 @@
        - シルホイールの演者（姿勢 cyr）を横向き（facing 90/270）にしない。
          輪が一本の線に潰れて、何をしているか読めなくなる。正面〜斜めまで
        - 姿勢 cyr は輪を含んでいる。装置のシルホイールを同じ場所へ重ねない
-         （実際に重ねてしまい、輪が頭に乗って見えた） */
+         （実際に重ねてしまい、輪が頭に乗って見えた）
+       - 照明の灯体を宙に浮かせない。灯体は必ず「何かに付いている」。
+         吊りは舞台の高さ（バトン＝h を会場の高さに）、前明かりは額縁のすぐ上
+         （srcV≒1.02・h＝会場の高さ）、SSは袖のスタンド、転がしは床。
+         既定の h=6m のままだと、正面図で灯体が空中の一点から生えて見えた */
   const SAMPLE_CAST = [
     { key: "mina", name: "ミナ", color: "#a84b26", h: 168 },
     { key: "riku", name: "リク", color: "#77865f", h: 176 },
@@ -2343,7 +2361,8 @@
         pieces.push(normalizePiece({ id: `sample-${key}-${i}`, type: "light",
           setId: lightId[key], originId: `sample-origin-${key}`,
           u, v, facing: 0, size: 100, color: "#d3ac59", name: "",
-          beam: { u: src.u, v: src.v, h: spec.h, toH: spec.toH } }, 0));
+          beam: { u: src.u, v: x.srcV !== undefined ? x.srcV : src.v,
+            h: x.h !== undefined ? x.h : spec.h, toH: spec.toH } }, 0));
       });
       scene.pieces = pieces;
       return scene;
@@ -3832,8 +3851,37 @@
      * 別々に塗ると、帯の裾の水平な線が円を上下に切ってしまい、
      * 「半円が二つ繋がっている」ように見えていた（上半分だけ帯が重なるため）。
      * 帯の裾を円の下半分の弧でつなぎ、帯は着地の手前で薄れさせる。 */
+    /* ★光は「当たる高さ」で止まらない。顔向け・体向けの明かり（toH>0）も、
+     *   体を過ぎた光は床か幕まで進んで、そこに落ちる。当たる高さで帯を切ると
+     *   光の輪が宙に浮いて見える（実際にそう見えていた）。
+     *   灯体(高さh)→当たる点(高さtoH) の線を実寸のまま延長し、
+     *   高さ0（床）に着く所を終点にする。床より先に奥の壁・袖の幕・天井に
+     *   着くならそこで止め、丸い当たりとして描く。 */
+    const b3 = piece.beam || normalizeBeam(null, piece);
+    const su = piece.animBeamU === undefined ? b3.u : piece.animBeamU;
+    const sv = piece.animBeamV === undefined ? b3.v : piece.animBeamV;
+    const au = pieceU(piece);
+    const av = pieceV(piece);
+    let tEnd = Infinity;
+    if (b3.h > b3.toH + 0.01) tEnd = b3.h / (b3.h - b3.toH);                       // 床に着く倍率
+    else if (b3.toH > b3.h + 0.01) tEnd = ((L.size.height || 8) - b3.h) / (b3.toH - b3.h);  // 下から上は天井まで
+    // 幕より外へは延ばさない。横（袖幕）と奥・手前で手前に丸める
+    const cutAt = (from, to, limit) => (Math.abs(to - from) < 1e-6 ? Infinity : (limit - from) / (to - from));
+    [cutAt(su, au, au > su ? 1.12 : -0.12), cutAt(sv, av, av > sv ? 1.12 : -0.02)]
+      .forEach((t) => { if (t > 0 && t < tEnd) tEnd = t; });
+    if (!isFinite(tEnd)) tEnd = 1;
+    tEnd = Math.max(1, tEnd);   // 少なくとも当たる点までは届く（終点を袖の外へ引いた明かりなど）
+    const eu = su + (au - su) * tEnd;
+    const ev = sv + (av - sv) * tEnd;
+    const hh = Math.max(0, b3.h + (b3.toH - b3.h) * tEnd);
+    const endPos = place(eu, ev, L);
+    const perEnd = perMetre(endPos, L);
+    const end = { x: endPos.x, y: L.tilt(endPos.rawY - hh * perEnd.y) };
+    // 光の円錐は灯体から先へ行くほど開く。終点の広さは距離の倍率で伸ばす
+    const spreadEnd = Math.max(6, ((dim && dim.dia) || 4) / 2 * perEnd.x * tEnd);
+    const onFloor = hh < 0.05;
     const ry = Math.max(3, 32 * scale);
-    const gradient = target.createLinearGradient(src.x, src.y, hit.x, hit.y);
+    const gradient = target.createLinearGradient(src.x, src.y, end.x, end.y);
     gradient.addColorStop(0, rgba(piece.color, 0.09));
     gradient.addColorStop(0.72, rgba(piece.color, 0.14));
     gradient.addColorStop(1, rgba(piece.color, 0.06));
@@ -3842,20 +3890,37 @@
     target.fillStyle = gradient;
     target.beginPath();
     target.moveTo(src.x, src.y);
-    target.lineTo(hit.x + spread, hit.y);
-    // 円の下半分をなぞって左端へ回り込む。ここで輪郭が一続きになる
-    target.ellipse(hit.x, hit.y, spread, ry, 0, 0, Math.PI);
+    target.lineTo(end.x + spreadEnd, end.y);
+    if (onFloor) {
+      // 円の下半分をなぞって左端へ回り込む。ここで輪郭が一続きになる
+      target.ellipse(end.x, end.y, spreadEnd, ry, 0, 0, Math.PI);
+    } else {
+      // 幕・壁・天井で終わる帯。裾はまっすぐ切る（面に当たって止まる）
+      target.lineTo(end.x - spreadEnd, end.y);
+    }
     target.closePath();
     target.fill();
-    // 明るいのは床に落ちた円そのもの。帯はそこへ吸い込まれる
-    const pool = target.createRadialGradient(hit.x, hit.y, 0, hit.x, hit.y, spread);
+    // 明るいのは光が落ちた所そのもの。帯はそこへ吸い込まれる
+    const pool = target.createRadialGradient(end.x, end.y, 0, end.x, end.y, spreadEnd);
     pool.addColorStop(0, rgba(piece.color, 0.34));
     pool.addColorStop(0.55, rgba(piece.color, 0.16));
     pool.addColorStop(1, rgba(piece.color, 0));
     target.fillStyle = pool;
     target.beginPath();
-    target.ellipse(hit.x, hit.y, spread, ry, 0, 0, Math.PI * 2);
+    if (onFloor) target.ellipse(end.x, end.y, spreadEnd, ry, 0, 0, Math.PI * 2);
+    else target.arc(end.x, end.y, spreadEnd * 0.8, 0, Math.PI * 2);   // 幕への丸い当たり
     target.fill();
+    /* 途中で体や顔に当たる高さ（toH>0）は、光を切らずに輪だけで示す。
+       掴んで動かすのはこの輪なので、明かりの道具のときと選択中は必ず出す。 */
+    if (tEnd > 1.01 && (lit || picked)) {
+      target.strokeStyle = rgba(piece.color, 0.55);
+      target.setLineDash([4, 4]);
+      target.lineWidth = 1.2;
+      target.beginPath();
+      target.ellipse(hit.x, hit.y, spread, Math.max(3, ry * 0.6), 0, 0, Math.PI * 2);
+      target.stroke();
+      target.setLineDash([]);
+    }
     target.globalCompositeOperation = "source-over";
     if (lit || picked) drawFixture(target, src, piece, true);
     target.restore();
@@ -4824,13 +4889,28 @@
       else if (piece.type === "sphere") drawSphere(target, piece, pos, scale, L);
       if (lean) target.restore();
     };
-    sc().pieces.filter((p) => p.type === "light").forEach(draw);
+    const lightPieces = sc().pieces.filter((p) => p.type === "light");
+    // 平面では、落ちる円は床の印なので駒の下に敷く
+    if (L.plan) lightPieces.forEach(draw);
     /* 平面図は「床に何がどう置いてあるか」の図なので、宙に吊ってあるものは
      * 既定では出さない。要るときだけ出せるように入り切りを持つ。 */
     const shown = sc().pieces.filter((p) => !(L.plan && !state.showFlown && isFlown(p)));
     // 正面図では奥から描く（重なりが自然になる）
     const solid = shown.filter((p) => p.type !== "light");
     (L.plan ? solid : solid.slice().sort((a, b) => a.v - b.v)).forEach(draw);
+    /* ★正面では光を物のあとに描く。物のあとに描かないと、台や人が
+     *   光の帯を四角く切り抜いて、光が途中で切れて見える。
+     *   光は物で消えない——帯は物の手前を横切り、当たった物が明るくなる。 */
+    if (!L.plan) lightPieces.forEach(draw);
+
+    /* はけていく途中の人。もうシーンの駒ではないので、ここで別に描く。
+       袖へ近づくにつれて、待っている「舞台裏」の薄さ（0.55）へ溶かし込む。 */
+    if (sceneAnim && sceneAnim.exits && sceneAnim.exits.length) {
+      target.save();
+      target.globalAlpha = 1 - 0.45 * (sceneAnim.progress || 0);
+      sceneAnim.exits.forEach((entry) => draw(entry.piece));
+      target.restore();
+    }
 
     // 名前。頭上（平面では点の脇）に小さく置く。演者と装置は別々に出し入れする
     if (state.showNames || state.showSetNames) {
@@ -4880,6 +4960,9 @@
        掴んで舞台へ引き入れると、その場でこのシーンに出る。 */
     if (L.plan) {
       backstageGhosts().forEach((g) => {
+        // はけの途中の人は、まだ袖に着いていない。歩いている方だけを描く
+        if (sceneAnim && sceneAnim.exits
+          && sceneAnim.exits.some((e) => e.piece.castId === g.member.id)) return;
         const pos = place(g.u, g.v, L);
         target.save();
         target.globalAlpha = 0.55;
@@ -6525,6 +6608,39 @@
         if (isOpen && scene.kind === "scene") {
           const body = document.createElement("div");
           body.className = "stage-scene-body";
+          const timing = document.createElement("div");
+          timing.className = "stage-rehearsal-time-grid stage-scene-rehearsal-times";
+          const makeTimingInput = (labelJa, key) => {
+            const label = document.createElement("label");
+            const title = document.createElement("span");
+            title.textContent = tx(labelJa);
+            const value = document.createElement("span");
+            const input = document.createElement("input");
+            input.type = "number";
+            input.min = "0";
+            input.max = "86400";
+            input.step = "0.1";
+            input.inputMode = "decimal";
+            input.value = scene.rehearsal && scene.rehearsal[key] !== null
+              ? String(scene.rehearsal[key]) : "";
+            input.setAttribute("aria-label", tx(`${labelJa}（秒）`));
+            input.addEventListener("input", () => {
+              if (!scene.rehearsal) scene.rehearsal = normalizeSceneRehearsal(null);
+              scene.rehearsal[key] = rehearsalSeconds(input.value);
+              persistSoon();
+              if (els.rehearsalExportModal && !els.rehearsalExportModal.hidden) {
+                refreshRehearsalExport();
+              }
+            });
+            const unit = document.createTextNode(` ${tx("秒")}`);
+            value.append(input, unit);
+            label.append(title, value);
+            return label;
+          };
+          timing.append(
+            makeTimingInput("留まる", "holdDurationSeconds"),
+            makeTimingInput("次へ移動", "transitionToNextSeconds"),
+          );
           const note = document.createElement("textarea");
           note.className = "stage-text-input";
           note.rows = 2;
@@ -6554,7 +6670,7 @@
           derive.disabled = !nextScene
             || (!movedPairs(scene, nextScene).length && !exitPieces(scene, nextScene).length);
           derive.addEventListener("click", () => deriveRoutes(scene));
-          body.append(note, apply, derive);
+          body.append(timing, note, apply, derive);
           row.append(body);
         }
         els.sceneList.append(row);
@@ -6786,6 +6902,7 @@
       delete entry.piece.animBeamU;
       delete entry.piece.animBeamV;
     });
+    // はけの駒は描くためだけの写しなので、捨てるだけでよい
     sceneAnim = null;
   }
 
@@ -6820,13 +6937,36 @@
           : null,
       });
     });
-    if (!pieces.length) return;
+    /* はける人。前のシーンには居て、このシーンには居ない演者は、
+     * 消えるのではなく袖まで歩いて入る。シーンの駒ではないので、
+     * 描くためだけの写しをこしらえ、舞台裏の立ち位置（backstageGhosts と
+     * 同じ場所）まで動かす。着いた所には薄い「舞台裏」の駒が待っている。 */
+    const exits = [];
+    const ghosts = backstageGhosts();
+    (fromScene.pieces || []).forEach((old) => {
+      if (old.type !== "performer" || !old.castId) return;   // 登録の無い駒の消滅は「削除」なので歩かせない
+      if (!onStageArea(old.u, old.v)) return;
+      if (twinOf(old, sc().pieces)) return;
+      const g = ghosts.find((x) => x.member.id === old.castId);
+      const dest = g ? { u: g.u, v: g.v } : wingDest(old);
+      const walker = normalizePiece(Object.assign({}, old, { id: `exit-${old.id}` }), 0);
+      exits.push({
+        piece: walker,
+        from: { u: old.u, v: old.v },
+        // 袖へのはけ動線が引いてあれば、その曲がり方を借りる
+        ctrl: old.route ? { u: old.route.bu, v: old.route.bv } : null,
+        to: dest,
+      });
+    });
+    if (!pieces.length && !exits.length) return;
+    const movers = pieces.concat(exits);
     const span = clamp(finite(state.sceneAnimMs, 620), 200, 3000);
     const start = performance.now();
     const step = (now) => {
       const t = clamp((now - start) / span, 0, 1);
       const e = easeInOut(t);
-      pieces.forEach((entry) => {
+      if (sceneAnim) sceneAnim.progress = e;
+      movers.forEach((entry) => {
         if (entry.ctrl) {
           const k = 1 - e;
           entry.piece.animU = k * k * entry.from.u + 2 * k * e * entry.ctrl.u + e * e * entry.to.u;
@@ -6845,7 +6985,7 @@
       stopSceneAnim();
       render();
     };
-    sceneAnim = { pieces, raf: requestAnimationFrame(step) };
+    sceneAnim = { pieces, exits, progress: 0, raf: requestAnimationFrame(step) };
   }
 
   // 場面を前後へ送る。上下キーの割り当て先でもある
@@ -7189,6 +7329,210 @@
     persistSoon();
     updateBackupNote();
     announce("このショーをファイルへ書き出しました。チームへ渡せます。");
+  }
+
+  function rehearsalIssueText(item) {
+    if (!isEn()) return item.messageJa;
+    const text = {
+      invalid_project: "The project data is invalid.",
+      invalid_stage_dimensions: "Stage width and depth must be numbers greater than zero.",
+      unsupported_venue: "This venue form is not supported by the Vision Pro app.",
+      no_scenes: "There are no scenes to export.",
+      no_cast: "There are no performers to export.",
+      invalid_cast_id: "A performer has an empty or invalid ID.",
+      duplicate_cast_id: "A performer ID is duplicated.",
+      invalid_scene_id: "A scene has an empty ID.",
+      duplicate_scene_id: "A scene ID is duplicated.",
+      ignored_performer_reference: "A placement that is not linked to the cast will be omitted.",
+      duplicate_cast_placement: "The same performer is placed twice in one scene.",
+      invalid_placement: "A performer placement has an invalid position or facing.",
+      empty_formation: "A scene has no performer placement to export.",
+      invalid_duration: "A rehearsal duration is invalid.",
+      missing_rehearsal_timing: "Some scenes do not have rehearsal durations yet.",
+    };
+    return text[item.code] || item.messageJa;
+  }
+
+  function rehearsalOmittedText(item) {
+    const ja = {
+      sets: "舞台セット・装置",
+      rigs: "セット登録",
+      lighting: "照明",
+      poses: "演者の姿勢",
+      piece_sizes: "駒の大きさ",
+      curved_routes: "曲線動線の制御点",
+      routes: "動線",
+      scene_notes: "シーンのメモ・付箋",
+      backgrounds: "背景・写真・描画",
+    };
+    const en = {
+      sets: "Set pieces and apparatus",
+      rigs: "Saved set layouts",
+      lighting: "Lighting",
+      poses: "Performer poses",
+      piece_sizes: "Piece sizes",
+      curved_routes: "Curve control points",
+      routes: "Routes",
+      scene_notes: "Scene notes and sticky notes",
+      backgrounds: "Backdrops, photos and drawing",
+    };
+    return `${(isEn() ? en : ja)[item.code] || item.code} (${item.count})`;
+  }
+
+  function rehearsalExporter() {
+    return window.SHOSAI_STAGE_REHEARSAL_EXPORT || null;
+  }
+
+  function refreshRehearsalExport() {
+    const api = rehearsalExporter();
+    if (!api || !els.rehearsalCheck) {
+      if (els.rehearsalCheck) {
+        els.rehearsalCheck.textContent = isEn()
+          ? "The rehearsal JSON converter could not be loaded."
+          : "稽古用JSONの変換器を読み込めませんでした。";
+        els.rehearsalCheck.className = "stage-rehearsal-check has-errors";
+      }
+      if (els.rehearsalExportRun) els.rehearsalExportRun.disabled = true;
+      return null;
+    }
+    const allowUnsupported = Boolean(els.rehearsalAllowUnsupported?.checked);
+    const inspection = api.inspectStageSketchProject(
+      state.project,
+      { allowUnsupportedVenue: allowUnsupported },
+    );
+    const unsupported = state.project.venue !== "proscenium";
+    if (els.rehearsalUnsupported) els.rehearsalUnsupported.hidden = !unsupported;
+    if (!unsupported && els.rehearsalAllowUnsupported) {
+      els.rehearsalAllowUnsupported.checked = false;
+    }
+
+    els.rehearsalCheck.innerHTML = "";
+    els.rehearsalCheck.className = `stage-rehearsal-check${
+      inspection.errors.length ? " has-errors" : " is-ready"}`;
+    const summary = document.createElement("p");
+    summary.className = "stage-rehearsal-check-summary";
+    if (inspection.errors.length) {
+      summary.textContent = isEn()
+        ? `${inspection.errors.length} issue(s) must be fixed before export.`
+        : `書き出し前に直す項目が${inspection.errors.length}件あります。`;
+    } else if (inspection.missingTimingScenes.length) {
+      summary.textContent = isEn()
+        ? `${inspection.missingTimingScenes.length} scene(s) still need durations.`
+        : `${inspection.missingTimingScenes.length}シーンの時間が未入力です。`;
+    } else {
+      summary.textContent = isEn()
+        ? "The project passed the rehearsal JSON checks."
+        : "稽古用JSONの検査に通りました。";
+    }
+    els.rehearsalCheck.append(summary);
+
+    const messages = [
+      ...inspection.errors.map((item) => ({ ...item, level: "error" })),
+      ...inspection.warnings.map((item) => ({ ...item, level: "warning" })),
+    ];
+    if (messages.length) {
+      const list = document.createElement("ul");
+      messages.forEach((item) => {
+        const row = document.createElement("li");
+        row.className = `is-${item.level}`;
+        row.textContent = rehearsalIssueText(item);
+        list.append(row);
+      });
+      els.rehearsalCheck.append(list);
+    }
+
+    if (els.rehearsalDefaults) {
+      els.rehearsalDefaults.hidden = !inspection.missingTimingScenes.length;
+    }
+    if (els.rehearsalOmittedList) {
+      els.rehearsalOmittedList.innerHTML = "";
+      if (!inspection.omittedFeatures.length) {
+        const row = document.createElement("li");
+        row.textContent = isEn()
+          ? "No omitted features are currently used in this show."
+          : "現在のショーで該当するものはありません。";
+        els.rehearsalOmittedList.append(row);
+      } else {
+        inspection.omittedFeatures.forEach((item) => {
+          const row = document.createElement("li");
+          row.textContent = rehearsalOmittedText(item);
+          els.rehearsalOmittedList.append(row);
+        });
+      }
+    }
+    if (els.rehearsalExportRun) {
+      els.rehearsalExportRun.disabled = Boolean(
+        inspection.errors.length || inspection.missingTimingScenes.length,
+      );
+    }
+    return inspection;
+  }
+
+  function openRehearsalExport() {
+    if (!els.rehearsalExportModal) return;
+    if (els.rehearsalSoundtrack) {
+      els.rehearsalSoundtrack.value =
+        state.project.rehearsal?.soundtrack === "bundled-demo" ? "bundled-demo" : "none";
+    }
+    if (els.rehearsalAllowUnsupported) els.rehearsalAllowUnsupported.checked = false;
+    els.rehearsalExportModal.hidden = false;
+    if (els.rehearsalExportBackdrop) els.rehearsalExportBackdrop.hidden = false;
+    refreshRehearsalExport();
+  }
+
+  function closeRehearsalExport() {
+    if (els.rehearsalExportModal) els.rehearsalExportModal.hidden = true;
+    if (els.rehearsalExportBackdrop) els.rehearsalExportBackdrop.hidden = true;
+  }
+
+  function applyRehearsalDefaults() {
+    const hold = rehearsalSeconds(els.rehearsalDefaultHold?.value);
+    const transition = rehearsalSeconds(els.rehearsalDefaultTransition?.value);
+    if (hold === null || transition === null) {
+      announce("留まる時間と次へ移動の時間を0以上で入れてください。");
+      return;
+    }
+    checkpoint();
+    state.project.scenes.forEach((scene) => {
+      if (scene.kind !== "scene") return;
+      if (!scene.rehearsal) scene.rehearsal = normalizeSceneRehearsal(null);
+      if (scene.rehearsal.holdDurationSeconds === null) {
+        scene.rehearsal.holdDurationSeconds = hold;
+      }
+      if (scene.rehearsal.transitionToNextSeconds === null) {
+        scene.rehearsal.transitionToNextSeconds = transition;
+      }
+    });
+    persistSoon();
+    renderScenes();
+    refreshRehearsalExport();
+    announce("未入力のシーンへ共通の時間を入れました。");
+  }
+
+  function exportRehearsalProject() {
+    const api = rehearsalExporter();
+    const inspection = refreshRehearsalExport();
+    if (!api || !inspection || inspection.errors.length || inspection.missingTimingScenes.length) {
+      announce("検査に通っていないため書き出せません。");
+      return;
+    }
+    const allowUnsupported = Boolean(els.rehearsalAllowUnsupported?.checked);
+    const result = api.convertStageSketchProject(
+      state.project,
+      { allowUnsupportedVenue: allowUnsupported },
+    );
+    const data = JSON.stringify(result.document, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    const safe = (state.project.title || "show").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 40);
+    const version = (state.project.versionLabel || "v1")
+      .replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 24);
+    link.download = `${safe}-${version}.rehearsal.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+    closeRehearsalExport();
+    announce("稽古用JSONを書き出しました。Vision Proで読み込む前に警告を確認してください。");
   }
 
   function importProject(file) {
@@ -8785,6 +9129,34 @@
   if (els.versionCopy) els.versionCopy.addEventListener("click", duplicateVersion);
   if (els.exportJson) els.exportJson.addEventListener("click", exportProject);
   if (els.backupExport) els.backupExport.addEventListener("click", exportProject);
+  if (els.rehearsalExportOpen) {
+    els.rehearsalExportOpen.addEventListener("click", openRehearsalExport);
+  }
+  if (els.rehearsalExportClose) {
+    els.rehearsalExportClose.addEventListener("click", closeRehearsalExport);
+  }
+  if (els.rehearsalExportBackdrop) {
+    els.rehearsalExportBackdrop.addEventListener("click", closeRehearsalExport);
+  }
+  if (els.rehearsalApplyDefaults) {
+    els.rehearsalApplyDefaults.addEventListener("click", applyRehearsalDefaults);
+  }
+  if (els.rehearsalAllowUnsupported) {
+    els.rehearsalAllowUnsupported.addEventListener("change", refreshRehearsalExport);
+  }
+  if (els.rehearsalSoundtrack) {
+    els.rehearsalSoundtrack.addEventListener("change", () => {
+      checkpoint();
+      state.project.rehearsal = normalizeProjectRehearsal({
+        ...state.project.rehearsal,
+        soundtrack: els.rehearsalSoundtrack.value === "bundled-demo" ? "bundled-demo" : null,
+      });
+      persistSoon();
+    });
+  }
+  if (els.rehearsalExportRun) {
+    els.rehearsalExportRun.addEventListener("click", exportRehearsalProject);
+  }
   if (els.importJson) {
     els.importJson.addEventListener("change", (e) => {
       importProject(e.target.files && e.target.files[0]);
