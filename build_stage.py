@@ -8,8 +8,8 @@
 抜くもの:
   ・<main id="view-stage"> … 舞台スケッチの画面そのもの
   ・</main> 以降にある窓（.stage-modal / .stage-modal-backdrop）
-  ・style.css と、舞台スケッチが使う3本のスクリプト
-        stage-venues.js / stage-i18n.js / stage-sketch.js
+  ・style.css と、舞台スケッチが使う4本のスクリプト
+        stage-venues.js / stage-i18n.js / stage-rehearsal-export.js / stage-sketch.js
 
 抜かないもの: db.js・data.js・app.js・roster.js（他のタブのためのもの）
 
@@ -82,6 +82,7 @@ page = f"""<!DOCTYPE html>
 
 <script src="{ver('stage-venues.js')}"></script>
 <script src="{ver('stage-i18n.js')}"></script>
+<script src="{ver('stage-rehearsal-export.js')}"></script>
 <script src="{ver('stage-sketch.js')}"></script>
 </body>
 </html>

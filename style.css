@@ -1539,6 +1539,47 @@ textarea, input[type="text"] {
   line-height: 1.6;
 }
 
+.stage-rehearsal-time-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.stage-rehearsal-time-grid label {
+  display: grid;
+  gap: 3px;
+  color: var(--milk-dim);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.stage-rehearsal-time-grid label > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.stage-rehearsal-time-grid input {
+  min-width: 0;
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+  color: var(--milk);
+  font: 11.5px var(--sans);
+  padding: 4px 6px;
+}
+
+.stage-rehearsal-time-grid input:focus {
+  border-color: var(--brass);
+  outline: none;
+}
+
+.stage-scene-rehearsal-times {
+  padding-bottom: 5px;
+  border-bottom: 1px dashed rgba(240, 231, 214, 0.16);
+}
+
 /* 掴んで動かしている行と、その跡の空き */
 .stage-scene-row.is-dragging {
   opacity: 0.97;
@@ -6513,6 +6554,7 @@ body.is-panel-dragging {
 .stage-modal.stage-pose-modal { width: min(1020px, calc(100vw - 40px)); }
 .stage-modal.stage-shows-modal { width: min(520px, calc(100vw - 40px)); }
 .stage-modal.stage-export-modal { width: min(420px, calc(100vw - 40px)); }
+.stage-modal.stage-rehearsal-export-modal { width: min(560px, calc(100vw - 40px)); }
 
 .stage-modal-head {
   display: flex;
@@ -6682,6 +6724,104 @@ body.is-panel-dragging {
   font-size: 9.5px;
   line-height: 1.65;
   margin-top: 5px;
+}
+
+.stage-rehearsal-export-open {
+  width: 100%;
+  min-height: 38px;
+  margin: 8px 0 5px;
+  border-style: dashed;
+}
+
+.stage-rehearsal-lead {
+  margin: 0 0 10px;
+  color: var(--milk-dim);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.stage-rehearsal-check,
+.stage-rehearsal-defaults,
+.stage-rehearsal-omitted {
+  margin: 8px 0 12px;
+  padding: 10px 11px;
+  border: 1px dashed rgba(240, 231, 214, 0.24);
+  background: rgba(240, 231, 214, 0.025);
+}
+
+.stage-rehearsal-check.has-errors {
+  border-color: rgba(168, 75, 38, 0.75);
+  background: rgba(168, 75, 38, 0.09);
+}
+
+.stage-rehearsal-check.is-ready {
+  border-color: rgba(119, 134, 95, 0.7);
+  background: rgba(119, 134, 95, 0.08);
+}
+
+.stage-rehearsal-check-summary,
+.stage-rehearsal-defaults > p,
+.stage-rehearsal-omitted p {
+  margin: 0;
+  color: var(--milk);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.stage-rehearsal-check ul,
+.stage-rehearsal-omitted ul {
+  margin: 7px 0 0;
+  padding-left: 18px;
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  line-height: 1.65;
+}
+
+.stage-rehearsal-check li.is-error { color: #e6a18a; }
+.stage-rehearsal-check li.is-warning { color: var(--brass); }
+
+.stage-rehearsal-defaults .stage-rehearsal-time-grid { margin: 8px 0; }
+
+.stage-rehearsal-defaults .stage-minor-action,
+#stage-rehearsal-export-run {
+  width: 100%;
+  min-height: 38px;
+}
+
+.stage-rehearsal-unsupported {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 9px 10px;
+  border: 1px dashed rgba(168, 75, 38, 0.72);
+  color: var(--milk);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.stage-rehearsal-unsupported[hidden] { display: none; }
+
+.stage-rehearsal-unsupported input {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.stage-rehearsal-omitted h3 {
+  margin: 0 0 5px;
+  color: var(--brass);
+  font: 500 12px var(--serif);
+  letter-spacing: 0.08em;
+}
+
+#stage-rehearsal-export-run {
+  margin-top: 12px;
+  border-color: var(--rust);
+}
+
+#stage-rehearsal-export-run:disabled {
+  opacity: 0.42;
+  cursor: default;
 }
 
 /* 一覧の行は 種類つき色見本・名前・舞台上/裏・錠・…・✕ の6列。

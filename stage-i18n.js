@@ -61,6 +61,7 @@
     "書き出す": "Export",
     "読み込む": "Import",
     "見本のショーを開く": "Open the sample show",
+    "Vision Pro稽古用JSON": "Vision Pro rehearsal JSON",
 
     /* ---- 劇場 ---- */
     "形式": "Form",
@@ -306,6 +307,26 @@
     "ファイルへ書き出す": "Export to file",
     "この端末に保存した前回のスケッチを開きました。": "Opened the sketch saved in this browser.",
     "舞台を空にする": "Clear the stage",
+    "書き出す前に、シーン・演者・時間・劇場形式を検査します。":
+      "Scenes, performers, durations and venue form are checked before export.",
+    "時間が未入力のシーンだけへ、共通の初期値を入れられます。":
+      "Apply common starting values only to scenes with missing durations.",
+    "留まる": "Hold",
+    "留まる（秒）": "Hold (seconds)",
+    "次へ移動": "Move to next",
+    "次へ移動（秒）": "Move to next (seconds)",
+    "秒": "sec",
+    "未入力のシーンへ適用": "Apply to scenes with missing times",
+    "音源": "Soundtrack",
+    "音なし": "No soundtrack",
+    "Vision Pro内蔵デモ音源を使う": "Use the built-in Vision Pro demo soundtrack",
+    "音源ファイルはJSONへ埋め込みません。この選択はショーの正本に保存します。":
+      "Audio files are not embedded in JSON. This choice is saved in the canonical show.",
+    "仮のプロセニアムとして確認する": "Preview as a temporary proscenium",
+    "変換されないもの": "Not converted",
+    "舞台セット、照明、姿勢、曲線動線、メモ、背景などは稽古用JSONへ変換しません。":
+      "Set pieces, lighting, poses, curved routes, notes and backdrops are not converted to rehearsal JSON.",
+    "稽古用JSONを書き出す": "Export rehearsal JSON",
     "これは構図・色・距離感を考えるための2D習作です。舞台機構、リギング、安全距離、施工寸法を決める図面ではありません。":
       "This is a 2D study for composition, colour and distance. It is not a drawing for stage machinery, rigging, safety distances or construction dimensions.",
   };
@@ -457,6 +478,16 @@
     [/^名前を入れてから残してください。$/, "Enter a name before saving."],
     [/^シーンがひとつしかありません。$/, "There is only one scene."],
     [/^書き出すシーンがありません。$/, "There are no scenes to export."],
+    [/^留まる時間と次へ移動の時間を0以上で入れてください。$/,
+      "Enter zero or greater for Hold and Move to next."],
+    [/^未入力のシーンへ共通の時間を入れました。$/,
+      "Applied the common durations to scenes with missing times."],
+    [/^稽古用JSONの変換器を読み込めませんでした。$/,
+      "The rehearsal JSON converter could not be loaded."],
+    [/^検査に通っていないため書き出せません。$/,
+      "The rehearsal JSON cannot be exported until the checks pass."],
+    [/^稽古用JSONを書き出しました。Vision Proで読み込む前に警告を確認してください。$/,
+      "Rehearsal JSON exported. Review the warnings before importing it on Vision Pro."],
     [/^消す背景の塗りはありません。$/, "There are no painted strokes to erase."],
     [/^真上から床へ落とす明かりに戻しました。$/, "Reset to a light falling straight down."],
     [/^背景の塗りは正面図で行います。正面を開いてください。$/, "Backdrop painting happens in the front view. Open the front view."],
