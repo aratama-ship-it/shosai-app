@@ -11,6 +11,17 @@ const route = z.object({
   bv: z.number().min(-0.2).max(1.2).optional().describe("曲線制御点の奥行"),
 }).optional();
 
+export const projectRehearsalSchema = z.object({
+  version: z.literal(1).optional(),
+  primaryMode: z.literal("ordered").optional(),
+  soundtrack: z.enum(["bundled-demo"]).nullable().optional(),
+}).optional();
+
+export const sceneRehearsalSchema = z.object({
+  holdDurationSeconds: z.number().min(0).max(86400).nullable().optional(),
+  transitionToNextSeconds: z.number().min(0).max(86400).nullable().optional(),
+}).optional();
+
 export const placementSchema = z.object({
   assetType: z.enum(["performer", "set"])
     .describe("演者はperformer、道具・装置・照明はset"),
@@ -45,6 +56,7 @@ export const sceneSchema = z.object({
   note: z.string().max(2000).optional()
     .describe("目的・障害・変化・観客へ見せる情報を簡潔に記録"),
   background: color,
+  rehearsal: sceneRehearsalSchema,
   placements: z.array(placementSchema).max(80).optional(),
 });
 
@@ -55,6 +67,7 @@ export const createProjectSchema = {
   branchReason: z.string().max(300).optional(),
   venue: z.enum(VENUES).optional(),
   venueSize: z.enum(VENUE_SIZES).optional(),
+  rehearsal: projectRehearsalSchema,
   sourcePrompt: z.string().max(4000).optional()
     .describe("元の依頼。未発表内容を外部へ送るかはAIクライアント側で判断する"),
   scenes: z.array(sceneSchema).max(60).optional(),
@@ -69,4 +82,3 @@ export const mutationBaseSchema = {
   expectedRevision: z.number().int().min(1)
     .describe("stage_sketch_read_projectで得た現在revision。古い値なら更新を拒否する"),
 };
-

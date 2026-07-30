@@ -77,6 +77,46 @@ function enumValue(value, values, label, fallback) {
   return selected;
 }
 
+function normalizeProjectRehearsal(raw) {
+  const rehearsal = raw && typeof raw === "object" ? raw : {};
+  return {
+    version: 1,
+    primaryMode: enumValue(
+      rehearsal.primaryMode,
+      ["ordered"],
+      "rehearsal.primaryMode",
+      "ordered",
+    ),
+    soundtrack: rehearsal.soundtrack === "bundled-demo" ? "bundled-demo" : null,
+  };
+}
+
+function normalizeSceneRehearsal(raw, label) {
+  const rehearsal = raw && typeof raw === "object" ? raw : {};
+  return {
+    holdDurationSeconds: rehearsal.holdDurationSeconds === undefined
+      || rehearsal.holdDurationSeconds === null
+      ? null
+      : numberValue(
+          rehearsal.holdDurationSeconds,
+          `${label}.rehearsal.holdDurationSeconds`,
+          0,
+          86400,
+          null,
+        ),
+    transitionToNextSeconds: rehearsal.transitionToNextSeconds === undefined
+      || rehearsal.transitionToNextSeconds === null
+      ? null
+      : numberValue(
+          rehearsal.transitionToNextSeconds,
+          `${label}.rehearsal.transitionToNextSeconds`,
+          0,
+          86400,
+          null,
+        ),
+  };
+}
+
 function uniqueNameId(list, prefix, name) {
   const existing = list.find((item) => item.name === name);
   return existing?.id || makeId(prefix);
@@ -207,9 +247,10 @@ export function normalizeSceneInput(project, raw, index = 0) {
   if (!raw || typeof raw !== "object") fail(`scenes[${index}]がオブジェクトではありません。`);
   const placements = Array.isArray(raw.placements) ? raw.placements : [];
   if (placements.length > 80) fail("一場面の配置は80個までです。");
+  const kind = raw.kind === "section" ? "section" : "scene";
   return {
     id: typeof raw.id === "string" ? assertId(raw.id, "scene.id") : makeId("scene"),
-    kind: raw.kind === "section" ? "section" : "scene",
+    kind,
     depth: numberValue(raw.depth, "depth", 0, 4, 0),
     title: stringValue(raw.title, `scenes[${index}].title`, 80, true),
     studyBeatId: raw.studyBeatId
@@ -223,6 +264,9 @@ export function normalizeSceneInput(project, raw, index = 0) {
       : placements.map((placement, placementIndex) =>
           normalizePlacement(project, placement, placementIndex)),
     strokes: [],
+    rehearsal: kind === "scene"
+      ? normalizeSceneRehearsal(raw.rehearsal, `scenes[${index}]`)
+      : null,
   };
 }
 
@@ -240,6 +284,7 @@ export function createProjectDocument(input) {
     venue: enumValue(input.venue, VENUES, "venue", "proscenium"),
     venueSize: enumValue(input.venueSize, VENUE_SIZES, "venueSize", "mid"),
     venueDims: null,
+    rehearsal: normalizeProjectRehearsal(input.rehearsal),
     cast: [],
     sets: [],
     rigs: [],
@@ -365,6 +410,10 @@ export function updateScene(document, input) {
     scene.studyBeatId = input.studyBeatId
       ? stringValue(input.studyBeatId, "studyBeatId", 64, true)
       : null;
+  }
+  if (input.rehearsal !== undefined) {
+    if (scene.kind === "section") fail("セクションには稽古時間を設定できません。");
+    scene.rehearsal = normalizeSceneRehearsal(input.rehearsal, "scene");
   }
   if (input.placements !== undefined) {
     if (scene.kind === "section") fail("セクションには配置を追加できません。");

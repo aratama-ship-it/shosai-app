@@ -1210,6 +1210,20 @@
   const validColor = (value, fallback) =>
     typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
   const finite = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
+  const rehearsalSeconds = (value) => {
+    if (value === undefined || value === null || value === "") return null;
+    const number = Number(value);
+    return Number.isFinite(number) && number >= 0 ? Math.min(number, 86400) : null;
+  };
+  const normalizeProjectRehearsal = (raw) => ({
+    version: 1,
+    primaryMode: raw && raw.primaryMode === "ordered" ? "ordered" : "ordered",
+    soundtrack: raw && raw.soundtrack === "bundled-demo" ? "bundled-demo" : null,
+  });
+  const normalizeSceneRehearsal = (raw) => ({
+    holdDurationSeconds: rehearsalSeconds(raw && raw.holdDurationSeconds),
+    transitionToNextSeconds: rehearsalSeconds(raw && raw.transitionToNextSeconds),
+  });
 
   let idCounter = 0;
   function nextId() {
@@ -1283,9 +1297,10 @@
   }
 
   function newScene(title, withExample, kind, depth) {
+    const sceneKind = kind === "section" ? "section" : "scene";
     return {
-      id: rid(kind === "section" ? "sect" : "scene"),
-      kind: kind === "section" ? "section" : "scene",
+      id: rid(sceneKind === "section" ? "sect" : "scene"),
+      kind: sceneKind,
       depth: clamp(finite(depth, 0), 0, MAX_DEPTH),
       title: title || sceneTitle(1),
       note: "",
@@ -1293,6 +1308,7 @@
       notes: [],
       pieces: withExample ? samplePieces() : [],
       strokes: [],
+      rehearsal: sceneKind === "scene" ? normalizeSceneRehearsal(null) : null,
     };
   }
 
@@ -1310,6 +1326,7 @@
         createdAt: nowIso(),
         venue: "proscenium",
         venueSize: "mid",
+        rehearsal: normalizeProjectRehearsal(null),
         // このショーに出る人。場面ごとの在／不在は pieces 側で決まる
         cast: withExample ? sampleCast() : [],
         // このショーで使う台や道具。寸法はここが正本で、置いた分はこれを参照する
@@ -1663,9 +1680,10 @@
 
   function normalizeScene(raw, index) {
     const fallbackBg = "#40362d";
+    const kind = raw.kind === "section" ? "section" : "scene";
     return {
       id: typeof raw.id === "string" ? raw.id : rid("scene"),
-      kind: raw.kind === "section" ? "section" : "scene",
+      kind,
       depth: clamp(finite(raw.depth, 0), 0, MAX_DEPTH),
       title: typeof raw.title === "string" && raw.title.trim() ? renameAuto(raw.title) : sceneTitle(index + 1),
       studyBeatId: typeof raw.studyBeatId === "string" ? raw.studyBeatId : null,
@@ -1677,6 +1695,7 @@
         ? raw.strokes.slice(-240).map(normalizeStroke).filter((stroke) => stroke.points.length)
         : [],
       photo: normalizePhoto(raw.photo),
+      rehearsal: kind === "scene" ? normalizeSceneRehearsal(raw.rehearsal) : null,
     };
   }
 
@@ -1762,6 +1781,7 @@
           ? rawProject.sceneStudySourceVersion : null,
         venue: venue.id,
         venueSize: size.id,
+        rehearsal: normalizeProjectRehearsal(rawProject.rehearsal),
         /* 規模の実寸。選んだ規模の値を土台に、ここで上書きした分だけ差し替える。
          * 実際の劇場は「中劇場」で括れない（間口12.4m・高さ7.2mのような値になる）。 */
         venueDims: normalizeVenueDims(rawProject.venueDims, size),

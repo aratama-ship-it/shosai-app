@@ -16,6 +16,10 @@ const initialScenes = [
   {
     title: "1-1 出会い",
     note: "二人が互いの存在に気づく。",
+    rehearsal: {
+      holdDurationSeconds: 2,
+      transitionToNextSeconds: 3.2,
+    },
     placements: [
       { assetType: "performer", assetName: "A", u: 0.25, v: 0.7, pose: "stand" },
       { assetType: "performer", assetName: "B", u: 0.75, v: 0.7, pose: "stand" },
@@ -30,6 +34,11 @@ test("creates an import-compatible version 3 draft", async () => {
     projectId: "test-show",
     title: "テストショー",
     sourcePrompt: "出会いを一場面にする",
+    rehearsal: {
+      version: 1,
+      primaryMode: "ordered",
+      soundtrack: "bundled-demo",
+    },
     scenes: initialScenes,
   });
 
@@ -37,6 +46,15 @@ test("creates an import-compatible version 3 draft", async () => {
   assert.equal(document.version, 3);
   assert.equal(document.mcpMeta.revision, 1);
   assert.equal(document.project.scenes.length, 1);
+  assert.deepEqual(document.project.rehearsal, {
+    version: 1,
+    primaryMode: "ordered",
+    soundtrack: "bundled-demo",
+  });
+  assert.deepEqual(document.project.scenes[0].rehearsal, {
+    holdDurationSeconds: 2,
+    transitionToNextSeconds: 3.2,
+  });
   assert.equal(document.project.cast.length, 2);
   assert.equal(document.project.sets.length, 1);
   assert.equal(document.project.scenes[0].pieces[0].castId, document.project.cast[0].id);
@@ -58,6 +76,10 @@ test("inserts intermediate scenes and rejects stale revisions", async () => {
     scenes: [{
       title: "1-1.5 ためらい",
       note: "接近する前に一度止まる。",
+      rehearsal: {
+        holdDurationSeconds: 1.5,
+        transitionToNextSeconds: 2.4,
+      },
       placements: [
         { assetType: "performer", assetName: "A", u: 0.4, v: 0.65, pose: "walk" },
       ],
@@ -70,6 +92,10 @@ test("inserts intermediate scenes and rejects stale revisions", async () => {
     reread.project.scenes.map((scene) => scene.title),
     ["1-1 出会い", "1-1.5 ためらい"],
   );
+  assert.deepEqual(reread.project.scenes[1].rehearsal, {
+    holdDurationSeconds: 1.5,
+    transitionToNextSeconds: 2.4,
+  });
 
   await assert.rejects(
     store.addScenes({
@@ -126,6 +152,10 @@ test("prepares a clean file for the browser and keeps MCP metadata private", asy
   assert.equal(output.version, 3);
   assert.equal("mcpMeta" in output, false);
   assert.equal(output.project.title, "書き出しテスト");
+  assert.deepEqual(output.project.scenes[0].rehearsal, {
+    holdDurationSeconds: 2,
+    transitionToNextSeconds: 3.2,
+  });
 });
 
 test("emits a human safety warning for circus and flown apparatus", async () => {
