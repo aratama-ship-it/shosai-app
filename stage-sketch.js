@@ -257,6 +257,36 @@
     { id, label, joints: Object.assign({}, BASE_JOINTS, over), wide: [1, 0, 0], face: [0, 0, 1] },
     extra || {});
 
+  /* ポールに付く姿勢（人間旗）。一覧には出さず、チャイニーズポールへ
+   * 乗せたときに自動で使う。原点(y=0)は「握りの真ん中」。手はx=0（ポールの線上）、
+   * 体は横一直線に浮き、脚は上下へ割る（写真の実技の形）。
+   * ★胴が水平なので wide は左右[1,0,0]ではなく前後[0,0,1]にする。
+   *   左右のままだと胴の軸と平行になり、断面が立たない。 */
+  const POLE_FLAG_R = {
+    id: "poleflag_r", label: "ポールに付く",
+    wide: [0, 0, 1], face: [0, 0.25, 0.97],
+    joints: {
+      head: [0.03, 0.10, 0], neck: [0.065, 0.05, 0],
+      shL: [0.10, 0.055, -0.05], shR: [0.10, 0.005, 0.05],
+      elL: [0.05, 0.22, 0], wrL: [0.0, 0.38, 0],
+      elR: [0.06, -0.15, 0], wrR: [0.0, -0.28, 0],
+      hipL: [0.40, -0.02, -0.045], hipR: [0.40, -0.06, 0.045],
+      knL: [0.60, 0.12, 0.01], anL: [0.76, 0.26, 0], toL: [0.80, 0.30, 0.02],
+      knR: [0.58, -0.22, 0.01], anR: [0.70, -0.38, 0], toR: [0.72, -0.44, 0.02],
+    },
+  };
+  const mirrorJoints = (joints) => {
+    const out = {};
+    Object.keys(joints).forEach((k) => { const j = joints[k]; out[k] = [-j[0], j[1], j[2]]; });
+    return out;
+  };
+  const POLE_FLAG_L = {
+    id: "poleflag_l", label: "ポールに付く",
+    wide: [0, 0, 1], face: [0, 0.25, 0.97],
+    joints: mirrorJoints(POLE_FLAG_R.joints),
+  };
+  const HIDDEN_POSES = [POLE_FLAG_R, POLE_FLAG_L];
+
   const POSES = [
     makePose("stand", "立つ", {}),
     makePose("walk", "歩く", {
@@ -681,7 +711,8 @@
       toL: [0.022, 0.05, -0.48], toR: [-0.004, 0.04, -0.47],
     }, { wide: [0, 1, 0], face: [0, 0.25, 1] }),
   ];
-  const poseById = (id) => POSES.find((p) => p.id === id) || POSES[0];
+  const poseById = (id) => POSES.find((p) => p.id === id)
+    || HIDDEN_POSES.find((p) => p.id === id) || POSES[0];
 
   /* その姿勢が身長Hに対して占める範囲。手足の太さぶんも見込む。
    * 平面図の footprint と、選んだときの枠の大きさに使う。
@@ -1029,6 +1060,11 @@
     castList: document.getElementById("stage-cast-list"),
     pieceFacing: document.getElementById("stage-piece-facing"),
     piecePose: document.getElementById("stage-piece-pose"),
+    poleControls: document.getElementById("stage-pole-controls"),
+    poleLeft: document.getElementById("stage-pole-left"),
+    poleRight: document.getElementById("stage-pole-right"),
+    poleH: document.getElementById("stage-pole-h"),
+    poleHValue: document.getElementById("stage-pole-h-value"),
     poseLabel: document.getElementById("stage-pose-label"),
     poseModal: document.getElementById("stage-pose"),
     poseBackdrop: document.getElementById("stage-pose-backdrop"),
@@ -1469,6 +1505,9 @@
       // 体の向き（度）。0=客席を向く、90=上手を向く、180=背中
       facing: clamp(finite(piece.facing, 0), 0, 359),
       dims: normalizeDims(type, piece),
+      // ポールに付いたときの持ち場（左右と握りの高さ）。付いていない間も持ち歩く
+      poleSide: piece.poleSide === "L" ? "L" : "R",
+      poleH: clamp(finite(piece.poleH, 2.5), 0.8, 9),
       // 姿勢。用意したものの中から選ぶ（形そのものは編集させない）
       pose: POSES.some((p) => p.id === piece.pose) ? piece.pose : "stand",
       /* 動線。この場面のあいだに、その駒がどこへ動くか。
@@ -2770,6 +2809,8 @@
     let holder = null;
     candidates.forEach((other) => {
       if (other === piece) return;
+      // ポールの上には立てない（付き方が特別なので refreshBases で別に扱う）
+      if (other.type === "pole") return;
       const foot = supportFootprint(other);
       if (!foot) return;
       const rad = ((other.facing || 0) * Math.PI) / 180;
@@ -2802,12 +2843,39 @@
     const pieces = sc().pieces;
     pieces.forEach((piece, i) => {
       if (piece.type === "light") { piece.base = 0; piece.supportId = null; return; }
+      /* ポールは常に床から立てる。人の近くへ置くと、人の描画範囲（旗の姿勢は
+         横に1m以上広がる）に「乗って」宙に浮いてしまうため、積み重ねの対象にしない。 */
+      if (piece.type === "pole") { piece.base = 0; piece.supportId = null; return; }
       if (isFlown(piece)) { piece.base = flownLift(piece); piece.supportId = null; return; }
       // 吊っているものの上には乗れない（宙に浮いた板の上に立たせない）
       const candidates = pieces.slice(0, i).filter((p) => !isFlown(p));
       const found = supportUnder(piece, size, candidates);
       piece.base = found.top;
       piece.supportId = found.holder;
+      if (piece.type !== "performer") return;
+
+      /* ポール。上に立つのではなく、手で付いて浮く（人間旗）。
+         近く（0.55m以内）へ置いた演者は、握りの高さ poleH でポールへ付く。 */
+      const pole = pieces.find((other) => other !== piece && other.type === "pole"
+        && !isFlown(other)
+        && Math.hypot((piece.u - other.u) * size.width, (piece.v - other.v) * size.depth) < 0.55);
+      if (pole) {
+        const top = (pieceDims(pole) || {}).h || 6;
+        piece.supportId = pole.id;
+        piece.base = clamp(finite(piece.poleH, 2.5), 0.8, Math.max(1, top - 0.4));
+        return;
+      }
+
+      /* 椅子。座面の上に「立つ」と背もたれへ足が乗った絵になるので、
+         腰が座面へ来る高さまで下げる（座る姿勢は refreshBases では変えず、
+         描くときに performerRig が差し替える）。 */
+      if (found.holder) {
+        const holder = pieces.find((other) => other.id === found.holder);
+        if (holder && holder.type === "chair") {
+          const sitHip = 0.285 * pieceHeightM(piece) * (piece.size / 100);
+          piece.base = Math.max(0, found.top - sitHip);
+        }
+      }
     });
   }
 
@@ -2964,11 +3032,27 @@
     return { P, rings, ux, uy, faceAt, eyes, facing: f, wheel, props };
   }
 
+  /* 何に乗っているか。"pole"＝ポールに付く／"chair"＝椅子に座る／null＝普通 */
+  function mountKindOf(piece) {
+    if (!piece || piece.type !== "performer" || !piece.supportId) return null;
+    const holder = sc().pieces.find((other) => other.id === piece.supportId);
+    if (!holder) return null;
+    if (holder.type === "pole") return "pole";
+    if (holder.type === "chair") return "chair";
+    return null;
+  }
+
   function performerRig(piece, pos, L) {
     const H = pieceHeightM(piece) * (piece.size / 100);
     const per = perMetre(pos, L);
     const zDrop = L.plan ? 0 : ((L.bottomY - L.floorY) / (L.size.depth || 9)) * H;
-    const rig = buildRig(piece.pose, pos.x, pos.rawY === undefined ? pos.y : pos.rawY,
+    /* ポールに付いている・椅子に座っているあいだは、姿勢は選べない。
+       体の使い方が乗り物側で決まっているため（写真の実技と同じ形にする）。 */
+    const mount = mountKindOf(piece);
+    const poseId = mount === "pole"
+      ? (piece.poleSide === "L" ? "poleflag_l" : "poleflag_r")
+      : (mount === "chair" ? "sit" : piece.pose);
+    const rig = buildRig(poseId, pos.x, pos.rawY === undefined ? pos.y : pos.rawY,
       H * per.x, H * per.y, ((piece.facing || 0) * Math.PI) / 180, zDrop, L.plan ? null : L.tilt);
     rig.per = per;
     rig.H = H;
@@ -7389,13 +7473,33 @@
     const sameType = sc().pieces.filter((candidate) => candidate.type === piece.type);
     els.selectedName.textContent = `${pieceTypeName(piece.type)} ${sameType.indexOf(piece) + 1}`;
     syncDimControls(piece);
+    const mount = mountKindOf(piece);
     if (els.piecePose) {
       const isPerformer = piece.type === "performer";
-      if (els.poseLabel) els.poseLabel.textContent = poseName(poseById(piece.pose));
-      els.piecePose.disabled = !isPerformer;
+      /* 乗り物の上では姿勢を選べない。何で決まっているかが読めるよう、
+         札には乗り方をそのまま出す。 */
+      if (els.poseLabel) {
+        els.poseLabel.textContent = mount === "pole" ? tx("ポールに付く")
+          : mount === "chair" ? tx("椅子に座る")
+          : poseName(poseById(piece.pose));
+      }
+      els.piecePose.disabled = !isPerformer || Boolean(mount);
       els.piecePose.hidden = !isPerformer;
       const row = els.piecePose.previousElementSibling;
       if (row) row.hidden = !isPerformer;
+    }
+    if (els.poleControls) {
+      const onPole = mount === "pole";
+      els.poleControls.hidden = !onPole;
+      if (onPole) {
+        const holder = sc().pieces.find((other) => other.id === piece.supportId);
+        const top = (holder && (pieceDims(holder) || {}).h) || 6;
+        els.poleH.max = String(Math.max(1, top - 0.4));
+        els.poleH.value = String(clamp(finite(piece.poleH, 2.5), 0.8, Math.max(1, top - 0.4)));
+        els.poleHValue.textContent = `${Number(els.poleH.value).toFixed(1)}m`;
+        els.poleLeft.setAttribute("aria-pressed", String(piece.poleSide === "L"));
+        els.poleRight.setAttribute("aria-pressed", String(piece.poleSide !== "L"));
+      }
     }
     if (els.pieceFacing) {
       // 向きは演者と台に効く。球は回しても見た目が変わらない
@@ -9390,6 +9494,29 @@
    * 一度でも見た（または閉じた）ら、次からは上の「使い方」からだけ。 */
   let seenTour = true;
   try { seenTour = localStorage.getItem(TOUR_KEY) === "done"; } catch (_) { seenTour = true; }
+  if (els.poleLeft) {
+    const setSide = (side) => {
+      const piece = selectedPiece();
+      if (!piece || mountKindOf(piece) !== "pole") return;
+      checkpoint();
+      piece.poleSide = side;
+      updateInspector();
+      render();
+      persistSoon();
+    };
+    els.poleLeft.addEventListener("click", () => setSide("L"));
+    els.poleRight.addEventListener("click", () => setSide("R"));
+  }
+  if (els.poleH) {
+    els.poleH.addEventListener("input", (event) => {
+      const piece = selectedPiece();
+      if (!piece || mountKindOf(piece) !== "pole") return;
+      piece.poleH = clamp(finite(event.target.value, 2.5), 0.8, 9);
+      if (els.poleHValue) els.poleHValue.textContent = `${piece.poleH.toFixed(1)}m`;
+      render();
+      persistSoon();
+    });
+  }
   if (els.planZoomIn) els.planZoomIn.addEventListener("click", () => zoomBy("plan", 1.35));
   if (els.planZoomOut) els.planZoomOut.addEventListener("click", () => zoomBy("plan", 1 / 1.35));
   if (els.sampleOpen) els.sampleOpen.addEventListener("click", openSampleShow);

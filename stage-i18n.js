@@ -210,6 +210,12 @@
 
     /* ---- 選んだもの ---- */
     "姿勢": "Pose",
+    "ポールに付く": "On the pole",
+    "椅子に座る": "Seated",
+    "ポールの持ち場": "Grip on the pole",
+    "左に付く": "Hang left",
+    "右に付く": "Hang right",
+    "握りの高さ": "Grip height",
     "向き": "Facing",
     "客席": "House",
     "背中": "Back",
