@@ -4624,14 +4624,15 @@
     {
       const b = planBounds();
       const wingRects = [];
+      const wingWord = backstageGhosts().length ? "舞台裏" : "袖";
       if (b.uMin < 0) {
         const w = -b.uMin * s.w;
-        wingRects.push({ x: s.x - w, y: s.y, w, h: s.h, label: "袖" });
-        wingRects.push({ x: s.x + s.w, y: s.y, w, h: s.h, label: "袖" });
+        wingRects.push({ x: s.x - w, y: s.y, w, h: s.h, label: wingWord });
+        wingRects.push({ x: s.x + s.w, y: s.y, w, h: s.h, label: wingWord });
       }
       if (b.vMin < 0) {
         const d = -b.vMin * s.h;
-        wingRects.push({ x: s.x, y: s.y - d, w: s.w, h: d, label: "袖" });
+        wingRects.push({ x: s.x, y: s.y - d, w: s.w, h: d, label: wingWord });
       }
       target.save();
       wingRects.forEach((r) => {
@@ -4853,6 +4854,36 @@
       target.fillRect(0, 0, W, H);
       // 見る位置の小図。客席が正面だけの劇場でしか意味を持たない
       if (state.showSeatMap && L.venue.audience === "front") drawSeatMap(target, L);
+    }
+
+    /* 舞台裏の演者。袖に立たせ、薄く描いて「まだ出ていない」ことを示す。
+       掴んで舞台へ引き入れると、その場でこのシーンに出る。 */
+    if (L.plan) {
+      backstageGhosts().forEach((g) => {
+        const pos = place(g.u, g.v, L);
+        target.save();
+        target.globalAlpha = 0.55;
+        const ghost = normalizePiece({
+          id: `ghost-${g.member.id}`, type: "performer", castId: g.member.id,
+          u: g.u, v: g.v, size: 100, color: g.member.color, name: "",
+        }, 0);
+        drawPlanPiece(target, ghost, pos, 1, L);
+        target.restore();
+        if (state.showNames) {
+          target.save();
+          target.globalAlpha = 0.7;
+          target.fillStyle = "rgba(13,12,11,0.85)";
+          const nm = g.member.name;
+          target.font = "12px 'Hiragino Kaku Gothic ProN', sans-serif";
+          const w = target.measureText(nm).width + 10;
+          target.fillRect(pos.x - w / 2, pos.y - 30, w, 17);
+          target.fillStyle = "rgba(240,231,214,0.8)";
+          target.textAlign = "center";
+          target.textBaseline = "middle";
+          target.fillText(nm, pos.x, pos.y - 21);
+          target.restore();
+        }
+      });
     }
     target.restore();
   }
@@ -5198,6 +5229,46 @@
 
   function castOnStage(castId) {
     return sc().pieces.some((piece) => piece.castId === castId);
+  }
+
+  /* 舞台裏の演者。平面図では袖に立たせて、全員が図の中に居るようにする。
+     プロセニアム等は上手袖の奥から順に並べ、あふれたら下手袖へ。
+     スラストは奥の袖に左から並べる。描く側と掴む側で同じ計算を使う。 */
+  function backstageGhosts() {
+    const off = state.project.cast.filter((member) => !castOnStage(member.id));
+    if (!off.length) return [];
+    const b = planBounds();
+    const out = [];
+    off.forEach((member, i) => {
+      if (b.vMin < 0) {
+        // 奥の袖: 左から等間隔
+        const u = 0.08 + (i % 10) * 0.095;
+        out.push({ member, u: Math.min(u, 0.94), v: b.vMin * 0.55 });
+        return;
+      }
+      // 左右の袖: 上手の奥から。7人を超えたら下手側へ
+      const side = i < 7 ? -1 : 1;
+      const at = i < 7 ? i : i - 7;
+      out.push({
+        member,
+        u: side < 0 ? b.uMin * 0.55 : 1 + (b.uMax - 1) * 0.55,
+        v: 0.10 + at * 0.115,
+      });
+    });
+    return out;
+  }
+
+  // 舞台裏の演者の当たり判定（平面図のみ）。掴んだら舞台へ出す
+  function ghostAt(point, L) {
+    if (!L.plan) return null;
+    const hitR = 16;
+    const list = backstageGhosts();
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+      const g = list[i];
+      const pos = place(g.u, g.v, L);
+      if (Math.hypot(point.x - pos.x, point.y - pos.y) <= hitR + 6) return g;
+    }
+    return null;
   }
 
   function renderCast() {
@@ -7907,7 +7978,25 @@
         pointerAction = { kind: "route", pointerId: event.pointerId, id: current.id, el, view, moved: true, handle };
         return;
       }
-      const hit = hitTest(point, L);
+      let hit = hitTest(point, L);
+      /* 舞台裏の演者を掴んだら、その場でこのシーンへ出して、そのまま掴んで動かす。
+         袖から舞台へ引き入れる手つきが、そのまま「出す」操作になる。 */
+      if (!hit && view === "plan") {
+        const ghost = ghostAt(point, L);
+        if (ghost) {
+          checkpoint();
+          const piece = normalizePiece({
+            id: nextId(), type: "performer", castId: ghost.member.id,
+            u: ghost.u, v: ghost.v, size: 100,
+            color: ghost.member.color || state.pieceColor, name: "",
+          }, 0);
+          sc().pieces.push(piece);
+          renderCast();
+          renderScenes();
+          announce(`${ghost.member.name}を舞台へ出しました。`);
+          hit = piece;
+        }
+      }
       selectedId = hit ? hit.id : null;
       updateInspector();
       render();
@@ -8001,6 +8090,7 @@
     if (view === "plan" && routeHandleAt(point, current, L)) return "grab";
     const hit = hitTest(point, L);
     if (hit) return isLocked(hit) ? "not-allowed" : "grab";
+    if (view === "plan" && ghostAt(point, L)) return "grab";
     if (view === "front" && (L.panRange > 0 || L.panRangeY > 0)) return "grab";
     if (view === "plan" && zoomOf("plan").z > 1.001) return "grab";
     return "default";

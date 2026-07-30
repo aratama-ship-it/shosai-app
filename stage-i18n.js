@@ -204,6 +204,7 @@
       "Beyond here: barrier and standing area (no fixed house)",
     "柵": "Barrier",
     "袖": "Wing",
+    "舞台裏": "Backstage",
     "音響卓": "FOH desk",
     "表情が見える限界": "the limit for reading a face",
     "身体の動きが読める限界": "the limit for reading body movement",
