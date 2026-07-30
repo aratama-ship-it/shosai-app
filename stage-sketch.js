@@ -1140,6 +1140,8 @@
     lightName: document.getElementById("stage-light-name"),
     lightAdd: document.getElementById("stage-light-add"),
     lightKind: document.getElementById("stage-light-kind"),
+    lightPreset: document.getElementById("stage-light-preset"),
+    lightPresetAdd: document.getElementById("stage-light-preset-add"),
     beamControls: document.getElementById("stage-beam-controls"),
     beamDia: document.getElementById("stage-beam-dia"),
     beamDiaValue: document.getElementById("stage-beam-dia-value"),
@@ -5905,6 +5907,105 @@
     return piece;
   }
 
+  /* ---------- 照明プリセット ----------
+     蔵書『ステージ・舞台照明入門』実践編PART3「照明プラン実例集」を下敷きにした
+     定番の組み方。1回押すと、その組の明かりを登録して現在のシーンへ点ける。
+       ・基本の3照明（本p199）: 地明かり＝真上からダークブルー（影を作るベース）、
+         バック＝奥から濃い色で輪郭と距離感、ブッチ＝袖から斜め交差の薄ピンクで幅を出す
+       ・バック8台＋AC（本p201 図②）: 奥バトンのストレート＋前寄りのACで立体感
+       ・トップサス（本p200）: 立ち位置の真上に1人分だけ。むやみに大きくしない
+       ・ライトカーテン（本p217）: 奥に並んだ真下向きの列が光の幕になる
+     色も本の記述に合わせた（地明かり＝ダークブルー、バック＝濃色、ブッチ＝薄ピンク、生）。
+     灯体の高さは会場の高さ＝バトンとして組む（宙に浮いた灯体を作らない）。 */
+  const LIGHT_PRESETS = {
+    basic3: {
+      label: "基本の3照明",
+      build: (size) => {
+        const H = size.height || 8;
+        const out = [];
+        [0.15, 0.38, 0.62, 0.85].forEach((u, i) => out.push({
+          name: `地明かり${i + 1}`, color: "#31518f", dia: 4, kind: "hang",
+          u, v: 0.5, beam: { u, v: 0.5, h: H, toH: 0 },
+        }));
+        [0.38, 0.62].forEach((u, i) => out.push({
+          name: `バック${i + 1}`, color: "#a03428", dia: 3, kind: "hang",
+          u, v: 0.5, beam: { u, v: 0.06, h: H, toH: 1.0 },
+        }));
+        out.push({ name: "ブッチ上手", color: "#d98ca0", dia: 2.6, kind: "ss",
+          u: 0.62, v: 0.55, beam: { u: -0.06, v: 0.78, h: 1.7, toH: 1.2 } });
+        out.push({ name: "ブッチ下手", color: "#d98ca0", dia: 2.6, kind: "ss",
+          u: 0.38, v: 0.55, beam: { u: 1.06, v: 0.78, h: 1.7, toH: 1.2 } });
+        return out;
+      },
+    },
+    backac: {
+      label: "バック8台＋AC",
+      build: (size) => {
+        const H = size.height || 8;
+        const out = [];
+        for (let i = 0; i < 8; i += 1) {
+          const u = 0.11 + i * (0.78 / 7);
+          out.push({ name: `バック${i + 1}`, color: "#e8e0cc", dia: 2.2, kind: "hang",
+            u, v: 0.55, beam: { u, v: 0.05, h: H, toH: 1.0 } });
+        }
+        out.push({ name: "AC センター", color: "#f0dfb6", dia: 3.4, kind: "hang",
+          u: 0.5, v: 0.62, beam: { u: 0.5, v: 0.33, h: H, toH: 1.4 } });
+        out.push({ name: "AC 上手", color: "#f0dfb6", dia: 3.4, kind: "hang",
+          u: 0.65, v: 0.6, beam: { u: 0.8, v: 0.78, h: H, toH: 1.4 } });
+        out.push({ name: "AC 下手", color: "#f0dfb6", dia: 3.4, kind: "hang",
+          u: 0.35, v: 0.6, beam: { u: 0.2, v: 0.78, h: H, toH: 1.4 } });
+        return out;
+      },
+    },
+    topsus: {
+      label: "トップサス（1人分）",
+      build: (size) => [{
+        name: "トップサス", color: "#f2ead6", dia: 1.6, kind: "hang",
+        u: 0.5, v: 0.6, beam: { u: 0.5, v: 0.6, h: size.height || 8, toH: 0 },
+      }],
+    },
+    curtain: {
+      label: "ライトカーテン",
+      build: (size) => {
+        const H = size.height || 8;
+        return [0, 1, 2, 3, 4, 5].map((i) => {
+          const u = 0.13 + i * (0.74 / 5);
+          return { name: `カーテン${i + 1}`, color: "#4a6ab8", dia: 1.2, kind: "hang",
+            u, v: 0.1, beam: { u, v: 0.1, h: H, toH: 0 } };
+        });
+      },
+    },
+  };
+
+  function buildLightPreset(key) {
+    const preset = LIGHT_PRESETS[key];
+    if (!preset) return;
+    checkpoint();
+    const scene = sc();
+    const specs = preset.build(venueSize());
+    specs.forEach((spec) => {
+      const item = {
+        id: rid("set"), kind: "light", name: spec.name.slice(0, 24), color: spec.color,
+        dims: normalizeDims("light", { dims: { dia: spec.dia } }), note: "",
+        locked: false, flown: false, wires: 2, framed: false, lightKind: spec.kind,
+      };
+      state.project.sets.push(item);
+      scene.pieces.push(normalizePiece({
+        id: nextId(), type: "light", setId: item.id,
+        u: spec.u, v: spec.v, size: 100, color: spec.color, name: "", facing: 0,
+        beam: spec.beam,
+      }, 0));
+    });
+    renderSets();
+    renderLights();
+    renderScenes();
+    updateInspector();
+    render();
+    persistSoon();
+    // 文はそのまま日本語で言う。英語は say の対訳表が文ごと差し替える
+    announce(`${preset.label}を組みました（明かり${specs.length}個）。個々の明かりはあとから自由に動かせます。`);
+  }
+
   // 明かりは「舞台の上か裏か」ではなく、点いているか消えているかで言う
   const onStageWord = (item, on) => (item && item.kind === "light"
     ? (on ? "ON" : "OFF")
@@ -8893,6 +8994,11 @@
   if (els.rosterAdd) els.rosterAdd.addEventListener("click", addFromRoster);
   const addLight = () => addSetItem("light", els.lightName, els.lightKind && els.lightKind.value);
   if (els.lightAdd) els.lightAdd.addEventListener("click", addLight);
+  if (els.lightPresetAdd) {
+    els.lightPresetAdd.addEventListener("click", () => {
+      buildLightPreset(els.lightPreset ? els.lightPreset.value : "basic3");
+    });
+  }
   if (els.lightName) {
     els.lightName.addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); addLight(); }
