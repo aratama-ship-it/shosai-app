@@ -598,6 +598,8 @@
       "Not enough performers to arrange (two or more on stage)."],
     [/^暗転で始まるシーンにしました。$/, "This scene now opens from blackout."],
     [/^暗転をやめました。$/, "Blackout removed."],
+    [/^名簿から(\d+)人をキャストへ加えました（(.+)）。舞台へ出すには一覧の「舞台裏」を押してください。$/,
+      "Added $1 people from the roster to the cast ($2). Press Backstage in the list to bring them on."],
     [/^背景の塗りは正面図で行います。正面を開いてください。$/, "Backdrop painting happens in the front view. Open the front view."],
     [/^背景の塗りは正面図で行います。$/, "Backdrop painting happens in the front view."],
     [/^背景の塗りを消しました。$/, "Painted strokes erased."],

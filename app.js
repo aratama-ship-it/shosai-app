@@ -804,6 +804,45 @@
     renderSeeds();
   }
 
+  /* 紙面をJSONへ書き出す。localStorageの中はAIから読めないので、
+     ファイルにして渡す（2026-07-30 種火→演目構成 設計メモの段階0）。
+     変換の決めごとは設計メモが正本。ここは事実（貼った・組んだ・書いた）だけを出す。 */
+  function exportScrapbookPage() {
+    const items = seedState.kept.slice(0, SCRAPBOOK_MAX_CARDS);
+    const status = $("#scrapbook-save-status");
+    if (!items.length) {
+      if (status) status.textContent = "書き出す付箋がありません。まず紙面に貼ってください。";
+      return;
+    }
+    const title = seedState.pageTitle.trim() || "無題の紙面";
+    const payload = {
+      format: "shosai-scrapbook-page",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      title,
+      pageNote: seedState.pageNote || "",
+      // 変換規則の正本。AIはこの設計メモの決めごとに従ってビート表へ変換する
+      conversionGuide: "show-creative-ideas/2026-07-30_種火から演目構成_設計メモ.md",
+      items: items.map((item) => ({
+        id: item.id,
+        kind: item.kind === "build" ? "combined" : "seed",   // combined=組んだアイデア（転の候補）
+        recipe: item.recipe || "",
+        title: item.title || "",
+        text: item.text || "",
+        note: item.note || "",
+        sources: Array.isArray(item.sources) ? item.sources : [],
+        bookSources: Array.isArray(item.bookSources) ? item.bookSources : [],
+      })),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `紙面-${title}.json`.replace(/[\\/:*?"<>|]/g, "_");
+    a.click();
+    URL.revokeObjectURL(a.href);
+    if (status) status.textContent = `「${title}」をJSONで書き出しました。AIに渡すと演目構成の下書きに変換できます。`;
+  }
+
   function openScrapbookPage(id) {
     const page = seedState.pages.find((item) => item.id === id);
     if (!page) return;
@@ -1189,6 +1228,7 @@
       persistScrapbook();
     });
     $("#btn-scrapbook-save").addEventListener("click", saveScrapbookPage);
+    $("#btn-scrapbook-export").addEventListener("click", exportScrapbookPage);
     $("#btn-scrapbook-new").addEventListener("click", startNewScrapbookPage);
     $("#btn-scrapbook-pages").addEventListener("click", () => {
       const picker = $("#scrapbook-page-picker");
@@ -1210,6 +1250,20 @@
     answers: {},   // fieldKey -> text（現在の問のみ・保存されない）
   };
 
+  /* ---------- 問答帳（Phase 1） ----------
+     自分の答えを日付つきで残す。採点はしない。「あのとき何を優先したか」を
+     あとから読み返すための記録で、この端末のブラウザにだけ保存する。 */
+  const MONDO_LOG_KEY = "shosai-mondo-log-v1";
+  function readMondoLog() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(MONDO_LOG_KEY) || "[]");
+      return Array.isArray(raw) ? raw : [];
+    } catch (_) { return []; }
+  }
+  function writeMondoLog(log) {
+    try { localStorage.setItem(MONDO_LOG_KEY, JSON.stringify(log)); } catch (_) { /* 保存不可でも動く */ }
+  }
+
   const MONDO_FIELDS = [
     ["first", "最初に何をするか"],
     ["feel", "観客に何を感じさせたいか"],
@@ -1222,6 +1276,33 @@
       .map(([k]) => (mondoState.answers[k] || "").trim())
       .filter(Boolean)
       .join("。");
+  }
+
+  function bindMondoLogDeletes(wrap) {
+    $$("[data-del-log]", wrap).forEach((b) =>
+      b.addEventListener("click", () => {
+        writeMondoLog(readMondoLog().filter((entry) => entry.id !== b.dataset.delLog));
+        const list = $("#mondo-log-list");
+        if (list) list.innerHTML = renderMondoLogList();
+        bindMondoLogDeletes(wrap);
+      }));
+  }
+
+  function renderMondoLogList() {
+    const log = readMondoLog();
+    if (!log.length) {
+      return `<p class="scrapbook-sessions-empty">まだ何も残していません。答えて照らしたら「問答帳に残す」で記録できます。</p>`;
+    }
+    return log.map((entry) => `
+      <article class="mondo-log-entry">
+        <header>
+          <strong>${esc(entry.qTitle)}</strong>
+          <span>${esc(new Date(entry.at).toLocaleDateString("ja-JP"))}</span>
+          <button type="button" class="link-btn" data-del-log="${esc(entry.id)}">消す</button>
+        </header>
+        <p>${esc(entry.text)}</p>
+        ${entry.axis ? `<p class="mondo-log-axis">照合: ${esc(entry.axis)}</p>` : ""}
+      </article>`).join("");
   }
 
   function renderMondo() {
@@ -1303,10 +1384,16 @@
           <label class="mondo-field"><span>実例にない、自分の案の部分</span><textarea rows="1" data-mf="mine"></textarea></label>
           <div class="seed-actions">
             <button type="button" class="seed-keep" id="mondo-to-seed">この答えをスクラップブックに貼る</button>
+            <button type="button" class="seed-keep" id="mondo-save-log">問答帳に残す</button>
           </div>
-          <p class="save-note-dark">Phase 0: 問答はこの画面の間だけ保持され、保存されません。</p>
+          <p class="save-note-dark">問答帳に残した答えは、この端末のブラウザに日付つきで保存されます。</p>
         </div>
-      </div>`;
+      </div>
+
+      <section class="mondo-log" aria-label="問答帳">
+        <p class="mondo-answer-label">問答帳 — これまでの自分の答え</p>
+        <div id="mondo-log-list">${renderMondoLogList()}</div>
+      </section>`;
 
     $$("[data-mf]", wrap).forEach((t) =>
       t.addEventListener("input", (e) => {
@@ -1353,6 +1440,30 @@
         card.querySelector('[data-stage="src"]').hidden = false;
         b.hidden = true;
       }));
+
+    const saveLog = $("#mondo-save-log");
+    if (saveLog)
+      saveLog.addEventListener("click", () => {
+        const text = mondoAnswerText();
+        if (!text) return;
+        const log = readMondoLog();
+        log.unshift({
+          id: `mlog-${Date.now().toString(36)}`,
+          qIndex: mondoState.index,
+          qTitle: q.title,
+          text,
+          axis: (mondoState.answers.axis || "").trim(),
+          mine: (mondoState.answers.mine || "").trim(),
+          at: new Date().toISOString(),
+        });
+        writeMondoLog(log.slice(0, 200));
+        const list = $("#mondo-log-list");
+        if (list) list.innerHTML = renderMondoLogList();
+        bindMondoLogDeletes(wrap);
+        saveLog.textContent = "残しました（問答帳へ）";
+        saveLog.disabled = true;
+      });
+    bindMondoLogDeletes(wrap);
 
     const toSeed = $("#mondo-to-seed");
     if (toSeed)

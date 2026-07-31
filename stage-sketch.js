@@ -5985,6 +5985,36 @@
     return join(n);
   }
 
+  /* 名簿タブから送られたキャスト候補を受け取る。
+     名簿は別モジュール（roster.js）なので、橋は localStorage の受け渡し札。
+     舞台スケッチを開いた時と、タブが#stageへ切り替わった時に読む。 */
+  const CAST_HANDOFF_KEY = "shosai-cast-handoff-v1";
+  function consumeCastHandoff() {
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem(CAST_HANDOFF_KEY) || "[]"); } catch (_) { return; }
+    if (!Array.isArray(list) || !list.length) return;
+    try { localStorage.removeItem(CAST_HANDOFF_KEY); } catch (_) { /* 消せなくても続行 */ }
+    const added = [];
+    list.forEach((entry) => {
+      const name = entry && typeof entry.name === "string" ? entry.name.trim().slice(0, 24) : "";
+      if (!name) return;
+      if ((state.project.cast || []).some((c) => c.name === name)) return;   // 同名は二重登録しない
+      const member = {
+        id: rid("cast"), name, color: nextPieceColor(state.project.cast.length),
+        heightCm: DEFAULT_HEIGHT_CM, note: "", locked: false,
+      };
+      state.project.cast.push(member);
+      added.push(name);
+    });
+    if (!added.length) return;
+    checkpoint();
+    renderCast();
+    renderScenes();
+    render();
+    persistSoon();
+    announce(`名簿から${added.length}人をキャストへ加えました（${added.join("・")}）。舞台へ出すには一覧の「舞台裏」を押してください。`);
+  }
+
   function addCastMember(nameInput) {
     const input = nameInput || els.rosterName;
     const raw = (input && input.value || "").trim() || autoName(pieceTypeName("performer"));
@@ -11504,6 +11534,11 @@ ${cuesheetHtml}
      ★state を組み終わってから通すこと。let state より前で呼ぶと
        TDZ で落ち、try/catch が握り潰して「棚に入らない」だけになる（実際に踏んだ）。 */
   if (!loaded.restored) shelveSample();
+  // 名簿タブから送られたキャスト候補。開いた時と、#stageへ切り替わった時に受け取る
+  consumeCastHandoff();
+  window.addEventListener("hashchange", () => {
+    if (location.hash.startsWith("#stage")) consumeCastHandoff();
+  });
   // ?sample を付けて開くと、見本から始まる（人へ渡すリンク用）
   if (openArgs.has("sample")) openSampleShow();
 

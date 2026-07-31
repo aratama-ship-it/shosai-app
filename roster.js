@@ -237,6 +237,30 @@
     head.append(title);
     card.append(head);
 
+    /* 舞台スケッチへの結線。名簿は読み取り専用のまま、
+       「キャスト候補」の受け渡しだけを橋（localStorage）越しに行う。
+       舞台スケッチを開いた瞬間に、候補がキャストへ追加される。 */
+    const sendRow = document.createElement("div");
+    sendRow.className = "seed-actions";
+    const sendBtn = document.createElement("button");
+    sendBtn.type = "button";
+    sendBtn.className = "btn-quiet";
+    sendBtn.textContent = "舞台スケッチのキャスト候補へ送る";
+    sendBtn.addEventListener("click", () => {
+      const KEY = "shosai-cast-handoff-v1";
+      let list = [];
+      try { list = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (_) { list = []; }
+      if (!Array.isArray(list)) list = [];
+      const name = (p.name || "").trim();
+      if (!name) return;
+      if (!list.some((x) => x && x.name === name)) list.push({ name });
+      try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (_) { /* 保存不可 */ }
+      sendBtn.textContent = "送りました（舞台スケッチを開くと追加されます）";
+      sendBtn.disabled = true;
+    });
+    sendRow.append(sendBtn);
+    card.append(sendRow);
+
     const grid = document.createElement("div");
     grid.className = "roster-fields";
     if (p.skills) grid.append(field("スキル", p.skills));
