@@ -7961,20 +7961,32 @@
     /* 動線は明かりにも引ける。灯体はその場に残したまま、
      * 当てる先だけが動く（追い掛ける明かり）。 */
     const anyKind = tool === "route";
+    /* ★錠が掛かっているものは、当たり判定ごと消す（本人の指定）。
+       固定した台や壁の上で、演者だけを掴みたいときのため。
+       掴めないので、錠を外す口は「出るもの」の一覧にある。
+       ★重なっているときは、囲いの面積が小さいものを優先して掴む。
+       広い台の上の演者が、台に負けて掴めないことがないように。
+       同じ面積なら、上に描かれている方（並びの後ろ）を取る。 */
+    let best = null;
+    let bestArea = Infinity;
     for (let i = sc().pieces.length - 1; i >= 0; i -= 1) {
       const piece = sc().pieces[i];
       if (!anyKind && (piece.type === "light") !== wantLight) continue;
       // 平面図で隠している吊物は掴めない（見えないものを掴むことになるため）
       if (L.plan && !state.showFlown && isFlown(piece)) continue;
+      if (isLocked(piece)) continue;
       const b = selectionBounds(piece, L);
-      if (point.x >= b.x && point.x <= b.x + b.w && point.y >= b.y && point.y <= b.y + b.h) return piece;
+      if (point.x < b.x || point.x > b.x + b.w || point.y < b.y || point.y > b.y + b.h) continue;
+      const area = b.w * b.h;
+      if (area < bestArea) { best = piece; bestArea = area; }
     }
-    return null;
+    return best;
   }
 
   // 灯体の印を掴んだか。当たる場所より先に見る（重なることがあるため）
+  // 錠が掛かった明かりは灯体ごと素通しにする（当たり判定を持たない）
   function fixtureAt(point, L) {
-    const lights = sc().pieces.filter((piece) => piece.type === "light");
+    const lights = sc().pieces.filter((piece) => piece.type === "light" && !isLocked(piece));
     for (let i = lights.length - 1; i >= 0; i -= 1) {
       const at = beamSource(lights[i], L);
       if (Math.hypot(point.x - at.x, point.y - at.y) <= 13) return lights[i];
@@ -8487,10 +8499,7 @@
       updateInspector();
       render();
       if (!hit) return;
-      if (isLocked(hit)) {
-        announce(`${pieceLabel(hit)}には錠が掛かっています。`);
-        return;
-      }
+      // 錠が掛かった明かりは hitTest がもう返さない（当たり判定ごと素通し）
       const at = beamTarget(hit, placePiece(hit, L), L);
       capture(el, event.pointerId);
       el.dataset.dragging = "true";
@@ -8573,11 +8582,8 @@
         }
         return;
       }
-      // 錠が掛かっているものは選べるが動かない。外す口は一覧と「選んだもの」にある
-      if (isLocked(hit)) {
-        announce(`${pieceLabel(hit)}には錠が掛かっています。動かすには錠を外してください。`);
-        return;
-      }
+      /* 錠が掛かっているものは hitTest がもう返さない（当たり判定ごと素通し、
+         本人の指定）。外す口は「出るもの」の一覧にある。 */
       const pos = placePiece(hit, L);
       capture(el, event.pointerId);
       el.dataset.dragging = "true";
@@ -8633,8 +8639,9 @@
     if (noteAt(point, L, view)) return "grab";
     const current = selectedPiece();
     if (view === "plan" && routeHandleAt(point, current, L)) return "grab";
+    // 錠が掛かったものは hitTest が返さないので、指の形も変わらない
     const hit = hitTest(point, L);
-    if (hit) return isLocked(hit) ? "not-allowed" : "grab";
+    if (hit) return "grab";
     if (view === "plan" && ghostAt(point, L)) return "grab";
     if (view === "front" && (L.panRange > 0 || L.panRangeY > 0)) return "grab";
     if (view === "plan" && zoomOf("plan").z > 1.001) return "grab";
