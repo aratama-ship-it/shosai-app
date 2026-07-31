@@ -4239,6 +4239,57 @@
       }
       target.restore();
     });
+
+    /* ---- 入り・はけの動線 ----
+       舞台と舞台裏をまたぐ移動は、手で引かなくても必ず見せる（本人の指定）。
+       はけ＝いま居て次のシーンに居ない人は、次のシーンでの舞台裏の立ち位置へ。
+       入り＝いま舞台裏で次のシーンに居る人は、袖の立ち位置から次の場所へ。
+       手で引いた動線（曲げられる）が同じ人にあれば、そちらを描く。
+       この線はデータではなく毎回の計算なので、取っ手は持たない。 */
+    const scene = sc();
+    const next = nextSceneOf(scene);
+    if (!next) return;
+    const transit = (a, b, color) => {
+      const gap = 13;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const len = Math.hypot(dx, dy) || 1;
+      if (len < gap * 2) return;
+      const from = { x: a.x + (dx / len) * gap, y: a.y + (dy / len) * gap };
+      target.save();
+      target.strokeStyle = rgba(color, 0.5);
+      target.lineWidth = 2.6;
+      target.lineCap = "round";
+      target.setLineDash([5, 6]);
+      target.beginPath();
+      target.moveTo(from.x, from.y);
+      target.lineTo(b.x, b.y);
+      target.stroke();
+      target.setLineDash([]);
+      const ang = Math.atan2(dy, dx);
+      target.fillStyle = rgba(color, 0.56);
+      target.beginPath();
+      target.moveTo(b.x, b.y);
+      target.lineTo(b.x - Math.cos(ang - 0.42) * 13, b.y - Math.sin(ang - 0.42) * 13);
+      target.lineTo(b.x - Math.cos(ang + 0.42) * 13, b.y - Math.sin(ang + 0.42) * 13);
+      target.closePath();
+      target.fill();
+      target.restore();
+    };
+    const ghostsNext = backstageGhostsFor(next);
+    scene.pieces.forEach((piece) => {
+      if (piece.type !== "performer" || !piece.castId || piece.route) return;
+      if (!onStageArea(piece.u, piece.v)) return;
+      if (twinOf(piece, next.pieces || [])) return;
+      const g = ghostsNext.find((x) => x.member.id === piece.castId);
+      const dest = g ? { u: g.u, v: g.v } : wingDest(piece);
+      transit(place(pieceU(piece), pieceV(piece), L), place(dest.u, dest.v, L), piece.color);
+    });
+    backstageGhostsFor(scene).forEach((g) => {
+      const tw = (next.pieces || []).find((q) => q.castId === g.member.id && onStageArea(q.u, q.v));
+      if (!tw) return;
+      transit(place(g.u, g.v, L), place(tw.u, tw.v, L), g.member.color || "#a84b26");
+    });
   }
 
   // 動線の取っ手に当たっているか。曲げる取っ手を優先する
@@ -5408,9 +5459,11 @@
 
   /* 舞台裏の演者。平面図では袖に立たせて、全員が図の中に居るようにする。
      プロセニアム等は上手袖の奥から順に並べ、あふれたら下手袖へ。
-     スラストは奥の袖に左から並べる。描く側と掴む側で同じ計算を使う。 */
-  function backstageGhosts() {
-    const off = state.project.cast.filter((member) => !castOnStage(member.id));
+     スラストは奥の袖に左から並べる。描く側と掴む側で同じ計算を使う。
+     シーンを渡せば「そのシーンでの舞台裏」を出す（入り・はけの動線の両端に使う）。 */
+  function backstageGhostsFor(scene) {
+    const off = state.project.cast.filter((member) =>
+      !(scene.pieces || []).some((piece) => piece.castId === member.id));
     if (!off.length) return [];
     const b = planBounds();
     const out = [];
@@ -5432,6 +5485,7 @@
     });
     return out;
   }
+  const backstageGhosts = () => backstageGhostsFor(sc());
 
   // 舞台裏の演者の当たり判定（平面図のみ）。掴んだら舞台へ出す
   function ghostAt(point, L) {
