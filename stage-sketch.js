@@ -4171,10 +4171,12 @@
   /* 動線。始点（駒）から行き先へ、二次曲線で引いて先に矢を付ける。
    * 曲がり具合は真ん中の control 点ひとつで決まる。直線から始めて、
    * 掴んで曲げれば回り込みになる——舞台で人が動く道はたいてい弧を描く。 */
-  function routePoints(piece, L) {
+  /* route を外から渡せる形。はけの自動動線（まだ piece.route に無い仮の線）にも
+     同じ取っ手・同じ当たり判定を使うため。 */
+  function routePointsFor(piece, route, L) {
     const at = place(pieceU(piece), pieceV(piece), L);
-    const to = place(piece.route.u, piece.route.v, L);
-    const ctrl = place(piece.route.bu, piece.route.bv, L);
+    const to = place(route.u, route.v, L);
+    const ctrl = place(route.bu, route.bv, L);
     /* 演者の足元からいきなり線を出すと、駒と矢印がくっついて読みにくい。
      * 出だしの向きへ少しだけ離してから引き始める。 */
     const gap = 13;
@@ -4186,6 +4188,7 @@
       : at;
     return { from, to, ctrl, at };
   }
+  const routePoints = (piece, L) => routePointsFor(piece, piece.route, L);
 
   // 二次曲線の上の点。矢の向きを出すのに使う
   function quadAt(a, c, b, t) {
@@ -4196,11 +4199,10 @@
     };
   }
 
-  function drawRoutes(target, L, showSelection) {
-    sc().pieces.forEach((piece) => {
-      if (!piece.route) return;
-      const { from, to, ctrl } = routePoints(piece, L);
-      const picked = showSelection && piece.id === selectedId;
+  // 一本の動線を描く。picked のときは取っ手つき。route は piece.route でも仮の線でもよい
+  function drawOneRoute(target, L, piece, route, picked) {
+    const { from, to, ctrl } = routePointsFor(piece, route, L);
+    {
       target.save();
       target.strokeStyle = rgba(piece.color, picked ? 0.95 : 0.62);
       target.lineWidth = picked ? 4 : 3.2;
@@ -4238,6 +4240,13 @@
         });
       }
       target.restore();
+    }
+  }
+
+  function drawRoutes(target, L, showSelection) {
+    sc().pieces.forEach((piece) => {
+      if (!piece.route) return;
+      drawOneRoute(target, L, piece, piece.route, showSelection && piece.id === selectedId);
     });
 
     /* ---- 入り・はけの動線 ----
@@ -4245,7 +4254,9 @@
        はけ＝いま居て次のシーンに居ない人は、次のシーンでの舞台裏の立ち位置へ。
        入り＝いま舞台裏で次のシーンに居る人は、袖の立ち位置から次の場所へ。
        手で引いた動線（曲げられる）が同じ人にあれば、そちらを描く。
-       この線はデータではなく毎回の計算なので、取っ手は持たない。 */
+       ★はけの線は、選んでいる間は本物と同じ取っ手を出す。掴んだ瞬間に
+         piece.route へ実体化して、袖のどちら側・どの深さへはけるかを
+         手で決められる（本人の指定）。触らなければ毎回の計算のまま。 */
     const scene = sc();
     const next = nextSceneOf(scene);
     if (!next) return;
@@ -4276,14 +4287,15 @@
       target.fill();
       target.restore();
     };
-    const ghostsNext = backstageGhostsFor(next);
     scene.pieces.forEach((piece) => {
-      if (piece.type !== "performer" || !piece.castId || piece.route) return;
-      if (!onStageArea(piece.u, piece.v)) return;
-      if (twinOf(piece, next.pieces || [])) return;
-      const g = ghostsNext.find((x) => x.member.id === piece.castId);
-      const dest = g ? { u: g.u, v: g.v } : wingDest(piece);
-      transit(place(pieceU(piece), pieceV(piece), L), place(dest.u, dest.v, L), piece.color);
+      const auto = exitRouteFor(piece, next);
+      if (!auto) return;
+      // 選んでいる間は本物の動線と同じ見た目・取っ手で出す（掴めば実体化）
+      if (showSelection && piece.id === selectedId) {
+        drawOneRoute(target, L, piece, auto, true);
+        return;
+      }
+      transit(place(pieceU(piece), pieceV(piece), L), place(auto.u, auto.v, L), piece.color);
     });
     backstageGhostsFor(scene).forEach((g) => {
       const tw = (next.pieces || []).find((q) => q.castId === g.member.id && onStageArea(q.u, q.v));
@@ -4293,13 +4305,25 @@
   }
 
   // 動線の取っ手に当たっているか。曲げる取っ手を優先する
-  function routeHandleAt(point, piece, L) {
-    if (!piece || !piece.route || !L.plan) return null;
-    const { from, to, ctrl } = routePoints(piece, L);
+  function routeHandleAtFor(point, piece, route, L) {
+    if (!piece || !route || !L.plan) return null;
+    const { from, to, ctrl } = routePointsFor(piece, route, L);
     const mid = quadAt(from, ctrl, to, 0.5);
     if (Math.hypot(point.x - mid.x, point.y - mid.y) <= 11) return "bend";
     if (Math.hypot(point.x - to.x, point.y - to.y) <= 11) return "end";
     return null;
+  }
+  const routeHandleAt = (point, piece, L) => routeHandleAtFor(point, piece, piece && piece.route, L);
+
+  /* はけの動線の行き先（自動で描く線と同じ計算）。
+     取っ手を掴まれたら、この形のまま piece.route へ実体化する。 */
+  function exitRouteFor(piece, next) {
+    if (!next || piece.type !== "performer" || !piece.castId || piece.route) return null;
+    if (!onStageArea(piece.u, piece.v)) return null;
+    if (twinOf(piece, next.pieces || [])) return null;
+    const g = backstageGhostsFor(next).find((x) => x.member.id === piece.castId);
+    const dest = g ? { u: g.u, v: g.v } : wingDest(piece);
+    return { u: dest.u, v: dest.v, bu: (piece.u + dest.u) / 2, bv: (piece.v + dest.v) / 2 };
   }
 
   /* ---------- 付箋 ---------- */
@@ -5457,17 +5481,45 @@
     return sc().pieces.some((piece) => piece.castId === castId);
   }
 
+  /* その人が「どこへはけたか」。このシーンより前をさかのぼり、最後に舞台に居た
+     シーンで袖へのはけ動線が手で引いてあれば、その行き先を舞台裏の立ち位置にする。
+     引いていなければ null（＝既定の並びに立つ）。袖のどちら側・どの深さに
+     居るかを本人が決められるようにするため。 */
+  function backstageSpotFor(member, scene) {
+    const rows = state.project.scenes.filter((row) => row.kind === "scene");
+    for (let i = rows.indexOf(scene) - 1; i >= 0; i -= 1) {
+      const p = (rows[i].pieces || []).find((q) => q.castId === member.id);
+      if (!p) continue;   // このシーンにも居ない。さらに前を見る
+      if (p.route && !onStageArea(p.route.u, p.route.v)) return { u: p.route.u, v: p.route.v };
+      return null;        // 直近の登場に、袖への指定が無い＝既定の並び
+    }
+    return null;
+  }
+
   /* 舞台裏の演者。平面図では袖に立たせて、全員が図の中に居るようにする。
      プロセニアム等は上手袖の奥から順に並べ、あふれたら下手袖へ。
      スラストは奥の袖に左から並べる。描く側と掴む側で同じ計算を使う。
-     シーンを渡せば「そのシーンでの舞台裏」を出す（入り・はけの動線の両端に使う）。 */
+     シーンを渡せば「そのシーンでの舞台裏」を出す（入り・はけの動線の両端に使う）。
+     はけ先を手で決めた人は、その場所に立つ（既定の並びから外す）。 */
   function backstageGhostsFor(scene) {
     const off = state.project.cast.filter((member) =>
       !(scene.pieces || []).some((piece) => piece.castId === member.id));
     if (!off.length) return [];
     const b = planBounds();
     const out = [];
-    off.forEach((member, i) => {
+    let slot = 0;   // 既定の並びの席。手で決めた人は席を使わない
+    off.forEach((member) => {
+      const spot = backstageSpotFor(member, scene);
+      if (spot) {
+        out.push({
+          member,
+          u: clamp(spot.u, b.uMin + 0.015, b.uMax - 0.015),
+          v: clamp(spot.v, Math.min(b.vMin + 0.015, 0), 0.97),
+        });
+        return;
+      }
+      const i = slot;
+      slot += 1;
       if (b.vMin < 0) {
         // 奥の袖: 左から等間隔
         const u = 0.08 + (i % 10) * 0.095;
@@ -8578,9 +8630,23 @@
       selectedNoteId = null;
       // 選んでいる駒の動線の取っ手は、駒そのものより先に拾う
       const current = selectedPiece();
-      const handle = view === "plan" ? routeHandleAt(point, current, L) : null;
+      let handle = view === "plan" ? routeHandleAt(point, current, L) : null;
+      let already = false;
+      /* はけの自動動線の取っ手。掴んだ瞬間に piece.route へ実体化して、
+         袖のどちら側・どの深さへはけるかを手で決められる（本人の指定）。
+         checkpoint は実体化の前に一度だけ（掴む→戻す、で線ごと消える）。 */
+      if (!handle && view === "plan" && current && !current.route) {
+        const auto = exitRouteFor(current, nextSceneOf(sc()));
+        const grabbed = auto ? routeHandleAtFor(point, current, auto, L) : null;
+        if (grabbed) {
+          checkpoint();
+          already = true;
+          current.route = auto;
+          handle = grabbed;
+        }
+      }
       if (handle) {
-        checkpoint();
+        if (!already) checkpoint();
         capture(el, event.pointerId);
         el.dataset.dragging = "true";
         pointerAction = { kind: "route", pointerId: event.pointerId, id: current.id, el, view, moved: true, handle };
@@ -8693,6 +8759,11 @@
     if (noteAt(point, L, view)) return "grab";
     const current = selectedPiece();
     if (view === "plan" && routeHandleAt(point, current, L)) return "grab";
+    // はけの自動動線の取っ手にも指の形を出す（掴めば実体化する）
+    if (view === "plan" && current && !current.route) {
+      const auto = exitRouteFor(current, nextSceneOf(sc()));
+      if (auto && routeHandleAtFor(point, current, auto, L)) return "grab";
+    }
     // 錠が掛かったものは hitTest が返さないので、指の形も変わらない
     const hit = hitTest(point, L);
     if (hit) return "grab";
