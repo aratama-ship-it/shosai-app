@@ -1197,6 +1197,7 @@
     planInner: document.getElementById("stage-plan-inner"),
     showNames: document.getElementById("stage-show-names"),
     showSetNames: document.getElementById("stage-show-set-names"),
+    showLightNames: document.getElementById("stage-show-light-names"),
     showSeatMap: document.getElementById("stage-show-seatmap"),
     seatMapToggle: document.getElementById("stage-seatmap-toggle"),
     depthLabelBack: document.getElementById("stage-depth-back"),
@@ -1392,8 +1393,9 @@
       showFront: true,
       showPlan: true,
       showNames: true,
-      // 名前は演者と舞台装置で別々に出し入れする
+      // 名前は演者・舞台装置・照明で別々に出し入れする
       showSetNames: true,
+      showLightNames: true,
       // 正面図の隅に「客席のどこから見ているか」の小図を出すか
       showSeatMap: true,
       // 平面図で吊物（宙に吊ってあるもの）まで出すか
@@ -1912,6 +1914,7 @@
       showPlan: raw.showPlan === undefined ? true : Boolean(raw.showPlan),
       showNames: raw.showNames === undefined ? true : Boolean(raw.showNames),
       showSetNames: raw.showSetNames === undefined ? true : Boolean(raw.showSetNames),
+      showLightNames: raw.showLightNames === undefined ? true : Boolean(raw.showLightNames),
       showSeatMap: raw.showSeatMap === undefined ? true : Boolean(raw.showSeatMap),
       showFlown: Boolean(raw.showFlown),
       showLightsFront: raw.showLightsFront === undefined ? true : Boolean(raw.showLightsFront),
@@ -2589,6 +2592,8 @@
       // 傾ける前の位置。駒はここから実寸で積み上げてから傾ける
       rawFloorY: seat.floorY,
       rawBottomY: seat.bottomY,
+      // 奥の壁の天井の線（傾ける前）。灯体の高さはこの線と釣り合わせる
+      rawCeilY: seat.floorY - (height * pxPerM) / span,
       tilt,
       untilt,
       backW: frontW / span,
@@ -3859,6 +3864,15 @@
     target.restore();
   }
 
+  /* 明かりの高さのある点の縦位置（傾ける前）。
+     床の線は奥行きで動くが、奥の壁の天井の線は一本の横線で動かない。
+     実寸のまま v ごとの縮尺で持ち上げると、同じ高さの灯体が奥行きの操作で
+     上下に泳いで見える（本人の指摘）。床と天井の線の間を高さの割合で埋め、
+     h=会場の高さなら、どの奥行きでも天井の線の上に乗るようにする。 */
+  function raiseRaw(rawFloor, hMetres, L) {
+    return rawFloor + (L.rawCeilY - rawFloor) * ((hMetres || 0) / (L.size.height || 8));
+  }
+
   /* 明かりの灯体の位置を画面へ落とす。平面ならその点、正面なら床から h だけ持ち上げる。 */
   function beamSource(piece, L) {
     const b = piece.beam || normalizeBeam(null, piece);
@@ -3867,17 +3881,14 @@
       piece.animBeamU === undefined ? b.u : piece.animBeamU,
       piece.animBeamV === undefined ? b.v : piece.animBeamV, L);
     if (L.plan) return { x: p.x, y: p.y };
-    const per = perMetre(p, L);
-    const rawY = p.rawY - b.h * per.y;
-    return { x: p.x, y: L.tilt(rawY) };
+    return { x: p.x, y: L.tilt(raiseRaw(p.rawY, b.h, L)) };
   }
 
   // 明かりが当たる点。床とは限らない（下から上への明かりでは宙にある）
   function beamTarget(piece, pos, L) {
     const b = piece.beam || normalizeBeam(null, piece);
     if (L.plan || !b.toH) return { x: pos.x, y: pos.y };
-    const per = perMetre(pos, L);
-    return { x: pos.x, y: L.tilt(pos.rawY - b.toH * per.y) };
+    return { x: pos.x, y: L.tilt(raiseRaw(pos.rawY, b.toH, L)) };
   }
 
   /* 光の実際の終点。灯体(高さh)→当たる点(高さtoH)の線を実寸のまま延長し、
@@ -3949,14 +3960,14 @@
         target.setLineDash([]);
         drawFixture(target, src, piece, lit || picked);
       }
-      /* 途中の「当たる点」。掴んで動かすのはこの輪（終点ではない）なので、
-         終点が先へ延びている明かりでは、道具のときと選択中に輪で示す */
-      if (land.tEnd > 1.01 && (lit || picked)) {
+      /* 掴む場所の輪。掴むのは必ず「光の終着点」（本人の指定）。
+         道具が明かりのときと選択中に、終着点へ破線の輪で示す */
+      if (lit || picked) {
         target.strokeStyle = rgba(piece.color, 0.55);
         target.setLineDash([4, 4]);
         target.lineWidth = 1.2;
         target.beginPath();
-        target.arc(hit.x, hit.y, spread, 0, Math.PI * 2);
+        target.arc(endPos.x, endPos.y, Math.max(10, ((dim && dim.dia) || 4) / 2 * L.pxPerM), 0, Math.PI * 2);
         target.stroke();
         target.setLineDash([]);
       }
@@ -3983,7 +3994,7 @@
     const land = beamLanding(piece, L.size);
     const endPos = place(land.eu, land.ev, L);
     const perEnd = perMetre(endPos, L);
-    const end = { x: endPos.x, y: L.tilt(endPos.rawY - land.hh * perEnd.y) };
+    const end = { x: endPos.x, y: L.tilt(raiseRaw(endPos.rawY, land.hh, L)) };
     // 光の円錐は灯体から先へ行くほど開く。終点の広さは距離の倍率で伸ばす
     const spreadEnd = Math.max(6, ((dim && dim.dia) || 4) / 2 * perEnd.x * land.tEnd);
     const onFloor = land.hh < 0.05;
@@ -4007,16 +4018,20 @@
     }
     target.closePath();
     target.fill();
-    // 明るいのは光が落ちた所そのもの。帯はそこへ吸い込まれる
-    const pool = target.createRadialGradient(end.x, end.y, 0, end.x, end.y, spreadEnd);
-    pool.addColorStop(0, rgba(piece.color, ga(0.34)));
-    pool.addColorStop(0.55, rgba(piece.color, ga(0.16)));
-    pool.addColorStop(1, rgba(piece.color, 0));
-    target.fillStyle = pool;
-    target.beginPath();
-    if (onFloor) target.ellipse(end.x, end.y, spreadEnd, ry, 0, 0, Math.PI * 2);
-    else target.arc(end.x, end.y, spreadEnd * 0.8, 0, Math.PI * 2);   // 幕への丸い当たり
-    target.fill();
+    /* 明るいのは床に落ちた円そのもの。帯はそこへ吸い込まれる。
+       ★横や上へ抜けて床に着かない光（幕・壁・天井で終わる）は、円を作らない。
+         丸い当たりを描くと光る玉に見えて不自然だった（本人の指定）。
+         帯が薄れて終わるだけにする。 */
+    if (onFloor) {
+      const pool = target.createRadialGradient(end.x, end.y, 0, end.x, end.y, spreadEnd);
+      pool.addColorStop(0, rgba(piece.color, ga(0.34)));
+      pool.addColorStop(0.55, rgba(piece.color, ga(0.16)));
+      pool.addColorStop(1, rgba(piece.color, 0));
+      target.fillStyle = pool;
+      target.beginPath();
+      target.ellipse(end.x, end.y, spreadEnd, ry, 0, 0, Math.PI * 2);
+      target.fill();
+    }
     /* 途中で体や顔に当たる高さ（toH>0）は、光を切らずに輪だけで示す。
        掴んで動かすのはこの輪なので、明かりの道具のときと選択中は必ず出す。 */
     if (land.tEnd > 1.01 && (lit || picked)) {
@@ -4181,6 +4196,15 @@
         const ex = Math.max(10, (ext.halfX * c + ext.halfZ * sn) * H * L.pxPerM);
         const ey = Math.max(10, (ext.halfX * sn + ext.halfZ * c) * H * L.pxPerM);
         return { x: pos.x - ex, y: pos.y - ey, w: ex * 2, h: ey * 2 };
+      }
+      /* 明かりは「光の終着点」を掴む（本人の指定）。当たる点が途中の高さでも、
+         掴む場所は必ず光が実際に落ちる所。掴んだときの差分は駒(当たる点)との
+         ずれとして保たれるので、引けば終着点が指に付いてくる。 */
+      if (piece.type === "light") {
+        const land = beamLanding(piece, L.size);
+        const at = place(land.eu, land.ev, L);
+        const r = Math.max(10, (((dim && dim.dia) || 4) / 2) * L.pxPerM);
+        return { x: at.x - r, y: at.y - r, w: r * 2, h: r * 2 };
       }
       const r = Math.max(10, (((dim && dim.dia) || 2) / 2) * L.pxPerM);
       return { x: pos.x - r, y: pos.y - r, w: r * 2, h: r * 2 };
@@ -5136,10 +5160,12 @@
       target.restore();
     }
 
-    // 名前。頭上（平面では点の脇）に小さく置く。演者と装置は別々に出し入れする
-    if (state.showNames || state.showSetNames) {
+    // 名前。頭上（平面では点の脇）に小さく置く。演者・装置・照明は別々に出し入れする
+    if (state.showNames || state.showSetNames || state.showLightNames) {
       shown.forEach((piece) => {
-        const wanted = piece.type === "performer" ? state.showNames : state.showSetNames;
+        const wanted = piece.type === "performer" ? state.showNames
+          : piece.type === "light" ? state.showLightNames
+          : state.showSetNames;
         if (!wanted) return;
         const labelText = pieceLabel(piece);
         if (!labelText) return;
@@ -8515,6 +8541,7 @@
     els.brushValue.textContent = String(state.brushSize);
     if (els.showNames) els.showNames.checked = state.showNames;
     if (els.showSetNames) els.showSetNames.checked = state.showSetNames;
+    if (els.showLightNames) els.showLightNames.checked = state.showLightNames;
     if (els.showSeatMap) els.showSeatMap.checked = state.showSeatMap;
     if (els.showFlown) els.showFlown.checked = state.showFlown;
     if (els.frontLights) els.frontLights.checked = state.showLightsFront;
@@ -9123,13 +9150,18 @@
         pointerAction.moved = true;
       }
       /* 灯体は宙にあるので、画面の点をそのまま床の座標に読み替えると
-       * 高さのぶんだけ奥へずれる。持ち上げたぶんを戻してから読む。 */
+       * 高さのぶんだけ奥へずれる。持ち上げたぶんを戻してから読む
+       * （raiseRaw の逆算。天井に付いた灯体は縦で奥行きが決まらないので横だけ動かす）。 */
       const b = piece.beam;
       let x = point.x;
       let y = point.y;
       if (!L.plan) {
-        const guide = place(b.u, b.v, L);
-        y = L.tilt(L.untilt(point.y) + b.h * perMetre(guide, L).y);
+        const k = (b.h || 0) / (L.size.height || 8);
+        if (Math.abs(1 - k) > 0.05) {
+          y = L.tilt((L.untilt(point.y) - L.rawCeilY * k) / (1 - k));
+        } else {
+          y = place(b.u, b.v, L).y;
+        }
       }
       const next = fromScreen(x, y, L);
       // 組の明かりは一体で動く。灯体を掴んでも組ごと平行移動する
@@ -9155,9 +9187,13 @@
       let px = point.x - pointerAction.offsetX;
       let py = point.y - pointerAction.offsetY;
       if (piece.type === "light" && !L.plan && piece.beam && piece.beam.toH) {
-        // 宙で受けている明かりは、その高さのぶんを戻してから床の座標に読む
-        const guide = placePiece(piece, L);
-        py = L.tilt(L.untilt(py) + piece.beam.toH * perMetre(guide, L).y);
+        // 宙で受けている明かりは、その高さのぶんを戻してから床の座標に読む（raiseRawの逆算）
+        const k2 = piece.beam.toH / (L.size.height || 8);
+        if (Math.abs(1 - k2) > 0.05) {
+          py = L.tilt((L.untilt(py) - L.rawCeilY * k2) / (1 - k2));
+        } else {
+          py = placePiece(piece, L).y;
+        }
       }
       const next = fromScreen(px, py, L);
       // 組の明かりは一体で動く。どの一つを掴んでも組ごと平行移動する
@@ -9347,6 +9383,14 @@
       render();
       persistSoon();
       announce(e.target.checked ? "装置名を出しました。" : "装置名を隠しました。");
+    });
+  }
+  if (els.showLightNames) {
+    els.showLightNames.addEventListener("change", (e) => {
+      state.showLightNames = e.target.checked;
+      render();
+      persistSoon();
+      announce(e.target.checked ? "照明名を出しました。" : "照明名を隠しました。");
     });
   }
   if (els.showSeatMap) {
