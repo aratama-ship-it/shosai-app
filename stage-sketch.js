@@ -1191,7 +1191,9 @@
     showFlown: document.getElementById("stage-show-flown"),
     frontLights: document.getElementById("stage-front-lights"),
     planLights: document.getElementById("stage-plan-lights"),
-    planRoutes: document.getElementById("stage-plan-routes"),
+    planRoutesCast: document.getElementById("stage-plan-routes-cast"),
+    planRoutesLight: document.getElementById("stage-plan-routes-light"),
+    planRoutesSet: document.getElementById("stage-plan-routes-set"),
     setInfoKindRow: document.getElementById("stage-setinfo-lightkind"),
     frontInner: document.getElementById("stage-front-inner"),
     planInner: document.getElementById("stage-plan-inner"),
@@ -1404,7 +1406,10 @@
          「照明を消して立ち位置だけ読む」「動線を隠して今の形だけ見る」ため */
       showLightsFront: true,
       showLightsPlan: true,
-      showRoutes: true,
+      // 動線の出し入れは演者・照明・装置で別（本人指定）
+      showRoutesCast: true,
+      showRoutesLight: true,
+      showRoutesSet: true,
       // 場面が変わるとき、動線に沿って動かして見せるか。秒数も持つ
       animateScenes: true,
       sceneAnimMs: 2000,
@@ -1919,7 +1924,12 @@
       showFlown: Boolean(raw.showFlown),
       showLightsFront: raw.showLightsFront === undefined ? true : Boolean(raw.showLightsFront),
       showLightsPlan: raw.showLightsPlan === undefined ? true : Boolean(raw.showLightsPlan),
-      showRoutes: raw.showRoutes === undefined ? true : Boolean(raw.showRoutes),
+      showRoutesCast: raw.showRoutesCast === undefined
+        ? (raw.showRoutes === undefined ? true : Boolean(raw.showRoutes)) : Boolean(raw.showRoutesCast),
+      showRoutesLight: raw.showRoutesLight === undefined
+        ? (raw.showRoutes === undefined ? true : Boolean(raw.showRoutes)) : Boolean(raw.showRoutesLight),
+      showRoutesSet: raw.showRoutesSet === undefined
+        ? (raw.showRoutes === undefined ? true : Boolean(raw.showRoutes)) : Boolean(raw.showRoutesSet),
       animateScenes: raw.animateScenes === undefined ? true : Boolean(raw.animateScenes),
       /* 既定は2秒（本人指定）。以前の既定620msのまま保存されたショーは、
          触っていない印なので新しい既定へ引き上げる */
@@ -3027,7 +3037,8 @@
 
   function placePiece(piece, L) {
     const pos = place(pieceU(piece), pieceV(piece), L);
-    const base = piece.base || 0;
+    // 転換アニメの途中は、床からの高さも途中の値で描く（降りる・登るの表現）
+    const base = piece.animBase !== undefined ? piece.animBase : (piece.base || 0);
     if (!base || L.plan) return pos;
     const rawY = pos.rawY - base * perMetre(pos, L).y;
     return Object.assign({}, pos, { rawY, y: L.tilt(rawY) });
@@ -3174,11 +3185,13 @@
     /* ポールに付いている・椅子に座っているあいだは、姿勢は選べない。
        体の使い方が乗り物側で決まっているため（写真の実技と同じ形にする）。 */
     const mount = mountKindOf(piece);
-    const poseId = mount === "pole"
-      ? (piece.poleSide === "L" ? "poleflag_l" : "poleflag_r")
-      : mount === "trapeze"
-        ? (piece.trapMode === "hang" ? "trapeze_hang" : "trapeze_sit")
-        : (mount === "chair" ? "sit" : piece.pose);
+    // 転換アニメの床の区間は歩く姿勢。乗り物の強制姿勢より優先する
+    const poseId = piece.animPose ? piece.animPose
+      : mount === "pole"
+        ? (piece.poleSide === "L" ? "poleflag_l" : "poleflag_r")
+        : mount === "trapeze"
+          ? (piece.trapMode === "hang" ? "trapeze_hang" : "trapeze_sit")
+          : (mount === "chair" ? "sit" : piece.pose);
     const rig = buildRig(poseId, pos.x, pos.rawY === undefined ? pos.y : pos.rawY,
       H * per.x, H * per.y, ((piece.facing || 0) * Math.PI) / 180, zDrop, L.plan ? null : L.tilt);
     rig.per = per;
@@ -3347,8 +3360,9 @@
     target.save();
 
     // ポールやトラピーズで宙に浮いている間は、影を落とさない（床に居ないため）
+    // 転換アニメで床を歩いている間（animBaseあり）は普通に影を落とす
     const mountHere = mountKindOf(piece);
-    if (mountHere === "pole" || mountHere === "trapeze") {
+    if ((mountHere === "pole" || mountHere === "trapeze") && piece.animBase === undefined) {
       paintBody(target, rig, piece.color);
       target.restore();
       return;
@@ -4323,7 +4337,7 @@
 
   function drawRoutes(target, L, showSelection) {
     sc().pieces.forEach((piece) => {
-      if (!piece.route) return;
+      if (!piece.route || !routesShownFor(piece)) return;
       drawOneRoute(target, L, piece, piece.route, showSelection && piece.id === selectedId);
     });
 
@@ -4337,7 +4351,7 @@
          手で決められる（本人の指定）。触らなければ毎回の計算のまま。 */
     const scene = sc();
     const next = nextSceneOf(scene);
-    if (!next) return;
+    if (!next || !state.showRoutesCast) return;   // 入り・はけは演者の動線
     const transit = (a, b, color) => {
       const gap = 13;
       const dx = b.x - a.x;
@@ -4382,10 +4396,15 @@
     });
   }
 
+  // その駒の動線を表示しているか（演者・照明・装置で別のつまみ）
+  const routesShownFor = (piece) => (piece && piece.type === "performer" ? state.showRoutesCast
+    : piece && piece.type === "light" ? state.showRoutesLight : state.showRoutesSet);
+  const anyRoutesShown = () => state.showRoutesCast || state.showRoutesLight || state.showRoutesSet;
+
   // 動線の取っ手に当たっているか。曲げる取っ手を優先する
   // 動線を隠している間は取っ手も無い（見えないものを掴ませない）
   function routeHandleAtFor(point, piece, route, L) {
-    if (!piece || !route || !L.plan || !state.showRoutes) return null;
+    if (!piece || !route || !L.plan || !routesShownFor(piece)) return null;
     const { from, to, ctrl } = routePointsFor(piece, route, L);
     const mid = quadAt(from, ctrl, to, 0.5);
     if (Math.hypot(point.x - mid.x, point.y - mid.y) <= 11) return "bend";
@@ -5184,8 +5203,10 @@
       });
     }
 
-    // 動線は平面図だけ。上から見た床の上の道筋なので、正面図には出しようがない
-    if (L.plan && state.showRoutes) drawRoutes(target, L, showSelection);
+    /* 動線は平面図だけ。上から見た床の上の道筋なので、正面図には出しようがない。
+       ★転換アニメの最中は出さない（本人指定）。動いている駒の足元に
+       「次の動線」が先回りして見えると、どちらが今の動きか分からなくなる */
+    if (L.plan && anyRoutesShown() && !sceneAnim) drawRoutes(target, L, showSelection);
     drawNotes(target, L, view, showSelection);
 
     if (showSelection) {
@@ -7421,6 +7442,8 @@
       delete entry.piece.animV;
       delete entry.piece.animBeamU;
       delete entry.piece.animBeamV;
+      delete entry.piece.animBase;
+      delete entry.piece.animPose;
     });
     // はけの駒は描くためだけの写しなので、捨てるだけでよい
     sceneAnim = null;
@@ -7451,6 +7474,8 @@
         from: { u: twin.u, v: twin.v },
         ctrl: route ? { u: route.bu, v: route.bv } : null,
         to: { u: piece.u, v: piece.v },
+        // 出発地点の床からの高さ（前のシーンで台やポールに乗っていた分）
+        startBase: piece.type === "performer" ? finite(twin.base, 0) : 0,
         // 明かりは灯体の側も動かす（当たる場所だけ動くと光が伸び縮みして見える）
         beam: piece.type === "light" && piece.beam && twin.beam
           ? { from: { u: twin.beam.u, v: twin.beam.v }, to: { u: piece.beam.u, v: piece.beam.v } }
@@ -7476,6 +7501,8 @@
         // 袖へのはけ動線が引いてあれば、その曲がり方を借りる
         ctrl: old.route ? { u: old.route.bu, v: old.route.bv } : null,
         to: dest,
+        startBase: finite(old.base, 0),
+        exit: true,   // 写しの駒は床（袖）で終わる。高さの計算に本体の base を使わない
       });
     });
     /* 入り。前のシーンに居なかった演者が、このシーンで舞台に居るなら、
@@ -7495,6 +7522,7 @@
         ctrl: null,
         to: { u: piece.u, v: piece.v },
         beam: null,
+        startBase: 0,   // 袖は床
       });
     });
     if (!pieces.length && !exits.length) return;
@@ -7506,17 +7534,51 @@
       const e = easeInOut(t);
       if (sceneAnim) sceneAnim.progress = e;
       movers.forEach((entry) => {
-        if (entry.ctrl) {
-          const k = 1 - e;
-          entry.piece.animU = k * k * entry.from.u + 2 * k * e * entry.ctrl.u + e * e * entry.to.u;
-          entry.piece.animV = k * k * entry.from.v + 2 * k * e * entry.ctrl.v + e * e * entry.to.v;
+        const piece = entry.piece;
+        // 道のりの補間（0..1）。曲がりがあれば二次曲線をたどる
+        const along = (p2) => {
+          const k = 1 - p2;
+          if (entry.ctrl) {
+            piece.animU = k * k * entry.from.u + 2 * k * p2 * entry.ctrl.u + p2 * p2 * entry.to.u;
+            piece.animV = k * k * entry.from.v + 2 * k * p2 * entry.ctrl.v + p2 * p2 * entry.to.v;
+          } else {
+            piece.animU = entry.from.u + (entry.to.u - entry.from.u) * p2;
+            piece.animV = entry.from.v + (entry.to.v - entry.from.v) * p2;
+          }
+        };
+        /* 高さのある始点・終点（ポール・トラピーズ・椅子・台の上）は、
+           降りる→床を歩く→着いてから登る、の三区間で動かす（本人の指定）。
+           宙に浮いたまま水平に滑ると、実技としてありえない絵になるため。
+           終点の高さは refreshBases が最終位置から出し続ける piece.base を読む。 */
+        const sb = piece.type === "performer" ? (entry.startBase || 0) : 0;
+        const eb = piece.type === "performer" && !entry.exit ? (piece.base || 0) : 0;
+        if (sb > 0.05 || eb > 0.05) {
+          const down = sb > 0.05 ? 0.25 : 0;
+          const up = eb > 0.05 ? 0.3 : 0;
+          const walkSpan = Math.max(0.05, 1 - down - up);
+          if (t < down) {
+            const p2 = easeInOut(t / down);
+            piece.animU = entry.from.u;
+            piece.animV = entry.from.v;
+            piece.animBase = sb * (1 - p2);   // まず降りる（乗り物の姿勢のまま）
+            delete piece.animPose;
+          } else if (t < down + walkSpan) {
+            along(easeInOut((t - down) / walkSpan));
+            piece.animBase = 0;
+            piece.animPose = "walk";          // 床は歩く
+          } else {
+            const p2 = easeInOut((t - down - walkSpan) / (up || 1));
+            piece.animU = entry.to.u;
+            piece.animV = entry.to.v;
+            piece.animBase = eb * p2;         // 着いてから登る（乗り物の姿勢で）
+            delete piece.animPose;
+          }
         } else {
-          entry.piece.animU = entry.from.u + (entry.to.u - entry.from.u) * e;
-          entry.piece.animV = entry.from.v + (entry.to.v - entry.from.v) * e;
+          along(e);
         }
         if (entry.beam) {
-          entry.piece.animBeamU = entry.beam.from.u + (entry.beam.to.u - entry.beam.from.u) * e;
-          entry.piece.animBeamV = entry.beam.from.v + (entry.beam.to.v - entry.beam.from.v) * e;
+          piece.animBeamU = entry.beam.from.u + (entry.beam.to.u - entry.beam.from.u) * e;
+          piece.animBeamV = entry.beam.from.v + (entry.beam.to.v - entry.beam.from.v) * e;
         }
       });
       render();
@@ -7709,9 +7771,13 @@
         bu: (piece.u + dest.u) / 2, bv: (piece.v + dest.v) / 2 };
     });
     // 隠したまま引くと「押したのに何も起きない」に見えるので、表示に戻す
-    if (!state.showRoutes) {
-      state.showRoutes = true;
-      if (els.planRoutes) els.planRoutes.checked = true;
+    if (!(state.showRoutesCast && state.showRoutesLight && state.showRoutesSet)) {
+      state.showRoutesCast = true;
+      state.showRoutesLight = true;
+      state.showRoutesSet = true;
+      if (els.planRoutesCast) els.planRoutesCast.checked = true;
+      if (els.planRoutesLight) els.planRoutesLight.checked = true;
+      if (els.planRoutesSet) els.planRoutesSet.checked = true;
     }
     renderScenes();
     updateInspector();
@@ -8465,9 +8531,13 @@
       if (els.frontLights) els.frontLights.checked = true;
       if (els.planLights) els.planLights.checked = true;
     }
-    if (tool === "route" && !state.showRoutes) {
-      state.showRoutes = true;
-      if (els.planRoutes) els.planRoutes.checked = true;
+    if (tool === "route" && !(state.showRoutesCast && state.showRoutesLight && state.showRoutesSet)) {
+      state.showRoutesCast = true;
+      state.showRoutesLight = true;
+      state.showRoutesSet = true;
+      if (els.planRoutesCast) els.planRoutesCast.checked = true;
+      if (els.planRoutesLight) els.planRoutesLight.checked = true;
+      if (els.planRoutesSet) els.planRoutesSet.checked = true;
     }
     canvas.dataset.tool = tool;
     // 平面図で使うのは「動かす」と「動線」だけ
@@ -8562,7 +8632,9 @@
     if (els.showFlown) els.showFlown.checked = state.showFlown;
     if (els.frontLights) els.frontLights.checked = state.showLightsFront;
     if (els.planLights) els.planLights.checked = state.showLightsPlan;
-    if (els.planRoutes) els.planRoutes.checked = state.showRoutes;
+    if (els.planRoutesCast) els.planRoutesCast.checked = state.showRoutesCast;
+    if (els.planRoutesLight) els.planRoutesLight.checked = state.showRoutesLight;
+    if (els.planRoutesSet) els.planRoutesSet.checked = state.showRoutesSet;
     if (els.animScenes) els.animScenes.checked = state.animateScenes;
     if (els.animMs) {
       if (document.activeElement !== els.animMs) els.animMs.value = String(state.sceneAnimMs / 1000);
@@ -9726,14 +9798,17 @@
       announce(state.showLightsPlan ? "平面の照明を出しました。" : "平面の照明を隠しました。");
     });
   }
-  if (els.planRoutes) {
-    els.planRoutes.addEventListener("change", (e) => {
-      state.showRoutes = e.target.checked;
+  [["planRoutesCast", "showRoutesCast", "演者の動線"],
+   ["planRoutesLight", "showRoutesLight", "照明の動線"],
+   ["planRoutesSet", "showRoutesSet", "装置の動線"]].forEach(([key, field, word]) => {
+    if (!els[key]) return;
+    els[key].addEventListener("change", (e) => {
+      state[field] = e.target.checked;
       render();
       persistSoon();
-      announce(state.showRoutes ? "動線を出しました。" : "動線を隠しました。引いた線は消えていません。");
+      announce(e.target.checked ? `${word}を出しました。` : `${word}を隠しました。引いた線は消えていません。`);
     });
-  }
+  });
   if (els.setInfoColor) {
     els.setInfoColor.addEventListener("input", (e) => {
       const item = currentSetItem();
