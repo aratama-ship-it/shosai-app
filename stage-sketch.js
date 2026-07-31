@@ -2301,12 +2301,17 @@
     { key: "trap", kind: "trapeze", name: "トラピーズ", color: "#d6dce2",
       dims: { w: 0.7, h: 0.06, lift: 4.2 }, flown: true },
   ];
+  /* h / srcV は種類の既定を上書きして、灯体を実際の取り付け場所へしまう。
+     見本の会場は中劇場（高さ8m）なので、吊り物は h=8（＝バトン。天井の線上に乗り、
+     宙に浮いた灯体に見えない）、前明かりは額縁のすぐ上（v=1.02）から差し込む。
+     ★この上書きは一度、並行編集で黙って消えたことがある。消すと灯体が
+       空中の一点から生えて見える（本人から二度指摘を受けた）。 */
   const SAMPLE_LIGHTS = [
-    { key: "wash", kind: "hang", name: "吊り・全体", dia: 7 },
-    { key: "spot", kind: "hang", name: "吊り・ピン", dia: 2.2 },
+    { key: "wash", kind: "hang", name: "吊り・全体", dia: 7, h: 8 },
+    { key: "spot", kind: "hang", name: "吊り・ピン", dia: 2.2, h: 8 },
     { key: "sideL", kind: "ss", name: "SS 上手", dia: 3 },
     { key: "sideR", kind: "ss", name: "SS 下手", dia: 3 },
-    { key: "front", kind: "front", name: "前明かり", dia: 5 },
+    { key: "front", kind: "front", name: "前明かり", dia: 5, h: 8, srcV: 1.02 },
   ];
 
   /* 各シーンの中身。居ない人はそのシーンの pieces に入れない（=舞台裏）。
