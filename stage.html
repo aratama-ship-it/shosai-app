@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>舞台スケッチ — 制作の書斎</title>
-<link rel="stylesheet" href="style.css?v=120">
+<link rel="stylesheet" href="style.css?v=121">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -27,6 +27,8 @@
           <button type="button" id="stage-undo" title="⌘Z（WindowsはCtrl+Z）" disabled>一つ戻す</button>
           <button type="button" id="stage-redo" title="⇧⌘Z（WindowsはCtrl+Shift+Z）" disabled>やり直す</button>
           <button type="button" class="stage-lang" id="stage-tour-start" title="使い方をひととおり見る">使い方</button>
+          <button type="button" class="stage-lang" id="stage-prefs-btn" title="機能の出し入れ（環境設定）">設定</button>
+          <button type="button" class="stage-lang" id="stage-present-btn" title="正面図だけを全画面で見せる。矢印キーでシーン送り、Escで戻る">プレゼン</button>
           <button type="button" class="stage-lang stage-feedback" id="stage-feedback"
                   title="使ってみた感想を送る">感想を送る</button>
           <button type="button" class="stage-lang" id="stage-lang" aria-pressed="false"
@@ -239,6 +241,12 @@
               <div class="stage-scene-actions stage-scene-actions-sub">
                 <button type="button" id="stage-scene-section" class="btn-quiet" title="シーンをまとめる入れ物を足す">セクション+</button>
               <button type="button" id="stage-show-map-btn" class="btn-quiet" title="全シーンを一枚で見渡す">地図</button>
+            </div>
+            <div class="stage-canvas-tools" id="stage-arrange-row">
+              <button type="button" id="stage-mirror-btn" class="btn-quiet" title="このシーンを上手下手そっくり反転する">ミラー</button>
+              <button type="button" id="stage-lineup-row" class="btn-quiet" title="舞台上の演者を等間隔の一列に">一列</button>
+              <button type="button" id="stage-lineup-circle" class="btn-quiet" title="舞台上の演者を円に">円</button>
+              <button type="button" id="stage-lineup-vee" class="btn-quiet" title="舞台上の演者をV字に">V字</button>
                 <button type="button" id="stage-scene-del" class="btn-quiet">削除</button>
               </div>
             </div>
@@ -635,6 +643,19 @@
   </div>
 </div>
 
+<div class="stage-modal-backdrop" id="stage-prefs-backdrop" hidden></div>
+<div class="stage-modal stage-shows-modal" id="stage-prefs-modal" role="dialog" aria-modal="true"
+     aria-labelledby="stage-prefs-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-prefs-title">環境設定</h2>
+    <button type="button" class="stage-modal-close" id="stage-prefs-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <p class="stage-profile-hint">機能の出し入れです。この端末だけの設定で、ショーのデータには入りません。</p>
+    <div id="stage-prefs-list"></div>
+  </div>
+</div>
+
 <div class="stage-modal-backdrop" id="stage-import-backdrop" hidden></div>
 <div class="stage-modal stage-shows-modal" id="stage-import-modal" role="dialog" aria-modal="true"
      aria-labelledby="stage-import-title" hidden>
@@ -742,8 +763,8 @@
 </div>
 
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=30"></script>
+<script src="stage-i18n.js?v=31"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
-<script src="stage-sketch.js?v=168"></script>
+<script src="stage-sketch.js?v=169"></script>
 </body>
 </html>

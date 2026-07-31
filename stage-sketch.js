@@ -1116,6 +1116,17 @@
     importAsNew: document.getElementById("stage-import-as-new"),
     importReplace: document.getElementById("stage-import-replace"),
     printBtn: document.getElementById("stage-print-btn"),
+    prefsBtn: document.getElementById("stage-prefs-btn"),
+    prefsModal: document.getElementById("stage-prefs-modal"),
+    prefsBackdrop: document.getElementById("stage-prefs-backdrop"),
+    prefsClose: document.getElementById("stage-prefs-close"),
+    prefsList: document.getElementById("stage-prefs-list"),
+    presentBtn: document.getElementById("stage-present-btn"),
+    arrangeRow: document.getElementById("stage-arrange-row"),
+    mirrorBtn: document.getElementById("stage-mirror-btn"),
+    lineupRow: document.getElementById("stage-lineup-row"),
+    lineupCircle: document.getElementById("stage-lineup-circle"),
+    lineupVee: document.getElementById("stage-lineup-vee"),
     trapSit: document.getElementById("stage-trap-sit"),
     trapHang: document.getElementById("stage-trap-hang"),
     poseLabel: document.getElementById("stage-pose-label"),
@@ -1278,6 +1289,40 @@
   // 印刷ページなどHTML文字列へ差し込むときの逃がし
   const escapeHtml = (t) => String(t).replace(/[&<>"']/g, (ch) => (
     { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+
+  /* ---------- 環境設定（機能の出し入れ） ----------
+     端末ごとの設定。ショーのデータには入れない（共有・書き出しに混ざらない）。
+     新しい機能は原則ここに並べ、切れるようにしておく（本人の方針）。 */
+  const PREFS_KEY = "shosai-stage-prefs-v1";
+  const FEATURES = [
+    { key: "presentation", label: "プレゼンモード",
+      hint: "上部の「プレゼン」で正面図だけを全画面に。矢印キーでシーン送り、Escで戻る" },
+    { key: "blackout", label: "暗転で始まるシーン",
+      hint: "シーンの欄に「暗転」の印が出て、その転換は一度真っ暗になってから明ける" },
+    { key: "mirror", label: "シーンの左右ミラー",
+      hint: "シーン操作に「ミラー」が出て、いまのシーンを上手下手そっくり反転する" },
+    { key: "lineup", label: "整列（一列・円・V字）",
+      hint: "シーン操作に整列ボタンが出て、舞台上の演者を並べ直す" },
+    { key: "busyness", label: "転換の忙しさ診断",
+      hint: "ショー地図に、転換ごとの移動量・動く人数・出入りの数を出す" },
+    { key: "crossing", label: "動線の交差警告",
+      hint: "同時に動く演者の動線がぶつかりそうな所に、平面図で印を出す" },
+    { key: "highwarn", label: "高所の下の注意",
+      hint: "ポールやトラピーズの真下に人が居るとき、平面図に印を出す" },
+    { key: "bamiri", label: "バミリ図（印刷）",
+      hint: "印刷用ページに、演者の立ち位置の実寸表を足す" },
+    { key: "cuesheet", label: "明かりのキューシート（印刷）",
+      hint: "印刷用ページに、シーンごとの明かりの点き消え表を足す" },
+  ];
+  const FEATURES_PLANNED = [
+    "転換アニメの動画書き出し", "見えない席の検査（遮蔽）", "複数選択と整形", "資料棚からの場面引用",
+  ];
+  let prefs = {};
+  try { prefs = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}") || {}; } catch (_) { prefs = {}; }
+  const featureOn = (key) => (prefs[key] === undefined ? true : Boolean(prefs[key]));
+  function savePrefs() {
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (_) { /* 保存できなくても動く */ }
+  }
   const rehearsalSeconds = (value) => {
     if (value === undefined || value === null || value === "") return null;
     const number = Number(value);
@@ -1777,6 +1822,8 @@
         : [],
       photo: normalizePhoto(raw.photo),
       rehearsal: kind === "scene" ? normalizeSceneRehearsal(raw.rehearsal) : null,
+      // 暗転で始まるシーン（転換が一度真っ暗になってから明ける）
+      blackout: kind === "scene" ? Boolean(raw.blackout) : false,
     };
   }
 
@@ -4418,6 +4465,48 @@
       if (!tw) return;
       transit(place(g.u, g.v, L), place(tw.u, tw.v, L), g.member.color || "#a84b26");
     });
+
+    /* 動線の交差警告。同じ転換で動く演者どうしの道を同じ時刻で刻み、
+       すれ違いが0.45mを切る所に印を出す（衝突しかけの発見） */
+    if (featureOn("crossing") && state.showRoutesCast) {
+      const size2 = L.size;
+      const paths = [];
+      scene.pieces.forEach((piece) => {
+        if (piece.type !== "performer" || !piece.route) return;
+        const r = piece.route;
+        const pts = [];
+        for (let i2 = 0; i2 <= 12; i2 += 1) {
+          const p2 = i2 / 12;
+          const k = 1 - p2;
+          pts.push({
+            u: k * k * piece.u + 2 * k * p2 * r.bu + p2 * p2 * r.u,
+            v: k * k * piece.v + 2 * k * p2 * r.bv + p2 * p2 * r.v,
+          });
+        }
+        paths.push(pts);
+      });
+      for (let i2 = 0; i2 < paths.length; i2 += 1) {
+        for (let j2 = i2 + 1; j2 < paths.length; j2 += 1) {
+          let best = 1e9;
+          let at2 = null;
+          for (let k2 = 0; k2 <= 12; k2 += 1) {
+            const a = paths[i2][k2];
+            const b2 = paths[j2][k2];
+            const d = Math.hypot((a.u - b2.u) * (size2.width || 12), (a.v - b2.v) * (size2.depth || 9));
+            if (d < best) { best = d; at2 = { u: (a.u + b2.u) / 2, v: (a.v + b2.v) / 2 }; }
+          }
+          if (best < 0.45 && at2) {
+            const pos2 = place(at2.u, at2.v, L);
+            target.save();
+            target.font = "16px sans-serif";
+            target.textAlign = "center";
+            target.textBaseline = "middle";
+            target.fillText("⚠", pos2.x, pos2.y);
+            target.restore();
+          }
+        }
+      }
+    }
   }
 
   // その駒の動線を表示しているか（演者・照明・装置で別のつまみ）
@@ -5238,6 +5327,13 @@
       if (selected) drawSelection(target, selected, L);
     }
 
+    /* 暗転で始まるシーンへの転換。前半で落ちて後半で明ける（山なりの黒幕）。
+       動きの中身は幕の裏で起きるのが、暗転転換の本来の姿 */
+    if (!L.plan && sceneAnim && sceneAnim.blackout) {
+      const a = Math.sin(Math.PI * clamp(sceneAnim.progress || 0, 0, 1));
+      target.fillStyle = `rgba(0,0,0,${(a * 0.96).toFixed(3)})`;
+      target.fillRect(0, 0, W, H);
+    }
     if (!L.plan) {
       const edgeShade = target.createRadialGradient(W / 2, H * 0.55, 180, W / 2, H * 0.55, W * 0.72);
       edgeShade.addColorStop(0.64, "rgba(0,0,0,0)");
@@ -5246,6 +5342,27 @@
       target.fillRect(0, 0, W, H);
       // 見る位置の小図。客席が正面だけの劇場でしか意味を持たない
       if (state.showSeatMap && L.venue.audience === "front") drawSeatMap(target, L);
+    }
+
+    /* 高所の下の注意。ポールやトラピーズに居る人の真下（0.7m以内）に
+       床の人が居たら、平面図に印を出す。安全の保証ではなく気づきのため */
+    if (L.plan && featureOn("highwarn")) {
+      const size3 = L.size;
+      const highs = sc().pieces.filter((q) => q.type === "performer" && (q.base || 0) > 1.5);
+      const lows = sc().pieces.filter((q) => q.type === "performer" && (q.base || 0) < 0.3);
+      highs.forEach((hp) => {
+        lows.forEach((lp) => {
+          const d = Math.hypot((hp.u - lp.u) * (size3.width || 12), (hp.v - lp.v) * (size3.depth || 9));
+          if (d < 0.7) {
+            const pos3 = place(lp.u, lp.v, L);
+            target.save();
+            target.font = "15px sans-serif";
+            target.textAlign = "center";
+            target.fillText("⚠", pos3.x, pos3.y - 16);
+            target.restore();
+          }
+        });
+      });
     }
 
     /* 舞台裏の演者。袖に立たせ、薄く描いて「まだ出ていない」ことを示す。
@@ -7251,6 +7368,24 @@
             makeTimingInput("留まる", "holdDurationSeconds"),
             makeTimingInput("次へ移動", "transitionToNextSeconds"),
           );
+          if (featureOn("blackout")) {
+            const dark = document.createElement("label");
+            dark.className = "stage-canvas-toggle";
+            dark.title = tx("このシーンへの転換を、一度真っ暗にしてから明ける");
+            const darkBox = document.createElement("input");
+            darkBox.type = "checkbox";
+            darkBox.checked = Boolean(scene.blackout);
+            darkBox.addEventListener("change", () => {
+              checkpoint();
+              scene.blackout = darkBox.checked;
+              persistSoon();
+              announce(scene.blackout ? "暗転で始まるシーンにしました。" : "暗転をやめました。");
+            });
+            const darkWord = document.createElement("span");
+            darkWord.textContent = tx("暗転");
+            dark.append(darkBox, darkWord);
+            timing.append(dark);
+          }
           const note = document.createElement("textarea");
           note.className = "stage-text-input";
           note.rows = 2;
@@ -7622,7 +7757,9 @@
         to: { u: old_.u, v: old_.v }, exit: true,
         glowFrom: finite(old_.glow, 1), glowTo: 0 });
     });
-    if (!pieces.length && !exits.length) return;
+    /* 暗転で始まるシーンへの転換は、動きが無くても暗転の幕だけは掛ける */
+    const blackout = featureOn("blackout") && Boolean(sc().blackout);
+    if (!pieces.length && !exits.length && !blackout) return;
     const movers = pieces.concat(exits);
     const span = clamp(finite(state.sceneAnimMs, 2000), 200, 3000);
     const start = performance.now();
@@ -7690,7 +7827,7 @@
       stopSceneAnim();
       render();
     };
-    sceneAnim = { pieces, exits, progress: 0, raf: requestAnimationFrame(step) };
+    sceneAnim = { pieces, exits, blackout, progress: 0, raf: requestAnimationFrame(step) };
   }
 
   /* ---------- ショー地図 ----------
@@ -7731,6 +7868,161 @@
         ctx.fillRect(x - 3.5, y - 2.5, 7, 5);
       }
     });
+  }
+
+  /* ---------- 環境設定の窓 ---------- */
+  function renderPrefs() {
+    const host = els.prefsList;
+    if (!host) return;
+    host.innerHTML = "";
+    FEATURES.forEach((f) => {
+      const row = document.createElement("label");
+      row.className = "stage-pref-row";
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = featureOn(f.key);
+      box.addEventListener("change", () => {
+        prefs[f.key] = box.checked;
+        savePrefs();
+        applyFeatureFlags();
+        renderScenes();
+        render();
+        announce(box.checked ? `設定「${f.label}」をONにしました。` : `設定「${f.label}」をOFFにしました。`);
+      });
+      const body = document.createElement("span");
+      const name = document.createElement("span");
+      name.className = "stage-pref-name";
+      name.textContent = tx(f.label);
+      const hint = document.createElement("p");
+      hint.className = "stage-pref-hint";
+      hint.textContent = tx(f.hint);
+      body.append(name, hint);
+      row.append(box, body);
+      host.append(row);
+    });
+    FEATURES_PLANNED.forEach((label) => {
+      const row = document.createElement("div");
+      row.className = "stage-pref-row is-planned";
+      const tag = document.createElement("span");
+      tag.className = "stage-pref-tag";
+      tag.textContent = tx("準備中");
+      const name = document.createElement("span");
+      name.className = "stage-pref-name";
+      name.textContent = tx(label);
+      row.append(tag, name);
+      host.append(row);
+    });
+  }
+  function openPrefs() {
+    renderPrefs();
+    if (els.prefsModal) els.prefsModal.hidden = false;
+    if (els.prefsBackdrop) els.prefsBackdrop.hidden = false;
+  }
+  function closePrefs() {
+    if (els.prefsModal) els.prefsModal.hidden = true;
+    if (els.prefsBackdrop) els.prefsBackdrop.hidden = true;
+  }
+  // 機能の出し入れをボタンの表示へ反映する
+  function applyFeatureFlags() {
+    if (els.presentBtn) els.presentBtn.hidden = !featureOn("presentation");
+    if (els.arrangeRow) els.arrangeRow.hidden = !(featureOn("mirror") || featureOn("lineup"));
+    if (els.mirrorBtn) els.mirrorBtn.hidden = !featureOn("mirror");
+    [els.lineupRow, els.lineupCircle, els.lineupVee].forEach((b) => {
+      if (b) b.hidden = !featureOn("lineup");
+    });
+  }
+
+  /* ---------- プレゼンモード ----------
+     正面のキャンバスをそのまま全画面へ。矢印キーのシーン送りは
+     いつもの割り当てが効き、Escで戻る（ブラウザの全画面をそのまま使う）。 */
+  function startPresentation() {
+    const cv = canvas;
+    if (!cv || !cv.requestFullscreen) {
+      announce("この環境では全画面にできませんでした。");
+      return;
+    }
+    cv.requestFullscreen().then(() => {
+      cv.focus();
+      announce("プレゼンモードです。矢印キーでシーン送り、Escで戻ります。");
+    }).catch(() => announce("この環境では全画面にできませんでした。"));
+  }
+
+  /* ---------- シーンの左右ミラー ---------- */
+  function mirrorScene() {
+    checkpoint();
+    (sc().pieces || []).forEach((piece) => {
+      piece.u = clamp(1 - piece.u, -0.5, 1.5);
+      if (piece.facing !== undefined) piece.facing = (360 - (piece.facing || 0)) % 360;
+      if (piece.poleSide) piece.poleSide = piece.poleSide === "L" ? "R" : "L";
+      if (piece.beam) piece.beam.u = clamp(1 - piece.beam.u, -0.3, 1.3);
+      if (piece.route) {
+        piece.route.u = clamp(1 - piece.route.u, -0.5, 1.5);
+        piece.route.bu = clamp(1 - piece.route.bu, -0.5, 1.5);
+      }
+    });
+    updateInspector();
+    render();
+    persistSoon();
+    announce("シーンを左右にミラーしました。");
+  }
+
+  /* ---------- 整列（舞台上の演者全員） ---------- */
+  function lineupPerformers(shape) {
+    const people = (sc().pieces || []).filter((piece) =>
+      piece.type === "performer" && onStageArea(piece.u, piece.v));
+    if (people.length < 2) { announce("並べ替える演者が足りません（舞台上に2人以上）。"); return; }
+    checkpoint();
+    // いまの左右の並びを保ったまま置き直す（順番を壊すと誰がどこか分からなくなる）
+    const ordered = people.slice().sort((a, b) => a.u - b.u);
+    const n = ordered.length;
+    if (shape === "row") {
+      const v = ordered.reduce((t, piece) => t + piece.v, 0) / n;
+      ordered.forEach((piece, i) => {
+        piece.u = n === 1 ? 0.5 : 0.15 + (0.7 * i) / (n - 1);
+        piece.v = clamp(v, 0.1, 0.95);
+      });
+      announce("舞台上の演者を等間隔の一列に並べました。");
+    } else if (shape === "circle") {
+      const r = Math.min(0.3, 0.1 + n * 0.03);
+      ordered.forEach((piece, i) => {
+        const a = -Math.PI / 2 + (Math.PI * 2 * i) / n;
+        piece.u = 0.5 + Math.cos(a) * r;
+        piece.v = 0.5 + Math.sin(a) * r * 0.8;
+      });
+      announce("舞台上の演者を円に並べました。");
+    } else {
+      // V字。先頭（中央寄り）を頂点に、交互に左右へ開く
+      ordered.forEach((piece, i) => {
+        const wing = Math.ceil(i / 2) * (i % 2 === 1 ? 1 : -1);
+        piece.u = 0.5 + wing * 0.09;
+        piece.v = 0.35 + Math.abs(wing) * 0.1;
+      });
+      announce("舞台上の演者をV字に並べました。");
+    }
+    render();
+    persistSoon();
+  }
+
+  /* ---------- 転換の忙しさ ---------- */
+  function transitionStats(prev, row) {
+    const size = venueSize();
+    let dist = 0;
+    let movers = 0;
+    let inout = 0;
+    (row.pieces || []).forEach((piece) => {
+      if (piece.type === "light") return;
+      const twin = twinOf(piece, prev.pieces || []);
+      if (!twin) {
+        if (piece.type === "performer" && piece.castId) inout += 1;
+        return;
+      }
+      const d = Math.hypot((piece.u - twin.u) * (size.width || 12), (piece.v - twin.v) * (size.depth || 9));
+      if (d >= 0.25) { movers += 1; dist += d; }
+    });
+    (prev.pieces || []).forEach((old_) => {
+      if (old_.type === "performer" && old_.castId && !twinOf(old_, row.pieces || [])) inout += 1;
+    });
+    return { dist, movers, inout };
   }
 
   /* ---------- 印刷用ページ ----------
@@ -7778,9 +8070,57 @@
   <div class="meta">
     ${row.note ? `<p class="note">${escapeHtml(row.note)}</p>` : ""}
     ${cast.length ? `<p class="cast">${en ? "On stage" : "舞台上"}: ${escapeHtml(cast.join(" / "))}</p>` : ""}
+    ${bamiriTable(row)}
   </div>
 </section>`);
     });
+    /* バミリ図: 立ち位置の実寸表。床にテープを貼る作業へそのまま持っていける */
+    function bamiriTable(row) {
+      if (!featureOn("bamiri")) return "";
+      const size = venueSize();
+      const people = (row.pieces || []).filter((q) => q.type === "performer" && onStageArea(q.u, q.v));
+      if (!people.length) return "";
+      const cells = people.map((q) => {
+        const off = (q.u - 0.5) * (size.width || 12);
+        const side = Math.abs(off) < 0.15
+          ? (en ? "centre" : "中央")
+          : (en
+            ? `${Math.abs(off).toFixed(1)}m ${off > 0 ? "SL" : "SR"}`
+            : `${off > 0 ? "上手" : "下手"}${Math.abs(off).toFixed(1)}m`);
+        const front = ((1 - q.v) * (size.depth || 9)).toFixed(1);
+        return `<tr><td>${escapeHtml(pieceLabel(q) || "?")}</td><td>${escapeHtml(side)}</td><td>${front}m</td></tr>`;
+      }).join("");
+      return `<table class="bamiri"><thead><tr><th>${en ? "Who" : "誰"}</th><th>${en ? "Across" : "左右"}</th><th>${en ? "From DS edge" : "ツラから"}</th></tr></thead><tbody>${cells}</tbody></table>`;
+    }
+
+    /* 明かりのキューシート: シーンごとの点き・消え・強さの変化 */
+    let cuesheetHtml = "";
+    if (featureOn("cuesheet")) {
+      const sceneRows = state.project.scenes.filter((r2) => r2.kind === "scene");
+      const lines = [];
+      sceneRows.forEach((row, i2) => {
+        const prev = i2 > 0 ? sceneRows[i2 - 1] : { pieces: [] };
+        const cur = (row.pieces || []).filter((q) => q.type === "light");
+        const before = (prev.pieces || []).filter((q) => q.type === "light");
+        const on = cur.filter((q) => !twinOf(q, before)).map((q) => pieceLabel(q));
+        const off = before.filter((q) => !twinOf(q, cur)).map((q) => pieceLabel(q));
+        const changed = cur.map((q) => {
+          const twin = twinOf(q, before);
+          if (!twin) return null;
+          const a = finite(twin.glow, 1);
+          const b2 = finite(q.glow, 1);
+          if (Math.abs(a - b2) < 0.01) return null;
+          return `${pieceLabel(q)} ${Math.round(a * 100)}→${Math.round(b2 * 100)}%`;
+        }).filter(Boolean);
+        if (!on.length && !off.length && !changed.length) return;
+        lines.push(`<tr><td>${i2 + 1} ${escapeHtml(row.title || "")}</td><td>${escapeHtml(on.join(" / "))}</td><td>${escapeHtml(off.join(" / "))}</td><td>${escapeHtml(changed.join(" / "))}</td></tr>`);
+      });
+      if (lines.length) {
+        cuesheetHtml = `<section class="scene"><header><h3>${en ? "Light cue sheet" : "明かりのキューシート"}</h3></header>
+<table class="cues"><thead><tr><th>${en ? "Scene" : "シーン"}</th><th>${en ? "On" : "点く"}</th><th>${en ? "Off" : "消える"}</th><th>${en ? "Level" : "強さ"}</th></tr></thead><tbody>${lines.join("")}</tbody></table></section>`;
+      }
+    }
+
     state.project.activeSceneId = keepScene;
     zoomState.front = keepFront;
     zoomState.plan = keepPlan;
@@ -7805,6 +8145,10 @@
   .meta { margin-top: 6px; }
   .note { font-size: 13px; margin: 0 0 4px; white-space: pre-wrap; }
   .cast { font-size: 12px; color: #555; margin: 0; }
+  table.bamiri, table.cues { border-collapse: collapse; font-size: 11px; margin-top: 6px; }
+  table.bamiri th, table.bamiri td, table.cues th, table.cues td {
+    border: 1px solid #bbb; padding: 2px 8px; text-align: left; }
+  table.bamiri th, table.cues th { background: #eee; }
   @media print {
     body { margin: 10mm; }
     .scene { page-break-after: always; margin-bottom: 0; }
@@ -7814,6 +8158,7 @@
 <h1>${title}</h1>
 <p class="stamp">${escapeHtml(state.project.versionLabel || "v1")} · ${new Date().toLocaleDateString(en ? "en-US" : "ja-JP")} · ${en ? "Stage Sketch print sheet" : "舞台スケッチ 印刷用"}</p>
 ${parts.join("\n")}
+${cuesheetHtml}
 </body></html>`;
     const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
     const win = window.open(url, "_blank");
@@ -7854,6 +8199,22 @@ ${parts.join("\n")}
       const lights = (row.pieces || []).filter((p) => p.type === "light").length;
       meta.textContent = isEn() ? `${cast} on stage · ${lights} lights` : `舞台上${cast}人 · 明かり${lights}`;
       cell.append(cv, title, meta);
+      /* 転換の忙しさ。前のシーンからこのシーンへ移るときの、
+         移動量・動く数・出入りの数。多い転換ほど稽古で崩れやすい */
+      if (featureOn("busyness")) {
+        const at = rows.indexOf(row);
+        if (at > 0) {
+          const st2 = transitionStats(rows[at - 1], row);
+          const busy = document.createElement("p");
+          busy.className = "stage-map-meta";
+          const heavy = st2.movers + st2.inout >= 6 || st2.dist >= 25;
+          if (heavy) busy.style.color = "#d3844a";
+          busy.textContent = isEn()
+            ? `Change: ${st2.dist.toFixed(0)}m · ${st2.movers} move · ${st2.inout} in/out${heavy ? " ⚠" : ""}`
+            : `転換: ${st2.dist.toFixed(0)}m・動く${st2.movers}・出入り${st2.inout}${heavy ? " ⚠" : ""}`;
+          cell.append(busy);
+        }
+      }
       cell.addEventListener("click", () => {
         closeShowMap();
         openScene(row.id);
@@ -11117,6 +11478,15 @@ ${parts.join("\n")}
   }
   if (els.showMapBtn) els.showMapBtn.addEventListener("click", openShowMap);
   if (els.printBtn) els.printBtn.addEventListener("click", openPrintPage);
+  if (els.prefsBtn) els.prefsBtn.addEventListener("click", openPrefs);
+  if (els.prefsClose) els.prefsClose.addEventListener("click", closePrefs);
+  if (els.prefsBackdrop) els.prefsBackdrop.addEventListener("click", closePrefs);
+  if (els.presentBtn) els.presentBtn.addEventListener("click", startPresentation);
+  if (els.mirrorBtn) els.mirrorBtn.addEventListener("click", mirrorScene);
+  if (els.lineupRow) els.lineupRow.addEventListener("click", () => lineupPerformers("row"));
+  if (els.lineupCircle) els.lineupCircle.addEventListener("click", () => lineupPerformers("circle"));
+  if (els.lineupVee) els.lineupVee.addEventListener("click", () => lineupPerformers("vee"));
+  applyFeatureFlags();
   if (els.importClose) els.importClose.addEventListener("click", closeImportPreview);
   if (els.importBackdrop) els.importBackdrop.addEventListener("click", closeImportPreview);
   if (els.importAsNew) els.importAsNew.addEventListener("click", () => confirmImport(true));

@@ -7060,3 +7060,28 @@ body.is-panel-dragging {
   border-bottom: 1px solid rgba(211, 172, 89, 0.25);
   padding-bottom: 3px;
 }
+
+
+/* ---- 環境設定 ---- */
+.stage-pref-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 2px;
+  border-bottom: 1px solid rgba(211, 172, 89, 0.14);
+}
+.stage-pref-row input { margin-top: 3px; }
+.stage-pref-name { font-size: 14px; color: rgba(239, 231, 214, 0.92); white-space: nowrap; }
+.stage-pref-hint { font-size: 12px; color: rgba(239, 231, 214, 0.5); margin: 0; }
+.stage-pref-row.is-planned .stage-pref-name { color: rgba(239, 231, 214, 0.45); }
+.stage-pref-tag {
+  font-size: 10px;
+  border: 1px solid rgba(211, 172, 89, 0.5);
+  color: rgba(211, 172, 89, 0.8);
+  padding: 1px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+/* プレゼン（正面キャンバスの全画面） */
+canvas:fullscreen { object-fit: contain; background: #000; }
+canvas:-webkit-full-screen { object-fit: contain; background: #000; }
