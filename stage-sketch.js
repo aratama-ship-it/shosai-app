@@ -1407,7 +1407,7 @@
       showRoutes: true,
       // 場面が変わるとき、動線に沿って動かして見せるか。秒数も持つ
       animateScenes: true,
-      sceneAnimMs: 620,
+      sceneAnimMs: 2000,
       // 舞台が一度に入らない席での見回し（-1〜1）。左右と上下
       frontPan: 0,
       frontPanY: 0,
@@ -1921,7 +1921,9 @@
       showLightsPlan: raw.showLightsPlan === undefined ? true : Boolean(raw.showLightsPlan),
       showRoutes: raw.showRoutes === undefined ? true : Boolean(raw.showRoutes),
       animateScenes: raw.animateScenes === undefined ? true : Boolean(raw.animateScenes),
-      sceneAnimMs: clamp(finite(raw.sceneAnimMs, 620), 200, 3000),
+      /* 既定は2秒（本人指定）。以前の既定620msのまま保存されたショーは、
+         触っていない印なので新しい既定へ引き上げる */
+      sceneAnimMs: finite(raw.sceneAnimMs, 2000) === 620 ? 2000 : clamp(finite(raw.sceneAnimMs, 2000), 200, 3000),
       frontPan: clamp(finite(raw.frontPan, 0), -1, 1),
       frontPanY: clamp(finite(raw.frontPanY, 0), -1, 1),
       closedSections: (raw.closedSections && typeof raw.closedSections === "object" && !Array.isArray(raw.closedSections))
@@ -7481,9 +7483,28 @@
         to: dest,
       });
     });
+    /* 入り。前のシーンに居なかった演者が、このシーンで舞台に居るなら、
+       前のシーンでの舞台裏の立ち位置（袖）から歩いて入る。
+       はけと対になる動き。駒はこのシーンに実在するので、写しではなく本物を動かす。
+       正面図では枠の外から入ってくる間、onStageArea の決まりで自然に現れる。 */
+    const ghostsBefore = backstageGhostsFor(fromScene);
+    sc().pieces.forEach((piece) => {
+      if (piece.type !== "performer" || !piece.castId) return;
+      if (!onStageArea(piece.u, piece.v)) return;
+      if (twinOf(piece, fromScene.pieces || [])) return;
+      const g = ghostsBefore.find((x) => x.member.id === piece.castId);
+      if (!g) return;   // 前のシーンに登録ごと無い＝その場に出現。歩かせようがない
+      pieces.push({
+        piece,
+        from: { u: g.u, v: g.v },
+        ctrl: null,
+        to: { u: piece.u, v: piece.v },
+        beam: null,
+      });
+    });
     if (!pieces.length && !exits.length) return;
     const movers = pieces.concat(exits);
-    const span = clamp(finite(state.sceneAnimMs, 620), 200, 3000);
+    const span = clamp(finite(state.sceneAnimMs, 2000), 200, 3000);
     const start = performance.now();
     const step = (now) => {
       const t = clamp((now - start) / span, 0, 1);
@@ -9754,7 +9775,7 @@
 
   if (els.animMs) {
     els.animMs.addEventListener("input", (e) => {
-      state.sceneAnimMs = clamp(finite(e.target.value, 0.62) * 1000, 200, 3000);
+      state.sceneAnimMs = clamp(finite(e.target.value, 2) * 1000, 200, 3000);
       if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}秒`;
       persistSoon();
     });
