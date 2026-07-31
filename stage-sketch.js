@@ -4074,8 +4074,9 @@
     target.save();
     if (piece.type === "performer") {
       // 姿勢ごとの実際の占有範囲で描く。寝ていれば床を長く取る
+      // 転換アニメの途中は、表示中の姿勢（前の姿勢や歩き）の広さで描く
       const H = pieceHeightM(piece) * (piece.size / 100);
-      const ext = poseExtent(piece.pose);
+      const ext = poseExtent(piece.animPose || piece.pose);
       const halfW = Math.max(4, ext.halfX * H * L.pxPerM);
       const halfD = Math.max(4, ext.halfZ * H * L.pxPerM);
       const rad = ((piece.facing || 0) * Math.PI) / 180;
@@ -7476,6 +7477,10 @@
         to: { u: piece.u, v: piece.v },
         // 出発地点の床からの高さ（前のシーンで台やポールに乗っていた分）
         startBase: piece.type === "performer" ? finite(twin.base, 0) : 0,
+        /* 移動中は前のシーンの姿勢のまま。着いてから新しい姿勢へ切り替える
+           （本人指定＝動きながら姿勢が変わると、どこで決めたのか読めない）。 */
+        fromPose: piece.type === "performer" && twin.pose && twin.pose !== piece.pose
+          ? twin.pose : null,
         // 明かりは灯体の側も動かす（当たる場所だけ動くと光が伸び縮みして見える）
         beam: piece.type === "light" && piece.beam && twin.beam
           ? { from: { u: twin.beam.u, v: twin.beam.v }, to: { u: piece.beam.u, v: piece.beam.v } }
@@ -7503,6 +7508,7 @@
         to: dest,
         startBase: finite(old.base, 0),
         exit: true,   // 写しの駒は床（袖）で終わる。高さの計算に本体の base を使わない
+        fromPose: "walk",   // はけは歩いて出る
       });
     });
     /* 入り。前のシーンに居なかった演者が、このシーンで舞台に居るなら、
@@ -7523,6 +7529,7 @@
         to: { u: piece.u, v: piece.v },
         beam: null,
         startBase: 0,   // 袖は床
+        fromPose: "walk",   // 入りは歩いて入る
       });
     });
     if (!pieces.length && !exits.length) return;
@@ -7560,8 +7567,8 @@
             const p2 = easeInOut(t / down);
             piece.animU = entry.from.u;
             piece.animV = entry.from.v;
-            piece.animBase = sb * (1 - p2);   // まず降りる（乗り物の姿勢のまま）
-            delete piece.animPose;
+            piece.animBase = sb * (1 - p2);   // まず降りる（前の姿勢のまま）
+            if (entry.fromPose) piece.animPose = entry.fromPose; else delete piece.animPose;
           } else if (t < down + walkSpan) {
             along(easeInOut((t - down) / walkSpan));
             piece.animBase = 0;
@@ -7575,6 +7582,8 @@
           }
         } else {
           along(e);
+          // 移動中は前のシーンの姿勢のまま。終わったら stopSceneAnim が消して新しい姿勢になる
+          if (entry.fromPose) piece.animPose = entry.fromPose;
         }
         if (entry.beam) {
           piece.animBeamU = entry.beam.from.u + (entry.beam.to.u - entry.beam.from.u) * e;
