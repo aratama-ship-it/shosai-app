@@ -1122,11 +1122,7 @@
     prefsClose: document.getElementById("stage-prefs-close"),
     prefsList: document.getElementById("stage-prefs-list"),
     presentBtn: document.getElementById("stage-present-btn"),
-    arrangeRow: document.getElementById("stage-arrange-row"),
-    mirrorBtn: document.getElementById("stage-mirror-btn"),
-    lineupRow: document.getElementById("stage-lineup-row"),
-    lineupCircle: document.getElementById("stage-lineup-circle"),
-    lineupVee: document.getElementById("stage-lineup-vee"),
+    arrangeSelect: document.getElementById("stage-arrange-select"),
     trapSit: document.getElementById("stage-trap-sit"),
     trapHang: document.getElementById("stage-trap-hang"),
     poseLabel: document.getElementById("stage-pose-label"),
@@ -1299,15 +1295,13 @@
       hint: "上部の「プレゼン」で正面図だけを全画面に。矢印キーでシーン送り、Escで戻る" },
     { key: "blackout", label: "暗転で始まるシーン",
       hint: "シーンの欄に「暗転」の印が出て、その転換は一度真っ暗になってから明ける" },
-    { key: "mirror", label: "シーンの左右ミラー",
-      hint: "シーン操作に「ミラー」が出て、いまのシーンを上手下手そっくり反転する" },
     { key: "lineup", label: "整列（一列・円・V字）",
-      hint: "シーン操作に整列ボタンが出て、舞台上の演者を並べ直す" },
-    { key: "busyness", label: "転換の忙しさ診断",
+      hint: "平面図の「動線を描く」の横に整列のプルダウンが出て、舞台上の演者を並べ直す" },
+    { key: "busyness", label: "転換の忙しさ診断", def: false,
       hint: "ショー地図に、転換ごとの移動量・動く人数・出入りの数を出す" },
-    { key: "crossing", label: "動線の交差警告",
+    { key: "crossing", label: "動線の交差警告", def: false,
       hint: "同時に動く演者の動線がぶつかりそうな所に、平面図で印を出す" },
-    { key: "highwarn", label: "高所の下の注意",
+    { key: "highwarn", label: "高所の下の注意", def: false,
       hint: "ポールやトラピーズの真下に人が居るとき、平面図に印を出す" },
     { key: "bamiri", label: "バミリ図（印刷）",
       hint: "印刷用ページに、演者の立ち位置の実寸表を足す" },
@@ -1319,7 +1313,11 @@
   ];
   let prefs = {};
   try { prefs = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}") || {}; } catch (_) { prefs = {}; }
-  const featureOn = (key) => (prefs[key] === undefined ? true : Boolean(prefs[key]));
+  const FEATURE_DEFAULTS = {};
+  FEATURES.forEach((f) => { FEATURE_DEFAULTS[f.key] = f.def === undefined ? true : f.def; });
+  const featureOn = (key) => (prefs[key] === undefined
+    ? (FEATURE_DEFAULTS[key] === undefined ? true : FEATURE_DEFAULTS[key])
+    : Boolean(prefs[key]));
   function savePrefs() {
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (_) { /* 保存できなくても動く */ }
   }
@@ -7925,11 +7923,7 @@
   // 機能の出し入れをボタンの表示へ反映する
   function applyFeatureFlags() {
     if (els.presentBtn) els.presentBtn.hidden = !featureOn("presentation");
-    if (els.arrangeRow) els.arrangeRow.hidden = !(featureOn("mirror") || featureOn("lineup"));
-    if (els.mirrorBtn) els.mirrorBtn.hidden = !featureOn("mirror");
-    [els.lineupRow, els.lineupCircle, els.lineupVee].forEach((b) => {
-      if (b) b.hidden = !featureOn("lineup");
-    });
+    if (els.arrangeSelect) els.arrangeSelect.hidden = !featureOn("lineup");
   }
 
   /* ---------- プレゼンモード ----------
@@ -7947,35 +7941,19 @@
     }).catch(() => announce("この環境では全画面にできませんでした。"));
   }
 
-  /* ---------- シーンの左右ミラー ---------- */
-  function mirrorScene() {
-    checkpoint();
-    (sc().pieces || []).forEach((piece) => {
-      piece.u = clamp(1 - piece.u, -0.5, 1.5);
-      if (piece.facing !== undefined) piece.facing = (360 - (piece.facing || 0)) % 360;
-      if (piece.poleSide) piece.poleSide = piece.poleSide === "L" ? "R" : "L";
-      if (piece.beam) piece.beam.u = clamp(1 - piece.beam.u, -0.3, 1.3);
-      if (piece.route) {
-        piece.route.u = clamp(1 - piece.route.u, -0.5, 1.5);
-        piece.route.bu = clamp(1 - piece.route.bu, -0.5, 1.5);
-      }
-    });
-    updateInspector();
-    render();
-    persistSoon();
-    announce("シーンを左右にミラーしました。");
-  }
-
-  /* ---------- 整列（舞台上の演者全員） ---------- */
+  /* ---------- 整列（舞台上の演者全員） ----------
+     ★いまの位置関係をなるべく保つ（本人指定）。誰がどこへ行くかが
+       席替えのように入れ替わると、並べた瞬間に配置の意味が壊れるため。
+       一列とV字は左右の順、円はいまの重心から見た角度の順をそのまま使う。 */
   function lineupPerformers(shape) {
     const people = (sc().pieces || []).filter((piece) =>
       piece.type === "performer" && onStageArea(piece.u, piece.v));
     if (people.length < 2) { announce("並べ替える演者が足りません（舞台上に2人以上）。"); return; }
     checkpoint();
-    // いまの左右の並びを保ったまま置き直す（順番を壊すと誰がどこか分からなくなる）
-    const ordered = people.slice().sort((a, b) => a.u - b.u);
-    const n = ordered.length;
+    const n = people.length;
     if (shape === "row") {
+      // 左右の順を保ち、奥行きはいまの平均へ
+      const ordered = people.slice().sort((a, b) => a.u - b.u);
       const v = ordered.reduce((t, piece) => t + piece.v, 0) / n;
       ordered.forEach((piece, i) => {
         piece.u = n === 1 ? 0.5 : 0.15 + (0.7 * i) / (n - 1);
@@ -7983,19 +7961,28 @@
       });
       announce("舞台上の演者を等間隔の一列に並べました。");
     } else if (shape === "circle") {
+      /* いまの重心から見た角度の順で、等間隔の円に置き直す。
+         始まりの角度も一人目のいまの角度に合わせるので、全員が「近くの席」へ入る */
+      const cu = people.reduce((t, piece) => t + piece.u, 0) / n;
+      const cv2 = people.reduce((t, piece) => t + piece.v, 0) / n;
+      const ordered = people.slice().sort((a, b) =>
+        Math.atan2(a.v - cv2, a.u - cu) - Math.atan2(b.v - cv2, b.u - cu));
+      const startA = Math.atan2(ordered[0].v - cv2, ordered[0].u - cu);
       const r = Math.min(0.3, 0.1 + n * 0.03);
       ordered.forEach((piece, i) => {
-        const a = -Math.PI / 2 + (Math.PI * 2 * i) / n;
-        piece.u = 0.5 + Math.cos(a) * r;
-        piece.v = 0.5 + Math.sin(a) * r * 0.8;
+        const a = startA + (Math.PI * 2 * i) / n;
+        piece.u = clamp(0.5 + Math.cos(a) * r, 0.05, 0.95);
+        piece.v = clamp(0.5 + Math.sin(a) * r * 0.8, 0.08, 0.95);
       });
       announce("舞台上の演者を円に並べました。");
     } else {
-      // V字。先頭（中央寄り）を頂点に、交互に左右へ開く
+      // V字。左右の順のまま、左側の人は左の腕へ・真ん中の人が頂点へ
+      const ordered = people.slice().sort((a, b) => a.u - b.u);
+      const mid = (n - 1) / 2;
       ordered.forEach((piece, i) => {
-        const wing = Math.ceil(i / 2) * (i % 2 === 1 ? 1 : -1);
-        piece.u = 0.5 + wing * 0.09;
-        piece.v = 0.35 + Math.abs(wing) * 0.1;
+        const off = i - mid;
+        piece.u = clamp(0.5 + off * 0.09, 0.05, 0.95);
+        piece.v = clamp(0.35 + Math.abs(off) * 0.1, 0.08, 0.95);
       });
       announce("舞台上の演者をV字に並べました。");
     }
@@ -11482,10 +11469,13 @@ ${cuesheetHtml}
   if (els.prefsClose) els.prefsClose.addEventListener("click", closePrefs);
   if (els.prefsBackdrop) els.prefsBackdrop.addEventListener("click", closePrefs);
   if (els.presentBtn) els.presentBtn.addEventListener("click", startPresentation);
-  if (els.mirrorBtn) els.mirrorBtn.addEventListener("click", mirrorScene);
-  if (els.lineupRow) els.lineupRow.addEventListener("click", () => lineupPerformers("row"));
-  if (els.lineupCircle) els.lineupCircle.addEventListener("click", () => lineupPerformers("circle"));
-  if (els.lineupVee) els.lineupVee.addEventListener("click", () => lineupPerformers("vee"));
+  if (els.arrangeSelect) {
+    els.arrangeSelect.addEventListener("change", (e) => {
+      const shape = e.target.value;
+      e.target.selectedIndex = 0;   // 「押すたびに選ぶ」道具として使う
+      if (shape) lineupPerformers(shape);
+    });
+  }
   applyFeatureFlags();
   if (els.importClose) els.importClose.addEventListener("click", closeImportPreview);
   if (els.importBackdrop) els.importBackdrop.addEventListener("click", closeImportPreview);

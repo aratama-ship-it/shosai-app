@@ -409,12 +409,6 @@
               <div class="stage-scene-actions stage-scene-actions-sub">
                 <button type="button" id="stage-scene-section" class="btn-quiet" title="シーンをまとめる入れ物を足す">セクション+</button>
               <button type="button" id="stage-show-map-btn" class="btn-quiet" title="全シーンを一枚で見渡す">地図</button>
-            </div>
-            <div class="stage-canvas-tools" id="stage-arrange-row">
-              <button type="button" id="stage-mirror-btn" class="btn-quiet" title="このシーンを上手下手そっくり反転する">ミラー</button>
-              <button type="button" id="stage-lineup-row" class="btn-quiet" title="舞台上の演者を等間隔の一列に">一列</button>
-              <button type="button" id="stage-lineup-circle" class="btn-quiet" title="舞台上の演者を円に">円</button>
-              <button type="button" id="stage-lineup-vee" class="btn-quiet" title="舞台上の演者をV字に">V字</button>
                 <button type="button" id="stage-scene-del" class="btn-quiet">削除</button>
               </div>
             </div>
@@ -493,6 +487,13 @@
                 <div class="stage-canvas-tools">
                   <button type="button" class="stage-canvas-tool" id="stage-plan-route"
                           aria-pressed="false">動線を描く</button>
+                  <select class="stage-canvas-tool" id="stage-arrange-select"
+                          title="舞台上の演者を、いまの位置関係を保ったまま並べ直す" aria-label="整列">
+                    <option value="">整列</option>
+                    <option value="row">一列</option>
+                    <option value="circle">円</option>
+                    <option value="vee">V字</option>
+                  </select>
                   <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-plan-zoom"
                           title="等倍に戻す" hidden>1.0× ⟲</button>
                   <button type="button" class="stage-canvas-tool" id="stage-plan-note"
@@ -1103,9 +1104,9 @@
 <script src="book-seeds.js?v=1"></script>
 <script src="app.js?v=39"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=31"></script>
+<script src="stage-i18n.js?v=32"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
-<script src="stage-sketch.js?v=169"></script>
+<script src="stage-sketch.js?v=170"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>
