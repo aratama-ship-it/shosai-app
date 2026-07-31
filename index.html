@@ -559,11 +559,27 @@
                 </label>
                 <input type="range" id="stage-piece-lift" min="0" max="10" step="0.05" value="2.5">
               </div>
+              <!-- プリセットの組を選んでいるときの操作。一体で扱い、直径と強さだけ触れる -->
+              <div id="stage-group-controls" hidden>
+                <label class="stage-control-label stage-range-label" for="stage-group-dia">
+                  照明の直径（全体） <span id="stage-group-dia-value">100%</span>
+                </label>
+                <input type="range" id="stage-group-dia" min="50" max="200" step="5" value="100">
+                <label class="stage-control-label stage-range-label" for="stage-group-glow">
+                  光の強さ <span id="stage-group-glow-value">100%</span>
+                </label>
+                <input type="range" id="stage-group-glow" min="10" max="150" step="5" value="100">
+                <button type="button" class="stage-minor-action" id="stage-group-split">組をばらす</button>
+              </div>
               <div id="stage-beam-controls" hidden>
                 <label class="stage-control-label stage-range-label" for="stage-beam-dia">
                   照明の直径 <span id="stage-beam-dia-value">400cm</span>
                 </label>
                 <input type="range" id="stage-beam-dia" min="0.3" max="20" step="0.05" value="4">
+                <label class="stage-control-label stage-range-label" for="stage-beam-glow">
+                  光の強さ <span id="stage-beam-glow-value">100%</span>
+                </label>
+                <input type="range" id="stage-beam-glow" min="10" max="150" step="5" value="100">
                 <p class="stage-range-scale"><span>照明の位置</span></p>
                 <label class="stage-control-label stage-range-label" for="stage-beam-u">
                   左右 <span id="stage-beam-u-value">中央</span>
@@ -1020,9 +1036,9 @@
 <script src="book-seeds.js?v=1"></script>
 <script src="app.js?v=39"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=27"></script>
+<script src="stage-i18n.js?v=28"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
-<script src="stage-sketch.js?v=160"></script>
+<script src="stage-sketch.js?v=161"></script>
 <script src="roster.js?v=1"></script>
 </body>
 </html>

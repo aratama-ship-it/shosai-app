@@ -1145,6 +1145,14 @@
     beamControls: document.getElementById("stage-beam-controls"),
     beamDia: document.getElementById("stage-beam-dia"),
     beamDiaValue: document.getElementById("stage-beam-dia-value"),
+    beamGlow: document.getElementById("stage-beam-glow"),
+    beamGlowValue: document.getElementById("stage-beam-glow-value"),
+    groupControls: document.getElementById("stage-group-controls"),
+    groupDia: document.getElementById("stage-group-dia"),
+    groupDiaValue: document.getElementById("stage-group-dia-value"),
+    groupGlow: document.getElementById("stage-group-glow"),
+    groupGlowValue: document.getElementById("stage-group-glow-value"),
+    groupSplit: document.getElementById("stage-group-split"),
     beamU: document.getElementById("stage-beam-u"),
     beamUValue: document.getElementById("stage-beam-u-value"),
     beamV: document.getElementById("stage-beam-v"),
@@ -1591,6 +1599,8 @@
        * 落ちる場所は駒そのもの（u,v）。ここには灯体の側だけを持つ。
        * 真上から落とす明かりが既定だが、斜めも、下から上へも同じ形で書ける。 */
       beam: normalizeBeam(piece && piece.beam, piece),
+      /* 光の強さ（1=標準）。シーンごとの駒に持つので、場面で明暗を変えられる */
+      glow: clamp(finite(piece.glow, 1), 0.1, 1.5),
       /* 錠。掛けているあいだは掴んでも動かない。
        * 登録のあるもの（演者・セット・光）は登録側で持つので、ここは
        * 登録を持たない駒（最初から置いてある例など）のための控え。 */
@@ -1871,6 +1881,17 @@
                 // 壁を枠にする（穴の空いた壁＝フレーム）
                 framed: Boolean(t.framed),
                 lightKind: kind === "light" && LIGHT_KINDS[t && t.lightKind] ? t.lightKind : "hang",
+                /* 照明プリセットの組。同じ lightGroup を持つ明かりは一体で扱う。
+                   presetDia は組んだときの直径（倍率スライダーの基準）、
+                   preset は組んだときの置き場（組をONに戻すときの復元用）。 */
+                lightGroup: kind === "light" && typeof t.lightGroup === "string" ? t.lightGroup : null,
+                groupLabel: typeof t.groupLabel === "string" ? t.groupLabel.slice(0, 24) : "",
+                presetDia: t.presetDia === undefined ? undefined : clamp(finite(t.presetDia, 4), 0.3, 20),
+                preset: (t.preset && typeof t.preset === "object")
+                  ? { u: clamp(finite(t.preset.u, 0.5), -0.5, 1.5),
+                    v: clamp(finite(t.preset.v, 0.5), -0.5, 1),
+                    beam: normalizeBeam(t.preset.beam, t.preset) }
+                  : undefined,
               };
             })
           : [],
@@ -3893,6 +3914,10 @@
     const hit = beamTarget(piece, pos, L);
     const lit = tool === "light";
     const picked = piece.id === selectedId;
+    /* 光の強さ。塗りの濃さをまとめて割り増し・割り引きする。
+       輪郭線（当たる点の輪・出どころの線）は操作の印なので強さに連動させない */
+    const glow = clamp(finite(piece.glow, 1), 0.1, 1.5);
+    const ga = (a) => Math.min(1, a * glow);
 
     if (L.plan) {
       /* 平面でも、光の落ちる円は「実際の終点」に描く（beamLanding）。
@@ -3905,7 +3930,7 @@
       target.save();
       // 幕・壁への当たり（宙で終わる光）は床の円より薄く描く
       const pool = target.createRadialGradient(endPos.x, endPos.y, 0, endPos.x, endPos.y, spreadEnd);
-      pool.addColorStop(0, rgba(piece.color, land.hh > 0.05 ? 0.2 : 0.34));
+      pool.addColorStop(0, rgba(piece.color, ga(land.hh > 0.05 ? 0.2 : 0.34)));
       pool.addColorStop(1, rgba(piece.color, 0));
       target.fillStyle = pool;
       target.beginPath();
@@ -3964,9 +3989,9 @@
     const onFloor = land.hh < 0.05;
     const ry = Math.max(3, 32 * scale);
     const gradient = target.createLinearGradient(src.x, src.y, end.x, end.y);
-    gradient.addColorStop(0, rgba(piece.color, 0.09));
-    gradient.addColorStop(0.72, rgba(piece.color, 0.14));
-    gradient.addColorStop(1, rgba(piece.color, 0.06));
+    gradient.addColorStop(0, rgba(piece.color, ga(0.09)));
+    gradient.addColorStop(0.72, rgba(piece.color, ga(0.14)));
+    gradient.addColorStop(1, rgba(piece.color, ga(0.06)));
     target.save();
     target.globalCompositeOperation = "screen";
     target.fillStyle = gradient;
@@ -3984,8 +4009,8 @@
     target.fill();
     // 明るいのは光が落ちた所そのもの。帯はそこへ吸い込まれる
     const pool = target.createRadialGradient(end.x, end.y, 0, end.x, end.y, spreadEnd);
-    pool.addColorStop(0, rgba(piece.color, 0.34));
-    pool.addColorStop(0.55, rgba(piece.color, 0.16));
+    pool.addColorStop(0, rgba(piece.color, ga(0.34)));
+    pool.addColorStop(0.55, rgba(piece.color, ga(0.16)));
     pool.addColorStop(1, rgba(piece.color, 0));
     target.fillStyle = pool;
     target.beginPath();
@@ -4543,7 +4568,20 @@
   }
 
   function drawSelection(target, piece, L) {
-    const b = selectionBounds(piece, L);
+    let b = selectionBounds(piece, L);
+    /* プリセットの組は一体で選ばれる。枠も組全体を囲む */
+    const gsel = piece.type === "light" ? lightGroupOf(piece) : null;
+    if (gsel) {
+      let x0 = b.x; let y0 = b.y; let x1 = b.x + b.w; let y1 = b.y + b.h;
+      groupScenePieces(gsel).forEach((p) => {
+        const c = selectionBounds(p, L);
+        x0 = Math.min(x0, c.x);
+        y0 = Math.min(y0, c.y);
+        x1 = Math.max(x1, c.x + c.w);
+        y1 = Math.max(y1, c.y + c.h);
+      });
+      b = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    }
     const locked = isLocked(piece);
     target.save();
     // 錠が掛かっているものは掴んでも動かない。掴む前に分かるよう、枠の色でも示す
@@ -5898,8 +5936,54 @@
       syncRosterGroups();
       return;
     }
+    /* プリセットの組は一行にまとめる。8灯が8行並ぶと、一体で扱う意図が伝わらない */
+    const groupsSeen = [];
+    lights.forEach((item) => {
+      if (item.lightGroup && !groupsSeen.includes(item.lightGroup)) groupsSeen.push(item.lightGroup);
+    });
+    if (groupsSeen.length) {
+      const head = document.createElement("p");
+      head.className = "stage-roster-head";
+      head.textContent = isEn() ? "Preset rigs" : "プリセットの組";
+      const box = document.createElement("div");
+      box.className = "stage-cast-list";
+      host.append(head, box);
+      groupsSeen.forEach((gid) => {
+        const items = groupItems(gid);
+        const row = document.createElement("div");
+        row.className = "stage-cast-row";
+        const dot = document.createElement("span");
+        dot.className = "stage-kind-swatch";
+        dot.style.background = (items[0] && items[0].color) || "#d3ac59";
+        dot.style.pointerEvents = "none";
+        const name = document.createElement("span");
+        name.className = "stage-cast-name";
+        name.textContent = groupTitle(gid);
+        const on = groupScenePieces(gid).length > 0;
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = `stage-onstage${on ? " is-on" : ""}`;
+        toggle.textContent = on ? "ON" : "OFF";
+        toggle.addEventListener("click", () => toggleLightGroup(gid));
+        const split = document.createElement("button");
+        split.type = "button";
+        split.className = "stage-icon-action";
+        split.textContent = tx("ばらす");
+        split.title = tx("組をやめて、一つずつの明かりに戻す");
+        split.addEventListener("click", () => splitLightGroup(gid));
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "stage-cast-remove";
+        del.textContent = "✕";
+        del.setAttribute("aria-label", isEn() ? "Remove this rig" : "この組を外す");
+        del.addEventListener("click", () => removeLightGroup(gid));
+        row.append(dot, name, toggle, split, del);
+        box.append(row);
+      });
+    }
     LIGHT_KIND_ORDER.forEach((key) => {
-      if (!lights.some((item) => lightKindOf(item) === key)) return;
+      const keep = (item) => item.kind === "light" && !item.lightGroup && lightKindOf(item) === key;
+      if (!lights.some(keep)) return;
       const head = document.createElement("p");
       head.className = "stage-roster-head";
       head.textContent = lightKindName(key);
@@ -5907,9 +5991,58 @@
       const box = document.createElement("div");
       box.className = "stage-cast-list";
       host.append(head, box);
-      renderSetList(box, (item) => item.kind === "light" && lightKindOf(item) === key, "");
+      renderSetList(box, keep, "");
     });
     syncRosterGroups();
+  }
+
+  /* 組ごとの点け消し。点けるときは、組んだときの置き場へ戻す
+     （ばらばらの既定位置に散らばると、組の形が壊れるため）。 */
+  function toggleLightGroup(groupId) {
+    checkpoint();
+    const scene = sc();
+    const pieces = groupScenePieces(groupId);
+    if (pieces.length) {
+      const ids = new Set(pieces.map((p) => p.id));
+      scene.pieces = scene.pieces.filter((p) => !ids.has(p.id));
+      if (ids.has(selectedId)) selectedId = null;
+      announce(`${groupTitle(groupId)}をOFFにしました。`);
+    } else {
+      groupItems(groupId).forEach((item) => {
+        const at = item.preset || { u: 0.5, v: 0.5, beam: null };
+        scene.pieces.push(normalizePiece({
+          id: nextId(), type: "light", setId: item.id,
+          u: at.u, v: at.v, size: 100, color: item.color, name: "", facing: 0,
+          beam: at.beam,
+        }, 0));
+      });
+      announce(`${groupTitle(groupId)}をONにしました。`);
+    }
+    renderLights();
+    renderScenes();
+    updateInspector();
+    render();
+    persistSoon();
+  }
+
+  function removeLightGroup(groupId) {
+    const items = groupItems(groupId);
+    if (!items.length) return;
+    const ids = new Set(items.map((t) => t.id));
+    if (!window.confirm(isEn()
+      ? `Remove ${groupTitle(groupId)}? The lights disappear from every scene.`
+      : `${groupTitle(groupId)}を外します。全てのシーンからこの組の明かりが消えます。`)) return;
+    checkpoint();
+    state.project.sets = state.project.sets.filter((t) => !ids.has(t.id));
+    state.project.scenes.forEach((scene) => {
+      scene.pieces = scene.pieces.filter((piece) => !ids.has(piece.setId));
+    });
+    selectedId = null;
+    renderLights();
+    renderScenes();
+    updateInspector();
+    render();
+    persistSoon();
   }
 
   /* 一枚にまとめた以上、空の見出しが三つ並ぶのは邪魔になる。
@@ -6128,11 +6261,16 @@
     checkpoint();
     const scene = sc();
     const specs = preset.build(venueSize());
+    /* 組の札。同じ札を持つ明かりは一体で動き、一体で選ばれる。
+       「ばらす」で札を消せば、以後は普通の明かりに戻る。 */
+    const groupId = rid("lgroup");
     specs.forEach((spec) => {
       const item = {
         id: rid("set"), kind: "light", name: spec.name.slice(0, 24), color: spec.color,
         dims: normalizeDims("light", { dims: { dia: spec.dia } }), note: "",
         locked: false, flown: false, wires: 2, framed: false, lightKind: spec.kind,
+        lightGroup: groupId, groupLabel: preset.label, presetDia: spec.dia,
+        preset: { u: spec.u, v: spec.v, beam: spec.beam },
       };
       state.project.sets.push(item);
       scene.pieces.push(normalizePiece({
@@ -6150,6 +6288,49 @@
     // 文はそのまま日本語で言う。英語は say の対訳表が文ごと差し替える
     announce(`${preset.label}を組みました（明かり${specs.length}個）。個々の明かりはあとから自由に動かせます。`);
   }
+
+  /* ---------- 照明プリセットの組 ----------
+     組（lightGroup）を持つ明かりは一体で扱う: 一つを掴めば全部が同じだけ動き、
+     選べば組として選ばれる。調整できるのは直径（倍率）と光の強さだけ。
+     「ばらす」で札を消せば、それぞれ普通の明かりに戻る（本人の指定）。 */
+  function lightGroupOf(piece) {
+    if (!piece || piece.type !== "light" || !piece.setId) return null;
+    const item = (state.project.sets || []).find((t) => t.id === piece.setId);
+    return item && item.lightGroup ? item.lightGroup : null;
+  }
+  function groupItems(groupId) {
+    return (state.project.sets || []).filter((t) => t.lightGroup === groupId);
+  }
+  // その組の、いまのシーンに出ている駒
+  function groupScenePieces(groupId) {
+    const ids = new Set(groupItems(groupId).map((t) => t.id));
+    return sc().pieces.filter((p) => p.type === "light" && ids.has(p.setId));
+  }
+  // 組を一体で動かす。当てる先も灯体も、同じだけ平行移動する
+  function moveLightGroup(groupId, du, dv) {
+    groupScenePieces(groupId).forEach((p) => {
+      p.u = clamp(p.u + du, -0.5, 1.5);
+      p.v = clamp(p.v + dv, -0.5, 1);
+      if (p.beam) {
+        p.beam.u = clamp(p.beam.u + du, -0.3, 1.3);
+        p.beam.v = clamp(p.beam.v + dv, -0.3, 1.3);
+      }
+    });
+  }
+  function splitLightGroup(groupId) {
+    checkpoint();
+    groupItems(groupId).forEach((t) => { t.lightGroup = null; t.groupLabel = ""; });
+    renderLights();
+    updateInspector();
+    render();
+    persistSoon();
+    announce("組をばらしました。それぞれ普通の明かりとして動かせます。");
+  }
+  const groupTitle = (groupId) => {
+    const items = groupItems(groupId);
+    const label = (items[0] && items[0].groupLabel) || "照明の組";
+    return isEn() ? `${tx(label)} (${items.length} lights)` : `${label}（${items.length}灯）`;
+  };
 
   // 明かりは「舞台の上か裏か」ではなく、点いているか消えているかで言う
   const onStageWord = (item, on) => (item && item.kind === "light"
@@ -8374,6 +8555,9 @@
   function removeSelected() {
     const piece = selectedPiece();
     if (!piece) return;
+    // 組の明かりは一体で消える（TURN OFFも組ごと）
+    const gid = piece.type === "light" ? lightGroupOf(piece) : null;
+    if (gid) { toggleLightGroup(gid); return; }
     checkpoint();
     sc().pieces = sc().pieces.filter((candidate) => candidate.id !== piece.id);
     selectedId = null;
@@ -8948,8 +9132,14 @@
         y = L.tilt(L.untilt(point.y) + b.h * perMetre(guide, L).y);
       }
       const next = fromScreen(x, y, L);
-      b.u = next.u;
-      b.v = next.v;
+      // 組の明かりは一体で動く。灯体を掴んでも組ごと平行移動する
+      const group = lightGroupOf(piece);
+      if (group) {
+        moveLightGroup(group, next.u - b.u, next.v - b.v);
+      } else {
+        b.u = next.u;
+        b.v = next.v;
+      }
       render();
       return;
     }
@@ -8970,6 +9160,13 @@
         py = L.tilt(L.untilt(py) + piece.beam.toH * perMetre(guide, L).y);
       }
       const next = fromScreen(px, py, L);
+      // 組の明かりは一体で動く。どの一つを掴んでも組ごと平行移動する
+      const dragGroup = piece.type === "light" ? lightGroupOf(piece) : null;
+      if (dragGroup) {
+        moveLightGroup(dragGroup, next.u - piece.u, next.v - piece.v);
+        render();
+        return;
+      }
       piece.u = next.u;
       piece.v = next.v;
       // 真下に落ちている明かりは、灯体もついてくる
@@ -9227,6 +9424,54 @@
       persistSoon();
     });
     els.beamDia.addEventListener("pointerdown", checkpoint);
+  }
+  /* 光の強さ。シーンごとの駒に持つので、場面で明暗を変えられる */
+  if (els.beamGlow) {
+    els.beamGlow.addEventListener("input", (e) => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== "light") return;
+      piece.glow = clamp(finite(e.target.value, 100) / 100, 0.1, 1.5);
+      if (els.beamGlowValue) els.beamGlowValue.textContent = `${Math.round(piece.glow * 100)}%`;
+      render();
+      persistSoon();
+    });
+    els.beamGlow.addEventListener("pointerdown", checkpoint);
+  }
+  /* 組の操作。直径は組んだときの値に対する倍率、強さは組の全駒へ同じ値 */
+  if (els.groupDia) {
+    els.groupDia.addEventListener("input", (e) => {
+      const piece = selectedPiece();
+      const gid = piece ? lightGroupOf(piece) : null;
+      if (!gid) return;
+      const factor = clamp(finite(e.target.value, 100), 50, 200) / 100;
+      groupItems(gid).forEach((t) => {
+        if (t.presetDia && t.dims) t.dims.dia = clamp(t.presetDia * factor, 0.3, 20);
+      });
+      if (els.groupDiaValue) els.groupDiaValue.textContent = `${Math.round(factor * 100)}%`;
+      render();
+      persistSoon();
+    });
+    els.groupDia.addEventListener("pointerdown", checkpoint);
+  }
+  if (els.groupGlow) {
+    els.groupGlow.addEventListener("input", (e) => {
+      const piece = selectedPiece();
+      const gid = piece ? lightGroupOf(piece) : null;
+      if (!gid) return;
+      const glow = clamp(finite(e.target.value, 100) / 100, 0.1, 1.5);
+      groupScenePieces(gid).forEach((p) => { p.glow = glow; });
+      if (els.groupGlowValue) els.groupGlowValue.textContent = `${Math.round(glow * 100)}%`;
+      render();
+      persistSoon();
+    });
+    els.groupGlow.addEventListener("pointerdown", checkpoint);
+  }
+  if (els.groupSplit) {
+    els.groupSplit.addEventListener("click", () => {
+      const piece = selectedPiece();
+      const gid = piece ? lightGroupOf(piece) : null;
+      if (gid) splitLightGroup(gid);
+    });
   }
 
   /* 光源の左右と奥行き。斜め上から中央へ差し込む明かりは、
@@ -9652,8 +9897,31 @@
         if (els.pieceLiftValue) els.pieceLiftValue.textContent = cmText(lift);
       }
     }
+    /* プリセットの組。一体で扱うので、名前は組の名で出し、
+       個別の位置スライダーは隠して「直径（全体）と強さ」だけ出す */
+    const lgroup = piece && piece.type === "light" ? lightGroupOf(piece) : null;
+    if (lgroup && els.selectedName) els.selectedName.textContent = groupTitle(lgroup);
+    if (els.groupControls) {
+      els.groupControls.hidden = !lgroup;
+      if (lgroup) {
+        const items = groupItems(lgroup);
+        const base = items[0];
+        const factor = base && base.presetDia
+          ? Math.round((((base.dims && base.dims.dia) || base.presetDia) / base.presetDia) * 100)
+          : 100;
+        if (els.groupDia && document.activeElement !== els.groupDia) {
+          els.groupDia.value = String(clamp(factor, 50, 200));
+        }
+        if (els.groupDiaValue) els.groupDiaValue.textContent = `${factor}%`;
+        const gPct = Math.round(clamp(finite(piece.glow, 1), 0.1, 1.5) * 100);
+        if (els.groupGlow && document.activeElement !== els.groupGlow) {
+          els.groupGlow.value = String(clamp(gPct, 10, 150));
+        }
+        if (els.groupGlowValue) els.groupGlowValue.textContent = `${gPct}%`;
+      }
+    }
     if (els.beamControls) {
-      const isLight = Boolean(piece && piece.type === "light");
+      const isLight = Boolean(piece && piece.type === "light") && !lgroup;
       els.beamControls.hidden = !isLight;
       if (isLight) {
         const b = piece.beam || (piece.beam = normalizeBeam(null, piece));
@@ -9662,6 +9930,11 @@
           els.beamDia.value = String((dim && dim.dia) || 4);
         }
         if (els.beamDiaValue) els.beamDiaValue.textContent = cmText((dim && dim.dia) || 4);
+        const glowPct = Math.round(clamp(finite(piece.glow, 1), 0.1, 1.5) * 100);
+        if (els.beamGlow && document.activeElement !== els.beamGlow) {
+          els.beamGlow.value = String(clamp(glowPct, 10, 150));
+        }
+        if (els.beamGlowValue) els.beamGlowValue.textContent = `${glowPct}%`;
         if (document.activeElement !== els.beamU) els.beamU.value = String(b.u);
         if (document.activeElement !== els.beamV) els.beamV.value = String(b.v);
         if (els.beamUValue) els.beamUValue.textContent = sideText(b.u);
@@ -9679,78 +9952,10 @@
       els.delete.title = light ? tx("このシーンではこの明かりを消します") : "";
     }
     if (els.routeClear) els.routeClear.hidden = !(piece && piece.route);
-    /* 照明の直径。登録した明かりそのものの寸法なので、置いてある全ての場面に効く
-   * （「…」の窓と同じ値を、選んだ場所からも触れるようにしたもの）。 */
-  if (els.beamDia) {
-    els.beamDia.addEventListener("input", (e) => {
-      const piece = selectedPiece();
-      if (!piece || piece.type !== "light") return;
-      const dia = clamp(finite(e.target.value, 4), 0.3, 20);
-      const owner = pieceSet(piece);
-      if (owner) owner.dims.dia = dia; else piece.dims = Object.assign({}, piece.dims, { dia });
-      if (els.beamDiaValue) els.beamDiaValue.textContent = cmText(dia);
-      renderLights();
-      render();
-      persistSoon();
-    });
-    els.beamDia.addEventListener("pointerdown", checkpoint);
-  }
-
-  /* 光源の左右と奥行き。斜め上から中央へ差し込む明かりは、
-   * 灯体を上手奥・下手奥へ振り分けて作る。正面図では差し込む角度が変わる。 */
-  [["beamU", "u", "beamUValue", sideText], ["beamV", "v", "beamVValue", depthText]].forEach(
-    ([key, field, labelKey, toText]) => {
-      const input = els[key];
-      if (!input) return;
-      input.addEventListener("input", (e) => {
-        const piece = selectedPiece();
-        if (!piece || piece.type !== "light") return;
-        piece.beam[field] = clamp(finite(e.target.value, 0.5), -0.3, 1.3);
-        if (els[labelKey]) els[labelKey].textContent = toText(piece.beam[field]);
-        render();
-        persistSoon();
-      });
-      input.addEventListener("pointerdown", checkpoint);
-    });
-
-  /* 明かりの高さ。灯体を下げて当たる高さを上げれば、下から上への明かりになる。 */
-  if (els.beamFrom) {
-    els.beamFrom.addEventListener("input", (e) => {
-      const piece = selectedPiece();
-      if (!piece || piece.type !== "light") return;
-      piece.beam.h = clamp(finite(e.target.value, BEAM_DEFAULT_H), 0, BEAM_MAX_H);
-      els.beamFromValue.textContent = `${piece.beam.h.toFixed(1)}m`;
-      render();
-      persistSoon();
-    });
-    els.beamFrom.addEventListener("pointerdown", checkpoint);
-  }
-  if (els.beamTo) {
-    els.beamTo.addEventListener("input", (e) => {
-      const piece = selectedPiece();
-      if (!piece || piece.type !== "light") return;
-      piece.beam.toH = clamp(finite(e.target.value, 0), 0, BEAM_MAX_H);
-      els.beamToValue.textContent = piece.beam.toH < 0.05 ? "床" : `${piece.beam.toH.toFixed(1)}m`;
-      render();
-      persistSoon();
-    });
-    els.beamTo.addEventListener("pointerdown", checkpoint);
-  }
-  if (els.beamReset) {
-    els.beamReset.addEventListener("click", () => {
-      const piece = selectedPiece();
-      if (!piece || piece.type !== "light") return;
-      checkpoint();
-      piece.beam.u = piece.u;
-      piece.beam.v = piece.v;
-      piece.beam.toH = 0;
-      piece.beam.h = BEAM_DEFAULT_H;
-      updateInspector();
-      render();
-      persistSoon();
-      announce("真上から床へ落とす明かりに戻しました。");
-    });
-  }
+    /* ★ここにあった beamDia/beamU/beamV/beamFrom/beamTo/beamReset の
+       addEventListener 群は削除した。syncDimControls は選ぶたびに呼ばれるため、
+       ここで登録すると同じ聞き手が選ぶたびに積み上がっていた（実害）。
+       登録は起動時に一度だけ、初期化部の同名ブロックで行う。 */
   if (els.pieceLock) {
       const locked = isLocked(piece);
       /* 錠は鍵の絵だけ。並ぶボタンが全部同じ長さの文字だと、目が滑って読めない。
