@@ -4034,17 +4034,8 @@
       target.ellipse(end.x, end.y, spreadEnd, ry, 0, 0, Math.PI * 2);
       target.fill();
     }
-    /* 途中で体や顔に当たる高さ（toH>0）は、光を切らずに輪だけで示す。
-       掴んで動かすのはこの輪なので、明かりの道具のときと選択中は必ず出す。 */
-    if (land.tEnd > 1.01 && (lit || picked)) {
-      target.strokeStyle = rgba(piece.color, 0.55);
-      target.setLineDash([4, 4]);
-      target.lineWidth = 1.2;
-      target.beginPath();
-      target.ellipse(hit.x, hit.y, spread, Math.max(3, ry * 0.6), 0, 0, Math.PI * 2);
-      target.stroke();
-      target.setLineDash([]);
-    }
+    /* 正面には「当たる点」の輪を出さない（何の印か分からないと言われた）。
+       狙いの調整は平面図の終着点の輪と、選んだもののスライダーで行う。 */
     target.globalCompositeOperation = "source-over";
     if (lit || picked) drawFixture(target, src, piece, true);
     target.restore();
@@ -4594,9 +4585,13 @@
   }
 
   function drawSelection(target, piece, L) {
+    /* 明かり単体は破線の枠を出さない。印は drawLight 側が持つ
+       （平面＝終着点の輪、正面＝灯体の点）。床に出る四角い破線が
+       「何の印か分からない」と言われたため。組だけは一体で選ばれることを
+       伝えるために、全体を囲む枠を出す。 */
     let b = selectionBounds(piece, L);
-    /* プリセットの組は一体で選ばれる。枠も組全体を囲む */
     const gsel = piece.type === "light" ? lightGroupOf(piece) : null;
+    if (piece.type === "light" && !gsel) return;
     if (gsel) {
       let x0 = b.x; let y0 = b.y; let x1 = b.x + b.w; let y1 = b.y + b.h;
       groupScenePieces(gsel).forEach((p) => {
