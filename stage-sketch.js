@@ -1181,6 +1181,9 @@
     pieceLift: document.getElementById("stage-piece-lift"),
     pieceLiftValue: document.getElementById("stage-piece-lift-value"),
     showFlown: document.getElementById("stage-show-flown"),
+    frontLights: document.getElementById("stage-front-lights"),
+    planLights: document.getElementById("stage-plan-lights"),
+    planRoutes: document.getElementById("stage-plan-routes"),
     setInfoKindRow: document.getElementById("stage-setinfo-lightkind"),
     frontInner: document.getElementById("stage-front-inner"),
     planInner: document.getElementById("stage-plan-inner"),
@@ -1387,6 +1390,11 @@
       showSeatMap: true,
       // 平面図で吊物（宙に吊ってあるもの）まで出すか
       showFlown: false,
+      /* 照明と動線の出し入れ。図ごとに別。
+         「照明を消して立ち位置だけ読む」「動線を隠して今の形だけ見る」ため */
+      showLightsFront: true,
+      showLightsPlan: true,
+      showRoutes: true,
       // 場面が変わるとき、動線に沿って動かして見せるか。秒数も持つ
       animateScenes: true,
       sceneAnimMs: 620,
@@ -1885,6 +1893,9 @@
       showSetNames: raw.showSetNames === undefined ? true : Boolean(raw.showSetNames),
       showSeatMap: raw.showSeatMap === undefined ? true : Boolean(raw.showSeatMap),
       showFlown: Boolean(raw.showFlown),
+      showLightsFront: raw.showLightsFront === undefined ? true : Boolean(raw.showLightsFront),
+      showLightsPlan: raw.showLightsPlan === undefined ? true : Boolean(raw.showLightsPlan),
+      showRoutes: raw.showRoutes === undefined ? true : Boolean(raw.showRoutes),
       animateScenes: raw.animateScenes === undefined ? true : Boolean(raw.animateScenes),
       sceneAnimMs: clamp(finite(raw.sceneAnimMs, 620), 200, 3000),
       frontPan: clamp(finite(raw.frontPan, 0), -1, 1),
@@ -4305,8 +4316,9 @@
   }
 
   // 動線の取っ手に当たっているか。曲げる取っ手を優先する
+  // 動線を隠している間は取っ手も無い（見えないものを掴ませない）
   function routeHandleAtFor(point, piece, route, L) {
-    if (!piece || !route || !L.plan) return null;
+    if (!piece || !route || !L.plan || !state.showRoutes) return null;
     const { from, to, ctrl } = routePointsFor(piece, route, L);
     const mid = quadAt(from, ctrl, to, 0.5);
     if (Math.hypot(point.x - mid.x, point.y - mid.y) <= 11) return "bend";
@@ -5036,7 +5048,9 @@
       else if (piece.type === "sphere") drawSphere(target, piece, pos, scale, L);
       if (lean) target.restore();
     };
-    const lightPieces = sc().pieces.filter((p) => p.type === "light");
+    // 照明の出し入れは図ごと。消している図では描かず、掴めもしない
+    const lightsOn = L.plan ? state.showLightsPlan : state.showLightsFront;
+    const lightPieces = lightsOn ? sc().pieces.filter((p) => p.type === "light") : [];
     // 平面では、落ちる円は床の印なので駒の下に敷く
     if (L.plan) lightPieces.forEach(draw);
     /* 平面図は「床に何がどう置いてあるか」の図なので、宙に吊ってあるものは
@@ -5085,7 +5099,7 @@
     }
 
     // 動線は平面図だけ。上から見た床の上の道筋なので、正面図には出しようがない
-    if (L.plan) drawRoutes(target, L, showSelection);
+    if (L.plan && state.showRoutes) drawRoutes(target, L, showSelection);
     drawNotes(target, L, view, showSelection);
 
     if (showSelection) {
@@ -7446,6 +7460,11 @@
       piece.route = { u: dest.u, v: dest.v,
         bu: (piece.u + dest.u) / 2, bv: (piece.v + dest.v) / 2 };
     });
+    // 隠したまま引くと「押したのに何も起きない」に見えるので、表示に戻す
+    if (!state.showRoutes) {
+      state.showRoutes = true;
+      if (els.planRoutes) els.planRoutes.checked = true;
+    }
     renderScenes();
     updateInspector();
     render();
@@ -8080,6 +8099,9 @@
       if (!anyKind && (piece.type === "light") !== wantLight) continue;
       // 平面図で隠している吊物は掴めない（見えないものを掴むことになるため）
       if (L.plan && !state.showFlown && isFlown(piece)) continue;
+      // 消している図の照明も同じ（見えないものを掴ませない）
+      if (piece.type === "light"
+        && !(L.plan ? state.showLightsPlan : state.showLightsFront)) continue;
       if (isLocked(piece)) continue;
       const b = selectionBounds(piece, L);
       if (point.x < b.x || point.x > b.x + b.w || point.y < b.y || point.y > b.y + b.h) continue;
@@ -8092,6 +8114,7 @@
   // 灯体の印を掴んだか。当たる場所より先に見る（重なることがあるため）
   // 錠が掛かった明かりは灯体ごと素通しにする（当たり判定を持たない）
   function fixtureAt(point, L) {
+    if (!(L.plan ? state.showLightsPlan : state.showLightsFront)) return null;
     const lights = sc().pieces.filter((piece) => piece.type === "light" && !isLocked(piece));
     for (let i = lights.length - 1; i >= 0; i -= 1) {
       const at = beamSource(lights[i], L);
@@ -8186,6 +8209,18 @@
       return;
     }
     tool = nextTool;
+    /* 見えないものは掴めない決まりなので、道具を持ったら対象を出す。
+       明かりの道具→両図の照明ON、動線の道具→動線ON（つまみも合わせる）。 */
+    if (tool === "light" && (!state.showLightsFront || !state.showLightsPlan)) {
+      state.showLightsFront = true;
+      state.showLightsPlan = true;
+      if (els.frontLights) els.frontLights.checked = true;
+      if (els.planLights) els.planLights.checked = true;
+    }
+    if (tool === "route" && !state.showRoutes) {
+      state.showRoutes = true;
+      if (els.planRoutes) els.planRoutes.checked = true;
+    }
     canvas.dataset.tool = tool;
     // 平面図で使うのは「動かす」と「動線」だけ
     if (planCanvas) {
@@ -8276,6 +8311,9 @@
     if (els.showSetNames) els.showSetNames.checked = state.showSetNames;
     if (els.showSeatMap) els.showSeatMap.checked = state.showSeatMap;
     if (els.showFlown) els.showFlown.checked = state.showFlown;
+    if (els.frontLights) els.frontLights.checked = state.showLightsFront;
+    if (els.planLights) els.planLights.checked = state.showLightsPlan;
+    if (els.planRoutes) els.planRoutes.checked = state.showRoutes;
     if (els.animScenes) els.animScenes.checked = state.animateScenes;
     if (els.animMs) {
       if (document.activeElement !== els.animMs) els.animMs.value = String(state.sceneAnimMs / 1000);
@@ -9340,6 +9378,30 @@
       render();
       persistSoon();
       announce(state.showFlown ? "平面にも吊物を出します。" : "平面では吊物を隠します。");
+    });
+  }
+  if (els.frontLights) {
+    els.frontLights.addEventListener("change", (e) => {
+      state.showLightsFront = e.target.checked;
+      render();
+      persistSoon();
+      announce(state.showLightsFront ? "正面の照明を点けました。" : "正面の照明を消しました。");
+    });
+  }
+  if (els.planLights) {
+    els.planLights.addEventListener("change", (e) => {
+      state.showLightsPlan = e.target.checked;
+      render();
+      persistSoon();
+      announce(state.showLightsPlan ? "平面の照明を出しました。" : "平面の照明を隠しました。");
+    });
+  }
+  if (els.planRoutes) {
+    els.planRoutes.addEventListener("change", (e) => {
+      state.showRoutes = e.target.checked;
+      render();
+      persistSoon();
+      announce(state.showRoutes ? "動線を出しました。" : "動線を隠しました。引いた線は消えていません。");
     });
   }
   if (els.setInfoColor) {
