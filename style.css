@@ -7023,3 +7023,40 @@ body.is-panel-dragging {
 
 .stage-zoom-fab button:hover { border-color: var(--brass); }
 .stage-zoom-fab button:disabled { color: var(--line-dark); cursor: default; }
+
+
+/* ---- ショー地図 ---- */
+.stage-map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.stage-map-cell {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(211, 172, 89, 0.25);
+  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+.stage-map-cell:hover { border-color: rgba(211, 172, 89, 0.7); }
+.stage-map-cell.is-current { border-color: #d3ac59; box-shadow: 0 0 0 1px #d3ac59 inset; }
+.stage-map-cell canvas { width: 100%; height: auto; display: block; border-radius: 2px; }
+.stage-map-title {
+  margin: 6px 0 2px;
+  font-size: 13px;
+  color: rgba(239, 231, 214, 0.9);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.stage-map-meta { margin: 0; font-size: 11px; color: rgba(239, 231, 214, 0.5); }
+.stage-map-section {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: rgba(211, 172, 89, 0.8);
+  border-bottom: 1px solid rgba(211, 172, 89, 0.25);
+  padding-bottom: 3px;
+}

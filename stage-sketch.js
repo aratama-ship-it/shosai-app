@@ -1104,6 +1104,18 @@
     poleH: document.getElementById("stage-pole-h"),
     poleHValue: document.getElementById("stage-pole-h-value"),
     trapControls: document.getElementById("stage-trap-controls"),
+    showMapBtn: document.getElementById("stage-show-map-btn"),
+    mapModal: document.getElementById("stage-map-modal"),
+    mapBackdrop: document.getElementById("stage-map-backdrop"),
+    mapClose: document.getElementById("stage-map-close"),
+    mapGrid: document.getElementById("stage-map-grid"),
+    importModal: document.getElementById("stage-import-modal"),
+    importBackdrop: document.getElementById("stage-import-backdrop"),
+    importClose: document.getElementById("stage-import-close"),
+    importSummary: document.getElementById("stage-import-summary"),
+    importAsNew: document.getElementById("stage-import-as-new"),
+    importReplace: document.getElementById("stage-import-replace"),
+    printBtn: document.getElementById("stage-print-btn"),
     trapSit: document.getElementById("stage-trap-sit"),
     trapHang: document.getElementById("stage-trap-hang"),
     poseLabel: document.getElementById("stage-pose-label"),
@@ -1263,6 +1275,9 @@
   const validColor = (value, fallback) =>
     typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
   const finite = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
+  // 印刷ページなどHTML文字列へ差し込むときの逃がし
+  const escapeHtml = (t) => String(t).replace(/[&<>"']/g, (ch) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
   const rehearsalSeconds = (value) => {
     if (value === undefined || value === null || value === "") return null;
     const number = Number(value);
@@ -3948,7 +3963,10 @@
     const picked = piece.id === selectedId;
     /* 光の強さ。塗りの濃さをまとめて割り増し・割り引きする。
        輪郭線（当たる点の輪・出どころの線）は操作の印なので強さに連動させない */
-    const glow = clamp(finite(piece.glow, 1), 0.1, 1.5);
+    // 転換フェードの途中は途中の強さで塗る（0まで許す＝消えゆく明かり）
+    const glow = piece.animGlow !== undefined
+      ? clamp(finite(piece.animGlow, 1), 0, 1.5)
+      : clamp(finite(piece.glow, 1), 0.1, 1.5);
     const ga = (a) => Math.min(1, a * glow);
 
     if (L.plan) {
@@ -6292,6 +6310,51 @@
         u: 0.5, v: 0.6, beam: { u: 0.5, v: 0.6, h: size.height || 8, toH: 0 },
       }],
     },
+    bar3: {
+      label: "3台口バーライト",
+      /* 本p205 図③: 3灯つなぎのバーライトを、奥のバトンに3組＋中のバトンに2組。
+         舞台全体を均一に均す基本の地明かり群 */
+      build: (size) => {
+        const H = size.height || 8;
+        const out = [];
+        [0.2, 0.5, 0.8].forEach((u, i) => out.push({
+          name: `バー奥${i + 1}`, color: "#e8e0cc", dia: 3.2, kind: "hang",
+          u, v: 0.18, beam: { u, v: 0.18, h: H, toH: 0 },
+        }));
+        [0.35, 0.65].forEach((u, i) => out.push({
+          name: `バー中${i + 1}`, color: "#e8e0cc", dia: 3.2, kind: "hang",
+          u, v: 0.52, beam: { u, v: 0.52, h: H, toH: 0 },
+        }));
+        return out;
+      },
+    },
+    enka: {
+      label: "演歌（ホリ染め）",
+      /* 本p218 図⑲: ホリゾント幕をローホリ（床置き）で赤く染め、
+         ブッチは青、バックは夕焼けのアンバー、前明かりとピンで人を綺麗に出す。
+         バーライトは使わないスタンダードな組み方 */
+      build: (size) => {
+        const H = size.height || 8;
+        const out = [];
+        [0.25, 0.5, 0.75].forEach((u, i) => out.push({
+          name: `ローホリ${i + 1}`, color: "#a03428", dia: 2.6, kind: "floor",
+          u, v: 0.02, beam: { u, v: 0.06, h: 0.15, toH: 5 },
+        }));
+        out.push({ name: "ブッチ上手", color: "#3d5a9e", dia: 2.6, kind: "ss",
+          u: 0.6, v: 0.55, beam: { u: -0.06, v: 0.78, h: 1.7, toH: 1.2 } });
+        out.push({ name: "ブッチ下手", color: "#3d5a9e", dia: 2.6, kind: "ss",
+          u: 0.4, v: 0.55, beam: { u: 1.06, v: 0.78, h: 1.7, toH: 1.2 } });
+        [0.38, 0.62].forEach((u, i) => out.push({
+          name: `バック${i + 1}`, color: "#c87d33", dia: 3, kind: "hang",
+          u, v: 0.5, beam: { u, v: 0.06, h: H, toH: 1.0 },
+        }));
+        out.push({ name: "前明かり", color: "#f0dfb6", dia: 3.4, kind: "hang",
+          u: 0.5, v: 0.62, beam: { u: 0.5, v: 1.02, h: H, toH: 1.4 } });
+        out.push({ name: "ピン", color: "#f2ead6", dia: 1.8, kind: "hang",
+          u: 0.5, v: 0.6, beam: { u: 0.5, v: 0.6, h: H, toH: 0 } });
+        return out;
+      },
+    },
     curtain: {
       label: "ライトカーテン",
       build: (size) => {
@@ -7450,6 +7513,7 @@
       delete entry.piece.animBeamV;
       delete entry.piece.animBase;
       delete entry.piece.animPose;
+      delete entry.piece.animGlow;
     });
     // はけの駒は描くためだけの写しなので、捨てるだけでよい
     sceneAnim = null;
@@ -7471,7 +7535,10 @@
       const sameSpot = Math.abs(twin.u - piece.u) < 0.004 && Math.abs(twin.v - piece.v) < 0.004;
       const sameBeam = !(piece.type === "light" && piece.beam && twin.beam)
         || (Math.abs(twin.beam.u - piece.beam.u) < 0.004 && Math.abs(twin.beam.v - piece.beam.v) < 0.004);
-      if (sameSpot && sameBeam) return;
+      // 明かりは強さの変化もフェードで見せる（場所が同じでも動かす対象になる）
+      const sameGlow = piece.type !== "light"
+        || Math.abs(finite(twin.glow, 1) - finite(piece.glow, 1)) < 0.01;
+      if (sameSpot && sameBeam && sameGlow) return;
       /* 動線があれば、その二次曲線をたどる。行き先が動線の終点と違っていても、
        * 曲がり方だけ借りて向かう（曲線の形は残しつつ、着地は次の場面の場所）。 */
       const route = twin.route;
@@ -7490,6 +7557,8 @@
         beam: piece.type === "light" && piece.beam && twin.beam
           ? { from: { u: twin.beam.u, v: twin.beam.v }, to: { u: piece.beam.u, v: piece.beam.v } }
           : null,
+        // 前のシーンの強さ。違えばフェードで新しい強さへ
+        glowFrom: piece.type === "light" ? finite(twin.glow, 1) : null,
       });
     });
     /* はける人。前のシーンには居て、このシーンには居ない演者は、
@@ -7536,6 +7605,22 @@
         startBase: 0,   // 袖は床
         fromPose: "walk",   // 入りは歩いて入る
       });
+    });
+    /* 明かりの点き消え。新しく点く明かりは0からフェードイン、
+       消える明かりは写しをこしらえてフェードアウト（本人指定の「照明フェード」）。 */
+    sc().pieces.forEach((piece) => {
+      if (piece.type !== "light") return;
+      if (twinOf(piece, fromScene.pieces || [])) return;
+      pieces.push({ piece, from: { u: piece.u, v: piece.v }, ctrl: null,
+        to: { u: piece.u, v: piece.v }, beam: null, glowFrom: 0 });
+    });
+    (fromScene.pieces || []).forEach((old_) => {
+      if (old_.type !== "light") return;
+      if (twinOf(old_, sc().pieces)) return;
+      const ghost = normalizePiece(Object.assign({}, old_, { id: `lightout-${old_.id}` }), 0);
+      exits.push({ piece: ghost, from: { u: old_.u, v: old_.v }, ctrl: null,
+        to: { u: old_.u, v: old_.v }, exit: true,
+        glowFrom: finite(old_.glow, 1), glowTo: 0 });
     });
     if (!pieces.length && !exits.length) return;
     const movers = pieces.concat(exits);
@@ -7594,6 +7679,11 @@
           piece.animBeamU = entry.beam.from.u + (entry.beam.to.u - entry.beam.from.u) * e;
           piece.animBeamV = entry.beam.from.v + (entry.beam.to.v - entry.beam.from.v) * e;
         }
+        // 明かりの強さのフェード（点く=0から、消える=0へ、変化=前の値から）
+        if (entry.glowFrom !== null && entry.glowFrom !== undefined) {
+          const gt = entry.glowTo !== undefined ? entry.glowTo : finite(piece.glow, 1);
+          piece.animGlow = entry.glowFrom + (gt - entry.glowFrom) * e;
+        }
       });
       render();
       if (t < 1) { sceneAnim.raf = requestAnimationFrame(step); return; }
@@ -7601,6 +7691,182 @@
       render();
     };
     sceneAnim = { pieces, exits, progress: 0, raf: requestAnimationFrame(step) };
+  }
+
+  /* ---------- ショー地図 ----------
+     全シーンの平面を小さく並べて一枚で見渡す。押すとそのシーンへ移る。
+     絵は簡略（舞台の枠＋駒の点だけ）。本物の描画を流用すると重いので、
+     地図は地図のための軽い描き方を持つ。 */
+  function drawMiniPlan(canvas, scene) {
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.fillStyle = "#171310";
+    ctx.fillRect(0, 0, w, h);
+    const size = venueSize();
+    const ratio = (size.depth || 9) / (size.width || 12);
+    let sw = w * 0.78;
+    let sh = sw * ratio;
+    if (sh > h * 0.82) { sh = h * 0.82; sw = sh / ratio; }
+    const sx = (w - sw) / 2;
+    const sy = (h - sh) / 2;
+    ctx.strokeStyle = "rgba(211,172,89,0.5)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(sx, sy, sw, sh);
+    const at = (u, v) => [sx + u * sw, sy + v * sh];
+    (scene.pieces || []).forEach((piece) => {
+      const [x, y] = at(clamp(piece.u, -0.18, 1.18), clamp(piece.v, -0.1, 1.05));
+      if (piece.type === "performer") {
+        ctx.fillStyle = piece.color;
+        ctx.beginPath();
+        ctx.arc(x, y, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (piece.type === "light") {
+        ctx.strokeStyle = rgba(piece.color, 0.8);
+        ctx.beginPath();
+        ctx.arc(x, y, 3.4, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = rgba(piece.color, 0.85);
+        ctx.fillRect(x - 3.5, y - 2.5, 7, 5);
+      }
+    });
+  }
+
+  /* ---------- 印刷用ページ ----------
+     全シーンの正面と平面を一枚ずつ並べた、印刷のためのページを別タブに開く。
+     ブラウザの「印刷」からPDFにして、稽古場へ紙で持っていける。
+     絵は本物の描画（drawStage）を場面ごとに退避・切替して撮る。 */
+  function openPrintPage() {
+    const rows = state.project.scenes.filter((row) => row.kind === "scene");
+    if (!rows.length) { announce("印刷するシーンがありません。"); return; }
+    const keepScene = state.project.activeSceneId;
+    const keepFront = Object.assign({}, zoomState.front);
+    const keepPlan = Object.assign({}, zoomState.plan);
+    zoomState.front = { z: 1, ox: 0, oy: 0 };
+    zoomState.plan = { z: 1, ox: 0, oy: 0 };
+    const fc = document.createElement("canvas"); fc.width = W; fc.height = H;
+    const pc = document.createElement("canvas"); pc.width = W; pc.height = H;
+    const fctx = fc.getContext("2d");
+    const pctx = pc.getContext("2d");
+    const en = isEn();
+    const parts = [];
+    // セクション見出しも順番どおりに差し込む
+    let sceneN = 0;
+    (state.project.scenes || []).forEach((row) => {
+      if (row.kind === "section") {
+        parts.push(`<h2 class="section">${escapeHtml(row.title || "")}</h2>`);
+        return;
+      }
+      sceneN += 1;
+      state.project.activeSceneId = row.id;
+      drawStage(fctx, false, "front");
+      drawStage(pctx, false, "plan");
+      const cast = (row.pieces || []).filter((q) => q.type === "performer")
+        .map((q) => pieceLabel(q)).filter(Boolean);
+      const rh = row.rehearsal || {};
+      const times = [];
+      if (finite(rh.holdDurationSeconds, -1) >= 0) times.push(en ? `hold ${rh.holdDurationSeconds}s` : `留まる ${rh.holdDurationSeconds}秒`);
+      if (finite(rh.transitionToNextSeconds, -1) >= 0) times.push(en ? `move ${rh.transitionToNextSeconds}s` : `次へ ${rh.transitionToNextSeconds}秒`);
+      parts.push(`<section class="scene">
+  <header><span class="no">${sceneN}</span><h3>${escapeHtml(row.title || "")}</h3>
+    <span class="times">${escapeHtml(times.join(" / "))}</span></header>
+  <div class="pics">
+    <img class="front" src="${fc.toDataURL("image/jpeg", 0.85)}" alt="">
+    <img class="plan" src="${pc.toDataURL("image/jpeg", 0.85)}" alt="">
+  </div>
+  <div class="meta">
+    ${row.note ? `<p class="note">${escapeHtml(row.note)}</p>` : ""}
+    ${cast.length ? `<p class="cast">${en ? "On stage" : "舞台上"}: ${escapeHtml(cast.join(" / "))}</p>` : ""}
+  </div>
+</section>`);
+    });
+    state.project.activeSceneId = keepScene;
+    zoomState.front = keepFront;
+    zoomState.plan = keepPlan;
+    render();
+    const title = escapeHtml(state.project.title || "");
+    const html = `<!DOCTYPE html><html lang="${en ? "en" : "ja"}"><head><meta charset="utf-8">
+<title>${title}</title>
+<style>
+  body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; color: #1c1a17; margin: 24px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .stamp { color: #777; font-size: 12px; margin: 0 0 18px; }
+  h2.section { font-size: 15px; letter-spacing: 0.1em; border-bottom: 1px solid #999; padding-bottom: 4px; margin: 26px 0 10px; page-break-after: avoid; }
+  .scene { page-break-inside: avoid; margin: 0 0 26px; }
+  .scene header { display: flex; align-items: baseline; gap: 10px; border-bottom: 2px solid #1c1a17; padding-bottom: 4px; margin-bottom: 8px; }
+  .scene .no { font-size: 18px; font-weight: bold; }
+  .scene h3 { font-size: 16px; margin: 0; flex: 1; }
+  .scene .times { font-size: 12px; color: #555; }
+  .pics { display: flex; gap: 10px; }
+  .pics img { display: block; border: 1px solid #ccc; }
+  .pics .front { width: 58%; height: auto; }
+  .pics .plan { width: 40%; height: auto; }
+  .meta { margin-top: 6px; }
+  .note { font-size: 13px; margin: 0 0 4px; white-space: pre-wrap; }
+  .cast { font-size: 12px; color: #555; margin: 0; }
+  @media print {
+    body { margin: 10mm; }
+    .scene { page-break-after: always; margin-bottom: 0; }
+    .scene:last-of-type { page-break-after: auto; }
+  }
+</style></head><body>
+<h1>${title}</h1>
+<p class="stamp">${escapeHtml(state.project.versionLabel || "v1")} · ${new Date().toLocaleDateString(en ? "en-US" : "ja-JP")} · ${en ? "Stage Sketch print sheet" : "舞台スケッチ 印刷用"}</p>
+${parts.join("\n")}
+</body></html>`;
+    const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    const win = window.open(url, "_blank");
+    if (!win) {
+      announce("印刷用ページを開けませんでした。ポップアップの許可を確認してください。");
+      return;
+    }
+    announce("印刷用ページを開きました。ブラウザの印刷からPDFにできます。");
+  }
+
+  function openShowMap() {
+    const grid = els.mapGrid;
+    if (!grid) return;
+    grid.innerHTML = "";
+    (state.project.scenes || []).forEach((row) => {
+      if (row.kind === "section") {
+        const head = document.createElement("p");
+        head.className = "stage-map-section";
+        head.textContent = row.title || "";
+        grid.append(head);
+        return;
+      }
+      const rows = state.project.scenes.filter((r) => r.kind === "scene");
+      const n = rows.indexOf(row) + 1;
+      const cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = `stage-map-cell${row.id === state.project.activeSceneId ? " is-current" : ""}`;
+      const cv = document.createElement("canvas");
+      cv.width = 220;
+      cv.height = 128;
+      drawMiniPlan(cv, row);
+      const title = document.createElement("p");
+      title.className = "stage-map-title";
+      title.textContent = `${n} ${row.title || ""}`;
+      const meta = document.createElement("p");
+      meta.className = "stage-map-meta";
+      const cast = (row.pieces || []).filter((p) => p.type === "performer").length;
+      const lights = (row.pieces || []).filter((p) => p.type === "light").length;
+      meta.textContent = isEn() ? `${cast} on stage · ${lights} lights` : `舞台上${cast}人 · 明かり${lights}`;
+      cell.append(cv, title, meta);
+      cell.addEventListener("click", () => {
+        closeShowMap();
+        openScene(row.id);
+      });
+      grid.append(cell);
+    });
+    if (els.mapModal) els.mapModal.hidden = false;
+    if (els.mapBackdrop) els.mapBackdrop.hidden = false;
+  }
+
+  function closeShowMap() {
+    if (els.mapModal) els.mapModal.hidden = true;
+    if (els.mapBackdrop) els.mapBackdrop.hidden = true;
   }
 
   // 場面を前後へ送る。上下キーの割り当て先でもある
@@ -8175,25 +8441,103 @@
         announce("このファイルにはシーンが入っていません。");
         return;
       }
-      if (!window.confirm("いま開いているショーを、読み込んだ内容で置き換えます。よろしいですか？")) return;
-      checkpoint();
+      /* いきなり置き換えず、まず見比べる（本人指定の差分プレビュー）。
+         既定の出口は「別のショーとして開く」＝いまのショーを壊さない。 */
       const next = normalizeState({ project: incoming.project, seat: state.seat,
         showFront: state.showFront, showPlan: state.showPlan, showNames: state.showNames,
         showSetNames: state.showSetNames,
         showSeatMap: state.showSeatMap, frontPan: state.frontPan, frontPanY: state.frontPanY,
         closedSections: state.closedSections, cursorRowId: state.cursorRowId,
         sceneListHeight: state.sceneListHeight });
-      state = next;
-      selectedId = null;
-      syncInputs();
-      renderScenes();
-      renderVenueControls();
-      updateInspector();
-      render();
-      persistSoon();
-      announce(`${state.project.title}（${state.project.versionLabel}）を読み込みました。`);
+      pendingImport = next;
+      renderImportSummary(next);
+      if (els.importModal) els.importModal.hidden = false;
+      if (els.importBackdrop) els.importBackdrop.hidden = false;
     };
     reader.readAsText(file);
+  }
+
+  /* 読み込み候補。窓を閉じたら捨てる */
+  let pendingImport = null;
+
+  function importCounts(st) {
+    const scenes = (st.project.scenes || []).filter((r) => r.kind === "scene");
+    return {
+      scenes: scenes.length,
+      cast: (st.project.cast || []).length,
+      sets: (st.project.sets || []).filter((t) => t.kind !== "light").length,
+      lights: (st.project.sets || []).filter((t) => t.kind === "light").length,
+      titles: scenes.map((r) => r.title || ""),
+    };
+  }
+
+  function renderImportSummary(next) {
+    const host = els.importSummary;
+    if (!host) return;
+    host.innerHTML = "";
+    const a = importCounts(state);
+    const b = importCounts(next);
+    const head = document.createElement("p");
+    head.className = "stage-profile-hint";
+    head.textContent = isEn()
+      ? `File: “${next.project.title}” (${next.project.versionLabel || "v1"}) — currently open: “${state.project.title}”`
+      : `ファイル:「${next.project.title}」（${next.project.versionLabel || "v1"}） ／ いま開いているのは「${state.project.title}」`;
+    host.append(head);
+    const table = document.createElement("p");
+    table.className = "stage-profile-hint";
+    table.textContent = isEn()
+      ? `Scenes ${a.scenes}→${b.scenes} · Cast ${a.cast}→${b.cast} · Sets ${a.sets}→${b.sets} · Lights ${a.lights}→${b.lights}`
+      : `シーン ${a.scenes}→${b.scenes} ／ 演者 ${a.cast}→${b.cast} ／ セット ${a.sets}→${b.sets} ／ 照明 ${a.lights}→${b.lights}`;
+    host.append(table);
+    // シーン名の見比べ: ファイルに新しく入っている名前と、置き換えると消える名前
+    const mine = new Set(a.titles);
+    const theirs = new Set(b.titles);
+    const added = b.titles.filter((t2) => !mine.has(t2));
+    const lost = a.titles.filter((t2) => !theirs.has(t2));
+    if (added.length) {
+      const line = document.createElement("p");
+      line.className = "stage-profile-hint";
+      line.textContent = isEn()
+        ? `New in file: ${added.join(" / ")}`
+        : `ファイル側にだけあるシーン: ${added.join(" ／ ")}`;
+      host.append(line);
+    }
+    if (lost.length) {
+      const line = document.createElement("p");
+      line.className = "stage-profile-hint";
+      line.textContent = isEn()
+        ? `Only in the current show (lost if replaced): ${lost.join(" / ")}`
+        : `いまのショーにだけあるシーン（置き換えると消える）: ${lost.join(" ／ ")}`;
+      host.append(line);
+    }
+  }
+
+  function closeImportPreview() {
+    pendingImport = null;
+    if (els.importModal) els.importModal.hidden = true;
+    if (els.importBackdrop) els.importBackdrop.hidden = true;
+  }
+
+  function confirmImport(asNew) {
+    const next = pendingImport;
+    if (!next) return;
+    closeImportPreview();
+    if (asNew) {
+      // いまのショーは棚に残したまま、別のショーとして開く（idを新しくする）
+      next.project.id = rid("show");
+      applyLoadedState(next, `「${next.project.title}」を別のショーとして開きました。前のショーはショー一覧にあります。`);
+      return;
+    }
+    checkpoint();
+    state = next;
+    selectedId = null;
+    syncInputs();
+    renderScenes();
+    renderVenueControls();
+    updateInspector();
+    render();
+    persistSoon();
+    announce(`${state.project.title}（${state.project.versionLabel}）を読み込みました。`);
   }
 
   function renderVenueControls() {
@@ -10771,6 +11115,14 @@
       persistSoon();
     });
   }
+  if (els.showMapBtn) els.showMapBtn.addEventListener("click", openShowMap);
+  if (els.printBtn) els.printBtn.addEventListener("click", openPrintPage);
+  if (els.importClose) els.importClose.addEventListener("click", closeImportPreview);
+  if (els.importBackdrop) els.importBackdrop.addEventListener("click", closeImportPreview);
+  if (els.importAsNew) els.importAsNew.addEventListener("click", () => confirmImport(true));
+  if (els.importReplace) els.importReplace.addEventListener("click", () => confirmImport(false));
+  if (els.mapClose) els.mapClose.addEventListener("click", closeShowMap);
+  if (els.mapBackdrop) els.mapBackdrop.addEventListener("click", closeShowMap);
   if (els.trapSit) {
     const setTrapMode = (mode) => {
       const piece = selectedPiece();
