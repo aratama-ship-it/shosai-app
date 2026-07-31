@@ -3859,6 +3859,31 @@
     return { x: pos.x, y: L.tilt(pos.rawY - b.toH * per.y) };
   }
 
+  /* 光の実際の終点。灯体(高さh)→当たる点(高さtoH)の線を実寸のまま延長し、
+     床（高さ0）に着く所を終点にする。床より先に袖の幕・奥や手前・天井に
+     着くならそこで止める（hh>0＝幕などへの丸い当たり）。
+     ★正面と平面の両方がこれを使う。片方だけだと二つの図で終点が食い違う。 */
+  function beamLanding(piece, size) {
+    const b = piece.beam || normalizeBeam(null, piece);
+    const su = piece.animBeamU === undefined ? b.u : piece.animBeamU;
+    const sv = piece.animBeamV === undefined ? b.v : piece.animBeamV;
+    const au = pieceU(piece);
+    const av = pieceV(piece);
+    let tEnd = Infinity;
+    if (b.h > b.toH + 0.01) tEnd = b.h / (b.h - b.toH);                          // 床に着く倍率
+    else if (b.toH > b.h + 0.01) tEnd = ((size.height || 8) - b.h) / (b.toH - b.h);  // 下から上は天井まで
+    // 幕より外へは延ばさない。横（袖幕）と奥・手前で手前に丸める
+    const cutAt = (from, to, limit) => (Math.abs(to - from) < 1e-6 ? Infinity : (limit - from) / (to - from));
+    [cutAt(su, au, au > su ? 1.12 : -0.12), cutAt(sv, av, av > sv ? 1.12 : -0.02)]
+      .forEach((t) => { if (t > 0 && t < tEnd) tEnd = t; });
+    if (!isFinite(tEnd)) tEnd = 1;
+    tEnd = Math.max(1, tEnd);   // 少なくとも当たる点までは届く（終点を袖の外へ引いた明かりなど）
+    return { tEnd,
+      eu: su + (au - su) * tEnd,
+      ev: sv + (av - sv) * tEnd,
+      hh: Math.max(0, b.h + (b.toH - b.h) * tEnd) };
+  }
+
   function drawLight(target, piece, pos, scale, L) {
     // 照明の円の直径を実寸（m）で持つ。床の1m枡で広さを読めるようにするため
     const dim = pieceDims(piece);
@@ -3870,27 +3895,45 @@
     const picked = piece.id === selectedId;
 
     if (L.plan) {
-      // 平面では、落ちる円と、どこから出ているかの線で読む
+      /* 平面でも、光の落ちる円は「実際の終点」に描く（beamLanding）。
+         ★以前は当たる点（toHの高さ）で円を描いていたため、SSのように途中の
+           高さを狙う明かりで、正面図は反対側の幕まで光が伸びるのに、
+           平面図は途中で止まる——二つの図の終点が食い違っていた（本人の指摘）。 */
+      const land = beamLanding(piece, L.size);
+      const endPos = place(land.eu, land.ev, L);
+      const spreadEnd = Math.max(6, ((dim && dim.dia) || 4) / 2 * L.pxPerM * land.tEnd);
       target.save();
-      const pool = target.createRadialGradient(hit.x, hit.y, 0, hit.x, hit.y, spread);
-      pool.addColorStop(0, rgba(piece.color, 0.34));
+      // 幕・壁への当たり（宙で終わる光）は床の円より薄く描く
+      const pool = target.createRadialGradient(endPos.x, endPos.y, 0, endPos.x, endPos.y, spreadEnd);
+      pool.addColorStop(0, rgba(piece.color, land.hh > 0.05 ? 0.2 : 0.34));
       pool.addColorStop(1, rgba(piece.color, 0));
       target.fillStyle = pool;
       target.beginPath();
-      target.arc(hit.x, hit.y, spread, 0, Math.PI * 2);
+      target.arc(endPos.x, endPos.y, spreadEnd, 0, Math.PI * 2);
       target.fill();
       // 灯体が真上にないときだけ、出どころを見せる（真上なら線が点になる）
-      const off = Math.hypot(src.x - hit.x, src.y - hit.y) > 6;
+      const off = Math.hypot(src.x - endPos.x, src.y - endPos.y) > 6;
       if (off || lit || picked) {
         target.strokeStyle = rgba(piece.color, lit || picked ? 0.7 : 0.34);
         target.lineWidth = 1.2;
         target.setLineDash([5, 5]);
         target.beginPath();
         target.moveTo(src.x, src.y);
-        target.lineTo(hit.x, hit.y);
+        target.lineTo(endPos.x, endPos.y);
         target.stroke();
         target.setLineDash([]);
         drawFixture(target, src, piece, lit || picked);
+      }
+      /* 途中の「当たる点」。掴んで動かすのはこの輪（終点ではない）なので、
+         終点が先へ延びている明かりでは、道具のときと選択中に輪で示す */
+      if (land.tEnd > 1.01 && (lit || picked)) {
+        target.strokeStyle = rgba(piece.color, 0.55);
+        target.setLineDash([4, 4]);
+        target.lineWidth = 1.2;
+        target.beginPath();
+        target.arc(hit.x, hit.y, spread, 0, Math.PI * 2);
+        target.stroke();
+        target.setLineDash([]);
       }
       target.restore();
       return;
@@ -3911,32 +3954,14 @@
     /* ★光は「当たる高さ」で止まらない。顔向け・体向けの明かり（toH>0）も、
      *   体を過ぎた光は床か幕まで進んで、そこに落ちる。当たる高さで帯を切ると
      *   光の輪が宙に浮いて見える（実際にそう見えていた）。
-     *   灯体(高さh)→当たる点(高さtoH) の線を実寸のまま延長し、
-     *   高さ0（床）に着く所を終点にする。床より先に奥の壁・袖の幕・天井に
-     *   着くならそこで止め、丸い当たりとして描く。 */
-    const b3 = piece.beam || normalizeBeam(null, piece);
-    const su = piece.animBeamU === undefined ? b3.u : piece.animBeamU;
-    const sv = piece.animBeamV === undefined ? b3.v : piece.animBeamV;
-    const au = pieceU(piece);
-    const av = pieceV(piece);
-    let tEnd = Infinity;
-    if (b3.h > b3.toH + 0.01) tEnd = b3.h / (b3.h - b3.toH);                       // 床に着く倍率
-    else if (b3.toH > b3.h + 0.01) tEnd = ((L.size.height || 8) - b3.h) / (b3.toH - b3.h);  // 下から上は天井まで
-    // 幕より外へは延ばさない。横（袖幕）と奥・手前で手前に丸める
-    const cutAt = (from, to, limit) => (Math.abs(to - from) < 1e-6 ? Infinity : (limit - from) / (to - from));
-    [cutAt(su, au, au > su ? 1.12 : -0.12), cutAt(sv, av, av > sv ? 1.12 : -0.02)]
-      .forEach((t) => { if (t > 0 && t < tEnd) tEnd = t; });
-    if (!isFinite(tEnd)) tEnd = 1;
-    tEnd = Math.max(1, tEnd);   // 少なくとも当たる点までは届く（終点を袖の外へ引いた明かりなど）
-    const eu = su + (au - su) * tEnd;
-    const ev = sv + (av - sv) * tEnd;
-    const hh = Math.max(0, b3.h + (b3.toH - b3.h) * tEnd);
-    const endPos = place(eu, ev, L);
+     *   終点の計算は平面と共通（beamLanding）。二つの図で同じ場所に落とす。 */
+    const land = beamLanding(piece, L.size);
+    const endPos = place(land.eu, land.ev, L);
     const perEnd = perMetre(endPos, L);
-    const end = { x: endPos.x, y: L.tilt(endPos.rawY - hh * perEnd.y) };
+    const end = { x: endPos.x, y: L.tilt(endPos.rawY - land.hh * perEnd.y) };
     // 光の円錐は灯体から先へ行くほど開く。終点の広さは距離の倍率で伸ばす
-    const spreadEnd = Math.max(6, ((dim && dim.dia) || 4) / 2 * perEnd.x * tEnd);
-    const onFloor = hh < 0.05;
+    const spreadEnd = Math.max(6, ((dim && dim.dia) || 4) / 2 * perEnd.x * land.tEnd);
+    const onFloor = land.hh < 0.05;
     const ry = Math.max(3, 32 * scale);
     const gradient = target.createLinearGradient(src.x, src.y, end.x, end.y);
     gradient.addColorStop(0, rgba(piece.color, 0.09));
@@ -3969,7 +3994,7 @@
     target.fill();
     /* 途中で体や顔に当たる高さ（toH>0）は、光を切らずに輪だけで示す。
        掴んで動かすのはこの輪なので、明かりの道具のときと選択中は必ず出す。 */
-    if (tEnd > 1.01 && (lit || picked)) {
+    if (land.tEnd > 1.01 && (lit || picked)) {
       target.strokeStyle = rgba(piece.color, 0.55);
       target.setLineDash([4, 4]);
       target.lineWidth = 1.2;
