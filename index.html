@@ -358,6 +358,44 @@
             <input type="range" id="stage-brush-size" min="12" max="120" step="2" value="42">
             <button type="button" class="stage-minor-action" id="stage-clear-paint">背景の塗りだけ消す</button>
 
+            <!-- スクリーンの文字。技名・擬音・字幕を背景へ映す -->
+            <div class="stage-screentext-block" id="stage-screentext-block">
+              <label class="stage-control-label">スクリーンの文字</label>
+              <div class="stage-cast-add stage-roster-add">
+                <input id="stage-screentext-input" class="stage-text-input" type="text" maxlength="60"
+                       placeholder="例: 黒閃 / ドッ / 純愛だよ" aria-label="スクリーンへ映す文字">
+                <button type="button" id="stage-screentext-add" class="btn-quiet">映す</button>
+              </div>
+              <div class="stage-cast-list" id="stage-screentext-list"></div>
+              <div id="stage-screentext-edit" hidden>
+                <label class="stage-control-label stage-range-label" for="stage-screentext-size">
+                  大きさ <span id="stage-screentext-size-value">18%</span>
+                </label>
+                <input type="range" id="stage-screentext-size" min="3" max="90" step="1" value="18">
+                <label class="stage-control-label stage-range-label" for="stage-screentext-opacity">
+                  濃さ <span id="stage-screentext-opacity-value">100%</span>
+                </label>
+                <input type="range" id="stage-screentext-opacity" min="10" max="100" step="5" value="100">
+                <label class="stage-control-label stage-range-label" for="stage-screentext-angle">
+                  傾き <span id="stage-screentext-angle-value">0°</span>
+                </label>
+                <input type="range" id="stage-screentext-angle" min="-45" max="45" step="1" value="0">
+                <div class="stage-action-row">
+                  <select id="stage-screentext-font" class="stage-select" aria-label="書体">
+                    <option value="brush">筆書き</option>
+                    <option value="gothic">太ゴシック</option>
+                    <option value="mincho">明朝</option>
+                  </select>
+                  <input type="color" id="stage-screentext-color" value="#efe7d6" aria-label="文字の色">
+                  <label class="stage-canvas-toggle" title="縦書きにする">
+                    <input type="checkbox" id="stage-screentext-vertical">
+                    <span>縦書き</span>
+                  </label>
+                </div>
+                <p class="stage-profile-hint">絵の上で掴んで動かせます。</p>
+              </div>
+            </div>
+
             <!-- 写真の背景。奥に壁のある劇場でだけ出す（全周形式には貼る面が無い） -->
             <div class="stage-photo-block" id="stage-photo-block">
               <label class="stage-control-label">背景の写真</label>
@@ -1106,9 +1144,9 @@
 <script src="book-seeds.js?v=1"></script>
 <script src="app.js?v=40"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=33"></script>
+<script src="stage-i18n.js?v=34"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
-<script src="stage-sketch.js?v=171"></script>
+<script src="stage-sketch.js?v=172"></script>
 <script src="roster.js?v=2"></script>
 </body>
 </html>

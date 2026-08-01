@@ -1011,6 +1011,20 @@
     brushValue: document.getElementById("stage-brush-value"),
     clearPaint: document.getElementById("stage-clear-paint"),
     photoBlock: document.getElementById("stage-photo-block"),
+    screenTextInput: document.getElementById("stage-screentext-input"),
+    screenTextAdd: document.getElementById("stage-screentext-add"),
+    screenTextList: document.getElementById("stage-screentext-list"),
+    screenTextEdit: document.getElementById("stage-screentext-edit"),
+    screenTextSize: document.getElementById("stage-screentext-size"),
+    screenTextSizeValue: document.getElementById("stage-screentext-size-value"),
+    screenTextOpacity: document.getElementById("stage-screentext-opacity"),
+    screenTextOpacityValue: document.getElementById("stage-screentext-opacity-value"),
+    screenTextAngle: document.getElementById("stage-screentext-angle"),
+    screenTextAngleValue: document.getElementById("stage-screentext-angle-value"),
+    screenTextFont: document.getElementById("stage-screentext-font"),
+    screenTextColor: document.getElementById("stage-screentext-color"),
+    screenTextVertical: document.getElementById("stage-screentext-vertical"),
+    screenTextBlock: document.getElementById("stage-screentext-block"),
     photoFile: document.getElementById("stage-photo-file"),
     photoOn: document.getElementById("stage-photo-on"),
     photoBright: document.getElementById("stage-photo-bright"),
@@ -1778,6 +1792,32 @@
     return { x: L.pxPerM * pos.scale, y: L.pxPerMv * pos.scale * (pos.stretch || 1) };
   }
 
+  /* 背景スクリーンの文字。舞台の奥のスクリーンへ映す字（技名・擬音・字幕・タイトル）。
+     位置は背景の壁の中の割合(0..1)で持つので、劇場の大きさや席を変えても同じ所に出る。
+     大きさは壁の高さに対する割合。縦書きは字を一つずつ下へ積む。 */
+  const SCREEN_FONTS = {
+    brush: { label: "筆書き", css: '"Hiragino Mincho ProN", "Yu Mincho", serif', weight: "700" },
+    gothic: { label: "太ゴシック", css: '"Hiragino Sans", "Yu Gothic", sans-serif', weight: "800" },
+    mincho: { label: "明朝", css: '"Hiragino Mincho ProN", "Yu Mincho", serif', weight: "400" },
+  };
+  function normalizeScreenText(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const text = typeof raw.text === "string" ? raw.text.slice(0, 60) : "";
+    if (!text) return null;
+    return {
+      id: typeof raw.id === "string" ? raw.id : rid("sctext"),
+      text,
+      u: clamp(finite(raw.u, 0.5), 0, 1),          // 壁の中の割合
+      v: clamp(finite(raw.v, 0.4), 0, 1),
+      size: clamp(finite(raw.size, 0.18), 0.03, 0.9),   // 壁の高さに対する割合
+      color: validColor(raw.color, "#efe7d6"),
+      font: SCREEN_FONTS[raw.font] ? raw.font : "brush",
+      vertical: Boolean(raw.vertical),
+      opacity: clamp(finite(raw.opacity, 1), 0.1, 1),
+      angle: clamp(finite(raw.angle, 0), -45, 45),
+    };
+  }
+
   function normalizeStroke(stroke) {
     const legacy = stroke && Array.isArray(stroke.points) && stroke.points.length
       && stroke.points[0] && stroke.points[0].u === undefined;
@@ -1819,6 +1859,9 @@
         ? raw.strokes.slice(-240).map(normalizeStroke).filter((stroke) => stroke.points.length)
         : [],
       photo: normalizePhoto(raw.photo),
+      // 背景スクリーンへ映す文字（技名・擬音・字幕）
+      screenTexts: Array.isArray(raw.screenTexts)
+        ? raw.screenTexts.slice(0, 12).map(normalizeScreenText).filter(Boolean) : [],
       rehearsal: kind === "scene" ? normalizeSceneRehearsal(raw.rehearsal) : null,
       // 暗転で始まるシーン（転換が一度真っ暗になってから明ける）
       blackout: kind === "scene" ? Boolean(raw.blackout) : false,
@@ -2076,6 +2119,8 @@
   let tool = "select";
   let selectedId = null;
   let selectedNoteId = null;
+  // いま選んでいるスクリーンの文字（掴んで動かす・つまみで直す対象）
+  let selectedTextId = null;
   let pointerAction = null;
   let history = [];
   let future = [];
@@ -2913,6 +2958,172 @@
     if (bright !== 1) target.filter = `brightness(${bright})`;
     target.drawImage(img, rect.x + (rect.w - w) / 2, rect.y + (rect.h - h) / 2, w, h);
     target.restore();
+  }
+
+  /* スクリーンの文字を描く。壁の矩形の中の割合で置き、大きさも壁の高さ基準。
+     縦書きは一文字ずつ下へ積む（回転させると読みにくいので字は立てたまま）。 */
+  function screenTextBox(t, rect) {
+    const px = Math.max(8, t.size * rect.h);
+    const chars = [...t.text];
+    const w = t.vertical ? px : px * chars.length * 0.92;
+    const h = t.vertical ? px * chars.length * 1.02 : px * 1.12;
+    return { x: rect.x + t.u * rect.w - w / 2, y: rect.y + t.v * rect.h - h / 2, w, h, px, chars };
+  }
+
+  function drawScreenTexts(target, rect) {
+    const list = sc().screenTexts || [];
+    if (!list.length) return;
+    list.forEach((t) => {
+      const box = screenTextBox(t, rect);
+      const spec = SCREEN_FONTS[t.font] || SCREEN_FONTS.brush;
+      target.save();
+      target.beginPath();
+      target.rect(rect.x, rect.y, rect.w, rect.h);
+      target.clip();
+      target.globalAlpha = t.opacity;
+      target.fillStyle = t.color;
+      target.font = `${spec.weight} ${Math.round(box.px)}px ${spec.css}`;
+      target.textAlign = "center";
+      target.textBaseline = "middle";
+      const cx = rect.x + t.u * rect.w;
+      const cy = rect.y + t.v * rect.h;
+      if (t.angle) {
+        target.translate(cx, cy);
+        target.rotate((t.angle * Math.PI) / 180);
+        target.translate(-cx, -cy);
+      }
+      if (t.vertical) {
+        const top = cy - (box.chars.length - 1) * box.px * 0.51;
+        box.chars.forEach((ch, i) => target.fillText(ch, cx, top + i * box.px * 1.02));
+      } else {
+        target.fillText(t.text, cx, cy);
+      }
+      target.restore();
+      // 選んでいる文字は枠を出す（掴んで動かせることを示す）
+      if (t.id === selectedTextId) {
+        target.save();
+        target.strokeStyle = "#d3ac59";
+        target.setLineDash([6, 5]);
+        target.lineWidth = 1.5;
+        target.strokeRect(box.x - 6, box.y - 6, box.w + 12, box.h + 12);
+        target.restore();
+      }
+    });
+  }
+
+  // 背景スクリーンの文字の当たり判定（正面図のみ）
+  function screenTextAt(point, L) {
+    if (L.plan) return null;
+    const rect = backdropRect(L);
+    if (!rect) return null;
+    const list = sc().screenTexts || [];
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+      const box = screenTextBox(list[i], rect);
+      if (point.x >= box.x - 6 && point.x <= box.x + box.w + 6
+        && point.y >= box.y - 6 && point.y <= box.y + box.h + 6) return list[i];
+    }
+    return null;
+  }
+
+  /* スクリーンの文字の一覧と、選んだ文字のつまみ。
+     写真や塗りと同じ「背景」の欄に置く（映すもの＝背景という括り）。 */
+  function selectedScreenText() {
+    return (sc().screenTexts || []).find((t) => t.id === selectedTextId) || null;
+  }
+
+  function renderScreenTexts() {
+    const host = els.screenTextList;
+    if (!host) return;
+    const list = sc().screenTexts || [];
+    host.innerHTML = "";
+    if (!list.length) {
+      const empty = document.createElement("p");
+      empty.className = "stage-cast-empty";
+      empty.textContent = isEn()
+        ? "No screen text yet. Type a word and press Project."
+        : "まだありません。言葉を入れて〈映す〉を押してください。";
+      host.append(empty);
+    }
+    list.forEach((t) => {
+      const row = document.createElement("div");
+      row.className = `stage-cast-row${t.id === selectedTextId ? " is-selected" : ""}`;
+      const dot = document.createElement("span");
+      dot.className = "stage-kind-swatch";
+      dot.style.background = t.color;
+      dot.style.pointerEvents = "none";
+      const name = document.createElement("button");
+      name.type = "button";
+      name.className = "stage-cast-name";
+      name.style.textAlign = "left";
+      name.textContent = t.text;
+      name.addEventListener("click", () => {
+        selectedTextId = t.id;
+        syncScreenTextControls();
+        renderScreenTexts();
+        render();
+      });
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "stage-cast-remove";
+      del.textContent = "✕";
+      del.setAttribute("aria-label", isEn() ? "Remove this text" : "この文字を消す");
+      del.addEventListener("click", () => {
+        checkpoint();
+        sc().screenTexts = (sc().screenTexts || []).filter((x) => x.id !== t.id);
+        if (selectedTextId === t.id) selectedTextId = null;
+        renderScreenTexts();
+        syncScreenTextControls();
+        render();
+        persistSoon();
+      });
+      row.append(dot, name, del);
+      host.append(row);
+    });
+    // 背景の壁を持たない形式では、映す面が無いので欄ごと隠す
+    if (els.screenTextBlock) els.screenTextBlock.hidden = venue().audience === "round";
+  }
+
+  function syncScreenTextControls() {
+    const t = selectedScreenText();
+    if (els.screenTextEdit) els.screenTextEdit.hidden = !t;
+    if (!t) return;
+    if (els.screenTextSize && document.activeElement !== els.screenTextSize) {
+      els.screenTextSize.value = String(Math.round(t.size * 100));
+    }
+    if (els.screenTextSizeValue) els.screenTextSizeValue.textContent = `${Math.round(t.size * 100)}%`;
+    if (els.screenTextOpacity && document.activeElement !== els.screenTextOpacity) {
+      els.screenTextOpacity.value = String(Math.round(t.opacity * 100));
+    }
+    if (els.screenTextOpacityValue) els.screenTextOpacityValue.textContent = `${Math.round(t.opacity * 100)}%`;
+    if (els.screenTextAngle && document.activeElement !== els.screenTextAngle) {
+      els.screenTextAngle.value = String(Math.round(t.angle));
+    }
+    if (els.screenTextAngleValue) els.screenTextAngleValue.textContent = `${Math.round(t.angle)}°`;
+    if (els.screenTextFont) els.screenTextFont.value = t.font;
+    if (els.screenTextColor) els.screenTextColor.value = t.color;
+    if (els.screenTextVertical) els.screenTextVertical.checked = t.vertical;
+  }
+
+  function addScreenText() {
+    const input = els.screenTextInput;
+    const raw = (input && input.value || "").trim();
+    if (!raw) { announce("映す言葉を入れてください。"); return; }
+    if (venue().audience === "round") {
+      announce(`${venueName(venue())}には映す面がありません。奥も客席です。`);
+      return;
+    }
+    checkpoint();
+    const t = normalizeScreenText({ text: raw, u: 0.5, v: 0.4, size: 0.18,
+      color: "#efe7d6", font: "brush", vertical: false, opacity: 1, angle: 0 });
+    if (!sc().screenTexts) sc().screenTexts = [];
+    sc().screenTexts.push(t);
+    selectedTextId = t.id;
+    if (input) input.value = "";
+    renderScreenTexts();
+    syncScreenTextControls();
+    render();
+    persistSoon();
+    announce(`「${raw}」をスクリーンへ映しました。絵の上で掴んで動かせます。`);
   }
 
   function buildPaintLayer(L) {
@@ -4787,6 +4998,8 @@
       // 写真は地の色の上、手描きの塗りの下。塗りは写真への描き込みとして残る
       if (sc().photo) paintPhoto(target, wall, sc().photo);
       target.drawImage(paintCanvas, 0, 0);
+      // スクリーンの文字は、写真と手描きの上（＝いちばん手前の投影）
+      drawScreenTexts(target, wall);
 
       const wallShade = target.createLinearGradient(wall.x, 0, wall.x + wall.w, 0);
       wallShade.addColorStop(0, "rgba(0,0,0,0.18)");
@@ -8273,6 +8486,9 @@ ${cuesheetHtml}
     renderSets();
     renderLights();
     renderRigs();
+    selectedTextId = null;
+    renderScreenTexts();
+    syncScreenTextControls();
     updateInspector();
     render();
     beginSceneAnim(before);
@@ -8302,6 +8518,9 @@ ${cuesheetHtml}
     renderSets();
     renderLights();
     renderRigs();
+    selectedTextId = null;
+    renderScreenTexts();
+    syncScreenTextControls();
     updateInspector();
     render();
     persistSoon();
@@ -8482,6 +8701,9 @@ ${cuesheetHtml}
     renderSets();
     renderLights();
     renderRigs();
+    selectedTextId = null;
+    renderScreenTexts();
+    syncScreenTextControls();
     updateInspector();
     render();
     persistSoon();
@@ -8507,6 +8729,9 @@ ${cuesheetHtml}
     renderSets();
     renderLights();
     renderRigs();
+    selectedTextId = null;
+    renderScreenTexts();
+    syncScreenTextControls();
     updateInspector();
     render();
     persistSoon();
@@ -8539,6 +8764,9 @@ ${cuesheetHtml}
     renderSets();
     renderLights();
     renderRigs();
+    selectedTextId = null;
+    renderScreenTexts();
+    syncScreenTextControls();
     updateInspector();
     render();
     persistSoon();
@@ -9725,6 +9953,26 @@ ${cuesheetHtml}
       // メモは絵の一番上に乗っているので、駒より先に拾う
       const note = noteAt(point, L, view);
       if (note) { grabNote(note, point, L, el, event, false); return; }
+      /* 背景スクリーンの文字。舞台の奥に映っているものなので、
+         駒より後ろ＝メモの次、駒より先に拾う（駒に隠れて掴めないと直せない）。 */
+      const stext = screenTextAt(point, L);
+      if (stext) {
+        selectedTextId = stext.id;
+        selectedNoteId = null;
+        const rect = backdropRect(L);
+        capture(el, event.pointerId);
+        el.dataset.dragging = "true";
+        pointerAction = {
+          kind: "screentext", pointerId: event.pointerId, id: stext.id, el, view,
+          before: snapshot(), moved: false, rect,
+          offsetU: (point.x - (rect.x + stext.u * rect.w)) / rect.w,
+          offsetV: (point.y - (rect.y + stext.v * rect.h)) / rect.h,
+        };
+        renderScreenTexts();
+        syncScreenTextControls();
+        render();
+        return;
+      }
       selectedNoteId = null;
       // 選んでいる駒の動線の取っ手は、駒そのものより先に拾う
       const current = selectedPiece();
@@ -9853,8 +10101,9 @@ ${cuesheetHtml}
       if (fixtureAt(point, L)) return "grab";
       return hitTest(point, L) ? "grab" : "default";
     }
-    // 動かす道具。メモ→動線の取っ手→駒→（何もなければ）視線を振る
+    // 動かす道具。メモ→スクリーンの文字→動線の取っ手→駒→（何もなければ）視線を振る
     if (noteAt(point, L, view)) return "grab";
+    if (screenTextAt(point, L)) return "grab";
     const current = selectedPiece();
     if (view === "plan" && routeHandleAt(point, current, L)) return "grab";
     // はけの自動動線の取っ手にも指の形を出す（掴めば実体化する）
@@ -9962,6 +10211,20 @@ ${cuesheetHtml}
         note.x = clamp(x, -60, W - 40);
         note.y = clamp(y, -20, H - 30);
       }
+      render();
+      return;
+    }
+
+    if (pointerAction.kind === "screentext") {
+      const t = (sc().screenTexts || []).find((x) => x.id === pointerAction.id);
+      if (!t) return;
+      if (!pointerAction.moved) {
+        recordBefore(pointerAction.before);
+        pointerAction.moved = true;
+      }
+      const rect = pointerAction.rect;
+      t.u = clamp((point.x - rect.x) / rect.w - pointerAction.offsetU, 0, 1);
+      t.v = clamp((point.y - rect.y) / rect.h - pointerAction.offsetV, 0, 1);
       render();
       return;
     }
@@ -10915,6 +11178,62 @@ ${cuesheetHtml}
     reader.readAsDataURL(file);
   }
 
+  if (els.screenTextAdd) els.screenTextAdd.addEventListener("click", addScreenText);
+  if (els.screenTextInput) {
+    els.screenTextInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); addScreenText(); }
+    });
+  }
+  [["screenTextSize", "size", 100, "screenTextSizeValue", (v) => `${Math.round(v * 100)}%`],
+   ["screenTextOpacity", "opacity", 100, "screenTextOpacityValue", (v) => `${Math.round(v * 100)}%`],
+   ["screenTextAngle", "angle", 1, "screenTextAngleValue", (v) => `${Math.round(v)}°`]].forEach(
+    ([key, field, div, labelKey, fmt]) => {
+      const input = els[key];
+      if (!input) return;
+      input.addEventListener("input", (e) => {
+        const t = selectedScreenText();
+        if (!t) return;
+        t[field] = finite(e.target.value, 0) / div;
+        if (field === "size") t.size = clamp(t.size, 0.03, 0.9);
+        if (field === "opacity") t.opacity = clamp(t.opacity, 0.1, 1);
+        if (field === "angle") t.angle = clamp(t.angle, -45, 45);
+        if (els[labelKey]) els[labelKey].textContent = fmt(t[field]);
+        render();
+        persistSoon();
+      });
+      input.addEventListener("pointerdown", checkpoint);
+    });
+  if (els.screenTextFont) {
+    els.screenTextFont.addEventListener("change", (e) => {
+      const t = selectedScreenText();
+      if (!t) return;
+      checkpoint();
+      t.font = SCREEN_FONTS[e.target.value] ? e.target.value : "brush";
+      render();
+      persistSoon();
+    });
+  }
+  if (els.screenTextColor) {
+    els.screenTextColor.addEventListener("input", (e) => {
+      const t = selectedScreenText();
+      if (!t) return;
+      t.color = validColor(e.target.value, "#efe7d6");
+      renderScreenTexts();
+      render();
+      persistSoon();
+    });
+    els.screenTextColor.addEventListener("pointerdown", checkpoint);
+  }
+  if (els.screenTextVertical) {
+    els.screenTextVertical.addEventListener("change", (e) => {
+      const t = selectedScreenText();
+      if (!t) return;
+      checkpoint();
+      t.vertical = e.target.checked;
+      render();
+      persistSoon();
+    });
+  }
   if (els.photoFile) {
     els.photoFile.addEventListener("change", (event) => {
       loadPhotoFile(event.target.files && event.target.files[0]);
@@ -11021,6 +11340,9 @@ ${cuesheetHtml}
     renderSets();
     renderLights();
     renderRigs();
+    selectedTextId = null;
+    renderScreenTexts();
+    syncScreenTextControls();
     updateInspector();
     setTool(tool);
     render();
@@ -11533,6 +11855,8 @@ ${cuesheetHtml}
   /* 初めて開いた端末には、見本のショーを棚へ入れておく（開いているショーは変えない）。
      ★state を組み終わってから通すこと。let state より前で呼ぶと
        TDZ で落ち、try/catch が握り潰して「棚に入らない」だけになる（実際に踏んだ）。 */
+  renderScreenTexts();
+  syncScreenTextControls();
   if (!loaded.restored) shelveSample();
   // 名簿タブから送られたキャスト候補。開いた時と、#stageへ切り替わった時に受け取る
   consumeCastHandoff();
