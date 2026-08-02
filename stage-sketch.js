@@ -13,6 +13,101 @@
 (function () {
   "use strict";
 
+  /* 段階0のビート骨格。作品の正解ではなく、シーン名・役割・エネルギーだけを
+     作るローカルの初期値。演者、道具、照明、背景、技、装置はここへ入れない。
+     内容の正本: 2026-07-28_stage-sketch-codex-round2-answer.md D2 */
+  const freezeBeatTemplate = (template) => Object.freeze({
+    ...template,
+    roles: Array.isArray(template.roles) ? Object.freeze(template.roles) : null,
+    energy: Array.isArray(template.energy) ? Object.freeze(template.energy) : null,
+  });
+  const BEAT_TEMPLATES = Object.freeze([
+    // 出典: https://cirque-cnac.bnf.fr/fr/esthetiques/le-cirque-classique
+    //       https://cirque-cnac.bnf.fr/es/infos/glossaire
+    freezeBeatTemplate({ id: "classic-circus", number: 1, name: "古典サーカス・プログラム型",
+      range: "8〜12", roles: [
+        "全員登場／世界提示", "短い個人番号", "対照的番号", "コミックな転換",
+        "主力番号", "集団番号", "全員のfinale",
+      ], energy: [4, 3, 4, 2, 4, 5, 5] }),
+    /* D2は、休憩を含む役割文と「4値｜休憩｜5値」の曲線を示すが、
+       休憩をsectionにするかsceneにするか、そのenergyをどこへ対応させるかを
+       一意に決めていない。発注書どおり推測せず、選択不可のまま内容だけ見せる。 */
+    freezeBeatTemplate({ id: "two-part-variety", number: 2, name: "二部制ヴァラエティ・ビル型",
+      range: "8〜12＋休憩", available: false,
+      roleText: "短い開幕 → 小編成 → 対照番号 → 一部の山 → 休憩 → 複雑な仕込みを要する番号 → 再加速 → 集団の驚き → finale",
+      curveText: "3 → 3 → 4 → 5 ｜休憩｜ 4 → 3 → 4 → 5 → 4",
+      holdReason: "休憩をシーン／セクションのどちらにするかと、役割とエネルギーの対応が要確認です。",
+      roles: null, energy: null }),
+    freezeBeatTemplate({ id: "three-act", number: 3, name: "三幕構成",
+      range: "7〜9", roles: [
+        "世界と人物", "発端", "目標決定", "障害の増加", "中央反転", "危機", "決断", "結果",
+      ], energy: [1, 2, 3, 3, 4, 5, 4, 2] }),
+    // 出典: https://teachers.yale.edu/curriculum/units/2016/3/5/4
+    freezeBeatTemplate({ id: "freytag", number: 4, name: "フライタークのピラミッド",
+      range: "6〜8", roles: [
+        "提示", "発端", "上昇", "危機", "クライマックス", "下降", "新しい均衡",
+      ], energy: [1, 2, 3, 4, 5, 3, 1] }),
+    // 出典: https://eprints.lib.hokudai.ac.jp/repo/huscap/all/38486/
+    freezeBeatTemplate({ id: "kishotenketsu", number: 5, name: "起承転結",
+      range: "4（または各節2シーンで8）", roles: [
+        "起＝規則提示", "承＝規則を深める", "転＝別の関係を持ち込む", "結＝両者の意味を結ぶ",
+      ], energy: [1, 2, 4, 2] }),
+    // 出典: https://education.nsw.gov.au/teaching-and-learning/curriculum/creative-arts/creative-arts-curriculum-resources-k-12/7-10-curriculum-resources/choreographic-forms
+    freezeBeatTemplate({ id: "rondo", number: 6, name: "ロンド形式 A–B–A–C–A–D–A'",
+      range: "5〜7", roles: [
+        "基準となる身体／道具の規則A", "対照B", "A再演", "別の対照C",
+        "A再演", "最大変奏D", "意味が変わったA'",
+      ], energy: [2, 3, 2, 4, 2, 5, 3] }),
+    freezeBeatTemplate({ id: "theme-variations", number: 7, name: "主題と変奏",
+      range: "5〜8", roles: [
+        "技／関係／道具の主題提示", "速度変奏", "空間変奏", "人数変奏",
+        "制約変奏", "要素を引いた版", "統合版",
+      ], energy: [2, 3, 3, 4, 5, 1, 4] }),
+    // 出典: https://education.nsw.gov.au/teaching-and-learning/curriculum/creative-arts/creative-arts-curriculum-resources-k-12/7-10-curriculum-resources/choreographic-forms
+    freezeBeatTemplate({ id: "canon-accumulation", number: 8, name: "カノン／アキュムレーション型",
+      range: "6〜9", roles: [
+        "一人が短い句を提示", "二人目が時間差で入る", "人数と句を蓄積", "層が衝突",
+        "全員ユニゾン", "一人ずつ抜ける", "最初の一人へ戻る",
+      ], energy: [1, 2, 3, 4, 5, 3, 1] }),
+    // 出典: https://cnac.fr/sites/default/files/2024-03/Dossier_de_presse_23e_promotion.pdf
+    freezeBeatTemplate({ id: "cycle-spiral", number: 9, name: "循環／螺旋ドラマトゥルギー",
+      range: "6〜8", roles: [
+        "原型となる出来事", "同じ出来事を別人物から見る", "別の客席方向から見る",
+        "逆順で再生", "原因と思ったものが結果だったと判明", "変質した原点へ戻る",
+      ], energy: [2, 3, 3, 4, 5, 2] }),
+    freezeBeatTemplate({ id: "single-focus-agres", number: 10,
+      name: "単一フォーカス／アグレ・ドラマトゥルギー", range: "6〜9", roles: [
+        "安定状態", "道具／身体の規則提示", "最初の逸脱", "能力拡張",
+        "失敗または停止", "関係から回復", "最大投入", "残響",
+      ], energy: [1, 2, 3, 4, 2, 3, 5, 1] }),
+  ]);
+  const normalizeBeat = (raw) => {
+    const beat = raw && typeof raw === "object" ? raw : {};
+    const energy = Number(beat.energy);
+    return {
+      role: typeof beat.role === "string" ? beat.role.slice(0, 160) : "",
+      energy: Number.isInteger(energy) && energy >= 1 && energy <= 5 ? energy : null,
+    };
+  };
+  const normalizeSceneBeat = (kind, raw) => kind === "scene" ? normalizeBeat(raw) : null;
+  const beatTemplateRows = (templateId) => {
+    const template = BEAT_TEMPLATES.find((item) => item.id === templateId);
+    if (!template || template.available === false || !template.roles || !template.energy) return [];
+    return template.roles.map((role, index) => ({
+      kind: "scene",
+      title: role,
+      beat: normalizeBeat({ role, energy: template.energy[index] }),
+      pieces: [],
+    }));
+  };
+  // DOMを立ち上げずに、同じ定数と正規化経路をNodeテストから検査する。
+  window.SHOSAI_STAGE_BEAT_TEMPLATE_MODEL = Object.freeze({
+    templates: BEAT_TEMPLATES,
+    normalizeBeat,
+    normalizeSceneBeat,
+    rowsForTemplate: beatTemplateRows,
+  });
+
   const canvas = document.getElementById("stage-canvas");
   if (!canvas) return;
   const VENUES = window.SHOSAI_VENUES;
@@ -1150,6 +1245,11 @@
     showsBackdrop: document.getElementById("stage-shows-backdrop"),
     showsClose: document.getElementById("stage-shows-close"),
     showList: document.getElementById("stage-show-list"),
+    beatTemplatesOpen: document.getElementById("stage-beat-templates-open"),
+    beatTemplatesModal: document.getElementById("stage-beat-templates"),
+    beatTemplatesBackdrop: document.getElementById("stage-beat-templates-backdrop"),
+    beatTemplatesClose: document.getElementById("stage-beat-templates-close"),
+    beatTemplateList: document.getElementById("stage-beat-template-list"),
     facingValue: document.getElementById("stage-facing-value"),
     profile: document.getElementById("stage-profile"),
     profileBackdrop: document.getElementById("stage-profile-backdrop"),
@@ -1433,6 +1533,7 @@
       notes: [],
       pieces: withExample ? samplePieces() : [],
       strokes: [],
+      beat: normalizeSceneBeat(sceneKind, null),
       rehearsal: sceneKind === "scene" ? normalizeSceneRehearsal(null) : null,
     };
   }
@@ -1862,6 +1963,7 @@
       // 背景スクリーンへ映す文字（技名・擬音・字幕）
       screenTexts: Array.isArray(raw.screenTexts)
         ? raw.screenTexts.slice(0, 12).map(normalizeScreenText).filter(Boolean) : [],
+      beat: normalizeSceneBeat(kind, raw.beat),
       rehearsal: kind === "scene" ? normalizeSceneRehearsal(raw.rehearsal) : null,
       // 暗転で始まるシーン（転換が一度真っ暗になってから明ける）
       blackout: kind === "scene" ? Boolean(raw.blackout) : false,
@@ -6968,6 +7070,106 @@
     if (els.showsBackdrop) els.showsBackdrop.hidden = true;
   }
 
+  /* ---------- 段階0: ビート骨格テンプレート ----------
+     適用先は常に別の新規ショー。いまのショーを棚へ残したうえで切り替えるので、
+     既存シーンへの上書き・追記という危険な分岐を持たない。 */
+  function createShowFromBeatTemplate(templateId) {
+    const template = BEAT_TEMPLATES.find((item) => item.id === templateId);
+    const rows = beatTemplateRows(templateId);
+    if (!template || template.available === false || !rows.length) return;
+    shelveCurrent();
+    const fresh = baseState(false);
+    fresh.project.title = template.name;
+    fresh.project.scenes = rows.map((row) => {
+      const scene = newScene(row.title, false);
+      scene.beat = normalizeBeat(row.beat);
+      return scene;
+    });
+    fresh.project.activeSceneId = fresh.project.scenes[0].id;
+    fresh.layout = state.layout;
+    applyLoadedState(normalizeState(fresh),
+      `「${template.name}」から新しいショーを作りました。前のショーは一覧に残っています。`);
+    closeBeatTemplates();
+    renderShows();
+  }
+
+  function renderBeatTemplates() {
+    if (!els.beatTemplateList) return;
+    els.beatTemplateList.innerHTML = "";
+    BEAT_TEMPLATES.forEach((template) => {
+      const available = template.available !== false;
+      const card = document.createElement("article");
+      card.className = `stage-beat-template-card${available ? "" : " is-held"}`;
+
+      const copy = document.createElement("div");
+      copy.className = "stage-beat-template-copy";
+      const heading = document.createElement("h3");
+      heading.className = "stage-beat-template-heading";
+      const number = document.createElement("span");
+      number.className = "stage-beat-template-number";
+      number.textContent = String(template.number).padStart(2, "0");
+      const name = document.createElement("span");
+      name.textContent = template.name;
+      heading.append(number, name);
+
+      const count = document.createElement("p");
+      count.className = "stage-beat-template-count";
+      count.textContent = available
+        ? `生成 ${template.roles.length}シーン・D2目安 ${template.range}`
+        : `生成数 要確認・D2目安 ${template.range}`;
+      const roles = document.createElement("p");
+      roles.className = "stage-beat-template-roles";
+      roles.textContent = template.roleText || template.roles.join(" → ");
+      copy.append(heading, count, roles);
+
+      const side = document.createElement("div");
+      side.className = "stage-beat-template-side";
+      if (available) {
+        const energy = document.createElement("div");
+        energy.className = "stage-beat-energy";
+        energy.setAttribute("aria-label", `エネルギー ${template.energy.join("、")}`);
+        template.energy.forEach((value) => {
+          const step = document.createElement("span");
+          step.className = "stage-beat-energy-step";
+          step.dataset.energy = String(value);
+          step.textContent = `E${value}`;
+          energy.append(step);
+        });
+        side.append(energy);
+      } else {
+        const curve = document.createElement("p");
+        curve.className = "stage-beat-template-curve-text";
+        curve.textContent = template.curveText;
+        const hold = document.createElement("p");
+        hold.className = "stage-beat-template-hold";
+        hold.textContent = template.holdReason;
+        side.append(curve, hold);
+      }
+
+      const apply = document.createElement("button");
+      apply.type = "button";
+      apply.className = "stage-beat-template-apply";
+      apply.disabled = !available;
+      apply.textContent = available ? "この骨格で新しいショーを作る" : "要確認のため保留";
+      apply.addEventListener("click", () => createShowFromBeatTemplate(template.id));
+      side.append(apply);
+      card.append(copy, side);
+      els.beatTemplateList.append(card);
+    });
+  }
+
+  function openBeatTemplates() {
+    if (!els.beatTemplatesModal) return;
+    renderBeatTemplates();
+    els.beatTemplatesModal.hidden = false;
+    if (els.beatTemplatesBackdrop) els.beatTemplatesBackdrop.hidden = false;
+  }
+
+  function closeBeatTemplates() {
+    if (els.beatTemplatesModal) els.beatTemplatesModal.hidden = true;
+    if (els.beatTemplatesBackdrop) els.beatTemplatesBackdrop.hidden = true;
+  }
+
   /* ---------- 姿勢を選ぶ ----------
      名前だけでは「片膝立ち」と「しゃがむ」の違いが伝わらないので、
      実際の形を小さく描いて並べる。舞台の絵と同じ骨格・同じ塗りを通すので、
@@ -7535,7 +7737,11 @@
         count.className = "stage-scene-count";
         count.textContent = scene.kind === "section"
           ? `${sceneChildren(i).filter((x) => x.kind === "scene").length}`
-          : `${scene.pieces.length}`;
+          : (scene.beat && scene.beat.energy !== null
+            ? `E${scene.beat.energy}・${scene.pieces.length}` : `${scene.pieces.length}`);
+        if (scene.kind === "scene" && scene.beat && scene.beat.energy !== null) {
+          count.title = `エネルギー ${scene.beat.energy}・配置 ${scene.pieces.length}`;
+        }
 
         button.append(num, name, count);
         /* 名前を直す入口は鉛筆。行そのものを入力欄にすると、
@@ -7576,6 +7782,17 @@
         if (isOpen && scene.kind === "scene") {
           const body = document.createElement("div");
           body.className = "stage-scene-body";
+          if (scene.beat && (scene.beat.role || scene.beat.energy !== null)) {
+            const beat = document.createElement("div");
+            beat.className = "stage-scene-beat";
+            const energy = document.createElement("span");
+            energy.className = "stage-scene-beat-energy";
+            energy.textContent = scene.beat.energy === null ? "E—" : `E${scene.beat.energy}`;
+            const role = document.createElement("span");
+            role.textContent = scene.beat.role;
+            beat.append(energy, role);
+            body.append(beat);
+          }
           const timing = document.createElement("div");
           timing.className = "stage-rehearsal-time-grid stage-scene-rehearsal-times";
           const makeTimingInput = (labelJa, key) => {
@@ -10493,6 +10710,9 @@ ${cuesheetHtml}
   if (els.showNew) els.showNew.addEventListener("click", newShow);
   if (els.showsClose) els.showsClose.addEventListener("click", closeShows);
   if (els.showsBackdrop) els.showsBackdrop.addEventListener("click", closeShows);
+  if (els.beatTemplatesOpen) els.beatTemplatesOpen.addEventListener("click", openBeatTemplates);
+  if (els.beatTemplatesClose) els.beatTemplatesClose.addEventListener("click", closeBeatTemplates);
+  if (els.beatTemplatesBackdrop) els.beatTemplatesBackdrop.addEventListener("click", closeBeatTemplates);
   if (els.poseClose) els.poseClose.addEventListener("click", closePoseModal);
   if (els.poseBackdrop) els.poseBackdrop.addEventListener("click", closePoseModal);
   if (els.pieceFacing) {

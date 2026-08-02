@@ -117,6 +117,19 @@ function normalizeSceneRehearsal(raw, label) {
   };
 }
 
+function normalizeSceneBeat(raw, label) {
+  const beat = raw && typeof raw === "object" ? raw : {};
+  const energy = beat.energy === undefined || beat.energy === null
+    ? null : Number(beat.energy);
+  if (energy !== null && (!Number.isInteger(energy) || energy < 1 || energy > 5)) {
+    fail(`${label}.beat.energyは1〜5の整数またはnullにしてください。`);
+  }
+  return {
+    role: stringValue(beat.role, `${label}.beat.role`, 160),
+    energy,
+  };
+}
+
 function uniqueNameId(list, prefix, name) {
   const existing = list.find((item) => item.name === name);
   return existing?.id || makeId(prefix);
@@ -264,6 +277,7 @@ export function normalizeSceneInput(project, raw, index = 0) {
       : placements.map((placement, placementIndex) =>
           normalizePlacement(project, placement, placementIndex)),
     strokes: [],
+    beat: kind === "scene" ? normalizeSceneBeat(raw.beat, `scenes[${index}]`) : null,
     rehearsal: kind === "scene"
       ? normalizeSceneRehearsal(raw.rehearsal, `scenes[${index}]`)
       : null,
@@ -410,6 +424,10 @@ export function updateScene(document, input) {
     scene.studyBeatId = input.studyBeatId
       ? stringValue(input.studyBeatId, "studyBeatId", 64, true)
       : null;
+  }
+  if (input.beat !== undefined) {
+    if (scene.kind === "section") fail("セクションにはビートを設定できません。");
+    scene.beat = normalizeSceneBeat(input.beat, "scene");
   }
   if (input.rehearsal !== undefined) {
     if (scene.kind === "section") fail("セクションには稽古時間を設定できません。");

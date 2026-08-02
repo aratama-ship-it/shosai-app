@@ -22,6 +22,13 @@ export const sceneRehearsalSchema = z.object({
   transitionToNextSeconds: z.number().min(0).max(86400).nullable().optional(),
 }).optional();
 
+export const sceneBeatSchema = z.object({
+  role: z.string().max(160).optional()
+    .describe("構成テンプレート由来の短い役割。具体的な技や装置は書かない"),
+  energy: z.number().int().min(1).max(5).nullable().optional()
+    .describe("1=静止・余白、5=最大密度／最大緊張。未設定はnull"),
+}).optional();
+
 export const placementSchema = z.object({
   assetType: z.enum(["performer", "set"])
     .describe("演者はperformer、道具・装置・照明はset"),
@@ -56,6 +63,7 @@ export const sceneSchema = z.object({
   note: z.string().max(2000).optional()
     .describe("目的・障害・変化・観客へ見せる情報を簡潔に記録"),
   background: color,
+  beat: sceneBeatSchema,
   rehearsal: sceneRehearsalSchema,
   placements: z.array(placementSchema).max(80).optional(),
 });

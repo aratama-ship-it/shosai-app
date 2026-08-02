@@ -158,6 +158,44 @@ test("prepares a clean file for the browser and keeps MCP metadata private", asy
   });
 });
 
+test("preserves beat through MCP storage and export while sections keep beat null", async () => {
+  const store = await temporaryStore();
+  const created = await store.create({
+    projectId: "beat-show",
+    title: "ビート往復",
+    scenes: [
+      { title: "提示", beat: { role: "世界と人物", energy: 1 } },
+      { kind: "section", title: "区切り", beat: { role: "休憩", energy: 2 } },
+    ],
+  });
+
+  assert.deepEqual(created.project.scenes[0].beat, { role: "世界と人物", energy: 1 });
+  assert.deepEqual(created.project.scenes[0].pieces, []);
+  assert.equal(created.project.scenes[1].beat, null);
+  assert.deepEqual(created.project.scenes[1].pieces, []);
+
+  await store.updateScene({
+    projectId: "beat-show",
+    expectedRevision: 1,
+    sceneId: created.project.scenes[0].id,
+    beat: { role: "中央反転", energy: 4 },
+  });
+  await assert.rejects(
+    store.updateScene({
+      projectId: "beat-show",
+      expectedRevision: 2,
+      sceneId: created.project.scenes[1].id,
+      beat: { role: "休憩", energy: 2 },
+    }),
+    /セクションにはビートを設定できません/,
+  );
+
+  const prepared = await store.prepareImport("beat-show", 2);
+  const output = JSON.parse(await readFile(prepared.importFile, "utf8"));
+  assert.deepEqual(output.project.scenes[0].beat, { role: "中央反転", energy: 4 });
+  assert.equal(output.project.scenes[1].beat, null);
+});
+
 test("emits a human safety warning for circus and flown apparatus", async () => {
   const store = await temporaryStore();
   await store.create({

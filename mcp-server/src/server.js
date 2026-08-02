@@ -10,6 +10,7 @@ import {
   mutationBaseSchema,
   placementSchema,
   projectIdSchema,
+  sceneBeatSchema,
   sceneRehearsalSchema,
   sceneSchema,
 } from "./schemas.js";
@@ -114,6 +115,7 @@ export function buildServer(projectStore = store) {
           depth: scene.depth,
           title: scene.title,
           studyBeatId: scene.studyBeatId,
+          beat: scene.beat,
           note: scene.note,
           pieceCount: scene.pieces.length,
         })),
@@ -215,6 +217,7 @@ export function buildServer(projectStore = store) {
         background: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
         depth: z.number().int().min(0).max(4).optional(),
         studyBeatId: z.string().max(64).nullable().optional(),
+        beat: sceneBeatSchema,
         rehearsal: sceneRehearsalSchema,
         placementMode: z.enum(["replace", "append"]).optional(),
         placements: z.array(placementSchema).max(80).optional(),

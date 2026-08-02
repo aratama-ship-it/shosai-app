@@ -1511,6 +1511,23 @@ textarea, input[type="text"] {
   padding: 5px 2px 2px 20px;
 }
 
+.stage-scene-beat {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  padding: 6px 8px;
+  border-left: 2px solid rgba(211, 172, 89, 0.45);
+  color: var(--milk-dim);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.stage-scene-beat-energy {
+  color: var(--brass);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
 /* 名前をその場で書き換えているあいだ。入力中だとはっきり分かる見た目にする */
 .stage-scene-rename {
   min-width: 0;
@@ -1734,6 +1751,122 @@ canvas[data-tool="note"] { cursor: copy; }
 
 .stage-show-title { font-size: 13px; letter-spacing: 0.04em; }
 .stage-show-meta { font-size: 10px; color: rgba(240, 231, 214, 0.42); }
+
+/* 構成テンプレートは、選ぶ前に全シーンの役割と呼吸を読み切れる一覧にする。
+   決定ボタンだけを先に目立たせず、設計図を読んでから新規ショーを作る順序。 */
+.stage-beat-template-lead {
+  color: var(--milk-dim);
+  font-size: 11.5px;
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+
+.stage-beat-template-list {
+  display: grid;
+  gap: 9px;
+}
+
+.stage-beat-template-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 178px;
+  gap: 8px 14px;
+  padding: 11px 12px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk);
+}
+
+.stage-beat-template-card.is-held {
+  border-style: dashed;
+  background: rgba(211, 172, 89, 0.035);
+}
+
+.stage-beat-template-copy { min-width: 0; }
+
+.stage-beat-template-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--paper);
+  font-family: var(--serif);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.stage-beat-template-number {
+  color: var(--rust);
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+.stage-beat-template-count {
+  color: rgba(240, 231, 214, 0.48);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+
+.stage-beat-template-roles {
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  line-height: 1.75;
+  margin-top: 7px;
+}
+
+.stage-beat-template-side {
+  display: grid;
+  align-content: space-between;
+  gap: 9px;
+}
+
+.stage-beat-energy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.stage-beat-energy-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 25px;
+  min-height: 25px;
+  border: 1px solid rgba(211, 172, 89, 0.34);
+  color: var(--milk-dim);
+  font-size: 9px;
+}
+
+.stage-beat-energy-step[data-energy="1"] { background: rgba(168, 75, 38, 0.05); }
+.stage-beat-energy-step[data-energy="2"] { background: rgba(168, 75, 38, 0.10); }
+.stage-beat-energy-step[data-energy="3"] { background: rgba(168, 75, 38, 0.17); }
+.stage-beat-energy-step[data-energy="4"] { background: rgba(168, 75, 38, 0.24); color: var(--milk); }
+.stage-beat-energy-step[data-energy="5"] { background: rgba(168, 75, 38, 0.34); color: var(--paper); }
+
+.stage-beat-template-curve-text,
+.stage-beat-template-hold {
+  color: rgba(240, 231, 214, 0.54);
+  font-size: 9.5px;
+  line-height: 1.6;
+}
+
+.stage-beat-template-hold { color: var(--brass); }
+
+.stage-beat-template-apply {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--line-dark);
+  background: none;
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+
+.stage-beat-template-apply:hover { border-color: var(--brass); color: var(--milk); }
+.stage-beat-template-apply:disabled { opacity: 0.42; cursor: not-allowed; }
+
+@media (max-width: 680px) {
+  .stage-beat-template-card { grid-template-columns: 1fr; }
+}
 
 /* 姿勢は名前だけでは違いが伝わらないので、形を並べて選ぶ */
 .stage-pose-button {
@@ -6553,6 +6686,7 @@ body.is-panel-dragging {
    後出しに負けて既定の380pxに戻る（実際に姿勢の窓がそうなっていた）。 */
 .stage-modal.stage-pose-modal { width: min(1020px, calc(100vw - 40px)); }
 .stage-modal.stage-shows-modal { width: min(520px, calc(100vw - 40px)); }
+.stage-modal.stage-beat-template-modal { width: min(780px, calc(100vw - 40px)); }
 .stage-modal.stage-export-modal { width: min(420px, calc(100vw - 40px)); }
 .stage-modal.stage-rehearsal-export-modal { width: min(560px, calc(100vw - 40px)); }
 
