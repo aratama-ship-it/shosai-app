@@ -2,9 +2,9 @@
 
 ## Status
 
-- Status: ACTIVE
-- Last updated: 2026-08-02 23:11 JST
-- Current wave: 3 — final verifier pass and milestone commit
+- Status: PARTIAL
+- Last updated: 2026-08-02 23:12 JST
+- Current wave: 4 — morning handoff complete
 
 ## Baseline
 
@@ -31,15 +31,18 @@
 - Wave 2: added three browser/model tests and one MCP persistence/export test. Browser suite passed 13/13 and MCP suite passed 7/7.
 - Wave 2: local in-app browser check at 1280×720 confirmed ten preview rows, disabled #2, an eight-scene 三幕構成 with all placement counts zero, original show preservation in the show list, and zero browser warning/error logs.
 - Wave 2: regenerated `stage.html`; `build_stage.py --check` and `git diff --check` passed. Cache versions are `style.css?v=123`, `stage-i18n.js?v=34`, `stage-sketch.js?v=173`, and unchanged `db.js?v=79`.
+- Wave 3: fresh final verifier pass succeeded: all five JS syntax checks, browser tests 13/13, MCP tests 7/7, generated-page parity, diff whitespace audit, active ledger validation, and scoped-file review.
+- Wave 3: committed Milestone 1 partial implementation locally as `ef154e1` with Japanese message `舞台スケッチにビート骨格9種を追加し構成の初期値を安全に試せるようにする`.
+- Wave 3: no push, deployment, publication, external message, deletion, `db.js` regeneration, or canonical show-reference edit occurred.
 
 ## Current Wave
 
-- Re-run all syntax, test, build, parity, diff, and ledger checks from a fresh verifier pass; then create the Milestone 1 partial implementation commit.
-- Completion condition: every runnable check passes, only scoped files differ, and the local commit is created without push.
+- Safe in-scope work is complete. #2 and English localization remain intentionally unimplemented pending the user's decision.
+- Completion condition met for the partial handoff: nine templates are usable and verified; the unresolved tenth template is visible, disabled, and documented.
 
 ## Next Action
 
-- Complete the final report, mark this run PARTIAL because #2 requires a user decision, run final ledger validation, and commit the ledger handoff.
+- User decides the representation of `休憩` in #2. After that decision, implement #2, re-run Milestone 1 checks, then decide whether to start Milestone 2 English localization.
 
 ## Blockers
 

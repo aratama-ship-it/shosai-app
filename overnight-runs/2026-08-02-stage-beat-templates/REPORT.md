@@ -22,7 +22,8 @@
 - New browser/model tests cover the ten-entry catalog with #2 held, equality of role/energy/generated-scene counts for the nine implementable templates, empty `pieces`, JSON roundtrip, and section `beat: null`.
 - New MCP test covers create, local persistence, update, browser-ready export, empty `pieces`, section `beat: null`, and rejection of setting a beat on a section.
 - Local in-app browser at 1280×720 confirmed the picker preview, disabled #2, an eight-scene 三幕構成 with E1–E5 and zero placements, previous-show retention, and zero warning/error logs.
-- Final fresh verifier pass and final ledger validation remain before handoff.
+- Final fresh verifier pass succeeded with the same results. Implementation commit: `ef154e1`.
+- Final ledger validation passed before the ledger handoff commit.
 
 ## Pre-existing State Preserved
 
@@ -40,9 +41,11 @@
 
 - #2 is blocked by the D2 role/energy mismatch and is held rather than guessed.
 - English localization is deferred while Milestone 1 remains incomplete.
+- No other blocker remains.
 
 ## Morning Decisions
 
 - Decide how #2 should represent `休憩`: section row without beat, ordinary scene with beat, or omitted from generated rows.
 - Review whether the final Japanese template-picker placement is appropriate after a local preview is available.
 - Decide whether English localization should proceed after #2 is resolved.
+- Local implementation commit `ef154e1` exists on `main`; it was not pushed.
