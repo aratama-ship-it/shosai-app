@@ -3,12 +3,16 @@ import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 test("an MCP client can list and call the shared stdio tools", async () => {
   const dataRoot = await mkdtemp(path.join(os.tmpdir(), "stage-sketch-mcp-wire-"));
-  const serverPath = path.resolve("src/server.js");
+  /* このテストファイルからの相対で解決する。cwd 依存にすると、リポジトリ直下から
+     `node --test mcp-server/test/*.js` を流したときにサーバーが起動できず、
+     「Connection closed」という原因の分かりにくい失敗になる。 */
+  const serverPath = fileURLToPath(new URL("../src/server.js", import.meta.url));
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [serverPath],

@@ -15,6 +15,29 @@ HERE = Path(__file__).resolve().parent
 REFERENCE_ROOT = HERE.parent / "show-reference"
 DATA = REFERENCE_ROOT / "data"
 OUT = HERE / "db.js"
+INDEX_HTML = HERE / "index.html"
+
+
+def bump_db_cache_version():
+    """index.html の `db.js?v=` を1つ上げる。
+
+    索引を作り直しても版数が据え置きだと、ブラウザは古い db.js を使い続ける。
+    公開サイトは10分ほどで期限切れになるが、file:// で直接開くときは残り続ける。
+    手で上げ忘れる場所なので、生成したその場で必ず上げる。
+    """
+    if not INDEX_HTML.exists():
+        return
+    html = INDEX_HTML.read_text(encoding="utf-8")
+    m = re.search(r"(db\.js\?v=)(\d+)", html)
+    if not m:
+        print("警告: index.html に db.js?v= が見つからず、キャッシュ版数を上げていない")
+        return
+    new = int(m.group(2)) + 1
+    INDEX_HTML.write_text(
+        html[: m.start()] + m.group(1) + str(new) + html[m.end():],
+        encoding="utf-8",
+    )
+    print(f"bumped index.html: db.js?v={m.group(2)} -> {new}")
 
 
 def load(name):
@@ -753,6 +776,7 @@ def main():
         encoding="utf-8",
     )
     print(f"wrote {OUT.name}: {OUT.stat().st_size/1024/1024:.2f} MB, counts={db['counts']}")
+    bump_db_cache_version()
 
 
 if __name__ == "__main__":
