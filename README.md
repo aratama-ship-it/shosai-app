@@ -21,6 +21,9 @@
 「時をほどく研究室」の固定8ビートを別ショーとして開ける。各ビートは通常の場面なので、
 配置・姿勢・メモを個別に直せる。元のショーは「ショー一覧」に残り、どちらもこのブラウザ内だけに保存される。
 
+Vision Proの実寸・一人称稽古を拡張として統合する方針と、version 3から稽古用JSONへの変換契約は
+[`docs/VISION_PRO_REHEARSAL_EXTENSION_HANDOFF.md`](docs/VISION_PRO_REHEARSAL_EXTENSION_HANDOFF.md) を参照。
+
 ## データ
 
 - `db.js` は正本データ（`../show-reference/data/*.json`、リポジトリ外）から生成した読み取り専用の索引

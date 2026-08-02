@@ -1,6 +1,6 @@
 /* 制作の書斎 — 自炊本から変形した種火
  *
- * 本文の転載ではなく、e-books pdf/内容要約 に記録された確認済みの論点を、
+ * 本文の転載ではなく、knowledge/e-books pdf/内容要約 に記録された確認済みの論点を、
  * 「未完成の一行場面」へ変形したもの。要確認扱いの本は使わない。
  * bookSources は下の SHOSAI_BOOK_SOURCES を参照し、出典と変形の境界を表示する。
  */
@@ -9,127 +9,127 @@ const SHOSAI_BOOK_SOURCES = {
   world_making: {
     title: "世界観の作り方",
     category: "01 写真・デザイン",
-    summaryPath: "e-books pdf/内容要約/01_写真・デザイン/世界観の作り方.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/01_写真・デザイン/世界観の作り方.md",
   },
   photo_story: {
     title: "ストーリーを語る、写真の撮り方",
     category: "01 写真・デザイン",
-    summaryPath: "e-books pdf/内容要約/01_写真・デザイン/ストーリーを語る、写真の撮り方.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/01_写真・デザイン/ストーリーを語る、写真の撮り方.md",
   },
   improv: {
     title: "〈インプロ〉即興の技術【改訂版】",
     category: "02 音楽・エンターテインメント",
-    summaryPath: "e-books pdf/内容要約/02_音楽・エンターテインメント/〈インプロ〉即興の技術【改訂版】.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/02_音楽・エンターテインメント/〈インプロ〉即興の技術【改訂版】.md",
   },
   neiro: {
     title: "NEIRO",
     category: "02 音楽・エンターテインメント",
-    summaryPath: "e-books pdf/内容要約/02_音楽・エンターテインメント/NEIRO.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/02_音楽・エンターテインメント/NEIRO.md",
   },
   noh_kyogen: {
     title: "教養として学んでおきたい能・狂言",
     category: "02 音楽・エンターテインメント",
-    summaryPath: "e-books pdf/内容要約/02_音楽・エンターテインメント/教養として学んでおきたい能・狂言.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/02_音楽・エンターテインメント/教養として学んでおきたい能・狂言.md",
   },
   conversation: {
     title: "会話の0.2秒を言語学する",
     category: "03 言語・語学",
-    summaryPath: "e-books pdf/内容要約/03_言語・語学/会話の0.2秒を言語学する.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/03_言語・語学/会話の0.2秒を言語学する.md",
   },
   speech_sound: {
     title: "音とことばのふしぎな世界",
     category: "03 言語・語学",
-    summaryPath: "e-books pdf/内容要約/03_言語・語学/音とことばのふしぎな世界.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/03_言語・語学/音とことばのふしぎな世界.md",
   },
   visual_thinker: {
     title: "ビジュアル・シンカーの脳",
     category: "04 科学・技術",
-    summaryPath: "e-books pdf/内容要約/04_科学・技術/ビジュアル・シンカーの脳.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/04_科学・技術/ビジュアル・シンカーの脳.md",
   },
   beautiful_experiments: {
     title: "世界で最も美しい10の科学実験",
     category: "04 科学・技術",
-    summaryPath: "e-books pdf/内容要約/04_科学・技術/世界で最も美しい10の科学実験.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/04_科学・技術/世界で最も美しい10の科学実験.md",
   },
   bayes: {
     title: "図解・ベイズ統計「超」入門",
     category: "04 科学・技術",
-    summaryPath: "e-books pdf/内容要約/04_科学・技術/図解・ベイズ統計「超」入門.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/04_科学・技術/図解・ベイズ統計「超」入門.md",
   },
   container: {
     title: "コンテナ物語",
     category: "05 歴史・地理・社会",
-    summaryPath: "e-books pdf/内容要約/05_歴史・地理・社会/コンテナ物語.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/05_歴史・地理・社会/コンテナ物語.md",
   },
   viewpoints: {
     title: "視点という教養",
     category: "05 歴史・地理・社会",
-    summaryPath: "e-books pdf/内容要約/05_歴史・地理・社会/視点という教養.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/05_歴史・地理・社会/視点という教養.md",
   },
   observation: {
     title: "観察力の鍛え方",
     category: "06 経済・ビジネス",
-    summaryPath: "e-books pdf/内容要約/06_経済・ビジネス/観察力の鍛え方.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/06_経済・ビジネス/観察力の鍛え方.md",
   },
   thinking: {
     title: "こうやって、考える。",
     category: "06 経済・ビジネス",
-    summaryPath: "e-books pdf/内容要約/06_経済・ビジネス/こうやって、考える。.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/06_経済・ビジネス/こうやって、考える。.md",
   },
   story_notebook: {
     title: "クリエイターのための物語創作ノート 改訂版",
     category: "07 小説・文学",
-    summaryPath: "e-books pdf/内容要約/07_小説・文学/クリエイターのための物語創作ノート 改訂版.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/07_小説・文学/クリエイターのための物語創作ノート 改訂版.md",
   },
   fantasy_world: {
     title: "クリエイターのためのファンタジー世界構築教典",
     category: "07 小説・文学",
-    summaryPath: "e-books pdf/内容要約/07_小説・文学/クリエイターのためのファンタジー世界構築教典.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/07_小説・文学/クリエイターのためのファンタジー世界構築教典.md",
   },
   mystery: {
     title: "ミステリが最強の文芸である",
     category: "07 小説・文学",
-    summaryPath: "e-books pdf/内容要約/07_小説・文学/ミステリが最強の文芸である.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/07_小説・文学/ミステリが最強の文芸である.md",
   },
   random_reading: {
     title: "乱読のセレンディピティ",
     category: "07 小説・文学",
-    summaryPath: "e-books pdf/内容要約/07_小説・文学/乱読のセレンディピティ.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/07_小説・文学/乱読のセレンディピティ.md",
   },
   cooking_tetrahedron: {
     title: "料理の四面体",
     category: "08 暮らし・料理",
-    summaryPath: "e-books pdf/内容要約/08_暮らし・料理/料理の四面体.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/08_暮らし・料理/料理の四面体.md",
   },
   brain_music: {
     title: "脳と音楽 基礎から身につく「大人の教養」",
     category: "04 科学・技術",
-    summaryPath: "e-books pdf/内容要約/04_科学・技術/脳と音楽 基礎から身につく「大人の教養」.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/04_科学・技術/脳と音楽 基礎から身につく「大人の教養」.md",
   },
   propaganda: {
     title: "たのしいプロパガンダ",
     category: "05 歴史・地理・社会",
-    summaryPath: "e-books pdf/内容要約/05_歴史・地理・社会/たのしいプロパガンダ.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/05_歴史・地理・社会/たのしいプロパガンダ.md",
   },
   linguistic_rap: {
     title: "言語学的ラップの世界",
     category: "02 音楽・エンターテインメント",
-    summaryPath: "e-books pdf/内容要約/02_音楽・エンターテインメント/言語学的ラップの世界.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/02_音楽・エンターテインメント/言語学的ラップの世界.md",
   },
   chord_theory: {
     title: "コード理論大全",
     category: "02 音楽・エンターテインメント",
-    summaryPath: "e-books pdf/内容要約/02_音楽・エンターテインメント/コード理論大全.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/02_音楽・エンターテインメント/コード理論大全.md",
   },
   naming: {
     title: "プロの小説家が教える 名付けの技法書",
     category: "07 小説・文学",
-    summaryPath: "e-books pdf/内容要約/07_小説・文学/プロの小説家が教える 名付けの技法書.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/07_小説・文学/プロの小説家が教える 名付けの技法書.md",
   },
   mysteries: {
     title: "クリエイターのための怪異図鑑",
     category: "07 小説・文学",
-    summaryPath: "e-books pdf/内容要約/07_小説・文学/クリエイターのための怪異図鑑.md",
+    summaryPath: "knowledge/e-books pdf/内容要約/07_小説・文学/クリエイターのための怪異図鑑.md",
   },
 };
 
