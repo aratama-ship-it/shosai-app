@@ -50,37 +50,61 @@ Node.js 20以上が必要です。このMacでは依存関係を導入済みで�
 npm ci
 ```
 
+## 接続設定はリポジトリへ入れない
+
+`.mcp.json`（Claude Code用）と `.codex/config.toml`（Codex用）は**追跡していません**。
+サーバーの場所を絶対パスで書く必要があり、端末ごとに違ううえ、このリポジトリは公開だからです。
+どちらも下の手順で各自の環境に作ります。**このMacでは作成済みです。**
+
 ## Codexで使う
 
-リポジトリ直下の `.codex/config.toml` に設定済みです。
+`shosai-app/.codex/config.toml` を次の内容で作ります。`cwd` はこの `mcp-server/` の絶対パスに置き換えます。
+
+```toml
+[mcp_servers.stage_sketch]
+command = "node"
+args = ["src/server.js"]
+cwd = "（このMacでの mcp-server/ の絶対パス）"
+startup_timeout_sec = 20
+tool_timeout_sec = 30
+```
 
 1. `shosai-app` をCodexのプロジェクトとして開く
 2. プロジェクトを信頼する
 3. 新しいセッションを開始する
 4. 「舞台スケッチMCPの使い方を読んで」と頼む
 
-Codexのプロジェクト設定が読み込まれない場合は、次でも登録できます。
+プロジェクト設定が読み込まれない場合は、`shosai-app` で次を実行しても登録できます。
 
 ```bash
-codex mcp add stage-sketch -- node "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/mcp-server/src/server.js"
+codex mcp add stage-sketch -- node "$PWD/mcp-server/src/server.js"
 ```
-
-Codexのプロジェクト別MCP設定は `.codex/config.toml` の
-`[mcp_servers.<id>]` で `command`、`args`、`cwd`を指定できます。
 
 ## Claude Codeで使う
 
-リポジトリ直下の `.mcp.json` に設定済みです。
+`shosai-app/.mcp.json` を次の内容で作ります。パスはこの `src/server.js` の絶対パスに置き換えます。
+
+```json
+{
+  "mcpServers": {
+    "stage-sketch": {
+      "command": "node",
+      "args": ["（このMacでの mcp-server/src/server.js の絶対パス）"],
+      "env": {}
+    }
+  }
+}
+```
 
 1. ターミナルで `shosai-app` へ移動する
 2. `claude` を起動する
 3. プロジェクトMCPの利用確認が出たら、内容を確認して承認する
 4. `/mcp` または `claude mcp list` で `stage-sketch` を確認する
 
-手動登録する場合:
+手動登録する場合は、`shosai-app` で次を実行します。
 
 ```bash
-claude mcp add --scope local stage-sketch -- node "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/mcp-server/src/server.js"
+claude mcp add --scope local stage-sketch -- node "$PWD/mcp-server/src/server.js"
 ```
 
 ## 最初の依頼例

@@ -9,3 +9,8 @@
 # 舞台スケッチMCPが作る個人用の下書き・履歴・読み込み用JSON
 .stage-sketch-mcp/
 node_modules/
+
+# MCPの接続設定。端末ごとに絶対パスが違ううえ、このリポジトリは公開なので追跡しない。
+# 雛形と作り方は mcp-server/README.md にある。
+.mcp.json
+.codex/
