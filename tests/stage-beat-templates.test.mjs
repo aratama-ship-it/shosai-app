@@ -13,21 +13,24 @@ const model = context.window.SHOSAI_STAGE_BEAT_TEMPLATE_MODEL;
 
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
-test("D2の10種を持ち、#2だけを推測せず保留する", () => {
+test("D2の10種をすべて生成でき、#2は休憩を通常シーンとして持つ", () => {
   const templates = plain(model.templates);
   assert.equal(templates.length, 10);
   assert.deepEqual(templates.map((item) => item.number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-  assert.equal(templates.filter((item) => item.available === false).length, 1);
+  assert.equal(templates.filter((item) => item.available === false).length, 0);
   assert.equal(templates[1].id, "two-part-variety");
-  assert.equal(templates[1].roles, null);
-  assert.equal(templates[1].energy, null);
-  assert.match(templates[1].roleText, /休憩/);
-  assert.match(templates[1].curveText, /｜休憩｜/);
-  assert.deepEqual(plain(model.rowsForTemplate("two-part-variety")), []);
+  assert.equal(templates[1].roles.length, 9);
+  assert.equal(templates[1].energy.length, 9);
+  assert.deepEqual(plain(model.rowsForTemplate("two-part-variety")[4]), {
+    kind: "scene",
+    title: "休憩",
+    beat: { role: "休憩", energy: 4 },
+    pieces: [],
+  });
 });
 
-test("実装可能な9種は役割数・エネルギー数・生成シーン数が一致し、配置が空である", () => {
-  model.templates.filter((template) => template.available !== false).forEach((template) => {
+test("10種すべてで役割数・エネルギー数・生成シーン数が一致し、配置が空である", () => {
+  model.templates.forEach((template) => {
     const rows = plain(model.rowsForTemplate(template.id));
     assert.equal(template.roles.length, template.energy.length, template.name);
     assert.equal(rows.length, template.roles.length, template.name);

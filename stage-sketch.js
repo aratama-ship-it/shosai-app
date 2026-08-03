@@ -29,15 +29,11 @@
         "全員登場／世界提示", "短い個人番号", "対照的番号", "コミックな転換",
         "主力番号", "集団番号", "全員のfinale",
       ], energy: [4, 3, 4, 2, 4, 5, 5] }),
-    /* D2は、休憩を含む役割文と「4値｜休憩｜5値」の曲線を示すが、
-       休憩をsectionにするかsceneにするか、そのenergyをどこへ対応させるかを
-       一意に決めていない。発注書どおり推測せず、選択不可のまま内容だけ見せる。 */
     freezeBeatTemplate({ id: "two-part-variety", number: 2, name: "二部制ヴァラエティ・ビル型",
-      range: "8〜12＋休憩", available: false,
-      roleText: "短い開幕 → 小編成 → 対照番号 → 一部の山 → 休憩 → 複雑な仕込みを要する番号 → 再加速 → 集団の驚き → finale",
-      curveText: "3 → 3 → 4 → 5 ｜休憩｜ 4 → 3 → 4 → 5 → 4",
-      holdReason: "休憩をシーン／セクションのどちらにするかと、役割とエネルギーの対応が要確認です。",
-      roles: null, energy: null }),
+      range: "8〜12＋休憩", roles: [
+        "短い開幕", "小編成", "対照番号", "一部の山", "休憩",
+        "複雑な仕込みを要する番号", "再加速", "集団の驚き", "finale",
+      ], energy: [3, 3, 4, 5, 4, 3, 4, 5, 4] }),
     freezeBeatTemplate({ id: "three-act", number: 3, name: "三幕構成",
       range: "7〜9", roles: [
         "世界と人物", "発端", "目標決定", "障害の増加", "中央反転", "危機", "決断", "結果",
@@ -7079,16 +7075,18 @@
     if (!template || template.available === false || !rows.length) return;
     shelveCurrent();
     const fresh = baseState(false);
-    fresh.project.title = template.name;
+    fresh.project.title = tx(template.name);
     fresh.project.scenes = rows.map((row) => {
-      const scene = newScene(row.title, false);
-      scene.beat = normalizeBeat(row.beat);
+      const role = tx(row.beat.role);
+      const scene = newScene(role, false);
+      scene.beat = normalizeBeat({ ...row.beat, role });
       return scene;
     });
     fresh.project.activeSceneId = fresh.project.scenes[0].id;
     fresh.layout = state.layout;
-    applyLoadedState(normalizeState(fresh),
-      `「${template.name}」から新しいショーを作りました。前のショーは一覧に残っています。`);
+    applyLoadedState(normalizeState(fresh), isEn()
+      ? `Created a new show from “${tx(template.name)}”. The previous show is still in All shows.`
+      : `「${template.name}」から新しいショーを作りました。前のショーは一覧に残っています。`);
     closeBeatTemplates();
     renderShows();
   }
@@ -7109,17 +7107,17 @@
       number.className = "stage-beat-template-number";
       number.textContent = String(template.number).padStart(2, "0");
       const name = document.createElement("span");
-      name.textContent = template.name;
+      name.textContent = tx(template.name);
       heading.append(number, name);
 
       const count = document.createElement("p");
       count.className = "stage-beat-template-count";
-      count.textContent = available
-        ? `生成 ${template.roles.length}シーン・D2目安 ${template.range}`
-        : `生成数 要確認・D2目安 ${template.range}`;
+      count.textContent = isEn()
+        ? `Creates ${template.roles.length} scenes · D2 guide ${tx(template.range)}`
+        : `生成 ${template.roles.length}シーン・D2目安 ${template.range}`;
       const roles = document.createElement("p");
       roles.className = "stage-beat-template-roles";
-      roles.textContent = template.roleText || template.roles.join(" → ");
+      roles.textContent = template.roles.map((role) => tx(role)).join(" → ");
       copy.append(heading, count, roles);
 
       const side = document.createElement("div");
@@ -7127,7 +7125,9 @@
       if (available) {
         const energy = document.createElement("div");
         energy.className = "stage-beat-energy";
-        energy.setAttribute("aria-label", `エネルギー ${template.energy.join("、")}`);
+        energy.setAttribute("aria-label", isEn()
+          ? `Energy ${template.energy.join(", ")}`
+          : `エネルギー ${template.energy.join("、")}`);
         template.energy.forEach((value) => {
           const step = document.createElement("span");
           step.className = "stage-beat-energy-step";
@@ -7136,21 +7136,13 @@
           energy.append(step);
         });
         side.append(energy);
-      } else {
-        const curve = document.createElement("p");
-        curve.className = "stage-beat-template-curve-text";
-        curve.textContent = template.curveText;
-        const hold = document.createElement("p");
-        hold.className = "stage-beat-template-hold";
-        hold.textContent = template.holdReason;
-        side.append(curve, hold);
       }
 
       const apply = document.createElement("button");
       apply.type = "button";
       apply.className = "stage-beat-template-apply";
       apply.disabled = !available;
-      apply.textContent = available ? "この骨格で新しいショーを作る" : "要確認のため保留";
+      apply.textContent = tx("この骨格で新しいショーを作る");
       apply.addEventListener("click", () => createShowFromBeatTemplate(template.id));
       side.append(apply);
       card.append(copy, side);
@@ -8703,6 +8695,7 @@ ${cuesheetHtml}
     renderSets();
     renderLights();
     renderRigs();
+    renderBeatTemplates();
     selectedTextId = null;
     renderScreenTexts();
     syncScreenTextControls();
