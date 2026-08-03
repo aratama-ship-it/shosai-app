@@ -6689,6 +6689,7 @@ body.is-panel-dragging {
 .stage-modal.stage-beat-template-modal { width: min(780px, calc(100vw - 40px)); }
 .stage-modal.stage-export-modal { width: min(420px, calc(100vw - 40px)); }
 .stage-modal.stage-rehearsal-export-modal { width: min(560px, calc(100vw - 40px)); }
+.stage-modal.stage-about-modal { width: min(720px, calc(100vw - 40px)); }
 
 .stage-modal-head {
   display: flex;
@@ -6720,6 +6721,37 @@ body.is-panel-dragging {
 .stage-modal-close:hover { color: var(--milk); border-color: var(--rust); }
 
 .stage-modal-body { padding: 14px 16px 18px; }
+
+.stage-about-link {
+  display: block;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--milk-dim);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.stage-about-link:hover { color: var(--milk); }
+
+.stage-about-body {
+  color: var(--milk-dim);
+  font-size: 13px;
+  line-height: 1.85;
+}
+
+.stage-about-copy { margin: 0 0 1.15em; }
+
+.stage-about-credit {
+  margin: 1.8em 0 0;
+  padding-top: 1em;
+  border-top: 1px solid var(--line-dark);
+  color: var(--milk);
+  font-family: var(--serif);
+  letter-spacing: 0.12em;
+}
 
 .stage-modal-body .stage-control-label {
   display: block;

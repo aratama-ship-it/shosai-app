@@ -2,9 +2,9 @@
 
 ## Status
 
-- Status: ACTIVE
-- Last updated: 2026-08-03 12:30 JST
-- Current wave: 1 — verified and ready for its separate commit
+- Status: COMPLETE
+- Last updated: 2026-08-03 12:38 JST
+- Current wave: 2 — verified and ready for its separate final commit
 
 ## Baseline
 
@@ -34,15 +34,24 @@
 - Wave 1 browser verification passed in Japanese and English at `http://127.0.0.1:8765/stage.html`: the second card was enabled, displayed nine scenes and the D2 range, created the exact nine-scene structure with an empty piece count, translated all ten headings and the generated show, and produced no warning/error console entries.
 - Wave 1 visual inspection at 1280x720 found the generated English show readable and usable. The local HTTP server was used because the in-app browser blocks direct `file://` navigation by policy.
 - Wave 1 protected-file hashes still exactly match the baseline; neither protected file is staged.
+- Wave 1 was committed separately as `f18f14fd7f42dd7f68aacdc8ba5d9736cc66078d` before any Wave 2 edit began. It was not pushed.
+- Wave 2 reread the live post-Wave-1 references as `style 123 / i18n 35 / sketch 174 / db 79`, then incremented the changed assets to `style 124 / i18n 36 / sketch 175`; `db 79` remains unchanged.
+- Wave 2 added an independent `stage-about-modal`, a header entry beside Guide, and a one-line entry below the preferences list. Opening from preferences closes that modal before opening About.
+- Wave 2 placed the seven approved Japanese paragraphs and `開発者` in the modal without wording or paragraph changes, and maps every paragraph exactly to the seven approved English paragraphs and `Developer`.
+- Wave 2 added distinct long-copy and developer-credit styling, close-button and backdrop handlers, and focused source-parity/structure/event-registration tests.
+- Wave 2 automated verification passed: JavaScript syntax, 18/18 browser-side Node tests, 7/7 MCP tests, generated-page parity, duplicate `TEXT` key detection, exact approved-copy parity, `git diff --check`, cache-reference inspection, and protected-file hashes.
+- Wave 2 browser verification passed for the header entry, preferences entry, Japanese content, English content, language switching, close button, responsive scrollable modal rendering, and both entry-point transitions at `http://127.0.0.1:8765/stage.html`.
+- The in-app browser's locator could not target a point outside the centered modal when selecting the full-screen backdrop, and Computer Use is prohibited from operating the Codex app. The backdrop uses the same click-handler pattern as the existing modals, and its exact registration is covered by the focused test; a physical pointing-device backdrop click remains the only local interaction not independently replayed.
+- Final protected-file hashes exactly match the baseline; neither protected file will be staged.
 
 ## Current Wave
 
-- Commit only Wave 1 implementation, tests, generated output, and current ledger evidence as the first work-order commit.
+- Commit only Wave 2 implementation, focused test, generated output, and final ledger evidence as the second work-order commit.
 - Completion condition: the staged-name review excludes `README.md` and `docs/IPAD_DEVICE_TEST.md`, the commit succeeds, and the protected dirty state remains unchanged.
 
 ## Next Action
 
-- Validate this active ledger, create the separate Wave 1 commit without pushing, then reopen the live `index.html` cache references before starting Wave 2.
+- Run final ledger validation, create the separate Wave 2 commit without pushing, stop the local-only HTTP server, and report both commit hashes.
 
 ## Blockers
 

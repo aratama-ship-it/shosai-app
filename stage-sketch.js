@@ -1088,6 +1088,11 @@
     tourNext: document.getElementById("stage-tour-next"),
     tourClose: document.getElementById("stage-tour-close"),
     tourStart: document.getElementById("stage-tour-start"),
+    aboutOpen: document.getElementById("stage-about-open"),
+    aboutOpenFromPrefs: document.getElementById("stage-about-open-from-prefs"),
+    aboutModal: document.getElementById("stage-about-modal"),
+    aboutBackdrop: document.getElementById("stage-about-backdrop"),
+    aboutClose: document.getElementById("stage-about-close"),
     feedback: document.getElementById("stage-feedback"),
     exportModal: document.getElementById("stage-export-modal"),
     exportBackdrop: document.getElementById("stage-export-backdrop"),
@@ -8372,6 +8377,21 @@
     if (els.prefsModal) els.prefsModal.hidden = true;
     if (els.prefsBackdrop) els.prefsBackdrop.hidden = true;
   }
+
+  function openAbout() {
+    if (els.aboutModal) els.aboutModal.hidden = false;
+    if (els.aboutBackdrop) els.aboutBackdrop.hidden = false;
+  }
+
+  function closeAbout() {
+    if (els.aboutModal) els.aboutModal.hidden = true;
+    if (els.aboutBackdrop) els.aboutBackdrop.hidden = true;
+  }
+
+  function openAboutFromPrefs() {
+    closePrefs();
+    openAbout();
+  }
   // 機能の出し入れをボタンの表示へ反映する
   function applyFeatureFlags() {
     if (els.presentBtn) els.presentBtn.hidden = !featureOn("presentation");
@@ -12033,6 +12053,10 @@ ${cuesheetHtml}
   if (els.prefsBtn) els.prefsBtn.addEventListener("click", openPrefs);
   if (els.prefsClose) els.prefsClose.addEventListener("click", closePrefs);
   if (els.prefsBackdrop) els.prefsBackdrop.addEventListener("click", closePrefs);
+  if (els.aboutOpen) els.aboutOpen.addEventListener("click", openAbout);
+  if (els.aboutOpenFromPrefs) els.aboutOpenFromPrefs.addEventListener("click", openAboutFromPrefs);
+  if (els.aboutClose) els.aboutClose.addEventListener("click", closeAbout);
+  if (els.aboutBackdrop) els.aboutBackdrop.addEventListener("click", closeAbout);
   if (els.presentBtn) els.presentBtn.addEventListener("click", startPresentation);
   if (els.arrangeSelect) {
     els.arrangeSelect.addEventListener("change", (e) => {

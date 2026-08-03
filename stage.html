@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>舞台スケッチ — 制作の書斎</title>
-<link rel="stylesheet" href="style.css?v=123">
+<link rel="stylesheet" href="style.css?v=124">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -27,6 +27,7 @@
           <button type="button" id="stage-undo" title="⌘Z（WindowsはCtrl+Z）" disabled>一つ戻す</button>
           <button type="button" id="stage-redo" title="⇧⌘Z（WindowsはCtrl+Shift+Z）" disabled>やり直す</button>
           <button type="button" class="stage-lang" id="stage-tour-start" title="使い方をひととおり見る">使い方</button>
+          <button type="button" class="stage-lang" id="stage-about-open">このアプリについて</button>
           <button type="button" class="stage-lang" id="stage-prefs-btn" title="機能の出し入れ（環境設定）">設定</button>
           <button type="button" class="stage-lang" id="stage-present-btn" title="正面図だけを全画面で見せる。矢印キーでシーン送り、Escで戻る">プレゼン</button>
           <button type="button" class="stage-lang stage-feedback" id="stage-feedback"
@@ -706,6 +707,26 @@
   <div class="stage-modal-body">
     <p class="stage-profile-hint">機能の出し入れです。この端末だけの設定で、ショーのデータには入りません。</p>
     <div id="stage-prefs-list"></div>
+    <button type="button" class="stage-about-link" id="stage-about-open-from-prefs">このアプリについて</button>
+  </div>
+</div>
+
+<div class="stage-modal-backdrop" id="stage-about-backdrop" hidden></div>
+<div class="stage-modal stage-about-modal" id="stage-about-modal" role="dialog" aria-modal="true"
+     aria-labelledby="stage-about-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-about-title">このアプリについて</h2>
+    <button type="button" class="stage-modal-close" id="stage-about-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body stage-about-body">
+    <p class="stage-about-copy">私が舞台スケッチを作ろうと思った始まりは、ディレクターの意向や、チームの中での自分の役割を、視覚的に把握できるものが欲しかったことでした。</p>
+    <p class="stage-about-copy">ショーにはどのような目的があるのか。その中で自分にはどのような役割があり、どこにいて、どこまで表現の自由を与えられているのか。私がいた現場では、口頭で伝えたり、演者が実際にステージへ立ったりしながら、ディレクターが配置やバランスを調整することが基本でした。絵やビデオを使うこともありましたが、時間外や休み時間に予習できていればよかったと思いました。</p>
+    <p class="stage-about-copy">芸術という抽象的なものにおいて、意思疎通を言葉だけで行うことは非常に難しいものです。言葉が正しく機能することもあれば、予想外の方向へ進み、それが良い結果につながることもあります。ただ、ディレクターが見せたいものをアーティストが表現しようとするとき、その意図を理解することに時間を取られすぎることもありました。</p>
+    <p class="stage-about-copy">私は劇場に入るたびに客席を歩き回り、それぞれの場所から自分がどのように見えるかをイメージします。舞台スケッチの俯瞰図では、人や物の位置と全体のバランスを第三者の目で捉えられます。正面図では、お客さんやディレクターから舞台がどう見えるかを考えられます。自分の内側からの見え方とは別に、客席側から自分や舞台を眺める、より客観的な視点を加えるための図です。</p>
+    <p class="stage-about-copy">図を作る中心は、ディレクターやそのアシスタントです。演者たちと事前に意図や配置を共有できれば、リハーサルの初期段階をより早く終え、その先の通し練習や、自信を持って行える練習へ時間を使えます。そうしてショーをさらに作り込んでほしいと考えています。</p>
+    <p class="stage-about-copy">他にも、これから初めてショーを作る人には、見せたいものを実際の舞台でどう表現するかを考えるために使ってほしいと思います。「思っていたより、こう見えるんだ」と、自分の考えが目に見える形になっていく過程も楽しんでもらえたらと思います。</p>
+    <p class="stage-about-copy">舞台スケッチは技術図面ではなく、安全を検証したり保証したりするものでもありません。ディレクターとアーティストの意思疎通を円滑にし、良いショーを作る時間を増やすためのスケッチです。これを通して、出来の良いショーが世の中にたくさん増えていくことを楽しみにしています。</p>
+    <p class="stage-about-credit">開発者</p>
   </div>
 </div>
 
@@ -816,8 +837,8 @@
 </div>
 
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=35"></script>
+<script src="stage-i18n.js?v=36"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
-<script src="stage-sketch.js?v=174"></script>
+<script src="stage-sketch.js?v=175"></script>
 </body>
 </html>
