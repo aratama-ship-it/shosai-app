@@ -52,7 +52,7 @@ test("使い方・About・感想は上部ではなく設定内にまとめる", 
 test("舞台スケッチ名の右側に小さなアプリ版番号を表示する", () => {
   assert.match(
     indexSource,
-    /舞台スケッチ<span class="stage-app-version">v0\.2\.1<\/span><span class="stage-beta">β版<\/span>/,
+    /舞台スケッチ<span class="stage-app-version">v0\.2\.2<\/span><span class="stage-beta">β版<\/span>/,
   );
   assert.match(styleSource, /\.stage-app-version \{[\s\S]*?font-size: 0\.38em;/);
 });
