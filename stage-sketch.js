@@ -1410,6 +1410,8 @@
       hint: "上部の「プレゼン」で正面図だけを全画面に。矢印キーでシーン送り、Escで戻る" },
     { key: "blackout", label: "暗転で始まるシーン",
       hint: "シーンの欄に「暗転」の印が出て、その転換は一度真っ暗になってから明ける" },
+    { key: "sceneTiming", label: "シーンの時間", def: false,
+      hint: "各シーンに「見せる時間」と「次のシーンへの移動時間」を表示する" },
     { key: "lineup", label: "整列（一列・円・V字）",
       hint: "平面図の「動線を描く」の横に整列のプルダウンが出て、舞台上の演者を並べ直す" },
     { key: "busyness", label: "転換の忙しさ診断", def: false,
@@ -7819,10 +7821,12 @@
             label.append(title, value);
             return label;
           };
-          timing.append(
-            makeTimingInput("留まる", "holdDurationSeconds"),
-            makeTimingInput("次へ移動", "transitionToNextSeconds"),
-          );
+          if (featureOn("sceneTiming")) {
+            timing.append(
+              makeTimingInput("見せる時間", "holdDurationSeconds"),
+              makeTimingInput("次のシーンへの移動時間", "transitionToNextSeconds"),
+            );
+          }
           if (featureOn("blackout")) {
             const dark = document.createElement("label");
             dark.className = "stage-canvas-toggle";
@@ -7870,7 +7874,8 @@
           derive.disabled = !nextScene
             || (!movedPairs(scene, nextScene).length && !exitPieces(scene, nextScene).length);
           derive.addEventListener("click", () => deriveRoutes(scene));
-          body.append(timing, note, apply, derive);
+          if (timing.childElementCount) body.append(timing);
+          body.append(note, apply, derive);
           row.append(body);
         }
         els.sceneList.append(row);
@@ -8517,8 +8522,10 @@
         .map((q) => pieceLabel(q)).filter(Boolean);
       const rh = row.rehearsal || {};
       const times = [];
-      if (finite(rh.holdDurationSeconds, -1) >= 0) times.push(en ? `hold ${rh.holdDurationSeconds}s` : `留まる ${rh.holdDurationSeconds}秒`);
-      if (finite(rh.transitionToNextSeconds, -1) >= 0) times.push(en ? `move ${rh.transitionToNextSeconds}s` : `次へ ${rh.transitionToNextSeconds}秒`);
+      if (featureOn("sceneTiming")) {
+        if (finite(rh.holdDurationSeconds, -1) >= 0) times.push(en ? `show ${rh.holdDurationSeconds}s` : `見せる ${rh.holdDurationSeconds}秒`);
+        if (finite(rh.transitionToNextSeconds, -1) >= 0) times.push(en ? `move ${rh.transitionToNextSeconds}s` : `次へ移動 ${rh.transitionToNextSeconds}秒`);
+      }
       parts.push(`<section class="scene">
   <header><span class="no">${sceneN}</span><h3>${escapeHtml(row.title || "")}</h3>
     <span class="times">${escapeHtml(times.join(" / "))}</span></header>
@@ -11795,11 +11802,17 @@ ${cuesheetHtml}
     watchTour();
   }
 
-  function endTour() {
+  function hideTour() {
     if (!els.tour) return;
     clearInterval(tourTimer);
     els.tour.hidden = true;
     tourAt = -1;
+  }
+
+  function endTour() {
+    hideTour();
+    seenTour = true;
+    tourRequested = false;
     try { localStorage.setItem(TOUR_KEY, "done"); } catch (_) { /* 覚えられなくても動く */ }
   }
 
@@ -12103,5 +12116,37 @@ ${cuesheetHtml}
   // ?sample を付けて開くと、見本から始まる（人へ渡すリンク用）
   if (openArgs.has("sample")) openSampleShow();
 
-  if (!seenTour || openArgs.has("tour")) setTimeout(() => showTour(0), 700);
+  /* 案内は舞台スケッチの中だけで起動する。
+   * index.html の資料棚や舞台技術を開いた時には出さず、初回の人が #stage へ
+   * 入った時、または単独の stage.html を開いた時だけ始める。案内中に総合ページの
+   * 別タブへ移った場合も、舞台スケッチの暗幕をそこへ持ち越さない。 */
+  let tourRequested = openArgs.has("tour");
+  let tourLaunchTimer = null;
+  function stageTourContextActive() {
+    const stageView = document.getElementById("view-stage");
+    return document.body.classList.contains("is-standalone")
+      || (location.hash === "#stage" && stageView && !stageView.hidden);
+  }
+  function syncStageTourContext() {
+    clearTimeout(tourLaunchTimer);
+    tourLaunchTimer = null;
+    if (!stageTourContextActive()) {
+      if (tourAt >= 0) hideTour();
+      return;
+    }
+    if (tourAt >= 0 || (seenTour && !tourRequested)) return;
+    tourLaunchTimer = setTimeout(() => {
+      tourLaunchTimer = null;
+      if (!stageTourContextActive() || tourAt >= 0) return;
+      tourRequested = false;
+      showTour(0);
+    }, 700);
+  }
+  // app.js の画面切替が同じ hashchange で終わった後に、表示中の画面を判定する。
+  window.addEventListener("hashchange", () => setTimeout(syncStageTourContext, 0));
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", syncStageTourContext);
+  } else {
+    syncStageTourContext();
+  }
 })();

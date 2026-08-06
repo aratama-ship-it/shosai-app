@@ -24,6 +24,9 @@
 Vision Proの実寸・一人称稽古を拡張として統合する方針と、version 3から稽古用JSONへの変換契約は
 [`docs/VISION_PRO_REHEARSAL_EXTENSION_HANDOFF.md`](docs/VISION_PRO_REHEARSAL_EXTENSION_HANDOFF.md) を参照。
 
+iPad実機での通しQAは未実施（2026-07-28議論の優先度2位）。チェックリストは
+[`docs/IPAD_DEVICE_TEST.md`](docs/IPAD_DEVICE_TEST.md)。
+
 ## データ
 
 - `db.js` は正本データ（`../show-reference/data/*.json`、リポジトリ外）から生成した読み取り専用の索引
