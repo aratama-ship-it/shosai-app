@@ -15,13 +15,20 @@ test("スマホ閲覧版はiPad PWAと分けて短辺600px以下のタッチ端�
 
 test("スマホの操作は読込・前後シーン・情報・メモに限定する", () => {
   assert.match(source, /function initPhoneViewerWorkspace\(\)/);
-  assert.match(source, /makePhoneButton\("読込", "舞台スケッチのJSONを読み込む"\)/);
+  assert.match(source, /makePhoneButton\("読込", "開くショーを選ぶ"/);
   assert.match(source, /scenePrev\.addEventListener\("click", \(\) => stepScene\(-1\)\)/);
   assert.match(source, /sceneNext\.addEventListener\("click", \(\) => stepScene\(1\)\)/);
   assert.match(source, /infoToggle\.addEventListener\("click"/);
   assert.match(source, /noteToggle\.addEventListener\("click"/);
   assert.match(source, /sceneNote\.addEventListener\("input"/);
   assert.match(source, /sc\(\)\.note = sceneNote\.value\.slice\(0, 200\)/);
+});
+
+test("スマホの読込メニューからJSONと同梱サンプルを選べる", () => {
+  assert.match(source, /className = "stage-phone-source"/);
+  assert.match(source, /makePhoneButton\("JSONファイル", "JSONファイルからショーを開く"\)/);
+  assert.match(source, /makePhoneButton\("サンプルショー", "サンプルショーを開く"\)/);
+  assert.match(source, /sampleButton\.addEventListener\("click"[\s\S]*?openSampleShow\(\)/);
 });
 
 test("読み込んだJSONはスマホでは編集用比較モーダルを挟まず開く", () => {
@@ -32,8 +39,20 @@ test("縦画面は正面図と平面図を並べ、横画面は一枚を切り�
   assert.match(source, /if \(phoneIsPortrait\(\)\) \{[\s\S]*?state\.showFront = true;[\s\S]*?state\.showPlan = true;/);
   assert.match(source, /const which = phoneUi && phoneUi\.singleView === "plan" \? "plan" : "front"/);
   assert.match(source, /viewToggle\.addEventListener\("click"[\s\S]*?enforcePhoneViews\(viewToggle\.dataset\.phoneView\)/);
-  assert.match(style, /@media \(orientation: portrait\) \{[\s\S]*?html\.stage-phone-viewer \.stage-canvas-stack \{[\s\S]*?grid-template-rows: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(style, /html\.stage-phone-viewer \.stage-canvas-stack \{[\s\S]*?grid-template-rows: auto auto;[\s\S]*?align-content: start/);
   assert.match(style, /@media \(orientation: landscape\) \{[\s\S]*?html\.stage-phone-viewer \.stage-canvas-stack \{[\s\S]*?grid-template-rows: minmax\(0, 1fr\)/);
+});
+
+test("横画面は操作を右側レールへ移し、図へ全高を渡す", () => {
+  assert.match(style, /@media \(orientation: landscape\) \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) 64px/);
+  assert.match(style, /html\.stage-phone-viewer \.stage-phone-toolbar \{[\s\S]*?grid-column: 2;[\s\S]*?flex-direction: column/);
+  assert.match(style, /justify-items: end/);
+  assert.match(style, /width: min\(100%, calc\(\(100dvh - 2px\) \* 16 \/ 9\)\)/);
+});
+
+test("縦画面の操作は一段に収まり、図へ重ならない", () => {
+  assert.match(style, /grid-template-rows: 48px;/);
+  assert.match(style, /stage-phone-note-toggle \{ grid-row: 1; \}/);
 });
 
 test("スマホでは舞台要素を編集できず、メモ操作だけを図上へ通す", () => {

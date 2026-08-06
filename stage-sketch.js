@@ -5842,7 +5842,9 @@
     phoneUi.noteToggle.textContent = tool === "note" ? "メモ終了" : "メモ";
     phoneUi.noteToggle.setAttribute("aria-pressed", String(tool === "note"));
     phoneUi.infoToggle.setAttribute("aria-pressed", String(phoneUi.infoOpen));
+    phoneUi.load.setAttribute("aria-pressed", String(phoneUi.sourceOpen));
     phoneUi.infoPanel.hidden = !phoneUi.infoOpen;
+    phoneUi.sourcePanel.hidden = !phoneUi.sourceOpen;
     phoneUi.board.classList.toggle("is-phone-info-open", phoneUi.infoOpen);
     phoneUi.viewToggle.hidden = phoneIsPortrait();
     const nextView = state.showFront ? "plan" : "front";
@@ -5862,23 +5864,24 @@
 
     const actions = document.createElement("div");
     actions.className = "stage-phone-actions";
-    const load = makePhoneButton("読込", "舞台スケッチのJSONを読み込む");
+    const load = makePhoneButton("読込", "開くショーを選ぶ", "stage-phone-load");
+    load.setAttribute("aria-pressed", "false");
     const projectName = document.createElement("strong");
     projectName.className = "stage-phone-project";
-    const infoToggle = makePhoneButton("情報", "シーン情報を表示する");
+    const infoToggle = makePhoneButton("情報", "シーン情報を表示する", "stage-phone-info-toggle");
     infoToggle.setAttribute("aria-pressed", "false");
-    const noteToggle = makePhoneButton("メモ", "図にメモを追加する");
+    const noteToggle = makePhoneButton("メモ", "図にメモを追加する", "stage-phone-note-toggle");
     noteToggle.setAttribute("aria-pressed", "false");
     const viewToggle = makePhoneButton("平面図へ", "平面図へ切り替える", "stage-phone-view-toggle");
     actions.append(load, projectName, infoToggle, noteToggle, viewToggle);
 
     const sceneBar = document.createElement("div");
     sceneBar.className = "stage-phone-scene-bar";
-    const scenePrev = makePhoneButton("‹", "前のシーンへ");
+    const scenePrev = makePhoneButton("‹", "前のシーンへ", "stage-phone-scene-prev");
     const sceneCurrent = document.createElement("div");
     sceneCurrent.className = "stage-phone-scene-current";
     sceneCurrent.setAttribute("aria-live", "polite");
-    const sceneNext = makePhoneButton("›", "次のシーンへ");
+    const sceneNext = makePhoneButton("›", "次のシーンへ", "stage-phone-scene-next");
     sceneBar.append(scenePrev, sceneCurrent, sceneNext);
     toolbar.append(actions, sceneBar);
 
@@ -5895,6 +5898,17 @@
     sceneNote.setAttribute("aria-label", "シーンのメモ");
     infoPanel.append(infoProject, infoScene, sceneNote);
 
+    const sourcePanel = document.createElement("section");
+    sourcePanel.className = "stage-phone-source";
+    sourcePanel.setAttribute("aria-label", "開くショーを選ぶ");
+    sourcePanel.hidden = true;
+    const sourceTitle = document.createElement("strong");
+    sourceTitle.textContent = "ショーを開く";
+    const fileButton = makePhoneButton("JSONファイル", "JSONファイルからショーを開く");
+    const sampleButton = makePhoneButton("サンプルショー", "サンプルショーを開く");
+    const sourceClose = makePhoneButton("閉じる", "ショー選択を閉じる");
+    sourcePanel.append(sourceTitle, fileButton, sampleButton, sourceClose);
+
     const fileInput = document.createElement("input");
     fileInput.type = "file";
     fileInput.accept = "application/json,.json";
@@ -5902,17 +5916,35 @@
     fileInput.hidden = true;
     fileInput.setAttribute("aria-hidden", "true");
     toolbar.append(fileInput);
+    board.prepend(sourcePanel);
     board.prepend(infoPanel);
     board.prepend(toolbar);
 
     phoneUi = {
       board, toolbar, actions, load, projectName, infoToggle, noteToggle, viewToggle,
       scenePrev, sceneCurrent, sceneNext, infoPanel, infoProject, infoScene,
-      sceneNote, fileInput, infoOpen: false, singleView: state.showPlan && !state.showFront ? "plan" : "front",
+      sceneNote, sourcePanel, fileButton, sampleButton, sourceClose, fileInput,
+      infoOpen: false, sourceOpen: false,
+      singleView: state.showPlan && !state.showFront ? "plan" : "front",
     };
 
-    load.addEventListener("click", () => fileInput.click());
+    load.addEventListener("click", () => {
+      phoneUi.sourceOpen = !phoneUi.sourceOpen;
+      if (phoneUi.sourceOpen) phoneUi.infoOpen = false;
+      syncPhoneViewer();
+    });
+    fileButton.addEventListener("click", () => fileInput.click());
+    sampleButton.addEventListener("click", () => {
+      phoneUi.sourceOpen = false;
+      phoneUi.singleView = "front";
+      openSampleShow();
+    });
+    sourceClose.addEventListener("click", () => {
+      phoneUi.sourceOpen = false;
+      syncPhoneViewer();
+    });
     fileInput.addEventListener("change", () => {
+      phoneUi.sourceOpen = false;
       importProject(fileInput.files && fileInput.files[0]);
       fileInput.value = "";
     });
@@ -5920,6 +5952,7 @@
     sceneNext.addEventListener("click", () => stepScene(1));
     infoToggle.addEventListener("click", () => {
       phoneUi.infoOpen = !phoneUi.infoOpen;
+      if (phoneUi.infoOpen) phoneUi.sourceOpen = false;
       syncPhoneViewer();
     });
     noteToggle.addEventListener("click", () => {
