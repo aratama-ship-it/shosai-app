@@ -7388,6 +7388,12 @@ html.stage-pwa-tablet .stage-tablet-view-buttons {
   gap: 3px;
 }
 
+/* PWAの操作中に、素早い二回タップをページ拡大として扱わせない。 */
+html.stage-pwa-tablet,
+html.stage-pwa-tablet body {
+  touch-action: manipulation;
+}
+
 html.stage-pwa-tablet .stage-tablet-rail-separator {
   height: 1px;
   margin: 5px 4px;

@@ -5896,10 +5896,12 @@
 
   function syncTabletWorkspace() {
     if (!tabletUi) return;
-    tabletUi.viewButtons.forEach((button) => {
-      const on = button.dataset.tabletView === "front" ? state.showFront : state.showPlan;
-      button.setAttribute("aria-pressed", String(on));
-    });
+    const nextView = state.showFront ? "plan" : "front";
+    const nextLabel = nextView === "plan" ? "平面図へ" : "正面図へ";
+    tabletUi.viewToggle.dataset.tabletView = nextView;
+    tabletUi.viewToggle.querySelector(".stage-tablet-rail-icon").textContent = nextView === "plan" ? "▦" : "▤";
+    tabletUi.viewToggle.querySelector(".stage-tablet-rail-label").textContent = nextLabel;
+    tabletUi.viewToggle.setAttribute("aria-label", `${nextLabel}切り替える`);
     tabletUi.groupButtons.forEach((button) => {
       button.setAttribute("aria-pressed", String(
         !tabletUi.drawer.hidden && button.dataset.tabletGroup === tabletUi.groupId
@@ -5965,11 +5967,9 @@
     rail.setAttribute("aria-label", "舞台スケッチの道具");
     const viewBox = document.createElement("div");
     viewBox.className = "stage-tablet-view-buttons";
-    const frontView = makeTabletButton("▤", "正面図", "stage-tablet-rail-button");
-    frontView.dataset.tabletView = "front";
-    const planView = makeTabletButton("▦", "平面図", "stage-tablet-rail-button");
-    planView.dataset.tabletView = "plan";
-    viewBox.append(frontView, planView);
+    const viewToggle = makeTabletButton("▦", "平面図へ", "stage-tablet-rail-button");
+    viewToggle.dataset.tabletView = "plan";
+    viewBox.append(viewToggle);
     const separator = document.createElement("span");
     separator.className = "stage-tablet-rail-separator";
     separator.setAttribute("aria-hidden", "true");
@@ -6052,20 +6052,18 @@
       drawerClose, pagePrev, pageCount, pageNext,
       scenePrev, sceneCurrent, sceneNext,
       groups, groupId: "show", pageIndex: 0,
-      viewButtons: [frontView, planView],
+      viewToggle,
       groupButtons: groups.map((group) => group.button),
     };
 
-    [frontView, planView].forEach((button) => {
-      button.addEventListener("click", () => {
-        enforceTabletSingleView(button.dataset.tabletView);
-        applyLayout();
-        syncViewSwitch();
-        renderVenueControls();
-        render();
-        persistSoon();
-        syncTabletWorkspace();
-      });
+    viewToggle.addEventListener("click", () => {
+      enforceTabletSingleView(viewToggle.dataset.tabletView);
+      applyLayout();
+      syncViewSwitch();
+      renderVenueControls();
+      render();
+      persistSoon();
+      syncTabletWorkspace();
     });
     drawerClose.addEventListener("click", closeTabletDrawer);
     pagePrev.addEventListener("click", () => { tabletUi.pageIndex -= 1; showTabletDrawerPage(); });
@@ -10903,6 +10901,9 @@ ${cuesheetHtml}
     el.addEventListener("pointerup", finishPointer);
     el.addEventListener("pointercancel", finishPointer);
     el.addEventListener("keydown", onKeyDown);
+    el.addEventListener("dblclick", (event) => {
+      if (tabletPwaActive) event.preventDefault();
+    });
   });
 
   document.querySelectorAll("[data-stage-tool]").forEach((button) => {
