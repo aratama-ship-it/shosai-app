@@ -9,6 +9,8 @@ const pwaSource = await readFile(new URL("stage-pwa.js", root), "utf8");
 const swSource = await readFile(new URL("stage-sw.js", root), "utf8");
 const indexSource = await readFile(new URL("index.html", root), "utf8");
 const styleSource = await readFile(new URL("style.css", root), "utf8");
+const stageSource = await readFile(new URL("stage-sketch.js", root), "utf8");
+const stageHtml = await readFile(new URL("stage.html", root), "utf8");
 
 test("ホーム画面から舞台スケッチ単独版をstandaloneで開く", () => {
   assert.equal(manifest.id, "./stage.html");
@@ -23,14 +25,18 @@ test("iPad用メタ情報とホーム画面アイコンを単独版へ組み込�
   assert.match(buildSource, /rel="manifest" href="stage-sketch\.webmanifest"/);
   assert.match(buildSource, /rel="apple-touch-icon" href="icons\/stage-sketch-180\.png"/);
   assert.match(buildSource, /rel="icon" href="icons\/stage-sketch-192\.png"/);
-  assert.match(buildSource, /stage-pwa\.js\?v=2/);
+  assert.match(buildSource, /stage-pwa\.js\?v=3/);
+  assert.match(stageHtml, /stage-pwa\.js\?v=3[\s\S]*stage-sketch\.js\?v=180/);
 });
 
 test("iPadのホーム画面版だけ上部の補足文を隠す", () => {
   assert.match(pwaSource, /display-mode: standalone/);
   assert.match(pwaSource, /window\.navigator\.standalone === true/);
   assert.match(pwaSource, /navigator\.maxTouchPoints > 1/);
-  assert.match(pwaSource, /classList\.toggle\("stage-pwa-tablet", standalone && tablet\)/);
+  assert.match(pwaSource, /\["localhost", "127\.0\.0\.1"\]\.includes\(window\.location\.hostname\)/);
+  assert.match(pwaSource, /has\("tablet-pwa-preview"\)/);
+  assert.match(pwaSource, /window\.SHOSAI_TABLET_PWA = tabletPwa/);
+  assert.match(pwaSource, /classList\.toggle\("stage-pwa-tablet", tabletPwa\)/);
   assert.match(styleSource, /html\.stage-pwa-tablet \.stage-sketch-kicker/);
   assert.match(styleSource, /html\.stage-pwa-tablet \.stage-storage-caution/);
 });
@@ -46,7 +52,7 @@ test("使い方・About・感想は上部ではなく設定内にまとめる", 
 test("舞台スケッチ名の右側に小さなアプリ版番号を表示する", () => {
   assert.match(
     indexSource,
-    /舞台スケッチ<span class="stage-app-version">v0\.1\.0<\/span><span class="stage-beta">β版<\/span>/,
+    /舞台スケッチ<span class="stage-app-version">v0\.2\.0<\/span><span class="stage-beta">β版<\/span>/,
   );
   assert.match(styleSource, /\.stage-app-version \{[\s\S]*?font-size: 0\.38em;/);
 });
@@ -76,7 +82,45 @@ test("オフライン用CSSとJSの版は現在のHTML参照と揃う", () => {
     assert.ok(ref, `${name} の版番号がindex.htmlにある`);
     assert.ok(swSource.includes(`./${ref[0]}`), `${ref[0]} がオフライン対象にある`);
   });
-  assert.ok(swSource.includes("./stage-pwa.js?v=2"));
+  assert.ok(swSource.includes("./stage-pwa.js?v=3"));
+});
+
+test("iPad PWAは単一図と左アイコンレールの専用ワークスペースを組み立てる", () => {
+  assert.match(stageSource, /const TABLET_MENU_GROUPS = \[/);
+  ["show", "cast", "look", "scenes", "tools", "inspect", "settings"].forEach((id) => {
+    assert.match(stageSource, new RegExp(`id: "${id}"`));
+  });
+  assert.match(stageSource, /className = "stage-tablet-rail"/);
+  assert.match(stageSource, /className = "stage-tablet-drawer"/);
+  assert.match(stageSource, /className = "stage-tablet-scene-bar"/);
+  assert.match(stageSource, /function enforceTabletSingleView\(preferred\)/);
+  assert.match(stageSource, /state\.showFront = which === "front"/);
+  assert.match(stageSource, /state\.showPlan = which === "plan"/);
+  assert.match(stageSource, /initTabletPwaWorkspace\(\)/);
+});
+
+test("iPad PWAはページをスクロールせず、ドロワーで図を切らずに縮める", () => {
+  assert.match(styleSource, /html\.stage-pwa-tablet body \{[\s\S]*?position: fixed;[\s\S]*?inset: 0;/);
+  assert.match(styleSource, /html\.stage-pwa-tablet \.stage-sketch-grid\.is-tablet-drawer-open \{[\s\S]*?grid-template-columns:/);
+  assert.match(styleSource, /html\.stage-pwa-tablet \.stage-board-frame \{[\s\S]*?16 \/ 9/);
+  assert.match(styleSource, /html\.stage-pwa-tablet \.stage-canvas-wrap \{[\s\S]*?aspect-ratio: 16 \/ 9/);
+  assert.match(styleSource, /html\.stage-pwa-tablet \.stage-tablet-drawer-body \{[\s\S]*?overflow: hidden/);
+  assert.match(styleSource, /min-height: 44px/);
+  assert.match(stageSource, /pagePrev\.textContent = "前へ"/);
+  assert.match(stageSource, /pageNext\.textContent = "次へ"/);
+});
+
+test("長いiPadメニューは意味のまとまりでページ分割する", () => {
+  const breaks = [...indexSource.matchAll(/data-tablet-break-before/g)];
+  assert.ok(breaks.length >= 7);
+  assert.match(stageSource, /hasAttribute\("data-tablet-break-before"\)/);
+  assert.match(stageSource, /stage-tablet-panel-page/);
+  assert.match(styleSource, /\.stage-tablet-panel-page\[hidden\] \{ display: none; \}/);
+});
+
+test("通常ブラウザ用の三列レイアウトは残す", () => {
+  assert.match(styleSource, /\.stage-sketch-grid \{[\s\S]*?grid-template-columns: 268px minmax\(420px, 1fr\) 268px;/);
+  assert.match(stageSource, /if \(!tabletUi\) \{[\s\S]*?\["left", "right"\]\.forEach/);
 });
 
 test("標準アイコンとマスク可能アイコンを宣言する", async () => {

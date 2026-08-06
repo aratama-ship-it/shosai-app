@@ -90,8 +90,8 @@ page = f"""<!DOCTYPE html>
 <script src="{ver('stage-venues.js')}"></script>
 <script src="{ver('stage-i18n.js')}"></script>
 <script src="{ver('stage-rehearsal-export.js')}"></script>
+<script src="stage-pwa.js?v=3"></script>
 <script src="{ver('stage-sketch.js')}"></script>
-<script src="stage-pwa.js?v=2"></script>
 </body>
 </html>
 """

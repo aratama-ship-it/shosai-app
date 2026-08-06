@@ -108,6 +108,11 @@
   if (!canvas) return;
   const VENUES = window.SHOSAI_VENUES;
   if (!VENUES) return;
+  // stage-pwa.js は単独版でこのスクリプトより先に読み込む。
+  // 通常ブラウザ版は false のままなので、既存の三列レイアウトへ一切介入しない。
+  const tabletPwaActive = window.SHOSAI_TABLET_PWA === true
+    || document.documentElement.classList.contains("stage-pwa-tablet");
+  let tabletUi = null;
   const SCENE_STUDIES = Array.isArray(window.SHOSAI_SCENE_STUDIES)
     ? window.SHOSAI_SCENE_STUDIES
     : [];
@@ -5716,6 +5721,7 @@
   }
 
   function render() {
+    enforceTabletSingleView();
     const v = venue();
     const size = venueSize();
     const counts = Object.keys(PIECE_TYPES)
@@ -5774,6 +5780,304 @@
 
   function panelEl(id) {
     return document.querySelector(`[data-panel="${id}"]`);
+  }
+
+  /* ---------- iPad PWA専用ワークスペース ----------
+     デスクトップのパネルを複製せず、PWAでだけ左ドロワーへ移して使う。
+     同じinput/buttonを動かすので、保存や描画の処理は一系統のまま保てる。 */
+  const TABLET_MENU_GROUPS = [
+    { id: "show", icon: "▣", label: "ショー", panels: ["project", "venue", "study"] },
+    { id: "cast", icon: "●", label: "出演・装置", panels: ["cast", "rigs"] },
+    { id: "look", icon: "☀", label: "照明・背景", panels: ["light", "background"] },
+    { id: "scenes", icon: "◫", label: "シーン", panels: ["scenes"] },
+    { id: "tools", icon: "✦", label: "描く道具", special: "tools" },
+    { id: "inspect", icon: "◎", label: "選んだもの", panels: ["inspector"] },
+    { id: "settings", icon: "⚙", label: "保存・設定", panels: ["save"], special: "actions" },
+  ];
+
+  function makeTabletButton(iconText, label, className) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = className;
+    button.setAttribute("aria-label", label);
+    const icon = document.createElement("span");
+    icon.className = "stage-tablet-rail-icon";
+    icon.textContent = iconText;
+    icon.setAttribute("aria-hidden", "true");
+    const word = document.createElement("span");
+    word.className = "stage-tablet-rail-label";
+    word.textContent = label;
+    button.append(icon, word);
+    return button;
+  }
+
+  function prepareTabletPanelPages(id, store) {
+    const panel = panelEl(id);
+    if (!panel) return [];
+    panel.classList.add("stage-tablet-drawer-panel");
+    const body = panel.querySelector(":scope > .stage-panel-body");
+    if (!body) return [];
+    body.hidden = false;
+
+    const existing = [...body.querySelectorAll(":scope > .stage-tablet-panel-page")];
+    if (existing.length) {
+      store.append(panel);
+      return existing.map((content, index) => ({
+        host: panel, content,
+        title: `${panel.dataset.title || id}${existing.length > 1 ? ` ${index + 1}` : ""}`,
+      }));
+    }
+
+    const groups = [];
+    let current = [];
+    [...body.children].forEach((child) => {
+      if (child.hasAttribute("data-tablet-break-before") && current.length) {
+        groups.push(current);
+        current = [];
+      }
+      current.push(child);
+    });
+    if (current.length) groups.push(current);
+    if (!groups.length) groups.push([]);
+
+    const pages = groups.map((nodes, index) => {
+      const page = document.createElement("div");
+      page.className = "stage-tablet-panel-page";
+      page.hidden = index !== 0;
+      nodes.forEach((node) => page.append(node));
+      body.append(page);
+      return {
+        host: panel,
+        content: page,
+        title: `${panel.dataset.title || id}${groups.length > 1 ? ` ${index + 1}` : ""}`,
+      };
+    });
+    store.append(panel);
+    return pages;
+  }
+
+  function prepareTabletSpecialPage(id, title, node, store) {
+    if (!node) return [];
+    const host = document.createElement("section");
+    host.className = `stage-tablet-special-panel stage-tablet-special-${id}`;
+    const page = document.createElement("div");
+    page.className = "stage-tablet-panel-page";
+    page.append(node);
+    host.append(page);
+    store.append(host);
+    return [{ host, content: page, title }];
+  }
+
+  function enforceTabletSingleView(preferred) {
+    if (!tabletPwaActive) return;
+    let which = preferred;
+    if (which !== "front" && which !== "plan") {
+      if (state.showFront !== state.showPlan) which = state.showFront ? "front" : "plan";
+      else {
+        try { which = localStorage.getItem("shosai-stage-tablet-view") || "front"; }
+        catch (_) { which = "front"; }
+      }
+    }
+    if (which !== "plan") which = "front";
+    state.showFront = which === "front";
+    state.showPlan = which === "plan";
+    try { localStorage.setItem("shosai-stage-tablet-view", which); } catch (_) { /* 続ける */ }
+  }
+
+  function syncTabletSceneBar() {
+    if (!tabletUi) return;
+    const scenes = state.project.scenes.filter((row) => row.kind === "scene");
+    const index = Math.max(0, scenes.findIndex((row) => row.id === state.project.activeSceneId));
+    const scene = scenes[index] || sc();
+    tabletUi.sceneCurrent.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${scene.title}`;
+    tabletUi.scenePrev.disabled = index <= 0;
+    tabletUi.sceneNext.disabled = index >= scenes.length - 1;
+  }
+
+  function syncTabletWorkspace() {
+    if (!tabletUi) return;
+    tabletUi.viewButtons.forEach((button) => {
+      const on = button.dataset.tabletView === "front" ? state.showFront : state.showPlan;
+      button.setAttribute("aria-pressed", String(on));
+    });
+    tabletUi.groupButtons.forEach((button) => {
+      button.setAttribute("aria-pressed", String(
+        !tabletUi.drawer.hidden && button.dataset.tabletGroup === tabletUi.groupId
+      ));
+    });
+    syncTabletSceneBar();
+  }
+
+  function showTabletDrawerPage() {
+    if (!tabletUi) return;
+    const group = tabletUi.groups.find((item) => item.id === tabletUi.groupId);
+    if (!group || !group.pages.length) return;
+    tabletUi.pageIndex = clamp(tabletUi.pageIndex, 0, group.pages.length - 1);
+    const page = group.pages[tabletUi.pageIndex];
+    tabletUi.drawerBody.replaceChildren(page.host);
+    page.host.hidden = false;
+    const body = page.host.querySelector(":scope > .stage-panel-body");
+    if (body) body.hidden = false;
+    page.host.querySelectorAll(".stage-tablet-panel-page").forEach((candidate) => {
+      candidate.hidden = candidate !== page.content;
+    });
+    tabletUi.drawerTitle.textContent = page.title;
+    tabletUi.pageCount.textContent = `${tabletUi.pageIndex + 1} / ${group.pages.length}`;
+    tabletUi.pagePrev.disabled = tabletUi.pageIndex <= 0;
+    tabletUi.pageNext.disabled = tabletUi.pageIndex >= group.pages.length - 1;
+    syncTabletWorkspace();
+  }
+
+  function closeTabletDrawer() {
+    if (!tabletUi) return;
+    tabletUi.drawer.hidden = true;
+    tabletUi.grid.classList.remove("is-tablet-drawer-open");
+    syncTabletWorkspace();
+  }
+
+  function openTabletGroup(id) {
+    if (!tabletUi) return;
+    if (!tabletUi.drawer.hidden && tabletUi.groupId === id) {
+      closeTabletDrawer();
+      return;
+    }
+    const group = tabletUi.groups.find((item) => item.id === id);
+    if (!group || !group.pages.length) return;
+    tabletUi.groupId = id;
+    tabletUi.pageIndex = 0;
+    tabletUi.drawer.hidden = false;
+    tabletUi.grid.classList.add("is-tablet-drawer-open");
+    showTabletDrawerPage();
+  }
+
+  function initTabletPwaWorkspace() {
+    if (!tabletPwaActive || tabletUi) return;
+    const grid = document.querySelector(".stage-sketch-grid");
+    const board = document.getElementById("stage-col-center");
+    const centerBar = board && board.querySelector(":scope > .stage-center-bar");
+    const frontTools = document.querySelector("#stage-front-cell .stage-canvas-tools");
+    const planTools = document.querySelector("#stage-plan-cell .stage-canvas-tools");
+    const historyActions = document.querySelector(".stage-sketch-head .stage-history-actions");
+    if (!grid || !board) return;
+
+    const rail = document.createElement("nav");
+    rail.className = "stage-tablet-rail";
+    rail.setAttribute("aria-label", "舞台スケッチの道具");
+    const viewBox = document.createElement("div");
+    viewBox.className = "stage-tablet-view-buttons";
+    const frontView = makeTabletButton("▤", "正面図", "stage-tablet-rail-button");
+    frontView.dataset.tabletView = "front";
+    const planView = makeTabletButton("▦", "平面図", "stage-tablet-rail-button");
+    planView.dataset.tabletView = "plan";
+    viewBox.append(frontView, planView);
+    const separator = document.createElement("span");
+    separator.className = "stage-tablet-rail-separator";
+    separator.setAttribute("aria-hidden", "true");
+    rail.append(viewBox, separator);
+
+    const drawer = document.createElement("aside");
+    drawer.className = "stage-tablet-drawer";
+    drawer.setAttribute("aria-label", "選んだ道具の内容");
+    drawer.hidden = true;
+    const drawerHead = document.createElement("header");
+    drawerHead.className = "stage-tablet-drawer-head";
+    const drawerTitle = document.createElement("h2");
+    const drawerClose = document.createElement("button");
+    drawerClose.type = "button";
+    drawerClose.textContent = "×";
+    drawerClose.setAttribute("aria-label", "メニューを閉じる");
+    drawerHead.append(drawerTitle, drawerClose);
+    const drawerBody = document.createElement("div");
+    drawerBody.className = "stage-tablet-drawer-body";
+    const store = document.createElement("div");
+    store.className = "stage-tablet-panel-store";
+    store.hidden = true;
+    const drawerFoot = document.createElement("footer");
+    drawerFoot.className = "stage-tablet-drawer-foot";
+    const pagePrev = document.createElement("button");
+    pagePrev.type = "button";
+    pagePrev.textContent = "前へ";
+    const pageCount = document.createElement("span");
+    pageCount.setAttribute("aria-live", "polite");
+    const pageNext = document.createElement("button");
+    pageNext.type = "button";
+    pageNext.textContent = "次へ";
+    drawerFoot.append(pagePrev, pageCount, pageNext);
+    drawer.append(drawerHead, drawerBody, drawerFoot, store);
+
+    const sceneBar = document.createElement("div");
+    sceneBar.className = "stage-tablet-scene-bar";
+    const scenePrev = document.createElement("button");
+    scenePrev.type = "button";
+    scenePrev.textContent = "‹";
+    scenePrev.setAttribute("aria-label", "前のシーンへ");
+    const sceneCurrent = document.createElement("button");
+    sceneCurrent.type = "button";
+    sceneCurrent.className = "stage-tablet-scene-current";
+    sceneCurrent.setAttribute("aria-label", "シーンの操作を開く");
+    const sceneNext = document.createElement("button");
+    sceneNext.type = "button";
+    sceneNext.textContent = "›";
+    sceneNext.setAttribute("aria-label", "次のシーンへ");
+    sceneBar.append(scenePrev, sceneCurrent, sceneNext);
+
+    grid.prepend(drawer);
+    grid.prepend(rail);
+    board.prepend(sceneBar);
+
+    const groups = TABLET_MENU_GROUPS.map((definition) => {
+      const pages = (definition.panels || []).flatMap((id) => prepareTabletPanelPages(id, store));
+      if (definition.special === "tools") {
+        pages.push(...prepareTabletSpecialPage("tools", "描く道具", centerBar, store));
+        const frontMenu = document.createElement("div");
+        frontMenu.className = "stage-tablet-canvas-menu";
+        if (els.seatList) frontMenu.append(els.seatList);
+        if (frontTools) frontMenu.append(frontTools);
+        pages.push(...prepareTabletSpecialPage("front-tools", "正面図の表示", frontMenu, store));
+        pages.push(...prepareTabletSpecialPage("plan-tools", "平面図の表示", planTools, store));
+      }
+      if (definition.special === "actions") {
+        pages.push(...prepareTabletSpecialPage("actions", "設定と書き出し", historyActions, store));
+      }
+      const button = makeTabletButton(definition.icon, definition.label, "stage-tablet-rail-button");
+      button.dataset.tabletGroup = definition.id;
+      button.setAttribute("aria-pressed", "false");
+      button.addEventListener("click", () => openTabletGroup(definition.id));
+      rail.append(button);
+      return { ...definition, pages, button };
+    });
+
+    tabletUi = {
+      grid, rail, drawer, drawerTitle, drawerBody, store,
+      drawerClose, pagePrev, pageCount, pageNext,
+      scenePrev, sceneCurrent, sceneNext,
+      groups, groupId: "show", pageIndex: 0,
+      viewButtons: [frontView, planView],
+      groupButtons: groups.map((group) => group.button),
+    };
+
+    [frontView, planView].forEach((button) => {
+      button.addEventListener("click", () => {
+        enforceTabletSingleView(button.dataset.tabletView);
+        applyLayout();
+        syncViewSwitch();
+        renderVenueControls();
+        render();
+        persistSoon();
+        syncTabletWorkspace();
+      });
+    });
+    drawerClose.addEventListener("click", closeTabletDrawer);
+    pagePrev.addEventListener("click", () => { tabletUi.pageIndex -= 1; showTabletDrawerPage(); });
+    pageNext.addEventListener("click", () => { tabletUi.pageIndex += 1; showTabletDrawerPage(); });
+    scenePrev.addEventListener("click", () => { if (els.scenePrev) els.scenePrev.click(); });
+    sceneNext.addEventListener("click", () => { if (els.sceneNext) els.sceneNext.click(); });
+    sceneCurrent.addEventListener("click", () => openTabletGroup("scenes"));
+
+    enforceTabletSingleView();
+    applyLayout();
+    syncViewSwitch();
+    syncTabletWorkspace();
   }
 
   // 各パネルの頭にタイトル・畳むボタン・つまみを付ける（初回だけ）
@@ -6016,17 +6320,21 @@
   // 状態に従って、パネルを列へ並べ直す
   function applyLayout() {
     const L = state.layout;
-    ["left", "right"].forEach((col) => {
-      const ids = PANELS.filter((id) => L.cols[id] === col).sort((a, b) => L.order[a] - L.order[b]);
-      ids.forEach((id) => {
-        const el = panelEl(id);
-        if (el && colEls[col]) colEls[col].append(el);
+    // iPad PWAではパネルの置き場所は左ドロワーが正本。
+    // デスクトップ時だけ、従来どおり左右の列へ並べる。
+    if (!tabletUi) {
+      ["left", "right"].forEach((col) => {
+        const ids = PANELS.filter((id) => L.cols[id] === col).sort((a, b) => L.order[a] - L.order[b]);
+        ids.forEach((id) => {
+          const el = panelEl(id);
+          if (el && colEls[col]) colEls[col].append(el);
+        });
       });
-    });
+    }
     PANELS.forEach((id) => {
       const el = panelEl(id);
       if (!el) return;
-      const collapsed = Boolean(L.collapsed[id]);
+      const collapsed = tabletUi ? false : Boolean(L.collapsed[id]);
       el.classList.toggle("is-collapsed", collapsed);
       const head = el.querySelector(".stage-panel-head");
       if (head) head.setAttribute("aria-expanded", String(!collapsed));
@@ -6041,6 +6349,7 @@
         if (cell) stack.append(cell);
       });
     }
+    syncTabletWorkspace();
   }
 
   function swapCenter() {
@@ -7891,6 +8200,7 @@
     const idx = cursorIndex();
     if (els.sceneDel) els.sceneDel.disabled = p.scenes.filter((x) => x.kind === "scene").length <= 1;
     renderSceneStudy();
+    syncTabletSceneBar();
     /* 並べ替えと入れ子は、掴んで動かす方に一本化した。
      * 矢印のボタンは同じことを二通りに増やすだけなので置かない。 */
   }
@@ -12021,6 +12331,7 @@ ${cuesheetHtml}
   syncViewSwitch();
   // 言語は loadState() より前に決めてある（見本の駒の名前がそこで決まるため）
   applyLayout();
+  initTabletPwaWorkspace();
   syncInputs();
   renderScenes();
   renderCast();
