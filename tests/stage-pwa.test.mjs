@@ -26,7 +26,7 @@ test("iPad用メタ情報とホーム画面アイコンを単独版へ組み込�
   assert.match(buildSource, /rel="apple-touch-icon" href="icons\/stage-sketch-180\.png"/);
   assert.match(buildSource, /rel="icon" href="icons\/stage-sketch-192\.png"/);
   assert.match(buildSource, /stage-pwa\.js\?v=3/);
-  assert.match(stageHtml, /stage-pwa\.js\?v=3[\s\S]*stage-sketch\.js\?v=184/);
+  assert.match(stageHtml, /stage-pwa\.js\?v=3[\s\S]*stage-sketch\.js\?v=185/);
 });
 
 test("iPadのホーム画面版だけ上部の補足文を隠す", () => {
@@ -52,7 +52,7 @@ test("使い方・About・感想は上部ではなく設定内にまとめる", 
 test("舞台スケッチ名の右側に小さなアプリ版番号を表示する", () => {
   assert.match(
     indexSource,
-    /舞台スケッチ<span class="stage-app-version">v0\.3\.1<\/span><span class="stage-beta">β版<\/span>/,
+    /舞台スケッチ<span class="stage-app-version">v0\.3\.2<\/span><span class="stage-beta">β版<\/span>/,
   );
   assert.match(styleSource, /\.stage-app-version \{[\s\S]*?font-size: 0\.38em;/);
 });
@@ -85,7 +85,7 @@ test("オフライン用CSSとJSの版は現在のHTML参照と揃う", () => {
   assert.ok(swSource.includes("./stage-pwa.js?v=3"));
 });
 
-test("iPad PWAは単一図と左アイコンレールの専用ワークスペースを組み立てる", () => {
+test("iPad PWAは縦画面で二面、横画面で単一図の専用ワークスペースを組み立てる", () => {
   assert.match(stageSource, /const TABLET_MENU_GROUPS = \[/);
   ["show", "cast", "look", "scenes", "tools", "inspect", "settings"].forEach((id) => {
     assert.match(stageSource, new RegExp(`id: "${id}"`));
@@ -94,16 +94,33 @@ test("iPad PWAは単一図と左アイコンレールの専用ワークスペー
   assert.match(stageSource, /className = "stage-tablet-drawer"/);
   assert.match(stageSource, /className = "stage-tablet-scene-bar"/);
   assert.match(stageSource, /function enforceTabletSingleView\(preferred\)/);
+  assert.match(stageSource, /if \(tabletOrientation\.matches\) \{[\s\S]*?state\.showFront = true;[\s\S]*?state\.showPlan = true;/);
   assert.match(stageSource, /state\.showFront = which === "front"/);
   assert.match(stageSource, /state\.showPlan = which === "plan"/);
   assert.match(stageSource, /initTabletPwaWorkspace\(\)/);
 });
 
-test("iPad PWAは一個のボタンで正面図と平面図を交互に切り替える", () => {
+test("iPad PWA横画面は一個のボタンで正面図と平面図を交互に切り替える", () => {
   assert.match(stageSource, /const viewToggle = makeTabletButton\("▦", "平面図へ"/);
   assert.match(stageSource, /const nextView = state\.showFront \? "plan" : "front"/);
   assert.match(stageSource, /enforceTabletSingleView\(viewToggle\.dataset\.tabletView\)/);
   assert.doesNotMatch(stageSource, /viewButtons|frontView|planView/);
+});
+
+test("iPad PWA縦画面は正面図と平面図を上下に隙間なく並べる", () => {
+  assert.match(styleSource, /@media \(orientation: portrait\) \{[\s\S]*?html\.stage-pwa-tablet \.stage-tablet-view-buttons \{[\s\S]*?display: none;/);
+  assert.match(styleSource, /@media \(orientation: portrait\) \{[\s\S]*?html\.stage-pwa-tablet \.stage-canvas-stack \{[\s\S]*?grid-template-rows: auto auto;[\s\S]*?gap: 4px;/);
+  assert.match(styleSource, /@media \(orientation: portrait\) \{[\s\S]*?html\.stage-pwa-tablet \.stage-board-frame \{[\s\S]*?width: 100%;/);
+});
+
+test("iPad PWAの姿勢と種類は5列で選べる", () => {
+  assert.match(styleSource, /html\.stage-pwa-tablet \.stage-pose-grid \{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);/);
+});
+
+test("サンプルのシーン番号を現在位置の後ろへ重ねて表示しない", () => {
+  assert.match(stageSource, /function sceneNavigationTitle\(scene, index\)/);
+  assert.match(stageSource, /sceneNavigationTitle\(scene, index\)/);
+  assert.match(stageSource, /tabletUi\.sceneCurrent\.textContent = `\$\{index \+ 1\} \/ \$\{Math\.max\(1, scenes\.length\)\}  \$\{sceneNavigationTitle\(scene, index\)\}`/);
 });
 
 test("iPad PWAではブラウザのダブルタップ拡大を起こさない", () => {

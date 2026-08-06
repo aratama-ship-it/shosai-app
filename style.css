@@ -7699,9 +7699,30 @@ html.stage-pwa-tablet .stage-canvas-wrap {
 
 html.stage-pwa-tablet .stage-canvas-help { display: none; }
 
+html.stage-pwa-tablet .stage-pose-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 @media (orientation: portrait) {
   html.stage-pwa-tablet .stage-sketch-grid.is-tablet-drawer-open {
     grid-template-columns: 58px min(320px, 42vw) minmax(0, 1fr);
+  }
+
+  html.stage-pwa-tablet .stage-tablet-view-buttons {
+    display: none;
+  }
+
+  html.stage-pwa-tablet .stage-canvas-stack {
+    grid-template-rows: auto auto;
+    place-items: stretch;
+    align-content: start;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  html.stage-pwa-tablet .stage-board-frame {
+    width: 100%;
+    max-height: none;
   }
 }
 

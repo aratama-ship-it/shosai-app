@@ -122,6 +122,7 @@
     && Math.min(window.screen.width, window.screen.height) <= 600;
   const phoneViewerActive = !tabletPwaActive && (phonePreview || phoneLike);
   const phoneOrientation = window.matchMedia("(orientation: portrait)");
+  const tabletOrientation = window.matchMedia("(orientation: portrait)");
   document.documentElement.classList.toggle("stage-phone-viewer", phoneViewerActive);
   let phoneUi = null;
   const SCENE_STUDIES = Array.isArray(window.SHOSAI_SCENE_STUDIES)
@@ -5811,6 +5812,11 @@
     return phoneOrientation.matches;
   }
 
+  function sceneNavigationTitle(scene, index) {
+    const title = String((scene && scene.title) || "");
+    return title.replace(new RegExp(`^\\s*${index + 1}\\s+`), "");
+  }
+
   function enforcePhoneViews(preferred) {
     if (!phoneViewerActive) return;
     if (phoneUi && (preferred === "front" || preferred === "plan")) {
@@ -5832,12 +5838,13 @@
     const found = scenes.findIndex((row) => row.id === state.project.activeSceneId);
     const index = found < 0 ? 0 : found;
     const scene = scenes[index] || sc();
-    phoneUi.sceneCurrent.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${scene.title}`;
+    const navigationTitle = sceneNavigationTitle(scene, index);
+    phoneUi.sceneCurrent.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${navigationTitle}`;
     phoneUi.scenePrev.disabled = index <= 0;
     phoneUi.sceneNext.disabled = index >= scenes.length - 1;
     phoneUi.projectName.textContent = state.project.title || "舞台スケッチ";
     phoneUi.infoProject.textContent = `${state.project.title || "舞台スケッチ"}  ${state.project.versionLabel || ""}`.trim();
-    phoneUi.infoScene.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${scene.title}`;
+    phoneUi.infoScene.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${navigationTitle}`;
     if (document.activeElement !== phoneUi.sceneNote) phoneUi.sceneNote.value = scene.note || "";
     phoneUi.noteToggle.textContent = tool === "note" ? "メモ終了" : "メモ";
     phoneUi.noteToggle.setAttribute("aria-pressed", String(tool === "note"));
@@ -6072,6 +6079,15 @@
 
   function enforceTabletSingleView(preferred) {
     if (!tabletPwaActive) return;
+    if (tabletOrientation.matches) {
+      if (state.showFront !== state.showPlan) {
+        const current = state.showFront ? "front" : "plan";
+        try { localStorage.setItem("shosai-stage-tablet-view", current); } catch (_) { /* 続ける */ }
+      }
+      state.showFront = true;
+      state.showPlan = true;
+      return;
+    }
     let which = preferred;
     if (which !== "front" && which !== "plan") {
       if (state.showFront !== state.showPlan) which = state.showFront ? "front" : "plan";
@@ -6091,13 +6107,14 @@
     const scenes = state.project.scenes.filter((row) => row.kind === "scene");
     const index = Math.max(0, scenes.findIndex((row) => row.id === state.project.activeSceneId));
     const scene = scenes[index] || sc();
-    tabletUi.sceneCurrent.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${scene.title}`;
+    tabletUi.sceneCurrent.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${sceneNavigationTitle(scene, index)}`;
     tabletUi.scenePrev.disabled = index <= 0;
     tabletUi.sceneNext.disabled = index >= scenes.length - 1;
   }
 
   function syncTabletWorkspace() {
     if (!tabletUi) return;
+    tabletUi.viewToggle.hidden = tabletOrientation.matches;
     const nextView = state.showFront ? "plan" : "front";
     const nextLabel = nextView === "plan" ? "平面図へ" : "正面図へ";
     tabletUi.viewToggle.dataset.tabletView = nextView;
@@ -6273,6 +6290,17 @@
     scenePrev.addEventListener("click", () => { if (els.scenePrev) els.scenePrev.click(); });
     sceneNext.addEventListener("click", () => { if (els.sceneNext) els.sceneNext.click(); });
     sceneCurrent.addEventListener("click", () => openTabletGroup("scenes"));
+
+    const orient = () => {
+      closeTabletDrawer();
+      enforceTabletSingleView();
+      applyLayout();
+      syncViewSwitch();
+      render();
+      persistSoon();
+    };
+    if (tabletOrientation.addEventListener) tabletOrientation.addEventListener("change", orient);
+    else if (tabletOrientation.addListener) tabletOrientation.addListener(orient);
 
     enforceTabletSingleView();
     applyLayout();
