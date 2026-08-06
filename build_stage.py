@@ -62,8 +62,15 @@ page = f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>舞台スケッチ — 制作の書斎</title>
+<meta name="theme-color" content="#191512">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="舞台スケッチ">
+<link rel="manifest" href="stage-sketch.webmanifest">
+<link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
+<link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
 <link rel="stylesheet" href="{ver('style.css')}">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
@@ -84,6 +91,7 @@ page = f"""<!DOCTYPE html>
 <script src="{ver('stage-i18n.js')}"></script>
 <script src="{ver('stage-rehearsal-export.js')}"></script>
 <script src="{ver('stage-sketch.js')}"></script>
+<script src="stage-pwa.js?v=2"></script>
 </body>
 </html>
 """

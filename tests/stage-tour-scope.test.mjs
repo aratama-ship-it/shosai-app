@@ -19,6 +19,23 @@ test("チュートリアルは舞台スケッチの表示中だけ自動起動�
   );
 });
 
-test("手動の使い方ボタンは残す", () => {
-  assert.match(stageSource, /els\.tourStart\.addEventListener\("click", \(\) => showTour\(0\)\)/);
+test("設定内の使い方ボタンは設定を閉じてから案内を始める", () => {
+  assert.match(
+    stageSource,
+    /els\.tourStart\.addEventListener\("click", \(\) => \{\s*closePrefs\(\);\s*showTour\(0\);/,
+  );
+});
+
+test("操作完了後もチュートリアルは自動で次へ進まない", () => {
+  const watchTourSource = stageSource.slice(
+    stageSource.indexOf("function watchTour()"),
+    stageSource.indexOf("function showTour(index)"),
+  );
+
+  assert.match(watchTourSource, /els\.tourCard\.classList\.add\("is-done"\)/);
+  assert.doesNotMatch(watchTourSource, /showTour\(tourAt \+ 1\)/);
+  assert.match(
+    stageSource,
+    /els\.tourNext\.addEventListener\("click", \(\) => \{[\s\S]*?showTour\(tourAt \+ 1\);/,
+  );
 });

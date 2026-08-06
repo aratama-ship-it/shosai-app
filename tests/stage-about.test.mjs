@@ -45,9 +45,8 @@ test("Aboutモーダルの英訳は承認済み英語原稿と完全一致する
   assert.equal(text["開発者"], "Developer");
 });
 
-test("Aboutには独立モーダルと二つの入口がある", () => {
+test("Aboutには独立モーダルと設定内の入口がある", () => {
   [
-    "stage-about-open",
     "stage-about-open-from-prefs",
     "stage-about-backdrop",
     "stage-about-modal",
@@ -56,7 +55,7 @@ test("Aboutには独立モーダルと二つの入口がある", () => {
   ].forEach((id) => assert.match(html, new RegExp(`id="${id}"`)));
   assert.match(html, /id="stage-about-modal" role="dialog" aria-modal="true"/);
   assert.match(html, /aria-labelledby="stage-about-title" hidden/);
-  assert.match(stageSource, /els\.aboutOpen\.addEventListener\("click", openAbout\)/);
+  assert.doesNotMatch(html, /id="stage-about-open"/);
   assert.match(stageSource, /els\.aboutOpenFromPrefs\.addEventListener\("click", openAboutFromPrefs\)/);
   assert.match(stageSource, /els\.aboutClose\.addEventListener\("click", closeAbout\)/);
   assert.match(stageSource, /els\.aboutBackdrop\.addEventListener\("click", closeAbout\)/);

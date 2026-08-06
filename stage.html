@@ -2,9 +2,16 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>舞台スケッチ — 制作の書斎</title>
-<link rel="stylesheet" href="style.css?v=124">
+<meta name="theme-color" content="#191512">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="舞台スケッチ">
+<link rel="manifest" href="stage-sketch.webmanifest">
+<link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
+<link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
+<link rel="stylesheet" href="style.css?v=131">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -19,19 +26,15 @@
       <header class="stage-sketch-head">
         <div>
           <p class="stage-sketch-kicker">STAGE IMAGE STUDY</p>
-          <h1 id="stage-sketch-title">舞台スケッチ<span class="stage-beta">β版</span></h1>
+          <h1 id="stage-sketch-title">舞台スケッチ<span class="stage-app-version">v0.1.0</span><span class="stage-beta">β版</span></h1>
         </div>
         <!-- 保存の注意。ブラウザ内の保存は消え得るので、上部で一度だけはっきり伝える -->
         <p class="stage-storage-caution">描いたものはこの端末のブラウザにだけ保存されます。設定や容量で消えることがあるので、区切りごとに〈書き出す〉からファイルへ控えを取ってください。</p>
         <div class="stage-history-actions">
           <button type="button" id="stage-undo" title="⌘Z（WindowsはCtrl+Z）" disabled>一つ戻す</button>
           <button type="button" id="stage-redo" title="⇧⌘Z（WindowsはCtrl+Shift+Z）" disabled>やり直す</button>
-          <button type="button" class="stage-lang" id="stage-tour-start" title="使い方をひととおり見る">使い方</button>
-          <button type="button" class="stage-lang" id="stage-about-open">このアプリについて</button>
           <button type="button" class="stage-lang" id="stage-prefs-btn" title="機能の出し入れ（環境設定）">設定</button>
           <button type="button" class="stage-lang" id="stage-present-btn" title="正面図だけを全画面で見せる。矢印キーでシーン送り、Escで戻る">プレゼン</button>
-          <button type="button" class="stage-lang stage-feedback" id="stage-feedback"
-                  title="使ってみた感想を送る">感想を送る</button>
           <button type="button" class="stage-lang" id="stage-lang" aria-pressed="false"
                   title="日本語 / English">EN</button>
           <button type="button" class="stage-export" id="stage-export">画像を書き出す</button>
@@ -707,7 +710,11 @@
   <div class="stage-modal-body">
     <p class="stage-profile-hint">機能の出し入れです。この端末だけの設定で、ショーのデータには入りません。</p>
     <div id="stage-prefs-list"></div>
-    <button type="button" class="stage-about-link" id="stage-about-open-from-prefs">このアプリについて</button>
+    <div class="stage-prefs-links" aria-label="案内とサポート">
+      <button type="button" class="stage-about-link" id="stage-tour-start" title="使い方をひととおり見る">使い方</button>
+      <button type="button" class="stage-about-link" id="stage-about-open-from-prefs">このアプリについて</button>
+      <button type="button" class="stage-about-link" id="stage-feedback" title="使ってみた感想を送る">感想を送る</button>
+    </div>
   </div>
 </div>
 
@@ -839,6 +846,7 @@
 <script src="stage-venues.js?v=14"></script>
 <script src="stage-i18n.js?v=37"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
-<script src="stage-sketch.js?v=177"></script>
+<script src="stage-sketch.js?v=179"></script>
+<script src="stage-pwa.js?v=2"></script>
 </body>
 </html>

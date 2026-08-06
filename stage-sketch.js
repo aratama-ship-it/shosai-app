@@ -1088,7 +1088,6 @@
     tourNext: document.getElementById("stage-tour-next"),
     tourClose: document.getElementById("stage-tour-close"),
     tourStart: document.getElementById("stage-tour-start"),
-    aboutOpen: document.getElementById("stage-about-open"),
     aboutOpenFromPrefs: document.getElementById("stage-about-open-from-prefs"),
     aboutModal: document.getElementById("stage-about-modal"),
     aboutBackdrop: document.getElementById("stage-about-backdrop"),
@@ -11769,17 +11768,16 @@ ${cuesheetHtml}
     tourTimer = setInterval(() => {
       if (tourAt < 0 || !step.done()) return;
       clearInterval(tourTimer);
-      // できた合図を一息置いてから次へ。押した手応えを消さないため
+      // できた合図だけを出し、次へ進むのは本人のボタン操作に任せる。
+      // iPad では操作開始のタップ時点で done() が成立する場合があるため、
+      // ここから自動で showTour() を呼ぶと、指を離す前に案内が切り替わってしまう。
       els.tourCard.classList.add("is-done");
-      setTimeout(() => {
-        els.tourCard.classList.remove("is-done");
-        if (tourAt >= 0) showTour(tourAt + 1);
-      }, 620);
     }, 320);
   }
 
   function showTour(index) {
     if (!els.tour) return;
+    els.tourCard.classList.remove("is-done");
     tourAt = clamp(index, 0, TOUR.length - 1);
     const step = TOUR[tourAt];
     if (step.begin) step.begin();
@@ -11818,6 +11816,7 @@ ${cuesheetHtml}
 
   if (els.feedback) {
     els.feedback.addEventListener("click", () => {
+      closePrefs();
       if (FEEDBACK_URL) { window.open(FEEDBACK_URL, "_blank", "noopener"); return; }
       const words = isEn()
         ? "The feedback form is not set up yet. Please tell the maker directly for now."
@@ -11826,7 +11825,12 @@ ${cuesheetHtml}
       announce(words);
     });
   }
-  if (els.tourStart) els.tourStart.addEventListener("click", () => showTour(0));
+  if (els.tourStart) {
+    els.tourStart.addEventListener("click", () => {
+      closePrefs();
+      showTour(0);
+    });
+  }
   if (els.tourClose) els.tourClose.addEventListener("click", endTour);
   if (els.tourPrev) els.tourPrev.addEventListener("click", () => showTour(tourAt - 1));
   if (els.tourNext) {
@@ -12066,7 +12070,6 @@ ${cuesheetHtml}
   if (els.prefsBtn) els.prefsBtn.addEventListener("click", openPrefs);
   if (els.prefsClose) els.prefsClose.addEventListener("click", closePrefs);
   if (els.prefsBackdrop) els.prefsBackdrop.addEventListener("click", closePrefs);
-  if (els.aboutOpen) els.aboutOpen.addEventListener("click", openAbout);
   if (els.aboutOpenFromPrefs) els.aboutOpenFromPrefs.addEventListener("click", openAboutFromPrefs);
   if (els.aboutClose) els.aboutClose.addEventListener("click", closeAbout);
   if (els.aboutBackdrop) els.aboutBackdrop.addEventListener("click", closeAbout);
