@@ -26,7 +26,7 @@ test("iPad用メタ情報とホーム画面アイコンを単独版へ組み込�
   assert.match(buildSource, /rel="apple-touch-icon" href="icons\/stage-sketch-180\.png"/);
   assert.match(buildSource, /rel="icon" href="icons\/stage-sketch-192\.png"/);
   assert.match(buildSource, /stage-pwa\.js\?v=3/);
-  assert.match(stageHtml, /stage-pwa\.js\?v=3[\s\S]*stage-sketch\.js\?v=185/);
+  assert.match(stageHtml, /stage-pwa\.js\?v=3[\s\S]*stage-sketch\.js\?v=186/);
 });
 
 test("iPadのホーム画面版だけ上部の補足文を隠す", () => {
@@ -52,7 +52,7 @@ test("使い方・About・感想は上部ではなく設定内にまとめる", 
 test("舞台スケッチ名の右側に小さなアプリ版番号を表示する", () => {
   assert.match(
     indexSource,
-    /舞台スケッチ<span class="stage-app-version">v0\.3\.2<\/span><span class="stage-beta">β版<\/span>/,
+    /舞台スケッチ<span class="stage-app-version">v0\.3\.3<\/span><span class="stage-beta">β版<\/span>/,
   );
   assert.match(styleSource, /\.stage-app-version \{[\s\S]*?font-size: 0\.38em;/);
 });
@@ -87,9 +87,10 @@ test("オフライン用CSSとJSの版は現在のHTML参照と揃う", () => {
 
 test("iPad PWAは縦画面で二面、横画面で単一図の専用ワークスペースを組み立てる", () => {
   assert.match(stageSource, /const TABLET_MENU_GROUPS = \[/);
-  ["show", "cast", "look", "scenes", "tools", "inspect", "settings"].forEach((id) => {
+  ["show", "cast", "look", "scenes", "inspect", "settings"].forEach((id) => {
     assert.match(stageSource, new RegExp(`id: "${id}"`));
   });
+  assert.doesNotMatch(stageSource, /id: "tools"/);
   assert.match(stageSource, /className = "stage-tablet-rail"/);
   assert.match(stageSource, /className = "stage-tablet-drawer"/);
   assert.match(stageSource, /className = "stage-tablet-scene-bar"/);
@@ -98,6 +99,38 @@ test("iPad PWAは縦画面で二面、横画面で単一図の専用ワークス
   assert.match(stageSource, /state\.showFront = which === "front"/);
   assert.match(stageSource, /state\.showPlan = which === "plan"/);
   assert.match(stageSource, /initTabletPwaWorkspace\(\)/);
+});
+
+test("PCとiPadの劇場サイズはショーメニュー内にまとめる", () => {
+  const projectPanel = indexSource.match(/<section class="stage-panel stage-project-section"[\s\S]*?<section class="stage-panel" data-panel="cast"/)?.[0] || "";
+  assert.match(projectPanel, /data-tablet-page-title="劇場サイズ"/);
+  assert.match(projectPanel, /id="stage-venue-select"/);
+  assert.match(projectPanel, /id="stage-size-select"/);
+  assert.doesNotMatch(indexSource, /data-panel="venue"/);
+  assert.match(stageSource, /panels: \["project", "study"\]/);
+});
+
+test("iPadの描画道具と主要操作は上部へ常設する", () => {
+  assert.match(stageSource, /className = "stage-tablet-top-controls"/);
+  assert.match(stageSource, /if \(toolGrid\) topControls\.append\(toolGrid\)/);
+  assert.match(stageSource, /if \(historyActions\) topControls\.append\(historyActions\)/);
+  assert.match(styleSource, /html\.stage-pwa-tablet \.stage-tablet-top-controls button \{[\s\S]*?min-height: 44px;/);
+  ["stage-undo", "stage-redo", "stage-prefs-btn", "stage-present-btn", "stage-lang"].forEach((id) => {
+    assert.match(indexSource, new RegExp(`id="${id}"`));
+  });
+});
+
+test("iPadの正面図と平面図は各図の上部にPC版と同じ操作を残す", () => {
+  const frontBar = indexSource.match(/<div class="stage-board-frame" id="stage-front-cell">[\s\S]*?<div class="stage-canvas-inner"/)?.[0] || "";
+  ["stage-seat-list", "stage-front-note", "stage-front-lights", "stage-show-seatmap"].forEach((id) => {
+    assert.match(frontBar, new RegExp(`id="${id}"`));
+  });
+  const planBar = indexSource.match(/<div class="stage-board-frame" id="stage-plan-cell">[\s\S]*?<div class="stage-canvas-inner"/)?.[0] || "";
+  ["stage-plan-route", "stage-plan-note", "stage-plan-lights", "stage-plan-routes-cast", "stage-plan-routes-light", "stage-plan-routes-set", "stage-show-flown"].forEach((id) => {
+    assert.match(planBar, new RegExp(`id="${id}"`));
+  });
+  assert.doesNotMatch(stageSource, /frontMenu\.append|prepareTabletSpecialPage\("front-tools"|prepareTabletSpecialPage\("plan-tools"/);
+  assert.match(styleSource, /html\.stage-pwa-tablet \.stage-canvas-bar \.stage-canvas-tool,[\s\S]*?min-height: 44px;/);
 });
 
 test("iPad PWA横画面は一個のボタンで正面図と平面図を交互に切り替える", () => {

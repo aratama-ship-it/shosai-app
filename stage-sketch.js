@@ -1633,17 +1633,17 @@
      使わないものは畳めるようにする。中央は絵だけで、上下の入れ替えのみ。 */
   /* 演者・舞台セット・光は「出るもの」一枚にまとめた（cast）。
    * 登録・出し入れ・寸法の仕組みが同じものを三つに割ると、目が三度行き来する。 */
-  const PANELS = ["project", "venue", "cast", "rigs", "light", "background", "study", "scenes", "inspector", "save"];
+  const PANELS = ["project", "cast", "rigs", "light", "background", "study", "scenes", "inspector", "save"];
 
   function defaultLayout() {
     return {
       // 場面は絵のすぐ右に置く（順番を見ながら描くため）
       cols: {
-        project: "left", venue: "left", cast: "left", rigs: "left", light: "left", background: "left",
+        project: "left", cast: "left", rigs: "left", light: "left", background: "left",
         study: "right", scenes: "right", inspector: "right", save: "right",
       },
       order: {
-        project: 0, venue: 1, cast: 2, rigs: 3, light: 4, background: 5,
+        project: 0, cast: 1, rigs: 2, light: 3, background: 4,
         study: -1, scenes: 0, inspector: 1, save: 2,
       },
       collapsed: {},
@@ -5995,13 +5995,12 @@
      デスクトップのパネルを複製せず、PWAでだけ左ドロワーへ移して使う。
      同じinput/buttonを動かすので、保存や描画の処理は一系統のまま保てる。 */
   const TABLET_MENU_GROUPS = [
-    { id: "show", icon: "▣", label: "ショー", panels: ["project", "venue", "study"] },
+    { id: "show", icon: "▣", label: "ショー", panels: ["project", "study"] },
     { id: "cast", icon: "●", label: "出演・装置", panels: ["cast", "rigs"] },
     { id: "look", icon: "☀", label: "照明・背景", panels: ["light", "background"] },
     { id: "scenes", icon: "◫", label: "シーン", panels: ["scenes"] },
-    { id: "tools", icon: "✦", label: "描く道具", special: "tools" },
     { id: "inspect", icon: "◎", label: "選んだもの", panels: ["inspector"] },
-    { id: "settings", icon: "⚙", label: "保存・設定", panels: ["save"], special: "actions" },
+    { id: "settings", icon: "⚙", label: "保存・設定", panels: ["save"], special: "display" },
   ];
 
   function makeTabletButton(iconText, label, className) {
@@ -6055,10 +6054,13 @@
       page.hidden = index !== 0;
       nodes.forEach((node) => page.append(node));
       body.append(page);
+      const pageTitle = nodes.find((node) => node.dataset && node.dataset.tabletPageTitle);
       return {
         host: panel,
         content: page,
-        title: `${panel.dataset.title || id}${groups.length > 1 ? ` ${index + 1}` : ""}`,
+        title: pageTitle
+          ? pageTitle.dataset.tabletPageTitle
+          : `${panel.dataset.title || id}${groups.length > 1 ? ` ${index + 1}` : ""}`,
       };
     });
     store.append(panel);
@@ -6176,10 +6178,21 @@
     const grid = document.querySelector(".stage-sketch-grid");
     const board = document.getElementById("stage-col-center");
     const centerBar = board && board.querySelector(":scope > .stage-center-bar");
-    const frontTools = document.querySelector("#stage-front-cell .stage-canvas-tools");
-    const planTools = document.querySelector("#stage-plan-cell .stage-canvas-tools");
+    const header = document.querySelector(".stage-sketch-head");
+    const toolGrid = centerBar && centerBar.querySelector(".stage-tool-grid");
+    const nameToggles = centerBar ? [...centerBar.querySelectorAll(".stage-name-toggle")] : [];
     const historyActions = document.querySelector(".stage-sketch-head .stage-history-actions");
-    if (!grid || !board) return;
+    if (!grid || !board || !header) return;
+
+    const topControls = document.createElement("div");
+    topControls.className = "stage-tablet-top-controls";
+    if (toolGrid) topControls.append(toolGrid);
+    if (historyActions) topControls.append(historyActions);
+    header.append(topControls);
+
+    const displayMenu = document.createElement("div");
+    displayMenu.className = "stage-tablet-display-menu";
+    nameToggles.forEach((toggle) => displayMenu.append(toggle));
 
     const rail = document.createElement("nav");
     rail.className = "stage-tablet-rail";
@@ -6246,17 +6259,8 @@
 
     const groups = TABLET_MENU_GROUPS.map((definition) => {
       const pages = (definition.panels || []).flatMap((id) => prepareTabletPanelPages(id, store));
-      if (definition.special === "tools") {
-        pages.push(...prepareTabletSpecialPage("tools", "描く道具", centerBar, store));
-        const frontMenu = document.createElement("div");
-        frontMenu.className = "stage-tablet-canvas-menu";
-        if (els.seatList) frontMenu.append(els.seatList);
-        if (frontTools) frontMenu.append(frontTools);
-        pages.push(...prepareTabletSpecialPage("front-tools", "正面図の表示", frontMenu, store));
-        pages.push(...prepareTabletSpecialPage("plan-tools", "平面図の表示", planTools, store));
-      }
-      if (definition.special === "actions") {
-        pages.push(...prepareTabletSpecialPage("actions", "設定と書き出し", historyActions, store));
+      if (definition.special === "display" && nameToggles.length) {
+        pages.push(...prepareTabletSpecialPage("display", "表示", displayMenu, store));
       }
       const button = makeTabletButton(definition.icon, definition.label, "stage-tablet-rail-button");
       button.dataset.tabletGroup = definition.id;
@@ -10033,7 +10037,8 @@ ${cuesheetHtml}
         button.type = "button";
         button.className = "stage-seat";
         button.setAttribute("aria-pressed", String(s2.id === seat.id));
-        button.textContent = seatName(s2);
+        button.textContent = tabletPwaActive ? s2.short : seatName(s2);
+        button.setAttribute("aria-label", seatName(s2));
         button.addEventListener("click", () => setSeat(s2.id));
         els.seatList.append(button);
       });

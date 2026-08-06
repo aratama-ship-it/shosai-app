@@ -5320,6 +5320,21 @@ canvas[data-tool="note"] { cursor: copy; }
 
 .stage-venue-section { padding-bottom: 4px; }
 
+.stage-project-venue {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-dark);
+}
+
+.stage-project-venue h3 {
+  margin: 0 0 10px;
+  color: var(--brass);
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
 .stage-venue-list {
   display: grid;
   gap: 1px;
@@ -7314,7 +7329,7 @@ html.stage-pwa-tablet #view-stage {
 
 html.stage-pwa-tablet .stage-sketch {
   display: grid;
-  grid-template-rows: 40px minmax(0, 1fr);
+  grid-template-rows: 52px minmax(0, 1fr);
   width: 100%;
   max-width: none;
   height: 100%;
@@ -7323,10 +7338,12 @@ html.stage-pwa-tablet .stage-sketch {
 }
 
 html.stage-pwa-tablet .stage-sketch-head {
-  min-height: 40px;
+  min-height: 52px;
   margin: 0;
-  padding: 0 10px;
+  padding: 0 6px 0 10px;
   align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
   border-bottom-color: rgba(156,130,63,0.45);
 }
 
@@ -7342,8 +7359,54 @@ html.stage-pwa-tablet .stage-app-version {
 }
 
 html.stage-pwa-tablet .stage-beta { font-size: 9px; }
-html.stage-pwa-tablet .stage-sketch-head > .stage-history-actions { display: none; }
 html.stage-pwa-tablet .stage-boundary-note { display: none; }
+
+html.stage-pwa-tablet .stage-sketch-head > div:first-child {
+  flex: 0 0 auto;
+}
+
+html.stage-pwa-tablet .stage-tablet-top-controls,
+html.stage-pwa-tablet .stage-tablet-top-controls .stage-tool-grid,
+html.stage-pwa-tablet .stage-tablet-top-controls .stage-history-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+html.stage-pwa-tablet .stage-tablet-top-controls {
+  margin-left: auto;
+}
+
+html.stage-pwa-tablet .stage-tablet-top-controls button {
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 3px;
+  overflow: hidden;
+  font-size: 0;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+html.stage-pwa-tablet .stage-tablet-top-controls button::before {
+  content: attr(data-tablet-icon);
+  font-size: 17px;
+}
+
+html.stage-pwa-tablet .stage-tablet-top-controls #stage-lang {
+  flex-basis: 52px;
+  width: 52px;
+  font-size: 9px;
+}
+
+html.stage-pwa-tablet .stage-tablet-top-controls #stage-lang::before { content: none; }
+
+html.stage-pwa-tablet .stage-tablet-top-controls .stage-export {
+  padding: 3px;
+}
 
 html.stage-pwa-tablet .stage-sketch-grid {
   display: grid;
@@ -7573,11 +7636,9 @@ html.stage-pwa-tablet .stage-tablet-drawer .stage-scene-list {
 
 html.stage-pwa-tablet .stage-tablet-drawer .stage-scene-row:not(.is-open) { display: none; }
 
-html.stage-pwa-tablet .stage-tablet-special-tools .stage-center-bar,
-html.stage-pwa-tablet .stage-tablet-canvas-menu,
-html.stage-pwa-tablet .stage-tablet-special-plan-tools .stage-canvas-tools {
+html.stage-pwa-tablet .stage-tablet-display-menu {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 7px;
   width: 100%;
   margin: 0;
@@ -7585,33 +7646,8 @@ html.stage-pwa-tablet .stage-tablet-special-plan-tools .stage-canvas-tools {
   border: 0;
 }
 
-html.stage-pwa-tablet .stage-tablet-special-tools .stage-tool-grid,
-html.stage-pwa-tablet .stage-tablet-special-tools .stage-view-switch,
-html.stage-pwa-tablet .stage-tablet-special-actions .stage-history-actions,
-html.stage-pwa-tablet .stage-tablet-canvas-menu .stage-canvas-tools {
-  display: contents;
-}
-
-html.stage-pwa-tablet .stage-tablet-special-tools .stage-tool-split,
-html.stage-pwa-tablet .stage-tablet-special-tools .stage-tool-hint,
-html.stage-pwa-tablet .stage-tablet-special-tools #stage-tool-help,
-html.stage-pwa-tablet .stage-tablet-special-tools [data-show-view="both"],
-html.stage-pwa-tablet .stage-tablet-special-tools #stage-swap-center,
-html.stage-pwa-tablet .stage-tablet-drawer [data-toggle-view] {
-  display: none;
-}
-
-html.stage-pwa-tablet .stage-tablet-special-actions .stage-history-actions {
-  width: 100%;
-}
-
-html.stage-pwa-tablet .stage-tablet-canvas-menu .stage-seat-list {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
-  margin: 0 0 8px;
-}
+html.stage-pwa-tablet .stage-center-bar { display: none; }
+html.stage-pwa-tablet .stage-tablet-drawer [data-toggle-view] { display: none; }
 
 html.stage-pwa-tablet .stage-board-column {
   grid-column: 3;
@@ -7678,14 +7714,45 @@ html.stage-pwa-tablet .stage-board-frame {
 html.stage-pwa-tablet .stage-board-frame.is-closed { display: none; }
 
 html.stage-pwa-tablet .stage-canvas-bar {
-  min-height: 40px;
-  padding: 8px 10px;
-  flex: 0 0 40px;
+  flex: 0 0 52px;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-height: 52px;
+  padding: 4px 6px;
+  overflow: hidden;
 }
 
 html.stage-pwa-tablet .stage-canvas-bar .stage-canvas-caption {
   margin: 0;
+  font-size: 10px;
+  white-space: nowrap;
 }
+
+html.stage-pwa-tablet .stage-canvas-bar .stage-seat-list,
+html.stage-pwa-tablet .stage-canvas-bar .stage-canvas-tools {
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin: 0;
+  min-width: 0;
+}
+
+html.stage-pwa-tablet .stage-canvas-bar .stage-seat {
+  flex: 0 1 52px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 3px 4px;
+  font-size: 9px;
+}
+
+html.stage-pwa-tablet .stage-canvas-bar .stage-canvas-tool,
+html.stage-pwa-tablet .stage-canvas-bar .stage-canvas-toggle {
+  min-height: 44px;
+  padding: 3px 5px;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+html.stage-pwa-tablet .stage-canvas-bar .stage-canvas-close { display: none; }
 
 html.stage-pwa-tablet .stage-canvas-inner {
   min-width: 0;

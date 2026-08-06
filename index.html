@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=140">
+<link rel="stylesheet" href="style.css?v=141">
 </head>
 <body>
 
@@ -187,18 +187,18 @@
       <header class="stage-sketch-head">
         <div>
           <p class="stage-sketch-kicker">STAGE IMAGE STUDY</p>
-          <h1 id="stage-sketch-title">舞台スケッチ<span class="stage-app-version">v0.3.2</span><span class="stage-beta">β版</span></h1>
+          <h1 id="stage-sketch-title">舞台スケッチ<span class="stage-app-version">v0.3.3</span><span class="stage-beta">β版</span></h1>
         </div>
         <!-- 保存の注意。ブラウザ内の保存は消え得るので、上部で一度だけはっきり伝える -->
         <p class="stage-storage-caution">描いたものはこの端末のブラウザにだけ保存されます。設定や容量で消えることがあるので、区切りごとに〈書き出す〉からファイルへ控えを取ってください。</p>
         <div class="stage-history-actions">
-          <button type="button" id="stage-undo" title="⌘Z（WindowsはCtrl+Z）" disabled>一つ戻す</button>
-          <button type="button" id="stage-redo" title="⇧⌘Z（WindowsはCtrl+Shift+Z）" disabled>やり直す</button>
-          <button type="button" class="stage-lang" id="stage-prefs-btn" title="機能の出し入れ（環境設定）">設定</button>
-          <button type="button" class="stage-lang" id="stage-present-btn" title="正面図だけを全画面で見せる。矢印キーでシーン送り、Escで戻る">プレゼン</button>
+          <button type="button" id="stage-undo" data-tablet-icon="↶" title="⌘Z（WindowsはCtrl+Z）" disabled>一つ戻す</button>
+          <button type="button" id="stage-redo" data-tablet-icon="↷" title="⇧⌘Z（WindowsはCtrl+Shift+Z）" disabled>やり直す</button>
+          <button type="button" class="stage-lang" id="stage-prefs-btn" data-tablet-icon="⚙" title="機能の出し入れ（環境設定）">設定</button>
+          <button type="button" class="stage-lang" id="stage-present-btn" data-tablet-icon="▶" title="正面図だけを全画面で見せる。矢印キーでシーン送り、Escで戻る">プレゼン</button>
           <button type="button" class="stage-lang" id="stage-lang" aria-pressed="false"
                   title="日本語 / English">EN</button>
-          <button type="button" class="stage-export" id="stage-export">画像を書き出す</button>
+          <button type="button" class="stage-export" id="stage-export" data-tablet-icon="⇩">画像を書き出す</button>
         </div>
       </header>
 
@@ -229,35 +229,34 @@
                     title="全シーンを一枚ずつ並べた印刷用のページを開きます。ブラウザの印刷からPDFにできます">印刷用ページ</button>
             <!-- 同梱の見本はショー一覧（棚）から開く。ここに置いていたボタンは
                  本人の指示で撤去した（?sample のリンクと棚入れはそのまま生きている） -->
-            </div>
-          </section>
-
-          <section class="stage-panel stage-venue-section" data-panel="venue" data-title="劇場サイズ">
-            <div class="stage-panel-body">
-            <div class="stage-field-row">
-              <label class="stage-field-label" for="stage-venue-select">形式</label>
-              <select id="stage-venue-select" class="stage-select"></select>
-            </div>
-            <div class="stage-field-row">
-              <label class="stage-field-label" for="stage-size-select">規模</label>
-              <select id="stage-size-select" class="stage-select"></select>
-            </div>
-            <div class="stage-dim-row" id="stage-venue-dims">
-              <label class="stage-dim-cell">
-                <span id="stage-venue-w-label">間口</span>
-                <input type="number" id="stage-venue-w" min="3" max="60" step="0.1"><i>m</i>
-              </label>
-              <label class="stage-dim-cell" id="stage-venue-d-cell">
-                <span>奥行</span>
-                <input type="number" id="stage-venue-d" min="3" max="60" step="0.1"><i>m</i>
-              </label>
-              <label class="stage-dim-cell">
-                <span>高さ</span>
-                <input type="number" id="stage-venue-h" min="2" max="40" step="0.1"><i>m</i>
-              </label>
-            </div>
-            <button type="button" class="stage-minor-action" id="stage-venue-reset">規模のとおりに戻す</button>
-            <p class="stage-venue-scale" id="stage-venue-scale"></p>
+            <section class="stage-project-venue stage-venue-section" data-tablet-break-before
+                     data-tablet-page-title="劇場サイズ" aria-labelledby="stage-project-venue-title">
+              <h3 id="stage-project-venue-title">劇場サイズ</h3>
+              <div class="stage-field-row">
+                <label class="stage-field-label" for="stage-venue-select">形式</label>
+                <select id="stage-venue-select" class="stage-select"></select>
+              </div>
+              <div class="stage-field-row">
+                <label class="stage-field-label" for="stage-size-select">規模</label>
+                <select id="stage-size-select" class="stage-select"></select>
+              </div>
+              <div class="stage-dim-row" id="stage-venue-dims">
+                <label class="stage-dim-cell">
+                  <span id="stage-venue-w-label">間口</span>
+                  <input type="number" id="stage-venue-w" min="3" max="60" step="0.1"><i>m</i>
+                </label>
+                <label class="stage-dim-cell" id="stage-venue-d-cell">
+                  <span>奥行</span>
+                  <input type="number" id="stage-venue-d" min="3" max="60" step="0.1"><i>m</i>
+                </label>
+                <label class="stage-dim-cell">
+                  <span>高さ</span>
+                  <input type="number" id="stage-venue-h" min="2" max="40" step="0.1"><i>m</i>
+                </label>
+              </div>
+              <button type="button" class="stage-minor-action" id="stage-venue-reset">規模のとおりに戻す</button>
+              <p class="stage-venue-scale" id="stage-venue-scale"></p>
+            </section>
             </div>
           </section>
           <section class="stage-panel" data-panel="cast" data-title="出るもの">
@@ -453,11 +452,11 @@
           <div class="stage-center-bar">
             <!-- 「動かす」二つと「背景」二つは別の仕事なので、間を空けて分ける -->
             <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
-              <button type="button" data-stage-tool="select" aria-pressed="true">ものを動かす</button>
-              <button type="button" data-stage-tool="light" aria-pressed="false">照明を動かす</button>
+              <button type="button" data-stage-tool="select" data-tablet-icon="↔" aria-label="ものを動かす" aria-pressed="true">ものを動かす</button>
+              <button type="button" data-stage-tool="light" data-tablet-icon="☀" aria-label="照明を動かす" aria-pressed="false">照明を動かす</button>
               <span class="stage-tool-split" aria-hidden="true"></span>
-              <button type="button" data-stage-tool="paint" aria-pressed="false">背景を塗る</button>
-              <button type="button" data-stage-tool="erase" aria-pressed="false">背景を消す</button>
+              <button type="button" data-stage-tool="paint" data-tablet-icon="✎" aria-label="背景を塗る" aria-pressed="false">背景を塗る</button>
+              <button type="button" data-stage-tool="erase" data-tablet-icon="⌫" aria-label="背景を消す" aria-pressed="false">背景を消す</button>
             </div>
             <button type="button" class="stage-hint-help" id="stage-tool-help"
                     aria-pressed="false" aria-label="いまの道具の説明を出す" title="いまの道具の説明">?</button>
@@ -1181,7 +1180,7 @@
 <script src="stage-venues.js?v=14"></script>
 <script src="stage-i18n.js?v=37"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
-<script src="stage-sketch.js?v=185"></script>
+<script src="stage-sketch.js?v=186"></script>
 <script src="roster.js?v=2"></script>
 </body>
 </html>
