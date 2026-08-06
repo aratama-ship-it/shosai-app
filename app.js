@@ -2163,6 +2163,7 @@
   }
 
   const dbState = {
+    shelf: "all",
     query: "",
     type: "",
     company: "",
@@ -2174,6 +2175,7 @@
     detailMode: "work"
   };
   let workMap, elMap, featMap, elsByWork, lensMap;
+  const dbShelves = window.SHOSAI_SHELVES;
 
   function buildDbMaps() {
     workMap = new Map(DB.works.map((w) => [w.id, w]));
@@ -2296,23 +2298,99 @@
     return "";
   }
 
-  function dbFilter() {
-    const q = dbState.query.trim().toLowerCase();
-    return DB.works.filter((w) => {
-      if (dbState.type) {
-        if (dbState.type.startsWith("sub:")) {
-          if (w.subcategory !== dbState.type.slice(4)) return false;
-        } else if (w.category !== dbState.type) return false;
-      }
-      if (dbState.company && (w.company || "") !== dbState.company) return false;
-      if (dbState.person && !(w.people || []).some((p) => p.person_id === dbState.person))
+  function dbShelfDefinition() {
+    return dbShelves.definitionFor(dbState.shelf);
+  }
+
+  function dbShelfWorks(shelfId) {
+    return dbShelves.worksForShelf(DB.works, shelfId || dbState.shelf);
+  }
+
+  function matchesDbType(w, type) {
+    if (!type) return true;
+    if (type.startsWith("sub:")) return w.subcategory === type.slice(4);
+    return w.category === type;
+  }
+
+  function updateDbTypeOptions() {
+    const works = dbShelfWorks();
+    const catCount = new Map();
+    const subCount = new Map();
+    for (const w of works) {
+      if (w.category) catCount.set(w.category, (catCount.get(w.category) || 0) + 1);
+      if (w.subcategory) subCount.set(w.subcategory, (subCount.get(w.subcategory) || 0) + 1);
+    }
+    const cats = [...catCount.entries()].sort((a, b) => b[1] - a[1]);
+    const subs = [...subCount.entries()].sort((a, b) => b[1] - a[1]);
+    const optionValues = new Set(["", ...cats.map(([category]) => category), ...subs.map(([subcategory]) => `sub:${subcategory}`)]);
+    if (!optionValues.has(dbState.type)) dbState.type = "";
+    $("#db-type").innerHTML =
+      `<option value="">すべてのジャンル（${works.length}）</option>` +
+      cats
+        .map(([category, count]) => {
+          let html = `<option value="${esc(category)}">${esc(category)}（${count}）</option>`;
+          if (category === "サーカス・アクロバット")
+            html += subs
+              .map(([subcategory, subcount]) => `<option value="sub:${esc(subcategory)}">　└ ${esc(subcategory)}（${subcount}）</option>`)
+              .join("");
+          return html;
+        })
+        .join("");
+    $("#db-type").value = dbState.type;
+  }
+
+  function renderDbShelfSwitcher() {
+    const shelf = dbShelfDefinition();
+    const works = dbShelfWorks();
+    $$("[data-db-shelf]").forEach((button) => {
+      const checked = button.dataset.dbShelf === shelf.id;
+      button.setAttribute("aria-checked", String(checked));
+      button.tabIndex = checked ? 0 : -1;
+    });
+    $("#db-shelf-description").textContent =
+      `${shelf.label}: ${works.length}件（全体 ${DB.works.length}件）。${shelf.description}`;
+  }
+
+  function setDbShelf(shelfId) {
+    if (!dbShelves.definitions.some((shelf) => shelf.id === shelfId)) return;
+    dbState.shelf = shelfId;
+    updateDbTypeOptions();
+    renderDbShelfSwitcher();
+    renderStagingLenses();
+    renderDbList();
+    if (dbState.detailMode === "lens") renderLensDigest();
+  }
+
+  function bindDbShelfSwitcher() {
+    const buttons = $$("[data-db-shelf]");
+    buttons.forEach((button, index) => {
+      button.addEventListener("click", () => setDbShelf(button.dataset.dbShelf));
+      button.addEventListener("keydown", (event) => {
+        const keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+        if (!keys.includes(event.key)) return;
+        event.preventDefault();
+        const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 :
+          (index + (event.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;
+        buttons[nextIndex].focus();
+        setDbShelf(buttons[nextIndex].dataset.dbShelf);
+      });
+    });
+  }
+
+  function dbFilter(overrides) {
+    const filters = { ...dbState, ...(overrides || {}) };
+    const q = filters.query.trim().toLowerCase();
+    return dbShelfWorks(filters.shelf).filter((w) => {
+      if (filters.type && !matchesDbType(w, filters.type)) return false;
+      if (filters.company && (w.company || "") !== filters.company) return false;
+      if (filters.person && !(w.people || []).some((p) => p.person_id === filters.person))
         return false;
-      if (dbState.depth && String(depthMeta(w).amount_level) !== dbState.depth) return false;
-      if (dbState.lens && !(w.staging_lenses || []).some((lens) => lens.id === dbState.lens))
+      if (filters.depth && String(depthMeta(w).amount_level) !== filters.depth) return false;
+      if (filters.lens && !(w.staging_lenses || []).some((lens) => lens.id === filters.lens))
         return false;
       if (!q) return true;
       const idx = searchIdx.get(w.id);
-      return q.split(/\s+/).every((t) => idx.hay.includes(t));
+      return q.split(/\s+/).every((term) => idx.hay.includes(term));
     });
   }
 
@@ -2358,10 +2436,12 @@
 
   function renderDbList() {
     const list = dbSort(dbFilter());
+    const shelf = dbShelfDefinition();
+    const shelfWorks = dbShelfWorks();
     const lens = lensMap.get(dbState.lens);
     const depth = (DB.research_depth_levels || []).find((item) => item.id === dbState.depth);
     $("#db-count").textContent =
-      `${DB.works.length}件中 ${list.length}件${lens ? ` ・ 型: ${lens.label}` : ""}${depth ? ` ・ ${depth.label}` : ""} ・ 索引生成 ${DB.generated}（正本は読み取りのみ）`;
+      `${shelf.label} ${shelfWorks.length}件中 ${list.length}件（全体 ${DB.works.length}件）${lens ? ` ・ 型: ${lens.label}` : ""}${depth ? ` ・ ${depth.label}` : ""} ・ 索引生成 ${DB.generated}（正本は読み取りのみ）`;
     const q = dbState.query.trim().toLowerCase();
     $("#db-list").innerHTML = list
       .map((w) => {
@@ -2386,7 +2466,7 @@
       <button type="button" class="db-lens" data-lens="${esc(lens.id)}" aria-pressed="${dbState.lens === lens.id}">
         <span class="db-lens-index">${String(index + 1).padStart(2, "0")}</span>
         <span class="db-lens-copy"><span class="db-lens-label">${esc(lens.label)}</span><span class="db-lens-desc">${esc(lens.description || "")}</span></span>
-        <span class="db-lens-count">${esc(lens.works_count)}件</span>
+        <span class="db-lens-count">${esc(dbFilter({ lens: lens.id }).length)}件</span>
       </button>`).join("");
     $("#db-lens-clear").hidden = !dbState.lens;
     $$('[data-lens]', $("#db-lens-list")).forEach((button) =>
@@ -2730,9 +2810,9 @@
   }
 
   function initDb() {
-    if (!DB) {
+    if (!DB || !dbShelves) {
       $("#db-list").innerHTML =
-        `<p class="evidence-empty" style="padding:16px">db.js が読み込めません。shosai-app フォルダで python3 build_db.py を実行してください。</p>`;
+        `<p class="evidence-empty" style="padding:16px">資料棚の索引または入口分類を読み込めません。</p>`;
       return;
     }
     buildDbMaps();
@@ -2742,28 +2822,10 @@
       dbState.lens = initialLens;
       dbState.detailMode = "lens";
     }
+    updateDbTypeOptions();
+    renderDbShelfSwitcher();
+    bindDbShelfSwitcher();
     renderStagingLenses();
-    // ジャンル大分類（build_db.pyで生成）: 件数の多い順。サーカスはサブ分類を字下げで続ける
-    const catCount = new Map();
-    const subCount = new Map();
-    for (const w of DB.works) {
-      if (w.category) catCount.set(w.category, (catCount.get(w.category) || 0) + 1);
-      if (w.subcategory) subCount.set(w.subcategory, (subCount.get(w.subcategory) || 0) + 1);
-    }
-    const cats = [...catCount.entries()].sort((a, b) => b[1] - a[1]);
-    const subs = [...subCount.entries()].sort((a, b) => b[1] - a[1]);
-    $("#db-type").innerHTML =
-      `<option value="">すべてのジャンル（${DB.works.length}）</option>` +
-      cats
-        .map(([c, n]) => {
-          let html = `<option value="${esc(c)}">${esc(c)}（${n}）</option>`;
-          if (c === "サーカス・アクロバット")
-            html += subs
-              .map(([s, m]) => `<option value="sub:${esc(s)}">　└ ${esc(s)}（${m}）</option>`)
-              .join("");
-          return html;
-        })
-        .join("");
 
     // 会社: 作品数の多い順
     const compCount = new Map();
