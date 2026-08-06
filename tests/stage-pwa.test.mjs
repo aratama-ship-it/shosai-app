@@ -26,7 +26,7 @@ test("iPad用メタ情報とホーム画面アイコンを単独版へ組み込�
   assert.match(buildSource, /rel="apple-touch-icon" href="icons\/stage-sketch-180\.png"/);
   assert.match(buildSource, /rel="icon" href="icons\/stage-sketch-192\.png"/);
   assert.match(buildSource, /stage-pwa\.js\?v=3/);
-  assert.match(stageHtml, /stage-pwa\.js\?v=3[\s\S]*stage-sketch\.js\?v=181/);
+  assert.match(stageHtml, /stage-pwa\.js\?v=3[\s\S]*stage-sketch\.js\?v=183/);
 });
 
 test("iPadのホーム画面版だけ上部の補足文を隠す", () => {
@@ -52,7 +52,7 @@ test("使い方・About・感想は上部ではなく設定内にまとめる", 
 test("舞台スケッチ名の右側に小さなアプリ版番号を表示する", () => {
   assert.match(
     indexSource,
-    /舞台スケッチ<span class="stage-app-version">v0\.2\.2<\/span><span class="stage-beta">β版<\/span>/,
+    /舞台スケッチ<span class="stage-app-version">v0\.3\.0<\/span><span class="stage-beta">β版<\/span>/,
   );
   assert.match(styleSource, /\.stage-app-version \{[\s\S]*?font-size: 0\.38em;/);
 });
@@ -108,7 +108,7 @@ test("iPad PWAは一個のボタンで正面図と平面図を交互に切り替
 
 test("iPad PWAではブラウザのダブルタップ拡大を起こさない", () => {
   assert.match(styleSource, /html\.stage-pwa-tablet,[\s\S]*?touch-action: manipulation;/);
-  assert.match(stageSource, /addEventListener\("dblclick", \(event\) => \{[\s\S]*?if \(tabletPwaActive\) event\.preventDefault\(\)/);
+  assert.match(stageSource, /addEventListener\("dblclick", \(event\) => \{[\s\S]*?if \(tabletPwaActive \|\| phoneViewerActive\) event\.preventDefault\(\)/);
   assert.doesNotMatch(stageSource, /dblclick[\s\S]{0,180}zoomBy/);
 });
 

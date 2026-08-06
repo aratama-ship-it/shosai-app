@@ -113,6 +113,17 @@
   const tabletPwaActive = window.SHOSAI_TABLET_PWA === true
     || document.documentElement.classList.contains("stage-pwa-tablet");
   let tabletUi = null;
+  /* スマホは編集机ではなく、受け取ったJSONを現場で確認するための閲覧機にする。
+     iPadは上の専用PWAへ任せ、短辺600px以下のタッチ端末だけを対象にする。
+     localhostのpreview指定は実機を使わないブラウザ試験用。 */
+  const phonePreview = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+    && new URLSearchParams(window.location.search).has("phone-viewer-preview");
+  const phoneLike = navigator.maxTouchPoints > 0
+    && Math.min(window.screen.width, window.screen.height) <= 600;
+  const phoneViewerActive = !tabletPwaActive && (phonePreview || phoneLike);
+  const phoneOrientation = window.matchMedia("(orientation: portrait)");
+  document.documentElement.classList.toggle("stage-phone-viewer", phoneViewerActive);
+  let phoneUi = null;
   const SCENE_STUDIES = Array.isArray(window.SHOSAI_SCENE_STUDIES)
     ? window.SHOSAI_SCENE_STUDIES
     : [];
@@ -5722,6 +5733,7 @@
 
   function render() {
     enforceTabletSingleView();
+    enforcePhoneViews();
     const v = venue();
     const size = venueSize();
     const counts = Object.keys(PIECE_TYPES)
@@ -5766,6 +5778,7 @@
       els.frontCaption.textContent = tx("正面");
       canvas.dataset.pannable = pannable ? "true" : "false";
     }
+    syncPhoneViewer();
   }
 
   /* ---------- 劇場のUI ---------- */
@@ -5780,6 +5793,162 @@
 
   function panelEl(id) {
     return document.querySelector(`[data-panel="${id}"]`);
+  }
+
+  /* ---------- スマホ専用の閲覧ワークスペース ----------
+     編集用の三列UIは見せず、JSON読込・場面送り・情報・付箋だけを残す。
+     縦は二面、横は一面なので、端末を回しても最後に見ていた向きを覚えておく。 */
+  function makePhoneButton(text, label, className = "") {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `stage-phone-button${className ? ` ${className}` : ""}`;
+    button.textContent = text;
+    button.setAttribute("aria-label", label);
+    return button;
+  }
+
+  function phoneIsPortrait() {
+    return phoneOrientation.matches;
+  }
+
+  function enforcePhoneViews(preferred) {
+    if (!phoneViewerActive) return;
+    if (phoneUi && (preferred === "front" || preferred === "plan")) {
+      phoneUi.singleView = preferred;
+    }
+    if (phoneIsPortrait()) {
+      state.showFront = true;
+      state.showPlan = true;
+      return;
+    }
+    const which = phoneUi && phoneUi.singleView === "plan" ? "plan" : "front";
+    state.showFront = which === "front";
+    state.showPlan = which === "plan";
+  }
+
+  function syncPhoneViewer() {
+    if (!phoneUi) return;
+    const scenes = state.project.scenes.filter((row) => row.kind === "scene");
+    const found = scenes.findIndex((row) => row.id === state.project.activeSceneId);
+    const index = found < 0 ? 0 : found;
+    const scene = scenes[index] || sc();
+    phoneUi.sceneCurrent.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${scene.title}`;
+    phoneUi.scenePrev.disabled = index <= 0;
+    phoneUi.sceneNext.disabled = index >= scenes.length - 1;
+    phoneUi.projectName.textContent = state.project.title || "舞台スケッチ";
+    phoneUi.infoProject.textContent = `${state.project.title || "舞台スケッチ"}  ${state.project.versionLabel || ""}`.trim();
+    phoneUi.infoScene.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${scene.title}`;
+    if (document.activeElement !== phoneUi.sceneNote) phoneUi.sceneNote.value = scene.note || "";
+    phoneUi.noteToggle.textContent = tool === "note" ? "メモ終了" : "メモ";
+    phoneUi.noteToggle.setAttribute("aria-pressed", String(tool === "note"));
+    phoneUi.infoToggle.setAttribute("aria-pressed", String(phoneUi.infoOpen));
+    phoneUi.infoPanel.hidden = !phoneUi.infoOpen;
+    phoneUi.board.classList.toggle("is-phone-info-open", phoneUi.infoOpen);
+    phoneUi.viewToggle.hidden = phoneIsPortrait();
+    const nextView = state.showFront ? "plan" : "front";
+    phoneUi.viewToggle.dataset.phoneView = nextView;
+    phoneUi.viewToggle.textContent = nextView === "plan" ? "平面図へ" : "正面図へ";
+    phoneUi.viewToggle.setAttribute("aria-label", `${phoneUi.viewToggle.textContent}切り替える`);
+  }
+
+  function initPhoneViewerWorkspace() {
+    if (!phoneViewerActive || phoneUi) return;
+    const board = document.getElementById("stage-col-center");
+    if (!board) return;
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "stage-phone-toolbar";
+    toolbar.setAttribute("aria-label", "スマホ閲覧用の操作");
+
+    const actions = document.createElement("div");
+    actions.className = "stage-phone-actions";
+    const load = makePhoneButton("読込", "舞台スケッチのJSONを読み込む");
+    const projectName = document.createElement("strong");
+    projectName.className = "stage-phone-project";
+    const infoToggle = makePhoneButton("情報", "シーン情報を表示する");
+    infoToggle.setAttribute("aria-pressed", "false");
+    const noteToggle = makePhoneButton("メモ", "図にメモを追加する");
+    noteToggle.setAttribute("aria-pressed", "false");
+    const viewToggle = makePhoneButton("平面図へ", "平面図へ切り替える", "stage-phone-view-toggle");
+    actions.append(load, projectName, infoToggle, noteToggle, viewToggle);
+
+    const sceneBar = document.createElement("div");
+    sceneBar.className = "stage-phone-scene-bar";
+    const scenePrev = makePhoneButton("‹", "前のシーンへ");
+    const sceneCurrent = document.createElement("div");
+    sceneCurrent.className = "stage-phone-scene-current";
+    sceneCurrent.setAttribute("aria-live", "polite");
+    const sceneNext = makePhoneButton("›", "次のシーンへ");
+    sceneBar.append(scenePrev, sceneCurrent, sceneNext);
+    toolbar.append(actions, sceneBar);
+
+    const infoPanel = document.createElement("section");
+    infoPanel.className = "stage-phone-info";
+    infoPanel.setAttribute("aria-label", "読み込んだシーンの情報");
+    infoPanel.hidden = true;
+    const infoProject = document.createElement("strong");
+    const infoScene = document.createElement("span");
+    const sceneNote = document.createElement("textarea");
+    sceneNote.rows = 2;
+    sceneNote.maxLength = 200;
+    sceneNote.placeholder = "このシーンのメモ";
+    sceneNote.setAttribute("aria-label", "シーンのメモ");
+    infoPanel.append(infoProject, infoScene, sceneNote);
+
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "application/json,.json";
+    fileInput.className = "stage-phone-file-input";
+    fileInput.hidden = true;
+    fileInput.setAttribute("aria-hidden", "true");
+    toolbar.append(fileInput);
+    board.prepend(infoPanel);
+    board.prepend(toolbar);
+
+    phoneUi = {
+      board, toolbar, actions, load, projectName, infoToggle, noteToggle, viewToggle,
+      scenePrev, sceneCurrent, sceneNext, infoPanel, infoProject, infoScene,
+      sceneNote, fileInput, infoOpen: false, singleView: state.showPlan && !state.showFront ? "plan" : "front",
+    };
+
+    load.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", () => {
+      importProject(fileInput.files && fileInput.files[0]);
+      fileInput.value = "";
+    });
+    scenePrev.addEventListener("click", () => stepScene(-1));
+    sceneNext.addEventListener("click", () => stepScene(1));
+    infoToggle.addEventListener("click", () => {
+      phoneUi.infoOpen = !phoneUi.infoOpen;
+      syncPhoneViewer();
+    });
+    noteToggle.addEventListener("click", () => {
+      setTool(tool === "note" ? "select" : "note");
+      syncPhoneViewer();
+    });
+    viewToggle.addEventListener("click", () => {
+      enforcePhoneViews(viewToggle.dataset.phoneView);
+      applyLayout();
+      syncViewSwitch();
+      render();
+      persistSoon();
+    });
+    sceneNote.addEventListener("input", () => {
+      sc().note = sceneNote.value.slice(0, 200);
+      persistSoon();
+    });
+
+    const orient = () => {
+      closeNoteEditor();
+      enforcePhoneViews();
+      applyLayout();
+      syncViewSwitch();
+      render();
+    };
+    if (phoneOrientation.addEventListener) phoneOrientation.addEventListener("change", orient);
+    else if (phoneOrientation.addListener) phoneOrientation.addListener(orient);
+    enforcePhoneViews();
+    syncPhoneViewer();
   }
 
   /* ---------- iPad PWA専用ワークスペース ----------
@@ -8199,6 +8368,7 @@
     if (els.sceneDel) els.sceneDel.disabled = p.scenes.filter((x) => x.kind === "scene").length <= 1;
     renderSceneStudy();
     syncTabletSceneBar();
+    syncPhoneViewer();
     /* 並べ替えと入れ子は、掴んで動かす方に一本化した。
      * 矢印のボタンは同じことを二通りに増やすだけなので置かない。 */
   }
@@ -9599,6 +9769,12 @@ ${cuesheetHtml}
         showSeatMap: state.showSeatMap, frontPan: state.frontPan, frontPanY: state.frontPanY,
         closedSections: state.closedSections, cursorRowId: state.cursorRowId,
         sceneListHeight: state.sceneListHeight });
+      // スマホは読み込んだデータを閲覧するだけなので、編集用の比較モーダルを挟まない。
+      if (phoneViewerActive) {
+        if (phoneUi) phoneUi.singleView = "front";
+        applyLoadedState(next, `「${next.project.title}」を読み込みました。`);
+        return;
+      }
       pendingImport = next;
       renderImportSummary(next);
       if (els.importModal) els.importModal.hidden = false;
@@ -10016,6 +10192,8 @@ ${cuesheetHtml}
   }
 
   function setTool(nextTool) {
+    // スマホ閲覧版で持てる道具は、見るための選択状態とメモだけ。
+    if (phoneViewerActive && nextTool !== "note") nextTool = "select";
     const painting = nextTool === "paint" || nextTool === "erase";
     if (!state.showFront && painting) {
       announce("背景の塗りは正面図で行います。正面を開いてください。");
@@ -10410,6 +10588,10 @@ ${cuesheetHtml}
     const L = layout(view);
     const point = pointFromEvent(event);
     el.focus();
+
+    // 閲覧中の一指タップでは駒・明かり・背景を変更しない。付箋モードだけ下へ通す。
+    // 二指ピンチはこの分岐より前に始まるので、図の確認用拡大は利用できる。
+    if (phoneViewerActive && tool !== "note") return;
 
     /* メモ。何もない所を押すと、そこに付箋が生まれてすぐ書ける。
      * すでに貼ってある付箋を押したときは、作らずにそれを掴んで動かす。 */
@@ -10866,6 +11048,7 @@ ${cuesheetHtml}
       removeNote(note.id);
       return;
     }
+    if (phoneViewerActive) return;
     const piece = selectedPiece();
     if (!piece) return;
     if (event.key === "Delete" || event.key === "Backspace") {
@@ -10902,7 +11085,7 @@ ${cuesheetHtml}
     el.addEventListener("pointercancel", finishPointer);
     el.addEventListener("keydown", onKeyDown);
     el.addEventListener("dblclick", (event) => {
-      if (tabletPwaActive) event.preventDefault();
+      if (tabletPwaActive || phoneViewerActive) event.preventDefault();
     });
   });
 
@@ -12333,6 +12516,7 @@ ${cuesheetHtml}
   // 言語は loadState() より前に決めてある（見本の駒の名前がそこで決まるため）
   applyLayout();
   initTabletPwaWorkspace();
+  initPhoneViewerWorkspace();
   syncInputs();
   renderScenes();
   renderCast();
@@ -12438,6 +12622,7 @@ ${cuesheetHtml}
   let tourRequested = openArgs.has("tour");
   let tourLaunchTimer = null;
   function stageTourContextActive() {
+    if (phoneViewerActive) return false;
     const stageView = document.getElementById("view-stage");
     return document.body.classList.contains("is-standalone")
       || (location.hash === "#stage" && stageView && !stageView.hidden);

@@ -7705,6 +7705,299 @@ html.stage-pwa-tablet .stage-canvas-help { display: none; }
   }
 }
 
+/* ===== スマホ: JSONを読み込んで見るための簡易ワークスペース ===== */
+html.stage-phone-viewer,
+html.stage-phone-viewer body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+html.stage-phone-viewer body {
+  position: fixed;
+  inset: 0;
+  padding: 0;
+  background: #0d0c0b;
+}
+
+html.stage-phone-viewer .spine,
+html.stage-phone-viewer .topnav,
+html.stage-phone-viewer .stage-sketch-head,
+html.stage-phone-viewer .stage-toolbox,
+html.stage-phone-viewer .stage-inspector,
+html.stage-phone-viewer .stage-scenes,
+html.stage-phone-viewer .stage-center-bar,
+html.stage-phone-viewer .stage-canvas-help,
+html.stage-phone-viewer .stage-boundary-note,
+html.stage-phone-viewer .stage-zoom-fab {
+  display: none !important;
+}
+
+html.stage-phone-viewer #view-stage {
+  display: block !important;
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+html.stage-phone-viewer .stage-sketch {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  margin: 0;
+  padding: max(0px, env(safe-area-inset-top))
+    max(0px, env(safe-area-inset-right))
+    max(0px, env(safe-area-inset-bottom))
+    max(0px, env(safe-area-inset-left));
+  overflow: hidden;
+}
+
+html.stage-phone-viewer .stage-sketch-grid {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+html.stage-phone-viewer .stage-board-column {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+html.stage-phone-viewer .stage-phone-toolbar {
+  z-index: 12;
+  display: grid;
+  grid-template-rows: 48px 44px;
+  min-width: 0;
+  border-bottom: 1px solid var(--line-dark);
+  background: #15120f;
+}
+
+html.stage-phone-viewer .stage-phone-actions {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 52px 64px 76px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+html.stage-phone-viewer .stage-phone-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 3px 6px;
+  border: 0;
+  border-left: 1px solid rgba(240,231,214,0.1);
+  background: transparent;
+  color: var(--milk-dim);
+  font-family: var(--sans);
+  font-size: 11px;
+}
+
+html.stage-phone-viewer .stage-phone-button[aria-pressed="true"] {
+  background: rgba(168,75,38,0.28);
+  color: var(--paper);
+}
+
+html.stage-phone-viewer .stage-phone-button:disabled { opacity: 0.24; }
+
+html.stage-phone-viewer .stage-phone-project {
+  align-self: center;
+  min-width: 0;
+  padding: 0 8px;
+  overflow: hidden;
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.stage-phone-viewer .stage-phone-scene-bar {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  min-width: 0;
+  border-top: 1px solid rgba(240,231,214,0.08);
+}
+
+html.stage-phone-viewer .stage-phone-scene-current {
+  align-self: center;
+  min-width: 0;
+  padding: 0 8px;
+  overflow: hidden;
+  color: var(--milk);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.stage-phone-viewer .stage-phone-scene-bar .stage-phone-button {
+  font-size: 26px;
+  line-height: 1;
+}
+
+html.stage-phone-viewer .stage-phone-info {
+  z-index: 11;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 10px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line-dark);
+  background: #1a1612;
+}
+
+html.stage-phone-viewer .stage-phone-info[hidden],
+html.stage-phone-viewer .stage-phone-view-toggle[hidden] { display: none !important; }
+
+html.stage-phone-viewer .stage-phone-info strong,
+html.stage-phone-viewer .stage-phone-info span {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.stage-phone-viewer .stage-phone-info strong { color: var(--brass); }
+html.stage-phone-viewer .stage-phone-info span { color: var(--milk-dim); text-align: right; }
+
+html.stage-phone-viewer .stage-phone-info textarea {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  resize: none;
+  padding: 6px 8px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk);
+  color: var(--milk);
+  font: 12px/1.35 var(--sans);
+}
+
+html.stage-phone-viewer .stage-phone-file-input {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+html.stage-phone-viewer .stage-canvas-stack {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  gap: 3px;
+  padding: 3px;
+  overflow: hidden;
+}
+
+html.stage-phone-viewer .stage-board-frame {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  box-shadow: none;
+}
+
+html.stage-phone-viewer .stage-board-frame.is-closed { display: none; }
+
+html.stage-phone-viewer .stage-canvas-bar {
+  flex: 0 0 32px;
+  min-height: 32px;
+  padding: 6px 8px;
+}
+
+html.stage-phone-viewer .stage-canvas-bar .stage-seat-list,
+html.stage-phone-viewer .stage-canvas-bar .stage-canvas-tools { display: none; }
+
+html.stage-phone-viewer .stage-canvas-bar .stage-canvas-caption {
+  margin: 0;
+  font-size: 9px;
+}
+
+html.stage-phone-viewer .stage-canvas-inner,
+html.stage-phone-viewer .stage-canvas-wrap {
+  min-width: 0;
+  min-height: 0;
+}
+
+html.stage-phone-viewer .stage-canvas-wrap { width: 100%; aspect-ratio: 16 / 9; }
+
+html.stage-phone-viewer #stage-canvas,
+html.stage-phone-viewer #stage-plan-canvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+/* スマホの付箋入力は、指とキーボードで隠れにくい下端のシートにする。 */
+html.stage-phone-viewer .stage-note-editor {
+  position: fixed;
+  z-index: 90;
+  top: auto !important;
+  right: max(8px, env(safe-area-inset-right));
+  bottom: max(8px, env(safe-area-inset-bottom));
+  left: max(8px, env(safe-area-inset-left)) !important;
+  width: auto !important;
+  min-width: 0;
+}
+
+html.stage-phone-viewer .stage-note-editor textarea { min-height: 72px; resize: none; }
+html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; min-width: 64px; }
+
+@media (orientation: portrait) {
+  html.stage-phone-viewer .stage-phone-actions {
+    grid-template-columns: 52px minmax(0, 1fr) 52px 64px;
+  }
+
+  html.stage-phone-viewer .stage-canvas-stack {
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+
+  html.stage-phone-viewer .stage-board-frame {
+    width: min(100%, calc((100dvh - 166px) * 8 / 9));
+  }
+
+  html.stage-phone-viewer .stage-board-column.is-phone-info-open .stage-board-frame {
+    width: min(100%, calc((100dvh - 260px) * 8 / 9));
+  }
+}
+
+@media (orientation: landscape) {
+  html.stage-phone-viewer .stage-canvas-stack {
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  html.stage-phone-viewer .stage-board-frame {
+    width: min(100%, calc((100dvh - 128px) * 16 / 9));
+  }
+
+  html.stage-phone-viewer .stage-board-column.is-phone-info-open .stage-board-frame {
+    width: min(100%, calc((100dvh - 220px) * 16 / 9));
+  }
+}
+
 
 /* ---- 問答帳 ---- */
 .mondo-log { margin-top: 26px; }
