@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=148">
+<link rel="stylesheet" href="style.css?v=149">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -469,6 +469,12 @@
                 </label>
                 <input type="range" id="stage-piece-lift" min="0" max="10" step="0.05" value="2.5">
               </div>
+              <div id="stage-seri-controls" hidden>
+                <label class="stage-control-label stage-range-label" for="stage-piece-seri">
+                  せり上がり（床からの高さ） <span id="stage-piece-seri-value">0cm</span>
+                </label>
+                <input type="range" id="stage-piece-seri" min="0" max="4" step="0.01" value="0">
+              </div>
               <!-- プリセットの組を選んでいるときの操作。一体で扱い、直径と強さだけ触れる -->
               <div id="stage-group-controls" hidden>
                 <label class="stage-control-label stage-range-label" for="stage-group-dia">
@@ -862,6 +868,6 @@
 <script src="stage-i18n.js?v=38"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-pwa.js?v=3"></script>
-<script src="stage-sketch.js?v=196"></script>
+<script src="stage-sketch.js?v=197"></script>
 </body>
 </html>

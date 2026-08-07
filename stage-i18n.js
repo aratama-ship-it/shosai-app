@@ -426,6 +426,7 @@
     "客席": "House",
     "背中": "Back",
     "地上高": "Trim height",
+    "せり上がり（床からの高さ）": "Rise height (from stage floor)",
     "照明の直径": "Pool diameter",
     "照明の位置": "Fixture position",
     "左右": "Across",
@@ -563,7 +564,7 @@
       trapeze: "Trapeze", cyrwheel: "Cyr wheel", pole: "Chinese pole",
       teeter: "Teeterboard", tissue: "Aerial silks", wire: "Tightwire",
       suitcase: "Suitcase", trampoline: "Trampoline", cane: "Handbalancing canes",
-      car: "Car", light: "Light",
+      car: "Car", seri: "Stage lift", light: "Light",
     },
     pieceType: {
       performer: "Performer", block: "Platform / box", table: "Table", chair: "Chair",
@@ -571,7 +572,7 @@
       trapeze: "Trapeze", cyrwheel: "Cyr wheel", pole: "Chinese pole",
       teeter: "Teeterboard", tissue: "Aerial silks", wire: "Tightwire",
       suitcase: "Suitcase", trampoline: "Trampoline", cane: "Handbalancing canes",
-      car: "Car", light: "Light",
+      car: "Car", seri: "Stage lift", light: "Light",
     },
     lightKind: {
       hang: "Overhead", ss: "Side light", front: "Front light", floor: "Floor light",
@@ -786,6 +787,8 @@
     [/^平面を上にしました。$/, "Plan view is now on top."],
 
     // 名前・数入り（具体的な枠から先に）
+    [/^せりを置きました。錠を掛けました（せりの位置は動きません）。動かすには一覧の🔒を外します。$/,
+      "Stage lift placed and locked (its position will not move). To move it, unlock it with the 🔒 in the list."],
     [/^(.+)を複製しました。前のシーンから少しずつ動かすときに使えます。$/, "Duplicated $1. Useful for moving things a little at a time."],
     [/^(.+)として複製しました。元の版は書き出したファイルの中に残ります。$/, "Duplicated as $1. The earlier version stays in exported files."],
     [/^(.+)を足しました。下のシーンを一段内側へ入れると、中身になります。$/, "Added $1. Indent the scenes below to put them inside it."],

@@ -198,6 +198,7 @@
     trampoline: "トランポリン",
     cane: "ハンドバランス用cane",
     car: "車",
+    seri: "せり",
     sphere: "球",
     light: "照明",
   };
@@ -212,6 +213,7 @@
     wall: 2.5,
     trapeze: 0.06, cyrwheel: 1.9, pole: 6, teeter: 0.75, tissue: 7,
     wire: 1.2, suitcase: 0.44, trampoline: 0.95, cane: 0.75, car: 1.45,
+    seri: 2.7,
     sphere: 1.2,
     light: 2.5,
   };
@@ -235,6 +237,7 @@
     trampoline: { w: 3.05, d: 1.7, h: 0.95 },
     cane: { w: 0.5, d: 0.3, h: 0.75 },
     car: { w: 4.3, d: 1.8, h: 1.45 },
+    seri: { w: 2.7, d: 1.8 },
     // 壁は厚みを固定で持つ（舞台の壁は建て込みの板なので、厚みは決まっている）
     wall: { w: 3, d: 0.3, h: 2.5 },
     sphere: { dia: 1.2, lift: 0 },         // 直径と、床からの高さ
@@ -297,7 +300,7 @@
     trapeze: "トラピーズ", cyrwheel: "シルホイール", pole: "チャイニーズポール",
     teeter: "ティーターボード", tissue: "エアリアルティシュー", wire: "綱渡り",
     suitcase: "スーツケース", trampoline: "トランポリン", cane: "ハンドバランス用cane",
-    car: "車",
+    car: "車", seri: "せり",
     light: "照明",
   };
   // 吊物にしかならない道具。床に置く形を持たない
@@ -339,7 +342,7 @@
   const SET_KIND_ORDER = [
     "block", "table", "chair", "bench", "stool", "wall", "sphere",
     "trapeze", "cyrwheel", "pole", "teeter", "tissue", "wire",
-    "suitcase", "trampoline", "cane", "car",
+    "suitcase", "trampoline", "cane", "car", "seri",
   ];
   /* ---------- 演者の骨格と姿勢 ----------
    * 関節を3次元（x=左右／y=上下／z=本人の正面向き）で持ち、向きの角度だけ
@@ -1012,7 +1015,7 @@
   const SOLID_TYPES = {
     block: true, table: true, chair: true, bench: true, stool: true, wall: true,
     trapeze: true, cyrwheel: true, pole: true, teeter: true, tissue: true, wire: true,
-    suitcase: true, trampoline: true, cane: true, car: true,
+    suitcase: true, trampoline: true, cane: true, car: true, seri: true,
   };
   const CHAIR_W = 0.5;
   const CHAIR_D = 0.55;
@@ -1348,6 +1351,9 @@
     liftControls: document.getElementById("stage-lift-controls"),
     pieceLift: document.getElementById("stage-piece-lift"),
     pieceLiftValue: document.getElementById("stage-piece-lift-value"),
+    seriControls: document.getElementById("stage-seri-controls"),
+    pieceSeri: document.getElementById("stage-piece-seri"),
+    pieceSeriValue: document.getElementById("stage-piece-seri-value"),
     showFlown: document.getElementById("stage-show-flown"),
     frontLights: document.getElementById("stage-front-lights"),
     planLights: document.getElementById("stage-plan-lights"),
@@ -1775,7 +1781,7 @@
     const raw = piece && piece.type === "ring" ? "sphere" : piece && piece.type;
     const type = PIECE_TYPES[raw] ? raw : "performer";
     const legacy = piece && piece.u === undefined && piece.x !== undefined ? migratePiece(piece) : null;
-    return {
+    const normalized = {
       id: typeof piece.id === "string" ? piece.id : `stage-restored-${index}`,
       type,
       // 袖に置けるので、枠の外も少しだけ許す（実際の枠は fromScreen が締める）
@@ -1818,6 +1824,9 @@
        * 登録を持たない駒（最初から置いてある例など）のための控え。 */
       locked: Boolean(piece && piece.locked),
     };
+    // せりの高さは登録寸法ではなく、シーンごとの上がり具合として持つ
+    if (type === "seri") normalized.seriH = clamp(finite(piece.seriH, 0), 0, 4);
+    return normalized;
   }
 
   // 台と球の実寸。dims を持たない古い保存は、size（倍率）から見た目が
@@ -2010,7 +2019,7 @@
    * 床からの高さ（base）と支えている駒（supportId）は置き場所から毎回引き直す。
    * 丸ごと控えると、シーンの数だけ同じ値の写しが保存に溜まる。 */
   const STASH_KEYS = ["type", "u", "v", "size", "facing", "pose",
-    "poleSide", "poleH", "trapMode", "glow", "beam", "route", "locked", "name"];
+    "poleSide", "poleH", "trapMode", "seriH", "glow", "beam", "route", "locked", "name"];
 
   function normalizeStash(raw) {
     const out = {};
@@ -3352,6 +3361,7 @@
    * 何の上にでも物を置けるようにするので、演者の頭の上も上面として扱う。 */
   function pieceTopLocal(piece) {
     if (piece.type === "light") return 0;
+    if (piece.type === "seri") return clamp(finite(piece.seriH, 0), 0, 4);
     if (piece.type === "performer") {
       return poseExtent(piece.pose).top * pieceHeightM(piece) * (piece.size / 100);
     }
@@ -3404,6 +3414,7 @@
    * 何かの上に乗ることも、何かを乗せることもない。高さは地上高で決まる。 */
   function isFlown(piece) {
     if (!piece || !SOLID_TYPES[piece.type]) return false;
+    if (piece.type === "seri") return false;
     const owner = pieceSet(piece);
     return Boolean(owner ? owner.flown : piece.flown);
   }
@@ -3420,9 +3431,16 @@
       /* ポールは常に床から立てる。人の近くへ置くと、人の描画範囲（旗の姿勢は
          横に1m以上広がる）に「乗って」宙に浮いてしまうため、積み重ねの対象にしない。 */
       if (piece.type === "pole") { piece.base = 0; piece.supportId = null; return; }
+      // せりは床の一部。ほかの駒に乗らず、上がっても床との接続を保つ
+      if (piece.type === "seri") { piece.base = 0; piece.supportId = null; return; }
       if (isFlown(piece)) { piece.base = flownLift(piece); piece.supportId = null; return; }
       // 吊っているものの上には乗れない（宙に浮いた板の上に立たせない）
-      const candidates = pieces.slice(0, i).filter((p) => !isFlown(p));
+      /* せりだけは並び順を超えて支えの候補に入れる。駒は動かすと並びの
+         最後へ回るため、順だけに頼ると「先に立たせた演者の下でせりを
+         動かす・上げる」で演者が乗れなくなる。せりは床の一部で、
+         高さ（seriH）が他の駒に依存しないので、循環は起きない。 */
+      const candidates = pieces.slice(0, i).filter((p) => !isFlown(p))
+        .concat(pieces.slice(i + 1).filter((p) => p.type === "seri"));
       const found = supportUnder(piece, size, candidates);
       piece.base = found.top;
       piece.supportId = found.holder;
@@ -3932,6 +3950,12 @@
   function pieceParts(piece) {
     const d = pieceDims(piece);
     if (!d) return null;
+    if (piece.type === "seri") {
+      const seriH = clamp(finite(piece.seriH, 0), 0, 4);
+      // 床と同じ高さでは立体を作らない。床面の輪郭は drawSolid が描く
+      if (seriH < 0.02) return [];
+      return [{ ox: 0, oz: 0, w: d.w, d: d.d, h: seriH, lift: 0, tint: 1 }];
+    }
     if (piece.type === "block") {
       return [{ ox: 0, oz: 0, w: d.w, d: d.d, h: d.h, lift: 0, tint: 1 }];
     }
@@ -4196,6 +4220,27 @@
     if (!parts) return;
     const flown = isFlown(piece);
     target.save();
+
+    // 下がり切ったせりは床面の継ぎ目だけ。高さのある板を置かない
+    if (piece.type === "seri" && parts.length === 0) {
+      const foot = pieceFootprint(piece);
+      const rad = ((piece.facing || 0) * Math.PI) / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      target.strokeStyle = rgba(piece.color, 0.62);
+      target.lineWidth = 1;
+      target.beginPath();
+      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sy], i) => {
+        const lx = (sx * foot.w) / 2;
+        const ly = (sy * foot.d) / 2;
+        const p = floorPoint(piece, lx * cos - ly * sin, lx * sin + ly * cos, L);
+        if (i) target.lineTo(p.x, p.y); else target.moveTo(p.x, p.y);
+      });
+      target.closePath();
+      target.stroke();
+      target.restore();
+      return;
+    }
 
     /* 吊物はワイヤーで天井から下がっている。上へ伸びる2本の線で吊りを示す。
      * 影は落とさない（床に触れていないので、接地の影は嘘になる）。 */
@@ -4594,7 +4639,9 @@
       target.fillRect(-w / 2, -d / 2, w, d);
       target.strokeStyle = "rgba(0,0,0,0.3)";
       target.lineWidth = 1.5;
+      if (piece.type === "seri") target.setLineDash([6, 4]);
       target.strokeRect(-w / 2, -d / 2, w, d);
+      if (piece.type === "seri") target.setLineDash([]);
       // 椅子は背もたれの側を濃くして、座る向きを分かるようにする。背は正面の反対側
       if (piece.type === "chair") {
         target.fillStyle = "rgba(13,12,11,0.4)";
@@ -4684,7 +4731,7 @@
     if (SOLID_TYPES[piece.type]) {
       // 描画と同じ手順で四隅を引き、その外接矩形を枠にする
       const foot = pieceFootprint(piece);
-      const height = dim.h;
+      const height = piece.type === "seri" ? pieceTopLocal(piece) : dim.h;
       const rad = ((piece.facing || 0) * Math.PI) / 180;
       const cos = Math.cos(rad);
       const sin = Math.sin(rad);
@@ -7192,6 +7239,8 @@
     }
     if (item.kind === "light") return `⌀${cmText(d.dia)}`;
     if (item.kind === "chair") return `高さ${cmText(d.h)}`;
+    // せりは高さの寸法を持たない（上がり具合はシーンごとの駒側にある）
+    if (item.kind === "seri") return `${Math.round(d.w * 100)}×${Math.round(d.d * 100)}cm`;
     return `${Math.round(d.w * 100)}×${Math.round(d.d * 100)}×${Math.round(d.h * 100)}cm`;
   }
 
@@ -7426,7 +7475,7 @@
     const lk = kind === "light" && LIGHT_KINDS[lightKind] ? lightKind : "hang";
     const dims = normalizeDims(kind, {});
     // 吊物にしたときのために、地上高の場所を作っておく（既定は床）
-    if (SOLID_TYPES[kind] && dims && dims.lift === undefined) dims.lift = 0;
+    if (SOLID_TYPES[kind] && kind !== "seri" && dims && dims.lift === undefined) dims.lift = 0;
     if (kind === "light") dims.dia = LIGHT_KINDS[lk].dia;
     const flownOnly = Boolean(FLOWN_ONLY[kind]);
     if (flownOnly && dims) dims.lift = kind === "tissue" ? 7.4 : 2.6;
@@ -8003,6 +8052,16 @@
       ctx2.restore();
       return;
     }
+    if (kind === "seri") {
+      // 下がり切った既定状態。登録時の見本も床面の継ぎ目として見せる
+      ctx2.save();
+      ctx2.strokeStyle = color;
+      ctx2.lineWidth = 1.5;
+      ctx2.setLineDash([5, 4]);
+      ctx2.strokeRect(w * 0.16, h * 0.42, w * 0.68, h * 0.34);
+      ctx2.restore();
+      return;
+    }
     const parts = pieceParts({ type: kind, dims, facing: 0 });
     if (!parts) return;
     // 幅と高さの範囲を測る
@@ -8329,7 +8388,7 @@
     }
     if (els.setInfoFlownRow) {
       // 吊れるのは形のあるもの（台・テーブル・椅子・壁）だけ
-      const canFly = Boolean(SOLID_TYPES[item.kind]);
+      const canFly = Boolean(SOLID_TYPES[item.kind] && item.kind !== "seri");
       const onlyFlown = Boolean(FLOWN_ONLY[item.kind]);
       els.setInfoFlownRow.hidden = !canFly;
       if (els.setInfoFlown) {
@@ -10911,7 +10970,17 @@ ${cuesheetHtml}
     if (changed) persistSoon();
     if (dragSync) {
       const piece = sc().pieces.find((candidate) => candidate.id === dragSync.id);
-      if (piece) syncRouteFromPrev(piece, dragSync.u, dragSync.v);
+      if (piece) {
+        syncRouteFromPrev(piece, dragSync.u, dragSync.v);
+        if (piece.type === "seri") {
+          setLocked(piece, true);
+          renderSets();
+          updateInspector();
+          render();
+          persistSoon();
+          announce("せりを置きました。錠を掛けました（せりの位置は動きません）。動かすには一覧の🔒を外します。");
+        }
+      }
     }
     // 動線を引き終えたら、場面の欄の「動線の先へ動かした場面を作る」が押せるようになる
     if (drewRoute) renderScenes();
@@ -11967,6 +12036,18 @@ ${cuesheetHtml}
     });
     els.pieceLift.addEventListener("pointerdown", checkpoint);
   }
+  if (els.pieceSeri) {
+    els.pieceSeri.addEventListener("input", (e) => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== "seri") return;
+      const value = clamp(finite(e.target.value, 0), 0, 4);
+      piece.seriH = value;
+      if (els.pieceSeriValue) els.pieceSeriValue.textContent = cmText(value);
+      render();
+      persistSoon();
+    });
+    els.pieceSeri.addEventListener("pointerdown", checkpoint);
+  }
   if (els.showFlown) {
     els.showFlown.addEventListener("change", (e) => {
       state.showFlown = e.target.checked;
@@ -12226,6 +12307,15 @@ ${cuesheetHtml}
         const lift = flownLift(piece);
         if (document.activeElement !== els.pieceLift) els.pieceLift.value = String(lift);
         if (els.pieceLiftValue) els.pieceLiftValue.textContent = cmText(lift);
+      }
+    }
+    if (els.seriControls) {
+      const isSeri = Boolean(piece && piece.type === "seri");
+      els.seriControls.hidden = !isSeri;
+      if (isSeri) {
+        const seriH = clamp(finite(piece.seriH, 0), 0, 4);
+        if (document.activeElement !== els.pieceSeri) els.pieceSeri.value = String(seriH);
+        if (els.pieceSeriValue) els.pieceSeriValue.textContent = cmText(seriH);
       }
     }
     /* プリセットの組。一体で扱うので、名前は組の名で出し、

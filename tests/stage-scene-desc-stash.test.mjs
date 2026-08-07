@@ -111,7 +111,7 @@ test("控えるのは登録から引き直せないものだけ", () => {
   const m = stageSource.match(/const STASH_KEYS = \[([\s\S]*?)\];/);
   assert.ok(m, "STASH_KEYS がある");
   const keys = m[1].match(/"[a-zA-Z]+"/g).map((s) => s.slice(1, -1));
-  ["u", "v", "size", "facing", "pose", "glow", "beam", "route", "locked"].forEach((k) => {
+  ["u", "v", "size", "facing", "pose", "seriH", "glow", "beam", "route", "locked"].forEach((k) => {
     assert.ok(keys.includes(k), `${k} は控える`);
   });
   // 寸法と色は舞台セットの登録が持ち、高さと支えは置き場所から引き直す
