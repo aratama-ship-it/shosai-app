@@ -1303,6 +1303,10 @@
     lightName: document.getElementById("stage-light-name"),
     lightAdd: document.getElementById("stage-light-add"),
     lightKind: document.getElementById("stage-light-kind"),
+    lightPresetOpen: document.getElementById("stage-light-preset-open"),
+    lightPresetModal: document.getElementById("stage-light-preset-modal"),
+    lightPresetBackdrop: document.getElementById("stage-light-preset-backdrop"),
+    lightPresetClose: document.getElementById("stage-light-preset-close"),
     lightPresetTiles: document.getElementById("stage-light-preset-tiles"),
     beamControls: document.getElementById("stage-beam-controls"),
     beamDia: document.getElementById("stage-beam-dia"),
@@ -7672,10 +7676,6 @@
     },
   };
 
-  const LIGHT_PRESET_KEYS = [
-    "basic3", "backac", "bar3", "enka", "topsus", "curtain", "beamx", "beamfan",
-  ];
-
   function drawPresetPreview(canvas, key) {
     const preset = LIGHT_PRESETS[key];
     if (!canvas || !preset) return;
@@ -7730,10 +7730,10 @@
     ctx.globalAlpha = 1;
   }
 
-  function renderLightPresetTiles() {
-    if (!els.lightPresetTiles) return;
+  function openLightPresetModal() {
+    if (!els.lightPresetModal || !els.lightPresetTiles) return;
     els.lightPresetTiles.innerHTML = "";
-    LIGHT_PRESET_KEYS.forEach((key) => {
+    Object.keys(LIGHT_PRESETS).forEach((key) => {
       const preset = LIGHT_PRESETS[key];
       const tile = document.createElement("button");
       tile.type = "button";
@@ -7745,10 +7745,21 @@
       label.textContent = tm("lightPreset", key, preset.label);
       tile.setAttribute("aria-label", label.textContent);
       tile.append(canvas, label);
-      tile.addEventListener("click", () => buildLightPreset(key));
+      tile.addEventListener("click", () => {
+        buildLightPreset(key);
+        closeLightPresetModal();
+      });
       els.lightPresetTiles.append(tile);
       drawPresetPreview(canvas, key);
     });
+    els.lightPresetModal.hidden = false;
+    els.lightPresetBackdrop.hidden = false;
+  }
+
+  function closeLightPresetModal() {
+    if (!els.lightPresetModal) return;
+    els.lightPresetModal.hidden = true;
+    els.lightPresetBackdrop.hidden = true;
   }
 
   function buildLightPreset(key) {
@@ -11891,6 +11902,14 @@ ${cuesheetHtml}
   if (els.rosterKind) els.rosterKind.addEventListener("click", openKindModal);
   if (els.kindClose) els.kindClose.addEventListener("click", closeKindModal);
   if (els.kindBackdrop) els.kindBackdrop.addEventListener("click", closeKindModal);
+  if (els.lightPresetOpen) els.lightPresetOpen.addEventListener("click", openLightPresetModal);
+  if (els.lightPresetClose) els.lightPresetClose.addEventListener("click", closeLightPresetModal);
+  if (els.lightPresetBackdrop) els.lightPresetBackdrop.addEventListener("click", closeLightPresetModal);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && els.lightPresetModal && !els.lightPresetModal.hidden) {
+      closeLightPresetModal();
+    }
+  });
   if (els.rosterAdd) els.rosterAdd.addEventListener("click", addFromRoster);
   const addLight = () => addSetItem("light", els.lightName, els.lightKind && els.lightKind.value);
   if (els.lightAdd) els.lightAdd.addEventListener("click", addLight);
@@ -12735,7 +12754,6 @@ ${cuesheetHtml}
     renderCast();
     renderSets();
     renderLights();
-    renderLightPresetTiles();
     renderRigs();
     selectedTextId = null;
     renderScreenTexts();
@@ -13186,7 +13204,6 @@ ${cuesheetHtml}
   renderCast();
   renderSets();
   renderLights();
-  renderLightPresetTiles();
   renderRigs();
   renderVenueControls();
   setTool("select");

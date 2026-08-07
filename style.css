@@ -2349,11 +2349,10 @@ canvas[data-tool="note"] { cursor: copy; }
   color: var(--paper);
 }
 
-.stage-light-preset-tiles {
+.stage-modal #stage-light-preset-tiles {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  margin-bottom: 9px;
 }
 
 /* 装置の型は寸法を持たないので、名前を1行、操作を1行に */

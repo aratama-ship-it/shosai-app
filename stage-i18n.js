@@ -200,6 +200,8 @@
     "車": "Car",
     "照明の名前": "Light name",
     "照明の種類": "Light type",
+    "プリセットから組む": "Build from preset",
+    "照明プリセット": "Lighting presets",
     "吊り（バトンから真下へ）": "Overhead (straight down from the bar)",
     "基本の3照明（地明かり＋バック＋ブッチ）": "Basic three-light rig (base wash + back + cross sides)",
     "基本の3照明": "Basic three-light rig",

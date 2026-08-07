@@ -23,7 +23,12 @@ test("サムネイルはプリセットの実データから描く", () => {
   assert.match(preview, /const specs = preset\.build\(size\)/);
 });
 
-test("stage.htmlはselectを廃止してプリセットタイル一覧を持つ", () => {
+test("stage.htmlはselectを廃止してモーダル内にプリセットタイル一覧を持つ", () => {
   assert.doesNotMatch(stageHtml, /<select[^>]*id="stage-light-preset"/);
-  assert.match(stageHtml, /<div id="stage-light-preset-tiles"/);
+  assert.match(stageHtml, /id="stage-light-preset-modal"[\s\S]*<div id="stage-light-preset-tiles"/);
+});
+
+test("プリセット一覧はモーダルで出す（開くボタンとモーダルがある）", () => {
+  assert.match(stageHtml, /id="stage-light-preset-open"/);
+  assert.match(stageHtml, /id="stage-light-preset-modal"/);
 });
