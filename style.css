@@ -7773,6 +7773,66 @@ body.is-panel-dragging {
 canvas:fullscreen { object-fit: contain; background: #000; }
 canvas:-webkit-full-screen { object-fit: contain; background: #000; }
 
+.stage-present-overlay { display: none; }
+
+.stage-pseudo-present #stage-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;
+  background: #000;
+  z-index: 60;
+}
+
+.stage-pseudo-present .stage-present-overlay { display: block; }
+
+.stage-present-zone {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 28px;
+  line-height: 1;
+  z-index: 61;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stage-present-zone.is-prev {
+  left: 0;
+  justify-content: flex-start;
+}
+
+.stage-present-zone.is-next {
+  right: 0;
+  justify-content: flex-end;
+}
+
+.stage-present-close {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 20px;
+  line-height: 42px;
+  text-align: center;
+  z-index: 62;
+  -webkit-tap-highlight-color: transparent;
+}
+
 
 /* ============ iPad PWA専用ワークスペース ============
    通常ブラウザには stage-pwa-tablet が付かないため、従来の三列画面を維持する。 */

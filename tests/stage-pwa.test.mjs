@@ -26,7 +26,7 @@ test("iPad用メタ情報とホーム画面アイコンを単独版へ組み込�
   assert.match(buildSource, /rel="apple-touch-icon" href="icons\/stage-sketch-180\.png"/);
   assert.match(buildSource, /rel="icon" href="icons\/stage-sketch-192\.png"/);
   assert.match(buildSource, /stage-pwa\.js\?v=3/);
-  assert.match(stageHtml, /stage-pwa\.js\?v=3[\s\S]*stage-sketch\.js\?v=193/);
+  assert.match(stageHtml, /stage-pwa\.js\?v=3[\s\S]*stage-sketch\.js\?v=194/);
 });
 
 test("iPadのホーム画面版だけ上部の補足文を隠す", () => {

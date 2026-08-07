@@ -143,6 +143,7 @@
   const H = canvas.height;
   // プレゼン（正面図だけの全画面）中か。説明の帯を出すかどうかの目印
   let presenting = false;
+  let pseudoPresenting = false;
   /* ---------- 初期化（テスト用） ----------
      ?fresh を付けて開くと、舞台スケッチの持ちものだけ消して開き直す。
      初めて来た人とまったく同じ状態（案内も自動で出る）を作れるので、
@@ -1253,6 +1254,10 @@
     prefsClose: document.getElementById("stage-prefs-close"),
     prefsList: document.getElementById("stage-prefs-list"),
     presentBtn: document.getElementById("stage-present-btn"),
+    presentOverlay: document.getElementById("stage-present-overlay"),
+    presentPrev: document.getElementById("stage-present-prev"),
+    presentNext: document.getElementById("stage-present-next"),
+    presentClose: document.getElementById("stage-present-close"),
     arrangeSelect: document.getElementById("stage-arrange-select"),
     trapSit: document.getElementById("stage-trap-sit"),
     trapHang: document.getElementById("stage-trap-hang"),
@@ -9228,25 +9233,54 @@
   /* ---------- プレゼンモード ----------
      正面のキャンバスをそのまま全画面へ。矢印キーのシーン送りは
      いつもの割り当てが効き、Escで戻る（ブラウザの全画面をそのまま使う）。 */
+  function enterPseudoPresentation() {
+    pseudoPresenting = true;
+    presenting = true;
+    document.body.classList.add("stage-pseudo-present");
+    if (els.presentOverlay) els.presentOverlay.setAttribute("aria-hidden", "false");
+    render();
+    announce("プレゼンモードです。左右のタップでシーン送り、✕で戻ります。");
+  }
+
+  function exitPseudoPresentation() {
+    pseudoPresenting = false;
+    presenting = false;
+    document.body.classList.remove("stage-pseudo-present");
+    if (els.presentOverlay) els.presentOverlay.setAttribute("aria-hidden", "true");
+    render();
+    announce("プレゼンを終えました。");
+  }
+
   function startPresentation() {
     const cv = canvas;
     if (!cv || !cv.requestFullscreen) {
-      announce("この環境では全画面にできませんでした。");
+      enterPseudoPresentation();
       return;
     }
     cv.requestFullscreen().then(() => {
       cv.focus();
       announce("プレゼンモードです。矢印キーでシーン送り、Escで戻ります。");
-    }).catch(() => announce("この環境では全画面にできませんでした。"));
+    }).catch(() => {
+      announce("この環境では全画面にできませんでした。");
+      enterPseudoPresentation();
+    });
   }
 
   /* 全画面かどうか。プレゼン中だけ、シーンの説明を絵の中へ描く。
      入るときも出るときも描き直しがいる（出たあと字が残らないように）。 */
   document.addEventListener("fullscreenchange", () => {
+    if (pseudoPresenting) return;
     const now = document.fullscreenElement === canvas;
     if (now === presenting) return;
     presenting = now;
     render();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (!pseudoPresenting) return;
+    if (event.key !== "Escape" || event.defaultPrevented) return;
+    event.preventDefault();
+    exitPseudoPresentation();
   });
 
   /* ---------- 整列（舞台上の演者全員） ----------
@@ -11957,6 +11991,9 @@ ${cuesheetHtml}
   }
   if (els.scenePrev) els.scenePrev.addEventListener("click", () => stepScene(-1));
   if (els.sceneNext) els.sceneNext.addEventListener("click", () => stepScene(1));
+  if (els.presentPrev) els.presentPrev.addEventListener("click", () => stepScene(-1));
+  if (els.presentNext) els.presentNext.addEventListener("click", () => stepScene(1));
+  if (els.presentClose) els.presentClose.addEventListener("click", exitPseudoPresentation);
   if (els.animScenes) {
     els.animScenes.addEventListener("change", (e) => {
       state.animateScenes = e.target.checked;
@@ -12436,7 +12473,7 @@ ${cuesheetHtml}
     };
     const roots = [
       document.getElementById("view-stage"),
-      ...document.querySelectorAll(".stage-modal"),
+      ...document.querySelectorAll(".stage-modal, .stage-present-overlay"),
     ].filter(Boolean);
     // 読み上げや行分けのために、文書そのものの言語も合わせる
     document.documentElement.lang = isEn() ? "en" : "ja";
