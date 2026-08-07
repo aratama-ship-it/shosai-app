@@ -57,7 +57,7 @@ test("プレゼンの見出しはシーン名にする（画面の道具の名�
 test("説明の帯は絵の拡大・移動に付き合わせない", () => {
   const fn = stageSource.slice(stageSource.indexOf("function drawSceneCaption"));
   const body = fn.slice(0, fn.indexOf("\n  }\n"));
-  assert.match(body, /target\.setTransform\(1, 0, 0, 1, 0, 0\)/);
+  assert.match(body, /target\.setTransform\(S, 0, 0, S, 0, 0\)/);
 });
 
 test("印刷用ページはシーンの説明を見出し付きで絵の前に出す", () => {

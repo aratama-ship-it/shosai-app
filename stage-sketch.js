@@ -5609,15 +5609,16 @@
     const L = layout(view);
     refreshBases(L.size);
     buildPaintLayer(L);
+    const S = target.canvas ? target.canvas.width / W : 1;
     target.save();
-    target.setTransform(1, 0, 0, 1, 0, 0);
+    target.setTransform(S, 0, 0, S, 0, 0);
     target.clearRect(0, 0, W, H);
     target.fillStyle = "#0d0c0b";
     target.fillRect(0, 0, W, H);
     // 二本指で拡大しているぶんを、ここで一度だけかける
     const zs = zoomOf(view);
     if (zs.z !== 1 || zs.ox || zs.oy) {
-      target.setTransform(zs.z, 0, 0, zs.z, -zs.ox * zs.z, -zs.oy * zs.z);
+      target.setTransform(zs.z * S, 0, 0, zs.z * S, -zs.ox * zs.z * S, -zs.oy * zs.z * S);
     }
 
     if (L.plan) drawPlanVenue(target, L);
@@ -5827,7 +5828,8 @@
     target.save();
     /* 説明の帯は絵の一部ではないので、拡大・移動には付き合わせない。
        付き合わせると、二本指で寄せたときに字だけ巨大になって枠から出る。 */
-    target.setTransform(1, 0, 0, 1, 0, 0);
+    const S = target.canvas ? target.canvas.width / W : 1;
+    target.setTransform(S, 0, 0, S, 0, 0);
     target.font = `${size}px 'Hiragino Kaku Gothic ProN', sans-serif`;
     const lines = wrapCaption(target, text, W - pad * 2);
     const lineH = Math.round(size * 1.5);
@@ -9240,6 +9242,7 @@
     presenting = true;
     document.body.classList.add("stage-pseudo-present");
     if (els.presentOverlay) els.presentOverlay.setAttribute("aria-hidden", "false");
+    syncCanvasResolution();
     render();
     announce("プレゼンモードです。左右のタップでシーン送り、✕で戻ります。");
   }
@@ -9249,6 +9252,7 @@
     presenting = false;
     document.body.classList.remove("stage-pseudo-present");
     if (els.presentOverlay) els.presentOverlay.setAttribute("aria-hidden", "true");
+    syncCanvasResolution();
     render();
     announce("プレゼンを終えました。");
   }
@@ -9268,6 +9272,33 @@
     });
   }
 
+  /* 大きな表示では内部解像度も追従させ、線や文字の粗さを抑える。
+     論理座標は変えず、過大な描画負荷を避けるため3倍を上限とする。 */
+  const BACKING_MAX_SCALE = 3;
+  function syncCanvasResolution() {
+    let changed = false;
+    for (const el of [canvas, planCanvas]) {
+      if (!el) continue;
+      const cssW = el.getBoundingClientRect().width;
+      if (!cssW) continue;
+      const want = Math.min(BACKING_MAX_SCALE, Math.max(1, (cssW * (window.devicePixelRatio || 1)) / W));
+      const cur = el.width / W;
+      if (Math.abs(want - cur) > 0.15) {
+        el.width = Math.round(W * want);
+        el.height = Math.round(H * want);
+        changed = true;
+      }
+    }
+    if (changed) render();
+  }
+  const canvasResObserver = new ResizeObserver(() => syncCanvasResolution());
+  canvasResObserver.observe(canvas);
+  if (planCanvas) canvasResObserver.observe(planCanvas);
+  window.addEventListener("resize", syncCanvasResolution);
+  /* ResizeObserverの初回通知は環境により来ないことがある（実際に来ない環境を確認済み）。
+     読み込み直後の一度は自分で合わせる */
+  requestAnimationFrame(syncCanvasResolution);
+
   /* 全画面かどうか。プレゼン中だけ、シーンの説明を絵の中へ描く。
      入るときも出るときも描き直しがいる（出たあと字が残らないように）。 */
   document.addEventListener("fullscreenchange", () => {
@@ -9275,6 +9306,7 @@
     const now = document.fullscreenElement === canvas;
     if (now === presenting) return;
     presenting = now;
+    syncCanvasResolution();
     render();
   });
 
@@ -11571,6 +11603,7 @@ ${cuesheetHtml}
       const open = which === "front" ? state.showFront : state.showPlan;
       setViewShown(which, !open);
       syncViewSwitch();
+      syncCanvasResolution();
     });
   });
   /* 道具の説明も畳んでおき、「?」で出す。中央のバーは道具そのものが並ぶ場所なので、
