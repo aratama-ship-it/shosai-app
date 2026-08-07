@@ -429,6 +429,7 @@
     "背中": "Back",
     "地上高": "Trim height",
     "せり上がり（床からの高さ）": "Rise height (from stage floor)",
+    "せりの縁をまたいでいます（上がると落ちます）": "Straddling the lift's edge (it will fall when raised)",
     "照明の直径": "Pool diameter",
     "照明の位置": "Fixture position",
     "左右": "Across",
@@ -799,6 +800,8 @@
     [/^平面を上にしました。$/, "Plan view is now on top."],
 
     // 名前・数入り（具体的な枠から先に）
+    [/^せりの縁をまたぐものがあります: (.+)（上がると落ちます）$/,
+      "Objects are straddling the lift's edge: $1 (they will fall when raised)"],
     [/^せりを置きました。錠を掛けました（せりの位置は動きません）。動かすには一覧の🔒を外します。$/,
       "Stage lift placed and locked (its position will not move). To move it, unlock it with the 🔒 in the list."],
     [/^(.+)を複製しました。前のシーンから少しずつ動かすときに使えます。$/, "Duplicated $1. Useful for moving things a little at a time."],

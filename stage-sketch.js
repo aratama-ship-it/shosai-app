@@ -1357,6 +1357,7 @@
     seriControls: document.getElementById("stage-seri-controls"),
     pieceSeri: document.getElementById("stage-piece-seri"),
     pieceSeriValue: document.getElementById("stage-piece-seri-value"),
+    seriWarning: document.getElementById("stage-seri-warning"),
     showFlown: document.getElementById("stage-show-flown"),
     frontLights: document.getElementById("stage-front-lights"),
     planLights: document.getElementById("stage-plan-lights"),
@@ -3420,6 +3421,55 @@
     if (piece.type === "seri") return false;
     const owner = pieceSet(piece);
     return Boolean(owner ? owner.flown : piece.flown);
+  }
+
+  /* 上がっているせりの縁を、一部だけまたいでいる駒。
+   * 駒の足元の四隅を舞台座標へ出してから、せりの向きへ逆回転する。
+   * supportUnder と同じく、舞台の奥方向は v が小さくなる座標で扱う。 */
+  function seriStraddlers(pieces, size) {
+    const raised = pieces.filter((p) => p.type === "seri"
+      && clamp(finite(p.seriH, 0), 0, 4) > 0.02);
+    const checked = pieces.filter((piece) => piece.type !== "seri"
+      && piece.type !== "light" && !isFlown(piece));
+    const found = [];
+    raised.forEach((seri) => {
+      const dims = pieceDims(seri);
+      if (!dims) return;
+      const seriRad = (finite(seri.facing, 0) * Math.PI) / 180;
+      const seriCos = Math.cos(seriRad);
+      const seriSin = Math.sin(seriRad);
+      checked.forEach((piece) => {
+        const foot = supportFootprint(piece);
+        if (!foot) return;
+        const pieceRad = (finite(piece.facing, 0) * Math.PI) / 180;
+        const pieceCos = Math.cos(pieceRad);
+        const pieceSin = Math.sin(pieceRad);
+        const dw = (piece.u - seri.u) * size.width;
+        const dd = -(piece.v - seri.v) * size.depth;
+        const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]) => {
+          const px = foot.cx + (sx * foot.w) / 2;
+          const pz = foot.cz + (sz * foot.d) / 2;
+          const worldX = dw + px * pieceCos - pz * pieceSin;
+          const worldZ = dd + px * pieceSin + pz * pieceCos;
+          return {
+            x: worldX * seriCos + worldZ * seriSin,
+            z: -worldX * seriSin + worldZ * seriCos,
+          };
+        });
+        const xs = corners.map((corner) => corner.x);
+        const zs = corners.map((corner) => corner.z);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minZ = Math.min(...zs);
+        const maxZ = Math.max(...zs);
+        const halfW = dims.w / 2;
+        const halfD = dims.d / 2;
+        const overlaps = maxX > -halfW && minX < halfW && maxZ > -halfD && minZ < halfD;
+        const fullyInside = minX >= -halfW && maxX <= halfW && minZ >= -halfD && maxZ <= halfD;
+        if (overlaps && !fullyInside) found.push({ piece, seri });
+      });
+    });
+    return found;
   }
 
   function flownLift(piece) {
@@ -5772,6 +5822,34 @@
        「次の動線」が先回りして見えると、どちらが今の動きか分からなくなる */
     if (L.plan && anyRoutesShown() && !sceneAnim) drawRoutes(target, L, showSelection);
     drawNotes(target, L, view, showSelection);
+
+    // 上がっているせりの縁をまたぐ駒は、操作を妨げない赤い破線だけで知らせる
+    const warned = new Set();
+    target.save();
+    target.strokeStyle = "rgba(192,57,43,0.9)";
+    target.setLineDash([5, 4]);
+    target.lineWidth = 1.5;
+    seriStraddlers(sc().pieces, L.size).forEach(({ piece }) => {
+      if (warned.has(piece.id)) return;
+      warned.add(piece.id);
+      if (!L.plan && !onStageArea(pieceU(piece), pieceV(piece))) return;
+      const foot = supportFootprint(piece);
+      if (!foot) return;
+      const rad = (finite(piece.facing, 0) * Math.PI) / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      target.beginPath();
+      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sz], i) => {
+        const lx = foot.cx + (sx * foot.w) / 2;
+        const lz = foot.cz + (sz * foot.d) / 2;
+        const p = floorPoint(piece, lx * cos - lz * sin, lx * sin + lz * cos, L);
+        if (i) target.lineTo(p.x, p.y); else target.moveTo(p.x, p.y);
+      });
+      target.closePath();
+      target.stroke();
+    });
+    target.setLineDash([]);
+    target.restore();
 
     if (showSelection) {
       const selected = sc().pieces.find((piece) => piece.id === selectedId);
@@ -10881,6 +10959,11 @@ ${cuesheetHtml}
 
   function updateInspector() {
     const piece = selectedPiece();
+    if (els.seriWarning) {
+      const involved = piece && seriStraddlers(sc().pieces, venueSize())
+        .some((entry) => entry.piece === piece || entry.seri === piece);
+      els.seriWarning.hidden = !involved;
+    }
     /* 「何も選んでいないときの案内」は説明文なので「?」の側で出し入れする。
      * ここで勝手に出すと、畳んだはずの文が選ぶたびに戻ってくる。 */
     els.selectionControls.hidden = !piece;
@@ -12168,10 +12251,23 @@ ${cuesheetHtml}
     els.pieceSeri.addEventListener("input", (e) => {
       const piece = selectedPiece();
       if (!piece || piece.type !== "seri") return;
+      const previous = clamp(finite(piece.seriH, 0), 0, 4);
       const value = clamp(finite(e.target.value, 0), 0, 4);
       piece.seriH = value;
       if (els.pieceSeriValue) els.pieceSeriValue.textContent = cmText(value);
       render();
+      updateInspector();
+      if (previous <= 0.02 && value > 0.02) {
+        const straddling = seriStraddlers(sc().pieces, venueSize())
+          .filter((entry) => entry.seri === piece)
+          .map((entry) => entry.piece)
+          .filter((item, index, all) => all.indexOf(item) === index);
+        if (straddling.length) {
+          const shownNames = straddling.slice(0, 3).map((item) => pieceLabel(item));
+          const others = straddling.length > 3 ? `、ほか${straddling.length - 3}件` : "";
+          announce(`せりの縁をまたぐものがあります: ${shownNames.join("、")}${others}（上がると落ちます）`);
+        }
+      }
       persistSoon();
     });
     els.pieceSeri.addEventListener("pointerdown", checkpoint);
