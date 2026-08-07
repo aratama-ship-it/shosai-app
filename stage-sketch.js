@@ -1303,8 +1303,7 @@
     lightName: document.getElementById("stage-light-name"),
     lightAdd: document.getElementById("stage-light-add"),
     lightKind: document.getElementById("stage-light-kind"),
-    lightPreset: document.getElementById("stage-light-preset"),
-    lightPresetAdd: document.getElementById("stage-light-preset-add"),
+    lightPresetTiles: document.getElementById("stage-light-preset-tiles"),
     beamControls: document.getElementById("stage-beam-controls"),
     beamDia: document.getElementById("stage-beam-dia"),
     beamDiaValue: document.getElementById("stage-beam-dia-value"),
@@ -7635,7 +7634,122 @@
         });
       },
     },
+    /* 参照写真（コンサート・サーカス系の床置きビーム演出）を下敷き */
+    beamx: {
+      label: "ビームクロス（床から交差）",
+      build: (size) => {
+        const H = size.height || 8;
+        const out = [];
+        [0.30, 0.38, 0.46].forEach((u, i) => out.push({
+          name: `クロス上手${i + 1}`, color: "#dce6f2", dia: 0.9, kind: "floor",
+          u, v: 0.08, beam: { u: [0.72, 0.80, 0.88][i], v: 0.10, h: 0.15, toH: H },
+        }));
+        [0.70, 0.62, 0.54].forEach((u, i) => out.push({
+          name: `クロス下手${i + 1}`, color: "#dce6f2", dia: 0.9, kind: "floor",
+          u, v: 0.08, beam: { u: [0.12, 0.20, 0.28][i], v: 0.10, h: 0.15, toH: H },
+        }));
+        [0.2, 0.4, 0.6, 0.8].forEach((u, i) => out.push({
+          name: `ローホリ${i + 1}`, color: "#a03428", dia: 2.6, kind: "floor",
+          u, v: 0.02, beam: { u, v: 0.06, h: 0.15, toH: 5 },
+        }));
+        return out;
+      },
+    },
+    beamfan: {
+      label: "ビーム扇（床から放射）",
+      build: (size) => {
+        const H = size.height || 8;
+        const targets = [0.08, 0.22, 0.36, 0.5, 0.64, 0.78, 0.92];
+        return targets.map((targetU, i) => {
+          const u = 0.44 + i * 0.02;
+          return {
+            name: `扇${i + 1}`, color: "#dce6f2", dia: 0.9, kind: "floor",
+            u, v: 0.10,
+            beam: { u: targetU, v: 0.10, h: 0.15, toH: i === 3 ? H * 1.05 : H },
+          };
+        });
+      },
+    },
   };
+
+  const LIGHT_PRESET_KEYS = [
+    "basic3", "backac", "bar3", "enka", "topsus", "curtain", "beamx", "beamfan",
+  ];
+
+  function drawPresetPreview(canvas, key) {
+    const preset = LIGHT_PRESETS[key];
+    if (!canvas || !preset) return;
+    const size = venueSize();
+    const specs = preset.build(size);
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    const floorY = h * 0.88;
+    const maxH = size.height || 8;
+    const venueW = size.width || 12;
+    const yAt = (metres) => floorY - (metres / maxH) * floorY;
+
+    ctx.fillStyle = "#0d0c0b";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "rgba(240, 231, 214, 0.22)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, floorY + 0.5);
+    ctx.lineTo(w, floorY + 0.5);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.globalCompositeOperation = "lighter";
+    specs.forEach((spec) => {
+      const beam = spec.beam || {};
+      const sourceX = spec.u * w;
+      const sourceY = yAt(beam.h || 0);
+      const targetX = finite(beam.u, spec.u) * w;
+      const targetY = yAt(finite(beam.toH, 0));
+      const targetHalfWidth = Math.max(1.5, (finite(spec.dia, 1) / venueW) * w * 0.5);
+      ctx.fillStyle = spec.color;
+      ctx.beginPath();
+      ctx.moveTo(sourceX - 1, sourceY);
+      ctx.lineTo(sourceX + 1, sourceY);
+      ctx.lineTo(targetX + targetHalfWidth, targetY);
+      ctx.lineTo(targetX - targetHalfWidth, targetY);
+      ctx.closePath();
+      ctx.fill();
+    });
+    ctx.restore();
+
+    specs.forEach((spec) => {
+      const beam = spec.beam || {};
+      ctx.fillStyle = spec.color;
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      ctx.arc(spec.u * w, yAt(beam.h || 0), 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function renderLightPresetTiles() {
+    if (!els.lightPresetTiles) return;
+    els.lightPresetTiles.innerHTML = "";
+    LIGHT_PRESET_KEYS.forEach((key) => {
+      const preset = LIGHT_PRESETS[key];
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = "stage-pose-tile";
+      const canvas = document.createElement("canvas");
+      canvas.width = 132;
+      canvas.height = 88;
+      const label = document.createElement("span");
+      label.textContent = tm("lightPreset", key, preset.label);
+      tile.setAttribute("aria-label", label.textContent);
+      tile.append(canvas, label);
+      tile.addEventListener("click", () => buildLightPreset(key));
+      els.lightPresetTiles.append(tile);
+      drawPresetPreview(canvas, key);
+    });
+  }
 
   function buildLightPreset(key) {
     const preset = LIGHT_PRESETS[key];
@@ -11780,11 +11894,6 @@ ${cuesheetHtml}
   if (els.rosterAdd) els.rosterAdd.addEventListener("click", addFromRoster);
   const addLight = () => addSetItem("light", els.lightName, els.lightKind && els.lightKind.value);
   if (els.lightAdd) els.lightAdd.addEventListener("click", addLight);
-  if (els.lightPresetAdd) {
-    els.lightPresetAdd.addEventListener("click", () => {
-      buildLightPreset(els.lightPreset ? els.lightPreset.value : "basic3");
-    });
-  }
   if (els.lightName) {
     els.lightName.addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); addLight(); }
@@ -12626,6 +12735,7 @@ ${cuesheetHtml}
     renderCast();
     renderSets();
     renderLights();
+    renderLightPresetTiles();
     renderRigs();
     selectedTextId = null;
     renderScreenTexts();
@@ -13076,6 +13186,7 @@ ${cuesheetHtml}
   renderCast();
   renderSets();
   renderLights();
+  renderLightPresetTiles();
   renderRigs();
   renderVenueControls();
   setTool("select");

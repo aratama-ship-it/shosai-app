@@ -583,6 +583,16 @@
       front: "from over the house onto the face",
       floor: "from the floor onto the body",
     },
+    lightPreset: {
+      basic3: "Basic three-light rig",
+      backac: "Eight backlights + front area lights",
+      bar3: "Three-lamp bar wash",
+      enka: "Enka (cyclorama wash)",
+      topsus: "Top special (one person)",
+      curtain: "Light curtain",
+      beamx: "Beam cross (from floor)",
+      beamfan: "Beam fan (from floor)",
+    },
     dim: {
       w: "Width", d: "Depth", h: "Height", dia: "Diameter", lift: "Height above floor",
     },
