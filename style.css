@@ -8227,8 +8227,11 @@ html.stage-pwa-tablet .stage-tablet-scene-bar button:disabled { opacity: 0.24; }
 
 html.stage-pwa-tablet .stage-canvas-stack {
   display: grid;
-  place-items: center;
-  align-content: center;
+  /* 縦は上詰めにする。中央寄せ＋overflow:hiddenだと、内容が高さを超えたとき
+     上下が均等に切られ、上端の操作列（見る位置のボタン）が潰れて押せなくなる。
+     上詰めなら、あふれても切れるのは絵の下端だけで、操作は生きる。 */
+  place-items: start center;
+  align-content: start;
   min-width: 0;
   min-height: 0;
   height: 100%;
@@ -8239,7 +8242,10 @@ html.stage-pwa-tablet .stage-canvas-stack {
 html.stage-pwa-tablet .stage-board-frame {
   display: flex;
   flex-direction: column;
-  width: min(100%, calc((100dvh - 144px) * 16 / 9));
+  /* 224px = 上部操作行56 + シーン送り48 + 見る位置の列52 + シーンの説明(1行)28
+     + 余白。絵(16:9)の上に載る行の高さを引いてから幅を決める。144だと
+     シーンの説明の分が計算に入っておらず、横向きで内容が縦にあふれていた。 */
+  width: min(100%, calc((100dvh - 224px) * 16 / 9));
   max-width: 100%;
   max-height: 100%;
   margin: 0;
