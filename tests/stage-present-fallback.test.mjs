@@ -30,3 +30,10 @@ test("疑似プレゼン中のfullscreenchangeは状態を変更しない", () =
     /document\.addEventListener\("fullscreenchange", \(\) => \{\s*if \(pseudoPresenting\) return;/,
   );
 });
+
+test("プレゼン中は見る位置の小図を描かない（見せる相手の道具ではない）", () => {
+  assert.match(
+    stageSource,
+    /state\.showSeatMap && L\.venue\.audience === "front" && !\(presenting && target === ctx\)/,
+  );
+});

@@ -5740,8 +5740,10 @@
       edgeShade.addColorStop(1, "rgba(0,0,0,0.3)");
       target.fillStyle = edgeShade;
       target.fillRect(0, 0, W, H);
-      // 見る位置の小図。客席が正面だけの劇場でしか意味を持たない
-      if (state.showSeatMap && L.venue.audience === "front") drawSeatMap(target, L);
+      /* 見る位置の小図。客席が正面だけの劇場でしか意味を持たない。
+         プレゼン中は出さない（見せる相手に必要なのは場面であって、
+         いまどの席から描いているかという作り手側の道具ではない）。 */
+      if (state.showSeatMap && L.venue.audience === "front" && !(presenting && target === ctx)) drawSeatMap(target, L);
     }
 
     /* 高所の下の注意。ポールやトラピーズに居る人の真下（0.7m以内）に
