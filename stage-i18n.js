@@ -226,6 +226,12 @@
     "正面図だけを全画面で見せる。矢印キーでシーン送り、Escで戻る": "Show only the front view, full screen. Arrow keys change scenes; Esc exits",
     "プレゼンモード": "Presentation mode",
     "上部の「プレゼン」で正面図だけを全画面に。矢印キーでシーン送り、Escで戻る": "The Present button shows the front view full screen. Arrows change scenes, Esc exits",
+    "プレゼンの説明": "Presentation caption",
+    "全画面のプレゼンで、絵の下にシーン名と説明を出す": "Shows the scene name and description below the image in full-screen presentation mode",
+    "文字サイズ": "Text size",
+    "小": "Small",
+    "中": "Medium",
+    "大": "Large",
     "暗転で始まるシーン": "Scenes that open from blackout",
     "シーンの欄に「暗転」の印が出て、その転換は一度真っ暗になってから明ける": "Each scene gets a Blackout switch; the change dips to black before lights up",
     "シーンの時間": "Scene timing",
@@ -380,6 +386,7 @@
     "押すと開きます": "Press to open",
     "押すと開閉します": "Press to open or close",
     "シーンのメモ": "Scene note",
+    "シーンの説明": "Scene description",
     "次のシーンで動いているものに、いまの位置から行き先までの動線を引きます":
       "Draws a route from here to where each piece stands in the next scene",
     "このシーンを写し、動線を引いた演者を行き先へ移したシーンを次に作ります":

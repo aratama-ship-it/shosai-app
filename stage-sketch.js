@@ -141,6 +141,8 @@
 
   const W = canvas.width;
   const H = canvas.height;
+  // プレゼン（正面図だけの全画面）中か。説明の帯を出すかどうかの目印
+  let presenting = false;
   /* ---------- 初期化（テスト用） ----------
      ?fresh を付けて開くと、舞台スケッチの持ちものだけ消して開き直す。
      初めて来た人とまったく同じ状態（案内も自動で出る）を作れるので、
@@ -1194,6 +1196,9 @@
     planCell: document.getElementById("stage-plan-cell"),
     canvasStack: document.getElementById("stage-canvas-stack"),
     frontCaption: document.getElementById("stage-front-caption"),
+    sceneDesc: document.getElementById("stage-scene-desc"),
+    sceneDescLabel: document.getElementById("stage-scene-desc-label"),
+    sceneDescText: document.getElementById("stage-scene-desc-text"),
     venueScale: document.getElementById("stage-venue-scale"),
     venueW: document.getElementById("stage-venue-w"),
     venueD: document.getElementById("stage-venue-d"),
@@ -1424,6 +1429,8 @@
   const FEATURES = [
     { key: "presentation", label: "プレゼンモード",
       hint: "上部の「プレゼン」で正面図だけを全画面に。矢印キーでシーン送り、Escで戻る" },
+    { key: "presentCaption", label: "プレゼンの説明",
+      hint: "全画面のプレゼンで、絵の下にシーン名と説明を出す" },
     { key: "blackout", label: "暗転で始まるシーン",
       hint: "シーンの欄に「暗転」の印が出て、その転換は一度真っ暗になってから明ける" },
     { key: "sceneTiming", label: "シーンの時間", def: false,
@@ -1523,6 +1530,7 @@
     const project = next && next.project;
     if (!project) return next;
     sweepPhotos(project);
+    sweepStashes(project);
     const pieces = [];
     (project.scenes || []).forEach((scene) => (scene.pieces || []).forEach((p) => pieces.push(p)));
     SAMPLE.cast.forEach((s) => {
@@ -1986,7 +1994,33 @@
       rehearsal: kind === "scene" ? normalizeSceneRehearsal(raw.rehearsal) : null,
       // 暗転で始まるシーン（転換が一度真っ暗になってから明ける）
       blackout: kind === "scene" ? Boolean(raw.blackout) : false,
+      /* 舞台から下げたものの置き場所の控え（setId ごとに一つ）。
+       * 「舞台上／舞台裏」を往復しても、既定位置へ飛ばずに元の場所へ戻すために持つ。 */
+      stashed: normalizeStash(raw.stashed),
     };
+  }
+
+  /* 控えるのは「登録から引き直せないものだけ」。
+   * 寸法・色・種類は舞台セットの登録側が持っていて、出し直すときにそちらを見る。
+   * 床からの高さ（base）と支えている駒（supportId）は置き場所から毎回引き直す。
+   * 丸ごと控えると、シーンの数だけ同じ値の写しが保存に溜まる。 */
+  const STASH_KEYS = ["type", "u", "v", "size", "facing", "pose",
+    "poleSide", "poleH", "trapMode", "glow", "beam", "route", "locked", "name"];
+
+  function normalizeStash(raw) {
+    const out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).slice(0, 120).forEach((setId) => {
+      const piece = raw[setId];
+      if (!piece || typeof piece !== "object") return;
+      /* 一度きちんとした駒として通してから、控える分だけを抜き直す。
+         前の版が丸ごと控えていた保存も、ここで同じ形に揃う。 */
+      const full = normalizePiece(piece, 0);
+      const kept = {};
+      STASH_KEYS.forEach((key) => { if (full[key] !== undefined) kept[key] = full[key]; });
+      out[setId] = kept;
+    });
+    return out;
   }
 
   /* 背景に貼る写真。シーンが持つのは「どの写真か」と明るさだけで、
@@ -2011,6 +2045,25 @@
       }
     });
     return out;
+  }
+
+  /* 登録の無くなった装置の「置き場所の控え」を捨てる。
+   * 控えは舞台裏へ下げたときに残るので、そのあと登録ごと外されたり、
+   * 別のショーのJSONを読み込んだりすると、行き場のない控えだけが残る。
+   * 消しても失うのは「もう出せないものの、昔の置き場所」だけ。 */
+  function sweepStashes(project) {
+    if (!project) return;
+    // 控えの鍵は、舞台セットの登録id か 名簿の演者id
+    const live = new Set([
+      ...(project.sets || []).map((t) => t.id),
+      ...(project.cast || []).map((c) => c.id),
+    ]);
+    (project.scenes || []).forEach((scene) => {
+      if (!scene.stashed) return;
+      Object.keys(scene.stashed).forEach((key) => {
+        if (!live.has(key)) delete scene.stashed[key];
+      });
+    });
   }
 
   // どのシーンからも指されなくなった写真は捨てる（外したぶんが残り続けないように）
@@ -5604,9 +5657,19 @@
     /* 平面図は「床に何がどう置いてあるか」の図なので、宙に吊ってあるものは
      * 既定では出さない。要るときだけ出せるように入り切りを持つ。 */
     const shown = sc().pieces.filter((p) => !(L.plan && !state.showFlown && isFlown(p)));
-    // 正面図では奥から描く（重なりが自然になる）
+    /* 正面図では奥から描く（重なりが自然になる）。
+     * 平面図は真上から見た図なので、床から高い順に上へ重ねる。
+     * ★並べ替えないと、盆や台をあとから足しただけで、その上に立っている人が
+     *   台の下に隠れて見えなくなる（上から見ているのに関係が逆になる）。 */
     const solid = shown.filter((p) => p.type !== "light");
-    (L.plan ? solid : solid.slice().sort((a, b) => a.v - b.v)).forEach(draw);
+    /* 平面の重ね順。まず床に近いものから高いものへ。
+     * 演者は、その上でさらに最後に描く。上から見た図で人が装置に埋もれると、
+     * 誰がどこに立っているかという平面図の一番の用が果たせなくなる。 */
+    const planLayer = (p) => (p.type === "performer" ? 1 : 0);
+    const topH = (p) => finite(p.base, 0) + pieceTopLocal(p);
+    (L.plan
+      ? solid.slice().sort((a, b) => (planLayer(a) - planLayer(b)) || (topH(a) - topH(b)))
+      : solid.slice().sort((a, b) => a.v - b.v)).forEach(draw);
     /* ★正面では光を物のあとに描く。物のあとに描かないと、台や人が
      *   光の帯を四角く切り抜いて、光が途中で切れて見える。
      *   光は物で消えない——帯は物の手前を横切り、当たった物が明るくなる。 */
@@ -5729,7 +5792,93 @@
         }
       });
     }
+    /* プレゼン中のシーンの説明。全画面になるのは canvas だけなので、
+       HTMLで置いた欄は出てこない。見せている絵の中へ字で描く。
+       ★描くのは全画面の正面図だけ。編集中の画面と、書き出す画像には出さない
+         （絵の上に字が焼き付いてしまうため）。 */
+    if (!L.plan && presenting && target === ctx) drawSceneCaption(target);
     target.restore();
+  }
+
+  /* 絵の下側に敷く説明の帯。暗い舞台の絵の上でも読めるよう、
+     字の下だけを薄く落とす（絵全体を曇らせない）。 */
+  function drawSceneCaption(target) {
+    if (!featureOn("presentCaption")) return;
+    const scene = sc();
+    const text = (scene.note || "").trim();
+    if (!text) return;
+    /* 見出しはシーン名にする。〈シーンの説明〉という札は画面の道具の名前で、
+       人に見せている絵の中では意味を持たない。見ている側が知りたいのは
+       「いまどの場面か」なので、そこをシーン名で埋める。 */
+    const title = (scene.title || "").trim();
+    const pad = 34;
+    const captionSizes = { small: 15, medium: 19, large: 25 };
+    const captionSize = ["small", "medium", "large"].includes(prefs.presentCaptionSize)
+      ? prefs.presentCaptionSize : "medium";
+    const size = captionSizes[captionSize];
+    const kick = Math.floor(size * 0.62);
+    target.save();
+    /* 説明の帯は絵の一部ではないので、拡大・移動には付き合わせない。
+       付き合わせると、二本指で寄せたときに字だけ巨大になって枠から出る。 */
+    target.setTransform(1, 0, 0, 1, 0, 0);
+    target.font = `${size}px 'Hiragino Kaku Gothic ProN', sans-serif`;
+    const lines = wrapCaption(target, text, W - pad * 2);
+    const lineH = Math.round(size * 1.5);
+    const kickH = title ? kick + 12 : 0;
+    const boxH = lines.length * lineH + kickH + 30;
+    const scrim = target.createLinearGradient(0, H - boxH - 40, 0, H);
+    scrim.addColorStop(0, "rgba(0,0,0,0)");
+    scrim.addColorStop(1, "rgba(0,0,0,0.78)");
+    target.fillStyle = scrim;
+    target.fillRect(0, H - boxH - 40, W, boxH + 40);
+    target.textAlign = "left";
+    target.textBaseline = "alphabetic";
+    const ink = (line, x, y) => {
+      // 影を先に置く。明るい背景の場面でも字が沈まない
+      target.fillStyle = "rgba(0,0,0,0.55)";
+      target.fillText(line, x + 1, y + 1);
+      target.fillStyle = "rgba(244,238,226,0.96)";
+      target.fillText(line, x, y);
+    };
+    const bottom = H - 22;
+    lines.forEach((line, i) => ink(line, pad, bottom - (lines.length - 1 - i) * lineH));
+    if (title) {
+      target.font = `${kick}px 'Hiragino Kaku Gothic ProN', sans-serif`;
+      target.fillStyle = "rgba(0,0,0,0.55)";
+      target.fillText(title, pad + 1, bottom - (lines.length - 1) * lineH - lineH + 5);
+      // シーン名は本文より一段落として、説明の方を主にする
+      target.fillStyle = "rgba(214,190,132,0.86)";
+      target.fillText(title, pad, bottom - (lines.length - 1) * lineH - lineH + 4);
+    }
+    target.restore();
+  }
+
+  /* 幅に収まるところで折り返す。日本語は単語の切れ目が無いので一文字ずつ測り、
+     空白のある書き方（英語）は語の切れ目を優先する。
+     ★上限は5行。説明は200字までなので、この幅なら普通は全部入る。
+       それでも溢れたときだけ、末尾を「…」にして絵を潰さないようにする。 */
+  const CAPTION_MAX_LINES = 5;
+  function wrapCaption(target, text, maxW) {
+    const out = [];
+    text.split("\n").forEach((para) => {
+      let line = "";
+      const units = /\s/.test(para) ? para.split(/(\s+)/) : Array.from(para);
+      units.forEach((unit) => {
+        const next = line + unit;
+        if (line && target.measureText(next).width > maxW) {
+          out.push(line.trim());
+          line = /^\s+$/.test(unit) ? "" : unit;
+        } else {
+          line = next;
+        }
+      });
+      if (line.trim()) out.push(line.trim());
+    });
+    if (out.length <= CAPTION_MAX_LINES) return out;
+    const kept = out.slice(0, CAPTION_MAX_LINES);
+    const last = kept[CAPTION_MAX_LINES - 1];
+    kept[CAPTION_MAX_LINES - 1] = `${last.slice(0, Math.max(1, last.length - 1))}…`;
+    return kept;
   }
 
   function render() {
@@ -5779,7 +5928,54 @@
       els.frontCaption.textContent = tx("正面");
       canvas.dataset.pannable = pannable ? "true" : "false";
     }
+    syncSceneDesc();
     syncPhoneViewer();
+  }
+
+  /* シーンのメモを正面の絵の真上に出す。ここでそのまま書き直せる。
+     ★打っている最中は value を書き換えない。書き換えると変換中の文字が飛び、
+       カーソルも末尾へ跳ねる（シーン一覧側の欄と同じ扱い）。 */
+  function syncSceneDesc() {
+    if (!els.sceneDesc) return;
+    const scene = sc();
+    const text = scene && scene.note ? scene.note : "";
+    if (els.sceneDescLabel) els.sceneDescLabel.textContent = tx("シーンの説明");
+    const box = els.sceneDescText;
+    if (box) {
+      box.placeholder = tm("misc", "sceneNoteHint", "この場面で何が起きるか");
+      box.setAttribute("aria-label", tx("シーンの説明"));
+      // セクション（章の見出し）には場面の中身が無いので、書く欄も出さない
+      const editable = !scene || scene.kind !== "section";
+      els.sceneDesc.hidden = !editable;
+      if (!editable) return;
+      if (document.activeElement !== box && box.value !== text) box.value = text;
+      growSceneDesc();
+    }
+  }
+
+  /* 行数に合わせて高さを詰める。既定の2行分を空けておくと、
+     一行しか書いていない場面で絵の上に空白の帯ができる。 */
+  function growSceneDesc() {
+    const box = els.sceneDescText;
+    if (!box) return;
+    box.style.height = "auto";
+    box.style.height = `${Math.min(96, Math.max(19, box.scrollHeight))}px`;
+  }
+
+  if (els.sceneDescText) {
+    els.sceneDescText.addEventListener("input", () => {
+      const scene = sc();
+      if (!scene) return;
+      scene.note = els.sceneDescText.value.slice(0, 200);
+      growSceneDesc();
+      /* シーン一覧側の同じ欄も合わせる（二つの欄が食い違って見えないように）。
+         一覧ごと組み直すと打つたびに作り直しになるので、その欄だけ書き換える。 */
+      const twin = document.getElementById("stage-scene-note-input");
+      if (twin && twin !== document.activeElement) twin.value = scene.note;
+      // プレゼン中は絵の中に字で描いているので、そちらも描き直す
+      if (presenting) render();
+      persistSoon();
+    });
   }
 
   /* ---------- 劇場のUI ---------- */
@@ -5975,6 +6171,7 @@
     });
     sceneNote.addEventListener("input", () => {
       sc().note = sceneNote.value.slice(0, 200);
+      syncSceneDesc();
       persistSoon();
     });
 
@@ -6920,11 +7117,15 @@
     const existing = scene.pieces.find((piece) => piece.castId === castId);
     const member = state.project.cast.find((c) => c.id === castId);
     if (existing) {
+      /* 装置と同じで、引っ込める前に立ち位置を控える。控えないと、
+         もう一度出したときに既定の並びへ飛んで、組んだ立ち位置が壊れる。 */
+      stashPiece(scene, castId, existing);
       scene.pieces = scene.pieces.filter((piece) => piece.id !== existing.id);
       if (selectedId === existing.id) selectedId = null;
       announce(`${member ? member.name : "この人"}を舞台から引っ込めました。`);
     } else if (member) {
-      placeCastPiece(member);
+      const shape = { castId, type: "performer", color: member.color || state.pieceColor };
+      if (!restoreStashed(scene, castId, shape)) placeCastPiece(member);
       announce(`${member.name}を舞台へ出しました。`);
     }
     renderCast();
@@ -6951,6 +7152,8 @@
     state.project.cast = state.project.cast.filter((c) => c.id !== castId);
     state.project.scenes.forEach((scene) => {
       scene.pieces = scene.pieces.filter((piece) => piece.castId !== castId);
+      // 名簿から外した人の控えも捨てる（もう出せない人の立ち位置は要らない）
+      if (scene.stashed) delete scene.stashed[castId];
     });
     selectedId = null;
     renderCast();
@@ -7075,11 +7278,15 @@
     const pieces = groupScenePieces(groupId);
     if (pieces.length) {
       const ids = new Set(pieces.map((p) => p.id));
+      // 動かしたあとの置き場所を控えてから消す（組んだ形のまま戻せるように）
+      pieces.forEach((p) => { if (p.setId) stashPiece(scene, p.setId, p); });
       scene.pieces = scene.pieces.filter((p) => !ids.has(p.id));
       if (ids.has(selectedId)) selectedId = null;
       announce(`${groupTitle(groupId)}をOFFにしました。`);
     } else {
       groupItems(groupId).forEach((item) => {
+        // 控え（前に消したときの場所）が第一。無ければ組んだときの置き場へ
+        if (restoreStashed(scene, item.id, { setId: item.id, type: "light", color: item.color })) return;
         const at = item.preset || { u: 0.5, v: 0.5, beam: null };
         scene.pieces.push(normalizePiece({
           id: nextId(), type: "light", setId: item.id,
@@ -7107,6 +7314,7 @@
     state.project.sets = state.project.sets.filter((t) => !ids.has(t.id));
     state.project.scenes.forEach((scene) => {
       scene.pieces = scene.pieces.filter((piece) => !ids.has(piece.setId));
+      if (scene.stashed) ids.forEach((id) => delete scene.stashed[id]);
     });
     selectedId = null;
     renderLights();
@@ -7453,6 +7661,29 @@
     ? (on ? "ON" : "OFF")
     : (on ? tm("misc", "onStage", "舞台上") : tm("misc", "offStage", "舞台裏")));
 
+  /* 舞台から下げた駒の置き場所を、そのシーンに控える／控えから戻す。
+     控えはシーンごとに持つ（同じ装置でも、シーンによって居場所が違うため）。 */
+  // 鍵は舞台セットの登録id か 名簿の演者id。登録の無い駒は控えない（戻す先が無い）
+  function stashPiece(scene, key, piece) {
+    if (!scene || !key || !piece) return;
+    if (!scene.stashed || typeof scene.stashed !== "object") scene.stashed = {};
+    const kept = {};
+    STASH_KEYS.forEach((key) => { if (piece[key] !== undefined) kept[key] = piece[key]; });
+    scene.stashed[key] = kept;
+  }
+
+  /* 控えから駒を起こす。控えは「どこに、どんな格好で居たか」だけなので、
+     何者であるか（種類・色・どの登録のものか）は shape で被せる。 */
+  function restoreStashed(scene, key, shape) {
+    const kept = scene && scene.stashed && scene.stashed[key];
+    if (!kept) return null;
+    const piece = normalizePiece({ ...kept, ...shape, id: nextId() }, 0);
+    scene.pieces.push(piece);
+    selectedId = piece.id;
+    delete scene.stashed[key];
+    return piece;
+  }
+
   function toggleSetOnStage(setId) {
     checkpoint();
     const scene = sc();
@@ -7460,13 +7691,18 @@
     const item = (state.project.sets || []).find((t) => t.id === setId);
     const light = item && item.kind === "light";
     if (existing) {
+      /* 下げる前に、いまの置き場所を控える。控えないと、出し直したときに
+         placeSetPiece の既定位置へ飛んで、組んだ配置が崩れる。 */
+      stashPiece(scene, setId, existing);
       scene.pieces = scene.pieces.filter((piece) => piece.id !== existing.id);
       if (selectedId === existing.id) selectedId = null;
       announce(light
         ? `${item.name}をOFFにしました。`
         : `${item ? item.name : "これ"}を舞台から下げました。`);
     } else if (item) {
-      placeSetPiece(item);
+      // 控えがあればそこへ戻す。無いときだけ既定位置へ出す
+      const shape = { setId, type: item.kind, color: item.color };
+      if (!restoreStashed(scene, setId, shape)) placeSetPiece(item);
       announce(light ? `${item.name}をONにしました。` : `${item.name}を舞台へ出しました。`);
     }
     renderSets();
@@ -7490,6 +7726,8 @@
     state.project.sets = state.project.sets.filter((t) => t.id !== setId);
     state.project.scenes.forEach((scene) => {
       scene.pieces = scene.pieces.filter((piece) => piece.setId !== setId);
+      // 控えも捨てる。登録の無いものの置き場所が残り続けないように
+      if (scene.stashed) delete scene.stashed[setId];
     });
     selectedId = null;
     renderSets();
@@ -8392,8 +8630,16 @@
           note.value = scene.note || "";
           note.placeholder = tm("misc", "sceneNoteHint", "このシーンのメモ（何が起きるか）");
           note.setAttribute("aria-label", tx("シーンのメモ"));
+          /* 開いているのがいまの場面なら、絵の上の欄と対になる。
+             片方を打ったときに、もう片方だけを書き換えるための目印。 */
+          if (scene.id === state.project.activeSceneId) note.id = "stage-scene-note-input";
           note.addEventListener("input", () => {
             scene.note = note.value.slice(0, 200);
+            // 絵の上の「シーンの説明」も打ちながら追いかける
+            if (scene.id === state.project.activeSceneId) {
+              syncSceneDesc();
+              if (presenting) render();
+            }
             persistSoon();
           });
           const apply = document.createElement("button");
@@ -8878,27 +9124,61 @@
     if (!host) return;
     host.innerHTML = "";
     FEATURES.forEach((f) => {
-      const row = document.createElement("label");
+      const row = document.createElement(f.key === "presentCaption" ? "div" : "label");
       row.className = "stage-pref-row";
       const box = document.createElement("input");
       box.type = "checkbox";
+      if (f.key === "presentCaption") box.id = "stage-pref-present-caption";
       box.checked = featureOn(f.key);
+      const captionSizeInputs = [];
       box.addEventListener("change", () => {
         prefs[f.key] = box.checked;
         savePrefs();
+        captionSizeInputs.forEach((radio) => { radio.disabled = !box.checked; });
         applyFeatureFlags();
         renderScenes();
         render();
         announce(box.checked ? `設定「${f.label}」をONにしました。` : `設定「${f.label}」をOFFにしました。`);
       });
       const body = document.createElement("span");
-      const name = document.createElement("span");
+      const name = document.createElement(f.key === "presentCaption" ? "label" : "span");
       name.className = "stage-pref-name";
+      if (f.key === "presentCaption") name.htmlFor = box.id;
       name.textContent = tx(f.label);
       const hint = document.createElement("p");
       hint.className = "stage-pref-hint";
       hint.textContent = tx(f.hint);
       body.append(name, hint);
+      if (f.key === "presentCaption") {
+        const sizeRow = document.createElement("span");
+        sizeRow.className = "stage-pref-caption-size";
+        const sizeTitle = document.createElement("span");
+        sizeTitle.className = "stage-pref-caption-size-title";
+        sizeTitle.textContent = tx("文字サイズ");
+        sizeRow.append(sizeTitle);
+        const currentSize = ["small", "medium", "large"].includes(prefs.presentCaptionSize)
+          ? prefs.presentCaptionSize : "medium";
+        [["small", "小"], ["medium", "中"], ["large", "大"]].forEach(([value, label]) => {
+          const option = document.createElement("label");
+          option.className = "stage-pref-caption-size-option";
+          const radio = document.createElement("input");
+          radio.type = "radio";
+          radio.name = "stage-present-caption-size";
+          radio.value = value;
+          radio.checked = currentSize === value;
+          radio.disabled = !box.checked;
+          radio.addEventListener("change", () => {
+            if (!radio.checked) return;
+            prefs.presentCaptionSize = value;
+            savePrefs();
+            render();
+          });
+          captionSizeInputs.push(radio);
+          option.append(radio, document.createTextNode(tx(label)));
+          sizeRow.append(option);
+        });
+        body.append(sizeRow);
+      }
       row.append(box, body);
       host.append(row);
     });
@@ -8959,6 +9239,15 @@
       announce("プレゼンモードです。矢印キーでシーン送り、Escで戻ります。");
     }).catch(() => announce("この環境では全画面にできませんでした。"));
   }
+
+  /* 全画面かどうか。プレゼン中だけ、シーンの説明を絵の中へ描く。
+     入るときも出るときも描き直しがいる（出たあと字が残らないように）。 */
+  document.addEventListener("fullscreenchange", () => {
+    const now = document.fullscreenElement === canvas;
+    if (now === presenting) return;
+    presenting = now;
+    render();
+  });
 
   /* ---------- 整列（舞台上の演者全員） ----------
      ★いまの位置関係をなるべく保つ（本人指定）。誰がどこへ行くかが
@@ -9071,12 +9360,12 @@
       parts.push(`<section class="scene">
   <header><span class="no">${sceneN}</span><h3>${escapeHtml(row.title || "")}</h3>
     <span class="times">${escapeHtml(times.join(" / "))}</span></header>
+  ${row.note ? `<p class="desc"><span class="desc-label">${en ? "Scene description" : "シーンの説明"}</span>${escapeHtml(row.note)}</p>` : ""}
   <div class="pics">
     <img class="front" src="${fc.toDataURL("image/jpeg", 0.85)}" alt="">
     <img class="plan" src="${pc.toDataURL("image/jpeg", 0.85)}" alt="">
   </div>
   <div class="meta">
-    ${row.note ? `<p class="note">${escapeHtml(row.note)}</p>` : ""}
     ${cast.length ? `<p class="cast">${en ? "On stage" : "舞台上"}: ${escapeHtml(cast.join(" / "))}</p>` : ""}
     ${bamiriTable(row)}
   </div>
@@ -9140,6 +9429,7 @@
   body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; color: #1c1a17; margin: 24px; }
   h1 { font-size: 20px; margin: 0 0 4px; }
   .stamp { color: #777; font-size: 12px; margin: 0 0 18px; }
+  .print-toggle { font-size: 12px; color: #555; margin: 0 0 14px; }
   h2.section { font-size: 15px; letter-spacing: 0.1em; border-bottom: 1px solid #999; padding-bottom: 4px; margin: 26px 0 10px; page-break-after: avoid; }
   .scene { page-break-inside: avoid; margin: 0 0 26px; }
   .scene header { display: flex; align-items: baseline; gap: 10px; border-bottom: 2px solid #1c1a17; padding-bottom: 4px; margin-bottom: 8px; }
@@ -9150,8 +9440,14 @@
   .pics img { display: block; border: 1px solid #ccc; }
   .pics .front { width: 58%; height: auto; }
   .pics .plan { width: 40%; height: auto; }
+  body.two-up .pics .front { width: 44%; }
+  body.two-up .pics .plan { width: 30%; }
   .meta { margin-top: 6px; }
-  .note { font-size: 13px; margin: 0 0 4px; white-space: pre-wrap; }
+  /* シーンの説明は絵の前に置く。何が起きる場面かを読んでから図を見る順番になる */
+  .desc { font-size: 13px; line-height: 1.6; margin: 0 0 8px; white-space: pre-wrap; }
+  .desc-label { display: inline-block; font-size: 10px; letter-spacing: 0.08em; color: #666;
+                border: 1px solid #bbb; border-radius: 2px; padding: 1px 5px; margin-right: 8px;
+                vertical-align: 1px; white-space: nowrap; }
   .cast { font-size: 12px; color: #555; margin: 0; }
   table.bamiri, table.cues { border-collapse: collapse; font-size: 11px; margin-top: 6px; }
   table.bamiri th, table.bamiri td, table.cues th, table.cues td {
@@ -9159,14 +9455,39 @@
   table.bamiri th, table.cues th { background: #eee; }
   @media print {
     body { margin: 10mm; }
+    .print-toggle { display: none; }
     .scene { page-break-after: always; margin-bottom: 0; }
     .scene:last-of-type { page-break-after: auto; }
+    body.two-up .scene { page-break-after: auto; }
+    body.two-up .scene.pb { page-break-after: always; }
   }
 </style></head><body>
 <h1>${title}</h1>
 <p class="stamp">${escapeHtml(state.project.versionLabel || "v1")} · ${new Date().toLocaleDateString(en ? "en-US" : "ja-JP")} · ${en ? "Stage Sketch print sheet" : "舞台スケッチ 印刷用"}</p>
+<div class="print-toggle">
+  <label><input type="radio" name="print-layout" value="1" checked> ${en ? "1 scene / page" : "1シーン/ページ"}</label>
+  <label><input type="radio" name="print-layout" value="2"> ${en ? "2 scenes / page" : "2シーン/ページ"}</label>
+</div>
 ${parts.join("\n")}
 ${cuesheetHtml}
+<script>
+(function () {
+  var radios = document.querySelectorAll('.print-toggle input[type="radio"]');
+  function applyPrintLayout() {
+    var selected = document.querySelector('.print-toggle input[type="radio"]:checked');
+    var twoUp = selected && selected.value === '2';
+    document.body.classList.toggle('two-up', twoUp);
+    var scenes = document.querySelectorAll('section.scene');
+    scenes.forEach(function (scene, index) {
+      scene.classList.toggle('pb', twoUp && (index + 1) % 2 === 0);
+    });
+  }
+  radios.forEach(function (radio) {
+    radio.addEventListener('change', applyPrintLayout);
+  });
+  applyPrintLayout();
+})();
+</script>
 </body></html>`;
     const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
     const win = window.open(url, "_blank");
@@ -10426,6 +10747,11 @@ ${cuesheetHtml}
     const gid = piece.type === "light" ? lightGroupOf(piece) : null;
     if (gid) { toggleLightGroup(gid); return; }
     checkpoint();
+    /* 登録のあるもの（名簿の演者・舞台セット）は、消しても登録は残るので
+       一覧では「舞台裏」になるだけ。トグルで下げたときと同じ扱いにして、
+       立ち位置を控える。ここで控えないと、消してから出し直したときだけ
+       既定位置へ飛ぶという、同じ結果に二つの筋道ができてしまう。 */
+    stashPiece(sc(), piece.setId || piece.castId, piece);
     sc().pieces = sc().pieces.filter((candidate) => candidate.id !== piece.id);
     selectedId = null;
     updateInspector();
