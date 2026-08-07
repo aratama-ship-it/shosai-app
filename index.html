@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=141">
+<link rel="stylesheet" href="style.css?v=145">
 </head>
 <body>
 
@@ -13,6 +13,7 @@
 <header class="topnav">
   <nav aria-label="主要画面">
     <a href="#db" data-nav="db">資料棚</a>
+    <a href="#apparatus" data-nav="apparatus">舞台技術</a>
     <a href="#companies" data-nav="companies">制作会社</a>
     <a href="#roster" data-nav="roster">名簿</a>
     <a href="#desk" data-nav="desk">制作机</a>
@@ -37,6 +38,16 @@
           </div>
         </header>
         <div class="db-search">
+          <section class="db-shelf-switcher" aria-labelledby="db-shelf-switcher-title">
+            <p class="db-shelf-switcher-kicker">資料の入口</p>
+            <h2 id="db-shelf-switcher-title">どの演出の条件から読むか</h2>
+            <div class="db-shelf-tabs" role="radiogroup" aria-label="資料棚の入口を選ぶ">
+              <button type="button" class="db-shelf-tab" data-db-shelf="all" role="radio" aria-checked="true">全体</button>
+              <button type="button" class="db-shelf-tab" data-db-shelf="screen" role="radio" aria-checked="false" tabindex="-1">映像演出</button>
+              <button type="button" class="db-shelf-tab" data-db-shelf="staging" role="radio" aria-checked="false" tabindex="-1">ステージング</button>
+            </div>
+            <p id="db-shelf-description" class="db-shelf-description" aria-live="polite"></p>
+          </section>
           <section class="db-lenses" aria-labelledby="db-lenses-title">
             <div class="db-lenses-head">
               <div>
@@ -78,6 +89,38 @@
         <p class="evidence-empty">一覧から作品を選ぶと、正本データと、関連作品・関連表現がここに出ます。</p>
       </section>
     </div>
+  </main>
+
+
+  <!-- 舞台技術: 装置の仕組みから場面を考える調査カード -->
+  <main id="view-apparatus" class="view" hidden>
+    <section class="apparatus-library" aria-labelledby="apparatus-title">
+      <header class="apparatus-head">
+        <p class="apparatus-kicker">STAGE APPARATUS CABINET</p>
+        <h1 id="apparatus-title">舞台装置から、場面を考える</h1>
+        <p>装置のカタログではなく、何を見せられるか、どこまで小さく試せるか、何が危険かを一緒に読む棚です。</p>
+        <p class="apparatus-boundary">予算は公開価格と実例から置いた企画初期の桁感です。業者見積や安全保証ではありません。</p>
+      </header>
+
+      <div class="apparatus-layout">
+        <aside class="apparatus-index" aria-label="舞台技術カード一覧">
+          <div class="apparatus-controls">
+            <label for="apparatus-search">装置・できること・条件を探す</label>
+            <input id="apparatus-search" type="search" placeholder="例: 浮遊、奈落、雨、挟圧、映像" autocomplete="off">
+            <div class="apparatus-selects">
+              <select id="apparatus-family" aria-label="装置の系統で絞り込む"></select>
+              <select id="apparatus-scale" aria-label="本格実装の予算規模で絞り込む"></select>
+            </div>
+            <p id="apparatus-count" class="apparatus-count"></p>
+          </div>
+          <div id="apparatus-list" class="apparatus-list"></div>
+        </aside>
+
+        <section id="apparatus-detail" class="apparatus-detail" aria-label="舞台技術カードの詳細" aria-live="polite">
+          <p class="evidence-empty">左の棚から装置を選ぶと、内部機構、縮小試作、予算、安全条件、実例が開きます。</p>
+        </section>
+      </div>
+    </section>
   </main>
 
 
@@ -1176,11 +1219,13 @@
 <script src="db.js?v=79"></script>
 <script src="data.js?v=16"></script>
 <script src="book-seeds.js?v=2"></script>
-<script src="app.js?v=40"></script>
+<script src="shelf-classification.js?v=1"></script>
+  <script src="stage-apparatus-data.js?v=10"></script>
+<script src="app.js?v=47"></script>
 <script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=37"></script>
+<script src="stage-i18n.js?v=38"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
-<script src="stage-sketch.js?v=186"></script>
+<script src="stage-sketch.js?v=193"></script>
 <script src="roster.js?v=2"></script>
 </body>
 </html>
