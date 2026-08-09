@@ -717,6 +717,27 @@ export const GUIDE = {
     v: "0=舞台奥、1=舞台前",
     warning: "上手・下手は話者で混乱しやすいため、MCP入力では画像の左/右とu値を優先する。",
   },
+  planEditExample: {
+    projectId: "sample-show",
+    expectedRevision: 1,
+    request: "第1場面に演者を1人追加する",
+    operations: [{
+      op: "add_placement",
+      sceneId: "scene-1",
+      placement: {
+        assetType: "performer",
+        assetName: "演者1",
+        language: "ja",
+        u: 0.5,
+        v: 0.6,
+        size: 100,
+        color: "#a84b26",
+        facing: 0,
+        pose: "stand",
+        heightCm: 165,
+      },
+    }],
+  },
   defaults: {
     policy: "指示にない値は手動追加と同じ既定値で埋めて配置する。情報不足だけでは質問しない。既存資産が同名で複数あり、取り違えると既存配置を壊す場合だけ質問する。",
     naming: {

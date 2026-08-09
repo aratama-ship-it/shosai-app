@@ -203,6 +203,14 @@ test("不足値は既定値で埋め、既存参照の複数候補だけ質問�
   assert.match(specSource, /未指定値は既定値で埋める（本人決定: 2026-08-09）/);
 });
 
+test("plan_editの入力検証エラーは最大3回直し、成功後はapplyせず終了する", () => {
+  assert.match(stageSource, /stage_sketch_plan_edit を呼んでください。/);
+  assert.match(stageSource, /入力検証エラーで失敗した場合は、エラー文に従って入力を直し、最大3回まで再試行してください。/);
+  assert.match(stageSource, /成功した計画が返った時点で必ず終了してください。/);
+  assert.match(stageSource, /stage_sketch_apply_edit_plan は決して呼ばないでください。/);
+  assert.doesNotMatch(stageSource, /stage_sketch_plan_editを1回呼んでください。/);
+});
+
 test("runAgentが例外を投げてもAI起動エラーとして表示する", async () => {
   const { model } = loadPanelModel(bridgeStub());
   const display = errorDisplay(model);

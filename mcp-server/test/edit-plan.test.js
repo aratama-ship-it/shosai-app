@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { ProjectStore } from "../src/project-store.js";
 import { planEditSchema } from "../src/schemas.js";
+import { GUIDE } from "../src/stage-model.js";
 
 async function temporaryStore() {
   const directory = await mkdtemp(path.join(os.tmpdir(), "stage-sketch-edit-plan-test-"));
@@ -572,6 +573,17 @@ test("questions accepts at most ten strings of 800 characters", () => {
   assert.ok(parse(["あ".repeat(800)]));
   assert.equal(parse(["あ".repeat(801)]), false);
   assert.equal(parse(Array.from({ length: 11 }, (_, index) => `質問${index}`)), false);
+});
+
+test("GUIDEのadd_placement例は現在のplan_editスキーマで有効", () => {
+  const parsed = {};
+  for (const [key, schema] of Object.entries(planEditSchema)) {
+    const result = schema.safeParse(GUIDE.planEditExample[key]);
+    assert.equal(result.success, true, `${key}がplan_editスキーマに一致する`);
+    parsed[key] = result.data;
+  }
+  assert.equal(parsed.operations[0].op, "add_placement");
+  assert.equal(parsed.operations[0].sceneId, "scene-1");
 });
 
 test("does not change the canonical project without confirmed true", async () => {

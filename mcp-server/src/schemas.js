@@ -225,7 +225,34 @@ const addSceneSchema = z.object({
   scene: sceneSchema,
 });
 
-export const editOperationSchema = z.discriminatedUnion("op", [
+function hasOwn(value, key) {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+
+function normalizeEditOperationInput(input, context) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return input;
+  const operation = { ...input };
+  const hasOp = hasOwn(operation, "op");
+  const hasType = hasOwn(operation, "type");
+
+  if (hasOp && hasType && operation.op !== operation.type) {
+    context.addIssue({
+      code: "custom",
+      message:
+        `operationsのopとtypeが食い違っています（op=${String(operation.op)}, ` +
+        `type=${String(operation.type)}）。操作の識別子はopにする必要があります。`,
+    });
+  } else if (!hasOp && hasType) {
+    operation.op = operation.type;
+  }
+
+  if (!hasOwn(operation, "sceneId") && hasOwn(operation, "scene_id")) {
+    operation.sceneId = operation.scene_id;
+  }
+  return operation;
+}
+
+const editOperationDiscriminatedUnion = z.discriminatedUnion("op", [
   replaceSceneAssetSchema,
   replaceAcrossScenesSchema,
   addPlacementSchema,
@@ -234,6 +261,11 @@ export const editOperationSchema = z.discriminatedUnion("op", [
   updateSceneFieldsSchema,
   addSceneSchema,
 ]);
+
+export const editOperationSchema = z.preprocess(
+  normalizeEditOperationInput,
+  editOperationDiscriminatedUnion,
+);
 
 export const planEditSchema = {
   ...mutationBaseSchema,

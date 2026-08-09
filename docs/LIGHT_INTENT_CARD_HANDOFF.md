@@ -123,6 +123,21 @@ http://127.0.0.1:8941/stage.html?lang=ja
 
 検証（2026-08-09、Claudeが自分で実行）: ブラウザ187/187、MCP 33/33、構文OK、実ブラウザ確認済み。
 
+### ★HTMLの正本は index.html。stage.html を直接編集しない
+
+`build_stage.py` は **index.html の `<main id="view-stage">` と窓・ツアー・プレゼン帯を抜き出して
+stage.html を生成する**。stage.html は生成物なので、直接編集しても次の生成で消える。
+
+```bash
+python3 build_stage.py          # 作り直す
+python3 build_stage.py --check  # 揃っているか見る
+```
+
+Phase 2 の初回実装ではここを取り違え、カードUI 約150行を stage.html にだけ入れてしまい、
+`--check` が「stage.html が古いです」と警告する状態になった（2026-08-09に是正済み）。
+**HTMLを触ったら必ず index.html 側を直し、`build_stage.py` を走らせて `--check` を通すこと。**
+JS と CSS は両ページ共有なので、この手順は要らない。
+
 ### 実機で見つけて直したこと（2026-08-09）
 
 いずれもテストでは出ず、実ブラウザで見て初めて分かった。

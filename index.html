@@ -546,7 +546,153 @@
                         maxlength="200" placeholder="この場面で何が起きるか"></textarea>
             </div>
           </div>
-          <div class="stage-canvas-stack" id="stage-canvas-stack">
+          <div class="stage-work-area" id="stage-work-area">
+            <details class="stage-light-intent" id="stage-light-intent">
+              <summary class="stage-light-intent-summary">
+                <span class="stage-light-intent-kicker">光の意図</span>
+                <span class="stage-light-intent-summary-text" id="stage-light-intent-summary-text">光で何を起こしたい？</span>
+              </summary>
+              <div class="stage-light-intent-body">
+                <div class="stage-light-intent-core">
+                  <label>
+                    <span>何を起こしたい？</span>
+                    <textarea id="stage-light-objective" rows="2" maxlength="160"
+                              placeholder="光によって、この場面に起こしたい変化"></textarea>
+                  </label>
+                  <label>
+                    <span>観客はどこを見る？</span>
+                    <textarea id="stage-light-audience-focus" rows="2" maxlength="160"
+                              placeholder="見てほしい対象と、まだ見せない対象"></textarea>
+                  </label>
+                </div>
+
+                <fieldset class="stage-light-layers">
+                  <legend>人・背景・空間をどう見せる？</legend>
+                  <label class="stage-light-layer-row">
+                    <span>演者</span>
+                    <select id="stage-light-layer-performer-intent" aria-label="演者の見せ方">
+                      <option value="unspecified">指定なし</option>
+                      <option value="reveal">見せる</option>
+                      <option value="soften">和らげる</option>
+                      <option value="conceal">見せない</option>
+                      <option value="silhouette">輪郭にする</option>
+                      <option value="separate">分離する</option>
+                      <option value="transform">変化させる</option>
+                    </select>
+                    <input id="stage-light-layer-performer-note" maxlength="160"
+                           aria-label="演者の見せ方の補足" placeholder="例: 顔は出さず、身体の輪郭だけ">
+                  </label>
+                  <label class="stage-light-layer-row">
+                    <span>空間</span>
+                    <select id="stage-light-layer-space-intent" aria-label="空間の見せ方">
+                      <option value="unspecified">指定なし</option>
+                      <option value="reveal">見せる</option>
+                      <option value="soften">和らげる</option>
+                      <option value="conceal">見せない</option>
+                      <option value="silhouette">輪郭にする</option>
+                      <option value="separate">分離する</option>
+                      <option value="transform">変化させる</option>
+                    </select>
+                    <input id="stage-light-layer-space-note" maxlength="160"
+                           aria-label="空間の見せ方の補足" placeholder="例: 足元から奥へ細い通路だけを開く">
+                  </label>
+                  <label class="stage-light-layer-row">
+                    <span>背景</span>
+                    <select id="stage-light-layer-background-intent" aria-label="背景の見せ方">
+                      <option value="unspecified">指定なし</option>
+                      <option value="reveal">見せる</option>
+                      <option value="soften">和らげる</option>
+                      <option value="conceal">見せない</option>
+                      <option value="silhouette">輪郭にする</option>
+                      <option value="separate">分離する</option>
+                      <option value="transform">変化させる</option>
+                    </select>
+                    <input id="stage-light-layer-background-note" maxlength="160"
+                           aria-label="背景の見せ方の補足" placeholder="例: 具体物が判別できない程度に沈める">
+                  </label>
+                </fieldset>
+
+                <fieldset class="stage-light-transition">
+                  <legend>いつ、どう変わる？</legend>
+                  <label>
+                    <span>合図</span>
+                    <select id="stage-light-trigger-type">
+                      <option value="unknown">指定なし</option>
+                      <option value="scene-start">シーン開始</option>
+                      <option value="action">動作</option>
+                      <option value="line">台詞</option>
+                      <option value="music">音・音楽</option>
+                      <option value="time">時間</option>
+                      <option value="manual">手動のGO</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>変化</span>
+                    <select id="stage-light-change">
+                      <option value="unknown">指定なし</option>
+                      <option value="hold">そのまま保つ</option>
+                      <option value="fade-in">明るくなる</option>
+                      <option value="fade-out">暗くなる</option>
+                      <option value="snap">瞬時に切り替わる</option>
+                      <option value="crossfade">入れ替わる</option>
+                      <option value="blackout">暗転する</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>体感速度</span>
+                    <select id="stage-light-tempo">
+                      <option value="unspecified">指定なし</option>
+                      <option value="instant">瞬間</option>
+                      <option value="quick">素早く</option>
+                      <option value="breathe">一呼吸で</option>
+                      <option value="slow">ゆっくり</option>
+                      <option value="hold">変化させない</option>
+                    </select>
+                  </label>
+                  <label class="stage-light-transition-note">
+                    <span>合図の具体</span>
+                    <input id="stage-light-trigger-note" maxlength="160"
+                           placeholder="例: 演者が中央で完全に止まった瞬間">
+                  </label>
+                </fieldset>
+
+                <details class="stage-light-optional">
+                  <summary>雰囲気・参照・実装候補</summary>
+                  <label>
+                    <span>雰囲気・質感</span>
+                    <input id="stage-light-mood" maxlength="80" placeholder="例: 時間が止まり、身体の境界だけが浮く">
+                  </label>
+                  <label>
+                    <span>参照メモ</span>
+                    <textarea id="stage-light-reference-note" rows="2" maxlength="200"
+                              placeholder="写真・本・過去作品の、どこを参照するか"></textarea>
+                  </label>
+                  <label>
+                    <span>実装候補</span>
+                    <textarea id="stage-light-implementation-note" rows="2" maxlength="300"
+                              placeholder="灯体・方向・色などの候補。採用前に照明担当者へ確認"></textarea>
+                  </label>
+                </details>
+
+                <div class="stage-light-intent-foot">
+                  <p>演出意図のスケッチです。実施方法と安全は、会場・照明担当者・専門家へ確認してください。</p>
+                  <button type="button" class="btn-quiet" id="stage-light-intent-clear">光の意図を消す</button>
+                </div>
+              </div>
+            </details>
+            <div class="stage-light-intent-compare" id="stage-light-intent-compare" hidden>
+              <div class="stage-light-intent-compare-row">
+                <span class="stage-light-intent-compare-kicker">光の意図</span>
+                <span id="stage-light-intent-compare-intent"></span>
+              </div>
+              <div class="stage-light-intent-compare-row">
+                <span class="stage-light-intent-compare-kicker">いまの照明</span>
+                <span id="stage-light-intent-compare-lights"></span>
+                <button type="button" class="btn-quiet" id="stage-light-intent-presets">配置案を試す…</button>
+              </div>
+              <p class="stage-light-intent-compare-note">照らし合わせは人が行います。</p>
+            </div>
+            <div class="stage-canvas-stack" id="stage-canvas-stack">
             <div class="stage-board-frame" id="stage-front-cell">
               <div class="stage-canvas-bar">
                 <p class="stage-canvas-caption" id="stage-front-caption">正面</p>
@@ -563,6 +709,10 @@
                   <label class="stage-canvas-toggle" title="正面の絵の照明を点けたり消したりする">
                     <input type="checkbox" id="stage-front-lights" checked>
                     <span>照明</span>
+                  </label>
+                  <label class="stage-canvas-toggle" title="光の意図を、図の上に作図の印として重ねる">
+                    <input type="checkbox" id="stage-front-light-intent">
+                    <span>光の意図</span>
                   </label>
                   <label class="stage-canvas-toggle" id="stage-seatmap-toggle">
                     <input type="checkbox" id="stage-show-seatmap" checked>
@@ -638,6 +788,7 @@
               </div>
               </div>
             </div>
+          </div>
           </div>
           <p class="stage-canvas-help" hidden>上下で奥行き、左右で立ち位置を決めます。選択中は矢印キーでも動かせます。</p>
         </section>
@@ -1014,6 +1165,7 @@
     <button type="button" class="stage-modal-close" id="stage-light-preset-close" aria-label="閉じる">✕</button>
   </header>
   <div class="stage-modal-body">
+    <p class="stage-light-preset-intent-note" id="stage-light-preset-intent-note" hidden></p>
     <div id="stage-light-preset-tiles"></div>
   </div>
 </div>
@@ -1460,7 +1612,7 @@
 <script src="stage-i18n.js?v=45"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=1"></script>
-<script src="stage-sketch.js?v=227"></script>
+<script src="stage-sketch.js?v=228"></script>
 <script src="stage-venue-editor.js?v=4"></script>
 <script src="roster.js?v=3"></script>
 </body>

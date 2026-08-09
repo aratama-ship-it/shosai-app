@@ -12603,12 +12603,14 @@ ${cuesheetHtml}
       `expectedRevision: ${revision}`,
       `本人の指示（この文字列をrequestへそのまま入れる）: ${JSON.stringify(request)}`,
       "stage_sketch MCPだけを使い、必要なproject/sceneを読んで指示をoperationsへ構造化し、",
-      "stage_sketch_plan_editを1回呼んでください。",
+      "stage_sketch_plan_edit を呼んでください。",
+      "入力検証エラーで失敗した場合は、エラー文に従って入力を直し、最大3回まで再試行してください。",
       "指示に含まれない値は、舞台スケッチの既定値で埋めて必ず operations を作ってください。",
       "名前・位置・姿勢・向き・大きさ・色が未指定でも質問せず、既定値で配置してください。",
       "questions で止まるのは、既存の演者・セットのどれを指すか複数候補があり、取り違えると既存の配置を壊す場合だけです。",
       `自動名の言語は現在の表示に合わせ、add_placementのplacement.languageを${isEn() ? "en" : "ja"}にしてください。`,
-      "plan_editの結果が返った時点で必ず終了し、stage_sketch_apply_edit_planは呼ばないでください。",
+      "成功した計画が返った時点で必ず終了してください。",
+      "stage_sketch_apply_edit_plan は決して呼ばないでください。",
       "ソースコードや作業フォルダ内の他ファイルは編集しないでください。",
     ].join("\n");
   }

@@ -47,6 +47,9 @@ test("an MCP client can list and call the shared stdio tools", async () => {
     assert.match(guide.content[0].text, /"defaults"/);
     assert.match(guide.content[0].text, /情報不足だけでは質問しない/);
     assert.match(guide.content[0].text, /nextPieceColor\(cast.length\)/);
+    assert.match(guide.content[0].text, /"operations": \[/);
+    assert.match(guide.content[0].text, /"op": "add_placement"/);
+    assert.match(guide.content[0].text, /"sceneId": "scene-1"/);
 
     const created = await client.callTool({
       name: "stage_sketch_create_project_draft",
@@ -91,6 +94,44 @@ test("an MCP client can list and call the shared stdio tools", async () => {
     assert.equal(planned.isError, undefined);
     const plan = JSON.parse(planned.content[0].text);
     assert.equal(plan.kind, "stage-sketch-edit-plan");
+
+    const aliasPlanned = await client.callTool({
+      name: "stage_sketch_plan_edit",
+      arguments: {
+        projectId: "wire-test",
+        expectedRevision: 1,
+        request: "typeとscene_idでも場面メモを更新できる",
+        operations: [{
+          type: "update_scene_fields",
+          scene_id: "scene-1",
+          note: "別名入力の更新案",
+        }],
+      },
+    });
+    assert.equal(aliasPlanned.isError, undefined);
+    const aliasPlan = JSON.parse(aliasPlanned.content[0].text);
+    assert.equal(aliasPlan.operations[0].op, "update_scene_fields");
+    assert.equal(aliasPlan.operations[0].sceneId, "scene-1");
+    assert.equal("type" in aliasPlan.operations[0], false);
+    assert.equal("scene_id" in aliasPlan.operations[0], false);
+
+    const conflictingAlias = await client.callTool({
+      name: "stage_sketch_plan_edit",
+      arguments: {
+        projectId: "wire-test",
+        expectedRevision: 1,
+        request: "食い違う識別子は拒否する",
+        operations: [{
+          op: "update_scene_fields",
+          type: "add_placement",
+          sceneId: "scene-1",
+          title: "適用されない更新案",
+        }],
+      },
+    });
+    assert.equal(conflictingAlias.isError, true);
+    assert.match(conflictingAlias.content[0].text, /opとtypeが食い違っています/);
+    assert.match(conflictingAlias.content[0].text, /操作の識別子はopにする必要があります/);
 
     const unconfirmed = await client.callTool({
       name: "stage_sketch_apply_edit_plan",
