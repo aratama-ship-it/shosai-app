@@ -5981,12 +5981,16 @@ canvas[data-tool="note"] { cursor: copy; }
    ★カードを開くと図が画面外へ押し出されて「書きながら図を見る」ができなかったため。 */
 .stage-work-area { display: contents; }
 
-@media (min-width: 1100px) {
+/* 寄せる下限は900px。当初は1100pxにしていたが、iPad横（1024px）で実測したところ
+   縦積みでは正面図が画面の外（上端y=908／画面900px）へ出て、
+   「書きながら図を見る」というこの機能の要が効かなかった。
+   1024pxでカード340px・正面図395pxが見え、入力欄も292px残る。 */
+@media (min-width: 900px) {
   .stage-work-area.is-docked {
     display: grid;
-    grid-template-columns: 380px minmax(0, 1fr);
+    grid-template-columns: 340px minmax(0, 1fr);
     grid-template-rows: auto auto;
-    gap: 18px;
+    gap: 14px;
     align-items: start;
   }
   .stage-work-area.is-docked > .stage-light-intent {
@@ -6010,6 +6014,16 @@ canvas[data-tool="note"] { cursor: copy; }
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
+  }
+}
+
+/* 画面に余裕があるときは、カードを少し広げて書きやすくする。
+   狭い側（900〜1099px）で340pxに抑えているのは図の取り分を守るためで、
+   広い画面までその窮屈さを持ち込む理由はない。 */
+@media (min-width: 1100px) {
+  .stage-work-area.is-docked {
+    grid-template-columns: 380px minmax(0, 1fr);
+    gap: 18px;
   }
 }
 

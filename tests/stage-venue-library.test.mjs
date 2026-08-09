@@ -536,7 +536,7 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
     assert.ok(stageHtml.includes(reference), `${reference} がstage.htmlにある`);
     assert.ok(swSource.includes(`./${reference}`), `${reference} がstage-sw.jsにある`);
   }
-  for (const page of [indexSource, stageHtml]) assert.ok(page.includes("style.css?v=165"));
-  assert.ok(swSource.includes("./style.css?v=165"));
+  for (const page of [indexSource, stageHtml]) assert.ok(page.includes("style.css?v=166"));
+  assert.ok(swSource.includes("./style.css?v=166"));
   assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v53";/);
 });
