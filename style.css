@@ -9095,6 +9095,12 @@ html.stage-phone-viewer .stage-scenes,
 html.stage-phone-viewer .stage-center-bar,
 html.stage-phone-viewer .stage-canvas-help,
 html.stage-phone-viewer .stage-boundary-note,
+/* 光の意図は書く側の道具。スマホは「読み込んで見る」ための画面なので、
+   シーン一覧や道具箱と同じように隠す。
+   ★出したままだと、要約の行がシーン送り（前へ／次へ）の上に重なって、
+     場面を送れなくなる（作り手用の帯を前提に組んであるため）。 */
+html.stage-phone-viewer .stage-light-intent,
+html.stage-phone-viewer .stage-light-intent-compare,
 html.stage-phone-viewer .stage-zoom-fab {
   display: none !important;
 }

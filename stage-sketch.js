@@ -6542,10 +6542,18 @@
     }
   }
 
-  const lightIntentOverlayOn = () => (
-    state.showLightIntent
-    || Boolean(els.lightIntent && els.lightIntent.open && !els.lightIntent.hidden)
-  );
+  /* 重ねを出すか。カードを開いている間は自動で出し、加えてトグルで
+     カードを閉じたまま出し続けられる（照明担当者へ見せるため）。
+     ★スマホの見る専用画面では出さない。あちらは書く側の道具を全部隠すので、
+       重ねだけ残ると切る手段が無くなる（作図注記は書く側の記法）。
+     ★カードは display:none でも hidden 属性は false のままなので、
+       実際に画面に出ているか（矩形を持つか）で見る。 */
+  const lightIntentOverlayOn = () => {
+    if (document.documentElement.classList.contains("stage-phone-viewer")) return false;
+    if (state.showLightIntent) return true;
+    const card = els.lightIntent;
+    return Boolean(card && card.open && !card.hidden && card.getClientRects().length);
+  };
 
   /* 重ね用の床の形。drawFrontVenue の floorPath と同じ形をなぞる。
      既存側を書き換えると描画順に影響するので、ここでは別に持つ。 */
