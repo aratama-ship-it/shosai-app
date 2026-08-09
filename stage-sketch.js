@@ -393,6 +393,41 @@
     element.textContent = stageAIErrorDetail(message);
     element.hidden = false;
   };
+  const normalizeStageAIPlacement = (raw) => {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    const u = Number(raw.u);
+    const v = Number(raw.v);
+    if (!Number.isFinite(u) || !Number.isFinite(v)) return null;
+    const size = Number(raw.size);
+    const facing = Number(raw.facing);
+    return {
+      u,
+      v,
+      size: Number.isFinite(size) ? size : 100,
+      facing: Number.isFinite(facing) ? facing : 0,
+      color: stageAIText(raw.color),
+    };
+  };
+  const normalizeStageAIPieceDiff = (raw) => {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    const changes = ["move", "replace", "update", "add", "remove"];
+    const change = changes.includes(raw.change) ? raw.change : "";
+    const assetType = raw.assetType === "performer" || raw.assetType === "set"
+      ? raw.assetType : "";
+    if (!change || !assetType) return null;
+    const from = normalizeStageAIPlacement(raw.from);
+    const to = normalizeStageAIPlacement(raw.to);
+    if ((change === "add" && !to) || (change === "remove" && !from)
+      || (!["add", "remove"].includes(change) && (!from || !to))) return null;
+    return {
+      change,
+      assetType,
+      label: stageAIText(raw.label),
+      kind: assetType === "set" ? stageAIText(raw.kind) : "",
+      from,
+      to,
+    };
+  };
   const normalizeStageAIPlan = (raw) => {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)
       || raw.kind !== "stage-sketch-edit-plan" || Number(raw.version) !== 1) return null;
@@ -409,10 +444,15 @@
     const diff = Array.isArray(raw.diff) ? raw.diff.slice(0, 40).map((item, index) => {
       if (!item || typeof item !== "object" || Array.isArray(item)) return null;
       const lines = textList(item.lines, 20);
-      if (!lines.length) return null;
+      const pieces = Array.isArray(item.pieces)
+        ? item.pieces.slice(0, 120).map(normalizeStageAIPieceDiff).filter(Boolean) : [];
+      const sceneId = stageAIText(item.sceneId);
+      if (!sceneId || (!lines.length && !pieces.length)) return null;
       return {
+        sceneId,
         sceneTitle: stageAIText(item.sceneTitle) || `場面 ${index + 1}`,
         lines,
+        pieces,
       };
     }).filter(Boolean) : [];
     return {
@@ -447,6 +487,11 @@
     },
     canAdopt(plan) {
       return Boolean(plan && plan.status === "proposed");
+    },
+    overlayDiff(plan, projectId, sceneId) {
+      if (!plan || plan.projectId !== projectId || !sceneId || !Array.isArray(plan.diff)) return null;
+      const diff = plan.diff.find((item) => item.sceneId === sceneId);
+      return diff && Array.isArray(diff.pieces) && diff.pieces.length ? diff : null;
     },
     formatAgentInfo(info) {
       const model = stageAIText(info && info.model);
@@ -4039,8 +4084,7 @@
     return clamp(finite(dims && dims.lift, 0), 0, 10);
   }
 
-  function refreshBases(size) {
-    const pieces = sc().pieces;
+  function refreshBases(size, pieces = sc().pieces) {
     pieces.forEach((piece, i) => {
       if (piece.type === "light") { piece.base = 0; piece.supportId = null; return; }
       /* ポールは常に床から立てる。人の近くへ置くと、人の描画範囲（旗の姿勢は
@@ -6925,6 +6969,179 @@
     drawLightIntentFocus(target, plan, centroids, L);
   }
 
+  /* 通常の駒もAI下書きの駒も、必ずこの一本を通して描く。
+     下書き側で座標変換や種類別描画を複製すると、正面と平面でずれる。 */
+  function drawStagePiece(target, piece, L, leanAt) {
+    /* 袖に居るものは正面図に出さない。額縁の外は客席から見えない。
+       アニメーション中は動きの途中の値で判定するので、はけていく駒は
+       枠を出た瞬間に消える（＝袖へ入って見えなくなる）。 */
+    if (!L.plan && !onStageArea(pieceU(piece), pieceV(piece))) return;
+    const pos = placePiece(piece, L);
+    const scale = pieceScale(piece, pos, L);
+    const lean = leanAt(pos);
+    if (lean) {
+      target.save();
+      target.translate(pos.x, pos.y);
+      target.transform(1, 0, lean, 1, 0, 0);   // 足元を軸に、上へ行くほど内側へ
+      target.translate(-pos.x, -pos.y);
+    }
+    if (piece.type === "light") drawLight(target, piece, pos, scale, L);
+    else if (L.plan) drawPlanPiece(target, piece, pos, scale, L);
+    else if (piece.type === "performer") drawPerformer(target, piece, pos, scale, L);
+    else if (SOLID_TYPES[piece.type]) drawSolid(target, piece, pos, scale, L);
+    else if (piece.type === "sphere") drawSphere(target, piece, pos, scale, L);
+    if (lean) target.restore();
+  }
+
+  function stageAskCurrentPiece(pieceDiff, usedIds) {
+    const from = pieceDiff.from;
+    const candidates = sc().pieces.filter((piece) => {
+      if (usedIds.has(piece.id)) return false;
+      const assetType = piece.type === "performer" ? "performer" : "set";
+      if (assetType !== pieceDiff.assetType) return false;
+      if (pieceDiff.change !== "replace" && pieceDiff.kind && piece.type !== pieceDiff.kind) return false;
+      return true;
+    });
+    if (!candidates.length) return null;
+    const label = pieceDiff.change === "replace" ? "" : pieceDiff.label;
+    const score = (piece) => {
+      const labelPenalty = label && pieceLabel(piece) !== label ? 100 : 0;
+      if (!from) return labelPenalty;
+      return labelPenalty
+        + Math.abs(finite(piece.u, 0.5) - from.u) * 10
+        + Math.abs(finite(piece.v, 0.6) - from.v) * 10
+        + Math.abs(finite(piece.size, 100) - from.size) / 100
+        + Math.abs(finite(piece.facing, 0) - from.facing) / 360;
+    };
+    return candidates.slice().sort((a, b) => score(a) - score(b))[0];
+  }
+
+  function stageAskDraftPiece(pieceDiff, current, index) {
+    const placement = pieceDiff.to;
+    if (!placement) return null;
+    const base = current ? { ...current } : {};
+    const changesAsset = pieceDiff.change === "add" || pieceDiff.change === "replace";
+    if (!changesAsset && current) {
+      return normalizePiece({
+        ...base,
+        u: placement.u,
+        v: placement.v,
+        size: placement.size,
+        facing: placement.facing,
+        color: placement.color || base.color,
+      }, index);
+    }
+    let asset = null;
+    if (pieceDiff.assetType === "performer") {
+      asset = (state.project.cast || []).find((item) => item.name === pieceDiff.label) || null;
+      base.type = "performer";
+      base.castId = asset ? asset.id : null;
+      base.setId = null;
+      base.name = asset ? "" : pieceDiff.label;
+      base.dims = null;
+    } else {
+      asset = (state.project.sets || []).find((item) => item.name === pieceDiff.label
+        && (!pieceDiff.kind || item.kind === pieceDiff.kind)) || null;
+      base.type = asset ? asset.kind : (pieceDiff.kind || base.type || "block");
+      base.castId = null;
+      base.setId = asset ? asset.id : null;
+      base.name = asset ? "" : pieceDiff.label;
+      if (asset && asset.dims) base.dims = asset.dims;
+    }
+    return normalizePiece({
+      ...base,
+      id: current ? current.id : `stage-ask-draft-${index}`,
+      u: placement.u,
+      v: placement.v,
+      size: placement.size,
+      facing: placement.facing,
+      color: placement.color || base.color,
+    }, index);
+  }
+
+  function drawStageAskOverlay(target, L, leanAt) {
+    // 下書きは編集画面だけ。画像・印刷へ「まだ保存していません」を焼き付けない。
+    if (target !== ctx && target !== planCtx) return;
+    const diff = STAGE_AI_PANEL_MODEL.overlayDiff(
+      stageAskPlan,
+      state.project.id,
+      state.project.activeSceneId
+    );
+    if (!diff) return;
+
+    const usedIds = new Set();
+    const previewPieces = sc().pieces.map((piece) => ({ ...piece }));
+    const entries = [];
+    diff.pieces.forEach((pieceDiff, index) => {
+      const current = pieceDiff.change === "add" ? null : stageAskCurrentPiece(pieceDiff, usedIds);
+      if (current) usedIds.add(current.id);
+      if (pieceDiff.change === "remove") {
+        if (current) {
+          const at = previewPieces.findIndex((piece) => piece.id === current.id);
+          if (at >= 0) previewPieces.splice(at, 1);
+        }
+        entries.push({ pieceDiff, current, draft: null });
+        return;
+      }
+      const draft = stageAskDraftPiece(pieceDiff, current, index);
+      if (!draft) return;
+      const at = current ? previewPieces.findIndex((piece) => piece.id === current.id) : -1;
+      if (at >= 0) previewPieces.splice(at, 1, draft); else previewPieces.push(draft);
+      entries.push({ pieceDiff, current, draft });
+    });
+    refreshBases(L.size, previewPieces);
+
+    entries.forEach(({ pieceDiff, current, draft }) => {
+      if (pieceDiff.change === "remove") {
+        if (!current) return;
+        const bounds = selectionBounds(current, L);
+        target.save();
+        target.globalAlpha = 0.45;
+        target.strokeStyle = "#9c823f";
+        target.lineWidth = 1;
+        target.beginPath();
+        target.moveTo(bounds.x, bounds.y + bounds.h);
+        target.lineTo(bounds.x + bounds.w, bounds.y);
+        target.stroke();
+        target.restore();
+        return;
+      }
+      if (!draft) return;
+      if (current && ["move", "replace", "update"].includes(pieceDiff.change)) {
+        const from = placePiece(current, L);
+        const to = placePiece(draft, L);
+        target.save();
+        target.strokeStyle = "#9c823f";
+        target.lineWidth = 1;
+        target.setLineDash([3, 3]);
+        target.beginPath();
+        target.moveTo(from.x, from.y);
+        target.lineTo(to.x, to.y);
+        target.stroke();
+        target.restore();
+      }
+      if (L.plan && !state.showFlown && isFlown(draft)) return;
+      target.save();
+      target.globalAlpha = 0.45;
+      drawStagePiece(target, draft, L, leanAt);
+      target.restore();
+    });
+
+    target.save();
+    const S = target.canvas ? target.canvas.width / W : 1;
+    target.setTransform(S, 0, 0, S, 0, 0);
+    const label = tx("下書き — まだ保存していません");
+    target.font = "10px 'Hiragino Kaku Gothic ProN', sans-serif";
+    target.textAlign = "right";
+    target.textBaseline = "top";
+    const width = target.measureText(label).width + 12;
+    target.fillStyle = "rgba(13,12,11,0.68)";
+    target.fillRect(W - width - 10, 10, width, 18);
+    target.fillStyle = "rgba(214,190,132,0.82)";
+    target.fillText(label, W - 16, 13);
+    target.restore();
+  }
+
   function drawStage(target, showSelection, view) {
     const L = layout(view);
     refreshBases(L.size);
@@ -6954,27 +7171,7 @@
     };
 
     // 演者と物。光は先に（奥に）描く
-    const draw = (piece) => {
-      /* 袖に居るものは正面図に出さない。額縁の外は客席から見えない。
-         アニメーション中は動きの途中の値で判定するので、はけていく駒は
-         枠を出た瞬間に消える（＝袖へ入って見えなくなる）。 */
-      if (!L.plan && !onStageArea(pieceU(piece), pieceV(piece))) return;
-      const pos = placePiece(piece, L);
-      const scale = pieceScale(piece, pos, L);
-      const lean = leanAt(pos);
-      if (lean) {
-        target.save();
-        target.translate(pos.x, pos.y);
-        target.transform(1, 0, lean, 1, 0, 0);   // 足元を軸に、上へ行くほど内側へ
-        target.translate(-pos.x, -pos.y);
-      }
-      if (piece.type === "light") drawLight(target, piece, pos, scale, L);
-      else if (L.plan) drawPlanPiece(target, piece, pos, scale, L);
-      else if (piece.type === "performer") drawPerformer(target, piece, pos, scale, L);
-      else if (SOLID_TYPES[piece.type]) drawSolid(target, piece, pos, scale, L);
-      else if (piece.type === "sphere") drawSphere(target, piece, pos, scale, L);
-      if (lean) target.restore();
-    };
+    const draw = (piece) => drawStagePiece(target, piece, L, leanAt);
     // 照明の出し入れは図ごと。消している図では描かず、掴めもしない
     const lightsOn = L.plan ? state.showLightsPlan : state.showLightsFront;
     const lightPieces = lightsOn ? sc().pieces.filter((p) => p.type === "light") : [];
@@ -7150,6 +7347,8 @@
         }
       });
     }
+    // 通常の駒・注記・操作表示を描き終えたあと、保存前のAI下書きを最後に重ねる。
+    drawStageAskOverlay(target, L, leanAt);
     /* プレゼン中のシーンの説明。全画面になるのは canvas だけなので、
        HTMLで置いた欄は出てこない。見せている絵の中へ字で描く。
        ★描くのは全画面の正面図だけ。編集中の画面と、書き出す画像には出さない
@@ -9589,6 +9788,8 @@
   /* ---------- ショーの新規・切り替え ---------- */
 
   function applyLoadedState(next, message) {
+    // 場面IDが別ショーで偶然重なっても、前のショーの下書きを出さない。
+    resetStageAskDraft({ clearInput: true, invalidate: true });
     state = next;
     selectedId = null;
     history.length = 0;
@@ -12278,6 +12479,7 @@ ${cuesheetHtml}
     shelveCurrent();
     reserveImportedShowId(next);
     checkpoint();
+    resetStageAskDraft({ clearInput: true, invalidate: true });
     state = next;
     selectedId = null;
     syncInputs();
@@ -12294,7 +12496,7 @@ ${cuesheetHtml}
   /* ---------- Macアプリ「AI指示」 ----------
      AIは現在のショーをMCP下書きとして読み、計画を作るところで一度止まる。
      「採る」もMCPのconfirmed経路を使い、JS側で差分適用を作り直さない。
-     盤面への下書き重ね描きは今回の範囲外なので、差分はこのパネル内だけに出す。 */
+     plan.diffの座標差分は保存データへ混ぜず、render時だけ盤面へ重ねる。 */
   let stageAskPlan = null;
   let stageAskTimer = null;
   let stageAskStartedAt = 0;
@@ -12313,6 +12515,14 @@ ${cuesheetHtml}
     if (els.askInput) els.askInput.readOnly = mode !== "idle";
   }
 
+  function resetStageAskDraft(options = {}) {
+    if (options.invalidate) stageAskRunToken += 1;
+    stopStageAskTimer();
+    stageAskPlan = null;
+    if (options.clearInput && els.askInput) els.askInput.value = "";
+    setStageAskMode("idle");
+  }
+
   function clearStageAskError() {
     if (!els.askError) return;
     els.askError.textContent = "";
@@ -12320,11 +12530,10 @@ ${cuesheetHtml}
   }
 
   function showStageAskError(output) {
-    stopStageAskTimer();
-    stageAskPlan = null;
-    setStageAskMode("idle");
+    resetStageAskDraft();
     // 接頭辞の後ろは、bridgeが返した改行とエラー文を丸めずに保つ。
     STAGE_AI_PANEL_MODEL.writeError(els.askError, output);
+    render();
   }
 
   function updateStageAskElapsed() {
@@ -12384,6 +12593,7 @@ ${cuesheetHtml}
     }
     if (els.askAdopt) els.askAdopt.hidden = !STAGE_AI_PANEL_MODEL.canAdopt(plan);
     setStageAskMode("draft");
+    render();
   }
 
   function stageAskPlanPrompt(projectId, revision, request) {
@@ -12518,9 +12728,7 @@ ${cuesheetHtml}
       shelveCurrent();
       next.project.id = rid("show");
       next.layout = state.layout;
-      stageAskPlan = null;
-      if (els.askInput) els.askInput.value = "";
-      setStageAskMode("idle");
+      resetStageAskDraft({ clearInput: true });
       applyLoadedState(next, "新しいショーとして保存しました。");
     } catch (error) {
       if (token !== stageAskRunToken) return;
@@ -12532,12 +12740,9 @@ ${cuesheetHtml}
   }
 
   function discardStageAskPlan() {
-    stageAskRunToken += 1;
-    stopStageAskTimer();
-    stageAskPlan = null;
+    resetStageAskDraft({ clearInput: true, invalidate: true });
     clearStageAskError();
-    if (els.askInput) els.askInput.value = "";
-    setStageAskMode("idle");
+    render();
     announce("下書きを捨てました。");
   }
 
@@ -12548,8 +12753,8 @@ ${cuesheetHtml}
     try {
       await STAGE_AI_PANEL_MODEL.stopAgent(bridge);
       if (token !== stageAskRunToken) return;
-      stageAskPlan = null;
-      setStageAskMode("idle");
+      resetStageAskDraft();
+      render();
       announce("AIの実行を止めました。");
     } catch (error) {
       if (token !== stageAskRunToken) return;

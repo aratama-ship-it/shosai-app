@@ -33,6 +33,7 @@
     "選んだもの": "Selection",
     "保存": "Saving",
     "AI指示": "AI Instructions",
+    "下書き — まだ保存していません": "Draft — not saved yet",
     "左の道具列": "Left column",
     "右の道具列": "Right column",
     "舞台面": "Stage",
