@@ -1,0 +1,219 @@
+
+> stage-sketch-mcp@0.1.0 test
+> node --test
+
+TAP version 13
+# Subtest: shows the third-scene source and second-scene replacement in a Japanese diff
+ok 1 - shows the third-scene source and second-scene replacement in a Japanese diff
+  ---
+  duration_ms: 15.882333
+  type: 'test'
+  ...
+# Subtest: returns only the moved performer as a structured move piece
+ok 2 - returns only the moved performer as a structured move piece
+  ---
+  duration_ms: 6.752125
+  type: 'test'
+  ...
+# Subtest: returns an asset-note-only change as a structured update piece
+ok 3 - returns an asset-note-only change as a structured update piece
+  ---
+  duration_ms: 4.923208
+  type: 'test'
+  ...
+# Subtest: returns every normalized placement as add pieces for an added scene
+ok 4 - returns every normalized placement as add pieces for an added scene
+  ---
+  duration_ms: 6.022666
+  type: 'test'
+  ...
+# Subtest: returns only the removed performer as a structured remove piece
+ok 5 - returns only the removed performer as a structured remove piece
+  ---
+  duration_ms: 7.0315
+  type: 'test'
+  ...
+# Subtest: minimal performer instruction becomes a proposed operation with manual-add defaults
+ok 6 - minimal performer instruction becomes a proposed operation with manual-add defaults
+  ---
+  duration_ms: 20.303917
+  type: 'test'
+  ...
+# Subtest: unnamed English sets use manual naming, placement, color, and dimensions
+ok 7 - unnamed English sets use manual naming, placement, color, and dimensions
+  ---
+  duration_ms: 4.185458
+  type: 'test'
+  ...
+# Subtest: light additions use the selected manual light kind defaults
+ok 8 - light additions use the selected manual light kind defaults
+  ---
+  duration_ms: 12.4275
+  type: 'test'
+  ...
+# Subtest: auto names skip names already used across both cast and sets
+ok 9 - auto names skip names already used across both cast and sets
+  ---
+  duration_ms: 4.540959
+  type: 'test'
+  ...
+# Subtest: keeps an ambiguous asset name in needs_clarification with human candidates
+ok 10 - keeps an ambiguous asset name in needs_clarification with human candidates
+  ---
+  duration_ms: 5.841417
+  type: 'test'
+  ...
+# Subtest: rejects a questions-only plan because missing values must use defaults
+ok 11 - rejects a questions-only plan because missing values must use defaults
+  ---
+  duration_ms: 4.404041
+  type: 'test'
+  ...
+# Subtest: rejects a plan when operations and questions are both empty
+ok 12 - rejects a plan when operations and questions are both empty
+  ---
+  duration_ms: 4.461959
+  type: 'test'
+  ...
+# Subtest: combines supplied and MCP-detected questions without duplicates
+ok 13 - combines supplied and MCP-detected questions without duplicates
+  ---
+  duration_ms: 3.824333
+  type: 'test'
+  ...
+# Subtest: questions accepts at most ten strings of 800 characters
+ok 14 - questions accepts at most ten strings of 800 characters
+  ---
+  duration_ms: 1.852167
+  type: 'test'
+  ...
+# Subtest: GUIDEのadd_placement例は現在のplan_editスキーマで有効
+ok 15 - GUIDEのadd_placement例は現在のplan_editスキーマで有効
+  ---
+  duration_ms: 0.125833
+  type: 'test'
+  ...
+# Subtest: does not change the canonical project without confirmed true
+ok 16 - does not change the canonical project without confirmed true
+  ---
+  duration_ms: 4.79075
+  type: 'test'
+  ...
+# Subtest: rejects applying a plan after the canonical revision has changed
+ok 17 - rejects applying a plan after the canonical revision has changed
+  ---
+  duration_ms: 8.791709
+  type: 'test'
+  ...
+# Subtest: archives the prior revision and exports editSummary after applying
+ok 18 - archives the prior revision and exports editSummary after applying
+  ---
+  duration_ms: 10.64175
+  type: 'test'
+  ...
+# Subtest: rejects a missing assetId without saving a plan
+ok 19 - rejects a missing assetId without saving a plan
+  ---
+  duration_ms: 3.388833
+  type: 'test'
+  ...
+# Subtest: warns without claiming safety approval when a high-risk apparatus is involved
+ok 20 - warns without claiming safety approval when a high-risk apparatus is involved
+  ---
+  duration_ms: 10.829208
+  type: 'test'
+  ...
+# Subtest: applies a replacement across scenes as one revision
+ok 21 - applies a replacement across scenes as one revision
+  ---
+  duration_ms: 12.870958
+  type: 'test'
+  ...
+# Subtest: supports the remaining placement, scene-field, and add-scene operations
+ok 22 - supports the remaining placement, scene-field, and add-scene operations
+  ---
+  duration_ms: 10.727167
+  type: 'test'
+  ...
+# Subtest: MCPのversion 3文書でも光の意図を正規化して保持する
+ok 23 - MCPのversion 3文書でも光の意図を正規化して保持する
+  ---
+  duration_ms: 14.179708
+  type: 'test'
+  ...
+# Subtest: 安全状態をapprovedへ偽装できず、空のカードはnullになる
+ok 24 - 安全状態をapprovedへ偽装できず、空のカードはnullになる
+  ---
+  duration_ms: 0.217083
+  type: 'test'
+  ...
+# Subtest: AI編集計画は正本を変えず、光の意図を項目単位の差分で示して承認後だけ適用する
+ok 25 - AI編集計画は正本を変えず、光の意図を項目単位の差分で示して承認後だけ適用する
+  ---
+  duration_ms: 15.487334
+  type: 'test'
+  ...
+# Subtest: an MCP client can list and call the shared stdio tools
+ok 26 - an MCP client can list and call the shared stdio tools
+  ---
+  duration_ms: 129.809834
+  type: 'test'
+  ...
+# Subtest: creates an import-compatible version 3 draft
+ok 27 - creates an import-compatible version 3 draft
+  ---
+  duration_ms: 13.895666
+  type: 'test'
+  ...
+# Subtest: inserts intermediate scenes and rejects stale revisions
+ok 28 - inserts intermediate scenes and rejects stale revisions
+  ---
+  duration_ms: 9.968125
+  type: 'test'
+  ...
+# Subtest: serializes simultaneous Codex and Claude Code edits
+ok 29 - serializes simultaneous Codex and Claude Code edits
+  ---
+  duration_ms: 56.925959
+  type: 'test'
+  ...
+# Subtest: prepares a clean file for the browser and keeps MCP metadata private
+ok 30 - prepares a clean file for the browser and keeps MCP metadata private
+  ---
+  duration_ms: 8.377584
+  type: 'test'
+  ...
+# Subtest: keeps one readable index for canonical projects and browser-import JSON
+ok 31 - keeps one readable index for canonical projects and browser-import JSON
+  ---
+  duration_ms: 7.447542
+  type: 'test'
+  ...
+# Subtest: related demo JSON appears in the index without copying it into MCP projects
+ok 32 - related demo JSON appears in the index without copying it into MCP projects
+  ---
+  duration_ms: 1.956667
+  type: 'test'
+  ...
+# Subtest: preserves beat through MCP storage and export while sections keep beat null
+ok 33 - preserves beat through MCP storage and export while sections keep beat null
+  ---
+  duration_ms: 10.807416
+  type: 'test'
+  ...
+# Subtest: emits a human safety warning for circus and flown apparatus
+ok 34 - emits a human safety warning for circus and flown apparatus
+  ---
+  duration_ms: 3.7395
+  type: 'test'
+  ...
+1..34
+# tests 34
+# suites 0
+# pass 34
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 228.307708
+

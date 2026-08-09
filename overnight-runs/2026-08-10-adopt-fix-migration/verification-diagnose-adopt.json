@@ -1,0 +1,569 @@
+{
+  "adoptStages" : [
+    {
+      "millisecondsSinceInstall" : 1079,
+      "planId" : "plan-diagnose-adopt",
+      "stage" : "adopt-started",
+      "token" : 2
+    },
+    {
+      "count" : 0,
+      "millisecondsSinceInstall" : 1080,
+      "stage" : "exports-listed"
+    },
+    {
+      "count" : 1,
+      "millisecondsSinceInstall" : 1643,
+      "stage" : "exports-listed"
+    },
+    {
+      "millisecondsSinceInstall" : 1644,
+      "name" : "diagnose-adopt-result.json",
+      "planId" : "plan-diagnose-adopt",
+      "stage" : "export-read"
+    },
+    {
+      "millisecondsSinceInstall" : 1644,
+      "name" : "diagnose-adopt-result.json",
+      "planId" : "plan-diagnose-adopt",
+      "stage" : "export-matched"
+    },
+    {
+      "millisecondsSinceInstall" : 1644,
+      "planId" : "plan-diagnose-adopt",
+      "stage" : "export-detected-before-agent-exit"
+    },
+    {
+      "castCount" : 3,
+      "millisecondsSinceInstall" : 1645,
+      "sceneCount" : 1,
+      "stage" : "export-validated"
+    },
+    {
+      "millisecondsSinceInstall" : 1647,
+      "projectId" : "proj-mslzqf48-bmz3",
+      "stage" : "original-shelved"
+    },
+    {
+      "millisecondsSinceInstall" : 1647,
+      "stage" : "draft-reset"
+    },
+    {
+      "castCount" : 3,
+      "millisecondsSinceInstall" : 1655,
+      "projectId" : "show-mslzqgbh-dbmq",
+      "stage" : "adoption-complete"
+    },
+    {
+      "didStop" : true,
+      "millisecondsSinceInstall" : 1705,
+      "stage" : "agent-stop-after-export"
+    },
+    {
+      "millisecondsSinceInstall" : 1790,
+      "ok" : false,
+      "stage" : "apply-agent-finished",
+      "tokenCurrent" : false
+    }
+  ],
+  "agent" : {
+    "arguments" : [
+
+    ],
+    "command" : "\/var\/folders\/sz\/p1txffwx2b5ghzrmff0f5cfr0000gn\/T\/stage-sketch-mac-diagnose-adopt-B2F61E48-E2BB-4412-B925-F011C964F650\/fake-agent.sh",
+    "fake" : true
+  },
+  "bridgeCalls" : [
+    {
+      "millisecondsSinceStart" : 220,
+      "name" : "stageSketchAgentInfo"
+    },
+    {
+      "millisecondsSinceStart" : 677,
+      "name" : "stageSketchWriteProject"
+    },
+    {
+      "millisecondsSinceStart" : 681,
+      "name" : "stageSketchRunAgent"
+    },
+    {
+      "millisecondsSinceStart" : 1184,
+      "name" : "stageSketchLatestPlan"
+    },
+    {
+      "millisecondsSinceStart" : 1208,
+      "name" : "stageSketchRunAgent"
+    },
+    {
+      "millisecondsSinceStart" : 1208,
+      "name" : "stageSketchListEditExports"
+    },
+    {
+      "millisecondsSinceStart" : 1710,
+      "name" : "stageSketchListEditExports"
+    },
+    {
+      "millisecondsSinceStart" : 1772,
+      "name" : "stageSketchReadExport"
+    },
+    {
+      "millisecondsSinceStart" : 1774,
+      "name" : "stageSketchStopAgent"
+    }
+  ],
+  "checks" : {
+    "draftBadgeCleared" : true,
+    "draftBadgeShownBeforeAdopt" : true,
+    "draftPanelCleared" : true,
+    "draftShownBeforeAdopt" : true,
+    "exportUsedBeforeAgentExit" : true,
+    "newPerformerInCastDOM" : true,
+    "newShowSelected" : true,
+    "noCapturedExceptions" : true,
+    "shelfIncreasedByOne" : true,
+    "twoAgentCallsCompleted" : true
+  },
+  "cleanup" : {
+    "agentWasRunningAtCleanup" : false,
+    "stopAgentAttempted" : true
+  },
+  "exceptions" : [
+
+  ],
+  "fakeAgentPath" : "\/var\/folders\/sz\/p1txffwx2b5ghzrmff0f5cfr0000gn\/T\/stage-sketch-mac-diagnose-adopt-B2F61E48-E2BB-4412-B925-F011C964F650\/fake-agent.sh",
+  "fatalErrors" : [
+
+  ],
+  "mcpDataRoot" : {
+    "passedToAgentAs" : "STAGE_SKETCH_MCP_DATA_DIR",
+    "path" : "\/var\/folders\/sz\/p1txffwx2b5ghzrmff0f5cfr0000gn\/T\/stage-sketch-mac-diagnose-adopt-B2F61E48-E2BB-4412-B925-F011C964F650",
+    "temporary" : true
+  },
+  "mode" : "adopt",
+  "ok" : true,
+  "pageURL" : "shosai:\/\/app\/stage.html",
+  "snapshots" : {
+    "after3Seconds" : {
+      "adoptStages" : [
+        {
+          "millisecondsSinceInstall" : 1079,
+          "planId" : "plan-diagnose-adopt",
+          "stage" : "adopt-started",
+          "token" : 2
+        },
+        {
+          "count" : 0,
+          "millisecondsSinceInstall" : 1080,
+          "stage" : "exports-listed"
+        },
+        {
+          "count" : 1,
+          "millisecondsSinceInstall" : 1643,
+          "stage" : "exports-listed"
+        },
+        {
+          "millisecondsSinceInstall" : 1644,
+          "name" : "diagnose-adopt-result.json",
+          "planId" : "plan-diagnose-adopt",
+          "stage" : "export-read"
+        },
+        {
+          "millisecondsSinceInstall" : 1644,
+          "name" : "diagnose-adopt-result.json",
+          "planId" : "plan-diagnose-adopt",
+          "stage" : "export-matched"
+        },
+        {
+          "millisecondsSinceInstall" : 1644,
+          "planId" : "plan-diagnose-adopt",
+          "stage" : "export-detected-before-agent-exit"
+        },
+        {
+          "castCount" : 3,
+          "millisecondsSinceInstall" : 1645,
+          "sceneCount" : 1,
+          "stage" : "export-validated"
+        },
+        {
+          "millisecondsSinceInstall" : 1647,
+          "projectId" : "proj-mslzqf48-bmz3",
+          "stage" : "original-shelved"
+        },
+        {
+          "millisecondsSinceInstall" : 1647,
+          "stage" : "draft-reset"
+        },
+        {
+          "castCount" : 3,
+          "millisecondsSinceInstall" : 1655,
+          "projectId" : "show-mslzqgbh-dbmq",
+          "stage" : "adoption-complete"
+        },
+        {
+          "didStop" : true,
+          "millisecondsSinceInstall" : 1705,
+          "stage" : "agent-stop-after-export"
+        },
+        {
+          "millisecondsSinceInstall" : 1790,
+          "ok" : false,
+          "stage" : "apply-agent-finished",
+          "tokenCurrent" : false
+        }
+      ],
+      "cast" : {
+        "names" : [
+          "演者A",
+          "演者B",
+          "演者1"
+        ],
+        "rowCount" : 3,
+        "textContent" : "演者A舞台上🔓…✕演者B舞台上🔓…✕演者1舞台上🔓…✕"
+      },
+      "draftBadge" : {
+        "visible" : false
+      },
+      "exceptions" : [
+
+      ],
+      "shelf" : {
+        "count" : 4,
+        "currentCastNames" : [
+          "演者A",
+          "演者B",
+          "演者1"
+        ],
+        "currentPieceCastIds" : [
+          "stage-sample-cast-1",
+          "stage-sample-cast-2",
+          "diagnose-cast-1"
+        ],
+        "currentProjectId" : "show-mslzqgbh-dbmq",
+        "currentTitle" : "無題のショー",
+        "ids" : [
+          "sample-eight-circus-v1",
+          "sample-seam-garden-v1",
+          "proj-mslzqf48-bmz3",
+          "show-mslzqgbh-dbmq"
+        ],
+        "names" : [
+          "見本: 八人のサーカス",
+          "見本: 継ぎ目の庭",
+          "無題のショー",
+          "無題のショー"
+        ]
+      },
+      "stageAskAdopt" : {
+        "exists" : true,
+        "hidden" : false,
+        "textContent" : "採る"
+      },
+      "stageAskDraft" : {
+        "exists" : true,
+        "hidden" : true,
+        "textContent" : "\n                演者1を追加。シーン 1演者1を追加。\n                \n                \n                  採る\n                  捨てる\n                \n              "
+      },
+      "stageAskElapsed" : {
+        "exists" : true,
+        "hidden" : false,
+        "textContent" : "考えています 0秒"
+      },
+      "stageAskError" : {
+        "exists" : true,
+        "hidden" : true,
+        "textContent" : ""
+      },
+      "stageAskIdle" : {
+        "exists" : true,
+        "hidden" : false,
+        "textContent" : "\n                頼む\n              "
+      },
+      "stageAskRunning" : {
+        "exists" : true,
+        "hidden" : true,
+        "textContent" : "\n                考えています 0秒\n                止める\n              "
+      }
+    },
+    "after8Seconds" : {
+      "adoptStages" : [
+        {
+          "millisecondsSinceInstall" : 1079,
+          "planId" : "plan-diagnose-adopt",
+          "stage" : "adopt-started",
+          "token" : 2
+        },
+        {
+          "count" : 0,
+          "millisecondsSinceInstall" : 1080,
+          "stage" : "exports-listed"
+        },
+        {
+          "count" : 1,
+          "millisecondsSinceInstall" : 1643,
+          "stage" : "exports-listed"
+        },
+        {
+          "millisecondsSinceInstall" : 1644,
+          "name" : "diagnose-adopt-result.json",
+          "planId" : "plan-diagnose-adopt",
+          "stage" : "export-read"
+        },
+        {
+          "millisecondsSinceInstall" : 1644,
+          "name" : "diagnose-adopt-result.json",
+          "planId" : "plan-diagnose-adopt",
+          "stage" : "export-matched"
+        },
+        {
+          "millisecondsSinceInstall" : 1644,
+          "planId" : "plan-diagnose-adopt",
+          "stage" : "export-detected-before-agent-exit"
+        },
+        {
+          "castCount" : 3,
+          "millisecondsSinceInstall" : 1645,
+          "sceneCount" : 1,
+          "stage" : "export-validated"
+        },
+        {
+          "millisecondsSinceInstall" : 1647,
+          "projectId" : "proj-mslzqf48-bmz3",
+          "stage" : "original-shelved"
+        },
+        {
+          "millisecondsSinceInstall" : 1647,
+          "stage" : "draft-reset"
+        },
+        {
+          "castCount" : 3,
+          "millisecondsSinceInstall" : 1655,
+          "projectId" : "show-mslzqgbh-dbmq",
+          "stage" : "adoption-complete"
+        },
+        {
+          "didStop" : true,
+          "millisecondsSinceInstall" : 1705,
+          "stage" : "agent-stop-after-export"
+        },
+        {
+          "millisecondsSinceInstall" : 1790,
+          "ok" : false,
+          "stage" : "apply-agent-finished",
+          "tokenCurrent" : false
+        }
+      ],
+      "cast" : {
+        "names" : [
+          "演者A",
+          "演者B",
+          "演者1"
+        ],
+        "rowCount" : 3,
+        "textContent" : "演者A舞台上🔓…✕演者B舞台上🔓…✕演者1舞台上🔓…✕"
+      },
+      "draftBadge" : {
+        "visible" : false
+      },
+      "exceptions" : [
+
+      ],
+      "shelf" : {
+        "count" : 4,
+        "currentCastNames" : [
+          "演者A",
+          "演者B",
+          "演者1"
+        ],
+        "currentPieceCastIds" : [
+          "stage-sample-cast-1",
+          "stage-sample-cast-2",
+          "diagnose-cast-1"
+        ],
+        "currentProjectId" : "show-mslzqgbh-dbmq",
+        "currentTitle" : "無題のショー",
+        "ids" : [
+          "sample-eight-circus-v1",
+          "sample-seam-garden-v1",
+          "proj-mslzqf48-bmz3",
+          "show-mslzqgbh-dbmq"
+        ],
+        "names" : [
+          "見本: 八人のサーカス",
+          "見本: 継ぎ目の庭",
+          "無題のショー",
+          "無題のショー"
+        ]
+      },
+      "stageAskAdopt" : {
+        "exists" : true,
+        "hidden" : false,
+        "textContent" : "採る"
+      },
+      "stageAskDraft" : {
+        "exists" : true,
+        "hidden" : true,
+        "textContent" : "\n                演者1を追加。シーン 1演者1を追加。\n                \n                \n                  採る\n                  捨てる\n                \n              "
+      },
+      "stageAskElapsed" : {
+        "exists" : true,
+        "hidden" : false,
+        "textContent" : "考えています 0秒"
+      },
+      "stageAskError" : {
+        "exists" : true,
+        "hidden" : true,
+        "textContent" : ""
+      },
+      "stageAskIdle" : {
+        "exists" : true,
+        "hidden" : false,
+        "textContent" : "\n                頼む\n              "
+      },
+      "stageAskRunning" : {
+        "exists" : true,
+        "hidden" : true,
+        "textContent" : "\n                考えています 0秒\n                止める\n              "
+      }
+    },
+    "immediatelyAfterRequest" : {
+      "adoptStages" : [
+
+      ],
+      "cast" : {
+        "names" : [
+          "演者A",
+          "演者B"
+        ],
+        "rowCount" : 2,
+        "textContent" : "演者A舞台上🔓…✕演者B舞台上🔓…✕"
+      },
+      "draftBadge" : {
+        "visible" : false
+      },
+      "exceptions" : [
+
+      ],
+      "shelf" : {
+        "count" : 3,
+        "currentCastNames" : [
+
+        ],
+        "currentPieceCastIds" : [
+
+        ],
+        "currentProjectId" : null,
+        "currentTitle" : null,
+        "ids" : [
+          "sample-eight-circus-v1",
+          "sample-seam-garden-v1",
+          "proj-mslzqf48-bmz3"
+        ],
+        "names" : [
+          "見本: 八人のサーカス",
+          "見本: 継ぎ目の庭",
+          "無題のショー"
+        ]
+      },
+      "stageAskAdopt" : {
+        "exists" : true,
+        "hidden" : false,
+        "textContent" : "採る"
+      },
+      "stageAskDraft" : {
+        "exists" : true,
+        "hidden" : true,
+        "textContent" : "\n                \n                \n                \n                  採る\n                  捨てる\n                \n              "
+      },
+      "stageAskElapsed" : {
+        "exists" : true,
+        "hidden" : false,
+        "textContent" : "考えています 0秒"
+      },
+      "stageAskError" : {
+        "exists" : true,
+        "hidden" : true,
+        "textContent" : ""
+      },
+      "stageAskIdle" : {
+        "exists" : true,
+        "hidden" : true,
+        "textContent" : "\n                頼む\n              "
+      },
+      "stageAskRunning" : {
+        "exists" : true,
+        "hidden" : false,
+        "textContent" : "\n                考えています 0秒\n                止める\n              "
+      }
+    },
+    "immediatelyBeforeAdopt" : {
+      "adoptStages" : [
+
+      ],
+      "cast" : {
+        "names" : [
+          "演者A",
+          "演者B"
+        ],
+        "rowCount" : 2,
+        "textContent" : "演者A舞台上🔓…✕演者B舞台上🔓…✕"
+      },
+      "draftBadge" : {
+        "visible" : true
+      },
+      "exceptions" : [
+
+      ],
+      "shelf" : {
+        "count" : 3,
+        "currentCastNames" : [
+
+        ],
+        "currentPieceCastIds" : [
+
+        ],
+        "currentProjectId" : null,
+        "currentTitle" : null,
+        "ids" : [
+          "sample-eight-circus-v1",
+          "sample-seam-garden-v1",
+          "proj-mslzqf48-bmz3"
+        ],
+        "names" : [
+          "見本: 八人のサーカス",
+          "見本: 継ぎ目の庭",
+          "無題のショー"
+        ]
+      },
+      "stageAskAdopt" : {
+        "exists" : true,
+        "hidden" : false,
+        "textContent" : "採る"
+      },
+      "stageAskDraft" : {
+        "exists" : true,
+        "hidden" : false,
+        "textContent" : "\n                演者1を追加。シーン 1演者1を追加。\n                \n                \n                  採る\n                  捨てる\n                \n              "
+      },
+      "stageAskElapsed" : {
+        "exists" : true,
+        "hidden" : false,
+        "textContent" : "考えています 0秒"
+      },
+      "stageAskError" : {
+        "exists" : true,
+        "hidden" : true,
+        "textContent" : ""
+      },
+      "stageAskIdle" : {
+        "exists" : true,
+        "hidden" : true,
+        "textContent" : "\n                頼む\n              "
+      },
+      "stageAskRunning" : {
+        "exists" : true,
+        "hidden" : true,
+        "textContent" : "\n                考えています 0秒\n                止める\n              "
+      }
+    }
+  }
+}

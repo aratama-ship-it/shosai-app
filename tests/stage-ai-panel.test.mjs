@@ -135,6 +135,59 @@ test("止める経路はブリッジのstopAgentを呼ぶ", async () => {
   assert.match(stageSource, /await STAGE_AI_PANEL_MODEL\.stopAgent\(bridge\)/);
 });
 
+test("採用完了は元ショーを残して棚を1件増やし、castと駒を持つ新ショーへ切り替えて下書きを解除する", () => {
+  const { model } = loadPanelModel(bridgeStub());
+  const original = {
+    project: {
+      id: "show-original",
+      title: "元のショー",
+      cast: [],
+      scenes: [{ id: "scene-1", pieces: [] }],
+    },
+    layout: { cols: { cast: "left" } },
+  };
+  const exported = {
+    project: {
+      id: "show-original",
+      title: "元のショー",
+      cast: [{ id: "cast-new", name: "演者1" }],
+      scenes: [{
+        id: "scene-1",
+        pieces: [{ id: "piece-new", type: "performer", castId: "cast-new" }],
+      }],
+    },
+  };
+  const shelf = new Map();
+  let current = original;
+  let draftActive = true;
+  const shelveCurrent = () => shelf.set(current.project.id, structuredClone(current));
+
+  const next = model.commitAppliedExport({
+    currentState: current,
+    exported,
+    prepareImportDocument: (document) => ({ project: structuredClone(document.project) }),
+    normalizeState: (value) => value,
+    shelveCurrent,
+    makeProjectId: () => "show-adopted",
+    resetDraft: () => { draftActive = false; },
+    applyLoadedState: (value) => {
+      current = value;
+      shelveCurrent();
+    },
+  });
+
+  assert.equal(shelf.size, 2);
+  assert.equal(shelf.has("show-original"), true);
+  assert.equal(shelf.has("show-adopted"), true);
+  assert.equal(current, next);
+  assert.equal(current.project.id, "show-adopted");
+  assert.equal(current.project.cast[0].name, "演者1");
+  assert.equal(current.project.scenes[0].pieces[0].castId, "cast-new");
+  assert.equal(draftActive, false);
+  assert.deepEqual(current.layout, original.layout);
+  assert.match(stageSource, /export-detected-before-agent-exit/);
+});
+
 test("runAgentがok:falseなら返却文を保ってAI起動エラーを表示する", async () => {
   const { model } = loadPanelModel(bridgeStub());
   const display = errorDisplay(model);

@@ -586,6 +586,19 @@
       };
     },
     normalizePlan: normalizeStageAIPlan,
+    commitAppliedExport(options) {
+      const prepared = options.prepareImportDocument(options.exported);
+      const next = options.normalizeState({
+        ...options.currentState,
+        project: prepared.project,
+      });
+      options.shelveCurrent();
+      next.project.id = options.makeProjectId();
+      next.layout = options.currentState.layout;
+      options.resetDraft({ clearInput: true });
+      options.applyLoadedState(next, "新しいショーとして保存しました。");
+      return next;
+    },
     stopAgent(bridge) {
       if (!this.isBridgeAvailable(bridge)) return Promise.resolve(false);
       return bridge.stopAgent();
@@ -7070,12 +7083,18 @@
   function drawStageAskOverlay(target, L, leanAt) {
     // 下書きは編集画面だけ。画像・印刷へ「まだ保存していません」を焼き付けない。
     if (target !== ctx && target !== planCtx) return;
+    if (target === ctx && window.__stageAdoptDiagnosis) {
+      window.__stageAdoptDiagnosis.draftBadgeVisible = false;
+    }
     const diff = STAGE_AI_PANEL_MODEL.overlayDiff(
       stageAskPlan,
       state.project.id,
       state.project.activeSceneId
     );
     if (!diff) return;
+    if (target === ctx && window.__stageAdoptDiagnosis) {
+      window.__stageAdoptDiagnosis.draftBadgeVisible = true;
+    }
 
     const usedIds = new Set();
     const previewPieces = sc().pieces.map((piece) => ({ ...piece }));
@@ -12687,13 +12706,33 @@ ${cuesheetHtml}
 
   async function stageAskExportForPlan(bridge, planId) {
     const entries = await bridge.listEditExports();
+    diagnoseStageAskAdopt("exports-listed", {
+      count: Array.isArray(entries) ? entries.length : null,
+    });
     if (!Array.isArray(entries)) return null;
     for (const entry of entries.slice(0, 60)) {
       if (!entry || entry.hasEditSummary !== true || typeof entry.name !== "string") continue;
       const document = await bridge.readExport(entry.name);
-      if (document && document.editSummary && document.editSummary.planId === planId) return document;
+      diagnoseStageAskAdopt("export-read", {
+        name: entry.name,
+        planId: document && document.editSummary && document.editSummary.planId,
+      });
+      if (document && document.editSummary && document.editSummary.planId === planId) {
+        diagnoseStageAskAdopt("export-matched", { name: entry.name, planId });
+        return document;
+      }
     }
     return null;
+  }
+
+  function diagnoseStageAskAdopt(stage, detail = {}) {
+    const diagnosis = window.__stageAdoptDiagnosis;
+    if (!diagnosis || !Array.isArray(diagnosis.stages)) return;
+    diagnosis.stages.push({
+      stage,
+      millisecondsSinceInstall: Date.now() - diagnosis.startedAt,
+      ...detail,
+    });
   }
 
   async function adoptStageAskPlan() {
@@ -12702,18 +12741,38 @@ ${cuesheetHtml}
     if (!STAGE_AI_PANEL_MODEL.canAdopt(plan)
       || !STAGE_AI_PANEL_MODEL.isBridgeAvailable(bridge)) return;
     const token = ++stageAskRunToken;
+    diagnoseStageAskAdopt("adopt-started", { planId: plan.planId, token });
     beginStageAskRun();
     try {
-      const result = await STAGE_AI_PANEL_MODEL.runAgent(
+      let reportAgentErrors = true;
+      let agentFinished = false;
+      let agentResult = null;
+      const agentPromise = STAGE_AI_PANEL_MODEL.runAgent(
         bridge,
         stageAskApplyPrompt(plan),
-        () => token === stageAskRunToken,
+        () => reportAgentErrors && token === stageAskRunToken,
         showStageAskError
-      );
-      if (!result || token !== stageAskRunToken) return;
-      let exported;
+      ).then((result) => {
+        agentFinished = true;
+        agentResult = result;
+        diagnoseStageAskAdopt("apply-agent-finished", {
+          ok: Boolean(result && result.ok === true),
+          tokenCurrent: token === stageAskRunToken,
+        });
+        return result;
+      });
+      let exported = null;
       try {
-        exported = await stageAskExportForPlan(bridge, plan.planId);
+        while (token === stageAskRunToken && !exported && !agentFinished) {
+          exported = await stageAskExportForPlan(bridge, plan.planId);
+          if (!exported && !agentFinished) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+        }
+        if (!exported && agentFinished) {
+          if (!agentResult || token !== stageAskRunToken) return;
+          exported = await stageAskExportForPlan(bridge, plan.planId);
+        }
       } catch (error) {
         if (token === stageAskRunToken) {
           showStageAskError(STAGE_AI_PANEL_MODEL.errorText(
@@ -12724,6 +12783,21 @@ ${cuesheetHtml}
         return;
       }
       if (token !== stageAskRunToken) return;
+      if (exported && !agentFinished) {
+        // MCPのexportは適用完了後にatomicで書かれる。planIdまで読めた時点で
+        // 保存へ進み、ツール実行後も残っているCLIだけを止める。
+        reportAgentErrors = false;
+        diagnoseStageAskAdopt("export-detected-before-agent-exit", { planId: plan.planId });
+        STAGE_AI_PANEL_MODEL.stopAgent(bridge).then((didStop) => {
+          diagnoseStageAskAdopt("agent-stop-after-export", { didStop });
+        }).catch((error) => {
+          diagnoseStageAskAdopt("agent-stop-after-export-error", {
+            message: error && typeof error.message === "string" ? error.message : String(error),
+          });
+        });
+      } else {
+        await agentPromise;
+      }
       if (!exported || exported.kind !== "shosai-stage-sketch"
         || Number(exported.version) !== 3 || !exported.project
         || !Array.isArray(exported.project.scenes)) {
@@ -12733,14 +12807,34 @@ ${cuesheetHtml}
         ));
         return;
       }
-      const prepared = prepareProjectImportDocument(exported);
-      const next = normalizeState({ ...state, project: prepared.project });
-      shelveCurrent();
-      next.project.id = rid("show");
-      next.layout = state.layout;
-      resetStageAskDraft({ clearInput: true });
-      applyLoadedState(next, "新しいショーとして保存しました。");
+      diagnoseStageAskAdopt("export-validated", {
+        castCount: Array.isArray(exported.project.cast) ? exported.project.cast.length : null,
+        sceneCount: exported.project.scenes.length,
+      });
+      const next = STAGE_AI_PANEL_MODEL.commitAppliedExport({
+        currentState: state,
+        exported,
+        prepareImportDocument: prepareProjectImportDocument,
+        normalizeState,
+        shelveCurrent: () => {
+          shelveCurrent();
+          diagnoseStageAskAdopt("original-shelved", { projectId: state.project.id });
+        },
+        makeProjectId: () => rid("show"),
+        resetDraft: (options) => {
+          resetStageAskDraft(options);
+          diagnoseStageAskAdopt("draft-reset", {});
+        },
+        applyLoadedState,
+      });
+      diagnoseStageAskAdopt("adoption-complete", {
+        projectId: state.project.id,
+        castCount: state.project.cast.length,
+      });
     } catch (error) {
+      diagnoseStageAskAdopt("adoption-error", {
+        message: error && typeof error.message === "string" ? error.message : String(error),
+      });
       if (token !== stageAskRunToken) return;
       showStageAskError(STAGE_AI_PANEL_MODEL.errorText(
         "AI指示の処理に失敗しました:",

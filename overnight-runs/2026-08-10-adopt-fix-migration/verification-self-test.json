@@ -1,0 +1,83 @@
+{
+  "ok" : true,
+  "results" : [
+    {
+      "detail" : "shosai:\/\/app\/index.html loaded",
+      "id" : 1,
+      "name" : "load-index",
+      "ok" : true
+    },
+    {
+      "detail" : "{\"title\":\"制作の書斎 — Phase 0 プロトタイプ\",\"migrationType\":\"object\",\"exportButton\":true,\"importButton\":true}",
+      "id" : 2,
+      "name" : "index-title",
+      "ok" : true
+    },
+    {
+      "detail" : "{\"bridgeType\":\"object\",\"stopType\":\"function\"}",
+      "id" : 3,
+      "name" : "bridge-present",
+      "ok" : true
+    },
+    {
+      "detail" : "{\"isArray\":true,\"stopIdle\":false,\"readObject\":true,\"readName\":null}",
+      "id" : 4,
+      "name" : "list-edit-exports",
+      "ok" : true
+    },
+    {
+      "detail" : "{\"title\":\"舞台スケッチ — 制作の書斎\",\"bridgeType\":\"object\",\"stopType\":\"function\",\"askPanel\":true,\"exportsIsArray\":true}",
+      "id" : 5,
+      "name" : "load-stage-and-bridge",
+      "ok" : true
+    },
+    {
+      "detail" : "status 404",
+      "id" : 6,
+      "name" : "reject-path-traversal",
+      "ok" : true
+    },
+    {
+      "detail" : "{\"rejected\":true,\"error\":\"writeProject requires a shosai-stage-sketch version 3 object with project.scenes as an array.\"}",
+      "id" : 7,
+      "name" : "write-project-reject-invalid-version",
+      "ok" : true
+    },
+    {
+      "detail" : "{\"first\":{\"projectId\":\"self-test-roundtrip\",\"revision\":1},\"second\":{\"revision\":2,\"projectId\":\"self-test-roundtrip\"},\"plan\":null}",
+      "id" : 8,
+      "name" : "write-project-latest-plan-roundtrip",
+      "ok" : true
+    },
+    {
+      "detail" : "{\"rejected\":true,\"error\":\"projectId must begin with an ASCII letter or number and contain only letters, numbers, dots, underscores, or hyphens (96 characters maximum).\"}",
+      "id" : 9,
+      "name" : "write-project-reject-project-id-traversal",
+      "ok" : true
+    },
+    {
+      "detail" : "activationPolicy=2, mainMenu=nil",
+      "id" : 10,
+      "name" : "no-main-menu-in-self-test",
+      "ok" : true
+    },
+    {
+      "detail" : "passed; exitCode=0; PATH=\/Users\/arata\/.local\/node\/bin:\/usr\/local\/bin:\/opt\/homebrew\/bin:\/usr\/bin:\/bin:\/usr\/sbin:\/sbin; HOME=\/Users\/arata; LANG=C.UTF-8; output=codex-cli 0.144.3",
+      "id" : 11,
+      "name" : "agent-version-with-runtime-environment",
+      "ok" : true
+    },
+    {
+      "detail" : "normalStartupUIDelegate=installed, selfTestUIDelegate=nil",
+      "id" : 12,
+      "name" : "normal-startup-ui-delegate-and-headless-defaults",
+      "ok" : true
+    },
+    {
+      "detail" : "{\"command\":\"\/Users\/arata\/.local\/node\/bin\/codex\",\"args\":\"exec --skip-git-repo-check --sandbox workspace-write -C <webRoot>\",\"modelValue\":\"gpt-5.6-sol\",\"reasoningEffortValue\":\"high\",\"hasModel\":true,\"hasReasoningEffort\":true,\"source\":\"codex-config\"}",
+      "id" : 13,
+      "name" : "agent-info-values",
+      "ok" : true
+    }
+  ]
+}

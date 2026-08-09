@@ -98,7 +98,8 @@ test("下書き状態を失えば場面に一致していても表示対象は�
 test("破棄・Esc・採用完了・別ショー切替は下書き状態を消し、場面切替は再描画する", () => {
   assert.match(stageSource, /function discardStageAskPlan\(\) \{[\s\S]*?resetStageAskDraft\([\s\S]*?render\(\)/);
   assert.match(stageSource, /event\.key !== "Escape"[\s\S]*?discardStageAskPlan\(\)/);
-  assert.match(stageSource, /function adoptStageAskPlan\([\s\S]*?resetStageAskDraft\(\{ clearInput: true \}\)[\s\S]*?applyLoadedState/);
+  assert.match(stageSource, /function adoptStageAskPlan\([\s\S]*?commitAppliedExport\(\{/);
+  assert.match(stageSource, /commitAppliedExport\(options\)[\s\S]*?options\.resetDraft\(\{ clearInput: true \}\)[\s\S]*?options\.applyLoadedState/);
   assert.match(stageSource, /function applyLoadedState\([\s\S]*?resetStageAskDraft\(\{ clearInput: true, invalidate: true \}\)/);
   assert.match(stageSource, /function openScene\([\s\S]*?state\.project\.activeSceneId = id;[\s\S]*?render\(\)/);
 });
