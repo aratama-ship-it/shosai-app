@@ -19,6 +19,7 @@ CodexとClaude Codeのどちらで使うかによって、それぞれの契約�
 - 複数場面をまとめて作る
 - 既存場面の間へ中間場面を追加する
 - 場面名、メモ、背景、演者・道具・照明の配置を直す
+- 自然言語の依頼を構造化した編集計画を作り、日本語の差分を確認してから一括適用する
 - CodexとClaude Codeの同時編集による上書きをrevisionとロックで防ぐ
 - 各変更前のJSONを履歴へ残す
 - 参照切れとサーカス・空中装置の確認警告を点検する
@@ -36,7 +37,14 @@ CodexとClaude Codeのどちらで使うかによって、それぞれの契約�
   history/    変更前の版
   exports/    舞台スケッチで読み込むJSON
   locks/      CodexとClaude Codeの同時編集防止
+  plans/      確認前・適用済みの編集計画JSON
+  SHOWS.md    全ショーの正本・読込JSONへの入口（自動更新）
+  shows.json  SHOWS.mdと同内容の機械可読な索引（自動更新）
 ```
+
+通常は `SHOWS.md` だけを開けば、どのJSONを編集するか／舞台スケッチで
+読み込むかを確認できます。`projects/` のJSONが正本です。`exports/` と
+`history/` は正本から派生するコピーなので、手で移動・編集しません。
 
 このフォルダはGit対象外で、外部へ送信されません。ただし、AIへ渡した依頼文や場面情報は、
 使用中のCodexまたはClaude Codeのサービスへ送られます。
@@ -139,6 +147,30 @@ revisionの競合がないことを確認し、追加後にもう一度点検し
 
 返された `importFile` を、舞台スケッチの「保存 > 読み込む」から選びます。
 
+## 編集の依頼例
+
+編集前に `stage_sketch_read_project` で現在のrevision、場面ID、各場面にいる演者・セットの
+名前とIDを読みます。そのうえで、まず計画と差分だけを依頼します。
+
+```text
+第3場面の円座を、第2場面で使っている円座に入れ替えて。まず差分だけ見せて
+```
+
+AIクライアントは `stage_sketch_plan_edit` を使い、元の依頼文と構造化した操作を
+`plans/` へ保存します。この時点では `projects/` の正本とrevisionは変わりません。
+資産名が曖昧なら候補を確認し、計画を作り直します。
+
+差分、警告、現在revisionを本人が確認したあとに、次のように明示します。
+
+```text
+その計画を適用して
+```
+
+AIクライアントは通常の会話継続を承認とは扱わず、同じ `planId`・`projectId`・
+`expectedRevision` と `confirmed: true` を `stage_sketch_apply_edit_plan` へ渡します。
+適用された全操作は1リビジョンにまとまり、直前版が履歴へ残ります。その後、点検と
+読み込み用JSONの準備まで自動で行います。
+
 ## 公開しているMCPツール
 
 - `stage_sketch_get_guide`
@@ -148,10 +180,13 @@ revisionの競合がないことを確認し、追加後にもう一度点検し
 - `stage_sketch_create_project_draft`
 - `stage_sketch_add_scenes`
 - `stage_sketch_update_scene`
+- `stage_sketch_plan_edit`
+- `stage_sketch_apply_edit_plan`
 - `stage_sketch_inspect_project`
 - `stage_sketch_prepare_import`
 
-削除ツールと、ブラウザへ自動適用するツールは意図的に公開していません。
+独立した削除ツールと、ブラウザへ自動適用するツールは意図的に公開していません。
+配置の削除は、履歴に残る確認済み編集計画の操作としてだけ扱います。
 
 ## 開発確認
 
@@ -160,7 +195,8 @@ npm test
 ```
 
 テストは、保存形式、場面挿入、古いrevisionの拒否、同時編集の直列化、
-読み込み用JSON、サーカス装置の警告、実際のstdio MCP接続を確認します。
+編集計画の差分・明示確認・履歴・原子的適用、読み込み用JSON、サーカス装置の警告、
+実際のstdio MCP接続を確認します。
 
 ## 安全上の境界
 

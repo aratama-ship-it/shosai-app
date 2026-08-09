@@ -13,7 +13,7 @@ export const VENUE_SIZES = ["small", "mid", "large"];
 export const SET_KINDS = [
   "block", "table", "chair", "bench", "stool", "wall", "sphere",
   "trapeze", "cyrwheel", "pole", "teeter", "tissue", "wire",
-  "suitcase", "trampoline", "cane", "car", "light",
+  "suitcase", "trampoline", "cane", "car", "seri", "light",
 ];
 
 export const POSES = [
@@ -27,9 +27,62 @@ export const HIGH_RISK_KINDS = new Set([
 
 const COLOR_RE = /^#[0-9a-f]{6}$/i;
 const ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$/;
-const DEFAULT_COLORS = [
-  "#a84b26", "#77865f", "#54718a", "#9a6d3a", "#765b83", "#3f7b70",
+export const PIECE_PALETTE = [
+  "#a84b26", "#efe7d6", "#77865f", "#8b98a1", "#d3ac59", "#6d6657",
 ];
+
+const SET_KIND_NAMES = {
+  ja: {
+    block: "台・箱", table: "テーブル", chair: "椅子", bench: "ベンチ",
+    stool: "スツール", wall: "壁", sphere: "球", trapeze: "トラピーズ",
+    cyrwheel: "シルホイール", pole: "チャイニーズポール", teeter: "ティーターボード",
+    tissue: "エアリアルティシュー", wire: "綱渡り", suitcase: "スーツケース",
+    trampoline: "トランポリン", cane: "ハンドバランス用cane", car: "車",
+    seri: "せり", light: "照明",
+  },
+  en: {
+    block: "Platform / box", table: "Table", chair: "Chair", bench: "Bench",
+    stool: "Stool", wall: "Wall", sphere: "Sphere", trapeze: "Trapeze",
+    cyrwheel: "Cyr wheel", pole: "Chinese pole", teeter: "Teeterboard",
+    tissue: "Aerial silks", wire: "Tightwire", suitcase: "Suitcase",
+    trampoline: "Trampoline", cane: "Handbalancing canes", car: "Car",
+    seri: "Stage lift", light: "Light",
+  },
+};
+
+const MANUAL_DIMS = {
+  block: { w: 2.04, d: 0.66, h: 1.2 },
+  table: { w: 1.6, d: 0.8, h: 0.72 },
+  chair: { h: 0.9 },
+  bench: { w: 1.8, d: 0.4, h: 0.45 },
+  stool: { w: 0.36, d: 0.36, h: 0.62 },
+  wall: { w: 3, d: 0.3, h: 2.5 },
+  sphere: { dia: 1.2, lift: 0 },
+  trapeze: { w: 0.7, d: 0.06, h: 0.06 },
+  cyrwheel: { dia: 1.9 },
+  pole: { w: 0.05, d: 0.05, h: 6 },
+  teeter: { w: 3.6, d: 0.45, h: 0.75 },
+  tissue: { w: 0.3, d: 0.06, h: 7 },
+  wire: { w: 6, d: 0.06, h: 1.2 },
+  suitcase: { w: 0.62, d: 0.24, h: 0.44 },
+  trampoline: { w: 3.05, d: 1.7, h: 0.95 },
+  cane: { w: 0.5, d: 0.3, h: 0.75 },
+  car: { w: 4.3, d: 1.8, h: 1.45 },
+  seri: { w: 2.7, d: 1.8 },
+  light: { dia: 4 },
+};
+
+const SOLID_KINDS = new Set([
+  "block", "table", "chair", "bench", "stool", "wall", "trapeze", "cyrwheel",
+  "pole", "teeter", "tissue", "wire", "suitcase", "trampoline", "cane", "car", "seri",
+]);
+
+const LIGHT_DEFAULTS = {
+  hang: { dia: 4, h: 6, toH: 0 },
+  ss: { dia: 2.6, h: 1.7, toH: 1.3 },
+  front: { dia: 3.4, h: 8, toH: 1.5 },
+  floor: { dia: 3, h: 0.18, toH: 1.6 },
+};
 
 function fail(message) {
   throw new Error(message);
@@ -75,6 +128,10 @@ function enumValue(value, values, label, fallback) {
     fail(`${label}は ${values.join(", ")} のいずれかにしてください。`);
   }
   return selected;
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
 
 function normalizeProjectRehearsal(raw) {
@@ -130,9 +187,122 @@ function normalizeSceneBeat(raw, label) {
   };
 }
 
+const LIGHTING_LAYER_VALUES = [
+  "unspecified", "reveal", "soften", "conceal", "silhouette", "separate", "transform",
+];
+const LIGHTING_TRIGGER_VALUES = [
+  "unknown", "scene-start", "action", "line", "music", "time", "manual",
+];
+const LIGHTING_CHANGE_VALUES = [
+  "unknown", "hold", "fade-in", "fade-out", "snap", "crossfade", "blackout",
+];
+const LIGHTING_TEMPO_VALUES = [
+  "unspecified", "instant", "quick", "breathe", "slow", "hold",
+];
+
+export function normalizeLightingIntent(raw, label = "lightingIntent") {
+  if (raw === undefined || raw === null) return null;
+  if (typeof raw !== "object" || Array.isArray(raw)) fail(`${label}はオブジェクトにしてください。`);
+  if (raw.safetyStatus !== undefined && raw.safetyStatus !== "not-assessed") {
+    fail(`${label}.safetyStatusはnot-assessedのみ指定できます。`);
+  }
+  const layerInput = raw.layers && typeof raw.layers === "object" && !Array.isArray(raw.layers)
+    ? raw.layers : {};
+  const layer = (key) => {
+    const source = layerInput[key] && typeof layerInput[key] === "object"
+      && !Array.isArray(layerInput[key]) ? layerInput[key] : {};
+    return {
+      intent: enumValue(source.intent, LIGHTING_LAYER_VALUES, `${label}.layers.${key}.intent`, "unspecified"),
+      note: stringValue(source.note, `${label}.layers.${key}.note`, 160),
+    };
+  };
+  const transitionInput = raw.transition && typeof raw.transition === "object"
+    && !Array.isArray(raw.transition) ? raw.transition : {};
+  const sourceRefs = Array.isArray(raw.sourceRefs) ? raw.sourceRefs.map((source, index) => {
+    if (!source || typeof source !== "object" || Array.isArray(source)) {
+      fail(`${label}.sourceRefs[${index}]はオブジェクトにしてください。`);
+    }
+    return {
+      kind: enumValue(source.kind, ["book", "research", "user"], `${label}.sourceRefs[${index}].kind`, "research"),
+      label: stringValue(source.label, `${label}.sourceRefs[${index}].label`, 120, true),
+      locator: stringValue(source.locator, `${label}.sourceRefs[${index}].locator`, 200),
+    };
+  }) : [];
+  if (sourceRefs.length > 8) fail(`${label}.sourceRefsは8件以内にしてください。`);
+  const next = {
+    version: 1,
+    objective: stringValue(raw.objective, `${label}.objective`, 160),
+    audienceFocus: stringValue(raw.audienceFocus, `${label}.audienceFocus`, 160),
+    layers: {
+      performer: layer("performer"),
+      background: layer("background"),
+      space: layer("space"),
+    },
+    transition: {
+      triggerType: enumValue(
+        transitionInput.triggerType,
+        LIGHTING_TRIGGER_VALUES,
+        `${label}.transition.triggerType`,
+        "unknown",
+      ),
+      triggerNote: stringValue(transitionInput.triggerNote, `${label}.transition.triggerNote`, 160),
+      change: enumValue(
+        transitionInput.change,
+        LIGHTING_CHANGE_VALUES,
+        `${label}.transition.change`,
+        "unknown",
+      ),
+      tempo: enumValue(
+        transitionInput.tempo,
+        LIGHTING_TEMPO_VALUES,
+        `${label}.transition.tempo`,
+        "unspecified",
+      ),
+    },
+    mood: stringValue(raw.mood, `${label}.mood`, 80),
+    referenceNote: stringValue(raw.referenceNote, `${label}.referenceNote`, 200),
+    implementationNote: stringValue(raw.implementationNote, `${label}.implementationNote`, 300),
+    safetyStatus: "not-assessed",
+    sourceRefs,
+  };
+  const layerContent = Object.values(next.layers).some((item) => (
+    item.intent !== "unspecified" || Boolean(item.note)
+  ));
+  const transitionContent = next.transition.triggerType !== "unknown"
+    || next.transition.change !== "unknown"
+    || next.transition.tempo !== "unspecified"
+    || Boolean(next.transition.triggerNote);
+  const textContent = Boolean(next.objective || next.audienceFocus || next.mood
+    || next.referenceNote || next.implementationNote || next.sourceRefs.length);
+  return layerContent || transitionContent || textContent ? next : null;
+}
+
 function uniqueNameId(list, prefix, name) {
   const existing = list.find((item) => item.name === name);
   return existing?.id || makeId(prefix);
+}
+
+function nextPieceColor(index) {
+  return PIECE_PALETTE[((index % PIECE_PALETTE.length) + PIECE_PALETTE.length)
+    % PIECE_PALETTE.length];
+}
+
+function autoPlacementName(project, assetType, kind, language) {
+  const selectedLanguage = language === "en" ? "en" : "ja";
+  const base = assetType === "performer"
+    ? (selectedLanguage === "en" ? "Performer" : "演者")
+    : SET_KIND_NAMES[selectedLanguage][kind];
+  const head = String(base).split(/[・/]/)[0].trim() || base;
+  const used = new Set([
+    ...(project.cast || []).map((item) => item.name),
+    ...(project.sets || []).map((item) => item.name),
+  ]);
+  const join = (number) => selectedLanguage === "en"
+    ? `${head} ${number}`
+    : `${head}${number}`;
+  let number = 1;
+  while (used.has(join(number))) number += 1;
+  return join(number);
 }
 
 function normalizeRoute(route) {
@@ -152,7 +322,7 @@ function ensureCast(project, placement, index) {
     member = {
       id: uniqueNameId(project.cast, "cast", name),
       name,
-      color: colorValue(placement.color, DEFAULT_COLORS[project.cast.length % DEFAULT_COLORS.length]),
+      color: colorValue(placement.color, nextPieceColor(project.cast.length)),
       heightCm: numberValue(placement.heightCm, "heightCm", 120, 210, 165),
       note: stringValue(placement.assetNote, "assetNote", 200),
       locked: false,
@@ -164,32 +334,26 @@ function ensureCast(project, placement, index) {
 
 function defaultDims(kind, placement) {
   const explicit = placement.dims && typeof placement.dims === "object" ? placement.dims : {};
-  const presets = {
-    block: { w: 1.2, d: 1.2, h: 0.6 },
-    table: { w: 1.5, d: 0.8, h: 0.75 },
-    chair: { w: 0.5, d: 0.5, h: 0.9 },
-    bench: { w: 1.6, d: 0.55, h: 0.55 },
-    stool: { w: 0.45, d: 0.45, h: 0.75 },
-    wall: { w: 3, d: 0.3, h: 2.4 },
-    sphere: { dia: 1, lift: 0 },
-    trapeze: { w: 1.2, h: 1.2, lift: 3.5 },
-    cyrwheel: { dia: 1.8, lift: 0 },
-    pole: { dia: 0.12, h: 4, lift: 0 },
-    teeter: { w: 3, d: 0.5, h: 0.6 },
-    tissue: { w: 0.3, h: 5, lift: 3.5 },
-    wire: { w: 5, h: 1.2, lift: 0 },
-    suitcase: { w: 0.7, d: 0.25, h: 0.5 },
-    trampoline: { w: 3, d: 2, h: 0.8 },
-    cane: { w: 0.6, h: 1, lift: 0 },
-    car: { w: 4.2, d: 1.8, h: 1.5 },
-    light: { dia: 3, h: 6, toH: 0 },
-  };
-  const base = presets[kind] || {};
+  const base = MANUAL_DIMS[kind] || {};
   const out = {};
   for (const [key, fallback] of Object.entries(base)) {
     const raw = explicit[key] === undefined ? fallback : explicit[key];
     out[key] = numberValue(raw, `dims.${key}`, 0, 60, fallback);
   }
+  if (SOLID_KINDS.has(kind) && kind !== "seri" && out.lift === undefined) {
+    out.lift = numberValue(explicit.lift, "dims.lift", 0, 60, 0);
+  }
+  if (kind === "light") {
+    const lightKind = enumValue(
+      placement.lightKind,
+      ["hang", "ss", "front", "floor"],
+      "lightKind",
+      "hang",
+    );
+    out.dia = numberValue(explicit.dia, "dims.dia", 0, 60, LIGHT_DEFAULTS[lightKind].dia);
+  }
+  if (kind === "trapeze" && explicit.lift === undefined) out.lift = 2.6;
+  if (kind === "tissue" && explicit.lift === undefined) out.lift = 7.4;
   return out;
 }
 
@@ -202,7 +366,10 @@ function ensureSet(project, placement, index) {
       id: makeId("set"),
       kind,
       name,
-      color: colorValue(placement.color, kind === "light" ? "#f0d58a" : "#8b98a1"),
+      color: colorValue(
+        placement.color,
+        kind === "light" ? "#d3ac59" : nextPieceColor(project.sets.length + 2),
+      ),
       dims: defaultDims(kind, placement),
       note: stringValue(placement.assetNote, "assetNote", 200),
       locked: false,
@@ -218,7 +385,7 @@ function ensureSet(project, placement, index) {
   return item;
 }
 
-function normalizePlacement(project, placement, index) {
+export function placementWithDefaults(project, scene, placement, index = 0) {
   if (!placement || typeof placement !== "object") {
     fail(`placements[${index}]がオブジェクトではありません。`);
   }
@@ -228,32 +395,118 @@ function normalizePlacement(project, placement, index) {
     `placements[${index}].assetType`,
     "performer",
   );
+  const language = enumValue(placement.language, ["ja", "en"], "language", "ja");
+  const kind = assetType === "set"
+    ? enumValue(placement.kind, SET_KINDS, "kind", "block")
+    : undefined;
+  const explicitName = stringValue(
+    placement.assetName,
+    `placements[${index}].assetName`,
+    24,
+  );
+  const assetName = explicitName || autoPlacementName(project, assetType, kind, language);
+  const existing = assetType === "performer"
+    ? project.cast.find((item) => item.name === assetName)
+    : project.sets.find((item) => item.name === assetName && item.kind === kind);
+  const pieces = Array.isArray(scene?.pieces) ? scene.pieces : [];
+  const count = pieces.filter((piece) => assetType === "performer"
+    ? piece.type === "performer"
+    : piece.type !== "performer").length;
+  const fallbackColor = existing?.color || (assetType === "performer"
+    ? nextPieceColor(project.cast.length)
+    : kind === "light" ? "#d3ac59" : nextPieceColor(project.sets.length + 2));
+  const normalized = {
+    ...placement,
+    assetType,
+    assetName,
+    language,
+    u: numberValue(
+      placement.u,
+      "u",
+      0,
+      1,
+      assetType === "performer"
+        ? clamp(0.5 + ((count % 5) - 2) * 0.09, 0.06, 0.94)
+        : clamp(0.5 + ((count % 5) - 2) * 0.11, 0.06, 0.94),
+    ),
+    v: numberValue(
+      placement.v,
+      "v",
+      0,
+      1,
+      assetType === "performer"
+        ? clamp(0.6 + (count % 3) * 0.07, 0.05, 0.95)
+        : clamp(0.5 + (count % 3) * 0.09, 0.05, 0.95),
+    ),
+    size: numberValue(placement.size, "size", 55, 180, 100),
+    color: colorValue(placement.color, fallbackColor),
+    facing: numberValue(placement.facing, "facing", 0, 359, 0),
+  };
+  if (assetType === "performer") {
+    normalized.pose = enumValue(placement.pose, POSES, "pose", "stand");
+    normalized.heightCm = numberValue(placement.heightCm, "heightCm", 120, 210, 165);
+  } else {
+    normalized.kind = kind;
+    normalized.dims = defaultDims(kind, placement);
+    normalized.flown = Boolean(placement.flown || kind === "trapeze" || kind === "tissue");
+    normalized.wires = Number(placement.wires) === 1 ? 1 : 2;
+    normalized.framed = Boolean(placement.framed);
+    normalized.lightKind = kind === "light"
+      ? enumValue(placement.lightKind, ["hang", "ss", "front", "floor"], "lightKind", "hang")
+      : "hang";
+  }
+  return normalized;
+}
+
+function normalizePlacement(project, scene, placement, index) {
+  const normalized = placementWithDefaults(project, scene, placement, index);
+  const assetType = normalized.assetType;
   const asset = assetType === "performer"
-    ? ensureCast(project, placement, index)
-    : ensureSet(project, placement, index);
+    ? ensureCast(project, normalized, index)
+    : ensureSet(project, normalized, index);
   const type = assetType === "performer" ? "performer" : asset.kind;
+  let beam = null;
+  if (type === "light") {
+    const spec = LIGHT_DEFAULTS[asset.lightKind];
+    const sourceU = asset.lightKind === "ss"
+      ? (normalized.u <= 0.5 ? -0.06 : 1.06)
+      : normalized.u;
+    const sourceV = asset.lightKind === "front"
+      ? 1.35
+      : asset.lightKind === "floor" ? 1 : normalized.v;
+    beam = { u: sourceU, v: sourceV, h: spec.h, toH: spec.toH };
+  }
   return {
     id: makeId("piece"),
     type,
-    u: numberValue(placement.u, "u", 0, 1, 0.5),
-    v: numberValue(placement.v, "v", 0, 1, 0.6),
-    size: numberValue(placement.size, "size", 55, 180, 100),
-    color: colorValue(placement.color, asset.color),
+    u: normalized.u,
+    v: normalized.v,
+    size: normalized.size,
+    color: normalized.color,
     name: asset.name,
     castId: assetType === "performer" ? asset.id : null,
     setId: assetType === "set" ? asset.id : null,
     originId: typeof placement.originId === "string" ? placement.originId : null,
-    facing: numberValue(placement.facing, "facing", 0, 359, 0),
+    facing: normalized.facing,
     dims: assetType === "set" ? asset.dims : null,
     pose: assetType === "performer"
-      ? enumValue(placement.pose, POSES, "pose", "stand")
+      ? normalized.pose
       : "stand",
-    route: normalizeRoute(placement.route),
+    route: normalizeRoute(normalized.route),
     base: 0,
     supportId: null,
-    beam: null,
+    beam,
     locked: false,
   };
+}
+
+function normalizePlacements(project, scene, placements) {
+  const next = [];
+  for (let index = 0; index < placements.length; index += 1) {
+    const workingScene = { pieces: [...(scene?.pieces || []), ...next] };
+    next.push(normalizePlacement(project, workingScene, placements[index], index));
+  }
+  return next;
 }
 
 export function normalizeSceneInput(project, raw, index = 0) {
@@ -272,14 +525,14 @@ export function normalizeSceneInput(project, raw, index = 0) {
     note: stringValue(raw.note, `scenes[${index}].note`, 2000),
     background: colorValue(raw.background, "#40362d"),
     notes: [],
-    pieces: raw.kind === "section"
-      ? []
-      : placements.map((placement, placementIndex) =>
-          normalizePlacement(project, placement, placementIndex)),
+    pieces: raw.kind === "section" ? [] : normalizePlacements(project, null, placements),
     strokes: [],
     beat: kind === "scene" ? normalizeSceneBeat(raw.beat, `scenes[${index}]`) : null,
     rehearsal: kind === "scene"
       ? normalizeSceneRehearsal(raw.rehearsal, `scenes[${index}]`)
+      : null,
+    lightingIntent: kind === "scene"
+      ? normalizeLightingIntent(raw.lightingIntent, `scenes[${index}].lightingIntent`)
       : null,
   };
 }
@@ -433,13 +686,17 @@ export function updateScene(document, input) {
     if (scene.kind === "section") fail("セクションには稽古時間を設定できません。");
     scene.rehearsal = normalizeSceneRehearsal(input.rehearsal, "scene");
   }
+  if (input.lightingIntent !== undefined) {
+    if (scene.kind === "section") fail("セクションには光の意図を設定できません。");
+    scene.lightingIntent = normalizeLightingIntent(input.lightingIntent, "scene.lightingIntent");
+  }
   if (input.placements !== undefined) {
     if (scene.kind === "section") fail("セクションには配置を追加できません。");
     if (!Array.isArray(input.placements) || input.placements.length > 80) {
       fail("placementsは80件以内の配列にしてください。");
     }
-    const next = input.placements.map((placement, index) =>
-      normalizePlacement(project, placement, index));
+    const baseScene = input.placementMode === "append" ? scene : null;
+    const next = normalizePlacements(project, baseScene, input.placements);
     scene.pieces = input.placementMode === "append" ? [...scene.pieces, ...next] : next;
     if (scene.pieces.length > 80) fail("一場面の配置は80個までです。");
   }
@@ -459,6 +716,29 @@ export const GUIDE = {
     u: "0=画像の左、1=画像の右（客席から見た左右）",
     v: "0=舞台奥、1=舞台前",
     warning: "上手・下手は話者で混乱しやすいため、MCP入力では画像の左/右とu値を優先する。",
+  },
+  defaults: {
+    policy: "指示にない値は手動追加と同じ既定値で埋めて配置する。情報不足だけでは質問しない。既存資産が同名で複数あり、取り違えると既存配置を壊す場合だけ質問する。",
+    naming: {
+      ja: "演者1、演者2のように種類名と数字を詰め、castとsetsを通じて重複しない最小番号を使う。",
+      en: "Performer 1, Performer 2のように種類名と数字の間を空け、castとsetsを通じて重複しない最小番号を使う。placement.language=enで英語名にする。",
+      set: "セットは種類名を基に同じ規則で命名する。kind省略時はblock（台1 / Platform 1）。",
+    },
+    performer: {
+      position: "その場面のperformer数をcountとして u=clamp(0.5+((count%5)-2)*0.09,0.06,0.94), v=clamp(0.6+(count%3)*0.07,0.05,0.95)",
+      size: 100,
+      heightCm: 165,
+      pose: "stand",
+      facing: 0,
+      color: "nextPieceColor(cast.length)",
+    },
+    set: {
+      position: "その場面のperformer以外の数をcountとして u=clamp(0.5+((count%5)-2)*0.11,0.06,0.94), v=clamp(0.5+(count%3)*0.09,0.05,0.95)",
+      size: 100,
+      facing: 0,
+      color: "lightは#d3ac59。それ以外はnextPieceColor(sets.length+2)。寸法・吊物・照明ビームも手動追加と同じ種類別既定値。",
+    },
+    palette: PIECE_PALETTE,
   },
   boundaries: [
     "研究DBは読み書きしない。",

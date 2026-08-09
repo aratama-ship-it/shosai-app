@@ -34,6 +34,9 @@ test("an MCP client can list and call the shared stdio tools", async () => {
     assert.ok(names.includes("stage_sketch_get_guide"));
     assert.ok(names.includes("stage_sketch_create_project_draft"));
     assert.ok(names.includes("stage_sketch_prepare_import"));
+    assert.ok(names.includes("stage_sketch_plan_edit"));
+    assert.ok(names.includes("stage_sketch_apply_edit_plan"));
+    assert.equal(names.length, 11);
 
     const guide = await client.callTool({
       name: "stage_sketch_get_guide",
@@ -41,19 +44,97 @@ test("an MCP client can list and call the shared stdio tools", async () => {
     });
     assert.equal(guide.isError, undefined);
     assert.match(guide.content[0].text, /ブラウザのlocalStorageへ直接書き込まない/);
+    assert.match(guide.content[0].text, /"defaults"/);
+    assert.match(guide.content[0].text, /情報不足だけでは質問しない/);
+    assert.match(guide.content[0].text, /nextPieceColor\(cast.length\)/);
 
     const created = await client.callTool({
       name: "stage_sketch_create_project_draft",
       arguments: {
         projectId: "wire-test",
         title: "通信テスト",
-        scenes: [{ title: "場面 1" }],
+        scenes: [{
+          id: "scene-1",
+          title: "場面 1",
+          placements: [
+            { assetType: "performer", assetName: "アキ", u: 0.5, v: 0.6 },
+            { assetType: "set", assetName: "円座", kind: "block", u: 0.4, v: 0.5 },
+          ],
+        }],
       },
     });
     assert.equal(created.isError, undefined);
     assert.match(created.content[0].text, /wire-test/);
+
+    const read = await client.callTool({
+      name: "stage_sketch_read_project",
+      arguments: { projectId: "wire-test" },
+    });
+    assert.equal(read.isError, undefined);
+    assert.match(read.content[0].text, /"sceneId"/);
+    assert.match(read.content[0].text, /"assetName": "アキ"/);
+    assert.match(read.content[0].text, /"assetName": "円座"/);
+
+    const planned = await client.callTool({
+      name: "stage_sketch_plan_edit",
+      arguments: {
+        projectId: "wire-test",
+        expectedRevision: 1,
+        request: "場面名を更新する。まず差分だけ見せて",
+        operations: [{
+          op: "update_scene_fields",
+          sceneId: "scene-1",
+          title: "場面 1 更新案",
+        }],
+      },
+    });
+    assert.equal(planned.isError, undefined);
+    const plan = JSON.parse(planned.content[0].text);
+    assert.equal(plan.kind, "stage-sketch-edit-plan");
+
+    const unconfirmed = await client.callTool({
+      name: "stage_sketch_apply_edit_plan",
+      arguments: {
+        planId: plan.planId,
+        projectId: "wire-test",
+        expectedRevision: 1,
+      },
+    });
+    assert.equal(unconfirmed.isError, undefined);
+    assert.match(unconfirmed.content[0].text, /confirmed: true/);
+
+    const minimalPlacement = await client.callTool({
+      name: "stage_sketch_plan_edit",
+      arguments: {
+        projectId: "wire-test",
+        expectedRevision: 1,
+        request: "演者を1人追加して",
+        operations: [{
+          op: "add_placement",
+          sceneId: "scene-1",
+          placement: { assetType: "performer" },
+        }],
+      },
+    });
+    assert.equal(minimalPlacement.isError, undefined);
+    const minimalPlan = JSON.parse(minimalPlacement.content[0].text);
+    assert.equal(minimalPlan.status, "proposed");
+    assert.equal(minimalPlan.operations[0].placement.assetName, "演者1");
+    assert.equal(minimalPlan.operations[0].placement.pose, "stand");
+
+    const emptyPlan = await client.callTool({
+      name: "stage_sketch_plan_edit",
+      arguments: {
+        projectId: "wire-test",
+        expectedRevision: 1,
+        request: "何もしない",
+        operations: [],
+        questions: [],
+      },
+    });
+    assert.equal(emptyPlan.isError, true);
+    assert.match(emptyPlan.content[0].text, /Too small: expected array to have >=1 items/);
   } finally {
     await client.close();
   }
 });
-
