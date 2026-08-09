@@ -25,9 +25,34 @@ test("iPad用メタ情報とホーム画面アイコンを単独版へ組み込�
   assert.match(buildSource, /rel="manifest" href="stage-sketch\.webmanifest"/);
   assert.match(buildSource, /rel="apple-touch-icon" href="icons\/stage-sketch-180\.png"/);
   assert.match(buildSource, /rel="icon" href="icons\/stage-sketch-192\.png"/);
-  assert.match(buildSource, /stage-pwa\.js\?v=3/);
-  assert.match(stageHtml, /stage-pwa\.js\?v=3[\s\S]*stage-sketch\.js\?v=200/);
-  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v30"/);
+  assert.match(buildSource, /stage-pwa\.js\?v=\d+/);
+
+  // 版番号そのものは毎回上がる（上げないとキャッシュが更新されない）ので、
+  // 数字を直書きせず「順序」と「三箇所の一致」を見る。
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const ver = (src, name) => {
+    const m = src.match(new RegExp(esc(name) + "\\?v=(\\d+)"));
+    return m ? m[1] : null;
+  };
+
+  // 読み込み順: 同梱ショー → PWA → 本体
+  const order = ["stage-samples/index.js", "stage-pwa.js", "stage-sketch.js"];
+  const at = order.map((n) => stageHtml.indexOf(n + "?v="));
+  assert.ok(at.every((p) => p >= 0), "単独版に3本のスクリプトが揃っている");
+  assert.deepEqual(at, [...at].sort((a, b) => a - b),
+    "読み込み順が 同梱ショー → PWA → 本体 になっていない");
+
+  // 版番号は index.html が正本。stage.html と stage-sw.js がそれに追随しているか。
+  // ここが食い違うと、直したのに画面へ反映されない（2026-08-08に実際に踏んだ）。
+  for (const name of ["stage-sketch.js", "stage-venues.js", "stage-venue-lines.js",
+    "stage-venue-editor.js", "stage-samples/index.js", "stage-rehearsal-export.js"]) {
+    assert.equal(ver(stageHtml, name), ver(indexSource, name),
+      `${name} の版番号が index.html と stage.html で食い違う（build_stage.py の実行忘れ）`);
+    assert.equal(ver(swSource, name), ver(indexSource, name),
+      `${name} の版番号が index.html と stage-sw.js で食い違う（Service Worker の更新忘れ）`);
+  }
+
+  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v\d+"/);
 });
 
 test("iPadのホーム画面版だけ上部の補足文を隠す", () => {
@@ -53,7 +78,7 @@ test("使い方・About・感想は上部ではなく設定内にまとめる", 
 test("舞台スケッチ名の右側に小さなアプリ版番号を表示する", () => {
   assert.match(
     indexSource,
-    /舞台スケッチ<span class="stage-app-version">v0\.3\.3<\/span><span class="stage-beta">β版<\/span>/,
+    /舞台スケッチ<span class="stage-app-version">v0\.3\.4<\/span><span class="stage-beta">β版<\/span>/,
   );
   assert.match(styleSource, /\.stage-app-version \{[\s\S]*?font-size: 0\.38em;/);
 });
@@ -74,6 +99,8 @@ test("オフライン用CSSとJSの版は現在のHTML参照と揃う", () => {
   const assetNames = [
     "style.css",
     "stage-venues.js",
+    "stage-venue-lines.js",
+    "stage-venue-editor.js",
     "stage-i18n.js",
     "stage-rehearsal-export.js",
     "stage-sketch.js",

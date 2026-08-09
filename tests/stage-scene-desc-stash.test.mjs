@@ -10,13 +10,25 @@ const i18nSource = await readFile(new URL("../stage-i18n.js", import.meta.url), 
 
 /* ---------- シーンの説明（正面図の上の欄） ---------- */
 
-test("シーンの説明は正面の絵の枠の中、絵より上に置く", () => {
-  const cell = stageHtml.slice(stageHtml.indexOf('id="stage-front-cell"'));
-  const desc = cell.indexOf('id="stage-scene-desc"');
-  const inner = cell.indexOf('id="stage-front-inner"');
-  assert.ok(desc > 0, "正面の枠の中に説明の行がある");
-  assert.ok(desc < inner, "説明の行は絵より前に来る");
-  assert.match(cell.slice(desc, inner), /<label class="stage-scene-desc-label"/);
+/* 2026-08-08 本人の指示で、説明は正面の枠の中から「シーンの行」へ移した。
+   前後の送りと同じ行に置き、一覧の欄を畳んでも場面を行き来できるようにする。 */
+test("シーンの説明と前後の送りは、道具の行と絵の間の「シーンの行」に置く", () => {
+  const bar = stageHtml.indexOf('id="stage-scene-bar"');
+  const stack = stageHtml.indexOf('id="stage-canvas-stack"');
+  assert.ok(bar > 0, "シーンの行がある");
+  assert.ok(bar < stack, "シーンの行は絵より前に来る");
+  const row = stageHtml.slice(bar, stack);
+  assert.match(row, /id="stage-scene-prev"/);
+  assert.match(row, /id="stage-scene-next"/);
+  assert.match(row, /id="stage-scene-now"/);
+  assert.match(row, /<label class="stage-scene-desc-label"/);
+});
+
+test("送りは一覧の欄の中には残さない（二重に置かない）", () => {
+  const panel = stageHtml.slice(stageHtml.indexOf('data-panel="scenes"'));
+  const body = panel.slice(0, panel.indexOf('id="stage-scene-list"'));
+  assert.doesNotMatch(body, /id="stage-scene-prev"/);
+  assert.doesNotMatch(body, /id="stage-scene-next"/);
 });
 
 test("説明はその場で書き直せる（読むだけの札にしない）", () => {

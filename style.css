@@ -1945,6 +1945,27 @@ html.stage-pwa-tablet .stage-storage-caution {
   letter-spacing: 0.06em;
 }
 
+/* 光の意図はシーン一覧では一行だけ。照明の設定札ではなく、
+   稽古用キューシートの欄外メモのように左の金線で区別する。 */
+.stage-scene-light-summary {
+  margin: 3px 4px 1px 20px;
+  padding-left: 7px;
+  border-left: 1px solid rgba(211, 172, 89, 0.48);
+  color: rgba(240, 231, 214, 0.48);
+  font-size: 9.5px;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-scene-light-summary::before {
+  content: "LIGHT · ";
+  color: var(--brass);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+}
+
 /* 名前をその場で書き換えているあいだ。入力中だとはっきり分かる見た目にする */
 .stage-scene-rename {
   min-width: 0;
@@ -2352,7 +2373,19 @@ canvas[data-tool="note"] { cursor: copy; }
 .stage-modal #stage-light-preset-tiles {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
+}
+
+/* 名前は2行まで置ける高さを確保する。1行に詰めると
+   〈ビームクロス（床から交差）〉のような長い名前が切れる。 */
+.stage-modal #stage-light-preset-tiles .stage-pose-tile {
+  padding: 8px 8px 11px;
+  align-content: start;
+}
+
+.stage-modal #stage-light-preset-tiles .stage-pose-tile span {
+  line-height: 1.45;
+  text-align: center;
 }
 
 /* 装置の型は寸法を持たないので、名前を1行、操作を1行に */
@@ -5348,6 +5381,12 @@ canvas[data-tool="note"] { cursor: copy; }
   letter-spacing: 0.15em;
 }
 
+.roster-pass-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+}
+
 #roster-pass {
   width: 100%;
   min-height: 44px;
@@ -5360,6 +5399,8 @@ canvas[data-tool="note"] { cursor: copy; }
 }
 
 #roster-pass::placeholder { color: rgba(240, 231, 214, 0.3); }
+
+#roster-pass-toggle { min-height: 44px; padding: 9px 14px; }
 
 #roster-unlock {
   justify-self: start;
@@ -5934,6 +5975,44 @@ canvas[data-tool="note"] { cursor: copy; }
   line-height: 1.65;
 }
 
+/* 光の意図カードと図の作業領域。
+   既定は今までどおり縦に並ぶ（display: contents で親の流れに素通しする）。
+   カードを開いたときだけ、広い画面で図の左横へ寄せる。
+   ★カードを開くと図が画面外へ押し出されて「書きながら図を見る」ができなかったため。 */
+.stage-work-area { display: contents; }
+
+@media (min-width: 1100px) {
+  .stage-work-area.is-docked {
+    display: grid;
+    grid-template-columns: 380px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 18px;
+    align-items: start;
+  }
+  .stage-work-area.is-docked > .stage-light-intent {
+    position: sticky;
+    top: 8px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    grid-row: 1 / span 2;
+  }
+  .stage-work-area.is-docked > .stage-light-intent-compare,
+  .stage-work-area.is-docked > .stage-canvas-stack { grid-column: 2; }
+
+  /* 横に寄せた列は本文2段分の幅しかない。横並びのままだと
+     「何を起こしたい？」の欄が1行8文字ほどになり、書きながら読み返せない。
+     寄せているあいだだけ縦に積み直す。 */
+  .stage-work-area.is-docked .stage-light-intent-core { grid-template-columns: minmax(0, 1fr); }
+  .stage-work-area.is-docked .stage-light-transition { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stage-work-area.is-docked .stage-light-transition-note { grid-column: 1 / -1; }
+  /* 消す押しボタンが本文の脇で間延びするので、寄せているあいだは下へ回す */
+  .stage-work-area.is-docked .stage-light-intent-foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+}
+
 /* 2面は縦に積む。横に割ると1面あたりが半分になり、
    煽りや床の潰れといった細部が読めなくなる。 */
 .stage-canvas-stack {
@@ -5994,6 +6073,31 @@ canvas[data-tool="note"] { cursor: copy; }
   justify-content: center;
   cursor: pointer;
 }
+
+/* ショーのパネルは〈名前と版〉〈ショーを行き来する〉〈ファイルへ出し入れする〉の
+   三つのまとまりでできている。ここだけ縦の刻みと列を一本化する。
+   ・段の間隔は、まとまりの中は6px、まとまりの境目は13px の二種類だけにする
+     （以前は 7/6/9/10/0/10 とばらばらで、境目の10pxより中の0pxが詰まっていたため、
+     〈構成テンプレートから作る〉が下の書き出し行にくっついて読めていた）
+   ・列は 1fr 1fr の一種類だけ。〈複製〉も右列へ入れて、
+     〈新しいショー〉〈読み込む〉と同じ中心線を通す
+   全幅の .stage-minor-action が左寄せなのはアプリ共通の作法（控えめな操作の印）なので、
+   ここでも変えない。まとまりの中へ寄せることで、上の行の続きとして読めるようにする。 */
+.stage-project-section .stage-panel-body,
+.stage-project-section .stage-tablet-panel-page {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stage-project-section .stage-text-input { margin-bottom: 0; }
+.stage-project-section .stage-version-row { grid-template-columns: 1fr 1fr; }
+.stage-project-section .stage-version-note { margin: 0; line-height: 1.5; }
+.stage-project-section .stage-minor-action { margin-top: 0; }
+/* まとまりの境目だけ間を広げる。6px の gap と合わせて 13px になる */
+.stage-project-section .stage-io-row { margin-top: 7px; }
+/* 劇場サイズは仕切り線を持つ別の節。以前と同じ16pxの間を保つ */
+.stage-project-section .stage-project-venue { margin-top: 10px; }
 
 /* ===== 舞台スケッチ: 固定 SceneStudy =====
  * 汎用のカード一覧ではなく、稽古場で横へ書き足す実験記録の欄として見せる。
@@ -6689,6 +6793,67 @@ body.is-panel-dragging {
 
 /* 正面の絵の真上に出す、そのシーンの説明。
    絵より前に出過ぎないよう、見出しは小さく、本文は落ち着いた明度で置く。 */
+/* 絵のすぐ上の「シーンの行」。前後の送りと、その場面の説明を横に並べる。
+   一覧の欄は畳めるので、送りを一覧の中だけに置くと畳んだ瞬間に行き来できなくなる。
+   狭い幅では説明が下へ折り返すが、送りは必ず一行目に残る。 */
+.stage-scene-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+}
+
+.stage-scene-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+/* いま何場面目か。送りだけでは今どこにいるかが読めない */
+.stage-scene-now {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--milk-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  max-width: 15em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 帯はパネルの外なので、パネル用の字詰めが効かない。ここで揃える */
+.stage-scene-bar .btn-quiet {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 6px 12px;
+  white-space: nowrap;
+  min-height: 30px;
+}
+
+.stage-scene-bar .btn-quiet:disabled { opacity: 0.35; cursor: default; }
+.stage-scene-bar .btn-quiet:disabled:hover { border-color: var(--line-dark); }
+
+/* 説明は残り幅いっぱいを取る。行の中で一番よく読む部分なので、
+   送りより先に折り返させない。
+   ★縦は伸ばさない。伸ばすと、書き込み欄の高さを内容から測る処理
+     （growSceneDesc）が空の行でも器の高さを拾い、帯が厚く空いてしまう。 */
+.stage-scene-bar .stage-scene-desc {
+  flex: 1 1 240px;
+  min-width: 0;
+  align-self: center;
+  align-items: center;
+  padding: 0;
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+
+.stage-scene-bar .stage-scene-desc-text { align-self: center; }
+
 .stage-scene-desc {
   display: flex;
   align-items: baseline;
@@ -6734,6 +6899,256 @@ body.is-panel-dragging {
 .stage-scene-desc-text:focus {
   outline: none;
   border-bottom-color: var(--brass);
+}
+
+/* 光の意図カード。意図→視線→層→変化の読み順を固定する。 */
+.stage-light-intent {
+  min-width: 0;
+  margin-bottom: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+}
+
+.stage-light-intent[hidden] { display: none; }
+
+.stage-light-intent-compare {
+  min-width: 0;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-dark);
+  background: rgba(28, 23, 19, 0.88);
+  color: var(--milk-dim);
+  font-size: 10.5px;
+}
+
+.stage-light-intent-compare[hidden] { display: none; }
+
+.stage-light-intent-compare-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  min-height: 29px;
+}
+
+.stage-light-intent-compare-row + .stage-light-intent-compare-row {
+  border-top: 1px solid rgba(240, 231, 214, 0.08);
+}
+
+.stage-light-intent-compare-kicker {
+  flex: 0 0 7em;
+  color: var(--brass);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.stage-light-intent-compare-row .btn-quiet {
+  margin-left: auto;
+  padding: 4px 9px;
+  min-height: 25px;
+  font-size: 10px;
+}
+
+.stage-light-intent-compare-note,
+.stage-light-preset-intent-note {
+  margin: 5px 0 0;
+  color: rgba(240, 231, 214, 0.42);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.stage-light-preset-intent-note {
+  margin: 0 0 12px;
+  padding: 7px 9px;
+  border-left: 2px solid rgba(211, 172, 89, 0.55);
+  background: rgba(211, 172, 89, 0.04);
+}
+
+.stage-light-preset-intent-note[hidden] { display: none; }
+
+.stage-light-intent-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 28px;
+  padding: 7px 2px 1px;
+  color: var(--milk-dim);
+  cursor: pointer;
+  list-style: none;
+}
+
+.stage-light-intent-summary::-webkit-details-marker { display: none; }
+
+.stage-light-intent-summary::after {
+  content: "▸";
+  color: rgba(211, 172, 89, 0.62);
+  font-size: 10px;
+}
+
+.stage-light-intent[open] > .stage-light-intent-summary::after { content: "▾"; }
+
+.stage-light-intent-kicker {
+  color: var(--brass);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.stage-light-intent-summary-text {
+  min-width: 0;
+  color: rgba(240, 231, 214, 0.66);
+  font-family: var(--serif);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-light-intent-body {
+  display: grid;
+  gap: 12px;
+  margin: 5px 0 3px;
+  padding: 10px 10px 10px 14px;
+  border-left: 2px solid rgba(211, 172, 89, 0.55);
+  background: rgba(211, 172, 89, 0.025);
+}
+
+.stage-light-intent-core {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stage-light-intent label,
+.stage-light-optional label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: var(--milk-dim);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+}
+
+.stage-light-intent input,
+.stage-light-intent textarea,
+.stage-light-intent select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line-dark);
+  border-radius: 0;
+  background: rgba(13, 12, 11, 0.26);
+  color: var(--milk);
+  font: 11px/1.5 var(--sans);
+  padding: 6px 7px;
+}
+
+.stage-light-intent textarea { resize: vertical; }
+
+.stage-light-intent input:focus,
+.stage-light-intent textarea:focus,
+.stage-light-intent select:focus {
+  outline: none;
+  border-bottom-color: var(--brass);
+  background: rgba(13, 12, 11, 0.42);
+}
+
+.stage-light-intent input::placeholder,
+.stage-light-intent textarea::placeholder { color: rgba(240, 231, 214, 0.27); }
+
+.stage-light-layers,
+.stage-light-transition {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.stage-light-layers legend,
+.stage-light-transition legend {
+  margin-bottom: 6px;
+  color: var(--paper);
+  font-family: var(--serif);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+
+.stage-light-layer-row {
+  grid-template-columns: 48px 118px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  border-top: 1px solid rgba(240, 231, 214, 0.07);
+}
+
+.stage-light-layer-row:last-child { border-bottom: 1px solid rgba(240, 231, 214, 0.07); }
+.stage-light-layer-row > span { color: var(--brass); }
+
+.stage-light-transition {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.stage-light-transition legend { grid-column: 1 / -1; }
+.stage-light-transition-note { grid-column: 1 / -1; }
+
+.stage-light-optional {
+  border-top: 1px dashed rgba(240, 231, 214, 0.14);
+  padding-top: 7px;
+}
+
+.stage-light-optional > summary {
+  color: rgba(240, 231, 214, 0.5);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.stage-light-optional[open] {
+  display: grid;
+  gap: 8px;
+}
+
+.stage-light-intent-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(240, 231, 214, 0.08);
+  padding-top: 8px;
+}
+
+.stage-light-intent-foot p {
+  max-width: 62ch;
+  margin: 0;
+  color: rgba(240, 231, 214, 0.38);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.stage-light-intent-foot .btn-quiet {
+  flex: 0 0 auto;
+  color: rgba(240, 231, 214, 0.48);
+}
+
+.stage-light-intent-foot .btn-quiet:disabled { opacity: 0.32; cursor: default; }
+
+@media (max-width: 760px) {
+  .stage-light-intent-core,
+  .stage-light-transition { grid-template-columns: minmax(0, 1fr); }
+  .stage-light-transition legend,
+  .stage-light-transition-note { grid-column: 1; }
+  .stage-light-layer-row { grid-template-columns: 44px minmax(0, 1fr); }
+  .stage-light-layer-row input { grid-column: 1 / -1; }
+  .stage-light-intent-foot { align-items: stretch; flex-direction: column; }
 }
 
 /* 絵のバーに置く道具の入り切り */
@@ -7192,11 +7607,15 @@ body.is-panel-dragging {
 /* ★窓ごとの幅は .stage-modal より後ろに置く。前に書くと、同じ強さの
    後出しに負けて既定の380pxに戻る（実際に姿勢の窓がそうなっていた）。 */
 .stage-modal.stage-pose-modal { width: min(1020px, calc(100vw - 40px)); }
+/* 照明プリセットの見本は、光の重なりと角度を読むための絵。
+   380pxの窓に3列だと1枚100px弱しかなく、灯体の数も色の違いも潰れる。 */
+.stage-modal#stage-light-preset-modal { width: min(820px, calc(100vw - 40px)); }
 .stage-modal.stage-shows-modal { width: min(520px, calc(100vw - 40px)); }
 .stage-modal.stage-beat-template-modal { width: min(780px, calc(100vw - 40px)); }
 .stage-modal.stage-export-modal { width: min(420px, calc(100vw - 40px)); }
 .stage-modal.stage-rehearsal-export-modal { width: min(560px, calc(100vw - 40px)); }
 .stage-modal.stage-about-modal { width: min(720px, calc(100vw - 40px)); }
+.stage-modal.stage-venue-editor-modal { width: min(980px, calc(100vw - 40px)); }
 
 .stage-modal-head {
   display: flex;
@@ -7228,6 +7647,261 @@ body.is-panel-dragging {
 .stage-modal-close:hover { color: var(--milk); border-color: var(--rust); }
 
 .stage-modal-body { padding: 14px 16px 18px; }
+
+/* ===== 会場エディタ: 形・観客・柱／什器／扉・天井（方式仕様 7章の1〜4） ===== */
+
+.stage-venue-editor-modal .stage-modal-body {
+  display: grid;
+  gap: 10px;
+}
+
+.stage-venue-editor-lead,
+.stage-venue-editor-boundary { margin: 0; }
+
+.stage-venue-editor-shapes {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+
+.stage-venue-editor-modes {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+
+.stage-venue-editor-object-tools,
+.stage-venue-editor-ceiling,
+.stage-venue-editor-lines {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line-dark);
+  background: rgba(25, 21, 18, 0.45);
+}
+
+.stage-venue-editor-object-tools {
+  grid-template-columns: minmax(180px, 1fr) minmax(190px, auto) auto;
+  align-items: center;
+}
+
+.stage-venue-editor-object-tools > p,
+.stage-venue-editor-ceiling h3,
+.stage-venue-editor-lines h3 {
+  margin: 0;
+  color: var(--milk);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.stage-venue-editor-object-tools .stage-toggle { margin: 0; }
+
+.stage-venue-editor-setting {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  color: var(--milk-dim);
+  font-size: 11px;
+}
+
+.stage-venue-editor-access-setting {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 92px minmax(0, 240px);
+  align-items: center;
+  gap: 8px;
+  color: var(--milk-dim);
+  font-size: 11px;
+}
+
+.stage-venue-editor-height-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.stage-venue-editor-ceiling-heights { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+.stage-venue-editor-rigging { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.stage-venue-editor-lines-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stage-venue-editor-lines-head > span {
+  color: var(--milk-dim);
+  font-size: 10px;
+}
+
+.stage-venue-editor-line-toggles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.stage-venue-editor-line-toggles label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid var(--line-dark);
+  color: var(--milk);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.stage-venue-editor-line-toggles input { accent-color: var(--brass); }
+
+.stage-venue-editor-probe-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+}
+
+.stage-venue-editor-probe-tools label {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--milk-dim);
+  font-size: 11px;
+}
+
+.stage-venue-editor-probe-tools input[type="range"] {
+  width: 100%;
+  accent-color: var(--brass);
+}
+
+.stage-venue-editor-probe-tools output {
+  min-width: 3.2em;
+  color: var(--milk);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.stage-venue-editor-probe-status {
+  margin: 0;
+  color: var(--milk-dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.stage-venue-editor-probe-status.is-overlap {
+  color: #ff6b61;
+  font-weight: 700;
+}
+
+.stage-venue-editor-object-tools button:disabled,
+.stage-venue-editor-object-tools input:disabled,
+.stage-venue-editor-object-tools select:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.stage-venue-editor-dims {
+  margin: 0;
+  color: var(--brass);
+  font: 500 13px var(--serif);
+  letter-spacing: 0.05em;
+}
+
+#stage-venue-editor-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(58vh, 640px);
+  aspect-ratio: 3 / 2;
+  border: 1px solid var(--line-dark);
+  background: var(--desk);
+  touch-action: none;
+  user-select: none;
+}
+
+#stage-venue-editor-canvas:focus {
+  outline: 1px solid var(--brass);
+  outline-offset: 2px;
+}
+
+.stage-venue-editor-status {
+  min-height: 1.5em;
+  margin: 0;
+  color: var(--milk-dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.stage-venue-editor-audience {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) minmax(180px, auto) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-venue-editor-audience p {
+  margin: 0;
+  color: var(--milk);
+  font-size: 11px;
+}
+
+.stage-venue-editor-audience .stage-toggle { margin: 0; }
+
+.stage-venue-editor-audience .btn-quiet {
+  min-height: 36px;
+  white-space: nowrap;
+}
+
+.stage-venue-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.stage-venue-editor-actions span {
+  flex: 1 1 auto;
+  color: var(--milk-dim);
+  font-size: 11px;
+  text-align: right;
+}
+
+.stage-venue-editor-actions .stage-minor-action {
+  min-width: 150px;
+  border-color: var(--rust);
+}
+
+@media (max-width: 640px) {
+  .stage-modal.stage-venue-editor-modal {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  .stage-venue-editor-shapes,
+  .stage-venue-editor-modes,
+  .stage-venue-editor-height-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .stage-venue-editor-object-tools { grid-template-columns: 1fr; }
+
+  .stage-venue-editor-object-tools > *,
+  .stage-venue-editor-setting,
+  .stage-venue-editor-access-setting { grid-column: 1; }
+
+  .stage-venue-editor-setting,
+  .stage-venue-editor-access-setting { grid-template-columns: 1fr; }
+
+  .stage-venue-editor-ceiling-heights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .stage-venue-editor-line-toggles,
+  .stage-venue-editor-probe-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .stage-venue-editor-probe-tools label { grid-column: 1 / -1; }
+
+  .stage-venue-editor-audience {
+    grid-template-columns: 1fr;
+  }
+
+  .stage-venue-editor-actions { align-items: stretch; flex-direction: column; }
+  .stage-venue-editor-actions span { min-height: 1.4em; text-align: left; }
+}
 
 .stage-about-link {
   display: block;
@@ -7379,11 +8053,23 @@ body.is-panel-dragging {
 
 /* 選んだものの操作は一列にまとめる。縦に積むと、つまみより
    ボタンの方が場所を取って、何を触る欄なのか分からなくなる */
+/* 横に並べるボタンの行。置く場所によって子の数が二つだったり三つだったりする。
+   列を「38px＋2列」で固定すると、子が二つの行では先頭が38pxまで潰れ、
+   字が一文字ずつ縦に折れて行だけが高くなる。実際に
+   〈読み込む前に見比べる〉の窓・ポールの左右・トラピーズの座る／ぶら下がる が
+   その形になっていた。子の数だけ等分の列を作る。 */
 .stage-action-row {
   display: grid;
-  grid-template-columns: 38px repeat(2, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 5px;
   margin-top: 10px;
+}
+
+/* 先頭が鍵などの小さな印のときだけ、その列を細くする */
+.stage-action-row.is-icon-led {
+  grid-auto-flow: row;
+  grid-template-columns: 38px repeat(2, minmax(0, 1fr));
 }
 
 .stage-icon-action {
@@ -7413,6 +8099,43 @@ body.is-panel-dragging {
   font-size: 9.5px;
   line-height: 1.65;
   margin-top: 5px;
+}
+
+/* AI指示は一つの補助パネルとして、本文・質問・差分・実行情報の書体と強さをそろえる。 */
+#stage-ask-panel,
+#stage-ask-panel * {
+  font-family: var(--sans);
+}
+
+#stage-ask-error,
+#stage-ask-elapsed,
+#stage-ask-draft-body,
+#stage-ask-agent-info {
+  color: rgba(240, 231, 214, 0.36);
+  font-size: 9.5px;
+  line-height: 1.65;
+}
+
+#stage-ask-error,
+#stage-ask-elapsed { margin: 5px 0 0; }
+
+#stage-ask-draft-body h3 {
+  margin: 8px 0 2px;
+  color: inherit;
+  font-size: inherit;
+  font-weight: 400;
+  line-height: inherit;
+}
+
+#stage-ask-draft-body ul {
+  margin: 0;
+  padding-left: 1.5em;
+}
+
+#stage-ask-draft-body li {
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .stage-rehearsal-export-open {

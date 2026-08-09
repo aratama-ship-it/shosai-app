@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>制作の書斎 — Phase 0 プロトタイプ</title>
-<link rel="stylesheet" href="style.css?v=152">
+<link rel="stylesheet" href="style.css?v=164">
 </head>
 <body>
 
@@ -164,8 +164,12 @@
       <div id="roster-gate" class="roster-gate">
         <form id="roster-gate-form" class="roster-gate-form">
           <label for="roster-pass">合言葉</label>
-          <input id="roster-pass" type="password" autocomplete="current-password"
-                 placeholder="スカウティングレポートと同じ合言葉">
+          <div class="roster-pass-row">
+            <input id="roster-pass" type="password" autocomplete="current-password"
+                   placeholder="スカウティングレポートと同じ合言葉">
+            <button type="button" id="roster-pass-toggle" class="btn-quiet"
+                    aria-pressed="false" aria-label="表示">表示</button>
+          </div>
           <button type="submit" id="roster-unlock" class="btn-quiet">名簿を開く</button>
         </form>
         <p id="roster-gate-note" class="roster-gate-note" aria-live="polite"></p>
@@ -230,7 +234,7 @@
       <header class="stage-sketch-head">
         <div>
           <p class="stage-sketch-kicker">STAGE IMAGE STUDY</p>
-          <h1 id="stage-sketch-title">舞台スケッチ<span class="stage-app-version">v0.3.3</span><span class="stage-beta">β版</span></h1>
+          <h1 id="stage-sketch-title">舞台スケッチ<span class="stage-app-version">v0.3.4</span><span class="stage-beta">β版</span></h1>
         </div>
         <!-- 保存の注意。ブラウザ内の保存は消え得るので、上部で一度だけはっきり伝える -->
         <p class="stage-storage-caution">描いたものはこの端末のブラウザにだけ保存されます。設定や容量で消えることがあるので、区切りごとに〈書き出す〉からファイルへ控えを取ってください。</p>
@@ -283,6 +287,14 @@
                 <label class="stage-field-label" for="stage-size-select">規模</label>
                 <select id="stage-size-select" class="stage-select"></select>
               </div>
+              <button type="button" class="stage-minor-action" id="stage-venue-editor-open">この部屋を作る</button>
+              <div class="stage-io-row">
+                <button type="button" class="btn-quiet" id="stage-venue-library-export">会場を書き出す</button>
+                <label class="btn-quiet stage-import-label">
+                  会場を読み込む<input type="file" id="stage-venue-library-import" accept="application/json" hidden>
+                </label>
+              </div>
+              <p class="stage-profile-hint" id="stage-venue-library-status" aria-live="polite"></p>
               <div class="stage-dim-row" id="stage-venue-dims">
                 <label class="stage-dim-cell">
                   <span id="stage-venue-w-label">間口</span>
@@ -299,6 +311,7 @@
               </div>
               <button type="button" class="stage-minor-action" id="stage-venue-reset">規模のとおりに戻す</button>
               <p class="stage-venue-scale" id="stage-venue-scale"></p>
+              <p class="stage-profile-hint" id="stage-venue-missing" hidden></p>
             </section>
             </div>
           </section>
@@ -393,7 +406,7 @@
               <label class="stage-control-label">スクリーンの文字</label>
               <div class="stage-cast-add stage-roster-add">
                 <input id="stage-screentext-input" class="stage-text-input" type="text" maxlength="60"
-                       placeholder="例: 黒閃 / ドッ / 純愛だよ" aria-label="スクリーンへ映す文字">
+                       placeholder="例: 三回宙返り / ドン / 10年後" aria-label="スクリーンへ映す文字">
                 <button type="button" id="stage-screentext-add" class="btn-quiet">映す</button>
               </div>
               <div class="stage-cast-list" id="stage-screentext-list"></div>
@@ -449,9 +462,9 @@
         <section class="stage-board-column stage-col-center" data-col="center" id="stage-col-center" aria-label="舞台面">
           <section class="stage-panel stage-scenes" data-panel="scenes" data-title="シーン" aria-label="シーンの一覧">
             <div class="stage-panel-body">
+              <!-- 前後の送りは絵のすぐ上（.stage-scene-bar）へ出した。
+                   ここに残すのは転換の見せ方だけ。 -->
               <div class="stage-scene-move">
-                <button type="button" id="stage-scene-prev" class="btn-quiet" title="前のシーンへ（↑）">◀ 前のシーン</button>
-                <button type="button" id="stage-scene-next" class="btn-quiet" title="次のシーンへ（↓）">次のシーン ▶</button>
                 <label class="stage-toggle stage-anim-toggle" title="次のシーンへ進むとき、動線に沿って動かして見せます">
                   <input type="checkbox" id="stage-anim-scenes" checked>
                   <span>アニメーション</span>
@@ -513,6 +526,25 @@
               <input type="checkbox" id="stage-show-light-names" checked>
               <span>照明名</span>
             </label>
+          </div>
+          <!-- シーンの行。前後の送りと「この場面で何が起きるか」を、絵のすぐ上に常に出す。
+               シーンの一覧は畳める欄なので、送りを一覧の中だけに置くと、
+               畳んだとたんに場面を行き来できなくなる。説明も同じ理由でここへ置き、
+               絵を見ながら読み書きできるようにする。 -->
+          <div class="stage-scene-bar" id="stage-scene-bar">
+            <div class="stage-scene-step" role="group" aria-label="シーンを送る">
+              <button type="button" id="stage-scene-prev" class="btn-quiet" title="前のシーンへ（↑）">◀ 前のシーン</button>
+              <span class="stage-scene-now" id="stage-scene-now" aria-live="polite"></span>
+              <button type="button" id="stage-scene-next" class="btn-quiet" title="次のシーンへ（↓）">次のシーン ▶</button>
+            </div>
+            <div class="stage-scene-desc" id="stage-scene-desc">
+              <label class="stage-scene-desc-label" id="stage-scene-desc-label"
+                     for="stage-scene-desc-text">シーンの説明</label>
+              <!-- 枠を持たない書き込み欄。読むときは本文にしか見えず、
+                   押せばそのまま直せる（シーン一覧を開きに行かなくていい） -->
+              <textarea class="stage-scene-desc-text" id="stage-scene-desc-text" rows="1"
+                        maxlength="200" placeholder="この場面で何が起きるか"></textarea>
+            </div>
           </div>
           <div class="stage-canvas-stack" id="stage-canvas-stack">
             <div class="stage-board-frame" id="stage-front-cell">
@@ -659,6 +691,7 @@
                 </label>
                 <input type="range" id="stage-piece-seri" min="0" max="4" step="0.01" value="0">
               </div>
+              <p id="stage-seri-warning" class="stage-seri-warning" hidden>せりの縁をまたいでいます（上がると落ちます）</p>
               <!-- プリセットの組を選んでいるときの操作。一体で扱い、直径と強さだけ触れる -->
               <div id="stage-group-controls" hidden>
                 <label class="stage-control-label stage-range-label" for="stage-group-dia">
@@ -700,7 +733,7 @@
                 <button type="button" class="stage-minor-action" id="stage-beam-reset">真上から落とす</button>
               </div>
               <p class="stage-dims-note" id="stage-dims-from-set" hidden></p>
-              <div class="stage-action-row">
+              <div class="stage-action-row is-icon-led">
                 <button type="button" class="stage-icon-action stage-lock-action" id="stage-piece-lock"
                         aria-pressed="false" aria-label="動かないようにする">🔓</button>
                 <button type="button" class="stage-icon-action" id="stage-duplicate">複製</button>
@@ -724,6 +757,30 @@
             <button type="button" class="stage-minor-action stage-rehearsal-export-open"
                     id="stage-rehearsal-export-open">Vision Pro稽古用JSON</button>
             <button type="button" class="stage-minor-action" id="stage-clear">舞台を空にする</button>
+          </section>
+
+          <section class="stage-panel" data-panel="ask" data-title="AI指示" id="stage-ask-panel" aria-label="AI指示">
+            <div class="stage-panel-body">
+              <textarea id="stage-ask-input" class="stage-text-input" rows="4" maxlength="500"
+                        placeholder="例: 3場面目の円座を、2場面目のものに入れ替えて"></textarea>
+              <div id="stage-ask-idle">
+                <button type="button" class="btn-quiet" id="stage-ask-run">頼む</button>
+              </div>
+              <div id="stage-ask-running" hidden>
+                <p id="stage-ask-elapsed" aria-live="polite">考えています 0秒</p>
+                <button type="button" class="btn-quiet" id="stage-ask-stop">止める</button>
+              </div>
+              <p id="stage-ask-error" role="alert" hidden></p>
+              <div id="stage-ask-draft" hidden>
+                <div id="stage-ask-draft-body"></div>
+                <p class="stage-profile-hint" id="stage-ask-warning" role="alert" hidden></p>
+                <div class="stage-action-row">
+                  <button type="button" class="stage-minor-action" id="stage-ask-adopt">採る</button>
+                  <button type="button" class="btn-quiet" id="stage-ask-discard">捨てる</button>
+                </div>
+              </div>
+              <p class="stage-profile-hint" id="stage-ask-agent-info" aria-live="polite">不明</p>
+            </div>
           </section>
         </aside>
       </div>
@@ -1155,7 +1212,8 @@
     <button type="button" class="stage-modal-close" id="stage-kind-close" aria-label="閉じる">✕</button>
   </header>
   <div class="stage-modal-body">
-    <p class="stage-profile-hint">絵は真横から見た形と、実物のおよその寸法です。</p>
+    <!-- 見出しの下の説明文は本人の指示で撤去（2026-08-09）。
+         絵を見れば分かるものに字を添えない。 -->
     <div class="stage-pose-grid" id="stage-kind-grid"></div>
   </div>
 </div>
@@ -1224,16 +1282,186 @@
   </div>
 </div>
 
+<div class="stage-modal-backdrop" id="stage-venue-editor-backdrop" hidden></div>
+<div class="stage-modal stage-venue-editor-modal" id="stage-venue-editor-modal" role="dialog"
+     aria-modal="true" aria-labelledby="stage-venue-editor-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-venue-editor-title">この部屋を作る</h2>
+    <button type="button" class="stage-modal-close" id="stage-venue-editor-close" aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <p class="stage-profile-hint stage-venue-editor-lead">近い形から始め、辺は一方向、角は二方向へ動かします。角の長押しで欠き取れます。</p>
+    <section class="stage-tool-grid stage-venue-editor-shapes" role="group" aria-label="部屋の近い形">
+      <button type="button" data-venue-editor-shape="rectangle" aria-pressed="true">矩形</button>
+      <button type="button" data-venue-editor-shape="l-shape" aria-pressed="false">L字</button>
+      <button type="button" data-venue-editor-shape="circle" aria-pressed="false">円</button>
+      <button type="button" data-venue-editor-shape="trapezoid" aria-pressed="false">台形</button>
+    </section>
+    <section class="stage-tool-grid stage-venue-editor-modes" role="group" aria-label="追加モード">
+      <button type="button" data-venue-editor-mode="select" aria-pressed="true">選択</button>
+      <button type="button" data-venue-editor-mode="column" aria-pressed="false">柱</button>
+      <button type="button" data-venue-editor-mode="furniture" aria-pressed="false">什器</button>
+      <button type="button" data-venue-editor-mode="door" aria-pressed="false">扉</button>
+    </section>
+    <section class="stage-venue-editor-object-tools" aria-label="柱・什器・扉の設定">
+      <p id="stage-venue-editor-object-selection">柱・什器・扉は選択されていません</p>
+      <label class="stage-toggle" for="stage-venue-editor-object-movable">
+        <input type="checkbox" id="stage-venue-editor-object-movable" disabled>
+        <span>動かせる（OFFは動かせない）</span>
+      </label>
+      <button type="button" class="btn-quiet" id="stage-venue-editor-object-remove" disabled>選択したものを削除</button>
+      <div class="stage-venue-editor-setting">
+        <span>什器の高さ</span>
+        <div class="stage-tool-grid stage-venue-editor-height-steps" role="group" aria-label="什器の高さ">
+          <button type="button" data-venue-editor-furniture-height="knee" aria-pressed="false" disabled>膝 0.5m</button>
+          <button type="button" data-venue-editor-furniture-height="waist" aria-pressed="true" disabled>腰 1.0m</button>
+          <button type="button" data-venue-editor-furniture-height="person" aria-pressed="false" disabled>背丈 1.7m</button>
+          <button type="button" data-venue-editor-furniture-height="ceiling" aria-pressed="false" disabled>天井まで</button>
+        </div>
+      </div>
+      <label class="stage-venue-editor-access-setting" for="stage-venue-editor-access-type">
+        <span>扉の種類</span>
+        <select class="stage-select" id="stage-venue-editor-access-type" disabled>
+          <option value="entrance">扉</option>
+          <option value="load-in">搬入口</option>
+        </select>
+      </label>
+    </section>
+    <section class="stage-venue-editor-ceiling" aria-labelledby="stage-venue-editor-ceiling-title">
+      <h3 id="stage-venue-editor-ceiling-title">天井</h3>
+      <div class="stage-venue-editor-setting">
+        <span>高さ</span>
+        <div class="stage-tool-grid stage-venue-editor-ceiling-heights" role="group" aria-label="天井の高さ">
+          <button type="button" data-venue-editor-ceiling-height="3" aria-pressed="false">約3m</button>
+          <button type="button" data-venue-editor-ceiling-height="4" aria-pressed="false">約4m</button>
+          <button type="button" data-venue-editor-ceiling-height="6" aria-pressed="true">約6m</button>
+          <button type="button" data-venue-editor-ceiling-height="8" aria-pressed="false">約8m</button>
+          <button type="button" data-venue-editor-ceiling-height="10" aria-pressed="false">それ以上</button>
+        </div>
+      </div>
+      <div class="stage-venue-editor-setting">
+        <span>吊り</span>
+        <div class="stage-tool-grid stage-venue-editor-rigging" role="group" aria-label="吊り条件">
+          <button type="button" data-venue-editor-rigging="none" aria-pressed="true">吊れない</button>
+          <button type="button" data-venue-editor-rigging="limited" aria-pressed="false">一部可</button>
+          <button type="button" data-venue-editor-rigging="full" aria-pressed="false">吊れる</button>
+        </div>
+      </div>
+    </section>
+    <section class="stage-venue-editor-lines" aria-labelledby="stage-venue-editor-lines-title">
+      <div class="stage-venue-editor-lines-head">
+        <h3 id="stage-venue-editor-lines-title">会場から導く4本の線</h3>
+        <span>既定はすべて表示</span>
+      </div>
+      <div class="stage-venue-editor-line-toggles" role="group" aria-label="線の表示">
+        <label><input type="checkbox" data-venue-editor-line-toggle="movement" checked><span>可動範囲</span></label>
+        <label><input type="checkbox" data-venue-editor-line-toggle="fall" checked><span>落下範囲</span></label>
+        <label><input type="checkbox" data-venue-editor-line-toggle="blind" checked><span>死角</span></label>
+        <label><input type="checkbox" data-venue-editor-line-toggle="sight" checked><span>見える限界</span></label>
+      </div>
+      <div class="stage-venue-editor-probe-tools">
+        <label for="stage-venue-editor-probe-tool">
+          <span>探り針の道具</span>
+          <select class="stage-select" id="stage-venue-editor-probe-tool">
+            <option value="juggling">ジャグリング</option>
+            <option value="diabolo">ディアボロ</option>
+            <option value="aerial" disabled>エアリアル</option>
+            <option value="unspecified" selected>指定なし</option>
+          </select>
+        </label>
+        <label for="stage-venue-editor-probe-reach">
+          <span>到達高さ</span>
+          <input type="range" id="stage-venue-editor-probe-reach" min="0.5" max="6" step="0.5" value="3">
+          <output id="stage-venue-editor-probe-reach-value" for="stage-venue-editor-probe-reach">3.0m</output>
+        </label>
+      </div>
+      <p id="stage-venue-editor-probe-status" class="stage-venue-editor-probe-status" aria-live="polite">落下範囲は経験則による目安です。安全性は判定しません。</p>
+    </section>
+    <p class="stage-venue-editor-dims" id="stage-venue-editor-dims">間口 だいたい12m ・ 奥行 だいたい8m</p>
+    <canvas id="stage-venue-editor-canvas" width="960" height="640" tabindex="0"
+            aria-label="会場の平面。4本の線を重ね、探り針をドラッグして落下範囲の目安を確かめます"></canvas>
+    <p class="stage-venue-editor-status" id="stage-venue-editor-status" aria-live="polite">選択モードです。辺をタップすると壁沿いに立ち見の観客を置けます。</p>
+    <section class="stage-venue-editor-audience">
+      <p id="stage-venue-editor-audience-selection">観客の帯はまだありません</p>
+      <label class="stage-toggle" for="stage-venue-editor-audience-mode">
+        <input type="checkbox" id="stage-venue-editor-audience-mode" disabled>
+        <span id="stage-venue-editor-audience-mode-text">座り（OFFは立ち見）</span>
+      </label>
+      <button type="button" class="btn-quiet" id="stage-venue-editor-audience-remove" disabled>この帯を外す</button>
+    </section>
+    <div class="stage-field-row">
+      <label class="stage-field-label" for="stage-venue-editor-name">会場名</label>
+      <input type="text" class="stage-text-input" id="stage-venue-editor-name" maxlength="100"
+             placeholder="例: 大広間（仮）" required>
+    </div>
+    <div class="stage-field-row">
+      <label class="stage-field-label" for="stage-venue-editor-source">出所</label>
+      <select class="stage-select" id="stage-venue-editor-source">
+        <option value="実測">実測</option>
+        <option value="図面">図面</option>
+        <option value="写真">写真</option>
+        <option value="記憶" selected>記憶</option>
+      </select>
+    </div>
+    <div class="stage-field-row">
+      <label class="stage-field-label" for="stage-venue-editor-confidence">確度</label>
+      <select class="stage-select" id="stage-venue-editor-confidence">
+        <option value="high">high</option>
+        <option value="mid">mid</option>
+        <option value="low" selected>low</option>
+      </select>
+    </div>
+    <div class="stage-field-row">
+      <label class="stage-field-label" for="stage-venue-editor-sharing">共有</label>
+      <select class="stage-select" id="stage-venue-editor-sharing">
+        <option value="ok" selected>ok</option>
+        <option value="internal-only">internal-only</option>
+      </select>
+    </div>
+    <p class="stage-profile-hint stage-venue-editor-boundary">目安の平面です。搬入経路・荷重・安全距離は判定しません。</p>
+    <footer class="stage-venue-editor-actions">
+      <span id="stage-venue-editor-save-status" aria-live="polite"></span>
+      <button type="button" class="stage-minor-action" id="stage-venue-editor-save">会場ライブラリに保存</button>
+    </footer>
+  </div>
+</div>
+
+<div class="stage-modal-backdrop" id="stage-venue-export-backdrop" hidden></div>
+<div class="stage-modal" id="stage-venue-export-modal" role="dialog" aria-modal="true"
+     aria-labelledby="stage-venue-export-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-venue-export-title">会場データの共有確認</h2>
+    <button type="button" class="stage-modal-close" id="stage-venue-export-cancel" aria-label="中止">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <p>この会場の資料は外部共有不可の設定です。</p>
+    <footer class="stage-venue-editor-actions">
+      <button type="button" class="stage-minor-action" id="stage-venue-export-include">会場データを含めます</button>
+      <button type="button" class="btn-quiet" id="stage-venue-export-without">会場は含めず書き出します</button>
+      <button type="button" class="btn-quiet" id="stage-venue-export-stop">中止</button>
+    </footer>
+  </div>
+</div>
+
+<div class="stage-present-overlay" id="stage-present-overlay" aria-hidden="true">
+  <button type="button" class="stage-present-zone is-prev" id="stage-present-prev" aria-label="前のシーンへ">‹</button>
+  <button type="button" class="stage-present-zone is-next" id="stage-present-next" aria-label="次のシーンへ">›</button>
+  <button type="button" class="stage-present-close" id="stage-present-close" aria-label="プレゼンを終える">✕</button>
+</div>
+
 <script src="db.js?v=79"></script>
 <script src="data.js?v=16"></script>
 <script src="book-seeds.js?v=2"></script>
 <script src="shelf-classification.js?v=1"></script>
   <script src="stage-apparatus-data.js?v=10"></script>
-<script src="app.js?v=47"></script>
-<script src="stage-venues.js?v=14"></script>
-<script src="stage-i18n.js?v=38"></script>
+<script src="app.js?v=48"></script>
+<script src="stage-venues.js?v=16"></script>
+<script src="stage-venue-lines.js?v=1"></script>
+<script src="stage-i18n.js?v=44"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
-<script src="stage-sketch.js?v=200"></script>
-<script src="roster.js?v=2"></script>
+<script src="stage-samples/index.js?v=1"></script>
+<script src="stage-sketch.js?v=226"></script>
+<script src="stage-venue-editor.js?v=4"></script>
+<script src="roster.js?v=3"></script>
 </body>
 </html>

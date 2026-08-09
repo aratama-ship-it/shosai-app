@@ -5,6 +5,15 @@
 (function () {
   "use strict";
 
+  // localStorageの移行処理は単独ファイルにして、ブラウザ版とMacアプリ版で共有する。
+  // index.htmlは保護対象なので、既存app.jsの入口から読み込む。
+  if (!window.SHOSAI_STORAGE_MIGRATION) {
+    const migrationScript = document.createElement("script");
+    migrationScript.src = "storage-migration.js?v=1";
+    migrationScript.dataset.shosaiStorageMigration = "1";
+    document.head.append(migrationScript);
+  }
+
   // ---------- 状態（Phase 0: メモリ上のみ・保存されない） ----------
   const state = {
     project: null,        // 現在開いているプロジェクト

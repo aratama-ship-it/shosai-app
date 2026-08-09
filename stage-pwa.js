@@ -15,7 +15,9 @@
 
   // file:// では Service Worker を登録できない。公開URLやローカルHTTPでは
   // 同じ stage.html をそのままPWAとして使える。
-  if (!("serviceWorker" in navigator) || window.location.protocol === "file:") return;
+  if (window.stageSketchBridge
+    || !("serviceWorker" in navigator)
+    || window.location.protocol === "file:") return;
 
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./stage-sw.js", { scope: "./" }).catch((error) => {
