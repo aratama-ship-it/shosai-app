@@ -15,6 +15,9 @@
   --milk: rgba(240, 231, 214, 0.85);
   --milk-dim: rgba(240, 231, 214, 0.55);
   --rust: #a84b26;
+  /* 8.5〜9.5px の小見出し用。--rust のままだと机の色の上で 2.80〜3.44 しかなく読みにくい。
+     色相はそのままに明るくして 4.5:1 を満たす。塗り・線・大きい字は --rust のまま使う。 */
+  --rust-ink: #df6433;
   --rust-deep: #8f3e1e;
   --brass: #9c823f;
   --moss: #77865f;
@@ -849,7 +852,7 @@ textarea, input[type="text"] {
 }
 
 .db-shelf-kicker {
-  color: var(--rust);
+  color: var(--rust-ink);
   font-size: 8.5px;
   letter-spacing: 0.18em;
   line-height: 1.45;
@@ -886,7 +889,7 @@ textarea, input[type="text"] {
 }
 
 .db-shelf-switcher-kicker {
-  color: var(--rust);
+  color: var(--rust-ink);
   font-size: 9.5px;
   letter-spacing: 0.24em;
   margin-bottom: 3px;
@@ -947,7 +950,7 @@ textarea, input[type="text"] {
 }
 
 .db-lenses-kicker {
-  color: var(--rust);
+  color: var(--rust-ink);
   font-size: 9.5px;
   letter-spacing: 0.24em;
   margin-bottom: 3px;
@@ -1004,7 +1007,7 @@ textarea, input[type="text"] {
 .db-lens[aria-pressed="true"] { background: rgba(154,60,43,0.2); border-color: rgba(154,60,43,0.72); box-shadow: inset 2px 0 0 var(--rust); }
 
 .db-lens-index {
-  color: var(--rust);
+  color: var(--rust-ink);
   font-size: 9.5px;
   letter-spacing: 0.12em;
 }
