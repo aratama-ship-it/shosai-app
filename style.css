@@ -133,7 +133,10 @@ textarea, input[type="text"] {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
+  justify-content: center;
   min-height: 48px;
+  /* 「名簿」のように短い項目は幅43pxで的が細かった。長い項目は元から超えるので影響しない */
+  min-width: 44px;
   padding: 0 16px;
   color: var(--milk-dim);
   text-decoration: none;
@@ -912,7 +915,8 @@ textarea, input[type="text"] {
 }
 
 .db-shelf-tab {
-  min-height: 34px;
+  /* 指で押す的を44px(Apple HIG)まで広げる。下の演出の型カードと高さが揃い、面の並びも整う */
+  min-height: 44px;
   border: 1px solid var(--line-dark);
   color: var(--milk-dim);
   font-family: var(--sans);
@@ -995,7 +999,7 @@ textarea, input[type="text"] {
   grid-template-columns: 1.8em minmax(0, 1fr);
   align-items: center;
   width: 100%;
-  min-height: 38px;
+  min-height: 44px;   /* 実測43pxで1px足りなかった。見た目はほぼ変わらない */
   gap: 5px;
   padding: 5px 7px;
   text-align: left;
@@ -1067,6 +1071,7 @@ textarea, input[type="text"] {
   background: var(--desk-2);
   border: 1px solid var(--line-dark);
   color: var(--milk);
+  min-height: 44px;   /* 検索欄43px・セレクト40pxで的が小さかった */
   padding: 10px 12px;
   border-radius: 1px;
   font-size: 14px;
