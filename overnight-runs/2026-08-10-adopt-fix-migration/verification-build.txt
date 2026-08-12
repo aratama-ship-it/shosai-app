@@ -1,0 +1,3 @@
+Building 制作の書斎.app
+Built: /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/mac-app/build/制作の書斎.app
+

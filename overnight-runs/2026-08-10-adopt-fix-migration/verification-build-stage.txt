@@ -1,0 +1,2 @@
+stage.html は index.html と揃っています
+
