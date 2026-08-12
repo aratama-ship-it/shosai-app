@@ -6,15 +6,19 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { ProjectStore } from "./project-store.js";
 import {
+  applyEditPlanSchema,
   createProjectSchema,
+  lightingIntentSchema,
   mutationBaseSchema,
   placementSchema,
+  planEditSchema,
   projectIdSchema,
   sceneBeatSchema,
   sceneRehearsalSchema,
   sceneSchema,
 } from "./schemas.js";
 import { GUIDE, summarizeDocument } from "./stage-model.js";
+import { sceneAssetSummary } from "./edit-plan.js";
 
 const store = new ProjectStore();
 
@@ -111,6 +115,7 @@ export function buildServer(projectStore = store) {
         project,
         scenes: document.project.scenes.map((scene) => ({
           id: scene.id,
+          sceneId: scene.id,
           kind: scene.kind,
           depth: scene.depth,
           title: scene.title,
@@ -118,6 +123,7 @@ export function buildServer(projectStore = store) {
           beat: scene.beat,
           note: scene.note,
           pieceCount: scene.pieces.length,
+          assets: sceneAssetSummary(document.project, scene),
         })),
       };
     }),
@@ -207,7 +213,7 @@ export function buildServer(projectStore = store) {
     {
       title: "一場面を修正する",
       description:
-        "場面名、メモ、背景、字下げ、配置を修正する。placementsは既定で全置換。" +
+        "場面名、メモ、背景、字下げ、光の意図、配置を修正する。placementsは既定で全置換。" +
         "placementMode=appendの場合だけ既存配置へ追加する。以前の版は履歴へ残る。",
       inputSchema: {
         ...mutationBaseSchema,
@@ -219,6 +225,7 @@ export function buildServer(projectStore = store) {
         studyBeatId: z.string().max(64).nullable().optional(),
         beat: sceneBeatSchema,
         rehearsal: sceneRehearsalSchema,
+        lightingIntent: lightingIntentSchema.nullable().optional(),
         placementMode: z.enum(["replace", "append"]).optional(),
         placements: z.array(placementSchema).max(80).optional(),
       },
@@ -230,6 +237,43 @@ export function buildServer(projectStore = store) {
       },
     },
     safeTool(async (input) => projectStore.updateScene(input)),
+  );
+
+  server.registerTool(
+    "stage_sketch_plan_edit",
+    {
+      title: "編集計画と差分を作る",
+      description:
+        "現在revisionに対する編集操作をメモリ上で試作し、日本語の差分として保存する。" +
+        "projects、exports、revisionは変更せず、配置の未指定値は手動追加と同じ既定値で補完する。" +
+        "質問で止まるのは、既存の同名候補が複数あり取り違えると既存配置を壊す場合だけ。",
+      inputSchema: planEditSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    safeTool(async (input) => projectStore.planEdit(input)),
+  );
+
+  server.registerTool(
+    "stage_sketch_apply_edit_plan",
+    {
+      title: "確認済みの編集計画を適用する",
+      description:
+        "明示的なconfirmed: trueと一致するrevisionがある場合だけ計画全体を1リビジョンで適用する。" +
+        "直前版を履歴へ残し、点検と読み込み用JSONの準備まで行う。",
+      inputSchema: applyEditPlanSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    safeTool(async (input) => projectStore.applyEditPlan(input)),
   );
 
   server.registerTool(

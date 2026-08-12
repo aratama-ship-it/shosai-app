@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -156,6 +156,54 @@ test("prepares a clean file for the browser and keeps MCP metadata private", asy
     holdDurationSeconds: 2,
     transitionToNextSeconds: 3.2,
   });
+});
+
+test("keeps one readable index for canonical projects and browser-import JSON", async () => {
+  const store = await temporaryStore();
+  await store.create({
+    projectId: "indexed-show",
+    title: "一覧テスト",
+    scenes: initialScenes,
+  });
+
+  const before = JSON.parse(await readFile(path.join(store.dataRoot, "shows.json"), "utf8"));
+  assert.equal(before.kind, "shosai-stage-sketch-show-index");
+  assert.equal(before.canonicalDirectory, "projects");
+  const indexedBefore = before.shows.find((show) => show.projectId === "indexed-show");
+  assert.ok(indexedBefore);
+  assert.equal(indexedBefore.projectFile, "projects/indexed-show.json");
+  assert.deepEqual(indexedBefore.importFiles, []);
+
+  await store.prepareImport("indexed-show", 1);
+  const after = JSON.parse(await readFile(path.join(store.dataRoot, "shows.json"), "utf8"));
+  const indexedAfter = after.shows.find((show) => show.projectId === "indexed-show");
+  assert.equal(indexedAfter.importFiles.length, 1);
+  assert.match(indexedAfter.importFiles[0], /^exports\/.+\.json$/);
+  const guide = await readFile(path.join(store.dataRoot, "SHOWS.md"), "utf8");
+  assert.match(guide, /舞台スケッチ・ショー一覧/);
+  assert.match(guide, /一覧テスト/);
+  assert.match(guide, /projects\/indexed-show\.json/);
+});
+
+test("related demo JSON appears in the index without copying it into MCP projects", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "stage-sketch-mcp-related-test-"));
+  const relatedDemoDir = path.join(directory, "jjk-show");
+  await mkdir(relatedDemoDir, { recursive: true });
+  await writeFile(path.join(relatedDemoDir, "demo-jjk.json"), JSON.stringify({
+    project: {
+      id: "jjk-demo", title: "呪術デモ", versionLabel: "v1",
+      scenes: [{ id: "scene-1", kind: "scene" }],
+    },
+  }), "utf8");
+  const store = new ProjectStore(directory, { relatedDemoDir });
+  await store.refreshShowIndex();
+  const index = JSON.parse(await readFile(path.join(directory, "shows.json"), "utf8"));
+  const demo = index.shows.find((show) => show.projectId === "jjk-demo");
+  assert.equal(demo.sourceKind, "related-demo");
+  assert.equal(demo.projectFile, "../../jjk-show/demo-jjk.json");
+  assert.deepEqual(demo.importFiles, ["../../jjk-show/demo-jjk.json"]);
+  const projectEntries = await readFile(path.join(directory, "SHOWS.md"), "utf8");
+  assert.match(projectEntries, /関連デモ[\s\S]*呪術デモ/);
 });
 
 test("preserves beat through MCP storage and export while sections keep beat null", async () => {
