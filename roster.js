@@ -440,6 +440,19 @@
       });
     }
 
+    const passInput = $("#roster-pass");
+    const passToggle = $("#roster-pass-toggle");
+    if (passInput && passToggle) {
+      passToggle.addEventListener("click", () => {
+        const reveal = passInput.type === "password";
+        const label = reveal ? "隠す" : "表示";
+        passInput.type = reveal ? "text" : "password";
+        setText(passToggle, label);
+        passToggle.setAttribute("aria-pressed", String(reveal));
+        passToggle.setAttribute("aria-label", label);
+      });
+    }
+
     const search = $("#roster-search");
     if (search) {
       search.addEventListener("input", () => { state.query = search.value; renderList(); });
@@ -466,7 +479,8 @@
     // 失敗しても合言葉を消さない（別アプリの解錠状態を壊さないため silent で試す）。
     let saved = null;
     try { saved = localStorage.getItem(PASS_KEY); } catch (e) { saved = null; }
-    if (saved && location.protocol === "https:") unlock(saved, { silent: true });
+    // file: では暗号データの fetch が使えず必ず失敗するため、自動解錠を試さない。
+    if (saved && location.protocol !== "file:") unlock(saved, { silent: true });
   }
 
   if (document.readyState === "loading") {

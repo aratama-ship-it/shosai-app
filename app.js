@@ -5,12 +5,27 @@
 (function () {
   "use strict";
 
-  // ---------- 状態（Phase 0: メモリ上のみ・保存されない） ----------
+  // localStorageの移行処理は単独ファイルにして、ブラウザ版とMacアプリ版で共有する。
+  // index.htmlは保護対象なので、既存app.jsの入口から読み込む。
+  if (!window.SHOSAI_STORAGE_MIGRATION) {
+    const migrationScript = document.createElement("script");
+    migrationScript.src = "storage-migration.js?v=1";
+    migrationScript.dataset.shosaiStorageMigration = "1";
+    document.head.append(migrationScript);
+  }
+
+  // ---------- 状態 ----------
   const state = {
     project: null,        // 現在開いているプロジェクト
     placed: new Set(),    // 置いたリファレンスID
+    placedMeta: new Map(), // id -> { role, note, at }
     decisions: {},        // visualId -> { verdict, reason }
     evidenceRef: null,    // 根拠パネルに出しているリファレンスID
+    deskProjects: [],
+    sheetEditing: false,
+    visualBriefEditing: false,
+    shelfGenre: "",
+    shelfPlacing: null,
   };
 
   const $ = (sel, el) => (el || document).querySelector(sel);
@@ -114,6 +129,9 @@
       bookSources: Array.isArray(item.bookSources)
         ? item.bookSources.filter((id) => typeof id === "string")
         : [],
+      apparatusSources: Array.isArray(item.apparatusSources)
+        ? item.apparatusSources.filter((id) => typeof id === "string")
+        : [],
       inspiration: typeof item.inspiration === "string" ? item.inspiration : "",
       createdAt: typeof item.createdAt === "string" ? item.createdAt : "",
     };
@@ -124,6 +142,7 @@
       ...item,
       sources: [...(item.sources || [])],
       bookSources: [...(item.bookSources || [])],
+      apparatusSources: [...(item.apparatusSources || [])],
     }));
   }
 
@@ -204,6 +223,290 @@
   function clipId(prefix) {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   }
+
+  // ---------- 制作机プロジェクト（端末内保存） ----------
+  const DESK_PROJECTS_STORAGE_KEY = "shosai-desk-projects-v1";
+  const SCENE_RELATION_LABELS = Object.freeze(["人物", "物", "光", "音", "背景"]);
+  const TRANSFORM_ROW_LABELS = Object.freeze(["元の構造", "残す機能", "変更する条件", "避ける表面", "生まれた案"]);
+  const BRIEF_FIELD_LABELS = Object.freeze([
+    { key: "subject", label: "主題" },
+    { key: "viewpoint", label: "視点と構図" },
+    { key: "people", label: "人物数と距離" },
+    { key: "objects", label: "主要な物" },
+    { key: "background", label: "背景" },
+    { key: "color", label: "色" },
+    { key: "light", label: "光" },
+    { key: "material", label: "素材感" },
+    { key: "era", label: "時代感" },
+    { key: "moment", label: "動きの瞬間" },
+    { key: "lettering", label: "文字の有無" },
+    { key: "avoid", label: "避けたい要素" },
+  ]);
+
+  function stringOrEmpty(value) {
+    return typeof value === "string" ? value : "";
+  }
+
+  function nullableString(value) {
+    return typeof value === "string" && value.trim() ? value : null;
+  }
+
+  function validIso(value, fallback) {
+    return typeof value === "string" && value ? value : fallback;
+  }
+
+  function normalizeStringArray(value) {
+    return Array.isArray(value) ? value.filter((id) => typeof id === "string") : [];
+  }
+
+  function normalizePlacedEntries(value, fallbackAt) {
+    const at = validIso(fallbackAt, new Date().toISOString());
+    if (!Array.isArray(value)) return [];
+    return value.map((item) => {
+      if (typeof item === "string") {
+        return { id: item, role: "near", note: "", at };
+      }
+      if (!item || typeof item !== "object" || Array.isArray(item) || typeof item.id !== "string") return null;
+      return {
+        id: item.id,
+        role: item.role === "contrast" ? "contrast" : "near",
+        note: stringOrEmpty(item.note),
+        at: validIso(item.at, at),
+      };
+    }).filter(Boolean);
+  }
+
+  function normalizeDeskOrigin(origin) {
+    if (!origin || typeof origin !== "object" || Array.isArray(origin)) return null;
+    return {
+      recipe: stringOrEmpty(origin.recipe),
+      sources: normalizeStringArray(origin.sources),
+      bookSources: normalizeStringArray(origin.bookSources),
+      apparatusSources: normalizeStringArray(origin.apparatusSources),
+      inspiration: stringOrEmpty(origin.inspiration),
+    };
+  }
+
+  function normalizeScene(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    const relations = SCENE_RELATION_LABELS.map((label, i) => {
+      const row = Array.isArray(raw.relations) ? raw.relations[i] : null;
+      return [label, Array.isArray(row) ? stringOrEmpty(row[1]) : ""];
+    });
+    const scene = {
+      audience: stringOrEmpty(raw.audience),
+      entry: stringOrEmpty(raw.entry),
+      exit: stringOrEmpty(raw.exit),
+      relations,
+      removed: stringOrEmpty(raw.removed),
+      undecided: stringOrEmpty(raw.undecided),
+      next: stringOrEmpty(raw.next),
+    };
+    const hasText = [
+      scene.audience,
+      scene.entry,
+      scene.exit,
+      scene.removed,
+      scene.undecided,
+      scene.next,
+      ...relations.map((row) => row[1]),
+    ].some((text) => text.trim());
+    return hasText ? scene : null;
+  }
+
+  function normalizeTransformation(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    const rows = TRANSFORM_ROW_LABELS.map((label, i) => {
+      const row = Array.isArray(raw.rows) ? raw.rows[i] : null;
+      return [label, Array.isArray(row) ? stringOrEmpty(row[1]) : ""];
+    });
+    const transformation = {
+      fromLabel: stringOrEmpty(raw.fromLabel),
+      rows,
+    };
+    const hasText = [transformation.fromLabel, ...rows.map((row) => row[1])]
+      .some((text) => text.trim());
+    return hasText ? transformation : null;
+  }
+
+  function normalizeBrief(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    const brief = {};
+    BRIEF_FIELD_LABELS.forEach(({ key }) => {
+      brief[key] = stringOrEmpty(raw[key]);
+    });
+    return BRIEF_FIELD_LABELS.some(({ key }) => brief[key].trim()) ? brief : null;
+  }
+
+  function rowValue(rows, label) {
+    const row = Array.isArray(rows) ? rows.find((item) => Array.isArray(item) && item[0] === label) : null;
+    return row ? stringOrEmpty(row[1]) : "";
+  }
+
+  function briefDraftFromStudy(project) {
+    const scene = normalizeScene(project && project.scene);
+    const transformation = normalizeTransformation(project && project.transformation);
+    const removed = scene ? stringOrEmpty(scene.removed) : "";
+    const avoidSurface = transformation ? rowValue(transformation.rows, "避ける表面") : "";
+    const avoid = [removed, avoidSurface].filter((text) => text.trim()).join("／");
+    return {
+      subject: "",
+      viewpoint: "",
+      people: scene ? rowValue(scene.relations, "人物") : "",
+      objects: scene ? rowValue(scene.relations, "物") : "",
+      background: scene ? rowValue(scene.relations, "背景") : "",
+      color: "",
+      light: scene ? rowValue(scene.relations, "光") : "",
+      material: "",
+      era: "",
+      moment: "",
+      lettering: "",
+      avoid,
+    };
+  }
+
+  function normalizeDeskProject(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    const now = new Date().toISOString();
+    const question = raw.question && typeof raw.question === "object" && !Array.isArray(raw.question)
+      ? raw.question
+      : {};
+    const current = stringOrEmpty(question.current).trim() || stringOrEmpty(raw.title).trim() || "無題の問い";
+    const sceneLineHistory = Array.isArray(raw.sceneLineHistory)
+      ? raw.sceneLineHistory
+          .filter((item) => item && typeof item === "object" && typeof item.text === "string")
+          .map((item) => ({ text: item.text, at: validIso(item.at, now) }))
+      : [];
+    const constraints = Array.isArray(raw.constraints)
+      ? raw.constraints
+          .filter((item) => item && typeof item === "object" && typeof item.label === "string" && item.label.trim())
+          .map((item) => ({ label: item.label.trim(), hard: item.hard === true }))
+      : [];
+    const decisions = {};
+    if (raw.decisions && typeof raw.decisions === "object" && !Array.isArray(raw.decisions)) {
+      Object.keys(raw.decisions).forEach((id) => {
+        const decision = raw.decisions[id];
+        if (!decision || typeof decision !== "object" || Array.isArray(decision)) return;
+        decisions[id] = {
+          verdict: typeof decision.verdict === "string" ? decision.verdict : null,
+          reason: stringOrEmpty(decision.reason),
+        };
+      });
+    }
+    const createdAt = validIso(raw.createdAt, now);
+    const placed = normalizePlacedEntries(raw.placed, createdAt);
+    return {
+      id: typeof raw.id === "string" && raw.id ? raw.id : clipId("proj"),
+      title: stringOrEmpty(raw.title).trim() || (current.length > 14 ? current.slice(0, 14) + "…" : current),
+      subtitle: stringOrEmpty(raw.subtitle),
+      question: {
+        previous: nullableString(question.previous),
+        current,
+      },
+      sceneLine: nullableString(raw.sceneLine),
+      sceneLineHistory,
+      constraints,
+      scene: normalizeScene(raw.scene),
+      transformation: normalizeTransformation(raw.transformation),
+      brief: normalizeBrief(raw.brief),
+      origin: normalizeDeskOrigin(raw.origin),
+      placed,
+      decisions,
+      createdAt,
+      updatedAt: validIso(raw.updatedAt, createdAt),
+    };
+  }
+
+  function confidenceLabel(raw) {
+    const value = stringOrEmpty(raw).toLowerCase();
+    if (value.startsWith("high")) return "高";
+    if (value.startsWith("medium")) return "中";
+    if (value.startsWith("low")) return "低";
+    return "不明";
+  }
+
+  const SHELF_SEARCH_FIELDS = Object.freeze([
+    "title",
+    "original_title",
+    "company",
+    "genre",
+    "summary",
+    "themes",
+    "tone",
+    "structure",
+    "signature_scenes",
+    "show_type",
+  ]);
+
+  function searchTextParts(work, field) {
+    const value = work ? work[field] : null;
+    if (Array.isArray(value)) return value.map((item) => stringOrEmpty(item));
+    return [stringOrEmpty(value)];
+  }
+
+  function searchShelfWorks(works, query) {
+    const terms = stringOrEmpty(query).trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!Array.isArray(works) || !terms.length) return [];
+    return works.map((work) => {
+      const fieldTexts = SHELF_SEARCH_FIELDS.map((field) => searchTextParts(work, field).join(" ").toLowerCase());
+      const termMatched = terms.every((term) => fieldTexts.some((text) => text.includes(term)));
+      if (!termMatched) return null;
+      const hits = fieldTexts.reduce((count, text) => count + (terms.some((term) => text.includes(term)) ? 1 : 0), 0);
+      return { work, hits };
+    }).filter(Boolean).sort((a, b) => {
+      if (b.hits !== a.hits) return b.hits - a.hits;
+      return (Number(b.work.year) || 0) - (Number(a.work.year) || 0);
+    });
+  }
+
+  function loadDeskProjects() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(DESK_PROJECTS_STORAGE_KEY) || "{}");
+      return Array.isArray(saved.projects)
+        ? saved.projects.map(normalizeDeskProject).filter(Boolean)
+        : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function persistDeskProjects() {
+    try {
+      localStorage.setItem(DESK_PROJECTS_STORAGE_KEY, JSON.stringify({
+        version: 1,
+        projects: state.deskProjects,
+      }));
+    } catch (_) {
+      // ブラウザ保存が使えない場合も、開いている間の操作は続ける。
+    }
+  }
+
+  function syncCurrentDeskProject() {
+    if (!state.project || state.project.kind !== "new") return;
+    const now = new Date().toISOString();
+    const data = state.project.data;
+    data.placed = [...state.placed].map((id) => {
+      const meta = state.placedMeta.get(id) || {};
+      return {
+        id,
+        role: meta.role === "contrast" ? "contrast" : "near",
+        note: stringOrEmpty(meta.note),
+        at: validIso(meta.at, now),
+      };
+    });
+    data.decisions = state.decisions;
+    data.updatedAt = now;
+    const normalized = normalizeDeskProject(data);
+    if (!normalized) return;
+    state.project.data = normalized;
+    const i = state.deskProjects.findIndex((p) => p.id === normalized.id);
+    if (i >= 0) state.deskProjects[i] = normalized;
+    else state.deskProjects.unshift(normalized);
+    persistDeskProjects();
+    renderDeskProjectList();
+  }
+
+  state.deskProjects = loadDeskProjects();
 
   const loadedScrapbook = loadScrapbook();
   const seedState = {
@@ -679,7 +982,8 @@
   function seedProvenanceHtml(seed) {
     const workSources = Array.isArray(seed.sources) ? seed.sources : [];
     const bookSources = Array.isArray(seed.bookSources) ? seed.bookSources : [];
-    if (!workSources.length && !bookSources.length) return "";
+    const apparatusSources = Array.isArray(seed.apparatusSources) ? seed.apparatusSources : [];
+    if (!workSources.length && !bookSources.length && !apparatusSources.length) return "";
 
     const sourceLinks = workSources
       .map((id) => {
@@ -709,12 +1013,23 @@
     const bookSection = bookLinks
       ? `<p class="seed-provenance-label">参照した自炊本</p><ul>${bookLinks}</ul>`
       : "";
+    const apparatusLinks = apparatusSources
+      .map((id) => {
+        const card = apparatusCards().find((item) => item.id === id);
+        if (!card) return `<li><span class="seed-source-missing">${esc(id)}（舞台技術DB内で未解決）</span></li>`;
+        return `<li><a href="#apparatus/${encodeURIComponent(card.id)}">${esc(card.name_ja)}</a><span>${esc(card.family)} / 調査ドラフト</span></li>`;
+      })
+      .join("");
+    const apparatusSectionHtml = apparatusLinks
+      ? `<p class="seed-provenance-label">参照した舞台技術</p><ul>${apparatusLinks}</ul>`
+      : "";
     return `
       <details class="seed-provenance">
         <summary>資料からの変形を見る</summary>
         <div class="seed-provenance-body">
           ${workSection}
           ${bookSection}
+          ${apparatusSectionHtml}
           <p class="seed-transform"><span>変形メモ（解釈）</span>${esc(seed.inspiration || "変形メモは未記入です。")}</p>
         </div>
       </details>`;
@@ -743,6 +1058,7 @@
       note: "",
       sources: Array.isArray(seed.sources) ? seed.sources : [],
       bookSources: Array.isArray(seed.bookSources) ? seed.bookSources : [],
+      apparatusSources: Array.isArray(seed.apparatusSources) ? seed.apparatusSources : [],
       inspiration: seed.inspiration || "",
       createdAt: new Date().toISOString(),
     };
@@ -821,8 +1137,8 @@
       exportedAt: new Date().toISOString(),
       title,
       pageNote: seedState.pageNote || "",
-      // 変換規則の正本。AIはこの設計メモの決めごとに従ってビート表へ変換する
-      conversionGuide: "show-creative-ideas/2026-07-30_種火から演目構成_設計メモ.md",
+      // 変換規則の正本。AIはこのPLAYBOOKの決めごとに従ってビート表へ変換する
+      conversionGuide: "shosai-app/mcp-server/PLAYBOOK.md",
       items: items.map((item) => ({
         id: item.id,
         kind: item.kind === "build" ? "combined" : "seed",   // combined=組んだアイデア（転の候補）
@@ -832,6 +1148,7 @@
         note: item.note || "",
         sources: Array.isArray(item.sources) ? item.sources : [],
         bookSources: Array.isArray(item.bookSources) ? item.bookSources : [],
+        apparatusSources: Array.isArray(item.apparatusSources) ? item.apparatusSources : [],
       })),
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -926,6 +1243,7 @@
     const question = `${materialTexts.join("と")}を同じ場面に置く。${note || "二つの条件が同時に変わる瞬間をつくる。"}`;
     const sources = [...new Set(materials.flatMap((item) => item.sources || []))];
     const bookSources = [...new Set(materials.flatMap((item) => item.bookSources || []))];
+    const apparatusSources = [...new Set(materials.flatMap((item) => item.apparatusSources || []))];
     const built = {
       id: clipId("build"),
       kind: "build",
@@ -936,6 +1254,7 @@
       note: "",
       sources,
       bookSources,
+      apparatusSources,
       inspiration: `材料: ${materials.map((item) => item.text).join(" / ")}`,
       createdAt: new Date().toISOString(),
     };
@@ -1181,6 +1500,7 @@
             recipe: item.recipe,
             sources: item.sources,
             bookSources: item.bookSources,
+            apparatusSources: item.apparatusSources,
             inspiration: item.inspiration,
           }));
         }
@@ -1495,8 +1815,12 @@
     thumbs.innerHTML = SHOSAI.visuals
       .map((v) => `<span class="thumb" aria-hidden="true">${ART[v.art]()}</span>`)
       .join("");
+    ensureDeskProjectList();
+    renderDeskProjectList();
 
     const card = $("#resume-card");
+    const kicker = $(".paper-kicker", card);
+    if (kicker && !$(".k", kicker)) kicker.insertAdjacentHTML("beforeend", `<span class="k">見本</span>`);
     const open = () => openProject(buildFixedProject());
     card.addEventListener("click", open);
     card.addEventListener("keydown", (e) => {
@@ -1519,31 +1843,137 @@
   }
 
   function buildNewProject(text, origin) {
+    const now = new Date().toISOString();
+    const data = normalizeDeskProject({
+      id: clipId("proj"),
+      title: text.length > 14 ? text.slice(0, 14) + "…" : text,
+      subtitle: origin ? "種火から始めた問い" : "新しい問い",
+      question: { previous: null, current: text },
+      sceneLine: null,
+      sceneLineHistory: [],
+      constraints: [],
+      scene: null,
+      transformation: null,
+      // 元にした作品・レシピ・変形メモ。ここで捨てると出どころを辿れなくなる
+      origin: origin || null,
+      placed: [],
+      decisions: {},
+      createdAt: now,
+      updatedAt: now,
+    });
+    if (data) {
+      const i = state.deskProjects.findIndex((p) => p.id === data.id);
+      if (i >= 0) state.deskProjects[i] = data;
+      else state.deskProjects.unshift(data);
+      persistDeskProjects();
+      renderDeskProjectList();
+    }
     return {
       kind: "new",
-      data: {
-        title: text.length > 14 ? text.slice(0, 14) + "…" : text,
-        subtitle: origin ? "種火から始めた問い" : "新しい問い",
-        question: { previous: null, current: text },
-        sceneLine: null,
-        constraints: [],
-        scene: null,
-        transformation: null,
-        // 元にした作品・レシピ・変形メモ。ここで捨てると出どころを辿れなくなる
-        origin: origin || null,
-      },
+      data,
     };
+  }
+
+  function ensureDeskProjectList() {
+    if ($("#desk-projects")) return;
+    const resume = $("#resume-card");
+    if (!resume) return;
+    resume.insertAdjacentHTML("beforebegin", `
+      <section class="desk-projects" id="desk-projects" hidden>
+        <h2>進行中の問い</h2>
+        <div class="desk-project-list" id="desk-project-list"></div>
+      </section>`);
+  }
+
+  function deskDateLabel(value) {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    return `${d.getMonth() + 1}月${d.getDate()}日`;
+  }
+
+  function renderDeskProjectList() {
+    const section = $("#desk-projects");
+    const list = $("#desk-project-list");
+    if (!section || !list) return;
+    const projects = state.deskProjects
+      .map(normalizeDeskProject)
+      .filter(Boolean)
+      .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    state.deskProjects = projects;
+    if (!projects.length) {
+      section.hidden = true;
+      list.innerHTML = "";
+      return;
+    }
+    section.hidden = false;
+    list.innerHTML = projects.map((p) => `
+      <article class="paper-card desk-project-card" data-desk-project="${esc(p.id)}" tabindex="0" role="button"
+               aria-label="${esc(p.title)}を開く">
+        <p class="paper-kicker">進行中<span class="k">${esc(deskDateLabel(p.updatedAt))}</span></p>
+        <h2>${esc(p.title)}</h2>
+        <p class="paper-sub">${esc(p.subtitle || "新しい問い")}</p>
+        <div class="paper-next">
+          <span class="label">場面の一行</span>
+          ${esc(p.sceneLine || p.question.current)}
+        </div>
+        <button type="button" class="desk-project-delete" data-delete-desk-project="${esc(p.id)}">削除</button>
+      </article>`).join("");
+
+    $$("[data-desk-project]", list).forEach((card) => {
+      const open = () => {
+        const project = state.deskProjects.find((p) => p.id === card.dataset.deskProject);
+        if (project) openProject({ kind: "new", data: normalizeDeskProject(project) });
+      };
+      card.addEventListener("click", (e) => {
+        if (e.target.closest("[data-delete-desk-project]")) return;
+        open();
+      });
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+      });
+    });
+    $$("[data-delete-desk-project]", list).forEach((button) => {
+      button.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!confirm("この問いを削除しますか。")) return;
+        state.deskProjects = state.deskProjects.filter((p) => p.id !== button.dataset.deleteDeskProject);
+        persistDeskProjects();
+        renderDeskProjectList();
+      });
+    });
   }
 
   // ---------- 制作机 ----------
   function openProject(project) {
+    if (project.kind === "new") {
+      project.data = normalizeDeskProject(project.data);
+      if (!project.data) return;
+    }
     state.project = project;
-    // 置いた資料と判断はプロジェクトごとに保持する（Phase 0: セッション中のみ）
-    if (!project.placed) project.placed = new Set();
-    if (!project.decisions) project.decisions = {};
-    state.placed = project.placed;
-    state.decisions = project.decisions;
+    state.sheetEditing = false;
+    state.visualBriefEditing = false;
+    if (project.kind === "new") {
+      const placedEntries = normalizePlacedEntries(project.data.placed, project.data.createdAt);
+      state.placed = new Set(placedEntries.map((item) => item.id));
+      state.placedMeta = new Map(placedEntries.map((item) => [item.id, {
+        role: item.role,
+        note: item.note,
+        at: item.at,
+      }]));
+      state.decisions = { ...(project.data.decisions || {}) };
+    } else {
+      if (!project.placed) project.placed = new Set();
+      if (!project.decisions) project.decisions = {};
+      state.placed = project.placed;
+      state.placedMeta = new Map();
+      state.decisions = project.decisions;
+    }
     state.evidenceRef = null;
+    state.shelfPlacing = null;
+    // 検索語とジャンル選択は前のプロジェクトから持ち越さない
+    state.shelfGenre = "";
+    const shelfInput = $("#shelf-input");
+    if (shelfInput) shelfInput.value = "";
     renderStudio();
     $$(".view").forEach((v) => (v.hidden = true));
     $("#view-studio").hidden = false;
@@ -1569,11 +1999,16 @@
     renderSheet(p, isNew);
     renderPlaced();
     renderEvidence();
+    renderVisualBrief(p, isNew);
     renderVisuals(isNew);
   }
 
   function renderSheet(p, isNew) {
     const sheet = $("#sheet");
+    if (isNew && state.sheetEditing) {
+      renderSheetEditor(sheet, p);
+      return;
+    }
     const shift = p.question.previous
       ? `<span class="label">問いの変化</span>
          ${esc(p.question.previous)}<span class="arrow">→</span><span class="now">${esc(p.question.current)}</span>`
@@ -1584,69 +2019,246 @@
           .map((c) =>
             `<span class="chip${c.hard ? " hard" : ""}">${esc(c.label)}<span class="k">${c.hard ? "固定" : "調整可"}</span></span>`)
           .join("")
-      : `<span class="chip">制約ピンはまだありません<span class="k">Phase 1で編集</span></span>`;
+      : `<span class="chip">制約ピンはまだありません<span class="k">書き込むから追加</span></span>`;
 
+    // 変換メモは設計書Step 5の項目順どおり「関係」と「意図的に外したもの」の間に置く
+    const transform = p.transformation ? renderTransformationDisplay(p.transformation) : "";
     let body = "";
     if (p.scene) {
       const s = p.scene;
-      const t = p.transformation;
+      const relations = (s.relations || []).filter((r) => r && r[1] && r[1].trim());
       body = `
-        <section class="study-section">
+        ${s.audience ? `<section class="study-section">
           <h3>この場面が観客に起こすこと</h3>
           <p>${esc(s.audience)}</p>
-        </section>
-        <section class="study-section">
+        </section>` : ""}
+        ${s.entry || s.exit ? `<section class="study-section">
           <h3>入口と出口</h3>
           <div class="entry-exit">
             <div class="ee"><b>入口</b><span>${esc(s.entry)}</span></div>
             <div class="ee"><b>出口</b><span>${esc(s.exit)}</span></div>
           </div>
-        </section>
-        <section class="study-section">
+        </section>` : ""}
+        ${relations.length ? `<section class="study-section">
           <h3>人物・物・光・音・背景の関係</h3>
           <div class="relations">
-            ${s.relations.map((r) => `<div class="rel"><b>${esc(r[0])}</b><span>${esc(r[1])}</span></div>`).join("")}
+            ${relations.map((r) => `<div class="rel"><b>${esc(r[0])}</b><span>${esc(r[1])}</span></div>`).join("")}
           </div>
-        </section>
-        <section class="study-section">
-          <h3>参考にした構造</h3>
-          <div class="transform-memo">
-            <p class="from">変換メモ — <b>${esc(t.fromLabel)}</b></p>
-            <dl>
-              ${t.rows
-                .map((row, i) =>
-                  `<div class="tr${i === t.rows.length - 1 ? " born" : ""}"><dt>${esc(row[0])}</dt><dd>${esc(row[1])}</dd></div>`)
-                .join("")}
-            </dl>
-          </div>
-        </section>
-        <section class="study-section">
+        </section>` : ""}
+        ${transform}
+        ${s.removed ? `<section class="study-section">
           <h3>意図的に外したもの</h3>
           <p>${esc(s.removed)}</p>
-        </section>
-        <section class="study-section">
+        </section>` : ""}
+        ${s.undecided ? `<section class="study-section">
           <h3>未決定事項</h3>
           <p>${esc(s.undecided)}</p>
-        </section>
-        <section class="study-section">
+        </section>` : ""}
+        ${s.next ? `<section class="study-section">
           <h3>次に試すこと</h3>
           <p class="next-action">${esc(s.next)}</p>
-        </section>`;
+        </section>` : ""}`;
     } else {
       body = `
         <section class="study-section">
           <h3>場面スタディ</h3>
-          <p class="placeholder">この問いの場面スタディはまだ書かれていません。右上の資料棚から近い例・対照の例を置き、場面案へ育てます。（Phase 0では入力・保存は未実装）</p>
-        </section>`;
+          <p class="placeholder">この問いの場面スタディはまだ書かれていません。右上の「書き込む」から場面スタディを書けます。</p>
+        </section>
+        ${transform}`;
     }
 
     sheet.innerHTML = `
+      ${isNew ? `<button type="button" class="sheet-write" id="sheet-write">書き込む</button>` : ""}
       <span class="scene-line-label">場面の一行</span>
       <p class="scene-line">${p.sceneLine ? esc(p.sceneLine) : "（まだ書かれていない — ブリーフ前にここを言い切る）"}</p>
       <div class="question-shift">${shift}</div>
       <div class="constraints" aria-label="制約ピン">${chips}</div>
       ${originHtml(p.origin)}
       ${body}`;
+    const write = $("#sheet-write", sheet);
+    if (write) write.addEventListener("click", () => {
+      state.sheetEditing = true;
+      renderSheet(p, true);
+      $("#sheet-scene-line").focus();
+    });
+  }
+
+  function renderTransformationDisplay(t) {
+    const rows = (t.rows || []).filter((row) => row && row[1] && row[1].trim());
+    if (!t.fromLabel && !rows.length) return "";
+    return `
+      <section class="study-section">
+        <h3>参考にした構造</h3>
+        <div class="transform-memo">
+          ${t.fromLabel ? `<p class="from">変換メモ — <b>${esc(t.fromLabel)}</b></p>` : ""}
+          ${rows.length ? `<dl>
+            ${rows
+              .map((row) =>
+                `<div class="tr${row[0] === "生まれた案" ? " born" : ""}"><dt>${esc(row[0])}</dt><dd>${esc(row[1])}</dd></div>`)
+              .join("")}
+          </dl>` : ""}
+        </div>
+      </section>`;
+  }
+
+  function renderSheetEditor(sheet, p) {
+    const scene = normalizeScene(p.scene) || {
+      audience: "",
+      entry: "",
+      exit: "",
+      relations: SCENE_RELATION_LABELS.map((label) => [label, ""]),
+      removed: "",
+      undecided: "",
+      next: "",
+    };
+    const transformation = normalizeTransformation(p.transformation) || {
+      fromLabel: "",
+      rows: TRANSFORM_ROW_LABELS.map((label) => [label, ""]),
+    };
+    const field = (name, label, value, rows = 3) => `
+      <label class="sheet-field">
+        <span>${label}</span>
+        <textarea name="${name}" rows="${rows}">${esc(value)}</textarea>
+      </label>`;
+    sheet.innerHTML = `
+      <form class="sheet-editor" id="sheet-editor">
+        <label class="sheet-field">
+          <span>場面の一行</span>
+          <input id="sheet-scene-line" name="sceneLine" type="text" value="${esc(p.sceneLine || "")}">
+        </label>
+        <label class="sheet-field">
+          <span>問い</span>
+          <input name="questionCurrent" type="text" value="${esc(p.question.current)}">
+        </label>
+        <section class="study-section">
+          <h3>制約ピン</h3>
+          <div class="constraint-editor" id="constraint-editor">
+            ${(p.constraints || []).map((c) => renderConstraintEditorRow(c)).join("")}
+          </div>
+          <button type="button" class="sheet-small-button" id="constraint-add">追加</button>
+        </section>
+        <section class="study-section">
+          <h3>場面スタディ</h3>
+          ${field("sceneAudience", "この場面が観客に起こすこと", scene.audience)}
+          <div class="sheet-field-grid">
+            ${field("sceneEntry", "入口", scene.entry, 2)}
+            ${field("sceneExit", "出口", scene.exit, 2)}
+          </div>
+          <div class="sheet-fixed-rows">
+            ${SCENE_RELATION_LABELS.map((label, i) => `
+              <label class="sheet-row-field">
+                <span>${esc(label)}</span>
+                <textarea name="relation-${i}" rows="1">${esc((scene.relations[i] || [label, ""])[1])}</textarea>
+              </label>`).join("")}
+          </div>
+          ${field("sceneRemoved", "意図的に外したもの", scene.removed, 2)}
+          ${field("sceneUndecided", "未決定事項", scene.undecided, 2)}
+          ${field("sceneNext", "次に試すこと", scene.next, 2)}
+        </section>
+        <section class="study-section">
+          <h3>参考にした構造</h3>
+          <div class="transform-memo">
+            <label class="sheet-field">
+              <span>参考にした構造</span>
+              <input name="transformFrom" type="text" value="${esc(transformation.fromLabel)}">
+            </label>
+            <div class="sheet-fixed-rows">
+              ${TRANSFORM_ROW_LABELS.map((label, i) => `
+                <label class="sheet-row-field${label === "生まれた案" ? " born" : ""}">
+                  <span>${esc(label)}</span>
+                  <textarea name="transform-${i}" rows="2">${esc((transformation.rows[i] || [label, ""])[1])}</textarea>
+                </label>`).join("")}
+            </div>
+          </div>
+        </section>
+        <div class="sheet-edit-actions">
+          <button type="submit" class="sheet-save">保存</button>
+          <button type="button" class="sheet-cancel" id="sheet-cancel">取り消す</button>
+        </div>
+      </form>`;
+    $("#constraint-add", sheet).addEventListener("click", () => {
+      $("#constraint-editor", sheet).insertAdjacentHTML("beforeend", renderConstraintEditorRow({ label: "", hard: false }));
+    });
+    sheet.addEventListener("click", (e) => {
+      const remove = e.target.closest("[data-remove-constraint]");
+      if (remove) remove.closest(".constraint-row").remove();
+    });
+    $("#sheet-cancel", sheet).addEventListener("click", () => {
+      state.sheetEditing = false;
+      renderSheet(p, true);
+    });
+    $("#sheet-editor", sheet).addEventListener("submit", (e) => {
+      e.preventDefault();
+      applySheetEdit(p, e.currentTarget);
+      state.sheetEditing = false;
+      syncCurrentDeskProject();
+      renderStudio();
+    });
+  }
+
+  function renderConstraintEditorRow(constraint) {
+    return `
+      <div class="constraint-row">
+        <input name="constraintLabel" type="text" value="${esc(constraint.label || "")}" aria-label="制約ピン">
+        <label><input name="constraintHard" type="checkbox" ${constraint.hard ? "checked" : ""}>固定</label>
+        <button type="button" data-remove-constraint>削除</button>
+      </div>`;
+  }
+
+  function applySheetEdit(project, form) {
+    const data = new FormData(form);
+    const value = (name) => stringOrEmpty(data.get(name)).trim();
+    const constraints = $$(".constraint-row", form).map((row) => {
+      const text = stringOrEmpty($('input[name="constraintLabel"]', row).value).trim();
+      return text ? { label: text, hard: $('input[name="constraintHard"]', row).checked } : null;
+    }).filter(Boolean);
+    applySheetValues(project, {
+      sceneLine: value("sceneLine"),
+      questionCurrent: value("questionCurrent"),
+      constraints,
+      sceneAudience: value("sceneAudience"),
+      sceneEntry: value("sceneEntry"),
+      sceneExit: value("sceneExit"),
+      relations: SCENE_RELATION_LABELS.map((label, i) => [label, value(`relation-${i}`)]),
+      sceneRemoved: value("sceneRemoved"),
+      sceneUndecided: value("sceneUndecided"),
+      sceneNext: value("sceneNext"),
+      transformFrom: value("transformFrom"),
+      transformRows: TRANSFORM_ROW_LABELS.map((label, i) => [label, value(`transform-${i}`)]),
+    });
+  }
+
+  function applySheetValues(project, values) {
+    const value = (name) => stringOrEmpty(values[name]).trim();
+    const sceneLine = value("sceneLine") || null;
+    if ((project.sceneLine || null) !== sceneLine && project.sceneLine) {
+      project.sceneLineHistory.push({ text: project.sceneLine, at: new Date().toISOString() });
+    }
+    project.sceneLine = sceneLine;
+    const nextQuestion = value("questionCurrent") || project.question.current;
+    if (nextQuestion !== project.question.current) {
+      project.question.previous = project.question.current;
+      project.question.current = nextQuestion;
+      project.title = project.title || (nextQuestion.length > 14 ? nextQuestion.slice(0, 14) + "…" : nextQuestion);
+    }
+    project.constraints = Array.isArray(values.constraints)
+      ? values.constraints
+          .filter((item) => item && typeof item.label === "string" && item.label.trim())
+          .map((item) => ({ label: item.label.trim(), hard: item.hard === true }))
+      : [];
+    project.scene = normalizeScene({
+      audience: value("sceneAudience"),
+      entry: value("sceneEntry"),
+      exit: value("sceneExit"),
+      relations: Array.isArray(values.relations) ? values.relations : [],
+      removed: value("sceneRemoved"),
+      undecided: value("sceneUndecided"),
+      next: value("sceneNext"),
+    });
+    project.transformation = normalizeTransformation({
+      fromLabel: value("transformFrom"),
+      rows: Array.isArray(values.transformRows) ? values.transformRows : [],
+    });
   }
 
   // 種火から始めた問いには、元にした作品と変形の理由を必ず添える。
@@ -1659,6 +2271,9 @@
       .filter(Boolean);
     const bookCatalog = typeof SHOSAI_BOOK_SOURCES !== "undefined" ? SHOSAI_BOOK_SOURCES : {};
     const books = (origin.bookSources || []).map((id) => bookCatalog[id]).filter(Boolean);
+    const apparatus = (origin.apparatusSources || [])
+      .map((id) => apparatusCards().find((card) => card.id === id))
+      .filter(Boolean);
     const workLinks = works.length
       ? `<ul class="origin-works">${works.map((w) => {
           const meta = [w.company, w.year].filter(Boolean).join(" / ");
@@ -1670,8 +2285,13 @@
           `<li><strong>${esc(book.title)}</strong><span>${esc(book.category)} / 自炊本の内容要約</span></li>`
         ).join("")}</ul>`
       : "";
-    const links = workLinks || bookLinks
-      ? `${workLinks}${bookLinks}`
+    const apparatusLinks = apparatus.length
+      ? `<ul class="origin-works">${apparatus.map((card) =>
+          `<li><a href="#apparatus/${encodeURIComponent(card.id)}">${esc(card.name_ja)}</a><span>${esc(card.family)} / 舞台技術調査ドラフト</span></li>`
+        ).join("")}</ul>`
+      : "";
+    const links = workLinks || bookLinks || apparatusLinks
+      ? `${workLinks}${bookLinks}${apparatusLinks}`
       : `<p class="origin-none">元にした資料は記録されていません（手で書いた種火、または場面問答の答え）。</p>`;
     return `
       <section class="origin" aria-label="この問いの出どころ">
@@ -1684,6 +2304,85 @@
 
   // ---------- 置いた資料（左レール） ----------
   function renderPlaced() {
+    if (state.project && state.project.kind === "new") {
+      renderPlacedDb();
+      return;
+    }
+    renderPlacedFixed();
+  }
+
+  function shelfWorkById(id) {
+    if (DB && Array.isArray(DB.works)) {
+      const found = DB.works.find((work) => work.id === id);
+      if (found) return { kind: "db", work: found };
+    }
+    const fixed = SHOSAI.references.find((ref) => ref.id === id);
+    return fixed ? { kind: "fixed", work: fixed } : null;
+  }
+
+  function workMetaLine(work, includeGenre = false) {
+    // ジャンル表示は正本の英語スラッグ(genre)ではなく日本語のcategoryを使う
+    return [work.company, work.year, includeGenre ? work.category : ""].filter((value) => value != null && value !== "").join(" ・ ");
+  }
+
+  function renderPlacedDb() {
+    const wrap = $("#placed-list");
+    const ids = [...state.placed];
+    if (!ids.length) {
+      wrap.innerHTML = `<p class="placed-empty">まだ資料を置いていません。<br>「資料棚」を開き、「この制作へ置く」で机へ運びます。</p>`;
+      return;
+    }
+    wrap.innerHTML = ids.map((id) => {
+      const resolved = shelfWorkById(id);
+      const meta = state.placedMeta.get(id) || { role: "near", note: "", at: "" };
+      if (!resolved) {
+        return `<div class="placed-card" data-ref="${esc(id)}">
+          <p class="t">資料棚で見つかりません</p>
+          <p class="m">${esc(id)}</p>
+          <div class="row"><button type="button" class="link-btn" data-remove="${esc(id)}">外す</button></div>
+        </div>`;
+      }
+      if (resolved.kind === "fixed") {
+        const r = resolved.work;
+        return `<div class="placed-card" data-ref="${esc(id)}">
+          <p class="t">${esc(r.title)}</p>
+          <p class="m">${esc(r.company)} ・ ${esc(r.year)}</p>
+          ${meta.role === "contrast" ? `<span class="axis-tag">対照</span>` : ""}
+          ${meta.note ? `<p class="placed-note">${esc(meta.note)}</p>` : `<p class="placed-note empty">なぜ置くかを書き添える</p>`}
+          <div class="row">
+            <button type="button" class="link-btn" data-ev="${esc(id)}">根拠を見る</button>
+            <button type="button" class="link-btn" data-remove="${esc(id)}">外す</button>
+          </div>
+        </div>`;
+      }
+      const work = resolved.work;
+      return `<div class="placed-card" data-ref="${esc(id)}">
+        <p class="t">${esc(work.title)}</p>
+        <p class="m">${esc(workMetaLine(work))}</p>
+        ${meta.role === "contrast" ? `<span class="axis-tag">対照</span>` : ""}
+        ${meta.note ? `<p class="placed-note">${esc(meta.note)}</p>` : `<p class="placed-note empty">なぜ置くかを書き添える</p>`}
+        <div class="row">
+          <button type="button" class="link-btn" data-ev="${esc(id)}">根拠を見る</button>
+          <button type="button" class="link-btn" data-remove="${esc(id)}">外す</button>
+        </div>
+      </div>`;
+    }).join("");
+
+    $$("[data-ev]", wrap).forEach((b) =>
+      b.addEventListener("click", () => showEvidence(b.dataset.ev)));
+    $$("[data-remove]", wrap).forEach((b) =>
+      b.addEventListener("click", () => {
+        state.placed.delete(b.dataset.remove);
+        state.placedMeta.delete(b.dataset.remove);
+        if (state.evidenceRef === b.dataset.remove) state.evidenceRef = null;
+        syncCurrentDeskProject();
+        renderPlaced();
+        renderEvidence();
+        renderShelf();
+      }));
+  }
+
+  function renderPlacedFixed() {
     const wrap = $("#placed-list");
     const refs = SHOSAI.references.filter((r) => state.placed.has(r.id));
     if (!refs.length) {
@@ -1710,6 +2409,7 @@
       b.addEventListener("click", () => {
         state.placed.delete(b.dataset.remove);
         if (state.evidenceRef === b.dataset.remove) state.evidenceRef = null;
+        syncCurrentDeskProject();
         renderPlaced();
         renderEvidence();
         renderShelf();
@@ -1732,6 +2432,69 @@
   }
 
   function renderEvidence() {
+    if (state.project && state.project.kind === "new") {
+      renderEvidenceDb();
+      return;
+    }
+    renderEvidenceFixed();
+  }
+
+  function renderEvidenceDb() {
+    const body = $("#evidence-body");
+    const resolved = shelfWorkById(state.evidenceRef);
+    if (!resolved) {
+      body.innerHTML = `<p class="evidence-empty">置いた資料の「根拠を見る」を選ぶと、出典・確信度・未確認事項がここに出ます。<br><br>制作メモ（紙の上）と根拠（この棚側）は混ぜずに保ちます。</p>`;
+      return;
+    }
+    if (resolved.kind === "fixed") {
+      renderEvidenceFixed();
+      return;
+    }
+    const w = resolved.work;
+    const meta = state.placedMeta.get(w.id) || { role: "near", note: "", at: "" };
+    const list = (items) => Array.isArray(items)
+      ? items.filter((item) => stringOrEmpty(item).trim()).slice(0, 3)
+      : [];
+    body.innerHTML = `
+      <div class="evidence-body">
+        <p class="work">${esc(w.title)}</p>
+        <p class="meta">${esc(workMetaLine(w, true))}</p>
+        <div class="ev-block fact">
+          <h4>▪ 事実</h4>
+          <p>${esc([w.company, w.year, w.category].filter((value) => value != null && value !== "").join(" ・ "))}</p>
+          ${w.summary ? `<p>${esc(w.summary)}</p>` : ""}
+        </div>
+        ${(list(w.themes).length || list(w.signature_scenes).length) ? `<div class="ev-block interp">
+          <h4>資料からの解釈（正本メモ）</h4>
+          ${list(w.themes).length ? `<p><b>themes</b><br>${list(w.themes).map(esc).join("<br>")}</p>` : ""}
+          ${list(w.signature_scenes).length ? `<p><b>signature_scenes</b><br>${list(w.signature_scenes).map(esc).join("<br>")}</p>` : ""}
+        </div>` : ""}
+        <div class="ev-block fact">
+          <h4>確信度</h4>
+          <p><span title="${esc(w.confidence || "")}">${esc(confidenceLabel(w.confidence))}</span></p>
+        </div>
+        <div class="ev-block unverified">
+          <h4>未確認事項</h4>
+          <p class="db-status">${esc(w.status || "未記録")}</p>
+        </div>
+        <div class="ev-block interp">
+          <h4>本人の判断 — なぜ置くか</h4>
+          <textarea class="evidence-note" rows="4" data-evidence-note="${esc(w.id)}" placeholder="なぜ置くか — 空でも置けます。あとから書けます">${esc(meta.note || "")}</textarea>
+        </div>
+        <p><a href="#db/${encodeURIComponent(w.id)}" data-close-shelf>作品ページを読む →</a></p>
+        <p class="ev-legend">区分 — <span style="color:var(--brass)">▪ 事実</span> ／ <span style="color:var(--slate)">解釈</span> ／ 点線＝未確認。AIの提案はPhase 2から。本人の判断は紙の上にだけ残します。</p>
+      </div>`;
+    const note = $("[data-evidence-note]", body);
+    if (note) note.addEventListener("input", (e) => {
+      const current = state.placedMeta.get(w.id) || { role: "near", note: "", at: new Date().toISOString() };
+      current.note = e.target.value;
+      state.placedMeta.set(w.id, current);
+      syncCurrentDeskProject();
+      renderPlaced();
+    });
+  }
+
+  function renderEvidenceFixed() {
     const body = $("#evidence-body");
     const r = SHOSAI.references.find((x) => x.id === state.evidenceRef);
     if (!r) {
@@ -1767,6 +2530,105 @@
   }
 
   // ---------- ビジュアルスタディ ----------
+  function renderVisualBrief(p, isNew) {
+    const wrap = $("#visual-brief");
+    if (!wrap) return;
+    if (!isNew) {
+      wrap.innerHTML = "";
+      wrap.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+    if (state.visualBriefEditing) {
+      renderVisualBriefEditor(wrap, p);
+      return;
+    }
+    const criterion = p.sceneLine
+      ? `場面の一行 — ${esc(p.sceneLine)}`
+      : `まず紙面の「場面の一行」を言い切ると、ブリーフと3案比較の判定基準になります（暫定でよい）。`;
+    const brief = normalizeBrief(p.brief);
+    const rows = brief
+      ? BRIEF_FIELD_LABELS
+          .filter(({ key }) => brief[key] && brief[key].trim())
+          .map(({ key, label }) => `<div class="tr"><dt>${esc(label)}</dt><dd>${esc(brief[key])}</dd></div>`)
+          .join("")
+      : "";
+    wrap.innerHTML = `
+      <div class="transform-memo visual-brief-paper">
+        <button type="button" class="sheet-write" id="visual-brief-write">書き込む</button>
+        <p class="from">${criterion}</p>
+        ${brief
+          ? `<dl>${rows}</dl>`
+          : `<p class="placeholder">ブリーフはまだ書かれていません。場面スタディの条件を、画像試作に渡せる形へまとめます。</p>`}
+      </div>`;
+    $("#visual-brief-write", wrap).addEventListener("click", () => {
+      state.visualBriefEditing = true;
+      renderVisualBrief(p, true);
+      const first = $('[name="brief-subject"]', wrap);
+      if (first) first.focus();
+    });
+  }
+
+  function renderVisualBriefEditor(wrap, p) {
+    const brief = normalizeBrief(p.brief) || briefDraftFromStudy(p);
+    const scene = normalizeScene(p.scene);
+    const refRows = scene
+      ? [
+          ["この場面が観客に起こすこと", scene.audience],
+          ["関係の埋まっている行（人物・物・光・音・背景）", (scene.relations || [])
+            .filter((row) => row && row[1] && row[1].trim())
+            .map((row) => `${row[0]}: ${row[1]}`)
+            .join("／")],
+          ["意図的に外したもの", scene.removed],
+        ].filter((row) => row[1] && row[1].trim())
+      : [];
+    const field = ({ key, label }) => {
+      const value = brief[key] || "";
+      if (key === "lettering") {
+        return `<label class="sheet-field">
+          <span>${esc(label)}</span>
+          <input name="brief-${esc(key)}" type="text" value="${esc(value)}">
+        </label>`;
+      }
+      return `<label class="sheet-field">
+        <span>${esc(label)}</span>
+        <textarea name="brief-${esc(key)}" rows="2">${esc(value)}</textarea>
+      </label>`;
+    };
+    wrap.innerHTML = `
+      <form class="transform-memo visual-brief-editor" id="visual-brief-editor">
+        ${refRows.length ? `<div class="visual-brief-reference">
+          <p class="from">場面スタディから写す元</p>
+          <dl>
+            ${refRows.map((row) => `<div class="tr"><dt>${esc(row[0])}</dt><dd>${esc(row[1])}</dd></div>`).join("")}
+          </dl>
+        </div>` : ""}
+        <div class="visual-brief-fields">
+          ${BRIEF_FIELD_LABELS.map(field).join("")}
+        </div>
+        <div class="sheet-edit-actions">
+          <button type="submit" class="sheet-save">保存</button>
+          <button type="button" class="sheet-cancel" id="visual-brief-cancel">取り消す</button>
+        </div>
+      </form>`;
+    $("#visual-brief-cancel", wrap).addEventListener("click", () => {
+      state.visualBriefEditing = false;
+      renderVisualBrief(p, true);
+    });
+    $("#visual-brief-editor", wrap).addEventListener("submit", (e) => {
+      e.preventDefault();
+      const data = new FormData(e.currentTarget);
+      const next = {};
+      BRIEF_FIELD_LABELS.forEach(({ key }) => {
+        next[key] = stringOrEmpty(data.get(`brief-${key}`)).trim();
+      });
+      p.brief = normalizeBrief(next);
+      state.visualBriefEditing = false;
+      syncCurrentDeskProject();
+      renderStudio();
+    });
+  }
+
   function renderVisuals(isNew) {
     const grid = $("#visual-grid");
     if (isNew) {
@@ -1775,7 +2637,7 @@
           (d) => `
           <div class="visual-empty">
             <span class="dir">${d}</span>
-            方向の異なる試作をここに置く<br>（場面の一行を書いてから作る）
+            方向の異なる試作をここに置く<br>（場面の一行→ブリーフの順で書いてから）
           </div>`)
         .join("");
       return;
@@ -1812,7 +2674,7 @@
                 .join("")}
             </div>
             <textarea rows="2" placeholder="理由を短く残す（例: 糸の角度は良い。頭部の向きだけ直したい）" aria-label="案${esc(v.dir)}の判断理由">${esc(dec.reason || "")}</textarea>
-            <p class="save-note">Phase 0: 判断はこの画面の間だけ保持され、保存されません。</p>
+            <p class="save-note">判断はこの制作の紙面に残ります。</p>
           </div>
         </article>`;
       })
@@ -1828,6 +2690,7 @@
           const d = state.decisions[id] || {};
           d.verdict = d.verdict === btn.dataset.verdict ? null : btn.dataset.verdict;
           state.decisions[id] = d;
+          syncCurrentDeskProject();
           $$(".judge-btn", card).forEach((b2) =>
             b2.setAttribute("aria-pressed", String(d.verdict === b2.dataset.verdict)));
           if (d.verdict) $("textarea", card).focus();
@@ -1836,6 +2699,7 @@
         const d = state.decisions[id] || {};
         d.reason = e.target.value;
         state.decisions[id] = d;
+        syncCurrentDeskProject();
       });
     });
   }
@@ -1882,6 +2746,7 @@
 
   // ---------- 資料棚 ----------
   function openShelf() {
+    state.shelfPlacing = null;
     renderShelf();
     $("#shelf").hidden = false;
     $("#shelf-backdrop").hidden = false;
@@ -1894,6 +2759,129 @@
   }
 
   function renderShelf() {
+    if (state.project && state.project.kind === "new") {
+      renderShelfDb();
+      return;
+    }
+    renderShelfFixed();
+  }
+
+  function shelfGenreOptions(works) {
+    const counts = new Map();
+    (works || []).forEach((work) => {
+      // チップは日本語のcategoryで作る（genreは英語スラッグで読めない）
+      const genre = stringOrEmpty(work.category).trim();
+      if (!genre) return;
+      counts.set(genre, (counts.get(genre) || 0) + 1);
+    });
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 8)
+      .map(([genre]) => genre);
+  }
+
+  function truncateText(text, limit) {
+    const value = stringOrEmpty(text).trim();
+    return value.length > limit ? `${value.slice(0, limit)}…` : value;
+  }
+
+  function renderShelfDb() {
+    const input = $("#shelf-input");
+    const body = $("#shelf-body");
+    const works = DB && Array.isArray(DB.works) ? DB.works : [];
+    const q = (input.value || "").trim();
+    const p = state.project.data;
+    const genres = shelfGenreOptions(works);
+    if (state.shelfGenre && !genres.includes(state.shelfGenre)) state.shelfGenre = "";
+    const chips = [`<button type="button" class="shelf-chip" data-shelf-genre="" aria-pressed="${state.shelfGenre === ""}">すべて</button>`]
+      .concat(genres.map((genre) =>
+        `<button type="button" class="shelf-chip" data-shelf-genre="${esc(genre)}" aria-pressed="${state.shelfGenre === genre}">${esc(genre)}</button>`))
+      .join("");
+    let results = q ? searchShelfWorks(works, q) : [];
+    if (state.shelfGenre) results = results.filter(({ work }) => work.category === state.shelfGenre);
+    const shown = results.slice(0, 30);
+    const resultHtml = q
+      ? `
+        <p class="shelf-count">全${results.length}件中${shown.length}件を表示</p>
+        ${shown.map(({ work }) => renderShelfDbCard(work)).join("")}
+        ${!results.length ? `<p class="evidence-empty" style="padding:20px 0">該当なし。検索語を変えて探してください。</p>` : ""}`
+      : `<p class="evidence-empty" style="padding:20px 0">問いの中の言葉や、作品名・会社名・ジャンルで探せます。</p>`;
+
+    body.innerHTML = `
+      <div class="shelf-context">
+        <p>この問いに効く資料を探す — ${esc(p.question.current)}</p>
+        ${p.sceneLine ? `<p>場面の一行 — ${esc(p.sceneLine)}</p>` : ""}
+      </div>
+      <div class="shelf-chips">${chips}</div>
+      ${resultHtml}`;
+
+    $$("[data-shelf-genre]", body).forEach((button) => {
+      button.addEventListener("click", () => {
+        state.shelfGenre = button.dataset.shelfGenre || "";
+        state.shelfPlacing = null;
+        renderShelf();
+      });
+    });
+    $$("[data-read-work]", body).forEach((link) =>
+      link.addEventListener("click", closeShelf));
+    $$("[data-place-open]", body).forEach((button) => {
+      button.addEventListener("click", () => {
+        state.shelfPlacing = button.dataset.placeOpen;
+        renderShelf();
+      });
+    });
+    $$("[data-place-db]", body).forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".ref-card");
+        const id = button.dataset.placeDb;
+        const role = ($('input[type="radio"]:checked', card) || {}).value || "near";
+        const noteInput = $("input[data-place-note]", card);
+        state.placed.add(id);
+        state.placedMeta.set(id, {
+          role: role === "contrast" ? "contrast" : "near",
+          note: noteInput ? noteInput.value : "",
+          at: new Date().toISOString(),
+        });
+        state.shelfPlacing = null;
+        syncCurrentDeskProject();
+        renderPlaced();
+        renderShelf();
+      });
+    });
+  }
+
+  function renderShelfDbCard(work) {
+    const placed = state.placed.has(work.id);
+    const confidence = `<span title="${esc(work.confidence || "")}">${esc(confidenceLabel(work.confidence))}</span>`;
+    const placing = state.shelfPlacing === work.id;
+    return `
+      <article class="ref-card">
+        <p class="t">${esc(work.title)}</p>
+        <p class="meta"><span class="k-fact">▪</span> ${esc(workMetaLine(work, true))}</p>
+        ${work.summary ? `<p class="shelf-summary">${esc(truncateText(work.summary, 120))}</p>` : ""}
+        <div class="ref-foot">
+          <span class="conf">確信度: ${confidence}</span>
+          <a href="#db/${encodeURIComponent(work.id)}" data-read-work>作品ページを読む →</a>
+        </div>
+        <div class="ref-foot">
+          ${placed ? `<button type="button" class="btn-place" disabled>置きました</button>` : `
+            <button type="button" class="btn-place" data-place-open="${esc(work.id)}">この制作へ置く</button>`}
+        </div>
+        ${placing && !placed ? `<div class="shelf-place-editor">
+          <div class="shelf-role" role="group" aria-label="置き方">
+            <label><input type="radio" name="role-${esc(work.id)}" value="near" checked>近い</label>
+            <label><input type="radio" name="role-${esc(work.id)}" value="contrast">対照</label>
+          </div>
+          <label class="sheet-field">
+            <span>一行理由</span>
+            <input data-place-note type="text" placeholder="なぜ置くか — 空でも置けます。あとから書けます">
+          </label>
+          <button type="button" class="btn-place" data-place-db="${esc(work.id)}">置く</button>
+        </div>` : ""}
+      </article>`;
+  }
+
+  function renderShelfFixed() {
     const q = ($("#shelf-input").value || "").trim().toLowerCase();
     const match = (r) =>
       !q ||
@@ -1949,12 +2937,535 @@
         state.placed.add(b.dataset.place);
         b.disabled = true;
         b.textContent = "置きました";
+        syncCurrentDeskProject();
         renderPlaced();
       }));
   }
 
+  // ---------- 舞台技術（調査ドラフトの読み取り専用カード） ----------
+  const apparatusLibrary = window.STAGE_APPARATUS_LIBRARY || null;
+  const apparatusState = { query: "", family: "", scale: "", selected: null };
+
+  const APPARATUS_BUDGET_LABELS = {
+    entry: "小規模な入口",
+    entry_illusion: "小規模な錯視",
+    study: "縮小スタディ",
+    existing_venue_use: "既設設備を使う",
+    study_model: "縮小スタディ",
+    small_event: "小規模イベント",
+    small_drop: "小規模な幕落とし",
+    lab_collaboration: "研究機関等との共同実験",
+    professional: "本格実装",
+    custom_stage_unit: "舞台用カスタム機",
+    temporary_custom: "仮設カスタム",
+    temporary_full_water: "本格的な仮設水舞台",
+    touring_professional: "巡演向け本格実装",
+    full_scale: "フルスケール",
+    permanent: "常設",
+    permanent_multiple: "複数基の常設",
+    permanent_residency: "専用常設",
+    flagship: "大型・常設",
+    arena: "アリーナ級",
+    arena_custom: "アリーナ用カスタム造形",
+    acrobatic_multi_unit: "複数台・アクロバット仕様",
+    large_sniffer_system: "大型高速巻上げ",
+    large_kinetic: "大型可動鏡面",
+    large_grid_or_arena: "大型グリッド／アリーナ",
+    multi_wagon_arena: "複数ワゴン／アリーナ",
+    passenger_or_multi_robot: "人搭乗／複数ロボット",
+    permanent_or_stadium: "常設／スタジアム",
+    stadium_tour: "スタジアムツアー",
+    venue_installation: "会場常設",
+    simulation: "安全な模擬実験",
+    large_installation: "大型設備",
+    large_venue: "大規模会場",
+    stadium: "スタジアム級",
+    multi_unit_arena: "複数台・アリーナ級",
+    large_kinetic_fabric: "大型キネティック布",
+    seat_level_multi_scent: "座席別・多香調システム",
+  };
+
+  const APPARATUS_ROLE_LABELS = {
+    automation_operator: "オートメーション・オペレーター",
+    automation_engineer: "オートメーション設計",
+    automation_programmer: "オートメーション・プログラマー",
+    operator: "装置オペレーター",
+    rigger: "リガー",
+    video_engineer: "映像エンジニア",
+    media_server_operator: "メディアサーバー・オペレーター",
+    projectionist: "映写担当",
+    projection_designer: "プロジェクション・デザイナー",
+    tracking_engineer: "トラッキング・エンジニア",
+    lighting_programmer: "照明プログラマー",
+    lighting_designer: "照明デザイナー",
+    flying_director: "フライング・ディレクター",
+    flying_operator: "フライング・オペレーター",
+    spotter: "安全監視",
+    safety_spotter: "安全監視",
+    stage_manager: "舞台監督",
+    stage_carpenter: "舞台機構・大道具",
+    structural_engineer: "構造設計",
+    stunt_or_acrobatic_coordinator: "アクロバット／スタント調整",
+    water_system_engineer: "水処理・水機構設計",
+    water_effect_engineer: "ウォーターエフェクト設計",
+    diver: "潜水技術者",
+    lifeguard: "水上安全担当",
+    maintenance_technician: "保守技術者",
+    wardrobe_maintenance: "衣装メンテナンス",
+    electrician: "電気担当",
+    kinetic_programmer: "キネティック・プログラマー",
+    drone_show_designer: "ドローンショー・デザイナー",
+    flight_safety_manager: "飛行安全管理",
+    drone_operator: "ドローン・オペレーター",
+    automation_designer: "オートメーション・デザイナー",
+    scenic_engineer: "舞台美術エンジニア",
+    scenic_designer: "舞台美術デザイナー",
+    wireless_engineer: "無線エンジニア",
+    mechanical_engineer: "機械設計",
+    movement_coach: "ムーブメント・コーチ",
+    robotics_engineer: "ロボティクス・エンジニア",
+    safety_plc_engineer: "安全PLCエンジニア",
+    robot_programmer: "ロボット・プログラマー",
+    choreographer: "振付家",
+    inflatable_designer: "インフレータブル・デザイナー",
+    fabrication_engineer: "製作エンジニア",
+    blower_technician: "送風機技術者",
+    fire_safety_manager: "防火安全管理",
+    drapery_specialist: "舞台幕スペシャリスト",
+    mirror_installation_specialist: "大型鏡面施工",
+    laser_safety_officer: "レーザー安全管理者",
+    laser_programmer: "レーザー・プログラマー",
+    show_control_programmer: "ショーコントロール・プログラマー",
+    venue_safety_manager: "会場安全管理",
+    audience_lighting_designer: "客席照明デザイナー",
+    rf_or_ir_technician: "RF／IR技術者",
+    front_of_house_manager: "フロント運営責任者",
+    sustainability_manager: "サステナビリティ管理",
+    sound_designer: "音響デザイナー",
+    system_engineer: "音響システム・エンジニア",
+    network_audio_engineer: "ネットワーク音響エンジニア",
+    mix_engineer: "ミックス・エンジニア",
+    accessibility_consultant: "アクセシビリティ監修",
+    acoustician: "音響設計者",
+    aerial_director: "エアリアル・ディレクター",
+    aerial_robotics_engineer: "飛行ロボティクス設計",
+    air_quality_monitor: "空気環境監視",
+    airflow_engineer: "気流設計",
+    anamorphic_content_designer: "アナモルフィック映像デザイナー",
+    animatronics_engineer: "アニマトロニクス設計",
+    architect: "建築設計",
+    atmospherics_technician: "大気演出技術者",
+    audio_dsp_engineer: "音響DSPエンジニア",
+    audio_system_engineer: "音響システム設計",
+    balloon_system_engineer: "気球システム設計",
+    biomedical_signal_engineer: "生体信号エンジニア",
+    black_light_director: "ブラックライト演出監修",
+    broadcast_engineer: "映像伝送エンジニア",
+    bubble_artist: "シャボン膜アーティスト",
+    cable_camera_pilot: "ケーブルカメラ・パイロット",
+    camera_operator: "カメラ・オペレーター",
+    camera_shading_operator: "カメラ色調整",
+    caption_operator: "字幕オペレーター",
+    character_technical_director: "キャラクター技術監督",
+    chemical_safety_advisor: "化学物質安全監修",
+    cleaning_crew: "清掃クルー",
+    compressed_air_technician: "圧縮空気技術者",
+    content_designer: "コンテンツ・デザイナー",
+    content_safety_editor: "生成コンテンツ安全編集",
+    control_system_engineer: "制御システム設計",
+    costume_designer: "衣装デザイナー",
+    creature_designer: "クリーチャー・デザイナー",
+    creature_operator: "クリーチャー・オペレーター",
+    crowd_safety_manager: "群集安全管理",
+    display_engineer: "ディスプレイ・エンジニア",
+    electrical_safety_engineer: "電気安全設計",
+    electromagnetics_engineer: "電磁気設計",
+    electronics_engineer: "電子回路エンジニア",
+    eye_tracking_engineer: "視線計測エンジニア",
+    fall_protection_supervisor: "墜落防止監督",
+    floor_technician: "舞台床技術者",
+    flying_system_engineer: "フライング機構設計",
+    fountain_programmer: "噴水プログラマー",
+    gas_safety_technician: "ガス安全技術者",
+    giant_puppet_engineer: "巨大パペット設計",
+    ground_handler: "地上誘導員",
+    haptic_designer: "触覚演出デザイナー",
+    head_rigger: "チーフ・リガー",
+    ice_show_director: "アイスショー監督",
+    illusion_designer: "イリュージョン・デザイナー",
+    interaction_designer: "インタラクション・デザイナー",
+    interaction_engineer: "インタラクション設計",
+    interactive_designer: "インタラクティブ演出設計",
+    interactive_system_engineer: "インタラクティブ・システム設計",
+    kinetic_artist: "キネティック・アーティスト",
+    kinetic_rigging_designer: "キネティック吊物設計",
+    led_engineer: "LEDエンジニア",
+    lidar_engineer: "LiDARエンジニア",
+    lighting_system_engineer: "照明システム設計",
+    mechanical_safety_engineer: "機械安全設計",
+    mechatronics_engineer: "メカトロニクス設計",
+    miniature_artist: "ミニチュア美術家",
+    mist_system_engineer: "ミスト設備設計",
+    mobile_stage_engineer: "移動舞台設計",
+    motion_capture_supervisor: "モーションキャプチャ監修",
+    motion_control_operator: "モーション制御オペレーター",
+    motion_programmer: "モーション・プログラマー",
+    network_engineer: "ネットワーク・エンジニア",
+    plumber: "給排水技術者",
+    privacy_lead: "プライバシー管理責任者",
+    prop_designer: "小道具デザイナー",
+    ptz_operator: "PTZカメラ・オペレーター",
+    puppet_builder: "パペット製作者",
+    puppet_designer: "パペット・デザイナー",
+    puppet_director: "パペット演出監督",
+    puppeteer: "パペティア",
+    pyrotechnician: "火薬・炎効果技術者",
+    real_time_ai_engineer: "リアルタイムAIエンジニア",
+    real_time_engineer: "リアルタイム映像エンジニア",
+    ride_operator: "ライド・オペレーター",
+    ride_system_engineer: "ライドシステム設計",
+    scenic_artist: "舞台美術ペインター",
+    scenic_fabricator: "舞台美術製作",
+    scent_designer: "香りデザイナー",
+    scent_system_technician: "香りシステム技術者",
+    seating_system_engineer: "客席機構設計",
+    sfx_operator: "特殊効果オペレーター",
+    site_manager: "施工現場責任者",
+    skating_coach: "スケーティング指導",
+    sound_artist: "サウンド・アーティスト",
+    sound_engineer: "音響エンジニア",
+    spatial_audio_engineer: "空間音響エンジニア",
+    special_effects_designer: "特殊効果デザイナー",
+    stage_machinery_engineer: "舞台機構設計",
+    stage_safety_manager: "舞台安全管理",
+    stilt_performer: "スティルト・パフォーマー",
+    structural_acoustician: "建築音響設計",
+    swarm_programmer: "群制御プログラマー",
+    system_tuner: "システム調整技術者",
+    theatre_consultant: "劇場コンサルタント",
+    translator: "翻訳者",
+    venue_technician: "会場技術者",
+    video_designer: "映像デザイナー",
+    video_system_engineer: "映像システム設計",
+    vision_director: "カメラ映像監督",
+    volumetric_capture_engineer: "ボリュメトリック撮影エンジニア",
+    wardrobe_supervisor: "衣装管理責任者",
+    water_effects_engineer: "水演出エンジニア",
+    wearable_technology_designer: "ウェアラブル技術デザイナー",
+    weather_safety_manager: "気象安全管理",
+    web_realtime_engineer: "Webリアルタイム通信エンジニア",
+    levitation_vendor: "浮遊システム・ベンダー",
+    show_control_engineer: "ショーコントロール設計",
+    science_demonstrator: "科学実演担当",
+    printmaker: "版画・印刷作家",
+    graphic_designer: "グラフィック・デザイナー",
+    circus_rigger: "サーカス・リガー",
+    circus_coach: "サーカス指導者",
+    acrobatic_performer: "アクロバット出演者",
+    high_voltage_engineer: "高電圧技術者",
+    electrical_safety_officer: "電気安全管理者",
+    quick_change_dresser: "早替え衣裳係",
+    science_historian: "科学史監修",
+    biological_safety_advisor: "生物安全監修",
+    book_artist: "ブック・アーティスト",
+    botanical_advisor: "植物監修",
+    cultural_context_advisor: "文化的文脈監修",
+    fluid_system_engineer: "流体システム設計",
+    furniture_designer: "家具デザイナー",
+    granular_materials_specialist: "粒体材料専門家",
+    instrument_builder: "楽器製作者",
+    materials_specialist: "材料専門家",
+    mathematics_communicator: "数学コミュニケーター",
+    occupational_therapist: "作業療法・身体知覚監修",
+    optical_designer: "光学設計",
+    optical_illusion_designer: "視覚錯視デザイナー",
+    paper_engineer: "ペーパー・エンジニア",
+    rope_specialist: "ロープ・結索専門家",
+    shadow_theatre_designer: "影絵・影演出デザイナー",
+    thermal_system_engineer: "熱システム設計",
+    audience_operations: "客席運営",
+    audience_safety_steward: "観客安全係",
+    conservator_advisor: "保存修復アドバイザー",
+    crowd_steward: "群集誘導係",
+    cultural_consultant: "文化的文脈監修",
+    electrical_safety_lead: "電気安全責任者",
+    fire_safety_lead: "防火安全責任者",
+    four_fabric_performers: "布操演者4名",
+    image_artist: "イメージ・アーティスト",
+    inflatable_scenic_engineer: "インフレータブル美術設計",
+    kinetic_sculpture_fabricator: "運動彫刻製作者",
+    licensed_apparatus_provider: "認定装置提供者",
+    licensed_operator: "認定オペレーター",
+    lighting_operator: "照明オペレーター",
+    maintenance_team: "保守チーム",
+    musician: "演奏家",
+    object_designer: "オブジェクト・デザイナー",
+    optical_prop_maker: "光学小道具製作者",
+    outside_facilitator: "客席側ファシリテーター",
+    performer: "出演者",
+    production_manager: "プロダクション・マネージャー",
+    prop_maker: "小道具製作者",
+    proprietary_trained_operator: "メーカー訓練済み操作者",
+    puppet_maker: "人形製作者",
+    qualified_rigger: "有資格リガー",
+    rescue_team: "救助チーム",
+    rigging_engineer: "リギング設計",
+    safety_reviewer: "安全審査担当",
+    scenic_carpenter: "舞台美術大工",
+    scenic_mechanical_designer: "舞台美術機械設計",
+    scenographer: "セノグラファー",
+    shadow_performer: "影絵操演者",
+    show_designer: "ショー・デザイナー",
+    sound_operator: "音響オペレーター",
+    spotter_team: "安全監視チーム",
+    textile_fabricator: "舞台布製作者",
+    textile_scenic_designer: "テキスタイル舞台美術設計",
+    theatre_machinery_engineer: "劇場機構設計",
+    touring_automation_engineer: "巡演オートメーション設計",
+    touring_carpenter: "巡演舞台大工",
+    trained_puppeteer: "訓練を受けた人形操演者",
+    venue_engineer: "会場設備設計",
+    venue_facilities: "会場施設担当",
+    venue_maintenance: "会場保守担当",
+    venue_safety_lead: "会場安全責任者",
+    venue_technical_manager: "会場技術責任者",
+    water_effects_specialist: "水演出専門家",
+    water_stage_technician: "水上舞台技術者",
+  };
+
+  function apparatusCards() {
+    return apparatusLibrary && Array.isArray(apparatusLibrary.cards) ? apparatusLibrary.cards : [];
+  }
+
+  function apparatusFiltered() {
+    const query = apparatusState.query.trim().toLowerCase();
+    return apparatusCards().filter((card) => {
+      if (apparatusState.family && card.family !== apparatusState.family) return false;
+      if (apparatusState.scale && card.planning_scale !== apparatusState.scale) return false;
+      if (!query) return true;
+      return JSON.stringify(card).toLowerCase().includes(query);
+    });
+  }
+
+  function apparatusMoney(value) {
+    if (typeof value === "number") {
+      if (value >= 100000000) return `${value / 100000000}億円`;
+      if (value >= 10000) return `${value / 10000}万円`;
+      return `${value.toLocaleString("ja-JP")}円`;
+    }
+    const plus = String(value || "").match(/^(\d+)_plus$/);
+    return plus ? `${apparatusMoney(Number(plus[1]))}〜` : String(value || "要見積");
+  }
+
+  function apparatusBudgetRows(card) {
+    return Object.entries(card.budget_jpy_inferred || {}).map(([key, value]) => {
+      const range = Array.isArray(value)
+        ? `${apparatusMoney(value[0])}〜${apparatusMoney(value[1])}`
+        : apparatusMoney(value);
+      return `<li><span>${esc(APPARATUS_BUDGET_LABELS[key] || key)}</span><b>${esc(range)}</b></li>`;
+    }).join("");
+  }
+
+  function apparatusListHtml(items) {
+    return items.map((card, index) => `
+      <button type="button" class="apparatus-row${card.id === apparatusState.selected ? " selected" : ""}"
+              data-apparatus="${esc(card.id)}">
+        <span class="apparatus-row-index">${String(index + 1).padStart(2, "0")}</span>
+        <span class="apparatus-row-copy">
+          <span class="apparatus-row-name">${esc(card.name_ja)}</span>
+          <span class="apparatus-row-meta">${esc(card.family)} ・ ${esc(card.planning_scale)}${card.digital_dependency === "none" ? " ・ 非デジタル" : ""}</span>
+          <span class="apparatus-row-effect">${esc((card.creative_capability || [])[0] || "")}</span>
+        </span>
+      </button>`).join("");
+  }
+
+  function renderApparatusList() {
+    if (!apparatusLibrary) return;
+    const visible = apparatusFiltered();
+    $("#apparatus-count").textContent = `${apparatusCards().length}件中 ${visible.length}件 ・ 調査ドラフト`;
+    $("#apparatus-list").innerHTML = apparatusListHtml(visible)
+      || `<p class="evidence-empty">条件に合う舞台技術はありません。</p>`;
+    $$('[data-apparatus]', $("#apparatus-list")).forEach((button) =>
+      button.addEventListener("click", () => {
+        const hash = `#apparatus/${encodeURIComponent(button.dataset.apparatus)}`;
+        if (location.hash === hash) selectApparatus(button.dataset.apparatus);
+        else location.hash = hash;
+      }));
+  }
+
+  function apparatusSection(title, inner, className) {
+    return `<section class="apparatus-section${className ? ` ${className}` : ""}"><h3>${esc(title)}</h3>${inner}</section>`;
+  }
+
+  function apparatusList(values) {
+    return `<ul>${(values || []).map((value) => `<li>${esc(value)}</li>`).join("")}</ul>`;
+  }
+
+  function apparatusIdeaSeed(card, mode, context) {
+    const subject = context.trim() || "いま考えている場面";
+    const effect = (card.creative_capability || [])[0] || card.name_ja;
+    const mechanism = (card.mechanism || []).slice(0, 2).join("と");
+    const failure = (card.failure_modes || [])[0] || "成立条件が崩れること";
+    const variants = {
+      scene: `${subject}で、${effect}。${mechanism}を、装置の説明ではなく場面の変化として見せるにはどうするか。`,
+      body: `${subject}で、${card.name_ja}を人物の動きと結びつける。人物が操作しているのか、装置に動かされているのかが途中で反転する場面をつくる。`,
+      reverse: `${subject}で、${card.name_ja}が期待どおりに成立しないことを演出にする。${failure}を事故ではなく、安全な代替表現へ置き換えて何を語れるか。`,
+      prototype: `${subject}を、まず「${card.minimum_viable_version}」から試す。本格装置を作る前に、観客へ伝わる因果を一つだけ確かめる。`,
+    };
+    return {
+      recipe: `舞台技術から変形・${mode === "body" ? "身体" : mode === "reverse" ? "反転" : mode === "prototype" ? "小さく試す" : "場面"}`,
+      text: variants[mode] || variants.scene,
+      apparatusSources: [card.id],
+      inspiration: `参照技術: ${card.name_ja}。表面を再現せず、${mechanism || "内部原理"}という関係を別の場面へ変形する。`,
+    };
+  }
+
+  function renderApparatusDetail(card) {
+    if (!card) {
+      $("#apparatus-detail").innerHTML = `<p class="evidence-empty">条件に合う舞台技術はありません。</p>`;
+      return;
+    }
+    const sources = (card.examples || []).map((example) => `
+      <li>
+        <a href="${esc(example.source)}" target="_blank" rel="noopener noreferrer">${esc(example.title)} <span>外部資料 ↗</span></a>
+        <small>${esc(example.evidence_status)}</small>
+      </li>`).join("");
+    const canonical = (card.canonical_links || [])
+      .filter((id) => id.startsWith("show_"))
+      .map((id) => `<a class="apparatus-canonical-link" href="#db/${encodeURIComponent(id)}">資料棚の作品を読む →</a>`)
+      .join("");
+    const roles = (card.crew_roles || []).map((role) => APPARATUS_ROLE_LABELS[role] || role.replaceAll("_", " "));
+    $("#apparatus-detail").innerHTML = `
+      <article class="apparatus-card">
+        <header class="apparatus-card-head">
+          <button type="button" class="apparatus-mobile-back" id="apparatus-mobile-back">← 一覧へ</button>
+          <p class="apparatus-card-kicker">${esc(card.family)} ／ ${esc(card.planning_scale)}</p>
+          <h2>${esc(card.name_ja)}</h2>
+          <div class="apparatus-status-line">
+            <span>調査ドラフト</span>
+            <span>見積前</span>
+            <span>安全設計前</span>
+            ${card.digital_dependency === "none" ? "<span>デジタル依存なし</span>" : ""}
+          </div>
+        </header>
+        <div class="apparatus-card-body">
+          ${apparatusSection("この装置で作れること", apparatusList(card.creative_capability), "apparatus-creative")}
+          <div class="apparatus-pair">
+            ${apparatusSection("内部の仕組み", apparatusList(card.mechanism))}
+            ${apparatusSection("最小構成で試す", `<p>${esc(card.minimum_viable_version)}</p>`, "apparatus-prototype")}
+          </div>
+          ${card.control_chain ? apparatusSection("信号と制御の流れ", `<p class="apparatus-control-chain">${esc(card.control_chain)}</p>`) : ""}
+          ${apparatusSection("企画初期の予算レンジ", `<ul class="apparatus-budget">${apparatusBudgetRows(card)}</ul><p class="apparatus-budget-note">公開価格と実例から置いたAI推定。会場・出演料・旅費・コンテンツ制作・税を原則含みません。</p>`, "apparatus-budget-section")}
+          <div class="apparatus-pair">
+            ${apparatusSection("会場に必要な条件", apparatusList(card.venue_requirements))}
+            ${apparatusSection("必要になる専門職", apparatusList(roles))}
+          </div>
+          ${apparatusSection("先に潰す事故要因", apparatusList(card.failure_modes), "apparatus-danger")}
+          ${apparatusSection("確認した実例・技術資料", `<ul class="apparatus-sources">${sources}</ul>${canonical}`)}
+          <section class="apparatus-idea-maker" aria-labelledby="apparatus-idea-title">
+            <div>
+              <p class="apparatus-idea-kicker">IDEA SEED</p>
+              <h3 id="apparatus-idea-title">この技術を、場面のアイデアに変える</h3>
+              <p>作品名や扱いたい感情を書き、変形の方向を選びます。元カードへのリンクを保ったまま、端末内のスクラップブックへ保存できます。</p>
+            </div>
+            <label for="apparatus-idea-context">いま考えている場面・テーマ</label>
+            <textarea id="apparatus-idea-context" rows="3" maxlength="240" placeholder="例：誰にも見つからずに部屋を出たい人物／祝祭が少しずつ崩れていく終幕"></textarea>
+            <label for="apparatus-idea-mode">変形の方向</label>
+            <select id="apparatus-idea-mode">
+              <option value="scene">装置の因果を、場面の変化にする</option>
+              <option value="body">人物の身体と結びつける</option>
+              <option value="reverse">期待どおりに動かないことから考える</option>
+              <option value="prototype">最小構成から試す</option>
+            </select>
+            <div class="apparatus-idea-actions">
+              <button type="button" id="apparatus-to-scrapbook">スクラップブックに貼る</button>
+              <button type="button" id="apparatus-start-project">この問いで制作机を始める</button>
+            </div>
+            <p id="apparatus-idea-status" class="apparatus-idea-status" aria-live="polite"></p>
+          </section>
+          <footer class="apparatus-card-foot">
+            <p>このカードは構想と問い合わせ準備のための資料です。構造、リギング、水、人体吊りの施工図や安全判断には使えません。</p>
+            <a href="#stage">舞台スケッチで配置を考える →</a>
+          </footer>
+        </div>
+      </article>`;
+    $("#apparatus-mobile-back").addEventListener("click", () =>
+      scrollApparatusMobileTarget($(".apparatus-index")));
+    const ideaSeed = () => apparatusIdeaSeed(card, $("#apparatus-idea-mode").value, $("#apparatus-idea-context").value);
+    $("#apparatus-to-scrapbook").addEventListener("click", () => {
+      const result = addToScrapbook(ideaSeed(), `「${card.name_ja}」から作った問いを紙面へ貼りました。`);
+      renderSeeds();
+      if (result) {
+        flashScrapbookCard(result.id);
+        location.hash = "#seeds";
+      } else {
+        $("#apparatus-idea-status").textContent = seedState.notice;
+      }
+    });
+    $("#apparatus-start-project").addEventListener("click", () => {
+      const seed = ideaSeed();
+      openProject(buildNewProject(seed.text, seed));
+    });
+  }
+
+  function scrollApparatusMobileTarget(target) {
+    target.scrollIntoView({ block: "start" });
+    window.scrollBy(0, -56);
+  }
+
+  function selectApparatus(id) {
+    const card = apparatusCards().find((item) => item.id === id);
+    if (!card) return;
+    apparatusState.selected = id;
+    renderApparatusList();
+    renderApparatusDetail(card);
+    if (window.matchMedia("(max-width: 820px)").matches)
+      scrollApparatusMobileTarget($("#apparatus-detail"));
+    else window.scrollTo(0, 0);
+  }
+
+  function initApparatus() {
+    if (!apparatusLibrary) {
+      $("#apparatus-list").innerHTML = `<p class="evidence-empty">舞台技術カードを読み込めません。</p>`;
+      return;
+    }
+    const cards = apparatusCards();
+    const families = [...new Set(cards.map((card) => card.family))];
+    const scales = ["数百万円", "数千万円", "億円以上"].filter((scale) =>
+      cards.some((card) => card.planning_scale === scale));
+    $("#apparatus-family").innerHTML = `<option value="">すべての系統（${families.length}）</option>`
+      + families.map((family) => `<option value="${esc(family)}">${esc(family)}</option>`).join("");
+    $("#apparatus-scale").innerHTML = `<option value="">すべての予算規模</option>`
+      + scales.map((scale) => `<option value="${esc(scale)}">本格実装: ${esc(scale)}</option>`).join("");
+    $("#apparatus-search").addEventListener("input", (event) => {
+      apparatusState.query = event.target.value;
+      const visible = apparatusFiltered();
+      if (!visible.some((card) => card.id === apparatusState.selected))
+        apparatusState.selected = visible[0] ? visible[0].id : null;
+      renderApparatusList();
+      renderApparatusDetail(visible.find((card) => card.id === apparatusState.selected));
+    });
+    $("#apparatus-family").addEventListener("change", (event) => {
+      apparatusState.family = event.target.value;
+      const visible = apparatusFiltered();
+      apparatusState.selected = visible[0] ? visible[0].id : null;
+      renderApparatusList();
+      renderApparatusDetail(visible[0]);
+    });
+    $("#apparatus-scale").addEventListener("change", (event) => {
+      apparatusState.scale = event.target.value;
+      const visible = apparatusFiltered();
+      apparatusState.selected = visible[0] ? visible[0].id : null;
+      renderApparatusList();
+      renderApparatusDetail(visible[0]);
+    });
+    apparatusState.selected = cards[0] ? cards[0].id : null;
+    renderApparatusList();
+    renderApparatusDetail(cards[0]);
+  }
+
   // ---------- 画面切り替え（ハッシュルーター） ----------
-  const VIEWS = ["db", "companies", "roster", "desk", "stage", "seeds", "mondo"];
+  const VIEWS = ["db", "apparatus", "companies", "roster", "desk", "stage", "seeds", "mondo"];
 
   function showView(name) {
     $$(".view").forEach((v) => (v.hidden = true));
@@ -1976,6 +3487,11 @@
     if (h.startsWith("#companies/")) {
       showView("companies");
       selectCompanyRadar(decodeURIComponent(h.slice(11)));
+      return;
+    }
+    if (h.startsWith("#apparatus/")) {
+      showView("apparatus");
+      selectApparatus(decodeURIComponent(h.slice(11)));
       return;
     }
     const name = h.slice(1);
@@ -2163,6 +3679,7 @@
   }
 
   const dbState = {
+    shelf: "all",
     query: "",
     type: "",
     company: "",
@@ -2174,6 +3691,7 @@
     detailMode: "work"
   };
   let workMap, elMap, featMap, elsByWork, lensMap;
+  const dbShelves = window.SHOSAI_SHELVES;
 
   function buildDbMaps() {
     workMap = new Map(DB.works.map((w) => [w.id, w]));
@@ -2296,23 +3814,99 @@
     return "";
   }
 
-  function dbFilter() {
-    const q = dbState.query.trim().toLowerCase();
-    return DB.works.filter((w) => {
-      if (dbState.type) {
-        if (dbState.type.startsWith("sub:")) {
-          if (w.subcategory !== dbState.type.slice(4)) return false;
-        } else if (w.category !== dbState.type) return false;
-      }
-      if (dbState.company && (w.company || "") !== dbState.company) return false;
-      if (dbState.person && !(w.people || []).some((p) => p.person_id === dbState.person))
+  function dbShelfDefinition() {
+    return dbShelves.definitionFor(dbState.shelf);
+  }
+
+  function dbShelfWorks(shelfId) {
+    return dbShelves.worksForShelf(DB.works, shelfId || dbState.shelf);
+  }
+
+  function matchesDbType(w, type) {
+    if (!type) return true;
+    if (type.startsWith("sub:")) return w.subcategory === type.slice(4);
+    return w.category === type;
+  }
+
+  function updateDbTypeOptions() {
+    const works = dbShelfWorks();
+    const catCount = new Map();
+    const subCount = new Map();
+    for (const w of works) {
+      if (w.category) catCount.set(w.category, (catCount.get(w.category) || 0) + 1);
+      if (w.subcategory) subCount.set(w.subcategory, (subCount.get(w.subcategory) || 0) + 1);
+    }
+    const cats = [...catCount.entries()].sort((a, b) => b[1] - a[1]);
+    const subs = [...subCount.entries()].sort((a, b) => b[1] - a[1]);
+    const optionValues = new Set(["", ...cats.map(([category]) => category), ...subs.map(([subcategory]) => `sub:${subcategory}`)]);
+    if (!optionValues.has(dbState.type)) dbState.type = "";
+    $("#db-type").innerHTML =
+      `<option value="">すべてのジャンル（${works.length}）</option>` +
+      cats
+        .map(([category, count]) => {
+          let html = `<option value="${esc(category)}">${esc(category)}（${count}）</option>`;
+          if (category === "サーカス・アクロバット")
+            html += subs
+              .map(([subcategory, subcount]) => `<option value="sub:${esc(subcategory)}">　└ ${esc(subcategory)}（${subcount}）</option>`)
+              .join("");
+          return html;
+        })
+        .join("");
+    $("#db-type").value = dbState.type;
+  }
+
+  function renderDbShelfSwitcher() {
+    const shelf = dbShelfDefinition();
+    const works = dbShelfWorks();
+    $$("[data-db-shelf]").forEach((button) => {
+      const checked = button.dataset.dbShelf === shelf.id;
+      button.setAttribute("aria-checked", String(checked));
+      button.tabIndex = checked ? 0 : -1;
+    });
+    $("#db-shelf-description").textContent =
+      `${shelf.label}: ${works.length}件（全体 ${DB.works.length}件）。${shelf.description}`;
+  }
+
+  function setDbShelf(shelfId) {
+    if (!dbShelves.definitions.some((shelf) => shelf.id === shelfId)) return;
+    dbState.shelf = shelfId;
+    updateDbTypeOptions();
+    renderDbShelfSwitcher();
+    renderStagingLenses();
+    renderDbList();
+    if (dbState.detailMode === "lens") renderLensDigest();
+  }
+
+  function bindDbShelfSwitcher() {
+    const buttons = $$("[data-db-shelf]");
+    buttons.forEach((button, index) => {
+      button.addEventListener("click", () => setDbShelf(button.dataset.dbShelf));
+      button.addEventListener("keydown", (event) => {
+        const keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+        if (!keys.includes(event.key)) return;
+        event.preventDefault();
+        const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 :
+          (index + (event.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;
+        buttons[nextIndex].focus();
+        setDbShelf(buttons[nextIndex].dataset.dbShelf);
+      });
+    });
+  }
+
+  function dbFilter(overrides) {
+    const filters = { ...dbState, ...(overrides || {}) };
+    const q = filters.query.trim().toLowerCase();
+    return dbShelfWorks(filters.shelf).filter((w) => {
+      if (filters.type && !matchesDbType(w, filters.type)) return false;
+      if (filters.company && (w.company || "") !== filters.company) return false;
+      if (filters.person && !(w.people || []).some((p) => p.person_id === filters.person))
         return false;
-      if (dbState.depth && String(depthMeta(w).amount_level) !== dbState.depth) return false;
-      if (dbState.lens && !(w.staging_lenses || []).some((lens) => lens.id === dbState.lens))
+      if (filters.depth && String(depthMeta(w).amount_level) !== filters.depth) return false;
+      if (filters.lens && !(w.staging_lenses || []).some((lens) => lens.id === filters.lens))
         return false;
       if (!q) return true;
       const idx = searchIdx.get(w.id);
-      return q.split(/\s+/).every((t) => idx.hay.includes(t));
+      return q.split(/\s+/).every((term) => idx.hay.includes(term));
     });
   }
 
@@ -2358,10 +3952,12 @@
 
   function renderDbList() {
     const list = dbSort(dbFilter());
+    const shelf = dbShelfDefinition();
+    const shelfWorks = dbShelfWorks();
     const lens = lensMap.get(dbState.lens);
     const depth = (DB.research_depth_levels || []).find((item) => item.id === dbState.depth);
     $("#db-count").textContent =
-      `${DB.works.length}件中 ${list.length}件${lens ? ` ・ 型: ${lens.label}` : ""}${depth ? ` ・ ${depth.label}` : ""} ・ 索引生成 ${DB.generated}（正本は読み取りのみ）`;
+      `${shelf.label} ${shelfWorks.length}件中 ${list.length}件（全体 ${DB.works.length}件）${lens ? ` ・ 型: ${lens.label}` : ""}${depth ? ` ・ ${depth.label}` : ""} ・ 索引生成 ${DB.generated}（正本は読み取りのみ）`;
     const q = dbState.query.trim().toLowerCase();
     $("#db-list").innerHTML = list
       .map((w) => {
@@ -2386,7 +3982,7 @@
       <button type="button" class="db-lens" data-lens="${esc(lens.id)}" aria-pressed="${dbState.lens === lens.id}">
         <span class="db-lens-index">${String(index + 1).padStart(2, "0")}</span>
         <span class="db-lens-copy"><span class="db-lens-label">${esc(lens.label)}</span><span class="db-lens-desc">${esc(lens.description || "")}</span></span>
-        <span class="db-lens-count">${esc(lens.works_count)}件</span>
+        <span class="db-lens-count">${esc(dbFilter({ lens: lens.id }).length)}件</span>
       </button>`).join("");
     $("#db-lens-clear").hidden = !dbState.lens;
     $$('[data-lens]', $("#db-lens-list")).forEach((button) =>
@@ -2730,9 +4326,9 @@
   }
 
   function initDb() {
-    if (!DB) {
+    if (!DB || !dbShelves) {
       $("#db-list").innerHTML =
-        `<p class="evidence-empty" style="padding:16px">db.js が読み込めません。shosai-app フォルダで python3 build_db.py を実行してください。</p>`;
+        `<p class="evidence-empty" style="padding:16px">資料棚の索引または入口分類を読み込めません。</p>`;
       return;
     }
     buildDbMaps();
@@ -2742,28 +4338,10 @@
       dbState.lens = initialLens;
       dbState.detailMode = "lens";
     }
+    updateDbTypeOptions();
+    renderDbShelfSwitcher();
+    bindDbShelfSwitcher();
     renderStagingLenses();
-    // ジャンル大分類（build_db.pyで生成）: 件数の多い順。サーカスはサブ分類を字下げで続ける
-    const catCount = new Map();
-    const subCount = new Map();
-    for (const w of DB.works) {
-      if (w.category) catCount.set(w.category, (catCount.get(w.category) || 0) + 1);
-      if (w.subcategory) subCount.set(w.subcategory, (subCount.get(w.subcategory) || 0) + 1);
-    }
-    const cats = [...catCount.entries()].sort((a, b) => b[1] - a[1]);
-    const subs = [...subCount.entries()].sort((a, b) => b[1] - a[1]);
-    $("#db-type").innerHTML =
-      `<option value="">すべてのジャンル（${DB.works.length}）</option>` +
-      cats
-        .map(([c, n]) => {
-          let html = `<option value="${esc(c)}">${esc(c)}（${n}）</option>`;
-          if (c === "サーカス・アクロバット")
-            html += subs
-              .map(([s, m]) => `<option value="sub:${esc(s)}">　└ ${esc(s)}（${m}）</option>`)
-              .join("");
-          return html;
-        })
-        .join("");
 
     // 会社: 作品数の多い順
     const compCount = new Map();
@@ -2832,10 +4410,32 @@
     if (dbState.detailMode === "lens") renderLensDigest();
   }
 
+  window.SHOSAI_DESK_PROJECTS_API = Object.freeze({
+    DESK_PROJECTS_STORAGE_KEY,
+    SCENE_RELATION_LABELS,
+    TRANSFORM_ROW_LABELS,
+    BRIEF_FIELD_LABELS,
+    normalizeDeskProject,
+    normalizeScene,
+    normalizeTransformation,
+    normalizeBrief,
+    briefDraftFromStudy,
+    normalizePlacedEntries,
+    searchShelfWorks,
+    confidenceLabel,
+    loadDeskProjects,
+    persistDeskProjects,
+    syncCurrentDeskProject,
+    applySheetEdit,
+    applySheetValues,
+    state,
+  });
+
   // ---------- 初期化 ----------
   function init() {
     initDesk();
     initDb();
+    initApparatus();
     initCompanyRadar();
     window.addEventListener("hashchange", route);
     route();

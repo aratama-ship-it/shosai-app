@@ -1,0 +1,345 @@
+/* 舞台スケッチ同梱ショーのデータ棚。
+ *
+ * ここだけが、アプリに同梱するショーの内容を持つ場所。stage-sketch.js は
+ * 描画・保存・読み込みだけを担当し、サンプル本文を持たない。
+ * ブラウザ/PWA を file: でも開けるよう、外部 JSON の fetch ではなく、JSON
+ * 相当の読み取り専用 JavaScript データとして同梱する。
+ *
+ * 新しい見本を足すときは samples 配列へ一件追加する。show の ID は書き出し
+ * JSON と同じく永続的に扱うため、公開後に変更しない。
+ */
+(function () {
+  "use strict";
+
+  /* 新規ショーを開いたときだけ使う、最小の初期配置。これはサンプルショー
+     そのものではなく、空のショーを始めやすくするための種。 */
+  const starter = {
+    cast: [
+      { id: "stage-sample-cast-1", pieceId: "stage-sample-performer-1",
+        ja: "演者A", en: "Performer A", color: "#a84b26", u: 0.36, v: 0.62, size: 105 },
+      { id: "stage-sample-cast-2", pieceId: "stage-sample-performer-2",
+        ja: "演者B", en: "Performer B", color: "#77865f", u: 0.66, v: 0.48, size: 92 },
+    ],
+    sets: [
+      { id: "stage-sample-set-1", pieceId: "stage-sample-block-1", kind: "block",
+        ja: "台", en: "Platform", color: "#efe7d6", u: 0.51, v: 0.7, size: 88 },
+    ],
+  };
+
+  /* 以前からある短い見本。8場面の動線・装置・照明を一つのデータとして保持する。 */
+  const eightCircus = {
+    schemaVersion: "1.0",
+    id: "sample-eight-circus-v1",
+    title: "見本: 八人のサーカス",
+    titleEn: "Sample: Eight Circus Performers",
+    versionLabel: "sample",
+    venue: "proscenium",
+    venueSize: "mid",
+    cast: [
+      { key: "mina", name: "ミナ", color: "#a84b26", h: 168 },
+      { key: "riku", name: "リク", color: "#77865f", h: 176 },
+      { key: "kai", name: "カイ", color: "#9c823f", h: 171 },
+      { key: "sora", name: "ソラ", color: "#6d6657", h: 158 },
+      { key: "noa", name: "ノア", color: "#a84b26", h: 163 },
+      { key: "jin", name: "ジン", color: "#77865f", h: 182 },
+      { key: "yuki", name: "ユキ", color: "#9c823f", h: 155 },
+      { key: "ren", name: "レン", color: "#6d6657", h: 174 },
+    ],
+    sets: [
+      { key: "deck", kind: "block", name: "台（1.8×1.0×0.5）", color: "#efe7d6", dims: { w: 1.8, d: 1.0, h: 0.5, lift: 0 } },
+      { key: "pole", kind: "pole", name: "チャイニーズポール", color: "#766a59", dims: { h: 6, dia: 0.1, lift: 0 } },
+      { key: "trap", kind: "trapeze", name: "トラピーズ", color: "#d6dce2", dims: { w: 0.7, h: 0.06, lift: 4.2 }, flown: true },
+    ],
+    lights: [
+      { key: "wash", kind: "hang", name: "吊り・全体", dia: 7, h: 8 },
+      { key: "spot", kind: "hang", name: "吊り・ピン", dia: 2.2, h: 8 },
+      { key: "sideL", kind: "ss", name: "SS 上手", dia: 3 },
+      { key: "sideR", kind: "ss", name: "SS 下手", dia: 3 },
+      { key: "front", kind: "front", name: "前明かり", dia: 5, h: 8, srcV: 1.02 },
+    ],
+    scenes: [
+      { title: "1 オープニング", note: "全員が袖と奥から現れ、一列で客席を見る。まだ誰の番でもない。", cast: { mina: [0.50, 0.72, 0, "stand"], riku: [0.36, 0.70, 0, "stand"], kai: [0.64, 0.70, 0, "stand"], sora: [0.24, 0.66, 0, "stand"], noa: [0.76, 0.66, 0, "stand"], jin: [0.14, 0.62, 0, "stand"], yuki: [0.86, 0.62, 0, "stand"], ren: [0.50, 0.58, 0, "reach"] }, sets: { deck: [0.50, 0.24] }, lights: { wash: [0.50, 0.66], front: [0.50, 0.70] } },
+      { title: "2 演目・シルホイール", note: "ミナの輪が上手袖から入り、舞台を横切る。他は袖へ引く。", cast: { mina: [0.16, 0.62, 0, "cyr"], riku: [0.06, 0.34, 0, "stand"], kai: [0.94, 0.34, 0, "stand"] }, sets: { deck: [0.50, 0.24] }, lights: { spot: [0.16, 0.62], sideL: [0.30, 0.60] } },
+      { title: "3 演目・チャイニーズポール", note: "輪が下手へ抜けきる。入れ替わりにポールが立ち、ジンが登る。", cast: { mina: [0.90, 0.64, 20, "cyr"], jin: [0.42, 0.34, 0, "reach"], riku: [0.06, 0.34, 0, "stand"], kai: [0.94, 0.34, 0, "stand"] }, sets: { deck: [0.50, 0.24], pole: [0.42, 0.34] }, lights: { spot: [0.42, 0.30], sideR: [0.42, 0.40] } },
+      { title: "4 トランジション", note: "ポールが残り、四人が交差して通り抜ける。台が奥から客席側へ出てくる。", cast: { sora: [0.10, 0.80, 90, "run"], noa: [0.90, 0.80, 270, "run"], yuki: [0.10, 0.50, 90, "walk"], ren: [0.90, 0.50, 270, "walk"], jin: [0.42, 0.34, 0, "stand"] }, sets: { deck: [0.50, 0.24], pole: [0.42, 0.34] }, lights: { wash: [0.50, 0.60] } },
+      { title: "5 演劇パート", note: "台の上のレンと、床のソラだけが残る。声で場をつなぐ。前明かりを顔へ。", cast: { ren: [0.50, 0.24, 0, "sing"], sora: [0.62, 0.68, 300, "kneel"] }, sets: { deck: [0.50, 0.24], pole: [0.42, 0.34] }, lights: { front: [0.54, 0.40], spot: [0.50, 0.24] } },
+      { title: "6 演目・トラピーズ", note: "ポールが退き、トラピーズが降りる。ユキが乗り、下でソラが見る。", cast: { yuki: [0.58, 0.40, 0, "reach"], sora: [0.30, 0.72, 45, "stand"], ren: [0.06, 0.30, 0, "stand"] }, sets: { trap: [0.58, 0.40] }, lights: { spot: [0.58, 0.36], sideL: [0.44, 0.44] } },
+      { title: "7 演目・群舞", note: "全員が下手側から一斉に入り、舞台いっぱいへ散る。いちばん動く場面。", cast: { mina: [0.30, 0.62, 0, "dance1"], riku: [0.46, 0.70, 0, "dance2"], kai: [0.62, 0.60, 0, "dance4"], sora: [0.20, 0.44, 0, "dance3"], noa: [0.78, 0.46, 0, "dance5"], jin: [0.70, 0.76, 0, "dance1"], yuki: [0.38, 0.42, 0, "dance4"], ren: [0.86, 0.66, 0, "dance2"] }, sets: { deck: [0.50, 0.22] }, lights: { wash: [0.50, 0.58], sideL: [0.26, 0.56], sideR: [0.74, 0.56] } },
+      { title: "8 エンディング・楽器", note: "台の上でジンがトランペット、レンがギター。残りは半円で座る。吊り一本だけ残す。", cast: { jin: [0.44, 0.24, 0, "trumpet"], ren: [0.58, 0.24, 0, "guitar"], mina: [0.28, 0.60, 20, "sit"], riku: [0.42, 0.66, 10, "sit"], kai: [0.58, 0.66, 350, "sit"], sora: [0.72, 0.60, 340, "sit"], noa: [0.20, 0.50, 30, "sit"], yuki: [0.80, 0.50, 330, "sit"] }, sets: { deck: [0.50, 0.24] }, lights: { spot: [0.50, 0.26] } },
+    ],
+    boundaries: ["配置・照明・動線は編集を始めるための見本であり、舞台機構や安全距離を決める図面ではない。"],
+  };
+
+  const cast = [
+    { key: "keeper", name: "保管人", nameEn: "Keeper", color: "#a84b26", h: 170 },
+    { key: "spill", name: "こぼれ", nameEn: "Spill", color: "#77865f", h: 165 },
+    { key: "handA", name: "手A", nameEn: "Hand A", color: "#9c823f", h: 174 },
+    { key: "handB", name: "手B", nameEn: "Hand B", color: "#6d6657", h: 160 },
+  ];
+
+  const sets = [
+    { key: "frameL", kind: "wall", name: "枠・左辺", color: "#8a8072", dims: { w: 0.22, d: 0.22, h: 2.4 } },
+    { key: "frameR", kind: "wall", name: "枠・右辺", color: "#8a8072", dims: { w: 0.22, d: 0.22, h: 2.4 } },
+    { key: "frameT", kind: "wall", name: "枠・上辺", color: "#8a8072", dims: { w: 2.8, d: 0.22, h: 0.22 } },
+    { key: "frameB", kind: "wall", name: "枠・下辺", color: "#8a8072", dims: { w: 2.8, d: 0.22, h: 0.22 } },
+    { key: "clothA", kind: "block", name: "布A（位置記号）", color: "#d8d0c0", dims: { w: 2.4, d: 0.18, h: 0.05 } },
+    { key: "clothB", kind: "block", name: "布B（位置記号）", color: "#b9afa0", dims: { w: 2.4, d: 0.18, h: 0.05 } },
+    { key: "case", kind: "suitcase", name: "記録用スーツケース", color: "#5e5144", dims: { w: 0.62, d: 0.24, h: 0.44 } },
+    { key: "ball1", kind: "sphere", name: "記録球1", color: "#eee4cf", dims: { dia: 0.16, lift: 0 } },
+    { key: "ball2", kind: "sphere", name: "記録球2", color: "#e0d3bb", dims: { dia: 0.16, lift: 0 } },
+    { key: "ball3", kind: "sphere", name: "記録球3", color: "#cfc0a6", dims: { dia: 0.16, lift: 0 } },
+    { key: "paper", kind: "block", name: "空白の記録紙（位置札）", color: "#f4f0e6", dims: { w: 0.42, d: 0.30, h: 0.02 } },
+  ];
+
+  const lights = [
+    { key: "work", kind: "hang", name: "白い作業灯", dia: 4.2, h: 8 },
+    { key: "pin", kind: "hang", name: "記録用ピン", dia: 1.8, h: 8 },
+    { key: "side", kind: "ss", name: "継ぎ目の横光", dia: 3.0 },
+    { key: "front", kind: "front", name: "客席を含む明かり", dia: 6.0, h: 8, srcV: 1.02 },
+  ];
+
+  const s = (id, title, durationSeconds, role, energy, note, castMap, setMap, lightMap) => ({
+    id, title, durationSeconds, role, energy, note,
+    cast: castMap || {}, sets: setMap || {}, lights: lightMap || {},
+  });
+  const performer = (u, v, facing, pose) => [u, v, facing || 0, pose || "stand"];
+  const object = (u, v, facing) => [u, v, facing || 0];
+
+  const sections = [
+    {
+      id: "1", title: "展示前の身体", durationSeconds: 300,
+      summary: "正確な保存手順が、最後の『空ける』だけを完了できず反復へ戻る。",
+      scenes: [
+        s("1-1", "背面の展示", 60, "世界提示", 1,
+          "観客には四つの枠の背面と、整え続ける手だけが見える。枠は奥向き、保管人は上手奥。狭い作業灯。",
+          { keeper: performer(0.78, 0.28, 180, "reach"), handA: performer(0.16, 0.30, 90), handB: performer(0.84, 0.30, 270) },
+          { frameL: object(0.34, 0.22), frameR: object(0.66, 0.22), frameT: object(0.50, 0.16), frameB: object(0.50, 0.32), case: object(0.83, 0.18) },
+          { work: object(0.72, 0.30) }),
+        s("1-2", "八動作の校正", 75, "規則提示", 2,
+          "保管人が『出す・置く・測る・包む・逸れる・支える・返す・空ける』を一巡。球と紙は最短経路だけを通る。",
+          { keeper: performer(0.62, 0.46, 225, "juggle3"), handA: performer(0.18, 0.28, 90), handB: performer(0.82, 0.28, 270) },
+          { frameL: object(0.34, 0.22), frameR: object(0.66, 0.22), frameT: object(0.50, 0.16), frameB: object(0.50, 0.32), case: object(0.82, 0.18), ball1: object(0.44, 0.48), ball2: object(0.52, 0.45), ball3: object(0.59, 0.50), paper: object(0.72, 0.38) },
+          { work: object(0.58, 0.46) }),
+        s("1-3", "正確すぎる反復", 90, "圧力上昇", 3,
+          "同じ手順を速めても崩さない。保管人の移動範囲は枠内へ縮まり、呼吸だけがクリックに追い越される。",
+          { keeper: performer(0.50, 0.28, 0, "juggle5"), handA: performer(0.32, 0.30, 90), handB: performer(0.68, 0.30, 270) },
+          { frameL: object(0.38, 0.22), frameR: object(0.62, 0.22), frameT: object(0.50, 0.16), frameB: object(0.50, 0.35), ball1: object(0.44, 0.31), ball2: object(0.50, 0.25), ball3: object(0.56, 0.31), paper: object(0.50, 0.38) },
+          { work: object(0.50, 0.30), pin: object(0.50, 0.28) }),
+        s("1-4", "終われない空白", 75, "欠落提示", 2,
+          "中央を空けても停止できず、保管人は開始位置へ逆戻りする。スーツケースから最後の一行が空白の紙が落ちる。",
+          { keeper: performer(0.76, 0.28, 180, "walk"), handA: performer(0.22, 0.28, 90), handB: performer(0.78, 0.28, 270) },
+          { frameL: object(0.34, 0.22), frameR: object(0.66, 0.22), frameT: object(0.50, 0.16), frameB: object(0.50, 0.32), case: object(0.82, 0.18), paper: object(0.68, 0.48) },
+          { work: object(0.72, 0.32), pin: object(0.68, 0.48) }),
+      ],
+    },
+    {
+      id: "2", title: "空白の受領", durationSeconds: 420,
+      summary: "空白を損傷として戻そうとする保管人へ、枠の向こうから別の返球が届く。",
+      scenes: [
+        s("2-1", "空白の検査", 90, "謎の発見", 2,
+          "保管人が紙を伸ばし、照らし、裏返す。紙札とスーツケースが中央前へ出る。",
+          { keeper: performer(0.48, 0.66, 0, "kneel"), handA: performer(0.20, 0.26, 90), handB: performer(0.80, 0.26, 270) },
+          { case: object(0.58, 0.70), paper: object(0.48, 0.61), frameL: object(0.34, 0.25), frameR: object(0.66, 0.25), frameT: object(0.50, 0.18), frameB: object(0.50, 0.35) },
+          { pin: object(0.48, 0.62) }),
+        s("2-2", "枠の向こうの手", 105, "他者の予告", 2,
+          "枠の隙間から、こぼれの手と視線だけが現れる。全身はまだ枠裏に置く。",
+          { keeper: performer(0.42, 0.58, 45, "kneel"), spill: performer(0.66, 0.18, 180, "reach"), handA: performer(0.18, 0.26, 90), handB: performer(0.82, 0.26, 270) },
+          { paper: object(0.48, 0.57), ball1: object(0.60, 0.34), frameL: object(0.34, 0.25), frameR: object(0.66, 0.25), frameT: object(0.50, 0.18), frameB: object(0.50, 0.35) },
+          { pin: object(0.58, 0.38), side: object(0.66, 0.28) }),
+        s("2-3", "規則を外れる返球", 105, "最初の対立", 3,
+          "返された球が決めた直線を外れ、弧を描く。保管人とこぼれの光はまだ分かれている。",
+          { keeper: performer(0.34, 0.62, 50, "catch"), spill: performer(0.70, 0.30, 230, "throw"), handA: performer(0.18, 0.26, 90), handB: performer(0.82, 0.26, 270) },
+          { ball1: object(0.50, 0.46), paper: object(0.40, 0.70), frameL: object(0.34, 0.25), frameR: object(0.66, 0.25) },
+          { work: object(0.32, 0.60), side: object(0.70, 0.34) }),
+        s("2-4", "初めて同じ拍", 120, "接続の発生", 3,
+          "保管人が空白の球を投げ、こぼれが全身で受ける。二人の時間を一本の対角線が結ぶ。",
+          { keeper: performer(0.28, 0.68, 55, "throw"), spill: performer(0.72, 0.30, 235, "catch"), handA: performer(0.15, 0.30, 90), handB: performer(0.85, 0.30, 270) },
+          { ball1: object(0.50, 0.48), frameL: object(0.34, 0.22), frameR: object(0.66, 0.22), clothA: object(0.50, 0.80) },
+          { work: object(0.50, 0.50), side: object(0.66, 0.38) }),
+      ],
+    },
+    {
+      id: "3", title: "正しい複写", durationSeconds: 540,
+      summary: "同じ形を強いる教示が、違いを利用した受け渡しへ反転する。",
+      scenes: [
+        s("3-1", "教示", 120, "関係設定", 2,
+          "保管人が八動作を分解し、こぼれが横で追う。手A・手Bは奥で記録する。",
+          { keeper: performer(0.40, 0.58, 0, "reach"), spill: performer(0.60, 0.58, 0, "reach"), handA: performer(0.25, 0.25, 0, "kneel"), handB: performer(0.75, 0.25, 0, "kneel") },
+          { paper: object(0.25, 0.34), ball1: object(0.45, 0.50), ball2: object(0.55, 0.50), frameL: object(0.32, 0.22), frameR: object(0.68, 0.22) },
+          { work: object(0.50, 0.56) }),
+        s("3-2", "同じ形にならない", 120, "誤差の発見", 3,
+          "順番は合うが重心と呼吸が違う。同じ終点へ向かう二本の異なる曲線を残す。",
+          { keeper: performer(0.34, 0.62, 35, "balance"), spill: performer(0.68, 0.48, 220, "balance"), handA: performer(0.20, 0.24, 0, "kneel"), handB: performer(0.80, 0.24, 0, "kneel") },
+          { ball1: object(0.48, 0.52), ball2: object(0.56, 0.55), clothA: object(0.50, 0.76) },
+          { work: object(0.50, 0.52), side: object(0.68, 0.48) }),
+        s("3-3", "修正の加速", 150, "圧力と抵抗", 4,
+          "保管人の修正が速まり、こぼれの意図した落下も増える。枠と記録線が二人へ迫る。",
+          { keeper: performer(0.42, 0.46, 90, "point"), spill: performer(0.58, 0.46, 270, "drop"), handA: performer(0.30, 0.34, 90, "reach"), handB: performer(0.70, 0.34, 270, "reach") },
+          { frameL: object(0.36, 0.42), frameR: object(0.64, 0.42), ball1: object(0.48, 0.62), ball2: object(0.55, 0.66), ball3: object(0.60, 0.58), paper: object(0.50, 0.34) },
+          { pin: object(0.50, 0.48), side: object(0.58, 0.46) }),
+        s("3-4", "違いによる成功", 150, "第一の山", 4,
+          "異なる高さと速度を利用した受け渡しが成功する。二人は離れ、中央で球の軌道だけが交差する。",
+          { keeper: performer(0.24, 0.66, 60, "throw"), spill: performer(0.76, 0.40, 240, "catch"), handA: performer(0.38, 0.25, 45, "reach"), handB: performer(0.62, 0.25, 315, "reach") },
+          { ball1: object(0.46, 0.50), ball2: object(0.54, 0.46), clothA: object(0.50, 0.78) },
+          { work: object(0.50, 0.50), side: object(0.62, 0.40) }),
+      ],
+    },
+    {
+      id: "4", title: "遊びとしての型", durationSeconds: 540,
+      summary: "八動作が四人の異なる技能へ変奏され、一度だけ完全な流れになる。",
+      scenes: [
+        s("4-1", "「置く」が「支える」になる", 120, "見立ての開始", 3,
+          "物を置く姿勢が、相手の肩を支える姿勢へ変わる。球を外し、接点を中央前へ置く。",
+          { keeper: performer(0.44, 0.66, 45, "support"), spill: performer(0.56, 0.62, 225, "lean"), handA: performer(0.30, 0.36, 90), handB: performer(0.70, 0.36, 270) },
+          { clothA: object(0.50, 0.78), frameL: object(0.30, 0.24), frameR: object(0.70, 0.24) },
+          { work: object(0.50, 0.62) }),
+        s("4-2", "「逸れる」が「回る」になる", 120, "技能の展開", 4,
+          "逸脱が回転と床移動へ広がる。ディアボロ相当の軌道は出演者技能に応じて要検証。",
+          { keeper: performer(0.34, 0.62, 90, "turn"), spill: performer(0.66, 0.56, 270, "floor"), handA: performer(0.36, 0.30, 180, "turn"), handB: performer(0.68, 0.30, 180, "turn") },
+          { ball1: object(0.46, 0.48), ball2: object(0.58, 0.44), clothA: object(0.50, 0.78) },
+          { side: object(0.50, 0.50), work: object(0.50, 0.55) }),
+        s("4-3", "「返す」が「つなぐ」になる", 120, "集団化", 4,
+          "一人の終点が次の人の始点になる。四人の菱形を、連続する受け渡しが巡る。",
+          { keeper: performer(0.50, 0.72, 0, "throw"), spill: performer(0.74, 0.48, 270, "catch"), handA: performer(0.50, 0.24, 180, "throw"), handB: performer(0.26, 0.48, 90, "catch") },
+          { ball1: object(0.62, 0.58), ball2: object(0.62, 0.36), ball3: object(0.38, 0.36), clothA: object(0.38, 0.58) },
+          { work: object(0.50, 0.48), side: object(0.70, 0.48) }),
+        s("4-4", "幸福な一回", 180, "仮の達成", 5,
+          "全員の違う動きが一度だけ完全な流れになる。布が床の道、空中の線、四人を通る痕跡へ変わる。",
+          { keeper: performer(0.22, 0.68, 60, "dance1"), spill: performer(0.76, 0.62, 300, "dance3"), handA: performer(0.34, 0.28, 120, "dance2"), handB: performer(0.66, 0.30, 240, "dance4") },
+          { clothA: object(0.34, 0.58, 25), clothB: object(0.66, 0.44, 335), ball1: object(0.48, 0.48), ball2: object(0.58, 0.54) },
+          { work: object(0.50, 0.52), side: object(0.66, 0.46), front: object(0.50, 0.70) }),
+      ],
+    },
+    {
+      id: "5", title: "締めすぎる糸", durationSeconds: 480,
+      summary: "共有可能だった型が唯一解へ固定され、関係を締め上げる。",
+      scenes: [
+        s("5-1", "成功の採寸", 120, "固定化の開始", 3,
+          "保管人が成功時の立ち位置と軌道を採寸する。四人は床の位置札へ正方形に戻される。",
+          { keeper: performer(0.34, 0.66, 0, "point"), spill: performer(0.66, 0.66, 0), handA: performer(0.34, 0.32, 180), handB: performer(0.66, 0.32, 180) },
+          { paper: object(0.34, 0.72), ball1: object(0.66, 0.72), ball2: object(0.34, 0.38), ball3: object(0.66, 0.38), clothA: object(0.50, 0.50) },
+          { work: object(0.50, 0.50), pin: object(0.34, 0.66) }),
+        s("5-2", "秒数の固定", 120, "規則の肥大", 3,
+          "呼吸と静止までクリックへ合わせる。動線は消え、各人の可動域が小さな箱へ閉じる。",
+          { keeper: performer(0.36, 0.62, 0, "stand"), spill: performer(0.64, 0.62, 0, "stand"), handA: performer(0.36, 0.34, 180, "stand"), handB: performer(0.64, 0.34, 180, "stand") },
+          { frameL: object(0.30, 0.48), frameR: object(0.70, 0.48), frameT: object(0.50, 0.26), frameB: object(0.50, 0.70), paper: object(0.50, 0.48) },
+          { work: object(0.50, 0.48), pin: object(0.50, 0.48) }),
+        s("5-3", "締めすぎる糸", 120, "圧迫の可視化", 4,
+          "布と糸の線が中央へ収束し、回転も支持も続かない。実際の関節・頸部・呼吸を圧迫する演技は行わない。",
+          { keeper: performer(0.42, 0.52, 90, "pull"), spill: performer(0.58, 0.52, 270, "pull"), handA: performer(0.50, 0.30, 180, "reach"), handB: performer(0.50, 0.72, 0, "reach") },
+          { clothA: object(0.50, 0.48, 45), clothB: object(0.50, 0.48, 315), frameL: object(0.34, 0.48), frameR: object(0.66, 0.48) },
+          { work: object(0.50, 0.50), side: object(0.50, 0.50) }),
+        s("5-4", "空けられた一歩", 120, "反抗／選択", 4,
+          "こぼれが決められた一歩だけを行わない。枠外へずれ、受け手のいない投球の軌道が残る。",
+          { keeper: performer(0.38, 0.58, 70, "throw"), spill: performer(0.82, 0.48, 270, "stand"), handA: performer(0.42, 0.30, 180), handB: performer(0.62, 0.32, 180) },
+          { ball1: object(0.66, 0.50), clothA: object(0.50, 0.68), frameR: object(0.72, 0.48), paper: object(0.38, 0.66) },
+          { pin: object(0.64, 0.50), side: object(0.82, 0.48) }),
+      ],
+    },
+    {
+      id: "6", title: "記録の崩壊", durationSeconds: 420,
+      summary: "記録と人の二択で、保管人が記録を落として相手を受ける。",
+      scenes: [
+        s("6-1", "受け手のいない投球", 90, "破綻の発火", 4,
+          "一つの球が受けられず、次の手順が始まらない。球の終点を空にし、四人の視線だけが一点へ集まる。",
+          { keeper: performer(0.30, 0.62, 70, "throw"), spill: performer(0.80, 0.46, 270, "stand"), handA: performer(0.38, 0.28, 135, "look"), handB: performer(0.62, 0.28, 225, "look") },
+          { ball1: object(0.62, 0.49), paper: object(0.30, 0.70), clothA: object(0.50, 0.72), frameR: object(0.72, 0.42) },
+          { pin: object(0.62, 0.49), side: object(0.72, 0.48) }),
+        s("6-2", "連鎖崩れ", 90, "システム崩壊", 5,
+          "球、紙、布、枠の順で体系がほどける。小道具は事前に決めた安全な落下位置へ分散し、枠は人の手で床面へ移す。無制御の倒壊はしない。",
+          { keeper: performer(0.38, 0.54, 75, "catch"), spill: performer(0.70, 0.50, 250, "fall"), handA: performer(0.28, 0.30, 90, "reach"), handB: performer(0.72, 0.28, 270, "reach") },
+          { ball1: object(0.58, 0.62), ball2: object(0.46, 0.70), paper: object(0.32, 0.72), clothA: object(0.52, 0.76, 25), clothB: object(0.68, 0.68, 335), frameL: object(0.22, 0.54, 90), frameR: object(0.78, 0.54, 90), frameT: object(0.50, 0.30), frameB: object(0.50, 0.82) },
+          { work: object(0.50, 0.52), side: object(0.68, 0.50) }),
+        s("6-3", "物か人か", 120, "中心選択", 5,
+          "保管人は落ちる記録の束と、足場を失うこぼれの二択に立つ。記録を落として人を受ける。低いフォール／キャッチ、床、マット、スポッター、技量は要検証。",
+          { keeper: performer(0.56, 0.58, 300, "support"), spill: performer(0.66, 0.54, 120, "lean"), handA: performer(0.42, 0.42, 45, "reach"), handB: performer(0.72, 0.40, 315, "reach") },
+          { paper: object(0.20, 0.66), ball1: object(0.26, 0.72), ball2: object(0.34, 0.76), clothA: object(0.58, 0.78), frameL: object(0.24, 0.46, 90), frameR: object(0.78, 0.46, 90) },
+          { pin: object(0.62, 0.56), side: object(0.66, 0.54) }),
+        s("6-4", "キャッチ後の呼吸", 120, "反転の定着", 1,
+          "二人が床近くで呼吸を合わせ、誰も記録を拾わない。周囲には手だけが残り、音と動線を止める。",
+          { keeper: performer(0.46, 0.68, 45, "kneel"), spill: performer(0.56, 0.66, 225, "sit"), handA: performer(0.34, 0.54, 45, "reach"), handB: performer(0.68, 0.54, 315, "reach") },
+          { paper: object(0.20, 0.72), ball1: object(0.28, 0.78), clothA: object(0.52, 0.82), frameL: object(0.24, 0.48, 90), frameR: object(0.78, 0.48, 90) },
+          { work: object(0.51, 0.66) }),
+      ],
+    },
+    {
+      id: "7", title: "三人で一つの身体", durationSeconds: 480,
+      summary: "支持者を隠さず、重心と主役を人から人へ渡して再建する。",
+      scenes: [
+        s("7-1", "支える手", 120, "再建の開始", 2,
+          "手A・手Bが、物ではなく二人の背中、足、腕を支える。接点が客席から読める斜め配置。",
+          { keeper: performer(0.42, 0.62, 45, "support"), spill: performer(0.54, 0.58, 225, "lean"), handA: performer(0.34, 0.48, 45, "support"), handB: performer(0.64, 0.50, 315, "support") },
+          { clothA: object(0.50, 0.78), frameL: object(0.24, 0.48, 90), frameR: object(0.78, 0.48, 90) },
+          { work: object(0.50, 0.56), side: object(0.62, 0.52) }),
+        s("7-2", "支点の交換", 120, "信頼の拡張", 4,
+          "支える者と支えられる者が一動作ごとに交替する。低い重心移動と短い放射状動線。体格差、反復回数、停止条件は要検証。",
+          { keeper: performer(0.36, 0.58, 60, "lean"), spill: performer(0.52, 0.50, 240, "support"), handA: performer(0.66, 0.42, 240, "lean"), handB: performer(0.50, 0.68, 0, "support") },
+          { clothA: object(0.50, 0.78, 20), clothB: object(0.60, 0.68, 330), frameT: object(0.50, 0.28), frameB: object(0.50, 0.82) },
+          { work: object(0.50, 0.52), side: object(0.62, 0.48) }),
+        s("7-3", "一つの身体", 120, "技術的頂点", 5,
+          "四人がいなければ成立しない共同バランス。高所化せず支持者にも等しく光を当てる。技量、床、マット、スポッター、キャッチ条件は要検証。",
+          { keeper: performer(0.42, 0.56, 45, "support"), spill: performer(0.52, 0.42, 180, "balance"), handA: performer(0.62, 0.56, 315, "support"), handB: performer(0.52, 0.68, 0, "support") },
+          { clothA: object(0.50, 0.80), frameL: object(0.28, 0.50, 90), frameR: object(0.74, 0.50, 90), frameT: object(0.50, 0.28), frameB: object(0.50, 0.78) },
+          { work: object(0.50, 0.52), side: object(0.52, 0.46), front: object(0.50, 0.66) }),
+        s("7-4", "主役が移る", 120, "感情的頂点", 5,
+          "一人ずつ中心を渡し、最後に誰も中心を所有しない。四人は四方へ展開し、中央を完全に空ける。",
+          { keeper: performer(0.20, 0.66, 45, "reach"), spill: performer(0.80, 0.62, 315, "reach"), handA: performer(0.34, 0.24, 135, "reach"), handB: performer(0.66, 0.24, 225, "reach") },
+          { clothA: object(0.34, 0.62, 25), clothB: object(0.68, 0.58, 335), frameL: object(0.24, 0.48, 90), frameR: object(0.76, 0.48, 90) },
+          { work: object(0.50, 0.48), front: object(0.50, 0.70) }),
+      ],
+    },
+    {
+      id: "8", title: "客席へ残す余白", durationSeconds: 420,
+      summary: "空白を埋めず、枠と問いを客席へ向けて続きを舞台外へ渡す。",
+      scenes: [
+        s("8-1", "八動作の再演", 90, "冒頭の変奏", 3,
+          "冒頭と同じ基準位置で八動作を再演するが、担当者はすべて入れ替わる。最後の『空ける』だけは全員。",
+          { keeper: performer(0.20, 0.34, 90, "reach"), spill: performer(0.42, 0.52, 0, "juggle3"), handA: performer(0.62, 0.46, 180, "reach"), handB: performer(0.80, 0.34, 270, "reach") },
+          { frameL: object(0.34, 0.22), frameR: object(0.66, 0.22), frameT: object(0.50, 0.16), frameB: object(0.50, 0.32), ball1: object(0.44, 0.48), ball2: object(0.52, 0.45), ball3: object(0.59, 0.50), paper: object(0.72, 0.38) },
+          { work: object(0.54, 0.46) }),
+        s("8-2", "空白を残す", 90, "問いの保持", 2,
+          "保管人は最後の一行を埋めず、記録紙をスーツケースへ戻す。布の端だけは外へ残す。",
+          { keeper: performer(0.48, 0.62, 0, "kneel"), spill: performer(0.62, 0.56, 315, "reach"), handA: performer(0.30, 0.30, 90), handB: performer(0.70, 0.30, 270) },
+          { case: object(0.50, 0.68), paper: object(0.50, 0.62), clothA: object(0.64, 0.76), frameL: object(0.32, 0.24), frameR: object(0.68, 0.24) },
+          { pin: object(0.50, 0.64), work: object(0.56, 0.58) }),
+        s("8-3", "枠が客席を向く", 120, "視点反転", 2,
+          "四人が枠の四辺を持ち、舞台前縁で客席へ向ける。客席灯は隣人の存在を認識できる程度の初期案。実照度は会場確認。",
+          { keeper: performer(0.28, 0.78, 0, "reach"), spill: performer(0.72, 0.78, 0, "reach"), handA: performer(0.38, 0.64, 0, "reach"), handB: performer(0.62, 0.64, 0, "reach") },
+          { frameL: object(0.30, 0.76), frameR: object(0.70, 0.76), frameT: object(0.50, 0.66), frameB: object(0.50, 0.84), clothA: object(0.50, 0.58) },
+          { front: object(0.50, 0.78), work: object(0.50, 0.68) }),
+        s("8-4", "布の端", 120, "余韻／終止", 1,
+          "人は暗がりへ消え、外へ残した布が床へ触れる音だけが残る。物語を封印せず、続きが舞台外へ伸びた状態で暗転。",
+          { keeper: performer(-0.10, 0.48, 270, "walk"), spill: performer(1.10, 0.48, 90, "walk"), handA: performer(-0.08, 0.28, 270, "walk"), handB: performer(1.08, 0.28, 90, "walk") },
+          { clothA: object(0.50, 0.80), case: object(0.50, 0.30), frameL: object(0.30, 0.76), frameR: object(0.70, 0.76), frameT: object(0.50, 0.66), frameB: object(0.50, 0.84) },
+          { pin: object(0.50, 0.80) }),
+      ],
+    },
+  ];
+
+  const seamGarden = {
+    schemaVersion: "1.0",
+    id: "sample-seam-garden-v1",
+    title: "見本: 継ぎ目の庭",
+    titleEn: "Sample: The Garden of Seams",
+    versionLabel: "sample-60m-v1",
+    venue: "proscenium",
+    venueSize: "mid",
+    totalDurationSeconds: 3600,
+    sourceMarkdown: "../show-creation/企画書_継ぎ目の庭_和とサーカス60分ストーリーショー.md",
+    cast,
+    sets,
+    lights,
+    sections,
+    boundaries: [
+      "配置は構図の初期仮説であり、舞台機構・施工・安全距離を決める図面ではない。",
+      "落下、キャッチ、共同バランス、ディアボロ相当の技は出演者・コーチ・会場による要検証。",
+      "布と枠は人体や装置を支持しない美術として扱い、無制御の倒壊や実破断を行わない。",
+    ],
+  };
+
+  window.SHOSAI_STAGE_SHOW_LIBRARY = Object.freeze({
+    schemaVersion: "1.0",
+    starter,
+    samples: Object.freeze([eightCircus, seamGarden]),
+  });
+})();
