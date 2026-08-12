@@ -24,6 +24,12 @@
     deskProjects: [],
     sheetEditing: false,
     visualBriefEditing: false,
+    branchEditing: false,
+    directionEditing: null,
+    promptOpen: {},
+    pendingVisualImport: null,
+    visualNotice: "",
+    visualImageUrls: new Map(),
     shelfGenre: "",
     shelfPlacing: null,
   };
@@ -242,6 +248,20 @@
     { key: "lettering", label: "文字の有無" },
     { key: "avoid", label: "避けたい要素" },
   ]);
+  const VISUAL_DIR_KEYS = Object.freeze(["A", "B", "C"]);
+  const VISUAL_DIRECTION_PLACEHOLDERS = Object.freeze({
+    A: "人物と物の関係を中心にする",
+    B: "光と空間の変化を中心にする",
+    C: "観客の視点と発見を中心にする",
+  });
+  const VISUAL_KIND_LABELS = Object.freeze({
+    ai: "AI生成",
+    self: "本人添付",
+    external: "外部資料",
+  });
+  const FIRST_LOOK_STORAGE_KEY = "shosai-first-look-v1";
+  const VISUAL_PROMPT_CAUTION =
+    "実在作品の意匠・キャラクター・象徴を再現しない。構図上の機能・関係・光・時間・観客体験へ分解して扱う。";
 
   function stringOrEmpty(value) {
     return typeof value === "string" ? value : "";
@@ -338,6 +358,125 @@
     return BRIEF_FIELD_LABELS.some(({ key }) => brief[key].trim()) ? brief : null;
   }
 
+  function normalizeDirections(raw) {
+    const source = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+    const directions = {};
+    VISUAL_DIR_KEYS.forEach((key) => {
+      const item = source[key] && typeof source[key] === "object" && !Array.isArray(source[key])
+        ? source[key]
+        : {};
+      directions[key] = {
+        label: stringOrEmpty(item.label),
+        intent: stringOrEmpty(item.intent),
+      };
+    });
+    return directions;
+  }
+
+  function normalizeFirstImpression(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw) || typeof raw.text !== "string") return null;
+    return { text: raw.text, at: validIso(raw.at, new Date().toISOString()) };
+  }
+
+  function normalizeVisualMeta(raw) {
+    const source = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+    const visualMeta = {};
+    VISUAL_DIR_KEYS.forEach((key) => {
+      const item = source[key];
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        visualMeta[key] = null;
+        return;
+      }
+      visualMeta[key] = {
+        importedAt: validIso(item.importedAt, new Date().toISOString()),
+        kind: Object.prototype.hasOwnProperty.call(VISUAL_KIND_LABELS, item.kind) ? item.kind : "ai",
+        method: stringOrEmpty(item.method),
+        prompt: stringOrEmpty(item.prompt),
+        firstImpression: normalizeFirstImpression(item.firstImpression),
+        revealed: item.revealed === true,
+      };
+    });
+    return visualMeta;
+  }
+
+  function deepCopyJson(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function normalizeBranchOrigin(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    if (
+      typeof raw.parentId !== "string" || !raw.parentId ||
+      typeof raw.parentTitle !== "string" || !raw.parentTitle.trim() ||
+      typeof raw.branchReason !== "string" || !raw.branchReason.trim() ||
+      typeof raw.branchedAt !== "string" || !raw.branchedAt ||
+      !raw.parentSnapshot || typeof raw.parentSnapshot !== "object" || Array.isArray(raw.parentSnapshot)
+    ) return null;
+    const snapshot = normalizeDeskProject(raw.parentSnapshot);
+    if (!snapshot || snapshot.id !== raw.parentId) return null;
+    return {
+      parentId: raw.parentId,
+      parentTitle: raw.parentTitle.trim(),
+      branchReason: raw.branchReason.trim(),
+      branchedAt: raw.branchedAt,
+      parentSnapshot: deepCopyJson(snapshot),
+    };
+  }
+
+  function firstLookEnabled() {
+    try {
+      return localStorage.getItem(FIRST_LOOK_STORAGE_KEY) !== "off";
+    } catch (_) {
+      return true;
+    }
+  }
+
+  function setFirstLookEnabled(enabled) {
+    try {
+      localStorage.setItem(FIRST_LOOK_STORAGE_KEY, enabled ? "on" : "off");
+    } catch (_) {
+      // 設定保存ができない場合も、その場の表示は続ける。
+    }
+  }
+
+  function hasBriefText(project) {
+    const brief = normalizeBrief(project && project.brief);
+    return !!brief;
+  }
+
+  function visualPromptText(project, dirKey) {
+    const p = normalizeDeskProject(project);
+    if (!p || !VISUAL_DIR_KEYS.includes(dirKey)) return "";
+    const lines = [];
+    if (p.sceneLine) lines.push(p.sceneLine);
+    const dir = p.directions[dirKey] || { label: "", intent: "" };
+    const directionText = [dir.label, dir.intent].filter((text) => text.trim()).join(" — ");
+    if (directionText) lines.push(`方向: ${directionText}`);
+    const brief = normalizeBrief(p.brief);
+    if (brief) {
+      BRIEF_FIELD_LABELS.forEach(({ key, label }) => {
+        if (brief[key] && brief[key].trim()) lines.push(`${label}: ${brief[key]}`);
+      });
+    }
+    const avoid = brief && brief.avoid && brief.avoid.trim() ? ` ${brief.avoid}` : "";
+    lines.push(`${VISUAL_PROMPT_CAUTION}${avoid}`);
+    return lines.join("\n");
+  }
+
+  function revealVisualSlot(project, dirKey, text) {
+    if (!project || !VISUAL_DIR_KEYS.includes(dirKey)) return null;
+    project.visualMeta = normalizeVisualMeta(project.visualMeta);
+    const meta = project.visualMeta[dirKey];
+    if (!meta) return null;
+    const impression = stringOrEmpty(text);
+    meta.firstImpression = impression.trim()
+      ? { text: impression, at: new Date().toISOString() }
+      : null;
+    meta.revealed = true;
+    project.visualMeta[dirKey] = meta;
+    return meta;
+  }
+
   function rowValue(rows, label) {
     const row = Array.isArray(rows) ? rows.find((item) => Array.isArray(item) && item[0] === label) : null;
     return row ? stringOrEmpty(row[1]) : "";
@@ -409,12 +548,35 @@
       scene: normalizeScene(raw.scene),
       transformation: normalizeTransformation(raw.transformation),
       brief: normalizeBrief(raw.brief),
+      directions: normalizeDirections(raw.directions),
+      visualMeta: normalizeVisualMeta(raw.visualMeta),
       origin: normalizeDeskOrigin(raw.origin),
+      branchOrigin: normalizeBranchOrigin(raw.branchOrigin),
       placed,
       decisions,
       createdAt,
       updatedAt: validIso(raw.updatedAt, createdAt),
     };
+  }
+
+  function buildBranchProject(parent, reason) {
+    const normalizedParent = normalizeDeskProject(parent);
+    const branchReason = stringOrEmpty(reason).trim();
+    if (!normalizedParent || !branchReason) return null;
+    const now = new Date().toISOString();
+    const parentSnapshot = deepCopyJson(normalizedParent);
+    const branch = deepCopyJson(normalizedParent);
+    branch.id = clipId("proj");
+    branch.createdAt = now;
+    branch.updatedAt = now;
+    branch.branchOrigin = {
+      parentId: normalizedParent.id,
+      parentTitle: normalizedParent.title,
+      branchReason,
+      branchedAt: now,
+      parentSnapshot,
+    };
+    return normalizeDeskProject(branch);
   }
 
   function confidenceLabel(raw) {
@@ -495,6 +657,8 @@
       };
     });
     data.decisions = state.decisions;
+    data.directions = normalizeDirections(data.directions);
+    data.visualMeta = normalizeVisualMeta(data.visualMeta);
     data.updatedAt = now;
     const normalized = normalizeDeskProject(data);
     if (!normalized) return;
@@ -1854,6 +2018,8 @@
       constraints: [],
       scene: null,
       transformation: null,
+      directions: normalizeDirections(null),
+      visualMeta: normalizeVisualMeta(null),
       // 元にした作品・レシピ・変形メモ。ここで捨てると出どころを辿れなくなる
       origin: origin || null,
       placed: [],
@@ -1912,6 +2078,7 @@
         <p class="paper-kicker">進行中<span class="k">${esc(deskDateLabel(p.updatedAt))}</span></p>
         <h2>${esc(p.title)}</h2>
         <p class="paper-sub">${esc(p.subtitle || "新しい問い")}</p>
+        ${p.branchOrigin ? `<p class="desk-branch-line">${esc(p.branchOrigin.parentTitle)}から派生｜${esc(p.branchOrigin.branchReason)}</p>` : ""}
         <div class="paper-next">
           <span class="label">場面の一行</span>
           ${esc(p.sceneLine || p.question.current)}
@@ -1936,6 +2103,9 @@
       button.addEventListener("click", (e) => {
         e.stopPropagation();
         if (!confirm("この問いを削除しますか。")) return;
+        if (window.SHOSAI_DESK_MEDIA && typeof window.SHOSAI_DESK_MEDIA.removeProject === "function") {
+          window.SHOSAI_DESK_MEDIA.removeProject(button.dataset.deleteDeskProject).catch(() => {});
+        }
         state.deskProjects = state.deskProjects.filter((p) => p.id !== button.dataset.deleteDeskProject);
         persistDeskProjects();
         renderDeskProjectList();
@@ -1945,13 +2115,19 @@
 
   // ---------- 制作机 ----------
   function openProject(project) {
+    revokeDeskVisualUrls();
     if (project.kind === "new") {
       project.data = normalizeDeskProject(project.data);
       if (!project.data) return;
     }
     state.project = project;
     state.sheetEditing = false;
+    state.branchEditing = false;
     state.visualBriefEditing = false;
+    state.directionEditing = null;
+    state.promptOpen = {};
+    state.pendingVisualImport = null;
+    state.visualNotice = "";
     if (project.kind === "new") {
       const placedEntries = normalizePlacedEntries(project.data.placed, project.data.createdAt);
       state.placed = new Set(placedEntries.map((item) => item.id));
@@ -1961,6 +2137,7 @@
         at: item.at,
       }]));
       state.decisions = { ...(project.data.decisions || {}) };
+      loadDeskVisualImages(project.data);
     } else {
       if (!project.placed) project.placed = new Set();
       if (!project.decisions) project.decisions = {};
@@ -2013,6 +2190,7 @@
       ? `<span class="label">問いの変化</span>
          ${esc(p.question.previous)}<span class="arrow">→</span><span class="now">${esc(p.question.current)}</span>`
       : `<span class="label">問い</span><span class="now">${esc(p.question.current)}</span>`;
+    const branchLine = branchOriginHtml(p);
 
     const chips = p.constraints.length
       ? p.constraints
@@ -2068,10 +2246,15 @@
     }
 
     sheet.innerHTML = `
-      ${isNew ? `<button type="button" class="sheet-write" id="sheet-write">書き込む</button>` : ""}
+      ${isNew ? `<div class="sheet-top-actions">
+        <button type="button" class="sheet-write" id="sheet-write">書き込む</button>
+        <button type="button" class="sheet-write sheet-branch-open" id="sheet-branch-open">枝分かれ</button>
+      </div>` : ""}
       <span class="scene-line-label">場面の一行</span>
       <p class="scene-line">${p.sceneLine ? esc(p.sceneLine) : "（まだ書かれていない — ブリーフ前にここを言い切る）"}</p>
       <div class="question-shift">${shift}</div>
+      ${branchLine}
+      ${isNew && state.branchEditing ? renderBranchForm() : ""}
       <div class="constraints" aria-label="制約ピン">${chips}</div>
       ${originHtml(p.origin)}
       ${body}`;
@@ -2081,6 +2264,118 @@
       renderSheet(p, true);
       $("#sheet-scene-line").focus();
     });
+    const branchOpen = $("#sheet-branch-open", sheet);
+    if (branchOpen) branchOpen.addEventListener("click", () => {
+      state.branchEditing = true;
+      renderSheet(p, true);
+      const input = $("#branch-reason", sheet);
+      if (input) input.focus();
+    });
+    bindBranchOriginLink(sheet);
+    bindBranchForm(sheet, p);
+  }
+
+  function branchOriginHtml(project) {
+    const origin = project && project.branchOrigin;
+    if (!origin) return "";
+    const text = `${origin.parentTitle}から派生｜${origin.branchReason}`;
+    const parentExists = state.deskProjects.some((item) => item && item.id === origin.parentId);
+    return parentExists
+      ? `<p class="branch-origin-line"><button type="button" data-open-branch-parent="${esc(origin.parentId)}">${esc(text)}</button></p>`
+      : `<p class="branch-origin-line">${esc(text)} <small>（親は削除済み）</small></p>`;
+  }
+
+  function renderBranchForm() {
+    return `
+      <form class="branch-form transform-memo" id="branch-form" novalidate>
+        <label class="sheet-field">
+          <span>枝分かれの理由</span>
+          <input id="branch-reason" name="branchReason" type="text" placeholder="例: 身体性を強めるため" required>
+        </label>
+        <p class="branch-error" id="branch-error" hidden></p>
+        <div class="sheet-edit-actions">
+          <button type="submit" class="sheet-save">枝を作る</button>
+          <button type="button" class="sheet-cancel" id="branch-cancel">やめる</button>
+        </div>
+      </form>`;
+  }
+
+  function bindBranchOriginLink(scope) {
+    $$("[data-open-branch-parent]", scope).forEach((button) => {
+      button.addEventListener("click", () => {
+        const parent = state.deskProjects.find((item) => item.id === button.dataset.openBranchParent);
+        if (parent) openProject({ kind: "new", data: normalizeDeskProject(parent) });
+      });
+    });
+  }
+
+  function bindBranchForm(sheet, project) {
+    const form = $("#branch-form", sheet);
+    if (!form) return;
+    $("#branch-cancel", form).addEventListener("click", () => {
+      state.branchEditing = false;
+      renderSheet(project, true);
+    });
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const reason = stringOrEmpty(new FormData(form).get("branchReason")).trim();
+      const error = $("#branch-error", form);
+      if (!reason) {
+        if (error) {
+          error.textContent = "枝の理由を一行だけ書いてください";
+          error.hidden = false;
+        }
+        const input = $("#branch-reason", form);
+        if (input) input.focus();
+        return;
+      }
+      createBranchFromCurrent(project, reason);
+    });
+  }
+
+  function projectHasVisualImages(project) {
+    const meta = normalizeVisualMeta(project && project.visualMeta);
+    return VISUAL_DIR_KEYS.some((dir) => !!meta[dir]);
+  }
+
+  function copyBranchMedia(parentId, branchId, parentProject) {
+    const media = window.SHOSAI_DESK_MEDIA;
+    if (!media || typeof media.get !== "function" || typeof media.put !== "function") {
+      return Promise.resolve(!projectHasVisualImages(parentProject));
+    }
+    return Promise.all(VISUAL_DIR_KEYS.map((dir) =>
+      media.get(parentId, dir)
+        .then((blob) => {
+          if (!blob) return true;
+          return media.put(branchId, dir, blob).then(() => true);
+        })
+        .catch(() => false)
+    )).then((results) => results.every(Boolean));
+  }
+
+  function createBranchFromCurrent(project, reason) {
+    if (!state.project || state.project.kind !== "new") return;
+    syncCurrentDeskProject();
+    const parent = normalizeDeskProject(state.project.data || project);
+    const branch = buildBranchProject(parent, reason);
+    if (!branch) return;
+    state.deskProjects = state.deskProjects.filter((p) => p.id !== branch.id);
+    state.deskProjects.unshift(branch);
+    persistDeskProjects();
+    renderDeskProjectList();
+    copyBranchMedia(parent.id, branch.id, parent)
+      .then((ok) => {
+        openProject({ kind: "new", data: branch });
+        if (!ok) {
+          state.visualNotice = "画像は引き継げませんでした";
+          renderVisuals(true);
+        }
+      })
+      .catch(() => {
+        openProject({ kind: "new", data: branch });
+        state.visualNotice = "画像は引き継げませんでした";
+        renderVisuals(true);
+      });
   }
 
   function renderTransformationDisplay(t) {
@@ -2629,17 +2924,390 @@
     });
   }
 
+  function revokeDeskVisualUrls() {
+    if (!state.visualImageUrls) return;
+    state.visualImageUrls.forEach((url) => {
+      try {
+        if (window.URL && typeof window.URL.revokeObjectURL === "function") window.URL.revokeObjectURL(url);
+      } catch (_) {}
+    });
+    state.visualImageUrls = new Map();
+  }
+
+  function loadDeskVisualImages(project) {
+    if (!window.SHOSAI_DESK_MEDIA || typeof window.SHOSAI_DESK_MEDIA.get !== "function") return;
+    VISUAL_DIR_KEYS.forEach((dir) => {
+      if (!project.visualMeta || !project.visualMeta[dir]) return;
+      window.SHOSAI_DESK_MEDIA.get(project.id, dir)
+        .then((blob) => {
+          if (!blob || !state.project || state.project.kind !== "new" || state.project.data.id !== project.id) return;
+          const old = state.visualImageUrls.get(dir);
+          if (old && window.URL && typeof window.URL.revokeObjectURL === "function") window.URL.revokeObjectURL(old);
+          if (window.URL && typeof window.URL.createObjectURL === "function") {
+            state.visualImageUrls.set(dir, window.URL.createObjectURL(blob));
+            renderVisuals(true);
+          }
+        })
+        .catch(() => {});
+    });
+  }
+
+  function visualMetaDateLabel(value) {
+    return deskDateLabel(value);
+  }
+
+  function visualImageButton(dir, url) {
+    if (!url) return "";
+    return `<button type="button" class="visual-art visual-imported-art" data-lb-image="${esc(dir)}" aria-label="案${esc(dir)}を拡大して見る">
+      <img src="${esc(url)}" alt="案${esc(dir)}の持ち込み画像">
+    </button>`;
+  }
+
+  function renderDirectionEditor(project, dir, direction) {
+    return `
+      <form class="direction-editor transform-memo" data-direction-form="${esc(dir)}">
+        <label class="sheet-field">
+          <span>方向ラベル</span>
+          <input name="label" type="text" value="${esc(direction.label)}" placeholder="${esc(VISUAL_DIRECTION_PLACEHOLDERS[dir])}">
+        </label>
+        <label class="sheet-field">
+          <span>この考え方の意図</span>
+          <textarea name="intent" rows="2" placeholder="${esc(VISUAL_DIRECTION_PLACEHOLDERS[dir])}">${esc(direction.intent)}</textarea>
+        </label>
+        <div class="sheet-edit-actions">
+          <button type="submit" class="sheet-save">保存</button>
+          <button type="button" class="sheet-cancel" data-direction-cancel>取り消す</button>
+        </div>
+      </form>`;
+  }
+
+  function renderPromptExport(project, dir) {
+    if (!hasBriefText(project)) {
+      return `<p class="visual-empty visual-brief-required">先にビジュアルブリーフを書くと、ここから生成条件を書き出せます</p>`;
+    }
+    if (!state.promptOpen[dir]) {
+      return `<button type="button" class="sheet-small-button visual-prompt-open" data-prompt-open="${esc(dir)}">生成条件を書き出す</button>`;
+    }
+    const text = visualPromptText(project, dir);
+    return `<div class="visual-prompt-box">
+      <textarea readonly rows="8">${esc(text)}</textarea>
+      <button type="button" class="sheet-small-button" data-copy-prompt="${esc(dir)}">コピー</button>
+    </div>`;
+  }
+
+  function renderDropArea(dir) {
+    return `<label class="visual-drop" data-drop-dir="${esc(dir)}">
+      <input type="file" accept="image/png,image/jpeg,image/webp" data-file-dir="${esc(dir)}">
+      <span class="dir">${esc(dir)}</span>
+      <span>画像をドラッグ&ドロップ、またはクリックして選ぶ</span>
+    </label>`;
+  }
+
+  function renderImportForm(dir) {
+    const pending = state.pendingVisualImport;
+    if (!pending || pending.dir !== dir) return "";
+    return `<form class="visual-import-form transform-memo" data-import-form="${esc(dir)}">
+      <p class="from">生成履歴</p>
+      <label class="sheet-field">
+        <span>区分</span>
+        <select name="kind">
+          <option value="ai">AI生成</option>
+          <option value="self">本人添付</option>
+          <option value="external">外部資料</option>
+        </select>
+      </label>
+      <label class="sheet-field">
+        <span>方法</span>
+        <input name="method" type="text" placeholder="使用したモデルまたは方法">
+      </label>
+      <label class="sheet-field">
+        <span>生成条件</span>
+        <textarea name="prompt" rows="4" placeholder="書き出した生成条件を貼り戻す"></textarea>
+      </label>
+      <div class="sheet-edit-actions">
+        <button type="submit" class="sheet-save">確定</button>
+        <button type="button" class="sheet-cancel" data-import-cancel>取り消す</button>
+      </div>
+    </form>`;
+  }
+
+  function renderFirstLookGate(dir, meta) {
+    const value = meta.firstImpression ? meta.firstImpression.text : "";
+    return `<form class="first-look-gate" data-first-look="${esc(dir)}">
+      <label class="sheet-field">
+        <span>第一印象 — 違和感・興味・身体感覚を先に書く</span>
+        <input name="firstImpression" type="text" value="${esc(value)}">
+      </label>
+      <div class="first-look-actions">
+        <button type="submit" class="sheet-save">書いて開く</button>
+        <button type="button" class="sheet-cancel" data-reveal-empty="${esc(dir)}">書かずに開く</button>
+      </div>
+    </form>`;
+  }
+
+  function renderVisualHistory(meta) {
+    if (!meta) return "";
+    return `<div class="visual-history">
+      <span class="chip">${esc(VISUAL_KIND_LABELS[meta.kind] || VISUAL_KIND_LABELS.ai)}</span>
+      ${meta.method ? `<span>${esc(meta.method)}</span>` : ""}
+      <span>${esc(visualMetaDateLabel(meta.importedAt))}</span>
+      ${meta.prompt ? `<details><summary>生成条件</summary><p>${esc(meta.prompt)}</p></details>` : ""}
+    </div>`;
+  }
+
+  function renderDecisionUi(id, dir) {
+    const dec = state.decisions[id] || {};
+    const verdicts = ["採用", "一部採用", "保留", "不採用"];
+    return `<div class="judge">
+      <p class="j-label">判断</p>
+      <div class="judge-row" role="group" aria-label="案${esc(dir)}の判断">
+        ${verdicts.map((vd) =>
+          `<button type="button" class="judge-btn" data-verdict="${vd}" aria-pressed="${dec.verdict === vd}">${vd}</button>`)
+          .join("")}
+      </div>
+      <textarea rows="2" placeholder="理由を短く残す" aria-label="案${esc(dir)}の判断理由">${esc(dec.reason || "")}</textarea>
+      <p class="save-note">判断はこの制作の紙面に残ります。</p>
+    </div>`;
+  }
+
+  function renderNewVisuals(grid) {
+    const project = state.project.data;
+    project.directions = normalizeDirections(project.directions);
+    project.visualMeta = normalizeVisualMeta(project.visualMeta);
+    const firstLook = firstLookEnabled();
+    grid.innerHTML = `
+      <div class="visual-first-look-control">
+        <label><input type="checkbox" id="first-look-toggle" ${firstLook ? "checked" : ""}>初見モード</label>
+        ${state.visualNotice ? `<p>${esc(state.visualNotice)}</p>` : ""}
+      </div>
+      ${VISUAL_DIR_KEYS.map((dir) => {
+        const direction = project.directions[dir];
+        const meta = project.visualMeta[dir];
+        const imageUrl = state.visualImageUrls.get(dir);
+        const hiddenByFirstLook = firstLook && meta && meta.revealed === false;
+        return `<article class="visual-card visual-card-new" data-visual="${esc(dir)}">
+          <div class="dir-row">
+            <span class="dir">${esc(dir)}</span>
+            <span class="dir-label">案${esc(dir)}${hiddenByFirstLook ? "" : ` — ${esc(direction.label || VISUAL_DIRECTION_PLACEHOLDERS[dir])}`}</span>
+            ${!hiddenByFirstLook ? `<button type="button" class="sheet-write visual-direction-write" data-direction-edit="${esc(dir)}">書き込む</button>` : ""}
+          </div>
+          ${!hiddenByFirstLook && state.directionEditing === dir ? renderDirectionEditor(project, dir, direction) : ""}
+          ${imageUrl ? visualImageButton(dir, imageUrl) : renderDropArea(dir)}
+          ${renderImportForm(dir)}
+          ${meta && imageUrl ? `<button type="button" class="sheet-small-button visual-remove" data-remove-visual="${esc(dir)}">画像を外す</button>` : ""}
+          ${hiddenByFirstLook ? renderFirstLookGate(dir, meta) : `
+            ${direction.intent ? `<div class="visual-meta"><div class="vm"><b>意図</b><span>${esc(direction.intent)}</span></div></div>` : ""}
+            ${meta && meta.firstImpression ? `<p class="first-impression">第一印象 — ${esc(meta.firstImpression.text)}</p>` : ""}
+            ${renderPromptExport(project, dir)}
+            ${renderVisualHistory(meta)}
+            ${meta && imageUrl ? renderDecisionUi(dir, dir) : ""}
+          `}
+        </article>`;
+      }).join("")}`;
+
+    const toggle = $("#first-look-toggle", grid);
+    if (toggle) toggle.addEventListener("change", (e) => {
+      setFirstLookEnabled(e.target.checked);
+      renderVisuals(true);
+    });
+    bindNewVisualEvents(grid, project);
+  }
+
+  function bindNewVisualEvents(grid, project) {
+    $$("[data-direction-edit]", grid).forEach((button) => {
+      button.addEventListener("click", () => {
+        state.directionEditing = button.dataset.directionEdit;
+        renderVisuals(true);
+      });
+    });
+    $$("[data-direction-form]", grid).forEach((form) => {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const dir = form.dataset.directionForm;
+        const data = new FormData(form);
+        project.directions[dir] = {
+          label: stringOrEmpty(data.get("label")).trim(),
+          intent: stringOrEmpty(data.get("intent")).trim(),
+        };
+        state.directionEditing = null;
+        syncCurrentDeskProject();
+        renderVisuals(true);
+      });
+    });
+    $$("[data-direction-cancel]", grid).forEach((button) =>
+      button.addEventListener("click", () => {
+        state.directionEditing = null;
+        renderVisuals(true);
+      }));
+    $$("[data-prompt-open]", grid).forEach((button) =>
+      button.addEventListener("click", () => {
+        state.promptOpen[button.dataset.promptOpen] = true;
+        renderVisuals(true);
+      }));
+    $$("[data-copy-prompt]", grid).forEach((button) =>
+      button.addEventListener("click", () => copyPromptText(project, button.dataset.copyPrompt, button)));
+    $$("[data-file-dir]", grid).forEach((input) =>
+      input.addEventListener("change", () => {
+        const file = input.files && input.files[0];
+        if (file) queueVisualImport(input.dataset.fileDir, file);
+      }));
+    $$("[data-drop-dir]", grid).forEach((drop) => {
+      drop.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        drop.classList.add("dragging");
+      });
+      drop.addEventListener("dragleave", () => drop.classList.remove("dragging"));
+      drop.addEventListener("drop", (e) => {
+        e.preventDefault();
+        drop.classList.remove("dragging");
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) queueVisualImport(drop.dataset.dropDir, file);
+      });
+    });
+    $$("[data-import-form]", grid).forEach((form) => {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        commitVisualImport(project, form);
+      });
+    });
+    $$("[data-import-cancel]", grid).forEach((button) =>
+      button.addEventListener("click", () => {
+        state.pendingVisualImport = null;
+        renderVisuals(true);
+      }));
+    $$("[data-remove-visual]", grid).forEach((button) =>
+      button.addEventListener("click", () => removeVisualImage(project, button.dataset.removeVisual)));
+    $$("[data-first-look]", grid).forEach((form) =>
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        revealVisualSlot(project, form.dataset.firstLook, new FormData(form).get("firstImpression"));
+        syncCurrentDeskProject();
+        renderVisuals(true);
+      }));
+    $$("[data-reveal-empty]", grid).forEach((button) =>
+      button.addEventListener("click", () => {
+        revealVisualSlot(project, button.dataset.revealEmpty, "");
+        syncCurrentDeskProject();
+        renderVisuals(true);
+      }));
+    $$("[data-lb-image]", grid).forEach((button) =>
+      button.addEventListener("click", () => openLightbox(button.dataset.lbImage)));
+    $$(".visual-card-new", grid).forEach((card) => bindDecisionEvents(card, card.dataset.visual));
+  }
+
+  function bindDecisionEvents(card, id) {
+    const textarea = $(".judge textarea", card);
+    if (!textarea) return;
+    $$(".judge-btn", card).forEach((btn) =>
+      btn.addEventListener("click", () => {
+        const d = state.decisions[id] || {};
+        d.verdict = d.verdict === btn.dataset.verdict ? null : btn.dataset.verdict;
+        state.decisions[id] = d;
+        syncCurrentDeskProject();
+        $$(".judge-btn", card).forEach((b2) =>
+          b2.setAttribute("aria-pressed", String(d.verdict === b2.dataset.verdict)));
+        if (d.verdict) textarea.focus();
+      }));
+    textarea.addEventListener("input", (e) => {
+      const d = state.decisions[id] || {};
+      d.reason = e.target.value;
+      state.decisions[id] = d;
+      syncCurrentDeskProject();
+    });
+  }
+
+  function copyPromptText(project, dir, button) {
+    const text = visualPromptText(project, dir);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        button.textContent = "コピーしました";
+      }).catch(() => selectPromptTextarea(button));
+      return;
+    }
+    selectPromptTextarea(button);
+  }
+
+  function selectPromptTextarea(button) {
+    const textarea = $("textarea", button.closest(".visual-prompt-box"));
+    if (textarea) textarea.select();
+  }
+
+  function queueVisualImport(dir, file) {
+    const allowed = ["image/png", "image/jpeg", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      state.visualNotice = "画像はPNG、JPEG、WebPだけ持ち込めます。";
+      renderVisuals(true);
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      state.visualNotice = "10MBを超える画像は保存できません。";
+      renderVisuals(true);
+      return;
+    }
+    state.visualNotice = "";
+    state.pendingVisualImport = { dir, file };
+    renderVisuals(true);
+  }
+
+  function commitVisualImport(project, form) {
+    const pending = state.pendingVisualImport;
+    if (!pending || pending.dir !== form.dataset.importForm) return;
+    if (!window.SHOSAI_DESK_MEDIA || typeof window.SHOSAI_DESK_MEDIA.put !== "function") {
+      state.visualNotice = "この端末では画像を保存できません";
+      renderVisuals(true);
+      return;
+    }
+    const data = new FormData(form);
+    const dir = pending.dir;
+    window.SHOSAI_DESK_MEDIA.put(project.id, dir, pending.file)
+      .then(() => {
+        const old = state.visualImageUrls.get(dir);
+        if (old && window.URL && typeof window.URL.revokeObjectURL === "function") window.URL.revokeObjectURL(old);
+        if (window.URL && typeof window.URL.createObjectURL === "function") {
+          state.visualImageUrls.set(dir, window.URL.createObjectURL(pending.file));
+        }
+        project.visualMeta = normalizeVisualMeta(project.visualMeta);
+        project.visualMeta[dir] = {
+          importedAt: new Date().toISOString(),
+          kind: Object.prototype.hasOwnProperty.call(VISUAL_KIND_LABELS, data.get("kind")) ? data.get("kind") : "ai",
+          method: stringOrEmpty(data.get("method")).trim(),
+          prompt: stringOrEmpty(data.get("prompt")).trim(),
+          firstImpression: null,
+          revealed: !firstLookEnabled(),
+        };
+        state.pendingVisualImport = null;
+        state.visualNotice = "";
+        syncCurrentDeskProject();
+        renderVisuals(true);
+      })
+      .catch(() => {
+        state.visualNotice = "この端末では画像を保存できません";
+        renderVisuals(true);
+      });
+  }
+
+  function removeVisualImage(project, dir) {
+    const finish = () => {
+      const old = state.visualImageUrls.get(dir);
+      if (old && window.URL && typeof window.URL.revokeObjectURL === "function") window.URL.revokeObjectURL(old);
+      state.visualImageUrls.delete(dir);
+      project.visualMeta = normalizeVisualMeta(project.visualMeta);
+      project.visualMeta[dir] = null;
+      delete state.promptOpen[dir];
+      syncCurrentDeskProject();
+      renderVisuals(true);
+    };
+    if (window.SHOSAI_DESK_MEDIA && typeof window.SHOSAI_DESK_MEDIA.remove === "function") {
+      window.SHOSAI_DESK_MEDIA.remove(project.id, dir).then(finish).catch(finish);
+    } else {
+      finish();
+    }
+  }
+
   function renderVisuals(isNew) {
     const grid = $("#visual-grid");
     if (isNew) {
-      grid.innerHTML = ["A", "B", "C"]
-        .map(
-          (d) => `
-          <div class="visual-empty">
-            <span class="dir">${d}</span>
-            方向の異なる試作をここに置く<br>（場面の一行→ブリーフの順で書いてから）
-          </div>`)
-        .join("");
+      renderNewVisuals(grid);
       return;
     }
 
@@ -2708,6 +3376,12 @@
   const LB_ORDER = ["vA", "vA2", "vB", "vC"];
 
   function lbItem(id) {
+    if (state.project && state.project.kind === "new" && VISUAL_DIR_KEYS.includes(id)) {
+      const p = state.project.data;
+      const direction = (p.directions && p.directions[id]) || { label: "", intent: "" };
+      const url = state.visualImageUrls.get(id);
+      if (url) return { dir: id, label: direction.label || VISUAL_DIRECTION_PLACEHOLDERS[id], intent: direction.intent, imageUrl: url };
+    }
     for (const v of SHOSAI.visuals) {
       if (v.id === id) return { dir: v.dir, label: v.dirLabel, intent: v.intent, art: v.art };
       if (v.derived && v.derived.id === id)
@@ -2724,7 +3398,9 @@
     if (!item) return;
     lbCurrent = id;
     lbReturnFocus = document.activeElement;
-    $("#lb-art").innerHTML = ART[item.art]();
+    $("#lb-art").innerHTML = item.imageUrl
+      ? `<img src="${esc(item.imageUrl)}" alt="案${esc(item.dir)}の持ち込み画像">`
+      : ART[item.art]();
     $("#lb-dir").textContent = `案${item.dir} — ${item.label}`;
     $("#lb-intent").textContent = item.intent;
     $("#lightbox").hidden = false;
@@ -2733,8 +3409,12 @@
 
   function stepLightbox(delta) {
     if (!lbCurrent) return;
-    const i = LB_ORDER.indexOf(lbCurrent);
-    const next = LB_ORDER[(i + delta + LB_ORDER.length) % LB_ORDER.length];
+    const order = state.project && state.project.kind === "new"
+      ? VISUAL_DIR_KEYS.filter((dir) => state.visualImageUrls.has(dir))
+      : LB_ORDER;
+    const i = order.indexOf(lbCurrent);
+    if (i < 0 || !order.length) return;
+    const next = order[(i + delta + order.length) % order.length];
     openLightbox(next);
   }
 
@@ -4415,11 +5095,19 @@
     SCENE_RELATION_LABELS,
     TRANSFORM_ROW_LABELS,
     BRIEF_FIELD_LABELS,
+    VISUAL_DIR_KEYS,
+    VISUAL_PROMPT_CAUTION,
     normalizeDeskProject,
+    normalizeBranchOrigin,
+    buildBranchProject,
     normalizeScene,
     normalizeTransformation,
     normalizeBrief,
+    normalizeDirections,
+    normalizeVisualMeta,
     briefDraftFromStudy,
+    visualPromptText,
+    revealVisualSlot,
     normalizePlacedEntries,
     searchShelfWorks,
     confidenceLabel,
