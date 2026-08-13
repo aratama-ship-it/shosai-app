@@ -825,6 +825,13 @@
                   <button type="button" id="stage-trap-hang" class="btn-quiet">ぶら下がる</button>
                 </div>
               </div>
+              <!-- ティシューに掴まっているときだけ出る操作 -->
+              <div id="stage-tissue-controls" hidden>
+                <label class="stage-control-label stage-range-label" for="stage-tissue-h">
+                  掴む高さ <span id="stage-tissue-h-value">4.0m</span>
+                </label>
+                <input type="range" id="stage-tissue-h" min="0" max="10" step="0.1" value="4">
+              </div>
               <div id="stage-facing-controls">
                 <label class="stage-control-label stage-range-label" for="stage-piece-facing">
                   向き <span id="stage-facing-value">客席</span>
@@ -1617,10 +1624,10 @@
 <script src="app.js?v=56"></script>
 <script src="stage-venues.js?v=16"></script>
 <script src="stage-venue-lines.js?v=4"></script>
-<script src="stage-i18n.js?v=47"></script>
+<script src="stage-i18n.js?v=48"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=1"></script>
-<script src="stage-sketch.js?v=231"></script>
+<script src="stage-sketch.js?v=232"></script>
 <script src="stage-venue-editor.js?v=6"></script>
 <script src="roster.js?v=3"></script>
 </body>

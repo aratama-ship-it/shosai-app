@@ -1791,6 +1791,9 @@
     poleH: document.getElementById("stage-pole-h"),
     poleHValue: document.getElementById("stage-pole-h-value"),
     trapControls: document.getElementById("stage-trap-controls"),
+    tissueControls: document.getElementById("stage-tissue-controls"),
+    tissueH: document.getElementById("stage-tissue-h"),
+    tissueHValue: document.getElementById("stage-tissue-h-value"),
     showMapBtn: document.getElementById("stage-show-map-btn"),
     mapModal: document.getElementById("stage-map-modal"),
     mapBackdrop: document.getElementById("stage-map-backdrop"),
@@ -2370,6 +2373,8 @@
       // ポールに付いたときの持ち場（左右と握りの高さ）。付いていない間も持ち歩く
       poleSide: piece.poleSide === "L" ? "L" : "R",
       poleH: clamp(finite(piece.poleH, 2.5), 0.8, 9),
+      // 布のどの高さを掴むか（床から・m）。掴んでいない間も持ち歩く
+      tissueH: clamp(finite(piece.tissueH, 4), 0, 10),
       // トラピーズの乗り方（座る／ぶら下がる）。降りている間も持ち歩く
       trapMode: piece.trapMode === "hang" ? "hang" : "sit",
       // 姿勢。用意したものの中から選ぶ（形そのものは編集させない）
@@ -2588,7 +2593,7 @@
    * 床からの高さ（base）と支えている駒（supportId）は置き場所から毎回引き直す。
    * 丸ごと控えると、シーンの数だけ同じ値の写しが保存に溜まる。 */
   const STASH_KEYS = ["type", "u", "v", "size", "facing", "pose",
-    "poleSide", "poleH", "trapMode", "seriH", "glow", "beam", "route", "locked", "name"];
+    "poleSide", "poleH", "tissueH", "trapMode", "seriH", "glow", "beam", "route", "locked", "name"];
 
   function normalizeStash(raw) {
     const out = {};
@@ -4171,6 +4176,22 @@
         return;
       }
 
+      /* エアリアルティシュー。布の近く（0.55m以内）へ置いた演者は布へ掴まる。
+         掴む高さ（tissueH）は布の範囲へ収める。布は lift から下へ h だけ垂れている。
+         体は握りの下へぶら下がるので、base は握りから身長比 1.15 を引いた高さ。
+         低い位置を掴むと base が 0 で止まり、床に立って布を握る形になる（それで正しい）。 */
+      const tissue = pieces.find((other) => other !== piece && other.type === "tissue"
+        && Math.hypot((piece.u - other.u) * size.width, (piece.v - other.v) * size.depth) < 0.55);
+      if (tissue) {
+        const top = flownLift(tissue);
+        const bottom = Math.max(0, top - ((pieceDims(tissue) || {}).h || 0));
+        const grip = clamp(finite(piece.tissueH, 4), bottom, Math.max(bottom, top - 0.2));
+        const H = pieceHeightM(piece) * (piece.size / 100);
+        piece.supportId = tissue.id;
+        piece.base = Math.max(0, grip - TRAP_GRIP.hang * H);
+        return;
+      }
+
       /* 椅子。座面の上に「立つ」と背もたれへ足が乗った絵になるので、
          腰が座面へ来る高さまで下げる（座る姿勢は refreshBases では変えず、
          描くときに performerRig が差し替える）。 */
@@ -4346,6 +4367,7 @@
     if (holder.type === "pole") return "pole";
     if (holder.type === "chair") return "chair";
     if (holder.type === "trapeze") return "trapeze";
+    if (holder.type === "tissue") return "tissue";
     return null;
   }
 
@@ -4362,6 +4384,8 @@
         ? (piece.poleSide === "L" ? "poleflag_l" : "poleflag_r")
         : mount === "trapeze"
           ? (piece.trapMode === "hang" ? "trapeze_hang" : "trapeze_sit")
+          : mount === "tissue"
+            ? "trapeze_hang"
           : (mount === "chair" ? "sit" : piece.pose);
     const rig = buildRig(poseId, pos.x, pos.rawY === undefined ? pos.y : pos.rawY,
       H * per.x, H * per.y, ((piece.facing || 0) * Math.PI) / 180, zDrop, L.plan ? null : L.tilt);
@@ -13332,6 +13356,7 @@ ${cuesheetHtml}
           : mount === "chair" ? tx("椅子に座る")
           : mount === "trapeze"
             ? poseName(poseById(piece.trapMode === "hang" ? "trapeze_hang" : "trapeze_sit"))
+            : mount === "tissue" ? tx("布に掴まる")
             : poseName(poseById(piece.pose));
       }
       els.piecePose.disabled = !isPerformer || Boolean(mount);
@@ -13358,6 +13383,21 @@ ${cuesheetHtml}
       if (onTrap) {
         els.trapSit.setAttribute("aria-pressed", String(piece.trapMode !== "hang"));
         els.trapHang.setAttribute("aria-pressed", String(piece.trapMode === "hang"));
+      }
+    }
+    if (els.tissueControls) {
+      const onTissue = mount === "tissue";
+      els.tissueControls.hidden = !onTissue;
+      if (onTissue) {
+        const holder = sc().pieces.find((other) => other.id === piece.supportId);
+        const top = holder ? flownLift(holder) : 0;
+        const bottom = Math.max(0, top - (((holder && pieceDims(holder)) || {}).h || 0));
+        const max = Math.max(bottom, top - 0.2);
+        const value = clamp(finite(piece.tissueH, 4), bottom, max);
+        els.tissueH.min = String(bottom);
+        els.tissueH.max = String(max);
+        els.tissueH.value = String(value);
+        els.tissueHValue.textContent = `${value.toFixed(1)}m`;
       }
     }
     if (els.pieceFacing) {
@@ -15718,6 +15758,16 @@ ${cuesheetHtml}
       if (!piece || mountKindOf(piece) !== "pole") return;
       piece.poleH = clamp(finite(event.target.value, 2.5), 0.8, 9);
       if (els.poleHValue) els.poleHValue.textContent = `${piece.poleH.toFixed(1)}m`;
+      render();
+      persistSoon();
+    });
+  }
+  if (els.tissueH) {
+    els.tissueH.addEventListener("input", (event) => {
+      const piece = selectedPiece();
+      if (!piece || mountKindOf(piece) !== "tissue") return;
+      piece.tissueH = clamp(finite(event.target.value, 4), 0, 10);
+      if (els.tissueHValue) els.tissueHValue.textContent = `${piece.tissueH.toFixed(1)}m`;
       render();
       persistSoon();
     });

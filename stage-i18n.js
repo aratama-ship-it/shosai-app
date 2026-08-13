@@ -488,6 +488,8 @@
     "トラピーズの乗り方": "On the trapeze",
     "座る": "Sit",
     "ぶら下がる": "Hang",
+    "布に掴まる": "Holding the silks",
+    "掴む高さ": "Grip height on the silks",
     "向き": "Facing",
     "客席": "House",
     "背中": "Back",
