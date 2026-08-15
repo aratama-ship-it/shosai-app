@@ -10190,3 +10190,118 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
   .stage-scene-grid-views button { padding-inline: 6px; }
   .stage-scene-grid-body { padding-inline: 10px; }
 }
+
+/* ===== 舞台スケッチ: セクションの色・一括開閉・後からまとめる =====
+   字下げの空白だけでは親が途切れて見えるため、14pxごとの溝へ親の色を通す。 */
+.stage-scene-head {
+  grid-template-columns: auto 16px minmax(0, 1fr) auto auto;
+}
+
+.stage-scene-bars {
+  position: relative;
+  align-self: stretch;
+  min-height: 40px;
+  flex: 0 0 auto;
+}
+
+.stage-scene-bar-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--bar-slot) * 14px + 5px);
+  width: 3px;
+  border-radius: 1px;
+  opacity: 0.82;
+}
+
+.stage-scene-bar-mark.is-own {
+  left: calc(var(--bar-slot) * 14px + 4px);
+  width: 5px;
+  opacity: 1;
+}
+
+.stage-scene-chip.is-section .stage-scene-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stage-scene-section-color {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.stage-scene-wrap {
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 4px 5px;
+  background: none;
+  color: rgba(240, 231, 214, 0.5);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stage-scene-wrap:hover,
+.stage-scene-wrap:focus-visible {
+  border-color: rgba(211, 172, 89, 0.45);
+  color: var(--brass);
+}
+
+.stage-scene-list.is-wrap-picking .stage-scene-chip:hover {
+  border-color: rgba(211, 172, 89, 0.48);
+  background: rgba(211, 172, 89, 0.09);
+}
+
+.stage-scene-list.is-wrap-picking .stage-scene-row.is-wrap-start {
+  border-color: rgba(211, 172, 89, 0.52);
+  background: rgba(211, 172, 89, 0.05);
+}
+
+/* 一覧と全開閉を同じ段へ置き、その下に従来の転換設定を保つ。 */
+.stage-scene-grid-open,
+#stage-scene-fold-all { grid-column: auto; }
+
+.stage-scene-grid-section {
+  padding: 0;
+  border-left: 4px solid var(--section-color, var(--brass));
+}
+
+.stage-scene-grid-section-button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  padding: 7px 8px 6px var(--scene-indent, 8px);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stage-scene-grid-section-button:hover,
+.stage-scene-grid-section-button:focus-visible {
+  background: rgba(211, 172, 89, 0.07);
+  outline: none;
+}
+
+.stage-scene-grid-section-button > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-scene-grid-section-total {
+  color: rgba(240, 231, 214, 0.46);
+  font-family: var(--sans);
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}

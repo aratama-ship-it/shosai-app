@@ -1810,6 +1810,7 @@
     sceneList: document.getElementById("stage-scene-list"),
     sceneResize: document.getElementById("stage-scene-resize"),
     sceneGridOpen: document.getElementById("stage-scene-grid-open"),
+    sceneFoldAll: document.getElementById("stage-scene-fold-all"),
     sceneGridModal: document.getElementById("stage-scene-grid-modal"),
     sceneGridBackdrop: document.getElementById("stage-scene-grid-backdrop"),
     sceneGridClose: document.getElementById("stage-scene-grid-close"),
@@ -2118,6 +2119,19 @@
    * 親は「自分より前にある、自分より浅い最初の行」。
    * kind:"section" は入れ物だけで、絵は持たない。 */
   const MAX_DEPTH = 4;
+  const SECTION_COLORS = Object.freeze([
+    "#d3ac59", "#a84b26", "#77865f", "#5f7386",
+    "#7a5a6e", "#4f7a72", "#b98d5a", "#8a8177",
+  ]);
+
+  // 色を保存値にすると並べ替えや読込のたびに同期が要るため、変わらないidだけから決める。
+  function sectionColor(id) {
+    let hash = 2166136261;
+    String(id || "").split("").forEach((letter) => {
+      hash = Math.imul(hash ^ letter.charCodeAt(0), 16777619) >>> 0;
+    });
+    return SECTION_COLORS[hash % SECTION_COLORS.length];
+  }
 
   /* 最初から置いてある見本。★駒だけでなく「出るもの」にも登録する。
      一覧に無いものが舞台に出ていると、「追加したものが一覧に載る」という
@@ -10673,6 +10687,37 @@
     return list.slice(index + 1, end);
   }
 
+  // セクション内は直下だけでなく、さらに入れ子になった場面も同じまとまりとして数える。
+  function sectionTotals(index) {
+    const scenes = sceneChildren(index).filter((row) => row.kind === "scene");
+    const seconds = scenes.reduce((sum, scene) => {
+      const rehearsal = scene.rehearsal || {};
+      return sum + finite(rehearsal.holdDurationSeconds, 0)
+        + finite(rehearsal.transitionToNextSeconds, 0);
+    }, 0);
+    return { scenes: scenes.length, seconds };
+  }
+
+  function sectionDurationText(seconds) {
+    if (seconds < 60) return isEn() ? `${Math.round(seconds)} sec` : `${Math.round(seconds)}秒`;
+    return isEn() ? `~${Math.round(seconds / 60)} min` : `約${Math.round(seconds / 60)}分`;
+  }
+
+  function sectionSummary(totals, place) {
+    const showTime = featureOn("sceneTiming") && totals.seconds > 0;
+    const duration = showTime ? sectionDurationText(totals.seconds) : "";
+    if (place === "list") return showTime ? `${totals.scenes}・${duration}` : `${totals.scenes}`;
+    if (isEn()) {
+      const scenes = `${totals.scenes} ${totals.scenes === 1 ? "scene" : "scenes"}`;
+      if (!showTime) return scenes;
+      return place === "title" ? `${scenes} · total ${duration}` : `${scenes} · ${duration}`;
+    }
+    if (!showTime) return `${totals.scenes}場面`;
+    return place === "title"
+      ? `${totals.scenes}場面・合計 ${duration}`
+      : `${totals.scenes}場面・${duration}`;
+  }
+
   // 畳んだセクションの中にいるか
   function sceneHidden(index) {
     const list = state.project.scenes;
@@ -10698,26 +10743,119 @@
     return numbers;
   }
 
+  // 「後からまとめる」の開始行。プロジェクトの内容ではないためstateへ保存しない。
+  let wrapPickStartId = null;
+
+  function clearWrapPick() {
+    wrapPickStartId = null;
+    if (!els.sceneList) return;
+    els.sceneList.classList.remove("is-wrap-picking");
+    els.sceneList.querySelectorAll(".is-wrap-start").forEach((row) => row.classList.remove("is-wrap-start"));
+  }
+
+  function cancelWrapPick(message) {
+    clearWrapPick();
+    renderScenes();
+    announce(message || "まとめるのを中止しました。");
+  }
+
+  function beginWrapPick(sceneId) {
+    wrapPickStartId = sceneId;
+    renderScenes();
+    announce("まとめる最後のシーンをクリックしてください。同じシーンを押すと1つだけまとめます。Escで中止。");
+  }
+
+  function finishWrapPick(endId) {
+    const list = state.project.scenes;
+    const start = list.findIndex((row) => row.id === wrapPickStartId);
+    const end = list.findIndex((row) => row.id === endId);
+    const startRow = list[start];
+    const endRow = list[end];
+    const depth = startRow && startRow.depth;
+    const valid = start >= 0 && end >= start
+      && startRow.kind === "scene" && endRow.kind === "scene"
+      && endRow.depth === depth
+      && list.slice(start, end + 1).every((row) => row.depth >= depth);
+    if (!valid) {
+      cancelWrapPick();
+      return;
+    }
+
+    const chosen = list.slice(start, end + 1);
+    if (chosen.some((row) => row.depth + 1 > MAX_DEPTH)) {
+      clearWrapPick();
+      renderScenes();
+      announce("深さの上限に達するため、ここではまとめられません。");
+      return;
+    }
+
+    checkpoint();
+    const count = list.filter((row) => row.kind === "section").length;
+    const section = newScene(isEn() ? `Section ${count + 1}` : `セクション ${count + 1}`,
+      false, "section", depth);
+    const sceneCount = chosen.filter((row) => row.kind === "scene").length;
+    chosen.forEach((row) => { row.depth += 1; });
+    list.splice(start, 0, section);
+    state.cursorRowId = section.id;
+    clearWrapPick();
+    renderScenes();
+    persistSoon();
+    openRename(section);
+    announce(`${sceneCount}シーンをまとめました。`);
+  }
+
+  function makeSceneBars(scene, ancestors) {
+    const bars = document.createElement("span");
+    bars.className = "stage-scene-bars";
+    const slots = scene.depth + (scene.kind === "section" ? 1 : 0);
+    bars.style.width = `${slots * 14}px`;
+    bars.setAttribute("aria-hidden", "true");
+    for (let depth = 0; depth < scene.depth; depth += 1) {
+      const section = ancestors[depth];
+      if (!section || section.kind !== "section") continue;
+      const mark = document.createElement("i");
+      mark.className = "stage-scene-bar-mark";
+      mark.style.setProperty("--bar-slot", depth);
+      mark.style.backgroundColor = sectionColor(section.id);
+      bars.append(mark);
+    }
+    if (scene.kind === "section") {
+      const own = document.createElement("i");
+      own.className = "stage-scene-bar-mark is-own";
+      own.style.setProperty("--bar-slot", scene.depth);
+      own.style.backgroundColor = sectionColor(scene.id);
+      bars.append(own);
+    }
+    return bars;
+  }
+
   function renderScenes() {
     const p = state.project;
     if (els.sceneList) {
       els.sceneList.innerHTML = "";
+      if (wrapPickStartId && !p.scenes.some((row) => row.id === wrapPickStartId)) wrapPickStartId = null;
+      els.sceneList.classList.toggle("is-wrap-picking", Boolean(wrapPickStartId));
       /* 番号は入れ子に沿って振る。セクションの中の場面は「4-1」のようになる。
        * 深さごとの数え札を持ち、浅い所へ戻ったら深い側は捨てる。 */
       const sceneNumbers = sceneNumberMap(p.scenes);
+      const sectionStack = [];
       p.scenes.forEach((scene, i) => {
         const numberText = sceneNumbers.get(scene.id) || String(i + 1);
+        sectionStack.length = scene.depth;
+        const ancestors = sectionStack.slice();
+        sectionStack[scene.depth] = scene.kind === "section" ? scene : null;
+        sectionStack.length = scene.depth + 1;
         if (sceneHidden(i)) return;
         const isCursor = scene.id === (state.cursorRowId || p.activeSceneId);
         const isOpen = scene.kind === "scene" && scene.id === p.activeSceneId;
 
         const row = document.createElement("div");
-        row.className = `stage-scene-row${isOpen ? " is-open" : ""}`;
+        row.className = `stage-scene-row${isOpen ? " is-open" : ""}${scene.id === wrapPickStartId ? " is-wrap-start" : ""}`;
         row.dataset.sceneId = scene.id;
-        row.style.marginLeft = `${scene.depth * 14}px`;
 
         const head = document.createElement("div");
         head.className = "stage-scene-head";
+        const bars = makeSceneBars(scene, ancestors);
 
         // 掴んで動かす取っ手。行そのものを掴むと中の編集ができなくなる
         const grip = document.createElement("span");
@@ -10743,14 +10881,26 @@
 
         const name = document.createElement("span");
         name.className = "stage-scene-name";
-        name.textContent = scene.title;
+        if (scene.kind === "section") {
+          const colorChip = document.createElement("i");
+          colorChip.className = "stage-scene-section-color";
+          colorChip.style.backgroundColor = sectionColor(scene.id);
+          colorChip.setAttribute("aria-hidden", "true");
+          name.append(colorChip, document.createTextNode(scene.title));
+        } else {
+          name.textContent = scene.title;
+        }
 
         const count = document.createElement("span");
         count.className = "stage-scene-count";
-        count.textContent = scene.kind === "section"
-          ? `${sceneChildren(i).filter((x) => x.kind === "scene").length}`
-          : (scene.beat && scene.beat.energy !== null
-            ? `E${scene.beat.energy}・${scene.pieces.length}` : `${scene.pieces.length}`);
+        if (scene.kind === "section") {
+          const totals = sectionTotals(i);
+          count.textContent = sectionSummary(totals, "list");
+          count.title = sectionSummary(totals, "title");
+        } else {
+          count.textContent = scene.beat && scene.beat.energy !== null
+            ? `E${scene.beat.energy}・${scene.pieces.length}` : `${scene.pieces.length}`;
+        }
         if (scene.kind === "scene" && scene.beat && scene.beat.energy !== null) {
           count.title = `エネルギー ${scene.beat.energy}・配置 ${scene.pieces.length}`;
         }
@@ -10764,20 +10914,25 @@
           openRename(scene);
         });
         button.addEventListener("click", () => {
+          if (wrapPickStartId) {
+            finishWrapPick(scene.id);
+            return;
+          }
           if (scene.kind === "section") {
             if (state.cursorRowId === scene.id) {
               state.closedSections[scene.id] = !state.closedSections[scene.id];
             }
             state.cursorRowId = scene.id;
             renderScenes();
+            renderSceneGrid();
             persistSoon();
             return;
           }
           openScene(scene.id);
         });
-        head.append(grip, button);
+        head.append(bars, grip, button);
         // 鉛筆は選んでいる行にだけ。全行に出すと並びが読みにくくなる
-        if (isCursor) {
+        if (isCursor && !wrapPickStartId) {
           const pen = document.createElement("button");
           pen.type = "button";
           pen.className = "stage-scene-pen";
@@ -10786,6 +10941,19 @@
           pen.setAttribute("aria-label", isEn() ? `Rename ${scene.title}` : `${scene.title} の名前を変える`);
           pen.addEventListener("click", (e) => { e.stopPropagation(); openRename(scene); });
           head.append(pen);
+          if (scene.kind === "scene") {
+            const wrap = document.createElement("button");
+            wrap.type = "button";
+            wrap.className = "stage-scene-wrap";
+            wrap.textContent = "⊂";
+            wrap.title = tx("ここから範囲をまとめて新しいセクションにする");
+            wrap.setAttribute("aria-label", wrap.title);
+            wrap.addEventListener("click", (event) => {
+              event.stopPropagation();
+              beginWrapPick(scene.id);
+            });
+            head.append(wrap);
+          }
         }
         row.append(head);
 
@@ -10836,6 +11004,10 @@
               if (els.rehearsalExportModal && !els.rehearsalExportModal.hidden) {
                 refreshRehearsalExport();
               }
+            });
+            input.addEventListener("change", () => {
+              renderScenes();
+              renderSceneGrid();
             });
             const unit = document.createTextNode(` ${tx("秒")}`);
             value.append(input, unit);
@@ -10920,6 +11092,13 @@
     }
     const idx = cursorIndex();
     if (els.sceneDel) els.sceneDel.disabled = p.scenes.filter((x) => x.kind === "scene").length <= 1;
+    if (els.sceneFoldAll) {
+      const sections = p.scenes.filter((row) => row.kind === "section");
+      const hasOpen = sections.some((section) => !state.closedSections[section.id]);
+      els.sceneFoldAll.hidden = sections.length === 0;
+      els.sceneFoldAll.textContent = tx(hasOpen ? "▸ 畳む" : "▾ 開く");
+      els.sceneFoldAll.title = tx(hasOpen ? "セクションをすべて畳む" : "セクションをすべて開く");
+    }
     renderSceneStudy();
     syncTabletSceneBar();
     syncPhoneViewer();
@@ -10972,11 +11151,31 @@
 
     state.project.scenes.forEach((scene, index) => {
       const numberText = numbers.get(scene.id) || String(index + 1);
+      if (sceneHiddenIn(state.project.scenes, index)) return;
       if (scene.kind === "section") {
         const heading = document.createElement("h3");
         heading.className = "stage-scene-grid-section";
         heading.style.setProperty("--scene-indent", `${8 + scene.depth * 14}px`);
-        heading.textContent = `${numberText} ${scene.title}`.trim();
+        heading.style.setProperty("--section-color", sectionColor(scene.id));
+        const shut = Boolean(state.closedSections[scene.id]);
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = "stage-scene-grid-section-button";
+        toggle.setAttribute("aria-expanded", String(!shut));
+        toggle.title = tx("押すと開閉します");
+        const title = document.createElement("span");
+        title.textContent = `${shut ? "▸" : "▾"} ${numberText} ${scene.title}`.trim();
+        const totals = document.createElement("span");
+        totals.className = "stage-scene-grid-section-total";
+        totals.textContent = sectionSummary(sectionTotals(index), "grid");
+        toggle.append(title, totals);
+        toggle.addEventListener("click", () => {
+          state.closedSections[scene.id] = !state.closedSections[scene.id];
+          renderSceneGrid();
+          renderScenes();
+          persistSoon();
+        });
+        heading.append(toggle);
         els.sceneGrid.append(heading);
         return;
       }
@@ -14714,6 +14913,17 @@ ${cuesheetHtml}
   if (els.showsClose) els.showsClose.addEventListener("click", closeShows);
   if (els.showsBackdrop) els.showsBackdrop.addEventListener("click", closeShows);
   if (els.sceneGridOpen) els.sceneGridOpen.addEventListener("click", openSceneGrid);
+  if (els.sceneFoldAll) {
+    els.sceneFoldAll.addEventListener("click", () => {
+      const sections = state.project.scenes.filter((row) => row.kind === "section");
+      const hasOpen = sections.some((section) => !state.closedSections[section.id]);
+      if (hasOpen) sections.forEach((section) => { state.closedSections[section.id] = true; });
+      else state.closedSections = {};
+      renderScenes();
+      renderSceneGrid();
+      persistSoon();
+    });
+  }
   if (els.sceneGridClose) els.sceneGridClose.addEventListener("click", closeSceneGrid);
   if (els.sceneGridBackdrop) els.sceneGridBackdrop.addEventListener("click", closeSceneGrid);
   if (els.sceneGridFront) els.sceneGridFront.addEventListener("click", () => setSceneGridView("front"));
@@ -14727,6 +14937,11 @@ ${cuesheetHtml}
   }
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && els.sceneGridModal && !els.sceneGridModal.hidden) closeSceneGrid();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !wrapPickStartId) return;
+    event.preventDefault();
+    cancelWrapPick();
   });
   if (els.beatTemplatesOpen) els.beatTemplatesOpen.addEventListener("click", openBeatTemplates);
   if (els.beatTemplatesClose) els.beatTemplatesClose.addEventListener("click", closeBeatTemplates);
