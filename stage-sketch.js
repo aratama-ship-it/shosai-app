@@ -1718,6 +1718,8 @@
     renameOk: document.getElementById("stage-rename-ok"),
     renameClose: document.getElementById("stage-rename-close"),
     renameTitle: document.getElementById("stage-rename-title"),
+    renameColors: document.getElementById("stage-rename-colors"),
+    renameSwatches: document.getElementById("stage-rename-swatches"),
     duplicate: document.getElementById("stage-duplicate"),
     delete: document.getElementById("stage-delete"),
     clear: document.getElementById("stage-clear"),
@@ -2124,10 +2126,11 @@
     "#7a5a6e", "#4f7a72", "#b98d5a", "#8a8177",
   ]);
 
-  // 色を保存値にすると並べ替えや読込のたびに同期が要るため、変わらないidだけから決める。
-  function sectionColor(id) {
+  // 未指定なら変わらないidから決め、指定済みなら並べ替えても本人が選んだ色を保つ。
+  function sectionColor(scene) {
+    if (scene && scene.color) return scene.color;
     let hash = 2166136261;
-    String(id || "").split("").forEach((letter) => {
+    String(scene && scene.id || "").split("").forEach((letter) => {
       hash = Math.imul(hash ^ letter.charCodeAt(0), 16777619) >>> 0;
     });
     return SECTION_COLORS[hash % SECTION_COLORS.length];
@@ -2197,6 +2200,7 @@
       id: rid(sceneKind === "section" ? "sect" : "scene"),
       kind: sceneKind,
       depth: clamp(finite(depth, 0), 0, MAX_DEPTH),
+      color: null,
       title: title || sceneTitle(1),
       note: "",
       background: "#40362d",
@@ -2629,6 +2633,7 @@
       id: typeof raw.id === "string" ? raw.id : rid("scene"),
       kind,
       depth: clamp(finite(raw.depth, 0), 0, MAX_DEPTH),
+      color: kind === "section" ? validColor(raw.color, "") || null : null,
       title: typeof raw.title === "string" && raw.title.trim() ? renameAuto(raw.title) : sceneTitle(index + 1),
       studyBeatId: typeof raw.studyBeatId === "string" ? raw.studyBeatId : null,
       note: typeof raw.note === "string" ? raw.note : "",
@@ -10710,6 +10715,66 @@
     return list.slice(index + 1, end);
   }
 
+  // どの入口から深さを変えても、飛び級の入れ子を保存しない。
+  function tidySceneDepths() {
+    let prev = -1;
+    state.project.scenes.forEach((sceneRow) => {
+      sceneRow.depth = Math.min(sceneRow.depth, prev + 1);
+      prev = sceneRow.depth;
+    });
+  }
+
+  function canShiftSceneDepth(scene, step) {
+    const list = state.project.scenes;
+    const index = list.indexOf(scene);
+    if (index < 0) return false;
+    if (step === -1) return scene.depth > 0;
+    if (step !== 1 || scene.depth + 1 > MAX_DEPTH || index === 0) return false;
+    return scene.depth <= list[index - 1].depth;
+  }
+
+  function shiftSceneDepth(scene, step) {
+    if (!canShiftSceneDepth(scene, step)) return false;
+    const index = state.project.scenes.indexOf(scene);
+    const moving = [scene, ...sceneChildren(index)];
+    // 親だけ動いて子が上限に取り残される状態は作らない。
+    if (step > 0 && moving.some((row) => row.depth + step > MAX_DEPTH)) {
+      announce("これ以上内側へは入れられません。");
+      return false;
+    }
+    checkpoint();
+    const list = state.project.scenes;
+    if (step < 0) {
+      /* 外へ出すときは、元の親に残る後ろの兄弟の手前から抜けてはいけない。
+       * その場で浅くすると、後ろに続く場面がこの行の中身に化けてしまう
+       * （幕の途中の場面を出すと、それ以降が幕から丸ごと抜けていた）。
+       * 元の親の終わりまで送ってから浅くする。 */
+      const parentDepth = scene.depth - 1;
+      let end = index + moving.length;
+      while (end < list.length && list[end].depth > parentDepth) end += 1;
+      if (end > index + moving.length) {
+        list.splice(index, moving.length);
+        list.splice(end - moving.length, 0, ...moving);
+      }
+    }
+    moving.forEach((row) => { row.depth += step; });
+    tidySceneDepths();
+    state.cursorRowId = scene.id;
+    renderScenes();
+    renderSceneGrid();
+    persistSoon();
+    announce(step > 0 ? "一段内側へ入れました。" : "一段外へ出しました。");
+    return true;
+  }
+
+  function focusSceneChip(sceneId) {
+    if (!els.sceneList) return;
+    const renderedRow = [...els.sceneList.querySelectorAll("[data-scene-id]")]
+      .find((row) => row.dataset.sceneId === sceneId);
+    const chip = renderedRow && renderedRow.querySelector(".stage-scene-chip");
+    if (chip) chip.focus();
+  }
+
   // セクション内は直下だけでなく、さらに入れ子になった場面も同じまとまりとして数える。
   function sectionTotals(index) {
     const scenes = sceneChildren(index).filter((row) => row.kind === "scene");
@@ -10839,14 +10904,14 @@
       const mark = document.createElement("i");
       mark.className = "stage-scene-bar-mark";
       mark.style.setProperty("--bar-slot", depth);
-      mark.style.backgroundColor = sectionColor(section.id);
+      mark.style.backgroundColor = sectionColor(section);
       bars.append(mark);
     }
     if (scene.kind === "section") {
       const own = document.createElement("i");
       own.className = "stage-scene-bar-mark is-own";
       own.style.setProperty("--bar-slot", scene.depth);
-      own.style.backgroundColor = sectionColor(scene.id);
+      own.style.backgroundColor = sectionColor(scene);
       bars.append(own);
     }
     return bars;
@@ -10907,7 +10972,7 @@
         if (scene.kind === "section") {
           const colorChip = document.createElement("i");
           colorChip.className = "stage-scene-section-color";
-          colorChip.style.backgroundColor = sectionColor(scene.id);
+          colorChip.style.backgroundColor = sectionColor(scene);
           colorChip.setAttribute("aria-hidden", "true");
           name.append(colorChip, document.createTextNode(scene.title));
         } else {
@@ -10949,13 +11014,37 @@
             renderScenes();
             renderSceneGrid();
             persistSoon();
+            focusSceneChip(scene.id);
             return;
           }
           openScene(scene.id);
+          focusSceneChip(scene.id);
         });
         head.append(bars, grip, button);
-        // 鉛筆は選んでいる行にだけ。全行に出すと並びが読みにくくなる
+        // 深さと名前の操作は選んでいる行にだけ。全行に出すと並びが読みにくくなる
         if (isCursor && !wrapPickStartId) {
+          const outdent = document.createElement("button");
+          outdent.type = "button";
+          outdent.className = "stage-scene-outdent";
+          outdent.textContent = "⇤";
+          outdent.title = tx("一段外へ出す");
+          outdent.setAttribute("aria-label", outdent.title);
+          outdent.disabled = !canShiftSceneDepth(scene, -1);
+          outdent.addEventListener("click", (event) => {
+            event.stopPropagation();
+            shiftSceneDepth(scene, -1);
+          });
+          const indent = document.createElement("button");
+          indent.type = "button";
+          indent.className = "stage-scene-indent";
+          indent.textContent = "⇥";
+          indent.title = tx("一段内側へ入れる");
+          indent.setAttribute("aria-label", indent.title);
+          indent.disabled = !canShiftSceneDepth(scene, 1);
+          indent.addEventListener("click", (event) => {
+            event.stopPropagation();
+            shiftSceneDepth(scene, 1);
+          });
           const pen = document.createElement("button");
           pen.type = "button";
           pen.className = "stage-scene-pen";
@@ -10963,7 +11052,7 @@
           pen.title = tx("名前を変える");
           pen.setAttribute("aria-label", isEn() ? `Rename ${scene.title}` : `${scene.title} の名前を変える`);
           pen.addEventListener("click", (e) => { e.stopPropagation(); openRename(scene); });
-          head.append(pen);
+          head.append(outdent, indent, pen);
           if (scene.kind === "scene") {
             const wrap = document.createElement("button");
             wrap.type = "button";
@@ -11179,7 +11268,7 @@
         const heading = document.createElement("h3");
         heading.className = "stage-scene-grid-section";
         heading.style.setProperty("--scene-indent", `${8 + scene.depth * 14}px`);
-        heading.style.setProperty("--section-color", sectionColor(scene.id));
+        heading.style.setProperty("--section-color", sectionColor(scene));
         const shut = Boolean(state.closedSections[scene.id]);
         const toggle = document.createElement("button");
         toggle.type = "button";
@@ -11304,8 +11393,42 @@
   function openRename(scene) {
     if (!scene || !els.rename) return;
     renameTarget = scene;
-    els.renameTitle.textContent = scene.kind === "section" ? "セクションの名前" : "シーンの名前";
+    els.renameTitle.textContent = tx(scene.kind === "section" ? "セクションの名前と色" : "シーンの名前");
     els.renameInput.value = scene.title;
+    if (els.renameColors) els.renameColors.hidden = scene.kind !== "section";
+    if (els.renameSwatches) {
+      els.renameSwatches.innerHTML = "";
+      if (scene.kind === "section") {
+        const choices = [{ color: null, label: "自動" },
+          ...SECTION_COLORS.map((color, index) => ({ color, label: `色 ${index + 1}` }))];
+        choices.forEach((choice) => {
+          const swatch = document.createElement("button");
+          swatch.type = "button";
+          swatch.className = `stage-rename-swatch${choice.color === null ? " is-auto" : ""}`;
+          swatch.setAttribute("aria-label", tx(choice.label));
+          swatch.setAttribute("aria-pressed", String(choice.color === null
+            ? scene.color === null : sectionColor(scene) === choice.color));
+          if (choice.color === null) {
+            swatch.textContent = tx("自動");
+            swatch.title = tx("idから決まる既定の色に戻す");
+          } else {
+            swatch.style.backgroundColor = choice.color;
+          }
+          swatch.addEventListener("click", () => {
+            if (!renameTarget || renameTarget.kind !== "section") return;
+            checkpoint();
+            renameTarget.color = choice.color;
+            els.renameSwatches.querySelectorAll(".stage-rename-swatch").forEach((button) => {
+              button.setAttribute("aria-pressed", String(button === swatch));
+            });
+            renderScenes();
+            renderSceneGrid();
+            persistSoon();
+          });
+          els.renameSwatches.append(swatch);
+        });
+      }
+    }
     els.rename.hidden = false;
     els.renameBackdrop.hidden = false;
     els.renameInput.focus();
@@ -11459,9 +11582,7 @@
         - moving[0].depth;
       moving.forEach((m) => { m.depth = clamp(m.depth + diff, 0, MAX_DEPTH); });
       list.splice(target, 0, ...moving);
-      // 前の行より2段以上深くならないよう詰める
-      let prev = -1;
-      list.forEach((sceneRow) => { sceneRow.depth = Math.min(sceneRow.depth, prev + 1); prev = sceneRow.depth; });
+      tidySceneDepths();
       state.cursorRowId = id;
     }
     sceneDrag = null;
@@ -15386,6 +15507,20 @@ ${cuesheetHtml}
    *  ・文字を打っている最中は触らない
    *  ・絵の上で駒を選んでいるときは、駒の微調整が先（そちらが既に受け取っている）
    * の二つは守る。 */
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    if (!els.sceneList || !els.sceneList.contains(document.activeElement)) return;
+    if (isTyping(event.target)) return;
+    const row = document.activeElement && document.activeElement.closest("[data-scene-id]");
+    const scene = row && state.project.scenes.find((item) => item.id === row.dataset.sceneId);
+    if (!scene) return;
+    event.preventDefault();
+    shiftSceneDepth(scene, event.key === "ArrowRight" ? 1 : -1);
+    // 描き直しで消えたボタンの代わりに同じ行のチップへ戻し、続けて操作できるようにする。
+    focusSceneChip(scene.id);
+  });
+
   document.addEventListener("keydown", (event) => {
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
     if (event.defaultPrevented) return;
