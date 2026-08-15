@@ -2,7 +2,7 @@
 
 - 作成: 2026-07-28（Claude）
 - 状態: 設計のみ。実装は Supabase プロジェクト作成後
-- 前提資料: `show-creative-ideas/2026-07-28_舞台スケッチ_改善議論まとめ_Claude×Codex.md`
+- 前提資料: `show-creative-ideas/docs/stage-sketch/2026-07-28_舞台スケッチ_改善議論まとめ_Claude×Codex.md`
 
 ## 決めごと（本人と合意済みの方針）
 
