@@ -14510,10 +14510,12 @@ ${cuesheetHtml}
     }
     facingWheelLastAt = now;
     facingWheelDelta += Number(event.deltaY) || 0;
+    /* ノッチに満たない細かいdeltaも消費する。ここで素通しすると、
+     * 回転の合間にページが一緒にスクロールしてしまう（実際に起きた）。 */
+    event.preventDefault();
     const notches = Math.trunc(Math.abs(facingWheelDelta) / 40) * Math.sign(facingWheelDelta);
     if (!notches) return;
 
-    event.preventDefault();
     if (!facingWheelCheckpointed) {
       checkpoint();
       facingWheelCheckpointed = true;
