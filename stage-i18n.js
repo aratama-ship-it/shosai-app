@@ -367,6 +367,8 @@
     "アニメーション": "Animation",
     "⊞ 一覧": "⊞ Grid",
     "カードの大きさ": "Card size",
+    "「光で何を起こしたい？」のカードと、図へ重ねる作図の印。OFFでも書いた内容は消えない":
+      "The lighting-intention card and its sketch overlay. Turning it off never erases what you wrote",
     "シーン一覧": "Scene grid",
     "正面図": "Front view",
     "平面図": "Plan view",

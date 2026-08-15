@@ -2061,6 +2061,8 @@
       hint: "シーンの欄に「暗転」の印が出て、その転換は一度真っ暗になってから明ける" },
     { key: "sceneTiming", label: "シーンの時間", def: false,
       hint: "各シーンに「見せる時間」と「次のシーンへの移動時間」を表示する" },
+    { key: "lightIntent", label: "光の意図", def: false,
+      hint: "「光で何を起こしたい？」のカードと、図へ重ねる作図の印。OFFでも書いた内容は消えない" },
     { key: "lineup", label: "整列（一列・円・V字）",
       hint: "平面図の「動線を描く」の横に整列のプルダウンが出て、舞台上の演者を並べ直す" },
     { key: "busyness", label: "転換の忙しさ診断", def: false,
@@ -6663,6 +6665,7 @@
      ★カードは display:none でも hidden 属性は false のままなので、
        実際に画面に出ているか（矩形を持つか）で見る。 */
   const lightIntentOverlayOn = () => {
+    if (!featureOn("lightIntent")) return false;
     if (document.documentElement.classList.contains("stage-phone-viewer")) return false;
     if (state.showLightIntent) return true;
     const card = els.lightIntent;
@@ -7711,7 +7714,7 @@
   function syncLightIntentCard() {
     if (!els.lightIntent) return;
     const scene = sc();
-    const editable = Boolean(scene && scene.kind === "scene");
+    const editable = featureOn("lightIntent") && Boolean(scene && scene.kind === "scene");
     els.lightIntent.hidden = !editable;
     if (!editable) return;
     const saved = normalizeLightingIntent("scene", scene.lightingIntent);
@@ -11609,6 +11612,19 @@
   function applyFeatureFlags() {
     if (els.presentBtn) els.presentBtn.hidden = !featureOn("presentation");
     if (els.arrangeSelect) els.arrangeSelect.hidden = !featureOn("lineup");
+    // 光の意図: カード・重ねのトグル・照らし合わせをまとめて出し入れする
+    if (els.frontLightIntent) {
+      const on = featureOn("lightIntent");
+      const holder = els.frontLightIntent.closest("label");
+      if (holder) holder.hidden = !on;
+      if (!on && state.showLightIntent) {
+        state.showLightIntent = false;
+        els.frontLightIntent.checked = false;
+      }
+    }
+    syncLightIntentCard();
+    syncLightIntentDock();
+    syncLightIntentCompare();
   }
 
   /* ---------- プレゼンモード ----------
