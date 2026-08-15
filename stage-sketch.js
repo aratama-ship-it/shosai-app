@@ -1704,6 +1704,7 @@
     routeClear: document.getElementById("stage-route-clear"),
     pieceLock: document.getElementById("stage-piece-lock"),
     facingControls: document.getElementById("stage-facing-controls"),
+    facingLock: document.getElementById("stage-facing-lock"),
     planRoute: document.getElementById("stage-plan-route"),
     planNote: document.getElementById("stage-plan-note"),
     frontNote: document.getElementById("stage-front-note"),
@@ -1808,6 +1809,13 @@
     studyBody: document.getElementById("stage-study-body"),
     sceneList: document.getElementById("stage-scene-list"),
     sceneResize: document.getElementById("stage-scene-resize"),
+    sceneGridOpen: document.getElementById("stage-scene-grid-open"),
+    sceneGridModal: document.getElementById("stage-scene-grid-modal"),
+    sceneGridBackdrop: document.getElementById("stage-scene-grid-backdrop"),
+    sceneGridClose: document.getElementById("stage-scene-grid-close"),
+    sceneGrid: document.getElementById("stage-scene-grid"),
+    sceneGridFront: document.getElementById("stage-scene-grid-front"),
+    sceneGridPlan: document.getElementById("stage-scene-grid-plan"),
     sceneAdd: document.getElementById("stage-scene-add"),
     sceneDup: document.getElementById("stage-scene-dup"),
     sceneDel: document.getElementById("stage-scene-del"),
@@ -1985,6 +1993,10 @@
     front: { z: 1, ox: 0, oy: 0 },
     plan: { z: 1, ox: 0, oy: 0 },
   };
+  let sceneGridView = "front";
+  const sceneGridThumbs = new Map();
+  let sceneGridGeneration = 0;
+  let sceneGridFrame = 0;
   const ZOOM_MIN = 1;
   const ZOOM_MAX = 5;
 
@@ -2177,6 +2189,7 @@
       beat: normalizeSceneBeat(sceneKind, null),
       rehearsal: sceneKind === "scene" ? normalizeSceneRehearsal(null) : null,
       lightingIntent: null,
+      facingLock: false,
     };
   }
 
@@ -2615,6 +2628,8 @@
       beat: normalizeSceneBeat(kind, raw.beat),
       rehearsal: kind === "scene" ? normalizeSceneRehearsal(raw.rehearsal) : null,
       lightingIntent: normalizeLightingIntent(kind, raw.lightingIntent),
+      // 誤ってホイールへ触れても向きが変わらないよう、シーンごとに持つ
+      facingLock: kind === "scene" ? Boolean(raw.facingLock) : false,
       // 暗転で始まるシーン（転換が一度真っ暗になってから明ける）
       blackout: kind === "scene" ? Boolean(raw.blackout) : false,
       /* 舞台から下げたものの置き場所の控え（setId ごとに一つ）。
@@ -10667,17 +10682,27 @@
     return false;
   }
 
+  // 一覧とグリッドで同じ数え札を使う。深さが戻ったら内側の札は捨てる。
+  function sceneNumberMap(rows) {
+    const counters = [];
+    const numbers = new Map();
+    (rows || []).forEach((scene) => {
+      counters[scene.depth] = (counters[scene.depth] || 0) + 1;
+      counters.length = scene.depth + 1;
+      numbers.set(scene.id, counters.join("-"));
+    });
+    return numbers;
+  }
+
   function renderScenes() {
     const p = state.project;
     if (els.sceneList) {
       els.sceneList.innerHTML = "";
       /* 番号は入れ子に沿って振る。セクションの中の場面は「4-1」のようになる。
        * 深さごとの数え札を持ち、浅い所へ戻ったら深い側は捨てる。 */
-      const counters = [];
+      const sceneNumbers = sceneNumberMap(p.scenes);
       p.scenes.forEach((scene, i) => {
-        counters[scene.depth] = (counters[scene.depth] || 0) + 1;
-        counters.length = scene.depth + 1;
-        const numberText = counters.join("-");
+        const numberText = sceneNumbers.get(scene.id) || String(i + 1);
         if (sceneHidden(i)) return;
         const isCursor = scene.id === (state.cursorRowId || p.activeSceneId);
         const isOpen = scene.kind === "scene" && scene.id === p.activeSceneId;
@@ -10896,6 +10921,143 @@
     syncPhoneViewer();
     /* 並べ替えと入れ子は、掴んで動かす方に一本化した。
      * 矢印のボタンは同じことを二通りに増やすだけなので置かない。 */
+  }
+
+  function stopSceneGridGeneration() {
+    sceneGridGeneration += 1;
+    if (sceneGridFrame) cancelAnimationFrame(sceneGridFrame);
+    sceneGridFrame = 0;
+  }
+
+  /* 一枚を撮るあいだだけ場面と拡大を差し替える。途中で画像化に失敗しても、
+   * いま編集している絵へ必ず戻す。 */
+  function sceneGridThumbnail(scene, view) {
+    const keepScene = state.project.activeSceneId;
+    const keepFront = Object.assign({}, zoomState.front);
+    const keepPlan = Object.assign({}, zoomState.plan);
+    try {
+      state.project.activeSceneId = scene.id;
+      zoomState.front = { z: 1, ox: 0, oy: 0 };
+      zoomState.plan = { z: 1, ox: 0, oy: 0 };
+      const source = document.createElement("canvas");
+      source.width = W;
+      source.height = H;
+      drawStage(source.getContext("2d"), false, view);
+      const thumb = document.createElement("canvas");
+      thumb.width = 300;
+      thumb.height = Math.round((H / W) * thumb.width);
+      thumb.getContext("2d").drawImage(source, 0, 0, thumb.width, thumb.height);
+      return thumb.toDataURL("image/jpeg", 0.82);
+    } finally {
+      state.project.activeSceneId = keepScene;
+      zoomState.front = keepFront;
+      zoomState.plan = keepPlan;
+    }
+  }
+
+  function renderSceneGrid() {
+    if (!els.sceneGrid || !els.sceneGridModal || els.sceneGridModal.hidden) return;
+    stopSceneGridGeneration();
+    const generation = sceneGridGeneration;
+    els.sceneGrid.innerHTML = "";
+    if (els.sceneGridFront) els.sceneGridFront.setAttribute("aria-pressed", String(sceneGridView === "front"));
+    if (els.sceneGridPlan) els.sceneGridPlan.setAttribute("aria-pressed", String(sceneGridView === "plan"));
+    const numbers = sceneNumberMap(state.project.scenes);
+    const jobs = [];
+
+    state.project.scenes.forEach((scene, index) => {
+      const numberText = numbers.get(scene.id) || String(index + 1);
+      if (scene.kind === "section") {
+        const heading = document.createElement("h3");
+        heading.className = "stage-scene-grid-section";
+        heading.style.setProperty("--scene-indent", `${8 + scene.depth * 14}px`);
+        heading.textContent = `${numberText} ${scene.title}`.trim();
+        els.sceneGrid.append(heading);
+        return;
+      }
+
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = `stage-scene-grid-card${scene.id === state.project.activeSceneId ? " is-current" : ""}`;
+      card.setAttribute("aria-label", isEn()
+        ? `Open ${numberText} ${scene.title}, ${scene.pieces.length} placed`
+        : `${numberText} ${scene.title}、配置 ${scene.pieces.length}、開く`);
+      card.addEventListener("click", () => {
+        openScene(scene.id);
+        closeSceneGrid();
+      });
+
+      const picture = document.createElement("span");
+      picture.className = "stage-scene-grid-thumb";
+      const image = document.createElement("img");
+      image.alt = "";
+      image.hidden = true;
+      picture.append(image);
+
+      const caption = document.createElement("span");
+      caption.className = "stage-scene-grid-caption";
+      const title = document.createElement("strong");
+      title.textContent = `${scene.studyBeatId || numberText} ${scene.title}`.trim();
+      const count = document.createElement("span");
+      count.textContent = isEn() ? `${scene.pieces.length} placed` : `配置 ${scene.pieces.length}`;
+      caption.append(title, count);
+      card.append(picture, caption);
+      els.sceneGrid.append(card);
+
+      const key = `${scene.id}:${sceneGridView}`;
+      const cached = sceneGridThumbs.get(key);
+      if (cached) {
+        image.src = cached;
+        image.hidden = false;
+      } else {
+        jobs.push({ scene, view: sceneGridView, key, image });
+      }
+    });
+
+    let at = 0;
+    const drawChunk = () => {
+      if (generation !== sceneGridGeneration || els.sceneGridModal.hidden) return;
+      const end = Math.min(at + 3, jobs.length);
+      while (at < end) {
+        const job = jobs[at];
+        at += 1;
+        try {
+          const src = sceneGridThumbnail(job.scene, job.view);
+          sceneGridThumbs.set(job.key, src);
+          if (generation === sceneGridGeneration && job.image.isConnected) {
+            job.image.src = src;
+            job.image.hidden = false;
+          }
+        } catch (_) {
+          // 一枚が画像化できなくても、空枠のまま残して次のシーンへ進む
+        }
+      }
+      if (at < jobs.length) sceneGridFrame = requestAnimationFrame(drawChunk);
+      else sceneGridFrame = 0;
+    };
+    if (jobs.length) sceneGridFrame = requestAnimationFrame(drawChunk);
+  }
+
+  function openSceneGrid() {
+    if (!els.sceneGridModal || !els.sceneGridBackdrop) return;
+    sceneGridThumbs.clear();
+    els.sceneGridModal.hidden = false;
+    els.sceneGridBackdrop.hidden = false;
+    renderSceneGrid();
+    if (els.sceneGridClose) els.sceneGridClose.focus();
+  }
+
+  function closeSceneGrid() {
+    stopSceneGridGeneration();
+    if (els.sceneGridModal) els.sceneGridModal.hidden = true;
+    if (els.sceneGridBackdrop) els.sceneGridBackdrop.hidden = true;
+  }
+
+  function setSceneGridView(view) {
+    const next = view === "plan" ? "plan" : "front";
+    if (sceneGridView === next) return;
+    sceneGridView = next;
+    renderSceneGrid();
   }
 
   /* 行の名前をその場で書き換える。
@@ -13437,6 +13599,11 @@ ${cuesheetHtml}
 
   function updateInspector() {
     const piece = selectedPiece();
+    if (els.facingLock) {
+      const locked = Boolean(sc().facingLock);
+      els.facingLock.textContent = locked ? "🔒" : "🔓";
+      els.facingLock.setAttribute("aria-pressed", String(locked));
+    }
     if (els.seriWarning) {
       const involved = piece && seriStraddlers(sc().pieces, venueSize())
         .some((entry) => entry.piece === piece || entry.seri === piece);
@@ -14309,6 +14476,61 @@ ${cuesheetHtml}
     persistSoon();
   }
 
+  let facingWheelDelta = 0;
+  let facingWheelLastAt = 0;
+  let facingWheelContext = "";
+  let facingWheelCheckpointed = false;
+  const facingLockNotices = new Set();
+
+  function resetFacingWheelGesture() {
+    facingWheelDelta = 0;
+    facingWheelLastAt = 0;
+    facingWheelContext = "";
+    facingWheelCheckpointed = false;
+  }
+
+  function onFacingWheel(event) {
+    const piece = selectedPiece();
+    if (!piece || (piece.type !== "performer" && !SOLID_TYPES[piece.type])) return;
+    const scene = sc();
+    if (scene.facingLock) {
+      if (!facingLockNotices.has(scene.id)) {
+        facingLockNotices.add(scene.id);
+        announce("向きロック中です");
+      }
+      return;
+    }
+
+    const now = performance.now();
+    const context = `${scene.id}:${piece.id}`;
+    if (context !== facingWheelContext || now - facingWheelLastAt >= 600) {
+      facingWheelDelta = 0;
+      facingWheelCheckpointed = false;
+      facingWheelContext = context;
+    }
+    facingWheelLastAt = now;
+    facingWheelDelta += Number(event.deltaY) || 0;
+    const notches = Math.trunc(Math.abs(facingWheelDelta) / 40) * Math.sign(facingWheelDelta);
+    if (!notches) return;
+
+    event.preventDefault();
+    if (!facingWheelCheckpointed) {
+      checkpoint();
+      facingWheelCheckpointed = true;
+    }
+    facingWheelDelta -= notches * 40;
+    const amount = event.shiftKey ? 5 : 15;
+    // 平面図は向きを負角で描くため、下スクロールは値を引くと見た目が時計回りになる
+    piece.facing = (((Number(piece.facing) || 0) - notches * amount) % 360 + 360) % 360;
+    if (els.pieceFacing) {
+      const deg = piece.facing > 180 ? piece.facing - 360 : piece.facing;
+      els.pieceFacing.value = String(deg);
+    }
+    if (els.facingValue) els.facingValue.textContent = facingLabel(piece.facing);
+    render();
+    persistSoon();
+  }
+
   [canvas, planCanvas].filter(Boolean).forEach((el) => {
     el.addEventListener("pointerdown", onPointerDown);
     el.addEventListener("pointermove", onHover);
@@ -14316,6 +14538,7 @@ ${cuesheetHtml}
     el.addEventListener("pointerup", finishPointer);
     el.addEventListener("pointercancel", finishPointer);
     el.addEventListener("keydown", onKeyDown);
+    el.addEventListener("wheel", onFacingWheel, { passive: false });
     el.addEventListener("dblclick", (event) => {
       if (tabletPwaActive || phoneViewerActive) event.preventDefault();
     });
@@ -14461,6 +14684,14 @@ ${cuesheetHtml}
   if (els.showNew) els.showNew.addEventListener("click", newShow);
   if (els.showsClose) els.showsClose.addEventListener("click", closeShows);
   if (els.showsBackdrop) els.showsBackdrop.addEventListener("click", closeShows);
+  if (els.sceneGridOpen) els.sceneGridOpen.addEventListener("click", openSceneGrid);
+  if (els.sceneGridClose) els.sceneGridClose.addEventListener("click", closeSceneGrid);
+  if (els.sceneGridBackdrop) els.sceneGridBackdrop.addEventListener("click", closeSceneGrid);
+  if (els.sceneGridFront) els.sceneGridFront.addEventListener("click", () => setSceneGridView("front"));
+  if (els.sceneGridPlan) els.sceneGridPlan.addEventListener("click", () => setSceneGridView("plan"));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && els.sceneGridModal && !els.sceneGridModal.hidden) closeSceneGrid();
+  });
   if (els.beatTemplatesOpen) els.beatTemplatesOpen.addEventListener("click", openBeatTemplates);
   if (els.beatTemplatesClose) els.beatTemplatesClose.addEventListener("click", closeBeatTemplates);
   if (els.beatTemplatesBackdrop) els.beatTemplatesBackdrop.addEventListener("click", closeBeatTemplates);
@@ -14473,6 +14704,20 @@ ${cuesheetHtml}
       piece.facing = ((Number(e.target.value) % 360) + 360) % 360;   // フェーダーは-180〜180
       if (els.facingValue) els.facingValue.textContent = facingLabel(piece.facing);
       render();
+    });
+  }
+  if (els.facingLock) {
+    els.facingLock.addEventListener("click", () => {
+      const scene = sc();
+      if (!scene || scene.kind !== "scene") return;
+      checkpoint();
+      scene.facingLock = !scene.facingLock;
+      resetFacingWheelGesture();
+      updateInspector();
+      persistSoon();
+      announce(scene.facingLock
+        ? "向きをロックしました。スクロールでは回りません。"
+        : "向きロックを外しました。");
     });
   }
   /* 追加の口は一つ。種類だけ選ばせる。演者と物と光で入り口を分けると、
@@ -15372,6 +15617,7 @@ ${cuesheetHtml}
     applyLang();
     renderVenueControls();
     renderScenes();
+    if (els.sceneGridModal && !els.sceneGridModal.hidden) renderSceneGrid();
     renderCast();
     renderSets();
     renderLights();

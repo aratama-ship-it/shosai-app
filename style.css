@@ -9997,3 +9997,182 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
 .mondo-log-entry header span { font-size: 11px; opacity: 0.6; }
 .mondo-log-entry p { margin: 4px 0 0; font-size: 13px; }
 .mondo-log-axis { opacity: 0.65; font-size: 12px; }
+
+/* ---- シーンの向きロックと一覧グリッド ---- */
+.stage-facing-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stage-facing-head .stage-control-label {
+  flex: 1;
+  margin: 0;
+}
+
+.stage-facing-lock {
+  flex: 0 0 auto;
+  min-width: 28px;
+  min-height: 26px;
+  padding: 2px 5px;
+  border: 1px solid var(--line-dark);
+  border-radius: 3px;
+  background: none;
+  color: var(--milk-dim);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.stage-panel .stage-facing-lock { min-height: 26px; }
+
+.stage-facing-lock:hover,
+.stage-facing-lock:focus-visible { border-color: var(--brass); }
+
+.stage-facing-lock[aria-pressed="true"] {
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.14);
+  color: var(--milk);
+}
+
+.stage-scene-grid-open { grid-column: 1 / -1; }
+
+.stage-modal.stage-scene-grid-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(1180px, calc(100vw - 32px));
+  height: min(820px, calc(100dvh - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+}
+
+.stage-scene-grid-head { flex: 0 0 auto; }
+
+.stage-scene-grid-head-actions,
+.stage-scene-grid-views {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.stage-scene-grid-views {
+  padding: 2px;
+  border: 1px solid var(--line-dark);
+  border-radius: 3px;
+}
+
+.stage-scene-grid-views button {
+  min-height: 26px;
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: none;
+  color: var(--milk-dim);
+  font: inherit;
+  font-size: 11px;
+}
+
+.stage-scene-grid-views button[aria-pressed="true"] {
+  border-color: rgba(168, 75, 38, 0.72);
+  background: rgba(168, 75, 38, 0.16);
+  color: var(--milk);
+}
+
+.stage-scene-grid-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.stage-scene-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.stage-scene-grid-section {
+  grid-column: 1 / -1;
+  margin: 8px 0 0;
+  padding: 7px 8px 6px var(--scene-indent, 8px);
+  border-bottom: 1px solid rgba(211, 172, 89, 0.3);
+  color: var(--brass);
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.stage-scene-grid-card {
+  display: grid;
+  grid-template-rows: auto auto;
+  min-width: 0;
+  padding: 5px;
+  overflow: hidden;
+  border: 1px solid var(--line-dark);
+  border-radius: 3px;
+  background: rgba(64, 54, 45, 0.34);
+  color: var(--milk);
+  text-align: left;
+}
+
+.stage-scene-grid-card:hover,
+.stage-scene-grid-card:focus-visible { border-color: var(--brass); }
+
+.stage-scene-grid-card.is-current {
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.1);
+}
+
+.stage-scene-grid-thumb {
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(240, 231, 214, 0.08);
+  border-radius: 2px;
+  background: #0d0c0b;
+}
+
+.stage-scene-grid-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stage-scene-grid-caption {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 7px;
+  padding: 7px 3px 3px;
+}
+
+.stage-scene-grid-caption strong {
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-scene-grid-caption span {
+  color: var(--milk-dim);
+  font-size: 9.5px;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .stage-modal.stage-scene-grid-modal {
+    width: calc(100vw - 12px);
+    height: calc(100dvh - 12px);
+    max-height: calc(100dvh - 12px);
+  }
+
+  .stage-scene-grid-head {
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .stage-scene-grid-head-actions { align-items: stretch; }
+  .stage-scene-grid-views button { padding-inline: 6px; }
+  .stage-scene-grid-body { padding-inline: 10px; }
+}
