@@ -1301,6 +1301,12 @@
   <header class="stage-modal-head stage-scene-grid-head">
     <h2 id="stage-scene-grid-title">シーン一覧</h2>
     <div class="stage-scene-grid-head-actions">
+      <label class="stage-scene-grid-size" title="カードの大きさ">
+        <span aria-hidden="true">▫</span>
+        <input type="range" id="stage-scene-grid-size" min="150" max="420" step="10" value="220"
+               aria-label="カードの大きさ">
+        <span aria-hidden="true">◻</span>
+      </label>
       <div class="stage-scene-grid-views" role="group" aria-label="表示">
         <button type="button" id="stage-scene-grid-front" data-scene-grid-view="front"
                 aria-pressed="true">正面図</button>

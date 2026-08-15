@@ -1816,6 +1816,7 @@
     sceneGrid: document.getElementById("stage-scene-grid"),
     sceneGridFront: document.getElementById("stage-scene-grid-front"),
     sceneGridPlan: document.getElementById("stage-scene-grid-plan"),
+    sceneGridSize: document.getElementById("stage-scene-grid-size"),
     sceneAdd: document.getElementById("stage-scene-add"),
     sceneDup: document.getElementById("stage-scene-dup"),
     sceneDel: document.getElementById("stage-scene-del"),
@@ -10944,7 +10945,8 @@
       source.height = H;
       drawStage(source.getContext("2d"), false, view);
       const thumb = document.createElement("canvas");
-      thumb.width = 300;
+      // カードをフェーダーで最大420pxまで広げられるため、拡大してもぼけない幅で撮る
+      thumb.width = 480;
       thumb.height = Math.round((H / W) * thumb.width);
       thumb.getContext("2d").drawImage(source, 0, 0, thumb.width, thumb.height);
       return thumb.toDataURL("image/jpeg", 0.82);
@@ -11038,9 +11040,17 @@
     if (jobs.length) sceneGridFrame = requestAnimationFrame(drawChunk);
   }
 
+  // カードの列幅。プレゼン字幕サイズと同じく prefs に覚えさせる
+  function applySceneGridSize() {
+    const size = clamp(finite(prefs.sceneGridSize, 220), 150, 420);
+    if (els.sceneGrid) els.sceneGrid.style.setProperty("--scene-grid-size", `${size}px`);
+    if (els.sceneGridSize) els.sceneGridSize.value = String(size);
+  }
+
   function openSceneGrid() {
     if (!els.sceneGridModal || !els.sceneGridBackdrop) return;
     sceneGridThumbs.clear();
+    applySceneGridSize();
     els.sceneGridModal.hidden = false;
     els.sceneGridBackdrop.hidden = false;
     renderSceneGrid();
@@ -14692,6 +14702,13 @@ ${cuesheetHtml}
   if (els.sceneGridBackdrop) els.sceneGridBackdrop.addEventListener("click", closeSceneGrid);
   if (els.sceneGridFront) els.sceneGridFront.addEventListener("click", () => setSceneGridView("front"));
   if (els.sceneGridPlan) els.sceneGridPlan.addEventListener("click", () => setSceneGridView("plan"));
+  if (els.sceneGridSize) {
+    els.sceneGridSize.addEventListener("input", (e) => {
+      prefs.sceneGridSize = clamp(finite(Number(e.target.value), 220), 150, 420);
+      savePrefs();
+      applySceneGridSize();
+    });
+  }
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && els.sceneGridModal && !els.sceneGridModal.hidden) closeSceneGrid();
   });

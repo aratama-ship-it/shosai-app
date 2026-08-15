@@ -10036,12 +10036,14 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
 
 .stage-scene-grid-open { grid-column: 1 / -1; }
 
+/* シーンを見渡す窓は画面いっぱい近くまで使う。1180pxでは30場面級のショーで
+   一覧の意味（全体を一目で掴む）が薄れた（2026-08-16 本人要望）。 */
 .stage-modal.stage-scene-grid-modal {
   display: flex;
   flex-direction: column;
-  width: min(1180px, calc(100vw - 32px));
-  height: min(820px, calc(100dvh - 32px));
-  max-height: calc(100dvh - 32px);
+  width: calc(100vw - 24px);
+  height: calc(100dvh - 24px);
+  max-height: calc(100dvh - 24px);
   overflow: hidden;
 }
 
@@ -10085,9 +10087,20 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
 
 .stage-scene-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  /* 列幅はフェーダー（--scene-grid-size）で変える。既定220px */
+  grid-template-columns: repeat(auto-fill, minmax(var(--scene-grid-size, 220px), 1fr));
   gap: 10px;
 }
+
+.stage-scene-grid-size {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--milk-dim);
+  font-size: 11px;
+}
+
+.stage-scene-grid-size input { width: 130px; }
 
 .stage-scene-grid-section {
   grid-column: 1 / -1;
@@ -10173,6 +10186,7 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
   }
 
   .stage-scene-grid-head-actions { align-items: stretch; }
+  .stage-scene-grid-size input { width: 80px; }
   .stage-scene-grid-views button { padding-inline: 6px; }
   .stage-scene-grid-body { padding-inline: 10px; }
 }

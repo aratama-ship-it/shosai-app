@@ -366,6 +366,7 @@
     "次のシーンへ（↓）": "Next scene (↓)",
     "アニメーション": "Animation",
     "⊞ 一覧": "⊞ Grid",
+    "カードの大きさ": "Card size",
     "シーン一覧": "Scene grid",
     "正面図": "Front view",
     "平面図": "Plan view",
