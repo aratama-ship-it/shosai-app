@@ -14513,14 +14513,15 @@ ${cuesheetHtml}
     /* ノッチに満たない細かいdeltaも消費する。ここで素通しすると、
      * 回転の合間にページが一緒にスクロールしてしまう（実際に起きた）。 */
     event.preventDefault();
-    const notches = Math.trunc(Math.abs(facingWheelDelta) / 40) * Math.sign(facingWheelDelta);
+    // 1ノッチ=±20。40では回りが鈍かったので半分にした（2026-08-16 本人指定）
+    const notches = Math.trunc(Math.abs(facingWheelDelta) / 20) * Math.sign(facingWheelDelta);
     if (!notches) return;
 
     if (!facingWheelCheckpointed) {
       checkpoint();
       facingWheelCheckpointed = true;
     }
-    facingWheelDelta -= notches * 40;
+    facingWheelDelta -= notches * 20;
     const amount = event.shiftKey ? 5 : 15;
     // 平面図は向きを負角で描くため、下スクロールは値を引くと見た目が時計回りになる
     piece.facing = (((Number(piece.facing) || 0) - notches * amount) % 360 + 360) % 360;
