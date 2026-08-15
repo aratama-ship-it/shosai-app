@@ -2736,6 +2736,26 @@
     });
   }
 
+  /* 区切りとして置かれたセクションを、一度だけ入れ物へ引き上げる。
+   * 以前は「セクション行の下に、同じ深さの場面を並べる」ことで幕を表せた。
+   * だが畳む・色バー・合計時間はどれも「中身を持っている」ことが前提なので、
+   * 中身が空のまま下に同じ深さの場面が続くセクションは、その並びを抱える形へ直す。
+   * ★すでに中身のあるセクションには触らない。直したら印（sectionsNested）を残し、
+   *   以後は本人が組んだ形をそのままにする（毎回の読み込みで作り替えない）。 */
+  function nestLooseSections(scenes) {
+    scenes.forEach((section, i) => {
+      if (section.kind !== "section") return;
+      const next = scenes[i + 1];
+      if (!next || next.depth > section.depth) return;   // 既に中身がある／後ろが無い
+      if (section.depth + 1 > MAX_DEPTH) return;
+      for (let j = i + 1; j < scenes.length; j += 1) {
+        // 次の区切り（セクション）か、より浅い行に当たったら、そこまでが中身
+        if (scenes[j].kind !== "scene" || scenes[j].depth !== section.depth) break;
+        scenes[j].depth += 1;
+      }
+    });
+  }
+
   function normalizeState(raw) {
     if (!raw || typeof raw !== "object") return baseState(true);
     const fallback = baseState(false);
@@ -2760,6 +2780,7 @@
       scene.depth = Math.min(scene.depth, prevDepth + 1);
       prevDepth = scene.depth;
     });
+    if (!rawProject.sectionsNested) nestLooseSections(scenes);
     if (!scenes.some((x) => x.kind === "scene")) scenes.push(newScene(sceneTitle(1), false));
     const wanted = scenes.find((x) => x.id === rawProject.activeSceneId && x.kind === "scene");
     const activeId = wanted ? wanted.id : scenes.find((x) => x.kind === "scene").id;
@@ -2772,6 +2793,8 @@
         versionLabel: typeof rawProject.versionLabel === "string" && rawProject.versionLabel.trim()
           ? rawProject.versionLabel : "v1",
         parentVersionId: typeof rawProject.parentVersionId === "string" ? rawProject.parentVersionId : null,
+        // 区切り型セクションの引き上げ済みの印。付いていれば以後は組んだ形をそのままにする
+        sectionsNested: true,
         branchReason: typeof rawProject.branchReason === "string" ? rawProject.branchReason : "",
         createdAt: typeof rawProject.createdAt === "string" ? rawProject.createdAt : nowIso(),
         sceneStudyId: typeof rawProject.sceneStudyId === "string" ? rawProject.sceneStudyId : null,
