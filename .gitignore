@@ -17,3 +17,6 @@ node_modules/
 
 # 制作の書斎.app のローカルビルド成果物
 mac-app/build/
+
+# 機能実装前のローカル退避コピー（履歴はgit側にあるので追跡しない）
+*_backup_*

@@ -528,7 +528,8 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
   for (const [name, version] of [
     ["stage-venues.js", "16"],
     ["stage-venue-lines.js", "4"],
-    ["stage-sketch.js", "232"],
+    ["stage-i18n.js", "49"],
+    ["stage-sketch.js", "233"],
     ["stage-venue-editor.js", "6"],
   ]) {
     const reference = `${name}?v=${version}`;
@@ -538,5 +539,5 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
   }
   for (const page of [indexSource, stageHtml]) assert.ok(page.includes("style.css?v=168"));
   assert.ok(swSource.includes("./style.css?v=168"));
-  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v59";/);
+  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v60";/);
 });

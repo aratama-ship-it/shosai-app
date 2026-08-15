@@ -683,6 +683,7 @@
     "照明名": "Light name",
     "頼む": "Ask",
     "止める": "Stop",
+    "この答えで作り直す": "Rebuild with this answer",
     "採る": "Adopt",
     "捨てる": "Discard",
     "不明": "Unknown",

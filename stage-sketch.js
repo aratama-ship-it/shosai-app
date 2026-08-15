@@ -441,6 +441,22 @@
       || !Number.isInteger(expectedRevision) || expectedRevision < 1) return null;
     const textList = (value, max) => Array.isArray(value)
       ? value.map(stageAIText).filter(Boolean).slice(0, max) : [];
+    const clarifications = Array.isArray(raw.clarifications) ? raw.clarifications.slice(0, 20).map((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+      const assetType = item.assetType === "performer" || item.assetType === "set"
+        ? item.assetType : "";
+      const id = stageAIText(item.id);
+      const assetName = stageAIText(item.assetName);
+      const text = stageAIText(item.text);
+      const options = Array.isArray(item.options) ? item.options.slice(0, 20).map((option) => {
+        if (!option || typeof option !== "object" || Array.isArray(option)) return null;
+        const assetId = stageAIText(option.assetId);
+        const label = stageAIText(option.label);
+        return assetId && label ? { assetId, label } : null;
+      }).filter(Boolean) : [];
+      return id && assetType && assetName && text && options.length
+        ? { id, assetType, assetName, text, options } : null;
+    }).filter(Boolean) : [];
     const diff = Array.isArray(raw.diff) ? raw.diff.slice(0, 40).map((item, index) => {
       if (!item || typeof item !== "object" || Array.isArray(item)) return null;
       const lines = textList(item.lines, 20);
@@ -465,6 +481,7 @@
       diff,
       warnings: textList(raw.warnings, 40),
       questions: textList(raw.questions, 20),
+      clarifications,
     };
   };
   const STAGE_AI_PANEL_MODEL = Object.freeze({
@@ -487,6 +504,23 @@
     },
     canAdopt(plan) {
       return Boolean(plan && plan.status === "proposed");
+    },
+    canReplanWithResolutions(plan, selections) {
+      if (!plan || plan.status !== "needs_clarification"
+        || !Array.isArray(plan.clarifications) || !plan.clarifications.length) return false;
+      return plan.clarifications.every((item) => selections && selections.has(item.id));
+    },
+    resolutionsFromSelections(plan, selections) {
+      if (!plan || !Array.isArray(plan.clarifications) || !selections) return [];
+      return plan.clarifications.map((item) => {
+        const assetId = selections.get(item.id);
+        const option = item.options.find((candidate) => candidate.assetId === assetId);
+        return option ? {
+          assetType: item.assetType,
+          assetName: item.assetName,
+          assetId: option.assetId,
+        } : null;
+      }).filter(Boolean);
     },
     overlayDiff(plan, projectId, sceneId) {
       if (!plan || plan.projectId !== projectId || !sceneId || !Array.isArray(plan.diff)) return null;
@@ -1701,6 +1735,7 @@
     askDraftBody: document.getElementById("stage-ask-draft-body"),
     askWarning: document.getElementById("stage-ask-warning"),
     askAdopt: document.getElementById("stage-ask-adopt"),
+    askResolve: document.getElementById("stage-ask-resolve"),
     askDiscard: document.getElementById("stage-ask-discard"),
     askError: document.getElementById("stage-ask-error"),
     askAgentInfo: document.getElementById("stage-ask-agent-info"),
@@ -12575,6 +12610,7 @@ ${cuesheetHtml}
      「採る」もMCPのconfirmed経路を使い、JS側で差分適用を作り直さない。
      plan.diffの座標差分は保存データへ混ぜず、render時だけ盤面へ重ねる。 */
   let stageAskPlan = null;
+  let stageAskClarificationSelections = new Map();
   let stageAskTimer = null;
   let stageAskStartedAt = 0;
   let stageAskRunToken = 0;
@@ -12596,6 +12632,7 @@ ${cuesheetHtml}
     if (options.invalidate) stageAskRunToken += 1;
     stopStageAskTimer();
     stageAskPlan = null;
+    stageAskClarificationSelections = new Map();
     if (options.clearInput && els.askInput) els.askInput.value = "";
     setStageAskMode("idle");
   }
@@ -12641,9 +12678,44 @@ ${cuesheetHtml}
     host.append(heading, list);
   }
 
-  function renderStageAskPlan(plan) {
+  function renderStageAskClarifications(plan) {
+    if (!els.askDraftBody || !Array.isArray(plan.clarifications) || !plan.clarifications.length) return false;
+    const heading = document.createElement("h3");
+    heading.textContent = "確認が必要です";
+    els.askDraftBody.append(heading);
+    plan.clarifications.forEach((clarification) => {
+      const block = document.createElement("div");
+      block.className = "stage-ai-clarification";
+      const text = document.createElement("p");
+      text.className = "stage-profile-hint";
+      text.textContent = clarification.text;
+      const row = document.createElement("div");
+      row.className = "stage-action-row";
+      clarification.options.forEach((option) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn-quiet";
+        button.textContent = option.label;
+        button.setAttribute(
+          "aria-pressed",
+          String(stageAskClarificationSelections.get(clarification.id) === option.assetId)
+        );
+        button.addEventListener("click", () => {
+          stageAskClarificationSelections.set(clarification.id, option.assetId);
+          renderStageAskPlan(plan, { keepSelections: true });
+        });
+        row.append(button);
+      });
+      block.append(text, row);
+      els.askDraftBody.append(block);
+    });
+    return true;
+  }
+
+  function renderStageAskPlan(plan, options = {}) {
     stopStageAskTimer();
     stageAskPlan = plan;
+    if (!options.keepSelections) stageAskClarificationSelections = new Map();
     clearStageAskError();
     if (els.askDraftBody) {
       els.askDraftBody.innerHTML = "";
@@ -12659,7 +12731,9 @@ ${cuesheetHtml}
         diff.lines
       ));
       if (plan.status === "needs_clarification") {
-        appendStageAskList(els.askDraftBody, "確認が必要です", plan.questions);
+        if (!renderStageAskClarifications(plan)) {
+          appendStageAskList(els.askDraftBody, "確認が必要です", plan.questions);
+        }
       }
     }
     if (els.askWarning) {
@@ -12669,16 +12743,28 @@ ${cuesheetHtml}
         : "";
     }
     if (els.askAdopt) els.askAdopt.hidden = !STAGE_AI_PANEL_MODEL.canAdopt(plan);
+    if (els.askResolve) {
+      const canResolve = STAGE_AI_PANEL_MODEL.canReplanWithResolutions(
+        plan,
+        stageAskClarificationSelections
+      );
+      els.askResolve.hidden = !(plan.status === "needs_clarification"
+        && Array.isArray(plan.clarifications) && plan.clarifications.length);
+      els.askResolve.disabled = !canResolve;
+    }
     setStageAskMode("draft");
     render();
   }
 
-  function stageAskPlanPrompt(projectId, revision, request) {
+  function stageAskPlanPrompt(projectId, revision, request, resolutions = []) {
     return [
       "舞台スケッチの現在ショーに対する編集計画を1件作成してください。",
       `projectId: ${projectId}`,
       `expectedRevision: ${revision}`,
       `本人の指示（この文字列をrequestへそのまま入れる）: ${JSON.stringify(request)}`,
+      ...(resolutions.length
+        ? [`本人の答え（この配列を plan_edit の resolutions へそのまま入れる）: ${JSON.stringify(resolutions)}`]
+        : []),
       "stage_sketch MCPだけを使い、必要なproject/sceneを読んで指示をoperationsへ構造化し、",
       "stage_sketch_plan_edit を呼んでください。",
       "入力検証エラーで失敗した場合は、エラー文に従って入力を直し、最大3回まで再試行してください。",
@@ -12704,7 +12790,7 @@ ${cuesheetHtml}
     ].join("\n");
   }
 
-  async function requestStageAskPlan() {
+  async function requestStageAskPlan(resolutions = []) {
     const bridge = window.stageSketchBridge;
     const request = els.askInput ? els.askInput.value.trim() : "";
     if (!request || !STAGE_AI_PANEL_MODEL.isBridgeAvailable(bridge)) return;
@@ -12729,7 +12815,12 @@ ${cuesheetHtml}
         bridge,
         currentDocument,
         request,
-        stageAskPlanPrompt,
+        (projectId, revision, promptRequest) => stageAskPlanPrompt(
+          projectId,
+          revision,
+          promptRequest,
+          resolutions
+        ),
         () => token === stageAskRunToken,
         showStageAskError
       );
@@ -12752,6 +12843,17 @@ ${cuesheetHtml}
         error
       ));
     }
+  }
+
+  function replanStageAskWithResolutions() {
+    const plan = stageAskPlan;
+    if (!STAGE_AI_PANEL_MODEL.canReplanWithResolutions(plan, stageAskClarificationSelections)) return;
+    const resolutions = STAGE_AI_PANEL_MODEL.resolutionsFromSelections(
+      plan,
+      stageAskClarificationSelections
+    );
+    stageAskClarificationSelections = new Map();
+    requestStageAskPlan(resolutions);
   }
 
   async function stageAskExportForPlan(bridge, planId) {
@@ -12923,8 +13025,9 @@ ${cuesheetHtml}
     if (!els.askPanel || !STAGE_AI_PANEL_MODEL.isBridgeAvailable(window.stageSketchBridge)) return;
     setStageAskMode("idle");
     STAGE_AI_PANEL_MODEL.renderAgentInfo(window.stageSketchBridge, els.askAgentInfo);
-    els.askRun?.addEventListener("click", requestStageAskPlan);
+    els.askRun?.addEventListener("click", () => requestStageAskPlan());
     els.askStop?.addEventListener("click", stopStageAskRun);
+    els.askResolve?.addEventListener("click", replanStageAskWithResolutions);
     els.askAdopt?.addEventListener("click", adoptStageAskPlan);
     els.askDiscard?.addEventListener("click", discardStageAskPlan);
     els.askInput?.addEventListener("keydown", (event) => {
