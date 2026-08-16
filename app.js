@@ -4158,7 +4158,9 @@
   }
 
   function route() {
-    const h = location.hash || "#db";
+    /* 開いた直後の画面は舞台スケッチ（2026-08-16 本人指定）。
+       URLに#が付いているときは従来どおりその画面を尊重する。 */
+    const h = location.hash || "#stage";
     if (h.startsWith("#db/")) {
       showView("db");
       selectWork(decodeURIComponent(h.slice(4)));
