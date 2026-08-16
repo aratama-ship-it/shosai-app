@@ -759,7 +759,7 @@
     bench: 0.45,
     stool: 0.62,
     wall: 2.5,
-    trapeze: 0.06, cyrwheel: 1.9, diabolo: 0.13, pole: 6, teeter: 0.75, tissue: 7,
+    trapeze: 0.06, cyrwheel: 1.9, diabolo: 0.26, pole: 6, teeter: 0.75, tissue: 7,
     wire: 1.2, suitcase: 0.44, trampoline: 0.95, cane: 0.75, car: 1.45,
     seri: 2.7,
     sphere: 1.2,
@@ -777,7 +777,10 @@
      * トラピーズは吊りバーの幅、ティシューは布の長さ、綱は張る長さ。 */
     trapeze: { w: 0.7, d: 0.06, h: 0.06 },
     cyrwheel: { dia: 1.9 },
-    diabolo: { dia: 0.115, w: 0.13 },
+    /* 実寸は直径11.5cm・全長13cmだが、12m間口の図では点になって形が読めない。
+     * 舞台の絵として「そこにディアボロがある」と伝わる大きさを優先し、
+     * 既定は実寸の2倍にする（本人指定）。実寸で置きたいときはつまみで戻せる。 */
+    diabolo: { dia: 0.23, w: 0.26 },
     pole: { w: 0.05, d: 0.05, h: 6 },
     teeter: { w: 3.6, d: 0.45, h: 0.75 },
     tissue: { w: 0.3, d: 0.06, h: 7 },
