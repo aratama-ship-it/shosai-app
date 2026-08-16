@@ -362,8 +362,8 @@
     /* ---- シーン ---- */
     "◀ 前のシーン": "◀ Previous",
     "次のシーン ▶": "Next ▶",
-    "前のシーンへ（↑）": "Previous scene (↑)",
-    "次のシーンへ（↓）": "Next scene (↓)",
+    "前のシーンへ（↑ または ←）": "Previous scene (↑ or ←)",
+    "次のシーンへ（↓ または →）": "Next scene (↓ or →)",
     "アニメーション": "Animation",
     "⊞ 一覧": "⊞ Grid",
     "▸ 畳む": "▸ Fold",

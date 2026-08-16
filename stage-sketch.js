@@ -15599,14 +15599,19 @@ ${cuesheetHtml}
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    /* 左右も同じ送りにする。絵の上の送りが「◀ 前のシーン／次のシーン ▶」と
+     * 横に並んでいるので、左右で送れないほうが探しにくい。
+     * 先に走る二つ（駒の微調整・一覧での深さ変え）が preventDefault するので、
+     * そちらに用があるときはここへ来ない。 */
+    const STEPS = { ArrowUp: -1, ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1 };
+    if (!STEPS[event.key]) return;
     if (event.defaultPrevented) return;
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     const view = document.getElementById("view-stage");
     if (!view || view.hidden) return;
     if (isTyping(event.target)) return;
     event.preventDefault();
-    stepScene(event.key === "ArrowDown" ? 1 : -1);
+    stepScene(STEPS[event.key]);
   });
 
   if (els.sceneAdd) els.sceneAdd.addEventListener("click", () => addScene(false));
