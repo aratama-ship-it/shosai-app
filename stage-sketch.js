@@ -737,6 +737,7 @@
     wall: "壁",
     trapeze: "トラピーズ",
     cyrwheel: "シルホイール",
+    diabolo: "ディアボロ",
     pole: "チャイニーズポール",
     teeter: "ティーターボード",
     tissue: "エアリアルティシュー",
@@ -758,7 +759,7 @@
     bench: 0.45,
     stool: 0.62,
     wall: 2.5,
-    trapeze: 0.06, cyrwheel: 1.9, pole: 6, teeter: 0.75, tissue: 7,
+    trapeze: 0.06, cyrwheel: 1.9, diabolo: 0.13, pole: 6, teeter: 0.75, tissue: 7,
     wire: 1.2, suitcase: 0.44, trampoline: 0.95, cane: 0.75, car: 1.45,
     seri: 2.7,
     sphere: 1.2,
@@ -776,6 +777,7 @@
      * トラピーズは吊りバーの幅、ティシューは布の長さ、綱は張る長さ。 */
     trapeze: { w: 0.7, d: 0.06, h: 0.06 },
     cyrwheel: { dia: 1.9 },
+    diabolo: { dia: 0.115, w: 0.13 },
     pole: { w: 0.05, d: 0.05, h: 6 },
     teeter: { w: 3.6, d: 0.45, h: 0.75 },
     tissue: { w: 0.3, d: 0.06, h: 7 },
@@ -810,6 +812,7 @@
     bench: { h: "座面までの高さ" },
     stool: { h: "座面までの高さ" },
     trapeze: { w: "バーの幅" },
+    diabolo: { dia: "カップの直径", w: "軸を含む長さ" },
     pole: { h: "ポールの高さ" },
     teeter: { w: "板の長さ", h: "支点の高さ" },
     tissue: { h: "布の長さ", w: "布の間隔" },
@@ -844,7 +847,7 @@
   const SET_KINDS = {
     block: "台・箱", table: "テーブル", chair: "椅子", bench: "ベンチ", stool: "スツール",
     wall: "壁", sphere: "球",
-    trapeze: "トラピーズ", cyrwheel: "シルホイール", pole: "チャイニーズポール",
+    trapeze: "トラピーズ", cyrwheel: "シルホイール", diabolo: "ディアボロ", pole: "チャイニーズポール",
     teeter: "ティーターボード", tissue: "エアリアルティシュー", wire: "綱渡り",
     suitcase: "スーツケース", trampoline: "トランポリン", cane: "ハンドバランス用cane",
     car: "車", seri: "せり",
@@ -888,7 +891,7 @@
   const lightKindOf = (item) => (item && LIGHT_KINDS[item.lightKind] ? item.lightKind : "hang");
   const SET_KIND_ORDER = [
     "block", "table", "chair", "bench", "stool", "wall", "sphere",
-    "trapeze", "cyrwheel", "pole", "teeter", "tissue", "wire",
+    "trapeze", "cyrwheel", "diabolo", "pole", "teeter", "tissue", "wire",
     "suitcase", "trampoline", "cane", "car", "seri",
   ];
   /* ---------- 演者の骨格と姿勢 ----------
@@ -1561,7 +1564,7 @@
   const TILT_DOWN = 16;
   const SOLID_TYPES = {
     block: true, table: true, chair: true, bench: true, stool: true, wall: true,
-    trapeze: true, cyrwheel: true, pole: true, teeter: true, tissue: true, wire: true,
+    trapeze: true, cyrwheel: true, diabolo: true, pole: true, teeter: true, tissue: true, wire: true,
     suitcase: true, trampoline: true, cane: true, car: true, seri: true,
   };
   const CHAIR_W = 0.5;
@@ -1571,6 +1574,10 @@
     const d = pieceDims(piece);
     if (!d) return null;
     if (piece.type === "chair") return { w: d.h * CHAIR_W, d: d.h * CHAIR_D };
+    // ディアボロは直径も持つので、球などの共通分岐より先に置き方を反映する
+    if (piece.type === "diabolo") {
+      return piece.diaboloMode === "stand" ? { w: d.dia, d: d.dia } : { w: d.w, d: d.dia };
+    }
     if (d.dia !== undefined) return { w: d.dia, d: d.dia };
     return { w: d.w, d: d.d };
   }
@@ -1838,6 +1845,7 @@
     poleH: document.getElementById("stage-pole-h"),
     poleHValue: document.getElementById("stage-pole-h-value"),
     trapControls: document.getElementById("stage-trap-controls"),
+    diaboloControls: document.getElementById("stage-diabolo-controls"),
     tissueControls: document.getElementById("stage-tissue-controls"),
     tissueH: document.getElementById("stage-tissue-h"),
     tissueHValue: document.getElementById("stage-tissue-h-value"),
@@ -1872,6 +1880,8 @@
     arrangeSelect: document.getElementById("stage-arrange-select"),
     trapSit: document.getElementById("stage-trap-sit"),
     trapHang: document.getElementById("stage-trap-hang"),
+    diaboloLay: document.getElementById("stage-diabolo-lay"),
+    diaboloStand: document.getElementById("stage-diabolo-stand"),
     poseLabel: document.getElementById("stage-pose-label"),
     poseModal: document.getElementById("stage-pose"),
     poseBackdrop: document.getElementById("stage-pose-backdrop"),
@@ -2446,6 +2456,8 @@
       tissueH: clamp(finite(piece.tissueH, 4), 0, 10),
       // トラピーズの乗り方（座る／ぶら下がる）。降りている間も持ち歩く
       trapMode: piece.trapMode === "hang" ? "hang" : "sit",
+      // ディアボロの置き方。古い保存や未指定は、舞台で形が読みやすい横置きに揃える
+      diaboloMode: piece.diaboloMode === "stand" ? "stand" : "lay",
       // 姿勢。用意したものの中から選ぶ（形そのものは編集させない）
       pose: POSES.some((p) => p.id === piece.pose) ? piece.pose : "stand",
       /* 動線。この場面のあいだに、その駒がどこへ動くか。
@@ -2510,12 +2522,19 @@
     const k = clamp(finite(piece && piece.size, 100), 55, 180) / 100;
     const out = {};
     Object.keys(base).forEach((key) => {
-      const meta = DIM_META[key];
+      const meta = dimMeta(type, key);
       const fallback = key === "lift" ? base[key] : base[key] * k;
       out[key] = clamp(finite(old ? old[key] : fallback, base[key]), meta.min, meta.max);
     });
     if (fixed) Object.assign(out, fixed);
     return out;
+  }
+
+  /* ディアボロは一般的な家具より小さい。共通下限を下げると既存道具の
+   * つまみの範囲まで変わるため、この種類だけ実寸を保持できる下限にする。 */
+  function dimMeta(kind, key) {
+    const meta = DIM_META[key];
+    return kind === "diabolo" ? Object.assign({}, meta, { min: 0.05, max: 0.5 }) : meta;
   }
 
   // 寸法の正本。舞台セットに登録したものは、そちらを引く。
@@ -2528,7 +2547,7 @@
     host.innerHTML = "";
     if (!dims) return;
     Object.keys(dims).forEach((key) => {
-      const meta = DIM_META[key];
+      const meta = dimMeta(kind, key);
       if (!meta) return;
       // 壁の厚みは固定。触らせないので、つまみも出さない
       if (kind === "wall" && key === "d") return;
@@ -2665,7 +2684,7 @@
    * 床からの高さ（base）と支えている駒（supportId）は置き場所から毎回引き直す。
    * 丸ごと控えると、シーンの数だけ同じ値の写しが保存に溜まる。 */
   const STASH_KEYS = ["type", "u", "v", "size", "facing", "pose",
-    "poleSide", "poleH", "tissueH", "trapMode", "seriH", "glow", "beam", "route", "locked", "name"];
+    "poleSide", "poleH", "tissueH", "trapMode", "diaboloMode", "seriH", "glow", "beam", "route", "locked", "name"];
 
   function normalizeStash(raw) {
     const out = {};
@@ -4829,6 +4848,24 @@
       const r = d.dia / 2;
       return [{ kind: "ring", c: [0, r, 0], r, w: 0.05, tone: "gear" }];
     }
+    if (piece.type === "diabolo") {
+      const r = d.dia / 2;
+      const len = d.w;
+      if (piece.diaboloMode === "stand") {
+        // 軸を垂直にし、下側のカップの縁を床へ置く
+        return [
+          { kind: "ring", plane: "xz", c: [0, 0.004, 0], r, w: 0.012, tone: "gear" },
+          { kind: "ring", plane: "xz", c: [0, len, 0], r, w: 0.012, tone: "gear" },
+          { kind: "line", a: [0, 0, 0], b: [0, len, 0], w: 0.02, tone: "gear" },
+        ];
+      }
+      // 横置きは左右のカップと、その間を通る軸で砂時計の形を見せる
+      return [
+        { kind: "ring", plane: "yz", c: [-len / 2, r, 0], r, w: 0.012, tone: "gear" },
+        { kind: "ring", plane: "yz", c: [len / 2, r, 0], r, w: 0.012, tone: "gear" },
+        { kind: "line", a: [-len / 2, r, 0], b: [len / 2, r, 0], w: 0.02, tone: "gear" },
+      ];
+    }
     if (piece.type === "pole") {
       /* 床から立つ一本のポール。足元の台座と、頂部の受けを持つ。
        * 太さは0.05mまでに抑える（前の既定0.06で保存された駒にも効かせる）。
@@ -5265,9 +5302,11 @@
       const steps = 32;
       for (let i = 0; i <= steps; i += 1) {
         const t = (i / steps) * Math.PI * 2;
-        // 既定は正面に立つ輪。plane:"xz" なら床と平行に寝た輪
+        // 既定は正面に立つ輪。xz は床と平行、yz は横向きの輪
         const q = part.plane === "xz"
           ? riggingPoint(piece, part.c[0] + Math.cos(t) * part.r, part.c[1], part.c[2] + Math.sin(t) * part.r, L)
+          : part.plane === "yz"
+            ? riggingPoint(piece, part.c[0], part.c[1] + Math.sin(t) * part.r, part.c[2] + Math.cos(t) * part.r, L)
           : riggingPoint(piece, part.c[0] + Math.cos(t) * part.r, part.c[1] + Math.sin(t) * part.r, part.c[2], L);
         if (i) target.lineTo(q.x, q.y); else target.moveTo(q.x, q.y);
       }
@@ -5573,6 +5612,44 @@
       target.lineTo(0, halfD * 1.35);
       target.closePath();
       target.fill();
+    } else if (piece.type === "diabolo") {
+      /* 実寸だけでは指で掴めないため、形を保ったまま画面上の下限を設ける。
+         向きは正面図と同じ符号で回し、置き方を替えても一緒に追従させる。 */
+      const d = pieceDims(piece);
+      const stand = piece.diaboloMode === "stand";
+      const r = Math.max(stand ? 6 : 5, (d.dia / 2) * L.pxPerM);
+      target.translate(pos.x, pos.y);
+      target.rotate(-((piece.facing || 0) * Math.PI) / 180);
+      target.fillStyle = piece.color;
+      target.strokeStyle = "rgba(0,0,0,0.4)";
+      target.lineWidth = 1.4;
+      if (stand) {
+        target.beginPath();
+        target.arc(0, 0, r, 0, Math.PI * 2);
+        target.fill();
+        target.stroke();
+        target.fillStyle = "rgba(13,12,11,0.58)";
+        target.beginPath();
+        target.arc(0, 0, r * 0.3, 0, Math.PI * 2);
+        target.fill();
+      } else {
+        const half = Math.max(7, (d.w / 2) * L.pxPerM);
+        target.strokeStyle = piece.color;
+        target.lineWidth = 3;
+        target.beginPath();
+        target.moveTo(-half, 0);
+        target.lineTo(half, 0);
+        target.stroke();
+        target.fillStyle = piece.color;
+        target.strokeStyle = "rgba(0,0,0,0.4)";
+        target.lineWidth = 1.4;
+        [-half, half].forEach((x) => {
+          target.beginPath();
+          target.arc(x, 0, r, 0, Math.PI * 2);
+          target.fill();
+          target.stroke();
+        });
+      }
     } else if (piece.type === "trapeze") {
       /* 吊りバー。真上からは0.06mの線にしかならず、見えない・掴めないと
          言われた。バーを太い丸端の線で、ロープの吊り点を両端の丸で描く。 */
@@ -14083,6 +14160,14 @@ ${cuesheetHtml}
         els.trapHang.setAttribute("aria-pressed", String(piece.trapMode === "hang"));
       }
     }
+    if (els.diaboloControls) {
+      const onDiabolo = piece.type === "diabolo";
+      els.diaboloControls.hidden = !onDiabolo;
+      if (onDiabolo) {
+        els.diaboloLay.setAttribute("aria-pressed", String(piece.diaboloMode !== "stand"));
+        els.diaboloStand.setAttribute("aria-pressed", String(piece.diaboloMode === "stand"));
+      }
+    }
     if (els.tissueControls) {
       const onTissue = mount === "tissue";
       els.tissueControls.hidden = !onTissue;
@@ -16647,6 +16732,20 @@ ${cuesheetHtml}
     };
     els.trapSit.addEventListener("click", () => setTrapMode("sit"));
     els.trapHang.addEventListener("click", () => setTrapMode("hang"));
+  }
+  if (els.diaboloLay) {
+    const setDiaboloMode = (mode) => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== "diabolo") return;
+      checkpoint();
+      piece.diaboloMode = mode;
+      updateInspector();
+      render();
+      persistSoon();
+      announce(mode === "stand" ? "ディアボロを縦置きにしました。" : "ディアボロを横置きにしました。");
+    };
+    els.diaboloLay.addEventListener("click", () => setDiaboloMode("lay"));
+    els.diaboloStand.addEventListener("click", () => setDiaboloMode("stand"));
   }
   if (els.planZoomIn) els.planZoomIn.addEventListener("click", () => zoomBy("plan", 1.35));
   if (els.planZoomOut) els.planZoomOut.addEventListener("click", () => zoomBy("plan", 1 / 1.35));

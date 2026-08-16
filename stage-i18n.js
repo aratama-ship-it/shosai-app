@@ -502,6 +502,11 @@
     "トラピーズの乗り方": "On the trapeze",
     "座る": "Sit",
     "ぶら下がる": "Hang",
+    "ディアボロの置き方": "How the diabolo sits",
+    "横置き": "On its side",
+    "縦置き": "On end",
+    "カップの直径": "Cup diameter",
+    "軸を含む長さ": "Length including the axle",
     "布に掴まる": "Holding the silks",
     "掴む高さ": "Grip height on the silks",
     "向き": "Facing",
@@ -756,7 +761,7 @@
     setKind: {
       block: "Platform / box", table: "Table", chair: "Chair", bench: "Bench",
       stool: "Stool", wall: "Wall", sphere: "Sphere",
-      trapeze: "Trapeze", cyrwheel: "Cyr wheel", pole: "Chinese pole",
+      trapeze: "Trapeze", cyrwheel: "Cyr wheel", diabolo: "Diabolo", pole: "Chinese pole",
       teeter: "Teeterboard", tissue: "Aerial silks", wire: "Tightwire",
       suitcase: "Suitcase", trampoline: "Trampoline", cane: "Handbalancing canes",
       car: "Car", seri: "Stage lift", light: "Light",
@@ -764,7 +769,7 @@
     pieceType: {
       performer: "Performer", block: "Platform / box", table: "Table", chair: "Chair",
       bench: "Bench", stool: "Stool", wall: "Wall", sphere: "Sphere",
-      trapeze: "Trapeze", cyrwheel: "Cyr wheel", pole: "Chinese pole",
+      trapeze: "Trapeze", cyrwheel: "Cyr wheel", diabolo: "Diabolo", pole: "Chinese pole",
       teeter: "Teeterboard", tissue: "Aerial silks", wire: "Tightwire",
       suitcase: "Suitcase", trampoline: "Trampoline", cane: "Handbalancing canes",
       car: "Car", seri: "Stage lift", light: "Light",
@@ -803,6 +808,7 @@
       "stool.h": "Seat height",
       "wall.w": "Width", "wall.h": "Height",
       "trapeze.w": "Bar width",
+      "diabolo.dia": "Cup diameter", "diabolo.w": "Length including the axle",
       "pole.h": "Pole height",
       "teeter.w": "Board length", "teeter.h": "Fulcrum height",
       "tissue.h": "Drop length", "tissue.w": "Gap between drops",
@@ -874,6 +880,8 @@
    * 具体的な文を先に、`〜を…にしました` のような広い網を後に置くこと。
    * 名前そのもの（姿勢・席・劇場など）は呼び出し側が訳語ヘルパーで既に選んでいる。 */
   const SAY = [
+    [/^ディアボロを縦置きにしました。$/, "Stood the diabolo on end."],
+    [/^ディアボロを横置きにしました。$/, "Laid the diabolo on its side."],
     [/^光の意図を更新しました。$/, "Updated the lighting intention."],
     [/^光の意図を消しました。一つ戻すで復元できます。$/, "Removed the lighting intention. Undo restores it."],
     [/^光の意図を図に重ねました。作図の印で、本番の見え方ではありません。$/,
