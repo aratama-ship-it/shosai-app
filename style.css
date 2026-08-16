@@ -10255,15 +10255,25 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
 /* ===== 舞台スケッチ: セクションの色・一括開閉・後からまとめる =====
    字下げの空白だけでは親が途切れて見えるため、14pxごとの溝へ親の色を通す。 */
 .stage-scene-head {
-  /* 色溝・取っ手・名前の後ろへ、深さ2個・鉛筆・まとめるを一列で置く。 */
-  grid-template-columns: auto 16px minmax(0, 1fr) repeat(4, auto);
+  /* 取っ手・名前の後ろへ、深さ2個・鉛筆・まとめるを一列で置く。
+     色溝は行の左端へ敷くので、ここには持たない。 */
+  grid-template-columns: 16px minmax(0, 1fr) repeat(4, auto);
+}
+
+/* 行の左に溝を空け、そこへバーを行の高さいっぱいに敷く。
+   見出しの中の一列にすると、開いている背の高い行で線が途中で切れる。 */
+.stage-scene-row {
+  position: relative;
+  padding-left: calc(3px + var(--scene-gutter, 0px));
 }
 
 .stage-scene-bars {
-  position: relative;
-  align-self: stretch;
-  min-height: 40px;
-  flex: 0 0 auto;
+  position: absolute;
+  left: 3px;
+  top: 0;
+  bottom: 0;
+  width: var(--scene-gutter, 0px);
+  pointer-events: none;
 }
 
 .stage-scene-bar-mark {
@@ -10280,6 +10290,14 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
   left: calc(var(--bar-slot) * 14px + 4px);
   width: 5px;
   opacity: 1;
+}
+
+/* 行の隙間（下の余白4px＋並びの隙間7px＋枠線2px＝13px）を跨いで、
+   下の行のバーへ繋ぐ。幕の終わりの行には付けないので線は垂れない。 */
+.stage-scene-bar-mark.is-linked {
+  bottom: -13px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .stage-scene-chip.is-section .stage-scene-name {

@@ -10892,11 +10892,12 @@
     announce(`${sceneCount}シーンをまとめました。`);
   }
 
+  /* 色バーは行の中の一列ではなく、行の左端に敷いた溝へ置く。
+   * 見出しの中に入れると、開いている行（メモや動線のボタンを抱えた背の高い行）で
+   * 上の数十pxしか塗られず、幕の線がそこで切れて見える。 */
   function makeSceneBars(scene, ancestors) {
     const bars = document.createElement("span");
     bars.className = "stage-scene-bars";
-    const slots = scene.depth + (scene.kind === "section" ? 1 : 0);
-    bars.style.width = `${slots * 14}px`;
     bars.setAttribute("aria-hidden", "true");
     for (let depth = 0; depth < scene.depth; depth += 1) {
       const section = ancestors[depth];
@@ -10915,6 +10916,22 @@
       bars.append(own);
     }
     return bars;
+  }
+
+  /* 行と行の隙間でバーが切れないよう、下の行へ続く分だけ伸ばす。
+   * 「次に見えている行が、その溝より深いか」で判断する。深くなければ
+   * そこがその幕の終わりなので伸ばさない（次の幕の頭まで線が垂れない）。 */
+  function linkSceneBars() {
+    if (!els.sceneList) return;
+    const rows = [...els.sceneList.children].filter((row) => row.dataset && row.dataset.sceneId);
+    rows.forEach((row, i) => {
+      const next = rows[i + 1];
+      const nextDepth = next ? Number(next.dataset.depth) : -1;
+      row.querySelectorAll(".stage-scene-bar-mark").forEach((mark) => {
+        const slot = Number(mark.style.getPropertyValue("--bar-slot"));
+        mark.classList.toggle("is-linked", nextDepth > slot);
+      });
+    });
   }
 
   function renderScenes() {
@@ -10940,6 +10957,10 @@
         const row = document.createElement("div");
         row.className = `stage-scene-row${isOpen ? " is-open" : ""}${scene.id === wrapPickStartId ? " is-wrap-start" : ""}`;
         row.dataset.sceneId = scene.id;
+        row.dataset.depth = String(scene.depth);
+        // 左端に空ける溝。バーはこの中へ、行の高さいっぱいに敷く
+        const slots = scene.depth + (scene.kind === "section" ? 1 : 0);
+        row.style.setProperty("--scene-gutter", `${slots * 14}px`);
 
         const head = document.createElement("div");
         head.className = "stage-scene-head";
@@ -11020,7 +11041,7 @@
           openScene(scene.id);
           focusSceneChip(scene.id);
         });
-        head.append(bars, grip, button);
+        head.append(grip, button);
         // 深さと名前の操作は選んでいる行にだけ。全行に出すと並びが読みにくくなる
         if (isCursor && !wrapPickStartId) {
           const outdent = document.createElement("button");
@@ -11067,7 +11088,7 @@
             head.append(wrap);
           }
         }
-        row.append(head);
+        row.append(bars, head);
 
         if (scene.kind === "scene" && scene.lightingIntent) {
           const lightSummary = document.createElement("div");
@@ -11193,6 +11214,7 @@
         }
         els.sceneList.append(row);
       });
+      linkSceneBars();
     }
     if (els.projectTitle && document.activeElement !== els.projectTitle) els.projectTitle.value = p.title;
     if (els.versionLabel && document.activeElement !== els.versionLabel) els.versionLabel.value = p.versionLabel;
