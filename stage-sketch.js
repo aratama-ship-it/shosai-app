@@ -12984,12 +12984,21 @@ ${cuesheetHtml}
       importFailureNotice("ファイルを読めませんでした。iCloudの場合は一度ダウンロードしてから選んでください。");
     };
     reader.onload = () => {
+      const text = String(reader.result);
       let parsed = null;
       try {
-        parsed = JSON.parse(String(reader.result));
+        parsed = JSON.parse(text);
       } catch (error) {
-        console.error("stage import: JSONとして読めませんでした", error);
-        importFailureNotice("読み込めませんでした。書き出したJSONファイル（.json）を選んでください。");
+        console.error("stage import: JSONとして読めませんでした", error, { fileName: file.name, fileSize: file.size, readLength: text.length, head: text.slice(0, 80) });
+        /* 中身が空＝iCloudの未ダウンロード（プレースホルダ）をファイルとして
+           選んだときの典型。原因が全く違うので、文言を分けて出す。 */
+        if (!text.trim()) {
+          importFailureNotice(`「${file.name}」は中身が空のまま読めました（iCloudから未ダウンロードの可能性）。`
+            + "ファイルアプリ／Finderで一度開いて中身が見えることを確認してから、もう一度選んでください。");
+        } else {
+          importFailureNotice(`「${file.name}」をJSONとして読めませんでした（${text.length}文字・先頭「${text.slice(0, 20)}…」）。`
+            + "書き出したJSONファイル（.json）を選んでください。");
+        }
         return;
       }
       const incoming = parsed && parsed.project ? parsed : { project: parsed };
