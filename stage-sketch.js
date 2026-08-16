@@ -14917,9 +14917,27 @@ ${cuesheetHtml}
     facingWheelCheckpointed = false;
   }
 
+  /* 選んだ駒の上か、その少し外側にカーソルがあるときだけ回す。
+   * 選んでいれば絵のどこでも回っていたため、離れた所を送るつもりの
+   * スクロールで向きが変わってしまっていた（本人指摘）。 */
+  const FACING_WHEEL_PAD = 28;
+
+  function onFacingWheelTarget(event, piece) {
+    const el = event.currentTarget || event.target;
+    if (!el || !el.getBoundingClientRect) return false;
+    const L = layout(viewOf(el));
+    const point = pointFromEvent(event);
+    const b = selectionBounds(piece, L);
+    if (!b) return false;
+    return point.x >= b.x - FACING_WHEEL_PAD && point.x <= b.x + b.w + FACING_WHEEL_PAD
+      && point.y >= b.y - FACING_WHEEL_PAD && point.y <= b.y + b.h + FACING_WHEEL_PAD;
+  }
+
   function onFacingWheel(event) {
     const piece = selectedPiece();
     if (!piece || (piece.type !== "performer" && !SOLID_TYPES[piece.type])) return;
+    // 近くに居ないうちは、向きロックの知らせも出さずに素通しする
+    if (!onFacingWheelTarget(event, piece)) return;
     const scene = sc();
     if (scene.facingLock) {
       if (!facingLockNotices.has(scene.id)) {
