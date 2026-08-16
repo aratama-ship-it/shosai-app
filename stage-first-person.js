@@ -4,8 +4,88 @@
   const NEAR = 0.12;
   const FOV_H = 86 * Math.PI / 180;
   const DEFAULT_HEIGHT_CM = 170;
+  const PANEL_STORAGE_KEY = "shosai-fpv-panels-v1";
+  const PANEL_TITLE_HEIGHT = 26;
+  const PANEL_KEYS = ["front", "plan"];
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const finite = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+
+  function panelContentHeight(width, sourceWidth = 16, sourceHeight = 9) {
+    const safeWidth = Math.max(1, finite(width, 280));
+    const safeSourceWidth = Math.max(1, finite(sourceWidth, 16));
+    const safeSourceHeight = Math.max(1, finite(sourceHeight, 9));
+    return safeWidth * safeSourceHeight / safeSourceWidth;
+  }
+
+  function panelWidthLimits(viewportWidth) {
+    const max = Math.max(1, Math.min(720, Math.max(1, finite(viewportWidth, 1024)) * .6));
+    return { min: Math.min(160, max), max };
+  }
+
+  function clampPanelLayout(layout, viewportWidth, viewportHeight, sourceWidth = 16, sourceHeight = 9) {
+    const widthLimit = panelWidthLimits(viewportWidth);
+    const width = clamp(finite(layout && layout.width, 280), widthLimit.min, widthLimit.max);
+    const totalHeight = PANEL_TITLE_HEIGHT + panelContentHeight(width, sourceWidth, sourceHeight);
+    return {
+      x: clamp(finite(layout && layout.x, 0), 0, Math.max(0, finite(viewportWidth, 1024) - width)),
+      y: clamp(finite(layout && layout.y, 0), 0, Math.max(0, finite(viewportHeight, 768) - totalHeight)),
+      width,
+      visible: layout && typeof layout.visible === "boolean" ? layout.visible : true,
+    };
+  }
+
+  function defaultPanelLayouts(viewportWidth = 1024, viewportHeight = 768) {
+    const widthLimit = panelWidthLimits(viewportWidth);
+    const width = clamp(280, widthLimit.min, widthLimit.max);
+    const totalHeight = PANEL_TITLE_HEIGHT + panelContentHeight(width);
+    return {
+      front: clampPanelLayout({
+        x: viewportWidth - 70 - 176 - 12 - width,
+        y: 16,
+        width,
+        visible: true,
+      }, viewportWidth, viewportHeight),
+      plan: clampPanelLayout({
+        x: viewportWidth - 16 - width,
+        y: viewportHeight - 70 - totalHeight,
+        width,
+        visible: true,
+      }, viewportWidth, viewportHeight),
+    };
+  }
+
+  function serializePanels(layouts) {
+    return JSON.stringify({ front: layouts.front, plan: layouts.plan });
+  }
+
+  function restorePanels(serialized, viewportWidth = 1024, viewportHeight = 768) {
+    const defaults = defaultPanelLayouts(viewportWidth, viewportHeight);
+    if (!serialized) return defaults;
+    try {
+      const raw = JSON.parse(serialized);
+      if (!raw || typeof raw !== "object") return defaults;
+      for (const key of PANEL_KEYS) {
+        const item = raw[key];
+        if (!item || !Number.isFinite(item.x) || !Number.isFinite(item.y)
+          || !Number.isFinite(item.width) || typeof item.visible !== "boolean") return defaults;
+      }
+      return {
+        front: clampPanelLayout(raw.front, viewportWidth, viewportHeight),
+        plan: clampPanelLayout(raw.plan, viewportWidth, viewportHeight),
+      };
+    } catch (_) {
+      return defaults;
+    }
+  }
+
+  function setPanelVisible(layouts, key, visible, panel, chip) {
+    if (!layouts || !layouts[key]) return false;
+    layouts[key].visible = Boolean(visible);
+    if (panel) panel.hidden = !layouts[key].visible;
+    if (chip && chip.classList) chip.classList.toggle("on", layouts[key].visible);
+    if (chip && chip.setAttribute) chip.setAttribute("aria-pressed", String(layouts[key].visible));
+    return layouts[key].visible;
+  }
 
   function toWorld(u, v, width, depth, y = 0) {
     return { x: (u - 0.5) * width, y, z: (v - 0.5) * depth };
@@ -98,6 +178,9 @@
   let sceneTimer = 0;
   let pendingScene = null;
   let drag = null;
+  let panelDrag = null;
+  let panelLayouts = null;
+  const panelAspect = { front: { width: 16, height: 9 }, plan: { width: 16, height: 9 } };
   let hintDismissed = false;
   let data = null;
   let W = 12;
@@ -135,6 +218,8 @@
 #stage-fpv-minimap{top:16px;right:70px;background:rgba(16,12,9,.72);border:1px solid rgba(232,226,212,.14);border-radius:4px}
 #stage-fpv-whose{left:20px;bottom:64px;font-size:12.5px;opacity:.85;pointer-events:none}#stage-fpv-whose b{font-weight:600}#stage-fpv-whose .m{opacity:.6;margin-left:.6em}
 #stage-fpv-cast{left:20px;bottom:20px;right:220px;display:flex;flex-wrap:wrap;gap:6px}.stage-fpv-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 8px;border-radius:3px;background:rgba(22,16,11,.86);border:1px solid rgba(232,226,212,.16);color:#e8e2d4;font-size:12px;cursor:pointer;font-family:inherit}.stage-fpv-chip:hover{border-color:rgba(232,226,212,.45)}.stage-fpv-chip.on{background:#e8e2d4;color:#14100c;border-color:#e8e2d4}.stage-fpv-chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
+#stage-fpv-panel-toggles{top:174px;right:70px;display:flex;flex-direction:column;align-items:stretch;gap:5px;z-index:71}.stage-fpv-panel-toggle{justify-content:center;padding:4px 9px;font-size:11px}
+.stage-fpv-panel{position:absolute;z-index:71;box-sizing:border-box;overflow:hidden;border:1px solid rgba(232,226,212,.16);border-radius:3px;background:var(--chip,rgba(22,16,11,.94));box-shadow:0 8px 24px rgba(0,0,0,.28);color:#e8e2d4;touch-action:none;user-select:none;-webkit-user-select:none}.stage-fpv-panel[hidden]{display:none!important}.stage-fpv-panel-bar{height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 5px 0 9px;font-size:11px;letter-spacing:.04em;cursor:grab}.stage-fpv-panel-bar:active{cursor:grabbing}.stage-fpv-panel-hide{width:24px;height:22px;padding:0;border:0;background:transparent;color:#e8e2d4;font:16px/20px inherit;cursor:pointer}.stage-fpv-panel canvas{display:block;width:100%;background:#16100b;pointer-events:auto}.stage-fpv-panel-resize{position:absolute;right:0;bottom:0;width:14px;height:14px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 0 45%,rgba(232,226,212,.55) 46% 55%,transparent 56% 65%,rgba(232,226,212,.55) 66% 75%,transparent 76%);touch-action:none}
 #stage-fpv-nav{right:16px;bottom:18px;display:flex;align-items:center;gap:8px}#stage-fpv-nav button{background:rgba(22,16,11,.86);color:#e8e2d4;border:1px solid rgba(232,226,212,.2);border-radius:3px;font-size:13px;padding:7px 12px;cursor:pointer;font-family:inherit}#stage-fpv-nav button:hover{border-color:rgba(232,226,212,.5)}#stage-fpv-count{font-size:11.5px;opacity:.6;min-width:52px;text-align:center}
 #stage-fpv-hint{left:50%;bottom:88px;transform:translateX(-50%);font-size:12.5px;background:rgba(22,16,11,.86);padding:7px 14px;border-radius:3px;opacity:.9;transition:opacity .8s;pointer-events:none;border:1px solid rgba(232,226,212,.14)}#stage-fpv-hint.gone{opacity:0}
 #stage-fpv-toast{left:50%;top:70px;transform:translateX(-50%);font-size:12.5px;background:rgba(22,16,11,.86);padding:7px 14px;border-radius:3px;opacity:0;transition:opacity .4s;pointer-events:none;border:1px solid rgba(232,226,212,.2)}#stage-fpv-toast.show{opacity:1}
@@ -171,13 +256,55 @@
     nav.append(previous, count, next);
     const hint = createElement("div", "stage-fpv-hint", "stage-fpv-hud");
     const toast = createElement("div", "stage-fpv-toast", "stage-fpv-hud");
+    const panelToggles = createElement("div", "stage-fpv-panel-toggles", "stage-fpv-hud");
+    const panels = {};
+    PANEL_KEYS.forEach((key) => {
+      const panel = createElement("section", `stage-fpv-panel-${key}`, "stage-fpv-panel");
+      const bar = createElement("div", "", "stage-fpv-panel-bar");
+      const panelTitle = createElement("span");
+      const hide = createElement("button", "", "stage-fpv-panel-hide");
+      hide.type = "button";
+      hide.textContent = "−";
+      const copy = createElement("canvas", `stage-fpv-panel-${key}-canvas`);
+      const handle = createElement("div", "", "stage-fpv-panel-resize");
+      handle.setAttribute("aria-hidden", "true");
+      const toggle = createElement("button", `stage-fpv-panel-${key}-toggle`, "stage-fpv-chip stage-fpv-panel-toggle");
+      toggle.type = "button";
+      bar.append(panelTitle, hide);
+      panel.append(bar, copy, handle);
+      panelToggles.appendChild(toggle);
+      panels[key] = { panel, bar, title: panelTitle, hide, canvas: copy, handle, toggle };
+      hide.addEventListener("pointerdown", stopPanelPointer);
+      hide.addEventListener("click", (event) => {
+        stopPanelPointer(event);
+        syncPanelVisibility(key, false);
+      });
+      toggle.addEventListener("pointerdown", stopPanelPointer);
+      toggle.addEventListener("click", (event) => {
+        stopPanelPointer(event);
+        syncPanelVisibility(key, !panelLayouts[key].visible);
+      });
+      bar.addEventListener("pointerdown", (event) => {
+        if (event.target === hide) { stopPanelPointer(event); return; }
+        beginPanelDrag(key, "move", event);
+      });
+      panel.addEventListener("pointerdown", (event) => {
+        if (event.target === panel) beginPanelDrag(key, "move", event);
+        else stopPanelPointer(event);
+      });
+      handle.addEventListener("pointerdown", (event) => beginPanelDrag(key, "resize", event));
+      panel.addEventListener("pointermove", movePanelDrag);
+      panel.addEventListener("pointerup", endPanelDrag);
+      panel.addEventListener("pointercancel", endPanelDrag);
+    });
     const closeButton = createElement("button", "stage-fpv-close");
     closeButton.type = "button";
     closeButton.textContent = "✕";
-    root.append(canvas, fade, title, minimap, whose, cast, nav, hint, toast, closeButton);
+    root.append(canvas, fade, title, minimap, panelToggles, panels.front.panel, panels.plan.panel,
+      whose, cast, nav, hint, toast, closeButton);
     document.body.appendChild(root);
     elements = { root, canvas, fade, show, act, scene, approx, minimap, whose, cast,
-      previous, count, next, hint, toast, closeButton };
+      previous, count, next, hint, toast, closeButton, panelToggles, panels };
     closeButton.addEventListener("click", close);
     previous.addEventListener("click", () => queueScene(-1));
     next.addEventListener("click", () => queueScene(1));
@@ -218,6 +345,133 @@
 
   function labelOf(piece) {
     return state.bridge && state.bridge.labelOf ? state.bridge.labelOf(piece) : piece && piece.name || "";
+  }
+
+  function stopPanelPointer(event) {
+    if (event && event.stopPropagation) event.stopPropagation();
+  }
+
+  function panelViewport() {
+    return {
+      width: window.innerWidth || elements && elements.root.clientWidth || 1024,
+      height: window.innerHeight || elements && elements.root.clientHeight || 768,
+    };
+  }
+
+  function savePanelLayouts() {
+    if (!panelLayouts) return;
+    try { window.localStorage.setItem(PANEL_STORAGE_KEY, serializePanels(panelLayouts)); } catch (_) { /* unavailable */ }
+  }
+
+  function loadPanelLayouts() {
+    const viewport = panelViewport();
+    let serialized = null;
+    try { serialized = window.localStorage.getItem(PANEL_STORAGE_KEY); } catch (_) { /* unavailable */ }
+    panelLayouts = restorePanels(serialized, viewport.width, viewport.height);
+  }
+
+  function applyPanelLayout(key) {
+    if (!elements || !panelLayouts || !panelLayouts[key]) return;
+    const viewport = panelViewport();
+    const aspect = panelAspect[key];
+    panelLayouts[key] = clampPanelLayout(panelLayouts[key], viewport.width, viewport.height,
+      aspect.width, aspect.height);
+    const layout = panelLayouts[key];
+    const panel = elements.panels[key];
+    const contentHeight = panelContentHeight(layout.width, aspect.width, aspect.height);
+    panel.panel.style.left = `${layout.x}px`;
+    panel.panel.style.top = `${layout.y}px`;
+    panel.panel.style.width = `${layout.width}px`;
+    panel.canvas.style.height = `${contentHeight}px`;
+    setPanelVisible(panelLayouts, key, layout.visible, panel.panel, panel.toggle);
+  }
+
+  function applyPanelLayouts() {
+    PANEL_KEYS.forEach(applyPanelLayout);
+  }
+
+  function syncPanelVisibility(key, visible, save = true) {
+    if (!elements || !panelLayouts || !panelLayouts[key]) return;
+    const panel = elements.panels[key];
+    setPanelVisible(panelLayouts, key, visible, panel.panel, panel.toggle);
+    if (save) savePanelLayouts();
+  }
+
+  function beginPanelDrag(key, mode, event) {
+    stopPanelPointer(event);
+    if (!panelLayouts || !panelLayouts[key]) return;
+    if (event && event.preventDefault) event.preventDefault();
+    const layout = panelLayouts[key];
+    panelDrag = {
+      key,
+      mode,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      x: layout.x,
+      y: layout.y,
+      width: layout.width,
+    };
+    const panel = elements.panels[key].panel;
+    if (panel.setPointerCapture) panel.setPointerCapture(event.pointerId);
+  }
+
+  function movePanelDrag(event) {
+    stopPanelPointer(event);
+    if (!panelDrag || event.pointerId !== panelDrag.pointerId) return;
+    if (event && event.preventDefault) event.preventDefault();
+    const layout = panelLayouts[panelDrag.key];
+    const dx = event.clientX - panelDrag.startX;
+    const dy = event.clientY - panelDrag.startY;
+    if (panelDrag.mode === "resize") layout.width = panelDrag.width + dx;
+    else {
+      layout.x = panelDrag.x + dx;
+      layout.y = panelDrag.y + dy;
+    }
+    applyPanelLayout(panelDrag.key);
+  }
+
+  function endPanelDrag(event) {
+    stopPanelPointer(event);
+    if (!panelDrag || event && event.pointerId !== undefined && event.pointerId !== panelDrag.pointerId) return;
+    panelDrag = null;
+    savePanelLayouts();
+  }
+
+  function drawPanelCopy(key) {
+    if (!elements || !panelLayouts || !panelLayouts[key].visible) return;
+    const getter = key === "front" ? state.bridge && state.bridge.getFrontCanvas
+      : state.bridge && state.bridge.getPlanCanvas;
+    if (typeof getter !== "function") return;
+    let source = null;
+    try { source = getter(); } catch (_) { return; }
+    const sourceWidth = finite(source && source.width, 0);
+    const sourceHeight = finite(source && source.height, 0);
+    if (!source || sourceWidth <= 0 || sourceHeight <= 0) return;
+    panelAspect[key] = { width: sourceWidth, height: sourceHeight };
+    applyPanelLayout(key);
+    const target = elements.panels[key].canvas;
+    const cssWidth = panelLayouts[key].width;
+    const cssHeight = panelContentHeight(cssWidth, sourceWidth, sourceHeight);
+    const ratio = Math.min(2, window.devicePixelRatio || 1);
+    const targetWidth = Math.max(1, Math.round(cssWidth * ratio));
+    const targetHeight = Math.max(1, Math.round(cssHeight * ratio));
+    if (target.width !== targetWidth) target.width = targetWidth;
+    if (target.height !== targetHeight) target.height = targetHeight;
+    const targetContext = target.getContext("2d");
+    if (!targetContext) return;
+    const scale = Math.min(targetWidth / sourceWidth, targetHeight / sourceHeight);
+    const drawWidth = sourceWidth * scale;
+    const drawHeight = sourceHeight * scale;
+    const x = (targetWidth - drawWidth) / 2;
+    const y = (targetHeight - drawHeight) / 2;
+    targetContext.fillStyle = "#16100b";
+    targetContext.fillRect(0, 0, targetWidth, targetHeight);
+    targetContext.drawImage(source, 0, 0, sourceWidth, sourceHeight, x, y, drawWidth, drawHeight);
+  }
+
+  function drawPanelCopies() {
+    PANEL_KEYS.forEach(drawPanelCopy);
   }
 
   function cameraPose() {
@@ -285,6 +539,12 @@
     elements.hint.textContent = text("ドラッグで見回す");
     elements.hint.classList.toggle("gone", hintDismissed);
     elements.closeButton.setAttribute("aria-label", text("視界を閉じる"));
+    PANEL_KEYS.forEach((key) => {
+      const label = text(key === "front" ? "正面図" : "平面図");
+      elements.panels[key].title.textContent = label;
+      elements.panels[key].toggle.textContent = label;
+      elements.panels[key].hide.setAttribute("aria-label", text("この図を隠す"));
+    });
     const me = currentPerformer(data.pieces);
     elements.whose.textContent = "";
     const bold = createElement("b");
@@ -333,6 +593,7 @@
     elements.canvas.width = canvasWidth * pixelRatio;
     elements.canvas.height = canvasHeight * pixelRatio;
     focal = (canvasWidth / 2) / Math.tan(FOV_H / 2);
+    if (panelLayouts) applyPanelLayouts();
   }
 
   function setBasis() {
@@ -804,6 +1065,7 @@
     vignette.addColorStop(0, "rgba(0,0,0,0)"); vignette.addColorStop(1, "rgba(8,6,4,.5)");
     ctx.fillStyle = vignette; ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     drawMinimap();
+    drawPanelCopies();
   }
 
   function frame() {
@@ -819,6 +1081,7 @@
     const current = finite(now.sceneIndex, 0);
     if (current !== pendingScene && state.bridge && state.bridge.stepScene) {
       state.bridge.stepScene(pendingScene > current ? 1 : -1);
+      if (state.bridge.requestRedraw) state.bridge.requestRedraw();
     }
     const after = readCurrent();
     validateView(false);
@@ -882,6 +1145,7 @@
     if (state.opened) close(false);
     state.bridge = bridge;
     readCurrent();
+    loadPanelLayouts();
     const initial = data.pieces.find((piece) => piece.id === bridge.initialPieceId && piece.type === "performer");
     if (initial) state.view = { type: "performer", key: identity(initial), name: labelOf(initial) };
     else state.view = { type: "audience", key: null, name: "" };
@@ -891,7 +1155,9 @@
     elements.root.hidden = false;
     elements.root.setAttribute("aria-hidden", "false");
     resize();
+    if (state.bridge.requestRedraw) state.bridge.requestRedraw();
     validateView(true);
+    applyPanelLayouts();
     window.addEventListener("keydown", onKeyDown, true);
     rafId = window.requestAnimationFrame(frame);
     return true;
@@ -907,6 +1173,8 @@
     sceneTimer = 0;
     pendingScene = null;
     drag = null;
+    panelDrag = null;
+    savePanelLayouts();
     elements.toast.classList.remove("show");
     elements.toast.textContent = "";
     elements.root.hidden = true;
@@ -922,5 +1190,13 @@
     open,
     close,
     _geom: Object.freeze({ toWorld, yawForward, rightOf, clipPolyNear, eyeHeight }),
+    _panels: Object.freeze({
+      clampLayout: clampPanelLayout,
+      contentHeight: panelContentHeight,
+      defaults: defaultPanelLayouts,
+      serialize: serializePanels,
+      restore: restorePanels,
+      setVisible: setPanelVisible,
+    }),
   });
 })();

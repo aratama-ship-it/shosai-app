@@ -504,6 +504,7 @@
     "姿勢": "Pose",
     "この人の視界": "View from here",
     "視界を閉じる": "Close view",
+    "この図を隠す": "Hide this panel",
     "前の場面": "Previous scene",
     "次の場面": "Next scene",
     "ドラッグで見回す": "Drag to look around",

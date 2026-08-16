@@ -7992,7 +7992,7 @@
     return kept;
   }
 
-  function render() {
+  function render(forceCanvases = false) {
     enforceTabletSingleView();
     enforcePhoneViews();
     syncArrowOptions();
@@ -8023,13 +8023,13 @@
         : `${b.dataset.toggleView === "front" ? "正面" : "平面"}の絵を${open ? "閉じる" : "開く"}`);
     });
 
-    if (state.showFront) {
+    if (state.showFront || forceCanvases) {
       drawStage(ctx, true, "front");
       canvas.setAttribute("aria-label", isEn()
         ? `Front view of ${venueName(v)} (${sizeName(size)}) from ${seatName(VENUES.seatById(state.seat))}. ${counts}. ${sc().strokes.length} backdrop strokes.`
         : `${v.label}（${size.label}）を${VENUES.seatById(state.seat).label}から見た正面図。${counts}。背景の線${sc().strokes.length}本。`);
     }
-    if (state.showPlan && planCtx) {
+    if ((state.showPlan || forceCanvases) && planCtx) {
       drawStage(planCtx, true, "plan");
       planCanvas.setAttribute("aria-label", isEn()
         ? `Plan view of ${venueName(v)} (${sizeName(size)}) from above. ${counts}.`
@@ -16155,6 +16155,9 @@ ${cuesheetHtml}
         },
         heightMOf: (candidate) => pieceHeightM(candidate) * (candidate.size / 100),
         labelOf: pieceLabel,
+        getFrontCanvas: () => canvas,
+        getPlanCanvas: () => planCanvas,
+        requestRedraw: () => render(true),
         stepScene,
         onClose: () => els.fpvOpen.focus(),
       });

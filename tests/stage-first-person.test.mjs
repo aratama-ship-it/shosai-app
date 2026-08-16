@@ -7,6 +7,7 @@ const source = await readFile(new URL("../stage-first-person.js", import.meta.ur
 const geometryContext = { window: {} };
 vm.runInNewContext(source, geometryContext, { filename: "stage-first-person.js" });
 const geom = geometryContext.window.SHOSAI_STAGE_FPV._geom;
+const panels = geometryContext.window.SHOSAI_STAGE_FPV._panels;
 const closeTo = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-9,
   `${actual} should be close to ${expected}`);
 
@@ -47,6 +48,56 @@ test("姿勢と支持物から目の高さを決める", () => {
   const tissue = { id: "tissue-1", type: "tissue" };
   const performer = { base: 4.5, pose: "stand", supportId: tissue.id };
   closeTo(geom.eyeHeight(performer, 2, [performer, tissue]), 6.2);
+});
+
+test("浮動小窓の位置と幅を画面内の制約へ収める", () => {
+  const tooLarge = panels.clampLayout({ x: -50, y: 900, width: 900, visible: true }, 1000, 700);
+  assert.equal(tooLarge.width, 600);
+  assert.equal(tooLarge.x, 0);
+  assert.equal(tooLarge.y, 336.5);
+  const tooSmall = panels.clampLayout({ x: 999, y: -20, width: 20, visible: false }, 1000, 700);
+  assert.equal(tooSmall.width, 160);
+  assert.equal(tooSmall.x, 840);
+  assert.equal(tooSmall.y, 0);
+  assert.equal(tooSmall.visible, false);
+});
+
+test("転写キャンバスは元キャンバスのアスペクト比を保つ", () => {
+  const height = panels.contentHeight(280, 1600, 900);
+  assert.ok(height >= 157 && height <= 158);
+});
+
+test("浮動小窓の保存値を往復し、壊れたJSONは初期値へ戻す", () => {
+  const layout = {
+    front: { x: 30, y: 40, width: 280, visible: false },
+    plan: { x: 610, y: 420, width: 240, visible: true },
+  };
+  const restored = panels.restore(panels.serialize(layout), 1000, 800);
+  assert.deepEqual(JSON.parse(JSON.stringify(restored)), layout);
+  const defaults = panels.defaults(1000, 800);
+  assert.deepEqual(JSON.parse(JSON.stringify(panels.restore("{broken", 1000, 800))),
+    JSON.parse(JSON.stringify(defaults)));
+});
+
+test("隠す・出すでvisibleとトグルチップを同期する", () => {
+  const layout = panels.defaults(1000, 800);
+  const panel = { hidden: false };
+  const values = new Set(["on"]);
+  const chip = {
+    attributes: {},
+    classList: { toggle(value, force) { if (force) values.add(value); else values.delete(value); } },
+    setAttribute(name, value) { this.attributes[name] = value; },
+  };
+  panels.setVisible(layout, "front", false, panel, chip);
+  assert.equal(layout.front.visible, false);
+  assert.equal(panel.hidden, true);
+  assert.equal(values.has("on"), false);
+  assert.equal(chip.attributes["aria-pressed"], "false");
+  panels.setVisible(layout, "front", true, panel, chip);
+  assert.equal(layout.front.visible, true);
+  assert.equal(panel.hidden, false);
+  assert.equal(values.has("on"), true);
+  assert.equal(chip.attributes["aria-pressed"], "true");
 });
 
 test("openからcloseでrAFを止め、オーバーレイを隠す", () => {
