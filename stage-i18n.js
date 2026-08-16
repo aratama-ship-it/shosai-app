@@ -315,6 +315,13 @@
     "背景を塗る": "Paint backdrop",
     "照明を動かす": "Move lights",
     "背景を消す": "Erase backdrop",
+    "矢印を描く": "Draw an arrow",
+    "矢印": "Arrow",
+    "空中": "In the air",
+    "矢じり": "Arrowhead",
+    "片側": "One end",
+    "両側": "Both ends",
+    "この場面の矢印を消す": "Clear this scene's arrows",
     "動線を描く": "Draw route",
     "動線を消す": "Clear route",
     "演者名": "Performer names",
@@ -324,6 +331,8 @@
     "いまの道具の説明": "About this tool",
     "いまの道具の説明を出す": "Show the tool description",
     "演者や物を選び、舞台の上で動かします。": "Select a performer or object and move it on stage.",
+    "正面図をなぞると矢印になります。床の上か空中かを選べます。":
+      "Drag on the front view to draw an arrow. Choose the floor or the air.",
     "上下で奥行き、左右で立ち位置を決めます。選択中は矢印キーでも動かせます。":
       "Up and down sets depth, left and right sets position. Arrow keys nudge the selection.",
 
@@ -522,7 +531,7 @@
     "奥行き": "Depth",
     "灯体の高さ": "Fixture height",
     "当たる高さ": "Target height",
-    "床": "Floor",
+    "床": "On the floor",
     "奥から4.5m": "4.5 m from upstage",
     "真上から落とす": "Reset to straight down",
     "動かないようにする": "Lock in place",
@@ -821,6 +830,7 @@
       select: "Select a performer or object and move it on stage.",
       paint: "Paint the upstage backdrop with a finger or the mouse.",
       erase: "Erase only the strokes painted on the backdrop.",
+      arrow: "Drag on the front view to draw an arrow. Choose the floor or the air. Alt/Option-click near an arrow to remove one.",
       route: "Grab a performer, object or light in the plan; where you let go is the destination. Drag the middle dot to bend the route.",
       note: "Press an empty spot to pin a note. Pinned notes can be dragged.",
       light: "Move lights only. The dot is the fixture, the bright ring is where it lands.",
@@ -880,6 +890,11 @@
    * 具体的な文を先に、`〜を…にしました` のような広い網を後に置くこと。
    * 名前そのもの（姿勢・席・劇場など）は呼び出し側が訳語ヘルパーで既に選んでいる。 */
   const SAY = [
+    [/^矢印を描きました。$/, "Drew an arrow."],
+    [/^矢印を消しました。$/, "Cleared the arrows."],
+    [/^矢印を1本消しました。$/, "Removed one arrow."],
+    [/^矢印は正面図で描きます。正面を開いてください。$/,
+      "Arrows are drawn in the front view. Open the front view."],
     [/^ディアボロを縦置きにしました。$/, "Stood the diabolo on end."],
     [/^ディアボロを横置きにしました。$/, "Laid the diabolo on its side."],
     [/^光の意図を更新しました。$/, "Updated the lighting intention."],

@@ -499,10 +499,12 @@
           </section>
 
           <div class="stage-center-bar">
-            <!-- 「動かす」二つと「背景」二つは別の仕事なので、間を空けて分ける -->
+            <!-- 「動かす」二つ・自由矢印・「背景」二つは別の仕事なので、間を空けて分ける -->
             <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
               <button type="button" data-stage-tool="select" data-tablet-icon="↔" aria-label="ものを動かす" aria-pressed="true">ものを動かす</button>
               <button type="button" data-stage-tool="light" data-tablet-icon="☀" aria-label="照明を動かす" aria-pressed="false">照明を動かす</button>
+              <span class="stage-tool-split" aria-hidden="true"></span>
+              <button type="button" data-stage-tool="arrow" data-tablet-icon="↗" aria-label="矢印を描く" aria-pressed="false">矢印を描く</button>
               <span class="stage-tool-split" aria-hidden="true"></span>
               <button type="button" data-stage-tool="paint" data-tablet-icon="✎" aria-label="背景を塗る" aria-pressed="false">背景を塗る</button>
               <button type="button" data-stage-tool="erase" data-tablet-icon="⌫" aria-label="背景を消す" aria-pressed="false">背景を消す</button>
@@ -707,6 +709,27 @@
                 <!-- 右手の道具はひとまとめにする。ばらのまま並べると、
                      間の余白が均等に割られて、道具どうしが離れてしまう -->
                 <div class="stage-canvas-tools">
+                  <div class="stage-arrow-options" id="stage-arrow-options" hidden>
+                    <div class="stage-arrow-choice" role="group" aria-label="矢印">
+                      <button type="button" id="stage-arrow-plane-floor" aria-pressed="true">床</button>
+                      <button type="button" id="stage-arrow-plane-air" aria-pressed="false">空中</button>
+                    </div>
+                    <label class="stage-arrow-depth-control" id="stage-arrow-depth-control">
+                      <span>奥行き</span>
+                      <input type="range" id="stage-arrow-depth" min="0" max="1" step="0.01" value="0.5">
+                      <output id="stage-arrow-depth-value" for="stage-arrow-depth">4.5m</output>
+                    </label>
+                    <div class="stage-arrow-choice stage-arrow-heads" role="group" aria-label="矢じり">
+                      <span>矢じり</span>
+                      <button type="button" id="stage-arrow-head-one" aria-pressed="true">片側</button>
+                      <button type="button" id="stage-arrow-head-both" aria-pressed="false">両側</button>
+                    </div>
+                    <label class="stage-arrow-color" title="矢印">
+                      <span>矢印</span>
+                      <input type="color" id="stage-arrow-color" value="#d3ac59" aria-label="矢印">
+                    </label>
+                    <button type="button" class="stage-arrow-clear" id="stage-arrow-clear">この場面の矢印を消す</button>
+                  </div>
                   <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-front-zoom"
                           title="等倍に戻す" hidden>1.0× ⟲</button>
                   <button type="button" class="stage-canvas-tool" id="stage-front-note"

@@ -10385,3 +10385,104 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
+
+/* 自由矢印の設定は、描く正面図のすぐ上へだけ出す。小さい札を一つの帯にして、
+   常設のメモ・照明の密度から浮かないようにする。 */
+.stage-arrow-options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+  min-width: 0;
+  color: var(--milk-dim);
+  font-size: 9.5px;
+}
+
+.stage-arrow-options[hidden],
+.stage-arrow-depth-control[hidden] { display: none; }
+
+.stage-arrow-choice,
+.stage-arrow-depth-control,
+.stage-arrow-color {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.stage-arrow-choice button,
+.stage-arrow-clear {
+  min-height: 27px;
+  padding: 3px 8px;
+  border: 1px solid var(--line-dark);
+  background: rgba(13, 12, 11, 0.18);
+  color: var(--milk-dim);
+  font-size: 9.5px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stage-arrow-choice button + button { margin-left: -6px; }
+
+.stage-arrow-choice button:hover,
+.stage-arrow-clear:hover { color: var(--milk); border-color: var(--brass); }
+
+.stage-arrow-choice button[aria-pressed="true"] {
+  color: var(--paper);
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.24);
+}
+
+.stage-arrow-depth-control input[type="range"] { width: 76px; }
+
+.stage-arrow-depth-control output {
+  min-width: 3.2em;
+  color: var(--brass);
+  font-variant-numeric: tabular-nums;
+}
+
+.stage-arrow-color span { font-size: 0; }
+
+.stage-arrow-color span::after {
+  content: "↗";
+  font-size: 13px;
+  color: var(--brass);
+}
+
+.stage-arrow-color input[type="color"] {
+  width: 30px;
+  height: 27px;
+  padding: 2px;
+  border: 1px solid var(--line-dark);
+  background: transparent;
+}
+
+.stage-arrow-clear:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+@media (max-width: 900px) {
+  .stage-canvas-bar:has(.stage-arrow-options:not([hidden])) { flex-wrap: wrap; }
+  .stage-canvas-bar:has(.stage-arrow-options:not([hidden])) .stage-canvas-tools {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+}
+
+/* iPad横画面は図の高さを固定しているため、矢印中だけ他の正面操作を畳み、
+   設定を横へ繰れる一列にする。 */
+html.stage-pwa-tablet #stage-front-cell:has(.stage-arrow-options:not([hidden])) .stage-seat-list,
+html.stage-pwa-tablet #stage-front-cell:has(.stage-arrow-options:not([hidden]))
+  .stage-canvas-tools > :not(.stage-arrow-options):not(.stage-canvas-close) { display: none; }
+
+html.stage-pwa-tablet .stage-arrow-options {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+html.stage-pwa-tablet .stage-arrow-choice button,
+html.stage-pwa-tablet .stage-arrow-clear,
+html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px; }

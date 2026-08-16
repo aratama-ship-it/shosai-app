@@ -1644,6 +1644,7 @@
     select: "演者や物を選び、舞台の上で動かします。",
     paint: "奥の背景面を指やマウスで塗ります。",
     erase: "背景に描いた線だけを消します。",
+    arrow: "正面図をなぞると矢印になります。床の上か空中かを選べます。Alt（option）を押しながらクリックすると、近い矢印を1本消せます。",
     route: "平面図で演者や物、明かりを掴み、離した所が行き先になります。真ん中の丸を引くと動線が曲がります。",
     note: "何もない所を押すとメモを貼れます。貼ったメモは掴んで動かせます。",
     light: "照明だけを動かします。丸い印が灯体、明るい輪が当たる場所です。",
@@ -1677,6 +1678,16 @@
     exportNote: document.getElementById("stage-export-note"),
     toolHint: document.getElementById("stage-tool-hint"),
     toolHelp: document.getElementById("stage-tool-help"),
+    arrowOptions: document.getElementById("stage-arrow-options"),
+    arrowPlaneFloor: document.getElementById("stage-arrow-plane-floor"),
+    arrowPlaneAir: document.getElementById("stage-arrow-plane-air"),
+    arrowDepthControl: document.getElementById("stage-arrow-depth-control"),
+    arrowDepth: document.getElementById("stage-arrow-depth"),
+    arrowDepthValue: document.getElementById("stage-arrow-depth-value"),
+    arrowHeadOne: document.getElementById("stage-arrow-head-one"),
+    arrowHeadBoth: document.getElementById("stage-arrow-head-both"),
+    arrowColor: document.getElementById("stage-arrow-color"),
+    arrowClear: document.getElementById("stage-arrow-clear"),
     background: document.getElementById("stage-bg-color"),
     paintColor: document.getElementById("stage-paint-color"),
     brushSize: document.getElementById("stage-brush-size"),
@@ -2217,6 +2228,7 @@
       notes: [],
       pieces: withExample ? samplePieces() : [],
       strokes: [],
+      arrows: [],
       beat: normalizeSceneBeat(sceneKind, null),
       rehearsal: sceneKind === "scene" ? normalizeSceneRehearsal(null) : null,
       lightingIntent: null,
@@ -2645,6 +2657,28 @@
     };
   }
 
+  /* 自由描画の矢印は背景の塗りと混ぜない。床では左右・奥行き、空中では
+   * 左右・高さを持つため、同じ点でも面に応じて b の上限が変わる。 */
+  function normalizeArrow(raw) {
+    const plane = raw && raw.plane === "air" ? "air" : "floor";
+    const points = Array.isArray(raw && raw.points)
+      ? raw.points.slice(-400).map((point) => ({
+          a: clamp(finite(point && point.a, 0.5), 0, 1),
+          b: clamp(finite(point && point.b, plane === "air" ? 1 : 0.5), 0,
+            plane === "air" ? 12 : 1),
+        }))
+      : [];
+    return {
+      id: raw && typeof raw.id === "string" ? raw.id : rid("arrow"),
+      plane,
+      depth: clamp(finite(raw && raw.depth, 0.5), 0, 1),
+      points,
+      heads: raw && raw.heads === "both" ? "both" : "one",
+      color: validColor(raw && raw.color, "#d3ac59"),
+      width: clamp(finite(raw && raw.width, 3), 1, 8),
+    };
+  }
+
   function normalizeScene(raw, index) {
     const fallbackBg = "#40362d";
     const kind = raw.kind === "section" ? "section" : "scene";
@@ -2661,6 +2695,9 @@
       notes: Array.isArray(raw.notes) ? raw.notes.slice(0, 60).map(normalizeNote).filter(Boolean) : [],
       strokes: Array.isArray(raw.strokes)
         ? raw.strokes.slice(-240).map(normalizeStroke).filter((stroke) => stroke.points.length)
+        : [],
+      arrows: Array.isArray(raw.arrows)
+        ? raw.arrows.slice(-60).map(normalizeArrow).filter((arrow) => arrow.points.length >= 2)
         : [],
       photo: normalizePhoto(raw.photo),
       // 背景スクリーンへ映す文字（技名・擬音・字幕）
@@ -3025,6 +3062,8 @@
   // いま選んでいるスクリーンの文字（掴んで動かす・つまみで直す対象）
   let selectedTextId = null;
   let pointerAction = null;
+  // 確定前の自由矢印。ショーの保存やUndoへは、指を離した時点で初めて入れる。
+  let arrowDraft = null;
   let history = [];
   let future = [];
   let saveTimer = null;
@@ -3728,6 +3767,14 @@
     const halfW = (L.backW + v * (L.frontW - L.backW)) / 2;
     const slide = (L.shift || 0) * (1 - v);
     return { u: clamp((x - L.centerX - slide) / (halfW * 2) + 0.5, 0, 1), v };
+  }
+
+  /* 舞台の点（左右u・奥行きv・高さhメートル）を画面へ落とす。
+   * 床の1m枡と同じ道（place → perMetre → tilt）を通るので遠近が一致する。 */
+  function stagePoint(u, v, h, L) {
+    const p = place(u, v, L);
+    if (L.plan || !h) return { x: p.x, y: p.y };
+    return { x: p.x, y: L.tilt(p.rawY - h * perMetre(p, L).y) };
   }
 
   // 実寸（m）から画面上の高さを出す。size は基準に対する倍率
@@ -5886,6 +5933,143 @@
     }
   }
 
+  function arrowPlanePref() {
+    return prefs.arrowPlane === "air" ? "air" : "floor";
+  }
+
+  function arrowDepthPref() {
+    return clamp(finite(prefs.arrowDepth, 0.5), 0, 1);
+  }
+
+  function arrowHeadsPref() {
+    return prefs.arrowHeads === "both" ? "both" : "one";
+  }
+
+  function arrowColorPref() {
+    return validColor(prefs.arrowColor, "#d3ac59");
+  }
+
+  // 保存された点を、正面／平面それぞれで実際に描く線へ変える。
+  function arrowScreenPoints(arrow, L) {
+    if (L.plan && arrow.plane === "air") {
+      const values = arrow.points.map((point) => point.a);
+      const lo = Math.min(...values);
+      const hi = Math.max(...values);
+      const tail = arrow.points[arrow.points.length - 1];
+      const near = arrow.points[Math.max(0, arrow.points.length - 4)];
+      const forward = tail.a - near.a || tail.a - arrow.points[0].a;
+      const left = place(lo, arrow.depth, L);
+      const right = place(hi, arrow.depth, L);
+      return forward < 0 ? [right, left] : [left, right];
+    }
+    return arrow.points.map((point) => arrow.plane === "air"
+      ? stagePoint(point.a, arrow.depth, point.b, L)
+      : stagePoint(point.a, point.b, 0, L));
+  }
+
+  function drawArrowHead(target, tip, inner, color, width) {
+    const dx = tip.x - inner.x;
+    const dy = tip.y - inner.y;
+    if (Math.hypot(dx, dy) < 0.5) return;
+    const angle = Math.atan2(dy, dx);
+    const size = 9 + width * 2;
+    target.fillStyle = color;
+    target.beginPath();
+    target.moveTo(tip.x, tip.y);
+    target.lineTo(tip.x - Math.cos(angle - 0.46) * size,
+      tip.y - Math.sin(angle - 0.46) * size);
+    target.lineTo(tip.x - Math.cos(angle + 0.46) * size,
+      tip.y - Math.sin(angle + 0.46) * size);
+    target.closePath();
+    target.fill();
+  }
+
+  function drawOneArrow(target, arrow, L) {
+    const points = arrowScreenPoints(arrow, L);
+    if (points.length < 2) return;
+    const color = validColor(arrow.color, "#d3ac59");
+    const width = clamp(finite(arrow.width, 3), 1, 8);
+    target.save();
+
+    /* 空中の始点から床へ細い補助線を落とす。矢印そのものより弱くして、
+     * 高さを読む手掛かりだけを残す。 */
+    if (!L.plan && arrow.plane === "air") {
+      const first = arrow.points[0];
+      const floor = stagePoint(first.a, arrow.depth, 0, L);
+      target.strokeStyle = rgba(color, 0.25);
+      target.lineWidth = 1;
+      target.setLineDash([3, 5]);
+      target.beginPath();
+      target.moveTo(points[0].x, points[0].y);
+      target.lineTo(floor.x, floor.y);
+      target.stroke();
+    }
+
+    target.strokeStyle = color;
+    target.lineWidth = width;
+    target.lineJoin = "round";
+    target.lineCap = "round";
+    target.setLineDash(L.plan && arrow.plane === "air" ? [8, 6] : []);
+    target.beginPath();
+    points.forEach((point, index) => {
+      if (index) target.lineTo(point.x, point.y); else target.moveTo(point.x, point.y);
+    });
+    target.stroke();
+    target.setLineDash([]);
+
+    const endNear = points[Math.max(0, points.length - Math.min(4, points.length - 1) - 1)];
+    drawArrowHead(target, points[points.length - 1], endNear, color, width);
+    if (arrow.heads === "both") {
+      const startNear = points[Math.min(points.length - 1, Math.min(4, points.length - 1))];
+      drawArrowHead(target, points[0], startNear, color, width);
+    }
+    target.restore();
+  }
+
+  function drawArrows(target, L) {
+    /* 空中面の奥行きは描き始める前にも必要なので、編集中の正面図だけ床へ示す。
+     * 印刷やサムネイルへは操作中のガイドを焼き付けない。 */
+    if (target === ctx && !L.plan && tool === "arrow" && arrowPlanePref() === "air") {
+      const left = stagePoint(0, arrowDepthPref(), 0, L);
+      const right = stagePoint(1, arrowDepthPref(), 0, L);
+      target.save();
+      target.strokeStyle = "rgba(211,172,89,0.35)";
+      target.lineWidth = 1.5;
+      target.setLineDash([7, 6]);
+      target.beginPath();
+      target.moveTo(left.x, left.y);
+      target.lineTo(right.x, right.y);
+      target.stroke();
+      target.restore();
+    }
+    (sc().arrows || []).forEach((arrow) => drawOneArrow(target, arrow, L));
+    if (target === ctx && !L.plan && arrowDraft) drawOneArrow(target, arrowDraft, L);
+  }
+
+  function pointToSegmentDistance(point, a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const length2 = dx * dx + dy * dy;
+    if (!length2) return Math.hypot(point.x - a.x, point.y - a.y);
+    const t = clamp(((point.x - a.x) * dx + (point.y - a.y) * dy) / length2, 0, 1);
+    return Math.hypot(point.x - (a.x + dx * t), point.y - (a.y + dy * t));
+  }
+
+  function arrowAt(point, L, view) {
+    const arrows = sc().arrows || [];
+    const limit = 12 / zoomOf(view).z;
+    let best = -1;
+    let bestDistance = limit;
+    for (let index = arrows.length - 1; index >= 0; index -= 1) {
+      const points = arrowScreenPoints(arrows[index], L);
+      for (let i = 1; i < points.length; i += 1) {
+        const distance = pointToSegmentDistance(point, points[i - 1], points[i]);
+        if (distance < bestDistance) { best = index; bestDistance = distance; }
+      }
+    }
+    return best;
+  }
+
   function drawRoutes(target, L, showSelection) {
     sc().pieces.forEach((piece) => {
       if (!piece.route || !routesShownFor(piece)) return;
@@ -7488,6 +7672,8 @@
        ★転換アニメの最中は出さない（本人指定）。動いている駒の足元に
        「次の動線」が先回りして見えると、どちらが今の動きか分からなくなる */
     if (L.plan && anyRoutesShown() && !sceneAnim) drawRoutes(target, L, showSelection);
+    // 自由矢印は作図の印なので、駒より手前へ置き、正面・平面の両方へ出す。
+    drawArrows(target, L);
     drawNotes(target, L, view, showSelection);
 
     // 上がっているせりの縁をまたぐ駒は、操作を妨げない赤い破線だけで知らせる
@@ -7692,6 +7878,7 @@
   function render() {
     enforceTabletSingleView();
     enforcePhoneViews();
+    syncArrowOptions();
     syncLightIntentCard();
     syncLightIntentDock();
     syncLightIntentCompare();
@@ -12564,6 +12751,7 @@ ${cuesheetHtml}
       id: rid("note"),
       pieceId: note.pieceId ? (swap.get(note.pieceId) || null) : null,
     }));
+    copy.arrows = (copy.arrows || []).map((arrow) => ({ ...arrow, id: rid("arrow") }));
     return copy;
   }
 
@@ -13938,6 +14126,20 @@ ${cuesheetHtml}
       point.y >= rect.y && point.y <= rect.y + rect.h;
   }
 
+  // 正面図の点を、選んだ床面／空中面の保存座標へ戻す。
+  function arrowPointFromScreen(point, L, arrow) {
+    if (arrow.plane === "floor") {
+      const floor = fromScreen(point.x, point.y, L);
+      return { a: floor.u, b: floor.v };
+    }
+    const base = place(0.5, arrow.depth, L);
+    // 左右は固定した奥行きの床面で逆算し、高さは傾ける前の縦座標で測る。
+    const across = fromScreen(point.x, base.y, L);
+    const metre = perMetre(base, L).y || 1;
+    const height = (base.rawY - L.untilt(point.y)) / metre;
+    return { a: across.u, b: clamp(height, 0, 12) };
+  }
+
   /* 拾えるものは道具で変わる。明かりは物と重なって置くのが普通なので、
    * 同じ手つきで両方を掴めるようにすると、狙ったほうが取れない。
    * 「動かす」では物だけ、「照明を動かす」では照明だけを拾う。 */
@@ -14053,6 +14255,25 @@ ${cuesheetHtml}
     return sc().pieces.find((piece) => piece.id === selectedId) || null;
   }
 
+  function syncArrowOptions() {
+    if (!els.arrowOptions) return;
+    const plane = arrowPlanePref();
+    const depth = arrowDepthPref();
+    const heads = arrowHeadsPref();
+    els.arrowOptions.hidden = tool !== "arrow";
+    if (els.arrowPlaneFloor) els.arrowPlaneFloor.setAttribute("aria-pressed", String(plane === "floor"));
+    if (els.arrowPlaneAir) els.arrowPlaneAir.setAttribute("aria-pressed", String(plane === "air"));
+    if (els.arrowDepthControl) els.arrowDepthControl.hidden = plane !== "air";
+    if (els.arrowDepth && document.activeElement !== els.arrowDepth) els.arrowDepth.value = String(depth);
+    if (els.arrowDepthValue) {
+      els.arrowDepthValue.textContent = `${((1 - depth) * (venueSize().depth || 9)).toFixed(1)}m`;
+    }
+    if (els.arrowHeadOne) els.arrowHeadOne.setAttribute("aria-pressed", String(heads === "one"));
+    if (els.arrowHeadBoth) els.arrowHeadBoth.setAttribute("aria-pressed", String(heads === "both"));
+    if (els.arrowColor && document.activeElement !== els.arrowColor) els.arrowColor.value = arrowColorPref();
+    if (els.arrowClear) els.arrowClear.disabled = !(sc().arrows || []).length;
+  }
+
   function setTool(nextTool) {
     // スマホ閲覧版で持てる道具は、見るための選択状態とメモだけ。
     if (phoneViewerActive && nextTool !== "note") nextTool = "select";
@@ -14069,6 +14290,14 @@ ${cuesheetHtml}
     if (nextTool === "route" && !state.showPlan) {
       announce("動線は平面図で引きます。平面を開いてください。");
       return;
+    }
+    if (nextTool === "arrow" && !state.showFront) {
+      announce("矢印は正面図で描きます。正面を開いてください。");
+      return;
+    }
+    if (arrowDraft) {
+      arrowDraft = null;
+      pointerAction = null;
     }
     tool = nextTool;
     /* 見えないものは掴めない決まりなので、道具を持ったら対象を出す。
@@ -14100,6 +14329,8 @@ ${cuesheetHtml}
     [els.planNote, els.frontNote].forEach((button) => {
       if (button) button.setAttribute("aria-pressed", String(tool === "note"));
     });
+    syncArrowOptions();
+    render();
   }
 
   function updateInspector() {
@@ -14338,6 +14569,37 @@ ${cuesheetHtml}
     if (!pointerAction || pointerAction.pointerId !== event.pointerId) return;
     const el = pointerAction.el || canvas;
     try { if (el.hasPointerCapture(event.pointerId)) el.releasePointerCapture(event.pointerId); } catch (_) { /* 同上 */ }
+    if (pointerAction.kind === "arrow") {
+      const action = pointerAction;
+      if (event.type !== "pointercancel" && arrowDraft && arrowDraft.points.length < 400) {
+        const point = pointFromEvent(event);
+        const previous = action.screenPoints[action.screenPoints.length - 1];
+        if (Math.hypot(point.x - previous.x, point.y - previous.y) * zoomOf(action.view).z >= 4) {
+          action.screenPoints.push(point);
+          arrowDraft.points.push(arrowPointFromScreen(point, layout(action.view), arrowDraft));
+        }
+      }
+      const draft = arrowDraft;
+      pointerAction = null;
+      arrowDraft = null;
+      el.dataset.dragging = "false";
+      const zoom = zoomOf(action.view).z;
+      const length = action.screenPoints.slice(1).reduce((sum, point, index) => (
+        sum + Math.hypot(point.x - action.screenPoints[index].x,
+          point.y - action.screenPoints[index].y) * zoom
+      ), 0);
+      if (event.type !== "pointercancel" && draft && draft.points.length >= 2 && length >= 12) {
+        checkpoint();
+        sc().arrows.push(normalizeArrow({ ...draft, id: rid("arrow") }));
+        render();
+        persistSoon();
+        announce("矢印を描きました。");
+      } else {
+        // 誤タップの下書きだけを消し、シーンや履歴には何も残さない。
+        render();
+      }
+      return;
+    }
     const changed = pointerAction.kind === "stroke" || pointerAction.kind === "pan"
       || pointerAction.kind === "route" || pointerAction.moved;
     const tapped = pointerAction.kind === "note"
@@ -14421,7 +14683,9 @@ ${cuesheetHtml}
     // 駒を掴んでいたら手を離す（二本目が置かれた時点で、拡大の操作へ移る）
     if (pointerAction) {
       pointerAction.el.dataset.dragging = "false";
+      if (pointerAction.kind === "arrow") arrowDraft = null;
       pointerAction = null;
+      render();
     }
   }
 
@@ -14505,6 +14769,39 @@ ${cuesheetHtml}
     // 二指ピンチはこの分岐より前に始まるので、図の確認用拡大は利用できる。
     if (phoneViewerActive && tool !== "note") return;
 
+    /* 自由矢印は正面図でだけ描く。平面図側では下の「動かす」と同じ分岐へ通し、
+     * 既存の駒操作を変えない。Alt（option）クリックは線を増やさず一本だけ消す。 */
+    if (tool === "arrow" && view === "front") {
+      if (event.altKey) {
+        const index = arrowAt(point, L, view);
+        if (index >= 0) {
+          checkpoint();
+          sc().arrows.splice(index, 1);
+          render();
+          persistSoon();
+          announce("矢印を1本消しました。");
+        }
+        return;
+      }
+      arrowDraft = {
+        plane: arrowPlanePref(),
+        depth: arrowDepthPref(),
+        heads: arrowHeadsPref(),
+        color: arrowColorPref(),
+        width: 3,
+        points: [],
+      };
+      arrowDraft.points.push(arrowPointFromScreen(point, L, arrowDraft));
+      capture(el, event.pointerId);
+      el.dataset.dragging = "true";
+      pointerAction = {
+        kind: "arrow", pointerId: event.pointerId, el, view, moved: false,
+        screenPoints: [point],
+      };
+      render();
+      return;
+    }
+
     /* メモ。何もない所を押すと、そこに付箋が生まれてすぐ書ける。
      * すでに貼ってある付箋を押したときは、作らずにそれを掴んで動かす。 */
     if (tool === "note") {
@@ -14587,7 +14884,7 @@ ${cuesheetHtml}
       return;
     }
 
-    if (tool === "select") {
+    if (tool === "select" || (tool === "arrow" && view === "plan")) {
       // メモは絵の一番上に乗っているので、駒より先に拾う
       const note = noteAt(point, L, view);
       if (note) { grabNote(note, point, L, el, event, false); return; }
@@ -14733,6 +15030,9 @@ ${cuesheetHtml}
     const view = viewOf(el);
     const L = layout(view);
     const point = pointFromEvent(event);
+    if (tool === "arrow" && view === "front") {
+      return event.altKey && arrowAt(point, L, view) >= 0 ? "not-allowed" : "crosshair";
+    }
     if (tool === "note") return noteAt(point, L, view) ? "grab" : "copy";
     if (tool === "route") return hitTest(point, L) ? "crosshair" : "default";
     if (tool === "light") {
@@ -14783,6 +15083,20 @@ ${cuesheetHtml}
     if (!pointerAction || pointerAction.pointerId !== event.pointerId) return;
     const L = layout(pointerAction.view);
     const point = pointFromEvent(event);
+
+    if (pointerAction.kind === "arrow") {
+      if (!arrowDraft || arrowDraft.points.length >= 400) return;
+      const points = pointerAction.screenPoints;
+      const previous = points[points.length - 1];
+      // 拡大中も実際の画面で4pxごとになるよう、表示倍率を掛けて測る。
+      if (Math.hypot(point.x - previous.x, point.y - previous.y) * zoomOf(pointerAction.view).z >= 4) {
+        points.push(point);
+        arrowDraft.points.push(arrowPointFromScreen(point, L, arrowDraft));
+        pointerAction.moved = true;
+        render();
+      }
+      return;
+    }
 
     if (pointerAction.kind === "planpan") {
       const zs = zoomOf("plan");
@@ -15081,6 +15395,48 @@ ${cuesheetHtml}
   document.querySelectorAll("[data-stage-tool]").forEach((button) => {
     button.addEventListener("click", () => setTool(button.dataset.stageTool));
   });
+  [[els.arrowPlaneFloor, "floor"], [els.arrowPlaneAir, "air"]].forEach(([button, plane]) => {
+    if (!button) return;
+    button.addEventListener("click", () => {
+      prefs.arrowPlane = plane;
+      savePrefs();
+      syncArrowOptions();
+      render();
+    });
+  });
+  if (els.arrowDepth) {
+    els.arrowDepth.addEventListener("input", (event) => {
+      prefs.arrowDepth = clamp(finite(event.target.value, 0.5), 0, 1);
+      savePrefs();
+      syncArrowOptions();
+      render();
+    });
+  }
+  [[els.arrowHeadOne, "one"], [els.arrowHeadBoth, "both"]].forEach(([button, heads]) => {
+    if (!button) return;
+    button.addEventListener("click", () => {
+      prefs.arrowHeads = heads;
+      savePrefs();
+      syncArrowOptions();
+    });
+  });
+  if (els.arrowColor) {
+    els.arrowColor.addEventListener("input", (event) => {
+      prefs.arrowColor = validColor(event.target.value, "#d3ac59");
+      savePrefs();
+      syncArrowOptions();
+    });
+  }
+  if (els.arrowClear) {
+    els.arrowClear.addEventListener("click", () => {
+      if (!(sc().arrows || []).length) return;
+      checkpoint();
+      sc().arrows = [];
+      render();
+      persistSoon();
+      announce("矢印を消しました。");
+    });
+  }
   // 演者・台・光はすべて、それぞれの一覧から舞台へ出し入れする
   if (els.showFront) {
     els.showFront.addEventListener("change", (e) => setViewShown("front", e.target.checked));
