@@ -4895,24 +4895,6 @@
       const r = d.dia / 2;
       return [{ kind: "ring", c: [0, r, 0], r, w: 0.05, tone: "gear" }];
     }
-    if (piece.type === "diabolo") {
-      const r = d.dia / 2;
-      const len = d.w;
-      if (piece.diaboloMode === "stand") {
-        // 軸を垂直にし、下側のカップの縁を床へ置く
-        return [
-          { kind: "ring", plane: "xz", c: [0, 0.004, 0], r, w: 0.012, tone: "gear" },
-          { kind: "ring", plane: "xz", c: [0, len, 0], r, w: 0.012, tone: "gear" },
-          { kind: "line", a: [0, 0, 0], b: [0, len, 0], w: 0.02, tone: "gear" },
-        ];
-      }
-      // 横置きは左右のカップと、その間を通る軸で砂時計の形を見せる
-      return [
-        { kind: "ring", plane: "yz", c: [-len / 2, r, 0], r, w: 0.012, tone: "gear" },
-        { kind: "ring", plane: "yz", c: [len / 2, r, 0], r, w: 0.012, tone: "gear" },
-        { kind: "line", a: [-len / 2, r, 0], b: [len / 2, r, 0], w: 0.02, tone: "gear" },
-      ];
-    }
     if (piece.type === "pole") {
       /* 床から立つ一本のポール。足元の台座と、頂部の受けを持つ。
        * 太さは0.05mまでに抑える（前の既定0.06で保存された駒にも効かせる）。
@@ -5193,8 +5175,9 @@
 
   // 台・テーブル・椅子。部品を奥から順に塗る
   function drawSolid(target, piece, pos, scale, L) {
-    const parts = pieceParts(piece);
-    if (!parts) return;
+    const diabolo = piece.type === "diabolo";
+    const parts = diabolo ? null : pieceParts(piece);
+    if (!diabolo && !parts) return;
     const flown = isFlown(piece);
     target.save();
 
@@ -5258,6 +5241,12 @@
       target.fill();
     }
 
+    if (diabolo) {
+      drawDiabolo(target, piece, L);
+      target.restore();
+      return;
+    }
+
     parts.forEach((part) => {
       if (part.kind === "disc") paintDisc(target, piece, L, part);
       else if (part.kind === "line" || part.kind === "ring") paintRigging(target, piece, L, part);
@@ -5287,6 +5276,130 @@
     const p = floorPoint(piece, lx * cos - lz * sin, lx * sin + lz * cos, L);
     if (L.plan) return { x: p.x, y: p.y };
     return { x: p.x, y: L.tilt(p.rawY - ly * perMetre(p, L).y) };
+  }
+
+  /* ディアボロ。軸に沿って実寸の断面円を並べ、その外形を一枚の曲面として塗る。
+   * 輪だけではなく、くびれからカップの縁へ広がる量感を見せる。 */
+  function drawDiabolo(target, piece, L) {
+    const d = pieceDims(piece);
+    if (!d) return;
+    const R = d.dia / 2;
+    const len = d.w;
+    const AX = Math.max(0.006, R * 0.13);
+    const WAIST = 0.14;
+    const HALF_SAMPLES = 16;
+    const radiusAt = (t) => {
+      const a = Math.abs(t);
+      if (a <= WAIST) return AX;
+      const k = (a - WAIST) / (1 - WAIST);
+      /* 指数を小さくするほど、くびれのすぐ横で一気に開いて縁の手前で寝る。
+       * 0.62では側面がほぼ直線になり、お椀ではなく漏斗に見えた（実機で確認）。
+       * 実物のカップは直径11.5cmに対し深さが6cm程度の浅い椀なので、この速さで開く。 */
+      return AX + (R - AX) * Math.pow(k, 0.38);
+    };
+    const sections = [];
+    for (let i = -HALF_SAMPLES; i <= HALF_SAMPLES; i += 1) {
+      const t = i / HALF_SAMPLES;
+      sections.push({ t, r: radiusAt(t) });
+    }
+    const traceClosed = (first, second) => {
+      target.beginPath();
+      first.forEach((p, i) => (i ? target.lineTo(p.x, p.y) : target.moveTo(p.x, p.y)));
+      second.forEach((p) => target.lineTo(p.x, p.y));
+      target.closePath();
+    };
+    const strokeAxis = (a, b) => {
+      const per = perMetre(floorPoint(piece, 0, 0, L), L);
+      target.save();
+      target.strokeStyle = rgba(piece.color, 1);
+      target.lineWidth = Math.max(1, AX * 2 * per.x);
+      target.lineCap = "round";
+      target.beginPath();
+      target.moveTo(a.x, a.y);
+      target.lineTo(b.x, b.y);
+      target.stroke();
+      target.restore();
+    };
+    const strokeRing = (pointAt, color, from = 0, to = Math.PI * 2) => {
+      const steps = 32;
+      target.strokeStyle = color;
+      target.lineWidth = 1;
+      target.beginPath();
+      for (let i = 0; i <= steps; i += 1) {
+        const a = from + ((to - from) * i) / steps;
+        const p = pointAt(a);
+        if (i) target.lineTo(p.x, p.y); else target.moveTo(p.x, p.y);
+      }
+      if (to - from >= Math.PI * 2 - 0.001) target.closePath();
+      target.stroke();
+    };
+
+    target.save();
+    target.lineJoin = "round";
+    target.strokeStyle = "rgba(0,0,0,0.35)";
+    target.lineWidth = 1;
+
+    if (piece.diaboloMode === "stand") {
+      const left = sections.map(({ t, r }) => riggingPoint(piece, -r, ((t + 1) / 2) * len, 0, L));
+      const right = sections.map(({ t, r }) => riggingPoint(piece, r, ((t + 1) / 2) * len, 0, L));
+      const axis = sections.map(({ t }) => riggingPoint(piece, 0, ((t + 1) / 2) * len, 0, L));
+
+      target.fillStyle = rgba(piece.color, 0.82);
+      traceClosed(left, right.slice().reverse());
+      target.fill();
+      target.stroke();
+
+      target.fillStyle = "rgba(0,0,0,0.16)";
+      traceClosed(left, axis.slice().reverse());
+      target.fill();
+
+      strokeAxis(
+        riggingPoint(piece, 0, ((-WAIST + 1) / 2) * len, 0, L),
+        riggingPoint(piece, 0, ((WAIST + 1) / 2) * len, 0, L));
+
+      const ringPoint = (ly) => (a) => riggingPoint(piece,
+        Math.cos(a) * R, ly, Math.sin(a) * R, L);
+      const topRing = ringPoint(len);
+      target.fillStyle = "rgba(0,0,0,0.22)";
+      target.beginPath();
+      for (let i = 0; i <= 32; i += 1) {
+        const p = topRing((i / 32) * Math.PI * 2);
+        if (i) target.lineTo(p.x, p.y); else target.moveTo(p.x, p.y);
+      }
+      target.closePath();
+      target.fill();
+      strokeRing(topRing, rgba(piece.color, 0.95));
+      strokeRing(ringPoint(0), rgba(piece.color, 0.95));
+      target.restore();
+      return;
+    }
+
+    const top = sections.map(({ t, r }) => riggingPoint(piece, (t * len) / 2, R + r, 0, L));
+    const bottom = sections.map(({ t, r }) => riggingPoint(piece, (t * len) / 2, R - r, 0, L));
+    const axis = sections.map(({ t }) => riggingPoint(piece, (t * len) / 2, R, 0, L));
+
+    target.fillStyle = rgba(piece.color, 0.82);
+    traceClosed(top, bottom.slice().reverse());
+    target.fill();
+    target.stroke();
+
+    target.fillStyle = "rgba(0,0,0,0.16)";
+    traceClosed(axis, bottom.slice().reverse());
+    target.fill();
+
+    strokeAxis(
+      riggingPoint(piece, (-WAIST * len) / 2, R, 0, L),
+      riggingPoint(piece, (WAIST * len) / 2, R, 0, L));
+
+    const rad = ((piece.facing || 0) * Math.PI) / 180;
+    const nearStart = Math.cos(rad) >= 0 ? Math.PI / 2 : -Math.PI / 2;
+    [-1, 1].forEach((side) => {
+      const rim = (a) => riggingPoint(piece,
+        (side * len) / 2, R + Math.sin(a) * R, Math.cos(a) * R, L);
+      strokeRing(rim, rgba(piece.color, 0.5));
+      strokeRing(rim, rgba(piece.color, 0.95), nearStart, nearStart + Math.PI);
+    });
+    target.restore();
   }
 
   /* 綱・ロープ・輪など、箱では表せない部品。
