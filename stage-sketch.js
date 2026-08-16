@@ -12954,20 +12954,48 @@ ${cuesheetHtml}
     announce("稽古用JSONを書き出しました。Vision Proで読み込む前に警告を確認してください。");
   }
 
+  /* 読み込み失敗の理由は aria-live（視覚的には隠れている）だけに流れていて、
+     目で見ると「選んでも何も起きない」ように見えていた。失敗のときだけ、
+     画面にも同じ文を短時間出す。成功時は比較モーダル自体が見えるので出さない。 */
+  function importFailureNotice(message) {
+    announce(message);
+    let box = document.getElementById("stage-import-notice");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "stage-import-notice";
+      box.setAttribute("role", "alert");
+      box.style.cssText = "position:fixed;left:50%;bottom:28px;transform:translateX(-50%);"
+        + "z-index:120;max-width:min(520px,calc(100vw - 40px));padding:10px 16px;"
+        + "background:#3a2222;color:#f2e6e6;border:1px solid #7a4040;font-size:13px;"
+        + "box-shadow:0 12px 30px rgba(0,0,0,.45)";
+      document.body.appendChild(box);
+    }
+    box.textContent = message;
+    box.hidden = false;
+    clearTimeout(importFailureNotice._t);
+    importFailureNotice._t = setTimeout(() => { box.hidden = true; }, 8000);
+  }
+
   function importProject(file) {
     if (!file) return;
     const reader = new FileReader();
+    reader.onerror = () => {
+      console.error("stage import: ファイルを読めませんでした", reader.error);
+      importFailureNotice("ファイルを読めませんでした。iCloudの場合は一度ダウンロードしてから選んでください。");
+    };
     reader.onload = () => {
       let parsed = null;
       try {
         parsed = JSON.parse(String(reader.result));
-      } catch (_) {
-        announce("読み込めませんでした。書き出したJSONファイルを選んでください。");
+      } catch (error) {
+        console.error("stage import: JSONとして読めませんでした", error);
+        importFailureNotice("読み込めませんでした。書き出したJSONファイル（.json）を選んでください。");
         return;
       }
       const incoming = parsed && parsed.project ? parsed : { project: parsed };
       if (!incoming.project || !Array.isArray(incoming.project.scenes)) {
-        announce("このファイルにはシーンが入っていません。");
+        console.error("stage import: project.scenes がありません", parsed && Object.keys(parsed));
+        importFailureNotice("このファイルにはシーンが入っていません。");
         return;
       }
       const editSummary = incoming.editSummary;

@@ -257,6 +257,9 @@
               <!-- 前後の送りは絵のすぐ上（.stage-scene-bar）へ出した。
                    ここに残すのは転換の見せ方だけ。 -->
               <div class="stage-scene-move">
+                <button type="button" class="btn-quiet stage-scene-grid-open" id="stage-scene-grid-open">⊞ 一覧</button>
+                <button type="button" class="btn-quiet" id="stage-scene-fold-all"
+                        title="セクションをすべて畳む" hidden>▸ 畳む</button>
                 <label class="stage-toggle stage-anim-toggle" title="次のシーンへ進むとき、動線に沿って動かして見せます">
                   <input type="checkbox" id="stage-anim-scenes" checked>
                   <span>アニメーション</span>
@@ -625,9 +628,15 @@
                 <input type="range" id="stage-tissue-h" min="0" max="10" step="0.1" value="4">
               </div>
               <div id="stage-facing-controls">
-                <label class="stage-control-label stage-range-label" for="stage-piece-facing">
-                  向き <span id="stage-facing-value">客席</span>
-                </label>
+                <div class="stage-facing-head">
+                  <label class="stage-control-label stage-range-label" for="stage-piece-facing">
+                    向き <span id="stage-facing-value">客席</span>
+                  </label>
+                  <button type="button" class="stage-facing-lock" id="stage-facing-lock"
+                          aria-pressed="false"
+                          aria-label="このシーンではスクロールでの向き変更をロックします"
+                          title="このシーンではスクロールでの向き変更をロックします">🔓</button>
+                </div>
                 <input type="range" id="stage-piece-facing" min="-180" max="180" step="15" value="0">
                 <p class="stage-range-scale"><span>背中</span><span>客席</span><span>背中</span></p>
               </div>
@@ -892,6 +901,10 @@
   <div class="stage-modal-body">
     <label class="stage-control-label" for="stage-rename-input">名前</label>
     <input id="stage-rename-input" class="stage-text-input" type="text" maxlength="40">
+    <div class="stage-rename-colors" id="stage-rename-colors" hidden>
+      <span class="stage-control-label">色</span>
+      <div class="stage-rename-swatches" id="stage-rename-swatches" role="group" aria-label="色"></div>
+    </div>
     <button type="button" class="stage-minor-action" id="stage-rename-ok">この名前にする</button>
   </div>
 </div>
@@ -906,6 +919,33 @@
   <div class="stage-modal-body">
     <p class="stage-profile-hint">この端末のブラウザに置いてあるショーです。保存は自動。別の端末へ持っていくときは「書き出す」を使ってください。</p>
     <div class="stage-show-list" id="stage-show-list"></div>
+  </div>
+</div>
+
+<div class="stage-modal-backdrop" id="stage-scene-grid-backdrop" hidden></div>
+<div class="stage-modal stage-scene-grid-modal" id="stage-scene-grid-modal" role="dialog"
+     aria-modal="true" aria-labelledby="stage-scene-grid-title" hidden>
+  <header class="stage-modal-head stage-scene-grid-head">
+    <h2 id="stage-scene-grid-title">シーン一覧</h2>
+    <div class="stage-scene-grid-head-actions">
+      <label class="stage-scene-grid-size" title="カードの大きさ">
+        <span aria-hidden="true">▫</span>
+        <input type="range" id="stage-scene-grid-size" min="150" max="420" step="10" value="220"
+               aria-label="カードの大きさ">
+        <span aria-hidden="true">◻</span>
+      </label>
+      <div class="stage-scene-grid-views" role="group" aria-label="表示">
+        <button type="button" id="stage-scene-grid-front" data-scene-grid-view="front"
+                aria-pressed="true">正面図</button>
+        <button type="button" id="stage-scene-grid-plan" data-scene-grid-view="plan"
+                aria-pressed="false">平面図</button>
+      </div>
+      <button type="button" class="stage-modal-close" id="stage-scene-grid-close"
+              aria-label="閉じる">✕</button>
+    </div>
+  </header>
+  <div class="stage-modal-body stage-scene-grid-body">
+    <div class="stage-scene-grid" id="stage-scene-grid"></div>
   </div>
 </div>
 
@@ -1243,7 +1283,7 @@
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=1"></script>
 <script src="stage-pwa.js?v=3"></script>
-<script src="stage-sketch.js?v=233"></script>
+<script src="stage-sketch.js?v=234"></script>
 <script src="stage-venue-editor.js?v=6"></script>
 </body>
 </html>
