@@ -1720,6 +1720,7 @@
     selectionEmpty: document.getElementById("stage-selection-empty"),
     selectionControls: document.getElementById("stage-selection-controls"),
     selectedName: document.getElementById("stage-selected-name"),
+    fpvOpen: document.getElementById("stage-fpv-open"),
     dimsFromSet: document.getElementById("stage-dims-from-set"),
     openSetInfo: document.getElementById("stage-open-setinfo"),
     routeClear: document.getElementById("stage-route-clear"),
@@ -14464,6 +14465,7 @@ ${cuesheetHtml}
     /* 「何も選んでいないときの案内」は説明文なので「?」の側で出し入れする。
      * ここで勝手に出すと、畳んだはずの文が選ぶたびに戻ってくる。 */
     els.selectionControls.hidden = !piece;
+    if (els.fpvOpen) els.fpvOpen.hidden = !(piece && piece.type === "performer");
     if (!piece) return;
     const sameType = sc().pieces.filter((candidate) => candidate.type === piece.type);
     els.selectedName.textContent = `${pieceTypeName(piece.type)} ${sameType.indexOf(piece) + 1}`;
@@ -16119,6 +16121,45 @@ ${cuesheetHtml}
   if (els.presentPrev) els.presentPrev.addEventListener("click", () => stepScene(-1));
   if (els.presentNext) els.presentNext.addEventListener("click", () => stepScene(1));
   if (els.presentClose) els.presentClose.addEventListener("click", exitPseudoPresentation);
+  if (els.fpvOpen) {
+    els.fpvOpen.addEventListener("click", () => {
+      const piece = selectedPiece();
+      const fpv = window.SHOSAI_STAGE_FPV;
+      if (!piece || piece.type !== "performer" || !fpv) return;
+      fpv.open({
+        initialPieceId: piece.id,
+        read: () => {
+          const current = sc();
+          const rows = state.project.scenes;
+          const at = rows.indexOf(current);
+          const scenes = rows.filter((row) => row.kind === "scene");
+          const size = venueSize();
+          refreshBases(size);
+          let actTitle = "";
+          for (let index = at - 1; index >= 0; index -= 1) {
+            if (rows[index].kind === "section" && rows[index].depth < current.depth) {
+              actTitle = rows[index].title || "";
+              break;
+            }
+          }
+          return {
+            pieces: current.pieces.map((candidate) => ({ ...candidate, dims: pieceDims(candidate) })),
+            showTitle: state.project.title || "",
+            sceneTitle: current.title || "",
+            actTitle,
+            sceneIndex: scenes.indexOf(current),
+            sceneCount: scenes.length,
+            venue: { width: size.width, depth: size.depth, height: size.height, type: state.project.venue },
+            lang,
+          };
+        },
+        heightMOf: (candidate) => pieceHeightM(candidate) * (candidate.size / 100),
+        labelOf: pieceLabel,
+        stepScene,
+        onClose: () => els.fpvOpen.focus(),
+      });
+    });
+  }
   if (els.animScenes) {
     els.animScenes.addEventListener("change", (e) => {
       state.animateScenes = e.target.checked;

@@ -317,7 +317,7 @@
     "背景を消す": "Erase backdrop",
     "矢印を描く": "Draw an arrow",
     "矢印": "Arrow",
-    "空中": "In the air",
+    "空中": "in the air",
     "矢じり": "Arrowhead",
     "片側": "One end",
     "両側": "Both ends",
@@ -502,6 +502,16 @@
 
     /* ---- 選んだもの ---- */
     "姿勢": "Pose",
+    "この人の視界": "View from here",
+    "視界を閉じる": "Close view",
+    "前の場面": "Previous scene",
+    "次の場面": "Next scene",
+    "ドラッグで見回す": "Drag to look around",
+    "の視界": " — view",
+    "目の高さ": "eye height",
+    "はこの場面にいません — 客席から見ています": " is not in this scene — viewing from the house",
+    "1階中央・5列目": "Stalls centre, row 5",
+    "劇場の箱は仮にプロセニアムで描いています": "Shell drawn as proscenium (approx.)",
     "ポールに付く": "On the pole",
     "椅子に座る": "Seated",
     "ポールの持ち場": "Grip on the pole",
@@ -569,7 +579,7 @@
     "絵は斜め前から見たところです。舞台での見え方は、向きによって変わります。":
       "Drawn from a three-quarter view. On stage it depends on which way the figure faces.",
     "演者プロフィール": "Performer profile",
-    "身長": "Height",
+    "身長": "height",
     "色": "Colour",
     // 付箋を貼る札と、プロフィール窓の記入欄が同じ字。訳は一つしか持てない
     "メモ": "Note",
