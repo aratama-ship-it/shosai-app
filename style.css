@@ -4085,8 +4085,12 @@ canvas[data-tool="note"] { cursor: copy; }
 
 @media (max-width: 560px) {
   .scrapbook-page-controls { grid-template-columns: 1fr; }
-  .scrapbook-page-actions { width: 100%; }
-  .scrapbook-page-actions button { flex: 1 1 0; }
+  /* .scrapbook-page-actions は保存・書き出し・読み込みのボタン5つ+隠しinputを
+     nowrapのflexで並べており、grid内の1fr列がその最小内容幅（500px近く）まで
+     広がって画面からはみ出していた（2026-08-18 発見）。折り返して幅を明け渡す。 */
+  .scrapbook-page-controls > * { min-width: 0; }
+  .scrapbook-page-actions { width: 100%; flex-wrap: wrap; row-gap: 8px; }
+  .scrapbook-page-actions button { flex: 1 1 auto; min-width: 0; }
   .scrapbook-board-tools { gap: 5px; }
   .scrapbook-pages-toggle { padding-left: 7px; padding-right: 6px; }
 }
@@ -5771,6 +5775,14 @@ canvas[data-tool="note"] { cursor: copy; }
   .topnav a { padding: 0 12px; font-size: 12.5px; }
   .topnav-note { display: none; }
 
+  /* 8つのタブが幅に収まらず横スクロールになる。指で送れることが
+     見た目でわからなかったので、右端（と送った後は左端も）を
+     ぼかして「まだ続きがある」ことを示す（2026-08-18）。 */
+  .topnav nav {
+    mask-image: linear-gradient(to right, transparent, black 14px, black calc(100% - 22px), transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 14px, black calc(100% - 22px), transparent);
+  }
+
   #view-desk { padding: 7vh 20px 56px; }
   #view-studio { padding-left: 0; }
   #view-db { padding-left: 0; }
@@ -5804,6 +5816,21 @@ canvas[data-tool="note"] { cursor: copy; }
     flex-direction: column;
     gap: 12px;
   }
+
+  /* スクラップブック／場面問答の見出し。flex:1 + min-width:0 の説明文が、
+     見出しと右のボタンに挟まれて幅6px程度まで潰れ、1行1文字の縦書き風に
+     なっていた（2026-08-18 発見）。縦積みにして説明文へ全幅を渡す。 */
+  .seeds-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .seeds-head .seed-history-reset {
+    align-self: flex-start;
+  }
+
+  .seeds-sub { flex: none; width: 100%; }
 
   .stage-history-actions { justify-content: flex-start; }
   /* 縦積みになったら、注意書きは幅いっぱいに伸ばす */
@@ -10688,6 +10715,23 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
   .stage-canvas-bar:has(.stage-arrow-options:not([hidden])) .stage-canvas-tools {
     flex: 1 1 100%;
     flex-wrap: wrap;
+  }
+}
+
+/* スマホ実機は舞台スケッチを「閲覧機」に切り替えるのが基本だが、
+   書斎アプリ内タブから開くとその判定が効かず（standaloneStagePage
+   ガードで対象外）、通常の編集UIがそのまま出る。道具列がnowrapで
+   214〜490px要求し、375px画面からはみ出して横スクロールが生まれ、
+   position:fixedの他要素の基準幅まで巻き込んで壊れていた
+   （2026-08-18 発見）。既存の矢印中と同じ「バーごと折り返す」対処を
+   常時にも広げる。 */
+@media (max-width: 600px) {
+  .stage-canvas-bar { flex-wrap: wrap; }
+  .stage-canvas-bar .stage-canvas-tools {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    margin-left: 0;
+    justify-content: flex-start;
   }
 }
 

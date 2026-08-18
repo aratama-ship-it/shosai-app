@@ -1,0 +1,33 @@
+{
+  "id": "./index.html",
+  "name": "制作の書斎",
+  "short_name": "制作の書斎",
+  "description": "ショー・演出リファレンスを、制作の問い・場面案・ビジュアル試作へつなぐ個人用の作業空間。",
+  "lang": "ja",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#191512",
+  "theme_color": "#191512",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./icons/stage-sketch-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/stage-sketch-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/stage-sketch-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

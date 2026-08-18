@@ -652,12 +652,17 @@
   let tabletUi = null;
   /* スマホは編集机ではなく、受け取ったJSONを現場で確認するための閲覧機にする。
      iPadは上の専用PWAへ任せ、短辺600px以下のタッチ端末だけを対象にする。
-     localhostのpreview指定は実機を使わないブラウザ試験用。 */
+     localhostのpreview指定は実機を使わないブラウザ試験用。
+     ★この閲覧機は stage.html 単独版だけの想定（.topnav/.spine を持たない）。
+       書斎本体 index.html にも同じ stage-sketch.js が載るため、判定にガードを
+       入れないと、実機スマホで書斎を開いただけで全画面のタブと背表紙が
+       消える（2026-08-18 発見）。 */
+  const standaloneStagePage = !document.querySelector(".topnav");
   const phonePreview = ["localhost", "127.0.0.1"].includes(window.location.hostname)
     && new URLSearchParams(window.location.search).has("phone-viewer-preview");
   const phoneLike = navigator.maxTouchPoints > 0
     && Math.min(window.screen.width, window.screen.height) <= 600;
-  const phoneViewerActive = !tabletPwaActive && (phonePreview || phoneLike);
+  const phoneViewerActive = standaloneStagePage && !tabletPwaActive && (phonePreview || phoneLike);
   const phoneOrientation = window.matchMedia("(orientation: portrait)");
   const tabletOrientation = window.matchMedia("(orientation: portrait)");
   document.documentElement.classList.toggle("stage-phone-viewer", phoneViewerActive);
