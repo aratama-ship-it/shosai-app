@@ -20,3 +20,9 @@ mac-app/build/
 
 # 機能実装前のローカル退避コピー（履歴はgit側にあるので追跡しない）
 *_backup_*
+
+# Cloudflare Pages Functionsのローカル秘密情報（本番はダッシュボードのSecretで管理）
+.dev.vars
+
+# wrangler pages dev のローカルキャッシュ
+.wrangler/
