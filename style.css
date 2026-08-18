@@ -7426,6 +7426,74 @@ body.is-panel-dragging {
 .stage-scene-bar .btn-quiet:disabled { opacity: 0.35; cursor: default; }
 .stage-scene-bar .btn-quiet:disabled:hover { border-color: var(--line-dark); }
 
+/* 前と次の送り。字を読み下さなくても向きが分かるよう色を分ける。
+   戻る＝石板色、進む＝錆色。面は塗らず、矢印と枠にだけ色を差す
+   （絵のすぐ上の帯なので、塗ると舞台面より先に目が行ってしまう）。 */
+.stage-scene-step-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.stage-scene-step-arrow {
+  font-size: 9px;
+  line-height: 1;
+  transition: transform 120ms ease;
+}
+
+.stage-scene-bar .stage-scene-step-btn.is-prev {
+  border-color: rgba(139, 152, 161, 0.42);
+  color: rgba(240, 231, 214, 0.72);
+}
+.stage-scene-step-btn.is-prev .stage-scene-step-arrow { color: var(--slate); }
+.stage-scene-bar .stage-scene-step-btn.is-prev:hover:not(:disabled) {
+  border-color: var(--slate);
+  color: var(--milk);
+}
+.stage-scene-step-btn.is-prev:hover:not(:disabled) .stage-scene-step-arrow {
+  transform: translateX(-2px);
+}
+
+.stage-scene-bar .stage-scene-step-btn.is-next {
+  border-color: rgba(223, 100, 51, 0.46);
+  color: var(--milk);
+}
+.stage-scene-step-btn.is-next .stage-scene-step-arrow { color: var(--rust-ink); }
+.stage-scene-bar .stage-scene-step-btn.is-next:hover:not(:disabled) {
+  border-color: var(--rust-ink);
+  color: var(--milk);
+}
+.stage-scene-step-btn.is-next:hover:not(:disabled) .stage-scene-step-arrow {
+  transform: translateX(2px);
+}
+
+/* 使えないときは色も引く。色が残ると「押せる」と読めてしまう */
+.stage-scene-bar .stage-scene-step-btn:disabled {
+  border-color: var(--line-dark);
+  color: var(--milk-dim);
+}
+.stage-scene-step-btn:disabled .stage-scene-step-arrow { color: var(--milk-dim); }
+
+/* 一覧への入り口。送りの二つより一段弱く、記号だけの正方形で置く */
+.stage-scene-bar .stage-scene-bar-grid {
+  padding: 6px 0;
+  width: 30px;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  letter-spacing: 0;
+  color: var(--milk-dim);
+  margin-left: 2px;
+}
+.stage-scene-bar .stage-scene-bar-grid:hover {
+  border-color: var(--brass);
+  color: var(--milk);
+}
+
 /* 説明は残り幅いっぱいを取る。行の中で一番よく読む部分なので、
    送りより先に折り返させない。
    ★縦は伸ばさない。伸ばすと、書き込み欄の高さを内容から測る処理
@@ -7854,6 +7922,111 @@ body.is-panel-dragging {
 
 .stage-center-bar button { min-height: 30px; font-size: 10.5px; padding: 4px 12px; }
 .stage-center-bar .stage-tool-grid button { padding: 4px 10px; letter-spacing: 0.04em; }
+
+/* 道具のうち「ものを動かす・照明を動かす・矢印を描く」は記号だけにする。
+   毎日いちばん多く押す三つで、形を覚えれば字は読まなくなる。
+   名前は span に残したまま隠すので、読み上げと英語切替はそのまま効く
+   （消すと画面読み上げで「ボタン」としか読まれなくなる）。 */
+.stage-center-bar .stage-tool-grid button.is-icon {
+  width: 40px;
+  min-width: 40px;
+  padding: 4px 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stage-center-bar .stage-tool-grid button.is-icon .stage-tool-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.stage-tool-icon {
+  font-size: 15px;
+  line-height: 1;
+  display: block;
+}
+
+/* 選んでいる道具の記号は、字の色より一段はっきり出す */
+.stage-center-bar .stage-tool-grid button.is-icon[aria-pressed="true"] .stage-tool-icon {
+  color: var(--paper);
+}
+
+/* 記号の上に出す説明。名前・ショートカット・使い方の三つを一枚で見せる。
+   環境設定「アイコンの説明」でOFFにできる（覚えたら消せる）。
+   ネイティブの title は出るまで遅く、字面も揃わないので自前で持つ。 */
+.stage-tip {
+  position: fixed;
+  z-index: 90;
+  max-width: 22em;
+  padding: 7px 10px 8px;
+  border: 1px solid var(--brass);
+  background: var(--desk-3);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 90ms ease;
+}
+
+.stage-tip.is-on { opacity: 1; }
+.stage-tip[hidden] { display: none; }
+
+.stage-tip-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--paper);
+  letter-spacing: 0.06em;
+}
+
+/* ショートカットの字。キーの形に見せると、押せるものだと一目で分かる */
+.stage-tip-key {
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: var(--brass);
+  border: 1px solid rgba(156, 130, 63, 0.6);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.stage-tip-hint {
+  margin: 4px 0 0;
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--milk-dim);
+}
+
+/* 上部の歯車。字を置かず正方形にして、隣の「プレゼン」と役目を分ける */
+.stage-gear-btn {
+  width: 34px;
+  min-width: 34px;
+  padding-left: 0;
+  padding-right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* 環境設定の中の言語。切り替えの札は右端に置く（他の行は左に印がある） */
+.stage-pref-lang-row {
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.stage-pref-lang-body { display: block; }
+
+.stage-pref-lang-row .stage-lang {
+  flex: 0 0 auto;
+  min-width: 74px;
+}
 
 /* 場面は右列で縦に積む */
 .stage-col .stage-scenes {
@@ -10486,3 +10659,91 @@ html.stage-pwa-tablet .stage-arrow-options {
 html.stage-pwa-tablet .stage-arrow-choice button,
 html.stage-pwa-tablet .stage-arrow-clear,
 html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px; }
+
+/* セットビルダー。舞台スケッチ本体とは別の全画面作業台として重ねる。 */
+.stage-roster-head-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.stage-roster-head-actions .btn-quiet { padding: 3px 8px; font-size: 11px; }
+#stage-model-picker { min-width: 120px; max-width: 220px; }
+
+.stage-model-builder {
+  position: fixed;
+  inset: 0;
+  z-index: 10040;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  color: #e8e2d4;
+  background: #100d0b;
+  font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+}
+.stage-model-builder[hidden] { display: none; }
+.stage-model-builder button,
+.stage-model-builder input,
+.stage-model-builder select,
+.stage-model-builder textarea { font: inherit; }
+.stage-model-builder-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(232,226,212,.2);
+  background: #211a15;
+}
+.stage-model-builder-head h2 { margin: 0; font-size: 18px; }
+.stage-model-builder-close,
+.stage-model-actions button,
+.stage-model-list button,
+.stage-model-part-list button {
+  border: 1px solid rgba(232,226,212,.24);
+  border-radius: 5px;
+  color: inherit;
+  background: #2a221c;
+  cursor: pointer;
+}
+.stage-model-builder-close { padding: 6px 12px; }
+.stage-model-builder-body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(190px, 23vw) minmax(320px, 1fr) minmax(240px, 27vw);
+}
+.stage-model-builder-side,
+.stage-model-builder-preview { min-width: 0; min-height: 0; padding: 12px; }
+.stage-model-builder-side { overflow: auto; background: #1a1512; }
+.stage-model-builder-side.is-left { border-right: 1px solid rgba(232,226,212,.15); }
+.stage-model-builder-side.is-right { border-left: 1px solid rgba(232,226,212,.15); }
+.stage-model-builder h3 { margin: 0 0 10px; font-size: 15px; }
+.stage-model-list,
+.stage-model-part-list { display: grid; gap: 5px; margin-bottom: 10px; }
+.stage-model-list button,
+.stage-model-part-list button { width: 100%; padding: 7px 8px; text-align: left; }
+.stage-model-list button.is-selected,
+.stage-model-part-list button.is-selected { border-color: #d3ac59; background: #493620; color: #fff1c8; }
+.stage-model-actions { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 14px; }
+.stage-model-actions button { padding: 5px 8px; }
+.stage-model-actions button.is-danger { color: #edb0a0; }
+.stage-model-transfer { margin-top: 12px; }
+.stage-model-builder textarea { width: 100%; box-sizing: border-box; resize: vertical; }
+.stage-model-builder-preview { display: grid; grid-template-rows: auto minmax(0, 1fr); background: #171411; }
+.stage-model-builder-preview canvas { width: 100%; height: 100%; min-height: 280px; touch-action: none; cursor: grab; }
+.stage-model-builder-preview canvas:active { cursor: grabbing; }
+.stage-model-controls { display: grid; gap: 7px; }
+.stage-model-controls label { display: grid; grid-template-columns: minmax(70px, 1fr) minmax(80px, 1fr) auto; align-items: center; gap: 6px; }
+.stage-model-controls input,
+.stage-model-controls select,
+.stage-model-builder textarea {
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid rgba(232,226,212,.25);
+  border-radius: 4px;
+  color: #efe7d6;
+  background: #100d0b;
+}
+.stage-model-controls h4 { margin: 10px 0 2px; color: #d3ac59; font-size: 12px; }
+.stage-model-controls i { color: rgba(232,226,212,.62); font-size: 11px; font-style: normal; }
+
+@media (max-width: 820px) {
+  .stage-model-builder-body { grid-template-columns: minmax(150px, 31vw) minmax(300px, 1fr); }
+  .stage-model-builder-side.is-right { grid-column: 1 / -1; border-left: 0; border-top: 1px solid rgba(232,226,212,.15); }
+  .stage-model-builder-body { overflow: auto; }
+  .stage-model-builder-preview { min-height: 55vh; }
+}

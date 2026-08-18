@@ -32,6 +32,62 @@ test("客席カメラのRIGHTはu=1側を画面右に置く", () => {
   closeTo(right.x, 1); closeTo(right.y, 0); closeTo(right.z, 0);
 });
 
+test("自由カメラはWを1秒押すと視線の水平前方へ2.4m進む", () => {
+  const moved = geom.moveFree({ x: 0, y: 1.35, z: 0 }, { x: 0, y: 0, z: 1 },
+    { x: -1, y: 0, z: 0 }, { forward: true }, 1, 2.4);
+  closeTo(moved.x, 0);
+  closeTo(moved.y, 1.35);
+  closeTo(moved.z, 2.4);
+});
+
+test("自由カメラの前進と右移動を同時にしても斜めだけ速くならない", () => {
+  const origin = { x: 0, y: 1.35, z: 0 };
+  const moved = geom.moveFree(origin, { x: 0, y: 0, z: 1 }, { x: 1, y: 0, z: 0 },
+    { forward: true, right: true }, 1, 2.4);
+  closeTo(Math.hypot(moved.x - origin.x, moved.y - origin.y, moved.z - origin.z), 2.4);
+});
+
+test("ほぼ真下を向いた自由カメラもWでは水平に進む", () => {
+  const origin = { x: 2, y: 6, z: 3 };
+  const pitch = -88 * Math.PI / 180;
+  const moved = geom.moveFree(origin, { x: 0, y: Math.sin(pitch), z: Math.cos(pitch) },
+    { x: 1, y: 0, z: 0 }, { forward: true }, 1, 2.4);
+  closeTo(moved.y, origin.y);
+  closeTo(Math.hypot(moved.x - origin.x, moved.z - origin.z), 2.4);
+});
+
+test("自由カメラの位置を舞台と客席を含む移動範囲へ収める", () => {
+  const upper = geom.clampFree({ x: 999, y: 999, z: 999 }, 12, 9, 8);
+  assert.deepEqual([upper.x, upper.y, upper.z], [18, 14, 26.5]);
+  const lower = geom.clampFree({ x: -999, y: -999, z: -999 }, 12, 9, 8);
+  assert.deepEqual([lower.x, lower.y, lower.z], [-18, .2, -12.5]);
+});
+
+test("自由カメラの客席中央と真上プリセットが指定の向きと高さを持つ", () => {
+  const presets = geom.freePresets(12, 9, 8);
+  const audience = presets.find((preset) => preset.name === "客席中央");
+  const overhead = presets.find((preset) => preset.name === "真上");
+  assert.equal(audience.yaw, 180);
+  assert.equal(overhead.y, 12);
+});
+
+test("自由カメラの移動はdtが0なら位置を変えずNaNにもならない", () => {
+  const moved = geom.moveFree({ x: 1, y: 2, z: 3 }, { x: 0, y: 0, z: 1 },
+    { x: 1, y: 0, z: 0 }, { forward: true }, 0, 2.4);
+  assert.deepEqual([moved.x, moved.y, moved.z], [1, 2, 3]);
+  assert.ok([moved.x, moved.y, moved.z].every(Number.isFinite));
+});
+
+test("フレーム間隔は上限0.1秒で切り、裏に回った直後もカメラがワープしない", () => {
+  // 裏に回って3秒止まったあとの1フレーム。3秒ぶん進ませてはいけない
+  assert.equal(geom.frameDelta(1000, 4000), .1);
+  assert.equal(geom.frameDelta(1000, 1016), .016);
+  // 初回フレームと、時刻が戻った場合は進めない
+  assert.equal(geom.frameDelta(null, 1000), 0);
+  assert.equal(geom.frameDelta(1000, 1000), 0);
+  assert.equal(geom.frameDelta(1000, 900), 0);
+});
+
 test("near面より手前を捨て、跨ぐ線分を交点で切る", () => {
   assert.deepEqual(Array.from(geom.clipPolyNear([
     { x: -1, y: 0, z: .02 }, { x: 1, y: 0, z: .04 }, { x: 0, y: 1, z: .08 },

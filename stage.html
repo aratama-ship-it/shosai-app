@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=168">
+<link rel="stylesheet" href="style.css?v=170">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -33,10 +33,8 @@
         <div class="stage-history-actions">
           <button type="button" id="stage-undo" data-tablet-icon="↶" title="⌘Z（WindowsはCtrl+Z）" disabled>一つ戻す</button>
           <button type="button" id="stage-redo" data-tablet-icon="↷" title="⇧⌘Z（WindowsはCtrl+Shift+Z）" disabled>やり直す</button>
-          <button type="button" class="stage-lang" id="stage-prefs-btn" data-tablet-icon="⚙" title="機能の出し入れ（環境設定）">設定</button>
+          <button type="button" class="stage-lang stage-gear-btn" id="stage-prefs-btn" data-tablet-icon="⚙" aria-label="設定" title="設定（機能の出し入れ・言語）"><span aria-hidden="true">⚙</span></button>
           <button type="button" class="stage-lang" id="stage-present-btn" data-tablet-icon="▶" title="正面図だけを全画面で見せる。矢印キーでシーン送り、Escで戻る">プレゼン</button>
-          <button type="button" class="stage-lang" id="stage-lang" aria-pressed="false"
-                  title="日本語 / English">EN</button>
           <button type="button" class="stage-export" id="stage-export" data-tablet-icon="⇩">画像を書き出す</button>
         </div>
       </header>
@@ -117,6 +115,7 @@
                 <button type="button" id="stage-roster-kind" class="stage-select stage-kind-button">
                   <span id="stage-roster-kind-label">演者</span><span aria-hidden="true">▸</span>
                 </button>
+                <select id="stage-model-picker" class="stage-select" aria-label="組んだセットを選ぶ" hidden></select>
                 <button type="button" id="stage-roster-add" class="btn-quiet">追加</button>
               </div>
               <p class="stage-cast-empty" id="stage-roster-empty">まだ何も登録していません。名前と種類を選んで追加してください。</p>
@@ -125,7 +124,9 @@
                 <div class="stage-cast-list" id="stage-cast-list"></div>
               </div>
               <div class="stage-roster-group" id="stage-group-sets" data-tablet-break-before>
-                <p class="stage-roster-head">舞台セット</p>
+                <p class="stage-roster-head stage-roster-head-actions"><span>舞台セット</span>
+                  <button type="button" id="stage-model-open" class="btn-quiet">セットを組む</button>
+                </p>
                 <div class="stage-cast-list" id="stage-set-list"></div>
               </div>
             </div>
@@ -291,14 +292,17 @@
           </section>
 
           <div class="stage-center-bar">
-            <!-- 「動かす」二つと「背景」二つは別の仕事なので、間を空けて分ける -->
+            <!-- 「動かす」二つ・自由矢印・「背景」二つは別の仕事なので、間を空けて分ける -->
             <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
-              <button type="button" data-stage-tool="select" data-tablet-icon="↔" aria-label="ものを動かす" aria-pressed="true">ものを動かす</button>
-              <button type="button" data-stage-tool="light" data-tablet-icon="☀" aria-label="照明を動かす" aria-pressed="false">照明を動かす</button>
+              <button type="button" data-stage-tool="select" data-tablet-icon="↔" data-tool-key="V" class="is-icon" aria-label="ものを動かす" aria-pressed="true"><span class="stage-tool-icon" aria-hidden="true">↔</span><span class="stage-tool-label">ものを動かす</span></button>
+              <button type="button" data-stage-tool="light" data-tablet-icon="☀" data-tool-key="L" class="is-icon" aria-label="照明を動かす" aria-pressed="false"><span class="stage-tool-icon" aria-hidden="true">☀</span><span class="stage-tool-label">照明を動かす</span></button>
               <span class="stage-tool-split" aria-hidden="true"></span>
-              <button type="button" data-stage-tool="paint" data-tablet-icon="✎" aria-label="背景を塗る" aria-pressed="false">背景を塗る</button>
-              <button type="button" data-stage-tool="erase" data-tablet-icon="⌫" aria-label="背景を消す" aria-pressed="false">背景を消す</button>
+              <button type="button" data-stage-tool="arrow" data-tablet-icon="↗" data-tool-key="A" class="is-icon" aria-label="矢印を描く" aria-pressed="false"><span class="stage-tool-icon" aria-hidden="true">↗</span><span class="stage-tool-label">矢印を描く</span></button>
+              <span class="stage-tool-split" aria-hidden="true"></span>
+              <button type="button" data-stage-tool="paint" data-tablet-icon="✎" data-tool-key="P" class="is-icon" aria-label="背景を塗る" aria-pressed="false"><span class="stage-tool-icon" aria-hidden="true">✎</span><span class="stage-tool-label">背景を塗る</span></button>
+              <button type="button" data-stage-tool="erase" data-tablet-icon="⌫" data-tool-key="E" class="is-icon" aria-label="背景を消す" aria-pressed="false"><span class="stage-tool-icon" aria-hidden="true">⌫</span><span class="stage-tool-label">背景を消す</span></button>
             </div>
+            <button type="button" class="btn-quiet" id="stage-freecam-open">3Dカメラ</button>
             <button type="button" class="stage-hint-help" id="stage-tool-help"
                     aria-pressed="false" aria-label="いまの道具の説明を出す" title="いまの道具の説明">?</button>
             <p class="stage-tool-hint" id="stage-tool-hint" hidden>演者や物を選び、舞台の上で動かします。</p>
@@ -328,9 +332,16 @@
                絵を見ながら読み書きできるようにする。 -->
           <div class="stage-scene-bar" id="stage-scene-bar">
             <div class="stage-scene-step" role="group" aria-label="シーンを送る">
-              <button type="button" id="stage-scene-prev" class="btn-quiet" title="前のシーンへ（↑ または ←）">◀ 前のシーン</button>
+              <!-- 前と次は、字を読まずとも向きが分かるように色を分ける。
+                   戻る＝石板色（控えめ）、進む＝錆色（この帯の主役の操作）。
+                   矢印だけに色を差し、面は塗らない（絵より前に出ないため）。 -->
+              <button type="button" id="stage-scene-prev" class="btn-quiet stage-scene-step-btn is-prev" title="前のシーンへ（↑ または ←）"><span class="stage-scene-step-arrow" aria-hidden="true">◀</span>前のシーン</button>
               <span class="stage-scene-now" id="stage-scene-now" aria-live="polite"></span>
-              <button type="button" id="stage-scene-next" class="btn-quiet" title="次のシーンへ（↓ または →）">次のシーン ▶</button>
+              <button type="button" id="stage-scene-next" class="btn-quiet stage-scene-step-btn is-next" title="次のシーンへ（↓ または →）">次のシーン<span class="stage-scene-step-arrow" aria-hidden="true">▶</span></button>
+              <!-- 一覧への入り口。シーンの欄を畳んでいても、絵を見ながら飛べる。
+                   字は置かず記号だけ（送りの二つより弱く見せる） -->
+              <button type="button" id="stage-scene-bar-grid" class="btn-quiet stage-scene-bar-grid"
+                      title="シーン一覧を開く" aria-label="シーン一覧を開く">⊞</button>
             </div>
             <div class="stage-scene-desc" id="stage-scene-desc">
               <label class="stage-scene-desc-label" id="stage-scene-desc-label"
@@ -499,10 +510,40 @@
                 <!-- 右手の道具はひとまとめにする。ばらのまま並べると、
                      間の余白が均等に割られて、道具どうしが離れてしまう -->
                 <div class="stage-canvas-tools">
+                  <div class="stage-arrow-options" id="stage-arrow-options" hidden>
+                    <div class="stage-arrow-choice" role="group" aria-label="矢印">
+                      <button type="button" id="stage-arrow-plane-floor" aria-pressed="true">床</button>
+                      <button type="button" id="stage-arrow-plane-air" aria-pressed="false">空中</button>
+                    </div>
+                    <label class="stage-arrow-depth-control" id="stage-arrow-depth-control">
+                      <span>奥行き</span>
+                      <input type="range" id="stage-arrow-depth" min="0" max="1" step="0.01" value="0.5">
+                      <output id="stage-arrow-depth-value" for="stage-arrow-depth">4.5m</output>
+                    </label>
+                    <div class="stage-arrow-choice stage-arrow-heads" role="group" aria-label="矢じり">
+                      <span>矢じり</span>
+                      <button type="button" id="stage-arrow-head-one" aria-pressed="true">片側</button>
+                      <button type="button" id="stage-arrow-head-both" aria-pressed="false">両側</button>
+                    </div>
+                    <!-- 線の太さ。矢じりの大きさも一緒に変わる（細い線に大きな矢じりは付かない）。
+                         いま引く矢印への設定で、すでに引いた矢印は変わらない（色・矢じりと同じ扱い） -->
+                    <div class="stage-arrow-choice stage-arrow-widths" role="group" aria-label="太さ">
+                      <span>太さ</span>
+                      <button type="button" id="stage-arrow-width-thin" aria-pressed="false">細</button>
+                      <button type="button" id="stage-arrow-width-mid" aria-pressed="true">中</button>
+                      <button type="button" id="stage-arrow-width-bold" aria-pressed="false">太</button>
+                    </div>
+                    <label class="stage-arrow-color" title="矢印">
+                      <span>矢印</span>
+                      <input type="color" id="stage-arrow-color" value="#d3ac59" aria-label="矢印">
+                    </label>
+                    <button type="button" class="stage-arrow-clear" id="stage-arrow-clear">この場面の矢印を消す</button>
+                  </div>
                   <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-front-zoom"
                           title="等倍に戻す" hidden>1.0× ⟲</button>
                   <button type="button" class="stage-canvas-tool" id="stage-front-note"
-                          aria-pressed="false">メモ</button>
+                          data-tool-tip="note" data-tool-key="N"
+                          aria-label="メモを貼る" aria-pressed="false">メモ</button>
                   <label class="stage-canvas-toggle" title="正面の絵の照明を点けたり消したりする">
                     <input type="checkbox" id="stage-front-lights" checked>
                     <span>照明</span>
@@ -533,7 +574,8 @@
                 <p class="stage-canvas-caption">平面（上から）</p>
                 <div class="stage-canvas-tools">
                   <button type="button" class="stage-canvas-tool" id="stage-plan-route"
-                          aria-pressed="false">動線を描く</button>
+                          data-tool-tip="route" data-tool-key="R"
+                          aria-label="動線を描く" aria-pressed="false">動線を描く</button>
                   <select class="stage-canvas-tool" id="stage-arrange-select"
                           title="舞台上の演者を、いまの位置関係を保ったまま並べ直す" aria-label="整列">
                     <option value="">整列</option>
@@ -544,7 +586,8 @@
                   <button type="button" class="stage-canvas-tool stage-zoom-reset" id="stage-plan-zoom"
                           title="等倍に戻す" hidden>1.0× ⟲</button>
                   <button type="button" class="stage-canvas-tool" id="stage-plan-note"
-                          aria-pressed="false">メモ</button>
+                          data-tool-tip="note" data-tool-key="N"
+                          aria-label="メモを貼る" aria-pressed="false">メモ</button>
                   <label class="stage-canvas-toggle" title="平面図の照明の円と灯体を出したり隠したりする">
                     <input type="checkbox" id="stage-plan-lights" checked>
                     <span>照明</span>
@@ -600,6 +643,8 @@
               <button type="button" id="stage-piece-pose" class="stage-pose-button">
                 <span id="stage-pose-label">立つ</span><span aria-hidden="true">▸</span>
               </button>
+              <!-- 一人称の「視界」。演者を選んでいるときだけ出る。
+                   stage.html には最初から置いてあったが、こちらへ入れ忘れていた -->
               <button type="button" id="stage-fpv-open" class="btn-quiet" hidden>この人の視界</button>
               <!-- ポールに付いているときだけ出る持ち場の操作 -->
               <div id="stage-pole-controls" hidden>
@@ -619,6 +664,14 @@
                 <div class="stage-action-row">
                   <button type="button" id="stage-trap-sit" class="btn-quiet">座る</button>
                   <button type="button" id="stage-trap-hang" class="btn-quiet">ぶら下がる</button>
+                </div>
+              </div>
+              <!-- ディアボロを選んだときだけ出る置き方の操作 -->
+              <div id="stage-diabolo-controls" hidden>
+                <label class="stage-control-label">ディアボロの置き方</label>
+                <div class="stage-action-row">
+                  <button type="button" id="stage-diabolo-lay" class="btn-quiet">横置き</button>
+                  <button type="button" id="stage-diabolo-stand" class="btn-quiet">縦置き</button>
                 </div>
               </div>
               <!-- ティシューに掴まっているときだけ出る操作 -->
@@ -973,6 +1026,16 @@
   <div class="stage-modal-body">
     <p class="stage-profile-hint">機能の出し入れです。この端末だけの設定で、ショーのデータには入りません。</p>
     <div id="stage-prefs-list"></div>
+    <!-- 言語は歯車の中へ。上部は道具の列なので、めったに触らないものは置かない -->
+    <div class="stage-pref-row stage-pref-lang-row">
+      <span class="stage-pref-lang-body">
+        <span class="stage-pref-name">言語 / Language</span>
+        <p class="stage-pref-hint">画面の文字を日本語と英語で切り替えます。</p>
+      </span>
+      <button type="button" class="stage-lang" id="stage-lang" aria-pressed="false"
+              title="日本語 / English">EN</button>
+    </div>
+
     <div class="stage-prefs-links" aria-label="案内とサポート">
       <button type="button" class="stage-about-link" id="stage-tour-start" title="使い方をひととおり見る">使い方</button>
       <button type="button" class="stage-about-link" id="stage-about-open-from-prefs">このアプリについて</button>
@@ -1280,12 +1343,14 @@
 
 <script src="stage-venues.js?v=16"></script>
 <script src="stage-venue-lines.js?v=4"></script>
-<script src="stage-i18n.js?v=51"></script>
+<script src="stage-i18n.js?v=56"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=1"></script>
+<script src="stage-set-model.js?v=1"></script>
+<script src="stage-set-builder.js?v=1"></script>
+<script src="stage-first-person.js?v=4"></script>
 <script src="stage-pwa.js?v=3"></script>
-<script src="stage-first-person.js?v=2"></script>
-<script src="stage-sketch.js?v=237"></script>
+<script src="stage-sketch.js?v=243"></script>
 <script src="stage-venue-editor.js?v=6"></script>
 </body>
 </html>

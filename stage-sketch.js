@@ -748,6 +748,7 @@
     car: "車",
     seri: "せり",
     sphere: "球",
+    model: "組んだセット",
     light: "照明",
   };
   // 実寸の目安（m）。人を基準に置くと、舞台の規模が見た目に出る
@@ -763,6 +764,7 @@
     wire: 1.2, suitcase: 0.44, trampoline: 0.95, cane: 0.75, car: 1.45,
     seri: 2.7,
     sphere: 1.2,
+    model: 1,
     light: 2.5,
   };
   // 台・テーブル・椅子・球・光は実寸（m）で持つ。人だけが身長で決まるのに対し、
@@ -854,6 +856,7 @@
     teeter: "ティーターボード", tissue: "エアリアルティシュー", wire: "綱渡り",
     suitcase: "スーツケース", trampoline: "トランポリン", cane: "ハンドバランス用cane",
     car: "車", seri: "せり",
+    model: "組んだセット",
     light: "照明",
   };
   // 吊物にしかならない道具。床に置く形を持たない
@@ -893,7 +896,7 @@
   const LIGHT_KIND_ORDER = ["hang", "ss", "front", "floor"];
   const lightKindOf = (item) => (item && LIGHT_KINDS[item.lightKind] ? item.lightKind : "hang");
   const SET_KIND_ORDER = [
-    "block", "table", "chair", "bench", "stool", "wall", "sphere",
+    "block", "table", "chair", "bench", "stool", "wall", "sphere", "model",
     "trapeze", "cyrwheel", "diabolo", "pole", "teeter", "tissue", "wire",
     "suitcase", "trampoline", "cane", "car", "seri",
   ];
@@ -909,7 +912,7 @@
    */
   const BASE_JOINTS = {
     head: [0, 0.935, 0], neck: [0, 0.855, 0],
-    shL: [-0.115, 0.82, 0], shR: [0.115, 0.82, 0],
+    shL: [-0.1075, 0.82, 0], shR: [0.1075, 0.82, 0],
     elL: [-0.135, 0.63, 0.015], elR: [0.135, 0.63, 0.015],
     wrL: [-0.145, 0.45, 0.03], wrR: [0.145, 0.45, 0.03],
     hipL: [-0.055, 0.52, 0], hipR: [0.055, 0.52, 0],
@@ -998,7 +1001,7 @@
     // 椅子の座面（およそ0.27H＝身長165cmで45cm）に腰を置く
     makePose("sit", "座る", {
       head: [0, 0.70, 0.02], neck: [0, 0.62, 0.01],
-      shL: [-0.115, 0.585, 0], shR: [0.115, 0.585, 0],
+      shL: [-0.1075, 0.585, 0], shR: [0.1075, 0.585, 0],
       elL: [-0.128, 0.41, 0.02], elR: [0.128, 0.41, 0.02],
       wrL: [-0.125, 0.28, 0.10], wrR: [0.125, 0.28, 0.10],
       hipL: [-0.058, 0.285, -0.02], hipR: [0.058, 0.285, -0.02],
@@ -1008,7 +1011,7 @@
     }),
     makePose("crouch", "しゃがむ", {
       head: [0, 0.655, 0.03], neck: [0, 0.575, 0.02],
-      shL: [-0.115, 0.545, 0.015], shR: [0.115, 0.545, 0.015],
+      shL: [-0.1075, 0.545, 0.015], shR: [0.1075, 0.545, 0.015],
       elL: [-0.13, 0.40, 0.11], elR: [0.13, 0.40, 0.11],
       wrL: [-0.12, 0.30, 0.24], wrR: [0.12, 0.30, 0.24],
       hipL: [-0.058, 0.235, -0.08], hipR: [0.058, 0.235, -0.08],
@@ -1018,7 +1021,7 @@
     }),
     makePose("kneel", "片膝立ち", {
       head: [0, 0.79, 0.01], neck: [0, 0.71, 0],
-      shL: [-0.115, 0.675, 0], shR: [0.115, 0.675, 0],
+      shL: [-0.1075, 0.675, 0], shR: [0.1075, 0.675, 0],
       elL: [-0.132, 0.49, 0.02], elR: [0.132, 0.49, 0.02],
       wrL: [-0.13, 0.32, 0.04], wrR: [0.13, 0.32, 0.04],
       hipL: [-0.058, 0.375, -0.02], hipR: [0.058, 0.375, -0.02],
@@ -1030,7 +1033,7 @@
     makePose("floorsit", "体育座り", {
       // 膝を抱えて座る。膝が胸の前へ立ち、踵は尻の近く
       head: [0, 0.47, -0.03], neck: [0, 0.40, -0.045],
-      shL: [-0.115, 0.36, -0.045], shR: [0.115, 0.36, -0.045],
+      shL: [-0.1075, 0.36, -0.045], shR: [0.1075, 0.36, -0.045],
       elL: [-0.135, 0.19, 0.01], elR: [0.135, 0.19, 0.01],
       wrL: [-0.05, 0.25, 0.14], wrR: [0.05, 0.25, 0.14],
       hipL: [-0.055, 0.07, -0.02], hipR: [0.055, 0.07, -0.02],
@@ -1041,7 +1044,7 @@
     makePose("agura", "あぐら", {
       // 膝を外へ開き、足首を身体の前で組む
       head: [0, 0.47, 0.01], neck: [0, 0.40, 0],
-      shL: [-0.115, 0.36, 0], shR: [0.115, 0.36, 0],
+      shL: [-0.1075, 0.36, 0], shR: [0.1075, 0.36, 0],
       elL: [-0.14, 0.22, 0.03], elR: [0.14, 0.22, 0.03],
       wrL: [-0.16, 0.11, 0.11], wrR: [0.16, 0.11, 0.11],
       hipL: [-0.055, 0.06, -0.01], hipR: [0.055, 0.06, -0.01],
@@ -1053,7 +1056,7 @@
     makePose("seiza", "正座", {
       // 踵の上に尻を乗せ、背すじは立てる。つま先は後ろへ寝かせる
       head: [0, 0.55, -0.07], neck: [0, 0.48, -0.08],
-      shL: [-0.115, 0.44, -0.08], shR: [0.115, 0.44, -0.08],
+      shL: [-0.1075, 0.44, -0.08], shR: [0.1075, 0.44, -0.08],
       elL: [-0.13, 0.27, -0.05], elR: [0.13, 0.27, -0.05],
       wrL: [-0.085, 0.17, 0.03], wrR: [0.085, 0.17, 0.03],
       hipL: [-0.055, 0.14, -0.10], hipR: [0.055, 0.14, -0.10],
@@ -1064,7 +1067,7 @@
     makePose("longsit", "長座", {
       // 脚をまっすぐ前へ。手は腰の横で床を突く
       head: [0, 0.45, -0.01], neck: [0, 0.38, -0.03],
-      shL: [-0.115, 0.34, -0.04], shR: [0.115, 0.34, -0.04],
+      shL: [-0.1075, 0.34, -0.04], shR: [0.1075, 0.34, -0.04],
       elL: [-0.14, 0.18, -0.02], elR: [0.14, 0.18, -0.02],
       wrL: [-0.15, 0.03, 0.02], wrR: [0.15, 0.03, 0.02],
       hipL: [-0.055, 0.05, -0.02], hipR: [0.055, 0.05, -0.02],
@@ -1075,7 +1078,7 @@
     makePose("hizadachi", "膝立ち", {
       // 両膝を床につけて上体は立てる。片膝立ち（kneel）の両膝版
       head: [0, 0.685, 0.01], neck: [0, 0.61, 0],
-      shL: [-0.115, 0.57, 0], shR: [0.115, 0.57, 0],
+      shL: [-0.1075, 0.57, 0], shR: [0.1075, 0.57, 0],
       elL: [-0.135, 0.38, 0.015], elR: [0.135, 0.38, 0.015],
       wrL: [-0.145, 0.21, 0.03], wrR: [0.145, 0.21, 0.03],
       hipL: [-0.055, 0.27, -0.01], hipR: [0.055, 0.27, -0.01],
@@ -1086,7 +1089,7 @@
     makePose("yankee", "ヤンキー座り", {
       // 足裏を全部つけた深いしゃがみ。肘を膝に置き、手は前で垂らす
       head: [0, 0.51, 0.06], neck: [0, 0.44, 0.03],
-      shL: [-0.115, 0.40, 0.02], shR: [0.115, 0.40, 0.02],
+      shL: [-0.1075, 0.40, 0.02], shR: [0.1075, 0.40, 0.02],
       elL: [-0.14, 0.30, 0.10], elR: [0.14, 0.30, 0.10],
       wrL: [-0.05, 0.26, 0.15], wrR: [0.05, 0.26, 0.15],
       hipL: [-0.055, 0.11, -0.06], hipR: [0.055, 0.11, -0.06],
@@ -1097,7 +1100,7 @@
     makePose("allfours", "よつんばい", {
       // 手と膝が床。胴は水平、顔は進む向きへ
       head: [0, 0.36, 0.41], neck: [0, 0.335, 0.34],
-      shL: [-0.115, 0.31, 0.27], shR: [0.115, 0.31, 0.27],
+      shL: [-0.1075, 0.31, 0.27], shR: [0.1075, 0.31, 0.27],
       elL: [-0.12, 0.17, 0.29], elR: [0.12, 0.17, 0.29],
       wrL: [-0.12, 0.03, 0.30], wrR: [0.12, 0.03, 0.30],
       hipL: [-0.055, 0.27, -0.02], hipR: [0.055, 0.27, -0.02],
@@ -1108,7 +1111,7 @@
     makePose("dogeza", "土下座", {
       // 正座から上体を前へ畳む。頭は床の近く、手は前の床へ
       head: [0, 0.13, 0.27], neck: [0, 0.15, 0.20],
-      shL: [-0.115, 0.16, 0.14], shR: [0.115, 0.16, 0.14],
+      shL: [-0.1075, 0.16, 0.14], shR: [0.1075, 0.16, 0.14],
       elL: [-0.13, 0.09, 0.20], elR: [0.13, 0.09, 0.20],
       wrL: [-0.10, 0.03, 0.30], wrR: [0.10, 0.03, 0.30],
       hipL: [-0.055, 0.13, -0.14], hipR: [0.055, 0.13, -0.14],
@@ -1121,7 +1124,7 @@
     makePose("handstand", "逆立ち", {
       wrL: [-0.145, 0.02, 0.06], wrR: [0.145, 0.02, 0.06],
       elL: [-0.128, 0.21, 0.03], elR: [0.128, 0.21, 0.03],
-      shL: [-0.115, 0.40, -0.01], shR: [0.115, 0.40, -0.01],
+      shL: [-0.1075, 0.40, -0.01], shR: [0.1075, 0.40, -0.01],
       neck: [0, 0.44, 0.01], head: [0, 0.36, 0.06],
       hipL: [-0.055, 0.70, -0.02], hipR: [0.055, 0.70, -0.02],
       knL: [-0.07, 0.94, 0.01], knR: [0.052, 0.945, -0.04],
@@ -1144,7 +1147,7 @@
       knR: [0.07, 0.44, 0.26], anR: [0.075, 0.24, 0.16], toR: [0.075, 0.20, 0.26],
       knL: [-0.07, 0.24, -0.20], anL: [-0.075, 0.06, -0.38], toL: [-0.075, 0.02, -0.46],
       hipL: [-0.055, 0.52, 0.02], hipR: [0.055, 0.52, 0.02],
-      shL: [-0.115, 0.81, 0.05], shR: [0.115, 0.81, 0.05],
+      shL: [-0.1075, 0.81, 0.05], shR: [0.1075, 0.81, 0.05],
       elL: [-0.15, 0.66, 0.20], wrL: [-0.13, 0.74, 0.36],
       elR: [0.15, 0.64, -0.14], wrR: [0.13, 0.56, -0.30],
       neck: [0, 0.85, 0.06], head: [0, 0.93, 0.10],
@@ -1154,7 +1157,7 @@
     makePose("backflip", "バク転", {
       wrL: [-0.13, 0.10, -0.46], wrR: [0.13, 0.10, -0.46],
       elL: [-0.14, 0.34, -0.40], elR: [0.14, 0.34, -0.40],
-      shL: [-0.115, 0.58, -0.28], shR: [0.115, 0.58, -0.28],
+      shL: [-0.1075, 0.58, -0.28], shR: [0.1075, 0.58, -0.28],
       neck: [0, 0.50, -0.34], head: [0, 0.40, -0.40],
       hipL: [-0.055, 0.86, 0.04], hipR: [0.055, 0.86, 0.04],
       knL: [-0.08, 0.96, 0.34], knR: [0.08, 0.98, 0.30],
@@ -1226,7 +1229,7 @@
       hipL: [-0.07, 0.44, 0], hipR: [0.07, 0.44, 0],
       knL: [-0.22, 0.25, 0.06], anL: [-0.30, 0.04, 0.04],
       knR: [0.22, 0.25, 0.06], anR: [0.30, 0.04, 0.04],
-      shL: [-0.115, 0.75, 0], shR: [0.115, 0.75, 0],
+      shL: [-0.1075, 0.75, 0], shR: [0.1075, 0.75, 0],
       elL: [-0.26, 0.66, 0.06], wrL: [-0.34, 0.56, 0.12],
       elR: [0.26, 0.66, 0.06], wrR: [0.34, 0.56, 0.12],
       neck: [0, 0.79, 0], head: [0, 0.87, 0.01],
@@ -1236,7 +1239,7 @@
       hipL: [-0.055, 0.66, 0], hipR: [0.055, 0.66, 0],
       knL: [-0.24, 0.50, 0.04], anL: [-0.38, 0.36, 0.02], toL: [-0.44, 0.31, 0.04],
       knR: [0.24, 0.50, 0.04], anR: [0.38, 0.36, 0.02], toR: [0.44, 0.31, 0.04],
-      shL: [-0.115, 0.96, 0], shR: [0.115, 0.96, 0],
+      shL: [-0.1075, 0.96, 0], shR: [0.1075, 0.96, 0],
       elL: [-0.24, 1.06, 0.02], wrL: [-0.30, 1.20, 0.04],
       elR: [0.24, 1.06, 0.02], wrR: [0.30, 1.20, 0.04],
       neck: [0, 1.00, 0], head: [0, 1.08, 0.01],
@@ -1267,7 +1270,7 @@
       hipL: [-0.055, 0.50, 0.02], hipR: [0.055, 0.50, 0.02],
       knL: [-0.07, 0.28, 0.10], anL: [-0.075, 0.075, 0.12],
       knR: [0.07, 0.28, -0.02], anR: [0.075, 0.075, 0.00],
-      shL: [-0.115, 0.80, 0.06], shR: [0.115, 0.80, 0.06],
+      shL: [-0.1075, 0.80, 0.06], shR: [0.1075, 0.80, 0.06],
       elL: [-0.18, 0.64, 0.14], wrL: [-0.20, 0.52, 0.24],
       elR: [0.18, 0.64, 0.14], wrR: [0.20, 0.52, 0.24],
       neck: [0, 0.84, 0.06], head: [0, 0.92, 0.09],
@@ -1280,7 +1283,7 @@
       hipL: [-0.055, 0.66, 0], hipR: [0.055, 0.66, 0],
       knL: [-0.10, 0.50, 0.22], anL: [-0.10, 0.34, 0.10], toL: [-0.10, 0.31, 0.18],
       knR: [0.10, 0.46, 0.14], anR: [0.10, 0.30, -0.06], toR: [0.10, 0.27, 0.02],
-      shL: [-0.115, 0.96, 0], shR: [0.115, 0.96, 0],
+      shL: [-0.1075, 0.96, 0], shR: [0.1075, 0.96, 0],
       elL: [-0.26, 0.94, 0.02], wrL: [-0.40, 0.98, 0.04],
       elR: [0.26, 0.94, 0.02], wrR: [0.40, 0.98, 0.04],
       neck: [0, 1.00, 0], head: [0, 1.08, 0.01],
@@ -1327,7 +1330,7 @@
      * 手足はきっちり輪の上に置く（四点とも中心から半径ぴったりの位置）。 */
     makePose("cyr", "シルホイール", {
       head: [0, 0.945, 0], neck: [0, 0.86, 0],
-      shL: [-0.115, 0.82, 0], shR: [0.115, 0.82, 0],
+      shL: [-0.1075, 0.82, 0], shR: [0.1075, 0.82, 0],
       elL: [-0.29, 0.83, 0], elR: [0.29, 0.83, 0],
       wrL: [-0.459, 0.881, 0], wrR: [0.459, 0.881, 0],     // 輪の上（斜め上）
       hipL: [-0.055, 0.52, 0], hipR: [0.055, 0.52, 0],
@@ -1373,7 +1376,7 @@
      * うつ伏せ・仰向け・横向きは、腕と脚の置き方と顔の向きで見分ける。 */
     makePose("lie", "うつ伏せ", {
       head: [0, 0.09, 0.50], neck: [0, 0.078, 0.42],
-      shL: [-0.115, 0.07, 0.36], shR: [0.115, 0.07, 0.36],
+      shL: [-0.1075, 0.07, 0.36], shR: [0.1075, 0.07, 0.36],
       elL: [-0.20, 0.06, 0.35], elR: [0.20, 0.06, 0.35],
       wrL: [-0.185, 0.06, 0.49], wrR: [0.185, 0.06, 0.49],
       hipL: [-0.058, 0.07, 0.06], hipR: [0.058, 0.07, 0.06],
@@ -1383,7 +1386,7 @@
     }, { face: [0, -1, 0.35] }),
     makePose("supine", "仰向け", {
       head: [0, 0.075, 0.50], neck: [0, 0.07, 0.42],
-      shL: [-0.115, 0.07, 0.36], shR: [0.115, 0.07, 0.36],
+      shL: [-0.1075, 0.07, 0.36], shR: [0.1075, 0.07, 0.36],
       elL: [-0.145, 0.06, 0.21], elR: [0.145, 0.06, 0.21],
       wrL: [-0.14, 0.055, 0.05], wrR: [0.14, 0.055, 0.05],
       hipL: [-0.058, 0.07, 0.06], hipR: [0.058, 0.07, 0.06],
@@ -1568,7 +1571,7 @@
   const SOLID_TYPES = {
     block: true, table: true, chair: true, bench: true, stool: true, wall: true,
     trapeze: true, cyrwheel: true, diabolo: true, pole: true, teeter: true, tissue: true, wire: true,
-    suitcase: true, trampoline: true, cane: true, car: true, seri: true,
+    suitcase: true, trampoline: true, cane: true, car: true, seri: true, model: true,
   };
   const CHAIR_W = 0.5;
   const CHAIR_D = 0.55;
@@ -1604,6 +1607,10 @@
    *   板のように見える。胸の厚み23cm・くびれ18cm・腰21cm（身長165cm）に合わせてある。
    * ★くびれ(t=0.62)を持たせてあるので、外周は凸包で取ってはいけない。
    *   凸包は凹みを埋めるので、腰のくびれが消えて胴が樽になる（実際にそうなっていた）。 */
+  /* ★2026-08-16: 断面・太さの数値は MakeHuman 1.3.0 由来の人体（CC0）を実測して置き換えた。
+     測り方と生の数値は tools/measure_makehuman_body.py（再実行すれば同じ表が出る）。
+     人体データの出どころは apps/Analyze-app/performer-motion-model/phase3-viewer/data/。
+     2026-08-16 第2便: そこから演者体型へ絞った（周径の根拠は docs/BODY_ATHLETIC_WORKORDER_2026-08-16.md）。 */
   const TORSO_RINGS = [
     /* t は肩の中点(y=0.82)から腰の中点(y=0.52)へ引いた線の割合なので、
        0.30 動くと身長の30%動く。頭の下端は y≈0.867 → t≈-0.157。
@@ -1611,38 +1618,51 @@
     /* 肩。★肩関節（x=±0.115）とほぼ同じ幅まで広げる。
      * ここが細いと、腕の付け根の丸だけが胴の外へ飛び出して、
      * 三角筋だけが発達した人に見える（胴との間に凹みもできる）。 */
-    { t: 0.00, halfX: 0.116, rz: 0.068 },    // 肩
-    { t: 0.14, halfX: 0.110, rz: 0.070 },    // 肩の下。ここを飛ばすと脇が角になる
-    { t: 0.30, halfX: 0.098, rz: 0.071 },    // 胸
-    { t: 0.62, halfX: 0.076, rz: 0.055 },    // くびれ
-    { t: 0.90, halfX: 0.090, rz: 0.064 },    // 腰（骨盤の張り）
-    { t: 1.16, halfX: 0.062, rz: 0.052 },    // 股（y≈0.47）。ここを絞らないと腿が癒着する
+    { t: 0.00, halfX: 0.112, rz: 0.051 },    // 肩（三角筋の張りを含む）
+    { t: 0.14, halfX: 0.098, rz: 0.060 },    // 肩の下。ここを飛ばすと脇が角になる
+    { t: 0.30, halfX: 0.088, rz: 0.058 },    // 胸
+    { t: 0.62, halfX: 0.072, rz: 0.049 },    // くびれ
+    { t: 0.90, halfX: 0.085, rz: 0.062 },    // 腰（骨盤の張り）
+    { t: 1.16, halfX: 0.059, rz: 0.044 },    // 股（y≈0.47）。ここを絞らないと腿が癒着する
   ];
 
   /* 首の断面。★胴の軸（肩→腰）の延長ではなく、「肩の中点→頭」に沿って積む。
    * 抱え込み宙返りのように胴が水平に近い姿勢では、軸の延長は前へ伸びるだけで
    * 頭へ届かず、首が付いていないように見える（実際にそうなっていた）。
-   * s は肩の中点から頭の中心までの割合。1.0を少し切る所で止めて頭の中へ差し込む。 */
+   * s は肩の中点から頭の中心までの割合。1.0を少し切る所で止めて頭の中へ差し込む。
+   * ★首が出ない原因は枚数ではなく、頭の楕円との太さの差だった（2026-08-16→17に2回踏んだ）。
+   *   頭は下端が尖るので顎の高さでは幅がほぼ0になり、そこを首の輪郭が埋めて円錐になる。
+   *   首(0.031)を頭の横半径(0.048)より35%細くして、初めて首の柱が見える。両方を一緒に見ること。
+   * ★★断面を増やすだけでは首は出ない。smoothClosedPath のベジェは、太い断面の隣に
+   *   細い断面を置くと制御点が外へ飛び出して谷を埋める（実測で首が定数の1.5倍に膨らんでいた）。
+   *   細い断面を同じ太さで3枚続け、移行も細かく刻むこと。1枚だけ細くしても効かない。 */
   const NECK_RINGS = [
-    { s: 0.18, halfX: 0.086, rz: 0.060 },   // 僧帽筋。ここを飛ばすと肩が角になる
-    { s: 0.55, halfX: 0.046, rz: 0.046 },   // 首
-    { s: 0.85, halfX: 0.033, rz: 0.038 },   // 頭の中まで差し込む
+    { s: 0.05, halfX: 0.108, rz: 0.046 },   // 肩の上端。腕の付け根の丸をここで包む
+    { s: 0.12, halfX: 0.088, rz: 0.043 },   // 僧帽筋の峰
+    { s: 0.20, halfX: 0.060, rz: 0.038 },   // 僧帽筋の裾
+    { s: 0.28, halfX: 0.038, rz: 0.034 },   // 首の付け根
+    { s: 0.36, halfX: 0.032, rz: 0.032 },   // 首の柱の下端
+    { s: 0.48, halfX: 0.031, rz: 0.032 },   // 首の柱。★ここが実際に目に見える首
+    { s: 0.60, halfX: 0.031, rz: 0.033 },   // 首の柱（同じ太さを3枚続けるのが要点）
+    { s: 0.80, halfX: 0.033, rz: 0.042 },   // 頭の中まで差し込む
   ];
 
   /* 手足の太さ（身長比の半径）。関節の間に中間の節を挟み、
      腿・ふくらはぎ・前腕のふくらみを持たせる。ここが無いと棒に見える。 */
   const LIMB_TAPER = {
     // 腿の付け根 → 腿の中 → 膝 → ふくらはぎ → 足首
-    leg: [0.050, 0.047, 0.033, 0.037, 0.019],
+    leg: [0.052, 0.054, 0.033, 0.036, 0.020],
     // 肩 → 上腕の中 → 肘 → 前腕の太い所 → 手首
-    arm: [0.029, 0.029, 0.023, 0.023, 0.014],
+    // ★肩の値を小さくするのは、丸が肩関節を中心に描かれ、肩の線より上へ肉がはみ出して
+    //   尖った肩当てになるため。三角筋の張りは TORSO_RINGS の t=0 と上腕の中が持つ。
+    arm: [0.010, 0.030, 0.026, 0.022, 0.0132],
   };
   // 節の間に挟む中間点の位置（0=手前の関節、1=先の関節）
   const LIMB_MIDS = { leg: [0.45, 0.35], arm: [0.5, 0.35] };
-  const HAND_LEN = 0.050;      // 手首から指先まで
-  const HAND_R = 0.020;
-  const FOOT_R = 0.020;        // 足の甲の厚み
-  const HEEL_BACK = 0.026;     // 踵がくるぶしより後ろへ出る量（実寸で約4cm）
+  const HAND_LEN = 0.062;      // 手首から指先まで
+  const HAND_R = 0.019;
+  const FOOT_R = 0.021;        // 足の甲の厚み
+  const HEEL_BACK = 0.030;     // 踵がくるぶしより後ろへ出る量
   const TOOL_HINTS = {
     select: "演者や物を選び、舞台の上で動かします。",
     paint: "奥の背景面を指やマウスで塗ります。",
@@ -1689,6 +1709,9 @@
     arrowDepthValue: document.getElementById("stage-arrow-depth-value"),
     arrowHeadOne: document.getElementById("stage-arrow-head-one"),
     arrowHeadBoth: document.getElementById("stage-arrow-head-both"),
+    arrowWidthThin: document.getElementById("stage-arrow-width-thin"),
+    arrowWidthMid: document.getElementById("stage-arrow-width-mid"),
+    arrowWidthBold: document.getElementById("stage-arrow-width-bold"),
     arrowColor: document.getElementById("stage-arrow-color"),
     arrowClear: document.getElementById("stage-arrow-clear"),
     background: document.getElementById("stage-bg-color"),
@@ -1721,6 +1744,7 @@
     selectionControls: document.getElementById("stage-selection-controls"),
     selectedName: document.getElementById("stage-selected-name"),
     fpvOpen: document.getElementById("stage-fpv-open"),
+    freecamOpen: document.getElementById("stage-freecam-open"),
     dimsFromSet: document.getElementById("stage-dims-from-set"),
     openSetInfo: document.getElementById("stage-open-setinfo"),
     routeClear: document.getElementById("stage-route-clear"),
@@ -1834,6 +1858,7 @@
     sceneList: document.getElementById("stage-scene-list"),
     sceneResize: document.getElementById("stage-scene-resize"),
     sceneGridOpen: document.getElementById("stage-scene-grid-open"),
+    sceneBarGrid: document.getElementById("stage-scene-bar-grid"),
     sceneFoldAll: document.getElementById("stage-scene-fold-all"),
     sceneGridModal: document.getElementById("stage-scene-grid-modal"),
     sceneGridBackdrop: document.getElementById("stage-scene-grid-backdrop"),
@@ -1925,6 +1950,8 @@
     rosterName: document.getElementById("stage-roster-name"),
     rosterKind: document.getElementById("stage-roster-kind"),
     rosterKindLabel: document.getElementById("stage-roster-kind-label"),
+    modelPicker: document.getElementById("stage-model-picker"),
+    modelOpen: document.getElementById("stage-model-open"),
     kindModal: document.getElementById("stage-kind"),
     kindBackdrop: document.getElementById("stage-kind-backdrop"),
     kindClose: document.getElementById("stage-kind-close"),
@@ -2099,6 +2126,8 @@
       hint: "同時に動く演者の動線がぶつかりそうな所に、平面図で印を出す" },
     { key: "highwarn", label: "高所の下の注意", def: false,
       hint: "ポールやトラピーズの真下に人が居るとき、平面図に印を出す" },
+    { key: "toolTips", label: "アイコンの説明",
+      hint: "道具のアイコンにカーソルを合わせると、名前・ショートカット・使い方を出す。覚えたらOFFにできる" },
     { key: "bamiri", label: "バミリ図（印刷）",
       hint: "印刷用ページに、演者の立ち位置の実寸表を足す" },
     { key: "cuesheet", label: "明かりのキューシート（印刷）",
@@ -2596,6 +2625,10 @@
 
   function pieceDims(piece) {
     const registered = pieceSet(piece);
+    if (registered && registered.kind === "model") {
+      const model = stageModel(registered.modelId);
+      return model ? window.SHOSAI_STAGE_MODELS.modelExtent(model) : { w: 1, d: 1, h: 1 };
+    }
     if (registered) return registered.dims;
     return (piece && piece.dims) || PIECE_DIMS[piece && piece.type] || null;
   }
@@ -2603,6 +2636,17 @@
   function pieceSet(piece) {
     if (!piece || !piece.setId || !state.project) return null;
     return (state.project.sets || []).find((t) => t.id === piece.setId) || null;
+  }
+
+  const STAGE_MODELS_KEY = "shosai-stage-models-v1";
+  function stageModelLibrary() {
+    const models = window.SHOSAI_STAGE_MODELS;
+    if (!models) return { version: 1, models: [] };
+    try { return models.parseLibrary(localStorage.getItem(STAGE_MODELS_KEY) || "") || { version: 1, models: [] }; }
+    catch (_) { return { version: 1, models: [] }; }
+  }
+  function stageModel(modelId) {
+    return stageModelLibrary().models.find((model) => model.id === modelId) || null;
   }
 
   // その奥行きでの「実寸1mあたりの画素」。横と縦で尺が違う（正面図のみ）
@@ -2889,6 +2933,7 @@
                 kind,
                 name: typeof t.name === "string" && t.name.trim() ? t.name.slice(0, 24) : `セット ${i + 1}`,
                 color: validColor(t.color, "#8b98a1"),
+                modelId: kind === "model" && typeof t.modelId === "string" ? t.modelId : null,
                 dims: (() => {
                   const d = normalizeDims(kind, t);
                   // 吊物にできる形は、地上高の置き場を必ず持つ
@@ -4625,12 +4670,15 @@
       const ny = P.head.y - P.neck.y;
       const len = Math.hypot(nx, ny);
       const angle = len > 0.4 ? Math.atan2(ny, nx) : -Math.PI / 2;
-      /* 頭。長い方が顎から頭頂（身長の13.6%）、短い方が耳から耳（9.2%）。
+      /* 頭。長い方が顎から頭頂（身長の13.0%＝約7.7頭身）、短い方が耳から耳（9.6%＝実測どおり）。
+         ★ここだけは実測（13.1%）ではなく、意図して小さくしてある。頭の大きさは
+         見た目の均整にいちばん効くため（2026-08-16 本人「もう少しスタイルを良く」）。
+         縦半径だけ意図して小さくしてある。リアル側へ戻すときは縦を 0.068 に戻せばよい。
          首は胴の一部として描いてあるので、ここに輪郭線は引かない。 */
       target.fillStyle = color;
       target.beginPath();
       target.ellipse(P.head.x, P.head.y,
-        Math.max(1.2, 0.068 * ux), Math.max(1.1, 0.046 * ux), angle, 0, Math.PI * 2);
+        Math.max(1.2, 0.065 * ux), Math.max(1.1, 0.048 * ux), angle, 0, Math.PI * 2);
       target.fill();
       /* 目。こちら側にある方だけ出すので、横を向けば自然に一つになる。
          小さすぎて点にしか見えない大きさのときは、はじめから描かない。 */
@@ -4771,9 +4819,12 @@
     const rad = ((piece.facing || 0) * Math.PI) / 180;
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
+    const partRad = ((part.rotY || 0) * Math.PI) / 180;
+    const partCos = Math.cos(partRad);
+    const partSin = Math.sin(partRad);
     const at = (ux, uy) => {
-      const lx = part.ox + ux;
-      const ly = part.oz + uy;
+      const lx = part.ox + ux * partCos - uy * partSin;
+      const ly = part.oz + ux * partSin + uy * partCos;
       const dw = lx * cos - ly * sin;
       const dd = lx * sin + ly * cos;
       const p = floorPoint(piece, dw, dd, L);
@@ -4837,6 +4888,11 @@
   function pieceParts(piece) {
     const d = pieceDims(piece);
     if (!d) return null;
+    if (piece.type === "model") {
+      const owner = pieceSet(piece);
+      const model = owner && stageModel(owner.modelId);
+      return model && window.SHOSAI_STAGE_MODELS ? window.SHOSAI_STAGE_MODELS.modelBoxes(model) : [];
+    }
     if (piece.type === "seri") {
       const seriH = clamp(finite(piece.seriH, 0), 0, 4);
       // 床と同じ高さでは立体を作らない。床面の輪郭は drawSolid が描く
@@ -6064,6 +6120,16 @@
 
   function arrowColorPref() {
     return validColor(prefs.arrowColor, "#d3ac59");
+  }
+
+  /* 線の太さ。数字ではなく三段で選ばせる（pxの値を見せても手掛かりにならない）。
+     矢じりの大きさもこの値から決まるので、細い線に大きな矢じりは付かない。 */
+  const ARROW_WIDTHS = { thin: 2, mid: 3.5, bold: 6 };
+  function arrowWidthKeyPref() {
+    return ARROW_WIDTHS[prefs.arrowWidth] ? prefs.arrowWidth : "mid";
+  }
+  function arrowWidthPref() {
+    return ARROW_WIDTHS[arrowWidthKeyPref()];
   }
 
   // 保存された点を、正面／平面それぞれで実際に描く線へ変える。
@@ -9525,6 +9591,12 @@
   // 一覧に出す寸法の要約。数字を見て「あの平台だ」と分かる程度に短く
   function setDimLabel(item) {
     const d = item.dims;
+    if (item.kind === "model") {
+      const model = stageModel(item.modelId);
+      const extent = model && window.SHOSAI_STAGE_MODELS.modelExtent(model);
+      return extent ? `${Math.round(extent.w * 100)}×${Math.round(extent.d * 100)}×${Math.round(extent.h * 100)}cm`
+        : (isEn() ? "Model unavailable" : "モデルがありません");
+    }
     if (item.kind === "sphere") {
       return d.lift > 0.05 ? `⌀${cmText(d.dia)} ／ 床上${cmText(d.lift)}` : `⌀${cmText(d.dia)}`;
     }
@@ -9760,8 +9832,10 @@
     });
   }
 
-  function addSetItem(kind, nameInput, lightKind) {
-    const raw = (nameInput && nameInput.value || "").trim() || autoName(setKindName(kind));
+  function addSetItem(kind, nameInput, lightKind, modelId) {
+    const chosenModel = kind === "model" ? stageModel(modelId) : null;
+    const raw = (nameInput && nameInput.value || "").trim()
+      || (chosenModel && chosenModel.name) || autoName(setKindName(kind));
     checkpoint();
     const lk = kind === "light" && LIGHT_KINDS[lightKind] ? lightKind : "hang";
     const dims = normalizeDims(kind, {});
@@ -9773,6 +9847,7 @@
     const item = {
       id: rid("set"), kind, name: raw.slice(0, 24),
       color: kind === "light" ? "#d3ac59" : nextPieceColor(state.project.sets.length + 2),
+      modelId: kind === "model" ? modelId : null,
       dims, note: "", locked: false, flown: flownOnly, wires: 2, framed: false, lightKind: lk,
     };
     state.project.sets.push(item);
@@ -10611,8 +10686,10 @@
       ctx2.restore();
       return;
     }
-    const parts = pieceParts({ type: kind, dims, facing: 0 });
-    if (!parts) return;
+    const modelPreview = kind === "model" && stageModelLibrary().models[0];
+    const parts = modelPreview ? window.SHOSAI_STAGE_MODELS.modelBoxes(modelPreview)
+      : pieceParts({ type: kind, dims, facing: 0 });
+    if (!parts || !parts.length) return;
     /* トラピーズの吊りロープは、舞台では吊物の描画が引くので pieceParts に無い。
        見本ではバー一本になり、床に置いた板と見分けがつかないので、ここで足す。 */
     if (kind === "trapeze") {
@@ -10727,6 +10804,27 @@
   const ROSTER_KINDS = ["performer"].concat(SET_KIND_ORDER);
   let rosterKind = "performer";
 
+  function renderModelPicker() {
+    if (!els.modelPicker) return;
+    const before = els.modelPicker.value;
+    const models = stageModelLibrary().models;
+    els.modelPicker.innerHTML = "";
+    models.forEach((model) => {
+      const option = document.createElement("option");
+      option.value = model.id;
+      option.textContent = model.name;
+      els.modelPicker.append(option);
+    });
+    els.modelPicker.hidden = rosterKind !== "model";
+    if (models.some((model) => model.id === before)) els.modelPicker.value = before;
+    if (!models.length) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = isEn() ? "Build a set first" : "先にセットを組んでください";
+      els.modelPicker.append(option);
+    }
+  }
+
   function openKindModal() {
     if (!els.kindModal) return;
     const grid = els.kindGrid;
@@ -10744,8 +10842,10 @@
       tile.addEventListener("click", () => {
         rosterKind = kind;
         if (els.rosterKindLabel) els.rosterKindLabel.textContent = label.textContent;
+        renderModelPicker();
         closeKindModal();
-        if (els.rosterName) els.rosterName.focus();
+        if (kind === "model" && els.modelPicker) els.modelPicker.focus();
+        else if (els.rosterName) els.rosterName.focus();
       });
       grid.append(tile);
       drawKindPreview(canvas, kind, kind === "performer" ? "#a84b26" : "#8b98a1");
@@ -10968,7 +11068,7 @@
     }
     if (els.setInfoFlownRow) {
       // 吊れるのは形のあるもの（台・テーブル・椅子・壁）だけ
-      const canFly = Boolean(SOLID_TYPES[item.kind] && item.kind !== "seri");
+      const canFly = Boolean(SOLID_TYPES[item.kind] && item.kind !== "seri" && item.kind !== "model");
       const onlyFlown = Boolean(FLOWN_ONLY[item.kind]);
       els.setInfoFlownRow.hidden = !canFly;
       if (els.setInfoFlown) {
@@ -14388,6 +14488,11 @@ ${cuesheetHtml}
     if (els.arrowHeadOne) els.arrowHeadOne.setAttribute("aria-pressed", String(heads === "one"));
     if (els.arrowHeadBoth) els.arrowHeadBoth.setAttribute("aria-pressed", String(heads === "both"));
     if (els.arrowColor && document.activeElement !== els.arrowColor) els.arrowColor.value = arrowColorPref();
+    const widthKey = arrowWidthKeyPref();
+    [[els.arrowWidthThin, "thin"], [els.arrowWidthMid, "mid"], [els.arrowWidthBold, "bold"]]
+      .forEach(([button, key]) => {
+        if (button) button.setAttribute("aria-pressed", String(widthKey === key));
+      });
     if (els.arrowClear) els.arrowClear.disabled = !(sc().arrows || []).length;
   }
 
@@ -14906,7 +15011,7 @@ ${cuesheetHtml}
         depth: arrowDepthPref(),
         heads: arrowHeadsPref(),
         color: arrowColorPref(),
-        width: 3,
+        width: arrowWidthPref(),
         points: [],
       };
       arrowDraft.points.push(arrowPointFromScreen(point, L, arrowDraft));
@@ -15513,6 +15618,109 @@ ${cuesheetHtml}
   document.querySelectorAll("[data-stage-tool]").forEach((button) => {
     button.addEventListener("click", () => setTool(button.dataset.stageTool));
   });
+
+  /* ---------- 道具の説明（アイコンの上に出す吹き出し） ----------
+     よく使う三つ（動かす・照明・矢印）を記号だけにしたので、
+     名前とショートカットと使い方を、カーソルを合わせたときに一枚で出す。
+     環境設定「アイコンの説明」でOFFにできる——覚えた人には邪魔になるため。
+     ネイティブのtitleを使わないのは、出るまで1秒近くかかることと、
+     ショートカットの字を組めないため。 */
+  let toolTipEl = null;
+  let toolTipFor = null;
+
+  function toolTipNode() {
+    if (toolTipEl) return toolTipEl;
+    toolTipEl = document.createElement("div");
+    toolTipEl.className = "stage-tip";
+    toolTipEl.setAttribute("role", "presentation");
+    toolTipEl.hidden = true;
+    document.body.append(toolTipEl);
+    return toolTipEl;
+  }
+
+  function hideToolTip() {
+    toolTipFor = null;
+    if (!toolTipEl) return;
+    toolTipEl.classList.remove("is-on");
+    toolTipEl.hidden = true;
+  }
+
+  function showToolTip(button) {
+    if (!featureOn("toolTips") || tabletPwaActive || phoneViewerActive) return;
+    const name = button.getAttribute("aria-label") || button.textContent.trim();
+    const key = button.dataset.toolKey || "";
+    // 道具の列は data-stage-tool、絵の上の「動線を描く」「メモ」は data-tool-tip
+    const toolName = button.dataset.stageTool || button.dataset.toolTip;
+    const tip = toolTipNode();
+    tip.innerHTML = "";
+    const head = document.createElement("p");
+    head.className = "stage-tip-name";
+    const label = document.createElement("span");
+    label.textContent = tx(name);
+    head.append(label);
+    if (key) {
+      const keyTag = document.createElement("span");
+      keyTag.className = "stage-tip-key";
+      keyTag.textContent = key;
+      head.append(keyTag);
+    }
+    tip.append(head);
+    const hintText = TOOL_HINTS[toolName];
+    if (hintText) {
+      const hint = document.createElement("p");
+      hint.className = "stage-tip-hint";
+      hint.textContent = tm("tool", toolName, hintText);
+      tip.append(hint);
+    }
+    tip.hidden = false;
+    // 位置は出してから測る。窓の右端・下端からははみ出させない
+    const box = button.getBoundingClientRect();
+    const size = tip.getBoundingClientRect();
+    const left = clamp(box.left, 8, Math.max(8, window.innerWidth - size.width - 8));
+    const below = box.bottom + 8;
+    const top = below + size.height > window.innerHeight - 8
+      ? Math.max(8, box.top - size.height - 8)
+      : below;
+    tip.style.left = `${Math.round(left)}px`;
+    tip.style.top = `${Math.round(top)}px`;
+    tip.classList.add("is-on");
+    toolTipFor = button;
+  }
+
+  document.querySelectorAll("[data-stage-tool], [data-tool-tip]").forEach((button) => {
+    button.addEventListener("pointerenter", (event) => {
+      if (event.pointerType === "touch") return;   // 指では出さない（押した瞬間に道具が変わる）
+      showToolTip(button);
+    });
+    button.addEventListener("pointerleave", hideToolTip);
+    button.addEventListener("focus", () => showToolTip(button));
+    button.addEventListener("blur", hideToolTip);
+    button.addEventListener("click", hideToolTip);
+  });
+  window.addEventListener("scroll", () => { if (toolTipFor) hideToolTip(); }, { passive: true });
+  window.addEventListener("resize", () => { if (toolTipFor) hideToolTip(); });
+
+  /* 道具のショートカット。V=動かす、L=照明、A=矢印、P=塗る、E=消す、R=動線、N=メモ。
+     打ち込み中と修飾キー付きは素通し（⌘Zなどを取らない）。
+     ★setTool を直に呼ばず、その札を押す。動線とメモは「もう一度押すと戻る」
+       作りなので、直に呼ぶとキーでは切れなくなる。
+     ★メモの札は正面と平面の両方にあるので、いま出ている方を押す。 */
+  document.addEventListener("keydown", (event) => {
+    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    if (event.defaultPrevented || phoneViewerActive) return;
+    if (isTyping(event.target)) return;
+    const view = document.getElementById("view-stage");
+    if (view && view.hidden) return;
+    const key = String(event.key || "").toUpperCase();
+    if (key.length !== 1) return;
+    const matches = [...document.querySelectorAll("[data-tool-key]")]
+      .filter((b) => (b.dataset.toolKey || "").toUpperCase() === key);
+    if (!matches.length) return;
+    const button = matches.find((b) => b.offsetParent !== null) || matches[0];
+    event.preventDefault();
+    hideToolTip();
+    button.click();
+  });
   [[els.arrowPlaneFloor, "floor"], [els.arrowPlaneAir, "air"]].forEach(([button, plane]) => {
     if (!button) return;
     button.addEventListener("click", () => {
@@ -15538,6 +15746,15 @@ ${cuesheetHtml}
       syncArrowOptions();
     });
   });
+  [[els.arrowWidthThin, "thin"], [els.arrowWidthMid, "mid"], [els.arrowWidthBold, "bold"]]
+    .forEach(([button, key]) => {
+      if (!button) return;
+      button.addEventListener("click", () => {
+        prefs.arrowWidth = key;
+        savePrefs();
+        syncArrowOptions();
+      });
+    });
   if (els.arrowColor) {
     els.arrowColor.addEventListener("input", (event) => {
       prefs.arrowColor = validColor(event.target.value, "#d3ac59");
@@ -15693,6 +15910,8 @@ ${cuesheetHtml}
   if (els.showsClose) els.showsClose.addEventListener("click", closeShows);
   if (els.showsBackdrop) els.showsBackdrop.addEventListener("click", closeShows);
   if (els.sceneGridOpen) els.sceneGridOpen.addEventListener("click", openSceneGrid);
+  // 絵のすぐ上の帯からも一覧へ。シーンの欄を畳んでいても飛べる
+  if (els.sceneBarGrid) els.sceneBarGrid.addEventListener("click", openSceneGrid);
   if (els.sceneFoldAll) {
     els.sceneFoldAll.addEventListener("click", () => {
       const sections = state.project.scenes.filter((row) => row.kind === "section");
@@ -15756,8 +15975,30 @@ ${cuesheetHtml}
   const addFromRoster = () => {
     if (rosterKind === "performer") { addCastMember(els.rosterName); return; }
     if (rosterKind === "light") { addSetItem("light", els.rosterName, "hang"); return; }
+    if (rosterKind === "model") {
+      const modelId = els.modelPicker && els.modelPicker.value;
+      if (!stageModel(modelId)) {
+        const builder = window.SHOSAI_STAGE_BUILDER;
+        if (builder) builder.open();
+        return;
+      }
+      addSetItem("model", els.rosterName, null, modelId);
+      return;
+    }
     addSetItem(SET_KINDS[rosterKind] ? rosterKind : "block", els.rosterName);
   };
+  renderModelPicker();
+  if (els.modelOpen) els.modelOpen.addEventListener("click", () => {
+    const builder = window.SHOSAI_STAGE_BUILDER;
+    if (builder) builder.open();
+  });
+  window.addEventListener("shosai-stage-models-change", () => {
+    renderModelPicker();
+    renderSets();
+    renderScenes();
+    updateInspector();
+    render();
+  });
   if (els.rosterKind) els.rosterKind.addEventListener("click", openKindModal);
   if (els.kindClose) els.kindClose.addEventListener("click", closeKindModal);
   if (els.kindBackdrop) els.kindBackdrop.addEventListener("click", closeKindModal);
@@ -16121,47 +16362,62 @@ ${cuesheetHtml}
   if (els.presentPrev) els.presentPrev.addEventListener("click", () => stepScene(-1));
   if (els.presentNext) els.presentNext.addEventListener("click", () => stepScene(1));
   if (els.presentClose) els.presentClose.addEventListener("click", exitPseudoPresentation);
+  function openFpv(initialPieceId, initialView, returnFocus) {
+    const fpv = window.SHOSAI_STAGE_FPV;
+    if (!fpv) return;
+    fpv.open({
+      initialPieceId,
+      initialView,
+      read: () => {
+        const current = sc();
+        const rows = state.project.scenes;
+        const at = rows.indexOf(current);
+        const scenes = rows.filter((row) => row.kind === "scene");
+        const size = venueSize();
+        refreshBases(size);
+        let actTitle = "";
+        for (let index = at - 1; index >= 0; index -= 1) {
+          if (rows[index].kind === "section" && rows[index].depth < current.depth) {
+            actTitle = rows[index].title || "";
+            break;
+          }
+        }
+        return {
+          pieces: current.pieces.map((candidate) => {
+            const owner = pieceSet(candidate);
+            return {
+              ...candidate,
+              dims: pieceDims(candidate),
+              model: candidate.type === "model" && owner ? stageModel(owner.modelId) : null,
+            };
+          }),
+          showTitle: state.project.title || "",
+          sceneTitle: current.title || "",
+          actTitle,
+          sceneIndex: scenes.indexOf(current),
+          sceneCount: scenes.length,
+          venue: { width: size.width, depth: size.depth, height: size.height, type: state.project.venue },
+          lang,
+        };
+      },
+      heightMOf: (candidate) => pieceHeightM(candidate) * (candidate.size / 100),
+      labelOf: pieceLabel,
+      getFrontCanvas: () => canvas,
+      getPlanCanvas: () => planCanvas,
+      requestRedraw: () => render(true),
+      stepScene,
+      onClose: () => returnFocus && returnFocus.focus(),
+    });
+  }
   if (els.fpvOpen) {
     els.fpvOpen.addEventListener("click", () => {
       const piece = selectedPiece();
-      const fpv = window.SHOSAI_STAGE_FPV;
-      if (!piece || piece.type !== "performer" || !fpv) return;
-      fpv.open({
-        initialPieceId: piece.id,
-        read: () => {
-          const current = sc();
-          const rows = state.project.scenes;
-          const at = rows.indexOf(current);
-          const scenes = rows.filter((row) => row.kind === "scene");
-          const size = venueSize();
-          refreshBases(size);
-          let actTitle = "";
-          for (let index = at - 1; index >= 0; index -= 1) {
-            if (rows[index].kind === "section" && rows[index].depth < current.depth) {
-              actTitle = rows[index].title || "";
-              break;
-            }
-          }
-          return {
-            pieces: current.pieces.map((candidate) => ({ ...candidate, dims: pieceDims(candidate) })),
-            showTitle: state.project.title || "",
-            sceneTitle: current.title || "",
-            actTitle,
-            sceneIndex: scenes.indexOf(current),
-            sceneCount: scenes.length,
-            venue: { width: size.width, depth: size.depth, height: size.height, type: state.project.venue },
-            lang,
-          };
-        },
-        heightMOf: (candidate) => pieceHeightM(candidate) * (candidate.size / 100),
-        labelOf: pieceLabel,
-        getFrontCanvas: () => canvas,
-        getPlanCanvas: () => planCanvas,
-        requestRedraw: () => render(true),
-        stepScene,
-        onClose: () => els.fpvOpen.focus(),
-      });
+      if (!piece || piece.type !== "performer") return;
+      openFpv(piece.id, undefined, els.fpvOpen);
     });
+  }
+  if (els.freecamOpen) {
+    els.freecamOpen.addEventListener("click", () => openFpv(undefined, "free", els.freecamOpen));
   }
   if (els.animScenes) {
     els.animScenes.addEventListener("change", (e) => {

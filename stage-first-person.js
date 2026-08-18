@@ -101,6 +101,76 @@
     return { x: -forward.z, y: 0, z: forward.x };
   }
 
+  function moveFree(pos, forwardVector, rightVector, keys, dtSeconds, speed) {
+    const origin = {
+      x: finite(pos && pos.x, 0),
+      y: finite(pos && pos.y, 0),
+      z: finite(pos && pos.z, 0),
+    };
+    const dt = Math.max(0, finite(dtSeconds, 0));
+    const metersPerSecond = Math.max(0, finite(speed, 0));
+    if (!dt || !metersPerSecond) return origin;
+    const normalizeHorizontal = (vector, fallback) => {
+      const x = finite(vector && vector.x, fallback.x);
+      const z = finite(vector && vector.z, fallback.z);
+      const length = Math.hypot(x, z);
+      return length > 0 ? { x: x / length, y: 0, z: z / length } : fallback;
+    };
+    const flatForward = normalizeHorizontal(forwardVector, { x: 0, y: 0, z: 1 });
+    const flatRight = normalizeHorizontal(rightVector, rightOf(flatForward));
+    const controls = keys || {};
+    const forwardAmount = (controls.forward ? 1 : 0) - (controls.back ? 1 : 0);
+    const rightAmount = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
+    const upAmount = (controls.up ? 1 : 0) - (controls.down ? 1 : 0);
+    let dx = flatForward.x * forwardAmount + flatRight.x * rightAmount;
+    let dy = upAmount;
+    let dz = flatForward.z * forwardAmount + flatRight.z * rightAmount;
+    const length = Math.hypot(dx, dy, dz);
+    if (!length) return origin;
+    const distance = metersPerSecond * dt / length;
+    dx *= distance;
+    dy *= distance;
+    dz *= distance;
+    return { x: origin.x + dx, y: origin.y + dy, z: origin.z + dz };
+  }
+
+  /* フレーム間隔の上限（秒）。タブを裏へ回した直後やカクついた直後は
+     rAFの時刻が大きく跳ぶ。そのまま速度に掛けると、1フレームで舞台の端まで
+     カメラがワープする（実際に踏んだ）。上限を切って「その分は進まない」に倒す。 */
+  const MAX_FRAME_SECONDS = .1;
+
+  function frameDelta(previous, now) {
+    if (previous === null || previous === undefined) return 0;
+    const elapsed = (finite(now, 0) - finite(previous, 0)) / 1000;
+    if (!(elapsed > 0)) return 0;
+    return Math.min(MAX_FRAME_SECONDS, elapsed);
+  }
+
+  function clampFree(pos, width, depth, ceiling) {
+    const stageWidth = Math.max(0, finite(width, 12));
+    const stageDepth = Math.max(0, finite(depth, 9));
+    const stageCeiling = Math.max(0, finite(ceiling, 8));
+    return {
+      x: clamp(finite(pos && pos.x, 0), -(stageWidth / 2 + 12), stageWidth / 2 + 12),
+      y: clamp(finite(pos && pos.y, 1.35), .2, stageCeiling + 6),
+      z: clamp(finite(pos && pos.z, 0), -(stageDepth / 2 + 8), stageDepth / 2 + 22),
+    };
+  }
+
+  function freePresets(width, depth, ceiling) {
+    const stageWidth = Math.max(0, finite(width, 12));
+    const stageDepth = Math.max(0, finite(depth, 9));
+    const stageCeiling = Math.max(0, finite(ceiling, 8));
+    return [
+      { id: "audience-center", name: "客席中央", x: 0, y: 1.35, z: stageDepth / 2 + 9, yaw: 180, pitch: -2 },
+      { id: "front-row", name: "最前列", x: 0, y: 1.2, z: stageDepth / 2 + 1.2, yaw: 180, pitch: 2 },
+      { id: "stage-right-wing", name: "上手袖", x: stageWidth / 2 + 1.5, y: 1.6, z: 0, yaw: 90, pitch: 0 },
+      { id: "stage-left-wing", name: "下手袖", x: -(stageWidth / 2 + 1.5), y: 1.6, z: 0, yaw: -90, pitch: 0 },
+      { id: "overhead", name: "真上", x: 0, y: stageCeiling + 4, z: 0, yaw: 180, pitch: -88 },
+      { id: "upstage", name: "舞台奥", x: 0, y: 1.6, z: -(stageDepth / 2 + 1), yaw: 0, pitch: 0 },
+    ];
+  }
+
   function clipPolyNear(points, near = NEAR) {
     if (!Array.isArray(points) || !points.length) return [];
     if (points.length === 2) {
@@ -167,6 +237,7 @@
     opened: false,
     bridge: null,
     view: { type: "audience", key: null, name: "" },
+    free: null,
     yaw: 180,
     pitch: -2,
     targetYaw: 180,
@@ -182,6 +253,8 @@
   let panelLayouts = null;
   const panelAspect = { front: { width: 16, height: 9 }, plan: { width: 16, height: 9 } };
   let hintDismissed = false;
+  let lastFrameTime = null;
+  const pressed = new Set();
   let data = null;
   let W = 12;
   let D = 9;
@@ -216,8 +289,9 @@
 #stage-fpv-view{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}#stage-fpv-view.dragging{cursor:grabbing}.stage-fpv-hud{position:absolute;color:#e8e2d4;user-select:none;-webkit-user-select:none}
 #stage-fpv-title{top:18px;left:20px;pointer-events:none}#stage-fpv-title .show{font-size:11px;letter-spacing:.12em;opacity:.55;margin-bottom:6px}#stage-fpv-title .act{font-size:11px;opacity:.6;margin-bottom:2px}#stage-fpv-title .scene{font-size:19px;font-weight:600;letter-spacing:.04em}#stage-fpv-title .approx{font-size:10.5px;opacity:.48;margin-top:5px}
 #stage-fpv-minimap{top:16px;right:70px;background:rgba(16,12,9,.72);border:1px solid rgba(232,226,212,.14);border-radius:4px}
-#stage-fpv-whose{left:20px;bottom:64px;font-size:12.5px;opacity:.85;pointer-events:none}#stage-fpv-whose b{font-weight:600}#stage-fpv-whose .m{opacity:.6;margin-left:.6em}
-#stage-fpv-cast{left:20px;bottom:20px;right:220px;display:flex;flex-wrap:wrap;gap:6px}.stage-fpv-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 8px;border-radius:3px;background:rgba(22,16,11,.86);border:1px solid rgba(232,226,212,.16);color:#e8e2d4;font-size:12px;cursor:pointer;font-family:inherit}.stage-fpv-chip:hover{border-color:rgba(232,226,212,.45)}.stage-fpv-chip.on{background:#e8e2d4;color:#14100c;border-color:#e8e2d4}.stage-fpv-chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
+#stage-fpv-whose{left:20px;bottom:102px;font-size:12.5px;opacity:.85;pointer-events:none}#stage-fpv-whose b{font-weight:600}#stage-fpv-whose .m{opacity:.6;margin-left:.6em}
+#stage-fpv-cast{left:20px;bottom:58px;right:220px;display:flex;flex-wrap:wrap;gap:6px}.stage-fpv-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 8px;border-radius:3px;background:rgba(22,16,11,.86);border:1px solid rgba(232,226,212,.16);color:#e8e2d4;font-size:12px;cursor:pointer;font-family:inherit}.stage-fpv-chip:hover{border-color:rgba(232,226,212,.45)}.stage-fpv-chip.on{background:#e8e2d4;color:#14100c;border-color:#e8e2d4}.stage-fpv-chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
+#stage-fpv-presets{left:20px;bottom:18px;right:220px;display:flex;flex-wrap:wrap;gap:5px}.stage-fpv-preset{padding:4px 8px;font-size:11px;background:rgba(22,16,11,.72)}
 #stage-fpv-panel-toggles{top:174px;right:70px;display:flex;flex-direction:column;align-items:stretch;gap:5px;z-index:71}.stage-fpv-panel-toggle{justify-content:center;padding:4px 9px;font-size:11px}
 .stage-fpv-panel{position:absolute;z-index:71;box-sizing:border-box;overflow:hidden;border:1px solid rgba(232,226,212,.16);border-radius:3px;background:var(--chip,rgba(22,16,11,.94));box-shadow:0 8px 24px rgba(0,0,0,.28);color:#e8e2d4;touch-action:none;user-select:none;-webkit-user-select:none}.stage-fpv-panel[hidden]{display:none!important}.stage-fpv-panel-bar{height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 5px 0 9px;font-size:11px;letter-spacing:.04em;cursor:grab}.stage-fpv-panel-bar:active{cursor:grabbing}.stage-fpv-panel-hide{width:24px;height:22px;padding:0;border:0;background:transparent;color:#e8e2d4;font:16px/20px inherit;cursor:pointer}.stage-fpv-panel canvas{display:block;width:100%;background:#16100b;pointer-events:auto}.stage-fpv-panel-resize{position:absolute;right:0;bottom:0;width:14px;height:14px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 0 45%,rgba(232,226,212,.55) 46% 55%,transparent 56% 65%,rgba(232,226,212,.55) 66% 75%,transparent 76%);touch-action:none}
 #stage-fpv-nav{right:16px;bottom:18px;display:flex;align-items:center;gap:8px}#stage-fpv-nav button{background:rgba(22,16,11,.86);color:#e8e2d4;border:1px solid rgba(232,226,212,.2);border-radius:3px;font-size:13px;padding:7px 12px;cursor:pointer;font-family:inherit}#stage-fpv-nav button:hover{border-color:rgba(232,226,212,.5)}#stage-fpv-count{font-size:11.5px;opacity:.6;min-width:52px;text-align:center}
@@ -247,6 +321,7 @@
     minimap.height = 150;
     const whose = createElement("div", "stage-fpv-whose", "stage-fpv-hud");
     const cast = createElement("div", "stage-fpv-cast", "stage-fpv-hud");
+    const presets = createElement("div", "stage-fpv-presets", "stage-fpv-hud");
     const nav = createElement("div", "stage-fpv-nav", "stage-fpv-hud");
     const previous = createElement("button", "stage-fpv-prev");
     previous.type = "button";
@@ -301,9 +376,9 @@
     closeButton.type = "button";
     closeButton.textContent = "✕";
     root.append(canvas, fade, title, minimap, panelToggles, panels.front.panel, panels.plan.panel,
-      whose, cast, nav, hint, toast, closeButton);
+      whose, cast, presets, nav, hint, toast, closeButton);
     document.body.appendChild(root);
-    elements = { root, canvas, fade, show, act, scene, approx, minimap, whose, cast,
+    elements = { root, canvas, fade, show, act, scene, approx, minimap, whose, cast, presets,
       previous, count, next, hint, toast, closeButton, panelToggles, panels };
     closeButton.addEventListener("click", close);
     previous.addEventListener("click", () => queueScene(-1));
@@ -475,6 +550,9 @@
   }
 
   function cameraPose() {
+    if (state.view.type === "free" && state.free) {
+      return { x: state.free.x, y: state.free.y, z: state.free.z, me: null };
+    }
     const me = currentPerformer(data.pieces);
     if (me) {
       const point = toWorld(finite(me.u, 0.5), finite(me.v, 0.5), W, D);
@@ -484,16 +562,58 @@
   }
 
   function resetAngles() {
-    const me = currentPerformer(data.pieces);
-    if (me) {
-      state.targetYaw = finite(me.facing, 0);
-      state.targetPitch = 0;
+    if (state.view.type === "free" && state.free) {
+      state.targetYaw = finite(state.free.yaw, 180);
+      state.targetPitch = finite(state.free.pitch, -2);
     } else {
-      state.targetYaw = 180;
-      state.targetPitch = -2;
+      const me = currentPerformer(data.pieces);
+      if (me) {
+        state.targetYaw = finite(me.facing, 0);
+        state.targetPitch = 0;
+      } else {
+        state.targetYaw = 180;
+        state.targetPitch = -2;
+      }
     }
     state.yaw = state.targetYaw;
     state.pitch = state.targetPitch;
+  }
+
+  function enterFree() {
+    if (state.view.type === "free") return;
+    if (!state.free) {
+      const pose = cameraPose();
+      state.free = {
+        x: pose.x,
+        y: pose.y,
+        z: pose.z,
+        yaw: state.yaw,
+        pitch: state.pitch,
+      };
+    }
+    state.view = { type: "free", key: null, name: "" };
+    resetAngles();
+    renderHud();
+  }
+
+  function leaveFree(nextView) {
+    if (state.view.type === "free" && state.free) {
+      state.free.yaw = state.targetYaw;
+      state.free.pitch = state.targetPitch;
+      pressed.clear();
+    }
+    state.view = nextView;
+    resetAngles();
+    renderHud();
+  }
+
+  function applyFreePreset(id) {
+    const preset = freePresets(W, D, CEIL).find((candidate) => candidate.id === id);
+    if (!preset) return;
+    state.free = { x: preset.x, y: preset.y, z: preset.z, yaw: preset.yaw, pitch: preset.pitch };
+    state.view = { type: "free", key: null, name: "" };
+    resetAngles();
+    renderHud();
   }
 
   function showToast(message) {
@@ -536,7 +656,9 @@
     elements.count.textContent = `${finite(data.sceneIndex, 0) + 1} / ${finite(data.sceneCount, 0)}`;
     elements.previous.textContent = `◀ ${text("前の場面")}`;
     elements.next.textContent = `${text("次の場面")} ▶`;
-    elements.hint.textContent = text("ドラッグで見回す");
+    elements.hint.textContent = state.view.type === "free"
+      ? text("W/A/S/D 移動・E/Q 上下・Shift 速く・ドラッグ 見回し・R 戻す")
+      : text("ドラッグで見回す");
     elements.hint.classList.toggle("gone", hintDismissed);
     elements.closeButton.setAttribute("aria-label", text("視界を閉じる"));
     PANEL_KEYS.forEach((key) => {
@@ -549,7 +671,10 @@
     elements.whose.textContent = "";
     const bold = createElement("b");
     const metrics = createElement("span", "", "m");
-    if (me) {
+    if (state.view.type === "free" && state.free) {
+      bold.textContent = text("自由カメラ");
+      metrics.textContent = freePositionText();
+    } else if (me) {
       const name = labelOf(me);
       const height = heightOf(me);
       const statureCm = Math.round(height / (finite(me.size, 100) / 100) * 100);
@@ -564,7 +689,9 @@
       metrics.textContent = text("1階中央・5列目");
     }
     elements.whose.append(bold, metrics);
+    elements.whoseMetrics = metrics;
     elements.cast.textContent = "";
+    elements.cast.appendChild(makeChip(text("自由カメラ"), "#7f9bb0", state.view.type === "free", enterFree));
     const seen = new Set();
     performers(data.pieces).forEach((piece) => {
       const key = identity(piece);
@@ -573,16 +700,35 @@
       const label = labelOf(piece);
       elements.cast.appendChild(makeChip(label, piece.color || "#c9c2b4",
         state.view.type === "performer" && state.view.key === key, () => {
-          state.view = { type: "performer", key, name: label };
-          resetAngles();
-          renderHud();
+          leaveFree({ type: "performer", key, name: label });
         }));
     });
     elements.cast.appendChild(makeChip(text("客席"), "#8d7a5f", state.view.type === "audience", () => {
-      state.view = { type: "audience", key: null, name: "" };
-      resetAngles();
-      renderHud();
+      leaveFree({ type: "audience", key: null, name: "" });
     }));
+    elements.presets.textContent = "";
+    freePresets(W, D, CEIL).forEach((preset) => {
+      const button = createElement("button", "", "stage-fpv-chip stage-fpv-preset");
+      button.type = "button";
+      button.textContent = text(preset.name);
+      button.addEventListener("click", () => applyFreePreset(preset.id));
+      elements.presets.appendChild(button);
+    });
+  }
+
+  function formatSigned(value) {
+    const rounded = Math.abs(value) < .05 ? 0 : value;
+    return `${rounded > 0 ? "+" : ""}${rounded.toFixed(1)}`;
+  }
+
+  function freePositionText() {
+    if (!state.free) return "";
+    const separators = data && data.lang === "en" ? " / " : " ／ ";
+    return [
+      `${text("前後")} ${formatSigned(state.free.z)}m`,
+      `${text("左右")} ${formatSigned(state.free.x)}m`,
+      `${text("高さ")} ${state.free.y.toFixed(2)}m`,
+    ].join(separators);
   }
 
   function resize() {
@@ -665,13 +811,14 @@
     });
   }
 
-  function drawBox(ctx, cx, cz, y0, y1, width, depth, color) {
+  function drawBox(ctx, cx, cz, y0, y1, width, depth, color, rotY = 0) {
     const halfWidth = width / 2;
     const halfDepth = depth / 2;
-    const corners = [
-      { x: cx - halfWidth, z: cz - halfDepth }, { x: cx + halfWidth, z: cz - halfDepth },
-      { x: cx + halfWidth, z: cz + halfDepth }, { x: cx - halfWidth, z: cz + halfDepth },
-    ];
+    const rad = finite(rotY, 0) * Math.PI / 180;
+    const cos = Math.cos(rad); const sin = Math.sin(rad);
+    const corner = (x, z) => ({ x: cx + x * cos - z * sin, z: cz + x * sin + z * cos });
+    const corners = [corner(-halfWidth, -halfDepth), corner(halfWidth, -halfDepth),
+      corner(halfWidth, halfDepth), corner(-halfWidth, halfDepth)];
     const faces = [];
     for (let index = 0; index < 4; index += 1) {
       const a = corners[index];
@@ -899,7 +1046,17 @@
     const x = point.x;
     const z = point.z;
     const color = piece.color || "#8d8272";
-    if (["wall", "block", "suitcase", "trampoline", "teeter"].includes(piece.type)) {
+    if (piece.type === "model" && piece.model && window.SHOSAI_STAGE_MODELS) {
+      const facing = finite(piece.facing, 0);
+      const angle = facing * Math.PI / 180;
+      const cos = Math.cos(angle); const sin = Math.sin(angle);
+      window.SHOSAI_STAGE_MODELS.modelBoxes(piece.model).forEach((box) => {
+        const offsetX = box.ox * cos - box.oz * sin;
+        const offsetZ = box.ox * sin + box.oz * cos;
+        drawBox(ctx, x + offsetX, z + offsetZ, box.lift, box.lift + box.h,
+          box.w, box.d, shade(color, box.tint), facing + box.rotY);
+      });
+    } else if (["wall", "block", "suitcase", "trampoline", "teeter"].includes(piece.type)) {
       const y0 = finite(dims.lift, 0);
       drawBox(ctx, x, z, y0, y0 + (dims.h || 1), dims.w || 1, dims.d || .4, color);
     } else if (piece.type === "table") {
@@ -995,16 +1152,23 @@
     const width = canvas.width; const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
     const padding = 14; const availableHeight = height - padding * 2 - 16;
-    const scale = Math.min((width - padding * 2) / W, availableHeight / D);
-    const originX = width / 2; const originY = padding + (availableHeight - D * scale) / 2 + 4;
-    const mapX = (x) => originX + x * scale;
-    const mapY = (z) => originY + (z + D / 2) * scale;
+    const minX = Math.min(-W / 2, camera.x - 1);
+    const maxX = Math.max(W / 2, camera.x + 1);
+    const minZ = Math.min(-D / 2, camera.z - 1);
+    const maxZ = Math.max(D / 2, camera.z + 1);
+    const mapWidth = Math.max(1, maxX - minX);
+    const mapDepth = Math.max(1, maxZ - minZ);
+    const scale = Math.min((width - padding * 2) / mapWidth, availableHeight / mapDepth);
+    const offsetX = padding + (width - padding * 2 - mapWidth * scale) / 2;
+    const offsetY = padding + (availableHeight - mapDepth * scale) / 2 + 4;
+    const mapX = (x) => offsetX + (x - minX) * scale;
+    const mapY = (z) => offsetY + (z - minZ) * scale;
     ctx.fillStyle = "rgba(30,24,19,.9)";
-    ctx.fillRect(mapX(-W / 2), originY, W * scale, D * scale);
+    ctx.fillRect(mapX(-W / 2), mapY(-D / 2), W * scale, D * scale);
     ctx.strokeStyle = "rgba(232,226,212,.3)";
-    ctx.strokeRect(mapX(-W / 2), originY, W * scale, D * scale);
+    ctx.strokeRect(mapX(-W / 2), mapY(-D / 2), W * scale, D * scale);
     ctx.fillStyle = "rgba(232,226,212,.4)"; ctx.font = "8.5px sans-serif"; ctx.textAlign = "center";
-    ctx.fillText(text("客席"), originX, originY + D * scale + 11);
+    ctx.fillText(text("客席"), mapX(0), mapY(D / 2) + 11);
     data.pieces.filter((piece) => piece.type !== "light").forEach((piece) => {
       const point = toWorld(piece.u, piece.v, W, D);
       const x = mapX(point.x); const y = mapY(point.z);
@@ -1026,17 +1190,45 @@
       ctx.lineTo(x + (direction.x * cosine - direction.z * sine) * 26,
         y + (direction.x * sine + direction.z * cosine) * 26);
     });
-    ctx.closePath(); ctx.fillStyle = "rgba(232,226,212,.13)"; ctx.fill();
-    ctx.beginPath(); ctx.arc(x, y, 4, 0, 7); ctx.fillStyle = "#e8e2d4"; ctx.fill();
+    ctx.closePath(); ctx.fillStyle = state.view.type === "free"
+      ? "rgba(127,155,176,.22)" : "rgba(232,226,212,.13)"; ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, 4, 0, 7);
+    ctx.fillStyle = state.view.type === "free" ? "#7f9bb0" : "#e8e2d4"; ctx.fill();
     ctx.strokeStyle = "#14100c"; ctx.lineWidth = 1.5; ctx.stroke();
   }
 
-  function renderFrame() {
+  function movementKeys() {
+    return {
+      forward: pressed.has("KeyW"),
+      back: pressed.has("KeyS"),
+      left: pressed.has("KeyA"),
+      right: pressed.has("KeyD"),
+      up: pressed.has("KeyE"),
+      down: pressed.has("KeyQ"),
+    };
+  }
+
+  function moveFreeFrame(dtSeconds) {
+    if (state.view.type !== "free" || !state.free) return;
+    const flatForward = yawForward(state.yaw);
+    const speed = pressed.has("ShiftLeft") || pressed.has("ShiftRight") ? 7.2 : 2.4;
+    const moved = moveFree(state.free, flatForward, rightOf(flatForward), movementKeys(), dtSeconds, speed);
+    const bounded = clampFree(moved, W, D, CEIL);
+    state.free.x = bounded.x;
+    state.free.y = bounded.y;
+    state.free.z = bounded.z;
+    state.free.yaw = state.targetYaw;
+    state.free.pitch = state.targetPitch;
+    if (elements.whoseMetrics) elements.whoseMetrics.textContent = freePositionText();
+  }
+
+  function renderFrame(dtSeconds = 0) {
     const ctx = elements.canvas.getContext("2d");
     if (!ctx) return;
     state.yaw += (state.targetYaw - state.yaw) * .24;
     state.pitch += (state.targetPitch - state.pitch) * .24;
     readCurrent();
+    moveFreeFrame(dtSeconds);
     camera = cameraPose();
     setBasis();
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
@@ -1068,9 +1260,12 @@
     drawPanelCopies();
   }
 
-  function frame() {
+  function frame(timestamp) {
     if (!state.opened) return;
-    renderFrame();
+    const now = finite(timestamp, 0);
+    const dtSeconds = frameDelta(lastFrameTime, now);
+    lastFrameTime = now;
+    renderFrame(dtSeconds);
     rafId = window.requestAnimationFrame(frame);
   }
 
@@ -1120,7 +1315,12 @@
     const dy = event.clientY - drag.y;
     drag = { x: event.clientX, y: event.clientY };
     state.targetYaw -= dx * .22;
-    state.targetPitch = clamp(state.targetPitch + dy * .18, -58, 62);
+    state.targetPitch = clamp(state.targetPitch + dy * .18,
+      state.view.type === "free" ? -89 : -58, state.view.type === "free" ? 89 : 62);
+    if (state.view.type === "free" && state.free) {
+      state.free.yaw = state.targetYaw;
+      state.free.pitch = state.targetPitch;
+    }
   }
 
   function endPointer() {
@@ -1128,15 +1328,59 @@
     if (elements) elements.canvas.classList.remove("dragging");
   }
 
-  function onKeyDown(event) {
-    if (!state.opened) return;
-    if (event.key === "Escape") close();
-    else if (event.key === "ArrowLeft") queueScene(-1);
-    else if (event.key === "ArrowRight") queueScene(1);
-    else return;
+  function consumeKey(event) {
     event.preventDefault();
     event.stopPropagation();
     if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+  }
+
+  function dismissHint() {
+    hintDismissed = true;
+    if (elements) elements.hint.classList.add("gone");
+  }
+
+  function onKeyDown(event) {
+    if (!state.opened || event.isComposing) return;
+    const code = event.code || event.key;
+    if (code === "Escape") {
+      consumeKey(event);
+      close();
+      return;
+    }
+    if (code === "ArrowLeft") {
+      consumeKey(event);
+      queueScene(-1);
+      return;
+    }
+    if (code === "ArrowRight") {
+      consumeKey(event);
+      queueScene(1);
+      return;
+    }
+    if (state.view.type !== "free" || event.metaKey || event.ctrlKey || event.altKey) return;
+    const movementCodes = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyQ", "ShiftLeft", "ShiftRight"]);
+    if (code === "KeyR") {
+      consumeKey(event);
+      dismissHint();
+      if (!event.repeat) applyFreePreset("audience-center");
+      return;
+    }
+    if (!movementCodes.has(code)) return;
+    pressed.add(code);
+    consumeKey(event);
+    dismissHint();
+  }
+
+  function onKeyUp(event) {
+    const code = event.code || event.key;
+    if (!pressed.has(code)) return;
+    pressed.delete(code);
+    if (state.opened && state.view.type === "free" && !event.isComposing) consumeKey(event);
+  }
+
+  function onBlur() {
+    pressed.clear();
+    lastFrameTime = null;
   }
 
   function open(bridge) {
@@ -1147,10 +1391,17 @@
     readCurrent();
     loadPanelLayouts();
     const initial = data.pieces.find((piece) => piece.id === bridge.initialPieceId && piece.type === "performer");
-    if (initial) state.view = { type: "performer", key: identity(initial), name: labelOf(initial) };
+    state.free = null;
+    if (bridge.initialView === "free") {
+      const preset = freePresets(W, D, CEIL)[0];
+      state.free = { x: preset.x, y: preset.y, z: preset.z, yaw: preset.yaw, pitch: preset.pitch };
+      state.view = { type: "free", key: null, name: "" };
+    } else if (initial) state.view = { type: "performer", key: identity(initial), name: labelOf(initial) };
     else state.view = { type: "audience", key: null, name: "" };
     state.opened = true;
     hintDismissed = false;
+    pressed.clear();
+    lastFrameTime = null;
     pendingScene = null;
     elements.root.hidden = false;
     elements.root.setAttribute("aria-hidden", "false");
@@ -1159,6 +1410,8 @@
     validateView(true);
     applyPanelLayouts();
     window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("keyup", onKeyUp, true);
+    window.addEventListener("blur", onBlur);
     rafId = window.requestAnimationFrame(frame);
     return true;
   }
@@ -1174,6 +1427,8 @@
     pendingScene = null;
     drag = null;
     panelDrag = null;
+    pressed.clear();
+    lastFrameTime = null;
     savePanelLayouts();
     elements.toast.classList.remove("show");
     elements.toast.textContent = "";
@@ -1181,15 +1436,19 @@
     elements.root.setAttribute("aria-hidden", "true");
     elements.fade.classList.remove("on");
     window.removeEventListener("keydown", onKeyDown, true);
+    window.removeEventListener("keyup", onKeyUp, true);
+    window.removeEventListener("blur", onBlur);
     const onClose = state.bridge && state.bridge.onClose;
     state.bridge = null;
+    state.free = null;
     if (notify && typeof onClose === "function") onClose();
   }
 
   window.SHOSAI_STAGE_FPV = Object.freeze({
     open,
     close,
-    _geom: Object.freeze({ toWorld, yawForward, rightOf, clipPolyNear, eyeHeight }),
+    _geom: Object.freeze({ toWorld, yawForward, rightOf, clipPolyNear, eyeHeight,
+      moveFree, clampFree, freePresets, frameDelta }),
     _panels: Object.freeze({
       clampLayout: clampPanelLayout,
       contentHeight: panelContentHeight,

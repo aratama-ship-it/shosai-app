@@ -34,6 +34,7 @@ iPad実機での通しQAは未実施（2026-07-28議論の優先度2位）。チ
 - `stage-scene-study-data.js` は `../direction-knowledge/examples/time_lab_future_scene_study.json` から舞台スケッチに必要な固定項目だけを同梱したデータ。舞台スケッチは実行時に書斎・知識ベースを読まず、単独で動く
 - 正本更新後の再生成: `python3 build_db.py`
 - コード変更時は `index.html` 内の `?v=` を上げる（キャッシュ対策）
+- **`index.html` の HTML を触ったら必ず `python3 build_stage.py` を走らせる。**`stage.html` はそこから生成する一枚で、手で直すものではない（直接編集すると次の生成で消える。過去に矢印ツール・ディアボロ・一人称の「視界」が片方だけに入った状態が起きている）。揃っているかは `python3 build_stage.py --check`
 - **コード変更のコミットと、索引再生成のコミットは分ける**（履歴でコードの変更を追えるようにするため）
 - 索引を何度も再生成した後は `git gc` で回収する（looseオブジェクトが溜まると .git が数十MBに膨らむ。gc後は全履歴込みで約5MB）
 
