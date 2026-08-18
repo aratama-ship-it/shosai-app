@@ -1912,6 +1912,7 @@
     prefsBackdrop: document.getElementById("stage-prefs-backdrop"),
     prefsClose: document.getElementById("stage-prefs-close"),
     prefsList: document.getElementById("stage-prefs-list"),
+    prefKeysBody: document.getElementById("stage-pref-keys-body"),
     presentBtn: document.getElementById("stage-present-btn"),
     presentOverlay: document.getElementById("stage-present-overlay"),
     presentPrev: document.getElementById("stage-present-prev"),
@@ -12354,6 +12355,48 @@
   }
 
   /* ---------- 環境設定の窓 ---------- */
+  /* ---------- ショートカット一覧 ----------
+     道具のキーは札の data-tool-key から拾う。ここへ書き写すと、
+     キーを足したときに一覧だけ古くなる（説明の吹き出しも同じ作りにしてある）。
+     残りは道具ではない決まったキー。押す場所が要るものは、そう書いておく。 */
+  const FIXED_KEYS = [
+    ["シーンを送る", "↑ ↓ ← →"],
+    ["一つ戻す", "⌘Z"],
+    ["やり直す", "⇧⌘Z"],
+    ["選んだものを消す", "Delete"],
+    ["窓を閉じる・プレゼンを終える", "Esc"],
+  ];
+
+  function renderPrefKeys() {
+    const host = els.prefKeysBody;
+    if (!host) return;
+    host.innerHTML = "";
+    const rows = [];
+    const seen = new Set();
+    document.querySelectorAll("[data-tool-key]").forEach((button) => {
+      const key = (button.dataset.toolKey || "").toUpperCase();
+      if (!key || seen.has(key)) return;   // メモは正面と平面に同じ札がある
+      seen.add(key);
+      rows.push([button.getAttribute("aria-label") || button.textContent.trim(), key]);
+    });
+    FIXED_KEYS.forEach(([label, key]) => rows.push([label, key]));
+    rows.forEach(([label, key]) => {
+      const row = document.createElement("p");
+      row.className = "stage-pref-key-row";
+      const name = document.createElement("span");
+      name.textContent = tx(label);
+      const tag = document.createElement("span");
+      tag.className = "stage-tip-key";
+      tag.textContent = key;
+      row.append(name, tag);
+      host.append(row);
+    });
+    const note = document.createElement("p");
+    note.className = "stage-pref-hint";
+    note.textContent = tx("文字を打っている最中は効きません。WindowsとLinuxでは⌘をCtrlに読み替えてください。");
+    host.append(note);
+  }
+
   function renderPrefs() {
     const host = els.prefsList;
     if (!host) return;
@@ -12432,6 +12475,7 @@
   }
   function openPrefs() {
     renderPrefs();
+    renderPrefKeys();
     if (els.prefsModal) els.prefsModal.hidden = false;
     if (els.prefsBackdrop) els.prefsBackdrop.hidden = false;
   }
@@ -16966,6 +17010,7 @@ ${cuesheetHtml}
     renderVenueControls();
     renderScenes();
     if (els.sceneGridModal && !els.sceneGridModal.hidden) renderSceneGrid();
+    if (els.prefsModal && !els.prefsModal.hidden) { renderPrefs(); renderPrefKeys(); }
     renderCast();
     renderSets();
     renderLights();

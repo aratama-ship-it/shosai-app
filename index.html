@@ -11,7 +11,7 @@
 <link rel="manifest" href="shosai-app.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=170">
+<link rel="stylesheet" href="style.css?v=175">
 </head>
 <body>
 
@@ -1422,6 +1422,13 @@
               title="日本語 / English">EN</button>
     </div>
 
+    <!-- ショートカット一覧。アイコンの説明を消した人が、キーを見に来られる場所。
+         中身はJSが道具の札（data-tool-key）から作るので、キーを足しても書き直さなくていい -->
+    <details class="stage-pref-keys" id="stage-pref-keys">
+      <summary class="stage-pref-keys-summary">ショートカット一覧</summary>
+      <div class="stage-pref-keys-body" id="stage-pref-keys-body"></div>
+    </details>
+
     <div class="stage-prefs-links" aria-label="案内とサポート">
       <button type="button" class="stage-about-link" id="stage-tour-start" title="使い方をひととおり見る">使い方</button>
       <button type="button" class="stage-about-link" id="stage-about-open-from-prefs">このアプリについて</button>
@@ -1736,13 +1743,13 @@
 <script src="app.js?v=57"></script>
 <script src="stage-venues.js?v=16"></script>
 <script src="stage-venue-lines.js?v=4"></script>
-<script src="stage-i18n.js?v=56"></script>
+<script src="stage-i18n.js?v=57"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=1"></script>
 <script src="stage-set-model.js?v=1"></script>
 <script src="stage-set-builder.js?v=1"></script>
 <script src="stage-first-person.js?v=4"></script>
-<script src="stage-sketch.js?v=243"></script>
+<script src="stage-sketch.js?v=245"></script>
 <script src="stage-venue-editor.js?v=6"></script>
 <script src="roster.js?v=3"></script>
 </body>

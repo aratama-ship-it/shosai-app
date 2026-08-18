@@ -8028,6 +8028,53 @@ body.is-panel-dragging {
   min-width: 74px;
 }
 
+/* 環境設定の中のショートカット一覧。既定は畳んでおく——毎回開く人のためではなく、
+   「アイコンの説明」を消した人が思い出しに来るための場所なので、
+   ふだんは設定の並びを邪魔しない。 */
+.stage-pref-keys {
+  border-bottom: 1px solid rgba(211, 172, 89, 0.14);
+  padding: 7px 2px 9px;
+}
+
+.stage-pref-keys-summary {
+  cursor: pointer;
+  font-size: 14px;
+  color: rgba(239, 231, 214, 0.92);
+  list-style: none;
+}
+
+.stage-pref-keys-summary::-webkit-details-marker { display: none; }
+
+.stage-pref-keys-summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 1.1em;
+  color: var(--brass);
+  transition: transform 120ms ease;
+}
+
+.stage-pref-keys[open] .stage-pref-keys-summary::before { content: "▾"; }
+
+.stage-pref-keys-body {
+  margin: 8px 0 0 1.1em;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+
+/* 名前とキーを両端に置く。目はキーの列だけを縦に追える */
+.stage-pref-key-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0;
+  font-size: 12px;
+  color: rgba(239, 231, 214, 0.72);
+}
+
+.stage-pref-keys-body .stage-pref-hint { margin-top: 6px; }
+
 /* 場面は右列で縦に積む */
 .stage-col .stage-scenes {
   border: 0;

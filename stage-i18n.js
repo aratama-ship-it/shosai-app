@@ -333,6 +333,11 @@
     "動線を描く": "Draw route",
     "メモを貼る": "Add a note",
     "太さ": "Width",
+    "ショートカット一覧": "Keyboard shortcuts",
+    "選んだものを消す": "Delete what is selected",
+    "窓を閉じる・プレゼンを終える": "Close a window / leave presentation",
+    "文字を打っている最中は効きません。WindowsとLinuxでは⌘をCtrlに読み替えてください。":
+      "They do nothing while you are typing. On Windows and Linux, read ⌘ as Ctrl.",
     "細": "Thin",
     "太": "Thick",
     "動線を消す": "Clear route",
