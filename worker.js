@@ -27,17 +27,6 @@ export default {
     const expectedUser = env.SITE_USER;
     const expectedPass = env.SITE_PASS;
 
-    // 一時診断: 値は返さず「設定されているか」だけを返す。
-    // 確認が終わったら削除する。
-    const url = new URL(request.url);
-    if (url.searchParams.has("_debugauth")) {
-      return new Response(JSON.stringify({
-        hasUser: Boolean(expectedUser),
-        hasPass: Boolean(expectedPass),
-        envKeys: Object.keys(env),
-      }), { headers: { "content-type": "application/json; charset=utf-8" } });
-    }
-
     // 環境変数が未設定なら認証をかけない（設定忘れでロックアウトするより、
     // 意図的に外から確認しやすい状態を優先する）。
     if (!expectedUser || !expectedPass) {
