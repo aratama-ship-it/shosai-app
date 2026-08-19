@@ -283,10 +283,15 @@
   }
 
   function exportLibrary() {
-    const blob = new Blob([API().serializeLibrary(library)], { type: "application/json" });
-    const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
-    link.download = "shosai-stage-models.json"; document.body.append(link); link.click(); link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    try {
+      const blob = new Blob([API().serializeLibrary(library)], { type: "application/json" });
+      const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
+      link.download = "shosai-stage-models.json"; document.body.append(link); link.click(); link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    } catch (error) {
+      console.error("set builder export: 書き出せませんでした", error);
+      window.alert(t("セットモデルを書き出せませんでした。もう一度お試しください。"));
+    }
   }
 
   async function importLibrary(event) {

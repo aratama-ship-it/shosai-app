@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=175">
+<link rel="stylesheet" href="style.css?v=180">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -33,7 +33,7 @@
         <div class="stage-history-actions">
           <button type="button" id="stage-undo" data-tablet-icon="↶" title="⌘Z（WindowsはCtrl+Z）" disabled>一つ戻す</button>
           <button type="button" id="stage-redo" data-tablet-icon="↷" title="⇧⌘Z（WindowsはCtrl+Shift+Z）" disabled>やり直す</button>
-          <button type="button" class="stage-lang stage-gear-btn" id="stage-prefs-btn" data-tablet-icon="⚙" aria-label="設定" title="設定（機能の出し入れ・言語）"><span aria-hidden="true">⚙</span></button>
+          <button type="button" class="stage-lang stage-gear-btn" id="stage-prefs-btn" data-tablet-icon="⚙" aria-label="設定" title="設定（機能の出し入れ・言語）"><span aria-hidden="true"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.12 3.47L6.78 1.72L9.22 1.72L9.88 3.47L11.58 2.69L13.31 4.42L12.53 6.12L14.28 6.78L14.28 9.22L12.53 9.88L13.31 11.58L11.58 13.31L9.88 12.53L9.22 14.28L6.78 14.28L6.12 12.53L4.42 13.31L2.69 11.58L3.47 9.88L1.72 9.22L1.72 6.78L3.47 6.12L2.69 4.42L4.42 2.69Z"/><circle cx="8" cy="8" r="2.2"/></svg></span></button>
           <button type="button" class="stage-lang" id="stage-present-btn" data-tablet-icon="▶" title="正面図だけを全画面で見せる。矢印キーでシーン送り、Escで戻る">プレゼン</button>
           <button type="button" class="stage-export" id="stage-export" data-tablet-icon="⇩">画像を書き出す</button>
         </div>
@@ -129,6 +129,31 @@
                 </p>
                 <div class="stage-cast-list" id="stage-set-list"></div>
               </div>
+            </div>
+          </section>
+
+          <section class="stage-panel" data-panel="machinery" data-title="舞台機構">
+            <div class="stage-panel-body">
+              <p class="stage-cast-hint">場面ごとに回転角・高さ・開きなどを変えられる舞台機構です。動きの再生や安全計算は行いません。</p>
+              <div class="stage-machinery-kind-list" id="stage-machinery-kind-list">
+                <button type="button" class="btn-quiet" data-machinery-kind="revolve">盆・回り舞台</button>
+                <button type="button" class="btn-quiet" data-machinery-kind="deck">可動デッキ・傾斜デッキ</button>
+                <div class="stage-machinery-curtain-row">
+                  <button type="button" class="btn-quiet" data-machinery-kind="curtain">幕</button>
+                  <select id="stage-machinery-curtain-kind" class="stage-select" aria-label="幕の種別">
+                    <option value="front">前幕・引き割り</option>
+                    <option value="traveler">中割り幕</option>
+                    <option value="drop">振り落とし・上下する幕</option>
+                    <option value="leg">袖幕</option>
+                    <option value="cyc">ホリゾント幕</option>
+                  </select>
+                </div>
+                <button type="button" class="btn-quiet" data-machinery-kind="pool">水面・可動プール床</button>
+                <button type="button" class="btn-quiet" data-machinery-kind="seri">せり</button>
+              </div>
+              <p class="stage-roster-head">既製プリセット</p>
+              <p class="stage-profile-hint">寸法は推定値です。配置後に一つずつ動かし、寸法を直せます。</p>
+              <div class="stage-cast-list" id="stage-machinery-presets"></div>
             </div>
           </section>
 
@@ -294,13 +319,13 @@
           <div class="stage-center-bar">
             <!-- 「動かす」二つ・自由矢印・「背景」二つは別の仕事なので、間を空けて分ける -->
             <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
-              <button type="button" data-stage-tool="select" data-tablet-icon="↔" data-tool-key="V" class="is-icon" aria-label="ものを動かす" aria-pressed="true"><span class="stage-tool-icon" aria-hidden="true">↔</span><span class="stage-tool-label">ものを動かす</span></button>
-              <button type="button" data-stage-tool="light" data-tablet-icon="☀" data-tool-key="L" class="is-icon" aria-label="照明を動かす" aria-pressed="false"><span class="stage-tool-icon" aria-hidden="true">☀</span><span class="stage-tool-label">照明を動かす</span></button>
+              <button type="button" data-stage-tool="select" data-tablet-icon="↔" data-tool-key="V" class="is-icon" aria-label="ものを動かす" aria-pressed="true"><span class="stage-tool-icon" aria-hidden="true"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.4v11.2M2.4 8h11.2"/><path d="M6.3 4.1 8 2.4l1.7 1.7M6.3 11.9 8 13.6l1.7-1.7"/><path d="M4.1 6.3 2.4 8l1.7 1.7M11.9 6.3 13.6 8l-1.7 1.7"/></svg></span><span class="stage-tool-label">ものを動かす</span></button>
+              <button type="button" data-stage-tool="light" data-tablet-icon="☀" data-tool-key="L" class="is-icon" aria-label="照明を動かす" aria-pressed="false"><span class="stage-tool-icon" aria-hidden="true"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.6a4.4 4.4 0 0 1 2.5 8c-.5.36-.8.94-.8 1.56v.3H6.3v-.3c0-.62-.3-1.2-.8-1.56A4.4 4.4 0 0 1 8 1.6Z"/><line x1="6.4" y1="13.5" x2="9.6" y2="13.5"/><line x1="6.8" y1="14.6" x2="9.2" y2="14.6"/></svg></span><span class="stage-tool-label">照明を動かす</span></button>
               <span class="stage-tool-split" aria-hidden="true"></span>
-              <button type="button" data-stage-tool="arrow" data-tablet-icon="↗" data-tool-key="A" class="is-icon" aria-label="矢印を描く" aria-pressed="false"><span class="stage-tool-icon" aria-hidden="true">↗</span><span class="stage-tool-label">矢印を描く</span></button>
+              <button type="button" data-stage-tool="arrow" data-tablet-icon="↗" data-tool-key="A" class="is-icon" aria-label="矢印を描く" aria-pressed="false"><span class="stage-tool-icon" aria-hidden="true"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 12.6 12.4 3.6"/><path d="M7.6 3.6h4.8v4.8"/></svg></span><span class="stage-tool-label">矢印を描く</span></button>
               <span class="stage-tool-split" aria-hidden="true"></span>
-              <button type="button" data-stage-tool="paint" data-tablet-icon="✎" data-tool-key="P" class="is-icon" aria-label="背景を塗る" aria-pressed="false"><span class="stage-tool-icon" aria-hidden="true">✎</span><span class="stage-tool-label">背景を塗る</span></button>
-              <button type="button" data-stage-tool="erase" data-tablet-icon="⌫" data-tool-key="E" class="is-icon" aria-label="背景を消す" aria-pressed="false"><span class="stage-tool-icon" aria-hidden="true">⌫</span><span class="stage-tool-label">背景を消す</span></button>
+              <button type="button" data-stage-tool="paint" data-tablet-icon="✎" data-tool-key="P" class="is-icon" aria-label="背景を塗る" aria-pressed="false"><span class="stage-tool-icon" aria-hidden="true"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M11.1 2.6l2.3 2.3-7.4 7.4-3 .7.7-3z"/><path d="M9.5 4.2l2.3 2.3"/></svg></span><span class="stage-tool-label">背景を塗る</span></button>
+              <button type="button" data-stage-tool="erase" data-tablet-icon="⌫" data-tool-key="E" class="is-icon" aria-label="背景を消す" aria-pressed="false"><span class="stage-tool-icon" aria-hidden="true"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8.9 4.2l3.9 3.9-4.3 4.3H4.6l-1.4-1.4z"/><path d="M6.1 7l3.9 3.9M4.6 12.4h7.8"/></svg></span><span class="stage-tool-label">背景を消す</span></button>
             </div>
             <button type="button" class="btn-quiet" id="stage-freecam-open">3Dカメラ</button>
             <button type="button" class="stage-hint-help" id="stage-tool-help"
@@ -704,9 +729,34 @@
                 <label class="stage-control-label stage-range-label" for="stage-piece-seri">
                   せり上がり（床からの高さ） <span id="stage-piece-seri-value">0cm</span>
                 </label>
-                <input type="range" id="stage-piece-seri" min="0" max="4" step="0.01" value="0">
+                <input type="range" id="stage-piece-seri" min="-3" max="4" step="0.01" value="0">
               </div>
               <p id="stage-seri-warning" class="stage-seri-warning" hidden>せりの縁をまたいでいます（上がると落ちます）</p>
+              <div id="stage-machinery-controls" hidden>
+                <div id="stage-revolve-controls" hidden>
+                  <label class="stage-control-label stage-range-label" for="stage-piece-spin">回転角 <span id="stage-piece-spin-value">0度</span></label>
+                  <input type="range" id="stage-piece-spin" min="-180" max="180" step="1" value="0">
+                </div>
+                <div id="stage-deck-controls" hidden>
+                  <label class="stage-control-label stage-range-label" for="stage-piece-tilt">傾斜角 <span id="stage-piece-tilt-value">0度</span></label>
+                  <input type="range" id="stage-piece-tilt" min="-60" max="60" step="0.5" value="0">
+                  <label class="stage-control-label stage-range-label" for="stage-piece-deck-h">高さ <span id="stage-piece-deck-h-value">0.00m</span></label>
+                  <input type="range" id="stage-piece-deck-h" min="-4" max="8" step="0.01" value="0">
+                </div>
+                <div id="stage-curtain-controls" hidden>
+                  <label class="stage-control-label stage-range-label" for="stage-piece-open">開き <span id="stage-piece-open-value">0%開</span></label>
+                  <input type="range" id="stage-piece-open" min="0" max="100" step="1" value="0">
+                </div>
+                <div id="stage-pool-controls" hidden>
+                  <label class="stage-control-label stage-range-label" for="stage-piece-water">水位 <span id="stage-piece-water-value">0.90m</span></label>
+                  <input type="range" id="stage-piece-water" min="0" max="3" step="0.01" value="0.9">
+                  <label class="stage-control-label stage-range-label" for="stage-piece-pool-h">床の高さ <span id="stage-piece-pool-h-value">-3.00m</span></label>
+                  <input type="range" id="stage-piece-pool-h" min="-4" max="0" step="0.01" value="-3">
+                </div>
+              </div>
+              <p id="stage-machinery-scene-diff" class="stage-dims-note" hidden></p>
+              <p id="stage-machinery-estimated" class="stage-machinery-estimated" hidden>推定値・要確認</p>
+              <p id="stage-deck-warning" class="stage-seri-warning" hidden>デッキの上の駒は自動では傾きません</p>
               <!-- プリセットの組を選んでいるときの操作。一体で扱い、直径と強さだけ触れる -->
               <div id="stage-group-controls" hidden>
                 <label class="stage-control-label stage-range-label" for="stage-group-dia">
@@ -873,18 +923,54 @@
     <button type="button" class="stage-modal-close" id="stage-export-close" aria-label="閉じる">✕</button>
   </header>
   <div class="stage-modal-body">
-    <label class="stage-control-label">どの絵を</label>
-    <div class="stage-tool-grid" role="group" aria-label="どの絵を書き出すか">
-      <button type="button" data-export-view="front" aria-pressed="true">正面</button>
-      <button type="button" data-export-view="plan" aria-pressed="false">平面</button>
-      <button type="button" data-export-view="both" aria-pressed="false">両方</button>
+    <div id="stage-export-purpose-block">
+      <label class="stage-control-label">何のために</label>
+      <div class="stage-tool-grid" role="group" aria-label="何のために書き出すか">
+        <button type="button" data-export-purpose="draft" aria-pressed="true">作図として</button>
+        <button type="button" data-export-purpose="pitch" aria-pressed="false">ピッチとして</button>
+      </div>
     </div>
 
-    <label class="stage-control-label">どのシーンを</label>
-    <div class="stage-export-scope" role="group" aria-label="どのシーンを書き出すか">
-      <button type="button" data-export-scope="current" aria-pressed="true">いまのシーン</button>
-      <button type="button" data-export-scope="section" aria-pressed="false">このセクションの中</button>
-      <button type="button" data-export-scope="all" aria-pressed="false">全部のシーン</button>
+    <div id="stage-export-draft-fields">
+      <label class="stage-control-label">どの絵を</label>
+      <div class="stage-tool-grid" role="group" aria-label="どの絵を書き出すか">
+        <button type="button" data-export-view="front" aria-pressed="true">正面</button>
+        <button type="button" data-export-view="plan" aria-pressed="false">平面</button>
+        <button type="button" data-export-view="both" aria-pressed="false">両方</button>
+      </div>
+
+      <label class="stage-control-label">どのシーンを</label>
+      <div class="stage-export-scope" role="group" aria-label="どのシーンを書き出すか">
+        <button type="button" data-export-scope="current" aria-pressed="true">いまのシーン</button>
+        <button type="button" data-export-scope="section" aria-pressed="false">このセクションの中</button>
+        <button type="button" data-export-scope="all" aria-pressed="false">全部のシーン</button>
+      </div>
+    </div>
+
+    <div id="stage-export-pitch-fields" hidden>
+      <label class="stage-control-label">画風</label>
+      <div class="stage-tool-grid" role="group" aria-label="ピッチ画像の画風">
+        <button type="button" data-pitch-style="theatre" aria-pressed="true">暗い劇場の一瞬</button>
+        <button type="button" data-pitch-style="paper" aria-pressed="false">紙の上のスケッチ</button>
+        <button type="button" data-pitch-style="poster" aria-pressed="false">ポスター</button>
+        <button type="button" data-pitch-style="render" aria-pressed="false">生成AIで仕上げる</button>
+      </div>
+      <p class="stage-profile-hint" id="stage-pitch-style-note"></p>
+
+      <label class="stage-control-label">大きさ</label>
+      <div class="stage-tool-grid" role="group" aria-label="ピッチ画像の大きさ">
+        <button type="button" data-pitch-size="2" aria-pressed="true">1920×1080</button>
+        <button type="button" data-pitch-size="1" aria-pressed="false">1280×720</button>
+        <button type="button" data-pitch-size="3" aria-pressed="false">3840×2160</button>
+      </div>
+      <label class="stage-check stage-pitch-caption-check">
+        <input type="checkbox" id="stage-pitch-caption" checked>
+        <span>絵に文字を入れる（ショー名・場面名・光の意図の一行）</span>
+      </label>
+
+      <label class="stage-control-label">生成条件の言語</label>
+      <div class="stage-tool-grid stage-pitch-langs" id="stage-pitch-langs"
+           role="group" aria-label="生成条件を出す言語"></div>
     </div>
 
     <p class="stage-profile-hint" id="stage-export-note"></p>
@@ -1350,14 +1436,16 @@
 
 <script src="stage-venues.js?v=16"></script>
 <script src="stage-venue-lines.js?v=4"></script>
-<script src="stage-i18n.js?v=57"></script>
+<script src="stage-i18n.js?v=59"></script>
+<script src="stage-prompt-i18n.js?v=1"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=1"></script>
 <script src="stage-set-model.js?v=1"></script>
 <script src="stage-set-builder.js?v=1"></script>
-<script src="stage-first-person.js?v=4"></script>
+<script src="stage-machinery.js?v=1"></script>
+<script src="stage-first-person.js?v=6"></script>
 <script src="stage-pwa.js?v=3"></script>
-<script src="stage-sketch.js?v=245"></script>
+<script src="stage-sketch.js?v=252"></script>
 <script src="stage-venue-editor.js?v=6"></script>
 </body>
 </html>

@@ -232,6 +232,168 @@
     tempoValues: LIGHT_INTENT_TEMPO_VALUES,
   });
 
+  /* ---------- ピッチ書き出し（純粋な組み立て） ----------
+     描画とDOMから切り離し、同じ入力なら必ず同じ結果になる部分だけをここへ置く。
+     語彙は stage-prompt-i18n.js の確定済みテーブルを受け取り、ここでは訳さない。 */
+  const PITCH_STYLE_PARAMS = Object.freeze({
+    theatre: Object.freeze({ beamHaze: 0.9, floorSheen: 0.35, bloom: 0.60,
+      grade: "teal-amber", vignette: 0.55, grain: 0.04, grainSize: 1 }),
+    paper: Object.freeze({ beamHaze: 0.25, floorSheen: 0, bloom: 0.15,
+      grade: null, vignette: 0.20, grain: 0.14, grainSize: 3 }),
+    poster: Object.freeze({ beamHaze: 0.9, floorSheen: 0.35, bloom: 0.60,
+      grade: "teal-amber", vignette: 0.70, grain: 0.04, grainSize: 1 }),
+    render: Object.freeze({ beamHaze: 0.9, floorSheen: 0.35, bloom: 0.60,
+      grade: "teal-amber", vignette: 0.55, grain: 0.04, grainSize: 1 }),
+  });
+
+  function seedFrom(text) {
+    let h = 2166136261;
+    const source = String(text || "");
+    for (let i = 0; i < source.length; i += 1) {
+      h ^= source.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  function mulberry32(seed) {
+    let value = seed >>> 0;
+    return function () {
+      value = (value + 0x6D2B79F5) | 0;
+      let t = Math.imul(value ^ (value >>> 15), 1 | value);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  const pitchStyleParams = (key) => PITCH_STYLE_PARAMS[key] || PITCH_STYLE_PARAMS.theatre;
+  const pitchSideKey = (u) => (Number(u) < 0.34 ? "left" : Number(u) > 0.66 ? "right" : "center");
+  const pitchDepthKey = (v) => (Number(v) < 0.34 ? "back" : Number(v) > 0.66 ? "front" : "mid");
+  const pitchNumber = (value) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? String(Math.round(number * 10) / 10) : "";
+  };
+
+  function buildPitchPrompt(options) {
+    const source = options || {};
+    const dictionaries = source.i18n || window.SHOSAI_PROMPT_I18N;
+    if (!dictionaries) return "";
+    const available = (dictionaries.langs || []).map((item) => item.code);
+    const langKey = available.includes(source.lang) ? source.lang : "ja";
+    const head = dictionaries.head[langKey];
+    const styleKey = PITCH_STYLE_PARAMS[source.style] ? source.style : "theatre";
+    const scene = source.scene || {};
+    const pieces = Array.isArray(scene.pieces) ? scene.pieces : [];
+    const cast = Array.isArray(source.cast) ? source.cast : [];
+    const sets = Array.isArray(source.sets) ? source.sets : [];
+    const venueFact = source.venue || {};
+    const blocks = [];
+    const titled = (title, body) => body ? `【${title}】${body}` : "";
+    const position = (piece) => {
+      const words = [
+        dictionaries.side[langKey][pitchSideKey(piece.u)],
+        dictionaries.depth[langKey][pitchDepthKey(piece.v)],
+      ];
+      if (Number(piece.base) > 0.3) words.push(`+${pitchNumber(piece.base)}m`);
+      return words.filter(Boolean).join("・");
+    };
+    const ownerName = (piece) => {
+      if (piece.castId) {
+        const member = cast.find((item) => item.id === piece.castId);
+        if (member && member.name) return member.name;
+      }
+      if (piece.setId) {
+        const item = sets.find((entry) => entry.id === piece.setId);
+        if (item && item.name) return item.name;
+      }
+      return String(piece.name || "").trim();
+    };
+
+    blocks.push(titled(head.style, dictionaries.style[langKey][styleKey]));
+
+    const venueParts = [];
+    if (String(venueFact.label || "").trim()) venueParts.push(String(venueFact.label).trim());
+    if (dictionaries.venue[langKey][venueFact.id]) {
+      venueParts.push(dictionaries.venue[langKey][venueFact.id]);
+    }
+    const dims = [venueFact.width, venueFact.depth, venueFact.height].map(pitchNumber);
+    if (dims.every(Boolean)) venueParts.push(`W×D×H ${dims.map((value) => `${value}m`).join(" × ")}`);
+    blocks.push(titled(head.venue, venueParts.join("／")));
+    blocks.push(titled(head.camera, head.camera1));
+
+    const stageLines = [];
+    const performers = pieces.filter((piece) => piece && piece.type === "performer");
+    if (performers.length) {
+      const entries = performers.map((piece) => {
+        const name = ownerName(piece) || dictionaries.piece[langKey].performer;
+        const pose = dictionaries.pose[langKey][piece.pose] || dictionaries.pose[langKey].stand;
+        return `${name} — ${position(piece)}、${pose}`;
+      });
+      stageLines.push(`- ${head.performers}（${performers.length}）: ${entries.join("／")}`);
+    }
+    const setPieces = pieces.filter((piece) => piece && piece.type !== "performer" && piece.type !== "light");
+    if (setPieces.length) {
+      const entries = setPieces.map((piece) => {
+        const name = ownerName(piece) || dictionaries.piece[langKey][piece.type] || "";
+        return name ? `${name}（${position(piece)}）` : "";
+      }).filter(Boolean);
+      if (entries.length) stageLines.push(`- ${head.sets}: ${entries.join("／")}`);
+    }
+    if (stageLines.length) blocks.push(`【${head.stage}】\n${stageLines.join("\n")}`);
+
+    const intent = scene.lightingIntent && typeof scene.lightingIntent === "object"
+      ? scene.lightingIntent : null;
+    const lights = pieces.filter((piece) => piece && piece.type === "light");
+    if (intent && lights.length) {
+      const lightLines = [];
+      const colors = [...new Set(lights.map((piece) => String(piece.color || "").trim()).filter(Boolean))];
+      if (colors.length) lightLines.push(`- ${head.colors}: ${colors.join("、")}`);
+      lights.forEach((piece) => {
+        const registered = piece.setId ? sets.find((entry) => entry.id === piece.setId) : null;
+        const kind = registered && registered.lightKind ? registered.lightKind : (piece.lightKind || "hang");
+        const kindText = dictionaries.lightKind[langKey][kind];
+        const noteText = dictionaries.lightNote[langKey][kind];
+        if (kindText && noteText) lightLines.push(`- ${kindText} — ${noteText}`);
+      });
+      if (lightLines.length) blocks.push(`【${head.light}】\n${lightLines.join("\n")}`);
+    }
+
+    if (intent) {
+      const ownLines = [];
+      const quoted = (value) => {
+        const raw = typeof value === "string" ? value.trim() : "";
+        return raw ? `「${raw}」` : "";
+      };
+      if (quoted(intent.objective)) ownLines.push(`- ${head.objective}: ${quoted(intent.objective)}`);
+      if (quoted(intent.audienceFocus)) ownLines.push(`- ${head.focus}: ${quoted(intent.audienceFocus)}`);
+      const layerKeys = [
+        ["performer", head.layerPerformer],
+        ["background", head.layerBackground],
+        ["space", head.layerSpace],
+      ];
+      layerKeys.forEach(([key, label]) => {
+        const layer = intent.layers && intent.layers[key];
+        if (!layer || !layer.intent || layer.intent === "unspecified") return;
+        const intentText = dictionaries.intent[langKey][layer.intent];
+        if (!intentText) return;
+        ownLines.push(`- ${label}: ${intentText}${quoted(layer.note)}`);
+      });
+      if (quoted(intent.mood)) ownLines.push(`- ${head.mood}: ${quoted(intent.mood)}`);
+      if (ownLines.length) blocks.push(`【${head.ownWords}】\n${ownLines.join("\n")}`);
+    }
+
+    blocks.push(titled(head.avoid, head.avoid1));
+    if (styleKey === "render" && head.refNote) blocks.push(head.refNote);
+    return blocks.filter(Boolean).join("\n\n");
+  }
+
+  window.SHOSAI_STAGE_PITCH_EXPORT_MODEL = Object.freeze({
+    seedFrom,
+    mulberry32,
+    styleParams: pitchStyleParams,
+    buildPrompt: buildPitchPrompt,
+  });
+
   /* 意図の値を、図の上の作図記号へ写す。明るさの再現ではないので、
      沈める表現に真っ黒を使わず、斜線ハッチなど「指定」だと読める記号を使う。 */
   const LIGHT_INTENT_MARKS = Object.freeze({
@@ -641,6 +803,14 @@
   window.SHOSAI_STAGE_AI_PANEL_MODEL = STAGE_AI_PANEL_MODEL;
   STAGE_AI_PANEL_MODEL.removeUnsupportedSection(document, window.stageSketchBridge);
 
+  /* テスト（tests/stage-export-zip.test.mjs）から純粋関数だけを叩けるようにする。他のMODELと同じ流儀。
+     crc32・makeZipBlob・dataUrlToBytes は function 宣言なのでこの位置からでも参照できる（巻き上げ）。
+     この下の #stage-canvas ガードより前に置くのは、DOM無しのテストがそこで早期returnするため。
+     crc32Table はcrc32内で使う唯一の外側変数なので、ここで先に初期化しておく（テストで早期returnしても
+     crc32を呼べるように。letはブロック先頭へ巻き上がるが、初期化文自体はガード後まで実行されないため）。 */
+  let crc32Table = null;
+  window.SHOSAI_STAGE_EXPORT_MODEL = Object.freeze({ crc32, makeZipBlob, dataUrlToBytes });
+
   const canvas = document.getElementById("stage-canvas");
   if (!canvas) return;
   const VENUES = window.SHOSAI_VENUES;
@@ -695,6 +865,8 @@
   // プレゼン（正面図だけの全画面）中か。説明の帯を出すかどうかの目印
   let presenting = false;
   let pseudoPresenting = false;
+  // ピッチ用の出力を描いている間だけ入る。通常の作図画面には持ち越さない。
+  let pitchStyle = null;
   /* ---------- 初期化（テスト用） ----------
      ?fresh を付けて開くと、舞台スケッチの持ちものだけ消して開き直す。
      初めて来た人とまったく同じ状態（案内も自動で出る）を作れるので、
@@ -752,6 +924,10 @@
     cane: "ハンドバランス用cane",
     car: "車",
     seri: "せり",
+    revolve: "盆・回り舞台",
+    deck: "可動デッキ・傾斜デッキ",
+    curtain: "幕",
+    pool: "水面・可動プール床",
     sphere: "球",
     model: "組んだセット",
     light: "照明",
@@ -768,6 +944,10 @@
     trapeze: 0.06, cyrwheel: 1.9, diabolo: 0.26, pole: 6, teeter: 0.75, tissue: 7,
     wire: 1.2, suitcase: 0.44, trampoline: 0.95, cane: 0.75, car: 1.45,
     seri: 2.7,
+    revolve: 12,
+    deck: 12,
+    curtain: 8,
+    pool: 14,
     sphere: 1.2,
     model: 1,
     light: 2.5,
@@ -797,6 +977,10 @@
     cane: { w: 0.5, d: 0.3, h: 0.75 },
     car: { w: 4.3, d: 1.8, h: 1.45 },
     seri: { w: 2.7, d: 1.8 },
+    revolve: { dia: 12, h: 0.15 },
+    deck: { w: 12, d: 9, h: 0.4 },
+    curtain: { w: 12, h: 8, lift: 0 },
+    pool: { w: 14, d: 10 },
     // 壁は厚みを固定で持つ（舞台の壁は建て込みの板なので、厚みは決まっている）
     wall: { w: 3, d: 0.3, h: 2.5 },
     sphere: { dia: 1.2, lift: 0 },         // 直径と、床からの高さ
@@ -830,6 +1014,10 @@
     trampoline: { h: "ベッドの高さ" },
     cane: { w: "左右の間隔", h: "cane の高さ" },
     light: { dia: "直径（床に落ちる円の広さ）" },
+    revolve: { dia: "直径", h: "せり出す厚み" },
+    deck: { h: "デッキの厚み" },
+    curtain: { lift: "吊り位置" },
+    pool: { w: "幅", d: "奥行き" },
   };
   function dimLabel(kind, key) {
     if (isEn()) {
@@ -860,7 +1048,8 @@
     trapeze: "トラピーズ", cyrwheel: "シルホイール", diabolo: "ディアボロ", pole: "チャイニーズポール",
     teeter: "ティーターボード", tissue: "エアリアルティシュー", wire: "綱渡り",
     suitcase: "スーツケース", trampoline: "トランポリン", cane: "ハンドバランス用cane",
-    car: "車", seri: "せり",
+    car: "車", seri: "せり", revolve: "盆・回り舞台", deck: "可動デッキ・傾斜デッキ",
+    curtain: "幕", pool: "水面・可動プール床",
     model: "組んだセット",
     light: "照明",
   };
@@ -903,7 +1092,7 @@
   const SET_KIND_ORDER = [
     "block", "table", "chair", "bench", "stool", "wall", "sphere", "model",
     "trapeze", "cyrwheel", "diabolo", "pole", "teeter", "tissue", "wire",
-    "suitcase", "trampoline", "cane", "car", "seri",
+    "suitcase", "trampoline", "cane", "car", "seri", "revolve", "deck", "curtain", "pool",
   ];
   /* ---------- 演者の骨格と姿勢 ----------
    * 関節を3次元（x=左右／y=上下／z=本人の正面向き）で持ち、向きの角度だけ
@@ -1577,6 +1766,7 @@
     block: true, table: true, chair: true, bench: true, stool: true, wall: true,
     trapeze: true, cyrwheel: true, diabolo: true, pole: true, teeter: true, tissue: true, wire: true,
     suitcase: true, trampoline: true, cane: true, car: true, seri: true, model: true,
+    revolve: true, deck: true, curtain: true, pool: true,
   };
   const CHAIR_W = 0.5;
   const CHAIR_D = 0.55;
@@ -1589,6 +1779,7 @@
     if (piece.type === "diabolo") {
       return piece.diaboloMode === "stand" ? { w: d.dia, d: d.dia } : { w: d.w, d: d.dia };
     }
+    if (piece.type === "curtain") return { w: d.w, d: .12 };
     if (d.dia !== undefined) return { w: d.dia, d: d.dia };
     return { w: d.w, d: d.d };
   }
@@ -1704,6 +1895,13 @@
     exportClose: document.getElementById("stage-export-close"),
     exportRun: document.getElementById("stage-export-run"),
     exportNote: document.getElementById("stage-export-note"),
+    exportTitle: document.getElementById("stage-export-title"),
+    exportPurposeBlock: document.getElementById("stage-export-purpose-block"),
+    exportDraftFields: document.getElementById("stage-export-draft-fields"),
+    exportPitchFields: document.getElementById("stage-export-pitch-fields"),
+    pitchStyleNote: document.getElementById("stage-pitch-style-note"),
+    pitchCaption: document.getElementById("stage-pitch-caption"),
+    pitchLangs: document.getElementById("stage-pitch-langs"),
     toolHint: document.getElementById("stage-tool-hint"),
     toolHelp: document.getElementById("stage-tool-help"),
     arrowOptions: document.getElementById("stage-arrow-options"),
@@ -2000,6 +2198,8 @@
     rigList: document.getElementById("stage-rig-list"),
     rigName: document.getElementById("stage-rig-name"),
     rigSave: document.getElementById("stage-rig-save"),
+    machineryCurtainKind: document.getElementById("stage-machinery-curtain-kind"),
+    machineryPresets: document.getElementById("stage-machinery-presets"),
     sceneAddRig: document.getElementById("stage-scene-add-rig"),
     sceneSection: document.getElementById("stage-scene-section"),
     setInfo: document.getElementById("stage-setinfo"),
@@ -2025,6 +2225,26 @@
     pieceSeri: document.getElementById("stage-piece-seri"),
     pieceSeriValue: document.getElementById("stage-piece-seri-value"),
     seriWarning: document.getElementById("stage-seri-warning"),
+    machineryControls: document.getElementById("stage-machinery-controls"),
+    revolveControls: document.getElementById("stage-revolve-controls"),
+    deckControls: document.getElementById("stage-deck-controls"),
+    curtainControls: document.getElementById("stage-curtain-controls"),
+    poolControls: document.getElementById("stage-pool-controls"),
+    pieceSpin: document.getElementById("stage-piece-spin"),
+    pieceSpinValue: document.getElementById("stage-piece-spin-value"),
+    pieceTilt: document.getElementById("stage-piece-tilt"),
+    pieceTiltValue: document.getElementById("stage-piece-tilt-value"),
+    pieceDeckH: document.getElementById("stage-piece-deck-h"),
+    pieceDeckHValue: document.getElementById("stage-piece-deck-h-value"),
+    pieceOpen: document.getElementById("stage-piece-open"),
+    pieceOpenValue: document.getElementById("stage-piece-open-value"),
+    pieceWater: document.getElementById("stage-piece-water"),
+    pieceWaterValue: document.getElementById("stage-piece-water-value"),
+    piecePoolH: document.getElementById("stage-piece-pool-h"),
+    piecePoolHValue: document.getElementById("stage-piece-pool-h-value"),
+    machinerySceneDiff: document.getElementById("stage-machinery-scene-diff"),
+    machineryEstimated: document.getElementById("stage-machinery-estimated"),
+    deckWarning: document.getElementById("stage-deck-warning"),
     showFlown: document.getElementById("stage-show-flown"),
     frontLights: document.getElementById("stage-front-lights"),
     frontLightIntent: document.getElementById("stage-front-light-intent"),
@@ -2138,6 +2358,8 @@
       hint: "印刷用ページに、演者の立ち位置の実寸表を足す" },
     { key: "cuesheet", label: "明かりのキューシート（印刷）",
       hint: "印刷用ページに、シーンごとの明かりの点き消え表を足す" },
+    { key: "pitchExport", label: "ピッチ書き出し", def: true,
+      hint: "書き出しモーダルに「ピッチとして」が出る。作図の線を落とし、光と空気を効かせた一枚絵と、生成AI用の条件文を出す" },
   ];
   const FEATURES_PLANNED = [
     "転換アニメの動画書き出し", "見えない席の検査（遮蔽）", "複数選択と整形", "資料棚からの場面引用",
@@ -2353,17 +2575,17 @@
      使わないものは畳めるようにする。中央は絵だけで、上下の入れ替えのみ。 */
   /* 演者・舞台セット・光は「出るもの」一枚にまとめた（cast）。
    * 登録・出し入れ・寸法の仕組みが同じものを三つに割ると、目が三度行き来する。 */
-  const PANELS = ["project", "cast", "rigs", "light", "background", "study", "scenes", "inspector", "save", "ask"];
+  const PANELS = ["project", "cast", "machinery", "rigs", "light", "background", "study", "scenes", "inspector", "save", "ask"];
 
   function defaultLayout() {
     return {
       // 場面は絵のすぐ右に置く（順番を見ながら描くため）
       cols: {
-        project: "left", cast: "left", rigs: "left", light: "left", background: "left",
+        project: "left", cast: "left", machinery: "left", rigs: "left", light: "left", background: "left",
         study: "right", scenes: "right", inspector: "right", save: "right", ask: "right",
       },
       order: {
-        project: 0, cast: 1, rigs: 2, light: 3, background: 4,
+        project: 0, cast: 1, machinery: 2, rigs: 3, light: 4, background: 5,
         study: -1, scenes: 0, inspector: 1, save: 2, ask: 3,
       },
       collapsed: {},
@@ -2529,8 +2751,22 @@
        * 登録を持たない駒（最初から置いてある例など）のための控え。 */
       locked: Boolean(piece && piece.locked),
     };
-    // せりの高さは登録寸法ではなく、シーンごとの上がり具合として持つ
-    if (type === "seri") normalized.seriH = clamp(finite(piece.seriH, 0), 0, 4);
+    // 舞台機構の値は登録寸法ではなく、シーンごとの状態として駒に持つ
+    if (type === "seri") normalized.seriH = clamp(finite(piece.seriH, 0), -3, 4);
+    if (type === "revolve") normalized.spin = clamp(finite(piece.spin, 0), -180, 180);
+    if (type === "deck") {
+      normalized.tilt = clamp(finite(piece.tilt, 0), -60, 60);
+      normalized.deckH = clamp(finite(piece.deckH, 0), -4, 8);
+    }
+    if (type === "curtain") {
+      normalized.curtainKind = ["front", "traveler", "drop", "leg", "cyc"].includes(piece.curtainKind)
+        ? piece.curtainKind : "front";
+      normalized.open = clamp(finite(piece.open, 0), 0, 100);
+    }
+    if (type === "pool") {
+      normalized.water = clamp(finite(piece.water, 0.9), 0, 3);
+      normalized.poolH = clamp(finite(piece.poolH, -3), -4, 0);
+    }
     return normalized;
   }
 
@@ -2585,7 +2821,13 @@
    * つまみの範囲まで変わるため、この種類だけ実寸を保持できる下限にする。 */
   function dimMeta(kind, key) {
     const meta = DIM_META[key];
-    return kind === "diabolo" ? Object.assign({}, meta, { min: 0.05, max: 0.5 }) : meta;
+    if (kind === "diabolo") return Object.assign({}, meta, { min: 0.05, max: 0.5 });
+    if (kind === "revolve" && key === "dia") return Object.assign({}, meta, { min: 2, max: 30 });
+    if (kind === "deck" && key === "w") return Object.assign({}, meta, { max: 16 });
+    if (kind === "curtain" && key === "w") return Object.assign({}, meta, { max: 60 });
+    if (kind === "curtain" && key === "h") return Object.assign({}, meta, { max: 9 });
+    if (kind === "pool" && key === "w") return Object.assign({}, meta, { max: 16 });
+    return meta;
   }
 
   // 寸法の正本。舞台セットに登録したものは、そちらを引く。
@@ -2603,7 +2845,7 @@
       // 壁の厚みは固定。触らせないので、つまみも出さない
       if (kind === "wall" && key === "d") return;
       // 地上高は、吊っているものと浮いている球にだけ意味がある
-      if (key === "lift" && SOLID_TYPES[kind] && !flown) return;
+      if (key === "lift" && SOLID_TYPES[kind] && !flown && kind !== "curtain") return;
       const label = document.createElement("label");
       label.className = "stage-control-label stage-range-label";
       label.htmlFor = `${prefix}-${key}`;
@@ -2642,6 +2884,24 @@
   function pieceSet(piece) {
     if (!piece || !piece.setId || !state.project) return null;
     return (state.project.sets || []).find((t) => t.id === piece.setId) || null;
+  }
+
+  // 盆の上にある駒の見かけの位置。保存値は動かさず、描画・視点・動線だけを回す。
+  function effectivePlacement(piece, scene = sc()) {
+    const machinery = window.SHOSAI_STAGE_MACHINERY;
+    if (!machinery) return { u: pieceU(piece), v: pieceV(piece), facing: finite(piece && piece.facing, 0) };
+    return machinery.effectivePlacement(piece, scene, venueSize(), {
+      dimsFor: pieceDims,
+      isFlown,
+    });
+  }
+
+  function effectivelyPlacedPiece(piece, scene = sc()) {
+    if (piece && piece._effectivePlacement) return piece;
+    const placed = effectivePlacement(piece, scene);
+    if (!placed.revolveId) return piece;
+    return { ...piece, u: placed.u, v: placed.v, facing: placed.facing,
+      animU: undefined, animV: undefined, _effectivePlacement: true };
   }
 
   const STAGE_MODELS_KEY = "shosai-stage-models-v1";
@@ -2775,7 +3035,8 @@
    * 床からの高さ（base）と支えている駒（supportId）は置き場所から毎回引き直す。
    * 丸ごと控えると、シーンの数だけ同じ値の写しが保存に溜まる。 */
   const STASH_KEYS = ["type", "u", "v", "size", "facing", "pose",
-    "poleSide", "poleH", "tissueH", "trapMode", "diaboloMode", "seriH", "glow", "beam", "route", "locked", "name"];
+    "poleSide", "poleH", "tissueH", "trapMode", "diaboloMode", "seriH", "spin", "tilt", "deckH",
+    "curtainKind", "open", "water", "poolH", "glow", "beam", "route", "locked", "name"];
 
   function normalizeStash(raw) {
     const out = {};
@@ -2958,6 +3219,11 @@
                 wires: t && Number(t.wires) === 1 ? 1 : 2,
                 // 壁を枠にする（穴の空いた壁＝フレーム）
                 framed: Boolean(t.framed),
+                curtainKind: kind === "curtain" && ["front", "traveler", "drop", "leg", "cyc"].includes(t.curtainKind)
+                  ? t.curtainKind : undefined,
+                confidence: t.confidence === "unverified" ? "unverified" : undefined,
+                sourceNote: typeof t.sourceNote === "string" ? t.sourceNote.slice(0, 200) : "",
+                estimated: Boolean(t.estimated),
                 lightKind: kind === "light" && LIGHT_KINDS[t && t.lightKind] ? t.lightKind : "hang",
                 /* 照明プリセットの組。同じ lightGroup を持つ明かりは一体で扱う。
                    presetDia は組んだときの直径（倍率スライダーの基準）、
@@ -3869,6 +4135,7 @@
     renderSets();
     renderLights();
     renderRigs();
+    renderMachineryPresets();
     renderVenueControls();
     updateInspector();
     render();
@@ -4232,7 +4499,8 @@
    * 何の上にでも物を置けるようにするので、演者の頭の上も上面として扱う。 */
   function pieceTopLocal(piece) {
     if (piece.type === "light") return 0;
-    if (piece.type === "seri") return clamp(finite(piece.seriH, 0), 0, 4);
+    if (piece.type === "seri") return Math.max(0, clamp(finite(piece.seriH, 0), -3, 4));
+    if (piece.type === "curtain" || piece.type === "pool" || piece.type === "deck") return 0;
     if (piece.type === "performer") {
       return poseExtent(piece.pose).top * pieceHeightM(piece) * (piece.size / 100);
     }
@@ -4259,6 +4527,7 @@
    * 候補は「自分より先に並んでいるもの」だけ。互いを支えにすると高さが
    * 際限なく積み上がるので、並び順で循環を断つ。
    * 動かしている駒は並びの最後へ回すので、必ず重なった相手の上に乗る。 */
+  const PERFORMER_UNSUPPORTABLE_TYPES = { chair: true, table: true, bench: true, stool: true };
   function supportUnder(piece, size, candidates) {
     let top = 0;
     let holder = null;
@@ -4268,6 +4537,17 @@
       if (other.type === "pole") return;
       const foot = supportFootprint(other);
       if (!foot) return;
+      // 座る・寄りかかる家具は、サイズに関係なく演者の支え候補から常に外す。
+      // 演者が座る対象であって、演者の上に乗ることはない。
+      if (other.type === "performer" && PERFORMER_UNSUPPORTABLE_TYPES[piece.type]) return;
+      // 演者は「自分と同じか、それより小さい設置面積の駒」しか支えない。
+      // 台やマットのような、演者より広い場所を取る什器が並び順の都合で
+      // 演者の頭に乗ってしまう逆転を防ぐ（什器の種類を列挙せず、大きさだけで線引きする）。
+      if (other.type === "performer" && piece.type !== "performer") {
+        const selfFoot = supportFootprint(piece);
+        const selfArea = selfFoot ? selfFoot.w * selfFoot.d : Infinity;
+        if (selfArea > foot.w * foot.d) return;
+      }
       const rad = ((other.facing || 0) * Math.PI) / 180;
       const dw = (piece.u - other.u) * size.width;
       const dd = -(piece.v - other.v) * size.depth;   // 奥へ行くほど v は小さい
@@ -4351,7 +4631,9 @@
          横に1m以上広がる）に「乗って」宙に浮いてしまうため、積み重ねの対象にしない。 */
       if (piece.type === "pole") { piece.base = 0; piece.supportId = null; return; }
       // せりは床の一部。ほかの駒に乗らず、上がっても床との接続を保つ
-      if (piece.type === "seri") { piece.base = 0; piece.supportId = null; return; }
+      if (["seri", "revolve", "deck", "curtain", "pool"].includes(piece.type)) {
+        piece.base = 0; piece.supportId = null; return;
+      }
       if (isFlown(piece)) { piece.base = flownLift(piece); piece.supportId = null; return; }
       // 吊っているものの上には乗れない（宙に浮いた板の上に立たせない）
       /* せりだけは並び順を超えて支えの候補に入れる。駒は動かすと並びの
@@ -4894,16 +5176,26 @@
   function pieceParts(piece) {
     const d = pieceDims(piece);
     if (!d) return null;
+    const machinery = window.SHOSAI_STAGE_MACHINERY;
+    if (machinery) {
+      const owner = pieceSet(piece);
+      const machineryPiece = piece.type === "curtain" && !piece.curtainKind && owner
+        ? { ...piece, curtainKind: owner.curtainKind } : piece;
+      const machineryBoxes = machinery.machineryParts(machineryPiece, d);
+      if (machineryBoxes) return machineryBoxes;
+    }
     if (piece.type === "model") {
       const owner = pieceSet(piece);
       const model = owner && stageModel(owner.modelId);
       return model && window.SHOSAI_STAGE_MODELS ? window.SHOSAI_STAGE_MODELS.modelBoxes(model) : [];
     }
     if (piece.type === "seri") {
-      const seriH = clamp(finite(piece.seriH, 0), 0, 4);
+      const seriH = clamp(finite(piece.seriH, 0), -3, 4);
       // 床と同じ高さでは立体を作らない。床面の輪郭は drawSolid が描く
-      if (seriH < 0.02) return [];
-      return [{ ox: 0, oz: 0, w: d.w, d: d.d, h: seriH, lift: 0, tint: 1 }];
+      if (Math.abs(seriH) < 0.02) return [];
+      return seriH > 0
+        ? [{ ox: 0, oz: 0, w: d.w, d: d.d, h: seriH, lift: 0, tint: 1 }]
+        : [{ ox: 0, oz: 0, w: d.w, d: d.d, h: -seriH, lift: seriH, tint: 1 }];
     }
     if (piece.type === "block") {
       return [{ ox: 0, oz: 0, w: d.w, d: d.d, h: d.h, lift: 0, tint: 1 }];
@@ -5246,6 +5538,46 @@
     if (!diabolo && !parts) return;
     const flown = isFlown(piece);
     target.save();
+
+    // 平面図の幕は、閉じている布の範囲を太線として読む。
+    if (piece.type === "curtain" && L.plan) {
+      const owner = pieceSet(piece);
+      const kind = piece.curtainKind || (owner && owner.curtainKind) || "front";
+      const open = clamp(finite(piece.open, 0), 0, 100);
+      // 割幕は全開でも両端に畳んだ布が残る。落とし幕・ホリ幕だけは全開で消える。
+      if (!["drop", "cyc"].includes(kind) || open < 100) {
+        target.strokeStyle = rgba(piece.color, .92);
+        target.lineWidth = 7;
+        target.lineCap = "butt";
+        parts.forEach((part) => {
+          const rad = ((piece.facing || 0) * Math.PI) / 180;
+          const cos = Math.cos(rad); const sin = Math.sin(rad);
+          const left = floorPoint(piece, (part.ox - part.w / 2) * cos, (part.ox - part.w / 2) * sin, L);
+          const right = floorPoint(piece, (part.ox + part.w / 2) * cos, (part.ox + part.w / 2) * sin, L);
+          target.beginPath(); target.moveTo(left.x, left.y); target.lineTo(right.x, right.y); target.stroke();
+        });
+      }
+      target.restore();
+      return;
+    }
+
+    // 床下へ沈んだせりは、平面図では破線の輪郭だけを残す。
+    if (piece.type === "seri" && L.plan && finite(piece.seriH, 0) < -0.02) {
+      const foot = pieceFootprint(piece);
+      const rad = ((piece.facing || 0) * Math.PI) / 180;
+      const cos = Math.cos(rad); const sin = Math.sin(rad);
+      target.strokeStyle = rgba(piece.color, .72);
+      target.lineWidth = 1.5;
+      target.setLineDash([7, 5]);
+      target.beginPath();
+      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sy], i) => {
+        const p = floorPoint(piece, sx * foot.w / 2 * cos - sy * foot.d / 2 * sin,
+          sx * foot.w / 2 * sin + sy * foot.d / 2 * cos, L);
+        if (i) target.lineTo(p.x, p.y); else target.moveTo(p.x, p.y);
+      });
+      target.closePath(); target.stroke(); target.setLineDash([]); target.restore();
+      return;
+    }
 
     // 下がり切ったせりは床面の継ぎ目だけ。高さのある板を置かない
     if (piece.type === "seri" && parts.length === 0) {
@@ -5658,7 +5990,7 @@
     const spread = Math.max(6, ((dim && dim.dia) || 4) / 2 * per.x);
     const src = beamSource(piece, L);
     const hit = beamTarget(piece, pos, L);
-    const lit = tool === "light";
+    const lit = !pitchStyle && tool === "light";
     const picked = piece.id === selectedId;
     /* 光の強さ。塗りの濃さをまとめて割り増し・割り引きする。
        輪郭線（当たる点の輪・出どころの線）は操作の印なので強さに連動させない */
@@ -5951,6 +6283,7 @@
   }
 
   function selectionBounds(piece, L) {
+    piece = effectivelyPlacedPiece(piece);
     const pos = placePiece(piece, L);
     const scale = pieceScale(piece, pos, L);
     const dim = pieceDims(piece);
@@ -6002,7 +6335,10 @@
     if (SOLID_TYPES[piece.type]) {
       // 描画と同じ手順で四隅を引き、その外接矩形を枠にする
       const foot = pieceFootprint(piece);
-      const height = piece.type === "seri" ? pieceTopLocal(piece) : dim.h;
+      const boxes = pieceParts(piece) || [];
+      const height = piece.type === "seri" ? Math.abs(finite(piece.seriH, 0))
+        : Number.isFinite(dim.h) ? dim.h
+          : Math.max(.05, ...boxes.map((part) => finite(part.lift, 0) + finite(part.h, 0)));
       const rad = ((piece.facing || 0) * Math.PI) / 180;
       const cos = Math.cos(rad);
       const sin = Math.sin(rad);
@@ -6043,9 +6379,15 @@
   /* route を外から渡せる形。はけの自動動線（まだ piece.route に無い仮の線）にも
      同じ取っ手・同じ当たり判定を使うため。 */
   function routePointsFor(piece, route, L) {
-    const at = place(pieceU(piece), pieceV(piece), L);
-    const to = place(route.u, route.v, L);
-    const ctrl = place(route.bu, route.bv, L);
+    const start = effectivePlacement(piece);
+    const pointPlacement = (u, v) => effectivePlacement({
+      ...piece, u, v, animU: undefined, animV: undefined, _effectivePlacement: false,
+    });
+    const end = pointPlacement(route.u, route.v);
+    const bend = pointPlacement(route.bu, route.bv);
+    const at = place(start.u, start.v, L);
+    const to = place(end.u, end.v, L);
+    const ctrl = place(bend.u, bend.v, L);
     /* 演者の足元からいきなり線を出すと、駒と矢印がくっついて読みにくい。
      * 出だしの向きへ少しだけ離してから引き始める。 */
     const gap = 13;
@@ -6616,6 +6958,7 @@
     : `客席の広がりは方向の目安です（${limit.m}mで${limit.label}）`);
 
   function label(target, text, x, y, align) {
+    if (pitchStyle) return;
     target.save();
     target.fillStyle = "rgba(239,231,214,0.5)";
     target.font = "13px 'Hiragino Kaku Gothic ProN', sans-serif";
@@ -6727,31 +7070,33 @@
     floorPath();
     target.fill();
 
-    // 床の目盛りは実寸1mごと。平面図と同じ刻みにして、二つの図で同じ枡を数えられるようにする。
-    // 広い舞台では線が混むので2mごとに間引く（平面図と同じ判断）。
-    floorPath();
-    target.clip();
-    target.strokeStyle = "rgba(239,231,214,0.09)";
-    target.lineWidth = 1;
-    const stepW = L.size.width > 14 ? 2 : 1;
-    const stepD = L.size.depth > 14 ? 2 : 1;
-    for (let m = stepD; m < L.size.depth; m += stepD) {   // 奥行きの線（横に走る）
-      const v = m / L.size.depth;
-      const a = place(0, v, L);
-      const b = place(1, v, L);
-      target.beginPath();
-      target.moveTo(a.x, a.y);
-      target.lineTo(b.x, b.y);
-      target.stroke();
-    }
-    for (let m = stepW; m < L.size.width; m += stepW) {   // 間口の線（奥へ走る）
-      const u = m / L.size.width;
-      const a = place(u, 0, L);
-      const b = place(u, 1, L);
-      target.beginPath();
-      target.moveTo(a.x, a.y);
-      target.lineTo(b.x, b.y);
-      target.stroke();
+    if (!pitchStyle) {
+      // 床の目盛りは実寸1mごと。平面図と同じ刻みにして、二つの図で同じ枡を数えられるようにする。
+      // 広い舞台では線が混むので2mごとに間引く（平面図と同じ判断）。
+      floorPath();
+      target.clip();
+      target.strokeStyle = "rgba(239,231,214,0.09)";
+      target.lineWidth = 1;
+      const stepW = L.size.width > 14 ? 2 : 1;
+      const stepD = L.size.depth > 14 ? 2 : 1;
+      for (let m = stepD; m < L.size.depth; m += stepD) {   // 奥行きの線（横に走る）
+        const v = m / L.size.depth;
+        const a = place(0, v, L);
+        const b = place(1, v, L);
+        target.beginPath();
+        target.moveTo(a.x, a.y);
+        target.lineTo(b.x, b.y);
+        target.stroke();
+      }
+      for (let m = stepW; m < L.size.width; m += stepW) {   // 間口の線（奥へ走る）
+        const u = m / L.size.width;
+        const a = place(u, 0, L);
+        const b = place(u, 1, L);
+        target.beginPath();
+        target.moveTo(a.x, a.y);
+        target.lineTo(b.x, b.y);
+        target.stroke();
+      }
     }
     target.restore();
 
@@ -7589,6 +7934,7 @@
   /* 通常の駒もAI下書きの駒も、必ずこの一本を通して描く。
      下書き側で座標変換や種類別描画を複製すると、正面と平面でずれる。 */
   function drawStagePiece(target, piece, L, leanAt) {
+    piece = effectivelyPlacedPiece(piece);
     /* 袖に居るものは正面図に出さない。額縁の外は客席から見えない。
        アニメーション中は動きの途中の値で判定するので、はけていく駒は
        枠を出た瞬間に消える（＝袖へ入って見えなくなる）。 */
@@ -7603,6 +7949,9 @@
       target.translate(-pos.x, -pos.y);
     }
     if (piece.type === "light") drawLight(target, piece, pos, scale, L);
+    else if (L.plan && ["revolve", "deck", "curtain", "pool", "seri"].includes(piece.type)) {
+      drawSolid(target, piece, pos, scale, L);
+    }
     else if (L.plan) drawPlanPiece(target, piece, pos, scale, L);
     else if (piece.type === "performer") drawPerformer(target, piece, pos, scale, L);
     else if (SOLID_TYPES[piece.type]) drawSolid(target, piece, pos, scale, L);
@@ -7815,7 +8164,7 @@
     const topH = (p) => finite(p.base, 0) + pieceTopLocal(p);
     (L.plan
       ? solid.slice().sort((a, b) => (planLayer(a) - planLayer(b)) || (topH(a) - topH(b)))
-      : solid.slice().sort((a, b) => a.v - b.v)).forEach(draw);
+      : solid.slice().sort((a, b) => effectivelyPlacedPiece(a).v - effectivelyPlacedPiece(b).v)).forEach(draw);
     /* ★正面では光を物のあとに描く。物のあとに描かないと、台や人が
      *   光の帯を四角く切り抜いて、光が途中で切れて見える。
      *   光は物で消えない——帯は物の手前を横切り、当たった物が明るくなる。 */
@@ -7831,7 +8180,7 @@
     }
 
     // 名前。頭上（平面では点の脇）に小さく置く。演者・装置・照明は別々に出し入れする
-    if (state.showNames || state.showSetNames || state.showLightNames) {
+    if (!pitchStyle && (state.showNames || state.showSetNames || state.showLightNames)) {
       shown.forEach((piece) => {
         const wanted = piece.type === "performer" ? state.showNames
           : piece.type === "light" ? state.showLightNames
@@ -7839,9 +8188,10 @@
         if (!wanted) return;
         const labelText = pieceLabel(piece);
         if (!labelText) return;
-        const pos = placePiece(piece, L);
-        const scale = pieceScale(piece, pos, L);
-        const b = selectionBounds(piece, L);
+        const visualPiece = effectivelyPlacedPiece(piece);
+        const pos = placePiece(visualPiece, L);
+        const scale = pieceScale(visualPiece, pos, L);
+        const b = selectionBounds(visualPiece, L);
         const x = L.plan ? pos.x : pos.x;
         const y = L.plan ? b.y - 9 : b.y - 10;
         target.save();
@@ -7860,38 +8210,42 @@
     /* 動線は平面図だけ。上から見た床の上の道筋なので、正面図には出しようがない。
        ★転換アニメの最中は出さない（本人指定）。動いている駒の足元に
        「次の動線」が先回りして見えると、どちらが今の動きか分からなくなる */
-    if (L.plan && anyRoutesShown() && !sceneAnim) drawRoutes(target, L, showSelection);
+    if (!pitchStyle && L.plan && anyRoutesShown() && !sceneAnim) drawRoutes(target, L, showSelection);
     // 自由矢印は作図の印なので、駒より手前へ置き、正面・平面の両方へ出す。
-    drawArrows(target, L);
-    drawNotes(target, L, view, showSelection);
+    if (!pitchStyle) {
+      drawArrows(target, L);
+      drawNotes(target, L, view, showSelection);
+    }
 
     // 上がっているせりの縁をまたぐ駒は、操作を妨げない赤い破線だけで知らせる
-    const warned = new Set();
-    target.save();
-    target.strokeStyle = "rgba(192,57,43,0.9)";
-    target.setLineDash([5, 4]);
-    target.lineWidth = 1.5;
-    seriStraddlers(sc().pieces, L.size).forEach(({ piece }) => {
-      if (warned.has(piece.id)) return;
-      warned.add(piece.id);
-      if (!L.plan && !onStageArea(pieceU(piece), pieceV(piece))) return;
-      const foot = supportFootprint(piece);
-      if (!foot) return;
-      const rad = (finite(piece.facing, 0) * Math.PI) / 180;
-      const cos = Math.cos(rad);
-      const sin = Math.sin(rad);
-      target.beginPath();
-      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sz], i) => {
-        const lx = foot.cx + (sx * foot.w) / 2;
-        const lz = foot.cz + (sz * foot.d) / 2;
-        const p = floorPoint(piece, lx * cos - lz * sin, lx * sin + lz * cos, L);
-        if (i) target.lineTo(p.x, p.y); else target.moveTo(p.x, p.y);
+    if (!pitchStyle) {
+      const warned = new Set();
+      target.save();
+      target.strokeStyle = "rgba(192,57,43,0.9)";
+      target.setLineDash([5, 4]);
+      target.lineWidth = 1.5;
+      seriStraddlers(sc().pieces, L.size).forEach(({ piece }) => {
+        if (warned.has(piece.id)) return;
+        warned.add(piece.id);
+        if (!L.plan && !onStageArea(pieceU(piece), pieceV(piece))) return;
+        const foot = supportFootprint(piece);
+        if (!foot) return;
+        const rad = (finite(piece.facing, 0) * Math.PI) / 180;
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+        target.beginPath();
+        [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sz], i) => {
+          const lx = foot.cx + (sx * foot.w) / 2;
+          const lz = foot.cz + (sz * foot.d) / 2;
+          const p = floorPoint(piece, lx * cos - lz * sin, lx * sin + lz * cos, L);
+          if (i) target.lineTo(p.x, p.y); else target.moveTo(p.x, p.y);
+        });
+        target.closePath();
+        target.stroke();
       });
-      target.closePath();
-      target.stroke();
-    });
-    target.setLineDash([]);
-    target.restore();
+      target.setLineDash([]);
+      target.restore();
+    }
 
     if (lightIntentOverlayOn()) drawLightIntentOverlay(target, L);
 
@@ -7916,12 +8270,12 @@
       /* 見る位置の小図。客席が正面だけの劇場でしか意味を持たない。
          プレゼン中は出さない（見せる相手に必要なのは場面であって、
          いまどの席から描いているかという作り手側の道具ではない）。 */
-      if (state.showSeatMap && L.venue.audience === "front" && !(presenting && target === ctx) && !L.venue.custom) drawSeatMap(target, L);
+      if (!pitchStyle && state.showSeatMap && L.venue.audience === "front" && !(presenting && target === ctx) && !L.venue.custom) drawSeatMap(target, L);
     }
 
     /* 高所の下の注意。ポールやトラピーズに居る人の真下（0.7m以内）に
        床の人が居たら、平面図に印を出す。安全の保証ではなく気づきのため */
-    if (L.plan && featureOn("highwarn")) {
+    if (!pitchStyle && L.plan && featureOn("highwarn")) {
       const size3 = L.size;
       const highs = sc().pieces.filter((q) => q.type === "performer" && (q.base || 0) > 1.5);
       const lows = sc().pieces.filter((q) => q.type === "performer" && (q.base || 0) < 0.3);
@@ -7973,7 +8327,7 @@
       });
     }
     // 通常の駒・注記・操作表示を描き終えたあと、保存前のAI下書きを最後に重ねる。
-    drawStageAskOverlay(target, L, leanAt);
+    if (!pitchStyle) drawStageAskOverlay(target, L, leanAt);
     /* プレゼン中のシーンの説明。全画面になるのは canvas だけなので、
        HTMLで置いた欄は出てこない。見せている絵の中へ字で描く。
        ★描くのは全画面の正面図だけ。編集中の画面と、書き出す画像には出さない
@@ -9607,6 +9961,10 @@
       return d.lift > 0.05 ? `⌀${cmText(d.dia)} ／ 床上${cmText(d.lift)}` : `⌀${cmText(d.dia)}`;
     }
     if (item.kind === "light") return `⌀${cmText(d.dia)}`;
+    if (item.kind === "revolve") return `⌀${d.dia.toFixed(2)}m × ${d.h.toFixed(2)}m`;
+    if (item.kind === "pool") return `${d.w.toFixed(2)}×${d.d.toFixed(2)}m`;
+    if (item.kind === "curtain") return `${d.w.toFixed(2)}×${d.h.toFixed(2)}m`;
+    if (item.kind === "deck") return `${d.w.toFixed(2)}×${d.d.toFixed(2)}×${d.h.toFixed(2)}m`;
     if (item.kind === "chair") return `高さ${cmText(d.h)}`;
     // せりは高さの寸法を持たない（上がり具合はシーンごとの駒側にある）
     if (item.kind === "seri") return `${Math.round(d.w * 100)}×${Math.round(d.d * 100)}cm`;
@@ -9845,6 +10203,7 @@
     checkpoint();
     const lk = kind === "light" && LIGHT_KINDS[lightKind] ? lightKind : "hang";
     const dims = normalizeDims(kind, {});
+    if (kind === "curtain" && dims) dims.w = venueSize().width;
     // 吊物にしたときのために、地上高の場所を作っておく（既定は床）
     if (SOLID_TYPES[kind] && kind !== "seri" && dims && dims.lift === undefined) dims.lift = 0;
     if (kind === "light") dims.dia = LIGHT_KINDS[lk].dia;
@@ -9855,6 +10214,7 @@
       color: kind === "light" ? "#d3ac59" : nextPieceColor(state.project.sets.length + 2),
       modelId: kind === "model" ? modelId : null,
       dims, note: "", locked: false, flown: flownOnly, wires: 2, framed: false, lightKind: lk,
+      curtainKind: kind === "curtain" ? "front" : undefined,
     };
     state.project.sets.push(item);
     placeSetPiece(item);
@@ -9882,6 +10242,7 @@
       u: clamp(0.5 + ((count % 5) - 2) * 0.11, 0.06, 0.94),
       v: clamp(0.5 + (count % 3) * 0.09, 0.05, 0.95),
       size: 100, color: item.color || state.pieceColor, name: "", facing: 0,
+      curtainKind: item.curtainKind,
     }, 0);
     // 明かりは種類ごとの仕込み位置から始める。出したあとは自由に動かせる
     if (piece.type === "light") {
@@ -10903,6 +11264,89 @@
     if (els.poseBackdrop) els.poseBackdrop.hidden = true;
   }
 
+  /* ---------- 舞台機構 ---------- */
+
+  const curtainKindName = (kind) => tm("curtainKind", kind, ({
+    front: "前幕・引き割り", traveler: "中割り幕", drop: "振り落とし・上下する幕",
+    leg: "袖幕", cyc: "ホリゾント幕",
+  })[kind] || kind);
+
+  function machineryDefaults(kind, curtainKind) {
+    if (kind === "revolve") return { spin: 0 };
+    if (kind === "deck") return { tilt: 0, deckH: 0 };
+    if (kind === "curtain") return { curtainKind, open: 0 };
+    if (kind === "pool") return { water: .9, poolH: -3 };
+    if (kind === "seri") return { seriH: 0 };
+    return {};
+  }
+
+  function addMachinery(kind) {
+    if (!["revolve", "deck", "curtain", "pool", "seri"].includes(kind)) return;
+    checkpoint();
+    const curtainKind = kind === "curtain" && els.machineryCurtainKind
+      ? els.machineryCurtainKind.value : "front";
+    const name = kind === "curtain" ? curtainKindName(curtainKind) : setKindName(kind);
+    const dims = normalizeDims(kind, { size: 100 });
+    // 幕の既定幅は、いま選んでいる劇場の間口いっぱい。
+    if (kind === "curtain" && dims) dims.w = venueSize().width;
+    const item = {
+      id: rid("set"), kind, name, color: kind === "pool" ? "#477f92" : kind === "curtain" ? "#784047" : "#8b98a1",
+      modelId: null, dims, note: "", locked: false, flown: false, wires: 2, framed: false,
+      curtainKind: kind === "curtain" ? curtainKind : undefined, lightKind: "hang",
+    };
+    state.project.sets.push(item);
+    const piece = normalizePiece({
+      id: nextId(), type: kind, setId: item.id, u: .5, v: .5, size: 100,
+      color: item.color, facing: 0, ...machineryDefaults(kind, curtainKind),
+    }, 0);
+    sc().pieces.push(piece);
+    selectedId = piece.id;
+    renderSets(); renderScenes(); updateInspector(); render(); persistSoon();
+    announce(`${name}を舞台へ置きました。`);
+  }
+
+  function applyMachineryPreset(preset) {
+    const machinery = window.SHOSAI_STAGE_MACHINERY;
+    if (!machinery || !preset) return;
+    checkpoint();
+    const created = machinery.expandPreset(state.project, sc(), preset, {
+      makeId: (prefix) => prefix === "piece" ? nextId() : rid(prefix),
+      normalizeDims,
+      normalizePiece,
+      isEn: isEn(),
+    });
+    selectedId = created.length ? created[created.length - 1].piece.id : null;
+    renderSets(); renderScenes(); updateInspector(); render(); persistSoon();
+    announce(`${isEn() ? preset.nameEn : preset.nameJa}を舞台へ置きました。`);
+  }
+
+  function renderMachineryPresets() {
+    const host = els.machineryPresets;
+    const machinery = window.SHOSAI_STAGE_MACHINERY;
+    if (!host || !machinery) return;
+    host.innerHTML = "";
+    const library = machinery.loadPresetLibrary(localStorage, venueSize());
+    library.presets.forEach((preset) => {
+      const row = document.createElement("div");
+      row.className = "stage-machinery-preset-row";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn-quiet";
+      button.textContent = isEn() ? (preset.nameEn || preset.nameJa) : preset.nameJa;
+      button.title = preset.sourceNote || "";
+      button.addEventListener("click", () => applyMachineryPreset(preset));
+      const badge = document.createElement("span");
+      badge.className = "stage-machinery-estimated";
+      badge.textContent = tx("推定値・要確認");
+      row.append(button, badge);
+      host.append(row);
+    });
+  }
+
+  document.querySelectorAll("[data-machinery-kind]").forEach((button) => {
+    button.addEventListener("click", () => addMachinery(button.dataset.machineryKind));
+  });
+
   /* ---------- セット登録（画面の名前。コード上は rig） ----------
      舞台装置の並びに名前をつけて残し、別のシーンで呼び出す。
      残すのは演者以外。演者は場面ごとに出入りするものなので、装置と一緒に
@@ -11074,7 +11518,8 @@
     }
     if (els.setInfoFlownRow) {
       // 吊れるのは形のあるもの（台・テーブル・椅子・壁）だけ
-      const canFly = Boolean(SOLID_TYPES[item.kind] && item.kind !== "seri" && item.kind !== "model");
+      const canFly = Boolean(SOLID_TYPES[item.kind]
+        && !["seri", "model", "revolve", "deck", "curtain", "pool"].includes(item.kind));
       const onlyFlown = Boolean(FLOWN_ONLY[item.kind]);
       els.setInfoFlownRow.hidden = !canFly;
       if (els.setInfoFlown) {
@@ -11093,8 +11538,10 @@
     }
     els.setInfoNote.value = item.note || "";
     buildDimControls(els.setInfoDims, "stage-setinfo", item.kind, item.dims, () => {
+      item.estimated = false;
       renderSets();
       renderLights();
+      updateInspector();
       render();
       persistSoon();
     }, Boolean(item.flown));
@@ -12520,6 +12967,7 @@
     syncLightIntentCard();
     syncLightIntentDock();
     syncLightIntentCompare();
+    if (els.exportPurposeBlock) updateExportPurposeUi();
   }
 
   /* ---------- プレゼンモード ----------
@@ -13274,22 +13722,26 @@ ${cuesheetHtml}
   }
 
   function writeProjectExport(includeVenue) {
-    const document = makeProjectExportDocument(state.project, includeVenue);
-    const data = JSON.stringify(document, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    const safe = (state.project.title || "show").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 40);
-    link.download = `${safe}-${state.project.versionLabel}.json`;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(link.href), 4000);
-    state.lastExportAt = nowIso();
-    state.editsSinceExport = 0;
-    persistSoon();
-    updateBackupNote();
-    announce(includeVenue || !bundledVenueForProject(state.project)
-      ? "このショーをファイルへ書き出しました。チームへ渡せます。"
-      : "会場データを含めず、元の会場IDを残してショーを書き出しました。");
+    try {
+      /* かつてこのローカル変数を document と名付けていて、グローバルの document を
+         覆い隠していた。document.createElement が落ち、書き出しが無反応になっていた。 */
+      const exportDoc = makeProjectExportDocument(state.project, includeVenue);
+      const data = JSON.stringify(exportDoc, null, 2);
+      const blob = new Blob([data], { type: "application/json" });
+      const safe = (state.project.title || "show").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 40);
+      const version = (state.project.versionLabel || "v1").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 24);
+      downloadBlob(blob, `${safe}-${version}.json`);
+      state.lastExportAt = nowIso();
+      state.editsSinceExport = 0;
+      persistSoon();
+      updateBackupNote();
+      announce(includeVenue || !bundledVenueForProject(state.project)
+        ? "このショーをファイルへ書き出しました。チームへ渡せます。"
+        : "会場データを含めず、元の会場IDを残してショーを書き出しました。");
+    } catch (error) {
+      console.error("stage export: ショーを書き出せませんでした", error);
+      exportFailureNotice("ショーを書き出せませんでした。もう一度お試しください。");
+    }
   }
 
   function exportProject() {
@@ -13488,23 +13940,24 @@ ${cuesheetHtml}
       announce("検査に通っていないため書き出せません。");
       return;
     }
-    const allowUnsupported = Boolean(els.rehearsalAllowUnsupported?.checked);
-    const result = api.convertStageSketchProject(
-      state.project,
-      { allowUnsupportedVenue: allowUnsupported },
-    );
-    const data = JSON.stringify(result.document, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    const safe = (state.project.title || "show").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 40);
-    const version = (state.project.versionLabel || "v1")
-      .replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 24);
-    link.download = `${safe}-${version}.rehearsal.json`;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(link.href), 4000);
-    closeRehearsalExport();
-    announce("稽古用JSONを書き出しました。Vision Proで読み込む前に警告を確認してください。");
+    try {
+      const allowUnsupported = Boolean(els.rehearsalAllowUnsupported?.checked);
+      const result = api.convertStageSketchProject(
+        state.project,
+        { allowUnsupportedVenue: allowUnsupported },
+      );
+      const data = JSON.stringify(result.document, null, 2);
+      const blob = new Blob([data], { type: "application/json" });
+      const safe = (state.project.title || "show").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 40);
+      const version = (state.project.versionLabel || "v1")
+        .replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 24);
+      downloadBlob(blob, `${safe}-${version}.rehearsal.json`);
+      closeRehearsalExport();
+      announce("稽古用JSONを書き出しました。Vision Proで読み込む前に警告を確認してください。");
+    } catch (error) {
+      console.error("stage export: 稽古用JSONを書き出せませんでした", error);
+      exportFailureNotice("稽古用JSONを書き出せませんでした。もう一度お試しください。");
+    }
   }
 
   /* 読み込み失敗の理由は aria-live（視覚的には隠れている）だけに流れていて、
@@ -13528,6 +13981,9 @@ ${cuesheetHtml}
     clearTimeout(importFailureNotice._t);
     importFailureNotice._t = setTimeout(() => { box.hidden = true; }, 8000);
   }
+
+  /* エクスポート系の失敗も同じ赤いトーストで見せる。中身は同じ関数（画面上の区別は要らない）。 */
+  const exportFailureNotice = importFailureNotice;
 
   function importProject(file) {
     if (!file) return;
@@ -16318,10 +16774,10 @@ ${cuesheetHtml}
     els.pieceSeri.addEventListener("input", (e) => {
       const piece = selectedPiece();
       if (!piece || piece.type !== "seri") return;
-      const previous = clamp(finite(piece.seriH, 0), 0, 4);
-      const value = clamp(finite(e.target.value, 0), 0, 4);
+      const previous = clamp(finite(piece.seriH, 0), -3, 4);
+      const value = clamp(finite(e.target.value, 0), -3, 4);
       piece.seriH = value;
-      if (els.pieceSeriValue) els.pieceSeriValue.textContent = cmText(value);
+      if (els.pieceSeriValue) els.pieceSeriValue.textContent = machineryStateText(value, "m");
       render();
       updateInspector();
       if (previous <= 0.02 && value > 0.02) {
@@ -16339,6 +16795,24 @@ ${cuesheetHtml}
     });
     els.pieceSeri.addEventListener("pointerdown", checkpoint);
   }
+  const bindMachineryControl = (control, kind, key, fallback, min, max) => {
+    if (!control) return;
+    control.addEventListener("pointerdown", checkpoint);
+    control.addEventListener("input", (event) => {
+      const piece = selectedPiece();
+      if (!piece || piece.type !== kind) return;
+      piece[key] = clamp(finite(event.target.value, fallback), min, max);
+      render();
+      updateInspector();
+      persistSoon();
+    });
+  };
+  bindMachineryControl(els.pieceSpin, "revolve", "spin", 0, -180, 180);
+  bindMachineryControl(els.pieceTilt, "deck", "tilt", 0, -60, 60);
+  bindMachineryControl(els.pieceDeckH, "deck", "deckH", 0, -4, 8);
+  bindMachineryControl(els.pieceOpen, "curtain", "open", 0, 0, 100);
+  bindMachineryControl(els.pieceWater, "pool", "water", .9, 0, 3);
+  bindMachineryControl(els.piecePoolH, "pool", "poolH", -3, -4, 0);
   if (els.showFlown) {
     els.showFlown.addEventListener("change", (e) => {
       state.showFlown = e.target.checked;
@@ -16433,11 +16907,22 @@ ${cuesheetHtml}
         }
         return {
           pieces: current.pieces.map((candidate) => {
-            const owner = pieceSet(candidate);
+            const visual = effectivelyPlacedPiece(candidate, current);
+            const owner = pieceSet(visual);
+            const visualRoute = candidate.route ? (() => {
+              const end = effectivePlacement({ ...candidate, u: candidate.route.u, v: candidate.route.v,
+                animU: undefined, animV: undefined }, current);
+              const bend = effectivePlacement({ ...candidate, u: candidate.route.bu, v: candidate.route.bv,
+                animU: undefined, animV: undefined }, current);
+              return { ...candidate.route, u: end.u, v: end.v, bu: bend.u, bv: bend.v };
+            })() : null;
             return {
-              ...candidate,
-              dims: pieceDims(candidate),
-              model: candidate.type === "model" && owner ? stageModel(owner.modelId) : null,
+              ...visual,
+              route: visualRoute,
+              dims: pieceDims(visual),
+              parts: ["revolve", "deck", "curtain", "pool", "seri"].includes(visual.type)
+                ? pieceParts(visual) : undefined,
+              model: visual.type === "model" && owner ? stageModel(owner.modelId) : null,
             };
           }),
           showTitle: state.project.title || "",
@@ -16674,6 +17159,70 @@ ${cuesheetHtml}
   /* 選んだものの欄は「ショーの中で動くもの」だけを持つ。
    * 名前・色・寸法・身長はショーを通して変わらないので、
    * 演者／舞台セット／照明の一覧側で決める。ここからはそこへ飛べるようにする。 */
+  const MACHINERY_STATES = {
+    seri: [{ key: "seriH", label: "高さ", min: -3, max: 4, fallback: 0, format: "m" }],
+    revolve: [{ key: "spin", label: "回転角", min: -180, max: 180, fallback: 0, format: "deg" }],
+    deck: [
+      { key: "tilt", label: "傾斜角", min: -60, max: 60, fallback: 0, format: "deg" },
+      { key: "deckH", label: "高さ", min: -4, max: 8, fallback: 0, format: "m" },
+    ],
+    curtain: [{ key: "open", label: "開き", min: 0, max: 100, fallback: 0, format: "open" }],
+    pool: [
+      { key: "water", label: "水位", min: 0, max: 3, fallback: .9, format: "m" },
+      { key: "poolH", label: "床の高さ", min: -4, max: 0, fallback: -3, format: "m" },
+    ],
+  };
+
+  function machineryStateValue(piece, spec) {
+    return clamp(finite(piece && piece[spec.key], spec.fallback), spec.min, spec.max);
+  }
+
+  function machineryStateText(value, format) {
+    if (format === "deg") return isEn() ? `${value}°` : `${value}度`;
+    if (format === "open") return isEn() ? `${Math.round(value)}% open` : `${Math.round(value)}%開`;
+    return `${value.toFixed(2)}m`;
+  }
+
+  function matchingPieceInScene(piece, scene) {
+    if (!piece || !scene) return null;
+    if (piece.setId) return scene.pieces.find((candidate) => candidate.setId === piece.setId) || null;
+    const identity = piece.originId || piece.id;
+    return scene.pieces.find((candidate) => (candidate.originId || candidate.id) === identity) || null;
+  }
+
+  function previousSceneOf(scene) {
+    const at = state.project.scenes.indexOf(scene);
+    for (let index = at - 1; index >= 0; index -= 1) {
+      if (state.project.scenes[index].kind === "scene") return state.project.scenes[index];
+    }
+    return null;
+  }
+
+  function machineryDiffText(piece) {
+    const specs = MACHINERY_STATES[piece && piece.type];
+    const previous = previousSceneOf(sc());
+    const priorPiece = previous && matchingPieceInScene(piece, previous);
+    if (!specs || !previous || !priorPiece) return "";
+    const before = specs.map((spec) => `${tm("machineryState", spec.key, spec.label)}${machineryStateText(machineryStateValue(priorPiece, spec), spec.format)}`).join("・");
+    const after = specs.map((spec) => `${tm("machineryState", spec.key, spec.label)}${machineryStateText(machineryStateValue(piece, spec), spec.format)}`).join("・");
+    return isEn() ? `Previous scene: ${before} → this scene: ${after}` : `前の場面: ${before} → この場面: ${after}`;
+  }
+
+  function deckHasFloorPiece(piece) {
+    if (!piece || piece.type !== "deck" || Math.abs(finite(piece.tilt, 0)) < .01) return false;
+    const dims = pieceDims(piece);
+    if (!dims) return false;
+    const angle = finite(piece.facing, 0) * Math.PI / 180;
+    return sc().pieces.some((other) => {
+      if (other === piece || other.type === "light" || isFlown(other)) return false;
+      const dx = (finite(other.u, .5) - finite(piece.u, .5)) * venueSize().width;
+      const dz = (finite(other.v, .5) - finite(piece.v, .5)) * venueSize().depth;
+      const x = dx * Math.cos(angle) + dz * Math.sin(angle);
+      const z = -dx * Math.sin(angle) + dz * Math.cos(angle);
+      return Math.abs(x) <= dims.w / 2 && Math.abs(z) <= dims.d / 2;
+    });
+  }
+
   function syncDimControls(piece) {
     const registered = pieceSet(piece);
     const member = piece && piece.castId
@@ -16704,11 +17253,39 @@ ${cuesheetHtml}
       const isSeri = Boolean(piece && piece.type === "seri");
       els.seriControls.hidden = !isSeri;
       if (isSeri) {
-        const seriH = clamp(finite(piece.seriH, 0), 0, 4);
+        const seriH = clamp(finite(piece.seriH, 0), -3, 4);
         if (document.activeElement !== els.pieceSeri) els.pieceSeri.value = String(seriH);
-        if (els.pieceSeriValue) els.pieceSeriValue.textContent = cmText(seriH);
+        if (els.pieceSeriValue) els.pieceSeriValue.textContent = machineryStateText(seriH, "m");
       }
     }
+    const machineryType = piece && MACHINERY_STATES[piece.type] ? piece.type : null;
+    if (els.machineryControls) els.machineryControls.hidden = !machineryType || machineryType === "seri";
+    [[els.revolveControls, "revolve"], [els.deckControls, "deck"],
+      [els.curtainControls, "curtain"], [els.poolControls, "pool"]].forEach(([group, kind]) => {
+      if (group) group.hidden = machineryType !== kind;
+    });
+    const syncMachineControl = (control, output, key, fallback, min, max, format) => {
+      if (!control || !piece || piece[key] === undefined) return;
+      const value = clamp(finite(piece[key], fallback), min, max);
+      if (document.activeElement !== control) control.value = String(value);
+      if (output) output.textContent = machineryStateText(value, format);
+    };
+    syncMachineControl(els.pieceSpin, els.pieceSpinValue, "spin", 0, -180, 180, "deg");
+    syncMachineControl(els.pieceTilt, els.pieceTiltValue, "tilt", 0, -60, 60, "deg");
+    syncMachineControl(els.pieceDeckH, els.pieceDeckHValue, "deckH", 0, -4, 8, "m");
+    syncMachineControl(els.pieceOpen, els.pieceOpenValue, "open", 0, 0, 100, "open");
+    syncMachineControl(els.pieceWater, els.pieceWaterValue, "water", .9, 0, 3, "m");
+    syncMachineControl(els.piecePoolH, els.piecePoolHValue, "poolH", -3, -4, 0, "m");
+    if (els.machinerySceneDiff) {
+      const text = machineryType ? machineryDiffText(piece) : "";
+      els.machinerySceneDiff.hidden = !text;
+      els.machinerySceneDiff.textContent = text;
+    }
+    if (els.machineryEstimated) {
+      const item = piece && pieceSet(piece);
+      els.machineryEstimated.hidden = !(item && item.estimated);
+    }
+    if (els.deckWarning) els.deckWarning.hidden = !deckHasFloorPiece(piece);
     /* プリセットの組。一体で扱うので、名前は組の名で出し、
        個別の位置スライダーは隠して「直径（全体）と強さ」だけ出す */
     const lgroup = piece && piece.type === "light" ? lightGroupOf(piece) : null;
@@ -17025,6 +17602,7 @@ ${cuesheetHtml}
     syncScreenTextControls();
     updateInspector();
     setTool(tool);
+    if (els.exportModal && !els.exportModal.hidden) updateExportNote();
     render();
   }
 
@@ -17332,8 +17910,305 @@ ${cuesheetHtml}
      複数になるときは1枚ずつ続けて落とす（束ねる形式を持たない代わりに、
      名前へ場面の番号と絵の種類を入れて並び順が分かるようにする）。 */
 
+  const PITCH_SIZE_SCALE = Object.freeze({ "1": 1, "2": 1.5, "3": 3 });
+  const PITCH_STYLE_NOTES = Object.freeze({
+    theatre: "客席から見た暗い箱。演者は輪郭と縁の光だけ、床に光の帯と反射、空中に埃。",
+    paper: "紙の地に墨で落とした一枚。まだ決まっていない絵として見せる。",
+    poster: "場面名と一行を大きく組み、絵はその下地にする。デッキの扉ページ向き。",
+    render: "アプリからは参照画像と生成条件を出す。仕上げは外部の生成AIで行う。",
+  });
+
+  const makePitchCanvas = (width, height) => {
+    const result = document.createElement("canvas");
+    result.width = width;
+    result.height = height;
+    return result;
+  };
+
+  function drawPitchBeamHaze(output, L, amount) {
+    if (!amount) return;
+    const S = output.width / W;
+    const layer = makePitchCanvas(output.width, output.height);
+    const layerCtx = layer.getContext("2d");
+    layerCtx.setTransform(S, 0, 0, S, 0, 0);
+    layerCtx.globalCompositeOperation = "screen";
+    layerCtx.filter = `blur(${Math.round(18 * S)}px)`;
+    sc().pieces.filter((piece) => piece.type === "light").forEach((piece) => {
+      const pos = placePiece(piece, L);
+      const src = beamSource(piece, L);
+      const land = beamLanding(piece, L.size);
+      const endPos = place(land.eu, land.ev, L);
+      const end = { x: endPos.x, y: L.tilt(raiseRaw(endPos.rawY, land.hh, L)) };
+      const dim = pieceDims(piece);
+      const spread = Math.max(12, (((dim && dim.dia) || 4) / 2) * perMetre(pos, L).x * land.tEnd * 1.9);
+      const gradient = layerCtx.createLinearGradient(src.x, src.y, end.x, end.y);
+      gradient.addColorStop(0, rgba(piece.color, 0.02 * amount));
+      gradient.addColorStop(0.65, rgba(piece.color, 0.11 * amount));
+      gradient.addColorStop(1, rgba(piece.color, 0.03 * amount));
+      layerCtx.fillStyle = gradient;
+      layerCtx.beginPath();
+      layerCtx.moveTo(src.x, src.y);
+      layerCtx.lineTo(end.x + spread, end.y);
+      layerCtx.lineTo(end.x - spread, end.y);
+      layerCtx.closePath();
+      layerCtx.fill();
+    });
+    const outputCtx = output.getContext("2d");
+    outputCtx.save();
+    outputCtx.globalCompositeOperation = "screen";
+    outputCtx.drawImage(layer, 0, 0);
+    outputCtx.restore();
+  }
+
+  function pitchFloorPath(target, L) {
+    const ring = ringEllipse(L);
+    target.beginPath();
+    if (L.venue.audience === "round" && ring) {
+      target.ellipse(ring.x, ring.y, ring.rx, ring.ry, 0, 0, Math.PI * 2);
+      return;
+    }
+    target.moveTo(L.centerX + (L.shift || 0) - L.backW / 2, L.floorY);
+    target.lineTo(L.centerX + (L.shift || 0) + L.backW / 2, L.floorY);
+    target.lineTo(L.centerX + L.frontW / 2, L.bottomY);
+    target.lineTo(L.centerX - L.frontW / 2, L.bottomY);
+    target.closePath();
+  }
+
+  function drawPitchFloorSheen(output, L, amount) {
+    if (!amount) return;
+    const S = output.width / W;
+    const layer = makePitchCanvas(output.width, output.height);
+    const layerCtx = layer.getContext("2d");
+    const leanAt = (pos) => {
+      const tilt = (L.seat && L.seat.tilt) || 0;
+      return tilt * ((pos.x - L.centerX) / (W / 2));
+    };
+    sc().pieces.filter((piece) => piece.type !== "light").forEach((piece) => {
+      const pos = placePiece(piece, L);
+      layerCtx.save();
+      layerCtx.setTransform(S, 0, 0, -S, 0, 2 * pos.y * S);
+      layerCtx.globalAlpha = amount;
+      drawStagePiece(layerCtx, piece, L, leanAt);
+      layerCtx.restore();
+    });
+    layerCtx.save();
+    layerCtx.setTransform(S, 0, 0, S, 0, 0);
+    layerCtx.globalCompositeOperation = "destination-in";
+    const fade = layerCtx.createLinearGradient(0, L.floorY, 0, L.bottomY);
+    fade.addColorStop(0, "rgba(255,255,255,0.05)");
+    fade.addColorStop(0.28, "rgba(255,255,255,0.72)");
+    fade.addColorStop(1, "rgba(255,255,255,0)");
+    layerCtx.fillStyle = fade;
+    pitchFloorPath(layerCtx, L);
+    layerCtx.fill();
+    layerCtx.restore();
+    const outputCtx = output.getContext("2d");
+    outputCtx.save();
+    outputCtx.globalCompositeOperation = "screen";
+    outputCtx.drawImage(layer, 0, 0);
+    outputCtx.restore();
+  }
+
+  function applyPitchBloom(output, amount) {
+    if (!amount) return;
+    const target = output.getContext("2d");
+    const source = target.getImageData(0, 0, output.width, output.height);
+    const bright = target.createImageData(output.width, output.height);
+    for (let i = 0; i < source.data.length; i += 4) {
+      const lum = source.data[i] * 0.2126 + source.data[i + 1] * 0.7152 + source.data[i + 2] * 0.0722;
+      if (lum < 168) continue;
+      const alpha = Math.min(255, (lum - 168) * 2.9);
+      bright.data[i] = source.data[i];
+      bright.data[i + 1] = source.data[i + 1];
+      bright.data[i + 2] = source.data[i + 2];
+      bright.data[i + 3] = alpha;
+    }
+    const layer = makePitchCanvas(output.width, output.height);
+    layer.getContext("2d").putImageData(bright, 0, 0);
+    target.save();
+    target.globalCompositeOperation = "screen";
+    target.globalAlpha = amount;
+    target.filter = `blur(${Math.max(8, Math.round(output.width / 80))}px)`;
+    target.drawImage(layer, 0, 0);
+    target.restore();
+  }
+
+  function applyPitchGrade(output) {
+    const target = output.getContext("2d");
+    const image = target.getImageData(0, 0, output.width, output.height);
+    for (let i = 0; i < image.data.length; i += 4) {
+      const lum = (image.data[i] + image.data[i + 1] + image.data[i + 2]) / 765;
+      const shadow = (1 - lum) * 0.13;
+      const high = lum * 0.09;
+      image.data[i] = clamp(image.data[i] + high * 255 - shadow * 42, 0, 255);
+      image.data[i + 1] = clamp(image.data[i + 1] + shadow * 42 + high * 18, 0, 255);
+      image.data[i + 2] = clamp(image.data[i + 2] + shadow * 70 - high * 36, 0, 255);
+    }
+    target.putImageData(image, 0, 0);
+  }
+
+  function applyPitchVignette(output, amount) {
+    if (!amount) return;
+    const target = output.getContext("2d");
+    const gradient = target.createRadialGradient(
+      output.width / 2, output.height * 0.52, output.width * 0.16,
+      output.width / 2, output.height * 0.52, output.width * 0.68);
+    gradient.addColorStop(0.55, "rgba(0,0,0,0)");
+    gradient.addColorStop(1, `rgba(0,0,0,${amount})`);
+    target.fillStyle = gradient;
+    target.fillRect(0, 0, output.width, output.height);
+  }
+
+  function applyPitchGrain(output, seed, amount, coarse, multiplyOnly = false) {
+    if (!amount) return;
+    const target = output.getContext("2d");
+    const image = target.getImageData(0, 0, output.width, output.height);
+    const random = mulberry32(seed);
+    const cell = Math.max(1, Math.round(coarse * output.width / W));
+    for (let y = 0; y < output.height; y += cell) {
+      for (let x = 0; x < output.width; x += cell) {
+        const noise = random();
+        const delta = (noise - 0.5) * 255 * amount;
+        const maxY = Math.min(output.height, y + cell);
+        const maxX = Math.min(output.width, x + cell);
+        for (let py = y; py < maxY; py += 1) {
+          for (let px = x; px < maxX; px += 1) {
+            const at = (py * output.width + px) * 4;
+            for (let channel = 0; channel < 3; channel += 1) {
+              image.data[at + channel] = multiplyOnly
+                ? image.data[at + channel] * (1 - noise * amount)
+                : clamp(image.data[at + channel] + delta, 0, 255);
+            }
+          }
+        }
+      }
+    }
+    target.putImageData(image, 0, 0);
+  }
+
+  function applyPitchPaper(output, seed, params) {
+    const target = output.getContext("2d");
+    const image = target.getImageData(0, 0, output.width, output.height);
+    const paper = [232, 224, 207];
+    const edge = Math.max(1, 24 * output.width / W);
+    for (let y = 0; y < output.height; y += 1) {
+      for (let x = 0; x < output.width; x += 1) {
+        const at = (y * output.width + x) * 4;
+        const lum = image.data[at] * 0.2126 + image.data[at + 1] * 0.7152 + image.data[at + 2] * 0.0722;
+        const ink = (255 - lum) / 255 * 0.82;
+        const dist = Math.min(x, y, output.width - 1 - x, output.height - 1 - y);
+        const edgeMix = clamp(dist / edge, 0, 1);
+        for (let channel = 0; channel < 3; channel += 1) {
+          const multiplied = paper[channel] * (1 - ink);
+          image.data[at + channel] = paper[channel] * (1 - edgeMix) + multiplied * edgeMix;
+        }
+        image.data[at + 3] = 255;
+      }
+    }
+    target.putImageData(image, 0, 0);
+    applyPitchGrain(output, seed, params.grain, params.grainSize, true);
+  }
+
+  function arrangePitchPoster(output) {
+    const source = makePitchCanvas(output.width, output.height);
+    source.getContext("2d").drawImage(output, 0, 0);
+    const target = output.getContext("2d");
+    target.setTransform(1, 0, 0, 1, 0, 0);
+    target.fillStyle = "#0d0c0b";
+    target.fillRect(0, 0, output.width, output.height);
+    const top = output.height / 3;
+    const scale = Math.min(output.width / source.width, (output.height - top) / source.height);
+    const width = source.width * scale;
+    const height = source.height * scale;
+    target.drawImage(source, (output.width - width) / 2, top + (output.height - top - height) / 2, width, height);
+  }
+
+  const pitchChars = (text, max) => {
+    const chars = Array.from(String(text || "").trim());
+    return chars.length > max ? `${chars.slice(0, max).join("")}…` : chars.join("");
+  };
+
+  function pitchSpacedText(target, text, x, y, spacing) {
+    const chars = Array.from(text);
+    const widths = chars.map((char) => target.measureText(char).width);
+    const total = widths.reduce((sum, width) => sum + width, 0) + spacing * Math.max(0, chars.length - 1);
+    let at = target.textAlign === "center" ? x - total / 2 : target.textAlign === "right" ? x - total : x;
+    chars.forEach((char, index) => {
+      target.fillText(char, at, y);
+      at += widths[index] + spacing;
+    });
+  }
+
+  function drawPitchCaption(output, scene, styleKey) {
+    const target = output.getContext("2d");
+    const S = output.width / W;
+    const title = String(scene.title || "").trim();
+    const show = String(state.project.title || "").trim();
+    const objective = pitchChars(scene.lightingIntent && scene.lightingIntent.objective, 44);
+    target.save();
+    target.setTransform(S, 0, 0, S, 0, 0);
+    target.textBaseline = "alphabetic";
+    if (styleKey === "poster") {
+      target.fillStyle = "rgba(240,231,214,0.96)";
+      target.textAlign = "center";
+      target.font = "72px 'Hiragino Mincho ProN', 'Yu Mincho', serif";
+      target.fillText(title, W / 2, 142);
+      if (objective) {
+        target.font = "22px 'Hiragino Kaku Gothic ProN', sans-serif";
+        const objectiveChars = Array.from(objective);
+        const first = objectiveChars.slice(0, 30).join("");
+        const rest = objectiveChars.slice(30).join("");
+        target.fillText(first, W / 2, 190);
+        if (rest) target.fillText(pitchChars(rest, 30), W / 2, 220);
+      }
+      target.globalAlpha = 0.5;
+      target.font = "14px 'Hiragino Kaku Gothic ProN', sans-serif";
+      target.fillText(show, W / 2, H - 24);
+    } else {
+      const ink = styleKey === "paper" ? "#3a352c" : "rgba(240,231,214,0.94)";
+      target.fillStyle = ink;
+      target.textAlign = "left";
+      target.font = "20px 'Hiragino Kaku Gothic ProN', sans-serif";
+      pitchSpacedText(target, title, 44, H - 44, 1.6);
+      target.globalAlpha = 0.55;
+      target.font = "12px 'Hiragino Kaku Gothic ProN', sans-serif";
+      target.fillText(show, 44, H - 22);
+      if (objective) {
+        target.globalAlpha = 0.8;
+        target.textAlign = "right";
+        target.font = "14px 'Hiragino Kaku Gothic ProN', sans-serif";
+        target.fillText(objective, W - 44, H - 44);
+      }
+    }
+    target.restore();
+  }
+
+  function finishPitchCanvas(output, scene, styleKey, sizeKey, caption) {
+    const params = pitchStyleParams(styleKey);
+    const L = layout("front");
+    // renderは参照画像としてtheatreと同じ絵を渡す。生成条件の本文だけを変える。
+    const seedStyle = styleKey === "render" ? "theatre" : styleKey;
+    const seed = seedFrom(`${scene.id || "scene"}${seedStyle}${sizeKey}`);
+    drawPitchBeamHaze(output, L, params.beamHaze);
+    drawPitchFloorSheen(output, L, params.floorSheen);
+    if (styleKey === "paper") {
+      applyPitchPaper(output, seed, params);
+    } else {
+      applyPitchBloom(output, params.bloom);
+      if (params.grade) applyPitchGrade(output);
+      if (styleKey === "poster") arrangePitchPoster(output);
+      applyPitchVignette(output, params.vignette);
+      applyPitchGrain(output, seed, params.grain, params.grainSize);
+    }
+    if (caption) drawPitchCaption(output, scene, styleKey);
+  }
+
   let exportView = "front";
   let exportScope = "current";
+  let exportPurpose = "draft";
+  let selectedPitchStyle = PITCH_STYLE_PARAMS[prefs.pitchStyle] ? prefs.pitchStyle : "theatre";
+  let selectedPitchSize = PITCH_SIZE_SCALE[String(prefs.pitchSize)] ? String(prefs.pitchSize) : "2";
+  let selectedPitchLangs = null;
 
   function exportTargets() {
     const p = state.project;
@@ -17358,7 +18233,77 @@ ${cuesheetHtml}
     return exportView === "both" ? ["front", "plan"] : [exportView];
   }
 
+  const promptI18n = () => window.SHOSAI_PROMPT_I18N || null;
+  const pitchLanguageCodes = () => {
+    const table = promptI18n();
+    return table ? table.langs.map((item) => item.code) : [];
+  };
+
+  function ensurePitchLanguages() {
+    const available = pitchLanguageCodes();
+    if (selectedPitchLangs === null) {
+      const stored = Array.isArray(prefs.pitchLangs)
+        ? prefs.pitchLangs.filter((code) => available.includes(code)) : [];
+      selectedPitchLangs = new Set(stored.length ? stored : [isEn() ? "en" : "ja"]);
+    }
+    if (!selectedPitchLangs.size) selectedPitchLangs.add("ja");
+  }
+
+  function buildPitchLanguageButtons() {
+    if (!els.pitchLangs) return;
+    const table = promptI18n();
+    if (!table) return;
+    ensurePitchLanguages();
+    els.pitchLangs.innerHTML = "";
+    table.langs.forEach((item) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.pitchLang = item.code;
+      button.textContent = item.label;
+      button.setAttribute("aria-pressed", String(selectedPitchLangs.has(item.code)));
+      button.addEventListener("click", () => {
+        if (selectedPitchLangs.has(item.code)) selectedPitchLangs.delete(item.code);
+        else selectedPitchLangs.add(item.code);
+        if (!selectedPitchLangs.size) selectedPitchLangs.add("ja");
+        prefs.pitchLangs = [...selectedPitchLangs];
+        savePrefs();
+        updateExportNote();
+      });
+      els.pitchLangs.append(button);
+    });
+  }
+
+  function updateExportPurposeUi() {
+    const pitchEnabled = featureOn("pitchExport") && Boolean(promptI18n());
+    if (!pitchEnabled) exportPurpose = "draft";
+    if (els.exportPurposeBlock) els.exportPurposeBlock.hidden = !pitchEnabled;
+    if (els.exportDraftFields) els.exportDraftFields.hidden = exportPurpose === "pitch";
+    if (els.exportPitchFields) els.exportPitchFields.hidden = exportPurpose !== "pitch";
+    if (els.exportTitle) {
+      els.exportTitle.textContent = tx(exportPurpose === "pitch" ? "ピッチ用に書き出す" : "画像を書き出す");
+    }
+    document.querySelectorAll("[data-export-purpose]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.exportPurpose === exportPurpose));
+    });
+    document.querySelectorAll("[data-pitch-style]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.pitchStyle === selectedPitchStyle));
+    });
+    document.querySelectorAll("[data-pitch-size]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.pitchSize === selectedPitchSize));
+    });
+    if (selectedPitchLangs !== null) {
+      document.querySelectorAll("[data-pitch-lang]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(selectedPitchLangs.has(button.dataset.pitchLang)));
+      });
+    }
+    if (els.pitchStyleNote) els.pitchStyleNote.textContent = tx(PITCH_STYLE_NOTES[selectedPitchStyle]);
+    if (els.pitchCaption) {
+      els.pitchCaption.checked = prefs.pitchCaption === undefined ? true : Boolean(prefs.pitchCaption);
+    }
+  }
+
   function updateExportNote() {
+    updateExportPurposeUi();
     document.querySelectorAll("[data-export-view]").forEach((b) => {
       b.setAttribute("aria-pressed", String(b.dataset.exportView === exportView));
     });
@@ -17366,11 +18311,15 @@ ${cuesheetHtml}
       b.setAttribute("aria-pressed", String(b.dataset.exportScope === exportScope));
     });
     if (!els.exportNote) return;
+    if (exportPurpose === "pitch") {
+      els.exportNote.textContent = "";
+      return;
+    }
     const scenes = exportTargets().length;
     const views = exportViews().length;
     const total = scenes * views;
     els.exportNote.textContent = total > 1
-      ? `${scenes}シーン × ${views === 2 ? "正面と平面" : "1枚"} ＝ 合計${total}枚を続けて落とします。`
+      ? `${scenes}シーン × ${views === 2 ? "正面と平面" : "1枚"} ＝ 合計${total}枚をZIP 1個にまとめます。`
       : "1枚を落とします。";
   }
 
@@ -17387,7 +18336,110 @@ ${cuesheetHtml}
 
   const safeName = (text) => String(text || "").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 24) || "scene";
 
-  function runExport() {
+  function crc32(bytes) {
+    if (!crc32Table) {
+      crc32Table = new Uint32Array(256);
+      for (let i = 0; i < crc32Table.length; i += 1) {
+        let value = i;
+        for (let bit = 0; bit < 8; bit += 1) {
+          value = (value >>> 1) ^ ((value & 1) ? 0xEDB88320 : 0);
+        }
+        crc32Table[i] = value >>> 0;
+      }
+    }
+    let value = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i += 1) {
+      value = (value >>> 8) ^ crc32Table[(value ^ bytes[i]) & 0xFF];
+    }
+    return (value ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function makeZipBlob(entries) {
+    const encoder = new TextEncoder();
+    const localParts = [];
+    const centralParts = [];
+    let localOffset = 0;
+    let centralSize = 0;
+
+    entries.forEach((entry) => {
+      const nameBytes = encoder.encode(entry.name);
+      const checksum = crc32(entry.bytes);
+      const localHeader = new Uint8Array(30);
+      const localView = new DataView(localHeader.buffer);
+      localView.setUint32(0, 0x04034B50, true);
+      localView.setUint16(4, 20, true);
+      localView.setUint16(6, 0x0800, true);
+      localView.setUint16(8, 0, true);
+      localView.setUint16(10, 0, true);
+      localView.setUint16(12, 0, true);
+      localView.setUint32(14, checksum, true);
+      localView.setUint32(18, entry.bytes.length, true);
+      localView.setUint32(22, entry.bytes.length, true);
+      localView.setUint16(26, nameBytes.length, true);
+      localView.setUint16(28, 0, true);
+      localParts.push(localHeader, nameBytes, entry.bytes);
+
+      const centralHeader = new Uint8Array(46);
+      const centralView = new DataView(centralHeader.buffer);
+      centralView.setUint32(0, 0x02014B50, true);
+      centralView.setUint16(4, 20, true);
+      centralView.setUint16(6, 20, true);
+      centralView.setUint16(8, 0x0800, true);
+      centralView.setUint16(10, 0, true);
+      centralView.setUint16(12, 0, true);
+      centralView.setUint16(14, 0, true);
+      centralView.setUint32(16, checksum, true);
+      centralView.setUint32(20, entry.bytes.length, true);
+      centralView.setUint32(24, entry.bytes.length, true);
+      centralView.setUint16(28, nameBytes.length, true);
+      centralView.setUint16(30, 0, true);
+      centralView.setUint16(32, 0, true);
+      centralView.setUint16(34, 0, true);
+      centralView.setUint16(36, 0, true);
+      centralView.setUint32(38, 0, true);
+      centralView.setUint32(42, localOffset, true);
+      centralParts.push(centralHeader, nameBytes);
+
+      localOffset += localHeader.length + nameBytes.length + entry.bytes.length;
+      centralSize += centralHeader.length + nameBytes.length;
+    });
+
+    const end = new Uint8Array(22);
+    const endView = new DataView(end.buffer);
+    endView.setUint32(0, 0x06054B50, true);
+    endView.setUint16(4, 0, true);
+    endView.setUint16(6, 0, true);
+    endView.setUint16(8, entries.length, true);
+    endView.setUint16(10, entries.length, true);
+    endView.setUint32(12, centralSize, true);
+    endView.setUint32(16, localOffset, true);
+    endView.setUint16(20, 0, true);
+    return new Blob([...localParts, ...centralParts, end], { type: "application/zip" });
+  }
+
+  function dataUrlToBytes(dataUrl) {
+    const comma = dataUrl.indexOf(",");
+    const metadata = dataUrl.slice(0, comma);
+    const payload = dataUrl.slice(comma + 1);
+    if (/;base64(?:;|$)/i.test(metadata)) {
+      const binary = atob(payload);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+    return new TextEncoder().encode(decodeURIComponent(payload));
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  function runDraftExport() {
     const scenes = exportTargets();
     const views = exportViews();
     if (!scenes.length) { announce("書き出すシーンがありません。"); return; }
@@ -17399,44 +18451,193 @@ ${cuesheetHtml}
       views.forEach((view) => jobs.push({ scene, view, index }));
     });
 
+    const entries = [];
+    let drawError = null;
     selectedId = null;
-    jobs.forEach((job, k) => {
-      // 場面を切り替えて描く。描き終えたら元の場面へ戻す
-      state.project.activeSceneId = job.scene.id;
-      const output = document.createElement("canvas");
-      output.width = W;
-      output.height = H;
-      /* 書き出しは等倍。手元で拡大して見ていても、渡すのは絵の全体。 */
-      const zs = zoomOf(job.view);
-      const keep = { z: zs.z, ox: zs.ox, oy: zs.oy };
-      zs.z = 1; zs.ox = 0; zs.oy = 0;
-      drawStage(output.getContext("2d", { alpha: false }), false, job.view);
-      Object.assign(zs, keep);
-      const link = document.createElement("a");
-      link.href = output.toDataURL("image/png");
-      const no = String(job.index + 1).padStart(2, "0");
-      link.download = `${safeName(state.project.title)}-${no}_${safeName(job.scene.title)}`
-        + `-${job.view === "front" ? VENUES.seatById(state.seat).short : "平面"}-${stamp}.png`;
-      // 続けて落とすと弾く browser があるので、少しずつ間を置く
-      setTimeout(() => { link.click(); }, k * 220);
-    });
-
-    setTimeout(() => {
+    try {
+      jobs.forEach((job) => {
+        // 場面を切り替えて描く。描き終えたら元の場面へ戻す
+        state.project.activeSceneId = job.scene.id;
+        const output = document.createElement("canvas");
+        output.width = W;
+        output.height = H;
+        /* 書き出しは等倍。手元で拡大して見ていても、渡すのは絵の全体。 */
+        const zs = zoomOf(job.view);
+        const keep = { z: zs.z, ox: zs.ox, oy: zs.oy };
+        zs.z = 1; zs.ox = 0; zs.oy = 0;
+        try {
+          drawStage(output.getContext("2d", { alpha: false }), false, job.view);
+          const no = String(job.index + 1).padStart(2, "0");
+          const viewLabel = job.view === "front" ? VENUES.seatById(state.seat).short : "平面";
+          const sceneDir = `${no}_${safeName(job.scene.title)}`;
+          entries.push({
+            // 単体で落とすときは、Downloadsに紛れないよう作品名と日時まで入れた長い名前
+            name: `${safeName(state.project.title)}-${sceneDir}-${viewLabel}-${stamp}.png`,
+            // ZIPの中は作品名も日時も要らない。正面と平面が揃うときだけ場面ごとの階層にする
+            zipName: views.length > 1
+              ? `${sceneDir}/${viewLabel}.png`
+              : `${sceneDir}-${viewLabel}.png`,
+            bytes: dataUrlToBytes(output.toDataURL("image/png")),
+          });
+        } finally {
+          Object.assign(zs, keep);
+        }
+      });
+    } catch (error) {
+      drawError = error;
+    } finally {
       state.project.activeSceneId = keepScene;
       selectedId = keepSelected;
       renderScenes();
       updateInspector();
       render();
-    }, jobs.length * 220 + 60);
+    }
+
+    if (drawError) {
+      console.error("stage export: 画像を書き出せませんでした", drawError);
+      exportFailureNotice("画像を書き出せませんでした。もう一度お試しください。");
+      return;
+    }
+
+    try {
+      if (entries.length === 1) {
+        downloadBlob(new Blob([entries[0].bytes], { type: "image/png" }), entries[0].name);
+      } else {
+        downloadBlob(
+          makeZipBlob(entries.map((entry) => ({ name: entry.zipName, bytes: entry.bytes }))),
+          `${safeName(state.project.title)}-${stamp}.zip`,
+        );
+      }
+    } catch (error) {
+      console.error("stage export: 画像を書き出せませんでした", error);
+      exportFailureNotice("画像を書き出せませんでした。もう一度お試しください。");
+      return;
+    }
 
     closeExport();
-    announce(`${jobs.length}枚を書き出しました。`);
+    announce(entries.length === 1
+      ? "1枚を書き出しました。"
+      : `${entries.length}枚をZIP 1個にまとめて書き出しました。`);
+  }
+
+  function runPitchExport() {
+    const scene = sc();
+    const table = promptI18n();
+    if (!scene || scene.kind !== "scene" || !table) {
+      announce("ピッチを書き出すシーンがありません。");
+      return;
+    }
+    ensurePitchLanguages();
+    stopSceneAnim();
+    const sizeKey = PITCH_SIZE_SCALE[selectedPitchSize] ? selectedPitchSize : "2";
+    const scale = PITCH_SIZE_SCALE[sizeKey];
+    const styleKey = PITCH_STYLE_PARAMS[selectedPitchStyle] ? selectedPitchStyle : "theatre";
+    const output = makePitchCanvas(Math.round(W * scale), Math.round(H * scale));
+    const keepSelected = selectedId;
+    const zoom = zoomOf("front");
+    const keepZoom = { z: zoom.z, ox: zoom.ox, oy: zoom.oy };
+    const caption = els.pitchCaption ? els.pitchCaption.checked : true;
+    selectedId = null;
+    zoom.z = 1;
+    zoom.ox = 0;
+    zoom.oy = 0;
+    pitchStyle = styleKey;
+    let drawError = null;
+    try {
+      drawStage(output.getContext("2d", { alpha: false }), false, "front");
+      finishPitchCanvas(output, scene, styleKey, sizeKey, caption);
+    } catch (error) {
+      drawError = error;
+    } finally {
+      pitchStyle = null;
+      selectedId = keepSelected;
+      Object.assign(zoom, keepZoom);
+    }
+    if (drawError) {
+      console.error("stage export: ピッチ画像を書き出せませんでした", drawError);
+      exportFailureNotice("ピッチ画像を書き出せませんでした。もう一度お試しください。");
+      return;
+    }
+
+    const stamp = stampNow();
+    const base = `${safeName(state.project.title)}-pitch-${safeName(scene.title)}-${stamp}`;
+    const downloads = [{
+      href: output.toDataURL("image/png"),
+      name: `${base}.png`,
+    }];
+    const venueInfo = venue();
+    const size = venueSize();
+    const promptOptions = {
+      i18n: table,
+      style: styleKey,
+      scene,
+      cast: state.project.cast,
+      sets: state.project.sets,
+      venue: {
+        id: venueInfo.id,
+        label: venueInfo.label,
+        width: size.width,
+        depth: size.depth,
+        height: size.height,
+      },
+    };
+    const prompts = [...selectedPitchLangs].map((langCode) => {
+      const text = buildPitchPrompt({ ...promptOptions, lang: langCode });
+      downloads.push({
+        href: `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`,
+        name: `${base}-${langCode}.txt`,
+      });
+      return { langCode, text };
+    });
+    try {
+      if (downloads.length === 1) {
+        const download = downloads[0];
+        downloadBlob(new Blob([dataUrlToBytes(download.href)]), download.name);
+      } else {
+        const entries = downloads.map((download) => ({
+          name: download.name,
+          bytes: dataUrlToBytes(download.href),
+        }));
+        downloadBlob(makeZipBlob(entries), `${base}.zip`);
+      }
+    } catch (error) {
+      console.error("stage export: ピッチ画像を書き出せませんでした", error);
+      exportFailureNotice("ピッチ画像を書き出せませんでした。もう一度お試しください。");
+      return;
+    }
+
+    prefs.pitchStyle = styleKey;
+    prefs.pitchSize = sizeKey;
+    prefs.pitchCaption = caption;
+    prefs.pitchLangs = [...selectedPitchLangs];
+    savePrefs();
+    closeExport();
+    announce(downloads.length === 1
+      ? "PNG 1枚を書き出しました。"
+      : `PNG 1枚と生成条件${prompts.length}件をZIP 1個にまとめて書き出しました。`);
+    if (prompts.length === 1) {
+      const clipboard = navigator.clipboard;
+      if (clipboard && typeof clipboard.writeText === "function") {
+        Promise.resolve(clipboard.writeText(prompts[0].text)).then(
+          () => announce("生成条件をクリップボードへコピーしました。"),
+          () => announce("生成条件は書き出しましたが、クリップボードへコピーできませんでした。"),
+        );
+      } else {
+        announce("生成条件は書き出しましたが、クリップボードへコピーできませんでした。");
+      }
+    }
+  }
+
+  function runExport() {
+    if (exportPurpose === "pitch" && featureOn("pitchExport")) runPitchExport();
+    else runDraftExport();
   }
 
   function openExport() {
     if (!els.exportModal) return;
     if (!state.showFront && exportView !== "plan") exportView = "plan";
     if (!state.showPlan && exportView === "plan") exportView = "front";
+    buildPitchLanguageButtons();
     updateExportNote();
     els.exportModal.hidden = false;
     els.exportBackdrop.hidden = false;
@@ -17451,6 +18652,34 @@ ${cuesheetHtml}
   if (els.exportClose) els.exportClose.addEventListener("click", closeExport);
   if (els.exportBackdrop) els.exportBackdrop.addEventListener("click", closeExport);
   if (els.exportRun) els.exportRun.addEventListener("click", runExport);
+  document.querySelectorAll("[data-export-purpose]").forEach((b) => {
+    b.addEventListener("click", () => {
+      exportPurpose = b.dataset.exportPurpose === "pitch" ? "pitch" : "draft";
+      updateExportNote();
+    });
+  });
+  document.querySelectorAll("[data-pitch-style]").forEach((b) => {
+    b.addEventListener("click", () => {
+      selectedPitchStyle = PITCH_STYLE_PARAMS[b.dataset.pitchStyle] ? b.dataset.pitchStyle : "theatre";
+      prefs.pitchStyle = selectedPitchStyle;
+      savePrefs();
+      updateExportNote();
+    });
+  });
+  document.querySelectorAll("[data-pitch-size]").forEach((b) => {
+    b.addEventListener("click", () => {
+      selectedPitchSize = PITCH_SIZE_SCALE[b.dataset.pitchSize] ? b.dataset.pitchSize : "2";
+      prefs.pitchSize = selectedPitchSize;
+      savePrefs();
+      updateExportNote();
+    });
+  });
+  if (els.pitchCaption) {
+    els.pitchCaption.addEventListener("change", () => {
+      prefs.pitchCaption = els.pitchCaption.checked;
+      savePrefs();
+    });
+  }
   document.querySelectorAll("[data-export-view]").forEach((b) => {
     b.addEventListener("click", () => { exportView = b.dataset.exportView; updateExportNote(); });
   });
@@ -17471,6 +18700,7 @@ ${cuesheetHtml}
   renderSets();
   renderLights();
   renderRigs();
+  renderMachineryPresets();
   renderVenueControls();
   setTool("select");
   updateInspector();

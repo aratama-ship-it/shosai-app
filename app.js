@@ -1315,13 +1315,18 @@
         apparatusSources: Array.isArray(item.apparatusSources) ? item.apparatusSources : [],
       })),
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `紙面-${title}.json`.replace(/[\\/:*?"<>|]/g, "_");
-    a.click();
-    URL.revokeObjectURL(a.href);
-    if (status) status.textContent = `「${title}」をJSONで書き出しました。AIに渡すと演目構成の下書きに変換できます。`;
+    try {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `紙面-${title}.json`.replace(/[\\/:*?"<>|]/g, "_");
+      a.click();
+      URL.revokeObjectURL(a.href);
+      if (status) status.textContent = `「${title}」をJSONで書き出しました。AIに渡すと演目構成の下書きに変換できます。`;
+    } catch (error) {
+      console.error("scrapbook export: 紙面を書き出せませんでした", error);
+      if (status) status.textContent = "紙面を書き出せませんでした。もう一度お試しください。";
+    }
   }
 
   function openScrapbookPage(id) {

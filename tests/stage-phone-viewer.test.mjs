@@ -8,7 +8,7 @@ const style = await readFile(new URL("style.css", root), "utf8");
 
 test("スマホ閲覧版はiPad PWAと分けて短辺600px以下のタッチ端末で起動する", () => {
   assert.match(source, /const phoneLike = navigator\.maxTouchPoints > 0[\s\S]*?Math\.min\(window\.screen\.width, window\.screen\.height\) <= 600/);
-  assert.match(source, /const phoneViewerActive = !tabletPwaActive && \(phonePreview \|\| phoneLike\)/);
+  assert.match(source, /const phoneViewerActive = standaloneStagePage && !tabletPwaActive && \(phonePreview \|\| phoneLike\)/);
   assert.match(source, /has\("phone-viewer-preview"\)/);
   assert.match(source, /classList\.toggle\("stage-phone-viewer", phoneViewerActive\)/);
 });

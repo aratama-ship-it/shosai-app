@@ -1591,14 +1591,19 @@
   }
 
   function downloadLibrary() {
-    const data = JSON.stringify(library.exportDocument(), null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "shosai-stage-venues.json";
-    link.click();
-    window.setTimeout(() => URL.revokeObjectURL(link.href), 4000);
-    if (els.libraryStatus) els.libraryStatus.textContent = "会場ライブラリを書き出しました。";
+    try {
+      const data = JSON.stringify(library.exportDocument(), null, 2);
+      const blob = new Blob([data], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "shosai-stage-venues.json";
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+      if (els.libraryStatus) els.libraryStatus.textContent = "会場ライブラリを書き出しました。";
+    } catch (error) {
+      console.error("venue library export: 書き出せませんでした", error);
+      if (els.libraryStatus) els.libraryStatus.textContent = "会場ライブラリを書き出せませんでした。もう一度お試しください。";
+    }
   }
 
   function importLibrary(file) {

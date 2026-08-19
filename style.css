@@ -2197,7 +2197,30 @@ canvas[data-tool="note"] { cursor: copy; }
 #stage-canvas[data-pannable="true"][data-dragging="true"] { cursor: grabbing; }
 
 /* 書き出しの選び方 */
-.stage-export-modal { width: min(420px, calc(100vw - 40px)); }
+.stage-export-modal { width: min(520px, calc(100vw - 40px)); }
+
+#stage-export-purpose-block { margin-bottom: 8px; }
+
+#stage-export-pitch-fields > .stage-tool-grid,
+.stage-pitch-langs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+#stage-export-pitch-fields > .stage-tool-grid button,
+.stage-pitch-langs button { border-left: 1px solid var(--line-dark); }
+
+.stage-pitch-caption-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  color: var(--milk-dim);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.stage-pitch-caption-check input { margin-top: 2px; }
 
 .stage-export-scope {
   display: grid;
@@ -7978,6 +8001,15 @@ body.is-panel-dragging {
   display: block;
 }
 
+/* 道具の絵はすべてSVGの線画で持つ（字の記号は端末ごとに形も太さも揃わない）。
+   色は文字色に追随させ、選んだ道具の強調（[aria-pressed="true"]）もそのまま効く */
+.stage-tool-icon svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+  color: currentColor;
+}
+
 /* 選んでいる道具の記号は、字の色より一段はっきり出す */
 .stage-center-bar .stage-tool-grid button.is-icon[aria-pressed="true"] .stage-tool-icon {
   color: var(--paper);
@@ -8028,8 +8060,11 @@ body.is-panel-dragging {
   color: var(--milk-dim);
 }
 
-/* 上部の歯車。字を置かず正方形にして、隣の「プレゼン」と役目を分ける */
-.stage-gear-btn {
+/* 上部の歯車。字を置かず正方形にして、隣の「プレゼン」と役目を分ける。
+   ★ .stage-history-actions button（クラス+要素）の font-size: 11px の方が
+     .stage-gear-btn（クラスのみ）より詳細度が高く、後で書いても負けて
+     字が小さいままになっていた。button. を付けて詳細度を合わせる。 */
+.stage-history-actions button.stage-gear-btn {
   width: 34px;
   min-width: 34px;
   padding-left: 0;
@@ -8037,8 +8072,14 @@ body.is-panel-dragging {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 20px;
   line-height: 1;
+}
+
+.stage-gear-btn svg {
+  width: 19px;
+  height: 19px;
+  display: block;
 }
 
 /* 環境設定の中の言語。切り替えの札は右端に置く（他の行は左に印がある） */
@@ -8447,7 +8488,7 @@ body.is-panel-dragging {
 .stage-modal#stage-light-preset-modal { width: min(820px, calc(100vw - 40px)); }
 .stage-modal.stage-shows-modal { width: min(520px, calc(100vw - 40px)); }
 .stage-modal.stage-beat-template-modal { width: min(780px, calc(100vw - 40px)); }
-.stage-modal.stage-export-modal { width: min(420px, calc(100vw - 40px)); }
+.stage-modal.stage-export-modal { width: min(520px, calc(100vw - 40px)); }
 .stage-modal.stage-rehearsal-export-modal { width: min(560px, calc(100vw - 40px)); }
 .stage-modal.stage-about-modal { width: min(720px, calc(100vw - 40px)); }
 .stage-modal.stage-venue-editor-modal { width: min(980px, calc(100vw - 40px)); }
@@ -9500,6 +9541,11 @@ html.stage-pwa-tablet .stage-tablet-top-controls button::before {
   content: attr(data-tablet-icon);
   font-size: 17px;
 }
+
+/* タブレット版は data-tablet-icon の文字を ::before で出す作り。
+   道具と歯車はSVGの絵も持っているので、そのままだと二つ並んで出る。
+   こちらでは文字の方を採るので、SVGは隠す（44px角に二つは入らない）。 */
+html.stage-pwa-tablet .stage-tablet-top-controls svg { display: none; }
 
 html.stage-pwa-tablet .stage-tablet-top-controls #stage-lang {
   flex-basis: 52px;
@@ -10838,3 +10884,10 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
   .stage-model-builder-body { overflow: auto; }
   .stage-model-builder-preview { min-height: 55vh; }
 }
+
+.stage-machinery-kind-list { display: grid; gap: 7px; margin: 10px 0 14px; }
+.stage-machinery-curtain-row { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: 6px; }
+.stage-machinery-preset-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 7px; }
+.stage-machinery-preset-row .btn-quiet { min-width: 0; text-align: left; white-space: normal; }
+.stage-machinery-estimated { display: inline-flex; width: fit-content; padding: 2px 7px; border: 1px solid rgba(211,172,89,.55); border-radius: 999px; color: #d3ac59; font-size: 10px; line-height: 1.35; }
+.stage-machinery-estimated[hidden] { display: none; }

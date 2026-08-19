@@ -24,25 +24,23 @@ test("舞台裏の控えにせり上がりを残す", () => {
   assert.match(stash[1], /"seriH"/);
 });
 
-test("せりの上面は登録寸法ではなくシーンのせり上がりから決める", () => {
+test("せりの上面は登録寸法ではなくシーンのせり上がりから決め、床下は支持面にしない", () => {
   const body = functionBody("pieceTopLocal", "supportFootprint");
-  assert.match(body, /piece\.type === "seri"[\s\S]*clamp\(finite\(piece\.seriH, 0\), 0, 4\)/);
+  assert.match(body, /piece\.type === "seri"[\s\S]*clamp\(finite\(piece\.seriH, 0\), -3, 4\)/);
 });
 
 test("せりは必ず床を基準にして支えを持たない", () => {
   const body = functionBody("refreshBases", "bringToTop");
-  assert.match(
-    body,
-    /piece\.type === "seri"\) \{ piece\.base = 0; piece\.supportId = null; return; \}/,
-  );
+  assert.match(body, /\["seri", "revolve", "deck", "curtain", "pool"\]\.includes\(piece\.type\)[\s\S]*piece\.base = 0; piece\.supportId = null; return;/);
 });
 
-test("下がり切ったせりは箱を作らず床面の輪郭だけを描く", () => {
+test("床面のせりは箱を作らず、負のせりは床下へ箱を作る", () => {
   const parts = functionBody("pieceParts", "drawSeatMap");
-  assert.match(parts, /piece\.type === "seri"[\s\S]*seriH < 0\.02\) return \[\]/);
-  assert.match(parts, /h: seriH, lift: 0/);
+  assert.match(parts, /machinery\.machineryParts/);
+  assert.match(stageSource, /piece\.seriH, 0\), -3, 4/);
   const draw = functionBody("drawSolid", "riggingPoint");
   assert.match(draw, /piece\.type === "seri" && parts\.length === 0/);
+  assert.match(draw, /piece\.type === "seri" && L\.plan && finite\(piece\.seriH, 0\) < -0\.02/);
   assert.match(draw, /target\.stroke\(\);[\s\S]*target\.restore\(\);[\s\S]*return;/);
 });
 

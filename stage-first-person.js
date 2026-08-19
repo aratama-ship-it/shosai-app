@@ -91,6 +91,41 @@
     return { x: (u - 0.5) * width, y, z: (v - 0.5) * depth };
   }
 
+  const HOUSE_ROWS = 13;
+  const HOUSE_ROW_DEPTH = .92;
+  const HOUSE_ROW_RISE = .14;
+
+  function wingWidthFor(width) {
+    return clamp(finite(width, 12) * .3, 2.4, 4.5);
+  }
+
+  function wingLegX(width) {
+    return finite(width, 12) / 2 + .4;
+  }
+
+  function wingLegPairs(depth) {
+    return clamp(Math.round(finite(depth, 9) / 3), 2, 4);
+  }
+
+  function wingLegZs(depth, pairs) {
+    const safeDepth = finite(depth, 9);
+    const count = Math.max(0, Math.round(finite(pairs, wingLegPairs(safeDepth))));
+    const spacing = (safeDepth - 2) / Math.max(1, count - 1);
+    return Array.from({ length: count }, (_, index) => safeDepth / 2 - 1 - index * spacing);
+  }
+
+  function houseSeatsPerRow(width) {
+    return Math.max(8, Math.floor(finite(width, 12) * 1.6 / .55));
+  }
+
+  function houseRiserRows(_width, depth) {
+    const startZ = finite(depth, 9) / 2 + 1.6;
+    return Array.from({ length: HOUSE_ROWS }, (_, index) => ({
+      z: startZ + HOUSE_ROW_DEPTH * index,
+      height: HOUSE_ROW_RISE * (index + 1),
+    }));
+  }
+
   function yawForward(degrees) {
     const yaw = finite(degrees, 0) * Math.PI / 180;
     return { x: -Math.sin(yaw), y: 0, z: Math.cos(yaw) };
@@ -976,32 +1011,27 @@
   }
 
   function drawHouse(ctx) {
-    const rows = 13;
-    const rowGap = .88;
-    const rake = .24;
-    const startZ = D / 2 + 2;
-    fillPoly(ctx, [{ x: -W * 1.4, y: -1.05, z: D / 2 }, { x: W * 1.4, y: -1.05, z: D / 2 },
-      { x: W * 1.4, y: -1.05 + rows * rake, z: startZ + rows * rowGap + 2 },
-      { x: -W * 1.4, y: -1.05 + rows * rake, z: startZ + rows * rowGap + 2 }], "#171210");
-    const perRow = Math.floor(W * 1.6 / .55);
-    for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
-      const z = startZ + rowIndex * rowGap;
-      const y = -1 + rowIndex * rake;
+    const risers = houseRiserRows(W, D);
+    const perRow = houseSeatsPerRow(W);
+    const rowWidth = perRow * .55 + 1;
+    risers.forEach(({ z, height }) => {
+      drawBox(ctx, 0, z, 0, height, rowWidth, HOUSE_ROW_DEPTH, "#3a2620");
       for (let seat = 0; seat < perRow; seat += 1) {
         const x = (seat - (perRow - 1) / 2) * .55;
         if (Math.abs(x) < .55) continue;
-        const point = toCamera({ x, y: y + .35, z });
+        const point = toCamera({ x, y: height + .35, z });
         if (point.z <= NEAR || point.z > 40) continue;
         const screen = toScreen(point);
         const radius = clamp(.16 * focal / point.z, .5, 4);
         ctx.beginPath(); ctx.arc(screen.x, screen.y, radius, 0, 7);
         ctx.fillStyle = `rgba(84,68,53,${clamp(.42 - point.z * .012, .08, .4)})`; ctx.fill();
       }
-    }
+    });
   }
 
   function drawShell(ctx) {
-    const halfWidth = W / 2;
+    const stageHalfWidth = W / 2;
+    const halfWidth = stageHalfWidth + wingWidthFor(W);
     const halfDepth = D / 2;
     fillPoly(ctx, [{ x: -halfWidth, y: 0, z: -halfDepth }, { x: halfWidth, y: 0, z: -halfDepth },
       { x: halfWidth, y: CEIL, z: -halfDepth }, { x: -halfWidth, y: CEIL, z: -halfDepth }], "#2b2118");
@@ -1025,6 +1055,15 @@
     line3(ctx, { x: -halfWidth, y: 0, z: halfDepth }, { x: halfWidth, y: 0, z: halfDepth }, "rgba(232,226,212,.28)", 2);
     fillPoly(ctx, [{ x: -halfWidth, y: -1.05, z: halfDepth }, { x: halfWidth, y: -1.05, z: halfDepth },
       { x: halfWidth, y: 0, z: halfDepth }, { x: -halfWidth, y: 0, z: halfDepth }], "#241c15");
+    const legHalfWidth = .8;
+    const legHeight = Math.min(CEIL - .5, CEIL * .75);
+    const legX = wingLegX(W);
+    wingLegZs(D, wingLegPairs(D)).forEach((z) => {
+      [-legX, legX].forEach((x) => {
+        fillPoly(ctx, [{ x: x - legHalfWidth, y: 0, z }, { x: x + legHalfWidth, y: 0, z },
+          { x: x + legHalfWidth, y: legHeight, z }, { x: x - legHalfWidth, y: legHeight, z }], "#0e0b08");
+      });
+    });
   }
 
   function drawProscenium(ctx) {
@@ -1046,7 +1085,21 @@
     const x = point.x;
     const z = point.z;
     const color = piece.color || "#8d8272";
-    if (piece.type === "model" && piece.model && window.SHOSAI_STAGE_MODELS) {
+    if (Array.isArray(piece.parts)) {
+      const facing = finite(piece.facing, 0);
+      const angle = facing * Math.PI / 180;
+      const cos = Math.cos(angle); const sin = Math.sin(angle);
+      piece.parts.forEach((box) => {
+        const offsetX = finite(box.ox, 0) * cos - finite(box.oz, 0) * sin;
+        const offsetZ = finite(box.ox, 0) * sin + finite(box.oz, 0) * cos;
+        ctx.save();
+        ctx.globalAlpha = clamp(finite(box.tint, 1), .12, 1);
+        drawBox(ctx, x + offsetX, z + offsetZ, finite(box.lift, 0),
+          finite(box.lift, 0) + finite(box.h, 0), finite(box.w, 1), finite(box.d, 1),
+          color, facing + finite(box.rotY, 0));
+        ctx.restore();
+      });
+    } else if (piece.type === "model" && piece.model && window.SHOSAI_STAGE_MODELS) {
       const facing = finite(piece.facing, 0);
       const angle = facing * Math.PI / 180;
       const cos = Math.cos(angle); const sin = Math.sin(angle);
@@ -1448,7 +1501,8 @@
     open,
     close,
     _geom: Object.freeze({ toWorld, yawForward, rightOf, clipPolyNear, eyeHeight,
-      moveFree, clampFree, freePresets, frameDelta }),
+      moveFree, clampFree, freePresets, frameDelta, wingWidthFor, wingLegX, wingLegPairs,
+      wingLegZs, houseSeatsPerRow, houseRiserRows }),
     _panels: Object.freeze({
       clampLayout: clampPanelLayout,
       contentHeight: panelContentHeight,

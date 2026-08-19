@@ -20,6 +20,48 @@ test("正規化座標の4点を客席から見た舞台ワールドへ変換す�
   assert.deepEqual([geom.toWorld(.5, 1, width, depth).x, geom.toWorld(.5, 1, width, depth).z], [0, 4]);
 });
 
+test("袖幅は舞台幅に比例し、小劇場と極端に広い舞台では上下限に収まる", () => {
+  assert.equal(geom.wingWidthFor(4), 2.4);
+  closeTo(geom.wingWidthFor(12), 3.6);
+  assert.equal(geom.wingWidthFor(60), 4.5);
+});
+
+test("袖幕の中心は舞台端より0.4m外側になる", () => {
+  assert.equal(geom.wingLegX(12), 6.4);
+  assert.equal(geom.wingLegX(8), 4.4);
+});
+
+test("袖幕の対数は舞台奥行きに応じて2組から4組に収まる", () => {
+  assert.equal(geom.wingLegPairs(3), 2);
+  assert.equal(geom.wingLegPairs(9), 3);
+  assert.equal(geom.wingLegPairs(60), 4);
+});
+
+test("袖幕のz位置は指定した組数ぶん客席側から舞台奥へ単調減少する", () => {
+  const zs = Array.from(geom.wingLegZs(9, 3));
+  assert.equal(zs.length, 3);
+  assert.deepEqual(zs, [3.5, 0, -3.5]);
+  assert.ok(zs.every((value, index) => index === 0 || value < zs[index - 1]));
+});
+
+test("客席の1列あたり座席数は既存式を保ち、狭い舞台でも最低8席になる", () => {
+  assert.equal(geom.houseSeatsPerRow(1), 8);
+  assert.equal(geom.houseSeatsPerRow(12), Math.floor(12 * 1.6 / .55));
+});
+
+test("客席段床は13列で、奥へ行くほど位置と高さが一定量ずつ増える", () => {
+  const rows = Array.from(geom.houseRiserRows(12, 9));
+  assert.equal(rows.length, 13);
+  rows.forEach((row, index) => {
+    closeTo(row.z, 9 / 2 + 1.6 + .92 * index);
+    closeTo(row.height, .14 * (index + 1));
+    if (index > 0) {
+      assert.ok(row.z > rows[index - 1].z);
+      assert.ok(row.height > rows[index - 1].height);
+    }
+  });
+});
+
 test("facing 0は客席向き、facing 90は上手向きになる", () => {
   const front = geom.yawForward(0);
   const stageLeft = geom.yawForward(90);
