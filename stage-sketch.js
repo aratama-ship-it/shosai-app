@@ -2075,6 +2075,7 @@
     sceneDel: document.getElementById("stage-scene-del"),
     scenePrev: document.getElementById("stage-scene-prev"),
     sceneNext: document.getElementById("stage-scene-next"),
+    sceneReplay: document.getElementById("stage-scene-replay"),
     sceneNow: document.getElementById("stage-scene-now"),
     animScenes: document.getElementById("stage-anim-scenes"),
     animMs: document.getElementById("stage-anim-ms"),
@@ -2492,6 +2493,7 @@
       arrows: [],
       beat: normalizeSceneBeat(sceneKind, null),
       rehearsal: sceneKind === "scene" ? normalizeSceneRehearsal(null) : null,
+      cueSeconds: null,
       lightingIntent: null,
       facingLock: false,
     };
@@ -2993,6 +2995,12 @@
     };
   }
 
+  function normalizeCueSeconds(value) {
+    if (value === null || value === undefined || value === "") return null;
+    const seconds = Number(value);
+    return Number.isFinite(seconds) ? clamp(seconds, 0.2, 10) : null;
+  }
+
   function normalizeScene(raw, index) {
     const fallbackBg = "#40362d";
     const kind = raw.kind === "section" ? "section" : "scene";
@@ -3019,6 +3027,7 @@
         ? raw.screenTexts.slice(0, 12).map(normalizeScreenText).filter(Boolean) : [],
       beat: normalizeSceneBeat(kind, raw.beat),
       rehearsal: kind === "scene" ? normalizeSceneRehearsal(raw.rehearsal) : null,
+      cueSeconds: kind === "scene" ? normalizeCueSeconds(raw.cueSeconds) : null,
       lightingIntent: normalizeLightingIntent(kind, raw.lightingIntent),
       // 誤ってホイールへ触れても向きが変わらないよう、シーンごとに持つ
       facingLock: kind === "scene" ? Boolean(raw.facingLock) : false,
@@ -3213,8 +3222,9 @@
                 locked: Boolean(t.locked),
                 /* 吊物。天井からワイヤーで吊り下がっているもの。
                  * 何かの上に乗ることも、何かを乗せることもない。
-                 * 代わりに地上高（dims.lift）で高さを決める。 */
-                flown: Boolean(t.flown),
+                 * 代わりに地上高（dims.lift）で高さを決める。
+                 * 吊物にしかならない道具（FLOWN_ONLY）は読み込み時に必ず吊りへ直す。 */
+                flown: Boolean(FLOWN_ONLY[kind] || t.flown),
                 // 吊りのワイヤーの本数。1本なら中央から、2本なら両端から
                 wires: t && Number(t.wires) === 1 ? 1 : 2,
                 // 壁を枠にする（穴の空いた壁＝フレーム）
@@ -4499,7 +4509,11 @@
    * 何の上にでも物を置けるようにするので、演者の頭の上も上面として扱う。 */
   function pieceTopLocal(piece) {
     if (piece.type === "light") return 0;
-    if (piece.type === "seri") return Math.max(0, clamp(finite(piece.seriH, 0), -3, 4));
+    if (piece.type === "seri") {
+      const seriH = piece.animMech && piece.animMech.seriH !== undefined
+        ? piece.animMech.seriH : piece.seriH;
+      return Math.max(0, clamp(finite(seriH, 0), -3, 4));
+    }
     if (piece.type === "curtain" || piece.type === "pool" || piece.type === "deck") return 0;
     if (piece.type === "performer") {
       return poseExtent(piece.pose).top * pieceHeightM(piece) * (piece.size / 100);
@@ -4566,6 +4580,10 @@
   function isFlown(piece) {
     if (!piece || !SOLID_TYPES[piece.type]) return false;
     if (piece.type === "seri") return false;
+    /* 吊物にしかならない道具は、登録の flown が false でも吊物として扱う。
+       UIは新規登録で必ず true にするが、スクリプト生成のJSONが false のまま
+       持ち込むことがあり、放っておくとバーが演者の頭に「乗る」。 */
+    if (FLOWN_ONLY[piece.type]) return true;
     const owner = pieceSet(piece);
     return Boolean(owner ? owner.flown : piece.flown);
   }
@@ -5543,7 +5561,8 @@
     if (piece.type === "curtain" && L.plan) {
       const owner = pieceSet(piece);
       const kind = piece.curtainKind || (owner && owner.curtainKind) || "front";
-      const open = clamp(finite(piece.open, 0), 0, 100);
+      const machinery = window.SHOSAI_STAGE_MACHINERY;
+      const open = clamp(machinery ? machinery.mechVal(piece, "open", 0) : finite(piece.open, 0), 0, 100);
       // 割幕は全開でも両端に畳んだ布が残る。落とし幕・ホリ幕だけは全開で消える。
       if (!["drop", "cyc"].includes(kind) || open < 100) {
         target.strokeStyle = rgba(piece.color, .92);
@@ -5562,7 +5581,9 @@
     }
 
     // 床下へ沈んだせりは、平面図では破線の輪郭だけを残す。
-    if (piece.type === "seri" && L.plan && finite(piece.seriH, 0) < -0.02) {
+    const machinery = window.SHOSAI_STAGE_MACHINERY;
+    if (piece.type === "seri" && L.plan
+      && (machinery ? machinery.mechVal(piece, "seriH", 0) : finite(piece.seriH, 0)) < -0.02) {
       const foot = pieceFootprint(piece);
       const rad = ((piece.facing || 0) * Math.PI) / 180;
       const cos = Math.cos(rad); const sin = Math.sin(rad);
@@ -8482,6 +8503,7 @@
     const index = Math.max(0, scenes.findIndex((row) => row.id === state.project.activeSceneId));
     if (els.scenePrev) els.scenePrev.disabled = index <= 0;
     if (els.sceneNext) els.sceneNext.disabled = index >= scenes.length - 1;
+    if (els.sceneReplay) els.sceneReplay.disabled = index <= 0 || !state.animateScenes;
     if (els.sceneNow) {
       const scene = scenes[index] || sc();
       els.sceneNow.textContent = scene
@@ -12081,6 +12103,27 @@
             label.append(title, value);
             return label;
           };
+          const cueLabel = document.createElement("label");
+          cueLabel.title = tx("この場面へ入る転換の再生時間。空なら設定の共通値");
+          const cueTitle = document.createElement("span");
+          cueTitle.textContent = tx("転換の長さ");
+          const cueValue = document.createElement("span");
+          const cueInput = document.createElement("input");
+          cueInput.type = "number";
+          cueInput.min = "0.2";
+          cueInput.max = "10";
+          cueInput.step = "0.1";
+          cueInput.inputMode = "decimal";
+          cueInput.placeholder = tx("共通");
+          cueInput.value = scene.cueSeconds === null ? "" : String(scene.cueSeconds);
+          cueInput.setAttribute("aria-label", tx("転換の長さ（秒）"));
+          cueInput.addEventListener("input", () => {
+            scene.cueSeconds = normalizeCueSeconds(cueInput.value);
+            persistSoon();
+          });
+          cueValue.append(cueInput, document.createTextNode(` ${tx("秒")}`));
+          cueLabel.append(cueTitle, cueValue);
+          timing.append(cueLabel);
           if (featureOn("sceneTiming")) {
             timing.append(
               makeTimingInput("見せる時間", "holdDurationSeconds"),
@@ -12168,6 +12211,7 @@
       els.sceneFoldAll.title = tx(hasOpen ? "セクションをすべて畳む" : "セクションをすべて開く");
     }
     renderSceneStudy();
+    syncSceneBar();
     syncTabletSceneBar();
     syncPhoneViewer();
     /* 並べ替えと入れ子は、掴んで動かす方に一本化した。
@@ -12574,6 +12618,14 @@
     return pieces.find((p) => (p.originId || p.id) === mine) || null;
   }
 
+  const MACHINERY_ANIM_KEYS = {
+    seri: { seriH: 0 },
+    revolve: { spin: 0 },
+    deck: { tilt: 0, deckH: 0 },
+    curtain: { open: 0 },
+    pool: { water: 0.9, poolH: -3 },
+  };
+
   function stopSceneAnim() {
     if (!sceneAnim) return;
     cancelAnimationFrame(sceneAnim.raf);
@@ -12585,6 +12637,7 @@
       delete entry.piece.animBase;
       delete entry.piece.animPose;
       delete entry.piece.animGlow;
+      delete entry.piece.animMech;
     });
     // はけの駒は描くためだけの写しなので、捨てるだけでよい
     sceneAnim = null;
@@ -12609,7 +12662,16 @@
       // 明かりは強さの変化もフェードで見せる（場所が同じでも動かす対象になる）
       const sameGlow = piece.type !== "light"
         || Math.abs(finite(twin.glow, 1) - finite(piece.glow, 1)) < 0.01;
-      if (sameSpot && sameBeam && sameGlow) return;
+      const mechDefaults = MACHINERY_ANIM_KEYS[piece.type] || null;
+      const mechKeys = mechDefaults ? Object.keys(mechDefaults) : [];
+      const mechFrom = {};
+      const mechTo = {};
+      const sameMech = mechKeys.every((key) => {
+        mechFrom[key] = finite(twin[key], mechDefaults[key]);
+        mechTo[key] = finite(piece[key], mechDefaults[key]);
+        return Math.abs(mechFrom[key] - mechTo[key]) <= 0.001;
+      });
+      if (sameSpot && sameBeam && sameGlow && sameMech) return;
       /* 動線があれば、その二次曲線をたどる。行き先が動線の終点と違っていても、
        * 曲がり方だけ借りて向かう（曲線の形は残しつつ、着地は次の場面の場所）。 */
       const route = twin.route;
@@ -12618,6 +12680,8 @@
         from: { u: twin.u, v: twin.v },
         ctrl: route ? { u: route.bu, v: route.bv } : null,
         to: { u: piece.u, v: piece.v },
+        mechFrom: mechKeys.length ? mechFrom : null,
+        mechTo: mechKeys.length ? mechTo : null,
         // 出発地点の床からの高さ（前のシーンで台やポールに乗っていた分）
         startBase: piece.type === "performer" ? finite(twin.base, 0) : 0,
         /* 移動中は前のシーンの姿勢のまま。着いてから新しい姿勢へ切り替える
@@ -12697,7 +12761,9 @@
     const blackout = featureOn("blackout") && Boolean(sc().blackout);
     if (!pieces.length && !exits.length && !blackout) return;
     const movers = pieces.concat(exits);
-    const span = clamp(finite(state.sceneAnimMs, 2000), 200, 3000);
+    const span = sc().cueSeconds !== null
+      ? sc().cueSeconds * 1000
+      : clamp(finite(state.sceneAnimMs, 2000), 200, 3000);
     const start = performance.now();
     const step = (now) => {
       const t = clamp((now - start) / span, 0, 1);
@@ -12756,6 +12822,19 @@
         if (entry.glowFrom !== null && entry.glowFrom !== undefined) {
           const gt = entry.glowTo !== undefined ? entry.glowTo : finite(piece.glow, 1);
           piece.animGlow = entry.glowFrom + (gt - entry.glowFrom) * e;
+        }
+        if (entry.mechFrom) {
+          piece.animMech = {};
+          Object.keys(entry.mechFrom).forEach((key) => {
+            const from = entry.mechFrom[key];
+            const to = entry.mechTo[key];
+            if (key === "spin") {
+              const delta = ((to - from + 540) % 360) - 180;
+              piece.animMech[key] = from + delta * e;
+            } else {
+              piece.animMech[key] = from + (to - from) * e;
+            }
+          });
         }
       });
       render();
@@ -13374,6 +13453,14 @@ ${cuesheetHtml}
       return;
     }
     openScene(next.id);
+  }
+
+  function replaySceneTransition() {
+    const rows = state.project.scenes.filter((row) => row.kind === "scene");
+    const at = rows.findIndex((row) => row.id === state.project.activeSceneId);
+    const fromScene = rows[at - 1];
+    if (!state.animateScenes || !fromScene) return;
+    beginSceneAnim(fromScene);
   }
 
   function openScene(id) {
@@ -16882,6 +16969,7 @@ ${cuesheetHtml}
   }
   if (els.scenePrev) els.scenePrev.addEventListener("click", () => stepScene(-1));
   if (els.sceneNext) els.sceneNext.addEventListener("click", () => stepScene(1));
+  if (els.sceneReplay) els.sceneReplay.addEventListener("click", replaySceneTransition);
   if (els.presentPrev) els.presentPrev.addEventListener("click", () => stepScene(-1));
   if (els.presentNext) els.presentNext.addEventListener("click", () => stepScene(1));
   if (els.presentClose) els.presentClose.addEventListener("click", exitPseudoPresentation);
@@ -16958,6 +17046,7 @@ ${cuesheetHtml}
       state.animateScenes = e.target.checked;
       if (!state.animateScenes) { stopSceneAnim(); render(); }
       if (els.animMs) els.animMs.disabled = !state.animateScenes;
+      syncSceneBar();
       persistSoon();
       announce(state.animateScenes ? "アニメーションを入れました。" : "アニメーションを切りました。");
     });

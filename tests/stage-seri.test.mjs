@@ -26,7 +26,9 @@ test("舞台裏の控えにせり上がりを残す", () => {
 
 test("せりの上面は登録寸法ではなくシーンのせり上がりから決め、床下は支持面にしない", () => {
   const body = functionBody("pieceTopLocal", "supportFootprint");
-  assert.match(body, /piece\.type === "seri"[\s\S]*clamp\(finite\(piece\.seriH, 0\), -3, 4\)/);
+  assert.match(body, /piece\.animMech && piece\.animMech\.seriH !== undefined/);
+  assert.match(body, /piece\.animMech\.seriH : piece\.seriH/);
+  assert.match(body, /clamp\(finite\(seriH, 0\), -3, 4\)/);
 });
 
 test("せりは必ず床を基準にして支えを持たない", () => {
@@ -40,7 +42,7 @@ test("床面のせりは箱を作らず、負のせりは床下へ箱を作る",
   assert.match(stageSource, /piece\.seriH, 0\), -3, 4/);
   const draw = functionBody("drawSolid", "riggingPoint");
   assert.match(draw, /piece\.type === "seri" && parts\.length === 0/);
-  assert.match(draw, /piece\.type === "seri" && L\.plan && finite\(piece\.seriH, 0\) < -0\.02/);
+  assert.match(draw, /piece\.type === "seri" && L\.plan[\s\S]*machinery\.mechVal\(piece, "seriH", 0\)/);
   assert.match(draw, /target\.stroke\(\);[\s\S]*target\.restore\(\);[\s\S]*return;/);
 });
 

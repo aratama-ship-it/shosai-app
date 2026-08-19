@@ -4,6 +4,8 @@ import test from "node:test";
 import vm from "node:vm";
 
 const source = await readFile(new URL("../stage-machinery.js", import.meta.url), "utf8");
+const sketchSource = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
+const indexSource = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const context = { window: {}, Date, Math, JSON };
 vm.runInNewContext(source, context, { filename: "stage-machinery.js" });
 const machinery = context.window.SHOSAI_STAGE_MACHINERY;
@@ -21,6 +23,19 @@ test("盆の内側の駒は盆の中心まわりに回転し、向きも追従�
   closeTo(placed.v, .75);
   closeTo(placed.facing, 90);
   assert.equal(placed.revolveId, "rev");
+});
+
+test("盆のアニメ中の角度を優先し、その上の駒も途中位置と向きへ回す", () => {
+  const revolve = {
+    id: "rev", type: "revolve", u: .5, v: .5, spin: 0,
+    animMech: { spin: 90 }, dims: { dia: 10 },
+  };
+  const piece = { id: "actor", type: "performer", u: .75, v: .5, facing: 0 };
+  const placed = machinery.effectivePlacement(piece, { pieces: [revolve, piece] },
+    { width: 20, depth: 20 }, { dimsFor: dims, isFlown: () => false });
+  closeTo(placed.u, .5);
+  closeTo(placed.v, .75);
+  closeTo(placed.facing, 90);
 });
 
 test("二重盆では最も小さい内盆だけを選び、内盆自身は外盆に追従する", () => {
@@ -60,6 +75,32 @@ test("プール床が水面より下なら水面を描き、床が0なら乾い�
 test("負のせりは床線より下の箱として展開する", () => {
   const parts = machinery.machineryParts({ type: "seri", seriH: -2 }, { w: 3, d: 2 });
   assert.deepEqual(plain(parts), [{ ox: 0, oz: 0, w: 3, d: 2, h: 2, lift: -2, tint: 1 }]);
+});
+
+test("せりの部品は保存値よりアニメ中の高さを優先する", () => {
+  const parts = machinery.machineryParts({ type: "seri", seriH: 0, animMech: { seriH: 2 } },
+    { w: 3, d: 2 });
+  assert.deepEqual(plain(parts), [{ ox: 0, oz: 0, w: 3, d: 2, h: 2, lift: 0, tint: 1 }]);
+  assert.equal(machinery.mechVal({ spin: 0, animMech: { spin: 45 } }, "spin", 0), 45);
+});
+
+test("場面転換は機構値を補間し、spinを最短弧で進めて終了時に消す", () => {
+  assert.match(sketchSource, /mechFrom:[\s\S]*?mechTo:/);
+  assert.match(sketchSource, /piece\.animMech = \{\}/);
+  assert.match(sketchSource, /delete entry\.piece\.animMech/);
+  assert.match(sketchSource, /\(\(to - from \+ 540\) % 360\) - 180/);
+  assert.match(source, /function machineryParts[\s\S]*?mechVal\(piece, "seriH"/);
+  assert.match(source, /function effectivePlacement[\s\S]*?mechVal\(revolve, "spin"/);
+});
+
+test("場面ごとの転換秒数を正規化し、再生ボタンと行き先の尺に使う", () => {
+  assert.match(sketchSource,
+    /function normalizeCueSeconds[\s\S]*?value === null[\s\S]*?clamp\(seconds, 0\.2, 10\)/);
+  assert.match(sketchSource, /cueSeconds: kind === "scene" \? normalizeCueSeconds\(raw\.cueSeconds\) : null/);
+  assert.match(sketchSource, /const span = sc\(\)\.cueSeconds !== null[\s\S]*?sc\(\)\.cueSeconds \* 1000/);
+  assert.match(indexSource, /id="stage-scene-replay"/);
+  assert.match(sketchSource, /sceneReplay\.disabled = index <= 0 \|\| !state\.animateScenes/);
+  assert.match(sketchSource, /beginSceneAnim\(fromScene\)/);
 });
 
 test("5件の内蔵プリセットは未確認の根拠メモを持ち、展開するとsetsとpiecesが増える", () => {

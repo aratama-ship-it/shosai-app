@@ -9,10 +9,16 @@
  * このスクリプトは stage-sketch.js の該当ロジック（poseExtent・PIECE_DIMS・refreshBases 等）を
  * 都度その場で読み取って使う。値を固定コピーすると本体の改訂で静かにズレるため。
  *
+ * 許可リスト（allowlist）: 2026-08-20に残存検出を全件レビューし、木箱を運ぶ・道具を持つ等の
+ * 「演者の上の小道具」は正当な表現と確定した（27件）。check-object-on-performer.allowlist.json に
+ * 記録し、以後は許可リストに載っている組み合わせを「新規」から除外する。夜間スキャンは
+ * 新規に増えた分だけを報告する（既知27件を毎晩報告し続けない）。
+ *
  * 使い方:
  *   node tools/check-object-on-performer.mjs <json...>
  *   node tools/check-object-on-performer.mjs .stage-sketch-mcp/projects/*.json ../../jjk-show/*.json
- * 終了コード: 見つかった件数（0件なら0）。CIやpreflightから素直に使える。
+ *   node tools/check-object-on-performer.mjs --all <json...>   # 許可リスト内の既知分も表示
+ * 終了コード: 新規に見つかった件数（0件なら0）。CIやpreflightから素直に使える。
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -22,6 +28,28 @@ const TOOLS_DIR = path.dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = path.resolve(TOOLS_DIR, "..");
 const STAGE_SKETCH_JS = path.join(APP_ROOT, "stage-sketch.js");
 const STAGE_VENUES_JS = path.join(APP_ROOT, "stage-venues.js");
+const ALLOWLIST_JSON = path.join(TOOLS_DIR, "check-object-on-performer.allowlist.json");
+
+// 検出結果を許可リストと突き合わせる鍵。高さ(base)は微妙な数値ズレで変わりうるので鍵に含めない。
+function allowlistKey(item) {
+  return [item.file, item.sceneId, item.pieceType, item.pieceName, item.holderName].join("|");
+}
+
+function loadAllowlistSet() {
+  try {
+    const raw = JSON.parse(readFileSync(ALLOWLIST_JSON, "utf8"));
+    const list = Array.isArray(raw) ? raw : raw.entries;
+    return new Set((list || []).map(allowlistKey));
+  } catch (error) {
+    // 許可リストが読めないときは「何も許可しない」側に倒す（検出を握りつぶさない）
+    console.error(`WARN: 許可リストを読めなかったため、全件を新規として扱う（${error.message}）`);
+    return new Set();
+  }
+}
+
+function printItem(item) {
+  console.log(`- ${item.file} ${item.sceneId}「${item.sceneTitle}」: ${item.pieceType}「${item.pieceName}」が ${item.holderName} の上（高さ${item.base}m）`);
+}
 
 function extractBetween(source, startAnchor, endAnchor, { fromIndex = 0 } = {}) {
   const start = source.indexOf(startAnchor, fromIndex);
@@ -52,11 +80,19 @@ function loadSolidTypes(stageSrc) {
   return new Function(`${block}\nreturn SOLID_TYPES;`)();
 }
 
+function loadFlownOnly(stageSrc) {
+  // 本体と同じ「吊物にしかならない道具」の一覧をその場で読む（コピーしない）
+  const block = extractBetween(stageSrc, "const FLOWN_ONLY = {", "};");
+  // eslint-disable-next-line no-new-func
+  return new Function(`${block}\nreturn FLOWN_ONLY;`)();
+}
+
 function buildEngine() {
   const stageSrc = readFileSync(STAGE_SKETCH_JS, "utf8");
   const { poseExtent, TRAP_GRIP } = loadPoseData(stageSrc);
   const PIECE_DIMS = loadPieceDims(stageSrc);
   const SOLID_TYPES = loadSolidTypes(stageSrc);
+  const FLOWN_ONLY = loadFlownOnly(stageSrc);
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const finite = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
@@ -118,6 +154,8 @@ function buildEngine() {
     const isFlown = (piece) => {
       if (!piece || !SOLID_TYPES[piece.type]) return false;
       if (piece.type === "seri") return false;
+      // 吊物にしかならない道具は、登録の flown が false でも吊物として扱う（本体と同じ）
+      if (FLOWN_ONLY[piece.type]) return true;
       const owner = pieceSet(piece);
       return Boolean(owner ? owner.flown : piece.flown);
     };
@@ -261,10 +299,19 @@ function scanFile(filePath, engine, venues) {
   return found;
 }
 
+function partitionByAllowlist(all, allowSet) {
+  const known = [];
+  const fresh = [];
+  all.forEach((item) => (allowSet.has(allowlistKey(item)) ? known : fresh).push(item));
+  return { known, fresh };
+}
+
 function main() {
-  const targets = process.argv.slice(2);
+  const argv = process.argv.slice(2);
+  const showAll = argv.includes("--all");
+  const targets = argv.filter((arg) => arg !== "--all");
   if (!targets.length) {
-    console.error("使い方: node tools/check-object-on-performer.mjs <project.json...>");
+    console.error("使い方: node tools/check-object-on-performer.mjs [--all] <project.json...>");
     process.exit(2);
   }
   const engine = buildEngine();
@@ -277,15 +324,36 @@ function main() {
       console.error(`ERROR scanning ${target}: ${error.message}`);
     }
   }
-  if (!all.length) {
-    console.log("OK: 演者の上に乗っている駒は見つかりませんでした。");
+  const { known, fresh } = partitionByAllowlist(all, loadAllowlistSet());
+  if (!fresh.length) {
+    console.log(`OK: 新規の検出はありません。（許可リスト内の既知${known.length}件は除外。全件表示は --all）`);
+    if (showAll && known.length) {
+      console.log("--- 許可リスト内（既知・意図的な表現） ---");
+      known.forEach(printItem);
+    }
     process.exit(0);
   }
-  console.log(`見つかった件数: ${all.length}`);
-  all.forEach((item) => {
-    console.log(`- ${item.file} ${item.sceneId}「${item.sceneTitle}」: ${item.pieceType}「${item.pieceName}」が ${item.holderName} の上（高さ${item.base}m）`);
-  });
-  process.exit(all.length);
+  console.log(`新規に見つかった件数: ${fresh.length}`);
+  fresh.forEach(printItem);
+  if (known.length) {
+    console.log(`（別途、許可リスト内の既知${known.length}件は非表示。全件表示は --all）`);
+    if (showAll) {
+      console.log("--- 許可リスト内（既知・意図的な表現） ---");
+      known.forEach(printItem);
+    }
+  }
+  process.exit(fresh.length);
 }
 
-main();
+const isMain = (() => {
+  try {
+    // import.meta.url はパス中の空白等をURLエンコードするので、
+    // 文字列比較ではなく fileURLToPath で戻してから比較する（2026-08-20に一度ここでハマった）。
+    return fileURLToPath(import.meta.url) === path.resolve(process.argv[1] || "");
+  } catch (_) {
+    return false;
+  }
+})();
+if (isMain) main();
+
+export { allowlistKey, loadAllowlistSet, partitionByAllowlist };

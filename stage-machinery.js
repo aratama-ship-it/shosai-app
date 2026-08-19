@@ -5,11 +5,15 @@
   const SOURCE_NOTE = "一般的な劇場設備の目安から置いた出発点。実在ショーの公表値ではない";
   const clamp = (value, min, max) => Math.min(max, Math.max(min, Number(value)));
   const finite = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+  const mechVal = (piece, key, fallback) => {
+    const anim = piece && piece.animMech;
+    return finite(anim && anim[key] !== undefined ? anim[key] : (piece ? piece[key] : undefined), fallback);
+  };
 
   function machineryParts(piece, dims) {
     if (!piece || !dims) return null;
     if (piece.type === "seri") {
-      const seriH = clamp(finite(piece.seriH, 0), -3, 4);
+      const seriH = clamp(mechVal(piece, "seriH", 0), -3, 4);
       if (Math.abs(seriH) < .02) return [];
       return seriH > 0
         ? [{ ox: 0, oz: 0, w: dims.w, d: dims.d, h: seriH, lift: 0, tint: 1 }]
@@ -23,8 +27,8 @@
     if (piece.type === "deck") {
       const count = 8;
       const sliceDepth = dims.d / count;
-      const slope = Math.tan(clamp(finite(piece.tilt, 0), -60, 60) * Math.PI / 180);
-      const deckH = clamp(finite(piece.deckH, 0), -4, 8);
+      const slope = Math.tan(clamp(mechVal(piece, "tilt", 0), -60, 60) * Math.PI / 180);
+      const deckH = clamp(mechVal(piece, "deckH", 0), -4, 8);
       return Array.from({ length: count }, (_, index) => {
         const oz = -dims.d / 2 + sliceDepth * (index + .5);
         return {
@@ -34,7 +38,7 @@
       });
     }
     if (piece.type === "curtain") {
-      const open = clamp(finite(piece.open, 0), 0, 100) / 100;
+      const open = clamp(mechVal(piece, "open", 0), 0, 100) / 100;
       const lift = finite(dims.lift, 0);
       if (piece.curtainKind === "drop" || piece.curtainKind === "cyc") {
         return [{ ox: 0, oz: 0, w: dims.w, d: .12, h: dims.h,
@@ -48,11 +52,11 @@
       }));
     }
     if (piece.type === "pool") {
-      const poolH = clamp(finite(piece.poolH, -3), -4, 0);
+      const poolH = clamp(mechVal(piece, "poolH", -3), -4, 0);
       const parts = [{ ox: 0, oz: 0, w: dims.w, d: dims.d, h: 0, lift: poolH, tint: .82 }];
       if (poolH < 0) {
         parts.push({ ox: 0, oz: 0, w: dims.w, d: dims.d, h: 0,
-          lift: clamp(finite(piece.water, .9), 0, 3), tint: .28, surface: "water" });
+          lift: clamp(mechVal(piece, "water", .9), 0, 3), tint: .28, surface: "water" });
       }
       return parts;
     }
@@ -96,7 +100,7 @@
     // 内盆は外盆の回転を受け、その上の駒は「動いた内盆」だけを親として受ける。
     // 直接の候補を最小の盆1枚に絞りつつ、親盆の回転は再帰結果から合成する。
     const parentSpin = centre.facing - finite(revolve.facing, 0);
-    const totalSpin = parentSpin + clamp(finite(revolve.spin, 0), -180, 180);
+    const totalSpin = parentSpin + clamp(mechVal(revolve, "spin", 0), -180, 180);
     const angle = totalSpin * Math.PI / 180;
     const rotatedX = dx * Math.cos(angle) - dz * Math.sin(angle);
     const rotatedZ = dx * Math.sin(angle) + dz * Math.cos(angle);
@@ -207,7 +211,7 @@
   }
 
   window.SHOSAI_STAGE_MACHINERY = Object.freeze({
-    STORAGE_KEY, SOURCE_NOTE, machineryParts, effectivePlacement,
+    STORAGE_KEY, SOURCE_NOTE, mechVal, machineryParts, effectivePlacement,
     builtInPresets, loadPresetLibrary, expandPreset,
   });
 })();

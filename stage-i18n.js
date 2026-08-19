@@ -295,6 +295,13 @@
     "V字": "V shape",
     "暗転": "Blackout",
     "このシーンへの転換を、一度真っ暗にしてから明ける": "Dip to black before this scene lights up",
+    "転換の長さ": "Transition duration",
+    "転換の長さ（秒）": "Transition duration (seconds)",
+    "共通": "Shared",
+    "この場面へ入る転換の再生時間。空なら設定の共通値":
+      "Playback time for the transition into this scene. Leave blank to use the shared setting",
+    "この場面への転換をもう一度見る": "Replay the transition into this scene",
+    "⟲ 転換": "⟲ Transition",
     "このシーンを上手下手そっくり反転する": "Flip this scene stage left/right",
     "舞台上の演者を等間隔の一列に": "Arrange everyone on stage in an even row",
     "舞台上の演者を円に": "Arrange everyone on stage in a circle",
