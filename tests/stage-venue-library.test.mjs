@@ -528,10 +528,10 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
   for (const [name, version] of [
     ["stage-venues.js", "16"],
     ["stage-venue-lines.js", "4"],
-    ["stage-i18n.js", "60"],
+    ["stage-i18n.js", "64"],
     ["stage-set-model.js", "1"],
     ["stage-set-builder.js", "1"],
-    ["stage-sketch.js", "254"],
+    ["stage-sketch.js", "263"],
     ["stage-venue-editor.js", "6"],
   ]) {
     const reference = `${name}?v=${version}`;
@@ -543,8 +543,8 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
   assert.ok(swSource.includes("./style.css?v=180"));
   assert.ok(stageHtml.includes("stage-machinery.js?v=2"));
   assert.ok(swSource.includes("./stage-machinery.js?v=2"));
-  assert.ok(stageHtml.includes("stage-first-person.js?v=6"));
-  assert.ok(swSource.includes("./stage-first-person.js?v=6"));
+  assert.ok(stageHtml.includes("stage-first-person.js?v=8"));
+  assert.ok(swSource.includes("./stage-first-person.js?v=8"));
   // 版番号そのものは毎回上がるので固定値にせず、形だけを検査する（stage-export-zip.test.mjsと同じ方針）。
   assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v\d+";/);
 });

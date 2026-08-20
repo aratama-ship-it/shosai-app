@@ -7562,6 +7562,7 @@ body.is-panel-dragging {
 
 .stage-scene-desc {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 8px;
   padding: 0 10px 7px;
@@ -7606,6 +7607,18 @@ body.is-panel-dragging {
   outline: none;
   border-bottom-color: var(--brass);
 }
+
+/* 転換で動いた小道具だけを説明の下へ出す。常設の説明を増やさず、
+   受け渡しがある場面でだけ稽古用の一行が見えるようにする。 */
+.stage-prop-moves {
+  flex: 1 1 100%;
+  margin: 2px 0 0;
+  color: var(--milk-dim);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.stage-prop-moves[hidden] { display: none; }
 
 /* 光の意図カード。意図→視線→層→変化の読み順を固定する。 */
 .stage-light-intent {
@@ -8326,11 +8339,15 @@ body.is-panel-dragging {
 
 .stage-roster-add .stage-text-input { grid-column: 1 / -1; }
 
+.stage-roster-add.is-prop-shape .stage-text-input { grid-column: 1; }
+
 .stage-roster-add .stage-select {
   grid-column: 1;
   margin-bottom: 0;
   min-width: 0;
 }
+
+.stage-roster-add .stage-prop-shape-select { grid-column: 2; }
 
 .stage-roster-add .btn-quiet { grid-column: 2; }
 

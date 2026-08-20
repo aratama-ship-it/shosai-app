@@ -1081,6 +1081,12 @@
 
   function drawPiece(ctx, piece) {
     const dims = piece.dims || {};
+    /* base は手の高さなので、握り点（無ければ外接の高さ中央）がそこへ来るだけ
+       持ち上げる。base をそのまま足すと長い棒の握り位置が手より上へずれる。 */
+    const boundsHeight = finite(dims.h, finite(dims.dia, 1));
+    const heldLift = piece.heldBy
+      ? Math.max(0.05, finite(piece.base, 0) - (piece.grip ? finite(piece.grip.y, 0) : boundsHeight / 2))
+      : 0;
     const point = toWorld(piece.u, piece.v, W, D);
     const x = point.x;
     const z = point.z;
@@ -1089,13 +1095,20 @@
       const facing = finite(piece.facing, 0);
       const angle = facing * Math.PI / 180;
       const cos = Math.cos(angle); const sin = Math.sin(angle);
+      const boundsBottom = Math.min(0, ...piece.parts.map((box) => finite(box.lift, 0)));
+      const boundsTop = Math.max(0, ...piece.parts.map((box) => finite(box.lift, 0) + finite(box.h, 0)));
+      const held = piece.heldBy
+        ? Math.max(0.05, finite(piece.base, 0)
+          - (piece.grip ? finite(piece.grip.y, 0) : (boundsTop - boundsBottom) / 2))
+        : 0;
       piece.parts.forEach((box) => {
         const offsetX = finite(box.ox, 0) * cos - finite(box.oz, 0) * sin;
         const offsetZ = finite(box.ox, 0) * sin + finite(box.oz, 0) * cos;
+        const lift = finite(box.lift, 0) + held;
         ctx.save();
         ctx.globalAlpha = clamp(finite(box.tint, 1), .12, 1);
-        drawBox(ctx, x + offsetX, z + offsetZ, finite(box.lift, 0),
-          finite(box.lift, 0) + finite(box.h, 0), finite(box.w, 1), finite(box.d, 1),
+        drawBox(ctx, x + offsetX, z + offsetZ, lift,
+          lift + finite(box.h, 0), finite(box.w, 1), finite(box.d, 1),
           color, facing + finite(box.rotY, 0));
         ctx.restore();
       });
@@ -1109,8 +1122,8 @@
         drawBox(ctx, x + offsetX, z + offsetZ, box.lift, box.lift + box.h,
           box.w, box.d, shade(color, box.tint), facing + box.rotY);
       });
-    } else if (["wall", "block", "suitcase", "trampoline", "teeter"].includes(piece.type)) {
-      const y0 = finite(dims.lift, 0);
+    } else if (["wall", "block", "suitcase", "trampoline", "teeter", "prop"].includes(piece.type)) {
+      const y0 = finite(dims.lift, 0) + heldLift;
       drawBox(ctx, x, z, y0, y0 + (dims.h || 1), dims.w || 1, dims.d || .4, color);
     } else if (piece.type === "table") {
       const height = dims.h || .9; const width = dims.w || 1.6; const depth = dims.d || .8;
@@ -1125,7 +1138,7 @@
       drawBox(ctx, x, z - depth / 2 + .04, .48, height, width, .07, shade(color, .85));
     } else if (piece.type === "sphere") {
       const radius = (dims.dia || .3) / 2;
-      const cameraPoint = toCamera({ x, y: finite(dims.lift, 0) + radius, z });
+      const cameraPoint = toCamera({ x, y: finite(dims.lift, 0) + heldLift + radius, z });
       if (cameraPoint.z > NEAR) {
         const screen = toScreen(cameraPoint); const projected = radius * focal / cameraPoint.z;
         const gradient = ctx.createRadialGradient(screen.x - projected * .3, screen.y - projected * .3,
@@ -1173,15 +1186,15 @@
       }
     } else if (piece.type === "cane") {
       const height = dims.h || 1;
-      line3(ctx, { x: x - .15, y: 0, z }, { x: x - .15, y: height, z }, shade(color, .9), 2.5);
-      line3(ctx, { x: x + .15, y: 0, z: z + .05 }, { x: x + .15, y: height, z: z + .05 }, shade(color, .9), 2.5);
+      line3(ctx, { x: x - .15, y: heldLift, z }, { x: x - .15, y: heldLift + height, z }, shade(color, .9), 2.5);
+      line3(ctx, { x: x + .15, y: heldLift, z: z + .05 }, { x: x + .15, y: heldLift + height, z: z + .05 }, shade(color, .9), 2.5);
     } else if (piece.type !== "light" && dims.w && dims.h) {
-      const y0 = finite(dims.lift, 0);
+      const y0 = finite(dims.lift, 0) + heldLift;
       drawBox(ctx, x, z, y0, y0 + dims.h, dims.w, dims.d || .4, color);
     }
     if (piece.type !== "performer" && piece.type !== "light") {
       const top = piece.type === "tissue" || piece.type === "trapeze" ? finite(dims.lift, 5) + .25
-        : finite(dims.lift, 0) + (dims.h || 1) + .3;
+        : finite(dims.lift, 0) + heldLift + (dims.h || 1) + .3;
       if (toCamera({ x, y: top, z }).z < 13) queueLabel({ x, y: top, z }, labelOf(piece), false);
     }
   }

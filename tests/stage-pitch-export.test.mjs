@@ -134,9 +134,9 @@ test("位置語彙へ左右反転を招く舞台用語が混ざっていない",
 test("ピッチ用UI・読み込み順・オフライン登録・作図注記ガードが揃う", () => {
   assert.match(indexSource, /data-export-purpose="pitch"/);
   assert.match(indexSource, /id="stage-pitch-langs"/);
-  assert.ok(indexSource.indexOf("stage-i18n.js?v=60") < indexSource.indexOf("stage-prompt-i18n.js?v=1"));
-  assert.ok(indexSource.indexOf("stage-prompt-i18n.js?v=1") < indexSource.indexOf("stage-sketch.js?v="));
-  assert.ok(swSource.includes("./stage-prompt-i18n.js?v=1"));
+  assert.ok(indexSource.indexOf("stage-i18n.js?v=64") < indexSource.indexOf("stage-prompt-i18n.js?v=2"));
+  assert.ok(indexSource.indexOf("stage-prompt-i18n.js?v=2") < indexSource.indexOf("stage-sketch.js?v="));
+  assert.ok(swSource.includes("./stage-prompt-i18n.js?v=2"));
   assert.match(stageSource, /if \(!pitchStyle && \(state\.showNames/);
   assert.match(stageSource, /if \(!pitchStyle\) \{\s*drawArrows/);
   assert.match(stageSource, /if \(!pitchStyle && L\.plan && anyRoutesShown/);

@@ -929,6 +929,7 @@
     curtain: "幕",
     pool: "水面・可動プール床",
     sphere: "球",
+    prop: "小道具",
     model: "組んだセット",
     light: "照明",
   };
@@ -949,6 +950,7 @@
     curtain: 8,
     pool: 14,
     sphere: 1.2,
+    prop: 0.4,
     model: 1,
     light: 2.5,
   };
@@ -984,8 +986,79 @@
     // 壁は厚みを固定で持つ（舞台の壁は建て込みの板なので、厚みは決まっている）
     wall: { w: 3, d: 0.3, h: 2.5 },
     sphere: { dia: 1.2, lift: 0 },         // 直径と、床からの高さ
+    prop: { w: 0.4, d: 0.3, h: 0.4 },
     light: { dia: 4 },                     // 床に落ちる明かりの円の直径
   };
+  const PROP_SHAPES = {
+    box: { ja: "箱", en: "Box", dims: { w: 0.4, d: 0.3, h: 0.4 }, grip: null, parts: null },
+    umbrella: { ja: "傘", en: "Umbrella", dims: { w: 0.9, d: 0.9, h: 1.08 }, grip: { x: 0, y: 0.30 },
+      parts: [
+        { shape: "cylinder", y: 0,    dia: 0.03,  h: 0.78, tint: 0.7 },
+        { shape: "cylinder", y: 0.78, dia: 0.90,  h: 0.09, tint: 1.0 },
+        { shape: "cylinder", y: 0.87, dia: 0.58,  h: 0.10, tint: 1.05 },
+        { shape: "cylinder", y: 0.97, dia: 0.24,  h: 0.06, tint: 1.1 },
+        { shape: "cylinder", y: 1.03, dia: 0.035, h: 0.05, tint: 0.7 },
+      ] },
+    club: { ja: "クラブ", en: "Club", dims: { w: 0.12, d: 0.12, h: 0.53 }, grip: { x: 0, y: 0.10 },
+      parts: [
+        { shape: "sphere",   y: 0,    dia: 0.05 },
+        { shape: "cylinder", y: 0.05, dia: 0.028, h: 0.10, tint: 0.8 },
+        { shape: "cylinder", y: 0.15, dia: 0.045, h: 0.12, tint: 0.95 },
+        { shape: "cylinder", y: 0.27, dia: 0.11,  h: 0.20, tint: 1.1 },
+        { shape: "sphere",   y: 0.47, dia: 0.06,  tint: 1.0 },
+      ] },
+    ball: { ja: "ボール", en: "Ball", dims: { w: 0.24, d: 0.24, h: 0.24 }, grip: { x: 0, y: 0.12 },
+      parts: [ { shape: "sphere", y: 0, dia: 0.24, tint: 1.05 } ] },
+    ring: { ja: "リング", en: "Ring", dims: { w: 0.40, d: 0.04, h: 0.40 }, grip: { x: 0, y: 0.03 },
+      parts: [
+        { shape: "box", x: 0,      y: 0.35, w: 0.30, d: 0.04, h: 0.05 },
+        { shape: "box", x: 0,      y: 0,    w: 0.30, d: 0.04, h: 0.05 },
+        { shape: "box", x: -0.175, y: 0.05, w: 0.05, d: 0.04, h: 0.30, tint: 0.95 },
+        { shape: "box", x: 0.175,  y: 0.05, w: 0.05, d: 0.04, h: 0.30, tint: 0.95 },
+      ] },
+    /* 棒の握りは手の高さ（立ち姿の手首≒0.75m）と同じにする。これで立って持つと
+       下端がちょうど床に着く。0.95にしていたら下端が床を突き抜けた（実際に見た）。 */
+    staff: { ja: "棒", en: "Staff", dims: { w: 0.05, d: 0.05, h: 1.60 }, grip: { x: 0, y: 0.75 },
+      parts: [
+        { shape: "cylinder", y: 0,    dia: 0.045, h: 0.04, tint: 0.6 },
+        { shape: "cylinder", y: 0.04, dia: 0.035, h: 1.52, tint: 0.9 },
+        { shape: "cylinder", y: 1.56, dia: 0.045, h: 0.04, tint: 0.6 },
+      ] },
+    sword: { ja: "刀", en: "Sword", dims: { w: 0.15, d: 0.05, h: 0.99 }, grip: { x: 0, y: 0.13 },
+      parts: [
+        { shape: "sphere",   y: 0,    dia: 0.045, tint: 0.55 },
+        { shape: "cylinder", y: 0.03, dia: 0.035, h: 0.21, tint: 0.6 },
+        { shape: "box",      y: 0.24, w: 0.15,  d: 0.04,  h: 0.03, tint: 0.65 },
+        { shape: "box",      y: 0.27, w: 0.045, d: 0.015, h: 0.72, tint: 1.2 },
+      ] },
+    book: { ja: "本", en: "Book", dims: { w: 0.20, d: 0.26, h: 0.06 }, grip: { x: 0, y: 0.03 },
+      parts: [
+        { shape: "box", y: 0,    w: 0.20,  d: 0.26, h: 0.055, tint: 0.7 },
+        { shape: "box", y: 0.01, w: 0.185, d: 0.24, h: 0.04,  tint: 1.2 },
+      ] },
+    tophat: { ja: "シルクハット", en: "Top hat", dims: { w: 0.32, d: 0.32, h: 0.19 }, grip: { x: 0, y: 0.02 },
+      parts: [
+        { shape: "cylinder", y: 0,     dia: 0.32, h: 0.025, tint: 0.6 },
+        { shape: "cylinder", y: 0.025, dia: 0.18, h: 0.16,  tint: 0.55 },
+        { shape: "cylinder", y: 0.03,  dia: 0.19, h: 0.035, tint: 0.95 },
+      ] },
+    lantern: { ja: "ランタン", en: "Lantern", dims: { w: 0.16, d: 0.16, h: 0.28 }, grip: { x: 0, y: 0.27 },
+      parts: [
+        { shape: "cylinder", y: 0,     dia: 0.15, h: 0.025, tint: 0.6 },
+        { shape: "cylinder", y: 0.025, dia: 0.12, h: 0.15,  tint: 1.2 },
+        { shape: "cylinder", y: 0.175, dia: 0.15, h: 0.035, tint: 0.6 },
+        { shape: "box", x: -0.05, y: 0.21,  w: 0.015, d: 0.015, h: 0.045, tint: 0.65 },
+        { shape: "box", x: 0.05,  y: 0.21,  w: 0.015, d: 0.015, h: 0.045, tint: 0.65 },
+        { shape: "box", x: 0,     y: 0.255, w: 0.115, d: 0.015, h: 0.02,  tint: 0.65 },
+      ] },
+    flag: { ja: "旗", en: "Flag", dims: { w: 0.60, d: 0.04, h: 1.30 }, grip: { x: -0.27, y: 0.78 },
+      parts: [
+        { shape: "cylinder", x: -0.27, y: 0,    dia: 0.025, h: 1.25, tint: 0.7 },
+        { shape: "sphere",   x: -0.27, y: 1.25, dia: 0.045, tint: 0.9 },
+        { shape: "panel",    x: 0.015, y: 0.84, w: 0.545, d: 0.02, h: 0.38, tint: 1.1 },
+      ] },
+  };
+  const PROP_SHAPE_ORDER = Object.keys(PROP_SHAPES);
   /* 寸法つまみの仕様。項目は種類ごとに違うので、画面はここから組み立てる。
    * HTMLへ固定で並べると、種類を足すたびに二箇所直すことになる。 */
   const DIM_META = {
@@ -1032,6 +1105,10 @@
   const pieceTypeName = (type) => tm("pieceType", type, PIECE_TYPES[type] || type);
   const lightKindName = (key) => tm("lightKind", key, LIGHT_KINDS[key].label);
   const lightKindNote = (key) => tm("lightNote", key, LIGHT_KINDS[key].note);
+  const propShapeName = (key) => {
+    const shape = PROP_SHAPES[key] || PROP_SHAPES.box;
+    return tm("propShape", PROP_SHAPES[key] ? key : "box", shape.ja);
+  };
   const venueName = (v) => tm("venue", v.id, v.label);
   const venueShortName = (v) => tm("venueShort", v.id, v.short);
   const venueNoteText = (v) => tm("venueNote", v.id, v.note);
@@ -1044,7 +1121,7 @@
    * 仕組みが同じなので同じ入れ物に置き、一覧だけ「光」パネルへ分けて出す。 */
   const SET_KINDS = {
     block: "台・箱", table: "テーブル", chair: "椅子", bench: "ベンチ", stool: "スツール",
-    wall: "壁", sphere: "球",
+    wall: "壁", sphere: "球", prop: "小道具",
     trapeze: "トラピーズ", cyrwheel: "シルホイール", diabolo: "ディアボロ", pole: "チャイニーズポール",
     teeter: "ティーターボード", tissue: "エアリアルティシュー", wire: "綱渡り",
     suitcase: "スーツケース", trampoline: "トランポリン", cane: "ハンドバランス用cane",
@@ -1090,7 +1167,7 @@
   const LIGHT_KIND_ORDER = ["hang", "ss", "front", "floor"];
   const lightKindOf = (item) => (item && LIGHT_KINDS[item.lightKind] ? item.lightKind : "hang");
   const SET_KIND_ORDER = [
-    "block", "table", "chair", "bench", "stool", "wall", "sphere", "model",
+    "block", "table", "chair", "bench", "stool", "wall", "sphere", "prop", "model",
     "trapeze", "cyrwheel", "diabolo", "pole", "teeter", "tissue", "wire",
     "suitcase", "trampoline", "cane", "car", "seri", "revolve", "deck", "curtain", "pool",
   ];
@@ -1764,10 +1841,12 @@
   const TILT_DOWN = 16;
   const SOLID_TYPES = {
     block: true, table: true, chair: true, bench: true, stool: true, wall: true,
+    prop: true,
     trapeze: true, cyrwheel: true, diabolo: true, pole: true, teeter: true, tissue: true, wire: true,
     suitcase: true, trampoline: true, cane: true, car: true, seri: true, model: true,
     revolve: true, deck: true, curtain: true, pool: true,
   };
+  const HOLDABLE_TYPES = { prop: true, suitcase: true, diabolo: true, sphere: true, cane: true };
   const CHAIR_W = 0.5;
   const CHAIR_D = 0.55;
   // その駒が床でどれだけの面積を取るか（m）。平面図と当たり判定で使う
@@ -2018,6 +2097,7 @@
     sceneDesc: document.getElementById("stage-scene-desc"),
     sceneDescLabel: document.getElementById("stage-scene-desc-label"),
     sceneDescText: document.getElementById("stage-scene-desc-text"),
+    propMoves: document.getElementById("stage-prop-moves"),
     lightIntent: document.getElementById("stage-light-intent"),
     lightIntentCompare: document.getElementById("stage-light-intent-compare"),
     lightIntentCompareIntent: document.getElementById("stage-light-intent-compare-intent"),
@@ -2086,6 +2166,13 @@
     poleControls: document.getElementById("stage-pole-controls"),
     poleLeft: document.getElementById("stage-pole-left"),
     poleRight: document.getElementById("stage-pole-right"),
+    holdControls: document.getElementById("stage-hold-controls"),
+    heldList: document.getElementById("stage-held-list"),
+    holdSelect: document.getElementById("stage-hold-select"),
+    holderControls: document.getElementById("stage-holder-controls"),
+    holderSelect: document.getElementById("stage-holder-select"),
+    holderLeft: document.getElementById("stage-holder-left"),
+    holderRight: document.getElementById("stage-holder-right"),
     poleH: document.getElementById("stage-pole-h"),
     poleHValue: document.getElementById("stage-pole-h-value"),
     trapControls: document.getElementById("stage-trap-controls"),
@@ -2155,6 +2242,7 @@
     rosterName: document.getElementById("stage-roster-name"),
     rosterKind: document.getElementById("stage-roster-kind"),
     rosterKindLabel: document.getElementById("stage-roster-kind-label"),
+    rosterPropShape: document.getElementById("stage-roster-prop-shape"),
     modelPicker: document.getElementById("stage-model-picker"),
     modelOpen: document.getElementById("stage-model-open"),
     kindModal: document.getElementById("stage-kind"),
@@ -2165,6 +2253,7 @@
     rosterEmpty: document.getElementById("stage-roster-empty"),
     groupCast: document.getElementById("stage-group-cast"),
     groupSets: document.getElementById("stage-group-sets"),
+    groupProps: document.getElementById("stage-group-props"),
     lightName: document.getElementById("stage-light-name"),
     lightAdd: document.getElementById("stage-light-add"),
     lightKind: document.getElementById("stage-light-kind"),
@@ -2195,6 +2284,7 @@
     beamToValue: document.getElementById("stage-beam-to-value"),
     beamReset: document.getElementById("stage-beam-reset"),
     setList: document.getElementById("stage-set-list"),
+    propList: document.getElementById("stage-prop-list"),
     lightList: document.getElementById("stage-light-list"),
     rigList: document.getElementById("stage-rig-list"),
     rigName: document.getElementById("stage-rig-name"),
@@ -2212,6 +2302,8 @@
     setInfoColor: document.getElementById("stage-setinfo-color"),
     setInfoNote: document.getElementById("stage-setinfo-note"),
     setInfoKind: document.getElementById("stage-setinfo-kind"),
+    setInfoPropShape: document.getElementById("stage-setinfo-prop-shape"),
+    setInfoPropShapeRow: document.getElementById("stage-setinfo-propshape"),
     setInfoFlown: document.getElementById("stage-setinfo-flown"),
     setInfoFlownRow: document.getElementById("stage-setinfo-flown-row"),
     setInfoFlownNote: document.getElementById("stage-setinfo-flown-note"),
@@ -2359,6 +2451,8 @@
       hint: "印刷用ページに、演者の立ち位置の実寸表を足す" },
     { key: "cuesheet", label: "明かりのキューシート（印刷）",
       hint: "印刷用ページに、シーンごとの明かりの点き消え表を足す" },
+    { key: "propsplot", label: "小道具の香盤表（印刷）", def: true,
+      hint: "印刷用ページに、シーンごとの持ち手と受け渡しの表を足す" },
     { key: "pitchExport", label: "ピッチ書き出し", def: true,
       hint: "書き出しモーダルに「ピッチとして」が出る。作図の線を落とし、光と空気を効かせた一枚絵と、生成AI用の条件文を出す" },
   ];
@@ -2724,9 +2818,14 @@
       // 体の向き（度）。0=客席を向く、90=上手を向く、180=背中
       facing: clamp(finite(piece.facing, 0), 0, 359),
       dims: normalizeDims(type, piece),
+      // 登録の無いAI JSONでも形だけ指定できる。未知値は描画時に箱へ戻す
+      propShape: typeof piece.propShape === "string" ? piece.propShape : null,
       // ポールに付いたときの持ち場（左右と握りの高さ）。付いていない間も持ち歩く
       poleSide: piece.poleSide === "L" ? "L" : "R",
       poleH: clamp(finite(piece.poleH, 2.5), 0.8, 9),
+      // 持たれる側から、同じシーンの演者と左右どちらの手かを指す
+      heldBy: typeof piece.heldBy === "string" ? piece.heldBy : null,
+      holdSide: piece.holdSide === "L" ? "L" : "R",
       // 布のどの高さを掴むか（床から・m）。掴んでいない間も持ち歩く
       tissueH: clamp(finite(piece.tissueH, 4), 0, 10),
       // トラピーズの乗り方（座る／ぶら下がる）。降りている間も持ち歩く
@@ -2804,7 +2903,8 @@
   }
 
   function normalizeDims(type, piece) {
-    const base = PIECE_DIMS[type];
+    const base = type === "prop" && piece && PROP_SHAPES[piece.propShape]
+      ? PROP_SHAPES[piece.propShape].dims : PIECE_DIMS[type];
     if (!base) return null;
     const fixed = type === "wall" ? { d: WALL_THICKNESS } : null;
     const old = piece && piece.dims ? piece.dims : null;
@@ -2823,6 +2923,10 @@
    * つまみの範囲まで変わるため、この種類だけ実寸を保持できる下限にする。 */
   function dimMeta(kind, key) {
     const meta = DIM_META[key];
+    if (kind === "prop") {
+      const presetMin = Math.min(...PROP_SHAPE_ORDER.map((id) => PROP_SHAPES[id].dims[key]));
+      return Object.assign({}, meta, { min: Math.min(meta.min, presetMin) });
+    }
     if (kind === "diabolo") return Object.assign({}, meta, { min: 0.05, max: 0.5 });
     if (kind === "revolve" && key === "dia") return Object.assign({}, meta, { min: 2, max: 30 });
     if (kind === "deck" && key === "w") return Object.assign({}, meta, { max: 16 });
@@ -2886,6 +2990,21 @@
   function pieceSet(piece) {
     if (!piece || !piece.setId || !state.project) return null;
     return (state.project.sets || []).find((t) => t.id === piece.setId) || null;
+  }
+
+  function isHoldable(piece, project) {
+    if (!piece || !HOLDABLE_TYPES[piece.type]) return false;
+    const source = project || (state && state.project);
+    const owner = piece.setId && source
+      ? (source.sets || []).find((item) => item.id === piece.setId) : null;
+    const dims = (owner && owner.dims) || piece.dims || PIECE_DIMS[piece.type] || {};
+    const longest = Math.max(...[dims.w, dims.d, dims.h, dims.dia]
+      .filter((value) => Number.isFinite(Number(value))).map(Number), 0);
+    const flown = Boolean(FLOWN_ONLY[piece.type] || (owner ? owner.flown : piece.flown));
+    /* 小道具は「持たせるために登録した物」なので寸法上限を掛けない。
+       棒・旗・傘は1.2mを超えるのが普通で、上限で弾くと本命が持てない。
+       上限は球など、舞台装置サイズの物をうっかり持たせないためだけに残す。 */
+    return (piece.type === "prop" || longest <= 1.2) && !flown;
   }
 
   // 盆の上にある駒の見かけの位置。保存値は動かさず、描画・視点・動線だけを回す。
@@ -3039,6 +3158,25 @@
     };
   }
 
+  /* 持ち手は同じ場面の演者だけ。同じ手を二つが指す保存は、並びの先を残して直す。
+     読み込みだけでなく駒を外した直後にも通せるよう、場面の駒だけを受け取る。 */
+  function normalizeHolds(pieces, project) {
+    const list = Array.isArray(pieces) ? pieces : [];
+    const byId = new Map(list.map((piece) => [piece.id, piece]));
+    const occupied = new Set();
+    list.forEach((piece) => {
+      if (!piece.heldBy) return;
+      const holder = byId.get(piece.heldBy);
+      const slot = `${piece.heldBy}:${piece.holdSide === "L" ? "L" : "R"}`;
+      if (!holder || holder.type !== "performer" || !isHoldable(piece, project) || occupied.has(slot)) {
+        piece.heldBy = null;
+        return;
+      }
+      occupied.add(slot);
+      piece.route = null;
+    });
+  }
+
   /* 控えるのは「登録から引き直せないものだけ」。
    * 寸法・色・種類は舞台セットの登録側が持っていて、出し直すときにそちらを見る。
    * 床からの高さ（base）と支えている駒（supportId）は置き場所から毎回引き直す。
@@ -3170,7 +3308,7 @@
     const wanted = scenes.find((x) => x.id === rawProject.activeSceneId && x.kind === "scene");
     const activeId = wanted ? wanted.id : scenes.find((x) => x.kind === "scene").id;
 
-    return adoptSamples({
+    const normalized = adoptSamples({
       version: 3,
       project: {
         id: typeof rawProject.id === "string" ? rawProject.id : rid("proj"),
@@ -3210,6 +3348,7 @@
                 name: typeof t.name === "string" && t.name.trim() ? t.name.slice(0, 24) : `セット ${i + 1}`,
                 color: validColor(t.color, "#8b98a1"),
                 modelId: kind === "model" && typeof t.modelId === "string" ? t.modelId : null,
+                propShape: kind === "prop" && PROP_SHAPES[t && t.propShape] ? t.propShape : "box",
                 dims: (() => {
                   const d = normalizeDims(kind, t);
                   // 吊物にできる形は、地上高の置き場を必ず持つ
@@ -3298,6 +3437,8 @@
       lastExportAt: typeof raw.lastExportAt === "string" ? raw.lastExportAt : "",
       editsSinceExport: clamp(finite(raw.editsSinceExport, 0), 0, 99999),
     });
+    normalized.project.scenes.forEach((scene) => normalizeHolds(scene.pieces, normalized.project));
+    return normalized;
   }
 
   function loadState() {
@@ -4145,6 +4286,11 @@
     renderSets();
     renderLights();
     renderRigs();
+    syncRosterPropShape();
+    if (els.setInfoPropShapeRow && !els.setInfoPropShapeRow.hidden) {
+      const item = currentSetItem();
+      renderPropShapeSelect(els.setInfoPropShape, item && item.propShape);
+    }
     renderMachineryPresets();
     renderVenueControls();
     updateInspector();
@@ -4545,8 +4691,10 @@
   function supportUnder(piece, size, candidates) {
     let top = 0;
     let holder = null;
+    if (piece.heldBy) return { top, holder };
     candidates.forEach((other) => {
       if (other === piece) return;
+      if (other.heldBy) return;
       // ポールの上には立てない（付き方が特別なので refreshBases で別に扱う）
       if (other.type === "pole") return;
       const foot = supportFootprint(other);
@@ -4643,7 +4791,9 @@
   }
 
   function refreshBases(size, pieces = sc().pieces) {
+    normalizeHolds(pieces, state.project);
     pieces.forEach((piece, i) => {
+      if (piece.heldBy) { piece.supportId = null; return; }
       if (piece.type === "light") { piece.base = 0; piece.supportId = null; return; }
       /* ポールは常に床から立てる。人の近くへ置くと、人の描画範囲（旗の姿勢は
          横に1m以上広がる）に「乗って」宙に浮いてしまうため、積み重ねの対象にしない。 */
@@ -4658,7 +4808,7 @@
          最後へ回るため、順だけに頼ると「先に立たせた演者の下でせりを
          動かす・上げる」で演者が乗れなくなる。せりは床の一部で、
          高さ（seriH）が他の駒に依存しないので、循環は起きない。 */
-      const candidates = pieces.slice(0, i).filter((p) => !isFlown(p))
+      const candidates = pieces.slice(0, i).filter((p) => !p.heldBy && !isFlown(p))
         .concat(pieces.slice(i + 1).filter((p) => p.type === "seri"));
       const found = supportUnder(piece, size, candidates);
       piece.base = found.top;
@@ -4718,6 +4868,21 @@
           piece.base = Math.max(0, found.top - sitHip);
         }
       }
+    });
+    /* 持ち物は支えの計算が終わってから手元へ寄せる。持ち手が台に乗っていても、
+       その base を確定したあとなら一巡で同じ高さへ追従できる。 */
+    pieces.forEach((piece) => {
+      if (!piece.heldBy) return;
+      const holder = pieces.find((other) => other.id === piece.heldBy && other.type === "performer");
+      if (!holder) { piece.heldBy = null; return; }
+      const side = piece.holdSide === "L" ? -1 : 1;
+      const rad = (finite(holder.facing, 0) * Math.PI) / 180;
+      const across = side * 0.28;
+      piece.u = clamp(holder.u + (across * Math.cos(rad)) / size.width, -0.5, 1.5);
+      piece.v = clamp(holder.v - (across * Math.sin(rad)) / size.depth, -0.5, 1);
+      piece.base = finite(holder.base, 0) + 0.75;
+      piece.supportId = null;
+      piece.route = null;
     });
   }
 
@@ -4908,6 +5073,29 @@
     rig.per = per;
     rig.H = H;
     return rig;
+  }
+
+  /* 正面図の持ち物は、同期した床座標ではなく演者の手首へ付ける。
+     形に握り点があるときは、その点を手首へ合わせる。中心合わせのままだと、
+     棒や旗を真ん中で持つ形になってしまうため。 */
+  function heldFrontPlacement(piece, L) {
+    if (!piece || !piece.heldBy || L.plan) return null;
+    const holder = sc().pieces.find((candidate) => candidate.id === piece.heldBy && candidate.type === "performer");
+    if (!holder) return null;
+    const placedHolder = effectivelyPlacedPiece(holder);
+    const rig = performerRig(placedHolder, placePiece(placedHolder, L), L);
+    const wrist = rig.P[piece.holdSide === "L" ? "wrL" : "wrR"];
+    const free = { ...piece, heldBy: null };
+    const box = selectionBounds(free, L);
+    const shape = free.type === "prop" ? scaledPropShape(free, pieceDims(free)) : null;
+    const grip = shape && shape.grip;
+    const bounds = grip ? propPartsBounds(pieceParts(free)) : null;
+    if (grip && bounds && bounds.maxX > bounds.minX && bounds.maxY > bounds.minY) {
+      const gripScreenX = box.x + box.w * ((grip.x - bounds.minX) / (bounds.maxX - bounds.minX));
+      const gripScreenY = box.y + box.h * (1 - (grip.y - bounds.minY) / (bounds.maxY - bounds.minY));
+      return { free, dx: wrist.x - gripScreenX, dy: wrist.y - gripScreenY };
+    }
+    return { free, dx: wrist.x - (box.x + box.w / 2), dy: wrist.y - (box.y + box.h / 2) };
   }
 
   /* 骨格から体を塗る。手足は付け根から先へ細くなる線、胴は肩・くびれ・腰の
@@ -5191,6 +5379,45 @@
 
   /* 台・テーブル・椅子は、直方体の部品の組み合わせとして持つ。
    * 部品はそれぞれ実寸なので、天板の厚みや脚の太さも寸法に連動して変わる。 */
+  function propShapeOf(piece) {
+    const owner = pieceSet(piece);
+    if (owner && PROP_SHAPES[owner.propShape]) return owner.propShape;
+    return piece && PROP_SHAPES[piece.propShape] ? piece.propShape : "box";
+  }
+
+  function scaledPropShape(piece, dims) {
+    const id = propShapeOf(piece);
+    const preset = PROP_SHAPES[id];
+    const sx = dims.w / preset.dims.w;
+    const sy = dims.h / preset.dims.h;
+    const sz = dims.d / preset.dims.d;
+    const parts = preset.parts && preset.parts.map((part) => ({
+      shape: part.shape,
+      x: finite(part.x, 0) * sx,
+      y: finite(part.y, 0) * sy,
+      z: finite(part.z, 0) * sz,
+      w: finite(part.w, 0) * sx,
+      d: finite(part.d, 0) * sz,
+      h: finite(part.h, 0) * sy,
+      dia: finite(part.dia, 0) * ((sx + sz) / 2),
+      tint: part.tint === undefined ? 1 : part.tint,
+    }));
+    return {
+      id,
+      parts,
+      grip: preset.grip ? { x: preset.grip.x * sx, y: preset.grip.y * sy } : null,
+    };
+  }
+
+  function propPartsBounds(parts) {
+    if (!parts || !parts.length) return null;
+    const minX = Math.min(...parts.map((part) => finite(part.ox, 0) - finite(part.w, 0) / 2));
+    const maxX = Math.max(...parts.map((part) => finite(part.ox, 0) + finite(part.w, 0) / 2));
+    const minY = Math.min(...parts.map((part) => finite(part.lift, 0)));
+    const maxY = Math.max(...parts.map((part) => finite(part.lift, 0) + finite(part.h, 0)));
+    return { minX, maxX, minY, maxY };
+  }
+
   function pieceParts(piece) {
     const d = pieceDims(piece);
     if (!d) return null;
@@ -5206,6 +5433,13 @@
       const owner = pieceSet(piece);
       const model = owner && stageModel(owner.modelId);
       return model && window.SHOSAI_STAGE_MODELS ? window.SHOSAI_STAGE_MODELS.modelBoxes(model) : [];
+    }
+    if (piece.type === "prop") {
+      const shape = scaledPropShape(piece, d);
+      if (shape.parts && window.SHOSAI_STAGE_MODELS) {
+        return shape.parts.flatMap((part) => window.SHOSAI_STAGE_MODELS.partBoxes(part));
+      }
+      return [{ ox: 0, oz: 0, w: d.w, d: d.d, h: d.h, lift: 0, tint: 1 }];
     }
     if (piece.type === "seri") {
       const seriH = clamp(finite(piece.seriH, 0), -3, 4);
@@ -6252,6 +6486,38 @@
         target.fill();
         target.stroke();
       });
+    } else if (piece.type === "prop") {
+      /* 小道具だけは形プリセットの部品を真上から重ねる。箱も同じ一部品を
+         通すので、既定の箱の塗り・輪郭・向き印はこれまでと変わらない。 */
+      const parts = (pieceParts(piece) || []).slice()
+        .sort((a, b) => finite(a.lift, 0) - finite(b.lift, 0));
+      const foot = pieceFootprint(piece);
+      const w = Math.max(5, foot.w * L.pxPerM);
+      const d = Math.max(5, foot.d * L.pxPerM);
+      target.translate(pos.x, pos.y);
+      target.rotate(-((piece.facing || 0) * Math.PI) / 180);
+      parts.forEach((part) => {
+        const pw = Math.max(1, finite(part.w, 0) * L.pxPerM);
+        const pd = Math.max(1, finite(part.d, 0) * L.pxPerM);
+        target.save();
+        target.translate(finite(part.ox, 0) * L.pxPerM, -finite(part.oz, 0) * L.pxPerM);
+        target.rotate(-finite(part.rotY, 0) * Math.PI / 180);
+        target.globalAlpha = clamp(finite(part.tint, 1), .12, 1);
+        target.fillStyle = piece.color;
+        target.fillRect(-pw / 2, -pd / 2, pw, pd);
+        target.strokeStyle = "rgba(0,0,0,0.3)";
+        target.lineWidth = 1.5;
+        target.strokeRect(-pw / 2, -pd / 2, pw, pd);
+        target.restore();
+      });
+      // どちらが正面かの印は、部品全体の基準寸法に一つだけ置く
+      target.fillStyle = "rgba(13,12,11,0.45)";
+      target.beginPath();
+      target.moveTo(-w * 0.13, d / 2);
+      target.lineTo(w * 0.13, d / 2);
+      target.lineTo(0, d / 2 + Math.min(w, d) * 0.32);
+      target.closePath();
+      target.fill();
     } else if (SOLID_TYPES[piece.type]) {
       // 真上から見るので、幅と奥行きがそのまま床の占有面積になる。向きも効く
       const foot = pieceFootprint(piece);
@@ -6305,6 +6571,11 @@
 
   function selectionBounds(piece, L) {
     piece = effectivelyPlacedPiece(piece);
+    const held = heldFrontPlacement(piece, L);
+    if (held) {
+      const box = selectionBounds(held.free, L);
+      return { x: box.x + held.dx, y: box.y + held.dy, w: box.w, h: box.h };
+    }
     const pos = placePiece(piece, L);
     const scale = pieceScale(piece, pos, L);
     const dim = pieceDims(piece);
@@ -6624,7 +6895,7 @@
 
   function drawRoutes(target, L, showSelection) {
     sc().pieces.forEach((piece) => {
-      if (!piece.route || !routesShownFor(piece)) return;
+      if (piece.heldBy || !piece.route || !routesShownFor(piece)) return;
       drawOneRoute(target, L, piece, piece.route, showSelection && piece.id === selectedId);
     });
 
@@ -6638,7 +6909,6 @@
          手で決められる（本人の指定）。触らなければ毎回の計算のまま。 */
     const scene = sc();
     const next = nextSceneOf(scene);
-    if (!next || !state.showRoutesCast) return;   // 入り・はけは演者の動線
     const transit = (a, b, color) => {
       const gap = 13;
       const dx = b.x - a.x;
@@ -6666,25 +6936,72 @@
       target.fill();
       target.restore();
     };
-    scene.pieces.forEach((piece) => {
-      const auto = exitRouteFor(piece, next);
-      if (!auto) return;
-      // 選んでいる間は本物の動線と同じ見た目・取っ手で出す（掴めば実体化）
-      if (showSelection && piece.id === selectedId) {
-        drawOneRoute(target, L, piece, auto, true);
-        return;
-      }
-      transit(place(pieceU(piece), pieceV(piece), L), place(auto.u, auto.v, L), piece.color);
-    });
-    backstageGhostsFor(scene).forEach((g) => {
-      const tw = (next.pieces || []).find((q) => q.castId === g.member.id && onStageArea(q.u, q.v));
-      if (!tw) return;
-      transit(place(g.u, g.v, L), place(tw.u, tw.v, L), g.member.color || "#a84b26");
-    });
+    if (next && state.showRoutesCast) {
+      scene.pieces.forEach((piece) => {
+        const auto = exitRouteFor(piece, next);
+        if (!auto) return;
+        // 選んでいる間は本物の動線と同じ見た目・取っ手で出す（掴めば実体化）
+        if (showSelection && piece.id === selectedId) {
+          drawOneRoute(target, L, piece, auto, true);
+          return;
+        }
+        transit(place(pieceU(piece), pieceV(piece), L), place(auto.u, auto.v, L), piece.color);
+      });
+      backstageGhostsFor(scene).forEach((g) => {
+        const tw = (next.pieces || []).find((q) => q.castId === g.member.id && onStageArea(q.u, q.v));
+        if (!tw) return;
+        transit(place(g.u, g.v, L), place(tw.u, tw.v, L), g.member.color || "#a84b26");
+      });
+    }
+
+    /* 受け渡し線は転換後の二人を結ぶ。両端を駒から離し、入り・はけより細かい破線にして、
+       同じ平面図に重なってもどちらの移動かを読み分けられるようにする。 */
+    if (L.plan && state.showRoutesCast) {
+      propHandoffPairs(scene).forEach(({ prop, fromPiece, toPiece }) => {
+        const a = place(pieceU(fromPiece), pieceV(fromPiece), L);
+        const b = place(pieceU(toPiece), pieceV(toPiece), L);
+        const gap = 11;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const len = Math.hypot(dx, dy);
+        if (len < gap * 2) return;
+        const ux = dx / len;
+        const uy = dy / len;
+        const from = { x: a.x + ux * gap, y: a.y + uy * gap };
+        const to = { x: b.x - ux * gap, y: b.y - uy * gap };
+        const color = validColor(prop.color, "#a84b26");
+        target.save();
+        target.strokeStyle = rgba(color, 0.55);
+        target.lineWidth = 2;
+        target.lineCap = "round";
+        target.setLineDash([3, 5]);
+        target.beginPath();
+        target.moveTo(from.x, from.y);
+        target.lineTo(to.x, to.y);
+        target.stroke();
+        target.setLineDash([]);
+        const ang = Math.atan2(dy, dx);
+        target.fillStyle = rgba(color, 0.62);
+        target.beginPath();
+        target.moveTo(to.x, to.y);
+        target.lineTo(to.x - Math.cos(ang - 0.42) * 9, to.y - Math.sin(ang - 0.42) * 9);
+        target.lineTo(to.x - Math.cos(ang + 0.42) * 9, to.y - Math.sin(ang + 0.42) * 9);
+        target.closePath();
+        target.fill();
+        if (state.showSetNames) {
+          target.fillStyle = color;
+          target.font = "11px 'Hiragino Kaku Gothic ProN', sans-serif";
+          target.textAlign = "center";
+          target.textBaseline = "bottom";
+          target.fillText(prop.name, (from.x + to.x) / 2, (from.y + to.y) / 2 - 4);
+        }
+        target.restore();
+      });
+    }
 
     /* 動線の交差警告。同じ転換で動く演者どうしの道を同じ時刻で刻み、
        すれ違いが0.45mを切る所に印を出す（衝突しかけの発見） */
-    if (featureOn("crossing") && state.showRoutesCast) {
+    if (next && featureOn("crossing") && state.showRoutesCast) {
       const size2 = L.size;
       const paths = [];
       scene.pieces.forEach((piece) => {
@@ -7980,6 +8297,15 @@
     if (lean) target.restore();
   }
 
+  function drawHeldFrontPiece(target, piece, L) {
+    const held = heldFrontPlacement(piece, L);
+    if (!held) return;
+    target.save();
+    target.translate(held.dx, held.dy);
+    drawStagePiece(target, held.free, L, () => 0);
+    target.restore();
+  }
+
   function stageAskCurrentPiece(pieceDiff, usedIds) {
     const from = pieceDiff.from;
     const candidates = sc().pieces.filter((piece) => {
@@ -8185,7 +8511,11 @@
     const topH = (p) => finite(p.base, 0) + pieceTopLocal(p);
     (L.plan
       ? solid.slice().sort((a, b) => (planLayer(a) - planLayer(b)) || (topH(a) - topH(b)))
-      : solid.slice().sort((a, b) => effectivelyPlacedPiece(a).v - effectivelyPlacedPiece(b).v)).forEach(draw);
+      : solid.filter((piece) => !piece.heldBy)
+        .sort((a, b) => effectivelyPlacedPiece(a).v - effectivelyPlacedPiece(b).v)).forEach(draw);
+    // 正面だけは演者を描き終えてから、保持中の物を手首へ重ねて手前に出す。
+    if (!L.plan) solid.filter((piece) => piece.heldBy)
+      .forEach((piece) => drawHeldFrontPiece(target, piece, L));
     /* ★正面では光を物のあとに描く。物のあとに描かないと、台や人が
      *   光の帯を四角く切り抜いて、光が途中で切れて見える。
      *   光は物で消えない——帯は物の手前を横切り、当たった物が明るくなる。 */
@@ -8439,6 +8769,136 @@
     return kept;
   }
 
+  /* ---------- 小道具の見取り ----------
+     登録札 setId だけを同一性に使う。登録の無いAI駒まで名前で結ぶと、
+     同名の別物を受け渡したように見せてしまうため、今回の香盤には含めない。 */
+  const registeredProps = () => (state.project.sets || []).filter((item) => item.kind === "prop");
+
+  function propHolderName(holder) {
+    if (!holder) return isEn() ? "Performer" : "演者";
+    const member = holder.castId
+      ? (state.project.cast || []).find((item) => item.id === holder.castId) : null;
+    return (member && member.name) || pieceLabel(holder) || (isEn() ? "Performer" : "演者");
+  }
+
+  function propPlotState(scene, prop) {
+    const pieces = scene && Array.isArray(scene.pieces) ? scene.pieces : [];
+    const piece = pieces.find((candidate) => candidate.setId === prop.id) || null;
+    if (!piece) return { kind: "absent", prop, piece: null };
+    if (piece.heldBy) {
+      const holder = pieces.find((candidate) => candidate.id === piece.heldBy
+        && candidate.type === "performer") || null;
+      if (!holder || !onStageArea(holder.u, holder.v)) return { kind: "absent", prop, piece };
+      return {
+        kind: "held", prop, piece, holder,
+        // シーン複製で駒idが変わっても、名簿札（または元の駒札）なら同じ人を追える。
+        holderKey: holder.castId || holder.originId || holder.id,
+        side: piece.holdSide === "L" ? "L" : "R",
+      };
+    }
+    if (!onStageArea(piece.u, piece.v)) return { kind: "absent", prop, piece };
+    return { kind: "floor", prop, piece };
+  }
+
+  function propHandoffPairs(scene) {
+    const previous = previousSceneOf(scene);
+    if (!previous) return [];
+    const pieces = Array.isArray(scene && scene.pieces) ? scene.pieces : [];
+    return registeredProps().map((prop) => {
+      const before = propPlotState(previous, prop);
+      const after = propPlotState(scene, prop);
+      if (before.kind !== "held" || after.kind !== "held"
+        || before.holderKey === after.holderKey) return null;
+      const fromPiece = before.holder.castId
+        ? pieces.find((piece) => piece.type === "performer"
+          && piece.castId === before.holder.castId)
+        : pieces.find((piece) => piece.type === "performer"
+          && (piece.originId || piece.id) === (before.holder.originId || before.holder.id));
+      if (!fromPiece) return null;
+      return { prop, fromPiece, toPiece: after.holder };
+    }).filter(Boolean);
+  }
+
+  function propPlotStateChanged(before, after) {
+    if (before.kind !== after.kind) return true;
+    if (after.kind !== "held") return false;
+    return before.holderKey !== after.holderKey || before.side !== after.side;
+  }
+
+  function propFloorSide(u, en = isEn()) {
+    /* 既存バミリの off > 0 = 上手 = SL と同じ向き。
+       したがって u が大きい側を上手、小さい側を下手とする。 */
+    if (u < 0.4) return en ? "stage right" : "下手";
+    if (u > 0.6) return en ? "stage left" : "上手";
+    return en ? "centre" : "中央";
+  }
+
+  function propHeldLabel(entry, en = isEn(), includeHand = false) {
+    const name = propHolderName(entry.holder);
+    if (!includeHand) return name;
+    if (en) return `${name} (${entry.side})`;
+    return `${name}（${entry.side === "L" ? "左" : "右"}）`;
+  }
+
+  function propSceneSummary(scene, en = isEn()) {
+    return registeredProps().map((prop) => {
+      const entry = propPlotState(scene, prop);
+      if (entry.kind === "absent") return null;
+      if (entry.kind === "held") return `${prop.name}=${propHeldLabel(entry, en, true)}`;
+      const floor = en ? `floor / ${propFloorSide(entry.piece.u, true)}`
+        : `床・${propFloorSide(entry.piece.u, false)}`;
+      return `${prop.name}=${floor}`;
+    }).filter(Boolean);
+  }
+
+  function propMovesBetweenScenes(previousScene, scene, en = isEn()) {
+    // 最初のシーンには比較元が無い。「登場」は二つ目以降の absent → present に限る。
+    if (!previousScene) return [];
+    return registeredProps().map((prop) => {
+      const before = propPlotState(previousScene, prop);
+      const after = propPlotState(scene, prop);
+      if (!propPlotStateChanged(before, after)) return null;
+      const name = prop.name;
+      if (before.kind === "absent") {
+        if (after.kind === "held") {
+          const holder = propHeldLabel(after, en);
+          return en ? `${name}: ${holder} enters with it` : `${name}: ${holder}が持って登場`;
+        }
+        return en ? `${name}: enters (on floor)` : `${name}: 床へ登場`;
+      }
+      if (after.kind === "absent") return en ? `${name}: cleared` : `${name}: はける`;
+      if (before.kind === "held" && after.kind === "floor") {
+        const holder = propHeldLabel(before, en);
+        return en ? `${name}: ${holder} sets it down` : `${name}: ${holder}が置く`;
+      }
+      if (before.kind === "floor" && after.kind === "held") {
+        const holder = propHeldLabel(after, en);
+        return en ? `${name}: ${holder} picks it up` : `${name}: ${holder}が取る`;
+      }
+      /* 同じ人の持ち替えを「A（左）→ A（右）」と書くと受け渡しに読める（実際に読んだ）。
+         人が変わるときだけ矢印にして、持ち替えは持ち替えと言い切る。 */
+      const handChangedOnly = before.holderKey === after.holderKey;
+      if (handChangedOnly) {
+        const holder = propHeldLabel(before, en);
+        const hands = before.side === "L" ? (en ? "L→R" : "左→右") : (en ? "R→L" : "右→左");
+        return en ? `${name}: ${holder} switches hands (${hands})`
+          : `${name}: ${holder}が持ち替え（${hands}）`;
+      }
+      return `${name}: ${propHeldLabel(before, en)} → ${propHeldLabel(after, en)}`;
+    }).filter(Boolean);
+  }
+
+  function syncPropMoves() {
+    if (!els.propMoves) return;
+    const scenes = (state.project.scenes || []).filter((row) => row.kind === "scene");
+    const scene = sc();
+    const index = scenes.indexOf(scene);
+    const moves = index < 0 ? [] : propMovesBetweenScenes(index > 0 ? scenes[index - 1] : null, scene);
+    els.propMoves.hidden = !moves.length;
+    els.propMoves.textContent = moves.length
+      ? `${isEn() ? "Props" : "小道具"}: ${moves.join(isEn() ? " / " : " ／ ")}` : "";
+  }
+
   function render(forceCanvases = false) {
     enforceTabletSingleView();
     enforcePhoneViews();
@@ -8492,6 +8952,7 @@
     }
     syncSceneBar();
     syncSceneDesc();
+    syncPropMoves();
     syncPhoneViewer();
   }
 
@@ -9906,6 +10367,13 @@
     return piece;
   }
 
+  // 持ち手が舞台から外れるときは、持ち物をその場へ置いてから人だけを下げる。
+  function releaseHeldBy(scene, holderId) {
+    (scene && scene.pieces || []).forEach((piece) => {
+      if (piece.heldBy === holderId) piece.heldBy = null;
+    });
+  }
+
   function toggleCastOnStage(castId) {
     checkpoint();
     const scene = sc();
@@ -9914,6 +10382,7 @@
     if (existing) {
       /* 装置と同じで、引っ込める前に立ち位置を控える。控えないと、
          もう一度出したときに既定の並びへ飛んで、組んだ立ち位置が壊れる。 */
+      releaseHeldBy(scene, existing.id);
       stashPiece(scene, castId, existing);
       scene.pieces = scene.pieces.filter((piece) => piece.id !== existing.id);
       if (selectedId === existing.id) selectedId = null;
@@ -9946,6 +10415,8 @@
     checkpoint();
     state.project.cast = state.project.cast.filter((c) => c.id !== castId);
     state.project.scenes.forEach((scene) => {
+      scene.pieces.filter((piece) => piece.castId === castId)
+        .forEach((piece) => releaseHeldBy(scene, piece.id));
       scene.pieces = scene.pieces.filter((piece) => piece.castId !== castId);
       // 名簿から外した人の控えも捨てる（もう出せない人の立ち位置は要らない）
       if (scene.stashed) delete scene.stashed[castId];
@@ -9994,9 +10465,10 @@
   }
 
   function renderSets() {
-    renderSetList(els.setList, (item) => item.kind !== "light",
+    renderSetList(els.setList, (item) => item.kind !== "light" && item.kind !== "prop",
       isEn() ? "Nothing registered yet. Enter a name, pick a kind, and add it."
         : "まだ何も登録していません。名前と形を選んで追加してください。");
+    renderSetList(els.propList, (item) => item.kind === "prop", "");
     syncRosterGroups();
   }
 
@@ -10137,11 +10609,74 @@
     const sets = state.project.sets || [];
     const counts = {
       cast: (state.project.cast || []).length,
-      sets: sets.filter((item) => item.kind !== "light").length,
+      sets: sets.filter((item) => item.kind !== "light" && item.kind !== "prop").length,
+      props: sets.filter((item) => item.kind === "prop").length,
     };
     if (els.groupCast) els.groupCast.hidden = counts.cast === 0;
     if (els.groupSets) els.groupSets.hidden = counts.sets === 0;
-    if (els.rosterEmpty) els.rosterEmpty.hidden = counts.cast + counts.sets > 0;
+    if (els.groupProps) els.groupProps.hidden = counts.props === 0;
+    if (els.rosterEmpty) els.rosterEmpty.hidden = counts.cast + counts.sets + counts.props > 0;
+  }
+
+  function setListRow(item) {
+    const row = document.createElement("div");
+    row.className = "stage-cast-row";
+
+    const swatch = kindSwatch(item, item.kind === "light" ? "light" : "object", item.name, (value) => {
+      item.color = value;
+      state.project.scenes.forEach((scene) => {
+        scene.pieces.forEach((piece) => {
+          if (piece.setId === item.id) piece.color = item.color;
+        });
+      });
+      render();
+      persistSoon();
+    });
+
+    const light = item.kind === "light";
+    const name = nameButton(item.name,
+      () => pickOnStage((piece) => piece.setId === item.id, item.name, light),
+      () => openSetInfo(item.id));
+
+    /* 寸法は行に出さず、行の title と「…」の窓へ回す。
+     * 狭い列で名前と寸法を並べると、どちらも数文字で切れて読めなくなる。 */
+    const summary = light
+      ? `${lightKindName(lightKindOf(item))}（${lightKindNote(lightKindOf(item))}）／${setDimLabel(item)}`
+      : `${setKindName(item.kind)}／${setDimLabel(item)}`;
+
+    const onStage = setOnStage(item.id);
+    const status = document.createElement("button");
+    status.type = "button";
+    status.className = `stage-cast-status ${onStage ? "is-on" : "is-off"}`;
+    status.textContent = onStageWord(item, onStage);
+    status.title = tx(light
+      ? (onStage ? "押すとこのシーンでは消します" : "押すとこのシーンで点けます")
+      : (onStage ? "押すと舞台から下げます" : "押すとこのシーンの舞台へ出します"));
+    status.addEventListener("click", () => toggleSetOnStage(item.id));
+
+    const detail = document.createElement("button");
+    detail.type = "button";
+    detail.className = "stage-cast-profile";
+    detail.textContent = "…";
+    const what = light ? tx("直径") : tx("寸法");
+    detail.title = isEn()
+      ? `Change the ${light ? "pool diameter" : "size"} of ${item.name} (now ${setDimLabel(item)})`
+      : `${item.name}の${what}を変える（いまは ${setDimLabel(item)}）`;
+    detail.setAttribute("aria-label", isEn() ? `Open the size of ${item.name}` : `${item.name}の${what}を開く`);
+    detail.addEventListener("click", () => openSetInfo(item.id));
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "stage-cast-remove";
+    remove.textContent = "✕";
+    remove.setAttribute("aria-label", isEn() ? `Remove ${item.name} from the set list` : `${item.name}を舞台セットから外す`);
+    remove.addEventListener("click", () => removeSetItem(item.id));
+
+    /* 一段にまとめる。名前の右へ寸法を小さく置き、名前が長ければそちらを詰める。
+     * 段を分けると、十数個並べたときに一覧が縦に伸びて見渡せなくなる。 */
+    row.title = summary;
+    row.append(swatch, name, status, lockButton(item, item.name), detail, remove);
+    return row;
   }
 
   function renderSetList(host, keep, emptyText) {
@@ -10156,75 +10691,19 @@
       return;
     }
     sets.forEach((item) => {
-      const row = document.createElement("div");
-      row.className = "stage-cast-row";
-
-      const swatch = kindSwatch(item, item.kind === "light" ? "light" : "object", item.name, (value) => {
-        item.color = value;
-        state.project.scenes.forEach((scene) => {
-          scene.pieces.forEach((piece) => {
-            if (piece.setId === item.id) piece.color = item.color;
-          });
-        });
-        render();
-        persistSoon();
-      });
-
-      const name = nameButton(item.name,
-        () => pickOnStage((piece) => piece.setId === item.id, item.name, light),
-        () => openSetInfo(item.id));
-
-      /* 寸法は行に出さず、行の title と「…」の窓へ回す。
-       * 狭い列で名前と寸法を並べると、どちらも数文字で切れて読めなくなる。 */
-      const summary = item.kind === "light"
-        ? `${lightKindName(lightKindOf(item))}（${lightKindNote(lightKindOf(item))}）／${setDimLabel(item)}`
-        : `${setKindName(item.kind)}／${setDimLabel(item)}`;
-
-      const onStage = setOnStage(item.id);
-      const light = item.kind === "light";
-      const status = document.createElement("button");
-      status.type = "button";
-      status.className = `stage-cast-status ${onStage ? "is-on" : "is-off"}`;
-      status.textContent = onStageWord(item, onStage);
-      status.title = tx(light
-        ? (onStage ? "押すとこのシーンでは消します" : "押すとこのシーンで点けます")
-        : (onStage ? "押すと舞台から下げます" : "押すとこのシーンの舞台へ出します"));
-      status.addEventListener("click", () => toggleSetOnStage(item.id));
-
-      const detail = document.createElement("button");
-      detail.type = "button";
-      detail.className = "stage-cast-profile";
-      detail.textContent = "…";
-      const what = item.kind === "light" ? tx("直径") : tx("寸法");
-      detail.title = isEn()
-        ? `Change the ${item.kind === "light" ? "pool diameter" : "size"} of ${item.name} (now ${setDimLabel(item)})`
-        : `${item.name}の${what}を変える（いまは ${setDimLabel(item)}）`;
-      detail.setAttribute("aria-label", isEn() ? `Open the size of ${item.name}` : `${item.name}の${what}を開く`);
-      detail.addEventListener("click", () => openSetInfo(item.id));
-
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.className = "stage-cast-remove";
-      remove.textContent = "✕";
-      remove.setAttribute("aria-label", isEn() ? `Remove ${item.name} from the set list` : `${item.name}を舞台セットから外す`);
-      remove.addEventListener("click", () => removeSetItem(item.id));
-
-      /* 一段にまとめる。名前の右へ寸法を小さく置き、名前が長ければそちらを詰める。
-       * 段を分けると、十数個並べたときに一覧が縦に伸びて見渡せなくなる。 */
-      row.className = "stage-cast-row";
-      row.title = summary;
-      row.append(swatch, name, status, lockButton(item, item.name), detail, remove);
-      host.append(row);
+      host.append(setListRow(item));
     });
   }
 
-  function addSetItem(kind, nameInput, lightKind, modelId) {
+  function addSetItem(kind, nameInput, lightKind, modelId, propShape) {
     const chosenModel = kind === "model" ? stageModel(modelId) : null;
+    const shape = kind === "prop" && PROP_SHAPES[propShape] ? propShape : "box";
     const raw = (nameInput && nameInput.value || "").trim()
-      || (chosenModel && chosenModel.name) || autoName(setKindName(kind));
+      || (chosenModel && chosenModel.name)
+      || autoName(kind === "prop" && shape !== "box" ? propShapeName(shape) : setKindName(kind));
     checkpoint();
     const lk = kind === "light" && LIGHT_KINDS[lightKind] ? lightKind : "hang";
-    const dims = normalizeDims(kind, {});
+    const dims = kind === "prop" ? { ...PROP_SHAPES[shape].dims } : normalizeDims(kind, {});
     if (kind === "curtain" && dims) dims.w = venueSize().width;
     // 吊物にしたときのために、地上高の場所を作っておく（既定は床）
     if (SOLID_TYPES[kind] && kind !== "seri" && dims && dims.lift === undefined) dims.lift = 0;
@@ -10235,6 +10714,7 @@
       id: rid("set"), kind, name: raw.slice(0, 24),
       color: kind === "light" ? "#d3ac59" : nextPieceColor(state.project.sets.length + 2),
       modelId: kind === "model" ? modelId : null,
+      propShape: shape,
       dims, note: "", locked: false, flown: flownOnly, wires: 2, framed: false, lightKind: lk,
       curtainKind: kind === "curtain" ? "front" : undefined,
     };
@@ -11193,6 +11673,29 @@
   const ROSTER_KINDS = ["performer"].concat(SET_KIND_ORDER);
   let rosterKind = "performer";
 
+  function renderPropShapeSelect(select, value) {
+    if (!select) return;
+    const selected = PROP_SHAPES[value] ? value : "box";
+    select.innerHTML = "";
+    PROP_SHAPE_ORDER.forEach((key) => {
+      const option = document.createElement("option");
+      option.value = key;
+      option.textContent = propShapeName(key);
+      select.append(option);
+    });
+    select.value = selected;
+  }
+
+  function syncRosterPropShape() {
+    if (!els.rosterPropShape) return;
+    const showing = rosterKind === "prop";
+    const before = els.rosterPropShape.value;
+    renderPropShapeSelect(els.rosterPropShape, before);
+    els.rosterPropShape.hidden = !showing;
+    const row = els.rosterPropShape.closest(".stage-roster-add");
+    if (row) row.classList.toggle("is-prop-shape", showing);
+  }
+
   function renderModelPicker() {
     if (!els.modelPicker) return;
     const before = els.modelPicker.value;
@@ -11232,6 +11735,7 @@
         rosterKind = kind;
         if (els.rosterKindLabel) els.rosterKindLabel.textContent = label.textContent;
         renderModelPicker();
+        syncRosterPropShape();
         closeKindModal();
         if (kind === "model" && els.modelPicker) els.modelPicker.focus();
         else if (els.rosterName) els.rosterName.focus();
@@ -11382,6 +11886,7 @@
     clone.id = nextId();
     clone.base = 0;
     clone.supportId = null;
+    clone.heldBy = null;
     return clone;
   }
 
@@ -11392,9 +11897,12 @@
     if (!rigs.length) {
       const empty = document.createElement("p");
       empty.className = "stage-cast-empty";
+      /* 小道具を登録しに来て、この欄で迷った実例がある（2026-08-20）。
+         ここは「組んだ立体」を残す欄で、一つずつの登録は「出るもの」の仕事。
+         その分かれ道を、空のときだけ一行で示す。 */
       empty.textContent = isEn()
-        ? "Nothing saved yet. Lay out the set, then save it under a name."
-        : "まだ残していません。並べ終えたら名前をつけて残してください。";
+        ? "Nothing saved yet. Lay out the set, then save it under a name. To add a single prop or furniture piece, use \"Cast & set\"."
+        : "まだ残していません。並べ終えたら名前をつけて残してください。小道具や家具を一つずつ登録するのは「出るもの」からです。";
       els.rigList.append(empty);
       return;
     }
@@ -11537,6 +12045,10 @@
     if (els.setInfoKindRow) {
       els.setInfoKindRow.hidden = item.kind !== "light";
       if (item.kind === "light" && els.setInfoKind) els.setInfoKind.value = lightKindOf(item);
+    }
+    if (els.setInfoPropShapeRow) {
+      els.setInfoPropShapeRow.hidden = item.kind !== "prop";
+      if (item.kind === "prop") renderPropShapeSelect(els.setInfoPropShape, item.propShape);
     }
     if (els.setInfoFlownRow) {
       // 吊れるのは形のあるもの（台・テーブル・椅子・壁）だけ
@@ -13223,6 +13735,7 @@
     const parts = [];
     // セクション見出しも順番どおりに差し込む
     let sceneN = 0;
+    let previousScene = null;
     (state.project.scenes || []).forEach((row) => {
       if (row.kind === "section") {
         parts.push(`<h2 class="section">${escapeHtml(row.title || "")}</h2>`);
@@ -13240,6 +13753,8 @@
         if (finite(rh.holdDurationSeconds, -1) >= 0) times.push(en ? `show ${rh.holdDurationSeconds}s` : `見せる ${rh.holdDurationSeconds}秒`);
         if (finite(rh.transitionToNextSeconds, -1) >= 0) times.push(en ? `move ${rh.transitionToNextSeconds}s` : `次へ移動 ${rh.transitionToNextSeconds}秒`);
       }
+      const props = featureOn("propsplot") ? propSceneSummary(row, en) : [];
+      const propMoves = featureOn("propsplot") ? propMovesBetweenScenes(previousScene, row, en) : [];
       parts.push(`<section class="scene">
   <header><span class="no">${sceneN}</span><h3>${escapeHtml(row.title || "")}</h3>
     <span class="times">${escapeHtml(times.join(" / "))}</span></header>
@@ -13250,9 +13765,12 @@
   </div>
   <div class="meta">
     ${cast.length ? `<p class="cast">${en ? "On stage" : "舞台上"}: ${escapeHtml(cast.join(" / "))}</p>` : ""}
+    ${props.length ? `<p class="prop-meta">${en ? "Props" : "小道具"}: ${escapeHtml(props.join(" / "))}</p>` : ""}
+    ${propMoves.length ? `<p class="prop-meta">${en ? "Handoffs" : "受け渡し"}: ${escapeHtml(propMoves.join(en ? " / " : " ／ "))}</p>` : ""}
     ${bamiriTable(row)}
   </div>
 </section>`);
+      previousScene = row;
     });
     /* バミリ図: 立ち位置の実寸表。床にテープを貼る作業へそのまま持っていける */
     function bamiriTable(row) {
@@ -13273,13 +13791,14 @@
       return `<table class="bamiri"><thead><tr><th>${en ? "Who" : "誰"}</th><th>${en ? "Across" : "左右"}</th><th>${en ? "From DS edge" : "ツラから"}</th></tr></thead><tbody>${cells}</tbody></table>`;
     }
 
+    const printSceneRows = state.project.scenes.filter((r2) => r2.kind === "scene");
+
     /* 明かりのキューシート: シーンごとの点き・消え・強さの変化 */
     let cuesheetHtml = "";
     if (featureOn("cuesheet")) {
-      const sceneRows = state.project.scenes.filter((r2) => r2.kind === "scene");
       const lines = [];
-      sceneRows.forEach((row, i2) => {
-        const prev = i2 > 0 ? sceneRows[i2 - 1] : { pieces: [] };
+      printSceneRows.forEach((row, i2) => {
+        const prev = i2 > 0 ? printSceneRows[i2 - 1] : { pieces: [] };
         const cur = (row.pieces || []).filter((q) => q.type === "light");
         const before = (prev.pieces || []).filter((q) => q.type === "light");
         const on = cur.filter((q) => !twinOf(q, before)).map((q) => pieceLabel(q));
@@ -13299,6 +13818,30 @@
         cuesheetHtml = `<section class="scene"><header><h3>${en ? "Light cue sheet" : "明かりのキューシート"}</h3></header>
 <table class="cues"><thead><tr><th>${en ? "Scene" : "シーン"}</th><th>${en ? "On" : "点く"}</th><th>${en ? "Off" : "消える"}</th><th>${en ? "Level" : "強さ"}</th></tr></thead><tbody>${lines.join("")}</tbody></table></section>`;
       }
+    }
+
+    /* 小道具の香盤表。列が増えてもキューシートと同じ薄い罫線に留め、
+       変化したセルだけを小さく強調して、図より目立たせない。 */
+    let propsPlotHtml = "";
+    const propsForPlot = registeredProps();
+    if (featureOn("propsplot") && propsForPlot.length) {
+      const head = printSceneRows.map((row, index) => (
+        `<th title="${escapeHtml(row.title || "")}">${index + 1}</th>`
+      )).join("");
+      const body = propsForPlot.map((prop) => {
+        let before = null;
+        const cells = printSceneRows.map((row) => {
+          const entry = propPlotState(row, prop);
+          const changed = before ? propPlotStateChanged(before, entry) : false;
+          before = entry;
+          const value = entry.kind === "held" ? propHolderName(entry.holder).slice(0, 8)
+            : (entry.kind === "floor" ? (en ? "floor" : "床") : "");
+          return `<td${changed ? ' class="changed"' : ""}>${escapeHtml(value)}</td>`;
+        }).join("");
+        return `<tr><th>${escapeHtml(prop.name || "")}</th>${cells}</tr>`;
+      }).join("");
+      propsPlotHtml = `<section class="scene props-plot"><header><h3>${en ? "Props plot" : "小道具の香盤表"}</h3></header>
+<table class="cues props-plot-table"><thead><tr><th>${en ? "Prop" : "小道具名"}</th>${head}</tr></thead><tbody>${body}</tbody></table></section>`;
     }
 
     state.project.activeSceneId = keepScene;
@@ -13331,11 +13874,12 @@
   .desc-label { display: inline-block; font-size: 10px; letter-spacing: 0.08em; color: #666;
                 border: 1px solid #bbb; border-radius: 2px; padding: 1px 5px; margin-right: 8px;
                 vertical-align: 1px; white-space: nowrap; }
-  .cast { font-size: 12px; color: #555; margin: 0; }
+  .cast, .prop-meta { font-size: 12px; color: #555; margin: 0; }
   table.bamiri, table.cues { border-collapse: collapse; font-size: 11px; margin-top: 6px; }
   table.bamiri th, table.bamiri td, table.cues th, table.cues td {
     border: 1px solid #bbb; padding: 2px 8px; text-align: left; }
   table.bamiri th, table.cues th { background: #eee; }
+  table.props-plot-table td.changed { font-weight: 600; text-decoration: underline; text-decoration-color: #888; }
   @media print {
     body { margin: 10mm; }
     .print-toggle { display: none; }
@@ -13353,6 +13897,7 @@
 </div>
 ${parts.join("\n")}
 ${cuesheetHtml}
+${propsPlotHtml}
 <script>
 (function () {
   var radios = document.querySelectorAll('.print-toggle input[type="radio"]');
@@ -13509,6 +14054,11 @@ ${cuesheetHtml}
     renderSets();
     renderLights();
     renderRigs();
+    syncRosterPropShape();
+    if (els.setInfoPropShapeRow && !els.setInfoPropShapeRow.hidden) {
+      const item = currentSetItem();
+      renderPropShapeSelect(els.setInfoPropShape, item && item.propShape);
+    }
     selectedTextId = null;
     renderScreenTexts();
     syncScreenTextControls();
@@ -13546,6 +14096,9 @@ ${cuesheetHtml}
       const id = nextId();
       swap.set(piece.id, id);
       return { ...piece, id, originId: piece.originId || piece.id };
+    });
+    copy.pieces.forEach((piece) => {
+      if (piece.heldBy) piece.heldBy = swap.get(piece.heldBy) || null;
     });
     copy.notes = (copy.notes || []).map((note) => ({
       ...note,
@@ -13598,6 +14151,7 @@ ${cuesheetHtml}
     const size = venueSize();
     const out = [];
     (scene.pieces || []).forEach((piece) => {
+      if (piece.heldBy) return;
       const twin = twinOf(piece, next.pieces || []);
       if (!twin) return;
       const dx = (twin.u - piece.u) * (size.width || 12);
@@ -13674,7 +14228,7 @@ ${cuesheetHtml}
     copy.note = "";
     let moved = 0;
     copy.pieces.forEach((piece) => {
-      if (!piece.route) return;
+      if (piece.heldBy || !piece.route) return;
       /* 動かすのは駒の居場所だけ。明かりの場合、これは「当てる先」であって
        * 灯体（beam.u/v）ではない。灯体はその場に残り、光が振られる。 */
       piece.u = clamp(piece.route.u, -0.5, 1.5);   // 袖へはける動線もそのまま実る
@@ -14968,6 +15522,7 @@ ${cuesheetHtml}
     for (let i = sc().pieces.length - 1; i >= 0; i -= 1) {
       const piece = sc().pieces[i];
       if (!anyKind && (piece.type === "light") !== wantLight) continue;
+      if (anyKind && piece.heldBy) continue;
       // 平面図で隠している吊物は掴めない（見えないものを掴むことになるため）
       if (L.plan && !state.showFlown && isFlown(piece)) continue;
       // 消している図の照明も同じ（見えないものを掴ませない）
@@ -15147,6 +15702,113 @@ ${cuesheetHtml}
     render();
   }
 
+  const heldItemName = (piece) => pieceLabel(piece) || pieceTypeName(piece.type);
+  const performerName = (piece) => pieceLabel(piece) || (() => {
+    const performers = sc().pieces.filter((candidate) => candidate.type === "performer");
+    return isEn() ? `Performer ${performers.indexOf(piece) + 1}` : `演者${performers.indexOf(piece) + 1}`;
+  })();
+
+  function freeHoldSide(holderId, ignoreId, preferred) {
+    const used = new Set(sc().pieces
+      .filter((piece) => piece.heldBy === holderId && piece.id !== ignoreId)
+      .map((piece) => piece.holdSide === "L" ? "L" : "R"));
+    const order = preferred === "L" ? ["L", "R"] : ["R", "L"];
+    return order.find((side) => !used.has(side)) || null;
+  }
+
+  function finishHoldingChange(message) {
+    refreshBases(venueSize());
+    updateInspector();
+    renderScenes();
+    renderSets();
+    render();
+    persistSoon();
+    if (message) announce(message);
+  }
+
+  function holdPieceBy(piece, holder, preferredSide) {
+    const side = holder && freeHoldSide(holder.id, piece && piece.id, preferredSide);
+    if (!piece || !holder || !side) {
+      announce("両手がふさがっています。");
+      return false;
+    }
+    piece.heldBy = holder.id;
+    piece.holdSide = side;
+    piece.route = null;
+    finishHoldingChange(`${heldItemName(piece)}を${performerName(holder)}に持たせました。`);
+    return true;
+  }
+
+  function dropHeldPiece(piece) {
+    if (!piece || !piece.heldBy) return;
+    const name = heldItemName(piece);
+    piece.heldBy = null;
+    finishHoldingChange(`${name}を手放しました。`);
+  }
+
+  function syncHoldingControls(piece) {
+    const performer = Boolean(piece && piece.type === "performer");
+    if (els.holdControls) els.holdControls.hidden = !performer;
+    if (performer && els.heldList && els.holdSelect) {
+      els.heldList.innerHTML = "";
+      sc().pieces.filter((item) => item.heldBy === piece.id).forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "stage-cast-row";
+        const name = document.createElement("span");
+        name.className = "stage-cast-name";
+        name.textContent = heldItemName(item);
+        const drop = document.createElement("button");
+        drop.type = "button";
+        drop.className = "btn-quiet";
+        drop.textContent = tx("手放す");
+        drop.addEventListener("click", () => {
+          checkpoint();
+          dropHeldPiece(item);
+        });
+        row.append(name, drop);
+        els.heldList.append(row);
+      });
+      els.holdSelect.innerHTML = "";
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = tx("持たせる…");
+      els.holdSelect.append(placeholder);
+      sc().pieces.filter((item) => item !== piece && !item.heldBy && isHoldable(item)
+        && onStageArea(item.u, item.v)).forEach((item) => {
+        const option = document.createElement("option");
+        option.value = `piece:${item.id}`;
+        option.textContent = heldItemName(item);
+        els.holdSelect.append(option);
+      });
+      (state.project.sets || []).filter((item) => isHoldable({ type: item.kind, setId: item.id }, state.project)
+        && !sc().pieces.some((candidate) => candidate.setId === item.id)).forEach((item) => {
+        const option = document.createElement("option");
+        option.value = `set:${item.id}`;
+        option.textContent = `${isEn() ? "Backstage: " : "舞台裏："}${item.name}`;
+        els.holdSelect.append(option);
+      });
+      els.holdSelect.value = "";
+    }
+
+    const held = Boolean(piece && isHoldable(piece) && piece.heldBy);
+    if (els.holderControls) els.holderControls.hidden = !held;
+    if (!held || !els.holderSelect) return;
+    els.holderSelect.innerHTML = "";
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = tx("持たせない");
+    els.holderSelect.append(none);
+    sc().pieces.filter((candidate) => candidate.type === "performer").forEach((candidate) => {
+      const option = document.createElement("option");
+      option.value = candidate.id;
+      option.textContent = performerName(candidate);
+      els.holderSelect.append(option);
+    });
+    els.holderSelect.value = piece.heldBy;
+    if (els.holderLeft) els.holderLeft.setAttribute("aria-pressed", String(piece.holdSide === "L"));
+    if (els.holderRight) els.holderRight.setAttribute("aria-pressed", String(piece.holdSide !== "L"));
+  }
+
   function updateInspector() {
     const piece = selectedPiece();
     if (els.facingLock) {
@@ -15163,6 +15825,7 @@ ${cuesheetHtml}
      * ここで勝手に出すと、畳んだはずの文が選ぶたびに戻ってくる。 */
     els.selectionControls.hidden = !piece;
     if (els.fpvOpen) els.fpvOpen.hidden = !(piece && piece.type === "performer");
+    syncHoldingControls(piece);
     if (!piece) return;
     const sameType = sc().pieces.filter((candidate) => candidate.type === piece.type);
     els.selectedName.textContent = `${pieceTypeName(piece.type)} ${sameType.indexOf(piece) + 1}`;
@@ -15303,6 +15966,7 @@ ${cuesheetHtml}
     const gid = piece.type === "light" ? lightGroupOf(piece) : null;
     if (gid) { toggleLightGroup(gid); return; }
     checkpoint();
+    if (piece.type === "performer") releaseHeldBy(sc(), piece.id);
     /* 登録のあるもの（名簿の演者・舞台セット）は、消しても登録は残るので
        一覧では「舞台裏」になるだけ。トグルで下げたときと同じ扱いにして、
        立ち位置を控える。ここで控えないと、消してから出し直したときだけ
@@ -15327,7 +15991,8 @@ ${cuesheetHtml}
     const piece = selectedPiece();
     if (!piece) return;
     checkpoint();
-    const copy = { ...piece, id: nextId(), u: clamp(piece.u + 0.06, 0, 1), v: clamp(piece.v + 0.04, 0, 1) };
+    const copy = { ...piece, id: nextId(), heldBy: null,
+      u: clamp(piece.u + 0.06, 0, 1), v: clamp(piece.v + 0.04, 0, 1) };
     sc().pieces.push(copy);
     selectedId = copy.id;
     updateInspector();
@@ -15798,6 +16463,8 @@ ${cuesheetHtml}
         }
         return;
       }
+      // 持ち物は選べるが、手元から直接は動かさない。手放してから置き場所を決める。
+      if (hit.heldBy) return;
       /* 錠が掛かっているものは hitTest がもう返さない（当たり判定ごと素通し、
          本人の指定）。外す口は「出るもの」の一覧にある。 */
       const pos = placePiece(hit, L);
@@ -16032,7 +16699,7 @@ ${cuesheetHtml}
 
     if (pointerAction.kind === "drag") {
       const piece = sc().pieces.find((candidate) => candidate.id === pointerAction.id);
-      if (!piece) return;
+      if (!piece || piece.heldBy) return;
       if (!pointerAction.moved) {
         recordBefore(pointerAction.before);
         pointerAction.moved = true;
@@ -16577,9 +17244,11 @@ ${cuesheetHtml}
       addSetItem("model", els.rosterName, null, modelId);
       return;
     }
-    addSetItem(SET_KINDS[rosterKind] ? rosterKind : "block", els.rosterName);
+    addSetItem(SET_KINDS[rosterKind] ? rosterKind : "block", els.rosterName, null, null,
+      els.rosterPropShape && els.rosterPropShape.value);
   };
   renderModelPicker();
+  syncRosterPropShape();
   if (els.modelOpen) els.modelOpen.addEventListener("click", () => {
     const builder = window.SHOSAI_STAGE_BUILDER;
     if (builder) builder.open();
@@ -16805,6 +17474,26 @@ ${cuesheetHtml}
       announce(`${item.name}を${lightKindName(item.lightKind)}にしました。`);
     });
   }
+  if (els.setInfoPropShape) {
+    els.setInfoPropShape.addEventListener("change", (e) => {
+      const item = currentSetItem();
+      if (!item || item.kind !== "prop") return;
+      const next = PROP_SHAPES[e.target.value] ? e.target.value : "box";
+      if (item.propShape === next) return;
+      checkpoint();
+      const lift = item.dims && item.dims.lift;
+      item.propShape = next;
+      item.dims = { ...PROP_SHAPES[next].dims };
+      if (Number.isFinite(lift)) item.dims.lift = lift;
+      openSetInfo(item.id);
+      renderSets();
+      renderScenes();
+      updateInspector();
+      render();
+      persistSoon();
+      announce(`形を${propShapeName(next)}にしました。寸法は基準値に戻しています。`);
+    });
+  }
   if (els.setInfoFlown) {
     els.setInfoFlown.addEventListener("change", (e) => {
       const item = currentSetItem();
@@ -17004,12 +17693,15 @@ ${cuesheetHtml}
                 animU: undefined, animV: undefined }, current);
               return { ...candidate.route, u: end.u, v: end.v, bu: bend.u, bv: bend.v };
             })() : null;
+            const dims = pieceDims(visual);
+            const propShape = visual.type === "prop" ? scaledPropShape(visual, dims) : null;
             return {
               ...visual,
               route: visualRoute,
-              dims: pieceDims(visual),
-              parts: ["revolve", "deck", "curtain", "pool", "seri"].includes(visual.type)
+              dims,
+              parts: visual.type === "prop" || ["revolve", "deck", "curtain", "pool", "seri"].includes(visual.type)
                 ? pieceParts(visual) : undefined,
+              grip: propShape ? propShape.grip : null,
               model: visual.type === "model" && owner ? stageModel(owner.modelId) : null,
             };
           }),
@@ -18805,6 +19497,64 @@ ${cuesheetHtml}
    * 一度でも見た（または閉じた）ら、次からは上の「使い方」からだけ。 */
   let seenTour = true;
   try { seenTour = localStorage.getItem(TOUR_KEY) === "done"; } catch (_) { seenTour = true; }
+  if (els.holdSelect) {
+    els.holdSelect.addEventListener("change", () => {
+      const holder = selectedPiece();
+      const value = els.holdSelect.value;
+      if (!holder || holder.type !== "performer" || !value) return;
+      const side = freeHoldSide(holder.id, null, "R");
+      if (!side) {
+        els.holdSelect.value = "";
+        announce("両手がふさがっています。");
+        return;
+      }
+      const [source, id] = value.split(":");
+      let piece = source === "piece" ? sc().pieces.find((candidate) => candidate.id === id) : null;
+      const item = source === "set" ? (state.project.sets || []).find((candidate) => candidate.id === id) : null;
+      if (!piece && !item) { els.holdSelect.value = ""; return; }
+      checkpoint();
+      if (!piece) piece = placeSetPiece(item);
+      selectedId = holder.id;
+      if (!holdPieceBy(piece, holder, side)) updateInspector();
+    });
+  }
+  if (els.holderSelect) {
+    els.holderSelect.addEventListener("change", () => {
+      const piece = selectedPiece();
+      if (!piece || !piece.heldBy) return;
+      const nextId = els.holderSelect.value;
+      if (!nextId) {
+        checkpoint();
+        dropHeldPiece(piece);
+        return;
+      }
+      if (nextId === piece.heldBy) return;
+      const holder = sc().pieces.find((candidate) => candidate.id === nextId && candidate.type === "performer");
+      const side = holder && freeHoldSide(holder.id, piece.id, "R");
+      if (!holder || !side) {
+        updateInspector();
+        announce("両手がふさがっています。");
+        return;
+      }
+      checkpoint();
+      holdPieceBy(piece, holder, side);
+    });
+  }
+  if (els.holderLeft) {
+    const changeHoldSide = (side) => {
+      const piece = selectedPiece();
+      if (!piece || !piece.heldBy || piece.holdSide === side) return;
+      if (freeHoldSide(piece.heldBy, piece.id, side) !== side) {
+        announce("両手がふさがっています。");
+        return;
+      }
+      checkpoint();
+      piece.holdSide = side;
+      finishHoldingChange("");
+    };
+    els.holderLeft.addEventListener("click", () => changeHoldSide("L"));
+    els.holderRight.addEventListener("click", () => changeHoldSide("R"));
+  }
   if (els.poleLeft) {
     const setSide = (side) => {
       const piece = selectedPiece();

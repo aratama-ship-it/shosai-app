@@ -252,7 +252,7 @@
   const PIECE = {
     ja: {
       performer: "演者", block: "平台（箱馬）", table: "テーブル", chair: "椅子", bench: "ベンチ",
-      stool: "スツール", wall: "壁", sphere: "球体",
+      stool: "スツール", wall: "壁", sphere: "球体", prop: "小道具",
       trapeze: "トラピーズ（空中ブランコ）", cyrwheel: "シルホイール", diabolo: "ディアボロ", pole: "中国竿（チャイニーズポール）",
       teeter: "シーソー（テーターボード）", tissue: "エアリアルティシュー（空中布）", wire: "綱（タイトワイヤー）",
       suitcase: "スーツケース", trampoline: "トランポリン", cane: "ハンドバランスのケイン",
@@ -261,7 +261,7 @@
     },
     en: {
       performer: "performer", block: "a rostrum / platform box", table: "a table", chair: "a chair", bench: "a bench",
-      stool: "a stool", wall: "a wall flat", sphere: "a sphere",
+      stool: "a stool", wall: "a wall flat", sphere: "a sphere", prop: "a prop",
       trapeze: "a trapeze hanging from the grid", cyrwheel: "a Cyr wheel", diabolo: "a diabolo", pole: "a Chinese pole",
       teeter: "a teeterboard", tissue: "aerial silks hanging from the grid", wire: "a tightwire",
       suitcase: "a suitcase", trampoline: "a trampoline", cane: "handbalancing canes",
@@ -270,7 +270,7 @@
     },
     fr: {
       performer: "interprète", block: "un praticable", table: "une table", chair: "une chaise", bench: "un banc",
-      stool: "un tabouret", wall: "un châssis mural", sphere: "une sphère",
+      stool: "un tabouret", wall: "un châssis mural", sphere: "une sphère", prop: "un accessoire",
       trapeze: "un trapèze suspendu au gril", cyrwheel: "une roue Cyr", diabolo: "un diabolo", pole: "un mât chinois",
       teeter: "une bascule coréenne", tissue: "un tissu aérien suspendu au gril", wire: "un fil tendu",
       suitcase: "une valise", trampoline: "un trampoline", cane: "des cannes d'équilibre",
@@ -279,7 +279,7 @@
     },
     zh: {
       performer: "演员", block: "台面平台（箱台）", table: "桌子", chair: "椅子", bench: "长凳",
-      stool: "凳子", wall: "墙片", sphere: "球体",
+      stool: "凳子", wall: "墙片", sphere: "球体", prop: "小道具",
       trapeze: "从吊杆垂下的吊杠", cyrwheel: "Cyr轮（大环）", diabolo: "空竹", pole: "中国杆（爬杆）",
       teeter: "跷板（弹板）", tissue: "从吊杆垂下的空中绸吊", wire: "钢丝（走钢丝用）",
       suitcase: "行李箱", trampoline: "蹦床", cane: "手倒立支架",
@@ -288,7 +288,7 @@
     },
     ko: {
       performer: "출연자", block: "평대（단）", table: "테이블", chair: "의자", bench: "벤치",
-      stool: "스툴", wall: "벽 세트", sphere: "구체",
+      stool: "스툴", wall: "벽 세트", sphere: "구체", prop: "소품",
       trapeze: "천장 바텐에 매달린 트래피즈", cyrwheel: "시르 휠", diabolo: "디아볼로", pole: "차이니즈 폴",
       teeter: "티터보드（시소판）", tissue: "천장 바텐에서 내려온 에어리얼 실크", wire: "외줄（타이트와이어）",
       suitcase: "여행 가방", trampoline: "트램펄린", cane: "핸드밸런싱 케인",

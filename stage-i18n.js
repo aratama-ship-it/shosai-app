@@ -184,6 +184,7 @@
     "追加": "Add",
     "残す": "Save",
     "種類": "Kind",
+    "形": "Shape",
     "名前": "Name",
     "寸法": "Size",
     "演者": "Performer",
@@ -267,6 +268,8 @@
     "印刷用ページに、演者の立ち位置の実寸表を足す": "Adds a real-measure position table to the print sheet",
     "明かりのキューシート（印刷）": "Light cue sheet (print)",
     "印刷用ページに、シーンごとの明かりの点き消え表を足す": "Adds a per-scene light on/off table to the print sheet",
+    "小道具の香盤表（印刷）": "Props plot (print)",
+    "印刷用ページに、シーンごとの持ち手と受け渡しの表を足す": "Adds per-scene prop holders and handoffs to the print sheet",
     "転換アニメの動画書き出し": "Export transitions as video",
     "見えない席の検査（遮蔽）": "Sightline check (occlusion)",
     "複数選択と整形": "Multi-select and shaping",
@@ -532,6 +535,14 @@
     /* ---- 選んだもの ---- */
     "姿勢": "Pose",
     "この人の視界": "View from here",
+    "持ち物": "Held items",
+    "持たせる物": "Item to hold",
+    "持たせる…": "Give an item…",
+    "持ち手": "Holder",
+    "持たせない": "No holder",
+    "手放す": "Release",
+    "左手": "Left hand",
+    "右手": "Right hand",
     "3Dカメラ": "3D Camera",
     "自由カメラ": "Free camera",
     "客席中央": "House centre",
@@ -628,6 +639,7 @@
     "舞台の上での見え方に効きます。同じ舞台でも、身長が違えば大きさが変わります。":
       "This changes how large the figure reads on stage. Same stage, different height, different size.",
     "舞台セット": "Set piece",
+    "小道具": "Props",
     "出し入れの段取り、重さ、注意点など": "Handling, weight, things to watch",
     "寸法は実寸です。床の1m枡と同じものさしで描かれます。":
       "Sizes are real. They are drawn on the same scale as the 1 m floor grid.",
@@ -873,7 +885,7 @@
     },
     setKind: {
       block: "Platform / box", table: "Table", chair: "Chair", bench: "Bench",
-      stool: "Stool", wall: "Wall", sphere: "Sphere",
+      stool: "Stool", wall: "Wall", sphere: "Sphere", prop: "Prop",
       trapeze: "Trapeze", cyrwheel: "Cyr wheel", diabolo: "Diabolo", pole: "Chinese pole",
       teeter: "Teeterboard", tissue: "Aerial silks", wire: "Tightwire",
       suitcase: "Suitcase", trampoline: "Trampoline", cane: "Handbalancing canes",
@@ -883,7 +895,7 @@
     },
     pieceType: {
       performer: "Performer", block: "Platform / box", table: "Table", chair: "Chair",
-      bench: "Bench", stool: "Stool", wall: "Wall", sphere: "Sphere",
+      bench: "Bench", stool: "Stool", wall: "Wall", sphere: "Sphere", prop: "Prop",
       trapeze: "Trapeze", cyrwheel: "Cyr wheel", diabolo: "Diabolo", pole: "Chinese pole",
       teeter: "Teeterboard", tissue: "Aerial silks", wire: "Tightwire",
       suitcase: "Suitcase", trampoline: "Trampoline", cane: "Handbalancing canes",
@@ -893,6 +905,11 @@
     },
     lightKind: {
       hang: "Overhead", ss: "Side light", front: "Front light", floor: "Floor light",
+    },
+    propShape: {
+      box: "Box", umbrella: "Umbrella", club: "Club", ball: "Ball", ring: "Ring",
+      staff: "Staff", sword: "Sword", book: "Book", tophat: "Top hat",
+      lantern: "Lantern", flag: "Flag",
     },
     lightNote: {
       hang: "straight down from the bar",
@@ -1164,6 +1181,7 @@
     [/^装置の動線を隠しました。引いた線は消えていません。$/, "Set routes hidden. Drawn routes are kept."],
     [/^組をばらしました。それぞれ普通の明かりとして動かせます。$/,
       "Rig split. Each light now moves on its own."],
+    [/^両手がふさがっています。$/, "Both hands are occupied."],
     [/^(.+)（(\d+)灯）をONにしました。$/, "$1 ($2 lights) turned ON."],
     [/^(.+)（(\d+)灯）をOFFにしました。$/, "$1 ($2 lights) turned OFF."],
     [/^平面では吊物を隠します。$/, "Flown pieces are hidden in the plan."],
@@ -1184,6 +1202,10 @@
     [/^(.+)を足しました。下のシーンを一段内側へ入れると、中身になります。$/, "Added $1. Indent the scenes below to put them inside it."],
     [/^(.+)を名簿へ加え、このシーンの舞台へ出しました。$/, "Added $1 to the cast and put them on stage."],
     [/^(.+)を舞台セットへ加え、このシーンの舞台へ出しました。$/, "Added $1 to the set and put it on stage."],
+    [/^形を(.+)にしました。寸法は基準値に戻しています。$/,
+      "Changed the shape to $1. Dimensions were reset to the preset values."],
+    [/^(.+)を(.+)に持たせました。$/, "Gave $1 to $2."],
+    [/^(.+)を手放しました。$/, "Released $1."],
     [/^(.+)を(.+)へ加えてONにしました。$/, "Added $1 as $2 and switched it ON."],
     [/^(.+)はこのシーンではOFFです。「OFF」を押すと点きます。$/, "$1 is OFF in this scene. Press OFF to switch it on."],
     [/^(.+)はいま舞台裏です。「舞台裏」を押すと舞台へ出ます。$/, "$1 is off stage. Press Off stage to bring it on."],
