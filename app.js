@@ -4421,7 +4421,9 @@
     return `<span class="db-depth-mark research-level-${esc(amountLevel)} depth-${esc(d.level)}" title="${esc(`${d.cause} — ${d.reason}`)}">${esc(amountLabel)}</span>`;
   };
 
-  // 全文検索索引: 作品の全項目＋人名＋演出特徴＋リンクされた要素まで対象にする
+  // 全文検索索引: 作品の全項目＋演出特徴＋リンクされた要素まで対象にする。
+  // 人物クレジットは入れない（人から作品を引くのは名簿の制作・技術スタッフ索引の役目）。
+  // 出典メモなどの本文に書かれた人名までは消さない。あれは作品の記述そのものなので。
   let searchIdx;
 
   function buildSearchIndex() {

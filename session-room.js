@@ -238,6 +238,15 @@ export class SessionRoom {
       return;
     }
 
+    if (data.t === "activity") {
+      /* 「いま操作中」の合図。送信者以外の全員へ名前・色つきで中継する */
+      const payload = { t: "activity", from: senderFrom(attachment) };
+      for (const socket of this.ctx.getWebSockets()) {
+        if (socket !== ws && isOpen(socket)) safeSend(socket, payload);
+      }
+      return;
+    }
+
     if (data.t === "pointer") {
       if (typeof data.view !== "string" ||
           typeof data.x !== "number" || !Number.isFinite(data.x) || data.x < 0 || data.x > 1 ||

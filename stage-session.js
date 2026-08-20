@@ -245,6 +245,10 @@
       setStatus("共有内容を読み込めませんでした。", true);
       return false;
     }
+    /* 上書き前に、まだ送っていない自分の変更（矢印・移動）を先に送り出す。
+       これが無いと、ホストの更新と同時に操作したときゲストの変更が黙って消える
+       （2026-08-20 照明の移動が反映されない不具合として実際に発生）。 */
+    if (role === "guest" && !applyingRemoteDocument) sendGuestDifferences();
     applyingRemoteDocument = true;
     applyGeneration += 1;
     const generation = applyGeneration;
@@ -286,8 +290,49 @@
     }, HOST_SEND_DEBOUNCE_MS);
   }
 
+  /* 「いま操作中: ◯◯」の大きな表示。同時に動かして変更がぶつかるのを、
+     互いの操作が見えるようにして避ける（2026-08-20 本人提案）。 */
+  let activityBanner = null;
+  let activityHideTimer = null;
+  let lastActivitySentAt = 0;
+
+  function sendActivity() {
+    if (!socketIsOpen()) return;
+    const now = Date.now();
+    if (now - lastActivitySentAt < 1000) return;
+    lastActivitySentAt = now;
+    sendMessage({ t: "activity" });
+  }
+
+  function showActivity(from) {
+    if (!from || typeof from.name !== "string") return;
+    if (!activityBanner) {
+      activityBanner = document.createElement("div");
+      activityBanner.className = "stage-session-activity";
+      activityBanner.setAttribute("role", "status");
+      activityBanner.setAttribute("aria-live", "polite");
+      const dot = document.createElement("span");
+      dot.className = "stage-session-activity-dot";
+      const text = document.createElement("span");
+      text.className = "stage-session-activity-text";
+      activityBanner.append(dot, text);
+      document.body.append(activityBanner);
+    }
+    const color = typeof from.color === "string" ? from.color : "#d3ac59";
+    activityBanner.querySelector(".stage-session-activity-dot").style.backgroundColor = color;
+    activityBanner.style.setProperty("--stage-session-activity-color", color);
+    activityBanner.querySelector(".stage-session-activity-text").textContent =
+      `いま操作中: ${normalizeName(from.name, "参加者")}`;
+    activityBanner.classList.add("is-visible");
+    clearTimeout(activityHideTimer);
+    activityHideTimer = setTimeout(() => {
+      if (activityBanner) activityBanner.classList.remove("is-visible");
+    }, 3000);
+  }
+
   function onLocalChange() {
     if (applyingRemoteDocument) return;
+    if (role) sendActivity();
     if (role === "host") scheduleHostDocument();
     else if (role === "guest") sendGuestDifferences();
   }
@@ -356,6 +401,8 @@
       applyRemoteDocument(message.doc);
     } else if (message.t === "op" && role === "host") {
       try { bridge.applyGuestOp(message.op); } catch (_) { /* 不正なopは無視する */ }
+    } else if (message.t === "activity") {
+      showActivity(message.from);
     } else if (message.t === "pointer") {
       renderRemotePointer(message);
     } else if (message.t === "presence") {

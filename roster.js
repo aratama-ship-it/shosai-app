@@ -31,6 +31,7 @@
     base: "",
     sort: "sheet",
     selected: null,
+    autoKey: false,
   };
 
   // ---------- 復号（scouting-webapp/site/crypto.js と同じ封筒形式） ----------
@@ -135,7 +136,9 @@
     const workspace = $("#roster-workspace");
     if (!gate || !workspace) return;
     const open = state.status === "ready";
-    gate.hidden = open;
+    // サイトの鍵で自動解錠している最中は、合言葉欄を一瞬だけ見せない。
+    // 解錠に失敗したときは（鍵が古い等）ゲートを出して手で入れられるようにする。
+    gate.hidden = open || (state.autoKey && state.status === "loading");
     workspace.hidden = !open;
     const note = $("#roster-gate-note");
     if (note) setText(note, state.message);
@@ -472,6 +475,18 @@
 
     const link = $("#roster-app-link");
     if (link) link.href = APP_URL;
+
+    /* サイト全体がBasic認証（worker.js）で守られているので、ここまで開けた時点で
+       本人かチームのゲスト。合言葉をもう一度聞かず、そのまま開く。
+       鍵は roster-key.local.js に置く（.gitignore済み・Cloudflareへのみ配信）。
+       data.enc は公開GitHub Pagesにあるので暗号化そのものは外さない。詳細は
+       roster-key.example.js の冒頭。ファイルが無ければ従来どおり合言葉欄が出る。 */
+    const siteKey = typeof SHOSAI_ROSTER_KEY !== "undefined" ? SHOSAI_ROSTER_KEY : "";
+    if (siteKey && location.protocol !== "file:") {
+      state.autoKey = true;
+      unlock(siteKey);
+      return;
+    }
 
     renderGate();
 

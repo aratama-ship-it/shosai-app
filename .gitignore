@@ -26,3 +26,7 @@ mac-app/build/
 
 # wrangler pages dev のローカルキャッシュ
 .wrangler/
+
+# 名簿の合言葉。Cloudflare（Basic認証の内側）へだけ配信し、公開リポジトリには残さない。
+# 雛形は roster-key.example.js。
+roster-key.local.js

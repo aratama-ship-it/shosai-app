@@ -146,6 +146,19 @@
     aerial_designer: "エアリアル設計",
     acrobatic_designer: "アクロバット設計",
     stage_safety_manager: "舞台安全管理",
+    // 部門には入らない職種。分類には使わないが、詳細で正本の職種を並べるとき
+    // snake_case のまま出さないために表記だけ持っておく。
+    director: "演出",
+    performer: "出演",
+    writer: "脚本",
+    choreographer: "振付",
+    composer: "作曲",
+    lyricist: "作詞",
+    music_director: "音楽監督",
+    creative_director: "クリエイティブディレクション",
+    artistic_director: "芸術監督",
+    clown: "クラウン",
+    collaborating_artist: "共同アーティスト",
   });
 
   const CONFIDENCE_LABELS = Object.freeze({
@@ -320,11 +333,23 @@
 
   const displayName = (c) => c.nameJa || c.name || c.id;
 
+  /* 一覧行に出す職種は、この索引の対象である制作・技術の職種にしぼる。
+     演出・出演しか正本に無く credit_label で拾った人は、代わりに部門名を出す。 */
+  const indexedRoles = (c) => c.roles.filter((r) => departmentsForRole(r).length);
+  const rowRoleText = (c) => {
+    const roles = indexedRoles(c);
+    return roles.length
+      ? roles.map(roleLabel).join(" ・ ")
+      : c.departments.map(departmentLabel).join(" ・ ");
+  };
+
+  /* 検索の対象は、名前・職種・クレジット表記・作品名・会社名。
+     部門名は入れない。入れると「大道具」で舞台美術部門の全員が返り、
+     実際に大道具としてクレジットされた人を探せなくなる。部門で絞るのは左の索引の役目。 */
   function haystack(c) {
     return [
       c.name, c.nameJa, c.id,
       ...c.roles.map(roleLabel), ...c.roles,
-      ...c.departments.map(departmentLabel),
       ...c.credits.map((x) => `${x.creditLabel} ${x.title} ${x.company} ${roleLabel(x.role)}`),
     ].join(" ").toLowerCase();
   }
@@ -426,7 +451,7 @@
       }
       const meta = document.createElement("span");
       meta.className = "crew-row-meta";
-      setText(meta, c.roles.map(roleLabel).filter(Boolean).join(" ・ "));
+      setText(meta, rowRoleText(c));
       body.append(meta);
       const works = document.createElement("span");
       works.className = "crew-row-works";
@@ -437,7 +462,7 @@
         renderList();
         renderDetail();
         const detail = $("#crew-detail");
-        if (detail) detail.scrollIntoView({ block: "nearest" });
+        if (detail) detail.scrollIntoView({ block: "start" });
       });
       list.append(btn);
     });
@@ -455,6 +480,17 @@
       pane.append(empty);
       return;
     }
+
+    // 一列になる幅では、一覧と詳細を行き来する手がかりが要る（資料棚と同じ作り）。
+    const back = document.createElement("button");
+    back.type = "button";
+    back.className = "db-mobile-back";
+    back.textContent = "← 一覧へ戻る";
+    back.addEventListener("click", () => {
+      const listPane = document.querySelector(".crew-list-pane");
+      if (listPane) listPane.scrollIntoView({ block: "start" });
+    });
+    pane.append(back);
 
     const card = document.createElement("article");
     card.className = "crew-card";
@@ -477,9 +513,12 @@
     depts.className = "crew-card-meta";
     setText(depts, c.departments.map(departmentLabel).join(" ／ "));
     head.append(depts);
+    // 詳細では正本の職種をすべて並べる。この索引の外の職種（演出・出演等）も隠さない。
     const roles = document.createElement("p");
     roles.className = "crew-card-roles";
-    setText(roles, c.roles.map(roleLabel).filter(Boolean).join(" ・ "));
+    setText(roles, c.roles.length
+      ? `正本の職種: ${c.roles.map(roleLabel).filter(Boolean).join(" ・ ")}`
+      : "");
     if (roles.textContent) head.append(roles);
     card.append(head);
 
@@ -563,7 +602,9 @@
     const panel = $("#people-panel-crew");
     if (!panel) return;
     started = true;
-    const db = window.SHOSAI_DB;
+    // db.js は `const SHOSAI_DB = …` で宣言するので window のプロパティにはならない。
+    // app.js と同じく、素のグローバルを typeof で確かめてから読む。
+    const db = typeof SHOSAI_DB !== "undefined" ? SHOSAI_DB : null;
     if (!db || !db.works || !db.persons) {
       state.status = "error";
       renderAll();

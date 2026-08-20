@@ -177,7 +177,7 @@ test("制作・技術スタッフにアーティスト名簿専用の項目が�
   ["contact", "instagram", "youtube", "photo", "bio", "size", "skills", "note", "base"]
     .forEach((forbidden) => assert.ok(!keys.has(forbidden), `${forbidden} を持たない`));
   // ソースにも連絡手段を扱う経路を持たない。
-  assert.doesNotMatch(crewSource, /instagram|youtube|contact|isSafePhoto/i);
+  assert.doesNotMatch(crewCode, /instagram|youtube|contact|isSafePhoto/i);
 });
 
 test("部門ごとの人数を動的に数える", () => {
@@ -193,9 +193,11 @@ test("部門ごとの人数を動的に数える", () => {
 // ------------------------------------------------------------ 名簿の境界
 
 test("制作・技術スタッフは合言葉を要求しない", () => {
-  assert.doesNotMatch(crewSource, /scout_pass/);
-  assert.doesNotMatch(crewSource, /data\.enc/);
-  assert.doesNotMatch(crewSource, /decrypt|PBKDF2|AES-GCM/);
+  assert.doesNotMatch(crewCode, /scout_pass/);
+  assert.doesNotMatch(crewCode, /data\.enc/);
+  assert.doesNotMatch(crewCode, /decrypt|PBKDF2|AES-GCM/);
+  // ゲートの表示・解錠にも一切触らない。
+  assert.doesNotMatch(crewCode, /roster-gate|roster-pass|#roster-workspace/);
 });
 
 test("アーティスト名簿の暗号化の境界は変わっていない", () => {
@@ -244,4 +246,42 @@ test("人数の単位はアーティストが「組」、制作・技術が「�
   assert.match(rosterSource, /組中 \$\{rows\.length\}組/);
   assert.match(crewSource, /\$\{state\.crew\.length\}人中 \$\{rows\.length\}人/);
   assert.match(crewSource, /`\$\{count\}人`/);
+});
+
+// ------------------------------- サイトのBasic認証と名簿の合言葉（2026-08-20）
+
+test("合言葉はサイトの鍵から自動解錠し、暗号化そのものは外さない", () => {
+  const rosterCode = stripComments(rosterSource);
+  // 鍵は roster-key.local.js の SHOSAI_ROSTER_KEY から読む（typeof で無くても壊れない）。
+  assert.match(rosterCode, /typeof SHOSAI_ROSTER_KEY !== "undefined" \? SHOSAI_ROSTER_KEY : ""/);
+  assert.match(rosterCode, /if \(siteKey && location\.protocol !== "file:"\)/);
+  // data.enc と復号方式は据え置き。平文化していない。
+  assert.match(rosterCode, /scouting-report-app\/data\/data\.enc/);
+  assert.match(rosterCode, /name: "PBKDF2"/);
+  assert.match(rosterCode, /\{ name: "AES-GCM", length: 256 \}/);
+  assert.match(rosterCode, /const PASS_KEY = "scout_pass";/);
+});
+
+test("自動解錠中だけ合言葉欄を隠し、失敗したら出す", () => {
+  assert.match(
+    stripComments(rosterSource),
+    /gate\.hidden = open \|\| \(state\.autoKey && state\.status === "loading"\);/);
+});
+
+test("index.html は合言葉ファイルを roster.js より先に読む", () => {
+  const keyTag = indexSource.indexOf('roster-key.local.js');
+  const rosterTag = indexSource.indexOf('roster.js?v=');
+  assert.ok(keyTag !== -1, "roster-key.local.js の読み込みがある");
+  assert.ok(keyTag < rosterTag, "合言葉ファイルが roster.js より先にある");
+});
+
+test("合言葉が公開リポジトリへ入らないようにする", async () => {
+  // 雛形は空のまま追跡し、実物は追跡しない。
+  const example = await readFile(new URL("roster-key.example.js", root), "utf8");
+  assert.match(example, /const SHOSAI_ROSTER_KEY = "";/);
+  const ignore = await readFile(new URL(".gitignore", root), "utf8");
+  assert.match(ignore, /^roster-key\.local\.js$/m);
+  // 配信対象からは外さない（Cloudflareの認証の内側へは載せる必要がある）。
+  const assets = await readFile(new URL(".assetsignore", root), "utf8");
+  assert.doesNotMatch(assets, /roster-key/);
 });
