@@ -2325,6 +2325,8 @@
     poolControls: document.getElementById("stage-pool-controls"),
     pieceSpin: document.getElementById("stage-piece-spin"),
     pieceSpinValue: document.getElementById("stage-piece-spin-value"),
+    pieceSpinRate: document.getElementById("stage-piece-spin-rate"),
+    pieceSpinRateValue: document.getElementById("stage-piece-spin-rate-value"),
     pieceTilt: document.getElementById("stage-piece-tilt"),
     pieceTiltValue: document.getElementById("stage-piece-tilt-value"),
     pieceDeckH: document.getElementById("stage-piece-deck-h"),
@@ -2855,6 +2857,7 @@
     // 舞台機構の値は登録寸法ではなく、シーンごとの状態として駒に持つ
     if (type === "seri") normalized.seriH = clamp(finite(piece.seriH, 0), -3, 4);
     if (type === "revolve") normalized.spin = clamp(finite(piece.spin, 0), -180, 180);
+    if (type === "revolve") normalized.spinRate = clamp(finite(piece.spinRate, 0), -30, 30);
     if (type === "deck") {
       normalized.tilt = clamp(finite(piece.tilt, 0), -60, 60);
       normalized.deckH = clamp(finite(piece.deckH, 0), -4, 8);
@@ -3182,7 +3185,7 @@
    * 床からの高さ（base）と支えている駒（supportId）は置き場所から毎回引き直す。
    * 丸ごと控えると、シーンの数だけ同じ値の写しが保存に溜まる。 */
   const STASH_KEYS = ["type", "u", "v", "size", "facing", "pose",
-    "poleSide", "poleH", "tissueH", "trapMode", "diaboloMode", "seriH", "spin", "tilt", "deckH",
+    "poleSide", "poleH", "tissueH", "trapMode", "diaboloMode", "seriH", "spin", "spinRate", "tilt", "deckH",
     "curtainKind", "open", "water", "poolH", "glow", "beam", "route", "locked", "name"];
 
   function normalizeStash(raw) {
@@ -12726,6 +12729,7 @@
     syncSceneBar();
     syncTabletSceneBar();
     syncPhoneViewer();
+    syncSpinRun();
     /* 並べ替えと入れ子は、掴んで動かす方に一本化した。
      * 矢印のボタンは同じことを二通りに増やすだけなので置かない。 */
   }
@@ -13119,6 +13123,136 @@
      保存されるのは行き先の値だけ。途中の位置は animU/animV に持ち、
      終わったら消す（途中で保存されても、絵の途中の位置は残らない）。 */
   let sceneAnim = null;
+  let spinRun = null;
+
+  const wrapSpinAngle = (angle) => ((angle % 360) + 540) % 360 - 180;
+
+  function spinningRevolves() {
+    const scene = sc();
+    if (!scene || !Array.isArray(scene.pieces)) return [];
+    return scene.pieces.filter((piece) => piece.type === "revolve"
+      && Math.abs(finite(piece.spinRate, 0)) > 0.01);
+  }
+
+  function sceneAnimOwnsPiece(piece) {
+    if (!sceneAnim) return false;
+    return [...(sceneAnim.pieces || []), ...(sceneAnim.exits || [])]
+      .some((entry) => entry.piece === piece);
+  }
+
+  function clearSpinRunAngles(run = spinRun) {
+    if (!run) return false;
+    let changed = false;
+    run.owned.forEach((piece) => {
+      if (sceneAnimOwnsPiece(piece) || !piece.animMech || piece.animMech.spin === undefined) return;
+      delete piece.animMech.spin;
+      if (!Object.keys(piece.animMech).length) delete piece.animMech;
+      changed = true;
+    });
+    run.owned.clear();
+    return changed;
+  }
+
+  function clearInactiveSpinRunAngles(run = spinRun) {
+    if (!run) return false;
+    const targets = new Set(spinningRevolves());
+    let changed = false;
+    run.owned.forEach((piece) => {
+      if (targets.has(piece) || sceneAnimOwnsPiece(piece)) return;
+      if (piece.animMech && piece.animMech.spin !== undefined) {
+        delete piece.animMech.spin;
+        if (!Object.keys(piece.animMech).length) delete piece.animMech;
+        changed = true;
+      }
+      run.owned.delete(piece);
+    });
+    return changed;
+  }
+
+  function stopSpinRun(renderAfter = true) {
+    const run = spinRun;
+    if (!run) return false;
+    cancelAnimationFrame(run.raf);
+    const changed = clearSpinRunAngles(run);
+    spinRun = null;
+    if (renderAfter && changed) render();
+    return changed;
+  }
+
+  function resetSpinRunClock() {
+    if (!spinRun) return;
+    spinRun.lastAt = null;
+    spinRun.elapsedMs = 0;
+  }
+
+  function pauseSpinRun() {
+    if (!spinRun) return;
+    clearSpinRunAngles(spinRun);
+    resetSpinRunClock();
+  }
+
+  function spinRunAllowed() {
+    return state.animateScenes && !document.hidden && spinningRevolves().length > 0;
+  }
+
+  function startSpinRun() {
+    if (!spinRunAllowed()) return;
+    const scene = sc();
+    const run = {
+      sceneId: scene.id,
+      raf: 0,
+      lastAt: null,
+      elapsedMs: 0,
+      owned: new Set(),
+    };
+    const step = (now) => {
+      if (spinRun !== run) return;
+      if (!spinRunAllowed() || sc().id !== run.sceneId) {
+        stopSpinRun();
+        return;
+      }
+      if (sceneAnim) {
+        run.lastAt = now;
+        run.elapsedMs = 0;
+        run.raf = requestAnimationFrame(step);
+        return;
+      }
+      const dt = run.lastAt === null ? 0 : Math.min(250, Math.max(0, now - run.lastAt));
+      run.lastAt = now;
+      run.elapsedMs += dt;
+      const pieces = spinningRevolves();
+      clearInactiveSpinRunAngles(run);
+      pieces.forEach((piece) => {
+        const spin = clamp(finite(piece.spin, 0), -180, 180);
+        const spinRate = clamp(finite(piece.spinRate, 0), -30, 30);
+        Object.defineProperty(piece, "animMech", {
+          configurable: true,
+          writable: true,
+          value: { spin: wrapSpinAngle(spin + spinRate * run.elapsedMs / 1000) },
+        });
+        run.owned.add(piece);
+      });
+      render();
+      run.raf = requestAnimationFrame(step);
+    };
+    spinRun = run;
+    run.raf = requestAnimationFrame(step);
+  }
+
+  function syncSpinRun(renderAfterStop = true) {
+    const scene = sc();
+    if (!spinRunAllowed()) {
+      stopSpinRun(renderAfterStop);
+      return;
+    }
+    if (spinRun && spinRun.sceneId === scene.id) {
+      const changed = clearInactiveSpinRunAngles(spinRun);
+      if (renderAfterStop && changed) render();
+      return;
+    }
+    stopSpinRun(renderAfterStop);
+    startSpinRun();
+  }
 
   const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
@@ -13132,7 +13266,7 @@
 
   const MACHINERY_ANIM_KEYS = {
     seri: { seriH: 0 },
-    revolve: { spin: 0 },
+    revolve: { spin: 0, spinRate: 0 },
     deck: { tilt: 0, deckH: 0 },
     curtain: { open: 0 },
     pool: { water: 0.9, poolH: -3 },
@@ -13153,12 +13287,14 @@
     });
     // はけの駒は描くためだけの写しなので、捨てるだけでよい
     sceneAnim = null;
+    resetSpinRunClock();
   }
 
   /* 動かすのは「次へ進むとき」だけ。前の場面へ戻るのは、作っている途中に
    * 見比べる動きなので、そのたびに動かれると邪魔になる（本人の指定）。 */
   function beginSceneAnim(fromScene) {
     stopSceneAnim();
+    pauseSpinRun();
     if (!state.animateScenes || !fromScene) return;
     const rows = state.project.scenes.filter((row) => row.kind === "scene");
     const wasAt = rows.findIndex((row) => row.id === fromScene.id);
@@ -17578,12 +17714,14 @@ ${propsPlotHtml}
       const piece = selectedPiece();
       if (!piece || piece.type !== kind) return;
       piece[key] = clamp(finite(event.target.value, fallback), min, max);
+      if (kind === "revolve") syncSpinRun(false);
       render();
       updateInspector();
       persistSoon();
     });
   };
   bindMachineryControl(els.pieceSpin, "revolve", "spin", 0, -180, 180);
+  bindMachineryControl(els.pieceSpinRate, "revolve", "spinRate", 0, -30, 30);
   bindMachineryControl(els.pieceTilt, "deck", "tilt", 0, -60, 60);
   bindMachineryControl(els.pieceDeckH, "deck", "deckH", 0, -4, 8);
   bindMachineryControl(els.pieceOpen, "curtain", "open", 0, 0, 100);
@@ -17736,13 +17874,16 @@ ${propsPlotHtml}
   if (els.animScenes) {
     els.animScenes.addEventListener("change", (e) => {
       state.animateScenes = e.target.checked;
-      if (!state.animateScenes) { stopSceneAnim(); render(); }
+      if (!state.animateScenes) stopSceneAnim();
+      syncSpinRun(false);
+      render();
       if (els.animMs) els.animMs.disabled = !state.animateScenes;
       syncSceneBar();
       persistSoon();
       announce(state.animateScenes ? "アニメーションを入れました。" : "アニメーションを切りました。");
     });
   }
+  document.addEventListener("visibilitychange", () => syncSpinRun());
 
   if (els.animMs) {
     els.animMs.addEventListener("input", (e) => {
@@ -17942,7 +18083,10 @@ ${propsPlotHtml}
    * 演者／舞台セット／照明の一覧側で決める。ここからはそこへ飛べるようにする。 */
   const MACHINERY_STATES = {
     seri: [{ key: "seriH", label: "高さ", min: -3, max: 4, fallback: 0, format: "m" }],
-    revolve: [{ key: "spin", label: "回転角", min: -180, max: 180, fallback: 0, format: "deg" }],
+    revolve: [
+      { key: "spin", label: "回転角", min: -180, max: 180, fallback: 0, format: "deg" },
+      { key: "spinRate", label: "回転速度", min: -30, max: 30, fallback: 0, format: "degPerSec" },
+    ],
     deck: [
       { key: "tilt", label: "傾斜角", min: -60, max: 60, fallback: 0, format: "deg" },
       { key: "deckH", label: "高さ", min: -4, max: 8, fallback: 0, format: "m" },
@@ -17960,6 +18104,7 @@ ${propsPlotHtml}
 
   function machineryStateText(value, format) {
     if (format === "deg") return isEn() ? `${value}°` : `${value}度`;
+    if (format === "degPerSec") return isEn() ? `${value} °/s` : `${value} 度/秒`;
     if (format === "open") return isEn() ? `${Math.round(value)}% open` : `${Math.round(value)}%開`;
     return `${value.toFixed(2)}m`;
   }
@@ -18052,6 +18197,7 @@ ${propsPlotHtml}
       if (output) output.textContent = machineryStateText(value, format);
     };
     syncMachineControl(els.pieceSpin, els.pieceSpinValue, "spin", 0, -180, 180, "deg");
+    syncMachineControl(els.pieceSpinRate, els.pieceSpinRateValue, "spinRate", 0, -30, 30, "degPerSec");
     syncMachineControl(els.pieceTilt, els.pieceTiltValue, "tilt", 0, -60, 60, "deg");
     syncMachineControl(els.pieceDeckH, els.pieceDeckHValue, "deckH", 0, -4, 8, "m");
     syncMachineControl(els.pieceOpen, els.pieceOpenValue, "open", 0, 0, 100, "open");

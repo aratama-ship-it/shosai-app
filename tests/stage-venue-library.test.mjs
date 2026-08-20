@@ -528,10 +528,10 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
   for (const [name, version] of [
     ["stage-venues.js", "16"],
     ["stage-venue-lines.js", "4"],
-    ["stage-i18n.js", "64"],
+    ["stage-i18n.js", "65"],
     ["stage-set-model.js", "1"],
     ["stage-set-builder.js", "1"],
-    ["stage-sketch.js", "263"],
+    ["stage-sketch.js", "264"],
     ["stage-venue-editor.js", "6"],
   ]) {
     const reference = `${name}?v=${version}`;

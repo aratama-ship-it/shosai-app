@@ -824,6 +824,8 @@
     "直径": "Diameter",
     "せり": "Stage lift",
     "0度": "0°",
+    "0 度/秒": "0 °/s",
+    "度/秒": "°/s",
     "0%開": "0% open",
     "舞台機構": "Stage machinery",
     "場面ごとに回転角・高さ・開きなどを変えられる舞台機構です。動きの再生や安全計算は行いません。": "Stage machinery whose angle, height or opening can change by scene. Motion playback and safety calculations are not included.",
@@ -841,6 +843,9 @@
     "寸法は推定値です。配置後に一つずつ動かし、寸法を直せます。": "Dimensions are estimates. After placing a preset, each item can be moved and resized separately.",
     "推定値・要確認": "Estimated — verify",
     "回転角": "Rotation angle",
+    "回転速度": "Spin speed",
+    "場面の間じゅう盆が回り続ける速さ。0で止まる。回転角は開始位相になる":
+      "How fast the revolve keeps turning throughout the scene. Set it to 0 to stop; the rotation angle is the starting phase.",
     "傾斜角": "Tilt angle",
     "開き": "Opening",
     "水位": "Water level",
@@ -960,7 +965,7 @@
       drop: "Drop / flying curtain", leg: "Leg", cyc: "Cyclorama",
     },
     machineryState: {
-      seriH: "Height ", spin: "Rotation ", tilt: "Tilt ", deckH: "Height ",
+      seriH: "Height ", spin: "Rotation ", spinRate: "Spin speed ", tilt: "Tilt ", deckH: "Height ",
       open: "Opening ", water: "Water level ", poolH: "Floor height ",
     },
     tool: {
