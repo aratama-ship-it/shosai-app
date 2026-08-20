@@ -892,8 +892,6 @@ function markdownReport({ issues, exclusions, meta, combinations }) {
   if (!exclusions.length) lines.push("対象外はありません。", "");
   exclusions.forEach((item) => lines.push(`- ${item.file} — ${item.reason}`));
   lines.push("", "## 環境メモ", "", `- Chrome: ${meta.chromeVersion}`, `- Node: ${meta.nodeVersion}`);
-  if (meta.preflightWarnings.length) meta.preflightWarnings.forEach((warning) => lines.push(`- WARN: ${warning}`));
-  else lines.push("- preflight WARN: なし");
   lines.push("");
   return lines.join("\n");
 }
@@ -976,7 +974,6 @@ async function main() {
     showCount: shows.length,
     chromeVersion,
     nodeVersion: process.version,
-    preflightWarnings: exclusions.filter((item) => !item.file.endsWith(".json")).map((item) => `${item.file}: ${item.reason}`),
   };
   if (options.out) {
     await writeReportFile(options.out, markdownReport({ issues, exclusions, meta, combinations }));
