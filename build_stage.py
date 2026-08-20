@@ -74,6 +74,7 @@ def ver(name: str) -> str:
 SKIP_JS = {
     "db.js", "data.js", "book-seeds.js", "shelf-classification.js",
     "stage-apparatus-data.js", "desk-media.js", "app.js", "roster.js",
+    "roster-crew.js",
 }
 
 

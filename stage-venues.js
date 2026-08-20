@@ -359,6 +359,95 @@
     }),
   ];
 
+  /* ── 実在会場プリセット ──────────────────────────────
+   * 形式プリセット（上のVENUES_V2）と違い、実在の劇場を図面から起こす。
+   * 数値は目安表示にだけ使う方針（このファイル冒頭）は実在会場でも同じ。
+   *
+   * シアタートラム（世田谷パブリックシアター・三軒茶屋）基本形態＝掘込みエンド形式。
+   * 出典: 公式図面「劇場平面図・断面図 基本形態掘込みエンド形式」2014.1改訂版
+   *       ＋公式仕様ページ https://setagaya-pt.jp/guide/tram/
+   *       （間口12.7m・奥行11.491m・高さ7m・スノコ高9.1m・基本225席。図面と一致を確認）
+   *       図面の最新版は2026年4月改訂。差分未確認のまま2014年版を採る。
+   * 図面から読めるが未反映のもの: 1枚迫り2715×5442（2013年度改修で分割機構は廃止）、
+   *       客席段床（±0/-240/-480/-720）、搬入エレベーター W1890×H2780×L5225〜5300・2500kg、
+   *       サイドギャラリー+5960・ギャラリー固定バトン+4000。
+   */
+  const theatreTramV2 = (() => {
+    /* 平面は長方形ではなく凸形。図面PDFのベクター実測（縮尺35.28mm/pt、
+     * 迫り5442mmで検証。左右対称・中心線一致を確認）:
+     *   奥の箱   内法 8.41m × 奥行約2.96m（黒扉の前）
+     *   絞り     内法 7.29m × 奥行約1.2m（両側の壁張り出し＋扉帯。扉開口は絞り幅に均す）
+     *   主室     内法14.71m（公式「開口部14.7m」と一致）
+     * 公式の間口12.7mは主室の側面ギャラリー内法（実測12.81m）にあたる。 */
+    const width = 14.7;    // 主室の内法（開口部）
+    const depth = 11.491;  // 舞台奥行＝奥壁から掘込み際まで（公式値。実測とも一致）
+    const houseDepth = 8.744; // 客席部の奥行 ＝ 断面図の全長20235 − 舞台奥行（近似）
+    const houseBack = roundM(depth + houseDepth);
+    const cx = width / 2;
+    const boxHalf = 8.41 / 2;    // 奥の箱
+    const neckHalf = 7.29 / 2;   // 絞り
+    const boxEnd = 2.96;         // 奥の箱の終わり（奥壁から）
+    const neckEnd = 5.43;        // 絞りの終わり＝主室の始まり
+    const variant = {
+      id: "standard",
+      label: "基本形態（掘込みエンド）",
+      floor: {
+        outline: [
+          [roundM(cx - boxHalf), 0], [roundM(cx + boxHalf), 0],
+          [roundM(cx + boxHalf), boxEnd], [roundM(cx + neckHalf), boxEnd],
+          [roundM(cx + neckHalf), neckEnd], [width, neckEnd],
+          [width, depth], [0, depth],
+          [0, neckEnd], [roundM(cx - neckHalf), neckEnd],
+          [roundM(cx - neckHalf), boxEnd], [roundM(cx - boxHalf), boxEnd],
+        ],
+        levels: [],
+      },
+      ceiling: {
+        heightM: 7,
+        gridM: 9.1,  // スノコ＝バックバトンとびきり+9100
+        rigging: "full",
+        note: "使える高さは約7m（照明用バトンとびきり+7310）。バックバトンとびきり＝+9100。実会場では要確認。",
+      },
+      audience: [{
+        id: "audience-front",
+        // 座席の帯は主室より狭い（両側が通路とギャラリー）。平面図の座席列からの近似。
+        polygon: [[2.25, depth], [12.45, depth], [12.45, houseBack], [2.25, houseBack]],
+        mode: "seated",
+        eyeM: 1.2,
+        side: "front",
+      }],
+      fixtures: [],
+      access: [],
+      capacity: { seats: 225 },
+    };
+    return {
+      format: "venue-v2",
+      id: "theatre-tram",
+      label: "シアタートラム",
+      basis: "theatre-tram",
+      scale: { gridM: 1, confidence: "approx" },
+      floor: variant.floor,
+      ceiling: variant.ceiling,
+      audience: variant.audience,
+      fixtures: variant.fixtures,
+      access: variant.access,
+      provenance: {
+        source: "図面",
+        confidence: "high",
+        sharing: "ok",
+        note: "公式図面2014.1改訂版を読み取り、公式仕様ページの数値と一致を確認。最新図面は2026年4月改訂版（未反映）。",
+      },
+      short: "実在・三軒茶屋",
+      realVenue: true,
+      // 奥壁の造作。黒扉の開口2.58mは平面図の壁走査実測（奥壁中央）。高さは写真から壁いっぱいと推定
+      backWall: [{ label: "黒扉", xM: 7.35, widthM: 2.58, heightM: 7 }],
+      note: "世田谷パブリックシアターの小劇場。客席側を掘り込んだエンド形式で、額縁が無く舞台と客席が同じ箱に入る。平面は凸形：奥は8.4m幅の箱（黒扉）、絞りを経て主室は14.7m。前端寄り中央に1枚迫り（5.44×2.72m）。客席は段床11列・基本225席。",
+      reference: "世田谷パブリックシアター 公式図面（2014.1改訂版）・仕様 https://setagaya-pt.jp/guide/tram/",
+      sizes: [variant],
+    };
+  })();
+  VENUES_V2.push(theatreTramV2);
+
   const outlineDimensions = (outline) => {
     const xs = outline.map((point) => point[0]);
     const ys = outline.map((point) => point[1]);
@@ -397,6 +486,15 @@
     frame: venue.fixtures.some((fixture) => fixture.type === "wall" && fixture.frame === true),
     sizes: venue.sizes.map(legacySize),
     source: venue.reference,
+    // 実在会場は平面図で長方形ではなく実際の輪郭を描く（custom は使わない。
+    // custom にすると正面図が近似席の描画へ落ちるため、輪郭だけを渡す）
+    ...(venue.realVenue ? {
+      realVenue: true,
+      outline: clone(venue.floor.outline),
+      audienceAreas: clone(venue.audience),
+      gridM: venue.ceiling.gridM,
+      backWall: clone(venue.backWall || []),
+    } : {}),
   }));
 
   const validPoint = (point) => Array.isArray(point) && point.length === 2 &&

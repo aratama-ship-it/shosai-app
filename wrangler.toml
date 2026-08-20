@@ -16,3 +16,12 @@ binding = "ASSETS"
 # 静的ファイルより先に必ず worker.js を通す。これが無いと、資料棚などの
 # 既存ファイルへのアクセスがBasic認証をすり抜けてしまう。
 run_worker_first = true
+
+[durable_objects]
+bindings = [
+  { name = "SESSION_ROOM", class_name = "SessionRoom" }
+]
+
+[[migrations]]
+tag = "v1-session-room"
+new_sqlite_classes = ["SessionRoom"]
