@@ -1315,13 +1315,18 @@
         apparatusSources: Array.isArray(item.apparatusSources) ? item.apparatusSources : [],
       })),
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `紙面-${title}.json`.replace(/[\\/:*?"<>|]/g, "_");
-    a.click();
-    URL.revokeObjectURL(a.href);
-    if (status) status.textContent = `「${title}」をJSONで書き出しました。AIに渡すと演目構成の下書きに変換できます。`;
+    try {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `紙面-${title}.json`.replace(/[\\/:*?"<>|]/g, "_");
+      a.click();
+      URL.revokeObjectURL(a.href);
+      if (status) status.textContent = `「${title}」をJSONで書き出しました。AIに渡すと演目構成の下書きに変換できます。`;
+    } catch (error) {
+      console.error("scrapbook export: 紙面を書き出せませんでした", error);
+      if (status) status.textContent = "紙面を書き出せませんでした。もう一度お試しください。";
+    }
   }
 
   function openScrapbookPage(id) {
@@ -4158,7 +4163,9 @@
   }
 
   function route() {
-    const h = location.hash || "#db";
+    /* 開いた直後の画面は舞台スケッチ（2026-08-16 本人指定）。
+       URLに#が付いているときは従来どおりその画面を尊重する。 */
+    const h = location.hash || "#stage";
     if (h.startsWith("#db/")) {
       showView("db");
       selectWork(decodeURIComponent(h.slice(4)));
@@ -4363,7 +4370,6 @@
     query: "",
     type: "",
     company: "",
-    person: "",
     depth: "",
     lens: "",
     sort: "company",
@@ -4415,7 +4421,9 @@
     return `<span class="db-depth-mark research-level-${esc(amountLevel)} depth-${esc(d.level)}" title="${esc(`${d.cause} — ${d.reason}`)}">${esc(amountLabel)}</span>`;
   };
 
-  // 全文検索索引: 作品の全項目＋人名＋演出特徴＋リンクされた要素まで対象にする
+  // 全文検索索引: 作品の全項目＋演出特徴＋リンクされた要素まで対象にする。
+  // 人物クレジットは入れない（人から作品を引くのは名簿の制作・技術スタッフ索引の役目）。
+  // 出典メモなどの本文に書かれた人名までは消さない。あれは作品の記述そのものなので。
   let searchIdx;
 
   function buildSearchIndex() {
@@ -4457,10 +4465,7 @@
         depthMeta(w).reason,
         depthMeta(w).next_step,
       ]);
-      add("人", (w.people || []).map((p) => {
-        const per = DB.persons[p.person_id];
-        return `${per ? `${per.name || ""} ${per.name_ja || ""}` : p.person_id} ${p.credit_label || p.role || ""}`;
-      }));
+      // 人物名は資料棚の全文検索に入れない。人から作品を引くのは名簿の仕事。
       add("演出特徴", (w.staging_features || []).map((f) => {
         const ft = featMap.get(f.feature_id);
         return `${ft ? `${ft.label_ja} ${ft.description || ""}` : f.feature_id} ${f.note || ""}`;
@@ -4579,8 +4584,6 @@
     return dbShelfWorks(filters.shelf).filter((w) => {
       if (filters.type && !matchesDbType(w, filters.type)) return false;
       if (filters.company && (w.company || "") !== filters.company) return false;
-      if (filters.person && !(w.people || []).some((p) => p.person_id === filters.person))
-        return false;
       if (filters.depth && String(depthMeta(w).amount_level) !== filters.depth) return false;
       if (filters.lens && !(w.staging_lenses || []).some((lens) => lens.id === filters.lens))
         return false;
@@ -4830,11 +4833,7 @@
       return li ? sec(title, `<ul>${li}</ul>`, cls) : "";
     };
 
-    const peopleHtml = (w.people || [])
-      .map((p) =>
-        `<li>${esc(personName(p.person_id))}<span class="dim"> — ${esc(p.credit_label || p.role || "")}</span></li>`)
-      .join("");
-
+    // 作品詳細に独立した「人」セクションは置かない（w.people は名簿の索引が使う）。
     const sfHtml = (w.staging_features || [])
       .map((f) => {
         const ft = featMap.get(f.feature_id);
@@ -4915,7 +4914,6 @@
     const depthBasis = depth.basis || {};
     const depthBasisText = [
       `個別URL ${depthBasis.source_url_count || 0}`,
-      `人物 ${depthBasis.people_count || 0}`,
       `演出特徴 ${depthBasis.staging_feature_count || 0}`,
       `再利用要素 ${depthBasis.element_count || 0}`,
       `制作項目 ${depthBasis.technical_field_count || 0}/6`,
@@ -4973,7 +4971,6 @@
       ${listSec("衣装", w.costume_features)}
       ${listSec("照明", w.lighting_features)}
       ${lensHtml ? sec("横断の手がかり（正本メモからの抽出）", `<p class="dbd-lens-note">ここにある型は、既存の構造・場面・観客体験などの記述を手がかりにした資料棚上の読み方です。作品の因果や意図を新たに断定するものではありません。</p>${lensHtml}`) : ""}
-      ${peopleHtml ? sec(`人（${(w.people || []).length}）`, `<ul>${peopleHtml}</ul>`) : ""}
       ${sfHtml ? sec(`演出特徴（${(w.staging_features || []).length}）`, sfHtml) : ""}
       ${elHtml ? sec(`関連表現 — この作品の要素（${els.length}）`, elHtml) : ""}
       ${relHtml ? sec("関連表現 — 要素どうしの関係", relHtml) : ""}
@@ -5033,22 +5030,7 @@
       `<option value="">すべての会社（${comps.length}）</option>` +
       comps.map(([c, n]) => `<option value="${esc(c)}">${esc(c)}（${n}）</option>`).join("");
 
-    // 人: 2作品以上に関わる人だけ、作品数の多い順（ディレクター・デザイナー等）
-    const perCount = new Map();
-    for (const w of DB.works)
-      for (const p of new Set((w.people || []).map((x) => x.person_id)))
-        perCount.set(p, (perCount.get(p) || 0) + 1);
-    const pers = [...perCount.entries()]
-      .filter(([, n]) => n >= 2)
-      .sort((a, b) => b[1] - a[1] || personName(a[0]).localeCompare(personName(b[0]), "ja"));
-    $("#db-person").innerHTML =
-      `<option value="">すべての人（2作品以上: ${pers.length}名）</option>` +
-      pers
-        .map(([pid, n]) => {
-          const roles = (DB.persons[pid] ? DB.persons[pid].roles : []).slice(0, 2).join("・");
-          return `<option value="${esc(pid)}">${esc(personName(pid))}（${n}）${roles ? " — " + esc(roles) : ""}</option>`;
-        })
-        .join("");
+    // 人での絞り込みは資料棚に置かない。人を入口に読むのは名簿（#roster）の役目。
 
     $("#db-depth").innerHTML =
       `<option value="">すべての調査レベル（${DB.works.length}）</option>` +
@@ -5069,7 +5051,6 @@
       });
     bindSelect("#db-type", "type");
     bindSelect("#db-company", "company");
-    bindSelect("#db-person", "person");
     bindSelect("#db-depth", "depth");
     bindSelect("#db-sort", "sort");
     $("#db-lens-clear").addEventListener("click", () => {

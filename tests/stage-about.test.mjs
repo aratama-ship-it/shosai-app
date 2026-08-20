@@ -7,11 +7,11 @@ const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const i18nSource = await readFile(new URL("../stage-i18n.js", import.meta.url), "utf8");
 const stageSource = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
 const japaneseSource = await readFile(
-  new URL("../../2026-08-03_舞台スケッチ_このアプリについて_約1000字版.md", import.meta.url),
+  new URL("../../docs/stage-sketch/2026-08-03_舞台スケッチ_このアプリについて_約1000字版.md", import.meta.url),
   "utf8",
 );
 const englishSource = await readFile(
-  new URL("../../2026-08-03_舞台スケッチ_このアプリについて_英語版.md", import.meta.url),
+  new URL("../../docs/stage-sketch/2026-08-03_舞台スケッチ_このアプリについて_英語版.md", import.meta.url),
   "utf8",
 );
 

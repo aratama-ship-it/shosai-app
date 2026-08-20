@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, readdir } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { createEditPlan } from "../src/edit-plan.js";
 import { ProjectStore } from "../src/project-store.js";
 import { planEditSchema } from "../src/schemas.js";
 import { GUIDE } from "../src/stage-model.js";
@@ -54,6 +55,43 @@ async function createSwapShow(projectId = "swap-show") {
       },
     ],
   });
+  return { store, document };
+}
+
+async function createAmbiguousPerformerShow(projectId = "ambiguous-performer-show") {
+  const store = await temporaryStore();
+  const document = await store.create({
+    projectId,
+    title: "同名演者の確認テスト",
+    scenes: [
+      {
+        id: "scene-1",
+        title: "上手のミナ",
+        placements: [{ assetType: "performer", assetName: "ミナ", u: 0.2, v: 0.6 }],
+      },
+      {
+        id: "scene-2",
+        title: "下手のミナ",
+        placements: [{ assetType: "performer", assetName: "ソラ", u: 0.8, v: 0.6 }],
+      },
+    ],
+  });
+  const duplicate = {
+    ...document.project.cast.find((item) => item.name === "ソラ"),
+    id: "cast-mina-duplicate",
+    name: "ミナ",
+    color: "#abcdef",
+  };
+  const scene = document.project.scenes.find((item) => item.id === "scene-2");
+  const piece = scene.pieces.find((item) => item.castId);
+  piece.castId = duplicate.id;
+  piece.name = duplicate.name;
+  piece.color = duplicate.color;
+  document.project.cast = [
+    document.project.cast.find((item) => item.name === "ミナ"),
+    duplicate,
+  ];
+  await writeFile(store.projectPath(projectId), JSON.stringify(document, null, 2));
   return { store, document };
 }
 
@@ -547,6 +585,113 @@ test("combines supplied and MCP-detected questions without duplicates", async ()
 
   assert.equal(plan.status, "needs_clarification");
   assert.deepEqual(plan.questions, ["どの円座を指していますか。", detectedQuestion]);
+});
+
+test("returns structured clarifications when a performer name matches multiple assets", async () => {
+  const { store } = await createAmbiguousPerformerShow();
+  const plan = await store.planEdit({
+    projectId: "ambiguous-performer-show",
+    expectedRevision: 1,
+    request: "ミナを少し右へ",
+    operations: [{
+      op: "update_placement",
+      sceneId: "scene-2",
+      target: { assetType: "performer", assetName: "ミナ" },
+      changes: { u: 0.9 },
+    }],
+  });
+
+  assert.equal(plan.status, "needs_clarification");
+  assert.equal(plan.clarifications.length, 1);
+  assert.equal(plan.clarifications[0].id, "clarify-1");
+  assert.equal(plan.clarifications[0].assetType, "performer");
+  assert.equal(plan.clarifications[0].assetName, "ミナ");
+  assert.equal(plan.clarifications[0].text, plan.questions[0]);
+  assert.equal(plan.clarifications[0].options.length, 2);
+  assert.ok(plan.clarifications[0].options.every((option) => option.assetId));
+});
+
+test("uses a matching resolution to target the intended ambiguous performer", async () => {
+  const { store, document } = await createAmbiguousPerformerShow("resolved-performer-show");
+  const intended = document.project.cast.find((item) => item.id === "cast-mina-duplicate");
+  const plan = await store.planEdit({
+    projectId: "resolved-performer-show",
+    expectedRevision: 1,
+    request: "下手のミナを少し右へ",
+    operations: [{
+      op: "update_placement",
+      sceneId: "scene-2",
+      target: { assetType: "performer", assetName: "ミナ" },
+      changes: { u: 0.9 },
+    }],
+    resolutions: [{ assetType: "performer", assetName: "ミナ", assetId: intended.id }],
+  });
+
+  assert.equal(plan.status, "proposed");
+  assert.deepEqual(plan.questions, []);
+  assert.deepEqual(plan.clarifications, []);
+  assert.equal(plan.diff[0].pieces.length, 1);
+  assert.equal(plan.diff[0].pieces[0].label, "ミナ");
+  assert.equal(plan.diff[0].pieces[0].from.u, 0.8);
+  assert.equal(plan.diff[0].pieces[0].to.u, 0.9);
+});
+
+test("ignores a resolution whose assetId is outside the ambiguous candidates", async () => {
+  const { store } = await createAmbiguousPerformerShow("bad-resolution-show");
+  const plan = await store.planEdit({
+    projectId: "bad-resolution-show",
+    expectedRevision: 1,
+    request: "ミナを少し右へ",
+    operations: [{
+      op: "update_placement",
+      sceneId: "scene-2",
+      target: { assetType: "performer", assetName: "ミナ" },
+      changes: { u: 0.9 },
+    }],
+    resolutions: [{ assetType: "performer", assetName: "ミナ", assetId: "cast-outside" }],
+  });
+
+  assert.equal(plan.status, "needs_clarification");
+  assert.equal(plan.clarifications.length, 1);
+});
+
+test("resolutions are optional for backward compatibility", () => {
+  const base = {
+    projectId: "resolution-schema-show",
+    expectedRevision: 1,
+    request: "質問する",
+    operations: [{
+      op: "add_placement",
+      sceneId: "scene-1",
+      placement: { assetType: "performer" },
+    }],
+  };
+  const values = {};
+  for (const [key, schema] of Object.entries(planEditSchema)) {
+    const result = schema.safeParse(base[key]);
+    assert.equal(result.success, true, `${key} accepts omitted resolutions`);
+    values[key] = result.data;
+  }
+  assert.equal(values.resolutions, undefined);
+});
+
+test("validation-error questions do not produce structured clarifications", async () => {
+  const { document } = await createSwapShow("validation-question-show");
+  document.project.scenes[0].pieces[0].castId = "cast-missing";
+  const plan = createEditPlan(document, {
+    projectId: "validation-question-show",
+    expectedRevision: 1,
+    request: "場面メモを更新する",
+    operations: [{
+      op: "update_scene_fields",
+      sceneId: "scene-1",
+      note: "検証エラー由来の質問を確認",
+    }],
+  });
+
+  assert.equal(plan.status, "needs_clarification");
+  assert.match(plan.questions.join("\n"), /演者参照 cast-missing が名簿にありません/);
+  assert.deepEqual(plan.clarifications, []);
 });
 
 test("questions accepts at most ten strings of 800 characters", () => {

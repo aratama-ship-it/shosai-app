@@ -36,9 +36,12 @@ test("refreshBases はティシューの近くでTRAP_GRIP.hangを使って掴�
   assert.match(body, /piece\.base = Math\.max\(0, grip - TRAP_GRIP\.hang \* H\)/);
 });
 
-test("mountKindOf はティシューを返す", () => {
-  const body = functionBody("mountKindOf", "performerRig");
+test("mountKindFrom はティシューを返す（mountKindOf は委譲）", () => {
+  // 2026-08-20 FPV肉付け移植で、判定本体は pieces を引数で受ける mountKindFrom へ移った
+  const body = functionBody("mountKindFrom", "resolvePoseId");
   assert.match(body, /holder\.type === "tissue"\) return "tissue"/);
+  const delegate = functionBody("mountKindOf", "performerRig");
+  assert.match(delegate, /mountKindFrom\(piece, sc\(\)\.pieces\)/);
 });
 
 test("performerRig はティシュー上でトラピーズのぶら下がり姿勢を使う", () => {

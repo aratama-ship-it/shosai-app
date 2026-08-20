@@ -229,14 +229,14 @@ test("旧下書きは一度だけ会場ライブラリへ取り込み、旧キ�
   assert.equal(second.venues.library.list().length, 1, "再起動で旧下書きを重複取り込みしない");
 });
 
-test("会場セレクト用一覧は既存5プリセットの後ろにライブラリ会場を並べる", () => {
+test("会場セレクト用一覧は既存6プリセットの後ろにライブラリ会場を並べる", () => {
   const storage = new MemoryStorage({
     "shosai-stage-venues-v1": JSON.stringify([venue("hall-a", "大広間")]),
   });
   const { venues } = loadModels(storage);
   assert.deepEqual(
     Array.from(venues.list, (item) => item.id),
-    ["proscenium", "thrust", "arena", "outdoor", "blackbox", "hall-a"],
+    ["proscenium", "thrust", "arena", "outdoor", "blackbox", "theatre-tram", "hall-a"],
   );
   assert.equal(venues.byId("hall-a").custom, true);
   assert.deepEqual(Array.from(venues.byId("hall-a").outline[0]), [2, 2]);
@@ -526,9 +526,12 @@ test("平面の重ね順は床・可動・可動什器・死角・見える限�
 test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う", () => {
   assert.match(sketchSource, /const STAGE_KEYS = \[[\s\S]*?"shosai-stage-venues-v1"/);
   for (const [name, version] of [
-    ["stage-venues.js", "16"],
+    ["stage-venues.js", "20"],
     ["stage-venue-lines.js", "4"],
-    ["stage-sketch.js", "232"],
+    ["stage-i18n.js", "72"],
+    ["stage-set-model.js", "1"],
+    ["stage-set-builder.js", "1"],
+    ["stage-sketch.js", "280"],
     ["stage-venue-editor.js", "6"],
   ]) {
     const reference = `${name}?v=${version}`;
@@ -536,7 +539,12 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
     assert.ok(stageHtml.includes(reference), `${reference} がstage.htmlにある`);
     assert.ok(swSource.includes(`./${reference}`), `${reference} がstage-sw.jsにある`);
   }
-  for (const page of [indexSource, stageHtml]) assert.ok(page.includes("style.css?v=168"));
-  assert.ok(swSource.includes("./style.css?v=168"));
-  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v59";/);
+  for (const page of [indexSource, stageHtml]) assert.ok(page.includes("style.css?v=189"));
+  assert.ok(swSource.includes("./style.css?v=189"));
+  assert.ok(stageHtml.includes("stage-machinery.js?v=2"));
+  assert.ok(swSource.includes("./stage-machinery.js?v=2"));
+  assert.ok(stageHtml.includes("stage-first-person.js?v=15"));
+  assert.ok(swSource.includes("./stage-first-person.js?v=15"));
+  // 版番号そのものは毎回上がるので固定値にせず、形だけを検査する（stage-export-zip.test.mjsと同じ方針）。
+  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v\d+";/);
 });

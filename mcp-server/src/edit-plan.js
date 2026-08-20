@@ -36,7 +36,33 @@ function candidateText(project, assetType, asset) {
   return `${asset.name} / ${kind} / 登場場面: ${scenes.join("、") || "なし"}`;
 }
 
-function resolveAsset(project, reference, questions, label) {
+function resolutionFor(resolutions, reference, matches) {
+  const resolution = resolutions.find((item) => item
+    && item.assetType === reference.assetType
+    && item.assetName === reference.assetName
+    && matches.some((asset) => asset.id === item.assetId));
+  return resolution || null;
+}
+
+function pushClarification(project, reference, questions, clarifications, label, matches) {
+  const candidates = matches
+    .map((asset) => candidateText(project, reference.assetType, asset));
+  const text = `${label}「${reference.assetName}」は${matches.length}件に一致しました。` +
+    `名前を特定してください。候補: ${candidates.join(" / ") || "候補なし"}`;
+  questions.push(text);
+  clarifications.push({
+    id: `clarify-${clarifications.length + 1}`,
+    assetType: reference.assetType,
+    assetName: reference.assetName,
+    text,
+    options: matches.map((asset, index) => ({
+      assetId: asset.id,
+      label: candidates[index],
+    })),
+  });
+}
+
+function resolveAsset(project, reference, questions, clarifications, resolutions, label) {
   const assets = assetsFor(project, reference.assetType);
   if (reference.assetId) {
     const asset = assets.find((item) => item.id === reference.assetId);
@@ -57,12 +83,10 @@ function resolveAsset(project, reference, questions, label) {
     );
   }
 
-  const candidates = matches
-    .map((asset) => candidateText(project, reference.assetType, asset));
-  questions.push(
-    `${label}「${reference.assetName}」は${matches.length}件に一致しました。` +
-    `名前を特定してください。候補: ${candidates.join(" / ") || "候補なし"}`,
-  );
+  const resolution = resolutionFor(resolutions, reference, matches);
+  if (resolution) return matches.find((asset) => asset.id === resolution.assetId);
+
+  pushClarification(project, reference, questions, clarifications, label, matches);
   return null;
 }
 
@@ -204,6 +228,8 @@ function createContext(document) {
     linesByScene: new Map(),
     forcedUpdatePieceIds: new Set(),
     questions: [],
+    clarifications: [],
+    resolutions: [],
     riskKinds: new Set(),
   };
 }
@@ -343,8 +369,12 @@ function applyOperation(context, operation) {
   const { project } = context.document;
   if (operation.op === "replace_scene_asset") {
     const scene = sceneOrThrow(project, operation.sceneId);
-    const fromAsset = resolveAsset(project, operation.from, context.questions, "置換対象");
-    const toAsset = resolveAsset(project, operation.to, context.questions, "置換先");
+    const fromAsset = resolveAsset(
+      project, operation.from, context.questions, context.clarifications, context.resolutions, "置換対象",
+    );
+    const toAsset = resolveAsset(
+      project, operation.to, context.questions, context.clarifications, context.resolutions, "置換先",
+    );
     if (fromAsset && toAsset) replaceInScene(context, scene, fromAsset, toAsset, operation);
     return;
   }
@@ -353,8 +383,12 @@ function applyOperation(context, operation) {
     const scenes = operation.sceneIds === "all"
       ? project.scenes.filter((scene) => scene.kind === "scene")
       : operation.sceneIds.map((sceneId) => sceneOrThrow(project, sceneId));
-    const fromAsset = resolveAsset(project, operation.from, context.questions, "置換対象");
-    const toAsset = resolveAsset(project, operation.to, context.questions, "置換先");
+    const fromAsset = resolveAsset(
+      project, operation.from, context.questions, context.clarifications, context.resolutions, "置換対象",
+    );
+    const toAsset = resolveAsset(
+      project, operation.to, context.questions, context.clarifications, context.resolutions, "置換先",
+    );
     if (!fromAsset || !toAsset) return;
     let replacementCount = 0;
     for (const scene of scenes) {
@@ -389,7 +423,9 @@ function applyOperation(context, operation) {
 
   if (operation.op === "remove_placement") {
     const scene = sceneOrThrow(project, operation.sceneId);
-    const asset = resolveAsset(project, operation.target, context.questions, "削除対象");
+    const asset = resolveAsset(
+      project, operation.target, context.questions, context.clarifications, context.resolutions, "削除対象",
+    );
     if (!asset) return;
     const indices = selectedPieces(
       scene,
@@ -407,7 +443,9 @@ function applyOperation(context, operation) {
 
   if (operation.op === "update_placement") {
     const scene = sceneOrThrow(project, operation.sceneId);
-    const asset = resolveAsset(project, operation.target, context.questions, "更新対象");
+    const asset = resolveAsset(
+      project, operation.target, context.questions, context.clarifications, context.resolutions, "更新対象",
+    );
     if (!asset) return;
     const indices = selectedPieces(
       scene,
@@ -580,14 +618,16 @@ function buildDiff(context) {
   });
 }
 
-function executeOperations(document, operations) {
+function executeOperations(document, operations, resolutions = []) {
   const context = createContext(document);
+  context.resolutions = resolutions;
   for (const operation of operations) applyOperation(context, operation);
   return context;
 }
 
 export function createEditPlan(document, input) {
   const operations = normalizeOperations(input.operations || []);
+  const resolutions = Array.isArray(input.resolutions) ? input.resolutions : [];
   const suppliedQuestions = [...new Set((input.questions || [])
     .map((question) => String(question).trim())
     .filter(Boolean))];
@@ -597,7 +637,7 @@ export function createEditPlan(document, input) {
     );
   }
   const preview = clone(document);
-  const context = executeOperations(preview, operations);
+  const context = executeOperations(preview, operations, resolutions);
   const check = validateDocument(preview);
   if (!check.valid) {
     context.questions.push(`適用後のJSONを検証できません: ${check.errors.join(" / ")}`);
@@ -632,6 +672,7 @@ export function createEditPlan(document, input) {
     summary,
     warnings,
     questions,
+    clarifications: context.clarifications,
     requiresConfirmation: true,
   };
 }

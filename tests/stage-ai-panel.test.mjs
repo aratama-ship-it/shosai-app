@@ -92,6 +92,96 @@ test("needs_clarificationの計画では採るボタンを出さない", () => {
   assert.match(stageSource, /askAdopt\.hidden = !STAGE_AI_PANEL_MODEL\.canAdopt\(plan\)/);
 });
 
+test("clarificationsを持つ計画は選択肢ボタンとして描く", () => {
+  const { model } = loadPanelModel(bridgeStub());
+  const plan = model.normalizePlan({
+    kind: "stage-sketch-edit-plan",
+    version: 1,
+    planId: "plan-clarify",
+    projectId: "show-1",
+    expectedRevision: 1,
+    request: "ミナを動かす",
+    status: "needs_clarification",
+    summary: "確認が必要です",
+    diff: [],
+    warnings: [],
+    questions: ["どちらのミナですか"],
+    clarifications: [{
+      id: "clarify-1",
+      assetType: "performer",
+      assetName: "ミナ",
+      text: "どちらのミナですか",
+      options: [
+        { assetId: "cast-a", label: "ミナ / 演者 / 登場場面: A" },
+        { assetId: "cast-b", label: "ミナ / 演者 / 登場場面: B" },
+      ],
+    }],
+  });
+
+  assert.equal(plan.clarifications.length, 1);
+  assert.equal(plan.clarifications[0].options.length, 2);
+  assert.match(stageSource, /function renderStageAskClarifications\(plan\)/);
+  assert.match(stageSource, /button\.setAttribute\(\s*"aria-pressed"/);
+  assert.match(stageSource, /row\.className = "stage-action-row"/);
+});
+
+test("全部答えるまでこの答えで作り直すを有効にしない", () => {
+  const { model } = loadPanelModel(bridgeStub());
+  const plan = {
+    status: "needs_clarification",
+    clarifications: [
+      { id: "clarify-1", assetType: "performer", assetName: "ミナ", options: [{ assetId: "cast-a" }] },
+      { id: "clarify-2", assetType: "set", assetName: "円座", options: [{ assetId: "set-a" }] },
+    ],
+  };
+  const partial = new Map([["clarify-1", "cast-a"]]);
+  const complete = new Map([["clarify-1", "cast-a"], ["clarify-2", "set-a"]]);
+
+  assert.equal(model.canReplanWithResolutions(plan, partial), false);
+  assert.equal(model.canReplanWithResolutions(plan, complete), true);
+  assert.match(stageSource, /askResolve\.disabled = !canResolve/);
+});
+
+test("clarificationsの無いneeds_clarification計画は従来の文字列質問表示に戻す", () => {
+  const { model } = loadPanelModel(bridgeStub());
+  const plan = model.normalizePlan({
+    kind: "stage-sketch-edit-plan",
+    version: 1,
+    planId: "plan-old-question",
+    projectId: "show-1",
+    expectedRevision: 1,
+    request: "質問",
+    status: "needs_clarification",
+    summary: "確認が必要です",
+    diff: [],
+    warnings: [],
+    questions: ["確認してください"],
+  });
+
+  assert.equal(Array.isArray(plan.clarifications), true);
+  assert.equal(plan.clarifications.length, 0);
+  assert.match(stageSource, /if \(!renderStageAskClarifications\(plan\)\) \{\s*appendStageAskList\(els\.askDraftBody, "確認が必要です", plan\.questions\);/);
+});
+
+test("この答えで作り直すプロンプトにはresolutions行を足す", () => {
+  const { model } = loadPanelModel(bridgeStub());
+  const plan = {
+    clarifications: [{
+      id: "clarify-1",
+      assetType: "performer",
+      assetName: "ミナ",
+      options: [{ assetId: "cast-b", label: "ミナ / 演者 / 登場場面: B" }],
+    }],
+  };
+  const resolutions = model.resolutionsFromSelections(plan, new Map([["clarify-1", "cast-b"]]));
+
+  assert.equal(JSON.stringify(resolutions), JSON.stringify([
+    { assetType: "performer", assetName: "ミナ", assetId: "cast-b" },
+  ]));
+  assert.match(stageSource, /本人の答え（この配列を plan_edit の resolutions へそのまま入れる）:/);
+  assert.match(stageSource, /requestStageAskPlan\(resolutions\)/);
+});
+
 test("AI実行権限の初回確認は承認後に一度だけ出す", () => {
   const { model } = loadPanelModel(bridgeStub());
   const values = new Map();

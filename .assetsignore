@@ -1,0 +1,20 @@
+# wrangler deploy が静的アセットとしてアップロードする対象から除外するファイル。
+# .gitignore と同じ書式。ここに無いものは "." 以下すべてがアップロード対象になる。
+
+.git/
+.wrangler/
+node_modules/
+mac-app/build/
+mac-app/Sources/
+mac-app/Resources/
+.stage-sketch-mcp/
+.codex/
+.mcp.json
+*_backup_*
+* 2.*
+* [0-9].*
+.DS_Store
+docs/
+tools/
+mcp-server/
+tests/

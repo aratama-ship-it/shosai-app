@@ -2,8 +2,8 @@
 
 - 状態: **完了（2026-08-12夜。Codex実装・Claude検証済み）**
 - 担当: Claude（夜間仕込みセッション、MBP）。実装はCodexへ委譲し、Claudeが検証する。
-- 根拠仕様: `show-creative-ideas/2026-08-08_会場エディタ_方式.md` 4章／venue-v2仕様6章（133行の方針）
-- HANDOFF: `show-creative-ideas/HANDOFF_venue.md` 4章の残り2「カスタム会場の正面図」
+- 根拠仕様: `show-creative-ideas/docs/venue/2026-08-08_会場エディタ_方式.md` 4章／venue-v2仕様6章（133行の方針）
+- HANDOFF: `show-creative-ideas/docs/venue/HANDOFF_venue.md` 4章の残り2「カスタム会場の正面図」
 
 ## 目的
 

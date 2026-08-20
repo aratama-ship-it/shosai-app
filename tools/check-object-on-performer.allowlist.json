@@ -1,0 +1,302 @@
+{
+  "_comment": "check-object-on-performer.mjs の許可リスト。2026-08-20に演者の上の物40件を本人と全件レビューし、意図的な表現27件をここに記録した（残り13件はデータを修正済み）。キーは file+sceneId+pieceType+pieceName+holderNameの組み合わせ（baseは含めない）。増えたら要レビュー、既存項目を機械的に増やさない。2026-08-20夜、継ぎ目の庭r1（8/8の修正前スナップショット）の6件を追加。r1は意図的に修正前の原本として保存されているためr1自体は直さず許可リストで扱う（同ショーのr2は座標修正済みで検出0件）。",
+  "entries": [
+    {
+      "file": "01_航路図_舞台スケッチ_v3.json",
+      "sceneId": "scene-4aff2ba79356",
+      "sceneTitle": "景26 網、荷を締め直す",
+      "pieceType": "block",
+      "pieceName": "木箱2",
+      "holderName": "網",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "01_航路図_舞台スケッチ_v3.json",
+      "sceneId": "scene-30704db8a486",
+      "sceneTitle": "景44 荷を降ろす準備",
+      "pieceType": "block",
+      "pieceName": "木箱5",
+      "holderName": "炊",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "01_航路図_舞台スケッチ_v3.json",
+      "sceneId": "scene-30704db8a486",
+      "sceneTitle": "景44 荷を降ろす準備",
+      "pieceType": "block",
+      "pieceName": "木箱6",
+      "holderName": "網",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "01_航路図_舞台スケッチ_v3.json",
+      "sceneId": "scene-2155d1745c4f",
+      "sceneTitle": "景48 荷降ろし",
+      "pieceType": "block",
+      "pieceName": "木箱2",
+      "holderName": "老",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "01_航路図_舞台スケッチ_v3.json",
+      "sceneId": "scene-2155d1745c4f",
+      "sceneTitle": "景48 荷降ろし",
+      "pieceType": "block",
+      "pieceName": "木箱3",
+      "holderName": "副",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "01_航路図_舞台スケッチ_v3.json",
+      "sceneId": "scene-2155d1745c4f",
+      "sceneTitle": "景48 荷降ろし",
+      "pieceType": "block",
+      "pieceName": "木箱4",
+      "holderName": "測",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "01_航路図_舞台スケッチ_v3.json",
+      "sceneId": "scene-2155d1745c4f",
+      "sceneTitle": "景48 荷降ろし",
+      "pieceType": "block",
+      "pieceName": "木箱6",
+      "holderName": "舵",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "11_スタンドイン_舞台スケッチ_v2.json",
+      "sceneId": "scene-4f4bff28eb05",
+      "sceneTitle": "景15 一つ持つと一つ落ちる",
+      "pieceType": "block",
+      "pieceName": "道具・カメラ",
+      "holderName": "演者（本人）",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "11_スタンドイン_舞台スケッチ_v2.json",
+      "sceneId": "scene-d09cfb627228",
+      "sceneTitle": "景16 拾い続ける【新設】",
+      "pieceType": "block",
+      "pieceName": "道具・ミット",
+      "holderName": "演者（本人）",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "chart-voyage-v3.json",
+      "sceneId": "scene-4aff2ba79356",
+      "sceneTitle": "景26 網、荷を締め直す",
+      "pieceType": "block",
+      "pieceName": "木箱2",
+      "holderName": "網",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "chart-voyage-v3.json",
+      "sceneId": "scene-30704db8a486",
+      "sceneTitle": "景44 荷を降ろす準備",
+      "pieceType": "block",
+      "pieceName": "木箱5",
+      "holderName": "炊",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "chart-voyage-v3.json",
+      "sceneId": "scene-30704db8a486",
+      "sceneTitle": "景44 荷を降ろす準備",
+      "pieceType": "block",
+      "pieceName": "木箱6",
+      "holderName": "網",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "chart-voyage-v3.json",
+      "sceneId": "scene-2155d1745c4f",
+      "sceneTitle": "景48 荷降ろし",
+      "pieceType": "block",
+      "pieceName": "木箱2",
+      "holderName": "老",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "chart-voyage-v3.json",
+      "sceneId": "scene-2155d1745c4f",
+      "sceneTitle": "景48 荷降ろし",
+      "pieceType": "block",
+      "pieceName": "木箱3",
+      "holderName": "副",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "chart-voyage-v3.json",
+      "sceneId": "scene-2155d1745c4f",
+      "sceneTitle": "景48 荷降ろし",
+      "pieceType": "block",
+      "pieceName": "木箱4",
+      "holderName": "測",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "chart-voyage-v3.json",
+      "sceneId": "scene-2155d1745c4f",
+      "sceneTitle": "景48 荷降ろし",
+      "pieceType": "block",
+      "pieceName": "木箱6",
+      "holderName": "舵",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "falling-practice-v2.json",
+      "sceneId": "scene-0820c964621c",
+      "sceneTitle": "景5 記録",
+      "pieceType": "block",
+      "pieceName": "テイク数記録ボード",
+      "holderName": "R（リガー）",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "falling-practice-v2.json",
+      "sceneId": "scene-59ceb2a40091",
+      "sceneTitle": "景13 記録",
+      "pieceType": "block",
+      "pieceName": "テイク数記録ボード",
+      "holderName": "R（リガー）",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "falling-practice-v2.json",
+      "sceneId": "scene-1dab8beba9ad",
+      "sceneTitle": "景21 記録",
+      "pieceType": "block",
+      "pieceName": "テイク数記録ボード",
+      "holderName": "R（リガー）",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "falling-practice-v2.json",
+      "sceneId": "scene-129084c3d380",
+      "sceneTitle": "景33 記録の余白",
+      "pieceType": "block",
+      "pieceName": "テイク数記録ボード",
+      "holderName": "R（リガー）",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "falling-practice-v2.json",
+      "sceneId": "scene-04292212d586",
+      "sceneTitle": "景37 時間の省略",
+      "pieceType": "block",
+      "pieceName": "テイク数記録ボード",
+      "holderName": "R（リガー）",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "falling-practice-v2.json",
+      "sceneId": "scene-73f39ee5c83b",
+      "sceneTitle": "景48 数字の総計",
+      "pieceType": "block",
+      "pieceName": "テイク数記録ボード",
+      "holderName": "R（リガー）",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "rulebook-v2.json",
+      "sceneId": "scene-067efeb1a006",
+      "sceneTitle": "景40 雪崩れ込み、旗あげが終わらないまま次へ",
+      "pieceType": "cane",
+      "pieceName": "旗1（赤・青・黄）",
+      "holderName": "プレイヤー1",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "rulebook-v2.json",
+      "sceneId": "scene-1a209bc79354",
+      "sceneTitle": "景47 通常、審判が指示に従う",
+      "pieceType": "block",
+      "pieceName": "大型ルールブック",
+      "holderName": "審判（R）",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "rulebook-v2.json",
+      "sceneId": "scene-2bcda8bab0e0",
+      "sceneTitle": "景48 改造、円が審判を回す",
+      "pieceType": "block",
+      "pieceName": "大型ルールブック",
+      "holderName": "プレイヤー1",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "standin-solo-v2.json",
+      "sceneId": "scene-4f4bff28eb05",
+      "sceneTitle": "景15 一つ持つと一つ落ちる",
+      "pieceType": "block",
+      "pieceName": "道具・カメラ",
+      "holderName": "演者（本人）",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "standin-solo-v2.json",
+      "sceneId": "scene-d09cfb627228",
+      "sceneTitle": "景16 拾い続ける【新設】",
+      "pieceType": "block",
+      "pieceName": "道具・ミット",
+      "holderName": "演者（本人）",
+      "note": "2026-08-20に本人と全件レビューし、意図的な表現と確定"
+    },
+    {
+      "file": "継ぎ目の庭_—_和とサーカス60分ストーリーショー-舞台スケッチ_v1-r1.json",
+      "sceneId": "seam-scene-1-2",
+      "sceneTitle": "1-2 八動作の校正",
+      "pieceType": "sphere",
+      "pieceName": "記録球3",
+      "holderName": "保管人",
+      "note": "2026-08-20に本人が判断。r1は8/8の修正前スナップショットとして意図的に保存されたもの（r2で座標修正済み・検出0件）。r1自体は変更しない"
+    },
+    {
+      "file": "継ぎ目の庭_—_和とサーカス60分ストーリーショー-舞台スケッチ_v1-r1.json",
+      "sceneId": "seam-scene-2-1",
+      "sceneTitle": "2-1 空白の検査",
+      "pieceType": "block",
+      "pieceName": "空白の記録紙（位置札）",
+      "holderName": "保管人",
+      "note": "2026-08-20に本人が判断。r1は8/8の修正前スナップショットとして意図的に保存されたもの（r2で座標修正済み・検出0件）。r1自体は変更しない"
+    },
+    {
+      "file": "継ぎ目の庭_—_和とサーカス60分ストーリーショー-舞台スケッチ_v1-r1.json",
+      "sceneId": "seam-scene-8-2",
+      "sceneTitle": "8-2 空白を残す",
+      "pieceType": "suitcase",
+      "pieceName": "記録用スーツケース",
+      "holderName": "保管人",
+      "note": "2026-08-20に本人が判断。r1は8/8の修正前スナップショットとして意図的に保存されたもの（r2で座標修正済み・検出0件）。r1自体は変更しない"
+    },
+    {
+      "file": "継ぎ目の庭_—_和とサーカス60分ストーリーショー-舞台スケッチ_v1-r1.json",
+      "sceneId": "seam-scene-8-2",
+      "sceneTitle": "8-2 空白を残す",
+      "pieceType": "block",
+      "pieceName": "空白の記録紙（位置札）",
+      "holderName": "保管人",
+      "note": "2026-08-20に本人が判断。r1は8/8の修正前スナップショットとして意図的に保存されたもの（r2で座標修正済み・検出0件）。r1自体は変更しない"
+    },
+    {
+      "file": "継ぎ目の庭_—_和とサーカス60分ストーリーショー-舞台スケッチ_v1-r1.json",
+      "sceneId": "seam-scene-8-3",
+      "sceneTitle": "8-3 枠が客席を向く",
+      "pieceType": "wall",
+      "pieceName": "枠・左辺",
+      "holderName": "保管人",
+      "note": "2026-08-20に本人が判断。r1は8/8の修正前スナップショットとして意図的に保存されたもの（r2で座標修正済み・検出0件）。r1自体は変更しない"
+    },
+    {
+      "file": "継ぎ目の庭_—_和とサーカス60分ストーリーショー-舞台スケッチ_v1-r1.json",
+      "sceneId": "seam-scene-8-3",
+      "sceneTitle": "8-3 枠が客席を向く",
+      "pieceType": "wall",
+      "pieceName": "枠・右辺",
+      "holderName": "こぼれ",
+      "note": "2026-08-20に本人が判断。r1は8/8の修正前スナップショットとして意図的に保存されたもの（r2で座標修正済み・検出0件）。r1自体は変更しない"
+    }
+  ]
+}

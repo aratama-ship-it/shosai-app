@@ -272,6 +272,12 @@ export const planEditSchema = {
   request: z.string().min(1).max(500),
   operations: z.array(editOperationSchema).min(1).max(40)
     .describe("編集操作。情報不足は配置の既定値で埋めるため、必ず1件以上指定する"),
+  resolutions: z.array(z.object({
+    assetType: z.enum(["performer", "set"]),
+    assetName: z.string().min(1).max(24),
+    assetId: z.string().min(1).max(96),
+  })).max(20).optional()
+    .describe("needs_clarificationで返した同名候補の選択回答。候補外のassetIdは採用しない"),
   questions: z.array(z.string().min(1).max(800)).max(10).optional()
     .describe("既存の同名候補が複数あり、取り違えると既存配置を壊す場合だけ使う確認質問"),
 };

@@ -17,3 +17,20 @@ node_modules/
 
 # 制作の書斎.app のローカルビルド成果物
 mac-app/build/
+
+# 機能実装前のローカル退避コピー（履歴はgit側にあるので追跡しない）
+*_backup_*
+
+# Cloudflare Pages Functionsのローカル秘密情報（本番はダッシュボードのSecretで管理）
+.dev.vars
+
+# wrangler pages dev のローカルキャッシュ
+.wrangler/
+
+# 名簿の合言葉。Cloudflare（Basic認証の内側）へだけ配信し、公開リポジトリには残さない。
+# 雛形は roster-key.example.js。
+roster-key.local.js
+
+# 自分用ショー（ショー一覧へ自動で入れる下書き）。Cloudflare（Basic認証の内側）へだけ
+# 配信し、公開リポジトリには残さない。build_stage_shows_local.py が生成する。
+stage-shows.local.js

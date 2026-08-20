@@ -8,6 +8,8 @@
   <string>制作の書斎</string>
   <key>CFBundleExecutable</key>
   <string>ShosaiDesk</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
   <string>local.shosai.desk</string>
   <key>CFBundleInfoDictionaryVersion</key>

@@ -1,0 +1,27 @@
+# Cloudflare Workers（静的アセット付き）としてデプロイするための設定。
+#
+# 当初は Cloudflare Pages（wrangler pages deploy + functions/_middleware.js）で
+# 組んだが、このCloudflareアカウントではPagesプロジェクトも内部的にWorkers化
+# されており、静的アセットの配信がWorkerコードより先に処理され、Basic認証の
+# ミドルウェアが一度も実行されなかった（2026-08-19に実機で確認）。
+# run_worker_first を明示できるのはこちらの形式だけなので、こちらへ移行する。
+
+name = "shosai-app"
+main = "worker.js"
+compatibility_date = "2026-08-19"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+# 静的ファイルより先に必ず worker.js を通す。これが無いと、資料棚などの
+# 既存ファイルへのアクセスがBasic認証をすり抜けてしまう。
+run_worker_first = true
+
+[durable_objects]
+bindings = [
+  { name = "SESSION_ROOM", class_name = "SessionRoom" }
+]
+
+[[migrations]]
+tag = "v1-session-room"
+new_sqlite_classes = ["SessionRoom"]

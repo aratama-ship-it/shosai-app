@@ -6,6 +6,18 @@ import vm from "node:vm";
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const appSource = await readFile(new URL("../app.js", import.meta.url), "utf8");
 const bundleSource = await readFile(new URL("../stage-apparatus-data.js", import.meta.url), "utf8");
+const wave86Report = await readFile(new URL(
+  "../../show-reference/2026-08-14_舞台装置から作る演出アイデア_第86便10件.md",
+  import.meta.url,
+), "utf8");
+const wave94Report = await readFile(new URL(
+  "../../show-reference/2026-08-14_舞台装置から作る演出アイデア_第94便10件.md",
+  import.meta.url,
+), "utf8");
+const wave95Report = await readFile(new URL(
+  "../../show-reference/2026-08-14_舞台装置から作る演出アイデア_第95便3件.md",
+  import.meta.url,
+), "utf8");
 const draftNames = [
   "stage_apparatus_10_2026-08-04.json",
   ...Array.from({ length: 9 }, (_, index) => `stage_apparatus_10_wave${index + 2}_2026-08-04.json`),
@@ -14,7 +26,7 @@ const draftNames = [
   ...(await readdir(new URL("../../show-reference/data/drafts/", import.meta.url)))
     .filter((name) => {
       const match = name.match(/^stage_apparatus_10_wave(\d+)_2026-08-\d\d\.json$/);
-      return match && Number(match[1]) >= 71 && Number(match[1]) <= 85;
+      return match && Number(match[1]) >= 71 && Number(match[1]) <= 95;
     })
     .sort((a, b) => Number(a.match(/wave(\d+)/)[1]) - Number(b.match(/wave(\d+)/)[1])),
 ];
@@ -34,10 +46,17 @@ test("舞台技術カードは追補と収録済みの検証便を同一順序�
   );
   assert.equal(library.cards.length, drafts.flatMap((draft) => draft.cards).length);
   assert.equal(new Set(library.cards.map((card) => card.id)).size, library.cards.length);
+  assert.equal(new Set(library.cards.map((card) => card.name_ja)).size, library.cards.length);
   assert.deepEqual(
     JSON.parse(JSON.stringify(library.research_batches.map((batch) => batch.source))),
     draftNames,
   );
+  assert.match(wave86Report, /^\| 851 \|/m);
+  assert.match(wave94Report, /^\| 940 \|/m);
+  assert.doesNotMatch(wave94Report, /^\| 941 \|/m);
+  assert.match(wave95Report, /^\| 941 \|/m);
+  assert.match(wave95Report, /^\| 943 \|/m);
+  assert.doesNotMatch(wave95Report, /^\| 944 \|/m);
 });
 
 test("第2・第3期は非デジタル、第4期は依存度を区別し、第5期300件を束ねる", () => {
@@ -62,7 +81,12 @@ test("第2・第3期は非デジタル、第4期は依存度を区別し、第5�
   const sixthWave = library.cards.slice(701);
   assert.ok(sixthWave.length >= 40);
   sixthWave.forEach((card) => {
-    assert.equal(card.evidence_grade, "primary_case_or_technical_source", card.id);
+    assert.ok([
+      "primary_case_or_technical_source",
+      "primary_design_concept",
+      "primary_research_project",
+      "primary_research_program",
+    ].includes(card.evidence_grade), card.id);
     assert.ok(card.verified_claims.length, card.id);
     assert.ok(card.inferred_design_extensions.length, card.id);
     assert.ok(card.risk_class.length, card.id);
@@ -88,6 +112,63 @@ test("全カードに検索・予算・安全・出典に必要な項目があ�
   );
 });
 
+test("第86–94便は既存との差と有効な近縁カードを保持する", () => {
+  const additions = library.cards.slice(850, 940);
+  const ids = new Set(library.cards.map((card) => card.id));
+  const normalizedSource = (source) => {
+    const url = new URL(source);
+    return `${url.hostname.replace(/^www\./, "")}${url.pathname.replace(/\/$/, "")}`;
+  };
+  const normalizedName = (name) => name.normalize("NFKC").toLowerCase()
+    .replace(/[\s・／/（）()\-—–:：,.、。「」『』]/g, "");
+  const priorSources = new Set(library.cards.slice(0, 850).flatMap((card) =>
+    card.examples.map((example) => normalizedSource(example.source))));
+  const priorNames = new Set(library.cards.slice(0, 850).map((card) => normalizedName(card.name_ja)));
+  assert.equal(additions.length, 90);
+  assert.equal(new Set(additions.map((card) => card.name_ja)).size, additions.length);
+  assert.equal(new Set(additions.map((card) => normalizedSource(card.examples[0].source))).size, additions.length);
+  additions.forEach((card) => {
+    assert.ok(!priorSources.has(normalizedSource(card.examples[0].source)), card.id);
+    assert.ok(!priorNames.has(normalizedName(card.name_ja)), card.id);
+    assert.equal(card.examples[0].access_checked_at, "2026-08-14", card.id);
+    assert.equal(card.examples[0].source_specificity, "direct", card.id);
+    assert.equal(card.professional_only, true, card.id);
+    assert.ok(card.distinctive_mechanism, card.id);
+    assert.ok(card.related_cards.length, card.id);
+    card.related_cards.forEach((link) => assert.ok(ids.has(link.id), `${card.id} -> ${link.id}`));
+    assert.ok(card.verified_claims.every((claim) => !claim.startsWith("機構一致:")), card.id);
+    Object.values(card.budget_jpy_inferred).forEach((range) => {
+      if (!Array.isArray(range)) return;
+      assert.ok(range[0] > 0 && range[1] >= range[0], card.id);
+    });
+  });
+  const expectedResearchGrades = new Map([
+    ["apparatus_mit_transquility_two_axis_media_panels", "primary_design_concept"],
+    ["apparatus_itke_dtaf_selflearning_trombe_vent_wall", "primary_research_project"],
+    ["apparatus_itke_jointless_adaptive_rod_kinematics", "primary_research_program"],
+    ["apparatus_itke_plant_surface_compliant_deployable", "primary_research_program"],
+  ]);
+  expectedResearchGrades.forEach((grade, id) => {
+    assert.equal(additions.find((card) => card.id === id)?.evidence_grade, grade, id);
+  });
+});
+
+test("第95便は3件の固有機構と有効な近縁カードを保持する", () => {
+  const additions = library.cards.slice(940);
+  const ids = new Set(library.cards.map((card) => card.id));
+  assert.equal(additions.length, 3);
+  assert.equal(new Set(additions.map((card) => card.id)).size, 3);
+  assert.equal(new Set(additions.map((card) => card.name_ja)).size, 3);
+  assert.equal(new Set(additions.map((card) => card.examples[0].source)).size, 3);
+  additions.forEach((card) => {
+    assert.equal(card.examples[0].access_checked_at, "2026-08-14", card.id);
+    assert.equal(card.examples[0].source_specificity, "direct", card.id);
+    assert.ok(card.distinctive_mechanism, card.id);
+    assert.ok(card.related_cards.length, card.id);
+    card.related_cards.forEach((link) => assert.ok(ids.has(link.id), `${card.id} -> ${link.id}`));
+  });
+});
+
 test("専門職と予算区分は画面表示用の日本語ラベルを持つ", () => {
   const roleCodes = new Set(library.cards.flatMap((card) => card.crew_roles));
   const budgetCodes = new Set(library.cards.flatMap((card) => Object.keys(card.budget_jpy_inferred)));
@@ -99,6 +180,7 @@ test("書斎に舞台技術タブ、検索、二つの絞り込み、詳細領�
   assert.match(html, /href="#apparatus" data-nav="apparatus">舞台技術<\/a>/);
   ["view-apparatus", "apparatus-search", "apparatus-family", "apparatus-scale", "apparatus-list", "apparatus-detail"]
     .forEach((id) => assert.match(html, new RegExp(`id="${id}"`)));
+  assert.match(html, /stage-apparatus-data\.js\?v=12/);
   assert.ok(html.indexOf("stage-apparatus-data.js") < html.indexOf("app.js"));
 });
 

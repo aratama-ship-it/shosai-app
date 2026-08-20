@@ -8,8 +8,11 @@ CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 MODULE_CACHE_DIR="$BUILD_DIR/module-cache"
 
-mkdir -p "$MACOS_DIR" "$MODULE_CACHE_DIR"
+RESOURCES_DIR="$CONTENTS_DIR/Resources"
+
+mkdir -p "$MACOS_DIR" "$MODULE_CACHE_DIR" "$RESOURCES_DIR"
 cp "$SCRIPT_DIR/Resources/Info.plist" "$CONTENTS_DIR/Info.plist"
+cp "$SCRIPT_DIR/Resources/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
 
 echo "Building 制作の書斎.app"
 CLANG_MODULE_CACHE_PATH="$MODULE_CACHE_DIR" \
@@ -23,5 +26,8 @@ xcrun swiftc \
   -framework CoreServices \
   "$SCRIPT_DIR"/Sources/*.swift \
   -o "$MACOS_DIR/ShosaiDesk"
+
+# Finder/Dock のアイコンキャッシュは mtime を見る。上書きビルドで旧アイコンが残らないようにする
+touch "$APP_DIR"
 
 echo "Built: $APP_DIR"

@@ -8,12 +8,13 @@
 抜くもの:
   ・<main id="view-stage"> … 舞台スケッチの画面そのもの
   ・</main> 以降にある窓（.stage-modal / .stage-modal-backdrop）
-  ・style.css と、舞台スケッチが使う6本のスクリプト
-        stage-venues.js / stage-venue-lines.js / stage-i18n.js /
-        stage-rehearsal-export.js / stage-samples/index.js /
-        stage-sketch.js / stage-venue-editor.js
+  ・style.css と、舞台スケッチが使うスクリプト
+        ★並びは index.html の <script> から自動で拾う（下の SKIP_JS 以外を全部）。
+          ここに手で並べていたころ、新しく足した stage-first-person.js が
+          載らないまま作り直され、単独ページから「この人の視界」が消えかけた。
+          正本に足したものが黙って落ちない形にしておく。
 
-抜かないもの: db.js・data.js・app.js・roster.js（他のタブのためのもの）
+抜かないもの: db.js・data.js・app.js・roster.js など、他のタブのためのもの（SKIP_JS）
 
 使い方:
     python3 build_stage.py          … 作り直す
@@ -68,6 +69,31 @@ def ver(name: str) -> str:
     m = re.search(re.escape(name) + r'(\?v=\d+)?', html)
     return m.group(0) if m else name
 
+
+# 他のタブ（資料棚・名簿・机・スクラップブック）のためのもの。単独ページには要らない
+SKIP_JS = {
+    "db.js", "data.js", "book-seeds.js", "shelf-classification.js",
+    "stage-apparatus-data.js", "desk-media.js", "app.js", "roster.js",
+    "roster-crew.js", "roster-key.local.js", "roster-key.example.js",
+}
+
+
+def stage_scripts() -> str:
+    """index.html が読む順のまま、舞台スケッチに要るものだけを並べ直す。
+
+    stage-pwa.js は単独ページだけのもの（ホーム画面へ入れて使うため）。
+    本体の直前に置く——舞台スケッチ本体より先に立ち上がる必要がある。
+    """
+    lines = []
+    for src in re.findall(r'<script src="([^"]+)"', html):
+        bare = re.sub(r"\?v=\d+", "", src)
+        if bare in SKIP_JS:
+            continue
+        if bare == "stage-sketch.js":
+            lines.append('<script src="stage-pwa.js?v=3"></script>')
+        lines.append(f'<script src="{src}"></script>')
+    return "\n".join(lines)
+
 page = f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -99,14 +125,7 @@ page = f"""<!DOCTYPE html>
 
 {present_html}
 
-<script src="{ver('stage-venues.js')}"></script>
-<script src="{ver('stage-venue-lines.js')}"></script>
-<script src="{ver('stage-i18n.js')}"></script>
-<script src="{ver('stage-rehearsal-export.js')}"></script>
-<script src="{ver('stage-samples/index.js')}"></script>
-<script src="stage-pwa.js?v=3"></script>
-<script src="{ver('stage-sketch.js')}"></script>
-<script src="{ver('stage-venue-editor.js')}"></script>
+{stage_scripts()}
 </body>
 </html>
 """
@@ -132,9 +151,10 @@ missing = [i for i in ids if f'id="{i}"' not in page]
 #   stage-scene-note-input … シーン一覧の描画時にJSが選択中の行へ付ける
 #   stage-study-body … 見本のショーの欄。同梱をボツにしたので、いまはどこにも無い
 #     （stage-scene-study-data.js はCodexの資料として残してあるが、読み込んでいない）
+#   stage-import-notice … 読み込み失敗の知らせ。JSがその場で作って body へ足す
 known_optional = {
     "stage-show-front", "stage-show-plan", "stage-study-body",
-    "stage-scene-note-input",
+    "stage-scene-note-input", "stage-import-notice",
 }
 missing = [i for i in missing if i not in known_optional]
 

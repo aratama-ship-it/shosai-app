@@ -55,7 +55,7 @@ SOURCES = (
         for path in sorted(
             (
                 item for item in DRAFTS.glob("stage_apparatus_10_wave*_2026-08-*.json")
-                if 71 <= int(item.name.split("wave", 1)[1].split("_", 1)[0]) <= 85
+                if 71 <= int(item.name.split("wave", 1)[1].split("_", 1)[0]) <= 95
             ),
             key=lambda item: int(json.loads(item.read_text(encoding="utf-8"))["wave"]),
         )
@@ -68,6 +68,7 @@ def load_library() -> dict:
     batches = []
     cards = []
     unresolved = []
+    created_dates = []
     for source, expected_count in SOURCES:
         data = json.loads(source.read_text(encoding="utf-8"))
         batch_cards = data.get("cards", [])
@@ -76,6 +77,8 @@ def load_library() -> dict:
         batches.append({"source": source.name, "purpose": data.get("purpose", "")})
         cards.extend(batch_cards)
         unresolved.extend(data.get("unresolved", []))
+        if data.get("created"):
+            created_dates.append(data["created"])
 
     ids = [card.get("id") for card in cards]
     if len(set(ids)) != len(ids):
@@ -92,7 +95,7 @@ def load_library() -> dict:
 
     return {
         "schema_version": "0.3-draft",
-        "created": "2026-08-05",
+        "created": max(created_dates),
         "status": "research_draft_not_merged",
         "purpose": f"制作の書斎で比較・検索する舞台技術カード{len(cards)}件。第71便以降は、既存カードとの重複監査と個別の一次実装資料確認を通過し、確認済み事実・演出展開案・危険区分・権利文化境界を追加。既存32件は汎用索引から直接資料へ出典修復済み。予算は企画初期用のAI推定で、業者見積ではない。",
         "budget_basis": {
