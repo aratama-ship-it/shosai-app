@@ -13,11 +13,11 @@ test("allowlistKeyはbaseを含まず、file/sceneId/pieceType/pieceName/holderN
   assert.equal(key, "a.json|s1|block|木箱2|網");
 });
 
-test("loadAllowlistSetは同梱の許可リストJSONを読み、2026-08-20レビュー済みの27件を持つ", async () => {
+test("loadAllowlistSetは同梱の許可リストJSONを読み、2026-08-20レビュー済みの33件を持つ", async () => {
   const set = loadAllowlistSet();
-  assert.equal(set.size, 27);
+  assert.equal(set.size, 33);
   const raw = JSON.parse(await readFile(new URL("tools/check-object-on-performer.allowlist.json", root), "utf8"));
-  assert.equal(raw.entries.length, 27);
+  assert.equal(raw.entries.length, 33);
   raw.entries.forEach((entry) => assert.ok(set.has(allowlistKey(entry))));
 });
 
