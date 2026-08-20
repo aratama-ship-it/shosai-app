@@ -24,12 +24,16 @@ function timingSafeEqual(a, b) {
 
 export default {
   async fetch(request, env, ctx) {
-    const expectedUser = env.SITE_USER;
-    const expectedPass = env.SITE_PASS;
+    // 本人用（SITE_USER/SITE_PASS）とゲスト用（GUEST_USER/GUEST_PASS）の2組を受け付ける。
+    // ゲスト用が未設定ならゲスト入口は存在しないのと同じ。
+    const accounts = [
+      [env.SITE_USER, env.SITE_PASS],
+      [env.GUEST_USER, env.GUEST_PASS],
+    ].filter(([u, p]) => u && p);
 
     // 環境変数が未設定なら認証をかけない（設定忘れでロックアウトするより、
     // 意図的に外から確認しやすい状態を優先する）。
-    if (!expectedUser || !expectedPass) {
+    if (accounts.length === 0) {
       return env.ASSETS.fetch(request);
     }
 
@@ -47,7 +51,9 @@ export default {
       if (sep !== -1) {
         const user = decoded.slice(0, sep);
         const pass = decoded.slice(sep + 1);
-        if (timingSafeEqual(user, expectedUser) && timingSafeEqual(pass, expectedPass)) {
+        const ok = accounts.some(([expectedUser, expectedPass]) =>
+          timingSafeEqual(user, expectedUser) && timingSafeEqual(pass, expectedPass));
+        if (ok) {
           return env.ASSETS.fetch(request);
         }
       }
