@@ -559,6 +559,13 @@
     "ドラッグで見回す": "Drag to look around",
     "W/A/S/D 移動・E/Q 上下・Shift 速く・ドラッグ 見回し・R 戻す":
       "W/A/S/D move · E/Q up/down · Shift faster · Drag to look · R reset",
+    "移動": "Move",
+    "上げる・下げる": "Up / down",
+    "押しながらで速く": "Hold to go faster",
+    "最初の位置に戻す": "Reset position",
+    "ドラッグ": "Drag",
+    "見回す": "Look around",
+    "場面を切り替え": "Change scene",
     "の視界": " — view",
     "目の高さ": "eye height",
     "はこの場面にいません — 客席から見ています": " is not in this scene — viewing from the house",
@@ -979,9 +986,11 @@
     },
     venue: {
       proscenium: "Proscenium", thrust: "Thrust", arena: "Big top", outdoor: "Outdoor stage", blackbox: "Black box",
+      "theatre-tram": "Theatre Tram",
     },
     venueShort: {
       proscenium: "framed stage", thrust: "three sides", arena: "in the round", outdoor: "temporary", blackbox: "flexible",
+      "theatre-tram": "real venue",
     },
     venueNote: {
       proscenium: "The house is on one side. The frame separates stage from house, so backdrop and scenery carry weight.",
@@ -989,11 +998,13 @@
       arena: "The house surrounds the whole ring. With no front, it has to work from every angle.",
       outdoor: "No house to contain it. The front barrier and the distance to front-of-house set the scale.",
       blackbox: "A box where the house position is decided each time. The form itself is a variable.",
+      "theatre-tram": "Setagaya Public Theatre's studio space in Sangenjaya. A sunken end stage: no frame, stage and house share one box. The plan is T-shaped — an 8.4 m upstage box narrows, then opens to the 14.7 m main room. A single stage lift (5.44×2.72 m) sits centre, near the front edge; 225 seats in the basic form.",
     },
     size: {
       small: "Small", mid: "Medium", large: "Large",
       onering: "One ring", grand: "Grand chapiteau",
       sl100: "Small 7×6m", sl260: "Medium 10×7m", sl320: "Large 12×12m",
+      standard: "Basic form (sunken end stage)",
     },
     seat: {
       front: "Front row", center: "Stalls centre", rear: "Stalls rear",

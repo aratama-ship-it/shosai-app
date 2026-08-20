@@ -86,7 +86,8 @@ test("openFpvはpropへpartsと拡縮済みgripを渡す", () => {
 test("3Dのparts分岐は握り点または外接高さ中央から保持の下駄を計算する", () => {
   const body = bodyBetween(fpvSource, "if (Array.isArray(piece.parts))", "} else if (piece.type === \"model\"");
   assert.match(body, /const held = piece\.heldBy/);
-  assert.match(body, /Math\.max\(0\.05, finite\(piece\.base, 0\)/);
+  // 2026-08-20 FPV転換対応で base の直読みは pieceBaseOf（animBase優先）へ替わった
+  assert.match(body, /Math\.max\(0\.05, pieceBaseOf\(piece\)/);
   assert.match(body, /piece\.grip \? finite\(piece\.grip\.y, 0\) : \(boundsTop - boundsBottom\) \/ 2/);
   assert.match(body, /const lift = finite\(box\.lift, 0\) \+ held/);
 });

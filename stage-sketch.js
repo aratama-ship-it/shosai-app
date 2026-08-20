@@ -3114,6 +3114,7 @@
       heads: raw && raw.heads === "both" ? "both" : "one",
       color: validColor(raw && raw.color, "#d3ac59"),
       width: clamp(finite(raw && raw.width, 3), 1, 8),
+      ...(raw && raw.guest === true ? { guest: true } : {}),
     };
   }
 
@@ -4362,6 +4363,7 @@
           ? "Could not save on this device. Export an image to keep your work."
           : "この端末へ保存できませんでした。画像を書き出して残してください。";
       }
+      try { if (window.SHOSAI_STAGE_SESSION_HOOKS?.onLocalChange) window.SHOSAI_STAGE_SESSION_HOOKS.onLocalChange(); } catch (_) { /* セッション未使用なら何もしない */ }
     }, 180);
   }
 
@@ -5045,14 +5047,7 @@
 
   /* 何に乗っているか。"pole"＝ポールに付く／"chair"＝椅子に座る／null＝普通 */
   function mountKindOf(piece) {
-    if (!piece || piece.type !== "performer" || !piece.supportId) return null;
-    const holder = sc().pieces.find((other) => other.id === piece.supportId);
-    if (!holder) return null;
-    if (holder.type === "pole") return "pole";
-    if (holder.type === "chair") return "chair";
-    if (holder.type === "trapeze") return "trapeze";
-    if (holder.type === "tissue") return "tissue";
-    return null;
+    return mountKindFrom(piece, sc().pieces);
   }
 
   function performerRig(piece, pos, L) {
@@ -5257,6 +5252,39 @@
     target.stroke();
     target.restore();
   }
+
+  /* 何に乗っているか（pieces配列を引数で受ける版。FPVと共用） */
+  function mountKindFrom(piece, pieces) {
+    if (!piece || piece.type !== "performer" || !piece.supportId) return null;
+    const holder = (pieces || []).find((other) => other.id === piece.supportId);
+    if (!holder) return null;
+    if (holder.type === "pole") return "pole";
+    if (holder.type === "chair") return "chair";
+    if (holder.type === "trapeze") return "trapeze";
+    if (holder.type === "tissue") return "tissue";
+    return null;
+  }
+
+  /* FPV用: 駒がいまどの姿勢IDで描かれるべきか（performerRig と同じ優先順位） */
+  function resolvePoseId(piece, pieces) {
+    const mount = mountKindFrom(piece, pieces);
+    return piece.animPose ? piece.animPose
+      : mount === "pole" ? (piece.poleSide === "L" ? "poleflag_l" : "poleflag_r")
+        : mount === "trapeze" ? (piece.trapMode === "hang" ? "trapeze_hang" : "trapeze_sit")
+          : mount === "tissue" ? "trapeze_hang"
+            : mount === "chair" ? "sit"
+              : (piece.pose || "stand");
+  }
+
+  /* 3Dカメラ（stage-first-person.js）へ体モデルを貸し出す窓口。
+   * FPVは読み込み順で先に評価されるため、FPV側は描画時に遅延参照する。 */
+  window.SHOSAI_STAGE_BODY = Object.freeze({
+    poseById, resolvePoseId,
+    TORSO_RINGS, NECK_RINGS, LIMB_TAPER, LIMB_MIDS, LIMBS,
+    HAND_LEN, HAND_R, FOOT_R, HEEL_BACK, PROP_TONES,
+    norm3, cross3, limbNodes, lerpPt,
+    taperedChain, smoothClosedPath, torsoOutline, mixToward,
+  });
 
   // 正面から見た演者
   function drawPerformer(target, piece, pos, scale, L) {
@@ -7392,7 +7420,56 @@
     // 全周形式の舞台面はリングの内側だけ。その外は客席なので床を敷かない。
     // fresh=false のときは今のパスへ足すだけにする（切り抜きの内側として使うため）。
     // ここで beginPath を呼ぶと、外枠ごと捨てて領域が反転してしまう。
-    const floorPath = (fresh = true) => {
+    /* 実在会場（realVenue）は平面の輪郭を正面図にも反映する。
+       立ち入れない領域の床を消し、絞りの壁を「客席と平行な面」と
+       「奥行き方向に走る側面」の両方で起こす。輪郭は直交ポリゴン前提。 */
+    const realShape = (v.realVenue && Array.isArray(v.outline) && v.outline.length >= 4 && !roundHouse)
+      ? (() => {
+          const xsAll = v.outline.map((point) => point[0]);
+          const ysAll = v.outline.map((point) => point[1]);
+          const minX = Math.min(...xsAll);
+          const maxX = Math.max(...xsAll);
+          const minY = Math.min(...ysAll);
+          const maxY = Math.max(...ysAll);
+          // 水平線 y で輪郭を切ったときの内法
+          const spanAt = (y) => {
+            let lo = Infinity;
+            let hi = -Infinity;
+            for (let i = 0; i < v.outline.length; i += 1) {
+              const a = v.outline[i];
+              const b = v.outline[(i + 1) % v.outline.length];
+              if ((a[1] <= y && b[1] > y) || (b[1] <= y && a[1] > y)) {
+                const t = (y - a[1]) / (b[1] - a[1]);
+                const x = a[0] + t * (b[0] - a[0]);
+                lo = Math.min(lo, x);
+                hi = Math.max(hi, x);
+              }
+            }
+            return hi >= lo ? { lo, hi } : null;
+          };
+          const inside = (x, y) => {
+            let hit = false;
+            for (let i = 0, j = v.outline.length - 1; i < v.outline.length; j = i, i += 1) {
+              const a = v.outline[i];
+              const b = v.outline[j];
+              if ((a[1] > y) !== (b[1] > y) &&
+                  x < ((b[0] - a[0]) * (y - a[1])) / (b[1] - a[1]) + a[0]) hit = !hit;
+            }
+            return hit;
+          };
+          return {
+            outline: v.outline,
+            minX, maxX, minY, maxY,
+            uOf: (x) => (x - minX) / Math.max(0.001, maxX - minX),
+            vOf: (y) => (y - minY) / Math.max(0.001, maxY - minY),
+            spanAt,
+            inside,
+            farSpan: spanAt(minY + 0.02),
+          };
+        })()
+      : null;
+
+    const trapezoidFloorPath = (fresh = true) => {
       if (fresh) target.beginPath();
       if (roundHouse && ring) {
         target.ellipse(ring.x, ring.y, ring.rx, ring.ry, 0, 0, Math.PI * 2);
@@ -7405,8 +7482,28 @@
         target.closePath();
       }
     };
+    const floorPath = (fresh = true) => {
+      if (!realShape) {
+        trapezoidFloorPath(fresh);
+        return;
+      }
+      // 実在会場の床は輪郭そのもの。立ち入れない領域には床を敷かない
+      if (fresh) target.beginPath();
+      realShape.outline.forEach((point, index) => {
+        const at = place(realShape.uOf(point[0]), realShape.vOf(point[1]), L);
+        if (index) target.lineTo(at.x, at.y);
+        else target.moveTo(at.x, at.y);
+      });
+      target.closePath();
+    };
 
     target.save();
+    if (realShape) {
+      // 立ち入れない領域は床を敷かず、奈落のような暗がりとして残す
+      trapezoidFloorPath();
+      target.fillStyle = "#0c0a09";
+      target.fill();
+    }
     target.fillStyle = "#211b17";
     floorPath();
     target.fill();
@@ -7440,6 +7537,79 @@
       }
     }
     target.restore();
+
+    // ---- 実在会場の絞り（凸形の壁） ----
+    // 輪郭の縁から壁の面を起こす。二種類ある:
+    //   客席と平行な壁 … 手前側が室内・奥側が塞がりの縁だけ見える
+    //   奥行きに走る側面 … 絞りの内側の面（中心を向いた面）だけ見える
+    // 外周そのものの壁は従来どおり描かない（袖・闇として残す）。
+    if (realShape) {
+      const heightM = L.size.height;
+      const EPS = 0.02;
+      // 最奥の間口の外に見えていた奥壁は闇に落とす
+      if (wall && realShape.farSpan) {
+        const leftEdge = place(realShape.uOf(realShape.farSpan.lo), 0, L).x;
+        const rightEdge = place(realShape.uOf(realShape.farSpan.hi), 0, L).x;
+        target.fillStyle = "#0f0d0c";
+        if (leftEdge > wall.x) target.fillRect(wall.x, wall.y, leftEdge - wall.x, wall.h);
+        if (rightEdge < wall.x + wall.w) {
+          target.fillRect(rightEdge, wall.y, wall.x + wall.w - rightEdge, wall.h);
+        }
+      }
+
+      const quads = [];
+      const pts = realShape.outline;
+      for (let i = 0; i < pts.length; i += 1) {
+        const a = pts[i];
+        const b = pts[(i + 1) % pts.length];
+        if (Math.abs(a[1] - b[1]) < 1e-6) {
+          // 客席と平行な壁
+          const y = a[1];
+          if (y <= realShape.minY + 1e-6 || y >= realShape.maxY - 1e-6) continue;
+          const x1 = Math.min(a[0], b[0]);
+          const x2 = Math.max(a[0], b[0]);
+          const mx = (x1 + x2) / 2;
+          if (realShape.inside(mx, y + EPS) && !realShape.inside(mx, y - EPS)) {
+            // 客席を向く壁は照明を受けて明るい（実会場写真ではブロック壁）
+            quads.push({ order: y, u1: realShape.uOf(x1), v1: realShape.vOf(y),
+              u2: realShape.uOf(x2), v2: realShape.vOf(y), tone: "#3a322a" });
+          }
+        } else if (Math.abs(a[0] - b[0]) < 1e-6) {
+          // 奥行き方向に走る壁（絞りの側面）
+          const x = a[0];
+          if (x <= realShape.minX + 1e-6 || x >= realShape.maxX - 1e-6) continue;
+          const y1 = Math.min(a[1], b[1]);
+          const y2 = Math.max(a[1], b[1]);
+          const toCentre = x < (realShape.minX + realShape.maxX) / 2 ? EPS : -EPS;
+          if (realShape.inside(x + toCentre, (y1 + y2) / 2) &&
+              !realShape.inside(x - toCentre, (y1 + y2) / 2)) {
+            // 奥行きに走る側面は影に入るぶん一段沈む
+            quads.push({ order: y2 - 0.001, u1: realShape.uOf(x), v1: realShape.vOf(y1),
+              u2: realShape.uOf(x), v2: realShape.vOf(y2), tone: "#28211b" });
+          }
+        }
+      }
+      // 奥にあるものから描く（手前の壁が奥の壁を正しく隠す）
+      target.save();
+      target.strokeStyle = "rgba(239,231,214,0.12)";
+      target.lineWidth = 1.5;
+      quads.sort((qa, qb) => qa.order - qb.order).forEach((q) => {
+        const b1 = place(q.u1, q.v1, L);
+        const b2 = place(q.u2, q.v2, L);
+        const t1 = stagePoint(q.u1, q.v1, heightM, L);
+        const t2 = stagePoint(q.u2, q.v2, heightM, L);
+        target.fillStyle = q.tone;
+        target.beginPath();
+        target.moveTo(b1.x, b1.y);
+        target.lineTo(b2.x, b2.y);
+        target.lineTo(t2.x, t2.y);
+        target.lineTo(t1.x, t1.y);
+        target.closePath();
+        target.fill();
+        target.stroke();
+      });
+      target.restore();
+    }
 
     // ---- 舞台の立ち上がりとピット ----
     // 目線が床と同じ高さの席では、床が線に潰れるぶん、視界の下半分を
@@ -7503,7 +7673,53 @@
     } else if (!roundHouse) {
       target.strokeStyle = "rgba(156,130,63,0.2)";
       target.lineWidth = 1;
-      target.strokeRect(back.x, back.y, back.w, L.floorY - back.y);
+      if (realShape && realShape.farSpan) {
+        // 実在会場は最奥の間口だけを縁取る（外側は闇に落としてある）
+        const lx = place(realShape.uOf(realShape.farSpan.lo), 0, L).x;
+        const rx = place(realShape.uOf(realShape.farSpan.hi), 0, L).x;
+        target.strokeRect(lx, back.y, rx - lx, L.floorY - back.y);
+      } else {
+        target.strokeRect(back.x, back.y, back.w, L.floorY - back.y);
+      }
+    }
+
+    // ---- 天井の機構帯（バトン群）。実在会場のみ ----
+    // 実会場写真では壁の上に照明バトンが密に吊られている。最前列のように
+    // 見上げる席で「使える高さ」より上がただの闇にならないよう、
+    // 使える高さの線に沿ってバトンと吊り物の気配をうっすら描く。
+    // 天の塗りより後に描くこと（先に描くと天に塗り潰される）。
+    if (realShape) {
+      const riggingH = L.size.height;
+      target.save();
+      target.strokeStyle = "rgba(239,231,214,0.14)";
+      target.lineWidth = 1.5;
+      const battenStep = 1.1;
+      for (let yM = realShape.minY + 0.5; yM < realShape.maxY - 0.3; yM += battenStep) {
+        const span = realShape.spanAt(yM);
+        if (!span) continue;
+        const u1 = realShape.uOf(span.lo);
+        const u2 = realShape.uOf(span.hi);
+        const vAt = realShape.vOf(yM);
+        const a = stagePoint(u1, vAt, riggingH, L);
+        const b = stagePoint(u2, vAt, riggingH, L);
+        if (a.y < -40 && b.y < -40) continue;
+        target.beginPath();
+        target.moveTo(a.x, a.y);
+        target.lineTo(b.x, b.y);
+        target.stroke();
+        // 吊り物の気配（短い縦のヒゲ）
+        const ticks = 8;
+        for (let t = 1; t < ticks; t += 1) {
+          const u = u1 + ((u2 - u1) * t) / ticks;
+          const top = stagePoint(u, vAt, riggingH, L);
+          const tip = stagePoint(u, vAt, riggingH - 0.45, L);
+          target.beginPath();
+          target.moveTo(top.x, top.y);
+          target.lineTo(tip.x, tip.y);
+          target.stroke();
+        }
+      }
+      target.restore();
     }
 
     // 袖は額縁より後に描く。額縁の塗りは奥の壁の幅で引いてあるため、
@@ -7695,7 +7911,8 @@
     target.fillStyle = "#141210";
     target.fillRect(0, 0, W, H);
 
-    if (v.custom && Array.isArray(v.outline) && v.outline.length >= 3) {
+    // 輪郭を持つのは作成会場と実在会場プリセット。どちらも実際の形で描く
+    if ((v.custom || v.realVenue) && Array.isArray(v.outline) && v.outline.length >= 3) {
       drawCustomPlanVenue(target, L);
       return;
     }
@@ -17821,6 +18038,11 @@ ${propsPlotHtml}
           }
         }
         return {
+          animateScenes: Boolean(state.animateScenes),
+          transition: sceneAnim ? {
+            progress: finite(sceneAnim.progress, 0),
+            blackout: Boolean(sceneAnim.blackout),
+          } : null,
           pieces: current.pieces.map((candidate) => {
             const visual = effectivelyPlacedPiece(candidate, current);
             const owner = pieceSet(visual);
@@ -17842,7 +18064,13 @@ ${propsPlotHtml}
               grip: propShape ? propShape.grip : null,
               model: visual.type === "model" && owner ? stageModel(owner.modelId) : null,
             };
-          }),
+          }).concat(
+            sceneAnim && sceneAnim.exits ? sceneAnim.exits.map((entry) => ({
+              ...entry.piece,
+              dims: pieceDims(entry.piece),
+              exitWalker: true,
+            })) : []
+          ),
           showTitle: state.project.title || "",
           sceneTitle: current.title || "",
           actTitle,
@@ -19839,4 +20067,54 @@ ${propsPlotHtml}
   } else {
     syncStageTourContext();
   }
+
+  window.SHOSAI_STAGE_SESSION_BRIDGE = Object.freeze({
+    exportDocumentString() {
+      return JSON.stringify(makeProjectExportDocument(state.project, true));
+    },
+    applyDocumentString(text) {
+      /* 受信docを現在のプロジェクトとして開く。壊れたJSONはfalseを返して何もしない */
+      let doc; try { doc = JSON.parse(text); } catch (_) { return false; }
+      if (!doc || doc.kind !== "shosai-stage-sketch" || !doc.project) return false;
+      const { project } = prepareProjectImportDocument(doc);
+      state.project = project;
+      selectedId = null;
+      renderScenes(); renderVenueControls(); updateInspector(); render();
+      persistSoon();
+      return true;
+    },
+    shelveNow() { shelveCurrent(); },
+    applyGuestOp(op) {
+      /* ホスト側でゲストopを状態へ適用。適用したらtrue */
+      if (!op || typeof op !== "object") return false;
+      const scene = state.project.scenes.find((s) => s.id === op.sceneId);
+      if (!scene) return false;
+      if (op.kind === "piece.move") {
+        const piece = (scene.pieces || []).find((p) => p.id === op.pieceId);
+        if (!piece) return false;
+        checkpoint();
+        piece.u = clamp(finite(op.u, piece.u), -0.5, 1.5);
+        piece.v = clamp(finite(op.v, piece.v), -0.5, 1);
+        if (op.base !== undefined) piece.base = Math.max(0, finite(op.base, piece.base || 0));
+        render(); persistSoon();
+        return true;
+      }
+      if (op.kind === "arrows.add") {
+        if (!Array.isArray(op.arrows) || op.arrows.length === 0 || op.arrows.length > 20) return false;
+        checkpoint();
+        op.arrows.forEach((raw) => scene.arrows.push(normalizeArrow({ ...raw, guest: true })));
+        render(); persistSoon();
+        return true;
+      }
+      return false;
+    },
+    clearGuestArrows() {
+      checkpoint();
+      state.project.scenes.forEach((scene) => {
+        scene.arrows = (scene.arrows || []).filter((arrow) => arrow.guest !== true);
+      });
+      render(); persistSoon();
+    },
+    isEnglish() { return isEn(); },
+  });
 })();

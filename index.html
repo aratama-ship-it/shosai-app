@@ -11,7 +11,7 @@
 <link rel="manifest" href="shosai-app.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-  <link rel="stylesheet" href="style.css?v=180">
+  <link rel="stylesheet" href="style.css?v=182">
 </head>
 <body>
 
@@ -71,10 +71,9 @@
                  aria-label="作品を全文検索">
           <select id="db-type" aria-label="種別で絞り込む"></select>
           <details class="db-filter-more">
-            <summary>会社・人物・調査レベル・並び順</summary>
+            <summary>会社・調査レベル・並び順</summary>
             <div>
               <select id="db-company" aria-label="会社で絞り込む"></select>
-              <select id="db-person" aria-label="人で絞り込む"></select>
               <select id="db-depth" aria-label="調査レベルで絞り込む"></select>
               <select id="db-sort" aria-label="並び順">
                 <option value="company">並び順: 会社 → 年</option>
@@ -86,7 +85,7 @@
           </details>
           <details class="db-depth-guide">
             <summary>調査レベルの見方</summary>
-            <p>1は概要中心、2は出典と作品骨格・複数の制作項目、3は人物・演出特徴・再利用要素まで広く接続した状態です。作品の価値を表すものではありません。</p>
+            <p>1は概要中心、2は出典と作品骨格・複数の制作項目、3は演出特徴・再利用要素まで広く接続した状態です。作品の価値を表すものではありません。</p>
           </details>
           <p class="db-count" id="db-count"></p>
         </div>
@@ -158,15 +157,40 @@
     </section>
   </main>
 
-  <!-- 名簿: スカウティングレポートの演者名簿。データは同一オリジンの暗号化ファイルを読む -->
+  <!-- 名簿: 人を探す場所。索引を二冊に分ける。
+       第一冊 アーティスト       = スカウティングレポート由来。暗号化ファイルを合言葉で解錠して読む。
+       第二冊 制作・技術スタッフ = db.js が既に配信している作品クレジットだけを、その場で索引する。
+       二冊は自動統合しない（同姓同名・別表記・グループ名がありうるため）。 -->
   <main id="view-roster" class="view" hidden>
     <section class="roster" aria-labelledby="roster-title">
       <header class="roster-head">
-        <p class="roster-kicker">PERFORMER ROSTER</p>
+        <p class="roster-kicker">PEOPLE INDEX</p>
         <h1 id="roster-title">名簿から、人をたどる</h1>
-        <p>スカウティングレポートに集めた演者を、書斎と同じ手つきで読む。検索と並べ替えだけを持ち、編集はしない。</p>
-        <p class="roster-boundary">個人情報のため、この名簿は暗号化したまま置いてある。合言葉を知らなければ中身は読めない。</p>
+        <p>舞台に立つ人と、舞台を成立させる人を、別の索引として読む。</p>
       </header>
+
+      <div id="people-index-tabs" class="people-index-tabs" role="tablist" aria-label="人の索引">
+        <button type="button" class="people-index-tab" id="people-tab-artists" role="tab"
+                aria-selected="true" aria-controls="people-panel-artists" tabindex="0">
+          <span class="people-index-volume">第一冊</span>
+          <span class="people-index-name">アーティスト</span>
+          <span class="people-index-desc">舞台に立つ人。スカウティングレポートに集めた演者とグループ。</span>
+          <span class="people-index-note">合言葉で解錠する</span>
+          <span class="people-index-open">いま開いている</span>
+        </button>
+        <button type="button" class="people-index-tab" id="people-tab-crew" role="tab"
+                aria-selected="false" aria-controls="people-panel-crew" tabindex="-1">
+          <span class="people-index-volume">第二冊</span>
+          <span class="people-index-name">制作・技術スタッフ</span>
+          <span class="people-index-desc">舞台を成立させる人。音響・照明・舞台美術・大道具・舞台監督など。</span>
+          <span class="people-index-note">作品クレジットから索引</span>
+          <span class="people-index-open">いま開いている</span>
+        </button>
+      </div>
+
+      <div id="people-panel-artists" class="people-index-panel" role="tabpanel"
+           aria-labelledby="people-tab-artists" tabindex="0">
+      <p class="roster-boundary">個人情報のため、この名簿は暗号化したまま置いてある。合言葉を知らなければ中身は読めない。</p>
 
       <div id="roster-gate" class="roster-gate">
         <form id="roster-gate-form" class="roster-gate-form">
@@ -203,6 +227,29 @@
           <p class="evidence-empty">一覧から選ぶと、登録内容と調べた紹介文がここに出ます。</p>
         </section>
       </div>
+      <!-- /people-panel-artists --></div>
+
+      <div id="people-panel-crew" class="people-index-panel" role="tabpanel"
+           aria-labelledby="people-tab-crew" tabindex="0" hidden>
+        <p class="roster-boundary">作品クレジットで確認できた範囲を収録しています。現在の所属、連絡先、依頼可否を示すものではありません。</p>
+
+        <div class="crew-layout">
+          <section class="crew-list-pane" aria-label="制作・技術スタッフ一覧">
+            <div class="crew-controls">
+              <div id="crew-departments" class="crew-departments" aria-label="部門で絞り込む"></div>
+              <label class="roster-search-label" for="crew-search">名前・職種・クレジット表記・作品を探す</label>
+              <input id="crew-search" type="search" placeholder="例: 照明、sound、大道具、Cirque" autocomplete="off">
+              <label class="roster-search-label" for="crew-sort">並べ替え</label>
+              <select id="crew-sort" class="roster-sort"></select>
+              <p id="crew-count" class="roster-count"></p>
+            </div>
+            <div id="crew-list" class="crew-list"></div>
+          </section>
+          <section id="crew-detail" class="crew-detail" aria-label="制作・技術スタッフの担当作品">
+            <p class="evidence-empty">一覧から選ぶと、作品ごとのクレジット表記がここに出ます。</p>
+          </section>
+        </div>
+      <!-- /people-panel-crew --></div>
     </section>
   </main>
 
@@ -1067,6 +1114,33 @@
             <button type="button" class="stage-minor-action stage-rehearsal-export-open"
                     id="stage-rehearsal-export-open">Vision Pro稽古用JSON</button>
             <button type="button" class="stage-minor-action" id="stage-clear">舞台を空にする</button>
+            <details class="stage-session-panel" id="stage-session-panel" hidden>
+              <summary id="stage-session-summary"></summary>
+              <div class="stage-session-body">
+                <div class="stage-session-host-controls" id="stage-session-host-controls">
+                  <label class="stage-session-field" for="stage-session-host-name">
+                    <span id="stage-session-host-name-label"></span>
+                    <input type="text" id="stage-session-host-name" maxlength="50" autocomplete="name">
+                  </label>
+                  <button type="button" class="stage-minor-action" id="stage-session-start"></button>
+                </div>
+                <div class="stage-session-invite" id="stage-session-invite" hidden>
+                  <label class="stage-session-field" for="stage-session-url"><span id="stage-session-url-label"></span></label>
+                  <div class="stage-session-copy-row">
+                    <input type="text" id="stage-session-url" readonly>
+                    <button type="button" class="btn-quiet" id="stage-session-copy"></button>
+                  </div>
+                </div>
+                <p class="stage-session-status" id="stage-session-status" aria-live="polite"></p>
+                <p class="stage-session-guest-note" id="stage-session-guest-note" hidden></p>
+                <div class="stage-session-participants-block">
+                  <p id="stage-session-participants-label"></p>
+                  <ul class="stage-session-participants" id="stage-session-participants"></ul>
+                </div>
+                <button type="button" class="stage-minor-action" id="stage-session-clear-guest-arrows" hidden></button>
+                <button type="button" class="stage-minor-action" id="stage-session-reconnect" hidden></button>
+              </div>
+            </details>
           </section>
 
           <section class="stage-panel" data-panel="ask" data-title="AI指示" id="stage-ask-panel" aria-label="AI指示">
@@ -1861,19 +1935,21 @@
 <script src="shelf-classification.js?v=1"></script>
   <script src="stage-apparatus-data.js?v=12"></script>
 <script src="desk-media.js?v=1"></script>
-<script src="app.js?v=57"></script>
-<script src="stage-venues.js?v=16"></script>
+<script src="app.js?v=58"></script>
+<script src="stage-venues.js?v=19"></script>
 <script src="stage-venue-lines.js?v=4"></script>
-<script src="stage-i18n.js?v=65"></script>
+<script src="stage-i18n.js?v=68"></script>
 <script src="stage-prompt-i18n.js?v=2"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=1"></script>
 <script src="stage-set-model.js?v=1"></script>
 <script src="stage-set-builder.js?v=1"></script>
 <script src="stage-machinery.js?v=2"></script>
-<script src="stage-first-person.js?v=8"></script>
-<script src="stage-sketch.js?v=264"></script>
+<script src="stage-first-person.js?v=11"></script>
+<script src="stage-sketch.js?v=273"></script>
+<script src="stage-session.js?v=1"></script>
 <script src="stage-venue-editor.js?v=6"></script>
 <script src="roster.js?v=3"></script>
+<script src="roster-crew.js?v=1"></script>
 </body>
 </html>

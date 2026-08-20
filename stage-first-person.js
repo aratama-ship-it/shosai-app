@@ -250,11 +250,11 @@
 
   function mountedPose(piece, pieces) {
     const support = supportOf(piece, pieces);
-    if (piece && piece.base > 0 && support && support.type === "tissue") return "hang";
+    if (pieceBaseOf(piece) > 0 && support && support.type === "tissue") return "hang";
     if (support && support.type === "trapeze") {
-      return piece.trapMode === "hang" && piece.base > 0 ? "hang" : "sitBar";
+      return piece.trapMode === "hang" && pieceBaseOf(piece) > 0 ? "hang" : "sitBar";
     }
-    return piece && piece.pose || "stand";
+    return piece && (piece.animPose || piece.pose) || "stand";
   }
 
   function eyeHeight(piece, heightM, pieces) {
@@ -265,7 +265,7 @@
     else if (pose === "lie_back") relative = 0.25;
     else if (pose === "handstand") relative = 0.3;
     else if (pose === "hang") relative = 0.85;
-    return finite(piece && piece.base, 0) + finite(heightM, 0) * relative;
+    return pieceBaseOf(piece) + finite(heightM, 0) * relative;
   }
 
   const state = {
@@ -331,6 +331,7 @@
 .stage-fpv-panel{position:absolute;z-index:71;box-sizing:border-box;overflow:hidden;border:1px solid rgba(232,226,212,.16);border-radius:3px;background:var(--chip,rgba(22,16,11,.94));box-shadow:0 8px 24px rgba(0,0,0,.28);color:#e8e2d4;touch-action:none;user-select:none;-webkit-user-select:none}.stage-fpv-panel[hidden]{display:none!important}.stage-fpv-panel-bar{height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 5px 0 9px;font-size:11px;letter-spacing:.04em;cursor:grab}.stage-fpv-panel-bar:active{cursor:grabbing}.stage-fpv-panel-hide{width:24px;height:22px;padding:0;border:0;background:transparent;color:#e8e2d4;font:16px/20px inherit;cursor:pointer}.stage-fpv-panel canvas{display:block;width:100%;background:#16100b;pointer-events:auto}.stage-fpv-panel-resize{position:absolute;right:0;bottom:0;width:14px;height:14px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 0 45%,rgba(232,226,212,.55) 46% 55%,transparent 56% 65%,rgba(232,226,212,.55) 66% 75%,transparent 76%);touch-action:none}
 #stage-fpv-nav{right:16px;bottom:18px;display:flex;align-items:center;gap:8px}#stage-fpv-nav button{background:rgba(22,16,11,.86);color:#e8e2d4;border:1px solid rgba(232,226,212,.2);border-radius:3px;font-size:13px;padding:7px 12px;cursor:pointer;font-family:inherit}#stage-fpv-nav button:hover{border-color:rgba(232,226,212,.5)}#stage-fpv-count{font-size:11.5px;opacity:.6;min-width:52px;text-align:center}
 #stage-fpv-hint{left:50%;bottom:88px;transform:translateX(-50%);font-size:12.5px;background:rgba(22,16,11,.86);padding:7px 14px;border-radius:3px;opacity:.9;transition:opacity .8s;pointer-events:none;border:1px solid rgba(232,226,212,.14)}#stage-fpv-hint.gone{opacity:0}
+#stage-fpv-keys{left:20px;bottom:146px;pointer-events:none;display:flex;flex-direction:column;gap:4px}#stage-fpv-keys .row{display:flex;align-items:center;gap:8px}#stage-fpv-keys .keys{display:flex;gap:3px}#stage-fpv-keys .key{min-width:10px;padding:2px 5px;border:1px solid rgba(232,226,212,.3);border-bottom-width:2px;border-radius:3px;background:rgba(22,16,11,.78);text-align:center;font-size:10.5px;line-height:1.25;letter-spacing:.02em}#stage-fpv-keys .what{font-size:11px;opacity:.62}
 #stage-fpv-toast{left:50%;top:70px;transform:translateX(-50%);font-size:12.5px;background:rgba(22,16,11,.86);padding:7px 14px;border-radius:3px;opacity:0;transition:opacity .4s;pointer-events:none;border:1px solid rgba(232,226,212,.2)}#stage-fpv-toast.show{opacity:1}
 #stage-fpv-fade{position:absolute;inset:0;background:#0d0a08;opacity:0;pointer-events:none;transition:opacity .16s}#stage-fpv-fade.on{opacity:1}#stage-fpv-close{position:absolute;top:14px;right:14px;width:44px;height:44px;padding:0;border:1px solid rgba(255,255,255,.32);border-radius:50%;background:rgba(0,0,0,.45);color:#fff;font-size:20px;line-height:42px;text-align:center;z-index:72;cursor:pointer;-webkit-tap-highlight-color:transparent}
 `;
@@ -364,6 +365,7 @@
     const next = createElement("button", "stage-fpv-next");
     next.type = "button";
     nav.append(previous, count, next);
+    const keyGuide = createElement("div", "stage-fpv-keys", "stage-fpv-hud");
     const hint = createElement("div", "stage-fpv-hint", "stage-fpv-hud");
     const toast = createElement("div", "stage-fpv-toast", "stage-fpv-hud");
     const panelToggles = createElement("div", "stage-fpv-panel-toggles", "stage-fpv-hud");
@@ -411,10 +413,10 @@
     closeButton.type = "button";
     closeButton.textContent = "✕";
     root.append(canvas, fade, title, minimap, panelToggles, panels.front.panel, panels.plan.panel,
-      whose, cast, presets, nav, hint, toast, closeButton);
+      whose, cast, presets, nav, keyGuide, hint, toast, closeButton);
     document.body.appendChild(root);
     elements = { root, canvas, fade, show, act, scene, approx, minimap, whose, cast, presets,
-      previous, count, next, hint, toast, closeButton, panelToggles, panels };
+      previous, count, next, keyGuide, hint, toast, closeButton, panelToggles, panels };
     closeButton.addEventListener("click", close);
     previous.addEventListener("click", () => queueScene(-1));
     next.addEventListener("click", () => queueScene(1));
@@ -431,7 +433,7 @@
   }
 
   function performers(pieces) {
-    return (pieces || []).filter((piece) => piece.type === "performer");
+    return (pieces || []).filter((piece) => piece.type === "performer" && !piece.exitWalker);
   }
 
   function currentPerformer(pieces) {
@@ -452,6 +454,13 @@
   function heightOf(piece) {
     return state.bridge && state.bridge.heightMOf ? finite(state.bridge.heightMOf(piece), 0) : 0;
   }
+
+  /* 転換アニメの途中は途中の値で描く（本編の pieceU/pieceV と同じ決まり）。
+   * ここを通さず piece.u を直に読むと、その経路だけ転換で瞬間移動する。 */
+  const pieceUOf = (piece) => (piece && piece.animU !== undefined ? piece.animU : piece && piece.u);
+  const pieceVOf = (piece) => (piece && piece.animV !== undefined ? piece.animV : piece && piece.v);
+  const pieceBaseOf = (piece) => finite(piece && (piece.animBase !== undefined ? piece.animBase : piece.base), 0);
+  const pieceGlowOf = (piece) => clamp(finite(piece && (piece.animGlow !== undefined ? piece.animGlow : piece.glow), 1), 0, 1.5);
 
   function labelOf(piece) {
     return state.bridge && state.bridge.labelOf ? state.bridge.labelOf(piece) : piece && piece.name || "";
@@ -590,7 +599,7 @@
     }
     const me = currentPerformer(data.pieces);
     if (me) {
-      const point = toWorld(finite(me.u, 0.5), finite(me.v, 0.5), W, D);
+      const point = toWorld(finite(pieceUOf(me), 0.5), finite(pieceVOf(me), 0.5), W, D);
       return { x: point.x, y: eyeHeight(me, heightOf(me), data.pieces), z: point.z, me };
     }
     return { x: 0, y: 1.35, z: D / 2 + 6.2, me: null };
@@ -691,10 +700,36 @@
     elements.count.textContent = `${finite(data.sceneIndex, 0) + 1} / ${finite(data.sceneCount, 0)}`;
     elements.previous.textContent = `◀ ${text("前の場面")}`;
     elements.next.textContent = `${text("次の場面")} ▶`;
-    elements.hint.textContent = state.view.type === "free"
-      ? text("W/A/S/D 移動・E/Q 上下・Shift 速く・ドラッグ 見回し・R 戻す")
-      : text("ドラッグで見回す");
-    elements.hint.classList.toggle("gone", hintDismissed);
+    /* 自由カメラでは左下に常設のキー一覧があるので、中央の消えるヒントは出さない */
+    elements.hint.textContent = text("ドラッグで見回す");
+    elements.hint.classList.toggle("gone", hintDismissed || state.view.type === "free");
+    elements.keyGuide.textContent = "";
+    const keyRows = state.view.type === "free" ? [
+      [["W", "A", "S", "D"], text("移動")],
+      [["E", "Q"], text("上げる・下げる")],
+      [["Shift"], text("押しながらで速く")],
+      [["R"], text("最初の位置に戻す")],
+      [[text("ドラッグ")], text("見回す")],
+      [["←", "→"], text("場面を切り替え")],
+      [["esc"], text("閉じる")],
+    ] : [
+      [[text("ドラッグ")], text("見回す")],
+      [["←", "→"], text("場面を切り替え")],
+      [["esc"], text("閉じる")],
+    ];
+    keyRows.forEach(([caps, label]) => {
+      const row = createElement("div", "", "row");
+      const capsWrap = createElement("span", "", "keys");
+      caps.forEach((cap) => {
+        const key = createElement("span", "", "key");
+        key.textContent = cap;
+        capsWrap.appendChild(key);
+      });
+      const what = createElement("span", "", "what");
+      what.textContent = label;
+      row.append(capsWrap, what);
+      elements.keyGuide.appendChild(row);
+    });
     elements.closeButton.setAttribute("aria-label", text("視界を閉じる"));
     PANEL_KEYS.forEach((key) => {
       const label = text(key === "front" ? "正面図" : "平面図");
@@ -895,9 +930,9 @@
     labels.length = 0;
   }
 
-  function drawPerformer(ctx, piece) {
+  function drawPerformerSimple(ctx, piece) {
     const height = heightOf(piece);
-    const foot = toWorld(piece.u, piece.v, W, D, finite(piece.base, 0));
+    const foot = toWorld(pieceUOf(piece), pieceVOf(piece), W, D, pieceBaseOf(piece));
     const cameraFoot = toCamera(foot);
     if (cameraFoot.z <= NEAR) return null;
     const scale = focal / cameraFoot.z;
@@ -963,27 +998,265 @@
       segment(-.02, .5, -.07, 0, limb); segment(.02, .5, .07, 0, limb);
     }
     ctx.restore();
-    if (finite(piece.base, 0) === 0 && pose !== "hang") {
+    if (pieceBaseOf(piece) === 0 && pose !== "hang") {
       fillPoly(ctx, circlePoints(foot.x, .01, foot.z, .26), "rgba(0,0,0,.28)");
     }
-    const top = pose === "hang" ? finite(piece.base, 0) + height * .95
-      : pose === "lie_back" ? finite(piece.base, 0) + .3
-      : finite(piece.base, 0) + height * (pose === "sit" ? .78 : pose === "crouch" ? .66
+    const top = pose === "hang" ? pieceBaseOf(piece) + height * .95
+      : pose === "lie_back" ? pieceBaseOf(piece) + .3
+      : pieceBaseOf(piece) + height * (pose === "sit" ? .78 : pose === "crouch" ? .66
         : pose === "kneel" ? .84 : pose === "sitBar" ? .7 : 1.01);
     return { x: foot.x, y: top, z: foot.z };
+  }
+
+  function drawPerformer(ctx, piece) {
+    const body = window.SHOSAI_STAGE_BODY;
+    if (!body) return drawPerformerSimple(ctx, piece);
+    const H = heightOf(piece);
+    if (!(H > 0)) return null;
+    const base = pieceBaseOf(piece);
+    const foot = toWorld(pieceUOf(piece), pieceVOf(piece), W, D, base);
+    if (toCamera(foot).z <= NEAR) return null;
+    const pose = body.poseById(body.resolvePoseId(piece, data.pieces));
+    const joints = pose.joints;
+    const yaw = finite(piece.facing, 0) * Math.PI / 180;
+    const cos = Math.cos(yaw);
+    const sin = Math.sin(yaw);
+    let topY = -Infinity;
+    let tooClose = false;
+    /* 体座標→ワールド→カメラ→画面。z は「大きいほど手前」（本編の慣例に合わせ、
+       カメラ距離の符号を反転して身長で割る）。s はその点での px/身長単位。 */
+    const project = (jx, jy, jz) => {
+      const world = {
+        x: foot.x + (jx * cos + jz * sin) * H,
+        y: foot.y + jy * H,
+        z: foot.z + (-jx * sin + jz * cos) * H,
+      };
+      const cam = toCamera(world);
+      if (cam.z <= NEAR) { tooClose = true; return { x: 0, y: 0, z: 0, s: 1 }; }
+      const screen = toScreen(cam);
+      if (world.y > topY) topY = world.y;
+      return { x: screen.x, y: screen.y, z: -cam.z / H, s: focal / cam.z * H };
+    };
+    const P = {};
+    Object.keys(joints).forEach((k) => { P[k] = project(joints[k][0], joints[k][1], joints[k][2]); });
+    if (tooClose) return null;
+
+    /* 胴・首の断面リング。本編 buildRig（stage-sketch.js 4947-4988行）と同じ計算。 */
+    const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+    const shMid = mid(joints.shL, joints.shR);
+    const hipMid = mid(joints.hipL, joints.hipR);
+    const axis = body.norm3([hipMid[0] - shMid[0], hipMid[1] - shMid[1], hipMid[2] - shMid[2]]);
+    const w0 = pose.wide;
+    const dot = w0[0] * axis[0] + w0[1] * axis[1] + w0[2] * axis[2];
+    let wide = body.norm3([w0[0] - axis[0] * dot, w0[1] - axis[1] * dot, w0[2] - axis[2] * dot]);
+    if (!isFinite(wide[0])) wide = [0, 0, 1];
+    const deep = body.norm3(body.cross3(axis, wide));
+    const headJ = joints.head;
+    const f = pose.face;
+    const eyes = [-1, 1].map((side) => project(
+      headJ[0] + f[0] * 0.048 + wide[0] * 0.019 * side,
+      headJ[1] + f[1] * 0.048 + wide[1] * 0.019 * side,
+      headJ[2] + f[2] * 0.048 + wide[2] * 0.019 * side));
+    const ringAt = (c, ring) => {
+      const o = project(c[0], c[1], c[2]);
+      const w = project(c[0] + wide[0] * ring.halfX, c[1] + wide[1] * ring.halfX, c[2] + wide[2] * ring.halfX);
+      const d = project(c[0] + deep[0] * ring.rz, c[1] + deep[1] * ring.rz, c[2] + deep[2] * ring.rz);
+      return { o, wx: w.x - o.x, wy: w.y - o.y, dx: d.x - o.x, dy: d.y - o.y };
+    };
+    const neckRings = body.NECK_RINGS.slice().reverse().map((ring) => ringAt([
+      shMid[0] + (headJ[0] - shMid[0]) * ring.s,
+      shMid[1] + (headJ[1] - shMid[1]) * ring.s,
+      shMid[2] + (headJ[2] - shMid[2]) * ring.s,
+    ], ring));
+    const bow = finite(pose.bow, 0);
+    const rings = neckRings.concat(body.TORSO_RINGS.map((ring) => {
+      const t = ring.t;
+      const arc = bow ? Math.sin(Math.PI * clamp(t, 0, 1)) * bow : 0;
+      return ringAt([
+        shMid[0] + (hipMid[0] - shMid[0]) * t - deep[0] * arc,
+        shMid[1] + (hipMid[1] - shMid[1]) * t - deep[1] * arc,
+        shMid[2] + (hipMid[2] - shMid[2]) * t - deep[2] * arc,
+      ], ring);
+    }));
+    if (tooClose) return null;
+
+    /* 道具（シルホイール・姿勢付属の小道具）も同じ変換に通す */
+    let wheel = null;
+    if (pose.wheel) {
+      wheel = [];
+      for (let i = 0; i <= 48; i += 1) {
+        const a = (i / 48) * Math.PI * 2;
+        wheel.push(project(Math.cos(a) * pose.wheel.r, pose.wheel.cy + Math.sin(a) * pose.wheel.r, 0));
+      }
+    }
+    let props = null;
+    if (pose.props && pose.props.length) {
+      props = pose.props.map((prop) => {
+        const out = { kind: prop.kind, r: prop.r || 0, w: prop.w || 0.02, tone: prop.tone || "gear" };
+        if (prop.kind === "line") {
+          out.a = project(prop.a[0], prop.a[1], prop.a[2]);
+          out.b = project(prop.b[0], prop.b[1], prop.b[2]);
+        } else {
+          out.c = project(prop.c[0], prop.c[1], prop.c[2]);
+          if (prop.kind === "ring") {
+            out.pts = [];
+            for (let i = 0; i <= 28; i += 1) {
+              const a = (i / 28) * Math.PI * 2;
+              out.pts.push(prop.plane === "xz"
+                ? project(prop.c[0] + Math.cos(a) * prop.r, prop.c[1], prop.c[2] + Math.sin(a) * prop.r)
+                : project(prop.c[0] + Math.cos(a) * prop.r, prop.c[1] + Math.sin(a) * prop.r, prop.c[2]));
+            }
+          }
+        }
+        return out;
+      });
+    }
+    if (tooClose) return null;
+
+    /* 影。空中（base>0）でなければ、足元へ床の円（従来と同じ描き方） */
+    if (base === 0) {
+      fillPoly(ctx, circlePoints(foot.x, .01, foot.z, .26), "rgba(0,0,0,.28)");
+    }
+
+    paintBody3d(ctx, body, P, rings, wheel, props, eyes, piece.color || "#c9c2b4");
+    return { x: foot.x, y: topY + 0.04 * H, z: foot.z };
+  }
+
+  /* 本編 paintBody の透視投影版。各節の px 換算はその節の s を使う
+   * （遠近で手前の腕が太く、奥の腕が細くなる）。 */
+  function paintBody3d(ctx, body, P, rings, wheel, props, eyes, color) {
+    ctx.save();
+    if (wheel) paintWheel3d(ctx, wheel, P, "far");
+    const parts = body.LIMBS.map((limb) => ({
+      kind: "limb", limb,
+      z: limb.pts.reduce((t, k) => t + P[k].z, 0) / limb.pts.length,
+    }));
+    const torsoZ = (P.shL.z + P.shR.z + P.hipL.z + P.hipR.z) / 4;
+    parts.push({ kind: "torso", z: torsoZ });
+    parts.push({ kind: "head", z: P.head.z + 0.002 });
+    parts.sort((a, b) => a.z - b.z);
+    parts.forEach((part) => {
+      if (part.kind === "limb") {
+        /* 奥の手足を沈ませる判定は、本編の絶対値ではなく胴との相対で取る
+           （こちらの z はカメラ距離由来で原点が体に無いため） */
+        const far = part.z < torsoZ - 0.02;
+        ctx.fillStyle = far ? body.mixToward(color, 0.26) : color;
+        const taper = body.LIMB_TAPER[part.limb.kind];
+        const nodes = body.limbNodes(part.limb.pts.map((k) => P[k]), part.limb.kind);
+        body.taperedChain(ctx, nodes, taper.map((r, i) => Math.max(0.8, r * (nodes[i].s || nodes[0].s))));
+        const from = P[part.limb.tip[0]];
+        const to = P[part.limb.tip[1]];
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const len = Math.hypot(dx, dy) || 1;
+        if (part.limb.kind === "arm") {
+          const tip = { x: to.x + (dx / len) * body.HAND_LEN * to.s, y: to.y + (dy / len) * body.HAND_LEN * to.s };
+          body.taperedChain(ctx, [to, body.lerpPt(to, tip, 0.55), tip],
+            [Math.max(0.8, body.HAND_R * to.s), Math.max(0.8, body.HAND_R * 1.05 * to.s), Math.max(0.6, body.HAND_R * 0.62 * to.s)]);
+        } else {
+          const heel = { x: from.x - (dx / len) * body.HEEL_BACK * from.s, y: from.y - (dy / len) * body.HEEL_BACK * from.s * 0.35 };
+          body.taperedChain(ctx, [heel, from, to],
+            [Math.max(0.8, body.FOOT_R * 0.9 * from.s), Math.max(0.8, body.FOOT_R * from.s), Math.max(0.6, body.FOOT_R * 0.62 * to.s)]);
+        }
+        return;
+      }
+      if (part.kind === "torso") {
+        ctx.fillStyle = color;
+        body.smoothClosedPath(ctx, body.torsoOutline(rings));
+        ctx.fill();
+        return;
+      }
+      const nx = P.head.x - P.neck.x;
+      const ny = P.head.y - P.neck.y;
+      const len = Math.hypot(nx, ny);
+      const angle = len > 0.4 ? Math.atan2(ny, nx) : -Math.PI / 2;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.ellipse(P.head.x, P.head.y,
+        Math.max(1.2, 0.065 * P.head.s), Math.max(1.1, 0.048 * P.head.s), angle, 0, Math.PI * 2);
+      ctx.fill();
+      if (eyes && 0.05 * P.head.s > 3) {
+        ctx.fillStyle = "rgba(13,12,11,0.5)";
+        ctx.beginPath();
+        eyes.forEach((eye) => {
+          if (eye.z < P.head.z - 0.004) return;
+          const r = Math.max(0.9, 0.0095 * P.head.s);
+          ctx.moveTo(eye.x + r, eye.y);
+          ctx.arc(eye.x, eye.y, r, 0, Math.PI * 2);
+        });
+        ctx.fill();
+      }
+    });
+    if (wheel) paintWheel3d(ctx, wheel, P, "near");
+    if (props) paintProps3d(ctx, props);
+    ctx.restore();
+  }
+
+  /* 本編 paintWheel の透視投影版。近い・遠いは胴の z との相対で分ける */
+  function paintWheel3d(ctx, pts, P, side) {
+    const torsoZ = (P.shL.z + P.shR.z + P.hipL.z + P.hipR.z) / 4;
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = Math.max(1.4, 0.022 * P.head.s);
+    ctx.strokeStyle = side === "far" ? "rgba(198,204,210,0.42)" : "rgba(222,228,234,0.86)";
+    ctx.beginPath();
+    let drawing = false;
+    pts.forEach((p) => {
+      const here = side === "far" ? p.z < torsoZ : p.z >= torsoZ;
+      if (!here) { drawing = false; return; }
+      if (!drawing) { ctx.moveTo(p.x, p.y); drawing = true; } else { ctx.lineTo(p.x, p.y); }
+    });
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* 本編 paintProps の透視投影版。色は本編 PROP_TONES を借りる */
+  function paintProps3d(ctx, props) {
+    const body = window.SHOSAI_STAGE_BODY;
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    props.forEach((prop) => {
+      const tone = body.PROP_TONES[prop.tone] || body.PROP_TONES.gear;
+      if (prop.kind === "line") {
+        ctx.strokeStyle = tone;
+        ctx.lineWidth = Math.max(1.2, prop.w * ((prop.a.s + prop.b.s) / 2));
+        ctx.beginPath();
+        ctx.moveTo(prop.a.x, prop.a.y);
+        ctx.lineTo(prop.b.x, prop.b.y);
+        ctx.stroke();
+        return;
+      }
+      if (prop.kind === "ring") {
+        ctx.strokeStyle = tone;
+        ctx.lineWidth = Math.max(1.2, prop.w * prop.c.s);
+        ctx.beginPath();
+        prop.pts.forEach((p, i) => { if (i) ctx.lineTo(p.x, p.y); else ctx.moveTo(p.x, p.y); });
+        ctx.stroke();
+        return;
+      }
+      ctx.fillStyle = tone;
+      ctx.beginPath();
+      ctx.arc(prop.c.x, prop.c.y, Math.max(1.5, prop.r * prop.c.s), 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.restore();
   }
 
   function drawRoute(ctx, piece, strong) {
     const route = piece.route;
     if (!route) return;
-    const controlU = finite(route.bu, (piece.u + route.u) / 2);
-    const controlV = finite(route.bv, (piece.v + route.v) / 2);
+    const startU = pieceUOf(piece);
+    const startV = pieceVOf(piece);
+    const controlU = finite(route.bu, (startU + route.u) / 2);
+    const controlV = finite(route.bv, (startV + route.v) / 2);
     const points = [];
     for (let index = 0; index <= 22; index += 1) {
       const t = index / 22;
       const inverse = 1 - t;
-      points.push(toWorld(inverse * inverse * piece.u + 2 * inverse * t * controlU + t * t * route.u,
-        inverse * inverse * piece.v + 2 * inverse * t * controlV + t * t * route.v, W, D, .02));
+      points.push(toWorld(inverse * inverse * startU + 2 * inverse * t * controlU + t * t * route.u,
+        inverse * inverse * startV + 2 * inverse * t * controlV + t * t * route.v, W, D, .02));
     }
     const color = strong ? piece.color || "#e8e2d4" : "rgba(232,226,212,.24)";
     ctx.save();
@@ -1085,9 +1358,9 @@
        持ち上げる。base をそのまま足すと長い棒の握り位置が手より上へずれる。 */
     const boundsHeight = finite(dims.h, finite(dims.dia, 1));
     const heldLift = piece.heldBy
-      ? Math.max(0.05, finite(piece.base, 0) - (piece.grip ? finite(piece.grip.y, 0) : boundsHeight / 2))
+      ? Math.max(0.05, pieceBaseOf(piece) - (piece.grip ? finite(piece.grip.y, 0) : boundsHeight / 2))
       : 0;
-    const point = toWorld(piece.u, piece.v, W, D);
+    const point = toWorld(pieceUOf(piece), pieceVOf(piece), W, D);
     const x = point.x;
     const z = point.z;
     const color = piece.color || "#8d8272";
@@ -1098,7 +1371,7 @@
       const boundsBottom = Math.min(0, ...piece.parts.map((box) => finite(box.lift, 0)));
       const boundsTop = Math.max(0, ...piece.parts.map((box) => finite(box.lift, 0) + finite(box.h, 0)));
       const held = piece.heldBy
-        ? Math.max(0.05, finite(piece.base, 0)
+        ? Math.max(0.05, pieceBaseOf(piece)
           - (piece.grip ? finite(piece.grip.y, 0) : (boundsTop - boundsBottom) / 2))
         : 0;
       piece.parts.forEach((box) => {
@@ -1202,12 +1475,15 @@
   function drawLightPools(ctx, pieces) {
     pieces.filter((piece) => piece.type === "light").forEach((piece) => {
       const dims = piece.dims || {};
-      const point = toWorld(piece.u, piece.v, W, D);
+      const point = toWorld(pieceUOf(piece), pieceVOf(piece), W, D);
       const radius = (dims.dia || 3) / 2;
-      fillPoly(ctx, circlePoints(point.x, .015, point.z, radius, 26), "rgba(242,233,205,.10)", "rgba(242,233,205,.10)");
+      const glow = pieceGlowOf(piece);
+      const poolColor = `rgba(242,233,205,${(.10 * glow).toFixed(3)})`;
+      fillPoly(ctx, circlePoints(point.x, .015, point.z, radius, 26), poolColor, poolColor);
       const hangY = dims.h || CEIL - 1;
       fillPoly(ctx, [{ x: point.x - .12, y: hangY, z: point.z }, { x: point.x + .12, y: hangY, z: point.z },
-        { x: point.x + radius, y: 0, z: point.z }, { x: point.x - radius, y: 0, z: point.z }], "rgba(242,233,205,.05)");
+        { x: point.x + radius, y: 0, z: point.z }, { x: point.x - radius, y: 0, z: point.z }],
+      `rgba(242,233,205,${(.05 * glow).toFixed(3)})`);
     });
   }
 
@@ -1236,7 +1512,7 @@
     ctx.fillStyle = "rgba(232,226,212,.4)"; ctx.font = "8.5px sans-serif"; ctx.textAlign = "center";
     ctx.fillText(text("客席"), mapX(0), mapY(D / 2) + 11);
     data.pieces.filter((piece) => piece.type !== "light").forEach((piece) => {
-      const point = toWorld(piece.u, piece.v, W, D);
+      const point = toWorld(pieceUOf(piece), pieceVOf(piece), W, D);
       const x = mapX(point.x); const y = mapY(point.z);
       if (piece.type === "performer") {
         ctx.beginPath(); ctx.arc(x, y, 3, 0, 7); ctx.fillStyle = piece.color || "#ccc"; ctx.fill();
@@ -1294,6 +1570,15 @@
     state.yaw += (state.targetYaw - state.yaw) * .24;
     state.pitch += (state.targetPitch - state.pitch) * .24;
     readCurrent();
+    const transition = data.transition;
+    if (transition && transition.blackout) {
+      /* 暗転。本編と同じ山なりのカーブ（進行0→1で 明→暗→明） */
+      elements.fade.style.transition = "none";
+      elements.fade.style.opacity = String(Math.sin(Math.PI * clamp(finite(transition.progress, 0), 0, 1)));
+    } else if (elements.fade.style.opacity !== "") {
+      elements.fade.style.opacity = "";
+      elements.fade.style.transition = "";
+    }
     moveFreeFrame(dtSeconds);
     camera = cameraPose();
     setBasis();
@@ -1307,7 +1592,7 @@
     data.pieces.filter((piece) => piece.type === "performer" && piece.route)
       .forEach((piece) => drawRoute(ctx, piece, camera.me === piece));
     data.pieces.filter((piece) => piece.type !== "light")
-      .map((piece) => ({ piece, depth: toCamera(toWorld(piece.u, piece.v, W, D, 1)).z }))
+      .map((piece) => ({ piece, depth: toCamera(toWorld(pieceUOf(piece), pieceVOf(piece), W, D, 1)).z }))
       .sort((a, b) => b.depth - a.depth)
       .forEach(({ piece }) => {
         if (piece === camera.me) return;
@@ -1363,8 +1648,8 @@
     const target = clamp(from + direction, 0, count - 1);
     if (target === from) return;
     pendingScene = target;
-    elements.fade.classList.add("on");
-    if (!sceneTimer) sceneTimer = setTimeout(runPendingScene, 140);
+    if (!data.animateScenes) elements.fade.classList.add("on");
+    if (!sceneTimer) sceneTimer = setTimeout(runPendingScene, data.animateScenes ? 0 : 140);
   }
 
   function onPointerDown(event) {
@@ -1514,6 +1799,7 @@
     open,
     close,
     _geom: Object.freeze({ toWorld, yawForward, rightOf, clipPolyNear, eyeHeight,
+      pieceUOf, pieceVOf, pieceBaseOf, pieceGlowOf,
       moveFree, clampFree, freePresets, frameDelta, wingWidthFor, wingLegX, wingLegPairs,
       wingLegZs, houseSeatsPerRow, houseRiserRows }),
     _panels: Object.freeze({

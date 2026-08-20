@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=180">
+<link rel="stylesheet" href="style.css?v=182">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -852,6 +852,33 @@
             <button type="button" class="stage-minor-action stage-rehearsal-export-open"
                     id="stage-rehearsal-export-open">Vision Pro稽古用JSON</button>
             <button type="button" class="stage-minor-action" id="stage-clear">舞台を空にする</button>
+            <details class="stage-session-panel" id="stage-session-panel" hidden>
+              <summary id="stage-session-summary"></summary>
+              <div class="stage-session-body">
+                <div class="stage-session-host-controls" id="stage-session-host-controls">
+                  <label class="stage-session-field" for="stage-session-host-name">
+                    <span id="stage-session-host-name-label"></span>
+                    <input type="text" id="stage-session-host-name" maxlength="50" autocomplete="name">
+                  </label>
+                  <button type="button" class="stage-minor-action" id="stage-session-start"></button>
+                </div>
+                <div class="stage-session-invite" id="stage-session-invite" hidden>
+                  <label class="stage-session-field" for="stage-session-url"><span id="stage-session-url-label"></span></label>
+                  <div class="stage-session-copy-row">
+                    <input type="text" id="stage-session-url" readonly>
+                    <button type="button" class="btn-quiet" id="stage-session-copy"></button>
+                  </div>
+                </div>
+                <p class="stage-session-status" id="stage-session-status" aria-live="polite"></p>
+                <p class="stage-session-guest-note" id="stage-session-guest-note" hidden></p>
+                <div class="stage-session-participants-block">
+                  <p id="stage-session-participants-label"></p>
+                  <ul class="stage-session-participants" id="stage-session-participants"></ul>
+                </div>
+                <button type="button" class="stage-minor-action" id="stage-session-clear-guest-arrows" hidden></button>
+                <button type="button" class="stage-minor-action" id="stage-session-reconnect" hidden></button>
+              </div>
+            </details>
           </section>
 
           <section class="stage-panel" data-panel="ask" data-title="AI指示" id="stage-ask-panel" aria-label="AI指示">
@@ -1469,18 +1496,19 @@
   <button type="button" class="stage-present-close" id="stage-present-close" aria-label="プレゼンを終える">✕</button>
 </div>
 
-<script src="stage-venues.js?v=16"></script>
+<script src="stage-venues.js?v=19"></script>
 <script src="stage-venue-lines.js?v=4"></script>
-<script src="stage-i18n.js?v=65"></script>
+<script src="stage-i18n.js?v=68"></script>
 <script src="stage-prompt-i18n.js?v=2"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=1"></script>
 <script src="stage-set-model.js?v=1"></script>
 <script src="stage-set-builder.js?v=1"></script>
 <script src="stage-machinery.js?v=2"></script>
-<script src="stage-first-person.js?v=8"></script>
+<script src="stage-first-person.js?v=11"></script>
 <script src="stage-pwa.js?v=3"></script>
-<script src="stage-sketch.js?v=264"></script>
+<script src="stage-sketch.js?v=273"></script>
+<script src="stage-session.js?v=1"></script>
 <script src="stage-venue-editor.js?v=6"></script>
 </body>
 </html>

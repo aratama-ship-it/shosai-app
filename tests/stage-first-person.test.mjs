@@ -271,3 +271,21 @@ test("openからcloseでrAFを止め、オーバーレイを隠す", () => {
   assert.equal(cancelled, 1);
   assert.equal(closed, 1);
 });
+
+test("転換アニメの途中値（animU/animV/animBase/animGlow）を優先して読む", () => {
+  const piece = { u: 0.2, v: 0.8, base: 1.5, glow: 1 };
+  assert.equal(geom.pieceUOf(piece), 0.2);
+  assert.equal(geom.pieceVOf(piece), 0.8);
+  assert.equal(geom.pieceBaseOf(piece), 1.5);
+  assert.equal(geom.pieceGlowOf(piece), 1);
+  piece.animU = 0.45;
+  piece.animV = 0.55;
+  piece.animBase = 0;
+  piece.animGlow = 0.3;
+  assert.equal(geom.pieceUOf(piece), 0.45);
+  assert.equal(geom.pieceVOf(piece), 0.55);
+  assert.equal(geom.pieceBaseOf(piece), 0);   // animBase=0 は「床に降りた」。無視してはいけない
+  assert.equal(geom.pieceGlowOf(piece), 0.3);
+  assert.equal(geom.pieceUOf(null), null);
+  assert.equal(geom.pieceBaseOf(null), 0);
+});
