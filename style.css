@@ -2462,6 +2462,51 @@ canvas[data-tool="note"] { cursor: copy; }
   color: var(--paper);
 }
 
+/* 正面図の下の姿勢帯。モーダルを開かずに姿勢を選ぶ（3Dカメラの帯と同じ発想の縮小版） */
+.stage-pose-strip {
+  /* 絵の「舞台の立ち上がり」（エプロン前面の暗い帯）へ重ねる。
+     枠の外へ足すと縦に伸びるので、絵の中の暗がりを置き場所として借りる（本人指定）。 */
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 6px 8px;
+  background: rgba(12, 9, 8, 0.82);
+  border-top: 1px solid rgba(239, 231, 214, 0.18);
+  scrollbar-width: thin;
+}
+.stage-pose-strip-tile {
+  flex: none;
+  width: 56px;
+  padding: 0 0 3px;
+  border: 1px solid var(--line-dark);
+  background: rgba(13, 12, 11, 0.5);
+  color: var(--milk-dim);
+  font-size: 9.5px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  font-family: inherit;
+}
+.stage-pose-strip-tile canvas { display: block; width: 100%; height: 48px; }
+.stage-pose-strip-tile span {
+  display: block;
+  padding: 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+.stage-pose-strip-tile:hover { border-color: var(--brass); color: var(--milk); }
+.stage-pose-strip-tile.is-on {
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.16);
+  color: var(--paper);
+}
+
 .stage-modal #stage-light-preset-tiles {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -6418,6 +6463,9 @@ canvas[data-tool="note"] { cursor: copy; }
   max-height: calc(100vh - 96px);
   overflow: auto;
   padding-right: 10px;
+  /* 既定の明るいスクロールバーは、この暗い机の上では白い帯として浮く。 */
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-dark) transparent;
 }
 
 .crew-controls {
@@ -6581,7 +6629,7 @@ canvas[data-tool="note"] { cursor: copy; }
   margin-bottom: 12px;
 }
 
-.crew-credit-list { display: grid; gap: 2px; }
+.crew-credit-list { display: grid; gap: 2px; list-style: none; padding-left: 0; }
 
 .crew-credit {
   padding: 12px 0 13px 12px;
@@ -6659,6 +6707,15 @@ canvas[data-tool="note"] { cursor: copy; }
   .people-index-tabs { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .crew-layout { grid-template-columns: minmax(0, 1fr); gap: 26px; }
   .crew-list-pane { position: static; max-height: none; overflow: visible; padding-right: 0; }
+  /* 一列のときは一覧の丈を抑える。519人ぶんの行を挟んだままだと、
+     選んだ人の詳細が画面のはるか下に沈む（資料棚の .db-list と同じ扱い）。 */
+  .crew-list {
+    max-height: 48vh;
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-dark) transparent;
+  }
+  .crew-detail .db-mobile-back { top: 0; }
 }
 
 /* ===== この問いの出どころ（種火から制作机へ渡ったとき） =====
@@ -11381,6 +11438,49 @@ body.stage-session-guest #stage-venue-editor-open,
 body.stage-session-guest #stage-backup-export,
 body.stage-session-guest #stage-rehearsal-export-open,
 body.stage-session-guest #stage-session-host-controls,
-body.stage-session-guest #stage-session-start {
+body.stage-session-guest #stage-session-start,
+body.stage-session-guest #stage-scene-prev,
+body.stage-session-guest #stage-scene-next,
+body.stage-session-guest #stage-present-prev,
+body.stage-session-guest #stage-present-next {
   display: none !important;
+}
+
+/* ゲストはシーンを切り替えられない（ホストに追従）。一覧は現在地の表示用に残す */
+body.stage-session-guest #stage-scene-list {
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+/* 「いま操作中: ◯◯」の大きな表示。同時操作の衝突を、互いの操作を見せて避ける */
+.stage-session-activity {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translate(-50%, -8px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 22px;
+  border: 2px solid var(--stage-session-activity-color, #d3ac59);
+  border-radius: 999px;
+  background: rgba(20, 17, 14, 0.94);
+  color: var(--paper, #f2e8d8);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  z-index: 9000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.stage-session-activity.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.stage-session-activity-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
 }

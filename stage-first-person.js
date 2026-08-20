@@ -242,6 +242,27 @@
     return output;
   }
 
+  function pickFrom(targets, px, py) {
+    let best = null;
+    (targets || []).forEach((target) => {
+      if (px < target.x - target.halfW || px > target.x + target.halfW
+        || py < target.yTop || py > target.yBottom) return;
+      if (!best || target.z < best.z) best = target;
+    });
+    return best;
+  }
+
+  function facingFromGround(foot, hit) {
+    const deg = Math.atan2(hit.x - foot.x, hit.z - foot.z) * 180 / Math.PI;
+    const snapped = Math.round(deg / 5) * 5;
+    return ((snapped + 180) % 360 + 360) % 360 - 180;
+  }
+
+  /* 床のワールド座標を舞台の正規化座標へ戻す（toWorld の逆） */
+  function uvFromGround(hit, width, depth) {
+    return { u: hit.x / width + 0.5, v: hit.z / depth + 0.5 };
+  }
+
   function supportOf(piece, pieces) {
     return piece && piece.supportId && Array.isArray(pieces)
       ? pieces.find((candidate) => candidate.id === piece.supportId) || null
@@ -277,6 +298,7 @@
     pitch: -2,
     targetYaw: 180,
     targetPitch: -2,
+    sel: null,
   };
   let elements = null;
   let rafId = 0;
@@ -284,6 +306,14 @@
   let sceneTimer = 0;
   let pendingScene = null;
   let drag = null;
+  let downAt = null;
+  let facingDrag = null;
+  let wheelFacing = null;
+  let wheelFacingTimer = 0;
+  let moveDrag = null;
+  let ringScreenPts = [];
+  let knobScreen = null;
+  let wasTransitioning = false;
   let panelDrag = null;
   let panelLayouts = null;
   const panelAspect = { front: { width: 16, height: 9 }, plan: { width: 16, height: 9 } };
@@ -303,6 +333,7 @@
   let right = rightOf(forward);
   let up = { x: 0, y: 1, z: 0 };
   const labels = [];
+  const hitTargets = [];
 
   function text(key) {
     const dictionary = window.SHOSAI_I18N && window.SHOSAI_I18N.text;
@@ -332,6 +363,16 @@
 #stage-fpv-nav{right:16px;bottom:18px;display:flex;align-items:center;gap:8px}#stage-fpv-nav button{background:rgba(22,16,11,.86);color:#e8e2d4;border:1px solid rgba(232,226,212,.2);border-radius:3px;font-size:13px;padding:7px 12px;cursor:pointer;font-family:inherit}#stage-fpv-nav button:hover{border-color:rgba(232,226,212,.5)}#stage-fpv-count{font-size:11.5px;opacity:.6;min-width:52px;text-align:center}
 #stage-fpv-hint{left:50%;bottom:88px;transform:translateX(-50%);font-size:12.5px;background:rgba(22,16,11,.86);padding:7px 14px;border-radius:3px;opacity:.9;transition:opacity .8s;pointer-events:none;border:1px solid rgba(232,226,212,.14)}#stage-fpv-hint.gone{opacity:0}
 #stage-fpv-keys{left:20px;bottom:146px;pointer-events:none;display:flex;flex-direction:column;gap:4px}#stage-fpv-keys .row{display:flex;align-items:center;gap:8px}#stage-fpv-keys .keys{display:flex;gap:3px}#stage-fpv-keys .key{min-width:10px;padding:2px 5px;border:1px solid rgba(232,226,212,.3);border-bottom-width:2px;border-radius:3px;background:rgba(22,16,11,.78);text-align:center;font-size:10.5px;line-height:1.25;letter-spacing:.02em}#stage-fpv-keys .what{font-size:11px;opacity:.62}
+#stage-fpv-edit{left:50%;bottom:70px;transform:translateX(-50%);max-width:min(760px,86vw);background:rgba(16,12,9,.9);border:1px solid rgba(232,226,212,.18);border-radius:4px;padding:8px 10px}
+#stage-fpv-edit .head{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px}
+#stage-fpv-edit .hint2{font-size:10.5px;opacity:.5;margin:-2px 0 6px}
+#stage-fpv-edit .dot{width:9px;height:9px;border-radius:50%;flex:none}
+#stage-fpv-edit .fv{opacity:.65}
+#stage-fpv-edit-poses{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.stage-fpv-pose-tile{flex:none;width:64px;padding:0;border:1px solid rgba(232,226,212,.16);border-radius:3px;background:rgba(22,16,11,.86);color:#e8e2d4;font-size:10px;cursor:pointer;font-family:inherit}
+.stage-fpv-pose-tile canvas{display:block;width:100%;height:56px;background:transparent}
+.stage-fpv-pose-tile span{display:block;padding:1px 2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stage-fpv-pose-tile.on{background:#e8e2d4;color:#14100c;border-color:#e8e2d4}
 #stage-fpv-toast{left:50%;top:70px;transform:translateX(-50%);font-size:12.5px;background:rgba(22,16,11,.86);padding:7px 14px;border-radius:3px;opacity:0;transition:opacity .4s;pointer-events:none;border:1px solid rgba(232,226,212,.2)}#stage-fpv-toast.show{opacity:1}
 #stage-fpv-fade{position:absolute;inset:0;background:#0d0a08;opacity:0;pointer-events:none;transition:opacity .16s}#stage-fpv-fade.on{opacity:1}#stage-fpv-close{position:absolute;top:14px;right:14px;width:44px;height:44px;padding:0;border:1px solid rgba(255,255,255,.32);border-radius:50%;background:rgba(0,0,0,.45);color:#fff;font-size:20px;line-height:42px;text-align:center;z-index:72;cursor:pointer;-webkit-tap-highlight-color:transparent}
 `;
@@ -367,6 +408,16 @@
     nav.append(previous, count, next);
     const keyGuide = createElement("div", "stage-fpv-keys", "stage-fpv-hud");
     const hint = createElement("div", "stage-fpv-hint", "stage-fpv-hud");
+    const edit = createElement("div", "stage-fpv-edit", "stage-fpv-hud");
+    edit.hidden = true;
+    const editHead = createElement("div", "", "head");
+    const editDot = createElement("span", "", "dot");
+    const editName = createElement("span");
+    const editFacing = createElement("span", "stage-fpv-edit-facing", "fv");
+    editHead.append(editDot, editName, editFacing);
+    const editHint = createElement("div", "", "hint2");
+    const editPoses = createElement("div", "stage-fpv-edit-poses");
+    edit.append(editHead, editHint, editPoses);
     const toast = createElement("div", "stage-fpv-toast", "stage-fpv-hud");
     const panelToggles = createElement("div", "stage-fpv-panel-toggles", "stage-fpv-hud");
     const panels = {};
@@ -413,10 +464,11 @@
     closeButton.type = "button";
     closeButton.textContent = "✕";
     root.append(canvas, fade, title, minimap, panelToggles, panels.front.panel, panels.plan.panel,
-      whose, cast, presets, nav, keyGuide, hint, toast, closeButton);
+      whose, cast, presets, nav, keyGuide, hint, edit, toast, closeButton);
     document.body.appendChild(root);
     elements = { root, canvas, fade, show, act, scene, approx, minimap, whose, cast, presets,
-      previous, count, next, keyGuide, hint, toast, closeButton, panelToggles, panels };
+      previous, count, next, keyGuide, hint, edit, editDot, editName, editFacing, editHint, editPoses,
+      toast, closeButton, panelToggles, panels };
     closeButton.addEventListener("click", close);
     previous.addEventListener("click", () => queueScene(-1));
     next.addEventListener("click", () => queueScene(1));
@@ -424,6 +476,7 @@
     canvas.addEventListener("pointermove", onPointerMove);
     canvas.addEventListener("pointerup", endPointer);
     canvas.addEventListener("pointercancel", endPointer);
+    canvas.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("resize", resize);
     return elements;
   }
@@ -464,6 +517,70 @@
 
   function labelOf(piece) {
     return state.bridge && state.bridge.labelOf ? state.bridge.labelOf(piece) : piece && piece.name || "";
+  }
+
+  function updateFacingText(value) {
+    if (!elements) return;
+    const deg = finite(value, 0);
+    const word = state.bridge && state.bridge.facingLabel ? state.bridge.facingLabel(deg) : "";
+    elements.editFacing.textContent = `${word ? `${word} ` : ""}${deg}°`;
+  }
+
+  function updateEditPanel() {
+    if (!elements) return;
+    const piece = state.sel && data && data.pieces.find((candidate) => (
+      candidate.id === state.sel && candidate.type === "performer" && !candidate.exitWalker
+    ));
+    if (!piece || data.transition) {
+      elements.edit.hidden = true;
+      return;
+    }
+    elements.edit.hidden = false;
+    elements.editDot.style.background = piece.color || "#c9c2b4";
+    elements.editName.textContent = labelOf(piece);
+    updateFacingText(piece.facing);
+    elements.editPoses.textContent = "";
+    const holder = supportOf(piece, data.pieces);
+    if (holder && ["pole", "trapeze", "tissue", "chair"].includes(holder.type)) {
+      elements.editHint.textContent = text("移動と姿勢は乗り物側で決まっています");
+      return;
+    }
+    elements.editHint.textContent = text("体をドラッグで移動・リングかスクロールで向き");
+    const poses = state.bridge && state.bridge.listPoses ? state.bridge.listPoses() : [];
+    let activeTile = null;
+    poses.forEach((pose) => {
+      const tile = createElement("button", "", `stage-fpv-pose-tile${piece.pose === pose.id ? " on" : ""}`);
+      tile.type = "button";
+      const preview = createElement("canvas");
+      preview.width = 128;
+      preview.height = 112;
+      const label = createElement("span");
+      label.textContent = pose.label;
+      tile.append(preview, label);
+      if (state.bridge.drawPosePreview) state.bridge.drawPosePreview(preview, pose.id, piece.color);
+      tile.addEventListener("click", () => {
+        if (!state.bridge || !state.bridge.setPiecePose
+          || !state.bridge.setPiecePose(piece.id, pose.id)) return;
+        readCurrent();
+        updateEditPanel();
+      });
+      elements.editPoses.appendChild(tile);
+      if (piece.pose === pose.id) activeTile = tile;
+    });
+    if (activeTile && activeTile.scrollIntoView) {
+      activeTile.scrollIntoView({ inline: "center", block: "nearest" });
+    }
+  }
+
+  function clearSelection() {
+    state.sel = null;
+    facingDrag = null;
+    wheelFacing = null;
+    clearTimeout(wheelFacingTimer);
+    moveDrag = null;
+    ringScreenPts = [];
+    knobScreen = null;
+    updateEditPanel();
   }
 
   function stopPanelPointer(event) {
@@ -624,6 +741,7 @@
   }
 
   function enterFree() {
+    clearSelection();
     if (state.view.type === "free") return;
     if (!state.free) {
       const pose = cameraPose();
@@ -641,6 +759,7 @@
   }
 
   function leaveFree(nextView) {
+    clearSelection();
     if (state.view.type === "free" && state.free) {
       state.free.yaw = state.targetYaw;
       state.free.pitch = state.targetPitch;
@@ -654,6 +773,7 @@
   function applyFreePreset(id) {
     const preset = freePresets(W, D, CEIL).find((candidate) => candidate.id === id);
     if (!preset) return;
+    clearSelection();
     state.free = { x: preset.x, y: preset.y, z: preset.z, yaw: preset.yaw, pitch: preset.pitch };
     state.view = { type: "free", key: null, name: "" };
     resetAngles();
@@ -704,18 +824,21 @@
     elements.hint.textContent = text("ドラッグで見回す");
     elements.hint.classList.toggle("gone", hintDismissed || state.view.type === "free");
     elements.keyGuide.textContent = "";
-    const keyRows = state.view.type === "free" ? [
-      [["W", "A", "S", "D"], text("移動")],
-      [["E", "Q"], text("上げる・下げる")],
-      [["Shift"], text("押しながらで速く")],
-      [["R"], text("最初の位置に戻す")],
-      [[text("ドラッグ")], text("見回す")],
-      [["←", "→"], text("場面を切り替え")],
-      [["esc"], text("閉じる")],
-    ] : [
-      [[text("ドラッグ")], text("見回す")],
-      [["←", "→"], text("場面を切り替え")],
-      [["esc"], text("閉じる")],
+    const keyRows = [
+      [[text("クリック")], text("演者を選ぶ")],
+      ...(state.view.type === "free" ? [
+        [["W", "A", "S", "D"], text("移動")],
+        [["E", "Q"], text("上げる・下げる")],
+        [["Shift"], text("押しながらで速く")],
+        [["R"], text("最初の位置に戻す")],
+        [[text("ドラッグ")], text("見回す")],
+        [["←", "→"], text("場面を切り替え")],
+        [["esc"], text("閉じる")],
+      ] : [
+        [[text("ドラッグ")], text("見回す")],
+        [["←", "→"], text("場面を切り替え")],
+        [["esc"], text("閉じる")],
+      ]),
     ];
     keyRows.forEach(([caps, label]) => {
       const row = createElement("div", "", "row");
@@ -784,6 +907,7 @@
       button.addEventListener("click", () => applyFreePreset(preset.id));
       elements.presets.appendChild(button);
     });
+    updateEditPanel();
   }
 
   function formatSigned(value) {
@@ -881,6 +1005,73 @@
     });
   }
 
+  function rayDirAt(px, py) {
+    const a = (px - canvasWidth / 2) / focal;
+    const b = (canvasHeight / 2 - py) / focal;
+    return {
+      x: right.x * a + up.x * b + forward.x,
+      y: right.y * a + up.y * b + forward.y,
+      z: right.z * a + up.z * b + forward.z,
+    };
+  }
+
+  function groundPointAt(px, py, planeY) {
+    const dir = rayDirAt(px, py);
+    if (Math.abs(dir.y) < 1e-6) return null;
+    const t = (planeY - camera.y) / dir.y;
+    if (t <= 0) return null;
+    return { x: camera.x + dir.x * t, z: camera.z + dir.z * t };
+  }
+
+  function drawFacingRing(ctx, piece) {
+    const base = pieceBaseOf(piece);
+    const foot = toWorld(pieceUOf(piece), pieceVOf(piece), W, D, base);
+    const radius = .55;
+    ringScreenPts = circlePoints(foot.x, foot.y + .015, foot.z, radius, 40)
+      .map((point) => {
+        const projected = toCamera(point);
+        return projected.z > NEAR ? toScreen(projected) : null;
+      });
+    ctx.save();
+    ctx.strokeStyle = "rgba(232,226,212,.85)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    let drawing = false;
+    ringScreenPts.forEach((point) => {
+      if (!point) { drawing = false; return; }
+      if (!drawing) { ctx.moveTo(point.x, point.y); drawing = true; }
+      else ctx.lineTo(point.x, point.y);
+    });
+    ctx.stroke();
+    const angle = finite(piece.facing, 0) * Math.PI / 180;
+    const knobWorld = {
+      x: foot.x + Math.sin(angle) * radius,
+      y: foot.y + .015,
+      z: foot.z + Math.cos(angle) * radius,
+    };
+    const knobCam = toCamera(knobWorld);
+    if (knobCam.z > NEAR) {
+      const knob = toScreen(knobCam);
+      const footCam = toCamera(foot);
+      if (footCam.z > NEAR) {
+        const origin = toScreen(footCam);
+        ctx.beginPath();
+        ctx.moveTo(origin.x, origin.y);
+        ctx.lineTo(knob.x, knob.y);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(knob.x, knob.y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = piece.color || "#e8e2d4";
+      ctx.fill();
+      ctx.strokeStyle = "#14100c";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      knobScreen = knob;
+    } else knobScreen = null;
+    ctx.restore();
+  }
+
   function drawBox(ctx, cx, cz, y0, y1, width, depth, color, rotY = 0) {
     const halfWidth = width / 2;
     const halfDepth = depth / 2;
@@ -937,6 +1128,16 @@
     if (cameraFoot.z <= NEAR) return null;
     const scale = focal / cameraFoot.z;
     const screen = toScreen(cameraFoot);
+    if (!piece.exitWalker) {
+      hitTargets.push({
+        id: piece.id,
+        x: screen.x,
+        yTop: screen.y - height * 1.1 * scale,
+        yBottom: screen.y + 6,
+        halfW: Math.max(18, .35 * height * scale),
+        z: cameraFoot.z,
+      });
+    }
     const color = piece.color || "#c9c2b4";
     const pose = mountedPose(piece, data.pieces);
     ctx.save();
@@ -1015,7 +1216,20 @@
     if (!(H > 0)) return null;
     const base = pieceBaseOf(piece);
     const foot = toWorld(pieceUOf(piece), pieceVOf(piece), W, D, base);
-    if (toCamera(foot).z <= NEAR) return null;
+    const footCam = toCamera(foot);
+    if (footCam.z <= NEAR) return null;
+    if (!piece.exitWalker) {
+      const footScreen = toScreen(footCam);
+      const px = focal / footCam.z;
+      hitTargets.push({
+        id: piece.id,
+        x: footScreen.x,
+        yTop: footScreen.y - H * 1.1 * px,
+        yBottom: footScreen.y + 6,
+        halfW: Math.max(18, .35 * H * px),
+        z: footCam.z,
+      });
+    }
     const pose = body.poseById(body.resolvePoseId(piece, data.pieces));
     const joints = pose.joints;
     const yaw = finite(piece.facing, 0) * Math.PI / 180;
@@ -1570,6 +1784,17 @@
     state.yaw += (state.targetYaw - state.yaw) * .24;
     state.pitch += (state.targetPitch - state.pitch) * .24;
     readCurrent();
+    hitTargets.length = 0;
+    ringScreenPts = [];
+    knobScreen = null;
+    if (state.sel && !data.pieces.some((piece) => (
+      piece.id === state.sel && piece.type === "performer" && !piece.exitWalker
+    ))) clearSelection();
+    const transitioning = Boolean(data.transition);
+    if (transitioning !== wasTransitioning) {
+      wasTransitioning = transitioning;
+      updateEditPanel();
+    }
     const transition = data.transition;
     if (transition && transition.blackout) {
       /* 暗転。本編と同じ山なりのカーブ（進行0→1で 明→暗→明） */
@@ -1602,6 +1827,10 @@
         } else drawPiece(ctx, piece);
       });
     if (inHouse) drawProscenium(ctx);
+    const selected = !data.transition && state.sel && data.pieces.find((piece) => (
+      piece.id === state.sel && piece.type === "performer" && !piece.exitWalker
+    ));
+    if (selected) drawFacingRing(ctx, selected);
     drawLabels(ctx);
     const vignette = ctx.createRadialGradient(canvasWidth / 2, canvasHeight / 2, Math.min(canvasWidth, canvasHeight) * .42,
       canvasWidth / 2, canvasHeight / 2, Math.max(canvasWidth, canvasHeight) * .72);
@@ -1630,6 +1859,7 @@
       if (state.bridge.requestRedraw) state.bridge.requestRedraw();
     }
     const after = readCurrent();
+    if (finite(after.sceneIndex, 0) !== current) clearSelection();
     validateView(false);
     if (finite(after.sceneIndex, 0) !== pendingScene) {
       sceneTimer = setTimeout(runPendingScene, 140);
@@ -1652,7 +1882,93 @@
     if (!sceneTimer) sceneTimer = setTimeout(runPendingScene, data.animateScenes ? 0 : 140);
   }
 
+  function canvasPoint(event) {
+    const rect = elements.canvas.getBoundingClientRect
+      ? elements.canvas.getBoundingClientRect() : { left: 0, top: 0 };
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  }
+
+  function pickPerformer(px, py) {
+    return pickFrom(hitTargets, px, py);
+  }
+
+  function hitsFacingControl(point) {
+    if (knobScreen && Math.hypot(point.x - knobScreen.x, point.y - knobScreen.y) <= 16) return true;
+    return ringScreenPts.some((ringPoint) => ringPoint
+      && Math.hypot(point.x - ringPoint.x, point.y - ringPoint.y) <= 12);
+  }
+
+  /* スクロールで選択中の演者を回す。ノッチ1つ(±100)で15度、書き込みは5度刻み。
+     一呼吸(800ms)続いたスクロールは1ジェスチャ＝undo1回にまとめる。 */
+  function onWheel(event) {
+    if (!state.opened || !state.sel || !data || data.transition) return;
+    const piece = data.pieces.find((candidate) => (
+      candidate.id === state.sel && candidate.type === "performer" && !candidate.exitWalker
+    ));
+    if (!piece || !state.bridge || !state.bridge.setPieceFacing) return;
+    event.preventDefault();
+    if (!wheelFacing || wheelFacing.id !== state.sel) {
+      wheelFacing = { id: state.sel, accum: finite(piece.facing, 0), snapshotted: false };
+    }
+    wheelFacing.accum += finite(event.deltaY, 0) * 0.15;
+    const deg = ((Math.round(wheelFacing.accum / 5) * 5 + 180) % 360 + 360) % 360 - 180;
+    const previous = finite(piece.facing, 0);
+    if (deg !== previous && state.bridge.setPieceFacing(state.sel, deg, !wheelFacing.snapshotted)) {
+      wheelFacing.snapshotted = true;
+      piece.facing = deg;
+      updateFacingText(deg);
+    }
+    clearTimeout(wheelFacingTimer);
+    wheelFacingTimer = setTimeout(() => { wheelFacing = null; }, 800);
+  }
+
   function onPointerDown(event) {
+    downAt = { x: event.clientX, y: event.clientY, moved: false };
+    const point = canvasPoint(event);
+    if (state.sel && data && !data.transition && hitsFacingControl(point)) {
+      facingDrag = { id: state.sel, snapshotted: false };
+      drag = null;
+      elements.canvas.classList.add("dragging");
+      if (elements.canvas.setPointerCapture) elements.canvas.setPointerCapture(event.pointerId);
+      hintDismissed = true;
+      elements.hint.classList.add("gone");
+      return;
+    }
+    if (state.sel && data && !data.transition) {
+      const hit = pickPerformer(point.x, point.y);
+      const piece = hit && hit.id === state.sel && data.pieces.find((candidate) => (
+        candidate.id === state.sel && candidate.type === "performer" && !candidate.exitWalker
+      ));
+      const holder = piece && supportOf(piece, data.pieces);
+      const mounted = holder && ["pole", "trapeze", "tissue", "chair"].includes(holder.type);
+      if (piece && !mounted) {
+        const foot = toWorld(pieceUOf(piece), pieceVOf(piece), W, D, pieceBaseOf(piece));
+        /* ドラッグは「掴んだ高さ」を通る水平面で受ける。足元の面に固定すると、
+           体の上の方を掴んだときレイが地平線近くで床と交わり、
+           わずかなポインタ移動が数メートルへ化ける（実際にそうなった）。 */
+        const dir = rayDirAt(point.x, point.y);
+        const horizontal = dir.x * dir.x + dir.z * dir.z;
+        const tStar = horizontal > 1e-9
+          ? ((foot.x - camera.x) * dir.x + (foot.z - camera.z) * dir.z) / horizontal : 0;
+        const planeY = clamp(camera.y + dir.y * tStar,
+          foot.y, foot.y + Math.max(.5, heightOf(piece)));
+        const ground = groundPointAt(point.x, point.y, planeY);
+        const at = ground ? uvFromGround(ground, W, D) : null;
+        moveDrag = {
+          id: state.sel,
+          planeY,
+          offsetU: at ? pieceUOf(piece) - at.u : 0,
+          offsetV: at ? pieceVOf(piece) - at.v : 0,
+          snapshotted: false,
+        };
+        drag = null;
+        elements.canvas.classList.add("dragging");
+        if (elements.canvas.setPointerCapture) elements.canvas.setPointerCapture(event.pointerId);
+        hintDismissed = true;
+        elements.hint.classList.add("gone");
+        return;
+      }
+    }
     drag = { x: event.clientX, y: event.clientY };
     elements.canvas.classList.add("dragging");
     if (elements.canvas.setPointerCapture) elements.canvas.setPointerCapture(event.pointerId);
@@ -1661,6 +1977,42 @@
   }
 
   function onPointerMove(event) {
+    if (downAt && Math.hypot(event.clientX - downAt.x, event.clientY - downAt.y) > 6) {
+      downAt.moved = true;
+    }
+    if (facingDrag) {
+      const piece = data && data.pieces.find((candidate) => (
+        candidate.id === facingDrag.id && candidate.type === "performer" && !candidate.exitWalker
+      ));
+      if (!piece || data.transition) return;
+      const point = canvasPoint(event);
+      const foot = toWorld(pieceUOf(piece), pieceVOf(piece), W, D, pieceBaseOf(piece));
+      const hit = groundPointAt(point.x, point.y, foot.y);
+      if (!hit || !state.bridge || !state.bridge.setPieceFacing) return;
+      const deg = facingFromGround(foot, hit);
+      const previous = finite(piece.facing, 0);
+      if (state.bridge.setPieceFacing(facingDrag.id, deg, !facingDrag.snapshotted)) {
+        if (deg !== previous) facingDrag.snapshotted = true;
+        piece.facing = deg;
+        updateFacingText(deg);
+      }
+      return;
+    }
+    if (moveDrag) {
+      const piece = data && data.pieces.find((candidate) => (
+        candidate.id === moveDrag.id && candidate.type === "performer" && !candidate.exitWalker
+      ));
+      if (!piece || data.transition) return;
+      const point = canvasPoint(event);
+      const ground = groundPointAt(point.x, point.y, moveDrag.planeY);
+      if (!ground || !state.bridge || !state.bridge.setPiecePlace) return;
+      const at = uvFromGround(ground, W, D);
+      if (state.bridge.setPiecePlace(moveDrag.id, at.u + moveDrag.offsetU, at.v + moveDrag.offsetV,
+        !moveDrag.snapshotted)) {
+        moveDrag.snapshotted = true;
+      }
+      return;
+    }
     if (!drag) return;
     const dx = event.clientX - drag.x;
     const dy = event.clientY - drag.y;
@@ -1674,9 +2026,25 @@
     }
   }
 
-  function endPointer() {
+  function endPointer(event) {
+    const shouldPick = !facingDrag && !moveDrag && downAt && !downAt.moved
+      && event && event.type === "pointerup";
+    const tapPoint = shouldPick ? canvasPoint({
+      clientX: finite(event.clientX, downAt.x),
+      clientY: finite(event.clientY, downAt.y),
+    }) : null;
     drag = null;
+    facingDrag = null;
+    moveDrag = null;
+    downAt = null;
     if (elements) elements.canvas.classList.remove("dragging");
+    if (tapPoint) {
+      const hit = pickPerformer(tapPoint.x, tapPoint.y);
+      state.sel = hit ? hit.id : null;
+      ringScreenPts = [];
+      knobScreen = null;
+      updateEditPanel();
+    }
   }
 
   function consumeKey(event) {
@@ -1695,6 +2063,10 @@
     const code = event.code || event.key;
     if (code === "Escape") {
       consumeKey(event);
+      if (state.sel) {
+        clearSelection();
+        return;
+      }
       close();
       return;
     }
@@ -1749,11 +2121,20 @@
       state.view = { type: "free", key: null, name: "" };
     } else if (initial) state.view = { type: "performer", key: identity(initial), name: labelOf(initial) };
     else state.view = { type: "audience", key: null, name: "" };
+    state.sel = null;
     state.opened = true;
     hintDismissed = false;
     pressed.clear();
     lastFrameTime = null;
     pendingScene = null;
+    drag = null;
+    downAt = null;
+    facingDrag = null;
+    moveDrag = null;
+    ringScreenPts = [];
+    knobScreen = null;
+    hitTargets.length = 0;
+    wasTransitioning = Boolean(data.transition);
     elements.root.hidden = false;
     elements.root.setAttribute("aria-hidden", "false");
     resize();
@@ -1777,9 +2158,15 @@
     sceneTimer = 0;
     pendingScene = null;
     drag = null;
+    downAt = null;
+    facingDrag = null;
+    moveDrag = null;
     panelDrag = null;
     pressed.clear();
     lastFrameTime = null;
+    clearSelection();
+    hitTargets.length = 0;
+    wasTransitioning = false;
     savePanelLayouts();
     elements.toast.classList.remove("show");
     elements.toast.textContent = "";
@@ -1801,7 +2188,12 @@
     _geom: Object.freeze({ toWorld, yawForward, rightOf, clipPolyNear, eyeHeight,
       pieceUOf, pieceVOf, pieceBaseOf, pieceGlowOf,
       moveFree, clampFree, freePresets, frameDelta, wingWidthFor, wingLegX, wingLegPairs,
-      wingLegZs, houseSeatsPerRow, houseRiserRows }),
+      wingLegZs, houseSeatsPerRow, houseRiserRows, facingFromGround, uvFromGround, pickFrom }),
+    /* 検証用の覗き窓。描画状態には触らない */
+    _probe: () => ({ camera: { ...camera }, focal, canvasWidth, canvasHeight,
+      yaw: state.yaw, pitch: state.pitch,
+      ground: (px, py, planeY) => groundPointAt(px, py, planeY),
+      moveDrag: moveDrag ? { ...moveDrag } : null }),
     _panels: Object.freeze({
       clampLayout: clampPanelLayout,
       contentHeight: panelContentHeight,

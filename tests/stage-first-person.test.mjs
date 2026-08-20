@@ -20,6 +20,13 @@ test("正規化座標の4点を客席から見た舞台ワールドへ変換す�
   assert.deepEqual([geom.toWorld(.5, 1, width, depth).x, geom.toWorld(.5, 1, width, depth).z], [0, 4]);
 });
 
+test("床のワールド座標を舞台の正規化座標へ戻す", () => {
+  const centre = geom.uvFromGround({ x: 0, z: 0 }, 12, 9);
+  assert.deepEqual([centre.u, centre.v], [.5, .5]);
+  const corner = geom.uvFromGround({ x: 6, z: -4.5 }, 12, 9);
+  assert.deepEqual([corner.u, corner.v], [1, 0]);
+});
+
 test("袖幅は舞台幅に比例し、小劇場と極端に広い舞台では上下限に収まる", () => {
   assert.equal(geom.wingWidthFor(4), 2.4);
   closeTo(geom.wingWidthFor(12), 3.6);
@@ -288,4 +295,23 @@ test("転換アニメの途中値（animU/animV/animBase/animGlow）を優先し
   assert.equal(geom.pieceGlowOf(piece), 0.3);
   assert.equal(geom.pieceUOf(null), null);
   assert.equal(geom.pieceBaseOf(null), 0);
+});
+
+test("足元リングの角度: 客席側クリックで0°、上手側90°、下手側-90°、5°刻みで正規化", () => {
+  const foot = { x: 0, y: 0, z: 0 };
+  assert.equal(geom.facingFromGround(foot, { x: 0, z: 2 }), 0);      // +z=客席側
+  assert.equal(geom.facingFromGround(foot, { x: 2, z: 0 }), 90);     // +x=上手
+  assert.equal(geom.facingFromGround(foot, { x: -2, z: 0 }), -90);   // -x=下手
+  assert.equal(geom.facingFromGround(foot, { x: 0.001, z: -2 }), -180); // 奥は±180へ畳む
+  assert.equal(geom.facingFromGround(foot, { x: Math.tan(23 * Math.PI / 180) * 2, z: 2 }), 25); // 5°刻み
+});
+
+test("演者のヒット判定は矩形に入った中で最も手前を選ぶ", () => {
+  const targets = [
+    { id: "far", x: 100, yTop: 10, yBottom: 90, halfW: 30, z: 12 },
+    { id: "near", x: 110, yTop: 10, yBottom: 90, halfW: 30, z: 6 },
+  ];
+  assert.equal(geom.pickFrom(targets, 105, 50).id, "near");
+  assert.equal(geom.pickFrom(targets, 75, 50).id, "far");   // farの矩形にだけ入る
+  assert.equal(geom.pickFrom(targets, 300, 50), null);
 });

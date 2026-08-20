@@ -2163,6 +2163,7 @@
     castList: document.getElementById("stage-cast-list"),
     pieceFacing: document.getElementById("stage-piece-facing"),
     piecePose: document.getElementById("stage-piece-pose"),
+    poseStrip: document.getElementById("stage-pose-strip"),
     poleControls: document.getElementById("stage-pole-controls"),
     poleLeft: document.getElementById("stage-pole-left"),
     poleRight: document.getElementById("stage-pole-right"),
@@ -7347,10 +7348,81 @@
     const ring = ringEllipse(L);
     const roundHouse = v.audience === "round";
 
+    /* 実在会場（realVenue）は平面の輪郭を正面図にも反映する。
+       立ち入れない領域の床を消し、絞りの壁を「客席と平行な面」と
+       「奥行き方向に走る側面」の両方で起こす。輪郭は直交ポリゴン前提。
+       奥壁の造作（黒扉）にも使うので、奥の描画より前に作る。 */
+    const realShape = (v.realVenue && Array.isArray(v.outline) && v.outline.length >= 4 && !roundHouse)
+      ? (() => {
+          const xsAll = v.outline.map((point) => point[0]);
+          const ysAll = v.outline.map((point) => point[1]);
+          const minX = Math.min(...xsAll);
+          const maxX = Math.max(...xsAll);
+          const minY = Math.min(...ysAll);
+          const maxY = Math.max(...ysAll);
+          // 水平線 y で輪郭を切ったときの内法
+          const spanAt = (y) => {
+            let lo = Infinity;
+            let hi = -Infinity;
+            for (let i = 0; i < v.outline.length; i += 1) {
+              const a = v.outline[i];
+              const b = v.outline[(i + 1) % v.outline.length];
+              if ((a[1] <= y && b[1] > y) || (b[1] <= y && a[1] > y)) {
+                const t = (y - a[1]) / (b[1] - a[1]);
+                const x = a[0] + t * (b[0] - a[0]);
+                lo = Math.min(lo, x);
+                hi = Math.max(hi, x);
+              }
+            }
+            return hi >= lo ? { lo, hi } : null;
+          };
+          const inside = (x, y) => {
+            let hit = false;
+            for (let i = 0, j = v.outline.length - 1; i < v.outline.length; j = i, i += 1) {
+              const a = v.outline[i];
+              const b = v.outline[j];
+              if ((a[1] > y) !== (b[1] > y) &&
+                  x < ((b[0] - a[0]) * (y - a[1])) / (b[1] - a[1]) + a[0]) hit = !hit;
+            }
+            return hit;
+          };
+          return {
+            outline: v.outline,
+            minX, maxX, minY, maxY,
+            uOf: (x) => (x - minX) / Math.max(0.001, maxX - minX),
+            vOf: (y) => (y - minY) / Math.max(0.001, maxY - minY),
+            spanAt,
+            inside,
+            farSpan: spanAt(minY + 0.02),
+          };
+        })()
+      : null;
+
     // ---- 奥 ----
     if (wall) {
       target.fillStyle = sc().background;
       target.fillRect(wall.x, wall.y, wall.w, wall.h);
+      // 実在会場の奥壁の造作（黒扉など）。地の色の上、写真・塗りの下。
+      // 背景を塗れば黒扉の前に吊った幕として自然に覆われる
+      if (realShape && Array.isArray(v.backWall)) {
+        v.backWall.forEach((feature) => {
+          const u1 = realShape.uOf(feature.xM - feature.widthM / 2);
+          const u2 = realShape.uOf(feature.xM + feature.widthM / 2);
+          const x1 = place(u1, 0, L).x;
+          const x2 = place(u2, 0, L).x;
+          const topY = Math.max(wall.y, stagePoint(u1, 0, feature.heightM, L).y);
+          target.fillStyle = "#12100e";
+          target.fillRect(x1, topY, x2 - x1, L.floorY - topY);
+          // 引き分け扉の合わせ目
+          target.strokeStyle = "rgba(239,231,214,0.10)";
+          target.lineWidth = 1;
+          target.beginPath();
+          target.moveTo((x1 + x2) / 2, topY);
+          target.lineTo((x1 + x2) / 2, L.floorY);
+          target.stroke();
+          if (feature.label) label(target, tx(feature.label), (x1 + x2) / 2, L.floorY - 14);
+        });
+      }
       // 写真は地の色の上、手描きの塗りの下。塗りは写真への描き込みとして残る
       if (sc().photo) paintPhoto(target, wall, sc().photo);
       target.drawImage(paintCanvas, 0, 0);
@@ -7420,55 +7492,6 @@
     // 全周形式の舞台面はリングの内側だけ。その外は客席なので床を敷かない。
     // fresh=false のときは今のパスへ足すだけにする（切り抜きの内側として使うため）。
     // ここで beginPath を呼ぶと、外枠ごと捨てて領域が反転してしまう。
-    /* 実在会場（realVenue）は平面の輪郭を正面図にも反映する。
-       立ち入れない領域の床を消し、絞りの壁を「客席と平行な面」と
-       「奥行き方向に走る側面」の両方で起こす。輪郭は直交ポリゴン前提。 */
-    const realShape = (v.realVenue && Array.isArray(v.outline) && v.outline.length >= 4 && !roundHouse)
-      ? (() => {
-          const xsAll = v.outline.map((point) => point[0]);
-          const ysAll = v.outline.map((point) => point[1]);
-          const minX = Math.min(...xsAll);
-          const maxX = Math.max(...xsAll);
-          const minY = Math.min(...ysAll);
-          const maxY = Math.max(...ysAll);
-          // 水平線 y で輪郭を切ったときの内法
-          const spanAt = (y) => {
-            let lo = Infinity;
-            let hi = -Infinity;
-            for (let i = 0; i < v.outline.length; i += 1) {
-              const a = v.outline[i];
-              const b = v.outline[(i + 1) % v.outline.length];
-              if ((a[1] <= y && b[1] > y) || (b[1] <= y && a[1] > y)) {
-                const t = (y - a[1]) / (b[1] - a[1]);
-                const x = a[0] + t * (b[0] - a[0]);
-                lo = Math.min(lo, x);
-                hi = Math.max(hi, x);
-              }
-            }
-            return hi >= lo ? { lo, hi } : null;
-          };
-          const inside = (x, y) => {
-            let hit = false;
-            for (let i = 0, j = v.outline.length - 1; i < v.outline.length; j = i, i += 1) {
-              const a = v.outline[i];
-              const b = v.outline[j];
-              if ((a[1] > y) !== (b[1] > y) &&
-                  x < ((b[0] - a[0]) * (y - a[1])) / (b[1] - a[1]) + a[0]) hit = !hit;
-            }
-            return hit;
-          };
-          return {
-            outline: v.outline,
-            minX, maxX, minY, maxY,
-            uOf: (x) => (x - minX) / Math.max(0.001, maxX - minX),
-            vOf: (y) => (y - minY) / Math.max(0.001, maxY - minY),
-            spanAt,
-            inside,
-            farSpan: spanAt(minY + 0.02),
-          };
-        })()
-      : null;
-
     const trapezoidFloorPath = (fresh = true) => {
       if (fresh) target.beginPath();
       if (roundHouse && ring) {
@@ -7690,6 +7713,43 @@
     // 天の塗りより後に描くこと（先に描くと天に塗り潰される）。
     if (realShape) {
       const riggingH = L.size.height;
+
+      // スノコ（gridM）。見上げる席（rise>0）だけに、バトンの上の天蓋として描く。
+      // 見下ろす席では物理的に見えないので描かない。濃さは見上げの強さに比例。
+      const lookUp = Math.max(0, (L.seat && L.seat.rise) || 0);
+      const snokoH = Number(v.gridM) || 0;
+      if (lookUp > 0.01 && snokoH > riggingH) {
+        const ceilPath = () => {
+          target.beginPath();
+          realShape.outline.forEach((point, index) => {
+            const at = stagePoint(realShape.uOf(point[0]), realShape.vOf(point[1]), snokoH, L);
+            if (index) target.lineTo(at.x, at.y);
+            else target.moveTo(at.x, at.y);
+          });
+          target.closePath();
+        };
+        target.save();
+        target.globalAlpha = Math.min(1, lookUp * 6);
+        ceilPath();
+        target.fillStyle = "#141110";
+        target.fill();
+        ceilPath();
+        target.clip();
+        // スノコの桟
+        target.strokeStyle = "rgba(239,231,214,0.08)";
+        target.lineWidth = 1;
+        for (let m = 0.5; m < L.size.width; m += 0.5) {
+          const u = m / L.size.width;
+          const slatA = stagePoint(u, 0, snokoH, L);
+          const slatB = stagePoint(u, 1, snokoH, L);
+          target.beginPath();
+          target.moveTo(slatA.x, slatA.y);
+          target.lineTo(slatB.x, slatB.y);
+          target.stroke();
+        }
+        target.restore();
+      }
+
       target.save();
       target.strokeStyle = "rgba(239,231,214,0.14)";
       target.lineWidth = 1.5;
@@ -13509,8 +13569,27 @@
 
   /* 動かすのは「次へ進むとき」だけ。前の場面へ戻るのは、作っている途中に
    * 見比べる動きなので、そのたびに動かれると邪魔になる（本人の指定）。 */
-  function beginSceneAnim(fromScene) {
+  /* 回り続けている盆の「いま見えている角度」の控え。転換の始点をここから取らないと、
+     切替の瞬間に盆と上の駒が保存値の角度へスナップする（3Dカメラで「一瞬カクつく」と
+     指摘された正体）。位相リセット自体は段階3の仕様なので消さず、
+     リセットを転換の回転として滑らかに見せる。
+     ★openScene は renderScenes()→syncSpinRun() が beginSceneAnim より先に旧runを止めて
+       角度を消すので、openScene の冒頭で控えて引数で渡す（内側で控えては間に合わない）。 */
+  function captureLiveSpins() {
+    const liveSpins = new Map();
+    if (spinRun) {
+      spinRun.owned.forEach((piece) => {
+        if (piece.animMech && piece.animMech.spin !== undefined) {
+          liveSpins.set(piece, piece.animMech.spin);
+        }
+      });
+    }
+    return liveSpins;
+  }
+
+  function beginSceneAnim(fromScene, liveSpinsIn) {
     stopSceneAnim();
+    const liveSpins = liveSpinsIn && liveSpinsIn.size ? liveSpinsIn : captureLiveSpins();
     pauseSpinRun();
     if (!state.animateScenes || !fromScene) return;
     const rows = state.project.scenes.filter((row) => row.kind === "scene");
@@ -13532,7 +13611,9 @@
       const mechFrom = {};
       const mechTo = {};
       const sameMech = mechKeys.every((key) => {
-        mechFrom[key] = finite(twin[key], mechDefaults[key]);
+        // 盆の spin だけは、控えた「見えている角度」を始点にする（無ければ保存値）
+        const fromValue = key === "spin" && liveSpins.has(twin) ? liveSpins.get(twin) : twin[key];
+        mechFrom[key] = finite(fromValue, mechDefaults[key]);
         mechTo[key] = finite(piece[key], mechDefaults[key]);
         return Math.abs(mechFrom[key] - mechTo[key]) <= 0.001;
       });
@@ -14362,11 +14443,20 @@ ${propsPlotHtml}
   }
 
   function openScene(id) {
+    /* 共有セッションのゲストはシーンを切り替えられない（ホストのシーンに追従する）。
+       ホストからの同期は applyDocumentString が activeSceneId を直接差し替えるため、
+       このガードの影響を受けない。 */
+    if (document.body.classList.contains("stage-session-guest")) {
+      announce("共有セッション中はホストのシーンに追従します。");
+      return;
+    }
     closeNoteEditor();
     selectedNoteId = null;
     state.cursorRowId = id;
     if (state.project.activeSceneId === id) { renderScenes(); return; }
     const before = sc();
+    // 盆の生きた角度は、renderScenes→syncSpinRun が旧runを止める前のここで控える
+    const liveSpins = captureLiveSpins();
     state.project.activeSceneId = id;
     selectedId = null;
     renderScenes();
@@ -14380,7 +14470,7 @@ ${propsPlotHtml}
     syncScreenTextControls();
     updateInspector();
     render();
-    beginSceneAnim(before);
+    beginSceneAnim(before, liveSpins);
     persistSoon();
     announce(`${sc().title}を開きました。`);
   }
@@ -16177,6 +16267,7 @@ ${propsPlotHtml}
     /* 「何も選んでいないときの案内」は説明文なので「?」の側で出し入れする。
      * ここで勝手に出すと、畳んだはずの文が選ぶたびに戻ってくる。 */
     els.selectionControls.hidden = !piece;
+    renderPoseStrip(piece);
     if (els.fpvOpen) els.fpvOpen.hidden = !(piece && piece.type === "performer");
     syncHoldingControls(piece);
     if (!piece) return;
@@ -16258,6 +16349,57 @@ ${propsPlotHtml}
         els.facingValue.textContent = isPerformer ? facingLabel(piece.facing) : "―";
       }
     }
+  }
+
+  /* 正面図の下の姿勢帯。毎回39枚を描き直すと重いので、
+     同じ演者・同じ色・同じ言語の間は組み直さず、ハイライトだけ動かす。 */
+  let poseStripFor = "";
+  function renderPoseStrip(piece) {
+    if (!els.poseStrip) return;
+    const show = Boolean(piece && piece.type === "performer" && !mountKindOf(piece));
+    els.poseStrip.hidden = !show;
+    if (!show) { poseStripFor = ""; return; }
+    const buildKey = `${piece.id}|${piece.color}|${lang}`;
+    if (poseStripFor === buildKey) {
+      els.poseStrip.querySelectorAll(".stage-pose-strip-tile").forEach((tile) => {
+        const on = tile.dataset.pose === piece.pose;
+        tile.classList.toggle("is-on", on);
+        tile.setAttribute("aria-pressed", String(on));
+        if (on && tile.scrollIntoView) tile.scrollIntoView({ inline: "center", block: "nearest" });
+      });
+      return;
+    }
+    poseStripFor = buildKey;
+    els.poseStrip.innerHTML = "";
+    POSES.forEach((pose) => {
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = `stage-pose-strip-tile${pose.id === piece.pose ? " is-on" : ""}`;
+      tile.dataset.pose = pose.id;
+      tile.setAttribute("aria-pressed", String(pose.id === piece.pose));
+      tile.title = poseName(pose);
+      const canvas = document.createElement("canvas");
+      canvas.width = 112;
+      canvas.height = 96;
+      const label = document.createElement("span");
+      label.textContent = poseName(pose);
+      tile.append(canvas, label);
+      els.poseStrip.appendChild(tile);
+      drawPosePreview(canvas, pose.id, piece.color);
+      tile.addEventListener("click", () => {
+        const current = selectedPiece();
+        if (!current || current.type !== "performer" || mountKindOf(current)
+          || current.pose === pose.id) return;
+        checkpoint();
+        current.pose = pose.id;
+        updateInspector();
+        render();
+        persistSoon();
+        announce(`姿勢を「${poseName(pose)}」にしました。`);
+      });
+    });
+    const active = els.poseStrip.querySelector(".is-on");
+    if (active && active.scrollIntoView) active.scrollIntoView({ inline: "center", block: "nearest" });
   }
 
   function syncInputs() {
@@ -18086,6 +18228,76 @@ ${propsPlotHtml}
       getPlanCanvas: () => planCanvas,
       requestRedraw: () => render(true),
       stepScene,
+      /* FPVから演者の向き・姿勢を直す。変更は必ず本編の undo・保存・再描画を通す */
+      setPieceFacing: (pieceId, deg, snapshot) => {
+        const piece = sc().pieces.find((p) => p.id === pieceId && p.type === "performer");
+        if (!piece) return false;
+        /* FPVが指すのは「見えている向き」。盆の上では見かけ＝保存値＋盆の回転なので、
+           その差を引いてから保存する。引かないと盆の分だけ余計に回る（実際にそうなった）。 */
+        const shownDelta = finite(effectivePlacement(piece).facing, 0) - finite(piece.facing, 0);
+        const raw = Math.round(finite(deg, 0) - shownDelta);
+        const value = clamp(((raw + 180) % 360 + 360) % 360 - 180, -180, 180);
+        if (value === finite(piece.facing, 0)) return true;
+        if (snapshot) checkpoint();
+        piece.facing = value;
+        updateInspector();
+        render();
+        persistSoon();
+        return true;
+      },
+      setPiecePose: (pieceId, poseId) => {
+        const piece = sc().pieces.find((p) => p.id === pieceId && p.type === "performer");
+        if (!piece || !POSES.some((p) => p.id === poseId)) return false;
+        if (piece.pose === poseId) return true;
+        checkpoint();
+        piece.pose = poseId;
+        updateInspector();
+        render();
+        persistSoon();
+        return true;
+      },
+      setPiecePlace: (pieceId, u, v, snapshot) => {
+        const piece = sc().pieces.find((p) => p.id === pieceId && p.type === "performer");
+        if (!piece || piece.heldBy) return false;
+        /* FPVが指すのは「見えている位置」。盆に乗っていれば、盆の回転（見かけの向き−保存の向き）
+           を逆に回してから保存する。そのまま書くと盆の回転分だけ滑る。 */
+        const placed = effectivePlacement(piece);
+        let targetU = finite(u, piece.u);
+        let targetV = finite(v, piece.v);
+        const revolve = placed.revolveId
+          ? sc().pieces.find((p) => p.id === placed.revolveId) : null;
+        if (revolve) {
+          const size = venueSize();
+          const centre = effectivePlacement(revolve);
+          const spin = finite(placed.facing, 0) - finite(piece.facing, 0);
+          const angle = -spin * Math.PI / 180;
+          const dx = (targetU - finite(centre.u, .5)) * size.width;
+          const dz = (targetV - finite(centre.v, .5)) * size.depth;
+          const dims = pieceDims(revolve);
+          /* 逆変換した点が盆から出るなら、盆を離れる＝見えている位置をそのまま保存する
+             （盆の円は回転で不変なので、境界で位置は連続する） */
+          if (Math.hypot(dx, dz) <= finite(dims && dims.dia, 0) / 2) {
+            targetU = finite(revolve.u, .5) + (dx * Math.cos(angle) - dz * Math.sin(angle)) / size.width;
+            targetV = finite(revolve.v, .5) + (dx * Math.sin(angle) + dz * Math.cos(angle)) / size.depth;
+          }
+        }
+        const nextU = clamp(targetU, -0.5, 1.5);
+        const nextV = clamp(targetV, -0.5, 1.5);
+        if (Math.abs(nextU - finite(piece.u, .5)) < 1e-6
+          && Math.abs(nextV - finite(piece.v, .5)) < 1e-6) return true;
+        if (snapshot) {
+          checkpoint();
+          bringToTop(piece);
+        }
+        piece.u = nextU;
+        piece.v = nextV;
+        render();
+        persistSoon();
+        return true;
+      },
+      listPoses: () => POSES.map((p) => ({ id: p.id, label: poseName(p) })),
+      drawPosePreview: (canvas, poseId, color) => drawPosePreview(canvas, poseId, color),
+      facingLabel,
       onClose: () => returnFocus && returnFocus.focus(),
     });
   }
