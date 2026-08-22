@@ -57,7 +57,13 @@ function errorDisplay(model) {
   };
 }
 
-async function runPlanRequest(model, bridge, show, promptFactory = () => "prompt") {
+async function runPlanRequest(
+  model,
+  bridge,
+  show,
+  promptFactory = () => "prompt",
+  revisionOptions = {},
+) {
   return model.requestPlan(
     bridge,
     { kind: "shosai-stage-sketch", version: 3, project: { id: "show-1" } },
@@ -65,6 +71,7 @@ async function runPlanRequest(model, bridge, show, promptFactory = () => "prompt
     promptFactory,
     () => true,
     show,
+    revisionOptions,
   );
 }
 
@@ -223,6 +230,94 @@ test("止める経路はブリッジのstopAgentを呼ぶ", async () => {
   assert.equal(calls, 1);
   assert.match(stageSource, /askStop\?\.addEventListener\("click", stopStageAskRun\)/);
   assert.match(stageSource, /await STAGE_AI_PANEL_MODEL\.stopAgent\(bridge\)/);
+});
+
+test("revision不一致はAIを起動せず、読み直しを案内する", async () => {
+  let agentCalls = 0;
+  const writeCalls = [];
+  const bridge = bridgeStub({
+    writeProject: async (...args) => {
+      writeCalls.push(args);
+      return { projectId: "show-1", conflict: true, currentRevision: 7 };
+    },
+    runAgent: async () => { agentCalls += 1; return { ok: true, output: "" }; },
+  });
+  const { model } = loadPanelModel(bridge);
+  const display = errorDisplay(model);
+  const outcome = await runPlanRequest(
+    model,
+    bridge,
+    display.show,
+    () => "prompt",
+    { expectedRevision: 5, language: "ja" },
+  );
+
+  assert.equal(outcome, null);
+  assert.equal(agentCalls, 0);
+  assert.equal(writeCalls.length, 1);
+  assert.equal(writeCalls[0][1], 5);
+  assert.equal(
+    display.element.textContent,
+    "正本がこの端末より新しくなっています（端末: r5 / 正本: r7）。AIに渡す前に、最新の編集結果を読み込み直してください。",
+  );
+});
+
+test("revision未読は一度だけ確認し、承認時だけallowFirstSyncで再送する", async () => {
+  const writeCalls = [];
+  let confirmations = 0;
+  let savedRevision = null;
+  const bridge = bridgeStub({
+    writeProject: async (...args) => {
+      writeCalls.push(args);
+      if (writeCalls.length === 1) {
+        return { projectId: "show-1", conflict: true, currentRevision: 4 };
+      }
+      return { projectId: "show-1", revision: 5 };
+    },
+  });
+  const { model } = loadPanelModel(bridge);
+  await runPlanRequest(model, bridge, () => {}, () => "prompt", {
+    expectedRevision: null,
+    language: "ja",
+    confirmFirstSync(message) {
+      confirmations += 1;
+      assert.equal(
+        message,
+        "この端末は、このショーの正本をまだ読み込んでいません。いまの内容で正本を置き換えて、AI編集を始めますか？（置き換える前の版は履歴に残ります）",
+      );
+      return true;
+    },
+    onWritten(revision) { savedRevision = revision; },
+  });
+
+  assert.equal(confirmations, 1);
+  assert.equal(writeCalls.length, 2);
+  assert.equal(writeCalls[0][1], null);
+  assert.equal(writeCalls[0][2], undefined);
+  assert.equal(writeCalls[1][1], null);
+  assert.equal(writeCalls[1][2], true);
+  assert.equal(savedRevision, 5);
+});
+
+test("revision未読の確認を取り消すと再送もAI起動もしない", async () => {
+  let writeCalls = 0;
+  let agentCalls = 0;
+  const bridge = bridgeStub({
+    writeProject: async () => {
+      writeCalls += 1;
+      return { projectId: "show-1", conflict: true, currentRevision: 4 };
+    },
+    runAgent: async () => { agentCalls += 1; return { ok: true, output: "" }; },
+  });
+  const { model } = loadPanelModel(bridge);
+  const outcome = await runPlanRequest(model, bridge, () => {}, () => "prompt", {
+    expectedRevision: null,
+    confirmFirstSync: () => false,
+  });
+
+  assert.equal(outcome, null);
+  assert.equal(writeCalls, 1);
+  assert.equal(agentCalls, 0);
 });
 
 test("採用完了は元ショーを残して棚を1件増やし、castと駒を持つ新ショーへ切り替えて下書きを解除する", () => {

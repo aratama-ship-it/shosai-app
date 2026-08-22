@@ -13,6 +13,15 @@ test("allowlistKeyはbaseを含まず、file/sceneId/pieceType/pieceName/holderN
   assert.equal(key, "a.json|s1|block|木箱2|網");
 });
 
+test("allowlistKeyはファイル名のNFC/NFD差を同じ許可項目として扱う", () => {
+  const nfc = "11_スタンドイン_舞台スケッチ_v2.json";
+  const nfd = nfc.normalize("NFD");
+  assert.notEqual(nfc, nfd);
+
+  const shared = { sceneId: "s1", pieceType: "block", pieceName: "道具・カメラ", holderName: "演者（本人）" };
+  assert.equal(allowlistKey({ ...shared, file: nfc }), allowlistKey({ ...shared, file: nfd }));
+});
+
 test("loadAllowlistSetは同梱の許可リストJSONを読み、2026-08-20レビュー済みの33件を持つ", async () => {
   const set = loadAllowlistSet();
   assert.equal(set.size, 33);

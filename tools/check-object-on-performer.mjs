@@ -31,8 +31,11 @@ const STAGE_VENUES_JS = path.join(APP_ROOT, "stage-venues.js");
 const ALLOWLIST_JSON = path.join(TOOLS_DIR, "check-object-on-performer.allowlist.json");
 
 // 検出結果を許可リストと突き合わせる鍵。高さ(base)は微妙な数値ズレで変わりうるので鍵に含めない。
+// iCloudや入力環境によるNFC/NFDのファイル名差では、同じショーを新規扱いにしない。
 function allowlistKey(item) {
-  return [item.file, item.sceneId, item.pieceType, item.pieceName, item.holderName].join("|");
+  return [item.file, item.sceneId, item.pieceType, item.pieceName, item.holderName]
+    .map((value) => String(value ?? "").normalize("NFC"))
+    .join("|");
 }
 
 function loadAllowlistSet() {

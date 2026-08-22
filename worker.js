@@ -6,8 +6,11 @@ export { SessionRoom };
 //
 // wrangler.toml の run_worker_first により、静的アセットより必ず先にここを通る。
 // 正しければ env.ASSETS.fetch(request) で通常の静的ファイル配信へ渡す。
-// IDとパスワードは Cloudflare の環境変数（Secret）SITE_USER / SITE_PASS に置き、
-// このファイルやリポジトリには平文で残さない。
+// IDとパスワードは Cloudflare の環境変数（Secret）SITE_USER / SITE_PASS と
+// GUEST_USER / GUEST_PASS に置き、このファイルやリポジトリには平文で残さない。
+// 本人用・ゲスト用とも、使う入口はIDとパスワードの両方を設定する。
+// 本番で未設定や片側だけなら503で配信を止める。
+// 両方とも未設定のまま認証なしで通せるのは、ローカル開発だけ。
 //
 // 名簿タブの合言葉（scout_pass）とは別物。あちらはブラウザ内で名簿データを
 // 復号するための鍵、こちらはサイトそのものへ入る前の関所。
@@ -24,6 +27,18 @@ function timingSafeEqual(a, b) {
     mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
   return mismatch === 0;
+}
+
+/* ローカル開発かどうか。Secret未設定でも通すのはここだけ。
+   本番（workers.dev・独自ドメイン）では設定不備を503で止める。 */
+function isLocalHost(request) {
+  let hostname = "";
+  try { hostname = new URL(request.url).hostname; } catch (_) { return false; }
+  return hostname === "localhost"
+    || hostname === "127.0.0.1"
+    || hostname === "::1"
+    || hostname === "[::1]"
+    || hostname.endsWith(".localhost");
 }
 
 const ROOM_ID_ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
@@ -84,16 +99,27 @@ async function serveAuthenticatedRequest(request, env) {
 export default {
   async fetch(request, env, ctx) {
     // 本人用（SITE_USER/SITE_PASS）とゲスト用（GUEST_USER/GUEST_PASS）の2組を受け付ける。
-    // ゲスト用が未設定ならゲスト入口は存在しないのと同じ。
-    const accounts = [
+    // ゲスト用の両方が未設定なら、ゲスト入口は存在しないのと同じ。
+    const pairs = [
       [env.SITE_USER, env.SITE_PASS],
       [env.GUEST_USER, env.GUEST_PASS],
-    ].filter(([u, p]) => u && p);
+    ];
+    // 片方だけ入っている組は設定ミス。両方空（＝その入口を使わない）は正常。
+    const misconfigured = pairs.some(([u, p]) => Boolean(u) !== Boolean(p));
+    const accounts = pairs.filter(([u, p]) => u && p);
 
-    // 環境変数が未設定なら認証をかけない（設定忘れでロックアウトするより、
-    // 意図的に外から確認しやすい状態を優先する）。
-    if (accounts.length === 0) {
-      return serveAuthenticatedRequest(request, env);
+    // 両入口とも未設定で通せるのはローカルだけ。片側だけの組はローカルでも止める。
+    if (accounts.length === 0 || misconfigured) {
+      if (isLocalHost(request) && !misconfigured) {
+        return serveAuthenticatedRequest(request, env);
+      }
+      return new Response("認証設定が未完了のため停止しています。", {
+        status: 503,
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "no-store",
+        },
+      });
     }
 
     const authHeader = request.headers.get("Authorization") || "";

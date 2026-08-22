@@ -519,9 +519,11 @@
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       const name = normalizeName(input.value, "ゲスト");
-      try { bridge.shelveNow(); }
-      catch (_) {
-        setStatus("現在の作業を退避できなかったため、参加を止めました。", true);
+      let shelved = false;
+      try { shelved = bridge.shelveNow() !== false; }
+      catch (_) { shelved = false; }
+      if (!shelved) {
+        setStatus("現在の作業を退避できなかったため、参加を止めました。ショーを書き出すか、使っていないショーを整理してから、もう一度お試しください。", true);
         return;
       }
       rememberName(name);

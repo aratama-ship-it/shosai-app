@@ -77,6 +77,15 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
         didReceive message: WKScriptMessage,
         replyHandler: @escaping (Any?, String?) -> Void
     ) {
+        guard Self.isTrustedFrame(
+            isMainFrame: message.frameInfo.isMainFrame,
+            originProtocol: message.frameInfo.securityOrigin.protocol
+        ) else {
+            diagnosticMessageHandler?("\(message.name):rejected-origin")
+            replyHandler(nil, "This bridge is only available to the app's own pages.")
+            return
+        }
+
         diagnosticMessageHandler?(message.name)
         switch message.name {
         case Self.runAgentMessage:
@@ -127,7 +136,13 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
                 return
             }
             do {
-                replyHandler(try projectStore.writeProject(document), nil)
+                let expectedRevision = try Self.expectedRevision(from: body["expectedRevision"])
+                let allowFirstSync = body["allowFirstSync"] as? Bool == true
+                replyHandler(try projectStore.writeProject(
+                    document,
+                    expectedRevision: expectedRevision,
+                    allowFirstSync: allowFirstSync
+                ), nil)
             } catch {
                 replyHandler(nil, error.localizedDescription)
             }
@@ -199,11 +214,19 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
           }
           return handlers.stageSketchReadExport.postMessage({ name });
         },
-        writeProject(document) {
+        writeProject(document, expectedRevision = null, allowFirstSync = false) {
           if (document === null || typeof document !== "object" || Array.isArray(document)) {
             return Promise.reject(new TypeError("writeProject expects a document object."));
           }
-          return handlers.stageSketchWriteProject.postMessage({ document });
+          if (expectedRevision !== null
+              && (!Number.isInteger(expectedRevision) || expectedRevision < 1)) {
+            return Promise.reject(new TypeError("expectedRevision must be null or a positive integer."));
+          }
+          return handlers.stageSketchWriteProject.postMessage({
+            document,
+            expectedRevision,
+            allowFirstSync: allowFirstSync === true
+          });
         },
         latestPlan(projectId) {
           if (typeof projectId !== "string") {
@@ -241,4 +264,20 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
       });
     })();
     """#
+
+    static func isTrustedFrame(isMainFrame: Bool, originProtocol: String) -> Bool {
+        isMainFrame && originProtocol.lowercased() == "shosai"
+    }
+
+    private static func expectedRevision(from value: Any?) throws -> Int? {
+        guard let value, !(value is NSNull) else { return nil }
+        guard let number = value as? NSNumber,
+              CFGetTypeID(number) != CFBooleanGetTypeID(),
+              number.doubleValue.rounded(.towardZero) == number.doubleValue,
+              number.doubleValue >= 1,
+              number.doubleValue <= Double(Int.max) else {
+            throw StageSketchProjectStoreError.invalidExpectedRevision
+        }
+        return number.intValue
+    }
 }

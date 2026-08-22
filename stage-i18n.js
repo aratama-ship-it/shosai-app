@@ -32,6 +32,7 @@
     "背景": "Backdrop",
     "シーンスタディ": "Scene study",
     "シーン": "Scenes",
+    "音楽": "Music",
     "選んだもの": "Selection",
     "保存": "Saving",
     "AI指示": "AI Instructions",
@@ -77,6 +78,23 @@
     "読み込む": "Import",
     "見本のショーを開く": "Open the sample show",
     "Vision Pro稽古用JSON": "Vision Pro rehearsal JSON",
+
+    /* ---- 音楽（端末内再生） ---- */
+    "端末内の楽曲を読み込み、流れているシーンを割り当てます。":
+      "Load music stored on this device and assign the scenes where it is playing.",
+    "＋ 楽曲を読み込む": "+ Load music",
+    "まだ楽曲を読み込んでいません。": "No music loaded yet.",
+    "読み込んだ楽曲": "Loaded music",
+    "このシーンで流す曲": "Music for this scene",
+    "音なし": "No music",
+    "この曲をすべて外す": "Remove this track from all scenes",
+    "この曲が流れているシーン": "Scenes using this track",
+    "この端末で音源を選び直す": "Reconnect the audio file on this device",
+    "音源ファイルはこの端末内だけに保存され、JSON、端末データの書き出し、共有セッションには含まれません。別端末では元ファイルを選び直してください。":
+      "Audio files stay only on this device. They are not included in project JSON, device-data exports or shared sessions. Select the original file again on another device.",
+    "現在のシーンの曲を再生": "Play music for the current scene",
+    "曲の先頭へ戻す": "Restart the track",
+    "曲の再生位置": "Track position",
 
     /* ---- 構成テンプレート ---- */
     "構成テンプレートから作る": "Create from a structure template",
@@ -740,7 +758,6 @@
     "秒": "sec",
     "未入力のシーンへ適用": "Apply to scenes with missing times",
     "音源": "Soundtrack",
-    "音なし": "No soundtrack",
     "Vision Pro内蔵デモ音源を使う": "Use the built-in Vision Pro demo soundtrack",
     "音源ファイルはJSONへ埋め込みません。この選択はショーの正本に保存します。":
       "Audio files are not embedded in JSON. This choice is saved in the canonical show.",

@@ -1,19 +1,20 @@
-const CACHE_NAME = "stage-sketch-pwa-v122";
+const CACHE_NAME = "stage-sketch-pwa-v132";
 const APP_SHELL = [
   "./stage.html",
-  "./style.css?v=189",
+  "./style.css?v=193",
   "./stage-venues.js?v=20",
   "./stage-venue-lines.js?v=4",
-  "./stage-i18n.js?v=72",
+  "./stage-i18n.js?v=74",
   "./stage-prompt-i18n.js?v=2",
   "./stage-rehearsal-export.js?v=1",
   "./stage-samples/index.js?v=1",
   "./stage-set-model.js?v=1",
   "./stage-set-builder.js?v=1",
   "./stage-machinery.js?v=2",
-  "./stage-first-person.js?v=15",
-  "./stage-sketch.js?v=280",
-  "./stage-session.js?v=2",
+  "./stage-first-person.js?v=16",
+  "./stage-audio-store.js?v=2",
+  "./stage-sketch.js?v=287",
+  "./stage-session.js?v=3",
   "./stage-venue-editor.js?v=6",
   "./stage-pwa.js?v=3",
   "./stage-sketch.webmanifest",
@@ -26,8 +27,10 @@ const STAGE_PATH = new URL("./stage.html", self.location.href).pathname;
 const APP_SHELL_URLS = new Set(APP_SHELL.map((path) => new URL(path, self.location.href).href));
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -53,7 +56,7 @@ self.addEventListener("fetch", (event) => {
       fetch(request).then((response) => {
         if (response.ok) {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put("./stage.html", copy));
+          event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put("./stage.html", copy)));
         }
         return response;
       }).catch(() => caches.match("./stage.html"))
@@ -67,7 +70,7 @@ self.addEventListener("fetch", (event) => {
     caches.match(request).then((cached) => cached || fetch(request).then((response) => {
       if (response.ok) {
         const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)));
       }
       return response;
     }))

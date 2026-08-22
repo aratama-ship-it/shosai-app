@@ -438,6 +438,7 @@
 
   const venueLibrary = window.SHOSAI_VENUES && window.SHOSAI_VENUES.library;
   const projectIoClone = (value) => JSON.parse(JSON.stringify(value));
+  const normalizeMcpRevision = (value) => Number.isInteger(value) && value >= 1 ? value : null;
   const bundledVenueForProject = (project) => {
     if (!venueLibrary || !project || venueLibrary.isPreset(project.venue)) return null;
     return venueLibrary.venueV2ById(project.venue);
@@ -464,6 +465,8 @@
     exportDocument: makeProjectExportDocument,
     prepareImportDocument: prepareProjectImportDocument,
     bundledVenueForProject,
+    cloneProject: projectIoClone,
+    normalizeMcpRevision,
   });
 
   /* MCPが書き出したeditSummaryのうち、読み込み確認に必要な公開項目だけを扱う。
@@ -736,24 +739,66 @@
       }
       return result;
     },
-    async requestPlan(bridge, document, request, promptFactory, shouldContinue, onError) {
+    async requestPlan(
+      bridge,
+      document,
+      request,
+      promptFactory,
+      shouldContinue,
+      onError,
+      revisionOptions = {}
+    ) {
       const isCurrent = typeof shouldContinue === "function" ? shouldContinue : () => true;
       const fail = typeof onError === "function" ? onError : () => {};
+      const expectedRevision = Number.isInteger(revisionOptions.expectedRevision)
+        && revisionOptions.expectedRevision >= 1 ? revisionOptions.expectedRevision : null;
+      const en = revisionOptions.language === "en";
+      const conflictText = (currentRevision) => en
+        ? `The canonical project is newer than this device (device r${expectedRevision}, canonical r${currentRevision}). Load the latest edit result before running the AI.`
+        : `正本がこの端末より新しくなっています（端末: r${expectedRevision} / 正本: r${currentRevision}）。AIに渡す前に、最新の編集結果を読み込み直してください。`;
       let written;
       try {
-        written = await bridge.writeProject(document);
+        written = await bridge.writeProject(document, expectedRevision);
       } catch (error) {
         if (isCurrent()) fail(stageAIErrorText("ショーの書き出しに失敗しました:", error));
         return null;
       }
       if (!isCurrent()) return null;
+      if (written && written.conflict === true) {
+        const currentRevision = Number(written.currentRevision);
+        if (expectedRevision !== null) {
+          fail(conflictText(currentRevision));
+          return null;
+        }
+        const firstSyncText = en
+          ? "This device has not loaded the canonical copy of this show yet. Replace it with what you have now and start the AI edit? The previous version is kept in history."
+          : "この端末は、このショーの正本をまだ読み込んでいません。いまの内容で正本を置き換えて、AI編集を始めますか？（置き換える前の版は履歴に残ります）";
+        if (typeof revisionOptions.confirmFirstSync !== "function"
+          || !revisionOptions.confirmFirstSync(firstSyncText)) return null;
+        try {
+          written = await bridge.writeProject(document, null, true);
+        } catch (error) {
+          if (isCurrent()) fail(stageAIErrorText("ショーの書き出しに失敗しました:", error));
+          return null;
+        }
+        if (!isCurrent()) return null;
+        if (written && written.conflict === true) {
+          fail(en
+            ? "The canonical project changed during synchronization. Load the latest edit result before running the AI."
+            : "同期中に正本が更新されました。AIに渡す前に、最新の編集結果を読み込み直してください。");
+          return null;
+        }
+      }
       if (!written || typeof written.projectId !== "string"
-        || !Number.isInteger(Number(written.revision))) {
+        || !Number.isInteger(Number(written.revision)) || Number(written.revision) < 1) {
         fail(stageAIErrorText(
           "ショーの書き出しに失敗しました:",
           "書き出し結果を確認できませんでした。"
         ));
         return null;
+      }
+      if (typeof revisionOptions.onWritten === "function") {
+        revisionOptions.onWritten(Number(written.revision));
       }
 
       let prompt;
@@ -787,6 +832,7 @@
       const next = options.normalizeState({
         ...options.currentState,
         project: prepared.project,
+        mcpRevision: null,
       });
       options.shelveCurrent();
       next.project.id = options.makeProjectId();
@@ -810,6 +856,68 @@
      crc32を呼べるように。letはブロック先頭へ巻き上がるが、初期化文自体はガード後まで実行されないため）。 */
   let crc32Table = null;
   window.SHOSAI_STAGE_EXPORT_MODEL = Object.freeze({ crc32, makeZipBlob, dataUrlToBytes });
+
+  /* 楽曲はJSONへ入る小さなメタデータと、IndexedDBへ入る音源Blobを分ける。
+   * DOMより前へ純粋関数を置き、旧データ・壊れた読込・再生遷移をNodeでも検査する。 */
+  const STAGE_AUDIO_TRACK_LIMIT = 24;
+  const STAGE_AUDIO_FILE_MAX_BYTES = 150 * 1024 * 1024;
+  const STAGE_AUDIO_ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$/;
+  const normalizeAudioTrack = (raw, index = 0) => {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    const id = typeof raw.id === "string" ? raw.id.trim() : "";
+    if (!STAGE_AUDIO_ID_RE.test(id)) return null;
+    const rawTitle = typeof raw.title === "string" ? raw.title.trim() : "";
+    const duration = Number(raw.durationSeconds);
+    return {
+      id,
+      title: (rawTitle || `楽曲 ${index + 1}`).slice(0, 80),
+      durationSeconds: Number.isFinite(duration) && duration > 0 && duration <= 86400
+        ? duration : null,
+    };
+  };
+  const normalizeAudioTracks = (raw) => {
+    if (!Array.isArray(raw)) return [];
+    const seen = new Set();
+    return raw.slice(0, STAGE_AUDIO_TRACK_LIMIT * 2).map(normalizeAudioTrack).filter((track) => {
+      if (!track || seen.has(track.id) || seen.size >= STAGE_AUDIO_TRACK_LIMIT) return false;
+      seen.add(track.id);
+      return true;
+    });
+  };
+  const normalizeAudioTrackId = (kind, value) => (
+    kind === "scene" && typeof value === "string" && STAGE_AUDIO_ID_RE.test(value.trim())
+      ? value.trim() : null
+  );
+  const audioSceneTransition = (currentTrackId, nextTrackId, wasPlaying) => {
+    const current = normalizeAudioTrackId("scene", currentTrackId);
+    const next = normalizeAudioTrackId("scene", nextTrackId);
+    if (current && current === next) return { action: "continue", play: Boolean(wasPlaying) };
+    if (!next) return { action: "stop", play: false };
+    return { action: "load", play: Boolean(wasPlaying) };
+  };
+  const audioIdentityDifference = (track, candidateTitle, candidateDuration) => {
+    const titleKey = (value) => String(value || "")
+      .normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("en-US");
+    const previousDuration = Number(track && track.durationSeconds);
+    const nextDuration = Number(candidateDuration);
+    const comparableDurations = Number.isFinite(previousDuration) && previousDuration > 0
+      && Number.isFinite(nextDuration) && nextDuration > 0;
+    return {
+      titleChanged: Boolean(track && titleKey(track.title) && titleKey(candidateTitle)
+        && titleKey(track.title) !== titleKey(candidateTitle)),
+      durationChanged: Boolean(comparableDurations
+        && Math.abs(previousDuration - nextDuration) > Math.max(2, previousDuration * 0.05)),
+    };
+  };
+  window.SHOSAI_STAGE_AUDIO_MODEL = Object.freeze({
+    trackLimit: STAGE_AUDIO_TRACK_LIMIT,
+    fileMaxBytes: STAGE_AUDIO_FILE_MAX_BYTES,
+    normalizeTrack: normalizeAudioTrack,
+    normalizeTracks: normalizeAudioTracks,
+    normalizeTrackId: normalizeAudioTrackId,
+    transition: audioSceneTransition,
+    identityDifference: audioIdentityDifference,
+  });
 
   const canvas = document.getElementById("stage-canvas");
   if (!canvas) return;
@@ -868,14 +976,17 @@
   // ピッチ用の出力を描いている間だけ入る。通常の作図画面には持ち越さない。
   let pitchStyle = null;
   /* ---------- 初期化（テスト用） ----------
-     ?fresh を付けて開くと、舞台スケッチの持ちものだけ消して開き直す。
+     ローカルで ?fresh を付け、確認を承認すると、舞台スケッチの持ちものだけ
+     消して開き直す。公開URLでは無視し、確認前には何も消さない。
      初めて来た人とまったく同じ状態（案内も自動で出る）を作れるので、
      チュートリアルの通し確認や、人に見せる前の仕切り直しに使う。
-     ★消すのは舞台スケッチの5つだけ。他の画面のものは触らない。
+     ★消すのは舞台スケッチの6つだけ。他の画面のものは触らない。
      ?tour を付けると、消さずに案内だけ出す。 */
   const STAGE_KEYS = [
     "shosai-stage-sketch-v1", "shosai-stage-shows-v1",
     "shosai-stage-tour-v1", "shosai-stage-lang", "shosai-stage-venues-v1",
+    // SHOWS_BROKEN_KEY と同じ値。あちらは後で定義されるのでここは文字列で書く。
+    "shosai-stage-shows-broken-v1",
   ];
   const openArgs = new URLSearchParams(window.location.search);
   /* ?lang=en / ?lang=ja … 開いた時点の言語を決める。
@@ -885,22 +996,40 @@
   const askedLang = (openArgs.get("lang") || "").toLowerCase();
   const openLang = askedLang === "en" || askedLang === "ja" ? askedLang : "";
   if (openArgs.has("fresh")) {
-    STAGE_KEYS.forEach((key) => {
-      try { localStorage.removeItem(key); } catch (_) { /* 消せなくても続ける */ }
-    });
-    /* ?fresh を落としたところへ入り直す（読み直すたびに消えるのを避ける）。
-       言語と見本の指定は持ち越す。消したあとも英語で／見本から開いてほしいため。
-       ★ここを忘れると ?fresh&sample が素の舞台で開く（実際に踏んだ）。 */
-    const carry = [];
-    if (openLang) carry.push(`lang=${openLang}`);
-    if (openArgs.has("sample")) carry.push("sample");
-    if (openArgs.has("seam-sample")) carry.push("seam-sample");
-    window.location.replace(window.location.pathname + (carry.length ? `?${carry.join("&")}` : ""));
-    return;
+    /* ?fresh は端末の全ショーを消す。公開URLでは誤クリック・共有リンク・先読みで
+       発動しうるので、ローカルでしか効かないようにする。
+       file:// で開いた単独版（stage.html）は hostname が空になるのでローカル扱い。 */
+    const freshAllowed = (() => {
+      const h = window.location.hostname;
+      return h === "" || h === "localhost" || h === "127.0.0.1"
+        || h === "::1" || h === "[::1]" || h.endsWith(".localhost");
+    })();
+    if (!freshAllowed) {
+      console.warn("?fresh はローカル環境でのみ使用できます。");
+    } else {
+      const message = openLang === "en"
+        ? "This will delete every stage sketch show saved on this device and reopen as a first-time visit. Shows you have not exported cannot be recovered. Continue?"
+        : "この端末に保存した舞台スケッチのショーをすべて消して、初回と同じ状態で開き直します。書き出していないショーは戻せません。続けますか？";
+      if (window.confirm(message)) {
+        STAGE_KEYS.forEach((key) => {
+          try { localStorage.removeItem(key); } catch (_) { /* 消せなくても続ける */ }
+        });
+        /* ?fresh を落としたところへ入り直す（読み直すたびに消えるのを避ける）。
+           言語と見本の指定は持ち越す。消したあとも英語で／見本から開いてほしいため。
+           ★ここを忘れると ?fresh&sample が素の舞台で開く（実際に踏んだ）。 */
+        const carry = [];
+        if (openLang) carry.push(`lang=${openLang}`);
+        if (openArgs.has("sample")) carry.push("sample");
+        if (openArgs.has("seam-sample")) carry.push("seam-sample");
+        window.location.replace(window.location.pathname + (carry.length ? `?${carry.join("&")}` : ""));
+        return;
+      }
+    }
   }
 
   const STORAGE_KEY = "shosai-stage-sketch-v1";          // いま開いているショー
   const SHOWS_KEY = "shosai-stage-shows-v1";              // 端末に置いた全ショー
+  const SHOWS_BROKEN_KEY = "shosai-stage-shows-broken-v1"; // 壊れた棚の原文の退避先
   const HISTORY_LIMIT = 36;
   /* 舞台に置ける駒の型。★舞台セットの種類（SET_KINDS）を足したら、
    * ここにも足すこと。無い型は「演者」に落とされる（実際に踏んだ）。 */
@@ -1680,6 +1809,47 @@
   const poseById = (id) => POSES.find((p) => p.id === id)
     || HIDDEN_POSES.find((p) => p.id === id) || POSES[0];
 
+  /* 衣装・髪型の語彙。段階0では保存と引き当ての器だけを持ち、描画には使わない。 */
+  const DEFAULT_SKIN = "#d9b38c";
+  const DEFAULT_HAIR_COLOR = "#2a2320";
+  const DEFAULT_TOP_COLOR = "#a84b26";
+  const DEFAULT_BOTTOM_COLOR = "#3a3f4a";
+  /* 丈。腰の中点→両足首の中点を1とした軸の割合で持つ。
+     ズボンでは色を塗り終える位置、スカートでは裾の位置を指す。 */
+  const LENGTHS = {
+    mini: { id: "mini", label: "ミニ", labelEn: "Mini", t: 0.30 },
+    knee: { id: "knee", label: "膝丈", labelEn: "Knee", t: 0.50 },
+    midi: { id: "midi", label: "ミディ", labelEn: "Midi", t: 0.72 },
+    ankle: { id: "ankle", label: "足首丈", labelEn: "Ankle", t: 1.00 },
+    floor: { id: "floor", label: "床丈", labelEn: "Floor", t: 1.08 },
+  };
+  /* 袖丈。肩→手首を1とした軸の割合。 */
+  const SLEEVES = {
+    none: { id: "none", label: "袖なし", labelEn: "Sleeveless", t: 0.00 },
+    short: { id: "short", label: "半袖", labelEn: "Short", t: 0.38 },
+    threequarter: { id: "threequarter", label: "七分袖", labelEn: "3/4", t: 0.72 },
+    long: { id: "long", label: "長袖", labelEn: "Long", t: 1.00 },
+  };
+  /* トップス。collar は胴の上塗りを始める位置（NECK_RINGS の s 値）。 */
+  const TOP_KINDS = {
+    tshirt: { id: "tshirt", label: "Tシャツ", labelEn: "T-shirt", collar: 0.28, sleeve: "short", shells: [] },
+    longtee: { id: "longtee", label: "長袖シャツ", labelEn: "Long sleeve", collar: 0.28, sleeve: "long", shells: [] },
+    tank: { id: "tank", label: "タンクトップ", labelEn: "Tank top", collar: 0.20, sleeve: "none", shells: [] },
+  };
+  const BOTTOM_KINDS = {
+    pants: { id: "pants", label: "長ズボン", labelEn: "Trousers", length: "ankle", shells: [] },
+    shorts: { id: "shorts", label: "半ズボン", labelEn: "Shorts", length: "mini", shells: [] },
+  };
+  const HAIR_STYLES = {
+    none: { id: "none", label: "なし", labelEn: "None", parts: [] },
+    short: { id: "short", label: "ショート", labelEn: "Short", parts: [] },
+  };
+  const topKindById = (id) => TOP_KINDS[id] || TOP_KINDS.tshirt;
+  const bottomKindById = (id) => BOTTOM_KINDS[id] || BOTTOM_KINDS.pants;
+  const hairStyleById = (id) => HAIR_STYLES[id] || HAIR_STYLES.none;
+  const lengthById = (id) => LENGTHS[id] || LENGTHS.ankle;
+  const sleeveById = (id) => SLEEVES[id] || SLEEVES.long;
+
   /* その姿勢が身長Hに対して占める範囲。手足の太さぶんも見込む。
    * 平面図の footprint と、選んだときの枠の大きさに使う。
    * 寝ている演者は床を長く占めるので、立っているときと同じ丸では表せない。 */
@@ -2055,6 +2225,22 @@
     backupNote: document.getElementById("stage-backup-note"),
     backupHint: document.getElementById("stage-backup-hint"),
     backupExport: document.getElementById("stage-backup-export"),
+    musicFile: document.getElementById("stage-music-file"),
+    musicStatus: document.getElementById("stage-music-status"),
+    musicLibrary: document.getElementById("stage-music-library"),
+    sceneAudioTrack: document.getElementById("stage-scene-audio-track"),
+    musicAssignment: document.getElementById("stage-music-assignment"),
+    musicAssignmentTitle: document.getElementById("stage-music-assignment-title"),
+    musicClearScenes: document.getElementById("stage-music-clear-scenes"),
+    musicSceneList: document.getElementById("stage-music-scene-list"),
+    musicRelink: document.getElementById("stage-music-relink"),
+    musicRelinkFile: document.getElementById("stage-music-relink-file"),
+    musicAudio: document.getElementById("stage-music-audio"),
+    musicToggle: document.getElementById("stage-music-toggle"),
+    musicRestart: document.getElementById("stage-music-restart"),
+    musicCurrent: document.getElementById("stage-music-current"),
+    musicSeek: document.getElementById("stage-music-seek"),
+    musicTime: document.getElementById("stage-music-time"),
     askPanel: document.getElementById("stage-ask-panel"),
     askInput: document.getElementById("stage-ask-input"),
     askIdle: document.getElementById("stage-ask-idle"),
@@ -2425,6 +2611,42 @@
   const escapeHtml = (t) => String(t).replace(/[&<>"']/g, (ch) => (
     { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 
+  function normalizeLook(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    const hair = raw.hair && typeof raw.hair === "object" ? raw.hair : {};
+    const top = raw.top && typeof raw.top === "object" ? raw.top : {};
+    const bottom = raw.bottom && typeof raw.bottom === "object" ? raw.bottom : {};
+    return {
+      skin: validColor(raw.skin, DEFAULT_SKIN),
+      hair: {
+        // 種類idは前方互換のため保存値を残し、描画時に既定へ落とす。
+        style: typeof hair.style === "string" ? hair.style.slice(0, 32) : "none",
+        color: validColor(hair.color, DEFAULT_HAIR_COLOR),
+      },
+      top: {
+        kind: typeof top.kind === "string" ? top.kind.slice(0, 32) : "tshirt",
+        color: validColor(top.color, DEFAULT_TOP_COLOR),
+        sleeve: typeof top.sleeve === "string" ? top.sleeve.slice(0, 32) : "short",
+      },
+      bottom: {
+        kind: typeof bottom.kind === "string" ? bottom.kind.slice(0, 32) : "pants",
+        color: validColor(bottom.color, DEFAULT_BOTTOM_COLOR),
+        length: typeof bottom.length === "string" ? bottom.length.slice(0, 32) : "ankle",
+      },
+    };
+  }
+
+  /* その駒をいまどの見た目で描くか。null なら現行の単色シルエット。 */
+  function resolveLook(piece, castList) {
+    if (!piece || piece.type !== "performer") return null;
+    const mode = piece.lookMode || "cast";
+    if (mode === "plain") return null;
+    if (mode === "custom") return piece.look || null;
+    if (!piece.castId) return null;
+    const member = (castList || []).find((item) => item.id === piece.castId);
+    return (member && member.look) || null;
+  }
+
   /* ---------- 環境設定（機能の出し入れ） ----------
      端末ごとの設定。ショーのデータには入れない（共有・書き出しに混ざらない）。
      新しい機能は原則ここに並べ、切れるようにしておく（本人の方針）。 */
@@ -2591,6 +2813,8 @@
       beat: normalizeSceneBeat(sceneKind, null),
       rehearsal: sceneKind === "scene" ? normalizeSceneRehearsal(null) : null,
       cueSeconds: null,
+      // このシーンで流れている曲。再生位置や音源Blobは保存しない。
+      audioTrackId: null,
       lightingIntent: null,
       facingLock: false,
     };
@@ -2600,6 +2824,8 @@
     const scene = newScene(sceneTitle(1), withExample);
     return {
       version: 3,
+      // Mac/MCP正本で、この端末が最後に確認したrevision。projectへは混ぜない。
+      mcpRevision: null,
       // ショー一つ分。劇場はショー単位で共通に持つ
       project: {
         id: rid("proj"),
@@ -2611,6 +2837,8 @@
         venue: "proscenium",
         venueSize: "mid",
         rehearsal: normalizeProjectRehearsal(null),
+        // 曲名などの小さな情報だけ。音源本体はstage-audio-store.jsのIndexedDBへ置く。
+        audioTracks: [],
         // このショーに出る人。場面ごとの在／不在は pieces 側で決まる
         cast: withExample ? sampleCast() : [],
         // このショーで使う台や道具。寸法はここが正本で、置いた分はこれを参照する
@@ -2674,17 +2902,17 @@
      使わないものは畳めるようにする。中央は絵だけで、上下の入れ替えのみ。 */
   /* 演者・舞台セット・光は「出るもの」一枚にまとめた（cast）。
    * 登録・出し入れ・寸法の仕組みが同じものを三つに割ると、目が三度行き来する。 */
-  const PANELS = ["project", "cast", "machinery", "rigs", "light", "background", "study", "scenes", "inspector", "save", "ask"];
+  const PANELS = ["project", "music", "cast", "machinery", "rigs", "light", "background", "study", "scenes", "inspector", "save", "ask"];
 
   function defaultLayout() {
     return {
       // 場面は絵のすぐ右に置く（順番を見ながら描くため）
       cols: {
-        project: "left", cast: "left", machinery: "left", rigs: "left", light: "left", background: "left",
+        project: "left", music: "left", cast: "left", machinery: "left", rigs: "left", light: "left", background: "left",
         study: "right", scenes: "right", inspector: "right", save: "right", ask: "right",
       },
       order: {
-        project: 0, cast: 1, machinery: 2, rigs: 3, light: 4, background: 5,
+        project: 0, music: 1, cast: 2, machinery: 3, rigs: 4, light: 5, background: 6,
         study: -1, scenes: 0, inspector: 1, save: 2, ask: 3,
       },
       collapsed: {},
@@ -2813,6 +3041,8 @@
       color: validColor(piece.color, "#a84b26"),
       name: typeof piece.name === "string" ? piece.name.slice(0, 24) : "",
       castId: typeof piece.castId === "string" ? piece.castId : null,
+      lookMode: ["cast", "plain", "custom"].includes(piece.lookMode) ? piece.lookMode : "cast",
+      look: normalizeLook(piece && piece.look),
       setId: typeof piece.setId === "string" ? piece.setId : null,
       /* 写したもとの駒の札。場面を写すと札は配り直されるので、
        * 登録の無い駒（最初から置いてある例など）は、これが無いと
@@ -3152,6 +3382,7 @@
       beat: normalizeSceneBeat(kind, raw.beat),
       rehearsal: kind === "scene" ? normalizeSceneRehearsal(raw.rehearsal) : null,
       cueSeconds: kind === "scene" ? normalizeCueSeconds(raw.cueSeconds) : null,
+      audioTrackId: normalizeAudioTrackId(kind, raw.audioTrackId),
       lightingIntent: normalizeLightingIntent(kind, raw.lightingIntent),
       // 誤ってホイールへ触れても向きが変わらないよう、シーンごとに持つ
       facingLock: kind === "scene" ? Boolean(raw.facingLock) : false,
@@ -3186,7 +3417,7 @@
    * 寸法・色・種類は舞台セットの登録側が持っていて、出し直すときにそちらを見る。
    * 床からの高さ（base）と支えている駒（supportId）は置き場所から毎回引き直す。
    * 丸ごと控えると、シーンの数だけ同じ値の写しが保存に溜まる。 */
-  const STASH_KEYS = ["type", "u", "v", "size", "facing", "pose",
+  const STASH_KEYS = ["type", "u", "v", "size", "facing", "pose", "lookMode", "look",
     "poleSide", "poleH", "tissueH", "trapMode", "diaboloMode", "seriH", "spin", "spinRate", "tilt", "deckH",
     "curtainKind", "open", "water", "poolH", "glow", "beam", "route", "locked", "name"];
 
@@ -3315,6 +3546,7 @@
 
     const normalized = adoptSamples({
       version: 3,
+      mcpRevision: normalizeMcpRevision(raw.mcpRevision),
       project: {
         id: typeof rawProject.id === "string" ? rawProject.id : rid("proj"),
         title: typeof rawProject.title === "string" && rawProject.title.trim() ? rawProject.title : untitledShow(),
@@ -3331,6 +3563,7 @@
         venue: venue.id,
         venueSize: size.id,
         rehearsal: normalizeProjectRehearsal(rawProject.rehearsal),
+        audioTracks: normalizeAudioTracks(rawProject.audioTracks),
         /* 規模の実寸。選んだ規模の値を土台に、ここで上書きした分だけ差し替える。
          * 実際の劇場は「中劇場」で括れない（間口12.4m・高さ7.2mのような値になる）。 */
         venueDims: normalizeVenueDims(rawProject.venueDims, size),
@@ -3342,6 +3575,7 @@
               heightCm: clamp(finite(c.heightCm, DEFAULT_HEIGHT_CM), 120, 210),
               note: typeof c.note === "string" ? c.note.slice(0, 200) : "",
               locked: Boolean(c.locked),
+              look: normalizeLook(c && c.look),
             }))
           : [],
         sets: Array.isArray(rawProject.sets)
@@ -3461,13 +3695,64 @@
      全ての控えは SHOWS_KEY に「id → 中身」で持つ。開き直すときは控えから戻す。
      保存は自動。ファイルへ出したいときは従来どおり「書き出す」。 */
 
-  function readShows() {
+  /* 棚のJSONが壊れていると分かったら true。以後、棚への書き込みを全部止める。
+     ★黙って {} に落として書き直すと、読めなかった他のショーが
+       いま開いている1本で置き換わって消える。それを防ぐための関所。 */
+  let shelfCorrupt = false;
+
+  function markShelfCorrupt(rawText) {
+    if (shelfCorrupt) return;
+    shelfCorrupt = true;
+    /* 原文は一度だけ退避する。既に退避済みなら上書きしない
+       （最初に壊れたときの原文が一番価値がある）。 */
     try {
-      const raw = JSON.parse(localStorage.getItem(SHOWS_KEY) || "{}");
-      return (raw && typeof raw === "object" && !Array.isArray(raw)) ? raw : {};
-    } catch (_) {
+      if (localStorage.getItem(SHOWS_BROKEN_KEY) === null) {
+        localStorage.setItem(SHOWS_BROKEN_KEY, rawText);
+      }
+    } catch (_) { /* 容量不足など。退避できなくても書き込み停止は続ける */ }
+  }
+
+  function readShows() {
+    let rawText = null;
+    try { rawText = localStorage.getItem(SHOWS_KEY); }
+    catch (_) { return {}; }                         // localStorage自体が読めない。壊れ扱いにはしない
+    if (rawText === null || rawText === "") return {}; // 初回。正常な空
+    let raw;
+    try { raw = JSON.parse(rawText); }
+    catch (_) { markShelfCorrupt(rawText); return {}; }
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+      markShelfCorrupt(rawText);
       return {};
     }
+    return raw;
+  }
+
+  function liveAudioTrackIdsForGc() {
+    const ids = new Set(audioTracks().map((track) => track.id));
+    let raw;
+    try {
+      const saved = localStorage.getItem(SHOWS_KEY);
+      raw = saved ? JSON.parse(saved) : {};
+    } catch (_) {
+      // 棚が壊れている時は、そこだけに残る音源を誤って消さない。
+      return null;
+    }
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    Object.values(raw).forEach((entry) => {
+      const tracks = entry && entry.state && entry.state.project && entry.state.project.audioTracks;
+      if (!Array.isArray(tracks)) return;
+      tracks.forEach((track) => {
+        if (track && STAGE_AUDIO_ID_RE.test(String(track.id || ""))) ids.add(track.id);
+      });
+    });
+    return [...ids];
+  }
+
+  function pruneOrphanAudioSoon() {
+    if (!audioStore || typeof audioStore.pruneExcept !== "function") return;
+    const liveIds = liveAudioTrackIdsForGc();
+    if (!liveIds) return;
+    setTimeout(() => { audioStore.pruneExcept(liveIds).catch(() => {}); }, 0);
   }
 
   /* 棚への保存が入りきらないことがある（localStorageは5MB前後）。
@@ -3475,6 +3760,9 @@
      という嘘の状態が起きていた。成否を返し、表示（persistSoon）で正直に伝える。 */
   let shelfFailed = false;
   function writeShows(shows) {
+    /* 棚が壊れているときは絶対に書かない。ここで書くと、読めなかったショーが
+       いま開いている1本で置き換わって消える。 */
+    if (shelfCorrupt) return false;
     try {
       localStorage.setItem(SHOWS_KEY, JSON.stringify(shows));
       shelfFailed = false;
@@ -3485,14 +3773,16 @@
     }
   }
 
-  // いまのショーを棚へ書き戻す。保存のたびに呼ぶので、一覧は常に最新になる
+  // いまのショーを棚へ書き戻す。保存のたびに呼ぶので、一覧は常に最新になる。
+  // ★戻り値は「棚へ確かに書けたか」。容量超過では false が返る（例外は飛ばない）。
+  //   セッション参加前の退避判定がこれを見ている（stage-session.js）。捨てないこと。
   function shelveCurrent() {
     const shows = readShows();
     shows[state.project.id] = {
       savedAt: nowIso(),
       state: JSON.parse(snapshot()),
     };
-    writeShows(shows);
+    return writeShows(shows);
   }
 
   /* 読み込んだファイルは、同じ project.id を持っていても別の内容なら
@@ -3545,6 +3835,675 @@
   let future = [];
   let saveTimer = null;
   let controlBefore = null;
+
+  /* ---------- シーンの音楽 ----------
+   * audio要素は一つだけ。シーンを送っても同じtrackIdならsrc/currentTimeへ触れず、
+   * 曲が変わる時だけIndexedDBからBlobを取り直す。再生位置は保存・Undoしない。 */
+  const audioStore = window.SHOSAI_STAGE_AUDIO_STORE || null;
+  let selectedAudioTrackId = (state.project.audioTracks[0] && state.project.audioTracks[0].id) || null;
+  let audioPanelSignature = "";
+  let audioLoadGeneration = 0;
+  let continueAudioOnNextSceneSync = false;
+  const audioPlayback = {
+    trackId: null,
+    objectUrl: null,
+    ready: false,
+    loading: false,
+    missing: false,
+    playAfterLoad: false,
+  };
+
+  function audioTracks() {
+    if (!Array.isArray(state.project.audioTracks)) state.project.audioTracks = [];
+    return state.project.audioTracks;
+  }
+
+  function audioTrackById(id) {
+    return audioTracks().find((track) => track.id === id) || null;
+  }
+
+  function currentSceneAudioTrack() {
+    return audioTrackById(sc().audioTrackId);
+  }
+
+  function audioFileTitle(file) {
+    const name = String((file && file.name) || "").trim();
+    const withoutExt = name.replace(/\.(mp3|m4a|wav|aac)$/i, "").trim();
+    return (withoutExt || (isEn() ? "Music" : "楽曲")).slice(0, 80);
+  }
+
+  function formatAudioTime(value) {
+    const seconds = Number.isFinite(Number(value)) && Number(value) > 0 ? Math.floor(Number(value)) : 0;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const rest = seconds % 60;
+    return hours
+      ? `${hours}:${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`
+      : `${minutes}:${String(rest).padStart(2, "0")}`;
+  }
+
+  function setAudioStatus(ja, en) {
+    if (els.musicStatus) els.musicStatus.textContent = isEn() ? (en || ja) : ja;
+  }
+
+  function revokeAudioObjectUrl() {
+    if (!audioPlayback.objectUrl) return;
+    try { window.URL.revokeObjectURL(audioPlayback.objectUrl); } catch (_) { /* 破棄済みでも続ける */ }
+    audioPlayback.objectUrl = null;
+  }
+
+  function clearAudioEngine() {
+    audioLoadGeneration += 1;
+    if (els.musicAudio) {
+      els.musicAudio.pause();
+      els.musicAudio.removeAttribute("src");
+      try { els.musicAudio.load(); } catch (_) { /* srcなしでも続ける */ }
+    }
+    revokeAudioObjectUrl();
+    audioPlayback.trackId = null;
+    audioPlayback.ready = false;
+    audioPlayback.loading = false;
+    audioPlayback.missing = false;
+    audioPlayback.playAfterLoad = false;
+    syncAudioControls();
+  }
+
+  function audioDuration() {
+    if (!els.musicAudio) return 0;
+    const value = Number(els.musicAudio.duration);
+    if (Number.isFinite(value) && value > 0) return value;
+    const track = audioTrackById(audioPlayback.trackId);
+    return track && Number.isFinite(Number(track.durationSeconds)) ? Number(track.durationSeconds) : 0;
+  }
+
+  function updateAudioTimeControls() {
+    const audio = els.musicAudio;
+    const current = audio && Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+    const duration = audioDuration();
+    const timeText = `${formatAudioTime(current)} / ${formatAudioTime(duration)}`;
+    if (els.musicSeek) {
+      els.musicSeek.max = String(duration || 0);
+      if (document.activeElement !== els.musicSeek) els.musicSeek.value = String(Math.min(current, duration || current));
+      els.musicSeek.disabled = !audioPlayback.ready || duration <= 0;
+      els.musicSeek.setAttribute("aria-valuetext", timeText);
+    }
+    if (els.musicTime) els.musicTime.textContent = timeText;
+    if (phoneUi && phoneUi.musicTime) phoneUi.musicTime.textContent = timeText;
+  }
+
+  function syncAudioControls() {
+    const assignedId = normalizeAudioTrackId("scene", sc().audioTrackId);
+    const track = audioTrackById(assignedId);
+    const title = track ? track.title : (assignedId
+      ? (isEn() ? "Unknown track" : "不明な楽曲")
+      : (isEn() ? "No music" : "音なし"));
+    const currentReady = Boolean(assignedId && audioPlayback.trackId === assignedId && audioPlayback.ready);
+    const playing = Boolean(currentReady && els.musicAudio && !els.musicAudio.paused && !els.musicAudio.ended);
+    const missing = Boolean(assignedId && audioPlayback.trackId === assignedId && audioPlayback.missing);
+    const displayTitle = missing ? `${title}${isEn() ? " (file missing)" : "（音源なし）"}` : title;
+
+    if (els.musicCurrent) els.musicCurrent.textContent = displayTitle;
+    if (els.musicToggle) {
+      els.musicToggle.disabled = !assignedId;
+      els.musicToggle.textContent = playing ? "❚❚" : "▶";
+      els.musicToggle.setAttribute("aria-pressed", String(playing));
+      els.musicToggle.setAttribute("aria-label", playing
+        ? (isEn() ? "Pause the current scene's music" : "現在のシーンの曲を一時停止")
+        : (isEn() ? "Play music for the current scene" : "現在のシーンの曲を再生"));
+    }
+    if (els.musicRestart) els.musicRestart.disabled = !currentReady;
+    if (els.musicRelink) els.musicRelink.hidden = !missing;
+
+    if (tabletUi && tabletUi.musicToggle) {
+      tabletUi.musicToggle.disabled = !assignedId;
+      tabletUi.musicToggle.textContent = playing ? "❚❚" : "▶";
+      tabletUi.musicToggle.setAttribute("aria-pressed", String(playing));
+      tabletUi.musicToggle.setAttribute("aria-label", playing
+        ? (isEn() ? "Pause music" : "曲を一時停止")
+        : (isEn() ? "Play music" : "曲を再生"));
+      tabletUi.musicToggle.title = displayTitle;
+      tabletUi.musicOpen.title = displayTitle;
+    }
+    if (phoneUi && phoneUi.musicToggle) {
+      phoneUi.musicToggle.disabled = !assignedId;
+      phoneUi.musicToggle.textContent = playing ? "❚❚" : "▶";
+      phoneUi.musicToggle.setAttribute("aria-pressed", String(playing));
+      phoneUi.musicToggle.setAttribute("aria-label", playing
+        ? (isEn() ? "Pause music" : "曲を一時停止")
+        : (isEn() ? "Play music" : "曲を再生"));
+      phoneUi.musicTitle.textContent = displayTitle;
+      phoneUi.musicTitle.disabled = !assignedId;
+      phoneUi.musicTitle.setAttribute("aria-label", missing
+        ? (isEn() ? `Reconnect ${title}` : `${title}の音源を選び直す`)
+        : (playing
+          ? (isEn() ? `Pause ${title}` : `${title}を一時停止`)
+          : (isEn() ? `Play ${title}` : `${title}を再生`)));
+    }
+    updateAudioTimeControls();
+  }
+
+  async function tryPlayCurrentAudio() {
+    if (!els.musicAudio || !audioPlayback.ready) return false;
+    try {
+      await els.musicAudio.play();
+      setAudioStatus(isEn() ? "Playing." : "再生しています。", "Playing.");
+      syncAudioControls();
+      return true;
+    } catch (_) {
+      audioPlayback.playAfterLoad = false;
+      setAudioStatus("自動では再生できませんでした。▶を押して再生してください。",
+        "Playback needs another tap. Press ▶ to play.");
+      syncAudioControls();
+      return false;
+    }
+  }
+
+  async function prepareAudioForCurrentScene(options = {}) {
+    const nextId = normalizeAudioTrackId("scene", sc().audioTrackId);
+    const transition = audioSceneTransition(audioPlayback.trackId, nextId, options.continuePlayback);
+
+    if (!options.force && nextId && audioPlayback.trackId === nextId) {
+      if (options.continuePlayback && audioPlayback.ready && els.musicAudio && els.musicAudio.paused) {
+        await tryPlayCurrentAudio();
+      }
+      syncAudioControls();
+      return audioPlayback.ready;
+    }
+
+    audioLoadGeneration += 1;
+    const generation = audioLoadGeneration;
+    if (els.musicAudio) {
+      els.musicAudio.pause();
+      els.musicAudio.removeAttribute("src");
+      try { els.musicAudio.load(); } catch (_) { /* 続ける */ }
+    }
+    revokeAudioObjectUrl();
+    audioPlayback.trackId = nextId;
+    audioPlayback.ready = false;
+    audioPlayback.loading = Boolean(nextId);
+    audioPlayback.missing = false;
+    audioPlayback.playAfterLoad = transition.play;
+
+    if (!nextId) {
+      audioPlayback.loading = false;
+      setAudioStatus("このシーンは音なしです。", "This scene has no music.");
+      syncAudioControls();
+      return false;
+    }
+    const track = audioTrackById(nextId);
+    if (!track || !audioStore || typeof audioStore.get !== "function") {
+      audioPlayback.loading = false;
+      audioPlayback.missing = true;
+      setAudioStatus("この端末に音源がありません。元ファイルを選び直してください。",
+        "The audio file is not on this device. Reconnect the original file.");
+      syncAudioControls();
+      return false;
+    }
+
+    setAudioStatus(`「${track.title}」を準備しています…`, `Preparing “${track.title}”…`);
+    syncAudioControls();
+    try {
+      const blob = await audioStore.get(nextId);
+      if (generation !== audioLoadGeneration || audioPlayback.trackId !== nextId) return false;
+      if (!blob) {
+        audioPlayback.loading = false;
+        audioPlayback.missing = true;
+        setAudioStatus("この端末に音源がありません。元ファイルを選び直してください。",
+          "The audio file is not on this device. Reconnect the original file.");
+        syncAudioControls();
+        return false;
+      }
+      audioPlayback.objectUrl = window.URL.createObjectURL(blob);
+      els.musicAudio.src = audioPlayback.objectUrl;
+      els.musicAudio.load();
+      // loadedmetadataでreadyにし、必要ならそこで再生を試す。
+      return true;
+    } catch (_) {
+      if (generation !== audioLoadGeneration) return false;
+      audioPlayback.loading = false;
+      audioPlayback.missing = true;
+      setAudioStatus("この端末では音源を読み出せませんでした。元ファイルを選び直してください。",
+        "The audio could not be read on this device. Reconnect the original file.");
+      syncAudioControls();
+      return false;
+    }
+  }
+
+  async function toggleAudioPlayback() {
+    if (!sc().audioTrackId) {
+      setAudioStatus("このシーンには曲が割り当てられていません。",
+        "No track is assigned to this scene.");
+      return;
+    }
+    if (audioPlayback.ready && els.musicAudio && !els.musicAudio.paused) {
+      els.musicAudio.pause();
+      return;
+    }
+    if (audioPlayback.ready && audioPlayback.trackId === sc().audioTrackId) {
+      await tryPlayCurrentAudio();
+      return;
+    }
+    audioPlayback.playAfterLoad = true;
+    await prepareAudioForCurrentScene({ continuePlayback: true, force: true });
+  }
+
+  function validAudioFile(file) {
+    if (!file || !Number.isFinite(file.size) || file.size <= 0) {
+      return isEn() ? "Choose a non-empty audio file." : "中身のある音源ファイルを選んでください。";
+    }
+    if (file.size > STAGE_AUDIO_FILE_MAX_BYTES) {
+      return isEn() ? "Audio files must be 150 MB or smaller." : "音源は150MB以下にしてください。";
+    }
+    const extensionOk = /\.(mp3|m4a|wav|aac)$/i.test(String(file.name || ""));
+    const mimeOk = ["audio/mpeg", "audio/mp4", "audio/x-m4a", "audio/wav", "audio/wave", "audio/x-wav", "audio/aac"]
+      .includes(String(file.type || "").toLowerCase());
+    return extensionOk || mimeOk ? "" : (isEn()
+      ? "Use an MP3, M4A/AAC or WAV file."
+      : "MP3、M4A/AAC、WAVの音源を選んでください。");
+  }
+
+  function probeAudioFile(file) {
+    return new Promise((resolve, reject) => {
+      const probe = document.createElement("audio");
+      let objectUrl = null;
+      let timer = null;
+      let finished = false;
+      const finish = (error, duration = null) => {
+        if (finished) return;
+        finished = true;
+        if (timer !== null) window.clearTimeout(timer);
+        probe.pause();
+        probe.removeAttribute("src");
+        try { probe.load(); } catch (_) { /* 読み取り確認用なので続ける */ }
+        if (objectUrl) {
+          try { window.URL.revokeObjectURL(objectUrl); } catch (_) { /* 続ける */ }
+        }
+        if (error) reject(error);
+        else resolve(duration);
+      };
+      probe.preload = "metadata";
+      probe.addEventListener("loadedmetadata", () => {
+        const duration = Number(probe.duration);
+        if (!Number.isFinite(duration) || duration <= 0 || duration > 86400) {
+          finish(new Error("Invalid audio duration"));
+          return;
+        }
+        finish(null, duration);
+      }, { once: true });
+      probe.addEventListener("error", () => finish(new Error("Unsupported audio file")), { once: true });
+      try {
+        objectUrl = window.URL.createObjectURL(file);
+        probe.src = objectUrl;
+        timer = window.setTimeout(() => finish(new Error("Audio metadata timed out")), 15000);
+        probe.load();
+      } catch (error) {
+        finish(error);
+      }
+    });
+  }
+
+  async function audioStorageHasRoom(file) {
+    if (!navigator.storage || typeof navigator.storage.estimate !== "function") return true;
+    try {
+      const estimate = await navigator.storage.estimate();
+      if (!Number.isFinite(estimate.quota) || !Number.isFinite(estimate.usage)) return true;
+      return estimate.usage + file.size * 1.1 <= estimate.quota;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  async function importAudioFile(file) {
+    const invalid = validAudioFile(file);
+    if (invalid) { setAudioStatus(invalid, invalid); return false; }
+    if (audioTracks().length >= STAGE_AUDIO_TRACK_LIMIT) {
+      setAudioStatus(`楽曲は${STAGE_AUDIO_TRACK_LIMIT}曲までです。不要な曲を外してから読み込んでください。`,
+        `A show can hold up to ${STAGE_AUDIO_TRACK_LIMIT} tracks. Remove one before loading another.`);
+      return false;
+    }
+    if (!audioStore || typeof audioStore.put !== "function") {
+      setAudioStatus("この端末では音源を保存できません。", "Audio cannot be stored on this device.");
+      return false;
+    }
+    if (!(await audioStorageHasRoom(file))) {
+      setAudioStatus("この端末の保存容量が足りません。別の音源か端末を使ってください。",
+        "This device does not have enough storage for that audio file.");
+      return false;
+    }
+    setAudioStatus("音源を再生できるか確認しています…", "Checking the audio file…");
+    let duration;
+    try {
+      duration = await probeAudioFile(file);
+    } catch (_) {
+      setAudioStatus("この音源を再生できません。MP3、M4A/AAC、WAVの元ファイルを選んでください。",
+        "This audio cannot be played. Choose an MP3, M4A/AAC or WAV file.");
+      return false;
+    }
+    const track = { id: rid("track"), title: audioFileTitle(file), durationSeconds: duration };
+    setAudioStatus(`「${track.title}」を端末へ保存しています…`, `Saving “${track.title}” on this device…`);
+    try {
+      await audioStore.put(track.id, file);
+    } catch (_) {
+      setAudioStatus("音源を端末へ保存できませんでした。既存のショーは変更していません。",
+        "The audio could not be stored. The show was not changed.");
+      return false;
+    }
+    checkpoint();
+    audioTracks().push(track);
+    selectedAudioTrackId = track.id;
+    sc().audioTrackId = track.id;
+    audioPanelSignature = "";
+    continueAudioOnNextSceneSync = false;
+    renderScenes();
+    render();
+    persistSoon();
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (_) { /* 任意 */ }
+    setAudioStatus(`「${track.title}」を読み込み、現在のシーンへ割り当てました。`,
+      `Loaded “${track.title}” and assigned it to the current scene.`);
+    return true;
+  }
+
+  async function relinkAudioFile(trackId, file) {
+    const invalid = validAudioFile(file);
+    if (invalid) { setAudioStatus(invalid, invalid); return false; }
+    if (!STAGE_AUDIO_ID_RE.test(String(trackId || "")) || !audioStore) return false;
+    const existingTrack = audioTrackById(trackId);
+    if (!existingTrack && audioTracks().length >= STAGE_AUDIO_TRACK_LIMIT) {
+      setAudioStatus(`楽曲は${STAGE_AUDIO_TRACK_LIMIT}曲までです。`,
+        `A show can hold up to ${STAGE_AUDIO_TRACK_LIMIT} tracks.`);
+      return false;
+    }
+    if (!(await audioStorageHasRoom(file))) {
+      setAudioStatus("この端末の保存容量が足りません。", "This device does not have enough storage.");
+      return false;
+    }
+    setAudioStatus("選んだ音源を確認しています…", "Checking the selected audio file…");
+    let duration;
+    try {
+      duration = await probeAudioFile(file);
+    } catch (_) {
+      setAudioStatus("この音源を再生できません。別の元ファイルを選んでください。",
+        "This audio cannot be played. Choose another original file.");
+      return false;
+    }
+    const candidateTitle = audioFileTitle(file);
+    const difference = audioIdentityDifference(existingTrack, candidateTitle, duration);
+    if (existingTrack && (difference.titleChanged || difference.durationChanged)) {
+      const oldDuration = existingTrack.durationSeconds
+        ? formatAudioTime(existingTrack.durationSeconds) : (isEn() ? "unknown" : "不明");
+      const warning = isEn()
+        ? `This may be a different track.\nRegistered: ${existingTrack.title} (${oldDuration})\nSelected: ${candidateTitle} (${formatAudioTime(duration)})\nReconnect using this file?`
+        : `別の曲を選んでいる可能性があります。\n登録: ${existingTrack.title}（${oldDuration}）\n選択: ${candidateTitle}（${formatAudioTime(duration)}）\nこのファイルで接続しますか？`;
+      if (!window.confirm(warning)) {
+        setAudioStatus("音源の再接続を中止しました。", "Audio reconnection was cancelled.");
+        return false;
+      }
+    }
+    try {
+      await audioStore.put(trackId, file);
+      let track = existingTrack;
+      if (!track) {
+        checkpoint();
+        track = { id: trackId, title: candidateTitle, durationSeconds: duration };
+        audioTracks().push(track);
+      } else {
+        track.durationSeconds = duration;
+      }
+      audioPanelSignature = "";
+      persistSoon();
+      await prepareAudioForCurrentScene({ force: true, continuePlayback: false });
+      setAudioStatus(`「${track.title}」の音源をこの端末へ接続しました。`,
+        `Reconnected the audio for “${track.title}” on this device.`);
+      return true;
+    } catch (_) {
+      setAudioStatus("音源を接続できませんでした。", "The audio file could not be reconnected.");
+      return false;
+    }
+  }
+
+  function audioPanelKey() {
+    return JSON.stringify({
+      lang,
+      selectedAudioTrackId,
+      active: state.project.activeSceneId,
+      tracks: audioTracks(),
+      scenes: state.project.scenes.map((scene) => [scene.id, scene.title, scene.audioTrackId]),
+    });
+  }
+
+  function setSceneAudioTrack(scene, trackId) {
+    if (!scene || scene.kind !== "scene") return;
+    const nextId = normalizeAudioTrackId("scene", trackId);
+    if (scene.audioTrackId === nextId) return;
+    const affectsCurrent = scene.id === state.project.activeSceneId;
+    const wasPlaying = affectsCurrent && els.musicAudio && !els.musicAudio.paused && audioPlayback.ready;
+    checkpoint();
+    scene.audioTrackId = nextId;
+    if (nextId) selectedAudioTrackId = nextId;
+    audioPanelSignature = "";
+    if (affectsCurrent) continueAudioOnNextSceneSync = Boolean(wasPlaying);
+    renderScenes();
+    render();
+    persistSoon();
+  }
+
+  function clearSelectedTrackAssignments() {
+    const track = audioTrackById(selectedAudioTrackId);
+    if (!track) return;
+    const affected = state.project.scenes.filter((scene) => scene.audioTrackId === track.id);
+    if (!affected.length) return;
+    const wasPlaying = affected.some((scene) => scene.id === state.project.activeSceneId)
+      && els.musicAudio && !els.musicAudio.paused && audioPlayback.ready;
+    checkpoint();
+    affected.forEach((scene) => { scene.audioTrackId = null; });
+    continueAudioOnNextSceneSync = Boolean(wasPlaying);
+    audioPanelSignature = "";
+    renderScenes();
+    render();
+    persistSoon();
+    setAudioStatus(`「${track.title}」を${affected.length}シーンから外しました。`,
+      `Removed “${track.title}” from ${affected.length} ${affected.length === 1 ? "scene" : "scenes"}.`);
+  }
+
+  function removeAudioTrack(trackId) {
+    const track = audioTrackById(trackId);
+    if (!track) return;
+    const used = state.project.scenes.filter((scene) => scene.audioTrackId === trackId).length;
+    const warning = isEn()
+      ? `Remove “${track.title}” from this show${used ? ` and ${used} assigned ${used === 1 ? "scene" : "scenes"}` : ""}? You can undo this until the page is closed.`
+      : `「${track.title}」をこのショーから外します${used ? `。割り当て済みの${used}シーンからも外れます` : ""}。ページを閉じるまでは「一つ戻す」で戻せます。`;
+    if (!window.confirm(warning)) return;
+    const affectsCurrent = sc().audioTrackId === trackId;
+    checkpoint();
+    state.project.audioTracks = audioTracks().filter((candidate) => candidate.id !== trackId);
+    state.project.scenes.forEach((scene) => {
+      if (scene.audioTrackId === trackId) scene.audioTrackId = null;
+    });
+    selectedAudioTrackId = state.project.audioTracks[0]?.id || null;
+    if (affectsCurrent) continueAudioOnNextSceneSync = false;
+    audioPanelSignature = "";
+    renderScenes();
+    render();
+    persistSoon();
+    setAudioStatus(`「${track.title}」をショーから外しました。`, `Removed “${track.title}” from the show.`);
+  }
+
+  function renderAudioPanel(force = false) {
+    if (!els.musicLibrary || !els.sceneAudioTrack) return;
+    const tracks = audioTracks();
+    const currentId = normalizeAudioTrackId("scene", sc().audioTrackId);
+    if (!selectedAudioTrackId || (!audioTrackById(selectedAudioTrackId) && selectedAudioTrackId !== currentId)) {
+      selectedAudioTrackId = audioTrackById(currentId)?.id || tracks[0]?.id || null;
+    }
+    const signature = audioPanelKey();
+    if (!force && signature === audioPanelSignature) return;
+    audioPanelSignature = signature;
+
+    els.sceneAudioTrack.replaceChildren();
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = isEn() ? "No music" : "音なし";
+    els.sceneAudioTrack.append(none);
+    tracks.forEach((track) => {
+      const option = document.createElement("option");
+      option.value = track.id;
+      option.textContent = track.title;
+      els.sceneAudioTrack.append(option);
+    });
+    if (currentId && !audioTrackById(currentId)) {
+      const unknown = document.createElement("option");
+      unknown.value = currentId;
+      unknown.textContent = isEn() ? "Unknown track (reconnect required)" : "不明な楽曲（音源の再接続が必要）";
+      els.sceneAudioTrack.append(unknown);
+    }
+    els.sceneAudioTrack.value = currentId || "";
+
+    els.musicLibrary.replaceChildren();
+    tracks.forEach((track) => {
+      const row = document.createElement("div");
+      row.className = `stage-music-track${track.id === selectedAudioTrackId ? " is-selected" : ""}`;
+      const choose = document.createElement("button");
+      choose.type = "button";
+      choose.className = "stage-music-track-select";
+      choose.setAttribute("aria-pressed", String(track.id === selectedAudioTrackId));
+      const title = document.createElement("strong");
+      title.textContent = track.title;
+      const meta = document.createElement("span");
+      const assigned = state.project.scenes.filter((scene) => scene.audioTrackId === track.id).length;
+      const duration = track.durationSeconds ? formatAudioTime(track.durationSeconds) : (isEn() ? "duration unknown" : "尺を確認中");
+      meta.textContent = isEn()
+        ? `${duration} · ${assigned} ${assigned === 1 ? "scene" : "scenes"}`
+        : `${duration}・${assigned}シーン`;
+      choose.append(title, meta);
+      choose.addEventListener("click", () => {
+        selectedAudioTrackId = track.id;
+        audioPanelSignature = "";
+        renderAudioPanel(true);
+      });
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "stage-music-track-remove";
+      remove.textContent = "×";
+      remove.setAttribute("aria-label", isEn() ? `Remove ${track.title}` : `${track.title}を外す`);
+      remove.addEventListener("click", () => removeAudioTrack(track.id));
+      row.append(choose, remove);
+      els.musicLibrary.append(row);
+    });
+
+    const selected = audioTrackById(selectedAudioTrackId);
+    els.musicAssignment.hidden = !selected;
+    if (selected) {
+      els.musicAssignmentTitle.textContent = selected.title;
+      els.musicSceneList.replaceChildren();
+      let sceneNumber = 0;
+      state.project.scenes.forEach((scene) => {
+        if (scene.kind !== "scene") return;
+        sceneNumber += 1;
+        const label = document.createElement("label");
+        label.className = "stage-music-scene-choice";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = scene.audioTrackId === selected.id;
+        const copy = document.createElement("span");
+        const other = scene.audioTrackId && scene.audioTrackId !== selected.id
+          ? audioTrackById(scene.audioTrackId) : null;
+        copy.textContent = `${sceneNumber}. ${sceneNavigationTitle(scene, sceneNumber - 1)}`;
+        if (other) {
+          const note = document.createElement("em");
+          note.textContent = isEn() ? ` · currently ${other.title}` : `・現在は「${other.title}」`;
+          copy.append(note);
+        }
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) setSceneAudioTrack(scene, selected.id);
+          else if (scene.audioTrackId === selected.id) setSceneAudioTrack(scene, null);
+        });
+        label.append(checkbox, copy);
+        els.musicSceneList.append(label);
+      });
+    } else if (els.musicSceneList) {
+      els.musicSceneList.replaceChildren();
+    }
+  }
+
+  function openCurrentAudioRelinkPicker(input = els.musicRelinkFile) {
+    const trackId = normalizeAudioTrackId("scene", sc().audioTrackId);
+    if (!trackId || !input) return;
+    input.dataset.trackId = trackId;
+    input.click();
+  }
+
+  function initStageAudio() {
+    if (!els.musicAudio) return;
+    if (els.musicFile) els.musicFile.addEventListener("change", async () => {
+      const file = els.musicFile.files && els.musicFile.files[0];
+      els.musicFile.value = "";
+      if (file) await importAudioFile(file);
+    });
+    if (els.sceneAudioTrack) els.sceneAudioTrack.addEventListener("change", () => {
+      setSceneAudioTrack(sc(), els.sceneAudioTrack.value || null);
+    });
+    if (els.musicClearScenes) els.musicClearScenes.addEventListener("click", clearSelectedTrackAssignments);
+    if (els.musicRelink) els.musicRelink.addEventListener("click", () => openCurrentAudioRelinkPicker());
+    if (els.musicRelinkFile) els.musicRelinkFile.addEventListener("change", async () => {
+      const file = els.musicRelinkFile.files && els.musicRelinkFile.files[0];
+      const trackId = els.musicRelinkFile.dataset.trackId || sc().audioTrackId;
+      els.musicRelinkFile.value = "";
+      if (file) await relinkAudioFile(trackId, file);
+    });
+    if (els.musicToggle) els.musicToggle.addEventListener("click", toggleAudioPlayback);
+    if (els.musicRestart) els.musicRestart.addEventListener("click", () => {
+      if (!audioPlayback.ready) return;
+      els.musicAudio.currentTime = 0;
+      updateAudioTimeControls();
+    });
+    if (els.musicSeek) els.musicSeek.addEventListener("input", () => {
+      if (!audioPlayback.ready) return;
+      const next = Number(els.musicSeek.value);
+      if (Number.isFinite(next)) els.musicAudio.currentTime = next;
+      updateAudioTimeControls();
+    });
+
+    els.musicAudio.addEventListener("loadedmetadata", () => {
+      if (!audioPlayback.trackId || !els.musicAudio.src) return;
+      audioPlayback.ready = true;
+      audioPlayback.loading = false;
+      audioPlayback.missing = false;
+      const track = audioTrackById(audioPlayback.trackId);
+      const duration = Number(els.musicAudio.duration);
+      if (track && Number.isFinite(duration) && duration > 0
+          && Math.abs(Number(track.durationSeconds || 0) - duration) > 0.25) {
+        track.durationSeconds = duration;
+        audioPanelSignature = "";
+        renderAudioPanel(true);
+        persistSoon();
+      }
+      setAudioStatus(track ? `「${track.title}」を再生できます。` : "曲を再生できます。",
+        track ? `“${track.title}” is ready to play.` : "The track is ready to play.");
+      syncAudioControls();
+      if (audioPlayback.playAfterLoad) {
+        audioPlayback.playAfterLoad = false;
+        tryPlayCurrentAudio();
+      }
+    });
+    els.musicAudio.addEventListener("error", () => {
+      if (!audioPlayback.trackId || !els.musicAudio.getAttribute("src")) return;
+      audioPlayback.ready = false;
+      audioPlayback.loading = false;
+      audioPlayback.missing = true;
+      audioPlayback.playAfterLoad = false;
+      setAudioStatus("この音源は再生できません。MP3、M4A/AAC、WAVの元ファイルを選び直してください。",
+        "This audio cannot be played. Reconnect an MP3, M4A/AAC or WAV file.");
+      syncAudioControls();
+    });
+    ["play", "pause", "ended"].forEach((eventName) => {
+      els.musicAudio.addEventListener(eventName, syncAudioControls);
+    });
+    els.musicAudio.addEventListener("timeupdate", updateAudioTimeControls);
+    els.musicAudio.addEventListener("durationchange", updateAudioTimeControls);
+    window.addEventListener("beforeunload", revokeAudioObjectUrl);
+    renderAudioPanel(true);
+    syncAudioControls();
+  }
 
   /* ---------- 固定 SceneStudy ----------
    * 知識ベース全体とは接続しない。同梱した固定データだけを読み、
@@ -4327,6 +5286,7 @@
   }
 
   function restore(value) {
+    clearAudioEngine();
     state = normalizeState(JSON.parse(value));
     if (!sc().pieces.some((piece) => piece.id === selectedId)) selectedId = null;
     detachOrphanNotes();
@@ -4399,7 +5359,11 @@
         localStorage.setItem(STORAGE_KEY, snapshot());
         shelveCurrent();
         /* 現在ショーと棚は別の保存。棚だけ失敗することがあるので分けて伝える */
-        els.saveStatus.textContent = shelfFailed
+        els.saveStatus.textContent = shelfCorrupt
+          ? (isEn()
+            ? `Saved \u201c${state.project.title}\u201d. The show shelf is damaged, so shelf updates are paused to avoid deleting your other shows. Export to a file, then rebuild the shelf from the show list.`
+            : `「${state.project.title}」は保存しました。ただしショー一覧の控えが壊れているため、一覧の更新を止めています（残っている他のショーを消さないためです）。ファイルへ書き出してから、ショー一覧で作り直してください。`)
+          : shelfFailed
           ? (isEn()
             ? `Saved \u201c${state.project.title}\u201d, but the show shelf is out of space \u2014 export to a file to keep a copy.`
             : `「${state.project.title}」を保存しましたが、ショー一覧の控えは容量不足で更新できていません。ファイルへ書き出してください。`)
@@ -5146,7 +6110,7 @@
   /* 骨格から体を塗る。手足は付け根から先へ細くなる線、胴は肩・くびれ・腰の
    * 断面を積んだ立体の外周。奥にあるものから塗り、奥の手足は色を沈ませる。
    * 舞台の絵でも姿勢の見本でも、ここを通す。 */
-  function paintBody(target, rig, color) {
+  function paintBody(target, rig, color, look) {
     const P = rig.P;
     const ux = rig.ux;
     const uy = rig.uy;
@@ -5327,6 +6291,9 @@
    * FPVは読み込み順で先に評価されるため、FPV側は描画時に遅延参照する。 */
   window.SHOSAI_STAGE_BODY = Object.freeze({
     poseById, resolvePoseId,
+    normalizeLook, resolveLook,
+    topKindById, bottomKindById, hairStyleById, lengthById, sleeveById,
+    LENGTHS, SLEEVES, TOP_KINDS, BOTTOM_KINDS, HAIR_STYLES,
     TORSO_RINGS, NECK_RINGS, LIMB_TAPER, LIMB_MIDS, LIMBS,
     HAND_LEN, HAND_R, FOOT_R, HEEL_BACK, PROP_TONES,
     norm3, cross3, limbNodes, lerpPt,
@@ -5337,13 +6304,14 @@
   function drawPerformer(target, piece, pos, scale, L) {
     const rig = performerRig(piece, pos, L);
     const P = rig.P;
+    const look = resolveLook(piece, state.project.cast);
     target.save();
 
     // ポールやトラピーズで宙に浮いている間は、影を落とさない（床に居ないため）
     // 転換アニメで床を歩いている間（animBaseあり）は普通に影を落とす
     const mountHere = mountKindOf(piece);
     if ((mountHere === "pole" || mountHere === "trapeze") && piece.animBase === undefined) {
-      paintBody(target, rig, piece.color);
+      paintBody(target, rig, piece.color, look);
       target.restore();
       return;
     }
@@ -5363,7 +6331,7 @@
       Math.max(3, (maxX - minX) / 2 + 0.03 * rig.ux), Math.max(1.2, 0.022 * rig.uy), 0, 0, Math.PI * 2);
     target.fill();
 
-    paintBody(target, rig, piece.color);
+    paintBody(target, rig, piece.color, look);
     target.restore();
   }
 
@@ -9280,6 +10248,20 @@
     syncSceneDesc();
     syncPropMoves();
     syncPhoneViewer();
+    renderAudioPanel();
+    const wantedAudioId = normalizeAudioTrackId("scene", sc().audioTrackId);
+    const missingAudioMetadata = Boolean(wantedAudioId && !audioTrackById(wantedAudioId));
+    if (wantedAudioId !== audioPlayback.trackId || (missingAudioMetadata && !audioPlayback.missing)) {
+      const shouldContinue = continueAudioOnNextSceneSync;
+      continueAudioOnNextSceneSync = false;
+      prepareAudioForCurrentScene({
+        continuePlayback: shouldContinue,
+        force: wantedAudioId === audioPlayback.trackId,
+      });
+    } else {
+      continueAudioOnNextSceneSync = false;
+      syncAudioControls();
+    }
   }
 
   /* 絵の上の送り。いま何場面目かを添えて、端では押せなくする。
@@ -9664,6 +10646,24 @@
     sceneBar.append(scenePrev, sceneCurrent, sceneNext);
     toolbar.append(actions, sceneBar);
 
+    const musicBar = document.createElement("div");
+    musicBar.className = "stage-phone-music-bar";
+    musicBar.setAttribute("aria-label", "現在のシーンの音楽");
+    const musicToggle = document.createElement("button");
+    musicToggle.type = "button";
+    musicToggle.className = "stage-phone-music-toggle";
+    musicToggle.textContent = "▶";
+    musicToggle.setAttribute("aria-label", "曲を再生");
+    musicToggle.setAttribute("aria-pressed", "false");
+    const musicTitle = document.createElement("button");
+    musicTitle.type = "button";
+    musicTitle.className = "stage-phone-music-title";
+    musicTitle.textContent = "音なし";
+    const musicTime = document.createElement("span");
+    musicTime.className = "stage-phone-music-time";
+    musicTime.textContent = "0:00 / 0:00";
+    musicBar.append(musicToggle, musicTitle, musicTime);
+
     const infoPanel = document.createElement("section");
     infoPanel.className = "stage-phone-info";
     infoPanel.setAttribute("aria-label", "読み込んだシーンの情報");
@@ -9695,15 +10695,24 @@
     fileInput.className = "stage-phone-file-input";
     fileInput.hidden = true;
     fileInput.setAttribute("aria-hidden", "true");
+    const musicFileInput = document.createElement("input");
+    musicFileInput.type = "file";
+    musicFileInput.accept = "audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,.mp3,.m4a,.wav,.aac";
+    musicFileInput.className = "stage-phone-file-input";
+    musicFileInput.hidden = true;
+    musicFileInput.setAttribute("aria-hidden", "true");
     toolbar.append(fileInput);
+    toolbar.append(musicFileInput);
     board.prepend(sourcePanel);
     board.prepend(infoPanel);
+    board.prepend(musicBar);
     board.prepend(toolbar);
 
     phoneUi = {
       board, toolbar, actions, load, projectName, infoToggle, noteToggle, viewToggle,
       scenePrev, sceneCurrent, sceneNext, infoPanel, infoProject, infoScene,
       sceneNote, sourcePanel, fileButton, seamSampleButton, sampleButton, sourceClose, fileInput,
+      musicBar, musicToggle, musicTitle, musicTime, musicFileInput,
       infoOpen: false, sourceOpen: false,
       singleView: state.showPlan && !state.showFront ? "plan" : "front",
     };
@@ -9735,6 +10744,17 @@
     });
     scenePrev.addEventListener("click", () => stepScene(-1));
     sceneNext.addEventListener("click", () => stepScene(1));
+    musicToggle.addEventListener("click", toggleAudioPlayback);
+    musicTitle.addEventListener("click", () => {
+      if (audioPlayback.missing) openCurrentAudioRelinkPicker(musicFileInput);
+      else toggleAudioPlayback();
+    });
+    musicFileInput.addEventListener("change", async () => {
+      const file = musicFileInput.files && musicFileInput.files[0];
+      const trackId = musicFileInput.dataset.trackId || sc().audioTrackId;
+      musicFileInput.value = "";
+      if (file) await relinkAudioFile(trackId, file);
+    });
     infoToggle.addEventListener("click", () => {
       phoneUi.infoOpen = !phoneUi.infoOpen;
       if (phoneUi.infoOpen) phoneUi.sourceOpen = false;
@@ -9775,6 +10795,7 @@
      同じinput/buttonを動かすので、保存や描画の処理は一系統のまま保てる。 */
   const TABLET_MENU_GROUPS = [
     { id: "show", icon: "▣", label: "ショー", panels: ["project", "study"] },
+    { id: "music", icon: "♪", label: "音楽", panels: ["music"] },
     { id: "cast", icon: "●", label: "出演・装置", panels: ["cast", "rigs"] },
     { id: "look", icon: "☀", label: "照明・背景", panels: ["light", "background"] },
     { id: "scenes", icon: "◫", label: "シーン", panels: ["scenes"] },
@@ -9891,6 +10912,8 @@
     tabletUi.sceneCurrent.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${sceneNavigationTitle(scene, index)}`;
     tabletUi.scenePrev.disabled = index <= 0;
     tabletUi.sceneNext.disabled = index >= scenes.length - 1;
+    tabletUi.sceneCurrent.title = currentSceneAudioTrack()
+      ? `${scene.title} — ${currentSceneAudioTrack().title}` : scene.title;
   }
 
   function syncTabletWorkspace() {
@@ -10022,15 +11045,27 @@
     scenePrev.type = "button";
     scenePrev.textContent = "‹";
     scenePrev.setAttribute("aria-label", "前のシーンへ");
+    const musicToggle = document.createElement("button");
+    musicToggle.type = "button";
+    musicToggle.className = "stage-tablet-music-toggle";
+    musicToggle.textContent = "▶";
+    musicToggle.setAttribute("aria-label", "曲を再生");
+    musicToggle.setAttribute("aria-pressed", "false");
     const sceneCurrent = document.createElement("button");
     sceneCurrent.type = "button";
     sceneCurrent.className = "stage-tablet-scene-current";
     sceneCurrent.setAttribute("aria-label", "シーンの操作を開く");
+    const musicOpen = document.createElement("button");
+    musicOpen.type = "button";
+    musicOpen.className = "stage-tablet-music-open";
+    musicOpen.textContent = "♪";
+    musicOpen.setAttribute("aria-label", "音楽の割り当てを開く");
     const sceneNext = document.createElement("button");
     sceneNext.type = "button";
     sceneNext.textContent = "›";
     sceneNext.setAttribute("aria-label", "次のシーンへ");
-    sceneBar.append(scenePrev, sceneCurrent, sceneNext);
+    sceneNext.className = "stage-tablet-scene-next";
+    sceneBar.append(scenePrev, musicToggle, sceneCurrent, musicOpen, sceneNext);
 
     grid.prepend(drawer);
     grid.prepend(rail);
@@ -10053,6 +11088,7 @@
       grid, rail, drawer, drawerTitle, drawerBody, store,
       drawerClose, pagePrev, pageCount, pageNext,
       scenePrev, sceneCurrent, sceneNext,
+      musicToggle, musicOpen,
       groups, groupId: "show", pageIndex: 0,
       viewToggle,
       groupButtons: groups.map((group) => group.button),
@@ -10073,6 +11109,8 @@
     scenePrev.addEventListener("click", () => { if (els.scenePrev) els.scenePrev.click(); });
     sceneNext.addEventListener("click", () => { if (els.sceneNext) els.sceneNext.click(); });
     sceneCurrent.addEventListener("click", () => openTabletGroup("scenes"));
+    musicToggle.addEventListener("click", toggleAudioPlayback);
+    musicOpen.addEventListener("click", () => openTabletGroup("music"));
 
     const orient = () => {
       closeTabletDrawer();
@@ -11614,7 +12652,10 @@
   function applyLoadedState(next, message) {
     // 場面IDが別ショーで偶然重なっても、前のショーの下書きを出さない。
     resetStageAskDraft({ clearInput: true, invalidate: true });
+    clearAudioEngine();
     state = next;
+    selectedAudioTrackId = (state.project.audioTracks[0] && state.project.audioTracks[0].id) || null;
+    audioPanelSignature = "";
     selectedId = null;
     history.length = 0;
     future.length = 0;
@@ -11669,9 +12710,49 @@
     }
     if (!window.confirm(`「${info.title}」を端末から消します。戻せません。`)) return;
     delete shows[id];
-    writeShows(shows);
+    if (!writeShows(shows)) {
+      renderShows();
+      announce(isEn()
+        ? "Could not update the show shelf, so nothing was deleted."
+        : "ショー一覧を更新できなかったため、消していません。");
+      return;
+    }
     renderShows();
     announce(`${info.title}を消しました。`);
+  }
+
+  function rebuildShelf() {
+    /* 壊れた原文は SHOWS_KEY にそのまま残っている（壊れている間は書き込みを止めているため）。
+       ここが唯一それを消す場所なので、消す前に必ずファイルへ逃がす。 */
+    let payload = null;
+    try { payload = localStorage.getItem(SHOWS_KEY); } catch (_) { payload = null; }
+    if (payload === null || payload === "") {
+      // SHOWS_KEY が読めない・空なら、保険で取ってある退避コピーを使う。
+      try { payload = localStorage.getItem(SHOWS_BROKEN_KEY); } catch (_) { payload = null; }
+    }
+
+    let ask;
+    if (payload !== null && payload !== "") {
+      downloadBlob(
+        new Blob([payload], { type: "application/json" }),
+        `舞台スケッチ-壊れたショー一覧-${stampNow()}.json`,
+      );
+      ask = isEn()
+        ? "The damaged show shelf was sent to your downloads. Did the file save correctly? Choose OK to rebuild the shelf and remove the damaged data from this device. Choose Cancel to change nothing."
+        : "壊れたショー一覧をファイルへ書き出しました。ダウンロードを確認できましたか？ OKを押すと一覧を作り直し、端末内の壊れたデータを消します。キャンセルすると何も変更しません。";
+    } else {
+      ask = isEn()
+        ? "There is no damaged data left to export. Rebuild the show shelf? The show you have open now is preserved."
+        : "書き出せる壊れたデータは残っていません。ショー一覧を作り直しますか？ いま開いているショーは残ります。";
+    }
+    if (!window.confirm(ask)) return;
+
+    try { localStorage.removeItem(SHOWS_KEY); } catch (_) { /* 消せなくても続ける */ }
+    try { localStorage.removeItem(SHOWS_BROKEN_KEY); } catch (_) { /* 同上 */ }
+    shelfCorrupt = false;
+    shelveCurrent();      // いま開いているショーを起点に作り直す
+    renderShows();
+    announce(isEn() ? "Rebuilt the show shelf." : "ショー一覧を作り直しました。");
   }
 
   function renderShows() {
@@ -11683,6 +12764,29 @@
       .filter(Boolean)
       .sort((a, b) => (b.savedAt || "").localeCompare(a.savedAt || ""));
     els.showList.innerHTML = "";
+    if (shelfCorrupt) {
+      const warning = document.createElement("section");
+      warning.className = "stage-show-row is-current";
+      warning.setAttribute("role", "alert");
+      const copy = document.createElement("div");
+      copy.className = "stage-show-open";
+      const title = document.createElement("strong");
+      title.className = "stage-show-title";
+      title.textContent = isEn() ? "Show shelf updates are paused" : "ショー一覧の更新を止めています";
+      const detail = document.createElement("span");
+      detail.className = "stage-show-meta";
+      detail.textContent = isEn()
+        ? "To avoid deleting your other shows, nothing is written to the damaged shelf. “Rebuild show shelf” exports the damaged data to a file before removing it. Exporting the show you have open is a good idea first."
+        : "勝手に他のショーを消さないため、壊れた一覧には書き込みません。「ショー一覧を作り直す」を押すと、壊れた元データをファイルへ書き出してから消します。先に、開いているショーもファイルへ書き出しておくと安全です。";
+      copy.append(title, detail);
+      const rebuild = document.createElement("button");
+      rebuild.type = "button";
+      rebuild.className = "stage-minor-action";
+      rebuild.textContent = isEn() ? "Rebuild show shelf" : "ショー一覧を作り直す";
+      rebuild.addEventListener("click", rebuildShelf);
+      warning.append(copy, rebuild);
+      els.showList.append(warning);
+    }
     rows.forEach((info) => {
       const row = document.createElement("div");
       row.className = `stage-show-row${info.id === state.project.id ? " is-current" : ""}`;
@@ -11993,7 +13097,7 @@
     const s = Math.min((w - pad * 2) / bw, (h - pad * 2) / bh);
     const ox = pad - x0 * s + ((w - pad * 2) - bw * s) / 2;
     const oy = pad - y0 * s + ((h - pad * 2) - bh * s) / 2;
-    paintBody(ctx, buildRig(poseId, ox, oy, s, s, yaw, 0, null), color);
+    paintBody(ctx, buildRig(poseId, ox, oy, s, s, yaw, 0, null), color, null);
   }
 
   const ROSTER_KINDS = ["performer"].concat(SET_KIND_ORDER);
@@ -12890,6 +13994,17 @@
           lightSummary.textContent = lightingIntentSummary(scene.lightingIntent, isEn(), 96);
           lightSummary.title = lightingIntentSummary(scene.lightingIntent, isEn(), 220);
           row.append(lightSummary);
+        }
+
+        if (scene.kind === "scene" && scene.audioTrackId) {
+          const musicSummary = document.createElement("div");
+          musicSummary.className = "stage-scene-audio-summary";
+          const track = audioTrackById(scene.audioTrackId);
+          musicSummary.textContent = track
+            ? track.title
+            : (isEn() ? "Audio file needs reconnecting" : "音源の再接続が必要");
+          musicSummary.title = musicSummary.textContent;
+          row.append(musicSummary);
         }
 
         /* 開いている場面だけ、名前とメモをその場で開く。
@@ -14501,6 +15616,9 @@ ${propsPlotHtml}
     state.cursorRowId = id;
     if (state.project.activeSceneId === id) { renderScenes(); return; }
     const before = sc();
+    continueAudioOnNextSceneSync = Boolean(
+      els.musicAudio && !els.musicAudio.paused && audioPlayback.ready
+    );
     // 盆の生きた角度は、renderScenes→syncSpinRun が旧runを止める前のここで控える
     const liveSpins = captureLiveSpins();
     state.project.activeSceneId = id;
@@ -14829,7 +15947,10 @@ ${propsPlotHtml}
       pieces: scene.pieces.map((piece) => ({ ...piece, id: nextId() })),
     }));
     copy.activeSceneId = copy.scenes[0].id;
+    clearAudioEngine();
     state.project = copy;
+    selectedAudioTrackId = copy.audioTracks[0]?.id || null;
+    audioPanelSignature = "";
     selectedId = null;
     renderScenes();
     renderVenueControls();
@@ -15147,6 +16268,8 @@ ${propsPlotHtml}
         return;
       }
       const editSummary = incoming.editSummary;
+      const appliedRevision = Number.isInteger(editSummary?.appliedRevision)
+        && editSummary.appliedRevision >= 1 ? editSummary.appliedRevision : null;
       const prepared = prepareProjectImportDocument(incoming);
       incoming.project = prepared.project;
       /* いきなり置き換えず、まず見比べる（本人指定の差分プレビュー）。
@@ -15154,12 +16277,16 @@ ${propsPlotHtml}
       /* JSON はショーの内容だけを持つ。画面の列幅・開閉・表示トグルまで
          ファイル側の既定へ戻すと、読み込んだ瞬間に操作画面が崩れて見える。
          いま使っている端末の画面状態を丸ごと残し、project だけ差し替える。 */
-      const next = normalizeState({ ...state, project: incoming.project });
+      const next = normalizeState({
+        ...state,
+        project: incoming.project,
+        mcpRevision: appliedRevision,
+      });
       // スマホは読み込んだデータを閲覧するだけなので、編集用の比較モーダルを挟まない。
       if (phoneViewerActive) {
         if (phoneUi) phoneUi.singleView = "front";
         shelveCurrent();
-        reserveImportedShowId(next);
+        if (next.mcpRevision === null) reserveImportedShowId(next);
         applyLoadedState(next, `「${next.project.title}」を読み込み、ショー一覧へ保存しました。`);
         return;
       }
@@ -15290,16 +16417,21 @@ ${propsPlotHtml}
       // いまのショーは棚に残したまま、別のショーとして開く（idを新しくする）
       shelveCurrent();
       next.project.id = rid("show");
+      next.mcpRevision = null;
       applyLoadedState(next, `「${next.project.title}」を別のショーとして開き、ショー一覧へ保存しました。`);
       return;
     }
     // 「置き換える」場合も、直前に開いていたショーを先に棚へ残す。
     // 取り込み元と同じIDでも、内容が違えば新しいIDを割り当てて共存させる。
     shelveCurrent();
-    reserveImportedShowId(next);
+    // MCP編集結果だけは同じ正本IDを保ち、appliedRevisionと対応させる。
+    if (next.mcpRevision === null) reserveImportedShowId(next);
     checkpoint();
     resetStageAskDraft({ clearInput: true, invalidate: true });
+    clearAudioEngine();
     state = next;
+    selectedAudioTrackId = (state.project.audioTracks[0] && state.project.audioTracks[0].id) || null;
+    audioPanelSignature = "";
     selectedId = null;
     syncInputs();
     renderScenes();
@@ -15529,7 +16661,16 @@ ${propsPlotHtml}
           resolutions
         ),
         () => token === stageAskRunToken,
-        showStageAskError
+        showStageAskError,
+        {
+          expectedRevision: state.mcpRevision,
+          language: isEn() ? "en" : "ja",
+          confirmFirstSync: (message) => window.confirm(message),
+          onWritten: (revision) => {
+            state.mcpRevision = revision;
+            persistSoon();
+          },
+        }
       );
       if (!outcome || token !== stageAskRunToken) return;
       const plan = STAGE_AI_PANEL_MODEL.normalizePlan(outcome.rawPlan);
@@ -16533,6 +17674,7 @@ ${propsPlotHtml}
     if (!piece) return;
     checkpoint();
     const copy = { ...piece, id: nextId(), heldBy: null,
+      look: piece.look ? normalizeLook(piece.look) : null,
       u: clamp(piece.u + 0.06, 0, 1), v: clamp(piece.v + 0.04, 0, 1) };
     sc().pieces.push(copy);
     selectedId = copy.id;
@@ -19002,6 +20144,9 @@ ${propsPlotHtml}
     lang = next === "en" ? "en" : "ja";
     try { localStorage.setItem(LANG_KEY, lang); } catch (_) { /* 保存できなくても動く */ }
     applyLang();
+    audioPanelSignature = "";
+    renderAudioPanel(true);
+    syncAudioControls();
     renderVenueControls();
     renderScenes();
     if (els.sceneGridModal && !els.sceneGridModal.hidden) renderSceneGrid();
@@ -20102,6 +21247,8 @@ ${propsPlotHtml}
 
   initStageAskPanel();
   buildPanelHeads();
+  initStageAudio();
+  pruneOrphanAudioSoon();
   syncViewSwitch();
   // 言語は loadState() より前に決めてある（見本の駒の名前がそこで決まるため）
   applyLayout();
@@ -20336,13 +21483,20 @@ ${propsPlotHtml}
       let doc; try { doc = JSON.parse(text); } catch (_) { return false; }
       if (!doc || doc.kind !== "shosai-stage-sketch" || !doc.project) return false;
       const { project } = prepareProjectImportDocument(doc);
+      const continuePlayback = Boolean(
+        audioPlayback.ready && els.musicAudio && !els.musicAudio.paused
+      );
       state.project = project;
+      state.mcpRevision = null;
+      continueAudioOnNextSceneSync = continuePlayback;
+      selectedAudioTrackId = (state.project.audioTracks[0] && state.project.audioTracks[0].id) || null;
+      audioPanelSignature = "";
       selectedId = null;
       renderScenes(); renderVenueControls(); updateInspector(); render();
       persistSoon();
       return true;
     },
-    shelveNow() { shelveCurrent(); },
+    shelveNow() { return shelveCurrent(); },
     applyGuestOp(op) {
       /* ホスト側でゲストopを状態へ適用。適用したらtrue */
       if (!op || typeof op !== "object") return false;

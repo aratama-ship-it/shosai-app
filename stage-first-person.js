@@ -1332,13 +1332,14 @@
       fillPoly(ctx, circlePoints(foot.x, .01, foot.z, .26), "rgba(0,0,0,.28)");
     }
 
-    paintBody3d(ctx, body, P, rings, wheel, props, eyes, piece.color || "#c9c2b4");
+    const look = body.resolveLook ? body.resolveLook(piece, data.cast) : null;
+    paintBody3d(ctx, body, P, rings, wheel, props, eyes, piece.color || "#c9c2b4", look);
     return { x: foot.x, y: topY + 0.04 * H, z: foot.z };
   }
 
   /* 本編 paintBody の透視投影版。各節の px 換算はその節の s を使う
    * （遠近で手前の腕が太く、奥の腕が細くなる）。 */
-  function paintBody3d(ctx, body, P, rings, wheel, props, eyes, color) {
+  function paintBody3d(ctx, body, P, rings, wheel, props, eyes, color, look) {
     ctx.save();
     if (wheel) paintWheel3d(ctx, wheel, P, "far");
     const parts = body.LIMBS.map((limb) => ({

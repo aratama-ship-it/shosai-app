@@ -32,7 +32,7 @@ test("スマホの読込メニューからJSONと同梱サンプルを選べる"
 });
 
 test("読み込んだJSONはスマホでは編集用比較モーダルを挟まず開く", () => {
-  assert.match(source, /if \(phoneViewerActive\) \{[\s\S]*?shelveCurrent\(\);\s*reserveImportedShowId\(next\);[\s\S]*?applyLoadedState\(next, `「\$\{next\.project\.title\}」を読み込み、ショー一覧へ保存しました。`\);[\s\S]*?return;/);
+  assert.match(source, /if \(phoneViewerActive\) \{[\s\S]*?shelveCurrent\(\);\s*if \(next\.mcpRevision === null\) reserveImportedShowId\(next\);[\s\S]*?applyLoadedState\(next, `「\$\{next\.project\.title\}」を読み込み、ショー一覧へ保存しました。`\);[\s\S]*?return;/);
 });
 
 test("縦画面は正面図と平面図を並べ、横画面は一枚を切り替える", () => {
@@ -43,11 +43,11 @@ test("縦画面は正面図と平面図を並べ、横画面は一枚を切り�
   assert.match(style, /@media \(orientation: landscape\) \{[\s\S]*?html\.stage-phone-viewer \.stage-canvas-stack \{[\s\S]*?grid-template-rows: minmax\(0, 1fr\)/);
 });
 
-test("横画面は操作を右側レールへ移し、図へ全高を渡す", () => {
+test("横画面は操作を右側レールへ移し、音楽帯を引いた高さへ図を収める", () => {
   assert.match(style, /@media \(orientation: landscape\) \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) 64px/);
   assert.match(style, /html\.stage-phone-viewer \.stage-phone-toolbar \{[\s\S]*?grid-column: 2;[\s\S]*?flex-direction: column/);
   assert.match(style, /justify-items: end/);
-  assert.match(style, /width: min\(100%, calc\(\(100dvh - 2px\) \* 16 \/ 9\)\)/);
+  assert.match(style, /width: min\(100%, calc\(\(100dvh - 46px\) \* 16 \/ 9\)\)/);
 });
 
 test("縦画面の操作は一段に収まり、図へ重ならない", () => {

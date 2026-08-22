@@ -6,6 +6,7 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
     typealias Completion = (Data, Int32) -> Void
 
     private let environment: WebEnvironment
+    private let mcpDataRootURL: URL
     private let agentRunner: AgentRunner
     private let webView: WKWebView
     private let completion: Completion
@@ -17,6 +18,7 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
     init(configuration: AppConfiguration, completion: @escaping Completion) {
         let temporaryMCPDataRootURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("stage-sketch-mac-self-test-\(UUID().uuidString)", isDirectory: true)
+        mcpDataRootURL = temporaryMCPDataRootURL
         environment = WebEnvironment(
             configuration: configuration,
             mcpDataRootURL: temporaryMCPDataRootURL,
@@ -49,7 +51,234 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
             ok: normalDelegateInstalled && selfTestRemainsHeadless,
             detail: "normalStartupUIDelegate=\(normalDelegateInstalled ? "installed" : "missing"), selfTestUIDelegate=\(selfTestRemainsHeadless ? "nil" : "present")"
         )
+        testNavigationAndOriginDecisions()
+        testProjectStoreRevisionAndLocking()
         testAgentVersion()
+    }
+
+    private func projectDocument(id: String, title: String) -> [String: Any] {
+        [
+            "kind": "shosai-stage-sketch",
+            "version": 3,
+            "project": [
+                "id": id,
+                "title": title,
+                "scenes": []
+            ]
+        ]
+    }
+
+    private func testProjectStoreRevisionAndLocking() {
+        let store = environment.projectStore
+        let projectsURL = mcpDataRootURL.appendingPathComponent("projects", isDirectory: true)
+        let locksURL = mcpDataRootURL.appendingPathComponent("locks", isDirectory: true)
+
+        do {
+            let id = "self-test-revision"
+            let first = try store.writeProject(
+                projectDocument(id: id, title: "first"),
+                expectedRevision: nil
+            )
+            let projectURL = projectsURL.appendingPathComponent("\(id).json")
+            let before = try Data(contentsOf: projectURL)
+            let conflict = try store.writeProject(
+                projectDocument(id: id, title: "must-not-write"),
+                expectedRevision: 2
+            )
+            let after = try Data(contentsOf: projectURL)
+            record(
+                id: 20,
+                name: "revision-mismatch-does-not-write",
+                ok: first["revision"] as? Int == 1
+                    && conflict["conflict"] as? Bool == true
+                    && conflict["currentRevision"] as? Int == 1
+                    && before == after,
+                detail: "conflict=\(conflict), bytesUnchanged=\(before == after)"
+            )
+
+            let matched = try store.writeProject(
+                projectDocument(id: id, title: "matched"),
+                expectedRevision: 1
+            )
+            record(
+                id: 21,
+                name: "matching-revision-increments",
+                ok: matched["revision"] as? Int == 2,
+                detail: "result=\(matched)"
+            )
+        } catch {
+            record(id: 20, name: "revision-mismatch-does-not-write", ok: false, detail: error.localizedDescription)
+            record(id: 21, name: "matching-revision-increments", ok: false, detail: error.localizedDescription)
+        }
+
+        do {
+            let id = "self-test-first-sync"
+            _ = try store.writeProject(
+                projectDocument(id: id, title: "first"),
+                expectedRevision: nil
+            )
+            let nilConflict = try store.writeProject(
+                projectDocument(id: id, title: "nil-conflict"),
+                expectedRevision: nil
+            )
+            let allowed = try store.writeProject(
+                projectDocument(id: id, title: "allowed"),
+                expectedRevision: nil,
+                allowFirstSync: true
+            )
+            let mismatchStillConflicts = try store.writeProject(
+                projectDocument(id: id, title: "must-not-write"),
+                expectedRevision: 1,
+                allowFirstSync: true
+            )
+            record(
+                id: 22,
+                name: "first-sync-only-bypasses-null-revision",
+                ok: nilConflict["conflict"] as? Bool == true
+                    && nilConflict["currentRevision"] as? Int == 1
+                    && allowed["revision"] as? Int == 2
+                    && mismatchStillConflicts["conflict"] as? Bool == true
+                    && mismatchStillConflicts["currentRevision"] as? Int == 2,
+                detail: "nil=\(nilConflict), allowed=\(allowed), mismatch=\(mismatchStillConflicts)"
+            )
+
+            let successLock = locksURL.appendingPathComponent("\(id).lock")
+            let conflictID = "self-test-lock-cleanup"
+            _ = try store.writeProject(
+                projectDocument(id: conflictID, title: "first"),
+                expectedRevision: nil
+            )
+            _ = try store.writeProject(
+                projectDocument(id: conflictID, title: "conflict"),
+                expectedRevision: 2
+            )
+            let conflictLock = locksURL.appendingPathComponent("\(conflictID).lock")
+            record(
+                id: 23,
+                name: "project-lock-cleanup-after-success-and-conflict",
+                ok: !FileManager.default.fileExists(atPath: successLock.path)
+                    && !FileManager.default.fileExists(atPath: conflictLock.path),
+                detail: "successLockExists=\(FileManager.default.fileExists(atPath: successLock.path)), conflictLockExists=\(FileManager.default.fileExists(atPath: conflictLock.path))"
+            )
+        } catch {
+            record(id: 22, name: "first-sync-only-bypasses-null-revision", ok: false, detail: error.localizedDescription)
+            record(id: 23, name: "project-lock-cleanup-after-success-and-conflict", ok: false, detail: error.localizedDescription)
+        }
+
+        do {
+            try FileManager.default.createDirectory(at: locksURL, withIntermediateDirectories: true)
+            let id = "self-test-lock-timeout"
+            let lockURL = locksURL.appendingPathComponent("\(id).lock")
+            try Data("held\n".utf8).write(to: lockURL)
+            defer { try? FileManager.default.removeItem(at: lockURL) }
+            let started = Date()
+            var message = ""
+            do {
+                _ = try store.writeProject(
+                    projectDocument(id: id, title: "blocked"),
+                    expectedRevision: nil
+                )
+            } catch {
+                message = error.localizedDescription
+            }
+            let elapsed = Date().timeIntervalSince(started)
+            record(
+                id: 24,
+                name: "project-lock-retries-for-four-seconds",
+                ok: message == "別のCodexまたはClaude Codeがこの下書きを編集中です。数秒後に読み直してください。"
+                    && elapsed >= 3.8,
+                detail: "elapsed=\(elapsed), error=\(message)"
+            )
+        } catch {
+            record(id: 24, name: "project-lock-retries-for-four-seconds", ok: false, detail: error.localizedDescription)
+        }
+    }
+
+    private func testNavigationAndOriginDecisions() {
+        let shosaiURL = URL(string: "shosai://app/index.html")!
+        let shosaiDecision = WebDownloadCoordinator.decision(
+            for: shosaiURL,
+            scheme: shosaiURL.scheme,
+            isMainFrame: true,
+            isLinkActivated: false,
+            shouldPerformDownload: false
+        )
+        record(
+            id: 14,
+            name: "navigation-allows-shosai",
+            ok: shosaiDecision == .allow,
+            detail: "decision=\(String(describing: shosaiDecision))"
+        )
+
+        let httpsURL = URL(string: "https://example.com/path")!
+        let scriptDecision = WebDownloadCoordinator.decision(
+            for: httpsURL,
+            scheme: httpsURL.scheme,
+            isMainFrame: true,
+            isLinkActivated: false,
+            shouldPerformDownload: false
+        )
+        record(
+            id: 15,
+            name: "navigation-cancels-https-script",
+            ok: scriptDecision == .cancel,
+            detail: "decision=\(String(describing: scriptDecision))"
+        )
+
+        let linkDecision = WebDownloadCoordinator.decision(
+            for: httpsURL,
+            scheme: httpsURL.scheme,
+            isMainFrame: true,
+            isLinkActivated: true,
+            shouldPerformDownload: false
+        )
+        record(
+            id: 16,
+            name: "navigation-opens-https-link-externally",
+            ok: linkDecision == .openExternally(httpsURL),
+            detail: "decision=\(String(describing: linkDecision))"
+        )
+
+        let fileURL = URL(fileURLWithPath: "/tmp/stage-sketch-self-test.html")
+        let unknownURL = URL(string: "unknown-scheme://example/path")!
+        let fileDecision = WebDownloadCoordinator.decision(
+            for: fileURL,
+            scheme: fileURL.scheme,
+            isMainFrame: true,
+            isLinkActivated: true,
+            shouldPerformDownload: false
+        )
+        let unknownDecision = WebDownloadCoordinator.decision(
+            for: unknownURL,
+            scheme: unknownURL.scheme,
+            isMainFrame: true,
+            isLinkActivated: true,
+            shouldPerformDownload: false
+        )
+        record(
+            id: 17,
+            name: "navigation-cancels-file-and-unknown-schemes",
+            ok: fileDecision == .cancel && unknownDecision == .cancel,
+            detail: "file=\(String(describing: fileDecision)), unknown=\(String(describing: unknownDecision))"
+        )
+
+        let trusted = StageSketchBridge.isTrustedFrame(
+            isMainFrame: true,
+            originProtocol: "SHOSAI"
+        )
+        let rejectedOrigins = ["https", "file", "about", ""].allSatisfy {
+            !StageSketchBridge.isTrustedFrame(isMainFrame: true, originProtocol: $0)
+        }
+        let rejectedSubframe = !StageSketchBridge.isTrustedFrame(
+            isMainFrame: false,
+            originProtocol: "shosai"
+        )
+        record(
+            id: 18,
+            name: "bridge-origin-policy",
+            ok: trusted && rejectedOrigins && rejectedSubframe,
+            detail: "trustedShosaiMain=\(trusted), rejectedOrigins=\(rejectedOrigins), rejectedShosaiSubframe=\(rejectedSubframe)"
+        )
     }
 
     private func testAgentVersion() {
@@ -398,7 +627,7 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
           }
         };
         const first = await window.stageSketchBridge.writeProject(document);
-        const second = await window.stageSketchBridge.writeProject(document);
+        const second = await window.stageSketchBridge.writeProject(document, first.revision);
         const plan = await window.stageSketchBridge.latestPlan(first.projectId);
         return JSON.stringify({ first, second, plan });
         """#
@@ -478,8 +707,83 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
                     detail: error.localizedDescription
                 )
             }
-            self.finish()
+            self.testUntrustedDocumentBridgeRejection()
         }
+    }
+
+    private func testUntrustedDocumentBridgeRejection() {
+        navigationTimeout?.cancel()
+        navigationCompletion = { [weak self] loadResult in
+            guard let self else { return }
+            guard case .success = loadResult else {
+                let detail: String
+                if case .failure(let error) = loadResult {
+                    detail = error.localizedDescription
+                } else {
+                    detail = "untrusted document did not load"
+                }
+                self.record(
+                    id: 19,
+                    name: "bridge-rejects-untrusted-document",
+                    ok: false,
+                    detail: detail
+                )
+                self.finish()
+                return
+            }
+
+            let script = #"""
+            try {
+              await window.stageSketchBridge.listEditExports();
+              return JSON.stringify({ rejected: false, error: null });
+            } catch (error) {
+              return JSON.stringify({
+                rejected: true,
+                error: String(error && error.message || error)
+              });
+            }
+            """#
+            self.webView.callAsyncJavaScript(
+                script,
+                arguments: [:],
+                in: nil,
+                in: .page
+            ) { [weak self] result in
+                guard let self else { return }
+                switch result {
+                case .success(let value):
+                    let text = value as? String ?? ""
+                    let data = text.data(using: .utf8) ?? Data()
+                    let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+                    let rejected = object?["rejected"] as? Bool == true
+                    let errorMessage = object?["error"] as? String ?? ""
+                    self.record(
+                        id: 19,
+                        name: "bridge-rejects-untrusted-document",
+                        ok: rejected && errorMessage.contains("only available to the app's own pages"),
+                        detail: text.isEmpty ? "bridge verification returned no data" : text
+                    )
+                case .failure(let error):
+                    self.record(
+                        id: 19,
+                        name: "bridge-rejects-untrusted-document",
+                        ok: false,
+                        detail: error.localizedDescription
+                    )
+                }
+                self.finish()
+            }
+        }
+
+        let timeout = DispatchWorkItem { [weak self] in
+            guard let self, let pending = self.navigationCompletion else { return }
+            self.navigationCompletion = nil
+            self.webView.stopLoading()
+            pending(.failure(URLError(.timedOut)))
+        }
+        navigationTimeout = timeout
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30, execute: timeout)
+        webView.loadHTMLString("<html><body>Untrusted bridge test</body></html>", baseURL: nil)
     }
 
     private func load(path: String, completion: @escaping (Result<Void, Error>) -> Void) {
@@ -538,11 +842,11 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
         finished = true
         navigationTimeout?.cancel()
 
-        for id in 1...13 where results[id] == nil {
+        for id in 1...24 where results[id] == nil {
             record(id: id, name: "missing-result", ok: false, detail: "test did not run")
         }
 
-        let orderedResults = (1...13).compactMap { results[$0] }
+        let orderedResults = (1...24).compactMap { results[$0] }
         let ok = orderedResults.allSatisfy { $0["ok"] as? Bool == true }
         let payload: [String: Any] = [
             "ok": ok,

@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=189">
+<link rel="stylesheet" href="style.css?v=193">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -103,6 +103,34 @@
               <p class="stage-venue-scale" id="stage-venue-scale"></p>
               <p class="stage-profile-hint" id="stage-venue-missing" hidden></p>
             </section>
+            </div>
+          </section>
+          <section class="stage-panel stage-music-panel" data-panel="music" data-title="音楽">
+            <div class="stage-panel-body">
+              <p class="stage-music-intro">端末内の楽曲を読み込み、流れているシーンを割り当てます。</p>
+              <label class="btn-quiet stage-import-label stage-music-import">
+                ＋ 楽曲を読み込む
+                <input type="file" id="stage-music-file"
+                       accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,.mp3,.m4a,.wav,.aac" hidden>
+              </label>
+              <p class="stage-music-status" id="stage-music-status" role="status" aria-live="polite">まだ楽曲を読み込んでいません。</p>
+              <div class="stage-music-library" id="stage-music-library" aria-label="読み込んだ楽曲"></div>
+              <label class="stage-control-label" for="stage-scene-audio-track">このシーンで流す曲</label>
+              <select class="stage-select" id="stage-scene-audio-track">
+                <option value="">音なし</option>
+              </select>
+              <section class="stage-music-assignment" id="stage-music-assignment" hidden>
+                <div class="stage-music-assignment-head">
+                  <strong id="stage-music-assignment-title"></strong>
+                  <button type="button" class="btn-quiet" id="stage-music-clear-scenes">この曲をすべて外す</button>
+                </div>
+                <p>この曲が流れているシーン</p>
+                <div class="stage-music-scene-list" id="stage-music-scene-list"></div>
+              </section>
+              <button type="button" class="stage-minor-action" id="stage-music-relink" hidden>この端末で音源を選び直す</button>
+              <input type="file" id="stage-music-relink-file"
+                     accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,.mp3,.m4a,.wav,.aac" hidden>
+              <p class="stage-music-local-note">音源ファイルはこの端末内だけに保存され、JSON、端末データの書き出し、共有セッションには含まれません。別端末では元ファイルを選び直してください。</p>
             </div>
           </section>
           <section class="stage-panel" data-panel="cast" data-title="出るもの">
@@ -383,6 +411,16 @@
               <textarea class="stage-scene-desc-text" id="stage-scene-desc-text" rows="1"
                         maxlength="200" placeholder="この場面で何が起きるか"></textarea>
               <p id="stage-prop-moves" class="stage-prop-moves" hidden></p>
+            </div>
+            <div class="stage-scene-music" id="stage-scene-music">
+              <button type="button" class="btn-quiet stage-music-toggle" id="stage-music-toggle"
+                      aria-label="現在のシーンの曲を再生" aria-pressed="false">▶</button>
+              <button type="button" class="btn-quiet stage-music-restart" id="stage-music-restart"
+                      aria-label="曲の先頭へ戻す" title="曲の先頭へ戻す">↺</button>
+              <span class="stage-music-current" id="stage-music-current">音なし</span>
+              <input type="range" class="stage-music-seek" id="stage-music-seek"
+                     min="0" max="0" step="0.1" value="0" aria-label="曲の再生位置" disabled>
+              <span class="stage-music-time" id="stage-music-time">0:00 / 0:00</span>
             </div>
           </div>
           <div class="stage-work-area" id="stage-work-area">
@@ -910,6 +948,9 @@
           </section>
         </aside>
       </div>
+
+      <!-- 再生要素は一つだけを使い回す。複数作るとiOSの再生許可と位置が分裂する。 -->
+      <audio id="stage-music-audio" class="stage-music-engine" preload="metadata"></audio>
 
       <p class="stage-boundary-note">これは構図・色・距離感を考えるための2D習作です。舞台機構、リギング、安全距離、施工寸法を決める図面ではありません。</p>
       <p class="visually-hidden" id="stage-live" aria-live="polite"></p>
@@ -1501,18 +1542,19 @@
 
 <script src="stage-venues.js?v=20"></script>
 <script src="stage-venue-lines.js?v=4"></script>
-<script src="stage-i18n.js?v=72"></script>
+<script src="stage-i18n.js?v=74"></script>
 <script src="stage-prompt-i18n.js?v=2"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=1"></script>
 <script src="stage-set-model.js?v=1"></script>
 <script src="stage-set-builder.js?v=1"></script>
 <script src="stage-machinery.js?v=2"></script>
-<script src="stage-first-person.js?v=15"></script>
+<script src="stage-first-person.js?v=16"></script>
 <script src="stage-shows.local.js?v=1"></script>
+<script src="stage-audio-store.js?v=2"></script>
 <script src="stage-pwa.js?v=3"></script>
-<script src="stage-sketch.js?v=280"></script>
-<script src="stage-session.js?v=2"></script>
+<script src="stage-sketch.js?v=287"></script>
+<script src="stage-session.js?v=3"></script>
 <script src="stage-venue-editor.js?v=6"></script>
 </body>
 </html>
