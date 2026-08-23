@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 
@@ -126,17 +126,69 @@ test(".gitignore: stage-shows.local.js は公開リポジトリに含めない",
   assert.match(gitignoreSource, /^stage-shows\.local\.js$/m);
 });
 
-test("build_stage_shows_local.py: SOURCESの各JSONが実在しproject.idが一意", async () => {
-  const matches = [...generatorSource.matchAll(/ROOT \/ "([^"]+)"/g)].map((m) => m[1]);
-  assert.ok(matches.length >= 10, "SOURCESが少なすぎる（読み取りに失敗した可能性）");
-  const seen = new Set();
-  const workspaceRoot = new URL("../", root); // build_stage_shows_local.py の ROOT は shosai-app の一つ上
-  for (const rel of matches) {
-    const text = await readFile(new URL(rel, workspaceRoot), "utf8");
-    const doc = JSON.parse(text);
-    assert.ok(doc.project && Array.isArray(doc.project.scenes), `${rel}: project.scenesが無い`);
-    assert.ok(doc.project.id, `${rel}: project.idが無い`);
-    assert.ok(!seen.has(doc.project.id), `${rel}: id "${doc.project.id}" が重複`);
-    seen.add(doc.project.id);
+async function jsonFilesUnder(dirUrl, recursive) {
+  let entries = [];
+  try {
+    entries = await readdir(dirUrl, { withFileTypes: true });
+  } catch (error) {
+    if (error && error.code === "ENOENT") return [];
+    throw error;
   }
+  const out = [];
+  for (const entry of entries) {
+    const child = new URL(`${entry.name}${entry.isDirectory() ? "/" : ""}`, dirUrl);
+    if (entry.isDirectory()) {
+      if (recursive) out.push(...await jsonFilesUnder(child, true));
+    } else if (entry.isFile() && entry.name.endsWith(".json")) {
+      out.push(child);
+    }
+  }
+  return out;
+}
+
+async function expandScanGlob(pattern, workspaceRoot) {
+  const recursive = pattern.includes("**/");
+  const base = pattern.split(recursive ? "**/" : "*")[0];
+  return jsonFilesUnder(new URL(base, workspaceRoot), recursive);
+}
+
+test("build_stage_shows_local.py: SCAN_GLOBSの各JSONが読め、採用project.idが一意", async () => {
+  const block = generatorSource.match(/SCAN_GLOBS = \[([\s\S]*?)\]/);
+  assert.ok(block, "SCAN_GLOBS がある");
+  const patterns = [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(patterns.length >= 3, "SCAN_GLOBSが少なすぎる（読み取りに失敗した可能性）");
+  const excludes = [...generatorSource.matchAll(/"([^"]+)":\s*"[^"]+"/g)].map((m) => m[1]);
+  const excludeIds = new Set(excludes);
+  const paths = [];
+  const pathKeys = new Set();
+  const workspaceRoot = new URL("../", root); // build_stage_shows_local.py の ROOT は shosai-app の一つ上
+  for (const pattern of patterns) {
+    const found = await expandScanGlob(pattern, workspaceRoot);
+    for (const path of found) {
+      const key = path.href;
+      if (pathKeys.has(key)) continue;
+      pathKeys.add(key);
+      paths.push(path);
+    }
+  }
+  assert.ok(paths.length >= 10, "SCAN_GLOBSの対象JSONが少なすぎる（読み取りに失敗した可能性）");
+  const picked = new Map();
+  for (const path of paths) {
+    let doc;
+    const text = await readFile(path, "utf8");
+    try {
+      doc = JSON.parse(text);
+    } catch (_) {
+      continue;
+    }
+    if (!doc || !doc.project || !Array.isArray(doc.project.scenes) || !doc.project.id) continue;
+    if (excludeIds.has(doc.project.id)) continue;
+    const info = await stat(path);
+    const current = picked.get(doc.project.id);
+    if (!current || info.mtimeMs > current.mtimeMs) {
+      picked.set(doc.project.id, { path, mtimeMs: info.mtimeMs });
+    }
+  }
+  assert.equal(picked.size, new Set(picked.keys()).size, "採用project.idが重複している");
+  assert.ok(picked.size >= 10, "採用対象のショーJSONが少なすぎる");
 });
