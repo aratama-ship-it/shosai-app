@@ -56,7 +56,7 @@ CATEGORY_RULES = [
     ("オペラ", ["opera"]),
     ("伝統芸能", ["kabuki", "noh_", "bunraku", "rakugo", "traditional_performing_arts", "intangible_heritage"]),
     # `conte` は contemporary に部分一致するため使わない。
-    ("コント・お笑い", ["sketch_comedy", "rahmens", "ラーメンズ", "お笑い", "kajalla", "potsunen"]),
+    ("コント・お笑い", ["sketch_comedy", "physical_comedy", "rahmens", "ラーメンズ", "お笑い", "kajalla", "potsunen"]),
     ("クラウン・道化", ["clown"]),
     ("サーカス・アクロバット", [
         "circus", "cirque", "cirk", "circo", "big_top", "acrobat", "juggling",
@@ -142,6 +142,10 @@ def categorize(w):
         return "ダンス・舞踊"
     if "musical" in g and "circus" not in g and "cirque" not in g:
         return "ミュージカル"
+    # self-help は形式名であり、event_hay の help が halftime の短縮語 ``half`` と
+    # 部分一致しうる。公式が cabaret と明示するこの限定形式を先に保護する。
+    if g == "self_help_cabaret" or show_type == "self_help_cabaret":
+        return "バラエティ・キャバレー"
     # 式典自体は制作会社や技法より優先する。ただし opening ceremony を含む
     # サーカス作品（Effervescence等）はサーカスとして残す。
     event_hay = f"{g} {show_type}"
