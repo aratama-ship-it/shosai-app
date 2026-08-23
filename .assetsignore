@@ -4,9 +4,7 @@
 .git/
 .wrangler/
 node_modules/
-mac-app/build/
-mac-app/Sources/
-mac-app/Resources/
+mac-app/
 .stage-sketch-mcp/
 .codex/
 .mcp.json
@@ -18,3 +16,15 @@ docs/
 tools/
 mcp-server/
 tests/
+overnight-runs/
+
+# ブラウザから実行時に読み込まれない内部資料・ビルドスクリプト（2026-08-23 P1-11対応）。
+# 実行時に必要なのは *.js / *.html / *.css / *.webmanifest / icons / data / stage-samples など。
+# 生成済み成果物（db.js等）はビルドスクリプト無しでも動くため、スクリプト側だけ除外する。
+*.py
+*.sql
+wrangler.toml
+HANDOVER_*.md
+REALTIME_SESSION_DESIGN.md
+SYNC_DESIGN.md
+SHOWS_INVENTORY.md
