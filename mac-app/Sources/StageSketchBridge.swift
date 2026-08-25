@@ -183,6 +183,16 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
         }
     }
 
+    func notifyDownloadDestinationDecision(_ didChooseDestination: Bool) {
+        let value = didChooseDestination ? "true" : "false"
+        DispatchQueue.main.async { [weak self] in
+            self?.webView?.evaluateJavaScript(
+                "window.__stageSketchNotifyDownloadDestinationDecision?.(\(value));",
+                completionHandler: nil
+            )
+        }
+    }
+
     private static let injectionScript = #"""
     (() => {
       "use strict";
@@ -190,6 +200,7 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
       if (!handlers) return;
 
       const callbacks = new Set();
+      const downloadDestinationCallbacks = new Set();
       const bridge = {
         version: "1",
         platform: "macos",
@@ -239,6 +250,12 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
             throw new TypeError("onEditAvailable expects a callback.");
           }
           callbacks.add(callback);
+        },
+        onDownloadDestinationDecision(callback) {
+          if (typeof callback !== "function") {
+            throw new TypeError("onDownloadDestinationDecision expects a callback.");
+          }
+          downloadDestinationCallbacks.add(callback);
         }
       };
 
@@ -255,6 +272,23 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
               callback(entry);
             } catch (error) {
               console.error("stageSketchBridge onEditAvailable callback failed.", error);
+            }
+          }
+        },
+        configurable: false,
+        enumerable: false,
+        writable: false
+      });
+      Object.defineProperty(window, "__stageSketchNotifyDownloadDestinationDecision", {
+        value(didChooseDestination) {
+          for (const callback of downloadDestinationCallbacks) {
+            try {
+              callback(didChooseDestination === true);
+            } catch (error) {
+              console.error(
+                "stageSketchBridge onDownloadDestinationDecision callback failed.",
+                error
+              );
             }
           }
         },

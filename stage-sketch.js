@@ -13,6 +13,58 @@
 (function () {
   "use strict";
 
+  const nativeDownloadDecisionWaiters = [];
+  let nativeDownloadDecisionBridge = null;
+
+  function prepareNativeDownloadDecision() {
+    const bridge = window.stageSketchBridge;
+    if (!bridge || typeof bridge.onDownloadDestinationDecision !== "function") return null;
+    if (nativeDownloadDecisionBridge !== bridge) {
+      bridge.onDownloadDestinationDecision((didChooseDestination) => {
+        const waiter = nativeDownloadDecisionWaiters.shift();
+        if (waiter) waiter.resolve(didChooseDestination === true);
+      });
+      nativeDownloadDecisionBridge = bridge;
+    }
+    const waiter = {};
+    waiter.promise = new Promise((resolve) => { waiter.resolve = resolve; });
+    nativeDownloadDecisionWaiters.push(waiter);
+    waiter.cancel = () => {
+      const index = nativeDownloadDecisionWaiters.indexOf(waiter);
+      if (index >= 0) nativeDownloadDecisionWaiters.splice(index, 1);
+    };
+    return waiter;
+  }
+
+  async function downloadBlob(blob, filename) {
+    const nativeDecision = prepareNativeDownloadDecision();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    try {
+      link.click();
+    } catch (error) {
+      if (nativeDecision) nativeDecision.cancel();
+      URL.revokeObjectURL(url);
+      throw error;
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return nativeDecision ? nativeDecision.promise : true;
+  }
+
+  function applyProjectExportOutcome(targetState, didChooseDestination, exportedAt) {
+    if (!didChooseDestination) return false;
+    targetState.lastExportAt = exportedAt;
+    targetState.editsSinceExport = 0;
+    return true;
+  }
+
+  window.SHOSAI_STAGE_DOWNLOAD_MODEL = Object.freeze({
+    downloadBlob,
+    applyProjectExportOutcome,
+  });
+
   /* 段階0のビート骨格。作品の正解ではなく、シーン名・役割・エネルギーだけを
      作るローカルの初期値。演者、道具、照明、背景、技、装置はここへ入れない。
      内容の正本: 2026-07-28_stage-sketch-codex-round2-answer.md D2 */
@@ -12731,7 +12783,7 @@
     announce(`${info.title}を消しました。`);
   }
 
-  function rebuildShelf() {
+  async function rebuildShelf() {
     /* 壊れた原文は SHOWS_KEY にそのまま残っている（壊れている間は書き込みを止めているため）。
        ここが唯一それを消す場所なので、消す前に必ずファイルへ逃がす。 */
     let payload = null;
@@ -12743,10 +12795,20 @@
 
     let ask;
     if (payload !== null && payload !== "") {
-      downloadBlob(
-        new Blob([payload], { type: "application/json" }),
-        `舞台スケッチ-壊れたショー一覧-${stampNow()}.json`,
-      );
+      try {
+        const didChooseDestination = await downloadBlob(
+          new Blob([payload], { type: "application/json" }),
+          `舞台スケッチ-壊れたショー一覧-${stampNow()}.json`,
+        );
+        if (!didChooseDestination) {
+          announce("書き出しをやめました。");
+          return;
+        }
+      } catch (error) {
+        console.error("stage export: 壊れたショー一覧を書き出せませんでした", error);
+        exportFailureNotice("ショーを書き出せませんでした。もう一度お試しください。");
+        return;
+      }
       ask = isEn()
         ? "The damaged show shelf was sent to your downloads. Did the file save correctly? Choose OK to rebuild the shelf and remove the damaged data from this device. Choose Cancel to change nothing."
         : "壊れたショー一覧をファイルへ書き出しました。ダウンロードを確認できましたか？ OKを押すと一覧を作り直し、端末内の壊れたデータを消します。キャンセルすると何も変更しません。";
@@ -15998,7 +16060,7 @@ ${propsPlotHtml}
     if (els.venueExportBackdrop) els.venueExportBackdrop.hidden = true;
   }
 
-  function writeProjectExport(includeVenue) {
+  async function writeProjectExport(includeVenue) {
     try {
       /* かつてこのローカル変数を document と名付けていて、グローバルの document を
          覆い隠していた。document.createElement が落ち、書き出しが無反応になっていた。 */
@@ -16007,9 +16069,11 @@ ${propsPlotHtml}
       const blob = new Blob([data], { type: "application/json" });
       const safe = (state.project.title || "show").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 40);
       const version = (state.project.versionLabel || "v1").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 24);
-      downloadBlob(blob, `${safe}-${version}.json`);
-      state.lastExportAt = nowIso();
-      state.editsSinceExport = 0;
+      const didChooseDestination = await downloadBlob(blob, `${safe}-${version}.json`);
+      if (!applyProjectExportOutcome(state, didChooseDestination, nowIso())) {
+        announce("書き出しをやめました。");
+        return;
+      }
       persistSoon();
       updateBackupNote();
       announce(includeVenue || !bundledVenueForProject(state.project)
@@ -16210,7 +16274,7 @@ ${propsPlotHtml}
     announce("未入力のシーンへ共通の時間を入れました。");
   }
 
-  function exportRehearsalProject() {
+  async function exportRehearsalProject() {
     const api = rehearsalExporter();
     const inspection = refreshRehearsalExport();
     if (!api || !inspection || inspection.errors.length || inspection.missingTimingScenes.length) {
@@ -16228,7 +16292,11 @@ ${propsPlotHtml}
       const safe = (state.project.title || "show").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 40);
       const version = (state.project.versionLabel || "v1")
         .replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 24);
-      downloadBlob(blob, `${safe}-${version}.rehearsal.json`);
+      const didChooseDestination = await downloadBlob(blob, `${safe}-${version}.rehearsal.json`);
+      if (!didChooseDestination) {
+        announce("書き出しをやめました。");
+        return;
+      }
       closeRehearsalExport();
       announce("稽古用JSONを書き出しました。Vision Proで読み込む前に警告を確認してください。");
     } catch (error) {
@@ -21018,16 +21086,7 @@ ${propsPlotHtml}
     return new TextEncoder().encode(decodeURIComponent(payload));
   }
 
-  function downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  }
-
-  function runDraftExport() {
+  async function runDraftExport() {
     const scenes = exportTargets();
     const views = exportViews();
     if (!scenes.length) { announce("書き出すシーンがありません。"); return; }
@@ -21089,12 +21148,23 @@ ${propsPlotHtml}
 
     try {
       if (entries.length === 1) {
-        downloadBlob(new Blob([entries[0].bytes], { type: "image/png" }), entries[0].name);
+        const didChooseDestination = await downloadBlob(
+          new Blob([entries[0].bytes], { type: "image/png" }),
+          entries[0].name,
+        );
+        if (!didChooseDestination) {
+          announce("書き出しをやめました。");
+          return;
+        }
       } else {
-        downloadBlob(
+        const didChooseDestination = await downloadBlob(
           makeZipBlob(entries.map((entry) => ({ name: entry.zipName, bytes: entry.bytes }))),
           `${safeName(state.project.title)}-${stamp}.zip`,
         );
+        if (!didChooseDestination) {
+          announce("書き出しをやめました。");
+          return;
+        }
       }
     } catch (error) {
       console.error("stage export: 画像を書き出せませんでした", error);
@@ -21108,7 +21178,7 @@ ${propsPlotHtml}
       : `${entries.length}枚をZIP 1個にまとめて書き出しました。`);
   }
 
-  function runPitchExport() {
+  async function runPitchExport() {
     const scene = sc();
     const table = promptI18n();
     if (!scene || scene.kind !== "scene" || !table) {
@@ -21180,13 +21250,24 @@ ${propsPlotHtml}
     try {
       if (downloads.length === 1) {
         const download = downloads[0];
-        downloadBlob(new Blob([dataUrlToBytes(download.href)]), download.name);
+        const didChooseDestination = await downloadBlob(
+          new Blob([dataUrlToBytes(download.href)]),
+          download.name,
+        );
+        if (!didChooseDestination) {
+          announce("書き出しをやめました。");
+          return;
+        }
       } else {
         const entries = downloads.map((download) => ({
           name: download.name,
           bytes: dataUrlToBytes(download.href),
         }));
-        downloadBlob(makeZipBlob(entries), `${base}.zip`);
+        const didChooseDestination = await downloadBlob(makeZipBlob(entries), `${base}.zip`);
+        if (!didChooseDestination) {
+          announce("書き出しをやめました。");
+          return;
+        }
       }
     } catch (error) {
       console.error("stage export: ピッチ画像を書き出せませんでした", error);

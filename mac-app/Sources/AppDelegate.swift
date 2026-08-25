@@ -28,7 +28,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let webView = environment.makeWebView(frame: window.contentView?.bounds ?? initialFrame)
             let webUIDelegate = MacWebUIDelegate.installForNormalStartup(on: webView)
             self.webUIDelegate = webUIDelegate
-            let downloadCoordinator = WebDownloadCoordinator()
+            let downloadCoordinator = WebDownloadCoordinator(
+                destinationDecisionHandler: { [weak bridge = environment.bridge] didChooseDestination in
+                    bridge?.notifyDownloadDestinationDecision(didChooseDestination)
+                }
+            )
             webView.navigationDelegate = downloadCoordinator
             self.downloadCoordinator = downloadCoordinator
             webView.autoresizingMask = [.width, .height]

@@ -11,6 +11,12 @@ enum WebNavigationDecision: Equatable {
 // <a download> を通常ブラウザと同じ保存操作へつなぐ。Web側はMac専用APIへ分岐しない。
 final class WebDownloadCoordinator: NSObject, WKNavigationDelegate, WKDownloadDelegate {
     private var activeDownloads: [ObjectIdentifier: WKDownload] = [:]
+    private let destinationDecisionHandler: (Bool) -> Void
+
+    init(destinationDecisionHandler: @escaping (Bool) -> Void) {
+        self.destinationDecisionHandler = destinationDecisionHandler
+        super.init()
+    }
 
     static func decision(
         for url: URL?,
@@ -76,7 +82,9 @@ final class WebDownloadCoordinator: NSObject, WKNavigationDelegate, WKDownloadDe
         panel.canCreateDirectories = true
         panel.nameFieldStringValue = suggestedFilename
         panel.begin { response in
-            completionHandler(response == .OK ? panel.url : nil)
+            let didChooseDestination = response == .OK
+            completionHandler(didChooseDestination ? panel.url : nil)
+            self.destinationDecisionHandler(didChooseDestination)
         }
     }
 

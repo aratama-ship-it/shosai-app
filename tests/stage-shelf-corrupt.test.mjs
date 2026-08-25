@@ -300,7 +300,7 @@ test("作り直しは、消す前に壊れた原文をダウンロードへ流�
   assert.equal(await fixture.downloads[0].blob.text(), raw);
 });
 
-test("作り直しの確認をキャンセルすると1バイトも消さない", () => {
+test("作り直しの確認をキャンセルすると1バイトも消さない", async () => {
   const raw = "{ first broken shelf";
   const backup = "first broken shelf backup";
   const fixture = createFixture(
@@ -308,16 +308,18 @@ test("作り直しの確認をキャンセルすると1バイトも消さない"
     { confirmResult: false },
   );
   rebuildButton(fixture).button.dispatch("click");
+  await Promise.resolve();
   assert.equal(fixture.downloads.length, 1, "確認前にダウンロードは始まる");
   assert.equal(fixture.values.get(SHOWS_KEY), raw);
   assert.equal(fixture.values.get(BROKEN_KEY), backup);
   assert.equal(fixture.shelveNow(), false, "shelfCorrupt も解除しない");
 });
 
-test("作り直しの確認でOKすると両方の壊れた値を消して棚を再構築する", () => {
+test("作り直しの確認でOKすると両方の壊れた値を消して棚を再構築する", async () => {
   const raw = "{ broken";
   const fixture = createFixture({ [SHOWS_KEY]: raw });
   rebuildButton(fixture).button.dispatch("click");
+  await Promise.resolve();
   const rebuilt = JSON.parse(fixture.values.get(SHOWS_KEY));
   assert.equal(Object.keys(rebuilt).length, 1);
   assert.equal(fixture.values.has(BROKEN_KEY), false);
@@ -326,11 +328,12 @@ test("作り直しの確認でOKすると両方の壊れた値を消して棚を
   assert.equal(fixture.elementById("stage-live").textContent, "ショー一覧を作り直しました。");
 });
 
-test("作り直し後に再び壊れると、2回目の原文を退避し直す", () => {
+test("作り直し後に再び壊れると、2回目の原文を退避し直す", async () => {
   const first = "{ first broken";
   const second = "{ second broken";
   const fixture = createFixture({ [SHOWS_KEY]: first });
   rebuildButton(fixture).button.dispatch("click");
+  await Promise.resolve();
   assert.equal(fixture.values.has(BROKEN_KEY), false, "1回目の退避値は消える");
   fixture.values.set(SHOWS_KEY, second);
   assert.equal(fixture.shelveNow(), false);
