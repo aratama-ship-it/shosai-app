@@ -23,6 +23,8 @@
   const COLUMN_MAX_RADIUS_M = 2;
   const FURNITURE_MIN_SIDE_M = 0.4;
   const ACCESS_DEFAULT_WIDTH_M = 1.2;
+  const MAX_LIBRARY_FILE_BYTES = 2 * 1024 * 1024;
+  const MAX_LIBRARY_IMPORT_VENUES = 200;
   const FURNITURE_HEIGHTS = Object.freeze({
     knee: 0.5,
     waist: 1,
@@ -63,6 +65,13 @@
     libraryExport: $("stage-venue-library-export"),
     libraryImport: $("stage-venue-library-import"),
     libraryStatus: $("stage-venue-library-status"),
+    importBackdrop: $("stage-venue-import-backdrop"),
+    importModal: $("stage-venue-import-modal"),
+    importClose: $("stage-venue-import-close"),
+    importSummary: $("stage-venue-import-summary"),
+    importList: $("stage-venue-import-list"),
+    importConfirm: $("stage-venue-import-confirm"),
+    importCancel: $("stage-venue-import-cancel"),
   };
 
   if (!els.open || !els.modal || !els.canvas) return;
@@ -71,6 +80,7 @@
   if (!library || !linesEngine) return;
 
   const ctx = els.canvas.getContext("2d");
+  const I18N = window.SHOSAI_I18N || { text: {}, say: [] };
   const clone = (value) => JSON.parse(JSON.stringify(value));
   const roundM = (value) => Math.round(value * 10) / 10;
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -130,6 +140,29 @@
   let longPressTimer = null;
   let returnFocus = null;
   let linesCache = { venueSignature: "", probeSignature: "", result: null };
+  let pendingLibraryImport = null;
+
+  function isEnglish() {
+    try { return window.localStorage.getItem("shosai-stage-lang") === "en"; } catch (_) { return false; }
+  }
+
+  const tx = (ja) => (isEnglish() && I18N.text[ja]) || ja;
+
+  function translatedStatus(message) {
+    if (!isEnglish() || !I18N.say) return message;
+    for (const [pattern, english] of I18N.say) {
+      if (pattern.test(message)) return message.replace(pattern, english);
+    }
+    return message;
+  }
+
+  function setLibraryStatus(message) {
+    if (els.libraryStatus) els.libraryStatus.textContent = translatedStatus(message);
+  }
+
+  function setLibraryStatuses(messages) {
+    if (els.libraryStatus) els.libraryStatus.textContent = messages.map(translatedStatus).join(" ");
+  }
 
   function polygonArea(points) {
     return points.reduce((sum, point, index) => {
@@ -1606,31 +1639,131 @@
     }
   }
 
+  function importedVenueDimensions(venue) {
+    const xs = venue.floor.outline.map((point) => point[0]);
+    const ys = venue.floor.outline.map((point) => point[1]);
+    return {
+      width: roundM(Math.max(...xs) - Math.min(...xs)),
+      depth: roundM(Math.max(...ys) - Math.min(...ys)),
+      height: roundM(venue.ceiling.heightM),
+    };
+  }
+
+  function clearImportPreview() {
+    pendingLibraryImport = null;
+    if (els.importList) els.importList.textContent = "";
+    if (els.importSummary) els.importSummary.textContent = "";
+    if (els.importModal) els.importModal.hidden = true;
+    if (els.importBackdrop) els.importBackdrop.hidden = true;
+  }
+
+  function cancelImportPreview() {
+    if (!pendingLibraryImport) return;
+    clearImportPreview();
+    setLibraryStatus("会場ライブラリの取り込みをやめました。会場ライブラリは変更していません。");
+    if (els.libraryImport) els.libraryImport.focus();
+  }
+
+  function renderImportPreview(pending) {
+    if (!els.importList || !els.importSummary || !els.importModal || !els.importBackdrop) return false;
+    els.importList.textContent = "";
+    pending.venues.forEach((venue) => {
+      const dimensions = importedVenueDimensions(venue);
+      const row = document.createElement("tr");
+      [venue.label, `${dimensions.width}m`, `${dimensions.depth}m`, `${dimensions.height}m`,
+        tx(venue.provenance && venue.provenance.source ? venue.provenance.source : "不明")]
+        .forEach((value) => {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          row.append(cell);
+        });
+      els.importList.append(row);
+    });
+    const summary = [
+      `取り込める会場が${pending.venues.length}件あります。`,
+      `取り込めない会場が${pending.invalid}件あります。`,
+    ];
+    if (pending.truncated) {
+      summary.push(`全${pending.total}件のうち先頭200件を確認します。残り${pending.truncated}件は取り込みません。`);
+    }
+    els.importSummary.textContent = summary.map(translatedStatus).join(" ");
+    els.importModal.hidden = false;
+    els.importBackdrop.hidden = false;
+    if (els.importConfirm) els.importConfirm.focus();
+    return true;
+  }
+
+  function confirmImportPreview() {
+    if (!pendingLibraryImport) return;
+    const pending = pendingLibraryImport;
+    clearImportPreview();
+    const result = library.importVenues(pending.venues);
+    const notImported = pending.invalid + pending.truncated + result.skipped;
+    if (result.error) {
+      setLibraryStatus(`会場ライブラリへ書き込めませんでした。取り込めた会場は0件、取り込めなかった会場は${pending.total}件です。`);
+      return;
+    }
+    const messages = [
+      `${result.imported}件の会場を取り込みました。取り込めなかった会場は${notImported}件です。IDが重なる会場は別IDで追加しています。`,
+    ];
+    if (pending.truncated) {
+      messages.push(`${pending.total}件のうち${result.imported}件を取り込みました。残り${pending.truncated}件は件数上限のため取り込んでいません。`);
+    }
+    setLibraryStatuses(messages);
+    if (els.libraryImport) els.libraryImport.focus();
+  }
+
   function importLibrary(file) {
     if (!file) return;
+    clearImportPreview();
+    if (file.size > MAX_LIBRARY_FILE_BYTES) {
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      setLibraryStatus(`このファイルは大きすぎます（${sizeMb}MB）。会場ライブラリは2MBまでです。`);
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       let parsed;
       try {
         parsed = JSON.parse(String(reader.result));
       } catch (_) {
-        if (els.libraryStatus) els.libraryStatus.textContent = "会場ライブラリのJSONを読み込めませんでした。";
+        setLibraryStatus("会場ライブラリのJSONを読み込めませんでした。");
         return;
       }
       const venues = Array.isArray(parsed) ? parsed
         : (parsed && parsed.kind === "shosai-stage-venue-library" && parsed.version === 1
           ? parsed.venues : null);
       if (!Array.isArray(venues)) {
-        if (els.libraryStatus) els.libraryStatus.textContent = "会場ライブラリの形式ではありません。";
+        setLibraryStatus("会場ライブラリの形式ではありません。");
         return;
       }
-      const result = library.importVenues(venues);
-      if (els.libraryStatus) {
-        els.libraryStatus.textContent = result.imported
-          ? `${result.imported}件の会場を取り込みました。IDが重なる会場は別IDで追加しています。`
-          : "取り込めるvenue-v2会場がありませんでした。";
+      const candidates = venues.slice(0, MAX_LIBRARY_IMPORT_VENUES);
+      const normalized = candidates.map((venue) => library.validateVenueV2(venue));
+      const valid = normalized.filter(Boolean);
+      const invalid = normalized.length - valid.length;
+      const truncated = Math.max(0, venues.length - MAX_LIBRARY_IMPORT_VENUES);
+      if (!valid.length) {
+        const messages = [
+          `取り込めない会場が${invalid}件ありました。取り込めるvenue-v2会場はありません。`,
+        ];
+        if (truncated) {
+          messages.push(`全${venues.length}件のうち先頭200件を検査しました。残り${truncated}件は件数上限のため取り込みません。`);
+        }
+        setLibraryStatuses(messages);
+        return;
+      }
+      pendingLibraryImport = {
+        venues: valid,
+        invalid,
+        total: venues.length,
+        truncated,
+      };
+      if (!renderImportPreview(pendingLibraryImport)) {
+        pendingLibraryImport = null;
+        setLibraryStatus("会場ライブラリの確認画面を開けませんでした。会場ライブラリは変更していません。");
       }
     };
+    reader.onerror = () => setLibraryStatus("会場ライブラリのファイルを読み込めませんでした。");
     reader.readAsText(file);
   }
 
@@ -1790,6 +1923,10 @@
       event.target.value = "";
     });
   }
+  if (els.importConfirm) els.importConfirm.addEventListener("click", confirmImportPreview);
+  if (els.importCancel) els.importCancel.addEventListener("click", cancelImportPreview);
+  if (els.importClose) els.importClose.addEventListener("click", cancelImportPreview);
+  if (els.importBackdrop) els.importBackdrop.addEventListener("click", cancelImportPreview);
   els.audienceRemove.addEventListener("click", removeSelectedAudience);
   if (els.objectRemove) els.objectRemove.addEventListener("click", removeSelectedElement);
   if (els.objectMovable) {
@@ -1844,6 +1981,11 @@
   });
   els.canvas.addEventListener("contextmenu", (event) => event.preventDefault());
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && els.importModal && !els.importModal.hidden) {
+      event.preventDefault();
+      cancelImportPreview();
+      return;
+    }
     if (event.key === "Escape" && !els.modal.hidden) closeEditor();
     if ((event.key === "Delete" || event.key === "Backspace") && !els.modal.hidden &&
         state.selectedElement && !["INPUT", "TEXTAREA", "SELECT"].includes(event.target && event.target.tagName)) {

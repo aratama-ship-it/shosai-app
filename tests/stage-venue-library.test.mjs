@@ -10,6 +10,7 @@ const linesSource = await readFile(new URL("stage-venue-lines.js", root), "utf8"
 const sketchSource = await readFile(new URL("stage-sketch.js", root), "utf8");
 const editorSource = await readFile(new URL("stage-venue-editor.js", root), "utf8");
 const indexSource = await readFile(new URL("index.html", root), "utf8");
+const i18nSource = await readFile(new URL("stage-i18n.js", root), "utf8");
 const stageHtml = await readFile(new URL("stage.html", root), "utf8");
 const swSource = await readFile(new URL("stage-sw.js", root), "utf8");
 
@@ -77,7 +78,14 @@ class FakeElement {
     this.options = [];
     this.files = [];
     this.tagName = "BUTTON";
-    this.textContent = "";
+    this.children = [];
+    this._textContent = "";
+  }
+
+  get textContent() { return this._textContent; }
+  set textContent(value) {
+    this._textContent = String(value);
+    if (value === "") this.children = [];
   }
 
   addEventListener(type, listener) {
@@ -94,6 +102,7 @@ class FakeElement {
 
   click() { this.dispatchEvent({ type: "click", preventDefault() {} }); }
   setAttribute(name, value) { this[name] = String(value); }
+  append(...children) { this.children.push(...children); }
   focus() {}
 }
 
@@ -110,6 +119,9 @@ function loadEditor(storage = new MemoryStorage()) {
     "stage-venue-editor-name", "stage-venue-editor-source", "stage-venue-editor-confidence",
     "stage-venue-editor-sharing", "stage-venue-editor-save", "stage-venue-editor-save-status",
     "stage-venue-library-export", "stage-venue-library-import", "stage-venue-library-status",
+    "stage-venue-import-backdrop", "stage-venue-import-modal", "stage-venue-import-close",
+    "stage-venue-import-summary", "stage-venue-import-list", "stage-venue-import-confirm",
+    "stage-venue-import-cancel",
     "stage-size-select", "stage-venue-w", "stage-venue-d", "stage-venue-h",
   ];
   const elements = new Map(ids.map((id) => [id, new FakeElement(id)]));
@@ -148,6 +160,9 @@ function loadEditor(storage = new MemoryStorage()) {
   elements.get("stage-venue-editor-probe-reach").value = "3";
   elements.get("stage-size-select").value = "custom";
   elements.get("stage-size-select").options = [{ value: "custom" }];
+  elements.get("stage-venue-library-import").tagName = "INPUT";
+  elements.get("stage-venue-import-backdrop").hidden = true;
+  elements.get("stage-venue-import-modal").hidden = true;
 
   const makeButtons = (values, dataKey) => values.map((value) => {
     const button = new FakeElement();
@@ -169,13 +184,29 @@ function loadEditor(storage = new MemoryStorage()) {
     getElementById: (id) => elements.get(id) || null,
     querySelectorAll: (selector) => selectors.get(selector) || [],
     addEventListener(type, listener) { documentListeners.set(type, listener); },
-    createElement: () => new FakeElement(),
+    createElement: (tagName) => {
+      const element = new FakeElement();
+      element.tagName = String(tagName).toUpperCase();
+      return element;
+    },
   };
   class FakeEvent {
     constructor(type) { this.type = type; }
   }
   class FakeCustomEvent extends FakeEvent {
     constructor(type, init = {}) { super(type); this.detail = init.detail; }
+  }
+  const fileReads = [];
+  class FakeFileReader {
+    readAsText(file) {
+      fileReads.push(file);
+      if (file.readError) {
+        if (this.onerror) this.onerror();
+        return;
+      }
+      this.result = file.contents;
+      if (this.onload) this.onload();
+    }
   }
   const window = {
     localStorage: storage,
@@ -194,6 +225,7 @@ function loadEditor(storage = new MemoryStorage()) {
     CustomEvent: FakeCustomEvent,
     getComputedStyle: () => ({ getPropertyValue: () => "" }),
     Blob: class Blob {},
+    FileReader: FakeFileReader,
     URL,
   });
   vm.runInContext(venuesSource, vmContext, { filename: "stage-venues.js" });
@@ -214,7 +246,14 @@ function loadEditor(storage = new MemoryStorage()) {
     };
   };
   const pointer = (type, point, pointerId = 1) => canvas.dispatchEvent(pointEvent(type, point, pointerId));
-  return { window, elements, button, pointer, storage, drawFills, selectors };
+  return { window, elements, button, pointer, storage, drawFills, selectors, documentListeners, fileReads };
+}
+
+function selectLibraryFile(editor, document, options = {}) {
+  const contents = typeof document === "string" ? document : JSON.stringify(document);
+  const input = editor.elements.get("stage-venue-library-import");
+  input.files = [{ contents, size: options.size ?? contents.length, readError: options.readError }];
+  input.dispatchEvent({ type: "change" });
 }
 
 test("旧下書きは一度だけ会場ライブラリへ取り込み、旧キーを残す", () => {
@@ -333,6 +372,128 @@ test("エディタ操作で柱1本・什器1つ・扉1つと独立した天井�
   assert.deepEqual(JSON.parse(JSON.stringify(restored.fixtures)), JSON.parse(JSON.stringify(saved.fixtures)));
   assert.deepEqual(JSON.parse(JSON.stringify(restored.access)), JSON.parse(JSON.stringify(saved.access)));
   assert.deepEqual(JSON.parse(JSON.stringify(restored.ceiling)), JSON.parse(JSON.stringify(saved.ceiling)));
+});
+
+test("会場ファイルはプレビュー確認まで書き込まず、確定したときだけ取り込む", () => {
+  const storage = new MemoryStorage({
+    "shosai-stage-venues-v1": JSON.stringify([venue("kept", "既存会場")]),
+  });
+  const editor = loadEditor(storage);
+  const before = JSON.stringify(editor.window.SHOSAI_VENUES.library.list());
+  const incoming = venue("previewed", "確認する会場");
+  incoming.ceiling.heightM = 8;
+  incoming.provenance.source = "図面";
+
+  selectLibraryFile(editor, { kind: "shosai-stage-venue-library", version: 1, venues: [incoming] });
+
+  assert.equal(editor.elements.get("stage-venue-import-modal").hidden, false);
+  assert.equal(JSON.stringify(editor.window.SHOSAI_VENUES.library.list()), before, "確認前に書き込んでいる");
+  assert.match(editor.elements.get("stage-venue-import-summary").textContent, /取り込める会場が1件/);
+  assert.match(editor.elements.get("stage-venue-import-summary").textContent, /取り込めない会場が0件/);
+  const cells = editor.elements.get("stage-venue-import-list").children[0].children
+    .map((cell) => cell.textContent);
+  assert.deepEqual(cells, ["確認する会場", "12m", "8m", "8m", "図面"]);
+
+  editor.elements.get("stage-venue-import-confirm").click();
+  assert.equal(editor.window.SHOSAI_VENUES.library.list().length, 2);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /1件の会場を取り込みました/);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /取り込めなかった会場は0件/);
+});
+
+test("やめる・暗幕・Escapeはいずれも会場ライブラリを変えない", () => {
+  const editor = loadEditor();
+  const before = JSON.stringify(editor.window.SHOSAI_VENUES.library.list());
+  const reopen = () => selectLibraryFile(editor, [venue("cancelled", "取り込まない会場")]);
+
+  reopen();
+  editor.elements.get("stage-venue-import-cancel").click();
+  assert.equal(JSON.stringify(editor.window.SHOSAI_VENUES.library.list()), before);
+
+  reopen();
+  editor.elements.get("stage-venue-import-backdrop").click();
+  assert.equal(JSON.stringify(editor.window.SHOSAI_VENUES.library.list()), before);
+
+  reopen();
+  let prevented = false;
+  editor.documentListeners.get("keydown")({
+    key: "Escape",
+    preventDefault() { prevented = true; },
+  });
+  assert.equal(prevented, true);
+  assert.equal(editor.elements.get("stage-venue-import-modal").hidden, true);
+  assert.equal(JSON.stringify(editor.window.SHOSAI_VENUES.library.list()), before);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /変更していません/);
+});
+
+test("2MB超過・壊れたJSON・壊れたvenue-v2は書き込まず理由と除外件数を出す", () => {
+  const editor = loadEditor();
+  const library = editor.window.SHOSAI_VENUES.library;
+
+  selectLibraryFile(editor, [], { size: (3 * 1024 * 1024) });
+  assert.equal(editor.fileReads.length, 0, "サイズ超過ファイルをFileReaderへ渡している");
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /3\.0MB/);
+  assert.equal(library.list().length, 0);
+
+  selectLibraryFile(editor, "{broken-json");
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /JSONを読み込めませんでした/);
+  assert.equal(library.list().length, 0);
+
+  const broken = venue("broken", "高さが壊れた会場");
+  broken.ceiling.heightM = 0;
+  selectLibraryFile(editor, [venue("valid", "取り込める会場"), broken]);
+  assert.match(editor.elements.get("stage-venue-import-summary").textContent, /取り込めない会場が1件/);
+  assert.equal(library.list().length, 0, "壊れた会場の検査中に書き込んでいる");
+  editor.elements.get("stage-venue-import-confirm").click();
+  assert.deepEqual(Array.from(library.list(), (item) => item.id), ["valid"]);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /取り込めなかった会場は1件/);
+});
+
+test("201件は先頭200件だけ候補にし、切り捨てた1件を確認前後の文言へ出す", () => {
+  const editor = loadEditor();
+  const incoming = Array.from({ length: 201 }, (_, index) => venue(`venue-${index + 1}`));
+
+  selectLibraryFile(editor, incoming);
+  assert.equal(editor.window.SHOSAI_VENUES.library.list().length, 0, "件数超過の確認前に書き込んでいる");
+  assert.equal(editor.elements.get("stage-venue-import-list").children.length, 200);
+  assert.match(editor.elements.get("stage-venue-import-summary").textContent, /全201件のうち先頭200件/);
+  assert.match(editor.elements.get("stage-venue-import-summary").textContent, /残り1件/);
+
+  editor.elements.get("stage-venue-import-confirm").click();
+  assert.equal(editor.window.SHOSAI_VENUES.library.list().length, 200);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /201件のうち200件を取り込みました/);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /残り1件/);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /取り込めなかった会場は1件/);
+});
+
+test("201件の先頭200件がすべて壊れていても、上限で切り捨てた1件を伝える", () => {
+  const editor = loadEditor();
+  const incoming = Array.from({ length: 201 }, (_, index) => {
+    const broken = venue(`broken-${index + 1}`);
+    broken.ceiling.heightM = 0;
+    return broken;
+  });
+
+  selectLibraryFile(editor, incoming);
+  assert.equal(editor.elements.get("stage-venue-import-modal").hidden, true);
+  assert.equal(editor.window.SHOSAI_VENUES.library.list().length, 0);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /取り込めない会場が200件/);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /全201件のうち先頭200件を検査しました/);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /残り1件/);
+});
+
+test("確認モーダルの静的文言は英語対訳を持つ", () => {
+  for (const id of [
+    "stage-venue-import-backdrop", "stage-venue-import-modal", "stage-venue-import-summary",
+    "stage-venue-import-list", "stage-venue-import-confirm", "stage-venue-import-cancel",
+  ]) {
+    assert.match(indexSource, new RegExp(`id="${id}"`));
+  }
+  for (const text of [
+    "会場ライブラリの取り込み", "内容を確認してから、取り込む会場を確定してください。",
+    "取り込みを確認する会場", "取り込む", "やめる",
+  ]) {
+    assert.ok(i18nSource.includes(JSON.stringify(text)), `${text} の英語対訳がない`);
+  }
 });
 
 test("受け入れ会場で4本の線・探り針・赤い観客重なりを即時に更新しvenueへ保存しない", () => {

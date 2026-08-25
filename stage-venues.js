@@ -536,6 +536,19 @@
     return venue;
   };
 
+  /* ファイル取り込みの確認画面で使う、書き込みを伴わない検証。
+   * venue-v2 の形は保存時と同じ normalizeLibraryVenue() へ集約し、
+   * 発注書で必須になった三寸法だけ、元データが正の有限数かを追加で見る。 */
+  const validateLibraryVenue = (raw) => {
+    const venue = normalizeLibraryVenue(raw);
+    if (!venue) return null;
+    const dimensions = outlineDimensions(venue.floor.outline);
+    const heightM = raw && raw.ceiling && raw.ceiling.heightM;
+    if (!(dimensions.width > 0) || !(dimensions.depth > 0) ||
+        typeof heightM !== "number" || !Number.isFinite(heightM) || heightM <= 0) return null;
+    return venue;
+  };
+
   const readLibrary = () => {
     try {
       const raw = window.localStorage.getItem(LIBRARY_KEY);
@@ -685,6 +698,10 @@
         return venue ? clone(venue) : null;
       },
       isPreset: (id) => VENUES_V2.some((venue) => venue.id === id),
+      validateVenueV2: (raw) => {
+        const venue = validateLibraryVenue(raw);
+        return venue ? clone(venue) : null;
+      },
       importVenues,
       exportDocument: () => ({
         kind: "shosai-stage-venue-library",

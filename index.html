@@ -2164,6 +2164,32 @@
   </div>
 </div>
 
+<div class="stage-modal-backdrop" id="stage-venue-import-backdrop" hidden></div>
+<div class="stage-modal stage-venue-import-modal" id="stage-venue-import-modal" role="dialog"
+     aria-modal="true" aria-labelledby="stage-venue-import-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-venue-import-title">会場ライブラリの取り込み</h2>
+    <button type="button" class="stage-modal-close" id="stage-venue-import-close" aria-label="やめる">✕</button>
+  </header>
+  <div class="stage-modal-body">
+    <p class="stage-profile-hint">内容を確認してから、取り込む会場を確定してください。</p>
+    <p id="stage-venue-import-summary" class="stage-venue-import-summary" aria-live="polite"></p>
+    <div class="stage-venue-import-table-wrap">
+      <table class="stage-venue-import-table">
+        <caption>取り込みを確認する会場</caption>
+        <thead>
+          <tr><th scope="col">名前</th><th scope="col">間口</th><th scope="col">奥行</th><th scope="col">高さ</th><th scope="col">出所</th></tr>
+        </thead>
+        <tbody id="stage-venue-import-list"></tbody>
+      </table>
+    </div>
+    <footer class="stage-venue-editor-actions">
+      <button type="button" class="btn-quiet" id="stage-venue-import-cancel">やめる</button>
+      <button type="button" class="stage-minor-action" id="stage-venue-import-confirm">取り込む</button>
+    </footer>
+  </div>
+</div>
+
 <div class="stage-modal-backdrop" id="stage-venue-export-backdrop" hidden></div>
 <div class="stage-modal" id="stage-venue-export-modal" role="dialog" aria-modal="true"
      aria-labelledby="stage-venue-export-title" hidden>

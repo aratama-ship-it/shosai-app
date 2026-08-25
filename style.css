@@ -9104,6 +9104,7 @@ body.is-panel-dragging {
 .stage-modal.stage-rehearsal-export-modal { width: min(560px, calc(100vw - 40px)); }
 .stage-modal.stage-about-modal { width: min(720px, calc(100vw - 40px)); }
 .stage-modal.stage-venue-editor-modal { width: min(980px, calc(100vw - 40px)); }
+.stage-modal.stage-venue-import-modal { width: min(760px, calc(100vw - 40px)); }
 
 .stage-modal-head {
   display: flex;
@@ -9355,6 +9356,63 @@ body.is-panel-dragging {
 .stage-venue-editor-actions .stage-minor-action {
   min-width: 150px;
   border-color: var(--rust);
+}
+
+.stage-venue-import-modal .stage-modal-body {
+  display: grid;
+  gap: 12px;
+}
+
+.stage-venue-import-modal .stage-profile-hint,
+.stage-venue-import-summary { margin: 0; }
+
+.stage-venue-import-summary {
+  color: var(--milk);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.stage-venue-import-table-wrap {
+  max-height: min(48vh, 420px);
+  overflow: auto;
+  border: 1px solid var(--line-dark);
+}
+
+.stage-venue-import-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--milk-dim);
+  font-size: 11px;
+}
+
+.stage-venue-import-table caption {
+  padding: 9px 10px;
+  color: var(--milk);
+  font-family: var(--serif);
+  text-align: left;
+}
+
+.stage-venue-import-table th,
+.stage-venue-import-table td {
+  padding: 8px 10px;
+  border-top: 1px solid var(--line-dark);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.stage-venue-import-table th {
+  position: sticky;
+  top: 0;
+  background: var(--desk-2);
+  color: var(--brass);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.stage-venue-import-table th:first-child,
+.stage-venue-import-table td:first-child {
+  min-width: 180px;
+  white-space: normal;
 }
 
 @media (max-width: 640px) {
