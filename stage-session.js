@@ -12,6 +12,7 @@
     hostNameLabel: $("stage-session-host-name-label"),
     hostName: $("stage-session-host-name"),
     start: $("stage-session-start"),
+    resume: $("stage-session-resume"),
     invite: $("stage-session-invite"),
     urlLabel: $("stage-session-url-label"),
     url: $("stage-session-url"),
@@ -21,6 +22,7 @@
     status: $("stage-session-status"),
     guestNote: $("stage-session-guest-note"),
     guestBadge: $("stage-session-guest-badge"),
+    hostAway: $("stage-session-host-away"),
     clearGuestArrows: $("stage-session-clear-guest-arrows"),
     reconnect: $("stage-session-reconnect"),
     planCanvas: $("stage-plan-canvas"),
@@ -28,6 +30,8 @@
   if (!els.panel || !els.start || !els.status || !els.participants) return;
 
   const NAME_KEY = "shosai-session-name";
+  const HOST_SESSION_KEY = "shosai-session-host-room";
+  const HOST_SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
   const RECONNECT_LIMIT = 5;
   const RECONNECT_DELAY_MS = 3000;
   const HOST_SEND_DEBOUNCE_MS = 300;
@@ -43,6 +47,8 @@
   let reconnectAllowed = true;
   let reconnectTimer = null;
   let hostSendTimer = null;
+  let storedHostSession = null;
+  let resumingStoredHost = false;
   let lastSentDocument = null;
   let lastReceivedDocument = null;
   let applyingRemoteDocument = false;
@@ -52,15 +58,24 @@
   const sentArrowOps = new Set();
   const remotePointers = new Map();
 
+  function sessionText(japanese) {
+    let english = false;
+    try { english = bridge.isEnglish() === true; } catch (_) { /* v2用 */ }
+    const translations = window.SHOSAI_I18N && window.SHOSAI_I18N.text;
+    return english && translations && translations[japanese] ? translations[japanese] : japanese;
+  }
+
   function setJapaneseLabels() {
     els.panel.hidden = false;
     if (els.summary) els.summary.textContent = "リアルタイム共有（会議用）";
     if (els.hostNameLabel) els.hostNameLabel.textContent = "表示名";
     els.start.textContent = "セッションを開始";
+    if (els.resume) els.resume.textContent = sessionText("前回のセッションを再開");
     if (els.urlLabel) els.urlLabel.textContent = "招待URL";
     if (els.copy) els.copy.textContent = "コピー";
     if (els.guestNote) els.guestNote.textContent = "ゲスト参加中: 使える共有操作はレーザーポインタと矢印だけです。駒は動かせません。";
     if (els.guestBadge) els.guestBadge.textContent = "ゲスト（閲覧＋矢印）";
+    if (els.hostAway) els.hostAway.textContent = sessionText("ホストの接続が切れています。復帰を待っています…");
     if (els.participantsLabel) els.participantsLabel.textContent = "参加者";
     if (els.clearGuestArrows) els.clearGuestArrows.textContent = "ゲスト注釈を一括消去";
     if (els.reconnect) els.reconnect.textContent = "再接続";
@@ -84,6 +99,74 @@
 
   function rememberName(name) {
     try { localStorage.setItem(NAME_KEY, name); } catch (_) { /* 名前の保存だけ失敗しても参加は続ける */ }
+  }
+
+  function normalizeSessionOrigin(value) {
+    if (typeof value !== "string" || !value) return "";
+    try {
+      const url = new URL(value);
+      return url.protocol === "http:" || url.protocol === "https:" ? url.origin : "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function clearStoredHostSession() {
+    storedHostSession = null;
+    try { localStorage.removeItem(HOST_SESSION_KEY); } catch (_) { /* 消去失敗でも現在の接続処理は続ける */ }
+    updateResumeButton();
+  }
+
+  function readStoredHostSession() {
+    let raw = null;
+    try { raw = localStorage.getItem(HOST_SESSION_KEY); } catch (_) { return null; }
+    if (!raw) return null;
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (_) { clearStoredHostSession(); return null; }
+    const savedAt = Number(parsed && parsed.savedAt);
+    const age = Date.now() - savedAt;
+    const origin = normalizeSessionOrigin(parsed && parsed.origin);
+    if (!parsed || typeof parsed.roomId !== "string" ||
+        !/^[a-z0-9]{1,64}$/i.test(parsed.roomId) ||
+        typeof parsed.hostKey !== "string" || !parsed.hostKey || parsed.hostKey.length > 1024 ||
+        !origin || !Number.isFinite(savedAt) || age < 0 || age > HOST_SESSION_MAX_AGE_MS) {
+      clearStoredHostSession();
+      return null;
+    }
+    return {
+      roomId: parsed.roomId.toLowerCase(),
+      hostKey: parsed.hostKey,
+      origin,
+      savedAt,
+    };
+  }
+
+  function rememberHostSession(session) {
+    const saved = {
+      roomId: session.roomId,
+      hostKey: session.hostKey,
+      origin: session.origin,
+      savedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem(HOST_SESSION_KEY, JSON.stringify(saved));
+      storedHostSession = saved;
+    } catch (_) {
+      storedHostSession = null;
+      // 上書き失敗時に前の部屋だけ残ると誤って再開できてしまうため、消去も試す。
+      try { localStorage.removeItem(HOST_SESSION_KEY); } catch (_) { /* 保存だけ失敗してもセッションは続ける */ }
+    }
+    updateResumeButton();
+  }
+
+  function updateResumeButton() {
+    if (els.resume) els.resume.hidden = Boolean(role) || !storedHostSession;
+  }
+
+  function inviteUrlFor(inviteRoomId, sessionOrigin, usesNativeBridge) {
+    return usesNativeBridge
+      ? `${sessionOrigin}/stage.html#session=${inviteRoomId}`
+      : `${location.origin}${location.pathname}#session=${inviteRoomId}`;
   }
 
   function invitedRoomId() {
@@ -226,6 +309,10 @@
     Array.from(remotePointers.keys()).forEach((clientId) => {
       if (!activeIds.has(clientId)) removeRemotePointer(clientId);
     });
+    if (els.hostAway) {
+      const hostPresent = participants.some((participant) => participant && participant.role === "host");
+      els.hostAway.hidden = role !== "guest" || hostPresent;
+    }
   }
 
   function updateRoleUi() {
@@ -236,6 +323,8 @@
     if (els.guestNote) els.guestNote.hidden = role !== "guest";
     if (els.guestBadge) els.guestBadge.hidden = role !== "guest";
     if (els.clearGuestArrows) els.clearGuestArrows.hidden = role !== "host";
+    if (els.hostAway && role !== "guest") els.hostAway.hidden = true;
+    updateResumeButton();
   }
 
   function parsedProjectDocument(text) {
@@ -497,8 +586,32 @@
       if (typeof message.doc === "string") applyRemoteDocument(message.doc);
       else setStatus("接続しました。ホストからの共有を待っています。");
     } else {
+      resumingStoredHost = false;
       setStatus("ホストとして接続しました。");
     }
+  }
+
+  function rejectStoredHostResume() {
+    reconnectAllowed = false;
+    resumingStoredHost = false;
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+    clearTimeout(hostSendTimer);
+    hostSendTimer = null;
+    const rejectedSocket = socket;
+    socket = null;
+    if (rejectedSocket) {
+      try { rejectedSocket.close(); } catch (_) { /* 拒否済みなので閉じられなくても再接続しない */ }
+    }
+    role = "";
+    roomId = "";
+    hostKey = "";
+    clearStoredHostSession();
+    if (els.url) els.url.value = "";
+    if (els.reconnect) els.reconnect.hidden = true;
+    updateRoleUi();
+    els.panel.open = true;
+    setStatus(sessionText("前回のセッションは終了しています。新しく開始してください。"), true);
   }
 
   function handleSocketMessage(event) {
@@ -527,10 +640,18 @@
     } else if (message.t === "presence") {
       renderParticipants(message.participants);
     } else if (message.t === "full") {
+      if (resumingStoredHost) {
+        rejectStoredHostResume();
+        return;
+      }
       reconnectAllowed = false;
       setStatus("このセッションは満員です。", true);
       if (els.reconnect) els.reconnect.hidden = false;
     } else if (message.t === "bad-key") {
+      if (resumingStoredHost) {
+        rejectStoredHostResume();
+        return;
+      }
       reconnectAllowed = false;
       setStatus("ホスト用の接続情報が一致しません。", true);
       if (els.reconnect) els.reconnect.hidden = false;
@@ -674,6 +795,7 @@
     const name = normalizeName(els.hostName && els.hostName.value, "ホスト");
     if (els.hostName) els.hostName.value = name;
     rememberName(name);
+    resumingStoredHost = false;
     els.start.disabled = true;
     setStatus("セッションを準備しています…");
     try {
@@ -708,19 +830,16 @@
       if (!result || typeof result.roomId !== "string" || typeof result.hostKey !== "string") {
         throw new Error("ルーム情報がありません");
       }
+      const sessionOrigin = normalizeSessionOrigin(usesNativeBridge ? result.origin : location.origin);
+      if (!sessionOrigin) throw new Error("ルーム情報がありません");
       role = "host";
       roomId = result.roomId;
       hostKey = result.hostKey;
       displayName = name;
       reconnectAttempts = 0;
       reconnectAllowed = true;
-      if (usesNativeBridge && typeof result.origin !== "string") {
-        throw new Error("ルーム情報がありません");
-      }
-      const inviteUrl = usesNativeBridge
-        ? `${result.origin}/stage.html#session=${roomId}`
-        : `${location.origin}${location.pathname}#session=${roomId}`;
-      if (els.url) els.url.value = inviteUrl;
+      rememberHostSession({ roomId, hostKey, origin: sessionOrigin });
+      if (els.url) els.url.value = inviteUrlFor(roomId, sessionOrigin, usesNativeBridge);
       updateRoleUi();
       connectSocket();
     } catch (error) {
@@ -730,6 +849,27 @@
       els.start.disabled = false;
       setStatus(`セッションを開始できませんでした（${error && error.message ? error.message : "不明なエラー"}）。`, true);
     }
+  }
+
+  function resumeHostSession() {
+    if (role) return;
+    const saved = readStoredHostSession();
+    storedHostSession = saved;
+    updateResumeButton();
+    if (!saved) return;
+    const name = normalizeName(els.hostName && els.hostName.value, "ホスト");
+    if (els.hostName) els.hostName.value = name;
+    rememberName(name);
+    role = "host";
+    roomId = saved.roomId;
+    hostKey = saved.hostKey;
+    displayName = name;
+    reconnectAttempts = 0;
+    reconnectAllowed = true;
+    resumingStoredHost = true;
+    if (els.url) els.url.value = inviteUrlFor(roomId, saved.origin, Boolean(nativeSessionBridge()));
+    updateRoleUi();
+    connectSocket();
   }
 
   async function copyInviteUrl() {
@@ -773,6 +913,7 @@
   }
 
   els.start.addEventListener("click", startHostSession);
+  if (els.resume) els.resume.addEventListener("click", resumeHostSession);
   if (els.copy) els.copy.addEventListener("click", copyInviteUrl);
   if (els.reconnect) els.reconnect.addEventListener("click", reconnectNow);
   if (els.clearGuestArrows) {
@@ -791,6 +932,8 @@
 
   if (els.hostName) els.hostName.value = readStoredName("ホスト");
   setJapaneseLabels();
+  storedHostSession = readStoredHostSession();
+  updateResumeButton();
   renderParticipants([]);
   setStatus("未接続です。");
   try { els.panel.dataset.sessionLanguage = bridge.isEnglish() ? "en" : "ja"; } catch (_) { /* v2用 */ }

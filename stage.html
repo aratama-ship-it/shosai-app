@@ -23,6 +23,7 @@
 
 <main id="view-stage" class="view">
     <div class="stage-session-guest-badge" id="stage-session-guest-badge" role="status" hidden>ゲスト（閲覧＋矢印）</div>
+    <div class="stage-session-host-away" id="stage-session-host-away" role="status" aria-live="polite" hidden>ホストの接続が切れています。復帰を待っています…</div>
     <section class="stage-sketch" aria-labelledby="stage-sketch-title">
       <header class="stage-sketch-head">
         <div>
@@ -903,6 +904,7 @@
                     <input type="text" id="stage-session-host-name" maxlength="50" autocomplete="name">
                   </label>
                   <button type="button" class="stage-minor-action" id="stage-session-start"></button>
+                  <button type="button" class="btn-quiet" id="stage-session-resume" hidden></button>
                 </div>
                 <div class="stage-session-invite" id="stage-session-invite" hidden>
                   <label class="stage-session-field" for="stage-session-url"><span id="stage-session-url-label"></span></label>
@@ -921,13 +923,6 @@
                 <button type="button" class="stage-minor-action" id="stage-session-reconnect" hidden></button>
               </div>
             </details>
-
-            <!-- どこで何ができるか。設定（保存パネル）から開く一覧。
-                 既定は畳んでおく（保存の導線を押し下げないため）。
-                 書斎のブロックは単独配布版では隠す（stage-sketch.js が制御）。 -->
-            <!-- 機能一覧は幅が要る資料なので、側柱ではなく窓で開く（2026-08-25）。
-                 細い保存パネルに入れると列見出しが縦積みになって読めなかった。 -->
-            <button type="button" class="stage-minor-action" id="stage-reach-open">どこで何ができるか</button>
           </section>
 
           <section class="stage-panel" data-panel="ask" data-title="AI指示" id="stage-ask-panel" aria-label="AI指示">
@@ -1428,6 +1423,11 @@
   <div class="stage-modal-body">
     <p class="stage-profile-hint">機能の出し入れです。この端末だけの設定で、ショーのデータには入りません。</p>
     <div id="stage-prefs-list"></div>
+    <!-- 幅が要る機能一覧は環境設定から既存の窓として開く。
+         書斎のブロックは単独配布版では隠す（stage-sketch.js が制御）。 -->
+    <div class="stage-pref-row stage-pref-reach-row">
+      <button type="button" class="stage-minor-action" id="stage-reach-open">どこで何ができるか</button>
+    </div>
     <!-- 言語は歯車の中へ。上部は道具の列なので、めったに触らないものは置かない -->
     <div class="stage-pref-row stage-pref-lang-row">
       <span class="stage-pref-lang-body">
@@ -1794,8 +1794,8 @@
 <script src="stage-shows.local.js?v=1"></script>
 <script src="stage-audio-store.js?v=2"></script>
 <script src="stage-pwa.js?v=6"></script>
-<script src="stage-sketch.js?v=290"></script>
-<script src="stage-session.js?v=6"></script>
+<script src="stage-sketch.js?v=291"></script>
+<script src="stage-session.js?v=7"></script>
 <script src="stage-venue-editor.js?v=6"></script>
 </body>
 </html>

@@ -71,6 +71,11 @@
     "共有セッション": "Shared session",
     "共有セッション。ゲストはレーザーポインタ＋矢印のみ": "Shared session. Guests use the laser pointer and arrows only",
     "ゲスト（閲覧＋矢印）": "Guest (view + arrows)",
+    "前回のセッションを再開": "Resume the previous session",
+    "前回のセッションは終了しています。新しく開始してください。":
+      "The previous session has ended. Please start a new one.",
+    "ホストの接続が切れています。復帰を待っています…":
+      "The host is disconnected. Waiting for them to return…",
     "ゲスト参加中: 使える共有操作はレーザーポインタと矢印だけです。駒は動かせません。":
       "Guest session: you can share only the laser pointer and arrows. Pieces cannot be moved.",
     "招かれて入る": "Join by invitation",

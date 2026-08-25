@@ -2,7 +2,8 @@
 //
 // 置き場所の経緯: 最初は保存パネルの中に <details> で畳んで入れたが、
 // 側柱の幅が268pxしかなく、列見出しが「ブ／ラ／ウ／ザ」と縦積みになって読めなかった
-// （実測して判明）。幅が要る資料なので、既存の窓（stage-modal）の作法へ移した。
+// （実測して判明）。幅が要る資料なので既存の窓（stage-modal）にし、その入口は
+// 2026-08-26 に保存パネルから環境設定モーダルへ移した。
 //
 // 内容の正しさ（●○—の値）は本人が決めた確定事項なので、勝手に変えないこと。
 
@@ -16,19 +17,25 @@ const stageHtml = await readFile(new URL("stage.html", root), "utf8");
 const source = await readFile(new URL("stage-sketch.js", root), "utf8");
 const style = await readFile(new URL("style.css", root), "utf8");
 
-test("設定（保存パネル）から開ける", () => {
+test("環境設定から開ける", () => {
   for (const [name, html] of [["index.html", indexHtml], ["stage.html", stageHtml]]) {
     assert.match(html, /id="stage-reach-open"/, `${name}: 開くボタンがあること`);
     assert.match(html, /id="stage-reach-modal"/, `${name}: 窓があること`);
     assert.match(html, /id="stage-reach-backdrop"/, `${name}: 暗幕があること`);
     assert.match(html, /id="stage-reach-close"/, `${name}: 閉じるがあること`);
   }
-  // 保存パネルの中に置くこと（iPadでは「保存・設定」グループに入る）
+  const prefsModal = indexHtml.slice(
+    indexHtml.indexOf('id="stage-prefs-modal"'),
+    indexHtml.indexOf('id="stage-about-backdrop"'),
+  );
+  assert.match(prefsModal, /id="stage-prefs-list"[\s\S]*id="stage-reach-open"/,
+    "開くボタンは環境設定モーダルの設定一覧より下に置くこと");
+
   const savePanel = indexHtml.slice(
     indexHtml.indexOf('data-panel="save"'),
     indexHtml.indexOf('data-panel="ask"'),
   );
-  assert.match(savePanel, /id="stage-reach-open"/, "開くボタンは保存パネルの中に置くこと");
+  assert.doesNotMatch(savePanel, /id="stage-reach-open"/, "保存パネルには開くボタンを残さないこと");
 });
 
 test("窓は既存の作法に従う", () => {
@@ -50,6 +57,7 @@ test("窓は表が読める幅を持つ", () => {
   assert.ok(block.length > 0, "窓のCSSがあること");
   assert.match(block, /width: min\(760px, calc\(100vw - 32px\)\)/);
   assert.match(block, /max-height: calc\(100dvh - 48px\)/);
+  assert.match(block, /z-index: 72/, "環境設定モーダルより手前に開くこと");
 });
 
 test("配る製品では書斎の一覧を見せない", () => {

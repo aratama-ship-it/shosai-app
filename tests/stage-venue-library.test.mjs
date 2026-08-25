@@ -692,7 +692,7 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
     ["stage-i18n.js", "75"],
     ["stage-set-model.js", "1"],
     ["stage-set-builder.js", "1"],
-    ["stage-sketch.js", "290"],
+    ["stage-sketch.js", "291"],
     ["stage-venue-editor.js", "6"],
   ]) {
     const reference = `${name}?v=${version}`;

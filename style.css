@@ -10029,6 +10029,7 @@ body.is-panel-dragging {
   border-bottom: 1px solid rgba(211, 172, 89, 0.14);
 }
 .stage-pref-row input { margin-top: 3px; }
+.stage-pref-reach-row .stage-minor-action { width: 100%; margin: 0; text-align: left; }
 .stage-pref-name { font-size: 14px; color: rgba(239, 231, 214, 0.92); white-space: nowrap; }
 .stage-pref-hint { font-size: 12px; color: rgba(239, 231, 214, 0.5); margin: 0; }
 .stage-pref-caption-size {
@@ -11801,12 +11802,53 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
 }
 .stage-session-guest-badge[hidden] { display: none; }
 
-body.stage-session-guest #stage-scene-add,
-body.stage-session-guest #stage-scene-add-rig,
-body.stage-session-guest #stage-scene-dup,
-body.stage-session-guest #stage-scene-section,
-body.stage-session-guest #stage-scene-del,
+.stage-session-host-away {
+  position: fixed;
+  top: calc(64px + env(safe-area-inset-top));
+  left: 50%;
+  z-index: 8985;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 10px 18px;
+  transform: translateX(-50%);
+  border: 2px solid #f1948a;
+  border-radius: 999px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, .38);
+  background: rgba(46, 25, 24, .97);
+  color: #ffd8d2;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+}
+.stage-session-host-away[hidden] { display: none; }
+
+/* ゲストは見る・指す・矢印を描くための画面だけを残す。
+   class が外れれば、この表示制限もまとめて外れる。 */
+body.stage-session-guest #stage-undo,
+body.stage-session-guest #stage-redo,
+body.stage-session-guest #stage-export,
+body.stage-session-guest .stage-storage-caution,
+body.stage-session-guest .stage-panel[data-panel="project"],
+body.stage-session-guest .stage-panel[data-panel="music"],
+body.stage-session-guest .stage-panel[data-panel="cast"],
 body.stage-session-guest .stage-panel[data-panel="machinery"],
+body.stage-session-guest .stage-panel[data-panel="rigs"],
+body.stage-session-guest .stage-panel[data-panel="light"],
+body.stage-session-guest .stage-panel[data-panel="background"],
+body.stage-session-guest .stage-panel[data-panel="inspector"],
+body.stage-session-guest .stage-panel[data-panel="ask"],
+body.stage-session-guest .stage-panel[data-panel="save"] > .stage-panel-head,
+body.stage-session-guest .stage-panel[data-panel="save"] h2,
+body.stage-session-guest #stage-save-status,
+body.stage-session-guest #stage-backup-note,
+body.stage-session-guest #stage-backup-hint,
+body.stage-session-guest #stage-clear,
+body.stage-session-guest .stage-scene-actions,
+body.stage-session-guest .stage-tablet-rail-button[data-tablet-group="show"],
+body.stage-session-guest .stage-tablet-rail-button[data-tablet-group="cast"],
+body.stage-session-guest .stage-tablet-rail-button[data-tablet-group="look"],
+body.stage-session-guest .stage-tablet-rail-button[data-tablet-group="inspect"],
 body.stage-session-guest #stage-machinery-controls,
 body.stage-session-guest #stage-venue-editor-open,
 body.stage-session-guest #stage-backup-export,
@@ -11864,7 +11906,7 @@ body.stage-session-guest #stage-scene-list {
   flex: none;
 }
 
-/* ===== どこで何ができるか（保存パネル内の一覧・2026-08-24） =====
+/* ===== どこで何ができるか（環境設定から開く一覧） =====
    もとは docs/feature-matrix-preview.html で組んだもの。
    ★正本はこちら（style.css と index.html）。プレビューは写しで、drift し得る。
    セレクタは .stage-reach-body 配下へ閉じてある。本体と衝突しないよう、
@@ -11878,6 +11920,7 @@ body.stage-session-guest #stage-scene-list {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   padding: 0;
+  z-index: 72; /* 環境設定モーダルから開いたとき、その上へ出す */
 }
 
 .stage-modal.stage-reach-modal .stage-modal-head { padding: 12px 16px; }

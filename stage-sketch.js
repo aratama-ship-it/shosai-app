@@ -21668,6 +21668,9 @@ ${propsPlotHtml}
       selectedId = null;
       selectedNoteId = null;
       selectedTextId = null;
+      if (tabletUi && ["show", "cast", "look", "inspect"].includes(tabletUi.groupId)) {
+        closeTabletDrawer();
+      }
       if (state.showFront) setTool("arrow");
       else { updateInspector(); render(); }
     },
