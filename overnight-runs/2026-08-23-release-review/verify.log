@@ -1,0 +1,48 @@
+== start Sun Aug 23 02:39:43 JST 2026 ==
+-- node tests --
+  duration_ms: 0.334959
+  type: 'test'
+  ...
+1..447
+# tests 447
+# suites 0
+# pass 447
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1544.045834
+-- build_stage check --
+stage.html は index.html と揃っています
+-- mcp tests --
+# pass 39
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 246.36375
+-- mac build --
+Building 制作の書斎.app
+Built: /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/mac-app/build/制作の書斎.app
+-- mac self-test --
+    {
+      "detail" : "nil=[\"conflict\": true, \"projectId\": \"self-test-first-sync\", \"currentRevision\": 1], allowed=[\"revision\": 2, \"projectId\": \"self-test-first-sync\"], mismatch=[\"conflict\": true, \"currentRevision\": 2, \"projectId\": \"self-test-first-sync\"]",
+      "id" : 22,
+      "name" : "first-sync-only-bypasses-null-revision",
+      "ok" : true
+    },
+    {
+      "detail" : "successLockExists=false, conflictLockExists=false",
+      "id" : 23,
+      "name" : "project-lock-cleanup-after-success-and-conflict",
+      "ok" : true
+    },
+    {
+      "detail" : "elapsed=4.031283020973206, error=別のCodexまたはClaude Codeがこの下書きを編集中です。数秒後に読み直してください。",
+      "id" : 24,
+      "name" : "project-lock-retries-for-four-seconds",
+      "ok" : true
+    }
+  ]
+}
+== end Sun Aug 23 02:39:59 JST 2026 exit=0 ==

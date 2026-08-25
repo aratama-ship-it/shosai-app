@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>制作の書斎</title>
+<link rel="icon" href="/icons/stage-sketch-192.png" sizes="192x192" type="image/png">
+<style>
+  :root {
+    --desk: #191512;
+    --paper: #efe7d6;
+    --paper-line: #d8c9ab;
+    --ink: #2b2620;
+    --ink-soft: #6a604e;
+    --rust: #a84b26;
+    --rust-deep: #8f3e1e;
+    --brass: #9c823f;
+    --serif: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
+    --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { height: 100%; }
+  body {
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 28px 18px calc(28px + env(safe-area-inset-bottom));
+    background: var(--desk);
+    color: var(--paper);
+    font-family: var(--sans);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* 暗い客席に、紙の上だけ明かりが落ちている。
+     緞帳の絵柄はアイコンが担うので、背景は襞をごく薄く敷くだけに留める——
+     はっきり描くと帯として主張し、読ませたい紙より目立ってしまう。 */
+  .curtain {
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 62% 46% at 50% 34%,
+        rgba(240, 231, 214, .085), rgba(240, 231, 214, .028) 45%, transparent 76%),
+      repeating-linear-gradient(90deg,
+        rgba(240, 231, 214, .022) 0 9px,
+        rgba(0, 0, 0, .05) 9px 19px);
+    pointer-events: none;
+  }
+
+  .stand { position: relative; width: min(384px, 100%); }
+
+  .sheet {
+    position: relative;
+    padding: 34px 30px 28px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 0 2px 0 rgba(0,0,0,.34), 0 18px 40px rgba(0,0,0,.5);
+  }
+
+  .mark { display: block; width: 54px; height: 54px; margin: 0 auto 16px; }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: 23px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-align: center;
+  }
+  .lede {
+    margin-top: 7px;
+    color: var(--ink-soft);
+    font-size: 11px;
+    line-height: 1.85;
+    letter-spacing: .02em;
+    text-align: center;
+  }
+
+  .rule { margin: 22px 0 4px; border: 0; border-top: 1px solid var(--paper-line); }
+
+  label { display: block; margin-top: 17px; }
+  label span {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--ink-soft);
+    font-size: 11px;
+    letter-spacing: .08em;
+  }
+  /* 枠で囲わず下線だけ。紙に書く感触に寄せる */
+  input {
+    width: 100%;
+    min-height: 44px;
+    padding: 6px 2px;
+    border: 0;
+    border-bottom: 1px solid var(--ink-soft);
+    border-radius: 0;
+    background: none;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;           /* iOSで拡大されないように16px以上を保つ */
+    letter-spacing: .04em;
+  }
+  input:focus { outline: 0; border-bottom: 2px solid var(--rust); padding-bottom: 5px; }
+
+  button {
+    width: 100%;
+    min-height: 48px;
+    margin-top: 26px;
+    border: 1px solid var(--rust-deep);
+    border-radius: 0;
+    background: var(--rust);
+    color: #fdf6e8;
+    font-family: var(--sans);
+    font-size: 14px;
+    letter-spacing: .18em;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  button:hover { background: var(--rust-deep); }
+  button:active { transform: translateY(1px); }
+
+  .note {
+    margin-top: 20px;
+    padding-left: 11px;
+    border-left: 2px solid var(--brass);
+    color: var(--ink-soft);
+    font-size: 10.5px;
+    line-height: 1.9;
+  }
+
+  /* 間違えたときは、責める調子にしない */
+  .alert {
+    margin-top: 18px;
+    padding: 9px 11px;
+    border-left: 3px solid var(--rust);
+    background: rgba(168, 75, 38, .09);
+    color: var(--rust-deep);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 380px) {
+    .sheet { padding: 28px 20px 24px; }
+  }
+</style>
+</head>
+<body>
+  <div class="curtain" aria-hidden="true"></div>
+  <main class="stand">
+    <form class="sheet" method="POST" action="/sign-in">
+      <img class="mark" src="/icons/stage-sketch-192.png" alt="" width="54" height="54">
+      <h1>制作の書斎</h1>
+      <p class="lede">舞台をつくるための机と、資料棚。</p>
+      <hr class="rule">
+      <p class="alert" role="alert">お名前かパスワードが違うようです。</p>
+      <label>
+        <span>お名前</span>
+        <input type="text" name="user" autocomplete="username"
+               autocapitalize="none" autocorrect="off" spellcheck="false" required autofocus>
+      </label>
+      <label>
+        <span>パスワード</span>
+        <input type="password" name="pass" autocomplete="current-password" required>
+      </label>
+      <input type="hidden" name="next" value="/">
+      <button type="submit">中へ入る</button>
+      <p class="note">招かれた方は、お渡ししたお名前とパスワードでお入りください。
+        一度入ると、しばらくは聞かれません。</p>
+    </form>
+  </main>
+</body>
+</html>

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>どこで何ができるか — 第二案プレビュー</title>
+<style>
+  :root {
+    --desk: #191512;
+    --desk-2: #201b16;
+    --line-dark: #382f25;
+    --paper: #efe7d6;
+    --paper-2: #e7dcc5;
+    --paper-line: #d8c9ab;
+    --ink: #2b2620;
+    --ink-soft: #6a604e;
+    --rust: #a84b26;
+    --rust-deep: #8f3e1e;
+    --brass: #9c823f;
+    --moss: #77865f;
+    --serif: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
+    --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--desk);
+    font-family: var(--sans);
+    padding: 28px 18px 60px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .reach-sheet {
+    width: 100%;
+    max-width: 720px;
+    background: var(--paper);
+    color: var(--ink);
+    padding: 30px 30px 26px;
+    box-shadow: 0 2px 0 rgba(0,0,0,.3), 0 14px 34px rgba(0,0,0,.4);
+  }
+
+  .reach-head { border-bottom: 2px solid var(--ink); padding-bottom: 13px; }
+  .reach-head h1 {
+    font-family: var(--serif);
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: .04em;
+  }
+  .reach-head p {
+    margin-top: 8px;
+    color: var(--ink-soft);
+    font-size: 11.5px;
+    line-height: 1.95;
+  }
+
+  .reach-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 20px;
+    margin-top: 13px;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+  .reach-legend b { color: var(--ink); font-weight: 600; }
+  .reach-legend .m { font-size: 13px; }
+  .m-full { color: var(--rust-deep); }
+  .m-part { color: var(--ink-soft); }
+  .m-none { color: #b3a68c; }
+
+  /* ===== 二つの道具を分ける見出し =====
+     ここがこの紙の背骨。配る道具と、配らない道具を、地の色と罫の太さで隔てる。 */
+  .tool-block { margin-top: 30px; }
+
+  .tool-mark {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 7px;
+    border-bottom: 3px solid var(--ink);
+  }
+  .tool-mark h2 {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: .07em;
+  }
+  /* 配る／配らないを、色ではなく語と枠で示す */
+  .tool-tag {
+    flex: 0 0 auto;
+    padding: 3px 9px;
+    font-size: 10px;
+    letter-spacing: .09em;
+    white-space: nowrap;
+  }
+  .tag-public { border: 1px solid var(--rust); color: var(--rust-deep); }
+  .tag-inhouse { border: 1px dashed var(--ink-soft); color: var(--ink-soft); }
+
+  .tool-lead {
+    margin-top: 9px;
+    color: var(--ink-soft);
+    font-size: 11px;
+    line-height: 1.95;
+  }
+  .tool-lead b { color: var(--ink); font-weight: 600; }
+
+  /* 身内の道具は、紙をひとまわり沈ませて「表に出さない側」だと示す */
+  .block-inhouse .tool-mark { border-bottom-color: var(--ink-soft); border-bottom-width: 1px; }
+  .block-inhouse table { background: rgba(184,168,136,.15); }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+
+  thead th {
+    padding: 0 4px 9px;
+    border-bottom: 1px solid var(--brass);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: .03em;
+    vertical-align: bottom;
+  }
+  thead th:first-child { text-align: left; }
+  thead th span {
+    display: block;
+    margin-top: 4px;
+    color: var(--ink-soft);
+    font-size: 9.5px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  .col-away { background: rgba(184,168,136,.2); }
+
+  tbody th.group {
+    text-align: left;
+    padding: 16px 4px 5px;
+    font-family: var(--serif);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .09em;
+    color: var(--rust-deep);
+  }
+
+  tbody td, tbody th.row { border-bottom: 1px solid var(--paper-line); }
+  tbody th.row {
+    text-align: left;
+    padding: 8px 10px 8px 4px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+  tbody th.row i {
+    display: block;
+    margin-top: 2px;
+    color: var(--ink-soft);
+    font-size: 10px;
+    font-style: normal;
+    line-height: 1.6;
+  }
+  tbody td {
+    width: 17%;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  tbody td u {
+    display: block;
+    margin-top: 1px;
+    font-size: 9px;
+    text-decoration: none;
+    color: var(--ink-soft);
+    letter-spacing: -.02em;
+  }
+
+  tr.warn th.row { box-shadow: inset 3px 0 0 var(--rust); padding-left: 11px; }
+  tr.warn th.row i { color: var(--rust-deep); }
+
+  .reach-foot {
+    margin-top: 22px;
+    padding-left: 11px;
+    border-left: 2px solid var(--brass);
+    color: var(--ink-soft);
+    font-size: 10.5px;
+    line-height: 1.95;
+  }
+
+  @media (max-width: 560px) {
+    body { padding: 14px 8px 40px; }
+    .reach-sheet { padding: 20px 15px 18px; }
+    .tool-mark { flex-wrap: wrap; gap: 6px; }
+    table, thead, tbody, tr, th, td { display: block; }
+    thead { display: none; }
+    tbody th.group { padding: 17px 0 4px; }
+
+    /* 行を一段組みへ。仕事の名前が一行を占め、その下に端末が横一列に並ぶ */
+    tbody tr:not(.group-row) {
+      display: grid;
+      border-bottom: 1px solid var(--paper-line);
+      padding: 10px 0 8px;
+    }
+    .cols-3 tbody tr:not(.group-row) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .cols-2 tbody tr:not(.group-row) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    tbody th.row { grid-column: 1 / -1; border: 0; padding: 0 0 7px; }
+    tr.warn th.row { box-shadow: inset 3px 0 0 var(--rust); padding-left: 9px; }
+    tbody td {
+      width: auto;
+      min-width: 0;
+      border: 0;
+      padding: 3px 0 4px;
+      font-size: 13px;
+    }
+    tbody td.col-away { background: rgba(184,168,136,.2); }
+    tbody td::before {
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 1px;
+      color: var(--ink-soft);
+      font-size: 9px;
+      letter-spacing: 0;
+    }
+    tbody td u { font-size: 8.5px; }
+  }
+</style>
+</head>
+<body>
+<div class="reach-sheet">
+
+  <div class="reach-head">
+    <h1>どこで何ができるか</h1>
+    <p>ここには二つの道具があります。<b>舞台スケッチ</b>は、これから広く使ってもらうためのアプリ。
+       <b>書斎</b>は、資料棚と名簿と制作机を置いた、こちらの手元だけの机です。
+       同じ画面から行き来できますが、配るのは舞台スケッチのほうだけです。</p>
+    <div class="reach-legend">
+      <span><b class="m m-full">●</b> つくる・直せる</span>
+      <span><b class="m m-part">○</b> 見る・限られる</span>
+      <span><b class="m m-none">—</b> この版には入っていない</span>
+    </div>
+  </div>
+
+  <!-- ============ 配る道具 ============ -->
+  <section class="tool-block cols-3">
+    <div class="tool-mark">
+      <h2>舞台スケッチ</h2>
+      <span class="tool-tag tag-public">配る道具</span>
+    </div>
+    <p class="tool-lead">
+      舞台を組み、光を置き、シーンを並べるための一枚。<b>これ単独で開けます</b>ので、
+      共演者やスタッフへはこちらを渡します。机で組み立て、稽古場へ持ち出し、現場では手元で確かめる——
+      左から右へ、<b>つくる</b>が机に残り、<b>確かめる</b>が手元へ移ります。
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>仕事</th>
+          <th>ブラウザ<span>机</span></th>
+          <th class="col-away">タブレット<span>稽古場</span></th>
+          <th class="col-away">スマホ<span>手元</span></th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <tr class="group-row"><th class="group" colspan="4">舞台をつくる</th></tr>
+
+        <tr>
+          <th class="row">ショーを開く・切り替える</th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-full">●</td>
+          <td data-label="スマホ" class="col-away m-part">○<u>受け取って開く</u></td>
+        </tr>
+        <tr>
+          <th class="row">演者・小道具を置く／動かす</th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-full">●</td>
+          <td data-label="スマホ" class="col-away m-none">—</td>
+        </tr>
+        <tr>
+          <th class="row">舞台セットを組む<i>3Dモデルを作って登録する</i></th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-full">●</td>
+          <td data-label="スマホ" class="col-away m-none">—</td>
+        </tr>
+        <tr>
+          <th class="row">照明を置く・光の意図を書く</th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-full">●</td>
+          <td data-label="スマホ" class="col-away m-none">—</td>
+        </tr>
+        <tr>
+          <th class="row">背景を塗る・矢印を描く</th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-full">●</td>
+          <td data-label="スマホ" class="col-away m-none">—</td>
+        </tr>
+        <tr>
+          <th class="row">シーンを足す・並べ替える</th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-full">●</td>
+          <td data-label="スマホ" class="col-away m-part">○<u>送るだけ</u></td>
+        </tr>
+        <tr>
+          <th class="row">舞台機構<i>迫り・盆・幕の転換</i></th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-none">—</td>
+          <td data-label="スマホ" class="col-away m-none">—</td>
+        </tr>
+        <tr>
+          <th class="row">3Dカメラ・この人の視界</th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-none">—</td>
+          <td data-label="スマホ" class="col-away m-none">—</td>
+        </tr>
+        <tr>
+          <th class="row">曲を割り当てる<i>音楽は机の上の仕事にする</i></th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-none">—</td>
+          <td data-label="スマホ" class="col-away m-none">—</td>
+        </tr>
+        <tr>
+          <th class="row">曲を再生する<i>シーンを送りながら聴く</i></th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-none">—</td>
+          <td data-label="スマホ" class="col-away m-none">—</td>
+        </tr>
+        <tr>
+          <th class="row">メモを書く</th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-full">●</td>
+          <td data-label="スマホ" class="col-away m-full">●</td>
+        </tr>
+
+        <tr class="group-row"><th class="group" colspan="4">持ち出す・残す</th></tr>
+
+        <tr>
+          <th class="row">この端末の中へ自動保存</th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-full">●</td>
+          <td data-label="スマホ" class="col-away m-full">●</td>
+        </tr>
+        <tr>
+          <th class="row">保存の警告が目に入る<i>棚が壊れた／容量が足りない、を知らせる行</i></th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-full">●</td>
+          <td data-label="スマホ" class="col-away m-full">●</td>
+        </tr>
+        <tr>
+          <th class="row">ファイルへ書き出す<i>控えを手元に残す</i></th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-full">●</td>
+          <td data-label="スマホ" class="col-away m-full">●</td>
+        </tr>
+        <tr>
+          <th class="row">ファイルを読み込む</th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-full">●</td>
+          <td data-label="スマホ" class="col-away m-full">●</td>
+        </tr>
+        <tr>
+          <th class="row">電波が無くても開く<i>一度開けば、次からは繋がっていなくても</i></th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-full">●</td>
+          <td data-label="スマホ" class="col-away m-full">●</td>
+        </tr>
+        <tr>
+          <th class="row">みんなで同じ舞台を見る<i>共有セッション</i></th>
+          <td data-label="ブラウザ" class="m-full">●</td>
+          <td data-label="タブレット" class="col-away m-full">●</td>
+          <td data-label="スマホ" class="col-away m-part">○<u>招かれて入る</u></td>
+        </tr>
+
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============ 配らない道具 ============ -->
+  <section class="tool-block block-inhouse cols-2">
+    <div class="tool-mark">
+      <h2>書斎</h2>
+      <span class="tool-tag tag-inhouse">身内の道具</span>
+    </div>
+    <p class="tool-lead">
+      調べたショーの資料棚、アーティストと制作スタッフの名簿、企画を書く制作机。
+      <b>ここは配りません。</b>舞台スケッチもこの中から使えますが、
+      人へ渡すときは上の単独版のほうを渡します。
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>仕事</th>
+          <th>アプリ<span>Mac</span></th>
+          <th>ブラウザ<span>机</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th class="row">資料棚をひく<i>ショーと舞台技術を調べる</i></th>
+          <td data-label="アプリ" class="m-full">●</td>
+          <td data-label="ブラウザ" class="m-full">●</td>
+        </tr>
+        <tr>
+          <th class="row">名簿をひく<i>アーティスト・制作スタッフ</i></th>
+          <td data-label="アプリ" class="m-full">●</td>
+          <td data-label="ブラウザ" class="m-full">●</td>
+        </tr>
+        <tr>
+          <th class="row">制作机で企画を書く<i>種火・スクラップブック・場面問答</i></th>
+          <td data-label="アプリ" class="m-full">●</td>
+          <td data-label="ブラウザ" class="m-full">●</td>
+        </tr>
+        <tr>
+          <th class="row">舞台スケッチを使う<i>上の表の仕事が、この中でもできる</i></th>
+          <td data-label="アプリ" class="m-full">●</td>
+          <td data-label="ブラウザ" class="m-full">●</td>
+        </tr>
+        <tr>
+          <th class="row">AIに直させる<i>言葉で指示して舞台を組み替える</i></th>
+          <td data-label="アプリ" class="m-full">●</td>
+          <td data-label="ブラウザ" class="m-none">—</td>
+        </tr>
+        <tr>
+          <th class="row">電波が無くても開く</th>
+          <td data-label="アプリ" class="m-full">●</td>
+          <td data-label="ブラウザ" class="m-none">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <p class="reach-foot">
+    「AIに直させる」はMacアプリの中だけの機能です。ブラウザで開いたときは、この項目自体が現れません。<br>
+    タブレット版・スマホ版は、舞台スケッチをホーム画面へ追加するか、渡されたリンクを開くと使えます。
+  </p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,42 @@
+ M .gitignore
+ M build_db.py
+ M db.js
+ M index.html
+ M mac-app/Sources/SelfTestRunner.swift
+ M mac-app/Sources/StageSketchBridge.swift
+ M mac-app/Sources/StageSketchProjectStore.swift
+ M mac-app/Sources/WebDownloadCoordinator.swift
+ M stage-first-person.js
+ M stage-i18n.js
+ M stage-session.js
+ M stage-sketch.js
+ M stage-sw.js
+ M stage.html
+ M style.css
+ M tests/stage-ai-panel.test.mjs
+ M tests/stage-import-workspace.test.mjs
+ M tests/stage-object-allowlist.test.mjs
+ M tests/stage-phone-viewer.test.mjs
+ M tests/stage-pitch-export.test.mjs
+ M tests/stage-venue-library.test.mjs
+ M tools/check-object-on-performer.mjs
+ M worker.js
+?? SHOWS_INVENTORY.md
+?? build_stage_shows_local.py
+?? docs/AVATAR_LOOK_CATALOG_DRAFT_2026-08-20.md
+?? docs/AVATAR_LOOK_DESIGN_2026-08-20.md
+?? docs/AVATAR_LOOK_PHASE0_WORKORDER_2026-08-20.md
+?? docs/MAC_BRIDGE_ORIGIN_WORKORDER_2026-08-22.md
+?? docs/MAC_BRIDGE_P0_4_DESIGN_2026-08-22.md
+?? docs/MAC_BRIDGE_REVISION_WORKORDER_2026-08-22.md
+?? docs/RELEASE_P0_DATALOSS_WORKORDER_2026-08-22.md
+?? docs/SHELF_BROKEN_EXPORT_WORKORDER_2026-08-22.md
+?? docs/SHELF_CORRUPT_GUARD_WORKORDER_2026-08-22.md
+?? docs/STAGE_SKETCH_RELEASE_REVIEW_2026-08-22.md
+?? stage-audio-store.js
+?? tests/stage-audio.test.mjs
+?? tests/stage-avatar-look.test.mjs
+?? tests/stage-local-shows.test.mjs
+?? tests/stage-mcp-revision.test.mjs
+?? tests/stage-session-shelve.test.mjs
+?? tests/stage-shelf-corrupt.test.mjs
