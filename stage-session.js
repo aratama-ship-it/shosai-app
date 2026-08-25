@@ -123,6 +123,69 @@
     return url.href;
   }
 
+  function nativeSessionBridge() {
+    const candidate = window.stageSketchBridge;
+    if (!candidate || typeof candidate.sessionConnect !== "function" ||
+        typeof candidate.sessionSend !== "function" ||
+        typeof candidate.sessionDisconnect !== "function" ||
+        typeof candidate.onSessionEvent !== "function") return null;
+    return candidate;
+  }
+
+  function createNativeSessionSocket(sessionBridge) {
+    const listeners = new Map();
+    const nativeSocket = {
+      readyState: WebSocket.CONNECTING,
+      addEventListener(type, callback) {
+        if (!listeners.has(type)) listeners.set(type, new Set());
+        listeners.get(type).add(callback);
+      },
+      send(text) {
+        Promise.resolve(sessionBridge.sessionSend(text)).catch(() => {
+          dispatch("error", { type: "error" });
+        });
+      },
+      close() {
+        Promise.resolve(sessionBridge.sessionDisconnect()).catch(() => {});
+      },
+    };
+    const dispatch = (type, event) => {
+      if (socket !== nativeSocket) return;
+      (listeners.get(type) || []).forEach((callback) => callback(event));
+    };
+    sessionBridge.onSessionEvent((event) => {
+      if (!event || typeof event.type !== "string" || socket !== nativeSocket) return;
+      if (event.type === "open") {
+        nativeSocket.readyState = WebSocket.OPEN;
+        dispatch("open", { type: "open" });
+      } else if (event.type === "message" && typeof event.data === "string") {
+        dispatch("message", { type: "message", data: event.data });
+      } else if (event.type === "error") {
+        dispatch("error", { type: "error" });
+      } else if (event.type === "close") {
+        nativeSocket.readyState = WebSocket.CLOSED;
+        dispatch("close", { type: "close" });
+      }
+    });
+    Promise.resolve(sessionBridge.sessionConnect({
+      roomId,
+      role,
+      name: displayName,
+      hostKey,
+    })).then((result) => {
+      if (socket !== nativeSocket || (result && result.ok === true)) return;
+      nativeSocket.readyState = WebSocket.CLOSED;
+      dispatch("error", { type: "error" });
+      dispatch("close", { type: "close" });
+    }).catch(() => {
+      if (socket !== nativeSocket) return;
+      nativeSocket.readyState = WebSocket.CLOSED;
+      dispatch("error", { type: "error" });
+      dispatch("close", { type: "close" });
+    });
+    return nativeSocket;
+  }
+
   function roleLabel(value) {
     return value === "host" ? "ホスト" : "ゲスト";
   }
@@ -518,7 +581,12 @@
     if (els.reconnect) els.reconnect.hidden = true;
     setStatus(reconnectAttempts ? "再接続しています…" : "接続しています…");
     let ws;
-    try { ws = new WebSocket(sessionSocketUrl()); }
+    try {
+      const sessionBridge = nativeSessionBridge();
+      ws = sessionBridge
+        ? createNativeSessionSocket(sessionBridge)
+        : new WebSocket(sessionSocketUrl());
+    }
     catch (_) {
       socket = null;
       scheduleReconnect();
@@ -613,9 +681,34 @@
     els.start.disabled = true;
     setStatus("セッションを準備しています…");
     try {
-      const response = await fetch("session/new", { method: "POST" });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const result = await response.json();
+      const sessionBridge = window.stageSketchBridge;
+      const usesNativeBridge = sessionBridge && typeof sessionBridge.sessionStart === "function";
+      let result;
+      if (usesNativeBridge) {
+        result = await sessionBridge.sessionStart();
+        if (!result || result.ok !== true) {
+          role = "";
+          roomId = "";
+          hostKey = "";
+          els.start.disabled = false;
+          const reason = result && typeof result.reason === "string" ? result.reason : "network";
+          if (reason === "cancelled") {
+            setStatus("未接続です。");
+          } else if (reason === "unauthorized") {
+            setStatus("会議用セッションのログインを確認できませんでした。", true);
+          } else if (reason === "network") {
+            setStatus("ネットワークに接続できないため、セッションを開始できませんでした。", true);
+          } else {
+            const status = /^http-(\d+)$/.exec(reason);
+            setStatus(`セッションを開始できませんでした（${status ? `HTTP ${status[1]}` : reason}）。`, true);
+          }
+          return;
+        }
+      } else {
+        const response = await fetch("session/new", { method: "POST" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        result = await response.json();
+      }
       if (!result || typeof result.roomId !== "string" || typeof result.hostKey !== "string") {
         throw new Error("ルーム情報がありません");
       }
@@ -625,7 +718,12 @@
       displayName = name;
       reconnectAttempts = 0;
       reconnectAllowed = true;
-      const inviteUrl = `${location.origin}${location.pathname}#session=${roomId}`;
+      if (usesNativeBridge && typeof result.origin !== "string") {
+        throw new Error("ルーム情報がありません");
+      }
+      const inviteUrl = usesNativeBridge
+        ? `${result.origin}/stage.html#session=${roomId}`
+        : `${location.origin}${location.pathname}#session=${roomId}`;
       if (els.url) els.url.value = inviteUrl;
       updateRoleUi();
       connectSocket();

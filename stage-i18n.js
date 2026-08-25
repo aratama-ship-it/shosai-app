@@ -1185,6 +1185,10 @@
     [/^向きロックを外しました。$/, "Facing lock removed."],
     [/^向きロック中です$/, "Facing is locked."],
     [/^共有セッション中はホストのシーンに追従します。$/, "In a shared session, you follow the host's scene."],
+    [/^会議用セッションのログインを確認できませんでした。$/,
+      "Could not verify the meeting-session login."],
+    [/^ネットワークに接続できないため、セッションを開始できませんでした。$/,
+      "Could not start the session because the network is unavailable."],
     // 固定文
     [/^一つ前の状態へ戻しました。$/, "Went back one step."],
     [/^やり直しました。$/, "Redone."],

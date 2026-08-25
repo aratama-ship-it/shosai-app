@@ -352,9 +352,28 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
 
     private func testBridgePresence() {
         let script = #"""
+        const sessionMethods = [
+          "sessionStart",
+          "sessionConnect",
+          "sessionSend",
+          "sessionDisconnect",
+          "onSessionEvent"
+        ];
+        const sessionHandlers = [
+          "stageSketchSessionStart",
+          "stageSketchSessionConnect",
+          "stageSketchSessionSend",
+          "stageSketchSessionDisconnect"
+        ];
         JSON.stringify({
           bridgeType: typeof window.stageSketchBridge,
-          stopType: typeof window.stageSketchBridge?.stopAgent
+          stopType: typeof window.stageSketchBridge?.stopAgent,
+          sessionMethodsRegistered: sessionMethods.every(
+            (name) => typeof window.stageSketchBridge?.[name] === "function"
+          ),
+          sessionHandlersRegistered: sessionHandlers.every(
+            (name) => typeof window.webkit?.messageHandlers?.[name]?.postMessage === "function"
+          )
         })
         """#
         webView.evaluateJavaScript(script) { [weak self] value, error in
@@ -364,10 +383,16 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
             let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
             let bridgeType = object?["bridgeType"] as? String ?? ""
             let stopType = object?["stopType"] as? String ?? ""
+            let sessionMethodsRegistered = object?["sessionMethodsRegistered"] as? Bool ?? false
+            let sessionHandlersRegistered = object?["sessionHandlersRegistered"] as? Bool ?? false
             self.record(
                 id: 3,
                 name: "bridge-present",
-                ok: error == nil && bridgeType == "object" && stopType == "function",
+                ok: error == nil
+                    && bridgeType == "object"
+                    && stopType == "function"
+                    && sessionMethodsRegistered
+                    && sessionHandlersRegistered,
                 detail: error?.localizedDescription ?? text
             )
             self.testAgentInfo()
@@ -733,15 +758,32 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
             }
 
             let script = #"""
-            try {
-              await window.stageSketchBridge.listEditExports();
-              return JSON.stringify({ rejected: false, error: null });
-            } catch (error) {
-              return JSON.stringify({
-                rejected: true,
-                error: String(error && error.message || error)
-              });
+            async function rejectionFor(operation) {
+              try {
+                await operation();
+                return { rejected: false, error: null };
+              } catch (error) {
+                return {
+                  rejected: true,
+                  error: String(error && error.message || error)
+                };
+              }
             }
+            const exportsResult = await rejectionFor(
+              () => window.stageSketchBridge.listEditExports()
+            );
+            const sessionResults = await Promise.all([
+              () => window.stageSketchBridge.sessionStart(),
+              () => window.stageSketchBridge.sessionConnect({
+                roomId: "selftest",
+                role: "guest",
+                name: "Self Test",
+                hostKey: ""
+              }),
+              () => window.stageSketchBridge.sessionSend("self-test"),
+              () => window.stageSketchBridge.sessionDisconnect()
+            ].map(rejectionFor));
+            return JSON.stringify({ exportsResult, sessionResults });
             """#
             self.webView.callAsyncJavaScript(
                 script,
@@ -755,12 +797,22 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
                     let text = value as? String ?? ""
                     let data = text.data(using: .utf8) ?? Data()
                     let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
-                    let rejected = object?["rejected"] as? Bool == true
-                    let errorMessage = object?["error"] as? String ?? ""
+                    let exportsResult = object?["exportsResult"] as? [String: Any]
+                    let sessionResults = object?["sessionResults"] as? [[String: Any]] ?? []
+                    let exportsRejected = exportsResult?["rejected"] as? Bool == true
+                    let exportsError = exportsResult?["error"] as? String ?? ""
+                    let sessionsRejected = sessionResults.count == 4
+                        && sessionResults.allSatisfy {
+                            $0["rejected"] as? Bool == true
+                                && ($0["error"] as? String ?? "")
+                                    .contains("only available to the app's own pages")
+                        }
                     self.record(
                         id: 19,
                         name: "bridge-rejects-untrusted-document",
-                        ok: rejected && errorMessage.contains("only available to the app's own pages"),
+                        ok: exportsRejected
+                            && sessionsRejected
+                            && exportsError.contains("only available to the app's own pages"),
                         detail: text.isEmpty ? "bridge verification returned no data" : text
                     )
                 case .failure(let error):

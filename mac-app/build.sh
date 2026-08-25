@@ -24,6 +24,7 @@ xcrun swiftc \
   -framework AppKit \
   -framework WebKit \
   -framework CoreServices \
+  -framework Security \
   "$SCRIPT_DIR"/Sources/*.swift \
   -o "$MACOS_DIR/ShosaiDesk"
 

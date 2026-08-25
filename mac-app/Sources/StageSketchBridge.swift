@@ -9,6 +9,10 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
     static let readExportMessage = "stageSketchReadExport"
     static let writeProjectMessage = "stageSketchWriteProject"
     static let latestPlanMessage = "stageSketchLatestPlan"
+    static let sessionStartMessage = "stageSketchSessionStart"
+    static let sessionConnectMessage = "stageSketchSessionConnect"
+    static let sessionSendMessage = "stageSketchSessionSend"
+    static let sessionDisconnectMessage = "stageSketchSessionDisconnect"
 
     weak var webView: WKWebView?
     var diagnosticMessageHandler: ((String) -> Void)?
@@ -16,16 +20,22 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
     private let exportStore: ExportStore
     private let projectStore: StageSketchProjectStore
     private let agentRunner: AgentRunner
+    private let sessionRelay: SessionRelay
 
     init(
         exportStore: ExportStore,
         projectStore: StageSketchProjectStore,
-        agentRunner: AgentRunner
+        agentRunner: AgentRunner,
+        sessionRelay: SessionRelay = SessionRelay()
     ) {
         self.exportStore = exportStore
         self.projectStore = projectStore
         self.agentRunner = agentRunner
+        self.sessionRelay = sessionRelay
         super.init()
+        sessionRelay.eventHandler = { [weak self] event in
+            self?.notifySessionEvent(event)
+        }
     }
 
     func install(in userContentController: WKUserContentController) {
@@ -63,6 +73,26 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
             self,
             contentWorld: .page,
             name: Self.latestPlanMessage
+        )
+        userContentController.addScriptMessageHandler(
+            self,
+            contentWorld: .page,
+            name: Self.sessionStartMessage
+        )
+        userContentController.addScriptMessageHandler(
+            self,
+            contentWorld: .page,
+            name: Self.sessionConnectMessage
+        )
+        userContentController.addScriptMessageHandler(
+            self,
+            contentWorld: .page,
+            name: Self.sessionSendMessage
+        )
+        userContentController.addScriptMessageHandler(
+            self,
+            contentWorld: .page,
+            name: Self.sessionDisconnectMessage
         )
         userContentController.addUserScript(WKUserScript(
             source: Self.injectionScript,
@@ -160,6 +190,44 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
                 replyHandler(nil, error.localizedDescription)
             }
 
+        case Self.sessionStartMessage:
+            sessionRelay.startSession { result in
+                replyHandler(result, nil)
+            }
+
+        case Self.sessionConnectMessage:
+            guard let body = message.body as? [String: Any],
+                  let roomID = body["roomId"] as? String,
+                  let role = body["role"] as? String,
+                  let name = body["name"] as? String,
+                  let hostKey = body["hostKey"] as? String else {
+                replyHandler(nil, "sessionConnect accepts roomId, role, name and hostKey strings.")
+                return
+            }
+            sessionRelay.connect(
+                roomID: roomID,
+                role: role,
+                name: name,
+                hostKey: hostKey
+            ) { result in
+                replyHandler(result, nil)
+            }
+
+        case Self.sessionSendMessage:
+            guard let body = message.body as? [String: Any],
+                  let text = body["text"] as? String else {
+                replyHandler(nil, "sessionSend accepts only a text string.")
+                return
+            }
+            sessionRelay.send(text: text) { result in
+                replyHandler(result, nil)
+            }
+
+        case Self.sessionDisconnectMessage:
+            sessionRelay.disconnect { result in
+                replyHandler(result, nil)
+            }
+
         default:
             replyHandler(nil, "Unknown bridge operation.")
         }
@@ -193,6 +261,20 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
         }
     }
 
+    func notifySessionEvent(_ event: [String: Any]) {
+        guard JSONSerialization.isValidJSONObject(event),
+              let data = try? JSONSerialization.data(withJSONObject: event),
+              let json = String(data: data, encoding: .utf8) else {
+            return
+        }
+        DispatchQueue.main.async { [weak self] in
+            self?.webView?.evaluateJavaScript(
+                "window.__stageSketchSessionEvent?.(\(json));",
+                completionHandler: nil
+            )
+        }
+    }
+
     private static let injectionScript = #"""
     (() => {
       "use strict";
@@ -201,6 +283,7 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
 
       const callbacks = new Set();
       const downloadDestinationCallbacks = new Set();
+      const sessionEventCallbacks = new Set();
       const bridge = {
         version: "1",
         platform: "macos",
@@ -245,6 +328,35 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
           }
           return handlers.stageSketchLatestPlan.postMessage({ projectId });
         },
+        sessionStart() {
+          return handlers.stageSketchSessionStart.postMessage({});
+        },
+        sessionConnect(options) {
+          if (options === null || typeof options !== "object" || Array.isArray(options)
+              || typeof options.roomId !== "string"
+              || typeof options.role !== "string"
+              || typeof options.name !== "string"
+              || typeof options.hostKey !== "string") {
+            return Promise.reject(new TypeError(
+              "sessionConnect expects roomId, role, name and hostKey strings."
+            ));
+          }
+          return handlers.stageSketchSessionConnect.postMessage({
+            roomId: options.roomId,
+            role: options.role,
+            name: options.name,
+            hostKey: options.hostKey
+          });
+        },
+        sessionSend(text) {
+          if (typeof text !== "string") {
+            return Promise.reject(new TypeError("sessionSend expects a text string."));
+          }
+          return handlers.stageSketchSessionSend.postMessage({ text });
+        },
+        sessionDisconnect() {
+          return handlers.stageSketchSessionDisconnect.postMessage({});
+        },
         onEditAvailable(callback) {
           if (typeof callback !== "function") {
             throw new TypeError("onEditAvailable expects a callback.");
@@ -256,6 +368,12 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
             throw new TypeError("onDownloadDestinationDecision expects a callback.");
           }
           downloadDestinationCallbacks.add(callback);
+        },
+        onSessionEvent(callback) {
+          if (typeof callback !== "function") {
+            throw new TypeError("onSessionEvent expects a callback.");
+          }
+          sessionEventCallbacks.add(callback);
         }
       };
 
@@ -289,6 +407,20 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
                 "stageSketchBridge onDownloadDestinationDecision callback failed.",
                 error
               );
+            }
+          }
+        },
+        configurable: false,
+        enumerable: false,
+        writable: false
+      });
+      Object.defineProperty(window, "__stageSketchSessionEvent", {
+        value(event) {
+          for (const callback of sessionEventCallbacks) {
+            try {
+              callback(event);
+            } catch (error) {
+              console.error("stageSketchBridge onSessionEvent callback failed.", error);
             }
           }
         },
