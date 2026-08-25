@@ -74,6 +74,7 @@ export class SessionRoom {
   constructor(ctx, env) {
     this.ctx = ctx;
     this.env = env;
+    this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"t":"ping"}', '{"t":"pong"}'));
   }
 
   async fetch(request) {

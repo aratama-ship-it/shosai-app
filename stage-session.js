@@ -24,6 +24,7 @@
     guestBadge: $("stage-session-guest-badge"),
     hostAway: $("stage-session-host-away"),
     clearGuestArrows: $("stage-session-clear-guest-arrows"),
+    refresh: $("stage-session-refresh"),
     reconnect: $("stage-session-reconnect"),
     planCanvas: $("stage-plan-canvas"),
   };
@@ -34,6 +35,8 @@
   const HOST_SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
   const RECONNECT_LIMIT = 5;
   const RECONNECT_DELAY_MS = 3000;
+  const PING_INTERVAL_MS = 25 * 1000;
+  const PONG_TIMEOUT_MS = 10 * 1000;
   const HOST_SEND_DEBOUNCE_MS = 300;
   const POINTER_THROTTLE_MS = 100;
   const POINTER_TTL_MS = 3000;
@@ -46,6 +49,8 @@
   let reconnectAttempts = 0;
   let reconnectAllowed = true;
   let reconnectTimer = null;
+  let pingTimer = null;
+  let pongTimer = null;
   let hostSendTimer = null;
   let storedHostSession = null;
   let resumingStoredHost = false;
@@ -78,6 +83,7 @@
     if (els.hostAway) els.hostAway.textContent = sessionText("ホストの接続が切れています。復帰を待っています…");
     if (els.participantsLabel) els.participantsLabel.textContent = "参加者";
     if (els.clearGuestArrows) els.clearGuestArrows.textContent = "ゲスト注釈を一括消去";
+    if (els.refresh) els.refresh.textContent = sessionText("最新を取り直す");
     if (els.reconnect) els.reconnect.textContent = "再接続";
   }
 
@@ -197,6 +203,44 @@
     } catch (_) {
       return false;
     }
+  }
+
+  function stopKeepalive() {
+    clearTimeout(pingTimer);
+    clearTimeout(pongTimer);
+    pingTimer = null;
+    pongTimer = null;
+  }
+
+  function scheduleKeepalivePing(ws) {
+    clearTimeout(pingTimer);
+    pingTimer = setTimeout(() => {
+      pingTimer = null;
+      if (socket !== ws || !socketIsOpen()) return;
+      if (!sendMessage({ t: "ping" })) {
+        try { ws.close(); } catch (_) { /* closeイベントで既存の再接続へ進む */ }
+        return;
+      }
+      clearTimeout(pongTimer);
+      pongTimer = setTimeout(() => {
+        pongTimer = null;
+        if (socket !== ws || !socketIsOpen()) return;
+        clearTimeout(pingTimer);
+        pingTimer = null;
+        try { ws.close(); } catch (_) { /* closeイベントで既存の再接続へ進む */ }
+      }, PONG_TIMEOUT_MS);
+      scheduleKeepalivePing(ws);
+    }, PING_INTERVAL_MS);
+  }
+
+  function startKeepalive(ws) {
+    stopKeepalive();
+    scheduleKeepalivePing(ws);
+  }
+
+  function acceptKeepalivePong() {
+    clearTimeout(pongTimer);
+    pongTimer = null;
   }
 
   function sessionSocketUrl() {
@@ -323,6 +367,7 @@
     if (els.guestNote) els.guestNote.hidden = role !== "guest";
     if (els.guestBadge) els.guestBadge.hidden = role !== "guest";
     if (els.clearGuestArrows) els.clearGuestArrows.hidden = role !== "host";
+    if (els.refresh) els.refresh.hidden = role !== "guest";
     if (els.hostAway && role !== "guest") els.hostAway.hidden = true;
     updateResumeButton();
   }
@@ -594,6 +639,7 @@
   function rejectStoredHostResume() {
     reconnectAllowed = false;
     resumingStoredHost = false;
+    stopKeepalive();
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
     clearTimeout(hostSendTimer);
@@ -619,7 +665,9 @@
     let message;
     try { message = JSON.parse(event.data); } catch (_) { return; }
     if (!message || typeof message !== "object") return;
-    if (message.t === "welcome") {
+    if (message.t === "pong") {
+      acceptKeepalivePong();
+    } else if (message.t === "welcome") {
       handleWelcome(message);
     } else if (message.t === "doc" && role === "guest" && typeof message.doc === "string") {
       applyRemoteDocument(message.doc);
@@ -676,6 +724,7 @@
 
   function handleSocketClose(ws) {
     if (socket !== ws) return;
+    stopKeepalive();
     socket = null;
     clearTimeout(hostSendTimer);
     hostSendTimer = null;
@@ -689,6 +738,7 @@
 
   function connectSocket() {
     if (!role || !roomId) return;
+    stopKeepalive();
     if (role === "guest") awaitingInitialGuestDocument = true;
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
@@ -709,6 +759,7 @@
     socket = ws;
     ws.addEventListener("open", () => {
       if (socket !== ws) return;
+      startKeepalive(ws);
       if (role === "host") sendHostDocument(true);
       else setStatus("接続しました。共有内容を待っています…");
     });
@@ -892,6 +943,19 @@
     connectSocket();
   }
 
+  function refreshGuestDocument() {
+    if (role !== "guest") return;
+    stopKeepalive();
+    const previousSocket = socket;
+    socket = null;
+    if (previousSocket) {
+      try { previousSocket.close(); } catch (_) { /* 新しい接続はこのまま試す */ }
+    }
+    reconnectAllowed = true;
+    reconnectAttempts = 0;
+    connectSocket();
+  }
+
   let lastPointerSentAt = 0;
   let lastPointerPosition = { x: 0, y: 0 };
   function sendPointer(on, x = lastPointerPosition.x, y = lastPointerPosition.y) {
@@ -915,6 +979,7 @@
   els.start.addEventListener("click", startHostSession);
   if (els.resume) els.resume.addEventListener("click", resumeHostSession);
   if (els.copy) els.copy.addEventListener("click", copyInviteUrl);
+  if (els.refresh) els.refresh.addEventListener("click", refreshGuestDocument);
   if (els.reconnect) els.reconnect.addEventListener("click", reconnectNow);
   if (els.clearGuestArrows) {
     els.clearGuestArrows.addEventListener("click", () => {

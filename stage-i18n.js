@@ -72,6 +72,7 @@
     "共有セッション。ゲストはレーザーポインタ＋矢印のみ": "Shared session. Guests use the laser pointer and arrows only",
     "ゲスト（閲覧＋矢印）": "Guest (view + arrows)",
     "前回のセッションを再開": "Resume the previous session",
+    "最新を取り直す": "Fetch latest",
     "前回のセッションは終了しています。新しく開始してください。":
       "The previous session has ended. Please start a new one.",
     "ホストの接続が切れています。復帰を待っています…":

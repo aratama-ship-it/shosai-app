@@ -5,8 +5,10 @@ import vm from "node:vm";
 
 const root = new URL("../", import.meta.url);
 const sessionSource = await readFile(new URL("stage-session.js", root), "utf8");
+const roomSource = await readFile(new URL("session-room.js", root), "utf8");
 const stageSketchSource = await readFile(new URL("stage-sketch.js", root), "utf8");
 const indexSource = await readFile(new URL("index.html", root), "utf8");
+const stageHtmlSource = await readFile(new URL("stage.html", root), "utf8");
 const styleSource = await readFile(new URL("style.css", root), "utf8");
 const i18nSource = await readFile(new URL("stage-i18n.js", root), "utf8");
 const HOST_SESSION_KEY = "shosai-session-host-room";
@@ -69,7 +71,10 @@ function createFixture({ invited = false, savedHost = null, macBridge = null } =
   const elementById = (id) => {
     if (!elements.has(id)) {
       const element = createElement(id.includes("canvas") ? "canvas" : "div");
-      if (["stage-session-guest-badge", "stage-session-host-away", "stage-session-resume"].includes(id)) {
+      if ([
+        "stage-session-guest-badge", "stage-session-host-away", "stage-session-resume",
+        "stage-session-refresh",
+      ].includes(id)) {
         element.hidden = true;
       }
       elements.set(id, element);
@@ -100,6 +105,15 @@ function createFixture({ invited = false, savedHost = null, macBridge = null } =
     removeItem: (key) => storage.delete(key),
   };
   const sockets = [];
+  const timers = new Map();
+  let nextTimerId = 1;
+  const setTimer = (callback, delay = 0) => {
+    const id = nextTimerId;
+    nextTimerId += 1;
+    timers.set(id, { callback, delay });
+    return id;
+  };
+  const clearTimer = (id) => { timers.delete(id); };
   class WebSocketStub {
     static CONNECTING = 0;
     static OPEN = 1;
@@ -109,6 +123,7 @@ function createFixture({ invited = false, savedHost = null, macBridge = null } =
       this.readyState = WebSocketStub.CONNECTING;
       this.listeners = new Map();
       this.sent = [];
+      this.closeCalls = 0;
       sockets.push(this);
     }
     addEventListener(type, callback) {
@@ -116,7 +131,10 @@ function createFixture({ invited = false, savedHost = null, macBridge = null } =
       this.listeners.get(type).push(callback);
     }
     send(text) { this.sent.push(text); }
-    close() { this.readyState = WebSocketStub.CLOSED; }
+    close() {
+      this.closeCalls += 1;
+      this.readyState = WebSocketStub.CLOSED;
+    }
     dispatch(type, event = {}) {
       if (type === "open") this.readyState = WebSocketStub.OPEN;
       if (type === "close") this.readyState = WebSocketStub.CLOSED;
@@ -150,8 +168,8 @@ function createFixture({ invited = false, savedHost = null, macBridge = null } =
     URL,
     console,
     performance: { now: () => 0 },
-    setTimeout: () => 1,
-    clearTimeout: noop,
+    setTimeout: setTimer,
+    clearTimeout: clearTimer,
     getComputedStyle: () => ({ position: "static" }),
     fetch: async (...args) => {
       fetchCalls.push(args);
@@ -179,6 +197,16 @@ function createFixture({ invited = false, savedHost = null, macBridge = null } =
     fetchCalls,
     sockets,
     storage,
+    activeTimerDelays() {
+      return [...timers.values()].map((timer) => timer.delay);
+    },
+    runTimer(delay) {
+      const entry = [...timers.entries()].find(([, timer]) => timer.delay === delay);
+      assert.ok(entry, `${delay}ms のタイマーがあること`);
+      const [id, timer] = entry;
+      timers.delete(id);
+      return timer.callback();
+    },
     async startHost() {
       elementById("stage-session-host-name").value = "Host";
       await elementById("stage-session-start").dispatch("click");
@@ -312,6 +340,79 @@ test("ゲストのwelcomeとpresenceでホスト不在帯を出し入れし、�
   assert.equal(host.elementById("stage-session-host-away").hidden, true);
 });
 
+test("pingとpongの文字列をサーバーとクライアントで正確に揃える", async () => {
+  const constructor = roomSource.slice(
+    roomSource.indexOf("  constructor(ctx, env) {"),
+    roomSource.indexOf("  async fetch(request)"),
+  );
+  assert.match(
+    constructor,
+    /setWebSocketAutoResponse\(new WebSocketRequestResponsePair\('\{"t":"ping"\}', '\{"t":"pong"\}'\)\)/,
+  );
+  assert.equal((roomSource.match(/setWebSocketAutoResponse/g) || []).length, 1);
+
+  const fixture = createFixture({ invited: true });
+  const socket = await fixture.joinGuest();
+  socket.dispatch("open");
+  fixture.runTimer(25_000);
+  assert.equal(socket.sent.at(-1), '{"t":"ping"}');
+});
+
+test("keepaliveは25秒ごとにpingし、pongをUIへ出さず、10秒途絶で閉じる", async () => {
+  const fixture = createFixture({ invited: true });
+  const socket = await fixture.joinGuest();
+  socket.dispatch("open");
+  assert.ok(fixture.activeTimerDelays().includes(25_000));
+
+  fixture.runTimer(25_000);
+  assert.equal(socket.sent.at(-1), '{"t":"ping"}');
+  assert.ok(fixture.activeTimerDelays().includes(10_000));
+  const statusBeforePong = fixture.elementById("stage-session-status").textContent;
+  socket.message({ t: "pong" });
+  assert.equal(fixture.activeTimerDelays().includes(10_000), false);
+  assert.equal(fixture.elementById("stage-session-status").textContent, statusBeforePong);
+
+  fixture.runTimer(25_000);
+  fixture.runTimer(10_000);
+  assert.equal(socket.closeCalls, 1);
+  assert.equal(fixture.activeTimerDelays().includes(25_000), false);
+});
+
+test("切断時はkeepaliveタイマーを止め、既存の3秒再接続へ渡す", async () => {
+  const fixture = createFixture({ invited: true });
+  const socket = await fixture.joinGuest();
+  socket.dispatch("open");
+  socket.dispatch("close");
+
+  assert.equal(fixture.activeTimerDelays().includes(25_000), false);
+  assert.equal(fixture.activeTimerDelays().includes(10_000), false);
+  assert.ok(fixture.activeTimerDelays().includes(3000));
+});
+
+test("最新を取り直すはゲストだけに出て、旧ソケットを閉じ、試行回数0で即時接続する", async () => {
+  assert.match(indexSource, /id="stage-session-refresh"[^>]*hidden/);
+  const guest = createFixture({ invited: true });
+  assert.equal(guest.elementById("stage-session-refresh").hidden, true);
+  const firstSocket = await guest.joinGuest();
+  firstSocket.dispatch("open");
+  assert.equal(guest.elementById("stage-session-refresh").hidden, false);
+
+  await guest.elementById("stage-session-refresh").dispatch("click");
+  assert.equal(firstSocket.closeCalls, 1);
+  assert.equal(guest.sockets.length, 2);
+  assert.equal(guest.elementById("stage-session-status").textContent, "接続しています…");
+
+  guest.sockets.at(-1).dispatch("close");
+  assert.match(guest.elementById("stage-session-status").textContent, /1\/5/);
+  await guest.elementById("stage-session-refresh").dispatch("click");
+  assert.equal(guest.sockets.length, 3);
+  assert.equal(guest.elementById("stage-session-status").textContent, "接続しています…");
+
+  const host = createFixture();
+  await host.startHost();
+  assert.equal(host.elementById("stage-session-refresh").hidden, true);
+});
+
 test("ホスト不在帯は上部中央・読み上げ通知・操作透過である", () => {
   assert.match(
     indexSource,
@@ -336,13 +437,25 @@ test("ゲスト用CSSは編集・管理パネルを隠し、classを外せば通
     "project", "music", "cast", "machinery", "rigs", "light", "background", "inspector", "ask",
   ]) {
     assert.match(block, new RegExp(`body\\.stage-session-guest \\.stage-panel\\[data-panel="${panel}"\\]`));
+    for (const html of [indexSource, stageHtmlSource]) {
+      assert.match(html, new RegExp(`class="[^"]*stage-panel[^"]*"[^>]*data-panel="${panel}"`));
+    }
   }
   assert.match(block, /data-panel="save"\] > \.stage-panel-head/);
-  for (const saveOnly of ["stage-save-status", "stage-backup-note", "stage-backup-hint", "stage-clear"]) {
-    assert.match(block, new RegExp(`body\\.stage-session-guest #${saveOnly}`));
+  assert.match(block, /data-panel="save"\] > \.stage-panel-body > :not\(#stage-session-panel\):not\(\.stage-tablet-panel-page\)/);
+  assert.match(block, /\.stage-tablet-panel-page > :not\(#stage-session-panel\)/);
+  for (const html of [indexSource, stageHtmlSource]) {
+    const savePanel = html.slice(
+      html.indexOf('<section class="stage-panel stage-save-note" data-panel="save"'),
+      html.indexOf('<section class="stage-panel" data-panel="ask"'),
+    );
+    assert.match(savePanel, /class="stage-panel-body"/);
+    assert.match(savePanel, /id="stage-session-panel"/);
   }
   assert.doesNotMatch(block, /body\.stage-session-guest #stage-session-panel/,
     "共有セッション欄そのものは隠さない");
+  assert.match(block, /body\.stage-session-guest #stage-present-btn/);
+  for (const html of [indexSource, stageHtmlSource]) assert.match(html, /id="stage-present-btn"/);
   assert.match(block, /body\.stage-session-guest \.stage-scene-actions/);
   assert.match(block, /body\.stage-session-guest #stage-undo/);
   assert.match(block, /body\.stage-session-guest \[data-stage-tool\]:not\(\[data-stage-tool="arrow"\]\)/);
@@ -370,6 +483,7 @@ test("追加した日本語UI文字列には英訳がある", () => {
   const translations = context.window.SHOSAI_I18N.text;
   for (const text of [
     "前回のセッションを再開",
+    "最新を取り直す",
     "前回のセッションは終了しています。新しく開始してください。",
     "ホストの接続が切れています。復帰を待っています…",
   ]) {
