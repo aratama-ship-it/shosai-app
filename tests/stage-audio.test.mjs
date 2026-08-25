@@ -94,7 +94,13 @@ test("IndexedDB helperはtrackIdを検査し、孤児回収を持つ", () => {
   assert.match(storeSource, /const STORE = "tracks"/);
 });
 
-test("PC・iPad・スマホが一つのaudio要素を共有する", () => {
+/* 2026-08-24 方針変更: 楽曲はPC版のみ。タブレット・スマホからはUIごと取り除いた。
+   長時間再生・画面ロック・バックグラウンド復帰・Bluetooth出力切替という
+   モバイル固有の壊れ方を抱え込まないための線引き（本人判断）。
+   このテストは以前「PC・iPad・スマホが一つのaudio要素を共有する」ことを守っていたが、
+   守るべき不変条件が「PCにはある／タブレット・スマホには無い」へ変わった。 */
+
+test("PCの音楽機能は一つのaudio要素で動く", () => {
   for (const html of [indexSource, stageHtml]) {
     assert.equal((html.match(/id="stage-music-audio"/g) || []).length, 1);
     assert.match(html, /data-panel="music"/);
@@ -102,17 +108,38 @@ test("PC・iPad・スマホが一つのaudio要素を共有する", () => {
     assert.match(html, /id="stage-music-toggle"/);
     assert.match(html, /stage-audio-store\.js\?v=2/);
   }
-  assert.match(stageSource, /id: "music", icon: "♪", label: "音楽", panels: \["music"\]/);
-  assert.match(stageSource, /className = "stage-phone-music-bar"/);
-  assert.match(stageSource, /musicToggle\.addEventListener\("click", toggleAudioPlayback\)/);
+  assert.match(stageSource, /els\.musicToggle\.addEventListener\("click", toggleAudioPlayback\)/);
+  assert.match(stageSource, /applyDocumentString\(text\)[\s\S]*?continuePlayback[\s\S]*?state\.project = project/);
+});
+
+test("タブレット・スマホに音楽UIを持ち込まない", () => {
+  // ★ここが緩むと、保証しない機能のボタンが配布物へ戻る
+  assert.ok(
+    !/id: "music", icon: "♪"/.test(stageSource),
+    "iPadのレールに音楽グループを載せないこと",
+  );
+  assert.ok(
+    !/stage-phone-music-bar|stage-tablet-music-toggle|stage-tablet-music-open/.test(stageSource),
+    "スマホ・タブレット専用の音楽UIを作らないこと",
+  );
+  assert.ok(
+    !/tabletUi\.music|phoneUi\.music/.test(stageSource),
+    "タブレット・スマホのUIオブジェクトへ音楽を持たせないこと",
+  );
+  assert.ok(
+    !/stage-phone-music|stage-tablet-music/.test(styleSource),
+    "音楽UIのCSSも残さないこと",
+  );
+});
+
+test("シーンの送りはタブレット・スマホの専用UIが持つ", () => {
+  // 音楽とは別の話。PC用の帯を隠して専用の送りを使う作りは変えていない
   assert.match(styleSource, /html\.stage-pwa-tablet \.stage-scene-bar \{ display: none; \}/);
   assert.match(styleSource, /html\.stage-phone-viewer \.stage-scene-bar \{ display: none !important; \}/);
   assert.match(
     styleSource,
     /is-tablet-drawer-open[\s\S]*?\.stage-canvas-bar \.stage-canvas-tools \{[\s\S]*?overflow-x: auto;/,
   );
-  assert.match(styleSource, /100dvh - 46px/);
-  assert.match(stageSource, /applyDocumentString\(text\)[\s\S]*?continuePlayback[\s\S]*?state\.project = project/);
 });
 
 test("音源のローカル限定をUIで明示し、主要文言を日英で持つ", () => {

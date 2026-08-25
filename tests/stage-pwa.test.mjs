@@ -91,7 +91,19 @@ test("PWA登録はHTTP上だけで行い、舞台スケッチの保存データ�
 });
 
 test("Service Workerは資料棚など同一サイトの別画面へ介入しない", () => {
-  assert.match(swSource, /if \(url\.pathname !== STAGE_PATH\) return/);
+  /* 2026-08-24: 配信層の307（/stage.html → /stage）対応で、単一のSTAGE_PATHから
+     舞台スケッチの二つの姿だけを持つSTAGE_PATHSへ変更。守る意図は同じ——
+     この集合に無い画面（資料棚・名簿など）へは介入しない。 */
+  assert.match(swSource, /if \(!STAGE_PATHS\.has\(url\.pathname\)\) return/);
+  assert.match(swSource, /new URL\("\.\/stage\.html", self\.location\.href\)\.pathname/);
+  assert.match(swSource, /new URL\("\.\/stage", self\.location\.href\)\.pathname/);
+  // 集合が舞台スケッチの2entryだけであること（増えたら介入範囲が広がっている）
+  const setBlock = swSource.slice(
+    swSource.indexOf("const STAGE_PATHS"),
+    swSource.indexOf("]);", swSource.indexOf("const STAGE_PATHS")),
+  );
+  const entries = [...setBlock.matchAll(/new URL\(/g)];
+  assert.equal(entries.length, 2, "STAGE_PATHSは stage.html と stage の2つだけに保つ");
   assert.match(swSource, /if \(!APP_SHELL_URLS\.has\(request\.url\)\) return/);
 });
 
@@ -110,7 +122,7 @@ test("オフライン用CSSとJSの版は現在のHTML参照と揃う", () => {
     assert.ok(ref, `${name} の版番号がindex.htmlにある`);
     assert.ok(swSource.includes(`./${ref[0]}`), `${ref[0]} がオフライン対象にある`);
   });
-  assert.ok(swSource.includes("./stage-pwa.js?v=3"));
+  assert.ok(swSource.includes("./stage-pwa.js?v=6"));
 });
 
 test("iPad PWAは縦画面で二面、横画面で単一図の専用ワークスペースを組み立てる", () => {

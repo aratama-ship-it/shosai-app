@@ -90,7 +90,7 @@ def stage_scripts() -> str:
         if bare in SKIP_JS:
             continue
         if bare == "stage-sketch.js":
-            lines.append('<script src="stage-pwa.js?v=3"></script>')
+            lines.append('<script src="stage-pwa.js?v=6"></script>')
         lines.append(f'<script src="{src}"></script>')
     return "\n".join(lines)
 

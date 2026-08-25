@@ -43,11 +43,21 @@ test("縦画面は正面図と平面図を並べ、横画面は一枚を切り�
   assert.match(style, /@media \(orientation: landscape\) \{[\s\S]*?html\.stage-phone-viewer \.stage-canvas-stack \{[\s\S]*?grid-template-rows: minmax\(0, 1fr\)/);
 });
 
-test("横画面は操作を右側レールへ移し、音楽帯を引いた高さへ図を収める", () => {
+test("横画面は操作を右側レールへ移し、図が縦いっぱいを使う", () => {
+  /* 2026-08-24: 楽曲をPC専用にして下の音楽帯44pxを取り除いたので、
+     その分は図の取り分になった（以前は 100dvh - 46px を引いていた）。
+     引き算が復活していたら、音楽帯が戻ったか、計算だけ取り残されている。 */
   assert.match(style, /@media \(orientation: landscape\) \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) 64px/);
   assert.match(style, /html\.stage-phone-viewer \.stage-phone-toolbar \{[\s\S]*?grid-column: 2;[\s\S]*?flex-direction: column/);
   assert.match(style, /justify-items: end/);
-  assert.match(style, /width: min\(100%, calc\(\(100dvh - 46px\) \* 16 \/ 9\)\)/);
+  assert.match(style, /width: min\(100%, calc\(100dvh \* 16 \/ 9\)\)/);
+  assert.ok(!/100dvh - 46px/.test(style), "音楽帯ぶんの引き算が残っていないこと");
+});
+
+test("スマホの図は音楽帯ぶんも使える二段組み", () => {
+  // 縦: 道具の帯48px + 図。横: 図だけ（道具は右のレールへ）
+  assert.match(style, /html\.stage-phone-viewer \.stage-board-column \{[\s\S]*?grid-template-rows: 48px minmax\(0, 1fr\);/);
+  assert.match(style, /@media \(orientation: landscape\) \{[\s\S]*?grid-template-rows: minmax\(0, 1fr\);/);
 });
 
 test("縦画面の操作は一段に収まり、図へ重ならない", () => {

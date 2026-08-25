@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=193">
+<link rel="stylesheet" href="style.css?v=195">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -920,6 +920,13 @@
                 <button type="button" class="stage-minor-action" id="stage-session-reconnect" hidden></button>
               </div>
             </details>
+
+            <!-- どこで何ができるか。設定（保存パネル）から開く一覧。
+                 既定は畳んでおく（保存の導線を押し下げないため）。
+                 書斎のブロックは単独配布版では隠す（stage-sketch.js が制御）。 -->
+            <!-- 機能一覧は幅が要る資料なので、側柱ではなく窓で開く（2026-08-25）。
+                 細い保存パネルに入れると列見出しが縦積みになって読めなかった。 -->
+            <button type="button" class="stage-minor-action" id="stage-reach-open">どこで何ができるか</button>
           </section>
 
           <section class="stage-panel" data-panel="ask" data-title="AI指示" id="stage-ask-panel" aria-label="AI指示">
@@ -1160,6 +1167,213 @@
   <div class="stage-modal-body">
     <p class="stage-profile-hint">この端末のブラウザに置いてあるショーです。保存は自動。別の端末へ持っていくときは「書き出す」を使ってください。</p>
     <div class="stage-show-list" id="stage-show-list"></div>
+  </div>
+</div>
+
+<div class="stage-modal-backdrop" id="stage-reach-backdrop" hidden></div>
+<div class="stage-modal stage-reach-modal" id="stage-reach-modal" role="dialog"
+     aria-modal="true" aria-labelledby="stage-reach-title" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-reach-title">どこで何ができるか</h2>
+    <button type="button" class="btn-quiet" id="stage-reach-close">閉じる</button>
+  </header>
+  <div class="stage-reach-body">
+
+
+        <div class="reach-head">
+          <h1>どこで何ができるか</h1>
+          <p class="reach-lead-desk">ここには二つの道具があります。舞台スケッチは、これから広く使ってもらうためのアプリ。書斎は、資料棚と名簿と制作机を置いた、こちらの手元だけの机です。同じ画面から行き来できますが、配るのは舞台スケッチのほうだけです。</p>
+          <p class="reach-lead-standalone" hidden>舞台を組み、光を置き、シーンを並べるための道具です。机で組み立て、稽古場へ持ち出し、現場では手元で確かめる——左から右へ、つくるが机に残り、確かめるが手元へ移ります。</p>
+          <div class="reach-legend">
+            <span><span class="m m-full">●</span> つくる・直せる</span>
+            <span><span class="m m-part">○</span> 見る・限られる</span>
+            <span><span class="m m-none">—</span> この版には入っていない</span>
+          </div>
+        </div>
+
+        <!-- ============ 配る道具 ============ -->
+        <section class="tool-block cols-3">
+          <div class="tool-mark">
+            <h2>舞台スケッチ</h2>
+            <span class="tool-tag tag-public">配る道具</span>
+          </div>
+          <p class="tool-lead">舞台を組み、光を置き、シーンを並べるための一枚。これ単独で開けますので、共演者やスタッフへはこちらを渡します。机で組み立て、稽古場へ持ち出し、現場では手元で確かめる——左から右へ、つくるが机に残り、確かめるが手元へ移ります。</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>仕事</th>
+                <th>ブラウザ<span>机</span></th>
+                <th class="col-away">タブレット<span>稽古場</span></th>
+                <th class="col-away">スマホ<span>手元</span></th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <tr class="group-row"><th class="group" colspan="4">舞台をつくる</th></tr>
+
+              <tr>
+                <th class="row">ショーを開く・切り替える</th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-full">●</td>
+                <td data-label="スマホ" class="col-away m-part">○<u>受け取って開く</u></td>
+              </tr>
+              <tr>
+                <th class="row">演者・小道具を置く／動かす</th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-full">●</td>
+                <td data-label="スマホ" class="col-away m-none">—</td>
+              </tr>
+              <tr>
+                <th class="row">舞台セットを組む<i>3Dモデルを作って登録する</i></th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-full">●</td>
+                <td data-label="スマホ" class="col-away m-none">—</td>
+              </tr>
+              <tr>
+                <th class="row">照明を置く・光の意図を書く</th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-full">●</td>
+                <td data-label="スマホ" class="col-away m-none">—</td>
+              </tr>
+              <tr>
+                <th class="row">背景を塗る・矢印を描く</th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-full">●</td>
+                <td data-label="スマホ" class="col-away m-none">—</td>
+              </tr>
+              <tr>
+                <th class="row">シーンを足す・並べ替える</th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-full">●</td>
+                <td data-label="スマホ" class="col-away m-part">○<u>送るだけ</u></td>
+              </tr>
+              <tr>
+                <th class="row">舞台機構<i>迫り・盆・幕の転換</i></th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-none">—</td>
+                <td data-label="スマホ" class="col-away m-none">—</td>
+              </tr>
+              <tr>
+                <th class="row">3Dカメラ・この人の視界</th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-none">—</td>
+                <td data-label="スマホ" class="col-away m-none">—</td>
+              </tr>
+              <tr>
+                <th class="row">曲を割り当てる<i>音楽は机の上の仕事にする</i></th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-none">—</td>
+                <td data-label="スマホ" class="col-away m-none">—</td>
+              </tr>
+              <tr>
+                <th class="row">曲を再生する<i>シーンを送りながら聴く</i></th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-none">—</td>
+                <td data-label="スマホ" class="col-away m-none">—</td>
+              </tr>
+              <tr>
+                <th class="row">メモを書く</th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-full">●</td>
+                <td data-label="スマホ" class="col-away m-full">●</td>
+              </tr>
+
+              <tr class="group-row"><th class="group" colspan="4">持ち出す・残す</th></tr>
+
+              <tr>
+                <th class="row">この端末の中へ自動保存</th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-full">●</td>
+                <td data-label="スマホ" class="col-away m-full">●</td>
+              </tr>
+              <tr>
+                <th class="row">保存の警告が目に入る<i>棚が壊れた／容量が足りない、を知らせる行</i></th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-full">●</td>
+                <td data-label="スマホ" class="col-away m-full">●</td>
+              </tr>
+              <tr>
+                <th class="row">ファイルへ書き出す<i>控えを手元に残す</i></th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-full">●</td>
+                <td data-label="スマホ" class="col-away m-full">●</td>
+              </tr>
+              <tr>
+                <th class="row">ファイルを読み込む</th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-full">●</td>
+                <td data-label="スマホ" class="col-away m-full">●</td>
+              </tr>
+              <tr>
+                <th class="row">電波が無くても開く<i>一度開けば、次からは繋がっていなくても</i></th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-full">●</td>
+                <td data-label="スマホ" class="col-away m-full">●</td>
+              </tr>
+              <tr>
+                <th class="row">みんなで同じ舞台を見る<i>共有セッション</i></th>
+                <td data-label="ブラウザ" class="m-full">●</td>
+                <td data-label="タブレット" class="col-away m-full">●</td>
+                <td data-label="スマホ" class="col-away m-part">○<u>招かれて入る</u></td>
+              </tr>
+
+            </tbody>
+          </table>
+        </section>
+
+        <!-- ============ 配らない道具 ============ -->
+        <section class="tool-block block-inhouse cols-2">
+          <div class="tool-mark">
+            <h2>書斎</h2>
+            <span class="tool-tag tag-inhouse">身内の道具</span>
+          </div>
+          <p class="tool-lead">調べたショーの資料棚、アーティストと制作スタッフの名簿、企画を書く制作机。ここは配りません。舞台スケッチもこの中から使えますが、人へ渡すときは上の単独版のほうを渡します。</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>仕事</th>
+                <th>アプリ<span>Mac</span></th>
+                <th>ブラウザ<span>机</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th class="row">資料棚をひく<i>ショーと舞台技術を調べる</i></th>
+                <td data-label="アプリ" class="m-full">●</td>
+                <td data-label="ブラウザ" class="m-full">●</td>
+              </tr>
+              <tr>
+                <th class="row">名簿をひく<i>アーティスト・制作スタッフ</i></th>
+                <td data-label="アプリ" class="m-full">●</td>
+                <td data-label="ブラウザ" class="m-full">●</td>
+              </tr>
+              <tr>
+                <th class="row">制作机で企画を書く<i>種火・スクラップブック・場面問答</i></th>
+                <td data-label="アプリ" class="m-full">●</td>
+                <td data-label="ブラウザ" class="m-full">●</td>
+              </tr>
+              <tr>
+                <th class="row">舞台スケッチを使う<i>上の表の仕事が、この中でもできる</i></th>
+                <td data-label="アプリ" class="m-full">●</td>
+                <td data-label="ブラウザ" class="m-full">●</td>
+              </tr>
+              <tr>
+                <th class="row">AIに直させる<i>言葉で指示して舞台を組み替える</i></th>
+                <td data-label="アプリ" class="m-full">●</td>
+                <td data-label="ブラウザ" class="m-none">—</td>
+              </tr>
+              <tr>
+                <th class="row">電波が無くても開く</th>
+                <td data-label="アプリ" class="m-full">●</td>
+                <td data-label="ブラウザ" class="m-none">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <p class="reach-foot">「AIに直させる」はMacアプリの中だけの機能です。ブラウザで開いたときは、この項目自体が現れません。<br>タブレット版・スマホ版は、舞台スケッチをホーム画面へ追加するか、渡されたリンクを開くと使えます。</p>
   </div>
 </div>
 
@@ -1542,7 +1756,7 @@
 
 <script src="stage-venues.js?v=20"></script>
 <script src="stage-venue-lines.js?v=4"></script>
-<script src="stage-i18n.js?v=74"></script>
+<script src="stage-i18n.js?v=75"></script>
 <script src="stage-prompt-i18n.js?v=2"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=1"></script>
@@ -1552,9 +1766,9 @@
 <script src="stage-first-person.js?v=16"></script>
 <script src="stage-shows.local.js?v=1"></script>
 <script src="stage-audio-store.js?v=2"></script>
-<script src="stage-pwa.js?v=3"></script>
-<script src="stage-sketch.js?v=287"></script>
-<script src="stage-session.js?v=3"></script>
+<script src="stage-pwa.js?v=6"></script>
+<script src="stage-sketch.js?v=288"></script>
+<script src="stage-session.js?v=4"></script>
 <script src="stage-venue-editor.js?v=6"></script>
 </body>
 </html>

@@ -945,6 +945,18 @@
   const tabletOrientation = window.matchMedia("(orientation: portrait)");
   document.documentElement.classList.toggle("stage-phone-viewer", phoneViewerActive);
   let phoneUi = null;
+
+  /* 機能一覧「どこで何ができるか」の見せ方を、どちらの製品として開かれたかで変える。
+     配る製品（stage.html 単独版）の利用者に、持っていない書斎機能の一覧を見せない。
+     導入文も差し替える——書斎の表が消えると「二つの道具があります」が意味を失うため。 */
+  if (standaloneStagePage) {
+    const inhouse = document.querySelector(".stage-reach-body .block-inhouse");
+    if (inhouse) inhouse.hidden = true;
+    const deskLead = document.querySelector(".stage-reach-body .reach-lead-desk");
+    if (deskLead) deskLead.hidden = true;
+    const standaloneLead = document.querySelector(".stage-reach-body .reach-lead-standalone");
+    if (standaloneLead) standaloneLead.hidden = false;
+  }
   const SCENE_STUDIES = Array.isArray(window.SHOSAI_SCENE_STUDIES)
     ? window.SHOSAI_SCENE_STUDIES
     : [];
@@ -2329,6 +2341,10 @@
     sceneGridOpen: document.getElementById("stage-scene-grid-open"),
     sceneBarGrid: document.getElementById("stage-scene-bar-grid"),
     sceneFoldAll: document.getElementById("stage-scene-fold-all"),
+    reachOpen: document.getElementById("stage-reach-open"),
+    reachModal: document.getElementById("stage-reach-modal"),
+    reachBackdrop: document.getElementById("stage-reach-backdrop"),
+    reachClose: document.getElementById("stage-reach-close"),
     sceneGridModal: document.getElementById("stage-scene-grid-modal"),
     sceneGridBackdrop: document.getElementById("stage-scene-grid-backdrop"),
     sceneGridClose: document.getElementById("stage-scene-grid-close"),
@@ -3928,7 +3944,6 @@
       els.musicSeek.setAttribute("aria-valuetext", timeText);
     }
     if (els.musicTime) els.musicTime.textContent = timeText;
-    if (phoneUi && phoneUi.musicTime) phoneUi.musicTime.textContent = timeText;
   }
 
   function syncAudioControls() {
@@ -3954,31 +3969,10 @@
     if (els.musicRestart) els.musicRestart.disabled = !currentReady;
     if (els.musicRelink) els.musicRelink.hidden = !missing;
 
-    if (tabletUi && tabletUi.musicToggle) {
-      tabletUi.musicToggle.disabled = !assignedId;
-      tabletUi.musicToggle.textContent = playing ? "❚❚" : "▶";
-      tabletUi.musicToggle.setAttribute("aria-pressed", String(playing));
-      tabletUi.musicToggle.setAttribute("aria-label", playing
-        ? (isEn() ? "Pause music" : "曲を一時停止")
-        : (isEn() ? "Play music" : "曲を再生"));
-      tabletUi.musicToggle.title = displayTitle;
-      tabletUi.musicOpen.title = displayTitle;
-    }
-    if (phoneUi && phoneUi.musicToggle) {
-      phoneUi.musicToggle.disabled = !assignedId;
-      phoneUi.musicToggle.textContent = playing ? "❚❚" : "▶";
-      phoneUi.musicToggle.setAttribute("aria-pressed", String(playing));
-      phoneUi.musicToggle.setAttribute("aria-label", playing
-        ? (isEn() ? "Pause music" : "曲を一時停止")
-        : (isEn() ? "Play music" : "曲を再生"));
-      phoneUi.musicTitle.textContent = displayTitle;
-      phoneUi.musicTitle.disabled = !assignedId;
-      phoneUi.musicTitle.setAttribute("aria-label", missing
-        ? (isEn() ? `Reconnect ${title}` : `${title}の音源を選び直す`)
-        : (playing
-          ? (isEn() ? `Pause ${title}` : `${title}を一時停止`)
-          : (isEn() ? `Play ${title}` : `${title}を再生`)));
-    }
+    /* タブレット・スマホ向けの音楽UIはここには無い。楽曲はPC専用と決めたため
+       （2026-08-24 本人判断）。長時間再生・画面ロック・バックグラウンド復帰・
+       Bluetooth出力切替といったモバイル固有の壊れ方を抱え込まないための線引き。
+       ★ここへ tabletUi / phoneUi の音楽UIを足さないこと。足すなら方針の再判断から。 */
     updateAudioTimeControls();
   }
 
@@ -5351,28 +5345,58 @@
     if (els.backupHint) els.backupHint.hidden = n < BACKUP_HINT_AFTER;
   }
 
+  /* スマホの閲覧機へ保存の警告を届ける。
+     ★通常の保存（info）では何も出さない。「保存しています…」→「保存しました」と
+       流れるたびに帯が出ては、現場で邪魔になるだけで読まれなくなる。
+     ★level が info のときに帯を隠さないこと。警告が出た直後に通常の保存が走ると、
+       せっかくの警告が消えてしまう。閉じるのは利用者の操作だけにする。 */
+  function syncPhoneSaveNotice(text, level) {
+    if (level !== "warn") return;
+    if (!phoneUi || !phoneUi.saveNotice) return;
+    phoneUi.saveNoticeText.textContent = text;
+    phoneUi.saveNotice.hidden = false;
+  }
+
+  /* 保存の状態は、机の「保存」パネルとスマホの閲覧機の両方へ届ける必要がある。
+     閲覧機ではパネルごと隠れているため、els.saveStatus へ直接代入すると
+     **警告が誰にも見えないまま保存が失敗する**（2026-08-23 に判明。P1-7の芯）。
+     ★ここを経由せず els.saveStatus.textContent へ直接書かないこと。 */
+  function setSaveStatus(text, level = "info") {
+    if (els.saveStatus) els.saveStatus.textContent = text;
+    syncPhoneSaveNotice(text, level);
+  }
+
   function persistSoon() {
     clearTimeout(saveTimer);
-    els.saveStatus.textContent = isEn() ? "Saving\u2026" : "変更を保存しています…";
+    setSaveStatus(isEn() ? "Saving\u2026" : "変更を保存しています…");
     saveTimer = setTimeout(() => {
       try {
         localStorage.setItem(STORAGE_KEY, snapshot());
         shelveCurrent();
         /* 現在ショーと棚は別の保存。棚だけ失敗することがあるので分けて伝える */
-        els.saveStatus.textContent = shelfCorrupt
-          ? (isEn()
+        if (shelfCorrupt) {
+          setSaveStatus(isEn()
             ? `Saved \u201c${state.project.title}\u201d. The show shelf is damaged, so shelf updates are paused to avoid deleting your other shows. Export to a file, then rebuild the shelf from the show list.`
-            : `「${state.project.title}」は保存しました。ただしショー一覧の控えが壊れているため、一覧の更新を止めています（残っている他のショーを消さないためです）。ファイルへ書き出してから、ショー一覧で作り直してください。`)
-          : shelfFailed
-          ? (isEn()
+            : `「${state.project.title}」は保存しました。ただしショー一覧の控えが壊れているため、一覧の更新を止めています（残っている他のショーを消さないためです）。ファイルへ書き出してから、ショー一覧で作り直してください。`,
+            "warn");
+        } else if (shelfFailed) {
+          setSaveStatus(isEn()
             ? `Saved \u201c${state.project.title}\u201d, but the show shelf is out of space \u2014 export to a file to keep a copy.`
-            : `「${state.project.title}」を保存しましたが、ショー一覧の控えは容量不足で更新できていません。ファイルへ書き出してください。`)
-          : (isEn() ? `Saved \u201c${state.project.title}\u201d.` : `「${state.project.title}」を保存しました。`);
+            : `「${state.project.title}」を保存しましたが、ショー一覧の控えは容量不足で更新できていません。ファイルへ書き出してください。`,
+            "warn");
+        } else {
+          setSaveStatus(isEn()
+            ? `Saved \u201c${state.project.title}\u201d.`
+            : `「${state.project.title}」を保存しました。`);
+        }
         updateBackupNote();
       } catch (_) {
-        els.saveStatus.textContent = isEn()
-          ? "Could not save on this device. Export an image to keep your work."
-          : "この端末へ保存できませんでした。画像を書き出して残してください。";
+        /* 「画像を書き出して」と案内していたが、いまは書き出しボタンが
+           警告のすぐ隣にある。そちらへ導く（2026-08-24 P1-7対応）。 */
+        setSaveStatus(isEn()
+          ? "Could not save on this device. Export the show to a file to keep your work."
+          : "この端末へ保存できませんでした。ファイルへ書き出して残してください。",
+          "warn");
       }
       try { if (window.SHOSAI_STAGE_SESSION_HOOKS?.onLocalChange) window.SHOSAI_STAGE_SESSION_HOOKS.onLocalChange(); } catch (_) { /* セッション未使用なら何もしない */ }
     }, 180);
@@ -10646,23 +10670,8 @@
     sceneBar.append(scenePrev, sceneCurrent, sceneNext);
     toolbar.append(actions, sceneBar);
 
-    const musicBar = document.createElement("div");
-    musicBar.className = "stage-phone-music-bar";
-    musicBar.setAttribute("aria-label", "現在のシーンの音楽");
-    const musicToggle = document.createElement("button");
-    musicToggle.type = "button";
-    musicToggle.className = "stage-phone-music-toggle";
-    musicToggle.textContent = "▶";
-    musicToggle.setAttribute("aria-label", "曲を再生");
-    musicToggle.setAttribute("aria-pressed", "false");
-    const musicTitle = document.createElement("button");
-    musicTitle.type = "button";
-    musicTitle.className = "stage-phone-music-title";
-    musicTitle.textContent = "音なし";
-    const musicTime = document.createElement("span");
-    musicTime.className = "stage-phone-music-time";
-    musicTime.textContent = "0:00 / 0:00";
-    musicBar.append(musicToggle, musicTitle, musicTime);
+    /* 音楽バーはここに置かない。楽曲はPC専用と決めたため（2026-08-24 本人判断）。
+       ★ここへ音楽UIを足さないこと。足すなら方針の再判断から。 */
 
     const infoPanel = document.createElement("section");
     infoPanel.className = "stage-phone-info";
@@ -10686,8 +10695,12 @@
     const fileButton = makePhoneButton("JSONファイル", "JSONファイルからショーを開く");
     const seamSampleButton = makePhoneButton("継ぎ目の庭", "継ぎ目の庭のサンプルを開く");
     const sampleButton = makePhoneButton("サンプルショー", "サンプルショーを開く");
+    /* 書き出しは読み込みの対。同じパネルに置く。
+       これが無いと、書いたメモを端末から取り出す手段が無くなる（P1-7）。 */
+    const exportButton = makePhoneButton("ファイルへ書き出す", "いまのショーをファイルへ書き出す");
     const sourceClose = makePhoneButton("閉じる", "ショー選択を閉じる");
-    sourcePanel.append(sourceTitle, fileButton, seamSampleButton, sampleButton, sourceClose);
+    sourcePanel.append(sourceTitle, fileButton, seamSampleButton, sampleButton,
+      exportButton, sourceClose);
 
     const fileInput = document.createElement("input");
     fileInput.type = "file";
@@ -10695,24 +10708,36 @@
     fileInput.className = "stage-phone-file-input";
     fileInput.hidden = true;
     fileInput.setAttribute("aria-hidden", "true");
-    const musicFileInput = document.createElement("input");
-    musicFileInput.type = "file";
-    musicFileInput.accept = "audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,.mp3,.m4a,.wav,.aac";
-    musicFileInput.className = "stage-phone-file-input";
-    musicFileInput.hidden = true;
-    musicFileInput.setAttribute("aria-hidden", "true");
+    // 音源を選び直すための入力欄も置かない（楽曲はPC専用・2026-08-24 本人判断）
+    /* 保存の警告帯。普段は出さず、失敗したときだけ出す。
+       閲覧機では「保存」パネルごと隠れており、警告の行き先が画面に無かったため、
+       容量不足や棚の破損が起きても無言で進んでいた（P1-7の芯）。
+       逃がす道（書き出し）を警告のすぐ隣に置く——気づいても取り出せないのでは意味がない。 */
+    const saveNotice = document.createElement("div");
+    saveNotice.className = "stage-phone-save-notice";
+    saveNotice.hidden = true;
+    saveNotice.setAttribute("role", "status");
+    saveNotice.setAttribute("aria-live", "polite");
+    const saveNoticeText = document.createElement("p");
+    saveNoticeText.className = "stage-phone-save-notice-text";
+    const saveNoticeActions = document.createElement("div");
+    saveNoticeActions.className = "stage-phone-save-notice-actions";
+    const saveNoticeExport = makePhoneButton("ファイルへ書き出す", "いまのショーをファイルへ書き出す");
+    const saveNoticeClose = makePhoneButton("閉じる", "この知らせを閉じる");
+    saveNoticeActions.append(saveNoticeExport, saveNoticeClose);
+    saveNotice.append(saveNoticeText, saveNoticeActions);
+
     toolbar.append(fileInput);
-    toolbar.append(musicFileInput);
     board.prepend(sourcePanel);
     board.prepend(infoPanel);
-    board.prepend(musicBar);
     board.prepend(toolbar);
+    board.prepend(saveNotice);
 
     phoneUi = {
       board, toolbar, actions, load, projectName, infoToggle, noteToggle, viewToggle,
       scenePrev, sceneCurrent, sceneNext, infoPanel, infoProject, infoScene,
       sceneNote, sourcePanel, fileButton, seamSampleButton, sampleButton, sourceClose, fileInput,
-      musicBar, musicToggle, musicTitle, musicTime, musicFileInput,
+      exportButton, saveNotice, saveNoticeText,
       infoOpen: false, sourceOpen: false,
       singleView: state.showPlan && !state.showFront ? "plan" : "front",
     };
@@ -10742,19 +10767,16 @@
       importProject(fileInput.files && fileInput.files[0]);
       fileInput.value = "";
     });
+    exportButton.addEventListener("click", () => {
+      phoneUi.sourceOpen = false;
+      syncPhoneViewer();
+      exportProject();
+    });
+    saveNoticeExport.addEventListener("click", () => exportProject());
+    /* 閉じるのは利用者の操作だけ。状態は消さないので、次に失敗すればまた出る。 */
+    saveNoticeClose.addEventListener("click", () => { saveNotice.hidden = true; });
     scenePrev.addEventListener("click", () => stepScene(-1));
     sceneNext.addEventListener("click", () => stepScene(1));
-    musicToggle.addEventListener("click", toggleAudioPlayback);
-    musicTitle.addEventListener("click", () => {
-      if (audioPlayback.missing) openCurrentAudioRelinkPicker(musicFileInput);
-      else toggleAudioPlayback();
-    });
-    musicFileInput.addEventListener("change", async () => {
-      const file = musicFileInput.files && musicFileInput.files[0];
-      const trackId = musicFileInput.dataset.trackId || sc().audioTrackId;
-      musicFileInput.value = "";
-      if (file) await relinkAudioFile(trackId, file);
-    });
     infoToggle.addEventListener("click", () => {
       phoneUi.infoOpen = !phoneUi.infoOpen;
       if (phoneUi.infoOpen) phoneUi.sourceOpen = false;
@@ -10795,7 +10817,8 @@
      同じinput/buttonを動かすので、保存や描画の処理は一系統のまま保てる。 */
   const TABLET_MENU_GROUPS = [
     { id: "show", icon: "▣", label: "ショー", panels: ["project", "study"] },
-    { id: "music", icon: "♪", label: "音楽", panels: ["music"] },
+    /* 音楽はPC専用と決めたので、ここには載せない（2026-08-24 本人判断）。
+       ★"music" を足し戻さないこと。足すなら方針の再判断から。 */
     { id: "cast", icon: "●", label: "出演・装置", panels: ["cast", "rigs"] },
     { id: "look", icon: "☀", label: "照明・背景", panels: ["light", "background"] },
     { id: "scenes", icon: "◫", label: "シーン", panels: ["scenes"] },
@@ -10912,8 +10935,8 @@
     tabletUi.sceneCurrent.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${sceneNavigationTitle(scene, index)}`;
     tabletUi.scenePrev.disabled = index <= 0;
     tabletUi.sceneNext.disabled = index >= scenes.length - 1;
-    tabletUi.sceneCurrent.title = currentSceneAudioTrack()
-      ? `${scene.title} — ${currentSceneAudioTrack().title}` : scene.title;
+    // 曲名は添えない（楽曲はPC専用・2026-08-24 本人判断）
+    tabletUi.sceneCurrent.title = scene.title;
   }
 
   function syncTabletWorkspace() {
@@ -11045,27 +11068,17 @@
     scenePrev.type = "button";
     scenePrev.textContent = "‹";
     scenePrev.setAttribute("aria-label", "前のシーンへ");
-    const musicToggle = document.createElement("button");
-    musicToggle.type = "button";
-    musicToggle.className = "stage-tablet-music-toggle";
-    musicToggle.textContent = "▶";
-    musicToggle.setAttribute("aria-label", "曲を再生");
-    musicToggle.setAttribute("aria-pressed", "false");
     const sceneCurrent = document.createElement("button");
     sceneCurrent.type = "button";
     sceneCurrent.className = "stage-tablet-scene-current";
     sceneCurrent.setAttribute("aria-label", "シーンの操作を開く");
-    const musicOpen = document.createElement("button");
-    musicOpen.type = "button";
-    musicOpen.className = "stage-tablet-music-open";
-    musicOpen.textContent = "♪";
-    musicOpen.setAttribute("aria-label", "音楽の割り当てを開く");
     const sceneNext = document.createElement("button");
     sceneNext.type = "button";
     sceneNext.textContent = "›";
     sceneNext.setAttribute("aria-label", "次のシーンへ");
     sceneNext.className = "stage-tablet-scene-next";
-    sceneBar.append(scenePrev, musicToggle, sceneCurrent, musicOpen, sceneNext);
+    // 音楽の再生・割り当てボタンはここに置かない（楽曲はPC専用・2026-08-24 本人判断）
+    sceneBar.append(scenePrev, sceneCurrent, sceneNext);
 
     grid.prepend(drawer);
     grid.prepend(rail);
@@ -11088,7 +11101,6 @@
       grid, rail, drawer, drawerTitle, drawerBody, store,
       drawerClose, pagePrev, pageCount, pageNext,
       scenePrev, sceneCurrent, sceneNext,
-      musicToggle, musicOpen,
       groups, groupId: "show", pageIndex: 0,
       viewToggle,
       groupButtons: groups.map((group) => group.button),
@@ -11109,8 +11121,6 @@
     scenePrev.addEventListener("click", () => { if (els.scenePrev) els.scenePrev.click(); });
     sceneNext.addEventListener("click", () => { if (els.sceneNext) els.sceneNext.click(); });
     sceneCurrent.addEventListener("click", () => openTabletGroup("scenes"));
-    musicToggle.addEventListener("click", toggleAudioPlayback);
-    musicOpen.addEventListener("click", () => openTabletGroup("music"));
 
     const orient = () => {
       closeTabletDrawer();
@@ -14313,6 +14323,22 @@
     const size = clamp(finite(prefs.sceneGridSize, 220), 150, 420);
     if (els.sceneGrid) els.sceneGrid.style.setProperty("--scene-grid-size", `${size}px`);
     if (els.sceneGridSize) els.sceneGridSize.value = String(size);
+  }
+
+  /* 機能一覧「どこで何ができるか」。幅が要る資料なので窓で開く。
+     以前は保存パネルの中に畳んで入れていたが、側柱が268pxしかなく
+     列見出しが「ブ／ラ／ウ／ザ」と縦積みになって読めなかった（2026-08-25）。 */
+  function openReachTable() {
+    if (!els.reachModal || !els.reachBackdrop) return;
+    els.reachModal.hidden = false;
+    els.reachBackdrop.hidden = false;
+    if (els.reachClose) els.reachClose.focus();
+  }
+
+  function closeReachTable() {
+    if (els.reachModal) els.reachModal.hidden = true;
+    if (els.reachBackdrop) els.reachBackdrop.hidden = true;
+    if (els.reachOpen) els.reachOpen.focus();
   }
 
   function openSceneGrid() {
@@ -18867,6 +18893,9 @@ ${propsPlotHtml}
   }
   if (els.sceneGridClose) els.sceneGridClose.addEventListener("click", closeSceneGrid);
   if (els.sceneGridBackdrop) els.sceneGridBackdrop.addEventListener("click", closeSceneGrid);
+  if (els.reachOpen) els.reachOpen.addEventListener("click", openReachTable);
+  if (els.reachClose) els.reachClose.addEventListener("click", closeReachTable);
+  if (els.reachBackdrop) els.reachBackdrop.addEventListener("click", closeReachTable);
   if (els.sceneGridFront) els.sceneGridFront.addEventListener("click", () => setSceneGridView("front"));
   if (els.sceneGridPlan) els.sceneGridPlan.addEventListener("click", () => setSceneGridView("plan"));
   if (els.sceneGridSize) {
@@ -18878,6 +18907,7 @@ ${propsPlotHtml}
   }
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && els.sceneGridModal && !els.sceneGridModal.hidden) closeSceneGrid();
+    if (event.key === "Escape" && els.reachModal && !els.reachModal.hidden) closeReachTable();
   });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || !wrapPickStartId) return;
@@ -20398,7 +20428,7 @@ ${propsPlotHtml}
       const words = isEn()
         ? "The feedback form is not set up yet. Please tell the maker directly for now."
         : "感想の送り先（フォーム）はまだ用意できていません。いまは直接お知らせください。";
-      els.saveStatus.textContent = words;
+      setSaveStatus(words);
       announce(words);
     });
   }
@@ -21267,9 +21297,9 @@ ${propsPlotHtml}
   updateHistoryButtons();
   updateBackupNote();
   render();
-  els.saveStatus.textContent = loaded.restored
+  setSaveStatus(loaded.restored
     ? "この端末に保存した前回のスケッチを開きました。"
-    : "変更はこの端末のブラウザ内へ自動保存します。";
+    : "変更はこの端末のブラウザ内へ自動保存します。");
   applyLang();
 
   /* 初めて開いた人には、こちらから声をかける。

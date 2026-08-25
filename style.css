@@ -10456,15 +10456,9 @@ html.stage-pwa-tablet .stage-tablet-scene-bar .stage-tablet-scene-current {
   white-space: nowrap;
 }
 
-html.stage-pwa-tablet .stage-tablet-music-toggle { grid-column: 2; }
-html.stage-pwa-tablet .stage-tablet-scene-current { grid-column: 3; }
-html.stage-pwa-tablet .stage-tablet-music-open { grid-column: 4; }
-html.stage-pwa-tablet .stage-tablet-scene-next { grid-column: 5; }
-
-html.stage-pwa-tablet .stage-tablet-music-toggle,
-html.stage-pwa-tablet .stage-tablet-music-open {
-  font-size: 17px;
-}
+/* 音楽の2ボタンを取り除いたので、前へ・シーン名・次への3桁に詰める（2026-08-24） */
+html.stage-pwa-tablet .stage-tablet-scene-current { grid-column: 2; }
+html.stage-pwa-tablet .stage-tablet-scene-next { grid-column: 3; }
 
 html.stage-pwa-tablet .stage-tablet-scene-bar button:disabled { opacity: 0.24; }
 
@@ -10675,7 +10669,9 @@ html.stage-phone-viewer .stage-sketch-grid {
 html.stage-phone-viewer .stage-board-column {
   position: relative;
   display: grid;
-  grid-template-rows: 48px minmax(0, 1fr) 44px;
+  /* 道具の帯と図の二段。以前は下に音楽帯44pxがあったが、楽曲はPC専用と決めて
+     取り除いたので、その分を図へ返している（2026-08-24 本人判断）。 */
+  grid-template-rows: 48px minmax(0, 1fr);
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -10694,51 +10690,8 @@ html.stage-phone-viewer .stage-phone-toolbar {
   background: #15120f;
 }
 
-html.stage-phone-viewer .stage-phone-music-bar {
-  z-index: 13;
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
-  grid-row: 3;
-  min-width: 0;
-  min-height: 44px;
-  border-top: 1px solid var(--line-dark);
-  background: #15120f;
-}
+/* 音楽バーの見た目はここにあったが、楽曲をPC専用にして取り除いた（2026-08-24） */
 
-html.stage-phone-viewer .stage-phone-music-toggle,
-html.stage-phone-viewer .stage-phone-music-title {
-  min-width: 44px;
-  min-height: 44px;
-  border: 0;
-  background: transparent;
-  color: var(--milk-dim);
-}
-
-html.stage-phone-viewer .stage-phone-music-toggle {
-  border-right: 1px solid rgba(240,231,214,0.1);
-  font-size: 16px;
-}
-
-html.stage-phone-viewer .stage-phone-music-title {
-  min-width: 0;
-  padding: 4px 9px;
-  overflow: hidden;
-  color: var(--milk);
-  font-size: 11px;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-html.stage-phone-viewer .stage-phone-music-time {
-  align-self: center;
-  min-width: 70px;
-  padding-right: 9px;
-  color: var(--milk-dim);
-  font-size: 9px;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
 
 html.stage-phone-viewer .stage-phone-actions {
   display: contents;
@@ -10830,7 +10783,9 @@ html.stage-phone-viewer .stage-phone-source {
   right: max(8px, env(safe-area-inset-right));
   left: max(8px, env(safe-area-inset-left));
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 64px;
+  /* 開く3つ＋書き出し＋閉じるの5つ。2桁で並べ、閉じるだけ下段いっぱいに置く
+     （2026-08-24 に「ファイルへ書き出す」を足して桁割りを組み直した） */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   padding: 10px;
   border: 1px solid var(--line-dark);
@@ -10850,6 +10805,61 @@ html.stage-phone-viewer .stage-phone-source strong {
 html.stage-phone-viewer .stage-phone-source .stage-phone-button {
   min-width: 0;
   border: 1px solid var(--line-dark);
+}
+
+html.stage-phone-viewer .stage-phone-source .stage-phone-button:last-child {
+  grid-column: 1 / -1;
+}
+
+/* ===== 保存の警告帯（P1-7）=====
+   閲覧機では「保存」パネルごと隠れており、容量不足や棚の破損が起きても
+   警告の行き先が画面に無く、無言で失敗していた（2026-08-23 判明）。
+   暗い図の上に紙が差し込まれたように見せて、見逃せないようにする。
+   ★盤面は2行のgridなので、ここは枠外へ出す（読み込みパネルと同じ作法）。
+     grid内に置くと3行目ができて図が潰れる。 */
+html.stage-phone-viewer .stage-phone-save-notice {
+  position: fixed;
+  z-index: 33;
+  top: calc(max(0px, env(safe-area-inset-top)) + 52px);
+  right: max(8px, env(safe-area-inset-right));
+  left: max(8px, env(safe-area-inset-left));
+  display: grid;
+  gap: 8px;
+  padding: 11px 12px;
+  border-left: 3px solid var(--rust);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.6);
+}
+
+html.stage-phone-viewer .stage-phone-save-notice[hidden] { display: none !important; }
+
+html.stage-phone-viewer .stage-phone-save-notice-text {
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+html.stage-phone-viewer .stage-phone-save-notice-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 84px;
+  gap: 8px;
+}
+
+/* 紙の上に置くので、暗い地の上に載る他のボタンとは配色を変える */
+html.stage-phone-viewer .stage-phone-save-notice .stage-phone-button {
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--rust);
+  background: var(--rust);
+  color: #fdf6e8;
+  font-size: 12px;
+}
+
+html.stage-phone-viewer .stage-phone-save-notice .stage-phone-button:last-child {
+  border-color: rgba(43, 38, 32, 0.3);
+  background: none;
+  color: var(--ink-soft);
 }
 
 html.stage-phone-viewer .stage-phone-info strong,
@@ -10972,7 +10982,8 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
 @media (orientation: landscape) {
   html.stage-phone-viewer .stage-board-column {
     grid-template-columns: minmax(0, 1fr) 64px;
-    grid-template-rows: minmax(0, 1fr) 44px;
+    /* 音楽帯を取り除いたぶん、図が縦いっぱいを使う（2026-08-24） */
+    grid-template-rows: minmax(0, 1fr);
   }
 
   html.stage-phone-viewer .stage-phone-toolbar {
@@ -11026,14 +11037,10 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
     padding: 0;
   }
 
-  html.stage-phone-viewer .stage-phone-music-bar {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
   html.stage-phone-viewer .stage-board-frame {
-    /* 下の音楽帯44pxと上下罫線を引いた、実際のcanvas行の高さで収める。 */
-    width: min(100%, calc((100dvh - 46px) * 16 / 9));
+    /* 横向きでは図が縦いっぱいを使う。以前は下の音楽帯44px＋罫線2pxを引いていたが、
+       楽曲をPC専用にして帯ごと取り除いたので、その分も図の取り分になった。 */
+    width: min(100%, calc(100dvh * 16 / 9));
   }
 
   html.stage-phone-viewer .stage-phone-info,
@@ -11774,3 +11781,219 @@ body.stage-session-guest #stage-scene-list {
   border-radius: 50%;
   flex: none;
 }
+
+/* ===== どこで何ができるか（保存パネル内の一覧・2026-08-24） =====
+   もとは docs/feature-matrix-preview.html で組んだもの。
+   ★正本はこちら（style.css と index.html）。プレビューは写しで、drift し得る。
+   セレクタは .stage-reach-body 配下へ閉じてある。本体と衝突しないよう、
+   :root / body / * のリセットは移していない。 */
+
+/* 幅が要る資料なので窓で開く。側柱（268px）に入れると
+   列見出しが「ブ／ラ／ウ／ザ」と縦積みになって読めなかった（2026-08-25 実測）。 */
+.stage-modal.stage-reach-modal {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: 0;
+}
+
+.stage-modal.stage-reach-modal .stage-modal-head { padding: 12px 16px; }
+
+  /* 独立した画面ではなくパネルの中に置くので、影は落とさず余白も詰める。
+     紙の色は保つ（この表は「読む資料」なので、机の色ではなく紙に載せる）。
+     ★抽出時に .reach-sheet の外枠は落としてあるので、容れ物である
+       .stage-reach-body そのものを紙にする。 */
+  .stage-reach-body {
+    width: 100%;
+    background: var(--paper);
+    color: var(--ink);
+    padding: 22px 24px 20px;
+    overflow: auto;
+  }
+
+  .stage-reach-body .reach-head { border-bottom: 2px solid var(--ink); padding-bottom: 13px; }
+  .stage-reach-body .reach-head h1 {
+    font-family: var(--serif);
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: .04em;
+  }
+  .stage-reach-body .reach-head p {
+    margin-top: 8px;
+    color: var(--ink-soft);
+    font-size: 11.5px;
+    line-height: 1.95;
+  }
+
+  .stage-reach-body .reach-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 20px;
+    margin-top: 13px;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+  .stage-reach-body .reach-legend b { color: var(--ink); font-weight: 600; }
+  .stage-reach-body .reach-legend .m { font-size: 13px; }
+  .stage-reach-body .m-full { color: var(--rust-deep); }
+  .stage-reach-body .m-part { color: var(--ink-soft); }
+  .stage-reach-body .m-none { color: #b3a68c; }
+
+  /* ===== 二つの道具を分ける見出し =====
+     ここがこの紙の背骨。配る道具と、配らない道具を、地の色と罫の太さで隔てる。 */
+  .stage-reach-body .tool-block { margin-top: 30px; }
+
+  .stage-reach-body .tool-mark {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 7px;
+    border-bottom: 3px solid var(--ink);
+  }
+  .stage-reach-body .tool-mark h2 {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: .07em;
+  }
+  /* 配る／配らないを、色ではなく語と枠で示す */
+  .stage-reach-body .tool-tag {
+    flex: 0 0 auto;
+    padding: 3px 9px;
+    font-size: 10px;
+    letter-spacing: .09em;
+    white-space: nowrap;
+  }
+  .stage-reach-body .tag-public { border: 1px solid var(--rust); color: var(--rust-deep); }
+  .stage-reach-body .tag-inhouse { border: 1px dashed var(--ink-soft); color: var(--ink-soft); }
+
+  .stage-reach-body .tool-lead {
+    margin-top: 9px;
+    color: var(--ink-soft);
+    font-size: 11px;
+    line-height: 1.95;
+  }
+  .stage-reach-body .tool-lead b { color: var(--ink); font-weight: 600; }
+
+  /* 身内の道具は、紙をひとまわり沈ませて「表に出さない側」だと示す */
+  .stage-reach-body .block-inhouse .tool-mark { border-bottom-color: var(--ink-soft); border-bottom-width: 1px; }
+  .stage-reach-body .block-inhouse table { background: rgba(184,168,136,.15); }
+
+  .stage-reach-body table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+
+  .stage-reach-body thead th {
+    padding: 0 4px 9px;
+    border-bottom: 1px solid var(--brass);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: .03em;
+    vertical-align: bottom;
+  }
+  .stage-reach-body thead th:first-child { text-align: left; }
+  .stage-reach-body thead th span {
+    display: block;
+    margin-top: 4px;
+    color: var(--ink-soft);
+    font-size: 9.5px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  .stage-reach-body .col-away { background: rgba(184,168,136,.2); }
+
+  .stage-reach-body tbody th.group {
+    text-align: left;
+    padding: 16px 4px 5px;
+    font-family: var(--serif);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .09em;
+    color: var(--rust-deep);
+  }
+
+  .stage-reach-body tbody td,
+.stage-reach-body tbody th.row { border-bottom: 1px solid var(--paper-line); }
+  .stage-reach-body tbody th.row {
+    text-align: left;
+    padding: 8px 10px 8px 4px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+  .stage-reach-body tbody th.row i {
+    display: block;
+    margin-top: 2px;
+    color: var(--ink-soft);
+    font-size: 10px;
+    font-style: normal;
+    line-height: 1.6;
+  }
+  .stage-reach-body tbody td {
+    width: 17%;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .stage-reach-body tbody td u {
+    display: block;
+    margin-top: 1px;
+    font-size: 9px;
+    text-decoration: none;
+    color: var(--ink-soft);
+    letter-spacing: -.02em;
+  }
+
+  .stage-reach-body tr.warn th.row { box-shadow: inset 3px 0 0 var(--rust); padding-left: 11px; }
+  .stage-reach-body tr.warn th.row i { color: var(--rust-deep); }
+
+  .stage-reach-body .reach-foot {
+    margin-top: 22px;
+    padding-left: 11px;
+    border-left: 2px solid var(--brass);
+    color: var(--ink-soft);
+    font-size: 10.5px;
+    line-height: 1.95;
+  }
+
+  @media (max-width: 560px) {
+    .stage-reach-body .reach-sheet { padding: 20px 15px 18px; }
+    .stage-reach-body .tool-mark { flex-wrap: wrap; gap: 6px; }
+    .stage-reach-body table,
+.stage-reach-body thead,
+.stage-reach-body tbody,
+.stage-reach-body tr,
+.stage-reach-body th,
+.stage-reach-body td { display: block; }
+    .stage-reach-body thead { display: none; }
+    .stage-reach-body tbody th.group { padding: 17px 0 4px; }
+
+    /* 行を一段組みへ。仕事の名前が一行を占め、その下に端末が横一列に並ぶ */
+    .stage-reach-body tbody tr:not(.group-row) {
+      display: grid;
+      border-bottom: 1px solid var(--paper-line);
+      padding: 10px 0 8px;
+    }
+    .stage-reach-body .cols-3 tbody tr:not(.group-row) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .stage-reach-body .cols-2 tbody tr:not(.group-row) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stage-reach-body tbody th.row { grid-column: 1 / -1; border: 0; padding: 0 0 7px; }
+    .stage-reach-body tr.warn th.row { box-shadow: inset 3px 0 0 var(--rust); padding-left: 9px; }
+    .stage-reach-body tbody td {
+      width: auto;
+      min-width: 0;
+      border: 0;
+      padding: 3px 0 4px;
+      font-size: 13px;
+    }
+    .stage-reach-body tbody td.col-away { background: rgba(184,168,136,.2); }
+    .stage-reach-body tbody td::before {
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 1px;
+      color: var(--ink-soft);
+      font-size: 9px;
+      letter-spacing: 0;
+    }
+    .stage-reach-body tbody td u { font-size: 8.5px; }
+  }
