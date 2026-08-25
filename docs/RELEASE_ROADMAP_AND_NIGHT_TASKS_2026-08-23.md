@@ -359,3 +359,44 @@ P1-11の`.assetsignore`強化で拾い漏れた分。次のデプロイ時にま
    `build_stage_shows_local.py`/`tests/stage-local-shows.test.mjs` のSCAN_GLOBS化）→ commitするか破棄するか。
 2. **fail-closed版Workerのデプロイ承認**（工程3）。
 3. 夜間タスクA〜Dを定期化するか、単発waveで流すかの選択。
+
+## 2026-08-25 デプロイ（Version `f6b99343-4a0d-4a10-86e5-d27e50ed9821`）
+
+今日の全変更を5コミットに分けてcommitし、デプロイした（未push）。
+
+| コミット | 内容 |
+|---|---|
+| `36edeff` | 認証: Basic認証→クッキーのログインへ移行、アイコン/manifestを公開 |
+| `d416e34` | PWAのオフライン起動（addAll全損・navigator.onLine誤判定・307のredirected印） |
+| `641a27d` | 共有セッション: ゲストの操作がリセットされ続ける不具合 |
+| `630fa65` | 発注書A実装: 楽曲をPC専用化・スマホの保存警告と書き出し・機能一覧UI |
+| `3b2a320` | 記録: 工程表・QA結果・発注書A/B/C |
+
+**本番で検証済み（Claudeがcurlで実施）**:
+- 中身16パスすべて401（`db.js` `roster.js` `roster-crew.js` `stage-shows.local.js`
+  `worker.js` `wrangler.toml` `session-room.js` 等。**個人のショー95本も名簿も守られている**）
+- 公開はアイコン2件・manifest・`/sign-in` のみ200
+- 画面遷移は `/sign-in?next=...` へ302／401に`no-store`あり・`WWW-Authenticate`なし
+- パス細工3パターンすべて401
+- ログイン画面: 文言・入力欄が揃い、外部参照は `/icons/` のみ、誤資格情報は401でクッキーを配らない
+- テスト513件全通過
+
+**Claudeが検証できていないこと**: 実際のログイン成功、実機PWAでの動作、共有セッションの再検証。
+
+## 次のセッションへの引き継ぎ
+
+**すぐやること**
+- 実機で一度ログインし直す（クッキーの版が変わるため）。PWAはアイコン削除→データ消去→再追加
+- 共有セッションの再検証（3人、または同一端末の別タブ3枚）。見るのは
+  ①ホストが触っていないのに「操作中」が出続けないか ②ゲストの操作がリセットされないか
+  ③**ゲストAの操作がゲストBに見えるか**（新設の中継経路。ここが最重要）
+- パスワード変更（curlの `%{redirect_url}` で平文露出した件）
+
+**未着手の実装**
+- 発注書B `docs/WORKORDER_B_VENUE_IMPORT_2026-08-25.md`（P1-8）
+- 発注書C `docs/WORKORDER_C_MAC_EXPORT_CANCEL_2026-08-25.md`（P1-10）
+
+**そのあと**: リリース可否の再判定（工程表13）。
+
+**未追跡のまま残しているもの**: `overnight-runs/2026-08-25-workorder-a/`（削除前スナップショット
+1.4MB）。commit済みなのでgit履歴で戻れる。削除は本人判断。
