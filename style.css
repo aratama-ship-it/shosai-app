@@ -11782,6 +11782,25 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
 .stage-modal.stage-session-name-modal { width: min(360px, calc(100vw - 40px)); }
 .stage-session-name-form { display: grid; gap: 12px; }
 
+.stage-session-guest-badge {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+  z-index: 8990;
+  padding: 10px 18px;
+  border: 2px solid var(--brass);
+  border-radius: 999px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, .38);
+  background: rgba(20, 17, 14, .96);
+  color: var(--brass);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  line-height: 1.25;
+  pointer-events: none;
+}
+.stage-session-guest-badge[hidden] { display: none; }
+
 body.stage-session-guest #stage-scene-add,
 body.stage-session-guest #stage-scene-add-rig,
 body.stage-session-guest #stage-scene-dup,
@@ -11797,7 +11816,12 @@ body.stage-session-guest #stage-session-start,
 body.stage-session-guest #stage-scene-prev,
 body.stage-session-guest #stage-scene-next,
 body.stage-session-guest #stage-present-prev,
-body.stage-session-guest #stage-present-next {
+body.stage-session-guest #stage-present-next,
+body.stage-session-guest [data-stage-tool]:not([data-stage-tool="arrow"]),
+body.stage-session-guest .stage-tool-split,
+body.stage-session-guest #stage-plan-route,
+body.stage-session-guest #stage-plan-note,
+body.stage-session-guest #stage-front-note {
   display: none !important;
 }
 

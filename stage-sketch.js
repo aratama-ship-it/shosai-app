@@ -17383,6 +17383,10 @@ ${propsPlotHtml}
     return sc().pieces.find((piece) => piece.id === selectedId) || null;
   }
 
+  function guestSessionActive() {
+    return document.body.classList.contains("stage-session-guest");
+  }
+
   function syncArrowOptions() {
     if (!els.arrowOptions) return;
     const plane = arrowPlanePref();
@@ -17410,6 +17414,7 @@ ${propsPlotHtml}
   function setTool(nextTool) {
     // スマホ閲覧版で持てる道具は、見るための選択状態とメモだけ。
     if (phoneViewerActive && nextTool !== "note") nextTool = "select";
+    if (guestSessionActive() && nextTool !== "arrow") return;
     const painting = nextTool === "paint" || nextTool === "erase";
     if (!state.showFront && painting) {
       announce("背景の塗りは正面図で行います。正面を開いてください。");
@@ -18065,6 +18070,8 @@ ${propsPlotHtml}
     // 閲覧中の一指タップでは駒・明かり・背景を変更しない。付箋モードだけ下へ通す。
     // 二指ピンチはこの分岐より前に始まるので、図の確認用拡大は利用できる。
     if (phoneViewerActive && tool !== "note") return;
+    // 共有ゲストが舞台上で使える作図操作は、正面図の自由矢印だけ。
+    if (guestSessionActive() && !(tool === "arrow" && view === "front")) return;
 
     /* 自由矢印は正面図でだけ描く。平面図側では下の「動かす」と同じ分岐へ通し、
      * 既存の駒操作を変えない。Alt（option）クリックは線を増やさず一本だけ消す。 */
@@ -18324,6 +18331,7 @@ ${propsPlotHtml}
    * 触っているものを毎回当てて決めるので、駒の上と何もない所で形が変わる。 */
   function cursorFor(el, event) {
     if (pointerAction) return "grabbing";
+    if (guestSessionActive() && !(tool === "arrow" && viewOf(el) === "front")) return "default";
     if (tool === "paint") return "crosshair";
     if (tool === "erase") return "cell";
     const view = viewOf(el);
@@ -18567,6 +18575,7 @@ ${propsPlotHtml}
   }
 
   function onKeyDown(event) {
+    if (guestSessionActive()) return;
     const note = selectedNote();
     if (note && (event.key === "Delete" || event.key === "Backspace")) {
       event.preventDefault();
@@ -18632,6 +18641,7 @@ ${propsPlotHtml}
   }
 
   function onFacingWheel(event) {
+    if (guestSessionActive()) return;
     const piece = selectedPiece();
     if (!piece || (piece.type !== "performer" && !SOLID_TYPES[piece.type])) return;
     // 近くに居ないうちは、向きロックの知らせも出さずに素通しする
@@ -21647,22 +21657,26 @@ ${propsPlotHtml}
       persistSoon();
       return true;
     },
+    finishSceneTransition() {
+      stopSceneAnim();
+      render();
+    },
+    replaySceneTransition: () => replaySceneTransition(),
+    enterGuestMode() {
+      pointerAction = null;
+      arrowDraft = null;
+      selectedId = null;
+      selectedNoteId = null;
+      selectedTextId = null;
+      if (state.showFront) setTool("arrow");
+      else { updateInspector(); render(); }
+    },
     shelveNow() { return shelveCurrent(); },
     applyGuestOp(op) {
       /* ホスト側でゲストopを状態へ適用。適用したらtrue */
       if (!op || typeof op !== "object") return false;
       const scene = state.project.scenes.find((s) => s.id === op.sceneId);
       if (!scene) return false;
-      if (op.kind === "piece.move") {
-        const piece = (scene.pieces || []).find((p) => p.id === op.pieceId);
-        if (!piece) return false;
-        checkpoint();
-        piece.u = clamp(finite(op.u, piece.u), -0.5, 1.5);
-        piece.v = clamp(finite(op.v, piece.v), -0.5, 1);
-        if (op.base !== undefined) piece.base = Math.max(0, finite(op.base, piece.base || 0));
-        render(); persistSoon();
-        return true;
-      }
       if (op.kind === "arrows.add") {
         if (!Array.isArray(op.arrows) || op.arrows.length === 0 || op.arrows.length > 20) return false;
         checkpoint();

@@ -424,6 +424,13 @@ function signInPage({ next = "/", error = "" } = {}) {
         一度入ると、しばらくは聞かれません。</p>
     </form>
   </main>
+  <script>
+    (() => {
+      const next = document.querySelector('input[name="next"]');
+      if (!next || !location.hash || next.value.includes("#")) return;
+      next.value += location.hash;
+    })();
+  </script>
 </body>
 </html>`;
 }

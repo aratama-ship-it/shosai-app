@@ -69,6 +69,10 @@
     "一度開けば、次からは繋がっていなくても": "Once opened, it works unconnected after that",
     "みんなで同じ舞台を見る": "Everyone sees the same stage",
     "共有セッション": "Shared session",
+    "共有セッション。ゲストはレーザーポインタ＋矢印のみ": "Shared session. Guests use the laser pointer and arrows only",
+    "ゲスト（閲覧＋矢印）": "Guest (view + arrows)",
+    "ゲスト参加中: 使える共有操作はレーザーポインタと矢印だけです。駒は動かせません。":
+      "Guest session: you can share only the laser pointer and arrows. Pieces cannot be moved.",
     "招かれて入る": "Join by invitation",
     "資料棚をひく": "Search the reference shelf",
     "ショーと舞台技術を調べる": "Look up shows and stage craft",

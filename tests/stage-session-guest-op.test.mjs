@@ -1,4 +1,5 @@
-// 共有セッションで、他人の操作の取り込みが「自分の編集」と誤認されないことを守る（2026-08-24）。
+// 共有セッションで、他人の矢印の取り込みが「自分の編集」と誤認されないことと、
+// 旧キャッシュ由来の piece.move をクライアントが採用しないことを守る（2026-08-25）。
 //
 // 実機3人で発覚した不具合:
 //   ゲストの操作をホストが取り込むとき applyingRemoteDocument を立てていなかった。
@@ -59,7 +60,7 @@ test("メッセージ処理から直接applyGuestOpを呼ばない", () => {
   assert.match(handler, /applyIncomingOp\(message\.op\)/);
 });
 
-test("ホストとゲストの両方がopを受け取れる", () => {
+test("ホストとゲストは許可された矢印opだけを受け取る", () => {
   const handler = sessionCode.slice(
     sessionCode.indexOf("function handleSocketMessage"),
     sessionCode.indexOf("function scheduleReconnect"),
@@ -67,10 +68,12 @@ test("ホストとゲストの両方がopを受け取れる", () => {
   assert.match(handler, /message\.t === "op" && role === "host"/);
   assert.match(handler, /message\.t === "op" && role === "guest"/,
     "他のゲストの操作も受け取れること（サーバが中継してくる）");
+  assert.match(handler, /isShareableGuestOp\(message\.op\)/,
+    "旧キャッシュのpiece.moveを両方の役割で落とすこと");
 });
 
-test("ゲストは差分の基準にも同じopを当てる", () => {
-  /* 基準を据え置くと、次に自分が動かしたとき他人の操作まで
+test("ゲストは矢印だけを差分の基準にも当てる", () => {
+  /* 基準を据え置くと、次に自分が矢印を描いたとき他人の矢印まで
      「自分の変更」として送り直してしまう。 */
   const handler = sessionCode.slice(
     sessionCode.indexOf("function handleSocketMessage"),
@@ -84,11 +87,8 @@ test("ゲストは差分の基準にも同じopを当てる", () => {
     sessionCode.indexOf("const GUEST_SETTLE_RESYNC_MS"),
   );
   assert.match(baseline, /lastReceivedDocument/);
-  // 丸め方をbridge側と揃える（ずれると毎回差分として送り続ける）
-  assert.match(baseline, /Math\.min\(1\.5, Math\.max\(-0\.5, op\.u\)\)/, "uの丸めを揃えること");
-  assert.match(baseline, /Math\.min\(1, Math\.max\(-0\.5, op\.v\)\)/, "vの丸めを揃えること");
-  assert.match(baseline, /Math\.max\(0, op\.base\)/, "baseの丸めを揃えること");
   assert.match(baseline, /arrows\.add/, "矢印の追加も基準へ反映すること");
+  assert.doesNotMatch(baseline, /piece\.move/, "駒移動を基準へ取り込まないこと");
 });
 
 test("ホストは落ち着いてから正本を配り直す", () => {
@@ -128,8 +128,8 @@ test("サーバはopを送信者以外のゲストへも中継する", () => {
     "他のゲストへも中継すること");
 });
 
-test("opを送れるのは今もゲストだけ", () => {
-  // 中継先を広げただけで、送信できる役割は変えていないこと
+test("サーバーの汎用中継は変更せず、opを送れる役割も今までどおりゲストだけ", () => {
+  // クライアントで絞っても、旧キャッシュ互換のためサーバーは変更しない
   const opBranch = roomCode.slice(
     roomCode.indexOf('if (data.t === "op")'),
     roomCode.indexOf('if (data.t === "activity")'),

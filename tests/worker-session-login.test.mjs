@@ -150,6 +150,16 @@ test("ログイン画面は認証なしで開ける", async () => {
   assert.match(html, /中へ入る/);
 });
 
+test("ログイン画面は招待URLのhashをhiddenの戻り先へ一度だけ足す", async () => {
+  const html = await (await worker.fetch(
+    get(`/sign-in?next=${encodeURIComponent("/stage.html")}`, NAV), env, {},
+  )).text();
+  assert.match(html, /document\.querySelector\('input\[name="next"\]'\)/);
+  assert.match(html, /!location\.hash/);
+  assert.match(html, /next\.value\.includes\("#"\)/);
+  assert.match(html, /next\.value \+= location\.hash/);
+});
+
 test("ログイン画面は外部の資源を一切読まない", async () => {
   // 認証の外に出る画面なので、外を参照すると壊れるか情報が漏れる
   const html = await (await worker.fetch(get("/sign-in", NAV), env, {})).text();
@@ -201,6 +211,17 @@ test("正しく入れるとクッキーを配り、元の場所へ戻す", async
        固定値のNOW（未来の時刻）で検証すると「もう期限切れ」と判定されてしまう。 */
   const token = cookieFrom(response);
   assert.equal(await readSessionToken(token, ACCOUNTS, realNow()), SITE[0]);
+});
+
+test("ログインPOSTは招待セッションの断片を303の戻り先に保つ", async () => {
+  const body = new URLSearchParams({
+    user: GUEST[0], pass: GUEST[1], next: "/stage.html#session=abc",
+  });
+  const response = await worker.fetch(
+    new Request("https://shosai.example/sign-in", { method: "POST", body }), env, {},
+  );
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get("Location"), "/stage.html#session=abc");
 });
 
 test("ログインの戻り先も外部へは飛ばさない", async () => {

@@ -20,6 +20,7 @@
     participants: $("stage-session-participants"),
     status: $("stage-session-status"),
     guestNote: $("stage-session-guest-note"),
+    guestBadge: $("stage-session-guest-badge"),
     clearGuestArrows: $("stage-session-clear-guest-arrows"),
     reconnect: $("stage-session-reconnect"),
     planCanvas: $("stage-plan-canvas"),
@@ -47,8 +48,8 @@
   let applyingRemoteDocument = false;
   let applyReleaseTimer = null;
   let applyGeneration = 0;
+  let awaitingInitialGuestDocument = false;
   const sentArrowOps = new Set();
-  const sentPieceOps = new Set();
   const remotePointers = new Map();
 
   function setJapaneseLabels() {
@@ -58,7 +59,8 @@
     els.start.textContent = "セッションを開始";
     if (els.urlLabel) els.urlLabel.textContent = "招待URL";
     if (els.copy) els.copy.textContent = "コピー";
-    if (els.guestNote) els.guestNote.textContent = "ゲスト参加中: 演者・道具の移動と矢印だけが全員へ共有されます。他の編集は次の更新で元に戻ります。";
+    if (els.guestNote) els.guestNote.textContent = "ゲスト参加中: 使える共有操作はレーザーポインタと矢印だけです。駒は動かせません。";
+    if (els.guestBadge) els.guestBadge.textContent = "ゲスト（閲覧＋矢印）";
     if (els.participantsLabel) els.participantsLabel.textContent = "参加者";
     if (els.clearGuestArrows) els.clearGuestArrows.textContent = "ゲスト注釈を一括消去";
     if (els.reconnect) els.reconnect.textContent = "再接続";
@@ -232,6 +234,7 @@
     if (els.hostName) els.hostName.disabled = Boolean(role);
     if (els.invite) els.invite.hidden = role !== "host" || !roomId;
     if (els.guestNote) els.guestNote.hidden = role !== "guest";
+    if (els.guestBadge) els.guestBadge.hidden = role !== "guest";
     if (els.clearGuestArrows) els.clearGuestArrows.hidden = role !== "host";
   }
 
@@ -244,11 +247,6 @@
     } catch (_) {
       return null;
     }
-  }
-
-  function coordinate(piece, key) {
-    const value = Number(piece && piece[key]);
-    return Number.isFinite(value) ? value : 0;
   }
 
   function sendGuestDifferences() {
@@ -275,23 +273,6 @@
         })) sentArrowOps.add(signature);
       });
 
-      const receivedPieces = new Map((receivedScene.pieces || []).map((piece) => [piece.id, piece]));
-      (currentScene.pieces || []).forEach((piece) => {
-        const receivedPiece = receivedPieces.get(piece.id);
-        if (!receivedPiece) return;
-        const u = coordinate(piece, "u");
-        const v = coordinate(piece, "v");
-        const base = coordinate(piece, "base");
-        if (u === coordinate(receivedPiece, "u") &&
-            v === coordinate(receivedPiece, "v") &&
-            base === coordinate(receivedPiece, "base")) return;
-        const signature = `${currentScene.id}\u001f${piece.id}\u001f${u}\u001f${v}\u001f${base}`;
-        if (sentPieceOps.has(signature)) return;
-        if (sendMessage({
-          t: "op",
-          op: { kind: "piece.move", sceneId: currentScene.id, pieceId: piece.id, u, v, base },
-        })) sentPieceOps.add(signature);
-      });
     });
   }
 
@@ -312,7 +293,12 @@
        3人での実機検証で「常にホストが操作中と出て、自分の操作がリセットされ続ける」
        として報告された（2026-08-24）。解放を260msにしてあるのは、
        persistSoonの180msより後に外すため。 */
+  function isShareableGuestOp(op) {
+    return Boolean(op && typeof op === "object" && op.kind === "arrows.add");
+  }
+
   function applyIncomingOp(op) {
+    if (!isShareableGuestOp(op)) return;
     applyingRemoteDocument = true;
     applyGeneration += 1;
     const generation = applyGeneration;
@@ -331,14 +317,6 @@
     const scenes = lastReceivedDocument.project.scenes || [];
     const scene = scenes.find((item) => item && item.id === op.sceneId);
     if (!scene) return;
-    if (op.kind === "piece.move") {
-      const piece = (scene.pieces || []).find((item) => item && item.id === op.pieceId);
-      if (!piece) return;
-      if (Number.isFinite(op.u)) piece.u = Math.min(1.5, Math.max(-0.5, op.u));
-      if (Number.isFinite(op.v)) piece.v = Math.min(1, Math.max(-0.5, op.v));
-      if (Number.isFinite(op.base)) piece.base = Math.max(0, op.base);
-      return;
-    }
     if (op.kind === "arrows.add" && Array.isArray(op.arrows)) {
       if (!Array.isArray(scene.arrows)) scene.arrows = [];
       scene.arrows.push(...op.arrows);
@@ -366,10 +344,15 @@
       setStatus("共有内容を読み込めませんでした。", true);
       return false;
     }
-    /* 上書き前に、まだ送っていない自分の変更（矢印・移動）を先に送り出す。
-       これが無いと、ホストの更新と同時に操作したときゲストの変更が黙って消える
-       （2026-08-20 照明の移動が反映されない不具合として実際に発生）。 */
+    /* 上書き前に、まだ送っていない自分の矢印を先に送り出す。
+       これが無いと、ホストの更新と同時に描いた矢印が黙って消える。 */
     if (role === "guest" && !applyingRemoteDocument) sendGuestDifferences();
+    const initialSync = role === "guest" && awaitingInitialGuestDocument;
+    const previousSceneId = lastReceivedDocument && lastReceivedDocument.project.activeSceneId;
+    const nextSceneId = parsed.project.activeSceneId;
+    if (typeof bridge.finishSceneTransition === "function") {
+      try { bridge.finishSceneTransition(); } catch (_) { /* 古い転換の打ち切り失敗はdoc適用を止めない */ }
+    }
     applyingRemoteDocument = true;
     applyGeneration += 1;
     const generation = applyGeneration;
@@ -383,8 +366,12 @@
       return false;
     }
     lastReceivedDocument = parsed;
+    if (role === "guest") awaitingInitialGuestDocument = false;
     sentArrowOps.clear();
-    sentPieceOps.clear();
+    if (!initialSync && previousSceneId && nextSceneId && previousSceneId !== nextSceneId &&
+        typeof bridge.replaySceneTransition === "function") {
+      try { bridge.replaySceneTransition(); } catch (_) { /* docの最終状態は適用済みなので保つ */ }
+    }
     applyReleaseTimer = setTimeout(() => releaseRemoteApply(generation), 260);
     setStatus("ホストの共有内容を反映しました。");
     return true;
@@ -504,6 +491,9 @@
     updateRoleUi();
     if (role === "guest") {
       document.body.classList.add("stage-session-guest");
+      if (typeof bridge.enterGuestMode === "function") {
+        try { bridge.enterGuestMode(); } catch (_) { /* 表示制限に失敗しても受信防御は保つ */ }
+      }
       if (typeof message.doc === "string") applyRemoteDocument(message.doc);
       else setStatus("接続しました。ホストからの共有を待っています。");
     } else {
@@ -521,10 +511,12 @@
     } else if (message.t === "doc" && role === "guest" && typeof message.doc === "string") {
       applyRemoteDocument(message.doc);
     } else if (message.t === "op" && role === "host") {
+      if (!isShareableGuestOp(message.op)) return;
       // 取り込みは自分の編集ではない。落ち着いてから正本を配り直す
       applyIncomingOp(message.op);
       scheduleSettleResync();
     } else if (message.t === "op" && role === "guest") {
+      if (!isShareableGuestOp(message.op)) return;
       // 他のゲストの操作。サーバが送信者以外へ回してくる
       applyIncomingOp(message.op);
       applyOpToBaseline(message.op);
@@ -576,6 +568,7 @@
 
   function connectSocket() {
     if (!role || !roomId) return;
+    if (role === "guest") awaitingInitialGuestDocument = true;
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
     if (els.reconnect) els.reconnect.hidden = true;
@@ -665,6 +658,9 @@
       reconnectAttempts = 0;
       reconnectAllowed = true;
       document.body.classList.add("stage-session-guest");
+      if (typeof bridge.enterGuestMode === "function") {
+        try { bridge.enterGuestMode(); } catch (_) { /* 表示制限に失敗しても受信防御は保つ */ }
+      }
       closeGuestNameModal();
       updateRoleUi();
       connectSocket();
