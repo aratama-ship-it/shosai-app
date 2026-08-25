@@ -239,6 +239,64 @@
     sendGuestDifferences();
   }
 
+  /* 受け取ったopを「リモート由来」として取り込む共通処理。
+
+     ★フラグを立てずに bridge.applyGuestOp() を呼んではいけない。
+       applyGuestOp は persistSoon() を呼び、その180ms後に onLocalChange() が発火する。
+       ホストでこれが起きると、他人の操作を自分の編集と誤認して
+       ①「いま操作中: ホスト」を全員へ配り
+       ②全文書を配り直して、まだ動かしている送信元ゲストの位置を巻き戻す。
+       3人での実機検証で「常にホストが操作中と出て、自分の操作がリセットされ続ける」
+       として報告された（2026-08-24）。解放を260msにしてあるのは、
+       persistSoonの180msより後に外すため。 */
+  function applyIncomingOp(op) {
+    applyingRemoteDocument = true;
+    applyGeneration += 1;
+    const generation = applyGeneration;
+    clearTimeout(applyReleaseTimer);
+    try { bridge.applyGuestOp(op); }
+    catch (_) { /* 不正なopは無視する */ }
+    applyReleaseTimer = setTimeout(() => releaseRemoteApply(generation), 260);
+  }
+
+  /* 差分の基準（lastReceivedDocument）へも同じopを当てる。
+     基準を据え置くと、次に自分が何か動かしたとき sendGuestDifferences() が
+     他人の操作まで「自分の変更」として送り直してしまう。
+     丸め方は bridge.applyGuestOp と揃えること。ずれると毎回差分として送り続ける。 */
+  function applyOpToBaseline(op) {
+    if (!lastReceivedDocument || !op || typeof op !== "object") return;
+    const scenes = lastReceivedDocument.project.scenes || [];
+    const scene = scenes.find((item) => item && item.id === op.sceneId);
+    if (!scene) return;
+    if (op.kind === "piece.move") {
+      const piece = (scene.pieces || []).find((item) => item && item.id === op.pieceId);
+      if (!piece) return;
+      if (Number.isFinite(op.u)) piece.u = Math.min(1.5, Math.max(-0.5, op.u));
+      if (Number.isFinite(op.v)) piece.v = Math.min(1, Math.max(-0.5, op.v));
+      if (Number.isFinite(op.base)) piece.base = Math.max(0, op.base);
+      return;
+    }
+    if (op.kind === "arrows.add" && Array.isArray(op.arrows)) {
+      if (!Array.isArray(scene.arrows)) scene.arrows = [];
+      scene.arrows.push(...op.arrows);
+    }
+  }
+
+  /* ゲストの操作が落ち着いたら、正本を配り直して保存も更新する。
+     即座に配り直すと送信元の操作を巻き戻すので、動きが止まるまで待つ。
+     一方まったく配らないと、あとから参加した人がwelcomeで古い舞台を受け取る
+     （welcomeで配られるのはホストが最後に送ったdocのため）。 */
+  const GUEST_SETTLE_RESYNC_MS = 2000;
+  let settleResyncTimer = null;
+  function scheduleSettleResync() {
+    if (role !== "host") return;
+    clearTimeout(settleResyncTimer);
+    settleResyncTimer = setTimeout(() => {
+      settleResyncTimer = null;
+      sendHostDocument(false);
+    }, GUEST_SETTLE_RESYNC_MS);
+  }
+
   function applyRemoteDocument(text) {
     const parsed = parsedProjectDocument(text);
     if (!parsed) {
@@ -400,7 +458,13 @@
     } else if (message.t === "doc" && role === "guest" && typeof message.doc === "string") {
       applyRemoteDocument(message.doc);
     } else if (message.t === "op" && role === "host") {
-      try { bridge.applyGuestOp(message.op); } catch (_) { /* 不正なopは無視する */ }
+      // 取り込みは自分の編集ではない。落ち着いてから正本を配り直す
+      applyIncomingOp(message.op);
+      scheduleSettleResync();
+    } else if (message.t === "op" && role === "guest") {
+      // 他のゲストの操作。サーバが送信者以外へ回してくる
+      applyIncomingOp(message.op);
+      applyOpToBaseline(message.op);
     } else if (message.t === "activity") {
       showActivity(message.from);
     } else if (message.t === "pointer") {

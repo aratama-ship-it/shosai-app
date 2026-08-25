@@ -235,6 +235,17 @@ export class SessionRoom {
 
       const payload = { t: "op", op: data.op, from: senderFrom(attachment) };
       for (const host of hosts) safeSend(host, payload);
+
+      /* 送信者以外のゲストへも中継する。
+         以前はホストにだけ送り、ホストが全文書を配り直すことで他のゲストへ伝えていた。
+         しかしその配り直しは、まだ動かしている送信元ゲストの位置まで巻き戻すため、
+         3人で使うと「自分の操作がリセットされ続ける」状態になった（2026-08-24 実機）。
+         opを直接回せば、配り直しを待たずに参加者同士の操作が見える。 */
+      for (const socket of this.ctx.getWebSockets()) {
+        if (socket === ws || !isOpen(socket)) continue;
+        const target = readAttachment(socket);
+        if (target && target.role === "guest") safeSend(socket, payload);
+      }
       return;
     }
 
