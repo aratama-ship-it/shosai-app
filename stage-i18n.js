@@ -16,10 +16,10 @@
   "use strict";
 
   const TEXT = {
-    /* ---- どこで何ができるか（機能一覧・2026-08-25） ----
+    /* ---- 端末による違い（機能一覧・2026-08-25。表示名は2026-08-26に「どこで何ができるか」から変更） ----
        劇場の言葉を保つ。desk/rehearsal room/at hand は、机→稽古場→現場という
        持ち出しの段階をそのまま英語でも読ませるための選び方。 */
-    "どこで何ができるか": "Where you can do what",
+    "端末による違い": "Differences by device",
     "ここには二つの道具があります。舞台スケッチは、これから広く使ってもらうためのアプリ。書斎は、資料棚と名簿と制作机を置いた、こちらの手元だけの机です。同じ画面から行き来できますが、配るのは舞台スケッチのほうだけです。":
       "There are two tools here. Stage Sketch is the app meant to be shared widely. The Study is our own desk \u2014 the reference shelf, the roster, and the writing desk. You can move between them from the same screen, but only Stage Sketch is handed out.",
     "舞台を組み、光を置き、シーンを並べるための道具です。机で組み立て、稽古場へ持ち出し、現場では手元で確かめる——左から右へ、つくるが机に残り、確かめるが手元へ移ります。":

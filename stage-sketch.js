@@ -1038,7 +1038,8 @@
   document.documentElement.classList.toggle("stage-phone-viewer", phoneViewerActive);
   let phoneUi = null;
 
-  /* 機能一覧「どこで何ができるか」の見せ方を、どちらの製品として開かれたかで変える。
+  /* 機能一覧「端末による違い」（旧称「どこで何ができるか」）の見せ方を、
+     どちらの製品として開かれたかで変える。
      配る製品（stage.html 単独版）の利用者に、持っていない書斎機能の一覧を見せない。
      導入文も差し替える——書斎の表が消えると「二つの道具があります」が意味を失うため。 */
   if (standaloneStagePage) {
@@ -14764,7 +14765,7 @@
     if (els.sceneGridSize) els.sceneGridSize.value = String(size);
   }
 
-  /* 機能一覧「どこで何ができるか」。幅が要る資料なので窓で開く。
+  /* 機能一覧「端末による違い」（旧称「どこで何ができるか」）。幅が要る資料なので窓で開く。
      以前は保存パネルの中に畳んで入れていたが、側柱が268pxしかなく
      列見出しが「ブ／ラ／ウ／ザ」と縦積みになって読めなかった（2026-08-25）。 */
   function openReachTable() {
