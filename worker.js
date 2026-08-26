@@ -6,8 +6,9 @@ export { SessionRoom };
 //
 // wrangler.toml の run_worker_first により、静的アセットより必ず先にここを通る。
 // 正しければ env.ASSETS.fetch(request) で通常の静的ファイル配信へ渡す。
-// IDとパスワードは Cloudflare の環境変数（Secret）SITE_USER / SITE_PASS と
-// GUEST_USER / GUEST_PASS に置き、このファイルやリポジトリには平文で残さない。
+// IDとパスワードは Cloudflare の環境変数（Secret）SITE_USER / SITE_PASS、
+// GUEST_USER / GUEST_PASS、GUEST_ACCOUNTS に置き、このファイルやリポジトリには
+// 平文で残さない。
 // 本人用・ゲスト用とも、使う入口はIDとパスワードの両方を設定する。
 // 本番で未設定や片側だけなら503で配信を止める。
 // 両方とも未設定のまま認証なしで通せるのは、ローカル開発だけ。
@@ -514,6 +515,47 @@ function matchBasicAuth(request, accounts) {
     timingSafeEqual(user, expectedUser) && timingSafeEqual(pass, expectedPass)) || null;
 }
 
+/* GUEST_ACCOUNTS は、未設定か空文字列のときだけ「この入口を使わない」と扱う。
+   設定済みなら全件を検証し、部分的に正しい名簿へ縮めず、どこか一つでも不正なら
+   設定全体を止める。label と未知の項目は将来用なので認証判定には使わない。 */
+function parseGuestAccounts(value, siteUser, legacyGuestUser) {
+  if (value === undefined || value === "") {
+    return { accounts: [], misconfigured: false };
+  }
+  if (typeof value !== "string") {
+    return { accounts: [], misconfigured: true };
+  }
+
+  let entries = null;
+  try {
+    entries = JSON.parse(value);
+  } catch (_) {
+    return { accounts: [], misconfigured: true };
+  }
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return { accounts: [], misconfigured: true };
+  }
+
+  const accounts = [];
+  const seenUsers = new Set();
+  for (const entry of entries) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      return { accounts: [], misconfigured: true };
+    }
+    const { user, pass } = entry;
+    if (typeof user !== "string" || user.length === 0
+        || typeof pass !== "string" || pass.length === 0) {
+      return { accounts: [], misconfigured: true };
+    }
+    if (seenUsers.has(user) || user === siteUser || user === legacyGuestUser) {
+      return { accounts: [], misconfigured: true };
+    }
+    seenUsers.add(user);
+    accounts.push([user, pass]);
+  }
+  return { accounts, misconfigured: false };
+}
+
 export default {
   async fetch(request, env, ctx) {
     // アイコンとmanifestは認証の手前で返す（上のコメントの理由による）。
@@ -521,17 +563,24 @@ export default {
       return env.ASSETS.fetch(request);
     }
 
-    // 本人用（SITE_USER/SITE_PASS）とゲスト用（GUEST_USER/GUEST_PASS）の2組を受け付ける。
-    // ゲスト用の両方が未設定なら、ゲスト入口は存在しないのと同じ。
+    // 本人用、移行中の旧ゲスト用、新しいゲスト名簿の順で受け付ける。
+    // 旧ゲスト用の両方と新しい名簿が未設定なら、各入口は存在しないのと同じ。
     const pairs = [
       [env.SITE_USER, env.SITE_PASS],
       [env.GUEST_USER, env.GUEST_PASS],
     ];
+    const guestConfig = parseGuestAccounts(
+      env.GUEST_ACCOUNTS, env.SITE_USER, env.GUEST_USER,
+    );
     // 片方だけ入っている組は設定ミス。両方空（＝その入口を使わない）は正常。
-    const misconfigured = pairs.some(([u, p]) => Boolean(u) !== Boolean(p));
-    const accounts = pairs.filter(([u, p]) => u && p);
+    const misconfigured = pairs.some(([u, p]) => Boolean(u) !== Boolean(p))
+      || guestConfig.misconfigured;
+    const accounts = [
+      ...pairs.filter(([u, p]) => u && p),
+      ...guestConfig.accounts,
+    ];
 
-    // 両入口とも未設定で通せるのはローカルだけ。片側だけの組はローカルでも止める。
+    // 全入口が未設定で通せるのはローカルだけ。設定ミスはローカルでも止める。
     if (accounts.length === 0 || misconfigured) {
       if (isLocalHost(request) && !misconfigured) {
         return serveAuthenticatedRequest(request, env);

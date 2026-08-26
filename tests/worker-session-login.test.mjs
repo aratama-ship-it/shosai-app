@@ -15,6 +15,10 @@ import worker, { createSessionToken, readSessionToken, safeNextPath } from "../w
 const SITE = ["arata", "site-pass-123"];
 const GUEST = ["guest", "guest-pass-456"];
 const ACCOUNTS = [SITE, GUEST];
+const MANAGED_GUESTS = [
+  ["guest1", "managed-pass-one"],
+  ["guest2", "managed-pass-two"],
+];
 /* 固定値の NOW はトークン単体の検査に使う。
    Worker を通す検査では、Worker が Date.now() を見るので実時刻を使うこと。 */
 const NOW = 1_800_000_000;
@@ -46,6 +50,33 @@ function cookieFrom(response) {
   const eq = raw.indexOf("=");
   const semi = raw.indexOf(";");
   return raw.slice(eq + 1, semi === -1 ? undefined : semi);
+}
+
+const managedGuestEntries = () => [
+  { user: MANAGED_GUESTS[0][0], pass: MANAGED_GUESTS[0][1], label: "ゲスト一", future: true },
+  { user: MANAGED_GUESTS[1][0], pass: MANAGED_GUESTS[1][1] },
+];
+
+const withGuestAccounts = (entries, base = env) => ({
+  ...base,
+  GUEST_ACCOUNTS: typeof entries === "string" ? entries : JSON.stringify(entries),
+});
+
+async function signIn(account, targetEnv) {
+  const body = new URLSearchParams({ user: account[0], pass: account[1], next: "/db.js" });
+  return worker.fetch(
+    new Request("https://shosai.example/sign-in", { method: "POST", body }), targetEnv, {},
+  );
+}
+
+async function assertMisconfigured(targetEnv, message) {
+  for (const origin of ["https://shosai.example", "http://localhost:8787"]) {
+    const response = await worker.fetch(
+      new Request(`${origin}/`, { method: "GET", headers: NAV }), targetEnv, {},
+    );
+    assert.equal(response.status, 503, `${message} (${origin})`);
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
+  }
 }
 
 // ---------- トークンそのもの ----------
@@ -272,6 +303,74 @@ test("ゲスト口座でも入れる", async () => {
   assert.equal(response.status, 200);
 });
 
+test("GUEST_ACCOUNTSの各口座はログイン・クッキー・Basic認証で通る", async () => {
+  const managedEnv = withGuestAccounts(managedGuestEntries());
+  for (const account of MANAGED_GUESTS) {
+    const login = await signIn(account, managedEnv);
+    assert.equal(login.status, 303, `${account[0]} はログインできる`);
+
+    const token = cookieFrom(login);
+    const cookieResponse = await worker.fetch(
+      get("/db.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${token}` }),
+      managedEnv,
+      {},
+    );
+    assert.equal(cookieResponse.status, 200, `${account[0]} のクッキーは通る`);
+
+    const basicResponse = await worker.fetch(get("/db.js", basicHeader(account)), managedEnv, {});
+    assert.equal(basicResponse.status, 200, `${account[0]} のBasic認証は通る`);
+  }
+});
+
+test("GUEST_ACCOUNTSの一人口座のパスワード変更は、その人のトークンだけを無効にする", async () => {
+  const initialEnv = withGuestAccounts(managedGuestEntries());
+  const firstToken = cookieFrom(await signIn(MANAGED_GUESTS[0], initialEnv));
+  const secondToken = cookieFrom(await signIn(MANAGED_GUESTS[1], initialEnv));
+  const changedEntries = managedGuestEntries();
+  changedEntries[0].pass = "changed-managed-pass";
+  const changedEnv = withGuestAccounts(changedEntries);
+
+  const firstResponse = await worker.fetch(
+    get("/db.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${firstToken}` }),
+    changedEnv,
+    {},
+  );
+  assert.equal(firstResponse.status, 401, "変更した人の旧トークンは無効");
+
+  const secondResponse = await worker.fetch(
+    get("/db.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${secondToken}` }),
+    changedEnv,
+    {},
+  );
+  assert.equal(secondResponse.status, 200, "変更していない人のトークンは有効");
+});
+
+test("GUEST_ACCOUNTSが未設定または空でも旧ゲスト口座は従来どおり通る", async () => {
+  for (const legacyEnv of [env, { ...env, GUEST_ACCOUNTS: "" }]) {
+    const login = await signIn(GUEST, legacyEnv);
+    assert.equal(login.status, 303);
+    const token = cookieFrom(login);
+    const cookieResponse = await worker.fetch(
+      get("/db.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${token}` }),
+      legacyEnv,
+      {},
+    );
+    assert.equal(cookieResponse.status, 200);
+    assert.equal(
+      (await worker.fetch(get("/db.js", basicHeader(GUEST)), legacyEnv, {})).status,
+      200,
+    );
+  }
+});
+
+test("旧ゲスト口座とGUEST_ACCOUNTSが重複なしで併存すれば両方通る", async () => {
+  const combinedEnv = withGuestAccounts(managedGuestEntries());
+  for (const account of [GUEST, ...MANAGED_GUESTS]) {
+    const response = await worker.fetch(get("/db.js", basicHeader(account)), combinedEnv, {});
+    assert.equal(response.status, 200, `${account[0]} は通る`);
+  }
+});
+
 test("出るとクッキーが消える", async () => {
   const response = await worker.fetch(get("/sign-out", NAV), env, {});
   assert.equal(response.status, 303);
@@ -303,4 +402,52 @@ test("設定が片側だけなら止める", async () => {
   const broken = { ...env, GUEST_PASS: "" };
   const response = await worker.fetch(get("/", NAV), broken, {});
   assert.equal(response.status, 503);
+});
+
+test("GUEST_ACCOUNTSがJSONとして読めなければ503で止める", async () => {
+  await assertMisconfigured(withGuestAccounts("not-json"), "不正JSONは設定ミス");
+});
+
+test("GUEST_ACCOUNTSが配列でなければ503で止める", async () => {
+  await assertMisconfigured(withGuestAccounts({ user: "guest1", pass: "dummy-pass" }), "非配列");
+});
+
+test("GUEST_ACCOUNTSが空配列なら503で止める", async () => {
+  await assertMisconfigured(withGuestAccounts([]), "空配列");
+});
+
+test("GUEST_ACCOUNTSに不正な要素が一つでもあれば503で止める", async () => {
+  const invalidEntries = [
+    null,
+    [],
+    "not-an-object",
+    { pass: "dummy-pass" },
+    { user: "guest1" },
+    { user: "", pass: "dummy-pass" },
+    { user: "guest1", pass: "" },
+    { user: 1, pass: "dummy-pass" },
+    { user: "guest1", pass: 1 },
+  ];
+  for (const entry of invalidEntries) {
+    await assertMisconfigured(withGuestAccounts([entry]), `不正要素: ${JSON.stringify(entry)}`);
+  }
+});
+
+test("GUEST_ACCOUNTS内でuserが重複すれば503で止める", async () => {
+  await assertMisconfigured(withGuestAccounts([
+    { user: "guest1", pass: "dummy-pass-one" },
+    { user: "guest1", pass: "dummy-pass-two" },
+  ]), "新名簿内の重複");
+});
+
+test("GUEST_ACCOUNTSのuserがSITE_USERと重複すれば503で止める", async () => {
+  await assertMisconfigured(withGuestAccounts([
+    { user: SITE[0], pass: "dummy-pass" },
+  ]), "本人用口座との重複");
+});
+
+test("GUEST_ACCOUNTSのuserが旧GUEST_USERと重複すれば503で止める", async () => {
+  await assertMisconfigured(withGuestAccounts([
+    { user: GUEST[0], pass: "dummy-pass" },
+  ]), "旧ゲスト口座との重複");
 });
