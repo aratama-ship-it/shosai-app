@@ -1,0 +1,122 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<title>ゲスト目印 意匠プレビュー</title><style>
+:root {
+  --desk: #191512;
+  --desk-2: #201b16;
+  --desk-3: #282119;
+  --line-dark: #382f25;
+  --paper: #efe7d6;
+  --paper-2: #e7dcc5;
+  --paper-line: #d8c9ab;
+  --ink: #2b2620;
+  --ink-soft: #6a604e;
+  --milk: rgba(240, 231, 214, 0.85);
+  --milk-dim: rgba(240, 231, 214, 0.55);
+  --rust: #a84b26;
+  /* 8.5〜9.5px の小見出し用。--rust のままだと机の色の上で 2.80〜3.44 しかなく読みにくい。
+     色相はそのままに明るくして 4.5:1 を満たす。塗り・線・大きい字は --rust のまま使う。 */
+  --rust-ink: #df6433;
+  --rust-deep: #8f3e1e;
+  --brass: #9c823f;
+  --moss: #77865f;
+  --slate: #8b98a1;
+  --serif: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
+  --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+}
+body {
+  background: var(--desk);
+  color: var(--milk);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.75;
+  min-height: 100vh;
+}
+body { padding: 30px 36px; }
+.stage-sketch-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--line-dark);
+  padding: 0 0 18px;
+  margin-bottom: 18px;
+}
+.stage-sketch-head h1 {
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: clamp(24px, 3vw, 33px);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+}
+.stage-sketch-kicker {
+  color: var(--rust);
+  font-size: 9.5px;
+  letter-spacing: 0.28em;
+  margin-bottom: 4px;
+}
+.stage-app-version {
+  margin-left: 0.55em;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 0.38em;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  vertical-align: 0.3em;
+}
+.stage-beta {
+  margin-left: 12px;
+  color: var(--rust);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  vertical-align: middle;
+}
+.stage-storage-caution {
+  flex: 0 1 420px;
+  margin: 0 0 3px;
+  padding-left: 11px;
+  border-left: 2px solid rgba(168, 75, 38, 0.65);
+  color: var(--milk-dim);
+  font-size: 11px;
+  line-height: 1.65;
+  letter-spacing: 0.02em;
+}
+.stage-session-guest-badge {
+  display: inline-block;
+  margin-left: 14px;
+  padding-left: 10px;
+  border-left: 2px solid rgba(156, 130, 63, 0.7);
+  color: var(--brass);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  line-height: 1.5;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.stage-session-guest-badge[hidden] { display:none; }
+.note { color:#8d8377; font:400 11px/1.6 var(--sans); letter-spacing:.1em; margin:26px 0 8px; }
+.oldbadge { display:inline-block; margin-left:14px; padding:10px 18px; border:2px solid var(--brass);
+  border-radius:999px; box-shadow:0 4px 18px rgba(0,0,0,.38); background:rgba(20,17,14,.96);
+  color:var(--brass); font-size:17px; font-weight:700; letter-spacing:.05em; vertical-align:middle; }
+</style></head><body>
+<p class="note">■ 変更後（題の右・サイトの語彙に揃えた）</p>
+<header class="stage-sketch-head"><div>
+<p class="stage-sketch-kicker">STAGE IMAGE STUDY</p>
+<h1>舞台スケッチ<span class="stage-app-version">v0.3.4</span><span class="stage-beta">β版</span><span class="stage-session-guest-badge" role="status">ゲスト（閲覧＋矢印）</span></h1>
+</div></header>
+<p class="note">■ 変更前の意匠を、同じ位置に置いた場合（比較用）</p>
+<header class="stage-sketch-head"><div>
+<p class="stage-sketch-kicker">STAGE IMAGE STUDY</p>
+<h1>舞台スケッチ<span class="stage-app-version">v0.3.4</span><span class="stage-beta">β版</span><span class="oldbadge">ゲスト（閲覧＋矢印）</span></h1>
+</div></header>
+<p class="note">■ ゲストでないとき（目印は出ない）＋ 左の線は下の注意書きと同じ作法</p>
+<header class="stage-sketch-head"><div>
+<p class="stage-sketch-kicker">STAGE IMAGE STUDY</p>
+<h1>舞台スケッチ<span class="stage-app-version">v0.3.4</span><span class="stage-beta">β版</span><span class="stage-session-guest-badge" hidden>ゲスト（閲覧＋矢印）</span></h1>
+</div></header>
+<p class="stage-storage-caution">描いたものはこの端末のブラウザにだけ保存されます。</p>
+</body></html>

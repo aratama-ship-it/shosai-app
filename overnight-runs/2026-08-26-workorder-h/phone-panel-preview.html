@@ -1,0 +1,154 @@
+<!doctype html><html lang="ja" class="stage-phone-viewer"><head><meta charset="utf-8">
+<title>縦向き パネルの出方</title><style>
+:root {
+  --desk: #191512;
+  --desk-2: #201b16;
+  --desk-3: #282119;
+  --line-dark: #382f25;
+  --paper: #efe7d6;
+  --paper-2: #e7dcc5;
+  --paper-line: #d8c9ab;
+  --ink: #2b2620;
+  --ink-soft: #6a604e;
+  --milk: rgba(240, 231, 214, 0.85);
+  --milk-dim: rgba(240, 231, 214, 0.55);
+  --rust: #a84b26;
+  /* 8.5〜9.5px の小見出し用。--rust のままだと机の色の上で 2.80〜3.44 しかなく読みにくい。
+     色相はそのままに明るくして 4.5:1 を満たす。塗り・線・大きい字は --rust のまま使う。 */
+  --rust-ink: #df6433;
+  --rust-deep: #8f3e1e;
+  --brass: #9c823f;
+  --moss: #77865f;
+  --slate: #8b98a1;
+  --serif: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
+  --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+}
+body { margin:0; padding:20px; background:#0d0c0b; font-family:var(--sans); }
+html.stage-phone-viewer .stage-phone-title {
+  grid-row: 1;
+  z-index: 12;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  padding: 0 12px;
+  background: #15120f;
+}
+html.stage-phone-viewer .stage-phone-title-name {
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+html.stage-phone-viewer .stage-phone-title-version {
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+html.stage-phone-viewer .stage-phone-title-beta {
+  color: var(--rust);
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+}
+html.stage-phone-viewer .stage-phone-toolbar {
+  grid-row: 2;
+  z-index: 12;
+  display: grid;
+  grid-template-columns: 48px 44px minmax(0, 1fr) 44px 48px 60px;
+  grid-template-rows: 48px;
+  min-width: 0;
+  border-bottom: 1px solid var(--line-dark);
+  background: #15120f;
+}
+html.stage-phone-viewer .stage-phone-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 3px 6px;
+  border: 0;
+  border-left: 1px solid rgba(240,231,214,0.1);
+  background: transparent;
+  color: var(--milk-dim);
+  font-family: var(--sans);
+  font-size: 11px;
+}
+html.stage-phone-viewer .stage-phone-info {
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 10px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line-dark);
+  background: #1a1612;
+}
+html.stage-phone-viewer .stage-phone-source {
+  grid-row: 4;
+  display: grid;
+  /* 開く3つ＋書き出し＋閉じるの5つ。2桁で並べ、閉じるだけ下段いっぱいに置く
+     （2026-08-24 に「ファイルへ書き出す」を足して桁割りを組み直した） */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line-dark);
+  background: #1a1612;
+}
+html.stage-phone-viewer .stage-phone-scene-current {
+  grid-column: 3;
+  align-self: center;
+  min-width: 0;
+  padding: 0 8px;
+  overflow: hidden;
+  color: var(--milk);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html.stage-phone-viewer .stage-phone-actions {
+  display: contents;
+}
+html.stage-phone-viewer .stage-phone-scene-bar {
+  display: contents;
+}
+.stage-phone-info[hidden], .stage-phone-source[hidden] { display:none !important; }
+.wrap { display:inline-block; vertical-align:top; margin:0 18px 12px 0; }
+.cap { color:#8d8377; font-size:11px; letter-spacing:.08em; margin:0 0 6px; }
+.phone { width:300px; height:430px; border:1px solid #2a251f; border-radius:14px; overflow:hidden; }
+.stage-board-column { display:grid; grid-template-rows:30px 48px auto auto minmax(0,1fr); height:100%; background:#191512; }
+.stage-canvas-stack { grid-row:5; display:grid; grid-template-rows:auto auto; align-content:start; gap:6px; padding:6px; min-height:0; }
+.cv { background:#221d18; border:1px solid #2f2820; color:#6a6055; font-size:10px; display:grid; place-items:center; height:110px; }
+.stage-phone-source { grid-template-columns:repeat(2,minmax(0,1fr)); }
+</style></head><body>
+<div class="wrap"><p class="cap">① 何も開いていない</p><div class="phone"><div class="stage-board-column">
+<header class="stage-phone-title"><span class="stage-phone-title-name">舞台スケッチ</span><span class="stage-phone-title-version">v0.3.4</span><span class="stage-phone-title-beta">β版</span></header>
+<div class="stage-phone-toolbar"><div class="stage-phone-actions">
+<button class="stage-phone-button stage-phone-load">ショー</button><button class="stage-phone-button">情報</button><button class="stage-phone-button">メモ</button><button class="stage-phone-button">平面図へ</button></div>
+<div class="stage-phone-scene-bar"><button class="stage-phone-button">‹</button><div class="stage-phone-scene-current">3 中庭の再会</div><button class="stage-phone-button">›</button></div></div>
+
+<div class="stage-canvas-stack"><div class="cv">正面図</div><div class="cv">平面（上から）</div></div>
+</div></div></div>
+<div class="wrap"><p class="cap">② 「情報」を開いた（図が下がる）</p><div class="phone"><div class="stage-board-column">
+<header class="stage-phone-title"><span class="stage-phone-title-name">舞台スケッチ</span><span class="stage-phone-title-version">v0.3.4</span><span class="stage-phone-title-beta">β版</span></header>
+<div class="stage-phone-toolbar"><div class="stage-phone-actions">
+<button class="stage-phone-button stage-phone-load">ショー</button><button class="stage-phone-button">情報</button><button class="stage-phone-button">メモ</button><button class="stage-phone-button">平面図へ</button></div>
+<div class="stage-phone-scene-bar"><button class="stage-phone-button">‹</button><div class="stage-phone-scene-current">3 中庭の再会</div><button class="stage-phone-button">›</button></div></div>
+<section class="stage-phone-info"><strong>継ぎ目の庭</strong><span>3 中庭の再会</span><textarea rows="2" placeholder="このシーンのメモ"></textarea></section>
+<div class="stage-canvas-stack"><div class="cv">正面図</div><div class="cv">平面（上から）</div></div>
+</div></div></div>
+<div class="wrap"><p class="cap">③ 「ショー」を開いた（書き出しはこの中）</p><div class="phone"><div class="stage-board-column">
+<header class="stage-phone-title"><span class="stage-phone-title-name">舞台スケッチ</span><span class="stage-phone-title-version">v0.3.4</span><span class="stage-phone-title-beta">β版</span></header>
+<div class="stage-phone-toolbar"><div class="stage-phone-actions">
+<button class="stage-phone-button stage-phone-load">ショー</button><button class="stage-phone-button">情報</button><button class="stage-phone-button">メモ</button><button class="stage-phone-button">平面図へ</button></div>
+<div class="stage-phone-scene-bar"><button class="stage-phone-button">‹</button><div class="stage-phone-scene-current">3 中庭の再会</div><button class="stage-phone-button">›</button></div></div>
+<section class="stage-phone-source"><strong>ショーを開く</strong>
+<button class="stage-phone-button">JSONファイル</button><button class="stage-phone-button">継ぎ目の庭</button>
+<button class="stage-phone-button">サンプルショー</button><button class="stage-phone-button">ファイルへ書き出す</button>
+<button class="stage-phone-button">閉じる</button></section>
+<div class="stage-canvas-stack"><div class="cv">正面図</div><div class="cv">平面（上から）</div></div>
+</div></div></div>
+</body></html>

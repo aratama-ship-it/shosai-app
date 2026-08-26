@@ -1,0 +1,160 @@
+<!doctype html><html lang="ja" class="stage-phone-viewer"><head><meta charset="utf-8">
+<title>スマホ上部の題 プレビュー</title><style>
+:root {
+  --desk: #191512;
+  --desk-2: #201b16;
+  --desk-3: #282119;
+  --line-dark: #382f25;
+  --paper: #efe7d6;
+  --paper-2: #e7dcc5;
+  --paper-line: #d8c9ab;
+  --ink: #2b2620;
+  --ink-soft: #6a604e;
+  --milk: rgba(240, 231, 214, 0.85);
+  --milk-dim: rgba(240, 231, 214, 0.55);
+  --rust: #a84b26;
+  /* 8.5〜9.5px の小見出し用。--rust のままだと机の色の上で 2.80〜3.44 しかなく読みにくい。
+     色相はそのままに明るくして 4.5:1 を満たす。塗り・線・大きい字は --rust のまま使う。 */
+  --rust-ink: #df6433;
+  --rust-deep: #8f3e1e;
+  --brass: #9c823f;
+  --moss: #77865f;
+  --slate: #8b98a1;
+  --serif: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
+  --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+}
+body { margin:0; padding:24px; background:#0d0c0b; font-family: var(--sans); }
+html.stage-phone-viewer .stage-phone-title {
+  z-index: 12;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  padding: 0 12px;
+  background: #15120f;
+}
+html.stage-phone-viewer .stage-phone-title-name {
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+html.stage-phone-viewer .stage-phone-title-version {
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+html.stage-phone-viewer .stage-phone-title-beta {
+  color: var(--rust);
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+}
+html.stage-phone-viewer .stage-phone-title .stage-session-guest-badge {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stage-session-guest-badge {
+  display: inline-block;
+  margin-left: 14px;
+  padding-left: 10px;
+  border-left: 2px solid rgba(156, 130, 63, 0.7);
+  color: var(--brass);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  line-height: 1.5;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+html.stage-phone-viewer .stage-phone-toolbar {
+  z-index: 12;
+  display: grid;
+  grid-template-columns: 48px 44px minmax(0, 1fr) 44px 48px 60px;
+  grid-template-rows: 48px;
+  min-width: 0;
+  border-bottom: 1px solid var(--line-dark);
+  background: #15120f;
+}
+html.stage-phone-viewer .stage-phone-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 3px 6px;
+  border: 0;
+  border-left: 1px solid rgba(240,231,214,0.1);
+  background: transparent;
+  color: var(--milk-dim);
+  font-family: var(--sans);
+  font-size: 11px;
+}
+html.stage-phone-viewer .stage-phone-scene-current {
+  grid-column: 3;
+  align-self: center;
+  min-width: 0;
+  padding: 0 8px;
+  overflow: hidden;
+  color: var(--milk);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html.stage-phone-viewer .stage-phone-actions {
+  display: contents;
+}
+html.stage-phone-viewer .stage-phone-scene-bar {
+  display: contents;
+}
+.stage-session-guest-badge[hidden] { display:none; }
+.phone { width:390px; height:300px; margin:0 26px 10px 0; display:inline-block;
+  border:1px solid #2a251f; border-radius:14px; overflow:hidden; vertical-align:top; }
+.stage-board-column { display:grid; grid-template-rows:30px 48px minmax(0,1fr); height:100%; background:#191512; }
+.canvas { display:grid; place-items:center; color:#4a423a; font-size:12px; }
+.cap { color:#8d8377; font-size:11px; letter-spacing:.1em; margin:0 0 8px; }
+</style></head><body>
+<p class="cap">■ 縦向き・ゲストではないとき（390px幅）</p>
+<div class="phone"><div class="stage-board-column">
+  <header class="stage-phone-title"><span class="stage-phone-title-name">舞台スケッチ</span><span class="stage-phone-title-version">v0.3.4</span><span class="stage-phone-title-beta">β版</span></header>
+  <div class="stage-phone-toolbar">
+    <div class="stage-phone-actions">
+      <button class="stage-phone-button stage-phone-load">ショー</button>
+      <button class="stage-phone-button">情報</button>
+      <button class="stage-phone-button">メモ</button>
+      <button class="stage-phone-button">平面図へ</button>
+    </div>
+    <div class="stage-phone-scene-bar">
+      <button class="stage-phone-button">‹</button>
+      <div class="stage-phone-scene-current">3 中庭の再会</div>
+      <button class="stage-phone-button">›</button>
+    </div>
+  </div>
+  <div class="canvas">（図）</div>
+</div></div>
+<p class="cap">■ 縦向き・ゲストで参加中</p>
+<div class="phone"><div class="stage-board-column">
+  <header class="stage-phone-title"><span class="stage-phone-title-name">舞台スケッチ</span><span class="stage-phone-title-version">v0.3.4</span><span class="stage-phone-title-beta">β版</span><span class="stage-session-guest-badge">ゲスト（閲覧＋矢印）</span></header>
+  <div class="stage-phone-toolbar">
+    <div class="stage-phone-actions">
+      <button class="stage-phone-button stage-phone-load">ショー</button>
+      <button class="stage-phone-button">情報</button>
+      <button class="stage-phone-button">メモ</button>
+      <button class="stage-phone-button">平面図へ</button>
+    </div>
+    <div class="stage-phone-scene-bar">
+      <button class="stage-phone-button">‹</button>
+      <div class="stage-phone-scene-current">3 中庭の再会</div>
+      <button class="stage-phone-button">›</button>
+    </div>
+  </div>
+  <div class="canvas">（図）</div>
+</div></div>
+</body></html>
