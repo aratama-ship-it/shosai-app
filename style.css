@@ -10728,9 +10728,14 @@ html.stage-phone-viewer .stage-sketch-grid {
 html.stage-phone-viewer .stage-board-column {
   position: relative;
   display: grid;
-  /* 道具の帯と図の二段。以前は下に音楽帯44pxがあったが、楽曲はPC専用と決めて
-     取り除いたので、その分を図へ返している（2026-08-24 本人判断）。 */
-  grid-template-rows: 48px minmax(0, 1fr);
+  /* 題・道具の帯・情報・ショー・設定・図。以前は下に音楽帯44pxがあったが、楽曲はPC専用と決めて
+     取り除いたので、その分を図へ返している（2026-08-24 本人判断）。
+     題の30pxは縦向きで足した分（2026-08-26 本人指摘。横向きでは題を消して二段に戻す）。
+     ★行を明示しないと canvas が暗黙の行へ押し出される。段を増減したらここも直すこと。 */
+  /* 7段目は図の下のメモ欄（縦向きのみ・2026-08-26 本人指示）。
+     図が minmax(0,1fr) なので、上のパネルが開いても縮むのは図のほうで、
+     メモ欄は下に残る。★段を増減したら各要素の grid-row と一緒に直すこと。 */
+  grid-template-rows: 30px 48px auto auto auto minmax(0, 1fr) auto;
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -10739,7 +10744,108 @@ html.stage-phone-viewer .stage-board-column {
   overflow: hidden;
 }
 
+/* 図は必ず6段目。情報・ショー・設定が hidden で消えても、自動配置で段が繰り上がらないようにする。
+   ★段を増減したら .stage-board-column の grid-template-rows と一緒に直すこと。 */
+html.stage-phone-viewer .stage-canvas-stack { grid-row: 6; }
+
+/* 図の下のメモ欄。道具の帯と同じ地色で、画面の下端の塊として置く。 */
+html.stage-phone-viewer .stage-phone-memo {
+  grid-row: 7;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  padding: 7px 10px;
+  border-top: 1px solid var(--line-dark);
+  background: #15120f;
+}
+
+html.stage-phone-viewer .stage-phone-memo-label {
+  padding-top: 3px;
+  color: var(--brass);
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+html.stage-phone-viewer .stage-phone-memo-input {
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--line-dark);
+  background: #1a1612;
+  color: var(--milk);
+  font-family: var(--sans);
+  /* ★16px未満にしないこと。iOSは入力欄へ寄るとき画面ごと拡大する（2026-08-24 に対応済みの罠）。 */
+  font-size: 16px;
+  line-height: 1.4;
+  resize: none;
+}
+
+/* 上部の題。デスクトップのヘッダーと同じ語彙（セリフの題＋小さなサンセリフの版＋錆色のβ版）を、
+   30pxの帯に収まる寸法へ落としたもの。道具の帯と同じ地色で、両者で一つの上部の塊に見せる。 */
+html.stage-phone-viewer .stage-phone-title {
+  grid-row: 1;
+  z-index: 12;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  padding: 0 12px;
+  background: #15120f;
+}
+
+html.stage-phone-viewer .stage-phone-title-name {
+  color: var(--milk);
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+html.stage-phone-viewer .stage-phone-title-version {
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+html.stage-phone-viewer .stage-phone-title-beta {
+  color: var(--rust);
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+}
+
+/* ゲストの目印は題の右端へ寄せる。意匠は机のものを引き継ぎ、寸法だけ帯に合わせる。 */
+html.stage-phone-viewer .stage-phone-title .stage-session-guest-badge {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.stage-phone-viewer .stage-phone-title .stage-phone-title-settings {
+  flex: 0 0 44px;
+  align-self: center;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  padding: 0;
+  /* ★44pxの当たりは縮めないこと。この画面の決まり（指で押せる大きさ）。
+     帯は30pxだが align-self:center で上下へはみ出させる。絵は下の svg 指定で15px。
+     以前は文字の「⚙」だったので font-size/line-height で寸法を作っていた（2026-08-26 SVGへ）。 */
+  border-left: 0;
+}
+
+/* ゲストの目印が出ているときは、その右隣に設定を置く。 */
+html.stage-phone-viewer .stage-phone-title .stage-session-guest-badge:not([hidden])
+  + .stage-phone-title-settings { margin-left: 0; }
+
 html.stage-phone-viewer .stage-phone-toolbar {
+  grid-row: 2;
   z-index: 12;
   display: grid;
   grid-template-columns: 48px 44px minmax(0, 1fr) 44px 48px 60px;
@@ -10754,6 +10860,19 @@ html.stage-phone-viewer .stage-phone-toolbar {
 
 html.stage-phone-viewer .stage-phone-actions {
   display: contents;
+}
+
+/* 絵で示すボタン（設定の歯車・閉じる×）。文字のボタンと同じ当たりの大きさを保ちつつ、
+   絵は15pxで置く。★大きさを変えるときは、ブラウザ版の .stage-gear-btn svg と見比べること。 */
+html.stage-phone-viewer .stage-phone-icon-button {
+  display: grid;
+  place-items: center;
+  color: var(--milk-dim);
+}
+
+html.stage-phone-viewer .stage-phone-icon-button svg {
+  width: 15px;
+  height: 15px;
 }
 
 html.stage-phone-viewer .stage-phone-button {
@@ -10786,10 +10905,15 @@ html.stage-phone-viewer .stage-phone-scene-bar {
 html.stage-phone-viewer .stage-phone-scene-current {
   grid-column: 3;
   align-self: center;
+  width: 100%;
+  min-height: 44px;
   min-width: 0;
   padding: 0 8px;
+  border: 0;
+  background: transparent;
   overflow: hidden;
   color: var(--milk);
+  font-family: var(--sans);
   font-size: 12px;
   letter-spacing: 0.04em;
   text-align: center;
@@ -10815,12 +10939,11 @@ html.stage-phone-viewer .stage-phone-scene-next,
 html.stage-phone-viewer .stage-phone-info-toggle,
 html.stage-phone-viewer .stage-phone-note-toggle { grid-row: 1; }
 
+/* ★縦向きでは重ねない。図（正面図・平面図）を下へ押し下げる（2026-08-26 本人指示）。
+   以前は position:fixed で正面図の上に被っていた。横向きだけ重ねる（下の landscape 参照）。
+   ★段は .stage-board-column の grid-template-rows と対。片方だけ直さないこと。 */
 html.stage-phone-viewer .stage-phone-info {
-  position: fixed;
-  z-index: 30;
-  top: calc(max(0px, env(safe-area-inset-top)) + 52px);
-  right: max(8px, env(safe-area-inset-right));
-  left: max(8px, env(safe-area-inset-left));
+  grid-row: 3;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 3px 10px;
@@ -10828,28 +10951,24 @@ html.stage-phone-viewer .stage-phone-info {
   padding: 6px 8px;
   border-bottom: 1px solid var(--line-dark);
   background: #1a1612;
-  box-shadow: 0 12px 28px rgba(0,0,0,0.55);
 }
 
 html.stage-phone-viewer .stage-phone-info[hidden],
 html.stage-phone-viewer .stage-phone-source[hidden],
+html.stage-phone-viewer .stage-phone-settings[hidden],
 html.stage-phone-viewer .stage-phone-view-toggle[hidden] { display: none !important; }
 
+/* 情報と同じく、縦向きでは重ねずに図を押し下げる（2026-08-26 本人指示）。 */
 html.stage-phone-viewer .stage-phone-source {
-  position: fixed;
-  z-index: 31;
-  top: calc(max(0px, env(safe-area-inset-top)) + 52px);
-  right: max(8px, env(safe-area-inset-right));
-  left: max(8px, env(safe-area-inset-left));
+  grid-row: 4;
   display: grid;
   /* 開く3つ＋書き出し＋閉じるの5つ。2桁で並べ、閉じるだけ下段いっぱいに置く
      （2026-08-24 に「ファイルへ書き出す」を足して桁割りを組み直した） */
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   padding: 10px;
-  border: 1px solid var(--line-dark);
+  border-bottom: 1px solid var(--line-dark);
   background: #1a1612;
-  box-shadow: 0 12px 28px rgba(0,0,0,0.55);
 }
 
 html.stage-phone-viewer .stage-phone-source strong {
@@ -10870,16 +10989,47 @@ html.stage-phone-viewer .stage-phone-source .stage-phone-button:last-child {
   grid-column: 1 / -1;
 }
 
+/* 設定も縦向きでは流し込み、情報・ショーと同様に図を押し下げる。 */
+html.stage-phone-viewer .stage-phone-settings {
+  grid-row: 5;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line-dark);
+  background: #1a1612;
+}
+
+html.stage-phone-viewer .stage-phone-settings strong {
+  grid-column: 1 / -1;
+  color: var(--brass);
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+html.stage-phone-viewer .stage-phone-settings .stage-phone-button {
+  min-width: 0;
+  border: 1px solid var(--line-dark);
+}
+
+html.stage-phone-viewer .stage-phone-settings .stage-phone-button:last-child {
+  grid-column: 1 / -1;
+}
+
 /* ===== 保存の警告帯（P1-7）=====
    閲覧機では「保存」パネルごと隠れており、容量不足や棚の破損が起きても
    警告の行き先が画面に無く、無言で失敗していた（2026-08-23 判明）。
    暗い図の上に紙が差し込まれたように見せて、見逃せないようにする。
    ★盤面は2行のgridなので、ここは枠外へ出す（読み込みパネルと同じ作法）。
      grid内に置くと3行目ができて図が潰れる。 */
+/* 保存の失敗を知らせる帯だけは重ねたままにする（割り込んで気づかせるため）。
+   題30px＋道具48pxの下へ。題を足したときに 52px から直した（2026-08-26）。 */
 html.stage-phone-viewer .stage-phone-save-notice {
   position: fixed;
   z-index: 33;
-  top: calc(max(0px, env(safe-area-inset-top)) + 52px);
+  top: calc(max(0px, env(safe-area-inset-top)) + 82px);
   right: max(8px, env(safe-area-inset-right));
   left: max(8px, env(safe-area-inset-left));
   display: grid;
@@ -10953,6 +11103,85 @@ html.stage-phone-viewer .stage-phone-file-input {
   height: 1px;
   opacity: 0;
   pointer-events: none;
+}
+
+/* シーン名から開く一覧だけは、段組みへ入れず画面全体を使う。 */
+html.stage-phone-viewer .stage-phone-scene-list {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  background: #15120f;
+  color: var(--milk);
+}
+
+html.stage-phone-viewer .stage-phone-scene-list[hidden] { display: none !important; }
+
+html.stage-phone-viewer .stage-phone-scene-list-head {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: max(6px, env(safe-area-inset-top))
+    max(10px, env(safe-area-inset-right)) 6px
+    max(14px, env(safe-area-inset-left));
+  border-bottom: 1px solid var(--line-dark);
+  background: #15120f;
+}
+
+html.stage-phone-viewer .stage-phone-scene-list-head strong {
+  flex: 1;
+  color: var(--paper);
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+}
+
+html.stage-phone-viewer .stage-phone-scene-list-head .stage-phone-button {
+  flex: 0 0 auto;
+  min-width: 64px;
+  border: 1px solid var(--line-dark);
+}
+
+html.stage-phone-viewer .stage-phone-scene-list-scroll {
+  min-height: 0;
+  padding: 8px max(8px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.stage-phone-viewer .stage-phone-scene-list-rows {
+  display: grid;
+  gap: 2px;
+}
+
+html.stage-phone-viewer .stage-phone-scene-list-row {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px 8px calc(12px + var(--phone-scene-indent, 0px));
+  border: 0;
+  border-bottom: 1px solid rgba(240,231,214,0.1);
+  background: transparent;
+  color: var(--milk-dim);
+  font: 13px/1.4 var(--sans);
+  letter-spacing: 0.03em;
+  text-align: left;
+}
+
+html.stage-phone-viewer .stage-phone-scene-list-row.is-section {
+  color: var(--brass);
+  font-weight: 600;
+}
+
+html.stage-phone-viewer .stage-phone-scene-list-row.is-current {
+  background: rgba(168,75,38,0.28);
+  color: var(--paper);
 }
 
 html.stage-phone-viewer .stage-canvas-stack {
@@ -11045,6 +11274,39 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
     grid-template-rows: minmax(0, 1fr);
   }
 
+  /* 横向きは縦の余白が図に要る。題は縦向きだけの贅沢（2026-08-26 本人判断）。 */
+  html.stage-phone-viewer .stage-phone-title { display: none; }
+
+  /* メモ欄も縦向きだけ（本人指示が「縦画面の場合は」）。 */
+  html.stage-phone-viewer .stage-phone-memo { display: none; }
+
+  /* ★横向きだけは、情報・ショーのパネルを今までどおり図の上へ重ねる。
+     横向きには押し下げる余白が無く、流し込むと図が画面の下へ出てしまうため。
+     右の64pxは道具のレールなので、その分を避けて置く。 */
+  html.stage-phone-viewer .stage-phone-info,
+  html.stage-phone-viewer .stage-phone-source,
+  html.stage-phone-viewer .stage-phone-settings {
+    position: fixed;
+    grid-row: auto;
+    top: calc(max(0px, env(safe-area-inset-top)) + 8px);
+    left: max(8px, env(safe-area-inset-left));
+    right: calc(64px + max(8px, env(safe-area-inset-right)));
+    border: 1px solid var(--line-dark);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.55);
+  }
+  html.stage-phone-viewer .stage-phone-info { z-index: 30; }
+  html.stage-phone-viewer .stage-phone-source { z-index: 31; }
+  html.stage-phone-viewer .stage-phone-settings { z-index: 32; }
+
+  /* 保存の警告も、レールを避けた位置へ（縦向きの82pxは題＋道具の分）。 */
+  html.stage-phone-viewer .stage-phone-save-notice {
+    top: calc(max(0px, env(safe-area-inset-top)) + 8px);
+    right: calc(64px + max(8px, env(safe-area-inset-right)));
+  }
+
+  /* 横向きは一段組みなので、縦向きで付けた段の指定を戻す（暗黙の段が生まれるのを防ぐ）。 */
+  html.stage-phone-viewer .stage-canvas-stack { grid-row: 1; }
+
   html.stage-phone-viewer .stage-phone-toolbar {
     grid-column: 2;
     grid-row: 1 / -1;
@@ -11083,7 +11345,7 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
     height: 32px;
     padding: 8px 42px 0;
     background: linear-gradient(rgba(13,12,11,0.72), transparent);
-    pointer-events: none;
+    pointer-events: auto;
   }
 
   html.stage-phone-viewer .stage-canvas-stack {
@@ -11103,7 +11365,8 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
   }
 
   html.stage-phone-viewer .stage-phone-info,
-  html.stage-phone-viewer .stage-phone-source {
+  html.stage-phone-viewer .stage-phone-source,
+  html.stage-phone-viewer .stage-phone-settings {
     top: calc(max(0px, env(safe-area-inset-top)) + 38px);
     right: calc(max(8px, env(safe-area-inset-right)) + 68px);
     left: auto;
@@ -11783,22 +12046,28 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
 .stage-modal.stage-session-name-modal { width: min(360px, calc(100vw - 40px)); }
 .stage-session-name-form { display: grid; gap: 12px; }
 
+/* ゲストの目印。題（舞台スケッチ v0.3.4 β版）の右に並べる。
+   ★丸い縁・影・独自の背景を持たせないこと。この画面の小さな標し
+     （キッカー・版・β版・保存の注意）はどれも縁も影も持たず、
+     小さなサンセリフ＋広い字間だけで揃えてある。ピル型にすると
+     ここだけ浮く（2026-08-26 本人指摘で固定表示のピルから改めた）。
+   左の2pxの線は「読ませたいが騒がせたくないもの」に使う既存の作法
+   （.stage-storage-caution と同じ）。動かない事実である v0.3.4・β版 は
+   線を持たないので、線の有無で「いまの状態」と読み分けられる。
+   色は真鍮＝共有セッションの色（.stage-session-guest-note と揃える）。 */
 .stage-session-guest-badge {
-  position: fixed;
-  top: calc(12px + env(safe-area-inset-top));
-  right: max(14px, env(safe-area-inset-right));
-  z-index: 8990;
-  padding: 10px 18px;
-  border: 2px solid var(--brass);
-  border-radius: 999px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, .38);
-  background: rgba(20, 17, 14, .96);
+  display: inline-block;
+  margin-left: 14px;
+  padding-left: 10px;
+  border-left: 2px solid rgba(156, 130, 63, 0.7);
   color: var(--brass);
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: .05em;
-  line-height: 1.25;
-  pointer-events: none;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  line-height: 1.5;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 .stage-session-guest-badge[hidden] { display: none; }
 
@@ -11832,7 +12101,6 @@ body.stage-session-guest #stage-export,
 body.stage-session-guest .stage-storage-caution,
 body.stage-session-guest .stage-panel[data-panel="project"],
 body.stage-session-guest .stage-panel[data-panel="music"],
-body.stage-session-guest .stage-panel[data-panel="cast"],
 body.stage-session-guest .stage-panel[data-panel="machinery"],
 body.stage-session-guest .stage-panel[data-panel="rigs"],
 body.stage-session-guest .stage-panel[data-panel="light"],
@@ -11861,6 +12129,67 @@ body.stage-session-guest #stage-plan-route,
 body.stage-session-guest #stage-plan-note,
 body.stage-session-guest #stage-front-note {
   display: none !important;
+}
+
+body.stage-session-guest .stage-cast-hint,
+body.stage-session-guest .stage-cast-add,
+body.stage-session-guest #stage-model-open,
+body.stage-session-guest .stage-cast-lock,
+body.stage-session-guest .stage-cast-profile,
+body.stage-session-guest .stage-cast-remove {
+  display: none !important;
+}
+
+body.stage-session-guest .stage-kind-swatch {
+  cursor: default;
+}
+
+body.stage-session-guest .stage-kind-swatch:hover {
+  border-color: var(--line-dark);
+}
+
+body.stage-session-guest .stage-kind-input,
+body.stage-session-guest .stage-cast-name,
+body.stage-session-guest .stage-cast-status {
+  pointer-events: none;
+}
+
+body.stage-session-guest .stage-cast-name {
+  border-color: transparent;
+  cursor: default;
+}
+
+body.stage-session-guest .stage-cast-name:hover,
+body.stage-session-guest .stage-cast-name:focus-visible {
+  border-color: transparent;
+  color: var(--milk);
+  outline: none;
+}
+
+body.stage-session-guest .stage-cast-status,
+body.stage-session-guest .stage-cast-status:hover {
+  border-color: transparent;
+  cursor: default;
+}
+
+body.stage-session-guest .stage-inspector {
+  display: none;
+}
+
+/* ★2列化は「机の3列レイアウト」のときだけ。iPad PWA（html.stage-pwa-tablet）と
+   スマホ閲覧機（html.stage-phone-viewer）は、左右の列を display:none にしたうえで
+   レール＋ドロワーの独自グリッドを組んでいる（style.css:10233 / :10719）。
+   :not() で外さないと、こちらが後勝ちして、そちらのレイアウトを壊す
+   （同じ詳細度で、この規則のほうがファイルの後ろにあるため。2026-08-26 検証で判明）。 */
+html:not(.stage-pwa-tablet):not(.stage-phone-viewer) body.stage-session-guest .stage-sketch-grid {
+  grid-template-columns: 268px minmax(420px, 1fr);
+  grid-template-areas: "tools board";
+}
+
+body.stage-session-guest #stage-col-left > #stage-session-panel {
+  margin: 0;
+  padding: 10px 0 14px;
+  border-top: 1px solid var(--line-dark);
 }
 
 /* ゲストはシーンを切り替えられない（ホストに追従）。一覧は現在地の表示用に残す */

@@ -79,7 +79,8 @@ test("警告の隣に書き出しがある", () => {
 });
 
 test("読み込みの対として書き出しを置く", () => {
-  assert.match(code, /const exportButton = makePhoneButton\("ファイルへ書き出す"/);
+  /* 文言は言語切替の対象だが、「同じ読み込み面に逃がす道を置く」意図は変えない。 */
+  assert.match(code, /const exportButton = makePhoneButton\(tx\("ファイルへ書き出す"\)/);
   assert.match(code, /sourcePanel\.append\(sourceTitle, fileButton, seamSampleButton, sampleButton,\s*exportButton, sourceClose\)/);
   // 既存の書き出し処理を使い回すこと（別経路を作らない）
   const handler = code.slice(code.indexOf('exportButton.addEventListener'));
@@ -87,8 +88,8 @@ test("読み込みの対として書き出しを置く", () => {
 });
 
 test("警告帯は盤面のgridの外へ出す", () => {
-  /* スマホの盤面は「道具の帯48px + 図」の2行gridなので、
-     grid内に置くと3行目ができて図が潰れる。読み込みパネルと同じ作法で枠外へ。 */
+  /* 警告は設定等の流し込み面と違って、利用者へ割り込んで知らせる必要がある。
+     六段gridの行へ入れず、従来どおり枠外へ重ねる。 */
   const block = style.slice(
     style.indexOf("html.stage-phone-viewer .stage-phone-save-notice {"),
     style.indexOf("html.stage-phone-viewer .stage-phone-save-notice[hidden]"),
@@ -105,7 +106,9 @@ test("警告帯のボタンは指で押せる大きさ", () => {
 });
 
 test("スマホの盤面から音楽帯ぶんの行が消えている", () => {
-  // 課題2.5で音楽UIを外したので、その44pxは図の取り分になった
-  assert.match(style, /grid-template-rows: 48px minmax\(0, 1fr\);/);
-  assert.ok(!/grid-template-rows: 48px minmax\(0, 1fr\) 44px/.test(style));
+  /* 音楽UIは戻さないこと。足した段は 題・情報・ショー・設定・メモ欄 だけ。
+     ★44pxの固定行が現れたら、下端の音楽帯が復活した疑い（2026-08-24 に取り除いたもの）。 */
+  assert.match(style, /grid-template-rows: 30px 48px auto auto auto minmax\(0, 1fr\) auto;/);
+  assert.ok(!/30px 48px auto auto auto 44px/.test(style));
+  assert.ok(!/stage-phone-music/.test(style), "音楽帯の見た目が戻っていないこと");
 });

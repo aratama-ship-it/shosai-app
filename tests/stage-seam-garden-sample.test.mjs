@@ -79,7 +79,8 @@ test("アプリは同梱ショーのデータ棚を先に読み、セクショ�
 });
 
 test("スマホの読込欄はデータ棚の二つのサンプルを区別する", () => {
-  assert.match(stageSource, /makePhoneButton\("継ぎ目の庭", "継ぎ目の庭のサンプルを開く"\)/);
-  assert.match(stageSource, /makePhoneButton\("サンプルショー", "サンプルショーを開く"\)/);
+  /* サンプルの区別を守りつつ、表示名と読み上げ名はどちらも翻訳へ通す。 */
+  assert.match(stageSource, /makePhoneButton\(tx\("継ぎ目の庭"\), tx\("継ぎ目の庭のサンプルを開く"\)\)/);
+  assert.match(stageSource, /makePhoneButton\(tx\("サンプルショー"\), tx\("サンプルショーを開く"\)\)/);
   assert.match(stageSource, /seamSampleButton\.addEventListener\("click"[\s\S]*openSeamGardenSampleShow\(\)/);
 });

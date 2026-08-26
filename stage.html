@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=196">
+<link rel="stylesheet" href="style.css?v=202">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -22,20 +22,19 @@
 <body class="is-standalone">
 
 <main id="view-stage" class="view">
-    <div class="stage-session-guest-badge" id="stage-session-guest-badge" role="status" hidden>ゲスト（閲覧＋矢印）</div>
     <div class="stage-session-host-away" id="stage-session-host-away" role="status" aria-live="polite" hidden>ホストの接続が切れています。復帰を待っています…</div>
     <section class="stage-sketch" aria-labelledby="stage-sketch-title">
       <header class="stage-sketch-head">
         <div>
           <p class="stage-sketch-kicker">STAGE IMAGE STUDY</p>
-          <h1 id="stage-sketch-title">舞台スケッチ<span class="stage-app-version">v0.3.4</span><span class="stage-beta">β版</span></h1>
+          <h1 id="stage-sketch-title">舞台スケッチ<span class="stage-app-version">v0.3.4</span><span class="stage-beta">β版</span><span class="stage-session-guest-badge" id="stage-session-guest-badge" role="status" hidden>ゲスト（閲覧＋矢印）</span></h1>
         </div>
         <!-- 保存の注意。ブラウザ内の保存は消え得るので、上部で一度だけはっきり伝える -->
         <p class="stage-storage-caution">描いたものはこの端末のブラウザにだけ保存されます。設定や容量で消えることがあるので、区切りごとに〈書き出す〉からファイルへ控えを取ってください。</p>
         <div class="stage-history-actions">
           <button type="button" id="stage-undo" data-tablet-icon="↶" title="⌘Z（WindowsはCtrl+Z）" disabled>一つ戻す</button>
           <button type="button" id="stage-redo" data-tablet-icon="↷" title="⇧⌘Z（WindowsはCtrl+Shift+Z）" disabled>やり直す</button>
-          <button type="button" class="stage-lang stage-gear-btn" id="stage-prefs-btn" data-tablet-icon="⚙" aria-label="設定" title="設定（機能の出し入れ・言語）"><span aria-hidden="true"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.12 3.47L6.78 1.72L9.22 1.72L9.88 3.47L11.58 2.69L13.31 4.42L12.53 6.12L14.28 6.78L14.28 9.22L12.53 9.88L13.31 11.58L11.58 13.31L9.88 12.53L9.22 14.28L6.78 14.28L6.12 12.53L4.42 13.31L2.69 11.58L3.47 9.88L1.72 9.22L1.72 6.78L3.47 6.12L2.69 4.42L4.42 2.69Z"/><circle cx="8" cy="8" r="2.2"/></svg></span></button>
+          <button type="button" class="stage-lang stage-gear-btn" id="stage-prefs-btn" data-tablet-icon="⚙" aria-label="設定" title="設定（機能の出し入れ・言語）"><span aria-hidden="true"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4.2" stroke-width="1.3"/><circle cx="8" cy="8" r="1.4" stroke-width="1.3"/><path stroke-width="2.3" d="M8 3.10V1.90M11.94 5.55l1.04-.60M11.94 10.45l1.04.60M8 12.90v1.20M4.06 10.45l-1.04.60M4.06 5.55l-1.04-.60"/></svg></span></button>
           <button type="button" class="stage-lang" id="stage-present-btn" data-tablet-icon="▶" title="正面図だけを全画面で見せる。矢印キーでシーン送り、Escで戻る">プレゼン</button>
           <button type="button" class="stage-export" id="stage-export" data-tablet-icon="⇩">画像を書き出す</button>
         </div>
@@ -1784,7 +1783,7 @@
 
 <script src="stage-venues.js?v=20"></script>
 <script src="stage-venue-lines.js?v=4"></script>
-<script src="stage-i18n.js?v=76"></script>
+<script src="stage-i18n.js?v=77"></script>
 <script src="stage-prompt-i18n.js?v=2"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=1"></script>
@@ -1795,8 +1794,8 @@
 <script src="stage-shows.local.js?v=1"></script>
 <script src="stage-audio-store.js?v=2"></script>
 <script src="stage-pwa.js?v=6"></script>
-<script src="stage-sketch.js?v=291"></script>
-<script src="stage-session.js?v=8"></script>
+<script src="stage-sketch.js?v=295"></script>
+<script src="stage-session.js?v=9"></script>
 <script src="stage-venue-editor.js?v=6"></script>
 </body>
 </html>

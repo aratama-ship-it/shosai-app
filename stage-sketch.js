@@ -65,6 +65,46 @@
     applyProjectExportOutcome,
   });
 
+  /* 初回の言語と、スマホのシーン一覧で見せる行をDOMから切り離して決める。
+     同じ判定を実装とNodeテストで共有し、保存済みの「ja」と未保存を混同しない。 */
+  function resolveInitialStageLanguage(openLanguage, storage, navigatorLike) {
+    if (openLanguage === "en" || openLanguage === "ja") return openLanguage;
+    try {
+      const saved = storage && storage.getItem("shosai-stage-lang");
+      if (saved !== null && saved !== undefined) return saved === "en" ? "en" : "ja";
+    } catch (_) { /* 保存先を読めなくても端末言語を試す */ }
+    try {
+      const primary = navigatorLike && navigatorLike.language;
+      const alternatives = navigatorLike && navigatorLike.languages;
+      const deviceLanguage = primary || (alternatives && alternatives[0]);
+      if (typeof deviceLanguage === "string" && deviceLanguage) {
+        return deviceLanguage.toLowerCase().startsWith("ja") ? "ja" : "en";
+      }
+    } catch (_) { /* 端末言語を読めなくても日本語で動く */ }
+    return "ja";
+  }
+
+  function visiblePhoneSceneRows(rows, collapsedSections) {
+    const visible = [];
+    let hiddenBelowDepth = null;
+    (Array.isArray(rows) ? rows : []).forEach((row) => {
+      const depth = Number.isFinite(Number(row && row.depth)) ? Number(row.depth) : 0;
+      if (hiddenBelowDepth !== null && depth > hiddenBelowDepth) return;
+      if (hiddenBelowDepth !== null) hiddenBelowDepth = null;
+      visible.push(row);
+      if (row && row.kind === "section" && collapsedSections
+          && typeof collapsedSections.has === "function" && collapsedSections.has(row.id)) {
+        hiddenBelowDepth = depth;
+      }
+    });
+    return visible;
+  }
+
+  window.SHOSAI_STAGE_PHONE_VIEWER_MODEL = Object.freeze({
+    resolveInitialLanguage: resolveInitialStageLanguage,
+    visibleSceneRows: visiblePhoneSceneRows,
+  });
+
   /* 段階0のビート骨格。作品の正解ではなく、シーン名・役割・エネルギーだけを
      作るローカルの初期値。演者、道具、照明、背景、技、装置はここへ入れない。
      内容の正本: 2026-07-28_stage-sketch-codex-round2-answer.md D2 */
@@ -2699,9 +2739,8 @@
   /* ★開く言語はここで決める。loadState() より前であること——
    * 初めて開いた人へ出す見本の駒と場面の名前を、その言語で作るため。
    * あとから決めると「Performer A」であるべき駒が「演者A」で焼き付く。 */
-  try { lang = localStorage.getItem(LANG_KEY) === "en" ? "en" : "ja"; } catch (_) { lang = "ja"; }
+  lang = resolveInitialStageLanguage(openLang, localStorage, navigator);
   if (openLang) {
-    lang = openLang;
     try { localStorage.setItem(LANG_KEY, lang); } catch (_) { /* 覚えられなくても動く */ }
   }
   // 見本と場面の名前。作った時点の言語で決まり、そのまま持ち物として残る
@@ -10702,6 +10741,163 @@
     state.showPlan = which === "plan";
   }
 
+  /* アイコンの図形は一箇所で持つ。★ブラウザ版の #stage-prefs-btn（index.html）と同じ形。
+     片方だけ直すと、同じ「設定」が端末によって違う絵になる。
+     16pxで潰れない作りにしてある——歯は輪から外へ伸ばす短い線6本で、
+     多角形の輪郭で歯を刻むと、この寸法では歯が1px以下になって溶ける。 */
+  const PHONE_ICON_SVG = {
+    gear: '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4.2" stroke-width="1.3"/><circle cx="8" cy="8" r="1.4" stroke-width="1.3"/><path stroke-width="2.3" d="M8 3.10V1.90M11.94 5.55l1.04-.60M11.94 10.45l1.04.60M8 12.90v1.20M4.06 10.45l-1.04.60M4.06 5.55l-1.04-.60"/></svg>',
+    close: '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg>',
+  };
+
+  /* 絵で示すボタン。文字を持たないので、言語を変えても中身は貼り替えない。
+     ★setPhoneButtonLang を使うと textContent で絵が消える。こちらを使うこと。 */
+  function makePhoneIconButton(shape, label, className = "") {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `stage-phone-button stage-phone-icon-button${className ? ` ${className}` : ""}`;
+    button.innerHTML = PHONE_ICON_SVG[shape];
+    button.setAttribute("aria-label", label);
+    return button;
+  }
+
+  function setPhoneIconButtonLang(button, label) {
+    if (!button) return;
+    button.setAttribute("aria-label", tx(label));
+  }
+
+  function setPhoneButtonLang(button, text, label) {
+    if (!button) return;
+    button.textContent = tx(text);
+    button.setAttribute("aria-label", tx(label));
+  }
+
+  function applyPhoneViewerLang() {
+    if (!phoneUi) return;
+    phoneUi.toolbar.setAttribute("aria-label", tx("スマホ閲覧用の操作"));
+    setPhoneButtonLang(phoneUi.load, "ショー", "ショーを開く・書き出す");
+    setPhoneButtonLang(phoneUi.infoToggle, "情報", "シーン情報を表示する");
+    setPhoneButtonLang(phoneUi.noteToggle, tool === "note" ? "メモ終了" : "メモ",
+      tool === "note" ? "メモを終了する" : "図にメモを追加する");
+    const nextView = state.showFront ? "plan" : "front";
+    setPhoneButtonLang(phoneUi.viewToggle, nextView === "plan" ? "平面図へ" : "正面図へ",
+      nextView === "plan" ? "平面図へ切り替える" : "正面図へ切り替える");
+    setPhoneButtonLang(phoneUi.scenePrev, "‹", "前のシーンへ");
+    setPhoneButtonLang(phoneUi.sceneNext, "›", "次のシーンへ");
+    phoneUi.sceneCurrent.setAttribute("aria-label", tx("全画面のシーン一覧を開く"));
+    phoneUi.infoPanel.setAttribute("aria-label", tx("読み込んだシーンの情報"));
+    phoneUi.sceneNote.placeholder = tx("このシーンのメモ");
+    phoneUi.memoBar.setAttribute("aria-label", tx("シーンのメモ"));
+    phoneUi.memoLabel.textContent = tx("メモ");
+    phoneUi.memoInput.placeholder = tx("このシーンのメモ");
+    phoneUi.memoInput.setAttribute("aria-label", tx("シーンのメモ"));
+    phoneUi.sceneNote.setAttribute("aria-label", tx("シーンのメモ"));
+    phoneUi.sourcePanel.setAttribute("aria-label", tx("開くショーを選ぶ"));
+    phoneUi.sourceTitle.textContent = tx("ショーを開く");
+    setPhoneButtonLang(phoneUi.fileButton, "JSONファイル", "JSONファイルからショーを開く");
+    setPhoneButtonLang(phoneUi.seamSampleButton, "継ぎ目の庭", "継ぎ目の庭のサンプルを開く");
+    setPhoneButtonLang(phoneUi.sampleButton, "サンプルショー", "サンプルショーを開く");
+    setPhoneButtonLang(phoneUi.exportButton, "ファイルへ書き出す", "いまのショーをファイルへ書き出す");
+    setPhoneButtonLang(phoneUi.sourceClose, "閉じる", "ショー選択を閉じる");
+    setPhoneButtonLang(phoneUi.saveNoticeExport, "ファイルへ書き出す", "いまのショーをファイルへ書き出す");
+    setPhoneButtonLang(phoneUi.saveNoticeClose, "閉じる", "この知らせを閉じる");
+    phoneUi.titleName.textContent = tx("舞台スケッチ");
+    if (phoneUi.titleBeta) phoneUi.titleBeta.textContent = tx(phoneUi.titleBetaJa);
+    setPhoneIconButtonLang(phoneUi.settingsToggle, "設定を開く");
+    phoneUi.settingsPanel.setAttribute("aria-label", tx("設定"));
+    phoneUi.settingsTitle.textContent = tx("設定");
+    setPhoneButtonLang(phoneUi.langJa, "日本語", "日本語に切り替える");
+    setPhoneButtonLang(phoneUi.langEn, "English", "英語に切り替える");
+    setPhoneButtonLang(phoneUi.settingsClose, "閉じる", "設定を閉じる");
+    phoneUi.langJa.setAttribute("aria-pressed", String(!isEn()));
+    phoneUi.langEn.setAttribute("aria-pressed", String(isEn()));
+    phoneUi.sceneList.setAttribute("aria-label", tx("全画面のシーン一覧"));
+    phoneUi.sceneListTitle.textContent = tx("シーン");
+    setPhoneIconButtonLang(phoneUi.sceneListClose, "全画面のシーン一覧を閉じる");
+    if (phoneUi.sceneListOpen) renderPhoneSceneList();
+  }
+
+  function renderPhoneSceneList() {
+    if (!phoneUi || !phoneUi.sceneListRows) return;
+    const scrollTop = phoneUi.sceneListScroll.scrollTop;
+    const rows = state.project.scenes || [];
+    const numbers = new Map();
+    let sceneNumber = 0;
+    rows.forEach((row) => {
+      if (row.kind === "scene") {
+        sceneNumber += 1;
+        numbers.set(row.id, sceneNumber);
+      }
+    });
+    phoneUi.sceneListRows.innerHTML = "";
+    visiblePhoneSceneRows(rows, phoneUi.collapsedSections).forEach((row) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `stage-phone-scene-list-row${row.kind === "section" ? " is-section" : ""}`;
+      button.style.setProperty("--phone-scene-indent", `${Math.max(0, Number(row.depth) || 0) * 18}px`);
+      if (row.kind === "section") {
+        const collapsed = phoneUi.collapsedSections.has(row.id);
+        button.textContent = `${collapsed ? "▸" : "▾"} ${row.title || ""}`;
+        button.setAttribute("aria-expanded", String(!collapsed));
+        button.setAttribute("aria-label", tx(collapsed
+          ? "セクションを展開する" : "セクションを折りたたむ"));
+        button.addEventListener("click", () => {
+          if (collapsed) phoneUi.collapsedSections.delete(row.id);
+          else phoneUi.collapsedSections.add(row.id);
+          renderPhoneSceneList();
+        });
+      } else {
+        const current = row.id === state.project.activeSceneId;
+        button.textContent = `${current ? "● " : ""}${numbers.get(row.id) || ""}  ${row.title || ""}`;
+        if (current) {
+          button.classList.add("is-current");
+          button.setAttribute("aria-current", "true");
+          button.dataset.phoneCurrentScene = "true";
+        }
+        button.addEventListener("click", () => {
+          openScene(row.id);
+          closePhoneSceneList();
+        });
+      }
+      phoneUi.sceneListRows.append(button);
+    });
+    phoneUi.sceneListScroll.scrollTop = scrollTop;
+  }
+
+  function revealActivePhoneScene() {
+    const rows = state.project.scenes || [];
+    const activeIndex = rows.findIndex((row) => (
+      row.kind === "scene" && row.id === state.project.activeSceneId
+    ));
+    if (activeIndex < 0) return;
+    rows.forEach((row, index) => {
+      if (row.kind !== "section" || index >= activeIndex) return;
+      let end = index + 1;
+      while (end < rows.length && Number(rows[end].depth) > Number(row.depth)) end += 1;
+      if (activeIndex < end) phoneUi.collapsedSections.delete(row.id);
+    });
+  }
+
+  function openPhoneSceneList() {
+    if (!phoneUi) return;
+    phoneUi.sceneListOpen = true;
+    phoneUi.sceneList.hidden = false;
+    phoneUi.sceneCurrent.setAttribute("aria-expanded", "true");
+    revealActivePhoneScene();
+    renderPhoneSceneList();
+    requestAnimationFrame(() => {
+      const current = phoneUi.sceneListRows.querySelector('[data-phone-current-scene="true"]');
+      if (current) current.scrollIntoView({ block: "center" });
+    });
+  }
+
+  function closePhoneSceneList() {
+    if (!phoneUi) return;
+    phoneUi.sceneListOpen = false;
+    phoneUi.sceneList.hidden = true;
+    phoneUi.sceneCurrent.setAttribute("aria-expanded", "false");
+  }
+
   function syncPhoneViewer() {
     if (!phoneUi) return;
     const scenes = state.project.scenes.filter((row) => row.kind === "scene");
@@ -10712,22 +10908,28 @@
     phoneUi.sceneCurrent.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${navigationTitle}`;
     phoneUi.scenePrev.disabled = index <= 0;
     phoneUi.sceneNext.disabled = index >= scenes.length - 1;
-    phoneUi.projectName.textContent = state.project.title || "舞台スケッチ";
-    phoneUi.infoProject.textContent = `${state.project.title || "舞台スケッチ"}  ${state.project.versionLabel || ""}`.trim();
+    phoneUi.projectName.textContent = state.project.title || tx("舞台スケッチ");
+    phoneUi.infoProject.textContent = `${state.project.title || tx("舞台スケッチ")}  ${state.project.versionLabel || ""}`.trim();
     phoneUi.infoScene.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${navigationTitle}`;
     if (document.activeElement !== phoneUi.sceneNote) phoneUi.sceneNote.value = scene.note || "";
-    phoneUi.noteToggle.textContent = tool === "note" ? "メモ終了" : "メモ";
+    if (document.activeElement !== phoneUi.memoInput) phoneUi.memoInput.value = scene.note || "";
+    phoneUi.noteToggle.textContent = tx(tool === "note" ? "メモ終了" : "メモ");
     phoneUi.noteToggle.setAttribute("aria-pressed", String(tool === "note"));
     phoneUi.infoToggle.setAttribute("aria-pressed", String(phoneUi.infoOpen));
     phoneUi.load.setAttribute("aria-pressed", String(phoneUi.sourceOpen));
+    phoneUi.settingsToggle.setAttribute("aria-pressed", String(phoneUi.settingsOpen));
     phoneUi.infoPanel.hidden = !phoneUi.infoOpen;
     phoneUi.sourcePanel.hidden = !phoneUi.sourceOpen;
+    phoneUi.settingsPanel.hidden = !phoneUi.settingsOpen;
     phoneUi.board.classList.toggle("is-phone-info-open", phoneUi.infoOpen);
     phoneUi.viewToggle.hidden = phoneIsPortrait();
     const nextView = state.showFront ? "plan" : "front";
     phoneUi.viewToggle.dataset.phoneView = nextView;
-    phoneUi.viewToggle.textContent = nextView === "plan" ? "平面図へ" : "正面図へ";
-    phoneUi.viewToggle.setAttribute("aria-label", `${phoneUi.viewToggle.textContent}切り替える`);
+    phoneUi.viewToggle.textContent = tx(nextView === "plan" ? "平面図へ" : "正面図へ");
+    phoneUi.viewToggle.setAttribute("aria-label", tx(nextView === "plan"
+      ? "平面図へ切り替える" : "正面図へ切り替える"));
+    phoneUi.langJa.setAttribute("aria-pressed", String(!isEn()));
+    phoneUi.langEn.setAttribute("aria-pressed", String(isEn()));
   }
 
   function initPhoneViewerWorkspace() {
@@ -10737,28 +10939,34 @@
 
     const toolbar = document.createElement("div");
     toolbar.className = "stage-phone-toolbar";
-    toolbar.setAttribute("aria-label", "スマホ閲覧用の操作");
+    toolbar.setAttribute("aria-label", tx("スマホ閲覧用の操作"));
 
     const actions = document.createElement("div");
     actions.className = "stage-phone-actions";
-    const load = makePhoneButton("読込", "開くショーを選ぶ", "stage-phone-load");
+    /* ★「読込」ではなく「ショー」。この中には書き出しも入っている。
+       読み込み専用の名前だと、書き出しに辿り着けない（2026-08-26 本人が実機で見つけた）。 */
+    const load = makePhoneButton(tx("ショー"), tx("ショーを開く・書き出す"), "stage-phone-load");
     load.setAttribute("aria-pressed", "false");
     const projectName = document.createElement("strong");
     projectName.className = "stage-phone-project";
-    const infoToggle = makePhoneButton("情報", "シーン情報を表示する", "stage-phone-info-toggle");
+    const infoToggle = makePhoneButton(tx("情報"), tx("シーン情報を表示する"), "stage-phone-info-toggle");
     infoToggle.setAttribute("aria-pressed", "false");
-    const noteToggle = makePhoneButton("メモ", "図にメモを追加する", "stage-phone-note-toggle");
+    const noteToggle = makePhoneButton(tx("メモ"), tx("図にメモを追加する"), "stage-phone-note-toggle");
     noteToggle.setAttribute("aria-pressed", "false");
-    const viewToggle = makePhoneButton("平面図へ", "平面図へ切り替える", "stage-phone-view-toggle");
+    const viewToggle = makePhoneButton(tx("平面図へ"), tx("平面図へ切り替える"), "stage-phone-view-toggle");
     actions.append(load, projectName, infoToggle, noteToggle, viewToggle);
 
     const sceneBar = document.createElement("div");
     sceneBar.className = "stage-phone-scene-bar";
-    const scenePrev = makePhoneButton("‹", "前のシーンへ", "stage-phone-scene-prev");
-    const sceneCurrent = document.createElement("div");
+    const scenePrev = makePhoneButton("‹", tx("前のシーンへ"), "stage-phone-scene-prev");
+    const sceneCurrent = document.createElement("button");
+    sceneCurrent.type = "button";
     sceneCurrent.className = "stage-phone-scene-current";
     sceneCurrent.setAttribute("aria-live", "polite");
-    const sceneNext = makePhoneButton("›", "次のシーンへ", "stage-phone-scene-next");
+    sceneCurrent.setAttribute("aria-label", tx("全画面のシーン一覧を開く"));
+    sceneCurrent.setAttribute("aria-haspopup", "dialog");
+    sceneCurrent.setAttribute("aria-expanded", "false");
+    const sceneNext = makePhoneButton("›", tx("次のシーンへ"), "stage-phone-scene-next");
     sceneBar.append(scenePrev, sceneCurrent, sceneNext);
     toolbar.append(actions, sceneBar);
 
@@ -10767,32 +10975,69 @@
 
     const infoPanel = document.createElement("section");
     infoPanel.className = "stage-phone-info";
-    infoPanel.setAttribute("aria-label", "読み込んだシーンの情報");
+    infoPanel.setAttribute("aria-label", tx("読み込んだシーンの情報"));
     infoPanel.hidden = true;
     const infoProject = document.createElement("strong");
     const infoScene = document.createElement("span");
     const sceneNote = document.createElement("textarea");
     sceneNote.rows = 2;
     sceneNote.maxLength = 200;
-    sceneNote.placeholder = "このシーンのメモ";
-    sceneNote.setAttribute("aria-label", "シーンのメモ");
+    sceneNote.placeholder = tx("このシーンのメモ");
+    sceneNote.setAttribute("aria-label", tx("シーンのメモ"));
     infoPanel.append(infoProject, infoScene, sceneNote);
 
     const sourcePanel = document.createElement("section");
     sourcePanel.className = "stage-phone-source";
-    sourcePanel.setAttribute("aria-label", "開くショーを選ぶ");
+    sourcePanel.setAttribute("aria-label", tx("開くショーを選ぶ"));
     sourcePanel.hidden = true;
     const sourceTitle = document.createElement("strong");
-    sourceTitle.textContent = "ショーを開く";
-    const fileButton = makePhoneButton("JSONファイル", "JSONファイルからショーを開く");
-    const seamSampleButton = makePhoneButton("継ぎ目の庭", "継ぎ目の庭のサンプルを開く");
-    const sampleButton = makePhoneButton("サンプルショー", "サンプルショーを開く");
+    sourceTitle.textContent = tx("ショーを開く");
+    const fileButton = makePhoneButton(tx("JSONファイル"), tx("JSONファイルからショーを開く"));
+    const seamSampleButton = makePhoneButton(tx("継ぎ目の庭"), tx("継ぎ目の庭のサンプルを開く"));
+    const sampleButton = makePhoneButton(tx("サンプルショー"), tx("サンプルショーを開く"));
     /* 書き出しは読み込みの対。同じパネルに置く。
        これが無いと、書いたメモを端末から取り出す手段が無くなる（P1-7）。 */
-    const exportButton = makePhoneButton("ファイルへ書き出す", "いまのショーをファイルへ書き出す");
-    const sourceClose = makePhoneButton("閉じる", "ショー選択を閉じる");
+    const exportButton = makePhoneButton(tx("ファイルへ書き出す"), tx("いまのショーをファイルへ書き出す"));
+    const sourceClose = makePhoneButton(tx("閉じる"), tx("ショー選択を閉じる"));
     sourcePanel.append(sourceTitle, fileButton, seamSampleButton, sampleButton,
       exportButton, sourceClose);
+
+    const settingsPanel = document.createElement("section");
+    settingsPanel.className = "stage-phone-settings";
+    settingsPanel.setAttribute("aria-label", tx("設定"));
+    settingsPanel.hidden = true;
+    const settingsTitle = document.createElement("strong");
+    settingsTitle.textContent = tx("設定");
+    const langJa = makePhoneButton(tx("日本語"), tx("日本語に切り替える"));
+    langJa.setAttribute("aria-pressed", String(!isEn()));
+    const langEn = makePhoneButton("English", tx("英語に切り替える"));
+    langEn.setAttribute("aria-pressed", String(isEn()));
+    const settingsClose = makePhoneButton(tx("閉じる"), tx("設定を閉じる"));
+    settingsPanel.append(settingsTitle, langJa, langEn, settingsClose);
+
+    /* 矢印の中央から開く全画面一覧。段組みの子にせず body 直下へ置く。 */
+    const sceneList = document.createElement("section");
+    sceneList.className = "stage-phone-scene-list";
+    sceneList.id = "stage-phone-scene-list";
+    sceneList.hidden = true;
+    sceneList.setAttribute("role", "dialog");
+    sceneList.setAttribute("aria-modal", "true");
+    sceneList.setAttribute("aria-label", tx("全画面のシーン一覧"));
+    const sceneListHead = document.createElement("header");
+    sceneListHead.className = "stage-phone-scene-list-head";
+    const sceneListTitle = document.createElement("strong");
+    sceneListTitle.textContent = tx("シーン");
+    /* 全画面の一覧を閉じるのは、見出しの隅の×が通り相場。文字より速く分かる（2026-08-26 本人指示）。
+       読み上げ用の名前は文字のまま残すので、意味は失われない。 */
+    const sceneListClose = makePhoneIconButton("close", tx("全画面のシーン一覧を閉じる"), "stage-phone-scene-list-close");
+    sceneListHead.append(sceneListTitle, sceneListClose);
+    const sceneListScroll = document.createElement("div");
+    sceneListScroll.className = "stage-phone-scene-list-scroll";
+    const sceneListRows = document.createElement("div");
+    sceneListRows.className = "stage-phone-scene-list-rows";
+    sceneListScroll.append(sceneListRows);
+    sceneList.append(sceneListHead, sceneListScroll);
+    document.body.append(sceneList);
 
     const fileInput = document.createElement("input");
     fileInput.type = "file";
@@ -10814,29 +11059,95 @@
     saveNoticeText.className = "stage-phone-save-notice-text";
     const saveNoticeActions = document.createElement("div");
     saveNoticeActions.className = "stage-phone-save-notice-actions";
-    const saveNoticeExport = makePhoneButton("ファイルへ書き出す", "いまのショーをファイルへ書き出す");
-    const saveNoticeClose = makePhoneButton("閉じる", "この知らせを閉じる");
+    const saveNoticeExport = makePhoneButton(tx("ファイルへ書き出す"), tx("いまのショーをファイルへ書き出す"));
+    const saveNoticeClose = makePhoneButton(tx("閉じる"), tx("この知らせを閉じる"));
     saveNoticeActions.append(saveNoticeExport, saveNoticeClose);
     saveNotice.append(saveNoticeText, saveNoticeActions);
 
     toolbar.append(fileInput);
     board.prepend(sourcePanel);
     board.prepend(infoPanel);
+    board.prepend(settingsPanel);
+    /* 上部の題。スマホでは .stage-sketch-head ごと隠しているため、
+       この画面には題も版も出ていなかった（2026-08-26 本人指摘）。
+       ★版と「β版」は index.html のヘッダーから読む。ここへ書き写すと二重管理になる。
+       縦向きだけ出す（横向きは道具が右の縦レールになり、縦の余白は図に要る）。 */
+    const titleBar = document.createElement("header");
+    titleBar.className = "stage-phone-title";
+    const titleName = document.createElement("span");
+    titleName.className = "stage-phone-title-name";
+    titleName.textContent = tx("舞台スケッチ");
+    titleBar.append(titleName);
+    const versionSource = document.querySelector(".stage-app-version");
+    if (versionSource && versionSource.textContent) {
+      const version = document.createElement("span");
+      version.className = "stage-phone-title-version";
+      version.textContent = versionSource.textContent;
+      titleBar.append(version);
+    }
+    const betaSource = document.querySelector(".stage-beta");
+    let titleBeta = null;
+    let titleBetaJa = "";
+    if (betaSource && betaSource.textContent) {
+      titleBeta = document.createElement("span");
+      titleBeta.className = "stage-phone-title-beta";
+      titleBetaJa = betaSource.textContent.trim();
+      titleBeta.textContent = tx(titleBetaJa);
+      titleBar.append(titleBeta);
+    }
+    /* ゲストの目印もここへ移す。要素ごと動かすので id は変わらず、
+       stage-session.js の hidden 切り替えはそのまま効く。 */
+    const guestBadge = document.getElementById("stage-session-guest-badge");
+    if (guestBadge) titleBar.append(guestBadge);
+    const settingsToggle = makePhoneIconButton("gear", tx("設定を開く"), "stage-phone-title-settings");
+    settingsToggle.setAttribute("aria-pressed", "false");
+    titleBar.append(settingsToggle);
+    sceneCurrent.setAttribute("aria-controls", sceneList.id);
+
+    /* 図の下のメモ欄（縦向きのみ）。本人指示 2026-08-26。
+       ★中身は情報パネルと同じ sc().note（シーンのメモ）。別の入れ物を作らないこと——
+         スマホの中だけに残る書き置きにすると、書き出しても持ち帰れない（P1-7で問題にした形）。
+       ★情報パネルの欄と二枚あるので、片方を打っている間はもう片方を書き換えない
+         （打っている途中でカーソルが飛ぶ）。 */
+    const memoBar = document.createElement("section");
+    memoBar.className = "stage-phone-memo";
+    memoBar.setAttribute("aria-label", tx("シーンのメモ"));
+    const memoLabel = document.createElement("span");
+    memoLabel.className = "stage-phone-memo-label";
+    memoLabel.textContent = tx("メモ");
+    const memoInput = document.createElement("textarea");
+    memoInput.rows = 2;
+    memoInput.maxLength = 200;
+    memoInput.className = "stage-phone-memo-input";
+    memoInput.placeholder = tx("このシーンのメモ");
+    memoInput.setAttribute("aria-label", tx("シーンのメモ"));
+    memoBar.append(memoLabel, memoInput);
+    board.append(memoBar);
+
     board.prepend(toolbar);
+    board.prepend(titleBar);
     board.prepend(saveNotice);
 
     phoneUi = {
-      board, toolbar, actions, load, projectName, infoToggle, noteToggle, viewToggle,
+      board, toolbar, titleBar, titleName, titleBeta, titleBetaJa, settingsToggle,
+      actions, load, projectName, infoToggle, noteToggle, viewToggle,
       scenePrev, sceneCurrent, sceneNext, infoPanel, infoProject, infoScene,
-      sceneNote, sourcePanel, fileButton, seamSampleButton, sampleButton, sourceClose, fileInput,
-      exportButton, saveNotice, saveNoticeText,
-      infoOpen: false, sourceOpen: false,
+      sceneNote, memoBar, memoLabel, memoInput,
+      sourcePanel, sourceTitle, fileButton, seamSampleButton, sampleButton, sourceClose, fileInput,
+      exportButton, settingsPanel, settingsTitle, langJa, langEn, settingsClose,
+      sceneList, sceneListTitle, sceneListClose, sceneListScroll, sceneListRows,
+      saveNotice, saveNoticeText, saveNoticeExport, saveNoticeClose,
+      infoOpen: false, sourceOpen: false, settingsOpen: false, sceneListOpen: false,
+      collapsedSections: new Set(),
       singleView: state.showPlan && !state.showFront ? "plan" : "front",
     };
 
     load.addEventListener("click", () => {
       phoneUi.sourceOpen = !phoneUi.sourceOpen;
-      if (phoneUi.sourceOpen) phoneUi.infoOpen = false;
+      if (phoneUi.sourceOpen) {
+        phoneUi.infoOpen = false;
+        phoneUi.settingsOpen = false;
+      }
       syncPhoneViewer();
     });
     fileButton.addEventListener("click", () => fileInput.click());
@@ -10869,11 +11180,30 @@
     saveNoticeClose.addEventListener("click", () => { saveNotice.hidden = true; });
     scenePrev.addEventListener("click", () => stepScene(-1));
     sceneNext.addEventListener("click", () => stepScene(1));
+    sceneCurrent.addEventListener("click", openPhoneSceneList);
+    sceneListClose.addEventListener("click", closePhoneSceneList);
     infoToggle.addEventListener("click", () => {
       phoneUi.infoOpen = !phoneUi.infoOpen;
-      if (phoneUi.infoOpen) phoneUi.sourceOpen = false;
+      if (phoneUi.infoOpen) {
+        phoneUi.sourceOpen = false;
+        phoneUi.settingsOpen = false;
+      }
       syncPhoneViewer();
     });
+    settingsToggle.addEventListener("click", () => {
+      phoneUi.settingsOpen = !phoneUi.settingsOpen;
+      if (phoneUi.settingsOpen) {
+        phoneUi.infoOpen = false;
+        phoneUi.sourceOpen = false;
+      }
+      syncPhoneViewer();
+    });
+    settingsClose.addEventListener("click", () => {
+      phoneUi.settingsOpen = false;
+      syncPhoneViewer();
+    });
+    langJa.addEventListener("click", () => setLang("ja"));
+    langEn.addEventListener("click", () => setLang("en"));
     noteToggle.addEventListener("click", () => {
       setTool(tool === "note" ? "select" : "note");
       syncPhoneViewer();
@@ -10891,6 +11221,12 @@
       persistSoon();
     });
 
+    memoInput.addEventListener("input", () => {
+      sc().note = memoInput.value.slice(0, 200);
+      syncSceneDesc();
+      persistSoon();
+    });
+
     const orient = () => {
       closeNoteEditor();
       enforcePhoneViews();
@@ -10901,6 +11237,7 @@
     if (phoneOrientation.addEventListener) phoneOrientation.addEventListener("change", orient);
     else if (phoneOrientation.addListener) phoneOrientation.addListener(orient);
     enforcePhoneViews();
+    applyPhoneViewerLang();
     syncPhoneViewer();
   }
 
@@ -20292,6 +20629,7 @@ ${propsPlotHtml}
     lang = next === "en" ? "en" : "ja";
     try { localStorage.setItem(LANG_KEY, lang); } catch (_) { /* 保存できなくても動く */ }
     applyLang();
+    applyPhoneViewerLang();
     audioPanelSignature = "";
     renderAudioPanel(true);
     syncAudioControls();
