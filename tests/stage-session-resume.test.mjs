@@ -33,7 +33,7 @@ function createClassList(initial = []) {
 
 function createElement(tagName = "div") {
   const listeners = new Map();
-  return {
+  const element = {
     tagName: tagName.toUpperCase(),
     className: "",
     classList: createClassList(),
@@ -41,6 +41,7 @@ function createElement(tagName = "div") {
     dataset: {},
     children: [],
     parentElement: null,
+    parentNode: null,
     value: "",
     textContent: "",
     hidden: false,
@@ -53,20 +54,62 @@ function createElement(tagName = "div") {
     async dispatch(type, event = {}) {
       for (const callback of listeners.get(type) || []) await callback(event);
     },
-    append(...children) { this.children.push(...children); },
-    replaceChildren(...children) { this.children = children; },
+    append(...children) {
+      children.forEach((child) => {
+        if (child.parentNode && typeof child.parentNode.removeChild === "function") {
+          child.parentNode.removeChild(child);
+        }
+        child.parentNode = this;
+        child.parentElement = this;
+        this.children.push(child);
+      });
+    },
+    insertBefore(child, reference) {
+      if (child.parentNode && typeof child.parentNode.removeChild === "function") {
+        child.parentNode.removeChild(child);
+      }
+      const index = reference == null ? -1 : this.children.indexOf(reference);
+      child.parentNode = this;
+      child.parentElement = this;
+      if (index < 0) this.children.push(child);
+      else this.children.splice(index, 0, child);
+      return child;
+    },
+    removeChild(child) {
+      const index = this.children.indexOf(child);
+      if (index < 0) return child;
+      this.children.splice(index, 1);
+      child.parentNode = null;
+      child.parentElement = null;
+      return child;
+    },
+    replaceChildren(...children) {
+      this.children.slice().forEach((child) => this.removeChild(child));
+      this.append(...children);
+    },
     setAttribute: noop,
-    remove: noop,
+    remove() {
+      if (this.parentNode && typeof this.parentNode.removeChild === "function") {
+        this.parentNode.removeChild(this);
+      }
+    },
     focus: noop,
     select: noop,
     setSelectionRange: noop,
     querySelector: () => null,
     getBoundingClientRect: () => ({ left: 0, top: 0, width: 1200, height: 800 }),
+    get firstChild() { return this.children[0] || null; },
+    get nextSibling() {
+      if (!this.parentNode) return null;
+      const index = this.parentNode.children.indexOf(this);
+      return index >= 0 ? this.parentNode.children[index + 1] || null : null;
+    },
     get childElementCount() { return this.children.length; },
   };
+  return element;
 }
 
-function createFixture({ invited = false, savedHost = null, macBridge = null } = {}) {
+function createFixture({ invited = false, savedHost = null, macBridge = null, rootClass = null } = {}) {
   const elements = new Map();
   const elementById = (id) => {
     if (!elements.has(id)) {
@@ -83,13 +126,32 @@ function createFixture({ invited = false, savedHost = null, macBridge = null } =
   };
   const body = createElement("body");
   body.classList.add("is-standalone");
+  const documentListeners = new Map();
+  /* iPad PWA は html.stage-pwa-tablet、スマホ閲覧機は html.stage-phone-viewer を付ける。
+     どちらも左列を display:none にするので、セッション欄を移してはいけない。 */
+  const documentElement = createElement("html");
+  if (rootClass) documentElement.classList.add(rootClass);
   const document = {
     body,
+    documentElement,
     getElementById: elementById,
     createElement,
-    createTextNode: (value) => ({ textContent: String(value) }),
+    createTextNode: (value) => ({ textContent: String(value), parentNode: null, parentElement: null }),
     querySelectorAll: () => [],
+    addEventListener(type, callback) {
+      if (!documentListeners.has(type)) documentListeners.set(type, []);
+      documentListeners.get(type).push(callback);
+    },
+    dispatch(type, event) {
+      for (const callback of documentListeners.get(type) || []) callback(event);
+    },
   };
+  const sessionPanelHome = createElement("div");
+  const sessionPanelNextSibling = createElement("p");
+  sessionPanelHome.append(elementById("stage-session-panel"), sessionPanelNextSibling);
+  const leftColumn = elementById("stage-col-left");
+  const leftColumnFirstChild = createElement("section");
+  leftColumn.append(leftColumnFirstChild);
   const location = {
     protocol: "http:",
     host: "localhost",
@@ -193,10 +255,20 @@ function createFixture({ invited = false, savedHost = null, macBridge = null } =
   vm.runInNewContext(sessionSource, context, { filename: "stage-session.js" });
 
   return {
+    document,
     elementById,
     fetchCalls,
+    documentElement,
+    leftColumn,
+    leftColumnFirstChild,
+    sessionPanelHome,
+    sessionPanelNextSibling,
     sockets,
     storage,
+    window,
+    dispatchDocumentEvent(type, event) {
+      document.dispatch(type, event);
+    },
     activeTimerDelays() {
       return [...timers.values()].map((timer) => timer.delay);
     },
@@ -427,6 +499,76 @@ test("ホスト不在帯は上部中央・読み上げ通知・操作透過で�
   assert.match(block, /pointer-events: none/);
 });
 
+test("ゲスト時はセッション欄を左列の先頭へ移し、元の親と次兄弟の位置へ戻せる", async () => {
+  const fixture = createFixture({ invited: true });
+  const panel = fixture.elementById("stage-session-panel");
+  assert.equal(panel.parentNode, fixture.sessionPanelHome);
+  assert.equal(panel.nextSibling, fixture.sessionPanelNextSibling);
+
+  await fixture.joinGuest();
+  assert.equal(fixture.leftColumn.firstChild, panel);
+  assert.equal(panel.open, true);
+
+  assert.equal(fixture.window.SHOSAI_STAGE_SESSION_HOOKS.restoreSessionPanelHome(), true);
+  assert.equal(panel.parentNode, fixture.sessionPanelHome);
+  assert.equal(panel.nextSibling, fixture.sessionPanelNextSibling);
+  assert.equal(fixture.leftColumn.firstChild, fixture.leftColumnFirstChild);
+});
+
+/* ★左列は iPad PWA と スマホ閲覧機では display:none（style.css:10251 / :10679）。
+   そこへ移すとゲストは接続状態も「最新を取り直す」も失うため、移してはいけない。
+   2026-08-26 の検証で見つけた欠落。この判定を外さないこと。 */
+for (const rootClass of ["stage-pwa-tablet", "stage-phone-viewer"]) {
+  test(`${rootClass} ではセッション欄を左列へ移さない（左列が display:none のため）`, async () => {
+    const fixture = createFixture({ invited: true, rootClass });
+    const panel = fixture.elementById("stage-session-panel");
+
+    await fixture.joinGuest();
+
+    assert.equal(fixture.document.body.classList.contains("stage-session-guest"), true,
+      "ゲスト判定そのものは付く");
+    assert.equal(panel.parentNode, fixture.sessionPanelHome,
+      "セッション欄は保存パネルの中に残る");
+    assert.equal(panel.nextSibling, fixture.sessionPanelNextSibling);
+    assert.equal(fixture.leftColumn.firstChild, fixture.leftColumnFirstChild,
+      "左列の中身は動かない");
+  });
+}
+
+test("ゲストの出るもの一覧はクリックとEnter・Spaceを実効的に遮断する", async () => {
+  const fixture = createFixture({ invited: true });
+  await fixture.joinGuest();
+
+  for (const className of ["stage-kind-swatch", "stage-cast-name", "stage-cast-status"]) {
+    const target = {
+      closest(selector) { return selector.includes(`.${className}`) ? this : null; },
+    };
+    for (const [type, key] of [["click", undefined], ["keydown", "Enter"], ["keydown", " "]]) {
+      let prevented = false;
+      let stopped = false;
+      fixture.dispatchDocumentEvent(type, {
+        type,
+        key,
+        target,
+        preventDefault() { prevented = true; },
+        stopImmediatePropagation() { stopped = true; },
+      });
+      assert.equal(prevented, true, `${className} の ${type}:${key || "pointer"} をpreventDefaultする`);
+      assert.equal(stopped, true, `${className} の ${type}:${key || "pointer"} を後続へ渡さない`);
+    }
+  }
+
+  const host = createFixture();
+  let hostPrevented = false;
+  host.dispatchDocumentEvent("click", {
+    type: "click",
+    target: { closest: () => ({}) },
+    preventDefault() { hostPrevented = true; },
+    stopImmediatePropagation: noop,
+  });
+  assert.equal(hostPrevented, false, "ゲストクラスが無い通常画面は遮断しない");
+});
+
 test("ゲスト用CSSは編集・管理パネルを隠し、classを外せば通常表示へ戻る", () => {
   const start = styleSource.indexOf("/* ゲストは見る・指す・矢印を描くための画面だけを残す。");
   const end = styleSource.indexOf("/* ゲストはシーンを切り替えられない", start);
@@ -434,13 +576,46 @@ test("ゲスト用CSSは編集・管理パネルを隠し、classを外せば通
   assert.ok(start >= 0 && end > start, "ゲスト表示制限のCSSブロックがあること");
 
   for (const panel of [
-    "project", "music", "cast", "machinery", "rigs", "light", "background", "inspector", "ask",
+    "project", "music", "machinery", "rigs", "light", "background", "inspector", "ask",
   ]) {
     assert.match(block, new RegExp(`body\\.stage-session-guest \\.stage-panel\\[data-panel="${panel}"\\]`));
     for (const html of [indexSource, stageHtmlSource]) {
       assert.match(html, new RegExp(`class="[^"]*stage-panel[^"]*"[^>]*data-panel="${panel}"`));
     }
   }
+  assert.doesNotMatch(block, /body\.stage-session-guest \.stage-panel\[data-panel="cast"\]/,
+    "出るものパネル自体は隠さない");
+  for (const html of [indexSource, stageHtmlSource]) {
+    assert.match(html, /class="[^"]*stage-panel[^"]*"[^>]*data-panel="cast"/);
+  }
+  for (const selector of [
+    ".stage-cast-hint", ".stage-cast-add", "#stage-model-open",
+    ".stage-cast-lock", ".stage-cast-profile", ".stage-cast-remove",
+  ]) {
+    assert.match(block, new RegExp(`body\\.stage-session-guest ${selector.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}`));
+  }
+  const rosterHideStart = block.indexOf("body.stage-session-guest .stage-cast-hint");
+  const rosterHideBlock = block.slice(rosterHideStart, block.indexOf("}", rosterHideStart));
+  assert.doesNotMatch(
+    rosterHideBlock,
+    /\.stage-kind-swatch|\.stage-kind-input|\.stage-cast-name|\.stage-cast-status/,
+    "色・名前・舞台上／舞台裏の情報はdisplay:noneにしない",
+  );
+  assert.match(block, /body\.stage-session-guest \.stage-kind-input,[\s\S]*?pointer-events: none/);
+  assert.match(block, /body\.stage-session-guest \.stage-cast-name,[\s\S]*?pointer-events: none/);
+  assert.match(block, /body\.stage-session-guest \.stage-cast-status \{[\s\S]*?border-color: transparent/);
+  assert.match(styleSource, /\.stage-cast-status\.is-on \{[\s\S]*?color: var\(--paper\)/);
+  assert.match(styleSource, /\.stage-cast-status\.is-off \{ color: rgba\(240, 231, 214, 0\.4\); \}/);
+  assert.match(block, /body\.stage-session-guest \.stage-inspector \{\s*display: none/);
+  assert.match(
+    block,
+    /body\.stage-session-guest \.stage-sketch-grid \{[\s\S]*?grid-template-columns: 268px minmax\(420px, 1fr\);[\s\S]*?grid-template-areas: "tools board";/,
+  );
+  assert.match(
+    styleSource,
+    /\.stage-sketch-grid \{[\s\S]*?grid-template-columns: 268px minmax\(420px, 1fr\) 268px;[\s\S]*?grid-template-areas: "tools board inspector";/,
+    "ゲストクラスが無い通常画面は3列のまま",
+  );
   assert.match(block, /data-panel="save"\] > \.stage-panel-head/);
   assert.match(block, /data-panel="save"\] > \.stage-panel-body > :not\(#stage-session-panel\):not\(\.stage-tablet-panel-page\)/);
   assert.match(block, /\.stage-tablet-panel-page > :not\(#stage-session-panel\)/);
@@ -475,6 +650,8 @@ test("ゲスト用CSSは編集・管理パネルを隠し、classを外せば通
   );
   assert.match(guestMode, /\["show", "cast", "look", "inspect"\]\.includes\(tabletUi\.groupId\)/);
   assert.match(guestMode, /closeTabletDrawer\(\)/, "開いていた編集ドロワーも閉じる");
+  assert.equal((sessionSource.match(/enterGuestSessionMode\(\);/g) || []).length, 2,
+    "ゲストになる2経路は同じ移設関数を使う");
 });
 
 test("追加した日本語UI文字列には英訳がある", () => {

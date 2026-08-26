@@ -60,6 +60,7 @@
   let applyReleaseTimer = null;
   let applyGeneration = 0;
   let awaitingInitialGuestDocument = false;
+  let sessionPanelHome = null;
   const sentArrowOps = new Set();
   const remotePointers = new Map();
 
@@ -189,6 +190,70 @@
     document.querySelectorAll("[data-nav]").forEach((link) => {
       link.setAttribute("aria-current", link.dataset.nav === "stage" ? "page" : "false");
     });
+  }
+
+  /* 左列（.stage-toolbox）は iPad PWA と スマホ閲覧機では display:none になっている
+   * （style.css:10251 / :10679）。そこへセッション欄を移すと、ゲストは接続状態も
+   * 「最新を取り直す」も「ホスト接続切れ」も参加者一覧も**すべて失う**。
+   * これらの端末では移さず、保存パネルの中（＝タブレットの「保存・設定」ドロワー。
+   * G-3でこのレールだけは隠していない）に置いたままにする。
+   * ★この判定を外さないこと。2026-08-26の検証で見つけた欠落。 */
+  function deskColumnsInUse() {
+    const root = document.documentElement;
+    if (!root || !root.classList) return true;
+    return !root.classList.contains("stage-pwa-tablet")
+      && !root.classList.contains("stage-phone-viewer");
+  }
+
+  function moveSessionPanelToGuestColumn() {
+    if (!deskColumnsInUse()) return false;
+    const leftColumn = $("stage-col-left");
+    if (!leftColumn || typeof leftColumn.insertBefore !== "function") return false;
+    if (!sessionPanelHome) {
+      sessionPanelHome = {
+        parent: els.panel.parentNode,
+        nextSibling: els.panel.nextSibling,
+      };
+    }
+    leftColumn.insertBefore(els.panel, leftColumn.firstChild);
+    els.panel.open = true;
+    return true;
+  }
+
+  function restoreSessionPanelHome() {
+    if (!sessionPanelHome || !sessionPanelHome.parent) return false;
+    const { parent, nextSibling } = sessionPanelHome;
+    if (nextSibling && nextSibling.parentNode === parent) parent.insertBefore(els.panel, nextSibling);
+    else parent.append(els.panel);
+    sessionPanelHome = null;
+    return true;
+  }
+
+  const GUEST_ROSTER_CONTROL_SELECTOR =
+    ".stage-kind-swatch, .stage-kind-input, .stage-cast-name, .stage-cast-status";
+
+  function blockGuestRosterEdit(event) {
+    if (!document.body.classList.contains("stage-session-guest")) return;
+    if (event.type === "keydown" && !["Enter", " ", "Spacebar"].includes(event.key)) return;
+    const target = event.target;
+    if (!target || typeof target.closest !== "function" ||
+        !target.closest(GUEST_ROSTER_CONTROL_SELECTOR)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
+  if (typeof document.addEventListener === "function") {
+    ["click", "dblclick", "input", "change", "keydown"].forEach((type) => {
+      document.addEventListener(type, blockGuestRosterEdit, true);
+    });
+  }
+
+  function enterGuestSessionMode() {
+    document.body.classList.add("stage-session-guest");
+    moveSessionPanelToGuestColumn();
+    if (typeof bridge.enterGuestMode === "function") {
+      try { bridge.enterGuestMode(); } catch (_) { /* 表示制限に失敗しても受信防御は保つ */ }
+    }
   }
 
   function socketIsOpen() {
@@ -579,7 +644,7 @@
     else if (role === "guest") sendGuestDifferences();
   }
 
-  window.SHOSAI_STAGE_SESSION_HOOKS = { onLocalChange };
+  window.SHOSAI_STAGE_SESSION_HOOKS = { onLocalChange, restoreSessionPanelHome };
 
   function pointerHost() {
     return els.planCanvas && els.planCanvas.parentElement;
@@ -624,10 +689,7 @@
     renderParticipants(message.participants);
     updateRoleUi();
     if (role === "guest") {
-      document.body.classList.add("stage-session-guest");
-      if (typeof bridge.enterGuestMode === "function") {
-        try { bridge.enterGuestMode(); } catch (_) { /* 表示制限に失敗しても受信防御は保つ */ }
-      }
+      enterGuestSessionMode();
       if (typeof message.doc === "string") applyRemoteDocument(message.doc);
       else setStatus("接続しました。ホストからの共有を待っています。");
     } else {
@@ -829,10 +891,7 @@
       displayName = name;
       reconnectAttempts = 0;
       reconnectAllowed = true;
-      document.body.classList.add("stage-session-guest");
-      if (typeof bridge.enterGuestMode === "function") {
-        try { bridge.enterGuestMode(); } catch (_) { /* 表示制限に失敗しても受信防御は保つ */ }
-      }
+      enterGuestSessionMode();
       closeGuestNameModal();
       updateRoleUi();
       connectSocket();
