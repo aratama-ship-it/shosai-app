@@ -1068,12 +1068,26 @@
   const paintCtx = paintCanvas.getContext("2d");
 
   const W = canvas.width;
-  const H = canvas.height;
+  const BASE_H = 720;
+  let H = canvas.height;
   // 光の意図の重ねで、演者を体の形どおりに扱うためのマスク
   const intentMaskCanvas = document.createElement("canvas");
   intentMaskCanvas.width = W;
   intentMaskCanvas.height = H;
   const intentMaskCtx = intentMaskCanvas.getContext("2d");
+  /* スマホ縦向きだけ、絵の枠を4:3にする。16:9のままだと縦長の画面で
+     図の下に空きが残る（2026-08-27 本人指示）。W は変えない。 */
+  function applyCanvasSize() {
+    const next = (phoneViewerActive && phoneOrientation.matches) ? 960 : BASE_H;
+    if (next === H) return false;
+    H = next;
+    canvas.height = H;
+    if (planCanvas) planCanvas.height = H;
+    paintCanvas.height = H;
+    intentMaskCanvas.height = H;
+    return true;
+  }
+  applyCanvasSize();
   let intentHatchPattern = null;
   // プレゼン（正面図だけの全画面）中か。説明の帯を出すかどうかの目印
   let presenting = false;
@@ -2279,6 +2293,14 @@
     tourNext: document.getElementById("stage-tour-next"),
     tourClose: document.getElementById("stage-tour-close"),
     tourStart: document.getElementById("stage-tour-start"),
+    helpOpen: document.getElementById("stage-help-open"),
+    manualOpen: document.getElementById("stage-manual-open"),
+    helpModal: document.getElementById("stage-help-modal"),
+    helpBackdrop: document.getElementById("stage-help-backdrop"),
+    helpClose: document.getElementById("stage-help-close"),
+    helpFind: document.getElementById("stage-help-find"),
+    helpResults: document.getElementById("stage-help-results"),
+    helpNote: document.getElementById("stage-help-note"),
     aboutOpenFromPrefs: document.getElementById("stage-about-open-from-prefs"),
     aboutModal: document.getElementById("stage-about-modal"),
     aboutBackdrop: document.getElementById("stage-about-backdrop"),
@@ -3259,7 +3281,7 @@
    * 貼る場所はその絵の上の一点で、掴んで動かす。
    * pieceId は前の版で駒に紐づけて貼れたときの名残。いま作るものは持たないが、
    * すでに貼ってあるものは駒についてまわる（勝手に置き場所を変えない）。
-   * 場所は 1280×720 の絵の中の画素で持つ（絵の大きさは変わらないので素直）。 */
+   * 場所は 1280×720 基準の画素で持つ。スマホ縦向きでは表示時だけ縦へ換算する。 */
   function normalizeNote(raw) {
     if (!raw || typeof raw !== "object") return null;
     const text = typeof raw.text === "string" ? raw.text.slice(0, 200) : "";
@@ -5299,6 +5321,14 @@
     // 客席の位置（席）によって、床の厚み・幅の開き・消失点の左右が変わる。
     const seat = frontSeatById(state.seat);
 
+    /* 席の floorY / bottomY / apron は 720px の絵に合わせた実数（stage-venues.js）。
+       枠を高くしたぶんだけ下げないと、正面図が上へ寄って下に空白が残る。
+       PCでは k === 1 なので何も変わらない。 */
+    const k = H / BASE_H;
+    const floorY = seat.floorY * k;
+    const bottomY = seat.bottomY * k;
+    const apron = (seat.apron || 0) * k;
+
     /* 尺は縦と横で同じにする。
      * 床の1m枡、演者の身長、セットの実寸が同じものさしで測られていないと、
      * 寸法を持たせた意味がない（幅1m×高さ2.4mの塔が正方形に見える）。
@@ -5309,7 +5339,7 @@
      * seat.backW / seat.frontW は絶対値ではなく、手前と奥の倍率差として使う。
      */
     const span = seat.frontW / seat.backW;              // 手前は奥の何倍に見えるか
-    const headroom = Math.max(24, seat.floorY - 22);     // 奥の壁の上に残す余白
+    const headroom = Math.max(24, floorY - 22);          // 奥の壁の上に残す余白
     const byWidth = (W * seat.frontW) / size.width;
     const byHeight = headroom / ((size.height || 8) / span);
     const pxPerM = Math.min(byWidth, byHeight);
@@ -5330,7 +5360,7 @@
      * 焦点距離が長くなり、同じ角度でも見え方が大きく動く。 */
     const panRange = Math.max(0, (frontW - W) / 2);
     const height = size.height || 8;
-    const horizon = seat.floorY;
+    const horizon = floorY;
     const focal = Math.max(120, (seat.eye || 10) * pxPerM);
     const panY = clamp(state.frontPanY || 0, -1, 1);
     const phi = (panY > 0 ? panY * TILT_UP : panY * TILT_DOWN) * Math.PI / 180;
@@ -5356,15 +5386,15 @@
     return {
       plan: false, venue: v, size, seat,
       // 傾けた後の位置。舞台の枠や床の帯はこれを見る
-      backY: tilt(seat.floorY - (height * pxPerM) / span),
-      floorY: tilt(seat.floorY),
-      bottomY: tilt(seat.bottomY),
-      apronBottom: tilt(seat.bottomY + (seat.apron || 0)),
+      backY: tilt(floorY - (height * pxPerM) / span),
+      floorY: tilt(floorY),
+      bottomY: tilt(bottomY),
+      apronBottom: tilt(bottomY + apron),
       // 傾ける前の位置。駒はここから実寸で積み上げてから傾ける
-      rawFloorY: seat.floorY,
-      rawBottomY: seat.bottomY,
+      rawFloorY: floorY,
+      rawBottomY: bottomY,
       // 奥の壁の天井の線（傾ける前）。灯体の高さはこの線と釣り合わせる
-      rawCeilY: seat.floorY - (height * pxPerM) / span,
+      rawCeilY: floorY - (height * pxPerM) / span,
       tilt,
       untilt,
       backW: frontW / span,
@@ -8326,15 +8356,18 @@
   // 紐づけた駒があれば、その駒の位置を足して置き場所を出す
   /* 付箋の置き場所。数でない値が一度でも入ると絵から消えて二度と掴めなくなるので、
    * ここで必ず数に均す（画面が組まれる前に押されたときなどに起きる）。 */
-  function notePos(note, L) {
+  function noteScreenXY(note, L) {
     note.x = finite(note.x, 100);
     note.y = finite(note.y, 100);
-    if (!note.pieceId) return { x: note.x, y: note.y };
+    const y = note.y * (H / BASE_H);
+    if (!note.pieceId) return { x: note.x, y };
     const piece = sc().pieces.find((p) => p.id === note.pieceId);
-    if (!piece) return { x: note.x, y: note.y };
+    if (!piece) return { x: note.x, y };
     const pos = placePiece(piece, L);
-    return { x: pos.x + note.x, y: pos.y + note.y };
+    return { x: pos.x + note.x, y: pos.y + y };
   }
+
+  const noteBaseY = (screenY) => screenY / (H / BASE_H);
 
   // 幅で折り返した行。書いた改行も活かす
   function noteLines(target, text) {
@@ -8353,10 +8386,9 @@
     return out.slice(0, 8);
   }
 
-  function noteBox(target, note, L) {
+  function noteBox(target, note, pos) {
     target.font = NOTE_FONT;
     const lines = noteLines(target, note.text || "メモ");
-    const pos = notePos(note, L);
     return {
       x: pos.x, y: pos.y, w: NOTE_W,
       h: NOTE_PAD * 2 + Math.max(1, lines.length) * NOTE_LINE,
@@ -8367,7 +8399,7 @@
   function drawNotes(target, L, view, showSelection) {
     const notes = (sc().notes || []).filter((note) => note.view === view);
     notes.forEach((note) => {
-      const box = noteBox(target, note, L);
+      const box = noteBox(target, note, noteScreenXY(note, L));
       const picked = showSelection && note.id === selectedNoteId;
       target.save();
       // 紐づけた駒とは細い線でつなぐ。どれについての覚え書きかが読めるように
@@ -8413,7 +8445,7 @@
   function noteAt(point, L, view) {
     const notes = (sc().notes || []).filter((note) => note.view === view);
     for (let i = notes.length - 1; i >= 0; i -= 1) {
-      const box = noteBox(ctx, notes[i], L);
+      const box = noteBox(ctx, notes[i], noteScreenXY(notes[i], L));
       if (point.x >= box.x && point.x <= box.x + box.w
         && point.y >= box.y && point.y <= box.y + box.h) return notes[i];
     }
@@ -8443,7 +8475,8 @@
     closeNoteEditor();
     const host = view === "plan" ? planCanvas : canvas;
     if (!host || !host.parentElement) return;
-    const box = noteBox(ctx, note, layout(view));
+    const L = layout(view);
+    const box = noteBox(ctx, note, noteScreenXY(note, L));
     const wrap = document.createElement("div");
     wrap.className = "stage-note-editor";
     /* ★この窓は自分で訳す。まとめて差し替える方に任せると、
@@ -11260,6 +11293,7 @@
     });
 
     const orient = () => {
+      applyCanvasSize();
       closeNoteEditor();
       enforcePhoneViews();
       applyLayout();
@@ -11268,6 +11302,15 @@
     };
     if (phoneOrientation.addEventListener) phoneOrientation.addEventListener("change", orient);
     else if (phoneOrientation.addListener) phoneOrientation.addListener(orient);
+    /* 保険。向きの通知（matchMediaのchange）が来ない環境があり、そのときは
+       枠の内部寸法が4:3のままCSSだけ16:9へ戻って絵が歪む（2026-08-27に確認）。
+       resizeは携帯のキーボード開閉でも飛ぶので、寸法が実際に変わったときだけ
+       描き直す。orient を直に繋ぐと、入力中に付箋の編集が閉じてしまう。 */
+    window.addEventListener("resize", () => {
+      if (!applyCanvasSize()) return;
+      applyLayout();
+      render();
+    });
     enforcePhoneViews();
     applyPhoneViewerLang();
     syncPhoneViewer();
@@ -15619,6 +15662,102 @@
     if (els.prefsBackdrop) els.prefsBackdrop.hidden = true;
   }
 
+  function manualLink(label, sectionId) {
+    const link = document.createElement("a");
+    link.className = "stage-about-link";
+    link.href = `manual/manual.html${sectionId ? `#${sectionId}` : ""}`;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = tx(label);
+    return link;
+  }
+
+  function showManualHelpNote(message, withManualLink) {
+    if (!els.helpNote) return;
+    els.helpNote.replaceChildren(document.createTextNode(tx(message)));
+    if (withManualLink) {
+      els.helpNote.append(document.createTextNode(" "), manualLink("冊子を開く"));
+    }
+  }
+
+  function renderManualHelp() {
+    if (!els.helpResults || !els.helpNote || !els.helpFind) return;
+    els.helpResults.replaceChildren();
+
+    const manual = window.MANUAL_CONTENT;
+    if (!manual || !Array.isArray(manual.chapters) || typeof window.MANUAL_FIND !== "function") {
+      showManualHelpNote("冊子を読み込めませんでした。ページを再読み込みしてください。", false);
+      return;
+    }
+
+    const query = els.helpFind.value;
+    if (!query.trim()) {
+      showManualHelpNote("言葉を入れると、冊子から該当箇所だけを出します。", false);
+      return;
+    }
+
+    let ids;
+    try {
+      ids = window.MANUAL_FIND(query);
+    } catch (_) {
+      showManualHelpNote("冊子を読み込めませんでした。ページを再読み込みしてください。", false);
+      return;
+    }
+    if (!Array.isArray(ids) || !ids.length) {
+      showManualHelpNote("見つかりませんでした。別の言い方でもう一度どうぞ。", true);
+      return;
+    }
+
+    const hitIds = new Set(ids);
+    const fragment = document.createDocumentFragment();
+    manual.chapters.forEach((chapter) => {
+      (chapter.sections || []).forEach((section) => {
+        if (!hitIds.has(section.id)) return;
+        const result = document.createElement("article");
+        result.className = "stage-help-result";
+
+        const chapterTitle = document.createElement("p");
+        chapterTitle.className = "stage-help-chapter";
+        chapterTitle.textContent = `第${chapter.no}章 ${chapter.title}`;
+
+        const heading = document.createElement("h3");
+        heading.textContent = section.title;
+        (section.tags || []).forEach((tagText) => {
+          const tag = document.createElement("span");
+          tag.className = "stage-help-tag";
+          tag.textContent = tagText;
+          heading.appendChild(tag);
+        });
+
+        const body = document.createElement("div");
+        body.className = "stage-help-copy";
+        body.innerHTML = section.html;
+        result.append(chapterTitle, heading, body, manualLink("冊子で読む", section.id));
+        fragment.appendChild(result);
+      });
+    });
+    els.helpResults.appendChild(fragment);
+    els.helpNote.textContent = "";
+  }
+
+  function openManualHelpFromPrefs() {
+    closePrefs();
+    if (els.helpModal) els.helpModal.hidden = false;
+    if (els.helpBackdrop) els.helpBackdrop.hidden = false;
+    renderManualHelp();
+    if (els.helpFind) els.helpFind.focus();
+  }
+
+  function closeManualHelp() {
+    if (els.helpModal) els.helpModal.hidden = true;
+    if (els.helpBackdrop) els.helpBackdrop.hidden = true;
+    if (els.prefsBtn) els.prefsBtn.focus();
+  }
+
+  function openManualBook() {
+    window.open("manual/manual.html", "_blank", "noopener");
+  }
+
   function openAbout() {
     if (els.aboutModal) els.aboutModal.hidden = false;
     if (els.aboutBackdrop) els.aboutBackdrop.hidden = false;
@@ -17697,7 +17836,7 @@ ${propsPlotHtml}
         if ((scene.pieces || []).some((piece) => piece.id === note.pieceId)) return;
         note.pieceId = null;
         note.x = clamp(note.x, 20, W - NOTE_W - 20);
-        note.y = clamp(note.y, 20, H - 80);
+        note.y = clamp(note.y, 20, BASE_H - 80);
       });
     });
   }
@@ -18321,7 +18460,7 @@ ${propsPlotHtml}
 
   // メモを掴む。道具が「動かす」でも「メモ」でも同じ手つきで動かせる
   function grabNote(note, point, L, el, event, fresh) {
-    const base = notePos(note, L);
+    const base = noteScreenXY(note, L);
     selectedId = null;
     selectedNoteId = note.id;
     capture(el, event.pointerId);
@@ -18491,7 +18630,7 @@ ${propsPlotHtml}
       const note = normalizeNote({
         view,
         x: clamp(point.x + 16, 8, W - NOTE_W - 8),
-        y: clamp(point.y - 34, 8, H - 60),
+        y: clamp(noteBaseY(point.y - 34), 8, BASE_H - 60),
         text: "",
       });
       sc().notes.push(note);
@@ -18841,10 +18980,10 @@ ${propsPlotHtml}
         const piece = sc().pieces.find((candidate) => candidate.id === note.pieceId);
         const at = piece ? placePiece(piece, L) : { x: 0, y: 0 };
         note.x = x - at.x;
-        note.y = y - at.y;
+        note.y = noteBaseY(y - at.y);
       } else {
         note.x = clamp(x, -60, W - 40);
-        note.y = clamp(y, -20, H - 30);
+        note.y = clamp(noteBaseY(y), -20, BASE_H - 30);
       }
       render();
       return;
@@ -19402,6 +19541,7 @@ ${propsPlotHtml}
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && els.sceneGridModal && !els.sceneGridModal.hidden) closeSceneGrid();
     if (event.key === "Escape" && els.reachModal && !els.reachModal.hidden) closeReachTable();
+    if (event.key === "Escape" && els.helpModal && !els.helpModal.hidden) closeManualHelp();
   });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || !wrapPickStartId) return;
@@ -20676,6 +20816,7 @@ ${propsPlotHtml}
     renderScenes();
     if (els.sceneGridModal && !els.sceneGridModal.hidden) renderSceneGrid();
     if (els.prefsModal && !els.prefsModal.hidden) { renderPrefs(); renderPrefKeys(); }
+    if (els.helpModal && !els.helpModal.hidden) renderManualHelp();
     renderCast();
     renderSets();
     renderLights();
@@ -21910,6 +22051,11 @@ ${propsPlotHtml}
   if (els.prefsBtn) els.prefsBtn.addEventListener("click", openPrefs);
   if (els.prefsClose) els.prefsClose.addEventListener("click", closePrefs);
   if (els.prefsBackdrop) els.prefsBackdrop.addEventListener("click", closePrefs);
+  if (els.helpOpen) els.helpOpen.addEventListener("click", openManualHelpFromPrefs);
+  if (els.manualOpen) els.manualOpen.addEventListener("click", openManualBook);
+  if (els.helpClose) els.helpClose.addEventListener("click", closeManualHelp);
+  if (els.helpBackdrop) els.helpBackdrop.addEventListener("click", closeManualHelp);
+  if (els.helpFind) els.helpFind.addEventListener("input", renderManualHelp);
   if (els.aboutOpenFromPrefs) els.aboutOpenFromPrefs.addEventListener("click", openAboutFromPrefs);
   if (els.aboutClose) els.aboutClose.addEventListener("click", closeAbout);
   if (els.aboutBackdrop) els.aboutBackdrop.addEventListener("click", closeAbout);

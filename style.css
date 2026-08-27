@@ -11260,6 +11260,12 @@ html.stage-phone-viewer .stage-note-editor textarea { min-height: 72px; resize: 
 html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; min-width: 64px; }
 
 @media (orientation: portrait) {
+  /* 縦向きのスマホは絵の枠を4:3にする（stage-sketch.js の applyCanvasSize と対）。
+     ★片方だけ直すと絵が歪む。両方そろえること。 */
+  html.stage-phone-viewer .stage-canvas-wrap,
+  html.stage-phone-viewer #stage-canvas,
+  html.stage-phone-viewer #stage-plan-canvas { aspect-ratio: 4 / 3; }
+
   html.stage-phone-viewer .stage-board-frame {
     width: 100%;
   }

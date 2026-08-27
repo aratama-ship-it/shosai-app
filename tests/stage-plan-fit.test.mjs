@@ -18,8 +18,13 @@ const H = 720;
 const wingM = 2.5;
 const EPSILON = 1e-9;
 
-function fit(audience, width = 12, depth = 9) {
-  return planFit({ W, H, audience, width, depth, wingM });
+function assertNear(actual, expected, label) {
+  assert.ok(Math.abs(actual - expected) <= EPSILON,
+    `${label}: ${actual} は ${expected} と一致する`);
+}
+
+function fit(audience, width = 12, depth = 9, height = H) {
+  return planFit({ W, H: height, audience, width, depth, wingM });
 }
 
 function assertPositive(result, label) {
@@ -40,9 +45,9 @@ function assertWingsFit(result, audience, label) {
   }
 }
 
-function assertLowerAudienceFits(result, audience, label) {
+function assertLowerAudienceFits(result, audience, label, height = H) {
   if (audience === "none") return;
-  assert.ok(H - (result.stage.y + result.stage.h) >= 96 - EPSILON,
+  assert.ok(height - (result.stage.y + result.stage.h) >= 96 - EPSILON,
     `${label}: 下の客席と文字が入る`);
 }
 
@@ -89,6 +94,26 @@ test("12m×9m frontは旧計算より1.1倍以上大きい", () => {
   const oldWidth = Math.min(availableWidth, availableHeight / ratio);
   assert.ok(result.stage.w >= oldWidth * 1.1,
     `新しい幅 ${result.stage.w} は旧幅 ${oldWidth} の1.1倍以上`);
+});
+
+test("12m×9m frontはH=960で袖と96pxの客席帯を保ち、H=720の結果を変えない", () => {
+  const desktop = fit("front");
+  assert.deepEqual(desktop, {
+    stage: { x: 256, y: 24, w: 768, h: 576 },
+    pxPerM: 64,
+  });
+
+  const phonePortrait = fit("front", 12, 9, 960);
+  assertPositive(phonePortrait, "front H=960");
+  assertNear(phonePortrait.stage.x, 205.1764705882353, "front H=960: x");
+  assertNear(phonePortrait.stage.y, 105.88235294117646, "front H=960: y");
+  assertNear(phonePortrait.stage.w, 869.6470588235294, "front H=960: 舞台幅");
+  assertNear(phonePortrait.stage.h, 652.2352941176471, "front H=960: 舞台奥行き");
+  assertNear(phonePortrait.pxPerM, 72.47058823529412, "front H=960: pxPerM");
+  assertWingsFit(phonePortrait, "front", "front H=960");
+  assertLowerAudienceFits(phonePortrait, "front", "front H=960", 960);
+  assert.ok(960 - (phonePortrait.stage.y + phonePortrait.stage.h) >= 96 - EPSILON,
+    "front H=960: 客席の帯を96px以上残す");
 });
 
 test("極端な会場寸法でも各形式の必要物が画面に収まる", () => {
