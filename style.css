@@ -9102,6 +9102,7 @@ body.is-panel-dragging {
 .stage-modal.stage-beat-template-modal { width: min(780px, calc(100vw - 40px)); }
 .stage-modal.stage-export-modal { width: min(520px, calc(100vw - 40px)); }
 .stage-modal.stage-rehearsal-export-modal { width: min(560px, calc(100vw - 40px)); }
+.stage-modal.stage-help-modal { width: min(720px, calc(100vw - 40px)); }
 .stage-modal.stage-about-modal { width: min(720px, calc(100vw - 40px)); }
 .stage-modal.stage-venue-editor-modal { width: min(980px, calc(100vw - 40px)); }
 .stage-modal.stage-venue-import-modal { width: min(760px, calc(100vw - 40px)); }
@@ -9478,6 +9479,17 @@ body.is-panel-dragging {
   text-align: left;
   text-decoration: none;
 }
+
+.stage-help-body { color: var(--milk-dim); font-size: 12px; line-height: 1.75; }
+.stage-help-results { margin-top: 14px; }
+.stage-help-result { padding: 14px 0; border-top: 1px solid var(--line-dark); }
+.stage-help-chapter { margin: 0 0 3px; font-size: 9px; color: rgba(240, 231, 214, 0.4); }
+.stage-help-result h3 { margin: 0 0 8px; color: var(--milk); font-family: var(--serif); font-size: 14px; }
+.stage-help-tag { margin-left: 8px; padding: 1px 6px; border: 1px solid var(--rust); color: var(--milk-dim); font: 9px var(--sans); white-space: nowrap; }
+.stage-help-copy p + p, .stage-help-copy p + ul, .stage-help-copy ul + p { margin-top: 8px; }
+.stage-help-copy ul, .stage-help-copy ol { padding-left: 1.4em; }
+.stage-help-note { margin-top: 12px; }
+.stage-help-result > .stage-about-link, .stage-help-note .stage-about-link { display: inline; margin: 0 0 0 6px; }
 
 .stage-about-body {
   color: var(--milk-dim);
