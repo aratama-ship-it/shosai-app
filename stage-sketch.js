@@ -2257,7 +2257,7 @@
     select: "演者や物を選び、舞台の上で動かします。",
     paint: "奥の背景面を指やマウスで塗ります。",
     erase: "背景に描いた線だけを消します。",
-    arrow: "正面図をなぞると矢印になります。床の上か空中かを選べます。Alt（option）を押しながらクリックすると、近い矢印を1本消せます。",
+    arrow: "正面図または平面図をなぞると矢印になります。正面図では床の上か空中かを選べます。Alt（option）を押しながらクリックすると、近い矢印を1本消せます。",
     route: "平面図で演者や物、明かりを掴み、離した所が行き先になります。真ん中の丸を引くと動線が曲がります。",
     note: "何もない所を押すとメモを貼れます。貼ったメモは掴んで動かせます。",
     light: "照明だけを動かします。丸い印が灯体、明るい輪が当たる場所です。",
@@ -3477,7 +3477,9 @@
   /* 自由描画の矢印は背景の塗りと混ぜない。床では左右・奥行き、空中では
    * 左右・高さを持つため、同じ点でも面に応じて b の上限が変わる。 */
   function normalizeArrow(raw) {
-    const plane = raw && raw.plane === "air" ? "air" : "floor";
+    const view = raw && raw.view === "plan" ? "plan" : "front";
+    const plane = view === "plan" ? "floor"
+      : raw && raw.plane === "air" ? "air" : "floor";
     const points = Array.isArray(raw && raw.points)
       ? raw.points.slice(-400).map((point) => ({
           a: clamp(finite(point && point.a, 0.5), 0, 1),
@@ -3487,6 +3489,7 @@
       : [];
     return {
       id: raw && typeof raw.id === "string" ? raw.id : rid("arrow"),
+      view,
       plane,
       depth: clamp(finite(raw && raw.depth, 0.5), 0, 1),
       points,
@@ -5226,6 +5229,55 @@
   /* ---------- レイアウト ----------
      舞台は常に画面いっぱいに描く。実寸の違いは「人の小ささ」として出る。 */
 
+  /* @planFit:start */
+  /* 平面図の既定の大きさ。舞台の枠だけでなく、その外に描かれるもの（袖の帯・客席・
+     全周の円）と、袖へ置かれる駒まで画面へ収める。固定の余白（旧 pad=104/176）だと
+     会場の寸法と無関係なので、余ったり詰まったりした。外部を一切参照しない純粋関数に
+     してあるのは、テストから取り出して数値で確かめるため。触るときは同じ性質を保つこと。 */
+  function planFit(input) {
+    // input: { W, H, audience, width, depth, wingM }
+    // 返り値: { stage: { x, y, w, h }, pxPerM }
+    const { W, H, audience, width, depth, wingM } = input;
+    const M = 24;
+    const ratio = depth / width;
+    const wingRatio = wingM / width;
+    let sw;
+    let top;
+    let bottom;
+
+    if (audience === "round") {
+      sw = (Math.min(W, H) - 2 * (95 + 28 + M)) / Math.max(1, ratio);
+      const sh = sw * ratio;
+      const outside = Math.max(sw, sh) / 2 + 95 + 28 + M;
+      top = outside - sh / 2;
+      bottom = top;
+    } else if (audience === "three") {
+      const byWidth = W - 2 * (96 + M);
+      const byHeight = (H - (96 + 2 * M)) / (ratio + wingRatio);
+      sw = Math.min(byWidth, byHeight);
+      top = wingRatio * sw + M;
+      bottom = 96 + M;
+    } else {
+      const byWidth = (W - 2 * M) / (1 + 2 * wingRatio);
+      bottom = audience === "none" ? M : 96 + M;
+      const byHeight = (H - M - bottom) / ratio;
+      sw = Math.min(byWidth, byHeight);
+      top = M;
+    }
+
+    const sh = sw * ratio;
+    return {
+      stage: {
+        x: (W - sw) / 2,
+        y: top + (H - top - bottom - sh) / 2,
+        w: sw,
+        h: sh,
+      },
+      pxPerM: sw / width,
+    };
+  }
+  /* @planFit:end */
+
   function layout(view) {
     const v = venue();
     const size = venueSize();
@@ -5233,20 +5285,13 @@
 
     if (plan) {
       // 平面図: 上が奥、下が客席側。舞台の縦横比を保って収める。
-      // 全周形式は客席が四方に要るので、舞台の取り分を減らす。
-      const pad = v.audience === "round" ? 176 : 104;
-      const availW = W - pad * 2;
-      const availH = H - pad * 2;
-      const ratio = size.depth / size.width;
-      let sw = availW;
-      let sh = sw * ratio;
-      if (sh > availH) { sh = availH; sw = sh / ratio; }
-      // 客席のある形式は舞台を少し上へ寄せ、下に客席の余地を残す
-      const shift = v.audience === "none" ? 0 : (v.audience === "round" ? 0 : -28);
+      const fit = planFit({
+        W, H, audience: v.audience, width: size.width, depth: size.depth, wingM: WING_M,
+      });
       return {
         plan: true, venue: v, size,
-        stage: { x: (W - sw) / 2, y: (H - sh) / 2 + shift, w: sw, h: sh },
-        pxPerM: sw / size.width,
+        stage: fit.stage,
+        pxPerM: fit.pxPerM,
       };
     }
 
@@ -7974,19 +8019,8 @@
     return ARROW_WIDTHS[arrowWidthKeyPref()];
   }
 
-  // 保存された点を、正面／平面それぞれで実際に描く線へ変える。
+  // 保存された点を、矢印を描いた図の実際の線へ変える。
   function arrowScreenPoints(arrow, L) {
-    if (L.plan && arrow.plane === "air") {
-      const values = arrow.points.map((point) => point.a);
-      const lo = Math.min(...values);
-      const hi = Math.max(...values);
-      const tail = arrow.points[arrow.points.length - 1];
-      const near = arrow.points[Math.max(0, arrow.points.length - 4)];
-      const forward = tail.a - near.a || tail.a - arrow.points[0].a;
-      const left = place(lo, arrow.depth, L);
-      const right = place(hi, arrow.depth, L);
-      return forward < 0 ? [right, left] : [left, right];
-    }
     return arrow.points.map((point) => arrow.plane === "air"
       ? stagePoint(point.a, arrow.depth, point.b, L)
       : stagePoint(point.a, point.b, 0, L));
@@ -8034,7 +8068,9 @@
     target.lineWidth = width;
     target.lineJoin = "round";
     target.lineCap = "round";
-    target.setLineDash(L.plan && arrow.plane === "air" ? [8, 6] : []);
+    /* 破線は使わない。空中の矢印を平面図で潰して描いていた頃の印だが、
+       矢印が描いた図にだけ出るようになり（2026-08-27）、空中＝正面図だけになった。 */
+    target.setLineDash([]);
     target.beginPath();
     points.forEach((point, index) => {
       if (index) target.lineTo(point.x, point.y); else target.moveTo(point.x, point.y);
@@ -8052,6 +8088,7 @@
   }
 
   function drawArrows(target, L) {
+    const wantView = L.plan ? "plan" : "front";
     /* 空中面の奥行きは描き始める前にも必要なので、編集中の正面図だけ床へ示す。
      * 印刷やサムネイルへは操作中のガイドを焼き付けない。 */
     if (target === ctx && !L.plan && tool === "arrow" && arrowPlanePref() === "air") {
@@ -8067,8 +8104,11 @@
       target.stroke();
       target.restore();
     }
-    (sc().arrows || []).forEach((arrow) => drawOneArrow(target, arrow, L));
-    if (target === ctx && !L.plan && arrowDraft) drawOneArrow(target, arrowDraft, L);
+    (sc().arrows || []).forEach((arrow) => {
+      if (arrow.view === wantView) drawOneArrow(target, arrow, L);
+    });
+    if ((target === ctx || target === planCtx) && arrowDraft
+      && arrowDraft.view === wantView) drawOneArrow(target, arrowDraft, L);
   }
 
   function pointToSegmentDistance(point, a, b) {
@@ -8086,6 +8126,7 @@
     let best = -1;
     let bestDistance = limit;
     for (let index = arrows.length - 1; index >= 0; index -= 1) {
+      if (arrows[index].view !== view) continue;
       const points = arrowScreenPoints(arrows[index], L);
       for (let i = 1; i < points.length; i += 1) {
         const distance = pointToSegmentDistance(point, points[i - 1], points[i]);
@@ -10012,7 +10053,7 @@
        ★転換アニメの最中は出さない（本人指定）。動いている駒の足元に
        「次の動線」が先回りして見えると、どちらが今の動きか分からなくなる */
     if (!pitchStyle && L.plan && anyRoutesShown() && !sceneAnim) drawRoutes(target, L, showSelection);
-    // 自由矢印は作図の印なので、駒より手前へ置き、正面・平面の両方へ出す。
+    // 自由矢印は描いた図にだけ出す（本人指示 2026-08-27）。駒より手前へ置く。
     if (!pitchStyle) {
       drawArrows(target, L);
       drawNotes(target, L, view, showSelection);
@@ -10778,8 +10819,6 @@
     phoneUi.toolbar.setAttribute("aria-label", tx("スマホ閲覧用の操作"));
     setPhoneButtonLang(phoneUi.load, "ショー", "ショーを開く・書き出す");
     setPhoneButtonLang(phoneUi.infoToggle, "情報", "シーン情報を表示する");
-    setPhoneButtonLang(phoneUi.noteToggle, tool === "note" ? "メモ終了" : "メモ",
-      tool === "note" ? "メモを終了する" : "図にメモを追加する");
     const nextView = state.showFront ? "plan" : "front";
     setPhoneButtonLang(phoneUi.viewToggle, nextView === "plan" ? "平面図へ" : "正面図へ",
       nextView === "plan" ? "平面図へ切り替える" : "正面図へ切り替える");
@@ -10914,8 +10953,6 @@
     phoneUi.infoScene.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${navigationTitle}`;
     if (document.activeElement !== phoneUi.sceneNote) phoneUi.sceneNote.value = scene.note || "";
     if (document.activeElement !== phoneUi.memoInput) phoneUi.memoInput.value = scene.note || "";
-    phoneUi.noteToggle.textContent = tx(tool === "note" ? "メモ終了" : "メモ");
-    phoneUi.noteToggle.setAttribute("aria-pressed", String(tool === "note"));
     phoneUi.infoToggle.setAttribute("aria-pressed", String(phoneUi.infoOpen));
     phoneUi.load.setAttribute("aria-pressed", String(phoneUi.sourceOpen));
     phoneUi.settingsToggle.setAttribute("aria-pressed", String(phoneUi.settingsOpen));
@@ -10952,10 +10989,8 @@
     projectName.className = "stage-phone-project";
     const infoToggle = makePhoneButton(tx("情報"), tx("シーン情報を表示する"), "stage-phone-info-toggle");
     infoToggle.setAttribute("aria-pressed", "false");
-    const noteToggle = makePhoneButton(tx("メモ"), tx("図にメモを追加する"), "stage-phone-note-toggle");
-    noteToggle.setAttribute("aria-pressed", "false");
     const viewToggle = makePhoneButton(tx("平面図へ"), tx("平面図へ切り替える"), "stage-phone-view-toggle");
-    actions.append(load, projectName, infoToggle, noteToggle, viewToggle);
+    actions.append(load, projectName, infoToggle, viewToggle);
 
     const sceneBar = document.createElement("div");
     sceneBar.className = "stage-phone-scene-bar";
@@ -11131,7 +11166,7 @@
 
     phoneUi = {
       board, toolbar, titleBar, titleName, titleBeta, titleBetaJa, settingsToggle,
-      actions, load, projectName, infoToggle, noteToggle, viewToggle,
+      actions, load, projectName, infoToggle, viewToggle,
       scenePrev, sceneCurrent, sceneNext, infoPanel, infoProject, infoScene,
       sceneNote, memoBar, memoLabel, memoInput,
       sourcePanel, sourceTitle, fileButton, seamSampleButton, sampleButton, sourceClose, fileInput,
@@ -11205,10 +11240,6 @@
     });
     langJa.addEventListener("click", () => setLang("ja"));
     langEn.addEventListener("click", () => setLang("en"));
-    noteToggle.addEventListener("click", () => {
-      setTool(tool === "note" ? "select" : "note");
-      syncPhoneViewer();
-    });
     viewToggle.addEventListener("click", () => {
       enforcePhoneViews(viewToggle.dataset.phoneView);
       applyLayout();
@@ -17512,8 +17543,12 @@ ${propsPlotHtml}
       announce("どちらか一方は開いたままにします。");
       return;
     }
+    if (arrowDraft) {
+      arrowDraft = null;
+      pointerAction = null;
+    }
     state[key] = shown;
-    if (!state.showFront && tool !== "select") setTool("select");
+    if (!state.showFront && tool !== "select" && tool !== "arrow") setTool("select");
     selectedId = null;
     renderVenueControls();
     updateInspector();
@@ -17732,7 +17767,13 @@ ${propsPlotHtml}
     const heads = arrowHeadsPref();
     els.arrowOptions.hidden = tool !== "arrow";
     if (els.arrowPlaneFloor) els.arrowPlaneFloor.setAttribute("aria-pressed", String(plane === "floor"));
-    if (els.arrowPlaneAir) els.arrowPlaneAir.setAttribute("aria-pressed", String(plane === "air"));
+    if (els.arrowPlaneAir) {
+      const disabled = !state.showFront;
+      els.arrowPlaneAir.setAttribute("aria-pressed", String(plane === "air"));
+      els.arrowPlaneAir.disabled = disabled;
+      els.arrowPlaneAir.setAttribute("aria-disabled", String(disabled));
+      els.arrowPlaneAir.title = disabled ? tx("空中の矢印は正面図で描きます") : "";
+    }
     if (els.arrowDepthControl) els.arrowDepthControl.hidden = plane !== "air";
     if (els.arrowDepth && document.activeElement !== els.arrowDepth) els.arrowDepth.value = String(depth);
     if (els.arrowDepthValue) {
@@ -17750,8 +17791,8 @@ ${propsPlotHtml}
   }
 
   function setTool(nextTool) {
-    // スマホ閲覧版で持てる道具は、見るための選択状態とメモだけ。
-    if (phoneViewerActive && nextTool !== "note") nextTool = "select";
+    // スマホ閲覧版は見るための選択状態に固定する。
+    if (phoneViewerActive) nextTool = "select";
     if (guestSessionActive() && nextTool !== "arrow") return;
     const painting = nextTool === "paint" || nextTool === "erase";
     if (!state.showFront && painting) {
@@ -17765,10 +17806,6 @@ ${propsPlotHtml}
     }
     if (nextTool === "route" && !state.showPlan) {
       announce("動線は平面図で引きます。平面を開いてください。");
-      return;
-    }
-    if (nextTool === "arrow" && !state.showFront) {
-      announce("矢印は正面図で描きます。正面を開いてください。");
       return;
     }
     if (arrowDraft) {
@@ -18405,15 +18442,15 @@ ${propsPlotHtml}
     const point = pointFromEvent(event);
     el.focus();
 
-    // 閲覧中の一指タップでは駒・明かり・背景を変更しない。付箋モードだけ下へ通す。
+    // 閲覧中の一指タップでは、付箋を含む図上の内容を変更しない。
     // 二指ピンチはこの分岐より前に始まるので、図の確認用拡大は利用できる。
-    if (phoneViewerActive && tool !== "note") return;
-    // 共有ゲストが舞台上で使える作図操作は、正面図の自由矢印だけ。
-    if (guestSessionActive() && !(tool === "arrow" && view === "front")) return;
+    if (phoneViewerActive) return;
+    // 共有ゲストが舞台上で使える作図操作は、正面・平面の自由矢印だけ。
+    if (guestSessionActive() && tool !== "arrow") return;
 
-    /* 自由矢印は正面図でだけ描く。平面図側では下の「動かす」と同じ分岐へ通し、
-     * 既存の駒操作を変えない。Alt（option）クリックは線を増やさず一本だけ消す。 */
-    if (tool === "arrow" && view === "front") {
+    /* 自由矢印は操作した図に属する。平面図では高さを持たない床の矢印にする。
+     * Alt（option）クリックは線を増やさず、その図の近い一本だけ消す。 */
+    if (tool === "arrow") {
       if (event.altKey) {
         const index = arrowAt(point, L, view);
         if (index >= 0) {
@@ -18426,7 +18463,8 @@ ${propsPlotHtml}
         return;
       }
       arrowDraft = {
-        plane: arrowPlanePref(),
+        view,
+        plane: view === "plan" ? "floor" : arrowPlanePref(),
         depth: arrowDepthPref(),
         heads: arrowHeadsPref(),
         color: arrowColorPref(),
@@ -18669,13 +18707,13 @@ ${propsPlotHtml}
    * 触っているものを毎回当てて決めるので、駒の上と何もない所で形が変わる。 */
   function cursorFor(el, event) {
     if (pointerAction) return "grabbing";
-    if (guestSessionActive() && !(tool === "arrow" && viewOf(el) === "front")) return "default";
+    if (guestSessionActive() && tool !== "arrow") return "default";
     if (tool === "paint") return "crosshair";
     if (tool === "erase") return "cell";
     const view = viewOf(el);
     const L = layout(view);
     const point = pointFromEvent(event);
-    if (tool === "arrow" && view === "front") {
+    if (tool === "arrow") {
       return event.altKey && arrowAt(point, L, view) >= 0 ? "not-allowed" : "crosshair";
     }
     if (tool === "note") return noteAt(point, L, view) ? "grab" : "copy";

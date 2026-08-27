@@ -42,7 +42,7 @@ test("端末言語を読めなくても日本語で起動する", () => {
   assert.match(source, /lang = resolveInitialStageLanguage\(openLang, localStorage, navigator\);/);
 });
 
-test("スマホの操作はショー・前後シーン・情報・メモに限定する", () => {
+test("スマホの操作はショー・前後シーン・情報に限定する", () => {
   assert.match(source, /function initPhoneViewerWorkspace\(\)/);
   /* ★入口は「読込」ではなく「ショー」。中に書き出しも入っているため、
      読み込み専用の名前だと書き出しに辿り着けない（2026-08-26 本人が実機で発見）。
@@ -52,7 +52,7 @@ test("スマホの操作はショー・前後シーン・情報・メモに限�
   assert.match(source, /scenePrev\.addEventListener\("click", \(\) => stepScene\(-1\)\)/);
   assert.match(source, /sceneNext\.addEventListener\("click", \(\) => stepScene\(1\)\)/);
   assert.match(source, /infoToggle\.addEventListener\("click"/);
-  assert.match(source, /noteToggle\.addEventListener\("click"/);
+  assert.ok(!/stage-phone-note-toggle/.test(source), "図上へ付箋を足す入口が残っていないこと");
   assert.match(source, /sceneNote\.addEventListener\("input"/);
   assert.match(source, /sc\(\)\.note = sceneNote\.value\.slice\(0, 200\)/);
 });
@@ -85,9 +85,6 @@ test("スマホ閲覧機で使う追加日本語はすべて英訳を持つ", ()
     "ショーを開く・書き出す": "Open or export a show",
     "情報": "Info",
     "シーン情報を表示する": "Show scene information",
-    "図にメモを追加する": "Add a note to the diagram",
-    "メモ終了": "Finish notes",
-    "メモを終了する": "Finish adding notes",
     "平面図へ": "Plan view",
     "正面図へ": "Front view",
     "平面図へ切り替える": "Switch to plan view",
@@ -247,21 +244,29 @@ test("シーン行はopenSceneを呼んでから全画面一覧を閉じる", ()
 
 test("縦画面の操作は一段に収まり、図へ重ならない", () => {
   assert.match(style, /grid-template-rows: 48px;/);
-  assert.match(style, /stage-phone-note-toggle \{ grid-row: 1; \}/);
 });
 
-test("スマホでは舞台要素を編集できず、メモ操作だけを図上へ通す", () => {
-  assert.match(source, /if \(phoneViewerActive && nextTool !== "note"\) nextTool = "select"/);
-  assert.match(source, /if \(phoneViewerActive && tool !== "note"\) return;/);
+test("スマホでは舞台要素も付箋も図上で編集できない", () => {
+  assert.match(source, /if \(phoneViewerActive\) nextTool = "select"/);
+  assert.match(source, /if \(phoneViewerActive\) return;/);
   assert.match(source, /if \(phoneViewerActive\) return;[\s\S]*?const piece = selectedPiece\(\)/);
   assert.match(source, /if \(tabletPwaActive \|\| phoneViewerActive\) event\.preventDefault\(\)/);
 });
 
-test("スマホ画面はスクロールせず44px操作と付箋入力シートを使う", () => {
+test("スマホ画面はスクロールせず44px操作を使う", () => {
   assert.match(style, /html\.stage-phone-viewer body \{[\s\S]*?position: fixed;[\s\S]*?inset: 0;/);
   assert.match(style, /html\.stage-phone-viewer \.stage-phone-button \{[\s\S]*?min-width: 44px;[\s\S]*?min-height: 44px;/);
   assert.match(style, /html\.stage-phone-viewer \.stage-board-frame\.is-closed \{ display: none; \}/);
-  assert.match(style, /html\.stage-phone-viewer \.stage-note-editor \{[\s\S]*?position: fixed;[\s\S]*?bottom:/);
+});
+
+test("スマホの付箋入力を外しても既存付箋の表示と図の下のメモ欄を残す", () => {
+  assert.equal(translations["メモ"], "Note", "tx(\"メモ\") の対訳を残すこと");
+  assert.match(source, /memoLabel\.textContent = tx\("メモ"\)/);
+  assert.match(source, /const memoInput = document\.createElement\("textarea"\)/);
+  assert.match(source, /drawNotes\(target, L, view, showSelection\)/);
+  assert.match(style,
+    /grid-template-columns: 48px 44px minmax\(0, 1fr\) 44px 48px;/,
+    "スマホの道具列は5列にすること");
 });
 
 test("スマホ閲覧版では編集チュートリアルを自動起動しない", () => {

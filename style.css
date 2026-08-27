@@ -10848,7 +10848,7 @@ html.stage-phone-viewer .stage-phone-toolbar {
   grid-row: 2;
   z-index: 12;
   display: grid;
-  grid-template-columns: 48px 44px minmax(0, 1fr) 44px 48px 60px;
+  grid-template-columns: 48px 44px minmax(0, 1fr) 44px 48px;
   grid-template-rows: 48px;
   min-width: 0;
   border-bottom: 1px solid var(--line-dark);
@@ -10930,14 +10930,12 @@ html.stage-phone-viewer .stage-phone-load { grid-column: 1; }
 html.stage-phone-viewer .stage-phone-scene-prev { grid-column: 2; }
 html.stage-phone-viewer .stage-phone-scene-next { grid-column: 4; }
 html.stage-phone-viewer .stage-phone-info-toggle { grid-column: 5; }
-html.stage-phone-viewer .stage-phone-note-toggle { grid-column: 6; }
 
 html.stage-phone-viewer .stage-phone-load,
 html.stage-phone-viewer .stage-phone-scene-prev,
 html.stage-phone-viewer .stage-phone-scene-current,
 html.stage-phone-viewer .stage-phone-scene-next,
-html.stage-phone-viewer .stage-phone-info-toggle,
-html.stage-phone-viewer .stage-phone-note-toggle { grid-row: 1; }
+html.stage-phone-viewer .stage-phone-info-toggle { grid-row: 1; }
 
 /* ★縦向きでは重ねない。図（正面図・平面図）を下へ押し下げる（2026-08-26 本人指示）。
    以前は position:fixed で正面図の上に被っていた。横向きだけ重ねる（下の landscape 参照）。

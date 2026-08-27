@@ -126,9 +126,6 @@
     "ショーを開く・書き出す": "Open or export a show",
     "情報": "Info",
     "シーン情報を表示する": "Show scene information",
-    "図にメモを追加する": "Add a note to the diagram",
-    "メモ終了": "Finish notes",
-    "メモを終了する": "Finish adding notes",
     "平面図へ": "Plan view",
     "正面図へ": "Front view",
     "平面図へ切り替える": "Switch to plan view",
@@ -491,8 +488,9 @@
     "いまの道具の説明": "About this tool",
     "いまの道具の説明を出す": "Show the tool description",
     "演者や物を選び、舞台の上で動かします。": "Select a performer or object and move it on stage.",
-    "正面図をなぞると矢印になります。床の上か空中かを選べます。":
-      "Drag on the front view to draw an arrow. Choose the floor or the air.",
+    "正面図または平面図をなぞると矢印になります。正面図では床の上か空中かを選べます。":
+      "Drag on the front or plan view to draw an arrow. In the front view, choose the floor or the air.",
+    "空中の矢印は正面図で描きます": "Airborne arrows are drawn in the front view.",
     "上下で奥行き、左右で立ち位置を決めます。選択中は矢印キーでも動かせます。":
       "Up and down sets depth, left and right sets position. Arrow keys nudge the selection.",
 
@@ -1217,8 +1215,6 @@
     [/^矢印を描きました。$/, "Drew an arrow."],
     [/^矢印を消しました。$/, "Cleared the arrows."],
     [/^矢印を1本消しました。$/, "Removed one arrow."],
-    [/^矢印は正面図で描きます。正面を開いてください。$/,
-      "Arrows are drawn in the front view. Open the front view."],
     [/^ディアボロを縦置きにしました。$/, "Stood the diabolo on end."],
     [/^ディアボロを横置きにしました。$/, "Laid the diabolo on its side."],
     [/^光の意図を更新しました。$/, "Updated the lighting intention."],
