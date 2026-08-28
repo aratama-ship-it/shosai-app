@@ -69,6 +69,92 @@ test("客席段床は13列で、奥へ行くほど位置と高さが一定量ず
   });
 });
 
+/* 客席の人影（2026-08-29）。寸法は Vision Proアプリの AudienceBuilder から借りた実寸。
+   舞台から見て「客がいる」気配を出すのが目的なので、頭が座った人の高さにあることと、
+   ばらつきが毎フレーム同じであることの2点が要になる。 */
+test("客席の人影は座った人の実寸を保つ", () => {
+  const person = geom.housePerson();
+  closeTo(person.headYM, 1.15);        // 列の床から頭の中心まで
+  closeTo(person.headDiameterM, .20);
+  closeTo(person.shoulderWidthM, .42);
+  closeTo(person.shoulderDropM, .17);
+  assert.ok(person.occupancy > 0 && person.occupancy <= 1);
+  // 頭は肩より上にある（上下を取り違えると人に見えない）
+  assert.ok(person.headYM - person.shoulderDropM < person.headYM);
+});
+
+test("席ごとのばらつきは何度呼んでも同じ（客席が沸き立たない）", () => {
+  const first = geom.seatNoise(3, 7, 1);
+  const again = geom.seatNoise(3, 7, 1);
+  assert.equal(first, again, "同じ席・同じ用途なら必ず同じ値");
+  assert.ok(first >= 0 && first < 1, "0以上1未満に収まる");
+  // 席が違えば値も違う（全員が同じ方へずれない）
+  assert.notEqual(geom.seatNoise(3, 7, 1), geom.seatNoise(3, 8, 1));
+  assert.notEqual(geom.seatNoise(3, 7, 1), geom.seatNoise(4, 7, 1));
+  // 用途（左右・高さ・空席）が違えば独立している
+  assert.notEqual(geom.seatNoise(3, 7, 1), geom.seatNoise(3, 7, 2));
+});
+
+/* 3Dカメラの絵はブラウザでしか出ないので、人の位置はここで直接検査する。 */
+test("客席の人は全列に散らばり、座った頭の高さに並ぶ", () => {
+  const width = 12;
+  const depth = 9;
+  const seats = Array.from(geom.houseSeats(width, depth));
+  const rows = Array.from(geom.houseRiserRows(width, depth));
+  const perRow = geom.houseSeatsPerRow(width);
+  const person = geom.housePerson();
+
+  assert.ok(seats.length > 0, "誰も座っていないということはない");
+  // 13列すべてに人がいる（後ろの列だけ空になったりしない）
+  assert.equal(new Set(seats.map((s) => s.row)).size, rows.length);
+  // 満席のときの席数（中央通路を除く）より少なく、大きく下回りもしない
+  const aisleFree = rows.length * perRow;
+  assert.ok(seats.length < aisleFree);
+  assert.ok(seats.length > aisleFree * .7);
+
+  seats.forEach((s) => {
+    const riser = rows[s.row];
+    // 頭は必ずその列の床から座った人の高さにある
+    const expected = riser.height + person.headYM;
+    assert.ok(Math.abs(s.y - expected) <= person.jitterYM + 1e-9,
+      `${s.row}列${s.seat}番の頭 ${s.y} が ${expected} からばらつきの範囲に収まる`);
+    closeTo(s.z, riser.z);
+    // 中央通路は空けたまま（ばらつきで埋めない）
+    assert.ok(Math.abs(s.x) >= .55 - person.jitterXM - 1e-9);
+  });
+
+  // 後ろの列ほど頭が高い（段床が効いている）
+  const backRow = seats.filter((s) => s.row === rows.length - 1)[0];
+  const frontRow = seats.filter((s) => s.row === 0)[0];
+  assert.ok(backRow.y > frontRow.y);
+});
+
+test("客席の人の位置は何度求めても同じ（カメラを動かしても並びが変わらない）", () => {
+  const a = Array.from(geom.houseSeats(12, 9));
+  const b = Array.from(geom.houseSeats(12, 9));
+  assert.equal(a.length, b.length);
+  a.forEach((seat, index) => {
+    closeTo(seat.x, b[index].x);
+    closeTo(seat.y, b[index].y);
+    closeTo(seat.z, b[index].z);
+  });
+});
+
+test("空席の判定は席ごとにばらけ、満席寄りに収まる", () => {
+  const person = geom.housePerson();
+  let occupied = 0;
+  let total = 0;
+  for (let row = 0; row < 13; row += 1) {
+    for (let seat = 0; seat < 30; seat += 1) {
+      total += 1;
+      if (geom.seatNoise(row, seat, 3) <= person.occupancy) occupied += 1;
+    }
+  }
+  const rate = occupied / total;
+  assert.ok(Math.abs(rate - person.occupancy) < .06,
+    `埋まり方（${rate.toFixed(3)}）が設定（${person.occupancy}）から離れすぎない`);
+});
+
 test("facing 0は客席向き、facing 90は上手向きになる", () => {
   const front = geom.yawForward(0);
   const stageLeft = geom.yawForward(90);
