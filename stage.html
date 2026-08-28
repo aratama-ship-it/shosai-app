@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=214">
+<link rel="stylesheet" href="style.css?v=216">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -345,8 +345,10 @@
               </div>
               <div class="stage-scene-actions stage-scene-actions-sub">
                 <button type="button" id="stage-scene-section" class="btn-quiet" title="シーンをまとめる入れ物を足す">セクション+</button>
-              <button type="button" id="stage-show-map-btn" class="btn-quiet" title="全シーンを一枚で見渡す">地図</button>
                 <button type="button" id="stage-scene-del" class="btn-quiet">削除</button>
+                <!-- 舞台を空にする＝いまのシーンの中身だけを消す。シーンごと消す〈削除〉の
+                     隣に置くと違いが分かる（以前は保存パネルにあり、意味が読み取れなかった） -->
+                <button type="button" id="stage-clear" class="btn-quiet" title="いまのシーンに置いたものと背景の塗りを消す（他のシーンはそのまま）">舞台を空にする</button>
               </div>
             </div>
           </section>
@@ -893,7 +895,6 @@
             </div>
             <button type="button" class="stage-minor-action stage-rehearsal-export-open"
                     id="stage-rehearsal-export-open">Vision Pro稽古用JSON</button>
-            <button type="button" class="stage-minor-action" id="stage-clear">舞台を空にする</button>
           </section>
 
           <!-- リアルタイム共有。以前は「保存」の中の畳みに入れていたが、
@@ -1521,19 +1522,6 @@
       <button type="button" class="btn-quiet" id="stage-import-as-new">別のショーとして開く</button>
       <button type="button" class="stage-minor-action" id="stage-import-replace">いまのショーを置き換える</button>
     </div>
-  </div>
-</div>
-
-<div class="stage-modal-backdrop" id="stage-map-backdrop" hidden></div>
-<div class="stage-modal stage-shows-modal" id="stage-map-modal" role="dialog" aria-modal="true"
-     aria-labelledby="stage-map-title" hidden>
-  <header class="stage-modal-head">
-    <h2 id="stage-map-title">ショー地図</h2>
-    <button type="button" class="stage-modal-close" id="stage-map-close" aria-label="閉じる">✕</button>
-  </header>
-  <div class="stage-modal-body">
-    <p class="stage-profile-hint">全シーンの平面を並べて見渡します。押すとそのシーンへ移ります。</p>
-    <div class="stage-map-grid" id="stage-map-grid"></div>
   </div>
 </div>
 

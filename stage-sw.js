@@ -1,7 +1,7 @@
 const CACHE_NAME = "stage-sketch-pwa-v164";
 const APP_SHELL = [
   "./stage.html",
-  "./style.css?v=214",
+  "./style.css?v=216",
   "./stage-venues.js?v=20",
   "./stage-venue-lines.js?v=4",
   "./stage-i18n.js?v=87",

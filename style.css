@@ -30,7 +30,11 @@
 
 [hidden] { display: none !important; }
 
-html { -webkit-text-size-adjust: 100%; }
+/* ★縦スクロールバーの居場所を常に空けておく（2026-08-28）。
+   確保しないと、パネルの〈?〉で説明が開いた瞬間にページが縦に伸びて
+   スクロールバーが現れ、その幅（約15px）ぶん画面全体が狭まって、
+   右端に揃えたアイコンが左へ飛ぶ。開閉のたびに画面が揺れて見えていた。 */
+html { -webkit-text-size-adjust: 100%; scrollbar-gutter: stable; }
 
 body {
   background: var(--desk);
@@ -11938,6 +11942,12 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
 }
 
 .stage-canvas-bar .stage-seat-list::-webkit-scrollbar { display: none; }
+/* 席のボタンは縮めない・文字を折り返さない。幅を詰められると札の文字が
+   2〜3行になってボタン自体が高くなり、列の高さが変わってしまう。 */
+.stage-canvas-bar .stage-seat-list .stage-seat {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 .stage-arrow-options::-webkit-scrollbar { display: none; }
 .stage-arrow-options { scrollbar-width: none; -ms-overflow-style: none; }
 

@@ -2459,6 +2459,7 @@
     musicRelink: document.getElementById("stage-music-relink"),
     musicRelinkFile: document.getElementById("stage-music-relink-file"),
     musicAudio: document.getElementById("stage-music-audio"),
+    sceneMusic: document.getElementById("stage-scene-music"),
     musicToggle: document.getElementById("stage-music-toggle"),
     musicRestart: document.getElementById("stage-music-restart"),
     musicCurrent: document.getElementById("stage-music-current"),
@@ -2594,11 +2595,6 @@
     tissueControls: document.getElementById("stage-tissue-controls"),
     tissueH: document.getElementById("stage-tissue-h"),
     tissueHValue: document.getElementById("stage-tissue-h-value"),
-    showMapBtn: document.getElementById("stage-show-map-btn"),
-    mapModal: document.getElementById("stage-map-modal"),
-    mapBackdrop: document.getElementById("stage-map-backdrop"),
-    mapClose: document.getElementById("stage-map-close"),
-    mapGrid: document.getElementById("stage-map-grid"),
     importModal: document.getElementById("stage-import-modal"),
     importBackdrop: document.getElementById("stage-import-backdrop"),
     importClose: document.getElementById("stage-import-close"),
@@ -4206,6 +4202,10 @@
   }
 
   function syncAudioControls() {
+    /* 楽曲を1曲も読み込んでいないうちは、シーン欄の再生バーごと隠す。
+       押せないボタンと「音なし 0:00 / 0:00」だけが並んでいても意味がなく、
+       場面の情報を1段ぶん押し下げるだけだった（2026-08-28 本人指摘）。 */
+    if (els.sceneMusic) els.sceneMusic.hidden = audioTracks().length === 0;
     const assignedId = normalizeAudioTrackId("scene", sc().audioTrackId);
     const track = audioTrackById(assignedId);
     const title = track ? track.title : (assignedId
@@ -16346,67 +16346,6 @@ ${propsPlotHtml}
     announce("印刷用ページを開きました。ブラウザの印刷からPDFにできます。");
   }
 
-  function openShowMap() {
-    const grid = els.mapGrid;
-    if (!grid) return;
-    grid.innerHTML = "";
-    (state.project.scenes || []).forEach((row) => {
-      if (row.kind === "section") {
-        const head = document.createElement("p");
-        head.className = "stage-map-section";
-        head.textContent = row.title || "";
-        grid.append(head);
-        return;
-      }
-      const rows = state.project.scenes.filter((r) => r.kind === "scene");
-      const n = rows.indexOf(row) + 1;
-      const cell = document.createElement("button");
-      cell.type = "button";
-      cell.className = `stage-map-cell${row.id === state.project.activeSceneId ? " is-current" : ""}`;
-      const cv = document.createElement("canvas");
-      cv.width = 220;
-      cv.height = 128;
-      drawMiniPlan(cv, row);
-      const title = document.createElement("p");
-      title.className = "stage-map-title";
-      title.textContent = `${n} ${row.title || ""}`;
-      const meta = document.createElement("p");
-      meta.className = "stage-map-meta";
-      const cast = (row.pieces || []).filter((p) => p.type === "performer").length;
-      const lights = (row.pieces || []).filter((p) => p.type === "light").length;
-      meta.textContent = isEn() ? `${cast} on stage · ${lights} lights` : `舞台上${cast}人 · 明かり${lights}`;
-      cell.append(cv, title, meta);
-      /* 転換の忙しさ。前のシーンからこのシーンへ移るときの、
-         移動量・動く数・出入りの数。多い転換ほど稽古で崩れやすい */
-      if (featureOn("busyness")) {
-        const at = rows.indexOf(row);
-        if (at > 0) {
-          const st2 = transitionStats(rows[at - 1], row);
-          const busy = document.createElement("p");
-          busy.className = "stage-map-meta";
-          const heavy = st2.movers + st2.inout >= 6 || st2.dist >= 25;
-          if (heavy) busy.style.color = "#d3844a";
-          busy.textContent = isEn()
-            ? `Change: ${st2.dist.toFixed(0)}m · ${st2.movers} move · ${st2.inout} in/out${heavy ? " ⚠" : ""}`
-            : `転換: ${st2.dist.toFixed(0)}m・動く${st2.movers}・出入り${st2.inout}${heavy ? " ⚠" : ""}`;
-          cell.append(busy);
-        }
-      }
-      cell.addEventListener("click", () => {
-        closeShowMap();
-        openScene(row.id);
-      });
-      grid.append(cell);
-    });
-    if (els.mapModal) els.mapModal.hidden = false;
-    if (els.mapBackdrop) els.mapBackdrop.hidden = false;
-  }
-
-  function closeShowMap() {
-    if (els.mapModal) els.mapModal.hidden = true;
-    if (els.mapBackdrop) els.mapBackdrop.hidden = true;
-  }
-
   // 場面を前後へ送る。上下キーの割り当て先でもある
   function stepScene(dir) {
     const rows = state.project.scenes.filter((row) => row.kind === "scene");
@@ -22206,7 +22145,6 @@ ${propsPlotHtml}
       persistSoon();
     });
   }
-  if (els.showMapBtn) els.showMapBtn.addEventListener("click", openShowMap);
   if (els.printBtn) els.printBtn.addEventListener("click", openPrintPage);
   if (els.prefsBtn) els.prefsBtn.addEventListener("click", openPrefs);
   if (els.prefsClose) els.prefsClose.addEventListener("click", closePrefs);
@@ -22232,8 +22170,6 @@ ${propsPlotHtml}
   if (els.importBackdrop) els.importBackdrop.addEventListener("click", closeImportPreview);
   if (els.importAsNew) els.importAsNew.addEventListener("click", () => confirmImport(true));
   if (els.importReplace) els.importReplace.addEventListener("click", () => confirmImport(false));
-  if (els.mapClose) els.mapClose.addEventListener("click", closeShowMap);
-  if (els.mapBackdrop) els.mapBackdrop.addEventListener("click", closeShowMap);
   if (els.trapSit) {
     const setTrapMode = (mode) => {
       const piece = selectedPiece();
