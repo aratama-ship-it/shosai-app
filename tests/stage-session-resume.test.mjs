@@ -616,16 +616,22 @@ test("ゲスト用CSSは編集・管理パネルを隠し、classを外せば通
     /\.stage-sketch-grid \{[\s\S]*?grid-template-columns: 268px minmax\(420px, 1fr\) 268px;[\s\S]*?grid-template-areas: "tools board inspector";/,
     "ゲストクラスが無い通常画面は3列のまま",
   );
-  assert.match(block, /data-panel="save"\] > \.stage-panel-head/);
-  assert.match(block, /data-panel="save"\] > \.stage-panel-body > :not\(#stage-session-panel\):not\(\.stage-tablet-panel-page\)/);
-  assert.match(block, /\.stage-tablet-panel-page > :not\(#stage-session-panel\)/);
+  /* 共有は「保存」から独立したパネルになったので、保存は丸ごと隠す（2026-08-28）。
+     以前は同居していたため、保存の頭と中身を一つずつ避けていた。 */
+  assert.match(block, /body\.stage-session-guest \.stage-panel\[data-panel="save"\],/);
+  assert.doesNotMatch(block, /data-panel="save"\] > \.stage-panel-body > :not\(#stage-session-panel\)/,
+    "保存の中から共有を避ける書き方は残っていない");
   for (const html of [indexSource, stageHtmlSource]) {
     const savePanel = html.slice(
       html.indexOf('<section class="stage-panel stage-save-note" data-panel="save"'),
-      html.indexOf('<section class="stage-panel" data-panel="ask"'),
+      html.indexOf('data-panel="session"'),
     );
     assert.match(savePanel, /class="stage-panel-body"/);
-    assert.match(savePanel, /id="stage-session-panel"/);
+    assert.doesNotMatch(savePanel, /id="stage-session-panel"/,
+      "共有は保存パネルの外にある");
+    assert.match(html, /<section class="stage-panel" data-panel="session"[\s\S]*?id="stage-session-panel"/,
+      "共有は独立したパネルとして置かれている");
+    assert.match(html, /data-panel="session" data-title="リアルタイム共有"/);
   }
   assert.doesNotMatch(block, /body\.stage-session-guest #stage-session-panel/,
     "共有セッション欄そのものは隠さない");

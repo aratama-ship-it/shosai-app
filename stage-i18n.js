@@ -159,6 +159,8 @@
     "使い方": "Guide",
     "使い方をさがす": "Search the Guide",
     "使いかたの冊子": "Guide Booklet",
+    "クイックガイド": "Quick Guide",
+    "90秒で読めるクイックガイドを開く": "Open the 90-second quick guide",
     "例：保存 ／ 消えた ／ 盆": "Example: save / disappeared / revolve",
     "言葉を入れると、冊子から該当箇所だけを出します。": "Enter a word to show only the matching sections from the booklet.",
     "見つかりませんでした。別の言い方でもう一度どうぞ。": "Nothing was found. Please try another wording.",
@@ -373,7 +375,25 @@
     "アイコンの説明": "Icon tips",
     "道具のアイコンにカーソルを合わせると、名前・ショートカット・使い方を出す。覚えたらOFFにできる":
       "Hovering a tool icon shows its name, shortcut and what it does. Turn it off once you know them",
-    "機能の出し入れです。この端末だけの設定で、ショーのデータには入りません。": "Feature switches. Saved on this device only — never in the show data.",
+    "この端末だけの設定です。ショーのデータには入らず、書き出しや共有にも混ざりません。":
+      "Saved on this device only. Never part of the show data, exports or shared sessions.",
+    "パネルの出し入れ": "Panels",
+    "リアルタイム共有": "Live sharing",
+    "機能の出し入れ": "Features",
+    "左の列に並べる欄です。OFFにしても、そこで作った内容は消えません。":
+      "Panels shown in the left column. Turning one off never deletes what you made in it.",
+    "音楽パネル": "Music panel",
+    "端末内の楽曲を読み込み、流れているシーンへ割り当てる欄を出す":
+      "Shows the panel for loading audio from this device and assigning it to scenes",
+    "舞台機構パネル": "Stage machinery panel",
+    "盆・可動デッキ・幕・せりなど、場面ごとに動く舞台機構を置く欄を出す":
+      "Shows the panel for revolves, decks, curtains and lifts that move scene by scene",
+    "セット登録パネル": "Saved sets panel",
+    "いまの舞台装置の並びに名前をつけて残し、別の場面で呼び出す欄を出す":
+      "Shows the panel for naming the current set arrangement and recalling it in another scene",
+    "背景パネル": "Backdrop panel",
+    "背景の地の色・塗る色・筆の太さなど、背景を描く欄を出す":
+      "Shows the panel for the backdrop colour, brush colour and brush size",
     "準備中": "Planned",
     "プレゼン": "Present",
     "正面図だけを全画面で見せる。矢印キーでシーン送り、Escで戻る": "Show only the front view, full screen. Arrow keys change scenes; Esc exits",

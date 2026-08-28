@@ -2350,6 +2350,7 @@
     tourStart: document.getElementById("stage-tour-start"),
     helpOpen: document.getElementById("stage-help-open"),
     manualOpen: document.getElementById("stage-manual-open"),
+    quickOpen: document.getElementById("stage-quick-open"),
     helpModal: document.getElementById("stage-help-modal"),
     helpBackdrop: document.getElementById("stage-help-backdrop"),
     helpClose: document.getElementById("stage-help-close"),
@@ -2923,10 +2924,29 @@
   const FEATURES_PLANNED = [
     "転換アニメの動画書き出し", "見えない席の検査（遮蔽）", "複数選択と整形", "資料棚からの場面引用",
   ];
+  /* ---------- パネルの出し入れ（PC版だけ） ----------
+     初めて開いた人の机に、道具を全部並べない。音楽・舞台機構・セット登録・背景は
+     「要ると分かってから出す」もので、最初の一枚を描くのには要らない。
+     ★畳む（layout.collapsed）とは別の仕組みにしてある。畳みはショーごとの持ち物で
+       書き出しにも乗るが、こちらは端末の設定であり、ショーのデータには入らない。
+     ★iPadのPWAとスマホの閲覧機は対象外。あちらは左ドロワー・閲覧UIが正本で、
+       ここで消すと出し戻す入り口がなくなる。 */
+  const PANEL_FEATURES = [
+    { key: "panelMusic", panel: "music", label: "音楽パネル", def: false,
+      hint: "端末内の楽曲を読み込み、流れているシーンへ割り当てる欄を出す" },
+    { key: "panelMachinery", panel: "machinery", label: "舞台機構パネル", def: false,
+      hint: "盆・可動デッキ・幕・せりなど、場面ごとに動く舞台機構を置く欄を出す" },
+    { key: "panelRigs", panel: "rigs", label: "セット登録パネル", def: false,
+      hint: "いまの舞台装置の並びに名前をつけて残し、別の場面で呼び出す欄を出す" },
+    { key: "panelBackground", panel: "background", label: "背景パネル", def: false,
+      hint: "背景の地の色・塗る色・筆の太さなど、背景を描く欄を出す" },
+  ];
   let prefs = {};
   try { prefs = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}") || {}; } catch (_) { prefs = {}; }
   const FEATURE_DEFAULTS = {};
-  FEATURES.forEach((f) => { FEATURE_DEFAULTS[f.key] = f.def === undefined ? true : f.def; });
+  [...FEATURES, ...PANEL_FEATURES].forEach((f) => {
+    FEATURE_DEFAULTS[f.key] = f.def === undefined ? true : f.def;
+  });
   const featureOn = (key) => (prefs[key] === undefined
     ? (FEATURE_DEFAULTS[key] === undefined ? true : FEATURE_DEFAULTS[key])
     : Boolean(prefs[key]));
@@ -3141,20 +3161,24 @@
      使わないものは畳めるようにする。中央は絵だけで、上下の入れ替えのみ。 */
   /* 演者・舞台セット・光は「出るもの」一枚にまとめた（cast）。
    * 登録・出し入れ・寸法の仕組みが同じものを三つに割ると、目が三度行き来する。 */
-  const PANELS = ["project", "music", "cast", "machinery", "rigs", "light", "background", "study", "scenes", "inspector", "save", "ask"];
+  const PANELS = ["project", "music", "cast", "machinery", "rigs", "light", "background", "study", "scenes", "inspector", "save", "session", "ask"];
 
   function defaultLayout() {
     return {
       // 場面は絵のすぐ右に置く（順番を見ながら描くため）
       cols: {
         project: "left", music: "left", cast: "left", machinery: "left", rigs: "left", light: "left", background: "left",
-        study: "right", scenes: "right", inspector: "right", save: "right", ask: "right",
+        study: "right", scenes: "right", inspector: "right", save: "right",
+        session: "right", ask: "right",
       },
       order: {
         project: 0, music: 1, cast: 2, machinery: 3, rigs: 4, light: 5, background: 6,
-        study: -1, scenes: 0, inspector: 1, save: 2, ask: 3,
+        study: -1, scenes: 0, inspector: 1, save: 2, session: 3, ask: 4,
       },
-      collapsed: {},
+      /* 共有は「会議のときだけ開く」もの。畳んだ状態から始める。
+         保存の中の畳みだったころと同じ見え方にするため（開いた形で置くと、
+         ふだん一人で描いている机に表示名と開始ボタンが常時出る）。 */
+      collapsed: { session: true },
       centerOrder: ["front", "plan"],
     };
   }
@@ -3176,7 +3200,10 @@
       cols[id] = c === "left" || c === "right" ? c : base.cols[id];
       const o = raw.order && Number(raw.order[id]);
       order[id] = Number.isFinite(o) ? o : base.order[id];
-      collapsed[id] = Boolean(raw.collapsed && raw.collapsed[id]);
+      /* 保存済みの並びに無いキーは、後から足したパネル。既定の畳みに従う。
+         Boolean() だけで受けると、新しいパネルが必ず開いた状態で現れる。 */
+      const cl = raw.collapsed && raw.collapsed[id];
+      collapsed[id] = cl === undefined ? Boolean(base.collapsed[id]) : Boolean(cl);
     });
     const co = Array.isArray(raw.centerOrder) ? raw.centerOrder.filter((x) => x === "front" || x === "plan") : [];
     const centerOrder = co.length === 2 ? co : base.centerOrder;
@@ -11405,7 +11432,9 @@
     { id: "look", icon: "☀", label: "照明・背景", panels: ["light", "background"] },
     { id: "scenes", icon: "◫", label: "シーン", panels: ["scenes"] },
     { id: "inspect", icon: "◎", label: "選んだもの", panels: ["inspector"] },
-    { id: "settings", icon: "⚙", label: "保存・設定", panels: ["save"], special: "display" },
+    /* 共有は机では独立したパネルだが、iPadでは従来どおり「保存・設定」の中に置く。
+       ここへ載せ忘れると、iPadから共有セッションへ入る道が消える。 */
+    { id: "settings", icon: "⚙", label: "保存・設定", panels: ["save", "session"], special: "display" },
   ];
 
   function makeTabletButton(iconText, label, className) {
@@ -11967,6 +11996,10 @@
       ["left", "right"].forEach((col) => {
         const ids = PANELS.filter((id) => L.cols[id] === col).sort((a, b) => L.order[a] - L.order[b]);
         ids.forEach((id) => {
+          /* ゲスト参加中の共有パネルは stage-session.js が左列の先頭へ移している。
+             ここで並べ直すと、ゲストが接続状態も「最新を取り直す」も見失う
+             （ゲストの右列は隠してあるため）。 */
+          if (id === "session" && document.body.classList.contains("stage-session-guest")) return;
           const el = panelEl(id);
           if (el && colEls[col]) colEls[col].append(el);
         });
@@ -11982,6 +12015,7 @@
       const body = el.querySelector(".stage-panel-body");
       if (body) body.hidden = collapsed;
     });
+    applyPanelVisibility();
     // 中央は絵の順序だけ
     const stack = els.canvasStack;
     if (stack) {
@@ -11991,6 +12025,39 @@
       });
     }
     syncTabletWorkspace();
+  }
+
+  /* 共有パネルは元々 <details> だった。stage-session.js は「開く／閉じる」を
+     その .open で書いている（セッションに入ったら開き、終われば閉じる）。
+     独立したパネルへ移したので、その代入をパネルの畳みへつなぎ直す。
+     ★向こうを書き換えずにこちらで受ける。共有セッションは実機でしか試せない部分が
+       多く、触る面を増やしたくない。 */
+  function bridgeSessionPanelOpen() {
+    const el = panelEl("session");
+    if (!el || Object.getOwnPropertyDescriptor(el, "open")) return;
+    Object.defineProperty(el, "open", {
+      configurable: true,
+      get() { return !state.layout.collapsed.session; },
+      set(value) {
+        const collapsed = !value;
+        if (Boolean(state.layout.collapsed.session) === collapsed) return;
+        state.layout.collapsed.session = collapsed;
+        applyLayout();
+        // ここでは保存しない。人が畳んだのではなく、接続の都合で開け閉めしただけ
+      },
+    });
+  }
+
+  /* パネルそのものの出し入れ。畳む（is-collapsed）は見出しを残すが、
+     こちらは見出しごと消す。並び順は state.layout に残したままなので、
+     設定で戻せば元の位置へ戻る。 */
+  function applyPanelVisibility() {
+    const deskUi = !tabletUi && !phoneViewerActive;
+    PANEL_FEATURES.forEach((f) => {
+      const el = panelEl(f.panel);
+      if (!el) return;
+      el.hidden = deskUi ? !featureOn(f.key) : false;
+    });
   }
 
   function swapCenter() {
@@ -15653,69 +15720,105 @@
     host.append(note);
   }
 
+  /* 環境設定の一行。パネルの出し入れも機能の出し入れも同じ形なので、
+     組み立ては一箇所で持つ（片方だけ手触りが変わるのを避ける）。 */
+  function prefRow(f) {
+    const isCaption = f.key === "presentCaption";
+    const row = document.createElement(isCaption ? "div" : "label");
+    row.className = "stage-pref-row";
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    if (isCaption) box.id = "stage-pref-present-caption";
+    box.checked = featureOn(f.key);
+    const captionSizeInputs = [];
+    box.addEventListener("change", () => {
+      prefs[f.key] = box.checked;
+      savePrefs();
+      captionSizeInputs.forEach((radio) => { radio.disabled = !box.checked; });
+      applyFeatureFlags();
+      renderScenes();
+      render();
+      announce(box.checked ? `設定「${f.label}」をONにしました。` : `設定「${f.label}」をOFFにしました。`);
+    });
+    const body = document.createElement("span");
+    const name = document.createElement(isCaption ? "label" : "span");
+    name.className = "stage-pref-name";
+    if (isCaption) name.htmlFor = box.id;
+    name.textContent = tx(f.label);
+    const hint = document.createElement("p");
+    hint.className = "stage-pref-hint";
+    hint.textContent = tx(f.hint);
+    body.append(name, hint);
+    if (isCaption) {
+      const sizeRow = document.createElement("span");
+      sizeRow.className = "stage-pref-caption-size";
+      const sizeTitle = document.createElement("span");
+      sizeTitle.className = "stage-pref-caption-size-title";
+      sizeTitle.textContent = tx("文字サイズ");
+      sizeRow.append(sizeTitle);
+      const currentSize = ["small", "medium", "large"].includes(prefs.presentCaptionSize)
+        ? prefs.presentCaptionSize : "medium";
+      [["small", "小"], ["medium", "中"], ["large", "大"]].forEach(([value, label]) => {
+        const option = document.createElement("label");
+        option.className = "stage-pref-caption-size-option";
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "stage-present-caption-size";
+        radio.value = value;
+        radio.checked = currentSize === value;
+        radio.disabled = !box.checked;
+        radio.addEventListener("change", () => {
+          if (!radio.checked) return;
+          prefs.presentCaptionSize = value;
+          savePrefs();
+          render();
+        });
+        captionSizeInputs.push(radio);
+        option.append(radio, document.createTextNode(tx(label)));
+        sizeRow.append(option);
+      });
+      body.append(sizeRow);
+    }
+    row.append(box, body);
+    return row;
+  }
+
+  /* 一群ぶんの器。見出し・添え書き・二列の枠を返す */
+  function prefGroup(title, lead) {
+    const group = document.createElement("section");
+    group.className = "stage-pref-group";
+    const head = document.createElement("h3");
+    head.className = "stage-pref-group-title";
+    head.textContent = tx(title);
+    group.append(head);
+    if (lead) {
+      const note = document.createElement("p");
+      note.className = "stage-pref-group-hint";
+      note.textContent = tx(lead);
+      group.append(note);
+    }
+    const grid = document.createElement("div");
+    grid.className = "stage-pref-grid";
+    group.append(grid);
+    return { group, grid };
+  }
+
+  /* 項目が増えて一列では縦に長くなりすぎたので、二群・二列に分ける。
+     ★列にするのは項目一覧だけ。言語・ショートカット・案内のリンクは
+       読む順に意味があるので一列のまま（index.html 側にそのまま置いてある）。 */
   function renderPrefs() {
     const host = els.prefsList;
     if (!host) return;
     host.innerHTML = "";
-    FEATURES.forEach((f) => {
-      const row = document.createElement(f.key === "presentCaption" ? "div" : "label");
-      row.className = "stage-pref-row";
-      const box = document.createElement("input");
-      box.type = "checkbox";
-      if (f.key === "presentCaption") box.id = "stage-pref-present-caption";
-      box.checked = featureOn(f.key);
-      const captionSizeInputs = [];
-      box.addEventListener("change", () => {
-        prefs[f.key] = box.checked;
-        savePrefs();
-        captionSizeInputs.forEach((radio) => { radio.disabled = !box.checked; });
-        applyFeatureFlags();
-        renderScenes();
-        render();
-        announce(box.checked ? `設定「${f.label}」をONにしました。` : `設定「${f.label}」をOFFにしました。`);
-      });
-      const body = document.createElement("span");
-      const name = document.createElement(f.key === "presentCaption" ? "label" : "span");
-      name.className = "stage-pref-name";
-      if (f.key === "presentCaption") name.htmlFor = box.id;
-      name.textContent = tx(f.label);
-      const hint = document.createElement("p");
-      hint.className = "stage-pref-hint";
-      hint.textContent = tx(f.hint);
-      body.append(name, hint);
-      if (f.key === "presentCaption") {
-        const sizeRow = document.createElement("span");
-        sizeRow.className = "stage-pref-caption-size";
-        const sizeTitle = document.createElement("span");
-        sizeTitle.className = "stage-pref-caption-size-title";
-        sizeTitle.textContent = tx("文字サイズ");
-        sizeRow.append(sizeTitle);
-        const currentSize = ["small", "medium", "large"].includes(prefs.presentCaptionSize)
-          ? prefs.presentCaptionSize : "medium";
-        [["small", "小"], ["medium", "中"], ["large", "大"]].forEach(([value, label]) => {
-          const option = document.createElement("label");
-          option.className = "stage-pref-caption-size-option";
-          const radio = document.createElement("input");
-          radio.type = "radio";
-          radio.name = "stage-present-caption-size";
-          radio.value = value;
-          radio.checked = currentSize === value;
-          radio.disabled = !box.checked;
-          radio.addEventListener("change", () => {
-            if (!radio.checked) return;
-            prefs.presentCaptionSize = value;
-            savePrefs();
-            render();
-          });
-          captionSizeInputs.push(radio);
-          option.append(radio, document.createTextNode(tx(label)));
-          sizeRow.append(option);
-        });
-        body.append(sizeRow);
-      }
-      row.append(box, body);
-      host.append(row);
-    });
+    // パネルの出し入れはPCの三列UIの話。iPad・スマホでは出さない
+    if (!tabletUi && !phoneViewerActive) {
+      const panels = prefGroup("パネルの出し入れ",
+        "左の列に並べる欄です。OFFにしても、そこで作った内容は消えません。");
+      PANEL_FEATURES.forEach((f) => { panels.grid.append(prefRow(f)); });
+      host.append(panels.group);
+    }
+    const features = prefGroup("機能の出し入れ", "");
+    FEATURES.forEach((f) => { features.grid.append(prefRow(f)); });
     FEATURES_PLANNED.forEach((label) => {
       const row = document.createElement("div");
       row.className = "stage-pref-row is-planned";
@@ -15726,8 +15829,9 @@
       name.className = "stage-pref-name";
       name.textContent = tx(label);
       row.append(tag, name);
-      host.append(row);
+      features.grid.append(row);
     });
+    host.append(features.group);
   }
   function openPrefs() {
     renderPrefs();
@@ -15836,6 +15940,12 @@
     window.open("manual/manual.html", "_blank", "noopener");
   }
 
+  /* クイックガイドは日本語版と英語版を別ファイルで持つ（本文が絵と一体のため、
+     冊子のような1データ2表示にはしていない）。表示中の言語の方を開く。 */
+  function openQuickGuide() {
+    window.open(isEn() ? "manual/quick-en.html" : "manual/quick.html", "_blank", "noopener");
+  }
+
   function openAbout() {
     if (els.aboutModal) els.aboutModal.hidden = false;
     if (els.aboutBackdrop) els.aboutBackdrop.hidden = false;
@@ -15852,6 +15962,7 @@
   }
   // 機能の出し入れをボタンの表示へ反映する
   function applyFeatureFlags() {
+    applyPanelVisibility();
     if (els.presentBtn) els.presentBtn.hidden = !featureOn("presentation");
     if (els.arrangeSelect) els.arrangeSelect.hidden = !featureOn("lineup");
     // 光の意図: カード・重ねのトグル・照らし合わせをまとめて出し入れする
@@ -22102,6 +22213,7 @@ ${propsPlotHtml}
   if (els.prefsBackdrop) els.prefsBackdrop.addEventListener("click", closePrefs);
   if (els.helpOpen) els.helpOpen.addEventListener("click", openManualHelpFromPrefs);
   if (els.manualOpen) els.manualOpen.addEventListener("click", openManualBook);
+  if (els.quickOpen) els.quickOpen.addEventListener("click", openQuickGuide);
   if (els.helpClose) els.helpClose.addEventListener("click", closeManualHelp);
   if (els.helpBackdrop) els.helpBackdrop.addEventListener("click", closeManualHelp);
   if (els.helpFind) els.helpFind.addEventListener("input", renderManualHelp);
@@ -22205,6 +22317,7 @@ ${propsPlotHtml}
 
       initStageAskPanel();
       buildPanelHeads();
+      bridgeSessionPanelOpen();
       initStageAudio();
       pruneOrphanAudioSoon();
       syncViewSwitch();
