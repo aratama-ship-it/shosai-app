@@ -782,6 +782,24 @@ test("TOHUの表示文言は日英そろっている", () => {
     "英語側に日本語が混じっていない");
 });
 
+/* 会場の説明はパネルへ textContent で入れる（＝素のまま出る）。
+   Markdownの強調やHTMLタグを書くと記号がそのまま画面に出てしまう。
+   2026-08-28に実際に「**内部に柱が1本も無い**」が画面へ出たので検査を足した。 */
+test("会場の説明に記法が混ざっていない（画面へ素のまま出るため）", () => {
+  const { venues } = loadModels();
+  const i18nContext = { window: {} };
+  vm.runInNewContext(i18nSource, i18nContext, { filename: "stage-i18n.js" });
+  const maps = i18nContext.window.SHOSAI_I18N.maps;
+
+  venues.v2.list.forEach((venue) => {
+    for (const [where, text] of [["日本語", venue.note], ["英語", maps.venueNote[venue.id]]]) {
+      if (!text) continue;
+      assert.ok(!text.includes("**"), `${venue.id} の${where}の説明にMarkdownの強調が残っている`);
+      assert.ok(!/<[a-z/]/i.test(text), `${venue.id} の${where}の説明にHTMLタグが残っている`);
+    }
+  });
+});
+
 test("会場プリセットは全部が日英そろっている（追加時の訳し忘れを止める）", () => {
   const { venues } = loadModels();
   const i18nContext = { window: {} };
@@ -805,12 +823,12 @@ test("会場プリセットは全部が日英そろっている（追加時の�
 test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う", () => {
   assert.match(sketchSource, /const STAGE_KEYS = \[[\s\S]*?"shosai-stage-venues-v1"/);
   for (const [name, version] of [
-    ["stage-venues.js", "22"],
+    ["stage-venues.js", "23"],
     ["stage-venue-lines.js", "4"],
     ["stage-i18n.js", "90"],
     ["stage-set-model.js", "1"],
     ["stage-set-builder.js", "1"],
-    ["stage-sketch.js", "310"],
+    ["stage-sketch.js", "311"],
     ["stage-venue-editor.js", "7"],
   ]) {
     const reference = `${name}?v=${version}`;
@@ -818,8 +836,8 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
     assert.ok(stageHtml.includes(reference), `${reference} がstage.htmlにある`);
     assert.ok(swSource.includes(`./${reference}`), `${reference} がstage-sw.jsにある`);
   }
-  for (const page of [indexSource, stageHtml]) assert.ok(page.includes("style.css?v=218"));
-  assert.ok(swSource.includes("./style.css?v=218"));
+  for (const page of [indexSource, stageHtml]) assert.ok(page.includes("style.css?v=219"));
+  assert.ok(swSource.includes("./style.css?v=219"));
   assert.ok(stageHtml.includes("stage-machinery.js?v=2"));
   assert.ok(swSource.includes("./stage-machinery.js?v=2"));
   assert.ok(stageHtml.includes("stage-first-person.js?v=19"));

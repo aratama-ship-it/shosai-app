@@ -2587,6 +2587,7 @@
     lightImplementationNote: document.getElementById("stage-light-implementation-note"),
     lightIntentClear: document.getElementById("stage-light-intent-clear"),
     venueScale: document.getElementById("stage-venue-scale"),
+    venueNote: document.getElementById("stage-venue-note"),
     venueMissing: document.getElementById("stage-venue-missing"),
     venueW: document.getElementById("stage-venue-w"),
     venueD: document.getElementById("stage-venue-d"),
@@ -17816,6 +17817,14 @@ ${propsPlotHtml}
       els.venueMissing.hidden = !current.missing;
       els.venueMissing.textContent = current.missing
         ? `この会場データが見つかりません（元のID: ${current.id}）` : "";
+    }
+
+    /* 会場の性格。プリセットは venueNote の対訳を、自分で作った会場は
+       書いたままの note を出す。文が無い会場では帯ごと消す。 */
+    if (els.venueNote) {
+      const note = current.missing ? "" : (venueNoteText(current) || "");
+      els.venueNote.textContent = note;
+      els.venueNote.hidden = !note;
     }
 
     if (els.sizeSelect) {

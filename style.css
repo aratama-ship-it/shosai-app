@@ -6952,6 +6952,18 @@ canvas[data-tool="note"] { cursor: copy; }
   color: var(--milk);
 }
 
+/* 会場の性格。寸法の背後にある「そこがどういう場所か」を読ませる文なので、
+   下の「目安」注記（9.5px・薄い）より一段はっきりさせる。
+   実測 rgba(240,231,214,0.62) は地 #201b16 に対して 6.06:1（AA本文4.5をクリア）。 */
+.stage-venue-note {
+  color: rgba(240, 231, 214, 0.62);
+  font-size: 11px;
+  line-height: 1.8;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(240, 231, 214, 0.1);
+}
+
 /* 寸法は「目安」であり、施工や安全の判断には使わせない */
 .stage-venue-scale {
   color: rgba(240, 231, 214, 0.36);
