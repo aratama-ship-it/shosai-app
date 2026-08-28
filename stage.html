@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=211">
+<link rel="stylesheet" href="style.css?v=214">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -1441,19 +1441,27 @@
       <button type="button" class="stage-lang" id="stage-lang" aria-pressed="false"
               title="日本語 / English">EN</button>
     </div>
+    <!-- 使い方まわりは5つある。全部並べると設定の主目的（機能の出し入れ）が
+         押し出されるので、畳んでおく。言語のすぐ下＝読める言葉になった直後に置く。 -->
+    <details class="stage-pref-guide" id="stage-pref-guide">
+      <summary class="stage-pref-guide-summary">
+        <span class="stage-pref-name">使い方</span>
+        <p class="stage-pref-hint">案内・検索・冊子・感想の送り先をまとめています。</p>
+      </summary>
+      <div class="stage-prefs-links" aria-label="案内とサポート">
+        <button type="button" class="stage-about-link" id="stage-quick-open" title="90秒で読めるクイックガイドを開く">クイックガイド</button>
+        <button type="button" class="stage-about-link" id="stage-tour-start" title="使い方をひととおり見る">はじめての案内</button>
+        <button type="button" class="stage-about-link" id="stage-help-open">使い方をさがす</button>
+        <button type="button" class="stage-about-link" id="stage-manual-open">使いかたの冊子</button>
+        <button type="button" class="stage-about-link" id="stage-feedback" title="使ってみた感想を送る">感想を送る</button>
+      </div>
+    </details>
     <div id="stage-prefs-list"></div>
     <!-- 幅が要る機能一覧は環境設定から既存の窓として開く。
          書斎のブロックは単独配布版では隠す（stage-sketch.js が制御）。 -->
     <div class="stage-pref-row stage-pref-reach-row">
       <button type="button" class="stage-minor-action" id="stage-reach-open">端末による違い</button>
-    </div>
-    <div class="stage-prefs-links" aria-label="案内とサポート">
-      <button type="button" class="stage-about-link" id="stage-quick-open" title="90秒で読めるクイックガイドを開く">クイックガイド</button>
-      <button type="button" class="stage-about-link" id="stage-tour-start" title="使い方をひととおり見る">使い方</button>
-      <button type="button" class="stage-about-link" id="stage-help-open">使い方をさがす</button>
-      <button type="button" class="stage-about-link" id="stage-manual-open">使いかたの冊子</button>
       <button type="button" class="stage-about-link" id="stage-about-open-from-prefs">このアプリについて</button>
-      <button type="button" class="stage-about-link" id="stage-feedback" title="使ってみた感想を送る">感想を送る</button>
     </div>
    </div>
    <!-- ショートカット一覧。アイコンの説明を消した人が、キーを見に来られる場所。
@@ -1811,14 +1819,14 @@
 
 <script src="stage-venues.js?v=20"></script>
 <script src="stage-venue-lines.js?v=4"></script>
-<script src="stage-i18n.js?v=84"></script>
+<script src="stage-i18n.js?v=86"></script>
 <script src="stage-prompt-i18n.js?v=2"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=1"></script>
 <script src="stage-set-model.js?v=1"></script>
 <script src="stage-set-builder.js?v=1"></script>
 <script src="stage-machinery.js?v=2"></script>
-<script src="stage-first-person.js?v=16"></script>
+<script src="stage-first-person.js?v=17"></script>
 <script src="stage-shows.local.js?v=1"></script>
 <script src="stage-audio-store.js?v=2"></script>
 <script src="manual/manual-content.js?v=1"></script>

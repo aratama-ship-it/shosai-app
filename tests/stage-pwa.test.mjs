@@ -68,11 +68,27 @@ test("iPadのホーム画面版だけ上部の補足文を隠す", () => {
 });
 
 test("使い方・About・感想は上部ではなく設定内にまとめる", () => {
-  const prefs = indexSource.match(/<div class="stage-prefs-links"[\s\S]*?<\/div>/)?.[0] || "";
-  ["stage-tour-start", "stage-about-open-from-prefs", "stage-feedback"].forEach((id) => {
-    assert.match(prefs, new RegExp(`id="${id}"`));
-  });
+  /* 使い方まわりの5つは設定内の畳めるまとまり（stage-pref-guide）へ入れた。
+     Aboutだけはそのまとまりの外（端末による違いと同じ行）に残している。 */
+  const guide = indexSource.match(/<details class="stage-pref-guide"[\s\S]*?<\/details>/)?.[0] || "";
+  ["stage-quick-open", "stage-tour-start", "stage-help-open", "stage-manual-open", "stage-feedback"]
+    .forEach((id) => {
+      assert.match(guide, new RegExp(`id="${id}"`), `${id} が使い方のまとまりにある`);
+    });
+  const prefsMain = indexSource.match(/<div class="stage-prefs-main">[\s\S]*?<\/aside>/)?.[0] || "";
+  assert.match(prefsMain, /id="stage-about-open-from-prefs"/);
   assert.doesNotMatch(indexSource, /id="stage-about-open"/);
+});
+
+test("使い方のまとまりは言語設定のすぐ下に置き、既定では畳んでおく", () => {
+  const langAt = indexSource.indexOf("stage-pref-lang-row");
+  const guideAt = indexSource.indexOf('<details class="stage-pref-guide"');
+  const listAt = indexSource.indexOf('id="stage-prefs-list"');
+  assert.ok(langAt > 0 && guideAt > langAt, "言語行より後ろにある");
+  assert.ok(listAt > guideAt, "機能一覧より前にある");
+  /* open 属性を持たない＝既定は畳んだ状態 */
+  const tag = indexSource.slice(guideAt, indexSource.indexOf(">", guideAt) + 1);
+  assert.doesNotMatch(tag, /\bopen\b/);
 });
 
 test("舞台スケッチ名の右側に小さなアプリ版番号を表示する", () => {

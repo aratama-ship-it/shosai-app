@@ -689,7 +689,7 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
   for (const [name, version] of [
     ["stage-venues.js", "20"],
     ["stage-venue-lines.js", "4"],
-    ["stage-i18n.js", "84"],
+    ["stage-i18n.js", "86"],
     ["stage-set-model.js", "1"],
     ["stage-set-builder.js", "1"],
     ["stage-sketch.js", "304"],
@@ -700,12 +700,12 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
     assert.ok(stageHtml.includes(reference), `${reference} がstage.htmlにある`);
     assert.ok(swSource.includes(`./${reference}`), `${reference} がstage-sw.jsにある`);
   }
-  for (const page of [indexSource, stageHtml]) assert.ok(page.includes("style.css?v=211"));
-  assert.ok(swSource.includes("./style.css?v=211"));
+  for (const page of [indexSource, stageHtml]) assert.ok(page.includes("style.css?v=214"));
+  assert.ok(swSource.includes("./style.css?v=214"));
   assert.ok(stageHtml.includes("stage-machinery.js?v=2"));
   assert.ok(swSource.includes("./stage-machinery.js?v=2"));
-  assert.ok(stageHtml.includes("stage-first-person.js?v=16"));
-  assert.ok(swSource.includes("./stage-first-person.js?v=16"));
+  assert.ok(stageHtml.includes("stage-first-person.js?v=17"));
+  assert.ok(swSource.includes("./stage-first-person.js?v=17"));
   // 版番号そのものは毎回上がるので固定値にせず、形だけを検査する（stage-export-zip.test.mjsと同じ方針）。
   assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v\d+";/);
 });

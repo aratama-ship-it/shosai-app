@@ -160,6 +160,8 @@
     "使い方をさがす": "Search the Guide",
     "使いかたの冊子": "Guide Booklet",
     "クイックガイド": "Quick Guide",
+    "はじめての案内": "First-time tour",
+    "案内・検索・冊子・感想の送り先をまとめています。": "Tours, search, the booklet, and where to send feedback.",
     "90秒で読めるクイックガイドを開く": "Open the 90-second quick guide",
     "例：保存 ／ 消えた ／ 盆": "Example: save / disappeared / revolve",
     "言葉を入れると、冊子から該当箇所だけを出します。": "Enter a word to show only the matching sections from the booklet.",

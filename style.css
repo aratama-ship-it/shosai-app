@@ -9985,10 +9985,20 @@ body.is-panel-dragging {
   margin-left: auto;
 }
 
+/* ★席の列は折り返さず、高さを固定する（2026-08-28）。
+   矢印ツールを選ぶと、この列の下に矢印の設定が並んで幅が詰まり、
+   折り返しと横スクロールバーのぶんだけ列が高くなって、図全体が下へずれていた。
+   高さを固定し、あふれは横スクロールで逃がすことで、道具を替えても図が動かない。 */
 .stage-canvas-bar .stage-seat-list {
   display: flex;
   flex: 1 1 auto;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  min-height: 28px;
+  align-items: center;
+  /* 横スクロールバーは高さを食うので隠す（列そのものが動く原因になる） */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   gap: 4px;
   min-width: 0;
 }
@@ -10084,6 +10094,47 @@ body.is-panel-dragging {
 
 
 /* ---- 環境設定 ---- */
+/* ---------- 設定内「使い方」のアコーディオン ----------
+   案内・検索・冊子・感想の5つ。全部並べると設定の主目的（機能の出し入れ）が
+   下へ押し出されるので、既定は畳んでおく。言語行のすぐ下に置く。
+   <details> の素の三角は消し、他の設定行と同じ罫で揃える。 */
+.stage-pref-guide {
+  border-bottom: 1px solid rgba(211, 172, 89, 0.14);
+}
+.stage-pref-guide-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 2px;
+  cursor: pointer;
+  list-style: none;
+  position: relative;
+  padding-right: 26px;
+}
+.stage-pref-guide-summary::-webkit-details-marker { display: none; }
+/* 開閉の目印。右端に控えめな山形を置き、開くと反転する */
+.stage-pref-guide-summary::after {
+  content: "";
+  position: absolute;
+  right: 6px;
+  top: 15px;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid rgba(239, 231, 214, 0.55);
+  border-bottom: 1.5px solid rgba(239, 231, 214, 0.55);
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+.stage-pref-guide[open] .stage-pref-guide-summary::after {
+  transform: rotate(-135deg);
+  top: 18px;
+}
+.stage-pref-guide-summary:hover .stage-pref-name { color: var(--rust-ink); }
+.stage-pref-guide-summary:focus-visible { outline: 2px solid var(--rust-ink); outline-offset: 2px; }
+/* 畳んだ中身は、行の罫を二重にしないため上の境界を持たせない */
+.stage-pref-guide .stage-prefs-links { margin-top: 0; border-top: none; }
+.stage-pref-guide .stage-prefs-links .stage-about-link { padding-left: 12px; }
+
 .stage-pref-row {
   display: flex;
   align-items: baseline;
@@ -11873,12 +11924,22 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
 .stage-arrow-options {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  /* ★折り返さない。折り返すと道具の列が2〜3段になり、その分だけ図の位置が
+     下へずれる（矢印を選んだ瞬間だけ絵が動いて見える原因だった）。
+     幅が足りないときは縦に伸ばさず、横スクロールで逃がす。 */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
   gap: 5px 8px;
   min-width: 0;
   color: var(--milk-dim);
   font-size: 9.5px;
 }
+
+.stage-canvas-bar .stage-seat-list::-webkit-scrollbar { display: none; }
+.stage-arrow-options::-webkit-scrollbar { display: none; }
+.stage-arrow-options { scrollbar-width: none; -ms-overflow-style: none; }
 
 .stage-arrow-options[hidden],
 .stage-arrow-depth-control[hidden] { display: none; }
@@ -11946,10 +12007,12 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
 }
 
 @media (max-width: 900px) {
+  /* 狭い画面では道具の列を丸ごと下段へ落とす。矢印オプション自体は1行のまま
+     （横スクロール）なので、増える高さは1段ぶんで一定になる。 */
   .stage-canvas-bar:has(.stage-arrow-options:not([hidden])) { flex-wrap: wrap; }
   .stage-canvas-bar:has(.stage-arrow-options:not([hidden])) .stage-canvas-tools {
     flex: 1 1 100%;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 }
 
