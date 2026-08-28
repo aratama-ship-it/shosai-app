@@ -5022,28 +5022,30 @@
     p.venue = source.venue;
     p.venueSize = source.venueSize;
     p.sampleSource = source.sourceMarkdown || "";
-    p.sampleBoundaries = Array.isArray(source.boundaries) ? source.boundaries.slice() : [];
+    p.sampleBoundaries = isEn() && Array.isArray(source.boundariesEn)
+      ? source.boundariesEn.slice()
+      : (Array.isArray(source.boundaries) ? source.boundaries.slice() : []);
     const castId = {}; const setId = {}; const lightId = {};
     p.cast = SAMPLE_CAST.map((c) => {
       castId[c.key] = `sample-cast-${c.key}`;
-      return { id: castId[c.key], name: c.name, color: c.color,
+      return { id: castId[c.key], name: isEn() && c.nameEn ? c.nameEn : c.name, color: c.color,
         heightCm: c.h, note: "", locked: false };
     });
     p.sets = SAMPLE_SETS.map((x) => {
       setId[x.key] = `sample-set-${x.key}`;
-      return { id: setId[x.key], kind: x.kind, name: x.name, color: x.color,
+      return { id: setId[x.key], kind: x.kind, name: isEn() && x.nameEn ? x.nameEn : x.name, color: x.color,
         dims: normalizeDims(x.kind, { dims: x.dims }), note: "", locked: false,
         flown: Boolean(x.flown), wires: 2, framed: false, lightKind: "hang" };
     }).concat(SAMPLE_LIGHTS.map((x) => {
       lightId[x.key] = `sample-light-${x.key}`;
-      return { id: lightId[x.key], kind: "light", name: x.name, color: "#d3ac59",
+      return { id: lightId[x.key], kind: "light", name: isEn() && x.nameEn ? x.nameEn : x.name, color: "#d3ac59",
         dims: normalizeDims("light", { dims: { dia: x.dia } }), note: "",
         locked: false, flown: false, wires: 2, framed: false, lightKind: x.kind };
     }));
 
     p.scenes = SAMPLE_SCENES.map((row, i) => {
-      const scene = newScene(row.title, false);
-      scene.note = row.note;
+      const scene = newScene(isEn() && row.titleEn ? row.titleEn : row.title, false);
+      scene.note = isEn() && row.noteEn ? row.noteEn : row.note;
       const pieces = [];
       Object.keys(row.cast || {}).forEach((key) => {
         const [u, v, facing, pose] = row.cast[key];
@@ -5092,7 +5094,9 @@
     p.venueSize = source.venueSize;
     p.rehearsal = normalizeProjectRehearsal(null);
     p.sampleSource = source.sourceMarkdown;
-    p.sampleBoundaries = Array.isArray(source.boundaries) ? source.boundaries.slice() : [];
+    p.sampleBoundaries = isEn() && Array.isArray(source.boundariesEn)
+      ? source.boundariesEn.slice()
+      : (Array.isArray(source.boundaries) ? source.boundaries.slice() : []);
 
     const castId = {};
     const setId = {};
@@ -5111,14 +5115,16 @@
     p.sets = source.sets.map((item) => {
       setId[item.key] = `seam-set-${item.key}`;
       return {
-        id: setId[item.key], kind: item.kind, name: item.name, color: item.color,
+        id: setId[item.key], kind: item.kind,
+        name: isEn() && item.nameEn ? item.nameEn : item.name, color: item.color,
         dims: normalizeDims(item.kind, { dims: item.dims }), note: "", locked: false,
         flown: Boolean(item.flown), wires: 2, framed: false, lightKind: "hang",
       };
     }).concat(source.lights.map((item) => {
       lightId[item.key] = `seam-light-${item.key}`;
       return {
-        id: lightId[item.key], kind: "light", name: item.name, color: "#d3ac59",
+        id: lightId[item.key], kind: "light",
+        name: isEn() && item.nameEn ? item.nameEn : item.name, color: "#d3ac59",
         dims: normalizeDims("light", { dims: { dia: item.dia } }), note: "",
         locked: false, flown: false, wires: 2, framed: false, lightKind: item.kind,
       };
@@ -5126,18 +5132,19 @@
 
     const rows = [];
     source.sections.forEach((section) => {
-      const sectionScene = newScene(`${section.id}. ${section.title}`, false, "section", 0);
+      const sectionTitle = isEn() && section.titleEn ? section.titleEn : section.title;
+      const sectionScene = newScene(`${section.id}. ${sectionTitle}`, false, "section", 0);
       sectionScene.id = `seam-section-${section.id}`;
-      sectionScene.note = section.summary || "";
+      sectionScene.note = (isEn() && section.summaryEn ? section.summaryEn : section.summary) || "";
       sectionScene.pieces = [];
       sectionScene.beat = null;
       sectionScene.rehearsal = null;
       rows.push(sectionScene);
 
       section.scenes.forEach((row) => {
-        const scene = newScene(`${row.id} ${row.title}`, false, "scene", 1);
+        const scene = newScene(`${row.id} ${isEn() && row.titleEn ? row.titleEn : row.title}`, false, "scene", 1);
         scene.id = `seam-scene-${row.id}`;
-        scene.note = row.note;
+        scene.note = isEn() && row.noteEn ? row.noteEn : row.note;
         scene.beat = normalizeSceneBeat("scene", { role: row.role, energy: row.energy });
         scene.rehearsal = normalizeSceneRehearsal({
           holdDurationSeconds: row.durationSeconds,

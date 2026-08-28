@@ -36,26 +36,26 @@
     venue: "proscenium",
     venueSize: "mid",
     cast: [
-      { key: "mina", name: "ミナ", color: "#a84b26", h: 168 },
-      { key: "riku", name: "リク", color: "#77865f", h: 176 },
-      { key: "kai", name: "カイ", color: "#9c823f", h: 171 },
-      { key: "sora", name: "ソラ", color: "#6d6657", h: 158 },
-      { key: "noa", name: "ノア", color: "#a84b26", h: 163 },
-      { key: "jin", name: "ジン", color: "#77865f", h: 182 },
-      { key: "yuki", name: "ユキ", color: "#9c823f", h: 155 },
-      { key: "ren", name: "レン", color: "#6d6657", h: 174 },
+      { key: "mina", name: "ミナ", nameEn: "Mina", color: "#a84b26", h: 168 },
+      { key: "riku", name: "リク", nameEn: "Riku", color: "#77865f", h: 176 },
+      { key: "kai", name: "カイ", nameEn: "Kai", color: "#9c823f", h: 171 },
+      { key: "sora", name: "ソラ", nameEn: "Sora", color: "#6d6657", h: 158 },
+      { key: "noa", name: "ノア", nameEn: "Noa", color: "#a84b26", h: 163 },
+      { key: "jin", name: "ジン", nameEn: "Jin", color: "#77865f", h: 182 },
+      { key: "yuki", name: "ユキ", nameEn: "Yuki", color: "#9c823f", h: 155 },
+      { key: "ren", name: "レン", nameEn: "Ren", color: "#6d6657", h: 174 },
     ],
     sets: [
-      { key: "deck", kind: "block", name: "台（1.8×1.0×0.5）", color: "#efe7d6", dims: { w: 1.8, d: 1.0, h: 0.5, lift: 0 } },
-      { key: "pole", kind: "pole", name: "チャイニーズポール", color: "#766a59", dims: { h: 6, dia: 0.1, lift: 0 } },
-      { key: "trap", kind: "trapeze", name: "トラピーズ", color: "#d6dce2", dims: { w: 0.7, h: 0.06, lift: 4.2 }, flown: true },
+      { key: "deck", kind: "block", name: "台（1.8×1.0×0.5）", nameEn: "Platform (1.8×1.0×0.5)", color: "#efe7d6", dims: { w: 1.8, d: 1.0, h: 0.5, lift: 0 } },
+      { key: "pole", kind: "pole", name: "チャイニーズポール", nameEn: "Chinese pole", color: "#766a59", dims: { h: 6, dia: 0.1, lift: 0 } },
+      { key: "trap", kind: "trapeze", name: "トラピーズ", nameEn: "Trapeze", color: "#d6dce2", dims: { w: 0.7, h: 0.06, lift: 4.2 }, flown: true },
     ],
     lights: [
-      { key: "wash", kind: "hang", name: "吊り・全体", dia: 7, h: 8 },
-      { key: "spot", kind: "hang", name: "吊り・ピン", dia: 2.2, h: 8 },
-      { key: "sideL", kind: "ss", name: "SS 上手", dia: 3 },
-      { key: "sideR", kind: "ss", name: "SS 下手", dia: 3 },
-      { key: "front", kind: "front", name: "前明かり", dia: 5, h: 8, srcV: 1.02 },
+      { key: "wash", kind: "hang", name: "吊り・全体", nameEn: "Overhead wash", dia: 7, h: 8 },
+      { key: "spot", kind: "hang", name: "吊り・ピン", nameEn: "Overhead pin", dia: 2.2, h: 8 },
+      { key: "sideL", kind: "ss", name: "SS 上手", nameEn: "Side light (stage left)", dia: 3 },
+      { key: "sideR", kind: "ss", name: "SS 下手", nameEn: "Side light (stage right)", dia: 3 },
+      { key: "front", kind: "front", name: "前明かり", nameEn: "Front light", dia: 5, h: 8, srcV: 1.02 },
     ],
     scenes: [
       { title: "1 オープニング", note: "全員が袖と奥から現れ、一列で客席を見る。まだ誰の番でもない。", cast: { mina: [0.50, 0.72, 0, "stand"], riku: [0.36, 0.70, 0, "stand"], kai: [0.64, 0.70, 0, "stand"], sora: [0.24, 0.66, 0, "stand"], noa: [0.76, 0.66, 0, "stand"], jin: [0.14, 0.62, 0, "stand"], yuki: [0.86, 0.62, 0, "stand"], ren: [0.50, 0.58, 0, "reach"] }, sets: { deck: [0.50, 0.24] }, lights: { wash: [0.50, 0.66], front: [0.50, 0.70] } },
@@ -78,24 +78,24 @@
   ];
 
   const sets = [
-    { key: "frameL", kind: "wall", name: "枠・左辺", color: "#8a8072", dims: { w: 0.22, d: 0.22, h: 2.4 } },
-    { key: "frameR", kind: "wall", name: "枠・右辺", color: "#8a8072", dims: { w: 0.22, d: 0.22, h: 2.4 } },
-    { key: "frameT", kind: "wall", name: "枠・上辺", color: "#8a8072", dims: { w: 2.8, d: 0.22, h: 0.22 } },
-    { key: "frameB", kind: "wall", name: "枠・下辺", color: "#8a8072", dims: { w: 2.8, d: 0.22, h: 0.22 } },
-    { key: "clothA", kind: "block", name: "布A（位置記号）", color: "#d8d0c0", dims: { w: 2.4, d: 0.18, h: 0.05 } },
-    { key: "clothB", kind: "block", name: "布B（位置記号）", color: "#b9afa0", dims: { w: 2.4, d: 0.18, h: 0.05 } },
-    { key: "case", kind: "suitcase", name: "記録用スーツケース", color: "#5e5144", dims: { w: 0.62, d: 0.24, h: 0.44 } },
-    { key: "ball1", kind: "sphere", name: "記録球1", color: "#eee4cf", dims: { dia: 0.16, lift: 0 } },
-    { key: "ball2", kind: "sphere", name: "記録球2", color: "#e0d3bb", dims: { dia: 0.16, lift: 0 } },
-    { key: "ball3", kind: "sphere", name: "記録球3", color: "#cfc0a6", dims: { dia: 0.16, lift: 0 } },
-    { key: "paper", kind: "block", name: "空白の記録紙（位置札）", color: "#f4f0e6", dims: { w: 0.42, d: 0.30, h: 0.02 } },
+    { key: "frameL", kind: "wall", name: "枠・左辺", nameEn: "Frame — left side", color: "#8a8072", dims: { w: 0.22, d: 0.22, h: 2.4 } },
+    { key: "frameR", kind: "wall", name: "枠・右辺", nameEn: "Frame — right side", color: "#8a8072", dims: { w: 0.22, d: 0.22, h: 2.4 } },
+    { key: "frameT", kind: "wall", name: "枠・上辺", nameEn: "Frame — top", color: "#8a8072", dims: { w: 2.8, d: 0.22, h: 0.22 } },
+    { key: "frameB", kind: "wall", name: "枠・下辺", nameEn: "Frame — bottom", color: "#8a8072", dims: { w: 2.8, d: 0.22, h: 0.22 } },
+    { key: "clothA", kind: "block", name: "布A（位置記号）", nameEn: "Cloth A (position marker)", color: "#d8d0c0", dims: { w: 2.4, d: 0.18, h: 0.05 } },
+    { key: "clothB", kind: "block", name: "布B（位置記号）", nameEn: "Cloth B (position marker)", color: "#b9afa0", dims: { w: 2.4, d: 0.18, h: 0.05 } },
+    { key: "case", kind: "suitcase", name: "記録用スーツケース", nameEn: "Archive suitcase", color: "#5e5144", dims: { w: 0.62, d: 0.24, h: 0.44 } },
+    { key: "ball1", kind: "sphere", name: "記録球1", nameEn: "Record ball 1", color: "#eee4cf", dims: { dia: 0.16, lift: 0 } },
+    { key: "ball2", kind: "sphere", name: "記録球2", nameEn: "Record ball 2", color: "#e0d3bb", dims: { dia: 0.16, lift: 0 } },
+    { key: "ball3", kind: "sphere", name: "記録球3", nameEn: "Record ball 3", color: "#cfc0a6", dims: { dia: 0.16, lift: 0 } },
+    { key: "paper", kind: "block", name: "空白の記録紙（位置札）", nameEn: "Blank record sheet (position card)", color: "#f4f0e6", dims: { w: 0.42, d: 0.30, h: 0.02 } },
   ];
 
   const lights = [
-    { key: "work", kind: "hang", name: "白い作業灯", dia: 4.2, h: 8 },
-    { key: "pin", kind: "hang", name: "記録用ピン", dia: 1.8, h: 8 },
-    { key: "side", kind: "ss", name: "継ぎ目の横光", dia: 3.0 },
-    { key: "front", kind: "front", name: "客席を含む明かり", dia: 6.0, h: 8, srcV: 1.02 },
+    { key: "work", kind: "hang", name: "白い作業灯", nameEn: "White work light", dia: 4.2, h: 8 },
+    { key: "pin", kind: "hang", name: "記録用ピン", nameEn: "Archive pin", dia: 1.8, h: 8 },
+    { key: "side", kind: "ss", name: "継ぎ目の横光", nameEn: "Seam side light", dia: 3.0 },
+    { key: "front", kind: "front", name: "客席を含む明かり", nameEn: "Light that includes the house", dia: 6.0, h: 8, srcV: 1.02 },
   ];
 
   const s = (id, title, durationSeconds, role, energy, note, castMap, setMap, lightMap) => ({
@@ -316,6 +316,130 @@
     },
   ];
 
+
+  /* ---------- 英語版の重ね書き（2026-08-28） ----------
+   * 場面名とト書きの英訳。元の定義を書き換えず、ここでまとめて重ねる。
+   * 上手=stage left / 下手=stage right（既存の訳語慣行に合わせる）。
+   * ト書きは現在形の舞台指示の文体で統一し、「要検証」は must be verified と訳す。 */
+  const EIGHT_SCENES_EN = [
+    { title: "1 Opening",
+      note: "Everyone enters from the wings and upstage, forming a single line facing the house. It is no one\u2019s turn yet." },
+    { title: "2 Act \u2014 Cyr wheel",
+      note: "Mina\u2019s wheel enters from the stage-left wing and crosses the stage. The others withdraw to the wings." },
+    { title: "3 Act \u2014 Chinese pole",
+      note: "The wheel clears off stage right. In its place the pole stands, and Jin climbs." },
+    { title: "4 Transition",
+      note: "The pole remains as four performers cross paths through the space. The platform comes downstage from the back." },
+    { title: "5 Spoken scene",
+      note: "Only Ren on the platform and Sora on the floor remain. Voice carries the scene. Front light on the faces." },
+    { title: "6 Act \u2014 Trapeze",
+      note: "The pole withdraws and the trapeze comes down. Yuki takes it; below, Sora watches." },
+    { title: "7 Act \u2014 Ensemble",
+      note: "Everyone pours in from stage right at once and scatters across the full stage. The most movement in the show." },
+    { title: "8 Ending \u2014 Instruments",
+      note: "On the platform, Jin on trumpet and Ren on guitar. The rest sit in a half circle. A single overhead light remains." },
+  ];
+  eightCircus.scenes.forEach((scene, index) => {
+    const en = EIGHT_SCENES_EN[index];
+    if (en) { scene.titleEn = en.title; scene.noteEn = en.note; }
+  });
+  eightCircus.boundariesEn = [
+    "The blocking, lights and routes are a sample for starting to edit \u2014 not a drawing that decides stage machinery or safety distances.",
+  ];
+
+  const SEAM_SECTIONS_EN = {
+    "1": { title: "The Body Before Exhibition",
+      summary: "A precise preservation routine cannot complete its final step \u2014 \u201cto clear\u201d \u2014 and folds back into repetition." },
+    "2": { title: "Receiving the Blank",
+      summary: "As the Keeper tries to return the blank as damage, a different throw arrives from beyond the frame." },
+    "3": { title: "The Correct Copy",
+      summary: "Instruction that forces sameness flips into an exchange that makes use of difference." },
+    "4": { title: "The Form as Play",
+      summary: "The eight motions are varied through four different skills, and once \u2014 only once \u2014 become a perfect flow." },
+    "5": { title: "The Thread Pulled Too Tight",
+      summary: "A form that could be shared is fixed into a single answer, and tightens around the relationship." },
+    "6": { title: "The Records Collapse",
+      summary: "Forced to choose between the records and a person, the Keeper drops the records and catches the person." },
+    "7": { title: "Three People, One Body",
+      summary: "Rebuilding without hiding the supporters: the weight and the leading role pass from person to person." },
+    "8": { title: "A Margin Left to the House",
+      summary: "The blank is not filled; the frame and the question turn to the house, and what follows is handed beyond the stage." },
+  };
+  const SEAM_SCENES_EN = {
+    "1-1": { title: "The Back of the Exhibit",
+      note: "The audience sees only the backs of four frames and the hands that keep arranging. The frames face upstage; the Keeper is upstage left. A narrow work light." },
+    "1-2": { title: "Calibrating the Eight Motions",
+      note: "The Keeper runs one full cycle \u2014 take out, place, measure, wrap, stray, support, return, clear. Balls and paper travel only the shortest paths." },
+    "1-3": { title: "Repetition Too Exact",
+      note: "The routine speeds up without breaking. The Keeper\u2019s range shrinks to inside the frame, and only the breath falls behind the click." },
+    "1-4": { title: "The Blank That Cannot End",
+      note: "Even with the centre cleared it cannot stop, and the Keeper backtracks to the starting position. From the suitcase falls a sheet whose last line is blank." },
+    "2-1": { title: "Inspecting the Blank",
+      note: "The Keeper smooths the sheet, lights it, turns it over. The card and the suitcase come downstage centre." },
+    "2-2": { title: "A Hand Beyond the Frame",
+      note: "Through a gap in the frame appear only Spill\u2019s hand and gaze. The whole body stays behind the frame for now." },
+    "2-3": { title: "A Throw Outside the Rules",
+      note: "The returned ball leaves the appointed straight line and draws an arc. The Keeper\u2019s light and Spill\u2019s are still separate." },
+    "2-4": { title: "The First Shared Beat",
+      note: "The Keeper throws the blank ball and Spill receives it with the whole body. One diagonal line ties their two rhythms together." },
+    "3-1": { title: "Instruction",
+      note: "The Keeper breaks the eight motions apart; Spill follows alongside. Hand A and Hand B record from upstage." },
+    "3-2": { title: "It Will Not Take the Same Shape",
+      note: "The order matches, but the weight and the breath differ. Two different curves remain, aimed at the same end point." },
+    "3-3": { title: "Corrections Accelerate",
+      note: "The Keeper\u2019s corrections speed up, and so do Spill\u2019s intended drops. The frame and the record lines close in on the two." },
+    "3-4": { title: "Success Through Difference",
+      note: "An exchange that uses their different heights and speeds succeeds. The two stand apart; only the balls\u2019 paths cross at centre." },
+    "4-1": { title: "\u201cPlace\u201d Becomes \u201cSupport\u201d",
+      note: "The posture of placing an object becomes the posture of supporting a partner\u2019s shoulder. The balls are set aside; the point of contact sits downstage centre." },
+    "4-2": { title: "\u201cStray\u201d Becomes \u201cTurn\u201d",
+      note: "Deviation opens out into turning and floor work. Any diabolo-grade trajectory must be verified against the performers\u2019 skills." },
+    "4-3": { title: "\u201cReturn\u201d Becomes \u201cConnect\u201d",
+      note: "One person\u2019s end point becomes the next person\u2019s start. A continuous exchange travels the diamond of four." },
+    "4-4": { title: "One Happy Run",
+      note: "Everyone\u2019s different movements become, just once, one complete flow. The cloths turn into a road on the floor, a line in the air, a trace passing through all four." },
+    "5-1": { title: "Measuring the Success",
+      note: "The Keeper measures the positions and paths of the successful run. The four are returned to a square of floor markers." },
+    "5-2": { title: "Fixing the Seconds",
+      note: "Even breath and stillness are matched to the click. The routes disappear, and each person\u2019s range closes into a small box." },
+    "5-3": { title: "The Thread Pulled Too Tight",
+      note: "The lines of cloth and thread converge on the centre; neither turning nor supporting can continue. No staging may actually constrict joints, the neck or breathing." },
+    "5-4": { title: "The Step Left Open",
+      note: "Spill withholds a single appointed step, slipping outside the frame. What remains is the path of a throw with no catcher." },
+    "6-1": { title: "A Throw With No Catcher",
+      note: "One ball goes uncaught and the next step cannot begin. The ball\u2019s end point is left empty; only four gazes gather on one spot." },
+    "6-2": { title: "The Chain Comes Apart",
+      note: "The system unravels in order \u2014 balls, paper, cloth, frame. Props disperse to pre-set safe landing spots, and the frames are moved to the floor by hand. Nothing collapses uncontrolled." },
+    "6-3": { title: "The Thing or the Person",
+      note: "The Keeper stands between the falling bundle of records and Spill losing footing. The records drop; the person is caught. The low fall and catch, floor, mats, spotters and skill level must be verified." },
+    "6-4": { title: "Breath After the Catch",
+      note: "Low to the floor, the two find one breath, and no one picks up the records. Around them only the Hands remain; sound and movement stop." },
+    "7-1": { title: "The Supporting Hands",
+      note: "Hand A and Hand B support not objects but the pair\u2019s backs, feet and arms. The points of contact sit on a diagonal the house can read." },
+    "7-2": { title: "Trading the Point of Support",
+      note: "Supporter and supported change places with every motion. Low shifts of weight, short radial paths. Differences in build, repetition counts and stopping conditions must be verified." },
+    "7-3": { title: "One Body",
+      note: "A shared balance that cannot exist without all four. It never goes high, and the light falls equally on the supporters. Skill level, floor, mats, spotters and catch conditions must be verified." },
+    "7-4": { title: "The Lead Moves On",
+      note: "The centre is handed from one to the next, until no one owns it. The four open out to the four directions, leaving the centre completely clear." },
+    "8-1": { title: "The Eight Motions, Replayed",
+      note: "The eight motions are replayed at the same reference positions as the opening, but every role has changed hands. Only the final \u201cclear\u201d belongs to everyone." },
+    "8-2": { title: "Leaving the Blank",
+      note: "The Keeper leaves the last line unfilled and returns the record sheet to the suitcase. Only the edge of the cloth is left outside." },
+    "8-3": { title: "The Frame Faces the House",
+      note: "The four take the frame\u2019s four sides and turn it to the house at the downstage edge. House light, as a first proposal, just bright enough to know your neighbour is there; actual levels to be checked in the venue." },
+    "8-4": { title: "The Edge of the Cloth",
+      note: "The people disappear into the dark; what remains is the sound of the cloth left outside touching the floor. The story is not sealed \u2014 blackout, with its continuation reaching beyond the stage." },
+  };
+  sections.forEach((section) => {
+    const enSection = SEAM_SECTIONS_EN[section.id];
+    if (enSection) { section.titleEn = enSection.title; section.summaryEn = enSection.summary; }
+    section.scenes.forEach((scene) => {
+      const en = SEAM_SCENES_EN[scene.id];
+      if (en) { scene.titleEn = en.title; scene.noteEn = en.note; }
+    });
+  });
+
   const seamGarden = {
     schemaVersion: "1.0",
     id: "sample-seam-garden-v1",
@@ -334,6 +458,11 @@
       "配置は構図の初期仮説であり、舞台機構・施工・安全距離を決める図面ではない。",
       "落下、キャッチ、共同バランス、ディアボロ相当の技は出演者・コーチ・会場による要検証。",
       "布と枠は人体や装置を支持しない美術として扱い、無制御の倒壊や実破断を行わない。",
+    ],
+    boundariesEn: [
+      "The blocking is a first hypothesis of composition \u2014 not a drawing that decides machinery, construction or safety distances.",
+      "Falls, catches, shared balances and any diabolo-grade tricks must be verified with the performers, coaches and venue.",
+      "The cloths and frames are scenery that supports no body and no rigging; nothing collapses uncontrolled and nothing actually breaks.",
     ],
   };
 

@@ -70,8 +70,9 @@ test("アプリは同梱ショーのデータ棚を先に読み、セクショ�
   assert.match(stageSource, /function bundledSampleById\(id\)/);
   assert.doesNotMatch(stageSource, /const SAMPLE_CAST = \[/);
   assert.match(stageSource, /function buildSeamGardenSampleShow\(\)/);
-  assert.match(stageSource, /newScene\(`\$\{section\.id\}\. \$\{section\.title\}`,[\s\S]*"section", 0\)/);
-  assert.match(stageSource, /newScene\(`\$\{row\.id\} \$\{row\.title\}`,[\s\S]*"scene", 1\)/);
+  /* 2026-08-28 英語対応: タイトルは言語で titleEn/title を選んでから組む形になった */
+  assert.match(stageSource, /newScene\(`\$\{section\.id\}\. \$\{sectionTitle\}`,[\s\S]*"section", 0\)/);
+  assert.match(stageSource, /newScene\(`\$\{row\.id\} \$\{isEn\(\) && row\.titleEn \? row\.titleEn : row\.title\}`,[\s\S]*"scene", 1\)/);
   assert.match(stageSource, /holdDurationSeconds: row\.durationSeconds/);
   assert.match(stageSource, /transitionToNextSeconds: 0/);
   assert.match(stageSource, /shelveSeamGardenSample\(\);/);
