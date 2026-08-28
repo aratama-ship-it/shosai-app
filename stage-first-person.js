@@ -131,6 +131,35 @@
     occupancy: .92,         // 埋まっている席の割合。1で満席
   };
 
+  /* 空席は椅子の背もたれだけが見える。人がいる席の椅子は体で隠れるので描かない。
+     背もたれの高さ0.95m・座面0.45mはVision Proアプリの座席と同じ。 */
+  const HOUSE_SEAT = {
+    backTopYM: .95,         // 列の床から背もたれの上端まで
+    backBottomYM: .45,      // 座面の高さ＝背もたれの下端
+    widthM: .50,            // 椅子1脚の幅（座席ピッチ0.52から隙間を引く）
+  };
+
+  /* 客席は舞台の一点を向く。端の席ほど内を向くので、肩や背もたれが斜めに見える。
+     Vision Proアプリの focusPoint と同じく、舞台中央よりわずかに奥（演者のいる辺り）。 */
+  const HOUSE_FOCUS_Z = -1;
+
+  /* 2階バルコニー。Vision Proアプリの TheaterPreset の2階席寸法を、
+     1階最前列からの隔たりに置き換えて持ってきた（ホールの大きさが違うため）。
+       ・1階最前列から2階最前列まで 7.7m（VPの -7.8 → -15.5）
+       ・1階の床から2階の床まで 4.2m（VPの -1.0 → 3.2）
+     2階は勾配が急（1列0.35m。1階は0.14m）で、これが「見下ろされる圧」を作る。 */
+  const HOUSE_BALCONY = {
+    rows: 6,
+    frontOffsetM: 7.7,
+    floorYM: 4.2,
+    rowPitchM: .9,
+    riseM: .35,
+    railHeightM: .95,
+    slabThicknessM: .5,
+    // 最後列の頭（床4.2＋勾配0.35×5＋座高1.15＝7.1m）が収まる天井の高さ
+    needsCeilingM: 7.5,
+  };
+
   /* 席ごとのばらつきは毎フレーム同じ値でなければならない（乱数だと客席が沸き立つ）。
      列と席の番号だけから決まる、繰り返し可能な0〜1を作る。 */
   function seatNoise(row, seat, salt) {
@@ -138,27 +167,68 @@
     return value - Math.floor(value);
   }
 
-  /* 客席に座る人の頭の位置。描画から切り離してある。
-     3Dカメラの絵はブラウザでしか出ないので、数・高さ・ばらつきはここを直接検査する。 */
-  function houseSeats(width, depth) {
-    const risers = houseRiserRows(width, depth);
+  /* 2階バルコニーの列。1階（houseRiserRows）と違い、height は舞台床からの
+     絶対の高さ（2階の床は宙に浮いているため）。
+     天井が低い会場（小屋・テント等）には2階は無い。最後列の頭が収まらない高さなら
+     一段も作らない——無理に描くと天井を突き抜ける。 */
+  function houseBalconyRows(_width, depth, ceiling) {
+    if (finite(ceiling, 8) < HOUSE_BALCONY.needsCeilingM) return [];
+    const front = finite(depth, 9) / 2 + 1.6 + HOUSE_BALCONY.frontOffsetM;
+    return Array.from({ length: HOUSE_BALCONY.rows }, (_, index) => ({
+      z: front + HOUSE_BALCONY.rowPitchM * index,
+      height: HOUSE_BALCONY.floorYM + HOUSE_BALCONY.riseM * index,
+    }));
+  }
+
+  /* 客席の席。描画から切り離してある。
+     3Dカメラの絵はブラウザでしか出ないので、数・高さ・ばらつきはここを直接検査する。
+     occupied が真なら人（頭＋肩）、偽なら空いた椅子（背もたれ）を描く。 */
+  function houseSeats(width, depth, ceiling) {
     const perRow = houseSeatsPerRow(width);
+    const blocks = [
+      { tier: "stalls", rows: houseRiserRows(width, depth), salt: 0 },
+      // ノイズの種を1階とずらす。同じだと2階が1階と同じ埋まり方になる
+      { tier: "balcony", rows: houseBalconyRows(width, depth, ceiling), salt: 100 },
+    ];
     const seats = [];
-    risers.forEach(({ z, height }, row) => {
-      for (let seat = 0; seat < perRow; seat += 1) {
-        const x = (seat - (perRow - 1) / 2) * .55;
-        if (Math.abs(x) < .55) continue;                                 // 中央通路
-        if (seatNoise(row, seat, 3) > HOUSE_PERSON.occupancy) continue;  // 空席
-        seats.push({
-          row,
-          seat,
-          x: x + (seatNoise(row, seat, 1) - .5) * 2 * HOUSE_PERSON.jitterXM,
-          y: height + HOUSE_PERSON.headYM + (seatNoise(row, seat, 2) - .5) * 2 * HOUSE_PERSON.jitterYM,
-          z,
-        });
-      }
+    blocks.forEach(({ tier, rows, salt }) => {
+      rows.forEach(({ z, height }, row) => {
+        for (let seat = 0; seat < perRow; seat += 1) {
+          const x = (seat - (perRow - 1) / 2) * .55;
+          if (Math.abs(x) < .55) continue;                    // 中央通路
+          const key = salt + row;
+          const occupied = seatNoise(key, seat, 3) <= HOUSE_PERSON.occupancy;
+          seats.push({
+            tier,
+            row,
+            seat,
+            occupied,
+            x: x + (seatNoise(key, seat, 1) - .5) * 2 * HOUSE_PERSON.jitterXM,
+            z,
+            floorY: height,
+            headY: height + HOUSE_PERSON.headYM
+              + (seatNoise(key, seat, 2) - .5) * 2 * HOUSE_PERSON.jitterYM,
+          });
+        }
+      });
     });
     return seats;
+  }
+
+  /* 席が舞台の一点を向いたときの、肩（または背もたれ）の両端。
+     端の席ほど内を向くので、正面から見ると横幅が詰まって見える。 */
+  function seatSpanEnds(x, z, widthM) {
+    const toFocusX = -x;
+    const toFocusZ = HOUSE_FOCUS_Z - z;
+    const length = Math.hypot(toFocusX, toFocusZ) || 1;
+    // 向きに直交する軸が肩の線
+    const axisX = -toFocusZ / length;
+    const axisZ = toFocusX / length;
+    const half = widthM / 2;
+    return [
+      { x: x - axisX * half, z: z - axisZ * half },
+      { x: x + axisX * half, z: z + axisZ * half },
+    ];
   }
 
   function wingWidthFor(width) {
@@ -1610,52 +1680,116 @@
     ctx.restore();
   }
 
+  /* 舞台を向いた横長の面（肩・背もたれ）を1枚描く。
+     両端を別々に投影してから結ぶので、端の席は横幅が詰まり、斜めに傾く。 */
+  function drawFacingSpan(ctx, person, y, widthM, heightM, fill) {
+    const [left, right] = seatSpanEnds(person.x, person.z, widthM);
+    const a = toCamera({ x: left.x, y, z: left.z });
+    const b = toCamera({ x: right.x, y, z: right.z });
+    if (a.z <= NEAR || b.z <= NEAR) return;
+    const pa = toScreen(a);
+    const pb = toScreen(b);
+    const dx = pb.x - pa.x;
+    const dy = pb.y - pa.y;
+    ctx.beginPath();
+    ctx.ellipse((pa.x + pb.x) / 2, (pa.y + pb.y) / 2,
+      Math.max(.6, Math.hypot(dx, dy) / 2),
+      clamp(heightM / 2 * (focal / Math.min(a.z, b.z)), .4, 14),
+      Math.atan2(dy, dx), 0, 7);
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+
   function drawHouse(ctx) {
-    const risers = houseRiserRows(W, D);
     const perRow = houseSeatsPerRow(W);
     const rowWidth = perRow * .55 + 1;
-    /* カメラから遠い列から描く。列の並び順のままだと、手前の段床が
-       奥の列に座る人を塗り潰してしまう（舞台から客席を見たときに人が消えていた）。
-       客席は暗がりなので、輪郭ではなく濃さの差だけで人だと分からせる。 */
+    const stalls = houseRiserRows(W, D);
+    const balcony = houseBalconyRows(W, D, CEIL);
+
     const byRow = new Map();
-    houseSeats(W, D).forEach((person) => {
-      if (!byRow.has(person.row)) byRow.set(person.row, []);
-      byRow.get(person.row).push(person);
+    houseSeats(W, D, CEIL).forEach((person) => {
+      const key = `${person.tier}:${person.row}`;
+      if (!byRow.has(key)) byRow.set(key, []);
+      byRow.get(key).push(person);
     });
 
-    risers
-      .map((riser, row) => ({ riser, row, depth: toCamera({ x: 0, y: riser.height, z: riser.z }).z }))
-      .sort((a, b) => b.depth - a.depth)
-      .forEach(({ riser, row }) => {
-        drawBox(ctx, 0, riser.z, 0, riser.height, rowWidth, HOUSE_ROW_DEPTH, "#3a2620");
+    const drawSeats = (key) => {
+      (byRow.get(key) || []).forEach((person) => {
+        const eye = toCamera({ x: person.x, y: person.headY, z: person.z });
+        if (eye.z <= NEAR || eye.z > 40) return;
+        const alpha = clamp(.5 - eye.z * .012, .1, .5);
 
-        (byRow.get(row) || []).forEach((person) => {
-          const head = toCamera({ x: person.x, y: person.y, z: person.z });
-          if (head.z <= NEAR || head.z > 40) return;
+        if (!person.occupied) {
+          // 空いた椅子。背もたれだけが見える（人がいる席の椅子は体で隠れる）
+          if (eye.z > 26) return;
+          const backY = person.floorY + (HOUSE_SEAT.backTopYM + HOUSE_SEAT.backBottomYM) / 2;
+          drawFacingSpan(ctx, person, backY, HOUSE_SEAT.widthM,
+            HOUSE_SEAT.backTopYM - HOUSE_SEAT.backBottomYM, `rgba(34,27,22,${alpha})`);
+          return;
+        }
 
-          const scale = focal / head.z;
-          const alpha = clamp(.5 - head.z * .012, .1, .5);
+        // 肩。頭より暗く、横に広い。人の形は肩の幅で決まる
+        drawFacingSpan(ctx, person, person.headY - HOUSE_PERSON.shoulderDropM,
+          HOUSE_PERSON.shoulderWidthM, HOUSE_PERSON.shoulderHeightM, `rgba(46,37,30,${alpha})`);
 
-          // 肩。頭より暗く、横に広い。人の形は肩の幅で決まる
-          const shoulder = toScreen(toCamera({
-            x: person.x, y: person.y - HOUSE_PERSON.shoulderDropM, z: person.z,
-          }));
-          ctx.beginPath();
-          ctx.ellipse(shoulder.x, shoulder.y,
-            clamp(HOUSE_PERSON.shoulderWidthM / 2 * scale, .6, 26),
-            clamp(HOUSE_PERSON.shoulderHeightM / 2 * scale, .4, 11), 0, 0, 7);
-          ctx.fillStyle = `rgba(46,37,30,${alpha})`;
-          ctx.fill();
-
-          // 頭
-          const headScreen = toScreen(head);
-          ctx.beginPath();
-          ctx.arc(headScreen.x, headScreen.y,
-            clamp(HOUSE_PERSON.headDiameterM / 2 * scale, .5, 12), 0, 7);
-          ctx.fillStyle = `rgba(88,71,55,${alpha})`;
-          ctx.fill();
-        });
+        // 頭
+        const headScreen = toScreen(eye);
+        ctx.beginPath();
+        ctx.arc(headScreen.x, headScreen.y,
+          clamp(HOUSE_PERSON.headDiameterM / 2 * (focal / eye.z), .5, 12), 0, 7);
+        ctx.fillStyle = `rgba(88,71,55,${alpha})`;
+        ctx.fill();
       });
+    };
+
+    /* 1階・2階・2階の床・手すりを、カメラから遠い順にまとめて描く。
+       列の並び順のままだと、手前の段床が奥の列に座る人を塗り潰してしまう
+       （舞台から客席を見たときに人が消えていた）。 */
+    const units = [];
+    const at = (y, z) => toCamera({ x: 0, y, z }).z;
+
+    stalls.forEach((riser, row) => units.push({
+      depth: at(riser.height, riser.z),
+      draw: () => {
+        drawBox(ctx, 0, riser.z, 0, riser.height, rowWidth, HOUSE_ROW_DEPTH, "#3a2620");
+        drawSeats(`stalls:${row}`);
+      },
+    }));
+
+    // 天井が低い会場には2階が無い（houseBalconyRows が空を返す）
+    if (balcony.length) {
+      const balconyDepthM = HOUSE_BALCONY.rows * HOUSE_BALCONY.rowPitchM;
+      const balconyCentreZ = balcony[0].z + balconyDepthM / 2 - HOUSE_BALCONY.rowPitchM / 2;
+      const railZ = balcony[0].z - HOUSE_BALCONY.rowPitchM / 2;
+
+      units.push({
+        depth: at(HOUSE_BALCONY.floorYM, balconyCentreZ),
+        draw: () => {
+          // 2階の床。1階の後方から見上げると天蓋になる
+          drawBox(ctx, 0, balconyCentreZ,
+            HOUSE_BALCONY.floorYM - HOUSE_BALCONY.slabThicknessM, HOUSE_BALCONY.floorYM,
+            rowWidth, balconyDepthM, "#2c211a");
+        },
+      });
+      units.push({
+        depth: at(HOUSE_BALCONY.floorYM, railZ),
+        draw: () => {
+          drawBox(ctx, 0, railZ,
+            HOUSE_BALCONY.floorYM, HOUSE_BALCONY.floorYM + HOUSE_BALCONY.railHeightM,
+            rowWidth, .1, "#4a3527");
+        },
+      });
+      balcony.forEach((riser, row) => units.push({
+        depth: at(riser.height, riser.z),
+        draw: () => {
+          drawBox(ctx, 0, riser.z, riser.height - HOUSE_BALCONY.riseM, riser.height,
+            rowWidth, HOUSE_BALCONY.rowPitchM, "#3a2620");
+          drawSeats(`balcony:${row}`);
+        },
+      }));
+    }
+
+    units.sort((a, b) => b.depth - a.depth).forEach((unit) => unit.draw());
   }
 
   function drawShell(ctx) {
@@ -2338,7 +2472,9 @@
       pieceUOf, pieceVOf, pieceBaseOf, pieceGlowOf,
       moveFree, clampFree, freePresets, frameDelta, wingWidthFor, wingLegX, wingLegPairs,
       wingLegZs, houseSeatsPerRow, houseRiserRows, facingFromGround, uvFromGround, pickFrom,
-      seatNoise, houseSeats, housePerson: () => HOUSE_PERSON,
+      seatNoise, houseSeats, houseBalconyRows, seatSpanEnds,
+      housePerson: () => HOUSE_PERSON, houseSeat: () => HOUSE_SEAT,
+      houseBalcony: () => HOUSE_BALCONY,
       lensPresets: () => LENSES, normalizeLensId, lensById, focalFor }),
     /* 検証用の覗き窓。描画状態には触らない */
     _probe: () => ({ camera: { ...camera }, focal, canvasWidth, canvasHeight,

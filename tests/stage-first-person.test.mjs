@@ -95,48 +95,125 @@ test("席ごとのばらつきは何度呼んでも同じ（客席が沸き立�
   assert.notEqual(geom.seatNoise(3, 7, 1), geom.seatNoise(3, 7, 2));
 });
 
-/* 3Dカメラの絵はブラウザでしか出ないので、人の位置はここで直接検査する。 */
-test("客席の人は全列に散らばり、座った頭の高さに並ぶ", () => {
+/* 3Dカメラの絵はブラウザでしか出ないので、席の位置はここで直接検査する。 */
+test("客席は1階・2階の全列に席が並び、座った頭の高さに人がいる", () => {
   const width = 12;
   const depth = 9;
   const seats = Array.from(geom.houseSeats(width, depth));
-  const rows = Array.from(geom.houseRiserRows(width, depth));
+  const stalls = Array.from(geom.houseRiserRows(width, depth));
+  const balcony = Array.from(geom.houseBalconyRows(width, depth));
   const perRow = geom.houseSeatsPerRow(width);
   const person = geom.housePerson();
 
-  assert.ok(seats.length > 0, "誰も座っていないということはない");
-  // 13列すべてに人がいる（後ろの列だけ空になったりしない）
-  assert.equal(new Set(seats.map((s) => s.row)).size, rows.length);
-  // 満席のときの席数（中央通路を除く）より少なく、大きく下回りもしない
-  const aisleFree = rows.length * perRow;
-  assert.ok(seats.length < aisleFree);
-  assert.ok(seats.length > aisleFree * .7);
+  // 1階13列＋2階6列。中央通路のぶんだけ席が減る
+  assert.equal(new Set(seats.filter((s) => s.tier === "stalls").map((s) => s.row)).size, stalls.length);
+  assert.equal(new Set(seats.filter((s) => s.tier === "balcony").map((s) => s.row)).size, balcony.length);
+  // 席数＝（全列 × 1列の席数）− 中央通路に落ちる席
+  const aisleSeats = Array.from({ length: perRow },
+    (_, seat) => (seat - (perRow - 1) / 2) * .55).filter((x) => Math.abs(x) < .55).length;
+  assert.ok(aisleSeats > 0, "中央通路が空いている");
+  assert.equal(seats.length, (stalls.length + balcony.length) * (perRow - aisleSeats));
+
+  // 埋まり方は設定どおり。空席も必ず混じる
+  const occupied = seats.filter((s) => s.occupied);
+  assert.ok(occupied.length < seats.length, "全部埋まってはいない");
+  assert.ok(occupied.length > seats.length * .8, "がらがらでもない");
 
   seats.forEach((s) => {
+    const rows = s.tier === "stalls" ? stalls : balcony;
     const riser = rows[s.row];
+    closeTo(s.z, riser.z);
+    closeTo(s.floorY, riser.height);
     // 頭は必ずその列の床から座った人の高さにある
     const expected = riser.height + person.headYM;
-    assert.ok(Math.abs(s.y - expected) <= person.jitterYM + 1e-9,
-      `${s.row}列${s.seat}番の頭 ${s.y} が ${expected} からばらつきの範囲に収まる`);
-    closeTo(s.z, riser.z);
+    assert.ok(Math.abs(s.headY - expected) <= person.jitterYM + 1e-9,
+      `${s.tier}${s.row}列${s.seat}番の頭 ${s.headY} が ${expected} からばらつきの範囲に収まる`);
     // 中央通路は空けたまま（ばらつきで埋めない）
     assert.ok(Math.abs(s.x) >= .55 - person.jitterXM - 1e-9);
   });
 
-  // 後ろの列ほど頭が高い（段床が効いている）
-  const backRow = seats.filter((s) => s.row === rows.length - 1)[0];
-  const frontRow = seats.filter((s) => s.row === 0)[0];
-  assert.ok(backRow.y > frontRow.y);
+  // 後ろの列ほど高い（段床）。2階は1階より高く、勾配も急
+  const stallRows = seats.filter((s) => s.tier === "stalls");
+  const balconyRows = seats.filter((s) => s.tier === "balcony");
+  assert.ok(stallRows[stallRows.length - 1].floorY > stallRows[0].floorY);
+  assert.ok(balconyRows[0].floorY > stallRows[stallRows.length - 1].floorY, "2階は1階より上");
+  const stallRise = stalls[1].height - stalls[0].height;
+  const balconyRise = balcony[1].height - balcony[0].height;
+  assert.ok(balconyRise > stallRise, "2階のほうが勾配が急");
 });
 
-test("客席の人の位置は何度求めても同じ（カメラを動かしても並びが変わらない）", () => {
+test("2階バルコニーは1階の後方に張り出し、Vision Proと同じ寸法を持つ", () => {
+  const depth = 9;
+  const balcony = Array.from(geom.houseBalconyRows(12, depth));
+  const stalls = Array.from(geom.houseRiserRows(12, depth));
+  const spec = geom.houseBalcony();
+
+  assert.equal(balcony.length, 6);
+  closeTo(spec.floorYM, 4.2);      // 1階の床から2階の床まで
+  closeTo(spec.riseM, .35);
+  closeTo(spec.railHeightM, .95);
+  // 2階最前列は1階最前列から7.7m後ろ
+  closeTo(balcony[0].z, stalls[0].z + spec.frontOffsetM);
+  // 1階の最後列より手前から張り出す（真上に覆いかぶさる）
+  assert.ok(balcony[0].z < stalls[stalls.length - 1].z, "2階は1階の上に張り出す");
+});
+
+test("天井が低い会場には2階席を作らない（テント・小屋で天井を突き抜けない）", () => {
+  const spec = geom.houseBalcony();
+  // 最後列の頭が収まらない高さなら一段も作らない
+  assert.deepEqual(Array.from(geom.houseBalconyRows(12, 9, 5.5)), []);   // シャピトー相当
+  assert.equal(Array.from(geom.houseBalconyRows(12, 9, 12)).length, spec.rows);
+  // 2階を作る会場では、最後列の頭が天井の内側に収まる
+  const rows = Array.from(geom.houseBalconyRows(12, 9, spec.needsCeilingM));
+  const topHead = rows[rows.length - 1].height + geom.housePerson().headYM;
+  assert.ok(topHead <= spec.needsCeilingM,
+    `最後列の頭 ${topHead.toFixed(2)}m が天井 ${spec.needsCeilingM}m に収まる`);
+  // 席のほうも2階が消える
+  const seats = Array.from(geom.houseSeats(12, 9, 5.5));
+  assert.equal(seats.filter((s) => s.tier === "balcony").length, 0);
+  assert.ok(seats.filter((s) => s.tier === "stalls").length > 0, "1階は残る");
+});
+
+test("席は舞台の一点を向く（端の席ほど内を向く）", () => {
+  const width = geom.housePerson().shoulderWidthM;
+  // 中央の席は肩の線が真横（zの差がほぼ無い）
+  const centre = geom.seatSpanEnds(0, 10, width);
+  assert.ok(Math.abs(centre[1].z - centre[0].z) < 1e-6);
+  closeTo(centre[1].x - centre[0].x, width);
+
+  // 端の席は内を向くので、肩の線が前後に傾く
+  const side = geom.seatSpanEnds(8, 10, width);
+  assert.ok(Math.abs(side[1].z - side[0].z) > .05, "斜めを向いている");
+  // どちら向きでも肩の幅そのものは変わらない
+  closeTo(Math.hypot(side[1].x - side[0].x, side[1].z - side[0].z), width);
+
+  // 左右対称
+  const mirror = geom.seatSpanEnds(-8, 10, width);
+  closeTo(Math.abs(mirror[1].z - mirror[0].z), Math.abs(side[1].z - side[0].z));
+});
+
+test("空いた椅子は背もたれの高さに描く（人の肩とは別の高さ）", () => {
+  const seat = geom.houseSeat();
+  const person = geom.housePerson();
+  closeTo(seat.backTopYM, .95);
+  closeTo(seat.backBottomYM, .45);
+  // 背もたれの上端は、座った人の肩よりわずかに低い＝空席が穴に見えない
+  const shoulderY = person.headYM - person.shoulderDropM;
+  assert.ok(seat.backTopYM < shoulderY, "背もたれの上端は肩より下");
+  assert.ok(seat.backTopYM > shoulderY - .1, "肩から離れすぎてもいない");
+  assert.ok(seat.widthM < .52, "座席ピッチより狭い（隙間がある）");
+});
+
+test("客席の席の位置は何度求めても同じ（カメラを動かしても並びが変わらない）", () => {
   const a = Array.from(geom.houseSeats(12, 9));
   const b = Array.from(geom.houseSeats(12, 9));
   assert.equal(a.length, b.length);
   a.forEach((seat, index) => {
     closeTo(seat.x, b[index].x);
-    closeTo(seat.y, b[index].y);
+    closeTo(seat.headY, b[index].headY);
     closeTo(seat.z, b[index].z);
+    assert.equal(seat.occupied, b[index].occupied);
+    assert.equal(seat.tier, b[index].tier);
   });
 });
 
