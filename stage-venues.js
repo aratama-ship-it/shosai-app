@@ -374,23 +374,21 @@
    * ピストの伝統寸法13m（Astley以来）は既存のビッグトップが持つ。こちらは
    * 現代の小型巡演テントで、日本で組みやすい規模にあたる。 */
   const chapiteauV2 = (() => {
-    const pisteDiameter = 7;
-    const centre = pisteDiameter / 2;
-    const houseInnerR = centre;      // ピストの際から客席が立ち上がる
-    const houseOuterR = 13 / 2;      // 外周ポール（テントの内法）
-    const BLOCKS = 4;                // 客席は4区画（出典どおり）
-    const SPAN = 0.86;               // 区画の張り出し。残りは出入りの通路
+    const BLOCKS = 4;   // 客席は4区画（小型は出典どおり。大型も主要4区画で組む）
+    const SPAN = 0.86;  // 区画の張り出し。残りは出入りの通路
 
-    const houseBlocks = Array.from({ length: BLOCKS }, (_, index) => {
+    /* ピストを囲む客席の輪。実際の可動席は平らな箱を円周に並べたものなので、
+       円弧ではなく直線の前縁で作る。 */
+    const houseRing = (centre, innerR, outerR) => Array.from({ length: BLOCKS }, (_, index) => {
       const from = index + (1 - SPAN) / 2;
       const to = index + 1 - (1 - SPAN) / 2;
       return {
         id: `audience-quarter-${index + 1}`,
         polygon: [
-          circlePoint(centre, houseInnerR, from, BLOCKS),
-          circlePoint(centre, houseInnerR, to, BLOCKS),
-          circlePoint(centre, houseOuterR, to, BLOCKS),
-          circlePoint(centre, houseOuterR, from, BLOCKS),
+          circlePoint(centre, innerR, from, BLOCKS),
+          circlePoint(centre, innerR, to, BLOCKS),
+          circlePoint(centre, outerR, to, BLOCKS),
+          circlePoint(centre, outerR, from, BLOCKS),
         ],
         mode: "seated",
         eyeM: 1.2,
@@ -398,20 +396,52 @@
       };
     });
 
-    const variant = {
-      id: "touring",
-      label: "巡演テント（ピスト7m・240席）",
-      floor: { outline: circleOutline(pisteDiameter), levels: [] },
-      ceiling: {
-        heightM: 5.5,   // コーポル（頂点）まで
-        rigging: "limited",
-        note: "頂点まで5.5m。空中演目の最低条件（シルクで吊り点4.5m）は満たすが余裕は少ない。回転シルク（6m）は入らない。",
-      },
-      audience: houseBlocks,
-      fixtures: [],   // マストは外側に立つのでテント内に支柱は無い
-      access: [],
-      capacity: { seats: 240 },
-    };
+    const touring = (() => {
+      const pisteDiameter = 7;
+      const centre = pisteDiameter / 2;
+      return {
+        id: "touring",
+        label: "小型（ピスト7m・240席）",
+        floor: { outline: circleOutline(pisteDiameter), levels: [] },
+        ceiling: {
+          heightM: 5.5,   // コーポル（頂点）まで
+          rigging: "limited",
+          note: "頂点まで5.5m。空中演目の最低条件（シルクで吊り点4.5m）は満たすが余裕は少ない。回転シルク（6m）は入らない。",
+        },
+        audience: houseRing(centre, centre, 13 / 2),  // ピストの際から外周ポールまで
+        fixtures: [],   // マストは外側に立つのでテント内に支柱は無い
+        access: [],
+        capacity: { seats: 240 },
+      };
+    })();
+
+    /* 大型＝伝統の13mリングが入る巡演テント。
+     * ピスト13mは1768年 Philip Astley 以来の国際標準（馬が一定の歩度を保てる径）。
+     * テントの規模は Cirque Arlette Gruss 公式の現行テント:
+     *   長さ65m × 幅40m／コーポル下16m／1730席／**内部にマストが無く全周360度見通せる**。
+     * 客席の外径は、テント幅40mから壁ぎわを引いた18.5mを採った。座席数からの
+     * 概算（1730席 ÷ 概ね2席/m²）でも約18mになり、二つの見積りが一致する。
+     * テントは実際には楕円（65×40）だが、演技空間まわりは円として扱う。 */
+    const grand = (() => {
+      const pisteDiameter = 13;
+      const centre = pisteDiameter / 2;
+      return {
+        id: "grand-ring",
+        label: "大型（伝統の13mリング・1730席）",
+        floor: { outline: circleOutline(pisteDiameter), levels: [] },
+        ceiling: {
+          heightM: 16,   // コーポル下（Gruss公式）
+          rigging: "full",
+          note: "コーポル下16m。内部にマストが無いので吊りも見通しも全周で通る。空中演目は高さに余裕がある。",
+        },
+        audience: houseRing(centre, centre, 18.5),
+        fixtures: [],   // 内部にマストが無いのがこの規模の売り
+        access: [],
+        capacity: { seats: 1730 },
+      };
+    })();
+
+    const variant = touring;
 
     return {
       format: "venue-v2",
@@ -428,12 +458,12 @@
         source: "図面",
         confidence: "high",
         sharing: "ok",
-        note: "実在の巡演テント1張の技術仕様書（La P'tite Fabrique de Cirque・13m）の数値。テント全体の代表値ではなく、この規模の一例として採った。",
+        note: "小型は実在の巡演テント1張の技術仕様書（La P'tite Fabrique de Cirque・13m）の数値。大型はピスト13m（Astley以来の国際標準）に、Cirque Arlette Gruss 公式の現行テント（65×40m・コーポル下16m・1730席・内部マスト無し）の規模を合わせた。客席の外径18.5mはテント幅と座席数の二つの見積りが一致した値で、公表値ではない。",
       },
       short: "テント・全周",
-      note: "現代の小型巡演テント。中央のピスト（リング）は直径7m、客席は4区画で最大240席。マストは外側に立つので、テントの中に支柱が無く演技空間を塞がない。頂点は5.5mで、空中演目は吊り点の高さに余裕が無い。伝統的なサーカスのリング13m（1768年 Philip Astley 以来の国際標準）は既存の〈ビッグトップ〉が持つ。設営には平坦な35×35mが要る。",
-      reference: "La P'tite Fabrique de Cirque 技術仕様書（13mシャピトー）／空中演目の最低高さは Katie Hardwick 技術要件",
-      sizes: [variant],
+      note: "巡演テント。小型はピスト（リング）が直径7mで客席4区画・最大240席、頂点5.5m。マストが外側に立つのでテントの中に支柱が無く、演技空間を塞がない。ただし吊り点の高さに余裕は無い。大型は伝統の13mリング（1768年 Philip Astley 以来の国際標準。馬が一定の歩度を保てる径）が入る規模で、コーポル下16m・1730席。この規模も内部にマストが無く、全周360度どこからも見通せる。テントは実際には楕円だが、演技空間まわりは円として扱っている。設営には小型で平坦な35×35mが要る。",
+      reference: "小型: La P'tite Fabrique de Cirque 技術仕様書（13mシャピトー）／大型: Cirque Arlette Gruss 公式 https://www.cirque-gruss.com/le-cirque ／空中演目の最低高さは Katie Hardwick 技術要件",
+      sizes: [touring, grand],
     };
   })();
   VENUES_V2.push(chapiteauV2);

@@ -723,15 +723,24 @@ test("TOHUプリセットは公式仕様書の実測値を保つ", () => {
 test("サーカスの3形式は出典どおりの寸法を保つ", () => {
   const { venues } = loadModels();
 
-  // シャピトー: ピスト7m・4区画・240席・頂点5.5m（巡演テントの技術仕様書）
+  // シャピトー: 小型はピスト7m・240席・頂点5.5m、大型は伝統の13mリング・1730席・16m
   const tent = venues.v2.byId("chapiteau");
-  const tentSize = tent.sizes[0];
-  const tentXs = tentSize.floor.outline.map((point) => point[0]);
-  assert.equal(Math.round((Math.max(...tentXs) - Math.min(...tentXs)) * 10) / 10, 7);
-  assert.equal(tentSize.ceiling.heightM, 5.5);
-  assert.equal(tentSize.capacity.seats, 240);
-  assert.equal(tentSize.audience.length, 4);
-  assert.equal(tentSize.fixtures.length, 0, "マストは外側に立つのでテント内に支柱を置かない");
+  assert.deepEqual(Array.from(tent.sizes, (size) => size.id), ["touring", "grand-ring"]);
+  const pisteOf = (size) => {
+    const xs = size.floor.outline.map((point) => point[0]);
+    return Math.round((Math.max(...xs) - Math.min(...xs)) * 10) / 10;
+  };
+  const [small, big] = Array.from(tent.sizes);
+  assert.equal(pisteOf(small), 7);
+  assert.equal(small.ceiling.heightM, 5.5);
+  assert.equal(small.capacity.seats, 240);
+  assert.equal(pisteOf(big), 13, "伝統のリングは13m（Astley以来の国際標準）");
+  assert.equal(big.ceiling.heightM, 16);
+  assert.equal(big.capacity.seats, 1730);
+  tent.sizes.forEach((size) => {
+    assert.equal(size.audience.length, 4);
+    assert.equal(size.fixtures.length, 0, "マストは外側に立つのでテント内に支柱を置かない");
+  });
 
   // 劇場のサーカス公演: 吊り8m/12m。回転シルクの最低6mを下回らない
   const theatre = venues.v2.byId("circus-theatre");
@@ -823,9 +832,9 @@ test("会場プリセットは全部が日英そろっている（追加時の�
 test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う", () => {
   assert.match(sketchSource, /const STAGE_KEYS = \[[\s\S]*?"shosai-stage-venues-v1"/);
   for (const [name, version] of [
-    ["stage-venues.js", "23"],
+    ["stage-venues.js", "24"],
     ["stage-venue-lines.js", "4"],
-    ["stage-i18n.js", "90"],
+    ["stage-i18n.js", "91"],
     ["stage-set-model.js", "1"],
     ["stage-set-builder.js", "1"],
     ["stage-sketch.js", "311"],
