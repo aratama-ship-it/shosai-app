@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>開演前のご案内 — 舞台スケッチ</title>
+<style>
+/* クイックマニュアル（プレゼン型・1場1ページ）。
+   設計の正: design/TOKEN_SHEET_quick-manual_2026-08-28.md — 値を変えるときは先にシートを直す。
+   冊子(manual.html)が「昼の机・紙」なのに対し、こちらは「夜の舞台」。
+   光はグローで作らず、アプリが実際に描いた舞台の絵（img/*.png）に語らせる。 */
+:root {
+  --desk: #191512;
+  --paper: #efe7d6;
+  --milk-dim: #b9ad97;
+  --rust: #a84b26;      /* 大きな文字・図形・線のみ（本文コントラスト不足） */
+  --rust-ink: #df6433;
+  --rust-deep: #8f3e1e;
+  --rust-pale: #f3c9b2;
+  --brass: #9c823f;
+  --line: rgba(239, 231, 214, 0.18);
+  --frame: rgba(239, 231, 214, 0.16);
+  --serif: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
+  --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body { background: #0d0b09; font-family: var(--sans); color: var(--paper); }
+
+/* ---------- 場（スライド）の器: 画面では1画面=1場、縦スクロールでスナップ ---------- */
+.deck { height: 100vh; overflow-y: auto; scroll-snap-type: y mandatory; }
+.scene-wrap { height: 100vh; display: flex; align-items: center; justify-content: center; scroll-snap-align: start; }
+.scene {
+  background: var(--desk);
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  position: relative;
+  overflow: hidden;
+  padding: 72px;
+  display: flex;
+  flex-direction: column;
+}
+/* 客席の暗がり: 本体と同作法の減衰のみ（発光装飾はしない） */
+.scene::before {
+  content: "";
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 120% 90% at 50% 0%, rgba(240,231,214,0.05), transparent 60%);
+}
+
+/* 進行の刻印 */
+.scene-no {
+  position: absolute; top: 34px; left: 72px;
+  font-family: var(--serif); font-size: 13px; letter-spacing: 0.3em; color: var(--brass);
+}
+.scene-mark { position: absolute; top: 34px; right: 72px; font-size: 12px; letter-spacing: 0.24em; color: var(--milk-dim); }
+
+.kicker { font-size: 13px; letter-spacing: 0.35em; color: var(--rust-ink); margin-bottom: 18px; }
+h1, h2 { font-family: var(--serif); font-weight: 600; letter-spacing: 0.06em; }
+h2 { font-size: 56px; line-height: 1.3; margin-bottom: 22px; }
+.lead { font-size: 18px; line-height: 1.75; max-width: 36em; color: var(--paper); }
+.lead strong { color: var(--rust-ink); font-weight: 600; }
+.dim { color: var(--milk-dim); }
+.note { font-size: 13px; color: var(--milk-dim); line-height: 1.7; }
+
+figure { margin: 0; }
+figure img { display: block; width: 100%; border: 1px solid var(--frame); }
+figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-spacing: 0.08em; }
+
+/* ---------- SCENE 00 表紙: 実画像を全面に ---------- */
+.cover { padding: 0; }
+.cover img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cover .front { position: relative; padding: 72px; height: 100%; display: flex; flex-direction: column; }
+.cover h1 { font-size: 76px; letter-spacing: 0.1em; margin: 10px 0 14px; }
+.cover .sub { font-size: 17px; letter-spacing: 0.14em; color: var(--paper); }
+.cover .foot { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; font-size: 12px; letter-spacing: 0.2em; color: var(--milk-dim); }
+
+/* ---------- 二枚看板（正面・平面） ---------- */
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 8px; }
+
+/* ---------- 手順・並記 ---------- */
+.steps { display: flex; gap: 40px; margin: 26px 0 30px; }
+.step { flex: 1; border-top: 1px solid var(--line); padding-top: 14px; }
+.step .n { font-family: var(--serif); font-size: 30px; color: var(--rust-ink); display: block; margin-bottom: 8px; }
+.step .t { font-size: 16px; line-height: 1.7; }
+.roles { border-top: 1px solid var(--line); padding-top: 16px; display: flex; gap: 40px; }
+.role { flex: 1; font-size: 14px; line-height: 1.8; }
+.role b { display: block; font-family: var(--serif); font-size: 17px; font-weight: 600; letter-spacing: 0.1em; margin-bottom: 4px; }
+.role b small { font-size: 11px; color: var(--brass); letter-spacing: 0.2em; margin-left: 8px; }
+
+/* 9つの動詞（ツアーの流れ） */
+.verbs { font-family: var(--serif); font-size: 24px; letter-spacing: 0.12em; line-height: 2.1; color: var(--paper); }
+.verbs span { color: var(--brass); margin: 0 10px; font-size: 18px; }
+
+/* 描けるものの目録 */
+.split { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: center; flex: 1; min-height: 0; }
+.list { list-style: none; }
+.list li { border-top: 1px solid var(--line); padding: 13px 2px; font-size: 16px; line-height: 1.6; }
+.list li:last-child { border-bottom: 1px solid var(--line); }
+.list b { font-family: var(--serif); font-weight: 600; letter-spacing: 0.08em; margin-right: 14px; }
+.list .only { font-size: 11px; color: var(--rust-ink); border: 1px solid var(--rust-ink); padding: 1px 7px; margin-left: 10px; letter-spacing: 0.1em; white-space: nowrap; }
+
+/* ---------- SCENE 06 約束: 一枚だけ反転 ---------- */
+.vow { background: var(--rust-deep); }
+.vow::before { display: none; }
+.vow .scene-no, .vow .scene-mark { color: var(--rust-pale); }
+.vow .kicker { color: var(--rust-pale); }
+.vow h2 { font-size: 60px; }
+.vow .lead { color: var(--paper); }
+.vow .lead strong { color: var(--paper); border-bottom: 2px solid var(--paper); }
+.vow .note { color: var(--rust-pale); }
+
+/* ---------- 終幕の三所 ---------- */
+.doors { display: flex; gap: 40px; margin-top: 30px; }
+.door { flex: 1; border-top: 1px solid var(--line); padding-top: 14px; font-size: 14px; line-height: 1.8; color: var(--milk-dim); }
+.door b { display: block; color: var(--paper); font-family: var(--serif); font-size: 18px; font-weight: 600; letter-spacing: 0.08em; margin-bottom: 6px; }
+.curtain-line { margin-top: auto; font-family: var(--serif); font-size: 26px; letter-spacing: 0.2em; color: var(--rust-ink); }
+
+/* ---------- 動き: 場の入り。reduced-motion では無効 ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .scene > .fx { opacity: 0; transform: translateY(12px); transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
+  .scene.on > .fx { opacity: 1; transform: none; }
+}
+
+/* ---------- 狭い画面（スマホ縦）: 器は保ちつつ余白と字を絞る（printには効かせない） ---------- */
+@media screen and (max-width: 760px) {
+  .scene { padding: 40px 24px; width: 100vw; aspect-ratio: auto; min-height: 100vh; height: auto; }
+  .scene-wrap { height: auto; min-height: 100vh; }
+  .deck { scroll-snap-type: none; height: auto; overflow: visible; }
+  .scene-no { left: 24px; } .scene-mark { right: 24px; }
+  h2 { font-size: 34px; } .cover h1 { font-size: 44px; }
+  .cover .front { padding: 40px 24px; }
+  .duo, .steps, .roles, .doors, .split { display: block; }
+  .duo figure + figure, .step + .step, .role + .role, .door + .door { margin-top: 18px; }
+  .split .list { margin-top: 18px; }
+  .verbs { font-size: 18px; }
+}
+
+/* ---------- 印刷: 1場=1ページの16:9デッキPDF ---------- */
+@page { size: 338.7mm 190.5mm; margin: 0; }  /* 1280×720px を 96dpi でmm換算した16:9面 */
+@media print {
+  body { background: #fff; }
+  .deck { height: auto; overflow: visible; }
+  .scene-wrap { height: auto; display: block; page-break-after: always; }
+  .scene { width: 338.7mm; height: 190.5mm; aspect-ratio: auto; padding: 19mm; }
+  .cover { padding: 0; }
+  .cover .front { padding: 19mm; }
+  .scene-no { left: 19mm; top: 9mm; } .scene-mark { right: 19mm; top: 9mm; }
+  .scene > .fx { opacity: 1 !important; transform: none !important; }
+}
+</style>
+</head>
+<body>
+<main class="deck" id="deck">
+
+  <!-- SCENE 00 表紙 -->
+  <div class="scene-wrap"><section class="scene cover on">
+    <img class="bg" src="img/hero-front.png" alt="舞台スケッチが描いた舞台。二本の明かりの下に演者が立つ">
+    <div class="front">
+      <p class="kicker">STAGE SKETCH — β</p>
+      <h1>舞台スケッチ</h1>
+      <p class="sub">開演前のご案内 — 90秒でわかる、はじめての手引き</p>
+      <p class="sub dim" style="margin-top:8px; font-size:13px;">招かれた方のための、8つの場</p>
+      <div class="foot"><span></span><span>2026-08</span></div>
+    </div>
+  </section></div>
+
+  <!-- SCENE 01 これは何 -->
+  <div class="scene-wrap"><section class="scene">
+    <p class="scene-no">SCENE 01</p><p class="scene-mark">これは何</p>
+    <div class="fx">
+      <h2 style="font-size:44px; margin-bottom:12px;">客席からと、真上から。二枚で一つの舞台。</h2>
+      <p class="lead" style="font-size:16px;">正面と平面は同じ舞台——<strong>片方を動かせば、もう片方も動きます。</strong></p>
+    </div>
+    <div class="duo fx" style="margin-top:20px;">
+      <figure><img src="img/hero-front.png" alt="正面図：客席から見た舞台"><figcaption>正面 — 客席から。明かりを当て、動線を引く</figcaption></figure>
+      <figure><img src="img/duo-plan.png" alt="平面図：真上から見た同じ舞台"><figcaption>平面 — 真上から。図面ではなく、構図と距離感の習作帳</figcaption></figure>
+    </div>
+  </section></div>
+
+  <!-- SCENE 02 入り口 -->
+  <div class="scene-wrap"><section class="scene">
+    <p class="scene-no">SCENE 02</p><p class="scene-mark">入り口</p>
+    <div class="fx">
+      <p class="kicker">ENTRANCE</p>
+      <h2>招待状は、名前とパスワード。</h2>
+    </div>
+    <div class="steps fx">
+      <div class="step"><span class="n">一</span><span class="t">招待メッセージのURLをブラウザで開く</span></div>
+      <div class="step"><span class="n">二</span><span class="t">お渡しした名前とパスワードで入る</span></div>
+      <div class="step"><span class="n">三</span><span class="t">舞台が現れます。あとは触るだけ</span></div>
+    </div>
+    <div class="roles fx">
+      <div class="role"><b>PC<small>描く机</small></b><span class="dim">道具が全部そろう本館。描く作業はここで。</span></div>
+      <div class="role"><b>iPad<small>持ち歩く画板</small></b><span class="dim">Safariの共有ボタンから〈ホーム画面に追加〉。稽古場でも開ける。</span></div>
+      <div class="role"><b>スマホ<small>見る係</small></b><span class="dim">シーンを送って眺める。読み込みと控えの書き出しも。</span></div>
+    </div>
+  </section></div>
+
+  <!-- SCENE 03 最初の10分 -->
+  <div class="scene-wrap"><section class="scene">
+    <p class="scene-no">SCENE 03</p><p class="scene-mark">最初の10分</p>
+    <div class="fx">
+      <p class="kicker">FIRST RUN</p>
+      <h2>最初の先生は、<br>アプリの中にいます。</h2>
+      <p class="lead">はじめて開くと、9段の短い案内がはじまります。読むだけではなく、手を動かすうちに——</p>
+    </div>
+    <p class="verbs fx" style="margin-top:26px">
+      動かす<span>→</span>足す<span>→</span>構える<span>→</span>動線<span>→</span>次の場<span>→</span>転換<span>→</span>明かり<span>→</span>メモ<span>→</span>書き出す
+    </p>
+    <p class="lead fx" style="margin-top:26px">終わる頃には、<strong>一場面できあがっています。</strong></p>
+    <p class="note fx" style="margin-top:auto">もう一度見たいときは 〈設定〉→〈使い方〉。</p>
+  </section></div>
+
+  <!-- SCENE 04 描けるもの -->
+  <div class="scene-wrap"><section class="scene">
+    <p class="scene-no">SCENE 04</p><p class="scene-mark">描けるもの</p>
+    <div class="fx"><p class="kicker">ON STAGE</p><h2 style="font-size:48px;">明かりも、幕も、盆も。</h2></div>
+    <div class="split fx">
+      <figure><img src="img/curtain-front.png" alt="前幕ひとそろいを吊った正面図" style="max-height:400px; object-fit:cover;"><figcaption>「前幕ひとそろい」を吊ったところ。幕越しに明かりが透ける</figcaption></figure>
+      <ul class="list">
+        <li><b>照明</b>吊り・SS・前明かり・転がしの4種</li>
+        <li><b>姿勢</b>30種——宙返り、シルホイール、一輪車</li>
+        <li><b>機構</b>盆・せり・幕・水面<span class="only">PCのみ</span></li>
+        <li><b>劇場</b>額縁からテントまで。実在の「シアタートラム」も</li>
+      </ul>
+    </div>
+  </section></div>
+
+  <!-- SCENE 05 一緒に見る -->
+  <div class="scene-wrap"><section class="scene">
+    <p class="scene-no">SCENE 05</p><p class="scene-mark">一緒に見る</p>
+    <div class="fx">
+      <p class="kicker">SHARED SESSION</p>
+      <h2>同じ舞台を、<br>離れた場所から。</h2>
+      <p class="lead">招待URLで入ると、ホストと同じ場面が手元に映ります。<strong>レーザーポインタと矢印</strong>で「ここ」を指せます。</p>
+    </div>
+    <p class="note fx" style="margin-top:auto">打ち合わせはZoom越しにどうぞ。場面はホストが送り、あなたは指す係です。</p>
+  </section></div>
+
+  <!-- SCENE 06 約束（反転） -->
+  <div class="scene-wrap"><section class="scene vow">
+    <p class="scene-no">SCENE 06</p><p class="scene-mark">たいせつな約束</p>
+    <div class="fx">
+      <p class="kicker">ONE PROMISE</p>
+      <h2>描いたものは、<br>あなたの端末の中に。</h2>
+      <p class="lead">クラウドには送られません。だから——区切りのいいところで<strong>〈書き出す〉を押して、控えを一枚</strong>。お願いはこれだけです。</p>
+    </div>
+    <p class="note fx" style="margin-top:auto">ブラウザのデータ削除で消えます。控えのファイルがあれば、いつでも戻せます。</p>
+  </section></div>
+
+  <!-- SCENE 07 困ったら -->
+  <div class="scene-wrap"><section class="scene">
+    <p class="scene-no">SCENE 07</p><p class="scene-mark">幕間の案内所</p>
+    <div class="fx"><p class="kicker">INTERMISSION</p><h2>困ったら、三つの窓口。</h2></div>
+    <div class="doors fx">
+      <div class="door"><b>使い方をさがす</b>〈設定〉から。言葉を入れると、その場で答えが出ます。</div>
+      <div class="door"><b>使いかたの冊子</b>深く知りたくなったら。全10章の読み物です。</div>
+      <div class="door"><b>感想を送る</b>ひとことで十分。「ここで迷った」が一番の贈り物です。</div>
+    </div>
+    <p class="curtain-line fx">それでは——開演です。</p>
+  </section></div>
+
+</main>
+<script>
+/* 場の入り(fade/rise)と矢印キー送り。reduced-motion時はCSS側で無効 */
+(function () {
+  "use strict";
+  const scenes = Array.from(document.querySelectorAll(".scene"));
+  const io = new IntersectionObserver((es) => {
+    es.forEach((e) => { if (e.isIntersecting) e.target.classList.add("on"); });
+  }, { threshold: 0.4 });
+  scenes.forEach((s) => io.observe(s));
+  const deck = document.getElementById("deck");
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowRight" && e.key !== "ArrowUp" && e.key !== "ArrowLeft") return;
+    const dir = (e.key === "ArrowDown" || e.key === "ArrowRight") ? 1 : -1;
+    const i = Math.round(deck.scrollTop / window.innerHeight) + dir;
+    const target = document.querySelectorAll(".scene-wrap")[Math.max(0, Math.min(scenes.length - 1, i))];
+    if (target) { e.preventDefault(); target.scrollIntoView({ behavior: "smooth" }); }
+  });
+})();
+</script>
+</body>
+</html>
