@@ -114,7 +114,10 @@ textarea, input[type="text"] {
   display: flex;
   align-items: center;
   gap: 18px;
-  flex-wrap: wrap;
+  /* ★折り返さない。タブは nav 自身が横スクロールし、注記は縮むので、
+     一行に収まる。wrap のままだと右端の項目が二行目へ落ちて、
+     貼りついたヘッダーが本文を余分に押し下げる（2026-08-28）。 */
+  flex-wrap: nowrap;
   background: rgba(25, 21, 18, 0.97);
   border-bottom: 1px solid var(--line-dark);
   padding: 0 20px 0 64px;
@@ -154,10 +157,29 @@ textarea, input[type="text"] {
 }
 
 .topnav-note {
+  /* 折り返さない一列なので、縮む余地を持たせる。持たせないと Mac版の入口が
+     二行目へ落ち、貼りついたヘッダーが 49px → 115px に伸びる（2026-08-28に確認）。 */
+  min-width: 0;
   margin-left: auto;
   font-size: 10.5px;
   color: rgba(240, 231, 214, 0.35);
 }
+
+/* Mac版の受け取り口（mac.html）。
+   ★セレクタは `.topnav a.topnav-app` にすること。`.topnav-app` だけだと
+     詳細度で `.topnav a` に負け、九つ目のタブの見た目になる（2026-08-28に実際に起きた）。
+   タブより一段小さい11pxの真鍮色。押せることは色で示し、下線は指した時だけ引く。
+   当たりの大きさ（min-height:48px）は `.topnav a` から受け継ぐので指定しない。 */
+.topnav a.topnav-app {
+  min-width: 0;
+  padding: 0;
+  color: var(--brass);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+}
+
+.topnav a.topnav-app:hover,
+.topnav a.topnav-app:focus-visible { color: var(--paper); border-bottom-color: var(--brass); }
 
 /* ============ 制作会社レーダー ============ */
 
@@ -5860,6 +5882,8 @@ canvas[data-tool="note"] { cursor: copy; }
   .topnav { padding-left: 8px; }
   .topnav a { padding: 0 12px; font-size: 12.5px; }
   .topnav-note { display: none; }
+  /* 注記が消えると右へ寄せる役目も消えるので、受け取り口が引き継ぐ。 */
+  .topnav a.topnav-app { margin-left: auto; }
 
   /* 8つのタブが幅に収まらず横スクロールになる。指で送れることが
      見た目でわからなかったので、右端（と送った後は左端も）を

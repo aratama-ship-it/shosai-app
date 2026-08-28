@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mac版を入れる — 制作の書斎</title>
+<link rel="icon" href="icons/shosai-app-192.png">
+<!-- ★このページは意図的に style.css を読まない。自己完結にしてある。
+     理由は二つ。①版番号（?v=）の付け替えを一枚増やさないため。
+     ②配布物の受け取り口が、本体のCSSの改修で崩れないため。
+     色と字は style.css の :root と同じ値を写している。変えるときは両方を見ること。 -->
+<style>
+  :root {
+    --desk: #191512; --desk-2: #201b16; --desk-3: #282119;
+    --line-dark: #382f25; --paper: #efe7d6;
+    --milk: rgba(240, 231, 214, 0.85); --milk-dim: rgba(240, 231, 214, 0.55);
+    --rust: #a84b26; --rust-ink: #df6433; --brass: #9c823f;
+    --serif: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
+    --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0 20px 80px;
+    background: var(--desk); color: var(--milk);
+    font-family: var(--sans); line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 620px; margin: 0 auto; }
+  .back {
+    display: inline-block; margin: 26px 0 0;
+    color: var(--milk-dim); font-size: 12px; text-decoration: none;
+    letter-spacing: 0.06em; border-bottom: 1px solid transparent;
+  }
+  .back:hover { color: var(--paper); border-bottom-color: var(--brass); }
+  .kicker {
+    margin: 34px 0 0; color: var(--brass);
+    font-size: 11px; letter-spacing: 0.18em;
+  }
+  h1 {
+    margin: 6px 0 0; color: var(--paper);
+    font-family: var(--serif); font-size: 30px; font-weight: 600; letter-spacing: 0.04em;
+  }
+  .lead { margin: 14px 0 0; font-size: 14px; }
+  h2 {
+    margin: 40px 0 0; color: var(--paper);
+    font-family: var(--serif); font-size: 17px; font-weight: 600; letter-spacing: 0.05em;
+  }
+  p { margin: 10px 0 0; font-size: 13.5px; }
+  ol, ul { margin: 10px 0 0; padding-left: 1.35em; font-size: 13.5px; }
+  li { margin: 5px 0 0; }
+  code {
+    padding: 1px 5px; border-radius: 3px;
+    background: var(--desk-3); color: var(--paper);
+    font-size: 12px; word-break: break-all;
+  }
+  pre {
+    margin: 10px 0 0; padding: 12px 14px; overflow-x: auto;
+    border: 1px solid var(--line-dark); border-radius: 4px;
+    background: var(--desk-2);
+  }
+  pre code { padding: 0; background: none; white-space: pre; word-break: normal; }
+
+  /* 受け取り口。この画面で唯一の「塗ってある」もの。 */
+  .get {
+    margin: 22px 0 0; padding: 20px 22px;
+    border: 1px solid var(--line-dark); border-radius: 5px;
+    background: var(--desk-2);
+  }
+  .get a.dl {
+    display: inline-block; padding: 11px 26px;
+    border-radius: 3px; background: var(--rust); color: var(--paper);
+    font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-decoration: none;
+  }
+  .get a.dl:hover { background: #b8552c; }
+  .meta { margin: 12px 0 0; color: var(--milk-dim); font-size: 11.5px; letter-spacing: 0.04em; }
+
+  /* 読ませたいが騒がせたくないもの。舞台スケッチの .stage-storage-caution と同じ作法。 */
+  .note {
+    margin: 16px 0 0; padding-left: 12px;
+    border-left: 2px solid var(--brass);
+    color: var(--milk-dim); font-size: 12.5px;
+  }
+  .note strong { color: var(--paper); font-weight: 600; }
+  .warn { border-left-color: var(--rust-ink); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a class="back" href="index.html">← 書斎へ戻る</a>
+
+  <p class="kicker">DESKTOP BUILD</p>
+  <h1>Mac版を入れる</h1>
+  <p class="lead">
+    ブラウザ版と<strong>中身は同じ</strong>です。同じファイルを読む「窓」が一つ増えるだけで、
+    ショーの保存先も設定も共有されます。Mac版でだけできることが二つあります。
+  </p>
+
+  <h2>ブラウザ版との違い</h2>
+  <ul>
+    <li><strong>AIに直させる</strong>——舞台スケッチのAI指示は、Mac版の中だけで動きます。
+      ブラウザではこの項目自体が現れません。</li>
+    <li><strong>書き出し先を選べる</strong>——保存ダイアログでフォルダを指定できます。</li>
+  </ul>
+  <p>それ以外の機能に差はありません。ブラウザ版で足りているなら、入れる必要はありません。</p>
+
+  <h2>受け取る</h2>
+  <div class="get">
+    <a class="dl" href="downloads/shosai-desk-mac.zip" download>制作の書斎.app を受け取る</a>
+    <p class="meta">zip 約1.7MB ／ Apple Silicon (arm64) ／ macOS 13 以降</p>
+  </div>
+
+  <p class="note warn">
+    <strong>Intel Macでは動きません。</strong>arm64だけの造りです。
+  </p>
+
+  <h2>入れかた</h2>
+  <ol>
+    <li>zipを開くと <code>制作の書斎.app</code> が出ます。</li>
+    <li>「アプリケーション」フォルダへ移します。</li>
+    <li><strong>最初の一回だけ</strong>、アイコンを右クリック（control＋クリック）して
+      <strong>「開く」</strong>を選びます。出てくる確認でもう一度「開く」。</li>
+  </ol>
+  <p class="note">
+    ふつうにダブルクリックすると<strong>「開発元を確認できないため開けません」</strong>と
+    止められます。Appleへの登録（署名・公証）をしていない手元の造りだからです。
+    右クリックからの「開く」は一度通せば覚えます。次からはダブルクリックで開きます。
+  </p>
+
+  <h2>★動かすには作業フォルダが要る</h2>
+  <p>
+    このアプリは中身を抱えていません。<strong>iCloud上の <code>shosai-app</code> フォルダを
+    そのまま読む窓</strong>です。だからブラウザ版を直せばMac版にも同時に届きます。
+    裏返すと、<strong>そのフォルダが無い Mac では起動しません。</strong>
+  </p>
+  <p>既定で見に行く場所はこれです。</p>
+  <pre><code>/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app</code></pre>
+  <p>
+    別のMac（利用者名が違う）へ入れるときは、この場所が変わります。
+    アプリを一度終了してから、ターミナルで置き場所を教えてください。
+  </p>
+  <pre><code>defaults write local.shosai.desk WebRootPath -string "/Users/&lt;利用者名&gt;/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app"</code></pre>
+  <p class="note">
+    iCloudの同期が終わっていないと、フォルダはあっても中身が降りてきていないことがあります。
+    Finderでそのフォルダを開き、雲のマークが消えてから起動してください。
+  </p>
+
+  <h2>更新する</h2>
+  <p>
+    <strong>ふだんの更新に、入れ直しは要りません。</strong>画面と機能はフォルダ側にあるので、
+    ブラウザ版が新しくなればMac版も新しくなります。
+    入れ直しが要るのは、アプリの殻そのもの（Swift側）を作り直したときだけです。
+  </p>
+
+</div>
+</body>
+</html>

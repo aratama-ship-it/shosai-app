@@ -11,7 +11,7 @@
 <link rel="manifest" href="shosai-app.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-  <link rel="stylesheet" href="style.css?v=205">
+  <link rel="stylesheet" href="style.css?v=206">
 </head>
 <body>
 
@@ -29,6 +29,13 @@
     <a href="#mondo" data-nav="mondo">場面問答</a>
   </nav>
   <p class="topnav-note">Phase 0 — 資料棚は正本読み取り。舞台スケッチはこの端末だけに保存。</p>
+  <!-- Mac版の受け取り口。★ここは舞台スケッチの画面（view-stage）の外なので、
+       配布する stage.html には入らない（build_stage.py はその画面と窓しか抜かない）。
+       書斎の道具であって、舞台スケッチの利用者に配るものではない。移すときは
+       tests/stage-mac-download.test.mjs も一緒に見ること。
+       ★このコメントに開始タグの文字列をそのまま書かないこと。書くと
+         build_stage.py がここを抽出の開始点と読み違え、単独版が壊れる（2026-08-28に実際に起きた）。 -->
+  <a class="topnav-app" href="mac.html">Mac版を入れる</a>
 </header>
 
 <div id="app">
