@@ -39,7 +39,7 @@ test("セッション bridge の shelveNow は shelveCurrent の結果を返す"
 });
 
 test("変更した2本のJS版とPWAキャッシュ版を正本・単独版・Service Workerで揃える", () => {
-  for (const reference of ["stage-sketch.js?v=304", "stage-session.js?v=9"]) {
+  for (const reference of ["stage-sketch.js?v=305", "stage-session.js?v=9"]) {
     assert.ok(indexSource.includes(reference), `${reference} が index.html にある`);
     assert.ok(stageHtml.includes(reference), `${reference} が stage.html にある`);
     assert.ok(serviceWorkerSource.includes(`./${reference}`), `${reference} が stage-sw.js にある`);

@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=216">
+<link rel="stylesheet" href="style.css?v=217">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -1464,6 +1464,15 @@
       <button type="button" class="stage-minor-action" id="stage-reach-open">端末による違い</button>
       <button type="button" class="stage-about-link" id="stage-about-open-from-prefs">このアプリについて</button>
     </div>
+    <!-- 取り返しのつかない操作なので、設定のいちばん下に単独で置く。
+         押しても二度たずねるまでは何も起きない（stage-sketch.js の resetToFirstRun）。 -->
+    <div class="stage-pref-row stage-pref-reset-row">
+      <span class="stage-pref-lang-body">
+        <span class="stage-pref-name">設定をリセット</span>
+        <p class="stage-pref-hint">この端末を、はじめて開いたときの状態に戻します。置いたショーも消えます。</p>
+      </span>
+      <button type="button" class="stage-minor-action stage-danger" id="stage-reset-all">リセット</button>
+    </div>
    </div>
    <!-- ショートカット一覧。アイコンの説明を消した人が、キーを見に来られる場所。
         畳んでおくのをやめ、設定の右へ開いたまま並べる（探しに来た人が必ず一手かけていた）。
@@ -1819,7 +1828,7 @@
 <script src="stage-audio-store.js?v=2"></script>
 <script src="manual/manual-content.js?v=1"></script>
 <script src="stage-pwa.js?v=6"></script>
-<script src="stage-sketch.js?v=304"></script>
+<script src="stage-sketch.js?v=305"></script>
 <script src="stage-session.js?v=9"></script>
 <script src="stage-venue-editor.js?v=6"></script>
 </body>

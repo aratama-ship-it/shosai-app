@@ -10148,6 +10148,20 @@ body.is-panel-dragging {
 }
 .stage-pref-row input { margin-top: 3px; }
 .stage-pref-reach-row .stage-minor-action { width: 100%; margin: 0; text-align: left; }
+/* 取り返しのつかない操作。錆色の輪郭で、押す前に一拍おいてもらう。
+   赤系の塗りつぶしにはしない（この画面の他の要素より強く見えすぎるため）。 */
+.stage-pref-reset-row { align-items: flex-start; }
+.stage-pref-reset-row .stage-danger {
+  width: auto;
+  margin: 0;
+  flex: 0 0 auto;
+  border-color: var(--rust);
+  color: var(--rust-ink);
+}
+.stage-pref-reset-row .stage-danger:hover {
+  border-color: var(--rust-ink);
+  background: rgba(168, 75, 38, 0.14);
+}
 .stage-pref-group { margin: 0 0 16px; }
 .stage-pref-group-title {
   margin: 16px 0 2px;

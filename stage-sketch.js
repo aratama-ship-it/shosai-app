@@ -2459,6 +2459,7 @@
     musicRelink: document.getElementById("stage-music-relink"),
     musicRelinkFile: document.getElementById("stage-music-relink-file"),
     musicAudio: document.getElementById("stage-music-audio"),
+    resetAll: document.getElementById("stage-reset-all"),
     sceneMusic: document.getElementById("stage-scene-music"),
     musicToggle: document.getElementById("stage-music-toggle"),
     musicRestart: document.getElementById("stage-music-restart"),
@@ -15936,6 +15937,66 @@
     if (els.prefsBtn) els.prefsBtn.focus();
   }
 
+  /* ---------- 設定をリセット ----------
+     この端末に貯めたものを全部捨てて、はじめて開いたときの状態へ戻す。
+     取り返しがつかないので、二度たずねてからでないと何もしない。
+     消すもの: 置いたショー全部・いま開いているショー・表示設定・言語・
+     案内を見たかどうか・組んだセットの型・読み込んだ音源（IndexedDB）。
+     書き出し済みのファイルは端末の外にあるので消えない。 */
+  const RESET_KEYS = [
+    STORAGE_KEY, SHOWS_KEY, SHOWS_BROKEN_KEY, PREFS_KEY, TOUR_KEY,
+    LANG_KEY, STAGE_MODELS_KEY, CAST_HANDOFF_KEY, LAST_USER_KEY,
+    STAGE_AI_PERMISSION_KEY, "shosai-stage-tablet-view",
+  ];
+
+  async function resetToFirstRun() {
+    const showCount = (() => {
+      try { return (JSON.parse(localStorage.getItem(SHOWS_KEY) || "[]") || []).length; }
+      catch (_) { return 0; }
+    })();
+    const en = isEn();
+    const first = en
+      ? `Reset this device to how it was the very first time you opened Stage Sketch.\n\n`
+        + `• ${showCount} show(s) kept on this device\n`
+        + `• Display settings, language, and whether you have seen the tour\n`
+        + `• Set pieces you built, and any music you loaded\n\n`
+        + `Files you have already exported are not touched. Continue?`
+      : `この端末の舞台スケッチを、はじめて開いたときの状態に戻します。\n\n`
+        + `・この端末に置いたショー ${showCount}本\n`
+        + `・表示の設定、言語、案内を見たかどうか\n`
+        + `・組んだセットの型、読み込んだ音源\n\n`
+        + `書き出し済みのファイルは消えません。続けますか？`;
+    if (!window.confirm(first)) return;
+    const second = en
+      ? "Really reset? This cannot be undone.\n\nIf you want to keep anything, stop here and use Export to save it to a file first."
+      : "本当に戻しますか。この操作は取り消せません。\n\n残したいものがあるなら、いったんやめて〈書き出す〉でファイルに保存してください。";
+    if (!window.confirm(second)) return;
+
+    /* 明示した鍵に加え、shosai- で始まる鍵を総ざらいで消す。
+       会場の下書きや移行済みの目印など、後から増えた鍵を取り残さないため。
+       （この端末の舞台スケッチ以外のデータには shosai- を使っていない） */
+    const keys = new Set(RESET_KEYS);
+    try {
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("shosai-")) keys.add(key);
+      }
+    } catch (_) { /* 一覧が取れなくても、明示した鍵は消す */ }
+    keys.forEach((key) => {
+      try { localStorage.removeItem(key); } catch (_) { /* 消せないものは残る */ }
+    });
+    /* 音源は IndexedDB。データベースごと捨てる（開いている接続があると
+       消えるのが遅れることがあるので、待たずに再読み込みへ進む） */
+    try {
+      if (els.musicAudio) { els.musicAudio.pause(); els.musicAudio.removeAttribute("src"); }
+      if (window.indexedDB && window.indexedDB.deleteDatabase) {
+        window.indexedDB.deleteDatabase("shosai-stage-audio");
+      }
+    } catch (_) { /* 消せなくても続ける */ }
+    /* 保存の自動書き戻しが走る前に、この場で読み直す */
+    window.location.reload();
+  }
+
   function openManualBook() {
     window.open("manual/manual.html", "_blank", "noopener");
   }
@@ -22151,6 +22212,7 @@ ${propsPlotHtml}
   if (els.prefsBackdrop) els.prefsBackdrop.addEventListener("click", closePrefs);
   if (els.helpOpen) els.helpOpen.addEventListener("click", openManualHelpFromPrefs);
   if (els.manualOpen) els.manualOpen.addEventListener("click", openManualBook);
+  if (els.resetAll) els.resetAll.addEventListener("click", resetToFirstRun);
   if (els.quickOpen) els.quickOpen.addEventListener("click", openQuickGuide);
   if (els.helpClose) els.helpClose.addEventListener("click", closeManualHelp);
   if (els.helpBackdrop) els.helpBackdrop.addEventListener("click", closeManualHelp);
