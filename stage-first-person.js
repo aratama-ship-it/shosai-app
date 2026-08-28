@@ -3,9 +3,9 @@
 
   const NEAR = 0.12;
   const LENSES = Object.freeze([
+    Object.freeze({ id: "ultrawide", name: "超広角", fovDeg: 120 }),
     Object.freeze({ id: "wide", name: "広角", fovDeg: 110 }),
     Object.freeze({ id: "normal", name: "標準", fovDeg: 86 }),
-    Object.freeze({ id: "tele", name: "望遠", fovDeg: 50 }),
   ]);
   const LENS_STORAGE_KEY = "shosai-fpv-lens-v1";
   let lensId = "normal";
