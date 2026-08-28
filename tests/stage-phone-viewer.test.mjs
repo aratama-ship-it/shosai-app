@@ -141,8 +141,27 @@ test("横画面は操作を右側レールへ移し、図が縦いっぱいを�
   assert.match(style, /@media \(orientation: landscape\) \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) 64px/);
   assert.match(style, /html\.stage-phone-viewer \.stage-phone-toolbar \{[\s\S]*?grid-column: 2;[\s\S]*?flex-direction: column/);
   assert.match(style, /justify-items: end/);
-  assert.match(style, /width: min\(100%, calc\(100dvh \* 16 \/ 9\)\)/);
   assert.ok(!/100dvh - 46px/.test(style), "音楽帯ぶんの引き算が残っていないこと");
+});
+
+/* ★2026-08-28: 旧 `width: min(100%, calc(100dvh * 16/9))` は、この枠へ実際に
+   配られる高さ（safe-area等を引いた後の値）と食い違うことがあり、iPhone 13 Pro Maxで
+   上下がわずかに切れる報告があった。100dvhから逆算する式をやめ、実際にグリッドから
+   渡された高さ（height:100%）からaspect-ratioで幅を導く形にした。
+   ブラウザ実測でオーバーフローが0.867px→-0.008pxへ縮んだことを確認済み。 */
+test("横画面の枠幅は100dvhの逆算式ではなく、実際に配られた高さから導く", () => {
+  const landscapeBlock = style.slice(style.indexOf("@media (orientation: landscape)"));
+  const frameRule = landscapeBlock.slice(
+    landscapeBlock.indexOf("html.stage-phone-viewer .stage-board-frame {"));
+  const body = frameRule.slice(0, frameRule.indexOf("}") + 1);
+  // 経緯を書いた説明コメントには "100dvh" の語が出るので、宣言だけを見る。
+  const declarations = body.replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.doesNotMatch(declarations, /100dvh/, "dvhから幅を逆算する式が残っていないこと");
+  assert.match(body, /width: auto;/);
+  assert.match(body, /height: auto;/);
+  assert.match(body, /max-width: 100%;/);
+  assert.match(body, /max-height: 100%;/);
+  assert.match(body, /aspect-ratio: 16 \/ 9;/);
 });
 
 test("スマホの縦は 題30+道具48+情報+ショー+設定+図+メモ の七段、横は図だけ", () => {
