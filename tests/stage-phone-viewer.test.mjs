@@ -130,7 +130,7 @@ test("縦画面は正面図と平面図を並べ、横画面は一枚を切り�
   assert.match(source, /if \(phoneIsPortrait\(\)\) \{[\s\S]*?state\.showFront = true;[\s\S]*?state\.showPlan = true;/);
   assert.match(source, /const which = phoneUi && phoneUi\.singleView === "plan" \? "plan" : "front"/);
   assert.match(source, /viewToggle\.addEventListener\("click"[\s\S]*?enforcePhoneViews\(viewToggle\.dataset\.phoneView\)/);
-  assert.match(style, /html\.stage-phone-viewer \.stage-canvas-stack \{[\s\S]*?grid-template-rows: auto auto;[\s\S]*?align-content: start/);
+  assert.match(style, /html\.stage-phone-viewer \.stage-canvas-stack \{[\s\S]*?grid-template-rows: auto auto minmax\(0, 1fr\);[\s\S]*?align-content: start/);
   assert.match(style, /@media \(orientation: landscape\) \{[\s\S]*?html\.stage-phone-viewer \.stage-canvas-stack \{[\s\S]*?grid-template-rows: minmax\(0, 1fr\)/);
 });
 
@@ -164,12 +164,14 @@ test("横画面の枠幅は100dvhの逆算式ではなく、実際に配られ�
   assert.match(body, /aspect-ratio: 16 \/ 9;/);
 });
 
-test("スマホの縦は 題30+道具48+情報+ショー+設定+図+メモ の七段、横は図だけ", () => {
+test("スマホの縦は外側を六段、canvas-stack内を図二段+メモ一段にし、横は図だけ", () => {
   /* 2026-08-26: ①題の帯30pxを足した ②情報・ショーのパネルを重ねずに流し込み、
      図を下へ押し下げるようにした（どちらも本人指示）。
+     2026-08-28: メモは canvas-stack の内側へ移し、縦長画面の余りを受け取る。
      横向きは縦の余白が図に要るので、題を消し、パネルは重ね、道具は右レールで一段に戻す。
      ★段を増減したら、この行と各パネルの grid-row を必ず一緒に直すこと。 */
-  assert.match(style, /html\.stage-phone-viewer \.stage-board-column \{[\s\S]*?grid-template-rows: 30px 48px auto auto auto minmax\(0, 1fr\) auto;/);
+  assert.match(style, /html\.stage-phone-viewer \.stage-board-column \{[\s\S]*?grid-template-rows: 30px 48px auto auto auto minmax\(0, 1fr\);/);
+  assert.match(style, /html\.stage-phone-viewer \.stage-canvas-stack \{\s*display: grid;\s*grid-template-rows: auto auto minmax\(0, 1fr\);/);
   assert.match(style, /@media \(orientation: landscape\) \{[\s\S]*?grid-template-rows: minmax\(0, 1fr\);/);
   assert.match(style, /@media \(orientation: landscape\) \{[\s\S]*?html\.stage-phone-viewer \.stage-phone-title \{ display: none; \}/);
 });
@@ -319,8 +321,23 @@ test("図の下のメモ欄は縦向きだけで、中身はシーンのメモ�
   assert.match(source, /memoInput\.addEventListener\("input", \(\) => \{[\s\S]*?sc\(\)\.note = memoInput\.value\.slice\(0, 200\)/);
   // 二枚あるので、打っている側は貼り替えない（カーソルが飛ぶ）
   assert.match(source, /document\.activeElement !== phoneUi\.memoInput\) phoneUi\.memoInput\.value = scene\.note/);
-  assert.match(style, /html\.stage-phone-viewer \.stage-phone-memo \{[\s\S]*?grid-row: 7;/);
+  assert.match(source, /els\.canvasStack\.append\(memoBar\)/, "メモ欄をcanvas-stackの内側へ置くこと");
+  assert.doesNotMatch(source, /board\.append\(memoBar\)/, "メモ欄を外側gridの行へ戻さないこと");
   assert.match(style, /@media \(orientation: landscape\) \{[\s\S]*?html\.stage-phone-viewer \.stage-phone-memo \{ display: none; \}/);
   // iOSは16px未満の入力欄へ寄ると画面ごと拡大する
   assert.match(style, /\.stage-phone-memo-input \{[\s\S]*?font-size: 16px;/);
+});
+
+/* ★2026-08-28に実ブラウザで発見: applyLayout()には正面図・平面図のDOM順を
+   並べ替える既存ロジック（swapCenter用。centerOrderに沿って前後を毎回re-appendする）
+   があり、これがcanvas-stackの子要素すべてに効く。メモにgrid-rowを明示しないと、
+   横縦切替（viewToggleのクリック＝orient()相当）のたびに前後図がDOMの末尾へ
+   移動し、メモがDOM順の先頭へ押し出されて1段目（本来は正面図の場所）に
+   自動配置されてしまう。実機相当のブラウザで、grid-row無しの状態を再現して
+   確認した（縦向き回転操作を6回往復させても崩れないことも確認済み）。 */
+test("メモの段はDOM順に頼らずgrid-rowで固定する（並べ替えで押し出されないように）", () => {
+  const memoRule = style.slice(style.indexOf("html.stage-phone-viewer .stage-phone-memo {"));
+  const body = memoRule.slice(0, memoRule.indexOf("}") + 1);
+  assert.match(body, /grid-row: 3;/,
+    "grid-rowを明示しないと、applyLayout()のDOM並べ替えでメモが1段目へ押し出される");
 });

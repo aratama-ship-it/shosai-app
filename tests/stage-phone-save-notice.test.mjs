@@ -106,9 +106,10 @@ test("警告帯のボタンは指で押せる大きさ", () => {
 });
 
 test("スマホの盤面から音楽帯ぶんの行が消えている", () => {
-  /* 音楽UIは戻さないこと。足した段は 題・情報・ショー・設定・メモ欄 だけ。
+  /* 音楽UIは戻さないこと。外側に足した段は 題・情報・ショー・設定 だけで、
+     メモ欄は canvas-stack の内側へ置く。
      ★44pxの固定行が現れたら、下端の音楽帯が復活した疑い（2026-08-24 に取り除いたもの）。 */
-  assert.match(style, /grid-template-rows: 30px 48px auto auto auto minmax\(0, 1fr\) auto;/);
+  assert.match(style, /grid-template-rows: 30px 48px auto auto auto minmax\(0, 1fr\);/);
   assert.ok(!/30px 48px auto auto auto 44px/.test(style));
   assert.ok(!/stage-phone-music/.test(style), "音楽帯の見た目が戻っていないこと");
 });

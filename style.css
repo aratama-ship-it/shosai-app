@@ -10768,10 +10768,10 @@ html.stage-phone-viewer .stage-board-column {
      取り除いたので、その分を図へ返している（2026-08-24 本人判断）。
      題の30pxは縦向きで足した分（2026-08-26 本人指摘。横向きでは題を消して二段に戻す）。
      ★行を明示しないと canvas が暗黙の行へ押し出される。段を増減したらここも直すこと。 */
-  /* 7段目は図の下のメモ欄（縦向きのみ・2026-08-26 本人指示）。
-     図が minmax(0,1fr) なので、上のパネルが開いても縮むのは図のほうで、
-     メモ欄は下に残る。★段を増減したら各要素の grid-row と一緒に直すこと。 */
-  grid-template-rows: 30px 48px auto auto auto minmax(0, 1fr) auto;
+  /* メモ欄は canvas-stack の3段目へ移した（縦向きのみ・2026-08-28）。
+     図を含む canvas-stack が minmax(0,1fr) なので、上のパネルが開いても
+     縮むのは引き続き図のほう。★段を増減したら各要素の grid-row と一緒に直すこと。 */
+  grid-template-rows: 30px 48px auto auto auto minmax(0, 1fr);
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -10784,9 +10784,15 @@ html.stage-phone-viewer .stage-board-column {
    ★段を増減したら .stage-board-column の grid-template-rows と一緒に直すこと。 */
 html.stage-phone-viewer .stage-canvas-stack { grid-row: 6; }
 
-/* 図の下のメモ欄。道具の帯と同じ地色で、画面の下端の塊として置く。 */
+/* 図の下のメモ欄（canvas-stackの3段目・2026-08-28に内側へ移した）。
+   道具の帯と同じ地色で、画面の下端の塊として置く。
+   ★grid-rowは明示が必須。applyLayout()に正面図・平面図のDOM順を並べ替える
+   既存ロジック（swapCenter用・stage-sketch.js:11908付近）があり、初期化後の
+   最初の描画でcanvas-stackの子がこの2枚だけ再appendされる。明示しないと、
+   その並べ替えでメモがDOM順の先頭へ押し出され、1段目（正面図の場所）に
+   自動配置されてしまう（2026-08-28に実機相当の検証で発見）。 */
 html.stage-phone-viewer .stage-phone-memo {
-  grid-row: 7;
+  grid-row: 3;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
@@ -11220,7 +11226,7 @@ html.stage-phone-viewer .stage-phone-scene-list-row.is-current {
 
 html.stage-phone-viewer .stage-canvas-stack {
   display: grid;
-  grid-template-rows: auto auto;
+  grid-template-rows: auto auto minmax(0, 1fr);
   place-items: stretch;
   align-content: start;
   min-width: 0;

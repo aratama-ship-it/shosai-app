@@ -11173,7 +11173,8 @@
     titleBar.append(settingsToggle);
     sceneCurrent.setAttribute("aria-controls", sceneList.id);
 
-    /* 図の下のメモ欄（縦向きのみ）。本人指示 2026-08-26。
+    /* canvas-stack の3段目に置く、図の下のメモ欄（縦向きのみ）。本人指示 2026-08-26。
+       2026-08-28: 縦長画面で図の下に残る余白をメモ欄へ渡すため、図と同じ箱の内側へ移した。
        ★中身は情報パネルと同じ sc().note（シーンのメモ）。別の入れ物を作らないこと——
          スマホの中だけに残る書き置きにすると、書き出しても持ち帰れない（P1-7で問題にした形）。
        ★情報パネルの欄と二枚あるので、片方を打っている間はもう片方を書き換えない
@@ -11191,7 +11192,7 @@
     memoInput.placeholder = tx("このシーンのメモ");
     memoInput.setAttribute("aria-label", tx("シーンのメモ"));
     memoBar.append(memoLabel, memoInput);
-    board.append(memoBar);
+    els.canvasStack.append(memoBar);
 
     board.prepend(toolbar);
     board.prepend(titleBar);
