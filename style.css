@@ -8736,32 +8736,30 @@ body.is-panel-dragging {
 /* 環境設定の中のショートカット一覧。既定は畳んでおく——毎回開く人のためではなく、
    「アイコンの説明」を消した人が思い出しに来るための場所なので、
    ふだんは設定の並びを邪魔しない。 */
+/* 以前は <details> の畳みだった。畳むほど長くもなく、キーを探しに来た人が
+   毎回ひと手かけていたので、右の柱へ開いたまま置く（2026-08-28）。 */
 .stage-pref-keys {
-  border-bottom: 1px solid rgba(211, 172, 89, 0.14);
-  padding: 7px 2px 9px;
+  min-width: 0;
+  padding-left: 24px;
+  border-left: 1px solid rgba(211, 172, 89, 0.14);
+  /* 設定の列の方がずっと長い。貼り付けておかないと、下の項目を見に行った
+     とたんにキーの一覧が上へ流れて消える（横に置いた意味が無くなる）。
+     ★これが効くのは上の grid に align-items: start があるため。
+       stretch のままだと桁いっぱいに伸び、貼り付く余地が無くなる。 */
+  position: sticky;
+  top: 0;
 }
 
-.stage-pref-keys-summary {
-  cursor: pointer;
-  font-size: 14px;
-  color: rgba(239, 231, 214, 0.92);
-  list-style: none;
+.stage-pref-keys-title {
+  margin: 2px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: rgba(211, 172, 89, 0.85);
 }
-
-.stage-pref-keys-summary::-webkit-details-marker { display: none; }
-
-.stage-pref-keys-summary::before {
-  content: "▸";
-  display: inline-block;
-  width: 1.1em;
-  color: var(--brass);
-  transition: transform 120ms ease;
-}
-
-.stage-pref-keys[open] .stage-pref-keys-summary::before { content: "▾"; }
 
 .stage-pref-keys-body {
-  margin: 8px 0 0 1.1em;
+  margin: 10px 0 0;
   display: grid;
   grid-template-columns: 1fr;
   gap: 4px;
@@ -9135,6 +9133,30 @@ body.is-panel-dragging {
 .stage-modal.stage-about-modal { width: min(720px, calc(100vw - 40px)); }
 .stage-modal.stage-venue-editor-modal { width: min(980px, calc(100vw - 40px)); }
 .stage-modal.stage-venue-import-modal { width: min(760px, calc(100vw - 40px)); }
+/* 環境設定は項目が増え、380pxの一列では縦に伸びて全体が見渡せなくなっていた。
+   窓を広げ、項目一覧を二列にし、ショートカット一覧は右の列へ開いたまま置く。 */
+.stage-modal.stage-prefs-modal { width: min(1180px, calc(100vw - 40px)); }
+
+/* 左に設定、右にショートカット一覧。 */
+.stage-prefs-modal .stage-modal-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 288px;
+  gap: 0 26px;
+  align-items: start;
+}
+
+.stage-prefs-main { min-width: 0; }
+
+/* 窓を広げたぶん、一行ものが横へ間延びする。案内のリンクと「端末による違い」は
+   二列に畳んで、項目一覧と同じ目の運びにする（縦にも短くなる）。 */
+.stage-prefs-modal .stage-prefs-links {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+}
+
+@media (max-width: 760px) {
+  .stage-prefs-modal .stage-prefs-links { grid-template-columns: minmax(0, 1fr); }
+}
 
 .stage-modal-head {
   display: flex;
@@ -10071,6 +10093,41 @@ body.is-panel-dragging {
 }
 .stage-pref-row input { margin-top: 3px; }
 .stage-pref-reach-row .stage-minor-action { width: 100%; margin: 0; text-align: left; }
+.stage-pref-group { margin: 0 0 16px; }
+.stage-pref-group-title {
+  margin: 16px 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: rgba(211, 172, 89, 0.85);
+}
+.stage-pref-group:first-child .stage-pref-group-title { margin-top: 12px; }
+.stage-pref-group-hint {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: rgba(239, 231, 214, 0.5);
+}
+/* 二列。行の高さは説明文の長さでばらつくので、上端で揃える */
+.stage-pref-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+}
+.stage-pref-grid .stage-pref-row { align-items: flex-start; }
+/* 窓が縮む幅（横向きでない端末・小さな画面）では一列へ戻す */
+@media (max-width: 1040px) {
+  .stage-prefs-modal .stage-modal-body { grid-template-columns: minmax(0, 1fr); }
+  .stage-pref-keys {
+    position: static;
+    margin-top: 12px;
+    padding: 8px 0 0;
+    border-left: 0;
+    border-top: 1px solid rgba(211, 172, 89, 0.14);
+  }
+}
+@media (max-width: 760px) {
+  .stage-pref-grid { grid-template-columns: minmax(0, 1fr); }
+}
 .stage-pref-name { font-size: 14px; color: rgba(239, 231, 214, 0.92); white-space: nowrap; }
 .stage-pref-hint { font-size: 12px; color: rgba(239, 231, 214, 0.5); margin: 0; }
 .stage-pref-caption-size {
@@ -11519,14 +11576,17 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
 
 .stage-scene-grid-open { grid-column: 1 / -1; }
 
-/* シーンを見渡す窓は画面いっぱい近くまで使う。1180pxでは30場面級のショーで
-   一覧の意味（全体を一目で掴む）が薄れた（2026-08-16 本人要望）。 */
+/* シーンを見渡す窓は広く使う。1180pxでは30場面級のショーで
+   一覧の意味（全体を一目で掴む）が薄れた（2026-08-16 本人要望）。
+   ただし画面いっぱい（100vw-24px）だと縁が消えて別ページのように見えたので、
+   9割に留め、暗幕の縁を残して「舞台の上に開いた窓」に戻す（2026-08-28 本人要望）。
+   9割でも1440pxの画面で1296px。上の懸念（狭くて一覧の意味が薄れる）には掛からない。 */
 .stage-modal.stage-scene-grid-modal {
   display: flex;
   flex-direction: column;
-  width: calc(100vw - 24px);
-  height: calc(100dvh - 24px);
-  max-height: calc(100dvh - 24px);
+  width: min(90vw, calc(100vw - 24px));
+  height: min(90dvh, calc(100dvh - 24px));
+  max-height: min(90dvh, calc(100dvh - 24px));
   overflow: hidden;
 }
 
@@ -12021,21 +12081,10 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
 .stage-machinery-estimated { display: inline-flex; width: fit-content; padding: 2px 7px; border: 1px solid rgba(211,172,89,.55); border-radius: 999px; color: #d3ac59; font-size: 10px; line-height: 1.35; }
 .stage-machinery-estimated[hidden] { display: none; }
 
-/* ===== 舞台スケッチ: リアルタイム共有セッション ===== */
-.stage-session-panel {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line-dark);
-}
-
-.stage-session-panel > summary {
-  color: var(--brass);
-  font-size: 10px;
-  letter-spacing: .08em;
-  line-height: 1.5;
-  cursor: pointer;
-}
-
+/* ===== 舞台スケッチ: リアルタイム共有セッション =====
+   以前は「保存」の中の <details> だった（.stage-session-panel と > summary の
+   意匠をここに持っていた）。独立したパネルへ移したので、枠と見出しは
+   .stage-panel / .stage-panel-head の側が持つ。 */
 .stage-session-body,
 .stage-session-host-controls,
 .stage-session-invite {
@@ -12202,7 +12251,12 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
 .stage-session-host-away[hidden] { display: none; }
 
 /* ゲストは見る・指す・矢印を描くための画面だけを残す。
-   class が外れれば、この表示制限もまとめて外れる。 */
+   class が外れれば、この表示制限もまとめて外れる。
+   ★保存は丸ごと隠してよい。共有が独立したパネルになり、保存の中に
+     残したいものが無くなったため（2026-08-28。以前は保存の頭と中身を
+     一つずつ避けて、中の共有欄だけを残していた）。
+   ★この並びの中に注釈を挟まないこと。セレクタとして数える検査がある
+     （tests/stage-session-resume.test.mjs）。 */
 body.stage-session-guest #stage-undo,
 body.stage-session-guest #stage-redo,
 body.stage-session-guest #stage-present-btn,
@@ -12216,9 +12270,7 @@ body.stage-session-guest .stage-panel[data-panel="light"],
 body.stage-session-guest .stage-panel[data-panel="background"],
 body.stage-session-guest .stage-panel[data-panel="inspector"],
 body.stage-session-guest .stage-panel[data-panel="ask"],
-body.stage-session-guest .stage-panel[data-panel="save"] > .stage-panel-head,
-body.stage-session-guest .stage-panel[data-panel="save"] > .stage-panel-body > :not(#stage-session-panel):not(.stage-tablet-panel-page),
-body.stage-session-guest .stage-panel[data-panel="save"] .stage-tablet-panel-page > :not(#stage-session-panel),
+body.stage-session-guest .stage-panel[data-panel="save"],
 body.stage-session-guest .stage-scene-actions,
 body.stage-session-guest .stage-tablet-rail-button[data-tablet-group="show"],
 body.stage-session-guest .stage-tablet-rail-button[data-tablet-group="cast"],
