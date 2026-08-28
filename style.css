@@ -1631,6 +1631,11 @@ textarea, input[type="text"] {
   line-height: 1.4;
 }
 
+/* 利用者の切り替わり判定が済むまで、前の人のパネル配置を一瞬見せない。 */
+.stage-sketch.stage-whoami-pending {
+  visibility: hidden;
+}
+
 /* β版の印。囲みではなく、上のキッカーと同じ小さな錆色の字で添える。
    枠付きの札にすると、題そのものより先に目へ入ってしまう。 */
 .stage-beta {
@@ -10201,9 +10206,13 @@ html.stage-pwa-tablet .stage-sketch-head {
 }
 
 html.stage-pwa-tablet .stage-sketch-head h1 {
+  display: flex;
+  align-items: center;
+  min-width: 0;
   font-size: 16px;
   line-height: 1;
   letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 html.stage-pwa-tablet .stage-app-version {
@@ -10215,7 +10224,16 @@ html.stage-pwa-tablet .stage-beta { font-size: 9px; }
 html.stage-pwa-tablet .stage-boundary-note { display: none; }
 
 html.stage-pwa-tablet .stage-sketch-head > div:first-child {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+html.stage-pwa-tablet .stage-session-guest-badge,
+html.stage-pwa-tablet .stage-session-whoami {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 html.stage-pwa-tablet .stage-tablet-top-controls,
@@ -10859,8 +10877,10 @@ html.stage-phone-viewer .stage-phone-title-beta {
   letter-spacing: 0.2em;
 }
 
-/* ゲストの目印は題の右端へ寄せる。意匠は机のものを引き継ぎ、寸法だけ帯に合わせる。 */
+/* ゲストとログイン者の目印は題の右端へ寄せる。意匠は机のものを引き継ぎ、寸法だけ帯に合わせる。 */
 html.stage-phone-viewer .stage-phone-title .stage-session-guest-badge {
+  flex: 0 1 auto;
+  min-width: 0;
   margin-left: auto;
   padding-left: 8px;
   font-size: 9px;
@@ -10868,6 +10888,21 @@ html.stage-phone-viewer .stage-phone-title .stage-session-guest-badge {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+html.stage-phone-viewer .stage-phone-title .stage-session-whoami {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 38vw;
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.stage-phone-viewer .stage-phone-title .stage-session-guest-badge:not([hidden])
+  + .stage-session-whoami:not([hidden]) { margin-left: 0; }
 
 html.stage-phone-viewer .stage-phone-title .stage-phone-title-settings {
   flex: 0 0 44px;
@@ -10882,8 +10917,10 @@ html.stage-phone-viewer .stage-phone-title .stage-phone-title-settings {
   border-left: 0;
 }
 
-/* ゲストの目印が出ているときは、その右隣に設定を置く。 */
+/* どちらかの目印が出ているときは、その右隣に設定を置く。 */
 html.stage-phone-viewer .stage-phone-title .stage-session-guest-badge:not([hidden])
+  ~ .stage-phone-title-settings,
+html.stage-phone-viewer .stage-phone-title .stage-session-whoami:not([hidden])
   + .stage-phone-title-settings { margin-left: 0; }
 
 html.stage-phone-viewer .stage-phone-toolbar {
@@ -12125,6 +12162,23 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
   white-space: nowrap;
 }
 .stage-session-guest-badge[hidden] { display: none; }
+
+/* ログインしている人の目印。ゲスト権限の目印とは出る条件が違うため、規則を分けて持つ。 */
+.stage-session-whoami {
+  display: inline-block;
+  margin-left: 14px;
+  padding-left: 10px;
+  border-left: 2px solid rgba(156, 130, 63, 0.7);
+  color: var(--brass);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  line-height: 1.5;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.stage-session-whoami[hidden] { display: none; }
 
 .stage-session-host-away {
   position: fixed;

@@ -71,6 +71,7 @@
     "共有セッション": "Shared session",
     "共有セッション。ゲストはレーザーポインタ＋矢印のみ": "Shared session. Guests use the laser pointer and arrows only",
     "ゲスト（閲覧＋矢印）": "Guest (view + arrows)",
+    "{{user}} でログイン中": "Signed in as {{user}}",
     "前回のセッションを再開": "Resume the previous session",
     "最新を取り直す": "Fetch latest",
     "前回のセッションは終了しています。新しく開始してください。":

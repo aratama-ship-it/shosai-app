@@ -1015,6 +1015,12 @@
   if (!canvas) return;
   const VENUES = window.SHOSAI_VENUES;
   if (!VENUES) return;
+  const stageSketchRoot = canvas.closest(".stage-sketch");
+  const canFetchWhoami = typeof window.fetch === "function";
+  if (canFetchWhoami && stageSketchRoot) {
+    stageSketchRoot.classList.add("stage-whoami-pending");
+    stageSketchRoot.setAttribute("aria-busy", "true");
+  }
   // stage-pwa.js は単独版でこのスクリプトより先に読み込む。
   // 通常ブラウザ版は false のままなので、既存の三列レイアウトへ一切介入しない。
   const tabletPwaActive = window.SHOSAI_TABLET_PWA === true
@@ -1149,7 +1155,56 @@
   const STORAGE_KEY = "shosai-stage-sketch-v1";          // いま開いているショー
   const SHOWS_KEY = "shosai-stage-shows-v1";              // 端末に置いた全ショー
   const SHOWS_BROKEN_KEY = "shosai-stage-shows-broken-v1"; // 壊れた棚の原文の退避先
+  const PREFS_KEY = "shosai-stage-prefs-v1";
+  const TOUR_KEY = "shosai-stage-tour-v1";
+  const LAST_USER_KEY = "shosai-stage-last-user-v1";
+  /* ★利用者が替わったときに消すのは、端末の見た目に関するこの2つだけ。
+     ショー・棚・モデル・言語の鍵はここへ足さない。 */
+  const USER_SWITCH_RESET_KEYS = [PREFS_KEY, TOUR_KEY];
   const HISTORY_LIMIT = 36;
+
+  async function fetchWhoamiIdentity() {
+    if (!canFetchWhoami) return null;
+    const controller = typeof window.AbortController === "function"
+      ? new window.AbortController() : null;
+    const timeout = window.setTimeout(() => {
+      if (controller) controller.abort();
+    }, 2500);
+    try {
+      const response = await window.fetch("/whoami", {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { "Accept": "application/json" },
+        ...(controller ? { signal: controller.signal } : {}),
+      });
+      if (!response.ok) return null;
+      const result = await response.json();
+      const user = result && typeof result.user === "string" ? result.user.trim() : "";
+      if (!user) return null;
+
+      let previousUser;
+      try { previousUser = localStorage.getItem(LAST_USER_KEY); }
+      catch (_) { return { user, switched: false }; }
+      if (previousUser === null) {
+        try { localStorage.setItem(LAST_USER_KEY, user); } catch (_) { /* 表示は続ける */ }
+        return { user, switched: false };
+      }
+      if (previousUser === user) return { user, switched: false };
+
+      USER_SWITCH_RESET_KEYS.forEach((key) => {
+        try { localStorage.removeItem(key); } catch (_) { /* 消せない設定だけ残る */ }
+      });
+      try { localStorage.setItem(LAST_USER_KEY, user); } catch (_) { /* 表示は続ける */ }
+      return { user, switched: true };
+    } catch (_) {
+      return null;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+
+  const whoamiRequest = canFetchWhoami ? fetchWhoamiIdentity() : null;
   /* 舞台に置ける駒の型。★舞台セットの種類（SET_KINDS）を足したら、
    * ここにも足すこと。無い型は「演者」に落とされる（実際に踏んだ）。 */
   const PIECE_TYPES = {
@@ -2758,6 +2813,21 @@
   const tx = (ja) => (isEn() && I18N.text[ja]) || ja;
   // 組み立てる名前。id を鍵にする
   const tm = (group, id, ja) => (isEn() && I18N.maps[group] && I18N.maps[group][id]) || ja;
+  let signedInUser = "";
+  function updateWhoamiBadge() {
+    const badge = document.getElementById("stage-session-whoami");
+    if (!badge) return;
+    if (!signedInUser) {
+      badge.textContent = "";
+      badge.hidden = true;
+      return;
+    }
+    const template = tx("{{user}} でログイン中");
+    const label = template.replace("{{user}}", signedInUser);
+    badge.textContent = label;
+    badge.title = label;
+    badge.hidden = false;
+  }
 
   /* ★開く言語はここで決める。loadState() より前であること——
    * 初めて開いた人へ出す見本の駒と場面の名前を、その言語で作るため。
@@ -2820,7 +2890,6 @@
   /* ---------- 環境設定（機能の出し入れ） ----------
      端末ごとの設定。ショーのデータには入れない（共有・書き出しに混ざらない）。
      新しい機能は原則ここに並べ、切れるようにしておく（本人の方針）。 */
-  const PREFS_KEY = "shosai-stage-prefs-v1";
   const FEATURES = [
     { key: "presentation", label: "プレゼンモード",
       hint: "上部の「プレゼン」で正面図だけを全画面に。矢印キーでシーン送り、Escで戻る" },
@@ -3088,6 +3157,12 @@
       collapsed: {},
       centerOrder: ["front", "plan"],
     };
+  }
+
+  function closedDefaultLayout() {
+    const layout = defaultLayout();
+    PANELS.forEach((id) => { layout.collapsed[id] = true; });
+    return layout;
   }
 
   function normalizeLayout(raw) {
@@ -11164,10 +11239,12 @@
       titleBeta.textContent = tx(titleBetaJa);
       titleBar.append(titleBeta);
     }
-    /* ゲストの目印もここへ移す。要素ごと動かすので id は変わらず、
-       stage-session.js の hidden 切り替えはそのまま効く。 */
+    /* ゲストとログイン者の目印もここへ移す。要素ごと動かすので id は変わらず、
+       stage-session.js と whoami の hidden 切り替えはそのまま効く。 */
     const guestBadge = document.getElementById("stage-session-guest-badge");
     if (guestBadge) titleBar.append(guestBadge);
+    const whoamiBadge = document.getElementById("stage-session-whoami");
+    if (whoamiBadge) titleBar.append(whoamiBadge);
     const settingsToggle = makePhoneIconButton("gear", tx("設定を開く"), "stage-phone-title-settings");
     settingsToggle.setAttribute("aria-pressed", "false");
     titleBar.append(settingsToggle);
@@ -20800,6 +20877,7 @@ ${propsPlotHtml}
       els.lang.textContent = isEn() ? "日本語" : "EN";
       els.lang.setAttribute("aria-pressed", String(isEn()));
     }
+    updateWhoamiBadge();
     updateBackupNote();
     document.documentElement.lang = isEn() ? "en" : "ja";
   }
@@ -20843,8 +20921,6 @@ ${propsPlotHtml}
   /* ★テスターの感想の送り先。Googleフォームのアドレスをここへ入れる。
    * 空のあいだは、押しても開かず、その旨だけ伝える（黙って何も起きないより良い）。 */
   const FEEDBACK_URL = "https://docs.google.com/forms/d/e/1FAIpQLSc-ibjOBVL5HbPC9xpjmcD-TTK3VoCmVJiGA6ouCZvGR9rW4Q/viewform";
-
-  const TOUR_KEY = "shosai-stage-tour-v1";
 
   /* 手を動かしてもらう案内。読ませるより、実際に一場面を作ってもらう。
    * 各段は「やること」を一つだけ持ち、できたら自分で次へ進む。
@@ -21925,37 +22001,9 @@ ${propsPlotHtml}
     b.addEventListener("click", () => { exportScope = b.dataset.exportScope; updateExportNote(); });
   });
 
-  initStageAskPanel();
-  buildPanelHeads();
-  initStageAudio();
-  pruneOrphanAudioSoon();
-  syncViewSwitch();
-  // 言語は loadState() より前に決めてある（見本の駒の名前がそこで決まるため）
-  applyLayout();
-  initTabletPwaWorkspace();
-  initPhoneViewerWorkspace();
-  syncInputs();
-  renderScenes();
-  renderCast();
-  renderSets();
-  renderLights();
-  renderRigs();
-  renderMachineryPresets();
-  renderVenueControls();
-  setTool("select");
-  updateInspector();
-  updateHistoryButtons();
-  updateBackupNote();
-  render();
-  setSaveStatus(loaded.restored
-    ? "この端末に保存した前回のスケッチを開きました。"
-    : "変更はこの端末のブラウザ内へ自動保存します。");
-  applyLang();
-
   /* 初めて開いた人には、こちらから声をかける。
    * 一度でも見た（または閉じた）ら、次からは上の「使い方」からだけ。 */
   let seenTour = true;
-  try { seenTour = localStorage.getItem(TOUR_KEY) === "done"; } catch (_) { seenTour = true; }
   if (els.holdSelect) {
     els.holdSelect.addEventListener("change", () => {
       const holder = selectedPiece();
@@ -22068,7 +22116,6 @@ ${propsPlotHtml}
       if (shape) lineupPerformers(shape);
     });
   }
-  applyFeatureFlags();
   if (els.importClose) els.importClose.addEventListener("click", closeImportPreview);
   if (els.importBackdrop) els.importBackdrop.addEventListener("click", closeImportPreview);
   if (els.importAsNew) els.importAsNew.addEventListener("click", () => confirmImport(true));
@@ -22109,20 +22156,10 @@ ${propsPlotHtml}
   /* 初めて開いた端末には、見本のショーを棚へ入れておく（開いているショーは変えない）。
      ★state を組み終わってから通すこと。let state より前で呼ぶと
        TDZ で落ち、try/catch が握り潰して「棚に入らない」だけになる（実際に踏んだ）。 */
-  renderScreenTexts();
-  syncScreenTextControls();
-  if (!loaded.restored) shelveSample();
-  shelveSeamGardenSample();
-  syncLocalShows();
   // 名簿タブから送られたキャスト候補。開いた時と、#stageへ切り替わった時に受け取る
-  consumeCastHandoff();
   window.addEventListener("hashchange", () => {
     if (location.hash.startsWith("#stage")) consumeCastHandoff();
   });
-  // ?sample を付けて開くと、見本から始まる（人へ渡すリンク用）
-  if (openArgs.has("sample")) openSampleShow();
-  // ?seam-sample は8セクション／32シーンの「継ぎ目の庭」を直接開く。
-  if (openArgs.has("seam-sample")) openSeamGardenSampleShow();
 
   /* 案内は舞台スケッチの中だけで起動する。
    * index.html の資料棚や舞台技術を開いた時には出さず、初回の人が #stage へ
@@ -22153,10 +22190,79 @@ ${propsPlotHtml}
   }
   // app.js の画面切替が同じ hashchange で終わった後に、表示中の画面を判定する。
   window.addEventListener("hashchange", () => setTimeout(syncStageTourContext, 0));
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", syncStageTourContext);
+
+  function finishInitialStageSetup(identity) {
+    try {
+      signedInUser = identity && identity.user ? identity.user : "";
+      if (identity && identity.switched) {
+        /* ショー本体・棚・モデル・言語は触らず、画面の持ち方だけを新しい人向けへ戻す。 */
+        prefs = {};
+        selectedPitchStyle = "theatre";
+        selectedPitchSize = "2";
+        selectedPitchLangs = null;
+        state.layout = closedDefaultLayout();
+      }
+
+      initStageAskPanel();
+      buildPanelHeads();
+      initStageAudio();
+      pruneOrphanAudioSoon();
+      syncViewSwitch();
+      // 言語は loadState() より前に決めてある（見本の駒の名前がそこで決まるため）
+      applyLayout();
+      initTabletPwaWorkspace();
+      initPhoneViewerWorkspace();
+      syncInputs();
+      renderScenes();
+      renderCast();
+      renderSets();
+      renderLights();
+      renderRigs();
+      renderMachineryPresets();
+      renderVenueControls();
+      setTool("select");
+      updateInspector();
+      updateHistoryButtons();
+      updateBackupNote();
+      render();
+      setSaveStatus(loaded.restored
+        ? "この端末に保存した前回のスケッチを開きました。"
+        : "変更はこの端末のブラウザ内へ自動保存します。");
+      applyLang();
+      applyFeatureFlags();
+
+      try { seenTour = localStorage.getItem(TOUR_KEY) === "done"; }
+      catch (_) { seenTour = true; }
+      renderScreenTexts();
+      syncScreenTextControls();
+      if (!loaded.restored) shelveSample();
+      shelveSeamGardenSample();
+      syncLocalShows();
+      consumeCastHandoff();
+      // ?sample を付けて開くと、見本から始まる（人へ渡すリンク用）
+      if (openArgs.has("sample")) openSampleShow();
+      // ?seam-sample は8セクション／32シーンの「継ぎ目の庭」を直接開く。
+      if (openArgs.has("seam-sample")) openSeamGardenSampleShow();
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", syncStageTourContext);
+      } else {
+        syncStageTourContext();
+      }
+    } finally {
+      if (stageSketchRoot) {
+        stageSketchRoot.classList.remove("stage-whoami-pending");
+        stageSketchRoot.removeAttribute("aria-busy");
+      }
+    }
+  }
+
+  /* 実ブラウザでは /whoami を待ってから初回描画する。DOMだけの単体テストなど
+     fetch が無い環境では、従来どおり同期的に組み立てる。 */
+  if (whoamiRequest) {
+    whoamiRequest.then(finishInitialStageSetup, () => finishInitialStageSetup(null));
   } else {
-    syncStageTourContext();
+    finishInitialStageSetup(null);
   }
 
   window.SHOSAI_STAGE_SESSION_BRIDGE = Object.freeze({

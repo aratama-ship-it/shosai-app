@@ -91,7 +91,32 @@ async function handleSessionRequest(request, env) {
   return jsonResponse({ ok: false, error: "not-found" }, 404);
 }
 
-async function serveAuthenticatedRequest(request, env) {
+function handleWhoamiRequest(request, user) {
+  const { pathname } = new URL(request.url);
+  if (pathname !== "/whoami") return null;
+
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return new Response(null, {
+      status: 405,
+      headers: {
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
+  return new Response(request.method === "HEAD" ? null : JSON.stringify({ user: user || "" }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+async function serveAuthenticatedRequest(request, env, user) {
+  const whoamiResponse = handleWhoamiRequest(request, user);
+  if (whoamiResponse) return whoamiResponse;
   const sessionResponse = await handleSessionRequest(request, env);
   if (sessionResponse) return sessionResponse;
   return env.ASSETS.fetch(request);
@@ -583,7 +608,7 @@ export default {
     // 全入口が未設定で通せるのはローカルだけ。設定ミスはローカルでも止める。
     if (accounts.length === 0 || misconfigured) {
       if (isLocalHost(request) && !misconfigured) {
-        return serveAuthenticatedRequest(request, env);
+        return serveAuthenticatedRequest(request, env, null);
       }
       return new Response("認証設定が未完了のため停止しています。", {
         status: 503,
@@ -619,14 +644,14 @@ export default {
       readCookie(request, SESSION_COOKIE), accounts, nowSeconds,
     );
     if (cookieUser) {
-      return serveAuthenticatedRequest(request, env);
+      return serveAuthenticatedRequest(request, env, cookieUser);
     }
 
     // ② Basic認証。既存の道具（curl・MCP等）の入口を壊さないために残す。
     //    通ったらクッキーも配って、次からはクッキー側で通るようにする。
     const basicAccount = matchBasicAuth(request, accounts);
     if (basicAccount) {
-      const response = await serveAuthenticatedRequest(request, env);
+      const response = await serveAuthenticatedRequest(request, env, basicAccount[0]);
       const token = await createSessionToken(basicAccount[0], basicAccount[1], nowSeconds);
       return withSessionCookie(response, token);
     }

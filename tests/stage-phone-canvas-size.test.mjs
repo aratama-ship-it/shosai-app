@@ -53,8 +53,10 @@ test("applyCanvasSizeは4枚のcanvasを同じ高さへ張り替える", () => {
 
 test("初回のcanvas寸法更新は最初の描画より前に行う", () => {
   const initialApply = source.indexOf("\n  applyCanvasSize();");
-  const initialRender = source.indexOf("\n  render();");
+  const initialSetup = source.indexOf("function finishInitialStageSetup(identity)");
+  const initialRender = source.indexOf("render();", initialSetup);
   assert.ok(initialApply >= 0, "初回のapplyCanvasSize呼び出しが必要です");
+  assert.ok(initialSetup > initialApply, "whoami後の初回セットアップが必要です");
   assert.ok(initialRender > initialApply, "初回の寸法更新は最初の描画より前です");
 });
 
