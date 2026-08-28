@@ -374,8 +374,8 @@
     "いまのショーを置き換える": "Replace the current show",
     "設定": "Settings",
     "環境設定": "Preferences",
-    "機能の出し入れ（環境設定）": "Turn features on and off (preferences)",
-    "設定（機能の出し入れ・言語）": "Settings (features and language)",
+    "機能のオン/オフ（環境設定）": "Turn features on and off (preferences)",
+    "設定（機能のオン/オフ・言語）": "Settings (features and language)",
     "言語 / Language": "Language / 言語",
     "画面の文字を日本語と英語で切り替えます。": "Switches the interface between Japanese and English.",
     "アイコンの説明": "Icon tips",
@@ -383,9 +383,9 @@
       "Hovering a tool icon shows its name, shortcut and what it does. Turn it off once you know them",
     "この端末だけの設定です。ショーのデータには入らず、書き出しや共有にも混ざりません。":
       "Saved on this device only. Never part of the show data, exports or shared sessions.",
-    "パネルの出し入れ": "Panels",
+    "パネルのオン/オフ": "Panels",
     "リアルタイム共有": "Live sharing",
-    "機能の出し入れ": "Features",
+    "機能のオン/オフ": "Features",
     "左の列に並べる欄です。OFFにしても、そこで作った内容は消えません。":
       "Panels shown in the left column. Turning one off never deletes what you made in it.",
     "音楽パネル": "Music panel",

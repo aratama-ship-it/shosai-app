@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=217">
+<link rel="stylesheet" href="style.css?v=218">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -34,7 +34,7 @@
         <div class="stage-history-actions">
           <button type="button" id="stage-undo" data-tablet-icon="↶" title="⌘Z（WindowsはCtrl+Z）" disabled>一つ戻す</button>
           <button type="button" id="stage-redo" data-tablet-icon="↷" title="⇧⌘Z（WindowsはCtrl+Shift+Z）" disabled>やり直す</button>
-          <button type="button" class="stage-lang stage-gear-btn" id="stage-prefs-btn" data-tablet-icon="⚙" aria-label="設定" title="設定（機能の出し入れ・言語）"><span aria-hidden="true"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4.2" stroke-width="1.3"/><circle cx="8" cy="8" r="1.4" stroke-width="1.3"/><path stroke-width="2.3" d="M8 3.10V1.90M11.94 5.55l1.04-.60M11.94 10.45l1.04.60M8 12.90v1.20M4.06 10.45l-1.04.60M4.06 5.55l-1.04-.60"/></svg></span></button>
+          <button type="button" class="stage-lang stage-gear-btn" id="stage-prefs-btn" data-tablet-icon="⚙" aria-label="設定" title="設定（機能のオン/オフ・言語）"><span aria-hidden="true"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4.2" stroke-width="1.3"/><circle cx="8" cy="8" r="1.4" stroke-width="1.3"/><path stroke-width="2.3" d="M8 3.10V1.90M11.94 5.55l1.04-.60M11.94 10.45l1.04.60M8 12.90v1.20M4.06 10.45l-1.04.60M4.06 5.55l-1.04-.60"/></svg></span></button>
           <button type="button" class="stage-lang" id="stage-present-btn" data-tablet-icon="▶" title="正面図だけを全画面で見せる。矢印キーでシーン送り、Escで戻る">プレゼン</button>
           <button type="button" class="stage-export" id="stage-export" data-tablet-icon="⇩">画像を書き出す</button>
         </div>
@@ -1442,7 +1442,7 @@
       <button type="button" class="stage-lang" id="stage-lang" aria-pressed="false"
               title="日本語 / English">EN</button>
     </div>
-    <!-- 使い方まわりは5つある。全部並べると設定の主目的（機能の出し入れ）が
+    <!-- 使い方まわりは5つある。全部並べると設定の主目的（機能のオン/オフ）が
          押し出されるので、畳んでおく。言語のすぐ下＝読める言葉になった直後に置く。 -->
     <details class="stage-pref-guide" id="stage-pref-guide">
       <summary class="stage-pref-guide-summary">
@@ -1462,7 +1462,9 @@
          書斎のブロックは単独配布版では隠す（stage-sketch.js が制御）。 -->
     <div class="stage-pref-row stage-pref-reach-row">
       <button type="button" class="stage-minor-action" id="stage-reach-open">端末による違い</button>
-      <button type="button" class="stage-about-link" id="stage-about-open-from-prefs">このアプリについて</button>
+    </div>
+    <div class="stage-pref-row stage-pref-about-row">
+      <button type="button" class="stage-minor-action" id="stage-about-open-from-prefs">このアプリについて</button>
     </div>
     <!-- 取り返しのつかない操作なので、設定のいちばん下に単独で置く。
          押しても二度たずねるまでは何も起きない（stage-sketch.js の resetToFirstRun）。 -->
@@ -1828,7 +1830,7 @@
 <script src="stage-audio-store.js?v=2"></script>
 <script src="manual/manual-content.js?v=1"></script>
 <script src="stage-pwa.js?v=6"></script>
-<script src="stage-sketch.js?v=305"></script>
+<script src="stage-sketch.js?v=306"></script>
 <script src="stage-session.js?v=9"></script>
 <script src="stage-venue-editor.js?v=6"></script>
 </body>

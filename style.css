@@ -10099,7 +10099,7 @@ body.is-panel-dragging {
 
 /* ---- 環境設定 ---- */
 /* ---------- 設定内「使い方」のアコーディオン ----------
-   案内・検索・冊子・感想の5つ。全部並べると設定の主目的（機能の出し入れ）が
+   案内・検索・冊子・感想の5つ。全部並べると設定の主目的（機能のオン/オフ）が
    下へ押し出されるので、既定は畳んでおく。言語行のすぐ下に置く。
    <details> の素の三角は消し、他の設定行と同じ罫で揃える。 */
 .stage-pref-guide {
@@ -10147,7 +10147,11 @@ body.is-panel-dragging {
   border-bottom: 1px solid rgba(211, 172, 89, 0.14);
 }
 .stage-pref-row input { margin-top: 3px; }
-.stage-pref-reach-row .stage-minor-action { width: 100%; margin: 0; text-align: left; }
+/* 「端末による違い」と「このアプリについて」は、どちらも窓を開くだけの入口。
+   同じ幅・同じ体裁で1行ずつ並べる（横に2つ置くと、長いほうが折り返して崩れた）。 */
+.stage-pref-reach-row .stage-minor-action,
+.stage-pref-about-row .stage-minor-action { width: 100%; margin: 0; text-align: left; }
+.stage-pref-about-row { border-bottom: 1px solid rgba(211, 172, 89, 0.14); }
 /* 取り返しのつかない操作。錆色の輪郭で、押す前に一拍おいてもらう。
    赤系の塗りつぶしにはしない（この画面の他の要素より強く見えすぎるため）。 */
 .stage-pref-reset-row { align-items: flex-start; }

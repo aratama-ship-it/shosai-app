@@ -2885,7 +2885,7 @@
     return (member && member.look) || null;
   }
 
-  /* ---------- 環境設定（機能の出し入れ） ----------
+  /* ---------- 環境設定（機能のオン/オフ） ----------
      端末ごとの設定。ショーのデータには入れない（共有・書き出しに混ざらない）。
      新しい機能は原則ここに並べ、切れるようにしておく（本人の方針）。 */
   const FEATURES = [
@@ -2921,7 +2921,7 @@
   const FEATURES_PLANNED = [
     "転換アニメの動画書き出し", "見えない席の検査（遮蔽）", "複数選択と整形", "資料棚からの場面引用",
   ];
-  /* ---------- パネルの出し入れ（PC版だけ） ----------
+  /* ---------- パネルのオン/オフ（PC版だけ） ----------
      初めて開いた人の机に、道具を全部並べない。音楽・舞台機構・セット登録・背景は
      「要ると分かってから出す」もので、最初の一枚を描くのには要らない。
      ★畳む（layout.collapsed）とは別の仕組みにしてある。畳みはショーごとの持ち物で
@@ -15721,7 +15721,7 @@
     host.append(note);
   }
 
-  /* 環境設定の一行。パネルの出し入れも機能の出し入れも同じ形なので、
+  /* 環境設定の一行。パネルのオン/オフも機能のオン/オフも同じ形なので、
      組み立ては一箇所で持つ（片方だけ手触りが変わるのを避ける）。 */
   function prefRow(f) {
     const isCaption = f.key === "presentCaption";
@@ -15811,14 +15811,14 @@
     const host = els.prefsList;
     if (!host) return;
     host.innerHTML = "";
-    // パネルの出し入れはPCの三列UIの話。iPad・スマホでは出さない
+    // パネルのオン/オフはPCの三列UIの話。iPad・スマホでは出さない
     if (!tabletUi && !phoneViewerActive) {
-      const panels = prefGroup("パネルの出し入れ",
+      const panels = prefGroup("パネルのオン/オフ",
         "左の列に並べる欄です。OFFにしても、そこで作った内容は消えません。");
       PANEL_FEATURES.forEach((f) => { panels.grid.append(prefRow(f)); });
       host.append(panels.group);
     }
-    const features = prefGroup("機能の出し入れ", "");
+    const features = prefGroup("機能のオン/オフ", "");
     FEATURES.forEach((f) => { features.grid.append(prefRow(f)); });
     FEATURES_PLANNED.forEach((label) => {
       const row = document.createElement("div");
@@ -16021,7 +16021,7 @@
     closePrefs();
     openAbout();
   }
-  // 機能の出し入れをボタンの表示へ反映する
+  // 機能のオン/オフをボタンの表示へ反映する
   function applyFeatureFlags() {
     applyPanelVisibility();
     if (els.presentBtn) els.presentBtn.hidden = !featureOn("presentation");
