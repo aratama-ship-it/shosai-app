@@ -689,11 +689,11 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
   for (const [name, version] of [
     ["stage-venues.js", "20"],
     ["stage-venue-lines.js", "4"],
-    ["stage-i18n.js", "87"],
+    ["stage-i18n.js", "88"],
     ["stage-set-model.js", "1"],
     ["stage-set-builder.js", "1"],
-    ["stage-sketch.js", "306"],
-    ["stage-venue-editor.js", "6"],
+    ["stage-sketch.js", "307"],
+    ["stage-venue-editor.js", "7"],
   ]) {
     const reference = `${name}?v=${version}`;
     assert.ok(indexSource.includes(reference), `${reference} がindex.htmlにある`);

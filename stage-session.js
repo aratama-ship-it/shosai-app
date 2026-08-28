@@ -64,32 +64,50 @@
   const sentArrowOps = new Set();
   const remotePointers = new Map();
 
-  function sessionText(japanese) {
-    let english = false;
-    try { english = bridge.isEnglish() === true; } catch (_) { /* v2用 */ }
-    const translations = window.SHOSAI_I18N && window.SHOSAI_I18N.text;
-    return english && translations && translations[japanese] ? translations[japanese] : japanese;
+  function sessionEnglish() {
+    try { return bridge.isEnglish() === true; } catch (_) { return false; }
   }
 
-  function setJapaneseLabels() {
-    els.panel.hidden = false;
-    if (els.summary) els.summary.textContent = "リアルタイム共有（会議用）";
-    if (els.hostNameLabel) els.hostNameLabel.textContent = "表示名";
-    els.start.textContent = "セッションを開始";
-    if (els.resume) els.resume.textContent = sessionText("前回のセッションを再開");
-    if (els.urlLabel) els.urlLabel.textContent = "招待URL";
-    if (els.copy) els.copy.textContent = "コピー";
-    if (els.guestNote) els.guestNote.textContent = "ゲスト参加中: 使える共有操作はレーザーポインタと矢印だけです。駒は動かせません。";
-    if (els.guestBadge) els.guestBadge.textContent = "ゲスト（閲覧＋矢印）";
-    if (els.hostAway) els.hostAway.textContent = sessionText("ホストの接続が切れています。復帰を待っています…");
-    if (els.participantsLabel) els.participantsLabel.textContent = "参加者";
-    if (els.clearGuestArrows) els.clearGuestArrows.textContent = "ゲスト注釈を一括消去";
-    if (els.refresh) els.refresh.textContent = sessionText("最新を取り直す");
-    if (els.reconnect) els.reconnect.textContent = "再接続";
+  /* 文言はすべて日本語で組み立て、出口で訳す。
+     完全一致（text）→型変換（say。名前や数を捕捉して埋め直す）の順で引き、
+     どちらにも無ければそのまま出す（日本語が見えたら「表に無い」の印）。 */
+  function sessionText(japanese) {
+    if (!sessionEnglish()) return japanese;
+    const i18n = window.SHOSAI_I18N;
+    if (!i18n) return japanese;
+    if (i18n.text && i18n.text[japanese]) return i18n.text[japanese];
+    if (i18n.say) {
+      for (const [pattern, english] of i18n.say) {
+        if (pattern.test(japanese)) return japanese.replace(pattern, english);
+      }
+    }
+    return japanese;
   }
+
+  function applySessionLabels() {
+    els.panel.hidden = false;
+    if (els.summary) els.summary.textContent = sessionText("リアルタイム共有（会議用）");
+    if (els.hostNameLabel) els.hostNameLabel.textContent = sessionText("表示名");
+    els.start.textContent = sessionText("セッションを開始");
+    if (els.resume) els.resume.textContent = sessionText("前回のセッションを再開");
+    if (els.urlLabel) els.urlLabel.textContent = sessionText("招待URL");
+    if (els.copy) els.copy.textContent = sessionText("コピー");
+    if (els.guestNote) els.guestNote.textContent = sessionText("ゲスト参加中: 使える共有操作はレーザーポインタと矢印だけです。駒は動かせません。");
+    if (els.guestBadge) els.guestBadge.textContent = sessionText("ゲスト（閲覧＋矢印）");
+    if (els.hostAway) els.hostAway.textContent = sessionText("ホストの接続が切れています。復帰を待っています…");
+    if (els.participantsLabel) els.participantsLabel.textContent = sessionText("参加者");
+    if (els.clearGuestArrows) els.clearGuestArrows.textContent = sessionText("ゲスト注釈を一括消去");
+    if (els.refresh) els.refresh.textContent = sessionText("最新を取り直す");
+    if (els.reconnect) els.reconnect.textContent = sessionText("再接続");
+  }
+
+  /* 直近の状態を日本語のまま覚えておき、言語切替の relabel() で引き直す */
+  let lastStatus = { message: "", isError: false };
+  let lastParticipants = [];
 
   function setStatus(message, isError = false) {
-    els.status.textContent = message;
+    lastStatus = { message, isError };
+    els.status.textContent = sessionText(message);
     els.status.classList.toggle("is-error", isError);
   }
 
@@ -398,6 +416,8 @@
 
   function renderParticipants(rawParticipants) {
     const participants = Array.isArray(rawParticipants) ? rawParticipants : [];
+    lastParticipants = participants;
+    const english = sessionEnglish();
     els.participants.replaceChildren();
     participants.forEach((participant) => {
       if (!participant || typeof participant !== "object") return;
@@ -405,13 +425,14 @@
       const dot = document.createElement("span");
       dot.className = "stage-session-participant-dot";
       dot.style.backgroundColor = typeof participant.color === "string" ? participant.color : "#d3ac59";
-      const name = normalizeName(participant.name, "名前なし");
-      item.append(dot, document.createTextNode(`${name}（${roleLabel(participant.role)}）`));
+      const name = normalizeName(participant.name, sessionText("名前なし"));
+      const role = sessionText(roleLabel(participant.role));
+      item.append(dot, document.createTextNode(english ? `${name} (${role})` : `${name}（${role}）`));
       els.participants.append(item);
     });
     if (!els.participants.childElementCount) {
       const empty = document.createElement("li");
-      empty.textContent = "まだ参加者はいません。";
+      empty.textContent = sessionText("まだ参加者はいません。");
       els.participants.append(empty);
     }
     const activeIds = new Set(participants.map((participant) => participant && participant.clientId).filter(Boolean));
@@ -629,7 +650,7 @@
     activityBanner.querySelector(".stage-session-activity-dot").style.backgroundColor = color;
     activityBanner.style.setProperty("--stage-session-activity-color", color);
     activityBanner.querySelector(".stage-session-activity-text").textContent =
-      `いま操作中: ${normalizeName(from.name, "参加者")}`;
+      sessionText(`いま操作中: ${normalizeName(from.name, sessionText("名前なし"))}`);
     activityBanner.classList.add("is-visible");
     clearTimeout(activityHideTimer);
     activityHideTimer = setTimeout(() => {
@@ -644,7 +665,15 @@
     else if (role === "guest") sendGuestDifferences();
   }
 
-  window.SHOSAI_STAGE_SESSION_HOOKS = { onLocalChange, restoreSessionPanelHome };
+  /* 言語切替のとき stage-sketch から呼ばれる。ラベル・状態・参加者を引き直す。
+     パネルは data-no-i18n で全体ウォーカーの対象外（ここが一元管理）。 */
+  function relabel() {
+    applySessionLabels();
+    if (lastStatus.message) setStatus(lastStatus.message, lastStatus.isError);
+    renderParticipants(lastParticipants);
+  }
+
+  window.SHOSAI_STAGE_SESSION_HOOKS = { onLocalChange, restoreSessionPanelHome, relabel };
 
   function pointerHost() {
     return els.planCanvas && els.planCanvas.parentElement;
@@ -677,7 +706,7 @@
     entry.node.style.top = `${message.y * 100}%`;
     entry.node.style.backgroundColor = color;
     entry.node.style.setProperty("--stage-session-pointer-color", color);
-    entry.label.textContent = normalizeName(from.name, "ゲスト");
+    entry.label.textContent = normalizeName(from.name, sessionText("ゲスト"));
     clearTimeout(entry.timer);
     entry.timer = setTimeout(() => removeRemotePointer(from.clientId), POINTER_TTL_MS);
   }
@@ -928,7 +957,7 @@
             setStatus("ネットワークに接続できないため、セッションを開始できませんでした。", true);
           } else {
             const status = /^http-(\d+)$/.exec(reason);
-            setStatus(`セッションを開始できませんでした（${status ? `HTTP ${status[1]}` : reason}）。`, true);
+            setStatus(`セッションを開始できませんでした（${status ? `HTTP ${status[1]}` : sessionText(reason)}）。`, true);
           }
           return;
         }
@@ -957,7 +986,7 @@
       roomId = "";
       hostKey = "";
       els.start.disabled = false;
-      setStatus(`セッションを開始できませんでした（${error && error.message ? error.message : "不明なエラー"}）。`, true);
+      setStatus(`セッションを開始できませんでした（${error && error.message ? error.message : sessionText("不明なエラー")}）。`, true);
     }
   }
 
@@ -1055,7 +1084,7 @@
   }
 
   if (els.hostName) els.hostName.value = readStoredName("ホスト");
-  setJapaneseLabels();
+  applySessionLabels();
   storedHostSession = readStoredHostSession();
   updateResumeButton();
   renderParticipants([]);

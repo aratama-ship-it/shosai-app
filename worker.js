@@ -280,6 +280,13 @@ function escapeHtml(value) {
    暗い机、上端に緞帳の襞、紙が一枚差し込まれ、そこに光が落ちている。
    認証の外に出る画面なので、外部リソースを一切参照しない（CSSは埋め込み、
    絵は認証を通さず取れる /icons/ のものだけ）。 */
+/* サインインのエラー英訳。和文が主、英文は添え書き。 */
+const SIGN_IN_ERROR_EN = {
+  "入力を読み取れませんでした。もう一度お願いします。": "The form could not be read. Please try again.",
+  "お名前かパスワードが違うようです。": "The name or password does not look right.",
+  "認証設定が未完了のため停止しています。": "Sign-in is paused because authentication is not fully configured.",
+};
+
 function signInPage({ next = "/", error = "" } = {}) {
   return `<!DOCTYPE html>
 <html lang="ja">
@@ -401,6 +408,14 @@ function signInPage({ next = "/", error = "" } = {}) {
   button:hover { background: var(--rust-deep); }
   button:active { transform: translateY(1px); }
 
+  /* 英語の添え書き。招かれた人に英語話者がいるため、主要な言葉に小さく並記する。
+     和文が主・英文が従の関係を崩さない大きさと色にとどめる。 */
+  .en { color: var(--ink-soft); font-weight: normal; }
+  .lede .en { display: block; font-size: 11px; letter-spacing: 0.04em; margin-top: 3px; }
+  label .en { font-size: 10px; margin-left: 7px; letter-spacing: 0.05em; }
+  button[type="submit"] .en { font-size: 11px; margin-left: 8px; opacity: 0.75; }
+  .note .en { display: block; margin-top: 4px; }
+  .alert .en { display: block; margin-top: 3px; font-size: 10.5px; }
   .note {
     margin-top: 20px;
     padding-left: 11px;
@@ -432,22 +447,26 @@ function signInPage({ next = "/", error = "" } = {}) {
     <form class="sheet" method="POST" action="${escapeHtml(SIGN_IN_PATH)}">
       <img class="mark" src="/icons/stage-sketch-192.png" alt="" width="54" height="54">
       <h1>制作の書斎</h1>
-      <p class="lede">舞台をつくるための机と、資料棚。</p>
+      <p class="lede">舞台をつくるための机と、資料棚。<span class="en">A desk and a shelf for building stage work.</span></p>
       <hr class="rule">
-      ${error ? `<p class="alert" role="alert">${escapeHtml(error)}</p>` : ""}
+      ${error ? `<p class="alert" role="alert">${escapeHtml(error)}${
+        SIGN_IN_ERROR_EN[error] ? `<span class="en">${escapeHtml(SIGN_IN_ERROR_EN[error])}</span>` : ""
+      }</p>` : ""}
       <label>
-        <span>お名前</span>
+        <span>お名前<span class="en">Name</span></span>
         <input type="text" name="user" autocomplete="username"
                autocapitalize="none" autocorrect="off" spellcheck="false" required autofocus>
       </label>
       <label>
-        <span>パスワード</span>
+        <span>パスワード<span class="en">Password</span></span>
         <input type="password" name="pass" autocomplete="current-password" required>
       </label>
       <input type="hidden" name="next" value="${escapeHtml(next)}">
-      <button type="submit">中へ入る</button>
+      <button type="submit">中へ入る<span class="en">Enter</span></button>
       <p class="note">招かれた方は、お渡ししたお名前とパスワードでお入りください。
-        一度入ると、しばらくは聞かれません。</p>
+        一度入ると、しばらくは聞かれません。
+        <span class="en">If you were invited, sign in with the name and password you were given.
+        Once you are in, you will not be asked again for a while.</span></p>
     </form>
   </main>
   <script>

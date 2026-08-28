@@ -871,13 +871,13 @@
       button.setAttribute("aria-pressed", String(button.dataset.venueEditorMode === state.mode));
     });
     const dims = dimensions();
-    els.dims.textContent = `間口 だいたい${approxM(dims.width)}m ・ 奥行 だいたい${approxM(dims.depth)}m`;
+    els.dims.textContent = translatedStatus(`間口 だいたい${approxM(dims.width)}m ・ 奥行 だいたい${approxM(dims.depth)}m`);
     const band = selectedBand();
     els.audienceMode.disabled = !band;
     els.audienceRemove.disabled = !band;
     els.audienceMode.checked = Boolean(band && band.mode === "seated");
     els.audienceSelection.textContent = band
-      ? `辺 ${band.edgeIndex + 1} の観客 ・ 深さ だいたい${approxM(band.depthM)}m`
+      ? translatedStatus(`辺 ${band.edgeIndex + 1} の観客 ・ 深さ だいたい${approxM(band.depthM)}m`)
       : (state.audience.length
         ? `観客の帯 ${state.audience.length}本（外側の丸をタップして選択）`
         : "観客の帯はまだありません");
@@ -933,7 +933,7 @@
     if (els.probeHeadroom) {
       const headroom = Math.round(linesResult.fall.headroomM * 2) / 2;
       const amount = `${headroom < 0 ? "−" : "+"}${Math.abs(headroom).toFixed(1)}m`;
-      els.probeHeadroom.textContent = `天井まで だいたい${amount}${headroom < 0 ? "（天井高を超える見込み）" : ""}`;
+      els.probeHeadroom.textContent = translatedStatus(`天井まで だいたい${amount}${headroom < 0 ? "（天井高を超える見込み）" : ""}`);
     }
     if (els.probeStatus) {
       els.probeStatus.textContent = linesResult.fall.audienceOverlap
@@ -963,7 +963,7 @@
   }
 
   function setStatus(message) {
-    els.status.textContent = message;
+    els.status.textContent = translatedStatus(message);
   }
 
   function setShape(shape) {

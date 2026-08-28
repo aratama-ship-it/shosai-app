@@ -18455,7 +18455,7 @@ ${propsPlotHtml}
     if (els.animMs) {
       if (document.activeElement !== els.animMs) els.animMs.value = String(state.sceneAnimMs / 1000);
       els.animMs.disabled = !state.animateScenes;
-      if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}秒`;
+      if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}${isEn() ? "s" : "秒"}`;
     }
     syncSeatMapToggle();
   }
@@ -20369,7 +20369,7 @@ ${propsPlotHtml}
   if (els.animMs) {
     els.animMs.addEventListener("input", (e) => {
       state.sceneAnimMs = clamp(finite(e.target.value, 2) * 1000, 200, 3000);
-      if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}秒`;
+      if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}${isEn() ? "s" : "秒"}`;
       persistSoon();
     });
   }
@@ -20974,6 +20974,8 @@ ${propsPlotHtml}
     };
     const roots = [
       document.getElementById("view-stage"),
+      // 使い方の案内はモーダルではない重ね物なので、明示して回す
+      document.getElementById("stage-tour"),
       ...document.querySelectorAll(".stage-modal, .stage-present-overlay"),
     ].filter(Boolean);
     // 読み上げや行分けのために、文書そのものの言語も合わせる
@@ -21007,6 +21009,11 @@ ${propsPlotHtml}
     if (els.sceneGridModal && !els.sceneGridModal.hidden) renderSceneGrid();
     if (els.prefsModal && !els.prefsModal.hidden) { renderPrefs(); renderPrefKeys(); }
     if (els.helpModal && !els.helpModal.hidden) renderManualHelp();
+    renderMachineryPresets();
+    renderModelPicker();
+    if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}${isEn() ? "s" : "秒"}`;
+    // 共有セッションのパネルは data-no-i18n（自前管理）。フックで引き直してもらう
+    try { window.SHOSAI_STAGE_SESSION_HOOKS?.relabel?.(); } catch (_) { /* 未読込なら次の描画で揃う */ }
     renderCast();
     renderSets();
     renderLights();
