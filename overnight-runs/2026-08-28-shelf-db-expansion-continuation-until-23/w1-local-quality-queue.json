@@ -1,0 +1,109 @@
+{
+  "run_id": "2026-08-28-shelf-db-expansion-continuation-until-23",
+  "wave": "W1",
+  "created_at": "2026-08-28T10:45:00+09:00",
+  "kind": "review_only_priority_queue",
+  "scope": "Current local canonical data and current shelf application only; no record creation, merge, or source retrieval.",
+  "baseline_counts": {
+    "references": 2663,
+    "persons": 1331,
+    "staging_features": 76,
+    "elements": 742,
+    "element_relations": 211,
+    "candidates": 472,
+    "catalog_entries": 561,
+    "intake_catalogs": 16,
+    "intake_works": 297,
+    "intake_leads": 21
+  },
+  "priority_method": "Rank by direct usefulness to a creative reference shelf first, then by evidence/identity risk. Counts are audit signals, not defects or automatic apply instructions.",
+  "clusters": [
+    {
+      "rank": 1,
+      "id": "creative-search-coverage",
+      "audit_signals": {
+        "reference_staging_features_missing": 2307,
+        "element_feature_links_missing": 496
+      },
+      "why_this_matters": "The shelf's stated search entry includes visual and structural terms. Missing feature assignments and feature-element bridges reduce reliable discovery by staging image or structure.",
+      "allowed_follow_up": "Select existing records for a source-bounded review proposal; keep unknowns as holds.",
+      "not_allowed": "Infer imagery, structure, technique, safety practice, or a feature assignment from titles or genre alone.",
+      "evidence": [
+        "show-reference/scripts/audit_data_gaps.py",
+        "shosai-app/index.html: db-search placeholder",
+        "shosai-app/build_db.py: staging lens derivation"
+      ]
+    },
+    {
+      "rank": 2,
+      "id": "attribution-and-person-discovery",
+      "audit_signals": {
+        "reference_people_missing": 2128,
+        "person_profile_missing": 1268
+      },
+      "why_this_matters": "Credits and creator paths are valuable shelf entry points, but the current counts show that a large share of references lack linked people or a usable profile.",
+      "allowed_follow_up": "Audit existing direct-credit evidence and propose isolated, source-specific review targets.",
+      "not_allowed": "Resolve same-name people, add roles, or infer credits from company affiliation or secondary summaries.",
+      "evidence": [
+        "show-reference/scripts/audit_data_gaps.py",
+        "show-reference/scripts/query_person.py"
+      ]
+    },
+    {
+      "rank": 3,
+      "id": "chronology-and-title-fidelity",
+      "audit_signals": {
+        "reference_year_missing": 536,
+        "reference_original_title_missing": 1
+      },
+      "why_this_matters": "Chronology and original titles support edition-aware browsing and prevent search results from implying that similarly named works are the same production.",
+      "allowed_follow_up": "List existing records whose own local source metadata can support a later review.",
+      "not_allowed": "Guess a premiere year, translation, edition, family relation, or current availability.",
+      "evidence": [
+        "show-reference/scripts/audit_data_gaps.py",
+        "show-reference/data/reference_index.json"
+      ]
+    },
+    {
+      "rank": 4,
+      "id": "catalog-to-reference-traceability",
+      "audit_signals": {
+        "catalog_not_elementized": 21,
+        "official_linked_unread": 61,
+        "catalog_shared_unread": 19
+      },
+      "why_this_matters": "Catalog entries can be valuable provenance paths, but they should not be treated as read, elementized, or work-specific without direct evidence.",
+      "allowed_follow_up": "Create a local status visualization and source-resolution review order only.",
+      "not_allowed": "Fetch new pages in this run, promote intake records, or treat shared catalog text as individual-work evidence.",
+      "evidence": [
+        "show-reference/scripts/audit_data_gaps.py",
+        "show-reference/scripts/query_research_intake.py",
+        "show-reference/data/research_intake.json"
+      ]
+    },
+    {
+      "rank": 5,
+      "id": "identity-and-title-collision-guardrails",
+      "audit_signals": {
+        "canonical_title_collision_groups": 4,
+        "intake_title_collision_groups": 2,
+        "cross_title_overlaps": 225,
+        "reported_existing_title_candidates": 222
+      },
+      "why_this_matters": "The shelf needs search results to preserve distinct productions, versions, and entries rather than collapsing them because names overlap.",
+      "allowed_follow_up": "Document collision-aware UI/search requirements and select evidence thresholds for a later human review.",
+      "not_allowed": "Canonical merge, duplicate deletion, or identity resolution based only on matching titles.",
+      "evidence": [
+        "show-reference/scripts/audit_data_gaps.py",
+        "show-reference/scripts/query_research_intake.py"
+      ]
+    }
+  ],
+  "out_of_scope": [
+    "Canonical data updates",
+    "Generated database replacement",
+    "App implementation",
+    "External source retrieval",
+    "Publication or deployment"
+  ]
+}

@@ -1,0 +1,13 @@
+Repository: shosai-app
+Git root: /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+Branch: main
+HEAD: 59ffbdf
+Captured: 2026-08-28 10:33 JST
+
+Pre-existing status:
+?? overnight-runs/2026-08-25-workorder-a/
+?? overnight-runs/2026-08-26-workorder-h/codex-i.log
+?? overnight-runs/2026-08-26-workorder-h/codex-j.log
+?? overnight-runs/2026-08-26-workorder-h/codex.log
+?? overnight-runs/2026-08-27-workorder-klm/
+?? overnight-runs/2026-08-27-workorder-n/

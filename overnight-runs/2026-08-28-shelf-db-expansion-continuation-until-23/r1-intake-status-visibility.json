@@ -1,0 +1,53 @@
+{
+  "run_id": "2026-08-28-shelf-db-expansion-continuation-until-23",
+  "wave": "R1",
+  "created_at": "2026-08-28T10:52:00+09:00",
+  "kind": "local_intake_status_visibility",
+  "source_file": "show-reference/data/research_intake.json",
+  "external_requests_made": false,
+  "status_counts": {
+    "official_page_read": 192,
+    "official_page_read_existing_canonical": 13,
+    "official_page_checked_minimal": 12,
+    "official_linked_unread": 61,
+    "catalog_shared_unread": 19
+  },
+  "official_linked_unread": {
+    "count": 61,
+    "catalogs": [
+      {
+        "catalog_id": "catalog_cirque_du_soleil_c53",
+        "count": 12,
+        "review_boundary": "Existing canonical references are linked for these current catalog entries. A current URL is not proof of an edition, version, or availability."
+      },
+      {
+        "catalog_id": "catalog_fidget_feet",
+        "count": 20,
+        "review_boundary": "Individual URLs exist but their bodies remain unread in this data state."
+      },
+      {
+        "catalog_id": "catalog_race_horse_company",
+        "count": 29,
+        "review_boundary": "Individual URLs exist but their bodies remain unread in this data state."
+      }
+    ]
+  },
+  "catalog_shared_unread": {
+    "count": 19,
+    "catalog_id": "catalog_cirque_du_soleil_c53",
+    "review_boundary": "A shared official catalog page is an entry point only. It must not be displayed or treated as individual-work evidence without a work-specific source."
+  },
+  "display_contract_candidates": [
+    "Use the state labels as provenance, not as a quality score or current-performance indicator.",
+    "Distinguish individual official URLs from shared catalog text before offering a source link as work evidence.",
+    "Keep official_linked_unread and catalog_shared_unread out of any claim that a work has been read, elementized, or confirmed.",
+    "Expose source state only with an explanatory boundary; do not invite automatic promotion from the shelf UI."
+  ],
+  "out_of_scope": [
+    "URL fetching",
+    "Source-status changes",
+    "Canonical merge or elementization",
+    "Current availability claims",
+    "App implementation"
+  ]
+}

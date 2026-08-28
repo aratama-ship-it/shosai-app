@@ -1,0 +1,58 @@
+{
+  "run_id": "2026-08-28-shelf-db-expansion-continuation-until-23",
+  "wave": "W2",
+  "created_at": "2026-08-28T10:48:00+09:00",
+  "kind": "isolated_generated_database_comparison",
+  "isolation": {
+    "method": "Copied only build_db.py and index.html to a disposable /tmp directory, symlinked current show-reference read-only, and generated db.js there.",
+    "original_files_written": false,
+    "isolated_index_cache_change": "The disposable index.html changed db.js?v=81 to v=82; the original index.html did not change."
+  },
+  "current_db": {
+    "generated": "2026-08-23",
+    "bytes": 15508152,
+    "sha256": "813bf0ab6dfe6f1a670db220008f2dd689bead765f591edeb66a0a972d111b03",
+    "counts": {
+      "works": 2663,
+      "elements": 742,
+      "element_relations": 211,
+      "features": 76,
+      "persons": 1331,
+      "event_show_companies": 17
+    }
+  },
+  "isolated_db": {
+    "generated": "2026-08-28",
+    "bytes": 15508152,
+    "sha256": "cd8f5e0f615a0911de93a9f1ab78bfd8632b5fd4c3ba1245b683d8ea2ba30923",
+    "counts": {
+      "works": 2663,
+      "elements": 742,
+      "element_relations": 211,
+      "features": 76,
+      "persons": 1331,
+      "event_show_companies": 17
+    }
+  },
+  "comparison": {
+    "changed_top_level_keys": ["generated"],
+    "exact_match_when_generated_ignored": true,
+    "staging_lens_counts": {
+      "opening": 46,
+      "entrance": 49,
+      "surface": 29,
+      "audience": 24,
+      "closing": 19
+    },
+    "research_amount_levels": {
+      "3": 412,
+      "2": 1830,
+      "1": 421
+    }
+  },
+  "verification": {
+    "isolated_node_check": "passed",
+    "post_wave_protected_hashes": "17/17 matched"
+  },
+  "decision_boundary": "There is no data-content regeneration gap to apply. Updating db.js solely to change the generated date or cache version is not recommended by this review run."
+}
