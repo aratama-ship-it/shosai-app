@@ -315,3 +315,27 @@ test("演者のヒット判定は矩形に入った中で最も手前を選ぶ",
   assert.equal(geom.pickFrom(targets, 75, 50).id, "far");   // farの矩形にだけ入る
   assert.equal(geom.pickFrom(targets, 300, 50), null);
 });
+
+test("レンズ表は3種で、既定の標準は従来の水平86度を保つ", () => {
+  const presets = Array.from(geom.lensPresets(), (lens) => [lens.id, lens.name, lens.fovDeg]);
+  assert.deepEqual(presets, [
+    ["wide", "広角", 110],
+    ["normal", "標準", 86],
+    ["tele", "望遠", 50],
+  ]);
+  closeTo(geom.focalFor(1024, 86), (1024 / 2) / Math.tan(43 * Math.PI / 180));
+});
+
+test("焦点距離は広角、標準、望遠の順に長くなる", () => {
+  const wide = geom.focalFor(1024, 110);
+  const normal = geom.focalFor(1024, 86);
+  const tele = geom.focalFor(1024, 50);
+  assert.ok(wide < normal);
+  assert.ok(normal < tele);
+});
+
+test("未知のレンズidと未指定値は標準へ戻る", () => {
+  assert.equal(geom.normalizeLensId("unknown"), "normal");
+  assert.equal(geom.normalizeLensId(undefined), "normal");
+  assert.equal(geom.normalizeLensId("wide"), "wide");
+});

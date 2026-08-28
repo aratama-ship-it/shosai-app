@@ -2,13 +2,32 @@
   "use strict";
 
   const NEAR = 0.12;
-  const FOV_H = 86 * Math.PI / 180;
+  const LENSES = Object.freeze([
+    Object.freeze({ id: "wide", name: "広角", fovDeg: 110 }),
+    Object.freeze({ id: "normal", name: "標準", fovDeg: 86 }),
+    Object.freeze({ id: "tele", name: "望遠", fovDeg: 50 }),
+  ]);
+  const LENS_STORAGE_KEY = "shosai-fpv-lens-v1";
+  let lensId = "normal";
   const DEFAULT_HEIGHT_CM = 170;
   const PANEL_STORAGE_KEY = "shosai-fpv-panels-v1";
   const PANEL_TITLE_HEIGHT = 26;
   const PANEL_KEYS = ["front", "plan"];
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const finite = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+
+  function normalizeLensId(value) {
+    return LENSES.some((lens) => lens.id === value) ? value : "normal";
+  }
+
+  function lensById(id) {
+    const normalized = normalizeLensId(id);
+    return LENSES.find((lens) => lens.id === normalized);
+  }
+
+  function focalFor(width, fovDeg) {
+    return (width / 2) / Math.tan(fovDeg * Math.PI / 360);
+  }
 
   function panelContentHeight(width, sourceWidth = 16, sourceHeight = 9) {
     const safeWidth = Math.max(1, finite(width, 280));
@@ -359,6 +378,7 @@
 #stage-fpv-cast{left:20px;bottom:58px;right:220px;display:flex;flex-wrap:wrap;gap:6px}.stage-fpv-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 8px;border-radius:3px;background:rgba(22,16,11,.86);border:1px solid rgba(232,226,212,.16);color:#e8e2d4;font-size:12px;cursor:pointer;font-family:inherit}.stage-fpv-chip:hover{border-color:rgba(232,226,212,.45)}.stage-fpv-chip.on{background:#e8e2d4;color:#14100c;border-color:#e8e2d4}.stage-fpv-chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
 #stage-fpv-presets{left:20px;bottom:18px;right:220px;display:flex;flex-wrap:wrap;gap:5px}.stage-fpv-preset{padding:4px 8px;font-size:11px;background:rgba(22,16,11,.72)}
 #stage-fpv-panel-toggles{top:174px;right:70px;display:flex;flex-direction:column;align-items:stretch;gap:5px;z-index:71}.stage-fpv-panel-toggle{justify-content:center;padding:4px 9px;font-size:11px}
+#stage-fpv-lens{top:236px;right:70px;display:flex;flex-direction:column;align-items:stretch;gap:5px;z-index:71}.stage-fpv-lens-chip{justify-content:center;padding:4px 9px;font-size:11px}
 .stage-fpv-panel{position:absolute;z-index:71;box-sizing:border-box;overflow:hidden;border:1px solid rgba(232,226,212,.16);border-radius:3px;background:var(--chip,rgba(22,16,11,.94));box-shadow:0 8px 24px rgba(0,0,0,.28);color:#e8e2d4;touch-action:none;user-select:none;-webkit-user-select:none}.stage-fpv-panel[hidden]{display:none!important}.stage-fpv-panel-bar{height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 5px 0 9px;font-size:11px;letter-spacing:.04em;cursor:grab}.stage-fpv-panel-bar:active{cursor:grabbing}.stage-fpv-panel-hide{width:24px;height:22px;padding:0;border:0;background:transparent;color:#e8e2d4;font:16px/20px inherit;cursor:pointer}.stage-fpv-panel canvas{display:block;width:100%;background:#16100b;pointer-events:auto}.stage-fpv-panel-resize{position:absolute;right:0;bottom:0;width:14px;height:14px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 0 45%,rgba(232,226,212,.55) 46% 55%,transparent 56% 65%,rgba(232,226,212,.55) 66% 75%,transparent 76%);touch-action:none}
 #stage-fpv-nav{right:16px;bottom:18px;display:flex;align-items:center;gap:8px}#stage-fpv-nav button{background:rgba(22,16,11,.86);color:#e8e2d4;border:1px solid rgba(232,226,212,.2);border-radius:3px;font-size:13px;padding:7px 12px;cursor:pointer;font-family:inherit}#stage-fpv-nav button:hover{border-color:rgba(232,226,212,.5)}#stage-fpv-count{font-size:11.5px;opacity:.6;min-width:52px;text-align:center}
 #stage-fpv-hint{left:50%;bottom:88px;transform:translateX(-50%);font-size:12.5px;background:rgba(22,16,11,.86);padding:7px 14px;border-radius:3px;opacity:.9;transition:opacity .8s;pointer-events:none;border:1px solid rgba(232,226,212,.14)}#stage-fpv-hint.gone{opacity:0}
@@ -420,6 +440,15 @@
     edit.append(editHead, editHint, editPoses);
     const toast = createElement("div", "stage-fpv-toast", "stage-fpv-hud");
     const panelToggles = createElement("div", "stage-fpv-panel-toggles", "stage-fpv-hud");
+    const lens = createElement("div", "stage-fpv-lens", "stage-fpv-hud");
+    const lensChips = LENSES.map((preset) => {
+      const chip = createElement("button", "", "stage-fpv-chip stage-fpv-lens-chip");
+      chip.type = "button";
+      chip.title = `${preset.fovDeg}°`;
+      chip.addEventListener("click", () => setLens(preset.id));
+      lens.appendChild(chip);
+      return chip;
+    });
     const panels = {};
     PANEL_KEYS.forEach((key) => {
       const panel = createElement("section", `stage-fpv-panel-${key}`, "stage-fpv-panel");
@@ -463,12 +492,12 @@
     const closeButton = createElement("button", "stage-fpv-close");
     closeButton.type = "button";
     closeButton.textContent = "✕";
-    root.append(canvas, fade, title, minimap, panelToggles, panels.front.panel, panels.plan.panel,
+    root.append(canvas, fade, title, minimap, panelToggles, lens, panels.front.panel, panels.plan.panel,
       whose, cast, presets, nav, keyGuide, hint, edit, toast, closeButton);
     document.body.appendChild(root);
     elements = { root, canvas, fade, show, act, scene, approx, minimap, whose, cast, presets,
       previous, count, next, keyGuide, hint, edit, editDot, editName, editFacing, editHint, editPoses,
-      toast, closeButton, panelToggles, panels };
+      toast, closeButton, panelToggles, lens, lensChips, panels };
     closeButton.addEventListener("click", close);
     previous.addEventListener("click", () => queueScene(-1));
     next.addEventListener("click", () => queueScene(1));
@@ -604,6 +633,31 @@
     let serialized = null;
     try { serialized = window.localStorage.getItem(PANEL_STORAGE_KEY); } catch (_) { /* unavailable */ }
     panelLayouts = restorePanels(serialized, viewport.width, viewport.height);
+  }
+
+  function syncLensChips() {
+    if (!elements) return;
+    elements.lens.setAttribute("aria-label", text("レンズ"));
+    elements.lensChips.forEach((chip, index) => {
+      const preset = LENSES[index];
+      const active = preset.id === lensId;
+      chip.textContent = text(preset.name);
+      chip.classList.toggle("on", active);
+      chip.setAttribute("aria-pressed", String(active));
+    });
+  }
+
+  function setLens(id) {
+    lensId = normalizeLensId(id);
+    try { window.localStorage.setItem(LENS_STORAGE_KEY, lensId); } catch (_) { /* unavailable */ }
+    resize();
+    syncLensChips();
+  }
+
+  function loadLens() {
+    let stored = null;
+    try { stored = window.localStorage.getItem(LENS_STORAGE_KEY); } catch (_) { /* unavailable */ }
+    lensId = normalizeLensId(stored);
   }
 
   function applyPanelLayout(key) {
@@ -908,6 +962,7 @@
       elements.presets.appendChild(button);
     });
     updateEditPanel();
+    syncLensChips();
   }
 
   function formatSigned(value) {
@@ -932,7 +987,7 @@
     canvasHeight = window.innerHeight || elements.root.clientHeight || 768;
     elements.canvas.width = canvasWidth * pixelRatio;
     elements.canvas.height = canvasHeight * pixelRatio;
-    focal = (canvasWidth / 2) / Math.tan(FOV_H / 2);
+    focal = focalFor(canvasWidth, lensById(lensId).fovDeg);
     if (panelLayouts) applyPanelLayouts();
   }
 
@@ -1740,7 +1795,8 @@
       }
     });
     const x = mapX(camera.x); const y = mapY(camera.z);
-    const direction = yawForward(state.yaw); const halfFov = FOV_H / 2;
+    const direction = yawForward(state.yaw);
+    const halfFov = lensById(lensId).fovDeg * Math.PI / 360;
     ctx.beginPath(); ctx.moveTo(x, y);
     [-halfFov, halfFov].forEach((angle) => {
       const cosine = Math.cos(angle); const sine = Math.sin(angle);
@@ -2114,6 +2170,7 @@
     state.bridge = bridge;
     readCurrent();
     loadPanelLayouts();
+    loadLens();
     const initial = data.pieces.find((piece) => piece.id === bridge.initialPieceId && piece.type === "performer");
     state.free = null;
     if (bridge.initialView === "free") {
@@ -2189,10 +2246,11 @@
     _geom: Object.freeze({ toWorld, yawForward, rightOf, clipPolyNear, eyeHeight,
       pieceUOf, pieceVOf, pieceBaseOf, pieceGlowOf,
       moveFree, clampFree, freePresets, frameDelta, wingWidthFor, wingLegX, wingLegPairs,
-      wingLegZs, houseSeatsPerRow, houseRiserRows, facingFromGround, uvFromGround, pickFrom }),
+      wingLegZs, houseSeatsPerRow, houseRiserRows, facingFromGround, uvFromGround, pickFrom,
+      lensPresets: () => LENSES, normalizeLensId, lensById, focalFor }),
     /* 検証用の覗き窓。描画状態には触らない */
     _probe: () => ({ camera: { ...camera }, focal, canvasWidth, canvasHeight,
-      yaw: state.yaw, pitch: state.pitch,
+      yaw: state.yaw, pitch: state.pitch, lens: lensId, fovDeg: lensById(lensId).fovDeg,
       ground: (px, py, planeY) => groundPointAt(px, py, planeY),
       moveDrag: moveDrag ? { ...moveDrag } : null }),
     _panels: Object.freeze({
