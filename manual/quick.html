@@ -99,7 +99,7 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
 .list b { font-family: var(--serif); font-weight: 600; letter-spacing: 0.08em; margin-right: 14px; }
 .list .only { font-size: 11px; color: var(--rust-ink); border: 1px solid var(--rust-ink); padding: 1px 7px; margin-left: 10px; letter-spacing: 0.1em; white-space: nowrap; }
 
-/* ---------- セッションパネルの再現カード（SCENE 04）
+/* ---------- セッションパネルの再現カード（SCENE 03）
    実物のラベル文言（リアルタイム共有／表示名／セッションを開始／招待URL／コピー）を
    そのまま使う。URLは例示（実データは出さない）。 ---------- */
 .session-card { border: 1px solid var(--frame); background: rgba(239, 231, 214, 0.03); padding: 26px; }
@@ -111,7 +111,7 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
 .session-card-btn { display: inline-block; margin-top: 12px; padding: 9px 20px; background: var(--rust-deep); color: var(--paper); font-size: 13px; letter-spacing: 0.06em; }
 .session-card-btn-quiet { background: none; border: 1px solid var(--line); color: var(--milk-dim); margin-left: 10px; }
 
-/* ---------- SCENE 05 約束: 一枚だけ反転 ---------- */
+/* ---------- SCENE 04 約束: 一枚だけ反転 ---------- */
 .vow { background: var(--rust-deep); }
 .vow::before { display: none; }
 .vow .scene-no, .vow .scene-mark { color: var(--rust-pale); }
@@ -126,21 +126,6 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
 .door { flex: 1; border-top: 1px solid var(--line); padding-top: 14px; font-size: 14px; line-height: 1.8; color: var(--milk-dim); }
 .door b { display: block; color: var(--paper); font-family: var(--serif); font-size: 18px; font-weight: 600; letter-spacing: 0.08em; margin-bottom: 6px; }
 .curtain-line { margin-top: auto; font-family: var(--serif); font-size: 26px; letter-spacing: 0.2em; color: var(--rust-ink); }
-
-/* ---------- 転換のコマ送り（SCENE 03）
-   アプリの転換再生を1コマずつ書き出した実画像を、順に差し替えて再生する。
-   CSSで作った偽の動きではなく、アプリが実際に描いた絵そのもの。 ---------- */
-.flip { position: relative; border: 1px solid var(--frame); overflow: hidden; }
-.flip img { display: block; width: 100%; border: none; }
-.flip-bar { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
-.flip-btn {
-  appearance: none; border: 1px solid var(--line); background: none; cursor: pointer;
-  color: var(--paper); font-family: var(--sans); font-size: 12px; letter-spacing: 0.1em;
-  padding: 6px 16px;
-}
-.flip-btn:hover { border-color: var(--rust-ink); color: var(--rust-ink); }
-.flip-track { flex: 1; height: 1px; background: var(--line); position: relative; }
-.flip-head { position: absolute; top: -2px; left: 0; width: 5px; height: 5px; background: var(--rust-ink); }
 
 /* ---------- 動き: 場の入り。reduced-motion では無効 ----------
    A案（スライド演出）: 場に入ると、要素が上から順に少し遅れて現れる。
@@ -185,8 +170,6 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
   .scene-no { left: 19mm; top: 9mm; } .scene-mark { right: 19mm; top: 9mm; }
   .scene > .fx { opacity: 1 !important; transform: none !important; }
   .scene .list li, .scene .door, .scene .role { opacity: 1 !important; transform: none !important; }
-  /* 紙では動かないので、再生の操作列は伏せる（絵は転換の途中のコマが残る） */
-  .flip-bar { display: none; }
 }
 </style>
 </head>
@@ -237,30 +220,9 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
     </div>
   </section></div>
 
-  <!-- SCENE 03 転換（動く図解） -->
-  <div class="scene-wrap"><section class="scene" data-anim="transition">
-    <p class="scene-no">SCENE 03</p><p class="scene-mark">動き</p>
-    <div class="fx">
-      <h2 style="font-size:44px; margin-bottom:12px;">場面の転換は、動いて見えます。</h2>
-      <p class="lead" style="font-size:15px;">平面図で動線を引き、次の場面を作る。あとは<strong>送るだけで、演者が動線をたどります。</strong></p>
-    </div>
-    <figure class="fx" style="margin-top:14px; display:flex; flex-direction:column; align-items:center;">
-      <div style="width:min(62%, 620px);">
-        <div class="flip">
-          <img src="img/transition/f00.jpg" alt="転換の再生：演者が動線に沿って移動していく様子" id="flip-img">
-        </div>
-        <div class="flip-bar">
-          <button type="button" class="flip-btn" id="flip-btn">もう一度</button>
-          <span class="flip-track"><span class="flip-head" id="flip-head"></span></span>
-        </div>
-      </div>
-      <figcaption style="align-self:flex-start; margin-top:12px">実際の転換再生を1コマずつ書き出したもの（2秒ぶん・13コマ）</figcaption>
-    </figure>
-  </section></div>
-
-  <!-- SCENE 04 一緒に見る -->
+  <!-- SCENE 03 一緒に見る -->
   <div class="scene-wrap"><section class="scene">
-    <p class="scene-no">SCENE 04</p><p class="scene-mark">一緒に見る</p>
+    <p class="scene-no">SCENE 03</p><p class="scene-mark">一緒に見る</p>
     <div class="fx">
       <p class="kicker">SHARED SESSION</p>
       <h2>同じ画面を、一緒に見られます。</h2>
@@ -283,9 +245,9 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
     </div>
   </section></div>
 
-  <!-- SCENE 05 約束（反転） -->
+  <!-- SCENE 04 約束（反転） -->
   <div class="scene-wrap"><section class="scene vow">
-    <p class="scene-no">SCENE 05</p><p class="scene-mark">保存のこと</p>
+    <p class="scene-no">SCENE 04</p><p class="scene-mark">保存のこと</p>
     <div class="fx">
       <p class="kicker">BACKUP</p>
       <h2>保存は端末の内部のみ。</h2>
@@ -294,9 +256,9 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
     <p class="note fx" style="margin-top:auto">ブラウザのデータ削除で消えます。控えのファイルがあれば、いつでも戻せます。</p>
   </section></div>
 
-  <!-- SCENE 06 困ったら -->
+  <!-- SCENE 05 困ったら -->
   <div class="scene-wrap"><section class="scene">
-    <p class="scene-no">SCENE 06</p><p class="scene-mark">困ったとき</p>
+    <p class="scene-no">SCENE 05</p><p class="scene-mark">困ったとき</p>
     <div class="fx"><p class="kicker">SUPPORT</p><h2>困ったときは、この三つ。</h2></div>
     <div class="doors fx">
       <div class="door"><b>使い方をさがす</b>〈設定〉から。言葉を入れると、その場で答えが出ます。</div>
@@ -316,45 +278,6 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
     es.forEach((e) => { if (e.isIntersecting) e.target.classList.add("on"); });
   }, { threshold: 0.4 });
   scenes.forEach((s) => io.observe(s));
-
-  /* ---- 転換のコマ送り（SCENE 03） ----
-     アプリの転換再生を書き出した13コマを、実物と同じ2秒で1周させる。
-     その場が画面に入ったときに1回だけ自動再生し、あとは〈もう一度〉で。
-     reduced-motion のときは自動再生せず、最後のコマ（転換後）を出しておく。 */
-  const flipImg = document.getElementById("flip-img");
-  if (flipImg) {
-    const COUNT = 13, SPAN = 2000;
-    const src = (i) => "img/transition/f" + String(i).padStart(2, "0") + ".jpg";
-    const head = document.getElementById("flip-head");
-    const btn = document.getElementById("flip-btn");
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // 先読み（コマ落ちを防ぐ）
-    for (let i = 0; i < COUNT; i++) { const im = new Image(); im.src = src(i); }
-    let timer = null;
-    function play() {
-      if (timer) clearInterval(timer);
-      let i = 0;
-      const stepMs = SPAN / (COUNT - 1);
-      flipImg.src = src(0);
-      if (head) head.style.left = "0%";
-      timer = setInterval(() => {
-        i += 1;
-        if (i >= COUNT) { clearInterval(timer); timer = null; return; }
-        flipImg.src = src(i);
-        if (head) head.style.left = (i / (COUNT - 1)) * 100 + "%";
-      }, stepMs);
-    }
-    if (btn) btn.addEventListener("click", play);
-    if (reduced) {
-      flipImg.src = src(COUNT - 1);
-      if (head) head.style.left = "100%";
-    } else {
-      let played = false;
-      new IntersectionObserver((es) => {
-        es.forEach((e) => { if (e.isIntersecting && !played) { played = true; play(); } });
-      }, { threshold: 0.5 }).observe(flipImg);
-    }
-  }
 
   const deck = document.getElementById("deck");
   document.addEventListener("keydown", (e) => {
