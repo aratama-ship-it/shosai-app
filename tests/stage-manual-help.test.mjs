@@ -44,22 +44,67 @@ test("MANUAL_FINDは全語ANDで検索し、noindex本文を除外する", () =>
   assert.deepEqual(Array.from(find("")), []);
 });
 
+test("全章・全節に英語の対訳が揃い、日本語が漏れていない", () => {
+  const kana = /[぀-ヿ一-鿿]/;
+  manual.chapters.forEach((chapter) => {
+    assert.ok(chapter.titleEn, `${chapter.id} に titleEn`);
+    assert.ok(chapter.tabEn, `${chapter.id} に tabEn`);
+    assert.ok(!kana.test(chapter.titleEn + chapter.tabEn), `${chapter.id} の章名英訳に日本語がない`);
+    chapter.sections.forEach((section) => {
+      assert.ok(section.titleEn, `${section.id} に titleEn`);
+      assert.ok(Array.isArray(section.keywordsEn) && section.keywordsEn.length, `${section.id} に keywordsEn`);
+      assert.equal(typeof section.htmlEn, "string");
+      assert.ok(section.htmlEn, `${section.id} に htmlEn`);
+      assert.ok(
+        !kana.test(section.titleEn + section.keywordsEn.join(" ") + section.htmlEn),
+        `${section.id} の英語本文に日本語がない`,
+      );
+      if (section.tags) {
+        assert.equal((section.tagsEn || []).length, section.tags.length, `${section.id} の tags に対訳がある`);
+      }
+    });
+  });
+});
+
+test("MANUAL_FINDは英語モードで英語の見出し・言い換え語・本文を引く", () => {
+  const en = Array.from(find("disappeared", "en"));
+  assert.ok(en.includes("lost"));
+  assert.ok(!en.includes("how-to-read"));
+  assert.ok(Array.from(find("revolve", "en")).includes("p-machinery"));
+  assert.ok(Array.from(find("no sound", "en")).includes("p-music"));
+  // 言語は混ぜない: 英語モードで日本語の言い換え語は当たらない
+  assert.ok(!Array.from(find("盆", "en")).includes("p-machinery"));
+  // 既定（第2引数なし）は従来どおり日本語
+  assert.ok(Array.from(find("盆")).includes("p-machinery"));
+});
+
+test("本文はいまのUIに追随している（地図なし・空にするはシーン欄・はじめての案内）", () => {
+  const sectionById = new Map(
+    manual.chapters.flatMap((chapter) => chapter.sections.map((section) => [section.id, section])),
+  );
+  const all = Array.from(sectionById.values()).map((section) => section.html).join(" ");
+  assert.ok(!all.includes("〈地図〉"), "廃止した〈地図〉が本文に残っていない");
+  assert.ok(sectionById.get("p-scenes").html.includes("舞台を空にする"), "空にするはシーン欄の節にある");
+  assert.ok(!sectionById.get("p-save").html.includes("舞台を空にする"), "保存の節から移動済み");
+  assert.ok(sectionById.get("tour").html.includes("はじめての案内"), "案内の呼び出し名が現行");
+});
+
 test("正本と単独版に検索・冊子導線と共通データが継承される", () => {
   for (const source of [indexSource, stageSource]) {
-    for (const value of ["stage-help-open", "stage-manual-open", "manual/manual-content.js?v=1"]) {
+    for (const value of ["stage-help-open", "stage-manual-open", "manual/manual-content.js?v=2"]) {
       assert.ok(source.includes(value), `${value} がページにある`);
     }
     assert.ok(
-      source.indexOf("manual/manual-content.js?v=1") < source.indexOf("stage-sketch.js?v=309"),
+      source.indexOf("manual/manual-content.js?v=2") < source.indexOf("stage-sketch.js?v=310"),
       "共通マニュアルデータがstage-sketch.jsより先に読み込まれる",
     );
   }
 });
 
 test("Service Workerは冊子一式を最新版へキャッシュする", () => {
-  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v169";/);
+  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v170";/);
   for (const entry of [
-    "./manual/manual-content.js?v=1",
+    "./manual/manual-content.js?v=2",
     "./manual/manual-content.js",
     "./manual/manual.html",
   ]) {

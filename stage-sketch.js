@@ -15941,9 +15941,10 @@
       return;
     }
 
+    const en = isEn();
     let ids;
     try {
-      ids = window.MANUAL_FIND(query);
+      ids = window.MANUAL_FIND(query, en ? "en" : "ja");
     } catch (_) {
       showManualHelpNote("冊子を読み込めませんでした。ページを再読み込みしてください。", false);
       return;
@@ -15963,11 +15964,14 @@
 
         const chapterTitle = document.createElement("p");
         chapterTitle.className = "stage-help-chapter";
-        chapterTitle.textContent = `第${chapter.no}章 ${chapter.title}`;
+        chapterTitle.textContent = en && chapter.titleEn
+          ? `Chapter ${chapter.no} — ${chapter.titleEn}`
+          : `第${chapter.no}章 ${chapter.title}`;
 
         const heading = document.createElement("h3");
-        heading.textContent = section.title;
-        (section.tags || []).forEach((tagText) => {
+        heading.textContent = en && section.titleEn ? section.titleEn : section.title;
+        const tagList = en && section.tagsEn ? section.tagsEn : (section.tags || []);
+        tagList.forEach((tagText) => {
           const tag = document.createElement("span");
           tag.className = "stage-help-tag";
           tag.textContent = tagText;
@@ -15976,7 +15980,7 @@
 
         const body = document.createElement("div");
         body.className = "stage-help-copy";
-        body.innerHTML = section.html;
+        body.innerHTML = en && section.htmlEn ? section.htmlEn : section.html;
         result.append(chapterTitle, heading, body, manualLink("冊子で読む", section.id));
         fragment.appendChild(result);
       });

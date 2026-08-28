@@ -7,7 +7,9 @@
 <style>
 /* 見た目の方針: アプリ本体（style.css）と同じ「暗い机の上の紙」。
    色・書体のトークンは本体 :root から複製（本体CSSは読み込まない。冊子は単体で立つ）。
-   発光・グラデ装飾はしない。紙・墨・錆色だけで組む。 */
+   発光・グラデ装飾はしない。紙・墨・錆色だけで組む。
+   言語: アプリの言語設定（localStorage shosai-stage-lang）に従い、?lang= で上書き可。
+   本文の日英は manual-content.js が持つ。ここは器の文言だけ。 */
 :root {
   --desk: #191512;
   --paper: #efe7d6;
@@ -30,6 +32,7 @@ body {
   line-height: 1.9;
   min-height: 100vh;
 }
+html[lang="en"] body { line-height: 1.75; }
 /* 机: 本体と同じく、ごく弱い光の減衰のみ */
 body::before {
   content: "";
@@ -85,6 +88,7 @@ body::before {
   cursor: pointer;
   transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
+html[lang="en"] .tab { min-height: 64px; letter-spacing: 0.1em; }
 .tab .no { font-size: 11px; color: var(--brass); margin-bottom: 6px; letter-spacing: 0; }
 .tab:hover { background: var(--paper); color: var(--ink); }
 .tab.active {
@@ -96,10 +100,21 @@ body::before {
 
 /* ---------- 表紙まわり ---------- */
 .head { border-bottom: 2px solid var(--ink); padding-bottom: 28px; margin-bottom: 8px; }
-.head .kicker {
-  font-size: 12px; letter-spacing: 0.3em; color: var(--rust-deep);
-  margin-bottom: 14px;
+.head .kicker-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; margin-bottom: 14px;
 }
+.head .kicker { font-size: 12px; letter-spacing: 0.3em; color: var(--rust-deep); }
+.lang-switch {
+  appearance: none; cursor: pointer;
+  background: none; border: 1px solid var(--ink-soft);
+  color: var(--ink-soft);
+  font: 12px/1.4 var(--sans);
+  letter-spacing: 0.08em;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+.lang-switch:hover { border-color: var(--rust-deep); color: var(--rust-deep); }
 .head h1 {
   font-family: var(--serif);
   font-weight: 600;
@@ -189,6 +204,7 @@ body::before {
 /* 問答（第10章） */
 .m-faq dt { font-weight: 600; margin-top: 14px; }
 .m-faq dt::before { content: "問 "; color: var(--rust-deep); font-family: var(--serif); }
+html[lang="en"] .m-faq dt::before { content: "Q. "; }
 .m-faq dd { margin: 4px 0 0 1.5em; }
 
 /* 検索で残らなかったもの */
@@ -223,6 +239,7 @@ body::before {
     border: none; background: none; color: rgba(240,231,214,0.55);
     white-space: nowrap;
   }
+  html[lang="en"] .tab { min-height: 0; }
   .tab .no { margin-bottom: 0; margin-right: 5px; }
   .tab.active { background: none; color: #efe7d6; transform: none; border-bottom: 2px solid var(--rust); }
 }
@@ -232,7 +249,7 @@ body::before {
   body { background: #fff; }
   body::before { display: none; }
   .book { padding: 0; }
-  .tabs, .finder { display: none; }
+  .tabs, .finder, .lang-switch { display: none; }
   .paper { box-shadow: none; border: none; max-width: none; padding: 0; background: #fff; }
   .paper::before { display: none; }
   .chapter { break-inside: avoid-page; }
@@ -245,36 +262,42 @@ body::before {
 <div class="book">
   <main class="paper">
     <header class="head">
-      <p class="kicker">舞台スケッチ β版</p>
-      <h1>使いかたの冊子</h1>
-      <p class="sub">お試しくださる方へ。頭から読まなくて大丈夫です — 困ったら、下の窓で引いてください。</p>
+      <div class="kicker-row">
+        <p class="kicker" id="kicker"></p>
+        <button type="button" class="lang-switch" id="lang-switch"></button>
+      </div>
+      <h1 id="title"></h1>
+      <p class="sub" id="sub"></p>
     </header>
 
     <div class="finder">
-      <label for="find">この冊子から引く</label>
+      <label for="find" id="find-label"></label>
       <div class="row">
-        <input id="find" type="search" placeholder="例：保存 ／ 消えた ／ 盆 ／ iPad" autocomplete="off">
-        <button type="button" class="clear" id="find-clear" aria-label="検索を消す">✕ 消す</button>
+        <input id="find" type="search" autocomplete="off">
+        <button type="button" class="clear" id="find-clear"></button>
       </div>
       <p class="count" id="find-count" role="status"></p>
     </div>
 
     <div id="body"><!-- 本文は manual-content.js から組む --></div>
 
-    <p class="nohit" id="nohit">この言葉では見つかりませんでした。別の言い方でもう一度どうぞ。それでも見つからなければ、アプリの〈設定〉→〈感想を送る〉で聞いてください — 冊子側を直します。</p>
+    <p class="nohit" id="nohit"></p>
 
     <footer class="colophon">
-      <span>舞台スケッチ 使いかたの冊子</span>
+      <span id="colophon-name"></span>
       <span id="updated"></span>
     </footer>
   </main>
 
-  <nav class="tabs" id="tabs" aria-label="章へ飛ぶ"></nav>
+  <nav class="tabs" id="tabs"></nav>
 </div>
 
 <script src="manual-content.js"></script>
 <script>
-/* 本文の組み立てと検索。文章はすべて manual-content.js（正本）から来る。 */
+/* 本文の組み立てと検索。文章はすべて manual-content.js（正本）から来る。
+   言語の決まり: URLの ?lang= が最優先（PDF生成用）、次にアプリ本体の設定
+   （localStorage shosai-stage-lang）、どちらも無ければ日本語。
+   右上の切替ボタンはこの冊子の表示だけを替え、アプリ側の設定は書き換えない。 */
 (function () {
   "use strict";
   const DATA = window.MANUAL_CONTENT;
@@ -284,66 +307,145 @@ body::before {
   const clearEl = document.getElementById("find-clear");
   const countEl = document.getElementById("find-count");
   const nohitEl = document.getElementById("nohit");
-  document.getElementById("updated").textContent = DATA.updated + " 版";
 
-  const TAB_LABEL_MAX = 6; // 爪に載せる章名は頭の数文字だけ
+  const UI = {
+    ja: {
+      docTitle: "使いかたの冊子 — 舞台スケッチ",
+      kicker: "舞台スケッチ β版",
+      title: "使いかたの冊子",
+      sub: "お試しくださる方へ。頭から読まなくて大丈夫です — 困ったら、下の窓で引いてください。",
+      findLabel: "この冊子から引く",
+      placeholder: "例：保存 ／ 消えた ／ 盆 ／ iPad",
+      clear: "✕ 消す",
+      clearAria: "検索を消す",
+      count: (n) => n + " 項目が見つかりました",
+      nohit: "この言葉では見つかりませんでした。別の言い方でもう一度どうぞ。それでも見つからなければ、アプリの〈設定〉→〈感想を送る〉で聞いてください — 冊子側を直します。",
+      colophon: "舞台スケッチ 使いかたの冊子",
+      updated: (d) => d + " 版",
+      chapterNo: (n) => "第" + n + "章",
+      tabsAria: "章へ飛ぶ",
+      switchLabel: "English"
+    },
+    en: {
+      docTitle: "Guide Booklet — Stage Sketch",
+      kicker: "STAGE SKETCH — BETA",
+      title: "Guide Booklet",
+      sub: "For everyone trying the beta. No need to read this front to back — when you are stuck, look it up below.",
+      findLabel: "Search this booklet",
+      placeholder: "e.g. saving / disappeared / revolve / iPad",
+      clear: "✕ Clear",
+      clearAria: "Clear the search",
+      count: (n) => (n === 1 ? "1 entry found" : n + " entries found"),
+      nohit: "Nothing matched those words — try another way of putting it. If it still will not appear, ask through 〈Settings〉 → 〈Send feedback〉 in the app, and we will mend the booklet.",
+      colophon: "Stage Sketch — Guide Booklet",
+      updated: (d) => "Edition of " + d,
+      chapterNo: (n) => "CHAPTER " + n,
+      tabsAria: "Jump to a chapter",
+      switchLabel: "日本語"
+    }
+  };
 
-  /* ---- 組む ---- */
-  DATA.chapters.forEach((ch) => {
-    const chEl = document.createElement("section");
-    chEl.className = "chapter";
-    chEl.id = "ch-" + ch.id;
-    const h2 = document.createElement("h2");
-    h2.innerHTML = '<span class="cno">第' + ch.no + '章</span>' + ch.title;
-    chEl.appendChild(h2);
-    ch.sections.forEach((sec) => {
-      const secEl = document.createElement("section");
-      secEl.className = "sec";
-      secEl.id = sec.id;
-      const h3 = document.createElement("h3");
-      h3.textContent = sec.title;
-      (sec.tags || []).forEach((t) => {
-        const tag = document.createElement("span");
-        tag.className = "m-tag";
-        tag.textContent = t;
-        h3.appendChild(tag);
+  let lang = (function () {
+    const fromUrl = new URLSearchParams(location.search).get("lang");
+    if (fromUrl === "en" || fromUrl === "ja") return fromUrl;
+    try {
+      if (localStorage.getItem("shosai-stage-lang") === "en") return "en";
+    } catch (_) { /* プライベートモード等では既定の日本語のまま */ }
+    return "ja";
+  })();
+
+  const TAB_LABEL_MAX = 6; // 爪に載せる章名は頭の数文字だけ（日本語の予備動作）
+
+  let chaptersEls = [];
+  let tabs = [];
+  let allSecs = [];
+
+  function render() {
+    const T = UI[lang];
+    document.documentElement.lang = lang;
+    document.title = T.docTitle;
+    document.getElementById("kicker").textContent = T.kicker;
+    document.getElementById("title").textContent = T.title;
+    document.getElementById("sub").textContent = T.sub;
+    document.getElementById("find-label").textContent = T.findLabel;
+    findEl.placeholder = T.placeholder;
+    clearEl.textContent = T.clear;
+    clearEl.setAttribute("aria-label", T.clearAria);
+    nohitEl.textContent = T.nohit;
+    document.getElementById("colophon-name").textContent = T.colophon;
+    document.getElementById("updated").textContent = T.updated(DATA.updated);
+    tabsEl.setAttribute("aria-label", T.tabsAria);
+    const switchEl = document.getElementById("lang-switch");
+    switchEl.textContent = T.switchLabel;
+    switchEl.setAttribute("aria-label", lang === "ja" ? "Switch to English" : "日本語に切り替える");
+
+    bodyEl.textContent = "";
+    tabsEl.textContent = "";
+
+    DATA.chapters.forEach((ch) => {
+      const en = lang === "en";
+      const chEl = document.createElement("section");
+      chEl.className = "chapter";
+      chEl.id = "ch-" + ch.id;
+      const h2 = document.createElement("h2");
+      h2.innerHTML = '<span class="cno">' + T.chapterNo(ch.no) + "</span>" +
+        (en && ch.titleEn ? ch.titleEn : ch.title);
+      chEl.appendChild(h2);
+      ch.sections.forEach((sec) => {
+        const secEl = document.createElement("section");
+        secEl.className = "sec";
+        secEl.id = sec.id;
+        const h3 = document.createElement("h3");
+        h3.textContent = en && sec.titleEn ? sec.titleEn : sec.title;
+        const tagList = en && sec.tagsEn ? sec.tagsEn : (sec.tags || []);
+        tagList.forEach((t) => {
+          const tag = document.createElement("span");
+          tag.className = "m-tag";
+          tag.textContent = t;
+          h3.appendChild(tag);
+        });
+        secEl.appendChild(h3);
+        const bodyWrap = document.createElement("div");
+        bodyWrap.innerHTML = en && sec.htmlEn ? sec.htmlEn : sec.html;
+        secEl.appendChild(bodyWrap);
+        chEl.appendChild(secEl);
       });
-      secEl.appendChild(h3);
-      const bodyWrap = document.createElement("div");
-      bodyWrap.innerHTML = sec.html;
-      secEl.appendChild(bodyWrap);
-      chEl.appendChild(secEl);
-    });
-    bodyEl.appendChild(chEl);
+      bodyEl.appendChild(chEl);
 
-    const tab = document.createElement("button");
-    tab.type = "button";
-    tab.className = "tab";
-    tab.dataset.chapter = "ch-" + ch.id;
-    tab.innerHTML = '<span class="no">' + ch.no + "</span>" +
-      (ch.tab || ch.title.replace(/[（(].*$/, "").replace(/ —.*$/, "").slice(0, TAB_LABEL_MAX));
-    tab.addEventListener("click", () => {
-      clearFind();
-      document.getElementById("ch-" + ch.id).scrollIntoView({ behavior: "smooth", block: "start" });
+      const tab = document.createElement("button");
+      tab.type = "button";
+      tab.className = "tab";
+      tab.dataset.chapter = "ch-" + ch.id;
+      const tabLabel = lang === "en"
+        ? (ch.tabEn || ch.titleEn || ch.title)
+        : (ch.tab || ch.title.replace(/[（(].*$/, "").replace(/ —.*$/, "").slice(0, TAB_LABEL_MAX));
+      tab.innerHTML = '<span class="no">' + ch.no + "</span>" + tabLabel;
+      tab.addEventListener("click", () => {
+        clearFind();
+        document.getElementById("ch-" + ch.id).scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      tabsEl.appendChild(tab);
     });
-    tabsEl.appendChild(tab);
-  });
+
+    chaptersEls = Array.from(document.querySelectorAll(".chapter"));
+    tabs = Array.from(tabsEl.children);
+    allSecs = Array.from(document.querySelectorAll(".sec"));
+    markActive();
+    applyFind(findEl.value);
+  }
 
   /* ---- いま読んでいる章の爪を出す ---- */
-  const chaptersEls = Array.from(document.querySelectorAll(".chapter"));
-  const tabs = Array.from(tabsEl.children);
   function markActive() {
+    if (!chaptersEls.length) return;
     let current = chaptersEls[0];
     const line = window.scrollY + window.innerHeight * 0.25;
     chaptersEls.forEach((c) => { if (c.offsetTop <= line) current = c; });
     tabs.forEach((t) => t.classList.toggle("active", t.dataset.chapter === current.id));
   }
   window.addEventListener("scroll", markActive, { passive: true });
-  markActive();
 
   /* ---- 引く ----
      見出し・言い換え語・本文の順で当てる。ふつうの文字探しで十分（項目は数十個）。 */
-  const allSecs = Array.from(document.querySelectorAll(".sec"));
   function applyFind(raw) {
     const q = raw.trim().toLowerCase().normalize("NFKC");
     clearEl.classList.toggle("show", q.length > 0);
@@ -354,7 +456,7 @@ body::before {
       nohitEl.classList.remove("show");
       return;
     }
-    const hitIds = new Set(window.MANUAL_FIND(raw));
+    const hitIds = new Set(window.MANUAL_FIND(raw, lang));
     let hits = 0;
     allSecs.forEach((s) => {
       const ok = hitIds.has(s.id);
@@ -365,13 +467,18 @@ body::before {
       const alive = c.querySelector(".sec:not(.hidden-by-find)");
       c.classList.toggle("hidden-by-find", !alive);
     });
-    countEl.textContent = hits > 0 ? hits + " 項目が見つかりました" : "";
+    countEl.textContent = hits > 0 ? UI[lang].count(hits) : "";
     nohitEl.classList.toggle("show", hits === 0);
   }
   function clearFind() { findEl.value = ""; applyFind(""); }
   findEl.addEventListener("input", () => applyFind(findEl.value));
   findEl.addEventListener("keydown", (e) => { if (e.key === "Escape") clearFind(); });
   clearEl.addEventListener("click", clearFind);
+
+  document.getElementById("lang-switch").addEventListener("click", () => {
+    lang = lang === "ja" ? "en" : "ja";
+    render();
+  });
 
   /* 本文中の「→ 第◯章」リンク: 検索で隠れていても飛べるように、先に検索を解く */
   bodyEl.addEventListener("click", (e) => {
@@ -382,6 +489,8 @@ body::before {
     const target = document.querySelector(a.getAttribute("href"));
     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
   });
+
+  render();
 })();
 </script>
 </body>
