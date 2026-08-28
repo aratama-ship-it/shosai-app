@@ -268,14 +268,14 @@ test("旧下書きは一度だけ会場ライブラリへ取り込み、旧キ�
   assert.equal(second.venues.library.list().length, 1, "再起動で旧下書きを重複取り込みしない");
 });
 
-test("会場セレクト用一覧は既存6プリセットの後ろにライブラリ会場を並べる", () => {
+test("会場セレクト用一覧は既存7プリセットの後ろにライブラリ会場を並べる", () => {
   const storage = new MemoryStorage({
     "shosai-stage-venues-v1": JSON.stringify([venue("hall-a", "大広間")]),
   });
   const { venues } = loadModels(storage);
   assert.deepEqual(
     Array.from(venues.list, (item) => item.id),
-    ["proscenium", "thrust", "arena", "outdoor", "blackbox", "theatre-tram", "hall-a"],
+    ["proscenium", "thrust", "arena", "outdoor", "blackbox", "theatre-tram", "tohu", "hall-a"],
   );
   assert.equal(venues.byId("hall-a").custom, true);
   assert.deepEqual(Array.from(venues.byId("hall-a").outline[0]), [2, 2]);
@@ -684,12 +684,54 @@ test("平面の重ね順は床・可動・可動什器・死角・見える限�
     "可動範囲の後に可動什器の拡張輪郭を描いていない");
 });
 
+/* TOHU（実在会場・第2号）。数値は公式技術仕様書 Devis Technique Tohu（2020-02-10版）。
+   ここを直すときは仕様書の該当欄を読み直してからにすること（記憶で書き換えない）。 */
+test("TOHUプリセットは公式仕様書の実測値を保つ", () => {
+  const { venues } = loadModels();
+  const tohu = venues.v2.byId("tohu");
+  assert.ok(tohu, "v2一覧にtohuがある");
+  assert.equal(tohu.realVenue, true);
+  assert.equal(tohu.provenance.confidence, "high");
+  assert.equal(tohu.sizes.length, 1);
+
+  const size = tohu.sizes[0];
+  assert.equal(size.id, "round-full");
+  // 床＝組める円形舞台の最大直径12.8m（仕様書 SCÈNE）
+  const xs = size.floor.outline.map((point) => point[0]);
+  assert.equal(Math.round((Math.max(...xs) - Math.min(...xs)) * 10) / 10, 12.8);
+  // 床からグリッドまで19.4m（仕様書 63'7''）。全高22.45mはグリッド+3.05m
+  assert.equal(size.ceiling.heightM, 19.4);
+  assert.equal(size.ceiling.gridM, 19.4);
+  assert.equal(size.capacity.seats, 1004);
+
+  // 可動席は11ブロック（仕様書 GRADINS: 5×85 + 6×69 = 839席）
+  assert.equal(size.audience.length, 11);
+  assert.ok(size.audience.every((area) => area.side === "round"),
+    "全周形式（正面図は全周の描画に落ちるので realShape を使わない）");
+
+  // 全周形式は正面図でrealShapeを使わない＝円の輪郭が直交ポリゴン前提の描画に入らない
+  assert.match(sketchSource, /const roundHouse = v\.audience === "round";/);
+  assert.match(sketchSource, /const realShape = \(v\.realVenue[\s\S]{0,120}&& !roundHouse\)/);
+});
+
+test("TOHUの表示文言は日英そろっている", () => {
+  const i18nContext = { window: {} };
+  vm.runInNewContext(i18nSource, i18nContext, { filename: "stage-i18n.js" });
+  const maps = i18nContext.window.SHOSAI_I18N.maps;
+  assert.equal(maps.venue.tohu, "TOHU");
+  assert.ok(maps.venueShort.tohu);
+  assert.ok(maps.venueNote.tohu && maps.venueNote.tohu.length > 80, "会場の説明が英語にもある");
+  assert.ok(maps.size["round-full"], "サイズ名の英訳がある");
+  assert.ok(!/[぀-ヿ一-鿿]/.test(maps.venueNote.tohu + maps.size["round-full"]),
+    "英語側に日本語が混じっていない");
+});
+
 test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う", () => {
   assert.match(sketchSource, /const STAGE_KEYS = \[[\s\S]*?"shosai-stage-venues-v1"/);
   for (const [name, version] of [
-    ["stage-venues.js", "20"],
+    ["stage-venues.js", "21"],
     ["stage-venue-lines.js", "4"],
-    ["stage-i18n.js", "88"],
+    ["stage-i18n.js", "89"],
     ["stage-set-model.js", "1"],
     ["stage-set-builder.js", "1"],
     ["stage-sketch.js", "310"],

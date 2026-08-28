@@ -102,7 +102,7 @@ test("正本と単独版に検索・冊子導線と共通データが継承さ�
 });
 
 test("Service Workerは冊子一式を最新版へキャッシュする", () => {
-  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v170";/);
+  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v171";/);
   for (const entry of [
     "./manual/manual-content.js?v=2",
     "./manual/manual-content.js",

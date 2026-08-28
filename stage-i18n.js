@@ -1224,11 +1224,11 @@
     },
     venue: {
       proscenium: "Proscenium", thrust: "Thrust", arena: "Big top", outdoor: "Outdoor stage", blackbox: "Black box",
-      "theatre-tram": "Theatre Tram",
+      "theatre-tram": "Theatre Tram", tohu: "TOHU",
     },
     venueShort: {
       proscenium: "framed stage", thrust: "three sides", arena: "in the round", outdoor: "temporary", blackbox: "flexible",
-      "theatre-tram": "real venue",
+      "theatre-tram": "real venue", tohu: "real venue",
     },
     venueNote: {
       proscenium: "The house is on one side. The frame separates stage from house, so backdrop and scenery carry weight.",
@@ -1237,12 +1237,14 @@
       outdoor: "No house to contain it. The front barrier and the distance to front-of-house set the scale.",
       blackbox: "A box where the house position is decided each time. The form itself is a variable.",
       "theatre-tram": "Setagaya Public Theatre's studio space in Sangenjaya. A sunken end stage: no frame, stage and house share one box. The plan is T-shaped — an 8.4 m upstage box narrows, then opens to the 14.7 m main room. A single stage lift (5.44×2.72 m) sits centre, near the front edge; 225 seats in the basic form.",
+      tohu: "The circular hall of TOHU, Montreal's cité des arts du cirque — the first house in North America built in the round for circus. The room measures 36.6 m across inside, on a bare sealed-concrete floor. There is no fixed stage: a round one is built each time from curved decks, up to 12.8 m across. Eleven retractable bleacher blocks hold 839, and they telescope away for other layouts; with 40 balcony stools and 125 floor chairs the house reaches 1,004 (TOHU quotes up to 1,200 — it varies with the layout). A 7.8 m opening leads backstage.",
     },
     size: {
       small: "Small", mid: "Medium", large: "Large",
       onering: "One ring", grand: "Grand chapiteau",
       sl100: "Small 7×6m", sl260: "Medium 10×7m", sl320: "Large 12×12m",
       standard: "Basic form (sunken end stage)",
+      "round-full": "In the round (12.8 m ring)",
     },
     seat: {
       front: "Front row", center: "Stalls centre", rear: "Stalls rear",

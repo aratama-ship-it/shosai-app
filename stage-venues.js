@@ -448,6 +448,91 @@
   })();
   VENUES_V2.push(theatreTramV2);
 
+  /* 実在会場 第2号: TOHU（モントリオール・サーカス芸術都市）
+   *
+   * 数値の出所は公式技術仕様書 "Devis Technique Tohu"（2020-02-10版）。
+   * 主要値は公式サイトの案内とも突き合わせて一致を確認した:
+   *   グリッドまで19.4m ＋ グリッドから屋根まで3.05m ＝ 22.45m
+   *   → 公式サイトの「hauteur 22,45 m」と一致。
+   *   可動席は5ブロック×85席＋6ブロック×69席＝839席 → 公式の839席と一致。
+   * 公式サイトは直径40mと案内するが、仕様書は「回廊込み42.7m／回廊内法36.6m」。
+   * 40mは丸めた案内値とみて、内法36.6mを室として採る。
+   *
+   * 舞台スケッチでは「床＝演技面」なので、床は仕様書にある**組める円形舞台の最大直径
+   * 12.8m**（曲面台の一式で作れる円）を採る。1768年 Philip Astley 以来のリング13mと
+   * ほぼ同じ寸法で、既存のビッグトップと並べても違和感がない。
+   *
+   * 客席の位置だけは仕様書に角度・半径の記載が無いため幾何から導いた（＝推定）:
+   * 可動席1ブロックの幅7.5m×11ブロックが円周に並ぶとすると、
+   *   7.5 = 2r・sin(180°/11) → r ≒ 13.3m（客席の前縁）。
+   * 室の内法半径18.3mとの差5.0mが可動席の奥行にあたり、席の高さ4.9mと釣り合う
+   * （伸縮式可動席のほぼ45度の勾配）ため、この推定を採用した。 */
+  const tohuV2 = (() => {
+    const stageDiameter = 12.8;   // 曲面台で組める円形舞台の最大直径（仕様書 SCÈNE）
+    const centre = stageDiameter / 2;
+    const houseInnerR = 13.3;     // 可動席の前縁（上記の幾何から導出。推定）
+    const roomR = 36.6 / 2;       // 室の内法半径（仕様書「回廊内法120' = 36.6m」）
+    const BLOCKS = 11;            // 可動席のブロック数（仕様書 GRADINS）
+
+    /* 可動席は実際には平らな箱を円周に並べたもの。円弧ではなく直線の前縁で作る。 */
+    const houseBlocks = Array.from({ length: BLOCKS }, (_, index) => {
+      const next = index + 1;
+      return {
+        id: `audience-block-${next}`,
+        polygon: [
+          circlePoint(centre, houseInnerR, index, BLOCKS),
+          circlePoint(centre, houseInnerR, next, BLOCKS),
+          circlePoint(centre, roomR, next, BLOCKS),
+          circlePoint(centre, roomR, index, BLOCKS),
+        ],
+        mode: "seated",
+        eyeM: 1.2,
+        side: "round",
+      };
+    });
+
+    const variant = {
+      id: "round-full",
+      label: "全周（円形舞台12.8m）",
+      floor: { outline: circleOutline(stageDiameter), levels: [] },
+      ceiling: {
+        heightM: 19.4,   // 床からグリッドまで（仕様書 63'7''）
+        gridM: 19.4,     // 吊りの面＝グリッドそのもの
+        rigging: "full",
+        note: "床からグリッドまで19.4m、グリッドから屋根まで3.05m（全高22.45m）。吊りは1点あたり最大2000kg。",
+      },
+      audience: houseBlocks,
+      fixtures: [],
+      access: [],
+      capacity: { seats: 1004 },
+    };
+
+    return {
+      format: "venue-v2",
+      id: "tohu",
+      label: "TOHU",
+      basis: "tohu",
+      scale: { gridM: 1, confidence: "approx" },
+      floor: variant.floor,
+      ceiling: variant.ceiling,
+      audience: variant.audience,
+      fixtures: variant.fixtures,
+      access: variant.access,
+      provenance: {
+        source: "図面",
+        confidence: "high",
+        sharing: "ok",
+        note: "公式技術仕様書 Devis Technique Tohu（2020-02-10版）の数値。全高と席数は公式サイトの案内とも一致を確認。客席の半径だけは記載が無く、可動席11ブロック×幅7.5mの幾何から導いた推定。より新しい2025-03-26版が公開されているが、本作業の環境からは取得できず未反映。",
+      },
+      short: "実在・モントリオール",
+      realVenue: true,
+      note: "モントリオールのサーカス芸術都市TOHUの円形ホール。北米で初めてサーカスのために建てられた全周360度の劇場で、客席の内法は直径36.6m、床は打ちっぱなしのコンクリート。中央の円形舞台は専用の曲面台で最大直径12.8mまで組める（固定の舞台は無く、毎回組む）。可動席は11ブロック839席で、伸縮させて別の配置にもできる。バルコニー40席と平土間125席を足して最大1004席（公式サイトは最大1200人と案内。構成で変わる）。後舞台へは幅7.8mの開口でつながる。",
+      reference: "TOHU 公式 https://tohu.ca/ ／ 技術仕様書 Devis Technique Tohu（2020-02-10版）",
+      sizes: [variant],
+    };
+  })();
+  VENUES_V2.push(tohuV2);
+
   const outlineDimensions = (outline) => {
     const xs = outline.map((point) => point[0]);
     const ys = outline.map((point) => point[1]);
