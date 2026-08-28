@@ -179,3 +179,36 @@ URLを知らなければ到達しない。**削除・巻き戻しはしていな
 - **git push**（本稿執筆時点で origin より先行。本人の指示があれば実施）。
 - 認証の内側の実機確認（ログインが要るためClaudeでは不可）。iPad PWAは `CACHE_NAME` を
   v153→v154 へ上げたので、次回起動時に新しい殻を取りに行く。
+
+---
+
+## デプロイ記録（2026-08-28）
+
+**Version `c65bff9f-a7db-4337-910b-3e2f48fcd632`**。6ファイル更新
+（index.html・stage.html・stage-sketch.js・stage-i18n.js・style.css ほか）。
+
+この回で本番へ出たもの:
+
+- クイックガイド（日本語 `manual/quick.html` / 英語 `manual/quick-en.html`）全7場と、
+  設定の先頭からの導線。表示言語に応じて開き分ける
+- 設定内の使い方5項目をアコーディオン化（言語のすぐ下）
+- 「設定をリセット」（二重確認つき）
+- 〈地図〉の廃止、〈舞台を空にする〉のシーン欄への移動、楽曲未読込時の再生バー非表示
+- 画面の揺れ2件の修正（`?` のスクロールバー出現／矢印ツール時の席ボタン折り返し）
+
+**デプロイ前**: 追跡ファイルの作業ツリー清潔・`build_stage.py --check` 通過・テスト638件全通過。
+
+**デプロイ後の境界確認**（2ドメインとも実施。すべて期待どおり）:
+
+- `https://shosai-app.juggler-arata.workers.dev` と
+  **`https://stagesketch.pygmix.com`（カスタムドメイン。この回で初めて確認）**
+- 中身7パスすべて401（新設の `/manual/quick.html`・`/manual/quick-en.html` を含む）
+- 公開200は `/sign-in`・manifest・アイコンのみ
+- 401に `cache-control: no-store` あり、`WWW-Authenticate` なし
+- パス細工6パターン（`..`／`//`／大文字／`%2F`／`./`／末尾`?`）すべて401
+
+### 未実施
+
+- git push（origin より先行）。ご指示があれば実施
+- 認証の内側の実機確認（ログインが要るためClaudeでは不可）。iPad PWAは
+  `CACHE_NAME` を v164 へ上げたので、次回起動時に新しい殻を取りに行く
