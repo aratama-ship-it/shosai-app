@@ -1,10 +1,10 @@
-const CACHE_NAME = "stage-sketch-pwa-v171";
+const CACHE_NAME = "stage-sketch-pwa-v172";
 const APP_SHELL = [
   "./stage.html",
   "./style.css?v=218",
-  "./stage-venues.js?v=21",
+  "./stage-venues.js?v=22",
   "./stage-venue-lines.js?v=4",
-  "./stage-i18n.js?v=89",
+  "./stage-i18n.js?v=90",
   "./stage-prompt-i18n.js?v=2",
   "./stage-rehearsal-export.js?v=1",
   "./stage-samples/index.js?v=2",

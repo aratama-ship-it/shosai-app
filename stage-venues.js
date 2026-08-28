@@ -359,6 +359,109 @@
     }),
   ];
 
+  /* ── サーカスの形式プリセット（2026-08-28 追加）──────────────
+   * 既存の〈ビッグトップ〉は形式の見取り図（リング13mの円と機械的な客席帯）で、
+   * 値がテストで固定されているため触らない。ここでは実際の運用寸法を持つ形式を足す。 */
+
+  /* シャピトー（巡演テント）。
+   * 出典: La P'tite Fabrique de Cirque「FICHE TECHNIQUE CHAPITEAU 13m」より
+   *   ・外周ポールで直径13m、袖（アプシス）まで含めて接地18m
+   *   ・マストは外側に立ち高さ8m（＝テント内に支柱が無く、演技空間を塞がない）
+   *   ・頂点の丸コーポル 直径1.5m・高さ5.50m
+   *   ・ピスト（リング）は中央に直径7.00m
+   *   ・客席はピストを囲む4区画・最大240席
+   *   ・設営には平坦な35×35mが要る
+   * ピストの伝統寸法13m（Astley以来）は既存のビッグトップが持つ。こちらは
+   * 現代の小型巡演テントで、日本で組みやすい規模にあたる。 */
+  const chapiteauV2 = (() => {
+    const pisteDiameter = 7;
+    const centre = pisteDiameter / 2;
+    const houseInnerR = centre;      // ピストの際から客席が立ち上がる
+    const houseOuterR = 13 / 2;      // 外周ポール（テントの内法）
+    const BLOCKS = 4;                // 客席は4区画（出典どおり）
+    const SPAN = 0.86;               // 区画の張り出し。残りは出入りの通路
+
+    const houseBlocks = Array.from({ length: BLOCKS }, (_, index) => {
+      const from = index + (1 - SPAN) / 2;
+      const to = index + 1 - (1 - SPAN) / 2;
+      return {
+        id: `audience-quarter-${index + 1}`,
+        polygon: [
+          circlePoint(centre, houseInnerR, from, BLOCKS),
+          circlePoint(centre, houseInnerR, to, BLOCKS),
+          circlePoint(centre, houseOuterR, to, BLOCKS),
+          circlePoint(centre, houseOuterR, from, BLOCKS),
+        ],
+        mode: "seated",
+        eyeM: 1.2,
+        side: "round",
+      };
+    });
+
+    const variant = {
+      id: "touring",
+      label: "巡演テント（ピスト7m・240席）",
+      floor: { outline: circleOutline(pisteDiameter), levels: [] },
+      ceiling: {
+        heightM: 5.5,   // コーポル（頂点）まで
+        rigging: "limited",
+        note: "頂点まで5.5m。空中演目の最低条件（シルクで吊り点4.5m）は満たすが余裕は少ない。回転シルク（6m）は入らない。",
+      },
+      audience: houseBlocks,
+      fixtures: [],   // マストは外側に立つのでテント内に支柱は無い
+      access: [],
+      capacity: { seats: 240 },
+    };
+
+    return {
+      format: "venue-v2",
+      id: "chapiteau",
+      label: "シャピトー（巡演テント）",
+      basis: "chapiteau",
+      scale: { gridM: 1, confidence: "approx" },
+      floor: variant.floor,
+      ceiling: variant.ceiling,
+      audience: variant.audience,
+      fixtures: variant.fixtures,
+      access: variant.access,
+      provenance: {
+        source: "図面",
+        confidence: "high",
+        sharing: "ok",
+        note: "実在の巡演テント1張の技術仕様書（La P'tite Fabrique de Cirque・13m）の数値。テント全体の代表値ではなく、この規模の一例として採った。",
+      },
+      short: "テント・全周",
+      note: "現代の小型巡演テント。中央のピスト（リング）は直径7m、客席は4区画で最大240席。マストは外側に立つので、テントの中に支柱が無く演技空間を塞がない。頂点は5.5mで、空中演目は吊り点の高さに余裕が無い。伝統的なサーカスのリング13m（1768年 Philip Astley 以来の国際標準）は既存の〈ビッグトップ〉が持つ。設営には平坦な35×35mが要る。",
+      reference: "La P'tite Fabrique de Cirque 技術仕様書（13mシャピトー）／空中演目の最低高さは Katie Hardwick 技術要件",
+      sizes: [variant],
+    };
+  })();
+  VENUES_V2.push(chapiteauV2);
+
+  /* 劇場でのサーカス公演（額縁舞台＋吊り）。
+   * 形式プリセットなので寸法は目安。ただし**吊りの高さだけは実務の最低条件**に合わせた。
+   * 出典: 空中演目の技術要件（Katie Hardwick ほか）
+   *   ・シルク: 吊り点まで最低4.5m／周囲に直径3mの空き
+   *   ・回転シルク: 最低6m／床から5mの高さまで直径4.5mの空き
+   *   ・フープ・ダンストラピス: 最低3m／周囲に直径4mの空き
+   *   ・吊り点は500kg以上で試験されていること（ソロ・シンクロの場合）
+   * 中規模は回転シルクが成立する下限、大規模は複数の空中演目を重ねられる高さ。 */
+  const circusTheatreV2 = createVenueV2({
+    id: "circus-theatre",
+    label: "劇場のサーカス公演",
+    short: "額縁・吊りあり",
+    note: "額縁舞台にサーカスを持ち込む形。客席は一方向で、空中演目は吊りの高さがそのまま演目の可否になる。目安として、シルクは吊り点まで4.5m・周囲に直径3mの空き、回転シルクは6m・直径4.5mの空き、フープやダンストラピスは3m・直径4mの空きが要る。吊り点は500kg以上で試験されたものを使う。落下範囲に物を置かないこと。",
+    audience: "front",
+    rigging: "full",
+    sizes: [
+      // 中規模＝回転シルク（最低6m）が成立する下限。大規模＝空中演目を重ねられる高さ
+      { id: "rig-mid", label: "中規模（吊り8m）", width: 12, depth: 9, height: 8, seats: 600 },
+      { id: "rig-large", label: "大規模（吊り12m）", width: 16, depth: 12, height: 12, seats: 1200 },
+    ],
+    source: "空中演目の最低高さは Katie Hardwick 技術要件ほか。舞台寸法は形式プリセットの目安",
+  });
+  VENUES_V2.push(circusTheatreV2);
+
   /* ── 実在会場プリセット ──────────────────────────────
    * 形式プリセット（上のVENUES_V2）と違い、実在の劇場を図面から起こす。
    * 数値は目安表示にだけ使う方針（このファイル冒頭）は実在会場でも同じ。
@@ -532,6 +635,84 @@
     };
   })();
   VENUES_V2.push(tohuV2);
+
+  /* 実在会場 第3号: シルク・ディヴェール（パリ・1852年／現存最古級の常設サーカス）
+   *
+   * 出典と相互検証:
+   *   ・公式の貸出資料 Plaquette Location（cirquedhiver.com）
+   *       「42メートルの直径」「20面・窓40」「1600 places assises」「piste de 125m2」
+   *   ・Circopedia（サーカス専門の事典）
+   *       正20角形・直径42m／外壁は厚さ55cm・高さ16.25m／ドーム頂点27.5m／
+   *       柱を1本も立てずにドームを架けた（当時としては前例が無い）
+   *   ・設計 Jacques-Ignace Hittorff、1852年着工・同年開場
+   * ピストの直径は数値としては公表が見当たらず、公式の面積125m²から導いた
+   *   （直径 = 2√(125/π) ＝ 12.62m）。伝統の13mリングにほぼ一致する。
+   * 開場時の収容は資料で食い違う（公式資料5900人／Circopedia 3900人）。
+   *   現在の1600席は公式資料の値を採る。 */
+  const cirqueDHiverV2 = (() => {
+    const pisteDiameter = 12.62;   // 公式の面積125m²から導出（2√(125/π)）
+    const centre = pisteDiameter / 2;
+    const roomR = 42 / 2;          // 建物の内法半径（公式・Circopedia・Wikipedia一致）
+    const SIDES = 20;              // 正20角形（イコサゴン）
+
+    /* 客席はピストの際から外壁まで。建物と同じ20面で割る。 */
+    const houseBlocks = Array.from({ length: SIDES }, (_, index) => {
+      const next = index + 1;
+      return {
+        id: `audience-bay-${next}`,
+        polygon: [
+          circlePoint(centre, centre, index, SIDES),
+          circlePoint(centre, centre, next, SIDES),
+          circlePoint(centre, roomR, next, SIDES),
+          circlePoint(centre, roomR, index, SIDES),
+        ],
+        mode: "seated",
+        eyeM: 1.2,
+        side: "round",
+      };
+    });
+
+    const variant = {
+      id: "ring",
+      label: "ワンリング（ピスト12.6m）",
+      floor: { outline: circleOutline(pisteDiameter, SIDES), levels: [] },
+      ceiling: {
+        heightM: 16.25,  // 外壁の高さ＝軒まで
+        gridM: 27.5,     // ドームの頂点
+        rigging: "full",
+        note: "外壁は高さ16.25m、その上のドームは頂点27.5m。柱が1本も無いので、吊りも見通しも全周で通る。",
+      },
+      audience: houseBlocks,
+      fixtures: [],
+      access: [],
+      capacity: { seats: 1600 },
+    };
+
+    return {
+      format: "venue-v2",
+      id: "cirque-dhiver",
+      label: "シルク・ディヴェール",
+      basis: "cirque-dhiver",
+      scale: { gridM: 1, confidence: "approx" },
+      floor: variant.floor,
+      ceiling: variant.ceiling,
+      audience: variant.audience,
+      fixtures: variant.fixtures,
+      access: variant.access,
+      provenance: {
+        source: "図面",
+        confidence: "high",
+        sharing: "ok",
+        note: "公式の貸出資料（直径42m・20面・1600席・ピスト125m²）と、サーカス専門事典 Circopedia（外壁16.25m・ドーム27.5m・柱なし）を突き合わせた。ピストの直径は公表が見当たらず、公式の面積125m²から導いた値。開場時の収容は資料により5900人／3900人と食い違う。",
+      },
+      short: "実在・パリ",
+      realVenue: true,
+      note: "パリの常設サーカス（1852年・設計 Jacques-Ignace Hittorff）。現存する最古級のサーカス建築で、平面は正20角形・直径42m。中央のピストは125m²（直径約12.6m）で、伝統の13mリングにほぼ一致する。外壁は高さ16.25m、その上のドームは頂点27.5m。**内部に柱が1本も無い**のが特徴で、全周どこからも見通せる。現在の客席は1600席（開場時は資料により5900人とも3900人とも）。TOHUが現代サーカスの箱なら、こちらは古典サーカスの箱にあたる。",
+      reference: "Cirque d'Hiver Bouglione 公式 https://www.cirquedhiver.com/ ／ Circopedia https://www.circopedia.org/Cirque_d'Hiver/fr",
+      sizes: [variant],
+    };
+  })();
+  VENUES_V2.push(cirqueDHiverV2);
 
   const outlineDimensions = (outline) => {
     const xs = outline.map((point) => point[0]);

@@ -268,14 +268,18 @@ test("旧下書きは一度だけ会場ライブラリへ取り込み、旧キ�
   assert.equal(second.venues.library.list().length, 1, "再起動で旧下書きを重複取り込みしない");
 });
 
-test("会場セレクト用一覧は既存7プリセットの後ろにライブラリ会場を並べる", () => {
+test("会場セレクト用一覧は既存10プリセットの後ろにライブラリ会場を並べる", () => {
   const storage = new MemoryStorage({
     "shosai-stage-venues-v1": JSON.stringify([venue("hall-a", "大広間")]),
   });
   const { venues } = loadModels(storage);
   assert.deepEqual(
     Array.from(venues.list, (item) => item.id),
-    ["proscenium", "thrust", "arena", "outdoor", "blackbox", "theatre-tram", "tohu", "hall-a"],
+    [
+      "proscenium", "thrust", "arena", "outdoor", "blackbox",
+      "chapiteau", "circus-theatre", "theatre-tram", "tohu", "cirque-dhiver",
+      "hall-a",
+    ],
   );
   assert.equal(venues.byId("hall-a").custom, true);
   assert.deepEqual(Array.from(venues.byId("hall-a").outline[0]), [2, 2]);
@@ -714,6 +718,58 @@ test("TOHUプリセットは公式仕様書の実測値を保つ", () => {
   assert.match(sketchSource, /const realShape = \(v\.realVenue[\s\S]{0,120}&& !roundHouse\)/);
 });
 
+/* サーカスの3形式（2026-08-28 追加）。寸法の出所は各プリセットのコメントにある。
+   ここを直すときは出典を読み直してからにすること（記憶で書き換えない）。 */
+test("サーカスの3形式は出典どおりの寸法を保つ", () => {
+  const { venues } = loadModels();
+
+  // シャピトー: ピスト7m・4区画・240席・頂点5.5m（巡演テントの技術仕様書）
+  const tent = venues.v2.byId("chapiteau");
+  const tentSize = tent.sizes[0];
+  const tentXs = tentSize.floor.outline.map((point) => point[0]);
+  assert.equal(Math.round((Math.max(...tentXs) - Math.min(...tentXs)) * 10) / 10, 7);
+  assert.equal(tentSize.ceiling.heightM, 5.5);
+  assert.equal(tentSize.capacity.seats, 240);
+  assert.equal(tentSize.audience.length, 4);
+  assert.equal(tentSize.fixtures.length, 0, "マストは外側に立つのでテント内に支柱を置かない");
+
+  // 劇場のサーカス公演: 吊り8m/12m。回転シルクの最低6mを下回らない
+  const theatre = venues.v2.byId("circus-theatre");
+  assert.deepEqual(Array.from(theatre.sizes, (size) => size.ceiling.heightM), [8, 12]);
+  assert.ok(theatre.sizes.every((size) => size.ceiling.heightM >= 6),
+    "回転シルクの最低高さ6mを下回らない");
+  assert.equal(venues.byId("circus-theatre").audience, "front");
+
+  // シルク・ディヴェール: 正20角形42m・ピスト125m²・外壁16.25m・ドーム27.5m・1600席
+  const hiver = venues.v2.byId("cirque-dhiver");
+  assert.equal(hiver.realVenue, true);
+  const ring = hiver.sizes[0];
+  assert.equal(ring.audience.length, 20, "建物と同じ20面で客席を割る");
+  assert.equal(ring.floor.outline.length, 20);
+  assert.equal(ring.ceiling.heightM, 16.25);
+  assert.equal(ring.ceiling.gridM, 27.5);
+  assert.equal(ring.capacity.seats, 1600);
+  assert.equal(ring.fixtures.length, 0, "内部に柱が1本も無いのが特徴");
+  // ピスト直径は公式の面積125m²から導いた値。面積へ戻して一致するか
+  const ringXs = ring.floor.outline.map((point) => point[0]);
+  const diameter = Math.max(...ringXs) - Math.min(...ringXs);
+  assert.ok(Math.abs(Math.PI * (diameter / 2) ** 2 - 125) < 1.5,
+    `ピスト直径${diameter}mは公式の125m²と整合する`);
+
+  // 全周形式は正面図で realShape を通らない（円・多角形の輪郭でも壊れない）
+  for (const id of ["chapiteau", "cirque-dhiver"]) {
+    assert.equal(venues.byId(id).audience, "round", `${id} は全周形式`);
+  }
+});
+
+test("既存のビッグトップは触っていない（形式の見取り図として据え置き）", () => {
+  const { venues } = loadModels();
+  const arena = venues.v2.byId("arena");
+  assert.deepEqual(Array.from(arena.sizes, (size) => size.id), ["onering", "grand"]);
+  assert.equal(arena.sizes[0].ringM, 13, "リング13mはAstley以来の国際標準");
+  assert.equal(arena.provenance.source, "preset");
+});
+
 test("TOHUの表示文言は日英そろっている", () => {
   const i18nContext = { window: {} };
   vm.runInNewContext(i18nSource, i18nContext, { filename: "stage-i18n.js" });
@@ -726,12 +782,32 @@ test("TOHUの表示文言は日英そろっている", () => {
     "英語側に日本語が混じっていない");
 });
 
+test("会場プリセットは全部が日英そろっている（追加時の訳し忘れを止める）", () => {
+  const { venues } = loadModels();
+  const i18nContext = { window: {} };
+  vm.runInNewContext(i18nSource, i18nContext, { filename: "stage-i18n.js" });
+  const maps = i18nContext.window.SHOSAI_I18N.maps;
+  const kana = /[぀-ヿ一-鿿]/;
+
+  venues.v2.list.forEach((venue) => {
+    assert.ok(maps.venue[venue.id], `${venue.id} の会場名に英訳がある`);
+    assert.ok(maps.venueShort[venue.id], `${venue.id} の短い呼び名に英訳がある`);
+    assert.ok(maps.venueNote[venue.id], `${venue.id} の説明に英訳がある`);
+    assert.ok(!kana.test(maps.venue[venue.id] + maps.venueShort[venue.id] + maps.venueNote[venue.id]),
+      `${venue.id} の英語に日本語が混じっていない`);
+    venue.sizes.forEach((size) => {
+      assert.ok(maps.size[size.id], `${venue.id}/${size.id} のサイズ名に英訳がある`);
+      assert.ok(!kana.test(maps.size[size.id]), `${venue.id}/${size.id} のサイズ名英訳に日本語がない`);
+    });
+  });
+});
+
 test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う", () => {
   assert.match(sketchSource, /const STAGE_KEYS = \[[\s\S]*?"shosai-stage-venues-v1"/);
   for (const [name, version] of [
-    ["stage-venues.js", "21"],
+    ["stage-venues.js", "22"],
     ["stage-venue-lines.js", "4"],
-    ["stage-i18n.js", "89"],
+    ["stage-i18n.js", "90"],
     ["stage-set-model.js", "1"],
     ["stage-set-builder.js", "1"],
     ["stage-sketch.js", "310"],
