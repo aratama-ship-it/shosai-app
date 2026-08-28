@@ -10,6 +10,24 @@ name = "shosai-app"
 main = "worker.js"
 compatibility_date = "2026-08-19"
 
+# 配る先の正式なURL（2026-08-28 本人決定）。
+# ★workers.dev の旧URLもしばらく併存させる（消していない）。
+#   舞台スケッチはショーを localStorage に持ち、これはドメインごとに分かれるため、
+#   旧URLのPWA・ブラウザに入れた作業は新URLへ自動では移らない。
+#   旧URLを止めるのは、移したい作業の書き出し／読み込みが済んでからにすること。
+# ★apex（pygmix.com）では別のサイトが動いている。ここで指定するのは
+#   stagesketch のホスト名だけ。apex や www に触れないこと。
+# ★routes を書くと workers.dev は既定で無効になる（2026-08-28にこれで旧URLを
+#   一時的に落とした）。旧URLを併存させたいので明示的に有効へ戻す。
+#   ★この行は [[routes]] より前（トップレベル）に置くこと。routesブロックの
+#     後ろに書くと routes の一部と解釈されて設定エラーになる。
+#   旧URLを本当に止めるときは、ここを false にしてデプロイする。
+workers_dev = true
+
+[[routes]]
+pattern = "stagesketch.pygmix.com"
+custom_domain = true
+
 [assets]
 directory = "."
 binding = "ASSETS"

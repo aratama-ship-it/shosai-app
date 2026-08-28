@@ -26,7 +26,7 @@ set -euo pipefail
 
 COUNT="${1:-3}"
 WORKER_NAME="shosai-app"
-SITE_URL="https://shosai-app.juggler-arata.workers.dev"
+SITE_URL="https://stagesketch.pygmix.com"
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 STAMP="$(date +%Y%m%d-%H%M)"
 VAULT="$HOME/shosai-guest-accounts"

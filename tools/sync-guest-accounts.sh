@@ -22,7 +22,7 @@
 set -euo pipefail
 
 WORKER_NAME="shosai-app"
-SITE_URL="https://shosai-app.juggler-arata.workers.dev"
+SITE_URL="https://stagesketch.pygmix.com"
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 VAULT="$HOME/shosai-guest-accounts"
 CSV="${1:-$VAULT/guest-accounts-latest.csv}"

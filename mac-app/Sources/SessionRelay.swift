@@ -77,7 +77,11 @@ private final class SessionCredentialStore {
 }
 
 final class SessionRelay: NSObject, URLSessionWebSocketDelegate {
-    static let productionOrigin = "https://shosai-app.juggler-arata.workers.dev"
+    /* 中継先の本番URL。2026-08-28に独自ドメインへ移した。
+       ★ここを変えたら .app を作り直して入れ直さないと、古い殻は旧URLへ繋ぎ続ける。
+         旧URL（shosai-app.juggler-arata.workers.dev）もまだ生きているので、
+         入れ直すまでの間も共有セッション自体は動く。 */
+    static let productionOrigin = "https://stagesketch.pygmix.com"
 
     var eventHandler: (([String: Any]) -> Void)?
 

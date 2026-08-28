@@ -184,7 +184,7 @@ test("Macブリッジは本番の招待URLを作り、open→message→closeを�
       ok: true,
       roomId: "macroom",
       hostKey: "mac-key",
-      origin: "https://shosai-app.juggler-arata.workers.dev",
+      origin: "https://stagesketch.pygmix.com",
     }),
     sessionConnect: async (options) => { connects.push(options); return { ok: true }; },
     sessionSend: async (text) => { sentTexts.push(text); return { ok: true }; },
@@ -202,7 +202,7 @@ test("Macブリッジは本番の招待URLを作り、open→message→closeを�
 
   assert.equal(
     fixture.elementById("stage-session-url").value,
-    "https://shosai-app.juggler-arata.workers.dev/stage.html#session=macroom",
+    "https://stagesketch.pygmix.com/stage.html#session=macroom",
   );
   assert.deepEqual(JSON.parse(JSON.stringify(connects)), [{
     roomId: "macroom",
@@ -225,7 +225,9 @@ test("Macブリッジは本番の招待URLを作り、open→message→closeを�
 });
 
 test("Swift中継は固定オリジン・Keychain・Basic認証とP0オリジン拒否テストを備える", () => {
-  assert.match(relaySource, /static let productionOrigin = "https:\/\/shosai-app\.juggler-arata\.workers\.dev"/);
+  /* 2026-08-28に独自ドメインへ移行。ここを変えたら .app の作り直しが要る
+     （古い殻は旧URLへ繋ぎ続ける）。 */
+  assert.match(relaySource, /static let productionOrigin = "https:\/\/stagesketch\.pygmix\.com"/);
   assert.match(relaySource, /static let service = "shosai-app-session"/);
   assert.match(relaySource, /forHTTPHeaderField: "Authorization"/);
   assert.match(relaySource, /URLSessionWebSocketTask/);
