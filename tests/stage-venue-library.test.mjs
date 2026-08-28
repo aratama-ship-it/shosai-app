@@ -704,8 +704,8 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
   assert.ok(swSource.includes("./style.css?v=218"));
   assert.ok(stageHtml.includes("stage-machinery.js?v=2"));
   assert.ok(swSource.includes("./stage-machinery.js?v=2"));
-  assert.ok(stageHtml.includes("stage-first-person.js?v=18"));
-  assert.ok(swSource.includes("./stage-first-person.js?v=18"));
+  assert.ok(stageHtml.includes("stage-first-person.js?v=19"));
+  assert.ok(swSource.includes("./stage-first-person.js?v=19"));
   // 版番号そのものは毎回上がるので固定値にせず、形だけを検査する（stage-export-zip.test.mjsと同じ方針）。
   assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v\d+";/);
 });

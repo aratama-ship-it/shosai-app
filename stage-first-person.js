@@ -2184,7 +2184,12 @@
     const initial = data.pieces.find((piece) => piece.id === bridge.initialPieceId && piece.type === "performer");
     state.free = null;
     if (bridge.initialView === "free") {
-      const preset = freePresets(W, D, CEIL)[0];
+      /* 開いた直後は「最前列」から始める（2026-08-28 本人指示）。
+         以前は一覧の先頭＝客席中央（舞台中心から約13.5m）で、舞台が遠く、
+         画面の下半分が空の客席で埋まっていた。最前列なら約5.7mで、
+         舞台のいちばん前から舞台を見上げる位置になる。 */
+      const presets = freePresets(W, D, CEIL);
+      const preset = presets.find((candidate) => candidate.id === "front-row") || presets[0];
       state.free = { x: preset.x, y: preset.y, z: preset.z, yaw: preset.yaw, pitch: preset.pitch };
       state.view = { type: "free", key: null, name: "" };
     } else if (initial) state.view = { type: "performer", key: identity(initial), name: labelOf(initial) };
