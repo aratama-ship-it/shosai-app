@@ -50,14 +50,14 @@ test("正本と単独版に検索・冊子導線と共通データが継承さ�
       assert.ok(source.includes(value), `${value} がページにある`);
     }
     assert.ok(
-      source.indexOf("manual/manual-content.js?v=1") < source.indexOf("stage-sketch.js?v=299"),
+      source.indexOf("manual/manual-content.js?v=1") < source.indexOf("stage-sketch.js?v=300"),
       "共通マニュアルデータがstage-sketch.jsより先に読み込まれる",
     );
   }
 });
 
 test("Service Workerは冊子一式をv155へキャッシュする", () => {
-  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v155";/);
+  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v156";/);
   for (const entry of [
     "./manual/manual-content.js?v=1",
     "./manual/manual-content.js",
