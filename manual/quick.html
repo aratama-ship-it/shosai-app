@@ -99,7 +99,19 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
 .list b { font-family: var(--serif); font-weight: 600; letter-spacing: 0.08em; margin-right: 14px; }
 .list .only { font-size: 11px; color: var(--rust-ink); border: 1px solid var(--rust-ink); padding: 1px 7px; margin-left: 10px; letter-spacing: 0.1em; white-space: nowrap; }
 
-/* ---------- SCENE 06 約束: 一枚だけ反転 ---------- */
+/* ---------- セッションパネルの再現カード（SCENE 03）
+   実物のラベル文言（リアルタイム共有／表示名／セッションを開始／招待URL／コピー）を
+   そのまま使う。URLは例示（実データは出さない）。 ---------- */
+.session-card { border: 1px solid var(--frame); background: rgba(239, 231, 214, 0.03); padding: 26px; }
+.session-card-title { font-family: var(--serif); font-size: 15px; letter-spacing: 0.08em; margin-bottom: 18px; color: var(--paper); }
+.session-card-field { display: block; }
+.session-card-field span:first-child { display: block; font-size: 11px; color: var(--milk-dim); letter-spacing: 0.14em; margin-bottom: 6px; }
+.session-card-input { display: block; border: 1px solid var(--line); padding: 9px 11px; font-size: 13px; color: var(--paper); background: rgba(0, 0, 0, 0.2); }
+.session-card-url { color: var(--milk-dim); font-size: 12px; letter-spacing: 0.02em; }
+.session-card-btn { display: inline-block; margin-top: 12px; padding: 9px 20px; background: var(--rust-deep); color: var(--paper); font-size: 13px; letter-spacing: 0.06em; }
+.session-card-btn-quiet { background: none; border: 1px solid var(--line); color: var(--milk-dim); margin-left: 10px; }
+
+/* ---------- SCENE 04 約束: 一枚だけ反転 ---------- */
 .vow { background: var(--rust-deep); }
 .vow::before { display: none; }
 .vow .scene-no, .vow .scene-mark { color: var(--rust-pale); }
@@ -168,8 +180,8 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
   <div class="scene-wrap"><section class="scene">
     <p class="scene-no">SCENE 01</p><p class="scene-mark">これは何</p>
     <div class="fx">
-      <h2 style="font-size:44px; margin-bottom:12px;">正面と真上、二つの図で描きます。</h2>
-      <p class="lead" style="font-size:16px;">正面と平面は同じ舞台——<strong>片方を動かせば、もう片方も動きます。</strong></p>
+      <h2 style="font-size:44px; margin-bottom:12px;">正面と真上、二つの図が連動します。</h2>
+      <p class="lead" style="font-size:16px;">同じ舞台を二つの視点で——<strong>片方を動かせば、もう片方も動きます。</strong></p>
     </div>
     <div class="duo fx" style="margin-top:20px;">
       <figure><img src="img/hero-front.png" alt="正面図：客席から見た舞台"><figcaption>正面 — 客席から。明かりを当て、動線を引く</figcaption></figure>
@@ -177,80 +189,64 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
     </div>
   </section></div>
 
-  <!-- SCENE 02 入り口 -->
+  <!-- SCENE 02 描けるもの -->
   <div class="scene-wrap"><section class="scene">
-    <p class="scene-no">SCENE 02</p><p class="scene-mark">入り口</p>
+    <p class="scene-no">SCENE 02</p><p class="scene-mark">一覧</p>
     <div class="fx">
-      <p class="kicker">ENTRANCE</p>
-      <h2>名前とパスワードで入ります。</h2>
+      <p class="kicker">ON STAGE</p>
+      <h2 style="font-size:48px;">描けるもの。</h2>
+      <p class="lead" style="font-size:15px;">演者も小道具も、名前をつけて自由に並べられます。</p>
     </div>
-    <div class="steps fx">
-      <div class="step"><span class="n">一</span><span class="t">招待メッセージのURLをブラウザで開く</span></div>
-      <div class="step"><span class="n">二</span><span class="t">お渡しした名前とパスワードで入る</span></div>
-      <div class="step"><span class="n">三</span><span class="t">舞台が現れます。あとは触るだけ</span></div>
-    </div>
-    <div class="roles fx">
-      <div class="role"><b>PC<small>描く机</small></b><span class="dim">道具が全部そろう本館。描く作業はここで。</span></div>
-      <div class="role"><b>iPad<small>持ち歩く画板</small></b><span class="dim">Safariの共有ボタンから〈ホーム画面に追加〉。稽古場でも開ける。</span></div>
-      <div class="role"><b>スマホ<small>見る係</small></b><span class="dim">シーンを送って眺める。読み込みと控えの書き出しも。</span></div>
-    </div>
-  </section></div>
-
-  <!-- SCENE 03 最初の10分 -->
-  <div class="scene-wrap"><section class="scene">
-    <p class="scene-no">SCENE 03</p><p class="scene-mark">最初の10分</p>
-    <div class="fx">
-      <p class="kicker">FIRST RUN</p>
-      <h2>まずは内蔵の案内どおりに。</h2>
-      <p class="lead">はじめて開くと、9段の短い案内がはじまります。読むだけではなく、手を動かすうちに——</p>
-    </div>
-    <p class="verbs fx" style="margin-top:26px">
-      動かす<span>→</span>足す<span>→</span>構える<span>→</span>動線<span>→</span>次の場<span>→</span>転換<span>→</span>明かり<span>→</span>メモ<span>→</span>書き出す
-    </p>
-    <p class="lead fx" style="margin-top:26px">終わる頃には、<strong>一場面できあがっています。</strong></p>
-    <p class="note fx" style="margin-top:auto">もう一度見たいときは 〈設定〉→〈使い方〉。</p>
-  </section></div>
-
-  <!-- SCENE 04 描けるもの -->
-  <div class="scene-wrap"><section class="scene">
-    <p class="scene-no">SCENE 04</p><p class="scene-mark">一覧</p>
-    <div class="fx"><p class="kicker">ON STAGE</p><h2 style="font-size:48px;">描けるもの。</h2></div>
-    <div class="split fx">
-      <figure><img src="img/curtain-front.png" alt="前幕ひとそろいを吊った正面図" style="max-height:400px; object-fit:cover;"><figcaption>「前幕ひとそろい」を吊ったところ。幕越しに明かりが透ける</figcaption></figure>
+    <div class="split fx" style="margin-top:16px;">
+      <figure><img src="img/cast-poses-props.png" alt="正面図：3人の演者。それぞれ違う姿勢で、ひとりは小道具の傘を持っている"><figcaption>演者3人、それぞれ違う姿勢。ひとりは小道具（傘）を持たせた状態</figcaption></figure>
       <ul class="list">
-        <li><b>照明</b>吊り・SS・前明かり・転がしの4種</li>
+        <li><b>配置</b>演者・小道具・舞台セットを自由に置く</li>
         <li><b>姿勢</b>30種——宙返り、シルホイール、一輪車</li>
+        <li><b>照明</b>吊り・SS・前明かり・転がしの4種</li>
         <li><b>機構</b>盆・せり・幕・水面<span class="only">PCのみ</span></li>
-        <li><b>劇場</b>額縁からテントまで。実在の「シアタートラム」も</li>
       </ul>
     </div>
   </section></div>
 
-  <!-- SCENE 05 一緒に見る -->
+  <!-- SCENE 03 一緒に見る -->
   <div class="scene-wrap"><section class="scene">
-    <p class="scene-no">SCENE 05</p><p class="scene-mark">一緒に見る</p>
+    <p class="scene-no">SCENE 03</p><p class="scene-mark">一緒に見る</p>
     <div class="fx">
       <p class="kicker">SHARED SESSION</p>
       <h2>同じ画面を、一緒に見られます。</h2>
-      <p class="lead">招待URLで入ると、ホストと同じ場面が手元に映ります。<strong>レーザーポインタと矢印</strong>で「ここ」を指せます。</p>
     </div>
-    <p class="note fx" style="margin-top:auto">打ち合わせはZoom越しにどうぞ。場面はホストが送り、あなたは指す係です。</p>
+    <div class="split fx" style="grid-template-columns: 1.1fr 1fr; margin-top:8px;">
+      <div>
+        <p class="lead">招待URLで入ると、ホストと同じ場面が手元に映ります。<strong>レーザーポインタと矢印</strong>で「ここ」を指せます。</p>
+        <p class="note" style="margin-top:20px">打ち合わせはZoom越しにどうぞ。場面はホストが送り、あなたは指す係です。</p>
+      </div>
+      <figure>
+        <div class="session-card">
+          <p class="session-card-title">リアルタイム共有（会議用）</p>
+          <label class="session-card-field"><span>表示名</span><span class="session-card-input">演出:あなた</span></label>
+          <span class="session-card-btn">セッションを開始</span>
+          <label class="session-card-field" style="margin-top:16px"><span>招待URL</span><span class="session-card-input session-card-url">https://…／s/xxxxxxxx</span></label>
+          <span class="session-card-btn session-card-btn-quiet">コピー</span>
+        </div>
+        <figcaption>実際のパネル表示——ホスト側が押すのはこの二つだけ</figcaption>
+      </figure>
+    </div>
   </section></div>
 
-  <!-- SCENE 06 約束（反転） -->
+  <!-- SCENE 04 約束（反転） -->
   <div class="scene-wrap"><section class="scene vow">
-    <p class="scene-no">SCENE 06</p><p class="scene-mark">保存のこと</p>
+    <p class="scene-no">SCENE 04</p><p class="scene-mark">保存のこと</p>
     <div class="fx">
       <p class="kicker">BACKUP</p>
-      <h2>保存は、この端末の中だけ。</h2>
+      <h2>保存は端末の内部のみ。</h2>
       <p class="lead">クラウドには送られません。だから——区切りのいいところで<strong>〈書き出す〉を押して、控えを一枚</strong>。お願いはこれだけです。</p>
     </div>
     <p class="note fx" style="margin-top:auto">ブラウザのデータ削除で消えます。控えのファイルがあれば、いつでも戻せます。</p>
   </section></div>
 
-  <!-- SCENE 07 困ったら -->
+  <!-- SCENE 05 困ったら -->
   <div class="scene-wrap"><section class="scene">
-    <p class="scene-no">SCENE 07</p><p class="scene-mark">困ったとき</p>
+    <p class="scene-no">SCENE 05</p><p class="scene-mark">困ったとき</p>
     <div class="fx"><p class="kicker">SUPPORT</p><h2>困ったときは、この三つ。</h2></div>
     <div class="doors fx">
       <div class="door"><b>使い方をさがす</b>〈設定〉から。言葉を入れると、その場で答えが出ます。</div>
