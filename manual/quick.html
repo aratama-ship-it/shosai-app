@@ -99,7 +99,7 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
 .list b { font-family: var(--serif); font-weight: 600; letter-spacing: 0.08em; margin-right: 14px; }
 .list .only { font-size: 11px; color: var(--rust-ink); border: 1px solid var(--rust-ink); padding: 1px 7px; margin-left: 10px; letter-spacing: 0.1em; white-space: nowrap; }
 
-/* ---------- セッションパネルの再現カード（SCENE 03）
+/* ---------- セッションパネルの再現カード（SCENE 04）
    実物のラベル文言（リアルタイム共有／表示名／セッションを開始／招待URL／コピー）を
    そのまま使う。URLは例示（実データは出さない）。 ---------- */
 .session-card { border: 1px solid var(--frame); background: rgba(239, 231, 214, 0.03); padding: 26px; }
@@ -111,7 +111,7 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
 .session-card-btn { display: inline-block; margin-top: 12px; padding: 9px 20px; background: var(--rust-deep); color: var(--paper); font-size: 13px; letter-spacing: 0.06em; }
 .session-card-btn-quiet { background: none; border: 1px solid var(--line); color: var(--milk-dim); margin-left: 10px; }
 
-/* ---------- SCENE 04 約束: 一枚だけ反転 ---------- */
+/* ---------- SCENE 05 約束: 一枚だけ反転 ---------- */
 .vow { background: var(--rust-deep); }
 .vow::before { display: none; }
 .vow .scene-no, .vow .scene-mark { color: var(--rust-pale); }
@@ -220,9 +220,28 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
     </div>
   </section></div>
 
-  <!-- SCENE 03 一緒に見る -->
+  <!-- SCENE 03 シーンを管理する -->
   <div class="scene-wrap"><section class="scene">
-    <p class="scene-no">SCENE 03</p><p class="scene-mark">一緒に見る</p>
+    <p class="scene-no">SCENE 03</p><p class="scene-mark">場面の管理</p>
+    <div class="fx">
+      <p class="kicker">SCENES</p>
+      <h2 style="font-size:46px; margin-bottom:12px;">場面を並べて、ショーにする。</h2>
+      <p class="lead" style="font-size:15px;">一場面ずつ作り、名前をつけ、順番を入れ替える。<strong>並んだ場面がそのままショーの流れです。</strong></p>
+    </div>
+    <figure class="fx" style="margin-top:18px;">
+      <img src="img/scene-map.png" alt="4つの場面を真上から見た図で横に並べた一覧。場面ごとに演者の位置が変わっている">
+      <figcaption>〈地図〉で全場面を見渡したところ。場面が進むほど、演者の居場所が変わっていく</figcaption>
+    </figure>
+    <div class="roles fx" style="margin-top:auto">
+      <div class="role"><b>作る<small>ADD</small></b><span class="dim">白紙から足すほか、動線の先へ動いた状態を次の場面にもできる。</span></div>
+      <div class="role"><b>束ねる<small>SECTION</small></b><span class="dim">幕・章のまとまりを作って、長いショーも見通せる。</span></div>
+      <div class="role"><b>つなぐ<small>CUE</small></b><span class="dim">転換の長さと暗転を場面ごとに決められる。</span></div>
+    </div>
+  </section></div>
+
+  <!-- SCENE 04 一緒に見る -->
+  <div class="scene-wrap"><section class="scene">
+    <p class="scene-no">SCENE 04</p><p class="scene-mark">一緒に見る</p>
     <div class="fx">
       <p class="kicker">SHARED SESSION</p>
       <h2>同じ画面を、一緒に見られます。</h2>
@@ -245,9 +264,9 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
     </div>
   </section></div>
 
-  <!-- SCENE 04 約束（反転） -->
+  <!-- SCENE 05 約束（反転） -->
   <div class="scene-wrap"><section class="scene vow">
-    <p class="scene-no">SCENE 04</p><p class="scene-mark">保存のこと</p>
+    <p class="scene-no">SCENE 05</p><p class="scene-mark">保存のこと</p>
     <div class="fx">
       <p class="kicker">BACKUP</p>
       <h2>保存は端末の内部のみ。</h2>
@@ -256,9 +275,9 @@ figcaption { font-size: 12px; color: var(--milk-dim); margin-top: 8px; letter-sp
     <p class="note fx" style="margin-top:auto">ブラウザのデータ削除で消えます。控えのファイルがあれば、いつでも戻せます。</p>
   </section></div>
 
-  <!-- SCENE 05 困ったら -->
+  <!-- SCENE 06 困ったら -->
   <div class="scene-wrap"><section class="scene">
-    <p class="scene-no">SCENE 05</p><p class="scene-mark">困ったとき</p>
+    <p class="scene-no">SCENE 06</p><p class="scene-mark">困ったとき</p>
     <div class="fx"><p class="kicker">SUPPORT</p><h2>困ったときは、この三つ。</h2></div>
     <div class="doors fx">
       <div class="door"><b>使い方をさがす</b>〈設定〉から。言葉を入れると、その場で答えが出ます。</div>
