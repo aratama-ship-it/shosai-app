@@ -988,7 +988,17 @@
     elements.canvas.width = canvasWidth * pixelRatio;
     elements.canvas.height = canvasHeight * pixelRatio;
     focal = focalFor(canvasWidth, lensById(lensId).fovDeg);
+    placeLensColumn();
     if (panelLayouts) applyPanelLayouts();
+  }
+
+  /* レンズ列はパネルトグル列の真下に置く。チップの高さは行送りの継承で
+     環境ごとに変わるため、CSSの固定topではなく実測で追随させる */
+  function placeLensColumn() {
+    if (!elements || !elements.lens || !elements.panelToggles) return;
+    if (typeof elements.panelToggles.getBoundingClientRect !== "function" || !elements.lens.style) return;
+    const togglesBottom = elements.panelToggles.getBoundingClientRect().bottom;
+    if (togglesBottom > 0) elements.lens.style.top = `${Math.round(togglesBottom + 8)}px`;
   }
 
   function setBasis() {
