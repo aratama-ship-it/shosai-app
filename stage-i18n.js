@@ -137,6 +137,7 @@
     "ショー選択を閉じる": "Close the show picker",
     "この知らせを閉じる": "Dismiss this notice",
     "設定を開く": "Open settings",
+    "端末による違いを開く": "See the differences by device",
     "日本語": "Japanese",
     "日本語に切り替える": "Switch to Japanese",
     "英語に切り替える": "Switch to English",

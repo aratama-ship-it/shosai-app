@@ -11047,6 +11047,7 @@
     phoneUi.settingsTitle.textContent = tx("設定");
     setPhoneButtonLang(phoneUi.langJa, "日本語", "日本語に切り替える");
     setPhoneButtonLang(phoneUi.langEn, "English", "英語に切り替える");
+    setPhoneButtonLang(phoneUi.reachButton, "端末による違い", "端末による違いを開く");
     setPhoneButtonLang(phoneUi.settingsClose, "閉じる", "設定を閉じる");
     phoneUi.langJa.setAttribute("aria-pressed", String(!isEn()));
     phoneUi.langEn.setAttribute("aria-pressed", String(isEn()));
@@ -11247,8 +11248,12 @@
     langJa.setAttribute("aria-pressed", String(!isEn()));
     const langEn = makePhoneButton("English", tx("英語に切り替える"));
     langEn.setAttribute("aria-pressed", String(isEn()));
+    /* 「なぜスマホは機能が少ないのか」に答える表への入口。
+       スマホだけ入口が無く、欠落が意図的だと確かめる術が画面に無かった（E-3）。
+       表そのものは窓（stage-reach-modal）が狭い画面用の一段組みを持っている。 */
+    const reachButton = makePhoneButton(tx("端末による違い"), tx("端末による違いを開く"));
     const settingsClose = makePhoneButton(tx("閉じる"), tx("設定を閉じる"));
-    settingsPanel.append(settingsTitle, langJa, langEn, settingsClose);
+    settingsPanel.append(settingsTitle, langJa, langEn, reachButton, settingsClose);
 
     /* 矢印の中央から開く全画面一覧。段組みの子にせず body 直下へ置く。 */
     const sceneList = document.createElement("section");
@@ -11372,7 +11377,7 @@
       scenePrev, sceneCurrent, sceneNext, infoPanel, infoProject, infoScene,
       sceneNote, memoBar, memoLabel, memoInput,
       sourcePanel, sourceTitle, fileButton, seamSampleButton, sampleButton, sourceClose, fileInput,
-      exportButton, settingsPanel, settingsTitle, langJa, langEn, settingsClose,
+      exportButton, settingsPanel, settingsTitle, langJa, langEn, reachButton, settingsClose,
       sceneList, sceneListTitle, sceneListClose, sceneListScroll, sceneListRows,
       saveNotice, saveNoticeText, saveNoticeExport, saveNoticeClose,
       infoOpen: false, sourceOpen: false, settingsOpen: false, sceneListOpen: false,
@@ -11435,6 +11440,11 @@
         phoneUi.sourceOpen = false;
       }
       syncPhoneViewer();
+    });
+    reachButton.addEventListener("click", () => {
+      phoneUi.settingsOpen = false;
+      syncPhoneViewer();
+      openReachTable();
     });
     settingsClose.addEventListener("click", () => {
       phoneUi.settingsOpen = false;

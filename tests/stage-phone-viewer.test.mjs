@@ -212,20 +212,34 @@ test("スマホの上部の題は、版とβ版をヘッダーの正本から読
   assert.match(style, /html\.stage-phone-viewer \.stage-phone-title-name \{[\s\S]*?font-family: var\(--serif\)/);
 });
 
-test("題の右端に44pxの設定入口があり、言語だけを切り替える", () => {
+test("題の右端に44pxの設定入口があり、言語と「端末による違い」だけを持つ", () => {
   /* ★絵文字の「⚙」ではなくSVG（2026-08-26 本人指示。16pxで潰れない形に描き直した）。
      文字へ戻すと、端末のフォント任せの絵になり、他のアイコンと揃わない。 */
   assert.match(source, /makePhoneIconButton\("gear", tx\("設定を開く"\), "stage-phone-title-settings"\)/);
   assert.ok(!/makePhoneButton\("⚙"/.test(source), "設定の入口が絵文字へ戻っていないこと");
   assert.match(source, /if \(guestBadge\) titleBar\.append\(guestBadge\);[\s\S]*?titleBar\.append\(settingsToggle\);/);
   assert.match(style, /\.stage-phone-title \.stage-phone-title-settings \{[\s\S]*?width: 44px;[\s\S]*?height: 44px;/);
-  assert.match(source, /settingsPanel\.append\(settingsTitle, langJa, langEn, settingsClose\)/);
+  /* 中身は言語2つ＋「端末による違い」＋閉じる、で全部（E-3・2026-08-29 本人指示で入口を追加）。
+     「端末による違い」は表を開くだけの入口で、機能のスイッチではない。
+     編集機能のスイッチをここへ足さない方針は変わっていない。 */
+  assert.match(source, /settingsPanel\.append\(settingsTitle, langJa, langEn, reachButton, settingsClose\)/);
   assert.match(source, /langJa\.setAttribute\("aria-pressed"/);
   assert.match(source, /langEn\.setAttribute\("aria-pressed"/);
   const settingsBlock = source.slice(source.indexOf("const settingsPanel ="),
     source.indexOf("/* 矢印の中央から開く全画面一覧", source.indexOf("const settingsPanel =")));
-  assert.ok(!/(feature|機能)/.test(settingsBlock),
-    "スマホ設定へ言語以外の項目を足していないこと");
+  /* 機能スイッチの混入を止める: この塊で押した状態を持つのは言語の2つだけ */
+  const pressedSetters = settingsBlock.match(/\.setAttribute\("aria-pressed"/g) || [];
+  assert.equal(pressedSetters.length, 2, "スマホ設定に状態を持つ項目は言語の2つだけ");
+});
+
+test("「端末による違い」の入口はスマホからも開け、狭い画面の一段組みが表側にある", () => {
+  /* E-3の芯: スマホは機能が最少の端末なのに、それが意図的だと確かめる表への
+     入口だけが無かった。「壊れている」という誤解の芽になる。 */
+  assert.match(source, /reachButton\.addEventListener\("click", \(\) => \{[\s\S]*?openReachTable\(\);[\s\S]*?\}\);/);
+  assert.match(source, /setPhoneButtonLang\(phoneUi\.reachButton, "端末による違い", "端末による違いを開く"\)/,
+    "言語切替で入口の文言も引き直す");
+  // 表そのものは560px以下で一段組みへ変わる（列見出しが縦積みで読めなくなる対策）
+  assert.match(style, /@media \(max-width: 560px\) \{[\s\S]*?\.stage-reach-body tbody td::before \{[\s\S]*?content: attr\(data-label\);/);
 });
 
 test("シーン名は押せる入口で、一覧は段組み外の全画面スクロール面になる", () => {
