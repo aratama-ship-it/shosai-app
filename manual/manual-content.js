@@ -28,7 +28,7 @@
  * 「使い方」→「はじめての案内」への改称を反映済み）。推測で書かない。
  */
 window.MANUAL_CONTENT = {
-  updated: "2026-08-28",
+  updated: "2026-08-29",
   chapters: [
     {
       id: "intro", no: 1, tab: "はじめに", tabEn: "Start",
@@ -112,8 +112,8 @@ window.MANUAL_CONTENT = {
           id: "after-tour", title: "案内のあとに試す三つ", titleEn: "Three things to try after the tour",
           keywords: ["次に", "続き", "劇場", "セット", "転換"],
           keywordsEn: ["next", "what now", "venue", "set", "transition"],
-          html: "<ul><li>〈劇場サイズ〉で形式と規模を選び直す。額縁舞台からテントの円形舞台まで、実在の劇場「シアタートラム」も入っています。</li><li>〈出るもの〉→〈セットを組む〉で、台や道具を自分の形に組んでみる。</li><li>シーンの欄で〈転換の長さ〉と〈暗転〉を決めて、場面の流れを通しで見る。</li></ul>",
-          htmlEn: "<ul><li>Re-choose the form and size under 〈Venue size〉 — from a proscenium frame to a big-top ring, including the real venue \"Theatre Tram\".</li><li>Use 〈Cast &amp; set〉 → 〈Build a set〉 to shape a platform or a prop of your own.</li><li>In the Scenes panel, set 〈Transition duration〉 and 〈Blackout〉, then watch the show flow end to end.</li></ul>"
+          html: "<ul><li>〈劇場サイズ〉で形式と規模を選び直す。額縁舞台から巡演テント、全周の円形舞台まであり、実在の劇場（シアタートラム・TOHU・シルク・ディヴェール）も入っています。</li><li>〈出るもの〉→〈セットを組む〉で、台や道具を自分の形に組んでみる。</li><li>シーンの欄で〈転換の長さ〉と〈暗転〉を決めて、場面の流れを通しで見る。</li></ul>",
+          htmlEn: "<ul><li>Re-choose the form and size under 〈Venue size〉 — from a proscenium frame to a touring tent to a full circle, including three real venues (Theatre Tram, TOHU, Cirque d'Hiver).</li><li>Use 〈Cast &amp; set〉 → 〈Build a set〉 to shape a platform or a prop of your own.</li><li>In the Scenes panel, set 〈Transition duration〉 and 〈Blackout〉, then watch the show flow end to end.</li></ul>"
         }
       ]
     },
@@ -164,10 +164,10 @@ window.MANUAL_CONTENT = {
         },
         {
           id: "p-venue", title: "劇場サイズ", titleEn: "Venue size",
-          keywords: ["劇場", "会場", "舞台の形", "広さ", "プロセニアム", "テント", "シアタートラム"],
-          keywordsEn: ["venue", "theatre", "stage shape", "size", "proscenium", "big top", "Theatre Tram"],
-          html: "<p>舞台の形式（プロセニアム・スラスト・ビッグトップ・屋外ステージ・ブラックボックス、実在のシアタートラム）と規模を選び、〈この部屋を作る〉で舞台が組み上がります。寸法を自分で入れるカスタムもあります。会場だけをファイルにして受け渡すこともできます。</p>",
-          htmlEn: "<p>Choose the form (proscenium, thrust, big top, outdoor stage, black box, or the real Theatre Tram) and the size, then 〈Build this room〉 assembles the stage. A custom option takes your own dimensions. A venue on its own can also be exported and passed along as a file.</p>"
+          keywords: ["劇場", "会場", "舞台の形", "広さ", "プロセニアム", "テント", "シャピトー", "サーカス", "リング", "全周", "シアタートラム", "TOHU", "シルク・ディヴェール"],
+          keywordsEn: ["venue", "theatre", "stage shape", "size", "proscenium", "big top", "chapiteau", "circus", "ring", "in the round", "Theatre Tram", "TOHU", "Cirque d'Hiver"],
+          html: "<p>舞台の形式と規模を選び、〈この部屋を作る〉で舞台が組み上がります。形式はプロセニアム・スラスト・ビッグトップ・屋外ステージ・ブラックボックスに加え、サーカス向けの〈シャピトー（巡演テント）〉と〈劇場のサーカス公演〉があります。実在の劇場は3つ——シアタートラム（東京・三軒茶屋）、TOHU（モントリオール・現代サーカスの全周360度）、シルク・ディヴェール（パリ1852年・古典サーカスのワンリング）。寸法を自分で入れるカスタムもあります。会場だけをファイルにして受け渡すこともできます。</p><p>会場を選ぶと、欄の下にその会場がどういう場所かの説明が出ます。</p>",
+          htmlEn: "<p>Choose the form and the size, then 〈Build this room〉 assembles the stage. Besides proscenium, thrust, big top, outdoor stage and black box, there are two circus forms — 〈Chapiteau〉 (a touring tent) and 〈Circus in a theatre〉. Three real venues are included: Theatre Tram (Tokyo), TOHU (Montreal — contemporary circus, fully in the round), and Cirque d'Hiver (Paris, 1852 — the classical one-ring house). A custom option takes your own dimensions. A venue on its own can also be exported and passed along as a file.</p><p>Choosing a venue shows a note below the panel describing what kind of room it is.</p>"
         },
         {
           id: "p-cast", title: "出るもの（演者・舞台セット・小道具）", titleEn: "Cast & set (performers, set pieces, props)",
@@ -237,10 +237,10 @@ window.MANUAL_CONTENT = {
         {
           id: "p-freecam", title: "3Dカメラ", titleEn: "3D Camera",
           tags: ["PCのみ"], tagsEn: ["PC only"],
-          keywords: ["3D", "カメラ", "立体", "歩く", "視点", "アングル"],
-          keywordsEn: ["3D", "camera", "walk", "viewpoint", "angle"],
-          html: "<p>道具の〈3Dカメラ〉で、組んだ舞台の中を立体のまま覗けます。客席や舞台上の任意の位置から構図を確かめるための機能です。<strong>PC版だけにあります。</strong></p>",
-          htmlEn: "<p>The 〈3D Camera〉 tool looks into the stage you have built, in three dimensions. Check the composition from any seat in the house or any spot on stage. <strong>PC version only.</strong></p>"
+          keywords: ["3D", "カメラ", "立体", "歩く", "視点", "アングル", "客席", "満席", "空席", "観客"],
+          keywordsEn: ["3D", "camera", "walk", "viewpoint", "angle", "audience", "house", "full house", "empty house"],
+          html: "<p>道具の〈3Dカメラ〉で、組んだ舞台の中を立体のまま覗けます。客席や舞台上の任意の位置から構図を確かめるための機能です。<strong>PC版だけにあります。</strong></p><p>客席には人が座っています。右側の〈満席〉〈空席〉で切り替えられます——本番の客席と、客入れ前の空の劇場。舞台のいちばん奥から振り返ると、客席がどう自分を囲んでいるかが見えます。全周の会場では客席がぐるりと一周します。</p>",
+          htmlEn: "<p>The 〈3D Camera〉 tool looks into the stage you have built, in three dimensions. Check the composition from any seat in the house or any spot on stage. <strong>PC version only.</strong></p><p>The house has people in it. Switch between 〈Full house〉 and 〈Empty house〉 on the right — the audience on the night, or the empty room before they come in. Turn around from upstage and you can see how the house wraps around you; in a venue in the round it goes all the way.</p>"
         }
       ]
     },

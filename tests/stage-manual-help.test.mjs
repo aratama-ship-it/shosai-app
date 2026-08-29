@@ -89,22 +89,51 @@ test("本文はいまのUIに追随している（地図なし・空にするは
   assert.ok(sectionById.get("tour").html.includes("はじめての案内"), "案内の呼び出し名が現行");
 });
 
+/* 冊子は配布物なので、アプリに会場を足したのに冊子が古いまま、が起きやすい。
+   会場の一覧が本文に出てくるかを機械で見張る（2026-08-29 実際に取りこぼした）。 */
+test("冊子の会場の説明が、アプリに入っている会場を取りこぼしていない", async () => {
+  const venuesSource = await readFile(new URL("stage-venues.js", root), "utf8");
+  const venuesContext = {
+    window: {
+      localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+      dispatchEvent() {},
+      CustomEvent: class { constructor(type) { this.type = type; } },
+    },
+  };
+  venuesContext.window.window = venuesContext.window;
+  vm.runInNewContext(venuesSource, venuesContext, { filename: "stage-venues.js" });
+  const venues = venuesContext.window.SHOSAI_VENUES.v2.list;
+
+  const section = manual.chapters
+    .flatMap((chapter) => chapter.sections)
+    .find((candidate) => candidate.id === "p-venue");
+  assert.ok(section, "劇場サイズの節がある");
+
+  /* 実在会場は名前で必ず触れる（テスターが「あの劇場は入っている?」と探す入口）。
+     形式プリセットは本文か言い換え語のどちらかに出ていればよい。 */
+  const body = section.html + " " + section.keywords.join(" ");
+  venues.filter((venue) => venue.realVenue).forEach((venue) => {
+    assert.ok(body.includes(venue.label),
+      `実在会場「${venue.label}」が冊子の劇場サイズの節に出ていない`);
+  });
+});
+
 test("正本と単独版に検索・冊子導線と共通データが継承される", () => {
   for (const source of [indexSource, stageSource]) {
-    for (const value of ["stage-help-open", "stage-manual-open", "manual/manual-content.js?v=2"]) {
+    for (const value of ["stage-help-open", "stage-manual-open", "manual/manual-content.js?v=3"]) {
       assert.ok(source.includes(value), `${value} がページにある`);
     }
     assert.ok(
-      source.indexOf("manual/manual-content.js?v=2") < source.indexOf("stage-sketch.js?v=312"),
+      source.indexOf("manual/manual-content.js?v=3") < source.indexOf("stage-sketch.js?v=312"),
       "共通マニュアルデータがstage-sketch.jsより先に読み込まれる",
     );
   }
 });
 
 test("Service Workerは冊子一式を最新版へキャッシュする", () => {
-  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v179";/);
+  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v180";/);
   for (const entry of [
-    "./manual/manual-content.js?v=2",
+    "./manual/manual-content.js?v=3",
     "./manual/manual-content.js",
     "./manual/manual.html",
   ]) {
