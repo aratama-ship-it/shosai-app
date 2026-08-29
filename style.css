@@ -10510,6 +10510,14 @@ html.stage-pwa-tablet .stage-tablet-rail-icon {
   line-height: 1;
 }
 
+/* 設定の歯車だけSVG（他は文字の記号）。★大きさを変えるときは、
+   ブラウザ版の .stage-gear-btn svg（19px）と見比べること。 */
+html.stage-pwa-tablet .stage-tablet-rail-icon svg {
+  width: 19px;
+  height: 19px;
+  display: block;
+}
+
 html.stage-pwa-tablet .stage-tablet-rail-label {
   max-width: 46px;
   overflow: hidden;

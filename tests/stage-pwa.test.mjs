@@ -141,6 +141,23 @@ test("オフライン用CSSとJSの版は現在のHTML参照と揃う", () => {
   assert.ok(swSource.includes("./stage-pwa.js?v=6"));
 });
 
+/* iPad左レールの設定歯車はSVG（他の帯アイコンは形の記号のまま。2026-08-30・E-2）。
+   ⚙は絵文字扱いを受けやすく、端末のフォント任せの絵になって不揃いになるため、
+   ブラウザ版・スマホ閲覧機の歯車と同じSVGを共有する。 */
+test("iPad左レールの設定アイコンは絵文字ではなくSVG（他の帯アイコンと共有の歯車）", () => {
+  assert.match(stageSource,
+    /\{ id: "settings", icon: "⚙", iconSvg: PHONE_ICON_SVG\.gear,/);
+  assert.match(stageSource, /if \(iconSvg\) icon\.innerHTML = iconSvg; else icon\.textContent = iconText;/);
+  assert.match(stageSource,
+    /const button = makeTabletButton\(definition\.icon, definition\.label, "stage-tablet-rail-button", definition\.iconSvg\);/);
+  // 他の帯アイコンは形の記号のまま（絵文字化しない・SVG化もしない）
+  ["▣", "●", "☀", "◫", "◎"].forEach((glyph) => {
+    assert.ok(stageSource.includes(`icon: "${glyph}"`), `${glyph} は文字のまま残っている`);
+  });
+  assert.match(styleSource,
+    /html\.stage-pwa-tablet \.stage-tablet-rail-icon svg \{[\s\S]*?width: 19px;[\s\S]*?height: 19px;/);
+});
+
 test("iPad PWAは縦画面で二面、横画面で単一図の専用ワークスペースを組み立てる", () => {
   assert.match(stageSource, /const TABLET_MENU_GROUPS = \[/);
   ["show", "cast", "look", "scenes", "inspect", "settings"].forEach((id) => {

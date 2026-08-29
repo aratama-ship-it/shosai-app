@@ -11508,17 +11508,21 @@
     { id: "inspect", icon: "◎", label: "選んだもの", panels: ["inspector"] },
     /* 共有は机では独立したパネルだが、iPadでは従来どおり「保存・設定」の中に置く。
        ここへ載せ忘れると、iPadから共有セッションへ入る道が消える。 */
-    { id: "settings", icon: "⚙", label: "保存・設定", panels: ["save", "session"], special: "display" },
+    /* ⚙だけ絵文字ではなくSVG（他の帯アイコン=▣●☀◫◎は形の記号で機種依存の色差が出ないが、
+       ⚙はUnicodeの絵文字扱いを受けやすく、機種のフォント任せの絵になって他アイコンと不揃いになる。
+       ブラウザ版の歯車・スマホ閲覧機の設定歯車と同じSVG＝PHONE_ICON_SVG.gearを共有する。2026-08-30 対応）。 */
+    { id: "settings", icon: "⚙", iconSvg: PHONE_ICON_SVG.gear,
+      label: "保存・設定", panels: ["save", "session"], special: "display" },
   ];
 
-  function makeTabletButton(iconText, label, className) {
+  function makeTabletButton(iconText, label, className, iconSvg) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = className;
     button.setAttribute("aria-label", label);
     const icon = document.createElement("span");
     icon.className = "stage-tablet-rail-icon";
-    icon.textContent = iconText;
+    if (iconSvg) icon.innerHTML = iconSvg; else icon.textContent = iconText;
     icon.setAttribute("aria-hidden", "true");
     const word = document.createElement("span");
     word.className = "stage-tablet-rail-label";
@@ -11774,7 +11778,7 @@
       if (definition.special === "display" && nameToggles.length) {
         pages.push(...prepareTabletSpecialPage("display", "表示", displayMenu, store));
       }
-      const button = makeTabletButton(definition.icon, definition.label, "stage-tablet-rail-button");
+      const button = makeTabletButton(definition.icon, definition.label, "stage-tablet-rail-button", definition.iconSvg);
       button.dataset.tabletGroup = definition.id;
       button.setAttribute("aria-pressed", "false");
       button.addEventListener("click", () => openTabletGroup(definition.id));
