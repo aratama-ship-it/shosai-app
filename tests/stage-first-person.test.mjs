@@ -253,6 +253,86 @@ test("3Dカメラへの会場データに客席の囲み方が渡っている", 
   assert.match(sketch, /venue: \{ width: size\.width, depth: size\.depth, height: size\.height, type: state\.project\.venue,[\s\S]{0,120}audience: venue\(\)\.audience \}/);
 });
 
+/* 客席の入り（2026-08-29・本人要望）。稽古で見たい状態が2つある——
+   本番の圧（満席）と、客入れ前・ゲネプロの空の劇場（座席だけ）。 */
+test("客席のカメラは段床の上に立つ（段に埋もれない）", () => {
+  const width = 12;
+  const depth = 9;
+  const rows = Array.from(geom.houseRiserRows(width, depth));
+  const seatedEye = geom.housePerson().headYM;
+
+  // 通路（最前列より手前）は素の地面、列の上ではその列の床
+  closeTo(geom.houseFloorAt(0, width, depth), geom.houseFloorY());
+  closeTo(geom.houseFloorAt(rows[0].z, width, depth), rows[0].height);
+  closeTo(geom.houseFloorAt(rows[rows.length - 1].z + 5, width, depth), rows[rows.length - 1].height);
+
+  // プリセットの目の高さは、その場所の床＋座った人の目
+  const presets = Array.from(geom.freePresets(width, depth, 8));
+  ["audience-center", "front-row"].forEach((id) => {
+    const preset = presets.find((candidate) => candidate.id === id);
+    const floor = geom.houseFloorAt(preset.z, width, depth);
+    closeTo(preset.y, floor + seatedEye);
+    assert.ok(preset.y - floor > .9, `${id} のカメラは床から十分な高さにある`);
+  });
+});
+
+test("舞台奥のカメラは舞台の内側に立つ（奥壁の裏へ出ない）", () => {
+  const depth = 9;
+  const upstage = Array.from(geom.freePresets(12, depth, 8)).find((p) => p.id === "upstage");
+  // 奥壁は z = -depth/2。カメラはその手前（舞台の内側）にいる
+  assert.ok(upstage.z > -depth / 2, `舞台奥のカメラ z=${upstage.z} が奥壁 ${-depth / 2} より手前`);
+  assert.ok(upstage.z < 0, "それでも舞台の奥半分にいる");
+  assert.equal(upstage.yaw, 0, "客席のほうを向いている");
+});
+
+test("客席の入りは満席と空席の2つで、空席では誰も座らない", () => {
+  const modes = Array.from(geom.houseModes());
+  assert.deepEqual(Array.from(modes, (mode) => mode.id), ["full", "empty"]);
+  assert.equal(geom.houseModeById("empty").occupancy, 0);
+  assert.ok(geom.houseModeById("full").occupancy > .5);
+  // 知らないidは満席へ落とす（保存値が壊れていても動く）
+  assert.equal(geom.normalizeHouseModeId("nonsense"), "full");
+  assert.equal(geom.normalizeHouseModeId(null), "full");
+  assert.equal(geom.normalizeHouseModeId("empty"), "empty");
+});
+
+test("空席では席の並びはそのままで、人だけが消える", () => {
+  const full = Array.from(geom.houseSeats(12, 9, 12, undefined, .92));
+  const empty = Array.from(geom.houseSeats(12, 9, 12, undefined, 0));
+
+  // 席そのものは減らない（椅子は並んだまま）
+  assert.equal(empty.length, full.length);
+  empty.forEach((seat, index) => {
+    closeTo(seat.x, full[index].x);
+    closeTo(seat.z, full[index].z);
+    closeTo(seat.headY, full[index].headY);
+    assert.equal(seat.tier, full[index].tier);
+  });
+
+  // 空席では一人も座っていない
+  assert.equal(empty.filter((seat) => seat.occupied).length, 0);
+  assert.ok(full.filter((seat) => seat.occupied).length > full.length * .8);
+});
+
+test("客席の入りの表示は日英そろっている", async () => {
+  const i18nSource = await readFile(new URL("../stage-i18n.js", import.meta.url), "utf8");
+  const context = { window: {} };
+  vm.runInNewContext(i18nSource, context, { filename: "stage-i18n.js" });
+  const table = context.window.SHOSAI_I18N.text;
+  for (const label of ["客席の入り", "満席", "空席"]) {
+    assert.equal(typeof table[label], "string", `${label} の英訳がある`);
+    assert.ok(!/[぀-ヿ一-鿿]/.test(table[label]), `${label} の英訳に日本語が混じっていない`);
+  }
+});
+
+test("全周会場でも空席にできる", () => {
+  const empty = Array.from(geom.houseSeats(13, 13, 12, "round", 0));
+  assert.ok(empty.length > 0);
+  assert.equal(empty.filter((seat) => seat.occupied).length, 0);
+  const full = Array.from(geom.houseSeats(13, 13, 12, "round", .92));
+  assert.equal(empty.length, full.length, "席の数はどちらでも同じ");
+});
+
 test("席は舞台の一点を向く（端の席ほど内を向く）", () => {
   const width = geom.housePerson().shoulderWidthM;
   // 中央の席は肩の線が真横（zの差がほぼ無い）

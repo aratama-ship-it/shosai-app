@@ -9,6 +9,24 @@
   ]);
   const LENS_STORAGE_KEY = "shosai-fpv-lens-v1";
   let lensId = "normal";
+
+  /* 客席の入り。稽古で見たい状態が2つある——本番の圧（満席）と、
+     客入れ前・ゲネプロの空の劇場（座席だけ）。切り替えて見比べる。
+     occupancy は席が埋まっている割合。0なら誰も座らず椅子だけが並ぶ。 */
+  const HOUSE_MODES = Object.freeze([
+    Object.freeze({ id: "full", name: "満席", occupancy: .92 }),
+    Object.freeze({ id: "empty", name: "空席", occupancy: 0 }),
+  ]);
+  const HOUSE_MODE_STORAGE_KEY = "shosai-fpv-house-v1";
+  let houseModeId = "full";
+
+  function normalizeHouseModeId(value) {
+    return HOUSE_MODES.some((mode) => mode.id === value) ? value : "full";
+  }
+
+  function houseModeById(id) {
+    return HOUSE_MODES.find((mode) => mode.id === normalizeHouseModeId(id));
+  }
   const DEFAULT_HEIGHT_CM = 170;
   const PANEL_STORAGE_KEY = "shosai-fpv-panels-v1";
   const PANEL_TITLE_HEIGHT = 26;
@@ -209,7 +227,10 @@
   /* 客席の席。描画から切り離してある。
      3Dカメラの絵はブラウザでしか出ないので、数・高さ・ばらつきはここを直接検査する。
      occupied が真なら人（頭＋肩）、偽なら空いた椅子（背もたれ）を描く。 */
-  function houseSeats(width, depth, ceiling, audience) {
+  function houseSeats(width, depth, ceiling, audience, occupancy) {
+    /* 席が埋まっている割合。省略時はいま選ばれている客席の入り（満席／空席）。
+       0なら人は一人も描かれず、椅子だけが並ぶ。 */
+    const filled = Number.isFinite(occupancy) ? occupancy : houseModeById(houseModeId).occupancy;
     if (audience === "round") {
       const seats = [];
       const period = Math.PI * 2 / HOUSE_RING.aisles;
@@ -223,7 +244,7 @@
           // 通路は対角（45度・135度…）。中心からの角度の近さで席を抜く
           const rel = ((angle - Math.PI / 4) % period + period) % period;
           if (Math.min(rel, period - rel) < aisleHalf) continue;
-          const occupied = seatNoise(key, seat, 3) <= HOUSE_PERSON.occupancy;
+          const occupied = seatNoise(key, seat, 3) < filled;
           seats.push({
             tier: "ring",
             row,
@@ -253,7 +274,7 @@
           const x = (seat - (perRow - 1) / 2) * .55;
           if (Math.abs(x) < .55) continue;                    // 中央通路
           const key = salt + row;
-          const occupied = seatNoise(key, seat, 3) <= HOUSE_PERSON.occupancy;
+          const occupied = seatNoise(key, seat, 3) < filled;
           seats.push({
             tier,
             row,
@@ -318,6 +339,17 @@
       z: startZ + HOUSE_ROW_DEPTH * index,
       height: HOUSE_FLOOR_Y + HOUSE_ROW_RISE * (index + 1),
     }));
+  }
+
+  /* その前後位置（z）における客席の床の高さ。段床の上に立つカメラを置くときに使う。
+     最前列より手前（通路）は素の地面、最後列より奥は最後列の高さで頭打ち。 */
+  function houseFloorAt(z, width, depth) {
+    const rows = houseRiserRows(width, depth);
+    let floor = HOUSE_FLOOR_Y;
+    rows.forEach((row) => {
+      if (finite(z, 0) >= row.z - HOUSE_ROW_DEPTH / 2) floor = row.height;
+    });
+    return floor;
   }
 
   function yawForward(degrees) {
@@ -390,14 +422,22 @@
     const stageWidth = Math.max(0, finite(width, 12));
     const stageDepth = Math.max(0, finite(depth, 9));
     const stageCeiling = Math.max(0, finite(ceiling, 8));
-    // 客席の床はHOUSE_FLOOR_Yぶん舞台より低い（座った目の高さもここから1m下がる）
+    /* 客席の目の高さは「その席の床＋座った人の目」で決める。客席は段床なので、
+       舞台の床から一律に測ると後方ほどカメラが段に埋もれてしまう。 */
+    const centerZ = stageDepth / 2 + 9;
+    const frontZ = stageDepth / 2 + 1.2;
+    const seatedEye = HOUSE_PERSON.headYM;
     return [
-      { id: "audience-center", name: "客席中央", x: 0, y: 1.35 + HOUSE_FLOOR_Y, z: stageDepth / 2 + 9, yaw: 180, pitch: -2 },
-      { id: "front-row", name: "最前列", x: 0, y: 1.2 + HOUSE_FLOOR_Y, z: stageDepth / 2 + 1.2, yaw: 180, pitch: 2 },
+      { id: "audience-center", name: "客席中央", x: 0,
+        y: houseFloorAt(centerZ, stageWidth, stageDepth) + seatedEye, z: centerZ, yaw: 180, pitch: -2 },
+      { id: "front-row", name: "最前列", x: 0,
+        y: houseFloorAt(frontZ, stageWidth, stageDepth) + seatedEye, z: frontZ, yaw: 180, pitch: 2 },
       { id: "stage-right-wing", name: "上手袖", x: stageWidth / 2 + 1.5, y: 1.6, z: 0, yaw: 90, pitch: 0 },
       { id: "stage-left-wing", name: "下手袖", x: -(stageWidth / 2 + 1.5), y: 1.6, z: 0, yaw: -90, pitch: 0 },
       { id: "overhead", name: "真上", x: 0, y: stageCeiling + 4, z: 0, yaw: 180, pitch: -88 },
-      { id: "upstage", name: "舞台奥", x: 0, y: 1.6, z: -(stageDepth / 2 + 1), yaw: 0, pitch: 0 },
+      /* 舞台奥は「舞台の奥のほう」であって、奥壁の外ではない。以前は壁の1m後ろに
+         置いていたため、壁の裏側が視界を塞いで客席が見えなかった（2026-08-29 修正）。 */
+      { id: "upstage", name: "舞台奥", x: 0, y: 1.6, z: -(stageDepth / 2) + 1.2, yaw: 0, pitch: 0 },
     ];
   }
 
@@ -553,8 +593,8 @@
 #stage-fpv-whose{left:20px;bottom:102px;font-size:12.5px;opacity:.85;pointer-events:none}#stage-fpv-whose b{font-weight:600}#stage-fpv-whose .m{opacity:.6;margin-left:.6em}
 #stage-fpv-cast{left:20px;bottom:58px;right:220px;display:flex;flex-wrap:wrap;gap:6px}.stage-fpv-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 8px;border-radius:3px;background:rgba(22,16,11,.86);border:1px solid rgba(232,226,212,.16);color:#e8e2d4;font-size:12px;cursor:pointer;font-family:inherit}.stage-fpv-chip:hover{border-color:rgba(232,226,212,.45)}.stage-fpv-chip.on{background:#e8e2d4;color:#14100c;border-color:#e8e2d4}.stage-fpv-chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
 #stage-fpv-presets{left:20px;bottom:18px;right:220px;display:flex;flex-wrap:wrap;gap:5px}.stage-fpv-preset{padding:4px 8px;font-size:11px;background:rgba(22,16,11,.72)}
-#stage-fpv-panel-toggles{top:174px;right:70px;display:flex;flex-direction:column;align-items:stretch;gap:5px;z-index:71}.stage-fpv-panel-toggle{justify-content:center;padding:4px 9px;font-size:11px}
-#stage-fpv-lens{top:236px;right:70px;display:flex;flex-direction:column;align-items:stretch;gap:5px;z-index:71}.stage-fpv-lens-chip{justify-content:center;padding:4px 9px;font-size:11px}
+#stage-fpv-panel-toggles{display:flex;flex-direction:column;align-items:stretch;gap:5px}.stage-fpv-panel-toggle{justify-content:center;padding:4px 9px;font-size:11px}
+#stage-fpv-optics{top:174px;right:70px;display:flex;flex-direction:column;align-items:stretch;gap:14px;z-index:71}#stage-fpv-lens,#stage-fpv-house{display:flex;flex-direction:column;align-items:stretch;gap:5px}.stage-fpv-lens-chip,.stage-fpv-house-chip{justify-content:center;padding:4px 9px;font-size:11px}
 .stage-fpv-panel{position:absolute;z-index:71;box-sizing:border-box;overflow:hidden;border:1px solid rgba(232,226,212,.16);border-radius:3px;background:var(--chip,rgba(22,16,11,.94));box-shadow:0 8px 24px rgba(0,0,0,.28);color:#e8e2d4;touch-action:none;user-select:none;-webkit-user-select:none}.stage-fpv-panel[hidden]{display:none!important}.stage-fpv-panel-bar{height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 5px 0 9px;font-size:11px;letter-spacing:.04em;cursor:grab}.stage-fpv-panel-bar:active{cursor:grabbing}.stage-fpv-panel-hide{width:24px;height:22px;padding:0;border:0;background:transparent;color:#e8e2d4;font:16px/20px inherit;cursor:pointer}.stage-fpv-panel canvas{display:block;width:100%;background:#16100b;pointer-events:auto}.stage-fpv-panel-resize{position:absolute;right:0;bottom:0;width:14px;height:14px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 0 45%,rgba(232,226,212,.55) 46% 55%,transparent 56% 65%,rgba(232,226,212,.55) 66% 75%,transparent 76%);touch-action:none}
 #stage-fpv-nav{right:16px;bottom:18px;display:flex;align-items:center;gap:8px}#stage-fpv-nav button{background:rgba(22,16,11,.86);color:#e8e2d4;border:1px solid rgba(232,226,212,.2);border-radius:3px;font-size:13px;padding:7px 12px;cursor:pointer;font-family:inherit}#stage-fpv-nav button:hover{border-color:rgba(232,226,212,.5)}#stage-fpv-count{font-size:11.5px;opacity:.6;min-width:52px;text-align:center}
 #stage-fpv-hint{left:50%;bottom:88px;transform:translateX(-50%);font-size:12.5px;background:rgba(22,16,11,.86);padding:7px 14px;border-radius:3px;opacity:.9;transition:opacity .8s;pointer-events:none;border:1px solid rgba(232,226,212,.14)}#stage-fpv-hint.gone{opacity:0}
@@ -615,14 +655,23 @@
     const editPoses = createElement("div", "stage-fpv-edit-poses");
     edit.append(editHead, editHint, editPoses);
     const toast = createElement("div", "stage-fpv-toast", "stage-fpv-hud");
-    const panelToggles = createElement("div", "stage-fpv-panel-toggles", "stage-fpv-hud");
-    const lens = createElement("div", "stage-fpv-lens", "stage-fpv-hud");
+    const panelToggles = createElement("div", "stage-fpv-panel-toggles");
+    const optics = createElement("div", "stage-fpv-optics", "stage-fpv-hud");
+    const lens = createElement("div", "stage-fpv-lens");
     const lensChips = LENSES.map((preset) => {
       const chip = createElement("button", "", "stage-fpv-chip stage-fpv-lens-chip");
       chip.type = "button";
       chip.title = `${preset.fovDeg}°`;
       chip.addEventListener("click", () => setLens(preset.id));
       lens.appendChild(chip);
+      return chip;
+    });
+    const house = createElement("div", "stage-fpv-house");
+    const houseChips = HOUSE_MODES.map((mode) => {
+      const chip = createElement("button", "", "stage-fpv-chip stage-fpv-house-chip");
+      chip.type = "button";
+      chip.addEventListener("click", () => setHouseMode(mode.id));
+      house.appendChild(chip);
       return chip;
     });
     const panels = {};
@@ -668,12 +717,14 @@
     const closeButton = createElement("button", "stage-fpv-close");
     closeButton.type = "button";
     closeButton.textContent = "✕";
-    root.append(canvas, fade, title, minimap, panelToggles, lens, panels.front.panel, panels.plan.panel,
+    optics.append(panelToggles, lens, house);
+    root.append(canvas, fade, title, minimap, optics,
+      panels.front.panel, panels.plan.panel,
       whose, cast, presets, nav, keyGuide, hint, edit, toast, closeButton);
     document.body.appendChild(root);
     elements = { root, canvas, fade, show, act, scene, approx, minimap, whose, cast, presets,
       previous, count, next, keyGuide, hint, edit, editDot, editName, editFacing, editHint, editPoses,
-      toast, closeButton, panelToggles, lens, lensChips, panels };
+      toast, closeButton, panelToggles, lens, lensChips, house, houseChips, panels };
     closeButton.addEventListener("click", close);
     previous.addEventListener("click", () => queueScene(-1));
     next.addEventListener("click", () => queueScene(1));
@@ -834,6 +885,30 @@
     let stored = null;
     try { stored = window.localStorage.getItem(LENS_STORAGE_KEY); } catch (_) { /* unavailable */ }
     lensId = normalizeLensId(stored);
+  }
+
+  function syncHouseChips() {
+    if (!elements) return;
+    elements.house.setAttribute("aria-label", text("客席の入り"));
+    elements.houseChips.forEach((chip, index) => {
+      const mode = HOUSE_MODES[index];
+      const active = mode.id === houseModeId;
+      chip.textContent = text(mode.name);
+      chip.classList.toggle("on", active);
+      chip.setAttribute("aria-pressed", String(active));
+    });
+  }
+
+  function setHouseMode(id) {
+    houseModeId = normalizeHouseModeId(id);
+    try { window.localStorage.setItem(HOUSE_MODE_STORAGE_KEY, houseModeId); } catch (_) { /* unavailable */ }
+    syncHouseChips();
+  }
+
+  function loadHouseMode() {
+    let stored = null;
+    try { stored = window.localStorage.getItem(HOUSE_MODE_STORAGE_KEY); } catch (_) { /* unavailable */ }
+    houseModeId = normalizeHouseModeId(stored);
   }
 
   function applyPanelLayout(key) {
@@ -1141,6 +1216,7 @@
     });
     updateEditPanel();
     syncLensChips();
+    syncHouseChips();
   }
 
   function formatSigned(value) {
@@ -1771,11 +1847,19 @@
     const alpha = clamp(.5 - eye.z * .012, .1, .5);
 
     if (!person.occupied) {
-      // 空いた椅子。背もたれだけが見える（人がいる席の椅子は体で隠れる）
-      if (eye.z > 26) return;
-      const backY = person.floorY + (HOUSE_SEAT.backTopYM + HOUSE_SEAT.backBottomYM) / 2;
-      drawFacingSpan(ctx, person, backY, HOUSE_SEAT.widthM,
-        HOUSE_SEAT.backTopYM - HOUSE_SEAT.backBottomYM, `rgba(34,27,22,${alpha})`);
+      /* 空いた椅子。背もたれだけが見える（人がいる席の椅子は体で隠れる）。
+         客入れ前（空席）では椅子が主役なので、奥まで描き、段床より明るくして
+         列が読めるようにする。満席のときの空席は「隙間」なので控えめでよい。 */
+      const emptyHouse = houseModeById(houseModeId).occupancy <= 0;
+      if (eye.z > (emptyHouse ? 40 : 26)) return;
+      /* 暗がりの椅子は面より輪郭で読める。塗りを抑えて縁を入れると、
+         隣どうしが溶けて壁のように潰れるのを防げる。 */
+      const seatAlpha = clamp(.34 - eye.z * .008, .07, .34);
+      drawFacingPanel(ctx, person,
+        person.floorY + HOUSE_SEAT.backBottomYM, person.floorY + HOUSE_SEAT.backTopYM,
+        HOUSE_SEAT.widthM,
+        emptyHouse ? `rgba(58,45,36,${seatAlpha})` : `rgba(30,24,19,${alpha})`,
+        emptyHouse ? `rgba(12,9,7,${clamp(seatAlpha * 1.5, .1, .5)})` : null);
       return;
     }
 
@@ -1837,6 +1921,19 @@
     }));
 
     units.sort((a, b) => b.depth - a.depth).forEach((unit) => unit.draw());
+  }
+
+  /* 舞台を向いた縦の板（椅子の背もたれ）を1枚描く。
+     楕円だと真上気味に見たとき円盤に見えてしまうので、実際の四角い面を起こす。 */
+  function drawFacingPanel(ctx, person, bottomY, topY, widthM, fill, stroke) {
+    const [left, right] = seatSpanEnds(person.x, person.z, widthM,
+      person.tier === "ring" ? { x: 0, z: 0 } : null);
+    fillPoly(ctx, [
+      { x: left.x, y: bottomY, z: left.z },
+      { x: right.x, y: bottomY, z: right.z },
+      { x: right.x, y: topY, z: right.z },
+      { x: left.x, y: topY, z: left.z },
+    ], fill, stroke, 1);
   }
 
   function drawHouse(ctx) {
@@ -2565,6 +2662,7 @@
     readCurrent();
     loadPanelLayouts();
     loadLens();
+    loadHouseMode();
     const initial = data.pieces.find((piece) => piece.id === bridge.initialPieceId && piece.type === "performer");
     state.free = null;
     if (bridge.initialView === "free") {
@@ -2649,7 +2747,8 @@
       seatNoise, houseSeats, houseBalconyRows, houseRingRows, seatSpanEnds,
       housePerson: () => HOUSE_PERSON, houseSeat: () => HOUSE_SEAT,
       houseBalcony: () => HOUSE_BALCONY, houseRing: () => HOUSE_RING,
-      houseFloorY: () => HOUSE_FLOOR_Y,
+      houseFloorY: () => HOUSE_FLOOR_Y, houseFloorAt,
+      houseModes: () => HOUSE_MODES, normalizeHouseModeId, houseModeById,
       lensPresets: () => LENSES, normalizeLensId, lensById, focalFor }),
     /* 検証用の覗き窓。描画状態には触らない */
     _probe: () => ({ camera: { ...camera }, focal, canvasWidth, canvasHeight,
