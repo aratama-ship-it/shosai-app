@@ -20334,7 +20334,9 @@ ${propsPlotHtml}
           actTitle,
           sceneIndex: scenes.indexOf(current),
           sceneCount: scenes.length,
-          venue: { width: size.width, depth: size.depth, height: size.height, type: state.project.venue },
+          venue: { width: size.width, depth: size.depth, height: size.height, type: state.project.venue,
+            // 客席の囲み方。全周（ビッグトップ・TOHU等）なら3Dカメラの客席もリングになる
+            audience: venue().audience },
           lang,
         };
       },

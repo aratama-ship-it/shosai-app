@@ -804,6 +804,7 @@
     "はこの場面にいません — 客席から見ています": " is not in this scene — viewing from the house",
     "1階中央・5列目": "Stalls centre, row 5",
     "劇場の箱は仮にプロセニアムで描いています": "Shell drawn as proscenium (approx.)",
+    "客席のリングは全周の目安で描いています": "The ring of seating is drawn as a rough in-the-round guide.",
     "黒扉": "Black door",
     "ポールに付く": "On the pole",
     "椅子に座る": "Seated",

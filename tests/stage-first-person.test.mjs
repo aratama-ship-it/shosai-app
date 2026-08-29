@@ -174,6 +174,71 @@ test("天井が低い会場には2階席を作らない（テント・小屋で�
   assert.ok(seats.filter((s) => s.tier === "stalls").length > 0, "1階は残る");
 });
 
+/* 全周会場（audience: "round"）のリング客席（2026-08-29）。
+   舞台の円を同心円の列が囲み、対角の通路で4つの帯に分かれる。2階は無い。 */
+test("全周会場では客席がリングになり、舞台をぐるりと囲む", () => {
+  const diameter = 13;
+  const seats = Array.from(geom.houseSeats(diameter, diameter, 12, "round"));
+  const rows = Array.from(geom.houseRingRows(diameter));
+  const person = geom.housePerson();
+  const ring = geom.houseRing();
+
+  assert.ok(seats.length > 0);
+  assert.ok(seats.every((s) => s.tier === "ring"), "リング席だけで2階は無い");
+  assert.equal(new Set(seats.map((s) => s.row)).size, ring.rows, "全列に席がある");
+
+  // 席は必ず自分の列の踏み面の中央、頭は座った人の高さ
+  seats.forEach((s) => {
+    const riser = rows[s.row];
+    const radius = Math.hypot(s.x, s.z);
+    assert.ok(Math.abs(radius - (riser.r + .92 / 2)) < person.jitterXM * 2 + 1e-9,
+      `${s.row}列${s.seat}番の半径 ${radius.toFixed(2)} が踏み面の中央にある`);
+    closeTo(s.floorY, riser.height);
+    assert.ok(Math.abs(s.headY - (riser.height + person.headYM)) <= person.jitterYM + 1e-9);
+  });
+
+  // 四方すべてに席がある（前だけのブロックになっていない）
+  const quadrants = new Set(seats.map((s) => `${s.x >= 0 ? "E" : "W"}${s.z >= 0 ? "S" : "N"}`));
+  assert.equal(quadrants.size, 4, "正面・上手・下手・奥のどこにも客がいる");
+
+  // 対角の通路（ヴォミトリー）が空いている
+  const firstRow = seats.filter((s) => s.row === 0);
+  const centreR = rows[0].r + .92 / 2;
+  const nearestToAisle = Math.min(...firstRow.map((s) => {
+    const angle = Math.atan2(s.z, s.x);
+    const period = Math.PI / 2;
+    const rel = ((angle - Math.PI / 4) % period + period) % period;
+    return Math.min(rel, period - rel) * centreR;   // 通路中心からの弧長
+  }));
+  assert.ok(nearestToAisle > ring.aisleWidthM / 2 - person.jitterXM * 2,
+    `通路のそば ${nearestToAisle.toFixed(2)}m に席が食い込んでいない`);
+
+  // 決定性: 何度求めても同じ
+  const again = Array.from(geom.houseSeats(diameter, diameter, 12, "round"));
+  assert.equal(again.length, seats.length);
+  seats.forEach((s, i) => {
+    closeTo(s.x, again[i].x);
+    closeTo(s.z, again[i].z);
+    assert.equal(s.occupied, again[i].occupied);
+  });
+});
+
+test("リングの席は舞台の中心を向く", () => {
+  const width = geom.housePerson().shoulderWidthM;
+  // 真横（x軸上）の席が中心 (0,0) を向くと、肩の線はz方向＝接線方向に伸びる
+  const ends = geom.seatSpanEnds(9, 0, width, { x: 0, z: 0 });
+  assert.ok(Math.abs(ends[1].x - ends[0].x) < 1e-9, "肩の線が半径と直交する");
+  closeTo(Math.abs(ends[1].z - ends[0].z), width);
+  // 引数を省略すればプロセニアムの既定（中央少し奥）のまま
+  const preset = geom.seatSpanEnds(0, 10, width);
+  assert.ok(Math.abs(preset[1].z - preset[0].z) < 1e-6);
+});
+
+test("3Dカメラへの会場データに客席の囲み方が渡っている", async () => {
+  const sketch = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
+  assert.match(sketch, /venue: \{ width: size\.width, depth: size\.depth, height: size\.height, type: state\.project\.venue,[\s\S]{0,120}audience: venue\(\)\.audience \}/);
+});
+
 test("席は舞台の一点を向く（端の席ほど内を向く）", () => {
   const width = geom.housePerson().shoulderWidthM;
   // 中央の席は肩の線が真横（zの差がほぼ無い）

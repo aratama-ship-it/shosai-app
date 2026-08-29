@@ -160,6 +160,24 @@
     needsCeilingM: 7.5,
   };
 
+  /* 全周会場（ビッグトップ・TOHU・シルク・ディヴェール等）のリング客席。
+     列は舞台の円を囲む同心円で、放射状の通路（ヴォミトリー）が対角に4本入り、
+     客席は正面・上手・下手・奥の4つの帯に分かれる。列の踏み面と段はプロセニアムの
+     客席と同じ寸法（HOUSE_ROW_DEPTH / HOUSE_ROW_RISE）。2階は作らない。 */
+  const HOUSE_RING = {
+    rows: 9,           // プロセニアムの13列より少ない。円周ぶん席数が増えるため
+    aisles: 4,
+    aisleWidthM: 1.1,
+  };
+
+  function houseRingRows(width) {
+    const innerR = finite(width, 12) / 2 + 1.6;  // 舞台の際から通路ひとつ分あけて始まる
+    return Array.from({ length: HOUSE_RING.rows }, (_, index) => ({
+      r: innerR + HOUSE_ROW_DEPTH * index,
+      height: HOUSE_ROW_RISE * (index + 1),
+    }));
+  }
+
   /* 席ごとのばらつきは毎フレーム同じ値でなければならない（乱数だと客席が沸き立つ）。
      列と席の番号だけから決まる、繰り返し可能な0〜1を作る。 */
   function seatNoise(row, seat, salt) {
@@ -183,7 +201,37 @@
   /* 客席の席。描画から切り離してある。
      3Dカメラの絵はブラウザでしか出ないので、数・高さ・ばらつきはここを直接検査する。
      occupied が真なら人（頭＋肩）、偽なら空いた椅子（背もたれ）を描く。 */
-  function houseSeats(width, depth, ceiling) {
+  function houseSeats(width, depth, ceiling, audience) {
+    if (audience === "round") {
+      const seats = [];
+      const period = Math.PI * 2 / HOUSE_RING.aisles;
+      houseRingRows(width).forEach(({ r, height }, row) => {
+        const centreR = r + HOUSE_ROW_DEPTH / 2;   // 座席は踏み面の中央
+        const count = Math.max(8, Math.floor((Math.PI * 2 * centreR) / .55));
+        const aisleHalf = (HOUSE_RING.aisleWidthM / 2) / centreR;  // 通路の角度幅
+        const key = 200 + row;                     // ノイズの種は1階・2階とずらす
+        for (let seat = 0; seat < count; seat += 1) {
+          const angle = ((seat + .5) / count) * Math.PI * 2;
+          // 通路は対角（45度・135度…）。中心からの角度の近さで席を抜く
+          const rel = ((angle - Math.PI / 4) % period + period) % period;
+          if (Math.min(rel, period - rel) < aisleHalf) continue;
+          const occupied = seatNoise(key, seat, 3) <= HOUSE_PERSON.occupancy;
+          seats.push({
+            tier: "ring",
+            row,
+            seat,
+            occupied,
+            x: Math.cos(angle) * centreR + (seatNoise(key, seat, 1) - .5) * 2 * HOUSE_PERSON.jitterXM,
+            z: Math.sin(angle) * centreR + (seatNoise(key, seat, 4) - .5) * 2 * HOUSE_PERSON.jitterXM,
+            floorY: height,
+            headY: height + HOUSE_PERSON.headYM
+              + (seatNoise(key, seat, 2) - .5) * 2 * HOUSE_PERSON.jitterYM,
+          });
+        }
+      });
+      return seats;
+    }
+
     const perRow = houseSeatsPerRow(width);
     const blocks = [
       { tier: "stalls", rows: houseRiserRows(width, depth), salt: 0 },
@@ -217,9 +265,11 @@
 
   /* 席が舞台の一点を向いたときの、肩（または背もたれ）の両端。
      端の席ほど内を向くので、正面から見ると横幅が詰まって見える。 */
-  function seatSpanEnds(x, z, widthM) {
-    const toFocusX = -x;
-    const toFocusZ = HOUSE_FOCUS_Z - z;
+  function seatSpanEnds(x, z, widthM, focus) {
+    const focusX = focus ? focus.x : 0;
+    const focusZ = focus ? focus.z : HOUSE_FOCUS_Z;
+    const toFocusX = focusX - x;
+    const toFocusZ = focusZ - z;
     const length = Math.hypot(toFocusX, toFocusZ) || 1;
     // 向きに直交する軸が肩の線
     const axisX = -toFocusZ / length;
@@ -986,8 +1036,10 @@
     elements.show.textContent = data.showTitle || "";
     elements.act.textContent = data.actTitle || "";
     elements.scene.textContent = data.sceneTitle || "";
-    elements.approx.textContent = data.venue && data.venue.type && data.venue.type !== "proscenium"
-      ? text("劇場の箱は仮にプロセニアムで描いています") : "";
+    elements.approx.textContent = data.venue && data.venue.audience === "round"
+      ? text("客席のリングは全周の目安で描いています")
+      : (data.venue && data.venue.type && data.venue.type !== "proscenium"
+        ? text("劇場の箱は仮にプロセニアムで描いています") : "");
     elements.count.textContent = `${finite(data.sceneIndex, 0) + 1} / ${finite(data.sceneCount, 0)}`;
     elements.previous.textContent = `◀ ${text("前の場面")}`;
     elements.next.textContent = `${text("次の場面")} ▶`;
@@ -1683,7 +1735,9 @@
   /* 舞台を向いた横長の面（肩・背もたれ）を1枚描く。
      両端を別々に投影してから結ぶので、端の席は横幅が詰まり、斜めに傾く。 */
   function drawFacingSpan(ctx, person, y, widthM, heightM, fill) {
-    const [left, right] = seatSpanEnds(person.x, person.z, widthM);
+    // リングの席は舞台の中心そのものを向く。プロセニアムは中央少し奥（既定）
+    const focus = person.tier === "ring" ? { x: 0, z: 0 } : null;
+    const [left, right] = seatSpanEnds(person.x, person.z, widthM, focus);
     const a = toCamera({ x: left.x, y, z: left.z });
     const b = toCamera({ x: right.x, y, z: right.z });
     if (a.z <= NEAR || b.z <= NEAR) return;
@@ -1700,7 +1754,87 @@
     ctx.fill();
   }
 
+  /* 席ひとつを描く。人がいれば肩＋頭、空席なら背もたれ。
+     プロセニアムの客席とリング客席の両方から使う。 */
+  function drawHousePerson(ctx, person) {
+    const eye = toCamera({ x: person.x, y: person.headY, z: person.z });
+    if (eye.z <= NEAR || eye.z > 40) return;
+    const alpha = clamp(.5 - eye.z * .012, .1, .5);
+
+    if (!person.occupied) {
+      // 空いた椅子。背もたれだけが見える（人がいる席の椅子は体で隠れる）
+      if (eye.z > 26) return;
+      const backY = person.floorY + (HOUSE_SEAT.backTopYM + HOUSE_SEAT.backBottomYM) / 2;
+      drawFacingSpan(ctx, person, backY, HOUSE_SEAT.widthM,
+        HOUSE_SEAT.backTopYM - HOUSE_SEAT.backBottomYM, `rgba(34,27,22,${alpha})`);
+      return;
+    }
+
+    // 肩。頭より暗く、横に広い。人の形は肩の幅で決まる
+    drawFacingSpan(ctx, person, person.headY - HOUSE_PERSON.shoulderDropM,
+      HOUSE_PERSON.shoulderWidthM, HOUSE_PERSON.shoulderHeightM, `rgba(46,37,30,${alpha})`);
+
+    // 頭
+    const headScreen = toScreen(eye);
+    ctx.beginPath();
+    ctx.arc(headScreen.x, headScreen.y,
+      clamp(HOUSE_PERSON.headDiameterM / 2 * (focal / eye.z), .5, 12), 0, 7);
+    ctx.fillStyle = `rgba(88,71,55,${alpha})`;
+    ctx.fill();
+  }
+
+  /* 全周会場のリング客席。段床は同心円の階段（内側の蹴込み＋踏み面）を扇形に割り、
+     席と一緒にカメラからの距離順で描く。舞台のどこから振り返っても客がいる。 */
+  function drawRingHouse(ctx) {
+    const rows = houseRingRows(W);
+    const units = [];
+    const at = (x, y, z) => toCamera({ x, y, z }).z;
+
+    rows.forEach(({ r, height }, row) => {
+      const previousTop = row ? rows[row - 1].height : 0;
+      const outer = r + HOUSE_ROW_DEPTH;
+      const segments = Math.max(16, Math.ceil((Math.PI * 2 * r) / 2.4));
+      for (let index = 0; index < segments; index += 1) {
+        const a0 = (index / segments) * Math.PI * 2;
+        const a1 = ((index + 1) / segments) * Math.PI * 2;
+        const mid = (a0 + a1) / 2;
+        const cos0 = Math.cos(a0); const sin0 = Math.sin(a0);
+        const cos1 = Math.cos(a1); const sin1 = Math.sin(a1);
+        units.push({
+          depth: at(Math.cos(mid) * r, height, Math.sin(mid) * r),
+          draw: () => {
+            // 蹴込み（内側の立ち上がり）。舞台から見るとこの面が階段状に見える
+            fillPoly(ctx, [
+              { x: cos0 * r, y: previousTop, z: sin0 * r },
+              { x: cos1 * r, y: previousTop, z: sin1 * r },
+              { x: cos1 * r, y: height, z: sin1 * r },
+              { x: cos0 * r, y: height, z: sin0 * r },
+            ], "#2e1e17", "rgba(16,12,9,.35)", 1);
+            // 踏み面
+            fillPoly(ctx, [
+              { x: cos0 * r, y: height, z: sin0 * r },
+              { x: cos1 * r, y: height, z: sin1 * r },
+              { x: cos1 * outer, y: height, z: sin1 * outer },
+              { x: cos0 * outer, y: height, z: sin0 * outer },
+            ], "#3a2620", "rgba(16,12,9,.35)", 1);
+          },
+        });
+      }
+    });
+
+    houseSeats(W, D, CEIL, "round").forEach((person) => units.push({
+      depth: at(person.x, person.headY, person.z),
+      draw: () => drawHousePerson(ctx, person),
+    }));
+
+    units.sort((a, b) => b.depth - a.depth).forEach((unit) => unit.draw());
+  }
+
   function drawHouse(ctx) {
+    if (data && data.venue && data.venue.audience === "round") {
+      drawRingHouse(ctx);
+      return;
+    }
     const perRow = houseSeatsPerRow(W);
     const rowWidth = perRow * .55 + 1;
     const stalls = houseRiserRows(W, D);
@@ -1714,32 +1848,7 @@
     });
 
     const drawSeats = (key) => {
-      (byRow.get(key) || []).forEach((person) => {
-        const eye = toCamera({ x: person.x, y: person.headY, z: person.z });
-        if (eye.z <= NEAR || eye.z > 40) return;
-        const alpha = clamp(.5 - eye.z * .012, .1, .5);
-
-        if (!person.occupied) {
-          // 空いた椅子。背もたれだけが見える（人がいる席の椅子は体で隠れる）
-          if (eye.z > 26) return;
-          const backY = person.floorY + (HOUSE_SEAT.backTopYM + HOUSE_SEAT.backBottomYM) / 2;
-          drawFacingSpan(ctx, person, backY, HOUSE_SEAT.widthM,
-            HOUSE_SEAT.backTopYM - HOUSE_SEAT.backBottomYM, `rgba(34,27,22,${alpha})`);
-          return;
-        }
-
-        // 肩。頭より暗く、横に広い。人の形は肩の幅で決まる
-        drawFacingSpan(ctx, person, person.headY - HOUSE_PERSON.shoulderDropM,
-          HOUSE_PERSON.shoulderWidthM, HOUSE_PERSON.shoulderHeightM, `rgba(46,37,30,${alpha})`);
-
-        // 頭
-        const headScreen = toScreen(eye);
-        ctx.beginPath();
-        ctx.arc(headScreen.x, headScreen.y,
-          clamp(HOUSE_PERSON.headDiameterM / 2 * (focal / eye.z), .5, 12), 0, 7);
-        ctx.fillStyle = `rgba(88,71,55,${alpha})`;
-        ctx.fill();
-      });
+      (byRow.get(key) || []).forEach((person) => drawHousePerson(ctx, person));
     };
 
     /* 1階・2階・2階の床・手すりを、カメラから遠い順にまとめて描く。
@@ -1793,6 +1902,18 @@
   }
 
   function drawShell(ctx) {
+    if (data && data.venue && data.venue.audience === "round") {
+      /* 全周会場に箱の壁は無い（奥も客席）。地面の円盤と舞台の円、
+         リングの印だけを敷き、まわりの闇はそのまま会場の暗がりにする。 */
+      const rows = houseRingRows(W);
+      const groundR = rows[rows.length - 1].r + HOUSE_ROW_DEPTH + 1.5;
+      fillPoly(ctx, circlePoints(0, -.002, 0, groundR, 44), "#1d1712");
+      fillPoly(ctx, circlePoints(0, .004, 0, W / 2, 36), "#262019");
+      [[.62, .05], [.4, .05]].forEach(([factor, alpha]) => {
+        fillPoly(ctx, circlePoints(0, .008, 0, Math.min(W, D) * factor, 30), `rgba(242,231,205,${alpha})`);
+      });
+      return;
+    }
     const stageHalfWidth = W / 2;
     const halfWidth = stageHalfWidth + wingWidthFor(W);
     const halfDepth = D / 2;
@@ -2086,10 +2207,17 @@
     setBasis();
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     ctx.fillStyle = "#0d0a08"; ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    const roundHouse = Boolean(data && data.venue && data.venue.audience === "round");
     const inHouse = camera.z > D / 2;
-    drawHouse(ctx);
-    if (!inHouse) drawProscenium(ctx);
-    drawShell(ctx);
+    if (roundHouse) {
+      // 全周会場は箱が無い。床を先に敷き、その上へ客席のリングを描く
+      drawShell(ctx);
+      drawHouse(ctx);
+    } else {
+      drawHouse(ctx);
+      if (!inHouse) drawProscenium(ctx);
+      drawShell(ctx);
+    }
     drawLightPools(ctx, data.pieces);
     data.pieces.filter((piece) => piece.type === "performer" && piece.route)
       .forEach((piece) => drawRoute(ctx, piece, camera.me === piece));
@@ -2472,9 +2600,9 @@
       pieceUOf, pieceVOf, pieceBaseOf, pieceGlowOf,
       moveFree, clampFree, freePresets, frameDelta, wingWidthFor, wingLegX, wingLegPairs,
       wingLegZs, houseSeatsPerRow, houseRiserRows, facingFromGround, uvFromGround, pickFrom,
-      seatNoise, houseSeats, houseBalconyRows, seatSpanEnds,
+      seatNoise, houseSeats, houseBalconyRows, houseRingRows, seatSpanEnds,
       housePerson: () => HOUSE_PERSON, houseSeat: () => HOUSE_SEAT,
-      houseBalcony: () => HOUSE_BALCONY,
+      houseBalcony: () => HOUSE_BALCONY, houseRing: () => HOUSE_RING,
       lensPresets: () => LENSES, normalizeLensId, lensById, focalFor }),
     /* 検証用の覗き窓。描画状態には触らない */
     _probe: () => ({ camera: { ...camera }, focal, canvasWidth, canvasHeight,
