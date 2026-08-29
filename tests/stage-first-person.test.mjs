@@ -58,15 +58,29 @@ test("客席の1列あたり座席数は既存式を保ち、狭い舞台でも�
 
 test("客席段床は13列で、奥へ行くほど位置と高さが一定量ずつ増える", () => {
   const rows = Array.from(geom.houseRiserRows(12, 9));
+  const floorY = geom.houseFloorY();
   assert.equal(rows.length, 13);
   rows.forEach((row, index) => {
     closeTo(row.z, 9 / 2 + 1.6 + .92 * index);
-    closeTo(row.height, .14 * (index + 1));
+    closeTo(row.height, floorY + .14 * (index + 1));
     if (index > 0) {
       assert.ok(row.z > rows[index - 1].z);
       assert.ok(row.height > rows[index - 1].height);
     }
   });
+});
+
+/* 客席の床は舞台の床（Y=0）より低い（2026-08-29・本人指示）。額縁もリングも
+   同じ方針: 演者を見上げる圧はここから生まれる。Vision Proアプリの
+   houseFloorY: -1.0 と同じ値を採る。 */
+test("客席の床は舞台の床より1m低い（Vision Proの houseFloorY と同じ）", () => {
+  closeTo(geom.houseFloorY(), -1);
+  // 最前列（1階もリングも）は真の地面のすぐ上、天井桟敷側は舞台の床を超えて上がる
+  const stalls = Array.from(geom.houseRiserRows(12, 9));
+  assert.ok(stalls[0].height < 0, "最前列の床は舞台の床（0）より低い");
+  assert.ok(stalls[stalls.length - 1].height > 0, "後方の床は舞台の床を超えて上がる");
+  const ring = Array.from(geom.houseRingRows(13));
+  assert.ok(ring[0].height < 0, "リングの最前列も同じ方針");
 });
 
 /* 客席の人影（2026-08-29）。寸法は Vision Proアプリの AudienceBuilder から借りた実寸。

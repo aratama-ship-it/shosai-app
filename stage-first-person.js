@@ -114,6 +114,14 @@
   const HOUSE_ROW_DEPTH = .92;
   const HOUSE_ROW_RISE = .14;
 
+  /* 客席の床は舞台の床（Y=0）より下にある。額縁劇場でもリング劇場でも、演者を
+     見上げる圧はここから生まれる。Vision Proアプリの houseFloorY: -1.0
+     （TheaterPreset.swift）と同じ値を採る。全周会場にもこの方針を広げた
+     （2026-08-29・本人指示）: 舞台は地面（客席側の床）より1m高いところにある
+     ことが多い、という一般則として全形式に適用する。
+     プロセニアムの舞台前縁の羽目板（drawShell の apron 面）も同じ高さで揃える。 */
+  const HOUSE_FLOOR_Y = -1;
+
   /* 客席の人影。舞台から見て「客がいる」気配を出すためのもので、座席そのものは描かない
      （2Dキャンバスなので、数を増やすより1体の見えを正しくする）。
      寸法は Vision Proアプリ（apps/visionpro/show-staging-planner の
@@ -174,7 +182,7 @@
     const innerR = finite(width, 12) / 2 + 1.6;  // 舞台の際から通路ひとつ分あけて始まる
     return Array.from({ length: HOUSE_RING.rows }, (_, index) => ({
       r: innerR + HOUSE_ROW_DEPTH * index,
-      height: HOUSE_ROW_RISE * (index + 1),
+      height: HOUSE_FLOOR_Y + HOUSE_ROW_RISE * (index + 1),
     }));
   }
 
@@ -308,7 +316,7 @@
     const startZ = finite(depth, 9) / 2 + 1.6;
     return Array.from({ length: HOUSE_ROWS }, (_, index) => ({
       z: startZ + HOUSE_ROW_DEPTH * index,
-      height: HOUSE_ROW_RISE * (index + 1),
+      height: HOUSE_FLOOR_Y + HOUSE_ROW_RISE * (index + 1),
     }));
   }
 
@@ -382,9 +390,10 @@
     const stageWidth = Math.max(0, finite(width, 12));
     const stageDepth = Math.max(0, finite(depth, 9));
     const stageCeiling = Math.max(0, finite(ceiling, 8));
+    // 客席の床はHOUSE_FLOOR_Yぶん舞台より低い（座った目の高さもここから1m下がる）
     return [
-      { id: "audience-center", name: "客席中央", x: 0, y: 1.35, z: stageDepth / 2 + 9, yaw: 180, pitch: -2 },
-      { id: "front-row", name: "最前列", x: 0, y: 1.2, z: stageDepth / 2 + 1.2, yaw: 180, pitch: 2 },
+      { id: "audience-center", name: "客席中央", x: 0, y: 1.35 + HOUSE_FLOOR_Y, z: stageDepth / 2 + 9, yaw: 180, pitch: -2 },
+      { id: "front-row", name: "最前列", x: 0, y: 1.2 + HOUSE_FLOOR_Y, z: stageDepth / 2 + 1.2, yaw: 180, pitch: 2 },
       { id: "stage-right-wing", name: "上手袖", x: stageWidth / 2 + 1.5, y: 1.6, z: 0, yaw: 90, pitch: 0 },
       { id: "stage-left-wing", name: "下手袖", x: -(stageWidth / 2 + 1.5), y: 1.6, z: 0, yaw: -90, pitch: 0 },
       { id: "overhead", name: "真上", x: 0, y: stageCeiling + 4, z: 0, yaw: 180, pitch: -88 },
@@ -1791,7 +1800,7 @@
     const at = (x, y, z) => toCamera({ x, y, z }).z;
 
     rows.forEach(({ r, height }, row) => {
-      const previousTop = row ? rows[row - 1].height : 0;
+      const previousTop = row ? rows[row - 1].height : HOUSE_FLOOR_Y;  // row0の土台は真の地面
       const outer = r + HOUSE_ROW_DEPTH;
       const segments = Math.max(16, Math.ceil((Math.PI * 2 * r) / 2.4));
       for (let index = 0; index < segments; index += 1) {
@@ -1857,10 +1866,26 @@
     const units = [];
     const at = (y, z) => toCamera({ x: 0, y, z }).z;
 
+    /* 舞台の羽目板（apron。drawShellで描く）と最前列の間、1.6mの通路床。
+       ここを敷かないと、舞台端から地面まで落ちた先が素通しの闇になる。 */
+    const walkwayFrontZ = D / 2;
+    const walkwayBackZ = stalls[0].z - HOUSE_ROW_DEPTH / 2;
+    units.push({
+      depth: at(HOUSE_FLOOR_Y, (walkwayFrontZ + walkwayBackZ) / 2),
+      draw: () => {
+        fillPoly(ctx, [
+          { x: -rowWidth / 2, y: HOUSE_FLOOR_Y, z: walkwayFrontZ },
+          { x: rowWidth / 2, y: HOUSE_FLOOR_Y, z: walkwayFrontZ },
+          { x: rowWidth / 2, y: HOUSE_FLOOR_Y, z: walkwayBackZ },
+          { x: -rowWidth / 2, y: HOUSE_FLOOR_Y, z: walkwayBackZ },
+        ], "#221a14");
+      },
+    });
+
     stalls.forEach((riser, row) => units.push({
       depth: at(riser.height, riser.z),
       draw: () => {
-        drawBox(ctx, 0, riser.z, 0, riser.height, rowWidth, HOUSE_ROW_DEPTH, "#3a2620");
+        drawBox(ctx, 0, riser.z, HOUSE_FLOOR_Y, riser.height, rowWidth, HOUSE_ROW_DEPTH, "#3a2620");
         drawSeats(`stalls:${row}`);
       },
     }));
@@ -1903,12 +1928,33 @@
 
   function drawShell(ctx) {
     if (data && data.venue && data.venue.audience === "round") {
-      /* 全周会場に箱の壁は無い（奥も客席）。地面の円盤と舞台の円、
-         リングの印だけを敷き、まわりの闇はそのまま会場の暗がりにする。 */
+      /* 全周会場に箱の壁は無い（奥も客席）。地面はHOUSE_FLOOR_Y、舞台の円だけが
+         Y=0で高い盆のように立つ。両者の間は縁の壁（舞台の土手）でつなぐ——
+         プロセニアムの前縁の羽目板と同じ考えを、全周ぶん巡らせたもの。 */
       const rows = houseRingRows(W);
       const groundR = rows[rows.length - 1].r + HOUSE_ROW_DEPTH + 1.5;
-      fillPoly(ctx, circlePoints(0, -.002, 0, groundR, 44), "#1d1712");
-      fillPoly(ctx, circlePoints(0, .004, 0, W / 2, 36), "#262019");
+      const stageR = W / 2;
+      fillPoly(ctx, circlePoints(0, HOUSE_FLOOR_Y - .002, 0, groundR, 44), "#1d1712");
+
+      const skirtSegments = 36;
+      Array.from({ length: skirtSegments }, (_, index) => {
+        const a0 = (index / skirtSegments) * Math.PI * 2;
+        const a1 = ((index + 1) / skirtSegments) * Math.PI * 2;
+        return { a0, a1, depth: toCamera({
+          x: Math.cos((a0 + a1) / 2) * stageR, y: HOUSE_FLOOR_Y / 2, z: Math.sin((a0 + a1) / 2) * stageR,
+        }).z };
+      }).sort((a, b) => b.depth - a.depth).forEach(({ a0, a1 }) => {
+        const cos0 = Math.cos(a0); const sin0 = Math.sin(a0);
+        const cos1 = Math.cos(a1); const sin1 = Math.sin(a1);
+        fillPoly(ctx, [
+          { x: cos0 * stageR, y: HOUSE_FLOOR_Y, z: sin0 * stageR },
+          { x: cos1 * stageR, y: HOUSE_FLOOR_Y, z: sin1 * stageR },
+          { x: cos1 * stageR, y: 0, z: sin1 * stageR },
+          { x: cos0 * stageR, y: 0, z: sin0 * stageR },
+        ], "#1a120d");
+      });
+
+      fillPoly(ctx, circlePoints(0, .004, 0, stageR, 36), "#262019");
       [[.62, .05], [.4, .05]].forEach(([factor, alpha]) => {
         fillPoly(ctx, circlePoints(0, .008, 0, Math.min(W, D) * factor, 30), `rgba(242,231,205,${alpha})`);
       });
@@ -1937,7 +1983,7 @@
       line3(ctx, { x: -halfWidth, y: 0, z }, { x: halfWidth, y: 0, z }, "rgba(232,226,212,.09)", 1);
     }
     line3(ctx, { x: -halfWidth, y: 0, z: halfDepth }, { x: halfWidth, y: 0, z: halfDepth }, "rgba(232,226,212,.28)", 2);
-    fillPoly(ctx, [{ x: -halfWidth, y: -1.05, z: halfDepth }, { x: halfWidth, y: -1.05, z: halfDepth },
+    fillPoly(ctx, [{ x: -halfWidth, y: HOUSE_FLOOR_Y, z: halfDepth }, { x: halfWidth, y: HOUSE_FLOOR_Y, z: halfDepth },
       { x: halfWidth, y: 0, z: halfDepth }, { x: -halfWidth, y: 0, z: halfDepth }], "#241c15");
     const legHalfWidth = .8;
     const legHeight = Math.min(CEIL - .5, CEIL * .75);
@@ -2603,6 +2649,7 @@
       seatNoise, houseSeats, houseBalconyRows, houseRingRows, seatSpanEnds,
       housePerson: () => HOUSE_PERSON, houseSeat: () => HOUSE_SEAT,
       houseBalcony: () => HOUSE_BALCONY, houseRing: () => HOUSE_RING,
+      houseFloorY: () => HOUSE_FLOOR_Y,
       lensPresets: () => LENSES, normalizeLensId, lensById, focalFor }),
     /* 検証用の覗き窓。描画状態には触らない */
     _probe: () => ({ camera: { ...camera }, focal, canvasWidth, canvasHeight,
