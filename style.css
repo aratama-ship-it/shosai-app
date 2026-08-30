@@ -12719,3 +12719,22 @@ body.stage-session-guest #stage-scene-list {
     }
     .stage-reach-body tbody td u { font-size: 8.5px; }
   }
+
+/* ============================================================
+   動きを減らす設定への対応（2026-08-30 追加）
+   OSの「視差効果を減らす」がONのとき、アニメーションとトランジションを実質止める。
+   7672行目に .stage-tour-ring だけの指定があったが、それ以外は未対応で、
+   design-lint の測定で「動きのある35要素すべてが reduce 時も変化なし」と出たため全体へ拡張した。
+   0ではなく0.01msにしているのは、transitionend / animationend を待つ処理が
+   止まってしまわないようにするため（完全に0にすると発火しない環境がある）。
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
