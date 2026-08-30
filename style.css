@@ -18,6 +18,9 @@
   /* 8.5〜9.5px の小見出し用。--rust のままだと机の色の上で 2.80〜3.44 しかなく読みにくい。
      色相はそのままに明るくして 4.5:1 を満たす。塗り・線・大きい字は --rust のまま使う。 */
   --rust-ink: #df6433;
+  /* 9px前後の小さい字用。--ink-soft(#6a604e)のままだと机の色の上で 2.93:1 しかない。
+     色相はそのままに明るくして 5.02:1 にした。大きい字・塗りは --ink-soft のまま使う。 */
+  --ink-soft-sm: #93856c;
   --rust-deep: #8f3e1e;
   --brass: #9c823f;
   --moss: #77865f;
@@ -1610,7 +1613,7 @@ textarea, input[type="text"] {
 }
 
 .stage-sketch-kicker {
-  color: var(--rust);
+  color: var(--rust-ink);
   font-size: 9.5px;
   letter-spacing: 0.28em;
   margin-bottom: 4px;
@@ -1618,7 +1621,7 @@ textarea, input[type="text"] {
 
 .stage-app-version {
   margin-left: 0.55em;
-  color: var(--ink-soft);
+  color: var(--ink-soft-sm);
   font-family: var(--sans);
   font-size: 0.38em;
   font-weight: 500;
@@ -1644,7 +1647,7 @@ textarea, input[type="text"] {
    枠付きの札にすると、題そのものより先に目へ入ってしまう。 */
 .stage-beta {
   margin-left: 12px;
-  color: var(--rust);
+  color: var(--rust-ink);
   font-family: var(--sans);
   font-size: 12px;
   font-weight: 400;
@@ -1997,7 +2000,7 @@ html.stage-pwa-tablet .stage-storage-caution {
 .stage-scene-head .stage-scene-chip { width: 100%; min-width: 0; }
 
 .stage-scene-grip {
-  color: rgba(240, 231, 214, 0.28);
+  color: rgba(240, 231, 214, 0.53);
   font-size: 12px;
   line-height: 1;
   text-align: center;
@@ -2703,7 +2706,7 @@ canvas[data-tool="note"] { cursor: copy; }
   z-index: 2;
   left: 13px;
   pointer-events: none;
-  color: rgba(239,231,214,0.42);
+  color: rgba(239,231,214,0.53);
   font-size: 8.5px;
   letter-spacing: 0.16em;
   text-shadow: 0 1px 2px rgba(0,0,0,0.75);
@@ -2764,7 +2767,7 @@ canvas[data-tool="note"] { cursor: copy; }
 }
 
 .stage-boundary-note {
-  color: rgba(240,231,214,0.38);
+  color: rgba(240,231,214,0.53);
   font-size: 10.5px;
   line-height: 1.8;
   border-top: 1px solid var(--line-dark);
@@ -6966,7 +6969,7 @@ canvas[data-tool="note"] { cursor: copy; }
 
 /* 寸法は「目安」であり、施工や安全の判断には使わせない */
 .stage-venue-scale {
-  color: rgba(240, 231, 214, 0.36);
+  color: rgba(240, 231, 214, 0.53);
   font-size: 9.5px;
   line-height: 1.7;
 }
@@ -7144,7 +7147,7 @@ canvas[data-tool="note"] { cursor: copy; }
 }
 
 .stage-text-input:focus { border-color: var(--brass); }
-.stage-text-input::placeholder { color: rgba(240, 231, 214, 0.3); }
+.stage-text-input::placeholder { color: rgba(240, 231, 214, 0.53); }
 
 .stage-version-row {
   display: grid;
@@ -7157,7 +7160,7 @@ canvas[data-tool="note"] { cursor: copy; }
 .stage-version-input { margin-bottom: 0; }
 
 .stage-version-note {
-  color: rgba(240, 231, 214, 0.36);
+  color: rgba(240, 231, 214, 0.53);
   font-size: 9.5px;
   line-height: 1.65;
   margin: 6px 0 9px;
@@ -7518,7 +7521,7 @@ canvas[data-tool="note"] { cursor: copy; }
 }
 
 .stage-scene-num {
-  color: var(--rust);
+  color: var(--rust-ink);
   font-size: 9px;
   letter-spacing: 0.1em;
 }
@@ -7531,7 +7534,7 @@ canvas[data-tool="note"] { cursor: copy; }
 }
 
 .stage-scene-count {
-  color: rgba(240, 231, 214, 0.34);
+  color: rgba(240, 231, 214, 0.53);
   font-size: 9px;
 }
 
@@ -7823,7 +7826,9 @@ body.is-panel-dragging {
 }
 
 .stage-panel-grip {
-  color: rgba(240, 231, 214, 0.28);
+  /* タッチ端末にはhoverが無く、0.28では2.26:1で見つけられなかった。
+     同じ役割の .stage-scene-grip と見た目を揃えるため 0.53（4.5:1超）にする。 */
+  color: rgba(240, 231, 214, 0.53);
   font-size: 12px;
   line-height: 1;
   cursor: grab;
@@ -8239,7 +8244,7 @@ body.is-panel-dragging {
   height: 19px;
 }
 
-.stage-scene-desc-text::placeholder { color: rgba(240, 231, 214, 0.28); }
+.stage-scene-desc-text::placeholder { color: rgba(240, 231, 214, 0.53); }
 
 .stage-scene-desc-text:hover { border-bottom-color: var(--line-dark); }
 
@@ -8420,7 +8425,7 @@ body.is-panel-dragging {
 }
 
 .stage-light-intent input::placeholder,
-.stage-light-intent textarea::placeholder { color: rgba(240, 231, 214, 0.27); }
+.stage-light-intent textarea::placeholder { color: rgba(240, 231, 214, 0.53); }
 
 .stage-light-layers,
 .stage-light-transition {
@@ -9009,7 +9014,7 @@ body.is-panel-dragging {
 }
 
 .stage-cast-empty {
-  color: rgba(240, 231, 214, 0.34);
+  color: rgba(240, 231, 214, 0.53);
   font-size: 10px;
   line-height: 1.7;
 }
@@ -9091,7 +9096,7 @@ body.is-panel-dragging {
   min-height: 22px;
   border: 0;
   background: none;
-  color: rgba(240, 231, 214, 0.3);
+  color: rgba(240, 231, 214, 0.53);
   font-size: 10px;
   line-height: 1;
 }
