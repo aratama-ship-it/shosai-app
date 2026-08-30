@@ -114,9 +114,49 @@ function handleWhoamiRequest(request, user) {
   });
 }
 
+/* ベータ版の生死確認。起動時に一度だけ stage-pwa.js から呼ばれる想定。
+   本人が製品版を出したら env.STAGE_BETA_ACTIVE を "false" にして
+   wrangler deploy し直すだけで、既にホーム画面へ入っているベータ版も
+   次回起動時にブロックできる。未設定時は事故で全員締め出さないよう
+   active 扱いにする（fail-open。ここはセキュリティ境界ではなく製品の
+   ライフサイクル切り替えなので、設定忘れで壊れる側より事故が軽い側に倒す）。 */
+function handleBetaStatusRequest(request, env) {
+  const { pathname } = new URL(request.url);
+  if (pathname !== "/beta-status") return null;
+
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return new Response(null, {
+      status: 405,
+      headers: {
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
+  const betaActive = env.STAGE_BETA_ACTIVE !== "false";
+  if (request.method === "HEAD") {
+    return new Response(null, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+  return jsonResponse({
+    ok: true,
+    betaActive,
+    message: (!betaActive && env.STAGE_BETA_MESSAGE) ? env.STAGE_BETA_MESSAGE : null,
+    productUrl: (!betaActive && env.STAGE_BETA_PRODUCT_URL) ? env.STAGE_BETA_PRODUCT_URL : null,
+  });
+}
+
 async function serveAuthenticatedRequest(request, env, user) {
   const whoamiResponse = handleWhoamiRequest(request, user);
   if (whoamiResponse) return whoamiResponse;
+  const betaStatusResponse = handleBetaStatusRequest(request, env);
+  if (betaStatusResponse) return betaStatusResponse;
   const sessionResponse = await handleSessionRequest(request, env);
   if (sessionResponse) return sessionResponse;
   return env.ASSETS.fetch(request);

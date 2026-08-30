@@ -43,3 +43,10 @@ bindings = [
 [[migrations]]
 tag = "v1-session-room"
 new_sqlite_classes = ["SessionRoom"]
+
+# 舞台スケッチのベータ提供スイッチ（2026-08-30 追加）。
+# 製品版を出したら STAGE_BETA_ACTIVE を "false" にして wrangler deploy し直す。
+# STAGE_BETA_PRODUCT_URL に製品版のURLを入れておくと、締め出し画面にリンクが出る
+# （空でもよい。その場合はリンクなしのメッセージだけになる）。
+[vars]
+STAGE_BETA_ACTIVE = "true"

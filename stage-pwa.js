@@ -19,6 +19,89 @@
     || !("serviceWorker" in navigator)
     || window.location.protocol === "file:") return;
 
+  /* ベータ版の締め出し。起動のたびに一度だけサーバーへ確認する
+     （常時オンライン必須にはしない。製品版が出たあともホーム画面のPWAが
+     オフラインキャッシュだけで動き続けるのを防ぐのが目的なので、起動時の
+     確認さえ通ればそのあとはこれまで通りオフラインで使える。2026-08-30決定）。 */
+  function showBetaGate({ heading, message, productUrl, retry }) {
+    let box = document.getElementById("stage-beta-gate");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "stage-beta-gate";
+      box.setAttribute("role", "alertdialog");
+      box.setAttribute("aria-modal", "true");
+      box.style.cssText = "position:fixed;inset:0;z-index:200;display:flex;"
+        + "align-items:center;justify-content:center;padding:24px;"
+        + "background:rgba(8,7,6,.92);color:#f2ece4;text-align:center;";
+      document.body.appendChild(box);
+    }
+    box.textContent = "";
+    const inner = document.createElement("div");
+    inner.style.cssText = "max-width:min(440px,calc(100vw - 48px));";
+    const h = document.createElement("p");
+    h.style.cssText = "font-size:16px;font-weight:600;margin:0 0 10px;";
+    h.textContent = heading;
+    const p = document.createElement("p");
+    p.style.cssText = "font-size:13px;line-height:1.7;margin:0 0 18px;color:#cfc3b6;";
+    p.textContent = message;
+    inner.appendChild(h);
+    inner.appendChild(p);
+    if (productUrl) {
+      const a = document.createElement("a");
+      a.href = productUrl;
+      a.textContent = "製品版はこちら";
+      a.style.cssText = "display:inline-block;padding:10px 20px;background:#f2ece4;"
+        + "color:#191512;text-decoration:none;font-size:13px;font-weight:600;";
+      inner.appendChild(a);
+    }
+    if (retry) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "再試行";
+      btn.style.cssText = "margin-left:10px;padding:10px 20px;background:transparent;"
+        + "color:#f2ece4;border:1px solid #6b6156;font-size:13px;cursor:pointer;";
+      btn.addEventListener("click", () => { box.remove(); checkBetaStatus(); });
+      inner.appendChild(btn);
+    }
+    box.appendChild(inner);
+  }
+
+  function checkBetaStatus() {
+    const controller = ("AbortController" in window) ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), 8000) : null;
+    fetch("/beta-status", {
+      cache: "no-store",
+      credentials: "same-origin",
+      signal: controller ? controller.signal : undefined,
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error(`beta-status ${response.status}`);
+        return response.json();
+      })
+      .then((data) => {
+        if (data && data.betaActive === false) {
+          showBetaGate({
+            heading: "ベータ版の提供は終了しました",
+            message: data.message || "ここまでご協力ありがとうございました。製品版をご利用ください。",
+            productUrl: data.productUrl || null,
+            retry: false,
+          });
+        }
+      })
+      .catch(() => {
+        showBetaGate({
+          heading: "オンライン接続が必要です",
+          message: "舞台スケッチのベータ版は、起動時にネット接続を確認できないと使えません。"
+            + "接続を確認してもう一度お試しください。",
+          productUrl: null,
+          retry: true,
+        });
+      })
+      .finally(() => { if (timer) clearTimeout(timer); });
+  }
+
+  checkBetaStatus();
+
   /* Service Worker文脈の取得にはBasic認証が乗らないことがある。ホーム画面へ追加したPWAで
      実際に起き、app shellを一件も保存できずオフラインが死んでいた（2026-08-24 実機で確認）。
      一方、ページ文脈の取得には認証が効いている——この画面が表示できている時点で、

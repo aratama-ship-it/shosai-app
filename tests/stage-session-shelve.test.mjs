@@ -45,7 +45,7 @@ test("変更した2本のJS版とPWAキャッシュ版を正本・単独版・Se
     assert.ok(serviceWorkerSource.includes(`./${reference}`), `${reference} が stage-sw.js にある`);
   }
   // 版は上げるたびにここも更新する（2026-08-26: 発注書Hのゲスト画面変更で v144 → v145）
-  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v182";/);
+  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v183";/);
 });
 
 test("ゲスト参加は false の退避結果を失敗として扱い、role 変更前に中止する", () => {

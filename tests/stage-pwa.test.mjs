@@ -106,6 +106,12 @@ test("PWA登録はHTTP上だけで行い、舞台スケッチの保存データ�
   assert.doesNotMatch(pwaSource + swSource, /localStorage|indexedDB/);
 });
 
+test("起動時にベータ版の提供状態を確認し、終了時のゲートを表示する", () => {
+  assert.match(pwaSource, /function checkBetaStatus\(\)/);
+  assert.match(pwaSource, /fetch\("\/beta-status"/);
+  assert.match(pwaSource, /function showBetaGate\(/);
+});
+
 test("Service Workerは資料棚など同一サイトの別画面へ介入しない", () => {
   /* 2026-08-24: 配信層の307（/stage.html → /stage）対応で、単一のSTAGE_PATHから
      舞台スケッチの二つの姿だけを持つSTAGE_PATHSへ変更。守る意図は同じ——
@@ -138,7 +144,7 @@ test("オフライン用CSSとJSの版は現在のHTML参照と揃う", () => {
     assert.ok(ref, `${name} の版番号がindex.htmlにある`);
     assert.ok(swSource.includes(`./${ref[0]}`), `${ref[0]} がオフライン対象にある`);
   });
-  assert.ok(swSource.includes("./stage-pwa.js?v=6"));
+  assert.ok(swSource.includes("./stage-pwa.js?v=7"));
 });
 
 /* iPad左レールの設定歯車はSVG（他の帯アイコンは形の記号のまま。2026-08-30・E-2）。
