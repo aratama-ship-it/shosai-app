@@ -119,7 +119,12 @@ function handleWhoamiRequest(request, user) {
    wrangler deploy し直すだけで、既にホーム画面へ入っているベータ版も
    次回起動時にブロックできる。未設定時は事故で全員締め出さないよう
    active 扱いにする（fail-open。ここはセキュリティ境界ではなく製品の
-   ライフサイクル切り替えなので、設定忘れで壊れる側より事故が軽い側に倒す）。 */
+   ライフサイクル切り替えなので、設定忘れで壊れる側より事故が軽い側に倒す）。
+
+   この状態確認だけは、認証設定が正常なことを確認した後、Cookie認証の
+   手前で返す。キャッシュから起動したPWAは、期限切れCookieでここが401に
+   なると、通信できているのに「オンライン接続が必要」と誤判定して起動できない。
+   返すのはベータ版が有効かと、終了時の公開案内だけである。2026-08-31実機報告。 */
 function handleBetaStatusRequest(request, env) {
   const { pathname } = new URL(request.url);
   if (pathname !== "/beta-status") return null;
@@ -162,11 +167,11 @@ async function serveAuthenticatedRequest(request, env, user) {
   return env.ASSETS.fetch(request);
 }
 
-/* ホーム画面へ追加したPWAの見た目に必要な、中身を持たない資源だけを認証の外へ出す。
+/* ホーム画面へ追加したPWAの見た目に必要な、中身を持たない静的資源だけを認証の外へ出す。
    iOSはアイコンを取りに行くとき本体と同じ認証文脈を使えないことがあり、401が返ると
    アプリ名の一文字目を描いた代替タイル（黒地に「舞」）になる。実機で発生した（2026-08-23）。
 
-   ★ここは fail-closed の境界に開ける唯一の穴なので、条件を広げないこと。
+   ★ここは fail-closed の境界に開ける静的アセットの例外なので、条件を広げないこと。
      出すのは緞帳のロゴ画像とアプリ名・色だけ。資料棚・名簿・ショーのデータは
      引き続き認証の内側にある。
    ★パターンは意図的に厳しくしてある。`/` を含めず拡張子を固定することで、
@@ -677,6 +682,12 @@ export default {
         },
       });
     }
+
+    /* ベータ版の有効状態は、認証設定の fail-closed 確認は通すが、
+       利用者のCookieには依存させない。PWAの起動確認そのものが、
+       期限切れCookieで401になって利用者を閉め出すのを防ぐ。 */
+    const betaStatusResponse = handleBetaStatusRequest(request, env);
+    if (betaStatusResponse) return betaStatusResponse;
 
     const url = new URL(request.url);
     const nowSeconds = Math.floor(Date.now() / 1000);
