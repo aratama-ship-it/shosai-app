@@ -12743,3 +12743,41 @@ body.stage-session-guest #stage-scene-list {
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================
+   タッチ端末のタップ対象（2026-08-31 追加 / design-lint U1）
+   指で押す環境だけ 44×44px を確保する。マウス環境の密度は変えない。
+   基準は Apple HIG の 44pt。design-lint の計測で 18〜27px の操作ボタンが
+   多数見つかったため、特に小さいものから対応した。
+   見た目（アイコンの大きさ・文字）は変えず、押せる範囲だけ広げている。
+   ============================================================ */
+@media (pointer: coarse) {
+  /* 一覧の行にある操作ボタン（錠・プロフィール・削除）。22×22px しかなかった */
+  .stage-cast-lock,
+  .stage-cast-profile,
+  .stage-cast-remove,
+  /* パネルの〈?〉。18×18px しかなかった */
+  .stage-panel-help,
+  .stage-hint-help {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 場面の階層・並べ替えのアイコン列。高さ44pxはあるが幅が20〜23pxしかなかった */
+  .stage-scene-outdent,
+  .stage-scene-indent,
+  .stage-scene-pen,
+  .stage-scene-wrap {
+    min-width: 44px;
+  }
+
+  /* 表示切替のチェックボックス行。ラベルごと押せるが高さ12pxで狙えなかった */
+  .stage-canvas-toggle {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
