@@ -13,6 +13,7 @@ mac-app/
 * [0-9].*
 .DS_Store
 docs/
+design/
 tools/
 mcp-server/
 tests/
