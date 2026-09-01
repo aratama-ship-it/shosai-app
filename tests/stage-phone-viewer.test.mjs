@@ -123,7 +123,7 @@ test("setLangはスマホ閲覧機の文言をその場で貼り直す", () => {
 });
 
 test("読み込んだJSONはスマホでは編集用比較モーダルを挟まず開く", () => {
-  assert.match(source, /if \(phoneViewerActive\) \{[\s\S]*?shelveCurrent\(\);\s*if \(next\.mcpRevision === null\) reserveImportedShowId\(next\);[\s\S]*?applyLoadedState\(next, `「\$\{next\.project\.title\}」を読み込み、ショー一覧へ保存しました。`\);[\s\S]*?return;/);
+  assert.match(source, /if \(phoneViewerActive\) \{\s*if \(next\.mcpRevision === null\) reserveImportedShowId\(next\);\s*if \(!applyLoadedState\(next, `「\$\{next\.project\.title\}」を読み込み、ショー一覧へ保存しました。`\)\) return;[\s\S]*?return;/);
 });
 
 test("縦画面は正面図と平面図を並べ、横画面は一枚を切り替える", () => {

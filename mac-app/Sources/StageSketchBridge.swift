@@ -10,6 +10,8 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
     static let writeProjectMessage = "stageSketchWriteProject"
     static let latestPlanMessage = "stageSketchLatestPlan"
     static let sessionStartMessage = "stageSketchSessionStart"
+    static let sessionUserMessage = "stageSketchSessionUser"
+    static let sessionResumeStatusMessage = "stageSketchSessionResumeStatus"
     static let sessionConnectMessage = "stageSketchSessionConnect"
     static let sessionSendMessage = "stageSketchSessionSend"
     static let sessionDisconnectMessage = "stageSketchSessionDisconnect"
@@ -78,6 +80,16 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
             self,
             contentWorld: .page,
             name: Self.sessionStartMessage
+        )
+        userContentController.addScriptMessageHandler(
+            self,
+            contentWorld: .page,
+            name: Self.sessionUserMessage
+        )
+        userContentController.addScriptMessageHandler(
+            self,
+            contentWorld: .page,
+            name: Self.sessionResumeStatusMessage
         )
         userContentController.addScriptMessageHandler(
             self,
@@ -192,6 +204,22 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
 
         case Self.sessionStartMessage:
             sessionRelay.startSession { result in
+                replyHandler(result, nil)
+            }
+
+        case Self.sessionUserMessage:
+            sessionRelay.currentUser { result in
+                replyHandler(result, nil)
+            }
+
+        case Self.sessionResumeStatusMessage:
+            guard let body = message.body as? [String: Any],
+                  let roomID = body["roomId"] as? String,
+                  let hostKey = body["hostKey"] as? String else {
+                replyHandler(nil, "sessionResumeStatus accepts roomId and hostKey strings.")
+                return
+            }
+            sessionRelay.resumeStatus(roomID: roomID, hostKey: hostKey) { result in
                 replyHandler(result, nil)
             }
 
@@ -330,6 +358,22 @@ final class StageSketchBridge: NSObject, WKScriptMessageHandlerWithReply {
         },
         sessionStart() {
           return handlers.stageSketchSessionStart.postMessage({});
+        },
+        sessionUser() {
+          return handlers.stageSketchSessionUser.postMessage({});
+        },
+        sessionResumeStatus(options) {
+          if (options === null || typeof options !== "object" || Array.isArray(options)
+              || typeof options.roomId !== "string"
+              || typeof options.hostKey !== "string") {
+            return Promise.reject(new TypeError(
+              "sessionResumeStatus expects roomId and hostKey strings."
+            ));
+          }
+          return handlers.stageSketchSessionResumeStatus.postMessage({
+            roomId: options.roomId,
+            hostKey: options.hostKey
+          });
         },
         sessionConnect(options) {
           if (options === null || typeof options !== "object" || Array.isArray(options)

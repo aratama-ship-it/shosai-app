@@ -63,5 +63,5 @@ test("projectIoClone(state.project)はmcpRevisionを正本projectへ混ぜない
 test("AI編集結果だけappliedRevisionを保持し、通常読込と別ショー化ではnullにする", () => {
   assert.match(stageSource, /const appliedRevision = Number\.isInteger\(editSummary\?\.appliedRevision\)[\s\S]*?mcpRevision: appliedRevision,/);
   assert.match(stageSource, /if \(next\.mcpRevision === null\) reserveImportedShowId\(next\);/);
-  assert.match(stageSource, /next\.project\.id = rid\("show"\);\s*next\.mcpRevision = null;/);
+  assert.match(stageSource, /candidate\.project\.id = rid\("show"\);\s*candidate\.mcpRevision = null;/);
 });

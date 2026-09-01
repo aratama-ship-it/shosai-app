@@ -60,8 +60,9 @@ test("承認後も元のショーを棚に残し、読み込んだショーを�
   const confirmImport = source.slice(start, end);
 
   assert.match(source, /importAsNew\.addEventListener\("click", \(\) => confirmImport\(true\)\)/);
-  assert.match(confirmImport, /if \(asNew\) \{[\s\S]*?shelveCurrent\(\);[\s\S]*?next\.project\.id = rid\("show"\);[\s\S]*?applyLoadedState\(next,/);
-  assert.match(source, /function applyLoadedState\(next, message\) \{[\s\S]*?shelveCurrent\(\);[\s\S]*?renderShows\(\);/);
+  assert.match(confirmImport, /if \(asNew\) \{[\s\S]*?candidate\.project\.id = rid\("show"\);[\s\S]*?if \(!applyLoadedState\(candidate,[\s\S]*?\)\) return;[\s\S]*?closeImportPreview\(\);/);
+  assert.match(source, /function applyLoadedState\(next, message\) \{\s*if \(!prepareLoadedState\(next\)\) return false;[\s\S]*?persistSoon\(\);[\s\S]*?return true;/);
+  assert.match(confirmImport, /if \(!prepareLoadedState\(next\)\) return;\s*closeImportPreview\(\);[\s\S]*?state = next;/);
 });
 
 test("スマホ閲覧モードは比較モーダルとAI差分表示を挟まない", () => {

@@ -19,10 +19,11 @@
     || !("serviceWorker" in navigator)
     || window.location.protocol === "file:") return;
 
-  /* ベータ版の締め出し。起動のたびに一度だけサーバーへ確認する
-     （常時オンライン必須にはしない。製品版が出たあともホーム画面のPWAが
-     オフラインキャッシュだけで動き続けるのを防ぐのが目的なので、起動時の
-     確認さえ通ればそのあとはこれまで通りオフラインで使える。2026-08-30決定）。 */
+  /* ベータ版の締め出し。起動のたびに一度だけサーバーへ確認する。
+     終了を確認できたときだけ入口を閉じる。確認できないときは、すでに保存済みの
+     app shell を使ってそのまま開く。そうしないと「オフラインで使える」という
+     PWAの約束と矛盾する。端末が完全にオフラインなら遠隔で終了を伝えることは
+     できないため、次に通信できた起動時に終了案内を表示する。 */
   function showBetaGate({ heading, message, productUrl, retry }) {
     let box = document.getElementById("stage-beta-gate");
     if (!box) {
@@ -88,14 +89,10 @@
           });
         }
       })
-      .catch(() => {
-        showBetaGate({
-          heading: "オンライン接続が必要です",
-          message: "舞台スケッチのベータ版は、起動時にネット接続を確認できないと使えません。"
-            + "接続を確認してもう一度お試しください。",
-          productUrl: null,
-          retry: true,
-        });
+      .catch((error) => {
+        // ベータ提供終了を確認できなかっただけで、保存済みPWAを締め出さない。
+        // 失敗は診断用に残し、次回オンライン時の確認へ委ねる。
+        console.info("ベータ提供状態を確認できませんでした。オフライン版を続けます。", error);
       })
       .finally(() => { if (timer) clearTimeout(timer); });
   }

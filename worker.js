@@ -43,6 +43,7 @@ function isLocalHost(request) {
 }
 
 const ROOM_ID_ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
+const SESSION_OWNER_HEADER = "X-Shosai-Session-Owner";
 
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -60,30 +61,50 @@ function createRoomId() {
   return Array.from(randomBytes, (value) => ROOM_ID_ALPHABET[value % ROOM_ID_ALPHABET.length]).join("");
 }
 
-async function handleSessionRequest(request, env) {
+async function handleSessionRequest(request, env, user) {
   const url = new URL(request.url);
   if (!url.pathname.startsWith("/session/")) return null;
 
   if (request.method === "POST" && url.pathname === "/session/new") {
     const roomId = createRoomId();
     const room = env.SESSION_ROOM.get(env.SESSION_ROOM.idFromName(roomId));
-    const initialized = await room.fetch("https://do/new", { method: "POST" });
+    const initialized = await room.fetch("https://do/new", {
+      method: "POST",
+      headers: { [SESSION_OWNER_HEADER]: user || "" },
+    });
     if (!initialized.ok) return initialized;
 
     const result = await initialized.json();
     if (!result || result.ok !== true || typeof result.hostKey !== "string") {
       return jsonResponse({ ok: false, error: "room-initialization-failed" }, 502);
     }
-    return jsonResponse({ roomId, hostKey: result.hostKey });
+    return jsonResponse({ roomId, hostKey: result.hostKey, user: user || "" });
+  }
+
+  const resumeMatch = url.pathname.match(/^\/session\/([^/]+)\/resume$/);
+  if (request.method === "GET" && resumeMatch) {
+    const roomId = resumeMatch[1];
+    const room = env.SESSION_ROOM.get(env.SESSION_ROOM.idFromName(roomId));
+    // 再開可否も WebSocket と同じく、外部からの利用者名は信用しない。
+    const headers = new Headers(request.headers);
+    headers.set(SESSION_OWNER_HEADER, user || "");
+    const key = url.searchParams.get("key") || "";
+    return room.fetch(new Request(`https://do/resume?key=${encodeURIComponent(key)}`, {
+      method: "GET",
+      headers,
+    }));
   }
 
   const match = url.pathname.match(/^\/session\/([^/]+)\/ws$/);
   if (request.method === "GET" && match) {
     const roomId = match[1];
     const room = env.SESSION_ROOM.get(env.SESSION_ROOM.idFromName(roomId));
+    const headers = new Headers(request.headers);
+    // 外から同名ヘッダーを付けられても、認証済み利用者で必ず上書きする。
+    headers.set(SESSION_OWNER_HEADER, user || "");
     const forwarded = new Request(`https://do/ws${url.search}`, {
       method: "GET",
-      headers: request.headers,
+      headers,
     });
     return room.fetch(forwarded);
   }
@@ -162,7 +183,7 @@ async function serveAuthenticatedRequest(request, env, user) {
   if (whoamiResponse) return whoamiResponse;
   const betaStatusResponse = handleBetaStatusRequest(request, env);
   if (betaStatusResponse) return betaStatusResponse;
-  const sessionResponse = await handleSessionRequest(request, env);
+  const sessionResponse = await handleSessionRequest(request, env, user);
   if (sessionResponse) return sessionResponse;
   return env.ASSETS.fetch(request);
 }

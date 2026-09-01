@@ -205,6 +205,7 @@ function createFixture({ invited = false } = {}) {
     sockets,
     runTimers,
     currentDocument: () => currentDocument,
+    setCurrentDocument: (value) => { currentDocument = value; },
     async joinGuest() {
       elementById("stage-session-name-input").value = "Guest";
       await elementById("stage-session-name-form").dispatch("submit", { preventDefault: noop });
@@ -247,6 +248,30 @@ test("再接続後の最初のdocも初期同期として転換しない", async
   secondSocket.dispatch("open");
   secondSocket.message({ t: "welcome", participants: [], doc: JSON.stringify(projectDocument("scene-b")) });
   assert.equal(fixture.calls.replay, 0);
+});
+
+test("ホストは共有docの保存確認を受け取ってから送信済みにする", async () => {
+  const fixture = createFixture();
+  const socket = await fixture.startHost();
+  socket.dispatch("open");
+  const sent = socket.sent.map((text) => JSON.parse(text)).find((message) => message.t === "doc");
+  assert.ok(sent && Number.isInteger(sent.documentId), "docに確認用の連番を付ける");
+
+  socket.message({ t: "doc-saved", documentId: sent.documentId, bytes: sent.doc.length });
+  assert.equal(fixture.elementById("stage-session-status").textContent, "共有内容を保存して配信しました。");
+});
+
+test("上限を超える共有docはWebSocketへ送らず、ホストの作業を残したまま知らせる", async () => {
+  const fixture = createFixture();
+  const socket = await fixture.startHost();
+  fixture.setCurrentDocument({
+    kind: "shosai-stage-sketch", version: 3,
+    project: { id: "too-large", scenes: [], note: "x".repeat(1800 * 1024) },
+  });
+  socket.dispatch("open");
+
+  assert.equal(socket.sent.length, 0);
+  assert.match(fixture.elementById("stage-session-status").textContent, /共有する舞台データが大きすぎます/);
 });
 
 test("ゲストは駒の差分を送らず、新しい矢印だけを送る", async () => {

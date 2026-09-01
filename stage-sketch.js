@@ -920,17 +920,17 @@
     },
     normalizePlan: normalizeStageAIPlan,
     commitAppliedExport(options) {
+      if (options.shelveCurrent() === false) return null;
       const prepared = options.prepareImportDocument(options.exported);
       const next = options.normalizeState({
         ...options.currentState,
         project: prepared.project,
         mcpRevision: null,
       });
-      options.shelveCurrent();
       next.project.id = options.makeProjectId();
       next.layout = options.currentState.layout;
+      if (options.applyLoadedState(next, "新しいショーとして保存しました。") === false) return null;
       options.resetDraft({ clearInput: true });
-      options.applyLoadedState(next, "新しいショーとして保存しました。");
       return next;
     },
     stopAgent(bridge) {
@@ -970,8 +970,8 @@
   const normalizeAudioTracks = (raw) => {
     if (!Array.isArray(raw)) return [];
     const seen = new Set();
-    return raw.slice(0, STAGE_AUDIO_TRACK_LIMIT * 2).map(normalizeAudioTrack).filter((track) => {
-      if (!track || seen.has(track.id) || seen.size >= STAGE_AUDIO_TRACK_LIMIT) return false;
+    return raw.map(normalizeAudioTrack).filter((track) => {
+      if (!track || seen.has(track.id)) return false;
       seen.add(track.id);
       return true;
     });
@@ -3035,6 +3035,51 @@
    * 親は「自分より前にある、自分より浅い最初の行」。
    * kind:"section" は入れ物だけで、絵は持たない。 */
   const MAX_DEPTH = 4;
+  /* 保存時に黙って配列を切らないための操作上限。既存の上限超過データは
+     読み込み時にそのまま保持し、以後の追加だけをここで止める。 */
+  const PROJECT_LIMITS = Object.freeze({
+    sceneRows: 60,
+    piecesPerScene: 80,
+    notesPerScene: 60,
+    strokesPerScene: 240,
+    arrowsPerScene: 60,
+    screenTextsPerScene: 12,
+    cast: 60,
+    sets: 60,
+    rigs: 40,
+    piecesPerRig: 120,
+    photos: 12,
+  });
+
+  function hasCapacity(list, limitKey, count, label) {
+    const limit = PROJECT_LIMITS[limitKey];
+    const current = Array.isArray(list) ? list.length : 0;
+    if (current + count <= limit) return true;
+    if (isEn()) {
+      const names = {
+        "シーンとセクション": "Scenes and sections",
+        "このシーンの駒": "Pieces in this scene",
+        "キャスト": "Cast members",
+        "舞台セットと明かり": "Sets and lights",
+        "映す言葉": "Screen texts",
+        "付箋": "Notes",
+        "矢印": "Arrows",
+        "背景の描画": "Background drawings",
+        "セット登録": "Saved rigs",
+        "セット登録の駒": "Pieces in a saved rig",
+        "背景写真": "Background photos",
+      };
+      announce(`${names[label] || label} can contain up to ${limit} items. Remove one before adding another.`);
+      return false;
+    }
+    announce(`${label}は${limit}件までです。不要なものを外してから追加してください。`);
+    return false;
+  }
+
+  const canAddSceneRows = (count = 1) => hasCapacity(state.project.scenes, "sceneRows", count, "シーンとセクション");
+  const canAddScenePieces = (scene, count = 1) => hasCapacity(scene && scene.pieces, "piecesPerScene", count, "このシーンの駒");
+  const canAddCast = (count = 1) => hasCapacity(state.project.cast, "cast", count, "キャスト");
+  const canAddSets = (count = 1) => hasCapacity(state.project.sets, "sets", count, "舞台セットと明かり");
   const SECTION_COLORS = Object.freeze([
     "#d3ac59", "#a84b26", "#77865f", "#5f7386",
     "#7a5a6e", "#4f7a72", "#b98d5a", "#8a8177",
@@ -3640,7 +3685,6 @@
             };
           })
           .filter((p) => Number.isFinite(p.u) && Number.isFinite(p.v))
-          .slice(-1800)
           .map((p) => ({ u: clamp(p.u, 0, 1), v: clamp(p.v, 0, 1) }))
       : [];
     return {
@@ -3658,7 +3702,7 @@
     const plane = view === "plan" ? "floor"
       : raw && raw.plane === "air" ? "air" : "floor";
     const points = Array.isArray(raw && raw.points)
-      ? raw.points.slice(-400).map((point) => ({
+      ? raw.points.map((point) => ({
           a: clamp(finite(point && point.a, 0.5), 0, 1),
           b: clamp(finite(point && point.b, plane === "air" ? 1 : 0.5), 0,
             plane === "air" ? 12 : 1),
@@ -3695,18 +3739,18 @@
       studyBeatId: typeof raw.studyBeatId === "string" ? raw.studyBeatId : null,
       note: typeof raw.note === "string" ? raw.note : "",
       background: validColor(raw.background, fallbackBg),
-      pieces: Array.isArray(raw.pieces) ? raw.pieces.slice(-80).map(normalizePiece) : [],
-      notes: Array.isArray(raw.notes) ? raw.notes.slice(0, 60).map(normalizeNote).filter(Boolean) : [],
+      pieces: Array.isArray(raw.pieces) ? raw.pieces.map(normalizePiece) : [],
+      notes: Array.isArray(raw.notes) ? raw.notes.map(normalizeNote).filter(Boolean) : [],
       strokes: Array.isArray(raw.strokes)
-        ? raw.strokes.slice(-240).map(normalizeStroke).filter((stroke) => stroke.points.length)
+        ? raw.strokes.map(normalizeStroke).filter((stroke) => stroke.points.length)
         : [],
       arrows: Array.isArray(raw.arrows)
-        ? raw.arrows.slice(-60).map(normalizeArrow).filter((arrow) => arrow.points.length >= 2)
+        ? raw.arrows.map(normalizeArrow).filter((arrow) => arrow.points.length >= 2)
         : [],
       photo: normalizePhoto(raw.photo),
       // 背景スクリーンへ映す文字（技名・擬音・字幕）
       screenTexts: Array.isArray(raw.screenTexts)
-        ? raw.screenTexts.slice(0, 12).map(normalizeScreenText).filter(Boolean) : [],
+        ? raw.screenTexts.map(normalizeScreenText).filter(Boolean) : [],
       beat: normalizeSceneBeat(kind, raw.beat),
       rehearsal: kind === "scene" ? normalizeSceneRehearsal(raw.rehearsal) : null,
       cueSeconds: kind === "scene" ? normalizeCueSeconds(raw.cueSeconds) : null,
@@ -3752,7 +3796,7 @@
   function normalizeStash(raw) {
     const out = {};
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
-    Object.keys(raw).slice(0, 120).forEach((setId) => {
+    Object.keys(raw).forEach((setId) => {
       const piece = raw[setId];
       if (!piece || typeof piece !== "object") return;
       /* 一度きちんとした駒として通してから、控える分だけを抜き直す。
@@ -3780,7 +3824,7 @@
   function normalizePhotoStore(raw) {
     const out = {};
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
-    Object.keys(raw).slice(0, 12).forEach((id) => {
+    Object.keys(raw).forEach((id) => {
       const src = raw[id];
       if (typeof src === "string" && src.startsWith("data:image/") && src.length <= PHOTO_MAX_BYTES) {
         out[id] = src;
@@ -3859,7 +3903,7 @@
 
     const venue = VENUES.byId(typeof rawProject.venue === "string" ? rawProject.venue : fallback.project.venue);
     const size = VENUES.sizeById(venue, typeof rawProject.venueSize === "string" ? rawProject.venueSize : "");
-    let scenes = Array.isArray(rawProject.scenes) ? rawProject.scenes.slice(0, 60).map(normalizeScene) : [];
+    let scenes = Array.isArray(rawProject.scenes) ? rawProject.scenes.map(normalizeScene) : [];
     if (!scenes.length) scenes = [newScene(sceneTitle(1), false)];
     // 字下げは「前の行より2段以上深い」ことがないように詰める
     let prevDepth = -1;
@@ -3896,7 +3940,7 @@
          * 実際の劇場は「中劇場」で括れない（間口12.4m・高さ7.2mのような値になる）。 */
         venueDims: normalizeVenueDims(rawProject.venueDims, size),
         cast: Array.isArray(rawProject.cast)
-          ? rawProject.cast.slice(0, 60).map((c, i) => ({
+          ? rawProject.cast.map((c, i) => ({
               id: typeof c.id === "string" ? c.id : rid("cast"),
               name: typeof c.name === "string" && c.name.trim() ? c.name.slice(0, 24) : `演者 ${i + 1}`,
               color: validColor(c.color, "#a84b26"),
@@ -3907,7 +3951,7 @@
             }))
           : [],
         sets: Array.isArray(rawProject.sets)
-          ? rawProject.sets.slice(0, 60).map((t, i) => {
+          ? rawProject.sets.map((t, i) => {
               const kind = SET_KINDS[t && t.kind] ? t.kind : (t && t.kind === "ring" ? "sphere" : "block");
               return {
                 id: typeof t.id === "string" ? t.id : rid("set"),
@@ -3956,11 +4000,11 @@
             })
           : [],
         rigs: Array.isArray(rawProject.rigs)
-          ? rawProject.rigs.slice(0, 40).map((r, i) => ({
+          ? rawProject.rigs.map((r, i) => ({
               id: typeof r.id === "string" ? r.id : rid("rig"),
               name: typeof r.name === "string" && r.name.trim() ? r.name.slice(0, 24) : `セット登録 ${i + 1}`,
               pieces: Array.isArray(r.pieces)
-                ? r.pieces.slice(0, 120).map((piece, k) => normalizePiece(piece, k))
+                ? r.pieces.map((piece, k) => normalizePiece(piece, k))
                 : [],
             }))
           : [],
@@ -4104,13 +4148,17 @@
   // いまのショーを棚へ書き戻す。保存のたびに呼ぶので、一覧は常に最新になる。
   // ★戻り値は「棚へ確かに書けたか」。容量超過では false が返る（例外は飛ばない）。
   //   セッション参加前の退避判定がこれを見ている（stage-session.js）。捨てないこと。
-  function shelveCurrent() {
+  function shelveState(value) {
     const shows = readShows();
-    shows[state.project.id] = {
+    shows[value.project.id] = {
       savedAt: nowIso(),
-      state: JSON.parse(snapshot()),
+      state: JSON.parse(JSON.stringify(value)),
     };
     return writeShows(shows);
+  }
+
+  function shelveCurrent() {
+    return shelveState(state);
   }
 
   /* 読み込んだファイルは、同じ project.id を持っていても別の内容なら
@@ -4977,7 +5025,6 @@
 
   function openFixedSceneStudy(study) {
     if (!study || !Array.isArray(study.beats) || !study.beats.length) return;
-    shelveCurrent();
 
     const fresh = baseState(false);
     const researcherId = `study-${study.id}-researcher`;
@@ -6007,6 +6054,7 @@
       announce(`${venueName(venue())}には映す面がありません。奥も客席です。`);
       return;
     }
+    if (!hasCapacity(sc().screenTexts, "screenTextsPerScene", 1, "映す言葉")) return;
     checkpoint();
     const t = normalizeScreenText({ text: raw, u: 0.5, v: 0.4, size: 0.18,
       color: "#efe7d6", font: "brush", vertical: false, opacity: 1, angle: 0 });
@@ -12411,6 +12459,7 @@
       const name = entry && typeof entry.name === "string" ? entry.name.trim().slice(0, 24) : "";
       if (!name) return;
       if ((state.project.cast || []).some((c) => c.name === name)) return;   // 同名は二重登録しない
+      if (!canAddCast()) return;
       const member = {
         id: rid("cast"), name, color: nextPieceColor(state.project.cast.length),
         heightCm: DEFAULT_HEIGHT_CM, note: "", locked: false,
@@ -12430,6 +12479,7 @@
   function addCastMember(nameInput) {
     const input = nameInput || els.rosterName;
     const raw = (input && input.value || "").trim() || autoName(pieceTypeName("performer"));
+    if (!canAddCast() || !canAddScenePieces(sc())) return;
     checkpoint();
     const member = {
       id: rid("cast"), name: raw.slice(0, 24), color: nextPieceColor(state.project.cast.length),
@@ -12455,6 +12505,7 @@
   // 演者をこの場面の舞台へ置く。登録した直後にも、あとから出すときにも通す
   function placeCastPiece(member) {
     const scene = sc();
+    if (!canAddScenePieces(scene)) return null;
     const count = scene.pieces.filter((p) => p.type === "performer").length;
     // 正規化を通す。手で作ると、あとから足した持ち物（明かりの当て方など）が抜ける
     const piece = normalizePiece({
@@ -12653,9 +12704,11 @@
   /* 組ごとの点け消し。点けるときは、組んだときの置き場へ戻す
      （ばらばらの既定位置に散らばると、組の形が壊れるため）。 */
   function toggleLightGroup(groupId) {
-    checkpoint();
     const scene = sc();
     const pieces = groupScenePieces(groupId);
+    const items = groupItems(groupId);
+    if (!pieces.length && !canAddScenePieces(scene, items.length)) return;
+    checkpoint();
     if (pieces.length) {
       const ids = new Set(pieces.map((p) => p.id));
       // 動かしたあとの置き場所を控えてから消す（組んだ形のまま戻せるように）
@@ -12664,7 +12717,7 @@
       if (ids.has(selectedId)) selectedId = null;
       announce(`${groupTitle(groupId)}をOFFにしました。`);
     } else {
-      groupItems(groupId).forEach((item) => {
+      items.forEach((item) => {
         // 控え（前に消したときの場所）が第一。無ければ組んだときの置き場へ
         if (restoreStashed(scene, item.id, { setId: item.id, type: "light", color: item.color })) return;
         const at = item.preset || { u: 0.5, v: 0.5, beam: null };
@@ -12802,6 +12855,7 @@
     const raw = (nameInput && nameInput.value || "").trim()
       || (chosenModel && chosenModel.name)
       || autoName(kind === "prop" && shape !== "box" ? propShapeName(shape) : setKindName(kind));
+    if (!canAddSets() || !canAddScenePieces(sc())) return;
     checkpoint();
     const lk = kind === "light" && LIGHT_KINDS[lightKind] ? lightKind : "hang";
     const dims = kind === "prop" ? { ...PROP_SHAPES[shape].dims } : normalizeDims(kind, {});
@@ -12837,6 +12891,7 @@
   // 舞台セット・明かりをこの場面へ置く。登録した直後にも、あとから出すときにも通す
   function placeSetPiece(item) {
     const scene = sc();
+    if (!canAddScenePieces(scene)) return null;
     /* 置き場所を少しずつずらすための数。明かりも数に入れる。
      * 外していたので、明かりを二つ出すと同じ場所に重なって出ていた。 */
     const count = scene.pieces.filter((p) => p.type !== "performer").length;
@@ -13227,9 +13282,10 @@
   function buildLightPreset(key) {
     const preset = LIGHT_PRESETS[key];
     if (!preset) return;
-    checkpoint();
     const scene = sc();
     const specs = preset.build(venueSize());
+    if (!canAddSets(specs.length) || !canAddScenePieces(scene, specs.length)) return;
+    checkpoint();
     /* 組の札。同じ札を持つ明かりは一体で動き、一体で選ばれる。
        「ばらす」で札を消せば、以後は普通の明かりに戻る。 */
     const groupId = rid("lgroup");
@@ -13322,6 +13378,7 @@
   function restoreStashed(scene, key, shape) {
     const kept = scene && scene.stashed && scene.stashed[key];
     if (!kept) return null;
+    if (!canAddScenePieces(scene)) return null;
     const piece = normalizePiece({ ...kept, ...shape, id: nextId() }, 0);
     scene.pieces.push(piece);
     selectedId = piece.id;
@@ -13386,7 +13443,36 @@
 
   /* ---------- ショーの新規・切り替え ---------- */
 
+  function showSwitchFailure(which) {
+    const current = which === "current";
+    const message = isEn()
+      ? (current
+        ? "Could not preserve the show you have open, so the switch was stopped. Export it to a file or make room in the show shelf, then try again."
+        : "Could not add the next show to the show shelf, so the switch was stopped. The current show is still open. Export it to a file or make room in the show shelf, then try again.")
+      : (current
+        ? "いま開いているショーを一覧へ退避できなかったため、切り替えを止めました。ファイルへ書き出すか、ショー一覧を整理してから、もう一度お試しください。"
+        : "次のショーを一覧へ保存できなかったため、切り替えを止めました。いまのショーは開いたままです。ファイルへ書き出すか、ショー一覧を整理してから、もう一度お試しください。");
+    setSaveStatus(message, "warn");
+    announce(message);
+  }
+
+  /* 状態を書き換える前に、いまのショーと次のショーを両方とも棚へ確保する。
+     localStorage の書き込みは一件ごとにatomicなので、次のショーが入らなくても
+     いまのショーを開いたまま止めれば、唯一の現行コピーを失わない。 */
+  function prepareLoadedState(next) {
+    if (!shelveCurrent()) {
+      showSwitchFailure("current");
+      return false;
+    }
+    if (!shelveState(next)) {
+      showSwitchFailure("next");
+      return false;
+    }
+    return true;
+  }
+
   function applyLoadedState(next, message) {
+    if (!prepareLoadedState(next)) return false;
     // 場面IDが別ショーで偶然重なっても、前のショーの下書きを出さない。
     resetStageAskDraft({ clearInput: true, invalidate: true });
     clearAudioEngine();
@@ -13396,9 +13482,8 @@
     selectedId = null;
     history.length = 0;
     future.length = 0;
-    // 読み込み・新規作成・ショー切替はいずれも即時に棚へ置く。
+    // prepareLoadedState で即時に棚へ置いてある。
     // 180ms後の自動保存を待つ間に画面を閉じても、一覧から開き直せる。
-    shelveCurrent();
     renderVenueControls();
     renderScenes();
     renderCast();
@@ -13412,15 +13497,15 @@
     render();
     persistSoon();
     announce(message);
+    return true;
   }
 
   function newShow() {
     if (!window.confirm("新しいショーを作ります。いま開いているショーは一覧に残ります。")) return;
-    shelveCurrent();
     const fresh = baseState(false);
     fresh.project.title = untitledShow();
     fresh.layout = state.layout;                 // 道具の並びは持ち越す
-    applyLoadedState(normalizeState(fresh), "新しいショーを作りました。");
+    if (!applyLoadedState(normalizeState(fresh), "新しいショーを作りました。")) return;
     closeShows();
     renderShows();
   }
@@ -13430,10 +13515,9 @@
     const entry = shows[id];
     if (!entry) return;
     if (id === state.project.id) { closeShows(); return; }
-    shelveCurrent();
     const next = normalizeState(entry.state);
     next.layout = state.layout;
-    applyLoadedState(next, `${next.project.title}を開きました。`);
+    if (!applyLoadedState(next, `${next.project.title}を開きました。`)) return;
     closeShows();
   }
 
@@ -13584,7 +13668,6 @@
     const template = BEAT_TEMPLATES.find((item) => item.id === templateId);
     const rows = beatTemplateRows(templateId);
     if (!template || template.available === false || !rows.length) return;
-    shelveCurrent();
     const fresh = baseState(false);
     fresh.project.title = tx(template.name);
     fresh.project.scenes = rows.map((row) => {
@@ -13595,9 +13678,9 @@
     });
     fresh.project.activeSceneId = fresh.project.scenes[0].id;
     fresh.layout = state.layout;
-    applyLoadedState(normalizeState(fresh), isEn()
+    if (!applyLoadedState(normalizeState(fresh), isEn()
       ? `Created a new show from “${tx(template.name)}”. The previous show is still in All shows.`
-      : `「${template.name}」から新しいショーを作りました。前のショーは一覧に残っています。`);
+      : `「${template.name}」から新しいショーを作りました。前のショーは一覧に残っています。`)) return;
     closeBeatTemplates();
     renderShows();
   }
@@ -13985,6 +14068,7 @@
 
   function addMachinery(kind) {
     if (!["revolve", "deck", "curtain", "pool", "seri"].includes(kind)) return;
+    if (!canAddSets() || !canAddScenePieces(sc())) return;
     checkpoint();
     const curtainKind = kind === "curtain" && els.machineryCurtainKind
       ? els.machineryCurtainKind.value : "front";
@@ -14011,6 +14095,8 @@
   function applyMachineryPreset(preset) {
     const machinery = window.SHOSAI_STAGE_MACHINERY;
     if (!machinery || !preset) return;
+    const itemCount = Array.isArray(preset.items) ? preset.items.length : 0;
+    if (!itemCount || !canAddSets(itemCount) || !canAddScenePieces(sc(), itemCount)) return;
     checkpoint();
     const created = machinery.expandPreset(state.project, sc(), preset, {
       makeId: (prefix) => prefix === "piece" ? nextId() : rid(prefix),
@@ -14158,6 +14244,8 @@
       announce("舞台に装置がありません。");
       return;
     }
+    if (!hasCapacity(state.project.rigs, "rigs", 1, "セット登録")
+      || !hasCapacity(pieces, "piecesPerRig", 0, "セット登録の駒")) return;
     checkpoint();
     state.project.rigs.push({ id: rid("rig"), name: raw.slice(0, 24), pieces: pieces.map(copyPiece) });
     if (els.rigName) els.rigName.value = "";
@@ -14181,9 +14269,11 @@
   function applyRig(rigId, mode) {
     const rig = (state.project.rigs || []).find((r) => r.id === rigId);
     if (!rig) return;
-    checkpoint();
     const scene = sc();
-    if (mode === "replace") scene.pieces = scene.pieces.filter((piece) => !isRigPiece(piece));
+    const kept = mode === "replace" ? scene.pieces.filter((piece) => !isRigPiece(piece)) : scene.pieces;
+    if (!canAddScenePieces({ pieces: kept }, rig.pieces.length)) return;
+    checkpoint();
+    if (mode === "replace") scene.pieces = kept;
     rig.pieces.forEach((piece) => scene.pieces.push(copyPiece(piece)));
     selectedId = null;
     renderScenes();
@@ -16546,9 +16636,10 @@ ${propsPlotHtml}
   }
 
   function addScene(carryRig) {
-    checkpoint();
     const p = state.project;
     const carried = carryRig ? currentRigPieces().map(copyPiece) : [];
+    if (!canAddSceneRows() || !canAddScenePieces({ pieces: [] }, carried.length)) return;
+    checkpoint();
     const i = cursorIndex();
     // セクションを起点にしたときは、その中身として一段内側へ入れる
     const depth = i >= 0 ? p.scenes[i].depth + (p.scenes[i].kind === "section" ? 1 : 0) : 0;
@@ -16584,6 +16675,7 @@ ${propsPlotHtml}
   /* セクションを足す。いまの行のすぐ後ろへ、同じ深さで入れる。
    * 入れ物だけなので絵は持たず、押すと開閉する。 */
   function addSection() {
+    if (!canAddSceneRows()) return;
     checkpoint();
     const p = state.project;
     const i = cursorIndex();
@@ -16735,6 +16827,7 @@ ${propsPlotHtml}
       announce("このシーンには動線がありません。平面図で行き先を引いてください。");
       return;
     }
+    if (!canAddSceneRows() || !hasCapacity(scene.pieces, "piecesPerScene", 0, "このシーンの駒")) return;
     checkpoint();
     const copy = cloneScene(scene);
     copy.title = `${scene.title} の続き`;
@@ -16773,10 +16866,12 @@ ${propsPlotHtml}
     const p = state.project;
     const i = cursorIndex();
     if (i < 0) return;
-    checkpoint();
     const cur = p.scenes[i];
     const block = [cur].concat(sceneChildren(i));
     const copies = block.map((row) => cloneScene(row));
+    if (!canAddSceneRows(copies.length)
+      || copies.some((row) => !hasCapacity(row.pieces, "piecesPerScene", 0, "このシーンの駒"))) return;
+    checkpoint();
     copies[0].title = `${cur.title} の複製`;
     p.scenes.splice(i + block.length, 0, ...copies);
     const firstScene = copies.find((x) => x.kind === "scene");
@@ -17196,10 +17291,9 @@ ${propsPlotHtml}
       });
       // スマホは読み込んだデータを閲覧するだけなので、編集用の比較モーダルを挟まない。
       if (phoneViewerActive) {
-        if (phoneUi) phoneUi.singleView = "front";
-        shelveCurrent();
         if (next.mcpRevision === null) reserveImportedShowId(next);
-        applyLoadedState(next, `「${next.project.title}」を読み込み、ショー一覧へ保存しました。`);
+        if (!applyLoadedState(next, `「${next.project.title}」を読み込み、ショー一覧へ保存しました。`)) return;
+        if (phoneUi) phoneUi.singleView = "front";
         return;
       }
       pendingImport = next;
@@ -17324,20 +17418,21 @@ ${propsPlotHtml}
   function confirmImport(asNew) {
     const next = pendingImport;
     if (!next) return;
-    closeImportPreview();
     if (asNew) {
       // いまのショーは棚に残したまま、別のショーとして開く（idを新しくする）
-      shelveCurrent();
-      next.project.id = rid("show");
-      next.mcpRevision = null;
-      applyLoadedState(next, `「${next.project.title}」を別のショーとして開き、ショー一覧へ保存しました。`);
+      const candidate = JSON.parse(JSON.stringify(next));
+      candidate.project.id = rid("show");
+      candidate.mcpRevision = null;
+      if (!applyLoadedState(candidate, `「${candidate.project.title}」を別のショーとして開き、ショー一覧へ保存しました。`)) return;
+      closeImportPreview();
       return;
     }
     // 「置き換える」場合も、直前に開いていたショーを先に棚へ残す。
     // 取り込み元と同じIDでも、内容が違えば新しいIDを割り当てて共存させる。
-    shelveCurrent();
     // MCP編集結果だけは同じ正本IDを保ち、appliedRevisionと対応させる。
     if (next.mcpRevision === null) reserveImportedShowId(next);
+    if (!prepareLoadedState(next)) return;
+    closeImportPreview();
     checkpoint();
     resetStageAskDraft({ clearInput: true, invalidate: true });
     clearAudioEngine();
@@ -17350,7 +17445,6 @@ ${propsPlotHtml}
     renderVenueControls();
     updateInspector();
     render();
-    shelveCurrent();
     renderShows();
     persistSoon();
     announce(`${state.project.title}（${state.project.versionLabel}）を読み込み、ショー一覧へ保存しました。`);
@@ -17729,8 +17823,9 @@ ${propsPlotHtml}
         prepareImportDocument: prepareProjectImportDocument,
         normalizeState,
         shelveCurrent: () => {
-          shelveCurrent();
-          diagnoseStageAskAdopt("original-shelved", { projectId: state.project.id });
+          const didShelve = shelveCurrent();
+          diagnoseStageAskAdopt("original-shelved", { projectId: state.project.id, didShelve });
+          return didShelve;
         },
         makeProjectId: () => rid("show"),
         resetDraft: (options) => {
@@ -17739,6 +17834,10 @@ ${propsPlotHtml}
         },
         applyLoadedState,
       });
+      if (!next) {
+        diagnoseStageAskAdopt("adoption-stopped-before-switch", { projectId: state.project.id });
+        return;
+      }
       diagnoseStageAskAdopt("adoption-complete", {
         projectId: state.project.id,
         castCount: state.project.cast.length,
@@ -18550,6 +18649,7 @@ ${propsPlotHtml}
   }
 
   function addPiece(type) {
+    if (!canAddScenePieces(sc())) return;
     checkpoint();
     const count = sc().pieces.length;
     const piece = normalizePiece({
@@ -18603,6 +18703,7 @@ ${propsPlotHtml}
   function duplicateSelected() {
     const piece = selectedPiece();
     if (!piece) return;
+    if (!canAddScenePieces(sc())) return;
     checkpoint();
     const copy = { ...piece, id: nextId(), heldBy: null,
       look: piece.look ? normalizeLook(piece.look) : null,
@@ -18683,6 +18784,7 @@ ${propsPlotHtml}
           point.y - action.screenPoints[index].y) * zoom
       ), 0);
       if (event.type !== "pointercancel" && draft && draft.points.length >= 2 && length >= 12) {
+        if (!hasCapacity(sc().arrows, "arrowsPerScene", 1, "矢印")) return;
         checkpoint();
         sc().arrows.push(normalizeArrow({ ...draft, id: rid("arrow") }));
         render();
@@ -18904,6 +19006,7 @@ ${propsPlotHtml}
     if (tool === "note") {
       const existing = noteAt(point, L, view);
       if (existing) { grabNote(existing, point, L, el, event, false); return; }
+      if (!hasCapacity(sc().notes, "notesPerScene", 1, "付箋")) return;
       checkpoint();
       const note = normalizeNote({
         view,
@@ -19036,6 +19139,7 @@ ${propsPlotHtml}
       if (!hit && view === "plan") {
         const ghost = ghostAt(point, L);
         if (ghost) {
+          if (!canAddScenePieces(sc())) return;
           checkpoint();
           const piece = normalizePiece({
             id: nextId(), type: "performer", castId: ghost.member.id,
@@ -19107,6 +19211,7 @@ ${propsPlotHtml}
       return;
     }
     const rect = backdropRect(L);
+    if (!hasCapacity(sc().strokes, "strokesPerScene", 1, "背景の描画")) return;
     checkpoint();
     const stroke = {
       color: state.paintColor,
@@ -20912,10 +21017,13 @@ ${propsPlotHtml}
           announce("この画像は大きすぎます。もう少し小さいものを選んでください。");
           return;
         }
-        checkpoint();
-        const store = state.project.photos || (state.project.photos = {});
+        const store = state.project.photos || {};
         // 同じ画をもう一度選んだときは、置き場のものを使い回す
         const already = Object.keys(store).find((key) => store[key] === src);
+        const retained = Object.keys(store).filter((id) => id !== (sc().photo && sc().photo.id));
+        if (!already && !hasCapacity(retained, "photos", 1, "背景写真")) return;
+        checkpoint();
+        if (!state.project.photos) state.project.photos = store;
         const id = already || rid("photo");
         store[id] = src;
         sc().photo = { id, bright: sc().photo ? sc().photo.bright : 100 };
@@ -22521,6 +22629,7 @@ ${propsPlotHtml}
       if (!scene) return false;
       if (op.kind === "arrows.add") {
         if (!Array.isArray(op.arrows) || op.arrows.length === 0 || op.arrows.length > 20) return false;
+        if (!hasCapacity(scene.arrows, "arrowsPerScene", op.arrows.length, "矢印")) return false;
         checkpoint();
         op.arrows.forEach((raw) => scene.arrows.push(normalizeArrow({ ...raw, guest: true })));
         render(); persistSoon();

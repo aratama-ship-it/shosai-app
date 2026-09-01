@@ -418,6 +418,13 @@
     "共有内容を読み込めませんでした。": "The shared stage could not be loaded.",
     "共有内容を舞台へ反映できませんでした。": "The shared stage could not be applied.",
     "共有する舞台データを作れませんでした。": "The stage data to share could not be prepared.",
+    "共有内容を保存して配信しました。": "The shared stage was saved and sent.",
+    "共有内容を送信できませんでした。接続を確認して、もう一度お試しください。":
+      "The shared stage could not be sent. Check the connection and try again.",
+    "共有する舞台データが大きすぎます。写真や不要な場面を減らしてから共有してください。":
+      "The shared stage is too large. Remove photos or unneeded scenes before sharing.",
+    "共有サーバーへ保存できませんでした。作業はこの端末に残っています。ショーを書き出してから、もう一度お試しください。":
+      "The shared stage could not be saved on the server. Your work remains on this device. Export the show, then try again.",
     "表示名を入力して参加してください。": "Enter a display name to join.",
     "招待URLをコピーしました。": "Invite link copied.",
     "コピーできなかったため、招待URLを選択しました。": "Copying was blocked, so the invite link has been selected instead.",
@@ -425,6 +432,8 @@
     "現在の作業を退避できなかったため、参加を止めました。ショーを書き出すか、使っていないショーを整理してから、もう一度お試しください。":
       "Joining was stopped because your current work could not be set aside. Export the show, or clear out shows you no longer use, then try again.",
     "前回のセッションは終了しています。新しく開始してください。": "The last session has ended. Please start a new one.",
+    "この共有はアプリ更新前に作成されています。新しい共有セッションを開始してください。":
+      "This share was created before the app update. Please start a new shared session.",
     "ルーム情報がありません": "No room information",
     "会議用セッションのログインを確認できませんでした。": "Your sign-in for the meeting session could not be confirmed.",
     "不明なエラー": "Unknown error",
@@ -1299,6 +1308,12 @@
    * 具体的な文を先に、`〜を…にしました` のような広い網を後に置くこと。
    * 名前そのもの（姿勢・席・劇場など）は呼び出し側が訳語ヘルパーで既に選んでいる。 */
   const SAY = [
+    [/^共有する舞台データが大きすぎます（(\d+)KB）。写真や不要な場面を減らしてから共有してください。$/,
+      "The shared stage is too large ($1 KB). Remove photos or unneeded scenes before sharing."],
+    [/^(.+)は(\d+)件までです。不要なものを外してから追加してください。$/,
+      "$1 can contain up to $2 items. Remove one before adding another."],
+    [/^(.+) can contain up to (\d+) items\. Remove one before adding another\.$/,
+      "$1 can contain up to $2 items. Remove one before adding another."],
     /* ---- 共有セッションの合成文 ---- */
     [/^いま操作中: (.+)$/, "Now editing: $1"],
     [/^切断しました。3秒後に再接続します（(\d+)\/(\d+)）。$/,

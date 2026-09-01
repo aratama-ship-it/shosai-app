@@ -373,6 +373,44 @@ test("採用完了は元ショーを残して棚を1件増やし、castと駒を
   assert.match(stageSource, /export-detected-before-agent-exit/);
 });
 
+test("AI採用は元ショーを退避できなければ、下書きと現在ショーを保って中止する", () => {
+  const { model } = loadPanelModel(bridgeStub());
+  let applyCalls = 0;
+  let resetCalls = 0;
+  const result = model.commitAppliedExport({
+    currentState: { project: { id: "show-original" }, layout: {} },
+    exported: { project: { id: "show-original", scenes: [] } },
+    prepareImportDocument: (document) => document,
+    normalizeState: (value) => value,
+    shelveCurrent: () => false,
+    makeProjectId: () => "show-adopted",
+    resetDraft: () => { resetCalls += 1; },
+    applyLoadedState: () => { applyCalls += 1; return true; },
+  });
+
+  assert.equal(result, null);
+  assert.equal(applyCalls, 0);
+  assert.equal(resetCalls, 0);
+});
+
+test("AI採用は次ショーを棚へ保存できなければ、下書きを解除しない", () => {
+  const { model } = loadPanelModel(bridgeStub());
+  let resetCalls = 0;
+  const result = model.commitAppliedExport({
+    currentState: { project: { id: "show-original" }, layout: {} },
+    exported: { project: { id: "show-original", scenes: [] } },
+    prepareImportDocument: (document) => document,
+    normalizeState: (value) => value,
+    shelveCurrent: () => true,
+    makeProjectId: () => "show-adopted",
+    resetDraft: () => { resetCalls += 1; },
+    applyLoadedState: () => false,
+  });
+
+  assert.equal(result, null);
+  assert.equal(resetCalls, 0);
+});
+
 test("runAgentがok:falseなら返却文を保ってAI起動エラーを表示する", async () => {
   const { model } = loadPanelModel(bridgeStub());
   const display = errorDisplay(model);

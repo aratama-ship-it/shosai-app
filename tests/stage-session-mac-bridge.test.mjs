@@ -154,12 +154,15 @@ function createFixture({ macBridge = null, sessionResult, fetchImpl }) {
 test("ブリッジが無いブラウザは従来どおり相対fetchでセッションを始める", async () => {
   const fetchCalls = [];
   const fixture = createFixture({
-    sessionResult: { roomId: "browserroom", hostKey: "browser-key" },
+    sessionResult: { roomId: "browserroom", hostKey: "browser-key", user: "browser-user" },
     fetchImpl: async (...args) => {
       fetchCalls.push(args);
+      if (args[0] === "/whoami") {
+        return { ok: true, json: async () => ({ user: "browser-user" }) };
+      }
       return {
         ok: true,
-        json: async () => ({ roomId: "browserroom", hostKey: "browser-key" }),
+        json: async () => ({ roomId: "browserroom", hostKey: "browser-key", user: "browser-user" }),
       };
     },
   });
@@ -167,9 +170,9 @@ test("ブリッジが無いブラウザは従来どおり相対fetchでセッシ
 
   await fixture.elementById("stage-session-start").dispatch("click");
 
-  assert.equal(fetchCalls.length, 1);
-  assert.equal(fetchCalls[0][0], "session/new");
-  assert.equal(fetchCalls[0][1].method, "POST");
+  const newSessionCalls = fetchCalls.filter(([url]) => url === "session/new");
+  assert.equal(newSessionCalls.length, 1);
+  assert.equal(newSessionCalls[0][1].method, "POST");
   assert.equal(fixture.elementById("stage-session-url").value, "http://localhost/stage.html#session=browserroom");
   assert.equal(fixture.webSocketURLs.length, 1);
   assert.match(fixture.webSocketURLs[0], /^ws:\/\/localhost\/session\/browserroom\/ws\?/);
@@ -184,8 +187,10 @@ test("Macブリッジは本番の招待URLを作り、open→message→closeを�
       ok: true,
       roomId: "macroom",
       hostKey: "mac-key",
+      user: "mac-user",
       origin: "https://stagesketch.pygmix.com",
     }),
+    sessionUser: async () => ({ ok: true, user: "mac-user" }),
     sessionConnect: async (options) => { connects.push(options); return { ok: true }; },
     sessionSend: async (text) => { sentTexts.push(text); return { ok: true }; },
     sessionDisconnect: async () => ({ ok: true }),
@@ -231,7 +236,7 @@ test("Swift中継は固定オリジン・Keychain・Basic認証とP0オリジン
   assert.match(relaySource, /static let service = "shosai-app-session"/);
   assert.match(relaySource, /forHTTPHeaderField: "Authorization"/);
   assert.match(relaySource, /URLSessionWebSocketTask/);
-  for (const name of ["sessionStart", "sessionConnect", "sessionSend", "sessionDisconnect"]) {
+  for (const name of ["sessionStart", "sessionUser", "sessionResumeStatus", "sessionConnect", "sessionSend", "sessionDisconnect"]) {
     assert.match(bridgeSource, new RegExp(`stageSketch${name[0].toUpperCase()}${name.slice(1)}`));
   }
   assert.match(selfTestSource, /sessionHandlersRegistered/);

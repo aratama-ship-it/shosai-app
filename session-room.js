@@ -1,7 +1,13 @@
 const MAX_CONNECTIONS = 20;
-const MAX_MESSAGE_BYTES = 8 * 1024 * 1024;
+/* SQLite-backed Durable Object は key と value の合計が2MBまで。WebSocketの
+   上限とは別なので、保存できない文書を受け取って配ったり、保存失敗を黙殺したり
+   しないよう余裕を含めてここで止める。 */
+const MAX_DOCUMENT_BYTES = 1800 * 1024;
+const MAX_MESSAGE_BYTES = MAX_DOCUMENT_BYTES + 64 * 1024;
 const MAX_OP_BYTES = 64 * 1024;
 const EMPTY_ROOM_TTL_MS = 10 * 60 * 1000;
+const SESSION_OWNER_HEADER = "X-Shosai-Session-Owner";
+const MAX_SESSION_OWNER_LENGTH = 128;
 const COLORS = [
   "#d3ac59",
   "#7fb3d5",
@@ -30,6 +36,12 @@ function byteLength(text) {
 function sanitizeName(value) {
   const withoutControls = String(value ?? "").replace(/[\u0000-\u001f\u007f-\u009f]/g, "");
   return Array.from(withoutControls).slice(0, 50).join("");
+}
+
+function sessionOwnerFrom(request) {
+  const owner = request.headers.get(SESSION_OWNER_HEADER) || "";
+  if (owner.length > MAX_SESSION_OWNER_LENGTH || /[\u0000-\u001f\u007f-\u009f]/.test(owner)) return null;
+  return owner;
 }
 
 function readAttachment(ws) {
@@ -81,9 +93,16 @@ export class SessionRoom {
     const url = new URL(request.url);
 
     if (request.method === "POST" && url.pathname === "/new") {
+      const hostOwner = sessionOwnerFrom(request);
+      if (hostOwner === null) return jsonResponse({ ok: false, error: "bad-owner" }, 400);
       const hostKey = crypto.randomUUID();
       await this.ctx.storage.put("hostKey", hostKey);
+      await this.ctx.storage.put("hostOwner", hostOwner);
       return jsonResponse({ ok: true, hostKey });
+    }
+
+    if (request.method === "GET" && url.pathname === "/resume") {
+      return this.resumeStatus(request, url);
     }
 
     if (request.method === "GET" && url.pathname === "/ws") {
@@ -91,6 +110,25 @@ export class SessionRoom {
     }
 
     return jsonResponse({ ok: false, error: "not-found" }, 404);
+  }
+
+  async resumeStatus(request, url) {
+    const expectedHostKey = await this.ctx.storage.get("hostKey");
+    const hostOwner = sessionOwnerFrom(request);
+    // 鍵を知らない利用者には、部屋の履歴や更新状況を返さない。
+    if (!expectedHostKey || url.searchParams.get("key") !== expectedHostKey || hostOwner === null) {
+      return jsonResponse({ ok: false, reason: "not-resumable" }, 403);
+    }
+
+    const expectedHostOwner = await this.ctx.storage.get("hostOwner");
+    // hostOwner のない部屋は、この保護を導入する前の形式。安全側で再開を止める。
+    if (typeof expectedHostOwner !== "string") {
+      return jsonResponse({ ok: false, reason: "session-updated" }, 409);
+    }
+    if (hostOwner !== expectedHostOwner) {
+      return jsonResponse({ ok: false, reason: "not-resumable" }, 403);
+    }
+    return jsonResponse({ ok: true });
   }
 
   async upgradeWebSocket(request, url) {
@@ -105,7 +143,10 @@ export class SessionRoom {
 
     if (role === "host") {
       const expectedHostKey = await this.ctx.storage.get("hostKey");
-      if (!expectedHostKey || url.searchParams.get("key") !== expectedHostKey) {
+      const expectedHostOwner = await this.ctx.storage.get("hostOwner");
+      const hostOwner = sessionOwnerFrom(request);
+      if (!expectedHostKey || typeof expectedHostOwner !== "string" || hostOwner === null ||
+          url.searchParams.get("key") !== expectedHostKey || hostOwner !== expectedHostOwner) {
         return jsonResponse({ t: "bad-key" }, 403);
       }
     }
@@ -199,8 +240,23 @@ export class SessionRoom {
         this.deny(ws, "invalid-doc");
         return;
       }
+      const documentBytes = byteLength(data.doc);
+      if (documentBytes > MAX_DOCUMENT_BYTES) {
+        this.deny(ws, "doc-too-large");
+        return;
+      }
 
-      await this.ctx.storage.put("doc", data.doc);
+      try {
+        await this.ctx.storage.put("doc", data.doc);
+      } catch (_) {
+        this.deny(ws, "doc-storage-failed");
+        return;
+      }
+      safeSend(ws, {
+        t: "doc-saved",
+        documentId: Number.isInteger(data.documentId) ? data.documentId : null,
+        bytes: documentBytes,
+      });
       for (const socket of this.ctx.getWebSockets()) {
         const target = readAttachment(socket);
         if (isOpen(socket) && target && target.role !== "host") {

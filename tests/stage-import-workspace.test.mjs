@@ -15,7 +15,8 @@ test("読み込んだショーは即時に棚へ保存し、別内容のID衝突
   assert.match(source, /function reserveImportedShowId\(next\)/);
   assert.match(source, /const savedProject = existing\.state\.project \|\| \{\};/);
   assert.match(source, /if \(JSON\.stringify\(importedProject\) !== JSON\.stringify\(savedComparable\)\) \{\s*project\.id = rid\("show"\);/);
-  assert.match(source, /function applyLoadedState\(next, message\) \{[\s\S]*?shelveCurrent\(\);[\s\S]*?persistSoon\(\);/);
-  assert.match(source, /if \(phoneViewerActive\) \{[\s\S]*?shelveCurrent\(\);\s*if \(next\.mcpRevision === null\) reserveImportedShowId\(next\);[\s\S]*?ショー一覧へ保存しました/);
-  assert.match(source, /function confirmImport\(asNew\) \{[\s\S]*?shelveCurrent\(\);[\s\S]*?if \(next\.mcpRevision === null\) reserveImportedShowId\(next\);[\s\S]*?renderShows\(\);/);
+  assert.match(source, /function prepareLoadedState\(next\) \{[\s\S]*?if \(!shelveCurrent\(\)\)[\s\S]*?if \(!shelveState\(next\)\)[\s\S]*?return true;/);
+  assert.match(source, /function applyLoadedState\(next, message\) \{\s*if \(!prepareLoadedState\(next\)\) return false;[\s\S]*?persistSoon\(\);[\s\S]*?return true;/);
+  assert.match(source, /if \(phoneViewerActive\) \{\s*if \(next\.mcpRevision === null\) reserveImportedShowId\(next\);\s*if \(!applyLoadedState\(next,[\s\S]*?\)\) return;[\s\S]*?ショー一覧へ保存しました/);
+  assert.match(source, /function confirmImport\(asNew\) \{[\s\S]*?if \(next\.mcpRevision === null\) reserveImportedShowId\(next\);\s*if \(!prepareLoadedState\(next\)\) return;[\s\S]*?renderShows\(\);/);
 });

@@ -169,6 +169,89 @@ test("未認証の副資源は401（HTMLを返さない）", async () => {
   assert.equal(response.headers.get("WWW-Authenticate"), null);
 });
 
+test("新しい共有セッションの応答は認証済み利用者名を返す", async () => {
+  let initializationHeaders = null;
+  const sessionEnv = {
+    ...env,
+    SESSION_ROOM: {
+      idFromName: (roomId) => roomId,
+      get: () => ({
+        fetch: async (_url, init) => {
+          initializationHeaders = new Headers(init.headers);
+          return new Response(JSON.stringify({ ok: true, hostKey: "test-host-key" }), {
+          headers: { "Content-Type": "application/json" },
+          });
+        },
+      }),
+    },
+  };
+  const response = await worker.fetch(new Request("https://shosai.example/session/new", {
+    method: "POST",
+    headers: basicHeader(GUEST),
+  }), sessionEnv, {});
+
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.match(result.roomId, /^[a-z0-9]{8}$/);
+  assert.equal(result.hostKey, "test-host-key");
+  assert.equal(result.user, GUEST[0]);
+  assert.equal(initializationHeaders.get("X-Shosai-Session-Owner"), GUEST[0]);
+});
+
+test("WebSocket中継は利用者IDをWorkerで上書きしてDurable Objectへ渡す", async () => {
+  let forwardedRequest = null;
+  const sessionEnv = {
+    ...env,
+    SESSION_ROOM: {
+      idFromName: (roomId) => roomId,
+      get: () => ({
+        fetch: async (request) => {
+          forwardedRequest = request;
+          return new Response("ok");
+        },
+      }),
+    },
+  };
+  const response = await worker.fetch(new Request("https://shosai.example/session/testroom/ws?role=host&key=key", {
+    headers: {
+      ...basicHeader(GUEST),
+      "X-Shosai-Session-Owner": "forged-owner",
+    },
+  }), sessionEnv, {});
+
+  assert.equal(response.status, 200);
+  assert.equal(forwardedRequest.headers.get("X-Shosai-Session-Owner"), GUEST[0]);
+});
+
+test("再開可否の照会も利用者IDをWorkerで上書きしてDurable Objectへ渡す", async () => {
+  let forwardedRequest = null;
+  const sessionEnv = {
+    ...env,
+    SESSION_ROOM: {
+      idFromName: (roomId) => roomId,
+      get: () => ({
+        fetch: async (request) => {
+          forwardedRequest = request;
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { "Content-Type": "application/json" },
+          });
+        },
+      }),
+    },
+  };
+  const response = await worker.fetch(new Request("https://shosai.example/session/testroom/resume?key=host-key", {
+    headers: {
+      ...basicHeader(GUEST),
+      "X-Shosai-Session-Owner": "forged-owner",
+    },
+  }), sessionEnv, {});
+
+  assert.equal(response.status, 200);
+  assert.equal(new URL(forwardedRequest.url).pathname, "/resume");
+  assert.equal(new URL(forwardedRequest.url).searchParams.get("key"), "host-key");
+  assert.equal(forwardedRequest.headers.get("X-Shosai-Session-Owner"), GUEST[0]);
+});
+
 test("ログイン画面は認証なしで開ける", async () => {
   const response = await worker.fetch(get("/sign-in", NAV), env, {});
   assert.equal(response.status, 200);

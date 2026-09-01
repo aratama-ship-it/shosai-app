@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import vm from "node:vm";
 
 const root = new URL("../", import.meta.url);
 const manifest = JSON.parse(await readFile(new URL("stage-sketch.webmanifest", root), "utf8"));
@@ -106,10 +107,45 @@ test("PWA登録はHTTP上だけで行い、舞台スケッチの保存データ�
   assert.doesNotMatch(pwaSource + swSource, /localStorage|indexedDB/);
 });
 
-test("起動時にベータ版の提供状態を確認し、終了時のゲートを表示する", () => {
+test("起動時にベータ版の提供状態を確認し、終了時だけゲートを表示する", () => {
   assert.match(pwaSource, /function checkBetaStatus\(\)/);
   assert.match(pwaSource, /fetch\("\/beta-status"/);
   assert.match(pwaSource, /function showBetaGate\(/);
+  const failurePath = pwaSource.slice(
+    pwaSource.indexOf(".catch((error) => {"),
+    pwaSource.indexOf(".finally(", pwaSource.indexOf(".catch((error) => {")),
+  );
+  assert.match(failurePath, /オフライン版を続けます/);
+  assert.doesNotMatch(failurePath, /showBetaGate/,
+    "通信不能は終了確認ではないため、保存済みPWAを閉じない");
+  assert.doesNotMatch(pwaSource, /オンライン接続が必要です/);
+});
+
+test("ベータ状態の確認が通信不能でも、保存済みPWAを閉じない", async () => {
+  const messages = [];
+  const appended = [];
+  const context = {
+    URLSearchParams,
+    console: { info: (...args) => messages.push(args) },
+    document: {
+      documentElement: { classList: { toggle() {} } },
+      getElementById() { return null; },
+      body: { appendChild(node) { appended.push(node); } },
+      createElement() { throw new Error("通信不能時にゲートを描画してはいけない"); },
+    },
+    navigator: { maxTouchPoints: 0, standalone: false, serviceWorker: {} },
+    window: {
+      matchMedia() { return { matches: false }; },
+      navigator: { maxTouchPoints: 0, standalone: false, serviceWorker: {} },
+      location: { hostname: "stage.example", protocol: "https:", search: "" },
+      addEventListener() {},
+    },
+    fetch() { return Promise.reject(new Error("offline")); },
+  };
+  vm.runInNewContext(pwaSource, context);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(appended.length, 0);
+  assert.match(messages.flat().join(" "), /オフライン版を続けます/);
 });
 
 test("Service Workerは資料棚など同一サイトの別画面へ介入しない", () => {
@@ -144,7 +180,7 @@ test("オフライン用CSSとJSの版は現在のHTML参照と揃う", () => {
     assert.ok(ref, `${name} の版番号がindex.htmlにある`);
     assert.ok(swSource.includes(`./${ref[0]}`), `${ref[0]} がオフライン対象にある`);
   });
-  assert.ok(swSource.includes("./stage-pwa.js?v=7"));
+  assert.ok(swSource.includes("./stage-pwa.js?v=8"));
 });
 
 /* iPad左レールの設定歯車はSVG（他の帯アイコンは形の記号のまま。2026-08-30・E-2）。

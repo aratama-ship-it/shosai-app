@@ -354,6 +354,8 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
         let script = #"""
         const sessionMethods = [
           "sessionStart",
+          "sessionUser",
+          "sessionResumeStatus",
           "sessionConnect",
           "sessionSend",
           "sessionDisconnect",
@@ -361,6 +363,8 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
         ];
         const sessionHandlers = [
           "stageSketchSessionStart",
+          "stageSketchSessionUser",
+          "stageSketchSessionResumeStatus",
           "stageSketchSessionConnect",
           "stageSketchSessionSend",
           "stageSketchSessionDisconnect"
@@ -774,6 +778,10 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
             );
             const sessionResults = await Promise.all([
               () => window.stageSketchBridge.sessionStart(),
+              () => window.stageSketchBridge.sessionResumeStatus({
+                roomId: "selftest",
+                hostKey: "self-test-key"
+              }),
               () => window.stageSketchBridge.sessionConnect({
                 roomId: "selftest",
                 role: "guest",
@@ -801,7 +809,7 @@ final class SelfTestRunner: NSObject, WKNavigationDelegate {
                     let sessionResults = object?["sessionResults"] as? [[String: Any]] ?? []
                     let exportsRejected = exportsResult?["rejected"] as? Bool == true
                     let exportsError = exportsResult?["error"] as? String ?? ""
-                    let sessionsRejected = sessionResults.count == 4
+                    let sessionsRejected = sessionResults.count == 5
                         && sessionResults.allSatisfy {
                             $0["rejected"] as? Bool == true
                                 && ($0["error"] as? String ?? "")

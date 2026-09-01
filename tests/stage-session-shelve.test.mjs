@@ -26,7 +26,8 @@ test("shelveCurrent は棚への書き込み結果を呼び出し元へ返す", 
     "  function shelveCurrent() {",
     "  function reserveImportedShowId(next) {",
   );
-  assert.match(body, /return writeShows\(shows\);/);
+  assert.match(body, /return shelveState\(state\);/);
+  assert.match(stageSource, /function shelveState\(value\) \{[\s\S]*?return writeShows\(shows\);/);
 });
 
 test("セッション bridge の shelveNow は shelveCurrent の結果を返す", () => {
@@ -39,13 +40,13 @@ test("セッション bridge の shelveNow は shelveCurrent の結果を返す"
 });
 
 test("変更した2本のJS版とPWAキャッシュ版を正本・単独版・Service Workerで揃える", () => {
-  for (const reference of ["stage-sketch.js?v=313", "stage-session.js?v=10"]) {
+  for (const reference of ["stage-sketch.js?v=315", "stage-session.js?v=13"]) {
     assert.ok(indexSource.includes(reference), `${reference} が index.html にある`);
     assert.ok(stageHtml.includes(reference), `${reference} が stage.html にある`);
     assert.ok(serviceWorkerSource.includes(`./${reference}`), `${reference} が stage-sw.js にある`);
   }
   // 版は上げるたびにここも更新する（2026-08-26: 発注書Hのゲスト画面変更で v144 → v145）
-  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v184";/);
+  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v190";/);
 });
 
 test("ゲスト参加は false の退避結果を失敗として扱い、role 変更前に中止する", () => {
@@ -160,13 +161,18 @@ function createSessionContext() {
   };
   const values = new Map();
   let quotaThrows = 0;
+  let showWriteCount = 0;
   const storage = {
     quotaFull: false,
+    failShowsWriteAt: null,
     getItem(key) { return values.get(key) ?? null; },
     setItem(key, value) {
-      if (this.quotaFull && key === "shosai-stage-shows-v1") {
-        quotaThrows += 1;
-        throw new DOMException("storage full", "QuotaExceededError");
+      if (key === "shosai-stage-shows-v1") {
+        showWriteCount += 1;
+        if (this.quotaFull || this.failShowsWriteAt === showWriteCount) {
+          quotaThrows += 1;
+          throw new DOMException("storage full", "QuotaExceededError");
+        }
       }
       values.set(key, String(value));
     },
@@ -228,11 +234,17 @@ function createSessionContext() {
         sightLimits: [{ m: 20, label: "表情が見える限界", note: "" }],
         outdoorMarks: [],
         v2: { get list() { return []; }, byId: () => null },
-        library: { list: () => [], venueV2ById: () => null },
+        library: {
+          list: () => [],
+          isPreset: () => true,
+          venueV2ById: () => null,
+          importVenues: () => ({ venues: [], idMap: {}, imported: 0, skipped: 0 }),
+        },
       },
       location,
       screen: { width: 1024, height: 768 },
       matchMedia: () => ({ matches: false, addEventListener: noop, removeEventListener: noop }),
+      confirm: () => true,
       addEventListener: noop,
       removeEventListener: noop,
       localStorage: storage,
@@ -275,6 +287,7 @@ function createSessionContext() {
     storage,
     body,
     quotaThrows: () => quotaThrows,
+    showWriteCount: () => showWriteCount,
     webSocketCount: () => webSocketCount,
   };
 }
@@ -301,6 +314,105 @@ test("QuotaExceededError で退避できないときはゲスト参加を開始�
   assert.equal(fixture.quotaThrows(), 1);
   assert.equal(fixture.body.classList.contains("stage-session-guest"), false);
   assert.equal(fixture.webSocketCount(), 0);
+});
+
+test("現在ショーを棚へ退避できなければ、新しいショーへ切り替えない", () => {
+  const fixture = createSessionContext();
+  vm.runInNewContext(stageSource, fixture.context, { filename: "stage-sketch.js" });
+  const bridge = fixture.context.window.SHOSAI_STAGE_SESSION_BRIDGE;
+  const before = bridge.exportDocumentString();
+
+  fixture.storage.quotaFull = true;
+  fixture.elementById("stage-show-new").dispatch("click");
+
+  assert.equal(bridge.exportDocumentString(), before);
+  assert.match(
+    fixture.elementById("stage-save-status").textContent,
+    /いま開いているショーを一覧へ退避できなかったため、切り替えを止めました/,
+  );
+  assert.equal(fixture.quotaThrows(), 1);
+});
+
+test("上限を超える既存ショーを読み込んでも、61件目以降を黙って切り捨てない", () => {
+  const fixture = createSessionContext();
+  const pieces = Array.from({ length: 81 }, (_, index) => ({ id: `piece-${index + 1}`, type: "block" }));
+  const scenes = Array.from({ length: 61 }, (_, index) => ({
+    id: `scene-${index + 1}`,
+    title: `シーン ${index + 1}`,
+    pieces: index === 0 ? pieces : [],
+    screenTexts: index === 0 ? Array.from({ length: 13 }, (_, n) => ({ text: `文字 ${n + 1}` })) : [],
+  }));
+  fixture.storage.setItem("shosai-stage-sketch-v1", JSON.stringify({
+    project: {
+      id: "over-limit", title: "上限超過の既存ショー", activeSceneId: "scene-1", scenes,
+      cast: Array.from({ length: 61 }, (_, index) => ({ id: `cast-${index + 1}`, name: `演者 ${index + 1}` })),
+      sets: Array.from({ length: 61 }, (_, index) => ({ id: `set-${index + 1}`, kind: "block", name: `台 ${index + 1}` })),
+    },
+  }));
+  vm.runInNewContext(stageSource, fixture.context, { filename: "stage-sketch.js" });
+
+  const doc = JSON.parse(fixture.context.window.SHOSAI_STAGE_SESSION_BRIDGE.exportDocumentString());
+  assert.equal(doc.project.scenes.length, 61);
+  assert.equal(doc.project.scenes.at(-1).id, "scene-61");
+  assert.equal(doc.project.scenes[0].pieces.length, 81);
+  assert.equal(doc.project.scenes[0].pieces[0].id, "piece-1");
+  assert.equal(doc.project.scenes[0].screenTexts.length, 13);
+  assert.equal(doc.project.cast.length, 61);
+  assert.equal(doc.project.sets.length, 61);
+});
+
+test("通常の新規シーン操作は60行で止まり、既存データを変えない", () => {
+  const fixture = createSessionContext();
+  fixture.storage.setItem("shosai-stage-sketch-v1", JSON.stringify({
+    project: {
+      id: "at-limit", title: "上限", activeSceneId: "scene-1",
+      scenes: Array.from({ length: 60 }, (_, index) => ({ id: `scene-${index + 1}`, title: `シーン ${index + 1}` })),
+    },
+  }));
+  vm.runInNewContext(stageSource, fixture.context, { filename: "stage-sketch.js" });
+  const bridge = fixture.context.window.SHOSAI_STAGE_SESSION_BRIDGE;
+  const before = bridge.exportDocumentString();
+
+  fixture.elementById("stage-scene-add").dispatch("click");
+
+  assert.equal(bridge.exportDocumentString(), before);
+  assert.match(stageSource, /const canAddSceneRows = \(count = 1\) => hasCapacity\(state\.project\.scenes, "sceneRows", count, "シーンとセクション"\);/);
+});
+
+test("現在ショーは退避できても次ショーが棚へ入らなければ、現在ショーを開いたまま止める", () => {
+  const fixture = createSessionContext();
+  vm.runInNewContext(stageSource, fixture.context, { filename: "stage-sketch.js" });
+  const bridge = fixture.context.window.SHOSAI_STAGE_SESSION_BRIDGE;
+  const before = bridge.exportDocumentString();
+  const currentId = JSON.parse(before).project.id;
+
+  fixture.storage.failShowsWriteAt = fixture.showWriteCount() + 2;
+  fixture.elementById("stage-show-new").dispatch("click");
+
+  assert.equal(bridge.exportDocumentString(), before);
+  assert.match(
+    fixture.elementById("stage-save-status").textContent,
+    /次のショーを一覧へ保存できなかったため、切り替えを止めました/,
+  );
+  assert.ok(JSON.parse(fixture.storage.getItem("shosai-stage-shows-v1"))[currentId]);
+  assert.equal(fixture.quotaThrows(), 1);
+});
+
+test("ショー棚が壊れているときは原文を保ち、新しいショーへ切り替えない", () => {
+  const fixture = createSessionContext();
+  fixture.storage.setItem("shosai-stage-shows-v1", "{broken shelf");
+  vm.runInNewContext(stageSource, fixture.context, { filename: "stage-sketch.js" });
+  const bridge = fixture.context.window.SHOSAI_STAGE_SESSION_BRIDGE;
+  const before = bridge.exportDocumentString();
+
+  fixture.elementById("stage-show-new").dispatch("click");
+
+  assert.equal(bridge.exportDocumentString(), before);
+  assert.equal(fixture.storage.getItem("shosai-stage-shows-v1"), "{broken shelf");
+  assert.match(
+    fixture.elementById("stage-save-status").textContent,
+    /いま開いているショーを一覧へ退避できなかったため、切り替えを止めました/,
+  );
 });
 
 function workerEnv(secrets = {}) {

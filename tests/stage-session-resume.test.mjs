@@ -109,7 +109,10 @@ function createElement(tagName = "div") {
   return element;
 }
 
-function createFixture({ invited = false, savedHost = null, macBridge = null, rootClass = null } = {}) {
+function createFixture({
+  invited = false, savedHost = null, macBridge = null, rootClass = null, currentUser = "test-user",
+  resumeStatus = { ok: true },
+} = {}) {
   const elements = new Map();
   const elementById = (id) => {
     if (!elements.has(id)) {
@@ -235,9 +238,15 @@ function createFixture({ invited = false, savedHost = null, macBridge = null, ro
     getComputedStyle: () => ({ position: "static" }),
     fetch: async (...args) => {
       fetchCalls.push(args);
+      if (args[0] === "/whoami") {
+        return { ok: true, json: async () => ({ user: currentUser }) };
+      }
+      if (typeof args[0] === "string" && new URL(args[0], location.origin).pathname.endsWith("/resume")) {
+        return { ok: resumeStatus.ok === true, json: async () => resumeStatus };
+      }
       return {
         ok: true,
-        json: async () => ({ roomId: "newroom", hostKey: "new-test-key" }),
+        json: async () => ({ roomId: "newroom", hostKey: "new-test-key", user: currentUser }),
       };
     },
   };
@@ -279,6 +288,9 @@ function createFixture({ invited = false, savedHost = null, macBridge = null, ro
       timers.delete(id);
       return timer.callback();
     },
+    async settle() {
+      await new Promise((resolve) => setImmediate(resolve));
+    },
     async startHost() {
       elementById("stage-session-host-name").value = "Host";
       await elementById("stage-session-start").dispatch("click");
@@ -302,31 +314,35 @@ function recentSavedHost(overrides = {}) {
     roomId: "savedroom",
     hostKey: "saved-test-key",
     origin: "https://saved.example",
+    owner: "test-user",
     savedAt: Date.now() - 60_000,
     ...overrides,
   };
 }
 
-test("新しいホストセッションは復帰に必要な4項目を保存する", async () => {
+test("新しいホストセッションは復帰に必要な利用者付き5項目を保存する", async () => {
   const fixture = createFixture({ savedHost: recentSavedHost({ roomId: "previousroom" }) });
   const before = Date.now();
   await fixture.startHost();
   const saved = JSON.parse(fixture.storage.get(HOST_SESSION_KEY));
 
-  assert.deepEqual(Object.keys(saved).sort(), ["hostKey", "origin", "roomId", "savedAt"]);
+  assert.deepEqual(Object.keys(saved).sort(), ["hostKey", "origin", "owner", "roomId", "savedAt"]);
   assert.equal(saved.roomId, "newroom");
   assert.equal(saved.hostKey, "new-test-key");
   assert.equal(saved.origin, "http://localhost");
+  assert.equal(saved.owner, "test-user");
   assert.ok(saved.savedAt >= before && saved.savedAt <= Date.now());
 });
 
-test("24時間以内の保存だけ再開ボタンを出し、古い保存は消す", () => {
+test("24時間以内かつ同じ利用者の保存だけ再開ボタンを出し、古い保存は消す", async () => {
   const recent = createFixture({ savedHost: recentSavedHost() });
+  await recent.settle();
   assert.equal(recent.elementById("stage-session-resume").hidden, false);
 
   const old = createFixture({
     savedHost: recentSavedHost({ savedAt: Date.now() - (24 * 60 * 60 * 1000) - 1 }),
   });
+  await old.settle();
   assert.equal(old.elementById("stage-session-resume").hidden, true);
   assert.equal(old.storage.has(HOST_SESSION_KEY), false);
 });
@@ -336,7 +352,7 @@ test("再開は新規作成APIを呼ばず保存済みの部屋と鍵で接続�
   const socket = await fixture.resumeHost();
   const socketUrl = new URL(socket.url);
 
-  assert.equal(fixture.fetchCalls.length, 0);
+  assert.equal(fixture.fetchCalls.filter(([url]) => url === "session/new").length, 0);
   assert.equal(socketUrl.pathname, "/session/savedroom/ws");
   assert.equal(socketUrl.searchParams.get("role"), "host");
   assert.equal(socketUrl.searchParams.get("key"), "saved-test-key");
@@ -349,7 +365,10 @@ test("再開は新規作成APIを呼ばず保存済みの部屋と鍵で接続�
 
 test("Macブリッジでの再開は保存時のoriginから招待URLを復元する", async () => {
   const connects = [];
+  const resumeStatuses = [];
   const macBridge = {
+    sessionUser: async () => ({ ok: true, user: "test-user" }),
+    sessionResumeStatus: async (options) => { resumeStatuses.push(options); return { ok: true }; },
     sessionConnect: async (options) => { connects.push(options); return { ok: true }; },
     sessionSend: async () => ({ ok: true }),
     sessionDisconnect: async () => ({ ok: true }),
@@ -358,15 +377,54 @@ test("Macブリッジでの再開は保存時のoriginから招待URLを復元�
   const fixture = createFixture({ savedHost: recentSavedHost(), macBridge });
   await fixture.resumeHost();
 
-  assert.equal(fixture.fetchCalls.length, 0);
+  assert.equal(fixture.fetchCalls.filter(([url]) => url === "session/new").length, 0);
   assert.equal(
     fixture.elementById("stage-session-url").value,
     "https://saved.example/stage.html#session=savedroom",
   );
   assert.equal(connects.length, 1);
+  assert.deepEqual(JSON.parse(JSON.stringify(resumeStatuses)), [{
+    roomId: "savedroom",
+    hostKey: "saved-test-key",
+  }]);
   assert.equal(connects[0].roomId, "savedroom");
   assert.equal(connects[0].role, "host");
   assert.equal(connects[0].hostKey, "saved-test-key");
+});
+
+test("更新前の共有は接続前に保存を消し、新しい共有の開始を案内する", async () => {
+  const fixture = createFixture({
+    savedHost: recentSavedHost(),
+    resumeStatus: { ok: false, reason: "session-updated" },
+  });
+  await fixture.resumeHost();
+
+  assert.equal(fixture.storage.has(HOST_SESSION_KEY), false);
+  assert.equal(fixture.sockets.length, 0);
+  assert.equal(fixture.elementById("stage-session-resume").hidden, true);
+  assert.equal(fixture.elementById("stage-session-start").disabled, false);
+  assert.equal(fixture.elementById("stage-session-panel").open, true);
+  assert.equal(
+    fixture.elementById("stage-session-status").textContent,
+    "この共有はアプリ更新前に作成されています。新しい共有セッションを開始してください。",
+  );
+  const statusCall = fixture.fetchCalls.find(([url]) => typeof url === "string" && url.includes("/resume"));
+  assert.ok(statusCall);
+  assert.match(statusCall[0], /\/session\/savedroom\/resume\?key=saved-test-key$/);
+});
+
+test("別の利用者で開いたときは前のホスト鍵を消し、再開を見せない", async () => {
+  const fixture = createFixture({
+    currentUser: "another-user",
+    savedHost: recentSavedHost({ owner: "test-user" }),
+  });
+  await fixture.settle();
+
+  assert.equal(fixture.storage.has(HOST_SESSION_KEY), false);
+  assert.equal(fixture.elementById("stage-session-resume").hidden, true);
+  const socket = await fixture.resumeHost();
+  assert.equal(socket, undefined);
+  assert.equal(fixture.sockets.length, 0);
 });
 
 test("再開がbad-keyまたはfullで拒否されたら保存を消して新規開始へ戻す", async () => {

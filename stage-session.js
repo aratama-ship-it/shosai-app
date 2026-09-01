@@ -33,11 +33,16 @@
   const NAME_KEY = "shosai-session-name";
   const HOST_SESSION_KEY = "shosai-session-host-room";
   const HOST_SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+  const HOST_SESSION_OWNER_MAX_LENGTH = 128;
   const RECONNECT_LIMIT = 5;
   const RECONNECT_DELAY_MS = 3000;
   const PING_INTERVAL_MS = 25 * 1000;
   const PONG_TIMEOUT_MS = 10 * 1000;
   const HOST_SEND_DEBOUNCE_MS = 300;
+  // Durable Object SQLite storage is limited to 2MB per key/value. Keep a margin
+  // for the storage key and future protocol metadata; this is deliberately shared
+  // with session-room.js rather than the WebSocket's much larger message limit.
+  const MAX_SESSION_DOCUMENT_BYTES = 1800 * 1024;
   const POINTER_THROTTLE_MS = 100;
   const POINTER_TTL_MS = 3000;
 
@@ -55,6 +60,8 @@
   let storedHostSession = null;
   let resumingStoredHost = false;
   let lastSentDocument = null;
+  let nextDocumentId = 1;
+  const pendingHostDocuments = new Map();
   let lastReceivedDocument = null;
   let applyingRemoteDocument = false;
   let applyReleaseTimer = null;
@@ -136,6 +143,12 @@
     }
   }
 
+  function normalizeSessionOwner(value) {
+    if (typeof value !== "string") return null;
+    const owner = value.trim();
+    return owner.length <= HOST_SESSION_OWNER_MAX_LENGTH ? owner : null;
+  }
+
   function clearStoredHostSession() {
     storedHostSession = null;
     try { localStorage.removeItem(HOST_SESSION_KEY); } catch (_) { /* 消去失敗でも現在の接続処理は続ける */ }
@@ -151,10 +164,11 @@
     const savedAt = Number(parsed && parsed.savedAt);
     const age = Date.now() - savedAt;
     const origin = normalizeSessionOrigin(parsed && parsed.origin);
+    const owner = normalizeSessionOwner(parsed && parsed.owner);
     if (!parsed || typeof parsed.roomId !== "string" ||
         !/^[a-z0-9]{1,64}$/i.test(parsed.roomId) ||
         typeof parsed.hostKey !== "string" || !parsed.hostKey || parsed.hostKey.length > 1024 ||
-        !origin || !Number.isFinite(savedAt) || age < 0 || age > HOST_SESSION_MAX_AGE_MS) {
+        !origin || owner === null || !Number.isFinite(savedAt) || age < 0 || age > HOST_SESSION_MAX_AGE_MS) {
       clearStoredHostSession();
       return null;
     }
@@ -162,6 +176,7 @@
       roomId: parsed.roomId.toLowerCase(),
       hostKey: parsed.hostKey,
       origin,
+      owner,
       savedAt,
     };
   }
@@ -171,6 +186,7 @@
       roomId: session.roomId,
       hostKey: session.hostKey,
       origin: session.origin,
+      owner: session.owner,
       savedAt: Date.now(),
     };
     try {
@@ -186,6 +202,52 @@
 
   function updateResumeButton() {
     if (els.resume) els.resume.hidden = Boolean(role) || !storedHostSession;
+  }
+
+  async function currentSessionOwner() {
+    const native = nativeSessionBridge();
+    if (native && typeof native.sessionUser === "function") {
+      try {
+        const result = await native.sessionUser();
+        return result && result.ok === true ? normalizeSessionOwner(result.user) : null;
+      } catch (_) {
+        return null;
+      }
+    }
+    if (typeof fetch !== "function") return null;
+    try {
+      const response = await fetch("/whoami", {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { "Accept": "application/json" },
+      });
+      if (!response.ok) return null;
+      const result = await response.json();
+      return normalizeSessionOwner(result && result.user);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function refreshStoredHostSession() {
+    const saved = readStoredHostSession();
+    if (!saved) {
+      storedHostSession = null;
+      updateResumeButton();
+      return null;
+    }
+    const owner = await currentSessionOwner();
+    // 初回確認中に新規開始・再開・ゲスト参加へ進んだ場合は、古い保存の結果で
+    // 現在の接続状態を上書きしない。
+    if (role) return storedHostSession;
+    if (owner === null || saved.owner !== owner) {
+      clearStoredHostSession();
+      return null;
+    }
+    storedHostSession = saved;
+    updateResumeButton();
+    return saved;
   }
 
   function inviteUrlFor(inviteRoomId, sessionOrigin, usesNativeBridge) {
@@ -276,6 +338,23 @@
 
   function socketIsOpen() {
     return Boolean(socket && socket.readyState === WebSocket.OPEN);
+  }
+
+  function utf8ByteLength(value) {
+    const text = String(value);
+    let bytes = 0;
+    for (let index = 0; index < text.length; index += 1) {
+      const code = text.charCodeAt(index);
+      if (code <= 0x7f) bytes += 1;
+      else if (code <= 0x7ff) bytes += 2;
+      else if (code >= 0xd800 && code <= 0xdbff
+          && index + 1 < text.length && text.charCodeAt(index + 1) >= 0xdc00
+          && text.charCodeAt(index + 1) <= 0xdfff) {
+        bytes += 4;
+        index += 1;
+      } else bytes += 3; // unpaired surrogate is serialized as U+FFFD
+    }
+    return bytes;
   }
 
   function sendMessage(message) {
@@ -605,8 +684,20 @@
       setStatus("共有する舞台データを作れませんでした。", true);
       return;
     }
-    if (!force && documentText === lastSentDocument) return;
-    if (sendMessage({ t: "doc", doc: documentText })) lastSentDocument = documentText;
+    const documentBytes = utf8ByteLength(documentText);
+    if (documentBytes > MAX_SESSION_DOCUMENT_BYTES) {
+      setStatus(`共有する舞台データが大きすぎます（${Math.ceil(documentBytes / 1024)}KB）。写真や不要な場面を減らしてから共有してください。`, true);
+      return;
+    }
+    if (!force && (documentText === lastSentDocument
+        || [...pendingHostDocuments.values()].includes(documentText))) return;
+    const documentId = nextDocumentId;
+    nextDocumentId += 1;
+    if (sendMessage({ t: "doc", documentId, doc: documentText })) {
+      pendingHostDocuments.set(documentId, documentText);
+    } else {
+      setStatus("共有内容を送信できませんでした。接続を確認して、もう一度お試しください。", true);
+    }
   }
 
   function scheduleHostDocument() {
@@ -727,7 +818,7 @@
     }
   }
 
-  function rejectStoredHostResume() {
+  function rejectStoredHostResume(message = "前回のセッションは終了しています。新しく開始してください。") {
     reconnectAllowed = false;
     resumingStoredHost = false;
     stopKeepalive();
@@ -748,7 +839,31 @@
     if (els.reconnect) els.reconnect.hidden = true;
     updateRoleUi();
     els.panel.open = true;
-    setStatus(sessionText("前回のセッションは終了しています。新しく開始してください。"), true);
+    setStatus(message, true);
+  }
+
+  async function storedHostResumeStatus(saved) {
+    const native = nativeSessionBridge();
+    if (native && typeof native.sessionResumeStatus === "function") {
+      try { return await native.sessionResumeStatus({ roomId: saved.roomId, hostKey: saved.hostKey }); }
+      catch (_) { return null; }
+    }
+    if (native || typeof fetch !== "function") return null;
+    try {
+      const url = new URL(`/session/${encodeURIComponent(saved.roomId)}/resume`, location.origin);
+      url.searchParams.set("key", saved.hostKey);
+      const response = await fetch(url.href, {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { "Accept": "application/json" },
+      });
+      const result = await response.json().catch(() => null);
+      return result && typeof result === "object" ? result : null;
+    } catch (_) {
+      // 一時的なオフラインでは、従来どおり再接続処理へ委ねる。
+      return null;
+    }
   }
 
   function handleSocketMessage(event) {
@@ -794,8 +909,17 @@
       reconnectAllowed = false;
       setStatus("ホスト用の接続情報が一致しません。", true);
       if (els.reconnect) els.reconnect.hidden = false;
+    } else if (message.t === "doc-saved" && role === "host") {
+      const documentId = message.documentId;
+      if (!Number.isInteger(documentId) || !pendingHostDocuments.has(documentId)) return;
+      lastSentDocument = pendingHostDocuments.get(documentId);
+      pendingHostDocuments.delete(documentId);
+      setStatus("共有内容を保存して配信しました。");
     } else if (message.t === "denied") {
-      const reason = message.reason === "no-host" ? "ホストが接続していません。" : "この操作は共有できません。";
+      const reason = message.reason === "no-host" ? "ホストが接続していません。"
+        : message.reason === "doc-too-large" ? "共有する舞台データが大きすぎます。写真や不要な場面を減らしてから共有してください。"
+          : message.reason === "doc-storage-failed" ? "共有サーバーへ保存できませんでした。作業はこの端末に残っています。ショーを書き出してから、もう一度お試しください。"
+            : "この操作は共有できません。";
       setStatus(reason, true);
     }
   }
@@ -977,7 +1101,10 @@
       displayName = name;
       reconnectAttempts = 0;
       reconnectAllowed = true;
-      rememberHostSession({ roomId, hostKey, origin: sessionOrigin });
+      const owner = normalizeSessionOwner(result.user);
+      const savedOwner = owner === null ? await currentSessionOwner() : owner;
+      if (savedOwner === null) clearStoredHostSession();
+      else rememberHostSession({ roomId, hostKey, origin: sessionOrigin, owner: savedOwner });
       if (els.url) els.url.value = inviteUrlFor(roomId, sessionOrigin, usesNativeBridge);
       updateRoleUi();
       connectSocket();
@@ -990,12 +1117,17 @@
     }
   }
 
-  function resumeHostSession() {
+  async function resumeHostSession() {
     if (role) return;
-    const saved = readStoredHostSession();
-    storedHostSession = saved;
-    updateResumeButton();
+    if (els.resume) els.resume.disabled = true;
+    const saved = await refreshStoredHostSession();
+    if (els.resume) els.resume.disabled = false;
     if (!saved) return;
+    const resumeStatus = await storedHostResumeStatus(saved);
+    if (resumeStatus && resumeStatus.ok === false && resumeStatus.reason === "session-updated") {
+      rejectStoredHostResume("この共有はアプリ更新前に作成されています。新しい共有セッションを開始してください。");
+      return;
+    }
     const name = normalizeName(els.hostName && els.hostName.value, "ホスト");
     if (els.hostName) els.hostName.value = name;
     rememberName(name);
@@ -1085,8 +1217,7 @@
 
   if (els.hostName) els.hostName.value = readStoredName("ホスト");
   applySessionLabels();
-  storedHostSession = readStoredHostSession();
-  updateResumeButton();
+  void refreshStoredHostSession();
   renderParticipants([]);
   setStatus("未接続です。");
   try { els.panel.dataset.sessionLanguage = bridge.isEnglish() ? "en" : "ja"; } catch (_) { /* v2用 */ }

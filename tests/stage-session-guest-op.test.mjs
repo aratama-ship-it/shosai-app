@@ -149,3 +149,36 @@ test("docを配れるのは今もホストだけ", () => {
   assert.match(docBranch, /attachment\.role !== "host"/);
   assert.match(docBranch, /deny\(ws, "host-only"\)/);
 });
+
+test("共有docはDurable Objectの保存上限より前で拒否し、保存確認後だけ配る", () => {
+  const docBranch = roomCode.slice(
+    roomCode.indexOf('if (data.t === "doc")'),
+    roomCode.indexOf('if (data.t === "op")'),
+  );
+  assert.match(roomCode, /const MAX_DOCUMENT_BYTES = 1800 \* 1024;/);
+  assert.match(docBranch, /documentBytes > MAX_DOCUMENT_BYTES/);
+  assert.match(docBranch, /deny\(ws, "doc-too-large"\)/);
+  assert.match(docBranch, /try \{\s*await this\.ctx\.storage\.put\("doc", data\.doc\);\s*\} catch/);
+  assert.match(docBranch, /deny\(ws, "doc-storage-failed"\)/);
+  assert.match(docBranch, /t: "doc-saved"/);
+  assert.ok(docBranch.indexOf('t: "doc-saved"') < docBranch.indexOf("for (const socket"),
+    "保存確認を返してからゲストへ配ること");
+});
+
+test("ホストは保存確認が来るまで送信済みとして扱わず、大きすぎるdocを送らない", () => {
+  const sender = sessionCode.slice(
+    sessionCode.indexOf("function sendHostDocument"),
+    sessionCode.indexOf("function scheduleHostDocument"),
+  );
+  const handler = sessionCode.slice(
+    sessionCode.indexOf("function handleSocketMessage"),
+    sessionCode.indexOf("function scheduleReconnect"),
+  );
+  assert.match(sessionCode, /const MAX_SESSION_DOCUMENT_BYTES = 1800 \* 1024;/);
+  assert.match(sender, /const documentBytes = utf8ByteLength\(documentText\)/);
+  assert.match(sender, /documentBytes > MAX_SESSION_DOCUMENT_BYTES/);
+  assert.match(sender, /pendingHostDocuments\.set\(documentId, documentText\)/);
+  assert.doesNotMatch(sender, /lastSentDocument = documentText/);
+  assert.match(handler, /message\.t === "doc-saved" && role === "host"/);
+  assert.match(handler, /lastSentDocument = pendingHostDocuments\.get\(documentId\)/);
+});

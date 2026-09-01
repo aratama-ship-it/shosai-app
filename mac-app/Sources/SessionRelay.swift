@@ -125,6 +125,72 @@ final class SessionRelay: NSObject, URLSessionWebSocketDelegate {
         }
     }
 
+    func currentUser(completion: @escaping ([String: Any]) -> Void) {
+        dispatchPrecondition(condition: .onQueue(.main))
+        do {
+            guard let credentials = try credentialStore.load() else {
+                completion(Self.failure("unauthorized"))
+                return
+            }
+            completion(["ok": true, "user": credentials.user])
+        } catch {
+            completion(Self.failure("network"))
+        }
+    }
+
+    func resumeStatus(
+        roomID: String,
+        hostKey: String,
+        completion: @escaping ([String: Any]) -> Void
+    ) {
+        dispatchPrecondition(condition: .onQueue(.main))
+        guard Self.validRoomID(roomID), !hostKey.isEmpty, hostKey.count <= 1024 else {
+            completion(Self.failure("http-400"))
+            return
+        }
+        let credentials: SessionCredentials
+        do {
+            guard let saved = try credentialStore.load() else {
+                completion(Self.failure("unauthorized"))
+                return
+            }
+            credentials = saved
+        } catch {
+            completion(Self.failure("network"))
+            return
+        }
+        guard var components = URLComponents(string: Self.productionOrigin) else {
+            completion(Self.failure("network"))
+            return
+        }
+        components.path = "/session/\(roomID)/resume"
+        components.queryItems = [URLQueryItem(name: "key", value: hostKey)]
+        guard let url = components.url else {
+            completion(Self.failure("network"))
+            return
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 15
+        request.setValue(Self.basicAuthorization(credentials), forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        urlSession.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                guard error == nil, let httpResponse = response as? HTTPURLResponse else {
+                    completion(Self.failure("network"))
+                    return
+                }
+                guard let data,
+                      let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let ok = result["ok"] as? Bool else {
+                    completion(Self.failure("http-\(httpResponse.statusCode)"))
+                    return
+                }
+                completion(["ok": ok, "reason": result["reason"] as? String ?? ""])
+            }
+        }.resume()
+    }
+
     func connect(
         roomID: String,
         role: String,
@@ -327,6 +393,7 @@ final class SessionRelay: NSObject, URLSessionWebSocketDelegate {
                     "ok": true,
                     "roomId": roomID,
                     "hostKey": hostKey,
+                    "user": credentials.user,
                     "origin": Self.productionOrigin
                 ], completion: completion)
             }
