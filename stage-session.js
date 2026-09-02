@@ -916,6 +916,9 @@
       pendingHostDocuments.delete(documentId);
       setStatus("共有内容を保存して配信しました。");
     } else if (message.t === "denied") {
+      if (message.reason === "doc-too-large" || message.reason === "doc-storage-failed") {
+        pendingHostDocuments.clear();
+      }
       const reason = message.reason === "no-host" ? "ホストが接続していません。"
         : message.reason === "doc-too-large" ? "共有する舞台データが大きすぎます。写真や不要な場面を減らしてから共有してください。"
           : message.reason === "doc-storage-failed" ? "共有サーバーへ保存できませんでした。作業はこの端末に残っています。ショーを書き出してから、もう一度お試しください。"
@@ -943,6 +946,7 @@
     socket = null;
     clearTimeout(hostSendTimer);
     hostSendTimer = null;
+    pendingHostDocuments.clear();
     clearRemotePointers();
     if (!reconnectAllowed) {
       if (els.reconnect) els.reconnect.hidden = false;

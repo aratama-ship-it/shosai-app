@@ -261,6 +261,21 @@ test("ホストは共有docの保存確認を受け取ってから送信済み�
   assert.equal(fixture.elementById("stage-session-status").textContent, "共有内容を保存して配信しました。");
 });
 
+test("共有docの保存失敗後は同じ内容をもう一度送れる", async () => {
+  const fixture = createFixture();
+  const socket = await fixture.startHost();
+  socket.dispatch("open");
+
+  socket.message({ t: "denied", reason: "doc-storage-failed" });
+  fixture.window.SHOSAI_STAGE_SESSION_HOOKS.onLocalChange();
+  fixture.runTimers(300);
+
+  const docs = socket.sent.map((text) => JSON.parse(text))
+    .filter((message) => message.t === "doc");
+  assert.equal(docs.length, 2);
+  assert.equal(docs[1].doc, docs[0].doc);
+});
+
 test("上限を超える共有docはWebSocketへ送らず、ホストの作業を残したまま知らせる", async () => {
   const fixture = createFixture();
   const socket = await fixture.startHost();

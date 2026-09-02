@@ -123,7 +123,23 @@ test("setLangはスマホ閲覧機の文言をその場で貼り直す", () => {
 });
 
 test("読み込んだJSONはスマホでは編集用比較モーダルを挟まず開く", () => {
-  assert.match(source, /if \(phoneViewerActive\) \{\s*if \(next\.mcpRevision === null\) reserveImportedShowId\(next\);\s*if \(!applyLoadedState\(next, `「\$\{next\.project\.title\}」を読み込み、ショー一覧へ保存しました。`\)\) return;[\s\S]*?return;/);
+  assert.match(source, /if \(phoneViewerActive\) \{\s*if \(next\.mcpRevision === null\) reserveImportedShowId\(next\);[\s\S]*?applyLoadedState\(next, `「\$\{next\.project\.title\}」を読み込み、ショー一覧へ保存しました。`\)[\s\S]*?return;/);
+});
+
+test("スマホでJSONを読み込むと描画前に正面図へ切り替え、失敗時は元へ戻す", () => {
+  const importStart = source.indexOf("  function importProject(file) {");
+  const branchStart = source.indexOf("      if (phoneViewerActive) {", importStart);
+  const branchEnd = source.indexOf("      pendingImport = next;", branchStart);
+  assert.ok(importStart >= 0 && branchStart > importStart && branchEnd > branchStart, "スマホ読込分岐がある");
+  const branch = source.slice(branchStart, branchEnd);
+  const setFrontAt = branch.indexOf('if (phoneUi) phoneUi.singleView = "front";');
+  const applyAt = branch.indexOf("applyLoadedState(next");
+  assert.ok(setFrontAt >= 0 && applyAt > setFrontAt, "正面図への切替が描画より前にある");
+  assert.match(branch, /const previousSingleView = phoneUi \? phoneUi\.singleView : null;/);
+  assert.match(
+    branch,
+    /if \(!applyLoadedState\(next,[\s\S]*?\)\) \{\s*if \(phoneUi\) phoneUi\.singleView = previousSingleView;\s*return;\s*\}/,
+  );
 });
 
 test("縦画面は正面図と平面図を並べ、横画面は一枚を切り替える", () => {

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>舞台スケッチ リリース前チェック＆レビュー 2026-09-02</title>
+<style>
+  :root{--ink:#1f1c18;--muted:#5a544c;--paper:#faf7f1;--card:#ffffff;--line:#d9d2c5;
+        --ok:#2f6b3a;--ok-bg:#e6f2e8;--warn:#8a5a12;--warn-bg:#fbefd9;--info:#365a7a;--info-bg:#e5eef6;
+        --stop:#9b2f2f;--stop-bg:#f8e3e3;--accent:#a84b26}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;line-height:1.7;font-size:16px}
+  main{max-width:920px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:1.5rem;margin:0 0 4px;letter-spacing:.02em}
+  h2{font-size:1.15rem;margin:40px 0 12px;padding-left:12px;border-left:4px solid var(--accent)}
+  h3{font-size:1rem;margin:22px 0 8px}
+  .meta{color:var(--muted);font-size:.9rem;margin-bottom:24px}
+  .ask{background:var(--card);border:2px solid var(--accent);border-radius:12px;padding:18px 20px;margin:20px 0}
+  .ask p{margin:6px 0}
+  .verdict{display:flex;gap:14px;align-items:flex-start;background:var(--ok-bg);border:1px solid var(--ok);border-radius:12px;padding:16px 18px;margin:16px 0}
+  .verdict .mark{font-size:1.6rem;line-height:1}
+  table{width:100%;border-collapse:collapse;background:var(--card);font-size:.93rem;margin:10px 0}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#f1ece2;font-weight:600}
+  .tag{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.8rem;font-weight:600;white-space:nowrap}
+  .ok{background:var(--ok-bg);color:var(--ok)} .warn{background:var(--warn-bg);color:var(--warn)}
+  .info{background:var(--info-bg);color:var(--info)} .stop{background:var(--stop-bg);color:var(--stop)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:12px 0}
+  .card h3{margin-top:0}
+  .card .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .card dl{margin:8px 0 0;display:grid;grid-template-columns:7em 1fr;gap:4px 10px}
+  .card dt{color:var(--muted);font-size:.88rem}
+  .card dd{margin:0}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.88em;background:#f1ece2;padding:1px 5px;border-radius:4px}
+  pre{background:#2b2723;color:#f3eee4;padding:12px 14px;border-radius:8px;overflow-x:auto;font-size:.85rem}
+  ol.steps li{margin:8px 0}
+  .small{font-size:.88rem;color:var(--muted)}
+  @media (max-width:600px){ .card dl{grid-template-columns:1fr} th,td{padding:6px 8px;font-size:.88rem} }
+</style>
+</head>
+<body>
+<main>
+<h1>舞台スケッチ リリース前チェック＆レビュー</h1>
+<p class="meta">確認日 2026-09-02・Claude（Fable）。対象 <code>shosai-app</code> HEAD <code>3f08794</code>「Stage Sketch release hardening」（2026-09-01 15:44 JST）。
+判定は本人が行う。ここは材料。前回の判定書は <code>docs/RELEASE_DECISION_2026-08-26.md</code>（β限定でリリース可、と本人が2026-08-27に判定済み）。</p>
+
+<section class="ask">
+  <strong>判断してほしいこと（2つ）</strong>
+  <p>① いまデプロイ済みの版（<code>3f08794</code>／Service Worker <code>v190</code>）のまま、テスター招待を始めてよいか。</p>
+  <p>② レビューで見つけた<b>軽微な2件</b>を、招待の前に直して版を上げるか、招待後の課題にするか。</p>
+</section>
+
+<div class="verdict"><div class="mark">✅</div><div>
+<b>結論: 技術的なブロッカーは見つからなかった。</b> 自動テスト699件全通過、版ピン（?v=・CACHE_NAME）は3か所で一致、単独ページ <code>stage.html</code> は正本と同期済み、HEADはpush済みでCloudflareへコミット直後にデプロイされている。公開境界（401）とβ生死応答も両ホストで正常。<br>
+<b>ただし1点、本人の実機でしか確かめられないことが残っている。</b> 起動時の「β生死確認」が8/30に追加され、8/31と9/1に挙動が変わった。<b>機内モードでのPWA起動（A-1）の記録は8/26の <code>v145</code> が最後</b>で、それ以降45回の版上げを跨いだ実測が無い。招待前に1回だけ確かめることを勧める。
+</div></div>
+
+<h2>1. 機械確認の結果（事実）</h2>
+<table>
+<tr><th style="width:15em">項目</th><th>結果</th><th style="width:7em">判定</th></tr>
+<tr><td>自動テスト <code>tests/index.mjs</code></td><td>699件 全通過（fail 0・4.1秒）</td><td><span class="tag ok">OK</span></td></tr>
+<tr><td>単独ページの同期 <code>build_stage.py --check</code></td><td>「stage.html は index.html と揃っています」</td><td><span class="tag ok">OK</span></td></tr>
+<tr><td>版ピンの一致</td><td><code>stage-sketch.js?v=315</code>／<code>stage-session.js?v=13</code>／<code>stage-pwa.js?v=8</code>／<code>stage-i18n.js?v=96</code>／<code>style.css?v=227</code> が index.html・stage.html・stage-sw.js の3か所で一致。<code>CACHE_NAME = stage-sketch-pwa-v190</code></td><td><span class="tag ok">OK</span></td></tr>
+<tr><td>Service Worker の資材一覧</td><td>APP_SHELL の27ファイルすべてがディスク上に存在（欠けるとオフライン起動が壊れる）</td><td><span class="tag ok">OK</span></td></tr>
+<tr><td>git の状態</td><td>HEAD <code>3f08794</code> は <code>origin/main</code> と一致（未pushなし）。未コミットは <code>mcp-server/</code> の6ファイルのみ（下記2-6）</td><td><span class="tag ok">OK</span></td></tr>
+<tr><td>Cloudflare デプロイ</td><td>コミット 06:44:53Z の直後、06:45:41Z・06:45:46Z・06:46:30Z の3回デプロイ（<code>wrangler deployments list</code>）。<b>配信中の中身は401のため取得できず、時刻からの推定</b></td><td><span class="tag info">推定</span></td></tr>
+<tr><td>公開境界</td><td><code>stagesketch.pygmix.com/stage.html</code>・旧 <code>workers.dev</code> ともに <b>401</b>（リダイレクト無し）</td><td><span class="tag ok">OK</span></td></tr>
+<tr><td>β生死応答 <code>/beta-status</code></td><td>両ホストで <code>{"ok":true,"betaActive":true}</code>（認証前に応答。8/31の実機対応どおり）</td><td><span class="tag ok">OK</span></td></tr>
+<tr><td>Secrets</td><td><code>GUEST_ACCOUNTS</code>・<code>SITE_USER</code>・<code>SITE_PASS</code> が投入済み（名前のみ確認。中身は見ていない）</td><td><span class="tag ok">OK</span></td></tr>
+<tr><td>mcp-server テスト</td><td>作業ツリー42件全通過／HEAD時点39件全通過（未コミット分はテスト追加）。Webの配信物ではない</td><td><span class="tag ok">OK</span></td></tr>
+<tr><td>デバッグ残骸</td><td>直近コミットの追加行に <code>console.log</code>／<code>debugger</code> なし</td><td><span class="tag ok">OK</span></td></tr>
+</table>
+
+<h2>2. 直近コミット <code>3f08794</code> のレビュー</h2>
+<p>28ファイル・+973/−133行。狙いは5つ。いずれも設計として妥当で、回帰テストが付いている。</p>
+<table>
+<tr><th style="width:14em">変更</th><th>内容</th><th style="width:6em">評価</th></tr>
+<tr><td>ショー切替時のデータ損失防止</td><td><code>prepareLoadedState</code> で「いまのショー」と「次のショー」を<b>両方棚へ入れてから</b>状態を書き換える。どちらか失敗なら切り替えを止め、現行コピーを失わない。新規・開く・雛形・読込・AI採用の全経路を統一</td><td><span class="tag ok">良</span></td></tr>
+<tr><td>保存時の黙った切り詰めを撤廃</td><td>読み込み時の <code>.slice()</code> を全撤去し、代わりに <code>PROJECT_LIMITS</code> で<b>追加操作の時点</b>で上限を告げる（場面60・駒80/場面・写真12など）。上限超過データは読込時に保持</td><td><span class="tag ok">良</span></td></tr>
+<tr><td>共有セッションの文書サイズ</td><td>Durable Object の2MB制限に対し 1,800KB で送信側・受信側の両方で止める。保存成功を <code>doc-saved</code> で返し、保存失敗を黙殺しない</td><td><span class="tag ok">良</span></td></tr>
+<tr><td>ホスト再開のなりすまし防止</td><td>部屋にログイン名（owner）を束ね、鍵が合っても別のログイン名なら再開・ホスト接続を拒否。Workerが外部ヘッダーを必ず上書き</td><td><span class="tag ok">良</span></td></tr>
+<tr><td>β生死確認を fail-open へ</td><td>確認できないとき（オフライン・サーバー不応答）は締め出さず保存済みPWAで起動。終了を<b>確認できたときだけ</b>閉じる。「オフラインで使える」というPWAの約束と整合</td><td><span class="tag ok">良</span></td></tr>
+</table>
+
+<h3>指摘（重要度順）</h3>
+
+<div class="card">
+  <div class="row"><span class="tag warn">低・回帰候補</span><b>2-1. スマホ横向きで、ファイル読込のあと表示が前の面のまま残る可能性</b></div>
+  <dl>
+    <dt>場所</dt><dd><code>stage-sketch.js:17295-17296</code></dd>
+    <dt>何が</dt><dd>今回の変更で <code>phoneUi.singleView = "front"</code> が <code>applyLoadedState()</code> の<b>後ろ</b>へ移った。<code>render()</code> は冒頭で <code>enforcePhoneViews()</code> を呼び <code>singleView</code> を反映するため、読込直後の描画は古い面で行われ、その後に "front" を代入しても再描画されない。次の操作まで平面図のまま（横向きで平面図を見ていた場合）</dd>
+    <dt>影響</dt><dd>縦向き（両面表示）では影響なし。横向き限定・次のタップで直る。実機未確認＝<b>コード読みからの推測</b></dd>
+    <dt>直し方</dt><dd>代入を <code>applyLoadedState</code> の前に戻す（失敗時は元の面へ戻す）か、代入の後に <code>render()</code> を1回呼ぶ。1〜2行</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <div class="row"><span class="tag warn">低</span><b>2-2. ホストの未応答ドキュメント台帳が、切断・拒否のときに片付かない</b></div>
+  <dl>
+    <dt>場所</dt><dd><code>stage-session.js:64, 692-699, 913-917</code></dd>
+    <dt>何が</dt><dd><code>pendingHostDocuments</code> は <code>doc-saved</code> を受けたときだけ消える。<code>denied</code>（doc-storage-failed 等）や <code>handleSocketClose</code> では残るため、①同じ内容の文書は <code>force</code> 無しでは再送されない（再接続時は <code>force</code> 付きなので回復する）、②未応答のまま切れた文書（最大1.8MBずつ）がメモリに残る</dd>
+    <dt>影響</dt><dd>通常の使い方では顕在化しにくい。長時間・不安定回線で少しずつメモリを食う程度</dd>
+    <dt>直し方</dt><dd><code>handleSocketClose</code> と <code>denied</code> 受信時に <code>pendingHostDocuments.clear()</code>。2行</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <div class="row"><span class="tag info">情報</span><b>2-3. <code>applyLoadedState</code> の戻り値を見ていない呼び出しが3か所残る</b></div>
+  <dl>
+    <dt>場所</dt><dd><code>stage-sketch.js:5102</code>（固定SceneStudy）・<code>5343</code>・<code>5362</code>（見本ショー2種）</dd>
+    <dt>影響</dt><dd>失敗時は関数内で警告帯とアナウンスが出て切り替えは止まる。後続処理が無いので実害なし。統一のためだけなら <code>if (!…) return;</code> を付ける</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <div class="row"><span class="tag info">情報</span><b>2-4. 読み込み時の切り詰め撤廃は、巨大ファイルをそのまま受け入れる方向の変更</b></div>
+  <dl>
+    <dt>何が</dt><dd>以前は写真12枚・場面60などに読込時点で切っていた。いまは追加操作だけを止めるので、上限超過のファイルを読み込むと全部保持される（設計意図どおり、コメントに明記あり）</dd>
+    <dt>影響</dt><dd>本人のファイルを読み込む前提なので安全上の問題ではない。ただし <b>P1-12「localStorage逼迫」を後回しにした判断</b>と組み合わさると、写真の多いファイルで棚の保存失敗が起きやすくなる。今回の「切替を止めて現行コピーを守る」変更がその受け皿になっている</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <div class="row"><span class="tag info">情報</span><b>2-5. Macアプリは作り直さないとセッション再開が退化する（β配布には無関係）</b></div>
+  <dl>
+    <dt>何が</dt><dd><code>StageSketchBridge.swift</code>／<code>SessionRelay.swift</code> に <code>sessionUser</code>・<code>sessionResumeStatus</code> が追加された。古いビルドのMacアプリでは <code>/whoami</code> へのフォールバックになり、ログイン名が取れなければ保存済みホスト情報が消えて「再開」ボタンが出ない（新規開始はできる）</dd>
+    <dt>影響</dt><dd>Macアプリは身内用。テスターへ配るWeb版には影響しない。<b>Macアプリのビルド状態は今回確認していない</b></dd>
+  </dl>
+</div>
+
+<div class="card">
+  <div class="row"><span class="tag info">情報</span><b>2-6. <code>mcp-server/</code> に未コミットの変更6ファイル（9/1 15:29-15:30更新）</b></div>
+  <dl>
+    <dt>何が</dt><dd>スキーマ追加＋テスト追加（39→42件）。作業ツリーで全通過。<code>3f08794</code>（15:44）に含めなかったのは意図か漏れか不明。別セッション（Codex等）が触っている可能性があるので、本レビューでは触っていない</dd>
+    <dt>影響</dt><dd>Webの配信物ではない。リリース判定には関係しない</dd>
+  </dl>
+</div>
+
+<h2>3. 確認できなかったこと（正直に残す）</h2>
+<table>
+<tr><th style="width:16em">項目</th><th>状況</th><th style="width:8em">重さ</th></tr>
+<tr><td><b>iPad PWA の機内モード起動（A-1）を <code>v190</code> で</b></td><td>記録は8/26の <code>v145</code> が最後。その後、起動時にネットへ問い合わせる「β生死確認」が加わり（8/30）、認証前へ移動（8/31）、fail-open化（9/1）と<b>起動経路が3回変わった</b>。コード上は fail-open で開くはずだが、<b>「PWA・認証・同期は実機でしか分からない」がこのプロジェクトの教訓</b></td><td><span class="tag stop">招待前に1回</span></td></tr>
+<tr><td>配信中の版が本当に <code>v190</code> か</td><td>401のため外から取得不能。デプロイ時刻がコミット直後なので、ほぼ確実だが未実測。iPadの設定画面などで確認できる表示があれば併せて</td><td><span class="tag info">推定</span></td></tr>
+<tr><td>共有セッション3人同時</td><td>8/24以降は未実施。本人が8/27に「確かめずに出す」と判定済み</td><td><span class="tag info">判定済み</span></td></tr>
+<tr><td>Macアプリの再ビルド</td><td>2-5参照。未確認</td><td><span class="tag info">β無関係</span></td></tr>
+</table>
+
+<h2>4. 次の行動（提案）</h2>
+<ol class="steps">
+  <li><b>本人・約5分:</b> iPadのホーム画面PWAで、通信ありで起動→閉じる→再起動→完全終了→<b>機内モードでWi-Fiがグレーであることを確認</b>→起動。開けば招待可。開かなければ★リリース阻止級として報告してほしい（手順は <code>docs/QA_FINAL_2026-08-26.md</code> A-1）。</li>
+  <li><b>任意:</b> 2-1と2-2を直す場合は <code>stage-sketch.js?v=316</code>・<code>stage-session.js?v=14</code>・<code>CACHE_NAME v191</code> の3枚版上げ＋<code>build_stage.py</code>＋版ピンテストを一組で。Codexに投げられる規模（合計4行）。直すなら手順1はその後に。</li>
+  <li><b>招待の実務:</b> <code>docs/INVITE_KIT_2026-08-28.md</code> の招待文を使う。<code>GUEST_ACCOUNTS</code> は投入済みなので、各テスターの名前とパスワードが入っているかだけ確認。不具合連絡経路は「設定→感想を送る」＋直接連絡で招待文に書かれている。</li>
+</ol>
+
+<p class="small">確認方法: テスト実行・build_stage.py --check・grep による版ピン照合・git log/status・wrangler deployments list／secret list・curl による公開境界確認・<code>git show 3f08794</code> の全差分読解。実機操作は行っていない。</p>
+</main>
+</body>
+</html>

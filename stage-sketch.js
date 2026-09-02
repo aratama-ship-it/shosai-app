@@ -17292,8 +17292,12 @@ ${propsPlotHtml}
       // スマホは読み込んだデータを閲覧するだけなので、編集用の比較モーダルを挟まない。
       if (phoneViewerActive) {
         if (next.mcpRevision === null) reserveImportedShowId(next);
-        if (!applyLoadedState(next, `「${next.project.title}」を読み込み、ショー一覧へ保存しました。`)) return;
+        const previousSingleView = phoneUi ? phoneUi.singleView : null;
         if (phoneUi) phoneUi.singleView = "front";
+        if (!applyLoadedState(next, `「${next.project.title}」を読み込み、ショー一覧へ保存しました。`)) {
+          if (phoneUi) phoneUi.singleView = previousSingleView;
+          return;
+        }
         return;
       }
       pendingImport = next;
