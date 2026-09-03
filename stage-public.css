@@ -329,47 +329,51 @@ html.stage-phone-viewer body.is-public .stage-pose-strip {
 html.stage-phone-viewer body.is-public .stage-pose-strip-tile { width: 50px; }
 html.stage-phone-viewer body.is-public .stage-pose-strip-tile canvas { height: 40px; }
 
-/* ---- スマホ体験版の道具列（2026-09-03） ----
-   会場の帯（本体では固定表示にしない）と、その下の「人を足す」「客席」。 */
-html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-venue-bar {
-  position: static;
-  width: auto;
-  margin: 0 0 6px;
-}
-html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-canvas-stack { padding-top: 0; }
+/* ---- スマホ体験版の道具列（2026-09-03・作り直し） ----
+   1列に「＋人」と客席の見え方の札。会場の種類の帯はスマホ本体では出さない。 */
 .stage-public-phone-tools {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 8px;
-  padding: 6px 7px;
+  gap: 6px;
+  margin: 0 0 6px;
+  padding: 5px 6px;
   border: 1px solid var(--line-dark);
   background: var(--desk-2);
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 .stage-public-add-performer {
   flex: 0 0 auto;
   min-height: 44px;
-  padding: 5px 12px;
+  padding: 5px 10px;
   border: 1px solid var(--brass);
   color: var(--paper);
   font: 12px var(--sans);
 }
-.stage-public-seat {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex: 1 1 auto;
-  color: var(--ink-soft-sm);
-  font: 11px var(--sans);
-}
-.stage-public-seat select {
-  flex: 1 1 auto;
-  min-width: 0;
+.stage-public-seat-buttons { display: flex; gap: 5px; flex: 0 0 auto; }
+.stage-public-seat-buttons button {
+  flex: 0 0 auto;
   min-height: 44px;
-  padding: 4px 8px;
+  padding: 5px 9px;
   border: 1px solid var(--line-dark);
-  background: var(--desk);
-  color: var(--paper);
-  font: 12px var(--sans);
+  color: var(--milk-dim);
+  font: 11px var(--sans);
+  white-space: nowrap;
+}
+.stage-public-seat-buttons button[aria-pressed="true"] { border-color: var(--brass); color: var(--paper); }
+.stage-public-phone-tools .stage-public-selection-status { flex: 0 0 auto; margin-left: 4px; }
+
+/* ---- スマホ本体はスクロールできるようにする（2026-09-03 本人指摘） ----
+   本体のスマホ表示は body を固定して高さ100%に収める設計。体験版で足した行の分だけ
+   下がはみ出て見えなくなった。固定を外し、普通に縦へ流す。
+   実験で、題の帯は static のままで崩れないことを確認済み。 */
+html.stage-phone-viewer body.is-public:not(.is-public-embed) {
+  position: static;
+  height: auto;
+  min-height: 100%;
+  overflow: auto;
+}
+html.stage-phone-viewer:has(body.is-public:not(.is-public-embed)) {
+  height: auto;
+  overflow: auto;
 }

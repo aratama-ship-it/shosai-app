@@ -182,7 +182,13 @@ test("スマホの体験版では姿勢の帯を正面図の上端に出す（�
 test("スマホ体験版: 人を足す・客席の位置・場面の切替と転換は開け、場面の追加は閉じる", () => {
   assert.match(publicJs, /function addPerformer\(\)/);
   assert.match(publicJs, /PUBLIC_MAX_PERFORMERS = 6/);
-  assert.match(publicJs, /function addPhoneTools\(\)/);
+  // スマホ本体は会場の種類でなく「客席からの見え方」の帯（本人指示 2026-09-03）
+  assert.match(publicJs, /function addPhoneSeatBar\(\)/);
+  assert.doesNotMatch(publicJs, /function addPhoneTools\(\)/);
+  assert.match(publicJs, /: phoneLike \? addPhoneSeatBar\(\)/);
+  // 右上の席の地図は外す／縦にスクロールできるようにする
+  assert.match(publicJs, /function hideSeatMapOnPhone\(\)/);
+  assert.match(publicCss, /html\.stage-phone-viewer body\.is-public:not\(\.is-public-embed\) \{\s*position: static;/);
   assert.match(publicJs, /"stage-scene-prev", "stage-scene-next", "stage-scene-replay",/);
   assert.match(publicJs, /"\.stage-phone-scene-prev", "\.stage-phone-scene-next", "\.stage-phone-scene-current",/);
   // 場面の帯は中身を個別に錠（足す・消す・複製が開かないように）

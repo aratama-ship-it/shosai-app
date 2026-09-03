@@ -185,56 +185,72 @@
     return status;
   }
 
-  /* スマホ体験版の道具列。会場の帯の下に「人を足す」と「客席の位置」を置く。
-     客席は本体の .stage-seat ボタン（スマホでは隠れている）を裏で押す。 */
-  function addPhoneTools() {
+  /* スマホ体験版の道具列（2026-09-03 本人指示で作り直し）。
+     ★会場の種類（プロセニアム等）の切替は出さない。求められたのは
+       「客席からの見え方」の切替。本体の .stage-seat ボタン（スマホでは隠れている）を
+       裏で押す札を並べ、同じ列に「人を足す」を置く。1列にして縦の場所を取らない。 */
+  function addPhoneSeatBar() {
     const stack = document.querySelector(".stage-canvas-stack");
-    if (!stack || document.querySelector(".stage-public-phone-tools")) return;
+    if (!stack || document.querySelector(".stage-public-phone-tools")) return null;
     const english = document.documentElement.lang === "en";
     const tools = document.createElement("div");
     tools.className = "stage-public-phone-tools";
+    tools.setAttribute("role", "group");
+    tools.setAttribute("aria-label", english ? "Seen from / add performer" : "客席からの見え方・人を足す");
 
     const add = document.createElement("button");
     add.type = "button";
     add.className = "stage-public-add-performer";
-    add.textContent = english ? "+ Performer" : "＋ 人を足す";
+    add.textContent = english ? "+ Performer" : "＋ 人";
+    add.setAttribute("aria-label", english ? "Add a performer" : "人を足す");
     add.addEventListener("click", () => { stopDemo(); addPerformer(); });
 
-    const seatLabel = document.createElement("label");
-    seatLabel.className = "stage-public-seat";
-    const seatText = document.createElement("span");
-    seatText.textContent = english ? "Seen from" : "客席";
-    const seat = document.createElement("select");
-    seat.setAttribute("aria-label", english ? "Which seat the stage is seen from" : "どの席から舞台を見るか");
-    seatLabel.append(seatText, seat);
-
+    const seats = document.createElement("div");
+    seats.className = "stage-public-seat-buttons";
     const rebuild = () => {
       const buttons = [...document.querySelectorAll("#stage-seat-list .stage-seat")];
-      seat.innerHTML = "";
-      buttons.forEach((button, index) => {
-        const option = document.createElement("option");
-        option.value = String(index);
-        option.textContent = button.getAttribute("aria-label") || button.textContent.trim();
-        option.selected = button.getAttribute("aria-pressed") === "true";
-        seat.append(option);
+      seats.innerHTML = "";
+      buttons.forEach((source, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = source.getAttribute("aria-label") || source.textContent.trim();
+        button.setAttribute("aria-pressed", source.getAttribute("aria-pressed") === "true" ? "true" : "false");
+        button.addEventListener("click", () => {
+          const live = document.querySelectorAll("#stage-seat-list .stage-seat")[index];
+          if (!live) return;
+          internalClick = true;
+          try { live.click(); } finally { internalClick = false; }
+        });
+        seats.append(button);
       });
-      seatLabel.hidden = buttons.length === 0;
+      tools.hidden = buttons.length === 0;
     };
-    seat.addEventListener("change", () => {
-      const buttons = [...document.querySelectorAll("#stage-seat-list .stage-seat")];
-      const target = buttons[Number(seat.value)];
-      if (!target) return;
-      internalClick = true;
-      try { target.click(); } finally { internalClick = false; }
-    });
     rebuild();
     const seatList = document.getElementById("stage-seat-list");
     if (seatList && typeof MutationObserver === "function") {
       new MutationObserver(rebuild).observe(seatList, { childList: true, attributes: true, subtree: true });
     }
 
-    tools.append(add, seatLabel);
+    const status = document.createElement("span");
+    status.className = "stage-public-selection-status";
+    status.id = "stage-public-selection-status";
+    status.setAttribute("role", "status");
+
+    tools.append(add, seats, status);
     stack.parentNode.insertBefore(tools, stack);
+    return status;
+  }
+
+  /* 正面図の右上に描かれる「どの席から見ているか」の小さな地図（drawSeatMap）は、
+     スマホでは図を隠すだけなので出さない（本人指示 2026-09-03）。
+     canvas に直接描かれるので、本体の切替（#stage-show-seatmap）を裏で外す。 */
+  function hideSeatMapOnPhone() {
+    const box = document.getElementById("stage-show-seatmap");
+    if (!box || !box.checked) return;
+    box.checked = false;
+    internalClick = true;
+    try { box.dispatchEvent(new Event("change", { bubbles: true })); }
+    finally { internalClick = false; }
   }
 
   function addPhoneNotice() {
@@ -651,15 +667,12 @@
     // 会場の帯は埋め込み専用。体験版本体には本来の「劇場サイズ」の欄がある。
     // ただし「タップで選んで置く」はスマホでどちらの形でも要るので、
     // 帯を出さないときは、選択中の表示だけ別に作って渡す。
-    const status = (embed || phoneLike) ? addVenueBar() : standaloneSelectionStatus();
+    // 会場の種類の帯は埋め込み（LP）だけ。スマホ本体は客席の見え方の帯にする
+    const status = embed ? addVenueBar()
+      : phoneLike ? addPhoneSeatBar()
+        : standaloneSelectionStatus();
     if (status) addPhoneTapPlacement(status);
-    if (phoneLike && !embed) {
-      // スマホ本体では帯を図の直前に置く（画面上部の案内やリンクに被せない）
-      const bar = document.querySelector(".stage-public-venue-bar");
-      const stack = document.querySelector(".stage-canvas-stack");
-      if (bar && stack) stack.parentNode.insertBefore(bar, stack);
-      addPhoneTools();
-    }
+    if (phoneLike && !embed) hideSeatMapOnPhone();
     // 埋め込み（LPの帯）は絞り込んだ画面なので錠は要らない。体験版本体だけに掛ける。
     if (!embed) {
       applyLocks();
