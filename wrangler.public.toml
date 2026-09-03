@@ -1,0 +1,26 @@
+# 公開体験版（認証なし）だけを配る、独立したWorker。
+#
+# ★βの本体（wrangler.toml / name = "shosai-app"）とは別物。名前が違うので、
+#   こちらをデプロイしても β・書斎・名簿には一切触れない。
+#
+# ★directory は "public-dist" に固定する。ここは build_public.py が毎回
+#   作り直すフォルダで、公開してよいファイルだけを集めてある。
+#   directory = "." にしてはいけない——名簿・設計文書・supabase-setup.sql・
+#   個人ショー（stage-shows.local.js・618KB）まで配ってしまう。
+#   2026-09-03、公開直前にこの取り違えを発見した。許可リストで塞ぐのではなく
+#   「集めたものだけを配る」形にしてある。
+#
+# 使い方:
+#   python3 build_public.py                       … public-dist/ を作り直す
+#   npx wrangler deploy -c wrangler.public.toml   … 配る
+
+name = "stagesketch-try"
+compatibility_date = "2026-08-19"
+
+# まずは workers.dev の名前で出す。独自ドメイン（例 try.stagesketch.pygmix.com）へ
+# 移すときは、[[routes]] を足して custom_domain = true にする。
+# ★pygmix.com の apex には別のサイトが動いている。触らないこと。
+workers_dev = true
+
+[assets]
+directory = "public-dist"

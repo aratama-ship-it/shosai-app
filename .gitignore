@@ -34,3 +34,4 @@ roster-key.local.js
 # 自分用ショー（ショー一覧へ自動で入れる下書き）。Cloudflare（Basic認証の内側）へだけ
 # 配信し、公開リポジトリには残さない。build_stage_shows_local.py が生成する。
 stage-shows.local.js
+public-dist/

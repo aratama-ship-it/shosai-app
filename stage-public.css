@@ -1,24 +1,30 @@
 /* 公開体験版だけの絞り込み。色は style.css の既存変数だけを使う。 */
-body.is-public #stage-col-left,
-body.is-public #stage-col-right,
+/* 窓と使い方案内は、どちらの形でも出さない（ロックの対象は窓を開く前のボタン） */
 body.is-public .stage-modal,
 body.is-public .stage-modal-backdrop,
 body.is-public #stage-tour {
   display: none !important;
 }
 
-body.is-public .stage-sketch-grid {
+/* 左右の列を畳むのは埋め込み（LPの帯）だけ。
+   体験版そのものは製品版と同じ画面を見せ、使えないところへ錠を出す。 */
+body.is-public-embed #stage-col-left,
+body.is-public-embed #stage-col-right {
+  display: none !important;
+}
+
+body.is-public-embed .stage-sketch-grid {
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas: "board";
 }
 
-body.is-public #stage-col-center {
+body.is-public-embed #stage-col-center {
   width: 100%;
   max-width: none;
 }
 
-body.is-public [data-stage-tool]:not([data-stage-tool="select"]),
-body.is-public .stage-tool-split {
+body.is-public-embed [data-stage-tool]:not([data-stage-tool="select"]),
+body.is-public-embed .stage-tool-split {
   display: none !important;
 }
 
@@ -129,34 +135,34 @@ html.stage-phone-viewer body.is-public.is-public-embed .stage-canvas-stack {
    「会場切替（この CSS の下方で定義した自前の帯）」だけ。 */
 
 /* シーン機能は出さない（体験版はショーを作る場所ではない） */
-body.is-public #stage-scene-bar,
-body.is-public .stage-scene-desc-label { display: none !important; }
+body.is-public-embed #stage-scene-bar,
+body.is-public-embed .stage-scene-desc-label { display: none !important; }
 
 /* 保存・書き出し・プレゼン・設定 */
-body.is-public #stage-export,
-body.is-public #stage-present-btn,
-body.is-public #stage-prefs-btn,
+body.is-public-embed #stage-export,
+body.is-public-embed #stage-present-btn,
+body.is-public-embed #stage-prefs-btn,
 body.is-public .stage-storage-caution { display: none !important; }
 
 /* 3Dカメラ・道具の並び・道具のヒント・名前の表示切替・図の入替 */
-body.is-public #stage-freecam-open,
-body.is-public .stage-tool-grid,
-body.is-public .stage-hint-help,
-body.is-public #stage-tool-hint,
-body.is-public .stage-name-toggle,
-body.is-public #stage-swap-center { display: none !important; }
+body.is-public-embed #stage-freecam-open,
+body.is-public-embed .stage-tool-grid,
+body.is-public-embed .stage-hint-help,
+body.is-public-embed #stage-tool-hint,
+body.is-public-embed .stage-name-toggle,
+body.is-public-embed #stage-swap-center { display: none !important; }
 
 /* 図の上に乗っている道具・客席位置・拡大縮小も出さない。
    体験版に残す操作は「駒を動かす」「会場を変える」「正面/平面/両方」だけ。 */
-body.is-public .stage-canvas-tools,
-body.is-public .stage-seat-list,
-body.is-public .stage-zoom-fab,
-body.is-public .stage-light-intent,
-body.is-public .stage-light-intent-compare { display: none !important; }
+body.is-public-embed .stage-canvas-tools,
+body.is-public-embed .stage-seat-list,
+body.is-public-embed .stage-zoom-fab,
+body.is-public-embed .stage-light-intent,
+body.is-public-embed .stage-light-intent-compare { display: none !important; }
 
 /* 画面に収める。LPへ iframe で置くとき、縦に伸びると帯からはみ出す。
    高さは実測して決めた（2026-09-03）。 */
-body.is-public #view-stage { padding-top: 8px; }
+body.is-public-embed #view-stage { padding-top: 8px; }
 body.is-public .stage-canvas-wrap { min-height: 0; }
 
 /* ★体験版の核は「二つの図が同時に動く」こと。本体は中央列が狭いため図を縦に積むが、
@@ -164,7 +170,7 @@ body.is-public .stage-canvas-wrap { min-height: 0; }
    左右の列を隠して幅が空いた分、公開版では横に並べる。
    高さは canvas が幅から決まるので、列を半分にすれば自然に収まる。 */
 @media (min-width: 900px) {
-  body.is-public .stage-canvas-stack {
+  body.is-public-embed .stage-canvas-stack {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: auto;
     align-items: start;
@@ -172,4 +178,69 @@ body.is-public .stage-canvas-wrap { min-height: 0; }
 }
 
 /* スマホ下部のシーンのメモ欄。体験版はシーンを持たないので出さない。 */
-body.is-public .stage-phone-info { display: none !important; }
+body.is-public-embed .stage-phone-info { display: none !important; }
+
+/* ---- 錠（体験版で使えない機能）2026-09-03 ----
+   製品版と同じ画面を見せたうえで、使えないところに錠を出す。
+   隠すのではなく「ある。ただしいまは開かない」と伝えるための表示。 */
+body.is-public [data-public-lock] {
+  position: relative;
+  opacity: 0.42;
+  cursor: not-allowed;
+  filter: saturate(0.4);
+}
+
+/* 錠のしるし。絵文字は使わない（言語・端末で字形が変わるため）。
+   線画のSVGを背景に置く。色は --brass。 */
+body.is-public [data-public-lock]::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  width: 13px;
+  height: 15px;
+  margin: -7px 0 0 -6px;
+  opacity: 0.92;
+  pointer-events: none;
+  background: center / contain no-repeat
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 15"><path d="M3 6V4.2A3.5 3.5 0 0 1 10 4.2V6" fill="none" stroke="%239c823f" stroke-width="1.6"/><rect x="1" y="6" width="11" height="8" rx="1.4" fill="%239c823f"/></svg>');
+}
+
+/* 大きな入れ物（パネルごと錠を掛けたとき）は、しるしを右上へ寄せる */
+body.is-public [data-public-lock="panel"]::after {
+  top: 9px;
+  left: auto;
+  right: 9px;
+  margin: 0;
+}
+
+/* 錠の説明。画面下に短く出て、しばらくすると消える */
+.stage-public-locked-note {
+  position: fixed;
+  z-index: 320;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  max-width: 34em;
+  margin: 0 auto;
+  padding: 12px 16px;
+  border: 1px solid var(--brass);
+  border-radius: 8px;
+  background: var(--desk-2);
+  color: var(--paper);
+  font: 14px/1.7 var(--sans);
+  text-align: center;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
+}
+
+.stage-public-locked-note b { color: var(--rust-ink); }
+
+/* 帯の外に単独で出す「いま選んでいる人」の表示（スマホのタップ操作用） */
+.stage-public-selection-solo {
+  margin: 0 0 6px;
+  padding: 0 4px;
+  color: var(--brass);
+  font: 12px var(--sans);
+  min-height: 1.2em;
+}

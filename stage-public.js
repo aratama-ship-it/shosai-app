@@ -24,6 +24,11 @@
     && Math.min(window.screen.width, window.screen.height) <= 600);
   const touches = new Set();
   let suppressNextClick = false;
+  /* 体験版の内部処理が、錠の掛かった要素をわざと押すことがある
+     （タップで演者を選ぶとき、左列の名前ボタンを押して選択を同期している）。
+     そのとき錠の知らせが出ると、舞台を触っただけで「製品版で使えます」と
+     出てしまう。内部からの操作だけは錠を素通しする。 */
+  let internalClick = false;
   let selectedPerformerId = null;
   let demoFrame = 0;
   let demoStopped = false;
@@ -171,7 +176,11 @@
       const cast = documentValue.project.cast.find((item) => item.id === nearest.piece.castId);
       const castIndex = documentValue.project.cast.findIndex((item) => item.id === nearest.piece.castId);
       const castButtons = document.querySelectorAll("#stage-cast-list .stage-cast-name");
-      if (castIndex >= 0 && castButtons[castIndex]) castButtons[castIndex].click();
+      if (castIndex >= 0 && castButtons[castIndex]) {
+        internalClick = true;
+        try { castButtons[castIndex].click(); }
+        finally { internalClick = false; }
+      }
       const english = document.documentElement.lang === "en";
       status.textContent = english
         ? `${cast ? cast.name : "Performer"} selected`
@@ -272,14 +281,141 @@
     if (host) host.insertBefore(button, host.children[1] || null);
   }
 
+
+  /* ---- 錠（2026-09-03 本人決定） ----------------------------------------
+     体験版は製品版と同じ画面を見せ、使えない機能へ錠を出す。隠さない。
+     ★許可したものだけを開ける「fail-closed」で組む。あとから本体へ機能が
+       増えたとき、既定で錠が掛かる側に倒れるようにするため。 */
+  const UNLOCKED_IDS = new Set([
+    "stage-venue-select", "stage-venue-scale", "stage-venue-reset",
+    "stage-venue-w", "stage-venue-h", "stage-venue-d",
+    "stage-undo", "stage-redo",
+  ]);
+  const UNLOCKED_CLOSEST = [
+    ".stage-view-switch",          // 正面 / 平面 / 両方
+    ".stage-public-venue-bar",     // 埋め込みで足す会場の帯
+    ".stage-public-phone-notice",  // PCを勧める帯の「続ける」
+    ".stage-public-locked-note",
+  ];
+
+  function lockLabel() {
+    return document.documentElement.lang === "en"
+      ? 'This is available in the full version. The preview lets you move performers and change the venue.'
+      : 'この機能は製品版（β）で使えます。体験版では、演者を動かすことと会場を変えることができます。';
+  }
+
+  function showLockedNote() {
+    let note = document.querySelector(".stage-public-locked-note");
+    if (!note) {
+      note = document.createElement("div");
+      note.className = "stage-public-locked-note";
+      note.setAttribute("role", "status");
+      document.body.append(note);
+    }
+    note.textContent = lockLabel();
+    clearTimeout(showLockedNote.timer);
+    showLockedNote.timer = setTimeout(() => note.remove(), 4200);
+  }
+
+  function isUnlocked(el) {
+    if (UNLOCKED_IDS.has(el.id)) return true;
+    if (el.dataset && el.dataset.stageTool === "select") return true;
+    return UNLOCKED_CLOSEST.some((selector) => el.closest(selector));
+  }
+
+  /* 錠を掛ける単位は「欄（.stage-panel）」を基本にする。
+     ★操作要素を一つずつ暗くすると、画面全体が灰色になって「壊れている」ように見える
+       （240個に錠が付いた。2026-09-03 実測）。欄ごとに一つの錠を出し、
+       「この欄は製品版」と読める形にする。
+     ★会場の欄だけは中身が混在する（劇場サイズは開ける／ショー操作は閉じる）ので、
+       そこだけ個別に掛ける。 */
+  function lockElement(el, kind) {
+    if (el.dataset.publicLock) return;
+    el.dataset.publicLock = kind;
+    el.setAttribute("aria-disabled", "true");
+    const english = document.documentElement.lang === "en";
+    const base = el.getAttribute("aria-label") || (el.textContent || "").trim().slice(0, 24);
+    if (base) el.setAttribute("aria-label", `${base}（${english ? "full version" : "製品版で使えます"}）`);
+  }
+
+  /* 会場の帯を出さないときの「いま選んでいる人」の表示。
+     スマホのタップ操作は、選んだことが分からないと使えない。 */
+  function standaloneSelectionStatus() {
+    const host = document.getElementById("stage-col-center");
+    if (!host) return null;
+    const status = document.createElement("p");
+    status.className = "stage-public-selection-status stage-public-selection-solo";
+    status.id = "stage-public-selection-status";
+    status.setAttribute("role", "status");
+    host.insertBefore(status, host.firstChild);
+    return status;
+  }
+
+  function applyLocks() {
+    const root = document.getElementById("view-stage");
+    if (!root) return;
+
+    const venuePanel = root.querySelector("#stage-venue-select")
+      && root.querySelector("#stage-venue-select").closest(".stage-panel");
+
+    // 1) 欄ごと。会場の欄だけ除く
+    root.querySelectorAll(".stage-panel").forEach((panel) => {
+      if (panel === venuePanel) return;
+      lockElement(panel, "panel");
+    });
+
+    // 2) 会場の欄の中は、会場に関わらないものだけ閉じる
+    if (venuePanel) {
+      venuePanel.querySelectorAll("button, select, input, a[href]").forEach((el) => {
+        if (isUnlocked(el)) return;
+        lockElement(el, "control");
+      });
+    }
+
+    // 3) 欄に入っていないもの（シーンの帯・上の並び・図の上の道具）
+    ["#stage-scene-bar", ".stage-canvas-tools", ".stage-seat-list", ".stage-zoom-fab",
+     ".stage-light-intent", ".stage-light-intent-compare", ".stage-phone-info"]
+      .forEach((selector) => root.querySelectorAll(selector).forEach((el) => lockElement(el, "panel")));
+
+    ["#stage-export", "#stage-present-btn", "#stage-prefs-btn", "#stage-freecam-open"]
+      .forEach((selector) => root.querySelectorAll(selector).forEach((el) => lockElement(el, "control")));
+
+    // 道具は「ものを動かす」だけ開ける
+    root.querySelectorAll("[data-stage-tool]").forEach((el) => {
+      if (el.dataset.stageTool === "select") return;
+      lockElement(el, "control");
+    });
+
+    /* 押した瞬間に本体の処理が走らないよう、捕捉段階で止める。 */
+    const swallow = (event) => {
+      if (internalClick) return;
+      const el = event.target.closest("[data-public-lock]");
+      if (!el) return;
+      event.preventDefault();
+      event.stopPropagation();
+      showLockedNote();
+    };
+    ["click", "pointerdown", "mousedown", "keydown"].forEach((type) => {
+      root.addEventListener(type, (event) => {
+        if (type === "keydown" && !["Enter", " ", "Spacebar"].includes(event.key)) return;
+        swallow(event);
+      }, true);
+    });
+  }
+
   function init() {
     resetPreview();
     const selectTool = document.querySelector('[data-stage-tool="select"]');
     if (selectTool) selectTool.click();
     [document.getElementById("stage-col-left"), document.getElementById("stage-col-right")]
       .filter(Boolean).forEach((column) => { column.inert = true; });
-    const status = addVenueBar();
+    // 会場の帯は埋め込み専用。体験版本体には本来の「劇場サイズ」の欄がある。
+    // ただし「タップで選んで置く」はスマホでどちらの形でも要るので、
+    // 帯を出さないときは、選択中の表示だけ別に作って渡す。
+    const status = embed ? addVenueBar() : standaloneSelectionStatus();
     if (status) addPhoneTapPlacement(status);
+    // 埋め込み（LPの帯）は絞り込んだ画面なので錠は要らない。体験版本体だけに掛ける。
+    if (!embed) applyLocks();
     addPhoneNotice();
     document.addEventListener("pointerdown", stopDemo, { once: true, capture: true });
     startDemo();
