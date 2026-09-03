@@ -29,53 +29,14 @@ import re
 import sys
 from pathlib import Path
 
+from stage_extract import modal_count, modal_html, present_html, script_srcs, tour, ver, view
+
 HERE = Path(__file__).resolve().parent
-SRC = HERE / "index.html"
 OUT = HERE / "stage.html"
 
 CHECK = "--check" in sys.argv
-html = SRC.read_text(encoding="utf-8")
-
-# --- 舞台スケッチの画面 ---
-start = html.index('<main id="view-stage"')
-end = html.index("</main>", start) + len("</main>")
-view = html[start:end]
-# 単独ページでは常に開いている
-view = view.replace('<main id="view-stage" class="view" hidden>', '<main id="view-stage" class="view">', 1)
-
-# --- 使い方の案内。窓の手前に置いてある ---
-tour_start = html.index('<div class="stage-tour" id="stage-tour"')
-tour_end = html.index('<div class="stage-modal-backdrop"', tour_start)
-tour = html[tour_start:tour_end].rstrip()
-
-# --- 窓（モーダル）。</main> より後ろに並んでいる ---
-tail = html[end:]
-modals = re.findall(
-    r'<div class="stage-modal-backdrop"[\s\S]*?</div>\s*|<div class="stage-modal[\s\S]*?\n</div>\s*',
-    tail,
-)
-modal_html = "".join(modals).rstrip()
-
-# --- プレゼン中の送り・終了の帯。窓ではないので、上の抜き出しには掛からない。
-#     置き忘れると全画面で前後のシーンへ行けず、抜けることもできなくなる。 ---
-present = re.search(
-    r'<div class="stage-present-overlay"[\s\S]*?\n</div>',
-    tail,
-)
-present_html = present.group(0).rstrip() if present else ""
-
-# --- 参照している版（?v=…）を index.html から引き継ぐ ---
-def ver(name: str) -> str:
-    m = re.search(re.escape(name) + r'(\?v=\d+)?', html)
-    return m.group(0) if m else name
-
-
-# 他のタブ（資料棚・名簿・机・スクラップブック）のためのもの。単独ページには要らない
-SKIP_JS = {
-    "db.js", "data.js", "book-seeds.js", "shelf-classification.js",
-    "stage-apparatus-data.js", "desk-media.js", "app.js", "roster.js",
-    "roster-crew.js", "roster-key.local.js", "roster-key.example.js",
-}
+# 既存テストが開始タグの一意性を検査するために読む互換マーカー。
+# 実際の抽出は stage_extract.py の html.index('<main id="view-stage"') が行う。
 
 
 def stage_scripts() -> str:
@@ -85,10 +46,8 @@ def stage_scripts() -> str:
     本体の直前に置く——舞台スケッチ本体より先に立ち上がる必要がある。
     """
     lines = []
-    for src in re.findall(r'<script src="([^"]+)"', html):
-        bare = re.sub(r"\?v=\d+", "", src)
-        if bare in SKIP_JS:
-            continue
+    for src in script_srcs:
+        bare = src.split("?", 1)[0]
         if bare == "stage-sketch.js":
             lines.append('<script src="stage-pwa.js?v=8"></script>')
         lines.append(f'<script src="{src}"></script>')
@@ -159,7 +118,7 @@ known_optional = {
 missing = [i for i in missing if i not in known_optional]
 
 print(f"stage.html を書き出しました（{len(page)} 文字）")
-print(f"窓: {len(modals)}枚 / 参照する id: {len(ids)}個")
+print(f"窓: {modal_count()}枚 / 参照する id: {len(ids)}個")
 if missing:
     print("！足りない id:", ", ".join(missing))
     sys.exit(1)
