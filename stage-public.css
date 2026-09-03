@@ -190,6 +190,24 @@ body.is-public [data-public-lock] {
   filter: saturate(0.4);
 }
 
+/* ★欄の見出しは暗くしない。
+   ①錠が掛かっていても畳めるボタンなので、押せると分かる必要がある（本人指示）
+   ②欄の名前が読めることで「製品版には何があるか」が伝わる。隠すのが目的ではない */
+body.is-public [data-public-lock="panel"] {
+  opacity: 1;
+  filter: none;
+}
+
+body.is-public [data-public-lock="panel"] > .stage-panel-body {
+  opacity: 0.42;
+  filter: saturate(0.4);
+  cursor: not-allowed;
+}
+
+body.is-public [data-public-lock="panel"] > .stage-panel-head {
+  cursor: pointer;
+}
+
 /* 錠のしるし。絵文字は使わない（言語・端末で字形が変わるため）。
    線画のSVGを背景に置く。色は --brass。 */
 body.is-public [data-public-lock]::after {

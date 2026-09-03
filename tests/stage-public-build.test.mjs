@@ -84,7 +84,7 @@ test("錠は許可した操作以外へ掛ける（fail-closed）", () => {
   assert.match(publicJs, /\["click", "pointerdown", "mousedown", "keydown"\]/);
   assert.match(publicJs, /addEventListener\(type,[\s\S]*?\}, true\);/);
   // 埋め込みには錠を出さない
-  assert.match(publicJs, /if \(!embed\) applyLocks\(\);/);
+  assert.match(publicJs, /if \(!embed\) \{\s*applyLocks\(\);\s*watchPoseStrip\(\);\s*\}/);
 });
 
 test("★個人データは公開版へ載せない（2026-09-03 公開直前に発見）", () => {
@@ -124,4 +124,20 @@ test("公開版は「体験版」であることを明示し、「β版」とは
   assert.doesNotMatch(publicJs, /SHOSAI_STAGE_I18N/);
   assert.ok(publicCss.includes(".stage-public-badge"), "札の見た目がある");
   assert.ok(publicCss.includes(".stage-public-note"), "説明の行の見た目がある");
+});
+
+test("姿勢は5つだけ開ける（本体は41種）", () => {
+  assert.match(publicJs, /const PUBLIC_POSES = new Set\(\["stand", "walk", "kneel", "seiza", "lie"\]\);/);
+  // 姿勢の帯は演者を選ぶたび作り直されるので、掛け直しを見張る
+  assert.match(publicJs, /function watchPoseStrip\(\)/);
+  assert.match(publicJs, /new MutationObserver\(\(\) => lockPoseTiles\(strip\)\)/);
+});
+
+test("錠の掛かった欄でも見出しを押して開け閉めできる", () => {
+  // 本人指示 2026-09-03。欄の名前が読めることで製品版の広さも伝わる。
+  assert.match(publicJs, /"\.stage-panel-head",/);
+  assert.match(publicJs, /if \(event\.target\.closest\("\.stage-panel-head"\)\) return;/);
+  // 見出しは暗くせず、中身だけ暗くする
+  assert.match(publicCss, /\[data-public-lock="panel"\] \{\s*opacity: 1;/);
+  assert.match(publicCss, /\[data-public-lock="panel"\] > \.stage-panel-body \{\s*opacity: 0\.42;/);
 });

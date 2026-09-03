@@ -292,6 +292,8 @@
     "stage-undo", "stage-redo",
   ]);
   const UNLOCKED_CLOSEST = [
+    // 欄の見出しは開閉のボタン。錠が掛かっていても畳めるようにする（本人指示 2026-09-03）。
+    ".stage-panel-head",
     ".stage-view-switch",          // 正面 / 平面 / 両方
     ".stage-public-venue-bar",     // 埋め込みで足す会場の帯
     ".stage-public-phone-notice",  // PCを勧める帯の「続ける」
@@ -376,6 +378,32 @@
       };
   }
 
+  /* ---- 姿勢は5つだけ（本人指示 2026-09-03） --------------------------
+     本体は41種を持つ。体験版で出すのは 立つ／歩く／片膝立ち／正座／うつ伏せ。
+     残りは錠にする。「まだこんなにある」ことが見えるので、隠すより伝わる。
+     ★姿勢の帯は演者を選ぶたびに作り直される。掛けっぱなしにはできないので、
+       中身の入れ替わりを見張って掛け直す。 */
+  const PUBLIC_POSES = new Set(["stand", "walk", "kneel", "seiza", "lie"]);
+
+  function lockPoseTiles(strip) {
+    strip.querySelectorAll("[data-pose]").forEach((tile) => {
+      if (PUBLIC_POSES.has(tile.dataset.pose)) {
+        delete tile.dataset.publicLock;
+        tile.removeAttribute("aria-disabled");
+        return;
+      }
+      lockElement(tile, "control");
+    });
+  }
+
+  function watchPoseStrip() {
+    const strip = document.getElementById("stage-pose-strip");
+    if (!strip) return;
+    lockPoseTiles(strip);
+    if (typeof MutationObserver !== "function") return;
+    new MutationObserver(() => lockPoseTiles(strip)).observe(strip, { childList: true });
+  }
+
   function markAsPreview() {
     const text = previewLabels();
     // ヘッダーの札と、スマホの題の札（stage-sketch.js が写した方）の両方
@@ -445,6 +473,8 @@
     /* 押した瞬間に本体の処理が走らないよう、捕捉段階で止める。 */
     const swallow = (event) => {
       if (internalClick) return;
+      // 錠の掛かった欄でも、見出しを押して開け閉めはできる。
+      if (event.target.closest(".stage-panel-head")) return;
       const el = event.target.closest("[data-public-lock]");
       if (!el) return;
       event.preventDefault();
@@ -471,7 +501,10 @@
     const status = embed ? addVenueBar() : standaloneSelectionStatus();
     if (status) addPhoneTapPlacement(status);
     // 埋め込み（LPの帯）は絞り込んだ画面なので錠は要らない。体験版本体だけに掛ける。
-    if (!embed) applyLocks();
+    if (!embed) {
+      applyLocks();
+      watchPoseStrip();
+    }
     markAsPreview();
     addPhoneNotice();
     document.addEventListener("pointerdown", stopDemo, { once: true, capture: true });
