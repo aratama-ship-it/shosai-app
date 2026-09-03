@@ -370,11 +370,13 @@
         badge: "Preview",
         title: "Stage Sketch (Preview)",
         note: "This is a preview. You can move the performers and change the venue. Features with a lock are available in the full version.",
+        betaLink: "Ask about the full beta version here",
       }
       : {
         badge: "体験版",
         title: "舞台スケッチ（体験版）",
         note: "これは体験版です。演者を動かすことと、会場を変えることができます。錠のついた機能は製品版（β）で使えます。",
+        betaLink: "製品版ベータ版はコチラからお問い合わせください",
       };
   }
 
@@ -429,10 +431,19 @@
     const head = document.querySelector(".stage-sketch-head");
     const grid = document.querySelector(".stage-sketch-grid");
     if (!head || !grid || document.querySelector(".stage-public-note")) return;
+    /* 製品版ベータへの問い合わせ。別ページ（beta.html）へ送る。
+       画面のいちばん上に置く（本人指示 2026-09-03）。 */
+    const link = document.createElement("a");
+    link.className = "stage-public-beta-link";
+    link.href = "beta.html";
+    link.textContent = text.betaLink;
+
     const note = document.createElement("p");
     note.className = "stage-public-note";
     note.textContent = text.note;
+
     grid.parentNode.insertBefore(note, grid);
+    grid.parentNode.insertBefore(link, note);
   }
 
   function applyLocks() {

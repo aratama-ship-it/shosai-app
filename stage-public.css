@@ -294,3 +294,23 @@ body.is-public .stage-public-badge {
   font: 600 11px var(--sans);
   letter-spacing: 0.1em;
 }
+
+/* 製品版ベータへの問い合わせ（画面のいちばん上・別ページへ） */
+.stage-public-beta-link {
+  display: block;
+  margin: 0 0 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--rust);
+  border-radius: 6px;
+  background: rgba(168, 75, 38, 0.14);
+  color: var(--rust-ink);
+  font: 600 14px/1.6 var(--sans);
+  text-decoration: none;
+}
+
+.stage-public-beta-link::after { content: " →"; }
+.stage-public-beta-link:hover,
+.stage-public-beta-link:focus-visible {
+  background: rgba(168, 75, 38, 0.26);
+  color: var(--paper);
+}

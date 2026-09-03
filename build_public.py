@@ -152,6 +152,10 @@ def collect_dist() -> list[str]:
         if ref.endswith((".js", ".css")):
             put(ref)
 
+    # 製品版ベータの紹介ページ（手で書いたもの）。/beta.html で開ける名前にする
+    shutil.copy2(HERE / "public-beta.html", DIST / "beta.html")
+    copied.append("beta.html（public-beta.html の写し）")
+
     # 見た目に要るアイコン
     for icon in ("icons/stage-sketch-192.png", "icons/stage-sketch-180.png"):
         put(icon)

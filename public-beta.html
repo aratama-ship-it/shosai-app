@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>製品版ベータについて — 舞台スケッチ</title>
+<meta name="theme-color" content="#191512">
+<meta name="robots" content="index, follow">
+<link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
+<style>
+  /* 色・書体は本体の style.css と同じ値。ここは1枚で完結させる（体験版のCSSに依存しない）。 */
+  :root{
+    --desk:#191512; --desk-2:#201b16; --line-dark:#382f25;
+    --paper:#efe7d6; --ink-soft-sm:#93856c;
+    --rust:#a84b26; --rust-ink:#df6433; --brass:#9c823f;
+    --serif:"Hiragino Mincho ProN","Yu Mincho",YuMincho,"Noto Serif JP",serif;
+    --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--desk);color:var(--paper);font-family:var(--serif);
+       line-height:1.9;font-size:16px;-webkit-text-size-adjust:100%}
+  main{max-width:660px;margin:0 auto;padding:48px 20px 96px}
+  .eyebrow{font-family:var(--sans);font-size:11px;letter-spacing:.28em;color:var(--ink-soft-sm);margin:0 0 10px}
+  h1{font-size:1.6rem;font-weight:600;letter-spacing:.04em;margin:0 0 8px}
+  h2{font-size:1.05rem;margin:40px 0 12px;padding-left:12px;border-left:3px solid var(--rust)}
+  p{margin:0 0 16px}
+  .lead{color:var(--paper);font-size:1.02rem}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.92rem}
+  th,td{border:1px solid var(--line-dark);padding:10px 12px;text-align:left;vertical-align:top}
+  th{background:var(--desk-2);color:var(--brass);font-weight:600}
+  td.no{color:var(--ink-soft-sm)}
+  .box{border:1px solid var(--line-dark);background:var(--desk-2);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .box.accent{border-color:var(--brass)}
+  .box h3{margin:0 0 8px;font-size:1rem;color:var(--brass)}
+  .fill{border:1px dashed var(--rust-ink);border-radius:8px;padding:14px 16px;margin:12px 0;
+        font-family:var(--sans);font-size:.9rem;color:var(--rust-ink)}
+  a{color:var(--rust-ink)}
+  .back{display:inline-block;margin-top:36px;font-family:var(--sans);font-size:.9rem}
+  .small{font-size:.86rem;color:var(--ink-soft-sm);font-family:var(--sans);line-height:1.8}
+  [hidden]{display:none !important}
+  @media (max-width:600px){ main{padding:32px 16px 72px} h1{font-size:1.35rem} }
+</style>
+</head>
+<body>
+<main>
+
+<!-- ============ 日本語 ============ -->
+<div id="ja">
+  <p class="eyebrow">STAGE SKETCH</p>
+  <h1>製品版ベータについて</h1>
+  <p class="lead">舞台スケッチは、舞台の一場面を「客席から見た絵」と「真上から見た図」の
+  二つで同時に描く道具です。いまお使いいただけるのは体験版で、製品版はベータとして
+  限られた方にお渡ししています。</p>
+
+  <h2>体験版と製品版ベータの違い</h2>
+  <table>
+    <tr><th style="width:52%">できること</th><th>体験版</th><th>製品版ベータ</th></tr>
+    <tr><td>演者を動かす／会場の形を変える</td><td>○</td><td>○</td></tr>
+    <tr><td>姿勢を選ぶ</td><td class="no">5種</td><td>41種</td></tr>
+    <tr><td>場面を並べてショーにする</td><td class="no">—</td><td>○</td></tr>
+    <tr><td>作ったものを保存する・書き出す</td><td class="no">—</td><td>○</td></tr>
+    <tr><td>3Dカメラ／この人の視界</td><td class="no">—</td><td>○</td></tr>
+    <tr><td>舞台機構（盆・せり・可動デッキ）</td><td class="no">—</td><td>○</td></tr>
+    <tr><td>照明の組み立て</td><td class="no">—</td><td>○</td></tr>
+    <tr><td>同じ画面を離れた人と一緒に見る</td><td class="no">—</td><td>○</td></tr>
+  </table>
+
+  <div class="box accent">
+    <h3>ベータ期間中は無償です</h3>
+    <p style="margin:0">ベータ期間中、製品版のご利用に費用はいただきません。
+    正式版の提供形態は未定です。</p>
+  </div>
+
+  <h2>お渡しする前にお伝えしていること</h2>
+  <p>舞台スケッチは技術図面ではなく、安全を検証したり保証したりするものでもありません。
+  演出家と演者の意思疎通を助け、良いショーを作る時間を増やすためのスケッチです。</p>
+  <p>また、まだ作っている途中のため、うまく動かないところが必ずあります。
+  「ここで迷った」のひとことが、いちばんありがたいご協力です。</p>
+
+  <h2>お問い合わせ</h2>
+  <!-- ★ここに連絡先を入れてください（下の .fill ごと差し替える）。
+       例: <p><a href="https://forms.gle/xxxx">お問い合わせフォーム</a></p> -->
+  <div class="fill" id="contact-ja">
+    ★ここに連絡先を入れてください（フォームのURL、SNSのアカウント等）。
+    このページのファイルは <code>public-beta.html</code> です。
+  </div>
+
+  <p class="small">個人で作っています。お返事に少しお時間をいただくことがあります。</p>
+
+  <a class="back" href="./">← 体験版へ戻る</a>
+  <p class="small" style="margin-top:24px"><a href="?lang=en">English</a></p>
+</div>
+
+<!-- ============ English ============ -->
+<div id="en" hidden>
+  <p class="eyebrow">STAGE SKETCH</p>
+  <h1>About the full beta</h1>
+  <p class="lead">Stage Sketch draws a stage scene two ways at once — as the house sees it,
+  and from directly above. What you can open today is the preview. The full version is
+  in beta, shared with a small number of people.</p>
+
+  <h2>Preview and full beta</h2>
+  <table>
+    <tr><th style="width:52%">What you can do</th><th>Preview</th><th>Full beta</th></tr>
+    <tr><td>Move performers / change the venue</td><td>Yes</td><td>Yes</td></tr>
+    <tr><td>Choose a pose</td><td class="no">5</td><td>41</td></tr>
+    <tr><td>Line scenes up into a show</td><td class="no">—</td><td>Yes</td></tr>
+    <tr><td>Save and export your work</td><td class="no">—</td><td>Yes</td></tr>
+    <tr><td>3D camera / a performer's point of view</td><td class="no">—</td><td>Yes</td></tr>
+    <tr><td>Stage machinery (revolve, lift, decks)</td><td class="no">—</td><td>Yes</td></tr>
+    <tr><td>Building the lighting</td><td class="no">—</td><td>Yes</td></tr>
+    <tr><td>Share one screen with someone else</td><td class="no">—</td><td>Yes</td></tr>
+  </table>
+
+  <div class="box accent">
+    <h3>Free during the beta</h3>
+    <p style="margin:0">There is no charge for the full version during the beta.
+    How the finished version will be offered is not decided yet.</p>
+  </div>
+
+  <h2>What we say before handing it over</h2>
+  <p>Stage Sketch is not a technical drawing, and it does not verify or guarantee safety.
+  It is a sketch, meant to help a director and performers understand each other and spend
+  more time making a good show.</p>
+  <p>It is still being built, so some things will not work. "I got lost here" is the most
+  useful thing you can tell us.</p>
+
+  <h2>Get in touch</h2>
+  <div class="fill" id="contact-en">
+    ★Put your contact here (form URL, social account, etc.).
+    This page is <code>public-beta.html</code>.
+  </div>
+
+  <p class="small">This is made by one person. A reply may take a little while.</p>
+
+  <a class="back" href="./">← Back to the preview</a>
+  <p class="small" style="margin-top:24px"><a href="?lang=ja">日本語</a></p>
+</div>
+
+<script>
+/* 言語は ?lang= で決める。無ければ端末の言語。体験版と同じ考え方にそろえる。 */
+(function () {
+  var asked = new URLSearchParams(location.search).get("lang");
+  var lang = asked === "en" || asked === "ja" ? asked
+    : (String(navigator.language || "").toLowerCase().indexOf("ja") === 0 ? "ja" : "en");
+  document.documentElement.lang = lang;
+  document.getElementById("ja").hidden = lang !== "ja";
+  document.getElementById("en").hidden = lang !== "en";
+  if (lang === "en") document.title = "About the full beta — Stage Sketch";
+})();
+</script>
+</main>
+</body>
+</html>

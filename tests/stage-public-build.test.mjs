@@ -7,6 +7,7 @@ const stageHtml = await readFile(new URL("../stage.html", import.meta.url), "utf
 const publicJs = await readFile(new URL("../stage-public.js", import.meta.url), "utf8");
 const publicCss = await readFile(new URL("../stage-public.css", import.meta.url), "utf8");
 const buildPublic = await readFile(new URL("../build_public.py", import.meta.url), "utf8");
+const betaPage = await readFile(new URL("../public-beta.html", import.meta.url), "utf8");
 
 test("公開体験版はPWAにならない（SW・manifest・アイコンを持たない）", () => {
   // βの stage.html には有る。公開版には無い、という対比で守る。
@@ -140,4 +141,24 @@ test("錠の掛かった欄でも見出しを押して開け閉めできる", ()
   // 見出しは暗くせず、中身だけ暗くする
   assert.match(publicCss, /\[data-public-lock="panel"\] \{\s*opacity: 1;/);
   assert.match(publicCss, /\[data-public-lock="panel"\] > \.stage-panel-body \{\s*opacity: 0\.42;/);
+});
+
+test("製品版ベータの問い合わせは、上部から別ページへ送る", () => {
+  assert.match(publicJs, /stage-public-beta-link/);
+  assert.match(publicJs, /link\.href = "beta\.html";/);
+  assert.match(publicJs, /betaLink: "製品版ベータ版はコチラからお問い合わせください"/);
+  // 説明の行より上に置く
+  assert.match(publicJs, /grid\.parentNode\.insertBefore\(link, note\);/);
+  // 配信フォルダへ運ばれる
+  assert.match(buildPublic, /shutil\.copy2\(HERE \/ "public-beta\.html", DIST \/ "beta\.html"\)/);
+});
+
+test("紹介ページはβ期間中が無償であることを書き、正式版の形は未定と断る", () => {
+  assert.match(betaPage, /ベータ期間中は無償です/);
+  assert.match(betaPage, /正式版の提供形態は未定です/);
+  assert.match(betaPage, /Free during the beta/);
+  // 技術図面ではない・安全を保証しないという断りを外さない
+  assert.match(betaPage, /技術図面ではなく、安全を検証したり保証したりするものでもありません/);
+  // 連絡先はまだ入っていない（本人が埋める）
+  assert.match(betaPage, /★ここに連絡先を入れてください/);
 });
