@@ -172,3 +172,7 @@ test("紹介ページはβ期間中が無償であることを書き、正式版
   assert.doesNotMatch(betaPage, /mailto:[^"]*%3C/);
   assert.doesNotMatch(betaPage, /★ここに連絡先を入れてください/);
 });
+
+test("スマホの体験版では姿勢の帯を正面図の上端に出す（床の演者を隠さない）", () => {
+  assert.match(publicCss, /html\.stage-phone-viewer body\.is-public \.stage-pose-strip \{\s*top: 0;\s*bottom: auto;/);
+});

@@ -314,3 +314,17 @@ body.is-public .stage-public-badge {
   background: rgba(168, 75, 38, 0.26);
   color: var(--paper);
 }
+
+/* ---- スマホの姿勢の帯は上へ（2026-09-03 本人指摘） ----
+   本体は正面図の下端（舞台の立ち上がり）へ重ねるが、スマホでは演者が立つ床を
+   丸ごと隠してしまい、選んだ人の後ろが見えない。上端へ移し、札も少し低くする。
+   βのスマホは閲覧専用で帯が出ないので、この上書きは体験版だけに効く。 */
+html.stage-phone-viewer body.is-public .stage-pose-strip {
+  top: 0;
+  bottom: auto;
+  border-top: 0;
+  border-bottom: 1px solid rgba(239, 231, 214, 0.18);
+  padding: 4px 6px;
+}
+html.stage-phone-viewer body.is-public .stage-pose-strip-tile { width: 50px; }
+html.stage-phone-viewer body.is-public .stage-pose-strip-tile canvas { height: 40px; }
