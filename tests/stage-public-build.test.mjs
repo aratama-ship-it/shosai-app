@@ -110,3 +110,18 @@ test("体験版の内部処理は自分の錠を踏まない", () => {
   assert.match(publicJs, /internalClick = true;\s*try \{ castButtons\[castIndex\]\.click\(\); \}\s*finally \{ internalClick = false; \}/);
   assert.match(publicJs, /const swallow = \(event\) => \{\s*if \(internalClick\) return;/);
 });
+
+test("公開版は「体験版」であることを明示し、「β版」とは名乗らない", () => {
+  // 「β版」は招待制の製品版を指す言葉。誰でも開ける公開版に出ていると取り違えのもと。
+  assert.match(publicJs, /function markAsPreview\(\)/);
+  assert.match(publicJs, /\.stage-beta, \.stage-phone-title-beta/);
+  assert.match(publicJs, /badge: "体験版"/);
+  assert.match(publicJs, /badge: "Preview"/);
+  assert.match(publicJs, /document\.title = text\.title;/);
+  // 埋め込みでも札を出す（iframeを切り取った絵にも残るように）
+  assert.match(publicJs, /stage-public-badge-chip/);
+  // 共有の i18n には足さない（版上げがβのテスターまで波及するため）
+  assert.doesNotMatch(publicJs, /SHOSAI_STAGE_I18N/);
+  assert.ok(publicCss.includes(".stage-public-badge"), "札の見た目がある");
+  assert.ok(publicCss.includes(".stage-public-note"), "説明の行の見た目がある");
+});

@@ -351,6 +351,62 @@
     return status;
   }
 
+  /* ---- 「体験版」であることを明示する（2026-09-03 本人指示） ------------
+     ★ヘッダーの版の札は既定で「β版」と出る。これは招待制の製品版βを指す言葉で、
+       誰でも開けるこの公開版に出ていると取り違えのもとになる。「体験版」へ差し替える。
+     ★言語は設定（錠が掛かる）から変えられないので、起動時の一度きりでよい。
+       共有の stage-i18n.js には足さない——足すと版上げが全ページへ波及し、
+       βのテスターのPWAまで作り直しになる。 */
+  function previewLabels() {
+    const english = (() => {
+      try { const b = bridge(); if (b && typeof b.isEnglish === "function") return b.isEnglish(); }
+      catch (_) { /* 読めなければ lang 属性で判断する */ }
+      return document.documentElement.lang === "en";
+    })();
+    return english
+      ? {
+        badge: "Preview",
+        title: "Stage Sketch (Preview)",
+        note: "This is a preview. You can move the performers and change the venue. Features with a lock are available in the full version.",
+      }
+      : {
+        badge: "体験版",
+        title: "舞台スケッチ（体験版）",
+        note: "これは体験版です。演者を動かすことと、会場を変えることができます。錠のついた機能は製品版（β）で使えます。",
+      };
+  }
+
+  function markAsPreview() {
+    const text = previewLabels();
+    // ヘッダーの札と、スマホの題の札（stage-sketch.js が写した方）の両方
+    document.querySelectorAll(".stage-beta, .stage-phone-title-beta").forEach((el) => {
+      el.textContent = text.badge;
+      el.classList.add("stage-public-badge");
+    });
+    document.title = text.title;
+
+    // 埋め込みは帯の中へ小さく出す。iframe を切り取った絵にも「体験版」が残るように。
+    if (embed) {
+      const bar = document.querySelector(".stage-public-venue-bar");
+      if (bar && !bar.querySelector(".stage-public-badge-chip")) {
+        const chip = document.createElement("span");
+        chip.className = "stage-public-badge-chip";
+        chip.textContent = text.badge;
+        bar.prepend(chip);
+      }
+      return;
+    }
+
+    // 体験版そのものには、何ができるかを1行で置く
+    const head = document.querySelector(".stage-sketch-head");
+    const grid = document.querySelector(".stage-sketch-grid");
+    if (!head || !grid || document.querySelector(".stage-public-note")) return;
+    const note = document.createElement("p");
+    note.className = "stage-public-note";
+    note.textContent = text.note;
+    grid.parentNode.insertBefore(note, grid);
+  }
+
   function applyLocks() {
     const root = document.getElementById("view-stage");
     if (!root) return;
@@ -416,6 +472,7 @@
     if (status) addPhoneTapPlacement(status);
     // 埋め込み（LPの帯）は絞り込んだ画面なので錠は要らない。体験版本体だけに掛ける。
     if (!embed) applyLocks();
+    markAsPreview();
     addPhoneNotice();
     document.addEventListener("pointerdown", stopDemo, { once: true, capture: true });
     startDemo();
