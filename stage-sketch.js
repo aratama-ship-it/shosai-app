@@ -2414,6 +2414,11 @@
     helpNote: document.getElementById("stage-help-note"),
     aboutOpenFromPrefs: document.getElementById("stage-about-open-from-prefs"),
     aboutModal: document.getElementById("stage-about-modal"),
+    feedbackOpen: document.getElementById("stage-feedback-open"),
+    feedbackModal: document.getElementById("stage-feedback-modal"),
+    feedbackBackdrop: document.getElementById("stage-feedback-backdrop"),
+    feedbackClose: document.getElementById("stage-feedback-close"),
+    feedbackFrame: document.getElementById("stage-feedback-frame"),
     aboutBackdrop: document.getElementById("stage-about-backdrop"),
     aboutClose: document.getElementById("stage-about-close"),
     feedback: document.getElementById("stage-feedback"),
@@ -16188,6 +16193,26 @@
     if (els.aboutBackdrop) els.aboutBackdrop.hidden = true;
   }
 
+  /* 感想・改善点の送信窓。送り先は FEEDBACK_URL（Googleフォーム）で、
+     以前は新しいタブで開いていた。β利用者が画面を離れずに書けるよう、
+     同じフォームを窓の中へ埋め込む（2026-09-03 本人指示）。
+     src は初めて開くときに入れる——開かない人の端末でフォームを読み込まない。 */
+  function openFeedback() {
+    if (!els.feedbackModal) return;
+    if (els.feedbackFrame && !els.feedbackFrame.getAttribute("src") && FEEDBACK_URL) {
+      const joiner = FEEDBACK_URL.includes("?") ? "&" : "?";
+      els.feedbackFrame.setAttribute("src", `${FEEDBACK_URL}${joiner}embedded=true`);
+    }
+    els.feedbackModal.hidden = false;
+    if (els.feedbackBackdrop) els.feedbackBackdrop.hidden = false;
+    if (els.feedbackClose) els.feedbackClose.focus();
+  }
+
+  function closeFeedback() {
+    if (els.feedbackModal) els.feedbackModal.hidden = true;
+    if (els.feedbackBackdrop) els.feedbackBackdrop.hidden = true;
+  }
+
   function openAboutFromPrefs() {
     closePrefs();
     openAbout();
@@ -19926,6 +19951,7 @@ ${propsPlotHtml}
     });
   }
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && els.feedbackModal && !els.feedbackModal.hidden) closeFeedback();
     if (event.key === "Escape" && els.sceneGridModal && !els.sceneGridModal.hidden) closeSceneGrid();
     if (event.key === "Escape" && els.reachModal && !els.reachModal.hidden) closeReachTable();
     if (event.key === "Escape" && els.helpModal && !els.helpModal.hidden) closeManualHelp();
@@ -21458,7 +21484,7 @@ ${propsPlotHtml}
   if (els.feedback) {
     els.feedback.addEventListener("click", () => {
       closePrefs();
-      if (FEEDBACK_URL) { window.open(FEEDBACK_URL, "_blank", "noopener"); return; }
+      if (FEEDBACK_URL) { openFeedback(); return; }
       const words = isEn()
         ? "The feedback form is not set up yet. Please tell the maker directly for now."
         : "感想の送り先（フォーム）はまだ用意できていません。いまは直接お知らせください。";
@@ -22428,6 +22454,9 @@ ${propsPlotHtml}
   if (els.helpBackdrop) els.helpBackdrop.addEventListener("click", closeManualHelp);
   if (els.helpFind) els.helpFind.addEventListener("input", renderManualHelp);
   if (els.aboutOpenFromPrefs) els.aboutOpenFromPrefs.addEventListener("click", openAboutFromPrefs);
+  if (els.feedbackOpen) els.feedbackOpen.addEventListener("click", openFeedback);
+  if (els.feedbackClose) els.feedbackClose.addEventListener("click", closeFeedback);
+  if (els.feedbackBackdrop) els.feedbackBackdrop.addEventListener("click", closeFeedback);
   if (els.aboutClose) els.aboutClose.addEventListener("click", closeAbout);
   if (els.aboutBackdrop) els.aboutBackdrop.addEventListener("click", closeAbout);
   if (els.presentBtn) els.presentBtn.addEventListener("click", startPresentation);

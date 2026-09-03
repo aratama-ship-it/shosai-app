@@ -479,6 +479,13 @@
      ".stage-light-intent", ".stage-light-intent-compare", ".stage-phone-info"]
       .forEach((selector) => root.querySelectorAll(selector).forEach((el) => lockElement(el, "panel")));
 
+    /* 上部のボタン列は「開けるもの（一つ戻す・やり直す）以外は全部錠」にする。
+       ★以前は錠にするものを名指ししていたため、あとから足した「感想を送る」が
+         素通りした（2026-09-03 実測）。欄と同じく fail-closed へ。 */
+    root.querySelectorAll(".stage-history-actions button, .stage-history-actions a[href]").forEach((el) => {
+      if (isUnlocked(el)) return;
+      lockElement(el, "control");
+    });
     ["#stage-export", "#stage-present-btn", "#stage-prefs-btn", "#stage-freecam-open"]
       .forEach((selector) => root.querySelectorAll(selector).forEach((el) => lockElement(el, "control")));
 

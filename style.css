@@ -12781,3 +12781,15 @@ body.stage-session-guest #stage-scene-list {
     align-items: center;
   }
 }
+
+/* ---- 感想・改善点の送信窓（2026-09-03） ----
+   Googleフォームを埋め込むので、他の窓より広く・高く取る。 */
+.stage-feedback-modal { width: min(640px, calc(100vw - 40px)); }
+.stage-feedback-body { padding: 0; }
+.stage-feedback-frame {
+  display: block;
+  width: 100%;
+  height: min(72vh, 760px);
+  border: 0;
+  background: var(--paper);
+}

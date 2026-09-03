@@ -837,7 +837,7 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
     ["stage-i18n.js", "96"],
     ["stage-set-model.js", "1"],
     ["stage-set-builder.js", "1"],
-    ["stage-sketch.js", "316"],
+    ["stage-sketch.js", "317"],
     ["stage-venue-editor.js", "7"],
   ]) {
     const reference = `${name}?v=${version}`;
@@ -845,8 +845,8 @@ test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシ�
     assert.ok(stageHtml.includes(reference), `${reference} がstage.htmlにある`);
     assert.ok(swSource.includes(`./${reference}`), `${reference} がstage-sw.jsにある`);
   }
-  for (const page of [indexSource, stageHtml]) assert.ok(page.includes("style.css?v=227"));
-  assert.ok(swSource.includes("./style.css?v=227"));
+  for (const page of [indexSource, stageHtml]) assert.ok(page.includes("style.css?v=228"));
+  assert.ok(swSource.includes("./style.css?v=228"));
   assert.ok(stageHtml.includes("stage-machinery.js?v=2"));
   assert.ok(swSource.includes("./stage-machinery.js?v=2"));
   assert.ok(stageHtml.includes("stage-first-person.js?v=24"));

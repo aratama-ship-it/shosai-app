@@ -84,6 +84,8 @@ test("錠は許可した操作以外へ掛ける（fail-closed）", () => {
   // 押しても本体の処理が走らないよう捕捉段階で止める
   assert.match(publicJs, /\["click", "pointerdown", "mousedown", "keydown"\]/);
   assert.match(publicJs, /addEventListener\(type,[\s\S]*?\}, true\);/);
+  // 上部のボタン列も名指しではなく fail-closed（新しいボタンが素通りしないように）
+  assert.match(publicJs, /root\.querySelectorAll\("\.stage-history-actions button, \.stage-history-actions a\[href\]"\)/);
   // 埋め込みには錠を出さない
   assert.match(publicJs, /if \(!embed\) \{\s*applyLocks\(\);\s*watchPoseStrip\(\);\s*\}/);
 });

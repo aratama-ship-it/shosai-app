@@ -40,13 +40,13 @@ test("セッション bridge の shelveNow は shelveCurrent の結果を返す"
 });
 
 test("変更した2本のJS版とPWAキャッシュ版を正本・単独版・Service Workerで揃える", () => {
-  for (const reference of ["stage-sketch.js?v=316", "stage-session.js?v=14"]) {
+  for (const reference of ["stage-sketch.js?v=317", "stage-session.js?v=14"]) {
     assert.ok(indexSource.includes(reference), `${reference} が index.html にある`);
     assert.ok(stageHtml.includes(reference), `${reference} が stage.html にある`);
     assert.ok(serviceWorkerSource.includes(`./${reference}`), `${reference} が stage-sw.js にある`);
   }
   // 版は上げるたびにここも更新する（2026-08-26: 発注書Hのゲスト画面変更で v144 → v145）
-  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v191";/);
+  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v192";/);
 });
 
 test("ゲスト参加は false の退避結果を失敗として扱い、role 変更前に中止する", () => {
