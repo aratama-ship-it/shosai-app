@@ -41,7 +41,9 @@ test("体験版の下地は手で組み立てず、書き出した文書を直�
   // 手組みの文書は audioTracks 等が欠けて applyDocumentString がその場で落ちる（2026-09-03）。
   assert.match(publicJs, /function resetPreview\(\) \{\s*const documentValue = readDocument\(\);/);
   assert.doesNotMatch(publicJs, /kind: "shosai-stage-sketch"/);
-  assert.match(publicJs, /project\.scenes = \[scene\];/);
+  // 場面は3つ（切替と転換の動きを見せる）。駒のidは場面間で同じ（転換アニメが同じ人を動かす）
+  assert.match(publicJs, /project\.scenes = \[scene, second, third\];/);
+  assert.match(publicJs, /copy = JSON\.parse\(JSON\.stringify\(scene\)\)/);
   assert.match(publicJs, /\.slice\(0, 3\)/);
 });
 
@@ -85,7 +87,7 @@ test("錠は許可した操作以外へ掛ける（fail-closed）", () => {
   assert.match(publicJs, /\["click", "pointerdown", "mousedown", "keydown"\]/);
   assert.match(publicJs, /addEventListener\(type,[\s\S]*?\}, true\);/);
   // 上部のボタン列も名指しではなく fail-closed（新しいボタンが素通りしないように）
-  assert.match(publicJs, /root\.querySelectorAll\("\.stage-history-actions button, \.stage-history-actions a\[href\]"\)/);
+  assert.match(publicJs, /"\.stage-history-actions button", "\.stage-history-actions a\[href\]",/);
   // 埋め込みには錠を出さない
   assert.match(publicJs, /if \(!embed\) \{\s*applyLocks\(\);\s*watchPoseStrip\(\);\s*\}/);
 });
@@ -175,4 +177,17 @@ test("紹介ページはβ期間中が無償であることを書き、正式版
 
 test("スマホの体験版では姿勢の帯を正面図の上端に出す（床の演者を隠さない）", () => {
   assert.match(publicCss, /html\.stage-phone-viewer body\.is-public \.stage-pose-strip \{\s*top: 0;\s*bottom: auto;/);
+});
+
+test("スマホ体験版: 人を足す・客席の位置・場面の切替と転換は開け、場面の追加は閉じる", () => {
+  assert.match(publicJs, /function addPerformer\(\)/);
+  assert.match(publicJs, /PUBLIC_MAX_PERFORMERS = 6/);
+  assert.match(publicJs, /function addPhoneTools\(\)/);
+  assert.match(publicJs, /"stage-scene-prev", "stage-scene-next", "stage-scene-replay",/);
+  assert.match(publicJs, /"\.stage-phone-scene-prev", "\.stage-phone-scene-next", "\.stage-phone-scene-current",/);
+  // 場面の帯は中身を個別に錠（足す・消す・複製が開かないように）
+  assert.match(publicJs, /"#stage-scene-bar button", "#stage-scene-bar select", "#stage-scene-bar input",/);
+  // スマホの「ショー」「情報」は場面帯の外。名指しで閉じる
+  assert.match(publicJs, /"\.stage-phone-load", "\.stage-phone-info-toggle",/);
+  assert.doesNotMatch(publicJs, /UNLOCKED_IDS = new Set\(\[[^\]]*stage-scene-add/);
 });

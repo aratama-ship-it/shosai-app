@@ -328,3 +328,48 @@ html.stage-phone-viewer body.is-public .stage-pose-strip {
 }
 html.stage-phone-viewer body.is-public .stage-pose-strip-tile { width: 50px; }
 html.stage-phone-viewer body.is-public .stage-pose-strip-tile canvas { height: 40px; }
+
+/* ---- スマホ体験版の道具列（2026-09-03） ----
+   会場の帯（本体では固定表示にしない）と、その下の「人を足す」「客席」。 */
+html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-venue-bar {
+  position: static;
+  width: auto;
+  margin: 0 0 6px;
+}
+html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-canvas-stack { padding-top: 0; }
+.stage-public-phone-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 6px 7px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+}
+.stage-public-add-performer {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 5px 12px;
+  border: 1px solid var(--brass);
+  color: var(--paper);
+  font: 12px var(--sans);
+}
+.stage-public-seat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+  color: var(--ink-soft-sm);
+  font: 11px var(--sans);
+}
+.stage-public-seat select {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk);
+  color: var(--paper);
+  font: 12px var(--sans);
+}

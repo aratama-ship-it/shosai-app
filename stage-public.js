@@ -68,10 +68,71 @@
     scene.pieces = scene.pieces.filter(
       (piece) => piece.type !== "performer" || keep.has(piece.id)
     );
-    // シーンは1枚だけ。並べる機能は出さない。
-    project.scenes = [scene];
+    /* 場面は3つ仕込む（本人指示 2026-09-03: 切替と転換の動きで利用イメージが湧くように）。
+       ★足す・消すはできない。★駒のidは場面間で同じにする——転換アニメは同じidの駒を
+         前の場面の位置から動かすので、idが違うと消えて現れるだけになる。 */
+    const english = document.documentElement.lang === "en";
+    const performers = scene.pieces.filter((piece) => piece.type === "performer");
+    const cloneScene = (title, mutate) => {
+      const copy = JSON.parse(JSON.stringify(scene));
+      copy.id = `public-scene-${title.index}`;
+      copy.title = english ? `Scene ${title.index}` : `場面 ${title.index}`;
+      copy.pieces.forEach((piece, order) => { if (piece.type === "performer") mutate(piece, order); });
+      return copy;
+    };
+    scene.id = "public-scene-1";
+    scene.title = english ? "Scene 1" : "場面 1";
+    const second = cloneScene({ index: 2 }, (piece, order) => {
+      // 左右を入れ替え、少し奥へ
+      piece.u = Math.max(0.12, Math.min(0.88, 1 - piece.u));
+      piece.v = Math.max(0.3, Math.min(0.85, piece.v - 0.14));
+      if (order === 0) piece.pose = "seiza";
+    });
+    const third = cloneScene({ index: 3 }, (piece, order) => {
+      // 前へ出て横に広がる
+      piece.u = order % 2 === 0 ? 0.24 : 0.76;
+      piece.v = 0.78;
+      piece.pose = order % 2 === 0 ? "kneel" : "walk";
+    });
+    if (performers.length) project.scenes = [scene, second, third];
+    else project.scenes = [scene];
     project.activeSceneId = scene.id;
     applyDocument(documentValue);
+  }
+
+  /* ---- 人を足す（スマホの体験版・本人指示 2026-09-03） ----
+     本体の「追加」は左列の欄にあり、スマホでは届かない。文書を直して戻す形で足す。
+     いまの場面にだけ置く（本体の addCastMember と同じ）。上限6人。 */
+  const PUBLIC_MAX_PERFORMERS = 6;
+  const PUBLIC_PALETTE = ["#a84b26", "#efe7d6", "#77865f", "#8b98a1", "#d3ac59", "#6d6657"];
+  function addPerformer() {
+    const documentValue = readDocument();
+    const scene = activeScene(documentValue);
+    if (!documentValue || !scene) return false;
+    const project = documentValue.project;
+    const here = scene.pieces.filter((piece) => piece.type === "performer");
+    if (here.length >= PUBLIC_MAX_PERFORMERS) {
+      showLockedNote(document.documentElement.lang === "en"
+        ? `The preview holds up to ${PUBLIC_MAX_PERFORMERS} performers.`
+        : `体験版で置けるのは${PUBLIC_MAX_PERFORMERS}人までです。`);
+      return false;
+    }
+    const english = document.documentElement.lang === "en";
+    const n = (project.cast || []).length;
+    const letter = String.fromCharCode(65 + (n % 26));
+    const castId = `public-cast-${n + 1}`;
+    const color = PUBLIC_PALETTE[n % PUBLIC_PALETTE.length];
+    project.cast = (project.cast || []).concat([{
+      id: castId, name: english ? `Performer ${letter}` : `演者${letter}`,
+      color, heightCm: 170, note: "", locked: false,
+    }]);
+    const sample = here[0] || {};
+    scene.pieces.push({
+      id: `public-performer-${n + 1}`, type: "performer", castId,
+      u: 0.5 + ((here.length % 3) - 1) * 0.12, v: 0.55, size: sample.size || 105,
+      color, name: "", pose: "stand",
+    });
+    return applyDocument(documentValue);
   }
 
   function addVenueBar() {
@@ -122,6 +183,58 @@
     new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
     sync();
     return status;
+  }
+
+  /* スマホ体験版の道具列。会場の帯の下に「人を足す」と「客席の位置」を置く。
+     客席は本体の .stage-seat ボタン（スマホでは隠れている）を裏で押す。 */
+  function addPhoneTools() {
+    const stack = document.querySelector(".stage-canvas-stack");
+    if (!stack || document.querySelector(".stage-public-phone-tools")) return;
+    const english = document.documentElement.lang === "en";
+    const tools = document.createElement("div");
+    tools.className = "stage-public-phone-tools";
+
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "stage-public-add-performer";
+    add.textContent = english ? "+ Performer" : "＋ 人を足す";
+    add.addEventListener("click", () => { stopDemo(); addPerformer(); });
+
+    const seatLabel = document.createElement("label");
+    seatLabel.className = "stage-public-seat";
+    const seatText = document.createElement("span");
+    seatText.textContent = english ? "Seen from" : "客席";
+    const seat = document.createElement("select");
+    seat.setAttribute("aria-label", english ? "Which seat the stage is seen from" : "どの席から舞台を見るか");
+    seatLabel.append(seatText, seat);
+
+    const rebuild = () => {
+      const buttons = [...document.querySelectorAll("#stage-seat-list .stage-seat")];
+      seat.innerHTML = "";
+      buttons.forEach((button, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = button.getAttribute("aria-label") || button.textContent.trim();
+        option.selected = button.getAttribute("aria-pressed") === "true";
+        seat.append(option);
+      });
+      seatLabel.hidden = buttons.length === 0;
+    };
+    seat.addEventListener("change", () => {
+      const buttons = [...document.querySelectorAll("#stage-seat-list .stage-seat")];
+      const target = buttons[Number(seat.value)];
+      if (!target) return;
+      internalClick = true;
+      try { target.click(); } finally { internalClick = false; }
+    });
+    rebuild();
+    const seatList = document.getElementById("stage-seat-list");
+    if (seatList && typeof MutationObserver === "function") {
+      new MutationObserver(rebuild).observe(seatList, { childList: true, attributes: true, subtree: true });
+    }
+
+    tools.append(add, seatLabel);
+    stack.parentNode.insertBefore(tools, stack);
   }
 
   function addPhoneNotice() {
@@ -297,10 +410,15 @@
     "stage-venue-select", "stage-venue-scale", "stage-venue-reset",
     "stage-venue-w", "stage-venue-h", "stage-venue-d",
     "stage-undo", "stage-redo",
+    // 場面の切替と転換の再生は開ける。足す・消す・複製は閉じたまま（2026-09-03）
+    "stage-scene-prev", "stage-scene-next", "stage-scene-replay",
   ]);
   const UNLOCKED_CLOSEST = [
     // 欄の見出しは開閉のボタン。錠が掛かっていても畳めるようにする（本人指示 2026-09-03）。
     ".stage-panel-head",
+    ".stage-phone-scene-prev", ".stage-phone-scene-next", ".stage-phone-scene-current",
+    "#stage-phone-scene-list",     // スマホの場面一覧（行と閉じるだけ。足す操作は無い）
+    ".stage-public-phone-tools",   // スマホ用に足す道具（人を足す・客席）
     ".stage-view-switch",          // 正面 / 平面 / 両方
     ".stage-public-venue-bar",     // 埋め込みで足す会場の帯
     ".stage-public-phone-notice",  // PCを勧める帯の「続ける」
@@ -313,7 +431,7 @@
       : 'この機能は製品版（β）で使えます。体験版では、演者を動かすことと会場を変えることができます。';
   }
 
-  function showLockedNote() {
+  function showLockedNote(message) {
     let note = document.querySelector(".stage-public-locked-note");
     if (!note) {
       note = document.createElement("div");
@@ -321,7 +439,7 @@
       note.setAttribute("role", "status");
       document.body.append(note);
     }
-    note.textContent = lockLabel();
+    note.textContent = message || lockLabel();
     clearTimeout(showLockedNote.timer);
     showLockedNote.timer = setTimeout(() => note.remove(), 4200);
   }
@@ -475,14 +593,22 @@
     }
 
     // 3) 欄に入っていないもの（シーンの帯・上の並び・図の上の道具）
-    ["#stage-scene-bar", ".stage-canvas-tools", ".stage-seat-list", ".stage-zoom-fab",
+    [".stage-canvas-tools", ".stage-seat-list", ".stage-zoom-fab",
      ".stage-light-intent", ".stage-light-intent-compare", ".stage-phone-info"]
       .forEach((selector) => root.querySelectorAll(selector).forEach((el) => lockElement(el, "panel")));
 
     /* 上部のボタン列は「開けるもの（一つ戻す・やり直す）以外は全部錠」にする。
        ★以前は錠にするものを名指ししていたため、あとから足した「感想を送る」が
          素通りした（2026-09-03 実測）。欄と同じく fail-closed へ。 */
-    root.querySelectorAll(".stage-history-actions button, .stage-history-actions a[href]").forEach((el) => {
+    root.querySelectorAll([
+      ".stage-history-actions button", ".stage-history-actions a[href]",
+      // シーンの帯は「送り・転換」だけ開け、足す・消す・複製・一覧などは閉じる
+      "#stage-scene-bar button", "#stage-scene-bar select", "#stage-scene-bar input",
+      // スマホの上下の帯（ショー・情報・設定は閉じる。送りと現在の場面は開ける）
+      // ★ショーと情報は場面帯の外にある別のボタン（2026-09-03 実測で素通りしていた）
+      ".stage-phone-scene-bar button", ".stage-phone-title button",
+      ".stage-phone-load", ".stage-phone-info-toggle",
+    ].join(", ")).forEach((el) => {
       if (isUnlocked(el)) return;
       lockElement(el, "control");
     });
@@ -500,6 +626,8 @@
       if (internalClick) return;
       // 錠の掛かった欄でも、見出しを押して開け閉めはできる。
       if (event.target.closest(".stage-panel-head")) return;
+      const control = event.target.closest("button, select, input, textarea, a[href], summary");
+      if (control && isUnlocked(control) && !control.dataset.publicLock) return;
       const el = event.target.closest("[data-public-lock]");
       if (!el) return;
       event.preventDefault();
@@ -523,8 +651,15 @@
     // 会場の帯は埋め込み専用。体験版本体には本来の「劇場サイズ」の欄がある。
     // ただし「タップで選んで置く」はスマホでどちらの形でも要るので、
     // 帯を出さないときは、選択中の表示だけ別に作って渡す。
-    const status = embed ? addVenueBar() : standaloneSelectionStatus();
+    const status = (embed || phoneLike) ? addVenueBar() : standaloneSelectionStatus();
     if (status) addPhoneTapPlacement(status);
+    if (phoneLike && !embed) {
+      // スマホ本体では帯を図の直前に置く（画面上部の案内やリンクに被せない）
+      const bar = document.querySelector(".stage-public-venue-bar");
+      const stack = document.querySelector(".stage-canvas-stack");
+      if (bar && stack) stack.parentNode.insertBefore(bar, stack);
+      addPhoneTools();
+    }
     // 埋め込み（LPの帯）は絞り込んだ画面なので錠は要らない。体験版本体だけに掛ける。
     if (!embed) {
       applyLocks();
