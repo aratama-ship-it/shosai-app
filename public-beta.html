@@ -32,8 +32,13 @@
   .box{border:1px solid var(--line-dark);background:var(--desk-2);border-radius:10px;padding:18px 20px;margin:18px 0}
   .box.accent{border-color:var(--brass)}
   .box h3{margin:0 0 8px;font-size:1rem;color:var(--brass)}
-  .fill{border:1px dashed var(--rust-ink);border-radius:8px;padding:14px 16px;margin:12px 0;
-        font-family:var(--sans);font-size:.9rem;color:var(--rust-ink)}
+  .contact{margin:14px 0 8px}
+  .contact a{display:inline-block;padding:12px 20px;border:1px solid var(--rust);border-radius:6px;
+             background:rgba(168,75,38,.14);color:var(--rust-ink);font-family:var(--sans);
+             text-decoration:none;line-height:1.5}
+  .contact-to{display:block;font-size:.78rem;letter-spacing:.22em;color:var(--brass)}
+  .contact-mail{display:block;font-size:1.02rem;letter-spacing:.02em}
+  .contact a:hover,.contact a:focus-visible{background:rgba(168,75,38,.28);color:var(--paper)}
   a{color:var(--rust-ink)}
   .back{display:inline-block;margin-top:36px;font-family:var(--sans);font-size:.9rem}
   .small{font-size:.86rem;color:var(--ink-soft-sm);font-family:var(--sans);line-height:1.8}
@@ -78,12 +83,15 @@
   「ここで迷った」のひとことが、いちばんありがたいご協力です。</p>
 
   <h2>お問い合わせ</h2>
-  <!-- ★ここに連絡先を入れてください（下の .fill ごと差し替える）。
-       例: <p><a href="https://forms.gle/xxxx">お問い合わせフォーム</a></p> -->
-  <div class="fill" id="contact-ja">
-    ★ここに連絡先を入れてください（フォームのURL、SNSのアカウント等）。
-    このページのファイルは <code>public-beta.html</code> です。
-  </div>
+  <p>製品版ベータを使ってみたい方は、こちらへご連絡ください。
+  お名前と、舞台・サーカス・ダンスなどでどんな関わり方をされているかを
+  ひとこと添えていただけると助かります。</p>
+  <p class="contact">
+    <a href="mailto:info@pygmix.com?subject=%E8%88%9E%E5%8F%B0%E3%82%B9%E3%82%B1%E3%83%83%E3%83%81%20%E8%A3%BD%E5%93%81%E7%89%88%E3%83%99%E3%83%BC%E3%82%BF%E3%81%AE%E3%81%8A%E5%95%8F%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B">
+      <span class="contact-to">ARATA URAWA</span>
+      <span class="contact-mail">info@pygmix.com</span>
+    </a>
+  </p>
 
   <p class="small">個人で作っています。お返事に少しお時間をいただくことがあります。</p>
 
@@ -126,10 +134,14 @@
   useful thing you can tell us.</p>
 
   <h2>Get in touch</h2>
-  <div class="fill" id="contact-en">
-    ★Put your contact here (form URL, social account, etc.).
-    This page is <code>public-beta.html</code>.
-  </div>
+  <p>If you would like to try the full beta, get in touch. It helps if you add a line
+  about who you are and how you work with stage, circus or dance.</p>
+  <p class="contact">
+    <a href="mailto:info@pygmix.com?subject=Stage%20Sketch%20-%20full%20beta">
+      <span class="contact-to">ARATA URAWA</span>
+      <span class="contact-mail">info@pygmix.com</span>
+    </a>
+  </p>
 
   <p class="small">This is made by one person. A reply may take a little while.</p>
 

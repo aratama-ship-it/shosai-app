@@ -159,6 +159,10 @@ test("紹介ページはβ期間中が無償であることを書き、正式版
   assert.match(betaPage, /Free during the beta/);
   // 技術図面ではない・安全を保証しないという断りを外さない
   assert.match(betaPage, /技術図面ではなく、安全を検証したり保証したりするものでもありません/);
-  // 連絡先はまだ入っていない（本人が埋める）
-  assert.match(betaPage, /★ここに連絡先を入れてください/);
+  // 連絡先（本人決定 2026-09-03）。宛先名も出す。
+  assert.match(betaPage, /mailto:info@pygmix\.com/);
+  assert.match(betaPage, /<span class="contact-to">ARATA URAWA<\/span>/);
+  // mailto に表示名を埋め込まない（対応しないメールソフトがある）
+  assert.doesNotMatch(betaPage, /mailto:[^"]*%3C/);
+  assert.doesNotMatch(betaPage, /★ここに連絡先を入れてください/);
 });
