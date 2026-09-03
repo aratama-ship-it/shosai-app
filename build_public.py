@@ -22,6 +22,15 @@ PUBLIC_SKIP_JS = {
     "stage-shows.local.js",
     # 名簿の合言葉。公開版は名簿を持たない。
     "roster-key.local.js",
+    # ---- ここから下は「錠が掛かっていて使えない機能」の実装。
+    #   積んでも触れないのに、スマホでは解析だけで時間を食う。
+    #   配信物は2MB（gzip 550KB）あり、スマホで重いという指摘を受けて外した
+    #   （2026-09-03）。外して壊れないことは実画面で確認すること。
+    "stage-first-person.js",    # この人の視界（122KB）
+    "stage-venue-editor.js",    # 会場エディタ（76KB・stage-sketchからの参照なし）
+    "manual/manual-content.js", # 冊子（44KB）
+    "stage-audio-store.js",     # 楽曲（参照側に || null の守りあり）
+    "stage-prompt-i18n.js",     # AI指示の訳（同上）
 }
 
 

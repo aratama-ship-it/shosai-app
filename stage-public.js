@@ -56,6 +56,10 @@
     if (!documentValue || !scene) return;
     const project = documentValue.project;
     project.venue = "proscenium";
+    /* 小劇場にする。舞台が小さいほど演者が大きく描かれ、指で選びやすい
+       （スマホで選びにくいという本人の指摘。2026-09-03）。 */
+    project.venueSize = "small";
+    delete project.venueDims;
     project.title = document.documentElement.lang === "en" ? "Preview" : "体験版";
     // 演者は3人まで。体験版は「動かす」だけの場所にする。
     const keep = new Set(
@@ -228,7 +232,10 @@
     const tick = (now) => {
       if (demoStopped) return;
       const progress = Math.min(1, (now - start) / 4500);
-      if (now - lastDraw >= 80 || progress === 1) {
+      /* 1回動かすごとに文書の書き出し・読み込みと全再描画が走る。
+         80msごとに回すとスマホで重い（2026-09-03 本人指摘）。
+         ゆっくり動く演出なので、間隔を空けても見た目は変わらない。 */
+      if (now - lastDraw >= 160 || progress === 1) {
         const eased = (1 - Math.cos(Math.PI * progress)) / 2;
         movePerformer(piece.id, from + (to - from) * eased);
         lastDraw = now;
