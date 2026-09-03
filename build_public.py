@@ -47,6 +47,24 @@ page = f"""<!DOCTYPE html>
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
 <link rel="stylesheet" href="{ver('style.css')}">
 <link rel="stylesheet" href="stage-public.css?v=1">
+<script>
+/* 公開体験版には認証が無いので /whoami は存在しない。本体は404を正しく受け流すが、
+   誰のコンソールにも赤い404が出るのは公開物として避けたい（2026-09-03）。
+   本体を書き換えず、ここで「誰でもない」と即答して呼び出しを止める。 */
+(function () {{
+  var real = window.fetch;
+  if (typeof real !== "function") return;
+  window.fetch = function (input, init) {{
+    var url = typeof input === "string" ? input : (input && input.url) || "";
+    if (url === "/whoami" || url.slice(-8) === "/whoami") {{
+      return Promise.resolve(new Response("{{}}", {{
+        status: 200, headers: {{ "Content-Type": "application/json" }},
+      }}));
+    }}
+    return real.apply(this, arguments);
+  }};
+}})();
+</script>
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
