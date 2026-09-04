@@ -405,14 +405,22 @@ test("LPは承認済みの文言を使い、詩的な見出しを足さない", 
   assert.doesNotMatch(lpPage, /分けているのは舞台の形ではなく/);
   assert.match(lpPage, /技術図面ではなく、安全を検証したり保証したりするものでもありません/);
   assert.match(lpPage, /PC用のアプリです/);
-  // 触れるデモは体験版の埋め込みモード
-  assert.match(lpPage, /src="\/try\.html\?embed=1"/);
+  /* ★「触ってみてください。」の埋め込みデモは本人指示で削除（2026-09-05・とりあえず）。
+       体験版へは下のボタン（/try.html）から送る。 */
+  assert.doesNotMatch(lpPage, /embed=1/);
+  assert.doesNotMatch(lpPage, /触ってみてください。/);
+  assert.match(lpPage, /<a class="btn btn-main" href="\/try\.html">/);
 });
 
 test("LPのいちばん上から「このアプリについて」へ飛べる", () => {
   // 本人指示 2026-09-05。冠と同じ行の右端に置き、下の帯へ飛ばす。
   assert.match(lpPage, /<a class="about-link" href="#about"><span data-ja>このアプリについて<\/span><span data-en>About this app<\/span><\/a>/);
   assert.match(lpPage, /<section class="story reveal" id="about">/);
+  // 帯そのものはいちばん下（フッターの直前）へ置く（本人指示 2026-09-05）
+  const about = lpPage.indexOf('<section class="story reveal" id="about">');
+  const cta = lpPage.indexOf('<section class="cta reveal">');
+  const footer = lpPage.indexOf("<footer>");
+  assert.ok(cta < about && about < footer, "CTA → このアプリについて → フッター の順");
   assert.match(lpPage, /#about\{ scroll-margin-top:var\(--space-4\); \}/);
   // 動きは環境の設定に従う
   assert.match(lpPage, /@media \(prefers-reduced-motion: reduce\)\{ html\{ scroll-behavior:auto; \} \}/);
@@ -477,6 +485,13 @@ test("LPの下部で12の機能を、画像つきで一つずつ紹介する", (
   }
   assert.match(buildPublic, /re\.findall\(r'src="media\/features\/\(\[\^"\]\+\)"', lp_html\)/);
   assert.match(buildPublic, /raise SystemExit\(f"！LPが参照する画像がない/);
+  /* ★imgに width/height を書く。読み込む前に場所を確保させるため。
+     書かないと、下の画像が読み込まれるたびにページが伸びて、
+     上の「このアプリについて」から飛んだ先が下へずれる（2026-09-05 実測: 約1300px）。 */
+  const sized = (lpPage.match(/<img src="media\/features\/[^"]+" width="\d+" height="\d+"/g) || []).length;
+  assert.equal(sized, 12, "12枚とも寸法つき");
+  /* ★小さい画像も width:auto にしない。読み込む前の高さが0になり、そのぶん下がずれる（実測146px）。 */
+  assert.doesNotMatch(lpPage, /\.tour-item-small \.tour-figure img\{ width:auto/);
   /* ★数字は画面のDOMから数えた実測値（2026-09-05）。冊子の「姿勢30種類」は古いので使わない。 */
   assert.match(lpPage, /演者の姿勢、46種。/);
   assert.match(lpPage, /小道具と器具、25種。/);
@@ -494,19 +509,16 @@ test("LPの出現アニメーションは、JSが動かなくても中身が見�
   assert.match(lpPage, /window\.setTimeout\(function \(\) \{ els\.forEach\(show\); \}, 2000\);/);
 });
 
-test("触れるデモの高さは中身に合わせる（画面の高さで決め打ちしない）", () => {
-  // 2026-09-04 実測: iframe を height:78vh にしていたため、1280x900 でも下に191px、
-  // 縦長のウィンドウではもっと大きな空白が出た。中身の高さは画面の高さではなく“幅”で決まる。
-  assert.doesNotMatch(lpPage, /\.demo-frame iframe\{[^}]*height:\s*\d+vh/);
-  assert.match(lpPage, /\.demo-frame iframe\{\n\s*display:block; width:100%; aspect-ratio:9\/4;/);
-  // JSで実寸に合わせる。測るのは body ではなく .stage-sketch
-  //（bodyの高さはiframeの高さと同じになるので、測っても今の値を読み返すだけになる）
-  assert.match(lpPage, /doc\.querySelector\("\.stage-sketch"\)/);
-  assert.doesNotMatch(lpPage, /frame\.style\.height = (?:doc|d)\.body\.scrollHeight/);
-  // スマホ表示は体験版が画面いっぱいに広がる作りなので、合わせにいかない
-  assert.match(lpPage, /doc\.documentElement\.classList\.contains\("stage-phone-viewer"\)/);
-  // 幅が変わると中身の高さも変わる
-  assert.match(lpPage, /window\.addEventListener\("resize", fit\);/);
+test("LPに体験版の埋め込みデモを置かない", () => {
+  /* 本人指示 2026-09-05（とりあえず）。帯・CSS・高さ合わせのJSをまとめて外した。
+     ★埋め込みモード（?embed=1）は stage-public.js に残してある。戻すのは差し戻しで足りる。 */
+  assert.doesNotMatch(lpPage, /demo-frame|demo-note|<section class="demo/);
+  assert.doesNotMatch(lpPage, /<iframe/);
+  // 対象が無いのに高さ合わせのJSだけ残さない（読む人を迷わせる）
+  assert.doesNotMatch(lpPage, /体験デモの高さを中身に合わせる/);
+  assert.doesNotMatch(lpPage, /stage-phone-viewer/);
+  // 埋め込みモード自体は体験版側に残っている
+  assert.match(publicJs, /const embed = params\.get\("embed"\) === "1";/);
 });
 
 test("LPは日英を持ち、承認済みの英語確定稿の文言を使う", () => {
@@ -522,10 +534,11 @@ test("LPは日英を持ち、承認済みの英語確定稿の文言を使う", 
   assert.equal(ja, en, `data-ja(${ja}) と data-en(${en}) の数が一致する`);
 });
 
-test("LPは言語をリンクと埋め込みへ引き継ぐ", () => {
+test("LPは言語をリンクへ引き継ぐ", () => {
   // 引き継がないと、英語で読んでいた人が「体験する」の先で日本語に戻る
   assert.match(lpPage, /var asked = new URLSearchParams\(location\.search\)\.get\("lang"\);/);
   assert.match(lpPage, /document\.documentElement\.lang = lang;/);
   assert.match(lpPage, /a\[href\$="\.html"\], a\[href\^="\/try"\]/);
-  assert.match(lpPage, /frame\.setAttribute\("src", frame\.getAttribute\("src"\) \+ "&lang=" \+ lang\);/);
+  // ★埋め込みデモは削除した（2026-09-05）。渡す先はリンクだけ
+  assert.doesNotMatch(lpPage, /frame\.setAttribute/);
 });

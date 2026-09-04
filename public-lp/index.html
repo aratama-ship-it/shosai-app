@@ -163,30 +163,6 @@ p{ margin:0 0 var(--space-3); }
   font-family:var(--sans); font-size:11px; letter-spacing:.12em; color:var(--brass);
 }
 
-/* ============ ②③ 触れるデモ ============ */
-.demo{ padding-top:var(--space-4); }
-.demo-frame{
-  border:1px solid var(--line-dark); border-radius:var(--radius-m);
-  overflow:hidden; background:var(--desk-2); box-shadow:var(--shadow-1);
-}
-/* 高さは中身の実寸にJSで合わせる（下の「体験デモの高さを中身に合わせる」を参照）。
-   ここの値はJSが動く前・動かない時の控え。中身の高さは画面の高さではなく“幅”で決まるので、
-   vhではなくaspect-ratioで近似する。 */
-.demo-frame iframe{
-  display:block; width:100%; aspect-ratio:9/4; min-height:440px; border:0;
-}
-@media (max-width:959px){
-  /* この幅では体験版が正面図と平面図を縦に並べるため、ずっと縦長になる */
-  .demo-frame iframe{ aspect-ratio:5/7; min-height:520px; }
-}
-@media (max-width:760px){
-  .demo-frame iframe{ aspect-ratio:auto; height:72svh; min-height:380px; }
-}
-.demo-note{
-  margin:var(--space-2) 0 0; font-family:var(--sans); font-size:var(--fs-small);
-  color:var(--ink-soft-sm);
-}
-
 /* ============ ④ 開発者の話 ============ */
 .story p{ margin-bottom:var(--space-4); }
 .story .lead{ color:var(--paper); }
@@ -220,10 +196,15 @@ p{ margin:0 0 var(--space-3); }
   margin:0; border:1px solid var(--line-dark); border-radius:var(--radius-m);
   overflow:hidden; background:var(--desk-2); box-shadow:var(--shadow-1);
 }
+/* ★imgに width/height を書いてある。読み込む前に場所を確保させるため。
+     書かないと、下の画像が読み込まれるたびにページが伸びて、
+     上の「このアプリについて」から飛んだ先が下へずれる（2026-09-05 実測: 約1300px）。 */
 .tour-figure img{ width:100%; height:auto; display:block; }
 /* 小さな欄の画像は、引き伸ばさず実寸のまま中央に置く */
 .tour-item-small .tour-figure{ display:flex; justify-content:center; padding:var(--space-5); }
-.tour-item-small .tour-figure img{ width:auto; max-width:100%; }
+/* ★width:auto にしない。読み込む前の高さが0になり、そのぶん下がずれる（2026-09-05 実測: 146px）。
+     幅を決めてやれば、width/height 属性の比から高さを先に確保できる。 */
+.tour-item-small .tour-figure img{ width:100%; max-width:268px; height:auto; }
 .tour-no{
   margin:0 0 var(--space-2); font-family:var(--sans); font-size:11px; letter-spacing:.28em; color:var(--brass);
 }
@@ -297,7 +278,7 @@ footer a{ color:var(--rust-ink); }
   </div>
   <div class="wrap hero-inner">
     <figure class="hero-video">
-      <video src="media/hero-ja.mp4" poster="media/hero-poster.jpg"
+      <video src="media/hero-ja.mp4" poster="media/hero-poster.jpg" width="1080" height="1080"
              autoplay muted loop playsinline preload="metadata"
              aria-label="正面図と真上からの図が同時に動く様子の録画">
         <source src="media/hero-ja.webm" type="video/webm">
@@ -311,41 +292,6 @@ footer a{ color:var(--rust-ink); }
     </div>
   </div>
 </header>
-
-<!-- ============ ②③ 触れるデモ ============ -->
-<section class="demo reveal">
-  <div class="wrap">
-    <h2><span data-ja>触ってみてください。</span><span data-en>Try it here.</span></h2>
-    <div class="demo-frame">
-      <iframe src="/try.html?embed=1" title="舞台スケッチの体験版（演者を動かす・会場を変える）"
-              loading="lazy" data-src-base="/try.html?embed=1"></iframe>
-    </div>
-    <p class="demo-note"><span data-ja>演者を動かすと、二つの図が同時に変わります。会場の形も切り替えられます。</span><span data-en>Move a performer and both views change at the same time. You can switch the venue too.</span></p>
-  </div>
-</section>
-
-<!-- ============ ④ 開発者の話 ============ -->
-<section class="story reveal" id="about">
-  <div class="read">
-    <h2><span data-ja>このアプリについて</span><span data-en>About this app</span></h2>
-    <p class="lead"><span data-ja>私が舞台スケッチを作ろうと思った始まりは、ディレクターの意向や、
-    チームの中での自分の役割を、視覚的に把握できるものが欲しかったことでした。</span><span data-en>I first started thinking about Stage Sketch because I needed a clearer way to see
-    what a director had in mind — and where I fit within that vision.</span></p>
-    <p><span data-ja>芸術という抽象的なものにおいて、意思疎通を言葉だけで行うことは非常に難しいものです。
-    ディレクターが見せたいものをアーティストが表現しようとするとき、
-    その意図を理解することに時間を取られすぎることもありました。</span><span data-en>Art is abstract by nature, so words can only take us so far. When an artist is trying to
-    realize a director's vision, too much rehearsal time can be spent simply working out what that vision is.</span></p>
-    <p><span data-ja>私は劇場に入るたびに客席を歩き回り、それぞれの場所から自分がどのように見えるかをイメージします。
-    俯瞰図では、人や物の位置と全体のバランスを第三者の目で捉えられます。
-    正面図では、お客さんやディレクターから舞台がどう見えるかを考えられます。</span><span data-en>Whenever I enter a theater, I walk through the auditorium and imagine how I will look from
-    different seats. The plan view shows where people and objects are placed and how the composition balances
-    as a whole. The front view shows what the audience — or the director — might see.</span></p>
-    <p><span data-ja>演者たちと事前に意図や配置を共有できれば、リハーサルの初期段階をより早く終え、
-    その先の通し練習へ時間を使えます。そうしてショーをさらに作り込んでほしいと考えています。</span><span data-en>If everyone can understand the intention and blocking in advance, the team can move through
-    the early stages more quickly and spend more time doing full runs, and shaping the show in greater depth.</span></p>
-    <p class="story-more"><a href="beta.html"><span data-ja>製品版ベータについて詳しく →</span><span data-en>More about the full beta →</span></a></p>
-  </div>
-</section>
 
 <!-- ============ ⑤ できないこと ============ -->
 <section class="reveal">
@@ -372,7 +318,7 @@ footer a{ color:var(--rust-ink); }
     <p class="lead"><span data-ja>製品版（β）の画面です。体験版で開いているのは、このうち一部です。</span><span data-en>Screens from the full beta. The preview opens only part of this.</span></p>
     <ol class="tour-list">
       <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/01-both.jpg" alt="正面図と平面図が連動して動く様子" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/01-both.jpg" width="1400" height="1786" alt="正面図と平面図が連動して動く様子" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">01</p>
           <h3><span data-ja>正面図と平面図が、連動して動く。</span><span data-en>Front and plan views move together.</span></h3>
@@ -380,7 +326,7 @@ footer a{ color:var(--rust-ink); }
         </div>
       </li>
       <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/02-seats.jpg" alt="2階席と1階左右席から見た同じ場面" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/02-seats.jpg" width="1456" height="478" alt="2階席と1階左右席から見た同じ場面" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">02</p>
           <h3><span data-ja>客席のどこから見るかを選べる。</span><span data-en>Choose where the house looks from.</span></h3>
@@ -388,7 +334,7 @@ footer a{ color:var(--rust-ink); }
         </div>
       </li>
       <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/03-scenes.jpg" alt="8つのシーンを並べた一覧" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/03-scenes.jpg" width="1263" height="423" alt="8つのシーンを並べた一覧" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">03</p>
           <h3><span data-ja>シーンを重ねて、見渡せる。</span><span data-en>Scenes, stacked and seen at once.</span></h3>
@@ -396,7 +342,7 @@ footer a{ color:var(--rust-ink); }
         </div>
       </li>
       <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/04-routes.jpg" alt="平面図に自動で描かれた動線と、手で描いた矢印" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/04-routes.jpg" width="761" height="471" alt="平面図に自動で描かれた動線と、手で描いた矢印" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">04</p>
           <h3><span data-ja>動線と矢印を描ける。</span><span data-en>Paths and arrows.</span></h3>
@@ -404,7 +350,7 @@ footer a{ color:var(--rust-ink); }
         </div>
       </li>
       <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/05-venues.jpg" alt="プロセニアム・スラスト・TOHU・シャピトーの平面図" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/05-venues.jpg" width="1522" height="942" alt="プロセニアム・スラスト・TOHU・シャピトーの平面図" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">05</p>
           <h3><span data-ja>会場の形式を選べる。自分の会場も作れる。</span><span data-en>Pick a venue, or build your own.</span></h3>
@@ -412,7 +358,7 @@ footer a{ color:var(--rust-ink); }
         </div>
       </li>
       <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/06-set-builder.jpg" alt="箱と板でセットを組む画面" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/06-set-builder.jpg" width="1400" height="886" alt="箱と板でセットを組む画面" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">06</p>
           <h3><span data-ja>舞台セットを組める。</span><span data-en>Build your own set pieces.</span></h3>
@@ -420,7 +366,7 @@ footer a{ color:var(--rust-ink); }
         </div>
       </li>
       <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/07-kinds.jpg" alt="台・テーブル・トラピーズ・シルホイールなど種類の一覧" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/07-kinds.jpg" width="970" height="776" alt="台・テーブル・トラピーズ・シルホイールなど種類の一覧" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">07</p>
           <h3><span data-ja>小道具と器具、25種。</span><span data-en>Twenty-five kinds of set and apparatus.</span></h3>
@@ -428,7 +374,7 @@ footer a{ color:var(--rust-ink); }
         </div>
       </li>
       <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/08-poses.jpg" alt="立つ・歩く・逆立ち・バク転などの姿勢の一覧" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/08-poses.jpg" width="970" height="838" alt="立つ・歩く・逆立ち・バク転などの姿勢の一覧" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">08</p>
           <h3><span data-ja>演者の姿勢、46種。</span><span data-en>Forty-six poses.</span></h3>
@@ -436,7 +382,7 @@ footer a{ color:var(--rust-ink); }
         </div>
       </li>
       <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/09-lights.jpg" alt="照明を選んだ正面図と、照明の欄" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/09-lights.jpg" width="1047" height="479" alt="照明を選んだ正面図と、照明の欄" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">09</p>
           <h3><span data-ja>照明も作れる。</span><span data-en>Lighting, too.</span></h3>
@@ -444,7 +390,7 @@ footer a{ color:var(--rust-ink); }
         </div>
       </li>
       <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/10-3d.jpg" alt="3Dカメラで客席中央から見た舞台と、演者の目線で見た客席" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/10-3d.jpg" width="2000" height="632" alt="3Dカメラで客席中央から見た舞台と、演者の目線で見た客席" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">10</p>
           <h3><span data-ja>3Dカメラで舞台の中へ。演者の目線でも。</span><span data-en>A 3D camera inside the set — and through a performer's eyes.</span></h3>
@@ -452,7 +398,7 @@ footer a{ color:var(--rust-ink); }
         </div>
       </li>
       <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/11-export.jpg" alt="画像を書き出す窓（作図として／ピッチとして）" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/11-export.jpg" width="1044" height="584" alt="画像を書き出す窓（作図として／ピッチとして）" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">11</p>
           <h3><span data-ja>書き出しは、作図にもピッチにも。</span><span data-en>Export for drawings, or for a pitch.</span></h3>
@@ -460,7 +406,7 @@ footer a{ color:var(--rust-ink); }
         </div>
       </li>
       <li class="tour-item tour-item-small">
-        <figure class="tour-figure"><img src="media/features/12-session.jpg" alt="リアルタイム共有の欄" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/12-session.jpg" width="268" height="239" alt="リアルタイム共有の欄" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">12</p>
           <h3><span data-ja>チームで、同じ場面を見ながら話せる。</span><span data-en>Meet over the same scene.</span></h3>
@@ -478,6 +424,30 @@ footer a{ color:var(--rust-ink); }
     <p><a class="btn btn-main" href="/try.html"><span data-ja>体験する</span><span data-en>Open the preview</span></a></p>
     <p class="cta-note small"><span data-ja>体験版はスマホでも開けますが、操作が限られます。PCでのご利用をお勧めします。</span><span data-en>The preview opens on phones too, but it is limited there. We recommend using a computer.</span></p>
     <p style="margin-top:var(--space-5)"><a class="btn btn-sub" href="beta.html"><span data-ja>製品版ベータを使ってみたい</span><span data-en>Ask about the full beta</span></a></p>
+  </div>
+</section>
+
+<!-- ============ 開発者の話（このアプリについて）============
+     いちばん下に置く（本人指示 2026-09-05）。上の「このアプリについて」からここへ飛ぶ。 -->
+<section class="story reveal" id="about">
+  <div class="read">
+    <h2><span data-ja>このアプリについて</span><span data-en>About this app</span></h2>
+    <p class="lead"><span data-ja>私が舞台スケッチを作ろうと思った始まりは、ディレクターの意向や、
+    チームの中での自分の役割を、視覚的に把握できるものが欲しかったことでした。</span><span data-en>I first started thinking about Stage Sketch because I needed a clearer way to see
+    what a director had in mind — and where I fit within that vision.</span></p>
+    <p><span data-ja>芸術という抽象的なものにおいて、意思疎通を言葉だけで行うことは非常に難しいものです。
+    ディレクターが見せたいものをアーティストが表現しようとするとき、
+    その意図を理解することに時間を取られすぎることもありました。</span><span data-en>Art is abstract by nature, so words can only take us so far. When an artist is trying to
+    realize a director's vision, too much rehearsal time can be spent simply working out what that vision is.</span></p>
+    <p><span data-ja>私は劇場に入るたびに客席を歩き回り、それぞれの場所から自分がどのように見えるかをイメージします。
+    俯瞰図では、人や物の位置と全体のバランスを第三者の目で捉えられます。
+    正面図では、お客さんやディレクターから舞台がどう見えるかを考えられます。</span><span data-en>Whenever I enter a theater, I walk through the auditorium and imagine how I will look from
+    different seats. The plan view shows where people and objects are placed and how the composition balances
+    as a whole. The front view shows what the audience — or the director — might see.</span></p>
+    <p><span data-ja>演者たちと事前に意図や配置を共有できれば、リハーサルの初期段階をより早く終え、
+    その先の通し練習へ時間を使えます。そうしてショーをさらに作り込んでほしいと考えています。</span><span data-en>If everyone can understand the intention and blocking in advance, the team can move through
+    the early stages more quickly and spend more time doing full runs, and shaping the show in greater depth.</span></p>
+    <p class="story-more"><a href="beta.html"><span data-ja>製品版ベータについて詳しく →</span><span data-en>More about the full beta →</span></a></p>
   </div>
 </section>
 
@@ -511,8 +481,6 @@ footer a{ color:var(--rust-ink); }
   document.querySelectorAll('a[href$=".html"], a[href^="/try"]').forEach(function (a) {
     a.setAttribute("href", withLang(a.getAttribute("href")));
   });
-  var frame = document.querySelector(".demo-frame iframe");
-  if (frame) frame.setAttribute("src", frame.getAttribute("src") + "&lang=" + lang);
 })();
 </script>
 
@@ -555,56 +523,5 @@ footer a{ color:var(--rust-ink); }
 })();
 </script>
 
-<script>
-/* 体験デモの高さを中身に合わせる。
-   体験版の中身の高さは「画面の高さ」ではなく「幅」で決まる（図の縦横比で決まる）ため、
-   iframeにvhで高さを与えると、縦長のウィンドウでは下に大きな空白ができる。
-   同じオリジンなので、中の実際の高さを読んで合わせる。
-
-   ★スマホ表示（stage-phone-viewer）のときは、体験版が意図的に画面いっぱいに広がる作りなので
-     測っても意味がない。CSSの高さのままにする。
-   ★測るのは <body> ではなく .stage-sketch。bodyの高さはiframeの高さと同じになるので、
-     bodyを測ると「今の高さ」を読み返すだけになってしまう。 */
-(function () {
-  var frame = document.querySelector(".demo-frame iframe");
-  if (!frame) return;
-
-  var fit = function () {
-    var doc;
-    try { doc = frame.contentDocument; } catch (err) { return; }
-    if (!doc || !doc.body) return;
-    if (doc.documentElement.classList.contains("stage-phone-viewer")) {
-      frame.style.height = "";
-      return;
-    }
-    var sketch = doc.querySelector(".stage-sketch");
-    if (!sketch || !sketch.offsetHeight) return;
-    var pad = 12;
-    var view = doc.getElementById("view-stage");
-    if (view && doc.defaultView) {
-      var cs = doc.defaultView.getComputedStyle(view);
-      var sum = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
-      if (isFinite(sum)) pad = sum;
-    }
-    var next = Math.round(sketch.offsetHeight + pad);
-    if (next < 300) return;
-    if (Math.abs(next - frame.clientHeight) <= 2) return;
-    frame.style.height = next + "px";
-  };
-
-  frame.addEventListener("load", function () {
-    fit();
-    [200, 700, 1600].forEach(function (ms) { window.setTimeout(fit, ms); });
-    if (typeof ResizeObserver === "function") {
-      try {
-        var sketch = frame.contentDocument.querySelector(".stage-sketch");
-        if (sketch) new ResizeObserver(fit).observe(sketch);
-      } catch (err) { /* 測れない時はCSSの高さのまま */ }
-    }
-  });
-  window.addEventListener("resize", fit);
-  window.addEventListener("orientationchange", function () { window.setTimeout(fit, 400); });
-})();
-</script>
 </body>
 </html>
