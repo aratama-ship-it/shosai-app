@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import test from "node:test";
 
 const tryHtml = await readFile(new URL("../try.html", import.meta.url), "utf8");
@@ -444,27 +445,29 @@ test("LPの名前の下に「誰が、何に使うか」を置く", () => {
   assert.match(lpPage, /\.hero-video video\{ max-height:56vh; \}/);
 });
 
-test("LPの下部に主な機能の一覧を置く（正本は冊子の機能ガイド）", () => {
-  // 本人指示 2026-09-05。できないこと の後、CTA の前。
-  const features = lpPage.indexOf('<section class="features reveal">');
+test("LPの下部で12の機能を、画像つきで一つずつ紹介する", () => {
+  // 本人指示 2026-09-05。一覧（8組の箇条書き）から、一機能・一画像の縦並びへ。
+  const tour = lpPage.indexOf('<section class="tour reveal">');
   const limits = lpPage.indexOf("<span data-ja>できないこと</span>");
   const cta = lpPage.indexOf('<section class="cta reveal">');
-  assert.ok(features > limits && features < cta, "できないこと → 主な機能 → CTA の順");
-  assert.match(lpPage, /<h2><span data-ja>主な機能<\/span><span data-en>What's inside<\/span><\/h2>/);
-  // 8つの組
-  for (const ja of ["描く", "会場", "出るもの", "舞台機構", "照明", "シーン", "見せる・残す", "一緒に"]) {
-    assert.match(lpPage, new RegExp(`<h3><span data-ja>${ja}</span>`), `${ja} の組がある`);
+  assert.ok(tour > limits && tour < cta, "できないこと → 12の機能 → CTA の順");
+  assert.match(lpPage, /<h2><span data-ja>12の機能を、ひとつずつ。<\/span><span data-en>Twelve things it does, one at a time\.<\/span><\/h2>/);
+  const items = lpPage.match(/<li class="tour-item[^"]*">/g) || [];
+  assert.equal(items.length, 12, "12項目");
+  // 画像は features/ 配下。全部が存在し、配信スクリプトが運ぶ
+  const refs = [...lpPage.matchAll(/src="media\/features\/([^"]+)"/g)].map((m) => m[1]);
+  assert.equal(new Set(refs).size, 12, "12枚がそれぞれ別の画像");
+  for (const name of refs) {
+    assert.ok(existsSync(new URL(`../public-lp/media/features/${name}`, import.meta.url)), `${name} がある`);
   }
-  // 冊子どおりの中身（抜粋）
-  assert.match(lpPage, /実在の劇場：シアタートラム・TOHU・シルク・ディヴェール/);
-  assert.match(lpPage, /吊り・SS・前明かり・転がし/);
-  assert.match(lpPage, /Vision Pro 稽古用JSON/);
-  // PC版だけの欄には札を付ける（冊子: 舞台機構・音楽・3Dカメラ）
-  assert.ok((lpPage.match(/<span class="pc"><span data-ja>PC版<\/span><span data-en>desktop<\/span><\/span>/g) || []).length >= 5);
-  /* ★姿勢の数は書かない。冊子の「30種類」とコードの定義数（46・うち隠し4）が一致していない。 */
-  assert.doesNotMatch(lpPage, /姿勢[：:]\s*\d+種/);
-  // 4列（1000px以上）・2列（600px以上）・1列
-  assert.match(lpPage, /@media \(min-width:1000px\)\{ \.feature-grid\{ grid-template-columns:repeat\(4,minmax\(0,1fr\)\); \} \}/);
+  assert.match(buildPublic, /re\.findall\(r'src="media\/features\/\(\[\^"\]\+\)"', lp_html\)/);
+  assert.match(buildPublic, /raise SystemExit\(f"！LPが参照する画像がない/);
+  /* ★数字は画面のDOMから数えた実測値（2026-09-05）。冊子の「姿勢30種類」は古いので使わない。 */
+  assert.match(lpPage, /演者の姿勢、46種。/);
+  assert.match(lpPage, /小道具と器具、25種。/);
+  assert.doesNotMatch(lpPage, /30種類/);
+  // 用語: 立ち稽古ではなく「場当たり」
+  assert.match(lpPage, /立ち位置は、場当たりの前に。/);
 });
 
 test("LPの出現アニメーションは、JSが動かなくても中身が見える形にする", () => {

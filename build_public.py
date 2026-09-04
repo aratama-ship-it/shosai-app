@@ -166,6 +166,19 @@ def collect_dist() -> list[str]:
         shutil.copy2(src, DIST / "media" / name)
         copied.append(f"media/{name}")
 
+    # LPの「12の機能」が参照する画像。LP本体から参照を読み取り、欠けていれば止める
+    # （名指しのリストにすると、LPへ足した画像が配信から漏れる）。
+    lp_html = (HERE / "public-lp" / "index.html").read_text(encoding="utf-8")
+    feature_refs = sorted(set(re.findall(r'src="media/features/([^"]+)"', lp_html)))
+    if feature_refs:
+        (DIST / "media" / "features").mkdir(parents=True, exist_ok=True)
+    for name in feature_refs:
+        src = media / "features" / name
+        if not src.exists():
+            raise SystemExit(f"！LPが参照する画像がない: {src}")
+        shutil.copy2(src, DIST / "media" / "features" / name)
+        copied.append(f"media/features/{name}")
+
     # try.html が読む css / js だけを、生成物から読み取って運ぶ
     page = OUT.read_text(encoding="utf-8")
     for ref in re.findall(r'(?:src|href)="([^":]+?)(?:\?v=\d+)?"', page):

@@ -188,31 +188,37 @@ p{ margin:0 0 var(--space-3); }
 .limits h2{ border:0; padding:0; margin-bottom:var(--space-2); font-size:var(--fs-body); color:var(--brass); }
 .limits p{ margin-bottom:0; font-size:var(--fs-small); line-height:1.8; color:var(--paper); }
 
-/* ============ 主な機能 ============ */
-.features .lead{
-  margin:0 0 var(--space-4); font-family:var(--sans); font-size:var(--fs-small); color:var(--ink-soft-sm);
+/* ============ 12の機能を、ひとつずつ ============
+   画像と文を横に並べ、左右を交互に振る。一つの機能に一つの画像。
+   ★画像は撮ったままの縦横比で置く（切って嘘にしない）。幅だけ揃える。 */
+.tour .lead{
+  margin:0 0 var(--space-5); font-family:var(--sans); font-size:var(--fs-small); color:var(--ink-soft-sm);
 }
-.feature-grid{ display:grid; gap:var(--space-3); grid-template-columns:minmax(0,1fr); }
-@media (min-width:600px){ .feature-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
-@media (min-width:1000px){ .feature-grid{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
-.feature-group{
-  border:1px solid var(--line-dark); background:var(--desk-2);
-  border-radius:var(--radius-m); padding:var(--space-4);
+.tour-list{ list-style:none; margin:0; padding:0; display:grid; gap:var(--space-6); }
+.tour-item{ display:grid; gap:var(--space-4); align-items:center; grid-template-columns:minmax(0,1fr); }
+@media (min-width:900px){
+  .tour-item{ grid-template-columns:minmax(0,7fr) minmax(0,5fr); gap:var(--space-6); }
+  .tour-item:nth-child(even) .tour-figure{ order:2; }
+  .tour-item:nth-child(even) .tour-copy{ order:1; }
 }
-.feature-group h3{
-  margin:0 0 var(--space-2); font-family:var(--sans); font-size:11px; font-weight:600;
-  letter-spacing:.18em; color:var(--brass);
+.tour-figure{
+  margin:0; border:1px solid var(--line-dark); border-radius:var(--radius-m);
+  overflow:hidden; background:var(--desk-2); box-shadow:var(--shadow-1);
 }
-.feature-group ul{ margin:0; padding:0; list-style:none; }
-.feature-group li{
-  font-family:var(--sans); font-size:var(--fs-small); line-height:1.75; color:var(--paper-line);
-  padding:6px 0; border-top:1px solid rgba(56,47,37,.7);
+.tour-figure img{ width:100%; height:auto; display:block; }
+/* 小さな欄の画像は、引き伸ばさず実寸のまま中央に置く */
+.tour-item-small .tour-figure{ display:flex; justify-content:center; padding:var(--space-5); }
+.tour-item-small .tour-figure img{ width:auto; max-width:100%; }
+.tour-no{
+  margin:0 0 var(--space-2); font-family:var(--sans); font-size:11px; letter-spacing:.28em; color:var(--brass);
 }
-.feature-group li:first-child{ border-top:0; padding-top:0; }
-.feature-group .pc{
-  display:inline-block; margin-left:8px; padding:0 6px; border:1px solid var(--line-dark);
-  border-radius:var(--radius-s); font-size:10px; letter-spacing:.1em; color:var(--ink-soft-sm);
-  vertical-align:1px;
+.tour-copy h3{
+  margin:0 0 var(--space-3); font-size:var(--fs-h2); font-weight:600; line-height:1.5; letter-spacing:.03em;
+}
+.tour-copy p{ margin:0; font-size:var(--fs-body); line-height:1.9; color:var(--paper-line); }
+@media (max-width:760px){
+  .tour-copy h3{ font-size:20px; }
+  .tour-copy p{ font-size:15px; }
 }
 
 /* ============ ⑥⑦ CTA ============ */
@@ -347,88 +353,113 @@ footer a{ color:var(--rust-ink); }
   </div>
 </section>
 
-<!-- ============ 主な機能（本人指示 2026-09-05） ============
-     正本は冊子の「機能ガイド」。ここに無いものを足すときは冊子を先に直す。
-     ★姿勢の数は書かない（冊子の「30種類」とコードの定義数が一致していないため）。 -->
-<section class="features reveal">
+<!-- ============ 12の機能を、ひとつずつ（本人指示 2026-09-05） ============
+     画像は製品版（stage.html?sample・見本「八人のサーカス」）を Playwright で撮ったもの。
+     数字（客席5・会場10＋自作・種類25・小道具の形11・姿勢46・照明4・書き出し画風4）は
+     すべて画面のDOMから数えた実測値。冊子に書かれた姿勢の数は古いので使わない。
+     ★12だけは静止画が弱い（未接続の欄）。実際の会議の画面が撮れたら差し替える。 -->
+<section class="tour reveal">
   <div class="wrap">
-    <h2><span data-ja>主な機能</span><span data-en>What's inside</span></h2>
-    <p class="lead"><span data-ja>製品版（β）で使えるものの一覧です。体験版で開いているのは、このうち一部です。</span><span data-en>Everything in the full beta. The preview opens only part of it.</span></p>
-    <div class="feature-grid">
-      <div class="feature-group">
-        <h3><span data-ja>描く</span><span data-en>Drawing</span></h3>
-        <ul>
-        <li><span data-ja>正面図と平面図が連動して動く</span><span data-en>Front and plan views move together</span></li>
-        <li><span data-ja>客席の位置を選ぶ：最前列・中央・後方・左右席・2階席</span><span data-en>Choose where the house looks from: front row, stalls centre, rear, side, balcony</span></li>
-        <li><span data-ja>演者・装置・照明に名前の札</span><span data-en>Name tags on performers, set and lights</span></li>
-        <li><span data-ja>動線と矢印を描く</span><span data-en>Draw paths and arrows</span></li>
-        <li><span data-ja>背景を塗る・写真を敷く・スクリーンに文字を映す</span><span data-en>Paint the backdrop, lay a photo, project text on a screen</span></li>
-        </ul>
-      </div>
-      <div class="feature-group">
-        <h3><span data-ja>会場</span><span data-en>Venues</span></h3>
-        <ul>
-        <li><span data-ja>形式：プロセニアム・スラスト・ビッグトップ・屋外ステージ・ブラックボックス</span><span data-en>Formats: proscenium, thrust, big top, outdoor stage, black box</span></li>
-        <li><span data-ja>サーカス向け：シャピトー（巡演テント）・劇場のサーカス公演</span><span data-en>For circus: chapiteau and circus in a theatre</span></li>
-        <li><span data-ja>実在の劇場：シアタートラム・TOHU・シルク・ディヴェール</span><span data-en>Real houses: Theatre Tram, TOHU, Cirque d'Hiver</span></li>
-        <li><span data-ja>寸法を入れて自分の部屋を作る・会場をファイルで受け渡す</span><span data-en>Build your own room from measurements; pass venues around as files</span></li>
-        </ul>
-      </div>
-      <div class="feature-group">
-        <h3><span data-ja>出るもの</span><span data-en>Cast and set</span></h3>
-        <ul>
-        <li><span data-ja>演者・舞台セット・小道具の名簿（名前・大きさ・色）</span><span data-en>A roster of performers, set pieces and props: name, size, colour</span></li>
-        <li><span data-ja>姿勢：宙返り、シルホイール、一輪車など</span><span data-en>Poses: somersault, Cyr wheel, unicycle and more</span></li>
-        <li><span data-ja>持ち物と器具：ポール・トラピーズ・ティシュー・ディアボロなど</span><span data-en>Apparatus in hand: pole, trapeze, tissu, diabolo and more</span></li>
-        <li><span data-ja>箱や板からセットを組む・並べた一式を登録して呼び出す</span><span data-en>Build set pieces from boxes and boards; save an arrangement and recall it</span></li>
-        </ul>
-      </div>
-      <div class="feature-group">
-        <h3><span data-ja>舞台機構</span><span data-en>Stage machinery</span></h3>
-        <ul>
-        <li><span data-ja>盆（回り舞台）・可動デッキ・幕・水面・せり</span><span data-en>Revolve, moving decks, curtains, water, lifts</span><span class="pc"><span data-ja>PC版</span><span data-en>desktop</span></span></li>
-        <li><span data-ja>既製プリセット：前幕ひとそろい、二重盆など</span><span data-en>Ready-made rigs such as a front-curtain set or a double revolve</span><span class="pc"><span data-ja>PC版</span><span data-en>desktop</span></span></li>
-        <li><span data-ja>転換に合わせて仕掛けが動く様子を再生</span><span data-en>Play back how the machinery moves through a transition</span><span class="pc"><span data-ja>PC版</span><span data-en>desktop</span></span></li>
-        </ul>
-      </div>
-      <div class="feature-group">
-        <h3><span data-ja>照明</span><span data-en>Lighting</span></h3>
-        <ul>
-        <li><span data-ja>吊り・SS・前明かり・転がし</span><span data-en>Overhead, side, front and floor lights</span></li>
-        <li><span data-ja>灯体と、光の当たる場所を別々に動かす</span><span data-en>Move the fixture and the spot it lights separately</span></li>
-        <li><span data-ja>定番の組み方をプリセットから</span><span data-en>Standard rigs from presets</span></li>
-        </ul>
-      </div>
-      <div class="feature-group">
-        <h3><span data-ja>シーン</span><span data-en>Scenes</span></h3>
-        <ul>
-        <li><span data-ja>場面を重ねる・セクションで束ねる・一覧で見渡す</span><span data-en>Stack scenes, group them into sections, see them all at once</span></li>
-        <li><span data-ja>転換の長さと暗転を決める・動線の先を次の場面にする</span><span data-en>Set transition length and blackout; the end of a path becomes the next scene</span></li>
-        <li><span data-ja>シーンごとの説明メモ</span><span data-en>A note on each scene</span></li>
-        <li><span data-ja>音楽をシーンに割り当てて流す</span><span data-en>Assign music to scenes and play it</span><span class="pc"><span data-ja>PC版</span><span data-en>desktop</span></span></li>
-        </ul>
-      </div>
-      <div class="feature-group">
-        <h3><span data-ja>見せる・残す</span><span data-en>Show and keep</span></h3>
-        <ul>
-        <li><span data-ja>プレゼン：正面図を全画面にして矢印キーで送る</span><span data-en>Presentation: front view full screen, arrow keys to step</span></li>
-        <li><span data-ja>3Dカメラで舞台の中を覗く・満席／空席</span><span data-en>A 3D camera inside the set, with a full or empty house</span><span class="pc"><span data-ja>PC版</span><span data-en>desktop</span></span></li>
-        <li><span data-ja>この人の視界</span><span data-en>See through a performer's eyes</span></li>
-        <li><span data-ja>画像を書き出す</span><span data-en>Export as an image</span></li>
-        <li><span data-ja>端末内に自動保存・ファイルへ書き出し・読み込み</span><span data-en>Autosave on the device; export and import as files</span></li>
-        <li><span data-ja>Vision Pro 稽古用JSON</span><span data-en>Rehearsal JSON for Vision Pro</span></li>
-        </ul>
-      </div>
-      <div class="feature-group">
-        <h3><span data-ja>一緒に</span><span data-en>Together</span></h3>
-        <ul>
-        <li><span data-ja>リアルタイム共有：招待URLで参加、ゲストはレーザーポインタと矢印</span><span data-en>Live sharing: join by URL; guests point and draw arrows</span></li>
-        <li><span data-ja>日本語・英語</span><span data-en>Japanese and English</span></li>
-        <li><span data-ja>クイックガイドと使いかたの冊子</span><span data-en>A quick guide and a full booklet</span></li>
-        <li><span data-ja>PC・iPad・スマホ（見る係）</span><span data-en>Desktop, iPad, and phone as a viewer</span></li>
-        </ul>
-      </div>
-    </div>
+    <h2><span data-ja>12の機能を、ひとつずつ。</span><span data-en>Twelve things it does, one at a time.</span></h2>
+    <p class="lead"><span data-ja>製品版（β）の画面です。体験版で開いているのは、このうち一部です。</span><span data-en>Screens from the full beta. The preview opens only part of this.</span></p>
+    <ol class="tour-list">
+      <li class="tour-item">
+        <figure class="tour-figure"><img src="media/features/01-both.jpg" alt="正面図と平面図が連動して動く様子" loading="lazy" decoding="async"></figure>
+        <div class="tour-copy">
+          <p class="tour-no">01</p>
+          <h3><span data-ja>正面図と平面図が、連動して動く。</span><span data-en>Front and plan views move together.</span></h3>
+          <p><span data-ja>演者をひとつ動かすと、客席から見た正面図と、真上からの平面図が同時に変わります。図面を二枚描き分ける手間がなくなります。</span><span data-en>Move one performer and both the front view, as the house sees it, and the plan from above change at once. No more drawing two pictures by hand.</span></p>
+        </div>
+      </li>
+      <li class="tour-item">
+        <figure class="tour-figure"><img src="media/features/02-seats.jpg" alt="2階席と1階左右席から見た同じ場面" loading="lazy" decoding="async"></figure>
+        <div class="tour-copy">
+          <p class="tour-no">02</p>
+          <h3><span data-ja>客席のどこから見るかを選べる。</span><span data-en>Choose where the house looks from.</span></h3>
+          <p><span data-ja>1階の最前列・中央・後方・左右席、そして2階席。同じ場面でも、見る位置で並びの意味が変わります。</span><span data-en>Front row, stalls centre, rear, side, or balcony. The same scene reads differently from each seat.</span></p>
+        </div>
+      </li>
+      <li class="tour-item">
+        <figure class="tour-figure"><img src="media/features/03-scenes.jpg" alt="8つのシーンを並べた一覧" loading="lazy" decoding="async"></figure>
+        <div class="tour-copy">
+          <p class="tour-no">03</p>
+          <h3><span data-ja>シーンを重ねて、見渡せる。</span><span data-en>Scenes, stacked and seen at once.</span></h3>
+          <p><span data-ja>場面を足し、セクションで束ね、一覧で見渡します。転換の長さと暗転を決めて、次の場面へ送れます。</span><span data-en>Add scenes, group them into sections, and see them all at a glance. Set transition length and blackout, then step to the next.</span></p>
+        </div>
+      </li>
+      <li class="tour-item">
+        <figure class="tour-figure"><img src="media/features/04-routes.jpg" alt="平面図に自動で描かれた動線と、手で描いた矢印" loading="lazy" decoding="async"></figure>
+        <div class="tour-copy">
+          <p class="tour-no">04</p>
+          <h3><span data-ja>動線と矢印を描ける。</span><span data-en>Paths and arrows.</span></h3>
+          <p><span data-ja>次の場面への動きは動線として自動で描かれます。伝えたい指示は、矢印を描き足して残せます。</span><span data-en>Movement to the next scene is drawn automatically as a path. Add arrows for the notes you want to leave.</span></p>
+        </div>
+      </li>
+      <li class="tour-item">
+        <figure class="tour-figure"><img src="media/features/05-venues.jpg" alt="プロセニアム・スラスト・TOHU・シャピトーの平面図" loading="lazy" decoding="async"></figure>
+        <div class="tour-copy">
+          <p class="tour-no">05</p>
+          <h3><span data-ja>会場の形式を選べる。自分の会場も作れる。</span><span data-en>Pick a venue, or build your own.</span></h3>
+          <p><span data-ja>プロセニアム、スラスト、全周のアリーナ、シャピトー。実在の劇場（シアタートラム・TOHU・シルク・ディヴェール）も入っています。置いた演者はそのままに、客席だけが動きます。寸法を入れて、自分の会場を作ることもできます。</span><span data-en>Proscenium, thrust, arena in the round, chapiteau, and real houses: Theatre Tram, TOHU, Cirque d'Hiver. Your performers stay put; only the audience moves. Or build your own room from measurements.</span></p>
+        </div>
+      </li>
+      <li class="tour-item">
+        <figure class="tour-figure"><img src="media/features/06-set-builder.jpg" alt="箱と板でセットを組む画面" loading="lazy" decoding="async"></figure>
+        <div class="tour-copy">
+          <p class="tour-no">06</p>
+          <h3><span data-ja>舞台セットを組める。</span><span data-en>Build your own set pieces.</span></h3>
+          <p><span data-ja>箱や板を組み合わせて、自分の装置を作ります。隣に立つ1.65mの人型が寸法の目安です。組んだものは名前をつけて残し、呼び出せます。</span><span data-en>Combine boxes and boards into your own scenery. The 1.65 m figure beside it keeps the scale honest. Name it, keep it, recall it.</span></p>
+        </div>
+      </li>
+      <li class="tour-item">
+        <figure class="tour-figure"><img src="media/features/07-kinds.jpg" alt="台・テーブル・トラピーズ・シルホイールなど種類の一覧" loading="lazy" decoding="async"></figure>
+        <div class="tour-copy">
+          <p class="tour-no">07</p>
+          <h3><span data-ja>小道具と器具、25種。</span><span data-en>Twenty-five kinds of set and apparatus.</span></h3>
+          <p><span data-ja>台・テーブル・椅子・壁から、トラピーズ、シルホイール、エアリアルティシュー、チャイニーズポール、綱渡り、トランポリンまで。手に持つ小道具は、傘・クラブ・ボール・リング・刀など11の形。</span><span data-en>From platforms, tables and walls to trapeze, Cyr wheel, aerial silk, Chinese pole, tightwire and trampoline. Hand props come in eleven shapes: umbrella, club, ball, ring, sword and more.</span></p>
+        </div>
+      </li>
+      <li class="tour-item">
+        <figure class="tour-figure"><img src="media/features/08-poses.jpg" alt="立つ・歩く・逆立ち・バク転などの姿勢の一覧" loading="lazy" decoding="async"></figure>
+        <div class="tour-copy">
+          <p class="tour-no">08</p>
+          <h3><span data-ja>演者の姿勢、46種。</span><span data-en>Forty-six poses.</span></h3>
+          <p><span data-ja>立つ・歩く・座るから、逆立ち、バク転、側方宙返り、シルホイール、一輪車、ジャグリング、楽器まで。姿勢と向きを変えるだけで、絵が伝わります。</span><span data-en>From standing and walking to handstand, back flip, cartwheel, Cyr wheel, unicycle, juggling and instruments. Change the pose and the facing, and the picture speaks.</span></p>
+        </div>
+      </li>
+      <li class="tour-item">
+        <figure class="tour-figure"><img src="media/features/09-lights.jpg" alt="照明を選んだ正面図と、照明の欄" loading="lazy" decoding="async"></figure>
+        <div class="tour-copy">
+          <p class="tour-no">09</p>
+          <h3><span data-ja>照明も作れる。</span><span data-en>Lighting, too.</span></h3>
+          <p><span data-ja>吊り・SS・前明かり・転がしの4種。灯体と、光の当たる場所を別々に掴んで動かせます。定番の組み方はプリセットから。</span><span data-en>Overhead, side, front and floor lights. Grab the fixture and the spot it lights separately. Standard rigs come as presets.</span></p>
+        </div>
+      </li>
+      <li class="tour-item">
+        <figure class="tour-figure"><img src="media/features/10-3d.jpg" alt="3Dカメラで客席中央から見た舞台と、演者の目線で見た客席" loading="lazy" decoding="async"></figure>
+        <div class="tour-copy">
+          <p class="tour-no">10</p>
+          <h3><span data-ja>3Dカメラで舞台の中へ。演者の目線でも。</span><span data-en>A 3D camera inside the set — and through a performer's eyes.</span></h3>
+          <p><span data-ja>組んだ舞台を立体のまま覗きます。客席中央から、袖から、真上から。演者を選べば、その人の目に客席がどう見えるかまで確かめられます。満席と空席も切り替えられます。</span><span data-en>Walk through the set in three dimensions: from the stalls, the wings, or straight above. Pick a performer and see the house through their eyes. Switch between a full house and an empty one.</span></p>
+        </div>
+      </li>
+      <li class="tour-item">
+        <figure class="tour-figure"><img src="media/features/11-export.jpg" alt="画像を書き出す窓（作図として／ピッチとして）" loading="lazy" decoding="async"></figure>
+        <div class="tour-copy">
+          <p class="tour-no">11</p>
+          <h3><span data-ja>書き出しは、作図にもピッチにも。</span><span data-en>Export for drawings, or for a pitch.</span></h3>
+          <p><span data-ja>作図なら、正面・平面・両方を、いまの場面からショー全体まで一括で（見本では8場面×2枚＝16枚をZIPひとつに）。ピッチ用なら画風4種、最大3840×2160で。</span><span data-en>For drawings: front, plan or both, from one scene to the whole show in a single ZIP (the sample gives 8 scenes × 2 = 16 images). For a pitch: four styles, up to 3840×2160.</span></p>
+        </div>
+      </li>
+      <li class="tour-item tour-item-small">
+        <figure class="tour-figure"><img src="media/features/12-session.jpg" alt="リアルタイム共有の欄" loading="lazy" decoding="async"></figure>
+        <div class="tour-copy">
+          <p class="tour-no">12</p>
+          <h3><span data-ja>チームで、同じ場面を見ながら話せる。</span><span data-en>Meet over the same scene.</span></h3>
+          <p><span data-ja>招待URLを送るだけで、全員が同じ場面を見ます。ゲストはレーザーポインタと矢印で指せ、演者や道具は動かせません。会議の間、絵が勝手に変わらないための決まりです。</span><span data-en>Send an invite link and everyone sees the same scene. Guests point with a laser and draw arrows, but cannot move performers or set. That keeps the picture steady while you talk.</span></p>
+        </div>
+      </li>
+    </ol>
   </div>
 </section>
 
