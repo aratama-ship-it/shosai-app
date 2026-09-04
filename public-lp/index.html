@@ -172,7 +172,9 @@ footer a{ color:var(--rust-ink); }
   .will-reveal{ opacity:1; transform:none; transition:none; }
   *{ animation:none !important; }
 }
+/* 言語ごとに、片方だけ出す。<html lang> をJSが決める。 */
 [lang="en"] [data-ja], [lang="ja"] [data-en]{ display:none; }
+.lang-switch a{ color:var(--rust-ink); }
 </style>
 </head>
 <body>
@@ -190,9 +192,9 @@ footer a{ color:var(--rust-ink); }
     </figure>
     <div class="hero-copy">
       <p class="eyebrow">STAGE SKETCH</p>
-      <h1 class="hero-line">正面と真上、<br>二つの図が連動します。</h1>
-      <p class="hero-sub">舞台の一場面を、客席から見た絵と真上から見た図で同時に描きます。</p>
-      <p class="badge-pc">PC用のアプリです</p>
+      <h1 class="hero-line"><span data-ja>正面と真上、<br>二つの図が連動します。</span><span data-en>Two views of one stage,<br>moving together.</span></h1>
+      <p class="hero-sub"><span data-ja>舞台の一場面を、客席から見た絵と真上から見た図で同時に描きます。</span><span data-en>Draw one moment of a show two ways at once — as the house sees it, and from directly above.</span></p>
+      <p class="badge-pc"><span data-ja>PC用のアプリです</span><span data-en>Made for desktop</span></p>
     </div>
   </div>
 </header>
@@ -200,39 +202,45 @@ footer a{ color:var(--rust-ink); }
 <!-- ============ ②③ 触れるデモ ============ -->
 <section class="demo reveal">
   <div class="wrap">
-    <h2>触ってみてください。</h2>
+    <h2><span data-ja>触ってみてください。</span><span data-en>Try it here.</span></h2>
     <div class="demo-frame">
       <iframe src="/try.html?embed=1" title="舞台スケッチの体験版（演者を動かす・会場を変える）"
-              loading="lazy"></iframe>
+              loading="lazy" data-src-base="/try.html?embed=1"></iframe>
     </div>
-    <p class="demo-note">演者を動かすと、二つの図が同時に変わります。会場の形も切り替えられます。</p>
+    <p class="demo-note"><span data-ja>演者を動かすと、二つの図が同時に変わります。会場の形も切り替えられます。</span><span data-en>Move a performer and both views change at the same time. You can switch the venue too.</span></p>
   </div>
 </section>
 
 <!-- ============ 会場の軸 ============ -->
 <section class="reveal">
   <div class="read">
-    <h2>分けているのは舞台の形ではなく、<br>客席がどこにあるかです。</h2>
-    <p>プロセニアム、スラスト、アリーナ、シャピトー。同じ場面を別の会場で見ると、
-    客席の位置が変わり、見え方が変わります。置いた演者はそのまま残ります。</p>
+    <h2><span data-ja>分けているのは舞台の形ではなく、<br>客席がどこにあるかです。</span><span data-en>Formats are defined by where the audience sits,<br>not by the shape of the stage.</span></h2>
+    <p><span data-ja>プロセニアム、スラスト、アリーナ、シャピトー。同じ場面を別の会場で見ると、
+    客席の位置が変わり、見え方が変わります。置いた演者はそのまま残ります。</span><span data-en>Proscenium, thrust, arena, chapiteau. Seeing the same scene in a different venue moves the audience,
+    and changes what they see. The performers you placed stay where they are.</span></p>
   </div>
 </section>
 
 <!-- ============ ④ 開発者の話 ============ -->
 <section class="story reveal">
   <div class="read">
-    <h2>このアプリについて</h2>
-    <p class="lead">私が舞台スケッチを作ろうと思った始まりは、ディレクターの意向や、
-    チームの中での自分の役割を、視覚的に把握できるものが欲しかったことでした。</p>
-    <p>芸術という抽象的なものにおいて、意思疎通を言葉だけで行うことは非常に難しいものです。
+    <h2><span data-ja>このアプリについて</span><span data-en>About this app</span></h2>
+    <p class="lead"><span data-ja>私が舞台スケッチを作ろうと思った始まりは、ディレクターの意向や、
+    チームの中での自分の役割を、視覚的に把握できるものが欲しかったことでした。</span><span data-en>I first started thinking about Stage Sketch because I needed a clearer way to see
+    what a director had in mind — and where I fit within that vision.</span></p>
+    <p><span data-ja>芸術という抽象的なものにおいて、意思疎通を言葉だけで行うことは非常に難しいものです。
     ディレクターが見せたいものをアーティストが表現しようとするとき、
-    その意図を理解することに時間を取られすぎることもありました。</p>
-    <p>私は劇場に入るたびに客席を歩き回り、それぞれの場所から自分がどのように見えるかをイメージします。
+    その意図を理解することに時間を取られすぎることもありました。</span><span data-en>Art is abstract by nature, so words can only take us so far. When an artist is trying to
+    realize a director's vision, too much rehearsal time can be spent simply working out what that vision is.</span></p>
+    <p><span data-ja>私は劇場に入るたびに客席を歩き回り、それぞれの場所から自分がどのように見えるかをイメージします。
     俯瞰図では、人や物の位置と全体のバランスを第三者の目で捉えられます。
-    正面図では、お客さんやディレクターから舞台がどう見えるかを考えられます。</p>
-    <p>演者たちと事前に意図や配置を共有できれば、リハーサルの初期段階をより早く終え、
-    その先の通し練習へ時間を使えます。そうしてショーをさらに作り込んでほしいと考えています。</p>
-    <p class="story-more"><a href="beta.html">製品版ベータについて詳しく →</a></p>
+    正面図では、お客さんやディレクターから舞台がどう見えるかを考えられます。</span><span data-en>Whenever I enter a theater, I walk through the auditorium and imagine how I will look from
+    different seats. The plan view shows where people and objects are placed and how the composition balances
+    as a whole. The front view shows what the audience — or the director — might see.</span></p>
+    <p><span data-ja>演者たちと事前に意図や配置を共有できれば、リハーサルの初期段階をより早く終え、
+    その先の通し練習へ時間を使えます。そうしてショーをさらに作り込んでほしいと考えています。</span><span data-en>If everyone can understand the intention and blocking in advance, the team can move through
+    the early stages more quickly and spend more time doing full runs, and shaping the show in greater depth.</span></p>
+    <p class="story-more"><a href="beta.html"><span data-ja>製品版ベータについて詳しく →</span><span data-en>More about the full beta →</span></a></p>
   </div>
 </section>
 
@@ -240,10 +248,12 @@ footer a{ color:var(--rust-ink); }
 <section class="reveal">
   <div class="read">
     <div class="limits">
-      <h2>できないこと</h2>
-      <p>舞台スケッチは技術図面ではなく、安全を検証したり保証したりするものでもありません。
+      <h2><span data-ja>できないこと</span><span data-en>What it does not do</span></h2>
+      <p><span data-ja>舞台スケッチは技術図面ではなく、安全を検証したり保証したりするものでもありません。
       ディレクターとアーティストの意思疎通を円滑にし、良いショーを作る時間を増やすためのスケッチです。
-      体験版で描いたものは保存されません。</p>
+      体験版で描いたものは保存されません。</span><span data-en>Stage Sketch is not a technical drawing, and it does not verify or guarantee safety.
+      It is a sketch, meant to help a director and performers understand each other and spend more time
+      making a good show. Nothing you draw in the preview is saved.</span></p>
     </div>
   </div>
 </section>
@@ -251,20 +261,47 @@ footer a{ color:var(--rust-ink); }
 <!-- ============ ⑥⑦ CTA ============ -->
 <section class="cta reveal">
   <div class="read">
-    <h2 style="border:0;padding:0;text-align:center">触ってみる</h2>
-    <p><a class="btn btn-main" href="/try.html">体験する</a></p>
-    <p class="cta-note small">体験版はスマホでも開けますが、操作が限られます。PCでのご利用をお勧めします。</p>
-    <p style="margin-top:var(--space-5)"><a class="btn btn-sub" href="beta.html">製品版ベータを使ってみたい</a></p>
+    <h2 style="border:0;padding:0;text-align:center"><span data-ja>触ってみる</span><span data-en>Have a go</span></h2>
+    <p><a class="btn btn-main" href="/try.html"><span data-ja>体験する</span><span data-en>Open the preview</span></a></p>
+    <p class="cta-note small"><span data-ja>体験版はスマホでも開けますが、操作が限られます。PCでのご利用をお勧めします。</span><span data-en>The preview opens on phones too, but it is limited there. We recommend using a computer.</span></p>
+    <p style="margin-top:var(--space-5)"><a class="btn btn-sub" href="beta.html"><span data-ja>製品版ベータを使ってみたい</span><span data-en>Ask about the full beta</span></a></p>
   </div>
 </section>
 
 <footer>
   <div class="read foot-row">
-    <span>舞台スケッチ</span>
-    <span><a href="beta.html">製品版ベータについて</a></span>
-    <span class="small">録画 2026-09-04 時点</span>
+    <span><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></span>
+    <span><a href="beta.html"><span data-ja>製品版ベータについて</span><span data-en>About the full beta</span></a></span>
+    <span class="small"><span data-ja>録画 2026-09-04 時点</span><span data-en>Recorded 2026-09-04</span></span>
+    <span class="small lang-switch"><a href="?lang=ja" data-en>日本語</a><a href="?lang=en" data-ja>English</a></span>
   </div>
 </footer>
+
+<script>
+/* 言語を決める。?lang=en / ?lang=ja が最優先、無ければ端末の言語。
+   紹介ページ（public-beta.html）と同じ考え方にそろえる。
+   ★リンクと埋め込みにも言語を引き継ぐ。引き継がないと、英語で読んでいた人が
+     「体験する」を押した先で日本語に戻ってしまう。 */
+(function () {
+  var asked = new URLSearchParams(location.search).get("lang");
+  var lang = asked === "en" || asked === "ja" ? asked
+    : (String(navigator.language || "").toLowerCase().indexOf("ja") === 0 ? "ja" : "en");
+  document.documentElement.lang = lang;
+  if (lang === "en") {
+    document.title = "Stage Sketch — Two views of one stage, moving together.";
+  }
+
+  var withLang = function (href) {
+    if (!href || href.charAt(0) === "?" || href.indexOf("//") === 0) return href;
+    return href + (href.indexOf("?") >= 0 ? "&" : "?") + "lang=" + lang;
+  };
+  document.querySelectorAll('a[href$=".html"], a[href^="/try"]').forEach(function (a) {
+    a.setAttribute("href", withLang(a.getAttribute("href")));
+  });
+  var frame = document.querySelector(".demo-frame iframe");
+  if (frame) frame.setAttribute("src", frame.getAttribute("src") + "&lang=" + lang);
+})();
+</script>
 
 <script>
 /* 帯の出現。

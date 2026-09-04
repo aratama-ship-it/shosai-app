@@ -353,3 +353,24 @@ test("LPの出現アニメーションは、JSが動かなくても中身が見�
   assert.match(lpPage, /els\.forEach\(function \(el\) \{ el\.classList\.add\("will-reveal"\); \}\);/);
   assert.match(lpPage, /window\.setTimeout\(function \(\) \{ els\.forEach\(show\); \}, 2000\);/);
 });
+
+test("LPは日英を持ち、承認済みの英語確定稿の文言を使う", () => {
+  // 2026-09-04: 英語版。?lang=en / 端末の言語で切り替える（紹介ページと同じ考え方）
+  assert.match(lpPage, /\[lang="en"\] \[data-ja\], \[lang="ja"\] \[data-en\]\{ display:none; \}/);
+  assert.match(lpPage, /Two views of one stage,<br>moving together\./);
+  assert.match(lpPage, /Formats are defined by where the audience sits,<br>not by the shape of the stage\./);
+  assert.match(lpPage, /Stage Sketch is not a technical drawing, and it does not verify or guarantee safety\./);
+  assert.match(lpPage, /Made for desktop/);
+  // 日英の対の数が合っている（片方だけ足すと表示が欠ける）
+  const ja = (lpPage.match(/data-ja/g) || []).length;
+  const en = (lpPage.match(/data-en/g) || []).length;
+  assert.equal(ja, en, `data-ja(${ja}) と data-en(${en}) の数が一致する`);
+});
+
+test("LPは言語をリンクと埋め込みへ引き継ぐ", () => {
+  // 引き継がないと、英語で読んでいた人が「体験する」の先で日本語に戻る
+  assert.match(lpPage, /var asked = new URLSearchParams\(location\.search\)\.get\("lang"\);/);
+  assert.match(lpPage, /document\.documentElement\.lang = lang;/);
+  assert.match(lpPage, /a\[href\$="\.html"\], a\[href\^="\/try"\]/);
+  assert.match(lpPage, /frame\.setAttribute\("src", frame\.getAttribute\("src"\) \+ "&lang=" \+ lang\);/);
+});
