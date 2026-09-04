@@ -432,8 +432,11 @@ test("LPの名前の下に「誰が、何に使うか」を置く", () => {
   assert.match(lpPage, /<dt><span data-ja>ディレクター<\/span><span data-en>Director<\/span><\/dt>/);
   assert.match(lpPage, /<dt><span data-ja>アーティスト<\/span><span data-en>Artist<\/span><\/dt>/);
   assert.match(lpPage, /頭の中にある絵を、目に見える形に。そのまま演者へ渡せます。/);
-  // 「立ちの練習」は舞台用語の「立ち稽古」に（本人指示 2026-09-05）。英語は blocking
-  assert.match(lpPage, /立ち位置は、立ち稽古の前に。稽古場の時間を、もっと繊細なところへ使えます。/);
+  /* 「立ちの練習」は舞台用語に（本人指示 2026-09-05）。立ち稽古ではなく「場当たり」
+     —— 実際の会場で立ち位置ときっかけを確かめる稽古。一行目の「限られたステージ利用時間」と対になる。
+     英語は blocking。 */
+  assert.match(lpPage, /立ち位置は、場当たりの前に。稽古場の時間を、もっと繊細なところへ使えます。/);
+  assert.doesNotMatch(lpPage, /立ち稽古/);
   assert.match(lpPage, /Blocking, before the room\. Rehearsal time goes to the finer work\./);
   /* ★二列に並べて高さを抑える。縦に積むとデモの帯が画面の外へ落ちる（2026-09-04 実測）。
      動画も 66vh→56vh へ詰めてある。 */
