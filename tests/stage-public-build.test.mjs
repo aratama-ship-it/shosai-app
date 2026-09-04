@@ -420,6 +420,13 @@ test("LPは承認済みの文言を使い、詩的な見出しを足さない", 
   assert.match(lpPage, /<a class="btn btn-main" href="\/try\.html">/);
 });
 
+test("LPの最下部に連絡先として名前を出す", () => {
+  // 本人指示 2026-09-05
+  assert.match(lpPage, /<span data-ja>作 ARATA URAWA<\/span><span data-en>Made by ARATA URAWA<\/span>/);
+  // 連絡の口は紹介ページ（beta.html）の問い合わせへ送る。LPに宛先を直接書かない
+  assert.match(lpPage, /<span data-ja>ご連絡は <a href="beta\.html">お問い合わせ<\/a> から<\/span>/);
+});
+
 test("LPのいちばん上で日本語と英語を切り替えられる", () => {
   /* 本人指示 2026-09-05。★リンクにしてある。JSが動かなくても効くし、フッターの切替と同じ考え方。 */
   assert.match(lpPage, /<a href="\?lang=ja" hreflang="ja">日本語<\/a>/);
@@ -500,19 +507,26 @@ test("LPの名前の下に「誰が、何に使うか」を置く", () => {
   assert.match(lpPage, /max-width:min\(620px, 56vh\)/);
 });
 
-test("LPの下部で12の機能を、画像つきで一つずつ紹介する", () => {
+test("LPの下部で13の機能を、画像つきで一つずつ紹介する", () => {
   // 本人指示 2026-09-05。一覧（8組の箇条書き）から、一機能・一画像の縦並びへ。
   const tour = lpPage.indexOf('<section class="tour reveal">');
+  /* ★注意点は帯をやめ、ディレクター／アーティストの下（動画の右の欄）へ入れた
+       （本人指示 2026-09-05）。 */
   const limits = lpPage.indexOf("<span data-ja>注意点</span>");
-  assert.ok(limits > 0, "注意点の帯がある");
+  assert.ok(limits > 0, "注意点がある");
+  assert.match(lpPage, /<\/dl>\s*\n\s*<div class="limits">/);
+  assert.ok(limits < lpPage.indexOf("</header>"), "注意点はヒーローの中");
   const cta = lpPage.indexOf('<section class="cta reveal">');
-  assert.ok(tour > limits && tour < cta, "注意点 → 12の機能 → CTA の順");
+  assert.ok(tour > limits && tour < cta, "注意点（上）→ 13の機能 → CTA の順");
   assert.match(lpPage, /<h2><span data-ja>12の機能を、ひとつずつ。<\/span><span data-en>Twelve things it does, one at a time\.<\/span><\/h2>/);
   const items = lpPage.match(/<li class="tour-item[^"]*">/g) || [];
-  assert.equal(items.length, 12, "12項目");
+  assert.equal(items.length, 13, "13項目（13はスマホ表示。本人指示 2026-09-05）");
+  assert.match(lpPage, /<h3><span data-ja>iPhoneで、稽古の前に覚えておく。<\/span>/);
+  // 09 の見出しは「照明を作る。」（本人指示 2026-09-05）
+  assert.match(lpPage, /<h3><span data-ja>照明を作る。<\/span><span data-en>Build the lighting\.<\/span><\/h3>/);
   // 画像は features/ 配下。全部が存在し、配信スクリプトが運ぶ
   const refs = [...lpPage.matchAll(/src="media\/features\/([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(new Set(refs).size, 12, "12枚がそれぞれ別の画像");
+  assert.equal(new Set(refs).size, 13, "13枚がそれぞれ別の画像");
   for (const name of refs) {
     assert.ok(existsSync(new URL(`../public-lp/media/features/${name}`, import.meta.url)), `${name} がある`);
   }
@@ -522,7 +536,12 @@ test("LPの下部で12の機能を、画像つきで一つずつ紹介する", (
      書かないと、下の画像が読み込まれるたびにページが伸びて、
      上の「このアプリについて」から飛んだ先が下へずれる（2026-09-05 実測: 約1300px）。 */
   const sized = (lpPage.match(/<img src="media\/features\/[^"]+" width="\d+" height="\d+"/g) || []).length;
-  assert.equal(sized, 12, "12枚とも寸法つき");
+  assert.equal(sized, 13, "13枚とも寸法つき");
+  /* ★左右を入れ替える回は、列の幅も入れ替える。order だけだと画像が狭い方の列へ入る
+       （2026-09-05 実測: 885px→442px）。 */
+  assert.match(lpPage, /\.tour-item:nth-child\(even\)\{ grid-template-columns:minmax\(0,4fr\) minmax\(0,8fr\); \}/);
+  // 機能どうしの間はしっかり空ける（本人指示 2026-09-05）
+  assert.match(lpPage, /@media \(min-width:900px\)\{ \.tour-list\{ gap:120px; \} \}/);
   /* ★小さい画像も width:auto にしない。読み込む前の高さが0になり、そのぶん下がずれる（実測146px）。 */
   assert.doesNotMatch(lpPage, /\.tour-item-small \.tour-figure img\{ width:auto/);
   /* ★数字は画面のDOMから数えた実測値（2026-09-05）。冊子の「姿勢30種類」は古いので使わない。 */

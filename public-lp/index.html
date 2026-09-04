@@ -175,7 +175,9 @@ p{ margin:0 0 var(--space-3); }
 .story-more a{ color:var(--rust-ink); }
 
 /* ============ ⑤ 注意点 ============ */
+/* ★ディレクター／アーティストの下に置く（本人指示 2026-09-05）。帯ではなく、右の欄の一部。 */
 .limits{
+  margin-top:var(--space-5);
   border-left:3px solid var(--brass); background:var(--desk-2);
   padding:var(--space-4); border-radius:0 var(--radius-m) var(--radius-m) 0;
 }
@@ -185,13 +187,23 @@ p{ margin:0 0 var(--space-3); }
 /* ============ 12の機能を、ひとつずつ ============
    画像と文を横に並べ、左右を交互に振る。一つの機能に一つの画像。
    ★画像は撮ったままの縦横比で置く（切って嘘にしない）。幅だけ揃える。 */
+/* ★この帯だけ幅を広げる。画像は実際の画面なので、大きいほど読める（本人指示 2026-09-05）。 */
+.tour-wrap{ max-width:1400px; }
 .tour .lead{
   margin:0 0 var(--space-5); font-family:var(--sans); font-size:var(--fs-small); color:var(--ink-soft-sm);
 }
-.tour-list{ list-style:none; margin:0; padding:0; display:grid; gap:var(--space-6); }
+/* ★機能どうしの間はしっかり空ける（本人指示 2026-09-05）。
+   詰めると、どこまでが一つの機能の話か分からなくなる。 */
+.tour-list{ list-style:none; margin:0; padding:0; display:grid; gap:var(--space-7); }
+@media (min-width:900px){ .tour-list{ gap:120px; } }
 .tour-item{ display:grid; gap:var(--space-4); align-items:center; grid-template-columns:minmax(0,1fr); }
 @media (min-width:900px){
-  .tour-item{ grid-template-columns:minmax(0,7fr) minmax(0,5fr); gap:var(--space-6); }
+  /* ★画像を大きく（本人指示 2026-09-05）。7fr:5fr → 8fr:4fr。
+     画像はどれも実際の画面なので、小さいと文字が読めない。 */
+  .tour-item{ grid-template-columns:minmax(0,8fr) minmax(0,4fr); gap:var(--space-5); }
+  /* ★左右を入れ替える回は、列の幅も入れ替える。order だけ入れ替えると
+     画像が狭い方の列（4fr）へ入ってしまう（2026-09-05 実測: 885px→442px）。 */
+  .tour-item:nth-child(even){ grid-template-columns:minmax(0,4fr) minmax(0,8fr); }
   .tour-item:nth-child(even) .tour-figure{ order:2; }
   .tour-item:nth-child(even) .tour-copy{ order:1; }
 }
@@ -297,23 +309,16 @@ footer a{ color:var(--rust-ink); }
           <dd><span data-ja>立ち位置は、場当たりの前に。稽古場の時間を、もっと繊細なところへ使えます。</span><span data-en>Blocking, before the room. Rehearsal time goes to the finer work.</span></dd>
         </div>
       </dl>
+      <div class="limits">
+            <h2><span data-ja>注意点</span><span data-en>Please note</span></h2>
+            <p><span data-ja>舞台スケッチは技術図面ではなく、安全を検証したり保証したりするものでもありません。
+            ディレクターとアーティストの意思疎通を円滑にし、良いショーを作る時間を増やすためのスケッチです。
+            体験版で描いたものは保存されません。</span><span data-en>Stage Sketch is not a technical drawing, and it does not verify or guarantee safety.
+            It is a sketch, meant to help a director and performers understand each other and spend more time
+            making a good show. Nothing you draw in the preview is saved.</span></p>
     </div>
   </div>
 </header>
-
-<!-- ============ ⑤ 注意点（本人指示 2026-09-05: 「できないこと」から言い換え）============ -->
-<section class="reveal">
-  <div class="read">
-    <div class="limits">
-      <h2><span data-ja>注意点</span><span data-en>Please note</span></h2>
-      <p><span data-ja>舞台スケッチは技術図面ではなく、安全を検証したり保証したりするものでもありません。
-      ディレクターとアーティストの意思疎通を円滑にし、良いショーを作る時間を増やすためのスケッチです。
-      体験版で描いたものは保存されません。</span><span data-en>Stage Sketch is not a technical drawing, and it does not verify or guarantee safety.
-      It is a sketch, meant to help a director and performers understand each other and spend more time
-      making a good show. Nothing you draw in the preview is saved.</span></p>
-    </div>
-  </div>
-</section>
 
 <!-- ============ 12の機能を、ひとつずつ（本人指示 2026-09-05） ============
      画像は製品版（stage.html?sample・見本「八人のサーカス」）を Playwright で撮ったもの。
@@ -321,7 +326,7 @@ footer a{ color:var(--rust-ink); }
      すべて画面のDOMから数えた実測値。冊子に書かれた姿勢の数は古いので使わない。
      ★12だけは静止画が弱い（未接続の欄）。実際の会議の画面が撮れたら差し替える。 -->
 <section class="tour reveal">
-  <div class="wrap">
+  <div class="wrap tour-wrap">
     <h2><span data-ja>12の機能を、ひとつずつ。</span><span data-en>Twelve things it does, one at a time.</span></h2>
     <p class="lead"><span data-ja>製品版（β）の画面です。体験版で開いているのは、このうち一部です。</span><span data-en>Screens from the full beta. The preview opens only part of this.</span></p>
     <ol class="tour-list">
@@ -334,7 +339,7 @@ footer a{ color:var(--rust-ink); }
         </div>
       </li>
       <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/02-seats.jpg" width="1456" height="478" alt="2階席と1階左右席から見た同じ場面" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/02-seats.jpg" width="1600" height="1008" alt="2階席と1階左右席から見た同じ場面" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">02</p>
           <h3><span data-ja>客席のどこから見るかを選べる。</span><span data-en>Choose where the house looks from.</span></h3>
@@ -393,12 +398,12 @@ footer a{ color:var(--rust-ink); }
         <figure class="tour-figure"><img src="media/features/09-lights.jpg" width="1047" height="479" alt="照明を選んだ正面図と、照明の欄" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">09</p>
-          <h3><span data-ja>照明も作れる。</span><span data-en>Lighting, too.</span></h3>
+          <h3><span data-ja>照明を作る。</span><span data-en>Build the lighting.</span></h3>
           <p><span data-ja>吊り・SS・前明かり・転がしの4種。灯体と、光の当たる場所を別々に掴んで動かせます。定番の組み方はプリセットから。</span><span data-en>Overhead, side, front and floor lights. Grab the fixture and the spot it lights separately. Standard rigs come as presets.</span></p>
         </div>
       </li>
       <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/10-3d.jpg" width="2000" height="632" alt="3Dカメラで客席中央から見た舞台と、演者の目線で見た客席" loading="lazy" decoding="async"></figure>
+        <figure class="tour-figure"><img src="media/features/10-3d.jpg" width="1500" height="1894" alt="3Dカメラで客席中央から見た舞台と、演者の目線で見た客席" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">10</p>
           <h3><span data-ja>3Dカメラで舞台の中へ。演者の目線でも。</span><span data-en>A 3D camera inside the set — and through a performer's eyes.</span></h3>
@@ -419,6 +424,14 @@ footer a{ color:var(--rust-ink); }
           <p class="tour-no">12</p>
           <h3><span data-ja>チームで、同じ場面を見ながら話せる。</span><span data-en>Meet over the same scene.</span></h3>
           <p><span data-ja>招待URLを送るだけで、全員が同じ場面を見ます。ゲストはレーザーポインタと矢印で指せ、演者や道具は動かせません。会議の間、絵が勝手に変わらないための決まりです。</span><span data-en>Send an invite link and everyone sees the same scene. Guests point with a laser and draw arrows, but cannot move performers or set. That keeps the picture steady while you talk.</span></p>
+        </div>
+      </li>
+      <li class="tour-item">
+        <figure class="tour-figure"><img src="media/features/13-phone.jpg" width="860" height="884" alt="iPhoneで場面と説明メモを見ている画面" loading="lazy" decoding="async"></figure>
+        <div class="tour-copy">
+          <p class="tour-no">13</p>
+          <h3><span data-ja>iPhoneで、稽古の前に覚えておく。</span><span data-en>Learn it on your phone, before the room.</span></h3>
+          <p><span data-ja>演者は自分のスマホで、場面を順に送りながら立ち位置と説明メモを確かめられます。稽古場に着いたときには、もう頭に入っている状態にできます。</span><span data-en>Performers step through the scenes on their own phone, checking positions and the note for each one. They arrive already knowing it.</span></p>
         </div>
       </li>
     </ol>
@@ -463,6 +476,8 @@ footer a{ color:var(--rust-ink); }
   <div class="read foot-row">
     <span><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></span>
     <span><a href="beta.html"><span data-ja>製品版ベータについて</span><span data-en>About the full beta</span></a></span>
+    <span><span data-ja>作 ARATA URAWA</span><span data-en>Made by ARATA URAWA</span></span>
+    <span class="small"><span data-ja>ご連絡は <a href="beta.html">お問い合わせ</a> から</span><span data-en>Get in touch via <a href="beta.html">the contact page</a></span></span>
     <span class="small"><span data-ja>録画 2026-09-04 時点</span><span data-en>Recorded 2026-09-04</span></span>
     <span class="small lang-switch"><a href="?lang=ja" data-en>日本語</a><a href="?lang=en" data-ja>English</a></span>
   </div>
