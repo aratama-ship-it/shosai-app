@@ -188,6 +188,33 @@ p{ margin:0 0 var(--space-3); }
 .limits h2{ border:0; padding:0; margin-bottom:var(--space-2); font-size:var(--fs-body); color:var(--brass); }
 .limits p{ margin-bottom:0; font-size:var(--fs-small); line-height:1.8; color:var(--paper); }
 
+/* ============ 主な機能 ============ */
+.features .lead{
+  margin:0 0 var(--space-4); font-family:var(--sans); font-size:var(--fs-small); color:var(--ink-soft-sm);
+}
+.feature-grid{ display:grid; gap:var(--space-3); grid-template-columns:minmax(0,1fr); }
+@media (min-width:600px){ .feature-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (min-width:1000px){ .feature-grid{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+.feature-group{
+  border:1px solid var(--line-dark); background:var(--desk-2);
+  border-radius:var(--radius-m); padding:var(--space-4);
+}
+.feature-group h3{
+  margin:0 0 var(--space-2); font-family:var(--sans); font-size:11px; font-weight:600;
+  letter-spacing:.18em; color:var(--brass);
+}
+.feature-group ul{ margin:0; padding:0; list-style:none; }
+.feature-group li{
+  font-family:var(--sans); font-size:var(--fs-small); line-height:1.75; color:var(--paper-line);
+  padding:6px 0; border-top:1px solid rgba(56,47,37,.7);
+}
+.feature-group li:first-child{ border-top:0; padding-top:0; }
+.feature-group .pc{
+  display:inline-block; margin-left:8px; padding:0 6px; border:1px solid var(--line-dark);
+  border-radius:var(--radius-s); font-size:10px; letter-spacing:.1em; color:var(--ink-soft-sm);
+  vertical-align:1px;
+}
+
 /* ============ ⑥⑦ CTA ============ */
 .cta{ text-align:center; }
 .btn{
@@ -240,7 +267,7 @@ footer a{ color:var(--rust-ink); }
       </div>
       <div class="uses-row">
         <dt><span data-ja>アーティスト</span><span data-en>Artist</span></dt>
-        <dd><span data-ja>立ち位置は、稽古の前に。稽古場の時間を、もっと繊細なところへ使えます。</span><span data-en>Learn your positions before the room, and spend rehearsal on the finer work.</span></dd>
+        <dd><span data-ja>立ち位置は、立ち稽古の前に。稽古場の時間を、もっと繊細なところへ使えます。</span><span data-en>Blocking, before the room. Rehearsal time goes to the finer work.</span></dd>
       </div>
     </dl>
   </div>
@@ -316,6 +343,91 @@ footer a{ color:var(--rust-ink); }
       体験版で描いたものは保存されません。</span><span data-en>Stage Sketch is not a technical drawing, and it does not verify or guarantee safety.
       It is a sketch, meant to help a director and performers understand each other and spend more time
       making a good show. Nothing you draw in the preview is saved.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 主な機能（本人指示 2026-09-05） ============
+     正本は冊子の「機能ガイド」。ここに無いものを足すときは冊子を先に直す。
+     ★姿勢の数は書かない（冊子の「30種類」とコードの定義数が一致していないため）。 -->
+<section class="features reveal">
+  <div class="wrap">
+    <h2><span data-ja>主な機能</span><span data-en>What's inside</span></h2>
+    <p class="lead"><span data-ja>製品版（β）で使えるものの一覧です。体験版で開いているのは、このうち一部です。</span><span data-en>Everything in the full beta. The preview opens only part of it.</span></p>
+    <div class="feature-grid">
+      <div class="feature-group">
+        <h3><span data-ja>描く</span><span data-en>Drawing</span></h3>
+        <ul>
+        <li><span data-ja>正面図と平面図が連動して動く</span><span data-en>Front and plan views move together</span></li>
+        <li><span data-ja>客席の位置を選ぶ：最前列・中央・後方・左右席・2階席</span><span data-en>Choose where the house looks from: front row, stalls centre, rear, side, balcony</span></li>
+        <li><span data-ja>演者・装置・照明に名前の札</span><span data-en>Name tags on performers, set and lights</span></li>
+        <li><span data-ja>動線と矢印を描く</span><span data-en>Draw paths and arrows</span></li>
+        <li><span data-ja>背景を塗る・写真を敷く・スクリーンに文字を映す</span><span data-en>Paint the backdrop, lay a photo, project text on a screen</span></li>
+        </ul>
+      </div>
+      <div class="feature-group">
+        <h3><span data-ja>会場</span><span data-en>Venues</span></h3>
+        <ul>
+        <li><span data-ja>形式：プロセニアム・スラスト・ビッグトップ・屋外ステージ・ブラックボックス</span><span data-en>Formats: proscenium, thrust, big top, outdoor stage, black box</span></li>
+        <li><span data-ja>サーカス向け：シャピトー（巡演テント）・劇場のサーカス公演</span><span data-en>For circus: chapiteau and circus in a theatre</span></li>
+        <li><span data-ja>実在の劇場：シアタートラム・TOHU・シルク・ディヴェール</span><span data-en>Real houses: Theatre Tram, TOHU, Cirque d'Hiver</span></li>
+        <li><span data-ja>寸法を入れて自分の部屋を作る・会場をファイルで受け渡す</span><span data-en>Build your own room from measurements; pass venues around as files</span></li>
+        </ul>
+      </div>
+      <div class="feature-group">
+        <h3><span data-ja>出るもの</span><span data-en>Cast and set</span></h3>
+        <ul>
+        <li><span data-ja>演者・舞台セット・小道具の名簿（名前・大きさ・色）</span><span data-en>A roster of performers, set pieces and props: name, size, colour</span></li>
+        <li><span data-ja>姿勢：宙返り、シルホイール、一輪車など</span><span data-en>Poses: somersault, Cyr wheel, unicycle and more</span></li>
+        <li><span data-ja>持ち物と器具：ポール・トラピーズ・ティシュー・ディアボロなど</span><span data-en>Apparatus in hand: pole, trapeze, tissu, diabolo and more</span></li>
+        <li><span data-ja>箱や板からセットを組む・並べた一式を登録して呼び出す</span><span data-en>Build set pieces from boxes and boards; save an arrangement and recall it</span></li>
+        </ul>
+      </div>
+      <div class="feature-group">
+        <h3><span data-ja>舞台機構</span><span data-en>Stage machinery</span></h3>
+        <ul>
+        <li><span data-ja>盆（回り舞台）・可動デッキ・幕・水面・せり</span><span data-en>Revolve, moving decks, curtains, water, lifts</span><span class="pc"><span data-ja>PC版</span><span data-en>desktop</span></span></li>
+        <li><span data-ja>既製プリセット：前幕ひとそろい、二重盆など</span><span data-en>Ready-made rigs such as a front-curtain set or a double revolve</span><span class="pc"><span data-ja>PC版</span><span data-en>desktop</span></span></li>
+        <li><span data-ja>転換に合わせて仕掛けが動く様子を再生</span><span data-en>Play back how the machinery moves through a transition</span><span class="pc"><span data-ja>PC版</span><span data-en>desktop</span></span></li>
+        </ul>
+      </div>
+      <div class="feature-group">
+        <h3><span data-ja>照明</span><span data-en>Lighting</span></h3>
+        <ul>
+        <li><span data-ja>吊り・SS・前明かり・転がし</span><span data-en>Overhead, side, front and floor lights</span></li>
+        <li><span data-ja>灯体と、光の当たる場所を別々に動かす</span><span data-en>Move the fixture and the spot it lights separately</span></li>
+        <li><span data-ja>定番の組み方をプリセットから</span><span data-en>Standard rigs from presets</span></li>
+        </ul>
+      </div>
+      <div class="feature-group">
+        <h3><span data-ja>シーン</span><span data-en>Scenes</span></h3>
+        <ul>
+        <li><span data-ja>場面を重ねる・セクションで束ねる・一覧で見渡す</span><span data-en>Stack scenes, group them into sections, see them all at once</span></li>
+        <li><span data-ja>転換の長さと暗転を決める・動線の先を次の場面にする</span><span data-en>Set transition length and blackout; the end of a path becomes the next scene</span></li>
+        <li><span data-ja>シーンごとの説明メモ</span><span data-en>A note on each scene</span></li>
+        <li><span data-ja>音楽をシーンに割り当てて流す</span><span data-en>Assign music to scenes and play it</span><span class="pc"><span data-ja>PC版</span><span data-en>desktop</span></span></li>
+        </ul>
+      </div>
+      <div class="feature-group">
+        <h3><span data-ja>見せる・残す</span><span data-en>Show and keep</span></h3>
+        <ul>
+        <li><span data-ja>プレゼン：正面図を全画面にして矢印キーで送る</span><span data-en>Presentation: front view full screen, arrow keys to step</span></li>
+        <li><span data-ja>3Dカメラで舞台の中を覗く・満席／空席</span><span data-en>A 3D camera inside the set, with a full or empty house</span><span class="pc"><span data-ja>PC版</span><span data-en>desktop</span></span></li>
+        <li><span data-ja>この人の視界</span><span data-en>See through a performer's eyes</span></li>
+        <li><span data-ja>画像を書き出す</span><span data-en>Export as an image</span></li>
+        <li><span data-ja>端末内に自動保存・ファイルへ書き出し・読み込み</span><span data-en>Autosave on the device; export and import as files</span></li>
+        <li><span data-ja>Vision Pro 稽古用JSON</span><span data-en>Rehearsal JSON for Vision Pro</span></li>
+        </ul>
+      </div>
+      <div class="feature-group">
+        <h3><span data-ja>一緒に</span><span data-en>Together</span></h3>
+        <ul>
+        <li><span data-ja>リアルタイム共有：招待URLで参加、ゲストはレーザーポインタと矢印</span><span data-en>Live sharing: join by URL; guests point and draw arrows</span></li>
+        <li><span data-ja>日本語・英語</span><span data-en>Japanese and English</span></li>
+        <li><span data-ja>クイックガイドと使いかたの冊子</span><span data-en>A quick guide and a full booklet</span></li>
+        <li><span data-ja>PC・iPad・スマホ（見る係）</span><span data-en>Desktop, iPad, and phone as a viewer</span></li>
+        </ul>
+      </div>
     </div>
   </div>
 </section>

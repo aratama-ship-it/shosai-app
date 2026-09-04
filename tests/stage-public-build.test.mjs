@@ -432,11 +432,36 @@ test("LPの名前の下に「誰が、何に使うか」を置く", () => {
   assert.match(lpPage, /<dt><span data-ja>ディレクター<\/span><span data-en>Director<\/span><\/dt>/);
   assert.match(lpPage, /<dt><span data-ja>アーティスト<\/span><span data-en>Artist<\/span><\/dt>/);
   assert.match(lpPage, /頭の中にある絵を、目に見える形に。そのまま演者へ渡せます。/);
-  assert.match(lpPage, /立ち位置は、稽古の前に。稽古場の時間を、もっと繊細なところへ使えます。/);
+  // 「立ちの練習」は舞台用語の「立ち稽古」に（本人指示 2026-09-05）。英語は blocking
+  assert.match(lpPage, /立ち位置は、立ち稽古の前に。稽古場の時間を、もっと繊細なところへ使えます。/);
+  assert.match(lpPage, /Blocking, before the room\. Rehearsal time goes to the finer work\./);
   /* ★二列に並べて高さを抑える。縦に積むとデモの帯が画面の外へ落ちる（2026-09-04 実測）。
      動画も 66vh→56vh へ詰めてある。 */
   assert.match(lpPage, /@media \(min-width:760px\)\{\n\s*\.uses-list\{ grid-template-columns:repeat\(2,minmax\(0,1fr\)\);/);
   assert.match(lpPage, /\.hero-video video\{ max-height:56vh; \}/);
+});
+
+test("LPの下部に主な機能の一覧を置く（正本は冊子の機能ガイド）", () => {
+  // 本人指示 2026-09-05。できないこと の後、CTA の前。
+  const features = lpPage.indexOf('<section class="features reveal">');
+  const limits = lpPage.indexOf("<span data-ja>できないこと</span>");
+  const cta = lpPage.indexOf('<section class="cta reveal">');
+  assert.ok(features > limits && features < cta, "できないこと → 主な機能 → CTA の順");
+  assert.match(lpPage, /<h2><span data-ja>主な機能<\/span><span data-en>What's inside<\/span><\/h2>/);
+  // 8つの組
+  for (const ja of ["描く", "会場", "出るもの", "舞台機構", "照明", "シーン", "見せる・残す", "一緒に"]) {
+    assert.match(lpPage, new RegExp(`<h3><span data-ja>${ja}</span>`), `${ja} の組がある`);
+  }
+  // 冊子どおりの中身（抜粋）
+  assert.match(lpPage, /実在の劇場：シアタートラム・TOHU・シルク・ディヴェール/);
+  assert.match(lpPage, /吊り・SS・前明かり・転がし/);
+  assert.match(lpPage, /Vision Pro 稽古用JSON/);
+  // PC版だけの欄には札を付ける（冊子: 舞台機構・音楽・3Dカメラ）
+  assert.ok((lpPage.match(/<span class="pc"><span data-ja>PC版<\/span><span data-en>desktop<\/span><\/span>/g) || []).length >= 5);
+  /* ★姿勢の数は書かない。冊子の「30種類」とコードの定義数（46・うち隠し4）が一致していない。 */
+  assert.doesNotMatch(lpPage, /姿勢[：:]\s*\d+種/);
+  // 4列（1000px以上）・2列（600px以上）・1列
+  assert.match(lpPage, /@media \(min-width:1000px\)\{ \.feature-grid\{ grid-template-columns:repeat\(4,minmax\(0,1fr\)\); \} \}/);
 });
 
 test("LPの出現アニメーションは、JSが動かなくても中身が見える形にする", () => {
