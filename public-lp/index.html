@@ -28,7 +28,7 @@
   /* 書体 */
   --serif:"Hiragino Mincho ProN","Yu Mincho",YuMincho,"Noto Serif JP",serif;
   --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;
-  --fs-hero:40px; --fs-h2:25px; --fs-body:16px; --fs-small:13px; --fs-ui:14px;
+  --fs-title:64px; --fs-hero:36px; --fs-h2:25px; --fs-body:16px; --fs-small:13px; --fs-ui:14px;
   /* 余白 */
   --space-1:4px; --space-2:8px; --space-3:16px; --space-4:24px;
   --space-5:40px; --space-6:64px; --space-7:96px;
@@ -42,7 +42,7 @@
   --motion-reveal:320ms ease-out;
 }
 @media (max-width:760px){
-  :root{ --fs-hero:26px; --fs-h2:20px; }
+  :root{ --fs-title:40px; --fs-hero:26px; --fs-h2:20px; }
 }
 
 *{box-sizing:border-box}
@@ -73,7 +73,9 @@ p{ margin:0 0 var(--space-3); }
   grid-template-columns:minmax(0,1fr);
 }
 @media (min-width:900px){
-  .hero-inner{ grid-template-columns:minmax(0,1fr) minmax(0,420px); gap:var(--space-6); }
+  /* ★右の欄は470px。420pxだと英語の "Two views of one stage," が三行に割れた（2026-09-04 実測）。
+     日本語も英語も二行に収まる最小の幅がここ。動画は662→612pxになる。 */
+  .hero-inner{ grid-template-columns:minmax(0,1fr) minmax(0,470px); gap:var(--space-6); }
 }
 .hero-video{
   position:relative; margin:0;
@@ -91,11 +93,24 @@ p{ margin:0 0 var(--space-3); }
 @media (max-width:899px){
   .hero-video video{ max-height:52svh; }
 }
+/* いちばん上に製品の名前を大きく出す（本人指示 2026-09-04）。
+   ★h1 は名前。以前は説明の一文を h1 にしていたが、名前が小さな添え字（eyebrow）のままだと、
+     この画面が何のページなのかが最初に読めない。
+   ★冠の「STAGE IMAGE STUDY」はアプリ本体の見出しと同じ字。LPと道具で名乗りを揃える。 */
+.hero-masthead{ margin-bottom:var(--space-5); }
+.hero-name{
+  font-family:var(--serif); font-size:var(--fs-title); font-weight:600;
+  line-height:1.15; letter-spacing:.08em; color:var(--paper);
+  margin:0;
+}
+
 .hero-copy{ min-width:0; }
 .eyebrow{
   font-family:var(--sans); font-size:11px; letter-spacing:.28em;
   color:var(--ink-soft-sm); margin:0 0 var(--space-2);
 }
+/* 名前の下に置く説明の一文。名前(64px)との差で段を作る。
+   ★40pxだと右の欄(420px)で「す。」だけが三行目へ落ちた（2026-09-04 実測）。36pxで二行に収まる。 */
 .hero-line{
   font-size:var(--fs-hero); font-weight:600; line-height:1.45; letter-spacing:.04em;
   margin:0 0 var(--space-3);
@@ -188,6 +203,10 @@ footer a{ color:var(--rust-ink); }
 
 <!-- ============ ① 完全版の録画 ============ -->
 <header class="hero">
+  <div class="wrap hero-masthead">
+    <p class="eyebrow">STAGE IMAGE STUDY</p>
+    <h1 class="hero-name"><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></h1>
+  </div>
   <div class="wrap hero-inner">
     <figure class="hero-video">
       <video src="media/hero-ja.mp4" poster="media/hero-poster.jpg"
@@ -198,8 +217,7 @@ footer a{ color:var(--rust-ink); }
       </video>
     </figure>
     <div class="hero-copy">
-      <p class="eyebrow">STAGE SKETCH</p>
-      <h1 class="hero-line"><span data-ja>正面と真上、<br>二つの図が連動します。</span><span data-en>Two views of one stage,<br>moving together.</span></h1>
+      <p class="hero-line"><span data-ja>正面と真上、<br>二つの図が連動します。</span><span data-en>Two views of one stage,<br>moving together.</span></p>
       <p class="hero-sub"><span data-ja>舞台の一場面を、客席から見た絵と真上から見た図で同時に描きます。</span><span data-en>Draw one moment of a show two ways at once — as the house sees it, and from directly above.</span></p>
       <p class="badge-pc"><span data-ja>PC用のアプリです</span><span data-en>Made for desktop</span></p>
     </div>

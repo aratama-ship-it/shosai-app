@@ -406,6 +406,22 @@ test("LPは承認済みの文言を使い、詩的な見出しを足さない", 
   assert.match(lpPage, /src="\/try\.html\?embed=1"/);
 });
 
+test("LPのいちばん上に製品の名前を大きく出す", () => {
+  // 本人指示 2026-09-04。名前が小さな添え字のままだと、何のページか最初に読めない。
+  assert.match(lpPage, /<h1 class="hero-name"><span data-ja>舞台スケッチ<\/span><span data-en>Stage Sketch<\/span><\/h1>/);
+  assert.match(lpPage, /--fs-title:64px;/);
+  assert.match(lpPage, /:root\{ --fs-title:40px;/);          // 760px以下
+  // 冠はアプリ本体の見出しと同じ字にする（LPと道具で名乗りを揃える）
+  assert.match(lpPage, /<p class="eyebrow">STAGE IMAGE STUDY<\/p>/);
+  // h1 は名前。説明の一文は h1 ではなくする
+  assert.match(lpPage, /<p class="hero-line">/);
+  assert.doesNotMatch(lpPage, /<h1 class="hero-line">/);
+  /* ★説明の一文は36px、右の欄は470px。40px×420pxだと日本語は「す。」が、
+       英語は "Two views of one stage," が三行に割れた（2026-09-04 実測）。 */
+  assert.match(lpPage, /--fs-hero:36px;/);
+  assert.match(lpPage, /minmax\(0,1fr\) minmax\(0,470px\)/);
+});
+
 test("LPの出現アニメーションは、JSが動かなくても中身が見える形にする", () => {
   // 2026-09-04 実測: 非表示のタブでは IntersectionObserver が発火せず全帯が opacity 0 だった。
   // 隠すのはJSが .will-reveal を付けたときだけにし、保険の時間切れも入れる。
