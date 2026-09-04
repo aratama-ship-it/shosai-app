@@ -420,6 +420,18 @@ test("LPは承認済みの文言を使い、詩的な見出しを足さない", 
   assert.match(lpPage, /<a class="btn btn-main" href="\/try\.html">/);
 });
 
+test("LPのいちばん上で日本語と英語を切り替えられる", () => {
+  /* 本人指示 2026-09-05。★リンクにしてある。JSが動かなくても効くし、フッターの切替と同じ考え方。 */
+  assert.match(lpPage, /<a href="\?lang=ja" hreflang="ja">日本語<\/a>/);
+  assert.match(lpPage, /<a href="\?lang=en" hreflang="en">English<\/a>/);
+  // いま読んでいる方に印を付ける
+  assert.match(lpPage, /\[lang="ja"\] \.lang-pick a\[hreflang="ja"\],\n\[lang="en"\] \.lang-pick a\[hreflang="en"\]\{/);
+  // 冠と同じ行の右側（このアプリについて と並べる）
+  assert.match(lpPage, /<div class="masthead-links">/);
+  /* ★言語のリンクに lang を足し直さない。withLang は "?" で始まる href を素通りさせている */
+  assert.match(lpPage, /if \(!href \|\| href\.charAt\(0\) === "\?" \|\| href\.indexOf\("\/\/"\) === 0\) return href;/);
+});
+
 test("LPのいちばん上から「このアプリについて」へ飛べる", () => {
   // 本人指示 2026-09-05。冠と同じ行の右端に置き、下の帯へ飛ばす。
   assert.match(lpPage, /<a class="about-link" href="#about"><span data-ja>このアプリについて<\/span><span data-en>About this app<\/span><\/a>/);
@@ -453,9 +465,10 @@ test("LPのいちばん上に製品の名前を大きく出す", () => {
   assert.doesNotMatch(lpPage, /<span data-en>Two views of one stage,<br>/);
   // 「PC用として明示する」（2026-09-03の指示）は残す。上の塊の中へ移した
   assert.match(lpPage, /<\/dl>\s*\n\s*<p class="badge-pc">/);
-  /* ★説明の一文ごと外したので、右の欄も無くなった（2026-09-05）。動画だけを中央に置く。 */
+  /* ★説明の一文は外した（2026-09-05）。右の欄には「誰が、何に使うか」が入る。 */
   assert.doesNotMatch(lpPage, /--fs-hero/);
-  assert.match(lpPage, /\.hero-inner\{ display:flex; justify-content:center; \}/);
+  assert.match(lpPage, /\.hero-inner\{ display:grid; gap:var\(--space-5\); grid-template-columns:minmax\(0,1fr\); justify-items:center; \}/);
+  assert.match(lpPage, /grid-template-columns:auto minmax\(260px,1fr\);/);
 });
 
 test("LPの名前の下に「誰が、何に使うか」を置く", () => {
@@ -474,8 +487,9 @@ test("LPの名前の下に「誰が、何に使うか」を置く", () => {
   assert.match(lpPage, /立ち位置は、場当たりの前に。稽古場の時間を、もっと繊細なところへ使えます。/);
   assert.doesNotMatch(lpPage, /立ち稽古/);
   assert.match(lpPage, /Blocking, before the room\. Rehearsal time goes to the finer work\./);
-  // 二列に並べる（760px以上）
-  assert.match(lpPage, /@media \(min-width:760px\)\{\n\s*\.uses-list\{ grid-template-columns:repeat\(2,minmax\(0,1fr\)\);/);
+  /* ★動画の右へ移したので常に縦積み（本人指示 2026-09-05）。横に二列だと右の欄では狭すぎる。 */
+  assert.match(lpPage, /<div class="hero-uses">\s*\n\s*<dl class="uses-list">/);
+  assert.doesNotMatch(lpPage, /\.uses-list\{ grid-template-columns:repeat\(2/);
   /* ★本人指示 2026-09-05 で大きくした。一行28px・役の本文17px（760px以下は20/15px）。 */
   assert.match(lpPage, /font-size:28px; line-height:1\.6;/);
   assert.match(lpPage, /margin:0; font-family:var\(--sans\); font-size:17px;/);

@@ -71,9 +71,17 @@ p{ margin:0 0 var(--space-3); }
 
 /* ============ ① ヒーロー: 完全版の録画 ============ */
 .hero{ padding:var(--space-5) 0 var(--space-4); }
-/* ★説明の一文は「12の機能」の01と同じ内容だったので外した（本人指示 2026-09-05）。
-   ヒーローに残るのは動画だけ。横いっぱいに伸ばすと画面を占領するので、幅を決めて中央に置く。 */
-.hero-inner{ display:flex; justify-content:center; }
+/* 動画の右に「誰が、何に使うか」を置く（本人指示 2026-09-05）。
+   ★動画の欄は auto。動画は高さの上限（56vh）で幅が決まるので、
+     固定幅にすると余った分だけ右へ隙間が空く。 */
+.hero-inner{ display:grid; gap:var(--space-5); grid-template-columns:minmax(0,1fr); justify-items:center; }
+@media (min-width:900px){
+  .hero-inner{
+    grid-template-columns:auto minmax(260px,1fr);
+    gap:var(--space-6); align-items:center; justify-items:stretch;
+  }
+}
+.hero-uses{ min-width:0; width:100%; max-width:620px; }
 /* ★幅は高さの上限に合わせて絞る。動画は1:1なので、幅だけ広いと左右に黒帯が出る
      （2026-09-05 実測: 618×504の枠に504×504が入り、両側57pxずつ黒）。 */
 .hero-video{
@@ -100,6 +108,15 @@ p{ margin:0 0 var(--space-3); }
   gap:var(--space-3); flex-wrap:wrap; margin-bottom:var(--space-2);
 }
 .masthead-top .eyebrow{ margin-bottom:0; }
+.masthead-links{ display:flex; align-items:baseline; gap:var(--space-3); flex-wrap:wrap; }
+/* 言語の切替。★リンクにしてある。JSが動かなくても効くし、フッターの切替と同じ考え方。 */
+.lang-pick{ display:inline-flex; align-items:baseline; gap:6px; font-family:var(--sans); font-size:var(--fs-small); }
+.lang-pick a{ color:var(--ink-soft-sm); text-decoration:none; }
+.lang-pick a:hover, .lang-pick a:focus-visible{ color:var(--paper); }
+.lang-pick span{ color:var(--line-dark); }
+/* いま読んでいる方に印を付ける */
+[lang="ja"] .lang-pick a[hreflang="ja"],
+[lang="en"] .lang-pick a[hreflang="en"]{ color:var(--paper); border-bottom:1px solid var(--brass); padding-bottom:1px; }
 .about-link{
   font-family:var(--sans); font-size:var(--fs-small); color:var(--ink-soft-sm);
   text-decoration:none; border-bottom:1px solid rgba(239,231,214,.28);
@@ -120,12 +137,10 @@ p{ margin:0 0 var(--space-3); }
   font-size:28px; line-height:1.6; letter-spacing:.04em; color:var(--paper);
 }
 @media (max-width:760px){ .uses-lead{ font-size:20px; } }
+/* ★動画の右へ移したので、常に縦積み（2026-09-05）。横に二列だと右の欄では狭すぎる。 */
 .uses-list{
-  margin:0; display:grid; gap:var(--space-3);
+  margin:0; display:grid; gap:var(--space-4);
   grid-template-columns:minmax(0,1fr);
-}
-@media (min-width:760px){
-  .uses-list{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-5); }
 }
 .uses-row{ display:grid; gap:2px; }
 .uses-row dt{
@@ -246,21 +261,15 @@ footer a{ color:var(--rust-ink); }
   <div class="wrap hero-masthead">
     <div class="masthead-top">
       <p class="eyebrow">STAGE IMAGE STUDY</p>
-      <a class="about-link" href="#about"><span data-ja>このアプリについて</span><span data-en>About this app</span></a>
+      <div class="masthead-links">
+        <span class="lang-pick">
+          <a href="?lang=ja" hreflang="ja">日本語</a><span aria-hidden="true">/</span><a href="?lang=en" hreflang="en">English</a>
+        </span>
+        <a class="about-link" href="#about"><span data-ja>このアプリについて</span><span data-en>About this app</span></a>
+      </div>
     </div>
     <h1 class="hero-name"><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></h1>
     <p class="uses-lead"><span data-ja>限られたステージ利用時間はもっと質の高い練習へ。</span><span data-en>The shortest line between imagining and doing.</span></p>
-    <dl class="uses-list">
-      <div class="uses-row">
-        <dt><span data-ja>ディレクター</span><span data-en>Director</span></dt>
-        <dd><span data-ja>頭の中にある絵を、目に見える形に。そのまま演者へ渡せます。</span><span data-en>Give the picture in your head a visible form — and hand it straight to the cast.</span></dd>
-      </div>
-      <div class="uses-row">
-        <dt><span data-ja>アーティスト</span><span data-en>Artist</span></dt>
-        <dd><span data-ja>立ち位置は、場当たりの前に。稽古場の時間を、もっと繊細なところへ使えます。</span><span data-en>Blocking, before the room. Rehearsal time goes to the finer work.</span></dd>
-      </div>
-    </dl>
-    <p class="badge-pc"><span data-ja>PC用のアプリです</span><span data-en>Made for desktop</span></p>
   </div>
   <div class="wrap hero-inner">
     <figure class="hero-video">
@@ -271,6 +280,19 @@ footer a{ color:var(--rust-ink); }
         <source src="media/hero-ja.mp4" type="video/mp4">
       </video>
     </figure>
+    <div class="hero-uses">
+      <dl class="uses-list">
+        <div class="uses-row">
+          <dt><span data-ja>ディレクター</span><span data-en>Director</span></dt>
+          <dd><span data-ja>頭の中にある絵を、目に見える形に。そのまま演者へ渡せます。</span><span data-en>Give the picture in your head a visible form — and hand it straight to the cast.</span></dd>
+        </div>
+        <div class="uses-row">
+          <dt><span data-ja>アーティスト</span><span data-en>Artist</span></dt>
+          <dd><span data-ja>立ち位置は、場当たりの前に。稽古場の時間を、もっと繊細なところへ使えます。</span><span data-en>Blocking, before the room. Rehearsal time goes to the finer work.</span></dd>
+        </div>
+      </dl>
+      <p class="badge-pc"><span data-ja>PC用のアプリです</span><span data-en>Made for desktop</span></p>
+    </div>
   </div>
 </header>
 
