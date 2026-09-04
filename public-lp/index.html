@@ -28,7 +28,7 @@
   /* 書体 */
   --serif:"Hiragino Mincho ProN","Yu Mincho",YuMincho,"Noto Serif JP",serif;
   --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;
-  --fs-title:64px; --fs-hero:36px; --fs-h2:25px; --fs-body:16px; --fs-small:13px; --fs-ui:14px;
+  --fs-title:84px; --fs-h2:25px; --fs-body:16px; --fs-small:13px; --fs-ui:14px;
   /* 余白 */
   --space-1:4px; --space-2:8px; --space-3:16px; --space-4:24px;
   --space-5:40px; --space-6:64px; --space-7:96px;
@@ -42,7 +42,7 @@
   --motion-reveal:320ms ease-out;
 }
 @media (max-width:760px){
-  :root{ --fs-title:40px; --fs-hero:26px; --fs-h2:20px; }
+  :root{ --fs-title:44px; --fs-h2:20px; }
 }
 
 *{box-sizing:border-box}
@@ -71,17 +71,13 @@ p{ margin:0 0 var(--space-3); }
 
 /* ============ ① ヒーロー: 完全版の録画 ============ */
 .hero{ padding:var(--space-5) 0 var(--space-4); }
-.hero-inner{
-  display:grid; gap:var(--space-4); align-items:center;
-  grid-template-columns:minmax(0,1fr);
-}
-@media (min-width:900px){
-  /* ★右の欄は470px。420pxだと英語の "Two views of one stage," が三行に割れた（2026-09-04 実測）。
-     日本語も英語も二行に収まる最小の幅がここ。動画は662→612pxになる。 */
-  .hero-inner{ grid-template-columns:minmax(0,1fr) minmax(0,470px); gap:var(--space-6); }
-}
+/* ★説明の一文は「12の機能」の01と同じ内容だったので外した（本人指示 2026-09-05）。
+   ヒーローに残るのは動画だけ。横いっぱいに伸ばすと画面を占領するので、幅を決めて中央に置く。 */
+.hero-inner{ display:flex; justify-content:center; }
+/* ★幅は高さの上限に合わせて絞る。動画は1:1なので、幅だけ広いと左右に黒帯が出る
+     （2026-09-05 実測: 618×504の枠に504×504が入り、両側57pxずつ黒）。 */
 .hero-video{
-  position:relative; margin:0;
+  position:relative; margin:0; width:100%; max-width:min(620px, 56vh);
   border:1px solid var(--line-dark); border-radius:var(--radius-m);
   overflow:hidden; box-shadow:var(--shadow-1); background:#000;
 }
@@ -89,20 +85,15 @@ p{ margin:0 0 var(--space-3); }
    計画の「②をスクロールせずに一部が見える位置へ置く」が守れない（実測: 下の帯が画面外）。
    ヒーロー全体の高さを画面の7割程度に抑え、動画はその中へ収める。 */
 .hero-video video{ width:100%; height:auto; max-height:56vh; object-fit:contain; background:#000; }
-@media (min-width:900px){
-  .hero-inner{ align-items:center; }
-  /* ★66vh→56vh。名前の下に「誰が、何に使うか」を足した分、動画を詰めないと
-     デモの帯が画面の外へ落ちる（2026-09-04 実測）。 */
-  .hero-video video{ max-height:56vh; }
-}
 @media (max-width:899px){
+  .hero-video{ max-width:min(620px, 46svh); }
   .hero-video video{ max-height:46svh; }
 }
 /* いちばん上に製品の名前を大きく出す（本人指示 2026-09-04）。
    ★h1 は名前。以前は説明の一文を h1 にしていたが、名前が小さな添え字（eyebrow）のままだと、
      この画面が何のページなのかが最初に読めない。
    ★冠の「STAGE IMAGE STUDY」はアプリ本体の見出しと同じ字。LPと道具で名乗りを揃える。 */
-.hero-masthead{ margin-bottom:var(--space-5); }
+.hero-masthead{ margin-bottom:var(--space-6); }
 /* 冠と「このアプリについて」を同じ行の両端へ。飛び先は下の #about。 */
 .masthead-top{
   display:flex; align-items:baseline; justify-content:space-between;
@@ -125,10 +116,10 @@ p{ margin:0 0 var(--space-3); }
    ★ここは道具の説明ではなく、読む人が自分の側を見つける場所。だから役どころを先に出す。
    ★二列に並べて高さを抑える。縦に積むとデモの帯が画面の外へ落ちる。 */
 .uses-lead{
-  margin:var(--space-3) 0 var(--space-3);
-  font-size:20px; letter-spacing:.04em; color:var(--paper);
+  margin:var(--space-4) 0 var(--space-4);
+  font-size:28px; line-height:1.6; letter-spacing:.04em; color:var(--paper);
 }
-@media (max-width:760px){ .uses-lead{ font-size:17px; } }
+@media (max-width:760px){ .uses-lead{ font-size:20px; } }
 .uses-list{
   margin:0; display:grid; gap:var(--space-3);
   grid-template-columns:minmax(0,1fr);
@@ -138,25 +129,19 @@ p{ margin:0 0 var(--space-3); }
 }
 .uses-row{ display:grid; gap:2px; }
 .uses-row dt{
-  font-family:var(--sans); font-size:11px; letter-spacing:.18em; color:var(--brass);
+  font-family:var(--sans); font-size:12px; letter-spacing:.18em; color:var(--brass);
+  margin-bottom:2px;
 }
 .uses-row dd{
-  margin:0; font-family:var(--sans); font-size:14px;
-  line-height:1.8; color:var(--paper-line);
+  margin:0; font-family:var(--sans); font-size:17px;
+  line-height:1.85; color:var(--paper-line);
 }
+@media (max-width:760px){ .uses-row dd{ font-size:15px; } }
 
-.hero-copy{ min-width:0; }
 .eyebrow{
   font-family:var(--sans); font-size:11px; letter-spacing:.28em;
   color:var(--ink-soft-sm); margin:0 0 var(--space-2);
 }
-/* 名前の下に置く説明の一文。名前(64px)との差で段を作る。
-   ★40pxだと右の欄(420px)で「す。」だけが三行目へ落ちた（2026-09-04 実測）。36pxで二行に収まる。 */
-.hero-line{
-  font-size:var(--fs-hero); font-weight:600; line-height:1.45; letter-spacing:.04em;
-  margin:0 0 var(--space-3);
-}
-.hero-sub{ color:var(--ink-soft-sm); font-size:var(--fs-small); font-family:var(--sans); margin:0; }
 .badge-pc{
   display:inline-block; margin-top:var(--space-3);
   padding:3px 10px; border:1px solid var(--brass); border-radius:var(--radius-s);
@@ -171,7 +156,7 @@ p{ margin:0 0 var(--space-3); }
 }
 .story-more a{ color:var(--rust-ink); }
 
-/* ============ ⑤ できないこと ============ */
+/* ============ ⑤ 注意点 ============ */
 .limits{
   border-left:3px solid var(--brass); background:var(--desk-2);
   padding:var(--space-4); border-radius:0 var(--radius-m) var(--radius-m) 0;
@@ -275,6 +260,7 @@ footer a{ color:var(--rust-ink); }
         <dd><span data-ja>立ち位置は、場当たりの前に。稽古場の時間を、もっと繊細なところへ使えます。</span><span data-en>Blocking, before the room. Rehearsal time goes to the finer work.</span></dd>
       </div>
     </dl>
+    <p class="badge-pc"><span data-ja>PC用のアプリです</span><span data-en>Made for desktop</span></p>
   </div>
   <div class="wrap hero-inner">
     <figure class="hero-video">
@@ -285,19 +271,14 @@ footer a{ color:var(--rust-ink); }
         <source src="media/hero-ja.mp4" type="video/mp4">
       </video>
     </figure>
-    <div class="hero-copy">
-      <p class="hero-line"><span data-ja>正面と真上、<br>二つの図が連動します。</span><span data-en>Two views of one stage,<br>moving together.</span></p>
-      <p class="hero-sub"><span data-ja>舞台の一場面を、客席から見た絵と真上から見た図で同時に描きます。</span><span data-en>Draw one moment of a show two ways at once — as the house sees it, and from directly above.</span></p>
-      <p class="badge-pc"><span data-ja>PC用のアプリです</span><span data-en>Made for desktop</span></p>
-    </div>
   </div>
 </header>
 
-<!-- ============ ⑤ できないこと ============ -->
+<!-- ============ ⑤ 注意点（本人指示 2026-09-05: 「できないこと」から言い換え）============ -->
 <section class="reveal">
   <div class="read">
     <div class="limits">
-      <h2><span data-ja>できないこと</span><span data-en>What it does not do</span></h2>
+      <h2><span data-ja>注意点</span><span data-en>Please note</span></h2>
       <p><span data-ja>舞台スケッチは技術図面ではなく、安全を検証したり保証したりするものでもありません。
       ディレクターとアーティストの意思疎通を円滑にし、良いショーを作る時間を増やすためのスケッチです。
       体験版で描いたものは保存されません。</span><span data-en>Stage Sketch is not a technical drawing, and it does not verify or guarantee safety.
@@ -354,7 +335,7 @@ footer a{ color:var(--rust-ink); }
         <div class="tour-copy">
           <p class="tour-no">05</p>
           <h3><span data-ja>会場の形式を選べる。自分の会場も作れる。</span><span data-en>Pick a venue, or build your own.</span></h3>
-          <p><span data-ja>プロセニアム、スラスト、全周のアリーナ、シャピトー。実在の劇場（シアタートラム・TOHU・シルク・ディヴェール）も入っています。置いた演者はそのままに、客席だけが動きます。寸法を入れて、自分の会場を作ることもできます。</span><span data-en>Proscenium, thrust, arena in the round, chapiteau, and real houses: Theatre Tram, TOHU, Cirque d'Hiver. Your performers stay put; only the audience moves. Or build your own room from measurements.</span></p>
+          <p><span data-ja>プロセニアム、スラスト、全周のアリーナ、シャピトー。置いた演者はそのままに、客席だけが動きます。寸法を入れて、自分の会場を作ることもできます。</span><span data-en>Proscenium, thrust, arena in the round, chapiteau. Your performers stay put; only the audience moves. Or build your own room from measurements.</span></p>
         </div>
       </li>
       <li class="tour-item">

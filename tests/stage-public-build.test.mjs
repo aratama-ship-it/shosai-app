@@ -399,12 +399,20 @@ test("LPが入口、体験版は /try.html。動画も配信フォルダへ運�
 });
 
 test("LPは承認済みの文言を使い、詩的な見出しを足さない", () => {
-  assert.match(lpPage, /正面と真上、<br>\s*二つの図が連動します。/);
   /* ★「分けているのは舞台の形ではなく…」の帯は本人指示で削除（2026-09-05）。
        会場の話は「12の機能」の05で画像つきに入れ替えた。 */
   assert.doesNotMatch(lpPage, /分けているのは舞台の形ではなく/);
   assert.match(lpPage, /技術図面ではなく、安全を検証したり保証したりするものでもありません/);
   assert.match(lpPage, /PC用のアプリです/);
+  /* ★「できないこと」は「注意点」へ言い換えた（本人指示 2026-09-05）。中の文はそのまま。 */
+  assert.match(lpPage, /<h2><span data-ja>注意点<\/span><span data-en>Please note<\/span><\/h2>/);
+  /* ★見出しだけを見る。ページの題（<title>）と og:description は、
+       画面の文ではなく product の説明なので触っていない。 */
+  assert.doesNotMatch(lpPage, /<span data-ja>できないこと<\/span>/);
+  assert.doesNotMatch(lpPage, /<span data-en>What it does not do<\/span>/);
+  /* ★05から「実在の劇場（…）も入っています」の一文を外した（本人指示 2026-09-05）。
+       会場そのものは残っているので、画像と会場の選択肢には手を付けない。 */
+  assert.doesNotMatch(lpPage, /実在の劇場（|and real houses:/);
   /* ★「触ってみてください。」の埋め込みデモは本人指示で削除（2026-09-05・とりあえず）。
        体験版へは下のボタン（/try.html）から送る。 */
   assert.doesNotMatch(lpPage, /embed=1/);
@@ -433,17 +441,21 @@ test("LPのいちばん上から「このアプリについて」へ飛べる", 
 test("LPのいちばん上に製品の名前を大きく出す", () => {
   // 本人指示 2026-09-04。名前が小さな添え字のままだと、何のページか最初に読めない。
   assert.match(lpPage, /<h1 class="hero-name"><span data-ja>舞台スケッチ<\/span><span data-en>Stage Sketch<\/span><\/h1>/);
-  assert.match(lpPage, /--fs-title:64px;/);
-  assert.match(lpPage, /:root\{ --fs-title:40px;/);          // 760px以下
+  // 本人指示 2026-09-05 でさらに大きくした（64→84px / 760px以下は40→44px）
+  assert.match(lpPage, /--fs-title:84px;/);
+  assert.match(lpPage, /:root\{ --fs-title:44px;/);          // 760px以下
   // 冠はアプリ本体の見出しと同じ字にする（LPと道具で名乗りを揃える）
   assert.match(lpPage, /<p class="eyebrow">STAGE IMAGE STUDY<\/p>/);
-  // h1 は名前。説明の一文は h1 ではなくする
-  assert.match(lpPage, /<p class="hero-line">/);
-  assert.doesNotMatch(lpPage, /<h1 class="hero-line">/);
-  /* ★説明の一文は36px、右の欄は470px。40px×420pxだと日本語は「す。」が、
-       英語は "Two views of one stage," が三行に割れた（2026-09-04 実測）。 */
-  assert.match(lpPage, /--fs-hero:36px;/);
-  assert.match(lpPage, /minmax\(0,1fr\) minmax\(0,470px\)/);
+  /* ★h1 は名前だけ。説明の一文（正面と真上、…）は「12の機能」の01と同じ内容だったので
+       本人指示で削除した（2026-09-05）。ヒーローに残るのは動画だけ。 */
+  assert.doesNotMatch(lpPage, /hero-line|hero-sub|hero-copy/);
+  assert.doesNotMatch(lpPage, /<span data-ja>正面と真上、<br>/);
+  assert.doesNotMatch(lpPage, /<span data-en>Two views of one stage,<br>/);
+  // 「PC用として明示する」（2026-09-03の指示）は残す。上の塊の中へ移した
+  assert.match(lpPage, /<\/dl>\s*\n\s*<p class="badge-pc">/);
+  /* ★説明の一文ごと外したので、右の欄も無くなった（2026-09-05）。動画だけを中央に置く。 */
+  assert.doesNotMatch(lpPage, /--fs-hero/);
+  assert.match(lpPage, /\.hero-inner\{ display:flex; justify-content:center; \}/);
 });
 
 test("LPの名前の下に「誰が、何に使うか」を置く", () => {
@@ -462,18 +474,22 @@ test("LPの名前の下に「誰が、何に使うか」を置く", () => {
   assert.match(lpPage, /立ち位置は、場当たりの前に。稽古場の時間を、もっと繊細なところへ使えます。/);
   assert.doesNotMatch(lpPage, /立ち稽古/);
   assert.match(lpPage, /Blocking, before the room\. Rehearsal time goes to the finer work\./);
-  /* ★二列に並べて高さを抑える。縦に積むとデモの帯が画面の外へ落ちる（2026-09-04 実測）。
-     動画も 66vh→56vh へ詰めてある。 */
+  // 二列に並べる（760px以上）
   assert.match(lpPage, /@media \(min-width:760px\)\{\n\s*\.uses-list\{ grid-template-columns:repeat\(2,minmax\(0,1fr\)\);/);
-  assert.match(lpPage, /\.hero-video video\{ max-height:56vh; \}/);
+  /* ★本人指示 2026-09-05 で大きくした。一行28px・役の本文17px（760px以下は20/15px）。 */
+  assert.match(lpPage, /font-size:28px; line-height:1\.6;/);
+  assert.match(lpPage, /margin:0; font-family:var\(--sans\); font-size:17px;/);
+  /* ★動画は1:1。枠の幅を高さの上限に合わせないと左右に黒帯が出る（2026-09-05 実測: 両側57px）。 */
+  assert.match(lpPage, /max-width:min\(620px, 56vh\)/);
 });
 
 test("LPの下部で12の機能を、画像つきで一つずつ紹介する", () => {
   // 本人指示 2026-09-05。一覧（8組の箇条書き）から、一機能・一画像の縦並びへ。
   const tour = lpPage.indexOf('<section class="tour reveal">');
-  const limits = lpPage.indexOf("<span data-ja>できないこと</span>");
+  const limits = lpPage.indexOf("<span data-ja>注意点</span>");
+  assert.ok(limits > 0, "注意点の帯がある");
   const cta = lpPage.indexOf('<section class="cta reveal">');
-  assert.ok(tour > limits && tour < cta, "できないこと → 12の機能 → CTA の順");
+  assert.ok(tour > limits && tour < cta, "注意点 → 12の機能 → CTA の順");
   assert.match(lpPage, /<h2><span data-ja>12の機能を、ひとつずつ。<\/span><span data-en>Twelve things it does, one at a time\.<\/span><\/h2>/);
   const items = lpPage.match(/<li class="tour-item[^"]*">/g) || [];
   assert.equal(items.length, 12, "12項目");
@@ -524,7 +540,6 @@ test("LPに体験版の埋め込みデモを置かない", () => {
 test("LPは日英を持ち、承認済みの英語確定稿の文言を使う", () => {
   // 2026-09-04: 英語版。?lang=en / 端末の言語で切り替える（紹介ページと同じ考え方）
   assert.match(lpPage, /\[lang="en"\] \[data-ja\], \[lang="ja"\] \[data-en\]\{ display:none; \}/);
-  assert.match(lpPage, /Two views of one stage,<br>moving together\./);
   assert.doesNotMatch(lpPage, /Formats are defined by where the audience sits/);
   assert.match(lpPage, /Stage Sketch is not a technical drawing, and it does not verify or guarantee safety\./);
   assert.match(lpPage, /Made for desktop/);
