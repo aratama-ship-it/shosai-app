@@ -335,6 +335,69 @@
     return applyDocument(documentValue);
   }
 
+  /* ---- 平面図の座標換算（2026-09-03 本人指摘: 思ったところへ動かせない） ----
+     以前は canvas 全体の比率をそのまま u,v にしていた。だが平面図の床は canvas の
+     余白の内側に描かれる矩形（本体 planFit）なので、床の中央を突いても u,v は 0.5 にならない。
+     本体の planFit をそのまま移し、床の矩形で換算する。
+     ★本体の planFit（stage-sketch.js の @planFit）と同じ式であること。向こうが変わったらここも直す。 */
+  const PUBLIC_W = 1280;
+  const PUBLIC_WING_M = 2.5;
+  function publicPlanFit(input) {
+    const { W, H, audience, width, depth, wingM } = input;
+    const M = 24;
+    const ratio = depth / width;
+    const wingRatio = wingM / width;
+    let sw, top, bottom;
+    if (audience === "round") {
+      sw = (Math.min(W, H) - 2 * (95 + 28 + M)) / Math.max(1, ratio);
+      const sh = sw * ratio;
+      const outside = Math.max(sw, sh) / 2 + 95 + 28 + M;
+      top = outside - sh / 2;
+      bottom = top;
+    } else if (audience === "three") {
+      const byWidth = W - 2 * (96 + M);
+      const byHeight = (H - (96 + 2 * M)) / (ratio + wingRatio);
+      sw = Math.min(byWidth, byHeight);
+      top = wingRatio * sw + M;
+      bottom = 96 + M;
+    } else {
+      const byWidth = (W - 2 * M) / (1 + 2 * wingRatio);
+      bottom = audience === "none" ? M : 96 + M;
+      const byHeight = (H - M - bottom) / ratio;
+      sw = Math.min(byWidth, byHeight);
+      top = M;
+    }
+    const sh = sw * ratio;
+    return { x: (W - sw) / 2, y: top + (H - top - bottom - sh) / 2, w: sw, h: sh };
+  }
+
+  /* 画面上の点 → 平面図の u,v。会場と規模は文書から、寸法は本体の VENUES から引く。
+     ピンチ拡大中の補正はしない（拡大したまま置くと少しずれる。仕様として割り切る）。 */
+  function planUVFromClient(canvas, clientX, clientY, documentValue) {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const VENUES = window.SHOSAI_VENUES;
+    const project = documentValue && documentValue.project;
+    if (!VENUES || !project) return null;
+    let stage = null;
+    try {
+      const venue = VENUES.byId(project.venue);
+      const size = VENUES.sizeById(venue, project.venueSize);
+      // 論理座標の高さ。backing の倍率（canvas.width / 1280）で割り戻す
+      const H = canvas.height / (canvas.width / PUBLIC_W);
+      stage = publicPlanFit({
+        W: PUBLIC_W, H, audience: venue.audience,
+        width: size.width, depth: size.depth, wingM: PUBLIC_WING_M,
+      });
+    } catch (_) { return null; }
+    const x = (clientX - rect.left) * (PUBLIC_W / rect.width);
+    const y = (clientY - rect.top) * ((canvas.height / (canvas.width / PUBLIC_W)) / rect.height);
+    return {
+      u: Math.max(0, Math.min(1, (x - stage.x) / stage.w)),
+      v: Math.max(0, Math.min(1, (y - stage.y) / stage.h)),
+    };
+  }
+
   function canvasTap(event, status) {
     if (!phoneLike || touches.size >= 2 || suppressNextClick) {
       suppressNextClick = false;
@@ -343,10 +406,13 @@
     const canvas = event.currentTarget;
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
-    const u = (event.clientX - rect.left) / rect.width;
-    const v = (event.clientY - rect.top) / rect.height;
     const documentValue = readDocument();
     const scene = activeScene(documentValue);
+    // 平面図は床の矩形で換算する。正面図は横位置だけなので canvas の比率のまま
+    const isPlan = canvas.id === "stage-plan-canvas";
+    const mapped = isPlan ? planUVFromClient(canvas, event.clientX, event.clientY, documentValue) : null;
+    const u = mapped ? mapped.u : (event.clientX - rect.left) / rect.width;
+    const v = mapped ? mapped.v : (event.clientY - rect.top) / rect.height;
     const performers = scene ? scene.pieces.filter((piece) => piece.type === "performer") : [];
     if (!selectedPerformerId) {
       const plan = canvas.id === "stage-plan-canvas";

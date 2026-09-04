@@ -239,3 +239,28 @@ test("スマホ設定は 日本語 / English / ✕ の一列にし、「端末�
   // 本体は言語切替のたび札を貼り直すので、掛け直しが要る
   assert.match(publicJs, /markAsPreview\(\);\s*\/\/[^\n]*\n\s*markPhoneSettings\(\);/);
 });
+
+test("平面図のタップは床の矩形（本体の planFit と同じ式）で u,v に換算する", () => {
+  // 2026-09-03 本人指摘: canvas 全体の比率のままだと思ったところへ動かない
+  assert.match(publicJs, /function publicPlanFit\(input\)/);
+  assert.match(publicJs, /function planUVFromClient\(canvas, clientX, clientY, documentValue\)/);
+  assert.match(publicJs, /const mapped = isPlan \? planUVFromClient\(canvas, event\.clientX, event\.clientY, documentValue\) : null;/);
+  // 本体の planFit と同じ定数
+  const stageSource = publicJs; // 比較は下の別テストで本体側と突き合わせる
+  assert.match(stageSource, /const M = 24;/);
+  assert.match(stageSource, /PUBLIC_WING_M = 2\.5/);
+});
+
+test("体験版の planFit は本体の planFit と式が一致する（ずれたら換算が狂う）", async () => {
+  const stageSource = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
+  const pick = (src, name) => {
+    const m = src.match(new RegExp(`function ${name}\\(input\\) \\{([\\s\\S]*?)\\n  \\}`));
+    assert.ok(m, `${name} がある`);
+    // 返り値の形だけ違う（本体は {stage, pxPerM}、体験版は stage そのもの）。式の部分だけ比べる
+    // 宣言の書き方（let を1行にまとめる等）は違ってよい。代入の式だけを比べる
+    return m[1].split("\n").map((row) => row.trim())
+      .filter((row) => / = /.test(row) && !/===/.test(row) && /sw|top|bottom|byWidth|byHeight|outside|ratio|M = 24/.test(row))
+      .join("\n");
+  };
+  assert.equal(pick(publicJs, "publicPlanFit"), pick(stageSource, "planFit"));
+});

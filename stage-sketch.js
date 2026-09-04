@@ -1087,8 +1087,11 @@
     const next = (phoneViewerActive && phoneOrientation.matches) ? 960 : BASE_H;
     if (next === H) return false;
     H = next;
-    canvas.height = H;
-    if (planCanvas) planCanvas.height = H;
+    /* backing の倍率（幅から求める）を保ったまま高さだけ変える。
+       論理の H をそのまま入れると、幅が縮小されているとき縦横比が崩れる。 */
+    const scale = canvas.width / W || 1;
+    canvas.height = Math.round(H * scale);
+    if (planCanvas) planCanvas.height = Math.round(H * (planCanvas.width / W || 1));
     paintCanvas.height = H;
     intentMaskCanvas.height = H;
     return true;
@@ -16279,13 +16282,18 @@
   /* 大きな表示では内部解像度も追従させ、線や文字の粗さを抑える。
      論理座標は変えず、過大な描画負荷を避けるため3倍を上限とする。 */
   const BACKING_MAX_SCALE = 3;
+  /* 下限も設ける。以前は1倍が下限で、スマホ（表示367px×dpr2＝734px）でも
+     1280px幅で描いていた——必要な画素の約3倍を毎回描き直していた（2026-09-03 実測）。
+     表示に要る画素数まで落とす。論理座標（W×H）は変えないので、入力の換算
+     （pointFromEvent の W / rect.width）や書き出し（等倍の別 canvas）には影響しない。 */
+  const BACKING_MIN_SCALE = 0.5;
   function syncCanvasResolution() {
     let changed = false;
     for (const el of [canvas, planCanvas]) {
       if (!el) continue;
       const cssW = el.getBoundingClientRect().width;
       if (!cssW) continue;
-      const want = Math.min(BACKING_MAX_SCALE, Math.max(1, (cssW * (window.devicePixelRatio || 1)) / W));
+      const want = Math.min(BACKING_MAX_SCALE, Math.max(BACKING_MIN_SCALE, (cssW * (window.devicePixelRatio || 1)) / W));
       const cur = el.width / W;
       if (Math.abs(want - cur) > 0.15) {
         el.width = Math.round(W * want);
@@ -16302,6 +16310,14 @@
   /* ResizeObserverの初回通知は環境により来ないことがある（実際に来ない環境を確認済み）。
      読み込み直後の一度は自分で合わせる */
   requestAnimationFrame(syncCanvasResolution);
+  /* スマホ閲覧機は起動後に図を組み替える（再親付け・4:3化）。その時点で
+     ResizeObserver の通知が来ない環境があり、初回の rAF だけでは組み替え前の
+     寸法で合わせたまま止まる（2026-09-03 実測: 表示367pxに対し1280pxのまま）。
+     読み込み完了後と、その次の描画枠でもう一度合わせる。 */
+  window.addEventListener("load", () => {
+    syncCanvasResolution();
+    requestAnimationFrame(syncCanvasResolution);
+  });
 
   /* 全画面かどうか。プレゼン中だけ、シーンの説明を絵の中へ描く。
      入るときも出るときも描き直しがいる（出たあと字が残らないように）。 */
@@ -22575,6 +22591,12 @@ ${propsPlotHtml}
       updateHistoryButtons();
       updateBackupNote();
       render();
+      /* 解像度合わせは、スマホの組み替え（initPhoneViewerWorkspace）と初回描画の
+         後にもう一度行う。起動直後の rAF は組み替え前の寸法で合わせてしまい、
+         その後 ResizeObserver の通知が来ない環境では 1280px のまま残る
+         （2026-09-03 実測。resize を投げると 734px に直った）。 */
+      syncCanvasResolution();
+      requestAnimationFrame(syncCanvasResolution);
       setSaveStatus(loaded.restored
         ? "この端末に保存した前回のスケッチを開きました。"
         : "変更はこの端末のブラウザ内へ自動保存します。");

@@ -11463,6 +11463,12 @@ html.stage-phone-viewer .stage-canvas-bar .stage-canvas-caption {
   font-size: 9px;
 }
 
+/* スマホでは見出しの帯（.stage-canvas-bar）が絵の上端に重なるので、
+   奥行きの札「奥・背景」を同じ高さに置くと見出しと重なる。
+   日本語では短いので目立たなかったが、英語（Upstage / backdrop）でぶつかる
+   （2026-09-03 発見）。帯の下へ逃がす。 */
+html.stage-phone-viewer .stage-depth-back { top: 30px; }
+
 html.stage-phone-viewer .stage-canvas-inner,
 html.stage-phone-viewer .stage-canvas-wrap {
   min-width: 0;

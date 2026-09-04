@@ -25,9 +25,11 @@ function runCanvasSize(phoneViewerActive, portrait, initialHeight) {
   return new Function("phoneViewerActive", "portrait", "initialHeight", `
     const phoneOrientation = { matches: portrait };
     const BASE_H = 720;
+    const W = 1280;
     let H = initialHeight;
-    const canvas = { height: initialHeight };
-    const planCanvas = { height: initialHeight };
+    // 2026-09-03: applyCanvasSize は backing の倍率（width / W）に追従する。等倍で試す
+    const canvas = { width: 1280, height: initialHeight };
+    const planCanvas = { width: 1280, height: initialHeight };
     const paintCanvas = { height: initialHeight };
     const intentMaskCanvas = { height: initialHeight };
     ${applySource}
@@ -116,4 +118,24 @@ test("向きの通知が来なくてもresizeで寸法を直す保険がある",
   assert.match(body, /applyLayout\(\);[\s\S]*?render\(\);/);
   assert.doesNotMatch(body, /closeNoteEditor\(\)/,
     "orientを直に繋ぐと入力中に付箋の編集が閉じる");
+});
+
+test("applyCanvasSizeは幅が縮小されていても縦横比を保つ（backing の倍率に追従）", () => {
+  // スマホは表示に要る画素数まで幅を落とす（下限0.5倍）。高さも同じ倍率でないと絵が潰れる
+  const applySource = functionSource("applyCanvasSize");
+  const run = new Function("initialHeight", `
+    const phoneViewerActive = true; const phoneOrientation = { matches: true };
+    const BASE_H = 720; const W = 1280; let H = initialHeight;
+    const canvas = { width: 640, height: Math.round(initialHeight * 0.5) };
+    const planCanvas = { width: 640, height: Math.round(initialHeight * 0.5) };
+    const paintCanvas = { height: initialHeight };
+    const intentMaskCanvas = { height: initialHeight };
+    ${applySource}
+    applyCanvasSize();
+    return { H, canvas, planCanvas, paintCanvas };
+  `)(720);
+  assert.equal(run.H, 960);
+  assert.equal(run.canvas.height, 480, "backing 0.5倍なら 960×0.5");
+  assert.equal(run.planCanvas.height, 480);
+  assert.equal(run.paintCanvas.height, 960, "paint 層は論理の高さのまま");
 });
