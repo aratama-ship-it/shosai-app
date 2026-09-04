@@ -293,7 +293,6 @@
       id: "proscenium",
       label: "プロセニアム",
       short: "額縁舞台",
-      note: "客席は正面の一方向。額縁が舞台と客席を分け、背景と大道具が効く。",
       audience: "front",
       rigging: "full",
       sizes: [
@@ -307,7 +306,6 @@
       id: "thrust",
       label: "スラスト",
       short: "張り出し舞台",
-      note: "舞台が客席へ突き出し、三方を客席が囲む。背中を必ず誰かに見せる。",
       audience: "three",
       rigging: "full",
       sizes: [
@@ -320,7 +318,6 @@
       id: "arena",
       label: "ビッグトップ",
       short: "円形・全周",
-      note: "客席が全周を囲む。正面が無いので、どの角度からも成立させる必要がある。",
       audience: "round",
       rigging: "full",
       sizes: [
@@ -334,7 +331,6 @@
       id: "outdoor",
       label: "屋外ステージ",
       short: "仮設・野外",
-      note: "客席という囲いが無い。前端の柵と音響卓までの距離が、そのまま空間の尺になる。",
       audience: "none",
       rigging: "limited",
       sizes: [
@@ -348,7 +344,6 @@
       id: "blackbox",
       label: "ブラックボックス",
       short: "可変",
-      note: "客席の位置を毎回決め直せる箱。形式そのものが変数になる。",
       audience: "front",
       rigging: "limited",
       sizes: [

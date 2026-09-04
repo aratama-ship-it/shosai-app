@@ -292,9 +292,12 @@ test("SHOSAI_VENUES.listの先頭5プリセットは値も並びも変えない"
     Array.from(venues.list.slice(0, 5), (item) => item.id),
     ["proscenium", "thrust", "arena", "outdoor", "blackbox"],
   );
+  /* 値を1バイトでも変えたら気づくための錠。変えるときは本人の指示があったときだけ。
+     2026-09-04: 会場の性格を書いた一文（note）を外した（本人指示）。
+       bd4b4907… → 7fa7d535… */
   assert.equal(
     createHash("sha256").update(firstFive).digest("hex"),
-    "bd4b49075c112d3faebd32c1b6101cc6d92fc2fc8e059ab2e9741b7f0302bd4b",
+    "7fa7d535a0b4d3819a805a7792c3120618ff4276981b6c6b62bb02845dd34ca4",
   );
 });
 
@@ -809,6 +812,30 @@ test("会場の説明に記法が混ざっていない（画面へ素のまま�
   });
 });
 
+test("形式プリセットには会場の性格を書いた一文を置かない", () => {
+  /* 本人指示 2026-09-04。実在会場の寸法・席数・出典の記述は残す。
+     ★同じ枠（#stage-venue-note）を使い回しているので、片方だけ消すとどちらも消えたように見える。
+       ここで「形式は無い・実在は有る」を両方おさえる。 */
+  const { venues } = loadModels();
+  const i18nContext = { window: {} };
+  vm.runInNewContext(i18nSource, i18nContext, { filename: "stage-i18n.js" });
+  const maps = i18nContext.window.SHOSAI_I18N.maps;
+  const forms = ["proscenium", "thrust", "arena", "outdoor", "blackbox"];
+
+  forms.forEach((id) => {
+    const venue = venues.v2.list.find((v) => v.id === id);
+    assert.ok(venue, `${id} がある`);
+    assert.ok(!venue.note, `${id} に説明の一文が無い`);
+    assert.ok(!maps.venueNote[id], `${id} の英訳も無い`);
+  });
+  // 実在会場は残っている
+  ["chapiteau", "tohu", "cirque-dhiver", "theatre-tram", "circus-theatre"].forEach((id) => {
+    const venue = venues.v2.list.find((v) => v.id === id);
+    assert.ok(venue && venue.note && venue.note.length > 40, `${id} の記述が残っている`);
+    assert.ok(maps.venueNote[id], `${id} の英訳が残っている`);
+  });
+});
+
 test("会場プリセットは全部が日英そろっている（追加時の訳し忘れを止める）", () => {
   const { venues } = loadModels();
   const i18nContext = { window: {} };
@@ -819,8 +846,10 @@ test("会場プリセットは全部が日英そろっている（追加時の�
   venues.v2.list.forEach((venue) => {
     assert.ok(maps.venue[venue.id], `${venue.id} の会場名に英訳がある`);
     assert.ok(maps.venueShort[venue.id], `${venue.id} の短い呼び名に英訳がある`);
-    assert.ok(maps.venueNote[venue.id], `${venue.id} の説明に英訳がある`);
-    assert.ok(!kana.test(maps.venue[venue.id] + maps.venueShort[venue.id] + maps.venueNote[venue.id]),
+    /* ★形式プリセットは説明の一文を持たない（本人指示 2026-09-04 で外した）。
+       説明があるものだけ英訳を要る形にする。 */
+    if (venue.note) assert.ok(maps.venueNote[venue.id], `${venue.id} の説明に英訳がある`);
+    assert.ok(!kana.test(maps.venue[venue.id] + maps.venueShort[venue.id] + (maps.venueNote[venue.id] || "")),
       `${venue.id} の英語に日本語が混じっていない`);
     venue.sizes.forEach((size) => {
       assert.ok(maps.size[size.id], `${venue.id}/${size.id} のサイズ名に英訳がある`);
@@ -832,9 +861,9 @@ test("会場プリセットは全部が日英そろっている（追加時の�
 test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う", () => {
   assert.match(sketchSource, /const STAGE_KEYS = \[[\s\S]*?"shosai-stage-venues-v1"/);
   for (const [name, version] of [
-    ["stage-venues.js", "24"],
+    ["stage-venues.js", "25"],
     ["stage-venue-lines.js", "4"],
-    ["stage-i18n.js", "96"],
+    ["stage-i18n.js", "97"],
     ["stage-set-model.js", "1"],
     ["stage-set-builder.js", "1"],
     ["stage-sketch.js", "318"],

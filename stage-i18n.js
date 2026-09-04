@@ -1249,11 +1249,8 @@
       "cirque-dhiver": "real venue",
     },
     venueNote: {
-      proscenium: "The house is on one side. The frame separates stage from house, so backdrop and scenery carry weight.",
-      thrust: "The stage juts into the house and is surrounded on three sides. Someone always sees your back.",
-      arena: "The house surrounds the whole ring. With no front, it has to work from every angle.",
-      outdoor: "No house to contain it. The front barrier and the distance to front-of-house set the scale.",
-      blackbox: "A box where the house position is decided each time. The form itself is a variable.",
+      /* ★形式プリセット（プロセニアム／スラスト／アリーナ／野外／ブラックボックス）の
+         性格を書いた一文は、本人指示で外した（2026-09-04）。実在会場の記述は残す。 */
       "theatre-tram": "Setagaya Public Theatre's studio space in Sangenjaya. A sunken end stage: no frame, stage and house share one box. The plan is T-shaped — an 8.4 m upstage box narrows, then opens to the 14.7 m main room. A single stage lift (5.44×2.72 m) sits centre, near the front edge; 225 seats in the basic form.",
       chapiteau: "A touring tent. The small one has a 7 m ring at the centre with four blocks of seating around it, up to 240 places, and a crown at 5.5 m. Its masts stand outside, so nothing obstructs the space within — but there is little room overhead for aerial work. The large one takes the traditional 13 m ring (the international standard since Philip Astley in 1768, the diameter at which a horse holds a steady pace), with 16 m under the crown and 1,730 seats. It too has no masts inside, so the sightlines run clear the whole way round. Real tents are oval; the space around the ring is treated here as a circle. Pitching the small one needs 35 × 35 m of flat ground.",
       "circus-theatre": "Circus brought into a framed stage. The house is on one side, and for aerial acts the rigging height alone decides what is possible. As a guide: silks want 4.5 m to the rigging point with 3 m of clear diameter around them, spinning silks 6 m with 4.5 m of clear diameter up to a height of 5 m, and hoop or dance trapeze 3 m with 4 m of clear diameter. Use points load-tested to at least 500 kg, and keep the fall zone clear.",
