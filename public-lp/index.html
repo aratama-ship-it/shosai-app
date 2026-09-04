@@ -123,6 +123,9 @@ p{ margin:0 0 var(--space-3); }
   padding-bottom:1px; white-space:nowrap;
 }
 .about-link:hover, .about-link:focus-visible{ color:var(--paper); border-bottom-color:var(--brass); }
+/* 名前の横に「PC用のアプリです」の札を置く（本人指示 2026-09-05）。
+   ★baseline で揃える。大きな名前の足元に小さな札が並ぶ形にしたいので、中央揃えにしない。 */
+.hero-title-row{ display:flex; align-items:baseline; gap:var(--space-3); flex-wrap:wrap; }
 .hero-name{
   font-family:var(--serif); font-size:var(--fs-title); font-weight:600;
   line-height:1.15; letter-spacing:.08em; color:var(--paper);
@@ -158,7 +161,7 @@ p{ margin:0 0 var(--space-3); }
   color:var(--ink-soft-sm); margin:0 0 var(--space-2);
 }
 .badge-pc{
-  display:inline-block; margin-top:var(--space-3);
+  display:inline-block; margin:0;
   padding:3px 10px; border:1px solid var(--brass); border-radius:var(--radius-s);
   font-family:var(--sans); font-size:11px; letter-spacing:.12em; color:var(--brass);
 }
@@ -268,7 +271,10 @@ footer a{ color:var(--rust-ink); }
         <a class="about-link" href="#about"><span data-ja>このアプリについて</span><span data-en>About this app</span></a>
       </div>
     </div>
-    <h1 class="hero-name"><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></h1>
+    <div class="hero-title-row">
+      <h1 class="hero-name"><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></h1>
+      <p class="badge-pc"><span data-ja>PC用のアプリです</span><span data-en>Made for desktop</span></p>
+    </div>
     <p class="uses-lead"><span data-ja>限られたステージ利用時間はもっと質の高い練習へ。</span><span data-en>The shortest line between imagining and doing.</span></p>
   </div>
   <div class="wrap hero-inner">
@@ -291,7 +297,6 @@ footer a{ color:var(--rust-ink); }
           <dd><span data-ja>立ち位置は、場当たりの前に。稽古場の時間を、もっと繊細なところへ使えます。</span><span data-en>Blocking, before the room. Rehearsal time goes to the finer work.</span></dd>
         </div>
       </dl>
-      <p class="badge-pc"><span data-ja>PC用のアプリです</span><span data-en>Made for desktop</span></p>
     </div>
   </div>
 </header>

@@ -463,8 +463,11 @@ test("LPのいちばん上に製品の名前を大きく出す", () => {
   assert.doesNotMatch(lpPage, /hero-line|hero-sub|hero-copy/);
   assert.doesNotMatch(lpPage, /<span data-ja>正面と真上、<br>/);
   assert.doesNotMatch(lpPage, /<span data-en>Two views of one stage,<br>/);
-  // 「PC用として明示する」（2026-09-03の指示）は残す。上の塊の中へ移した
-  assert.match(lpPage, /<\/dl>\s*\n\s*<p class="badge-pc">/);
+  /* 「PC用として明示する」（2026-09-03の指示）は残す。
+     置き場所は名前の横（本人指示 2026-09-05）。★baselineで揃える（中央揃えにしない）。 */
+  assert.match(lpPage, /<div class="hero-title-row">\s*\n\s*<h1 class="hero-name">/);
+  assert.match(lpPage, /<\/h1>\s*\n\s*<p class="badge-pc">/);
+  assert.match(lpPage, /\.hero-title-row\{ display:flex; align-items:baseline;/);
   /* ★説明の一文は外した（2026-09-05）。右の欄には「誰が、何に使うか」が入る。 */
   assert.doesNotMatch(lpPage, /--fs-hero/);
   assert.match(lpPage, /\.hero-inner\{ display:grid; gap:var\(--space-5\); grid-template-columns:minmax\(0,1fr\); justify-items:center; \}/);
