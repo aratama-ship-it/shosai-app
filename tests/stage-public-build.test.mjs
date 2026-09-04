@@ -193,14 +193,14 @@ test("製品版ベータの問い合わせは、上部から別ページへ送�
   assert.match(publicJs, /stage-public-beta-link/);
   assert.match(publicJs, /link\.href = "beta\.html";/);
   assert.match(publicJs, /betaLink: "製品版ベータ版はコチラからお問い合わせください"/);
-  // 画面のいちばん上、題より一段上の右へ置く（本人指示 2026-09-04）
-  assert.match(publicJs, /head\.parentNode\.insertBefore\(link, head\);/);
-  /* ★見出しの帯の中には入れない。あの帯は space-between で題と操作の列を両端へ振っているので、
-       三つ目を入れると操作の列が真ん中へ寄る（2026-09-04 実測）。 */
-  assert.doesNotMatch(publicJs, /head\.append\(link\)/);
-  /* ★横いっぱいの帯にしない。width:fit-content と margin-left:auto の組で寄せる
-       （親が block でも flex 列でも同じに効く）。 */
-  assert.match(publicCss, /\.stage-public-beta-link \{[^}]*width: fit-content;[^}]*margin: 0 0 8px auto;/);
+  // 題（舞台スケッチ／体験版）のすぐ右へ置く（本人指示 2026-09-04）
+  assert.match(publicJs, /const title = head\.firstElementChild;/);
+  assert.match(publicJs, /if \(title\) title\.after\(link\); else head\.append\(link\);/);
+  /* ★寄せは margin-right:auto。見出しの帯は justify-content: space-between なので、
+       ただ足すだけだと三つ目が真ん中で浮く（2026-09-04 実測）。 */
+  assert.match(publicCss, /\.stage-public-beta-link \{[^}]*width: fit-content;[^}]*margin: 0 auto 0 0;/);
+  /* ★帯は既定で折り返さない。幅が足りないと操作の列ごと画面の外へ出る。体験版だけ折り返す。 */
+  assert.match(publicCss, /body\.is-public:not\(\.is-public-embed\) \.stage-sketch-head \{ flex-wrap: wrap;/);
   // 配信フォルダへ運ばれる
   assert.match(buildPublic, /shutil\.copy2\(HERE \/ "public-beta\.html", DIST \/ "beta\.html"\)/);
 });

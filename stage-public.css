@@ -293,14 +293,17 @@ body.is-public .stage-public-badge {
 }
 
 /* 製品版ベータへの問い合わせ（画面のいちばん上・別ページへ） */
-/* 問い合わせの口は右へ寄せる（本人指示 2026-09-04）。
+/* 問い合わせの口は、題（舞台スケッチ／体験版）のすぐ右へ置く（本人指示 2026-09-04）。
    横いっぱいの帯にすると、画面の頭が「宣伝」で埋まって、本題の図が下がる。
-   ★width:fit-content と margin-left:auto の組で寄せる。親が block でも flex 列でも同じに効く。 */
+   ★margin-right:auto で余った幅を右へ逃がし、題へ寄せる。見出しの帯は
+     justify-content: space-between なので、何もしないと三つ目が真ん中で浮く。
+   ★帯は既定で折り返さない。幅が足りないと操作の列ごと画面の外へ出るので、
+     体験版だけ折り返しを許す（実測: 1180px以下で操作の列が二行目へ落ちる）。 */
 .stage-public-beta-link {
   display: block;
   width: fit-content;
   max-width: 100%;
-  margin: 0 0 8px auto;
+  margin: 0 auto 0 0;
   padding: 10px 14px;
   border: 1px solid var(--rust);
   border-radius: 6px;
@@ -309,6 +312,8 @@ body.is-public .stage-public-badge {
   font: 600 14px/1.6 var(--sans);
   text-decoration: none;
 }
+
+body.is-public:not(.is-public-embed) .stage-sketch-head { flex-wrap: wrap; row-gap: 8px; }
 
 .stage-public-beta-link::after { content: " →"; }
 .stage-public-beta-link:hover,

@@ -909,9 +909,7 @@
     const grid = document.querySelector(".stage-sketch-grid");
     if (!head || !grid) return;
     /* 製品版ベータへの問い合わせ。別ページ（beta.html）へ送る。
-       画面のいちばん上、題より一段上の右へ置く（本人指示 2026-09-03 / 2026-09-04）。
-       ★見出しの帯（.stage-sketch-head）の中には入れない。あの帯は justify-content: space-between で
-         「題」と「操作の列」を両端へ振っている。三つ目を入れると操作の列が真ん中へ寄る。 */
+       題（舞台スケッチ／体験版）のすぐ右へ置く（本人指示 2026-09-03 / 2026-09-04）。 */
     const existing = document.querySelector(".stage-public-beta-link");
     if (existing) { existing.textContent = text.betaLink; return; }
     const link = document.createElement("a");
@@ -921,7 +919,10 @@
 
     /* 「これは体験版です」の一行は出さない（本人指示 2026-09-03）。
        版の札（体験版 / Preview）と、上の問い合わせリンクで足りる。 */
-    head.parentNode.insertBefore(link, head);
+    /* ★題の「後ろ」へ入れる。帯へ足すだけだと、帯が justify-content: space-between なので
+         三つ目が真ん中で浮く。寄せ方は stage-public.css の margin-right:auto で決める。 */
+    const title = head.firstElementChild;
+    if (title) title.after(link); else head.append(link);
   }
 
   /* ---- 名簿の上限（本人指示 2026-09-04） ------------------------------
