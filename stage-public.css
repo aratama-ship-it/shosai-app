@@ -1,7 +1,8 @@
 /* 公開体験版だけの絞り込み。色は style.css の既存変数だけを使う。 */
-/* 窓と使い方案内は、どちらの形でも出さない（ロックの対象は窓を開く前のボタン） */
-body.is-public .stage-modal,
-body.is-public .stage-modal-backdrop,
+/* 窓と使い方案内は、どちらの形でも出さない（ロックの対象は窓を開く前のボタン）。
+   ★ただし設定の窓だけは開ける。日本語⇄英語の切替に要る（本人指示 2026-09-03）。 */
+body.is-public .stage-modal:not(#stage-prefs-modal),
+body.is-public .stage-modal-backdrop:not(#stage-prefs-backdrop),
 body.is-public #stage-tour {
   display: none !important;
 }

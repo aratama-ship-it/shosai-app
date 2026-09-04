@@ -244,6 +244,19 @@
   /* 正面図の右上に描かれる「どの席から見ているか」の小さな地図（drawSeatMap）は、
      スマホでは図を隠すだけなので出さない（本人指示 2026-09-03）。
      canvas に直接描かれるので、本体の切替（#stage-show-seatmap）を裏で外す。 */
+  /* スマホの設定パネルは、言語の切替と閉じるだけ開ける。
+     言語ボタンにはクラスが無いので、押下状態（aria-pressed）を持つ先頭2つを言語とみなし、
+     目印を付けてから錠を掛ける。 */
+  function markPhoneSettings() {
+    const panel = document.querySelector(".stage-phone-settings");
+    if (!panel) return;
+    const buttons = [...panel.querySelectorAll("button")];
+    buttons.filter((el) => el.hasAttribute("aria-pressed")).slice(0, 2)
+      .forEach((el) => el.classList.add("stage-public-lang"));
+    const close = buttons[buttons.length - 1];
+    if (close) close.classList.add("stage-public-lang");
+  }
+
   function hideSeatMapOnPhone() {
     const box = document.getElementById("stage-show-seatmap");
     if (!box || !box.checked) return;
@@ -428,6 +441,9 @@
     "stage-undo", "stage-redo",
     // 場面の切替と転換の再生は開ける。足す・消す・複製は閉じたまま（2026-09-03）
     "stage-scene-prev", "stage-scene-next", "stage-scene-replay",
+    /* 設定は開ける。中身は錠だが、日本語⇄英語の切替だけは使えるようにする
+       （本人指示 2026-09-03）。 */
+    "stage-prefs-btn", "stage-prefs-close", "stage-lang",
   ]);
   const UNLOCKED_CLOSEST = [
     // 欄の見出しは開閉のボタン。錠が掛かっていても畳めるようにする（本人指示 2026-09-03）。
@@ -435,6 +451,8 @@
     ".stage-phone-scene-prev", ".stage-phone-scene-next", ".stage-phone-scene-current",
     "#stage-phone-scene-list",     // スマホの場面一覧（行と閉じるだけ。足す操作は無い）
     ".stage-public-phone-tools",   // スマホ用に足す道具（人を足す・客席）
+    ".stage-phone-title-settings", // スマホの歯車（設定を開く）
+    ".stage-public-lang",          // スマホ設定の中の 日本語 / English
     ".stage-view-switch",          // 正面 / 平面 / 両方
     ".stage-public-venue-bar",     // 埋め込みで足す会場の帯
     ".stage-public-phone-notice",  // PCを勧める帯の「続ける」
@@ -545,10 +563,29 @@
     new MutationObserver(() => lockPoseTiles(strip)).observe(strip, { childList: true });
   }
 
+  /* 言語を切り替えると本体が html の lang を書き換える（stage-sketch.js）。
+     体験版で足した札や道具は本体の訳語の仕組みの外にあるので、ここで貼り直す。 */
+  function watchLanguage() {
+    if (typeof MutationObserver !== "function") return;
+    let last = document.documentElement.lang;
+    new MutationObserver(() => {
+      const now = document.documentElement.lang;
+      if (now === last) return;
+      last = now;
+      markAsPreview();
+      const add = document.querySelector(".stage-public-add-performer");
+      if (add) {
+        const english = now === "en";
+        add.textContent = english ? "+ Performer" : "＋ 人";
+        add.setAttribute("aria-label", english ? "Add a performer" : "人を足す");
+      }
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
+  }
+
   function markAsPreview() {
     const text = previewLabels();
     // ヘッダーの札と、スマホの題の札（stage-sketch.js が写した方）の両方
-    document.querySelectorAll(".stage-beta, .stage-phone-title-beta").forEach((el) => {
+    document.querySelectorAll(".stage-beta, .stage-phone-title-beta, .stage-public-badge-chip").forEach((el) => {
       el.textContent = text.badge;
       el.classList.add("stage-public-badge");
     });
@@ -569,9 +606,11 @@
     // 体験版そのものには、何ができるかを1行で置く
     const head = document.querySelector(".stage-sketch-head");
     const grid = document.querySelector(".stage-sketch-grid");
-    if (!head || !grid || document.querySelector(".stage-public-beta-link")) return;
+    if (!head || !grid) return;
     /* 製品版ベータへの問い合わせ。別ページ（beta.html）へ送る。
        画面のいちばん上に置く（本人指示 2026-09-03）。 */
+    const existing = document.querySelector(".stage-public-beta-link");
+    if (existing) { existing.textContent = text.betaLink; return; }
     const link = document.createElement("a");
     link.className = "stage-public-beta-link";
     link.href = "beta.html";
@@ -619,11 +658,15 @@
       // ★ショーと情報は場面帯の外にある別のボタン（2026-09-03 実測で素通りしていた）
       ".stage-phone-scene-bar button", ".stage-phone-title button",
       ".stage-phone-load", ".stage-phone-info-toggle",
+      // スマホ設定の中身（言語と閉じるは上の許可リストで残す）。
+      // 「端末による違い」は窓を開くが、その窓は出さないので押しても何も起きない
+      ".stage-phone-settings button",
     ].join(", ")).forEach((el) => {
       if (isUnlocked(el)) return;
       lockElement(el, "control");
     });
-    ["#stage-export", "#stage-present-btn", "#stage-prefs-btn", "#stage-freecam-open"]
+    // ★#stage-prefs-btn は入れない。設定は開ける（中身は上の許可リストで絞る）
+    ["#stage-export", "#stage-present-btn", "#stage-freecam-open"]
       .forEach((selector) => root.querySelectorAll(selector).forEach((el) => lockElement(el, "control")));
 
     // 道具は「ものを動かす」だけ開ける
@@ -631,6 +674,35 @@
       if (el.dataset.stageTool === "select") return;
       lockElement(el, "control");
     });
+
+    /* 設定の窓は <main id="view-stage"> の外にある。上の走査は届かないので、
+       ここで別に掛ける。開けるのは言語の切替と閉じるだけ。
+       ★冊子・使い方は、軽くするために配信から外したスクリプトを使う。
+         押せてしまうと何も起きないか壊れるので、必ず錠にする。 */
+    const prefs = document.getElementById("stage-prefs-modal");
+    if (prefs) {
+      /* ★項目の一覧（#stage-prefs-list）は本体がJSで組み立てる。起動時に一度掛けるだけでは
+         静的なボタンしか捕まらない（2026-09-03 実測: チェック21個が素通り）。組み直しを見張る。 */
+      const lockInside = () => {
+        prefs.querySelectorAll("button, select, input, textarea, a[href]").forEach((el) => {
+          if (isUnlocked(el)) return;
+          lockElement(el, "control");
+        });
+      };
+      lockInside();
+      if (typeof MutationObserver === "function") {
+        new MutationObserver(lockInside).observe(prefs, { childList: true, subtree: true });
+      }
+      prefs.addEventListener("click", (event) => {
+        if (internalClick) return;
+        const control = event.target.closest("button, select, input, textarea, a[href]");
+        if (control && isUnlocked(control) && !control.dataset.publicLock) return;
+        if (!event.target.closest("[data-public-lock]")) return;
+        event.preventDefault();
+        event.stopPropagation();
+        showLockedNote();
+      }, true);
+    }
 
     /* 押した瞬間に本体の処理が走らないよう、捕捉段階で止める。 */
     const swallow = (event) => {
@@ -670,9 +742,11 @@
     if (phoneLike && !embed) hideSeatMapOnPhone();
     // 埋め込み（LPの帯）は絞り込んだ画面なので錠は要らない。体験版本体だけに掛ける。
     if (!embed) {
+      markPhoneSettings();
       applyLocks();
       watchPoseStrip();
     }
+    watchLanguage();
     markAsPreview();
     addPhoneNotice();
     document.addEventListener("pointerdown", stopDemo, { once: true, capture: true });

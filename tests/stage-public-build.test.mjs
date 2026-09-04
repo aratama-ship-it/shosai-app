@@ -89,7 +89,7 @@ test("錠は許可した操作以外へ掛ける（fail-closed）", () => {
   // 上部のボタン列も名指しではなく fail-closed（新しいボタンが素通りしないように）
   assert.match(publicJs, /"\.stage-history-actions button", "\.stage-history-actions a\[href\]",/);
   // 埋め込みには錠を出さない
-  assert.match(publicJs, /if \(!embed\) \{\s*applyLocks\(\);\s*watchPoseStrip\(\);\s*\}/);
+  assert.match(publicJs, /if \(!embed\) \{\s*markPhoneSettings\(\);\s*applyLocks\(\);\s*watchPoseStrip\(\);\s*\}/);
 });
 
 test("★個人データは公開版へ載せない（2026-09-03 公開直前に発見）", () => {
@@ -196,6 +196,9 @@ test("スマホ体験版: 人を足す・客席の位置・場面の切替と転
   assert.match(publicJs, /"#stage-scene-bar button", "#stage-scene-bar select", "#stage-scene-bar input",/);
   // スマホの「ショー」「情報」は場面帯の外。名指しで閉じる
   assert.match(publicJs, /"\.stage-phone-load", "\.stage-phone-info-toggle",/);
+  // スマホ設定の中身も錠（言語と閉じるだけ .stage-public-lang で残す）
+  assert.match(publicJs, /"\.stage-phone-settings button",/);
+  assert.match(publicJs, /function markPhoneSettings\(\)/);
   assert.doesNotMatch(publicJs, /UNLOCKED_IDS = new Set\(\[[^\]]*stage-scene-add/);
 });
 
@@ -203,4 +206,19 @@ test("スマホ体験版では、帯を固定していたころの余白を残�
   // 会場の帯の固定と、その分の padding は埋め込み（LP）だけ
   assert.doesNotMatch(publicCss, /html\.stage-phone-viewer body\.is-public \.stage-canvas-stack \{\s*padding-top: 54px;/);
   assert.match(publicCss, /is-public-embed \.stage-public-venue-bar \{\s*position: fixed;/);
+});
+
+test("設定は開ける。中身は錠だが、言語の切替と閉じるだけ使える", () => {
+  // 本人指示 2026-09-03: 設定画面自体は錠にしない。日英の切替を残す。
+  assert.match(publicJs, /"stage-prefs-btn", "stage-prefs-close", "stage-lang",/);
+  assert.doesNotMatch(publicJs, /\["#stage-export", "#stage-present-btn", "#stage-prefs-btn"/);
+  assert.match(publicCss, /body\.is-public \.stage-modal:not\(#stage-prefs-modal\)/);
+  // 項目の一覧は本体がJSで組むので、組み直しを見張って掛け直す
+  assert.match(publicJs, /new MutationObserver\(lockInside\)\.observe\(prefs, \{ childList: true, subtree: true \}\)/);
+});
+
+test("言語を切り替えたら、体験版で足した札とリンクも貼り直す", () => {
+  assert.match(publicJs, /function watchLanguage\(\)/);
+  assert.match(publicJs, /attributeFilter: \["lang"\]/);
+  assert.match(publicJs, /if \(existing\) \{ existing\.textContent = text\.betaLink; return; \}/);
 });
