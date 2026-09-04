@@ -85,13 +85,15 @@ p{ margin:0 0 var(--space-3); }
 /* ★動画は1:1で縦に大きい。そのまま置くと画面を占有し、
    計画の「②をスクロールせずに一部が見える位置へ置く」が守れない（実測: 下の帯が画面外）。
    ヒーロー全体の高さを画面の7割程度に抑え、動画はその中へ収める。 */
-.hero-video video{ width:100%; height:auto; max-height:62vh; object-fit:contain; background:#000; }
+.hero-video video{ width:100%; height:auto; max-height:56vh; object-fit:contain; background:#000; }
 @media (min-width:900px){
   .hero-inner{ align-items:center; }
-  .hero-video video{ max-height:66vh; }
+  /* ★66vh→56vh。名前の下に「誰が、何に使うか」を足した分、動画を詰めないと
+     デモの帯が画面の外へ落ちる（2026-09-04 実測）。 */
+  .hero-video video{ max-height:56vh; }
 }
 @media (max-width:899px){
-  .hero-video video{ max-height:52svh; }
+  .hero-video video{ max-height:46svh; }
 }
 /* いちばん上に製品の名前を大きく出す（本人指示 2026-09-04）。
    ★h1 は名前。以前は説明の一文を h1 にしていたが、名前が小さな添え字（eyebrow）のままだと、
@@ -102,6 +104,30 @@ p{ margin:0 0 var(--space-3); }
   font-family:var(--serif); font-size:var(--fs-title); font-weight:600;
   line-height:1.15; letter-spacing:.08em; color:var(--paper);
   margin:0;
+}
+
+/* 名前のすぐ下に「誰が、何に使うか」を置く（本人指示 2026-09-04）。
+   ★ここは道具の説明ではなく、読む人が自分の側を見つける場所。だから役どころを先に出す。
+   ★二列に並べて高さを抑える。縦に積むとデモの帯が画面の外へ落ちる。 */
+.uses-lead{
+  margin:var(--space-3) 0 var(--space-3);
+  font-size:20px; letter-spacing:.04em; color:var(--paper);
+}
+@media (max-width:760px){ .uses-lead{ font-size:17px; } }
+.uses-list{
+  margin:0; display:grid; gap:var(--space-3);
+  grid-template-columns:minmax(0,1fr);
+}
+@media (min-width:760px){
+  .uses-list{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-5); }
+}
+.uses-row{ display:grid; gap:2px; }
+.uses-row dt{
+  font-family:var(--sans); font-size:11px; letter-spacing:.18em; color:var(--brass);
+}
+.uses-row dd{
+  margin:0; font-family:var(--sans); font-size:14px;
+  line-height:1.8; color:var(--paper-line);
 }
 
 .hero-copy{ min-width:0; }
@@ -206,6 +232,17 @@ footer a{ color:var(--rust-ink); }
   <div class="wrap hero-masthead">
     <p class="eyebrow">STAGE IMAGE STUDY</p>
     <h1 class="hero-name"><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></h1>
+    <p class="uses-lead"><span data-ja>使い方は、ひとつではありません。</span><span data-en>More than one way to use it.</span></p>
+    <dl class="uses-list">
+      <div class="uses-row">
+        <dt><span data-ja>ディレクター</span><span data-en>Director</span></dt>
+        <dd><span data-ja>頭の中にある絵を、目に見える形に。そのまま演者へ渡せます。</span><span data-en>Give the picture in your head a visible form — and hand it straight to the cast.</span></dd>
+      </div>
+      <div class="uses-row">
+        <dt><span data-ja>アーティスト</span><span data-en>Artist</span></dt>
+        <dd><span data-ja>立ち位置は、稽古の前に。稽古場の時間を、もっと繊細なところへ使えます。</span><span data-en>Learn your positions before the room, and spend rehearsal on the finer work.</span></dd>
+      </div>
+    </dl>
   </div>
   <div class="wrap hero-inner">
     <figure class="hero-video">

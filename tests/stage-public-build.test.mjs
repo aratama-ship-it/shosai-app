@@ -422,6 +422,20 @@ test("LPのいちばん上に製品の名前を大きく出す", () => {
   assert.match(lpPage, /minmax\(0,1fr\) minmax\(0,470px\)/);
 });
 
+test("LPの名前の下に「誰が、何に使うか」を置く", () => {
+  // 本人指示 2026-09-04。読む人が自分の側を見つけられるように、役どころを先に出す。
+  assert.match(lpPage, /class="uses-lead"><span data-ja>使い方は、ひとつではありません。<\/span>/);
+  assert.match(lpPage, /<span data-en>More than one way to use it\.<\/span>/);
+  assert.match(lpPage, /<dt><span data-ja>ディレクター<\/span><span data-en>Director<\/span><\/dt>/);
+  assert.match(lpPage, /<dt><span data-ja>アーティスト<\/span><span data-en>Artist<\/span><\/dt>/);
+  assert.match(lpPage, /頭の中にある絵を、目に見える形に。そのまま演者へ渡せます。/);
+  assert.match(lpPage, /立ち位置は、稽古の前に。稽古場の時間を、もっと繊細なところへ使えます。/);
+  /* ★二列に並べて高さを抑える。縦に積むとデモの帯が画面の外へ落ちる（2026-09-04 実測）。
+     動画も 66vh→56vh へ詰めてある。 */
+  assert.match(lpPage, /@media \(min-width:760px\)\{\n\s*\.uses-list\{ grid-template-columns:repeat\(2,minmax\(0,1fr\)\);/);
+  assert.match(lpPage, /\.hero-video video\{ max-height:56vh; \}/);
+});
+
 test("LPの出現アニメーションは、JSが動かなくても中身が見える形にする", () => {
   // 2026-09-04 実測: 非表示のタブでは IntersectionObserver が発火せず全帯が opacity 0 だった。
   // 隠すのはJSが .will-reveal を付けたときだけにし、保険の時間切れも入れる。
