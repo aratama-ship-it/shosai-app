@@ -90,7 +90,7 @@ test("錠は許可した操作以外へ掛ける（fail-closed）", () => {
   // 上部のボタン列も名指しではなく fail-closed（新しいボタンが素通りしないように）
   assert.match(publicJs, /"\.stage-history-actions button", "\.stage-history-actions a\[href\]",/);
   // 埋め込みには錠を出さない
-  assert.match(publicJs, /if \(!embed\) \{\s*markPhoneSettings\(\);\s*watchPhoneSettings\(\);\s*applyLocks\(\);\s*watchPoseStrip\(\);\s*\}/);
+  assert.match(publicJs, /if \(!embed\) \{\s*markPhoneSettings\(\);\s*watchPhoneSettings\(\);\s*applyLocks\(\);\s*watchPoseStrip\(\);\s*watchRosterLimits\(\);\s*\}/);
 });
 
 test("★個人データは公開版へ載せない（2026-09-03 公開直前に発見）", () => {
@@ -165,6 +165,30 @@ test("「出るもの」と「選んだもの」は体験版でも使える", ()
   assert.match(publicJs, /const PUBLIC_POSES = new Set\(\["stand", "walk", "kneel", "seiza", "lie"\]\)/);
 });
 
+test("体験版で置けるのは演者3人・舞台セット2つまで", () => {
+  // 本人指示 2026-09-04。「出るもの」を開けたので、そこからいくらでも足せてしまう。
+  assert.match(publicJs, /const PUBLIC_MAX_PERFORMERS = 3;/);
+  assert.match(publicJs, /const PUBLIC_MAX_SETS = 2;/);
+  // ① 押す前に止める（なぜ足せないかを出す）
+  assert.match(publicJs, /add\.addEventListener\("click", guardRosterAdd, true\)/);
+  assert.match(publicJs, /function pendingRosterGroup\(\)/);
+  // ② すり抜けたら戻す。★行の✕は window.confirm を出すので使えない（2026-09-04 実測）
+  assert.match(publicJs, /const undo = document\.getElementById\("stage-undo"\);/);
+  assert.doesNotMatch(publicJs, /querySelector\("\.stage-cast-remove"\)/);
+  // 数えるのは名簿。舞台裏にいる人も一人として数える
+  assert.match(publicJs, /\(project\.cast \|\| \[\]\)\.length >= PUBLIC_MAX_PERFORMERS/);
+  // 小道具には上限を置かない（指示になかったため）
+  assert.match(publicJs, /if \(shape && !shape\.hidden\) return "props";/);
+});
+
+test("錠の掛かった欄は畳んだ状態で始める（開くことはできる）", () => {
+  // 本人指示 2026-09-04
+  /* ★is-collapsed を直接付けない。畳んでいるかは本体が state.layout.collapsed で持っていて、
+       クラスだけ付けると次に見出しを押しても何も起きない。本体の見出しを押して畳ませる。 */
+  assert.match(publicJs, /if \(head && !panel\.classList\.contains\("is-collapsed"\)\) \{/);
+  assert.doesNotMatch(publicJs, /panel\.classList\.add\("is-collapsed"\)/);
+});
+
 test("製品版ベータの問い合わせは、上部から別ページへ送る", () => {
   assert.match(publicJs, /stage-public-beta-link/);
   assert.match(publicJs, /link\.href = "beta\.html";/);
@@ -199,7 +223,7 @@ test("スマホの体験版では姿勢の帯を正面図の上端に出す（�
 
 test("スマホ体験版: 人を足す・客席の位置・場面の切替と転換は開け、場面の追加は閉じる", () => {
   assert.match(publicJs, /function addPerformer\(\)/);
-  assert.match(publicJs, /PUBLIC_MAX_PERFORMERS = 6/);
+  assert.match(publicJs, /PUBLIC_MAX_PERFORMERS = 3/);
   // スマホ本体は会場の種類でなく「客席からの見え方」の帯（本人指示 2026-09-03）
   assert.match(publicJs, /function addPhoneSeatBar\(\)/);
   assert.doesNotMatch(publicJs, /function addPhoneTools\(\)/);

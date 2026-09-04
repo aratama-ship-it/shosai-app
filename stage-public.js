@@ -100,10 +100,29 @@
     applyDocument(documentValue);
   }
 
+  /* ---- 体験版で置ける数（本人指示 2026-09-04） ----------------------
+     演者3人・舞台セット2つ。並べ方を試すには足りて、作品を作り切ることはできない量。
+     ★数える先は「名簿（project.cast）」であって、いまの場面に出ている駒ではない。
+       舞台裏にいる人も一人として数える。人数の話は名簿の話なので。
+     ★小道具と照明には上限を置いていない（指示になかったため）。 */
+  const PUBLIC_MAX_PERFORMERS = 3;
+  const PUBLIC_MAX_SETS = 2;
+
+  function limitNote(group) {
+    const english = document.documentElement.lang === "en";
+    if (group === "cast") {
+      return english
+        ? `The preview holds up to ${PUBLIC_MAX_PERFORMERS} performers. The full version (beta) lets you add more.`
+        : `体験版で置ける演者は${PUBLIC_MAX_PERFORMERS}人までです。製品版（β）ではもっと足せます。`;
+    }
+    return english
+      ? `The preview holds up to ${PUBLIC_MAX_SETS} set pieces. The full version (beta) lets you add more.`
+      : `体験版で置ける舞台セットは${PUBLIC_MAX_SETS}つまでです。製品版（β）ではもっと足せます。`;
+  }
+
   /* ---- 人を足す（スマホの体験版・本人指示 2026-09-03） ----
      本体の「追加」は左列の欄にあり、スマホでは届かない。文書を直して戻す形で足す。
-     いまの場面にだけ置く（本体の addCastMember と同じ）。上限6人。 */
-  const PUBLIC_MAX_PERFORMERS = 6;
+     いまの場面にだけ置く（本体の addCastMember と同じ）。 */
   const PUBLIC_PALETTE = ["#a84b26", "#efe7d6", "#77865f", "#8b98a1", "#d3ac59", "#6d6657"];
   function addPerformer() {
     const documentValue = readDocument();
@@ -111,10 +130,8 @@
     if (!documentValue || !scene) return false;
     const project = documentValue.project;
     const here = scene.pieces.filter((piece) => piece.type === "performer");
-    if (here.length >= PUBLIC_MAX_PERFORMERS) {
-      showLockedNote(document.documentElement.lang === "en"
-        ? `The preview holds up to ${PUBLIC_MAX_PERFORMERS} performers.`
-        : `体験版で置けるのは${PUBLIC_MAX_PERFORMERS}人までです。`);
+    if ((project.cast || []).length >= PUBLIC_MAX_PERFORMERS) {
+      showLockedNote(limitNote("cast"));
       return false;
     }
     const english = document.documentElement.lang === "en";
@@ -905,6 +922,81 @@
     grid.parentNode.insertBefore(link, grid);
   }
 
+  /* ---- 名簿の上限（本人指示 2026-09-04） ------------------------------
+     「出るもの」の欄を開けたので、そこからいくらでも足せてしまう。演者3人・舞台セット2つで止める。
+
+     二段構えにしている。
+     ① 押す前に止める：足しても何も起きない、ではなく「なぜ足せないか」を出す。
+     ② 足りてしまったら消す：見張って上限超過を戻す。①はいまの種類を読んで判断するので、
+        読み違えたときの受け皿が要る。消すのは本体の✕（removeCastMember / removeSetItem）に任せる。
+        中途半端に文書を書き換えると、その駒を指している場面の側が残る。 */
+  const ROSTER_LISTS = { cast: "stage-cast-list", sets: "stage-set-list" };
+  const ROSTER_MAX = { cast: PUBLIC_MAX_PERFORMERS, sets: PUBLIC_MAX_SETS };
+  /* 本体の ROSTER_KINDS は ["performer"] + セットの種類。札の文字で見分ける。
+     共有の stage-i18n.js を関数として読める形では持っていないので、ここに書く
+     （previewLabels と同じ考え方）。 */
+  const PERFORMER_LABELS = new Set(["演者", "Performer"]);
+
+  function rosterCount(group) {
+    const host = document.getElementById(ROSTER_LISTS[group]);
+    return host ? host.children.length : 0;
+  }
+
+  /* いま「追加」を押すと、どの組へ入るか。
+     ★小道具は本体が「形」の選択肢を出すので、それが見えているかで分かる。上限は無い。 */
+  function pendingRosterGroup() {
+    const shape = document.getElementById("stage-roster-prop-shape");
+    if (shape && !shape.hidden) return "props";
+    const label = document.getElementById("stage-roster-kind-label");
+    return PERFORMER_LABELS.has(label ? label.textContent.trim() : "") ? "cast" : "sets";
+  }
+
+  function guardRosterAdd(event) {
+    const group = pendingRosterGroup();
+    if (group === "props") return;
+    if (rosterCount(group) < ROSTER_MAX[group]) return;
+    event.preventDefault();
+    event.stopPropagation();
+    showLockedNote(limitNote(group));
+  }
+
+  /* ★戻すのは本体の「一つ戻す」に任せる。
+     行の✕（removeCastMember / removeSetItem）は window.confirm を出す。
+     こちらが勝手に足したわけでもないのに確認の窓が出るのはおかしいし、
+     自動では答えられないので消えない（2026-09-04 実測で3件のまま残った）。
+     追加は checkpoint() を通るので、一つ戻せばその追加だけがちょうど消える。 */
+  let trimFailed = false;
+  function trimRoster() {
+    const over = Object.keys(ROSTER_LISTS)
+      .find((group) => rosterCount(group) > ROSTER_MAX[group]);
+    if (!over) { trimFailed = false; return; }
+    if (trimFailed) return;              // 戻せなかったら、もう押さない
+    const undo = document.getElementById("stage-undo");
+    if (!undo) return;
+    const before = rosterCount(over);
+    internalClick = true;
+    try { undo.click(); } finally { internalClick = false; }
+    showLockedNote(limitNote(over));
+    trimFailed = rosterCount(over) >= before;
+  }
+
+  function watchRosterLimits() {
+    const add = document.getElementById("stage-roster-add");
+    if (add) add.addEventListener("click", guardRosterAdd, true);
+    const name = document.getElementById("stage-roster-name");
+    if (name) {
+      name.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        guardRosterAdd(event);
+      }, true);
+    }
+    if (typeof MutationObserver !== "function") return;
+    Object.values(ROSTER_LISTS).forEach((id) => {
+      const host = document.getElementById(id);
+      if (host) new MutationObserver(trimRoster).observe(host, { childList: true });
+    });
+  }
+
   function applyLocks() {
     const root = document.getElementById("view-stage");
     if (!root) return;
@@ -930,6 +1022,15 @@
            （押した瞬間を止めるだけだと、範囲入力や選択肢は矢印キーで値が変わってしまう） */
       const body = panel.querySelector(".stage-panel-body");
       if (body) body.inert = true;
+      /* 錠の欄は畳んだ状態で始める（本人指示 2026-09-04）。見出しを押せば開く。
+         ★is-collapsed を直接付けない。畳んでいるかどうかは本体が state.layout.collapsed で
+           持っていて、クラスだけ付けると次に見出しを押しても何も起きない。
+           本体の見出しを押して、本体の状態ごと畳ませる。 */
+      const head = panel.querySelector(".stage-panel-head");
+      if (head && !panel.classList.contains("is-collapsed")) {
+        internalClick = true;
+        try { head.click(); } finally { internalClick = false; }
+      }
     });
 
     // 2) 会場の欄の中は、会場に関わらないものだけ閉じる
@@ -1045,6 +1146,7 @@
       watchPhoneSettings();
       applyLocks();
       watchPoseStrip();
+      watchRosterLimits();
     }
     watchLanguage();
     markAsPreview();
