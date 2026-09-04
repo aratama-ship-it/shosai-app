@@ -293,9 +293,14 @@ body.is-public .stage-public-badge {
 }
 
 /* 製品版ベータへの問い合わせ（画面のいちばん上・別ページへ） */
+/* 問い合わせの口は右へ寄せる（本人指示 2026-09-04）。
+   横いっぱいの帯にすると、画面の頭が「宣伝」で埋まって、本題の図が下がる。
+   ★width:fit-content と margin-left:auto の組で寄せる。親が block でも flex 列でも同じに効く。 */
 .stage-public-beta-link {
   display: block;
-  margin: 0 0 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 8px auto;
   padding: 10px 14px;
   border: 1px solid var(--rust);
   border-radius: 6px;

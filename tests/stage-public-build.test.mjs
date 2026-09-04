@@ -193,8 +193,11 @@ test("製品版ベータの問い合わせは、上部から別ページへ送�
   assert.match(publicJs, /stage-public-beta-link/);
   assert.match(publicJs, /link\.href = "beta\.html";/);
   assert.match(publicJs, /betaLink: "製品版ベータ版はコチラからお問い合わせください"/);
-  // 画面のいちばん上に置く
+  // 画面のいちばん上、右へ寄せて置く（右寄せは本人指示 2026-09-04）
   assert.match(publicJs, /grid\.parentNode\.insertBefore\(link, grid\);/);
+  /* ★横いっぱいの帯にしない。width:fit-content と margin-left:auto の組で寄せる
+       （親が block でも flex 列でも同じに効く）。 */
+  assert.match(publicCss, /\.stage-public-beta-link \{[^}]*width: fit-content;[^}]*margin: 0 0 8px auto;/);
   // 配信フォルダへ運ばれる
   assert.match(buildPublic, /shutil\.copy2\(HERE \/ "public-beta\.html", DIST \/ "beta\.html"\)/);
 });
