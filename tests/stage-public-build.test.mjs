@@ -82,8 +82,8 @@ test("錠は許可した操作以外へ掛ける（fail-closed）", () => {
   assert.match(publicJs, /function applyLocks\(\)/);
   // 欄ごとに掛けるのが基本（一つずつ暗くすると画面全体が灰色になる）
   assert.match(publicJs, /root\.querySelectorAll\("\.stage-panel"\)/);
-  // 会場の欄だけは開ける
-  assert.match(publicJs, /if \(panel === venuePanel\) return;/);
+  // 開ける欄（会場・出るもの・選んだもの）以外へ掛ける
+  assert.match(publicJs, /if \(openPanels\.has\(panel\)\) return;/);
   // 押しても本体の処理が走らないよう捕捉段階で止める
   assert.match(publicJs, /\["click", "pointerdown", "mousedown", "keydown"\]/);
   assert.match(publicJs, /addEventListener\(type,[\s\S]*?\}, true\);/);
@@ -144,9 +144,25 @@ test("錠の掛かった欄でも見出しを押して開け閉めできる", ()
   // 本人指示 2026-09-03。欄の名前が読めることで製品版の広さも伝わる。
   assert.match(publicJs, /"\.stage-panel-head",/);
   assert.match(publicJs, /if \(event\.target\.closest\("\.stage-panel-head"\)\) return;/);
+  /* ★2026-09-04 実測: 左右の列ごと inert にしていたため、見出しまで死んでいて
+       どの欄も畳めなかった。列ごとの inert はやめ、錠の掛かった欄の「本文だけ」を inert にする。 */
+  assert.doesNotMatch(publicJs, /column\.inert = true/);
+  assert.match(publicJs, /const body = panel\.querySelector\("\.stage-panel-body"\);\s*\n\s*if \(body\) body\.inert = true;/);
   // 見出しは暗くせず、中身だけ暗くする
   assert.match(publicCss, /\[data-public-lock="panel"\] \{\s*opacity: 1;/);
   assert.match(publicCss, /\[data-public-lock="panel"\] > \.stage-panel-body \{\s*opacity: 0\.42;/);
+});
+
+test("「出るもの」と「選んだもの」は体験版でも使える", () => {
+  /* 本人指示 2026-09-04。この二つが開いていれば
+     「人を足す → 舞台の上で選ぶ → 姿勢と向きを決める」が一周そのまま試せる。 */
+  assert.match(publicJs, /root\.querySelector\('\.stage-panel\[data-panel="cast"\]'\)/);
+  assert.match(publicJs, /root\.querySelector\('\.stage-panel\[data-panel="inspector"\]'\)/);
+  // ★「この人の視界」は stage-first-person.js が要る。配信から外しているので錠のまま
+  assert.match(publicJs, /"#stage-fpv-open"/);
+  assert.match(buildPublic, /"stage-first-person\.js",/);
+  // 姿勢は5つのままにする（欄を開けても増やさない）
+  assert.match(publicJs, /const PUBLIC_POSES = new Set\(\["stand", "walk", "kneel", "seiza", "lie"\]\)/);
 });
 
 test("製品版ベータの問い合わせは、上部から別ページへ送る", () => {

@@ -911,11 +911,25 @@
 
     const venuePanel = root.querySelector("#stage-venue-select")
       && root.querySelector("#stage-venue-select").closest(".stage-panel");
+    /* 開ける欄。「出るもの」と「選んだもの」は体験版でも使えるようにする（本人指示 2026-09-04）。
+       この二つがあれば、人を足して姿勢と向きを決める、という一周がそのまま試せる。 */
+    const openPanels = new Set([venuePanel,
+      root.querySelector('.stage-panel[data-panel="cast"]'),
+      root.querySelector('.stage-panel[data-panel="inspector"]'),
+    ].filter(Boolean));
 
-    // 1) 欄ごと。会場の欄だけ除く
+    // 1) 欄ごと。開ける欄だけ除く
     root.querySelectorAll(".stage-panel").forEach((panel) => {
-      if (panel === venuePanel) return;
+      if (openPanels.has(panel)) return;
       lockElement(panel, "panel");
+      /* 中身は inert にする。
+         ★以前は左右の列ごと inert にしていた。おかげでキーボードからも触れなかったが、
+           見出し（開閉のボタン）まで死んで、どの欄も畳めなかった（2026-09-04 実測）。
+         ★見出しを外して「本文だけ」inert にする。畳めるようになり、
+           錠の掛かった欄の中はタブでも矢印キーでも動かせないままになる。
+           （押した瞬間を止めるだけだと、範囲入力や選択肢は矢印キーで値が変わってしまう） */
+      const body = panel.querySelector(".stage-panel-body");
+      if (body) body.inert = true;
     });
 
     // 2) 会場の欄の中は、会場に関わらないものだけ閉じる
@@ -950,7 +964,10 @@
       lockElement(el, "control");
     });
     // ★#stage-prefs-btn は入れない。設定は開ける（中身は上の許可リストで絞る）
-    ["#stage-export", "#stage-present-btn", "#stage-freecam-open"]
+    /* ★#stage-fpv-open（この人の視界）は「選んだもの」の中にある。欄ごと開けたので、
+         ここで名指しして錠にする。中身は stage-first-person.js が要るが、
+         軽くするために配信から外してある。押せてしまうと何も起きない。 */
+    ["#stage-export", "#stage-present-btn", "#stage-freecam-open", "#stage-fpv-open"]
       .forEach((selector) => root.querySelectorAll(selector).forEach((el) => lockElement(el, "control")));
 
     // 道具は「ものを動かす」だけ開ける
@@ -1013,8 +1030,6 @@
     resetPreview();
     const selectTool = document.querySelector('[data-stage-tool="select"]');
     if (selectTool) selectTool.click();
-    [document.getElementById("stage-col-left"), document.getElementById("stage-col-right")]
-      .filter(Boolean).forEach((column) => { column.inert = true; });
     // 会場の帯は埋め込み専用。体験版本体には本来の「劇場サイズ」の欄がある。
     // ただし「タップで選んで置く」はスマホでどちらの形でも要るので、
     // 帯を出さないときは、選択中の表示だけ別に作って渡す。
