@@ -392,3 +392,25 @@ html.stage-phone-viewer body.is-public .stage-phone-settings .stage-public-close
   font-size: 15px;
 }
 body.is-public .stage-public-off { display: none !important; }
+
+/* ---- スマホ横向き（2026-09-03 本人指摘: 上下が切れる） ----
+   本体は横向きで図を縦いっぱいに使う（題も隠す設計）。そこへ体験版で足した
+   問い合わせリンク（上）と道具列（下）が縦に入ると 53px 溢れ、道具列が画面外へ
+   押し出されて見えなくなっていた。横向きだけ、リンクは出さず、道具列は図の下端へ
+   重ねる帯にして、縦の場所を取らない。右の64pxは本体の道具レールなので避ける。 */
+@media (orientation: landscape) {
+  html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-beta-link { display: none; }
+  html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-phone-tools {
+    position: fixed;
+    z-index: 5;
+    left: max(0px, env(safe-area-inset-left));
+    right: calc(64px + max(0px, env(safe-area-inset-right)));
+    bottom: max(0px, env(safe-area-inset-bottom));
+    margin: 0;
+    padding: 4px 6px;
+    border: 0;
+    border-top: 1px solid rgba(239, 231, 214, 0.18);
+    background: rgba(12, 9, 8, 0.82);
+  }
+  html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-phone-tools button { min-height: 38px; }
+}
