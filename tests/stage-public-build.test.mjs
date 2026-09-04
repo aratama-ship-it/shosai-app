@@ -424,10 +424,11 @@ test("LPのいちばん上に製品の名前を大きく出す", () => {
 
 test("LPの名前の下に「誰が、何に使うか」を置く", () => {
   // 本人指示 2026-09-04。読む人が自分の側を見つけられるように、役どころを先に出す。
-  // 一行目は「誰のためか」（本人指示 2026-09-04: This is for your team, more creativity, more training）
-  assert.match(lpPage, /class="uses-lead"><span data-ja>あなたのチームのために。創る時間も、トレーニングの時間も、もっと。<\/span>/);
-  assert.match(lpPage, /<span data-en>This is for your team — making time for more creativity, more training\.<\/span>/);
-  assert.doesNotMatch(lpPage, /使い方は、ひとつではありません。/);
+  /* 一行目は本人が選んだ確定稿（2026-09-05）。日英は対訳ではなく、それぞれの言語で立つ形。
+     ★句読点も含めて本人の指定どおり。勝手に「、」を足さない。 */
+  assert.match(lpPage, /class="uses-lead"><span data-ja>限られたステージ利用時間はもっと質の高い練習へ。<\/span>/);
+  assert.match(lpPage, /<span data-en>The shortest line between imagining and doing\.<\/span>/);
+  assert.doesNotMatch(lpPage, /使い方は、ひとつではありません。|あなたのチームのために。/);
   assert.match(lpPage, /<dt><span data-ja>ディレクター<\/span><span data-en>Director<\/span><\/dt>/);
   assert.match(lpPage, /<dt><span data-ja>アーティスト<\/span><span data-en>Artist<\/span><\/dt>/);
   assert.match(lpPage, /頭の中にある絵を、目に見える形に。そのまま演者へ渡せます。/);
