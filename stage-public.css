@@ -104,7 +104,7 @@ body.is-public.is-public-embed .stage-sketch-head {
   display: none;
 }
 
-html.stage-phone-viewer body.is-public .stage-public-venue-bar {
+html.stage-phone-viewer body.is-public.is-public-embed .stage-public-venue-bar {
   position: fixed;
   z-index: 32;
   top: max(0px, env(safe-area-inset-top));
@@ -114,14 +114,13 @@ html.stage-phone-viewer body.is-public .stage-public-venue-bar {
   margin: 0;
 }
 
-html.stage-phone-viewer body.is-public .stage-public-selection-status {
+html.stage-phone-viewer body.is-public.is-public-embed .stage-public-selection-status {
   display: none;
 }
 
-html.stage-phone-viewer body.is-public .stage-canvas-stack {
-  padding-top: 54px;
-}
-
+/* 会場の帯を画面上端へ固定するのは埋め込み（LP）だけ。その分の余白もここだけ。
+   ★体験版の本体は帯を廃したのに余白54pxが残り、「＋人」の行と正面図の間が
+     空いていた（2026-09-03 本人指摘・実測で判明）。 */
 html.stage-phone-viewer body.is-public.is-public-embed .stage-canvas-stack {
   padding-top: 48px;
 }
@@ -274,16 +273,6 @@ body.is-public .stage-public-badge {
   letter-spacing: 0.12em;
 }
 
-/* 何ができるかの1行。読み物としての説明ではなく、期待を合わせるための表示。 */
-.stage-public-note {
-  margin: 0 0 10px;
-  padding: 9px 14px;
-  border-left: 3px solid var(--brass);
-  background: var(--desk-2);
-  color: var(--milk);
-  font: 13px/1.75 var(--sans);
-}
-
 /* 埋め込みの帯に置く小さな札 */
 .stage-public-badge-chip {
   flex: 0 0 auto;
@@ -335,7 +324,7 @@ html.stage-phone-viewer body.is-public .stage-pose-strip-tile canvas { height: 4
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 0 0 6px;
+  margin: 0 0 2px;
   padding: 5px 6px;
   border: 1px solid var(--line-dark);
   background: var(--desk-2);

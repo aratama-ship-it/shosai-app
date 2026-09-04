@@ -128,7 +128,8 @@ test("公開版は「体験版」であることを明示し、「β版」とは
   // 共有の i18n には足さない（版上げがβのテスターまで波及するため）
   assert.doesNotMatch(publicJs, /SHOSAI_STAGE_I18N/);
   assert.ok(publicCss.includes(".stage-public-badge"), "札の見た目がある");
-  assert.ok(publicCss.includes(".stage-public-note"), "説明の行の見た目がある");
+  // 「これは体験版です」の一行は出さない（本人指示 2026-09-03）。札とリンクで足りる
+  assert.doesNotMatch(publicJs, /stage-public-note/);
 });
 
 test("姿勢は5つだけ開ける（本体は41種）", () => {
@@ -151,8 +152,8 @@ test("製品版ベータの問い合わせは、上部から別ページへ送�
   assert.match(publicJs, /stage-public-beta-link/);
   assert.match(publicJs, /link\.href = "beta\.html";/);
   assert.match(publicJs, /betaLink: "製品版ベータ版はコチラからお問い合わせください"/);
-  // 説明の行より上に置く
-  assert.match(publicJs, /grid\.parentNode\.insertBefore\(link, note\);/);
+  // 画面のいちばん上に置く
+  assert.match(publicJs, /grid\.parentNode\.insertBefore\(link, grid\);/);
   // 配信フォルダへ運ばれる
   assert.match(buildPublic, /shutil\.copy2\(HERE \/ "public-beta\.html", DIST \/ "beta\.html"\)/);
 });
@@ -196,4 +197,10 @@ test("スマホ体験版: 人を足す・客席の位置・場面の切替と転
   // スマホの「ショー」「情報」は場面帯の外。名指しで閉じる
   assert.match(publicJs, /"\.stage-phone-load", "\.stage-phone-info-toggle",/);
   assert.doesNotMatch(publicJs, /UNLOCKED_IDS = new Set\(\[[^\]]*stage-scene-add/);
+});
+
+test("スマホ体験版では、帯を固定していたころの余白を残さない", () => {
+  // 会場の帯の固定と、その分の padding は埋め込み（LP）だけ
+  assert.doesNotMatch(publicCss, /html\.stage-phone-viewer body\.is-public \.stage-canvas-stack \{\s*padding-top: 54px;/);
+  assert.match(publicCss, /is-public-embed \.stage-public-venue-bar \{\s*position: fixed;/);
 });
