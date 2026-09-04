@@ -113,11 +113,18 @@ p{ margin:0 0 var(--space-3); }
   border:1px solid var(--line-dark); border-radius:var(--radius-m);
   overflow:hidden; background:var(--desk-2); box-shadow:var(--shadow-1);
 }
+/* 高さは中身の実寸にJSで合わせる（下の「体験デモの高さを中身に合わせる」を参照）。
+   ここの値はJSが動く前・動かない時の控え。中身の高さは画面の高さではなく“幅”で決まるので、
+   vhではなくaspect-ratioで近似する。 */
 .demo-frame iframe{
-  display:block; width:100%; height:78vh; min-height:420px; border:0;
+  display:block; width:100%; aspect-ratio:9/4; min-height:440px; border:0;
+}
+@media (max-width:959px){
+  /* この幅では体験版が正面図と平面図を縦に並べるため、ずっと縦長になる */
+  .demo-frame iframe{ aspect-ratio:5/7; min-height:520px; }
 }
 @media (max-width:760px){
-  .demo-frame iframe{ height:72svh; min-height:380px; }
+  .demo-frame iframe{ aspect-ratio:auto; height:72svh; min-height:380px; }
 }
 .demo-note{
   margin:var(--space-2) 0 0; font-family:var(--sans); font-size:var(--fs-small);
@@ -325,6 +332,58 @@ footer a{ color:var(--rust-ink); }
 
   // 保険: 2秒経っても出ていないものは、そのまま出す
   window.setTimeout(function () { els.forEach(show); }, 2000);
+})();
+</script>
+
+<script>
+/* 体験デモの高さを中身に合わせる。
+   体験版の中身の高さは「画面の高さ」ではなく「幅」で決まる（図の縦横比で決まる）ため、
+   iframeにvhで高さを与えると、縦長のウィンドウでは下に大きな空白ができる。
+   同じオリジンなので、中の実際の高さを読んで合わせる。
+
+   ★スマホ表示（stage-phone-viewer）のときは、体験版が意図的に画面いっぱいに広がる作りなので
+     測っても意味がない。CSSの高さのままにする。
+   ★測るのは <body> ではなく .stage-sketch。bodyの高さはiframeの高さと同じになるので、
+     bodyを測ると「今の高さ」を読み返すだけになってしまう。 */
+(function () {
+  var frame = document.querySelector(".demo-frame iframe");
+  if (!frame) return;
+
+  var fit = function () {
+    var doc;
+    try { doc = frame.contentDocument; } catch (err) { return; }
+    if (!doc || !doc.body) return;
+    if (doc.documentElement.classList.contains("stage-phone-viewer")) {
+      frame.style.height = "";
+      return;
+    }
+    var sketch = doc.querySelector(".stage-sketch");
+    if (!sketch || !sketch.offsetHeight) return;
+    var pad = 12;
+    var view = doc.getElementById("view-stage");
+    if (view && doc.defaultView) {
+      var cs = doc.defaultView.getComputedStyle(view);
+      var sum = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      if (isFinite(sum)) pad = sum;
+    }
+    var next = Math.round(sketch.offsetHeight + pad);
+    if (next < 300) return;
+    if (Math.abs(next - frame.clientHeight) <= 2) return;
+    frame.style.height = next + "px";
+  };
+
+  frame.addEventListener("load", function () {
+    fit();
+    [200, 700, 1600].forEach(function (ms) { window.setTimeout(fit, ms); });
+    if (typeof ResizeObserver === "function") {
+      try {
+        var sketch = frame.contentDocument.querySelector(".stage-sketch");
+        if (sketch) new ResizeObserver(fit).observe(sketch);
+      } catch (err) { /* 測れない時はCSSの高さのまま */ }
+    }
+  });
+  window.addEventListener("resize", fit);
+  window.addEventListener("orientationchange", function () { window.setTimeout(fit, 400); });
 })();
 </script>
 </body>

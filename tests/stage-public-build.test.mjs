@@ -354,6 +354,21 @@ test("LPの出現アニメーションは、JSが動かなくても中身が見�
   assert.match(lpPage, /window\.setTimeout\(function \(\) \{ els\.forEach\(show\); \}, 2000\);/);
 });
 
+test("触れるデモの高さは中身に合わせる（画面の高さで決め打ちしない）", () => {
+  // 2026-09-04 実測: iframe を height:78vh にしていたため、1280x900 でも下に191px、
+  // 縦長のウィンドウではもっと大きな空白が出た。中身の高さは画面の高さではなく“幅”で決まる。
+  assert.doesNotMatch(lpPage, /\.demo-frame iframe\{[^}]*height:\s*\d+vh/);
+  assert.match(lpPage, /\.demo-frame iframe\{\n\s*display:block; width:100%; aspect-ratio:9\/4;/);
+  // JSで実寸に合わせる。測るのは body ではなく .stage-sketch
+  //（bodyの高さはiframeの高さと同じになるので、測っても今の値を読み返すだけになる）
+  assert.match(lpPage, /doc\.querySelector\("\.stage-sketch"\)/);
+  assert.doesNotMatch(lpPage, /frame\.style\.height = (?:doc|d)\.body\.scrollHeight/);
+  // スマホ表示は体験版が画面いっぱいに広がる作りなので、合わせにいかない
+  assert.match(lpPage, /doc\.documentElement\.classList\.contains\("stage-phone-viewer"\)/);
+  // 幅が変わると中身の高さも変わる
+  assert.match(lpPage, /window\.addEventListener\("resize", fit\);/);
+});
+
 test("LPは日英を持ち、承認済みの英語確定稿の文言を使う", () => {
   // 2026-09-04: 英語版。?lang=en / 端末の言語で切り替える（紹介ページと同じ考え方）
   assert.match(lpPage, /\[lang="en"\] \[data-ja\], \[lang="ja"\] \[data-en\]\{ display:none; \}/);
