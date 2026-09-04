@@ -432,7 +432,13 @@
     close.type = "button";
     close.textContent = english ? "Continue ／ 続ける" : "続ける ／ Continue";
     close.addEventListener("click", () => notice.remove());
-    notice.append(message, sub, close);
+    /* ★スマホでは見出しの帯ごと出さないので、上の「紹介ページ」の口が届かない。
+       この帯はスマホで最初に出るので、ここへ置く（本人指示 2026-09-04）。 */
+    const overview = document.createElement("a");
+    overview.className = "stage-public-phone-notice-link";
+    overview.href = lpHref();
+    overview.textContent = english ? "See the overview ／ 紹介ページを見る" : "紹介ページを見る ／ See the overview";
+    notice.append(message, sub, close, overview);
     document.body.append(notice);
     close.focus();
   }
@@ -812,6 +818,12 @@
      ★言語は設定（錠が掛かる）から変えられないので、起動時の一度きりでよい。
        共有の stage-i18n.js には足さない——足すと版上げが全ページへ波及し、
        βのテスターのPWAまで作り直しになる。 */
+  /* 紹介ページ（LP）へは、いま見ている言語を持って行く。LPは ?lang= が無いと端末の言語で決めるので、
+     日本語の端末で英語の体験版を見ていた人が、押した先で日本語へ戻ってしまう。 */
+  function lpHref() {
+    return `./?lang=${document.documentElement.lang === "en" ? "en" : "ja"}`;
+  }
+
   function previewLabels() {
     const english = (() => {
       try { const b = bridge(); if (b && typeof b.isEnglish === "function") return b.isEnglish(); }
@@ -823,11 +835,13 @@
         badge: "Preview",
         title: "Stage Sketch (Preview)",
         betaLink: "Ask about the full beta version here",
+        lpLink: "Overview",
       }
       : {
         badge: "体験版",
         title: "舞台スケッチ（体験版）",
         betaLink: "製品版ベータ版はコチラからお問い合わせください",
+        lpLink: "紹介ページ",
       };
   }
 
@@ -908,21 +922,37 @@
     const head = document.querySelector(".stage-sketch-head");
     const grid = document.querySelector(".stage-sketch-grid");
     if (!head || !grid) return;
-    /* 製品版ベータへの問い合わせ。別ページ（beta.html）へ送る。
-       題（舞台スケッチ／体験版）のすぐ右へ置く（本人指示 2026-09-03 / 2026-09-04）。 */
-    const existing = document.querySelector(".stage-public-beta-link");
-    if (existing) { existing.textContent = text.betaLink; return; }
+    /* 題（舞台スケッチ／体験版）のすぐ右に、外向きの口を二つ並べる。
+       ・製品版ベータへの問い合わせ → beta.html（本人指示 2026-09-03 / 2026-09-04）
+       ・紹介ページ（LP）→ ./（本人指示 2026-09-04）
+       体験版へ直接来た人は、これが何なのかを知る場所が無い。戻る先を置く。 */
+    const existing = document.querySelector(".stage-public-links");
+    if (existing) {
+      const beta = existing.querySelector(".stage-public-beta-link");
+      const overview = existing.querySelector(".stage-public-lp-link");
+      if (beta) beta.textContent = text.betaLink;
+      if (overview) { overview.textContent = text.lpLink; overview.href = lpHref(); }
+      return;
+    }
     const link = document.createElement("a");
     link.className = "stage-public-beta-link";
     link.href = "beta.html";
     link.textContent = text.betaLink;
+    const overview = document.createElement("a");
+    overview.className = "stage-public-lp-link";
+    overview.href = lpHref();
+    overview.textContent = text.lpLink;
 
     /* 「これは体験版です」の一行は出さない（本人指示 2026-09-03）。
-       版の札（体験版 / Preview）と、上の問い合わせリンクで足りる。 */
-    /* ★題の「後ろ」へ入れる。帯へ足すだけだと、帯が justify-content: space-between なので
-         三つ目が真ん中で浮く。寄せ方は stage-public.css の margin-right:auto で決める。 */
+       版の札（体験版 / Preview）と、この二つの口で足りる。 */
+    /* ★組にして題の「後ろ」へ入れる。帯へばらばらに足すと、帯が
+         justify-content: space-between なので、間が勝手に開いて散らばる。
+         寄せ方は stage-public.css の margin-right:auto（組の側）で決める。 */
+    const links = document.createElement("div");
+    links.className = "stage-public-links";
+    links.append(link, overview);
     const title = head.firstElementChild;
-    if (title) title.after(link); else head.append(link);
+    if (title) title.after(links); else head.append(links);
   }
 
   /* ---- 名簿の上限（本人指示 2026-09-04） ------------------------------

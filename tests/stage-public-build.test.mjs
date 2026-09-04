@@ -193,16 +193,30 @@ test("製品版ベータの問い合わせは、上部から別ページへ送�
   assert.match(publicJs, /stage-public-beta-link/);
   assert.match(publicJs, /link\.href = "beta\.html";/);
   assert.match(publicJs, /betaLink: "製品版ベータ版はコチラからお問い合わせください"/);
-  // 題（舞台スケッチ／体験版）のすぐ右へ置く（本人指示 2026-09-04）
+  // 題（舞台スケッチ／体験版）のすぐ右へ、紹介ページと組にして置く（本人指示 2026-09-04）
   assert.match(publicJs, /const title = head\.firstElementChild;/);
-  assert.match(publicJs, /if \(title\) title\.after\(link\); else head\.append\(link\);/);
-  /* ★寄せは margin-right:auto。見出しの帯は justify-content: space-between なので、
-       ただ足すだけだと三つ目が真ん中で浮く（2026-09-04 実測）。 */
-  assert.match(publicCss, /\.stage-public-beta-link \{[^}]*width: fit-content;[^}]*margin: 0 auto 0 0;/);
+  assert.match(publicJs, /if \(title\) title\.after\(links\); else head\.append\(links\);/);
+  /* ★寄せは組（.stage-public-links）側の margin-right:auto。見出しの帯は
+       justify-content: space-between なので、ばらばらに足すと間が勝手に開いて散らばる。 */
+  assert.match(publicCss, /\.stage-public-links \{[^}]*margin: 0 auto 0 0;/);
   /* ★帯は既定で折り返さない。幅が足りないと操作の列ごと画面の外へ出る。体験版だけ折り返す。 */
   assert.match(publicCss, /body\.is-public:not\(\.is-public-embed\) \.stage-sketch-head \{ flex-wrap: wrap;/);
   // 配信フォルダへ運ばれる
   assert.match(buildPublic, /shutil\.copy2\(HERE \/ "public-beta\.html", DIST \/ "beta\.html"\)/);
+});
+
+test("体験版から紹介ページ（LP）へ戻れる", () => {
+  // 本人指示 2026-09-04。体験版へ直接来た人には、これが何なのかを知る場所が要る。
+  assert.match(publicJs, /overview\.className = "stage-public-lp-link";/);
+  assert.match(publicJs, /lpLink: "紹介ページ"/);
+  assert.match(publicJs, /lpLink: "Overview"/);
+  /* ★いま見ている言語を持って行く。LPは ?lang= が無いと端末の言語で決めるので、
+       日本語の端末で英語の体験版を見ていた人が、押した先で日本語へ戻ってしまう。 */
+  assert.match(publicJs, /return `\.\/\?lang=\$\{document\.documentElement\.lang === "en" \? "en" : "ja"\}`;/);
+  /* ★スマホは見出しの帯ごと出さない（実測: .stage-sketch-head が display:none）。
+       上の口が届かないので、最初に出る「PCを勧める」帯にも置く。 */
+  assert.match(publicJs, /overview\.className = "stage-public-phone-notice-link";/);
+  assert.match(publicCss, /\.stage-public-phone-notice-link \{/);
 });
 
 test("紹介ページはβ期間中が無償であることを書き、正式版の形は未定と断る", () => {
@@ -267,14 +281,15 @@ test("設定は開ける。中身は錠だが、言語の切替と閉じるだ�
 test("言語を切り替えたら、体験版で足した札とリンクも貼り直す", () => {
   assert.match(publicJs, /function watchLanguage\(\)/);
   assert.match(publicJs, /attributeFilter: \["lang"\]/);
-  assert.match(publicJs, /if \(existing\) \{ existing\.textContent = text\.betaLink; return; \}/);
+  assert.match(publicJs, /if \(beta\) beta\.textContent = text\.betaLink;/);
+  assert.match(publicJs, /if \(overview\) \{ overview\.textContent = text\.lpLink; overview\.href = lpHref\(\); \}/);
 });
 
 test("スマホへ最初に出す「PCを勧める」帯は、日本語と英語を並べて出す", () => {
   // この帯は言語の切替へ触れる前に出るので、端末の言語だけで選ばない（本人指示 2026-09-03）
   assert.match(publicJs, /const JA = "この体験版はスマホでは操作が限られます。PCでのご利用をお勧めします。";/);
   assert.match(publicJs, /const EN = "This preview is limited on phones\. We recommend using a computer\.";/);
-  assert.match(publicJs, /notice\.append\(message, sub, close\);/);
+  assert.match(publicJs, /notice\.append\(message, sub, close, overview\);/);
   assert.match(publicJs, /close\.textContent = english \? "Continue ／ 続ける" : "続ける ／ Continue";/);
 });
 
@@ -362,7 +377,7 @@ test("体験版の planFit は本体の planFit と式が一致する（ずれ�
 
 test("スマホ横向きでは、リンクと道具列を出さず、右レールに ＋人・客席・設定 を置く", () => {
   // 2026-09-03 本人指摘: 横向きで上下が切れる／下の帯は右のメニューへまとめる
-  assert.match(publicCss, /@media \(orientation: landscape\) \{[\s\S]*?\.stage-public-beta-link \{ display: none; \}/);
+  assert.match(publicCss, /@media \(orientation: landscape\) \{[\s\S]*?\.stage-public-links \{ display: none; \}/);
   assert.match(publicCss, /@media \(orientation: landscape\) \{[\s\S]*?\.stage-public-phone-tools \{ display: none; \}/);
   assert.match(publicCss, /\.stage-public-rail \{ display: none; \}/);
   assert.match(publicJs, /function addPhoneRail\(\)/);

@@ -293,17 +293,57 @@ body.is-public .stage-public-badge {
 }
 
 /* 製品版ベータへの問い合わせ（画面のいちばん上・別ページへ） */
-/* 問い合わせの口は、題（舞台スケッチ／体験版）のすぐ右へ置く（本人指示 2026-09-04）。
-   横いっぱいの帯にすると、画面の頭が「宣伝」で埋まって、本題の図が下がる。
+/* 外向きの口（問い合わせ・紹介ページ）は、題（舞台スケッチ／体験版）のすぐ右へ置く
+   （本人指示 2026-09-04）。横いっぱいの帯にすると、画面の頭が「宣伝」で埋まって
+   本題の図が下がる。
    ★margin-right:auto で余った幅を右へ逃がし、題へ寄せる。見出しの帯は
-     justify-content: space-between なので、何もしないと三つ目が真ん中で浮く。
+     justify-content: space-between なので、何もしないと真ん中で浮いて散らばる。
    ★帯は既定で折り返さない。幅が足りないと操作の列ごと画面の外へ出るので、
      体験版だけ折り返しを許す（実測: 1180px以下で操作の列が二行目へ落ちる）。 */
+.stage-public-links {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 0 auto 0 0;
+}
+
+/* スマホの告知の中の「紹介ページを見る」。「続ける」より控えめにする。 */
+.stage-public-phone-notice-link {
+  display: inline-block;
+  margin-top: 12px;
+  color: var(--ink-soft);
+  font: 500 13px/1.6 var(--sans);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(239, 231, 214, 0.28);
+}
+.stage-public-phone-notice-link:hover,
+.stage-public-phone-notice-link:focus-visible {
+  color: var(--milk);
+  border-bottom-color: var(--brass);
+}
+
+/* 紹介ページ（LP）へ戻る口。問い合わせの箱より控えめにして、
+   どちらが本命の一手かを取り違えないようにする。 */
+.stage-public-lp-link {
+  color: var(--ink-soft);
+  font: 500 13px/1.6 var(--sans);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(239, 231, 214, 0.28);
+  padding-bottom: 1px;
+  white-space: nowrap;
+}
+.stage-public-lp-link:hover,
+.stage-public-lp-link:focus-visible {
+  color: var(--milk);
+  border-bottom-color: var(--brass);
+}
+
 .stage-public-beta-link {
   display: block;
   width: fit-content;
   max-width: 100%;
-  margin: 0 auto 0 0;
+  margin: 0;
   padding: 10px 14px;
   border: 1px solid var(--rust);
   border-radius: 6px;
@@ -411,7 +451,7 @@ body.is-public .stage-public-off { display: none !important; }
 .stage-public-rail { display: none; }
 
 @media (orientation: landscape) {
-  html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-beta-link { display: none; }
+  html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-links { display: none; }
   html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-phone-tools { display: none; }
   html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-rail {
     display: flex;
