@@ -46,7 +46,10 @@
 }
 
 *{box-sizing:border-box}
-html{ -webkit-text-size-adjust:100%; }
+html{ -webkit-text-size-adjust:100%; scroll-behavior:smooth; }
+@media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } }
+/* 飛び先が画面の上端へ貼りつかないように */
+#about{ scroll-margin-top:var(--space-4); }
 body{
   margin:0; background:var(--desk); color:var(--paper);
   font-family:var(--serif); font-size:var(--fs-body); line-height:1.8; letter-spacing:.02em;
@@ -100,6 +103,18 @@ p{ margin:0 0 var(--space-3); }
      この画面が何のページなのかが最初に読めない。
    ★冠の「STAGE IMAGE STUDY」はアプリ本体の見出しと同じ字。LPと道具で名乗りを揃える。 */
 .hero-masthead{ margin-bottom:var(--space-5); }
+/* 冠と「このアプリについて」を同じ行の両端へ。飛び先は下の #about。 */
+.masthead-top{
+  display:flex; align-items:baseline; justify-content:space-between;
+  gap:var(--space-3); flex-wrap:wrap; margin-bottom:var(--space-2);
+}
+.masthead-top .eyebrow{ margin-bottom:0; }
+.about-link{
+  font-family:var(--sans); font-size:var(--fs-small); color:var(--ink-soft-sm);
+  text-decoration:none; border-bottom:1px solid rgba(239,231,214,.28);
+  padding-bottom:1px; white-space:nowrap;
+}
+.about-link:hover, .about-link:focus-visible{ color:var(--paper); border-bottom-color:var(--brass); }
 .hero-name{
   font-family:var(--serif); font-size:var(--fs-title); font-weight:600;
   line-height:1.15; letter-spacing:.08em; color:var(--paper);
@@ -263,7 +278,10 @@ footer a{ color:var(--rust-ink); }
 <!-- ============ ① 完全版の録画 ============ -->
 <header class="hero">
   <div class="wrap hero-masthead">
-    <p class="eyebrow">STAGE IMAGE STUDY</p>
+    <div class="masthead-top">
+      <p class="eyebrow">STAGE IMAGE STUDY</p>
+      <a class="about-link" href="#about"><span data-ja>このアプリについて</span><span data-en>About this app</span></a>
+    </div>
     <h1 class="hero-name"><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></h1>
     <p class="uses-lead"><span data-ja>限られたステージ利用時間はもっと質の高い練習へ。</span><span data-en>The shortest line between imagining and doing.</span></p>
     <dl class="uses-list">
@@ -306,18 +324,8 @@ footer a{ color:var(--rust-ink); }
   </div>
 </section>
 
-<!-- ============ 会場の軸 ============ -->
-<section class="reveal">
-  <div class="read">
-    <h2><span data-ja>分けているのは舞台の形ではなく、<br>客席がどこにあるかです。</span><span data-en>Formats are defined by where the audience sits,<br>not by the shape of the stage.</span></h2>
-    <p><span data-ja>プロセニアム、スラスト、アリーナ、シャピトー。同じ場面を別の会場で見ると、
-    客席の位置が変わり、見え方が変わります。置いた演者はそのまま残ります。</span><span data-en>Proscenium, thrust, arena, chapiteau. Seeing the same scene in a different venue moves the audience,
-    and changes what they see. The performers you placed stay where they are.</span></p>
-  </div>
-</section>
-
 <!-- ============ ④ 開発者の話 ============ -->
-<section class="story reveal">
+<section class="story reveal" id="about">
   <div class="read">
     <h2><span data-ja>このアプリについて</span><span data-en>About this app</span></h2>
     <p class="lead"><span data-ja>私が舞台スケッチを作ろうと思った始まりは、ディレクターの意向や、
@@ -527,6 +535,20 @@ footer a{ color:var(--rust-ink); }
     });
   }, { threshold: 0.12 });
   els.forEach(function (el) { io.observe(el); });
+
+  /* ★リンクで下の帯へ飛ぶとき、その帯がまだ隠れていることがある
+       （出現アニメーションは画面に入ってから動くため）。飛ぶ前に出しておく。 */
+  var showTarget = function (hash) {
+    if (!hash || hash.charAt(0) !== "#") return;
+    var el = document.getElementById(hash.slice(1));
+    if (el && el.classList.contains("reveal")) show(el);
+  };
+  document.addEventListener("click", function (event) {
+    var link = event.target.closest && event.target.closest('a[href^="#"]');
+    if (link) showTarget(link.getAttribute("href"));
+  });
+  window.addEventListener("hashchange", function () { showTarget(window.location.hash); });
+  showTarget(window.location.hash);
 
   // 保険: 2秒経っても出ていないものは、そのまま出す
   window.setTimeout(function () { els.forEach(show); }, 2000);

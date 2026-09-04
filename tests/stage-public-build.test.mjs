@@ -400,11 +400,26 @@ test("LPが入口、体験版は /try.html。動画も配信フォルダへ運�
 
 test("LPは承認済みの文言を使い、詩的な見出しを足さない", () => {
   assert.match(lpPage, /正面と真上、<br>\s*二つの図が連動します。/);
-  assert.match(lpPage, /分けているのは舞台の形ではなく、<br>\s*客席がどこにあるかです。/);
+  /* ★「分けているのは舞台の形ではなく…」の帯は本人指示で削除（2026-09-05）。
+       会場の話は「12の機能」の05で画像つきに入れ替えた。 */
+  assert.doesNotMatch(lpPage, /分けているのは舞台の形ではなく/);
   assert.match(lpPage, /技術図面ではなく、安全を検証したり保証したりするものでもありません/);
   assert.match(lpPage, /PC用のアプリです/);
   // 触れるデモは体験版の埋め込みモード
   assert.match(lpPage, /src="\/try\.html\?embed=1"/);
+});
+
+test("LPのいちばん上から「このアプリについて」へ飛べる", () => {
+  // 本人指示 2026-09-05。冠と同じ行の右端に置き、下の帯へ飛ばす。
+  assert.match(lpPage, /<a class="about-link" href="#about"><span data-ja>このアプリについて<\/span><span data-en>About this app<\/span><\/a>/);
+  assert.match(lpPage, /<section class="story reveal" id="about">/);
+  assert.match(lpPage, /#about\{ scroll-margin-top:var\(--space-4\); \}/);
+  // 動きは環境の設定に従う
+  assert.match(lpPage, /@media \(prefers-reduced-motion: reduce\)\{ html\{ scroll-behavior:auto; \} \}/);
+  /* ★飛び先の帯がまだ隠れていることがある（出現アニメーションは画面に入ってから動く）。
+       飛ぶ前に出しておく。 */
+  assert.match(lpPage, /var showTarget = function \(hash\) \{/);
+  assert.match(lpPage, /window\.addEventListener\("hashchange", function \(\) \{ showTarget\(window\.location\.hash\); \}\);/);
 });
 
 test("LPのいちばん上に製品の名前を大きく出す", () => {
@@ -498,7 +513,7 @@ test("LPは日英を持ち、承認済みの英語確定稿の文言を使う", 
   // 2026-09-04: 英語版。?lang=en / 端末の言語で切り替える（紹介ページと同じ考え方）
   assert.match(lpPage, /\[lang="en"\] \[data-ja\], \[lang="ja"\] \[data-en\]\{ display:none; \}/);
   assert.match(lpPage, /Two views of one stage,<br>moving together\./);
-  assert.match(lpPage, /Formats are defined by where the audience sits,<br>not by the shape of the stage\./);
+  assert.doesNotMatch(lpPage, /Formats are defined by where the audience sits/);
   assert.match(lpPage, /Stage Sketch is not a technical drawing, and it does not verify or guarantee safety\./);
   assert.match(lpPage, /Made for desktop/);
   // 日英の対の数が合っている（片方だけ足すと表示が欠ける）
