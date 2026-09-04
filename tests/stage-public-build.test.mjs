@@ -56,9 +56,9 @@ test("自動デモは画面に見えてから再生する", () => {
 });
 
 test("正面図のタップは左右だけ動かし、演者を宙に浮かせない", () => {
-  // 俯瞰図では v も渡す。正面図では undefined を渡して奥行きを変えない。
-  assert.match(publicJs,
-    /movePerformer\(selectedPerformerId, u, canvas\.id === "stage-plan-canvas" \? v : undefined\);/);
+  // 俯瞰図では u,v とも動かす。正面図では u だけ渡し、奥行き(v)は変えない。
+  assert.match(publicJs, /if \(mapped\) movePerformer\(selectedPerformerId, mapped\.u, mapped\.v\);/);
+  assert.match(publicJs, /if \(u !== null\) movePerformer\(selectedPerformerId, u, undefined\);/);
   // 二指の最中は動かさない（ピンチを妨げない）
   assert.match(publicJs, /touches\.size >= 2/);
 });
@@ -244,11 +244,59 @@ test("平面図のタップは床の矩形（本体の planFit と同じ式）�
   // 2026-09-03 本人指摘: canvas 全体の比率のままだと思ったところへ動かない
   assert.match(publicJs, /function publicPlanFit\(input\)/);
   assert.match(publicJs, /function planUVFromClient\(canvas, clientX, clientY, documentValue\)/);
-  assert.match(publicJs, /const mapped = isPlan \? planUVFromClient\(canvas, event\.clientX, event\.clientY, documentValue\) : null;/);
   // 本体の planFit と同じ定数
   const stageSource = publicJs; // 比較は下の別テストで本体側と突き合わせる
   assert.match(stageSource, /const M = 24;/);
   assert.match(stageSource, /PUBLIC_WING_M = 2\.5/);
+});
+
+test("正面図のタップは、駒ごとの既存の奥行き(v)での擬似パース幅で u に換算する", () => {
+  // 2026-09-03 本人指摘: 端でずれる。本体 layout() の front 枝と同じ式で幅を出す
+  assert.match(publicJs, /function publicFrontHalfWidth\(canvas, documentValue\)/);
+  assert.match(publicJs, /function publicFrontU\(canvas, clientX, v, documentValue\)/);
+  // ★v はタップのY座標から逆算しない（駒の既存v）。理由: 客席が近い席（floorY〜bottomYが
+  //   狭い）ではCSS 1pxのタップのぶれがvを大きく動かし、実測でuが最大3%以上ずれた
+  assert.doesNotMatch(publicJs, /function publicFrontU\(canvas, clientX, clientY, documentValue\)/);
+  assert.doesNotMatch(publicJs, /const untilt = \(y\) =>/);
+  // 選択は候補ごとにその駒のvでuを出し直す（単一uを全員へ当てはめない）
+  assert.match(publicJs, /const frontUFor = \(v\) => publicFrontU\(canvas, event\.clientX, v, documentValue\);/);
+  assert.match(publicJs, /const u = frontUFor\(piece\.v\);/);
+  // 移動は選ばれた駒自身のvを使い、奥行きは変えない
+  assert.match(publicJs, /const u = frontUFor\(selected\.v\);/);
+  assert.match(publicJs, /if \(u !== null\) movePerformer\(selectedPerformerId, u, undefined\);/);
+});
+
+test("正面図の幅の式は本体 layout() の front 枝と一致する（ずれたら換算が狂う）", async () => {
+  // ★体験版は clientY から v を逆算しない設計（駒の既存vを使う）なので、
+  //   本体にある焦点距離・傾け(tilt/untilt/focal/horizon)の行は意図的に持たない。
+  //   backW/panRange は本体では書き方が違う（backWは返り値オブジェクトのプロパティ、
+  //   panRangeはtilt計算の直前）ので、この2つだけは個別に式の中身を確認する。
+  const stageSource = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
+  const normalize = (row) => row
+    .replace(/\/\/.*$/, "")           // 行末コメントを外す
+    .replace(/\bW\b/g, "PUBLIC_W")     // 変数名の違いを吸収
+    .trim();
+  const pick = (src, name) => {
+    const m = src.match(new RegExp(`function ${name}\\([^)]*\\) \\{([\\s\\S]*?)\\n  \\}`));
+    assert.ok(m, `${name} がある`);
+    return m[1].split("\n").map(normalize)
+      .filter((row) => / = /.test(row) && !/===/.test(row) && /^const (span|headroom|byWidth|byHeight|pxPerM|frontW) =/.test(row))
+      .join("\n");
+  };
+  const publicSide = pick(publicJs, "publicFrontHalfWidth");
+  const stageStart = stageSource.indexOf("    // 正面図: 奥のラインと手前のラインの間で擬似パースを作る。");
+  const stageEnd = stageSource.indexOf("\n    return {", stageStart);
+  assert.ok(stageStart > 0 && stageEnd > stageStart, "本体の front 枝が見つかる");
+  const stageSeg = stageSource.slice(stageStart, stageEnd).split("\n").map(normalize)
+    .filter((row) => / = /.test(row) && !/===/.test(row) && /^const (span|headroom|byWidth|byHeight|pxPerM|frontW) =/.test(row))
+    .join("\n");
+  assert.equal(publicSide, stageSeg);
+
+  // backW と panRange は個別に（式の意味が一致すること）
+  assert.match(publicJs, /const backW = frontW \/ span;/);
+  assert.match(stageSource, /backW: frontW \/ span,/);
+  assert.match(publicJs, /const panRange = Math\.max\(0, \(frontW - PUBLIC_W\) \/ 2\);/);
+  assert.match(stageSource, /const panRange = Math\.max\(0, \(frontW - W\) \/ 2\);/);
 });
 
 test("体験版の planFit は本体の planFit と式が一致する（ずれたら換算が狂う）", async () => {

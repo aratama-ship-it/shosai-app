@@ -493,6 +493,65 @@
     };
   }
 
+  /* ---- 正面図のタップ換算（2026-09-03 本人指摘: 端でずれる） ----
+     以前は canvas 全体の比率で u を出していた。正面図は擬似パースがあり、
+     手前ほど幅が広く奥ほど狭い（本体 layout() の front 枝）ので、線形の比率のまま
+     だと中央から離れるほどずれる（実測: 1階中央・端で画面比9%）。
+
+     ★v はタップのY座標から逆算しない。「駒の既存の奥行き」を使う。
+       Y座標から逆算する式（本体の fromScreen と同じ）も一度実装したが、
+       客席が近い席（1階最前列）では floorY〜bottomY の幅がとても狭く、
+       CSS 1px のタップのぶれが v を大きく動かし、u が実測で最大0.03ずれた
+       （指の太さを思えばもっと動く）。正面図のタップは元々「左右だけ動かし、
+       奥行きは変えない」設計なので、その変えない奥行き（駒の v）をそのまま
+       使う方が、式としても、指のぶれへの強さとしても正しい。 */
+  function publicFrontHalfWidth(canvas, documentValue) {
+    const VENUES = window.SHOSAI_VENUES;
+    const project = documentValue && documentValue.project;
+    if (!VENUES || !project) return null;
+    let seat;
+    try {
+      const seatButtons = [...document.querySelectorAll("#stage-seat-list .stage-seat")];
+      const index = seatButtons.findIndex((el) => el.getAttribute("aria-pressed") === "true");
+      seat = (index >= 0 && VENUES.seats[index]) || VENUES.seatById(project.seat || "center");
+    } catch (_) { return null; }
+    let venue, size;
+    try {
+      venue = VENUES.byId(project.venue);
+      size = VENUES.sizeById(venue, project.venueSize);
+    } catch (_) { return null; }
+
+    const BASE_H = 720;
+    const H = canvas.height / (canvas.width / PUBLIC_W);
+    const k = H / BASE_H;
+    const floorY = seat.floorY * k;
+
+    const span = seat.frontW / seat.backW;
+    const headroom = Math.max(24, floorY - 22);
+    const byWidth = (PUBLIC_W * seat.frontW) / size.width;
+    const byHeight = headroom / ((size.height || 8) / span);
+    const pxPerM = Math.min(byWidth, byHeight);
+    const frontW = pxPerM * size.width;
+    const backW = frontW / span;
+    const panRange = Math.max(0, (frontW - PUBLIC_W) / 2);
+    const centerX = PUBLIC_W / 2 + Math.max(-1, Math.min(1, project.frontPan || 0)) * panRange;
+    const shift = (seat.shift || 0) * PUBLIC_W * 0.5;
+    return { frontW, backW, centerX, shift };
+  }
+
+  /* 与えた奥行き v（駒の既存の値）での幅を使って、タップの画面x → u。 */
+  function publicFrontU(canvas, clientX, v, documentValue) {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width) return null;
+    const geom = publicFrontHalfWidth(canvas, documentValue);
+    if (!geom) return null;
+    const { frontW, backW, centerX, shift } = geom;
+    const x = (clientX - rect.left) * (PUBLIC_W / rect.width);
+    const halfW = (backW + v * (frontW - backW)) / 2;
+    const slide = shift * (1 - v);
+    return Math.max(0, Math.min(1, (x - centerX - slide) / (halfW * 2) + 0.5));
+  }
+
   function canvasTap(event, status) {
     if (!phoneLike || touches.size >= 2 || suppressNextClick) {
       suppressNextClick = false;
@@ -503,21 +562,28 @@
     if (!rect.width || !rect.height) return;
     const documentValue = readDocument();
     const scene = activeScene(documentValue);
-    // 平面図は床の矩形で換算する。正面図は横位置だけなので canvas の比率のまま
     const isPlan = canvas.id === "stage-plan-canvas";
-    const mapped = isPlan ? planUVFromClient(canvas, event.clientX, event.clientY, documentValue) : null;
-    const u = mapped ? mapped.u : (event.clientX - rect.left) / rect.width;
-    const v = mapped ? mapped.v : (event.clientY - rect.top) / rect.height;
     const performers = scene ? scene.pieces.filter((piece) => piece.type === "performer") : [];
+
+    // 正面図は、駒ごとの奥行き（既存の v）で幅が変わるため、候補ごとに u を出し直す。
+    // 単一の u を先に決めて全員へ当てはめると、手前と奥の駒で誤差の意味が変わる。
+    const frontUFor = (v) => publicFrontU(canvas, event.clientX, v, documentValue);
+
     if (!selectedPerformerId) {
-      const plan = canvas.id === "stage-plan-canvas";
+      const mappedPlan = isPlan ? planUVFromClient(canvas, event.clientX, event.clientY, documentValue) : null;
       const nearest = performers
-        .map((piece) => ({
-          piece,
-          distance: plan ? Math.hypot(piece.u - u, piece.v - v) : Math.abs(piece.u - u),
-        }))
+        .map((piece) => {
+          if (isPlan) {
+            const u = mappedPlan ? mappedPlan.u : null;
+            const v = mappedPlan ? mappedPlan.v : null;
+            return u === null ? null : { piece, distance: Math.hypot(piece.u - u, piece.v - v) };
+          }
+          const u = frontUFor(piece.v);
+          return u === null ? null : { piece, distance: Math.abs(piece.u - u) };
+        })
+        .filter(Boolean)
         .sort((a, b) => a.distance - b.distance)[0];
-      if (!nearest || nearest.distance > (plan ? 0.2 : 0.16)) return;
+      if (!nearest || nearest.distance > (isPlan ? 0.2 : 0.16)) return;
       selectedPerformerId = nearest.piece.id;
       const cast = documentValue.project.cast.find((item) => item.id === nearest.piece.castId);
       const castIndex = documentValue.project.cast.findIndex((item) => item.id === nearest.piece.castId);
@@ -534,7 +600,16 @@
       canvas.setAttribute("aria-describedby", "stage-public-selection-status");
       return;
     }
-    movePerformer(selectedPerformerId, u, canvas.id === "stage-plan-canvas" ? v : undefined);
+
+    const selected = performers.find((piece) => piece.id === selectedPerformerId);
+    if (isPlan) {
+      const mapped = planUVFromClient(canvas, event.clientX, event.clientY, documentValue);
+      if (mapped) movePerformer(selectedPerformerId, mapped.u, mapped.v);
+    } else if (selected) {
+      // 左右だけ動かし、奥行き（selected.v）は変えない。浮かせない。
+      const u = frontUFor(selected.v);
+      if (u !== null) movePerformer(selectedPerformerId, u, undefined);
+    }
     selectedPerformerId = null;
     status.textContent = "";
     canvas.removeAttribute("aria-describedby");
