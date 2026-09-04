@@ -89,7 +89,7 @@ test("錠は許可した操作以外へ掛ける（fail-closed）", () => {
   // 上部のボタン列も名指しではなく fail-closed（新しいボタンが素通りしないように）
   assert.match(publicJs, /"\.stage-history-actions button", "\.stage-history-actions a\[href\]",/);
   // 埋め込みには錠を出さない
-  assert.match(publicJs, /if \(!embed\) \{\s*markPhoneSettings\(\);\s*applyLocks\(\);\s*watchPoseStrip\(\);\s*\}/);
+  assert.match(publicJs, /if \(!embed\) \{\s*markPhoneSettings\(\);\s*watchPhoneSettings\(\);\s*applyLocks\(\);\s*watchPoseStrip\(\);\s*\}/);
 });
 
 test("★個人データは公開版へ載せない（2026-09-03 公開直前に発見）", () => {
@@ -221,4 +221,21 @@ test("言語を切り替えたら、体験版で足した札とリンクも貼�
   assert.match(publicJs, /function watchLanguage\(\)/);
   assert.match(publicJs, /attributeFilter: \["lang"\]/);
   assert.match(publicJs, /if \(existing\) \{ existing\.textContent = text\.betaLink; return; \}/);
+});
+
+test("スマホへ最初に出す「PCを勧める」帯は、日本語と英語を並べて出す", () => {
+  // この帯は言語の切替へ触れる前に出るので、端末の言語だけで選ばない（本人指示 2026-09-03）
+  assert.match(publicJs, /const JA = "この体験版はスマホでは操作が限られます。PCでのご利用をお勧めします。";/);
+  assert.match(publicJs, /const EN = "This preview is limited on phones\. We recommend using a computer\.";/);
+  assert.match(publicJs, /notice\.append\(message, sub, close\);/);
+  assert.match(publicJs, /close\.textContent = english \? "Continue ／ 続ける" : "続ける ／ Continue";/);
+});
+
+test("スマホ設定は 日本語 / English / ✕ の一列にし、「端末による違い」は出さない", () => {
+  // 本人指示 2026-09-03
+  assert.match(publicJs, /close\.textContent = "✕";/);
+  assert.match(publicJs, /el\.classList\.add\("stage-public-off"\);/);
+  assert.match(publicCss, /\.stage-public-off \{ display: none !important; \}/);
+  // 本体は言語切替のたび札を貼り直すので、掛け直しが要る
+  assert.match(publicJs, /markAsPreview\(\);\s*\/\/[^\n]*\n\s*markPhoneSettings\(\);/);
 });

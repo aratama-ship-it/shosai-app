@@ -244,19 +244,50 @@
   /* 正面図の右上に描かれる「どの席から見ているか」の小さな地図（drawSeatMap）は、
      スマホでは図を隠すだけなので出さない（本人指示 2026-09-03）。
      canvas に直接描かれるので、本体の切替（#stage-show-seatmap）を裏で外す。 */
-  /* スマホの設定パネルは、言語の切替と閉じるだけ開ける。
-     言語ボタンにはクラスが無いので、押下状態（aria-pressed）を持つ先頭2つを言語とみなし、
-     目印を付けてから錠を掛ける。 */
+  /* スマホの設定パネルを体験版向けに組み直す（本人指示 2026-09-03）。
+     ・「端末による違い」は出さない
+     ・閉じるは ✕ にして、日本語 / English と同じ一列の右端へ
+     ★本体は言語を切り替えるたびに札の文字を貼り直す（setPhoneButtonLang）。
+       ✕ も「閉じる」に戻されるので、言語が変わったら呼び直すこと。 */
   function markPhoneSettings() {
     const panel = document.querySelector(".stage-phone-settings");
     if (!panel) return;
+    const english = document.documentElement.lang === "en";
     const buttons = [...panel.querySelectorAll("button")];
-    buttons.filter((el) => el.hasAttribute("aria-pressed")).slice(0, 2)
-      .forEach((el) => el.classList.add("stage-public-lang"));
+    if (!buttons.length) return;
+
+    const langs = buttons.filter((el) => el.hasAttribute("aria-pressed")).slice(0, 2);
     const close = buttons[buttons.length - 1];
-    if (close) close.classList.add("stage-public-lang");
+    langs.forEach((el) => el.classList.add("stage-public-lang"));
+
+    // 言語でも閉じるでもないもの（＝端末による違い）は出さない
+    buttons.forEach((el) => {
+      if (el === close || langs.includes(el)) return;
+      el.classList.add("stage-public-off");
+      el.hidden = true;
+    });
+
+    if (close) {
+      close.classList.add("stage-public-lang", "stage-public-close");
+      const label = english ? "Close settings" : "設定を閉じる";
+      // ★同じ値でも書けば変化として見張りに拾われる。必要なときだけ書く
+      if (close.textContent !== "✕") close.textContent = "✕";
+      if (close.getAttribute("aria-label") !== label) close.setAttribute("aria-label", label);
+    }
   }
 
+  /* 本体は表示を整えるたびに札の文字を貼り直す（setPhoneButtonLang）。
+     一度きりの書き換えでは元に戻るので、パネルの変化を見張って掛け直す。 */
+  function watchPhoneSettings() {
+    const panel = document.querySelector(".stage-phone-settings");
+    if (!panel || typeof MutationObserver !== "function") return;
+    new MutationObserver(() => markPhoneSettings())
+      .observe(panel, { childList: true, subtree: true, characterData: true });
+  }
+
+  /* 正面図の右上に描かれる「どの席から見ているか」の小さな地図（drawSeatMap）は、
+     スマホでは図を隠すだけなので出さない（本人指示 2026-09-03）。
+     canvas に直接描かれるので、本体の切替（#stage-show-seatmap）を裏で外す。 */
   function hideSeatMapOnPhone() {
     const box = document.getElementById("stage-show-seatmap");
     if (!box || !box.checked) return;
@@ -272,16 +303,24 @@
     notice.className = "stage-public-phone-notice";
     notice.setAttribute("role", "dialog");
     notice.setAttribute("aria-modal", "true");
+    /* ★日本語と英語を並べて出す（本人指示 2026-09-03）。
+       この帯は言語の切替へ触れる前に、いちばん最初に出る。端末の言語だけで
+       選ぶと、日本語の端末を使う英語話者には英文が届かない。両方見せて迷いを無くす。
+       先に出すのは端末の言語の方。 */
+    const english = document.documentElement.lang === "en";
+    const JA = "この体験版はスマホでは操作が限られます。PCでのご利用をお勧めします。";
+    const EN = "This preview is limited on phones. We recommend using a computer.";
     const message = document.createElement("p");
+    message.textContent = english ? EN : JA;
+    const sub = document.createElement("p");
+    sub.className = "stage-public-phone-notice-sub";
+    sub.textContent = english ? JA : EN;
+    sub.lang = english ? "ja" : "en";
     const close = document.createElement("button");
     close.type = "button";
-    const english = document.documentElement.lang === "en";
-    message.textContent = english
-      ? "This preview is limited on phones. We recommend using a computer."
-      : "この体験版はスマホでは操作が限られます。PCでのご利用をお勧めします。";
-    close.textContent = english ? "Continue" : "続ける";
+    close.textContent = english ? "Continue ／ 続ける" : "続ける ／ Continue";
     close.addEventListener("click", () => notice.remove());
-    notice.append(message, close);
+    notice.append(message, sub, close);
     document.body.append(notice);
     close.focus();
   }
@@ -573,6 +612,8 @@
       if (now === last) return;
       last = now;
       markAsPreview();
+      // 本体が札の文字を貼り直すので、✕ と非表示を掛け直す
+      markPhoneSettings();
       const add = document.querySelector(".stage-public-add-performer");
       if (add) {
         const english = now === "en";
@@ -743,6 +784,7 @@
     // 埋め込み（LPの帯）は絞り込んだ画面なので錠は要らない。体験版本体だけに掛ける。
     if (!embed) {
       markPhoneSettings();
+      watchPhoneSettings();
       applyLocks();
       watchPoseStrip();
     }

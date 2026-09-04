@@ -80,7 +80,14 @@ body.is-public-embed .stage-tool-split {
 
 .stage-public-phone-notice p {
   max-width: 30em;
+  margin: 0;
   font: 600 18px/1.7 var(--sans);
+}
+
+/* もう一方の言語。読めるが、主にはしない */
+.stage-public-phone-notice-sub {
+  font: 400 14px/1.7 var(--sans) !important;
+  color: var(--ink-soft);
 }
 
 .stage-public-phone-notice button {
@@ -367,3 +374,21 @@ html.stage-phone-viewer:has(body.is-public:not(.is-public-embed)) {
   height: auto;
   overflow: auto;
 }
+
+/* ---- スマホ設定パネル（2026-09-03 本人指示） ----
+   「端末による違い」を外し、日本語 / English / ✕ を一列にする。
+   本体は2桁のグリッドなので、体験版では横並びに組み替える。 */
+html.stage-phone-viewer body.is-public .stage-phone-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+html.stage-phone-viewer body.is-public .stage-phone-settings strong { width: 100%; }
+html.stage-phone-viewer body.is-public .stage-phone-settings .stage-public-lang { flex: 1 1 0; }
+html.stage-phone-viewer body.is-public .stage-phone-settings .stage-public-close {
+  flex: 0 0 auto;
+  min-width: 48px;
+  font-size: 15px;
+}
+body.is-public .stage-public-off { display: none !important; }
