@@ -8,6 +8,7 @@ const publicJs = await readFile(new URL("../stage-public.js", import.meta.url), 
 const publicCss = await readFile(new URL("../stage-public.css", import.meta.url), "utf8");
 const buildPublic = await readFile(new URL("../build_public.py", import.meta.url), "utf8");
 const betaPage = await readFile(new URL("../public-beta.html", import.meta.url), "utf8");
+const lpPage = await readFile(new URL("../public-lp/index.html", import.meta.url), "utf8");
 
 test("公開体験版はPWAにならない（SW・manifest・アイコンを持たない）", () => {
   // βの stage.html には有る。公開版には無い、という対比で守る。
@@ -324,4 +325,31 @@ test("スマホ横向きでは、リンクと道具列を出さず、右レー�
   assert.match(publicJs, /popover\.className = "stage-public-popover";/);
   assert.match(publicJs, /document\.querySelector\("\.stage-phone-title-settings"\)/);
   assert.match(publicJs, /"\.stage-public-rail",/);
+});
+
+test("LPが入口、体験版は /try.html。動画も配信フォルダへ運ぶ", () => {
+  // 2026-09-04: LPを作ったので入口を入れ替えた
+  assert.match(buildPublic, /shutil\.copy2\(HERE \/ "public-lp" \/ "index\.html", DIST \/ "index\.html"\)/);
+  assert.match(buildPublic, /shutil\.copy2\(OUT, DIST \/ "try\.html"\)/);
+  assert.match(buildPublic, /for name in \("hero-ja\.mp4", "hero-ja\.webm", "hero-poster\.jpg"\)/);
+  // 動画が無ければビルドを止める（黙って欠けたまま配らない）
+  assert.match(buildPublic, /raise SystemExit\(f"！LPの動画がない/);
+});
+
+test("LPは承認済みの文言を使い、詩的な見出しを足さない", () => {
+  assert.match(lpPage, /正面と真上、<br>\s*二つの図が連動します。/);
+  assert.match(lpPage, /分けているのは舞台の形ではなく、<br>\s*客席がどこにあるかです。/);
+  assert.match(lpPage, /技術図面ではなく、安全を検証したり保証したりするものでもありません/);
+  assert.match(lpPage, /PC用のアプリです/);
+  // 触れるデモは体験版の埋め込みモード
+  assert.match(lpPage, /src="\/try\.html\?embed=1"/);
+});
+
+test("LPの出現アニメーションは、JSが動かなくても中身が見える形にする", () => {
+  // 2026-09-04 実測: 非表示のタブでは IntersectionObserver が発火せず全帯が opacity 0 だった。
+  // 隠すのはJSが .will-reveal を付けたときだけにし、保険の時間切れも入れる。
+  assert.match(lpPage, /\.will-reveal\{ opacity:0;/);
+  assert.doesNotMatch(lpPage, /\.reveal\{ opacity:0;/);
+  assert.match(lpPage, /els\.forEach\(function \(el\) \{ el\.classList\.add\("will-reveal"\); \}\);/);
+  assert.match(lpPage, /window\.setTimeout\(function \(\) \{ els\.forEach\(show\); \}, 2000\);/);
 });

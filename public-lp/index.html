@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>舞台スケッチ — 正面と真上、二つの図が連動します。</title>
+<meta name="description" content="舞台の一場面を、客席から見た絵と真上から見た図で同時に描くPC用のアプリ。演出家と演者の意思疎通を助けるスケッチです。">
+<meta name="theme-color" content="#191512">
+<meta name="robots" content="index, follow">
+<link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="舞台スケッチ">
+<meta property="og:description" content="正面と真上、二つの図が連動します。">
+<meta property="og:image" content="media/hero-poster.jpg">
+<style>
+/* ============================================================
+   デザイントークン
+   docs/stage-sketch/2026-09-03_舞台スケッチ_公開版LP_参照ブリーフと実装計画.html の6節が正。
+   ここにある値だけを使う。変えたくなったらコードより先にシートを直す。
+   色はアプリ本体 style.css の :root をそのまま継承（コントラストは実測済み）。
+   ============================================================ */
+:root{
+  /* 配色 */
+  --desk:#191512; --desk-2:#201b16; --line-dark:#382f25;
+  --paper:#efe7d6; --paper-line:#d8c9ab;
+  --ink:#2b2620; --ink-soft:#6a604e; --ink-soft-sm:#93856c;
+  --rust:#a84b26; --rust-ink:#df6433; --rust-deep:#8f3e1e; --brass:#9c823f;
+  /* 書体 */
+  --serif:"Hiragino Mincho ProN","Yu Mincho",YuMincho,"Noto Serif JP",serif;
+  --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;
+  --fs-hero:40px; --fs-h2:25px; --fs-body:16px; --fs-small:13px; --fs-ui:14px;
+  /* 余白 */
+  --space-1:4px; --space-2:8px; --space-3:16px; --space-4:24px;
+  --space-5:40px; --space-6:64px; --space-7:96px;
+  --read:680px;  /* 読み物の幅 */
+  --wide:1180px; /* デモの幅 */
+  /* 形状 */
+  --radius-s:4px; --radius-m:10px; --radius-l:16px;
+  --shadow-1:0 2px 10px rgba(0,0,0,.35);
+  /* 動き */
+  --motion-ui:180ms ease-out;
+  --motion-reveal:320ms ease-out;
+}
+@media (max-width:760px){
+  :root{ --fs-hero:26px; --fs-h2:20px; }
+}
+
+*{box-sizing:border-box}
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0; background:var(--desk); color:var(--paper);
+  font-family:var(--serif); font-size:var(--fs-body); line-height:1.8; letter-spacing:.02em;
+}
+img,video{ max-width:100%; display:block; }
+
+.wrap{ max-width:var(--wide); margin:0 auto; padding:0 var(--space-3); }
+.read{ max-width:var(--read); margin:0 auto; padding:0 var(--space-3); }
+
+/* ---- 帯の共通 ---- */
+section{ padding:var(--space-6) 0; }
+h2{
+  font-size:var(--fs-h2); font-weight:600; line-height:1.5; letter-spacing:.03em;
+  margin:0 0 var(--space-4); padding-left:var(--space-3);
+  border-left:3px solid var(--rust);
+}
+p{ margin:0 0 var(--space-3); }
+.small{ font-size:var(--fs-small); line-height:1.7; color:var(--ink-soft-sm); }
+
+/* ============ ① ヒーロー: 完全版の録画 ============ */
+.hero{ padding:var(--space-5) 0 var(--space-4); }
+.hero-inner{
+  display:grid; gap:var(--space-4); align-items:center;
+  grid-template-columns:minmax(0,1fr);
+}
+@media (min-width:900px){
+  .hero-inner{ grid-template-columns:minmax(0,1fr) minmax(0,420px); gap:var(--space-6); }
+}
+.hero-video{
+  position:relative; margin:0;
+  border:1px solid var(--line-dark); border-radius:var(--radius-m);
+  overflow:hidden; box-shadow:var(--shadow-1); background:#000;
+}
+/* ★動画は1:1で縦に大きい。そのまま置くと画面を占有し、
+   計画の「②をスクロールせずに一部が見える位置へ置く」が守れない（実測: 下の帯が画面外）。
+   ヒーロー全体の高さを画面の7割程度に抑え、動画はその中へ収める。 */
+.hero-video video{ width:100%; height:auto; max-height:62vh; object-fit:contain; background:#000; }
+@media (min-width:900px){
+  .hero-inner{ align-items:center; }
+  .hero-video video{ max-height:66vh; }
+}
+@media (max-width:899px){
+  .hero-video video{ max-height:52svh; }
+}
+.hero-copy{ min-width:0; }
+.eyebrow{
+  font-family:var(--sans); font-size:11px; letter-spacing:.28em;
+  color:var(--ink-soft-sm); margin:0 0 var(--space-2);
+}
+.hero-line{
+  font-size:var(--fs-hero); font-weight:600; line-height:1.45; letter-spacing:.04em;
+  margin:0 0 var(--space-3);
+}
+.hero-sub{ color:var(--ink-soft-sm); font-size:var(--fs-small); font-family:var(--sans); margin:0; }
+.badge-pc{
+  display:inline-block; margin-top:var(--space-3);
+  padding:3px 10px; border:1px solid var(--brass); border-radius:var(--radius-s);
+  font-family:var(--sans); font-size:11px; letter-spacing:.12em; color:var(--brass);
+}
+
+/* ============ ②③ 触れるデモ ============ */
+.demo{ padding-top:var(--space-4); }
+.demo-frame{
+  border:1px solid var(--line-dark); border-radius:var(--radius-m);
+  overflow:hidden; background:var(--desk-2); box-shadow:var(--shadow-1);
+}
+.demo-frame iframe{
+  display:block; width:100%; height:78vh; min-height:420px; border:0;
+}
+@media (max-width:760px){
+  .demo-frame iframe{ height:72svh; min-height:380px; }
+}
+.demo-note{
+  margin:var(--space-2) 0 0; font-family:var(--sans); font-size:var(--fs-small);
+  color:var(--ink-soft-sm);
+}
+
+/* ============ ④ 開発者の話 ============ */
+.story p{ margin-bottom:var(--space-4); }
+.story .lead{ color:var(--paper); }
+.story-more{
+  font-family:var(--sans); font-size:var(--fs-small);
+}
+.story-more a{ color:var(--rust-ink); }
+
+/* ============ ⑤ できないこと ============ */
+.limits{
+  border-left:3px solid var(--brass); background:var(--desk-2);
+  padding:var(--space-4); border-radius:0 var(--radius-m) var(--radius-m) 0;
+}
+.limits h2{ border:0; padding:0; margin-bottom:var(--space-2); font-size:var(--fs-body); color:var(--brass); }
+.limits p{ margin-bottom:0; font-size:var(--fs-small); line-height:1.8; color:var(--paper); }
+
+/* ============ ⑥⑦ CTA ============ */
+.cta{ text-align:center; }
+.btn{
+  display:inline-block; padding:14px 28px; border-radius:var(--radius-s);
+  font-family:var(--sans); font-size:var(--fs-ui); letter-spacing:.06em;
+  text-decoration:none; transition:background var(--motion-ui), color var(--motion-ui);
+  min-height:44px;
+}
+.btn-main{ border:1px solid var(--rust); background:rgba(168,75,38,.18); color:var(--rust-ink); }
+.btn-main:hover,.btn-main:focus-visible{ background:rgba(168,75,38,.32); color:var(--paper); }
+.btn-sub{ border:1px solid var(--line-dark); color:var(--ink-soft-sm); }
+.btn-sub:hover,.btn-sub:focus-visible{ border-color:var(--brass); color:var(--paper); }
+.cta-note{ margin:var(--space-3) 0 0; }
+
+footer{
+  border-top:1px solid var(--line-dark); padding:var(--space-5) 0 var(--space-6);
+  font-family:var(--sans); font-size:var(--fs-small); color:var(--ink-soft-sm);
+}
+footer a{ color:var(--rust-ink); }
+.foot-row{ display:flex; flex-wrap:wrap; gap:var(--space-3) var(--space-4); align-items:baseline; }
+
+/* 出現アニメーション。
+   ★既定では隠さない。JSが動いたときだけ .will-reveal が付いて隠れる。
+     こうしないと、JSが失敗した／通知が来ない環境で中身が永久に見えなくなる
+     （2026-09-04 実測: 非表示のタブでは IntersectionObserver が発火せず、
+      全帯が opacity 0 のままだった）。 */
+.will-reveal{ opacity:0; transform:translateY(12px); transition:opacity var(--motion-reveal), transform var(--motion-reveal); }
+.will-reveal.is-in{ opacity:1; transform:none; }
+@media (prefers-reduced-motion:reduce){
+  .will-reveal{ opacity:1; transform:none; transition:none; }
+  *{ animation:none !important; }
+}
+[lang="en"] [data-ja], [lang="ja"] [data-en]{ display:none; }
+</style>
+</head>
+<body>
+
+<!-- ============ ① 完全版の録画 ============ -->
+<header class="hero">
+  <div class="wrap hero-inner">
+    <figure class="hero-video">
+      <video src="media/hero-ja.mp4" poster="media/hero-poster.jpg"
+             autoplay muted loop playsinline preload="metadata"
+             aria-label="正面図と真上からの図が同時に動く様子の録画">
+        <source src="media/hero-ja.webm" type="video/webm">
+        <source src="media/hero-ja.mp4" type="video/mp4">
+      </video>
+    </figure>
+    <div class="hero-copy">
+      <p class="eyebrow">STAGE SKETCH</p>
+      <h1 class="hero-line">正面と真上、<br>二つの図が連動します。</h1>
+      <p class="hero-sub">舞台の一場面を、客席から見た絵と真上から見た図で同時に描きます。</p>
+      <p class="badge-pc">PC用のアプリです</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ ②③ 触れるデモ ============ -->
+<section class="demo reveal">
+  <div class="wrap">
+    <h2>触ってみてください。</h2>
+    <div class="demo-frame">
+      <iframe src="/try.html?embed=1" title="舞台スケッチの体験版（演者を動かす・会場を変える）"
+              loading="lazy"></iframe>
+    </div>
+    <p class="demo-note">演者を動かすと、二つの図が同時に変わります。会場の形も切り替えられます。</p>
+  </div>
+</section>
+
+<!-- ============ 会場の軸 ============ -->
+<section class="reveal">
+  <div class="read">
+    <h2>分けているのは舞台の形ではなく、<br>客席がどこにあるかです。</h2>
+    <p>プロセニアム、スラスト、アリーナ、シャピトー。同じ場面を別の会場で見ると、
+    客席の位置が変わり、見え方が変わります。置いた演者はそのまま残ります。</p>
+  </div>
+</section>
+
+<!-- ============ ④ 開発者の話 ============ -->
+<section class="story reveal">
+  <div class="read">
+    <h2>このアプリについて</h2>
+    <p class="lead">私が舞台スケッチを作ろうと思った始まりは、ディレクターの意向や、
+    チームの中での自分の役割を、視覚的に把握できるものが欲しかったことでした。</p>
+    <p>芸術という抽象的なものにおいて、意思疎通を言葉だけで行うことは非常に難しいものです。
+    ディレクターが見せたいものをアーティストが表現しようとするとき、
+    その意図を理解することに時間を取られすぎることもありました。</p>
+    <p>私は劇場に入るたびに客席を歩き回り、それぞれの場所から自分がどのように見えるかをイメージします。
+    俯瞰図では、人や物の位置と全体のバランスを第三者の目で捉えられます。
+    正面図では、お客さんやディレクターから舞台がどう見えるかを考えられます。</p>
+    <p>演者たちと事前に意図や配置を共有できれば、リハーサルの初期段階をより早く終え、
+    その先の通し練習へ時間を使えます。そうしてショーをさらに作り込んでほしいと考えています。</p>
+    <p class="story-more"><a href="beta.html">製品版ベータについて詳しく →</a></p>
+  </div>
+</section>
+
+<!-- ============ ⑤ できないこと ============ -->
+<section class="reveal">
+  <div class="read">
+    <div class="limits">
+      <h2>できないこと</h2>
+      <p>舞台スケッチは技術図面ではなく、安全を検証したり保証したりするものでもありません。
+      ディレクターとアーティストの意思疎通を円滑にし、良いショーを作る時間を増やすためのスケッチです。
+      体験版で描いたものは保存されません。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ⑥⑦ CTA ============ -->
+<section class="cta reveal">
+  <div class="read">
+    <h2 style="border:0;padding:0;text-align:center">触ってみる</h2>
+    <p><a class="btn btn-main" href="/try.html">体験する</a></p>
+    <p class="cta-note small">体験版はスマホでも開けますが、操作が限られます。PCでのご利用をお勧めします。</p>
+    <p style="margin-top:var(--space-5)"><a class="btn btn-sub" href="beta.html">製品版ベータを使ってみたい</a></p>
+  </div>
+</section>
+
+<footer>
+  <div class="read foot-row">
+    <span>舞台スケッチ</span>
+    <span><a href="beta.html">製品版ベータについて</a></span>
+    <span class="small">録画 2026-09-04 時点</span>
+  </div>
+</footer>
+
+<script>
+/* 帯の出現。
+   ★隠すのはJSが動いたときだけ（.will-reveal を付ける）。付けなければ中身は見えたまま。
+   ★保険として、一定時間で必ず出す。通知が来ない環境（非表示のタブなど）でも
+     中身が消えたままにならないようにする。 */
+(function () {
+  var els = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
+  if (!els.length) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (typeof IntersectionObserver !== "function") return;
+
+  els.forEach(function (el) { el.classList.add("will-reveal"); });
+  var show = function (el) { el.classList.add("is-in"); };
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) { show(e.target); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.12 });
+  els.forEach(function (el) { io.observe(el); });
+
+  // 保険: 2秒経っても出ていないものは、そのまま出す
+  window.setTimeout(function () { els.forEach(show); }, 2000);
+})();
+</script>
+</body>
+</html>

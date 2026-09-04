@@ -149,9 +149,22 @@ def collect_dist() -> list[str]:
         shutil.copy2(src, dst)
         copied.append(rel)
 
-    # 入口。/ で開けるように index.html の名前で置く
-    shutil.copy2(OUT, DIST / "index.html")
-    copied.append("index.html（try.html の写し）")
+    # 入口は LP（public-lp/index.html）。体験版は /try.html に置く。
+    # 2026-09-04: それまでは体験版が入口だったが、LPを作ったので入れ替えた。
+    shutil.copy2(HERE / "public-lp" / "index.html", DIST / "index.html")
+    copied.append("index.html（public-lp/index.html の写し・LP本体）")
+    shutil.copy2(OUT, DIST / "try.html")
+    copied.append("try.html（体験版）")
+
+    # LPが使う動画とポスター
+    media = HERE / "public-lp" / "media"
+    for name in ("hero-ja.mp4", "hero-ja.webm", "hero-poster.jpg"):
+        src = media / name
+        if not src.exists():
+            raise SystemExit(f"！LPの動画がない: {src}")
+        (DIST / "media").mkdir(exist_ok=True)
+        shutil.copy2(src, DIST / "media" / name)
+        copied.append(f"media/{name}")
 
     # try.html が読む css / js だけを、生成物から読み取って運ぶ
     page = OUT.read_text(encoding="utf-8")
