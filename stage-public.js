@@ -189,27 +189,12 @@
      ★会場の種類（プロセニアム等）の切替は出さない。求められたのは
        「客席からの見え方」の切替。本体の .stage-seat ボタン（スマホでは隠れている）を
        裏で押す札を並べ、同じ列に「人を足す」を置く。1列にして縦の場所を取らない。 */
-  function addPhoneSeatBar() {
-    const stack = document.querySelector(".stage-canvas-stack");
-    if (!stack || document.querySelector(".stage-public-phone-tools")) return null;
-    const english = document.documentElement.lang === "en";
-    const tools = document.createElement("div");
-    tools.className = "stage-public-phone-tools";
-    tools.setAttribute("role", "group");
-    tools.setAttribute("aria-label", english ? "Seen from / add performer" : "客席からの見え方・人を足す");
-
-    const add = document.createElement("button");
-    add.type = "button";
-    add.className = "stage-public-add-performer";
-    add.textContent = english ? "+ Performer" : "＋ 人";
-    add.setAttribute("aria-label", english ? "Add a performer" : "人を足す");
-    add.addEventListener("click", () => { stopDemo(); addPerformer(); });
-
-    const seats = document.createElement("div");
-    seats.className = "stage-public-seat-buttons";
+  /* 客席の札を container の中へ並べる。本体の .stage-seat（スマホでは隠れている）を裏で押す。
+     会場が変わると本体が札を作り直すので、見張って作り直す。 */
+  function buildSeatButtons(container, onPick) {
     const rebuild = () => {
       const buttons = [...document.querySelectorAll("#stage-seat-list .stage-seat")];
-      seats.innerHTML = "";
+      container.innerHTML = "";
       buttons.forEach((source, index) => {
         const button = document.createElement("button");
         button.type = "button";
@@ -220,16 +205,46 @@
           if (!live) return;
           internalClick = true;
           try { live.click(); } finally { internalClick = false; }
+          if (onPick) onPick();
         });
-        seats.append(button);
+        container.append(button);
       });
-      tools.hidden = buttons.length === 0;
+      container.hidden = buttons.length === 0;
     };
     rebuild();
     const seatList = document.getElementById("stage-seat-list");
     if (seatList && typeof MutationObserver === "function") {
       new MutationObserver(rebuild).observe(seatList, { childList: true, attributes: true, subtree: true });
     }
+  }
+
+  function railLabels() {
+    const english = document.documentElement.lang === "en";
+    return english
+      ? { add: "+1", addLabel: "Add a performer", seat: "Seat", seatLabel: "Which seat the stage is seen from", settings: "Settings", settingsLabel: "Open settings", close: "Close" }
+      : { add: "＋人", addLabel: "人を足す", seat: "客席", seatLabel: "どの席から舞台を見るか", settings: "設定", settingsLabel: "設定を開く", close: "閉じる" };
+  }
+
+  /* 縦向き: 図の上に一列（＋人・客席の札）。 */
+  function addPhoneSeatBar() {
+    const stack = document.querySelector(".stage-canvas-stack");
+    if (!stack || document.querySelector(".stage-public-phone-tools")) return null;
+    const text = railLabels();
+    const tools = document.createElement("div");
+    tools.className = "stage-public-phone-tools";
+    tools.setAttribute("role", "group");
+    tools.setAttribute("aria-label", text.seatLabel);
+
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "stage-public-add-performer";
+    add.textContent = text.add;
+    add.setAttribute("aria-label", text.addLabel);
+    add.addEventListener("click", () => { stopDemo(); addPerformer(); });
+
+    const seats = document.createElement("div");
+    seats.className = "stage-public-seat-buttons";
+    buildSeatButtons(seats, null);
 
     const status = document.createElement("span");
     status.className = "stage-public-selection-status";
@@ -238,7 +253,87 @@
 
     tools.append(add, seats, status);
     stack.parentNode.insertBefore(tools, stack);
+    addPhoneRail();
     return status;
+  }
+
+  /* 横向き: 右のレール（本体の .stage-phone-toolbar）へ「＋人」「客席」「設定」を足す。
+     下に帯を重ねると図の床を隠す（2026-09-03 本人指摘）。
+     「客席」と「設定」はタップで選択肢が出る。縦向きでは CSS で隠す。 */
+  function addPhoneRail() {
+    const toolbar = document.querySelector(".stage-phone-toolbar");
+    const sceneBar = toolbar && toolbar.querySelector(".stage-phone-scene-bar");
+    if (!toolbar || document.querySelector(".stage-public-rail")) return;
+    const text = railLabels();
+    const rail = document.createElement("div");
+    rail.className = "stage-public-rail";
+
+    const make = (label, aria, cls) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `stage-phone-button ${cls}`;
+      button.textContent = label;
+      button.setAttribute("aria-label", aria);
+      return button;
+    };
+    const add = make(text.add, text.addLabel, "stage-public-rail-add");
+    add.addEventListener("click", () => { stopDemo(); addPerformer(); });
+
+    const seat = make(text.seat, text.seatLabel, "stage-public-rail-seat");
+    seat.setAttribute("aria-haspopup", "true");
+    seat.setAttribute("aria-expanded", "false");
+
+    const settings = make(text.settings, text.settingsLabel, "stage-public-rail-settings");
+    settings.addEventListener("click", () => {
+      closePopover();
+      const toggle = document.querySelector(".stage-phone-title-settings");
+      if (!toggle) return;
+      internalClick = true;
+      try { toggle.click(); } finally { internalClick = false; }
+    });
+
+    // 客席の選択肢（ポップオーバー）
+    const popover = document.createElement("div");
+    popover.className = "stage-public-popover";
+    popover.setAttribute("role", "dialog");
+    popover.setAttribute("aria-label", text.seatLabel);
+    popover.hidden = true;
+    const head = document.createElement("div");
+    head.className = "stage-public-popover-head";
+    const title = document.createElement("strong");
+    title.textContent = text.seatLabel;
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "stage-public-popover-close";
+    close.textContent = "✕";
+    close.setAttribute("aria-label", text.close);
+    head.append(title, close);
+    const list = document.createElement("div");
+    list.className = "stage-public-seat-buttons stage-public-popover-list";
+    buildSeatButtons(list, () => closePopover());
+    popover.append(head, list);
+    document.body.append(popover);
+
+    function closePopover() {
+      popover.hidden = true;
+      seat.setAttribute("aria-expanded", "false");
+    }
+    seat.addEventListener("click", () => {
+      const open = popover.hidden;
+      popover.hidden = !open;
+      seat.setAttribute("aria-expanded", String(open));
+    });
+    close.addEventListener("click", closePopover);
+    document.addEventListener("pointerdown", (event) => {
+      if (popover.hidden) return;
+      if (popover.contains(event.target) || seat.contains(event.target)) return;
+      closePopover();
+    }, true);
+
+    rail.append(add, seat, settings);
+    if (sceneBar) toolbar.insertBefore(rail, sceneBar);
+    else toolbar.append(rail);
+    rail.__labels = { add, seat, settings, title, close };
   }
 
   /* 正面図の右上に描かれる「どの席から見ているか」の小さな地図（drawSeatMap）は、
@@ -556,6 +651,8 @@
     ".stage-phone-scene-prev", ".stage-phone-scene-next", ".stage-phone-scene-current",
     "#stage-phone-scene-list",     // スマホの場面一覧（行と閉じるだけ。足す操作は無い）
     ".stage-public-phone-tools",   // スマホ用に足す道具（人を足す・客席）
+    ".stage-public-rail",          // 横向きの右レールに足した札（＋人・客席・設定）
+    ".stage-public-popover",       // その選択肢
     ".stage-phone-title-settings", // スマホの歯車（設定を開く）
     ".stage-public-lang",          // スマホ設定の中の 日本語 / English
     ".stage-view-switch",          // 正面 / 平面 / 両方
@@ -680,11 +777,16 @@
       markAsPreview();
       // 本体が札の文字を貼り直すので、✕ と非表示を掛け直す
       markPhoneSettings();
+      const text = railLabels();
       const add = document.querySelector(".stage-public-add-performer");
-      if (add) {
-        const english = now === "en";
-        add.textContent = english ? "+ Performer" : "＋ 人";
-        add.setAttribute("aria-label", english ? "Add a performer" : "人を足す");
+      if (add) { add.textContent = text.add; add.setAttribute("aria-label", text.addLabel); }
+      const rail = document.querySelector(".stage-public-rail");
+      if (rail && rail.__labels) {
+        const l = rail.__labels;
+        l.add.textContent = text.add; l.add.setAttribute("aria-label", text.addLabel);
+        l.seat.textContent = text.seat; l.seat.setAttribute("aria-label", text.seatLabel);
+        l.settings.textContent = text.settings; l.settings.setAttribute("aria-label", text.settingsLabel);
+        l.title.textContent = text.seatLabel; l.close.setAttribute("aria-label", text.close);
       }
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
   }

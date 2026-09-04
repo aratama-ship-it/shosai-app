@@ -393,24 +393,54 @@ html.stage-phone-viewer body.is-public .stage-phone-settings .stage-public-close
 }
 body.is-public .stage-public-off { display: none !important; }
 
-/* ---- スマホ横向き（2026-09-03 本人指摘: 上下が切れる） ----
-   本体は横向きで図を縦いっぱいに使う（題も隠す設計）。そこへ体験版で足した
-   問い合わせリンク（上）と道具列（下）が縦に入ると 53px 溢れ、道具列が画面外へ
-   押し出されて見えなくなっていた。横向きだけ、リンクは出さず、道具列は図の下端へ
-   重ねる帯にして、縦の場所を取らない。右の64pxは本体の道具レールなので避ける。 */
+/* ---- スマホ横向き（2026-09-03 本人指摘: 上下が切れる → 右レールへ） ----
+   本体は横向きで図を縦いっぱいに使う（題も隠す設計）。体験版で足した問い合わせ
+   リンクと道具列を縦に入れると溢れ、下へ重ねると図の床を隠す。横向きでは
+   リンクを出さず、道具列も隠し、右のレール（本体 .stage-phone-toolbar）に
+   「＋人」「客席」「設定」を置く。客席と設定はタップで選択肢が出る。 */
+.stage-public-rail { display: none; }
+
 @media (orientation: landscape) {
   html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-beta-link { display: none; }
-  html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-phone-tools {
-    position: fixed;
-    z-index: 5;
-    left: max(0px, env(safe-area-inset-left));
-    right: calc(64px + max(0px, env(safe-area-inset-right)));
-    bottom: max(0px, env(safe-area-inset-bottom));
-    margin: 0;
-    padding: 4px 6px;
-    border: 0;
-    border-top: 1px solid rgba(239, 231, 214, 0.18);
-    background: rgba(12, 9, 8, 0.82);
+  html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-phone-tools { display: none; }
+  html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-rail {
+    display: flex;
+    flex-direction: column;
+    flex: 3 1 0;
+    min-height: 0;
   }
-  html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-phone-tools button { min-height: 38px; }
+  html.stage-phone-viewer body.is-public:not(.is-public-embed) .stage-public-rail .stage-phone-button {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
 }
+
+/* 客席の選択肢。本体の横向きパネル（fixed・レール64pxを避ける）と同じ置き方。 */
+.stage-public-popover {
+  position: fixed;
+  z-index: 33;
+  top: calc(max(0px, env(safe-area-inset-top)) + 8px);
+  right: calc(64px + max(8px, env(safe-area-inset-right)));
+  max-width: min(420px, calc(100vw - 64px - 16px));
+  padding: 8px 10px 10px;
+  border: 1px solid var(--brass);
+  background: var(--desk-2);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+}
+.stage-public-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--brass);
+  font: 600 12px var(--sans);
+}
+.stage-public-popover-close {
+  min-width: 40px;
+  min-height: 36px;
+  border: 1px solid var(--line-dark);
+  color: var(--paper);
+  font: 14px var(--sans);
+}
+.stage-public-popover-list { flex-wrap: wrap; }

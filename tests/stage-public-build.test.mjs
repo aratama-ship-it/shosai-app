@@ -265,9 +265,15 @@ test("体験版の planFit は本体の planFit と式が一致する（ずれ�
   assert.equal(pick(publicJs, "publicPlanFit"), pick(stageSource, "planFit"));
 });
 
-test("スマホ横向きでは、リンクを出さず道具列を図の下端へ重ねる（縦に溢れさせない）", () => {
-  // 2026-09-03 本人指摘: 横向きで上下が切れる。本体は横向きで図を縦いっぱいに使う
+test("スマホ横向きでは、リンクと道具列を出さず、右レールに ＋人・客席・設定 を置く", () => {
+  // 2026-09-03 本人指摘: 横向きで上下が切れる／下の帯は右のメニューへまとめる
   assert.match(publicCss, /@media \(orientation: landscape\) \{[\s\S]*?\.stage-public-beta-link \{ display: none; \}/);
-  assert.match(publicCss, /@media \(orientation: landscape\) \{[\s\S]*?\.stage-public-phone-tools \{\s*position: fixed;/);
-  assert.match(publicCss, /right: calc\(64px \+ max\(0px, env\(safe-area-inset-right\)\)\);/);
+  assert.match(publicCss, /@media \(orientation: landscape\) \{[\s\S]*?\.stage-public-phone-tools \{ display: none; \}/);
+  assert.match(publicCss, /\.stage-public-rail \{ display: none; \}/);
+  assert.match(publicJs, /function addPhoneRail\(\)/);
+  assert.match(publicJs, /toolbar\.insertBefore\(rail, sceneBar\)/);
+  // 客席は選択肢（ポップオーバー）、設定は本体の歯車を裏で押す
+  assert.match(publicJs, /popover\.className = "stage-public-popover";/);
+  assert.match(publicJs, /document\.querySelector\("\.stage-phone-title-settings"\)/);
+  assert.match(publicJs, /"\.stage-public-rail",/);
 });
