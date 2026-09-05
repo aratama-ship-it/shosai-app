@@ -555,7 +555,10 @@ test("LPの下部で13の機能を、画像つきで一つずつ紹介する", (
   // 09 の見出しは「照明を作る。」（本人指示 2026-09-05）
   assert.match(lpPage, /<h3><span data-ja>簡易的な照明をつくる。<\/span><span data-en>Rough out the lighting\.<\/span><\/h3>/);
   // 画像は features/ 配下。全部が存在し、配信スクリプトが運ぶ
-  const refs = [...lpPage.matchAll(/src="media\/features\/([^"]+)"/g)].map((m) => m[1]);
+  // ★CTA帯（案B「二つの入口」）も同じ media/features/ を使うので、この節では
+  //   tour〜cta間だけを見る（CTAの画像数は別テストで数える）。
+  const tourSection = lpPage.slice(tour, cta);
+  const refs = [...tourSection.matchAll(/src="media\/features\/([^"]+)"/g)].map((m) => m[1]);
   /* ★item 13だけ画像が2枚（iPhoneフレーム2台。本人指示 2026-09-05）。
        13項目・画像14枚になる。 */
   assert.equal(new Set(refs).size, 14, "14枚がそれぞれ別の画像（item 13が2枚）");
@@ -567,7 +570,7 @@ test("LPの下部で13の機能を、画像つきで一つずつ紹介する", (
   /* ★imgに width/height を書く。読み込む前に場所を確保させるため。
      書かないと、下の画像が読み込まれるたびにページが伸びて、
      上の「このアプリについて」から飛んだ先が下へずれる（2026-09-05 実測: 約1300px）。 */
-  const sized = (lpPage.match(/<img src="media\/features\/[^"]+" width="\d+" height="\d+"/g) || []).length;
+  const sized = (tourSection.match(/<img src="media\/features\/[^"]+" width="\d+" height="\d+"/g) || []).length;
   assert.equal(sized, 14, "14枚とも寸法つき");
   /* ★左右を入れ替える回は、列の幅も入れ替える。order だけだと画像が狭い方の列へ入る
        （2026-09-05 実測: 885px→442px）。 */
@@ -591,13 +594,16 @@ test("LPの下部で13の機能を、画像つきで一つずつ紹介する", (
 test("Mac用スタンドアローンの入れ方を書く（体験版ではなく製品版が対象）", () => {
   /* 本人指示 2026-09-05。実体はPWAで、manifest の start_url は ./stage.html＝製品版。
      体験版（public-dist）には manifest も stage-pwa.js も入れていないので、
-     「体験版をDockに追加」と書くと嘘になる。 */
-  assert.match(lpPage, /製品版を Safari で開き、メニューバーの「ファイル」→「Dockに追加…」/);
+     「体験版をDockに追加」と書くと嘘になる。
+     ★CTAを二つの入口に組み直した際（同日）、文面はそのまま製品版側の列（.cta-dock）へ移した。 */
+  assert.match(lpPage, /Macでは Safari の「ファイル」→「Dockに追加…」/);
   assert.match(lpPage, /macOS Sonoma以降/);
-  assert.match(lpPage, /open the full version in Safari and choose File → Add to Dock/);
+  assert.match(lpPage, /On a Mac, Safari's File → Add to Dock/);
   assert.doesNotMatch(lpPage, /体験版を[^。]*Dockに追加/);
   // 版の札（ブラウザ対応／Mac用スタンドアローン対応）と食い違わせない
   assert.match(lpPage, /Mac用スタンドアローン対応/);
+  // 製品版だけの機能なので、体験版側の列（.cta-col の1つ目）には置かない
+  assert.match(lpPage, /<div class="cta-dock">[\s\S]*?Dockに追加/);
 });
 
 test("13番はiPhoneのフレームで見せる", () => {
@@ -635,8 +641,34 @@ test("LPの帯幅は全帯で同じ（「このアプリについて」だけ細
   assert.match(lpPage, /\.story-grid\{ grid-template-columns:minmax\(0,1fr\) minmax\(0,720px\); gap:var\(--space-6\); align-items:start; \}/);
   assert.match(lpPage, /\.story-body p\{ margin-bottom:var\(--space-4\); font-size:17px; line-height:1\.95; \}/);
   // CTA と footer も .wrap に載せる（帯の外枠を別々に持たない）
-  assert.match(lpPage, /<div class="wrap cta-inner">/);
+  assert.match(lpPage, /<section class="cta reveal">\s*<div class="wrap">/);
   assert.match(lpPage, /<div class="wrap foot-row">/);
+});
+
+test("LPのCTAは、体験版と製品版を実画面で対比する二つの入口にする", () => {
+  /* 本人指示 2026-09-05「この項目をもう少し画像を含めて大きくして期待感を大きくしてください」。
+     Codexとブレスト（判断用ページ: docs/stage-sketch/2026-09-05_cta-proposals/）した3案から
+     「二つの入口」案を採用。角丸カードにはしない（罫線と余白だけで分ける。汎用SaaS風を避ける）。 */
+  assert.match(lpPage, /<h2 class="cta-heading"><span data-ja>まず触る。もっと使う。<\/span><span data-en>Try it first\. Go further\.<\/span><\/h2>/);
+  const ctaCols = (lpPage.match(/<div class="cta-col">/g) || []).length;
+  assert.equal(ctaCols, 2, "体験版・製品版の2列");
+  assert.match(lpPage, /\.cta-col \+ \.cta-col\{ border-left:1px solid var\(--line-dark\); \}/);
+  assert.doesNotMatch(lpPage, /\.cta-col\{[^}]*border-radius/);
+  assert.doesNotMatch(lpPage, /\.cta-figure\{[^}]*border-radius/);
+  // 体験版側は錠が写る実画面を撮り直したもの（本人方針: 使えない機能は錠で「ある」と伝える）
+  assert.match(lpPage, /<img src="media\/features\/cta-preview\.jpg" width="1600" height="1000"/);
+  assert.ok(
+    existsSync(new URL("../public-lp/media/features/cta-preview.jpg", import.meta.url)),
+    "cta-preview.jpg がある",
+  );
+  // 製品版側は既存の10-3dを再利用（同じ画像がtourとCTAの2箇所に出るのは意図的）
+  assert.match(lpPage, /<img src="media\/features\/10-3d\.jpg" width="1500" height="1894" alt="製品版の3Dカメラで舞台の中に入った視点"/);
+  // 体験版で開くもの・製品版でできることは、実際の錠の実装（PUBLIC_MAX等）と食い違わせない
+  assert.match(lpPage, /客席5か所から見る/);
+  assert.match(publicJs, /const PUBLIC_MAX_PERFORMERS = 3;/);
+  assert.match(lpPage, /演者3人・セット2つまで/);
+  assert.match(lpPage, /<a class="btn btn-main" href="\/try\.html">/);
+  assert.match(lpPage, /<a class="btn btn-sub" href="beta\.html">/);
 });
 
 test("LPのタップ対象は 44px 以上、区切り文字は本文色（design-lint C1/U1）", () => {

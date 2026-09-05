@@ -294,9 +294,43 @@ p{ margin:0 0 var(--space-3); }
   .tour-copy p{ font-size:15px; }
 }
 
-/* ============ ⑥⑦ CTA ============ */
-.cta{ text-align:center; }
-.cta-inner{ max-width:var(--read); }  /* ボタンの周りは余白で集める（A_design §2 余白のライト） */
+/* ============ ⑥⑦ CTA — 二つの入口（本人指示 2026-09-05）============
+   「もう少し画像を含めて大きくして期待感を大きく」。判断用3案（案A/B/C）から
+   案Bを採用: 体験版と製品版を実画面で対比する。カード化（角丸の囲み）はせず、
+   縦罫線と余白だけで分ける（A_design方針: 前回と違うことを目的にしない／
+   汎用SaaSの角丸カード表現を避ける）。判断用ページ:
+   docs/stage-sketch/2026-09-05_cta-proposals/index.html */
+.cta-heading{ text-align:center; border:0; padding:0; margin:0 0 var(--space-5); }
+.cta-cols{ display:grid; grid-template-columns:1fr; gap:var(--space-6); }
+@media (min-width:900px){
+  .cta-cols{ grid-template-columns:1fr 1fr; gap:0; }
+  .cta-col{ padding:0 var(--space-5); }
+  .cta-col + .cta-col{ border-left:1px solid var(--line-dark); }
+  .cta-col:first-child{ padding-left:0; }
+  .cta-col:last-child{ padding-right:0; }
+}
+.cta-label{
+  font-family:var(--sans); font-size:11px; letter-spacing:.24em; color:var(--brass);
+  margin:0 0 var(--space-2);
+}
+.cta-figure{
+  border:1px solid var(--line-dark); background:var(--desk-2); box-shadow:var(--shadow-1);
+  overflow:hidden; aspect-ratio:16/10; margin:0 0 var(--space-3);
+}
+.cta-figure img{ width:100%; height:100%; object-fit:cover; object-position:left top; }
+.cta-col h3{ font-size:21px; font-weight:600; line-height:1.5; margin:0 0 var(--space-3); color:var(--paper); }
+.cta-col ul{
+  list-style:none; margin:0 0 var(--space-4); padding:0;
+  font-family:var(--sans); font-size:15px; line-height:1.8; color:var(--paper-line);
+}
+.cta-col li{ padding-left:1.1em; text-indent:-1.1em; }
+.cta-col li::before{ content:"・"; color:var(--brass); }
+/* Mac用スタンドアローンの入れ方（本人指示 2026-09-05）。★製品版だけの機能なので右列に置く。
+   実体はPWA。manifest の start_url は ./stage.html＝製品版なので、体験版からは入れられない。
+   「ファイル」→「Dockに追加…」は macOS Sonoma で入った Safari の機能（Apple の紹介記事で確認）。 */
+.cta-dock{ display:flex; align-items:center; gap:12px; margin:0 0 var(--space-3); }
+.cta-dock img{ width:36px; height:36px; border-radius:8px; flex:none; }
+.cta-dock p{ margin:0; font-family:var(--sans); font-size:var(--fs-small); line-height:1.7; color:var(--ink-soft-sm); }
 .btn{
   display:inline-block; padding:14px 28px; border-radius:var(--radius-s);
   font-family:var(--sans); font-size:var(--fs-ui); letter-spacing:.06em;
@@ -528,17 +562,45 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
   </div>
 </section>
 
-<!-- ============ ⑥⑦ CTA ============ -->
+<!-- ============ ⑥⑦ CTA — 二つの入口（本人指示 2026-09-05） ============ -->
 <section class="cta reveal">
-  <div class="wrap cta-inner">
-    <h2 style="border:0;padding:0;text-align:center"><span data-ja>触ってみる</span><span data-en>Have a go</span></h2>
-    <p><a class="btn btn-main" href="/try.html"><span data-ja>体験する</span><span data-en>Open the preview</span></a></p>
-    <p class="cta-note small"><span data-ja>体験版はスマホでも開けますが、操作が限られます。PCでのご利用をお勧めします。</span><span data-en>The preview opens on phones too, but it is limited there. We recommend using a computer.</span></p>
-    <p style="margin-top:var(--space-5)"><a class="btn btn-sub" href="beta.html"><span data-ja>製品版ベータを使ってみたい</span><span data-en>Ask about the full beta</span></a></p>
-    <!-- Mac用スタンドアローンの入れ方（本人指示 2026-09-05）。
-         ★実体はPWA。manifest の start_url は ./stage.html ＝製品版なので、体験版からは入れられない。
-           「ファイル」→「Dockに追加…」は macOS Sonoma で入った Safari の機能（Apple の紹介記事で確認）。 -->
-    <p class="cta-note small"><span data-ja>Macでアプリのように使うときは、製品版を Safari で開き、メニューバーの「ファイル」→「Dockに追加…」を選びます。Dockのアイコンから、独立したウィンドウで開きます（macOS Sonoma以降）。</span><span data-en>To use it like an app on a Mac, open the full version in Safari and choose File → Add to Dock. It then opens in its own window from the Dock (macOS Sonoma or later).</span></p>
+  <div class="wrap">
+    <h2 class="cta-heading"><span data-ja>まず触る。もっと使う。</span><span data-en>Try it first. Go further.</span></h2>
+    <div class="cta-cols">
+      <div class="cta-col">
+        <p class="cta-label"><span data-ja>体験版 — ブラウザで、いま</span><span data-en>Preview — right now, in your browser</span></p>
+        <figure class="cta-figure"><img src="media/features/cta-preview.jpg" width="1600" height="1000" alt="体験版の実際の画面。錠のかかったボタンもそのまま見える" loading="lazy" decoding="async"></figure>
+        <h3><span data-ja>錠の掛かった欄も、そのまま見えます。</span><span data-en>Locked panels stay visible, not hidden.</span></h3>
+        <ul>
+          <li><span data-ja>正面図と平面図が連動して動く</span><span data-en>Front view and plan view move together</span></li>
+          <li><span data-ja>客席5か所から見る</span><span data-en>See it from five points in the house</span></li>
+          <li><span data-ja>場面の切替と転換の再生</span><span data-en>Switch scenes and replay the transitions</span></li>
+          <li><span data-ja>演者3人・セット2つまで、姿勢いろいろ</span><span data-en>Up to three performers and two set pieces, with a range of poses</span></li>
+        </ul>
+        <p><a class="btn btn-main" href="/try.html"><span data-ja>体験する</span><span data-en>Open the preview</span></a></p>
+        <p class="cta-note small"><span data-ja>体験版はスマホでも開けますが、操作が限られます。PCでのご利用をお勧めします。</span><span data-en>The preview opens on phones too, but it is limited there. We recommend using a computer.</span></p>
+      </div>
+      <div class="cta-col">
+        <p class="cta-label"><span data-ja>製品版ベータ — 13の機能すべて</span><span data-en>Full beta — all thirteen</span></p>
+        <figure class="cta-figure"><img src="media/features/10-3d.jpg" width="1500" height="1894" alt="製品版の3Dカメラで舞台の中に入った視点" loading="lazy" decoding="async"></figure>
+        <h3><span data-ja>3Dカメラ、照明、オンライン会議、書き出し。</span><span data-en>3D camera, lighting, online meetings, and export.</span></h3>
+        <ul>
+          <li><span data-ja>人数・セット数の上限なし</span><span data-en>No limit on performers or set pieces</span></li>
+          <li><span data-ja>3Dカメラで演者の目線に入る</span><span data-en>Step into a performer's view with the 3D camera</span></li>
+          <li><span data-ja>招待URLで同じ場面を見ながら会議</span><span data-en>Share an invite link and meet while looking at the same scene</span></li>
+          <li><span data-ja>画像として書き出し、一部でも一括でも</span><span data-en>Export as images, one at a time or all at once</span></li>
+        </ul>
+        <!-- Mac用スタンドアローンの入れ方（本人指示 2026-09-05）。
+             ★実体はPWA。manifest の start_url は ./stage.html ＝製品版なので、体験版からは入れられない。
+               「ファイル」→「Dockに追加…」は macOS Sonoma で入った Safari の機能（Apple の紹介記事で確認）。 -->
+        <div class="cta-dock">
+          <img src="icons/stage-sketch-192.png" width="36" height="36" alt="">
+          <p><span data-ja>Macでは Safari の「ファイル」→「Dockに追加…」で、独立したウィンドウのアプリになります（macOS Sonoma以降）。</span><span data-en>On a Mac, Safari's File → Add to Dock turns it into an app in its own window (macOS Sonoma or later).</span></p>
+        </div>
+        <p><a class="btn btn-sub" href="beta.html"><span data-ja>製品版ベータを使ってみたい</span><span data-en>Ask about the full beta</span></a></p>
+        <p class="cta-note small"><span data-ja>ボタンの先で、お問い合わせの手順をご案内します。</span><span data-en>The button explains how to get in touch.</span></p>
+      </div>
+    </div>
   </div>
 </section>
 
