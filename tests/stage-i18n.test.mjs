@@ -36,3 +36,52 @@ test("10種のテンプレ名・役割名・範囲に英訳がある", () => {
   assert.equal(text["構成テンプレートから作る"], "Create from a structure template");
   assert.equal(text["この骨格で新しいショーを作る"], "Create a new show from this structure");
 });
+
+/* ---- 英語の書式をそろえる（2026-09-05・アプリ内英語の一巡） ----
+   LP・紹介ページと同じ方針: 綴りはブリティッシュ、アポストロフィは直線、
+   emダッシュは前後に空白。★Aboutモーダルの英語は「承認済み英語原稿」
+   （docs/stage-sketch/2026-08-03_..._英語版.md）と完全一致させる決まりなので、
+   そこに載っている文言だけは対象外にする。原稿を直すのは本人の判断。 */
+const approvedEnglish = new Set(
+  (await readFile(
+    new URL("../../docs/stage-sketch/2026-08-03_舞台スケッチ_このアプリについて_英語版.md", import.meta.url),
+    "utf8",
+  ))
+    .split(/\r?\n/).map((line) => line.trim()).filter(Boolean),
+);
+const englishValues = Object.values(text)
+  .filter((v) => typeof v === "string" && !/[぀-ヿ一-鿿]/.test(v) && !approvedEnglish.has(v.trim()));
+
+test("英語の綴りはブリティッシュにそろえる（承認済み原稿は除く）", () => {
+  const american = ["theater", "realize", "organize", "recognize", "analyze", "color", "center", "meter"];
+  for (const word of american) {
+    const hit = englishValues.filter((v) => new RegExp(`\\b${word}\\b`, "i").test(v));
+    assert.equal(hit.length, 0, `アメリカ綴り「${word}」が残っている: ${hit[0]}`);
+  }
+  // 上演のプログラムは programme（コンピュータの program と区別する）
+  assert.equal(text["古典サーカス・プログラム型"], "Classical Circus Programme");
+});
+
+test("英語の約物はLPと同じ書き方にそろえる（承認済み原稿は除く）", () => {
+  const curly = englishValues.filter((v) => v.includes("’"));
+  assert.equal(curly.length, 0, `カーリーのアポストロフィが残っている: ${curly[0]}`);
+  const tight = englishValues.filter((v) => /\S—\S/.test(v));
+  assert.equal(tight.length, 0, `emダッシュの前後に空白がない: ${tight[0]}`);
+});
+
+test("同じ英語が別の意味に使われていない（太さと間口）", () => {
+  /* ★2026-09-05: 線の太さも劇場の間口もどちらも "Width" だった。
+     矢印の選択肢は Thin / Medium / Thick なので、見出しは Thickness が合う。 */
+  assert.equal(text["太さ"], "Thickness");
+  assert.equal(text["間口"], "Width");
+});
+
+test("パネルの見出しは sentence case にそろえる", () => {
+  // 12枚の見出しのうち「AI指示」だけが Title Case だった
+  for (const [ja, en] of [
+    ["出るもの", "Cast & set"], ["舞台機構", "Stage machinery"], ["セット登録", "Saved sets"],
+    ["リアルタイム共有", "Live sharing"], ["AI指示", "AI instructions"],
+  ]) {
+    assert.equal(text[ja], en);
+  }
+});

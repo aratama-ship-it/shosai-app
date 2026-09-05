@@ -515,7 +515,10 @@ test("AI指示パネルは重複見出しを置かずsectionをaria-labelで区�
     assert.match(panel, /class="btn-quiet" id="stage-ask-run"/);
     assert.doesNotMatch(html, /data-panel="AI指示"/);
   }
-  assert.match(i18nSource, /"AI指示": "AI Instructions"/);
+  /* ★パネル見出しの大文字化は sentence case にそろえる。他11枚（Cast & set /
+       Stage machinery / Saved sets / Live sharing 等）がすべて sentence case で、
+       ここだけ Title Case だった（2026-09-05・アプリ内英語の一巡）。 */
+  assert.match(i18nSource, /"AI指示": "AI instructions"/);
   assert.match(specSource, /^# メニュー「AI指示」— AI編集パネル 仕様書/m);
   assert.match(specSource, /data-panel="ask" data-title="AI指示"/);
 });
