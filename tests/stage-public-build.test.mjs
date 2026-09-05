@@ -713,6 +713,16 @@ test("sitemap.xml と robots.txt を配る（第3弾-3）", () => {
   assert.match(buildPublic, /copied\.append\("robots\.txt（sitemap の場所を知らせる）"\)/);
 });
 
+test("Search Console の所有権確認タグを消さない", () => {
+  /* 2026-09-05。Googleは後から再確認するので、消すとプロパティの所有権が外れる。
+     ★このサイトでは確認ファイル方式（google〜.html）が使えない。Cloudflareが .html を
+       拡張子なしURLへ307リダイレクトするため（実測: /googletest….html → 307）。
+       だからタグ方式で入れている。消したら確認ファイルに逃げることもできない。 */
+  assert.match(lpPage, /<meta name="google-site-verification" content="[A-Za-z0-9_-]{20,}">/);
+  // トップページ（/）に無いと確認が通らない。英語版にも同じ源から入る
+  assert.match(lpPage, /<meta name="robots" content="index, follow">/);
+});
+
 test("所有権の確認ファイルを配れる（Search Console 用）", () => {
   /* 2026-09-05。sitemap を Search Console へ登録するには、先にサイトの所有権を
      確かめる必要がある。指定された名前のファイルをサイト直下へ置く方式に対応する。
