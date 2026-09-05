@@ -635,6 +635,26 @@ def collect_dist() -> list[str]:
     for icon in ("icons/stage-sketch-192.png", "icons/stage-sketch-180.png"):
         put(icon)
 
+    # 所有権の確認ファイル（Search Console 等）。public-lp/verification/ の中身を
+    # 配信フォルダの直下へそのまま運ぶ。無ければ何もしない。
+    # ★ここは「誰でも読める場所」へ出る。置いてよいのは .html と .txt だけにして、
+    #   うっかり鍵や設計文書を置いたときはビルドで止める。
+    #   README.md は説明用なので配らない。
+    verification = HERE / "public-lp" / "verification"
+    if verification.is_dir():
+        for item in sorted(verification.iterdir()):
+            if item.name.startswith(".") or item.name == "README.md":
+                continue
+            if not item.is_file():
+                raise SystemExit(f"！確認ファイルの場所にフォルダがある: {item}")
+            if item.suffix not in (".html", ".txt"):
+                raise SystemExit(
+                    f"！確認ファイルに置けるのは .html と .txt だけ: {item.name}"
+                    f"（public-lp/verification/README.md を読むこと）"
+                )
+            shutil.copy2(item, DIST / item.name)
+            copied.append(f"{item.name}（所有権の確認ファイル）")
+
     return copied
 
 

@@ -713,6 +713,27 @@ test("sitemap.xml と robots.txt を配る（第3弾-3）", () => {
   assert.match(buildPublic, /copied\.append\("robots\.txt（sitemap の場所を知らせる）"\)/);
 });
 
+test("所有権の確認ファイルを配れる（Search Console 用）", () => {
+  /* 2026-09-05。sitemap を Search Console へ登録するには、先にサイトの所有権を
+     確かめる必要がある。指定された名前のファイルをサイト直下へ置く方式に対応する。
+     ★配信フォルダは毎回作り直すので、置き場所を決めてビルドに運ばせないと消える。 */
+  assert.match(buildPublic, /verification = HERE \/ "public-lp" \/ "verification"/);
+  assert.match(buildPublic, /shutil\.copy2\(item, DIST \/ item\.name\)/);
+  assert.match(buildPublic, /copied\.append\(f"\{item\.name\}（所有権の確認ファイル）"\)/);
+  // 無ければ何もしない（毎回置く必要はない）
+  assert.match(buildPublic, /if verification\.is_dir\(\):/);
+  /* ★誰でも読める場所へ出るので、置ける種類を絞る。うっかり鍵や設計文書を
+       置いたらビルドで止める（.json を置いて exit 1 になることを確認済み）。 */
+  assert.match(buildPublic, /if item\.suffix not in \("\.html", "\.txt"\):/);
+  assert.match(buildPublic, /！確認ファイルに置けるのは \.html と \.txt だけ/);
+  // 説明用の README は配らない
+  assert.match(buildPublic, /item\.name == "README\.md"/);
+  assert.ok(
+    existsSync(new URL("../public-lp/verification/README.md", import.meta.url)),
+    "置き場所と手順の説明がある",
+  );
+});
+
 test("体験版の英語は用語集（commit 71db200）にそろえる", () => {
   /* 2026-09-05。LPだけ校閲して、アプリ側の英語が古い言い方のまま残っていた。
      用語集: 体験版=the preview／製品版ベータ=the full beta／演者=performers／
