@@ -667,7 +667,9 @@ test("LPのCTAは、体験版と製品版を実画面で対比する二つの入
   assert.match(lpPage, /客席5か所から見る/);
   assert.match(publicJs, /const PUBLIC_MAX_PERFORMERS = 3;/);
   assert.match(lpPage, /演者3人・セット2つまで/);
-  assert.match(lpPage, /<a class="btn btn-main" href="\/try\.html">/);
+  // ボタンの文言は「体験版を使ってみる」（本人指示 2026-09-05。「体験する」から変更。製品版側の「製品版ベータを使ってみたい」と対になる）
+  assert.match(lpPage, /<a class="btn btn-main" href="\/try\.html"><span data-ja>体験版を使ってみる<\/span><span data-en>Try the preview<\/span><\/a>/);
+  assert.doesNotMatch(lpPage, /<span data-ja>体験する<\/span>/);
   assert.match(lpPage, /<a class="btn btn-sub" href="beta\.html">/);
 });
 
@@ -715,7 +717,7 @@ test("LPは日英を持ち、承認済みの英語確定稿の文言を使う", 
 });
 
 test("LPは言語をリンクへ引き継ぐ", () => {
-  // 引き継がないと、英語で読んでいた人が「体験する」の先で日本語に戻る
+  // 引き継がないと、英語で読んでいた人が「体験版を使ってみる」の先で日本語に戻る
   assert.match(lpPage, /var asked = new URLSearchParams\(location\.search\)\.get\("lang"\);/);
   assert.match(lpPage, /document\.documentElement\.lang = lang;/);
   assert.match(lpPage, /a\[href\$="\.html"\], a\[href\^="\/try"\]/);
