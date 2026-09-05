@@ -39,6 +39,32 @@
 <meta property="og:locale" content="ja_JP">
 <meta property="og:locale:alternate" content="en_GB">
 <meta name="twitter:card" content="summary_large_image">
+<!-- ヒーロー動画の構造化データ（2026-09-06）。
+     ★Search Console の URL検査で「動画が検出されました」と出たが、動画向けの情報は
+       何も与えていなかった。
+     ★Google の必須は name / thumbnailUrl / uploadDate の3つ。
+       description / contentUrl / duration / embedUrl は推奨（公式ドキュメントで確認・2026-09-06）。
+       uploadDate はISO 8601でタイムゾーンを付けるのが推奨。contentUrl は
+       「動画があるページ」ではなく動画ファイルそのものを指すこと。
+     ★数値は実測: 1080×1080 / h264 / 30fps / 46.77秒（PT47S）。録画日はLPの表記と同じ 2026-09-04。
+     ★英語版（/en/）では name と description を英語へ差し替える（build_public.py の english_lp）。
+     ★動画を差し替えたら、ここの長さ・日付・説明も直すこと。 -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "舞台スケッチ — 舞台の立ち位置と動線を、正面図と平面図で同時に描く",
+  "description": "舞台の立ち位置と動線を、客席からの正面図と真上の平面図で同時に描くツールです。製品版ベータの画面をそのまま録画したものです。",
+  "thumbnailUrl": "https://stagesketch-try.juggler-arata.workers.dev/media/hero-poster.jpg",
+  "uploadDate": "2026-09-04T15:12:00+09:00",
+  "duration": "PT47S",
+  "contentUrl": "https://stagesketch-try.juggler-arata.workers.dev/media/hero-ja.mp4",
+  "width": 1080,
+  "height": 1080,
+  "inLanguage": "ja",
+  "isFamilyFriendly": true
+}
+</script>
 <style>
 /* ============================================================
    デザイントークン

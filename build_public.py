@@ -189,6 +189,13 @@ EN_OG_ALT = (
     "as the house sees it and a plan view from above. Preview in the browser, no sign-up, "
     "free during the beta."
 )
+# ヒーロー動画の構造化データ（VideoObject）。用語はLPのヒーローと同じ一文にそろえる。
+EN_VIDEO_NAME = "Stage Sketch — drawing stage positions and movement in a front view and a plan view"
+EN_VIDEO_DESC = (
+    "A tool for drawing stage positions and movement in a front view and a plan view that move "
+    "together. Recorded straight from the screen of the full beta."
+)
+
 # 体験版（/en/try）。題は本体（stage-public.js）が出す英語の題と同じにする。
 # 開いた瞬間に題が入れ替わって見えるのを避けるため、静的な題も同じ文字列にそろえる。
 EN_TRY_TITLE = "Stage Sketch (Preview)"
@@ -338,6 +345,16 @@ def english_lp(html: str) -> str:
         '客席からの見え方を正面図と平面図で同時に描けるブラウザツール。">',
         f'<meta property="og:description" content="{EN_OG_DESC}">',
     )
+    # ヒーロー動画の構造化データ。動画そのものは日英で同じもの（音声なしの画面録画）。
+    page.sub('"name": "舞台スケッチ — 舞台の立ち位置と動線を、正面図と平面図で同時に描く",',
+             f'"name": "{EN_VIDEO_NAME}",')
+    page.sub(
+        '"description": "舞台の立ち位置と動線を、客席からの正面図と真上の平面図で同時に描く'
+        'ツールです。製品版ベータの画面をそのまま録画したものです。",',
+        f'"description": "{EN_VIDEO_DESC}",',
+    )
+    page.sub('"inLanguage": "ja",', '"inLanguage": "en",')
+
     page.english_card().self_url("/", "/en/")
 
     # ★体験版へのリンクだけはルートからの絶対パスで書いてある。英語版どうしをつなぐ。

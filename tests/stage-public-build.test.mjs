@@ -713,6 +713,40 @@ test("sitemap.xml と robots.txt を配る（第3弾-3）", () => {
   assert.match(buildPublic, /copied\.append\("robots\.txt（sitemap の場所を知らせる）"\)/);
 });
 
+test("ヒーロー動画の構造化データ（VideoObject）を持つ", () => {
+  /* 2026-09-06。Search Console の URL検査で「動画が検出されました」と出たが、
+     動画向けの情報を何も与えていなかった。
+     ★Googleの必須は name / thumbnailUrl / uploadDate の3つ（公式ドキュメントで確認）。
+       description / contentUrl / duration は推奨。ここでは推奨まで入れている。 */
+  const block = lpPage.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+  assert.ok(block, "JSON-LD の塊がある");
+  const data = JSON.parse(block[1]);
+  assert.equal(data["@type"], "VideoObject");
+  for (const key of ["name", "thumbnailUrl", "uploadDate"]) {
+    assert.ok(data[key], `必須項目がある: ${key}`);
+  }
+  for (const key of ["description", "contentUrl", "duration"]) {
+    assert.ok(data[key], `推奨項目も入れている: ${key}`);
+  }
+  // 推奨。数値は実測値（1080×1080 / 46.77秒 → PT47S / 録画日はLPの表記と同じ）
+  assert.equal(data.duration, "PT47S");
+  assert.equal(data.width, 1080);
+  assert.equal(data.height, 1080);
+  assert.match(data.uploadDate, /^2026-09-04T/);
+  assert.match(lpPage, /録画 2026-09-04 時点/);  // ★LPの表記と食い違わせない
+  // 画像と動画は絶対URLでないと拾われない。配信しているファイルを指すこと
+  assert.match(data.thumbnailUrl, /^https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/media\/hero-poster\.jpg$/);
+  assert.match(data.contentUrl, /^https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/media\/hero-ja\.mp4$/);
+  assert.match(lpPage, /poster="\/?media\/hero-poster\.jpg"/);
+  assert.match(lpPage, /src="media\/hero-ja\.mp4"/);
+
+  // 英語版では name / description / inLanguage を差し替える
+  assert.match(buildPublic, /EN_VIDEO_NAME = "Stage Sketch — drawing stage positions and movement in a front view and a plan view"/);
+  assert.match(buildPublic, /EN_VIDEO_DESC = \(/);
+  assert.match(buildPublic, /page\.sub\('"inLanguage": "ja",', '"inLanguage": "en",'\)/);
+  assert.equal(data.inLanguage, "ja");
+});
+
 test("Search Console の所有権確認タグを消さない", () => {
   /* 2026-09-05。Googleは後から再確認するので、消すとプロパティの所有権が外れる。
      ★このサイトでは確認ファイル方式（google〜.html）が使えない。Cloudflareが .html を
