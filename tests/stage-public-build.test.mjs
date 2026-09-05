@@ -433,8 +433,10 @@ test("LPは承認済みの文言を使い、詩的な見出しを足さない", 
 test("LPの最下部に連絡先として名前を出す", () => {
   // 本人指示 2026-09-05
   assert.match(lpPage, /<span data-ja>作 ARATA URAWA<\/span><span data-en>Made by ARATA URAWA<\/span>/);
-  // 連絡の口は紹介ページ（beta.html）の問い合わせへ送る。LPに宛先を直接書かない
-  assert.match(lpPage, /<span data-ja>ご連絡は <a href="beta\.html">お問い合わせ<\/a> から<\/span>/);
+  /* ★本人指示 2026-09-05: 紹介ページ（beta.html）を挟まず、pygmixの問い合わせフォームへ直接飛ぶ。
+       日本語・英語で subject を出し分ける（既存の beta.html と同じURLパターン）。 */
+  assert.match(lpPage, /<a href="https:\/\/pygmix\.com\/contact\?category=tool&amp;subject=%E8%88%9E%E5%8F%B0%E3%82%B9%E3%82%B1%E3%83%83%E3%83%81">お問い合わせフォーム<\/a>/);
+  assert.match(lpPage, /<a href="https:\/\/pygmix\.com\/contact\?category=tool&amp;subject=Stage%20Sketch">contact form<\/a>/);
 });
 
 test("LPのいちばん上で日本語と英語を切り替えられる", () => {
@@ -453,11 +455,15 @@ test("LPのいちばん上から「このアプリについて」へ飛べる", 
   // 本人指示 2026-09-05。冠と同じ行の右端に置き、下の帯へ飛ばす。
   assert.match(lpPage, /<a class="about-link" href="#about"><span data-ja>このアプリについて<\/span><span data-en>About this app<\/span><\/a>/);
   assert.match(lpPage, /<section class="story reveal" id="about">/);
-  // 帯そのものはいちばん下（フッターの直前）へ置く（本人指示 2026-09-05）
+  /* ★帯の位置は本人指示で「もっと下」→「もっと上」と二度動いた。
+       最終形（2026-09-05）: hero の直後・「13の機能」の帯の前。
+       文面も同じタイミングで演者としての経歴を踏まえた長い版に差し替えている。 */
+  const heroEnd = lpPage.indexOf("</header>");
   const about = lpPage.indexOf('<section class="story reveal" id="about">');
-  const cta = lpPage.indexOf('<section class="cta reveal">');
-  const footer = lpPage.indexOf("<footer>");
-  assert.ok(cta < about && about < footer, "CTA → このアプリについて → フッター の順");
+  const tour = lpPage.indexOf('<section class="tour reveal">');
+  assert.ok(heroEnd < about && about < tour, "hero → このアプリについて → 13の機能 の順");
+  assert.match(lpPage, /10年以上、幸運にもいくつもの素晴らしいショーに沢山演者として関わる/);
+  assert.match(lpPage, /For more than ten years, I've had the good fortune to perform/);
   assert.match(lpPage, /#about\{ scroll-margin-top:var\(--space-4\); \}/);
   // 動きは環境の設定に従う
   assert.match(lpPage, /@media \(prefers-reduced-motion: reduce\)\{ html\{ scroll-behavior:auto; \} \}/);
