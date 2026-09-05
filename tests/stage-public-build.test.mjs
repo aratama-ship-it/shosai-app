@@ -254,7 +254,13 @@ test("紹介ページは送信前後の流れを3行で示し、戻り先のラ�
   assert.match(betaPage, /What happens next: /);
   assert.match(betaPage, /Reply time: /);
   assert.match(betaPage, /<a class="back" href="\.\/">← 紹介ページへ戻る<\/a>/);
-  assert.match(betaPage, /<a class="back" href="\.\/">← Back to the introduction page<\/a>/);
+  /* ★同じページを2通りの名前で呼ばない。体験版の画面が "Overview" /
+       "See the overview" と呼んでいるので、戻り先の名前もそちらに合わせる
+       （2026-09-05・アプリ内英語の一巡）。 */
+  assert.match(betaPage, /<a class="back" href="\.\/">← Back to the overview<\/a>/);
+  assert.doesNotMatch(betaPage, /introduction page/);
+  assert.match(publicJs, /lpLink: "Overview"/);
+  assert.match(publicJs, /See the overview ／ 紹介ページを見る/);
   assert.doesNotMatch(betaPage, /<a class="back"[^>]*>[^<]*(体験版へ戻る|Back to the preview)/);
 });
 
@@ -339,7 +345,7 @@ test("言語を切り替えたら、体験版で足した札とリンクも貼�
 test("スマホへ最初に出す「PCを勧める」帯は、日本語と英語を並べて出す", () => {
   // この帯は言語の切替へ触れる前に出るので、端末の言語だけで選ばない（本人指示 2026-09-03）
   assert.match(publicJs, /const JA = "この体験版はスマホでは操作が限られます。PCでのご利用をお勧めします。";/);
-  assert.match(publicJs, /const EN = "This preview is limited on phones\. We recommend using a computer\.";/);
+  assert.match(publicJs, /const EN = "The preview is limited on phones\. It works best on a computer\.";/);
   assert.match(publicJs, /notice\.append\(message, sub, close, overview\);/);
   assert.match(publicJs, /close\.textContent = english \? "Continue ／ 続ける" : "続ける ／ Continue";/);
 });
@@ -668,6 +674,47 @@ test("英語版は別URL /en/ に静的に出す（クローラーはJSを実行
   assert.match(buildPublic, /japanese_head_markers=\("舞台スケッチ｜", "演出家・演者"\)/);
   assert.match(buildPublic, /japanese_head_markers=\("製品版ベータについて", "舞台スケッチの製品版"\)/);
   assert.match(buildPublic, /japanese_head_markers=\("舞台スケッチ（体験版）", "舞台スケッチの体験版"\)/);
+});
+
+test("体験版の英語は用語集（commit 71db200）にそろえる", () => {
+  /* 2026-09-05。LPだけ校閲して、アプリ側の英語が古い言い方のまま残っていた。
+     用語集: 体験版=the preview／製品版ベータ=the full beta／演者=performers／
+     客席=the house／立ち位置=positions／動線=movement／正面図=front view／平面図=plan view。 */
+  assert.match(publicJs, /betaLink: "Request access to the full beta"/);
+  assert.match(publicJs, /The full beta lets you add more\./);
+  assert.match(publicJs, /seatLabel: "Which seat in the house you watch from"/);
+  assert.match(publicJs, /This is available in the full beta\./);
+
+  /* ★錠のラベルの括弧も言語で変える。英語に全角の（）が混じると読み上げが崩れる
+       （2026-09-05 実機で "Seat（full version）" を確認）。 */
+  assert.match(publicJs, /\? `\$\{base\} \(in the full version\)`/);
+  assert.match(publicJs, /: `\$\{base\}（製品版で使えます）`/);
+  /* ★「製品版」= the full version と「製品版（β）」= the full beta は書き分ける。
+       LP・紹介ページも同じ書き分けをしているので、片方に寄せない。 */
+  assert.match(publicJs, /The full beta lets you add more\./);
+  assert.match(lpPage, /The full version is by request\./);
+
+  /* ★会場の名前は製品の会場データ（stage-venues.js の label / stage-i18n.js の venueKind）が正。
+       2026-09-05: LPの英語が シャピトー を "big top" と訳しており、アプリの "Big top"
+       （= arena・日本語「ビッグトップ」）と別の会場を指していた。読んだ人が違う会場を選ぶ。 */
+  assert.match(publicJs, /\["arena", "ビッグトップ", "Big top"\]/);
+  assert.match(publicJs, /\["chapiteau", "シャピトー", "Chapiteau"\]/);
+  assert.match(lpPage, /Proscenium, thrust, a big top in the round, or a touring chapiteau\./);
+  assert.doesNotMatch(lpPage, /or big top\./);
+
+  /* ★同じものを2通りの言い方で呼ばない。ここに挙げた言い方は使わない。
+       "the full beta" 以外の呼び方をすると、LP・紹介ページ・アプリで別物に見える。 */
+  for (const banned of [
+    "full beta version",     // → the full beta
+    "full version (beta)",   // → the full beta
+    "beta version",          // → the full beta
+    "trial version",         // → the preview
+    "introduction page",     // → the overview
+  ]) {
+    for (const [name, text] of [["stage-public.js", publicJs], ["public-beta.html", betaPage], ["public-lp/index.html", lpPage]]) {
+      assert.ok(!text.includes(banned), `${name} に古い言い方が残っている: ${banned}`);
+    }
+  }
 });
 
 test("体験版と紹介ページにも日本語の説明・OGPがある（第3弾）", () => {

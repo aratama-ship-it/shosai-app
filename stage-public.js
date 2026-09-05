@@ -112,11 +112,11 @@
     const english = document.documentElement.lang === "en";
     if (group === "cast") {
       return english
-        ? `The preview holds up to ${PUBLIC_MAX_PERFORMERS} performers. The full version (beta) lets you add more.`
+        ? `The preview holds up to ${PUBLIC_MAX_PERFORMERS} performers. The full beta lets you add more.`
         : `体験版で置ける演者は${PUBLIC_MAX_PERFORMERS}人までです。製品版（β）ではもっと足せます。`;
     }
     return english
-      ? `The preview holds up to ${PUBLIC_MAX_SETS} set pieces. The full version (beta) lets you add more.`
+      ? `The preview holds up to ${PUBLIC_MAX_SETS} set pieces. The full beta lets you add more.`
       : `体験版で置ける舞台セットは${PUBLIC_MAX_SETS}つまでです。製品版（β）ではもっと足せます。`;
   }
 
@@ -163,10 +163,14 @@
     status.className = "stage-public-selection-status";
     status.id = "stage-public-selection-status";
     status.setAttribute("aria-live", "polite");
+    /* ★名前は製品の会場データに合わせる。arena の名前は「ビッグトップ」/「Big top」で、
+       ここだけ「アリーナ」/「Arena」と呼んでいた（同じ画面の会場の選択欄は
+       「ビッグトップ（円形・全周）」と出る。2026-09-05 実測）。
+       正: stage-venues.js の label と stage-i18n.js の venueKind。 */
     const venues = [
       ["proscenium", "プロセニアム", "Proscenium"],
       ["thrust", "スラスト", "Thrust"],
-      ["arena", "アリーナ", "Arena"],
+      ["arena", "ビッグトップ", "Big top"],
       ["chapiteau", "シャピトー", "Chapiteau"],
     ];
     const buttons = venues.map(([value, ja, en]) => {
@@ -238,7 +242,7 @@
   function railLabels() {
     const english = document.documentElement.lang === "en";
     return english
-      ? { add: "+1", addLabel: "Add a performer", seat: "Seat", seatLabel: "Which seat the stage is seen from", settings: "Settings", settingsLabel: "Open settings", close: "Close" }
+      ? { add: "+1", addLabel: "Add a performer", seat: "Seat", seatLabel: "Which seat in the house you watch from", settings: "Settings", settingsLabel: "Open settings", close: "Close" }
       : { add: "＋人", addLabel: "人を足す", seat: "客席", seatLabel: "どの席から舞台を見るか", settings: "設定", settingsLabel: "設定を開く", close: "閉じる" };
   }
 
@@ -421,7 +425,7 @@
        先に出すのは端末の言語の方。 */
     const english = document.documentElement.lang === "en";
     const JA = "この体験版はスマホでは操作が限られます。PCでのご利用をお勧めします。";
-    const EN = "This preview is limited on phones. We recommend using a computer.";
+    const EN = "The preview is limited on phones. It works best on a computer.";
     const message = document.createElement("p");
     message.textContent = english ? EN : JA;
     const sub = document.createElement("p");
@@ -761,7 +765,7 @@
 
   function lockLabel() {
     return document.documentElement.lang === "en"
-      ? 'This is available in the full version. The preview lets you move performers and change the venue.'
+      ? 'This is available in the full beta. The preview lets you move performers and change the venue.'
       : 'この機能は製品版（β）で使えます。体験版では、演者を動かすことと会場を変えることができます。';
   }
 
@@ -796,7 +800,15 @@
     el.setAttribute("aria-disabled", "true");
     const english = document.documentElement.lang === "en";
     const base = el.getAttribute("aria-label") || (el.textContent || "").trim().slice(0, 24);
-    if (base) el.setAttribute("aria-label", `${base}（${english ? "full version" : "製品版で使えます"}）`);
+    /* ★括弧も言語で変える。英語の読み上げに全角の（）が混じると読みが崩れる
+       （2026-09-05 実機で "Seat（full version）" を確認）。
+       ★日本語が「製品版」なので英語も the full version。「製品版（β）」＝the full beta
+         とは書き分ける（LP・紹介ページも同じ書き分けをしている）。 */
+    if (base) {
+      el.setAttribute("aria-label", english
+        ? `${base} (in the full version)`
+        : `${base}（製品版で使えます）`);
+    }
   }
 
   /* 会場の帯を出さないときの「いま選んでいる人」の表示。
@@ -834,7 +846,7 @@
       ? {
         badge: "Preview",
         title: "Stage Sketch (Preview)",
-        betaLink: "Ask about the full beta version here",
+        betaLink: "Request access to the full beta",
         lpLink: "Overview",
       }
       : {
