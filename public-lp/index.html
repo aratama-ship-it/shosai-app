@@ -236,6 +236,33 @@ p{ margin:0 0 var(--space-3); }
 .tour-figure img{ width:100%; height:auto; display:block; }
 /* 小さな欄の画像は、引き伸ばさず実寸のまま中央に置く */
 .tour-item-small .tour-figure{ display:flex; justify-content:center; padding:var(--space-5); }
+/* item 13 だけ、1枚絵ではなく iPhone のフレームを2台並べる（本人指示 2026-09-05）。
+   ★外枠（.tour-figure の背景・枠線・影）は打ち消す。フレーム自体に縁があるので、
+     二重に囲むと絵として重い。★width:66%・justify-self の寄せは他の項目と共通のまま
+     （.tour-item-small だけを除外している一般規則を、ここでは打ち消さずに使う）。 */
+.tour-item-phones .tour-figure{
+  border:0; background:none; box-shadow:none; overflow:visible;
+  display:flex; flex-direction:column; gap:var(--space-4); align-items:stretch;
+}
+/* ★560px未満では横に並べない。66%幅を2分割すると1台あたり150px前後になり、
+     画面の文字が読めない（2026-09-05 実測: 390px幅で101px/台）。縦に積んで
+     1台ぶんの幅を確保する。 */
+@media (min-width:560px){
+  .tour-item-phones .tour-figure{ flex-direction:row; align-items:flex-start; }
+}
+.phone-frame{
+  position:relative; flex:1 1 0; min-width:0;
+  aspect-ratio:390/844; /* 実機のスクリーンショットと同じ比率。読み込み前から場所を確保する */
+  padding:10px; border-radius:34px;
+  background:#100e0c; border:1px solid var(--line-dark); box-shadow:var(--shadow-1);
+}
+.phone-frame img{ width:100%; height:100%; object-fit:cover; display:block; border-radius:24px; }
+/* ダイナミックアイランド。実機の位置に合わせて画面の上に重ねる */
+.phone-frame::before{
+  content:""; position:absolute; top:22px; left:50%; transform:translateX(-50%);
+  width:32%; height:18px; border-radius:999px; background:#100e0c;
+}
+
 /* ★width:auto にしない。読み込む前の高さが0になり、そのぶん下がずれる（2026-09-05 実測: 146px）。
      幅を決めてやれば、width/height 属性の比から高さを先に確保できる。 */
 .tour-item-small .tour-figure img{ width:100%; max-width:268px; height:auto; }
@@ -476,8 +503,15 @@ footer a{ color:var(--rust-ink); }
           <p><span data-ja>招待URLを送るだけで、全員でリアルタイムシェアができます。ホストは全機能使えます。ゲストはレーザーポインタと矢印の描画のみです。</span><span data-en>Just send an invite URL, and everyone shares the same view in real time. The host has full access; guests can only point with a laser and draw arrows.</span></p>
         </div>
       </li>
-      <li class="tour-item">
-        <figure class="tour-figure"><img src="media/features/13-phone.jpg" width="860" height="884" alt="iPhoneで場面と説明メモを見ている画面" loading="lazy" decoding="async"></figure>
+      <li class="tour-item tour-item-phones">
+        <figure class="tour-figure">
+          <div class="phone-frame">
+            <img src="media/features/13-phone-a.jpg" width="780" height="1688" alt="iPhoneで見た1場面目の正面図・平面図・説明メモ" loading="lazy" decoding="async">
+          </div>
+          <div class="phone-frame">
+            <img src="media/features/13-phone-b.jpg" width="780" height="1688" alt="iPhoneで見た3場面目の正面図・平面図・説明メモ" loading="lazy" decoding="async">
+          </div>
+        </figure>
         <div class="tour-copy">
           <p class="tour-no">13</p>
           <h3><span data-ja>iPhoneで、稽古の前に覚えておく。</span><span data-en>Learn it on your phone, before the room.</span></h3>

@@ -542,7 +542,9 @@ test("LPの下部で13の機能を、画像つきで一つずつ紹介する", (
   assert.match(lpPage, /<h3><span data-ja>簡易的な照明をつくる。<\/span><span data-en>Rough out the lighting\.<\/span><\/h3>/);
   // 画像は features/ 配下。全部が存在し、配信スクリプトが運ぶ
   const refs = [...lpPage.matchAll(/src="media\/features\/([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(new Set(refs).size, 13, "13枚がそれぞれ別の画像");
+  /* ★item 13だけ画像が2枚（iPhoneフレーム2台。本人指示 2026-09-05）。
+       13項目・画像14枚になる。 */
+  assert.equal(new Set(refs).size, 14, "14枚がそれぞれ別の画像（item 13が2枚）");
   for (const name of refs) {
     assert.ok(existsSync(new URL(`../public-lp/media/features/${name}`, import.meta.url)), `${name} がある`);
   }
@@ -552,7 +554,7 @@ test("LPの下部で13の機能を、画像つきで一つずつ紹介する", (
      書かないと、下の画像が読み込まれるたびにページが伸びて、
      上の「このアプリについて」から飛んだ先が下へずれる（2026-09-05 実測: 約1300px）。 */
   const sized = (lpPage.match(/<img src="media\/features\/[^"]+" width="\d+" height="\d+"/g) || []).length;
-  assert.equal(sized, 13, "13枚とも寸法つき");
+  assert.equal(sized, 14, "14枚とも寸法つき");
   /* ★左右を入れ替える回は、列の幅も入れ替える。order だけだと画像が狭い方の列へ入る
        （2026-09-05 実測: 885px→442px）。 */
   assert.match(lpPage, /\.tour-item:nth-child\(even\)\{ grid-template-columns:minmax\(0,4fr\) minmax\(0,8fr\); \}/);
@@ -570,6 +572,21 @@ test("LPの下部で13の機能を、画像つきで一つずつ紹介する", (
   assert.doesNotMatch(lpPage, /演者の姿勢、\d+種/);
   // 用語: 立ち稽古ではなく「場当たり」
   assert.match(lpPage, /立ち位置は、場当たりの前に。/);
+});
+
+test("13番はiPhoneのフレームで見せる", () => {
+  // 本人指示 2026-09-05。1枚絵ではなく、実機比率(390:844)のフレームを2台並べる。
+  assert.match(lpPage, /<li class="tour-item tour-item-phones">/);
+  assert.match(lpPage, /<div class="phone-frame">\s*\n\s*<img src="media\/features\/13-phone-a\.jpg"/);
+  assert.match(lpPage, /<div class="phone-frame">\s*\n\s*<img src="media\/features\/13-phone-b\.jpg"/);
+  // 外枠（背景・枠線・影）は打ち消す。フレーム自体に縁があるので二重に囲まない
+  assert.match(lpPage, /\.tour-item-phones \.tour-figure\{\s*\n\s*border:0; background:none; box-shadow:none; overflow:visible;/);
+  // 実機と同じ比率で、読み込み前から場所を確保する
+  assert.match(lpPage, /\.phone-frame\{[^}]*aspect-ratio:390\/844;/);
+  /* ★560px未満では横に並べない。66%幅を2分割すると1台あたり150px前後になり、
+       画面の文字が読めない（2026-09-05 実測: 390px幅で101px/台 → 縦積みで226px/台）。 */
+  assert.match(lpPage, /\.tour-item-phones \.tour-figure\{\s*\n\s*border:0; background:none; box-shadow:none; overflow:visible;\s*\n\s*display:flex; flex-direction:column;/);
+  assert.match(lpPage, /@media \(min-width:560px\)\{\s*\n\s*\.tour-item-phones \.tour-figure\{ flex-direction:row;/);
 });
 
 test("13の機能の画像は列いっぱいに広げず、縦横とも66%くらいに収める", () => {
