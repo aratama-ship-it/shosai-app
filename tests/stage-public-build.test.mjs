@@ -254,6 +254,19 @@ test("紹介ページは送信前後の流れを3行で示し、戻り先のラ�
   assert.doesNotMatch(betaPage, /<a class="back"[^>]*>[^<]*(体験版へ戻る|Back to the preview)/);
 });
 
+test("紹介ページのコントラストとタップ対象を直す（design-lint既存NG8件・本人承認2026-09-05）", () => {
+  /* 本人承認 2026-09-05「これをやりましょう」。design-lintをbeta.htmlに初めて通して見つかった、
+     今回のマーケ見直しとは無関係の既存不備。実測: C1 4.37:1(NG)→C3(明るくした値)で5.8:1、
+     U1は .back 27.4px・.small内リンク14pxがともに44px未満だった → 実測NG8件→0件。
+     ★下線は消さない（brass地の色だけに頼ったリンクにしない・design-lint C3。
+       一度 text-decoration:none + 疑似要素にしたら再びC3で引っかかった）。 */
+  assert.match(betaPage, /\.contact-to\{display:block;font-size:\.78rem;letter-spacing:\.22em;color:#b89654\}/);
+  assert.doesNotMatch(betaPage, /\.contact-to\{[^}]*color:var\(--brass\)/);
+  assert.match(betaPage, /\.back\{display:inline-block;margin-top:36px;font-family:var\(--sans\);font-size:\.9rem;padding-block:14px\}/);
+  assert.match(betaPage, /\.small a\{display:inline-block;padding-block:12px\}/);
+  assert.doesNotMatch(betaPage, /\.small a\{[^}]*text-decoration:none/);
+});
+
 test("紹介ページの姿勢の数は本体の実装と一致させる（第2弾・#11）", async () => {
   /* ★「41種」は古い数字だった。stage-sketch.js の POSES 配列を実測すると46種（2026-09-05）。
      LP側（08の機能紹介）は本人指示で数を伏せたまま——すぐ増える見込みで、公開のたびに

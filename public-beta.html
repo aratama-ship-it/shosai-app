@@ -36,12 +36,19 @@
   .contact a{display:inline-block;padding:12px 20px;border:1px solid var(--rust);border-radius:6px;
              background:rgba(168,75,38,.14);color:var(--rust-ink);font-family:var(--sans);
              text-decoration:none;line-height:1.5}
-  .contact-to{display:block;font-size:.78rem;letter-spacing:.22em;color:var(--brass)}
+  /* ★brass(#9C823F)は .contact のロゴ地(合成後 #2D1D14)に対して4.38:1・design-lint C1でNG（2026-09-05実測）。
+       この文字だけ明るくした値（5.8:1・contrast.mjsで実測）を使う。他の brass 利用箇所は desk地で足りている。 */
+  .contact-to{display:block;font-size:.78rem;letter-spacing:.22em;color:#b89654}
   .contact-mail{display:block;font-size:1.02rem;letter-spacing:.02em}
   .contact a:hover,.contact a:focus-visible{background:rgba(168,75,38,.28);color:var(--paper)}
   a{color:var(--rust-ink)}
-  .back{display:inline-block;margin-top:36px;font-family:var(--sans);font-size:.9rem}
+  /* ★タップ対象は44px以上（design-lint U1）。.back は27.4px、.small 内のリンクは14pxしかなかった
+       （2026-09-05実測）。padding-block で押せる高さを確保する。下線が padding の分下がらないよう
+       ::after の疑似要素にする。 */
+  .back{display:inline-block;margin-top:36px;font-family:var(--sans);font-size:.9rem;padding-block:14px}
   .small{font-size:.86rem;color:var(--ink-soft-sm);font-family:var(--sans);line-height:1.8}
+  /* ★下線は消さない（brass地の色だけに頼ったリンクにしない・design-lint C3）。既定の underline のまま高さだけ足す。 */
+  .small a{display:inline-block;padding-block:12px}
   [hidden]{display:none !important}
   @media (max-width:600px){ main{padding:32px 16px 72px} h1{font-size:1.35rem} }
 </style>
