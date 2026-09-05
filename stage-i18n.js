@@ -21,8 +21,11 @@
  *
  * ★Aboutモーダルの英語は「承認済み英語原稿」と完全一致させる決まり
  *   （docs/stage-sketch/2026-08-03_舞台スケッチ_このアプリについて_英語版.md、
- *   tests/stage-about.test.mjs が守る）。上の書式より原稿が優先で、直すなら原稿と両方。
- *   一括置換をかけるときは、この原稿に載っている文言を除外すること。
+ *   tests/stage-about.test.mjs が守る）。直すなら原稿とこのファイルの両方を同時に。
+ *   一括置換をかけるときは、この原稿に載っている文言を既定で除外すること。
+ *   2026-09-05: 本人承認のうえ、原稿側の綴りだけブリティッシュに直した
+ *   （theater→theatre / realize→realise / realizing→realising）。
+ *   約物（カーリーの ’ と 空白なしの em ダッシュ）は著者の文章としてそのまま残す。
  */
 (function () {
   "use strict";
@@ -183,10 +186,10 @@
     "隠す": "Hide",
     "私が舞台スケッチを作ろうと思った始まりは、ディレクターの意向や、チームの中での自分の役割を、視覚的に把握できるものが欲しかったことでした。": "I first started thinking about Stage Sketch because I needed a clearer way to see what a director had in mind—and where I fit within that vision.",
     "ショーにはどのような目的があるのか。その中で自分にはどのような役割があり、どこにいて、どこまで表現の自由を与えられているのか。私がいた現場では、口頭で伝えたり、演者が実際にステージへ立ったりしながら、ディレクターが配置やバランスを調整することが基本でした。絵やビデオを使うこともありましたが、時間外や休み時間に予習できていればよかったと思いました。": "What is this show trying to achieve? What is my part in it? Where am I meant to be, and how much creative freedom do I have? On the productions I worked on, most of this was communicated verbally. Performers would take their places onstage while the director adjusted the blocking and overall balance. We sometimes referred to drawings or video, but I often wished there were a way to review the plan beforehand, whether between rehearsals or during a break.",
-    "芸術という抽象的なものにおいて、意思疎通を言葉だけで行うことは非常に難しいものです。言葉が正しく機能することもあれば、予想外の方向へ進み、それが良い結果につながることもあります。ただ、ディレクターが見せたいものをアーティストが表現しようとするとき、その意図を理解することに時間を取られすぎることもありました。": "Art is abstract by nature, so words can only take us so far. Sometimes they communicate exactly what we mean. Sometimes they send the work in an unexpected direction—and that can lead somewhere interesting. But when an artist is trying to realize a director’s vision, too much rehearsal time can be spent simply working out what that vision is.",
-    "私は劇場に入るたびに客席を歩き回り、それぞれの場所から自分がどのように見えるかをイメージします。舞台スケッチの俯瞰図では、人や物の位置と全体のバランスを第三者の目で捉えられます。正面図では、お客さんやディレクターから舞台がどう見えるかを考えられます。自分の内側からの見え方とは別に、客席側から自分や舞台を眺める、より客観的な視点を加えるための図です。": "Whenever I enter a theater, I walk through the auditorium and imagine how I will look from different seats. Stage Sketch offers two ways to step outside the performance and look back at it. The plan view shows where people and objects are placed and how the composition balances as a whole. The front view shows what the audience—or the director—might see. Together, they offer a more objective perspective: not only the view from inside the performance, but also the view from the house.",
+    "芸術という抽象的なものにおいて、意思疎通を言葉だけで行うことは非常に難しいものです。言葉が正しく機能することもあれば、予想外の方向へ進み、それが良い結果につながることもあります。ただ、ディレクターが見せたいものをアーティストが表現しようとするとき、その意図を理解することに時間を取られすぎることもありました。": "Art is abstract by nature, so words can only take us so far. Sometimes they communicate exactly what we mean. Sometimes they send the work in an unexpected direction—and that can lead somewhere interesting. But when an artist is trying to realise a director’s vision, too much rehearsal time can be spent simply working out what that vision is.",
+    "私は劇場に入るたびに客席を歩き回り、それぞれの場所から自分がどのように見えるかをイメージします。舞台スケッチの俯瞰図では、人や物の位置と全体のバランスを第三者の目で捉えられます。正面図では、お客さんやディレクターから舞台がどう見えるかを考えられます。自分の内側からの見え方とは別に、客席側から自分や舞台を眺める、より客観的な視点を加えるための図です。": "Whenever I enter a theatre, I walk through the auditorium and imagine how I will look from different seats. Stage Sketch offers two ways to step outside the performance and look back at it. The plan view shows where people and objects are placed and how the composition balances as a whole. The front view shows what the audience—or the director—might see. Together, they offer a more objective perspective: not only the view from inside the performance, but also the view from the house.",
     "図を作る中心は、ディレクターやそのアシスタントです。演者たちと事前に意図や配置を共有できれば、リハーサルの初期段階をより早く終え、その先の通し練習や、自信を持って行える練習へ時間を使えます。そうしてショーをさらに作り込んでほしいと考えています。": "Directors or their assistants will usually create the diagrams, then share them with performers before rehearsal. If everyone can understand the intention and blocking in advance, the team can move through the early stages more quickly and spend more time doing full runs, rehearsing with greater confidence, and shaping the show in greater depth.",
-    "他にも、これから初めてショーを作る人には、見せたいものを実際の舞台でどう表現するかを考えるために使ってほしいと思います。「思っていたより、こう見えるんだ」と、自分の考えが目に見える形になっていく過程も楽しんでもらえたらと思います。": "I also hope Stage Sketch gives people creating their first show a place to explore how an idea might work in real space. There is something exciting about watching an idea become visible and realizing, “Oh, so that’s how it might look.”",
+    "他にも、これから初めてショーを作る人には、見せたいものを実際の舞台でどう表現するかを考えるために使ってほしいと思います。「思っていたより、こう見えるんだ」と、自分の考えが目に見える形になっていく過程も楽しんでもらえたらと思います。": "I also hope Stage Sketch gives people creating their first show a place to explore how an idea might work in real space. There is something exciting about watching an idea become visible and realising, “Oh, so that’s how it might look.”",
     "舞台スケッチは技術図面ではなく、安全を検証したり保証したりするものでもありません。ディレクターとアーティストの意思疎通を円滑にし、良いショーを作る時間を増やすためのスケッチです。これを通して、出来の良いショーが世の中にたくさん増えていくことを楽しみにしています。": "Stage Sketch is not a technical drafting tool, and it cannot assess or guarantee safety. It is a visual communication tool—a way for directors and artists to spend less time getting on the same page and more time shaping the show. If it helps bring more well-crafted shows into the world, I will be delighted.",
     "感想を送る": "Send feedback",
     "使ってみた感想を送る": "Send your impressions",

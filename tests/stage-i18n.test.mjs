@@ -49,13 +49,17 @@ const approvedEnglish = new Set(
   ))
     .split(/\r?\n/).map((line) => line.trim()).filter(Boolean),
 );
-const englishValues = Object.values(text)
-  .filter((v) => typeof v === "string" && !/[぀-ヿ一-鿿]/.test(v) && !approvedEnglish.has(v.trim()));
+const allEnglishValues = Object.values(text)
+  .filter((v) => typeof v === "string" && !/[぀-ヿ一-鿿]/.test(v));
+const englishValues = allEnglishValues.filter((v) => !approvedEnglish.has(v.trim()));
 
-test("英語の綴りはブリティッシュにそろえる（承認済み原稿は除く）", () => {
-  const american = ["theater", "realize", "organize", "recognize", "analyze", "color", "center", "meter"];
+test("英語の綴りはブリティッシュにそろえる（承認済み原稿も含む）", () => {
+  /* ★綴りだけは承認済み原稿も対象にする。2026-09-05、本人承認のうえで原稿側の
+     theater / realize / realizing をブリティッシュに直した（約物は著者の文章として
+     そのまま残す）。原稿と stage-i18n.js は完全一致が必須なので、直すときは両方。 */
+  const american = ["theater", "realize", "realizing", "organize", "recognize", "analyze", "color", "center", "meter"];
   for (const word of american) {
-    const hit = englishValues.filter((v) => new RegExp(`\\b${word}\\b`, "i").test(v));
+    const hit = allEnglishValues.filter((v) => new RegExp(`\\b${word}\\b`, "i").test(v));
     assert.equal(hit.length, 0, `アメリカ綴り「${word}」が残っている: ${hit[0]}`);
   }
   // 上演のプログラムは programme（コンピュータの program と区別する）
