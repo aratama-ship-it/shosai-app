@@ -54,3 +54,8 @@
 - `.btn-main` の地: rgba(168,75,38,**.12**)。.18 だと合成後 #321F16 に対し文字 #DF6433 が 4.46:1 で 4.5 を割る（design-lint C1 実測）。.12 で #2A1C14・4.72:1。
 - `prefers-reduced-motion: reduce` では animation に加えて transition も止める（ボタンの hover 180ms が最初の画面に入ったため）。
 - ヒーローの動画上限 56vh→50vh（名前の下に「何のツールか」の一文 18px/1.7 と二つの入口を足したため）。1440×900 で動画の上端 496px。
+
+## 追記 2026-09-05（第2弾・証拠帯／OGP）
+- 証拠帯 `.proof`: hero直後。見出し無し・4項目・太字14px（--paper）＋注記13px（--ink-soft-sm）。上下罫 --line-dark。900px以上で4列、未満で2列。
+- 帯の順: hero → 証拠帯 → 13の機能 → このアプリについて → CTA（作者の話は13の機能の後ろへ・本人承認）。
+- OGP画像: 1200×630（実体2400×1260 JPEG q90・約210KB）。左に名前84px/明朝・一文24px、右に hero-poster の切り抜き。元は public-lp/og/og-source.html、生成は build_og.py。

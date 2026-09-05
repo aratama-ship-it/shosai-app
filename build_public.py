@@ -169,6 +169,17 @@ def collect_dist() -> list[str]:
     # LPの「12の機能」が参照する画像。LP本体から参照を読み取り、欠けていれば止める
     # （名指しのリストにすると、LPへ足した画像が配信から漏れる）。
     lp_html = (HERE / "public-lp" / "index.html").read_text(encoding="utf-8")
+
+    # SNSカード用の画像（og:image）。絶対URLで書いてあるので、media/ 以下の名前だけ取り出して運ぶ。
+    # ★2026-09-05: 1200×630 の専用画像（public-lp/og/ から build_og.py で作る）。無ければ止める。
+    og = re.search(r'property="og:image" content="[^"]*?/media/([^"/]+)"', lp_html)
+    if not og:
+        raise SystemExit("！LPに og:image が無い（media/ 以下の絶対URLで書く）")
+    og_src = media / og.group(1)
+    if not og_src.exists():
+        raise SystemExit(f"！og:image の画像がない: {og_src}（python3 public-lp/og/build_og.py で作る）")
+    shutil.copy2(og_src, DIST / "media" / og.group(1))
+    copied.append(f"media/{og.group(1)}（og:image）")
     feature_refs = sorted(set(re.findall(r'src="media/features/([^"]+)"', lp_html)))
     if feature_refs:
         (DIST / "media" / "features").mkdir(parents=True, exist_ok=True)

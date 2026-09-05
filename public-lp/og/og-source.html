@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>OGP 1200×630 の元（舞台スケッチ）</title>
+<!-- SNSカード用の画像の元。Playwright で 1200×630（DPR2）で撮って media/og-1200x630.jpg にする。
+     ★配信物ではない（build_public.py は media/ の名指し分と features/ しか運ばない）。
+     トークンは LP と同じ（design/TOKEN_SHEET_public-lp_2026-09-05.md）。
+     作り方: python3 build_og.py（同じフォルダ）。 -->
+<style>
+:root{
+  --desk:#191512; --desk-2:#201b16; --line-dark:#382f25;
+  --paper:#efe7d6; --paper-line:#d8c9ab; --ink-soft-sm:#93856c; --brass:#9c823f; --rust:#a84b26; --rust-ink:#df6433;
+  --serif:"Hiragino Mincho ProN","Yu Mincho",YuMincho,"Noto Serif JP",serif;
+  --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;
+}
+*{ box-sizing:border-box; }
+html,body{ margin:0; background:var(--desk); }
+.card{
+  width:1200px; height:630px; position:relative; overflow:hidden;
+  background:var(--desk); color:var(--paper); font-family:var(--serif);
+  display:grid; grid-template-columns:600px 1fr;
+}
+.text{ padding:64px 0 56px 64px; display:flex; flex-direction:column; justify-content:space-between; }
+.eyebrow{ font-family:var(--sans); font-size:15px; letter-spacing:.3em; color:var(--brass); margin:0 0 22px; }
+/* ★6文字を1行に収める: 84px×6 + 字間 ≒ 521px < 列幅536px（104pxだと折り返す・2026-09-05 実測） */
+.name{ font-size:84px; font-weight:600; letter-spacing:.05em; line-height:1.15; margin:0 0 6px; white-space:nowrap; }
+.name-en{ font-family:var(--sans); font-size:20px; letter-spacing:.22em; color:var(--ink-soft-sm); margin:0 0 30px; }
+.what{ font-family:var(--sans); font-size:24px; line-height:1.6; color:var(--paper-line); margin:0; max-width:520px; }
+.foot{ font-family:var(--sans); font-size:16px; color:var(--ink-soft-sm); letter-spacing:.04em; display:flex; gap:22px; align-items:center; }
+.foot b{ font-weight:600; color:var(--rust-ink); }
+.foot .dot{ width:4px; height:4px; border-radius:50%; background:var(--line-dark); }
+/* 右: 実画面。正面図と平面図が縦に並ぶポスターを、少し傾けずにそのまま。額縁は細い罫だけ。 */
+.shot{ position:relative; }
+.frame{
+  position:absolute; left:16px; top:48px; width:552px; height:552px;
+  border:1px solid var(--line-dark); box-shadow:0 12px 40px rgba(0,0,0,.5); overflow:hidden; background:#000;
+}
+.frame img{ width:100%; height:100%; object-fit:cover; object-position:center 42%; display:block; }
+.rule{ position:absolute; left:0; top:0; bottom:0; width:1px; background:var(--line-dark); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="text">
+    <div>
+      <p class="eyebrow">STAGE IMAGE STUDY</p>
+      <h1 class="name">舞台スケッチ</h1>
+      <p class="name-en">STAGE SKETCH</p>
+      <p class="what">舞台の立ち位置と動線を、客席からの正面図と真上の平面図で同時に描くツール。</p>
+    </div>
+    <p class="foot"><b>ブラウザ体験版</b><span class="dot"></span><span>登録不要</span><span class="dot"></span><span>ベータ期間中は無償</span></p>
+  </div>
+  <div class="shot">
+    <div class="rule"></div>
+    <div class="frame"><img src="../media/hero-poster.jpg" alt=""></div>
+  </div>
+</div>
+</body>
+</html>

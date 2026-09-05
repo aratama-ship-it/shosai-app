@@ -534,15 +534,41 @@ test("LPの最初の画面に「何のツールか」の一文と二つの入口
   assert.match(lpPage, /\.hero-video video\{ [^}]*max-height:50vh;/);
 });
 
+test("LPの hero 直後に証拠帯を置く（第2弾・#3・本人承認「両方進めて」）", () => {
+  /* 4つの事実だけ。★実在会場名は入れない（本人指示 2026-09-05「実在の劇場（…）この文章は消してください」）。
+     ★提携・導入実績・利用者の声に見える表現は入れない。 */
+  const items = (lpPage.match(/<ul class="proof-list">[\s\S]*?<\/ul>/) || [""])[0];
+  assert.equal((items.match(/<li>/g) || []).length, 4, "証拠は4つ");
+  assert.match(items, /元サーカスアーティストが作っています/);
+  assert.match(items, /見本ショー「八人のサーカス」8場面で撮影/);
+  assert.match(items, /ベータ期間中は無償/);
+  assert.match(items, /画面はすべて製品版βの実写/);
+  assert.doesNotMatch(items, /シアタートラム|TOHU|ディヴェール|導入実績|提携/);
+  // 「体験版は3場面」は実装どおり（stage-public.js が場面を3つに切っている）
+  assert.match(items, /そのうち3場面が入った状態で開きます/);
+  assert.match(publicJs, /project\.scenes = \[scene, second, third\];/);
+  assert.match(lpPage, /\.proof\{ padding:var\(--space-4\) 0; border-top:1px solid var\(--line-dark\); border-bottom:1px solid var\(--line-dark\); \}/);
+});
+
+test("OGP画像は専用の1200×630（第2弾・本人承認）。配信スクリプトが og:image を運ぶ", () => {
+  assert.match(lpPage, /<meta property="og:image" content="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/media\/og-1200x630\.jpg">/);
+  assert.match(lpPage, /<meta property="og:image:width" content="1200">\s*\n<meta property="og:image:height" content="630">/);
+  assert.ok(existsSync(new URL("../public-lp/media/og-1200x630.jpg", import.meta.url)), "og-1200x630.jpg がある（public-lp/og/build_og.py で作る）");
+  assert.ok(existsSync(new URL("../public-lp/og/og-source.html", import.meta.url)), "元のHTMLがある");
+  // ★名指しのリストではなく meta から読み取って運ぶ。無ければ止める（fail-closed）
+  assert.match(buildPublic, /property="og:image" content="\[\^"\]\*\?\/media\/\(\[\^"\/\]\+\)"/);
+  assert.match(buildPublic, /raise SystemExit\(f"！og:image の画像がない/);
+});
+
 test("LPの題・説明・OGPは検索と共有向け（第1弾）", () => {
   assert.match(lpPage, /<title>舞台スケッチ｜立ち位置・動線を正面図と平面図で共有<\/title>/);
   assert.doesNotMatch(lpPage, /content="[^"]*PC用のアプリ/);  // 札（ブラウザ対応／Mac対応）と食い違う
   // ★SNSのカードは絶対URLでないと出ない
-  assert.match(lpPage, /<meta property="og:image" content="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/media\/hero-poster\.jpg">/);
+  assert.match(lpPage, /<meta property="og:image" content="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/media\/og-1200x630\.jpg">/);  // 第2弾で専用画像に
   assert.match(lpPage, /<meta property="og:url" content="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/">/);
   assert.match(lpPage, /<link rel="canonical" href="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/">/);
   assert.match(lpPage, /<meta name="twitter:card" content="summary_large_image">/);
-  assert.match(lpPage, /<meta property="og:image:width" content="1080">/);
+  assert.match(lpPage, /<meta property="og:image:width" content="1200">/);  // 第2弾で専用画像 1200×630 に
   // 英語の題はJSで差し替える（英語の description/OGP は静的ページかサーバー側の出し分けが要る＝未対応）
   assert.match(lpPage, /document\.title = "Stage Sketch \| Share positions and movement in a front view and a plan view";/);
 });
@@ -563,13 +589,16 @@ test("LPのいちばん上から「このアプリについて」へ飛べる", 
   // 本人指示 2026-09-05。冠と同じ行の右端に置き、下の帯へ飛ばす。
   assert.match(lpPage, /<a class="about-link" href="#about"><span data-ja>このアプリについて<\/span><span data-en>About this app<\/span><\/a>/);
   assert.match(lpPage, /<section class="story reveal" id="about">/);
-  /* ★帯の位置は本人指示で「もっと下」→「もっと上」と二度動いた。
-       最終形（2026-09-05）: hero の直後・「13の機能」の帯の前。
-       文面も同じタイミングで演者としての経歴を踏まえた長い版に差し替えている。 */
+  /* ★帯の位置は本人指示で三度動いた: 最下部 → hero直後（「上にしてください」）→
+       13の機能の後ろ（2026-09-05 夕・マーケ見直し第2弾 #4・本人承認「両方進めて」）。
+       Codexの見立て「初見は機能を先に確かめたい」に本人が同意。文章は削らない。
+       いまの順: hero → 証拠帯 → 13の機能 → このアプリについて → CTA */
   const heroEnd = lpPage.indexOf("</header>");
+  const proof = lpPage.indexOf('<section class="proof reveal">');
   const about = lpPage.indexOf('<section class="story reveal" id="about">');
   const tour = lpPage.indexOf('<section class="tour reveal">');
-  assert.ok(heroEnd < about && about < tour, "hero → このアプリについて → 13の機能 の順");
+  const cta = lpPage.indexOf('<section class="cta reveal">');
+  assert.ok(heroEnd < proof && proof < tour && tour < about && about < cta, "hero → 証拠帯 → 13の機能 → このアプリについて → CTA の順");
   assert.match(lpPage, /10年以上、幸運にもいくつもの素晴らしいショーに沢山演者として関わる/);
   assert.match(lpPage, /For more than ten years I have been fortunate to perform/);
   assert.match(lpPage, /#about\{ scroll-margin-top:var\(--space-4\); \}/);

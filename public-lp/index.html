@@ -18,10 +18,10 @@
 <meta property="og:title" content="舞台スケッチ — 立ち位置・動線を正面図と平面図で共有">
 <meta property="og:description" content="演出家・演者・制作チーム向け。舞台の立ち位置、動線、客席からの見え方を正面図と平面図で同時に描けるブラウザツール。">
 <meta property="og:url" content="https://stagesketch-try.juggler-arata.workers.dev/">
-<meta property="og:image" content="https://stagesketch-try.juggler-arata.workers.dev/media/hero-poster.jpg">
-<meta property="og:image:width" content="1080">
-<meta property="og:image:height" content="1080">
-<meta property="og:image:alt" content="舞台スケッチの画面。客席から見た正面図と、真上から見た平面図。">
+<meta property="og:image" content="https://stagesketch-try.juggler-arata.workers.dev/media/og-1200x630.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="舞台スケッチ — 舞台の立ち位置と動線を、客席からの正面図と真上の平面図で同時に描くツール。ブラウザ体験版・登録不要・ベータ期間中は無償。">
 <meta property="og:locale" content="ja_JP">
 <meta property="og:locale:alternate" content="en_GB">
 <meta name="twitter:card" content="summary_large_image">
@@ -215,6 +215,15 @@ p{ margin:0 0 var(--space-3); }
      以前は幅680pxの1列で、上下の広い帯（1320px）に挟まれて細く見えた（本人指摘）。
      行長は保つ（本文列は最大720px＝17pxで約42字。A_design §3: 30〜50字）。
    ★上に1pxの罫。ヒーローの動画とこの帯の切れ目を、余白だけでなく線でも示す。 */
+/* ============ 証拠帯（2026-09-05 第2弾・#3） ============
+   hero の直後・13の機能の前。4つの事実を1行に。帯の主役にしない（見出し無し・小さい字）。 */
+.proof{ padding:var(--space-4) 0; border-top:1px solid var(--line-dark); border-bottom:1px solid var(--line-dark); }
+.proof-list{ list-style:none; margin:0; padding:0; display:grid; gap:var(--space-4); grid-template-columns:repeat(2, minmax(0,1fr)); }
+@media (min-width:900px){ .proof-list{ grid-template-columns:repeat(4, minmax(0,1fr)); gap:var(--space-5); } }
+.proof-list li{ display:grid; gap:2px; font-family:var(--sans); }
+.proof-list b{ font-weight:600; font-size:14px; line-height:1.6; color:var(--paper); }
+.proof-list li > span{ font-size:var(--fs-small); line-height:1.7; color:var(--ink-soft-sm); }
+
 .story{ padding:var(--space-7) 0; border-top:1px solid var(--line-dark); }
 .story-grid{ display:grid; gap:var(--space-5); grid-template-columns:minmax(0,1fr); }
 @media (min-width:900px){
@@ -481,21 +490,21 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
   </div>
 </header>
 
-<section class="story reveal" id="about">
-  <div class="wrap story-grid">
-    <div class="story-aside">
-      <h2><span data-ja>このアプリについて</span><span data-en>About this app</span></h2>
-      <p class="story-more"><a href="beta.html"><span data-ja>製品版ベータについて詳しく →</span><span data-en>More about the full beta →</span></a></p>
-    </div>
-    <div class="story-body">
-    <p class="lead"><span data-ja>私は10年以上、幸運にもいくつもの素晴らしいショーに沢山演者として関わることをさせていただきました。一人の演者として、素晴らしいディレクターの意図をどれだけ把握して観客に届けることができるのかが常に私の戦いでした。このアプリは、そんな私がこれがあったらよかったのに、を盛り込んだアプリです。</span><span data-en>For more than ten years I have been fortunate to perform in one wonderful show after another. As a performer, my constant challenge was to grasp a great director's intention and carry it to the audience. This app brings together everything I wished I had had along the way.</span></p>
-    <p><span data-ja>芸術という抽象的なものにおいて、意思疎通を言葉だけで行うことは非常に難しいものです。ディレクターが見せたいものをアーティストが表現しようとするとき、その意図を理解することに時間を取られすぎることもありました。</span><span data-en>Art is abstract, and words alone are often not enough. When performers try to express what a director wants to show, too much time can go into working out what that vision is.</span></p>
-    <p><span data-ja>私は新しい劇場に入るたびに客席を歩き回り、それぞれの場所から自分がどのように見えるかをイメージします。俯瞰図では、人や物の位置と全体のバランスを第三者の目で捉えられます。正面図では、お客さんやディレクターから舞台がどう見えるかを考えられます。演者はこれらを常に頭の何処かで考え続けます。</span><span data-en>Whenever I enter a new theatre, I walk through the house and imagine how I will look from each seat. The plan view lets me step back and see where people and objects are placed, and how the whole stage balances. The front view shows what the audience, and the director, will actually see. A performer keeps both in mind, somewhere in the back of their head, all the time.</span></p>
-    <p><span data-ja>私はショーの世界が大好きです。だからこそ、準備不足のショーを見ると少しがっかりします。演者たちと事前に意図や配置を共有できればリハーサルの初期段階をより早く終え、その先の通し練習へ時間を使えます。そうしてショーを素晴らしいものとし、世界を少しだけ素晴らしいものにしてくれたら嬉しいです。</span><span data-en>I love the world of live shows, which is exactly why an underprepared one leaves me a little disappointed. If a director's intentions and everyone's positions are shared in advance, the early stages of rehearsal go faster, and more time is left for run-throughs. I hope this helps make shows better and, in a small way, the world too.</span></p>
-    </div>
+<!-- ============ 証拠帯（2026-09-05 第2弾・#3・本人承認） ============
+     作者の話（いまは13の機能の後ろ）へ行く前に、信頼の根拠を一行で。
+     ★実在会場名は入れない（本人指示 2026-09-05: 05にあった実在会場名の一文を「消してください」）。
+     ★提携・導入実績・利用者の声に見える表現は入れない。ページ内の他の場所で既に言っている事実だけ。
+     ★「体験版は3場面」は stage-public.js（project.scenes = [scene, second, third]）の実装どおり。 -->
+<section class="proof reveal">
+  <div class="wrap">
+    <ul class="proof-list">
+      <li><b><span data-ja>元サーカスアーティストが作っています</span><span data-en>Made by a former circus artist</span></b><span><span data-ja>出演歴10年以上。演者として欲しかったものを形にしました。</span><span data-en>More than ten years on stage. Built from what a performer wished for.</span></span></li>
+      <li><b><span data-ja>見本ショー「八人のサーカス」8場面で撮影</span><span data-en>Shot with the sample show, eight scenes</span></b><span><span data-ja>体験版は、そのうち3場面が入った状態で開きます。</span><span data-en>The preview opens with three of those scenes already in place.</span></span></li>
+      <li><b><span data-ja>ベータ期間中は無償</span><span data-en>Free during the beta</span></b><span><span data-ja>製品版はお問い合わせ制。正式版の提供形態は未定です。</span><span data-en>The full version is by request. How the finished version will be offered is not decided yet.</span></span></li>
+      <li><b><span data-ja>画面はすべて製品版βの実写</span><span data-en>Every screen is the real full beta</span></b><span><span data-ja>録画・撮影は 2026年9月4〜5日時点のものです。</span><span data-en>Recorded and captured on 4–5 September 2026.</span></span></li>
+    </ul>
   </div>
 </section>
-
 <!-- ============ 13の機能を、ひとつずつ（本人指示 2026-09-05／13番のiPhone追加で12→13に更新） ============
      画像は製品版（stage.html?sample・見本「八人のサーカス」）を Playwright で撮ったもの。
      数字（客席5・会場10＋自作・小道具や姿勢は本人指示で数を伏せている）は
@@ -625,6 +634,25 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
         </div>
       </li>
     </ol>
+  </div>
+</section>
+
+<!-- ============ 開発者の話（このアプリについて）============
+     位置の変遷: 最下部（2026-09-05 朝）→ hero直後（同日「上にしてください」）→ 13の機能の後ろ
+     （同日夕・マーケ見直し第2弾 #4・本人承認「両方進めて」）。Codexの見立て「初見は機能を先に確かめたい。
+     作者の4段落が『使えるか確かめたい』を中断する」に本人が同意した形。文章自体は削らない。 -->
+<section class="story reveal" id="about">
+  <div class="wrap story-grid">
+    <div class="story-aside">
+      <h2><span data-ja>このアプリについて</span><span data-en>About this app</span></h2>
+      <p class="story-more"><a href="beta.html"><span data-ja>製品版ベータについて詳しく →</span><span data-en>More about the full beta →</span></a></p>
+    </div>
+    <div class="story-body">
+    <p class="lead"><span data-ja>私は10年以上、幸運にもいくつもの素晴らしいショーに沢山演者として関わることをさせていただきました。一人の演者として、素晴らしいディレクターの意図をどれだけ把握して観客に届けることができるのかが常に私の戦いでした。このアプリは、そんな私がこれがあったらよかったのに、を盛り込んだアプリです。</span><span data-en>For more than ten years I have been fortunate to perform in one wonderful show after another. As a performer, my constant challenge was to grasp a great director's intention and carry it to the audience. This app brings together everything I wished I had had along the way.</span></p>
+    <p><span data-ja>芸術という抽象的なものにおいて、意思疎通を言葉だけで行うことは非常に難しいものです。ディレクターが見せたいものをアーティストが表現しようとするとき、その意図を理解することに時間を取られすぎることもありました。</span><span data-en>Art is abstract, and words alone are often not enough. When performers try to express what a director wants to show, too much time can go into working out what that vision is.</span></p>
+    <p><span data-ja>私は新しい劇場に入るたびに客席を歩き回り、それぞれの場所から自分がどのように見えるかをイメージします。俯瞰図では、人や物の位置と全体のバランスを第三者の目で捉えられます。正面図では、お客さんやディレクターから舞台がどう見えるかを考えられます。演者はこれらを常に頭の何処かで考え続けます。</span><span data-en>Whenever I enter a new theatre, I walk through the house and imagine how I will look from each seat. The plan view lets me step back and see where people and objects are placed, and how the whole stage balances. The front view shows what the audience, and the director, will actually see. A performer keeps both in mind, somewhere in the back of their head, all the time.</span></p>
+    <p><span data-ja>私はショーの世界が大好きです。だからこそ、準備不足のショーを見ると少しがっかりします。演者たちと事前に意図や配置を共有できればリハーサルの初期段階をより早く終え、その先の通し練習へ時間を使えます。そうしてショーを素晴らしいものとし、世界を少しだけ素晴らしいものにしてくれたら嬉しいです。</span><span data-en>I love the world of live shows, which is exactly why an underprepared one leaves me a little disappointed. If a director's intentions and everyone's positions are shared in advance, the early stages of rehearsal go faster, and more time is left for run-throughs. I hope this helps make shows better and, in a small way, the world too.</span></p>
+    </div>
   </div>
 </section>
 
