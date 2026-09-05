@@ -544,7 +544,11 @@ test("LPの下部で13の機能を、画像つきで一つずつ紹介する", (
   assert.ok(limits < lpPage.indexOf("</header>"), "注意点はヒーローの中");
   const cta = lpPage.indexOf('<section class="cta reveal">');
   assert.ok(tour > limits && tour < cta, "注意点（上）→ 13の機能 → CTA の順");
-  assert.match(lpPage, /<h2><span data-ja>12の機能を、ひとつずつ。<\/span><span data-en>Twelve things it does, one at a time\.<\/span><\/h2>/);
+  // 見出しの数は li の実数と一致させる（13番のiPhoneを足したあと「12」のままだった。本人指摘 2026-09-05）
+  const items = (lpPage.match(/<li class="tour-item/g) || []).length;
+  assert.equal(items, 13, "tour-item は13個");
+  assert.match(lpPage, /<h2><span data-ja>13の機能を、ひとつずつ。<\/span><span data-en>Thirteen things it does, one at a time\.<\/span><\/h2>/);
+  assert.doesNotMatch(lpPage, /12の機能を、ひとつずつ。|Twelve things it does/);
   const items = lpPage.match(/<li class="tour-item[^"]*">/g) || [];
   assert.equal(items.length, 13, "13項目（13はスマホ表示。本人指示 2026-09-05）");
   assert.match(lpPage, /<h3><span data-ja>iPhoneで、稽古の前に覚えておく。<\/span>/);
