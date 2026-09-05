@@ -561,11 +561,23 @@ test("LPの下部で13の機能を、画像つきで一つずつ紹介する", (
   /* ★小さい画像も width:auto にしない。読み込む前の高さが0になり、そのぶん下がずれる（実測146px）。 */
   assert.doesNotMatch(lpPage, /\.tour-item-small \.tour-figure img\{ width:auto/);
   /* ★数字は画面のDOMから数えた実測値（2026-09-05）。冊子の「姿勢30種類」は古いので使わない。 */
-  assert.match(lpPage, /演者の姿勢、46種。/);
   assert.match(lpPage, /小道具と器具、25種。/);
   assert.doesNotMatch(lpPage, /30種類/);
+  /* ★姿勢の数（46種）は本人指示で外した（2026-09-05）。すぐ増える見込みで、
+       公開のたびに数字を追いかけたくないため。小道具・器具（07）は対象外——
+       本人が名指ししたのは姿勢（08）だけ。 */
+  assert.match(lpPage, /<h3><span data-ja>演者の姿勢、いろいろ。<\/span><span data-en>A wide range of poses\.<\/span><\/h3>/);
+  assert.doesNotMatch(lpPage, /演者の姿勢、\d+種/);
   // 用語: 立ち稽古ではなく「場当たり」
   assert.match(lpPage, /立ち位置は、場当たりの前に。/);
+});
+
+test("13の機能の画像は列いっぱいに広げず、縦横とも66%くらいに収める", () => {
+  // 本人指示 2026-09-05。★「選んだもの」の小さい画像（item 12）は元から実寸なので対象外。
+  assert.match(lpPage, /\.tour-item:not\(\.tour-item-small\) \.tour-figure\{ width:66%; justify-self:center; \}/);
+  // 900px以上では列の外側（奇数回=左／偶数回=右）へ寄せ、文字との間に余白を作る
+  assert.match(lpPage, /\.tour-item:not\(\.tour-item-small\) \.tour-figure\{ justify-self:start; \}/);
+  assert.match(lpPage, /\.tour-item:nth-child\(even\):not\(\.tour-item-small\) \.tour-figure\{ justify-self:end; \}/);
 });
 
 test("LPの出現アニメーションは、JSが動かなくても中身が見える形にする", () => {

@@ -204,6 +204,14 @@ p{ margin:0 0 var(--space-3); }
 .tour-list{ list-style:none; margin:0; padding:0; display:grid; gap:var(--space-7); }
 @media (min-width:900px){ .tour-list{ gap:120px; } }
 .tour-item{ display:grid; gap:var(--space-4); align-items:center; grid-template-columns:minmax(0,1fr); }
+/* 画像は縦横とも66%くらいのサイズに収める（本人指示 2026-09-05）。width を絞れば、
+   img は height:auto なので縦も同じ比率で縮む。
+   ★「選んだもの」の小さい画像（item 12）は元から実寸で置いているので対象外。
+   ★900px未満（1列）でも同じ比率にする。justify-self:center で中央に置く。
+   ★この規則は下の @media より前に置くこと。同じ詳細度どうしはソース順で決まるので、
+     後ろにあると @media の start/end を centerで上書きしてしまう
+     （2026-09-05 実測: 900px以上でも全行centerになっていた）。 */
+.tour-item:not(.tour-item-small) .tour-figure{ width:66%; justify-self:center; }
 @media (min-width:900px){
   /* ★画像を大きく（本人指示 2026-09-05）。7fr:5fr → 8fr:4fr。
      画像はどれも実際の画面なので、小さいと文字が読めない。 */
@@ -213,6 +221,10 @@ p{ margin:0 0 var(--space-3); }
   .tour-item:nth-child(even){ grid-template-columns:minmax(0,4fr) minmax(0,8fr); }
   .tour-item:nth-child(even) .tour-figure{ order:2; }
   .tour-item:nth-child(even) .tour-copy{ order:1; }
+  /* 列いっぱいには広げない。列の中で外側（奇数回=左／偶数回=右）へ寄せ、
+     文字との間に余白を作る（本人指示 2026-09-05）。 */
+  .tour-item:not(.tour-item-small) .tour-figure{ justify-self:start; }
+  .tour-item:nth-child(even):not(.tour-item-small) .tour-figure{ justify-self:end; }
 }
 .tour-figure{
   margin:0; border:1px solid var(--line-dark); border-radius:var(--radius-m);
@@ -428,7 +440,7 @@ footer a{ color:var(--rust-ink); }
         <figure class="tour-figure"><img src="media/features/08-poses.jpg" width="970" height="838" alt="立つ・歩く・逆立ち・バク転などの姿勢の一覧" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">08</p>
-          <h3><span data-ja>演者の姿勢、46種。</span><span data-en>Forty-six poses.</span></h3>
+          <h3><span data-ja>演者の姿勢、いろいろ。</span><span data-en>A wide range of poses.</span></h3>
           <p><span data-ja>姿勢や方向を変えることはもちろん、様々な状況を用意しています。</span><span data-en>Change the pose and the facing, of course — and find a stance ready for whatever the moment needs.</span></p>
         </div>
       </li>
