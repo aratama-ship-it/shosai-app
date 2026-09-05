@@ -408,8 +408,8 @@ test("LPは承認済みの文言を使い、詩的な見出しを足さない", 
      Mac用スタンドアローン版の実体はPWA: stage-sketch.webmanifest が display:standalone、
      stage-pwa.js が Service Worker を登録する（キャッシュ生成を実測で確認）。
      ★Electron/Tauri/.dmg が無いことだけを見て「無い」と判断しない。 */
-  assert.match(lpPage, /<span data-ja>ブラウザ対応<\/span><span data-en>Works in the browser<\/span>/);
-  assert.match(lpPage, /<span data-ja>Mac用スタンドアローン対応<\/span><span data-en>Mac standalone support<\/span>/);
+  assert.match(lpPage, /<span data-ja>ブラウザ対応<\/span><span data-en>Runs in the browser<\/span>/);
+  assert.match(lpPage, /<span data-ja>Mac用スタンドアローン対応<\/span><span data-en>Standalone Mac app<\/span>/);
   assert.doesNotMatch(lpPage, /準備中|in preparation/);
   assert.equal(stageManifest.display, "standalone", "スタンドアローンで開く指定がある");
   assert.ok((stageManifest.icons || []).length >= 3, "アイコンがある");
@@ -473,7 +473,7 @@ test("LPのいちばん上から「このアプリについて」へ飛べる", 
   const tour = lpPage.indexOf('<section class="tour reveal">');
   assert.ok(heroEnd < about && about < tour, "hero → このアプリについて → 13の機能 の順");
   assert.match(lpPage, /10年以上、幸運にもいくつもの素晴らしいショーに沢山演者として関わる/);
-  assert.match(lpPage, /For more than ten years, I've had the good fortune to perform/);
+  assert.match(lpPage, /For more than ten years I have been fortunate to perform/);
   assert.match(lpPage, /#about\{ scroll-margin-top:var\(--space-4\); \}/);
   // 動きは環境の設定に従う
   assert.match(lpPage, /@media \(prefers-reduced-motion: reduce\)\{ html\{ scroll-behavior:auto; \} \}/);
@@ -522,7 +522,7 @@ test("LPの名前の下に「誰が、何に使うか」を置く", () => {
      英語は blocking。 */
   assert.match(lpPage, /立ち位置は、場当たりの前に。稽古場の時間を、もっと繊細なところへ使えます。/);
   assert.doesNotMatch(lpPage, /立ち稽古/);
-  assert.match(lpPage, /Blocking, before the room\. Rehearsal time goes to the finer work\./);
+  assert.match(lpPage, /Positions settled before the blocking rehearsal\. Rehearsal time goes to the finer work\./);
   /* ★動画の右へ移したので常に縦積み（本人指示 2026-09-05）。横に二列だと右の欄では狭すぎる。 */
   assert.match(lpPage, /<div class="hero-uses">\s*\n\s*<dl class="uses-list">/);
   assert.doesNotMatch(lpPage, /\.uses-list\{ grid-template-columns:repeat\(2/);
@@ -547,13 +547,13 @@ test("LPの下部で13の機能を、画像つきで一つずつ紹介する", (
   // 見出しの数は li の実数と一致させる（13番のiPhoneを足したあと「12」のままだった。本人指摘 2026-09-05）
   const itemCount = (lpPage.match(/<li class="tour-item/g) || []).length;
   assert.equal(itemCount, 13, "tour-item は13個");
-  assert.match(lpPage, /<h2><span data-ja>13の機能を、ひとつずつ。<\/span><span data-en>Thirteen things it does, one at a time\.<\/span><\/h2>/);
+  assert.match(lpPage, /<h2><span data-ja>13の機能を、ひとつずつ。<\/span><span data-en>Thirteen features, one by one\.<\/span><\/h2>/);
   assert.doesNotMatch(lpPage, /12の機能を、ひとつずつ。|Twelve things it does/);
   const items = lpPage.match(/<li class="tour-item[^"]*">/g) || [];
   assert.equal(items.length, 13, "13項目（13はスマホ表示。本人指示 2026-09-05）");
   assert.match(lpPage, /<h3><span data-ja>iPhoneで、稽古の前に覚えておく。<\/span>/);
   // 09 の見出しは「照明を作る。」（本人指示 2026-09-05）
-  assert.match(lpPage, /<h3><span data-ja>簡易的な照明をつくる。<\/span><span data-en>Rough out the lighting\.<\/span><\/h3>/);
+  assert.match(lpPage, /<h3><span data-ja>簡易的な照明をつくる。<\/span><span data-en>Add basic lighting\.<\/span><\/h3>/);
   // 画像は features/ 配下。全部が存在し、配信スクリプトが運ぶ
   // ★CTA帯（案B「二つの入口」）も同じ media/features/ を使うので、この節では
   //   tour〜cta間だけを見る（CTAの画像数は別テストで数える）。
@@ -598,7 +598,7 @@ test("Mac用スタンドアローンの入れ方を書く（体験版ではな�
      ★CTAを二つの入口に組み直した際（同日）、文面はそのまま製品版側の列（.cta-dock）へ移した。 */
   assert.match(lpPage, /Macでは Safari の「ファイル」→「Dockに追加…」/);
   assert.match(lpPage, /macOS Sonoma以降/);
-  assert.match(lpPage, /On a Mac, Safari's File → Add to Dock/);
+  assert.match(lpPage, /On a Mac, choose File → Add to Dock… in Safari/);
   assert.doesNotMatch(lpPage, /体験版を[^。]*Dockに追加/);
   // 版の札（ブラウザ対応／Mac用スタンドアローン対応）と食い違わせない
   assert.match(lpPage, /Mac用スタンドアローン対応/);
@@ -649,7 +649,7 @@ test("LPのCTAは、体験版と製品版を実画面で対比する二つの入
   /* 本人指示 2026-09-05「この項目をもう少し画像を含めて大きくして期待感を大きくしてください」。
      Codexとブレスト（判断用ページ: docs/stage-sketch/2026-09-05_cta-proposals/）した3案から
      「二つの入口」案を採用。角丸カードにはしない（罫線と余白だけで分ける。汎用SaaS風を避ける）。 */
-  assert.match(lpPage, /<h2 class="cta-heading"><span data-ja>まず触る。もっと使う。<\/span><span data-en>Try it first\. Go further\.<\/span><\/h2>/);
+  assert.match(lpPage, /<h2 class="cta-heading"><span data-ja>まず触る。もっと使う。<\/span><span data-en>Try the preview\. Use every feature\.<\/span><\/h2>/);
   const ctaCols = (lpPage.match(/<div class="cta-col">/g) || []).length;
   assert.equal(ctaCols, 2, "体験版・製品版の2列");
   assert.match(lpPage, /\.cta-col \+ \.cta-col\{ border-left:1px solid var\(--line-dark\); \}/);
@@ -706,6 +706,10 @@ test("LPに体験版の埋め込みデモを置かない", () => {
 });
 
 test("LPは日英を持ち、承認済みの英語確定稿の文言を使う", () => {
+  /* ★2026-09-05 英語を全面校閲（Codex gpt-5.6-sol の指摘を Claude が採否判断）。
+     用語は製品UI（stage-i18n.js: Front view / Plan view / Transition）と beta.html（full beta）に揃え、
+     綴りはブリティッシュ。一行コピー（本人選択）と下の注意点（確定稿）は変えていない。
+     差分と根拠: docs/stage-sketch/2026-09-05_lp-marketing-review/ */
   // 2026-09-04: 英語版。?lang=en / 端末の言語で切り替える（紹介ページと同じ考え方）
   assert.match(lpPage, /\[lang="en"\] \[data-ja\], \[lang="ja"\] \[data-en\]\{ display:none; \}/);
   assert.doesNotMatch(lpPage, /Formats are defined by where the audience sits/);
