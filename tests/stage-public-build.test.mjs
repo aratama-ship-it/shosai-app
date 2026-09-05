@@ -408,8 +408,8 @@ test("LPは承認済みの文言を使い、詩的な見出しを足さない", 
      Mac用スタンドアローン版の実体はPWA: stage-sketch.webmanifest が display:standalone、
      stage-pwa.js が Service Worker を登録する（キャッシュ生成を実測で確認）。
      ★Electron/Tauri/.dmg が無いことだけを見て「無い」と判断しない。 */
-  assert.match(lpPage, /<span data-ja>ブラウザ版<\/span><span data-en>Browser<\/span>/);
-  assert.match(lpPage, /<span data-ja>Mac用スタンドアローン版<\/span><span data-en>Mac standalone app<\/span>/);
+  assert.match(lpPage, /<span data-ja>ブラウザ対応<\/span><span data-en>Works in the browser<\/span>/);
+  assert.match(lpPage, /<span data-ja>Mac用スタンドアローン対応<\/span><span data-en>Mac standalone support<\/span>/);
   assert.doesNotMatch(lpPage, /準備中|in preparation/);
   assert.equal(stageManifest.display, "standalone", "スタンドアローンで開く指定がある");
   assert.ok((stageManifest.icons || []).length >= 3, "アイコンがある");
