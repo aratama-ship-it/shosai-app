@@ -135,7 +135,7 @@ test("公開版は「体験版」であることを明示し、「β版」とは
   assert.doesNotMatch(publicJs, /stage-public-note/);
 });
 
-test("姿勢は5つだけ開ける（本体は41種）", () => {
+test("姿勢は5つだけ開ける（本体は46種）", () => {
   assert.match(publicJs, /const PUBLIC_POSES = new Set\(\["stand", "walk", "kneel", "seiza", "lie"\]\);/);
   // 姿勢の帯は演者を選ぶたび作り直されるので、掛け直しを見張る
   assert.match(publicJs, /function watchPoseStrip\(\)/);
@@ -237,6 +237,38 @@ test("紹介ページはβ期間中が無償であることを書き、正式版
   // mailto に表示名を埋め込まない（対応しないメールソフトがある）
   assert.doesNotMatch(betaPage, /mailto:[^"]*%3C/);
   assert.doesNotMatch(betaPage, /★ここに連絡先を入れてください/);
+});
+
+test("紹介ページは送信前後の流れを3行で示し、戻り先のラベルを正しく言う（第2弾・#7）", () => {
+  /* 本人承認 2026-09-05「次の1手1をしましょう」＝第2弾の7・8・10・11をまとめて実装。
+     Codex指摘: href="./" は beta.html から見て LP（紹介ページ）に戻る。体験版（try.html）ではない。
+     「返信の目安」は日数を約束しない（できない約束をしない）。 */
+  assert.match(betaPage, /送信する内容: /);
+  assert.match(betaPage, /送信後の流れ: /);
+  assert.match(betaPage, /返信の目安: /);
+  assert.match(betaPage, /What to send: /);
+  assert.match(betaPage, /What happens next: /);
+  assert.match(betaPage, /Reply time: /);
+  assert.match(betaPage, /<a class="back" href="\.\/">← 紹介ページへ戻る<\/a>/);
+  assert.match(betaPage, /<a class="back" href="\.\/">← Back to the introduction page<\/a>/);
+  assert.doesNotMatch(betaPage, /<a class="back"[^>]*>[^<]*(体験版へ戻る|Back to the preview)/);
+});
+
+test("紹介ページの姿勢の数は本体の実装と一致させる（第2弾・#11）", async () => {
+  /* ★「41種」は古い数字だった。stage-sketch.js の POSES 配列を実測すると46種（2026-09-05）。
+     LP側（08の機能紹介）は本人指示で数を伏せたまま——すぐ増える見込みで、公開のたびに
+     数字を追いかけたくないため（既存方針）。紹介ページの比較表は「体験版との違い」を示す
+     目的があるので数字を残し、古い値を実測値に更新した。 */
+  const stageSource = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
+  const posesBlock = stageSource.slice(
+    stageSource.indexOf("const POSES = ["),
+    stageSource.indexOf("\n  ];", stageSource.indexOf("const POSES = [")),
+  );
+  const poseCount = (posesBlock.match(/makePose\(/g) || []).length;
+  assert.equal(poseCount, 46, "stage-sketch.js の POSES は46件（この数が変わったら紹介ページも直す）");
+  assert.match(betaPage, /<td>姿勢を選ぶ<\/td><td class="no">5種<\/td><td>46種<\/td>/);
+  assert.match(betaPage, /<td>Choose a pose<\/td><td class="no">5<\/td><td>46<\/td>/);
+  assert.doesNotMatch(betaPage, />41種<|>41</);
 });
 
 test("スマホの体験版では姿勢の帯を正面図の上端に出す（床の演者を隠さない）", () => {
@@ -441,15 +473,28 @@ test("LPの最下部に連絡先として名前を出す", () => {
 
 test("LPのいちばん上に体験版とライセンスへのリンクを置く", () => {
   // 本人指示 2026-09-05
-  assert.match(lpPage, /<a class="about-link" href="\/try\.html"><span data-ja>体験版はコチラ<\/span><span data-en>Try the preview<\/span><\/a>/);
-  /* ★ライセンス（利用条件・料金）のページはまだ無い。本人の選択で、
-       製品版ベータの問い合わせページ（beta.html）へ送る（2026-09-05）。
-     ★同日の第1弾で文言を「ライセンスはコチラ」→「製品版ベータについて」に。
-       いまは無償β・提供形態未定なので「ライセンス」は実態と合わない（Codex指摘・本人承認）。 */
+  /* ★同日の第1弾で文言を「ライセンスはコチラ」→「製品版ベータについて」に。
+       いまは無償β・提供形態未定なので「ライセンス」は実態と合わない（Codex指摘・本人承認）。
+     ★第2弾（#10）で「体験版はコチラ」を上部から外した。第1弾で名前の直下に大きな
+       「体験版を使ってみる」ボタンを置いたため、上部の小さいリンクは同じ行き先の重複になる。 */
   assert.match(lpPage, /<a class="about-link" href="beta\.html"><span data-ja>製品版ベータについて<\/span><span data-en>About the full beta<\/span><\/a>/);
   assert.doesNotMatch(lpPage, /<span data-ja>ライセンスはコチラ<\/span>|<span data-en>Licensing<\/span>/);
+  assert.doesNotMatch(lpPage, /<div class="masthead-links">\s*<a class="about-link" href="\/try\.html">/);
   // 言語を引き継ぐ仕組み（withLang）が .html リンクを自動で拾う
   assert.match(lpPage, /a\[href\$="\.html"\], a\[href\^="\/try"\]/);
+});
+
+test("13項目の折り返し地点に、小さな二入口を一度だけ置く（第2弾・#8）", () => {
+  // 本人承認 2026-09-05「次の1手1をしましょう」。末尾まで読まない人を拾う。派手にしない。
+  const midlinks = (lpPage.match(/<li class="tour-midlink">/g) || []).length;
+  assert.equal(midlinks, 1, "二入口は1箇所だけ（帯の主役にしない）");
+  const seven = lpPage.indexOf('<p class="tour-no">07</p>');
+  const mid = lpPage.indexOf('<li class="tour-midlink">');
+  const eight = lpPage.indexOf('<p class="tour-no">08</p>');
+  assert.ok(seven < mid && mid < eight, "07と08のあいだ（13項目のほぼ折り返し地点）");
+  // 末尾CTAと同じ行き先・同じ文言（別の言い回しを増やさない）
+  assert.match(lpPage, /<li class="tour-midlink">\s*<a href="\/try\.html"><span data-ja>体験版を使ってみる<\/span>/);
+  assert.match(lpPage, /<a href="beta\.html"><span data-ja>製品版ベータを使ってみたい<\/span><span data-en>Request access to the full beta<\/span><\/a>\s*\n\s*<\/li>/);
 });
 
 test("LPの最初の画面に「何のツールか」の一文と二つの入口を置く（マーケ見直し・第1弾）", () => {

@@ -247,6 +247,15 @@ p{ margin:0 0 var(--space-3); }
 /* ★機能どうしの間はしっかり空ける（本人指示 2026-09-05）。
    詰めると、どこまでが一つの機能の話か分からなくなる。 */
 .tour-list{ list-style:none; margin:0; padding:0; display:grid; gap:var(--space-7); }
+/* 折り返し地点の小さな二入口（2026-09-05 第2弾・#8）。帯の主役にしない。 */
+.tour-midlink{
+  text-align:center; font-family:var(--sans); font-size:var(--fs-small);
+  border-top:1px solid var(--line-dark); border-bottom:1px solid var(--line-dark);
+  padding:var(--space-4) 0; margin:calc(var(--space-7) * -1 + var(--space-5)) 0;
+}
+.tour-midlink a{ color:var(--rust-ink); text-decoration:none; display:inline-block; padding-block:12px; }
+.tour-midlink a:hover, .tour-midlink a:focus-visible{ color:var(--paper); }
+.tour-midlink span[aria-hidden]{ color:var(--ink-soft-sm); margin:0 var(--space-2); }
 @media (min-width:900px){ .tour-list{ gap:120px; } }
 .tour-item{ display:grid; gap:var(--space-4); align-items:center; grid-template-columns:minmax(0,1fr); }
 /* 画像は縦横とも66%くらいのサイズに収める（本人指示 2026-09-05）。width を絞れば、
@@ -407,9 +416,9 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
     <div class="masthead-top">
       <p class="eyebrow">STAGE IMAGE STUDY</p>
       <div class="masthead-links">
-        <a class="about-link" href="/try.html"><span data-ja>体験版はコチラ</span><span data-en>Try the preview</span></a>
-        <!-- 「ライセンスはコチラ」→「製品版ベータについて」（2026-09-05 第1弾）。
-             いまは無償β・提供形態未定（beta.html）なので「ライセンス」は実態と合わない。 -->
+        <!-- 「体験版はコチラ」は上部から外す（2026-09-05 第2弾・#10）。
+             ★第1弾で名前の直下に大きな「体験版を使ってみる」ボタンを置いたため、
+               ここに小さく重ねると同じ行き先の重複リンクになる。上部は補助的な行き先だけにする。 -->
         <a class="about-link" href="beta.html"><span data-ja>製品版ベータについて</span><span data-en>About the full beta</span></a>
         <a class="about-link" href="#about"><span data-ja>このアプリについて</span><span data-en>About this app</span></a>
         <span class="lang-pick">
@@ -552,6 +561,13 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
           <h3><span data-ja>小道具と器具をそろえる。</span><span data-en>Props and apparatus, ready to place.</span></h3>
           <p><span data-ja>台・テーブル・椅子・壁から、トラピーズ、シルホイール、エアリアルティシュー、チャイニーズポール、綱渡り、トランポリンまで。手に持つ小道具は、傘・クラブ・ボール・リング・刀など。</span><span data-en>From platforms, tables, chairs and walls to trapeze, Cyr wheel, aerial silk, Chinese pole, tightwire and trampoline. Hand props include umbrellas, clubs, balls, rings and swords.</span></p>
         </div>
+      </li>
+      <!-- 13項目の折り返し地点にだけ、小さく二つの入口を置く（2026-09-05 第2弾・#8）。
+           ★末尾まで読まない人を拾う。派手にせず1行のリンクだけ。末尾CTAと同じ行き先・同じ文言。 -->
+      <li class="tour-midlink">
+        <a href="/try.html"><span data-ja>体験版を使ってみる</span><span data-en>Try the preview</span></a>
+        <span aria-hidden="true">/</span>
+        <a href="beta.html"><span data-ja>製品版ベータを使ってみたい</span><span data-en>Request access to the full beta</span></a>
       </li>
       <li class="tour-item">
         <figure class="tour-figure"><img src="media/features/08-poses.jpg" width="970" height="838" alt="立つ・歩く・逆立ち・バク転などの姿勢の一覧" loading="lazy" decoding="async"></figure>
