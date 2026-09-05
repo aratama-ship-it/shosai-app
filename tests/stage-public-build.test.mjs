@@ -572,16 +572,28 @@ test("LPの下部で13の機能を、画像つきで一つずつ紹介する", (
   assert.match(lpPage, /@media \(min-width:900px\)\{ \.tour-list\{ gap:120px; \} \}/);
   /* ★小さい画像も width:auto にしない。読み込む前の高さが0になり、そのぶん下がずれる（実測146px）。 */
   assert.doesNotMatch(lpPage, /\.tour-item-small \.tour-figure img\{ width:auto/);
-  /* ★数字は画面のDOMから数えた実測値（2026-09-05）。冊子の「姿勢30種類」は古いので使わない。 */
-  assert.match(lpPage, /小道具と器具、25種。/);
   assert.doesNotMatch(lpPage, /30種類/);
-  /* ★姿勢の数（46種）は本人指示で外した（2026-09-05）。すぐ増える見込みで、
-       公開のたびに数字を追いかけたくないため。小道具・器具（07）は対象外——
-       本人が名指ししたのは姿勢（08）だけ。 */
+  /* ★中身の数（姿勢46種・小道具と器具25種・手持ち11の形）は本人指示で全部外した
+       （08は2026-09-05、07も同日に追加指示）。すぐ増える見込みで、公開のたびに数字を
+       追いかけたくないため。数を足すときは本人に確認する。 */
+  assert.match(lpPage, /<h3><span data-ja>小道具と器具をそろえる。<\/span>/);
+  assert.doesNotMatch(lpPage, /25種|Twenty-five|eleven shapes|11の形/);
   assert.match(lpPage, /<h3><span data-ja>演者の姿勢、いろいろ。<\/span><span data-en>A wide range of poses\.<\/span><\/h3>/);
   assert.doesNotMatch(lpPage, /演者の姿勢、\d+種/);
   // 用語: 立ち稽古ではなく「場当たり」
   assert.match(lpPage, /立ち位置は、場当たりの前に。/);
+});
+
+test("Mac用スタンドアローンの入れ方を書く（体験版ではなく製品版が対象）", () => {
+  /* 本人指示 2026-09-05。実体はPWAで、manifest の start_url は ./stage.html＝製品版。
+     体験版（public-dist）には manifest も stage-pwa.js も入れていないので、
+     「体験版をDockに追加」と書くと嘘になる。 */
+  assert.match(lpPage, /製品版を Safari で開き、メニューバーの「ファイル」→「Dockに追加…」/);
+  assert.match(lpPage, /macOS Sonoma以降/);
+  assert.match(lpPage, /open the full version in Safari and choose File → Add to Dock/);
+  assert.doesNotMatch(lpPage, /体験版を[^。]*Dockに追加/);
+  // 版の札（ブラウザ対応／Mac用スタンドアローン対応）と食い違わせない
+  assert.match(lpPage, /Mac用スタンドアローン対応/);
 });
 
 test("13番はiPhoneのフレームで見せる", () => {

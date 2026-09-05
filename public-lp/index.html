@@ -465,8 +465,8 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
         <figure class="tour-figure"><img src="media/features/07-kinds.jpg" width="970" height="776" alt="台・テーブル・トラピーズ・シルホイールなど種類の一覧" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">07</p>
-          <h3><span data-ja>小道具と器具、25種。</span><span data-en>Twenty-five kinds of set and apparatus.</span></h3>
-          <p><span data-ja>台・テーブル・椅子・壁から、トラピーズ、シルホイール、エアリアルティシュー、チャイニーズポール、綱渡り、トランポリンまで。手に持つ小道具は、傘・クラブ・ボール・リング・刀など11の形。</span><span data-en>From platforms, tables and walls to trapeze, Cyr wheel, aerial silk, Chinese pole, tightwire and trampoline. Hand props come in eleven shapes: umbrella, club, ball, ring, sword and more.</span></p>
+          <h3><span data-ja>小道具と器具をそろえる。</span><span data-en>Set pieces and apparatus, ready to place.</span></h3>
+          <p><span data-ja>台・テーブル・椅子・壁から、トラピーズ、シルホイール、エアリアルティシュー、チャイニーズポール、綱渡り、トランポリンまで。手に持つ小道具は、傘・クラブ・ボール・リング・刀など。</span><span data-en>From platforms, tables and walls to trapeze, Cyr wheel, aerial silk, Chinese pole, tightwire and trampoline. Hand props include umbrella, club, ball, ring and sword.</span></p>
         </div>
       </li>
       <li class="tour-item">
@@ -535,6 +535,10 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
     <p><a class="btn btn-main" href="/try.html"><span data-ja>体験する</span><span data-en>Open the preview</span></a></p>
     <p class="cta-note small"><span data-ja>体験版はスマホでも開けますが、操作が限られます。PCでのご利用をお勧めします。</span><span data-en>The preview opens on phones too, but it is limited there. We recommend using a computer.</span></p>
     <p style="margin-top:var(--space-5)"><a class="btn btn-sub" href="beta.html"><span data-ja>製品版ベータを使ってみたい</span><span data-en>Ask about the full beta</span></a></p>
+    <!-- Mac用スタンドアローンの入れ方（本人指示 2026-09-05）。
+         ★実体はPWA。manifest の start_url は ./stage.html ＝製品版なので、体験版からは入れられない。
+           「ファイル」→「Dockに追加…」は macOS Sonoma で入った Safari の機能（Apple の紹介記事で確認）。 -->
+    <p class="cta-note small"><span data-ja>Macでアプリのように使うときは、製品版を Safari で開き、メニューバーの「ファイル」→「Dockに追加…」を選びます。Dockのアイコンから、独立したウィンドウで開きます（macOS Sonoma以降）。</span><span data-en>To use it like an app on a Mac, open the full version in Safari and choose File → Add to Dock. It then opens in its own window from the Dock (macOS Sonoma or later).</span></p>
   </div>
 </section>
 
