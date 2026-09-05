@@ -10,7 +10,19 @@
  * 訳語の方針: サーカス／劇場の現場で通じる語を採る。
  *   吊物=flown、転がし=floor light（footlightは前端の列だけを指すので使わない）、
  *   SS=side light、前明かり=front light、
- *   間口=proscenium width、袖=wing、ツラ=downstage edge。
+ *   間口=proscenium width、袖=wing、袖幕=leg、ツラ=downstage edge。
+ *
+ * 英語の書式（2026-09-05・LP／紹介ページと同じ方針にそろえた。tests/stage-i18n.test.mjs が検査）:
+ *   綴りはブリティッシュ（theatre / colour / centre / realise。上演のプログラムは programme）。
+ *   アポストロフィは直線の '（カーリーの ’ は使わない）。
+ *   em ダッシュは前後に空白を入れる（… — …）。★日本語の —— は日本語の組版なのでそのまま。
+ *   パネルの見出しは sentence case（Cast & set / Stage machinery / AI instructions）。
+ *   同じ英語を別の意味に使わない（線の太さ=Thickness と 劇場の間口=Width を分ける）。
+ *
+ * ★Aboutモーダルの英語は「承認済み英語原稿」と完全一致させる決まり
+ *   （docs/stage-sketch/2026-08-03_舞台スケッチ_このアプリについて_英語版.md、
+ *   tests/stage-about.test.mjs が守る）。上の書式より原稿が優先で、直すなら原稿と両方。
+ *   一括置換をかけるときは、この原稿に載っている文言を除外すること。
  */
 (function () {
   "use strict";
