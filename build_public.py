@@ -131,6 +131,150 @@ print("足りない id はありません")
 import shutil
 
 DIST = HERE / "public-dist"
+SITE = "https://stagesketch-try.juggler-arata.workers.dev"
+
+
+# --- 英語版LP（/en/index.html）を作る ------------------------------------
+# ★なぜ別URLなのか（2026-09-05）:
+#   SNSのクローラー（Twitterbot / facebookexternalhit / Slackbot）とGoogleは
+#   JSを実行しない。LPは本文の日英を data-ja / data-en とJSで切り替えているが、
+#   <title> と description / og:* をJSで書き換えても、共有カードにも検索結果にも
+#   届かない（英語で読んでいても日本語のカードが出る）。
+#   Accept-Language を見るサーバー側の出し分けも、クローラーがそのヘッダーを
+#   送らないので効かない。だから「言語ごとに別URL＋hreflang」にする。
+#
+# ★HTMLは二重に持たない。日本語版（public-lp/index.html）が唯一の正本で、
+#   ここは meta だけを差し替えて生成する。英語の文言を直すときは下の EN_META を直す。
+#
+# ★英語は commit 71db200（英語の全面校閲）の用語に揃える:
+#   立ち位置=positions／動線=movement／正面図=front view／平面図=plan view／
+#   客席=the house／体験版=the preview／製品版ベータ=the full beta／
+#   登録不要=No sign-up／綴りはブリティッシュ。
+EN_TITLE = "Stage Sketch | Share positions and movement in a front view and a plan view"
+EN_DESC = (
+    "For directors, performers and production teams. A browser tool for drawing stage "
+    "positions, movement and the view from the house in a front view and a plan view at "
+    "once. No sign-up for the preview."
+)
+EN_OG_DESC = (
+    "For directors, performers and production teams. A browser tool for drawing stage "
+    "positions, movement and the view from the house in a front view and a plan view at once."
+)
+EN_OG_ALT = (
+    "Stage Sketch — a tool for drawing stage positions and movement at once, in a front view "
+    "as the house sees it and a plan view from above. Preview in the browser, no sign-up, "
+    "free during the beta."
+)
+
+
+def english_lp(html: str) -> str:
+    """日本語版LPから、meta だけ英語に差し替えた /en/index.html を作る。
+
+    置換は1件ずつ数を確かめる。LP側の書き方が変わったらここで止める
+    （黙って日本語のmetaのまま英語ページを出さないため）。
+    """
+
+    def sub(old: str, new: str, n: int = 1) -> None:
+        nonlocal html
+        got = html.count(old)
+        if got != n:
+            raise SystemExit(f"！英語版LPの差し替えに失敗（想定{n}件・実際{got}件）: {old[:60]}")
+        html = html.replace(old, new)
+
+    sub('<html lang="ja">', '<html lang="en">')
+    sub(
+        """<!-- 検索・共有向けの題と説明（2026-09-05 マーケ観点の見直し・第1弾／第3弾で英語版を分離）。
+     ★description に「PC用のアプリ」と書かない（ブラウザ対応／Mac対応の札と食い違う）。
+     ★og:image は絶対URLでないとSNSのカードが出ない。og:url／twitter:card／canonical も同時に。
+     ★このファイルは日本語版（/）の正本。英語版（/en/）は build_public.py が
+       このファイルから meta だけ英語に差し替えて生成する。英語の文言を直すときは
+       build_public.py の english_lp() を直す（HTMLを二重に持たない）。
+     ★SNSのクローラーとGoogleはJSを実行しない前提。だから題・説明・OGPは
+       JSで書き換えるのではなく、言語ごとに別URL（/ と /en/）で静的に持つ。 -->""",
+        """<!-- ★このファイルは生成物。直接編集しない。
+     public-lp/index.html（日本語版が正本）から build_public.py の english_lp() が
+     meta だけ英語に差し替えて作る。作り直しは python3 build_public.py。
+     Generated file — do not edit. Built from public-lp/index.html by build_public.py. -->""",
+    )
+    sub("<title>舞台スケッチ｜立ち位置・動線を正面図と平面図で共有</title>", f"<title>{EN_TITLE}</title>")
+    sub(
+        '<meta name="description" content="演出家・演者・制作チーム向け。舞台の立ち位置、動線、'
+        '客席からの見え方を正面図と平面図で同時に描けるブラウザツール。体験版は登録不要。">',
+        f'<meta name="description" content="{EN_DESC}">',
+    )
+    sub('<meta property="og:site_name" content="舞台スケッチ">',
+        '<meta property="og:site_name" content="Stage Sketch">')
+    sub('<meta property="og:title" content="舞台スケッチ — 立ち位置・動線を正面図と平面図で共有">',
+        '<meta property="og:title" content="Stage Sketch — Share positions and movement in a front view and a plan view">')
+    sub(
+        '<meta property="og:description" content="演出家・演者・制作チーム向け。舞台の立ち位置、動線、'
+        '客席からの見え方を正面図と平面図で同時に描けるブラウザツール。">',
+        f'<meta property="og:description" content="{EN_OG_DESC}">',
+    )
+    sub(
+        '<meta property="og:image:alt" content="舞台スケッチ — 舞台の立ち位置と動線を、'
+        '客席からの正面図と真上の平面図で同時に描くツール。ブラウザ体験版・登録不要・'
+        'ベータ期間中は無償。">',
+        f'<meta property="og:image:alt" content="{EN_OG_ALT}">',
+    )
+    sub(
+        '<meta property="og:locale" content="ja_JP">\n'
+        '<meta property="og:locale:alternate" content="en_GB">',
+        '<meta property="og:locale" content="en_GB">\n'
+        '<meta property="og:locale:alternate" content="ja_JP">',
+    )
+
+    # 自分自身を指す2本（canonical と og:url）だけ /en/ に向ける。
+    # hreflang の3本（ja / en / x-default）は両ページで同じ内容なので触らない。
+    sub(f'<link rel="canonical" href="{SITE}/">', f'<link rel="canonical" href="{SITE}/en/">')
+    sub(f'<meta property="og:url" content="{SITE}/">', f'<meta property="og:url" content="{SITE}/en/">')
+
+    # ★/en/ は1階層下。相対パスのままだと /en/media/... を取りに行って404になる。
+    #   属性を名指しせず、src / href / poster を総なめにして絶対パスへ直す。
+    #   （2026-09-05: 名指しの一覧を作ったら poster="media/hero-poster.jpg" を
+    #     取りこぼし、英語版だけ動画のポスターが404になった。実画面で発見。）
+    absolute = ("http://", "https://", "//", "#", "data:", "mailto:", "tel:", "?", "/")
+    rel_attr = re.compile(r'\b(src|href|poster)="([^"]*)"')
+
+    def to_absolute(m: "re.Match[str]") -> str:
+        url = m.group(2)
+        if not url or url.startswith(absolute):
+            return m.group(0)
+        return f'{m.group(1)}="/{url}"'
+
+    before = rel_attr.findall(html)
+    html = rel_attr.sub(to_absolute, html)
+    fixed = [f'{a}="{u}"' for a, u in before if u and not u.startswith(absolute)]
+    if not fixed:
+        raise SystemExit("！英語版LP: 相対パスの書き換え対象が1つも無い（LPの書き方が変わった？）")
+
+    # 取りこぼしがあればここで止める（英語版だけ404、を二度とやらないため）
+    left = [f'{a}="{u}"' for a, u in rel_attr.findall(html) if u and not u.startswith(absolute)]
+    if left:
+        raise SystemExit(f"！英語版LP: 相対パスが残っている: {', '.join(sorted(set(left)))}")
+
+    # 言語の決定。URLで英語と決まっているので、端末の言語や ?lang= で上書きしない。
+    sub(
+        """  var asked = new URLSearchParams(location.search).get("lang");
+  var lang = asked === "en" || asked === "ja" ? asked
+    : (String(navigator.language || "").toLowerCase().indexOf("ja") === 0 ? "ja" : "en");
+  document.documentElement.lang = lang;
+  if (lang === "en") {
+    document.title = "Stage Sketch | Share positions and movement in a front view and a plan view";
+  }
+""",
+        """  /* ★このページは /en/。URLで言語が決まっているので、端末の言語や ?lang= で
+     上書きしない。題は最初から英語で書いてある（JSでは触らない）。 */
+  var lang = "en";
+  document.documentElement.lang = lang;
+""",
+    )
+
+    if "data-ja" not in html or "data-en" not in html:
+        raise SystemExit("！英語版LP: 本文の日英切替（data-ja / data-en）が消えている")
+    if "舞台スケッチ｜" in html.split("</head>", 1)[0]:
+        raise SystemExit("！英語版LP: head に日本語の題が残っている")
+    return html
 
 
 def collect_dist() -> list[str]:
@@ -155,6 +299,16 @@ def collect_dist() -> list[str]:
     copied.append("index.html（public-lp/index.html の写し・LP本体）")
     shutil.copy2(OUT, DIST / "try.html")
     copied.append("try.html（体験版）")
+
+    # 英語圏向けの入口 /en/。日本語版から meta だけ英語に差し替えた写し。
+    # ★中身（本文HTML）は日本語版と同じで、表示は data-ja / data-en が切り替える。
+    en_dir = DIST / "en"
+    en_dir.mkdir(exist_ok=True)
+    (en_dir / "index.html").write_text(
+        english_lp((HERE / "public-lp" / "index.html").read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    copied.append("en/index.html（英語版LP・meta英語／本文は共通）")
 
     # LPが使う動画とポスター
     media = HERE / "public-lp" / "media"

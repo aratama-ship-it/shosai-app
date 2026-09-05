@@ -3,16 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- 検索・共有向けの題と説明（2026-09-05 マーケ観点の見直し・第1弾）。
+<!-- 検索・共有向けの題と説明（2026-09-05 マーケ観点の見直し・第1弾／第3弾で英語版を分離）。
      ★description に「PC用のアプリ」と書かない（ブラウザ対応／Mac対応の札と食い違う）。
      ★og:image は絶対URLでないとSNSのカードが出ない。og:url／twitter:card／canonical も同時に。
-       画像はいまのポスター（1080×1080）。名前入りの 1200×630 は別途作る（本人判断待ち）。 -->
+     ★このファイルは日本語版（/）の正本。英語版（/en/）は build_public.py が
+       このファイルから meta だけ英語に差し替えて生成する。英語の文言を直すときは
+       build_public.py の english_lp() を直す（HTMLを二重に持たない）。
+     ★SNSのクローラーとGoogleはJSを実行しない前提。だから題・説明・OGPは
+       JSで書き換えるのではなく、言語ごとに別URL（/ と /en/）で静的に持つ。 -->
 <title>舞台スケッチ｜立ち位置・動線を正面図と平面図で共有</title>
 <meta name="description" content="演出家・演者・制作チーム向け。舞台の立ち位置、動線、客席からの見え方を正面図と平面図で同時に描けるブラウザツール。体験版は登録不要。">
 <meta name="theme-color" content="#191512">
 <meta name="robots" content="index, follow">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
 <link rel="canonical" href="https://stagesketch-try.juggler-arata.workers.dev/">
+<link rel="alternate" hreflang="ja" href="https://stagesketch-try.juggler-arata.workers.dev/">
+<link rel="alternate" hreflang="en" href="https://stagesketch-try.juggler-arata.workers.dev/en/">
+<link rel="alternate" hreflang="x-default" href="https://stagesketch-try.juggler-arata.workers.dev/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="舞台スケッチ">
 <meta property="og:title" content="舞台スケッチ — 立ち位置・動線を正面図と平面図で共有">
@@ -414,7 +421,11 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
 }
 /* 言語ごとに、片方だけ出す。<html lang> をJSが決める。 */
 [lang="en"] [data-ja], [lang="ja"] [data-en]{ display:none; }
-.lang-switch a{ color:var(--rust-ink); }
+/* 44×44 のタップ面。上の .lang-pick と同じ理由（「日本語」は文字幅40px）。
+   ★2026-09-05: これまでの design-lint は ?lang=ja で測っていて、日本語表示では
+     この「日本語」リンクが隠れるため見えていなかった。英語版を /en/ で出すにあたり
+     英語表示でも測って見つけた。★inline のままだと幅が文字ぶんしかない。 */
+.lang-switch a{ color:var(--rust-ink); display:inline-block; padding:12px 4px; }
 </style>
 </head>
 <body>
@@ -431,7 +442,7 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
         <a class="about-link" href="beta.html"><span data-ja>製品版ベータについて</span><span data-en>About the full beta</span></a>
         <a class="about-link" href="#about"><span data-ja>このアプリについて</span><span data-en>About this app</span></a>
         <span class="lang-pick">
-          <a href="?lang=ja" hreflang="ja">日本語</a><span aria-hidden="true">/</span><a href="?lang=en" hreflang="en">English</a>
+          <a href="/" hreflang="ja">日本語</a><span aria-hidden="true">/</span><a href="/en/" hreflang="en">English</a>
         </span>
       </div>
     </div>
@@ -707,13 +718,16 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
     <span><span data-ja>作 ARATA URAWA</span><span data-en>Made by ARATA URAWA</span></span>
     <span class="small"><span data-ja>ご連絡は <a href="https://pygmix.com/contact?category=tool&amp;subject=%E8%88%9E%E5%8F%B0%E3%82%B9%E3%82%B1%E3%83%83%E3%83%81">お問い合わせフォーム</a> から</span><span data-en>Get in touch via the <a href="https://pygmix.com/contact?category=tool&amp;subject=Stage%20Sketch">contact form</a></span></span>
     <span class="small"><span data-ja>録画 2026-09-04 時点</span><span data-en>Recorded 4 September 2026</span></span>
-    <span class="small lang-switch"><a href="?lang=ja" data-en>日本語</a><a href="?lang=en" data-ja>English</a></span>
+    <span class="small lang-switch"><a href="/" data-en>日本語</a><a href="/en/" data-ja>English</a></span>
   </div>
 </footer>
 
 <script>
 /* 言語を決める。?lang=en / ?lang=ja が最優先、無ければ端末の言語。
    紹介ページ（public-beta.html）と同じ考え方にそろえる。
+   ★ここで切り替わるのは本文だけ。題・説明・OGPはJSでは直さない（クローラーが
+     JSを実行しないため）。英語の入口は別URL /en/（build_public.py が生成）。
+     画面上の言語リンクは / と /en/ を指す。?lang= は既存の共有URLのために受け続ける。
    ★リンクと埋め込みにも言語を引き継ぐ。引き継がないと、英語で読んでいた人が
      「体験版を使ってみる」を押した先で日本語に戻ってしまう。 */
 (function () {

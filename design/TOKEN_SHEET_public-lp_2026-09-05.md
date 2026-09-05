@@ -59,3 +59,10 @@
 - 証拠帯 `.proof`: hero直後。見出し無し・4項目・太字14px（--paper）＋注記13px（--ink-soft-sm）。上下罫 --line-dark。900px以上で4列、未満で2列。
 - 帯の順: hero → 証拠帯 → 13の機能 → このアプリについて → CTA（作者の話は13の機能の後ろへ・本人承認）。
 - OGP画像: 1200×630（実体2400×1260 JPEG q90・約210KB）。左に名前84px/明朝・一文24px、右に hero-poster の切り抜き。元は public-lp/og/og-source.html、生成は build_og.py。
+
+## 追記 2026-09-05（第3弾・英語版を別URLに分離）
+- **英語の入口は `/en/`（静的ページ）。** 題・説明・OGPはJSで書き換えない。SNSのクローラーとGoogleはJSを実行せず、Accept-Language も送らないため、サーバー側の出し分けでも英語カードは出せない。`/` と `/en/` に `hreflang`（ja / en / x-default）を相互に張り、`canonical` と `og:url` は各ページ自身を指す。
+- HTMLは二重に持たない。`public-lp/index.html`（日本語版）が正本で、`/en/index.html` は `build_public.py` の `english_lp()` が meta だけ差し替えて生成する。差し替えが1件でも当たらなければビルドを止める。
+- `/en/` は1階層下なので、`media/` `icons/` `beta.html` の相対パスを生成時に絶対パス化する。`/en/` では言語を `"en"` に固定し、端末の言語や `?lang=` で上書きしない。
+- 画面の言語リンクは `?lang=` から `/`・`/en/` に変更（共有されたURLがそのまま言語を表すため）。`?lang=` は既存の共有URL向けにJS側で受け続ける。
+- **`.lang-switch a`（フッターの言語リンク）: `display:inline-block; padding:12px 4px;`。** 「日本語」は文字幅40pxで、inline のままだと幅が44pxに届かない（design-lint U1・実測 40.0×50.1px）。★これまでのlintは `?lang=ja` で測っており、日本語表示ではこのリンクが隠れるため検出できていなかった。以後は日本語版・英語版の両方を測る。

@@ -569,19 +569,74 @@ test("LPの題・説明・OGPは検索と共有向け（第1弾）", () => {
   assert.match(lpPage, /<link rel="canonical" href="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/">/);
   assert.match(lpPage, /<meta name="twitter:card" content="summary_large_image">/);
   assert.match(lpPage, /<meta property="og:image:width" content="1200">/);  // 第2弾で専用画像 1200×630 に
-  // 英語の題はJSで差し替える（英語の description/OGP は静的ページかサーバー側の出し分けが要る＝未対応）
+  /* 端末が英語の人が「/」を開いたときのために、題だけはJSでも英語にする。
+     ★ただしJSは共有カードにも検索結果にも届かない。英語の入口は別URL /en/（下のテスト）。 */
   assert.match(lpPage, /document\.title = "Stage Sketch \| Share positions and movement in a front view and a plan view";/);
+});
+
+test("英語版LPは別URL /en/ に静的に出す（クローラーはJSを実行しない）", () => {
+  /* 2026-09-05 第3弾。英語で読んでいてもカードと検索結果が日本語のままだった。
+     ★SNSのクローラー（Twitterbot / facebookexternalhit / Slackbot）とGoogleはJSを
+       実行しない。Accept-Language も送らないので、サーバー側で見て出し分けることも
+       できない。だから「言語ごとに別URL＋hreflang」にする。 */
+
+  // 日本語版と英語版が互いを指す（3本とも両ページで同じ内容）
+  assert.match(lpPage, /<link rel="alternate" hreflang="ja" href="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/">/);
+  assert.match(lpPage, /<link rel="alternate" hreflang="en" href="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/en\/">/);
+  assert.match(lpPage, /<link rel="alternate" hreflang="x-default" href="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/">/);
+
+  // HTMLは二重に持たない。日本語版から meta だけ差し替えて生成する
+  assert.match(buildPublic, /def english_lp\(html: str\) -> str:/);
+  assert.match(buildPublic, /sub\('<html lang="ja">', '<html lang="en">'\)/);
+  assert.match(buildPublic, /EN_TITLE = "Stage Sketch \| Share positions and movement in a front view and a plan view"/);
+  assert.match(buildPublic, /EN_DESC = \(/);
+  assert.match(buildPublic, /EN_OG_DESC = \(/);
+  assert.match(buildPublic, /EN_OG_ALT = \(/);
+  // 用語は commit 71db200（英語の全面校閲）に揃える
+  assert.match(buildPublic, /"positions, movement and the view from the house in a front view and a plan view at "/);
+  assert.match(buildPublic, /No sign-up for the preview\./);
+
+  // 自分自身を指す2本だけ /en/ に向ける（hreflang の3本は共通なので触らない）
+  assert.match(buildPublic, /sub\(f'<link rel="canonical" href="\{SITE\}\/">', f'<link rel="canonical" href="\{SITE\}\/en\/">'\)/);
+  assert.match(buildPublic, /sub\(f'<meta property="og:url" content="\{SITE\}\/">', f'<meta property="og:url" content="\{SITE\}\/en\/">'\)/);
+
+  /* ★/en/ は1階層下。相対パスのままだと /en/media/... を取りに行って404になる。
+     ★属性を名指しで並べない。2026-09-05、名指しの一覧が poster="media/hero-poster.jpg" を
+       取りこぼし、英語版だけ動画のポスターが404になった（実画面で発見）。
+       src / href / poster を総なめにして、取りこぼしがあればビルドを止める。 */
+  assert.match(buildPublic, /rel_attr = re\.compile\(r'\\b\(src\|href\|poster\)="\(\[\^"\]\*\)"'\)/);
+  assert.match(buildPublic, /raise SystemExit\(f"！英語版LP: 相対パスが残っている/);
+  assert.match(buildPublic, /raise SystemExit\("！英語版LP: 相対パスの書き換え対象が1つも無い/);
+
+  // /en/ ではURLで言語が決まっている。端末の言語や ?lang= で上書きしない
+  assert.match(buildPublic, /var lang = "en";/);
+  // 本文の日英切替は残す（表示は data-ja \/ data-en が切り替える）
+  assert.match(buildPublic, /！英語版LP: 本文の日英切替（data-ja \/ data-en）が消えている/);
+  // 差し替え漏れがあれば止める（黙って日本語のmetaのまま英語ページを出さない）
+  assert.match(buildPublic, /！英語版LPの差し替えに失敗（想定\{n\}件・実際\{got\}件）/);
+  assert.match(buildPublic, /！英語版LP: head に日本語の題が残っている/);
+
+  // 配信フォルダに書き出す
+  assert.match(buildPublic, /en_dir = DIST \/ "en"/);
+  assert.match(buildPublic, /\(en_dir \/ "index\.html"\)\.write_text\(/);
+  assert.match(buildPublic, /english_lp\(\(HERE \/ "public-lp" \/ "index\.html"\)\.read_text\(encoding="utf-8"\)\),/);
 });
 
 test("LPのいちばん上で日本語と英語を切り替えられる", () => {
   /* 本人指示 2026-09-05。★リンクにしてある。JSが動かなくても効くし、フッターの切替と同じ考え方。 */
-  assert.match(lpPage, /<a href="\?lang=ja" hreflang="ja">日本語<\/a>/);
-  assert.match(lpPage, /<a href="\?lang=en" hreflang="en">English<\/a>/);
+  /* ★2026-09-05 第3弾: ?lang= から / と /en/ に変えた。?lang=en はページを共有しても
+       カードが日本語のままになる（クローラーがJSを実行しない）。URLで言語が決まる形にする。
+       既存の ?lang= 付きURLは、下のJSがこれまでどおり受ける。 */
+  assert.match(lpPage, /<a href="\/" hreflang="ja">日本語<\/a>/);
+  assert.match(lpPage, /<a href="\/en\/" hreflang="en">English<\/a>/);
+  assert.match(lpPage, /<a href="\/" data-en>日本語<\/a><a href="\/en\/" data-ja>English<\/a>/);  // フッター側
   // いま読んでいる方に印を付ける
   assert.match(lpPage, /\[lang="ja"\] \.lang-pick a\[hreflang="ja"\],\n\[lang="en"\] \.lang-pick a\[hreflang="en"\]\{/);
   // 冠と同じ行の右側（このアプリについて と並べる）
   assert.match(lpPage, /<div class="masthead-links">/);
-  /* ★言語のリンクに lang を足し直さない。withLang は "?" で始まる href を素通りさせている */
+  /* ★言語のリンク（/ と /en/）に ?lang= を足さない。withLang が見るのは
+       a[href$=".html"] と a[href^="/try"] だけで、どちらにも当たらない。 */
+  assert.match(lpPage, /document\.querySelectorAll\('a\[href\$="\.html"\], a\[href\^="\/try"\]'\)/);
   assert.match(lpPage, /if \(!href \|\| href\.charAt\(0\) === "\?" \|\| href\.indexOf\("\/\/"\) === 0\) return href;/);
 });
 
