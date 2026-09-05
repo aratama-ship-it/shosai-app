@@ -49,3 +49,8 @@
 
 ## 5. モーション（変更なし）
 --motion-ui 180ms ease-out／--motion-reveal 320ms ease-out 12px／prefers-reduced-motion: reduce で無効。
+
+## 追記 2026-09-05（マーケ見直し・第1弾）
+- `.btn-main` の地: rgba(168,75,38,**.12**)。.18 だと合成後 #321F16 に対し文字 #DF6433 が 4.46:1 で 4.5 を割る（design-lint C1 実測）。.12 で #2A1C14・4.72:1。
+- `prefers-reduced-motion: reduce` では animation に加えて transition も止める（ボタンの hover 180ms が最初の画面に入ったため）。
+- ヒーローの動画上限 56vh→50vh（名前の下に「何のツールか」の一文 18px/1.7 と二つの入口を足したため）。1440×900 で動画の上端 496px。

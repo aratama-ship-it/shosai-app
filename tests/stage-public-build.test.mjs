@@ -443,10 +443,50 @@ test("LPのいちばん上に体験版とライセンスへのリンクを置く
   // 本人指示 2026-09-05
   assert.match(lpPage, /<a class="about-link" href="\/try\.html"><span data-ja>体験版はコチラ<\/span><span data-en>Try the preview<\/span><\/a>/);
   /* ★ライセンス（利用条件・料金）のページはまだ無い。本人の選択で、
-       製品版ベータの問い合わせページ（beta.html）へ送る（2026-09-05）。 */
-  assert.match(lpPage, /<a class="about-link" href="beta\.html"><span data-ja>ライセンスはコチラ<\/span><span data-en>Licensing<\/span><\/a>/);
+       製品版ベータの問い合わせページ（beta.html）へ送る（2026-09-05）。
+     ★同日の第1弾で文言を「ライセンスはコチラ」→「製品版ベータについて」に。
+       いまは無償β・提供形態未定なので「ライセンス」は実態と合わない（Codex指摘・本人承認）。 */
+  assert.match(lpPage, /<a class="about-link" href="beta\.html"><span data-ja>製品版ベータについて<\/span><span data-en>About the full beta<\/span><\/a>/);
+  assert.doesNotMatch(lpPage, /<span data-ja>ライセンスはコチラ<\/span>|<span data-en>Licensing<\/span>/);
   // 言語を引き継ぐ仕組み（withLang）が .html リンクを自動で拾う
   assert.match(lpPage, /a\[href\$="\.html"\], a\[href\^="\/try"\]/);
+});
+
+test("LPの最初の画面に「何のツールか」の一文と二つの入口を置く（マーケ見直し・第1弾）", () => {
+  /* 本人承認 2026-09-05「第一弾実装で」。判断用ページ: docs/stage-sketch/2026-09-05_lp-marketing-review/
+     それまでは名前→便益の一行→動画で、道具の中身を言う行と、押せるボタンが最初の画面に無かった。 */
+  assert.match(lpPage, /<div class="hero-title-row">[\s\S]*?<\/div>\s*<!--[\s\S]*?-->\s*<p class="hero-what"><span data-ja>舞台の立ち位置と動線を、客席からの正面図と真上の平面図で同時に描くツールです。<\/span>/);
+  // 順番: 一文 → 便益の一行 → 二つの入口 → 動画
+  const what = lpPage.indexOf('<p class="hero-what">');
+  const lead = lpPage.indexOf('<p class="uses-lead">');
+  const actions = lpPage.indexOf('<div class="hero-actions">');
+  const video = lpPage.indexOf('<figure class="hero-video">');
+  assert.ok(what < lead && lead < actions && actions < video, "一文 → 一行 → 入口 → 動画");
+  // 入口は末尾CTAと同じ行き先・同じ文言
+  assert.match(lpPage, /<div class="hero-action">\s*<a class="btn btn-main" href="\/try\.html"><span data-ja>体験版を使ってみる<\/span>/);
+  assert.match(lpPage, /<div class="hero-action">\s*<a class="btn btn-sub" href="beta\.html"><span data-ja>製品版ベータを使ってみたい<\/span>/);
+  // 不安の先回りを一まとまりで（登録・保存・端末・上限・錠）。上限の数は stage-public.js と同じ
+  assert.match(lpPage, /登録不要・保存されません・PC推奨。演者3人／セット2つまで。製品版の機能も錠つきで見えます。/);
+  assert.match(publicJs, /PUBLIC_MAX_PERFORMERS = 3;[\s\S]*?PUBLIC_MAX_SETS = 2;/);
+  // 「無償」は beta.html にしか無かった。上と末尾の両方に出す
+  assert.match(lpPage, /ベータ期間中は無償。お問い合わせ制です。/);
+  assert.match(lpPage, /ベータ期間中は無償です。ボタンの先で、お問い合わせの手順をご案内します。/);
+  assert.match(betaPage, /ベータ期間中は無償/);
+  // 入口を足したぶん動画の上限を下げる（56vh→50vh）
+  assert.match(lpPage, /\.hero-video video\{ [^}]*max-height:50vh;/);
+});
+
+test("LPの題・説明・OGPは検索と共有向け（第1弾）", () => {
+  assert.match(lpPage, /<title>舞台スケッチ｜立ち位置・動線を正面図と平面図で共有<\/title>/);
+  assert.doesNotMatch(lpPage, /content="[^"]*PC用のアプリ/);  // 札（ブラウザ対応／Mac対応）と食い違う
+  // ★SNSのカードは絶対URLでないと出ない
+  assert.match(lpPage, /<meta property="og:image" content="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/media\/hero-poster\.jpg">/);
+  assert.match(lpPage, /<meta property="og:url" content="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/">/);
+  assert.match(lpPage, /<link rel="canonical" href="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/">/);
+  assert.match(lpPage, /<meta name="twitter:card" content="summary_large_image">/);
+  assert.match(lpPage, /<meta property="og:image:width" content="1080">/);
+  // 英語の題はJSで差し替える（英語の description/OGP は静的ページかサーバー側の出し分けが要る＝未対応）
+  assert.match(lpPage, /document\.title = "Stage Sketch \| Share positions and movement in a front view and a plan view";/);
 });
 
 test("LPのいちばん上で日本語と英語を切り替えられる", () => {
@@ -529,8 +569,10 @@ test("LPの名前の下に「誰が、何に使うか」を置く", () => {
   /* ★本人指示 2026-09-05 で大きくした。一行28px・役の本文17px（760px以下は20/15px）。 */
   assert.match(lpPage, /font-size:28px; line-height:1\.6;/);
   assert.match(lpPage, /margin:0; font-family:var\(--sans\); font-size:17px;/);
-  /* ★動画は1:1。枠の幅を高さの上限に合わせないと左右に黒帯が出る（2026-09-05 実測: 両側57px）。 */
-  assert.match(lpPage, /max-width:min\(620px, 56vh\)/);
+  /* ★動画は1:1。枠の幅を高さの上限に合わせないと左右に黒帯が出る（2026-09-05 実測: 両側57px）。
+       上限は 56vh→50vh（同日の第1弾で名前の下に一文と入口を足したため）。枠と動画の両方を同じ値に。 */
+  assert.match(lpPage, /max-width:min\(620px, 50vh\)/);
+  assert.match(lpPage, /\.hero-video video\{ [^}]*max-height:50vh;/);
 });
 
 test("LPの下部で13の機能を、画像つきで一つずつ紹介する", () => {

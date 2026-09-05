@@ -3,15 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>舞台スケッチ — 正面と真上、二つの図が連動します。</title>
-<meta name="description" content="舞台の一場面を、客席から見た絵と真上から見た図で同時に描くPC用のアプリ。演出家と演者の意思疎通を助けるスケッチです。">
+<!-- 検索・共有向けの題と説明（2026-09-05 マーケ観点の見直し・第1弾）。
+     ★description に「PC用のアプリ」と書かない（ブラウザ対応／Mac対応の札と食い違う）。
+     ★og:image は絶対URLでないとSNSのカードが出ない。og:url／twitter:card／canonical も同時に。
+       画像はいまのポスター（1080×1080）。名前入りの 1200×630 は別途作る（本人判断待ち）。 -->
+<title>舞台スケッチ｜立ち位置・動線を正面図と平面図で共有</title>
+<meta name="description" content="演出家・演者・制作チーム向け。舞台の立ち位置、動線、客席からの見え方を正面図と平面図で同時に描けるブラウザツール。体験版は登録不要。">
 <meta name="theme-color" content="#191512">
 <meta name="robots" content="index, follow">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
+<link rel="canonical" href="https://stagesketch-try.juggler-arata.workers.dev/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="舞台スケッチ">
-<meta property="og:description" content="正面と真上、二つの図が連動します。">
-<meta property="og:image" content="media/hero-poster.jpg">
+<meta property="og:site_name" content="舞台スケッチ">
+<meta property="og:title" content="舞台スケッチ — 立ち位置・動線を正面図と平面図で共有">
+<meta property="og:description" content="演出家・演者・制作チーム向け。舞台の立ち位置、動線、客席からの見え方を正面図と平面図で同時に描けるブラウザツール。">
+<meta property="og:url" content="https://stagesketch-try.juggler-arata.workers.dev/">
+<meta property="og:image" content="https://stagesketch-try.juggler-arata.workers.dev/media/hero-poster.jpg">
+<meta property="og:image:width" content="1080">
+<meta property="og:image:height" content="1080">
+<meta property="og:image:alt" content="舞台スケッチの画面。客席から見た正面図と、真上から見た平面図。">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:locale:alternate" content="en_GB">
+<meta name="twitter:card" content="summary_large_image">
 <style>
 /* ============================================================
    デザイントークン
@@ -85,14 +98,16 @@ p{ margin:0 0 var(--space-3); }
 /* ★幅は高さの上限に合わせて絞る。動画は1:1なので、幅だけ広いと左右に黒帯が出る
      （2026-09-05 実測: 618×504の枠に504×504が入り、両側57pxずつ黒）。 */
 .hero-video{
-  position:relative; margin:0; width:100%; max-width:min(620px, 56vh);
+  position:relative; margin:0; width:100%; max-width:min(620px, 50vh);
   border:1px solid var(--line-dark); border-radius:var(--radius-m);
   overflow:hidden; box-shadow:var(--shadow-1); background:#000;
 }
 /* ★動画は1:1で縦に大きい。そのまま置くと画面を占有し、
    計画の「②をスクロールせずに一部が見える位置へ置く」が守れない（実測: 下の帯が画面外）。
    ヒーロー全体の高さを画面の7割程度に抑え、動画はその中へ収める。 */
-.hero-video video{ width:100%; height:auto; max-height:56vh; object-fit:contain; background:#000; }
+/* ★2026-09-05 第1弾: 名前の下に一文と二つの入口を足したぶん、動画の上限を 56vh→50vh に下げ、
+     1440×900 で動画の下端が画面内に残るようにする（実測は下のテストと判断用ページに）。 */
+.hero-video video{ width:100%; height:auto; max-height:50vh; object-fit:contain; background:#000; }
 @media (max-width:899px){
   .hero-video{ max-width:min(620px, 46svh); }
   .hero-video video{ max-height:46svh; }
@@ -143,11 +158,25 @@ p{ margin:0 0 var(--space-3); }
 /* 名前のすぐ下に「誰が、何に使うか」を置く（本人指示 2026-09-04）。
    ★ここは道具の説明ではなく、読む人が自分の側を見つける場所。だから役どころを先に出す。
    ★二列に並べて高さを抑える。縦に積むとデモの帯が画面の外へ落ちる。 */
+/* 「何のツールか」の一文（2026-09-05 第1弾）。名前の直下・便益の一行の上。ゴシックで機能的に。 */
+.hero-what{
+  margin:var(--space-3) 0 0; max-width:760px;
+  font-family:var(--sans); font-size:18px; line-height:1.7; color:var(--paper-line);
+}
+@media (max-width:760px){ .hero-what{ font-size:15px; } }
 .uses-lead{
-  margin:var(--space-4) 0 var(--space-4);
+  margin:var(--space-3) 0 var(--space-4);
   font-size:28px; line-height:1.6; letter-spacing:.04em; color:var(--paper);
 }
 @media (max-width:760px){ .uses-lead{ font-size:20px; } }
+/* 二つの入口（第1弾）。末尾CTAと同じボタン。注記は各ボタンの直下に、最大幅で折り返す。 */
+.hero-actions{ display:flex; flex-wrap:wrap; gap:var(--space-4) var(--space-6); margin:0 0 var(--space-3); }
+.hero-action{ flex:1 1 280px; max-width:460px; }
+.hero-action .btn{ margin:0; }
+.hero-action-note{
+  margin:var(--space-2) 0 0; font-family:var(--sans); font-size:var(--fs-small); line-height:1.7;
+  color:var(--ink-soft-sm);
+}
 /* ★動画の右へ移したので、常に縦積み（2026-09-05）。横に二列だと右の欄では狭すぎる。 */
 .uses-list{
   margin:0; display:grid; gap:var(--space-4);
@@ -337,7 +366,9 @@ p{ margin:0 0 var(--space-3); }
   text-decoration:none; transition:background var(--motion-ui), color var(--motion-ui);
   min-height:44px;
 }
-.btn-main{ border:1px solid var(--rust); background:rgba(168,75,38,.18); color:var(--rust-ink); }
+/* ★地の錆色は .12 まで。.18 だと合成後の地 #321F16 に対して文字 #DF6433 が 4.46:1 で
+     4.5 を割る（design-lint C1・2026-09-05 実測）。.12 なら #2A1C14 で 4.72:1。 */
+.btn-main{ border:1px solid var(--rust); background:rgba(168,75,38,.12); color:var(--rust-ink); }
 .btn-main:hover,.btn-main:focus-visible{ background:rgba(168,75,38,.32); color:var(--paper); }
 .btn-sub{ border:1px solid var(--line-dark); color:var(--ink-soft-sm); }
 .btn-sub:hover,.btn-sub:focus-visible{ border-color:var(--brass); color:var(--paper); }
@@ -359,7 +390,9 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
 .will-reveal.is-in{ opacity:1; transform:none; }
 @media (prefers-reduced-motion:reduce){
   .will-reveal{ opacity:1; transform:none; transition:none; }
-  *{ animation:none !important; }
+  /* ★transition も止める。ボタンの hover（180ms）が最初の画面に入ったことで
+       design-lint M1 に掛かった（2026-09-05 第1弾）。 */
+  *{ animation:none !important; transition:none !important; }
 }
 /* 言語ごとに、片方だけ出す。<html lang> をJSが決める。 */
 [lang="en"] [data-ja], [lang="ja"] [data-en]{ display:none; }
@@ -375,7 +408,9 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
       <p class="eyebrow">STAGE IMAGE STUDY</p>
       <div class="masthead-links">
         <a class="about-link" href="/try.html"><span data-ja>体験版はコチラ</span><span data-en>Try the preview</span></a>
-        <a class="about-link" href="beta.html"><span data-ja>ライセンスはコチラ</span><span data-en>Licensing</span></a>
+        <!-- 「ライセンスはコチラ」→「製品版ベータについて」（2026-09-05 第1弾）。
+             いまは無償β・提供形態未定（beta.html）なので「ライセンス」は実態と合わない。 -->
+        <a class="about-link" href="beta.html"><span data-ja>製品版ベータについて</span><span data-en>About the full beta</span></a>
         <a class="about-link" href="#about"><span data-ja>このアプリについて</span><span data-en>About this app</span></a>
         <span class="lang-pick">
           <a href="?lang=ja" hreflang="ja">日本語</a><span aria-hidden="true">/</span><a href="?lang=en" hreflang="en">English</a>
@@ -389,7 +424,22 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
         <span class="badge-pc"><span data-ja>Mac用スタンドアローン対応</span><span data-en>Standalone Mac app</span></span>
       </p>
     </div>
+    <!-- 名前の直下に「何のツールか」を一文で（2026-09-05 マーケ観点の見直し・第1弾）。
+         それまでは便益の一行だけで、道具の中身を言う行が無かった（Codex・Claude一致）。 -->
+    <p class="hero-what"><span data-ja>舞台の立ち位置と動線を、客席からの正面図と真上の平面図で同時に描くツールです。</span><span data-en>A tool for drawing stage positions and movement in a front view and a plan view that move together.</span></p>
     <p class="uses-lead"><span data-ja>限られたステージ利用時間はもっと質の高い練習へ。</span><span data-en>The shortest line between imagining and doing.</span></p>
+    <!-- 二つの入口を最初の画面にも置く（第1弾）。末尾のCTAと同じ行き先。
+         ★ボタンの下に不安の先回りを一まとまりで（登録・保存・端末・上限・錠）。 -->
+    <div class="hero-actions">
+      <div class="hero-action">
+        <a class="btn btn-main" href="/try.html"><span data-ja>体験版を使ってみる</span><span data-en>Try the preview</span></a>
+        <p class="hero-action-note"><span data-ja>登録不要・保存されません・PC推奨。演者3人／セット2つまで。製品版の機能も錠つきで見えます。</span><span data-en>No sign-up, nothing is saved, best on a computer. Up to three performers and two set pieces; the full version's features stay visible, locked.</span></p>
+      </div>
+      <div class="hero-action">
+        <a class="btn btn-sub" href="beta.html"><span data-ja>製品版ベータを使ってみたい</span><span data-en>Request access to the full beta</span></a>
+        <p class="hero-action-note"><span data-ja>ベータ期間中は無償。お問い合わせ制です。</span><span data-en>Free during the beta. Access on request.</span></p>
+      </div>
+    </div>
   </div>
   <div class="wrap hero-inner">
     <figure class="hero-video">
@@ -598,7 +648,7 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
           <p><span data-ja>Macでは Safari の「ファイル」→「Dockに追加…」で、独立したウィンドウのアプリになります（macOS Sonoma以降）。</span><span data-en>On a Mac, choose File → Add to Dock… in Safari to use it as an app in its own window (macOS Sonoma or later).</span></p>
         </div>
         <p><a class="btn btn-sub" href="beta.html"><span data-ja>製品版ベータを使ってみたい</span><span data-en>Request access to the full beta</span></a></p>
-        <p class="cta-note small"><span data-ja>ボタンの先で、お問い合わせの手順をご案内します。</span><span data-en>The next page explains how to get in touch.</span></p>
+        <p class="cta-note small"><span data-ja>ベータ期間中は無償です。ボタンの先で、お問い合わせの手順をご案内します。</span><span data-en>Free during the beta. The next page explains how to get in touch.</span></p>
       </div>
     </div>
   </div>
@@ -628,7 +678,7 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
     : (String(navigator.language || "").toLowerCase().indexOf("ja") === 0 ? "ja" : "en");
   document.documentElement.lang = lang;
   if (lang === "en") {
-    document.title = "Stage Sketch — Two views of one stage, moving together.";
+    document.title = "Stage Sketch | Share positions and movement in a front view and a plan view";
   }
 
   var withLang = function (href) {
