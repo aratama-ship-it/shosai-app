@@ -4,9 +4,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>製品版ベータについて — 舞台スケッチ</title>
+<!-- 検索・共有向けの説明とSNSカード（2026-09-05 第3弾）。
+     ★このファイルは日本語版（/beta）の正本。英語版（/en/beta）は build_public.py の
+       english_beta() が meta だけ英語に差し替えて生成する。英語の文言はそちらを直す。
+     ★JSで書き換えない。クローラーはJSを実行しないため、言語ごとに別URLで持つ。 -->
+<meta name="description" content="舞台スケッチの製品版ベータについて。体験版との違い、ベータ期間中は無償であること、お渡しまでの流れとお問い合わせ方法をまとめています。">
 <meta name="theme-color" content="#191512">
 <meta name="robots" content="index, follow">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
+<link rel="canonical" href="https://stagesketch-try.juggler-arata.workers.dev/beta">
+<link rel="alternate" hreflang="ja" href="https://stagesketch-try.juggler-arata.workers.dev/beta">
+<link rel="alternate" hreflang="en" href="https://stagesketch-try.juggler-arata.workers.dev/en/beta">
+<link rel="alternate" hreflang="x-default" href="https://stagesketch-try.juggler-arata.workers.dev/beta">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="舞台スケッチ">
+<meta property="og:title" content="製品版ベータについて — 舞台スケッチ">
+<meta property="og:description" content="体験版との違い、ベータ期間中は無償であること、お渡しまでの流れ。舞台の立ち位置と動線を正面図と平面図で同時に描くツールです。">
+<meta property="og:url" content="https://stagesketch-try.juggler-arata.workers.dev/beta">
+<meta property="og:image" content="https://stagesketch-try.juggler-arata.workers.dev/media/og-1200x630.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="舞台スケッチ — 舞台の立ち位置と動線を、客席からの正面図と真上の平面図で同時に描くツール。ブラウザ体験版・登録不要・ベータ期間中は無償。">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:locale:alternate" content="en_GB">
+<meta name="twitter:card" content="summary_large_image">
 <style>
   /* 色・書体は本体の style.css と同じ値。ここは1枚で完結させる（体験版のCSSに依存しない）。 */
   :root{
@@ -49,6 +70,11 @@
   .small{font-size:.86rem;color:var(--ink-soft-sm);font-family:var(--sans);line-height:1.8}
   /* ★下線は消さない（brass地の色だけに頼ったリンクにしない・design-lint C3）。既定の underline のまま高さだけ足す。 */
   .small a{display:inline-block;padding-block:12px}
+  /* 44×44 のタップ面。「日本語」は文字幅41pxで、上下の余白だけでは幅が足りない
+     （design-lint U1・実測 41.3×48.8px）。LPの .lang-switch と同じ直し方。
+     ★英語表示のときしか出ないリンクなので、日本語表示だけを測っていた間は
+       見つからなかった（2026-09-05 第3弾で英語版を測って発見）。 */
+  .lang-switch a{padding-inline:4px}
   [hidden]{display:none !important}
   @media (max-width:600px){ main{padding:32px 16px 72px} h1{font-size:1.35rem} }
 </style>
@@ -112,7 +138,7 @@
   <!-- 「体験版へ戻る」→「紹介ページへ戻る」（2026-09-05 第2弾・#7）。
        ★href="./" は beta.html から見て LP（紹介ページ）に戻る。体験版（try.html）ではない。 -->
   <a class="back" href="./">← 紹介ページへ戻る</a>
-  <p class="small" style="margin-top:24px"><a href="?lang=en">English</a></p>
+  <p class="small lang-switch" style="margin-top:24px"><a href="/en/beta.html">English</a></p>
 </div>
 
 <!-- ============ English ============ -->
@@ -167,11 +193,14 @@
   <p class="small">If the form does not open, write to <a href="mailto:info@pygmix.com?subject=Stage%20Sketch%20-%20full%20beta">info@pygmix.com</a> instead.</p>
 
   <a class="back" href="./">← Back to the introduction page</a>
-  <p class="small" style="margin-top:24px"><a href="?lang=ja">日本語</a></p>
+  <p class="small lang-switch" style="margin-top:24px"><a href="/beta.html">日本語</a></p>
 </div>
 
 <script>
-/* 言語は ?lang= で決める。無ければ端末の言語。体験版と同じ考え方にそろえる。 */
+/* 言語は ?lang= で決める。無ければ端末の言語。体験版と同じ考え方にそろえる。
+   ★ここで切り替わるのは本文だけ。題・説明・OGPはJSで直さない（クローラーが
+     JSを実行しないため）。英語の入口は別URL /en/beta.html（build_public.py が生成）。
+     画面の言語リンクも /beta.html と /en/beta.html を指す。?lang= は既存の共有URL向けに受ける。 */
 (function () {
   var asked = new URLSearchParams(location.search).get("lang");
   var lang = asked === "en" || asked === "ja" ? asked

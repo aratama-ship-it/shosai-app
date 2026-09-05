@@ -3,10 +3,12 @@
 <head>
 <meta charset="utf-8">
 <title>OGP 1200×630 の元（舞台スケッチ）</title>
-<!-- SNSカード用の画像の元。Playwright で 1200×630（DPR2）で撮って media/og-1200x630.jpg にする。
+<!-- SNSカード用の画像の元。Playwright で 1200×630（DPR2）で撮る。
+     日本語版 → media/og-1200x630.jpg ／ 英語版 → media/og-1200x630-en.jpg
+     ★1枚のファイルで両方を持つ（?lang=en で英語になる）。CSSと絵を二重に持たないため。
      ★配信物ではない（build_public.py は media/ の名指し分と features/ しか運ばない）。
      トークンは LP と同じ（design/TOKEN_SHEET_public-lp_2026-09-05.md）。
-     作り方: python3 build_og.py（同じフォルダ）。 -->
+     作り方: ~/.venvs/design-lint/bin/python build_og.py（同じフォルダ・2枚とも出る）。 -->
 <style>
 :root{
   --desk:#191512; --desk-2:#201b16; --line-dark:#382f25;
@@ -25,6 +27,21 @@ html,body{ margin:0; background:var(--desk); }
 .eyebrow{ font-family:var(--sans); font-size:15px; letter-spacing:.3em; color:var(--brass); margin:0 0 22px; }
 /* ★6文字を1行に収める: 84px×6 + 字間 ≒ 521px < 列幅536px（104pxだと折り返す・2026-09-05 実測） */
 .name{ font-size:84px; font-weight:600; letter-spacing:.05em; line-height:1.15; margin:0 0 6px; white-space:nowrap; }
+/* 英語は12文字。84pxのままでは列幅536pxに収まらない。日本語（84pxで実測529px）の
+   見た目の重さに近い大きさを実測で選ぶ（74px で約512px・余白24px。2026-09-05 実測）。
+   ★はみ出しても white-space:nowrap のせいで静かに切れるだけなので、build_og.py が毎回測る。 */
+[lang="en"] .name{ font-size:74px; }
+/* 英語版の副題は日本語の名前。日本語には字間を効かせない（間延びして読みにくい） */
+[lang="en"] .name-en{ letter-spacing:.04em; }
+/* 英語の本文は日本語より字数が多い。1行を短くして3行に収める */
+[lang="en"] .what{ font-size:22px; max-width:500px; }
+/* 英語のフッター3項目は16px・間隔22pxだと自然幅568pxで枠536pxを超え、
+   語の途中で折り返していた（2026-09-05 実測）。字と間隔を詰めて1行に収める。
+   ★nowrap にして、収まらなくなったら「静かに折り返す」のではなく build_og.py で止める。 */
+[lang="en"] .foot{ font-size:15px; gap:18px; }
+.foot > *{ white-space:nowrap; }
+/* 言語ごとに片方だけ出す（LPと同じ考え方） */
+[lang="en"] [data-ja], [lang="ja"] [data-en]{ display:none; }
 .name-en{ font-family:var(--sans); font-size:20px; letter-spacing:.22em; color:var(--ink-soft-sm); margin:0 0 30px; }
 .what{ font-family:var(--sans); font-size:24px; line-height:1.6; color:var(--paper-line); margin:0; max-width:520px; }
 .foot{ font-family:var(--sans); font-size:16px; color:var(--ink-soft-sm); letter-spacing:.04em; display:flex; gap:22px; align-items:center; }
@@ -45,16 +62,25 @@ html,body{ margin:0; background:var(--desk); }
   <div class="text">
     <div>
       <p class="eyebrow">STAGE IMAGE STUDY</p>
-      <h1 class="name">舞台スケッチ</h1>
-      <p class="name-en">STAGE SKETCH</p>
-      <p class="what">舞台の立ち位置と動線を、客席からの正面図と真上の平面図で同時に描くツール。</p>
+      <h1 class="name"><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></h1>
+      <p class="name-en"><span data-ja>STAGE SKETCH</span><span data-en>舞台スケッチ</span></p>
+      <!-- 英語は LP のヒーロー（hero-what）と同じ一文。用語は commit 71db200 の校閲に揃える。 -->
+      <p class="what"><span data-ja>舞台の立ち位置と動線を、客席からの正面図と真上の平面図で同時に描くツール。</span><span data-en>A tool for drawing stage positions and movement in a front view and a plan view that move together.</span></p>
     </div>
-    <p class="foot"><b>ブラウザ体験版</b><span class="dot"></span><span>登録不要</span><span class="dot"></span><span>ベータ期間中は無償</span></p>
+    <p class="foot" data-ja><b>ブラウザ体験版</b><span class="dot"></span><span>登録不要</span><span class="dot"></span><span>ベータ期間中は無償</span></p>
+    <p class="foot" data-en><b>Preview in the browser</b><span class="dot"></span><span>No sign-up</span><span class="dot"></span><span>Free during the beta</span></p>
   </div>
   <div class="shot">
     <div class="rule"></div>
     <div class="frame"><img src="../media/hero-poster.jpg" alt=""></div>
   </div>
 </div>
+<script>
+/* 撮るときに ?lang=en を付けると英語版になる（build_og.py が2回撮る）。 */
+(function () {
+  var asked = new URLSearchParams(location.search).get("lang");
+  document.documentElement.lang = asked === "en" ? "en" : "ja";
+})();
+</script>
 </body>
 </html>

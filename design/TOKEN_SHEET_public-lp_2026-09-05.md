@@ -66,3 +66,11 @@
 - `/en/` は1階層下なので、`media/` `icons/` `beta.html` の相対パスを生成時に絶対パス化する。`/en/` では言語を `"en"` に固定し、端末の言語や `?lang=` で上書きしない。
 - 画面の言語リンクは `?lang=` から `/`・`/en/` に変更（共有されたURLがそのまま言語を表すため）。`?lang=` は既存の共有URL向けにJS側で受け続ける。
 - **`.lang-switch a`（フッターの言語リンク）: `display:inline-block; padding:12px 4px;`。** 「日本語」は文字幅40pxで、inline のままだと幅が44pxに届かない（design-lint U1・実測 40.0×50.1px）。★これまでのlintは `?lang=ja` で測っており、日本語表示ではこのリンクが隠れるため検出できていなかった。以後は日本語版・英語版の両方を測る。
+
+## 追記 2026-09-05（第3弾-2・英語のSNSカードと /beta・/try の日英meta）
+- **英語のSNSカード画像: `media/og-1200x630-en.jpg`。** 元は日本語版と同じ `public-lp/og/og-source.html` 1枚で、`?lang=en` で英語になる（CSSと絵を二重に持たない）。`build_og.py` が2枚とも書き出す。
+- カード内の英語の寸法（実測して決めた値）: `[lang="en"] .name` **74px**（日本語84pxのままでは名前12文字が列幅536pxに収まらない。74pxで実幅512px）。`[lang="en"] .what` **22px / max-width 500px**。`[lang="en"] .foot` **15px / gap 18px**（16px・gap22pxでは自然幅568pxで枠536pxを超え、語の途中で折り返していた）。
+- **`.foot > *{ white-space:nowrap; }` を必ず併用する。** 折り返せる状態だと、はみ出しても見た目が崩れず静かに切れた絵が出る。`build_og.py` が毎回 `scrollWidth > clientWidth` で測り、超えたら書き出さずに止める（guard が実際に効くことを 84px・gap22px で確認済み）。
+- **`/beta` と `/try` にも日英の description・OGP を入れた。** URLは `/beta`・`/en/beta`・`/try`・`/en/try`。canonical と og:url は各ページ自身、hreflang は3本とも日英で同じ。カード画像は英語版だけ `-en.jpg`。
+- `/en/try.html` は本体（stage-sketch.js）が `?lang=` を見て開く言語を決めるため、本体が読み込まれる前に `history.replaceState` で `lang=en` をURLへ足す。これが無いと端末が日本語の人には日本語で開き、英語のURLとして人に渡せない。
+- **`public-beta.html` の `.lang-switch a{padding-inline:4px}`。** 「日本語」は文字幅41pxで、上下の余白（`.small a` の `padding-block:12px`）だけでは幅が44pxに届かない（design-lint U1・実測 41.3×48.8px）。LPの `.lang-switch` と同型の問題で、英語表示のときしか出ないリンクのため日本語版だけを測っていた間は見つからなかった。

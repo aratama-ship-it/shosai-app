@@ -10,6 +10,8 @@ const publicCss = await readFile(new URL("../stage-public.css", import.meta.url)
 const buildPublic = await readFile(new URL("../build_public.py", import.meta.url), "utf8");
 const betaPage = await readFile(new URL("../public-beta.html", import.meta.url), "utf8");
 const lpPage = await readFile(new URL("../public-lp/index.html", import.meta.url), "utf8");
+const buildOg = await readFile(new URL("../public-lp/og/build_og.py", import.meta.url), "utf8");
+const ogSource = await readFile(new URL("../public-lp/og/og-source.html", import.meta.url), "utf8");
 const stageManifest = JSON.parse(await readFile(new URL("../stage-sketch.webmanifest", import.meta.url), "utf8"));
 
 test("公開体験版はPWAにならない（SW・manifest・アイコンを持たない）", () => {
@@ -29,8 +31,10 @@ test("公開体験版は is-public を付け、専用のCSSとJSを最後に読�
   assert.match(tryHtml, /<body class="is-standalone is-public">/);
   assert.match(tryHtml, /stage-public\.css\?v=\d+/);
   assert.match(tryHtml, /stage-public\.js\?v=\d+/);
+  /* ★<script> の位置で見る。ページ内のコメントにファイル名が出ることがあるので、
+       単なる文字列の初出で比べると順番の判定が狂う（2026-09-05 実際に狂った）。 */
   assert.ok(
-    tryHtml.indexOf("stage-public.js") > tryHtml.indexOf("stage-sketch.js"),
+    tryHtml.indexOf('<script src="stage-public.js') > tryHtml.indexOf('<script src="stage-sketch.js'),
     "stage-public.js は stage-sketch.js より後に読む",
   );
 });
@@ -203,8 +207,8 @@ test("製品版ベータの問い合わせは、上部から別ページへ送�
   assert.match(publicCss, /\.stage-public-links \{[^}]*margin: 0 auto 0 0;/);
   /* ★帯は既定で折り返さない。幅が足りないと操作の列ごと画面の外へ出る。体験版だけ折り返す。 */
   assert.match(publicCss, /body\.is-public:not\(\.is-public-embed\) \.stage-sketch-head \{ flex-wrap: wrap;/);
-  // 配信フォルダへ運ばれる
-  assert.match(buildPublic, /shutil\.copy2\(HERE \/ "public-beta\.html", DIST \/ "beta\.html"\)/);
+  // 配信フォルダへ運ばれる（日本語版と英語版をまとめて書き出すループの中）
+  assert.match(buildPublic, /"beta\.html", english_beta, "製品版ベータの紹介（public-beta\.html の写し）"\)/);
 });
 
 test("体験版から紹介ページ（LP）へ戻れる", () => {
@@ -437,8 +441,11 @@ test("スマホ横向きでは、リンクと道具列を出さず、右レー�
 
 test("LPが入口、体験版は /try.html。動画も配信フォルダへ運ぶ", () => {
   // 2026-09-04: LPを作ったので入口を入れ替えた
-  assert.match(buildPublic, /shutil\.copy2\(HERE \/ "public-lp" \/ "index\.html", DIST \/ "index\.html"\)/);
-  assert.match(buildPublic, /shutil\.copy2\(OUT, DIST \/ "try\.html"\)/);
+  assert.match(buildPublic, /"index\.html", english_lp, "LP本体（public-lp\/index\.html の写し）"\)/);
+  assert.match(buildPublic, /\(OUT\.read_text\(encoding="utf-8"\), "try\.html", english_try, "体験版"\),/);
+  // 日本語版と英語版を同じループで書き出す（片方だけ更新される事故を防ぐ）
+  assert.match(buildPublic, /\(DIST \/ name\)\.write_text\(ja_html, encoding="utf-8"\)/);
+  assert.match(buildPublic, /\(en_dir \/ name\)\.write_text\(en_html, encoding="utf-8"\)/);
   assert.match(buildPublic, /for name in \("hero-ja\.mp4", "hero-ja\.webm", "hero-poster\.jpg"\)/);
   // 動画が無ければビルドを止める（黙って欠けたまま配らない）
   assert.match(buildPublic, /raise SystemExit\(f"！LPの動画がない/);
@@ -557,7 +564,30 @@ test("OGP画像は専用の1200×630（第2弾・本人承認）。配信スク�
   assert.ok(existsSync(new URL("../public-lp/og/og-source.html", import.meta.url)), "元のHTMLがある");
   // ★名指しのリストではなく meta から読み取って運ぶ。無ければ止める（fail-closed）
   assert.match(buildPublic, /property="og:image" content="\[\^"\]\*\?\/media\/\(\[\^"\/\]\+\)"/);
-  assert.match(buildPublic, /raise SystemExit\(f"！og:image の画像がない/);
+  assert.match(buildPublic, /raise SystemExit\(\s*f"！og:image の画像がない/);
+  // ★配る全ページ（日本語版3枚＋英語版3枚）から拾う。英語版は別の画像を指す
+  assert.match(buildPublic, /all_pages = \[lp_html, OUT\.read_text\(encoding="utf-8"\),/);
+  assert.match(buildPublic, /\] \+ en_pages/);
+});
+
+test("英語版のSNSカードは英語の画像を使う（第3弾）", () => {
+  /* 2026-09-05。日本語のカード画像を英語版でも出していたので、文字だけ英語の
+     1200×630 を別に作った。元は1枚（og-source.html）で ?lang=en で英語になる。 */
+  assert.ok(existsSync(new URL("../public-lp/media/og-1200x630-en.jpg", import.meta.url)), "英語版のカード画像がある");
+  assert.match(buildOg, /CARDS = \[\("ja", "og-1200x630\.jpg"\), \("en", "og-1200x630-en\.jpg"\)\]/);
+  assert.match(buildOg, /page\.goto\(f"\{SRC\.as_uri\(\)\}\?lang=\{lang\}"\)/);
+  // 元のHTMLは1枚で日英を持つ（CSSと絵を二重に持たない）
+  assert.match(ogSource, /\[lang="en"\] \[data-ja\], \[lang="ja"\] \[data-en\]\{ display:none; \}/);
+  assert.match(ogSource, /<span data-en>Stage Sketch<\/span>/);
+  assert.match(ogSource, /<p class="foot" data-en>/);
+  /* ★英語は字数が多い。名前もフッター行も枠からはみ出したが、white-space:nowrap の
+       せいで静かに切れるだけで見た目は崩れない。だから毎回測って止める。 */
+  assert.match(ogSource, /\[lang="en"\] \.name\{ font-size:74px; \}/);
+  assert.match(ogSource, /\[lang="en"\] \.foot\{ font-size:15px; gap:18px; \}/);
+  assert.match(buildOg, /raise SystemExit\(f"！\{lang\}: 文字が枠からはみ出している/);
+  assert.match(buildOg, /el\.scrollWidth > el\.clientWidth \+ 1/);
+  // 英語版のページは英語のカードを指す
+  assert.match(buildPublic, /content="\{SITE\}\/media\/og-1200x630-en\.jpg"/);
 });
 
 test("LPの題・説明・OGPは検索と共有向け（第1弾）", () => {
@@ -574,52 +604,85 @@ test("LPの題・説明・OGPは検索と共有向け（第1弾）", () => {
   assert.match(lpPage, /document\.title = "Stage Sketch \| Share positions and movement in a front view and a plan view";/);
 });
 
-test("英語版LPは別URL /en/ に静的に出す（クローラーはJSを実行しない）", () => {
+test("英語版は別URL /en/ に静的に出す（クローラーはJSを実行しない）", () => {
   /* 2026-09-05 第3弾。英語で読んでいてもカードと検索結果が日本語のままだった。
      ★SNSのクローラー（Twitterbot / facebookexternalhit / Slackbot）とGoogleはJSを
        実行しない。Accept-Language も送らないので、サーバー側で見て出し分けることも
        できない。だから「言語ごとに別URL＋hreflang」にする。 */
 
   // 日本語版と英語版が互いを指す（3本とも両ページで同じ内容）
-  assert.match(lpPage, /<link rel="alternate" hreflang="ja" href="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/">/);
-  assert.match(lpPage, /<link rel="alternate" hreflang="en" href="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/en\/">/);
-  assert.match(lpPage, /<link rel="alternate" hreflang="x-default" href="https:\/\/stagesketch-try\.juggler-arata\.workers\.dev\/">/);
+  const site = "https:\\/\\/stagesketch-try\\.juggler-arata\\.workers\\.dev";
+  for (const [page, ja, en] of [[lpPage, "\\/", "\\/en\\/"], [betaPage, "\\/beta", "\\/en\\/beta"], [tryHtml, "\\/try", "\\/en\\/try"]]) {
+    assert.match(page, new RegExp(`<link rel="canonical" href="${site}${ja}">`));
+    assert.match(page, new RegExp(`<link rel="alternate" hreflang="ja" href="${site}${ja}">`));
+    assert.match(page, new RegExp(`<link rel="alternate" hreflang="en" href="${site}${en}">`));
+    assert.match(page, new RegExp(`<link rel="alternate" hreflang="x-default" href="${site}${ja}">`));
+    assert.match(page, /<meta name="twitter:card" content="summary_large_image">/);
+    assert.match(page, /<meta property="og:image:width" content="1200">/);
+  }
 
-  // HTMLは二重に持たない。日本語版から meta だけ差し替えて生成する
+  // HTMLは二重に持たない。日本語版から meta だけ差し替えて生成する（3ページとも同じ仕組み）
+  assert.match(buildPublic, /class EnglishPage:/);
   assert.match(buildPublic, /def english_lp\(html: str\) -> str:/);
-  assert.match(buildPublic, /sub\('<html lang="ja">', '<html lang="en">'\)/);
+  assert.match(buildPublic, /def english_beta\(html: str\) -> str:/);
+  assert.match(buildPublic, /def english_try\(html: str\) -> str:/);
+  assert.match(buildPublic, /page\.sub\('<html lang="ja">', '<html lang="en">'\)/);
   assert.match(buildPublic, /EN_TITLE = "Stage Sketch \| Share positions and movement in a front view and a plan view"/);
-  assert.match(buildPublic, /EN_DESC = \(/);
-  assert.match(buildPublic, /EN_OG_DESC = \(/);
-  assert.match(buildPublic, /EN_OG_ALT = \(/);
+  assert.match(buildPublic, /EN_TRY_TITLE = "Stage Sketch \(Preview\)"/);
+  assert.match(buildPublic, /EN_BETA_TITLE = "About the full beta — Stage Sketch"/);
   // 用語は commit 71db200（英語の全面校閲）に揃える
   assert.match(buildPublic, /"positions, movement and the view from the house in a front view and a plan view at "/);
   assert.match(buildPublic, /No sign-up for the preview\./);
+  assert.match(buildPublic, /Free during the beta\./);
 
-  // 自分自身を指す2本だけ /en/ に向ける（hreflang の3本は共通なので触らない）
-  assert.match(buildPublic, /sub\(f'<link rel="canonical" href="\{SITE\}\/">', f'<link rel="canonical" href="\{SITE\}\/en\/">'\)/);
-  assert.match(buildPublic, /sub\(f'<meta property="og:url" content="\{SITE\}\/">', f'<meta property="og:url" content="\{SITE\}\/en\/">'\)/);
+  // 自分自身を指す2本だけ英語版のURLへ向ける（hreflang の3本は共通なので触らない）
+  assert.match(buildPublic, /def self_url\(self, ja_path: str, en_path: str\)/);
+  assert.match(buildPublic, /self_url\("\/", "\/en\/"\)/);
+  assert.match(buildPublic, /self_url\("\/beta", "\/en\/beta"\)/);
+  assert.match(buildPublic, /self_url\("\/try", "\/en\/try"\)/);
 
-  /* ★/en/ は1階層下。相対パスのままだと /en/media/... を取りに行って404になる。
+  /* ★/en/ は1階層下。素材の相対パスをそのままにすると /en/media/... で404になる。
      ★属性を名指しで並べない。2026-09-05、名指しの一覧が poster="media/hero-poster.jpg" を
        取りこぼし、英語版だけ動画のポスターが404になった（実画面で発見）。
-       src / href / poster を総なめにして、取りこぼしがあればビルドを止める。 */
-  assert.match(buildPublic, /rel_attr = re\.compile\(r'\\b\(src\|href\|poster\)="\(\[\^"\]\*\)"'\)/);
-  assert.match(buildPublic, /raise SystemExit\(f"！英語版LP: 相対パスが残っている/);
-  assert.match(buildPublic, /raise SystemExit\("！英語版LP: 相対パスの書き換え対象が1つも無い/);
+     ★逆に、兄弟ページ（.html）と ./ は直さない。/en/ の中で解決されるのが正しい。 */
+  assert.match(buildPublic, /REF_ATTR = re\.compile\(r'\\b\(src\|href\|poster\)="\(\[\^"\]\*\)"'\)/);
+  assert.match(buildPublic, /return url\.split\("\?", 1\)\[0\]\.split\("#", 1\)\[0\]\.endswith\("\.html"\)/);
+  assert.match(buildPublic, /raise SystemExit\(f"！英語版\{self\.name\}: 相対パスが残っている/);
+  assert.match(buildPublic, /raise SystemExit\(f"！英語版\{self\.name\}: 絶対パスに直す対象が1つも無い/);
+  // 体験版へのリンクだけはルート絶対で書いてあるので、英語版どうしをつなぐ
+  assert.match(buildPublic, /page\.sub\('href="\/try\.html"', 'href="\/en\/try\.html"', 3\)/);
 
   // /en/ ではURLで言語が決まっている。端末の言語や ?lang= で上書きしない
   assert.match(buildPublic, /var lang = "en";/);
-  // 本文の日英切替は残す（表示は data-ja \/ data-en が切り替える）
-  assert.match(buildPublic, /！英語版LP: 本文の日英切替（data-ja \/ data-en）が消えている/);
-  // 差し替え漏れがあれば止める（黙って日本語のmetaのまま英語ページを出さない）
-  assert.match(buildPublic, /！英語版LPの差し替えに失敗（想定\{n\}件・実際\{got\}件）/);
-  assert.match(buildPublic, /！英語版LP: head に日本語の題が残っている/);
+  /* ★体験版だけは本体（stage-sketch.js）が ?lang= を見て開く言語を決めるので、
+       本体が読む前にURLへ lang=en を足す。足さないと端末が日本語の人に日本語で開く。 */
+  assert.match(buildPublic, /url\.searchParams\.set\("lang", "en"\);/);
+  assert.match(buildPublic, /history\.replaceState\(null, "", url\);/);
 
-  // 配信フォルダに書き出す
-  assert.match(buildPublic, /en_dir = DIST \/ "en"/);
-  assert.match(buildPublic, /\(en_dir \/ "index\.html"\)\.write_text\(/);
-  assert.match(buildPublic, /english_lp\(\(HERE \/ "public-lp" \/ "index\.html"\)\.read_text\(encoding="utf-8"\)\),/);
+  // 本文の日英切替は残す（表示は各ページの仕組みが切り替える）
+  assert.match(buildPublic, /！英語版LP: 本文の日英切替（data-ja \/ data-en）が消えている/);
+  assert.match(buildPublic, /！英語版beta: 本文の日英の塊（#ja \/ #en）が消えている/);
+  // 差し替え漏れがあれば止める（黙って日本語のmetaのまま英語ページを出さない）
+  assert.match(buildPublic, /！英語版\{self\.name\}の差し替えに失敗（想定\{n\}件・実際\{got\}件）/);
+  assert.match(buildPublic, /！英語版\{self\.name\}: head に日本語が残っている/);
+  assert.match(buildPublic, /japanese_head_markers=\("舞台スケッチ｜", "演出家・演者"\)/);
+  assert.match(buildPublic, /japanese_head_markers=\("製品版ベータについて", "舞台スケッチの製品版"\)/);
+  assert.match(buildPublic, /japanese_head_markers=\("舞台スケッチ（体験版）", "舞台スケッチの体験版"\)/);
+});
+
+test("体験版と紹介ページにも日本語の説明・OGPがある（第3弾）", () => {
+  /* 2026-09-05。それまで /try と /beta は description も og:* も1つも持たず、
+     どの言語で共有してもカードが出なかった。 */
+  assert.match(tryHtml, /<meta name="description" content="舞台スケッチの体験版。登録不要、/);
+  assert.match(tryHtml, /<meta property="og:title" content="舞台スケッチ（体験版）— 登録不要でそのまま試せます">/);
+  assert.match(betaPage, /<meta name="description" content="舞台スケッチの製品版ベータについて。/);
+  assert.match(betaPage, /<meta property="og:title" content="製品版ベータについて — 舞台スケッチ">/);
+  // 題はJSでも書き換わるが、カードと検索結果はHTMLに書いた方が正
+  assert.match(tryHtml, /<title>舞台スケッチ（体験版）<\/title>/);
+  assert.match(betaPage, /<title>製品版ベータについて — 舞台スケッチ<\/title>/);
+  // 紹介ページの言語リンクも共有できるURLにする（?lang= はJS側で受け続ける）
+  assert.match(betaPage, /<a href="\/en\/beta\.html">English<\/a>/);
+  assert.match(betaPage, /<a href="\/beta\.html">日本語<\/a>/);
 });
 
 test("LPのいちばん上で日本語と英語を切り替えられる", () => {
