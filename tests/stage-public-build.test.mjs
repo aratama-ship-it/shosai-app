@@ -10,6 +10,7 @@ const publicCss = await readFile(new URL("../stage-public.css", import.meta.url)
 const buildPublic = await readFile(new URL("../build_public.py", import.meta.url), "utf8");
 const betaPage = await readFile(new URL("../public-beta.html", import.meta.url), "utf8");
 const lpPage = await readFile(new URL("../public-lp/index.html", import.meta.url), "utf8");
+const stageManifest = JSON.parse(await readFile(new URL("../stage-sketch.webmanifest", import.meta.url), "utf8"));
 
 test("公開体験版はPWAにならない（SW・manifest・アイコンを持たない）", () => {
   // βの stage.html には有る。公開版には無い、という対比で守る。
@@ -403,13 +404,16 @@ test("LPは承認済みの文言を使い、詩的な見出しを足さない", 
        会場の話は「12の機能」の05で画像つきに入れ替えた。 */
   assert.doesNotMatch(lpPage, /分けているのは舞台の形ではなく/);
   assert.match(lpPage, /技術図面ではなく、安全を検証したり保証したりするものでもありません/);
-  /* ★版の札。「ブラウザ版」は今あるもの、「Mac用スタンドアローン版」はまだ無い
-     （2026-09-05 確認: package.json も Electron/Tauri も .dmg も無い）。
-     公開ページなので、あるものと無いものを見分けられる書き方にする。 */
+  /* ★版の札。どちらも今あるもの（2026-09-05 実測）。
+     Mac用スタンドアローン版の実体はPWA: stage-sketch.webmanifest が display:standalone、
+     stage-pwa.js が Service Worker を登録する（キャッシュ生成を実測で確認）。
+     ★Electron/Tauri/.dmg が無いことだけを見て「無い」と判断しない。 */
   assert.match(lpPage, /<span data-ja>ブラウザ版<\/span><span data-en>Browser<\/span>/);
-  assert.match(lpPage, /badge-soon"><span data-ja>Mac用スタンドアローン版（準備中）<\/span>/);
-  assert.match(lpPage, /<span data-en>Mac standalone \(in preparation\)<\/span>/);
-  assert.match(lpPage, /\.badge-soon\{ border-style:dashed;/);
+  assert.match(lpPage, /<span data-ja>Mac用スタンドアローン版<\/span><span data-en>Mac standalone app<\/span>/);
+  assert.doesNotMatch(lpPage, /準備中|in preparation/);
+  assert.equal(stageManifest.display, "standalone", "スタンドアローンで開く指定がある");
+  assert.ok((stageManifest.icons || []).length >= 3, "アイコンがある");
+  assert.match(stageHtml, /<link rel="manifest" href="stage-sketch\.webmanifest">/);
   /* ★「できないこと」は「注意点」へ言い換えた（本人指示 2026-09-05）。中の文はそのまま。 */
   assert.match(lpPage, /<h2><span data-ja>注意点<\/span><span data-en>Please note<\/span><\/h2>/);
   /* ★見出しだけを見る。ページの題（<title>）と og:description は、

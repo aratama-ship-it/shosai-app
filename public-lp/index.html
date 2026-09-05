@@ -160,16 +160,18 @@ p{ margin:0 0 var(--space-3); }
   font-family:var(--sans); font-size:11px; letter-spacing:.28em;
   color:var(--ink-soft-sm); margin:0 0 var(--space-2);
 }
-/* 版の札。★「ブラウザ版」は今あるもの、「Mac用スタンドアローン版」はまだ無い（2026-09-05 確認:
-   package.json も Electron/Tauri も .dmg も無く、冊子の対応表も PC／iPad／スマホの3つだけ）。
-   実線＝使える／破線＝準備中、で見分けられるようにしてある。出せるようになったら badge-soon を外す。 */
+/* 版の札。どちらも今あるもの（2026-09-05 実測）。
+   ★Mac用スタンドアローン版の実体はPWA。stage-sketch.webmanifest が display:standalone・
+     アイコン3種を持ち、stage-pwa.js が Service Worker を登録している
+     （キャッシュ stage-sketch-pwa-v194 の生成を確認）。
+     SafariのDockに追加／Chromeのインストールで、独立したウィンドウのMacアプリとして開く。
+   ★Electron/Tauri/.dmg は無い。それだけを見て「スタンドアローン版は無い」と判断しない。 */
 .editions{ display:flex; align-items:baseline; gap:var(--space-2); flex-wrap:wrap; margin:0; }
 .badge-pc{
   display:inline-block; margin:0;
   padding:3px 10px; border:1px solid var(--brass); border-radius:var(--radius-s);
   font-family:var(--sans); font-size:11px; letter-spacing:.12em; color:var(--brass);
 }
-.badge-soon{ border-style:dashed; border-color:var(--line-dark); color:var(--ink-soft-sm); }
 
 /* ============ ④ 開発者の話 ============ */
 .story p{ margin-bottom:var(--space-4); }
@@ -292,7 +294,7 @@ footer a{ color:var(--rust-ink); }
       <h1 class="hero-name"><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></h1>
       <p class="editions">
         <span class="badge-pc"><span data-ja>ブラウザ版</span><span data-en>Browser</span></span>
-        <span class="badge-pc badge-soon"><span data-ja>Mac用スタンドアローン版（準備中）</span><span data-en>Mac standalone (in preparation)</span></span>
+        <span class="badge-pc"><span data-ja>Mac用スタンドアローン版</span><span data-en>Mac standalone app</span></span>
       </p>
     </div>
     <p class="uses-lead"><span data-ja>限られたステージ利用時間はもっと質の高い練習へ。</span><span data-en>The shortest line between imagining and doing.</span></p>
@@ -358,8 +360,8 @@ footer a{ color:var(--rust-ink); }
         <figure class="tour-figure"><img src="media/features/03-scenes.jpg" width="1263" height="423" alt="8つのシーンを並べた一覧" loading="lazy" decoding="async"></figure>
         <div class="tour-copy">
           <p class="tour-no">03</p>
-          <h3><span data-ja>シーンを重ねて、見渡せる。</span><span data-en>Scenes, stacked and seen at once.</span></h3>
-          <p><span data-ja>場面を足し、セクションで束ね、一覧で見渡します。転換の長さと暗転を決めて、次の場面へ送れます。</span><span data-en>Add scenes, group them into sections, and see them all at a glance. Set transition length and blackout, then step to the next.</span></p>
+          <h3><span data-ja>シーン一覧で表示する。</span><span data-en>See every scene at once.</span></h3>
+          <p><span data-ja>転換の長さや暗転にも対応、アニメーション機能もあります。</span><span data-en>Set the length of each transition and its blackout, and play the change back as an animation.</span></p>
         </div>
       </li>
       <li class="tour-item">
