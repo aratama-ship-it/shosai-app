@@ -533,7 +533,7 @@ test("LPの下部で13の機能を、画像つきで一つずつ紹介する", (
   assert.equal(items.length, 13, "13項目（13はスマホ表示。本人指示 2026-09-05）");
   assert.match(lpPage, /<h3><span data-ja>iPhoneで、稽古の前に覚えておく。<\/span>/);
   // 09 の見出しは「照明を作る。」（本人指示 2026-09-05）
-  assert.match(lpPage, /<h3><span data-ja>照明を作る。<\/span><span data-en>Build the lighting\.<\/span><\/h3>/);
+  assert.match(lpPage, /<h3><span data-ja>簡易的な照明をつくる。<\/span><span data-en>Rough out the lighting\.<\/span><\/h3>/);
   // 画像は features/ 配下。全部が存在し、配信スクリプトが運ぶ
   const refs = [...lpPage.matchAll(/src="media\/features\/([^"]+)"/g)].map((m) => m[1]);
   assert.equal(new Set(refs).size, 13, "13枚がそれぞれ別の画像");
