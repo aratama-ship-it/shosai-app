@@ -74,3 +74,10 @@
 - **`/beta` と `/try` にも日英の description・OGP を入れた。** URLは `/beta`・`/en/beta`・`/try`・`/en/try`。canonical と og:url は各ページ自身、hreflang は3本とも日英で同じ。カード画像は英語版だけ `-en.jpg`。
 - `/en/try.html` は本体（stage-sketch.js）が `?lang=` を見て開く言語を決めるため、本体が読み込まれる前に `history.replaceState` で `lang=en` をURLへ足す。これが無いと端末が日本語の人には日本語で開き、英語のURLとして人に渡せない。
 - **`public-beta.html` の `.lang-switch a{padding-inline:4px}`。** 「日本語」は文字幅41pxで、上下の余白（`.small a` の `padding-block:12px`）だけでは幅が44pxに届かない（design-lint U1・実測 41.3×48.8px）。LPの `.lang-switch` と同型の問題で、英語表示のときしか出ないリンクのため日本語版だけを測っていた間は見つからなかった。
+
+## 追記 2026-09-05（第3弾-3・英語の用語統一と sitemap）
+- **英語の用語の正本は製品UI**（`stage-i18n.js` と `stage-venues.js`）。LP・紹介ページ・体験版の英語はそこに合わせる。使わない言い方（`full beta version` / `full version (beta)` / `beta version` / `trial version` / `introduction page`）はテストで検査して弾く。
+- **書き分け**: 「製品版」= *the full version* ／「製品版（β）」「製品版ベータ」= *the full beta* ／「体験版」= *the preview*。片方に寄せない（LP・紹介ページ・アプリで同じ書き分けをしている）。
+- **★会場名の訳語が別の実体と衝突していた。** LPの英語が シャピトー を "big top" と訳していたが、アプリの "Big top" は別の会場（`arena`・日本語「ビッグトップ」）。読んだ人がアプリで違う会場を選ぶ。LPを "a big top in the round, or a touring chapiteau." に修正し、体験版の会場の帯（`?embed=1` 時のみ表示）も「アリーナ」/"Arena" → 「ビッグトップ」/"Big top" に統一。
+- 錠の `aria-label` は括弧も言語で変える（英語に全角の（）が混じると読み上げが崩れる。実機で `Seat（full version）` を確認・46か所）。
+- **`sitemap.xml`（日英6URL・hreflang付き）と `robots.txt` を配信に追加。** URLは各ページが宣言している `canonical` から生成し、ページ側の `hreflang` と食い違えばビルドを止める（一覧を二重に持たない）。`<lastmod>` は入れない（ビルド日時＝毎回全更新の申告になり実態と違う）。
