@@ -439,6 +439,16 @@ test("LPの最下部に連絡先として名前を出す", () => {
   assert.match(lpPage, /<a href="https:\/\/pygmix\.com\/contact\?category=tool&amp;subject=Stage%20Sketch">contact form<\/a>/);
 });
 
+test("LPのいちばん上に体験版とライセンスへのリンクを置く", () => {
+  // 本人指示 2026-09-05
+  assert.match(lpPage, /<a class="about-link" href="\/try\.html"><span data-ja>体験版はコチラ<\/span><span data-en>Try the preview<\/span><\/a>/);
+  /* ★ライセンス（利用条件・料金）のページはまだ無い。本人の選択で、
+       製品版ベータの問い合わせページ（beta.html）へ送る（2026-09-05）。 */
+  assert.match(lpPage, /<a class="about-link" href="beta\.html"><span data-ja>ライセンスはコチラ<\/span><span data-en>Licensing<\/span><\/a>/);
+  // 言語を引き継ぐ仕組み（withLang）が .html リンクを自動で拾う
+  assert.match(lpPage, /a\[href\$="\.html"\], a\[href\^="\/try"\]/);
+});
+
 test("LPのいちばん上で日本語と英語を切り替えられる", () => {
   /* 本人指示 2026-09-05。★リンクにしてある。JSが動かなくても効くし、フッターの切替と同じ考え方。 */
   assert.match(lpPage, /<a href="\?lang=ja" hreflang="ja">日本語<\/a>/);
