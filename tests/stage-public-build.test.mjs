@@ -607,6 +607,33 @@ test("13の機能の画像は列いっぱいに広げず、縦横とも66%くら
   assert.match(lpPage, /\.tour-item:nth-child\(even\):not\(\.tour-item-small\) \.tour-figure\{ justify-self:end; \}/);
 });
 
+test("LPの帯幅は全帯で同じ（「このアプリについて」だけ細く見えない）", () => {
+  /* 本人指摘 2026-09-05「このアプリについてが、全体的にブロックが狭い気がします」。
+     原因は帯ごとの幅違い（--wide 1180 と .tour-wrap 1400 の混在）。全帯 1320 に揃え、帯別の上書きを外した。
+     正本: design/TOKEN_SHEET_public-lp_2026-09-05.md */
+  assert.match(lpPage, /--wide:1320px;/);
+  assert.doesNotMatch(lpPage, /\.tour-wrap\{/);
+  assert.doesNotMatch(lpPage, /max-width:1400px/);
+  // 「このアプリについて」は見出し＋リンクの脇柱と、720px（≒42字）の本文の2列
+  assert.match(lpPage, /<div class="wrap story-grid">\s*<div class="story-aside">/);
+  assert.match(lpPage, /\.story-grid\{ grid-template-columns:minmax\(0,1fr\) minmax\(0,720px\); gap:var\(--space-6\); align-items:start; \}/);
+  assert.match(lpPage, /\.story-body p\{ margin-bottom:var\(--space-4\); font-size:17px; line-height:1\.95; \}/);
+  // CTA と footer も .wrap に載せる（帯の外枠を別々に持たない）
+  assert.match(lpPage, /<div class="wrap cta-inner">/);
+  assert.match(lpPage, /<div class="wrap foot-row">/);
+});
+
+test("LPのタップ対象は 44px 以上、区切り文字は本文色（design-lint C1/U1）", () => {
+  // 2026-09-05 design-lint 本番計測: C1=「/」区切りが 1.38:1、U1=9リンクが44px未満。ローカル再計測で両方 OK。
+  assert.match(lpPage, /\.lang-pick span\{ color:var\(--ink-soft-sm\); \}/);
+  assert.match(lpPage, /\.lang-pick a\{ [^}]*padding:12px 4px; \}/);  // 「日本語」は文字幅40px→左右にも余白
+  assert.match(lpPage, /\.about-link\{[\s\S]*?padding-block:12px;/);
+  assert.match(lpPage, /\.story-more a\{ [^}]*padding-block:12px; \}/);
+  assert.match(lpPage, /footer a\{ [^}]*padding-block:14px; \}/);
+  // 選択中の言語の下線は padding を潰さない（潰すと高さ37pxに落ちる）
+  assert.doesNotMatch(lpPage, /\.lang-pick a\[hreflang="en"\]\{[^}]*padding-bottom:1px/);
+});
+
 test("LPの出現アニメーションは、JSが動かなくても中身が見える形にする", () => {
   // 2026-09-04 実測: 非表示のタブでは IntersectionObserver が発火せず全帯が opacity 0 だった。
   // 隠すのはJSが .will-reveal を付けたときだけにし、保険の時間切れも入れる。

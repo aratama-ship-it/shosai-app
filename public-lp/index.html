@@ -33,7 +33,7 @@
   --space-1:4px; --space-2:8px; --space-3:16px; --space-4:24px;
   --space-5:40px; --space-6:64px; --space-7:96px;
   --read:680px;  /* 読み物の幅 */
-  --wide:1180px; /* デモの幅 */
+  --wide:1320px; /* 全帯の枠。★帯ごとに幅を変えない（2026-09-05: 「このアプリについて」だけ細く見えた本人指摘） */
   /* 形状 */
   --radius-s:4px; --radius-m:10px; --radius-l:16px;
   --shadow-1:0 2px 10px rgba(0,0,0,.35);
@@ -110,19 +110,27 @@ p{ margin:0 0 var(--space-3); }
 .masthead-top .eyebrow{ margin-bottom:0; }
 .masthead-links{ display:flex; align-items:baseline; gap:var(--space-3); flex-wrap:wrap; }
 /* 言語の切替。★リンクにしてある。JSが動かなくても効くし、フッターの切替と同じ考え方。 */
-.lang-pick{ display:inline-flex; align-items:baseline; gap:6px; font-family:var(--sans); font-size:var(--fs-small); }
-.lang-pick a{ color:var(--ink-soft-sm); text-decoration:none; }
+.lang-pick{ display:inline-flex; align-items:baseline; gap:2px; font-family:var(--sans); font-size:var(--fs-small); }
+/* 44×44 のタップ面: 「日本語」は文字幅40pxなので左右にも余白を持たせる（design-lint U1） */
+.lang-pick a{ color:var(--ink-soft-sm); text-decoration:none; display:inline-block; padding:12px 4px; }
 .lang-pick a:hover, .lang-pick a:focus-visible{ color:var(--paper); }
-.lang-pick span{ color:var(--line-dark); }
+.lang-pick span{ color:var(--ink-soft-sm); }  /* ★--line-dark は文字に使わない（1.38:1・design-lint C1） */
 /* いま読んでいる方に印を付ける */
 [lang="ja"] .lang-pick a[hreflang="ja"],
-[lang="en"] .lang-pick a[hreflang="en"]{ color:var(--paper); border-bottom:1px solid var(--brass); padding-bottom:1px; }
+[lang="en"] .lang-pick a[hreflang="en"]{ color:var(--paper); border-bottom:1px solid var(--brass); }  /* ★padding-bottom を上書きしない（押せる高さ44pxが37pxに落ちた・2026-09-05 実測） */
+/* ★押せる高さ 44px を padding-block で確保する（design-lint U1: 25px を検出・2026-09-05）。
+     下線は border ではなく擬似要素にしないと、padding のぶん下線が下がる。 */
 .about-link{
   font-family:var(--sans); font-size:var(--fs-small); color:var(--ink-soft-sm);
-  text-decoration:none; border-bottom:1px solid rgba(239,231,214,.28);
-  padding-bottom:1px; white-space:nowrap;
+  text-decoration:none; white-space:nowrap;
+  display:inline-block; padding-block:12px; position:relative;
 }
-.about-link:hover, .about-link:focus-visible{ color:var(--paper); border-bottom-color:var(--brass); }
+.about-link::after{
+  content:""; position:absolute; left:0; right:0; bottom:11px; height:1px;
+  background:rgba(239,231,214,.28);
+}
+.about-link:hover, .about-link:focus-visible{ color:var(--paper); }
+.about-link:hover::after, .about-link:focus-visible::after{ background:var(--brass); }
 /* 名前の横に版の札を置く（本人指示 2026-09-05）。
    ★baseline で揃える。大きな名前の足元に小さな札が並ぶ形にしたいので、中央揃えにしない。 */
 .hero-title-row{ display:flex; align-items:baseline; gap:var(--space-3); flex-wrap:wrap; }
@@ -173,13 +181,23 @@ p{ margin:0 0 var(--space-3); }
   font-family:var(--sans); font-size:11px; letter-spacing:.12em; color:var(--brass);
 }
 
-/* ============ ④ 開発者の話 ============ */
-.story p{ margin-bottom:var(--space-4); }
-.story .lead{ color:var(--paper); }
-.story-more{
-  font-family:var(--sans); font-size:var(--fs-small);
+/* ============ ④ 開発者の話 ============
+   ★2列にする（2026-09-05）。左＝見出しと行き先、右＝本文。
+     以前は幅680pxの1列で、上下の広い帯（1320px）に挟まれて細く見えた（本人指摘）。
+     行長は保つ（本文列は最大720px＝17pxで約42字。A_design §3: 30〜50字）。
+   ★上に1pxの罫。ヒーローの動画とこの帯の切れ目を、余白だけでなく線でも示す。 */
+.story{ padding:var(--space-7) 0; border-top:1px solid var(--line-dark); }
+.story-grid{ display:grid; gap:var(--space-5); grid-template-columns:minmax(0,1fr); }
+@media (min-width:900px){
+  .story-grid{ grid-template-columns:minmax(0,1fr) minmax(0,720px); gap:var(--space-6); align-items:start; }
+  .story-aside{ position:sticky; top:var(--space-5); }
 }
-.story-more a{ color:var(--rust-ink); }
+.story-body p{ margin-bottom:var(--space-4); font-size:17px; line-height:1.95; }
+@media (max-width:760px){ .story-body p{ font-size:var(--fs-body); line-height:1.9; } }
+.story .lead{ color:var(--paper); }
+.story-body p:not(.lead){ color:var(--paper-line); }
+.story-more{ font-family:var(--sans); font-size:var(--fs-small); margin:0; }
+.story-more a{ color:var(--rust-ink); display:inline-block; padding-block:12px; }
 
 /* ============ ⑤ 注意点 ============ */
 /* ★ディレクター／アーティストの下に置く（本人指示 2026-09-05）。帯ではなく、右の欄の一部。 */
@@ -194,8 +212,6 @@ p{ margin:0 0 var(--space-3); }
 /* ============ 12の機能を、ひとつずつ ============
    画像と文を横に並べ、左右を交互に振る。一つの機能に一つの画像。
    ★画像は撮ったままの縦横比で置く（切って嘘にしない）。幅だけ揃える。 */
-/* ★この帯だけ幅を広げる。画像は実際の画面なので、大きいほど読める（本人指示 2026-09-05）。 */
-.tour-wrap{ max-width:1400px; }
 .tour .lead{
   margin:0 0 var(--space-5); font-family:var(--sans); font-size:var(--fs-small); color:var(--ink-soft-sm);
 }
@@ -280,6 +296,7 @@ p{ margin:0 0 var(--space-3); }
 
 /* ============ ⑥⑦ CTA ============ */
 .cta{ text-align:center; }
+.cta-inner{ max-width:var(--read); }  /* ボタンの周りは余白で集める（A_design §2 余白のライト） */
 .btn{
   display:inline-block; padding:14px 28px; border-radius:var(--radius-s);
   font-family:var(--sans); font-size:var(--fs-ui); letter-spacing:.06em;
@@ -296,7 +313,7 @@ footer{
   border-top:1px solid var(--line-dark); padding:var(--space-5) 0 var(--space-6);
   font-family:var(--sans); font-size:var(--fs-small); color:var(--ink-soft-sm);
 }
-footer a{ color:var(--rust-ink); }
+footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /* 13px+28 ≒ 44px（design-lint U1） */
 .foot-row{ display:flex; flex-wrap:wrap; gap:var(--space-3) var(--space-4); align-items:baseline; }
 
 /* 出現アニメーション。
@@ -372,30 +389,17 @@ footer a{ color:var(--rust-ink); }
 </header>
 
 <section class="story reveal" id="about">
-  <div class="read">
-    <h2><span data-ja>このアプリについて</span><span data-en>About this app</span></h2>
-    <p class="lead"><span data-ja>私は10年以上、幸運にもいくつもの素晴らしいショーに沢山演者として関わることをさせていただきました。
-    一人の演者として、素晴らしいディレクターの意図をどれだけ把握して観客に届けることができるのかが常に私の戦いでした。
-    このアプリは、そんな私がこれがあったらよかったのに、を盛り込んだアプリです。</span><span data-en>For more than ten years, I've had the good fortune to perform in show after wonderful show.
-    As a performer, my constant struggle was how fully I could grasp a great director's intention and carry it
-    to the audience. This app is built from everything I wished I'd had along the way.</span></p>
-    <p><span data-ja>芸術という抽象的なものにおいて、意思疎通を言葉だけで行うことは非常に難しいものです。
-    ディレクターが見せたいものをアーティストが表現しようとするとき、
-    その意図を理解することに時間を取られすぎることもありました。</span><span data-en>Art is abstract by nature, so words alone rarely carry it. When an artist tries to realize
-    what a director wants to show, too much time can be spent just working out what that vision is.</span></p>
-    <p><span data-ja>私は新しい劇場に入るたびに客席を歩き回り、それぞれの場所から自分がどのように見えるかをイメージします。
-    俯瞰図では、人や物の位置と全体のバランスを第三者の目で捉えられます。
-    正面図では、お客さんやディレクターから舞台がどう見えるかを考えられます。演者はこれらを常に頭の何処かで考え続けます。</span><span data-en>Every time I step into a new theater, I walk through the house and imagine how I'll look
-    from each seat. The plan view lets me see where people and objects sit and how the whole composition
-    balances, as a third eye would. The front view shows what the audience — or the director — will actually
-    see. A performer keeps turning both of these over, somewhere in the back of their mind, all the time.</span></p>
-    <p><span data-ja>私はショーの世界が大好きです。だからこそ、準備不足のショーを見ると少しがっかりします。
-    演者たちと事前に意図や配置を共有できればリハーサルの初期段階をより早く終え、
-    その先の通し練習へ時間を使えます。そうしてショーを素晴らしいものとし、世界を少しだけ素晴らしいものにしてくれたら嬉しいです。</span><span data-en>I love this world of shows — which is exactly why an underprepared one leaves me a little
-    disappointed. If performers can share intention and blocking in advance, a team can move through the
-    early stages of rehearsal faster and spend more of that time on full runs. I'd be glad if that helped
-    make shows a little more wonderful, and through them, the world too.</span></p>
-    <p class="story-more"><a href="beta.html"><span data-ja>製品版ベータについて詳しく →</span><span data-en>More about the full beta →</span></a></p>
+  <div class="wrap story-grid">
+    <div class="story-aside">
+      <h2><span data-ja>このアプリについて</span><span data-en>About this app</span></h2>
+      <p class="story-more"><a href="beta.html"><span data-ja>製品版ベータについて詳しく →</span><span data-en>More about the full beta →</span></a></p>
+    </div>
+    <div class="story-body">
+    <p class="lead"><span data-ja>私は10年以上、幸運にもいくつもの素晴らしいショーに沢山演者として関わることをさせていただきました。一人の演者として、素晴らしいディレクターの意図をどれだけ把握して観客に届けることができるのかが常に私の戦いでした。このアプリは、そんな私がこれがあったらよかったのに、を盛り込んだアプリです。</span><span data-en>For more than ten years, I've had the good fortune to perform in show after wonderful show. As a performer, my constant struggle was how fully I could grasp a great director's intention and carry it to the audience. This app is built from everything I wished I'd had along the way.</span></p>
+    <p><span data-ja>芸術という抽象的なものにおいて、意思疎通を言葉だけで行うことは非常に難しいものです。ディレクターが見せたいものをアーティストが表現しようとするとき、その意図を理解することに時間を取られすぎることもありました。</span><span data-en>Art is abstract by nature, so words alone rarely carry it. When an artist tries to realize what a director wants to show, too much time can be spent just working out what that vision is.</span></p>
+    <p><span data-ja>私は新しい劇場に入るたびに客席を歩き回り、それぞれの場所から自分がどのように見えるかをイメージします。俯瞰図では、人や物の位置と全体のバランスを第三者の目で捉えられます。正面図では、お客さんやディレクターから舞台がどう見えるかを考えられます。演者はこれらを常に頭の何処かで考え続けます。</span><span data-en>Every time I step into a new theater, I walk through the house and imagine how I'll look from each seat. The plan view lets me see where people and objects sit and how the whole composition balances, as a third eye would. The front view shows what the audience — or the director — will actually see. A performer keeps turning both of these over, somewhere in the back of their mind, all the time.</span></p>
+    <p><span data-ja>私はショーの世界が大好きです。だからこそ、準備不足のショーを見ると少しがっかりします。演者たちと事前に意図や配置を共有できればリハーサルの初期段階をより早く終え、その先の通し練習へ時間を使えます。そうしてショーを素晴らしいものとし、世界を少しだけ素晴らしいものにしてくれたら嬉しいです。</span><span data-en>I love this world of shows — which is exactly why an underprepared one leaves me a little disappointed. If performers can share intention and blocking in advance, a team can move through the early stages of rehearsal faster and spend more of that time on full runs. I'd be glad if that helped make shows a little more wonderful, and through them, the world too.</span></p>
+    </div>
   </div>
 </section>
 
@@ -405,7 +409,7 @@ footer a{ color:var(--rust-ink); }
      すべて画面のDOMから数えた実測値。冊子に書かれた姿勢の数は古いので使わない。
      ★12だけは静止画が弱い（未接続の欄）。実際の会議の画面が撮れたら差し替える。 -->
 <section class="tour reveal">
-  <div class="wrap tour-wrap">
+  <div class="wrap">
     <h2><span data-ja>12の機能を、ひとつずつ。</span><span data-en>Twelve things it does, one at a time.</span></h2>
     <p class="lead"><span data-ja>製品版（β）の画面です。体験版で開いているのは、このうち一部です。</span><span data-en>Screens from the full beta. The preview opens only part of this.</span></p>
     <ol class="tour-list">
@@ -526,7 +530,7 @@ footer a{ color:var(--rust-ink); }
 
 <!-- ============ ⑥⑦ CTA ============ -->
 <section class="cta reveal">
-  <div class="read">
+  <div class="wrap cta-inner">
     <h2 style="border:0;padding:0;text-align:center"><span data-ja>触ってみる</span><span data-en>Have a go</span></h2>
     <p><a class="btn btn-main" href="/try.html"><span data-ja>体験する</span><span data-en>Open the preview</span></a></p>
     <p class="cta-note small"><span data-ja>体験版はスマホでも開けますが、操作が限られます。PCでのご利用をお勧めします。</span><span data-en>The preview opens on phones too, but it is limited there. We recommend using a computer.</span></p>
@@ -537,7 +541,7 @@ footer a{ color:var(--rust-ink); }
 <!-- ============ 開発者の話（このアプリについて）============
      いちばん下に置く（本人指示 2026-09-05）。上の「このアプリについて」からここへ飛ぶ。 -->
 <footer>
-  <div class="read foot-row">
+  <div class="wrap foot-row">
     <span><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></span>
     <span><a href="beta.html"><span data-ja>製品版ベータについて</span><span data-en>About the full beta</span></a></span>
     <span><span data-ja>作 ARATA URAWA</span><span data-en>Made by ARATA URAWA</span></span>
