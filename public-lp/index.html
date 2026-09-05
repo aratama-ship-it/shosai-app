@@ -160,11 +160,16 @@ p{ margin:0 0 var(--space-3); }
   font-family:var(--sans); font-size:11px; letter-spacing:.28em;
   color:var(--ink-soft-sm); margin:0 0 var(--space-2);
 }
+/* 版の札。★「ブラウザ版」は今あるもの、「Mac用スタンドアローン版」はまだ無い（2026-09-05 確認:
+   package.json も Electron/Tauri も .dmg も無く、冊子の対応表も PC／iPad／スマホの3つだけ）。
+   実線＝使える／破線＝準備中、で見分けられるようにしてある。出せるようになったら badge-soon を外す。 */
+.editions{ display:flex; align-items:baseline; gap:var(--space-2); flex-wrap:wrap; margin:0; }
 .badge-pc{
   display:inline-block; margin:0;
   padding:3px 10px; border:1px solid var(--brass); border-radius:var(--radius-s);
   font-family:var(--sans); font-size:11px; letter-spacing:.12em; color:var(--brass);
 }
+.badge-soon{ border-style:dashed; border-color:var(--line-dark); color:var(--ink-soft-sm); }
 
 /* ============ ④ 開発者の話 ============ */
 .story p{ margin-bottom:var(--space-4); }
@@ -285,7 +290,10 @@ footer a{ color:var(--rust-ink); }
     </div>
     <div class="hero-title-row">
       <h1 class="hero-name"><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></h1>
-      <p class="badge-pc"><span data-ja>PC用のアプリです</span><span data-en>Made for desktop</span></p>
+      <p class="editions">
+        <span class="badge-pc"><span data-ja>ブラウザ版</span><span data-en>Browser</span></span>
+        <span class="badge-pc badge-soon"><span data-ja>Mac用スタンドアローン版（準備中）</span><span data-en>Mac standalone (in preparation)</span></span>
+      </p>
     </div>
     <p class="uses-lead"><span data-ja>限られたステージ利用時間はもっと質の高い練習へ。</span><span data-en>The shortest line between imagining and doing.</span></p>
   </div>
@@ -343,7 +351,7 @@ footer a{ color:var(--rust-ink); }
         <div class="tour-copy">
           <p class="tour-no">02</p>
           <h3><span data-ja>客席のどこから見るかを選べる。</span><span data-en>Choose where the house looks from.</span></h3>
-          <p><span data-ja>1階の最前列・中央・後方・左右席、そして2階席。同じ場面でも、見る位置で並びの意味が変わります。</span><span data-en>Front row, stalls centre, rear, side, or balcony. The same scene reads differently from each seat.</span></p>
+          <p><span data-ja>1階の最前列・中央・後方・左右席、そして2階席。同じ場面を様々な位置から見ることで、すべてのお客様を意識したショーづくりを。</span><span data-en>Front row, stalls centre, rear, side, or balcony. See the same scene from every position, and build a show that holds for every seat in the house.</span></p>
         </div>
       </li>
       <li class="tour-item">

@@ -403,7 +403,13 @@ test("LPは承認済みの文言を使い、詩的な見出しを足さない", 
        会場の話は「12の機能」の05で画像つきに入れ替えた。 */
   assert.doesNotMatch(lpPage, /分けているのは舞台の形ではなく/);
   assert.match(lpPage, /技術図面ではなく、安全を検証したり保証したりするものでもありません/);
-  assert.match(lpPage, /PC用のアプリです/);
+  /* ★版の札。「ブラウザ版」は今あるもの、「Mac用スタンドアローン版」はまだ無い
+     （2026-09-05 確認: package.json も Electron/Tauri も .dmg も無い）。
+     公開ページなので、あるものと無いものを見分けられる書き方にする。 */
+  assert.match(lpPage, /<span data-ja>ブラウザ版<\/span><span data-en>Browser<\/span>/);
+  assert.match(lpPage, /badge-soon"><span data-ja>Mac用スタンドアローン版（準備中）<\/span>/);
+  assert.match(lpPage, /<span data-en>Mac standalone \(in preparation\)<\/span>/);
+  assert.match(lpPage, /\.badge-soon\{ border-style:dashed;/);
   /* ★「できないこと」は「注意点」へ言い換えた（本人指示 2026-09-05）。中の文はそのまま。 */
   assert.match(lpPage, /<h2><span data-ja>注意点<\/span><span data-en>Please note<\/span><\/h2>/);
   /* ★見出しだけを見る。ページの題（<title>）と og:description は、
@@ -473,7 +479,7 @@ test("LPのいちばん上に製品の名前を大きく出す", () => {
   /* 「PC用として明示する」（2026-09-03の指示）は残す。
      置き場所は名前の横（本人指示 2026-09-05）。★baselineで揃える（中央揃えにしない）。 */
   assert.match(lpPage, /<div class="hero-title-row">\s*\n\s*<h1 class="hero-name">/);
-  assert.match(lpPage, /<\/h1>\s*\n\s*<p class="badge-pc">/);
+  assert.match(lpPage, /<\/h1>\s*\n\s*<p class="editions">/);
   assert.match(lpPage, /\.hero-title-row\{ display:flex; align-items:baseline;/);
   /* ★説明の一文は外した（2026-09-05）。右の欄には「誰が、何に使うか」が入る。 */
   assert.doesNotMatch(lpPage, /--fs-hero/);
@@ -578,7 +584,6 @@ test("LPは日英を持ち、承認済みの英語確定稿の文言を使う", 
   assert.match(lpPage, /\[lang="en"\] \[data-ja\], \[lang="ja"\] \[data-en\]\{ display:none; \}/);
   assert.doesNotMatch(lpPage, /Formats are defined by where the audience sits/);
   assert.match(lpPage, /Stage Sketch is not a technical drawing, and it does not verify or guarantee safety\./);
-  assert.match(lpPage, /Made for desktop/);
   // 日英の対の数が合っている（片方だけ足すと表示が欠ける）
   const ja = (lpPage.match(/data-ja/g) || []).length;
   const en = (lpPage.match(/data-en/g) || []).length;
