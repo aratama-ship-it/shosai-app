@@ -676,6 +676,43 @@ test("英語版は別URL /en/ に静的に出す（クローラーはJSを実行
   assert.match(buildPublic, /japanese_head_markers=\("舞台スケッチ（体験版）", "舞台スケッチの体験版"\)/);
 });
 
+test("sitemap.xml と robots.txt を配る（第3弾-3）", () => {
+  /* 2026-09-05。日英6URLを検索エンジンへ渡す。
+     ★URLはページが宣言している canonical から作る。一覧をここに書き写すと、
+       ページを直したときサイトマップだけ古くなる（正本を二重に持たない）。 */
+  assert.match(buildPublic, /CANONICAL_RE = re\.compile\(r'<link rel="canonical" href="\(\[\^"\]\+\)">'\)/);
+  assert.match(buildPublic, /ALTERNATE_RE = re\.compile\(r'<link rel="alternate" hreflang="\(\[\^"\]\+\)" href="\(\[\^"\]\+\)">'\)/);
+  assert.match(buildPublic, /def sitemap_xml\(pairs: list\[tuple\[str, str, dict\[str, str\]\]\]\) -> str:/);
+  assert.match(buildPublic, /\(DIST \/ "sitemap\.xml"\)\.write_text\(sitemap_xml\(url_pairs\), encoding="utf-8"\)/);
+  // hreflang は sitemap 側にも書く（Google は sitemap でも受け取る）
+  assert.match(buildPublic, /<xhtml:link rel="alternate" hreflang="\{lang\}" href="\{alternates\[lang\]\}"\/>/);
+  assert.match(buildPublic, /for lang in \("ja", "en", "x-default"\)/);
+  assert.match(buildPublic, /xmlns:xhtml="http:\/\/www\.w3\.org\/1999\/xhtml"/);
+
+  /* ★ページ側の canonical / hreflang と食い違っていたら止める。
+       黙って古いURLを検索エンジンへ渡すくらいなら、ビルドが失敗した方がよい
+       （2026-09-05: わざと食い違わせて exit 1 になることを確認）。 */
+  assert.match(buildPublic, /raise SystemExit\(f"！\{name\}: canonical が無い"\)/);
+  assert.match(buildPublic, /raise SystemExit\(f"！\{name\}: hreflang が足りない/);
+  assert.match(buildPublic, /日本語版と英語版で hreflang の中身が違う/);
+  assert.match(buildPublic, /canonical（\{ja_url\}）と hreflang ja（\{ja_alt\['ja'\]\}）が食い違う/);
+  assert.match(buildPublic, /x-default は日本語版（\{ja_url\}）を指すこと/);
+
+  /* ★<lastmod> は入れない。ビルド日時を書くと「毎回すべて更新された」と申告することになる。
+     ★関数の中身だけを見る。build_public.py のコメントにも <lastmod> の字は出てくるので、
+       ファイル全体を見ると「入れない」という説明文そのものに引っかかる（実際に引っかかった）。 */
+  const sitemapFn = buildPublic.slice(
+    buildPublic.indexOf("def sitemap_xml("),
+    buildPublic.indexOf("def check_pair("),
+  );
+  assert.ok(sitemapFn.length > 200, "sitemap_xml の中身を取り出せている");
+  assert.doesNotMatch(sitemapFn, /lastmod/);
+
+  // robots.txt から sitemap の場所を知らせる
+  assert.match(buildPublic, /Sitemap: \{SITE\}\/sitemap\.xml/);
+  assert.match(buildPublic, /copied\.append\("robots\.txt（sitemap の場所を知らせる）"\)/);
+});
+
 test("体験版の英語は用語集（commit 71db200）にそろえる", () => {
   /* 2026-09-05。LPだけ校閲して、アプリ側の英語が古い言い方のまま残っていた。
      用語集: 体験版=the preview／製品版ベータ=the full beta／演者=performers／

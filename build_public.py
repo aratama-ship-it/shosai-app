@@ -465,6 +465,64 @@ def english_try(html: str) -> str:
     return page.done(japanese_head_markers=("舞台スケッチ（体験版）", "舞台スケッチの体験版"))
 
 
+# --- sitemap.xml と robots.txt ------------------------------------------
+# ★URLは各ページが宣言している canonical から取る。ここに一覧を書き写すと、
+#   ページ側を直したときにサイトマップだけ古くなる（正本を二重に持たない）。
+# ★Google は sitemap でも hreflang を受け取れる。ページの <link rel="alternate"> と
+#   同じ内容を書き、食い違っていればビルドを止める。
+# ★<lastmod> は入れない。ビルド日時を書くと「毎回すべて更新された」と申告することになり、
+#   実態と違う。Google も正確でない lastmod は無視する。
+CANONICAL_RE = re.compile(r'<link rel="canonical" href="([^"]+)">')
+ALTERNATE_RE = re.compile(r'<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">')
+
+
+def page_links(html: str, name: str) -> tuple[str, dict[str, str]]:
+    """ページが宣言している canonical と hreflang を取り出す。欠けていれば止める。"""
+    found = CANONICAL_RE.search(html)
+    if not found:
+        raise SystemExit(f"！{name}: canonical が無い")
+    alternates = dict(ALTERNATE_RE.findall(html))
+    missing = [k for k in ("ja", "en", "x-default") if k not in alternates]
+    if missing:
+        raise SystemExit(f"！{name}: hreflang が足りない: {', '.join(missing)}")
+    return found.group(1), alternates
+
+
+def sitemap_xml(pairs: list[tuple[str, str, dict[str, str]]]) -> str:
+    """日本語版と英語版の両方を、hreflang付きで並べる。"""
+    entries = []
+    for ja_url, en_url, alternates in pairs:
+        links = "\n".join(
+            f'    <xhtml:link rel="alternate" hreflang="{lang}" href="{alternates[lang]}"/>'
+            for lang in ("ja", "en", "x-default")
+        )
+        for loc in (ja_url, en_url):
+            entries.append(f"  <url>\n    <loc>{loc}</loc>\n{links}\n  </url>")
+    body = "\n".join(entries)
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
+        '        xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
+        f"{body}\n"
+        "</urlset>\n"
+    )
+
+
+def check_pair(ja_html: str, en_html: str, name: str) -> tuple[str, str, dict[str, str]]:
+    """日本語版と英語版が、互いを正しく指しているかを確かめる。"""
+    ja_url, ja_alt = page_links(ja_html, name)
+    en_url, en_alt = page_links(en_html, f"en/{name}")
+    if ja_alt != en_alt:
+        raise SystemExit(f"！{name}: 日本語版と英語版で hreflang の中身が違う")
+    if ja_url != ja_alt["ja"]:
+        raise SystemExit(f"！{name}: canonical（{ja_url}）と hreflang ja（{ja_alt['ja']}）が食い違う")
+    if en_url != en_alt["en"]:
+        raise SystemExit(f"！en/{name}: canonical（{en_url}）と hreflang en（{en_alt['en']}）が食い違う")
+    if ja_alt["x-default"] != ja_url:
+        raise SystemExit(f"！{name}: x-default は日本語版（{ja_url}）を指すこと")
+    return ja_url, en_url, ja_alt
+
+
 def collect_dist() -> list[str]:
     if DIST.exists():
         shutil.rmtree(DIST)
@@ -498,6 +556,7 @@ def collect_dist() -> list[str]:
          "beta.html", english_beta, "製品版ベータの紹介（public-beta.html の写し）"),
     ]
     en_pages = []
+    url_pairs = []
     for ja_html, name, to_english, note in pages:
         (DIST / name).write_text(ja_html, encoding="utf-8")
         copied.append(f"{name}（{note}）")
@@ -505,6 +564,19 @@ def collect_dist() -> list[str]:
         (en_dir / name).write_text(en_html, encoding="utf-8")
         copied.append(f"en/{name}（英語版・meta英語／本文は共通）")
         en_pages.append(en_html)
+        url_pairs.append(check_pair(ja_html, en_html, name))
+
+    # 検索エンジンへ渡す一覧。canonical から作るので、ページを直せば自動で追随する。
+    (DIST / "sitemap.xml").write_text(sitemap_xml(url_pairs), encoding="utf-8")
+    copied.append(f"sitemap.xml（{len(url_pairs) * 2}件・hreflang付き）")
+    (DIST / "robots.txt").write_text(
+        "User-agent: *\n"
+        "Allow: /\n"
+        "\n"
+        f"Sitemap: {SITE}/sitemap.xml\n",
+        encoding="utf-8",
+    )
+    copied.append("robots.txt（sitemap の場所を知らせる）")
 
     # LPが使う動画とポスター
     media = HERE / "public-lp" / "media"
