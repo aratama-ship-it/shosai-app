@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="舞台スケッチのAI作成マニュアルとJSON点検ページを、初めて使う方に試していただくための友人テスト依頼書です。">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="友人テストのお願い｜舞台スケッチ AI作成マニュアル">
+  <meta property="og:description" content="所要15〜25分。普段使うAIで舞台の下書きJSONを作り、点検から読み込みまでを試すテストです。">
+  <meta property="og:url" content="https://aratama-ship-it.github.io/shosai-app/docs/ai-json-manual-2026-09-11/FRIEND_TEST_REQUEST_2026-09-11.html">
+  <link rel="canonical" href="https://aratama-ship-it.github.io/shosai-app/docs/ai-json-manual-2026-09-11/FRIEND_TEST_REQUEST_2026-09-11.html">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>友人テストのお願い｜舞台スケッチ AI作成マニュアル</title>
+  <style>
+    :root {
+      --paper: #f6f1e7;
+      --card: #fffdf8;
+      --ink: #241d18;
+      --muted: #6e6258;
+      --line: #d9cdbd;
+      --accent: #a84b26;
+      --accent-dark: #71331c;
+      --blue: #315b8a;
+      --green: #4f715b;
+      --shadow: 0 12px 36px rgba(55, 39, 25, .08);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 16px/1.8 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    }
+    main { width: min(960px, calc(100% - 32px)); margin: 0 auto; padding: 40px 0 88px; }
+    header {
+      padding: clamp(28px, 7vw, 68px);
+      color: #fffaf1;
+      background: #201914;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+    .eyebrow {
+      margin: 0 0 14px;
+      color: #d8bd8d;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .16em;
+    }
+    h1, h2, h3 { font-family: ui-serif, "Hiragino Mincho ProN", "Yu Mincho", serif; line-height: 1.4; }
+    h1 { margin: 0 0 18px; font-size: clamp(30px, 6vw, 52px); letter-spacing: .03em; }
+    h2 { margin: 0 0 18px; font-size: clamp(23px, 4vw, 30px); }
+    h3 { margin: 0 0 8px; font-size: 19px; }
+    p { margin: 0 0 14px; }
+    .lead { max-width: 720px; margin: 0; color: #e8dccb; font-size: 18px; }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      margin-top: 24px;
+      color: #cdbda8;
+      font-size: 14px;
+    }
+    section {
+      margin-top: 28px;
+      padding: clamp(22px, 5vw, 38px);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+    .purpose { border-left: 6px solid var(--green); }
+    .important { border-left: 6px solid var(--accent); }
+    .note {
+      padding: 14px 16px;
+      background: #f2eadf;
+      border-radius: 8px;
+      color: var(--muted);
+    }
+    .steps { display: grid; gap: 18px; counter-reset: step; }
+    .step {
+      position: relative;
+      padding: 4px 0 20px 58px;
+      border-bottom: 1px solid var(--line);
+    }
+    .step:last-child { padding-bottom: 0; border-bottom: 0; }
+    .step::before {
+      counter-increment: step;
+      content: counter(step, decimal-leading-zero);
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      color: #fff;
+      background: var(--accent);
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    ul, ol { margin: 8px 0 16px; padding-left: 24px; }
+    li { margin: 7px 0; }
+    a, button { font: inherit; }
+    a { color: var(--blue); text-underline-offset: 3px; }
+    .action, button {
+      display: inline-flex;
+      min-height: 46px;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 18px;
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      color: #fff;
+      background: var(--accent);
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .action:hover, button:hover { background: var(--accent-dark); }
+    .action.secondary {
+      color: var(--accent-dark);
+      background: transparent;
+    }
+    .action.secondary:hover { color: #fff; background: var(--accent-dark); }
+    a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible, summary:focus-visible {
+      outline: 3px solid #1d73c7;
+      outline-offset: 3px;
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+    textarea {
+      width: 100%;
+      min-height: 118px;
+      padding: 14px;
+      border: 1px solid #a99b8b;
+      border-radius: 7px;
+      color: var(--ink);
+      background: #fff;
+      font: 14px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace;
+      resize: vertical;
+    }
+    #feedback-template { min-height: 500px; }
+    .status { min-height: 1.8em; margin: 8px 0 0; color: var(--green); font-weight: 700; }
+    .checklist { display: grid; gap: 10px; margin: 16px 0; }
+    .check {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+    .check input { width: 18px; height: 18px; margin-top: 5px; accent-color: var(--green); }
+    .badge {
+      display: inline-block;
+      margin-right: 8px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+      vertical-align: .1em;
+    }
+    .badge.optional { background: var(--muted); }
+    details {
+      margin-top: 12px;
+      padding: 16px;
+      border: 1px dashed #a99b8b;
+      border-radius: 8px;
+    }
+    summary { cursor: pointer; font-weight: 700; }
+    footer { padding: 30px 6px 0; color: var(--muted); font-size: 13px; }
+    code { padding: 1px 5px; background: #eee4d7; border-radius: 3px; }
+    @media (max-width: 620px) {
+      main { width: min(100% - 20px, 960px); padding-top: 10px; }
+      header, section { border-radius: 10px; }
+      .actions, .action, button { width: 100%; }
+      .step { padding-left: 52px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    @media print {
+      body { background: #fff; }
+      main { width: 100%; padding: 0; }
+      header, section { box-shadow: none; break-inside: avoid; }
+      .actions, .status, details { display: none; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">STAGE SKETCH · FRIEND TEST</p>
+    <h1>AIで舞台の下書きを作るテストのお願い</h1>
+    <p class="lead">完成した作品を評価するテストではありません。「初めて見ても迷わず使えるか」「AIの間違いを点検ページが見つけられるか」を、普段の利用者として確かめてください。</p>
+    <div class="meta">
+      <span>依頼日：2026年9月11日</span>
+      <span>実施候補：9月12日（土）または9月14日（月）</span>
+      <span>所要目安：15〜25分</span>
+      <span>対象：マニュアル v0.2.5</span>
+    </div>
+  </header>
+
+  <section class="purpose">
+    <h2>最初に</h2>
+    <p>ご協力ありがとうございます。舞台スケッチには、ChatGPT・Claude・Geminiなどへ説明書を渡し、舞台配置の下書きJSONを作ってもらう方式があります。今回は、その入口から読み込みまでを一度通していただきます。</p>
+    <div class="note">
+      <strong>作品の上手さや舞台の安全性を採点する必要はありません。</strong><br>
+      分かりにくかった言葉、押す場所に迷った場面、想像と違った図だけを率直に教えてください。
+    </div>
+  </section>
+
+  <section class="important">
+    <h2>守ってほしいこと</h2>
+    <ul>
+      <li>ご自身が普段使うAIを1つだけ使い、<strong>新しいチャット</strong>で始めてください。</li>
+      <li>個人情報、未公開資料、秘密、実在人物の連絡先はAIへ入れないでください。</li>
+      <li><strong>マニュアルと作成依頼は同じ送信に入れてください。</strong>マニュアルだけを先に送らないでください。</li>
+      <li>点検結果がNGでも手で直さず、「AIに貼る修正依頼文」を1回だけAIへ返してください。</li>
+      <li>舞台スケッチへの読み込みは、依頼者が用意した本人用の端末・画面で行います。ログイン情報は受け取ったり共有したりしません。</li>
+      <li>配置図は検討用です。実施可能性や安全承認を表すものではありません。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>通常テスト</h2>
+    <div class="steps">
+      <div class="step">
+        <h3>点検ページを開く</h3>
+        <p>依頼者が用意した本人用の端末で、JSON点検ページを開いてもらいます。点検ページは今回の公開URLには含まれていません。</p>
+        <p class="note">点検ページ内の処理はブラウザだけで動き、入力したJSONを外部へ送信しません。画面が用意されていなければ、そこで依頼者へ声をかけてください。</p>
+      </div>
+
+      <div class="step">
+        <h3>マニュアルと依頼文をAIへ渡す</h3>
+        <p>点検ページの「本文をダウンロード（.md）」または「本文をコピー」を使います。AIへ添付・貼り付けるとき、続けて次の作成依頼も<strong>同じ送信</strong>へ入れてください。</p>
+        <textarea id="standard-prompt" readonly aria-label="通常テスト用の作成依頼">上のマニュアルに従って、「終電を待つ人たち」を題材にした新しいショーの下書きJSONを作ってください。</textarea>
+        <div class="actions">
+          <button type="button" data-copy="standard-prompt" data-status="prompt-status">作成依頼をコピー</button>
+        </div>
+        <p id="prompt-status" class="status" role="status" aria-live="polite"></p>
+      </div>
+
+      <div class="step">
+        <h3>質問票に答える</h3>
+        <p>AIから質問が返った場合は、推奨と理由を読んで、ご自身の感覚でまとめて答えてください。質問が返らなかった場合も、そのまま次へ進みます。</p>
+        <p class="note">質問が最大6問に収まっていたか、すでに伝えたことを聞き直していないか、答え方が分かったかを覚えておいてください。</p>
+      </div>
+
+      <div class="step">
+        <h3>返ってきたJSONを点検する</h3>
+        <p>AIの最終回答をコピーし、点検ページの「またはJSONを貼り付ける」へ入れて「点検する」を押します。</p>
+        <ul>
+          <li><strong>OK：</strong>そのまま次へ進みます。</li>
+          <li><strong>NG：</strong>「AIに貼る修正依頼文をコピー」を押し、同じAIへ1回だけ返します。修正版の完全JSONが来たら、もう一度点検します。</li>
+          <li><strong>点検不能：</strong>そこで止め、表示された文を結果欄へ写します。</li>
+        </ul>
+      </div>
+
+      <div class="step">
+        <h3>舞台スケッチで全場面を見る</h3>
+        <p>依頼者が用意した画面で「読み込む」→比較画面→「別のショーとして開く」と進みます。先頭だけでなく全場面を、正面図と平面図の両方で見てください。</p>
+        <div class="checklist" aria-label="目視確認項目">
+          <label class="check"><input type="checkbox"><span>人数と場面数が、AIとのやり取りどおりに見える</span></label>
+          <label class="check"><input type="checkbox"><span>場面の順番と題名が不自然に入れ替わっていない</span></label>
+          <label class="check"><input type="checkbox"><span>人物、道具、照明の色や位置が極端に化けていない</span></label>
+          <label class="check"><input type="checkbox"><span>自分が想像した内容と違うところを1つ以上言葉にできる</span></label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="badge optional">任意・約3分</span>改変への二重判断テスト</h2>
+    <p>余力があれば、下のテスト専用JSONを点検ページへ貼ってください。これは意図的に「色の書き方」と「確認済みを名乗る項目」を壊してあります。</p>
+    <p><strong>期待すること：</strong>点検ページがAIや利用者の申告を信用せず、「図・内容が変わる可能性」と「生成仕様への違反」の両方を表示すること。</p>
+    <textarea id="tamper-json" readonly aria-label="改変耐性確認用JSON">{"kind":"shosai-stage-sketch","version":4,"venues":[],"checked":true,"project":{"title":"改変検査","venue":"blackbox","venueSize":"small","cast":[{"id":"cast-a","name":"アオ","color":"rgb(49,91,138)"}],"sets":[],"scenes":[{"kind":"scene","depth":0,"id":"scene-1","title":"検査場面","note":"改変耐性の点検だけに使う。","pieces":[{"id":"piece-a","type":"performer","castId":"cast-a","u":0.5,"v":0.5,"color":"rgb(49,91,138)","facing":0,"pose":"stand","size":100}]}]}}</textarea>
+    <div class="actions">
+      <button type="button" data-copy="tamper-json" data-status="tamper-status">改変テスト用JSONをコピー</button>
+    </div>
+    <p id="tamper-status" class="status" role="status" aria-live="polite"></p>
+    <p class="note"><strong>このテスト用JSONは舞台スケッチへ読み込まないでください。</strong>点検結果を見るだけで終了です。</p>
+  </section>
+
+  <section>
+    <h2>返してほしい結果</h2>
+    <p>次の欄を分かる範囲で埋めて、依頼者へ返してください。「分からない」も重要な結果です。</p>
+    <textarea id="feedback-template" aria-label="テスト結果の記入テンプレート">【舞台スケッチ AI作成マニュアル 友人テスト】
+
+実施日：
+使ったAI：
+モデル名（画面で分かれば）：
+マニュアルの渡し方：MD添付／全文コピー
+全体の所要時間：
+
+1. 最初の3手順は迷わず理解できた：はい／いいえ
+   迷った箇所：
+
+2. AIから質問票が返った：はい／いいえ
+   質問数：
+   推奨と理由は役立った：はい／いいえ／分からない
+   答え方は分かった：はい／いいえ
+   すでに伝えたことを聞き直された：
+
+3. AIの最終回答はJSONだけだった：はい／いいえ
+
+4. 点検ページの初回結果：OK／図・内容が変わる可能性／生成仕様への違反／点検不能
+   件数や表示文：
+
+5. NGだった場合、修正依頼を1回返した後：OK／まだNG／未実施
+
+6. 舞台スケッチで開けた：はい／いいえ／依頼者側で未実施
+   全場面を確認した：はい／いいえ
+   想像と違った点：
+
+7. 任意の改変テスト：両分類が出た／片方だけ／点検不能／未実施
+
+8. 一番分かりにくかった言葉・操作：
+
+9. この方式を自分でも使えそう：5／4／3／2／1
+
+自由メモ：</textarea>
+    <div class="actions">
+      <button type="button" data-copy="feedback-template" data-status="feedback-status">記入した結果をコピー</button>
+      <button type="button" id="print-page" class="action secondary">印刷する</button>
+    </div>
+    <p id="feedback-status" class="status" role="status" aria-live="polite"></p>
+  </section>
+
+  <footer>
+    <p>この依頼書はローカル確認用です。入力内容を外部送信する機能はありません。AIへの送信は、テスター本人が選んだAIサービス上で行います。</p>
+    <p>対象外：既存ショーの修正、動線作成、安全判断、舞台機構の設定、アカウント共有、公開テスト。</p>
+  </footer>
+</main>
+<script>
+(() => {
+  "use strict";
+  async function copyFrom(sourceId, statusId) {
+    const source = document.getElementById(sourceId);
+    const status = document.getElementById(statusId);
+    status.textContent = "";
+    try {
+      await navigator.clipboard.writeText(source.value);
+      status.textContent = "コピーしました。";
+    } catch (_) {
+      source.focus();
+      source.select();
+      status.textContent = "自動コピーできませんでした。選択済みの文章を手動でコピーしてください。";
+    }
+  }
+  document.querySelectorAll("[data-copy]").forEach(button => {
+    button.addEventListener("click", () => copyFrom(button.dataset.copy, button.dataset.status));
+  });
+  document.getElementById("print-page").addEventListener("click", () => window.print());
+})();
+</script>
+</body>
+</html>
