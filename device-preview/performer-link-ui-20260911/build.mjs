@@ -44,6 +44,7 @@ for (const [from, to] of pageAssets) index = index.replaceAll(from, to);
 index = index
   .replace('<title>Stage Sketch Viewer</title>', '<title>Stage Sketch Viewer — 端末UI確認用</title>\n<link rel="icon" href="data:,">')
   .replace('href="/study"', 'href="./index.html"')
+  .replace('</head>', '<link rel="stylesheet" href="./phone.css?v=2">\n<script src="./phone.js?v=2" defer></script></head>')
   .replace(
     '<script src="./stage-study-viewer.js?v=17" defer></script>',
     '<script src="./preview-adapter.js?v=1" defer></script>\n<script src="./stage-study-viewer.js?v=17" defer></script>',
@@ -147,7 +148,7 @@ const adapter = `(() => {
 await write('preview-adapter.js', adapter);
 
 const generated = ['index.html', 'study-frame.html', 'stage-study-viewer.js', 'stage-study-continuity.js',
-  'preview-adapter.js', 'sample.json', ...copies.values()];
+  'preview-adapter.js', 'sample.json', 'phone.css', 'phone.js', ...copies.values()];
 const manifest = {
   kind: 'stage-sketch-device-ui-preview',
   generatedAt: new Date().toISOString(),
