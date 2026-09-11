@@ -44,7 +44,7 @@ for (const [from, to] of pageAssets) index = index.replaceAll(from, to);
 index = index
   .replace('<title>Stage Sketch Viewer</title>', '<title>Stage Sketch Viewer — 端末UI確認用</title>\n<link rel="icon" href="data:,">')
   .replace('href="/study"', 'href="./index.html"')
-  .replace('</head>', '<link rel="stylesheet" href="./phone.css?v=2">\n<script src="./phone.js?v=2" defer></script></head>')
+  .replace('</head>', '<link rel="stylesheet" href="./phone.css?v=2">\n<script src="./phone.js?v=3" defer></script></head>')
   .replace(
     '<script src="./stage-study-viewer.js?v=17" defer></script>',
     '<script src="./preview-adapter.js?v=1" defer></script>\n<script src="./stage-study-viewer.js?v=17" defer></script>',

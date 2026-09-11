@@ -1,21 +1,21 @@
 {
   "kind": "stage-sketch-device-ui-preview",
-  "generatedAt": "2026-09-11T14:30:41.155Z",
+  "generatedAt": "2026-09-11T14:37:15.461Z",
   "mode": "static-ui-only",
   "sourceSample": "public/ai-json/samples/sample-standard.json",
   "externalSubmission": false,
   "files": {
     "index.html": {
       "bytes": 21714,
-      "sha256": "e6f2be6fa991d5f119315e60581c2ed73ce3fbf7dec93ce96e8c600c34cc3a62"
+      "sha256": "be69aa6068f2fcdabe08ec378377962dd85efc55bde6d64d38b0173902ad6590"
     },
     "phone.css": {
       "bytes": 7957,
       "sha256": "c66a0c5060a9e2fe5dfeb4a998f35f04089f3068eaec8bb09bc3f6778601187b"
     },
     "phone.js": {
-      "bytes": 9939,
-      "sha256": "af936414ccd1229b2bf6b340cf4d91aa62a1e8a370c3d865cd1b9d7c45cab1da"
+      "bytes": 10022,
+      "sha256": "9af2462b34a66b11fd9b8324ec52a59574f64a81367ecff705a5e921d7063add"
     },
     "preview-adapter.js": {
       "bytes": 9255,

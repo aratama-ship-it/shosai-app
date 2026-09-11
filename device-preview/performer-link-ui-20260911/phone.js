@@ -63,7 +63,7 @@
   }
   const alert=make('p','phone-alert'); alert.setAttribute('role','status'); alert.hidden=true; shell.append(alert);
   function sync() {
-    const ready=!$('study-workspace').hidden;
+    const ready=!$('study-workspace').hidden&&!$('study-note-fields').disabled;
     previous.disabled=$('study-prev').disabled||!ready; next.disabled=$('study-next').disabled||!ready;
     previous.setAttribute('aria-label',$('study-prev').getAttribute('aria-label')); next.setAttribute('aria-label',$('study-next').getAttribute('aria-label'));
     current.textContent=$('study-scene-heading').textContent||t('scenes'); current.disabled=!ready;
@@ -84,11 +84,11 @@
     if(signature!==listSignature) {
       listSignature=signature; sceneList.replaceChildren(...opts.map(o=>{const b=button('',null,()=>{$('study-scenes').value=o.value; $('study-scenes').dispatchEvent(new Event('change')); show('');}); b.textContent=o.textContent; b.dataset.scene=o.value;return b;}));
     }
-    for(const b of sceneList.children){const selected=b.dataset.scene===$('study-scenes').value; b.setAttribute('aria-current',String(selected)); b.setAttribute('aria-pressed',String(selected)); b.disabled=$('study-scenes').disabled;}
+    for(const b of sceneList.children){const selected=b.dataset.scene===$('study-scenes').value; b.setAttribute('aria-current',String(selected)); b.setAttribute('aria-pressed',String(selected)); b.disabled=!ready||$('study-scenes').disabled;}
     const save=$('study-save-status'); const danger=save.classList.contains('study-danger');
     const message=danger?save.textContent:!opened&&$('study-note-status').textContent.includes('送信できません')?$('study-note-status').textContent:'';
     if(alert.textContent!==message)alert.textContent=message; alert.hidden=!message;
-    if (!ready && opened) { opened=''; panel.hidden=true; }
+    if ($('study-workspace').hidden && opened) { opened=''; panel.hidden=true; }
   }
   function rotate() { $('study-view').value=orientation.matches?'both':'front'; $('study-view').dispatchEvent(new Event('change')); sync(); }
   orientation.addEventListener('change',rotate);
@@ -98,7 +98,7 @@
   let queued=false;
   const observer=new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;sync();});});
   for(const id of ['study-scene-heading','study-scenes','study-pen-status','study-save-status','study-note-status'])observer.observe($(id),{childList:true,subtree:true,characterData:true});
-  for(const id of ['study-prev','study-next','study-replay','study-pen','study-view','study-workspace'])observer.observe($(id),{attributes:true,attributeFilter:['disabled','hidden','aria-pressed']});
+  for(const id of ['study-prev','study-next','study-replay','study-pen','study-view','study-workspace','study-note-fields'])observer.observe($(id),{attributes:true,attributeFilter:['disabled','hidden','aria-pressed']});
   observer.observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
   $('study-pen').addEventListener('click',()=>{if($('study-pen').getAttribute('aria-pressed')==='true')show('');});
   $('study-sticky-position').addEventListener('click',()=>show(''));
