@@ -1,7 +1,7 @@
 /* Based on the main PWA's stage-phone-viewer: stacked portrait / 64px landscape rail. */
 html.study-phone, html.study-phone body { width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; }
 body.study-phone {
-  --phone-header: 44px; --phone-scenes: 44px; --phone-tools: 48px; --phone-rail: 64px;
+  --phone-header: 52px; --phone-scenes: 44px; --phone-tools: 48px; --phone-rail: 64px;
   --phone-brand: 18px; --phone-control: 12px; --phone-heading: 14px; --phone-panel: 360px;
   position: fixed; inset: 0; padding: 0; touch-action: manipulation;
 }
@@ -10,7 +10,7 @@ body.study-phone {
   height: var(--phone-height, 100dvh); width: 100%; max-width: none; box-sizing: border-box;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
-.study-phone .study-header { grid-row: 1; grid-column: 1; display: flex; padding: 0 0 0 8px; margin: 0; border-left: 0; gap: 4px; }
+.study-phone .study-header { grid-row: 1; grid-column: 1; display: flex; align-items: center; padding: 0 0 0 12px; margin: 0; border-left: 0; gap: 4px; }
 .study-phone .study-header .study-heading { min-width: 0; flex: 1; }
 .study-phone .study-header h1 { font-size: var(--phone-brand); margin: 0; letter-spacing: .03em; white-space: nowrap; }
 .study-phone .study-header .study-kicker { display: none; }

@@ -20,3 +20,11 @@ Reference: stage-sketch.js `initPhoneViewerWorkspace`, style.css `html.stage-pho
 - Phone activation: touch screen short edge <=600px (as main PWA) or narrow non-touch preview viewport <=600px. iPad/desktop retain original layout.
 
 UI adaptation files are hand-authored and retained by build.mjs. No dataset or API changes.
+
+## Device feedback refinement
+
+- Keep the existing blue palette. Portrait brand band 52px, landscape 44px; explicit vertical centering with 12px horizontal inset and native safe-area padding. No browser-specific offset guesses.
+- Give each drawing a matching 44px local control row: front has the existing five seat presets; plan has its view label. A 44px reset target shows zoom percentage. Remove the rendered seat-map inset.
+- Separate the two drawings with a 1px muted blue rule, 4px inter-view gap. Fit the original 16:9 drawing without distortion inside each available area.
+- Pinch range 1–4×, anchored under the finger midpoint; two-finger pan and one-finger pan when not annotating. No automatic reset on scene/orientation changes; explicit reset per drawing.
+- Transform canvas and annotations together. Pinch cancels an unfinished pen/sticky drag, without deleting committed notes. Non-central seat previews hide front annotations (which were authored against the central view); returning to central or starting front annotation restores the original view. Seat changes never mutate the show.

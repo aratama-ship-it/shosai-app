@@ -16,7 +16,10 @@
     }
     function layout() {
       for (const [view, canvas] of Object.entries(canvases)) {
-        const rect = canvas.getBoundingClientRect(), parent = canvas.parentElement.getBoundingClientRect();
+        const visual = canvas.getBoundingClientRect(), box = canvas.parentElement.getBoundingClientRect();
+        const factor = box.width / canvas.parentElement.clientWidth || 1;
+        const rect = { left: visual.left / factor, top: visual.top / factor, width: visual.width / factor, height: visual.height / factor };
+        const parent = { left: box.left / factor, top: box.top / factor };
         const scale = Math.min(rect.width / canvas.width, rect.height / canvas.height);
         const width = canvas.width * scale, height = canvas.height * scale;
         Object.assign(layers[view].style, {
@@ -70,7 +73,7 @@
     new ResizeObserver(layout).observe(document.querySelector('.study-drawings'));
     for (const canvas of Object.values(canvases)) new MutationObserver(layout).observe(canvas, { attributes: true, attributeFilter: ['width', 'height'] });
     layout(); render();
-    function capture(selected, drawNotes = () => {}) {
+    function capture(selected, drawNotes = () => {}, crop = (view, output) => output, annotationsVisible = () => true) {
       const views = selected === 'both' ? ['front', 'plan'] : [selected];
       return views.map(view => {
         const source = canvases[view];
@@ -83,9 +86,9 @@
           const ctx = output.getContext('2d');
           ctx.fillStyle = style.getPropertyValue('--study-bg'); ctx.fillRect(0, 0, output.width, output.height);
           ctx.drawImage(source, 0, 0, output.width, output.height);
-          const penScale = output.width / Math.max(1, layers[view].getBoundingClientRect().width);
+          const penScale = output.width / Math.max(1, layers[view].clientWidth);
           ctx.lineCap = ctx.lineJoin = 'round';
-          for (const stroke of strokes.filter(s => s.view === view)) {
+          for (const stroke of strokes.filter(s => s.view === view && annotationsVisible(view))) {
             for (const halo of [true, false]) {
               ctx.strokeStyle = style.getPropertyValue(halo ? '--study-bg' : '--study-pen');
               ctx.fillStyle = ctx.strokeStyle;
@@ -98,8 +101,8 @@
               }
             }
           }
-          drawNotes(ctx, view, output.width, output.height);
-          const dataUrl = output.toDataURL('image/jpeg', quality);
+          if (annotationsVisible(view)) drawNotes(ctx, view, output.width, output.height);
+          const dataUrl = crop(view, output).toDataURL('image/jpeg', quality);
           if (dataUrl.length <= 180000) return { view, dataUrl };
         }
         throw new Error('capture-too-large');

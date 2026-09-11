@@ -25647,6 +25647,7 @@ ${propsPlotHtml}
         state.project.audioTracks = [];
         state.project.scenes.forEach(scene => { scene.audioTrackId = null; });
         state.showFront = state.showPlan = true;
+        state.showSeatMap = false;
         state.animateScenes = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         render(); syncCanvasResolution();
       },
@@ -25660,6 +25661,10 @@ ${propsPlotHtml}
       replay() { replaySceneTransition(); },
       stop() { stopSceneAnim(); stopSpinRun(); render(); },
       resize() { syncCanvasResolution(); render(); },
+      camera(id) {
+        if (VENUES.seats.some(seat => seat.id === id)) { state.seat = id; state.showSeatMap = false; render(); }
+        return { seat: state.seat, seats: VENUES.seats.map(seat => ({ id: seat.id, label: seatName(seat) })) };
+      },
     });
     return;
   }

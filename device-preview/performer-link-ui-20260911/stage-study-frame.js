@@ -2,9 +2,11 @@
 // opaque-origin sandbox. No storage, network, forms, downloads or top navigation.
 (() => {
   'use strict';
-  let pen = null, sticky = null, canAnnotate = false, sceneId = '', revision = 0;
+  let pen = null, sticky = null, navigation = null, canAnnotate = false, sceneId = '', revision = 0;
   for (const name of ['click', 'dblclick', 'contextmenu', 'pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture', 'mousedown', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'keydown', 'keyup', 'beforeinput', 'input', 'compositionstart', 'compositionupdate', 'compositionend', 'focusout', 'change', 'drop', 'dragstart', 'paste', 'cut', 'copy', 'submit']) {
     window.addEventListener(name, event => {
+      const navigated = navigation?.handleEvent(event);
+      if (navigated) { if (navigated !== 'native') event.preventDefault(); event.stopImmediatePropagation(); return; }
       const nativeNoteInput = sticky?.handleEvent(event);
       pen?.handleEvent(event);
       // Read-only still blocks editor handlers. Outside the active pen layer,
@@ -20,6 +22,10 @@
     const front = document.getElementById('stage-canvas'); const plan = document.getElementById('stage-plan-canvas');
     front.removeAttribute('tabindex'); plan.removeAttribute('tabindex');
     document.querySelector('.study-front').append(front); document.querySelector('.study-plan').append(plan);
+    navigation = window.SHOSAI_STUDY_NAVIGATION({ engine, canvases: { front, plan }, cancelAnnotations(pointer) {
+      const event = { type: 'pointercancel', pointerId: pointer.pointerId, target: pointer.target };
+      pen?.handleEvent(event); sticky?.handleEvent(event);
+    } });
     pen = window.SHOSAI_STUDY_PEN({ canvases: { front, plan }, changed(strokes, limit) {
       window.parent.postMessage({ channel: 'stage-study', action: 'ink', sceneId, revision, strokes, limit }, location.origin);
     } });
@@ -48,13 +54,19 @@
         else if (message.action === 'capture') {
           try {
             engine.stop(); engine.scene(sceneId); pen.show(true); pen.resize(); sticky.show(true); sticky.resize();
-            const screens = pen.capture(document.body.dataset.view, sticky.draw);
+            const screens = pen.capture(document.body.dataset.view, sticky.draw, navigation.crop, navigation.annotationsVisible);
             window.parent.postMessage({ channel: 'stage-study', action: 'captured', requestId: message.requestId, sceneId, revision, screens }, location.origin);
           } catch { window.parent.postMessage({ channel: 'stage-study', action: 'capture-error', requestId: message.requestId }, location.origin); }
         }
         else if (message.action === 'view' && ['both', 'front', 'plan'].includes(message.view)) { document.body.dataset.view = message.view; engine.resize(); }
         else return;
         pen.resize(); sticky.resize();
+        if (message.action === 'load') navigation.loaded(message.lang);
+        if (message.action === 'pen-mode') { navigation.mode('sticky', false); navigation.mode('pen', Boolean(message.enabled)); }
+        if (message.action === 'sticky-mode') { navigation.mode('pen', false); navigation.mode('sticky', Boolean(message.enabled)); }
+        if (message.action === 'replay') { navigation.mode('pen', false); navigation.mode('sticky', false); }
+        if (['sticky-add', 'sticky-focus'].includes(message.action)) navigation.central();
+        navigation.layout();
         if (message.action === 'load') window.parent.postMessage({ channel: 'stage-study', action: 'loaded' }, location.origin);
       } catch { window.parent.postMessage({ channel: 'stage-study', action: 'error' }, location.origin); }
     });

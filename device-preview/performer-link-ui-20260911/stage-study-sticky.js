@@ -112,7 +112,10 @@
     }
     function layout() {
       for (const [view, canvas] of Object.entries(canvases)) {
-        const rect = canvas.getBoundingClientRect(), parent = canvas.parentElement.getBoundingClientRect();
+        const visual = canvas.getBoundingClientRect(), box = canvas.parentElement.getBoundingClientRect();
+        const factor = box.width / canvas.parentElement.clientWidth || 1;
+        const rect = { left: visual.left / factor, top: visual.top / factor, width: visual.width / factor, height: visual.height / factor };
+        const parent = { left: box.left / factor, top: box.top / factor };
         const scale = Math.min(rect.width / canvas.width, rect.height / canvas.height);
         const width = canvas.width * scale, height = canvas.height * scale;
         Object.assign(layers[view].style, { left: `${rect.left - parent.left + (rect.width - width) / 2}px`, top: `${rect.top - parent.top + (rect.height - height) / 2}px`, width: `${width}px`, height: `${height}px` });
@@ -208,7 +211,8 @@
       } else if (drag && drag.pointer === event.pointerId) {
         if (['pointercancel','lostpointercapture'].includes(event.type)) { cancel(); return false; }
         if (['pointermove','pointerup'].includes(event.type)) {
-          const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
+          const factor = layer.getBoundingClientRect().width / layer.clientWidth || 1;
+          const dx = (event.clientX - drag.x) / factor, dy = (event.clientY - drag.y) / factor;
           drag.moved ||= Math.hypot(dx,dy) > 4;
           const moving = notes.find(n => n.id === drag.id);
           if (moving && drag.moved) {

@@ -15,18 +15,17 @@ await mkdir(previewDir, { recursive: true });
 const copies = new Map([
   ['style.css', 'style.css'],
   ['stage-study.css', 'stage-study.css'],
-  ['stage-study-sticky.js', 'stage-study-sticky.js'],
   ['stage-study-private.js', 'stage-study-private.js'],
   ['stage-study-sync.js', 'stage-study-sync.js'],
-  ['stage-study-frame.js', 'stage-study-frame.js'],
-  ['stage-study-pen.js', 'stage-study-pen.js'],
   ['stage-venues.js', 'stage-venues.js'],
   ['stage-venue-lines.js', 'stage-venue-lines.js'],
   ['stage-i18n.js', 'stage-i18n.js'],
   ['stage-set-model.js', 'stage-set-model.js'],
   ['stage-machinery.js', 'stage-machinery.js'],
-  ['stage-sketch.js', 'stage-sketch.js'],
 ]);
+// These preview snapshots contain read-only camera/viewport adaptations. Retain
+// them instead of overwriting with unrelated, in-progress production sources.
+const retained = ['stage-study-sticky.js', 'stage-study-frame.js', 'stage-study-pen.js', 'stage-sketch.js', 'study-navigation.js', 'study-navigation.css'];
 
 for (const [from, to] of copies) await write(to, await read(from));
 
@@ -44,7 +43,7 @@ for (const [from, to] of pageAssets) index = index.replaceAll(from, to);
 index = index
   .replace('<title>Stage Sketch Viewer</title>', '<title>Stage Sketch Viewer — 端末UI確認用</title>\n<link rel="icon" href="data:,">')
   .replace('href="/study"', 'href="./index.html"')
-  .replace('</head>', '<link rel="stylesheet" href="./phone.css?v=2">\n<script src="./phone.js?v=3" defer></script></head>')
+  .replace('</head>', '<link rel="stylesheet" href="./phone.css?v=4">\n<script src="./phone.js?v=3" defer></script></head>')
   .replace(
     '<script src="./stage-study-viewer.js?v=17" defer></script>',
     '<script src="./preview-adapter.js?v=1" defer></script>\n<script src="./stage-study-viewer.js?v=17" defer></script>',
@@ -57,6 +56,7 @@ index = index
     '<div id="study-name-field">',
     '<p class="study-muted"><strong>端末UI確認用：</strong>共有ボタンは成功表示まで確認できますが、入力内容はどこにも送信されません。</p><div id="study-name-field">',
   );
+index = index.replace('./stage-study-viewer.js?v=17', './stage-study-viewer.js?v=18').replace('./stage-study-continuity.js?v=3', './stage-study-continuity.js?v=4');
 await write('index.html', index);
 
 let frame = await read('study-frame.html');
@@ -74,11 +74,16 @@ const frameAssets = new Map([
   ['/study-assets/stage-sketch.js', './stage-sketch.js'],
 ]);
 for (const [from, to] of frameAssets) frame = frame.replaceAll(from, to);
+frame = frame.replace('</head>', '<link rel="stylesheet" href="./study-navigation.css?v=1"></head>')
+  .replace('<script src="./stage-study-frame.js?v=5">', '<script src="./study-navigation.js?v=1"></script><script src="./stage-study-frame.js?v=6">')
+  .replace('./stage-study-pen.js?v=3', './stage-study-pen.js?v=4')
+  .replace('./stage-study-sticky.js?v=4', './stage-study-sticky.js?v=5')
+  .replace('src="./stage-sketch.js"', 'src="./stage-sketch.js?v=viewer-camera-1"');
 await write('study-frame.html', frame);
 
 let viewer = await read('stage-study-viewer.js');
 viewer = viewer
-  .replaceAll("frame.src = '/study-frame.html';", "frame.src = './study-frame.html';")
+  .replaceAll("frame.src = '/study-frame.html';", "frame.src = './study-frame.html?v=4';")
   .replace(
     "sent: ['オーナーへ共有しました。自分用メモは残っています。', 'Shared with the owner. Your personal notes are kept.']",
     "sent: ['UI確認用の成功表示です。入力内容は送信されていません。', 'Preview success state only. Nothing was sent.']",
@@ -90,7 +95,7 @@ viewer = viewer
 await write('stage-study-viewer.js', viewer);
 
 let continuity = await read('stage-study-continuity.js');
-continuity = continuity.replaceAll("el.src = '/study-frame.html';", "el.src = './study-frame.html';");
+continuity = continuity.replaceAll("el.src = '/study-frame.html';", "el.src = './study-frame.html?v=4';");
 await write('stage-study-continuity.js', continuity);
 
 const sample = JSON.parse(await read('public/ai-json/samples/sample-standard.json'));
@@ -148,7 +153,7 @@ const adapter = `(() => {
 await write('preview-adapter.js', adapter);
 
 const generated = ['index.html', 'study-frame.html', 'stage-study-viewer.js', 'stage-study-continuity.js',
-  'preview-adapter.js', 'sample.json', 'phone.css', 'phone.js', ...copies.values()];
+  'preview-adapter.js', 'sample.json', 'phone.css', 'phone.js', ...retained, ...copies.values()];
 const manifest = {
   kind: 'stage-sketch-device-ui-preview',
   generatedAt: new Date().toISOString(),
@@ -166,7 +171,7 @@ for (const relative of ['index.html', 'study-frame.html']) {
   const html = await readFile(output(relative), 'utf8');
   if (/\b(?:src|href)="\/(?:study|stage)/.test(html)) throw new Error(`absolute preview asset path remains in ${relative}`);
 }
-if (!viewer.includes("frame.src = './study-frame.html';") || !continuity.includes("el.src = './study-frame.html';")) {
+if (!viewer.includes("frame.src = './study-frame.html?v=4';") || !continuity.includes("el.src = './study-frame.html?v=4';")) {
   throw new Error('preview iframe paths were not rewritten');
 }
 console.log(`Built ${generated.length} files in ${previewDir}`);
