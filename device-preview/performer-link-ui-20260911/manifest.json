@@ -1,0 +1,85 @@
+{
+  "kind": "stage-sketch-device-ui-preview",
+  "generatedAt": "2026-09-11T14:11:40.634Z",
+  "mode": "static-ui-only",
+  "sourceSample": "public/ai-json/samples/sample-standard.json",
+  "externalSubmission": false,
+  "files": {
+    "index.html": {
+      "bytes": 21622,
+      "sha256": "893542ed8f5e64ed0404655cb95f18092cd83d92a01ff744a67d35d277a4ee59"
+    },
+    "preview-adapter.js": {
+      "bytes": 9255,
+      "sha256": "a099854f6c8ccb5aea0df3fc102e9b02019ebeed5fa2fb5d5c92b3ece0a9d67c"
+    },
+    "sample.json": {
+      "bytes": 11791,
+      "sha256": "3eeb77f824af7157ba392d255c0c08b5a46116deb744daadaaa2ba9b830f7344"
+    },
+    "stage-i18n.js": {
+      "bytes": 142678,
+      "sha256": "bcbc26da324dde6196c5c1f5e822ee7ee5de6594af197aaf2ec58ab1c6b8916c"
+    },
+    "stage-machinery.js": {
+      "bytes": 10541,
+      "sha256": "e268e6aa01a6bbf931edb932b7ce83c2c11e6798d69b9136b4934c13df9299de"
+    },
+    "stage-set-model.js": {
+      "bytes": 6008,
+      "sha256": "12d9afb4185eef66d4aa5951de53a6f86837bb0110893bd300d221d8dffc21c7"
+    },
+    "stage-sketch.js": {
+      "bytes": 1231005,
+      "sha256": "6c0eb1c1ce176abc53fa448edcba0d149c5525bd47bd42d53bd30591dda5683f"
+    },
+    "stage-study-continuity.js": {
+      "bytes": 12707,
+      "sha256": "a4a969b1bc3585eb00531654a3cd2017fe2886d2b04c7fe6be7ab57ee2eff8cd"
+    },
+    "stage-study-frame.js": {
+      "bytes": 5827,
+      "sha256": "f731c5e68e67559825933ba3a908f6b12e140d5514f3a4b43239846689ebcb04"
+    },
+    "stage-study-pen.js": {
+      "bytes": 6899,
+      "sha256": "890a945ab03a2a0888649b025be82b75fab548ae1f2e50e65414b463b61dccaa"
+    },
+    "stage-study-private.js": {
+      "bytes": 4694,
+      "sha256": "b8cca456054d69bf166dca5954aba5f209d9291a67560a5663cd30a020cfc3e0"
+    },
+    "stage-study-sticky.js": {
+      "bytes": 20368,
+      "sha256": "74b252a6e654b7fcfcce5ebf7876650cd8f867efd6b10e026e2d8102762561ca"
+    },
+    "stage-study-sync.js": {
+      "bytes": 5662,
+      "sha256": "b5b07eea195e6b6c18549af592480a8e2599eca339fdd89dac862931cdf12452"
+    },
+    "stage-study-viewer.js": {
+      "bytes": 50351,
+      "sha256": "4d84ce3fe153dd575480e7f9510af683507e45aca2fe6caea2d0528cde1be8f6"
+    },
+    "stage-study.css": {
+      "bytes": 30849,
+      "sha256": "e586a8241849721040c27f60bbd358cd7f633cd9c9ab7fec47eda6e9bf16ab9f"
+    },
+    "stage-venue-lines.js": {
+      "bytes": 20527,
+      "sha256": "bd90b40b603463d5c1ef950fa99c37a36fabc728b14280bfb545f920950676f4"
+    },
+    "stage-venues.js": {
+      "bytes": 48364,
+      "sha256": "4bf2563625799e78ea7ba3dc6ceff723a388557543fa108f12ed34b8c446ee2f"
+    },
+    "study-frame.html": {
+      "bytes": 146997,
+      "sha256": "5e0e70e7a8373e9e24513416f47acb277d67b02b10a21f333d036a0efad6c453"
+    },
+    "style.css": {
+      "bytes": 352982,
+      "sha256": "91cfa2c192a33b8e3887b79ea825b4527a173b2201381086b4cb0cf31b99c785"
+    }
+  }
+}
