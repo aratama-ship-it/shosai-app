@@ -110,12 +110,9 @@
   .list.cols2 .row .nm{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .list.cols2 .row .nm small{display:none}
   .list.cols2 button.st{min-width:34px;padding:1px 4px}
-  /* 中央 */
-  /* シーン送りと再生は図の上の1行の中央へ（2026-09-13 本人要望）。配置では中身だけ隠す（場所は残す） */
-  .scenebox{grid-column:2;justify-self:center;gap:12px}
-  .scenebox.off>*{visibility:hidden}
-  .scenebar{display:flex;align-items:center;gap:6px}
-  .scenebar .name{font-family:var(--serif);font-size:11.5px;color:var(--milk);white-space:nowrap}
+  /* シーン送りと再生（.transport）は照明デザインパネル右上、オン・オフの左に置く
+     （2026-09-13 本人要望「パネルの名前さえわかっていればOK」でシーン名表示は削除）。
+     配置タブでは丸ごと隠す（照明デザインタブのときだけ意味がある）。 */
   .transport{display:flex;align-items:center;gap:5px}
   .transport .btn.small,.scenebar .btn.small{min-height:24px;padding:2px 8px;font-size:10px}
   .transport .t{font-variant-numeric:tabular-nums;color:var(--brass);min-width:4.2em;text-align:right;font-size:10.5px}
@@ -146,11 +143,9 @@
   .fmode{display:flex;align-items:center;gap:5px;justify-self:center}
   .sechead .viewtitle{font-size:11px;letter-spacing:.08em}
   .sechead .viewnote{font-size:8.5px}
-  /* 図の上の横並びバー: 図に出すもの／シーン送り。
-     シーン送り（.scenebox）は帯の中身に対してではなく<b>窓の幅そのもの</b>の中央に置きたい
-     （2026-09-13 本人要望）。ヘッダー（.head）と同じ 1fr auto 1fr の3分割にして、
-     左＝図に出すもの、中央＝シーン送り、右は空列（対称にするためだけの余白）にする。 */
-  .figbar{flex:0 0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px 14px;min-height:26px;padding-bottom:5px;margin:0 auto;border-bottom:1px solid var(--line-dark);width:min(100%,var(--band))}
+  /* 図の上の横並びバー: 図に出すものだけ（シーン送りと再生は 2026-09-13 本人要望で
+     照明デザインパネルの右上へ移した）。 */
+  .figbar{flex:0 0 auto;display:flex;align-items:center;gap:6px 14px;min-height:26px;padding-bottom:5px;margin:0 auto;border-bottom:1px solid var(--line-dark);flex-wrap:wrap;width:min(100%,var(--band))}
   .fb{display:flex;align-items:center;gap:8px;min-width:0}
   .fb>b{color:var(--brass);font-size:9px;font-weight:600;letter-spacing:.14em;white-space:nowrap}
   .fb #legend-r{color:var(--milk-dim);font-size:9.5px}
@@ -185,10 +180,21 @@
   .empty p{margin:0;color:var(--milk-dim)}
   /* 右: 設定欄 */
   .panel.insp{gap:0;position:relative}
-  /* パネル右上のオン・オフ。押すたびに切り替わる1つのボタンで、いまの状態をそのまま表示する
-     （2026-09-13 本人要望「オンとオフの切り替え式に」「ちょっと大きめに」）。
-     パネルに対して絶対配置なので、中身を縦にスクロールしても右上に残る。 */
-  .ontoggle{position:absolute;right:8px;top:5px;z-index:3;display:inline-flex;align-items:center;gap:8px;
+  /* 照明デザインの見出し行。左＝パネル名、右＝シーン送り・再生とオン・オフ。
+     絶対配置ではなく普通のflex行にした（2026-09-13: パネル幅が狭いと padding-right の
+     絶対配置トリックでは見出しの文字が縦に折り返ってしまったため、素直な横並びに直した）。
+     min-height はオン・オフボタン（34px）に合わせ、何も出ていないときも高さが変わらないように。 */
+  /* パネル幅（実測340px前後）だと見出し「照明デザイン」とボタン列を横一列にできない
+     （2026-09-13 実測: 横並びだと6文字の見出しが3行に折り返った）。上下2段にする。
+     上＝パネル名、下＝シーン送り・再生とオン・オフを右寄せ。 */
+  .insphead{display:flex;flex-direction:column;gap:5px;margin-bottom:6px}
+  .insphead .ptitle{margin:0}
+  .panelhead-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px}
+  .panelhead-actions .transport{gap:6px}
+  .panelhead-actions .transport .btn.small{min-height:26px;padding:2px 9px;font-size:10px}
+  /* オン・オフ。押すたびに切り替わる1つのボタンで、いまの状態をそのまま表示する
+     （2026-09-13 本人要望「オンとオフの切り替え式に」「ちょっと大きめに」）。 */
+  .ontoggle{display:inline-flex;align-items:center;gap:8px;
     min-height:34px;padding:4px 13px 4px 9px;border:1px solid var(--line-dark);background:var(--recess);
     color:var(--milk-dim);font:600 13px/1 var(--sans);letter-spacing:.1em;cursor:pointer}
   .ontoggle:hover{border-color:var(--brass)}
@@ -197,8 +203,6 @@
   .ontoggle[aria-pressed="true"]{color:var(--milk);border-color:var(--brass);background:rgba(156,130,63,.22)}
   .ontoggle[aria-pressed="true"] .sw{background:rgba(156,130,63,.45);border-color:var(--brass)}
   .ontoggle[aria-pressed="true"] .sw::after{left:15px;background:var(--brass)}
-  /* 見出しがボタンの下へ潜らないよう、出ているときだけ右を空ける */
-  .panel.insp.has-toggle .ptitle{padding-right:104px}
   .field{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px;align-items:center;min-height:34px;font-size:10.5px;color:var(--milk-dim)}
   .field.wide{grid-template-columns:1fr}
   .seg{display:inline-flex;flex-wrap:wrap}
@@ -348,20 +352,6 @@
           </span>
           <!-- シーン送りと再生は「照明デザイン」のときだけ中身を出す。
                配置では隠すが場所は残す（図の位置が両ページでずれないように・2026-09-11 本人指摘） -->
-          <span class="fb scenebox" id="scenerow">
-            <span class="scenebar">
-              <button type="button" class="btn small quiet" id="scene-prev">〈 前</button>
-              <span class="name" id="scene-name"></span>
-              <button type="button" class="btn small quiet" id="scene-next">次 〉</button>
-            </span>
-            <span class="transport" id="transport">
-              <button type="button" class="btn small" id="t-home">最初へ</button>
-              <button type="button" class="btn small" id="t-play">再生</button>
-              <button type="button" class="btn small" id="t-stop">停止</button>
-              <span class="t" id="t-time">0.0秒</span>
-              <span class="playing" id="t-playing" hidden>再生中</span>
-            </span>
-          </span>
         </div>
         <!-- 凸の形: 上＝平面図（真上から）、下段＝下手｜客席から（正面）｜上手。
              下段は3つとも縦軸が高さなので、高さの目盛りが横一直線にそろう。 -->
@@ -389,7 +379,23 @@
           </div>
           <!-- 上段右＝選んだ灯体（メイン）と配置（サブ・下の層）。2026-09-11 本人要望 -->
           <section class="panel insp" id="panel-insp">
-            <button type="button" class="ontoggle" id="lighttoggle" hidden aria-pressed="false"><span class="sw"></span><b>オフ</b></button>
+            <!-- 照明デザインの見出し行: 左＝パネル名、右＝シーン送り・再生とオン・オフ。
+                 2026-09-13 本人要望で図の上の帯から移設し、シーン名の表示はやめた
+                 （パネル名「照明デザイン」がわかれば足りる）。配置タブでは丸ごと隠す
+                 （配置モードは選んだ灯体／配置(ショー共通)という別の静的見出しを使う）。 -->
+            <div class="insphead" id="insphead" hidden>
+              <p class="ptitle">照明デザイン</p>
+              <div class="panelhead-actions" id="panelhead-actions">
+                <span class="transport" id="transport" hidden>
+                  <button type="button" class="btn small" id="t-home">最初へ</button>
+                  <button type="button" class="btn small" id="t-play">再生</button>
+                  <button type="button" class="btn small" id="t-stop">停止</button>
+                  <span class="t" id="t-time">0.0秒</span>
+                  <span class="playing" id="t-playing" hidden>再生中</span>
+                </span>
+                <button type="button" class="ontoggle" id="lighttoggle" hidden aria-pressed="false"><span class="sw"></span><b>オフ</b></button>
+              </div>
+            </div>
             <div id="selacts">
               <p class="ptitle">選んだ灯体</p>
               <div class="tsbtns">
@@ -461,8 +467,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789209116"></script>
-<script src="stage-figure.js?v=1789209116"></script>
-<script src="app.js?v=1789209116"></script>
+<script src="rig-engine.js?v=1789211088"></script>
+<script src="stage-figure.js?v=1789211088"></script>
+<script src="app.js?v=1789211088"></script>
 </body>
 </html>

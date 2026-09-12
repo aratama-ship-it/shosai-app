@@ -1678,7 +1678,6 @@
     const tgl = $("lighttoggle"), panel = $("panel-insp"); if (!tgl || !panel) return;
     const fid = state.mode === "move" && ids.length === 1 ? ids[0] : null;
     tgl.hidden = !fid;
-    panel.classList.toggle("has-toggle", Boolean(fid));
     if (!fid) { tgl.onclick = null; return; }
     const on = isLit(lightOf(fid));
     tgl.setAttribute("aria-pressed", String(on));
@@ -1731,8 +1730,7 @@
       return;
     }
     // ---- 動きモード ----
-    // シーン名は上のシーン送りに出ているので、見出しでは繰り返さない（右上のオン・オフと重なって折り返していた）
-    host.append(el("p", "ptitle", "照明デザイン"));
+    // パネル名「照明デザイン」は静的HTML(#insphead)へ移した。ここでは繰り返さない。
     if (!ids.length) { host.append(el("p", "hint", "灯体を選んでください。")); return; }
     if (ids.length === 1) {
       const fid = ids[0]; const f = fixtureById(fid); const l = lightOf(fid);
@@ -1890,9 +1888,11 @@
   /* ---------- 全体 ---------- */
   function renderAll() {
     $("mode-place").setAttribute("aria-pressed", String(state.mode === "place")); $("mode-move").setAttribute("aria-pressed", String(state.mode === "move"));
-    $("scene-name").textContent = `シーン ${state.sceneIndex + 1}「${scene().name}」`;
-    // 配置はシーン共通なので、シーン送りと再生は動きモードでだけ出す（2026-09-11 本人指摘）
-    $("scenerow").classList.toggle("off", state.mode !== "move");   // 場所は残す（図の位置を両ページで揃える）
+    /* 配置はシーン共通なので、シーン送りと再生は照明デザインのときだけ出す（2026-09-11 本人指摘）。
+       2026-09-13 本人要望でパネル右上へ移した（シーン名の表示はやめた）。 */
+    const inMove = state.mode === "move";
+    $("insphead").hidden = !inMove;
+    $("transport").hidden = !inMove;
     $("empty").hidden = Boolean(state.rig.trusses.length || state.rig.fixtures.length);
     $("dirty").textContent = state.dirty ? "未適用の変更あり" : ""; $("dirty").classList.toggle("ok", !state.dirty);
     $("undo").disabled = !state.history.length; $("redo").disabled = !state.future.length;
@@ -1917,8 +1917,6 @@
   /* ---------- ヘッダ・空状態・書き出し ---------- */
   $("mode-place").onclick = () => { state.mode = "place"; stop(); renderAll(); };
   $("mode-move").onclick = () => { state.mode = "move"; state.tool = null; renderAll(); };
-  $("scene-prev").onclick = () => { state.sceneIndex = (state.sceneIndex + state.scenes.length - 1) % state.scenes.length; home(); renderAll(); };
-  $("scene-next").onclick = () => { state.sceneIndex = (state.sceneIndex + 1) % state.scenes.length; home(); renderAll(); };
   $("t-home").onclick = home; $("t-play").onclick = play; $("t-stop").onclick = () => stop();
   $("undo").onclick = undo; $("redo").onclick = redo;
   $("mirror").onclick = mirrorSelected;
