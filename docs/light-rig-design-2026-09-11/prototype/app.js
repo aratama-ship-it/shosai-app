@@ -177,9 +177,16 @@
 
   /* ---------- 履歴（モーダル内Undo） ---------- */
   const snapshot = () => JSON.stringify({ rig: state.rig, scenes: state.scenes, palette: state.palette, levelCurve: state.levelCurve });
+  /* いま画面に出ている状態（＝最後に commit した時点）の控え。
+     履歴へ積みたいのは「変更<b>前</b>」の状態だが、commit は変更が済んだ後に呼ばれるので、
+     その時点から変更前を作り直せない。そこで直前の状態をここに1つ持っておく。
+     2026-09-13 修正: これが無く「変更<b>後</b>」を積んでいたため、1回目の「元に戻す」が
+     いまと同じ状態の復元になり、以降もずっと1手ぶんずれていた（色を変えて押しても戻らない）。 */
+  let baseline = snapshot();
   function commit(label) {
-    state.history.push(snapshot());
+    state.history.push(baseline);      // 変更前を記録する
     if (state.history.length > 100) state.history.shift();
+    baseline = snapshot();             // ここからが次の「変更前」
     state.future.length = 0;
     state.dirty = true;
     if (label) toast(label, "元に戻す", undo);
@@ -195,8 +202,9 @@
     state.dirty = true;
     renderAll();
   }
-  function undo() { if (!state.history.length) return; state.future.push(snapshot()); restore(state.history.pop()); }
-  function redo() { if (!state.future.length) return; state.history.push(snapshot()); restore(state.future.pop()); }
+  /* 戻す・やり直すでも控えを更新する。控えがずれると、次の commit で積む「変更前」が狂う。 */
+  function undo() { if (!state.history.length) return; state.future.push(baseline); const json = state.history.pop(); baseline = json; restore(json); }
+  function redo() { if (!state.future.length) return; state.history.push(baseline); const json = state.future.pop(); baseline = json; restore(json); }
 
   /* ---------- toast / dialog ---------- */
   let toastTimer = 0;
@@ -2086,7 +2094,7 @@
     state.selTruss = t.id; state.sel.clear();
     commit("奥バトン1本（高さ約6m）＋ムービング4灯を吊りました");   // toastの「元に戻す」で取り消せる
   };
-  $("apply").onclick = () => { state.dirty = false; state.history.length = 0; state.future.length = 0; renderAll(); $("dirty").textContent = "ショーへ適用しました"; setTimeout(() => renderAll(), 2500); toast("ショーへ適用しました（試作なので画面は残ります）"); };
+  $("apply").onclick = () => { state.dirty = false; state.history.length = 0; state.future.length = 0; baseline = snapshot(); renderAll(); $("dirty").textContent = "ショーへ適用しました"; setTimeout(() => renderAll(), 2500); toast("ショーへ適用しました（試作なので画面は残ります）"); };
   $("close").onclick = () => { if (state.dirty) dialog("<p>変更がまだ適用されていません。</p>", [["編集に戻る", null, "quiet"], ["破棄して閉じる", () => toast("破棄しました（試作なので画面は残ります）"), "quiet"], ["適用して閉じる", () => $("apply").onclick(), "primary"]]); else toast("閉じました（試作なので画面は残ります）"); };
 
   // 書き出し: 平面図を4秒録画（順0で検証した方式）＋3コマPNG＋灯ごとの説明
@@ -2133,6 +2141,7 @@
     circus.build();
     state.selTruss = state.rig.trusses[0] ? state.rig.trusses[0].id : null;
     state.history = []; state.future = []; state.dirty = false;   // 見本の状態を「元に戻す」の起点にする
+    baseline = snapshot();                                        // 控えも見本の状態にそろえる
   }
   loadCircus8Demo();
 
