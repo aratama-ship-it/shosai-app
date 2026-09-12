@@ -495,6 +495,13 @@
       const Y = isFront(f) ? B.y + B.h + FRONT_DY : p.Y;     // 前明かりは客席帯に並べる（実距離は数値で）
       drawFixtureMark(pctx, X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
     });
+    // 範囲選択（マーキー）。灯体の上に重ねて描く
+    if (state.drag && state.drag.kind === "marquee" && state.drag.moved) {
+      const dg = state.drag;
+      const x = Math.min(dg.x0, dg.x1), y = Math.min(dg.y0, dg.y1), mw = Math.abs(dg.x1 - dg.x0), mh = Math.abs(dg.y1 - dg.y0);
+      pctx.save(); pctx.fillStyle = "rgba(211,172,89,0.12)"; pctx.strokeStyle = "rgba(211,172,89,0.85)"; pctx.lineWidth = 1.5; pctx.setLineDash([7, 5]);
+      pctx.fillRect(x, y, mw, mh); pctx.strokeRect(x, y, mw, mh); pctx.restore();
+    }
     // 状態
     const st = state.tool === "truss" ? "バトンを渡す" : state.tool === "fixture" ? "吊り 配置中" : state.tool === "floor" ? "転がし 配置中" : state.tool === "side" ? "SS 配置中" : state.drag ? "ドラッグ調整中" : state.sel.size > 1 ? `${state.sel.size}灯を選択中` : "選択";
     $("statebadge").textContent = st;
@@ -867,7 +874,9 @@
   function draw() { drawPlan(); SECS.forEach((sec) => (sec.kind === "front" ? (state.front3d ? drawFront3D(sec) : drawFront(sec)) : drawSide(sec))); }
 
   /* ---------- 当たり判定 ---------- */
-  function hitFixturePlan(pt) { const P = planProj(), B = planBox(); let best = null; state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S); const X = f.mount.type === "side" ? (f.mount.side === "shimote" ? B.x - SIDE_DX : B.x + B.w + SIDE_DX) : p.X; const Y = isFront(f) ? B.y + B.h + FRONT_DY : p.Y; if (Math.hypot(pt.X - X, pt.Y - Y) < 22) best = f; }); return best; }
+  // 灯体の平面図上の画面座標。当たり判定と範囲選択（マーキー）の両方で使う共通の式。
+  function fixturePlanXY(f, P, B) { const S = fixtureWorld(f); if (!S) return null; const p = P(S); const X = f.mount.type === "side" ? (f.mount.side === "shimote" ? B.x - SIDE_DX : B.x + B.w + SIDE_DX) : p.X; const Y = isFront(f) ? B.y + B.h + FRONT_DY : p.Y; return { X, Y }; }
+  function hitFixturePlan(pt) { const P = planProj(), B = planBox(); let best = null; state.rig.fixtures.forEach((f) => { const xy = fixturePlanXY(f, P, B); if (!xy) return; if (Math.hypot(pt.X - xy.X, pt.Y - xy.Y) < 22) best = f; }); return best; }
   function hitFixtureSec(sec, pt) { const P = secProj(sec); let best = null; state.rig.fixtures.forEach((f) => { if (sec.kind !== "front" && !(f.mount.type === "side" && f.mount.side === sec.kind)) return; const S = fixtureWorld(f); if (!S) return; const p = P(S); if (Math.hypot(pt.X - p.X, pt.Y - p.Y) < 22) best = f; }); return best; }
   function hitTrussPlan(pt) { const B = planBox(); return state.rig.trusses.find((t) => Math.abs(pt.Y - (B.y + t.v * B.h)) < 14 && pt.X > B.x - 30 && pt.X < B.x + B.w + 30) || null; }
   // 円の半径ハンドルの世界座標。面ごとに「その面が本当の円として見える図」の軸へオフセットする
@@ -956,7 +965,12 @@
     const f = hitFixturePlan(pt);
     if (f) { if (ev.shiftKey) { state.sel.has(f.id) ? state.sel.delete(f.id) : state.sel.add(f.id); } else if (!state.sel.has(f.id)) state.sel = new Set([f.id]); state.selTruss = f.mount.type === "truss" ? f.mount.trussId : state.selTruss; if (state.mode === "place" && !ev.shiftKey) state.drag = { kind: "fixture", fid: f.id, before: snapshot(), moved: false, startU: f.mount.u, startV: f.mount.v, X0: pt.X, Y0: pt.Y }; renderAll(); return; }
     if (state.mode === "place") { const t = hitTrussPlan(pt); if (t) { state.selTruss = t.id; state.sel.clear(); state.drag = { kind: "truss", tid: t.id, before: snapshot(), moved: false }; renderAll(); return; } }
-    if (!ev.shiftKey) { state.sel.clear(); renderAll(); }
+    /* 何も掴まなかった＝ドラッグで囲んで複数選ぶ（マーキー選択。2026-09-13 本人要望「範囲選択」）。
+       非Shiftはここで先に選択を空にしておく——ただドラッグせずクリックだけした場合も
+       「選択を外す」として従来どおり働く。Shiftはいまの選択に足していく。 */
+    state.drag = { kind: "marquee", x0: pt.X, y0: pt.Y, x1: pt.X, y1: pt.Y, base: new Set(state.sel), moved: false };
+    if (!ev.shiftKey) state.sel.clear();
+    renderAll();
   });
   plan.addEventListener("pointermove", (ev) => {
     const pt = canvasPoint(plan, ev); const B = planBox(); state.hover = { canvas: "plan", ...pt };
@@ -964,9 +978,24 @@
     if (dg && dg.kind === "fixture") { const f = fixtureById(dg.fid); if (f) { const u = snapU(E.clamp((pt.X - B.x) / B.w, 0, 1)), v = snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)); if (f.mount.type === "truss") f.mount.u = u; else if (f.mount.type === "floor") { f.mount.u = u; f.mount.v = v; } else f.mount.v = v; dg.moved = true; } }
     else if (dg && dg.kind === "truss") { const t = E.trussById(state.rig, dg.tid); if (t) { t.v = snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)); dg.moved = true; } }
     else if (dg && dg.kind === "handle") { const uv = E.planToUV(state.dims, B, pt.X, pt.Y); applyHandleDrag(dg, { u: snapU(uv.u), v: snapV(uv.v) }, dg.axis); }
+    else if (dg && dg.kind === "marquee") {
+      dg.x1 = pt.X; dg.y1 = pt.Y;
+      if (!dg.moved && Math.hypot(dg.x1 - dg.x0, dg.y1 - dg.y0) > 4) dg.moved = true;
+      if (dg.moved) {
+        const P = planProj();
+        const lo = { X: Math.min(dg.x0, dg.x1), Y: Math.min(dg.y0, dg.y1) };
+        const hi = { X: Math.max(dg.x0, dg.x1), Y: Math.max(dg.y0, dg.y1) };
+        const inside = state.rig.fixtures.filter((f) => { const xy = fixturePlanXY(f, P, B); return xy && xy.X >= lo.X && xy.X <= hi.X && xy.Y >= lo.Y && xy.Y <= hi.Y; });
+        state.sel = new Set([...dg.base, ...inside.map((f) => f.id)]);
+      }
+    }
     if (dg) { draw(); if (dg.kind !== "handle") renderInspector(); } else draw();
   });
-  const endDrag = () => { const dg = state.drag; if (!dg) return; state.drag = null; if (dg.moved) { state.history.push(dg.before); state.future.length = 0; state.dirty = true; } renderAll(); };
+  const endDrag = () => {
+    const dg = state.drag; if (!dg) return; state.drag = null;
+    if (dg.kind === "marquee") { renderAll(); return; }   // 範囲選択は元に戻す対象にしない（選択はundo外）
+    if (dg.moved) { state.history.push(dg.before); state.future.length = 0; state.dirty = true; } renderAll();
+  };
   plan.addEventListener("pointerup", endDrag); plan.addEventListener("pointercancel", endDrag);
   plan.addEventListener("pointerleave", () => { state.hover = null; draw(); });
   /* 図の灯体をダブルクリックで点灯／消灯（2026-09-11 本人要望）。
@@ -1178,7 +1207,7 @@
   const field = (lab, node, wide) => { const f = document.createElement("div"); f.className = "field" + (wide ? " wide" : ""); const l = document.createElement("span"); l.textContent = lab; f.append(l, node); return f; };
   const btn = (t, fn, cls) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = t; b.onclick = fn; return b; };
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
-  const range = (min, max, step, val, fmt, onInput, onChange) => { const w = el("div"); const i = document.createElement("input"); i.type = "range"; i.min = min; i.max = max; i.step = step; i.value = val; const v = el("span", "val", fmt(val)); i.oninput = () => { v.textContent = fmt(Number(i.value)); onInput(Number(i.value)); }; i.onchange = () => onChange && onChange(Number(i.value)); w.append(i, v); return w; };
+  const range = (min, max, step, val, fmt, onInput, onChange) => { const w = el("div", "rangewrap"); const i = document.createElement("input"); i.type = "range"; i.min = min; i.max = max; i.step = step; i.value = val; const v = el("span", "val", fmt(val)); i.oninput = () => { v.textContent = fmt(Number(i.value)); onInput(Number(i.value)); }; i.onchange = () => onChange && onChange(Number(i.value)); w.append(i, v); return w; };
 
   /* T字の下の帯。置く操作と選んだ灯体の操作を、図のすぐ下に置く（2026-09-11 本人要望で右欄・左欄から移動）。
      動きモードでは置くことがないので帯ごと隠し、そのぶん図を大きくする。 */
@@ -1398,8 +1427,9 @@
       add(field("振り方", seg(SL_FORMS, sp.form, (v) => { sp.form = v; if (live()) applySearchlight(movers); else renderAll(); }), true));
       add(field(sp.form === "cone" ? "散らす幅" : "振り幅", range(0.2, 1, 0.05, sp.span, (v) => `舞台幅の${Math.round(v * 100)}%（約${(v * d.W).toFixed(1)}m）`, (v) => { sp.span = v; touch(); }, settle)));
       /* 高さ0＝床を舐める。バトンに吊ったムービングは下にしか振れないので、これが既定（2026-09-12 本人指摘）。 */
-      add(field("狙う高さ", range(0, d.H, 0.1, hNow, (v) => (v <= 0.05 ? "0m（床を舐める）" : `${v.toFixed(1)}m（空中）`), (v) => { sp.hM = v; touch(); }, settle)));
-      add(field("狙う奥行き", range(0, 1, 0.05, slDepth(), (v) => `${(v * d.D).toFixed(1)}m（${v < 0.3 ? "奥" : v > 0.7 ? "前" : "中ほど"}）`, (v) => { sp.vv = v; touch(); }, settle)));
+      // ラベルは「狙う」を外して短く。「（床を舐める）」の説明も削除（2026-09-13 本人要望）
+      add(field("高さ", range(0, d.H, 0.1, hNow, (v) => (v <= 0.05 ? "0m" : `${v.toFixed(1)}m（空中）`), (v) => { sp.hM = v; touch(); }, settle)));
+      add(field("奥行き", range(0, 1, 0.05, slDepth(), (v) => `${(v * d.D).toFixed(1)}m（${v < 0.3 ? "奥" : v > 0.7 ? "前" : "中ほど"}）`, (v) => { sp.vv = v; touch(); }, settle)));
       if (sp.form !== "cone") add(field("切り返し", seg([["linear", "リニア"], ["ease", "イーズ"]], sp.easing, (v) => { sp.easing = v; if (live()) applySearchlight(movers); else renderAll(); })));
       add(btn(live() ? `${movers.length}灯に当て直す` : `${movers.length}灯にこの型を当てる`, () => applySearchlight(movers), "primary"));
     }
@@ -1457,15 +1487,14 @@
       const g = groupOf(fid);
       if (g) { const gi = cue().groups.indexOf(g); const box = el("div", "box", `<p class="hint">組${gi + 1}「${groupName(g)}」の一員です。</p>`); box.append(btn("組から外す", () => ungroup(fid), "small quiet")); host.append(box); }
       /* 点灯・消灯はON/OFFのトグルで示す（2026-09-13 本人要望）。未設定はどちらも
-         押されていない状態で表す——触るとその場で「決めた」側になる。消灯まで決めた後だけ、
-         「設定を外す」で未設定へ戻せる（滅多に使わない操作なので小さく添えるだけにする）。 */
+         押されていない状態で表す——触るとその場で「決めた」側になる。
+         「設定を外す」（未設定へ戻す）は削除した（2026-09-13 本人要望）——点灯／消灯の2択で足りる。 */
       if (!l || l.on !== true) {
         const cur = l && l.on === false ? "off" : null;
         host.append(field("点灯", seg([["off", "消灯"], ["on", "点灯"]], cur, (v) => {
           if (v === "on") ensureOn(fid); else setLight(fid, { on: false });
           commit();
         })));
-        if (cur === "off") host.append(btn("設定を外す", () => { delete cue().lights[fid]; commit(); }, "small quiet"));
         return;
       }
       /* 光の色。よく使う6色＋自分で作った色（ショー共通）。作った色はそのまま並ぶので、
@@ -1572,7 +1601,8 @@
         }, "small primary");
         host.append(field("貼り付け", b));
       }
-      const s = el("div", "seg"); s.append(btn("消灯にする", () => { setLight(fid, { on: false }); commit(); }, "small quiet"), btn("設定を外す", () => { delete cue().lights[fid]; commit(); }, "small quiet")); host.append(s);
+      // 「設定を外す」は削除した（2026-09-13 本人要望）。消灯だけにする。
+      host.append(btn("消灯にする", () => { setLight(fid, { on: false }); commit(); }, "small quiet"));
       return;
     }
     // 複数
@@ -1581,13 +1611,14 @@
     const gs = [...new Set(ids.map((id) => groupOf(id)).filter(Boolean))];
     const same = gs.length === 1 && gs[0].members.length === ids.length && ids.every((id) => gs[0].members.includes(id));
     if (same) { const g = gs[0]; const gi = cue().groups.indexOf(g); host.append(el("p", "hint", `組${gi + 1}「${groupName(g)}」を編集中`));
-      host.append(field("組の動き", seg([["together", "一緒に動く"], ["mirror", "鏡のように動く"], ["sequential", "順番に動く"], ["fan", "扇に開く・閉じる"], ["cross", "交差して入れ替わる"]], g.compose || g.relation, (v) => makeGroup(g.members, v), "col"), true));
+      // 5択は横1列（2026-09-13 本人要望「スペースはあるはず」）
+      host.append(field("組の動き", seg([["together", "一緒に動く"], ["mirror", "鏡のように動く"], ["sequential", "順番に動く"], ["fan", "扇に開く・閉じる"], ["cross", "交差して入れ替わる"]], g.compose || g.relation, (v) => makeGroup(g.members, v)), true));
       if (g.relation === "sequential") host.append(field("ずらす時間", range(100, 1500, 50, g.delayMs, (v) => `${(v / 1000).toFixed(2)}秒ずつ`, (v) => { g.delayMs = v; draw(); }, () => commit())));
       const ol = el("div", "seg col"); g.members.forEach((m, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = `${i + 1}. ${label(m)} ${fixtureById(m).name || ""}${i > 0 ? "　▲ 前へ" : ""}`; b.onclick = () => { if (i > 0) { [g.members[i - 1], g.members[i]] = [g.members[i], g.members[i - 1]]; commit(); } }; ol.append(b); }); host.append(field("この組の灯体", ol, true));
       host.append(btn("組を解散する", () => { cue().groups = cue().groups.filter((x) => x !== g); g.members.forEach((m) => setLight(m, { groupId: null })); commit("組を解散しました"); }, "small quiet"));
     } else {
       host.append(el("p", "hint", "選んだ灯体で組の動きをつくる"));
-      host.append(field("組の動き", seg([["together", "一緒に動く"], ["mirror", "鏡のように動く"], ["sequential", "順番に動く"], ["fan", "扇に開く・閉じる"], ["cross", "交差して入れ替わる"]], null, (v) => makeGroup(ids, v), "col"), true));
+      host.append(field("組の動き", seg([["together", "一緒に動く"], ["mirror", "鏡のように動く"], ["sequential", "順番に動く"], ["fan", "扇に開く・閉じる"], ["cross", "交差して入れ替わる"]], null, (v) => makeGroup(ids, v)), true));
     }
   }
 

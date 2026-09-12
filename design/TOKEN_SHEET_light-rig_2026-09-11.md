@@ -268,3 +268,20 @@
 ## 15. 幕・ホリゾントの塗りの濃さ（2026-09-13）
 
 色（#784047）は本体既定のまま。**立面での塗りアルファは試作独自の値**（本体はこの濃さを指定していない）。0.55だと奥の壁を覆って灯体の光と競合したため、0.3へ下げた。
+
+
+## 16. 範囲選択（マーキー）・seg1行化・ON-OFF整理（2026-09-13）
+
+- 平面図の空クリックはこれまで「選択解除」だけだったが、ドラッグとして扱い `state.drag={kind:"marquee",x0,y0,x1,y1,base,moved}` を持たせた。
+  4px未満の移動は従来のクリック扱い（`moved` が立たないので `state.sel` は変わらない）。移動が閾値を超えたら
+  `fixturePlanXY(f,P,B)`（`hitFixturePlan` と共通の式）で各灯体の画面座標を出し、矩形内なら選択に加える。
+  Shiftは `base=new Set(state.sel)` を保持して足し算、非Shiftは先に `state.sel.clear()`。選択はUndo対象に含めない
+  （`endDrag` で `kind==="marquee"` のときは history へ push しない）。
+- `.seg`（`.col` を除く）は既定で `flex-wrap:nowrap` ＋ `button{flex:1 1 0}` にして、2〜5択を必ず1行・均等幅にする。
+  `.slbox .field.wide .seg{display:grid;grid-template-columns:1fr 1fr}`（旧2×2ルール）は削除。`.seg.col`（回る面など、
+  文言が長いもの）は対象外のまま残す。
+- `range()` の戻り値に `.rangewrap` クラスを付け、`display:flex;gap:8px` で input と値を横並びに。
+  `input[type=range]{width:150px}` で全スライダーが一律コンパクトになる。
+- `.swatches{padding:3px 0 3px 3px;margin-left:-3px}` — 選択中スウォッチの `outline` が `.panel{overflow:hidden}` に
+  食われていたのを、余白を持たせて回避（見た目の位置はマージンで打ち消して変えない）。
+- 「設定を外す」（未設定へ戻す）はUIから完全に削除。点灯／消灯の2択のみ。
