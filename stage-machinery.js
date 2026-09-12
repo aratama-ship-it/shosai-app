@@ -190,7 +190,7 @@
       const set = {
         id: makeId("set"), kind: item.kind,
         name: (isEn ? item.nameEn : item.nameJa) || item.nameJa || item.kind,
-        color: item.kind === "pool" ? "#477f92" : item.kind === "curtain" ? "#784047" : "#8b98a1",
+        color: item.kind === "pool" ? "#477f92" : item.kind === "curtain" ? "#000000" : "#8b98a1",
         dims: normalizeDims(item.kind, { dims: item.dims, size: 100 }), note: "", locked: false,
         flown: false, wires: 2, framed: false, lightKind: "hang",
         curtainKind: item.curtainKind || undefined,

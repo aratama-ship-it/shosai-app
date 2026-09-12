@@ -15,9 +15,9 @@
     /* 前幕は本来ちょうど間口いっぱい〜少し広いが、w を広げすぎると束ねた布（全開時も残る）が
        舞台の外＝図の外へ出てしまう（実測で発覚。18m幅で試したら平面図の外に落ちた）。
        図の中に収まる 1.0（間口と同じ幅）にしてある。 */
-    { id: "cur-front", kind: "curtain", name: "前幕", curtainKind: "front", u: 0.5, v: 0.97, w: 1.0, hM: 7.5, open: 100, color: "#784047", facing: 0 },
+    { id: "cur-front", kind: "curtain", name: "前幕", curtainKind: "front", u: 0.5, v: 0.97, w: 1.0, hM: 7.5, open: 100, color: "#000000", facing: 0 },
     // 色は本体の既定と同じ（stage-machinery.js:193 は幕の種類を問わず同じ既定色を使う）
-    { id: "cur-cyc", kind: "curtain", name: "ホリゾント幕", curtainKind: "cyc", u: 0.5, v: 0.04, w: 1.04, hM: 6.5, open: 0, color: "#784047", facing: 0 },
+    { id: "cur-cyc", kind: "curtain", name: "ホリゾント幕", curtainKind: "cyc", u: 0.5, v: 0.04, w: 1.04, hM: 6.5, open: 0, color: "#000000", facing: 0 },
   ];
   const state = {
     mode: "place",                     // "place" | "move"
@@ -610,7 +610,7 @@
     if (["drop", "cyc"].includes(pc.curtainKind) && open >= 100) return;
     const panels = curtainPanelsWorld(pc, d);
     ctx.save();
-    ctx.strokeStyle = hexA(pc.color || "#784047", 0.9); ctx.lineWidth = 7; ctx.lineCap = "butt";
+    ctx.strokeStyle = hexA(pc.color || "#000000", 0.9); ctx.lineWidth = 7; ctx.lineCap = "butt";
     panels.forEach((part) => {
       const a = P({ x: part.leftX, y: part.leftY, z: 0 }), b = P({ x: part.rightX, y: part.rightY, z: 0 });
       ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
@@ -652,10 +652,11 @@
       const fr = P({ x: part.rightX, y: part.rightY, z: part.lift });
       const tl = P({ x: part.leftX, y: part.leftY, z: part.lift + part.h });
       const tr = P({ x: part.rightX, y: part.rightY, z: part.lift + part.h });
-      // 色は本体既定のまま（#784047＝stage-machinery.jsの既定）。ただし立面での塗りの濃さは
+      // 色は黒に固定（2026-09-13 本人指摘「幕が紫色に見える」で#784047から変更。
+      // stage-machinery.js側も既定を黒へ修正済み）。立面での塗りの濃さは
       // 本体側で決めていない試作独自の値——0.55だと後ろの壁いっぱいを覆って灯体の光と競合したので、
       // 「下敷き」らしく控えめな0.3へ落とした（2026-09-13 本人指摘「色が強い」）。
-      ctx.fillStyle = hexA(pc.color || "#784047", 0.3);
+      ctx.fillStyle = hexA(pc.color || "#000000", 0.3);
       ctx.beginPath(); ctx.moveTo(fl.X, fl.Y); ctx.lineTo(fr.X, fr.Y); ctx.lineTo(tr.X, tr.Y); ctx.lineTo(tl.X, tl.Y); ctx.closePath();
       ctx.fill(); ctx.strokeStyle = "rgba(240,231,214,0.22)"; ctx.lineWidth = 1; ctx.stroke();
     });
@@ -1573,7 +1574,7 @@
           add(el("p", "hint", `組${gi + 1}「${groupName(g)}」を編集中`));
           add(field("動き方", seg(REL, g.compose || g.relation, (v) => makeGroup(g.members, v)), true));
           if (g.relation === "sequential") add(field("ずらす時間", range(100, 1500, 50, g.delayMs, (v) => `${(v / 1000).toFixed(2)}秒ずつ`, (v) => { g.delayMs = v; draw(); }, () => commit())));
-          const ol = el("div", "seg col");
+          const ol = el("div", "seg col grouplist");
           g.members.forEach((m, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = `${i + 1}. ${label(m)} ${fixtureById(m).name || ""}${i > 0 ? "　▲ 前へ" : ""}`; b.onclick = () => { if (i > 0) { [g.members[i - 1], g.members[i]] = [g.members[i], g.members[i - 1]]; commit(); } }; ol.append(b); });
           add(field("この組の灯体", ol, true));
           add(btn("組を解散する", () => { cue().groups = cue().groups.filter((x) => x !== g); g.members.forEach((m) => setLight(m, { groupId: null })); commit("組を解散しました"); }, "small quiet"));

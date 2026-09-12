@@ -199,6 +199,13 @@
      （2026-09-13 実害: 「組の動き」「この組の灯体」の文字が下の要素と重なった）。
      縦積みで折り返す気が無いので明示的に止める。 */
   .seg.col{flex-direction:column;flex-wrap:nowrap;align-items:stretch} .seg.col button+button{margin-left:0;margin-top:-1px;text-align:left}
+  /* 「この組の灯体」だけは横幅を抑えるため上下積みでなく左右に並べる（2026-09-13 本人要望）。
+     上のグリッド事故は「スクロールする display:grid」が原因で、ここは親(.inspbody)が
+     display:flex のまま・このボックス自体もflexなのでグリッドではない＝再発条件に当たらない。
+     数が多いときは高さの上限で打ち切ってこの中だけ縦スクロールし、外側の縦幅は抑える。 */
+  .seg.col.grouplist{flex-direction:row;flex-wrap:wrap;align-items:flex-start;max-height:150px;overflow-y:auto}
+  .seg.col.grouplist button{text-align:center;white-space:nowrap;flex:0 0 auto}
+  .seg.col.grouplist button+button{margin-left:-1px;margin-top:0}
   /* サーチライト（複数ムービングを一撃で組む）。まとまりが見えるよう枠で囲う */
   .slbox{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;align-content:start;border:1px solid var(--line-dark);background:var(--recess);padding:8px;margin-bottom:2px}
   .slbox>*{grid-column:1/-1;min-width:0}
@@ -422,8 +429,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789199185"></script>
-<script src="stage-figure.js?v=1789199185"></script>
-<script src="app.js?v=1789199185"></script>
+<script src="rig-engine.js?v=1789200209"></script>
+<script src="stage-figure.js?v=1789200209"></script>
+<script src="app.js?v=1789200209"></script>
 </body>
 </html>
