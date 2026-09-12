@@ -313,7 +313,15 @@
   const FRONT_BASE_H = 720;
   const FRONT_SEATS = {
     center: { id: "center", label: "1階 中央", floorY: 478, bottomY: 598, backW: 0.5, frontW: 0.94, rise: 0.06 },
-    rear: { id: "rear", label: "1階 後方", floorY: 470, bottomY: 674, backW: 0.62, frontW: 0.94, rise: 0 },
+    /* 1階 後方（2026-09-13 修正: 2階席のように見えるという本人指摘）。
+       床の帯（bottomY - floorY）は「目線が舞台の床からどれだけ高いか」を決める。
+       幅の比 frontW/backW=1.52 は 舞台前端まで約15m（奥行き8mなら 15.4m）を意味し、これは後方席として妥当。
+       その距離で床の帯／奥の壁の高さ を測ると、元の 204（470→674）は目線が床から約7.1m＝2階席の高さだった
+       （実測: 床の帯168px ÷ 奥の壁366px ÷ ((1.52-1)/8) ≒ 7.1m）。
+       1階後方の実際は、舞台の高さ約1m・客席の傾斜で約2.5〜3.5m上がる・座った目線1.15m から
+       <b>舞台の床より約2.5m上</b>。その比に合わせて帯を 204→72 にした（見下ろす角度 約9.5度）。
+       floorY は変えていないので、奥の壁の大きさと幅の比はそのまま。床より下は客席側の暗がりが広がる。 */
+    rear: { id: "rear", label: "1階 後方", floorY: 470, bottomY: 542, backW: 0.62, frontW: 0.94, rise: 0 },
     front: { id: "front", label: "1階 前方", floorY: 490, bottomY: 532, backW: 0.45, frontW: 1.75, rise: 0.15 },
   };
   const frontPerspSetup = (dims, box, seatId) => {
@@ -366,6 +374,19 @@
     if (m.type === "front") return `前明かり・${lr(m.u)}・舞台前から約${Math.round(finite(m.ahead, 5))}m・高さ約${Math.round(finite(m.h, 7))}m`;
     if (m.type === "side") return `SS・${m.side === "shimote" ? "下手" : "上手"}の袖（高さ約${Math.round(m.h)}m）・${m.v < 0.4 ? "奥寄り" : m.v > 0.6 ? "手前寄り" : "中ほど"}`;
     return "取り付け未設定";
+  };
+
+  /* 一覧の行に出す短い位置の言葉（2026-09-13 本人要望で復帰）。
+     見出し側がすでに「吊り・奥から1列目」「SS・下手の袖」などを言っているので、
+     行では<b>その中で灯ごとに違うところだけ</b>を返す。 */
+  const mountSpot = (fixture) => {
+    const m = (fixture && fixture.mount) || {};
+    const lr = (u) => (u < 0.4 ? "下手寄り" : u > 0.6 ? "上手寄り" : "中央");
+    const fb = (v) => (v < 0.4 ? "奥" : v > 0.6 ? "手前" : "中ほど");
+    if (m.type === "truss" || m.type === "front") return lr(m.u);
+    if (m.type === "floor") return `${lr(m.u)}・${fb(m.v)}`;
+    if (m.type === "side") return m.v < 0.4 ? "奥寄り" : m.v > 0.6 ? "手前寄り" : "中ほど";
+    return "";
   };
 
   const posWord = (p) => `${p.u < 0.4 ? "下手" : p.u > 0.6 ? "上手" : "中央"}・奥から${(p.v * 100).toFixed(0)}%${p.hM > 0.05 ? `・高さ約${p.hM.toFixed(1)}m` : ""}`;
@@ -444,7 +465,7 @@
     DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
     clamp, finite,
     newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, beamLanding, trussById, trussRow, fixtureWorld,
-    newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, paramPhase, constrainPointToSurface, periodMs, groupEffect,
+    newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, paramPhase, mountSpot, constrainPointToSurface, periodMs, groupEffect,
     pointWorld, planeVec, circleOffset, eightOffset, targetAt, pathGuide, mirrorMount,
     FRONT_SEATS, frontPerspSetup, makeFrontPerspProjector, frontPerspToUH,
     makePlanProjector, makeFrontProjector, makeSideProjector, planToUV, frontToUH, sideToVH,

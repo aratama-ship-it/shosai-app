@@ -1344,7 +1344,11 @@
       r.innerHTML = `<span class="no">${idx !== undefined ? idx + 1 + "." : ""}${label(f.id)}</span><span class="nm">${f.name || "名前なし"}<small>${E.describeMount(f, state.rig).replace(/（高さ約\dm）/, "")}</small></span>`;
       // 状態の欄はそのまま押せるオン／オフにする（2026-09-11 本人要望。一覧から直接切り替えたい）
       const stCell = document.createElement(state.mode === "move" ? "button" : "span");
-      stCell.className = "st " + st;
+      stCell.className = state.mode === "move" ? "st " + st : "st spot";
+      /* 配置タブの3列目は空いているので、灯ごとに違う取り付け位置（下手寄り／中央など）を出す。
+         2列表示にしたときに行の <small> がCSSで隠れて見えなくなっていたぶんの復帰
+         （2026-09-13 本人要望）。見出しが言っている「吊り・奥から1列目」等は繰り返さない。 */
+      if (state.mode === "place") { stCell.textContent = E.mountSpot(f); stCell.title = E.describeMount(f, state.rig); }
       if (state.mode === "move") {
         stCell.type = "button";
         stCell.textContent = st === "off" ? "オフ" : "オン";
