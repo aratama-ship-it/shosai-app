@@ -47,6 +47,10 @@
   .btn.quiet{color:var(--milk-dim)}
   .btn:disabled{opacity:.35;cursor:default}
   .btn.small{min-height:28px;padding:3px 9px;font-size:10.5px}
+  /* 設定（歯車）。アイコンは舞台スケッチ本体 stage.html のSVGをそのまま使う（2026-09-13 本人指示）。 */
+  .gearbtn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--line-dark);background:none;color:var(--milk-dim);cursor:pointer}
+  .gearbtn:hover{border-color:var(--brass);color:var(--milk)}
+  .gearbtn svg{width:17px;height:17px;display:block}
   .x{min-width:26px;min-height:24px;border:1px solid var(--line-dark);background:none;color:var(--milk-dim);font-size:11px;cursor:pointer}
   /* ---- 本文3列 ---- */
   /* 2026-09-11 本人要望で3列をやめ、図と同じ6枠のグリッドへ一本化した */
@@ -142,7 +146,7 @@
   .fmode{display:flex;align-items:center;gap:5px;justify-self:center}
   .sechead .viewtitle{font-size:11px;letter-spacing:.08em}
   .sechead .viewnote{font-size:8.5px}
-  /* 図の上の横並びバー: 図に出すもの＋図の見かた */
+  /* 図の上の横並びバー: 図に出すものの並び（凡例は 2026-09-13 本人要望で削除） */
   .figbar{flex:0 0 auto;display:flex;align-items:center;gap:6px 14px;min-height:26px;padding-bottom:5px;margin:0 auto;border-bottom:1px solid var(--line-dark);flex-wrap:wrap;width:min(100%,var(--band))}
   .fb{display:flex;align-items:center;gap:8px;min-width:0}
   .fb>b{color:var(--brass);font-size:9px;font-weight:600;letter-spacing:.14em;white-space:nowrap}
@@ -260,7 +264,10 @@
   .val{color:var(--brass);font-variant-numeric:tabular-nums}
   /* .panel は overflow:hidden なので、選択中スウォッチの outline（枠の外側にはみ出す）が
      左端で切れていた（2026-09-13 本人指摘）。余白を持たせて逃がす。 */
-  .swatches{display:flex;gap:4px;flex-wrap:wrap;align-items:center;padding:3px 0 3px 3px;margin-left:-3px}
+  /* 選んだ色の輪（outline 2px + offset 1px＝3px 外へ出る）ぶんを左に空ける。
+     以前は margin-left:-3px で相殺していたが、スクロール枠（.inspbody の overflow-x:hidden）の
+     外側へはみ出すため左端が切れていた（2026-09-13 本人指摘）。負のマージンをやめて内側で確保する。 */
+  .swatches{display:flex;gap:4px;flex-wrap:wrap;align-items:center;padding:3px}
   .swatches button{width:22px;height:22px;border:1px solid var(--line-dark);cursor:pointer;padding:0}
   .swatches button[aria-pressed="true"]{outline:2px solid var(--brass);outline-offset:1px}
   /* 作った色は内側に細い輪を入れて、もとからある6色と見分ける */
@@ -310,6 +317,7 @@
         <button type="button" id="redo" title="やり直す（⇧⌘Z）">やり直す</button>
       </span>
       <span class="dirty" id="dirty"></span>
+      <button type="button" class="gearbtn" id="prefs" aria-label="設定" title="設定（強さの効き方）"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4.2" stroke-width="1.3"/><circle cx="8" cy="8" r="1.4" stroke-width="1.3"/><path stroke-width="2.3" d="M8 3.10V1.90M11.94 5.55l1.04-.60M11.94 10.45l1.04.60M8 12.90v1.20M4.06 10.45l-1.04.60M4.06 5.55l-1.04-.60"/></svg></button>
       <button type="button" class="btn" id="export" title="動画（MP4）・配置図付き3コマ（PNG）・灯ごとの説明（テキスト）を同じ時点から作ります">書き出す</button>
       <button type="button" class="btn primary" id="apply">適用して閉じる</button>
       <button type="button" class="x" id="close" aria-label="閉じる">✕</button>
@@ -331,7 +339,6 @@
               <button type="button" data-show="blackout" aria-pressed="false" title="光が当たっていないところを真っ暗にする（灯体情報タブのみ）">室内灯を消す</button>
             </span>
           </span>
-          <span class="fb"><b>図の見かた</b><span id="legend-r"></span></span>
           <!-- シーン送りと再生は「灯体情報（このシーン）」のときだけ中身を出す。
                配置では隠すが場所は残す（図の位置が両ページでずれないように・2026-09-11 本人指摘） -->
           <span class="fb scenebox" id="scenerow">
@@ -358,8 +365,8 @@
             <input type="search" id="search" class="search" placeholder="番号・名前で探す" aria-label="灯体を探す">
             <div class="filters" id="filters" role="group" aria-label="絞り込み">
               <button type="button" data-filter="all" aria-pressed="true">すべて</button>
-              <button type="button" data-filter="unset" aria-pressed="false">未設定</button>
-              <button type="button" data-filter="on" aria-pressed="false">点灯</button>
+              <button type="button" data-filter="off" aria-pressed="false">オフ</button>
+              <button type="button" data-filter="on" aria-pressed="false">オン</button>
               <button type="button" data-filter="move" aria-pressed="false">動き</button>
             </div>
             <p class="hint" id="sel-count"></p>
@@ -396,7 +403,7 @@
             </div>
           </section>
           <div class="sec side l">
-            <div class="sechead"><span class="viewtitle">下手から見る</span><span class="viewnote">横軸＝奥行き</span></div>
+            <div class="sechead"><span class="viewtitle">下手から見る</span></div>
             <canvas id="secL" width="520" height="520"></canvas>
           </div>
           <div class="sec front">
@@ -413,12 +420,11 @@
                   <option value="rear">1階 後方</option>
                 </select>
               </span>
-              <span class="viewnote">横軸＝下手・上手／縦軸＝高さ</span>
             </div>
             <canvas id="secF" width="780" height="520"></canvas>
           </div>
           <div class="sec side r">
-            <div class="sechead"><span class="viewtitle">上手から見る</span><span class="viewnote">横軸＝奥行き</span></div>
+            <div class="sechead"><span class="viewtitle">上手から見る</span></div>
             <canvas id="secR" width="520" height="520"></canvas>
           </div>
         </div>
@@ -448,8 +454,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789206318"></script>
-<script src="stage-figure.js?v=1789206318"></script>
-<script src="app.js?v=1789206318"></script>
+<script src="rig-engine.js?v=1789207931"></script>
+<script src="stage-figure.js?v=1789207931"></script>
+<script src="app.js?v=1789207931"></script>
 </body>
 </html>

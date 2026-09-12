@@ -196,7 +196,7 @@
     const o = JSON.parse(json);
     state.rig = o.rig; state.scenes = o.scenes; if (o.palette) state.palette = o.palette;
     // 強さの効き方。目盛りの数が合うものだけ受け取る（古い記録には無い＝そのときはリニアのまま）
-    if (Array.isArray(o.levelCurve) && o.levelCurve.length === LEVEL_CURVE_STEPS + 1) state.levelCurve = o.levelCurve.slice();
+    if (Array.isArray(o.levelCurve) && o.levelCurve.length === LEVEL_CURVE_POINTS) state.levelCurve = o.levelCurve.slice();
     state.sel = new Set([...state.sel].filter(fixtureById));
     if (state.selTruss && !E.trussById(state.rig, state.selTruss)) state.selTruss = null;
     state.dirty = true;
@@ -318,18 +318,36 @@
      一覧の「オン／オフ」も実際に光っているかで出し分ける（数字が0なのにオンと出ると読めないため）。 */
   const levelOf = (l) => E.levelOf(l);
   const isLit = (l) => E.isLit(l);
-  const LEVEL_CURVE_STEPS = 32;
+  /* カーブは「動かせる点」で持つ（2026-09-13 本人要望「一点を動かしたら滑らかな弧になるように」）。
+     0%・25%・50%・75%・100% の5点。横位置は固定で、縦だけドラッグして決める。
+     以前はなぞった跡を33目盛りそのまま覚えていたので、線がガタついた。 */
+  const LEVEL_CURVE_POINTS = 5;
   function resetLevelCurve() {
-    state.levelCurve = Array.from({ length: LEVEL_CURVE_STEPS + 1 }, (_, i) => i / LEVEL_CURVE_STEPS);
+    state.levelCurve = Array.from({ length: LEVEL_CURVE_POINTS }, (_, i) => i / (LEVEL_CURVE_POINTS - 1));
   }
   resetLevelCurve();   // 既定はリニア。state の宣言直後ではなくここで呼ぶ（定数がまだ初期化前のため）
-  /* 入力（0〜1）→ 出る明るさ（0〜1）。目盛りの間は直線でつなぐ。
-     入力0は必ず0＝消灯（カーブをどう描いても「0なのに光る」は作らせない）。 */
+  /* 入力（0〜1）→ 出る明るさ（0〜1）。点と点の間は単調3次補間（Fritsch–Carlson）でつなぐ。
+     ふつうの3次曲線と違って行き過ぎ（オーバーシュート）が出ないので、
+     「つまみを上げたのに暗くなる」区間ができない。1点動かすとその周りが滑らかな弧になる。
+     入力0は必ず0＝消灯（どう動かしても「0なのに光る」は作らせない）。 */
   function curveAt(x) {
-    const c = state.levelCurve; if (!c) return E.clamp(x, 0, 1);
-    const t = E.clamp(x, 0, 1) * LEVEL_CURVE_STEPS;
-    const i = Math.min(LEVEL_CURVE_STEPS - 1, Math.floor(t)), fr = t - i;
-    return E.clamp(c[i] + (c[i + 1] - c[i]) * fr, 0, 1);
+    const p = state.levelCurve;
+    if (!Array.isArray(p) || p.length < 2) return E.clamp(x, 0, 1);
+    const n = p.length - 1, h = 1 / n;
+    const t = E.clamp(x, 0, 1) * n;
+    const i = Math.min(n - 1, Math.floor(t)), u = t - i;
+    const d = []; for (let k = 0; k < n; k++) d.push((p[k + 1] - p[k]) / h);   // 各区間の傾き
+    const m = new Array(n + 1);
+    m[0] = d[0]; m[n] = d[n - 1];
+    for (let k = 1; k < n; k++) m[k] = (d[k - 1] * d[k] <= 0) ? 0 : (d[k - 1] + d[k]) / 2;
+    for (let k = 0; k < n; k++) {                                             // 行き過ぎを抑える
+      if (d[k] === 0) { m[k] = 0; m[k + 1] = 0; continue; }
+      const a = m[k] / d[k], b = m[k + 1] / d[k], q = a * a + b * b;
+      if (q > 9) { const tau = 3 / Math.sqrt(q); m[k] = tau * a * d[k]; m[k + 1] = tau * b * d[k]; }
+    }
+    const u2 = u * u, u3 = u2 * u;
+    return E.clamp((2 * u3 - 3 * u2 + 1) * p[i] + (u3 - 2 * u2 + u) * h * m[i]
+      + (-2 * u3 + 3 * u2) * p[i + 1] + (u3 - u2) * h * m[i + 1], 0, 1);
   }
   // その灯が図の上でどれだけ濃く出るか（0〜1）。消灯・強さ0は0。
   const litFactor = (l) => (isLit(l) ? curveAt(levelOf(l) / 100) : 0);
@@ -337,8 +355,11 @@
   function turnOn(fid) { ensureOn(fid); const l = lightOf(fid); if (l && levelOf(l) <= 0) setLight(fid, { level: 100 }); }
   const LEVEL_WORD = (v) => (v <= 0 ? "消灯" : v < 25 ? "かすか" : v < 55 ? "暗め" : v < 85 ? "普通" : "全開");
 
-  const lightState = (fid) => { const l = lightOf(fid); if (!l || l.on === null || l.on === undefined) return "unset"; if (l.on === false || levelOf(l) <= 0) return "off"; return (l.path && l.path.kind !== "still") ? "move" : "on"; };
-  const STATE_LABEL = { unset: "未設定", off: "オフ", on: "オン", move: "動き" };
+  /* 一覧や絞り込みに出す状態。未設定と消灯は分けず、どちらも「オフ」として見せる
+     （2026-09-13 本人要望「つけるという表現はなしに／最初から全部オフに」）。
+     データの上では未設定（on:null）のままなので、まとめて変更が「未設定は点けてから」を判断できる。 */
+  const lightState = (fid) => { const l = lightOf(fid); if (!l || l.on !== true || levelOf(l) <= 0) return "off"; return (l.path && l.path.kind !== "still") ? "move" : "on"; };
+  const STATE_LABEL = { off: "オフ", on: "オン", move: "動き" };
 
   /* ---------- 配置の操作 ---------- */
   function addTruss(v) {
@@ -1163,7 +1184,7 @@
   };
   plan.addEventListener("pointerup", endDrag); plan.addEventListener("pointercancel", endDrag);
   plan.addEventListener("pointerleave", () => { state.hover = null; draw(); });
-  /* 図の灯体をダブルクリックで点灯／消灯（2026-09-11 本人要望）。
+  /* 図の灯体をダブルクリックでオン／オフ（2026-09-11 本人要望）。
      配置のページで押したときは、灯体情報のページへ移って点ける。 */
   function toggleLightOf(f) {
     if (!f) return;
@@ -1322,8 +1343,8 @@
       stCell.className = "st " + st;
       if (state.mode === "move") {
         stCell.type = "button";
-        stCell.textContent = st === "unset" ? "つける" : st === "off" ? "オフ" : "オン";
-        stCell.title = st === "unset" ? "このシーンで点ける" : st === "off" ? "いまオフ。押すとオン" : "いまオン。押すとオフ";
+        stCell.textContent = st === "off" ? "オフ" : "オン";
+        stCell.title = st === "off" ? "いまオフ。押すとオン" : "いまオン。押すとオフ";
         stCell.onclick = (ev) => { ev.stopPropagation(); const l = lightOf(f.id); if (isLit(l)) setLight(f.id, { on: false }); else turnOn(f.id); commit(); };
       }
       r.append(stCell);
@@ -1495,8 +1516,8 @@
     /* --- 1) いま効く一括変更 --- */
     {
       const on = el("div", "seg");
-      on.append(btn("全部つける", () => { ids.forEach(turnOn); commit(`${ids.length}灯を点灯にしました`); }, "small"),
-                btn("全部消す", () => { ids.forEach((fid) => setLight(fid, { on: false })); commit(`${ids.length}灯を消灯にしました`); }, "small quiet"));
+      on.append(btn("全部オン", () => { ids.forEach(turnOn); commit(`${ids.length}灯をオンにしました`); }, "small"),
+                btn("全部オフ", () => { ids.forEach((fid) => setLight(fid, { on: false })); commit(`${ids.length}灯をオフにしました`); }, "small quiet"));
       add(field("オン・オフ", on, true));
     }
     /* 強さ（調光）。0は消灯と同じ（2026-09-13 本人決定）。
@@ -1857,11 +1878,9 @@
     SECS.forEach((sec) => sec.cv.parentElement.classList.toggle("focus", sec.kind === focusKind));
     renderToolStrip();   // 帯の出し入れで図に使える高さが変わるので、寸法合わせより先に
     syncCanvasSize();
-    $("legend-r").textContent = state.mode === "move" ? "実線＝いまの光　破線＝動く範囲　●A/B＝ドラッグ" : "■吊り　▲前明かり　◆SS（袖）　●転がし　◎付き＝ムービング";
     document.querySelectorAll("#showtoggles button").forEach((b) => b.setAttribute("aria-pressed", String(showOn(b.dataset.show))));
     document.querySelectorAll("#frontmode button").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.front === "3d") === Boolean(state.front3d))));
     $("seat").hidden = !state.front3d;
-    SECS.find((x) => x.kind === "front").cv.parentElement.querySelector(".viewnote").textContent = state.front3d ? "擬似パース（本体の正面図と同じ）" : "横軸＝下手・上手／縦軸＝高さ";
     $("filters").hidden = state.mode !== "move";
     document.querySelectorAll("#filters button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filter === state.filter)));
     renderList(); renderInspector(); renderFixedConflicts(); renderTransport(); draw();
@@ -1878,6 +1897,7 @@
   document.querySelectorAll("#filters button").forEach((b) => { b.onclick = () => { state.filter = b.dataset.filter; renderAll(); }; });
   $("dup").onclick = duplicateSelected; $("del").onclick = removeSelected; $("spread").onclick = spreadSelected;
   $("presets").onclick = openPresets;
+  $("prefs").onclick = openLevelCurve;   // 設定（歯車）。いまの設定は「強さの効き方」だけ
   $("empty-presets").onclick = openPresets;
   $("empty-truss").onclick = () => { state.tool = "truss"; $("empty").hidden = true; renderAll(); $("empty").hidden = true; };
   /* ---------- よくある仕込み（プリセット） ----------
@@ -2019,7 +2039,7 @@
 
   function openLevelCurve() {
     dialog(`<p class="kicker">強さの効き方（全灯共通）</p>
-      <p class="hint">灯ごとの「強さ」は目盛りどおりの数値です。その数値が<b>図に出る明るさ</b>へどう効くかを、ここでなぞって決めます（音楽のベロシティカーブと同じ考え方）。
+      <p class="hint">灯ごとの「強さ」は目盛りどおりの数値です。その数値が<b>図に出る明るさ</b>へどう効くかを、ここで決めます（音楽のベロシティカーブと同じ考え方）。
       この1本をアプリ全体で使います——灯ごと・場面ごとには変わりません。</p>
       <canvas id="lvcurve" class="curvecv" width="640" height="360" aria-label="強さの効き方のカーブ"></canvas>
       <p class="hint"><b>横</b>＝つまみの数値　<b>縦</b>＝図に出る明るさ。点線がリニア（そのままの目盛り）。</p>
@@ -2028,6 +2048,8 @@
       [["閉じる", null, "primary"]]);
     const cv = $("lvcurve"); if (!cv) return;
     const cx = cv.getContext("2d"), read = $("lvread");
+    const N = () => state.levelCurve.length - 1;
+    let held = null;                                   // いま掴んでいる点
     const paint = () => {
       const w = cv.width, h = cv.height;
       cx.setTransform(1, 0, 0, 1, 0, 0);
@@ -2040,34 +2062,45 @@
       }
       cx.save(); cx.setLineDash([9, 9]); cx.strokeStyle = "rgba(240,231,214,0.3)"; cx.lineWidth = 2;
       cx.beginPath(); cx.moveTo(0, h); cx.lineTo(w, 0); cx.stroke(); cx.restore();
+      // 曲線そのもの。curveAt を細かく刻んで描くので、図に出る明るさとそのまま一致する
       cx.strokeStyle = "#9c823f"; cx.lineWidth = 5; cx.lineJoin = "round"; cx.beginPath();
-      state.levelCurve.forEach((v, i) => { const x = (i / LEVEL_CURVE_STEPS) * w, y = h - v * h; i ? cx.lineTo(x, y) : cx.moveTo(x, y); });
+      for (let i = 0; i <= 120; i++) {
+        const x = i / 120, y = curveAt(x);
+        i ? cx.lineTo(x * w, h - y * h) : cx.moveTo(x * w, h - y * h);
+      }
       cx.stroke();
+      // 動かせる点。0%は消灯で固定なので小さく沈めて描く
+      state.levelCurve.forEach((v, i) => {
+        const x = (i / N()) * w, y = h - v * h, fixed = i === 0;
+        cx.beginPath(); cx.arc(x, y, fixed ? 7 : (held === i ? 14 : 11), 0, Math.PI * 2);
+        cx.fillStyle = fixed ? "rgba(240,231,214,0.25)" : (held === i ? "#efe7d6" : "#9c823f");
+        cx.fill();
+        if (!fixed) { cx.strokeStyle = "#14110e"; cx.lineWidth = 3; cx.stroke(); }
+      });
       if (read) read.textContent = [25, 50, 75, 100].map((q) => `${q}% → ${Math.round(curveAt(q / 100) * 100)}%`).join("　／　");
     };
-    /* なぞった跡をそのまま曲線にする。速く動かすと点が飛ぶので、前に触れた目盛りとの間は
-       直線で埋める（歯抜けのまま残ると、そこだけ明るさが飛ぶ）。 */
-    let drawing = false, lastI = null;
-    const put = (ev) => {
+    /* いちばん近い点を掴んで、縦だけ動かす。横位置は固定なので点どうしが入れ替わらない。
+       0%の点は消灯で固定（掴めない）。 */
+    const at = (ev) => {
       const r = cv.getBoundingClientRect();
-      const x = E.clamp((ev.clientX - r.left) / Math.max(1, r.width), 0, 1);
-      const y = E.clamp(1 - (ev.clientY - r.top) / Math.max(1, r.height), 0, 1);
-      const i = Math.round(x * LEVEL_CURVE_STEPS);
-      if (lastI != null && Math.abs(i - lastI) > 1) {
-        const a = Math.min(i, lastI), b = Math.max(i, lastI);
-        const va = lastI < i ? state.levelCurve[lastI] : y, vb = lastI < i ? y : state.levelCurve[lastI];
-        for (let k = a; k <= b; k++) state.levelCurve[k] = va + ((vb - va) * (k - a)) / Math.max(1, b - a);
-      } else state.levelCurve[i] = y;
-      state.levelCurve[0] = 0;          // 0%は必ず消灯（描いても「0なのに光る」は作らせない）
-      lastI = i; paint(); draw();
+      return { x: E.clamp((ev.clientX - r.left) / Math.max(1, r.width), 0, 1),
+               y: E.clamp(1 - (ev.clientY - r.top) / Math.max(1, r.height), 0, 1) };
     };
-    /* なぞっている最中は draw() だけで見せ、指を離した時に1回 commit する。
-       ショー共通の持ち物として保存・Undoの対象にした（2026-09-13 本人決定）ので、
-       1ストローク＝1手ぶんの履歴になるようにそろえる。 */
-    const settle = () => { if (!drawing) return; drawing = false; lastI = null; commit(); };
-    cv.onpointerdown = (ev) => { ev.preventDefault(); drawing = true; lastI = null; try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 取れなくても描ける */ } put(ev); };
-    cv.onpointermove = (ev) => { if (drawing) put(ev); };
-    cv.onpointerup = cv.onpointercancel = settle;
+    const grab = (ev) => {
+      const { x } = at(ev);
+      let best = null, bd = 1;
+      state.levelCurve.forEach((v, i) => { if (i === 0) return; const d = Math.abs(x - i / N()); if (d < bd) { bd = d; best = i; } });
+      return bd <= 0.5 / N() + 0.06 ? best : null;      // 近くを押せばその点を掴む
+    };
+    cv.onpointerdown = (ev) => {
+      ev.preventDefault(); held = grab(ev); if (held == null) return;
+      try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 取れなくても動かせる */ }
+      state.levelCurve[held] = at(ev).y; paint(); draw();
+    };
+    cv.onpointermove = (ev) => { if (held == null) return; state.levelCurve[held] = at(ev).y; paint(); draw(); };
+    /* 離した時に1回だけ記録する。ショー共通の持ち物として保存・Undoの対象にしたので、
+       1回のドラッグ＝1手ぶんの履歴になるようにそろえる（2026-09-13 本人決定）。 */
+    cv.onpointerup = cv.onpointercancel = () => { if (held == null) return; held = null; paint(); commit(); };
     const rst = $("lvreset"); if (rst) rst.onclick = () => { resetLevelCurve(); paint(); draw(); commit(); };
     paint();
   }
@@ -2112,7 +2145,7 @@
   let exportCancel = false;
   $("band-cancel").onclick = () => { exportCancel = true; };
   $("export").onclick = async () => {
-    if (state.exporting) return; const lit = state.rig.fixtures.filter((f) => isLit(lightOf(f.id))); if (!lit.length) { toast("点灯している灯がありません。「灯体情報（このシーン）」で点灯を設定してください。"); return; }
+    if (state.exporting) return; const lit = state.rig.fixtures.filter((f) => isLit(lightOf(f.id))); if (!lit.length) { toast("オンの灯がありません。「灯体情報（このシーン）」で灯を選び、右上のボタンでオンにしてください。"); return; }
     state.exporting = true; exportCancel = false; stop(); state.mode = "move"; renderAll();
     const band = $("band"), bar = $("band-bar"); band.hidden = false; $("band-text").textContent = "動画を書き出しています　この画面を開いたままにしてください。";
     const base = `light-rig-${scene().name}`;
