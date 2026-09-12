@@ -329,6 +329,14 @@
        floorY は変えていないので、奥の壁の大きさと幅の比はそのまま。床より下は客席側の暗がりが広がる。 */
     rear: { id: "rear", label: "1階 後方", floorY: 470, bottomY: 542, backW: 0.62, frontW: 0.94, rise: 0 },
     front: { id: "front", label: "1階 前方", floorY: 490, bottomY: 532, backW: 0.45, frontW: 1.75, rise: 0.15 },
+    /* 2階席（2026-09-13 本人要望で追加）。1階の3席と同じ考え方で数値を決める。
+       中規模ホールの2階前方はおおむね 舞台前端まで約18m・舞台の床より約7.5m上（見下ろし約23度）。
+       幅の比 frontW/backW = 1 + 8/18 ≒ 1.45。frontW は他の席と同じ0.94にそろえ backW=0.65。
+       床の帯は 266（製品の392→658）だと目線が約13.1m＝見下ろし36度で、ホールの2階にしては高すぎた
+       （実測）。7.5m になるよう 266→152（bottomY 658→544）へ詰めた。rise は手前ほど背を低く見せる負の値。
+       製品 stage-venues.js の balcony は floorY392/bottomY658/backW0.5/frontW0.9 だが、
+       その幅の比は前端まで10mを意味し eye:18 と食い違うので、ここでは比のほうを実距離に合わせた。 */
+    balcony: { id: "balcony", label: "2階席", floorY: 392, bottomY: 544, backW: 0.65, frontW: 0.94, rise: -0.12 },
   };
   const frontPerspSetup = (dims, box, seatId) => {
     const seat = FRONT_SEATS[seatId] || FRONT_SEATS.center;
