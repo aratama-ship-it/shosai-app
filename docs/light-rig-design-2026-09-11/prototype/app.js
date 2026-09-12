@@ -1516,6 +1516,15 @@
     const box = el("div", "slbox");
     const add = (n) => box.append(n);
     add(el("p", "kicker", `まとめて変更（${ids.length}灯）`));
+    /* 欄の並びは単灯と同じ箱構成にそろえる（2026-09-13 本人要望）:
+       ①光の色 → ②当てる場所・動き → ③光の強さ → ④光の広がり → ⑤動かす。
+       オン・オフだけは単灯と違って右上のボタンが使えないので、箱の前に置く。 */
+    const sub = (title) => { const b = el("div", "pbox"); if (title) b.append(el("p", "kicker", title)); add(b); return b; };
+    /* その灯が「動いている」か。単灯と同じ決め方——軌道が動きなし以外、または強さ・広がりに終点がある。 */
+    const isMovingLight = (fid) => { const l = lightOf(fid); if (!l || l.on !== true) return false; const pp = l.path || {}; return pp.kind !== "still" || l.levelTo != null || l.beamDegTo != null; };
+    const movingMovers = movers.filter(isMovingLight);
+    const allMoving = movers.length > 0 && movingMovers.length === movers.length;
+    const someMoving = movingMovers.length > 0;
 
     /* --- 1) いま効く一括変更 --- */
     {
@@ -1524,27 +1533,18 @@
                 btn("全部オフ", () => { ids.forEach((fid) => setLight(fid, { on: false })); commit(`${ids.length}灯をオフにしました`); }, "small quiet"));
       add(field("オン・オフ", on, true));
     }
-    /* 強さ（調光）。0は消灯と同じ（2026-09-13 本人決定）。
-       目盛りはリニアのまま。見える明るさへの効き方だけを「効き方」のカーブで決める。 */
+
+    // ① 光の色。単灯と同じ並び（既定6色＋作った色＋色を作る）を、そのまま全灯へ入れる
     {
-      const lvs = new Set(lit.map((fid) => Math.round(levelOf(lightOf(fid)))));
-      const same = lvs.size <= 1;
-      const cur = same && lvs.size === 1 ? [...lvs][0] : 100;
-      add(field(same ? "強さ" : "強さ（バラバラ）",
-        range(0, 100, 1, cur, (v) => (v <= 0 ? "0%（消灯）" : `${Math.round(v)}%（${LEVEL_WORD(v)}）`),
-          (v) => { bulkEach(ids, (f, l) => { l.level = v; }); draw(); },
-          () => commit(`${ids.length}灯の強さを変えました`)), true));
-    }
-    // 光の色。単灯と同じ並び（既定6色＋作った色＋色を作る）を、そのまま全灯へ入れる
-    {
+      const b = sub("光の色");
       const cols = new Set(lit.map((fid) => (lightOf(fid).color || "").toLowerCase()));
       const cur = cols.size === 1 ? [...cols][0] : "";
       const put = (c, quiet) => { bulkEach(ids, (f, l, i, fid) => setLight(fid, { color: c })); quiet ? draw() : commit(`${ids.length}灯の色を変えました`); };
       const swatch = (c, custom) => {
-        const b = document.createElement("button"); b.type = "button"; b.className = custom ? "custom" : "";
-        b.style.background = c; b.title = custom ? `作った色 ${c}` : c;
-        b.setAttribute("aria-pressed", String(cur === c.toLowerCase()));
-        b.onclick = () => put(c); return b;
+        const sb = document.createElement("button"); sb.type = "button"; sb.className = custom ? "custom" : "";
+        sb.style.background = c; sb.title = custom ? `作った色 ${c}` : c;
+        sb.setAttribute("aria-pressed", String(cur === c.toLowerCase()));
+        sb.onclick = () => put(c); return sb;
       };
       const sw = el("div", "swatches");
       COLORS.forEach((c) => sw.append(swatch(c, false)));
@@ -1561,28 +1561,31 @@
         put(c);
       };
       sw.append(pick);
-      add(field(cols.size > 1 ? "光の色（いまバラバラ）" : "光の色", sw, true));
+      if (cols.size > 1) b.append(el("p", "hint", "いまバラバラです。押すと全灯そろいます。"));
+      b.append(sw);
+      // 1灯ずつ色をずらす（グラデーション）。選んだ順に始めの色→終わりの色へ按分する（2026-09-12 本人要望）
+      if (lit.length >= 2) {
+        const g = state.slGrad;
+        const mkColorInput = (key, def) => {
+          const inp = document.createElement("input"); inp.type = "color"; inp.className = "mkcolor";
+          inp.value = /^#[0-9a-f]{6}$/i.test(g[key] || "") ? g[key] : def;
+          inp.oninput = () => { g[key] = inp.value; };
+          return inp;
+        };
+        b.append(field("始めの色", mkColorInput("from", "#7ab8ff")));
+        b.append(field("終わりの色", mkColorInput("to", "#ff7a5c")));
+        b.append(btn(`${lit.length}灯へグラデーションで配る`, () => {
+          lit.forEach((fid, i) => { const t = lit.length > 1 ? i / (lit.length - 1) : 0; setLight(fid, { color: lerpColor(g.from, g.to, t) }); });
+          commit(`${lit.length}灯の色をグラデーションにしました`);
+        }, "small primary"));
+      }
     }
-    // 1灯ずつ色をずらす（グラデーション）。選んだ順に始めの色→終わりの色へ按分する（2026-09-12 本人要望）
-    if (lit.length >= 2) {
-      const g = state.slGrad;
-      const mkColorInput = (key, def) => {
-        const inp = document.createElement("input"); inp.type = "color"; inp.className = "mkcolor";
-        inp.value = /^#[0-9a-f]{6}$/i.test(g[key] || "") ? g[key] : def;
-        inp.oninput = () => { g[key] = inp.value; };
-        return inp;
-      };
-      add(field("始めの色", mkColorInput("from", "#7ab8ff")));
-      add(field("終わりの色", mkColorInput("to", "#ff7a5c")));
-      add(btn(`${lit.length}灯へグラデーションで配る`, () => {
-        lit.forEach((fid, i) => { const t = lit.length > 1 ? i / (lit.length - 1) : 0; setLight(fid, { color: lerpColor(g.from, g.to, t) }); });
-        commit(`${lit.length}灯の色をグラデーションにしました`);
-      }, "small primary"));
-    }
-    // 当てる場所
+
+    // ② 当てる場所・動き
     {
+      const b = sub("当てる場所・動き");
       const surs = new Set(lit.map((fid) => lightOf(fid).surface || "floor"));
-      add(field(surs.size > 1 ? "当てる場所（バラバラ）" : "当てる場所",
+      b.append(field(surs.size > 1 ? "当てる場所（バラバラ）" : "当てる場所",
         seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"]], surs.size === 1 ? [...surs][0] : null, (v) => {
           bulkEach(ids, (f, l, i, fid) => {
             setLight(fid, { surface: v }); restyleToSurface(fid);
@@ -1590,10 +1593,45 @@
           });
           commit(`${ids.length}灯の当てる場所を変えました`);
         }), true));
+      /* 軌道の種類。まとめて変更では「どれかにそろえる」だけを出す（1灯ずつの始点・終点は単灯側で決める）。
+         型から作りたいときは下の「動きの型（サーチライト・組）」を使う。 */
+      if (movers.length) {
+        const kinds = new Set(movers.map((fid) => ((lightOf(fid) || {}).path || {}).kind || "still"));
+        b.append(field(kinds.size > 1 ? "動き（バラバラ）" : "動き",
+          seg([["still", "動きなし"], ["line", "往復"], ["circle", "円"], ["eight", "8の字"]], kinds.size === 1 ? [...kinds][0] : null, (v) => {
+            bulkEach(movers, (f, l, i, fid) => setKind(fid, v));
+            commit(`${movers.length}灯の動きを変えました`);
+          }), true));
+      }
     }
-    /* 光の広がり。ムービングはシーンごとの値（light.beamDeg）、固定灯は仕込みの値（fixture.beamDeg）へ入れる。
+
+    /* ③ 光の強さ。0は消灯と同じ（2026-09-13 本人決定）。目盛りはリニアのままで、
+       見える明るさへの効き方だけを環境設定のカーブで決める。 */
+    {
+      const b = sub("光の強さ");
+      const fmtLv = (v) => (v <= 0 ? "0%（消灯）" : `${Math.round(v)}%（${LEVEL_WORD(v)}）`);
+      const lvs = new Set(lit.map((fid) => Math.round(levelOf(lightOf(fid)))));
+      const same = lvs.size <= 1;
+      const cur = same && lvs.size === 1 ? [...lvs][0] : 100;
+      b.append(field(someMoving ? (same ? "始点" : "始点（バラバラ）") : (same ? "強さ" : "強さ（バラバラ）"),
+        range(0, 100, 1, cur, fmtLv,
+          (v) => { bulkEach(ids, (f, l) => { l.level = v; }); draw(); },
+          () => commit(`${ids.length}灯の強さを変えました`)), true));
+      if (someMoving) {
+        const tos = new Set(movingMovers.map((fid) => Math.round(E.clamp(E.finite((lightOf(fid) || {}).levelTo, levelOf(lightOf(fid))), 0, 100))));
+        const sameTo = tos.size <= 1, curTo = sameTo && tos.size === 1 ? [...tos][0] : 100;
+        b.append(field(sameTo ? "終点" : "終点（バラバラ）",
+          range(0, 100, 1, curTo, fmtLv,
+            (v) => { movingMovers.forEach((fid) => { const l = lightOf(fid); if (l) l.levelTo = v; }); draw(); },
+            () => commit(`${movingMovers.length}灯の終点の強さを変えました`)), true));
+      }
+    }
+
+    /* ④ 光の広がり。ムービングはシーンごとの値（light.beamDeg）、固定灯は仕込みの値（fixture.beamDeg）へ入れる。
        混ざって選ばれていても、それぞれ正しいほうへ入る（本人要望の「太さを一括で」）。 */
     {
+      const b = sub("光の広がり");
+      const fmtDeg = (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`;
       const degs = ids.map((fid) => Math.round(E.beamDegOf(fixtureById(fid), lightOf(fid) || {})));
       const same = allSame(degs);
       const now = E.clamp(same ? degs[0] : sp.beamDeg, 4, 70);
@@ -1602,20 +1640,47 @@
         bulkEach(ids, (f, l) => { if (E.isMoving(f)) l.beamDeg = v; else f.beamDeg = v; });
         quiet ? draw() : commit();
       };
-      add(field(same ? "光の広がり" : "光の広がり（バラバラ）",
-        range(4, 70, 1, now, (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`, (v) => put(v, true), () => put(E.finite(sp.beamDeg, now)))));
+      b.append(field(someMoving ? (same ? "始点" : "始点（バラバラ）") : (same ? "広がり" : "広がり（バラバラ）"),
+        range(4, 70, 1, now, fmtDeg, (v) => put(v, true), () => put(E.finite(sp.beamDeg, now))), true));
+      if (someMoving) {
+        const tos = new Set(movingMovers.map((fid) => { const l = lightOf(fid) || {}; return Math.round(E.clamp(E.finite(l.beamDegTo, E.beamDegOf(fixtureById(fid), l)), 5, 55)); }));
+        const sameTo = tos.size <= 1, curTo = sameTo && tos.size === 1 ? [...tos][0] : 24;
+        b.append(field(sameTo ? "終点" : "終点（バラバラ）",
+          range(5, 55, 1, curTo, fmtDeg,
+            (v) => { movingMovers.forEach((fid) => { const l = lightOf(fid); if (l) l.beamDegTo = v; }); draw(); },
+            () => commit(`${movingMovers.length}灯の終点の広がりを変えました`)), true));
+      }
     }
+
+    /* ⑤ 動かす（ムービングを選んでいるときだけ）。単灯と同じ考え方——入れると②③④に始点と終点ができ、
+       ここで運び方（時間・ずらす刻み）をまとめて決める。全灯そろって動いているときだけスイッチがオン。 */
     if (movers.length) {
-      // 動きだけ消す。狙い先・色・広がりはそのまま、軌道だけ動きなしに戻す（2026-09-12 本人要望）
-      add(field("動き", btn(`${movers.length}灯を動きなしにする`, () => {
-        bulkEach(movers, (f, l) => { const pt = currentPoint(l); l.path = { kind: "still", a: { ...pt } }; });
-        commit(`${movers.length}灯の動きを消しました`);
-      }, "small quiet"), true));
-      // 1往復（1周）の時間とオフセットの刻み。動きを持つムービングだけに入る
-      add(field("1往復の時間", range(1, 30, 0.5, sp.periodSec, (v) => `${v.toFixed(1)}秒`, (v) => { sp.periodSec = v; bulkEach(movers, (f, l) => { l.periodSec = v; }); draw(); }, () => commit())));
-      add(field("ずらす刻み", range(0, 3, 0.1, sp.stepSec, (v) => (v < 0.05 ? "ずらさない（全灯そろう）" : `${v.toFixed(1)}秒ずつ`), (v) => {
-        sp.stepSec = v; let i = 0; bulkEach(movers, (f, l) => { l.offsetSec = Math.round(i * v * 10) / 10; i += 1; }); draw();
-      }, () => commit())));
+      const b = sub(null);
+      const head = el("div", "pboxhead"); head.append(el("p", "kicker", `動かす（ムービング${movers.length}灯）`));
+      head.append(switchBtn(allMoving,
+        allMoving ? "動かしています。押すと全灯を止めます（始点の値で止まります）"
+          : someMoving ? "一部だけ動いています。押すと全灯そろって動かします"
+          : "押すと全灯に始点と終点を置いて動かします",
+        () => {
+          if (allMoving) {
+            bulkEach(movers, (f, l) => { const pt = currentPoint(l); l.path = { kind: "still", a: { ...pt } }; delete l.levelTo; delete l.beamDegTo; });
+            commit(`${movers.length}灯の動きを止めました（始点の値で止まっています）`);
+          } else {
+            bulkEach(movers, (f, l, i, fid) => {
+              if (((lightOf(fid) || {}).path || {}).kind === "still") setKind(fid, "line");
+              const l2 = lightOf(fid); l2.levelTo = levelOf(l2); l2.beamDegTo = E.beamDegOf(f, l2);
+            });
+            commit(`${movers.length}灯に始点と終点を置きました`);
+          }
+        }));
+      b.append(head);
+      if (someMoving) {
+        // 1往復（1周）の時間とオフセットの刻み。動きを持つムービングだけに入る
+        b.append(field("1往復の時間", range(1, 30, 0.5, sp.periodSec, (v) => `${v.toFixed(1)}秒`, (v) => { sp.periodSec = v; bulkEach(movers, (f, l) => { l.periodSec = v; }); draw(); }, () => commit())));
+        b.append(field("ずらす刻み", range(0, 3, 0.1, sp.stepSec, (v) => (v < 0.05 ? "ずらさない（全灯そろう）" : `${v.toFixed(1)}秒ずつ`), (v) => {
+          sp.stepSec = v; let i = 0; bulkEach(movers, (f, l) => { l.offsetSec = Math.round(i * v * 10) / 10; i += 1; }); draw();
+        }, () => commit())));
+      }
     }
 
     /* --- 2) 動きの型（サーチライト・組） ---
