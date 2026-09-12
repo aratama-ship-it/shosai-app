@@ -338,7 +338,7 @@
   const LEVEL_WORD = (v) => (v <= 0 ? "消灯" : v < 25 ? "かすか" : v < 55 ? "暗め" : v < 85 ? "普通" : "全開");
 
   const lightState = (fid) => { const l = lightOf(fid); if (!l || l.on === null || l.on === undefined) return "unset"; if (l.on === false || levelOf(l) <= 0) return "off"; return (l.path && l.path.kind !== "still") ? "move" : "on"; };
-  const STATE_LABEL = { unset: "未設定", off: "消灯", on: "点灯", move: "動き" };
+  const STATE_LABEL = { unset: "未設定", off: "オフ", on: "オン", move: "動き" };
 
   /* ---------- 配置の操作 ---------- */
   function addTruss(v) {
@@ -1323,7 +1323,7 @@
       if (state.mode === "move") {
         stCell.type = "button";
         stCell.textContent = st === "unset" ? "つける" : st === "off" ? "オフ" : "オン";
-        stCell.title = st === "unset" ? "このシーンで点灯させる" : st === "off" ? "消灯中。押すと点灯" : "点灯中。押すと消灯";
+        stCell.title = st === "unset" ? "このシーンで点ける" : st === "off" ? "いまオフ。押すとオン" : "いまオン。押すとオフ";
         stCell.onclick = (ev) => { ev.stopPropagation(); const l = lightOf(f.id); if (isLit(l)) setLight(f.id, { on: false }); else turnOn(f.id); commit(); };
       }
       r.append(stCell);
@@ -1497,7 +1497,7 @@
       const on = el("div", "seg");
       on.append(btn("全部つける", () => { ids.forEach(turnOn); commit(`${ids.length}灯を点灯にしました`); }, "small"),
                 btn("全部消す", () => { ids.forEach((fid) => setLight(fid, { on: false })); commit(`${ids.length}灯を消灯にしました`); }, "small quiet"));
-      add(field("点灯", on, true));
+      add(field("オン・オフ", on, true));
     }
     /* 強さ（調光）。0は消灯と同じ（2026-09-13 本人決定）。
        目盛りはリニアのまま。見える明るさへの効き方だけを「効き方」のカーブで決める。 */
@@ -1647,9 +1647,26 @@
     host.append(box);
   }
 
+  /* パネル右上のオン・オフ。1灯を選んでいるときだけ出す。
+     押すたびに切り替わる1つのボタンにした（2026-09-13 本人要望）——未設定と消灯を分けて見せず、
+     「いま光っているか」だけを示す。未設定の灯を押したら、その場で点いた状態から始める。 */
+  function syncLightToggle(ids) {
+    const tgl = $("lighttoggle"), panel = $("panel-insp"); if (!tgl || !panel) return;
+    const fid = state.mode === "move" && ids.length === 1 ? ids[0] : null;
+    tgl.hidden = !fid;
+    panel.classList.toggle("has-toggle", Boolean(fid));
+    if (!fid) { tgl.onclick = null; return; }
+    const on = isLit(lightOf(fid));
+    tgl.setAttribute("aria-pressed", String(on));
+    tgl.querySelector("b").textContent = on ? "オン" : "オフ";
+    tgl.title = on ? `${label(fid)}は点いています。押すと消えます` : `${label(fid)}は消えています。押すと点きます`;
+    tgl.onclick = () => { if (isLit(lightOf(fid))) setLight(fid, { on: false }); else turnOn(fid); commit(); };
+  }
+
   function renderInspector() {
     const host = $("insp"); host.innerHTML = "";
     const ids = [...state.sel];
+    syncLightToggle(ids);
     if (state.mode === "place") {
       // 見出しは静的な「選んだ灯体」／下の層の「配置（ショー共通）」が持つので、ここでは出さない
       if (!state.sel.size && !state.selTruss) host.append(el("p", "hint", "図か一覧で灯体やバトンを選ぶと、ここに設定が出ます。配置はすべてのシーンで共通です。"));
@@ -1697,15 +1714,10 @@
       host.append(el("p", "kicker", `${label(fid)}（${E.isMoving(f) ? "ムービング" : "固定"}）　${f.name || ""}`));
       const g = groupOf(fid);
       if (g) { const gi = cue().groups.indexOf(g); const box = el("div", "box", `<p class="hint">組${gi + 1}「${groupName(g)}」の一員です。</p>`); box.append(btn("組から外す", () => ungroup(fid), "small quiet")); host.append(box); }
-      /* 点灯・消灯はON/OFFのトグルで示す（2026-09-13 本人要望）。未設定はどちらも
-         押されていない状態で表す——触るとその場で「決めた」側になる。
-         「設定を外す」（未設定へ戻す）は削除した（2026-09-13 本人要望）——点灯／消灯の2択で足りる。 */
+      /* オン・オフはパネル右上のボタンへ集約した（2026-09-13 本人要望）。
+         本文からは2択の欄を外し、消えている灯ではそこへ誘導するだけにする。 */
       if (!l || l.on !== true) {
-        const cur = l && l.on === false ? "off" : null;
-        host.append(field("点灯", seg([["off", "消灯"], ["on", "点灯"]], cur, (v) => {
-          if (v === "on") turnOn(fid); else setLight(fid, { on: false });
-          commit();
-        })));
+        host.append(el("p", "hint", "この灯はいま消えています。右上の〈オフ〉を押して点けると、強さ・色・当てる場所・動きを決められます。"));
         return;
       }
       /* 強さ（調光）。舞台照明でいちばん基本の操作なので、色より先に置く。
@@ -1817,8 +1829,7 @@
         }, "small primary");
         host.append(field("貼り付け", b));
       }
-      // 「設定を外す」は削除した（2026-09-13 本人要望）。消灯だけにする。
-      host.append(btn("消灯にする", () => { setLight(fid, { on: false }); commit(); }, "small quiet"));
+      // 消す操作はパネル右上のオン・オフへ一本化した（2026-09-13 本人要望）。
       return;
     }
     // 複数（「組の動き」も含めて renderBulk 側の「まとめて変更」枠に集約した。2026-09-13 本人要望）
