@@ -271,6 +271,10 @@
   .pwhy{font-size:9.5px;line-height:1.6;color:rgba(240,231,214,.4);border-top:1px solid var(--line-dark);padding-top:4px;margin-top:2px}
   .dialog .in{background:var(--desk-2);border:1px solid var(--brass);padding:18px 20px;display:grid;gap:12px;max-width:380px}
   .dialog .in:has(.pgrid){max-width:760px}
+  /* 強さの効き方（ベロシティカーブ）を指でなぞって描く枠。
+     touch-action:none にしないと、なぞったときに画面ごとスクロールして描けない。 */
+  .dialog .in:has(.curvecv){max-width:460px}
+  .curvecv{width:100%;aspect-ratio:16/9;display:block;border:1px solid var(--line-dark);background:var(--recess);touch-action:none;cursor:crosshair}
   .dialog .in p{margin:0}
   .dialog .acts{display:flex;gap:8px;flex-wrap:wrap}
   .kbd{font-size:9.5px;color:var(--milk-dim)}
@@ -429,8 +433,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789200209"></script>
-<script src="stage-figure.js?v=1789200209"></script>
-<script src="app.js?v=1789200209"></script>
+<script src="rig-engine.js?v=1789203121"></script>
+<script src="stage-figure.js?v=1789203121"></script>
+<script src="app.js?v=1789203121"></script>
 </body>
 </html>

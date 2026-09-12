@@ -130,6 +130,13 @@
     collapsed: new Set(), filter: "all",   // 一覧: 取り付け場所ごとの折り畳みと絞り込み（20灯以上向け）
     snap: false,                           // 1mのグリッドに合わせて置く・動かす（本人要望 2026-09-11）
     show: { no: true, beam: true, path: true, grid: true, pieces: true, blackout: false },
+    /* 強さ（調光）の効き方。灯ごとの数値（0〜100%）は目盛りどおりのリニアで、
+       その数値が「見える明るさ」へどう効くかだけをこのカーブで決める
+       （音楽のベロシティカーブと同じ考え方。2026-09-13 本人要望）。
+       アプリ全体で1本だけ持つ共通の設定なので、灯ごとにも場面ごとにも変わらない。
+       値は入力0〜1を等間隔に切った LEVEL_CURVE_STEPS+1 個の出力（0〜1）。既定はリニア。
+       図の見え方の設定なので、show や snap と同じくUndoの対象にはしない。 */
+    levelCurve: null,                  // 初期化は下の resetLevelCurve()
     front3d: false,                    // 客席から見る図を擬似パース（本体の正面図と同じ式）で描く
     seat: "center",                    // その席（stage-venues.js の値をそのまま使う）
     search: "",
@@ -295,7 +302,31 @@
   // rig-engine の周期表は固定なので、本試作の秒数（4/2/1）へ合わせるため speed を経由せず delay を秒数基準に
   function cueWithPeriods() { return cue(); }
 
-  const lightState = (fid) => { const l = lightOf(fid); if (!l || l.on === null || l.on === undefined) return "unset"; if (l.on === false) return "off"; return (l.path && l.path.kind !== "still") ? "move" : "on"; };
+  /* ---------- 強さ（調光） ----------
+     0は消灯と同じ扱い（2026-09-13 本人決定）。on を false にしなくても、強さ0なら図から消える。
+     一覧の「オン／オフ」も実際に光っているかで出し分ける（数字が0なのにオンと出ると読めないため）。 */
+  const levelOf = (l) => E.levelOf(l);
+  const isLit = (l) => E.isLit(l);
+  const LEVEL_CURVE_STEPS = 32;
+  function resetLevelCurve() {
+    state.levelCurve = Array.from({ length: LEVEL_CURVE_STEPS + 1 }, (_, i) => i / LEVEL_CURVE_STEPS);
+  }
+  resetLevelCurve();   // 既定はリニア。state の宣言直後ではなくここで呼ぶ（定数がまだ初期化前のため）
+  /* 入力（0〜1）→ 出る明るさ（0〜1）。目盛りの間は直線でつなぐ。
+     入力0は必ず0＝消灯（カーブをどう描いても「0なのに光る」は作らせない）。 */
+  function curveAt(x) {
+    const c = state.levelCurve; if (!c) return E.clamp(x, 0, 1);
+    const t = E.clamp(x, 0, 1) * LEVEL_CURVE_STEPS;
+    const i = Math.min(LEVEL_CURVE_STEPS - 1, Math.floor(t)), fr = t - i;
+    return E.clamp(c[i] + (c[i + 1] - c[i]) * fr, 0, 1);
+  }
+  // その灯が図の上でどれだけ濃く出るか（0〜1）。消灯・強さ0は0。
+  const litFactor = (l) => (isLit(l) ? curveAt(levelOf(l) / 100) : 0);
+  // 点ける。強さが0のまま点けても光らないので、そのときは全開に戻す
+  function turnOn(fid) { ensureOn(fid); const l = lightOf(fid); if (l && levelOf(l) <= 0) setLight(fid, { level: 100 }); }
+  const LEVEL_WORD = (v) => (v <= 0 ? "消灯" : v < 25 ? "かすか" : v < 55 ? "暗め" : v < 85 ? "普通" : "全開");
+
+  const lightState = (fid) => { const l = lightOf(fid); if (!l || l.on === null || l.on === undefined) return "unset"; if (l.on === false || levelOf(l) <= 0) return "off"; return (l.path && l.path.kind !== "still") ? "move" : "on"; };
   const STATE_LABEL = { unset: "未設定", off: "消灯", on: "点灯", move: "動き" };
 
   /* ---------- 配置の操作 ---------- */
@@ -535,7 +566,8 @@
     const litSpots = [];   // 室内灯を消す（ブラックアウト）用。光の当たっている場所だけ集める
     if (state.mode === "move") {
       state.rig.fixtures.forEach((f) => {
-        const l = lightOf(f.id); if (!l || l.on !== true) return;
+        const l = lightOf(f.id); if (!isLit(l)) return;   // 消灯・強さ0は図に出さない
+        const lv = litFactor(l);
         const S = fixtureWorld(f); if (!S) return; const T = targetAt(f.id, state.play.t); if (!T) return;
         const s = P(S), tp = P(T); const sel = isSel(f.id); const dim = state.sel.size && !sel;
         const g = showOn("path") ? E.pathGuide(l, state.dims) : null;
@@ -544,7 +576,7 @@
           else if (g.kind === "loop" && g.plane === "horizontal") strokeLoop(pctx, P, g);
           pctx.restore(); }
         if (l.surface === "floor" || l.surface === "air") {
-          if (showOn("beam")) { const r = drawBeam(pctx, s, tp, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true); litSpots.push({ fromX: s.X, fromY: s.Y, toX: tp.X, toY: tp.Y, r }); }
+          if (showOn("beam")) { const r = drawBeam(pctx, s, tp, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv); litSpots.push({ fromX: s.X, fromY: s.Y, toX: tp.X, toY: tp.Y, r, lv }); }
           if (l.surface === "air") {
             // 空中の狙い点は床に落ちない。真上から見ると高さが読めないので、印＋高さ＋床への破線を出す
             pctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.7); pctx.lineWidth = 3; pctx.beginPath();
@@ -552,7 +584,7 @@
             pctx.beginPath(); pctx.arc(tp.X, tp.Y, 22, 0, Math.PI * 2); pctx.stroke();
             if (!dim) { pctx.fillStyle = hexA(l.color, 0.9); pctx.font = "17px sans-serif"; pctx.textBaseline = "bottom"; pctx.fillText(`空中 ${T.z.toFixed(1)}m`, tp.X + 26, tp.Y - 8); }
           } // 床の輪は drawBeam が広がりから描く
-        } else if (showOn("beam")) { const r = drawBeam(pctx, s, { X: s.X, Y: B.y }, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true); litSpots.push({ fromX: s.X, fromY: s.Y, toX: s.X, toY: B.y, r }); }
+        } else if (showOn("beam")) { const r = drawBeam(pctx, s, { X: s.X, Y: B.y }, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv); litSpots.push({ fromX: s.X, fromY: s.Y, toX: s.X, toY: B.y, r, lv }); }
         // ハンドル（選択灯のみ・床と空中は平面図で位置を動かす）
         if (sel && l.surface !== "back") drawHandles(pctx, P, l, f.id);
       });
@@ -715,13 +747,15 @@
     side: { floor: [1, 0.16], back: [0.14, 1], air: [1, 1] },
   };
   const squashFor = (view, surface) => (SPOT_SQUASH[view] || SPOT_SQUASH.plan)[surface] || [1, 1];
-  function drawBeam(ctx, from, to, world, color, deg, dim, pxPerM, squash, asLine, noPool) {
+  function drawBeam(ctx, from, to, world, color, deg, dim, pxPerM, squash, asLine, noPool, lv) {
     const rM = E.spotRadiusM(world.S, world.T, deg), rPx = Math.max(rM * pxPerM, 3);
     const [sx, sy] = squash || [1, 1];
     const halfW = Math.max(rPx * sx * BEAM_SOFT, 3);
     const ry = Math.max(rPx * sy * BEAM_SOFT, 1.5);
     const lying = sy < sx * 0.6;                 // その図で面を真横から見ている＝床に寝ている
-    const a = dim ? 0.32 : 1;
+    /* 濃さ＝（選んでいない灯を沈める係数）×（その灯の強さ）。強さは0〜1へ通したあとの値で、
+       灯ごとの数値0〜100%を state.levelCurve で曲げたもの（2026-09-13 本人要望）。 */
+    const a = (dim ? 0.32 : 1) * E.clamp(E.finite(lv, 1), 0, 1);
     const bx = to.X - from.X, by = to.Y - from.Y, blen = Math.hypot(bx, by) || 1;
     const nx = (-by / blen) * halfW, ny = (bx / blen) * halfW;
     ctx.save();
@@ -730,7 +764,7 @@
       /* 真上から見る図では光の帯を三角に開かない（2026-09-11 本人指定）。
          真上から見ているぶん、開き具合は床の光だまりの大きさとして既に出ている。
          出どころが狙い先の真上にあるときは線が点になるので引かない（本体と同じ）。 */
-      if (blen > 6) { ctx.strokeStyle = hexA(color, dim ? 0.22 : 0.55); ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(from.X, from.Y); ctx.lineTo(to.X, to.Y); ctx.stroke(); ctx.setLineDash([]); }
+      if (blen > 6) { ctx.strokeStyle = hexA(color, (dim ? 0.22 : 0.55) * E.clamp(E.finite(lv, 1), 0, 1)); ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(from.X, from.Y); ctx.lineTo(to.X, to.Y); ctx.stroke(); ctx.setLineDash([]); }
     } else {
       const g = ctx.createLinearGradient(to.X - nx, to.Y - ny, to.X + nx, to.Y + ny);
       BEAM_EDGE.forEach(([at, w]) => g.addColorStop(at, hexA(color, 0.16 * w * a)));
@@ -779,6 +813,8 @@
     mctx.fillStyle = "#0d0e10"; mctx.fillRect(0, 0, mc.width, mc.height);
     mctx.globalCompositeOperation = "destination-out";
     spots.forEach((sp) => {
+      // 灯の強さぶんだけ暗幕を剥がす。20%の灯なら20%ぶんしか明るくならない（2026-09-13）
+      const lv = E.clamp(E.finite(sp.lv, 1), 0, 1); if (lv <= 0) return;
       const r = Math.max(sp.r * 1.15, 10);
       const dx = sp.toX - sp.fromX, dy = sp.toY - sp.fromY, len = Math.hypot(dx, dy) || 1;
       const nx = -dy / len, ny = dx / len;
@@ -788,9 +824,9 @@
       mctx.lineTo(sp.toX + nx * w1, sp.toY + ny * w1);
       mctx.lineTo(sp.toX - nx * w1, sp.toY - ny * w1);
       mctx.lineTo(sp.fromX - nx * w0, sp.fromY - ny * w0);
-      mctx.closePath(); mctx.fillStyle = "rgba(255,255,255,0.85)"; mctx.fill();
+      mctx.closePath(); mctx.fillStyle = `rgba(255,255,255,${0.85 * lv})`; mctx.fill();
       const grad = mctx.createRadialGradient(sp.toX, sp.toY, 0, sp.toX, sp.toY, r);
-      grad.addColorStop(0, "rgba(255,255,255,1)"); grad.addColorStop(0.75, "rgba(255,255,255,0.9)"); grad.addColorStop(1, "rgba(255,255,255,0)");
+      grad.addColorStop(0, `rgba(255,255,255,${lv})`); grad.addColorStop(0.75, `rgba(255,255,255,${0.9 * lv})`); grad.addColorStop(1, "rgba(255,255,255,0)");
       mctx.fillStyle = grad; mctx.beginPath(); mctx.arc(sp.toX, sp.toY, r, 0, Math.PI * 2); mctx.fill();
     });
     ctx.save(); ctx.globalCompositeOperation = "source-over"; ctx.drawImage(mc, 0, 0); ctx.restore();
@@ -855,10 +891,10 @@
       if (sel) { fctx.fillStyle = "#d3ac59"; fctx.fillRect(B.x + B.w + 16, Y - 12, 22, 24); fctx.fillStyle = "#1a1409"; fctx.font = "600 14px sans-serif"; fctx.fillText("↕", B.x + B.w + 20, Y); fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${t.h.toFixed(1)}m（ドラッグ）`, B.x + B.w + 44, Y); } });
     // 光線
     const litSpotsF = [];   // 室内灯を消す（ブラックアウト）用
-    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!l || l.on !== true) return; const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
+    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; const lv = litFactor(l); const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
       if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
-        const r = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface);
-        litSpotsF.push({ fromX: s.X, fromY: s.Y, toX: e2.X, toY: e2.Y, r }); }
+        const r = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface, lv);
+        litSpotsF.push({ fromX: s.X, fromY: s.Y, toX: e2.X, toY: e2.Y, r, lv }); }
       if (l.surface === "air") { const floorY = B.y + B.h; fctx.save(); fctx.setLineDash([5, 6]); fctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.45); fctx.lineWidth = 2; fctx.beginPath(); fctx.moveTo(tp.X, tp.Y); fctx.lineTo(tp.X, floorY); fctx.stroke(); fctx.restore();
         fctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.8); fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(tp.X - 12, tp.Y - 12); fctx.lineTo(tp.X + 12, tp.Y + 12); fctx.moveTo(tp.X + 12, tp.Y - 12); fctx.lineTo(tp.X - 12, tp.Y + 12); fctx.stroke(); fctx.beginPath(); fctx.arc(tp.X, tp.Y, 16, 0, Math.PI * 2); fctx.stroke();
         if (!dim) { fctx.fillStyle = hexA(l.color, 0.9); fctx.font = "15px sans-serif"; fctx.textBaseline = "bottom"; fctx.fillText(`${T.z.toFixed(1)}m`, tp.X + 20, tp.Y - 6); } }
@@ -896,10 +932,10 @@
     state.rig.trusses.forEach((t) => { const q = P({ x: 0, y: t.v * d.D, z: t.h }); const sel = state.selTruss === t.id && state.mode === "place"; fctx.beginPath(); fctx.arc(q.X, q.Y, sel ? 10 : 7, 0, Math.PI * 2); fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.fill(); fctx.fillStyle = "rgba(156,130,63,0.9)"; fctx.font = "14px sans-serif"; fctx.fillText(`奥から${E.trussRow(state.rig, t.id)}列目`, q.X + 12, q.Y - 14); });
     // 光線（この側の灯は濃く、他は薄く）
     const litSpotsSide = [];   // 室内灯を消す（ブラックアウト）用
-    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!l || l.on !== true) return; const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s0 = P(S), tp = P(T); const mine = f.mount.type === "side" && f.mount.side === side; const air = l.surface === "air"; const dim = !(mine || (air && isSel(f.id))) || (state.sel.size && !isSel(f.id));
+    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; const lv = litFactor(l); const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s0 = P(S), tp = P(T); const mine = f.mount.type === "side" && f.mount.side === side; const air = l.surface === "air"; const dim = !(mine || (air && isSel(f.id))) || (state.sel.size && !isSel(f.id));
       if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
-        const r = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.D, squashFor("side", be.surface || "air"), false, !be.surface);
-        litSpotsSide.push({ fromX: s0.X, fromY: s0.Y, toX: e2.X, toY: e2.Y, r }); }
+        const r = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.D, squashFor("side", be.surface || "air"), false, !be.surface, lv);
+        litSpotsSide.push({ fromX: s0.X, fromY: s0.Y, toX: e2.X, toY: e2.Y, r, lv }); }
       if (air) {
         fctx.save(); fctx.setLineDash([5, 6]); fctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.45); fctx.lineWidth = 2; fctx.beginPath(); fctx.moveTo(tp.X, tp.Y); fctx.lineTo(tp.X, B.y + B.h); fctx.stroke(); fctx.restore();
         fctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.8); fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(tp.X - 12, tp.Y - 12); fctx.lineTo(tp.X + 12, tp.Y + 12); fctx.moveTo(tp.X + 12, tp.Y - 12); fctx.lineTo(tp.X - 12, tp.Y + 12); fctx.stroke(); fctx.beginPath(); fctx.arc(tp.X, tp.Y, 16, 0, Math.PI * 2); fctx.stroke();
@@ -963,7 +999,8 @@
     // 光
     const litSpots3D = [];   // 室内灯を消す（ブラックアウト）用
     if (state.mode === "move") state.rig.fixtures.forEach((f) => {
-      const l = lightOf(f.id); if (!l || l.on !== true) return;
+      const l = lightOf(f.id); if (!isLit(l)) return;
+      const lv = litFactor(l);
       const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return;
       const s0 = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
       if (showOn("beam")) {
@@ -973,8 +1010,8 @@
         const sq = be.surface === "floor"
           ? [1, Math.min(1, ((L.bottomY - L.floorY) / d.D) / (L.pxPerM * Math.max(0.05, e2.scale || 1)))]
           : squashFor("front", be.surface || "air");
-        const r = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface);
-        litSpots3D.push({ fromX: s0.X, fromY: s0.Y, toX: e2.X, toY: e2.Y, r });
+        const r = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface, lv);
+        litSpots3D.push({ fromX: s0.X, fromY: s0.Y, toX: e2.X, toY: e2.Y, r, lv });
       }
       if (showOn("path")) { const g = E.pathGuide(l, d);
         if (g && g.kind === "line") { fctx.save(); fctx.setLineDash([8, 6]); fctx.strokeStyle = "rgba(223,100,51,0.7)"; fctx.lineWidth = 2; const a = P(g.a ? E.pointWorld(g.a, d) : S), b = P(E.pointWorld(g.b, d)); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); fctx.restore(); } }
@@ -1011,7 +1048,7 @@
     const near = (pt3) => { const q = P(E.pointWorld(pt3, d)); return Math.hypot(pt.X - q.X, pt.Y - q.Y) < 18; };
     for (let i = ids.length - 1; i >= 0; i--) {
       const fid = ids[i], l = lightOf(fid);
-      if (!l || l.on !== true || !allowedSurfaces.includes(l.surface)) continue;
+      if (!isLit(l) || !allowedSurfaces.includes(l.surface)) continue;
       const p = l.path || {};
       if (p.kind === "line") { if (near(p.a)) return { fid, handle: "a" }; if (near(p.b)) return { fid, handle: "b" }; }
       else if (p.kind === "circle" || p.kind === "eight") { const rq = P(circleRadiusWorld(p.c, p.r, p.plane, d, p.tilt)); if (Math.hypot(pt.X - rq.X, pt.Y - rq.Y) < 18) return { fid, handle: "r" }; if (near(p.c)) return { fid, handle: "c" }; }
@@ -1037,7 +1074,7 @@
     const grabbed = hh.handle === "r" ? null : pathPoint(sp, hh.handle);
     const out = [];
     [...state.sel].forEach((fid) => {
-      const l = lightOf(fid); const p = l && l.path; if (!p || l.on !== true) return;
+      const l = lightOf(fid); const p = l && l.path; if (!p || !isLit(l)) return;
       if (hh.handle === "r") { if (p.kind === "circle" || p.kind === "eight") out.push({ fid, handle: "r", r0: p.r }); return; }
       if (l.surface !== src.surface) return;          // 当てる場所が違う灯は巻き込まない
       let name = null;
@@ -1120,10 +1157,10 @@
   function toggleLightOf(f) {
     if (!f) return;
     state.sel = new Set([f.id]);
-    if (state.mode !== "move") { state.mode = "move"; ensureOn(f.id); commit(`${label(f.id)}を点けました`); return; }
+    if (state.mode !== "move") { state.mode = "move"; turnOn(f.id); commit(`${label(f.id)}を点けました`); return; }
     const l = lightOf(f.id);
-    if (l && l.on === true) { setLight(f.id, { on: false }); commit(`${label(f.id)}を消しました`); }
-    else { ensureOn(f.id); commit(`${label(f.id)}を点けました`); }
+    if (isLit(l)) { setLight(f.id, { on: false }); commit(`${label(f.id)}を消しました`); }
+    else { turnOn(f.id); commit(`${label(f.id)}を点けました`); }
   }
   plan.addEventListener("dblclick", (ev) => { ev.preventDefault(); toggleLightOf(hitFixturePlan(canvasPoint(plan, ev))); });
   // axis: "uv"(平面図: 高さは変えない) / "uh"(正面図: 奥行きは変えない) / "vh"(側面図: 左右は変えない)
@@ -1276,7 +1313,7 @@
         stCell.type = "button";
         stCell.textContent = st === "unset" ? "つける" : st === "off" ? "オフ" : "オン";
         stCell.title = st === "unset" ? "このシーンで点灯させる" : st === "off" ? "消灯中。押すと点灯" : "点灯中。押すと消灯";
-        stCell.onclick = (ev) => { ev.stopPropagation(); const l = lightOf(f.id); if (l && l.on === true) setLight(f.id, { on: false }); else ensureOn(f.id); commit(); };
+        stCell.onclick = (ev) => { ev.stopPropagation(); const l = lightOf(f.id); if (isLit(l)) setLight(f.id, { on: false }); else turnOn(f.id); commit(); };
       }
       r.append(stCell);
       r.onclick = (ev) => { if (ev.shiftKey) { isSel(f.id) ? state.sel.delete(f.id) : state.sel.add(f.id); } else state.sel = new Set([f.id]); if (f.mount.type === "truss") state.selTruss = f.mount.trussId; renderAll(); }; return r; };
@@ -1447,9 +1484,21 @@
     /* --- 1) いま効く一括変更 --- */
     {
       const on = el("div", "seg");
-      on.append(btn("全部つける", () => { ids.forEach(ensureOn); commit(`${ids.length}灯を点灯にしました`); }, "small"),
+      on.append(btn("全部つける", () => { ids.forEach(turnOn); commit(`${ids.length}灯を点灯にしました`); }, "small"),
                 btn("全部消す", () => { ids.forEach((fid) => setLight(fid, { on: false })); commit(`${ids.length}灯を消灯にしました`); }, "small quiet"));
       add(field("点灯", on, true));
+    }
+    /* 強さ（調光）。0は消灯と同じ（2026-09-13 本人決定）。
+       目盛りはリニアのまま。見える明るさへの効き方だけを「効き方」のカーブで決める。 */
+    {
+      const lvs = new Set(lit.map((fid) => Math.round(levelOf(lightOf(fid)))));
+      const same = lvs.size <= 1;
+      const cur = same && lvs.size === 1 ? [...lvs][0] : 100;
+      add(field(same ? "強さ" : "強さ（バラバラ）",
+        range(0, 100, 1, cur, (v) => (v <= 0 ? "0%（消灯）" : `${Math.round(v)}%（${LEVEL_WORD(v)}）`),
+          (v) => { bulkEach(ids, (f, l) => { l.level = v; }); draw(); },
+          () => commit(`${ids.length}灯の強さを変えました`)), true));
+      add(levelCurveButton());
     }
     // 光の色。単灯と同じ並び（既定6色＋作った色＋色を作る）を、そのまま全灯へ入れる
     {
@@ -1643,11 +1692,16 @@
       if (!l || l.on !== true) {
         const cur = l && l.on === false ? "off" : null;
         host.append(field("点灯", seg([["off", "消灯"], ["on", "点灯"]], cur, (v) => {
-          if (v === "on") ensureOn(fid); else setLight(fid, { on: false });
+          if (v === "on") turnOn(fid); else setLight(fid, { on: false });
           commit();
         })));
         return;
       }
+      /* 強さ（調光）。舞台照明でいちばん基本の操作なので、色より先に置く。
+         0まで下げると消灯と同じ扱いになり、図から消える（2026-09-13 本人決定）。 */
+      host.append(field("強さ", range(0, 100, 1, levelOf(l), (v) => (v <= 0 ? "0%（消灯）" : `${Math.round(v)}%（${LEVEL_WORD(v)}）`),
+        (v) => { l.level = v; draw(); }, () => commit()), true));
+      host.append(levelCurveButton());
       /* 光の色。よく使う6色＋自分で作った色（ショー共通）。作った色はそのまま並ぶので、
          別の灯からもワンタッチで選べる（2026-09-11 本人要望）。 */
       {
@@ -1935,6 +1989,63 @@
   const putSS = (side, v, h, kind, deg) => pushFix({ type: "side", side, v, h }, kind, deg || (kind === "moving" ? 12 : 20));
   const putFloor = (u, v, kind, deg) => pushFix({ type: "floor", u, v }, kind, deg || (kind === "moving" ? 12 : 30));
 
+  /* ---------- 強さの効き方（ベロシティカーブ） ----------
+     アプリ全体で1本だけ持つ共通の設定（2026-09-13 本人決定）。灯ごとの「強さ」の数値は
+     目盛りどおりのリニアのままで、その数値が図の明るさへどう効くかだけをこの曲線が決める。
+     音楽のベロシティカーブと同じ考え方なので、選ぶのではなく指でなぞって描く。 */
+  const levelCurveButton = () => btn("強さの効き方（全灯共通）", openLevelCurve, "small quiet");
+
+  function openLevelCurve() {
+    dialog(`<p class="kicker">強さの効き方（全灯共通）</p>
+      <p class="hint">灯ごとの「強さ」は目盛りどおりの数値です。その数値が<b>図に出る明るさ</b>へどう効くかを、ここでなぞって決めます（音楽のベロシティカーブと同じ考え方）。
+      この1本をアプリ全体で使います——灯ごと・場面ごとには変わりません。</p>
+      <canvas id="lvcurve" class="curvecv" width="640" height="360" aria-label="強さの効き方のカーブ"></canvas>
+      <p class="hint"><b>横</b>＝つまみの数値　<b>縦</b>＝図に出る明るさ。点線がリニア（そのままの目盛り）。</p>
+      <p class="hint live" id="lvread"></p>
+      <button type="button" class="btn small quiet" id="lvreset">リニアに戻す</button>`,
+      [["閉じる", null, "primary"]]);
+    const cv = $("lvcurve"); if (!cv) return;
+    const cx = cv.getContext("2d"), read = $("lvread");
+    const paint = () => {
+      const w = cv.width, h = cv.height;
+      cx.setTransform(1, 0, 0, 1, 0, 0);
+      cx.fillStyle = "#14110e"; cx.fillRect(0, 0, w, h);
+      cx.strokeStyle = "rgba(240,231,214,0.12)"; cx.lineWidth = 2;
+      for (let i = 1; i < 4; i++) {
+        const x = (w * i) / 4, y = (h * i) / 4;
+        cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, h); cx.stroke();
+        cx.beginPath(); cx.moveTo(0, y); cx.lineTo(w, y); cx.stroke();
+      }
+      cx.save(); cx.setLineDash([9, 9]); cx.strokeStyle = "rgba(240,231,214,0.3)"; cx.lineWidth = 2;
+      cx.beginPath(); cx.moveTo(0, h); cx.lineTo(w, 0); cx.stroke(); cx.restore();
+      cx.strokeStyle = "#9c823f"; cx.lineWidth = 5; cx.lineJoin = "round"; cx.beginPath();
+      state.levelCurve.forEach((v, i) => { const x = (i / LEVEL_CURVE_STEPS) * w, y = h - v * h; i ? cx.lineTo(x, y) : cx.moveTo(x, y); });
+      cx.stroke();
+      if (read) read.textContent = [25, 50, 75, 100].map((q) => `${q}% → ${Math.round(curveAt(q / 100) * 100)}%`).join("　／　");
+    };
+    /* なぞった跡をそのまま曲線にする。速く動かすと点が飛ぶので、前に触れた目盛りとの間は
+       直線で埋める（歯抜けのまま残ると、そこだけ明るさが飛ぶ）。 */
+    let drawing = false, lastI = null;
+    const put = (ev) => {
+      const r = cv.getBoundingClientRect();
+      const x = E.clamp((ev.clientX - r.left) / Math.max(1, r.width), 0, 1);
+      const y = E.clamp(1 - (ev.clientY - r.top) / Math.max(1, r.height), 0, 1);
+      const i = Math.round(x * LEVEL_CURVE_STEPS);
+      if (lastI != null && Math.abs(i - lastI) > 1) {
+        const a = Math.min(i, lastI), b = Math.max(i, lastI);
+        const va = lastI < i ? state.levelCurve[lastI] : y, vb = lastI < i ? y : state.levelCurve[lastI];
+        for (let k = a; k <= b; k++) state.levelCurve[k] = va + ((vb - va) * (k - a)) / Math.max(1, b - a);
+      } else state.levelCurve[i] = y;
+      state.levelCurve[0] = 0;          // 0%は必ず消灯（描いても「0なのに光る」は作らせない）
+      lastI = i; paint(); draw();
+    };
+    cv.onpointerdown = (ev) => { ev.preventDefault(); drawing = true; lastI = null; try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 取れなくても描ける */ } put(ev); };
+    cv.onpointermove = (ev) => { if (drawing) put(ev); };
+    cv.onpointerup = cv.onpointercancel = () => { drawing = false; lastI = null; };
+    const rst = $("lvreset"); if (rst) rst.onclick = () => { resetLevelCurve(); paint(); draw(); };
+    paint();
+  }
+
   function openPresets() {
     const cards = RIG_PRESETS.map((p) => `<button type="button" class="pcard" data-preset="${p.key}">
       <span class="pname">${p.name}<em>${p.count}灯</em></span>
@@ -1975,7 +2086,7 @@
   let exportCancel = false;
   $("band-cancel").onclick = () => { exportCancel = true; };
   $("export").onclick = async () => {
-    if (state.exporting) return; const lit = state.rig.fixtures.filter((f) => (lightOf(f.id) || {}).on === true); if (!lit.length) { toast("点灯している灯がありません。「灯体情報（このシーン）」で点灯を設定してください。"); return; }
+    if (state.exporting) return; const lit = state.rig.fixtures.filter((f) => isLit(lightOf(f.id))); if (!lit.length) { toast("点灯している灯がありません。「灯体情報（このシーン）」で点灯を設定してください。"); return; }
     state.exporting = true; exportCancel = false; stop(); state.mode = "move"; renderAll();
     const band = $("band"), bar = $("band-bar"); band.hidden = false; $("band-text").textContent = "動画を書き出しています　この画面を開いたままにしてください。";
     const base = `light-rig-${scene().name}`;

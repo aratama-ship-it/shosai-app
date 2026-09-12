@@ -106,6 +106,9 @@
    * Point3 = { u: 0..1, v: 0..1, hM: 床からの高さm }
    * cue.lights[fixtureId] = {
    *   on: true|false|null(未設定), color: "#rrggbb",
+   *   level: 0..100,                   // 強さ（調光）。0は消灯と同じ扱い（2026-09-13 本人決定）。
+   *                                    // 目盛りそのものはリニア。見える明るさへの効き方（カーブ）は
+   *                                    // アプリ全体で1つの設定として app.js 側が持つ。
    *   surface: "floor"|"back"|"air",   // UI上の制約プリセット（データの座標変換には使わない）
    *   path:
    *       {kind:"still", a:Point3}
@@ -118,7 +121,7 @@
   const newPoint = (over = {}) => ({ u: 0.5, v: 0.5, hM: 0, ...over });
 
   const newLightCue = (over = {}) => ({
-    on: true, color: "#f2ead6", surface: "floor",
+    on: true, level: 100, color: "#f2ead6", surface: "floor",
     path: { kind: "still", a: newPoint() },
     speed: "normal", groupId: null, ...over,
   });
@@ -336,18 +339,27 @@
   const posWord = (p) => `${p.u < 0.4 ? "下手" : p.u > 0.6 ? "上手" : "中央"}・奥から${(p.v * 100).toFixed(0)}%${p.hM > 0.05 ? `・高さ約${p.hM.toFixed(1)}m` : ""}`;
   const PLANE_LABEL = { horizontal: "水平の円", frontVertical: "客席側から見た縦の円", sideVertical: "舞台横から見た縦の円" };
 
+  /* 強さ（調光）。未設定の灯は 100 とみなす＝これまでの「点いていれば全開」と同じ見え方になる。
+     0 は消灯と同じ扱い（2026-09-13 本人決定。フェードを扱えるように点灯/消灯の2択から連続値へ）。 */
+  const levelOf = (light) => clamp(finite(light && light.level, 100), 0, 100);
+  /* 実際に光っているか。on が true でも強さ0なら光らない＝図にも出さない。 */
+  const isLit = (light) => Boolean(light) && light.on === true && levelOf(light) > 0;
+
   const describeCue = (light) => {
     if (!light || light.on === null || light.on === undefined) return "未設定";
     if (light.on === false) return "消灯";
+    const lv = levelOf(light);
+    if (lv <= 0) return "消灯（強さ0%）";
+    const strength = lv >= 100 ? "" : `強さ${Math.round(lv)}%で`;
     const face = light.surface === "back" ? "奥壁" : light.surface === "air" ? "空中" : "床";
     const sp = { slow: "ゆっくり", normal: "普通の速さ", fast: "速く" }[light.speed] || "普通の速さ";
     const path = light.path || {};
     if (path.kind === "line") {
       const diag = Math.abs((path.a.hM || 0) - (path.b.hM || 0)) > 0.15 ? "（斜めの軌道）" : "";
-      return `${face}の${posWord(path.a)}〜${posWord(path.b)}を往復${diag}（${sp}）。${path.start === "b" ? posWord(path.b) : posWord(path.a)}から開始`;
+      return `${strength}${face}の${posWord(path.a)}〜${posWord(path.b)}を往復${diag}（${sp}）。${path.start === "b" ? posWord(path.b) : posWord(path.a)}から開始`;
     }
-    if (path.kind === "circle") return `${face}の${posWord(path.c)}を中心に半径約${Math.round(path.r * 10) / 10}mで${PLANE_LABEL[path.plane] || "水平の円"}・${path.dir === "ccw" ? "反時計回り" : "時計回り"}（${sp}）`;
-    return `${face}の${posWord(path.a || newPoint())}を静止で当てる`;
+    if (path.kind === "circle") return `${strength}${face}の${posWord(path.c)}を中心に半径約${Math.round(path.r * 10) / 10}mで${PLANE_LABEL[path.plane] || "水平の円"}・${path.dir === "ccw" ? "反時計回り" : "時計回り"}（${sp}）`;
+    return `${strength}${face}の${posWord(path.a || newPoint())}を静止で当てる`;
   };
 
   /* 下手⇄上手のコピー（配置のみ。2026-09-11 本人回答＝初回は配置だけでよい）。
@@ -393,7 +405,7 @@
     DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
     clamp, finite,
     newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, beamLanding, trussById, trussRow, fixtureWorld,
-    newPoint, newLightCue, constrainPointToSurface, periodMs, groupEffect,
+    newPoint, newLightCue, levelOf, isLit, constrainPointToSurface, periodMs, groupEffect,
     pointWorld, planeVec, circleOffset, eightOffset, targetAt, pathGuide, mirrorMount,
     FRONT_SEATS, frontPerspSetup, makeFrontPerspProjector, frontPerspToUH,
     makePlanProjector, makeFrontProjector, makeSideProjector, planToUV, frontToUH, sideToVH,
