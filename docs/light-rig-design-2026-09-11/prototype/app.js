@@ -1797,8 +1797,6 @@
   $("scene-next").onclick = () => { state.sceneIndex = (state.sceneIndex + 1) % state.scenes.length; home(); renderAll(); };
   $("t-home").onclick = home; $("t-play").onclick = play; $("t-stop").onclick = () => stop();
   $("undo").onclick = undo; $("redo").onclick = redo;
-  $("sel-all").onclick = () => { state.sel = new Set(state.rig.fixtures.map((f) => f.id)); renderAll(); };
-  $("sel-none").onclick = () => { state.sel.clear(); renderAll(); };
   $("mirror").onclick = mirrorSelected;
   document.querySelectorAll("#filters button").forEach((b) => { b.onclick = () => { state.filter = b.dataset.filter; renderAll(); }; });
   $("dup").onclick = duplicateSelected; $("del").onclick = removeSelected; $("spread").onclick = spreadSelected;

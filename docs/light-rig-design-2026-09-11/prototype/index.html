@@ -84,8 +84,6 @@
   .row .st.unset{color:var(--milk-dim)} .row .st.off{color:#8b98a1} .row .st.on{color:var(--milk)} .row .st.move{color:var(--rust-ink)}
   .grp{margin:6px 0 2px;padding:3px 6px;font-size:10px;color:var(--brass);border-bottom:1px solid var(--line-dark);display:flex;justify-content:space-between;align-items:center}
   .grp small{color:var(--milk-dim);font-size:9px}
-  .list-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-  .list-actions .btn{min-height:30px;padding:3px 6px;font-size:10.5px}
   .filters{display:flex}
   .filters button{flex:1;min-height:24px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk-dim);font-size:9.5px;cursor:pointer}
   .filters button+button{margin-left:-1px}
@@ -332,10 +330,6 @@
           <!-- 上段左＝灯体の一覧（下手から見る図の真上）。2026-09-11 本人要望で左列から移動 -->
           <section class="panel" id="panel-fixtures">
             <p class="ptitle">灯体</p>
-            <div class="list-actions">
-              <button type="button" class="btn quiet" id="sel-all">すべて選ぶ</button>
-              <button type="button" class="btn quiet" id="sel-none">選択を外す</button>
-            </div>
             <input type="search" id="search" class="search" placeholder="番号・名前で探す" aria-label="灯体を探す">
             <div class="filters" id="filters" role="group" aria-label="絞り込み">
               <button type="button" data-filter="all" aria-pressed="true">すべて</button>
@@ -428,8 +422,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789198446"></script>
-<script src="stage-figure.js?v=1789198446"></script>
-<script src="app.js?v=1789198446"></script>
+<script src="rig-engine.js?v=1789199185"></script>
+<script src="stage-figure.js?v=1789199185"></script>
+<script src="app.js?v=1789199185"></script>
 </body>
 </html>
