@@ -139,7 +139,10 @@
        保存・Undoの対象にする（2026-09-13 本人決定）。 */
     levelCurve: null,                  // 初期化は下の resetLevelCurve()
     front3d: false,                    // 客席から見る図を擬似パース（本体の正面図と同じ式）で描く
-    seat: "center",                    // その席（stage-venues.js の値をそのまま使う）
+    /* 3Dで最初に見せる席。2026-09-13 本人決定で2階席。見下ろすので立ち位置の関係が読みやすく、
+       灯の当たり先を確かめる最初の1枚に向く（製品 stage-sketch.js の既定は "center"）。
+       選択肢の既定（index.html の selected）と必ずそろえること。 */
+    seat: "balcony",
     search: "",
     copiedPath: null,   // 動きのコピー（灯から灯へ写す。2026-09-12 本人要望）
     /* サーチライト＝複数のムービングを空へ振る定番の見せ方。選んで、数値を決めて、一撃で当てる。
