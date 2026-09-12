@@ -107,6 +107,9 @@
    * cue.lights[fixtureId] = {
    *   on: true|false|null(未設定), color: "#rrggbb",
    *   level: 0..100,                   // 強さ（調光）。0は消灯と同じ扱い（2026-09-13 本人決定）。
+   *   levelTo: 0..100 | 省略,          // 動きの中で強さを変えるときの「終わり」の値（ムービングのみ）。
+   *   beamDegTo: 4..70 | 省略,         // 同じく「終わり」の広がり（ズーム）。始めは level / beamDeg。
+   *                                    // 位置の往復と同じ位相で 始め→終わり→始め と往復する（2026-09-13 本人要望）。
    *                                    // 目盛りそのものはリニア。見える明るさへの効き方（カーブ）は
    *                                    // アプリ全体で1つの設定として app.js 側が持つ。
    *   surface: "floor"|"back"|"air",   // UI上の制約プリセット（データの座標変換には使わない）
@@ -184,25 +187,54 @@
   const eightOffset = (plane, ang, r, r2, tiltDeg) =>
     planeVec(plane, Math.sin(ang) * r, Math.sin(ang * 2) * (r2 == null ? r : r2), tiltDeg);
 
+  /* 周期の中の「いま」。0〜1が周期1回ぶん。組の順番送りと一灯ずつのオフセットを織り込む。
+     一灯ずつの遅らせ（オフセット秒）は組の順番送りとは別に持てるので、
+     組にしていない灯どうしでも波をずらせる（2026-09-12 本人要望）。 */
+  const cycleT = (light, cue, fixtureId, tMs) => {
+    const { phaseShiftMs, mirror } = groupEffect(cue, fixtureId);
+    const offsetMs = clamp(finite(light.offsetSec, 0), -60, 60) * 1000;
+    return { t: (tMs + phaseShiftMs - offsetMs) / periodMs(light), mirror };
+  };
+  /* 往復の位相（0＝A側・1＝B側）。位置の往復と、広がり・強さの往復が同じ式を使う。
+     往復の運び方（2026-09-11 本人要望）:
+       "linear"＝端で急に折り返す機械的な動き。卓のフェードをそのまま当てた感じ。
+       "ease"（既定）＝端で減速して止まり、また加速する。ムービングのヨークは
+       止まる前に減速するので、実物はこちらに近い。式は cos の半周期（ease-in-out）。 */
+  const swingPhase = (light, t, mirror) => {
+    const path = light.path || {};
+    let p = tri(t);
+    if ((path.easing || "ease") === "ease") p = 0.5 - Math.cos(p * Math.PI) / 2;
+    if (path.kind === "line" && path.start === "b") p = 1 - p;
+    if (mirror) p = 1 - p;
+    return p;
+  };
+  /* 広がり・強さが「動きの中で変わる」ときの位相（0＝始めの値・1＝終わりの値）。
+     往復（line）は位置とまったく同じ位相＝Aで始めの値、Bで終わりの値になる。
+     円・8の字・動きなしは、1周（1周期）で 始め→終わり→始め と往復させる（2026-09-13）。 */
+  const paramPhase = (light, cue, fixtureId, tMs) => {
+    if (!light) return 0;
+    const { t, mirror } = cycleT(light, cue, fixtureId, tMs);
+    return swingPhase(light, t, mirror);
+  };
+  /* 時刻 tMs における広がり（°）と強さ（0〜100）。終わりの値を持たない灯はそのままの値。 */
+  const beamDegAt = (fixture, light, phase) => {
+    const base = beamDegOf(fixture, light);
+    if (!isMoving(fixture) || !light || light.beamDegTo == null) return base;
+    return base + (clamp(finite(light.beamDegTo, base), 4, 70) - base) * clamp(finite(phase, 0), 0, 1);
+  };
+  const levelAt = (light, phase) => {
+    const base = levelOf(light);
+    if (!light || light.levelTo == null) return base;
+    return base + (clamp(finite(light.levelTo, base), 0, 100) - base) * clamp(finite(phase, 0), 0, 1);
+  };
+
   /* 時刻 tMs における光の当たる先（世界座標）。未設定・消灯は null。 */
   const targetAt = (light, cue, fixtureId, tMs, dims = DEFAULT_DIMS) => {
     if (!light || light.on !== true) return null;
     const path = light.path || { kind: "still", a: newPoint() };
-    const { phaseShiftMs, mirror } = groupEffect(cue, fixtureId);
-    const T = periodMs(light);
-    /* 一灯ずつの遅らせ（オフセット秒）。組の順番送りとは別に持てるので、
-       組にしていない灯どうしでも波をずらせる（2026-09-12 本人要望）。 */
-    const offsetMs = clamp(finite(light.offsetSec, 0), -60, 60) * 1000;
-    const t = (tMs + phaseShiftMs - offsetMs) / T;
+    const { t, mirror } = cycleT(light, cue, fixtureId, tMs);
     if (path.kind === "line") {
-      /* 往復の運び方（2026-09-11 本人要望）。
-         "linear"＝端で急に折り返す機械的な動き。卓のフェードをそのまま当てた感じ。
-         "ease"（既定）＝端で減速して止まり、また加速する。ムービングのヨークは
-         止まる前に減速するので、実物はこちらに近い。式は cos の半周期（ease-in-out）。 */
-      let p = tri(t);
-      if ((path.easing || "ease") === "ease") p = 0.5 - Math.cos(p * Math.PI) / 2;
-      if (path.start === "b") p = 1 - p;
-      if (mirror) p = 1 - p;
+      const p = swingPhase(light, t, mirror);
       const a = pointWorld(path.a, dims), b = pointWorld(path.b, dims);
       return { x: a.x + (b.x - a.x) * p, y: a.y + (b.y - a.y) * p, z: a.z + (b.z - a.z) * p, phase: p };
     }
@@ -343,23 +375,30 @@
      0 は消灯と同じ扱い（2026-09-13 本人決定。フェードを扱えるように点灯/消灯の2択から連続値へ）。 */
   const levelOf = (light) => clamp(finite(light && light.level, 100), 0, 100);
   /* 実際に光っているか。on が true でも強さ0なら光らない＝図にも出さない。 */
-  const isLit = (light) => Boolean(light) && light.on === true && levelOf(light) > 0;
+  const isLit = (light) => Boolean(light) && light.on === true
+    && Math.max(levelOf(light), light.levelTo == null ? 0 : clamp(finite(light.levelTo, 0), 0, 100)) > 0;
 
-  const describeCue = (light) => {
+  const describeCue = (light, fixture) => {
     if (!light || light.on === null || light.on === undefined) return "未設定";
     if (light.on === false) return "消灯";
-    const lv = levelOf(light);
-    if (lv <= 0) return "消灯（強さ0%）";
-    const strength = lv >= 100 ? "" : `強さ${Math.round(lv)}%で`;
+    const lv = levelOf(light), lvTo = light.levelTo == null ? null : clamp(finite(light.levelTo, lv), 0, 100);
+    if (lv <= 0 && (lvTo == null || lvTo <= 0)) return "消灯（強さ0%）";
+    const strength = lvTo != null && Math.round(lvTo) !== Math.round(lv)
+      ? `強さ${Math.round(lv)}%→${Math.round(lvTo)}%で`
+      : (lv >= 100 ? "" : `強さ${Math.round(lv)}%で`);
+    // ムービングが動きの中でズームするときだけ、広がりの変化を添える
+    const zoom = fixture && isMoving(fixture) && light.beamDegTo != null
+      && Math.round(light.beamDegTo) !== Math.round(beamDegOf(fixture, light))
+      ? `。広がりは${Math.round(beamDegOf(fixture, light))}°→${Math.round(light.beamDegTo)}°` : "";
     const face = light.surface === "back" ? "奥壁" : light.surface === "air" ? "空中" : "床";
     const sp = { slow: "ゆっくり", normal: "普通の速さ", fast: "速く" }[light.speed] || "普通の速さ";
     const path = light.path || {};
     if (path.kind === "line") {
       const diag = Math.abs((path.a.hM || 0) - (path.b.hM || 0)) > 0.15 ? "（斜めの軌道）" : "";
-      return `${strength}${face}の${posWord(path.a)}〜${posWord(path.b)}を往復${diag}（${sp}）。${path.start === "b" ? posWord(path.b) : posWord(path.a)}から開始`;
+      return `${strength}${face}の${posWord(path.a)}〜${posWord(path.b)}を往復${diag}（${sp}）。${path.start === "b" ? posWord(path.b) : posWord(path.a)}から開始${zoom}`;
     }
-    if (path.kind === "circle") return `${strength}${face}の${posWord(path.c)}を中心に半径約${Math.round(path.r * 10) / 10}mで${PLANE_LABEL[path.plane] || "水平の円"}・${path.dir === "ccw" ? "反時計回り" : "時計回り"}（${sp}）`;
-    return `${strength}${face}の${posWord(path.a || newPoint())}を静止で当てる`;
+    if (path.kind === "circle") return `${strength}${face}の${posWord(path.c)}を中心に半径約${Math.round(path.r * 10) / 10}mで${PLANE_LABEL[path.plane] || "水平の円"}・${path.dir === "ccw" ? "反時計回り" : "時計回り"}（${sp}）${zoom}`;
+    return `${strength}${face}の${posWord(path.a || newPoint())}を静止で当てる${zoom}`;
   };
 
   /* 下手⇄上手のコピー（配置のみ。2026-09-11 本人回答＝初回は配置だけでよい）。
@@ -405,7 +444,7 @@
     DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
     clamp, finite,
     newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, beamLanding, trussById, trussRow, fixtureWorld,
-    newPoint, newLightCue, levelOf, isLit, constrainPointToSurface, periodMs, groupEffect,
+    newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, paramPhase, constrainPointToSurface, periodMs, groupEffect,
     pointWorld, planeVec, circleOffset, eightOffset, targetAt, pathGuide, mirrorMount,
     FRONT_SEATS, frontPerspSetup, makeFrontPerspProjector, frontPerspToUH,
     makePlanProjector, makeFrontProjector, makeSideProjector, planToUV, frontToUH, sideToVH,
