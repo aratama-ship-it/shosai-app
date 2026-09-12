@@ -209,6 +209,11 @@
   .slbox .kicker{margin:0}
   /* 枠の中の2つ目の見出し（動きの型）。上に罫線を入れて、一括変更と切り分ける */
   .slbox .kicker.sub2{margin-top:4px;padding-top:7px;border-top:1px solid var(--line-dark)}
+  /* 動きの型（サーチライト・組）はアコーディオンで畳んでおく（2026-09-13 本人要望）。
+     見出しをクリックで開閉。矢印は▸(閉)/▾(開)だけで示す——アイコン画像は使わない。 */
+  .slbox .kicker.accordion{cursor:pointer;user-select:none}
+  .slbox .kicker.accordion:hover{color:var(--milk)}
+  .slbox .kicker.accordion .accicon{display:inline-block;width:1em;color:var(--milk-dim)}
   .slbox .btn{width:100%}
   /* 選んだ灯体の操作（パネルの先頭・メイン） */
   .tsbtns{display:grid;grid-template-columns:1fr 1fr;gap:4px}
@@ -300,6 +305,7 @@
               <button type="button" data-show="path" aria-pressed="true">動く範囲</button>
               <button type="button" data-show="grid" aria-pressed="true">1mの線</button>
               <button type="button" data-show="pieces" aria-pressed="true" title="舞台スケッチ側で置いてある演者・セットを下敷きに出す">演者・セット</button>
+              <button type="button" data-show="blackout" aria-pressed="false" title="光が当たっていないところを真っ暗にする（灯体情報タブのみ）">室内灯を消す</button>
             </span>
           </span>
           <span class="fb"><b>図の見かた</b><span id="legend-r"></span></span>
@@ -343,7 +349,6 @@
           <div class="planwrap">
             <div class="viewhead">
               <span class="viewtitle">平面図（真上から）</span>
-              <span class="viewnote">上が奥・下が手前。その先が客席</span>
               <label class="snap" title="1mのグリッドに合わせて置く・動かす"><input type="checkbox" id="snap"><span>1mでそろえる</span></label>
             </div>
             <span class="statebadge" id="statebadge">選択</span>
@@ -423,8 +428,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789192191"></script>
-<script src="stage-figure.js?v=1789192191"></script>
-<script src="app.js?v=1789192191"></script>
+<script src="rig-engine.js?v=1789198446"></script>
+<script src="stage-figure.js?v=1789198446"></script>
+<script src="app.js?v=1789198446"></script>
 </body>
 </html>

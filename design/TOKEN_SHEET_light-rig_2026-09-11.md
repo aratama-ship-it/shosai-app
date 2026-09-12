@@ -285,3 +285,28 @@
 - `.swatches{padding:3px 0 3px 3px;margin-left:-3px}` — 選択中スウォッチの `outline` が `.panel{overflow:hidden}` に
   食われていたのを、余白を持たせて回避（見た目の位置はマージンで打ち消して変えない）。
 - 「設定を外す」（未設定へ戻す）はUIから完全に削除。点灯／消灯の2択のみ。
+
+
+## 17. 既定は実在の見本「8人のサーカス」（2026-09-13）
+
+`stage-samples/index.js` の `eightCircus`（同梱の見本ショー）をそのまま起点にした。演者8人・8場面の立ち位置/姿勢/向き/色/身長、
+セット（台/ポール/トラピーズ）は出典の値をそのまま使う。灯体の仕込みだけ試作側で足す（`RIG_PRESETS` の "circus"、22灯）。
+`loadCircus8Demo()` は起動時に無条件で呼ぶ（`?demo=circus8` のようなURL分岐は廃止）。他の仕込みを試したいときは
+「よくある仕込みから選ぶ」でいつでも灯体だけ組み直せる（演者データは変わらない）。
+
+## 18. アコーディオン（動きの型・組の動き）
+
+`state.slOpen = {search:false, group:false}`。`renderBulk()` 内の共通ヘルパー `accHead(text, key)` が
+`<p class="kicker sub2 accordion">▸/▾ + text</p>` を作り、クリックで `state.slOpen[key]` を反転して再描画。
+CSSは `.slbox .kicker.accordion{cursor:pointer}` のみ（開閉の見た目は▸/▾の文字だけで表現、アイコン画像は使わない）。
+「組の動き」はそれまで `renderInspector()` 側に単独であったコードを `renderBulk()` 内へ移し、対象を `ids` から `movers`
+（選択中のムービングだけ）に絞った。
+
+## 19. 室内灯を消す（ブラックアウト）
+
+`paintBlackout(ctx, canvas, spots)`（`spots: [{fromX,fromY,toX,toY,r}]`）。図ごとに専用のオフスクリーンcanvasを
+`WeakMap`で持ち回す（`blackoutCanvases`、canvas要素をキーに）。オフスクリーン側で黒塗り→`destination-out`で
+穴（着地の光だまり＋出どころ〜着地の柱、`drawBeam()`が返す `rPx` を1.15倍で使用）→`source-over`で本図へ重ねる。
+`state.show.blackout`（既定false）、`#showtoggles` の `data-show="blackout"` ボタンで切り替え。
+`drawPlan`/`drawFront`/`drawFront3D`/`drawSide` それぞれの `state.mode==="move"` 分岐の末尾（灯体の印を描いた後）で
+`if (state.mode==="move" && showOn("blackout")) paintBlackout(...)` を呼ぶ——配置モードでは呼ばない（光を出していないため）。

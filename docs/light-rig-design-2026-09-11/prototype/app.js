@@ -33,22 +33,87 @@
        空＝データの器だけで、paintBody() も look 引数を受け取るが中で使っていない。段階0のまま）。
        移植できるのは実在する描画だけなので、ここでは持ち込まない（2026-09-13 本人要望への回答）。
        幕・ホリゾントは stage-machinery.js の machineryParts() curtain分岐を移植（rig-engine.js
-       curtainParts）。前幕とホリゾント幕の2枚を見本として置く。 */
+       curtainParts）。前幕とホリゾント幕の2枚を見本として置く。
+       演者・配置・姿勢は舞台スケッチ本体に同梱の見本ショー「見本: 八人のサーカス」
+       （stage-samples/index.js の eightCircus, id: sample-eight-circus-v1）をそのまま移植した
+       （2026-09-13 本人指摘。当初は自作の仮データを使っていたが、実在する見本があった）。
+       8場面・8人（ミナ/リク/カイ/ソラ/ノア/ジン/ユキ/レン）・台/チャイニーズポール/トラピーズを
+       そのシーンで使うぶんだけ入れてある。姿勢・色・身長(cm→m)・向きは出典の値そのまま。 */
     scenes: [
-      { id: "s1", name: "登場", cue: { lights: {}, groups: [] }, pieces: [
-        { id: "p1", kind: "performer", name: "演者1", u: 0.5, v: 0.55, hM: 1.7, pose: "stand", facing: 0, color: "#d9b38c" },
+      { id: "s1", name: "1 オープニング", cue: { lights: {}, groups: [] }, pieces: [
+        { id: "p-mina", kind: "performer", name: "ミナ", u: 0.5, v: 0.72, hM: 1.68, pose: "stand", facing: 0, color: "#a84b26" },
+        { id: "p-riku", kind: "performer", name: "リク", u: 0.36, v: 0.7, hM: 1.76, pose: "stand", facing: 0, color: "#77865f" },
+        { id: "p-kai", kind: "performer", name: "カイ", u: 0.64, v: 0.7, hM: 1.71, pose: "stand", facing: 0, color: "#9c823f" },
+        { id: "p-sora", kind: "performer", name: "ソラ", u: 0.24, v: 0.66, hM: 1.58, pose: "stand", facing: 0, color: "#6d6657" },
+        { id: "p-noa", kind: "performer", name: "ノア", u: 0.76, v: 0.66, hM: 1.63, pose: "stand", facing: 0, color: "#a84b26" },
+        { id: "p-jin", kind: "performer", name: "ジン", u: 0.14, v: 0.62, hM: 1.82, pose: "stand", facing: 0, color: "#77865f" },
+        { id: "p-yuki", kind: "performer", name: "ユキ", u: 0.86, v: 0.62, hM: 1.55, pose: "stand", facing: 0, color: "#9c823f" },
+        { id: "p-ren", kind: "performer", name: "レン", u: 0.5, v: 0.58, hM: 1.74, pose: "reach", facing: 0, color: "#6d6657" },
+        { id: "set-deck", kind: "set", name: "台", u: 0.5, v: 0.24, hM: 0.5 },
         ...DEFAULT_CURTAINS,
       ] },
-      { id: "s2", name: "ソロ", cue: { lights: {}, groups: [] }, pieces: [
-        { id: "p1", kind: "performer", name: "演者1", u: 0.42, v: 0.5, hM: 1.7, pose: "dance1", facing: 20, color: "#d9b38c" },
-        { id: "p2", kind: "performer", name: "演者2", u: 0.64, v: 0.62, hM: 1.6, pose: "reach", facing: -30, color: "#c68a5c" },
+      { id: "s2", name: "2 演目・シルホイール", cue: { lights: {}, groups: [] }, pieces: [
+        { id: "p-mina", kind: "performer", name: "ミナ", u: 0.16, v: 0.62, hM: 1.68, pose: "cyr", facing: 0, color: "#a84b26" },
+        { id: "p-riku", kind: "performer", name: "リク", u: 0.06, v: 0.34, hM: 1.76, pose: "stand", facing: 0, color: "#77865f" },
+        { id: "p-kai", kind: "performer", name: "カイ", u: 0.94, v: 0.34, hM: 1.71, pose: "stand", facing: 0, color: "#9c823f" },
+        { id: "set-deck", kind: "set", name: "台", u: 0.5, v: 0.24, hM: 0.5 },
         ...DEFAULT_CURTAINS,
       ] },
-      { id: "s3", name: "フィナーレ", cue: { lights: {}, groups: [] }, pieces: [
-        { id: "p1", kind: "performer", name: "演者1", u: 0.3, v: 0.58, hM: 1.7, pose: "open", facing: 0, color: "#d9b38c" },
-        { id: "p2", kind: "performer", name: "演者2", u: 0.5, v: 0.5, hM: 1.65, pose: "handstand", facing: 0, color: "#c68a5c" },
-        { id: "p3", kind: "performer", name: "演者3", u: 0.7, v: 0.58, hM: 1.6, pose: "sit", facing: 40, color: "#8c6a4a" },
-        { id: "p4", kind: "set", name: "台", u: 0.5, v: 0.28, hM: 0.6 },
+      { id: "s3", name: "3 演目・チャイニーズポール", cue: { lights: {}, groups: [] }, pieces: [
+        { id: "p-mina", kind: "performer", name: "ミナ", u: 0.9, v: 0.64, hM: 1.68, pose: "cyr", facing: 20, color: "#a84b26" },
+        { id: "p-jin", kind: "performer", name: "ジン", u: 0.42, v: 0.34, hM: 1.82, pose: "reach", facing: 0, color: "#77865f" },
+        { id: "p-riku", kind: "performer", name: "リク", u: 0.06, v: 0.34, hM: 1.76, pose: "stand", facing: 0, color: "#77865f" },
+        { id: "p-kai", kind: "performer", name: "カイ", u: 0.94, v: 0.34, hM: 1.71, pose: "stand", facing: 0, color: "#9c823f" },
+        { id: "set-deck", kind: "set", name: "台", u: 0.5, v: 0.24, hM: 0.5 },
+        { id: "set-pole", kind: "set", name: "チャイニーズポール", u: 0.42, v: 0.34, hM: 6 },
+        ...DEFAULT_CURTAINS,
+      ] },
+      { id: "s4", name: "4 トランジション", cue: { lights: {}, groups: [] }, pieces: [
+        { id: "p-sora", kind: "performer", name: "ソラ", u: 0.1, v: 0.8, hM: 1.58, pose: "run", facing: 90, color: "#6d6657" },
+        { id: "p-noa", kind: "performer", name: "ノア", u: 0.9, v: 0.8, hM: 1.63, pose: "run", facing: 270, color: "#a84b26" },
+        { id: "p-yuki", kind: "performer", name: "ユキ", u: 0.1, v: 0.5, hM: 1.55, pose: "walk", facing: 90, color: "#9c823f" },
+        { id: "p-ren", kind: "performer", name: "レン", u: 0.9, v: 0.5, hM: 1.74, pose: "walk", facing: 270, color: "#6d6657" },
+        { id: "p-jin", kind: "performer", name: "ジン", u: 0.42, v: 0.34, hM: 1.82, pose: "stand", facing: 0, color: "#77865f" },
+        { id: "set-deck", kind: "set", name: "台", u: 0.5, v: 0.24, hM: 0.5 },
+        { id: "set-pole", kind: "set", name: "チャイニーズポール", u: 0.42, v: 0.34, hM: 6 },
+        ...DEFAULT_CURTAINS,
+      ] },
+      { id: "s5", name: "5 演劇パート", cue: { lights: {}, groups: [] }, pieces: [
+        { id: "p-ren", kind: "performer", name: "レン", u: 0.5, v: 0.24, hM: 1.74, pose: "sing", facing: 0, color: "#6d6657" },
+        { id: "p-sora", kind: "performer", name: "ソラ", u: 0.62, v: 0.68, hM: 1.58, pose: "kneel", facing: 300, color: "#6d6657" },
+        { id: "set-deck", kind: "set", name: "台", u: 0.5, v: 0.24, hM: 0.5 },
+        { id: "set-pole", kind: "set", name: "チャイニーズポール", u: 0.42, v: 0.34, hM: 6 },
+        ...DEFAULT_CURTAINS,
+      ] },
+      { id: "s6", name: "6 演目・トラピーズ", cue: { lights: {}, groups: [] }, pieces: [
+        { id: "p-yuki", kind: "performer", name: "ユキ", u: 0.58, v: 0.4, hM: 1.55, pose: "reach", facing: 0, color: "#9c823f" },
+        { id: "p-sora", kind: "performer", name: "ソラ", u: 0.3, v: 0.72, hM: 1.58, pose: "stand", facing: 45, color: "#6d6657" },
+        { id: "p-ren", kind: "performer", name: "レン", u: 0.06, v: 0.3, hM: 1.74, pose: "stand", facing: 0, color: "#6d6657" },
+        { id: "set-trap", kind: "set", name: "トラピーズ", u: 0.58, v: 0.4, hM: 4.26 },
+        ...DEFAULT_CURTAINS,
+      ] },
+      { id: "s7", name: "7 演目・群舞", cue: { lights: {}, groups: [] }, pieces: [
+        { id: "p-mina", kind: "performer", name: "ミナ", u: 0.3, v: 0.62, hM: 1.68, pose: "dance1", facing: 0, color: "#a84b26" },
+        { id: "p-riku", kind: "performer", name: "リク", u: 0.46, v: 0.7, hM: 1.76, pose: "dance2", facing: 0, color: "#77865f" },
+        { id: "p-kai", kind: "performer", name: "カイ", u: 0.62, v: 0.6, hM: 1.71, pose: "dance4", facing: 0, color: "#9c823f" },
+        { id: "p-sora", kind: "performer", name: "ソラ", u: 0.2, v: 0.44, hM: 1.58, pose: "dance3", facing: 0, color: "#6d6657" },
+        { id: "p-noa", kind: "performer", name: "ノア", u: 0.78, v: 0.46, hM: 1.63, pose: "dance5", facing: 0, color: "#a84b26" },
+        { id: "p-jin", kind: "performer", name: "ジン", u: 0.7, v: 0.76, hM: 1.82, pose: "dance1", facing: 0, color: "#77865f" },
+        { id: "p-yuki", kind: "performer", name: "ユキ", u: 0.38, v: 0.42, hM: 1.55, pose: "dance4", facing: 0, color: "#9c823f" },
+        { id: "p-ren", kind: "performer", name: "レン", u: 0.86, v: 0.66, hM: 1.74, pose: "dance2", facing: 0, color: "#6d6657" },
+        { id: "set-deck", kind: "set", name: "台", u: 0.5, v: 0.22, hM: 0.5 },
+        ...DEFAULT_CURTAINS,
+      ] },
+      { id: "s8", name: "8 エンディング・楽器", cue: { lights: {}, groups: [] }, pieces: [
+        { id: "p-jin", kind: "performer", name: "ジン", u: 0.44, v: 0.24, hM: 1.82, pose: "trumpet", facing: 0, color: "#77865f" },
+        { id: "p-ren", kind: "performer", name: "レン", u: 0.58, v: 0.24, hM: 1.74, pose: "guitar", facing: 0, color: "#6d6657" },
+        { id: "p-mina", kind: "performer", name: "ミナ", u: 0.28, v: 0.6, hM: 1.68, pose: "sit", facing: 20, color: "#a84b26" },
+        { id: "p-riku", kind: "performer", name: "リク", u: 0.42, v: 0.66, hM: 1.76, pose: "sit", facing: 10, color: "#77865f" },
+        { id: "p-kai", kind: "performer", name: "カイ", u: 0.58, v: 0.66, hM: 1.71, pose: "sit", facing: 350, color: "#9c823f" },
+        { id: "p-sora", kind: "performer", name: "ソラ", u: 0.72, v: 0.6, hM: 1.58, pose: "sit", facing: 340, color: "#6d6657" },
+        { id: "p-noa", kind: "performer", name: "ノア", u: 0.2, v: 0.5, hM: 1.63, pose: "sit", facing: 30, color: "#a84b26" },
+        { id: "p-yuki", kind: "performer", name: "ユキ", u: 0.8, v: 0.5, hM: 1.55, pose: "sit", facing: 330, color: "#9c823f" },
+        { id: "set-deck", kind: "set", name: "台", u: 0.5, v: 0.24, hM: 0.5 },
         ...DEFAULT_CURTAINS,
       ] },
     ],
@@ -64,7 +129,7 @@
     hover: null, drag: null,
     collapsed: new Set(), filter: "all",   // 一覧: 取り付け場所ごとの折り畳みと絞り込み（20灯以上向け）
     snap: false,                           // 1mのグリッドに合わせて置く・動かす（本人要望 2026-09-11）
-    show: { no: true, beam: true, path: true, grid: true, pieces: true },
+    show: { no: true, beam: true, path: true, grid: true, pieces: true, blackout: false },
     front3d: false,                    // 客席から見る図を擬似パース（本体の正面図と同じ式）で描く
     seat: "center",                    // その席（stage-venues.js の値をそのまま使う）
     search: "",
@@ -76,6 +141,9 @@
     sl: { form: "sweep", span: 0.8, hM: null, vv: 0.4, periodSec: 6, beamDeg: 8, stepSec: 0.5, easing: "linear" },
     slLive: "",         // 直近にサーチライトを当てた灯の並び（同じ顔ぶれの間はつまみが即反映される）
     slGrad: { from: "#7ab8ff", to: "#ff7a5c" },   // 1灯ずつ色をずらす（グラデーション）の2色（2026-09-12 本人要望）
+    /* 「動きの型」欄はアコーディオンで畳んでおく（2026-09-13 本人要望）。
+       組の動きはサーチライトと同じ「複数ムービングの動かし方」の欄へ統合した。 */
+    slOpen: { search: false, group: false },
     exporting: false,
   };
   const SPEED_SEC = { slow: 4, normal: 2, fast: 1 };
@@ -464,6 +532,7 @@
     if (state.tool === "side" && hv && hv.canvas === "plan") { const side = hv.X < B.x ? "shimote" : hv.X > B.x + B.w ? "kamite" : null; if (side) drawFixtureMark(pctx, side === "shimote" ? B.x - SIDE_DX : B.x + B.w + SIDE_DX, E.clamp(hv.Y, B.y, B.y + B.h), "diamond", { ghost: true }); else { pctx.fillStyle = "rgba(240,231,214,0.6)"; pctx.font = "18px sans-serif"; pctx.fillText("舞台の外側（下手／上手）をクリックしてください", B.x + B.w / 2 - 190, B.y + B.h + 44); } }
 
     // 動き: 軌道・光線
+    const litSpots = [];   // 室内灯を消す（ブラックアウト）用。光の当たっている場所だけ集める
     if (state.mode === "move") {
       state.rig.fixtures.forEach((f) => {
         const l = lightOf(f.id); if (!l || l.on !== true) return;
@@ -475,7 +544,7 @@
           else if (g.kind === "loop" && g.plane === "horizontal") strokeLoop(pctx, P, g);
           pctx.restore(); }
         if (l.surface === "floor" || l.surface === "air") {
-          if (showOn("beam")) drawBeam(pctx, s, tp, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true);
+          if (showOn("beam")) { const r = drawBeam(pctx, s, tp, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true); litSpots.push({ fromX: s.X, fromY: s.Y, toX: tp.X, toY: tp.Y, r }); }
           if (l.surface === "air") {
             // 空中の狙い点は床に落ちない。真上から見ると高さが読めないので、印＋高さ＋床への破線を出す
             pctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.7); pctx.lineWidth = 3; pctx.beginPath();
@@ -483,7 +552,7 @@
             pctx.beginPath(); pctx.arc(tp.X, tp.Y, 22, 0, Math.PI * 2); pctx.stroke();
             if (!dim) { pctx.fillStyle = hexA(l.color, 0.9); pctx.font = "17px sans-serif"; pctx.textBaseline = "bottom"; pctx.fillText(`空中 ${T.z.toFixed(1)}m`, tp.X + 26, tp.Y - 8); }
           } // 床の輪は drawBeam が広がりから描く
-        } else if (showOn("beam")) { drawBeam(pctx, s, { X: s.X, Y: B.y }, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true); }
+        } else if (showOn("beam")) { const r = drawBeam(pctx, s, { X: s.X, Y: B.y }, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true); litSpots.push({ fromX: s.X, fromY: s.Y, toX: s.X, toY: B.y, r }); }
         // ハンドル（選択灯のみ・床と空中は平面図で位置を動かす）
         if (sel && l.surface !== "back") drawHandles(pctx, P, l, f.id);
       });
@@ -495,6 +564,8 @@
       const Y = isFront(f) ? B.y + B.h + FRONT_DY : p.Y;     // 前明かりは客席帯に並べる（実距離は数値で）
       drawFixtureMark(pctx, X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
     });
+    // 室内灯を消す（2026-09-13 本人要望）。灯体の印は暗くしたくないので、印より前・マーキーより後に重ねる
+    if (state.mode === "move" && showOn("blackout")) paintBlackout(pctx, plan, litSpots);
     // 範囲選択（マーキー）。灯体の上に重ねて描く
     if (state.drag && state.drag.kind === "marquee" && state.drag.moved) {
       const dg = state.drag;
@@ -688,6 +759,42 @@
     return rPx;
   }
 
+  /* 室内灯を消す（ブラックアウト。2026-09-13 本人要望「光のあたってないところは真っ暗で見えない」）。
+     やり方: オフスクリーンに黒を敷き、destination-out で「光が当たっている場所」だけ穴を開け、
+     それを図の上に重ねる。穴は実際のビームの見た目（drawBeamの三角＋光だまり）とは別に、
+     着地の光だまり＋出どころから着地までの光の柱をやや広め・柔らかめに取るだけで十分
+     （マスクなので厳密に一致していなくてよい）。図ごとにオフスクリーンを1枚持って使い回す。 */
+  const blackoutCanvases = new WeakMap();
+  function paintBlackout(ctx, canvas, spots) {
+    let mc = blackoutCanvases.get(canvas);
+    if (!mc || mc.width !== canvas.width || mc.height !== canvas.height) {
+      mc = document.createElement("canvas"); mc.width = canvas.width; mc.height = canvas.height;
+      blackoutCanvases.set(canvas, mc);
+    }
+    const mctx = mc.getContext("2d");
+    mctx.setTransform(1, 0, 0, 1, 0, 0);
+    mctx.clearRect(0, 0, mc.width, mc.height);
+    mctx.globalCompositeOperation = "source-over";
+    mctx.fillStyle = "#0d0e10"; mctx.fillRect(0, 0, mc.width, mc.height);
+    mctx.globalCompositeOperation = "destination-out";
+    spots.forEach((sp) => {
+      const r = Math.max(sp.r * 1.15, 10);
+      const dx = sp.toX - sp.fromX, dy = sp.toY - sp.fromY, len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len, ny = dx / len;
+      const w0 = Math.max(3, r * 0.12), w1 = Math.max(r * 0.85, 8);
+      mctx.beginPath();
+      mctx.moveTo(sp.fromX + nx * w0, sp.fromY + ny * w0);
+      mctx.lineTo(sp.toX + nx * w1, sp.toY + ny * w1);
+      mctx.lineTo(sp.toX - nx * w1, sp.toY - ny * w1);
+      mctx.lineTo(sp.fromX - nx * w0, sp.fromY - ny * w0);
+      mctx.closePath(); mctx.fillStyle = "rgba(255,255,255,0.85)"; mctx.fill();
+      const grad = mctx.createRadialGradient(sp.toX, sp.toY, 0, sp.toX, sp.toY, r);
+      grad.addColorStop(0, "rgba(255,255,255,1)"); grad.addColorStop(0.75, "rgba(255,255,255,0.9)"); grad.addColorStop(1, "rgba(255,255,255,0)");
+      mctx.fillStyle = grad; mctx.beginPath(); mctx.arc(sp.toX, sp.toY, r, 0, Math.PI * 2); mctx.fill();
+    });
+    ctx.save(); ctx.globalCompositeOperation = "source-over"; ctx.drawImage(mc, 0, 0); ctx.restore();
+  }
+
   // 円・8の字の下書きは、エンジンが返す点の並びを線でつなぐだけ（傾きも8の字もこれで描ける）
   function strokeLoop(ctx, P, g) { ctx.beginPath(); g.pts.forEach((w, i) => { const q = P(w); i ? ctx.lineTo(q.X, q.Y) : ctx.moveTo(q.X, q.Y); }); ctx.stroke(); }
   const beamOf = (f) => E.beamDegOf(f, lightOf(f.id));
@@ -746,9 +853,11 @@
     state.rig.trusses.forEach((t) => { const Y = B.y + B.h - t.h / d.H * B.h; const sel = state.selTruss === t.id && state.mode === "place"; fctx.strokeStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.lineWidth = sel ? 5 : 3; fctx.beginPath(); fctx.moveTo(B.x - 16, Y); fctx.lineTo(B.x + B.w + 16, Y); fctx.stroke();
       if (sel) { fctx.fillStyle = "#d3ac59"; fctx.fillRect(B.x + B.w + 16, Y - 12, 22, 24); fctx.fillStyle = "#1a1409"; fctx.font = "600 14px sans-serif"; fctx.fillText("↕", B.x + B.w + 20, Y); fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${t.h.toFixed(1)}m（ドラッグ）`, B.x + B.w + 44, Y); } });
     // 光線
+    const litSpotsF = [];   // 室内灯を消す（ブラックアウト）用
     if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!l || l.on !== true) return; const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
       if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
-        drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface); }
+        const r = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface);
+        litSpotsF.push({ fromX: s.X, fromY: s.Y, toX: e2.X, toY: e2.Y, r }); }
       if (l.surface === "air") { const floorY = B.y + B.h; fctx.save(); fctx.setLineDash([5, 6]); fctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.45); fctx.lineWidth = 2; fctx.beginPath(); fctx.moveTo(tp.X, tp.Y); fctx.lineTo(tp.X, floorY); fctx.stroke(); fctx.restore();
         fctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.8); fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(tp.X - 12, tp.Y - 12); fctx.lineTo(tp.X + 12, tp.Y + 12); fctx.moveTo(tp.X + 12, tp.Y - 12); fctx.lineTo(tp.X - 12, tp.Y + 12); fctx.stroke(); fctx.beginPath(); fctx.arc(tp.X, tp.Y, 16, 0, Math.PI * 2); fctx.stroke();
         if (!dim) { fctx.fillStyle = hexA(l.color, 0.9); fctx.font = "15px sans-serif"; fctx.textBaseline = "bottom"; fctx.fillText(`${T.z.toFixed(1)}m`, tp.X + 20, tp.Y - 6); } }
@@ -762,6 +871,7 @@
     // 灯体
     state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S); const Y = isFront(f) ? Math.max(20, p.Y) : p.Y; drawFixtureMark(fctx, p.X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
       if (f.mount.type === "side" && isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${f.mount.h.toFixed(1)}m（ドラッグ）`, p.X + (f.mount.side === "shimote" ? -180 : 26), p.Y - 26); } });
+    if (state.mode === "move" && showOn("blackout")) paintBlackout(fctx, front, litSpotsF);
   }
   /* ---------- 描画: 側面図（舞台中央から下手／上手を見る） ---------- */
   function drawSide(sec) {
@@ -784,9 +894,11 @@
     // トラス（断面＝点）
     state.rig.trusses.forEach((t) => { const q = P({ x: 0, y: t.v * d.D, z: t.h }); const sel = state.selTruss === t.id && state.mode === "place"; fctx.beginPath(); fctx.arc(q.X, q.Y, sel ? 10 : 7, 0, Math.PI * 2); fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.fill(); fctx.fillStyle = "rgba(156,130,63,0.9)"; fctx.font = "14px sans-serif"; fctx.fillText(`奥から${E.trussRow(state.rig, t.id)}列目`, q.X + 12, q.Y - 14); });
     // 光線（この側の灯は濃く、他は薄く）
+    const litSpotsSide = [];   // 室内灯を消す（ブラックアウト）用
     if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!l || l.on !== true) return; const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s0 = P(S), tp = P(T); const mine = f.mount.type === "side" && f.mount.side === side; const air = l.surface === "air"; const dim = !(mine || (air && isSel(f.id))) || (state.sel.size && !isSel(f.id));
       if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
-        drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.D, squashFor("side", be.surface || "air"), false, !be.surface); }
+        const r = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.D, squashFor("side", be.surface || "air"), false, !be.surface);
+        litSpotsSide.push({ fromX: s0.X, fromY: s0.Y, toX: e2.X, toY: e2.Y, r }); }
       if (air) {
         fctx.save(); fctx.setLineDash([5, 6]); fctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.45); fctx.lineWidth = 2; fctx.beginPath(); fctx.moveTo(tp.X, tp.Y); fctx.lineTo(tp.X, B.y + B.h); fctx.stroke(); fctx.restore();
         fctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.8); fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(tp.X - 12, tp.Y - 12); fctx.lineTo(tp.X + 12, tp.Y + 12); fctx.moveTo(tp.X + 12, tp.Y - 12); fctx.lineTo(tp.X - 12, tp.Y + 12); fctx.stroke(); fctx.beginPath(); fctx.arc(tp.X, tp.Y, 16, 0, Math.PI * 2); fctx.stroke();
@@ -806,6 +918,7 @@
         const frontX = side === "shimote" ? B.x + B.w + FRONT_DX_SEC : B.x - FRONT_DX_SEC;
         fctx.globalAlpha = 0.35; drawFixtureMark(fctx, isFront(f) ? frontX : q.X, q.Y, shapeOf(f.mount), { sel: false, st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) }); fctx.globalAlpha = 1;
       } });
+    if (state.mode === "move" && showOn("blackout")) paintBlackout(fctx, front, litSpotsSide);
     // 予告
     const hv = state.hover;
     if (state.tool === "side" && hv && hv.canvas === side) { const q = { X: E.clamp(hv.X, B.x, B.x + B.w), Y: E.clamp(hv.Y, B.y, B.y + B.h) }; fctx.strokeStyle = "rgba(240,231,214,0.3)"; fctx.setLineDash([6, 6]); fctx.beginPath(); fctx.moveTo(q.X, B.y + B.h); fctx.lineTo(q.X, q.Y); fctx.stroke(); fctx.setLineDash([]); drawFixtureMark(fctx, q.X, q.Y, "diamond", { ghost: true }); fctx.fillStyle = "rgba(240,231,214,0.85)"; fctx.font = "16px sans-serif"; fctx.fillText(`${side === "shimote" ? "下手" : "上手"}の袖に立てる（クリック）`, q.X + 22, q.Y - 26); }
@@ -847,6 +960,7 @@
       fctx.strokeStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.lineWidth = sel ? 5 : 3; fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke();
       fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.7)"; fctx.font = "15px sans-serif"; fctx.fillText(`${t.label || "バトン"} 高さ${t.h.toFixed(1)}m`, b.X + 10, b.Y); });
     // 光
+    const litSpots3D = [];   // 室内灯を消す（ブラックアウト）用
     if (state.mode === "move") state.rig.fixtures.forEach((f) => {
       const l = lightOf(f.id); if (!l || l.on !== true) return;
       const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return;
@@ -858,7 +972,8 @@
         const sq = be.surface === "floor"
           ? [1, Math.min(1, ((L.bottomY - L.floorY) / d.D) / (L.pxPerM * Math.max(0.05, e2.scale || 1)))]
           : squashFor("front", be.surface || "air");
-        drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface);
+        const r = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface);
+        litSpots3D.push({ fromX: s0.X, fromY: s0.Y, toX: e2.X, toY: e2.Y, r });
       }
       if (showOn("path")) { const g = E.pathGuide(l, d);
         if (g && g.kind === "line") { fctx.save(); fctx.setLineDash([8, 6]); fctx.strokeStyle = "rgba(223,100,51,0.7)"; fctx.lineWidth = 2; const a = P(g.a ? E.pointWorld(g.a, d) : S), b = P(E.pointWorld(g.b, d)); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); fctx.restore(); } }
@@ -867,6 +982,7 @@
     // 灯体
     state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S);
       drawFixtureMark(fctx, p.X, isFront(f) ? Math.max(20, p.Y) : p.Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) }); });
+    if (state.mode === "move" && showOn("blackout")) paintBlackout(fctx, cv, litSpots3D);
     fctx.fillStyle = "rgba(240,231,214,0.4)"; fctx.font = "15px sans-serif"; fctx.textBaseline = "top";
     fctx.fillText(`${L.seat.label}から見た形（舞台スケッチの正面図と同じ描き方）`, 8, h - 24);
   }
@@ -1290,9 +1406,9 @@
     host.append(box);
   }
 
-  /* ---------- まとめて変える（選んだ灯への一括操作） ----------
+  /* ---------- まとめて変更（選んだ灯への一括操作） ----------
      本人の言葉:「サーチライトというより選んだライトの一括変更みたいなことがしたい」（2026-09-12）。
-     そこで枠の主役を「まとめて変える」にして、サーチライトはその中の<b>動きの型</b>に置いた。
+     そこで枠の主役を「まとめて変更」にして、サーチライトはその中の<b>動きの型</b>に置いた。
      ・上半分（色・広がり・当てる場所・時間・ずらす刻み）は<b>動かした瞬間に全灯へ入る</b>。軌道は作り直さない。
      ・下半分（動きの型）はボタンを押したときだけ軌道を組み直す。 */
   function bulkEach(ids, fn) {
@@ -1325,7 +1441,7 @@
     }
     const box = el("div", "slbox");
     const add = (n) => box.append(n);
-    add(el("p", "kicker", `まとめて変える（${ids.length}灯）`));
+    add(el("p", "kicker", `まとめて変更（${ids.length}灯）`));
 
     /* --- 1) いま効く一括変更 --- */
     {
@@ -1417,21 +1533,55 @@
       }, () => commit())));
     }
 
-    /* --- 2) 動きの型（サーチライト） --- */
+    /* --- 2) 動きの型（サーチライト・組） ---
+       複数選択時の「動かし方」はここへ集約する（2026-09-13 本人要望「組の動きもサーチライト機能に
+       含まれるのでまとめて」）。どちらもムービングだけが対象。最初はどちらも畳んでおく
+       （本人要望「サーチライトは最初アコーディオンで畳んでおきましょう」）。 */
+    const accHead = (text, key, onToggle) => {
+      const open = state.slOpen[key];
+      const h = el("p", "kicker sub2 accordion");
+      h.innerHTML = `<span class="accicon">${open ? "▾" : "▸"}</span>${text}`;
+      h.onclick = () => { state.slOpen[key] = !state.slOpen[key]; if (onToggle) onToggle(); else renderInspector(); };
+      add(h);
+      return open;
+    };
     if (movers.length >= 2) {
       const live = () => state.slLive === movers.join(",");
       const touch = () => { if (live()) applySearchlight(movers, true); };
       const settle = () => { if (live()) commit(); };
       const hNow = slHeight(movers);
-      add(el("p", "kicker sub2", `動きの型（サーチライト・ムービング${movers.length}灯）${live() ? "　当たっています" : ""}`));
-      add(field("振り方", seg(SL_FORMS, sp.form, (v) => { sp.form = v; if (live()) applySearchlight(movers); else renderAll(); }), true));
-      add(field(sp.form === "cone" ? "散らす幅" : "振り幅", range(0.2, 1, 0.05, sp.span, (v) => `舞台幅の${Math.round(v * 100)}%（約${(v * d.W).toFixed(1)}m）`, (v) => { sp.span = v; touch(); }, settle)));
-      /* 高さ0＝床を舐める。バトンに吊ったムービングは下にしか振れないので、これが既定（2026-09-12 本人指摘）。 */
-      // ラベルは「狙う」を外して短く。「（床を舐める）」の説明も削除（2026-09-13 本人要望）
-      add(field("高さ", range(0, d.H, 0.1, hNow, (v) => (v <= 0.05 ? "0m" : `${v.toFixed(1)}m（空中）`), (v) => { sp.hM = v; touch(); }, settle)));
-      add(field("奥行き", range(0, 1, 0.05, slDepth(), (v) => `${(v * d.D).toFixed(1)}m（${v < 0.3 ? "奥" : v > 0.7 ? "前" : "中ほど"}）`, (v) => { sp.vv = v; touch(); }, settle)));
-      if (sp.form !== "cone") add(field("切り返し", seg([["linear", "リニア"], ["ease", "イーズ"]], sp.easing, (v) => { sp.easing = v; if (live()) applySearchlight(movers); else renderAll(); })));
-      add(btn(live() ? `${movers.length}灯に当て直す` : `${movers.length}灯にこの型を当てる`, () => applySearchlight(movers), "primary"));
+      const open = accHead(`動きの型（サーチライト・ムービング${movers.length}灯）${live() ? "　当たっています" : ""}`, "search");
+      if (open) {
+        add(field("振り方", seg(SL_FORMS, sp.form, (v) => { sp.form = v; if (live()) applySearchlight(movers); else renderAll(); }), true));
+        add(field(sp.form === "cone" ? "散らす幅" : "振り幅", range(0.2, 1, 0.05, sp.span, (v) => `舞台幅の${Math.round(v * 100)}%（約${(v * d.W).toFixed(1)}m）`, (v) => { sp.span = v; touch(); }, settle)));
+        /* 高さ0＝床を舐める。バトンに吊ったムービングは下にしか振れないので、これが既定（2026-09-12 本人指摘）。 */
+        add(field("高さ", range(0, d.H, 0.1, hNow, (v) => (v <= 0.05 ? "0m" : `${v.toFixed(1)}m（空中）`), (v) => { sp.hM = v; touch(); }, settle)));
+        add(field("奥行き", range(0, 1, 0.05, slDepth(), (v) => `${(v * d.D).toFixed(1)}m（${v < 0.3 ? "奥" : v > 0.7 ? "前" : "中ほど"}）`, (v) => { sp.vv = v; touch(); }, settle)));
+        if (sp.form !== "cone") add(field("切り返し", seg([["linear", "リニア"], ["ease", "イーズ"]], sp.easing, (v) => { sp.easing = v; if (live()) applySearchlight(movers); else renderAll(); })));
+        add(btn(live() ? `${movers.length}灯に当て直す` : `${movers.length}灯にこの型を当てる`, () => applySearchlight(movers), "primary"));
+      }
+      /* 組（一緒に動く・鏡・順番・扇・交差）。任意の軌道を保ったまま「動きの関係」だけ足す、
+         サーチライトより自由度の高いもう一つの型。対象はムービングだけに揃えた
+         （固定灯は動かないので組む意味がない）。 */
+      const gs = [...new Set(movers.map((id) => groupOf(id)).filter(Boolean))];
+      const same = gs.length === 1 && gs[0].members.length === movers.length && movers.every((id) => gs[0].members.includes(id));
+      const openG = accHead(`組の動き（一緒に動く・鏡・順番・扇・交差）${same ? "　編集中" : ""}`, "group");
+      if (openG) {
+        const REL = [["together", "一緒に動く"], ["mirror", "鏡のように動く"], ["sequential", "順番に動く"], ["fan", "扇に開く・閉じる"], ["cross", "交差して入れ替わる"]];
+        if (same) {
+          const g = gs[0]; const gi = cue().groups.indexOf(g);
+          add(el("p", "hint", `組${gi + 1}「${groupName(g)}」を編集中`));
+          add(field("動き方", seg(REL, g.compose || g.relation, (v) => makeGroup(g.members, v)), true));
+          if (g.relation === "sequential") add(field("ずらす時間", range(100, 1500, 50, g.delayMs, (v) => `${(v / 1000).toFixed(2)}秒ずつ`, (v) => { g.delayMs = v; draw(); }, () => commit())));
+          const ol = el("div", "seg col");
+          g.members.forEach((m, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = `${i + 1}. ${label(m)} ${fixtureById(m).name || ""}${i > 0 ? "　▲ 前へ" : ""}`; b.onclick = () => { if (i > 0) { [g.members[i - 1], g.members[i]] = [g.members[i], g.members[i - 1]]; commit(); } }; ol.append(b); });
+          add(field("この組の灯体", ol, true));
+          add(btn("組を解散する", () => { cue().groups = cue().groups.filter((x) => x !== g); g.members.forEach((m) => setLight(m, { groupId: null })); commit("組を解散しました"); }, "small quiet"));
+        } else {
+          add(el("p", "hint", "選んだムービングで組の動きをつくる"));
+          add(field("動き方", seg(REL, null, (v) => makeGroup(movers, v)), true));
+        }
+      }
     }
     host.append(box);
   }
@@ -1605,21 +1755,9 @@
       host.append(btn("消灯にする", () => { setLight(fid, { on: false }); commit(); }, "small quiet"));
       return;
     }
-    // 複数
+    // 複数（「組の動き」も含めて renderBulk 側の「まとめて変更」枠に集約した。2026-09-13 本人要望）
     host.append(el("p", "kicker", `${ids.length}灯を選択中`));
     renderBulk(host, ids);
-    const gs = [...new Set(ids.map((id) => groupOf(id)).filter(Boolean))];
-    const same = gs.length === 1 && gs[0].members.length === ids.length && ids.every((id) => gs[0].members.includes(id));
-    if (same) { const g = gs[0]; const gi = cue().groups.indexOf(g); host.append(el("p", "hint", `組${gi + 1}「${groupName(g)}」を編集中`));
-      // 5択は横1列（2026-09-13 本人要望「スペースはあるはず」）
-      host.append(field("組の動き", seg([["together", "一緒に動く"], ["mirror", "鏡のように動く"], ["sequential", "順番に動く"], ["fan", "扇に開く・閉じる"], ["cross", "交差して入れ替わる"]], g.compose || g.relation, (v) => makeGroup(g.members, v)), true));
-      if (g.relation === "sequential") host.append(field("ずらす時間", range(100, 1500, 50, g.delayMs, (v) => `${(v / 1000).toFixed(2)}秒ずつ`, (v) => { g.delayMs = v; draw(); }, () => commit())));
-      const ol = el("div", "seg col"); g.members.forEach((m, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = `${i + 1}. ${label(m)} ${fixtureById(m).name || ""}${i > 0 ? "　▲ 前へ" : ""}`; b.onclick = () => { if (i > 0) { [g.members[i - 1], g.members[i]] = [g.members[i], g.members[i - 1]]; commit(); } }; ol.append(b); }); host.append(field("この組の灯体", ol, true));
-      host.append(btn("組を解散する", () => { cue().groups = cue().groups.filter((x) => x !== g); g.members.forEach((m) => setLight(m, { groupId: null })); commit("組を解散しました"); }, "small quiet"));
-    } else {
-      host.append(el("p", "hint", "選んだ灯体で組の動きをつくる"));
-      host.append(field("組の動き", seg([["together", "一緒に動く"], ["mirror", "鏡のように動く"], ["sequential", "順番に動く"], ["fan", "扇に開く・閉じる"], ["cross", "交差して入れ替わる"]], null, (v) => makeGroup(ids, v)), true));
-    }
   }
 
 
@@ -1866,33 +2004,20 @@
   };
   function download(blob, name) { if (!blob) return; const u = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = u; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); }
 
-  /* 先方確認用の見本読み込み（2026-09-13 本人要望「8人のサーカスを読み込んだ状態で」）。
-     URLに ?demo=circus8 が付いているときだけ、8人のサーカスの仕込みを最初から入れて開く。
-     既定の空の状態（プリセットを選ぶダイアログから始まる）はそのまま残し、確認用リンクだけの特例にする。
-     ライトの位置・トラスは「サーカス・空中芸」プリセット（22灯）をそのまま使う。演者8人の点灯・色・動きは
-     あえて未設定のまま渡す——操作性を見てもらうのが目的なので、灯体情報タブでの設定はご本人に触ってもらう。 */
+  /* 「8人のサーカス」を既定の起点にする（2026-09-13 本人要望「デフォルトで読み込んでほしい」）。
+     演者・配置・姿勢は state.scenes 側にすでに実在の見本（stage-samples/index.js の eightCircus）
+     として入っている。ここで足すのはライトの仕込み（トラス・灯体）だけ——「サーカス・空中芸」
+     プリセット（22灯）をそのまま使う。点灯・色・動きはあえて未設定のまま渡す（灯体情報タブで
+     ご本人に触ってもらう）。他のプリセットを試したいときは「よくある仕込みから選ぶ」でいつでも
+     組み直せる（この既定の読み込みを打ち消すわけではなく、単に灯体を選び直すだけ）。 */
   function loadCircus8Demo() {
     const circus = RIG_PRESETS.find((p) => p.key === "circus");
     if (!circus) return;
     circus.build();
     state.selTruss = state.rig.trusses[0] ? state.rig.trusses[0].id : null;
-    const CIRCUS_CAST = [
-      { id: "p1", name: "演者1", u: 0.50, v: 0.50, hM: 1.70, pose: "handstand", facing: 0, color: "#d9b38c" },
-      { id: "p2", name: "演者2", u: 0.25, v: 0.35, hM: 1.65, pose: "cyr", facing: 15, color: "#c68a5c" },
-      { id: "p3", name: "演者3", u: 0.75, v: 0.35, hM: 1.68, pose: "juggle", facing: -10, color: "#8c6a4a" },
-      { id: "p4", name: "演者4", u: 0.15, v: 0.62, hM: 1.60, pose: "sideflip-mid", facing: 20, color: "#e8c9a0" },
-      { id: "p5", name: "演者5", u: 0.85, v: 0.62, hM: 1.72, pose: "cartwheel-oneside-mid", facing: -20, color: "#a97a52" },
-      { id: "p6", name: "演者6", u: 0.35, v: 0.75, hM: 1.63, pose: "tuck", facing: 0, color: "#6b4a34" },
-      { id: "p7", name: "演者7", u: 0.65, v: 0.75, hM: 1.69, pose: "windmill", facing: 0, color: "#dbb48f" },
-      { id: "p8", name: "演者8", u: 0.50, v: 0.22, hM: 1.66, pose: "stand", facing: 0, color: "#b98860" },
-    ];
-    state.scenes.forEach((sc) => {
-      sc.pieces = [...CIRCUS_CAST.map((p) => ({ ...p, kind: "performer" })), ...DEFAULT_CURTAINS];
-    });
     state.history = []; state.future = []; state.dirty = false;   // 見本の状態を「元に戻す」の起点にする
-    toast(`8人のサーカス仕込み（${state.rig.fixtures.length}灯）を読み込みました`);
   }
-  if (new URLSearchParams(location.search).get("demo") === "circus8") loadCircus8Demo();
+  loadCircus8Demo();
 
   // 試作の検証用。製品では出さない（状態を外から読めるようにしておく）
   window.__RIG = { state, E, planBox, secBox, secOf, SECS };
