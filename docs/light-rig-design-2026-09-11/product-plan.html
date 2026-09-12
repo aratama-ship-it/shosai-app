@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>「照明を組む」製品実装の着手計画 — 2026-09-12</title>
+<style>
+  :root{--ink:#26221c;--paper:#f6f1e7;--line:#cfc4ae;--muted:#6e6558;--accent:#8a3b1f;--ok:#3f6b46;--hold:#8a6d1f;--card:#fffdf8;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;line-height:1.75;font-size:15px}
+  main{max-width:980px;margin:0 auto;padding:30px 20px 80px}
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:17px;margin:36px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--ink)}
+  h3{font-size:15px;margin:20px 0 6px}
+  .meta{color:var(--muted);font-size:13px;margin-bottom:22px}
+  .ask{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--accent);padding:14px 18px;margin:18px 0}
+  .ask h2{margin-top:0;border:none;padding:0;font-size:16px}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px;background:var(--card)}
+  th,td{border:1px solid var(--line);padding:7px 10px;vertical-align:top;text-align:left}
+  th{background:#ede5d3;font-weight:600}
+  pre{background:#2a2620;color:#f2eadb;padding:13px 15px;border-radius:4px;font-size:12.5px;line-height:1.6;overflow:auto}
+  code{background:#ede5d3;padding:0 4px;border-radius:2px;font-size:13px}
+  .note{font-size:13px;color:var(--muted)}
+  .stop{color:var(--accent);font-weight:600}
+  .ok{color:var(--ok);font-weight:600}
+  .guess{color:var(--hold);font-weight:600}
+  ul,ol{padding-left:22px} li{margin:5px 0}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+<h1>「照明を組む」製品実装の着手計画</h1>
+<div class="meta">2026-09-12 ／ Claude（Opus 5） ／ 前提: 試作は <a href="prototype/index.html">prototype/index.html</a>、設計は <a href="index.html">index.html</a>。<b>本体コードはまだ1行も変えていない。</b></div>
+
+<section class="ask">
+<h2 class="stop">先に報告: いま本体ファイルに触れません</h2>
+<p><b>2026-09-12 00:06 に <code>stage-sketch.js</code> と <code>index.html</code> が更新されています</b>（この計画を書いている1分前）。別のセッションが本体を編集中です。
+メモリにも「<b>本体 stage-sketch.js は M4 まで触らない</b>（同日に別セッションが本体を編集中）」という取り決めが残っています。</p>
+<p>本体を同時に触ると、2026-08-28 に実際に起きた「他セッションの作業中ファイルの巻き込み」が再発します。
+そこで<b>この計画の承認と、本体側の作業に入ってよい合図（別セッションの区切り）</b>をいただくまで、本体には触りません。</p>
+<p class="note">本体に触らずに進められる部分（新規ファイルの中身・試作での検証）は先に進められます。下の「順序」を参照。</p>
+</section>
+
+<section class="ask"><h2>訂正（2026-09-12）: この計画は「後々」のもの</h2>
+<p>本人の当面の希望は<b>製品への組み込みではなく、試作の3D画面で演者が本体と同じ立体の姿で描かれること</b>だった（読み違え）。それは試作側で対応済み（<a href="index.html">設計書 §4-11</a>・<code>prototype/stage-figure.js</code>）。
+ここに書いた窓口（<code>SHOSAI_STAGE_VIEW</code>）と新モジュール・テストは<b>本体に入っており実働も確認済み</b>だが、使う場面は製品化のとき。それまで本体の見え方には影響しない（入口が無い）。</p></section>
+<h2 class="ok">0. 進捗（2026-09-12 00:2x 時点）</h2>
+<table>
+<thead><tr><th style="width:12%">段</th><th style="width:16%">状態</th><th>結果</th></tr></thead>
+<tbody>
+<tr><td><b>M1</b> 窓口の検証</td><td class="ok">できる（確認済み）</td><td>下の「M1の結論」参照。本体は読んだだけ。</td></tr>
+<tr><td><b>M2</b> モジュール</td><td class="ok">中核まで完了</td><td><code>stage-light-rig.js</code>（318行）を新規作成。試作の幾何をそのまま移植し、擬似パースだけ外した（本体から借りるため）。<code>window.SHOSAI_STAGE_LIGHT_RIG</code> を公開。<b>まだ誰からも読み込まれていない</b>ので、本体の動きには何も影響しない。</td></tr>
+<tr><td><b>M3</b> テスト</td><td class="ok">11件 通過</td><td><code>tests/stage-light-rig.test.mjs</code>。取り付け4種の世界座標／反対側コピー／往復のゆるめる・一定／楕円と傾き／8の字／光の終点／広がりとズーム／語彙／3図の投影。<br><b>全体 1043件中 1039件 通過。</b>落ちた4件は LP のテスト（<code>try.html</code> / <code>stage.html</code> / <code>stage-public.js</code>）で、<b>別セッションが編集中のファイル</b>。こちらの変更とは無関係（触っていない）。</td></tr>
+<tr><td><b>M4</b> 本体へ接続</td><td class="ok">窓口まで完了・実働確認済み</td><td>本人の合図（2026-09-12 02:2x、本体は43分静かだったことを確認）を受けて着手。下の「M4の結果」参照。</td></tr>
+</tbody>
+</table>
+
+<h3 class="ok">M1の結論: 窓口は作れる</h3>
+<p>本体を読んで確かめた根拠。</p>
+<ol>
+<li><b>本体は論理座標で描いて、あとから倍率をかけている。</b> <code>drawStage</code> の冒頭は <code>const S = target.canvas.width / W; target.setTransform(S,0,0,S,0,0)</code>。つまり <code>W×H</code>（<code>W</code>＝メインキャンバスの幅、<code>H</code>＝720）という固定の座標系で描き、<b>描画先の大きさに依存しない</b>。任意のキャンバスへそのまま出せる。</li>
+<li><b>会場と駒の描画は画面固有の状態を見ていない。</b> ズーム（<code>zoomOf</code>）は <code>drawStage</code> 側で別に掛けている。<code>drawFrontVenue(target, L)</code> と <code>drawStagePiece(target, piece, L, leanAt)</code> は <code>L</code>（レイアウト）だけを見る。</li>
+<li><b>投影も同じ座標系。</b> <code>stagePoint(u,v,h,L)</code> が論理座標を返すので、光を重ねるときは同じ <code>S</code> を掛ければ必ず一致する。</li>
+</ol>
+<p><b>本体側に要る手当て（M4でやる）</b>: ①<code>drawStage</code> の中にインラインで書かれている駒の描画（並べ替え・保持物・名前）を <code>drawPiecesInto(target, L, leanAt)</code> として切り出す（<b>振る舞いは変えない小さなリファクタ</b>） ②<code>window.SHOSAI_STAGE_VIEW</code> を足す。</p>
+<p class="note">気をつける点: <code>refreshBases(L.size)</code> と <code>buildPaintLayer(L)</code> を描く前に呼ぶ／ズームは掛けない／首振り（<code>state.frontPan</code>）と表示トグル（<code>state.showLightsFront</code> など）は state を見るので、モーダル側から指定できるよう <code>layout(view, override)</code> の形にする（照明駒は<b>出さない</b>——別物なので）。</p>
+
+<h3 class="ok">M4の結果: 窓口は実際に動いた。本体への変更は2点だけで済んだ</h3>
+<p><b>駒描画の切り出しは要らなかった。</b> <code>drawStage</code> 自体が任意のキャンバスへ描ける作り（冒頭で <code>S = target.canvas.width / W</code> を掛ける）なので、そのまま呼べばよかった。本体への変更は次の2点だけ。</p>
+<ol>
+<li><code>drawStage(target, showSelection, view, <b>opts</b>)</code> に第4引数を足し、<code>opts.noZoom</code> のとき二本指の拡大を無視する（既定＝未指定は<b>従来どおり</b>。既存の呼び出し9か所は3引数のままなので影響なし）。</li>
+<li><code>window.SHOSAI_STAGE_VIEW</code> を追加。</li>
+</ol>
+<pre>window.SHOSAI_STAGE_VIEW.renderFront(ctx, { seat, hideLightPieces })
+  → { scale, logical:{w,h}, point(u,v,hM) → {x,y}, pxPerM, seat, size }
+   ほかに seats() / currentSeat() / scenePieces()（読むだけ）/ venueSize()</pre>
+<p><b>実働の確認（ブラウザで実測）</b>: 900×506 のキャンバスへ <code>renderFront</code> を呼ぶと、
+標本4695点のうち<b>2086点（44%）が非黒</b>＝会場と駒がちゃんと描かれた。
+<code>point(0.5,0.5,2) − point(0.5,0.5,0)</code> ＝ <b>111px</b>（＝身長2mぶん）、<code>pxPerM</code> 70.5。
+席は5種（最前・中央・後方・左右・2階）取得でき、シーンの駒（演者A・演者B・台）と会場寸法（中劇場 12×9×8m）も読めた。</p>
+<p><b>回帰なし</b>: <code>build_stage.py --check</code> 通過。テストは 1047件中 1042件 通過。落ちた5件は<b>すべて別セッションの作業中ファイル</b>由来——LP 4件（<code>try.html</code>／<code>stage.html</code>／<code>stage-public.js</code>）と、<code>index.html</code> に増えた <code>aria-label="整列の形"</code> が <code>stage-i18n.js</code> 未登録の1件。<b>こちらの3ファイル（stage-sketch.js の2点・stage-light-rig.js・worker.js）に該当文字列は無い。</b><span class="note">※「整列の形」の登録は別セッションの担当なので触っていない。</span></p>
+
+<h2>1. 何を作るか</h2>
+<p>試作で固まった「照明を組む」画面を、舞台スケッチ本体の中に作る。<b>正面図（3D）は本体の描画をそのまま使う</b>——袖幕・ホリゾント幕・舞台の立ち上がり・客席の暗がり・姿勢つきの演者・会場の種類が最初から全部出る。試作のように描き直さない（二重管理を作らない）。</p>
+
+<h3>本体の描画を使う、の中身</h3>
+<p>本体の正面図は <code>drawFrontVenue</code>（546行）＋<code>drawStagePiece</code>（121行）＋姿勢49種＋写真・塗り層・実在会場の輪郭で出来ている。これを写すのではなく、<b>本体に「描いてもらう」</b>。
+必要なのは本体側の<b>小さな窓口1つ</b>だけ。</p>
+<pre>// stage-sketch.js に足す（これだけ）
+window.SHOSAI_STAGE_VIEW = Object.freeze({
+  // 指定のキャンバスへ、正面図の会場と駒を描く。戻り値はその絵の投影関数。
+  // 光はこの投影関数を使って上に重ねる＝同じ遠近・同じ席で必ず一致する。
+  renderFront(ctx, { width, height, sceneId, seat }) {
+    const L = layout("front");            // 既存
+    drawFrontVenue(ctx, L);               // 既存（幕・ホリゾント・apron・客席・会場）
+    drawPieces(ctx, L);                   // 既存（姿勢つきの演者・セット）
+    return {
+      point: (u, v, hM) => stagePoint(u, v, hM, L),   // 既存
+      pxPerM: L.pxPerM, seat: L.seat, size: L.size,
+    };
+  },
+  seats: () => FRONT_SEATS.map(s => ({ id: s.id, label: s.label })),
+});</pre>
+<p class="note">※ 実際の引数と内部関数名は実装時に本体へ合わせる。<span class="guess">上の形で足りるかは未検証</span>——<code>layout()</code> が画面固有の状態（ズーム・首振り・選択）を見ているので、切り出せるかを最初に確かめる（下の M1）。</p>
+
+<h2>2. 触るファイル</h2>
+<table>
+<thead><tr><th style="width:26%">ファイル</th><th>何をするか</th><th style="width:14%">衝突リスク</th></tr></thead>
+<tbody>
+<tr><td><code>stage-light-rig.js</code>（新規）</td><td>試作の中身を製品の形へ。幾何・状態・描画・書き出し。<code>window.SHOSAI_STAGE_LIGHT_RIG</code> を出す（<code>stage-light-motion.js</code> と同じ作法）。</td><td class="ok">なし（新規）</td></tr>
+<tr><td><code>index.html</code></td><td>「照明を組む」モーダルの骨組みと入口ボタン。<code>&lt;script&gt;</code> 1行。</td><td class="stop">高（編集中）</td></tr>
+<tr><td><code>stage-sketch.js</code></td><td>①上の <code>SHOSAI_STAGE_VIEW</code> を出す ②入口ボタンとモーダルの開閉 ③保存データに <code>lightRig</code> / <code>lightRigCue</code> を足す</td><td class="stop">高（編集中）</td></tr>
+<tr><td><code>stage-i18n.js</code></td><td>新しい日本語テキストの TEXT／announce の SAY を追加（カバレッジテストが厳しいので漏らすと落ちる）</td><td>中</td></tr>
+<tr><td><code>worker.js</code></td><td><code>GUEST_STAGE_ASSETS</code> に <code>/stage-light-rig.js</code> を足す。<b>忘れるとゲストだけ403</b>（前回の光の動きで実際に踏んだ）</td><td class="ok">低</td></tr>
+<tr><td><code>tests/</code></td><td>幾何の純関数テスト（投影・軌道・食い違い判定）と、i18n・guest-scope の既存テストを通す</td><td class="ok">なし（新規）</td></tr>
+<tr><td><code>stage.html</code></td><td><b>生成物</b>。<code>build_stage.py</code> で再生成（直接編集しない）</td><td>—</td></tr>
+<tr><td><code>?v=</code> / <code>CACHE_NAME</code></td><td><b>触らない。</b>公開時に本人が一括で上げる</td><td>—</td></tr>
+</tbody>
+</table>
+
+<h2>3. 順序（本体に触る／触らないで分ける）</h2>
+<h3>いま進められる（本体に触らない）</h3>
+<ol>
+<li><b>M1 窓口の検証</b>: <code>layout("front")</code> と <code>drawFrontVenue</code> が、画面固有の状態（ズーム・首振り・選択・アニメ）抜きで別キャンバスへ描けるかを読んで確かめる。<b>ここが成立しないと計画全体が変わる</b>ので最初にやる。読むだけなので衝突しない。</li>
+<li><b>M2 <code>stage-light-rig.js</code> を書く</b>: 試作の rig-engine と app を製品の形へ。正面図だけは「窓口があれば使う／無ければ試作と同じ簡易描画」の2本立てにしておき、本体に繋がる前から単体で動かせるようにする。</li>
+<li><b>M3 テストを書く</b>: 投影・軌道（往復のイージング・楕円の傾き・8の字）・固定灯の食い違い判定・下手上手コピー。Nodeで回る純関数だけを対象にする。</li>
+</ol>
+<h3>本体の区切りを待つ（合図をください）</h3>
+<ol start="4">
+<li><b>M4 本体へ接続</b>: <code>SHOSAI_STAGE_VIEW</code> の追加、入口ボタン、モーダル、保存データ。<code>build_stage.py --check</code>、i18n カバレッジ、guest-scope を通す。</li>
+<li><b>M5 実機確認</b>: 1440×900 と iPad。前回踏んだ「Service Worker が古いJSを配る」を避けるため、確認前にSW解除。</li>
+</ol>
+
+<h2>4. 保存データ（試作で固まった形）</h2>
+<pre>project.lightRig = {              // ショー共通
+  schemaVersion: 1,
+  trusses: [{ id, v, h, label }],                        // バトン
+  fixtures: [{ id, no, name, kind:"moving"|"fixed",      // 灯体
+               beamDeg, mount }],                        // mount: truss/front/side/floor
+  palette: ["#3fd2b8", …],                               // 作った色（ショー共通）
+}
+scene.lightRigCue = {             // このシーン
+  lights: { [fixtureId]: { on, color, surface:"floor"|"air"|"back",
+                           beamDeg?,                      // ムービングのズーム
+                           path:{ kind:"still"|"line"|"circle"|"eight", … },
+                           speed } },
+  groups: [{ id, members, relation, compose, delayMs }],
+}</pre>
+<p class="note">既存の照明駒（<code>project.sets</code> / <code>scene.pieces</code>）は触らない。<code>scene.pieces</code> は<b>読むだけ</b>（演者・セットの下敷き）。</p>
+
+<h2>5. 判断してほしいこと</h2>
+<div class="ask">
+<ol>
+<li><b>この計画で進めてよいか。</b> 特に「本体の正面図を窓口ごしに使う（写さない）」という形。</li>
+<li><b>本体ファイルに触ってよい合図</b>をいつもらえるか。別セッションの区切りが付いたら教えてください。それまでは M1〜M3（本体に触らない範囲）を進めます。</li>
+<li><b>M1 で窓口が作れないと分かった場合</b>の代わりの手。候補は ①本体の正面図キャンバスの上に光だけを重ねる別レイヤーにする ②「照明を組む」を本体のモーダルではなく本体の1モードにする——どちらも本体への手当てが大きくなる。</li>
+</ol>
+</div>
+
+<h2>6. 持ち越し（この計画とは別）</h2>
+<ul>
+<li><b>3Dの「1階 後方」が2階席のように見える</b>——試作の数値は本体と完全一致なので本体側の課題。本体と試作を同時に直す。<a href="index.html">設計書 5-2</a>。</li>
+<li>色の変化（シーン内での色替え）・ゴボ・アイリス・ストロボは未実装。表は<a href="index.html">設計書 4-7</a>。</li>
+<li>配置ページの一覧から「下手寄り／中央」の表示が消えたまま（2列化の副作用）。</li>
+</ul>
+
+</main>
+</body>
+</html>

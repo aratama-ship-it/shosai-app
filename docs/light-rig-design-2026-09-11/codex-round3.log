@@ -1,0 +1,3118 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+model: gpt-5.6-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a08ec7-ec12-7093-a9bf-07ee7664c23f
+--------
+user
+第3ラウンド。本人が6問へ回答し、要件が2つ増えました。**空中の狙い点が必要**になったため、第1ラウンドで「床・奥壁に限定すれば成立する」とした前提が崩れます。設計を見直してください。
+
+## 本人の回答（2026-09-11）
+1. **光を当てる先: 空中が必要**。「サーカスにおいては空中芸がよくあり、それに向けて当てるというのは多々ある」。床・奥壁だけでは足りない。
+2. 灯体の設置位置はショー共通で固定。OK。
+3. 1シーンにつき1状態。OK。
+4. **灯体数は20以上がメイン**。（「下調べしてほしい」＝一般的な規模とUIの扱い方を調べる。Claudeが別途調査中）
+5. 断面図で**直接ドラッグしたい**。OK。
+6. 本体への反映は「適用して閉じる」でOK。**ただし将来、舞台スケッチ本体と同じ3D画面をこちらにも実装したい。その場合は考え直す必要があるかもしれない。リアルタイムで演者と照明を同時に動かすことが必要になる可能性がある。**
+
+## 追加要件
+7. **下手と上手のコピー**。「一般的に下手と上手の灯体の位置は同じになると思うので、下手と上手をコピーするみたいな機能が欲しい」。
+
+## 現状（第2ラウンド後に実装した試作）
+- `prototype/rig-engine.js`（純関数）＋`prototype/app.js`（UI）＋`prototype/index.html`。実際に動く。
+- 3列 196/636/292、モーダル1180×840。平面図636×382＋断面図636×150（タブ「正面（客席から）｜下手を見る｜上手を見る」。側面図は横軸＝奥行き、縦軸＝高さ、スタンドを床からの縦線で描く）。
+- データ: `project.lightRig{trusses[{id,v,h,label}], fixtures[{id,no,name,mount}]}`、mountは`{type:"truss",trussId,u}|{type:"floor",u,v}|{type:"side",side,v,h}`。
+- cue: `lights[fixtureId]{on,color,surface:"floor"|"back",path:{kind:"still",a}|{kind:"line",a,b,start}|{kind:"circle",c,r,dir,start},speed,groupId}`、`groups[{id,members,relation:"together"|"mirror"|"sequential",delayMs,compose:"fan"|"cross"}]`。
+- 幾何: 世界座標 x=(u−0.5)W, y=vD, z=h。面上の点は `surfacePoint(surface,{u,v})`（floor→z=0、back→y=0でvを高さ割合として読む）。
+
+## Claude(私)の案（壊してよい）
+**A. 当てる先を「面」から「3D点」へ**。`surface` を残しつつ、内部は常に狙い点 `{u,v,h}`（舞台空間の点）で持つ。UIの「当てる場所」は3択:
+- 床（h=0固定。平面図でu,vをドラッグ）
+- 奥の壁（v=0固定。正面図でu,高さをドラッグ）
+- **空中（高さhを指定。平面図でu,vを、断面図で高さをドラッグ）**
+軌道は「狙い点が動く面」に拘束する: 床＝水平面z=0、奥壁＝垂直面y=0、空中＝**高さhの水平面**（円は水平の円、往復は水平の線）。これで「空中の演者を追う（静止）」「その高さで往復」「その高さで円を描く」が表せる。
+**B. 空中の点は演者と結びつけたい**が、初回は自由な点とし、将来「この演者に当てる」を足す（本体の演者は u,v と姿勢・高さを持つ。空中芸の道具＝trapeze/tissue/poleは高さを持つ）。
+**C. 下手上手のコピー**: 選択した灯体（または片側のスタンド灯すべて）を反対側へ複製。u→1−u（トラス・床）、side反転（横）。動き（cue）もコピーするか選べる。コピー後は「鏡のように動く」の組にするかを聞く。
+**D. 20灯以上のUI**: 左一覧を取り付け場所で折り畳める見出しに分ける（奥トラス／2列目／床／下手／上手）。見出しに「4灯・未設定2」。絞り込み（すべて／未設定／点灯／動きあり）。番号は連番のまま、名前で検索は初回不要。
+**E. 将来の3Dとリアルタイム**: 今の2層データ（rig＝共通、cue＝シーンごと）と3D計算（世界座標で持ち、投影は表示側）は3Dでもそのまま使える。リアルタイムで演者と照明を同時に動かすのは「シーン内の時間軸」が要る＝1シーン1状態の前提を壊す。今は壊さず、将来へ逃げ道（cueにtimelineを足せる形）だけ残す。
+
+## 依頼（順番にすべて答える）
+1. **空中の狙い点の設計批評**: A案（床/奥壁/空中の3択＋内部は3D点＋軌道は面に拘束）は妥当か。空中を「高さhの水平面」に拘束するのは足りるか（斜めの面・垂直な円＝演者の周りを縦に回る、が必要になる場面はあるか）。灯体から見た「首の振り」ではなく狙い点で表す方針は、空中でも成立するか。照明さんへ渡すとき、空中の点をどう説明すれば伝わるか（「高さ4mの中央」で足りるか）。
+2. **空中を足したときの描画**: 平面図・正面図・側面図で、空中の狙い点と光線をどう描き分けるか（床に落ちる光と、空中で止まる光の区別）。空中の点は高さが分からないと平面図だけでは読めない。最小の表現は。
+3. **下手上手のコピーの仕様**: 何をコピーし、何をコピーしないか（名前・番号・動き・組）。u→1−u の鏡映で良いか。コピー後の番号の付け方。既に反対側に灯体がある場合。操作の置き場所（一覧の操作／設定欄／メニュー）。取り消し。
+4. **20灯以上の一覧UI**: 折り畳み・絞り込み・並び順・選択の一括操作。196pxで20〜40灯を扱えるか、幅や行の高さを変えるべきか。組と取り付け場所の二重の階層をどう見せるか（一覧は1つしか作れない）。
+5. **将来の3Dとリアルタイムへの逃げ道**: 今のデータ構造で「後から3D表示」「シーン内の時間軸（演者と照明を同時に動かす）」へ進めるか。今の段階で入れておくべき最小の備えは何か（入れすぎない）。1シーン1状態を後から壊すときの移行方法。
+6. **MVPの再定義**: 空中・コピー・20灯を含めた最初の2週間。何を削るか。
+7. **本人に確認すべきこと**を最大2問。
+
+出力は日本語、見出し付きMarkdown、事実と推測を分ける。ファイルは変更しない。
+codex
+今回も Sol が適切です。空中の狙い点はUI追加ではなく、軌道の座標系・書き出し文・将来の時間軸まで波及するためです。試作コードを読み取り、空中照射については照明機器メーカーの一次資料だけで補強してから、2週間に収まる境界を引き直します。ファイルは変更しません。
+exec
+/bin/zsh -lc "sed -n '1,340p' prototype/app.js" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+ succeeded in 0ms:
+/* 「照明を組む」試作 — UIと描画（判断用。製品コードではない）
+ * 仕様の根拠: ../codex-round2.answer.md（3列 196/636/292、正面図常時表示、配置と動きの2モード、
+ * クリック配置と吸着予告、組の5つの動き、未設定/消灯/点灯の区別、未適用と適用）。
+ * 幾何は rig-engine.js（純関数）。ここは状態・操作・描画だけ。 */
+(function () {
+  "use strict";
+  const E = window.RIG_ENGINE;
+  const $ = (id) => document.getElementById(id);
+
+  /* ---------- 状態 ---------- */
+  const state = {
+    mode: "place",                     // "place" | "move"
+    view: "front",                     // 断面図: "front" | "shimote" | "kamite"
+    dims: { W: 12, D: 8, H: 8 },
+    rig: { trusses: [], fixtures: [] },
+    scenes: [
+      { id: "s1", name: "登場", cue: { lights: {}, groups: [] } },
+      { id: "s2", name: "ソロ", cue: { lights: {}, groups: [] } },
+      { id: "s3", name: "フィナーレ", cue: { lights: {}, groups: [] } },
+    ],
+    sceneIndex: 0,
+    sel: new Set(), selTruss: null,
+    tool: null,                        // null | "truss" | "fixture" | "floor" | "side"
+    play: { on: false, t: 0, last: 0, raf: 0 },
+    dirty: false, history: [], future: [],
+    nextNo: 1, seq: 1,
+    hover: null, drag: null,
+    exporting: false,
+  };
+  const SPEED_SEC = { slow: 4, normal: 2, fast: 1 };
+  E.SPEED_PERIOD_MS && Object.assign(E.SPEED_PERIOD_MS, {}); // 参照のみ
+  const periodMs = (light) => (SPEED_SEC[light && light.speed] || 2) * 1000;
+  const COLORS = ["#f2ead6", "#ffd27a", "#ff7a5c", "#7ab8ff", "#8be08b", "#d98cf0"];
+
+  const scene = () => state.scenes[state.sceneIndex];
+  const cue = () => scene().cue;
+  const lightOf = (fid) => cue().lights[fid] || null;
+  const fixtureById = (id) => state.rig.fixtures.find((f) => f.id === id) || null;
+  const groupOf = (fid) => cue().groups.find((g) => g.members.includes(fid)) || null;
+  const uid = (p) => `${p}${state.seq++}`;
+
+  /* ---------- 履歴（モーダル内Undo） ---------- */
+  const snapshot = () => JSON.stringify({ rig: state.rig, scenes: state.scenes });
+  function commit(label) {
+    state.history.push(snapshot());
+    if (state.history.length > 100) state.history.shift();
+    state.future.length = 0;
+    state.dirty = true;
+    if (label) toast(label, "元に戻す", undo);
+    renderAll();
+  }
+  function restore(json) {
+    const o = JSON.parse(json);
+    state.rig = o.rig; state.scenes = o.scenes;
+    state.sel = new Set([...state.sel].filter(fixtureById));
+    if (state.selTruss && !E.trussById(state.rig, state.selTruss)) state.selTruss = null;
+    state.dirty = true;
+    renderAll();
+  }
+  function undo() { if (!state.history.length) return; state.future.push(snapshot()); restore(state.history.pop()); }
+  function redo() { if (!state.future.length) return; state.history.push(snapshot()); restore(state.future.pop()); }
+
+  /* ---------- toast / dialog ---------- */
+  let toastTimer = 0;
+  function toast(text, actionLabel, action) {
+    const el = $("toast"); el.innerHTML = ""; el.hidden = false;
+    el.append(Object.assign(document.createElement("span"), { textContent: text }));
+    if (actionLabel) { const b = document.createElement("button"); b.textContent = actionLabel; b.onclick = () => { el.hidden = true; action(); }; el.append(b); }
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 5000);
+  }
+  function dialog(html, buttons) {
+    const d = $("dialog"); d.innerHTML = ""; d.hidden = false;
+    const box = document.createElement("div"); box.className = "in"; box.innerHTML = html;
+    const acts = document.createElement("div"); acts.className = "acts";
+    buttons.forEach(([label, fn, cls]) => { const b = document.createElement("button"); b.className = "btn " + (cls || ""); b.textContent = label; b.onclick = () => { d.hidden = true; fn && fn(); }; acts.append(b); });
+    box.append(acts); d.append(box);
+  }
+
+  /* ---------- 幾何: キャンバスの箱 ---------- */
+  const plan = $("plan"), front = $("front");
+  const pctx = plan.getContext("2d"), fctx = front.getContext("2d");
+  const PLAN_BOX = { x: 130, y: 70, w: 1012, h: 620 };            // 舞台（内部px、CSSの2倍）
+  const frontBox = () => ({ x: 130, y: 36, w: 1012, h: front.height - 72 });
+  const planProj = () => E.makePlanProjector(state.dims, PLAN_BOX);
+  const frontProj = () => E.makeFrontProjector(state.dims, frontBox());
+  const sectionProj = () => (state.view === "front" ? frontProj() : E.makeSideProjector(state.dims, frontBox(), state.view));
+  const canvasPoint = (c, ev) => { const r = c.getBoundingClientRect(); return { X: (ev.clientX - r.left) * c.width / r.width, Y: (ev.clientY - r.top) * c.height / r.height }; };
+
+  const fixtureWorld = (f) => E.fixtureWorld(f, state.rig, state.dims);
+  const targetAt = (fid, t) => E.targetAt(lightOf(fid), cueWithPeriods(), fid, t, state.dims);
+  // rig-engine の周期表は固定なので、本試作の秒数（4/2/1）へ合わせるため speed を経由せず delay を秒数基準に
+  function cueWithPeriods() { return cue(); }
+
+  const lightState = (fid) => { const l = lightOf(fid); if (!l || l.on === null || l.on === undefined) return "unset"; if (l.on === false) return "off"; return (l.path && l.path.kind !== "still") ? "move" : "on"; };
+  const STATE_LABEL = { unset: "未設定", off: "消灯", on: "点灯", move: "動き" };
+
+  /* ---------- 配置の操作 ---------- */
+  function addTruss(v) {
+    const last = state.rig.trusses[state.rig.trusses.length - 1];
+    const t = E.newTruss(uid("t"), v, last ? last.h : 6, "");
+    if (!last) t.tentative = true;
+    state.rig.trusses.push(t);
+    state.selTruss = t.id; state.sel.clear();
+    commit(); toast("トラスを置きました", "元に戻す", undo);
+  }
+  function addFixture(mount) {
+    const f = E.newFixture(uid("f"), state.nextNo++, mount, "");
+    state.rig.fixtures.push(f);
+    state.sel = new Set([f.id]);
+    commit();
+    return f;
+  }
+  function removeSelected() {
+    const ids = [...state.sel]; if (!ids.length) return;
+    state.rig.fixtures = state.rig.fixtures.filter((f) => !ids.includes(f.id));
+    state.scenes.forEach((s) => { ids.forEach((id) => delete s.cue.lights[id]); s.cue.groups = s.cue.groups.map((g) => ({ ...g, members: g.members.filter((m) => !ids.includes(m)) })).filter((g) => g.members.length >= 2); });
+    state.sel.clear();
+    commit(`${ids.length === 1 ? label(ids[0]) : ids.length + "灯"}を削除しました`);
+  }
+  function duplicateSelected() {
+    const ids = [...state.sel]; if (!ids.length) return;
+    const made = [];
+    ids.forEach((id) => {
+      const f = fixtureById(id); if (!f) return;
+      const m = JSON.parse(JSON.stringify(f.mount));
+      if (m.type === "truss" || m.type === "floor") { m.u = m.u + 0.08 <= 1 ? m.u + 0.08 : Math.max(0, m.u - 0.08); }
+      else if (m.type === "side") { m.v = Math.min(1, m.v + 0.1); }
+      const nf = E.newFixture(uid("f"), state.nextNo++, m, ""); state.rig.fixtures.push(nf); made.push(nf.id);
+    });
+    state.sel = new Set(made);
+    commit(`${made.length}灯を複製しました`);
+  }
+  function spreadSelected() {
+    const fs = [...state.sel].map(fixtureById).filter((f) => f && f.mount.type === "truss");
+    const tid = fs[0] && fs[0].mount.trussId;
+    if (fs.length < 3 || fs.some((f) => f.mount.trussId !== tid)) return;
+    fs.sort((a, b) => a.mount.u - b.mount.u);
+    const a = fs[0].mount.u, b = fs[fs.length - 1].mount.u;
+    fs.forEach((f, i) => { f.mount.u = a + (b - a) * i / (fs.length - 1); });
+    commit("等間隔に並べました");
+  }
+  const canSpread = () => { const fs = [...state.sel].map(fixtureById).filter(Boolean); return fs.length >= 3 && fs.every((f) => f.mount.type === "truss" && f.mount.trussId === fs[0].mount.trussId); };
+  const label = (fid) => { const f = fixtureById(fid); return f ? `L${String(f.no).padStart(2, "0")}` : ""; };
+
+  /* ---------- 動きの操作 ---------- */
+  function setLight(fid, patch) { const c = cue(); c.lights[fid] = { ...(c.lights[fid] || E.newLightCue({ on: null })), ...patch }; }
+  function ensureOn(fid) { const l = lightOf(fid); if (!l || l.on !== true) setLight(fid, { on: true, surface: "floor", path: { kind: "still", a: { u: 0.5, v: 0.6 } }, speed: "normal", color: (l && l.color) || COLORS[0] }); }
+  function currentPoint(l) { const p = l.path || {}; return p.kind === "circle" ? p.c : (p.a || { u: 0.5, v: 0.6 }); }
+  function setKind(fid, kind) {
+    const l = lightOf(fid); if (!l) return; const p = currentPoint(l);
+    if (kind === "still") setLight(fid, { path: { kind: "still", a: { ...p } } });
+    if (kind === "line") setLight(fid, { path: { kind: "line", a: { u: E.clamp(p.u - 0.2, 0, 1), v: p.v }, b: { u: E.clamp(p.u + 0.2, 0, 1), v: p.v }, start: "a" } });
+    if (kind === "circle") setLight(fid, { path: { kind: "circle", c: { ...p }, r: 1.5, dir: "cw", start: 0 } });
+  }
+  function makeGroup(ids, relation) {
+    const c = cue();
+    c.groups = c.groups.map((g) => ({ ...g, members: g.members.filter((m) => !ids.includes(m)) })).filter((g) => g.members.length >= 2);
+    const g = { id: uid("g"), members: [...ids], relation: "together", delayMs: 400 };
+    ids.forEach(ensureOn);
+    const n = ids.length;
+    if (relation === "fan") {
+      ids.forEach((id, i) => { const off = (i - (n - 1) / 2) / Math.max(1, n - 1) * 0.7; setLight(id, { path: { kind: "line", a: { u: 0.5, v: 0.6 }, b: { u: E.clamp(0.5 + off, 0.05, 0.95), v: 0.6 }, start: "a" } }); });
+      g.relation = "together"; g.compose = "fan";
+    } else if (relation === "cross") {
+      ids.forEach((id, i) => { const left = i % 2 === 0; setLight(id, { path: { kind: "line", a: { u: left ? 0.25 : 0.75, v: 0.6 }, b: { u: left ? 0.75 : 0.25, v: 0.6 }, start: "a" } }); });
+      g.relation = "together"; g.compose = "cross";
+    } else {
+      ids.forEach((id) => { const l = lightOf(id); if (!l.path || l.path.kind === "still") setKind(id, "line"); });
+      g.relation = relation;
+    }
+    c.groups.push(g);
+    ids.forEach((id) => setLight(id, { groupId: g.id }));
+    const names = { together: "一緒に動く", mirror: "鏡のように動く", sequential: "順番に動く", fan: "扇に開く・閉じる", cross: "交差して入れ替わる" };
+    commit(`${n}灯を「${names[relation]}」にしました`);
+  }
+  function ungroup(fid) { const c = cue(); c.groups = c.groups.map((g) => ({ ...g, members: g.members.filter((m) => m !== fid) })).filter((g) => g.members.length >= 2); setLight(fid, { groupId: null }); commit(`${label(fid)}を組から外しました`); }
+  const groupName = (g) => ({ together: "一緒に動く", mirror: "鏡のように動く", sequential: "順番に動く" }[g.relation] || "") + (g.compose === "fan" ? "（扇）" : g.compose === "cross" ? "（交差）" : "");
+
+  /* ---------- 再生 ---------- */
+  function play() { if (state.play.on) return; state.play.on = true; state.play.last = 0; state.play.raf = requestAnimationFrame(tick); renderTransport(); }
+  function stop(reason) { if (!state.play.on) return; state.play.on = false; cancelAnimationFrame(state.play.raf); if (reason) toast(reason); renderTransport(); draw(); }
+  function home() { stop(); state.play.t = 0; renderTransport(); draw(); }
+  function tick(ts) { if (!state.play.on) return; if (!state.play.last) state.play.last = ts; state.play.t += ts - state.play.last; state.play.last = ts; renderTransport(); draw(); state.play.raf = requestAnimationFrame(tick); }
+  function renderTransport() { $("t-time").textContent = `${(state.play.t / 1000).toFixed(1)}秒`; $("t-playing").hidden = !state.play.on; $("t-play").disabled = state.play.on; }
+
+  /* ---------- 描画: 平面図 ---------- */
+  const isSel = (fid) => state.sel.has(fid);
+  function drawPlan() {
+    const w = plan.width, h = plan.height, P = planProj(), B = PLAN_BOX, d = state.dims;
+    pctx.clearRect(0, 0, w, h); pctx.fillStyle = "#0d0e10"; pctx.fillRect(0, 0, w, h);
+    // 袖・客席の帯
+    pctx.fillStyle = "rgba(255,255,255,0.02)"; pctx.fillRect(0, B.y, B.x, B.h); pctx.fillRect(B.x + B.w, B.y, w - B.x - B.w, B.h);
+    pctx.fillStyle = "rgba(156,130,63,0.05)"; pctx.fillRect(B.x, B.y + B.h, B.w, h - B.y - B.h);
+    // 舞台
+    pctx.fillStyle = "rgba(255,255,255,0.035)"; pctx.fillRect(B.x, B.y, B.w, B.h);
+    pctx.strokeStyle = "rgba(239,231,214,0.06)"; pctx.lineWidth = 1;
+    for (let m = 1; m < d.W; m++) { const X = B.x + m / d.W * B.w; pctx.beginPath(); pctx.moveTo(X, B.y); pctx.lineTo(X, B.y + B.h); pctx.stroke(); }
+    for (let m = 1; m < d.D; m++) { const Y = B.y + m / d.D * B.h; pctx.beginPath(); pctx.moveTo(B.x, Y); pctx.lineTo(B.x + B.w, Y); pctx.stroke(); }
+    pctx.strokeStyle = "rgba(239,231,214,0.25)"; pctx.strokeRect(B.x, B.y, B.w, B.h);
+    pctx.fillStyle = "rgba(240,231,214,0.45)"; pctx.font = "20px sans-serif"; pctx.textBaseline = "top";
+    pctx.fillText("奥", B.x + 8, B.y - 30); pctx.fillText("客席 ▼", B.x + B.w / 2 - 34, B.y + B.h + 14);
+    pctx.fillText("下手", 30, B.y + B.h / 2 - 10); pctx.fillText("上手", B.x + B.w + 30, B.y + B.h / 2 - 10);
+    pctx.fillText(`${d.W}m × ${d.D}m`, B.x + B.w - 120, B.y - 30);
+
+    // トラス
+    state.rig.trusses.forEach((t) => {
+      const Y = B.y + t.v * B.h; const sel = state.selTruss === t.id && state.mode === "place";
+      pctx.strokeStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; pctx.lineWidth = sel ? 6 : 4;
+      pctx.beginPath(); pctx.moveTo(B.x - 24, Y); pctx.lineTo(B.x + B.w + 24, Y); pctx.stroke();
+      pctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.9)"; pctx.font = "18px sans-serif";
+      pctx.fillText(`${t.label || "トラス"}　奥から${E.trussRow(state.rig, t.id)}列目・高さ約${t.h.toFixed(1)}m${t.tentative ? "（仮の高さ）" : ""}`, B.x - 24, Y - 26);
+    });
+    // 予告（ゴースト）
+    const hv = state.hover;
+    if (state.tool === "truss" && hv && hv.canvas === "plan") {
+      const Y = E.clamp(hv.Y, B.y, B.y + B.h); pctx.strokeStyle = "rgba(211,172,89,0.45)"; pctx.setLineDash([12, 8]); pctx.lineWidth = 4;
+      pctx.beginPath(); pctx.moveTo(B.x - 24, Y); pctx.lineTo(B.x + B.w + 24, Y); pctx.stroke(); pctx.setLineDash([]);
+      pctx.fillStyle = "rgba(240,231,214,0.8)"; pctx.font = "18px sans-serif"; pctx.fillText("ここにトラスを置く（クリック）", B.x + B.w / 2 - 110, Y + 10);
+    }
+    if (state.tool === "fixture" && hv && hv.canvas === "plan") {
+      const t = E.trussById(state.rig, state.selTruss);
+      if (t) {
+        const Y = B.y + t.v * B.h; const near = Math.abs(hv.Y - Y) < 60 && hv.X >= B.x && hv.X <= B.x + B.w;
+        if (near) { drawFixtureMark(pctx, hv.X, Y, "square", { ghost: true }); pctx.fillStyle = "rgba(240,231,214,0.85)"; pctx.font = "18px sans-serif"; pctx.fillText(`奥から${E.trussRow(state.rig, t.id)}列目に置く`, hv.X + 18, Y - 44); }
+        else { pctx.fillStyle = "rgba(240,231,214,0.6)"; pctx.font = "18px sans-serif"; pctx.fillText("トラスの上をクリックしてください", B.x + B.w / 2 - 130, B.y + B.h + 44); }
+      }
+    }
+    if (state.tool === "floor" && hv && hv.canvas === "plan" && inBox(hv, B)) drawFixtureMark(pctx, hv.X, hv.Y, "circle", { ghost: true });
+    if (state.tool === "side" && hv && hv.canvas === "plan") { const side = hv.X < B.x ? "shimote" : hv.X > B.x + B.w ? "kamite" : null; if (side) drawFixtureMark(pctx, side === "shimote" ? B.x - 60 : B.x + B.w + 60, E.clamp(hv.Y, B.y, B.y + B.h), "diamond", { ghost: true }); else { pctx.fillStyle = "rgba(240,231,214,0.6)"; pctx.font = "18px sans-serif"; pctx.fillText("舞台の外側（下手／上手）をクリックしてください", B.x + B.w / 2 - 190, B.y + B.h + 44); } }
+
+    // 動き: 軌道・光線
+    if (state.mode === "move") {
+      state.rig.fixtures.forEach((f) => {
+        const l = lightOf(f.id); if (!l || l.on !== true) return;
+        const S = fixtureWorld(f); if (!S) return; const T = targetAt(f.id, state.play.t); if (!T) return;
+        const s = P(S), tp = P(T); const sel = isSel(f.id); const dim = state.sel.size && !sel;
+        const g = E.pathGuide(l, state.dims);
+        if (g) { pctx.save(); pctx.setLineDash([10, 8]); pctx.strokeStyle = sel ? "rgba(223,100,51,0.9)" : "rgba(223,100,51,0.35)"; pctx.lineWidth = 2;
+          if (g.kind === "line") { const a = P(g.a), b = P(g.b); pctx.beginPath(); pctx.moveTo(a.X, a.Y); pctx.lineTo(b.X, b.Y); pctx.stroke(); }
+          else if (l.surface === "floor") { const c = P(g.c); pctx.beginPath(); pctx.ellipse(c.X, c.Y, g.r / state.dims.W * B.w, g.r / state.dims.D * B.h, 0, 0, Math.PI * 2); pctx.stroke(); }
+          pctx.restore(); }
+        if (l.surface === "floor") {
+          const grad = pctx.createLinearGradient(s.X, s.Y, tp.X, tp.Y); grad.addColorStop(0, hexA(l.color, dim ? 0.18 : 0.75)); grad.addColorStop(1, hexA(l.color, dim ? 0.03 : 0.08));
+          pctx.strokeStyle = grad; pctx.lineWidth = 14; pctx.lineCap = "round"; pctx.beginPath(); pctx.moveTo(s.X, s.Y); pctx.lineTo(tp.X, tp.Y); pctx.stroke();
+          const r = 0.7 / state.dims.W * B.w; const glow = pctx.createRadialGradient(tp.X, tp.Y, 0, tp.X, tp.Y, r * 1.6); glow.addColorStop(0, hexA(l.color, dim ? 0.15 : 0.55)); glow.addColorStop(1, hexA(l.color, 0));
+          pctx.fillStyle = glow; pctx.beginPath(); pctx.arc(tp.X, tp.Y, r * 1.6, 0, Math.PI * 2); pctx.fill();
+        } else { pctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.5); pctx.setLineDash([4, 6]); pctx.lineWidth = 3; pctx.beginPath(); pctx.moveTo(s.X, s.Y); pctx.lineTo(s.X, B.y); pctx.stroke(); pctx.setLineDash([]); }
+        // ハンドル（選択灯のみ・床面）
+        if (sel && l.surface === "floor") drawHandles(pctx, P, l, f.id);
+      });
+    }
+    // 灯体
+    state.rig.fixtures.forEach((f) => {
+      const S = fixtureWorld(f); if (!S) return; const p = P(S); const shape = f.mount.type === "truss" ? "square" : f.mount.type === "floor" ? "circle" : "diamond";
+      const X = f.mount.type === "side" ? (f.mount.side === "shimote" ? B.x - 60 : B.x + B.w + 60) : p.X;
+      drawFixtureMark(pctx, X, p.Y, shape, { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: label(f.id) });
+    });
+    // 状態
+    const st = state.tool === "truss" ? "トラス配置中" : state.tool === "fixture" ? "灯体配置中（トラス）" : state.tool === "floor" ? "灯体配置中（床）" : state.tool === "side" ? "灯体配置中（横）" : state.drag ? "ドラッグ調整中" : state.sel.size > 1 ? `${state.sel.size}灯を選択中` : "選択";
+    $("statebadge").textContent = st;
+  }
+  const inBox = (p, B) => p.X >= B.x && p.X <= B.x + B.w && p.Y >= B.y && p.Y <= B.y + B.h;
+  function hexA(hex, a) { const v = parseInt((hex || "#f2ead6").slice(1), 16); return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`; }
+  function drawFixtureMark(ctx, X, Y, shape, o) {
+    const s = 15; ctx.save();
+    const fill = o.ghost ? "rgba(240,231,214,0.35)" : o.st === "unset" ? "rgba(13,14,16,1)" : o.st === "off" ? "#2a2520" : (o.color || "#f2ead6");
+    ctx.fillStyle = fill; ctx.strokeStyle = o.sel ? "#d3ac59" : o.ghost ? "rgba(240,231,214,0.5)" : "rgba(240,231,214,0.7)"; ctx.lineWidth = o.sel ? 5 : 2;
+    ctx.beginPath();
+    if (shape === "square") ctx.rect(X - s, Y - s, s * 2, s * 2);
+    else if (shape === "circle") ctx.arc(X, Y, s, 0, Math.PI * 2);
+    else { ctx.moveTo(X, Y - s * 1.2); ctx.lineTo(X + s * 1.2, Y); ctx.lineTo(X, Y + s * 1.2); ctx.lineTo(X - s * 1.2, Y); ctx.closePath(); }
+    ctx.fill(); ctx.stroke();
+    if (o.st === "off") { ctx.strokeStyle = "rgba(240,231,214,0.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X - s, Y + s); ctx.lineTo(X + s, Y - s); ctx.stroke(); }
+    if (o.no) { ctx.fillStyle = o.sel ? "#1a1409" : "rgba(240,231,214,0.95)"; if (o.sel) { ctx.fillStyle = "#d3ac59"; ctx.fillRect(X - 22, Y + s + 4, 44, 22); ctx.fillStyle = "#1a1409"; } ctx.font = "600 16px sans-serif"; ctx.textBaseline = "top"; ctx.textAlign = "center"; ctx.fillText(o.no, X, Y + s + 6); ctx.textAlign = "left"; }
+    ctx.restore();
+  }
+  function drawHandles(ctx, P, l, fid) {
+    const p = l.path || {}; const d = state.dims;
+    const hp = (pt, txt, filled) => { const q = P(E.surfacePoint(l.surface, pt, d)); ctx.beginPath(); ctx.arc(q.X, q.Y, 12, 0, Math.PI * 2); ctx.fillStyle = filled ? "#df6433" : "#201b16"; ctx.strokeStyle = "#df6433"; ctx.lineWidth = 3; ctx.fill(); ctx.stroke(); if (txt) { ctx.fillStyle = "#efe7d6"; ctx.font = "600 16px sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "center"; ctx.fillText(txt, q.X, q.Y + 1); ctx.textAlign = "left"; } return q; };
+    if (p.kind === "line") {
+      const a = hp(p.a, "A", p.start !== "b"), b = hp(p.b, "B", p.start === "b");
+      const from = p.start === "b" ? b : a, to = p.start === "b" ? a : b; arrow(ctx, from, to);
+    } else if (p.kind === "circle") {
+      const c = hp(p.c, "", false); const rq = P(E.surfacePoint(l.surface, { u: p.c.u + p.r / d.W, v: p.c.v }, d));
+      ctx.beginPath(); ctx.arc(rq.X, rq.Y, 10, 0, Math.PI * 2); ctx.fillStyle = "#201b16"; ctx.strokeStyle = "#df6433"; ctx.lineWidth = 3; ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(240,231,214,0.8)"; ctx.font = "15px sans-serif"; ctx.fillText(`半径 ${p.r.toFixed(1)}m`, rq.X + 14, rq.Y - 8);
+      ctx.fillText(p.dir === "ccw" ? "反時計回り" : "時計回り", c.X + 14, c.Y - 22);
+    } else hp(p.a || { u: 0.5, v: 0.6 }, "", true);
+  }
+  function arrow(ctx, from, to) { const dx = to.X - from.X, dy = to.Y - from.Y, L = Math.hypot(dx, dy) || 1; const ux = dx / L, uy = dy / L; const sx = from.X + ux * 20, sy = from.Y + uy * 20, ex = from.X + ux * Math.min(L * 0.45, 90), ey = from.Y + uy * Math.min(L * 0.45, 90); ctx.strokeStyle = "#df6433"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke(); ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex - ux * 14 - uy * 9, ey - uy * 14 + ux * 9); ctx.lineTo(ex - ux * 14 + uy * 9, ey - uy * 14 - ux * 9); ctx.closePath(); ctx.fillStyle = "#df6433"; ctx.fill(); }
+
+  /* ---------- 描画: 正面図 ---------- */
+  function drawFront() {
+    const w = front.width, h = front.height, B = frontBox(), P = frontProj(), d = state.dims;
+    fctx.clearRect(0, 0, w, h); fctx.fillStyle = "#0d0e10"; fctx.fillRect(0, 0, w, h);
+    fctx.fillStyle = "rgba(255,255,255,0.03)"; fctx.fillRect(B.x, B.y, B.w, B.h);           // 奥壁
+    fctx.strokeStyle = "rgba(239,231,214,0.25)"; fctx.strokeRect(B.x, B.y, B.w, B.h);
+    fctx.fillStyle = "rgba(255,255,255,0.05)"; fctx.fillRect(0, B.y + B.h, w, h - B.y - B.h); // 床
+    fctx.fillStyle = "rgba(240,231,214,0.45)"; fctx.font = "16px sans-serif"; fctx.textBaseline = "middle";
+    [2, 4, 6, 8].filter((m) => m <= d.H).forEach((m) => { const Y = B.y + B.h - m / d.H * B.h; fctx.fillText(`${m}m`, B.x - 40, Y); fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.beginPath(); fctx.moveTo(B.x, Y); fctx.lineTo(B.x + B.w, Y); fctx.stroke(); });
+    fctx.fillText("床", B.x - 40, B.y + B.h); fctx.fillText("下手", 30, B.y + 14); fctx.fillText("上手", B.x + B.w + 30, B.y + 14);
+    // トラス
+    state.rig.trusses.forEach((t) => { const Y = B.y + B.h - t.h / d.H * B.h; const sel = state.selTruss === t.id && state.mode === "place"; fctx.strokeStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.lineWidth = sel ? 5 : 3; fctx.beginPath(); fctx.moveTo(B.x - 16, Y); fctx.lineTo(B.x + B.w + 16, Y); fctx.stroke();
+      if (sel) { fctx.fillStyle = "#d3ac59"; fctx.fillRect(B.x + B.w + 16, Y - 12, 22, 24); fctx.fillStyle = "#1a1409"; fctx.font = "600 14px sans-serif"; fctx.fillText("↕", B.x + B.w + 20, Y); fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${t.h.toFixed(1)}m（ドラッグ）`, B.x + B.w + 44, Y); } });
+    // 光線
+    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!l || l.on !== true) return; const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
+      const grad = fctx.createLinearGradient(s.X, s.Y, tp.X, tp.Y); grad.addColorStop(0, hexA(l.color, dim ? 0.18 : 0.7)); grad.addColorStop(1, hexA(l.color, dim ? 0.03 : 0.08)); fctx.strokeStyle = grad; fctx.lineWidth = 10; fctx.lineCap = "round"; fctx.beginPath(); fctx.moveTo(s.X, s.Y); fctx.lineTo(tp.X, tp.Y); fctx.stroke();
+      if (l.surface === "back") { const g = E.pathGuide(l, d); if (g) { fctx.save(); fctx.setLineDash([8, 6]); fctx.strokeStyle = "rgba(223,100,51,0.7)"; fctx.lineWidth = 2; if (g.kind === "line") { const a = P(g.a), b = P(g.b); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); } else { const c = P(g.c); fctx.beginPath(); fctx.ellipse(c.X, c.Y, g.r / d.W * B.w, g.r / d.H * B.h, 0, 0, Math.PI * 2); fctx.stroke(); } fctx.restore(); }
+        if (isSel(f.id)) drawHandles(fctx, P, l, f.id); }
+    });
+    // 灯体
+    state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S); const shape = f.mount.type === "truss" ? "square" : f.mount.type === "floor" ? "circle" : "diamond"; drawFixtureMark(fctx, p.X, p.Y, shape, { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: label(f.id) });
+      if (f.mount.type === "side" && isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${f.mount.h.toFixed(1)}m（ドラッグ）`, p.X + (f.mount.side === "shimote" ? -180 : 26), p.Y - 26); } });
+  }
+  /* ---------- 描画: 側面図（舞台中央から下手／上手を見る） ---------- */
+  function drawSide(side) {
+    const w = front.width, h = front.height, B = frontBox(), d = state.dims, P = E.makeSideProjector(d, B, side);
+    fctx.clearRect(0, 0, w, h); fctx.fillStyle = "#0d0e10"; fctx.fillRect(0, 0, w, h);
+    const backX = P({ x: 0, y: 0, z: 0 }).X, frontX = P({ x: 0, y: d.D, z: 0 }).X;
+    const left = Math.min(backX, frontX), right = Math.max(backX, frontX);
+    fctx.fillStyle = "rgba(255,255,255,0.03)"; fctx.fillRect(left, B.y, right - left, B.h);
+    fctx.fillStyle = "rgba(255,255,255,0.05)"; fctx.fillRect(0, B.y + B.h, w, h - B.y - B.h);          // 床
+    fctx.fillStyle = "rgba(156,130,63,0.35)"; fctx.fillRect(backX - (side === "shimote" ? 0 : 6), B.y, 6, B.h); // 奥壁
+    fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.lineWidth = 1;
+    for (let m = 1; m < d.D; m++) { const X = P({ x: 0, y: m, z: 0 }).X; fctx.beginPath(); fctx.moveTo(X, B.y); fctx.lineTo(X, B.y + B.h); fctx.stroke(); }
+    fctx.fillStyle = "rgba(240,231,214,0.45)"; fctx.font = "16px sans-serif"; fctx.textBaseline = "middle";
+    [2, 4, 6, 8].filter((m) => m <= d.H).forEach((m) => { const Y = B.y + B.h - m / d.H * B.h; fctx.fillText(`${m}m`, B.x - 40, Y); fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.beginPath(); fctx.moveTo(B.x, Y); fctx.lineTo(B.x + B.w, Y); fctx.stroke(); });
+    fctx.fillText("床", B.x - 40, B.y + B.h);
+    fctx.fillText("客席 ▶", side === "shimote" ? 30 : B.x + B.w + 20, B.y + 14); fctx.fillText("奥壁", side === "shimote" ? B.x + B.w + 20 : 30, B.y + 14);
+    fctx.fillText(`${side === "shimote" ? "下手" : "上手"}側のスタンド・ブーム（舞台中央から見る）`, B.x + 10, B.y - 18);
+    // トラス（断面＝点）
+    state.rig.trusses.forEach((t) => { const q = P({ x: 0, y: t.v * d.D, z: t.h }); const sel = state.selTruss === t.id && state.mode === "place"; fctx.beginPath(); fctx.arc(q.X, q.Y, sel ? 10 : 7, 0, Math.PI * 2); fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.fill(); fctx.fillStyle = "rgba(156,130,63,0.9)"; fctx.font = "14px sans-serif"; fctx.fillText(`奥から${E.trussRow(state.rig, t.id)}列目`, q.X + 12, q.Y - 14); });
+    // 光線（この側の灯は濃く、他は薄く）
+    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!l || l.on !== true) return; const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s0 = P(S), tp = P(T); const mine = f.mount.type === "side" && f.mount.side === side; const dim = !mine || (state.sel.size && !isSel(f.id));
+      const grad = fctx.createLinearGradient(s0.X, s0.Y, tp.X, tp.Y); grad.addColorStop(0, hexA(l.color, dim ? 0.12 : 0.7)); grad.addColorStop(1, hexA(l.color, dim ? 0.02 : 0.08)); fctx.strokeStyle = grad; fctx.lineWidth = mine ? 10 : 4; fctx.lineCap = "round"; fctx.beginPath(); fctx.moveTo(s0.X, s0.Y); fctx.lineTo(tp.X, tp.Y); fctx.stroke(); });
+    // 灯体: この側のスタンド灯は床からの縦線＋印。他は小さく薄く
+    state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const q = P(S);
+      if (f.mount.type === "side" && f.mount.side === side) { fctx.strokeStyle = "rgba(240,231,214,0.5)"; fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(q.X, B.y + B.h); fctx.lineTo(q.X, q.Y); fctx.stroke(); fctx.beginPath(); fctx.moveTo(q.X - 14, B.y + B.h); fctx.lineTo(q.X + 14, B.y + B.h); fctx.stroke();
+        drawFixtureMark(fctx, q.X, q.Y, "diamond", { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: label(f.id) });
+        if (isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${f.mount.h.toFixed(1)}m・${f.mount.v < 0.4 ? "奥寄り" : f.mount.v > 0.6 ? "手前寄り" : "中ほど"}（ドラッグで奥行きと高さ）`, q.X + 22, q.Y - 26); } }
+
+exec
+/bin/zsh -lc "sed -n '1,280p' prototype/rig-engine.js" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+exec
+/bin/zsh -lc 'rg -n "rig-|fixture|group|filter|section|plan|front|side|export|dirty|apply|undo|surface|path" prototype/index.html prototype/app.js prototype/rig-engine.js' in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+ succeeded in 0ms:
+/* 「照明を組む」試作 — 幾何と時間の純関数（DOM・描画を持たない）
+ *
+ * 設計の根拠: ../codex-round1.answer.md（2026-09-11 第1ラウンド）
+ *   - 灯体の設置位置はショー共通（rig）、点灯・色・動きはシーンごと（cue）
+ *   - 一灯の軌道が基本。扇・交差・順には「組」の構成として表す
+ *   - 位置は3D（幅W・奥行きD・高さ）で計算してから平面図・正面図へ投影する
+ *   - 当てる面は床または奥壁。空中の狙い点は今回持たない（データは拡張できる形）
+ *   - 「向かい合わせ」は半周期ずらしではなく軌道の鏡映
+ *
+ * 座標の契約（本体 stage-sketch.js と同じ）:
+ *   u: 左右 0..1（0=下手側=客席から見て左、1=上手側=右）
+ *   v: 奥行き 0..1（0=最奥、1=最前＝客席側）
+ *   世界座標: x=(u-0.5)*W [m], y=v*D [m], z=高さ [m]
+ *
+ * 機材の型番・回路・DMX・照度は持たない（案を照明担当者へ渡すための道具）。
+ */
+(function (root) {
+  "use strict";
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const finite = (v, f) => (Number.isFinite(Number(v)) ? Number(v) : f);
+
+  /* ---------- 既定 ---------- */
+  const DEFAULT_DIMS = Object.freeze({ W: 12, D: 8, H: 8 });
+  // 床置きの光源の高さ。実測ではなく描画上の仮定（光線が床面上を走らないため）
+  const FLOOR_FIXTURE_Z = 0.3;
+  // 横（ブーム）の光源は舞台端の少し外
+  const SIDE_OFFSET_M = 0.4;
+  const SPEED_PERIOD_MS = Object.freeze({ slow: 6000, normal: 3000, fast: 1500 });
+
+  /* ---------- rig（ショー共通） ---------- */
+  const newTruss = (id, v, h, label) => ({ id, v: clamp(finite(v, 0.2), 0, 1), h: clamp(finite(h, 6), 2, 14), label: label || "" });
+
+  // mount: {type:"truss", trussId, u} | {type:"floor", u, v} | {type:"side", side:"kamite"|"shimote", v, h}
+  const newFixture = (id, no, mount, name) => ({ id, no, name: name || "", mount });
+
+  const trussById = (rig, id) => (rig.trusses || []).find((t) => t.id === id) || null;
+
+  // 奥から何段目（1始まり）。表示専用。保存はしない
+  const trussRow = (rig, trussId) => {
+    const sorted = [...(rig.trusses || [])].sort((a, b) => a.v - b.v);
+    const i = sorted.findIndex((t) => t.id === trussId);
+    return i < 0 ? null : i + 1;
+  };
+
+  // 灯体の世界座標（光源）
+  const fixtureWorld = (fixture, rig, dims = DEFAULT_DIMS) => {
+    const m = fixture.mount || {};
+    if (m.type === "truss") {
+      const t = trussById(rig, m.trussId);
+      if (!t) return null;
+      return { x: (clamp(finite(m.u, 0.5), 0, 1) - 0.5) * dims.W, y: t.v * dims.D, z: t.h };
+    }
+    if (m.type === "floor") {
+      return { x: (clamp(finite(m.u, 0.5), 0, 1) - 0.5) * dims.W, y: clamp(finite(m.v, 0.5), 0, 1) * dims.D, z: FLOOR_FIXTURE_Z };
+    }
+    if (m.type === "side") {
+      const sign = m.side === "shimote" ? -1 : 1; // 下手=左=負、上手=右=正
+      return { x: sign * (dims.W / 2 + SIDE_OFFSET_M), y: clamp(finite(m.v, 0.5), 0, 1) * dims.D, z: clamp(finite(m.h, 2), 0.3, 14) };
+    }
+    return null;
+  };
+
+  /* ---------- cue（シーンごと） ----------
+   * cue.lights[fixtureId] = {
+   *   on: true|false|null(未設定),
+   *   color: "#rrggbb",
+   *   surface: "floor"|"back",
+   *   path: {kind:"still", a:{u,v}}                       // 静止（floor: u,v / back: u,h→vに正規化して持つ）
+   *       | {kind:"line", a:{u,v}, b:{u,v}, start:"a"|"b"} // 往復
+   *       | {kind:"circle", c:{u,v}, r:number(m), dir:"cw"|"ccw", start:number(0..1)}
+   *   speed: "slow"|"normal"|"fast",
+   *   groupId: string|null
+   * }
+   * cue.groups = [{ id, members:[fixtureId...](順序あり), relation:"together"|"mirror"|"sequential", delayMs }]
+   * 面が back のときは path の v を「高さの割合 0..1（0=床、1=天井）」として読む。
+   */
+  const newLightCue = (over = {}) => ({
+    on: true, color: "#f2ead6", surface: "floor",
+    path: { kind: "still", a: { u: 0.5, v: 0.5 } },
+    speed: "normal", groupId: null, ...over,
+  });
+
+  const periodMs = (light) => SPEED_PERIOD_MS[light && light.speed] || SPEED_PERIOD_MS.normal;
+
+  const tri = (t) => { const m = ((t % 1) + 1) % 1; return m < 0.5 ? m * 2 : 2 - m * 2; };
+  const saw = (t) => ((t % 1) + 1) % 1;
+
+  /* 組の効果を位相へ反映する。
+   *   together   … 全員同じ位相
+   *   sequential … メンバー順に delayMs ずつ遅らせる
+   *   mirror     … 先頭以外は軌道を鏡映（line: 端を入れ替え／circle: 回転を反転・中心は保持）
+   * 返り値: { phaseShiftMs, mirror:boolean }
+   */
+  const groupEffect = (cue, fixtureId) => {
+    const g = (cue.groups || []).find((x) => x.members.includes(fixtureId));
+    if (!g) return { phaseShiftMs: 0, mirror: false };
+    const idx = g.members.indexOf(fixtureId);
+    if (g.relation === "sequential") return { phaseShiftMs: -idx * finite(g.delayMs, 400), mirror: false };
+    if (g.relation === "mirror") return { phaseShiftMs: 0, mirror: idx % 2 === 1 };
+    return { phaseShiftMs: 0, mirror: false };
+  };
+
+  // 面上の正規化点 → 世界座標
+  const surfacePoint = (surface, p, dims) => (
+    surface === "back"
+      ? { x: (clamp(finite(p.u, 0.5), 0, 1) - 0.5) * dims.W, y: 0, z: clamp(finite(p.v, 0.5), 0, 1) * dims.H }
+      : { x: (clamp(finite(p.u, 0.5), 0, 1) - 0.5) * dims.W, y: clamp(finite(p.v, 0.5), 0, 1) * dims.D, z: 0 }
+  );
+
+  /* 時刻 tMs における光の当たる先（世界座標）。未設定・消灯は null。 */
+  const targetAt = (light, cue, fixtureId, tMs, dims = DEFAULT_DIMS) => {
+    if (!light || light.on !== true) return null;
+    const path = light.path || { kind: "still", a: { u: 0.5, v: 0.5 } };
+    const { phaseShiftMs, mirror } = groupEffect(cue, fixtureId);
+    const T = periodMs(light);
+    const t = (tMs + phaseShiftMs) / T;
+    if (path.kind === "line") {
+      let p = tri(t);
+      if (path.start === "b") p = 1 - p;
+      if (mirror) p = 1 - p;
+      const a = surfacePoint(light.surface, path.a, dims);
+      const b = surfacePoint(light.surface, path.b, dims);
+      return { x: a.x + (b.x - a.x) * p, y: a.y + (b.y - a.y) * p, z: a.z + (b.z - a.z) * p, phase: p };
+    }
+    if (path.kind === "circle") {
+      const c = surfacePoint(light.surface, path.c, dims);
+      const r = clamp(finite(path.r, 1.5), 0.2, Math.max(dims.W, dims.D));
+      let ang = saw(t + finite(path.start, 0)) * Math.PI * 2;
+      if (path.dir === "ccw") ang = -ang;
+      if (mirror) ang = Math.PI - ang;
+      // 床: xy平面の円。奥壁: xz平面の円
+      if (light.surface === "back") return { x: c.x + Math.cos(ang) * r, y: 0, z: Math.max(0, c.z + Math.sin(ang) * r), phase: saw(t) };
+      return { x: c.x + Math.cos(ang) * r, y: clamp(c.y + Math.sin(ang) * r, 0, dims.D), z: 0, phase: saw(t) };
+    }
+    const a = surfacePoint(light.surface, path.a, dims);
+    return { ...a, phase: 0 };
+  };
+
+  /* 軌道の目安（破線用）。時刻に依存しない。 */
+  const pathGuide = (light, dims = DEFAULT_DIMS) => {
+    if (!light) return null;
+    const path = light.path;
+    if (!path || path.kind === "still") return null;
+    if (path.kind === "line") return { kind: "line", a: surfacePoint(light.surface, path.a, dims), b: surfacePoint(light.surface, path.b, dims) };
+    if (path.kind === "circle") return { kind: "circle", c: surfacePoint(light.surface, path.c, dims), r: clamp(finite(path.r, 1.5), 0.2, 20), surface: light.surface };
+    return null;
+  };
+
+  /* ---------- 投影 ----------
+   * plan: 上から。x→右、y(奥行き)→下（本体と同じ「画面の下ほど手前」）
+   * front: 客席から。x→右、z→上。奥行きは表現しない（正射影）。
+   */
+  const makePlanProjector = (dims, box) => {
+    const sx = box.w / dims.W, sy = box.h / dims.D;
+    return (p) => ({ X: box.x + (p.x + dims.W / 2) * sx, Y: box.y + p.y * sy });
+  };
+  const makeFrontProjector = (dims, box) => {
+    const sx = box.w / dims.W, sz = box.h / dims.H;
+    return (p) => ({ X: box.x + (p.x + dims.W / 2) * sx, Y: box.y + box.h - p.z * sz });
+  };
+
+  /* 側面図: 舞台中央からその側（下手/上手）を見る。横軸＝奥行き、縦軸＝高さ。
+   * 下手を見ると客席は左手・奥は右手。上手を見ると客席は右手・奥は左手。 */
+  const makeSideProjector = (dims, box, side) => {
+    const sz = box.h / dims.H;
+    return (p) => {
+      const t = p.y / dims.D;
+      const X = box.x + (side === "shimote" ? (1 - t) : t) * box.w;
+      return { X, Y: box.y + box.h - p.z * sz };
+    };
+  };
+  const sideToVH = (dims, box, side, X, Y) => {
+    const t = clamp((X - box.x) / box.w, 0, 1);
+    return { v: side === "shimote" ? 1 - t : t, h: clamp((box.y + box.h - Y) / box.h * dims.H, 0, dims.H) };
+  };
+
+  // 逆投影（平面図のクリック→u,v）
+  const planToUV = (dims, box, X, Y) => ({
+    u: clamp((X - box.x) / box.w, 0, 1),
+    v: clamp((Y - box.y) / box.h, 0, 1),
+  });
+  const frontToUH = (dims, box, X, Y) => ({
+    u: clamp((X - box.x) / box.w, 0, 1),
+    h: clamp((box.y + box.h - Y) / box.h * dims.H, 0, dims.H),
+  });
+
+  /* ---------- 説明文（照明さんへ渡す一行） ---------- */
+  const describeMount = (fixture, rig) => {
+    const m = fixture.mount || {};
+    const lr = (u) => (u < 0.4 ? "下手寄り" : u > 0.6 ? "上手寄り" : "中央");
+    if (m.type === "truss") {
+      const t = trussById(rig, m.trussId);
+      const row = trussRow(rig, m.trussId);
+      return t ? `奥から${row}列目のトラス（高さ約${Math.round(t.h)}m）・${lr(m.u)}` : "トラス（不明）";
+    }
+    if (m.type === "floor") return `床置き・${lr(m.u)}・${m.v < 0.4 ? "奥" : m.v > 0.6 ? "手前" : "中ほど"}`;
+    if (m.type === "side") return `${m.side === "shimote" ? "下手" : "上手"}の横（高さ約${Math.round(m.h)}m）・${m.v < 0.4 ? "奥寄り" : m.v > 0.6 ? "手前寄り" : "中ほど"}`;
+    return "取り付け未設定";
+  };
+
+  const describeCue = (light) => {
+    if (!light || light.on === null || light.on === undefined) return "未設定";
+    if (light.on === false) return "消灯";
+    const face = light.surface === "back" ? "奥壁" : "床";
+    const sp = { slow: "ゆっくり", normal: "普通の速さ", fast: "速く" }[light.speed] || "普通の速さ";
+    const path = light.path || {};
+    const pos = (p) => `${p.u < 0.4 ? "下手" : p.u > 0.6 ? "上手" : "中央"}${light.surface === "back" ? (p.v > 0.6 ? "上" : p.v < 0.4 ? "下" : "") : (p.v < 0.4 ? "奥" : p.v > 0.6 ? "手前" : "")}`;
+    if (path.kind === "line") return `${face}の${pos(path.a)}〜${pos(path.b)}を往復（${sp}）。${path.start === "b" ? pos(path.b) : pos(path.a)}から開始`;
+    if (path.kind === "circle") return `${face}の${pos(path.c)}を中心に半径約${Math.round(path.r * 10) / 10}mで${path.dir === "ccw" ? "反時計回り" : "時計回り"}（${sp}）`;
+    return `${face}の${pos(path.a || { u: 0.5, v: 0.5 })}を静止で当てる`;
+  };
+
+  root.RIG_ENGINE = Object.freeze({
+    DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, SPEED_PERIOD_MS,
+    clamp, finite,
+    newTruss, newFixture, trussById, trussRow, fixtureWorld,
+    newLightCue, periodMs, groupEffect, surfacePoint, targetAt, pathGuide,
+    makePlanProjector, makeFrontProjector, makeSideProjector, planToUV, frontToUH, sideToVH,
+    describeMount, describeCue,
+  });
+})(typeof window !== "undefined" ? window : globalThis);
+
+ succeeded in 0ms:
+prototype/index.html:27:  .dirty{font-size:10.5px;color:var(--rust-ink);letter-spacing:.06em;min-width:9em;text-align:right}
+prototype/index.html:28:  .dirty.ok{color:var(--brass)}
+prototype/index.html:65:  #plan{height:382px} #front{height:150px} #front.big{height:240px}
+prototype/index.html:111:    <div class="modes" role="group" aria-label="モード">
+prototype/index.html:116:      <button type="button" class="btn small quiet" id="undo" title="元に戻す（⌘Z）">元に戻す</button>
+prototype/index.html:118:      <span class="dirty" id="dirty"></span>
+prototype/index.html:119:      <button type="button" class="btn primary" id="apply">適用して閉じる</button>
+prototype/index.html:126:    <section class="col">
+prototype/index.html:140:    </section>
+prototype/index.html:143:    <section class="col">
+prototype/index.html:158:        <canvas id="plan" width="1272" height="820"></canvas>
+prototype/index.html:159:        <div class="viewtabs" role="group" aria-label="断面図の向き">
+prototype/index.html:160:          <button type="button" data-view="front" aria-pressed="true">正面（客席から）</button>
+prototype/index.html:164:        <canvas id="front" width="1272" height="300"></canvas>
+prototype/index.html:176:    </section>
+prototype/index.html:179:    <section class="col">
+prototype/index.html:182:        <button type="button" class="btn" id="export" style="width:100%">動画・図・説明を書き出す</button>
+prototype/index.html:186:    </section>
+prototype/index.html:192:<script src="rig-engine.js"></script>
+prototype/rig-engine.js:34:  // mount: {type:"truss", trussId, u} | {type:"floor", u, v} | {type:"side", side:"kamite"|"shimote", v, h}
+prototype/rig-engine.js:47:  const fixtureWorld = (fixture, rig, dims = DEFAULT_DIMS) => {
+prototype/rig-engine.js:48:    const m = fixture.mount || {};
+prototype/rig-engine.js:57:    if (m.type === "side") {
+prototype/rig-engine.js:58:      const sign = m.side === "shimote" ? -1 : 1; // 下手=左=負、上手=右=正
+prototype/rig-engine.js:65:   * cue.lights[fixtureId] = {
+prototype/rig-engine.js:68:   *   surface: "floor"|"back",
+prototype/rig-engine.js:69:   *   path: {kind:"still", a:{u,v}}                       // 静止（floor: u,v / back: u,h→vに正規化して持つ）
+prototype/rig-engine.js:73:   *   groupId: string|null
+prototype/rig-engine.js:75:   * cue.groups = [{ id, members:[fixtureId...](順序あり), relation:"together"|"mirror"|"sequential", delayMs }]
+prototype/rig-engine.js:76:   * 面が back のときは path の v を「高さの割合 0..1（0=床、1=天井）」として読む。
+prototype/rig-engine.js:79:    on: true, color: "#f2ead6", surface: "floor",
+prototype/rig-engine.js:80:    path: { kind: "still", a: { u: 0.5, v: 0.5 } },
+prototype/rig-engine.js:81:    speed: "normal", groupId: null, ...over,
+prototype/rig-engine.js:95:  const groupEffect = (cue, fixtureId) => {
+prototype/rig-engine.js:96:    const g = (cue.groups || []).find((x) => x.members.includes(fixtureId));
+prototype/rig-engine.js:98:    const idx = g.members.indexOf(fixtureId);
+prototype/rig-engine.js:105:  const surfacePoint = (surface, p, dims) => (
+prototype/rig-engine.js:106:    surface === "back"
+prototype/rig-engine.js:112:  const targetAt = (light, cue, fixtureId, tMs, dims = DEFAULT_DIMS) => {
+prototype/rig-engine.js:114:    const path = light.path || { kind: "still", a: { u: 0.5, v: 0.5 } };
+prototype/rig-engine.js:115:    const { phaseShiftMs, mirror } = groupEffect(cue, fixtureId);
+prototype/rig-engine.js:118:    if (path.kind === "line") {
+prototype/rig-engine.js:120:      if (path.start === "b") p = 1 - p;
+prototype/rig-engine.js:122:      const a = surfacePoint(light.surface, path.a, dims);
+prototype/rig-engine.js:123:      const b = surfacePoint(light.surface, path.b, dims);
+prototype/rig-engine.js:126:    if (path.kind === "circle") {
+prototype/rig-engine.js:127:      const c = surfacePoint(light.surface, path.c, dims);
+prototype/rig-engine.js:128:      const r = clamp(finite(path.r, 1.5), 0.2, Math.max(dims.W, dims.D));
+prototype/rig-engine.js:129:      let ang = saw(t + finite(path.start, 0)) * Math.PI * 2;
+prototype/rig-engine.js:130:      if (path.dir === "ccw") ang = -ang;
+prototype/rig-engine.js:133:      if (light.surface === "back") return { x: c.x + Math.cos(ang) * r, y: 0, z: Math.max(0, c.z + Math.sin(ang) * r), phase: saw(t) };
+prototype/rig-engine.js:136:    const a = surfacePoint(light.surface, path.a, dims);
+prototype/rig-engine.js:141:  const pathGuide = (light, dims = DEFAULT_DIMS) => {
+prototype/rig-engine.js:143:    const path = light.path;
+prototype/rig-engine.js:144:    if (!path || path.kind === "still") return null;
+prototype/rig-engine.js:145:    if (path.kind === "line") return { kind: "line", a: surfacePoint(light.surface, path.a, dims), b: surfacePoint(light.surface, path.b, dims) };
+prototype/rig-engine.js:146:    if (path.kind === "circle") return { kind: "circle", c: surfacePoint(light.surface, path.c, dims), r: clamp(finite(path.r, 1.5), 0.2, 20), surface: light.surface };
+prototype/rig-engine.js:151:   * plan: 上から。x→右、y(奥行き)→下（本体と同じ「画面の下ほど手前」）
+prototype/rig-engine.js:152:   * front: 客席から。x→右、z→上。奥行きは表現しない（正射影）。
+prototype/rig-engine.js:165:  const makeSideProjector = (dims, box, side) => {
+prototype/rig-engine.js:169:      const X = box.x + (side === "shimote" ? (1 - t) : t) * box.w;
+prototype/rig-engine.js:173:  const sideToVH = (dims, box, side, X, Y) => {
+prototype/rig-engine.js:175:    return { v: side === "shimote" ? 1 - t : t, h: clamp((box.y + box.h - Y) / box.h * dims.H, 0, dims.H) };
+prototype/rig-engine.js:179:  const planToUV = (dims, box, X, Y) => ({
+prototype/rig-engine.js:183:  const frontToUH = (dims, box, X, Y) => ({
+prototype/rig-engine.js:189:  const describeMount = (fixture, rig) => {
+prototype/rig-engine.js:190:    const m = fixture.mount || {};
+prototype/rig-engine.js:198:    if (m.type === "side") return `${m.side === "shimote" ? "下手" : "上手"}の横（高さ約${Math.round(m.h)}m）・${m.v < 0.4 ? "奥寄り" : m.v > 0.6 ? "手前寄り" : "中ほど"}`;
+prototype/rig-engine.js:205:    const face = light.surface === "back" ? "奥壁" : "床";
+prototype/rig-engine.js:207:    const path = light.path || {};
+prototype/rig-engine.js:208:    const pos = (p) => `${p.u < 0.4 ? "下手" : p.u > 0.6 ? "上手" : "中央"}${light.surface === "back" ? (p.v > 0.6 ? "上" : p.v < 0.4 ? "下" : "") : (p.v < 0.4 ? "奥" : p.v > 0.6 ? "手前" : "")}`;
+prototype/rig-engine.js:209:    if (path.kind === "line") return `${face}の${pos(path.a)}〜${pos(path.b)}を往復（${sp}）。${path.start === "b" ? pos(path.b) : pos(path.a)}から開始`;
+prototype/rig-engine.js:210:    if (path.kind === "circle") return `${face}の${pos(path.c)}を中心に半径約${Math.round(path.r * 10) / 10}mで${path.dir === "ccw" ? "反時計回り" : "時計回り"}（${sp}）`;
+prototype/rig-engine.js:211:    return `${face}の${pos(path.a || { u: 0.5, v: 0.5 })}を静止で当てる`;
+prototype/rig-engine.js:217:    newTruss, newFixture, trussById, trussRow, fixtureWorld,
+prototype/rig-engine.js:218:    newLightCue, periodMs, groupEffect, surfacePoint, targetAt, pathGuide,
+prototype/rig-engine.js:219:    makePlanProjector, makeFrontProjector, makeSideProjector, planToUV, frontToUH, sideToVH,
+prototype/app.js:4: * 幾何は rig-engine.js（純関数）。ここは状態・操作・描画だけ。 */
+prototype/app.js:13:    view: "front",                     // 断面図: "front" | "shimote" | "kamite"
+prototype/app.js:15:    rig: { trusses: [], fixtures: [] },
+prototype/app.js:17:      { id: "s1", name: "登場", cue: { lights: {}, groups: [] } },
+prototype/app.js:18:      { id: "s2", name: "ソロ", cue: { lights: {}, groups: [] } },
+prototype/app.js:19:      { id: "s3", name: "フィナーレ", cue: { lights: {}, groups: [] } },
+prototype/app.js:23:    tool: null,                        // null | "truss" | "fixture" | "floor" | "side"
+prototype/app.js:25:    dirty: false, history: [], future: [],
+prototype/app.js:28:    exporting: false,
+prototype/app.js:38:  const fixtureById = (id) => state.rig.fixtures.find((f) => f.id === id) || null;
+prototype/app.js:39:  const groupOf = (fid) => cue().groups.find((g) => g.members.includes(fid)) || null;
+prototype/app.js:48:    state.dirty = true;
+prototype/app.js:49:    if (label) toast(label, "元に戻す", undo);
+prototype/app.js:55:    state.sel = new Set([...state.sel].filter(fixtureById));
+prototype/app.js:57:    state.dirty = true;
+prototype/app.js:60:  function undo() { if (!state.history.length) return; state.future.push(snapshot()); restore(state.history.pop()); }
+prototype/app.js:80:  const plan = $("plan"), front = $("front");
+prototype/app.js:81:  const pctx = plan.getContext("2d"), fctx = front.getContext("2d");
+prototype/app.js:83:  const frontBox = () => ({ x: 130, y: 36, w: 1012, h: front.height - 72 });
+prototype/app.js:84:  const planProj = () => E.makePlanProjector(state.dims, PLAN_BOX);
+prototype/app.js:85:  const frontProj = () => E.makeFrontProjector(state.dims, frontBox());
+prototype/app.js:86:  const sectionProj = () => (state.view === "front" ? frontProj() : E.makeSideProjector(state.dims, frontBox(), state.view));
+prototype/app.js:89:  const fixtureWorld = (f) => E.fixtureWorld(f, state.rig, state.dims);
+prototype/app.js:91:  // rig-engine の周期表は固定なので、本試作の秒数（4/2/1）へ合わせるため speed を経由せず delay を秒数基準に
+prototype/app.js:94:  const lightState = (fid) => { const l = lightOf(fid); if (!l || l.on === null || l.on === undefined) return "unset"; if (l.on === false) return "off"; return (l.path && l.path.kind !== "still") ? "move" : "on"; };
+prototype/app.js:104:    commit(); toast("トラスを置きました", "元に戻す", undo);
+prototype/app.js:108:    state.rig.fixtures.push(f);
+prototype/app.js:115:    state.rig.fixtures = state.rig.fixtures.filter((f) => !ids.includes(f.id));
+prototype/app.js:116:    state.scenes.forEach((s) => { ids.forEach((id) => delete s.cue.lights[id]); s.cue.groups = s.cue.groups.map((g) => ({ ...g, members: g.members.filter((m) => !ids.includes(m)) })).filter((g) => g.members.length >= 2); });
+prototype/app.js:124:      const f = fixtureById(id); if (!f) return;
+prototype/app.js:127:      else if (m.type === "side") { m.v = Math.min(1, m.v + 0.1); }
+prototype/app.js:128:      const nf = E.newFixture(uid("f"), state.nextNo++, m, ""); state.rig.fixtures.push(nf); made.push(nf.id);
+prototype/app.js:134:    const fs = [...state.sel].map(fixtureById).filter((f) => f && f.mount.type === "truss");
+prototype/app.js:142:  const canSpread = () => { const fs = [...state.sel].map(fixtureById).filter(Boolean); return fs.length >= 3 && fs.every((f) => f.mount.type === "truss" && f.mount.trussId === fs[0].mount.trussId); };
+prototype/app.js:143:  const label = (fid) => { const f = fixtureById(fid); return f ? `L${String(f.no).padStart(2, "0")}` : ""; };
+prototype/app.js:147:  function ensureOn(fid) { const l = lightOf(fid); if (!l || l.on !== true) setLight(fid, { on: true, surface: "floor", path: { kind: "still", a: { u: 0.5, v: 0.6 } }, speed: "normal", color: (l && l.color) || COLORS[0] }); }
+prototype/app.js:148:  function currentPoint(l) { const p = l.path || {}; return p.kind === "circle" ? p.c : (p.a || { u: 0.5, v: 0.6 }); }
+prototype/app.js:151:    if (kind === "still") setLight(fid, { path: { kind: "still", a: { ...p } } });
+prototype/app.js:152:    if (kind === "line") setLight(fid, { path: { kind: "line", a: { u: E.clamp(p.u - 0.2, 0, 1), v: p.v }, b: { u: E.clamp(p.u + 0.2, 0, 1), v: p.v }, start: "a" } });
+prototype/app.js:153:    if (kind === "circle") setLight(fid, { path: { kind: "circle", c: { ...p }, r: 1.5, dir: "cw", start: 0 } });
+prototype/app.js:157:    c.groups = c.groups.map((g) => ({ ...g, members: g.members.filter((m) => !ids.includes(m)) })).filter((g) => g.members.length >= 2);
+prototype/app.js:162:      ids.forEach((id, i) => { const off = (i - (n - 1) / 2) / Math.max(1, n - 1) * 0.7; setLight(id, { path: { kind: "line", a: { u: 0.5, v: 0.6 }, b: { u: E.clamp(0.5 + off, 0.05, 0.95), v: 0.6 }, start: "a" } }); });
+prototype/app.js:165:      ids.forEach((id, i) => { const left = i % 2 === 0; setLight(id, { path: { kind: "line", a: { u: left ? 0.25 : 0.75, v: 0.6 }, b: { u: left ? 0.75 : 0.25, v: 0.6 }, start: "a" } }); });
+prototype/app.js:168:      ids.forEach((id) => { const l = lightOf(id); if (!l.path || l.path.kind === "still") setKind(id, "line"); });
+prototype/app.js:171:    c.groups.push(g);
+prototype/app.js:172:    ids.forEach((id) => setLight(id, { groupId: g.id }));
+prototype/app.js:176:  function ungroup(fid) { const c = cue(); c.groups = c.groups.map((g) => ({ ...g, members: g.members.filter((m) => m !== fid) })).filter((g) => g.members.length >= 2); setLight(fid, { groupId: null }); commit(`${label(fid)}を組から外しました`); }
+prototype/app.js:177:  const groupName = (g) => ({ together: "一緒に動く", mirror: "鏡のように動く", sequential: "順番に動く" }[g.relation] || "") + (g.compose === "fan" ? "（扇）" : g.compose === "cross" ? "（交差）" : "");
+prototype/app.js:189:    const w = plan.width, h = plan.height, P = planProj(), B = PLAN_BOX, d = state.dims;
+prototype/app.js:215:    if (state.tool === "truss" && hv && hv.canvas === "plan") {
+prototype/app.js:220:    if (state.tool === "fixture" && hv && hv.canvas === "plan") {
+prototype/app.js:228:    if (state.tool === "floor" && hv && hv.canvas === "plan" && inBox(hv, B)) drawFixtureMark(pctx, hv.X, hv.Y, "circle", { ghost: true });
+prototype/app.js:229:    if (state.tool === "side" && hv && hv.canvas === "plan") { const side = hv.X < B.x ? "shimote" : hv.X > B.x + B.w ? "kamite" : null; if (side) drawFixtureMark(pctx, side === "shimote" ? B.x - 60 : B.x + B.w + 60, E.clamp(hv.Y, B.y, B.y + B.h), "diamond", { ghost: true }); else { pctx.fillStyle = "rgba(240,231,214,0.6)"; pctx.font = "18px sans-serif"; pctx.fillText("舞台の外側（下手／上手）をクリックしてください", B.x + B.w / 2 - 190, B.y + B.h + 44); } }
+prototype/app.js:233:      state.rig.fixtures.forEach((f) => {
+prototype/app.js:235:        const S = fixtureWorld(f); if (!S) return; const T = targetAt(f.id, state.play.t); if (!T) return;
+prototype/app.js:237:        const g = E.pathGuide(l, state.dims);
+prototype/app.js:240:          else if (l.surface === "floor") { const c = P(g.c); pctx.beginPath(); pctx.ellipse(c.X, c.Y, g.r / state.dims.W * B.w, g.r / state.dims.D * B.h, 0, 0, Math.PI * 2); pctx.stroke(); }
+prototype/app.js:242:        if (l.surface === "floor") {
+prototype/app.js:249:        if (sel && l.surface === "floor") drawHandles(pctx, P, l, f.id);
+prototype/app.js:253:    state.rig.fixtures.forEach((f) => {
+prototype/app.js:254:      const S = fixtureWorld(f); if (!S) return; const p = P(S); const shape = f.mount.type === "truss" ? "square" : f.mount.type === "floor" ? "circle" : "diamond";
+prototype/app.js:255:      const X = f.mount.type === "side" ? (f.mount.side === "shimote" ? B.x - 60 : B.x + B.w + 60) : p.X;
+prototype/app.js:259:    const st = state.tool === "truss" ? "トラス配置中" : state.tool === "fixture" ? "灯体配置中（トラス）" : state.tool === "floor" ? "灯体配置中（床）" : state.tool === "side" ? "灯体配置中（横）" : state.drag ? "ドラッグ調整中" : state.sel.size > 1 ? `${state.sel.size}灯を選択中` : "選択";
+prototype/app.js:278:    const p = l.path || {}; const d = state.dims;
+prototype/app.js:279:    const hp = (pt, txt, filled) => { const q = P(E.surfacePoint(l.surface, pt, d)); ctx.beginPath(); ctx.arc(q.X, q.Y, 12, 0, Math.PI * 2); ctx.fillStyle = filled ? "#df6433" : "#201b16"; ctx.strokeStyle = "#df6433"; ctx.lineWidth = 3; ctx.fill(); ctx.stroke(); if (txt) { ctx.fillStyle = "#efe7d6"; ctx.font = "600 16px sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "center"; ctx.fillText(txt, q.X, q.Y + 1); ctx.textAlign = "left"; } return q; };
+prototype/app.js:284:      const c = hp(p.c, "", false); const rq = P(E.surfacePoint(l.surface, { u: p.c.u + p.r / d.W, v: p.c.v }, d));
+prototype/app.js:294:    const w = front.width, h = front.height, B = frontBox(), P = frontProj(), d = state.dims;
+prototype/app.js:300:    [2, 4, 6, 8].filter((m) => m <= d.H).forEach((m) => { const Y = B.y + B.h - m / d.H * B.h; fctx.fillText(`${m}m`, B.x - 40, Y); fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.beginPath(); fctx.moveTo(B.x, Y); fctx.lineTo(B.x + B.w, Y); fctx.stroke(); });
+prototype/app.js:306:    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!l || l.on !== true) return; const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
+prototype/app.js:308:      if (l.surface === "back") { const g = E.pathGuide(l, d); if (g) { fctx.save(); fctx.setLineDash([8, 6]); fctx.strokeStyle = "rgba(223,100,51,0.7)"; fctx.lineWidth = 2; if (g.kind === "line") { const a = P(g.a), b = P(g.b); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); } else { const c = P(g.c); fctx.beginPath(); fctx.ellipse(c.X, c.Y, g.r / d.W * B.w, g.r / d.H * B.h, 0, 0, Math.PI * 2); fctx.stroke(); } fctx.restore(); }
+prototype/app.js:312:    state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S); const shape = f.mount.type === "truss" ? "square" : f.mount.type === "floor" ? "circle" : "diamond"; drawFixtureMark(fctx, p.X, p.Y, shape, { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: label(f.id) });
+prototype/app.js:313:      if (f.mount.type === "side" && isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${f.mount.h.toFixed(1)}m（ドラッグ）`, p.X + (f.mount.side === "shimote" ? -180 : 26), p.Y - 26); } });
+prototype/app.js:316:  function drawSide(side) {
+prototype/app.js:317:    const w = front.width, h = front.height, B = frontBox(), d = state.dims, P = E.makeSideProjector(d, B, side);
+prototype/app.js:319:    const backX = P({ x: 0, y: 0, z: 0 }).X, frontX = P({ x: 0, y: d.D, z: 0 }).X;
+prototype/app.js:320:    const left = Math.min(backX, frontX), right = Math.max(backX, frontX);
+prototype/app.js:323:    fctx.fillStyle = "rgba(156,130,63,0.35)"; fctx.fillRect(backX - (side === "shimote" ? 0 : 6), B.y, 6, B.h); // 奥壁
+prototype/app.js:327:    [2, 4, 6, 8].filter((m) => m <= d.H).forEach((m) => { const Y = B.y + B.h - m / d.H * B.h; fctx.fillText(`${m}m`, B.x - 40, Y); fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.beginPath(); fctx.moveTo(B.x, Y); fctx.lineTo(B.x + B.w, Y); fctx.stroke(); });
+prototype/app.js:329:    fctx.fillText("客席 ▶", side === "shimote" ? 30 : B.x + B.w + 20, B.y + 14); fctx.fillText("奥壁", side === "shimote" ? B.x + B.w + 20 : 30, B.y + 14);
+prototype/app.js:330:    fctx.fillText(`${side === "shimote" ? "下手" : "上手"}側のスタンド・ブーム（舞台中央から見る）`, B.x + 10, B.y - 18);
+prototype/app.js:334:    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!l || l.on !== true) return; const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s0 = P(S), tp = P(T); const mine = f.mount.type === "side" && f.mount.side === side; const dim = !mine || (state.sel.size && !isSel(f.id));
+prototype/app.js:337:    state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const q = P(S);
+prototype/app.js:338:      if (f.mount.type === "side" && f.mount.side === side) { fctx.strokeStyle = "rgba(240,231,214,0.5)"; fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(q.X, B.y + B.h); fctx.lineTo(q.X, q.Y); fctx.stroke(); fctx.beginPath(); fctx.moveTo(q.X - 14, B.y + B.h); fctx.lineTo(q.X + 14, B.y + B.h); fctx.stroke();
+prototype/app.js:341:      else if (f.mount.type !== "side") { fctx.globalAlpha = 0.35; drawFixtureMark(fctx, q.X, q.Y, f.mount.type === "truss" ? "square" : "circle", { sel: false, st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: label(f.id) }); fctx.globalAlpha = 1; } });
+prototype/app.js:344:    if (state.tool === "side" && hv && hv.canvas === "front") { const q = { X: E.clamp(hv.X, B.x, B.x + B.w), Y: E.clamp(hv.Y, B.y, B.y + B.h) }; fctx.strokeStyle = "rgba(240,231,214,0.3)"; fctx.setLineDash([6, 6]); fctx.beginPath(); fctx.moveTo(q.X, B.y + B.h); fctx.lineTo(q.X, q.Y); fctx.stroke(); fctx.setLineDash([]); drawFixtureMark(fctx, q.X, q.Y, "diamond", { ghost: true }); fctx.fillStyle = "rgba(240,231,214,0.85)"; fctx.font = "16px sans-serif"; fctx.fillText(`${side === "shimote" ? "下手" : "上手"}の横に置く（クリック）`, q.X + 22, q.Y - 26); }
+prototype/app.js:345:    if (!state.rig.fixtures.some((f) => f.mount.type === "side" && f.mount.side === side) && state.tool !== "side") { fctx.fillStyle = "rgba(240,231,214,0.45)"; fctx.font = "16px sans-serif"; fctx.fillText(`${side === "shimote" ? "下手" : "上手"}側にスタンド灯はまだありません。「灯体を横に置く」でこの図をクリックすると置けます。`, B.x + 10, B.y + B.h / 2); }
+prototype/app.js:347:  function draw() { drawPlan(); if (state.view === "front") drawFront(); else drawSide(state.view); }
+prototype/app.js:350:  function hitFixturePlan(pt) { const P = planProj(), B = PLAN_BOX; let best = null; state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S); const X = f.mount.type === "side" ? (f.mount.side === "shimote" ? B.x - 60 : B.x + B.w + 60) : p.X; if (Math.hypot(pt.X - X, pt.Y - p.Y) < 22) best = f; }); return best; }
+prototype/app.js:351:  function hitFixtureFront(pt) { const P = sectionProj(); let best = null; state.rig.fixtures.forEach((f) => { if (state.view !== "front" && !(f.mount.type === "side" && f.mount.side === state.view)) return; const S = fixtureWorld(f); if (!S) return; const p = P(S); if (Math.hypot(pt.X - p.X, pt.Y - p.Y) < 22) best = f; }); return best; }
+prototype/app.js:353:  function hitHandle(pt, P, surface) { // 選択中1灯のハンドル
+prototype/app.js:354:    if (state.sel.size !== 1) return null; const fid = [...state.sel][0]; const l = lightOf(fid); if (!l || l.on !== true || l.surface !== surface) return null; const p = l.path || {}; const d = state.dims;
+prototype/app.js:355:    const near = (uv) => { const q = P(E.surfacePoint(l.surface, uv, d)); return Math.hypot(pt.X - q.X, pt.Y - q.Y) < 18; };
+prototype/app.js:363:  plan.addEventListener("pointerdown", (ev) => {
+prototype/app.js:364:    const pt = canvasPoint(plan, ev); const B = PLAN_BOX; try { plan.setPointerCapture(ev.pointerId); } catch (_) { /* 合成イベント等 */ } plan.focus && plan.focus();
+prototype/app.js:366:    if (state.tool === "fixture") { const t = E.trussById(state.rig, state.selTruss); if (!t) return; const Y = B.y + t.v * B.h; if (Math.abs(pt.Y - Y) < 60 && inBox({ X: pt.X, Y }, B)) { addFixture({ type: "truss", trussId: t.id, u: (pt.X - B.x) / B.w }); toast(`${label([...state.sel][0])}を奥から${E.trussRow(state.rig, t.id)}列目に置きました`, "元に戻す", undo); } return; }
+prototype/app.js:367:    if (state.tool === "floor") { if (inBox(pt, B)) { addFixture({ type: "floor", u: (pt.X - B.x) / B.w, v: (pt.Y - B.y) / B.h }); toast(`${label([...state.sel][0])}を床に置きました`, "元に戻す", undo); } return; }
+prototype/app.js:368:    if (state.tool === "side") { const side = pt.X < B.x ? "shimote" : pt.X > B.x + B.w ? "kamite" : null; if (side) { addFixture({ type: "side", side, v: E.clamp((pt.Y - B.y) / B.h, 0, 1), h: 2 }); toast(`${label([...state.sel][0])}を${side === "shimote" ? "下手" : "上手"}の横に置きました`, "元に戻す", undo); } return; }
+prototype/app.js:370:    if (state.mode === "move") { const hh = hitHandle(pt, planProj(), "floor"); if (hh) { if (state.play.on) stop("調整するため再生を止めました"); state.drag = { kind: "handle", ...hh, before: snapshot() }; return; } }
+prototype/app.js:372:    if (f) { if (ev.shiftKey) { state.sel.has(f.id) ? state.sel.delete(f.id) : state.sel.add(f.id); } else if (!state.sel.has(f.id)) state.sel = new Set([f.id]); state.selTruss = f.mount.type === "truss" ? f.mount.trussId : state.selTruss; if (state.mode === "place" && !ev.shiftKey) state.drag = { kind: "fixture", fid: f.id, before: snapshot(), moved: false, startU: f.mount.u, startV: f.mount.v, X0: pt.X, Y0: pt.Y }; renderAll(); return; }
+prototype/app.js:376:  plan.addEventListener("pointermove", (ev) => {
+prototype/app.js:377:    const pt = canvasPoint(plan, ev); const B = PLAN_BOX; state.hover = { canvas: "plan", ...pt };
+prototype/app.js:379:    if (dg && dg.kind === "fixture") { const f = fixtureById(dg.fid); if (f) { if (f.mount.type === "truss") f.mount.u = E.clamp((pt.X - B.x) / B.w, 0, 1); else if (f.mount.type === "floor") { f.mount.u = E.clamp((pt.X - B.x) / B.w, 0, 1); f.mount.v = E.clamp((pt.Y - B.y) / B.h, 0, 1); } else f.mount.v = E.clamp((pt.Y - B.y) / B.h, 0, 1); dg.moved = true; } }
+prototype/app.js:381:    else if (dg && dg.kind === "handle") applyHandleDrag(dg, E.planToUV(state.dims, B, pt.X, pt.Y), "floor");
+prototype/app.js:384:  const endDrag = () => { const dg = state.drag; if (!dg) return; state.drag = null; if (dg.moved) { state.history.push(dg.before); state.future.length = 0; state.dirty = true; } renderAll(); };
+prototype/app.js:385:  plan.addEventListener("pointerup", endDrag); plan.addEventListener("pointercancel", endDrag);
+prototype/app.js:386:  plan.addEventListener("pointerleave", () => { state.hover = null; draw(); });
+prototype/app.js:387:  function applyHandleDrag(dg, uv, surface) { const l = lightOf(dg.fid); if (!l) return; const p = l.path; const d = state.dims; dg.moved = true;
+prototype/app.js:388:    if (dg.kind === "a" || dg.kind === "b") { (p.kind === "still" ? (p.a = p.a || {}) : p[dg.kind]).u = uv.u; (p.kind === "still" ? p.a : p[dg.kind]).v = surface === "back" ? uv.v : uv.v; }
+prototype/app.js:394:  front.addEventListener("pointerdown", (ev) => {
+prototype/app.js:395:    const pt = canvasPoint(front, ev); const B = frontBox(); try { front.setPointerCapture(ev.pointerId); } catch (_) { /* 合成イベント等 */ }
+prototype/app.js:396:    if (state.view !== "front") {
+prototype/app.js:397:      const side = state.view;
+prototype/app.js:398:      if (state.tool === "side") { const vh = E.sideToVH(state.dims, B, side, pt.X, pt.Y); addFixture({ type: "side", side, v: vh.v, h: Math.max(0.3, vh.h) }); toast(`${label([...state.sel][0])}を${side === "shimote" ? "下手" : "上手"}の横に置きました`, "元に戻す", undo); return; }
+prototype/app.js:400:      if (f) { state.sel = ev.shiftKey ? (state.sel.has(f.id) ? (state.sel.delete(f.id), state.sel) : state.sel.add(f.id)) : new Set([f.id]); if (state.mode === "place" && !ev.shiftKey) state.drag = { kind: "sideVH", fid: f.id, before: snapshot(), moved: false }; renderAll(); return; }
+prototype/app.js:407:      const f = hitFixtureFront(pt); if (f) { state.sel = new Set([f.id]); if (f.mount.type === "side") state.drag = { kind: "sideH", fid: f.id, before: snapshot(), moved: false }; renderAll(); return; }
+prototype/app.js:411:    const hh = hitHandle(pt, frontProj(), "back"); if (hh) { if (state.play.on) stop("調整するため再生を止めました"); state.drag = { kind: "handle", ...hh, before: snapshot() }; return; }
+prototype/app.js:414:  front.addEventListener("pointermove", (ev) => {
+prototype/app.js:415:    const pt = canvasPoint(front, ev); const B = frontBox(); state.hover = { canvas: "front", ...pt }; const dg = state.drag;
+prototype/app.js:416:    if (!dg) { if (state.tool === "side" && state.view !== "front") draw(); return; }
+prototype/app.js:417:    if (dg.kind === "sideVH") { const f = fixtureById(dg.fid); if (f) { const vh = E.sideToVH(state.dims, B, state.view, pt.X, pt.Y); f.mount.v = vh.v; f.mount.h = E.clamp(vh.h, 0.3, state.dims.H); dg.moved = true; } draw(); renderInspector(); return; }
+prototype/app.js:419:    else if (dg.kind === "sideH") { const f = fixtureById(dg.fid); if (f) { f.mount.h = E.clamp((B.y + B.h - pt.Y) / B.h * state.dims.H, 0.3, state.dims.H); dg.moved = true; } }
+prototype/app.js:420:    else if (dg.kind === "handle") { const uh = E.frontToUH(state.dims, B, pt.X, pt.Y); applyHandleDrag(dg, { u: uh.u, v: uh.h / state.dims.H }, "back"); }
+prototype/app.js:423:  front.addEventListener("pointerup", endDrag); front.addEventListener("pointercancel", endDrag);
+prototype/app.js:424:  front.addEventListener("pointerleave", () => { state.hover = null; draw(); });
+prototype/app.js:430:    if (ev.key === "Escape") { if (state.drag) { const dg = state.drag; state.drag = null; restore(dg.before); state.dirty = true; } else if (state.tool) { state.tool = null; renderAll(); } else if (state.sel.size) { state.sel.clear(); renderAll(); } return; }
+prototype/app.js:435:    if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? redo() : undo(); }
+prototype/app.js:441:    const c = cue(); const grouped = new Set(c.groups.flatMap((g) => g.members));
+prototype/app.js:445:    if (state.mode === "move") c.groups.forEach((g, gi) => { const h = document.createElement("div"); h.className = "grp"; h.innerHTML = `<span>組${gi + 1}　${groupName(g)}</span><small>${g.members.length}灯</small>`; h.onclick = () => { state.sel = new Set(g.members); renderAll(); }; host.append(h); g.members.forEach((m, i) => { const f = fixtureById(m); if (f) host.append(row(f, g.relation === "sequential" ? i : undefined)); }); });
+prototype/app.js:446:    const rest = state.rig.fixtures.filter((f) => state.mode !== "move" || !grouped.has(f.id));
+prototype/app.js:447:    if (rest.length && state.mode === "move" && c.groups.length) { const h = document.createElement("div"); h.className = "grp"; h.innerHTML = "<span>組なし</span>"; host.append(h); }
+prototype/app.js:449:    if (!state.rig.fixtures.length) host.innerHTML = '<p class="hint" style="padding:6px">灯体はまだありません。</p>';
+prototype/app.js:468:      [["truss", "トラスを足す"], ["fixture", "灯体を足す（トラスに）", !state.selTruss], ["floor", "灯体を床に置く"], ["side", "灯体を横に置く（上手／下手）"]].forEach(([k, t, dis]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = state.tool === k ? "配置を終える（Esc）" : t; b.setAttribute("aria-pressed", String(state.tool === k)); b.disabled = Boolean(dis); b.onclick = () => { state.tool = state.tool === k ? null : k; renderAll(); }; tools.append(b); });
+prototype/app.js:471:      if (state.tool === "side") host.append(el("p", "note", "下の側面図（下手を見る／上手を見る）をクリックすると、その奥行きと高さにスタンド灯を置けます。平面図の舞台の外側をクリックしても置けます。"));
+prototype/app.js:478:        host.append(btn("このトラスに灯体を足す", () => { state.tool = "fixture"; renderAll(); }, "primary"));
+prototype/app.js:479:        host.append(btn("トラスを削除", () => { const n = state.rig.fixtures.filter((f) => f.mount.trussId === t.id).length; const go = () => { state.rig.fixtures = state.rig.fixtures.filter((f) => f.mount.trussId !== t.id); state.rig.trusses = state.rig.trusses.filter((x) => x.id !== t.id); state.selTruss = null; state.sel.clear(); commit("トラスを削除しました"); }; n ? dialog(`<p>このトラスには${n}灯が付いています。灯体ごと削除しますか？</p>`, [["やめる", null, "quiet"], ["灯体ごと削除", go, "primary"]]) : go(); }, "quiet"));
+prototype/app.js:482:        const f = fixtureById(ids[0]); const m = f.mount;
+prototype/app.js:489:        if (m.type === "side") { host.append(field("取り付け", seg([["shimote", "下手側"], ["kamite", "上手側"]], m.side, (v) => { m.side = v; commit(); }))); host.append(field("奥行き", range(0, 1, 0.01, m.v, (v) => (v < 0.4 ? "奥寄り" : v > 0.6 ? "手前寄り" : "中ほど"), (v) => { m.v = v; draw(); }, () => commit()))); host.append(field("高さ", range(0.3, state.dims.H, 0.1, m.h, (v) => `約${v.toFixed(1)}m`, (v) => { m.h = v; draw(); }, () => commit()))); }
+prototype/app.js:503:      const fid = ids[0]; const f = fixtureById(fid); const l = lightOf(fid);
+prototype/app.js:505:      const g = groupOf(fid);
+prototype/app.js:506:      if (g) { const gi = cue().groups.indexOf(g); const box = el("div", "box", `<p class="hint">組${gi + 1}「${groupName(g)}」の一員です。個別に直すと「調整済み」になります。</p>`); box.append(btn("組から外す", () => ungroup(fid), "small quiet")); host.append(box); }
+prototype/app.js:510:      host.append(field("当てる場所", seg([["floor", "床"], ["back", "奥の壁"]], l.surface, (v) => { setLight(fid, { surface: v }); commit(); })));
+prototype/app.js:511:      const p = l.path || { kind: "still" };
+prototype/app.js:513:      if (p.kind === "line") { host.append(field("始め方", seg([["a", "A → B"], ["b", "B → A"]], p.start || "a", (v) => { p.start = v; commit(); }))); host.append(el("p", "note", `動く範囲は図のA・Bをドラッグ。${l.surface === "back" ? "奥の壁は正面図で。" : "床は平面図で。"}`)); }
+prototype/app.js:522:    const gs = [...new Set(ids.map((id) => groupOf(id)).filter(Boolean))];
+prototype/app.js:524:    if (same) { const g = gs[0]; const gi = cue().groups.indexOf(g); host.append(el("p", "hint", `組${gi + 1}「${groupName(g)}」を編集中`));
+prototype/app.js:528:      const ol = el("div", "seg col"); g.members.forEach((m, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = `${i + 1}. ${label(m)} ${fixtureById(m).name || ""}${i > 0 ? "　▲ 前へ" : ""}`; b.onclick = () => { if (i > 0) { [g.members[i - 1], g.members[i]] = [g.members[i], g.members[i - 1]]; commit(); } }; ol.append(b); }); host.append(field("この組の灯体", ol, true));
+prototype/app.js:529:      host.append(btn("組を解散する", () => { cue().groups = cue().groups.filter((x) => x !== g); g.members.forEach((m) => setLight(m, { groupId: null })); commit("組を解散しました"); }, "small quiet"));
+prototype/app.js:542:    $("empty").hidden = Boolean(state.rig.trusses.length || state.rig.fixtures.length);
+prototype/app.js:543:    $("dirty").textContent = state.dirty ? "未適用の変更あり" : ""; $("dirty").classList.toggle("ok", !state.dirty);
+prototype/app.js:544:    $("undo").disabled = !state.history.length; $("redo").disabled = !state.future.length;
+prototype/app.js:546:    const selFix = [...state.sel].map(fixtureById).filter(Boolean);
+prototype/app.js:547:    const sideSel = selFix.find((f) => f.mount.type === "side");
+prototype/app.js:548:    const back = state.mode === "move" && [...state.sel].some((id) => (lightOf(id) || {}).surface === "back");
+prototype/app.js:551:    if (!state.viewPinned) { if (sideSel) state.view = sideSel.mount.side; else if (back) state.view = "front"; else if (state.tool === "side" && state.view === "front") state.view = "shimote"; else if (state.tool !== "side" && !sideSel) state.view = "front"; }
+prototype/app.js:553:    const big = (back && state.view === "front") || state.view !== "front";
+prototype/app.js:554:    front.classList.toggle("big", big); front.height = big ? 480 : 300; plan.style.height = big ? "292px" : "382px";
+prototype/app.js:555:    $("legend-l").textContent = state.view === "front" ? "平面図（上が奥・下が客席）／正面図（客席から）" : `平面図（上が奥・下が客席）／${state.view === "shimote" ? "下手" : "上手"}を見た側面図（横軸＝奥行き・縦軸＝高さ）`;
+prototype/app.js:566:  $("undo").onclick = undo; $("redo").onclick = redo;
+prototype/app.js:567:  $("sel-all").onclick = () => { state.sel = new Set(state.rig.fixtures.map((f) => f.id)); renderAll(); };
+prototype/app.js:571:  $("empty-preset").onclick = () => dialog("<p>奥トラス1本（高さ約6m）に、ムービング4灯を等間隔に置きます。</p><p class='note'>置いたあとで位置と灯数を変えられます。</p>", [["やめる", null, "quiet"], ["置く", () => { const t = E.newTruss(uid("t"), 0.15, 6, "奥トラス"); state.rig.trusses.push(t); [0.2, 0.4, 0.6, 0.8].forEach((u) => state.rig.fixtures.push(E.newFixture(uid("f"), state.nextNo++, { type: "truss", trussId: t.id, u }, ""))); state.selTruss = t.id; state.sel.clear(); commit("奥トラス1本＋ムービング4灯を置きました"); }, "primary"]]);
+prototype/app.js:572:  $("apply").onclick = () => { state.dirty = false; state.history.length = 0; state.future.length = 0; renderAll(); $("dirty").textContent = "ショーへ適用しました"; setTimeout(() => renderAll(), 2500); toast("ショーへ適用しました（試作なので画面は残ります）"); };
+prototype/app.js:573:  $("close").onclick = () => { if (state.dirty) dialog("<p>変更がまだ適用されていません。</p>", [["編集に戻る", null, "quiet"], ["破棄して閉じる", () => toast("破棄しました（試作なので画面は残ります）"), "quiet"], ["適用して閉じる", () => $("apply").onclick(), "primary"]]); else toast("閉じました（試作なので画面は残ります）"); };
+prototype/app.js:576:  let exportCancel = false;
+prototype/app.js:577:  $("band-cancel").onclick = () => { exportCancel = true; };
+prototype/app.js:578:  $("export").onclick = async () => {
+prototype/app.js:579:    if (state.exporting) return; const lit = state.rig.fixtures.filter((f) => (lightOf(f.id) || {}).on === true); if (!lit.length) { toast("点灯している灯がありません。動きモードで点灯を設定してください。"); return; }
+prototype/app.js:580:    state.exporting = true; exportCancel = false; stop(); state.mode = "move"; renderAll();
+prototype/app.js:582:    const base = `light-rig-${scene().name}`;
+prototype/app.js:586:        const stream = plan.captureStream(0); const track = stream.getVideoTracks()[0]; const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 5e6 }); const chunks = [];
+prototype/app.js:589:        await new Promise((r) => { const timer = setInterval(() => { if (exportCancel || t > DUR) { clearInterval(timer); rec.stop(); r(); return; } state.play.t = t; draw(); track.requestFrame && track.requestFrame(); bar.style.width = `${Math.min(100, t / DUR * 100)}%`; t += 33; }, 33); });
+prototype/app.js:591:        if (!exportCancel && chunks.length) download(new Blob(chunks, { type: mime.split(";")[0] }), `${base}.${mime.startsWith("video/mp4") ? "mp4" : "webm"}`);
+prototype/app.js:593:      if (!exportCancel) {
+prototype/app.js:594:        const off = document.createElement("canvas"); off.width = plan.width * 3 / 2; off.height = plan.height / 2 + 40; const oc = off.getContext("2d"); oc.fillStyle = "#0d0e10"; oc.fillRect(0, 0, off.width, off.height);
+prototype/app.js:595:        [0, 1000, 2000].forEach((tt, i) => { state.play.t = tt; draw(); oc.drawImage(plan, i * plan.width / 2, 40, plan.width / 2, plan.height / 2); oc.fillStyle = "#efe7d6"; oc.font = "22px sans-serif"; oc.fillText(`${(tt / 1000).toFixed(1)}秒`, i * plan.width / 2 + 12, 28); });
+prototype/app.js:598:        const lines = [`灯体の配置と動きの案　シーン「${scene().name}」　${new Date().toISOString().slice(0, 10)}`, ""]; state.rig.fixtures.forEach((f) => lines.push(`${label(f.id)}${f.name ? "（" + f.name + "）" : ""}：${E.describeMount(f, state.rig)}。${E.describeCue(lightOf(f.id))}`)); cue().groups.forEach((g, i) => lines.push(`組${i + 1}（${groupName(g)}）：${g.members.map(label).join("・")}`)); lines.push("", "灯体の概略配置と動きの案です。機種・回路・DMX・照度・設置の安全性は未検討です。");
+prototype/app.js:603:    band.hidden = true; bar.style.width = "0%"; state.exporting = false; state.play.t = 0; renderAll();
+
+web search: 
+web search: site:etcconnect.com Augment3d XYZ focus moving light position official ...
+web search: 
+web search: site:etcconnect.com/WebDocs/Controls/EosFamilyOnlineHelp "Track SEM" XYZ Focus Palette ...
+codex
+試作の内部では、`surface`ごとに2次元座標の意味を変えており、空中を足すだけなら動いても、将来の3D・追尾で再び変換が必要になります。ETCの公式3D機能も、灯体のパン／チルト値ではなく、空間上のXYZ点へ光を向ける方式を持っています。したがって「狙い点を正本にする」方向は維持できますが、空中を常に水平面へ固定する部分は弱めるべきです。
+exec
+/bin/zsh -lc "sed -n '220,470p' prototype/app.js; sed -n '470,620p' prototype/app.js" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+exec
+/bin/zsh -lc "rg -n \"cloneScene|project\\.scenes|piece\\.route|cueSeconds|anim|timeline|keyframe|scene.*state|transition\" ../../stage-sketch.js | head -120" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+ succeeded in 0ms:
+    if (state.tool === "fixture" && hv && hv.canvas === "plan") {
+      const t = E.trussById(state.rig, state.selTruss);
+      if (t) {
+        const Y = B.y + t.v * B.h; const near = Math.abs(hv.Y - Y) < 60 && hv.X >= B.x && hv.X <= B.x + B.w;
+        if (near) { drawFixtureMark(pctx, hv.X, Y, "square", { ghost: true }); pctx.fillStyle = "rgba(240,231,214,0.85)"; pctx.font = "18px sans-serif"; pctx.fillText(`奥から${E.trussRow(state.rig, t.id)}列目に置く`, hv.X + 18, Y - 44); }
+        else { pctx.fillStyle = "rgba(240,231,214,0.6)"; pctx.font = "18px sans-serif"; pctx.fillText("トラスの上をクリックしてください", B.x + B.w / 2 - 130, B.y + B.h + 44); }
+      }
+    }
+    if (state.tool === "floor" && hv && hv.canvas === "plan" && inBox(hv, B)) drawFixtureMark(pctx, hv.X, hv.Y, "circle", { ghost: true });
+    if (state.tool === "side" && hv && hv.canvas === "plan") { const side = hv.X < B.x ? "shimote" : hv.X > B.x + B.w ? "kamite" : null; if (side) drawFixtureMark(pctx, side === "shimote" ? B.x - 60 : B.x + B.w + 60, E.clamp(hv.Y, B.y, B.y + B.h), "diamond", { ghost: true }); else { pctx.fillStyle = "rgba(240,231,214,0.6)"; pctx.font = "18px sans-serif"; pctx.fillText("舞台の外側（下手／上手）をクリックしてください", B.x + B.w / 2 - 190, B.y + B.h + 44); } }
+
+    // 動き: 軌道・光線
+    if (state.mode === "move") {
+      state.rig.fixtures.forEach((f) => {
+        const l = lightOf(f.id); if (!l || l.on !== true) return;
+        const S = fixtureWorld(f); if (!S) return; const T = targetAt(f.id, state.play.t); if (!T) return;
+        const s = P(S), tp = P(T); const sel = isSel(f.id); const dim = state.sel.size && !sel;
+        const g = E.pathGuide(l, state.dims);
+        if (g) { pctx.save(); pctx.setLineDash([10, 8]); pctx.strokeStyle = sel ? "rgba(223,100,51,0.9)" : "rgba(223,100,51,0.35)"; pctx.lineWidth = 2;
+          if (g.kind === "line") { const a = P(g.a), b = P(g.b); pctx.beginPath(); pctx.moveTo(a.X, a.Y); pctx.lineTo(b.X, b.Y); pctx.stroke(); }
+          else if (l.surface === "floor") { const c = P(g.c); pctx.beginPath(); pctx.ellipse(c.X, c.Y, g.r / state.dims.W * B.w, g.r / state.dims.D * B.h, 0, 0, Math.PI * 2); pctx.stroke(); }
+          pctx.restore(); }
+        if (l.surface === "floor") {
+          const grad = pctx.createLinearGradient(s.X, s.Y, tp.X, tp.Y); grad.addColorStop(0, hexA(l.color, dim ? 0.18 : 0.75)); grad.addColorStop(1, hexA(l.color, dim ? 0.03 : 0.08));
+          pctx.strokeStyle = grad; pctx.lineWidth = 14; pctx.lineCap = "round"; pctx.beginPath(); pctx.moveTo(s.X, s.Y); pctx.lineTo(tp.X, tp.Y); pctx.stroke();
+          const r = 0.7 / state.dims.W * B.w; const glow = pctx.createRadialGradient(tp.X, tp.Y, 0, tp.X, tp.Y, r * 1.6); glow.addColorStop(0, hexA(l.color, dim ? 0.15 : 0.55)); glow.addColorStop(1, hexA(l.color, 0));
+          pctx.fillStyle = glow; pctx.beginPath(); pctx.arc(tp.X, tp.Y, r * 1.6, 0, Math.PI * 2); pctx.fill();
+        } else { pctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.5); pctx.setLineDash([4, 6]); pctx.lineWidth = 3; pctx.beginPath(); pctx.moveTo(s.X, s.Y); pctx.lineTo(s.X, B.y); pctx.stroke(); pctx.setLineDash([]); }
+        // ハンドル（選択灯のみ・床面）
+        if (sel && l.surface === "floor") drawHandles(pctx, P, l, f.id);
+      });
+    }
+    // 灯体
+    state.rig.fixtures.forEach((f) => {
+      const S = fixtureWorld(f); if (!S) return; const p = P(S); const shape = f.mount.type === "truss" ? "square" : f.mount.type === "floor" ? "circle" : "diamond";
+      const X = f.mount.type === "side" ? (f.mount.side === "shimote" ? B.x - 60 : B.x + B.w + 60) : p.X;
+      drawFixtureMark(pctx, X, p.Y, shape, { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: label(f.id) });
+    });
+    // 状態
+    const st = state.tool === "truss" ? "トラス配置中" : state.tool === "fixture" ? "灯体配置中（トラス）" : state.tool === "floor" ? "灯体配置中（床）" : state.tool === "side" ? "灯体配置中（横）" : state.drag ? "ドラッグ調整中" : state.sel.size > 1 ? `${state.sel.size}灯を選択中` : "選択";
+    $("statebadge").textContent = st;
+  }
+  const inBox = (p, B) => p.X >= B.x && p.X <= B.x + B.w && p.Y >= B.y && p.Y <= B.y + B.h;
+  function hexA(hex, a) { const v = parseInt((hex || "#f2ead6").slice(1), 16); return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`; }
+  function drawFixtureMark(ctx, X, Y, shape, o) {
+    const s = 15; ctx.save();
+    const fill = o.ghost ? "rgba(240,231,214,0.35)" : o.st === "unset" ? "rgba(13,14,16,1)" : o.st === "off" ? "#2a2520" : (o.color || "#f2ead6");
+    ctx.fillStyle = fill; ctx.strokeStyle = o.sel ? "#d3ac59" : o.ghost ? "rgba(240,231,214,0.5)" : "rgba(240,231,214,0.7)"; ctx.lineWidth = o.sel ? 5 : 2;
+    ctx.beginPath();
+    if (shape === "square") ctx.rect(X - s, Y - s, s * 2, s * 2);
+    else if (shape === "circle") ctx.arc(X, Y, s, 0, Math.PI * 2);
+    else { ctx.moveTo(X, Y - s * 1.2); ctx.lineTo(X + s * 1.2, Y); ctx.lineTo(X, Y + s * 1.2); ctx.lineTo(X - s * 1.2, Y); ctx.closePath(); }
+    ctx.fill(); ctx.stroke();
+    if (o.st === "off") { ctx.strokeStyle = "rgba(240,231,214,0.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X - s, Y + s); ctx.lineTo(X + s, Y - s); ctx.stroke(); }
+    if (o.no) { ctx.fillStyle = o.sel ? "#1a1409" : "rgba(240,231,214,0.95)"; if (o.sel) { ctx.fillStyle = "#d3ac59"; ctx.fillRect(X - 22, Y + s + 4, 44, 22); ctx.fillStyle = "#1a1409"; } ctx.font = "600 16px sans-serif"; ctx.textBaseline = "top"; ctx.textAlign = "center"; ctx.fillText(o.no, X, Y + s + 6); ctx.textAlign = "left"; }
+    ctx.restore();
+  }
+  function drawHandles(ctx, P, l, fid) {
+    const p = l.path || {}; const d = state.dims;
+    const hp = (pt, txt, filled) => { const q = P(E.surfacePoint(l.surface, pt, d)); ctx.beginPath(); ctx.arc(q.X, q.Y, 12, 0, Math.PI * 2); ctx.fillStyle = filled ? "#df6433" : "#201b16"; ctx.strokeStyle = "#df6433"; ctx.lineWidth = 3; ctx.fill(); ctx.stroke(); if (txt) { ctx.fillStyle = "#efe7d6"; ctx.font = "600 16px sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "center"; ctx.fillText(txt, q.X, q.Y + 1); ctx.textAlign = "left"; } return q; };
+    if (p.kind === "line") {
+      const a = hp(p.a, "A", p.start !== "b"), b = hp(p.b, "B", p.start === "b");
+      const from = p.start === "b" ? b : a, to = p.start === "b" ? a : b; arrow(ctx, from, to);
+    } else if (p.kind === "circle") {
+      const c = hp(p.c, "", false); const rq = P(E.surfacePoint(l.surface, { u: p.c.u + p.r / d.W, v: p.c.v }, d));
+      ctx.beginPath(); ctx.arc(rq.X, rq.Y, 10, 0, Math.PI * 2); ctx.fillStyle = "#201b16"; ctx.strokeStyle = "#df6433"; ctx.lineWidth = 3; ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(240,231,214,0.8)"; ctx.font = "15px sans-serif"; ctx.fillText(`半径 ${p.r.toFixed(1)}m`, rq.X + 14, rq.Y - 8);
+      ctx.fillText(p.dir === "ccw" ? "反時計回り" : "時計回り", c.X + 14, c.Y - 22);
+    } else hp(p.a || { u: 0.5, v: 0.6 }, "", true);
+  }
+  function arrow(ctx, from, to) { const dx = to.X - from.X, dy = to.Y - from.Y, L = Math.hypot(dx, dy) || 1; const ux = dx / L, uy = dy / L; const sx = from.X + ux * 20, sy = from.Y + uy * 20, ex = from.X + ux * Math.min(L * 0.45, 90), ey = from.Y + uy * Math.min(L * 0.45, 90); ctx.strokeStyle = "#df6433"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke(); ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex - ux * 14 - uy * 9, ey - uy * 14 + ux * 9); ctx.lineTo(ex - ux * 14 + uy * 9, ey - uy * 14 - ux * 9); ctx.closePath(); ctx.fillStyle = "#df6433"; ctx.fill(); }
+
+  /* ---------- 描画: 正面図 ---------- */
+  function drawFront() {
+    const w = front.width, h = front.height, B = frontBox(), P = frontProj(), d = state.dims;
+    fctx.clearRect(0, 0, w, h); fctx.fillStyle = "#0d0e10"; fctx.fillRect(0, 0, w, h);
+    fctx.fillStyle = "rgba(255,255,255,0.03)"; fctx.fillRect(B.x, B.y, B.w, B.h);           // 奥壁
+    fctx.strokeStyle = "rgba(239,231,214,0.25)"; fctx.strokeRect(B.x, B.y, B.w, B.h);
+    fctx.fillStyle = "rgba(255,255,255,0.05)"; fctx.fillRect(0, B.y + B.h, w, h - B.y - B.h); // 床
+    fctx.fillStyle = "rgba(240,231,214,0.45)"; fctx.font = "16px sans-serif"; fctx.textBaseline = "middle";
+    [2, 4, 6, 8].filter((m) => m <= d.H).forEach((m) => { const Y = B.y + B.h - m / d.H * B.h; fctx.fillText(`${m}m`, B.x - 40, Y); fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.beginPath(); fctx.moveTo(B.x, Y); fctx.lineTo(B.x + B.w, Y); fctx.stroke(); });
+    fctx.fillText("床", B.x - 40, B.y + B.h); fctx.fillText("下手", 30, B.y + 14); fctx.fillText("上手", B.x + B.w + 30, B.y + 14);
+    // トラス
+    state.rig.trusses.forEach((t) => { const Y = B.y + B.h - t.h / d.H * B.h; const sel = state.selTruss === t.id && state.mode === "place"; fctx.strokeStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.lineWidth = sel ? 5 : 3; fctx.beginPath(); fctx.moveTo(B.x - 16, Y); fctx.lineTo(B.x + B.w + 16, Y); fctx.stroke();
+      if (sel) { fctx.fillStyle = "#d3ac59"; fctx.fillRect(B.x + B.w + 16, Y - 12, 22, 24); fctx.fillStyle = "#1a1409"; fctx.font = "600 14px sans-serif"; fctx.fillText("↕", B.x + B.w + 20, Y); fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${t.h.toFixed(1)}m（ドラッグ）`, B.x + B.w + 44, Y); } });
+    // 光線
+    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!l || l.on !== true) return; const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
+      const grad = fctx.createLinearGradient(s.X, s.Y, tp.X, tp.Y); grad.addColorStop(0, hexA(l.color, dim ? 0.18 : 0.7)); grad.addColorStop(1, hexA(l.color, dim ? 0.03 : 0.08)); fctx.strokeStyle = grad; fctx.lineWidth = 10; fctx.lineCap = "round"; fctx.beginPath(); fctx.moveTo(s.X, s.Y); fctx.lineTo(tp.X, tp.Y); fctx.stroke();
+      if (l.surface === "back") { const g = E.pathGuide(l, d); if (g) { fctx.save(); fctx.setLineDash([8, 6]); fctx.strokeStyle = "rgba(223,100,51,0.7)"; fctx.lineWidth = 2; if (g.kind === "line") { const a = P(g.a), b = P(g.b); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); } else { const c = P(g.c); fctx.beginPath(); fctx.ellipse(c.X, c.Y, g.r / d.W * B.w, g.r / d.H * B.h, 0, 0, Math.PI * 2); fctx.stroke(); } fctx.restore(); }
+        if (isSel(f.id)) drawHandles(fctx, P, l, f.id); }
+    });
+    // 灯体
+    state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S); const shape = f.mount.type === "truss" ? "square" : f.mount.type === "floor" ? "circle" : "diamond"; drawFixtureMark(fctx, p.X, p.Y, shape, { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: label(f.id) });
+      if (f.mount.type === "side" && isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${f.mount.h.toFixed(1)}m（ドラッグ）`, p.X + (f.mount.side === "shimote" ? -180 : 26), p.Y - 26); } });
+  }
+  /* ---------- 描画: 側面図（舞台中央から下手／上手を見る） ---------- */
+  function drawSide(side) {
+    const w = front.width, h = front.height, B = frontBox(), d = state.dims, P = E.makeSideProjector(d, B, side);
+    fctx.clearRect(0, 0, w, h); fctx.fillStyle = "#0d0e10"; fctx.fillRect(0, 0, w, h);
+    const backX = P({ x: 0, y: 0, z: 0 }).X, frontX = P({ x: 0, y: d.D, z: 0 }).X;
+    const left = Math.min(backX, frontX), right = Math.max(backX, frontX);
+    fctx.fillStyle = "rgba(255,255,255,0.03)"; fctx.fillRect(left, B.y, right - left, B.h);
+    fctx.fillStyle = "rgba(255,255,255,0.05)"; fctx.fillRect(0, B.y + B.h, w, h - B.y - B.h);          // 床
+    fctx.fillStyle = "rgba(156,130,63,0.35)"; fctx.fillRect(backX - (side === "shimote" ? 0 : 6), B.y, 6, B.h); // 奥壁
+    fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.lineWidth = 1;
+    for (let m = 1; m < d.D; m++) { const X = P({ x: 0, y: m, z: 0 }).X; fctx.beginPath(); fctx.moveTo(X, B.y); fctx.lineTo(X, B.y + B.h); fctx.stroke(); }
+    fctx.fillStyle = "rgba(240,231,214,0.45)"; fctx.font = "16px sans-serif"; fctx.textBaseline = "middle";
+    [2, 4, 6, 8].filter((m) => m <= d.H).forEach((m) => { const Y = B.y + B.h - m / d.H * B.h; fctx.fillText(`${m}m`, B.x - 40, Y); fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.beginPath(); fctx.moveTo(B.x, Y); fctx.lineTo(B.x + B.w, Y); fctx.stroke(); });
+    fctx.fillText("床", B.x - 40, B.y + B.h);
+    fctx.fillText("客席 ▶", side === "shimote" ? 30 : B.x + B.w + 20, B.y + 14); fctx.fillText("奥壁", side === "shimote" ? B.x + B.w + 20 : 30, B.y + 14);
+    fctx.fillText(`${side === "shimote" ? "下手" : "上手"}側のスタンド・ブーム（舞台中央から見る）`, B.x + 10, B.y - 18);
+    // トラス（断面＝点）
+    state.rig.trusses.forEach((t) => { const q = P({ x: 0, y: t.v * d.D, z: t.h }); const sel = state.selTruss === t.id && state.mode === "place"; fctx.beginPath(); fctx.arc(q.X, q.Y, sel ? 10 : 7, 0, Math.PI * 2); fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.fill(); fctx.fillStyle = "rgba(156,130,63,0.9)"; fctx.font = "14px sans-serif"; fctx.fillText(`奥から${E.trussRow(state.rig, t.id)}列目`, q.X + 12, q.Y - 14); });
+    // 光線（この側の灯は濃く、他は薄く）
+    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!l || l.on !== true) return; const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s0 = P(S), tp = P(T); const mine = f.mount.type === "side" && f.mount.side === side; const dim = !mine || (state.sel.size && !isSel(f.id));
+      const grad = fctx.createLinearGradient(s0.X, s0.Y, tp.X, tp.Y); grad.addColorStop(0, hexA(l.color, dim ? 0.12 : 0.7)); grad.addColorStop(1, hexA(l.color, dim ? 0.02 : 0.08)); fctx.strokeStyle = grad; fctx.lineWidth = mine ? 10 : 4; fctx.lineCap = "round"; fctx.beginPath(); fctx.moveTo(s0.X, s0.Y); fctx.lineTo(tp.X, tp.Y); fctx.stroke(); });
+    // 灯体: この側のスタンド灯は床からの縦線＋印。他は小さく薄く
+    state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const q = P(S);
+      if (f.mount.type === "side" && f.mount.side === side) { fctx.strokeStyle = "rgba(240,231,214,0.5)"; fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(q.X, B.y + B.h); fctx.lineTo(q.X, q.Y); fctx.stroke(); fctx.beginPath(); fctx.moveTo(q.X - 14, B.y + B.h); fctx.lineTo(q.X + 14, B.y + B.h); fctx.stroke();
+        drawFixtureMark(fctx, q.X, q.Y, "diamond", { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: label(f.id) });
+        if (isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${f.mount.h.toFixed(1)}m・${f.mount.v < 0.4 ? "奥寄り" : f.mount.v > 0.6 ? "手前寄り" : "中ほど"}（ドラッグで奥行きと高さ）`, q.X + 22, q.Y - 26); } }
+      else if (f.mount.type !== "side") { fctx.globalAlpha = 0.35; drawFixtureMark(fctx, q.X, q.Y, f.mount.type === "truss" ? "square" : "circle", { sel: false, st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: label(f.id) }); fctx.globalAlpha = 1; } });
+    // 予告
+    const hv = state.hover;
+    if (state.tool === "side" && hv && hv.canvas === "front") { const q = { X: E.clamp(hv.X, B.x, B.x + B.w), Y: E.clamp(hv.Y, B.y, B.y + B.h) }; fctx.strokeStyle = "rgba(240,231,214,0.3)"; fctx.setLineDash([6, 6]); fctx.beginPath(); fctx.moveTo(q.X, B.y + B.h); fctx.lineTo(q.X, q.Y); fctx.stroke(); fctx.setLineDash([]); drawFixtureMark(fctx, q.X, q.Y, "diamond", { ghost: true }); fctx.fillStyle = "rgba(240,231,214,0.85)"; fctx.font = "16px sans-serif"; fctx.fillText(`${side === "shimote" ? "下手" : "上手"}の横に置く（クリック）`, q.X + 22, q.Y - 26); }
+    if (!state.rig.fixtures.some((f) => f.mount.type === "side" && f.mount.side === side) && state.tool !== "side") { fctx.fillStyle = "rgba(240,231,214,0.45)"; fctx.font = "16px sans-serif"; fctx.fillText(`${side === "shimote" ? "下手" : "上手"}側にスタンド灯はまだありません。「灯体を横に置く」でこの図をクリックすると置けます。`, B.x + 10, B.y + B.h / 2); }
+  }
+  function draw() { drawPlan(); if (state.view === "front") drawFront(); else drawSide(state.view); }
+
+  /* ---------- 当たり判定 ---------- */
+  function hitFixturePlan(pt) { const P = planProj(), B = PLAN_BOX; let best = null; state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S); const X = f.mount.type === "side" ? (f.mount.side === "shimote" ? B.x - 60 : B.x + B.w + 60) : p.X; if (Math.hypot(pt.X - X, pt.Y - p.Y) < 22) best = f; }); return best; }
+  function hitFixtureFront(pt) { const P = sectionProj(); let best = null; state.rig.fixtures.forEach((f) => { if (state.view !== "front" && !(f.mount.type === "side" && f.mount.side === state.view)) return; const S = fixtureWorld(f); if (!S) return; const p = P(S); if (Math.hypot(pt.X - p.X, pt.Y - p.Y) < 22) best = f; }); return best; }
+  function hitTrussPlan(pt) { const B = PLAN_BOX; return state.rig.trusses.find((t) => Math.abs(pt.Y - (B.y + t.v * B.h)) < 14 && pt.X > B.x - 30 && pt.X < B.x + B.w + 30) || null; }
+  function hitHandle(pt, P, surface) { // 選択中1灯のハンドル
+    if (state.sel.size !== 1) return null; const fid = [...state.sel][0]; const l = lightOf(fid); if (!l || l.on !== true || l.surface !== surface) return null; const p = l.path || {}; const d = state.dims;
+    const near = (uv) => { const q = P(E.surfacePoint(l.surface, uv, d)); return Math.hypot(pt.X - q.X, pt.Y - q.Y) < 18; };
+    if (p.kind === "line") { if (near(p.a)) return { fid, kind: "a" }; if (near(p.b)) return { fid, kind: "b" }; }
+    else if (p.kind === "circle") { if (near({ u: p.c.u + p.r / d.W, v: p.c.v })) return { fid, kind: "r" }; if (near(p.c)) return { fid, kind: "c" }; }
+    else if (near(p.a || { u: 0.5, v: 0.6 })) return { fid, kind: "a" };
+    return null;
+  }
+
+  /* ---------- ポインタ操作: 平面図 ---------- */
+  plan.addEventListener("pointerdown", (ev) => {
+    const pt = canvasPoint(plan, ev); const B = PLAN_BOX; try { plan.setPointerCapture(ev.pointerId); } catch (_) { /* 合成イベント等 */ } plan.focus && plan.focus();
+    if (state.tool === "truss") { addTruss(E.clamp((pt.Y - B.y) / B.h, 0, 1)); state.tool = null; return; }
+    if (state.tool === "fixture") { const t = E.trussById(state.rig, state.selTruss); if (!t) return; const Y = B.y + t.v * B.h; if (Math.abs(pt.Y - Y) < 60 && inBox({ X: pt.X, Y }, B)) { addFixture({ type: "truss", trussId: t.id, u: (pt.X - B.x) / B.w }); toast(`${label([...state.sel][0])}を奥から${E.trussRow(state.rig, t.id)}列目に置きました`, "元に戻す", undo); } return; }
+    if (state.tool === "floor") { if (inBox(pt, B)) { addFixture({ type: "floor", u: (pt.X - B.x) / B.w, v: (pt.Y - B.y) / B.h }); toast(`${label([...state.sel][0])}を床に置きました`, "元に戻す", undo); } return; }
+    if (state.tool === "side") { const side = pt.X < B.x ? "shimote" : pt.X > B.x + B.w ? "kamite" : null; if (side) { addFixture({ type: "side", side, v: E.clamp((pt.Y - B.y) / B.h, 0, 1), h: 2 }); toast(`${label([...state.sel][0])}を${side === "shimote" ? "下手" : "上手"}の横に置きました`, "元に戻す", undo); } return; }
+    // 選択モード
+    if (state.mode === "move") { const hh = hitHandle(pt, planProj(), "floor"); if (hh) { if (state.play.on) stop("調整するため再生を止めました"); state.drag = { kind: "handle", ...hh, before: snapshot() }; return; } }
+    const f = hitFixturePlan(pt);
+    if (f) { if (ev.shiftKey) { state.sel.has(f.id) ? state.sel.delete(f.id) : state.sel.add(f.id); } else if (!state.sel.has(f.id)) state.sel = new Set([f.id]); state.selTruss = f.mount.type === "truss" ? f.mount.trussId : state.selTruss; if (state.mode === "place" && !ev.shiftKey) state.drag = { kind: "fixture", fid: f.id, before: snapshot(), moved: false, startU: f.mount.u, startV: f.mount.v, X0: pt.X, Y0: pt.Y }; renderAll(); return; }
+    if (state.mode === "place") { const t = hitTrussPlan(pt); if (t) { state.selTruss = t.id; state.sel.clear(); state.drag = { kind: "truss", tid: t.id, before: snapshot(), moved: false }; renderAll(); return; } }
+    if (!ev.shiftKey) { state.sel.clear(); renderAll(); }
+  });
+  plan.addEventListener("pointermove", (ev) => {
+    const pt = canvasPoint(plan, ev); const B = PLAN_BOX; state.hover = { canvas: "plan", ...pt };
+    const dg = state.drag;
+    if (dg && dg.kind === "fixture") { const f = fixtureById(dg.fid); if (f) { if (f.mount.type === "truss") f.mount.u = E.clamp((pt.X - B.x) / B.w, 0, 1); else if (f.mount.type === "floor") { f.mount.u = E.clamp((pt.X - B.x) / B.w, 0, 1); f.mount.v = E.clamp((pt.Y - B.y) / B.h, 0, 1); } else f.mount.v = E.clamp((pt.Y - B.y) / B.h, 0, 1); dg.moved = true; } }
+    else if (dg && dg.kind === "truss") { const t = E.trussById(state.rig, dg.tid); if (t) { t.v = E.clamp((pt.Y - B.y) / B.h, 0, 1); dg.moved = true; } }
+    else if (dg && dg.kind === "handle") applyHandleDrag(dg, E.planToUV(state.dims, B, pt.X, pt.Y), "floor");
+    if (dg) { draw(); if (dg.kind !== "handle") renderInspector(); } else draw();
+  });
+  const endDrag = () => { const dg = state.drag; if (!dg) return; state.drag = null; if (dg.moved) { state.history.push(dg.before); state.future.length = 0; state.dirty = true; } renderAll(); };
+  plan.addEventListener("pointerup", endDrag); plan.addEventListener("pointercancel", endDrag);
+  plan.addEventListener("pointerleave", () => { state.hover = null; draw(); });
+  function applyHandleDrag(dg, uv, surface) { const l = lightOf(dg.fid); if (!l) return; const p = l.path; const d = state.dims; dg.moved = true;
+    if (dg.kind === "a" || dg.kind === "b") { (p.kind === "still" ? (p.a = p.a || {}) : p[dg.kind]).u = uv.u; (p.kind === "still" ? p.a : p[dg.kind]).v = surface === "back" ? uv.v : uv.v; }
+    else if (dg.kind === "c") { p.c.u = uv.u; p.c.v = uv.v; }
+    else if (dg.kind === "r") { p.r = E.clamp(Math.abs(uv.u - p.c.u) * d.W, 0.3, d.W / 2); }
+  }
+
+  /* ---------- ポインタ操作: 正面図 ---------- */
+  front.addEventListener("pointerdown", (ev) => {
+    const pt = canvasPoint(front, ev); const B = frontBox(); try { front.setPointerCapture(ev.pointerId); } catch (_) { /* 合成イベント等 */ }
+    if (state.view !== "front") {
+      const side = state.view;
+      if (state.tool === "side") { const vh = E.sideToVH(state.dims, B, side, pt.X, pt.Y); addFixture({ type: "side", side, v: vh.v, h: Math.max(0.3, vh.h) }); toast(`${label([...state.sel][0])}を${side === "shimote" ? "下手" : "上手"}の横に置きました`, "元に戻す", undo); return; }
+      const f = hitFixtureFront(pt);
+      if (f) { state.sel = ev.shiftKey ? (state.sel.has(f.id) ? (state.sel.delete(f.id), state.sel) : state.sel.add(f.id)) : new Set([f.id]); if (state.mode === "place" && !ev.shiftKey) state.drag = { kind: "sideVH", fid: f.id, before: snapshot(), moved: false }; renderAll(); return; }
+      if (!ev.shiftKey) { state.sel.clear(); renderAll(); }
+      return;
+    }
+    if (state.mode === "place") {
+      const t = E.trussById(state.rig, state.selTruss);
+      if (t) { const Y = B.y + B.h - t.h / state.dims.H * B.h; if (pt.X > B.x + B.w && Math.abs(pt.Y - Y) < 24) { state.drag = { kind: "trussH", tid: t.id, before: snapshot(), moved: false }; return; } }
+      const f = hitFixtureFront(pt); if (f) { state.sel = new Set([f.id]); if (f.mount.type === "side") state.drag = { kind: "sideH", fid: f.id, before: snapshot(), moved: false }; renderAll(); return; }
+      const t2 = state.rig.trusses.find((tt) => Math.abs(pt.Y - (B.y + B.h - tt.h / state.dims.H * B.h)) < 12); if (t2) { state.selTruss = t2.id; state.sel.clear(); renderAll(); }
+      return;
+    }
+    const hh = hitHandle(pt, frontProj(), "back"); if (hh) { if (state.play.on) stop("調整するため再生を止めました"); state.drag = { kind: "handle", ...hh, before: snapshot() }; return; }
+    const f = hitFixtureFront(pt); if (f) { state.sel = ev.shiftKey ? (state.sel.has(f.id) ? (state.sel.delete(f.id), state.sel) : state.sel.add(f.id)) : new Set([f.id]); renderAll(); }
+  });
+  front.addEventListener("pointermove", (ev) => {
+    const pt = canvasPoint(front, ev); const B = frontBox(); state.hover = { canvas: "front", ...pt }; const dg = state.drag;
+    if (!dg) { if (state.tool === "side" && state.view !== "front") draw(); return; }
+    if (dg.kind === "sideVH") { const f = fixtureById(dg.fid); if (f) { const vh = E.sideToVH(state.dims, B, state.view, pt.X, pt.Y); f.mount.v = vh.v; f.mount.h = E.clamp(vh.h, 0.3, state.dims.H); dg.moved = true; } draw(); renderInspector(); return; }
+    if (dg.kind === "trussH") { const t = E.trussById(state.rig, dg.tid); if (t) { t.h = E.clamp((B.y + B.h - pt.Y) / B.h * state.dims.H, 2, state.dims.H); t.tentative = false; dg.moved = true; } }
+    else if (dg.kind === "sideH") { const f = fixtureById(dg.fid); if (f) { f.mount.h = E.clamp((B.y + B.h - pt.Y) / B.h * state.dims.H, 0.3, state.dims.H); dg.moved = true; } }
+    else if (dg.kind === "handle") { const uh = E.frontToUH(state.dims, B, pt.X, pt.Y); applyHandleDrag(dg, { u: uh.u, v: uh.h / state.dims.H }, "back"); }
+    draw(); if (dg.kind !== "handle") renderInspector();
+  });
+  front.addEventListener("pointerup", endDrag); front.addEventListener("pointercancel", endDrag);
+  front.addEventListener("pointerleave", () => { state.hover = null; draw(); });
+  document.querySelectorAll(".viewtabs button").forEach((b) => { b.onclick = () => { state.view = b.dataset.view; state.viewPinned = true; renderAll(); }; });
+
+  /* ---------- キーボード ---------- */
+  document.addEventListener("keydown", (ev) => {
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName);
+    if (ev.key === "Escape") { if (state.drag) { const dg = state.drag; state.drag = null; restore(dg.before); state.dirty = true; } else if (state.tool) { state.tool = null; renderAll(); } else if (state.sel.size) { state.sel.clear(); renderAll(); } return; }
+    if (typing) return;
+    if (ev.key === " ") { ev.preventDefault(); state.play.on ? stop() : play(); }
+    if ((ev.key === "Delete" || ev.key === "Backspace") && state.mode === "place" && state.sel.size) { ev.preventDefault(); removeSelected(); }
+    if ((ev.key === "d" || ev.key === "D") && state.mode === "place" && state.sel.size) duplicateSelected();
+    if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? redo() : undo(); }
+  });
+
+  /* ---------- 左: 一覧 ---------- */
+  function renderList() {
+    const host = $("list"); host.innerHTML = "";
+    const c = cue(); const grouped = new Set(c.groups.flatMap((g) => g.members));
+    const row = (f, idx) => { const r = document.createElement("div"); r.className = "row" + (isSel(f.id) ? " sel" : ""); const st = lightState(f.id);
+      r.innerHTML = `<span class="no">${idx !== undefined ? idx + 1 + "." : ""}${label(f.id)}</span><span class="nm">${f.name || "名前なし"}<small>${E.describeMount(f, state.rig).replace(/（高さ約\dm）/, "")}</small></span><span class="st ${st}">${state.mode === "move" ? STATE_LABEL[st] : ""}</span>`;
+      r.onclick = (ev) => { if (ev.shiftKey) { isSel(f.id) ? state.sel.delete(f.id) : state.sel.add(f.id); } else state.sel = new Set([f.id]); if (f.mount.type === "truss") state.selTruss = f.mount.trussId; renderAll(); }; return r; };
+    if (state.mode === "move") c.groups.forEach((g, gi) => { const h = document.createElement("div"); h.className = "grp"; h.innerHTML = `<span>組${gi + 1}　${groupName(g)}</span><small>${g.members.length}灯</small>`; h.onclick = () => { state.sel = new Set(g.members); renderAll(); }; host.append(h); g.members.forEach((m, i) => { const f = fixtureById(m); if (f) host.append(row(f, g.relation === "sequential" ? i : undefined)); }); });
+    const rest = state.rig.fixtures.filter((f) => state.mode !== "move" || !grouped.has(f.id));
+    if (rest.length && state.mode === "move" && c.groups.length) { const h = document.createElement("div"); h.className = "grp"; h.innerHTML = "<span>組なし</span>"; host.append(h); }
+    rest.forEach((f) => host.append(row(f)));
+    if (!state.rig.fixtures.length) host.innerHTML = '<p class="hint" style="padding:6px">灯体はまだありません。</p>';
+    $("sel-count").textContent = state.sel.size > 1 ? `${state.sel.size}灯を選択中` : "";
+    $("dup").disabled = !(state.mode === "place" && state.sel.size); $("del").disabled = !(state.mode === "place" && state.sel.size); $("spread").disabled = !(state.mode === "place" && canSpread());
+    $("spread").title = canSpread() ? "" : "同じトラスの3灯以上を選ぶと使えます";
+  }
+
+  /* ---------- 右: 設定欄 ---------- */
+  const seg = (opts, cur, onPick, cls) => { const s = document.createElement("div"); s.className = "seg " + (cls || ""); opts.forEach(([v, t, dis]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.setAttribute("aria-pressed", String(v === cur)); b.disabled = Boolean(dis); b.onclick = () => onPick(v); s.append(b); }); return s; };
+  const field = (lab, node, wide) => { const f = document.createElement("div"); f.className = "field" + (wide ? " wide" : ""); const l = document.createElement("span"); l.textContent = lab; f.append(l, node); return f; };
+  const btn = (t, fn, cls) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = t; b.onclick = fn; return b; };
+  const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
+  const range = (min, max, step, val, fmt, onInput, onChange) => { const w = el("div"); const i = document.createElement("input"); i.type = "range"; i.min = min; i.max = max; i.step = step; i.value = val; const v = el("span", "val", fmt(val)); i.oninput = () => { v.textContent = fmt(Number(i.value)); onInput(Number(i.value)); }; i.onchange = () => onChange && onChange(Number(i.value)); w.append(i, v); return w; };
+
+  function renderInspector() {
+    const host = $("insp"); host.innerHTML = "";
+    const ids = [...state.sel];
+    if (state.mode === "place") {
+      host.append(el("p", "kicker", "配置（ショー共通）"), el("p", "hint", "配置はすべてのシーンで共通です。"));
+      const tools = el("div", "seg col");
+      [["truss", "トラスを足す"], ["fixture", "灯体を足す（トラスに）", !state.selTruss], ["floor", "灯体を床に置く"], ["side", "灯体を横に置く（上手／下手）"]].forEach(([k, t, dis]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = state.tool === k ? "配置を終える（Esc）" : t; b.setAttribute("aria-pressed", String(state.tool === k)); b.disabled = Boolean(dis); b.onclick = () => { state.tool = state.tool === k ? null : k; renderAll(); }; tools.append(b); });
+      host.append(tools);
+      if (!state.selTruss) host.append(el("p", "note", "トラスを選ぶと「灯体を足す（トラスに）」が使えます。"));
+      if (!state.selTruss) host.append(el("p", "note", "トラスを選ぶと「灯体を足す（トラスに）」が使えます。"));
+      if (state.tool === "side") host.append(el("p", "note", "下の側面図（下手を見る／上手を見る）をクリックすると、その奥行きと高さにスタンド灯を置けます。平面図の舞台の外側をクリックしても置けます。"));
+      const t = E.trussById(state.rig, state.selTruss);
+      if (t && !ids.length) {
+        host.append(el("p", "kicker", `トラス（奥から${E.trussRow(state.rig, t.id)}列目）`));
+        const name = document.createElement("input"); name.type = "text"; name.value = t.label; name.placeholder = "名前（任意）"; name.onchange = () => { t.label = name.value.slice(0, 16); commit(); }; host.append(field("名前", name));
+        host.append(field("奥行き", range(0, 1, 0.01, t.v, (v) => `${(v * state.dims.D).toFixed(1)}m（奥から）`, (v) => { t.v = v; draw(); }, () => commit())));
+        host.append(field("高さ", range(2, state.dims.H, 0.1, t.h, (v) => `約${v.toFixed(1)}m${t.tentative ? "（仮の高さ）" : ""}`, (v) => { t.h = v; t.tentative = false; draw(); }, () => commit())));
+        host.append(btn("このトラスに灯体を足す", () => { state.tool = "fixture"; renderAll(); }, "primary"));
+        host.append(btn("トラスを削除", () => { const n = state.rig.fixtures.filter((f) => f.mount.trussId === t.id).length; const go = () => { state.rig.fixtures = state.rig.fixtures.filter((f) => f.mount.trussId !== t.id); state.rig.trusses = state.rig.trusses.filter((x) => x.id !== t.id); state.selTruss = null; state.sel.clear(); commit("トラスを削除しました"); }; n ? dialog(`<p>このトラスには${n}灯が付いています。灯体ごと削除しますか？</p>`, [["やめる", null, "quiet"], ["灯体ごと削除", go, "primary"]]) : go(); }, "quiet"));
+      }
+      if (ids.length === 1) {
+        const f = fixtureById(ids[0]); const m = f.mount;
+        host.append(el("p", "kicker", `${label(f.id)}　${E.describeMount(f, state.rig)}`));
+        const name = document.createElement("input"); name.type = "text"; name.value = f.name; name.placeholder = "例: 中央ムービング"; name.onchange = () => { f.name = name.value.slice(0, 20); commit(); }; host.append(field("名前", name));
+        if (m.type === "truss") { const sel = document.createElement("select"); state.rig.trusses.forEach((tt) => { const o = document.createElement("option"); o.value = tt.id; o.textContent = `奥から${E.trussRow(state.rig, tt.id)}列目${tt.label ? "・" + tt.label : ""}`; o.selected = tt.id === m.trussId; sel.append(o); }); sel.onchange = () => { m.trussId = sel.value; state.selTruss = sel.value; commit(); }; host.append(field("取り付けるトラス", sel));
+          host.append(field("横位置", range(0, 1, 0.01, m.u, (v) => (v < 0.4 ? "下手寄り" : v > 0.6 ? "上手寄り" : "中央"), (v) => { m.u = v; draw(); }, () => commit())));
+          const tt = E.trussById(state.rig, m.trussId); host.append(field("高さ", el("span", "val", `約${tt ? tt.h.toFixed(1) : "?"}m（トラスから継承）`))); }
+        if (m.type === "floor") { host.append(field("横位置", range(0, 1, 0.01, m.u, (v) => (v < 0.4 ? "下手寄り" : v > 0.6 ? "上手寄り" : "中央"), (v) => { m.u = v; draw(); }, () => commit()))); host.append(field("奥行き", range(0, 1, 0.01, m.v, (v) => (v < 0.4 ? "奥" : v > 0.6 ? "手前" : "中ほど"), (v) => { m.v = v; draw(); }, () => commit()))); host.append(field("高さ", el("span", "val", "床置き"))); }
+        if (m.type === "side") { host.append(field("取り付け", seg([["shimote", "下手側"], ["kamite", "上手側"]], m.side, (v) => { m.side = v; commit(); }))); host.append(field("奥行き", range(0, 1, 0.01, m.v, (v) => (v < 0.4 ? "奥寄り" : v > 0.6 ? "手前寄り" : "中ほど"), (v) => { m.v = v; draw(); }, () => commit()))); host.append(field("高さ", range(0.3, state.dims.H, 0.1, m.h, (v) => `約${v.toFixed(1)}m`, (v) => { m.h = v; draw(); }, () => commit()))); }
+        const acts = el("div", "seg"); acts.append(btn("複製", duplicateSelected, "small"), btn("削除", removeSelected, "small quiet")); host.append(acts);
+      } else if (ids.length > 1) {
+        host.append(el("p", "kicker", `${ids.length}灯を選択中`));
+        const acts = el("div", "seg"); acts.append(btn("複製", duplicateSelected, "small"), btn("削除", removeSelected, "small quiet")); host.append(acts);
+        const sp = btn("等間隔に並べる", spreadSelected, "small"); sp.disabled = !canSpread(); host.append(sp); if (!canSpread()) host.append(el("p", "note", "同じトラスの3灯以上を選ぶと使えます。"));
+      }
+      host.append(el("p", "note", "動きは「動き（このシーン）」で設定します。"));
+      return;
+    }
+    // ---- 動きモード ----
+    host.append(el("p", "kicker", `動き（シーン「${scene().name}」）`), el("p", "hint", "現在のシーンだけの点灯と動きを設定します。"));
+    if (!ids.length) { host.append(el("p", "note", "灯体を選んでください（一覧・平面図・正面図のどこからでも）。Shiftで複数選ぶと組にできます。")); return; }
+    if (ids.length === 1) {
+      const fid = ids[0]; const f = fixtureById(fid); const l = lightOf(fid);
+      host.append(el("p", "kicker", `${label(fid)}　${f.name || ""}`));
+      const g = groupOf(fid);
+      if (g) { const gi = cue().groups.indexOf(g); const box = el("div", "box", `<p class="hint">組${gi + 1}「${groupName(g)}」の一員です。個別に直すと「調整済み」になります。</p>`); box.append(btn("組から外す", () => ungroup(fid), "small quiet")); host.append(box); }
+      if (!l || l.on === null || l.on === undefined) { host.append(el("p", "note", "このシーンでは未設定です。")); const s = el("div", "seg"); s.append(btn("点灯を設定", () => { ensureOn(fid); commit(); }, "primary"), btn("消灯を設定", () => { setLight(fid, { on: false }); commit(); }, "quiet")); host.append(s); return; }
+      if (l.on === false) { host.append(el("p", "note", "このシーンでは消灯です。")); const s = el("div", "seg"); s.append(btn("点灯にする", () => { ensureOn(fid); commit(); }), btn("設定を外す", () => { delete cue().lights[fid]; commit(); }, "quiet")); host.append(s); return; }
+      const sw = el("div", "swatches"); COLORS.forEach((c) => { const b = document.createElement("button"); b.type = "button"; b.style.background = c; b.setAttribute("aria-pressed", String(l.color === c)); b.onclick = () => { setLight(fid, { color: c }); commit(); }; sw.append(b); }); host.append(field("光の色", sw));
+      host.append(field("当てる場所", seg([["floor", "床"], ["back", "奥の壁"]], l.surface, (v) => { setLight(fid, { surface: v }); commit(); })));
+      const p = l.path || { kind: "still" };
+      host.append(field("動き", seg([["still", "止める"], ["line", "往復"], ["circle", "円"]], p.kind, (v) => { setKind(fid, v); commit(); })));
+      if (p.kind === "line") { host.append(field("始め方", seg([["a", "A → B"], ["b", "B → A"]], p.start || "a", (v) => { p.start = v; commit(); }))); host.append(el("p", "note", `動く範囲は図のA・Bをドラッグ。${l.surface === "back" ? "奥の壁は正面図で。" : "床は平面図で。"}`)); }
+      if (p.kind === "circle") { host.append(field("回る向き", seg([["cw", "時計回り"], ["ccw", "反時計回り"]], p.dir, (v) => { p.dir = v; commit(); }))); host.append(field("半径", range(0.3, state.dims.W / 2, 0.1, p.r, (v) => `約${v.toFixed(1)}m`, (v) => { p.r = v; draw(); }, () => commit()))); host.append(field("始める位置", range(0, 1, 0.05, p.start || 0, (v) => `${Math.round(v * 360)}°`, (v) => { p.start = v; draw(); }, () => commit()))); }
+      if (p.kind === "still") host.append(el("p", "note", "当てる先は図のハンドルをドラッグ。"));
+      if (p.kind !== "still") host.append(field(p.kind === "circle" ? "1周の時間" : "1往復の時間", seg([["slow", "ゆっくり 4秒"], ["normal", "普通 2秒"], ["fast", "速い 1秒"]], l.speed, (v) => { setLight(fid, { speed: v }); commit(); })));
+      const s = el("div", "seg"); s.append(btn("消灯にする", () => { setLight(fid, { on: false }); commit(); }, "small quiet"), btn("設定を外す", () => { delete cue().lights[fid]; commit(); }, "small quiet")); host.append(s);
+      return;
+    }
+    // 複数
+    host.append(el("p", "kicker", `${ids.length}灯を選択中`));
+    const gs = [...new Set(ids.map((id) => groupOf(id)).filter(Boolean))];
+    const same = gs.length === 1 && gs[0].members.length === ids.length && ids.every((id) => gs[0].members.includes(id));
+    if (same) { const g = gs[0]; const gi = cue().groups.indexOf(g); host.append(el("p", "hint", `組${gi + 1}「${groupName(g)}」を編集中`));
+      host.append(field("組の動き", seg([["together", "一緒に動く"], ["mirror", "鏡のように動く"], ["sequential", "順番に動く"], ["fan", "扇に開く・閉じる"], ["cross", "交差して入れ替わる"]], g.compose || g.relation, (v) => makeGroup(g.members, v), "col"), true));
+      if (g.relation === "sequential") host.append(field("ずらす時間", range(100, 1500, 50, g.delayMs, (v) => `${(v / 1000).toFixed(2)}秒ずつ`, (v) => { g.delayMs = v; draw(); }, () => commit())));
+      host.append(el("p", "note", "順番に動くときは、一覧の並び（1・2・3…）が実際の順番です。"));
+      const ol = el("div", "seg col"); g.members.forEach((m, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = `${i + 1}. ${label(m)} ${fixtureById(m).name || ""}${i > 0 ? "　▲ 前へ" : ""}`; b.onclick = () => { if (i > 0) { [g.members[i - 1], g.members[i]] = [g.members[i], g.members[i - 1]]; commit(); } }; ol.append(b); }); host.append(field("この組の灯体", ol, true));
+      host.append(btn("組を解散する", () => { cue().groups = cue().groups.filter((x) => x !== g); g.members.forEach((m) => setLight(m, { groupId: null })); commit("組を解散しました"); }, "small quiet"));
+    } else {
+      host.append(el("p", "hint", "選んだ灯体で組の動きをつくる"));
+      host.append(field("組の動き", seg([["together", "一緒に動く"], ["mirror", "鏡のように動く"], ["sequential", "順番に動く"], ["fan", "扇に開く・閉じる"], ["cross", "交差して入れ替わる"]], null, (v) => makeGroup(ids, v), "col"), true));
+      host.append(el("p", "note", "未設定の灯は「点灯」にしてから組にします。一灯ずつの調整は組にした後もできます。"));
+    }
+  }
+
+  /* ---------- 全体 ---------- */
+  function renderAll() {
+    $("mode-place").setAttribute("aria-pressed", String(state.mode === "place")); $("mode-move").setAttribute("aria-pressed", String(state.mode === "move"));
+    $("scene-name").textContent = `シーン ${state.sceneIndex + 1}「${scene().name}」`;
+    $("transport").style.visibility = state.mode === "move" ? "visible" : "hidden";
+    $("empty").hidden = Boolean(state.rig.trusses.length || state.rig.fixtures.length);
+    $("dirty").textContent = state.dirty ? "未適用の変更あり" : ""; $("dirty").classList.toggle("ok", !state.dirty);
+    $("undo").disabled = !state.history.length; $("redo").disabled = !state.future.length;
+    // 断面図の向き: 横の灯体を選んだらその側、奥壁を編集中は正面。手動で選んだ向きは次の選択変更まで保つ
+    const selFix = [...state.sel].map(fixtureById).filter(Boolean);
+    const sideSel = selFix.find((f) => f.mount.type === "side");
+    const back = state.mode === "move" && [...state.sel].some((id) => (lightOf(id) || {}).surface === "back");
+    const selKey = [...state.sel].sort().join(",") + "|" + state.tool;
+    if (selKey !== state.lastSelKey) { state.lastSelKey = selKey; state.viewPinned = false; }
+    if (!state.viewPinned) { if (sideSel) state.view = sideSel.mount.side; else if (back) state.view = "front"; else if (state.tool === "side" && state.view === "front") state.view = "shimote"; else if (state.tool !== "side" && !sideSel) state.view = "front"; }
+    document.querySelectorAll(".viewtabs button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === state.view)));
+    const big = (back && state.view === "front") || state.view !== "front";
+    front.classList.toggle("big", big); front.height = big ? 480 : 300; plan.style.height = big ? "292px" : "382px";
+    $("legend-l").textContent = state.view === "front" ? "平面図（上が奥・下が客席）／正面図（客席から）" : `平面図（上が奥・下が客席）／${state.view === "shimote" ? "下手" : "上手"}を見た側面図（横軸＝奥行き・縦軸＝高さ）`;
+    $("legend-r").textContent = state.mode === "move" ? "実線＝いまの光　破線＝動く範囲　●A/B＝ドラッグ" : "■トラス灯　●床置き　◆横（スタンド・ブーム）";
+    renderList(); renderInspector(); renderTransport(); draw();
+  }
+
+  /* ---------- ヘッダ・空状態・書き出し ---------- */
+  $("mode-place").onclick = () => { state.mode = "place"; stop(); renderAll(); };
+  $("mode-move").onclick = () => { state.mode = "move"; state.tool = null; renderAll(); };
+  $("scene-prev").onclick = () => { state.sceneIndex = (state.sceneIndex + state.scenes.length - 1) % state.scenes.length; home(); renderAll(); };
+  $("scene-next").onclick = () => { state.sceneIndex = (state.sceneIndex + 1) % state.scenes.length; home(); renderAll(); };
+  $("t-home").onclick = home; $("t-play").onclick = play; $("t-stop").onclick = () => stop();
+  $("undo").onclick = undo; $("redo").onclick = redo;
+  $("sel-all").onclick = () => { state.sel = new Set(state.rig.fixtures.map((f) => f.id)); renderAll(); };
+  $("sel-none").onclick = () => { state.sel.clear(); renderAll(); };
+  $("dup").onclick = duplicateSelected; $("del").onclick = removeSelected; $("spread").onclick = spreadSelected;
+  $("empty-truss").onclick = () => { state.tool = "truss"; $("empty").hidden = true; renderAll(); $("empty").hidden = true; };
+  $("empty-preset").onclick = () => dialog("<p>奥トラス1本（高さ約6m）に、ムービング4灯を等間隔に置きます。</p><p class='note'>置いたあとで位置と灯数を変えられます。</p>", [["やめる", null, "quiet"], ["置く", () => { const t = E.newTruss(uid("t"), 0.15, 6, "奥トラス"); state.rig.trusses.push(t); [0.2, 0.4, 0.6, 0.8].forEach((u) => state.rig.fixtures.push(E.newFixture(uid("f"), state.nextNo++, { type: "truss", trussId: t.id, u }, ""))); state.selTruss = t.id; state.sel.clear(); commit("奥トラス1本＋ムービング4灯を置きました"); }, "primary"]]);
+  $("apply").onclick = () => { state.dirty = false; state.history.length = 0; state.future.length = 0; renderAll(); $("dirty").textContent = "ショーへ適用しました"; setTimeout(() => renderAll(), 2500); toast("ショーへ適用しました（試作なので画面は残ります）"); };
+  $("close").onclick = () => { if (state.dirty) dialog("<p>変更がまだ適用されていません。</p>", [["編集に戻る", null, "quiet"], ["破棄して閉じる", () => toast("破棄しました（試作なので画面は残ります）"), "quiet"], ["適用して閉じる", () => $("apply").onclick(), "primary"]]); else toast("閉じました（試作なので画面は残ります）"); };
+
+  // 書き出し: 平面図を4秒録画（順0で検証した方式）＋3コマPNG＋灯ごとの説明
+  let exportCancel = false;
+  $("band-cancel").onclick = () => { exportCancel = true; };
+  $("export").onclick = async () => {
+    if (state.exporting) return; const lit = state.rig.fixtures.filter((f) => (lightOf(f.id) || {}).on === true); if (!lit.length) { toast("点灯している灯がありません。動きモードで点灯を設定してください。"); return; }
+    state.exporting = true; exportCancel = false; stop(); state.mode = "move"; renderAll();
+    const band = $("band"), bar = $("band-bar"); band.hidden = false; $("band-text").textContent = "動画を書き出しています　この画面を開いたままにしてください。";
+    const base = `light-rig-${scene().name}`;
+    try {
+      const mime = ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm"].find((t) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t));
+      if (mime) {
+        const stream = plan.captureStream(0); const track = stream.getVideoTracks()[0]; const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 5e6 }); const chunks = [];
+        rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); }; const done = new Promise((r) => { rec.onstop = r; rec.onerror = r; });
+        const DUR = 4000; let t = 0; rec.start(250);
+        await new Promise((r) => { const timer = setInterval(() => { if (exportCancel || t > DUR) { clearInterval(timer); rec.stop(); r(); return; } state.play.t = t; draw(); track.requestFrame && track.requestFrame(); bar.style.width = `${Math.min(100, t / DUR * 100)}%`; t += 33; }, 33); });
+        await done;
+        if (!exportCancel && chunks.length) download(new Blob(chunks, { type: mime.split(";")[0] }), `${base}.${mime.startsWith("video/mp4") ? "mp4" : "webm"}`);
+      }
+      if (!exportCancel) {
+        const off = document.createElement("canvas"); off.width = plan.width * 3 / 2; off.height = plan.height / 2 + 40; const oc = off.getContext("2d"); oc.fillStyle = "#0d0e10"; oc.fillRect(0, 0, off.width, off.height);
+        [0, 1000, 2000].forEach((tt, i) => { state.play.t = tt; draw(); oc.drawImage(plan, i * plan.width / 2, 40, plan.width / 2, plan.height / 2); oc.fillStyle = "#efe7d6"; oc.font = "22px sans-serif"; oc.fillText(`${(tt / 1000).toFixed(1)}秒`, i * plan.width / 2 + 12, 28); });
+        oc.fillStyle = "#df6433"; oc.font = "600 22px sans-serif"; oc.fillText(`光の配置と動きの案　シーン「${scene().name}」`, off.width - 520, 28);
+        await new Promise((r) => off.toBlob((b) => { download(b, `${base}.png`); r(); }, "image/png"));
+        const lines = [`灯体の配置と動きの案　シーン「${scene().name}」　${new Date().toISOString().slice(0, 10)}`, ""]; state.rig.fixtures.forEach((f) => lines.push(`${label(f.id)}${f.name ? "（" + f.name + "）" : ""}：${E.describeMount(f, state.rig)}。${E.describeCue(lightOf(f.id))}`)); cue().groups.forEach((g, i) => lines.push(`組${i + 1}（${groupName(g)}）：${g.members.map(label).join("・")}`)); lines.push("", "灯体の概略配置と動きの案です。機種・回路・DMX・照度・設置の安全性は未検討です。");
+        download(new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" }), `${base}.txt`);
+        toast("動画・図・説明を書き出しました");
+      } else toast("書き出しを中止しました");
+    } catch (e) { toast("書き出しに失敗しました: " + (e && e.message)); }
+    band.hidden = true; bar.style.width = "0%"; state.exporting = false; state.play.t = 0; renderAll();
+  };
+  function download(blob, name) { if (!blob) return; const u = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = u; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); }
+
+  renderAll();
+})();
+
+ succeeded in 0ms:
+379:    transition: {
+404:    const transition = raw.transition && typeof raw.transition === "object" ? raw.transition : {};
+405:    next.transition = {
+406:      triggerType: lightIntentEnum(transition.triggerType, LIGHT_INTENT_TRIGGER_VALUES, "unknown"),
+407:      triggerNote: lightIntentText(transition.triggerNote, 160),
+408:      change: lightIntentEnum(transition.change, LIGHT_INTENT_CHANGE_VALUES, "unknown"),
+409:      tempo: lightIntentEnum(transition.tempo, LIGHT_INTENT_TEMPO_VALUES, "unspecified"),
+424:    const transitionContent = next.transition.triggerType !== "unknown"
+425:      || next.transition.change !== "unknown"
+426:      || next.transition.tempo !== "unspecified"
+427:      || Boolean(next.transition.triggerNote);
+430:    return layerContent || transitionContent || textContent ? next : null;
+475:    if (intent.transition.triggerNote && parts.join(" ／ ").length < max * 0.7) {
+476:      parts.push(intent.transition.triggerNote);
+684:      transition: intent.transition,
+1174:    transition: audioSceneTransition,
+3531:    rehearsalDefaultTransition: document.getElementById("stage-rehearsal-default-transition"),
+3649:    animScenes: document.getElementById("stage-anim-scenes"),
+3650:    animMs: document.getElementById("stage-anim-ms"),
+3651:    animMsValue: document.getElementById("stage-anim-ms-value"),
+4114:    transitionToNextSeconds: rehearsalSeconds(raw && raw.transitionToNextSeconds),
+4170:  const canAddSceneRows = (count = 1) => hasCapacity(state.project.scenes, "sceneRows", count, "シーンとセクション");
+4231:    (project.scenes || []).forEach((scene) => (scene.pieces || []).forEach((p) => pieces.push(p)));
+4263:      cueSeconds: null,
+4324:      animateScenes: true,
+4536:      route: normalizeRoute(piece && piece.route),
+4722:      animU: undefined, animV: undefined, _effectivePlacement: true };
+4849:      cueSeconds: kind === "scene" ? normalizeCueSeconds(raw.cueSeconds) : null,
+4883:      piece.route = null;
+4946:    (project.scenes || []).forEach((scene) => {
+4958:    (project.scenes || []).forEach((scene) => {
+4964:    (project.scenes || []).forEach((scene) => {
+5130:      animateScenes: raw.animateScenes === undefined ? true : Boolean(raw.animateScenes),
+5150:    normalized.project.scenes.forEach((scene) => normalizeHolds(scene.pieces, normalized.project));
+5461:    const transition = audioSceneTransition(audioPlayback.trackId, nextId, options.continuePlayback);
+5483:    audioPlayback.playAfterLoad = transition.play;
+5724:      scenes: state.project.scenes.map((scene) => [scene.id, scene.title, scene.audioTrackId]),
+5732:    const affectsCurrent = scene.id === state.project.activeSceneId;
+5747:    const affected = state.project.scenes.filter((scene) => scene.audioTrackId === track.id);
+5749:    const wasPlaying = affected.some((scene) => scene.id === state.project.activeSceneId)
+5765:    const used = state.project.scenes.filter((scene) => scene.audioTrackId === trackId).length;
+5771:    state.project.scenes.forEach((scene) => {
+5824:      const assigned = state.project.scenes.filter((scene) => scene.audioTrackId === track.id).length;
+5849:      state.project.scenes.forEach((scene) => {
+6027:      state.project.scenes
+6150:    fresh.project.scenes = study.beats.map((beat) => {
+6180:    fresh.project.activeSceneId = fresh.project.scenes[0].id;
+6341:          transitionToNextSeconds: 0,
+6396:    const scenes = next.project.scenes.filter((scene) => scene.kind === "scene");
+6406:        piece.route = { u: twin.u, v: twin.v,
+6468:    if (!doc.project || !Array.isArray(doc.project.scenes)) return null;
+7193:      const seriH = piece.animMech && piece.animMech.seriH !== undefined
+7194:        ? piece.animMech.seriH : piece.seriH;
+7422:        piece.route = null;
+7432:      piece.route = null;
+7455:  const pieceU = (piece) => (piece && piece.animU !== undefined ? piece.animU : piece.u);
+7456:  const pieceV = (piece) => (piece && piece.animV !== undefined ? piece.animV : piece.v);
+7461:    const base = piece.animBase !== undefined ? piece.animBase : (piece.base || 0);
+7603:    const poseId = piece.animPose ? piece.animPose
+7828:    return piece.animPose ? piece.animPose
+7859:    // 転換アニメで床を歩いている間（animBaseあり）は普通に影を落とす
+7861:    if ((mountHere === "pole" || mountHere === "trapeze") && piece.animBase === undefined) {
+8913:      piece.animBeamU === undefined ? b.u : piece.animBeamU,
+8914:      piece.animBeamV === undefined ? b.v : piece.animBeamV, L);
+8932:    const su = piece.animBeamU === undefined ? b.u : piece.animBeamU;
+8933:    const sv = piece.animBeamV === undefined ? b.v : piece.animBeamV;
+8974:    const glow = piece.animGlow !== undefined
+8975:      ? clamp(finite(piece.animGlow, 1), 0, 1.5)
+9123:      const ext = poseExtent(piece.animPose || piece.pose);
+9393:  /* route を外から渡せる形。はけの自動動線（まだ piece.route に無い仮の線）にも
+9398:      ...piece, u, v, animU: undefined, animV: undefined, _effectivePlacement: false,
+9416:  const routePoints = (piece, L) => routePointsFor(piece, piece.route, L);
+9427:  // 一本の動線を描く。picked のときは取っ手つき。route は piece.route でも仮の線でもよい
+9616:      if (piece.heldBy || !piece.route || !routesShownFor(piece)) return;
+9617:      drawOneRoute(target, L, piece, piece.route, showSelection && piece.id === selectedId);
+9626:         piece.route へ実体化して、袖のどちら側・どの深さへはけるかを
+9726:        if (piece.type !== "performer" || !piece.route) return;
+9727:        const r = piece.route;
+9778:  const routeHandleAt = (point, piece, L) => routeHandleAtFor(point, piece, piece && piece.route, L);
+9781:     取っ手を掴まれたら、この形のまま piece.route へ実体化する。 */
+9783:    if (!next || piece.type !== "performer" || !piece.castId || piece.route) return null;
+11910:    const scenes = (state.project.scenes || []).filter((row) => row.kind === "scene");
+11997:    const scenes = (state.project.scenes || []).filter((row) => row.kind === "scene");
+11998:    const index = Math.max(0, scenes.findIndex((row) => row.id === state.project.activeSceneId));
+12001:    if (els.sceneReplay) els.sceneReplay.disabled = index <= 0 || !state.animateScenes;
+12104:    setValue(els.lightTriggerType, intent.transition.triggerType);
+12105:    setValue(els.lightChange, intent.transition.change);
+12106:    setValue(els.lightTempo, intent.transition.tempo);
+12107:    setValue(els.lightTriggerNote, intent.transition.triggerNote);
+12241:  bindLightIntentSelect(els.lightTriggerType, (intent, value) => { intent.transition.triggerType = value; });
+12242:  bindLightIntentSelect(els.lightChange, (intent, value) => { intent.transition.change = value; });
+12243:  bindLightIntentSelect(els.lightTempo, (intent, value) => { intent.transition.tempo = value; });
+12244:  bindLightIntentText(els.lightTriggerNote, (intent, value) => { intent.transition.triggerNote = value; });
+12922:    const rows = state.project.scenes || [];
+12967:    const rows = state.project.scenes || [];
+12969:      row.kind === "scene" && row.id === state.project.activeSceneId
+13002:    const scenes = state.project.scenes.filter((row) => row.kind === "scene");
+13003:    const found = scenes.findIndex((row) => row.id === state.project.activeSceneId);
+13482:    const scenes = state.project.scenes.filter((row) => row.kind === "scene");
+13483:    const index = Math.max(0, scenes.findIndex((row) => row.id === state.project.activeSceneId));
+13560:      ? [...centerBar.querySelectorAll(".stage-name-toggle, .stage-anim-control")]
+13780:      el.style.transition = "none";
+13783:        el.style.transition = "transform 170ms cubic-bezier(0.2, 0.7, 0.3, 1)";
+13792:      el.style.transition = "";
+13794:      el.removeEventListener("transitionend", done);
+13796:    el.addEventListener("transitionend", done);
+13833:    el.style.transition = "";
+13896:    el.style.transition = "none";
+13899:      el.style.transition = "transform 170ms cubic-bezier(0.2, 0.7, 0.3, 1)";
+14019:    const rows = state.project.scenes.filter((row) => row.kind === "scene");
+14104:        state.project.scenes.forEach((scene) => {
+14367:    const scenesWith = state.project.scenes.filter((scene) =>
+14375:    state.project.scenes.forEach((scene) => {
+14549:    state.project.scenes.forEach((scene) => {
+14582:      state.project.scenes.forEach((scene) => {
+15218:    const scenesWith = state.project.scenes.filter((scene) =>
+15226:    state.project.scenes.forEach((scene) => {
+15515:    fresh.project.scenes = rows.map((row) => {
+15521:    fresh.project.activeSceneId = fresh.project.scenes[0].id;
+16260:        state.project.scenes.forEach((scene) => {
+
+exec
+/bin/zsh -lc "rg -n \"\\.left|\\.list|\\.row|\\.grp|grid-template-columns|196|292|fixture-list|filter|toolbar|height:\" prototype/index.html | head -100; sed -n '1,260p' prototype/index.html" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+ succeeded in 0ms:
+15:  html,body{margin:0;background:#0d0b09;color:var(--milk);font-family:var(--sans);font-size:12px;line-height:1.5}
+16:  body{min-height:100vh;display:grid;place-items:center;padding:20px}
+19:  .modal{width:min(1180px,calc(100vw - 40px));height:min(840px,calc(100vh - 40px));background:var(--desk-2);border:1px solid var(--line-dark);box-shadow:0 24px 60px rgba(0,0,0,.5);display:grid;grid-template-rows:60px minmax(0,1fr);overflow:hidden}
+20:  .head{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid var(--line-dark)}
+23:  .modes button{min-height:34px;padding:6px 16px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk-dim);font-size:12px;cursor:pointer}
+29:  .btn{min-height:34px;padding:6px 14px;border:1px solid var(--line-dark);background:none;color:var(--milk);font-size:12px;cursor:pointer;letter-spacing:.06em;border-radius:1px}
+34:  .btn.small{min-height:28px;padding:3px 9px;font-size:10.5px}
+35:  .x{min-width:26px;min-height:24px;border:1px solid var(--line-dark);background:none;color:var(--milk-dim);font-size:11px;cursor:pointer}
+37:  .body{display:grid;grid-template-columns:196px minmax(0,636px) 292px;gap:12px;padding:12px 16px 14px;min-height:0}
+38:  .col{min-height:0;display:flex;flex-direction:column;gap:8px}
+41:  .hint{color:var(--milk-dim);font-size:10px;line-height:1.6;margin:0}
+43:  .list{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:2px;padding:6px}
+44:  .row{display:grid;grid-template-columns:28px 1fr auto;gap:6px;align-items:center;min-height:36px;padding:2px 6px;border:1px solid transparent;cursor:pointer;color:var(--milk-dim)}
+45:  .row:hover{border-color:var(--line-dark)}
+46:  .row.sel{border-color:var(--brass);background:rgba(156,130,63,.16);color:var(--milk)}
+47:  .row .no{font:600 11px/1 var(--sans);color:var(--milk);background:var(--desk-3);padding:5px 0;text-align:center;border:1px solid var(--line-dark)}
+48:  .row.sel .no{background:var(--brass);color:#1a1409;border-color:var(--brass)}
+49:  .row .nm{font-size:11px;line-height:1.25;overflow:hidden}
+50:  .row .nm small{display:block;font-size:9px;color:var(--milk-dim)}
+51:  .row .st{font-size:9px;letter-spacing:.04em;white-space:nowrap}
+52:  .row .st.unset{color:var(--milk-dim)} .row .st.off{color:#8b98a1} .row .st.on{color:var(--milk)} .row .st.move{color:var(--rust-ink)}
+53:  .grp{margin:6px 0 2px;padding:3px 6px;font-size:10px;color:var(--brass);border-bottom:1px solid var(--line-dark);display:flex;justify-content:space-between;align-items:center}
+54:  .grp small{color:var(--milk-dim);font-size:9px}
+55:  .list-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+56:  .list-actions .btn{min-height:30px;padding:3px 6px;font-size:10.5px}
+58:  .scenebar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;min-height:32px}
+60:  .transport{display:flex;align-items:center;gap:6px;justify-content:center;min-height:32px}
+63:  .canvases{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+65:  #plan{height:382px} #front{height:150px} #front.big{height:240px}
+67:  .viewtabs button{min-height:26px;padding:2px 10px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk-dim);font-size:10px;cursor:pointer}
+71:  .legend{display:flex;justify-content:space-between;color:var(--milk-dim);font-size:9.5px;min-height:20px;align-items:center}
+73:  .band .bar{flex:1;height:6px;background:var(--desk);border:1px solid var(--line-dark)}
+74:  .band .bar i{display:block;height:100%;background:var(--brass)}
+79:  .insp{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px}
+80:  .field{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px;align-items:center;min-height:34px;font-size:10.5px;color:var(--milk-dim)}
+81:  .field.wide{grid-template-columns:1fr}
+83:  .seg button{min-height:32px;padding:4px 10px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk-dim);font-size:10.5px;cursor:pointer}
+88:  input[type=text],select{width:100%;min-height:32px;border:1px solid var(--line-dark);background:var(--desk-2);color:var(--milk);font:11px var(--sans);padding:5px 8px}
+92:  .swatches button{width:22px;height:22px;border:1px solid var(--line-dark);cursor:pointer}
+94:  .note{color:var(--milk-dim);font-size:9.5px;line-height:1.6;margin:0}
+127:      <div class="box" style="flex:1;min-height:0;display:flex;flex-direction:column;gap:8px">
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>試作: 照明を組む — 舞台スケッチ（判断用・製品ではない）</title>
+<style>
+  :root{
+    --desk:#191512;--desk-2:#201b16;--desk-3:#282119;--line-dark:#382f25;
+    --milk:#efe7d6;--milk-dim:rgba(240,231,214,.55);--brass:#9c823f;--rust:#a84b26;--rust-ink:#df6433;
+    --recess:rgba(13,12,11,.3);--sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;--serif:"Hiragino Mincho ProN","Yu Mincho",serif;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html,body{margin:0;background:#0d0b09;color:var(--milk);font-family:var(--sans);font-size:12px;line-height:1.5}
+  body{min-height:100vh;display:grid;place-items:center;padding:20px}
+  .proto-note{position:fixed;left:14px;top:10px;font-size:10px;color:var(--milk-dim);letter-spacing:.06em}
+  /* ---- モーダル外枠（本体 .stage-modal の語彙） ---- */
+  .modal{width:min(1180px,calc(100vw - 40px));height:min(840px,calc(100vh - 40px));background:var(--desk-2);border:1px solid var(--line-dark);box-shadow:0 24px 60px rgba(0,0,0,.5);display:grid;grid-template-rows:60px minmax(0,1fr);overflow:hidden}
+  .head{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid var(--line-dark)}
+  .head h1{margin:0;font:500 15px/1 var(--serif);letter-spacing:.08em;color:var(--milk)}
+  .modes{display:inline-flex;justify-self:center}
+  .modes button{min-height:34px;padding:6px 16px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk-dim);font-size:12px;cursor:pointer}
+  .modes button+button{margin-left:-1px}
+  .modes button[aria-pressed="true"]{color:var(--milk);border-color:var(--brass);background:rgba(156,130,63,.22)}
+  .head-right{display:flex;align-items:center;gap:10px}
+  .dirty{font-size:10.5px;color:var(--rust-ink);letter-spacing:.06em;min-width:9em;text-align:right}
+  .dirty.ok{color:var(--brass)}
+  .btn{min-height:34px;padding:6px 14px;border:1px solid var(--line-dark);background:none;color:var(--milk);font-size:12px;cursor:pointer;letter-spacing:.06em;border-radius:1px}
+  .btn:hover{border-color:var(--brass)}
+  .btn.primary{border-color:var(--brass);background:rgba(156,130,63,.18)}
+  .btn.quiet{color:var(--milk-dim)}
+  .btn:disabled{opacity:.35;cursor:default}
+  .btn.small{min-height:28px;padding:3px 9px;font-size:10.5px}
+  .x{min-width:26px;min-height:24px;border:1px solid var(--line-dark);background:none;color:var(--milk-dim);font-size:11px;cursor:pointer}
+  /* ---- 本文3列 ---- */
+  .body{display:grid;grid-template-columns:196px minmax(0,636px) 292px;gap:12px;padding:12px 16px 14px;min-height:0}
+  .col{min-height:0;display:flex;flex-direction:column;gap:8px}
+  .box{border:1px solid var(--line-dark);background:rgba(25,21,18,.45);padding:10px}
+  .kicker{color:var(--brass);font-size:9px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin:0 0 6px}
+  .hint{color:var(--milk-dim);font-size:10px;line-height:1.6;margin:0}
+  /* 左: 一覧 */
+  .list{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:2px;padding:6px}
+  .row{display:grid;grid-template-columns:28px 1fr auto;gap:6px;align-items:center;min-height:36px;padding:2px 6px;border:1px solid transparent;cursor:pointer;color:var(--milk-dim)}
+  .row:hover{border-color:var(--line-dark)}
+  .row.sel{border-color:var(--brass);background:rgba(156,130,63,.16);color:var(--milk)}
+  .row .no{font:600 11px/1 var(--sans);color:var(--milk);background:var(--desk-3);padding:5px 0;text-align:center;border:1px solid var(--line-dark)}
+  .row.sel .no{background:var(--brass);color:#1a1409;border-color:var(--brass)}
+  .row .nm{font-size:11px;line-height:1.25;overflow:hidden}
+  .row .nm small{display:block;font-size:9px;color:var(--milk-dim)}
+  .row .st{font-size:9px;letter-spacing:.04em;white-space:nowrap}
+  .row .st.unset{color:var(--milk-dim)} .row .st.off{color:#8b98a1} .row .st.on{color:var(--milk)} .row .st.move{color:var(--rust-ink)}
+  .grp{margin:6px 0 2px;padding:3px 6px;font-size:10px;color:var(--brass);border-bottom:1px solid var(--line-dark);display:flex;justify-content:space-between;align-items:center}
+  .grp small{color:var(--milk-dim);font-size:9px}
+  .list-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+  .list-actions .btn{min-height:30px;padding:3px 6px;font-size:10.5px}
+  /* 中央 */
+  .scenebar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;min-height:32px}
+  .scenebar .name{text-align:center;font-family:var(--serif);font-size:12px;color:var(--milk)}
+  .transport{display:flex;align-items:center;gap:6px;justify-content:center;min-height:32px}
+  .transport .t{font-variant-numeric:tabular-nums;color:var(--brass);min-width:5em;text-align:right}
+  .transport .playing{color:var(--milk);background:rgba(168,75,38,.28);border:1px solid var(--rust);padding:2px 8px;font-size:10.5px}
+  .canvases{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+  canvas{display:block;width:100%;background:#0d0e10;border:1px solid var(--line-dark);cursor:crosshair;touch-action:none}
+  #plan{height:382px} #front{height:150px} #front.big{height:240px}
+  .viewtabs{display:inline-flex}
+  .viewtabs button{min-height:26px;padding:2px 10px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk-dim);font-size:10px;cursor:pointer}
+  .viewtabs button+button{margin-left:-1px}
+  .viewtabs button[aria-pressed="true"]{color:var(--milk);border-color:var(--brass);background:rgba(156,130,63,.22)}
+  .statebadge{position:absolute;left:8px;top:8px;font-size:10px;color:var(--milk);background:rgba(32,27,22,.85);border:1px solid var(--line-dark);padding:2px 8px;letter-spacing:.06em;pointer-events:none}
+  .legend{display:flex;justify-content:space-between;color:var(--milk-dim);font-size:9.5px;min-height:20px;align-items:center}
+  .band{position:absolute;left:0;right:0;top:0;background:rgba(32,27,22,.96);border:1px solid var(--brass);padding:10px 12px;font-size:11px;display:flex;gap:12px;align-items:center;z-index:5}
+  .band .bar{flex:1;height:6px;background:var(--desk);border:1px solid var(--line-dark)}
+  .band .bar i{display:block;height:100%;background:var(--brass)}
+  .empty{position:absolute;inset:0;display:grid;place-items:center;background:rgba(13,14,16,.86);z-index:4}
+  .empty .in{text-align:center;display:grid;gap:10px;max-width:360px}
+  .empty p{margin:0;color:var(--milk-dim)}
+  /* 右: 設定欄 */
+  .insp{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px}
+  .field{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px;align-items:center;min-height:34px;font-size:10.5px;color:var(--milk-dim)}
+  .field.wide{grid-template-columns:1fr}
+  .seg{display:inline-flex;flex-wrap:wrap}
+  .seg button{min-height:32px;padding:4px 10px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk-dim);font-size:10.5px;cursor:pointer}
+  .seg button+button{margin-left:-1px}
+  .seg button[aria-pressed="true"]{color:var(--milk);border-color:var(--brass);background:rgba(156,130,63,.24)}
+  .seg button:disabled{opacity:.35;cursor:default}
+  .seg.col{flex-direction:column;align-items:stretch} .seg.col button+button{margin-left:0;margin-top:-1px;text-align:left}
+  input[type=text],select{width:100%;min-height:32px;border:1px solid var(--line-dark);background:var(--desk-2);color:var(--milk);font:11px var(--sans);padding:5px 8px}
+  input[type=range]{width:100%}
+  .val{color:var(--brass);font-variant-numeric:tabular-nums}
+  .swatches{display:flex;gap:4px}
+  .swatches button{width:22px;height:22px;border:1px solid var(--line-dark);cursor:pointer}
+  .swatches button[aria-pressed="true"]{outline:2px solid var(--brass);outline-offset:1px}
+  .note{color:var(--milk-dim);font-size:9.5px;line-height:1.6;margin:0}
+  .foot{color:var(--milk-dim);font-size:9.5px;border-top:1px solid var(--line-dark);padding-top:6px;margin-top:auto}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--desk-3);border:1px solid var(--brass);color:var(--milk);padding:8px 14px;font-size:11px;display:flex;gap:12px;align-items:center;z-index:9}
+  .toast button{background:none;border:0;color:var(--brass);cursor:pointer;font-size:11px;text-decoration:underline}
+  .dialog{position:absolute;inset:0;background:rgba(13,11,9,.7);display:grid;place-items:center;z-index:8}
+  .dialog .in{background:var(--desk-2);border:1px solid var(--brass);padding:18px 20px;display:grid;gap:12px;max-width:380px}
+  .dialog .in p{margin:0}
+  .dialog .acts{display:flex;gap:8px;flex-wrap:wrap}
+  .kbd{font-size:9.5px;color:var(--milk-dim)}
+  .kbd b{color:var(--milk);font-weight:500;border:1px solid var(--line-dark);padding:0 4px;margin:0 2px}
+</style>
+</head>
+<body>
+<div class="proto-note">試作（クリックできる設計案）— 製品コードとは無関係。1440×900想定。</div>
+<div class="modal" id="modal">
+  <header class="head">
+    <h1>照明を組む</h1>
+    <div class="modes" role="group" aria-label="モード">
+      <button type="button" id="mode-place" aria-pressed="true">配置（ショー共通）</button>
+      <button type="button" id="mode-move" aria-pressed="false">動き（このシーン）</button>
+    </div>
+    <div class="head-right">
+      <button type="button" class="btn small quiet" id="undo" title="元に戻す（⌘Z）">元に戻す</button>
+      <button type="button" class="btn small quiet" id="redo" title="やり直す（⇧⌘Z）">やり直す</button>
+      <span class="dirty" id="dirty"></span>
+      <button type="button" class="btn primary" id="apply">適用して閉じる</button>
+      <button type="button" class="x" id="close" aria-label="閉じる">✕</button>
+    </div>
+  </header>
+
+  <div class="body">
+    <!-- 左: 灯体一覧 -->
+    <section class="col">
+      <div class="box" style="flex:1;min-height:0;display:flex;flex-direction:column;gap:8px">
+        <p class="kicker">灯体</p>
+        <div class="list-actions">
+          <button type="button" class="btn quiet" id="sel-all">すべて選ぶ</button>
+          <button type="button" class="btn quiet" id="sel-none">選択を外す</button>
+          <button type="button" class="btn quiet" id="dup" disabled>複製</button>
+          <button type="button" class="btn quiet" id="del" disabled>削除</button>
+          <button type="button" class="btn quiet" id="spread" disabled style="grid-column:1/-1">等間隔に並べる</button>
+        </div>
+        <p class="hint" id="sel-count"></p>
+        <div class="list" id="list"></div>
+      </div>
+      <p class="kbd">選択 <b>クリック</b>　複数 <b>Shift</b>　解除 <b>Esc</b>　再生 <b>Space</b></p>
+    </section>
+
+    <!-- 中央: 図 -->
+    <section class="col">
+      <div class="scenebar">
+        <button type="button" class="btn small quiet" id="scene-prev">〈 前のシーン</button>
+        <div class="name" id="scene-name"></div>
+        <button type="button" class="btn small quiet" id="scene-next">次のシーン 〉</button>
+      </div>
+      <div class="transport" id="transport">
+        <button type="button" class="btn small" id="t-home">最初へ</button>
+        <button type="button" class="btn small" id="t-play">再生</button>
+        <button type="button" class="btn small" id="t-stop">停止</button>
+        <span class="t" id="t-time">0.0秒</span>
+        <span class="playing" id="t-playing" hidden>再生中</span>
+      </div>
+      <div class="canvases" id="canvases">
+        <span class="statebadge" id="statebadge">選択</span>
+        <canvas id="plan" width="1272" height="820"></canvas>
+        <div class="viewtabs" role="group" aria-label="断面図の向き">
+          <button type="button" data-view="front" aria-pressed="true">正面（客席から）</button>
+          <button type="button" data-view="shimote" aria-pressed="false">下手を見る（舞台中央から）</button>
+          <button type="button" data-view="kamite" aria-pressed="false">上手を見る（舞台中央から）</button>
+        </div>
+        <canvas id="front" width="1272" height="300"></canvas>
+        <div class="legend"><span id="legend-l">平面図（上が奥・下が客席）／正面図（客席から）</span><span id="legend-r"></span></div>
+        <div class="empty" id="empty" hidden>
+          <div class="in">
+            <p>まだ照明がありません。<br>最初のトラスと灯体を置きます。</p>
+            <button type="button" class="btn" id="empty-truss">トラスから始める</button>
+            <button type="button" class="btn primary" id="empty-preset">奥トラス1本＋ムービング4灯を置く</button>
+            <p class="note">よくある組み方は、あとから位置と灯数を変えられます。</p>
+          </div>
+        </div>
+        <div class="band" id="band" hidden><span id="band-text">動画を書き出しています</span><div class="bar"><i id="band-bar" style="width:0%"></i></div><button type="button" class="btn small quiet" id="band-cancel">中止</button></div>
+      </div>
+    </section>
+
+    <!-- 右: 設定欄 -->
+    <section class="col">
+      <div class="box insp" id="insp"></div>
+      <div class="box">
+        <button type="button" class="btn" id="export" style="width:100%">動画・図・説明を書き出す</button>
+        <p class="note" style="margin-top:6px">動画（MP4）・配置図付き3コマ（PNG）・灯ごとの説明（テキスト）を同じ時点から作ります。</p>
+      </div>
+      <p class="foot">灯体の位置と動きを伝えるための案です。機種・回路・DMX・照度・設置の安全性は示しません。</p>
+    </section>
+  </div>
+  <div class="dialog" id="dialog" hidden></div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="rig-engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
+
+codex
+# 結論
+
+Claude案Aの核である、**狙いを灯体のパン／チルトではなく3D空間上の点として持つ方針は妥当**です。
+
+ただし、次の二点は変更します。
+
+1. `surface`によって座標の意味を変えない。床・奥壁・空中のどれでも、点は常に `{u, v, hM}` とする。
+2. 空中の光を「その点で止まる光」と描かない。空中点は光が通る狙い点であり、光線はその先へ薄く延びる。
+
+空中の水平移動はMVPとして十分な可能性がありますが、データ構造まで水平面へ固定してはいけません。線のA・Bは最初から完全な3D点にし、円には軌道面を明示します。
+
+# 1. 空中の狙い点の設計批評
+
+## 確認事実
+
+現在の試作は、同じ `path` 内の `v`を次の二つの意味で使っています。
+
+- 床：舞台の奥行き
+- 奥壁：高さの割合
+
+[rig-engine.js](</Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11/prototype/rig-engine.js:95>)
+
+この方式へ空中を追加すると、`v`が場面によって奥行きにも高さにもなり、3D表示や演者追尾へ進む際に再変換が必要になります。
+
+ETCのAugment3dには、灯体へパン／チルト値を直接指定する方法とは別に、空間上のXYZ位置へ光を向ける「XYZ Programming」があります。画面上の点へ向けるClick-To-Focusや、床上の位置に顔・胸の高さを加えるFocus Heightも用意されています。[ETC公式：Augment3d Terms](https://www.etcconnect.com/WebDocs/Controls/EosFamilyOnlineHelp/en/Content/20_Augment3d/Augment3d_Terms.htm)、[Working with Fixtures](https://www.etcconnect.com/WebDocs/Controls/EosFamilyOnlineHelp/en/Content/20_Augment3d/03_Fixtures_in_Augment3d/Working_with_Fixtures_in_Augment3d.htm)
+
+これは、今回の「実現方法ではなく、どこへ光を向けたいかを渡す」方針と整合します。
+
+## 確定案：点の意味を統一する
+
+`surface`は幾何の変換方法ではなく、UI上の拘束条件として扱います。名称も `targetKind` または `aimArea`へ変える方がよいです。
+
+```js
+aim: {
+  targetKind: "floor" | "backWall" | "air",
+  path:
+    { kind: "still", point: Point3 }
+  | { kind: "line", a: Point3, b: Point3, start: "a" | "b" }
+  | {
+      kind: "circle",
+      center: Point3,
+      radiusM: 1.5,
+      plane: { kind: "horizontal" },
+      direction: "cw" | "ccw",
+      startAngle: 0
+    }
+}
+
+Point3 = {
+  u: 0..1,
+  v: 0..1,
+  hM: 高さm
+}
+```
+
+各点の意味は常に同じです。
+
+- `u`：下手から上手
+- `v`：奥から手前
+- `hM`：床からの高さm
+
+UIが次の制約をかけます。
+
+| 当てる場所 | UIが固定する値 |
+|---|---|
+| 床 | `hM = 0` |
+| 奥の壁 | `v = 0` |
+| 空中 | MVPでは自由な`u,v,hM`。往復のA・Bは同じ高さに連動 |
+| 空中の円 | MVPでは水平面 |
+
+現在のデータは読み込み時に変換できます。
+
+```text
+floor: {u, v} → {u, v, hM:0}
+back:  {u, v:高さ割合} → {u, v:0, hM:高さ割合×会場高さ}
+```
+
+旧形式を新形式として解釈せず、バージョン付きの正規化処理で一度だけ変換します。
+
+## 空中を水平面へ拘束するのは足りるか
+
+### 判断
+
+**MVPの操作制約としては採用できます。データ構造の上限にはしません。**
+
+空中演者を静止して狙う、同じ高さで左右へ追う、同じ高さの周囲を回す、という用途は表現できます。
+
+一方で、次の動きは表現できません。
+
+- 演者の上から下へなぞる
+- 上昇・下降する演者を追う
+- エアリアルフープを正面から囲むような縦の円
+- 斜めに上昇する軌道
+- 灯体側から見たパン／チルトの円運動
+
+ETCの卓では、円運動はパンとチルトへ波形を組み合わせて作られます。その結果が舞台空間の水平円になるとは限りません。[ETC公式：Table Effects](https://www.etcconnect.com/webdocs/Controls/HOG/HTML/en/sect-table_effects.htm)
+
+サーカスで縦円や斜め軌道がどの程度頻出するかは、今回確認した資料だけでは断定できません。ただし、空中演者の上下移動を考えると、将来必要になる可能性は高いと判断します。
+
+そのため、円には最初から次を持たせます。
+
+```js
+plane: { kind: "horizontal" }
+```
+
+将来は互換性を保ったまま、
+
+```js
+plane: { kind: "frontVertical" }
+plane: { kind: "sideVertical" }
+plane: { kind: "custom", normal: {...}, up: {...} }
+```
+
+を足せます。MVPのUIには`水平`しか出しません。
+
+線のA・Bは初めから別々の3D点にします。MVPでは高さを連動させますが、将来その連動を解除すれば、斜め・上下移動をデータ移行なしで扱えます。
+
+## 狙い点方式は空中でも成立するか
+
+成立します。ただし、このアプリが分からないものを明記する必要があります。
+
+3D狙い点から灯体方向は、
+
+```text
+direction = normalize(target − fixture)
+```
+
+で求められます。しかし現在は灯体型番、取り付け方向、パン／チルト範囲を持ちません。そのため、次は判定できません。
+
+- 実際の灯体がその点へ届くか
+- 首がどちら向きに回るか
+- パンの境界をまたいで急反転しないか
+- 舞台装置や人で遮られないか
+- 光が対象へ十分な明るさで届くか
+
+ETCの3D機能も、実機との対応には灯体位置・向きやプロファイル上のパン／チルト情報を使います。[ETC公式：Fixtures in Augment3d](https://www.etcconnect.com/WebDocs/Controls/EosFamilyOnlineHelp/en/Content/20_Augment3d/03_Fixtures_in_Augment3d/Fixtures_in_Augment3d.htm)
+
+したがって、書き出しでは「空中点へ当てる」より次の言い方が正確です。
+
+> L12：奥から2列目のトラス・下手寄り。舞台中央、奥壁から約3.0m、高さ約4.0mの空中点を通す。
+
+`高さ4mの中央`だけでは奥行きがありません。最低でも次を含めます。
+
+- 灯体番号
+- 灯体のおおよその場所
+- 下手／中央／上手
+- 奥壁からのおおよその距離
+- 床からの高さ
+- 静止または軌道
+- 実際の対象があれば、その説明
+
+初回は自由点なので、最後は任意メモを足せるようにします。
+
+```text
+狙いの補足：空中ブランコの演者の胴体付近
+```
+
+これは演者とのデータ連携ではなく、照明担当者へ意味を渡す文章です。
+
+# 2. 空中を足したときの描画
+
+## 最も重要な区別
+
+**空中の光は、空中点で物理的に止まりません。**
+
+対象となる演者や器具がまだ3Dモデルとして接続されていない場合、その点に描く輪は「光が溜まっている表現」ではなく、狙いを示す編集記号です。
+
+次の三種類を、色だけでなく形でも分けます。
+
+| 狙い | 記号 | 光線 |
+|---|---|---|
+| 床 | 塗りのある楕円・光溜まり | 灯体から床まで |
+| 奥壁 | 壁面に接した楕円 | 灯体から壁まで |
+| 空中 | 中抜きの二重丸＋十字 | 灯体から狙い点まで濃く、その先を細い破線で延長 |
+
+空中点から床へ、細い鉛直の補助線を下ろします。これにより、光溜まりと空中の編集点を取り違えません。
+
+## 平面図
+
+平面図では、空中点の`u,v`を直接編集します。
+
+最小表示は次です。
+
+- 中抜き二重丸
+- 中央の十字
+- `空中 4.0m`
+- 選択時だけ床への投影位置を薄い点で表示
+- 灯体から狙い点への線
+- 選択灯だけA・B・開始矢印を表示
+
+高さは記号の横に必ず表示します。
+
+```text
+A　空中 4.0m
+B　空中 4.0m
+```
+
+20灯すべての高さを常時表示すると読めなくなるため、未選択灯は`空中`を示す小さな上向き記号だけにします。
+
+現在の試作では、奥壁を狙う灯の平面表示が、灯体のX位置から奥へ真っすぐ引かれており、実際の狙い点のX位置を使っていません。空中対応時には床・奥壁・空中を別々に描くより、**すべて世界座標の光源Sと狙い点Tを投影する一本の処理**へ統合するべきです。[app.js](</Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11/prototype/app.js:220>)
+
+## 正面図
+
+正面図では`u,hM`を直接編集します。
+
+- 左右：狙い点の横位置
+- 上下：高さ
+- 空中点から床へ鉛直破線
+- 高さの寸法
+- 奥行きはラベルで補う
+
+```text
+高さ 4.0m
+奥壁から 3.0m
+```
+
+正面図では奥行きが重なるため、選択していない空中点へ詳細ラベルを出しません。
+
+## 側面図
+
+側面図では`v,hM`を直接編集します。
+
+- 左右：奥行き
+- 上下：高さ
+- 空中点から床へ鉛直破線
+- 横位置はラベルで補う
+
+```text
+高さ 4.0m
+中央線から下手へ 1.2m
+```
+
+空中点を編集している間は、正面・下手側面・上手側面のタブを手動で探させず、次の二つを主にします。
+
+```text
+正面：左右と高さ
+側面：奥行きと高さ
+```
+
+下手を見る／上手を見るの違いは横置き灯の配置には意味がありますが、空中の狙い点編集では左右反転による混乱が増えます。空中編集用には向きを固定した`側面（下手側から）`を既定にし、客席と奥壁の表示を常時残す方がよいです。
+
+## 空中のドラッグ
+
+一つの点を二つの図で編集します。
+
+- 平面図でドラッグ：`u,v`だけ変更。高さを維持
+- 正面図でドラッグ：`u,hM`だけ変更。奥行きを維持
+- 側面図でドラッグ：`v,hM`だけ変更。横位置を維持
+
+同じ座標を二つの図から編集できるため、変更していない軸を逆投影で求め直してはいけません。
+
+# 3. 下手と上手のコピー
+
+## コピーの意味
+
+これは「左右を永久に連動する機能」ではなく、**選択した灯体から反対側へ新しい灯体を作る一回の操作**とします。
+
+初回から連動関係を作ると、片側だけ後で変更したい場合の解除規則が増えます。
+
+## 位置の変換
+
+現在の矩形舞台座標では、次でよいです。
+
+| 対象 | 変換 |
+|---|---|
+| トラス上 | 同じ`trussId`、`u → 1−u` |
+| 床 | `u → 1−u`、`v`は維持 |
+| 横 | `side`を下手↔上手、`v,h`は維持 |
+| トラス自体 | コピーしない |
+| 中央線上 | コピー対象外 |
+
+将来、不整形な実在会場へ進んだ場合は、正確には`u`の反転ではなく舞台中央面に対する世界座標Xの鏡映です。現在の正規化された矩形舞台では両者が一致します。
+
+## コピーするもの
+
+配置だけをコピーする場合：
+
+- 取り付け方法
+- トラス所属
+- 横位置・奥行き・高さ
+- 灯体の分類
+- 任意名
+
+任意名はそのままコピーします。名前に含まれる「下手」「上手」を自動で書き換えません。自由文の意味を誤って変える可能性があるためです。コピー後は新しい灯体を選択し、名前欄をすぐ編集できる状態にします。
+
+## コピーしないもの
+
+- `id`
+- 灯体番号
+- 組への所属
+- 元灯体との永続的な左右リンク
+- 他シーンのcue
+- 削除済み・無効な参照
+
+灯体番号は現在の最大番号の次から、新しい連番を割り当てます。
+
+```text
+L03 → L21
+L04 → L22
+L07 → L23
+```
+
+欠番へ自動で詰めると、既存の図や会話で使った番号が再利用される可能性があります。番号の再利用はしません。
+
+## 動きをコピーする場合
+
+製品版では次の二択が妥当です。
+
+```text
+［配置だけコピー］
+［配置と現在のシーンの動きをコピー］
+```
+
+現在シーンの動きをコピーする場合は、次も鏡映します。
+
+- 静止先の`u`
+- A・Bの`u`
+- 円の中心
+- 開始位置
+- 水平円の回転方向
+
+鏡像として同じ瞬間を再現するには、水平円の時計回り／反時計回りも反転させる必要があります。線ではA・Bの名前と開始側を維持したまま、各点の位置を鏡映します。
+
+組は自動コピーしません。コピー後に次を出します。
+
+```text
+下手から上手へ4灯コピーしました。
+［元に戻す］［コピーした灯で組をつくる］
+```
+
+`コピーした灯で組をつくる`を選んだ後に、組の動き方を選びます。元灯とコピー灯を勝手に`鏡のように動く`へ結びません。
+
+元の組全体を選択していた場合に、新しい組を複製する機能は将来追加できます。組の一部だけを選んだ場合は、元の組構造をコピーしません。
+
+## 反対側に既存灯がある場合
+
+位置が近いという理由だけで、既存灯を同じ灯体とみなしません。
+
+コピー実行前に予告を表示します。
+
+```text
+8灯を下手から上手へコピーします。
+3灯は既存の灯体と重なります。
+
+［重なる3灯を飛ばしてコピー］
+［重なっても追加］
+［やめる］
+```
+
+`置き換える`は初回には入れません。既存灯の全シーンcueまで消す危険があるためです。
+
+重なり判定の候補は次です。
+
+- トラス：同じトラスで、鏡映後の横位置が近い
+- 床：鏡映後の床位置が近い
+- 横：反対側で奥行きと高さが近い
+
+閾値は概略図のための候補判定であり、「同一灯」と断定するものではありません。
+
+## 操作の置き場所
+
+左一覧の固定ツールバーに、複数選択用の`操作`メニューを置きます。
+
+```text
+操作
+├ 複製
+├ 反対側へコピー
+├ 等間隔に並べる
+└ 削除
+```
+
+右設定欄には置きません。この操作は一灯の属性ではなく、選択集合へ働くためです。
+
+方向が混在する選択では実行前に方向を選ばせます。
+
+```text
+［下手から上手へ］
+［上手から下手へ］
+```
+
+Undoでは、生成された灯体とその現在シーンのcueを一回でまとめて戻します。
+
+# 4. 20灯以上の一覧UI
+
+## 196pxは狭い
+
+20〜40灯という件数自体はスクロールで扱えます。しかし196pxでは、次を同時に読めません。
+
+- `L21`
+- 任意名
+- 取り付け場所
+- 未設定／消灯／点灯／動き
+- 組番号と順番
+
+折り畳み見出しと絞り込みを足すと、さらに窮屈になります。
+
+## 確定寸法
+
+1440×900ではモーダルを **1320×860px**へ広げます。
+
+```text
+左一覧 248px
+中央   716px
+右設定 300px
+列間   12px×2
+左右余白 16px×2
+```
+
+```css
+grid-template-columns: 248px minmax(620px, 1fr) 300px;
+```
+
+画面幅が足りない場合は、左一覧を196pxへ潰すのではなく、折り畳める248pxのドロワーにします。
+
+行高は38〜40pxです。860pxの画面なら、一覧内におよそ14〜16灯を同時表示できます。40灯すべてを一画面へ詰めるより、場所見出し、検索、選択の維持が重要です。
+
+## 一覧の唯一の階層
+
+**階層は取り付け場所に固定します。組は階層にしません。**
+
+```text
+⌄ 奥から1列目のトラス　8灯・未設定2
+  L01　中央ムービング　動き　組1・1番
+  L02　中央ムービング　動き　組1・2番
+
+⌄ 奥から2列目のトラス　8灯・未設定4
+  L09　上手寄り　　　　未設定
+
+⌄ 床　4灯
+⌄ 下手側　2灯
+⌄ 上手側　2灯
+```
+
+取り付け場所はショー共通で安定しています。組はシーンごとに変わるため、それを一覧階層にすると、シーン送りのたびに灯体行が大きく移動します。
+
+組は各行の小さな文字で表示します。
+
+```text
+組2・3番
+```
+
+この表示をクリックすると組全体を選択します。右設定欄に、組員を順番付きで一覧表示します。
+
+## 並び順
+
+見出し：
+
+1. トラスを奥から手前
+2. 床
+3. 下手側
+4. 上手側
+5. 取り付け不明
+
+各見出し内：
+
+- 灯体番号順
+
+横位置順にすると、灯体をドラッグした直後に一覧行が移動します。番号順なら作業位置を失いません。
+
+## 折り畳み
+
+- 折り畳み状態はモード切替・シーン送りで維持
+- 選択灯の見出しは自動で開く
+- 折り畳み中の選択数を見出しに表示
+- 未設定灯がある見出しには件数を表示
+- フィルター変更で勝手に全見出しを開閉しない
+
+## 絞り込みと検索
+
+```text
+［番号・名前で検索］
+［すべて］［未設定］［消灯］［点灯］［動きあり］
+```
+
+20〜40灯が主要規模になったため、検索は初回から入れる方を推します。実装負荷が比較的小さく、灯体番号を指定されたときの移動量を大きく減らせます。
+
+`点灯`は静止灯だけ、`動きあり`は移動灯だけに分けます。
+
+## 選択
+
+PC一覧の一般的な扱いに寄せます。
+
+- クリック：一灯を選択
+- `Shift`クリック：連続範囲
+- `⌘`／`Ctrl`クリック：追加・解除
+- 見出しのチェック：その場所の表示中の灯を選択
+- `表示中をすべて選ぶ`：絞り込み結果だけ選択
+
+フィルターで選択灯が隠れても、選択自体は解除しません。
+
+```text
+8灯を選択中（2灯は絞り込みで非表示）
+```
+
+と表示します。
+
+一括操作は一覧上部へ固定します。
+
+```text
+［表示中をすべて選ぶ］［操作 ▾］
+```
+
+# 5. 将来の3Dとリアルタイムへの逃げ道
+
+## 現状評価
+
+### そのまま使える部分
+
+- `project.lightRig`とシーンcueの二層
+- 固定IDによる灯体参照
+- 灯体位置を世界座標へ変換する関数
+- 時刻を渡して狙い点を求める純関数
+- 再生と書き出しが同じ幾何を使う考え方
+
+### 変更が必要な部分
+
+- 面ごとに座標の意味が変わる`surfacePoint`
+- `surface`に依存する円計算
+- モーダル専用の再生時刻
+- 3D対象を参照できない狙い点
+- cueの形式バージョンがないこと
+
+## 今入れる最小の備え
+
+### 1. スキーマのバージョン
+
+```js
+project.lightRig.version = 1
+scene.lightRigCue.version = 1
+```
+
+未知の将来フィールドを読み込み時にゼロや既定値へ潰さないようにします。
+
+### 2. すべての狙い点を同じPoint3へする
+
+```js
+{u, v, hM}
+```
+
+床・壁は入力制約です。描画関数内の特殊な座標解釈にしません。
+
+### 3. 狙いの種類を判別可能な形にする
+
+現在：
+
+```js
+aim: {
+  kind: "point",
+  targetKind: "air",
+  path: ...
+}
+```
+
+将来：
+
+```js
+aim: {
+  kind: "entity",
+  entityId: "...",
+  anchor: "bodyCenter",
+  offset: {xM:0, yM:0, zM:0.2},
+  fallbackPoint: {...}
+}
+```
+
+`entity`用の空フィールドを今から保存する必要はありません。`kind:"point"`という判別子だけで逃げ道を作れます。
+
+ETCのAugment3dにも、移動するScenic Element MovableへFocus Paletteを関連付け、XYZオフセットを保ちながら追従させる仕組みがあります。これは将来の「演者または空中器具のアンカー＋相対オフセット」に近い考え方です。[ETC公式リリースノート](https://www.etcconnect.com/workarea/DownloadAsset.aspx?id=10737518944)
+
+### 4. 共通の時刻から評価する
+
+内部APIを次の形にします。
+
+```js
+evaluateLightCue(sceneCue, fixtureId, tMs, sceneContext)
+```
+
+現在は固定したcue設定と繰り返し軌道を評価します。将来は同じ入口で、演者位置と照明の時間列を評価できます。
+
+灯体モジュール内部で`performance.now()`を直接読む構造にはしません。本体側の共通シーン時計から`tMs`を渡します。
+
+### 5. timelineの空配列は入れない
+
+将来用として`timeline:[]`を今から保存すると、意味が決まっていないフィールドが正本に残ります。今はcue全体にバージョンを付け、評価関数を一本化するだけで足ります。
+
+## 1シーン1状態から時間軸への移行
+
+現在のcueを次のようにまとめておくと移行が容易です。
+
+```js
+scene.lightRigCue = {
+  version: 1,
+  state: {
+    lights: {...},
+    groups: [...]
+  }
+}
+```
+
+将来のv2では、
+
+```js
+scene.lightRigCue = {
+  version: 2,
+  timeline: {
+    durationMs: ...,
+    segments: [
+      { atMs: 0, state: {...} }
+    ]
+  }
+}
+```
+
+へ変換できます。
+
+移行時はv1の状態を`0ms`の一つ目の状態として置き、シーン終了まで維持します。現在の往復・円のループは、その状態内の手続き的な動きとして残せます。
+
+これなら既存シーンの意味を変えず、後から同一シーン内へ、
+
+```text
+0秒：静止
+3秒：演者を追う
+8秒：消灯
+```
+
+を追加できます。
+
+## 「適用して閉じる」は将来も使えるか
+
+3D表示が増えても、必ずしも編集方式を変える必要はありません。
+
+- 正本：本体へ最後に適用したrig/cue
+- 編集中：モーダル内のdraft
+- 3Dプレビュー：draftと現在の演者状態を組み合わせて描く
+
+という構成なら、演者と照明をリアルタイム表示しながら、適用までは正本を変更しない方式を維持できます。
+
+将来、本体のメイン3D画面上で直接灯体を編集するようになった時点で、即時反映へ変えるかを再検討すれば足ります。
+
+# 6. MVPの再定義
+
+以下は既存試作がある前提の、10作業日程度の提案です。工数の確約ではありません。
+
+## 1〜2日目：3D点への移行
+
+- `Point3 {u,v,hM}`へ統一
+- `surface`を`targetKind`へ移行
+- 床・奥壁の旧試作データ変換
+- `targetAt`と`pathGuide`を3D点基準へ変更
+- 床・奥壁の既存挙動を回帰確認
+
+## 3〜4日目：空中の編集
+
+- `当てる場所：空中`
+- 静止、同じ高さの往復、水平円
+- 平面図で`u,v`
+- 正面図で`u,hM`
+- 側面図で`v,hM`
+- 空中点、鉛直補助線、光線の延長表示
+- 高さ・奥行きを含む説明文
+
+## 5〜6日目：20〜40灯の一覧
+
+- モーダル1320px
+- 左一覧248px
+- 取り付け場所ごとの折り畳み
+- 番号・名前検索
+- 状態フィルター
+- 安定した番号順
+- Shift範囲選択、⌘／Ctrl追加選択
+- 組番号・順番の行内表示
+- 24灯と40灯の表示・選択確認
+
+## 7日目：左右コピー
+
+初回は次に絞ります。
+
+- 選択灯の配置を反対側へコピー
+- 新しい連番
+- 中央線上を除外
+- 重複予告
+- 重複を飛ばす／追加する
+- 一回のUndo
+
+**現在シーンの動きコピーは、本人の回答次第で入れるか決めます。**
+
+## 8〜9日目：再生と書き出し
+
+- 空中を含む全灯再生
+- 複数灯の組
+- 空中点を含む動画と3コマ図
+- 灯ごとの高さ・奥行き説明
+- 24灯で再生・書き出し確認
+- 適用して閉じる
+- 再度開いたときの同一性確認
+
+## 10日目：操作検証
+
+一つの通し場面で確認します。
+
+1. 3本のトラスへ24灯を置く。
+2. 下手側4灯を上手へコピーする。
+3. 未設定灯だけを絞り込む。
+4. 一灯を高さ4mの空中点へ当てる。
+5. その灯へ同じ高さの往復を付ける。
+6. 二灯を扇の組にする。
+7. 全灯を再生する。
+8. 適用、再読込、書き出しを行う。
+
+## 2回目へ回すもの
+
+- 縦円・斜め円・任意平面
+- 高さの違うA・B
+- 演者・器具へのデータ参照
+- 3Dビュー
+- 演者と照明の共通タイムライン
+- 全シーンの動きコピー
+- 左右灯の永続的な連動
+- コピーによる既存灯の置き換え
+- 遮蔽、光束、光溜まり、煙・霞の物理表現
+- 実機のパン／チルト可動範囲判定
+
+# 7. 本人に確認すべきこと
+
+1. **空中の動きは、初回は「静止・同じ高さの往復・水平円」で足りますか。それとも、演者の上昇下降を追う斜め線または縦円が初回から必要ですか。**  
+   空中編集を二つの図で連動させるだけで済むか、A・Bそれぞれの高さ編集と軌道面選択が必要かが変わります。
+
+2. **下手上手コピーの初回は、灯体の配置だけで足りますか。それとも、現在のシーンの点灯・色・空中を含む動きも鏡像でコピーしたいですか。**  
+   後者では軌道、円の回転方向、重複cue、組の扱いまでコピー仕様へ含める必要があります。
+
+今回は読み取りと公式資料の確認のみで、ファイルは変更していません。
+
+> 🔜 **次の一手**: ①上の2点を本人確認する　②回答後、既存試作の`surface`依存を3D点へ置き換える実装仕様を確定する  
+> 🧠 **おすすめモデル**: Sol（3D座標・複数ビュー・操作状態の整合を保った試作改修）
+tokens used
+163,452
+# 結論
+
+Claude案Aの核である、**狙いを灯体のパン／チルトではなく3D空間上の点として持つ方針は妥当**です。
+
+ただし、次の二点は変更します。
+
+1. `surface`によって座標の意味を変えない。床・奥壁・空中のどれでも、点は常に `{u, v, hM}` とする。
+2. 空中の光を「その点で止まる光」と描かない。空中点は光が通る狙い点であり、光線はその先へ薄く延びる。
+
+空中の水平移動はMVPとして十分な可能性がありますが、データ構造まで水平面へ固定してはいけません。線のA・Bは最初から完全な3D点にし、円には軌道面を明示します。
+
+# 1. 空中の狙い点の設計批評
+
+## 確認事実
+
+現在の試作は、同じ `path` 内の `v`を次の二つの意味で使っています。
+
+- 床：舞台の奥行き
+- 奥壁：高さの割合
+
+[rig-engine.js](</Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11/prototype/rig-engine.js:95>)
+
+この方式へ空中を追加すると、`v`が場面によって奥行きにも高さにもなり、3D表示や演者追尾へ進む際に再変換が必要になります。
+
+ETCのAugment3dには、灯体へパン／チルト値を直接指定する方法とは別に、空間上のXYZ位置へ光を向ける「XYZ Programming」があります。画面上の点へ向けるClick-To-Focusや、床上の位置に顔・胸の高さを加えるFocus Heightも用意されています。[ETC公式：Augment3d Terms](https://www.etcconnect.com/WebDocs/Controls/EosFamilyOnlineHelp/en/Content/20_Augment3d/Augment3d_Terms.htm)、[Working with Fixtures](https://www.etcconnect.com/WebDocs/Controls/EosFamilyOnlineHelp/en/Content/20_Augment3d/03_Fixtures_in_Augment3d/Working_with_Fixtures_in_Augment3d.htm)
+
+これは、今回の「実現方法ではなく、どこへ光を向けたいかを渡す」方針と整合します。
+
+## 確定案：点の意味を統一する
+
+`surface`は幾何の変換方法ではなく、UI上の拘束条件として扱います。名称も `targetKind` または `aimArea`へ変える方がよいです。
+
+```js
+aim: {
+  targetKind: "floor" | "backWall" | "air",
+  path:
+    { kind: "still", point: Point3 }
+  | { kind: "line", a: Point3, b: Point3, start: "a" | "b" }
+  | {
+      kind: "circle",
+      center: Point3,
+      radiusM: 1.5,
+      plane: { kind: "horizontal" },
+      direction: "cw" | "ccw",
+      startAngle: 0
+    }
+}
+
+Point3 = {
+  u: 0..1,
+  v: 0..1,
+  hM: 高さm
+}
+```
+
+各点の意味は常に同じです。
+
+- `u`：下手から上手
+- `v`：奥から手前
+- `hM`：床からの高さm
+
+UIが次の制約をかけます。
+
+| 当てる場所 | UIが固定する値 |
+|---|---|
+| 床 | `hM = 0` |
+| 奥の壁 | `v = 0` |
+| 空中 | MVPでは自由な`u,v,hM`。往復のA・Bは同じ高さに連動 |
+| 空中の円 | MVPでは水平面 |
+
+現在のデータは読み込み時に変換できます。
+
+```text
+floor: {u, v} → {u, v, hM:0}
+back:  {u, v:高さ割合} → {u, v:0, hM:高さ割合×会場高さ}
+```
+
+旧形式を新形式として解釈せず、バージョン付きの正規化処理で一度だけ変換します。
+
+## 空中を水平面へ拘束するのは足りるか
+
+### 判断
+
+**MVPの操作制約としては採用できます。データ構造の上限にはしません。**
+
+空中演者を静止して狙う、同じ高さで左右へ追う、同じ高さの周囲を回す、という用途は表現できます。
+
+一方で、次の動きは表現できません。
+
+- 演者の上から下へなぞる
+- 上昇・下降する演者を追う
+- エアリアルフープを正面から囲むような縦の円
+- 斜めに上昇する軌道
+- 灯体側から見たパン／チルトの円運動
+
+ETCの卓では、円運動はパンとチルトへ波形を組み合わせて作られます。その結果が舞台空間の水平円になるとは限りません。[ETC公式：Table Effects](https://www.etcconnect.com/webdocs/Controls/HOG/HTML/en/sect-table_effects.htm)
+
+サーカスで縦円や斜め軌道がどの程度頻出するかは、今回確認した資料だけでは断定できません。ただし、空中演者の上下移動を考えると、将来必要になる可能性は高いと判断します。
+
+そのため、円には最初から次を持たせます。
+
+```js
+plane: { kind: "horizontal" }
+```
+
+将来は互換性を保ったまま、
+
+```js
+plane: { kind: "frontVertical" }
+plane: { kind: "sideVertical" }
+plane: { kind: "custom", normal: {...}, up: {...} }
+```
+
+を足せます。MVPのUIには`水平`しか出しません。
+
+線のA・Bは初めから別々の3D点にします。MVPでは高さを連動させますが、将来その連動を解除すれば、斜め・上下移動をデータ移行なしで扱えます。
+
+## 狙い点方式は空中でも成立するか
+
+成立します。ただし、このアプリが分からないものを明記する必要があります。
+
+3D狙い点から灯体方向は、
+
+```text
+direction = normalize(target − fixture)
+```
+
+で求められます。しかし現在は灯体型番、取り付け方向、パン／チルト範囲を持ちません。そのため、次は判定できません。
+
+- 実際の灯体がその点へ届くか
+- 首がどちら向きに回るか
+- パンの境界をまたいで急反転しないか
+- 舞台装置や人で遮られないか
+- 光が対象へ十分な明るさで届くか
+
+ETCの3D機能も、実機との対応には灯体位置・向きやプロファイル上のパン／チルト情報を使います。[ETC公式：Fixtures in Augment3d](https://www.etcconnect.com/WebDocs/Controls/EosFamilyOnlineHelp/en/Content/20_Augment3d/03_Fixtures_in_Augment3d/Fixtures_in_Augment3d.htm)
+
+したがって、書き出しでは「空中点へ当てる」より次の言い方が正確です。
+
+> L12：奥から2列目のトラス・下手寄り。舞台中央、奥壁から約3.0m、高さ約4.0mの空中点を通す。
+
+`高さ4mの中央`だけでは奥行きがありません。最低でも次を含めます。
+
+- 灯体番号
+- 灯体のおおよその場所
+- 下手／中央／上手
+- 奥壁からのおおよその距離
+- 床からの高さ
+- 静止または軌道
+- 実際の対象があれば、その説明
+
+初回は自由点なので、最後は任意メモを足せるようにします。
+
+```text
+狙いの補足：空中ブランコの演者の胴体付近
+```
+
+これは演者とのデータ連携ではなく、照明担当者へ意味を渡す文章です。
+
+# 2. 空中を足したときの描画
+
+## 最も重要な区別
+
+**空中の光は、空中点で物理的に止まりません。**
+
+対象となる演者や器具がまだ3Dモデルとして接続されていない場合、その点に描く輪は「光が溜まっている表現」ではなく、狙いを示す編集記号です。
+
+次の三種類を、色だけでなく形でも分けます。
+
+| 狙い | 記号 | 光線 |
+|---|---|---|
+| 床 | 塗りのある楕円・光溜まり | 灯体から床まで |
+| 奥壁 | 壁面に接した楕円 | 灯体から壁まで |
+| 空中 | 中抜きの二重丸＋十字 | 灯体から狙い点まで濃く、その先を細い破線で延長 |
+
+空中点から床へ、細い鉛直の補助線を下ろします。これにより、光溜まりと空中の編集点を取り違えません。
+
+## 平面図
+
+平面図では、空中点の`u,v`を直接編集します。
+
+最小表示は次です。
+
+- 中抜き二重丸
+- 中央の十字
+- `空中 4.0m`
+- 選択時だけ床への投影位置を薄い点で表示
+- 灯体から狙い点への線
+- 選択灯だけA・B・開始矢印を表示
+
+高さは記号の横に必ず表示します。
+
+```text
+A　空中 4.0m
+B　空中 4.0m
+```
+
+20灯すべての高さを常時表示すると読めなくなるため、未選択灯は`空中`を示す小さな上向き記号だけにします。
+
+現在の試作では、奥壁を狙う灯の平面表示が、灯体のX位置から奥へ真っすぐ引かれており、実際の狙い点のX位置を使っていません。空中対応時には床・奥壁・空中を別々に描くより、**すべて世界座標の光源Sと狙い点Tを投影する一本の処理**へ統合するべきです。[app.js](</Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11/prototype/app.js:220>)
+
+## 正面図
+
+正面図では`u,hM`を直接編集します。
+
+- 左右：狙い点の横位置
+- 上下：高さ
+- 空中点から床へ鉛直破線
+- 高さの寸法
+- 奥行きはラベルで補う
+
+```text
+高さ 4.0m
+奥壁から 3.0m
+```
+
+正面図では奥行きが重なるため、選択していない空中点へ詳細ラベルを出しません。
+
+## 側面図
+
+側面図では`v,hM`を直接編集します。
+
+- 左右：奥行き
+- 上下：高さ
+- 空中点から床へ鉛直破線
+- 横位置はラベルで補う
+
+```text
+高さ 4.0m
+中央線から下手へ 1.2m
+```
+
+空中点を編集している間は、正面・下手側面・上手側面のタブを手動で探させず、次の二つを主にします。
+
+```text
+正面：左右と高さ
+側面：奥行きと高さ
+```
+
+下手を見る／上手を見るの違いは横置き灯の配置には意味がありますが、空中の狙い点編集では左右反転による混乱が増えます。空中編集用には向きを固定した`側面（下手側から）`を既定にし、客席と奥壁の表示を常時残す方がよいです。
+
+## 空中のドラッグ
+
+一つの点を二つの図で編集します。
+
+- 平面図でドラッグ：`u,v`だけ変更。高さを維持
+- 正面図でドラッグ：`u,hM`だけ変更。奥行きを維持
+- 側面図でドラッグ：`v,hM`だけ変更。横位置を維持
+
+同じ座標を二つの図から編集できるため、変更していない軸を逆投影で求め直してはいけません。
+
+# 3. 下手と上手のコピー
+
+## コピーの意味
+
+これは「左右を永久に連動する機能」ではなく、**選択した灯体から反対側へ新しい灯体を作る一回の操作**とします。
+
+初回から連動関係を作ると、片側だけ後で変更したい場合の解除規則が増えます。
+
+## 位置の変換
+
+現在の矩形舞台座標では、次でよいです。
+
+| 対象 | 変換 |
+|---|---|
+| トラス上 | 同じ`trussId`、`u → 1−u` |
+| 床 | `u → 1−u`、`v`は維持 |
+| 横 | `side`を下手↔上手、`v,h`は維持 |
+| トラス自体 | コピーしない |
+| 中央線上 | コピー対象外 |
+
+将来、不整形な実在会場へ進んだ場合は、正確には`u`の反転ではなく舞台中央面に対する世界座標Xの鏡映です。現在の正規化された矩形舞台では両者が一致します。
+
+## コピーするもの
+
+配置だけをコピーする場合：
+
+- 取り付け方法
+- トラス所属
+- 横位置・奥行き・高さ
+- 灯体の分類
+- 任意名
+
+任意名はそのままコピーします。名前に含まれる「下手」「上手」を自動で書き換えません。自由文の意味を誤って変える可能性があるためです。コピー後は新しい灯体を選択し、名前欄をすぐ編集できる状態にします。
+
+## コピーしないもの
+
+- `id`
+- 灯体番号
+- 組への所属
+- 元灯体との永続的な左右リンク
+- 他シーンのcue
+- 削除済み・無効な参照
+
+灯体番号は現在の最大番号の次から、新しい連番を割り当てます。
+
+```text
+L03 → L21
+L04 → L22
+L07 → L23
+```
+
+欠番へ自動で詰めると、既存の図や会話で使った番号が再利用される可能性があります。番号の再利用はしません。
+
+## 動きをコピーする場合
+
+製品版では次の二択が妥当です。
+
+```text
+［配置だけコピー］
+［配置と現在のシーンの動きをコピー］
+```
+
+現在シーンの動きをコピーする場合は、次も鏡映します。
+
+- 静止先の`u`
+- A・Bの`u`
+- 円の中心
+- 開始位置
+- 水平円の回転方向
+
+鏡像として同じ瞬間を再現するには、水平円の時計回り／反時計回りも反転させる必要があります。線ではA・Bの名前と開始側を維持したまま、各点の位置を鏡映します。
+
+組は自動コピーしません。コピー後に次を出します。
+
+```text
+下手から上手へ4灯コピーしました。
+［元に戻す］［コピーした灯で組をつくる］
+```
+
+`コピーした灯で組をつくる`を選んだ後に、組の動き方を選びます。元灯とコピー灯を勝手に`鏡のように動く`へ結びません。
+
+元の組全体を選択していた場合に、新しい組を複製する機能は将来追加できます。組の一部だけを選んだ場合は、元の組構造をコピーしません。
+
+## 反対側に既存灯がある場合
+
+位置が近いという理由だけで、既存灯を同じ灯体とみなしません。
+
+コピー実行前に予告を表示します。
+
+```text
+8灯を下手から上手へコピーします。
+3灯は既存の灯体と重なります。
+
+［重なる3灯を飛ばしてコピー］
+［重なっても追加］
+［やめる］
+```
+
+`置き換える`は初回には入れません。既存灯の全シーンcueまで消す危険があるためです。
+
+重なり判定の候補は次です。
+
+- トラス：同じトラスで、鏡映後の横位置が近い
+- 床：鏡映後の床位置が近い
+- 横：反対側で奥行きと高さが近い
+
+閾値は概略図のための候補判定であり、「同一灯」と断定するものではありません。
+
+## 操作の置き場所
+
+左一覧の固定ツールバーに、複数選択用の`操作`メニューを置きます。
+
+```text
+操作
+├ 複製
+├ 反対側へコピー
+├ 等間隔に並べる
+└ 削除
+```
+
+右設定欄には置きません。この操作は一灯の属性ではなく、選択集合へ働くためです。
+
+方向が混在する選択では実行前に方向を選ばせます。
+
+```text
+［下手から上手へ］
+［上手から下手へ］
+```
+
+Undoでは、生成された灯体とその現在シーンのcueを一回でまとめて戻します。
+
+# 4. 20灯以上の一覧UI
+
+## 196pxは狭い
+
+20〜40灯という件数自体はスクロールで扱えます。しかし196pxでは、次を同時に読めません。
+
+- `L21`
+- 任意名
+- 取り付け場所
+- 未設定／消灯／点灯／動き
+- 組番号と順番
+
+折り畳み見出しと絞り込みを足すと、さらに窮屈になります。
+
+## 確定寸法
+
+1440×900ではモーダルを **1320×860px**へ広げます。
+
+```text
+左一覧 248px
+中央   716px
+右設定 300px
+列間   12px×2
+左右余白 16px×2
+```
+
+```css
+grid-template-columns: 248px minmax(620px, 1fr) 300px;
+```
+
+画面幅が足りない場合は、左一覧を196pxへ潰すのではなく、折り畳める248pxのドロワーにします。
+
+行高は38〜40pxです。860pxの画面なら、一覧内におよそ14〜16灯を同時表示できます。40灯すべてを一画面へ詰めるより、場所見出し、検索、選択の維持が重要です。
+
+## 一覧の唯一の階層
+
+**階層は取り付け場所に固定します。組は階層にしません。**
+
+```text
+⌄ 奥から1列目のトラス　8灯・未設定2
+  L01　中央ムービング　動き　組1・1番
+  L02　中央ムービング　動き　組1・2番
+
+⌄ 奥から2列目のトラス　8灯・未設定4
+  L09　上手寄り　　　　未設定
+
+⌄ 床　4灯
+⌄ 下手側　2灯
+⌄ 上手側　2灯
+```
+
+取り付け場所はショー共通で安定しています。組はシーンごとに変わるため、それを一覧階層にすると、シーン送りのたびに灯体行が大きく移動します。
+
+組は各行の小さな文字で表示します。
+
+```text
+組2・3番
+```
+
+この表示をクリックすると組全体を選択します。右設定欄に、組員を順番付きで一覧表示します。
+
+## 並び順
+
+見出し：
+
+1. トラスを奥から手前
+2. 床
+3. 下手側
+4. 上手側
+5. 取り付け不明
+
+各見出し内：
+
+- 灯体番号順
+
+横位置順にすると、灯体をドラッグした直後に一覧行が移動します。番号順なら作業位置を失いません。
+
+## 折り畳み
+
+- 折り畳み状態はモード切替・シーン送りで維持
+- 選択灯の見出しは自動で開く
+- 折り畳み中の選択数を見出しに表示
+- 未設定灯がある見出しには件数を表示
+- フィルター変更で勝手に全見出しを開閉しない
+
+## 絞り込みと検索
+
+```text
+［番号・名前で検索］
+［すべて］［未設定］［消灯］［点灯］［動きあり］
+```
+
+20〜40灯が主要規模になったため、検索は初回から入れる方を推します。実装負荷が比較的小さく、灯体番号を指定されたときの移動量を大きく減らせます。
+
+`点灯`は静止灯だけ、`動きあり`は移動灯だけに分けます。
+
+## 選択
+
+PC一覧の一般的な扱いに寄せます。
+
+- クリック：一灯を選択
+- `Shift`クリック：連続範囲
+- `⌘`／`Ctrl`クリック：追加・解除
+- 見出しのチェック：その場所の表示中の灯を選択
+- `表示中をすべて選ぶ`：絞り込み結果だけ選択
+
+フィルターで選択灯が隠れても、選択自体は解除しません。
+
+```text
+8灯を選択中（2灯は絞り込みで非表示）
+```
+
+と表示します。
+
+一括操作は一覧上部へ固定します。
+
+```text
+［表示中をすべて選ぶ］［操作 ▾］
+```
+
+# 5. 将来の3Dとリアルタイムへの逃げ道
+
+## 現状評価
+
+### そのまま使える部分
+
+- `project.lightRig`とシーンcueの二層
+- 固定IDによる灯体参照
+- 灯体位置を世界座標へ変換する関数
+- 時刻を渡して狙い点を求める純関数
+- 再生と書き出しが同じ幾何を使う考え方
+
+### 変更が必要な部分
+
+- 面ごとに座標の意味が変わる`surfacePoint`
+- `surface`に依存する円計算
+- モーダル専用の再生時刻
+- 3D対象を参照できない狙い点
+- cueの形式バージョンがないこと
+
+## 今入れる最小の備え
+
+### 1. スキーマのバージョン
+
+```js
+project.lightRig.version = 1
+scene.lightRigCue.version = 1
+```
+
+未知の将来フィールドを読み込み時にゼロや既定値へ潰さないようにします。
+
+### 2. すべての狙い点を同じPoint3へする
+
+```js
+{u, v, hM}
+```
+
+床・壁は入力制約です。描画関数内の特殊な座標解釈にしません。
+
+### 3. 狙いの種類を判別可能な形にする
+
+現在：
+
+```js
+aim: {
+  kind: "point",
+  targetKind: "air",
+  path: ...
+}
+```
+
+将来：
+
+```js
+aim: {
+  kind: "entity",
+  entityId: "...",
+  anchor: "bodyCenter",
+  offset: {xM:0, yM:0, zM:0.2},
+  fallbackPoint: {...}
+}
+```
+
+`entity`用の空フィールドを今から保存する必要はありません。`kind:"point"`という判別子だけで逃げ道を作れます。
+
+ETCのAugment3dにも、移動するScenic Element MovableへFocus Paletteを関連付け、XYZオフセットを保ちながら追従させる仕組みがあります。これは将来の「演者または空中器具のアンカー＋相対オフセット」に近い考え方です。[ETC公式リリースノート](https://www.etcconnect.com/workarea/DownloadAsset.aspx?id=10737518944)
+
+### 4. 共通の時刻から評価する
+
+内部APIを次の形にします。
+
+```js
+evaluateLightCue(sceneCue, fixtureId, tMs, sceneContext)
+```
+
+現在は固定したcue設定と繰り返し軌道を評価します。将来は同じ入口で、演者位置と照明の時間列を評価できます。
+
+灯体モジュール内部で`performance.now()`を直接読む構造にはしません。本体側の共通シーン時計から`tMs`を渡します。
+
+### 5. timelineの空配列は入れない
+
+将来用として`timeline:[]`を今から保存すると、意味が決まっていないフィールドが正本に残ります。今はcue全体にバージョンを付け、評価関数を一本化するだけで足ります。
+
+## 1シーン1状態から時間軸への移行
+
+現在のcueを次のようにまとめておくと移行が容易です。
+
+```js
+scene.lightRigCue = {
+  version: 1,
+  state: {
+    lights: {...},
+    groups: [...]
+  }
+}
+```
+
+将来のv2では、
+
+```js
+scene.lightRigCue = {
+  version: 2,
+  timeline: {
+    durationMs: ...,
+    segments: [
+      { atMs: 0, state: {...} }
+    ]
+  }
+}
+```
+
+へ変換できます。
+
+移行時はv1の状態を`0ms`の一つ目の状態として置き、シーン終了まで維持します。現在の往復・円のループは、その状態内の手続き的な動きとして残せます。
+
+これなら既存シーンの意味を変えず、後から同一シーン内へ、
+
+```text
+0秒：静止
+3秒：演者を追う
+8秒：消灯
+```
+
+を追加できます。
+
+## 「適用して閉じる」は将来も使えるか
+
+3D表示が増えても、必ずしも編集方式を変える必要はありません。
+
+- 正本：本体へ最後に適用したrig/cue
+- 編集中：モーダル内のdraft
+- 3Dプレビュー：draftと現在の演者状態を組み合わせて描く
+
+という構成なら、演者と照明をリアルタイム表示しながら、適用までは正本を変更しない方式を維持できます。
+
+将来、本体のメイン3D画面上で直接灯体を編集するようになった時点で、即時反映へ変えるかを再検討すれば足ります。
+
+# 6. MVPの再定義
+
+以下は既存試作がある前提の、10作業日程度の提案です。工数の確約ではありません。
+
+## 1〜2日目：3D点への移行
+
+- `Point3 {u,v,hM}`へ統一
+- `surface`を`targetKind`へ移行
+- 床・奥壁の旧試作データ変換
+- `targetAt`と`pathGuide`を3D点基準へ変更
+- 床・奥壁の既存挙動を回帰確認
+
+## 3〜4日目：空中の編集
+
+- `当てる場所：空中`
+- 静止、同じ高さの往復、水平円
+- 平面図で`u,v`
+- 正面図で`u,hM`
+- 側面図で`v,hM`
+- 空中点、鉛直補助線、光線の延長表示
+- 高さ・奥行きを含む説明文
+
+## 5〜6日目：20〜40灯の一覧
+
+- モーダル1320px
+- 左一覧248px
+- 取り付け場所ごとの折り畳み
+- 番号・名前検索
+- 状態フィルター
+- 安定した番号順
+- Shift範囲選択、⌘／Ctrl追加選択
+- 組番号・順番の行内表示
+- 24灯と40灯の表示・選択確認
+
+## 7日目：左右コピー
+
+初回は次に絞ります。
+
+- 選択灯の配置を反対側へコピー
+- 新しい連番
+- 中央線上を除外
+- 重複予告
+- 重複を飛ばす／追加する
+- 一回のUndo
+
+**現在シーンの動きコピーは、本人の回答次第で入れるか決めます。**
+
+## 8〜9日目：再生と書き出し
+
+- 空中を含む全灯再生
+- 複数灯の組
+- 空中点を含む動画と3コマ図
+- 灯ごとの高さ・奥行き説明
+- 24灯で再生・書き出し確認
+- 適用して閉じる
+- 再度開いたときの同一性確認
+
+## 10日目：操作検証
+
+一つの通し場面で確認します。
+
+1. 3本のトラスへ24灯を置く。
+2. 下手側4灯を上手へコピーする。
+3. 未設定灯だけを絞り込む。
+4. 一灯を高さ4mの空中点へ当てる。
+5. その灯へ同じ高さの往復を付ける。
+6. 二灯を扇の組にする。
+7. 全灯を再生する。
+8. 適用、再読込、書き出しを行う。
+
+## 2回目へ回すもの
+
+- 縦円・斜め円・任意平面
+- 高さの違うA・B
+- 演者・器具へのデータ参照
+- 3Dビュー
+- 演者と照明の共通タイムライン
+- 全シーンの動きコピー
+- 左右灯の永続的な連動
+- コピーによる既存灯の置き換え
+- 遮蔽、光束、光溜まり、煙・霞の物理表現
+- 実機のパン／チルト可動範囲判定
+
+# 7. 本人に確認すべきこと
+
+1. **空中の動きは、初回は「静止・同じ高さの往復・水平円」で足りますか。それとも、演者の上昇下降を追う斜め線または縦円が初回から必要ですか。**  
+   空中編集を二つの図で連動させるだけで済むか、A・Bそれぞれの高さ編集と軌道面選択が必要かが変わります。
+
+2. **下手上手コピーの初回は、灯体の配置だけで足りますか。それとも、現在のシーンの点灯・色・空中を含む動きも鏡像でコピーしたいですか。**  
+   後者では軌道、円の回転方向、重複cue、組の扱いまでコピー仕様へ含める必要があります。
+
+今回は読み取りと公式資料の確認のみで、ファイルは変更していません。
+
+> 🔜 **次の一手**: ①上の2点を本人確認する　②回答後、既存試作の`surface`依存を3D点へ置き換える実装仕様を確定する  
+> 🧠 **おすすめモデル**: Sol（3D座標・複数ビュー・操作状態の整合を保った試作改修）
+exit=0
