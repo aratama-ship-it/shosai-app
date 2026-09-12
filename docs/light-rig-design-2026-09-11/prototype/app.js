@@ -135,7 +135,8 @@
        （音楽のベロシティカーブと同じ考え方。2026-09-13 本人要望）。
        アプリ全体で1本だけ持つ共通の設定なので、灯ごとにも場面ごとにも変わらない。
        値は入力0〜1を等間隔に切った LEVEL_CURVE_STEPS+1 個の出力（0〜1）。既定はリニア。
-       図の見え方の設定なので、show や snap と同じくUndoの対象にはしない。 */
+       作った色（palette）と同じく<b>ショー共通の持ち物</b>として扱うので、rig・scenes と一緒に
+       保存・Undoの対象にする（2026-09-13 本人決定）。 */
     levelCurve: null,                  // 初期化は下の resetLevelCurve()
     front3d: false,                    // 客席から見る図を擬似パース（本体の正面図と同じ式）で描く
     seat: "center",                    // その席（stage-venues.js の値をそのまま使う）
@@ -175,7 +176,7 @@
   const uid = (p) => `${p}${state.seq++}`;
 
   /* ---------- 履歴（モーダル内Undo） ---------- */
-  const snapshot = () => JSON.stringify({ rig: state.rig, scenes: state.scenes, palette: state.palette });
+  const snapshot = () => JSON.stringify({ rig: state.rig, scenes: state.scenes, palette: state.palette, levelCurve: state.levelCurve });
   function commit(label) {
     state.history.push(snapshot());
     if (state.history.length > 100) state.history.shift();
@@ -187,6 +188,8 @@
   function restore(json) {
     const o = JSON.parse(json);
     state.rig = o.rig; state.scenes = o.scenes; if (o.palette) state.palette = o.palette;
+    // 強さの効き方。目盛りの数が合うものだけ受け取る（古い記録には無い＝そのときはリニアのまま）
+    if (Array.isArray(o.levelCurve) && o.levelCurve.length === LEVEL_CURVE_STEPS + 1) state.levelCurve = o.levelCurve.slice();
     state.sel = new Set([...state.sel].filter(fixtureById));
     if (state.selTruss && !E.trussById(state.rig, state.selTruss)) state.selTruss = null;
     state.dirty = true;
@@ -2039,10 +2042,14 @@
       state.levelCurve[0] = 0;          // 0%は必ず消灯（描いても「0なのに光る」は作らせない）
       lastI = i; paint(); draw();
     };
+    /* なぞっている最中は draw() だけで見せ、指を離した時に1回 commit する。
+       ショー共通の持ち物として保存・Undoの対象にした（2026-09-13 本人決定）ので、
+       1ストローク＝1手ぶんの履歴になるようにそろえる。 */
+    const settle = () => { if (!drawing) return; drawing = false; lastI = null; commit(); };
     cv.onpointerdown = (ev) => { ev.preventDefault(); drawing = true; lastI = null; try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 取れなくても描ける */ } put(ev); };
     cv.onpointermove = (ev) => { if (drawing) put(ev); };
-    cv.onpointerup = cv.onpointercancel = () => { drawing = false; lastI = null; };
-    const rst = $("lvreset"); if (rst) rst.onclick = () => { resetLevelCurve(); paint(); draw(); };
+    cv.onpointerup = cv.onpointercancel = settle;
+    const rst = $("lvreset"); if (rst) rst.onclick = () => { resetLevelCurve(); paint(); draw(); commit(); };
     paint();
   }
 
