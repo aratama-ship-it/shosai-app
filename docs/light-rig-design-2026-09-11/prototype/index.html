@@ -236,6 +236,13 @@
   .seg.col.grouplist{flex-direction:row;flex-wrap:wrap;align-items:flex-start;max-height:150px;overflow-y:auto}
   .seg.col.grouplist button{text-align:center;white-space:nowrap;flex:0 0 auto}
   .seg.col.grouplist button+button{margin-left:-1px;margin-top:0}
+  /* 照明デザイン（単灯）の箱。色／当てる場所・動き／強さ／広がり／動かす を1箱ずつ
+     （2026-09-13 本人要望）。中は縦積み。見出し(.kicker)は箱の中で余白を持たない。 */
+  .pbox{border:1px solid var(--line-dark);background:var(--recess);padding:8px;display:grid;gap:7px}
+  .pbox>.kicker{margin:0}
+  .pbox .pboxhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .pbox .pboxhead .kicker{margin:0}
+  .pbox .swatches{padding:3px}
   /* サーチライト（複数ムービングを一撃で組む）。まとまりが見えるよう枠で囲う */
   .slbox{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;align-content:start;border:1px solid var(--line-dark);background:var(--recess);padding:8px;margin-bottom:2px}
   .slbox>*{grid-column:1/-1;min-width:0}
@@ -480,8 +487,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789211495"></script>
-<script src="stage-figure.js?v=1789211495"></script>
-<script src="app.js?v=1789211495"></script>
+<script src="rig-engine.js?v=1789213026"></script>
+<script src="stage-figure.js?v=1789213026"></script>
+<script src="app.js?v=1789213026"></script>
 </body>
 </html>

@@ -1674,6 +1674,14 @@
   /* パネル右上のオン・オフ。1灯を選んでいるときだけ出す。
      押すたびに切り替わる1つのボタンにした（2026-09-13 本人要望）——未設定と消灯を分けて見せず、
      「いま光っているか」だけを示す。未設定の灯を押したら、その場で点いた状態から始める。 */
+  /* 右上のオン・オフと同じ見た目の切り替え（「動かす」で使う）。押すたびに反転する。 */
+  function switchBtn(on, title, onToggle) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "ontoggle";
+    b.setAttribute("aria-pressed", String(on)); b.title = title;
+    b.innerHTML = `<span class="sw"></span><b>${on ? "オン" : "オフ"}</b>`;
+    b.onclick = onToggle; return b;
+  }
+
   function syncLightToggle(ids) {
     const tgl = $("lighttoggle"), panel = $("panel-insp"); if (!tgl || !panel) return;
     const fid = state.mode === "move" && ids.length === 1 ? ids[0] : null;
@@ -1740,38 +1748,39 @@
       /* オン・オフはパネル右上のボタンへ集約した（2026-09-13 本人要望）。
          本文からは2択の欄を外し、消えている灯ではそこへ誘導するだけにする。 */
       if (!l || l.on !== true) {
-        host.append(el("p", "hint", "この灯はいま消えています。右上の〈オフ〉を押して点けると、強さ・色・当てる場所・動きを決められます。"));
+        host.append(el("p", "hint", "この灯はいま消えています。右上の〈オフ〉を押して点けると、色・当てる場所・強さ・広がりを決められます。"));
         return;
       }
-      /* 強さ（調光）。舞台照明でいちばん基本の操作なので、色より先に置く。
-         0まで下げると消灯と同じ扱いになり、図から消える（2026-09-13 本人決定）。
-         ムービングは動きの中で強さを変えられる（2026-09-13 本人要望）: 「終わり」の値を持たせると
-         始め→終わり→始め と往復する。位相は位置の往復と同じ。効き方（カーブ）は環境設定へ移した。 */
-      {
-        const fmtLv = (v) => (v <= 0 ? "0%（消灯）" : `${Math.round(v)}%（${LEVEL_WORD(v)}）`);
-        const fading = E.isMoving(f) && l.levelTo != null;
-        host.append(field(fading ? "強さ（始め）" : "強さ", range(0, 100, 1, levelOf(l), fmtLv, (v) => { l.level = v; draw(); }, () => commit()), true));
-        if (fading) {
-          host.append(field("強さ（終わり）", range(0, 100, 1, E.clamp(E.finite(l.levelTo, levelOf(l)), 0, 100), fmtLv, (v) => { l.levelTo = v; draw(); }, () => commit()), true));
-          host.append(btn("終わりの強さをやめる（動きの中で変えない）", () => { delete l.levelTo; commit(); }, "small quiet"));
-        } else if (E.isMoving(f)) {
-          host.append(btn("動きの中で強さを変える（終わりの値を決める）", () => { l.levelTo = levelOf(l); commit(); }, "small quiet"));
-        }
-      }
-      /* 光の色。よく使う6色＋自分で作った色（ショー共通）。作った色はそのまま並ぶので、
+      /* ---- 欄の構成（2026-09-13 本人要望） ----
+         ①光の色 → ②当てる場所・動き（位置に関わるものを1箱） → ③光の強さ → ④光の広がり →
+         ⑤動かす（ムービングのみ）。
+         「動かす」を入れると②③④のすべてに始点と終点ができ、⑤でその運び方（時間・切り返し・
+         向き・遅れ）をまとめて決める。動かしていないときは各箱が1つの値だけを持つ。
+         動かしているかどうかは別の旗を持たず、データから決める:
+           位置の軌道が「動きなし」以外 or 強さ・広がりに終点がある ＝ 動かしている。 */
+      const p = l.path || { kind: "still" };
+      const mover = E.isMoving(f);
+      const moving = mover && (p.kind !== "still" || l.levelTo != null || l.beamDegTo != null);
+      const box = (title) => { const b = el("div", "pbox"); if (title) b.append(el("p", "kicker", title)); host.append(b); return b; };
+      const heightField = (b, label2, point) => {
+        if (l.surface === "floor") return; // 床は高さ0固定。UIに出さない
+        b.append(field(label2, range(0, state.dims.H, 0.1, point.hM || 0, (v) => `約${v.toFixed(1)}m`, (v) => { point.hM = v; draw(); }, () => commit())));
+      };
+
+      /* ① 光の色。よく使う6色＋自分で作った色（ショー共通）。作った色はそのまま並ぶので、
          別の灯からもワンタッチで選べる（2026-09-11 本人要望）。 */
       {
+        const b = box("光の色");
         const swatch = (c, custom) => {
-          const b = document.createElement("button"); b.type = "button"; b.className = custom ? "custom" : "";
-          b.style.background = c; b.title = custom ? `作った色 ${c}` : c;
-          b.setAttribute("aria-pressed", String((l.color || "").toLowerCase() === c.toLowerCase()));
-          b.onclick = () => { setLight(fid, { color: c }); commit(); };
-          return b;
+          const sb = document.createElement("button"); sb.type = "button"; sb.className = custom ? "custom" : "";
+          sb.style.background = c; sb.title = custom ? `作った色 ${c}` : c;
+          sb.setAttribute("aria-pressed", String((l.color || "").toLowerCase() === c.toLowerCase()));
+          sb.onclick = () => { setLight(fid, { color: c }); commit(); };
+          return sb;
         };
         const sw = el("div", "swatches");
         COLORS.forEach((c) => sw.append(swatch(c, false)));
         state.palette.forEach((c) => sw.append(swatch(c, true)));
-        // 色を作る。押すとブラウザの色見本が開き、選んだ色がそのまま灯へ入る
         const pick = document.createElement("input"); pick.type = "color"; pick.className = "mkcolor";
         pick.value = /^#[0-9a-f]{6}$/i.test(l.color || "") ? l.color : "#ffd27a";
         pick.title = "色を作る（作った色はショー全体で使えます）";
@@ -1784,97 +1793,114 @@
           setLight(fid, { color: c }); commit(`色 ${c} を作りました（ほかの灯からも選べます）`);
         };
         sw.append(pick);
-        host.append(field("光の色", sw, true));
+        b.append(sw);
         const cur = (l.color || "").toLowerCase();
         if (state.palette.some((x) => x.toLowerCase() === cur)) {
-          host.append(btn(`この色（${cur}）を作った色から外す`, () => { state.palette = state.palette.filter((x) => x.toLowerCase() !== cur); commit(); }, "small quiet"));
+          b.append(btn(`この色（${cur}）を作った色から外す`, () => { state.palette = state.palette.filter((x) => x.toLowerCase() !== cur); commit(); }, "small quiet"));
         }
       }
-      host.append(field("当てる場所", seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"]], l.surface, (v) => {
-        setLight(fid, { surface: v }); restyleToSurface(fid);
-        const l2 = lightOf(fid); if (l2.path && l2.path.kind === "circle") l2.path.plane = v === "back" ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
-        commit();
-      }), true));
-      const p = l.path || { kind: "still" };
-      const heightField = (label2, point) => {
-        if (l.surface === "floor") return; // 床は高さ0固定。UIに出さない
-        host.append(field(label2, range(0, state.dims.H, 0.1, point.hM || 0, (v) => `約${v.toFixed(1)}m`, (v) => { point.hM = v; draw(); }, () => commit())));
-      };
-      /* 動き（往復・円）はムービングだけ。固定灯は向きが仕込みで決まるので付けられない
-         （2026-09-11 本人判断）。広がり・色・当てる場所は固定灯でも決められる。 */
-      if (E.isMoving(f)) {
-        host.append(field("動き", seg([["still", "動きなし"], ["line", "往復"], ["circle", "円"], ["eight", "8の字"]], p.kind, (v) => { setKind(fid, v); commit(); }), true));
-        // ズーム＝このシーンの光の広がり。ムービングだけが持てる（実機は7〜50°程度）。
-        // 動きの中でズームすることもあるので「終わり」の広がりも持てる（2026-09-13 本人要望）
-        {
-          const fmtDeg = (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`;
-          const zooming = l.beamDegTo != null;
-          host.append(field(zooming ? "広がり（始め）" : "光の広がり", range(5, 55, 1, E.beamDegOf(f, l), fmtDeg, (v) => { l.beamDeg = v; draw(); }, () => commit())));
-          if (zooming) {
-            host.append(field("広がり（終わり）", range(5, 55, 1, E.clamp(E.finite(l.beamDegTo, E.beamDegOf(f, l)), 5, 55), fmtDeg, (v) => { l.beamDegTo = v; draw(); }, () => commit())));
-            host.append(btn("終わりの広がりをやめる（動きの中で変えない）", () => { delete l.beamDegTo; commit(); }, "small quiet"));
-          } else {
-            host.append(btn("動きの中で広がりを変える（終わりの値を決める）", () => { l.beamDegTo = E.beamDegOf(f, l); commit(); }, "small quiet"));
+
+      /* ② 当てる場所・動き。位置に関わるものをここに集める。
+         動かしているときは軌道の種類と始点・終点を、動かしていないときは当てる先だけを持つ。 */
+      {
+        const b = box("当てる場所・動き");
+        b.append(field("当てる場所", seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"]], l.surface, (v) => {
+          setLight(fid, { surface: v }); restyleToSurface(fid);
+          const l2 = lightOf(fid); if (l2.path && l2.path.kind === "circle") l2.path.plane = v === "back" ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
+          commit();
+        }), true));
+        if (moving) {
+          /* 軌道の種類。「動きなし」は位置だけ止めて、強さ・広がりの往復は続ける。 */
+          b.append(field("動き", seg([["still", "動きなし"], ["line", "往復"], ["circle", "円"], ["eight", "8の字"]], p.kind, (v) => { setKind(fid, v); commit(); }), true));
+          if (p.kind === "still") { b.append(el("p", "hint", "位置は動かさず、強さ・広がりだけが 始点→終点→始点 と往復します。")); heightField(b, "高さ", p.a); }
+          if (p.kind === "line") { heightField(b, "始点の高さ", p.a); heightField(b, "終点の高さ", p.b); }
+          if (p.kind === "circle" || p.kind === "eight") {
+            if (l.surface === "air") b.append(field("回る面", seg([["horizontal", "水平"], ["frontVertical", "客席側から見た縦"], ["sideVertical", "舞台横から見た縦"]], p.plane || "horizontal", (v) => { p.plane = v; commit(); }, "col"), true));
+            b.append(field("回る向き", seg([["cw", "時計回り"], ["ccw", "反時計回り"]], p.dir, (v) => { p.dir = v; commit(); })));
+            /* 円は2軸で持つ＝楕円にできる（2026-09-11 本人要望）。軸の呼び名は面で変わる。 */
+            const AXIS = { horizontal: ["左右のふくらみ", "奥行きのふくらみ"], frontVertical: ["左右のふくらみ", "高さのふくらみ"], sideVertical: ["奥行きのふくらみ", "高さのふくらみ"] }[p.plane || "horizontal"];
+            const lim = Math.max(state.dims.W, state.dims.H) / 2;
+            b.append(field(AXIS[0], range(0.3, lim, 0.1, p.r, (v) => `約${v.toFixed(1)}m`, (v) => { p.r = v; draw(); }, () => commit())));
+            b.append(field(AXIS[1], range(0.3, lim, 0.1, p.r2 == null ? p.r : p.r2, (v) => `約${v.toFixed(1)}m`, (v) => { p.r2 = v; draw(); }, () => commit())));
+            b.append(field("傾き", range(-90, 90, 5, p.tilt == null ? 0 : p.tilt, (v) => (Math.round(v) === 0 ? "まっすぐ" : `${Math.round(v)}°`), (v) => { p.tilt = v; draw(); }, () => commit())));
+            { const rr = p.r2 == null ? p.r : p.r2, tl = Math.round(p.tilt || 0);
+              if (Math.abs(rr - p.r) >= 0.05 || tl) b.append(btn(p.kind === "eight" ? "傾きと形をそろえる" : "まん丸・まっすぐに戻す", () => { p.r2 = p.r; p.tilt = 0; commit(); }, "small quiet")); }
+            heightField(b, "中心の高さ", p.c);
+            b.append(field("始める位置", range(0, 1, 0.05, p.start || 0, (v) => `${Math.round(v * 360)}°`, (v) => { p.start = v; draw(); }, () => commit())));
           }
-          if (l.beamDeg != null) host.append(btn(`仕込みの広がり（${Math.round(f.beamDeg == null ? 18 : f.beamDeg)}°）に戻す`, () => { delete l.beamDeg; commit(); }, "small quiet"));
+        } else {
+          heightField(b, "高さ", p.a || E.newPoint());
+          if (!mover && p.kind !== "still") b.append(el("p", "warn", "⚠ この灯には動きが付いたままです。固定灯なので実際には動きません。"));
         }
-      } else {
-        // 固定灯でも広がりは決められる（灯体を作る＝仕込みを決める操作）。ただしシーン別には変わらない
-        host.append(field("光の広がり", range(4, 70, 1, f.beamDeg == null ? 24 : f.beamDeg, (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`, (v) => { f.beamDeg = v; draw(); }, () => commit())));
-        if (p.kind !== "still") host.append(el("p", "warn", "⚠ この灯には動きが付いたままです。固定灯なので実際には動きません。"));
       }
-      if (p.kind === "still") { heightField("高さ", p.a); }
-      if (p.kind === "line") {
-        host.append(field("始め方", seg([["a", "A → B"], ["b", "B → A"]], p.start || "a", (v) => { p.start = v; commit(); })));
-        // 端での切り返し方（2026-09-12 本人指定で「切り返し」＝リニア／イーズ）
-        host.append(field("切り返し", seg([["linear", "リニア"], ["ease", "イーズ"]], p.easing || "ease", (v) => { p.easing = v; commit(); })));
-        heightField("Aの高さ", p.a); heightField("Bの高さ", p.b);
+
+      /* ③ 光の強さ。0まで下げると消灯と同じ扱いになり、図から消える（2026-09-13 本人決定）。
+         動かしているときは始点と終点を持ち、位置と同じ位相で往復する。効き方（カーブ）は環境設定。 */
+      {
+        const b = box("光の強さ");
+        const fmtLv = (v) => (v <= 0 ? "0%（消灯）" : `${Math.round(v)}%（${LEVEL_WORD(v)}）`);
+        b.append(field(moving ? "始点" : "強さ", range(0, 100, 1, levelOf(l), fmtLv, (v) => { l.level = v; draw(); }, () => commit()), true));
+        if (moving) b.append(field("終点", range(0, 100, 1, E.clamp(E.finite(l.levelTo, levelOf(l)), 0, 100), fmtLv, (v) => { l.levelTo = v; draw(); }, () => commit()), true));
       }
-      if (p.kind === "circle" || p.kind === "eight") {
-        if (l.surface === "air") host.append(field("回る面", seg([["horizontal", "水平"], ["frontVertical", "客席側から見た縦"], ["sideVertical", "舞台横から見た縦"]], p.plane || "horizontal", (v) => { p.plane = v; commit(); }, "col"), true));
-        host.append(field("回る向き", seg([["cw", "時計回り"], ["ccw", "反時計回り"]], p.dir, (v) => { p.dir = v; commit(); })));
-        /* 円は2軸で持つ＝楕円にできる（2026-09-11 本人要望）。軸の呼び名は面で変わる。 */
-        const AXIS = { horizontal: ["左右のふくらみ", "奥行きのふくらみ"], frontVertical: ["左右のふくらみ", "高さのふくらみ"], sideVertical: ["奥行きのふくらみ", "高さのふくらみ"] }[p.plane || "horizontal"];
-        const lim = Math.max(state.dims.W, state.dims.H) / 2;
-        host.append(field(AXIS[0], range(0.3, lim, 0.1, p.r, (v) => `約${v.toFixed(1)}m`, (v) => { p.r = v; draw(); }, () => commit())));
-        host.append(field(AXIS[1], range(0.3, lim, 0.1, p.r2 == null ? p.r : p.r2, (v) => `約${v.toFixed(1)}m`, (v) => { p.r2 = v; draw(); }, () => commit())));
-        // 面の中での傾き。楕円や8の字を斜めに寝かせられる（2026-09-11 本人要望）
-        host.append(field("傾き", range(-90, 90, 5, p.tilt == null ? 0 : p.tilt, (v) => (Math.round(v) === 0 ? "まっすぐ" : `${Math.round(v)}°`), (v) => { p.tilt = v; draw(); }, () => commit())));
-        {
-          const rr = p.r2 == null ? p.r : p.r2, tl = Math.round(p.tilt || 0);
-          if (Math.abs(rr - p.r) >= 0.05 || tl) host.append(btn(p.kind === "eight" ? "傾きと形をそろえる" : "まん丸・まっすぐに戻す", () => { p.r2 = p.r; p.tilt = 0; commit(); }, "small quiet"));
+
+      /* ④ 光の広がり。ムービングはシーンごとにズームできる（実機は7〜50°程度）。
+         固定灯はレンズ／ランプで決まるので仕込みの値を編集する（シーン別には変わらない）。 */
+      {
+        const b = box("光の広がり");
+        const fmtDeg = (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`;
+        if (mover) {
+          b.append(field(moving ? "始点" : "広がり", range(5, 55, 1, E.beamDegOf(f, l), fmtDeg, (v) => { l.beamDeg = v; draw(); }, () => commit()), true));
+          if (moving) b.append(field("終点", range(5, 55, 1, E.clamp(E.finite(l.beamDegTo, E.beamDegOf(f, l)), 5, 55), fmtDeg, (v) => { l.beamDegTo = v; draw(); }, () => commit()), true));
+          if (l.beamDeg != null) b.append(btn(`仕込みの広がり（${Math.round(f.beamDeg == null ? 18 : f.beamDeg)}°）に戻す`, () => { delete l.beamDeg; if (l.beamDegTo != null) l.beamDegTo = E.beamDegOf(f, l); commit(); }, "small quiet"));
+        } else {
+          b.append(field("広がり", range(4, 70, 1, f.beamDeg == null ? 24 : f.beamDeg, fmtDeg, (v) => { f.beamDeg = v; draw(); }, () => commit()), true));
         }
-        heightField("中心の高さ", p.c);
-        host.append(field("始める位置", range(0, 1, 0.05, p.start || 0, (v) => `${Math.round(v * 360)}°`, (v) => { p.start = v; draw(); }, () => commit())));
       }
-      /* 動きの時間。位置が動く灯に加えて、広がり・強さだけが動く灯（動きなし＋終わりの値）にも出す。 */
-      const valueMotion = E.isMoving(f) && (l.levelTo != null || l.beamDegTo != null);
-      if (p.kind !== "still" || valueMotion) {
-        const label1 = p.kind === "line" ? "1往復の時間" : p.kind === "still" ? "変化の1往復の時間" : "1周の時間";
-        if (p.kind === "still") host.append(el("p", "hint", "位置は動かさず、広がり・強さだけが 始め→終わり→始め と往復します。"));
-        host.append(field(label1, seg([["slow", "ゆっくり 4秒"], ["normal", "普通 2秒"], ["fast", "速い 1秒"]], l.periodSec == null ? l.speed : null, (v) => { setLight(fid, { speed: v, periodSec: null }); commit(); }), true));
-        // 3段で足りないときのために秒数そのものを持てる（2026-09-12 本人要望）
-        const secNow = l.periodSec == null ? E.SPEED_PERIOD_MS[l.speed] / 1000 : l.periodSec;
-        host.append(field("秒で決める", range(0.4, 30, 0.1, secNow, (v) => `${v.toFixed(1)}秒${l.periodSec == null ? "（未使用）" : ""}`, (v) => { l.periodSec = v; draw(); }, () => commit())));
-        if (l.periodSec != null) host.append(btn("秒の指定をやめて3段に戻す", () => { delete l.periodSec; commit(); }, "small quiet"));
-        /* 何秒遅れて始めるか。組の「順番に動く」とは別に、一灯ずつずらせる。
-           サーチライトのように、同じ動きを少しずつ遅らせて波を作るのに使う（2026-09-12 本人要望）。 */
-        host.append(field("オフセット", range(-10, 10, 0.1, E.finite(l.offsetSec, 0), (v) => (Math.abs(v) < 0.05 ? "なし" : `${v > 0 ? "+" : ""}${v.toFixed(1)}秒`), (v) => { l.offsetSec = v; draw(); }, () => commit())));
-        // 軌道のコピー（2026-09-12 本人要望）
-        const acts = el("div", "seg");
-        acts.append(btn(state.copiedPath && state.copiedPath.from === fid ? "コピー済み" : "この動きをコピー", () => {
-          state.copiedPath = { from: fid, label: label(fid), path: JSON.parse(JSON.stringify(p)), speed: l.speed, periodSec: l.periodSec, beamDeg: l.beamDeg, beamDegTo: l.beamDegTo, levelTo: l.levelTo };
-          renderAll(); toast(`${label(fid)}の動きをコピーしました。別のムービングを選んで貼り付けられます。`);
-        }, "small"));
-        host.append(field("動きのコピー", acts));
-      }
-      if (state.copiedPath && state.copiedPath.from !== fid && E.isMoving(f)) {
-        const c = state.copiedPath;
-        const b = btn(`${c.label}の動きを貼り付ける`, () => {
-          setLight(fid, { path: JSON.parse(JSON.stringify(c.path)), speed: c.speed, periodSec: c.periodSec, beamDeg: c.beamDeg, beamDegTo: c.beamDegTo, levelTo: c.levelTo });
-          commit(`${c.label}の動きを${label(fid)}へ写しました（オフセットは灯ごとのまま）`);
-        }, "small primary");
-        host.append(field("貼り付け", b));
+
+      /* ⑤ 動かす（ムービングのみ）。入れると②③④に始点と終点ができる。
+         運び方（時間・切り返し・向き・遅れ）はここで一括に決める（2026-09-13 本人要望）。 */
+      if (mover) {
+        const b = box(null);
+        const head = el("div", "pboxhead"); head.append(el("p", "kicker", "動かす"));
+        head.append(switchBtn(moving, moving ? "動かしています。押すと止めます（始点の値で止まります）" : "押すと始点と終点を置いて動かします", () => {
+          if (moving) {
+            const a = currentPoint(l);
+            setLight(fid, { path: { kind: "still", a: { ...a } } });
+            const l2 = lightOf(fid); delete l2.levelTo; delete l2.beamDegTo;
+            commit("動きを止めました（始点の値で止まっています）");
+          } else {
+            setKind(fid, "line");
+            const l2 = lightOf(fid); l2.levelTo = levelOf(l2); l2.beamDegTo = E.beamDegOf(f, l2);
+            commit("始点と終点を置きました。②③④で終点の値を決められます");
+          }
+        }));
+        b.append(head);
+        if (moving) {
+          const kind = (lightOf(fid).path || {}).kind;
+          if (kind === "line") b.append(field("始め方", seg([["a", "始点 → 終点"], ["b", "終点 → 始点"]], p.start || "a", (v) => { p.start = v; commit(); })));
+          // 端での運び方（2026-09-12 本人指定で「切り返し」＝リニア／イーズ）。位置・強さ・広がりに共通
+          b.append(field("切り返し", seg([["linear", "リニア"], ["ease", "イーズ"]], p.easing || "ease", (v) => { p.easing = v; commit(); })));
+          const label1 = kind === "line" ? "1往復の時間" : kind === "still" ? "変化の1往復の時間" : "1周の時間";
+          b.append(field(label1, seg([["slow", "ゆっくり 4秒"], ["normal", "普通 2秒"], ["fast", "速い 1秒"]], l.periodSec == null ? l.speed : null, (v) => { setLight(fid, { speed: v, periodSec: null }); commit(); }), true));
+          const secNow = l.periodSec == null ? E.SPEED_PERIOD_MS[l.speed] / 1000 : l.periodSec;
+          b.append(field("秒で決める", range(0.4, 30, 0.1, secNow, (v) => `${v.toFixed(1)}秒${l.periodSec == null ? "（未使用）" : ""}`, (v) => { l.periodSec = v; draw(); }, () => commit())));
+          if (l.periodSec != null) b.append(btn("秒の指定をやめて3段に戻す", () => { delete l.periodSec; commit(); }, "small quiet"));
+          /* 何秒遅れて始めるか。組の「順番に動く」とは別に、一灯ずつずらせる（2026-09-12 本人要望）。 */
+          b.append(field("オフセット", range(-10, 10, 0.1, E.finite(l.offsetSec, 0), (v) => (Math.abs(v) < 0.05 ? "なし" : `${v > 0 ? "+" : ""}${v.toFixed(1)}秒`), (v) => { l.offsetSec = v; draw(); }, () => commit())));
+          const acts = el("div", "seg");
+          acts.append(btn(state.copiedPath && state.copiedPath.from === fid ? "コピー済み" : "この動きをコピー", () => {
+            state.copiedPath = { from: fid, label: label(fid), path: JSON.parse(JSON.stringify(p)), speed: l.speed, periodSec: l.periodSec, beamDeg: l.beamDeg, beamDegTo: l.beamDegTo, levelTo: l.levelTo };
+            renderAll(); toast(`${label(fid)}の動きをコピーしました。別のムービングを選んで貼り付けられます。`);
+          }, "small"));
+          b.append(field("動きのコピー", acts));
+        }
+        if (state.copiedPath && state.copiedPath.from !== fid) {
+          const c = state.copiedPath;
+          b.append(field("貼り付け", btn(`${c.label}の動きを貼り付ける`, () => {
+            setLight(fid, { path: JSON.parse(JSON.stringify(c.path)), speed: c.speed, periodSec: c.periodSec, beamDeg: c.beamDeg, beamDegTo: c.beamDegTo, levelTo: c.levelTo });
+            commit(`${c.label}の動きを${label(fid)}へ写しました（オフセットは灯ごとのまま）`);
+          }, "small primary")));
+        }
       }
       // 消す操作はパネル右上のオン・オフへ一本化した（2026-09-13 本人要望）。
       return;
