@@ -574,7 +574,10 @@
       const fr = P({ x: part.rightX, y: part.rightY, z: part.lift });
       const tl = P({ x: part.leftX, y: part.leftY, z: part.lift + part.h });
       const tr = P({ x: part.rightX, y: part.rightY, z: part.lift + part.h });
-      ctx.fillStyle = hexA(pc.color || "#784047", 0.55);
+      // 色は本体既定のまま（#784047＝stage-machinery.jsの既定）。ただし立面での塗りの濃さは
+      // 本体側で決めていない試作独自の値——0.55だと後ろの壁いっぱいを覆って灯体の光と競合したので、
+      // 「下敷き」らしく控えめな0.3へ落とした（2026-09-13 本人指摘「色が強い」）。
+      ctx.fillStyle = hexA(pc.color || "#784047", 0.3);
       ctx.beginPath(); ctx.moveTo(fl.X, fl.Y); ctx.lineTo(fr.X, fr.Y); ctx.lineTo(tr.X, tr.Y); ctx.lineTo(tl.X, tl.Y); ctx.closePath();
       ctx.fill(); ctx.strokeStyle = "rgba(240,231,214,0.22)"; ctx.lineWidth = 1; ctx.stroke();
     });
