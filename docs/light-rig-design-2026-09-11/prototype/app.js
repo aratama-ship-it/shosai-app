@@ -1723,12 +1723,12 @@
       } else if (ids.length > 1) {
         host.append(el("p", "kicker", `${ids.length}灯を選択中`));
         if (!canSpread()) host.append(el("p", "note", "「等間隔に並べる」は同じバトンの3灯以上を選ぶと使えます。"));
-        host.append(el("p", "note", "「反対側へコピー」は配置（取り付け位置）だけを下手⇄上手で左右対称に写します（吊り・転がしは左右反転、SSは上手／下手を入れ替え）。点灯や動きは「灯体情報（このシーン）」で設定してください。"));
+        host.append(el("p", "note", "「反対側へコピー」は配置（取り付け位置）だけを下手⇄上手で左右対称に写します（吊り・転がしは左右反転、SSは上手／下手を入れ替え）。オン・オフや動きは「照明デザイン」タブで設定してください。"));
       }
       return;
     }
     // ---- 動きモード ----
-    host.append(el("p", "ptitle", `灯体情報（シーン「${scene().name}」）`));
+    host.append(el("p", "ptitle", `照明デザイン（シーン「${scene().name}」）`));
     if (!ids.length) { host.append(el("p", "hint", "灯体を選んでください。")); return; }
     if (ids.length === 1) {
       const fid = ids[0]; const f = fixtureById(fid); const l = lightOf(fid);
@@ -2145,7 +2145,7 @@
   let exportCancel = false;
   $("band-cancel").onclick = () => { exportCancel = true; };
   $("export").onclick = async () => {
-    if (state.exporting) return; const lit = state.rig.fixtures.filter((f) => isLit(lightOf(f.id))); if (!lit.length) { toast("オンの灯がありません。「灯体情報（このシーン）」で灯を選び、右上のボタンでオンにしてください。"); return; }
+    if (state.exporting) return; const lit = state.rig.fixtures.filter((f) => isLit(lightOf(f.id))); if (!lit.length) { toast("オンの灯がありません。「照明デザイン」タブで灯を選び、右上のボタンでオンにしてください。"); return; }
     state.exporting = true; exportCancel = false; stop(); state.mode = "move"; renderAll();
     const band = $("band"), bar = $("band-bar"); band.hidden = false; $("band-text").textContent = "動画を書き出しています　この画面を開いたままにしてください。";
     const base = `light-rig-${scene().name}`;
