@@ -1890,7 +1890,11 @@
     $("mode-place").setAttribute("aria-pressed", String(state.mode === "place")); $("mode-move").setAttribute("aria-pressed", String(state.mode === "move"));
     /* 配置はシーン共通なので、シーン送りと再生は照明デザインのときだけ出す（2026-09-11 本人指摘）。
        2026-09-13 本人要望でパネル右上へ移した（シーン名の表示はやめた）。 */
+    /* 配置はシーン共通なので、シーン送りも再生も照明デザインのときだけ出す（2026-09-11 本人指摘）。
+       シーン送りは図の上の帯（場所は残して中身だけ隠す）、再生はパネルの見出し行（丸ごと隠す）。 */
     const inMove = state.mode === "move";
+    $("scene-name").textContent = `シーン ${state.sceneIndex + 1}「${scene().name}」`;
+    $("scenerow").classList.toggle("off", !inMove);   // 場所は残す（図の位置を両ページで揃える）
     $("insphead").hidden = !inMove;
     $("transport").hidden = !inMove;
     $("empty").hidden = Boolean(state.rig.trusses.length || state.rig.fixtures.length);
@@ -1917,6 +1921,8 @@
   /* ---------- ヘッダ・空状態・書き出し ---------- */
   $("mode-place").onclick = () => { state.mode = "place"; stop(); renderAll(); };
   $("mode-move").onclick = () => { state.mode = "move"; state.tool = null; renderAll(); };
+  $("scene-prev").onclick = () => { state.sceneIndex = (state.sceneIndex + state.scenes.length - 1) % state.scenes.length; home(); renderAll(); };
+  $("scene-next").onclick = () => { state.sceneIndex = (state.sceneIndex + 1) % state.scenes.length; home(); renderAll(); };
   $("t-home").onclick = home; $("t-play").onclick = play; $("t-stop").onclick = () => stop();
   $("undo").onclick = undo; $("redo").onclick = redo;
   $("mirror").onclick = mirrorSelected;
