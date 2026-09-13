@@ -925,13 +925,22 @@
   function drawBeam(ctx, from, to, world, color, deg, dim, pxPerM, squash, asLine, noPool, lv, gobo, surf, proj) {
     const rM = E.spotRadiusM(world.S, world.T, deg), rPx = Math.max(rM * pxPerM, 3);
     const ell = noPool ? null : poolEllipse(world, deg, surf, proj);
-    const ret = () => (ell
-      ? { r: rPx, toX: ell.cx, toY: ell.cy, ax: ell.ax, ay: ell.ay, bx: ell.bx, by: ell.by }
-      : { r: rPx, toX: to.X, toY: to.Y });
     const [sx, sy] = squash || [1, 1];
     const halfW = Math.max(rPx * sx * BEAM_SOFT, 3);
     const ry = Math.max(rPx * sy * BEAM_SOFT, 1.5);
     const lying = sy < sx * 0.6;                 // その図で面を真横から見ている＝床に寝ている
+    /* 着地の断面を「単位円をここへ写す行列」として、楕円が出せた図・出せない図の両方で
+       同じ形（cx,cy,ax,ay,bx,by）にそろえる。楕円が出せない図の行列は translate+scale(1,ry/halfW) と
+       同じ効果になるよう組んである（下のPoolの描画と同じ式）。
+       ＊これは「作業灯を消す」の穴を、実際に見えている光と同じ輪郭にするための値
+       （2026-09-13 本人指摘「点光源と面光源が両方見える」＝穴の形が光の形と違っていた）。 */
+    const pool = ell
+      ? { cx: ell.cx, cy: ell.cy, ax: ell.ax, ay: ell.ay, bx: ell.bx, by: ell.by }
+      : { cx: to.X, cy: to.Y, ax: halfW, ay: 0, bx: 0, by: ry };
+    /* 帯の三角の先端（狙い点）は pool の中心とは限らない——斜めに当たるほど pool の中心は
+       遠い側へずれる（spotEllipse の性質）。三角の断面は狙い点で、pool（着地の丸み）は
+       そこから離れた位置に別で乗る。暗幕の穴をそろえるにはこの両方が要る。 */
+    const ret = () => ({ r: rPx, toX: pool.cx, toY: pool.cy, landX: to.X, landY: to.Y, halfW, ry, lying, asLine, noPool, pool });
     /* 濃さ＝（選んでいない灯を沈める係数）×（その灯の強さ）。強さは0〜1へ通したあとの値で、
        灯ごとの数値0〜100%を state.levelCurve で曲げたもの（2026-09-13 本人要望）。 */
     const a = (dim ? 0.32 : 1) * E.clamp(E.finite(lv, 1), 0, 1);
@@ -973,17 +982,11 @@
     // 当たったところ。帯の裾と同じ広さまで半影を伸ばす（境目が線で出ないように）
     // 何にも当たらず図の外へ抜ける光は、丸を描かない（丸い当たりを描くと光る玉に見える）
     if (noPool) { ctx.restore(); return ret(); }
-    /* 楕円が出せた図では、単位円を楕円へ写す行列を掛けてから半径1で描く。
+    /* 単位円を pool（着地の断面）へ写す行列を掛けてから半径1で描く。
+       楕円が出せた図・出せない図のどちらも pool の形で表してあるので、ここは1本の式で足りる。
        そうすると光だまり・グラデーション・模様がまとめて同じ歪み方をする。 */
-    let R, maskR;
-    if (ell) {
-      ctx.transform(ell.ax, ell.ay, ell.bx, ell.by, ell.cx, ell.cy);
-      R = 1;
-      maskR = Math.max(Math.hypot(ell.ax, ell.ay), Math.hypot(ell.bx, ell.by), 3);
-    } else {
-      ctx.translate(to.X, to.Y); ctx.scale(1, ry / halfW);
-      R = halfW; maskR = halfW;
-    }
+    ctx.transform(pool.ax, pool.ay, pool.bx, pool.by, pool.cx, pool.cy);
+    const R = 1, maskR = Math.max(Math.hypot(pool.ax, pool.ay), Math.hypot(pool.bx, pool.by), 3);
     const stops = (g, rad) => {
       g.addColorStop(0, hexA(color, 0.34 * a));
       g.addColorStop(0.55 / BEAM_SOFT, hexA(color, 0.16 * a));
@@ -1049,29 +1052,45 @@
     const dim = E.clamp(E.finite(state.dim, 100), 0, 100) / 100;
     mctx.fillStyle = `rgba(13,14,16,${dim})`; mctx.fillRect(0, 0, mc.width, mc.height);
     mctx.globalCompositeOperation = "destination-out";
+    /* 穴の形は、実際に見えている光の輪郭と同じにする。
+       前は「だいたい光だまりに合わせた台形」を別に作っていたため、光の帯（芯が濃く縁が薄い
+       三角）より台形のほうが広く、穴の縁が地のまま明るく残って「細い光の三角」の外側に
+       もう1枚「薄く広い三角（面光源のように見えるもの）」が重なって見えていた
+       （2026-09-13 本人指摘。screenshot: 灯体の根元から幅を持って始まる灰色の帯）。
+       直し方は「別に作らない」——drawBeam が実際に塗る三角＋着地の丸みと、同じ式・同じ値
+       （halfW・ry・lying・pool。ret() で公開）で穴を組む。三角の先端は必ず点になる。 */
     spots.forEach((sp) => {
       // 灯の強さぶんだけ暗幕を剥がす。20%の灯なら20%ぶんしか明るくならない（2026-09-13）
       const lv = E.clamp(E.finite(sp.lv, 1), 0, 1); if (lv <= 0) return;
-      const r = Math.max(sp.r * 1.15, 10);
-      const dx = sp.toX - sp.fromX, dy = sp.toY - sp.fromY, len = Math.hypot(dx, dy) || 1;
-      const nx = -dy / len, ny = dx / len;
-      const w0 = Math.max(3, r * 0.12), w1 = Math.max(r * 0.85, 8);
       mctx.beginPath();
-      mctx.moveTo(sp.fromX + nx * w0, sp.fromY + ny * w0);
-      mctx.lineTo(sp.toX + nx * w1, sp.toY + ny * w1);
-      mctx.lineTo(sp.toX - nx * w1, sp.toY - ny * w1);
-      mctx.lineTo(sp.fromX - nx * w0, sp.fromY - ny * w0);
+      if (sp.asLine) {
+        /* 真上から見る図では光を三角に開かない（drawBeamと同じ理由）。実際に見えるのは
+           細い破線だけなので、穴もその太さに合わせた細い帯にする。太い三角を穴にすると
+           そこだけ地が明るく見えてしまう。 */
+        const dx = sp.landX - sp.fromX, dy = sp.landY - sp.fromY, len = Math.hypot(dx, dy) || 1;
+        const nx = (-dy / len) * 5, ny = (dx / len) * 5;
+        mctx.moveTo(sp.fromX + nx, sp.fromY + ny); mctx.lineTo(sp.landX + nx, sp.landY + ny);
+        mctx.lineTo(sp.landX - nx, sp.landY - ny); mctx.lineTo(sp.fromX - nx, sp.fromY - ny);
+      } else if (sp.lying) {
+        mctx.moveTo(sp.fromX, sp.fromY);
+        mctx.lineTo(sp.landX + sp.halfW, sp.landY);
+        mctx.ellipse(sp.landX, sp.landY, sp.halfW, sp.ry, 0, 0, Math.PI);
+      } else {
+        const dx = sp.landX - sp.fromX, dy = sp.landY - sp.fromY, len = Math.hypot(dx, dy) || 1;
+        const nx = (-dy / len) * sp.halfW, ny = (dx / len) * sp.halfW;
+        mctx.moveTo(sp.fromX, sp.fromY);
+        mctx.lineTo(sp.landX + nx, sp.landY + ny);
+        mctx.lineTo(sp.landX - nx, sp.landY - ny);
+      }
       mctx.closePath(); mctx.fillStyle = `rgba(255,255,255,${0.85 * lv})`; mctx.fill();
-      /* 穴の形は光だまりに合わせる。斜めに当たって伸びているのに丸で抜くと、
-         伸びた先が暗いまま残って光が途中で切れて見える（2026-09-13）。 */
-      const oval = sp.ax != null && Math.abs(sp.ax * sp.by - sp.ay * sp.bx) > 4;
+      // 何にも当たらず抜けていく光は着地の丸みを描かない（光自体にも無い）ので、穴にも足さない
+      if (sp.noPool) return;
+      // 着地の丸み（pool）も、光と同じ「単位円をここへ写す行列」で抜く
       mctx.save();
-      if (oval) mctx.transform(sp.ax * 1.15, sp.ay * 1.15, sp.bx * 1.15, sp.by * 1.15, sp.toX, sp.toY);
-      else mctx.translate(sp.toX, sp.toY);
-      const R2 = oval ? 1 : r;
-      const grad = mctx.createRadialGradient(0, 0, 0, 0, 0, R2);
+      mctx.transform(sp.pool.ax, sp.pool.ay, sp.pool.bx, sp.pool.by, sp.pool.cx, sp.pool.cy);
+      const grad = mctx.createRadialGradient(0, 0, 0, 0, 0, 1);
       grad.addColorStop(0, `rgba(255,255,255,${lv})`); grad.addColorStop(0.75, `rgba(255,255,255,${0.9 * lv})`); grad.addColorStop(1, "rgba(255,255,255,0)");
-      mctx.fillStyle = grad; mctx.beginPath(); mctx.arc(0, 0, R2, 0, Math.PI * 2); mctx.fill();
+      mctx.fillStyle = grad; mctx.beginPath(); mctx.arc(0, 0, 1, 0, Math.PI * 2); mctx.fill();
       mctx.restore();
     });
     ctx.save(); ctx.globalCompositeOperation = "source-over"; ctx.drawImage(mc, 0, 0); ctx.restore();
