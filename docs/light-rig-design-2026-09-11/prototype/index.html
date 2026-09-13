@@ -125,7 +125,7 @@
   .scenebox.off>*{visibility:hidden}
   .scenebar{display:flex;align-items:center;gap:4px;min-width:0}
   .scenebar .name{font-family:var(--serif);font-size:13px;color:var(--milk);flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
-  /* セットのシーン（LXQパネルの上）。 */
+  /* セットのシーン（LX cueパネルの上）。 */
   .lxscene{display:flex;flex-direction:column;gap:3px;padding-bottom:5px;border-bottom:1px solid var(--line-dark)}
   .lxscene .kicker{margin:0}
   .lxscene .scenebar .btn.small{padding:2px 6px;min-height:24px}
@@ -154,7 +154,7 @@
   .sec.side.l{grid-column:1} .sec.front{grid-column:2}
   /* 上段の左右＝灯体パネル／設定パネル。幅は下の側面図とそろえる（app.jsが設定） */
   .panel{grid-row:1;min-width:0;min-height:0;overflow:hidden;border:1px solid var(--line-dark);background:rgba(25,21,18,.45);padding:8px;display:flex;flex-direction:column;gap:7px;align-self:stretch}
-  /* 左の枠は1枠ぶんのまま。その中で灯体（左）とLXQ（右）が<b>横幅を半分ずつ</b>分け合う
+  /* 左の枠は1枠ぶんのまま。その中で灯体（左）とLX cue（右）が<b>横幅を半分ずつ</b>分け合う
      （2026-09-13 本人指定。縦に積むと両方が半分の高さになり一覧が2行しか見えなかったので横並び、
      ただし枠は広げずコンパクトに収める）。幅は syncFigureSizes が .leftcol へ入れる。 */
   .leftcol{grid-column:1;grid-row:1;display:flex;flex-direction:row;gap:8px;min-width:0;min-height:0;align-self:stretch;justify-self:start}
@@ -351,13 +351,13 @@
   /* 選んだ灯体の操作（パネルの先頭・メイン） */
   .tsbtns{display:grid;grid-template-columns:1fr 1fr;gap:4px}
   .tsbtns .btn{min-height:28px;padding:2px 6px;font-size:12px;white-space:nowrap}
-  /* LXキュー。#lxqbox は .inspbody の外（パネル直下）なので、幅の面倒を自分で見る。
+  /* LX cue。#lxqbox は .inspbody の外（パネル直下）なので、幅の面倒を自分で見る。
      .pbox は display:grid なので、中身が縮まないとパネルごと広がる（HANDOFFの落とし穴）。 */
   #lxqbox{min-width:0}
   #lxqbox>*{min-width:0}
   #lxqbox .btn{white-space:normal;line-height:1.3}
   #lxqbox .field>.numin{width:84px;justify-self:start;min-height:26px;border:1px solid var(--line-dark);background:var(--desk-2);color:var(--milk);font:13px var(--sans);padding:2px 6px;text-align:right;font-variant-numeric:tabular-nums}
-  /* LXキューの一覧。1行＝番号・名前・呼び出す・消す（2026-09-13 本人要望）。 */
+  /* LX cueの一覧。1行＝番号・名前・呼び出す・消す（2026-09-13 本人要望）。 */
   /* 半分幅（1440で約150px）に収まる1行。番号→名前→呼び出す→消す。
      名前は縮められるようにして、番号と2つのボタンだけは必ず出す。 */
   .lxrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:3px;align-items:center;min-height:28px;padding:1px 0;min-width:0}
@@ -515,7 +515,7 @@
           <!-- シーン送りは「照明デザイン」のときだけ中身を出す。
                配置では隠すが場所は残す（図の位置が両ページでずれないように・2026-09-11 本人指摘）。
                再生（最初へ／再生／停止／時刻）は 2026-09-13 本人要望でパネル側へ移した。 -->
-          <!-- 中央は「いま画面に出ているデザインがどのキューか」。シーン送りはLXQパネルの上へ移した
+          <!-- 中央は「いま画面に出ているデザインがどのキューか」。シーン送りはLX cueパネルの上へ移した
                （2026-09-13 本人要望「もっと大きく」）。中身は app.js が入れる。 -->
           <span class="fb scenebox" id="scenerow">
             <span class="qnow" id="qnow"></span>
@@ -524,9 +524,9 @@
         <!-- 凸の形: 上＝平面図（真上から）、下段＝下手｜客席から（正面）｜上手。
              下段は3つとも縦軸が高さなので、高さの目盛りが横一直線にそろう。 -->
         <div class="figgrid">
-          <!-- 左は2枠ぶんを横並び（2026-09-13 本人要望）。左＝灯体の一覧、右＝LXQ。
+          <!-- 左は2枠ぶんを横並び（2026-09-13 本人要望）。左＝灯体の一覧、右＝LX cue。
                縦に積むと両方が半分の高さになるので、横に並べて高さをまるごと使う。
-               LXQは照明デザインの中ではなく独立したパネル。 -->
+               LX cueは照明デザインの中ではなく独立したパネル。 -->
           <div class="leftcol">
           <!-- 上段左＝灯体の一覧（下手を見る図の真上）。2026-09-11 本人要望で左列から移動 -->
           <section class="panel" id="panel-fixtures">
@@ -564,7 +564,7 @@
               </span>
             </div>
             <div class="lxhead">
-              <p class="ptitle">LXQ</p>
+              <p class="ptitle">LX cue</p>
               <button type="button" class="ontoggle" id="lxlink" aria-pressed="true"><span class="sw"></span><b><span class="swlab">シーンと連動</span>オン</b></button>
             </div>
             <div class="lxbody" id="lxqbox"></div>
@@ -666,8 +666,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789310875"></script>
-<script src="stage-figure.js?v=1789310875"></script>
-<script src="app.js?v=1789310875"></script>
+<script src="rig-engine.js?v=1789311154"></script>
+<script src="stage-figure.js?v=1789311154"></script>
+<script src="app.js?v=1789311154"></script>
 </body>
 </html>
