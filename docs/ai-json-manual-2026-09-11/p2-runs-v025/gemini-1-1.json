@@ -1,0 +1,469 @@
+{
+  "kind": "shosai-stage-sketch",
+  "version": 4,
+  "venues": [],
+  "project": {
+    "title": "サーカス・ロミオとジュリエット",
+    "venue": "proscenium",
+    "venueSize": "mid",
+    "cast": [
+      {
+        "id": "cast-romeo",
+        "name": "ロミオ",
+        "color": "rgb(49, 91, 138)"
+      },
+      {
+        "id": "cast-juliet",
+        "name": "ジュリエット",
+        "color": "rgb(180, 70, 90)"
+      },
+      {
+        "id": "cast-mercutio",
+        "name": "マキューシオ",
+        "color": "rgb(210, 150, 40)"
+      },
+      {
+        "id": "cast-tybalt",
+        "name": "ティボルト",
+        "color": "rgb(70, 130, 80)"
+      }
+    ],
+    "sets": [
+      {
+        "id": "set-tissue",
+        "kind": "tissue",
+        "name": "エアリアルティシュー",
+        "color": "rgb(180, 70, 90)"
+      },
+      {
+        "id": "set-light-center",
+        "kind": "light",
+        "name": "センターピンスポット",
+        "color": "rgb(255, 245, 200)",
+        "lightKind": "hang"
+      }
+    ],
+    "scenes": [
+      {
+        "kind": "section",
+        "depth": 0,
+        "id": "sec-1",
+        "title": "第一部：遭遇と誓い"
+      },
+      {
+        "kind": "scene",
+        "depth": 1,
+        "id": "scene-1",
+        "title": "ヴェローナの喧騒",
+        "note": "両家の対立をアクロバットとジャグリングで表現。仮定: 人数は4人、会場はproscenium/mid。安全未確認。",
+        "beat": {
+          "role": "導入",
+          "energy": 3
+        },
+        "pieces": [
+          {
+            "id": "p1-1",
+            "type": "performer",
+            "castId": "cast-romeo",
+            "u": 0.25,
+            "v": 0.6,
+            "color": "rgb(49, 91, 138)",
+            "facing": 90,
+            "pose": "cartwheel-oneside-mid",
+            "size": 100
+          },
+          {
+            "id": "p1-2",
+            "type": "performer",
+            "castId": "cast-mercutio",
+            "u": 0.35,
+            "v": 0.5,
+            "color": "rgb(210, 150, 40)",
+            "facing": 90,
+            "pose": "juggle",
+            "size": 100
+          },
+          {
+            "id": "p1-3",
+            "type": "performer",
+            "castId": "cast-tybalt",
+            "u": 0.75,
+            "v": 0.5,
+            "color": "rgb(70, 130, 80)",
+            "facing": 270,
+            "pose": "stand",
+            "size": 100
+          },
+          {
+            "id": "p1-4",
+            "type": "light",
+            "setId": "set-light-center",
+            "u": 0.5,
+            "v": 0.5,
+            "color": "rgb(255, 245, 200)",
+            "facing": 0,
+            "size": 100
+          }
+        ]
+      },
+      {
+        "kind": "scene",
+        "depth": 1,
+        "id": "scene-2",
+        "title": "仮面舞踏会",
+        "note": "ロミオとジュリエットが初めて視線を交わす場面。安全未確認。",
+        "beat": {
+          "role": "展開",
+          "energy": 2
+        },
+        "pieces": [
+          {
+            "id": "p2-1",
+            "type": "performer",
+            "castId": "cast-romeo",
+            "u": 0.4,
+            "v": 0.6,
+            "color": "rgb(49, 91, 138)",
+            "facing": 45,
+            "pose": "reach",
+            "size": 100
+          },
+          {
+            "id": "p2-2",
+            "type": "performer",
+            "castId": "cast-juliet",
+            "u": 0.6,
+            "v": 0.4,
+            "color": "rgb(180, 70, 90)",
+            "facing": 225,
+            "pose": "dance1",
+            "size": 100
+          },
+          {
+            "id": "p2-3",
+            "type": "performer",
+            "castId": "cast-tybalt",
+            "u": 0.85,
+            "v": 0.2,
+            "color": "rgb(70, 130, 80)",
+            "facing": 220,
+            "pose": "stand",
+            "size": 100
+          },
+          {
+            "id": "p2-4",
+            "type": "light",
+            "setId": "set-light-center",
+            "u": 0.5,
+            "v": 0.5,
+            "color": "rgb(255, 245, 200)",
+            "facing": 0,
+            "size": 100
+          }
+        ]
+      },
+      {
+        "kind": "scene",
+        "depth": 1,
+        "id": "scene-3",
+        "title": "バルコニーの愛",
+        "note": "空中装置（ティシュー）を用いた高低差のある愛の二重奏。安全未確認。",
+        "beat": {
+          "role": "見せ場",
+          "energy": 4
+        },
+        "pieces": [
+          {
+            "id": "p3-1",
+            "type": "tissue",
+            "setId": "set-tissue",
+            "u": 0.5,
+            "v": 0.3,
+            "color": "rgb(180, 70, 90)",
+            "facing": 0,
+            "size": 100
+          },
+          {
+            "id": "p3-2",
+            "type": "performer",
+            "castId": "cast-juliet",
+            "u": 0.5,
+            "v": 0.3,
+            "color": "rgb(180, 70, 90)",
+            "facing": 0,
+            "pose": "open",
+            "size": 100
+          },
+          {
+            "id": "p3-3",
+            "type": "performer",
+            "castId": "cast-romeo",
+            "u": 0.5,
+            "v": 0.7,
+            "color": "rgb(49, 91, 138)",
+            "facing": 0,
+            "pose": "reach",
+            "size": 100
+          },
+          {
+            "id": "p3-4",
+            "type": "light",
+            "setId": "set-light-center",
+            "u": 0.5,
+            "v": 0.4,
+            "color": "rgb(255, 245, 200)",
+            "facing": 0,
+            "size": 100
+          }
+        ]
+      },
+      {
+        "kind": "section",
+        "depth": 0,
+        "id": "sec-2",
+        "title": "第二部：衝突と追放"
+      },
+      {
+        "kind": "scene",
+        "depth": 1,
+        "id": "scene-4",
+        "title": "決闘の前奏",
+        "note": "広場での煽り合いと緊迫感。安全未確認。",
+        "beat": {
+          "role": "対立",
+          "energy": 3
+        },
+        "pieces": [
+          {
+            "id": "p4-1",
+            "type": "performer",
+            "castId": "cast-mercutio",
+            "u": 0.4,
+            "v": 0.6,
+            "color": "rgb(210, 150, 40)",
+            "facing": 90,
+            "pose": "handstand",
+            "size": 100
+          },
+          {
+            "id": "p4-2",
+            "type": "performer",
+            "castId": "cast-tybalt",
+            "u": 0.6,
+            "v": 0.6,
+            "color": "rgb(70, 130, 80)",
+            "facing": 270,
+            "pose": "stand",
+            "size": 100
+          },
+          {
+            "id": "p4-3",
+            "type": "performer",
+            "castId": "cast-romeo",
+            "u": 0.2,
+            "v": 0.8,
+            "color": "rgb(49, 91, 138)",
+            "facing": 45,
+            "pose": "walk",
+            "size": 100
+          },
+          {
+            "id": "p4-4",
+            "type": "light",
+            "setId": "set-light-center",
+            "u": 0.5,
+            "v": 0.6,
+            "color": "rgb(255, 245, 200)",
+            "facing": 0,
+            "size": 100
+          }
+        ]
+      },
+      {
+        "kind": "scene",
+        "depth": 1,
+        "id": "scene-5",
+        "title": "悲劇の決闘",
+        "note": "アクロバティックな戦闘の末の悲劇。マキューシオとティボルトの倒れていく表現。安全未確認。",
+        "beat": {
+          "role": "クライマックス",
+          "energy": 5
+        },
+        "pieces": [
+          {
+            "id": "p5-1",
+            "type": "performer",
+            "castId": "cast-mercutio",
+            "u": 0.45,
+            "v": 0.7,
+            "color": "rgb(210, 150, 40)",
+            "facing": 0,
+            "pose": "lie",
+            "size": 100
+          },
+          {
+            "id": "p5-2",
+            "type": "performer",
+            "castId": "cast-tybalt",
+            "u": 0.65,
+            "v": 0.5,
+            "color": "rgb(70, 130, 80)",
+            "facing": 180,
+            "pose": "sideflip-mid",
+            "size": 100
+          },
+          {
+            "id": "p5-3",
+            "type": "performer",
+            "castId": "cast-romeo",
+            "u": 0.5,
+            "v": 0.5,
+            "color": "rgb(49, 91, 138)",
+            "facing": 90,
+            "pose": "reach",
+            "size": 100
+          },
+          {
+            "id": "p5-4",
+            "type": "light",
+            "setId": "set-light-center",
+            "u": 0.5,
+            "v": 0.5,
+            "color": "rgb(255, 245, 200)",
+            "facing": 0,
+            "size": 100
+          }
+        ]
+      },
+      {
+        "kind": "scene",
+        "depth": 1,
+        "id": "scene-6",
+        "title": "追放宣告",
+        "note": "ロミオ一人残され、悲しみと焦燥のパフォーマンス。安全未確認。",
+        "beat": {
+          "role": "落差",
+          "energy": 2
+        },
+        "pieces": [
+          {
+            "id": "p6-1",
+            "type": "performer",
+            "castId": "cast-romeo",
+            "u": 0.5,
+            "v": 0.5,
+            "color": "rgb(49, 91, 138)",
+            "facing": 0,
+            "pose": "crouch",
+            "size": 100
+          },
+          {
+            "id": "p6-2",
+            "type": "light",
+            "setId": "set-light-center",
+            "u": 0.5,
+            "v": 0.5,
+            "color": "rgb(255, 245, 200)",
+            "facing": 0,
+            "size": 100
+          }
+        ]
+      },
+      {
+        "kind": "section",
+        "depth": 0,
+        "id": "sec-3",
+        "title": "第三部：秘薬と終幕"
+      },
+      {
+        "kind": "scene",
+        "depth": 1,
+        "id": "scene-7",
+        "title": "仮死の眠り",
+        "note": "ジュリエットが秘薬を飲み空中スローモーションのように横たわる。安全未確認。",
+        "beat": {
+          "role": "予兆",
+          "energy": 1
+        },
+        "pieces": [
+          {
+            "id": "p7-1",
+            "type": "tissue",
+            "setId": "set-tissue",
+            "u": 0.5,
+            "v": 0.4,
+            "color": "rgb(180, 70, 90)",
+            "facing": 0,
+            "size": 100
+          },
+          {
+            "id": "p7-2",
+            "type": "performer",
+            "castId": "cast-juliet",
+            "u": 0.5,
+            "v": 0.4,
+            "color": "rgb(180, 70, 90)",
+            "facing": 0,
+            "pose": "supine",
+            "size": 100
+          },
+          {
+            "id": "p7-3",
+            "type": "light",
+            "setId": "set-light-center",
+            "u": 0.5,
+            "v": 0.4,
+            "color": "rgb(255, 245, 200)",
+            "facing": 0,
+            "size": 100
+          }
+        ]
+      },
+      {
+        "kind": "scene",
+        "depth": 1,
+        "id": "scene-8",
+        "title": "キャピュレット家の霊廟",
+        "note": "すれ違いによる絶望と最後の静寂。安全未確認。",
+        "beat": {
+          "role": "結末",
+          "energy": 1
+        },
+        "pieces": [
+          {
+            "id": "p8-1",
+            "type": "performer",
+            "castId": "cast-juliet",
+            "u": 0.45,
+            "v": 0.5,
+            "color": "rgb(180, 70, 90)",
+            "facing": 0,
+            "pose": "lie",
+            "size": 100
+          },
+          {
+            "id": "p8-2",
+            "type": "performer",
+            "castId": "cast-romeo",
+            "u": 0.55,
+            "v": 0.5,
+            "color": "rgb(49, 91, 138)",
+            "facing": 0,
+            "pose": "kneel",
+            "size": 100
+          },
+          {
+            "id": "p8-3",
+            "type": "light",
+            "setId": "set-light-center",
+            "u": 0.5,
+            "v": 0.5,
+            "color": "rgb(255, 245, 200)",
+            "facing": 0,
+            "size": 100
+          }
+        ]
+      }
+    ]
+  }
+}

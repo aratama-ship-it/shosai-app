@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=347">
+<link rel="stylesheet" href="style.css?v=356">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -150,7 +150,7 @@
           </section>
           <section class="stage-panel" data-panel="cast" data-title="出るもの">
             <div class="stage-panel-body">
-              <p class="stage-cast-hint">この舞台に出る演者と舞台セットを、まとめてここに登録します。
+              <p class="stage-cast-hint">この舞台に出る演者、大道具、小道具を、まとめてここに登録します。
                 寸法や色はここで決め、シーンごとに舞台の上か裏かを切り替えます。明かりは別の項目です。追加したものはそのシーンの舞台に出ます。</p>
               <div class="stage-roster-kind-openers" role="group" aria-label="出るもの">
                 <button type="button" class="stage-roster-kind-open" data-roster-kind-layer="performer"
@@ -169,13 +169,13 @@
                      aria-label="演者の一覧の高さ"></div>
               </div>
               <div class="stage-roster-group" id="stage-group-sets" data-tablet-break-before>
-                <p class="stage-roster-head stage-roster-head-actions"><span>舞台セット</span>
-                  <button type="button" id="stage-model-open" class="btn-quiet">セットを組む</button>
+                <p class="stage-roster-head stage-roster-head-actions"><span>大道具</span>
+                  <button type="button" id="stage-model-open" class="btn-quiet" hidden>セットを組む</button>
                 </p>
                 <div class="stage-cast-list" id="stage-set-list"></div>
                 <div class="stage-roster-list-resize" data-roster-list-resize="set" role="separator"
                      tabindex="0" aria-orientation="horizontal" aria-controls="stage-set-list"
-                     aria-label="舞台セットの一覧の高さ"></div>
+                     aria-label="大道具の一覧の高さ"></div>
               </div>
               <div class="stage-roster-group" id="stage-group-props" data-tablet-break-before>
                 <p class="stage-roster-head">小道具</p>
@@ -1120,7 +1120,7 @@
               </svg>
             </button>
             <button type="button" class="stage-timeline-square stage-timeline-transport-button" id="stage-timeline-metronome"
-                    aria-label="メトロノーム" title="メトロノーム" aria-pressed="false" disabled>
+                    aria-label="メトロノーム" title="メトロノーム" aria-pressed="false" hidden disabled>
               <svg class="stage-timeline-metronome-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
                 <path d="M12.5 4.5h7l3.5 22h-14zM7.5 28h17"></path>
                 <path d="M16 24 22.5 9"></path>
@@ -1128,18 +1128,18 @@
                 <path d="M13.8 14.5h3.2M13.3 18.5h2.5"></path>
               </svg>
             </button>
-            <button type="button" id="stage-timeline-anchor" disabled>ここが頭</button>
-            <button type="button" id="stage-timeline-clear-anchors" disabled>点を消す</button>
+            <button type="button" id="stage-timeline-anchor" hidden disabled>ここが頭</button>
+            <button type="button" id="stage-timeline-clear-anchors" hidden disabled>点を消す</button>
             <button type="button" class="stage-timeline-square" id="stage-timeline-loop-a">A</button>
             <button type="button" class="stage-timeline-square" id="stage-timeline-loop-b">B</button>
             <button type="button" id="stage-timeline-loop" aria-pressed="false">区間ループ</button>
             <div class="stage-timeline-tempo" aria-label="テンポと拍子">
-              <label for="stage-timeline-bpm">BPM</label>
-              <input type="number" id="stage-timeline-bpm" value="120" min="40" max="240" step="1" disabled>
-              <button type="button" id="stage-timeline-auto-bpm" disabled>BPM推定</button>
-              <span id="stage-timeline-meter">4/4</span>
-              <button type="button" id="stage-timeline-mark-one" disabled>先頭を記録</button>
-              <span>実測 <b id="stage-timeline-real-tempo">120.0</b></span>
+              <label for="stage-timeline-bpm" id="stage-timeline-bpm-label" hidden>BPM</label>
+              <input type="number" id="stage-timeline-bpm" value="120" min="40" max="240" step="1" hidden disabled>
+              <button type="button" id="stage-timeline-auto-bpm" hidden disabled>BPM推定</button>
+              <span id="stage-timeline-meter" hidden>4/4</span>
+              <button type="button" id="stage-timeline-mark-one" hidden disabled>先頭を記録</button>
+              <span id="stage-timeline-real-tempo-readout" hidden>実測 <b id="stage-timeline-real-tempo">120.0</b></span>
             </div>
             <span class="stage-timeline-menu-spacer" aria-hidden="true"></span>
             <button type="button" id="stage-timeline-grid" title="スナップ単位" data-no-i18n>スナップ 1/4</button>
@@ -1625,19 +1625,20 @@
                 autocomplete="off" data-1p-ignore></textarea>
     </div>
     <div class="stage-rename-scene-fields" id="stage-rename-scene-fields" hidden>
+      <dl class="stage-timeline-cue-facts" id="stage-rename-scene-facts">
+        <div><dt>シーン</dt><dd id="stage-rename-scene-number">—</dd></div>
+        <div><dt>セクション</dt><dd id="stage-rename-scene-section">—</dd></div>
+        <div><dt>開始位置</dt><dd id="stage-rename-scene-position">—</dd></div>
+        <div><dt>見せる時間</dt><dd id="stage-rename-scene-hold">—</dd></div>
+        <div><dt>転換にかける時間</dt><dd id="stage-rename-scene-transition">—</dd></div>
+      </dl>
       <label class="stage-control-label" for="stage-rename-subtitle">サブタイトル</label>
       <input id="stage-rename-subtitle" class="stage-text-input" type="text" maxlength="160"
              autocomplete="off" data-1p-ignore>
-      <label class="stage-control-label" for="stage-rename-energy">エネルギー</label>
-      <select id="stage-rename-energy" class="stage-text-input">
-        <option value="">未設定</option>
-        <option value="1">E1</option>
-        <option value="2">E2</option>
-        <option value="3">E3</option>
-        <option value="4">E4</option>
-        <option value="5">E5</option>
-      </select>
       <p class="stage-rename-subtitle-hint">表示は設定の「シーンのサブタイトル」から切り替えられます。</p>
+      <label class="stage-control-label" for="stage-rename-scene-note">シーンの説明</label>
+      <textarea id="stage-rename-scene-note" class="stage-text-input" maxlength="2000"
+                autocomplete="off" data-1p-ignore></textarea>
     </div>
     <div class="stage-rename-colors" id="stage-rename-colors" hidden>
       <span class="stage-control-label">色</span>
@@ -2032,7 +2033,7 @@
     <button type="button" class="stage-modal-close" id="stage-beat-templates-close" aria-label="閉じる">✕</button>
   </header>
   <div class="stage-modal-body">
-    <p class="stage-beat-template-lead">これは正解ではなく、書き換えて使うための初期値です。シーン名・役割・エネルギーだけを作り、演者や道具は置きません。いまのショーは一覧に残ります。</p>
+    <p class="stage-beat-template-lead">これは正解ではなく、書き換えて使うための初期値です。シーン名と役割だけを作り、演者や道具は置きません。いまのショーは一覧に残ります。</p>
     <div class="stage-beat-template-list" id="stage-beat-template-list"></div>
   </div>
 </div>
@@ -2266,6 +2267,7 @@
              role="group" aria-label="形"></div>
       </section>
       <div class="stage-kind-submit">
+        <button type="button" id="stage-kind-model-open" class="btn-quiet" hidden>セットを組む</button>
         <button type="button" id="stage-roster-add" class="btn-quiet">追加</button>
       </div>
     </div>
@@ -2704,12 +2706,12 @@
 
 <script src="stage-venues.js?v=30"></script>
 <script src="stage-venue-lines.js?v=6"></script>
-<script src="stage-i18n.js?v=172"></script>
-<script src="stage-i18n.zh-Hans.js?v=62"></script>
-<script src="stage-i18n.zh-Hant.js?v=62"></script>
+<script src="stage-i18n.js?v=175"></script>
+<script src="stage-i18n.zh-Hans.js?v=65"></script>
+<script src="stage-i18n.zh-Hant.js?v=65"></script>
 <script src="stage-prompt-i18n.js?v=3"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
-<script src="stage-samples/index.js?v=2"></script>
+<script src="stage-samples/index.js?v=3"></script>
 <script src="stage-set-model.js?v=1"></script>
 <script src="stage-set-builder.js?v=3"></script>
 <script src="stage-machinery.js?v=2"></script>
@@ -2717,10 +2719,10 @@
 <script src="stage-shows.local.js?v=1"></script>
 <script src="stage-audio-store.js?v=2"></script>
 <script src="stage-light-motion.js?v=1"></script>
-<script src="manual/manual-content.js?v=11"></script>
+<script src="manual/manual-content.js?v=12"></script>
 <script src="stage-pwa.js?v=9"></script>
-<script src="stage-sketch.js?v=459"></script>
-<script src="stage-timeline.js?v=36"></script>
+  <script src="stage-sketch.js?v=469"></script>
+<script src="stage-timeline.js?v=42"></script>
 <script src="stage-session.js?v=19"></script>
 <script src="stage-study-owner.js?v=23"></script>
 <script src="stage-usage.js?v=2"></script>

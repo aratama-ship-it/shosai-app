@@ -51,7 +51,7 @@ test("editSummary付きJSONの差分行と警告を読み込みモーダル用�
 test("editSummaryなしのJSONではAI編集の追加節を作らない", () => {
   assert.equal(model.modalText(null), "");
   assert.equal(model.modalText(undefined), "");
-  assert.match(source, /const editDetails = normalizeImportEditSummary\(editSummary, isEn\(\)\);\s*if \(editDetails\) \{/);
+  assert.match(source, /const editDetails = normalizeImportEditSummary\(\s*editSummary,\s*languageValue\(\(\) => true, \(\) => false\),\s*\);\s*if \(editDetails\) \{/);
 });
 
 test("承認後も元のショーを棚に残し、読み込んだショーを別エントリとして増やす", () => {

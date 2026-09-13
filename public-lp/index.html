@@ -124,46 +124,72 @@ p{ margin:0 0 var(--space-3); }
 
 /* ============ ① ヒーロー: 完全版の録画 ============ */
 .hero{ padding:var(--space-5) 0 var(--space-4); }
-/* 動画の右に「誰が、何に使うか」を置く（本人指示 2026-09-05）。
-   ★動画の欄は auto。動画は高さの上限（56vh）で幅が決まるので、
-     固定幅にすると余った分だけ右へ隙間が空く。 */
-.hero-inner{ display:grid; gap:var(--space-5); grid-template-columns:minmax(0,1fr); justify-items:center; }
-@media (min-width:900px){
-  .hero-inner{
-    grid-template-columns:auto minmax(260px,1fr);
-    gap:var(--space-6); align-items:center; justify-items:stretch;
-  }
-}
-.hero-uses{ min-width:0; width:100%; max-width:620px; }
-/* ★幅は高さの上限に合わせて絞る。動画は1:1なので、幅だけ広いと左右に黒帯が出る
-     （2026-09-05 実測: 618×504の枠に504×504が入り、両側57pxずつ黒）。 */
+/* AC-7: 名前・入口・動画・二者へのコピーを、一つの縦の流れとして見せる。 */
+.hero-inner{ display:grid; gap:var(--space-3); justify-items:center; }
 .hero-video{
-  position:relative; margin:0; width:100%; max-width:min(620px, 50vh);
+  position:relative; margin:0; width:100%; max-width:min(760px, 58vh);
   border:1px solid var(--line-dark); border-radius:var(--radius-m);
   overflow:hidden; box-shadow:var(--shadow-1); background:#000;
 }
-/* ★動画は1:1で縦に大きい。そのまま置くと画面を占有し、
-   計画の「②をスクロールせずに一部が見える位置へ置く」が守れない（実測: 下の帯が画面外）。
-   ヒーロー全体の高さを画面の7割程度に抑え、動画はその中へ収める。 */
-/* ★2026-09-05 第1弾: 名前の下に一文と二つの入口を足したぶん、動画の上限を 56vh→50vh に下げ、
-     1440×900 で動画の下端が画面内に残るようにする（実測は下のテストと判断用ページに）。 */
-.hero-video video{ width:100%; height:auto; max-height:50vh; object-fit:contain; background:#000; }
-@media (max-width:899px){
-  .hero-video{ max-width:min(620px, 46svh); }
-  .hero-video video{ max-height:46svh; }
+.hero-video video{ width:100%; height:auto; max-height:58vh; object-fit:contain; background:#000; }
+/* 動画のシークバー（本人指示 2026-09-11: 静止しているように見える場面があるため、
+   カーソルが乗っているときだけ再生位置を示すバーを出す）。
+   ★動画そのものの作り直しは別途の前提。ここはUIの上乗せだけ。
+   ★既定は透明・pointer-events:none。ホバー中だけ見える・掴める。
+   ★ホバーの無いタッチ端末は常時うっすら出す（気づける薄い可視性）。 */
+.hero-video-seek{
+  position:absolute; left:0; right:0; bottom:0; height:6px;
+  background:rgba(255,255,255,.16); opacity:0; pointer-events:none;
+  transition:opacity 160ms ease-out; cursor:pointer;
 }
+.hero-video:hover .hero-video-seek,
+.hero-video:focus-within .hero-video-seek,
+.hero-video-seek.is-active{ opacity:1; pointer-events:auto; }
+@media (hover:none){ .hero-video-seek{ opacity:.5; pointer-events:auto; } }
+.hero-video-seek-fill{ height:100%; width:0%; background:var(--rust-ink); }
+.hero-video-caption{
+  margin:0; max-width:var(--read); text-align:center;
+  font-family:var(--sans); font-size:var(--fs-small); line-height:1.7; color:var(--ink-soft-sm);
+}
+.catchcopy{
+  width:100%; margin-top:var(--space-4); display:grid; gap:var(--space-5);
+  grid-template-columns:minmax(0,1fr);
+}
+@media (min-width:900px){ .catchcopy{ grid-template-columns:1fr 1fr; } }
+.catchcopy-item{ min-width:0; text-align:center; }
+.catchcopy-label{
+  margin:0 0 var(--space-2); font-family:var(--sans); font-size:12px;
+  letter-spacing:.18em; color:var(--brass);
+}
+.catchcopy-text{ margin:0; font-family:var(--serif); }
+.catchcopy-line-quiet{
+  display:block; font-size:calc(var(--fs-body) + var(--space-1));
+  line-height:1.6; color:var(--ink-soft-sm);
+}
+.catchcopy-line-main{
+  display:block; margin-top:var(--space-1);
+  font-size:calc(var(--fs-h2) + var(--space-1));
+  line-height:1.5; color:var(--paper);
+}
+.catchcopy-text-en{
+  margin:0; font-family:var(--sans); font-size:var(--fs-body); line-height:1.85; color:var(--paper-line);
+}
+/* 読点の位置で改行できるようにする（本人指示 2026-09-11）。
+   ★CJK文は<wbr>が効かない（改行禁則点が元々どこにでもあるため）。<br>で明示的に制御する。
+   ★PC幅では一行に収まるので改行を消す。760px以下だけ効かせる。 */
+.catchcopy-break{ display:none; }
+@media (max-width:760px){ .catchcopy-break{ display:inline; } }
 /* いちばん上に製品の名前を大きく出す（本人指示 2026-09-04）。
    ★h1 は名前。以前は説明の一文を h1 にしていたが、名前が小さな添え字（eyebrow）のままだと、
      この画面が何のページなのかが最初に読めない。
    ★冠の「STAGE IMAGE STUDY」はアプリ本体の見出しと同じ字。LPと道具で名乗りを揃える。 */
-.hero-masthead{ margin-bottom:var(--space-6); }
-/* 冠と「このアプリについて」を同じ行の両端へ。飛び先は下の #about。 */
+.hero-masthead{ margin-bottom:var(--space-5); text-align:center; }
+/* 冠と補助リンクを中央に積む。飛び先は下の #about。 */
 .masthead-top{
-  display:flex; align-items:baseline; justify-content:space-between;
-  gap:var(--space-3); flex-wrap:wrap; margin-bottom:var(--space-2);
+  display:grid; justify-items:center; gap:var(--space-2); margin-bottom:var(--space-2);
 }
 .masthead-top .eyebrow{ margin-bottom:0; }
-.masthead-links{ display:flex; align-items:baseline; gap:var(--space-3); flex-wrap:wrap; }
+.masthead-links{ display:flex; align-items:baseline; justify-content:center; gap:var(--space-3); flex-wrap:wrap; }
 /* 言語の切替。★リンクにしてある。JSが動かなくても効くし、フッターの切替と同じ考え方。 */
 .lang-pick{ display:inline-flex; align-items:baseline; gap:2px; font-family:var(--sans); font-size:var(--fs-small); }
 /* 44×44 のタップ面: 「日本語」は文字幅40pxなので左右にも余白を持たせる（design-lint U1） */
@@ -186,64 +212,35 @@ p{ margin:0 0 var(--space-3); }
 }
 .about-link:hover, .about-link:focus-visible{ color:var(--paper); }
 .about-link:hover::after, .about-link:focus-visible::after{ background:var(--brass); }
-/* 名前の横に版の札を置く（本人指示 2026-09-05）。
-   ★baseline で揃える。大きな名前の足元に小さな札が並ぶ形にしたいので、中央揃えにしない。 */
-.hero-title-row{ display:flex; align-items:baseline; gap:var(--space-3); flex-wrap:wrap; }
+/* 名前と対応範囲の札を中央に積む。 */
+.hero-title-row{ display:grid; justify-items:center; gap:var(--space-2); }
 .hero-name{
   font-family:var(--serif); font-size:var(--fs-title); font-weight:600;
   line-height:1.15; letter-spacing:.08em; color:var(--paper);
   margin:0;
 }
 
-/* 名前のすぐ下に「誰が、何に使うか」を置く（本人指示 2026-09-04）。
-   ★ここは道具の説明ではなく、読む人が自分の側を見つける場所。だから役どころを先に出す。
-   ★二列に並べて高さを抑える。縦に積むとデモの帯が画面の外へ落ちる。 */
 /* 「何のツールか」の一文（2026-09-05 第1弾）。名前の直下・便益の一行の上。ゴシックで機能的に。 */
 .hero-what{
-  margin:var(--space-3) 0 0; max-width:760px;
+  margin:var(--space-3) auto 0; max-width:760px;
   font-family:var(--sans); font-size:18px; line-height:1.7; color:var(--paper-line);
 }
 @media (max-width:760px){ .hero-what{ font-size:15px; } }
-.uses-lead{
-  margin:var(--space-3) 0 var(--space-4);
-  font-size:28px; line-height:1.6; letter-spacing:.04em; color:var(--paper);
-}
-@media (max-width:760px){ .uses-lead{ font-size:20px; } }
 /* 二つの入口（第1弾）。末尾CTAと同じボタン。注記は各ボタンの直下に、最大幅で折り返す。 */
-.hero-actions{ display:flex; flex-wrap:wrap; gap:var(--space-4) var(--space-6); margin:0 0 var(--space-3); }
+.hero-actions{ display:flex; justify-content:center; flex-wrap:wrap; gap:var(--space-4) var(--space-6); margin:var(--space-4) 0 0; }
 .hero-action{ flex:1 1 280px; max-width:460px; }
 .hero-action .btn{ margin:0; }
 .hero-action-note{
   margin:var(--space-2) 0 0; font-family:var(--sans); font-size:var(--fs-small); line-height:1.7;
   color:var(--ink-soft-sm);
 }
-/* ★動画の右へ移したので、常に縦積み（2026-09-05）。横に二列だと右の欄では狭すぎる。 */
-.uses-list{
-  margin:0; display:grid; gap:var(--space-4);
-  grid-template-columns:minmax(0,1fr);
-}
-.uses-row{ display:grid; gap:2px; }
-.uses-row dt{
-  font-family:var(--sans); font-size:12px; letter-spacing:.18em; color:var(--brass);
-  margin-bottom:2px;
-}
-.uses-row dd{
-  margin:0; font-family:var(--sans); font-size:17px;
-  line-height:1.85; color:var(--paper-line);
-}
-@media (max-width:760px){ .uses-row dd{ font-size:15px; } }
-
 .eyebrow{
   font-family:var(--sans); font-size:11px; letter-spacing:.28em;
   color:var(--ink-soft-sm); margin:0 0 var(--space-2);
 }
-/* 版の札。どちらも今あるもの（2026-09-05 実測）。
-   ★Mac用スタンドアローン版の実体はPWA。stage-sketch.webmanifest が display:standalone・
-     アイコン3種を持ち、stage-pwa.js が Service Worker を登録している
-     （キャッシュ stage-sketch-pwa-v194 の生成を確認）。
-     SafariのDockに追加／Chromeのインストールで、独立したウィンドウのMacアプリとして開く。
-   ★Electron/Tauri/.dmg は無い。それだけを見て「スタンドアローン版は無い」と判断しない。 */
-.editions{ display:flex; align-items:baseline; gap:var(--space-2); flex-wrap:wrap; margin:0; }
+/* 対応範囲の札。ネイティブMac版はベータ版の対象外（本人訂正 2026-09-09）。
+   Safariの「Dockに追加」はブラウザ版の利用方法であり、ネイティブMac版の提供ではない。 */
+.editions{ display:flex; align-items:baseline; justify-content:center; gap:var(--space-2); flex-wrap:wrap; margin:0; }
 .badge-pc{
   display:inline-block; margin:0;
   padding:3px 10px; border:1px solid var(--brass); border-radius:var(--radius-s);
@@ -255,15 +252,6 @@ p{ margin:0 0 var(--space-3); }
      以前は幅680pxの1列で、上下の広い帯（1320px）に挟まれて細く見えた（本人指摘）。
      行長は保つ（本文列は最大720px＝17pxで約42字。A_design §3: 30〜50字）。
    ★上に1pxの罫。ヒーローの動画とこの帯の切れ目を、余白だけでなく線でも示す。 */
-/* ============ 証拠帯（2026-09-05 第2弾・#3） ============
-   hero の直後・13の機能の前。4つの事実を1行に。帯の主役にしない（見出し無し・小さい字）。 */
-.proof{ padding:var(--space-4) 0; border-top:1px solid var(--line-dark); border-bottom:1px solid var(--line-dark); }
-.proof-list{ list-style:none; margin:0; padding:0; display:grid; gap:var(--space-4); grid-template-columns:repeat(2, minmax(0,1fr)); }
-@media (min-width:900px){ .proof-list{ grid-template-columns:repeat(4, minmax(0,1fr)); gap:var(--space-5); } }
-.proof-list li{ display:grid; gap:2px; font-family:var(--sans); }
-.proof-list b{ font-weight:600; font-size:14px; line-height:1.6; color:var(--paper); }
-.proof-list li > span{ font-size:var(--fs-small); line-height:1.7; color:var(--ink-soft-sm); }
-
 .story{ padding:var(--space-7) 0; border-top:1px solid var(--line-dark); }
 .story-grid{ display:grid; gap:var(--space-5); grid-template-columns:minmax(0,1fr); }
 @media (min-width:900px){
@@ -278,9 +266,9 @@ p{ margin:0 0 var(--space-3); }
 .story-more a{ color:var(--rust-ink); display:inline-block; padding-block:12px; }
 
 /* ============ ⑤ 注意点 ============ */
-/* ★ディレクター／アーティストの下に置く（本人指示 2026-09-05）。帯ではなく、右の欄の一部。 */
+/* ★ディレクター／アーティストの下に置く（本人指示 2026-09-05）。 */
 .limits{
-  margin-top:var(--space-5);
+  width:100%; margin-top:var(--space-5);
   border-left:3px solid var(--brass); background:var(--desk-2);
   padding:var(--space-4); border-radius:0 var(--radius-m) var(--radius-m) 0;
 }
@@ -483,13 +471,12 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
       <h1 class="hero-name"><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></h1>
       <p class="editions">
         <span class="badge-pc"><span data-ja>ブラウザ対応</span><span data-en>Runs in the browser</span></span>
-        <span class="badge-pc"><span data-ja>Mac用スタンドアローン対応</span><span data-en>Standalone Mac app</span></span>
+        <span class="badge-pc"><span data-ja>ネイティブMac版はベータ版対象外</span><span data-en>Native Mac app: not included in beta</span></span>
       </p>
     </div>
     <!-- 名前の直下に「何のツールか」を一文で（2026-09-05 マーケ観点の見直し・第1弾）。
          それまでは便益の一行だけで、道具の中身を言う行が無かった（Codex・Claude一致）。 -->
     <p class="hero-what"><span data-ja>舞台の立ち位置と動線を、客席からの正面図と真上の平面図で同時に描くツールです。</span><span data-en>A tool for drawing stage positions and movement in a front view and a plan view that move together.</span></p>
-    <p class="uses-lead"><span data-ja>限られたステージ利用時間はもっと質の高い練習へ。</span><span data-en>The shortest line between imagining and doing.</span></p>
     <!-- 二つの入口を最初の画面にも置く（第1弾）。末尾のCTAと同じ行き先。
          ★ボタンの下に不安の先回りを一まとまりで（登録・保存・端末・上限・錠）。 -->
     <div class="hero-actions">
@@ -511,44 +498,34 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
         <source src="media/hero-ja.webm" type="video/webm">
         <source src="media/hero-ja.mp4" type="video/mp4">
       </video>
+      <div class="hero-video-seek"><div class="hero-video-seek-fill"></div></div>
     </figure>
-    <div class="hero-uses">
-      <dl class="uses-list">
-        <div class="uses-row">
-          <dt><span data-ja>ディレクター</span><span data-en>Director</span></dt>
-          <dd><span data-ja>頭の中にある絵を、目に見える形に。そのまま演者へ渡せます。</span><span data-en>Make the picture in your head visible, and hand it straight to the performers.</span></dd>
-        </div>
-        <div class="uses-row">
-          <dt><span data-ja>アーティスト</span><span data-en>Artist</span></dt>
-          <dd><span data-ja>立ち位置は、場当たりの前に。稽古場の時間を、もっと繊細なところへ使えます。</span><span data-en>Positions settled before the blocking rehearsal. Rehearsal time goes to the finer work.</span></dd>
-        </div>
-      </dl>
-      <div class="limits">
-            <h2><span data-ja>注意点</span><span data-en>Please note</span></h2>
-            <p><span data-ja>舞台スケッチは技術図面ではなく、安全を検証したり保証したりするものでもありません。
-            ディレクターとアーティストの意思疎通を円滑にし、良いショーを作る時間を増やすためのスケッチです。
-            体験版で描いたものは保存されません。</span><span data-en>Stage Sketch is not a technical drawing, and it does not verify or guarantee safety.
-            It is a sketch, meant to help a director and performers understand each other and spend more time
-            making a good show. Nothing you draw in the preview is saved.</span></p>
+    <p class="hero-video-caption"><span data-ja>正面図（客席から）と平面図（真上から）が、同じデータで同時に動きます</span><span data-en>The front view (from the audience) and plan view (from above) move together from the same data.</span></p>
+    <div class="catchcopy">
+      <div class="catchcopy-item">
+        <p class="catchcopy-label"><span data-ja>ディレクターへ</span><span data-en>Director</span></p>
+        <p class="catchcopy-text" data-ja><span class="catchcopy-line-quiet">伝えたいのは、立ち位置じゃない。</span><span class="catchcopy-line-main">あなたの思いは、<br class="catchcopy-break">もっと伝わる。</span></p>
+        <!-- EN copy: provisional, reused from previous uses-list. Not yet confirmed as final marketing copy. -->
+        <p class="catchcopy-text-en" data-en>Make the picture in your head visible, and hand it straight to the performers.</p>
+      </div>
+      <div class="catchcopy-item">
+        <p class="catchcopy-label"><span data-ja>アーティストへ</span><span data-en>Artist</span></p>
+        <p class="catchcopy-text" data-ja><span class="catchcopy-line-quiet">立ち位置は、稽古の前に。</span><span class="catchcopy-line-main">あなたの稽古は、<br class="catchcopy-break">もっと質の高いものに。</span></p>
+        <!-- EN copy: provisional, reused from previous uses-list. Not yet confirmed as final marketing copy. -->
+        <p class="catchcopy-text-en" data-en>Positions settled before the blocking rehearsal. Rehearsal time goes to the finer work.</p>
+      </div>
+    </div>
+    <div class="limits">
+      <h2><span data-ja>注意点</span><span data-en>Please note</span></h2>
+      <p><span data-ja>舞台スケッチは技術図面ではなく、安全を検証したり保証したりするものでもありません。
+      ディレクターとアーティストの意思疎通を円滑にし、良いショーを作る時間を増やすためのスケッチです。
+      体験版で描いたものは保存されません。</span><span data-en>Stage Sketch is not a technical drawing, and it does not verify or guarantee safety.
+      It is a sketch, meant to help a director and performers understand each other and spend more time
+      making a good show. Nothing you draw in the preview is saved.</span></p>
     </div>
   </div>
 </header>
 
-<!-- ============ 証拠帯（2026-09-05 第2弾・#3・本人承認） ============
-     作者の話（いまは13の機能の後ろ）へ行く前に、信頼の根拠を一行で。
-     ★実在会場名は入れない（本人指示 2026-09-05: 05にあった実在会場名の一文を「消してください」）。
-     ★提携・導入実績・利用者の声に見える表現は入れない。ページ内の他の場所で既に言っている事実だけ。
-     ★「体験版は3場面」は stage-public.js（project.scenes = [scene, second, third]）の実装どおり。 -->
-<section class="proof reveal">
-  <div class="wrap">
-    <ul class="proof-list">
-      <li><b><span data-ja>元サーカスアーティストが作っています</span><span data-en>Made by a former circus artist</span></b><span><span data-ja>出演歴10年以上。演者として欲しかったものを形にしました。</span><span data-en>More than ten years on stage. Built from what a performer wished for.</span></span></li>
-      <li><b><span data-ja>見本ショー「八人のサーカス」8場面で撮影</span><span data-en>Shot with the sample show, eight scenes</span></b><span><span data-ja>体験版は、そのうち3場面が入った状態で開きます。</span><span data-en>The preview opens with three of those scenes already in place.</span></span></li>
-      <li><b><span data-ja>ベータ期間中は無償</span><span data-en>Free during the beta</span></b><span><span data-ja>製品版はお問い合わせ制。正式版の提供形態は未定です。</span><span data-en>The full version is by request. How the finished version will be offered is not decided yet.</span></span></li>
-      <li><b><span data-ja>画面はすべて製品版βの実写</span><span data-en>Every screen is the real full beta</span></b><span><span data-ja>録画・撮影は 2026年9月4〜5日時点のものです。</span><span data-en>Recorded and captured on 4–5 September 2026.</span></span></li>
-    </ul>
-  </div>
-</section>
 <!-- ============ 13の機能を、ひとつずつ（本人指示 2026-09-05／13番のiPhone追加で12→13に更新） ============
      画像は製品版（stage.html?sample・見本「八人のサーカス」）を Playwright で撮ったもの。
      数字（客席5・会場10＋自作・小道具や姿勢は本人指示で数を伏せている）は
@@ -733,7 +710,7 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
                「ファイル」→「Dockに追加…」は macOS Sonoma で入った Safari の機能（Apple の紹介記事で確認）。 -->
         <div class="cta-dock">
           <img src="icons/stage-sketch-192.png" width="36" height="36" alt="">
-          <p><span data-ja>Macでは Safari の「ファイル」→「Dockに追加…」で、独立したウィンドウのアプリになります（macOS Sonoma以降）。</span><span data-en>On a Mac, choose File → Add to Dock… in Safari to use it as an app in its own window (macOS Sonoma or later).</span></p>
+          <p><span data-ja>Macでは Safari の「ファイル」→「Dockに追加…」で、ブラウザ版を独立したウィンドウで使えます（macOS Sonoma以降）。ネイティブMac版はベータ版の対象外です。</span><span data-en>On a Mac, choose File → Add to Dock… in Safari to use the browser version in its own window (macOS Sonoma or later). The native Mac app is not included in the beta.</span></p>
         </div>
         <p><a class="btn btn-sub" href="beta.html"><span data-ja>製品版ベータを使ってみたい</span><span data-en>Request access to the full beta</span></a></p>
         <p class="cta-note small"><span data-ja>ベータ期間中は無償です。ボタンの先で、お問い合わせの手順をご案内します。</span><span data-en>Free during the beta. The next page explains how to get in touch.</span></p>
@@ -749,7 +726,7 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
     <span><span data-ja>舞台スケッチ</span><span data-en>Stage Sketch</span></span>
     <span><a href="beta.html"><span data-ja>製品版ベータについて</span><span data-en>About the full beta</span></a></span>
     <span><span data-ja>作 ARATA URAWA</span><span data-en>Made by ARATA URAWA</span></span>
-    <span class="small"><span data-ja>ご連絡は <a href="https://pygmix.com/contact?category=tool&amp;subject=%E8%88%9E%E5%8F%B0%E3%82%B9%E3%82%B1%E3%83%83%E3%83%81">お問い合わせフォーム</a> から</span><span data-en>Get in touch via the <a href="https://pygmix.com/contact?category=tool&amp;subject=Stage%20Sketch">contact form</a></span></span>
+    <span class="small"><span data-ja>ご連絡は <a href="https://pygmix.com/contact?category=tool&amp;subject=%E8%88%9E%E5%8F%B0%E3%82%B9%E3%82%B1%E3%83%83%E3%83%81">お問い合わせフォーム</a> から</span><span data-en>Get in touch via the <a href="https://pygmix.com/contact?lang=en&amp;category=tool&amp;subject=Stage%20Sketch">contact form</a></span></span>
     <span class="small"><span data-ja>録画 2026-09-04 時点</span><span data-en>Recorded 4 September 2026</span></span>
     <span class="small lang-switch"><a href="/" data-en>日本語</a><a href="/en/" data-ja>English</a></span>
   </div>
@@ -821,5 +798,48 @@ footer a{ color:var(--rust-ink); display:inline-block; padding-block:14px; }  /*
 })();
 </script>
 
+<script>
+/* ヒーロー動画のシークバー。
+   ★カーソルが乗っている間だけ見える（CSS側の :hover/:focus-within）。
+     ここでは再生位置に合わせて帯を伸ばすことと、クリック・ドラッグで
+     シークできることだけを行う。ホバーの無いタッチ端末はCSS側で常時薄く見せているので、
+     pointerdownでの一時的な全表示だけ足す。 */
+(function () {
+  var seek = document.querySelector(".hero-video-seek");
+  var video = document.querySelector(".hero-video video");
+  if (!seek || !video) return;
+  var fill = seek.querySelector(".hero-video-seek-fill");
+
+  function update() {
+    if (!video.duration) return;
+    var ratio = video.currentTime / video.duration;
+    fill.style.width = (ratio * 100) + "%";
+  }
+  video.addEventListener("timeupdate", update);
+  video.addEventListener("loadedmetadata", update);
+
+  function seekTo(clientX) {
+    var rect = seek.getBoundingClientRect();
+    if (!rect.width || !video.duration) return;
+    var ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    video.currentTime = ratio * video.duration;
+  }
+
+  var dragging = false;
+  seek.addEventListener("pointerdown", function (e) {
+    dragging = true;
+    seek.classList.add("is-active");
+    seekTo(e.clientX);
+  });
+  window.addEventListener("pointermove", function (e) {
+    if (dragging) seekTo(e.clientX);
+  });
+  window.addEventListener("pointerup", function () {
+    if (!dragging) return;
+    dragging = false;
+    seek.classList.remove("is-active");
+  });
+})();
+</script>
 </body>
 </html>

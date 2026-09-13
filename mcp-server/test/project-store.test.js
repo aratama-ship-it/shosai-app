@@ -16,6 +16,7 @@ const initialScenes = [
   {
     title: "1-1 出会い",
     note: "二人が互いの存在に気づく。",
+    transitionNote: "Aは上手袖から入り、Bの横で止まる。",
     rehearsal: {
       holdDurationSeconds: 2,
       transitionToNextSeconds: 3.2,
@@ -55,6 +56,7 @@ test("creates an import-compatible version 3 draft", async () => {
     holdDurationSeconds: 2,
     transitionToNextSeconds: 3.2,
   });
+  assert.equal(document.project.scenes[0].transitionNote, "Aは上手袖から入り、Bの横で止まる。");
   assert.equal(document.project.cast.length, 2);
   assert.equal(document.project.sets.length, 1);
   assert.equal(document.project.scenes[0].pieces[0].castId, document.project.cast[0].id);
@@ -76,6 +78,7 @@ test("inserts intermediate scenes and rejects stale revisions", async () => {
     scenes: [{
       title: "1-1.5 ためらい",
       note: "接近する前に一度止まる。",
+      transitionNote: "Aは中央へ半歩だけ進む。",
       rehearsal: {
         holdDurationSeconds: 1.5,
         transitionToNextSeconds: 2.4,
@@ -96,6 +99,7 @@ test("inserts intermediate scenes and rejects stale revisions", async () => {
     holdDurationSeconds: 1.5,
     transitionToNextSeconds: 2.4,
   });
+  assert.equal(reread.project.scenes[1].transitionNote, "Aは中央へ半歩だけ進む。");
 
   await assert.rejects(
     store.addScenes({

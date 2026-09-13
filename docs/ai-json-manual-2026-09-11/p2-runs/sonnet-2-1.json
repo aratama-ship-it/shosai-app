@@ -1,0 +1,86 @@
+{
+  "kind": "shosai-stage-sketch",
+  "version": 4,
+  "venues": [],
+  "project": {
+    "title": "空いた椅子",
+    "venue": "blackbox",
+    "venueSize": "small",
+    "cast": [
+      {"id": "cast-mina", "name": "ミナ", "color": "#b3446c", "note": "待つ側"},
+      {"id": "cast-toka", "name": "トウカ", "color": "#2f6f8f", "note": "待つ側"},
+      {"id": "cast-ren", "name": "レン", "color": "#7a7a7a", "note": "来ない相手役"}
+    ],
+    "sets": [
+      {"id": "set-table", "kind": "table", "name": "机", "color": "#5d4630", "note": "待ち合わせ場所の机"},
+      {"id": "set-chair1", "kind": "chair", "name": "椅子A", "color": "#7a5a3a"},
+      {"id": "set-chair2", "kind": "chair", "name": "椅子B", "color": "#7a5a3a"},
+      {"id": "set-light", "kind": "light", "name": "上明かり", "color": "#fff4d6", "lightKind": "hang", "note": "各場面共通の真上1灯"}
+    ],
+    "scenes": [
+      {
+        "kind": "scene",
+        "depth": 0,
+        "id": "scene-1",
+        "title": "約束の時刻",
+        "note": "仮定: 人数3名のうち、待つ側をミナとトウカ、来ない相手をレンに割り当てて構成した。名前・配役・立ち位置の詳細は本人未指定のため推奨で仮決めしている。ミナとトウカが机を挟んで椅子に座り、約束の時刻を待つ。観客には静かな期待が見える。",
+        "beat": {"role": "導入", "energy": 2},
+        "lightingIntent": {
+          "objective": "待ち合わせ場所を静かに照らす",
+          "audienceFocus": "机と椅子、2人の様子",
+          "mood": "静かな期待"
+        },
+        "pieces": [
+          {"id": "piece-s1-table", "type": "table", "setId": "set-table", "u": 0.50, "v": 0.55, "color": "#5d4630", "facing": 0, "size": 100},
+          {"id": "piece-s1-chair1", "type": "chair", "setId": "set-chair1", "u": 0.40, "v": 0.58, "color": "#7a5a3a", "facing": 0, "size": 100},
+          {"id": "piece-s1-chair2", "type": "chair", "setId": "set-chair2", "u": 0.60, "v": 0.58, "color": "#7a5a3a", "facing": 0, "size": 100},
+          {"id": "piece-s1-light", "type": "light", "setId": "set-light", "u": 0.50, "v": 0.55, "color": "#fff4d6", "facing": 0, "size": 100},
+          {"id": "piece-s1-mina", "type": "performer", "castId": "cast-mina", "u": 0.40, "v": 0.56, "color": "#b3446c", "facing": 0, "pose": "sit", "size": 100},
+          {"id": "piece-s1-toka", "type": "performer", "castId": "cast-toka", "u": 0.60, "v": 0.56, "color": "#2f6f8f", "facing": 0, "pose": "sit", "size": 100}
+        ]
+      },
+      {
+        "kind": "scene",
+        "depth": 0,
+        "id": "scene-2",
+        "title": "過ぎていく時間",
+        "note": "トウカが待ちきれず机を離れ、部屋の隅へ歩いていく。ミナは椅子に座ったまま同じ場所で待ち続ける。観客には焦りと粘り強さの対比が見える。",
+        "beat": {"role": "展開", "energy": 3},
+        "lightingIntent": {
+          "objective": "机の上の明かりを保ったまま人物の距離を見せる",
+          "audienceFocus": "机に残るミナと離れていくトウカ",
+          "mood": "焦りと諦め"
+        },
+        "pieces": [
+          {"id": "piece-s2-table", "type": "table", "setId": "set-table", "u": 0.50, "v": 0.55, "color": "#5d4630", "facing": 0, "size": 100},
+          {"id": "piece-s2-chair1", "type": "chair", "setId": "set-chair1", "u": 0.40, "v": 0.58, "color": "#7a5a3a", "facing": 0, "size": 100},
+          {"id": "piece-s2-chair2", "type": "chair", "setId": "set-chair2", "u": 0.60, "v": 0.58, "color": "#7a5a3a", "facing": 0, "size": 100},
+          {"id": "piece-s2-light", "type": "light", "setId": "set-light", "u": 0.50, "v": 0.55, "color": "#fff4d6", "facing": 0, "size": 100},
+          {"id": "piece-s2-mina", "type": "performer", "castId": "cast-mina", "u": 0.40, "v": 0.56, "color": "#b3446c", "facing": 0, "pose": "sit", "size": 100},
+          {"id": "piece-s2-toka", "type": "performer", "castId": "cast-toka", "u": 0.75, "v": 0.35, "color": "#2f6f8f", "facing": 90, "pose": "walk", "size": 100}
+        ]
+      },
+      {
+        "kind": "scene",
+        "depth": 0,
+        "id": "scene-3",
+        "title": "来ない合図",
+        "note": "ミナが椅子を立ち、机のそばに一人残る。レンは奥を素通りするが、ミナに気づかず歩き去る。トウカはすでに退場済みのためこの場面には配置していない。観客にはすれ違いのまま終わる関係が見える。",
+        "beat": {"role": "すれ違い", "energy": 2},
+        "lightingIntent": {
+          "objective": "机の明かりの中と外を対比させる",
+          "audienceFocus": "明かりの中のミナと、外を通り過ぎるレン",
+          "mood": "すれ違いの余韻"
+        },
+        "pieces": [
+          {"id": "piece-s3-table", "type": "table", "setId": "set-table", "u": 0.50, "v": 0.55, "color": "#5d4630", "facing": 0, "size": 100},
+          {"id": "piece-s3-chair1", "type": "chair", "setId": "set-chair1", "u": 0.40, "v": 0.58, "color": "#7a5a3a", "facing": 0, "size": 100},
+          {"id": "piece-s3-chair2", "type": "chair", "setId": "set-chair2", "u": 0.60, "v": 0.58, "color": "#7a5a3a", "facing": 0, "size": 100},
+          {"id": "piece-s3-light", "type": "light", "setId": "set-light", "u": 0.50, "v": 0.55, "color": "#fff4d6", "facing": 0, "size": 100},
+          {"id": "piece-s3-mina", "type": "performer", "castId": "cast-mina", "u": 0.45, "v": 0.55, "color": "#b3446c", "facing": 0, "pose": "stand", "size": 100},
+          {"id": "piece-s3-ren", "type": "performer", "castId": "cast-ren", "u": 0.55, "v": 0.12, "color": "#7a7a7a", "facing": 180, "pose": "walk", "size": 100}
+        ]
+      }
+    ]
+  }
+}

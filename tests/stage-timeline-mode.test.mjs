@@ -118,6 +118,27 @@ test("時間表示は時刻だけ、カウント表示はカウントだけを�
   assert.match(timeline, /else \{[\s\S]*?makeTick\(sec, String\(Math\.round\(count\)\)\)/);
 });
 
+test("テンポ・カウント合わせ操作はカウント式だけで表示する", () => {
+  assert.match(html, /id="stage-timeline-metronome"[\s\S]*?hidden disabled/);
+  assert.match(html, /id="stage-timeline-anchor" hidden disabled/);
+  assert.match(html, /id="stage-timeline-clear-anchors" hidden disabled/);
+  assert.match(html, /id="stage-timeline-bpm-label" hidden/);
+  assert.match(html, /id="stage-timeline-bpm"[^>]*hidden disabled/);
+  assert.match(html, /id="stage-timeline-auto-bpm" hidden disabled/);
+  assert.match(html, /id="stage-timeline-meter" hidden/);
+  assert.match(html, /id="stage-timeline-mark-one" hidden disabled/);
+  assert.match(html, /id="stage-timeline-real-tempo-readout" hidden/);
+  assert.match(timeline, /const showCountTempo = ui\.unit === "count"/);
+  assert.match(timeline, /\[els\.metronome, els\.anchorHere, els\.clearAnchors, els\.bpmLabel, els\.bpm, els\.autoBpm,[\s\S]*?els\.meter, els\.markOne, els\.realTempoReadout\][\s\S]*?control\.hidden = !showCountTempo/);
+});
+
+test("シーク位置へ移動すると該当シーンを平面図・正面図へ同期する", () => {
+  assert.match(timeline, /function syncSceneForSeek\(\)[\s\S]*?syncTimelinePlaybackScene\(seekSeconds\)/);
+  assert.match(timeline, /function seekFromPointer\(event\)[\s\S]*?syncSceneForSeek\(\)/);
+  assert.match(timeline, /if \(event\.shiftKey\)[\s\S]*?syncSceneForSeek\(\)/);
+  assert.match(timeline, /name === "seeking"[\s\S]*?seekSeconds = els\.audio\.currentTime;[\s\S]*?syncSceneForSeek\(\)/);
+});
+
 test("表示単位はセクションごとに保存し、切替前に毎回注意を確認する", () => {
   assert.match(sketch, /timelineUnit: sceneKind === "section" \? "time" : null/);
   assert.match(sketch, /timelineUnit: kind === "section" && raw\.timelineUnit === "count" \? "count" : "time"/);
@@ -178,6 +199,20 @@ test("右上の表示設定から8レーンを個別に隠し、端末内へ保�
 test("タイムラインのシーン選択は本体のopenSceneへ接続する", () => {
   assert.match(sketch, /openSceneById\(id, options = \{\}\)[\s\S]*?openScene\(next\.id, options\)/);
   assert.match(timeline, /bridge\.openSceneById\(segment\.sceneId\)/);
+});
+
+test("シーン帯は単クリックの移動と端ドラッグを保ち、ダブルクリックで本体と同じ詳細を開く", () => {
+  assert.doesNotMatch(html, /id="stage-timeline-scene-detail-modal"/);
+  assert.match(html, /id="stage-rename"[\s\S]*?id="stage-rename-scene-number"[\s\S]*?id="stage-rename-scene-section"/);
+  assert.match(html, /id="stage-rename-scene-position"[\s\S]*?id="stage-rename-scene-hold"[\s\S]*?id="stage-rename-scene-transition"/);
+  assert.match(html, /id="stage-rename-scene-note"[^>]*maxlength="2000"/);
+  assert.match(timeline, /function scheduleTimelineSceneOpen\(segment\)[\s\S]*?setTimeout[\s\S]*?openTimelineScene\(segment\)/);
+  assert.match(timeline, /button\.addEventListener\("dblclick", \(event\) => \{[\s\S]*?bridge\.openSceneDetailsById\(segment\.sceneId\)/);
+  assert.match(timeline, /event\.target\.closest\("\.stage-timeline-block-resize-handle"\)/);
+  assert.match(timeline, /window\.SHOSAI_STAGE_TIMELINE_DETAILS = Object\.freeze\(\{ sceneFactsById \}\)/);
+  assert.match(sketch, /openSceneDetailsById\(id\)[\s\S]*?openRename\(scene\)/);
+  assert.match(sketch, /nextSceneNote[\s\S]*?renameTarget\.note = nextSceneNote/);
+  assert.match(css, /\.stage-modal#stage-rename \{[^}]*width: min\(520px, calc\(100vw - 40px\)\)/);
 });
 
 test("音源なしでもセクション時間を内部時計として再生する", () => {
@@ -297,12 +332,25 @@ test("音源ブロックのダブルクリックで音源別ゲインを編集�
   ]) assert.match(html, new RegExp(`id="${id}"`));
   assert.match(html, /id="stage-timeline-audio-gain-range" min="-24" max="12" step="0\.5"/);
   assert.match(timeline, /document\.createElement\(timeline\.trackId \? "button" : "div"\)/);
-  assert.match(timeline, /audioBlock\.addEventListener\("dblclick", \(\) => openAudioDetails/);
+  assert.match(timeline, /audioBlock\.addEventListener\("dblclick", \(\) => \{[\s\S]*?openAudioDetails\(timeline\.trackId, audioBlock\)/);
   assert.match(timeline, /const factor = 10 \*\* \(normalizedAudioGainDb\(gainDb\) \/ 20\)/);
   assert.match(timeline, /createMediaElementSource\(els\.audio\)[\s\S]*?createGain\(\)[\s\S]*?gain\.connect\(context\.destination\)/);
   assert.match(timeline, /bridge\.setTimelineAudioGainDb\(trackId, gainDb\)/);
   assert.match(sketch, /setTimelineAudioGainDb\(trackId, value\)[\s\S]*?track\.gainDb = gainDb/);
   assert.match(css, /\.stage-modal\.stage-timeline-audio-detail-modal \{ width: min\(440px/);
+});
+
+test("端末内の音源が欠落したら同じ音源枠から再接続し、タイムライン情報を作り直さない", () => {
+  assert.match(sketch, /hasTimelineAudioFile\(trackId\)[\s\S]*?audioStore\.get\(normalizedTrackId\)/);
+  assert.match(sketch, /openTimelineAudioRelinkPicker\(trackId\)[\s\S]*?openAudioRelinkPicker\(trackId\)/);
+  assert.match(sketch, /audioStore\.put\(trackId, file\)[\s\S]*?stage-timeline-audio-change[\s\S]*?reconnected: true/);
+  assert.match(timeline, /function checkTimelineAudioAvailability\(audioBlock, trackId, title\)/);
+  assert.match(timeline, /showMissingAudioState\(audioBlock, title\)/);
+  assert.match(timeline, /audioBlock\.dataset\.audioMissing !== "true"[\s\S]*?bridge\.openTimelineAudioRelinkPicker\(timeline\.trackId\)/);
+  assert.match(timeline, /音源が見つかりません/);
+  assert.match(timeline, /読み込み直す/);
+  assert.match(css, /\.stage-timeline-audio-block\.is-missing \{[\s\S]*?border-style: dashed/);
+  assert.doesNotMatch(timeline, /openTimelineAudioRelinkPicker[\s\S]{0,260}(?:addTimelineScene|addTimelineCue|addTimelineTransition)/);
 });
 
 test("再生は単独三角形、前後は縦棒付き、先頭は矢印として44px枠へ揃える", () => {

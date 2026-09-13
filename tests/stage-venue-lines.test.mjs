@@ -63,6 +63,55 @@ test("可動範囲は壁0.5m・固定物0.5m・観客1.0m・段差縁0.3mを引�
   assert.equal(lines.movementStatusAt(room, [3, 1.7]).allowed, true);
 });
 
+test("接続した追加ステージをメインと同じ床・可動範囲として扱う", () => {
+  const lines = loadLines();
+  const room = venue({
+    floor: {
+      outline: rectangle,
+      extensions: [{
+        id: "stage-extension-1",
+        shape: "rectangle",
+        polygon: [[12, 2], [16, 2], [16, 6], [12, 6]],
+      }],
+      levels: [],
+    },
+  });
+  assert.equal(lines.movementStatusAt(room, [14, 4]).allowed, true);
+  assert.equal(lines.movementStatusAt(room, [13, 2.2]).reasons.includes("wall"), true);
+  assert.equal(lines.movementStatusAt(room, [20, 4]).reasons.includes("outside-floor"), true);
+  const movement = lines.computeMovement(room);
+  assert.ok(movement.areas.some((area) => area.x < 16 && area.x + area.width > 12),
+    "追加ステージ上に可動範囲がない");
+});
+
+test("重なり合成後は内部境界を壁にせず可動範囲を再計算する", () => {
+  const lines = loadLines();
+  const room = venue({
+    floor: {
+      outline: rectangle,
+      extensions: [{
+        id: "stage-extension-1",
+        shape: "rectangle",
+        merged: true,
+        polygon: [[8, 5], [16, 5], [16, 10], [8, 10]],
+      }],
+      levels: [],
+    },
+  });
+  const internalEdgePoint = [11.7, 6.1];
+  assert.equal(lines.movementStatusAt(room, internalEdgePoint).allowed, true,
+    "合成で内側になった元の外周を壁として残している");
+  assert.equal(lines.movementStatusAt(room, [11.8, 2]).reasons.includes("wall"), true,
+    "合成後も露出している外周の余白が消えている");
+  const movement = lines.computeMovement(room);
+  assert.ok(movement.areas.some((area) =>
+    internalEdgePoint[0] >= area.x - 0.001 &&
+    internalEdgePoint[0] <= area.x + area.width + 0.001 &&
+    internalEdgePoint[1] >= area.y - 0.001 &&
+    internalEdgePoint[1] <= area.y + area.height + 0.001),
+  "再計算した可動範囲へ合成部分が描画されていない");
+});
+
 test("movable:trueの什器は可動範囲から引かず、拡張範囲用の別輪郭にする", () => {
   const lines = loadLines();
   const room = venue({

@@ -37,12 +37,32 @@ run_worker_first = true
 
 [durable_objects]
 bindings = [
-  { name = "SESSION_ROOM", class_name = "SessionRoom" }
+  { name = "SESSION_ROOM", class_name = "SessionRoom" },
+  { name = "USAGE_METRICS", class_name = "UsageMetrics" },
+  { name = "STUDY_LINKS", class_name = "StudyLinks" },
+  { name = "STUDY_READER_AUTH", class_name = "StudyReaderAuth" },
+  { name = "STUDY_READER_ACCOUNTS", class_name = "StudyReaderAccount" }
 ]
 
 [[migrations]]
 tag = "v1-session-room"
 new_sqlite_classes = ["SessionRoom"]
+
+[[migrations]]
+tag = "v2-usage-metrics"
+new_sqlite_classes = ["UsageMetrics"]
+
+[[migrations]]
+tag = "v3-study-links"
+new_sqlite_classes = ["StudyLinks"]
+
+[[migrations]]
+tag = "v4-study-reader-accounts"
+new_sqlite_classes = ["StudyReaderAuth", "StudyReaderAccount"]
+
+# Reader Google OAuth configuration (register only when authorized):
+# STUDY_GOOGLE_CLIENT_ID, STUDY_GOOGLE_REDIRECT_URI: environment variables.
+# STUDY_GOOGLE_CLIENT_SECRET: Worker secret. Never enable local login in production.
 
 # 舞台スケッチのベータ提供スイッチ（2026-08-30 追加）。
 # 製品版を出したら STAGE_BETA_ACTIVE を "false" にして wrangler deploy し直す。
@@ -50,3 +70,10 @@ new_sqlite_classes = ["SessionRoom"]
 # （空でもよい。その場合はリンクなしのメッセージだけになる）。
 [vars]
 STAGE_BETA_ACTIVE = "true"
+# 2026-09-12便は、選択済み5項目＋演者向けViewerだけを表へ出す。
+# 未選択機能のコードと既存データ互換は残し、入口を閉じる。
+STAGE_RELEASE_SCOPE = "beta-20260912"
+# Beta invitation links open without reader login. Other pages and management APIs stay protected.
+STUDY_ALLOW_ANONYMOUS = "true"
+# β版のみ。falseで新規計測を停止する（記録済み集計は管理者のみ閲覧可）。
+STAGE_USAGE_ENABLED = "false"

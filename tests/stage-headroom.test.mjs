@@ -6,7 +6,7 @@ import vm from "node:vm";
 const root = new URL("../", import.meta.url);
 const linesSource = await readFile(new URL("stage-venue-lines.js", root), "utf8");
 const editorSource = await readFile(new URL("stage-venue-editor.js", root), "utf8");
-const indexSource = await readFile(new URL("index.html", root), "utf8");
+const indexSource = await readFile(new URL("stage.html", root), "utf8");
 
 function loadLines() {
   const window = {};
@@ -42,18 +42,13 @@ test("headroomは要求値の正負を保ち、既存のクランプ済み高さ
   assert.equal(above.radiusM, 2.4);
 });
 
-test("探り針パネルは実測JSON入口・出所・0.5m丸めの事実表示を持つ", () => {
-  assert.match(indexSource,
-    /id="stage-venue-editor-probe-capture-open"[^>]*>実測を読み込む</);
-  assert.match(indexSource,
-    /type="file" id="stage-venue-editor-probe-capture-input" accept="\.json" hidden/);
-  assert.match(indexSource, /id="stage-venue-editor-probe-capture-source"/);
-  assert.match(indexSource, /id="stage-venue-editor-probe-headroom"/);
-  assert.match(editorSource, /raw\.format !== "performer-capture-v0"/);
-  assert.match(editorSource, /実測: \$\{state\.lines\.measurement\.performer\}（目安）/);
-  assert.match(editorSource, /Math\.round\(linesResult\.fall\.headroomM \* 2\) \/ 2/);
-  assert.match(editorSource, /天井まで だいたい\$\{amount\}/);
-  assert.match(editorSource, /clearProbeMeasurement\(\);[\s\S]*?setProbeReach\(els\.probeReach\.value\)/);
+test("会場実測ツールは現在の会場エディタには置かず、会場線の純粋計算として保つ", () => {
+  // 実測読込UIは3D会場編集への移行で廃止済み。古い入口の復活を要求せず、
+  // 会場線の計算器が独立していることだけを回帰対象にする。
+  assert.doesNotMatch(indexSource, /stage-venue-editor-probe-capture-open/);
+  assert.doesNotMatch(editorSource, /performer-capture-v0/);
+  assert.match(linesSource, /function computeFall/);
+  assert.match(linesSource, /function normalizeProbe/);
 });
 
 test("compute()経由でも要求値が二重正規化で失われない（回帰: 天井超の実測が+0.0になる）", () => {

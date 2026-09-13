@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stage House View S3 Preview</title>
+<style>
+  html{color-scheme:dark} body{margin:0;background:#090807;color:#efe7d6;font:14px/1.5 system-ui,sans-serif}
+  main{max-width:1320px;margin:auto;padding:24px} h1{font-size:20px;margin:0 0 6px} p{color:#bcb4a6;margin:0 0 18px}
+  section{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px}
+  figure{margin:0;background:#12100e;border:1px solid #332d27;padding:10px} canvas{display:block;width:100%;height:auto;background:#0f0d0c}
+  figcaption{padding-top:8px} small{display:block;color:#9c9487}
+</style>
+</head>
+<body>
+<main>
+  <h1>正面図「引いた絵」S3 単体確認</h1>
+  <p>本体未接続。高い席から、左右へ回り込む客席・天井の構造・通路で割れた床・小さい舞台を確認する。</p>
+  <section id="previews"></section>
+</main>
+<script src="../stage-venue-lines.js"></script>
+<script src="../stage-venues.js"></script>
+<script src="../stage-house-view.js"></script>
+<script>
+(() => {
+  const examples = [
+    { id: "dome-concert", position: 4, caption: "武道館型・上段相当" },
+    { id: "arena-concert", position: "side-high", caption: "アリーナ横・高い席相当" },
+    { id: "dome-concert", position: 3, caption: "後方スタンド相当" },
+    { id: "dome-concert", position: 2, caption: "ドーム・スタンド下段" },
+    { id: "arena-concert", position: 1, caption: "アリーナ・後方" },
+    { id: "dome-concert", position: 4, caption: "全周客席（round確認）", wrap: "round" },
+    { id: "festival-field", position: "back", caption: "野外フェス・立ち見後方" },
+    { id: "dome-concert", position: 4, caption: "上限ストレス確認", crowdWidthM: 180 },
+  ];
+  const host = document.getElementById("previews");
+  examples.forEach(({ id, position, caption, crowdWidthM, wrap }) => {
+    const sourceVenue = SHOSAI_VENUES.byId(id);
+    const venue = wrap ? { ...sourceVenue, bowl: { ...sourceVenue.bowl, wrap } } : sourceVenue;
+    const size = venue.sizes[0];
+    const seats = SHOSAI_VENUES.seatsFor(venue, size);
+    let seat = position === "back" ? seats[1] : seats[position];
+    if (position === "side-high") {
+      const base = seats.at(-1);
+      seat = SHOSAI_VENUE_LINES.deriveSeat({
+        id: `${id}-side-high`, label: "横の高い席", distanceM: base.eye,
+        eyeM: base.plan.eyeM, offsetM: -(size.width / 2 + 4), depthM: size.depth,
+        heightM: venue.bowl.stageHeightM, stageWidthM: size.width,
+        fovDeg: venue.bowl.fovDeg || 60, mode: base.plan.mode,
+      });
+      seat.plan.tier = base.plan.tier;
+      seat.plan.floorM = base.plan.floorM;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = 640; canvas.height = 360;
+    const ctx = canvas.getContext("2d");
+    const scale = canvas.height / 720;
+    const pxPerM = seat.frontW * canvas.width / size.width;
+    const L = {
+      floorY: seat.floorY * scale, bottomY: seat.bottomY * scale,
+      centerX: canvas.width / 2, frontW: seat.frontW * canvas.width,
+      backW: seat.backW * canvas.width, shift: seat.shift * canvas.width * 0.5,
+      pxPerM, seat, size,
+    };
+    const drawSize = crowdWidthM ? { ...size, width: crowdWidthM } : size;
+    const crowd = SHOSAI_STAGE_HOUSE_VIEW.drawBehind(ctx, {
+      L, venue, size: drawSize, seat, houseMode: "full",
+    });
+    const stageW = pxPerM * size.width;
+    const stageH = pxPerM * venue.bowl.stageHeightM;
+    ctx.fillStyle = "#28211b";
+    ctx.fillRect(L.centerX - stageW / 2, L.floorY - stageH, stageW, stageH);
+    ctx.strokeStyle = "rgba(239,231,214,0.28)";
+    ctx.strokeRect(L.centerX - stageW / 2, L.floorY - stageH, stageW, stageH);
+    const performerH = 1.7 * pxPerM;
+    ctx.strokeStyle = "#efe7d6"; ctx.lineWidth = pxPerM * 0.035;
+    ctx.beginPath(); ctx.arc(L.centerX, L.floorY - performerH, performerH * 0.12, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(L.centerX, L.floorY - performerH * 0.88); ctx.lineTo(L.centerX, L.floorY); ctx.stroke();
+    SHOSAI_STAGE_HOUSE_VIEW.drawFront(ctx, { L, venue, size, seat, houseMode: "full" });
+    const figure = document.createElement("figure");
+    const text = document.createElement("figcaption");
+    text.textContent = `${caption} — ${seat.note}`;
+    const note = document.createElement("small");
+    note.textContent = crowdWidthM
+      ? `プレビュー専用・客席幅${crowdWidthM}m相当／${crowd.particles}粒（間引き前${crowd.desiredParticles}粒）／帯なし`
+        : `仮の寸法・図面未照合／回り込み ${crowd.wrap}`;
+    text.append(note);
+    figure.append(canvas, text); host.append(figure);
+  });
+})();
+</script>
+</body>
+</html>

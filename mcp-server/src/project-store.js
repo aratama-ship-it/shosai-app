@@ -437,6 +437,7 @@ export class ProjectStore {
       summary: plan.summary,
       baseRevision: plan.expectedRevision,
       appliedRevision: changed.project.revision,
+      ...(plan.evidenceContext ? { evidenceContext: clone(plan.evidenceContext) } : {}),
       diff: plan.diff,
       warnings: plan.warnings,
     };

@@ -18,12 +18,12 @@ function tagWithId(source, id) {
 
 test("スクリーン文字の例から黒閃を外す", () => {
   const expected = "例: 三回宙返り / ドン / 10年後";
-  const placeholders = [indexSource, stageSource].map((source) => {
+  const placeholders = [stageSource].map((source) => {
     const input = tagWithId(source, "stage-screentext-input");
     return input.match(/placeholder="([^"]+)"/)?.[1];
   });
 
-  assert.deepEqual(placeholders, [expected, expected]);
+  assert.deepEqual(placeholders, [expected]);
   assert.doesNotMatch(placeholders.join("\n"), /黒閃/);
   assert.ok(i18nSource.includes(
     `"${expected}": "e.g. a technique name, a sound effect, a subtitle"`,

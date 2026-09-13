@@ -9,10 +9,17 @@ const venuesSource = await readFile(new URL("stage-venues.js", root), "utf8");
 const linesSource = await readFile(new URL("stage-venue-lines.js", root), "utf8");
 const sketchSource = await readFile(new URL("stage-sketch.js", root), "utf8");
 const editorSource = await readFile(new URL("stage-venue-editor.js", root), "utf8");
-const indexSource = await readFile(new URL("index.html", root), "utf8");
+const indexSource = await readFile(new URL("stage.html", root), "utf8");
+const styleSource = await readFile(new URL("style.css", root), "utf8");
 const i18nSource = await readFile(new URL("stage-i18n.js", root), "utf8");
 const stageHtml = await readFile(new URL("stage.html", root), "utf8");
 const swSource = await readFile(new URL("stage-sw.js", root), "utf8");
+
+const polygonArea = (points) => Math.abs(points.reduce((sum, point, index) => {
+  const next = points[(index + 1) % points.length];
+  return sum + (point[0] * next[1]) - (next[0] * point[1]);
+}, 0) / 2);
+const polygonsArea = (polygons) => polygons.reduce((sum, polygon) => sum + polygonArea(polygon), 0);
 
 class MemoryStorage {
   constructor(initial = {}) {
@@ -80,6 +87,7 @@ class FakeElement {
     this.tagName = "BUTTON";
     this.children = [];
     this._textContent = "";
+    this.reportValidityCalls = 0;
   }
 
   get textContent() { return this._textContent; }
@@ -104,25 +112,42 @@ class FakeElement {
   setAttribute(name, value) { this[name] = String(value); }
   append(...children) { this.children.push(...children); }
   focus() {}
+  select() {}
+  reportValidity() {
+    this.reportValidityCalls += 1;
+    return Boolean(String(this.value || "").trim());
+  }
 }
 
 function loadEditor(storage = new MemoryStorage()) {
   const ids = [
-    "stage-venue-editor-open", "stage-venue-editor-backdrop", "stage-venue-editor-modal",
+    "stage-venue-editor-backdrop", "stage-venue-editor-modal",
     "stage-venue-editor-close", "stage-venue-editor-dims", "stage-venue-editor-status",
-    "stage-venue-editor-audience-selection", "stage-venue-editor-audience-mode",
-    "stage-venue-editor-audience-mode-text", "stage-venue-editor-audience-remove",
+    "stage-venue-editor-undo", "stage-venue-editor-redo",
+    "stage-venue-editor-zoom-out", "stage-venue-editor-zoom-in",
+    "stage-venue-editor-extension-merge",
+    "stage-venue-editor-audience-merge", "stage-venue-editor-wing-merge",
+    "stage-venue-editor-audience-selection", "stage-venue-editor-audience-full",
+    "stage-venue-editor-audience-remove",
+    "stage-venue-editor-wing-summary",
     "stage-venue-editor-object-selection", "stage-venue-editor-object-movable",
     "stage-venue-editor-object-remove", "stage-venue-editor-access-type",
+    "stage-venue-editor-ceiling-height",
     "stage-venue-editor-probe-tool", "stage-venue-editor-probe-reach",
     "stage-venue-editor-probe-reach-value", "stage-venue-editor-probe-status",
     "stage-venue-editor-name", "stage-venue-editor-source", "stage-venue-editor-confidence",
-    "stage-venue-editor-sharing", "stage-venue-editor-save", "stage-venue-editor-save-status",
+    "stage-venue-editor-sharing", "stage-venue-editor-save", "stage-venue-editor-apply",
+    "stage-venue-editor-save-status",
+    "stage-venue-conflict-backdrop", "stage-venue-conflict-modal", "stage-venue-conflict-message",
+    "stage-venue-conflict-first", "stage-venue-conflict-second",
+    "stage-venue-save-name-backdrop", "stage-venue-save-name-modal", "stage-venue-save-name-form",
+    "stage-venue-save-name", "stage-venue-save-name-close", "stage-venue-save-name-cancel",
     "stage-venue-library-export", "stage-venue-library-import", "stage-venue-library-status",
     "stage-venue-import-backdrop", "stage-venue-import-modal", "stage-venue-import-close",
     "stage-venue-import-summary", "stage-venue-import-list", "stage-venue-import-confirm",
     "stage-venue-import-cancel",
-    "stage-size-select", "stage-venue-w", "stage-venue-d", "stage-venue-h",
+    "stage-venue-discard-backdrop", "stage-venue-discard-modal",
+    "stage-venue-discard-cancel", "stage-venue-discard-confirm",
   ];
   const elements = new Map(ids.map((id) => [id, new FakeElement(id)]));
   const canvas = new FakeElement("stage-venue-editor-canvas");
@@ -132,8 +157,10 @@ function loadEditor(storage = new MemoryStorage()) {
   canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 960, height: 640 });
   canvas.setPointerCapture = () => {};
   const drawFills = [];
+  const drawText = [];
   const context2d = new Proxy({
     fill() { drawFills.push(this.fillStyle); },
+    fillText(value) { drawText.push(String(value)); },
   }, {
     get(target, property) {
       if (!(property in target)) target[property] = () => {};
@@ -146,6 +173,7 @@ function loadEditor(storage = new MemoryStorage()) {
 
   elements.get("stage-venue-editor-name").tagName = "INPUT";
   elements.get("stage-venue-editor-name").value = "柱・什器・扉の部屋";
+  elements.get("stage-venue-save-name").tagName = "INPUT";
   elements.get("stage-venue-editor-source").value = "記憶";
   elements.get("stage-venue-editor-confidence").value = "low";
   elements.get("stage-venue-editor-sharing").value = "ok";
@@ -158,11 +186,17 @@ function loadEditor(storage = new MemoryStorage()) {
     { value: "unspecified", disabled: false },
   ];
   elements.get("stage-venue-editor-probe-reach").value = "3";
-  elements.get("stage-size-select").value = "custom";
-  elements.get("stage-size-select").options = [{ value: "custom" }];
   elements.get("stage-venue-library-import").tagName = "INPUT";
+  elements.get("stage-venue-editor-backdrop").hidden = true;
+  elements.get("stage-venue-editor-modal").hidden = true;
+  elements.get("stage-venue-conflict-backdrop").hidden = true;
+  elements.get("stage-venue-conflict-modal").hidden = true;
+  elements.get("stage-venue-save-name-backdrop").hidden = true;
+  elements.get("stage-venue-save-name-modal").hidden = true;
   elements.get("stage-venue-import-backdrop").hidden = true;
   elements.get("stage-venue-import-modal").hidden = true;
+  elements.get("stage-venue-discard-backdrop").hidden = true;
+  elements.get("stage-venue-discard-modal").hidden = true;
 
   const makeButtons = (values, dataKey) => values.map((value) => {
     const button = new FakeElement();
@@ -170,10 +204,19 @@ function loadEditor(storage = new MemoryStorage()) {
     return button;
   });
   const selectors = new Map([
-    ["[data-venue-editor-shape]", makeButtons(["rectangle", "l-shape", "circle", "trapezoid"], "venueEditorShape")],
+    ["[data-venue-editor-stage-format]", makeButtons(["theatre", "thrust", "in-the-round"], "venueEditorStageFormat")],
+    ["[data-venue-editor-shape]", makeButtons(["rectangle", "l-shape", "circle", "freeform"], "venueEditorShape")],
+    ["[data-venue-editor-extension-shape]", makeButtons(["rectangle", "circle"], "venueEditorExtensionShape")],
+    ["[data-venue-editor-area-mode]", ["audience", "wing"].flatMap((kind) =>
+      ["rectangle", "circle"].map((shape) => {
+        const button = new FakeElement();
+        button.dataset.venueEditorAreaMode = kind;
+        button.dataset.venueEditorAreaShape = shape;
+        return button;
+      }))],
+    ["[data-venue-editor-wing]", makeButtons(["left", "right"], "venueEditorWing")],
     ["[data-venue-editor-mode]", makeButtons(["select", "column", "furniture", "door"], "venueEditorMode")],
     ["[data-venue-editor-furniture-height]", makeButtons(["knee", "waist", "person", "ceiling"], "venueEditorFurnitureHeight")],
-    ["[data-venue-editor-ceiling-height]", makeButtons(["3", "4", "6", "8", "10"], "venueEditorCeilingHeight")],
     ["[data-venue-editor-rigging]", makeButtons(["none", "limited", "full"], "venueEditorRigging")],
     ["[data-venue-editor-line-toggle]", makeButtons(["movement", "fall", "blind", "sight"], "venueEditorLineToggle")],
   ]);
@@ -208,9 +251,17 @@ function loadEditor(storage = new MemoryStorage()) {
       if (this.onload) this.onload();
     }
   }
+  const windowListeners = new Map();
   const window = {
     localStorage: storage,
-    dispatchEvent() {},
+    addEventListener(type, listener) {
+      if (!windowListeners.has(type)) windowListeners.set(type, []);
+      windowListeners.get(type).push(listener);
+    },
+    dispatchEvent(event) {
+      (windowListeners.get(event.type) || []).forEach((listener) => listener(event));
+      return true;
+    },
     CustomEvent: FakeCustomEvent,
     setTimeout,
     clearTimeout,
@@ -246,8 +297,124 @@ function loadEditor(storage = new MemoryStorage()) {
     };
   };
   const pointer = (type, point, pointerId = 1) => canvas.dispatchEvent(pointEvent(type, point, pointerId));
-  return { window, elements, button, pointer, storage, drawFills, selectors, documentListeners, fileReads };
+  return { window, elements, button, pointer, storage, drawFills, drawText, selectors, documentListeners, fileReads };
 }
+
+test("形式一覧の末尾と劇場パネルの劇場セットアップ入口から、従来の寸法入力を出さず会場モーダルを開く", () => {
+  assert.match(indexSource,
+    /id="stage-venue-custom-open"[^>]*aria-haspopup="dialog"[^>]*aria-controls="stage-venue-editor-modal">劇場セットアップ</);
+  assert.match(indexSource, /id="stage-venue-editor-title">劇場セットアップ</);
+  for (const id of ["stage-venue-dims", "stage-venue-w", "stage-venue-d", "stage-venue-h", "stage-venue-reset"]) {
+    assert.doesNotMatch(indexSource, new RegExp(`id="${id}"`), id);
+  }
+  assert.match(sketchSource,
+    /custom\.value = "__create_custom_venue__";[\s\S]*?custom\.textContent = tx\("カスタム"\);[\s\S]*?venueSelect\.append\(custom\);/);
+  assert.match(sketchSource,
+    /if \(e\.target\.value === "__create_custom_venue__"\)[\s\S]*?e\.target\.value = state\.project\.venue;[\s\S]*?syncVenueEditorTemplate\(\);[\s\S]*?return;/);
+  assert.match(sketchSource,
+    /venueCustomOpen\.addEventListener\("click", \(\) => \{[\s\S]*?syncVenueEditorTemplate\(\);[\s\S]*?window\.dispatchEvent\(new Event\("stage-venue-editor-open"\)\)/);
+  assert.match(sketchSource,
+    /previewVenueEditorTemplate\(e\.target\.value, state\.project\.venueSize\);/);
+  assert.match(sketchSource,
+    /sizeSelect\.addEventListener\("change", \(e\) => \{\s*previewVenueEditorTemplate\(/);
+
+  const editor = loadEditor();
+  assert.equal(editor.elements.get("stage-venue-editor-modal").hidden, true);
+  editor.window.dispatchEvent({ type: "stage-venue-editor-open" });
+  assert.equal(editor.elements.get("stage-venue-editor-modal").hidden, false);
+});
+
+test("未反映の劇場編集は閉じる前に警告し、破棄すると開始時の下書きへ戻す", () => {
+  const editor = loadEditor();
+  editor.window.dispatchEvent({ type: "stage-venue-editor-open" });
+  editor.button(
+    "[data-venue-editor-stage-format]", "thrust", "venueEditorStageFormat",
+  ).click();
+
+  editor.elements.get("stage-venue-editor-close").click();
+  assert.equal(editor.elements.get("stage-venue-editor-modal").hidden, false);
+  assert.equal(editor.elements.get("stage-venue-discard-modal").hidden, false);
+
+  editor.elements.get("stage-venue-discard-cancel").click();
+  assert.equal(editor.elements.get("stage-venue-discard-modal").hidden, true);
+  assert.equal(editor.elements.get("stage-venue-editor-modal").hidden, false);
+
+  editor.elements.get("stage-venue-editor-close").click();
+  editor.elements.get("stage-venue-discard-confirm").click();
+  assert.equal(editor.elements.get("stage-venue-editor-modal").hidden, true);
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().stageFormat, "theatre");
+});
+
+test("ライブラリ保存だけでは反映せず、反映ボタンで初めて選択中の劇場を通知する", () => {
+  const editor = loadEditor();
+  const applied = [];
+  editor.window.addEventListener("stage-venue-saved", (event) => applied.push(event.detail.venue));
+  editor.window.dispatchEvent({ type: "stage-venue-editor-open" });
+
+  const saved = editor.window.SHOSAI_VENUE_EDITOR.save();
+  assert.ok(saved);
+  assert.equal(applied.length, 0);
+  assert.equal(editor.elements.get("stage-venue-editor-modal").hidden, false);
+
+  editor.elements.get("stage-venue-editor-apply").click();
+  assert.equal(applied.length, 1);
+  assert.equal(applied[0].id, saved.id, "編集が変わっていないときは保存済み劇場を再利用する");
+  assert.equal(editor.elements.get("stage-venue-editor-modal").hidden, true);
+
+  editor.elements.get("stage-venue-editor-name").value = "";
+  editor.window.dispatchEvent({ type: "stage-venue-editor-open" });
+  editor.elements.get("stage-venue-editor-apply").click();
+  assert.equal(applied.length, 2);
+  assert.match(applied[1].label, /(?:（編集）$|^カスタム劇場\d+$)/,
+    "任意の劇場名が空でも、現在の形式から自動名を付けて反映する");
+});
+
+test("劇場形式プリセットと規模を変えると制作中の床・形式・客席・天井を一緒に入れ替える", () => {
+  const editor = loadEditor();
+  const apply = (venueId, sizeId) => editor.window.dispatchEvent({
+    type: "stage-venue-editor-template",
+    detail: { venueId, sizeId },
+  });
+  const dimensionsOf = (outline) => {
+    const xs = outline.map((point) => point[0]);
+    const ys = outline.map((point) => point[1]);
+    return [Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
+  };
+
+  apply("proscenium", "mid");
+  let venue = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.equal(venue.stageFormat, "theatre");
+  assert.deepEqual(dimensionsOf(venue.floor.outline), [12, 9]);
+  assert.equal(venue.audience.length, 1);
+  assert.equal(venue.ceiling.heightM, 8);
+  assert.equal(editor.elements.get("stage-venue-editor-confidence").value, "low",
+    "プリセットの根拠確度を新しいカスタム会場の確度へ流用しない");
+
+  apply("thrust", "small");
+  venue = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.equal(venue.stageFormat, "thrust");
+  assert.deepEqual(dimensionsOf(venue.floor.outline), [9, 8]);
+  assert.equal(venue.audience.length, 3);
+
+  editor.elements.get("stage-venue-editor-undo").click();
+  venue = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.equal(venue.stageFormat, "theatre");
+  assert.deepEqual(dimensionsOf(venue.floor.outline), [12, 9]);
+  editor.elements.get("stage-venue-editor-redo").click();
+  venue = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.equal(venue.stageFormat, "thrust");
+
+  apply("arena", "onering");
+  venue = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.equal(venue.stageFormat, "in-the-round");
+  assert.ok(venue.floor.outline.length >= 24);
+  assert.equal(venue.audience.length, 32);
+  assert.equal(venue.ceiling.heightM, 12);
+  assert.equal(
+    editor.button("[data-venue-editor-shape]", "circle", "venueEditorShape")["aria-pressed"],
+    "true",
+  );
+});
 
 function selectLibraryFile(editor, document, options = {}) {
   const contents = typeof document === "string" ? document : JSON.stringify(document);
@@ -268,7 +435,7 @@ test("旧下書きは一度だけ会場ライブラリへ取り込み、旧キ�
   assert.equal(second.venues.library.list().length, 1, "再起動で旧下書きを重複取り込みしない");
 });
 
-test("会場セレクト用一覧は既存10プリセットの後ろにライブラリ会場を並べる", () => {
+test("会場セレクト用一覧は汎用10形式の後ろに読み込み済み会場を並べる", () => {
   const storage = new MemoryStorage({
     "shosai-stage-venues-v1": JSON.stringify([venue("hall-a", "大広間")]),
   });
@@ -277,12 +444,42 @@ test("会場セレクト用一覧は既存10プリセットの後ろにライブ
     Array.from(venues.list, (item) => item.id),
     [
       "proscenium", "thrust", "arena", "outdoor", "blackbox",
-      "chapiteau", "circus-theatre", "theatre-tram", "tohu", "cirque-dhiver",
+      // 2026-09-12 本人承認により会場3種を追加
+      "arena-concert", "dome-concert", "festival-field",
+      "chapiteau", "circus-theatre",
       "hall-a",
     ],
   );
   assert.equal(venues.byId("hall-a").custom, true);
   assert.deepEqual(Array.from(venues.byId("hall-a").outline[0]), [2, 2]);
+});
+
+test("実在劇場は初期一覧に出さず、読み込んだデータと旧ショーのIDは使える", () => {
+  const storage = new MemoryStorage();
+  const { venues, io } = loadModels(storage);
+  const ids = ["theatre-tram", "tohu", "cirque-dhiver"];
+  const original = ids.map((id) => venues.library.venueV2ById(id));
+  for (const id of ids) {
+    assert.equal(venues.list.some((v) => v.id === id), false);
+    assert.equal(venues.v2.list.some((v) => v.id === id), false);
+    assert.equal(venues.byId(id).missing, undefined);
+  }
+  const imported = venues.library.importVenues(original);
+  assert.equal(imported.imported, 3);
+  const reloaded = loadModels(storage);
+  original.forEach((data) => {
+    const id = imported.idMap[data.id];
+    assert.notEqual(id, data.id, "同梱データのIDを上書きしない");
+    assert.ok(reloaded.venues.list.some((v) => v.id === id), "読み込み後と再起動後は選べる");
+    assert.ok(reloaded.venues.v2.list.some((v) => v.id === id));
+    assert.equal(JSON.stringify(reloaded.venues.v2.byId(id)), JSON.stringify({ ...data, id }));
+    const exported = io.exportDocument({ venue: id, venueSize: "custom" });
+    assert.equal(exported.venues.length, 1, "ショーの書き出しにも会場データを同梱できる");
+    const fresh = loadModels();
+    const restored = fresh.io.prepareImportDocument(exported);
+    assert.equal(restored.venueImport.imported, 1);
+    assert.equal(JSON.stringify(fresh.venues.v2.byId(restored.project.venue).floor), JSON.stringify(data.floor));
+  });
 });
 
 test("SHOSAI_VENUES.listの先頭5プリセットは値も並びも変えない", () => {
@@ -305,6 +502,7 @@ test("柱・什器・扉・天井とmovableは会場ライブラリを往復す�
   const storage = new MemoryStorage();
   const first = loadModels(storage);
   const complete = venue("fixture-room", "設営確認室");
+  complete.stageFormat = "thrust";
   complete.ceiling = { heightM: 4, rigging: "none", note: "段階選択" };
   complete.fixtures = [
     { type: "column", at: [7, 6], radiusM: 0.4, heightM: 4, label: "柱", movable: false },
@@ -318,10 +516,351 @@ test("柱・什器・扉・天井とmovableは会場ライブラリを往復す�
     "shosai-stage-venues-v1": JSON.stringify(document),
   });
   const restored = loadModels(restoredStorage).venues.library.list()[0];
+  assert.equal(restored.stageFormat, "thrust");
   assert.deepEqual(JSON.parse(JSON.stringify(restored.ceiling)), complete.ceiling);
   assert.deepEqual(JSON.parse(JSON.stringify(restored.fixtures)), complete.fixtures);
   assert.deepEqual(JSON.parse(JSON.stringify(restored.access)), complete.access);
   assert.deepEqual(Array.from(restored.fixtures, (item) => item.movable), [false, true]);
+});
+
+test("旧会場データのステージ形式は劇場式として読み込む", () => {
+  const { venues } = loadModels(new MemoryStorage({
+    "shosai-stage-venues-v1": JSON.stringify([venue("legacy-format", "旧形式")]),
+  }));
+  assert.equal(venues.library.list()[0].stageFormat, "theatre");
+});
+
+test("5番と6番で四角・丸を配置し、重なりを合成して保存する", () => {
+  const editor = loadEditor();
+  const areaMode = (kind, shape = "rectangle") => editor.selectors
+    .get("[data-venue-editor-area-mode]")
+    .find((button) => button.dataset.venueEditorAreaMode === kind &&
+      button.dataset.venueEditorAreaShape === shape)
+    .click();
+  const draw = (from, to, pointerId) => {
+    editor.pointer("pointerdown", from, pointerId);
+    editor.pointer("pointermove", to, pointerId);
+    editor.pointer("pointerup", to, pointerId);
+  };
+
+  assert.match(indexSource,
+    /class="stage-venue-editor-audience-guide"[\s\S]*?data-venue-editor-area-mode="audience"[\s\S]*?id="stage-venue-editor-audience-full"[^>]*>全周に配置[\s\S]*?<\/section>/,
+    "全周配置ボタンが5番のボックス内にない");
+  assert.match(indexSource, /data-venue-editor-area-mode="wing"/);
+
+  areaMode("audience", "rectangle");
+  draw([0, 10], [2, 14], 1);
+  areaMode("audience", "circle");
+  draw([2.5, 12], [3.5, 12], 2);
+  let preview = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.deepEqual(Array.from(preview.audience[0].polygon, (point) => Array.from(point)),
+    [[0, 10], [2, 10], [2, 14], [0, 14]]);
+  assert.equal(preview.audience[0].shape, "rectangle");
+  assert.equal(preview.audience[1].polygon.length, 24);
+  assert.equal(preview.audience[1].shape, "circle");
+  assert.equal(preview.audience[0].mode, "audience");
+  const audienceMerge = editor.elements.get("stage-venue-editor-audience-merge");
+  assert.equal(audienceMerge.disabled, false);
+  audienceMerge.click();
+  preview = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.deepEqual(Array.from(preview.audience, (area) => area.merged), [true, true]);
+
+  areaMode("wing", "rectangle");
+  draw([1, 4], [4, 9], 3);
+  areaMode("wing", "circle");
+  draw([4.5, 7], [6, 7], 4);
+  preview = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.deepEqual(Array.from(preview.stageWings[0].polygon, (point) => Array.from(point)),
+    [[1, 4], [4, 4], [4, 9], [1, 9]]);
+  assert.equal(preview.stageWings[0].shape, "rectangle");
+  assert.equal(preview.stageWings[1].polygon.length, 24);
+  assert.equal(preview.stageWings[1].shape, "circle");
+  assert.equal(preview.stageWings[0].side, "custom");
+  assert.ok(editor.drawText.includes("舞台袖"), "図面上に舞台袖の文字表示がない");
+  const wingMerge = editor.elements.get("stage-venue-editor-wing-merge");
+  assert.equal(wingMerge.disabled, false);
+  wingMerge.click();
+  preview = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.deepEqual(Array.from(preview.stageWings, (area) => area.merged), [true, true]);
+
+  const saved = editor.window.SHOSAI_VENUE_EDITOR.save();
+  const restored = loadModels(editor.storage).venues.library.venueV2ById(saved.id);
+  assert.deepEqual(Array.from(restored.audience, (area) => [area.shape, area.merged]),
+    [["rectangle", true], ["circle", true]]);
+  assert.deepEqual(Array.from(restored.stageWings, (area) => [area.shape, area.merged]),
+    [["rectangle", true], ["circle", true]]);
+});
+
+test("ステージ・客席・舞台袖が重なると2択を出し、選ばなかった側だけを切り取る", () => {
+  const modalMarkup = indexSource.match(/<div class="stage-modal stage-venue-conflict-modal"[\s\S]*?<\/div>\s*<\/div>/)?.[0] || "";
+  assert.match(modalMarkup, /role="alertdialog"/);
+  assert.equal((modalMarkup.match(/<button\b/g) || []).length, 2, "重なり警告は優先する2択だけにする");
+  assert.doesNotMatch(modalMarkup, /stage-modal-close/);
+  assert.match(styleSource, /\.stage-venue-conflict-actions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(editorSource,
+    /const pairs = \[\["stage", "audience"\], \["stage", "wing"\], \["audience", "wing"\]\];/);
+
+  const editor = loadEditor();
+  const audienceRectangle = editor.selectors.get("[data-venue-editor-area-mode]")
+    .find((button) => button.dataset.venueEditorAreaMode === "audience" &&
+      button.dataset.venueEditorAreaShape === "rectangle");
+  const draw = (from, to, pointerId) => {
+    editor.pointer("pointerdown", from, pointerId);
+    editor.pointer("pointermove", to, pointerId);
+    editor.pointer("pointerup", to, pointerId);
+  };
+  const conflictModal = editor.elements.get("stage-venue-conflict-modal");
+  const first = editor.elements.get("stage-venue-conflict-first");
+  const second = editor.elements.get("stage-venue-conflict-second");
+
+  audienceRectangle.click();
+  draw([14, 8], [20, 14], 41);
+  assert.equal(conflictModal.hidden, false);
+  assert.equal(first.textContent, "ステージを優先");
+  assert.equal(second.textContent, "客席を優先");
+  first.click();
+  let preview = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.equal(conflictModal.hidden, true);
+  assert.ok(Math.abs(polygonsArea(preview.audience.map((area) => area.polygon)) - 20) < 0.001,
+    "ステージと重なる16㎡だけを客席から切り取れていない");
+  assert.equal(polygonsArea([preview.floor.outline]), 96);
+
+  editor.elements.get("stage-venue-editor-undo").click();
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().audience.length, 0,
+    "警告の選択と切り取りを1回のUndoで戻せない");
+
+  draw([14, 8], [20, 14], 42);
+  second.click();
+  preview = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  const stagePieces = [preview.floor.outline]
+    .concat(preview.floor.extensions.map((item) => item.polygon));
+  assert.equal(conflictModal.hidden, true);
+  assert.ok(Math.abs(polygonsArea(stagePieces) - 80) < 0.001,
+    "客席と重なる16㎡だけをステージから切り取れていない");
+  assert.equal(polygonsArea(preview.audience.map((area) => area.polygon)), 36);
+  assert.ok(preview.floor.extensions.every((item) => item.cutout && item.merged),
+    "分割されたステージ片を一体面として保存していない");
+});
+
+test("客席と舞台袖の重なりも、選択した優先側を残して切り取る", () => {
+  const editor = loadEditor();
+  const areaMode = (kind) => editor.selectors.get("[data-venue-editor-area-mode]")
+    .find((button) => button.dataset.venueEditorAreaMode === kind &&
+      button.dataset.venueEditorAreaShape === "rectangle").click();
+  const draw = (from, to, pointerId) => {
+    editor.pointer("pointerdown", from, pointerId);
+    editor.pointer("pointermove", to, pointerId);
+    editor.pointer("pointerup", to, pointerId);
+  };
+
+  areaMode("audience");
+  draw([0, 10], [5, 14], 45);
+  areaMode("wing");
+  draw([3, 12], [8, 16], 46);
+  const first = editor.elements.get("stage-venue-conflict-first");
+  const second = editor.elements.get("stage-venue-conflict-second");
+  assert.equal(first.textContent, "客席を優先");
+  assert.equal(second.textContent, "舞台袖を優先");
+  second.click();
+  const preview = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.ok(Math.abs(polygonsArea(preview.audience.map((area) => area.polygon)) - 16) < 0.001);
+  assert.equal(polygonsArea(preview.stageWings.map((area) => area.polygon)), 20);
+});
+
+test("丸い客席がステージへ重なった場合も、曲線側の重複だけを切り取る", () => {
+  const editor = loadEditor();
+  editor.selectors.get("[data-venue-editor-area-mode]")
+    .find((button) => button.dataset.venueEditorAreaMode === "audience" &&
+      button.dataset.venueEditorAreaShape === "circle").click();
+  editor.pointer("pointerdown", [18, 8], 47);
+  editor.pointer("pointermove", [21, 8], 47);
+  editor.pointer("pointerup", [21, 8], 47);
+  editor.elements.get("stage-venue-conflict-first").click();
+
+  const preview = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  const remainingAudienceArea = polygonsArea(preview.audience.map((area) => area.polygon));
+  assert.equal(editor.elements.get("stage-venue-conflict-modal").hidden, true);
+  assert.ok(remainingAudienceArea > 13.5 && remainingAudienceArea < 14.5,
+    `半円相当を残せていない: ${remainingAudienceArea}㎡`);
+  assert.equal(preview.floor.outline.length, 4);
+});
+
+test("3番で四角と丸の追加ステージを既存舞台へ接続し、同じ床として保存する", () => {
+  const editor = loadEditor();
+  const extensionMode = (value) => editor.button(
+    "[data-venue-editor-extension-shape]", value, "venueEditorExtensionShape",
+  ).click();
+  const draw = (from, to, pointerId) => {
+    editor.pointer("pointerdown", from, pointerId);
+    editor.pointer("pointermove", to, pointerId);
+    editor.pointer("pointerup", to, pointerId);
+  };
+
+  extensionMode("rectangle");
+  draw([18, 6], [21, 10], 51);
+  let preview = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.equal(preview.floor.extensions.length, 1);
+  assert.equal(preview.floor.extensions[0].shape, "rectangle");
+  assert.deepEqual(Array.from(preview.floor.extensions[0].polygon, (point) => Array.from(point)),
+    [[18, 6], [21, 6], [21, 10], [18, 10]]);
+  assert.equal(editor.window.SHOSAI_VENUE_LINES.movementStatusAt(preview, [20, 8]).allowed, true,
+    "追加した四角が舞台面として扱われていない");
+
+  extensionMode("circle");
+  draw([10, 4], [10, 2], 52);
+  preview = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.equal(preview.floor.extensions.length, 2);
+  assert.equal(preview.floor.extensions[1].shape, "circle");
+  assert.equal(preview.floor.extensions[1].polygon.length, 24);
+
+  extensionMode("rectangle");
+  draw([0, 0], [2, 2], 53);
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().floor.extensions.length, 2,
+    "離れた四角を同じ舞台として追加した");
+
+  const undo = editor.elements.get("stage-venue-editor-undo");
+  const redo = editor.elements.get("stage-venue-editor-redo");
+  undo.click();
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().floor.extensions.length, 1);
+  redo.click();
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().floor.extensions.length, 2);
+
+  const saved = editor.window.SHOSAI_VENUE_EDITOR.save();
+  const restored = loadModels(editor.storage).venues.library.venueV2ById(saved.id);
+  assert.equal(restored.floor.extensions.length, 2);
+  assert.deepEqual(Array.from(restored.floor.extensions, (item) => item.shape), ["rectangle", "circle"]);
+});
+
+test("追加した四角・丸を接続範囲内で動かし、重なりを合成して戻せる", () => {
+  const editor = loadEditor();
+  const rectangle = editor.button(
+    "[data-venue-editor-extension-shape]", "rectangle", "venueEditorExtensionShape",
+  );
+  const canvasMove = (from, to, pointerId) => {
+    editor.pointer("pointerdown", from, pointerId);
+    editor.pointer("pointermove", to, pointerId);
+    editor.pointer("pointerup", to, pointerId);
+  };
+  rectangle.click();
+  canvasMove([16, 6], [20, 10], 81);
+
+  const merge = editor.elements.get("stage-venue-editor-extension-merge");
+  assert.equal(merge.disabled, false, "重なった追加ステージがあるのに合成できない");
+
+  canvasMove([19, 8], [20, 8], 82);
+  let extension = editor.window.SHOSAI_VENUE_EDITOR.getVenue().floor.extensions[0];
+  assert.deepEqual(Array.from(extension.polygon, (point) => Array.from(point)),
+    [[17, 6], [21, 6], [21, 10], [17, 10]], "追加ステージをドラッグ移動できない");
+
+  canvasMove([20, 8], [26, 8], 83);
+  extension = editor.window.SHOSAI_VENUE_EDITOR.getVenue().floor.extensions[0];
+  assert.deepEqual(Array.from(extension.polygon, (point) => Array.from(point)),
+    [[17, 6], [21, 6], [21, 10], [17, 10]], "接続が切れる位置へ動かしている");
+
+  merge.click();
+  extension = editor.window.SHOSAI_VENUE_EDITOR.getVenue().floor.extensions[0];
+  assert.equal(extension.merged, true);
+  assert.equal(merge.disabled, true, "合成済みの形をもう一度合成できる");
+
+  editor.elements.get("stage-venue-editor-undo").click();
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().floor.extensions[0].merged, undefined);
+  editor.elements.get("stage-venue-editor-redo").click();
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().floor.extensions[0].merged, true);
+
+  const beforeMergedMove = JSON.stringify(editor.window.SHOSAI_VENUE_EDITOR.getVenue().floor.extensions[0].polygon);
+  canvasMove([20, 8], [19, 8], 84);
+  assert.equal(JSON.stringify(editor.window.SHOSAI_VENUE_EDITOR.getVenue().floor.extensions[0].polygon), beforeMergedMove,
+    "合成後の一体面から追加形状だけを動かしている");
+
+  const saved = editor.window.SHOSAI_VENUE_EDITOR.save();
+  const restored = loadModels(editor.storage).venues.library.venueV2ById(saved.id);
+  assert.equal(restored.floor.extensions[0].merged, true, "合成状態が会場ライブラリを往復していない");
+});
+
+test("劇場セットアップのボタンとショートカットで編集を戻し、やり直せる", () => {
+  const editor = loadEditor();
+  const audienceMode = editor.button(
+    "[data-venue-editor-area-mode]", "audience", "venueEditorAreaMode",
+  );
+  const undo = editor.elements.get("stage-venue-editor-undo");
+  const redo = editor.elements.get("stage-venue-editor-redo");
+  const canvas = editor.elements.get("stage-venue-editor-canvas");
+  const keydown = editor.documentListeners.get("keydown");
+
+  assert.equal(undo.disabled, true);
+  assert.equal(redo.disabled, true);
+  audienceMode.click();
+  editor.pointer("pointerdown", [2, 10], 71);
+  editor.pointer("pointermove", [5, 14], 71);
+  editor.pointer("pointerup", [5, 14], 71);
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().audience.length, 1);
+  assert.equal(undo.disabled, false);
+
+  undo.click();
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().audience.length, 0);
+  assert.equal(redo.disabled, false);
+  redo.click();
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().audience.length, 1);
+
+  editor.window.dispatchEvent({ type: "stage-venue-editor-open" });
+  let prevented = 0;
+  keydown({
+    key: "z", metaKey: true, ctrlKey: false, shiftKey: false, target: canvas,
+    preventDefault() { prevented += 1; },
+  });
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().audience.length, 0);
+  keydown({
+    key: "Z", metaKey: true, ctrlKey: false, shiftKey: true, target: canvas,
+    preventDefault() { prevented += 1; },
+  });
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().audience.length, 1);
+  assert.equal(prevented, 2);
+
+  editor.elements.get("stage-venue-editor-zoom-out").click();
+  undo.click();
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().audience.length, 0,
+    "表示倍率を履歴へ混ぜている");
+
+  const name = editor.elements.get("stage-venue-editor-name");
+  keydown({
+    key: "z", metaKey: true, ctrlKey: false, shiftKey: false, target: name,
+    preventDefault() { prevented += 1; },
+  });
+  assert.equal(prevented, 2, "文字入力欄の標準Undoを横取りしている");
+});
+
+test("360度ステージだけは5番の全周配置から隙間のない客席を作り、区画を選択削除できる", () => {
+  const editor = loadEditor();
+  const format = (value) => editor.button(
+    "[data-venue-editor-stage-format]", value, "venueEditorStageFormat",
+  ).click();
+
+  assert.equal(editor.elements.get("stage-venue-editor-audience-full").hidden, true,
+    "劇場式で全周配置ボタンが表示されている");
+  assert.equal(editor.elements.get("stage-venue-editor-audience-full").disabled, true);
+  format("in-the-round");
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().audience.length, 0,
+    "全周配置ボタンを押す前に客席を自動配置している");
+  assert.equal(editor.elements.get("stage-venue-editor-audience-full").hidden, false,
+    "360度ステージで全周配置ボタンが表示されていない");
+  assert.equal(editor.elements.get("stage-venue-editor-audience-full").disabled, false);
+  editor.elements.get("stage-venue-editor-audience-full").click();
+  let preview = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.equal(preview.audience.length, 4);
+  preview.audience.forEach((area, index) => {
+    const next = preview.audience[(index + 1) % preview.audience.length];
+    assert.deepEqual(Array.from(area.polygon[2]), Array.from(next.polygon[3]),
+      `客席の外周が辺${index + 1}と辺${index + 2}の間で割れている`);
+  });
+
+  const first = preview.floor.outline[0];
+  const second = preview.floor.outline[1];
+  const midpoint = [(first[0] + second[0]) / 2, (first[1] + second[1]) / 2];
+  editor.pointer("pointerdown", midpoint, 9);
+  editor.pointer("pointerup", midpoint, 9);
+  editor.elements.get("stage-venue-editor-audience-remove").click();
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().audience.length, 3,
+    "全周客席から選択した1区画を削除できない");
 });
 
 test("エディタ操作で柱1本・什器1つ・扉1つと独立した天井条件をvenue-v2保存できる", () => {
@@ -354,7 +893,9 @@ test("エディタ操作で柱1本・什器1つ・扉1つと独立した天井�
   editor.pointer("pointerup", [12, 4], 4);
 
   editor.button("[data-venue-editor-rigging]", "full", "venueEditorRigging").click();
-  editor.button("[data-venue-editor-ceiling-height]", "4", "venueEditorCeilingHeight").click();
+  const ceilingHeight = editor.elements.get("stage-venue-editor-ceiling-height");
+  ceilingHeight.value = "4";
+  ceilingHeight.dispatchEvent({ type: "change" });
   assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getVenue().ceiling.rigging, "full", "高さを変えても吊り条件は連動しない");
   editor.button("[data-venue-editor-rigging]", "none", "venueEditorRigging").click();
 
@@ -369,10 +910,8 @@ test("エディタ操作で柱1本・什器1つ・扉1つと独立した天井�
   assert.deepEqual(JSON.parse(JSON.stringify(preview.ceiling)), {
     heightM: 4,
     rigging: "none",
-    note: "段階選択の目安。実会場では要確認。",
+    note: "数値入力の目安。実劇場では要確認。",
   });
-  assert.equal(editor.elements.get("stage-venue-h").value, "4", "既存の高さ入力欄へ橋渡しする");
-
   const saved = editor.window.SHOSAI_VENUE_EDITOR.save();
   assert.ok(saved);
   const restored = loadModels(editor.storage).venues.library.venueV2ById(saved.id);
@@ -395,16 +934,16 @@ test("会場ファイルはプレビュー確認まで書き込まず、確定�
 
   assert.equal(editor.elements.get("stage-venue-import-modal").hidden, false);
   assert.equal(JSON.stringify(editor.window.SHOSAI_VENUES.library.list()), before, "確認前に書き込んでいる");
-  assert.match(editor.elements.get("stage-venue-import-summary").textContent, /取り込める会場が1件/);
-  assert.match(editor.elements.get("stage-venue-import-summary").textContent, /取り込めない会場が0件/);
+  assert.match(editor.elements.get("stage-venue-import-summary").textContent, /取り込める劇場が1件/);
+  assert.match(editor.elements.get("stage-venue-import-summary").textContent, /取り込めない劇場が0件/);
   const cells = editor.elements.get("stage-venue-import-list").children[0].children
     .map((cell) => cell.textContent);
   assert.deepEqual(cells, ["確認する会場", "12m", "8m", "8m", "図面"]);
 
   editor.elements.get("stage-venue-import-confirm").click();
   assert.equal(editor.window.SHOSAI_VENUES.library.list().length, 2);
-  assert.match(editor.elements.get("stage-venue-library-status").textContent, /1件の会場を取り込みました/);
-  assert.match(editor.elements.get("stage-venue-library-status").textContent, /取り込めなかった会場は0件/);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /1件の劇場を取り込みました/);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /取り込めなかった劇場は0件/);
 });
 
 test("やめる・暗幕・Escapeはいずれも会場ライブラリを変えない", () => {
@@ -448,11 +987,11 @@ test("2MB超過・壊れたJSON・壊れたvenue-v2は書き込まず理由と�
   const broken = venue("broken", "高さが壊れた会場");
   broken.ceiling.heightM = 0;
   selectLibraryFile(editor, [venue("valid", "取り込める会場"), broken]);
-  assert.match(editor.elements.get("stage-venue-import-summary").textContent, /取り込めない会場が1件/);
+  assert.match(editor.elements.get("stage-venue-import-summary").textContent, /取り込めない劇場が1件/);
   assert.equal(library.list().length, 0, "壊れた会場の検査中に書き込んでいる");
   editor.elements.get("stage-venue-import-confirm").click();
   assert.deepEqual(Array.from(library.list(), (item) => item.id), ["valid"]);
-  assert.match(editor.elements.get("stage-venue-library-status").textContent, /取り込めなかった会場は1件/);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /取り込めなかった劇場は1件/);
 });
 
 test("201件は先頭200件だけ候補にし、切り捨てた1件を確認前後の文言へ出す", () => {
@@ -469,7 +1008,7 @@ test("201件は先頭200件だけ候補にし、切り捨てた1件を確認前�
   assert.equal(editor.window.SHOSAI_VENUES.library.list().length, 200);
   assert.match(editor.elements.get("stage-venue-library-status").textContent, /201件のうち200件を取り込みました/);
   assert.match(editor.elements.get("stage-venue-library-status").textContent, /残り1件/);
-  assert.match(editor.elements.get("stage-venue-library-status").textContent, /取り込めなかった会場は1件/);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /取り込めなかった劇場は1件/);
 });
 
 test("201件の先頭200件がすべて壊れていても、上限で切り捨てた1件を伝える", () => {
@@ -483,7 +1022,7 @@ test("201件の先頭200件がすべて壊れていても、上限で切り捨�
   selectLibraryFile(editor, incoming);
   assert.equal(editor.elements.get("stage-venue-import-modal").hidden, true);
   assert.equal(editor.window.SHOSAI_VENUES.library.list().length, 0);
-  assert.match(editor.elements.get("stage-venue-library-status").textContent, /取り込めない会場が200件/);
+  assert.match(editor.elements.get("stage-venue-library-status").textContent, /取り込めない劇場が200件/);
   assert.match(editor.elements.get("stage-venue-library-status").textContent, /全201件のうち先頭200件を検査しました/);
   assert.match(editor.elements.get("stage-venue-library-status").textContent, /残り1件/);
 });
@@ -503,16 +1042,17 @@ test("確認モーダルの静的文言は英語対訳を持つ", () => {
   }
 });
 
-test("受け入れ会場で4本の線・探り針・赤い観客重なりを即時に更新しvenueへ保存しない", () => {
+test("受け入れ会場で可動範囲・死角・見える限界を即時に更新しvenueへ保存しない", () => {
   const editor = loadEditor();
   const mode = (value) => editor.button("[data-venue-editor-mode]", value, "venueEditorMode").click();
+  const areaMode = (value) => editor.button("[data-venue-editor-area-mode]", value, "venueEditorAreaMode").click();
   const lineArea = () => editor.window.SHOSAI_VENUE_EDITOR.getLines().result.movement.areas
     .reduce((sum, area) => sum + (area.width * area.height), 0);
 
-  for (const point of [[12, 4], [18, 8], [12, 12]]) {
-    editor.pointer("pointerdown", point);
-    editor.pointer("pointerup", point);
-  }
+  areaMode("audience");
+  editor.pointer("pointerdown", [6, 12], 1);
+  editor.pointer("pointermove", [18, 15], 1);
+  editor.pointer("pointerup", [18, 15], 1);
 
   mode("column");
   editor.pointer("pointerdown", [12, 8], 2);
@@ -530,32 +1070,18 @@ test("受け入れ会場で4本の線・探り針・赤い観客重なりを即�
   movable.dispatchEvent({ type: "change" });
   const expandedArea = lineArea();
 
-  editor.window.SHOSAI_VENUE_EDITOR.setCeilingHeight(4);
-  editor.window.SHOSAI_VENUE_EDITOR.setRigging("none");
-  editor.window.SHOSAI_VENUE_EDITOR.setProbeTool("juggling");
-  editor.window.SHOSAI_VENUE_EDITOR.setProbeReach(4);
-  mode("select");
-  editor.pointer("pointerdown", [12, 8], 4);
-  editor.pointer("pointerup", [12, 10.8], 4);
-
   const lines = editor.window.SHOSAI_VENUE_EDITOR.getLines();
   assert.ok(lines.result.movement.areas.length > 0);
   assert.ok(expandedArea > fixedArea, "movable:trueで可動範囲が広がっていない");
   assert.equal(lines.result.movement.movableExtensions.length, 1, "可動什器の破線用輪郭がない");
   assert.ok(lines.result.blindSpots.areas.length > 0, "柱の後ろに死角がない");
   assert.equal(lines.result.sightLimits.length, 0, "小部屋なのに20m/35m線がある");
-  assert.deepEqual(Array.from(lines.probe.at), [12, 10.8], "pointerup位置で探り針を正確に確定していない");
-  assert.equal(lines.result.fall.audienceOverlap, true);
-  assert.ok(editor.drawFills.includes("rgba(238,55,48,0.88)"), "観客との重なりを赤く塗っていない");
-  assert.match(editor.elements.get("stage-venue-editor-probe-status").textContent, /赤く表示/);
+  assert.ok(!editor.drawFills.includes("rgba(238,55,48,0.88)"), "削除した落下範囲が描画されている");
 
   const savedShape = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
   assert.equal("lines" in savedShape, false);
   assert.equal("probe" in savedShape, false);
   assert.ok(editor.selectors.get("[data-venue-editor-line-toggle]").every((input) => input.checked));
-  const aerial = editor.elements.get("stage-venue-editor-probe-tool").options
-    .find((option) => option.value === "aerial");
-  assert.equal(aerial.disabled, true, "吊り不可でエアリアルが選択可能になっている");
 });
 
 test("未知の会場IDは元IDを持つmissing会場になり、プロセニアムへ化けない", () => {
@@ -625,7 +1151,7 @@ test("保存メタデータ既定値とinternal-onlyの3択確認UIを持つ", (
   assert.match(indexSource, /id="stage-venue-editor-source"[\s\S]*?<option value="記憶" selected>/);
   assert.match(indexSource, /id="stage-venue-editor-confidence"[\s\S]*?<option value="low" selected>/);
   assert.match(indexSource, /id="stage-venue-editor-sharing"[\s\S]*?<option value="ok" selected>/);
-  assert.match(indexSource, /この会場の資料は外部共有不可の設定です。/);
+  assert.match(indexSource, /この劇場の資料は外部共有不可の設定です。/);
   assert.match(indexSource, /id="stage-venue-export-include"/);
   assert.match(indexSource, /id="stage-venue-export-without"/);
   assert.match(indexSource, /id="stage-venue-export-stop"/);
@@ -634,50 +1160,210 @@ test("保存メタデータ既定値とinternal-onlyの3択確認UIを持つ", (
   assert.match(sketchSource, /この会場データが見つかりません（元のID: \$\{current\.id\}）/);
 });
 
-test("柱・什器・扉の追加モードと、独立した天井高・吊りUIを持つ", () => {
-  for (const [mode, label] of [["select", "選択"], ["column", "柱"], ["furniture", "什器"], ["door", "扉"]]) {
-    assert.match(indexSource, new RegExp(`data-venue-editor-mode="${mode}"[^>]*>${label}<`));
+test("劇場名は常設欄では任意で、ライブラリ保存時の確認だけ必須にする", () => {
+  const editorNameInput = indexSource.match(/<input[^>]*id="stage-venue-editor-name"[^>]*>/)?.[0];
+  const saveNameInput = indexSource.match(/<input[^>]*id="stage-venue-save-name"[^>]*>/)?.[0];
+  assert.ok(editorNameInput);
+  assert.ok(saveNameInput);
+  assert.doesNotMatch(editorNameInput, /\srequired(?:\s|>)/);
+  assert.match(indexSource, /class="stage-field-row stage-venue-editor-name-field"[\s\S]*?<label[^>]*>劇場名<\/label>/);
+  assert.match(saveNameInput, /\srequired(?:\s|>)/);
+  assert.match(indexSource, /id="stage-venue-save-name-modal"[\s\S]*?id="stage-venue-save-name-form"[\s\S]*?劇場名 <span class="stage-required">必須<\/span>/);
+  assert.match(styleSource, /\.stage-venue-editor-name-field \{ grid-column: 1 \/ -1; \}/);
+  assert.match(styleSource, /\.stage-venue-save-name-actions \{\n  display: grid;\n  grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(styleSource, /\.stage-venue-editor-actions\.stage-venue-save-name-actions > \.btn-quiet,[\s\S]*?> \.stage-minor-action \{[\s\S]*?height: 44px;[\s\S]*?color: var\(--milk\);[\s\S]*?font-family: var\(--sans\);[\s\S]*?font-size: 14px;/);
+
+  const editor = loadEditor();
+  const topName = editor.elements.get("stage-venue-editor-name");
+  const saveButton = editor.elements.get("stage-venue-editor-save");
+  const modal = editor.elements.get("stage-venue-save-name-modal");
+  const input = editor.elements.get("stage-venue-save-name");
+  const form = editor.elements.get("stage-venue-save-name-form");
+  topName.value = "";
+
+  saveButton.click();
+  assert.equal(modal.hidden, false);
+  assert.equal(input.value, "");
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getDrafts().length, 0);
+
+  form.dispatchEvent({ type: "submit", preventDefault() {} });
+  assert.equal(input.reportValidityCalls, 1);
+  assert.equal(modal.hidden, false);
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getDrafts().length, 0);
+
+  input.value = "保存時に付けた会場名";
+  form.dispatchEvent({ type: "submit", preventDefault() {} });
+  assert.equal(modal.hidden, true);
+  assert.equal(topName.value, "保存時に付けた会場名");
+  assert.equal(editor.window.SHOSAI_VENUE_EDITOR.getDrafts()[0].label, "保存時に付けた会場名");
+});
+
+test("未反映データの確認ボタンは役割が違っても同じ文字規格にする", () => {
+  assert.match(indexSource,
+    /class="stage-venue-discard-actions"[\s\S]*?class="btn-quiet"[^>]*>編集を続ける<[\s\S]*?class="stage-minor-action"[^>]*>変更を破棄して戻る</);
+  assert.match(styleSource,
+    /\.stage-venue-discard-actions \{[\s\S]*?--stage-venue-discard-action-font-size: 14px;[\s\S]*?--stage-venue-discard-action-line-height: 1\.4;[\s\S]*?--stage-venue-discard-action-letter-spacing: 0\.15em;/);
+  assert.match(styleSource,
+    /\.stage-venue-discard-actions > button \{[\s\S]*?font-family: var\(--sans\);[\s\S]*?font-size: var\(--stage-venue-discard-action-font-size\);[\s\S]*?font-weight: 400;[\s\S]*?line-height: var\(--stage-venue-discard-action-line-height\);[\s\S]*?letter-spacing: var\(--stage-venue-discard-action-letter-spacing\);[\s\S]*?text-align: center;/);
+});
+
+test("柱・什器・扉の追加・設定UIを表示しない", () => {
+  assert.match(indexSource, /<section class="stage-venue-editor-metadata"[\s\S]*?id="stage-venue-editor-name"[\s\S]*?id="stage-venue-editor-source"[\s\S]*?id="stage-venue-editor-confidence"[\s\S]*?id="stage-venue-editor-sharing"/);
+  assert.match(styleSource, /\.stage-venue-editor-metadata \{\n  display: grid;\n  grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(styleSource, /\.stage-venue-editor-name-field \{ grid-column: 1 \/ -1; \}/);
+  assert.match(indexSource, /<div class="stage-venue-editor-workspace">[\s\S]*?<div class="stage-venue-editor-menu">[\s\S]*?stage-venue-editor-shape[\s\S]*?<div class="stage-venue-editor-panel">[\s\S]*?stage-venue-editor-canvas/);
+  assert.match(styleSource, /\.stage-venue-editor-workspace \{\n  display: grid;\n  grid-template-columns: minmax\(320px, 0\.78fr\) minmax\(0, 1\.45fr\);/);
+  assert.match(styleSource, /\.stage-venue-editor-menu \{\n  container: stage-venue-editor-menu \/ inline-size;[\s\S]*?overflow-x: hidden;[\s\S]*?overflow-y: auto;/);
+  assert.match(styleSource, /@container stage-venue-editor-menu \(max-width: 520px\) \{[\s\S]*?\.stage-venue-editor-shapes \{ grid-template-columns: repeat\(4, minmax\(0, 1fr\)\); \}[\s\S]*?\.stage-venue-editor-height-steps \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}[\s\S]*?\.stage-venue-editor-object-tools \{ grid-template-columns: minmax\(0, 1fr\); \}/);
+  assert.match(styleSource, /\.stage-venue-editor-panel \{ container: stage-venue-editor-panel \/ inline-size; \}/);
+  assert.match(styleSource, /@container stage-venue-editor-panel \(max-width: 520px\) \{[\s\S]*?\.stage-venue-editor-area-selection \{ grid-template-columns: minmax\(0, 1fr\); \}[\s\S]*?flex-direction: column;/);
+  assert.match(styleSource, /#stage-venue-editor-canvas \{[\s\S]*?height: auto;[\s\S]*?aspect-ratio: 3 \/ 2;[\s\S]*?border:/);
+  assert.doesNotMatch(styleSource, /#stage-venue-editor-canvas \{[^}]*max-height:/);
+  assert.match(indexSource, /class="stage-venue-editor-canvas-wrap"[\s\S]*?id="stage-venue-editor-canvas"[\s\S]*?class="stage-venue-editor-zoom"[\s\S]*?id="stage-venue-editor-undo"[\s\S]*?id="stage-venue-editor-redo"[\s\S]*?id="stage-venue-editor-zoom-out"[\s\S]*?id="stage-venue-editor-zoom-in"/);
+  assert.match(styleSource, /\.stage-venue-editor-zoom \{[\s\S]*?right: 10px;[\s\S]*?bottom: 10px;[\s\S]*?grid-template-columns: repeat\(4, 44px\);/);
+  assert.match(styleSource, /\.stage-venue-editor-zoom button \{[\s\S]*?width: 44px;[\s\S]*?height: 44px;/);
+  assert.match(indexSource, /<section class="stage-venue-editor-shape"[\s\S]*?stage-venue-editor-shape-step[\s\S]*?stage-venue-editor-shapes[\s\S]*?stage-venue-editor-lead/);
+  assert.match(styleSource, /\.stage-venue-editor-format,\n\.stage-venue-editor-shape,\n\.stage-venue-editor-extension,\n\.stage-venue-editor-ceiling,/);
+  assert.match(indexSource, /id="stage-venue-editor-format-title">1\. ステージの形式を選択してください</);
+  assert.match(indexSource, /id="stage-venue-editor-shape-title">2\. メインの形を選択してください</);
+  assert.match(indexSource, /id="stage-venue-editor-extension-title">3\. 追加のステージを選択してください</);
+  assert.match(indexSource, /長方形・L字・円・カスタムから選択してください。/);
+  for (const shape of ["rectangle", "l-shape", "circle", "freeform"]) {
+    assert.match(indexSource, new RegExp(`data-venue-editor-shape="${shape}"[\\s\\S]*?<svg[\\s\\S]*?<span>`));
   }
-  assert.match(indexSource, /id="stage-venue-editor-object-movable"/);
-  assert.match(indexSource, /data-venue-editor-furniture-height="knee"[^>]*>膝 0\.5m</);
-  assert.match(indexSource, /data-venue-editor-furniture-height="waist"[^>]*>腰 1\.0m</);
-  assert.match(indexSource, /data-venue-editor-furniture-height="person"[^>]*>背丈 1\.7m</);
-  assert.match(indexSource, /data-venue-editor-furniture-height="ceiling"[^>]*>天井まで</);
-  for (const height of [3, 4, 6, 8, 10]) {
-    assert.match(indexSource, new RegExp(`data-venue-editor-ceiling-height="${height}"`));
+  assert.doesNotMatch(indexSource, /data-venue-editor-shape="trapezoid"|>台形</);
+  assert.doesNotMatch(editorSource, /形を切り替えました。辺・角・(?:観客と、置いていた柱・什器・扉|客席)は初期化しました。/);
+  assert.match(styleSource, /\.stage-venue-editor-shapes,\n\.stage-venue-editor-extension-shapes,\n\.stage-venue-editor-area-shapes \{\n  grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(indexSource, /data-venue-editor-extension-shape="rectangle"[\s\S]*?<svg[\s\S]*?<span>四角<\/span>/);
+  assert.match(indexSource, /data-venue-editor-extension-shape="circle"[\s\S]*?<svg[\s\S]*?<span>丸<\/span>/);
+  assert.match(styleSource, /\.stage-venue-editor-extension-shapes,\n\.stage-venue-editor-area-shapes \{ grid-template-columns: repeat\(3, minmax\(0, 1fr\)\); \}/);
+  assert.match(indexSource, /id="stage-venue-editor-extension-merge"[^>]*disabled>重なりを合成<\/button>/);
+  for (const kind of ["audience", "wing"]) {
+    assert.match(indexSource, new RegExp(`data-venue-editor-area-mode="${kind}" data-venue-editor-area-shape="rectangle"[\\s\\S]*?<span>四角<\\/span>`));
+    assert.match(indexSource, new RegExp(`data-venue-editor-area-mode="${kind}" data-venue-editor-area-shape="circle"[\\s\\S]*?<span>丸<\\/span>`));
+    assert.match(indexSource, new RegExp(`id="stage-venue-editor-${kind}-merge"[^>]*disabled>重なりを合成<\\/button>`));
   }
+  assert.match(indexSource, /追加した四角・丸はドラッグで動かせます。重なる部分は合成できます。/);
+  assert.match(i18nSource, /"重なりを合成": "Merge overlaps"/);
+  assert.match(i18nSource, /"追加した四角・丸はドラッグで動かせます。重なる部分は合成できます。":/);
+  assert.match(indexSource, /id="stage-venue-editor-ceiling-title">4\. 天井の高さを指定してください</);
+  assert.match(indexSource, /<div class="stage-venue-editor-menu">[\s\S]*?stage-venue-editor-extension-title[\s\S]*?stage-venue-editor-ceiling-title[\s\S]*?<section class="stage-venue-editor-audience-guide"[^>]*>[\s\S]*?id="stage-venue-editor-audience-title">5\. 客席を配置してください<[\s\S]*?data-venue-editor-area-mode="audience"[\s\S]*?id="stage-venue-editor-audience-full"[^>]*>全周に配置<[\s\S]*?<section class="stage-venue-editor-wings-guide"[^>]*>[\s\S]*?id="stage-venue-editor-wings-title">6\. 舞台袖を配置してください[\s\S]*?data-venue-editor-area-mode="wing"/);
+  assert.match(indexSource, /<div class="stage-venue-editor-panel">[\s\S]*?<section class="stage-venue-editor-audience-step"[^>]*aria-labelledby="stage-venue-editor-audience-title"[\s\S]*?id="stage-venue-editor-canvas"[\s\S]*?class="stage-venue-editor-area-selection"/);
+  assert.doesNotMatch(indexSource, /<div class="stage-venue-editor-panel">[\s\S]*?id="stage-venue-editor-audience-title">5\. 客席を配置してください/);
+  assert.match(indexSource, /緑：ステージ上の可動範囲（1枡ごとの目安）/);
+  assert.match(indexSource, /id="stage-venue-editor-wings-title">6\. 舞台袖を配置してください</);
+  assert.match(indexSource, /破線：舞台袖/);
+  assert.doesNotMatch(indexSource, /data-venue-editor-wing="(?:left|right)"/);
+  assert.match(indexSource, /id="stage-venue-editor-audience-full"[^>]*>全周に配置</);
+  assert.doesNotMatch(indexSource, /stage-venue-editor-audience-mode|座り（OFFは立ち見）/);
+  assert.match(editorSource, /function audienceRuns\(\)[\s\S]*?function audienceRunPolygon\(/);
+  assert.match(editorSource, /mode: "audience",\n        eyeM: 1\.2/);
+  for (const [value, label] of [["theatre", "劇場式"], ["thrust", "張り出し式"], ["in-the-round", "360度ステージ"]]) {
+    assert.match(indexSource, new RegExp(`data-venue-editor-stage-format="${value}"[^>]*>${label}<`));
+  }
+  assert.match(styleSource, /\.stage-venue-editor-formats \{\n  grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(styleSource, /\.stage-venue-editor-ceiling,\n\.stage-venue-editor-audience-guide,\n\.stage-venue-editor-wings-guide,\n\.stage-venue-editor-audience-step,\n\.stage-venue-editor-lines/);
+  assert.ok(
+    indexSource.indexOf('stage-venue-editor-format-title') < indexSource.indexOf('stage-venue-editor-shape-title')
+      && indexSource.indexOf('stage-venue-editor-shape-title') < indexSource.indexOf('stage-venue-editor-extension-title')
+      && indexSource.indexOf('stage-venue-editor-extension-title') < indexSource.indexOf('stage-venue-editor-ceiling-title')
+      && indexSource.indexOf('stage-venue-editor-ceiling-title') < indexSource.indexOf('stage-venue-editor-audience-title')
+      && indexSource.indexOf('stage-venue-editor-audience-title') < indexSource.indexOf('stage-venue-editor-wings-title')
+      && indexSource.indexOf('stage-venue-editor-wings-title') < indexSource.indexOf('stage-venue-editor-panel'),
+    "ステージ形式、メイン形状、追加ステージ、天井高、客席、舞台袖、編集パネルの順に表示する",
+  );
+  assert.doesNotMatch(indexSource, /data-venue-editor-mode=/);
+  assert.doesNotMatch(indexSource, /class="stage-venue-editor-object-tools"/);
+  assert.doesNotMatch(indexSource, /id="stage-venue-editor-object-(?:selection|movable|remove)"/);
+  assert.doesNotMatch(indexSource, /data-venue-editor-furniture-height=/);
+  assert.doesNotMatch(indexSource, /id="stage-venue-editor-access-type"/);
+  assert.match(indexSource, /<input[^>]*type="number"[^>]*id="stage-venue-editor-ceiling-height"/);
+  assert.match(indexSource, /id="stage-venue-editor-ceiling-height"[^>]*min="0\.1"[^>]*max="100"[^>]*step="0\.1"/);
+  assert.doesNotMatch(indexSource, /data-venue-editor-ceiling-height=/);
+  assert.match(editorSource, /CEILING_MIN_HEIGHT_M = 0\.1/);
+  assert.match(editorSource, /CEILING_MAX_HEIGHT_M = 100/);
   for (const rigging of ["none", "limited", "full"]) {
     assert.match(indexSource, new RegExp(`data-venue-editor-rigging="${rigging}"`));
   }
   assert.match(editorSource, /const COLUMN_DEFAULT_RADIUS_M = 0\.4;/);
   assert.match(editorSource, /const ACCESS_DEFAULT_WIDTH_M = 1\.2;/);
-  assert.match(editorSource, /\["stage-venue-h", venue\.ceiling\.heightM\]/);
+  assert.doesNotMatch(editorSource, /bridgeVenue(?:Dims|Height)/);
 });
 
-test("4本の表示トグルと、保存しない探り針の道具・到達高さUIを持つ", () => {
+test("グリッドを縮小して固定範囲の外まで舞台を広げても寸法を保存できる", () => {
+  const editor = loadEditor();
+  const before = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.deepEqual(Array.from(before.floor.outline[0]), [6, 4]);
+  assert.ok(editor.drawText.some((value) => value === "1枡 ≒ 1m"), "初期グリッドの1m表記がない");
+
+  editor.elements.get("stage-venue-editor-zoom-out").click();
+  editor.elements.get("stage-venue-editor-zoom-out").click();
+  const afterZoom = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  assert.equal(JSON.stringify(afterZoom.floor), JSON.stringify(before.floor), "表示倍率で舞台寸法を変えている");
+  assert.ok(editor.drawText.some((value) => value === "1枡 ≒ 2m"), "縮小時にグリッド間隔の表示を更新していない");
+
+  const canvas = editor.elements.get("stage-venue-editor-canvas");
+  const event = (type, clientX, pointerId = 51) => ({
+    type,
+    button: 0,
+    pointerId,
+    clientX,
+    clientY: 320,
+    preventDefault() {},
+  });
+  canvas.dispatchEvent(event("pointerdown", 577));
+  canvas.dispatchEvent(event("pointermove", 770));
+  canvas.dispatchEvent(event("pointerup", 770));
+
+  const expanded = editor.window.SHOSAI_VENUE_EDITOR.getVenue();
+  const xs = expanded.floor.outline.map((point) => point[0]);
+  assert.ok(Math.max(...xs) > 23.5, "旧グリッド右端の上限が残っている");
+  assert.equal(Math.max(...xs) - Math.min(...xs), 24);
+  assert.match(editor.elements.get("stage-venue-editor-dims").textContent, /間口 だいたい24m/);
+});
+
+test("カスタム会場モーダルは広い画面で表示領域の約80%を使う", () => {
+  assert.match(styleSource,
+    /\.stage-modal\.stage-venue-editor-modal \{ width: min\(80vw, calc\(100vw - 40px\)\); \}/);
+  assert.match(styleSource,
+    /\.stage-modal\.stage-venue-editor-modal \{\n    width: calc\(100vw - 16px\);/);
+});
+
+test("会場から導く3本の線パネルを隠し、線の計算と保存データは残す", () => {
+  assert.match(indexSource, /<section class="stage-venue-editor-lines"/);
+  assert.match(styleSource, /\.stage-venue-editor-modal \.stage-venue-editor-lines \{ display: none; \}/);
+  assert.match(editorSource, /state\.lines\.visible/);
+  for (const compute of ["computeMovement", "computeBlindSpots", "computeSightLimits"]) {
+    assert.match(editorSource, new RegExp(`linesEngine\\.${compute}\\(`));
+  }
+});
+
+test("落下範囲と探り針を表示・操作・描画しない", () => {
   for (const [line, label] of [
-    ["movement", "可動範囲"], ["fall", "落下範囲"], ["blind", "死角"], ["sight", "見える限界"],
+    ["movement", "可動範囲"], ["blind", "死角"], ["sight", "見える限界"],
   ]) {
     assert.match(indexSource,
       new RegExp(`data-venue-editor-line-toggle="${line}" checked><span>${label}</span>`));
   }
-  for (const tool of ["juggling", "diabolo", "aerial", "unspecified"]) {
-    assert.match(indexSource, new RegExp(`<option value="${tool}"`));
-  }
-  assert.match(indexSource, /id="stage-venue-editor-probe-reach"[^>]*max="6"[^>]*step="0\.5"/);
-  assert.match(indexSource, /落下範囲は経験則による目安です。安全性は判定しません。/);
+  assert.doesNotMatch(indexSource, /data-venue-editor-line-toggle="fall"/);
+  assert.doesNotMatch(indexSource, /stage-venue-editor-probe/);
+  assert.doesNotMatch(indexSource, /落下範囲|探り針/);
+  assert.doesNotMatch(editorSource, /function (?:drawFallRange|drawProbe|hitProbe|moveProbe)/);
+  assert.doesNotMatch(editorSource, /setProbe(?:Tool|Reach)|applyPerformerCapture/);
+  assert.doesNotMatch(editorSource, /落下範囲|探り針/);
+  const renderBody = editorSource.match(/function render\(\) \{([\s\S]*?)\n  \}/)?.[1] || "";
+  assert.doesNotMatch(renderBody, /drawFallRange|drawProbe/);
   assert.match(editorSource, /getLines: \(\) => clone/);
   assert.doesNotMatch(editorSource, /venue\.lines\s*=/);
 });
 
-test("平面の重ね順は床・可動・可動什器・死角・見える限界・落下・会場実体の順にする", () => {
+test("平面の重ね順は床・可動・可動什器・死角・見える限界・会場実体の順にする", () => {
   const renderBody = editorSource.match(/function render\(\) \{([\s\S]*?)\n  \}/)?.[1] || "";
   const calls = [
     "drawFloor()",
     "drawMovementLines(linesResult)",
     "drawBlindSpots(linesResult)",
     "drawSightLimits(linesResult)",
-    "drawFallRange(linesResult)",
     "drawAudience()",
     "drawRoom()",
     "drawFixtures()",
@@ -830,7 +1516,7 @@ test("形式プリセットには会場の性格を書いた一文を置かな�
   });
   // 実在会場は残っている
   ["chapiteau", "tohu", "cirque-dhiver", "theatre-tram", "circus-theatre"].forEach((id) => {
-    const venue = venues.v2.list.find((v) => v.id === id);
+    const venue = venues.v2.byId(id);
     assert.ok(venue && venue.note && venue.note.length > 40, `${id} の記述が残っている`);
     assert.ok(maps.venueNote[id], `${id} の英訳が残っている`);
   });
@@ -860,26 +1546,16 @@ test("会場プリセットは全部が日英そろっている（追加時の�
 
 test("会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う", () => {
   assert.match(sketchSource, /const STAGE_KEYS = \[[\s\S]*?"shosai-stage-venues-v1"/);
-  for (const [name, version] of [
-    ["stage-venues.js", "25"],
-    ["stage-venue-lines.js", "4"],
-    ["stage-i18n.js", "97"],
-    ["stage-set-model.js", "1"],
-    ["stage-set-builder.js", "1"],
-    ["stage-sketch.js", "318"],
-    ["stage-venue-editor.js", "7"],
+  for (const name of [
+    "stage-venues.js", "stage-venue-lines.js", "stage-i18n.js", "stage-set-model.js",
+    "stage-set-builder.js", "stage-sketch.js", "stage-venue-editor.js", "style.css",
+    "stage-machinery.js", "stage-first-person.js",
   ]) {
-    const reference = `${name}?v=${version}`;
-    assert.ok(indexSource.includes(reference), `${reference} がindex.htmlにある`);
+    const reference = indexSource.match(new RegExp(name.replaceAll(".", "\\.") + "\\?v=\\d+"))?.[0];
+    assert.ok(reference, `${name} がindex.htmlにある`);
     assert.ok(stageHtml.includes(reference), `${reference} がstage.htmlにある`);
     assert.ok(swSource.includes(`./${reference}`), `${reference} がstage-sw.jsにある`);
   }
-  for (const page of [indexSource, stageHtml]) assert.ok(page.includes("style.css?v=229"));
-  assert.ok(swSource.includes("./style.css?v=229"));
-  assert.ok(stageHtml.includes("stage-machinery.js?v=2"));
-  assert.ok(swSource.includes("./stage-machinery.js?v=2"));
-  assert.ok(stageHtml.includes("stage-first-person.js?v=24"));
-  assert.ok(swSource.includes("./stage-first-person.js?v=24"));
   // 版番号そのものは毎回上がるので固定値にせず、形だけを検査する（stage-export-zip.test.mjsと同じ方針）。
   assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v\d+";/);
 });

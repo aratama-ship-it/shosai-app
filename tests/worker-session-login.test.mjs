@@ -63,7 +63,7 @@ const withGuestAccounts = (entries, base = env) => ({
 });
 
 async function signIn(account, targetEnv) {
-  const body = new URLSearchParams({ user: account[0], pass: account[1], next: "/db.js" });
+  const body = new URLSearchParams({ user: account[0], pass: account[1], next: "/stage.html" });
   return worker.fetch(
     new Request("https://shosai.example/sign-in", { method: "POST", body }), targetEnv, {},
   );
@@ -134,6 +134,8 @@ test("戻り先は同一オリジンのパスだけ許す", () => {
   assert.equal(safeNextPath("/stage.html?x=1#y"), "/stage.html?x=1#y");
   for (const bad of [
     "//evil.example/steal",        // protocol-relative で外部へ飛べる
+    "/\\evil.example/steal",       // URLパーサーが外部ホストへ解釈する
+    "/\\[",                        // 言語・戻り先の解析で例外にしない
     "https://evil.example",
     "http://evil.example",
     "evil.example",
@@ -258,7 +260,7 @@ test("ログイン画面は認証なしで開ける", async () => {
   assert.match(response.headers.get("Content-Type") || "", /text\/html/);
   assert.equal(response.headers.get("Cache-Control"), "no-store");
   const html = await response.text();
-  assert.match(html, /制作の書斎/);
+  assert.match(html, /舞台スケッチ/);
   assert.match(html, /name="user"/);
   assert.match(html, /name="pass"/);
   assert.match(html, /中へ入る/);
@@ -394,13 +396,13 @@ test("GUEST_ACCOUNTSの各口座はログイン・クッキー・Basic認証で�
 
     const token = cookieFrom(login);
     const cookieResponse = await worker.fetch(
-      get("/db.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${token}` }),
+      get("/stage-sketch.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${token}` }),
       managedEnv,
       {},
     );
     assert.equal(cookieResponse.status, 200, `${account[0]} のクッキーは通る`);
 
-    const basicResponse = await worker.fetch(get("/db.js", basicHeader(account)), managedEnv, {});
+    const basicResponse = await worker.fetch(get("/stage-sketch.js", basicHeader(account)), managedEnv, {});
     assert.equal(basicResponse.status, 200, `${account[0]} のBasic認証は通る`);
   }
 });
@@ -414,14 +416,14 @@ test("GUEST_ACCOUNTSの一人口座のパスワード変更は、その人のト
   const changedEnv = withGuestAccounts(changedEntries);
 
   const firstResponse = await worker.fetch(
-    get("/db.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${firstToken}` }),
+    get("/stage-sketch.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${firstToken}` }),
     changedEnv,
     {},
   );
   assert.equal(firstResponse.status, 401, "変更した人の旧トークンは無効");
 
   const secondResponse = await worker.fetch(
-    get("/db.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${secondToken}` }),
+    get("/stage-sketch.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${secondToken}` }),
     changedEnv,
     {},
   );
@@ -434,13 +436,13 @@ test("GUEST_ACCOUNTSが未設定または空でも旧ゲスト口座は従来ど
     assert.equal(login.status, 303);
     const token = cookieFrom(login);
     const cookieResponse = await worker.fetch(
-      get("/db.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${token}` }),
+      get("/stage-sketch.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${token}` }),
       legacyEnv,
       {},
     );
     assert.equal(cookieResponse.status, 200);
     assert.equal(
-      (await worker.fetch(get("/db.js", basicHeader(GUEST)), legacyEnv, {})).status,
+      (await worker.fetch(get("/stage-sketch.js", basicHeader(GUEST)), legacyEnv, {})).status,
       200,
     );
   }
@@ -449,7 +451,7 @@ test("GUEST_ACCOUNTSが未設定または空でも旧ゲスト口座は従来ど
 test("旧ゲスト口座とGUEST_ACCOUNTSが重複なしで併存すれば両方通る", async () => {
   const combinedEnv = withGuestAccounts(managedGuestEntries());
   for (const account of [GUEST, ...MANAGED_GUESTS]) {
-    const response = await worker.fetch(get("/db.js", basicHeader(account)), combinedEnv, {});
+    const response = await worker.fetch(get("/stage-sketch.js", basicHeader(account)), combinedEnv, {});
     assert.equal(response.status, 200, `${account[0]} は通る`);
   }
 });

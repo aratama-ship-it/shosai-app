@@ -124,6 +124,7 @@
     "ドラッグで高さを変更。上下キーで調整、ダブルクリックまたはEnterで元に戻す": "Drag to resize. Use up/down arrows to adjust; double-click or press Enter to reset",
     "演者の一覧の高さ": "Performer list height",
     "舞台セットの一覧の高さ": "Set-piece list height",
+    "大道具の一覧の高さ": "Set-piece list height",
     "小道具の一覧の高さ": "Props list height",
     /* ---- B3: isEn 三項演算子から移した固定文言（2026-09-09） ---- */
     "楽曲": "Music",
@@ -441,8 +442,8 @@
     /* ---- 構成テンプレート ---- */
     "構成テンプレートから作る": "Create from a structure template",
     "構成テンプレートから新しいショーを作る": "Create a new show from a structure template",
-    "これは正解ではなく、書き換えて使うための初期値です。シーン名・役割・エネルギーだけを作り、演者や道具は置きません。いまのショーは一覧に残ります。":
-      "These are starting points, not answers. They create only scene names, roles and energy levels — no performers or objects. Your current show stays in All shows.",
+    "これは正解ではなく、書き換えて使うための初期値です。シーン名と役割だけを作り、演者や道具は置きません。いまのショーは一覧に残ります。":
+      "These are starting points, not answers. They create only scene names and roles — no performers or objects. Your current show stays in All shows.",
     "この骨格で新しいショーを作る": "Create a new show from this structure",
     "古典サーカス・プログラム型": "Classical Circus Programme",
     "二部制ヴァラエティ・ビル型": "Two-Part Variety Bill",
@@ -756,7 +757,7 @@
     "シーンの時間": "Scene timing",
     "各シーンに「見せる時間」と「次のシーンへの移動時間」を表示する": "Shows the time on the scene and the time moving to the next scene",
     "シーンのサブタイトル": "Scene subtitle",
-    "シーン一覧に構成上の役割とエネルギーをサブタイトルとして表示する。OFFでも内容は消えません": "Show the scene's structural role and energy as a subtitle in the scene list. Turning this off does not erase the content",
+    "シーン一覧に構成上の役割をサブタイトルとして表示する。OFFでも内容は消えません": "Show the scene's structural role as a subtitle in the scene list. Turning this off does not erase the content",
     "転換情報": "Transition details",
     "選択中のシーンの上下に、転換の長さ・暗転・メモを表示する。OFFでも内容は消えません": "Show duration, blackout and notes between the selected scene and its neighbours. Turning this off does not erase the content",
     "シーンの左右ミラー": "Mirror the scene",
@@ -843,8 +844,8 @@
     "転がし（床置きから体へ）": "Floor light (from the floor)",
     "まだ何も登録していません。名前と種類を選んで追加してください。":
       "Nothing registered yet. Enter a name, pick a kind, and add it.",
-    "この舞台に出る演者と舞台セットを、まとめてここに登録します。 寸法や色はここで決め、シーンごとに舞台の上か裏かを切り替えます。明かりは別の項目です。追加したものはそのシーンの舞台に出ます。":
-      "Register the performers and set pieces for this show here. Sizes and colours are decided here; each scene decides what is on stage. Lights have their own panel. Anything you add goes on stage in the current scene.",
+    "この舞台に出る演者、大道具、小道具を、まとめてここに登録します。 寸法や色はここで決め、シーンごとに舞台の上か裏かを切り替えます。明かりは別の項目です。追加したものはそのシーンの舞台に出ます。":
+      "Register the performers, set pieces, and props for this show here. Sizes and colours are decided here; each scene decides what is on stage. Lights have their own panel. Anything you add goes on stage in the current scene.",
     "いまの舞台装置の並びに名前をつけて残します。別のシーンで呼び出したり、いまの並びへ足したりできます。演者は含みません。":
       "Save the current set layout under a name. You can recall it in another scene, or add it to what is already there. Performers are not included.",
     "照明は、どこから出てどこへ落ちるかを持ちます。 種類ごとに仕込む場所と当てる高さの既定値が入ります。 「照明を動かす」に切り替えると、灯体の丸い印と、当たる輪をそれぞれ掴んで動かせます。動線を引くと、灯体はそのままで当たる先だけが動きます。":
@@ -1281,7 +1282,6 @@
     "シーンの名前": "Scene name",
     "シーンの詳細": "Scene details",
     "サブタイトル": "Subtitle",
-    "エネルギー": "Energy",
     "未設定": "Not set",
     "表示は設定の「シーンのサブタイトル」から切り替えられます。": "Show or hide it under \"Scene subtitle\" in Settings.",
     "変更を保存": "Save changes",
@@ -1364,6 +1364,8 @@
     "長さ": "Duration",
     "ゲイン": "Gain",
     "ダブルクリックで音源情報": "Double-click for audio information",
+    "音源が見つかりません": "Audio file not found",
+    "読み込み直す": "Reconnect",
     "0 dB が元の音量です。ヘッダーの音量とは別に、この音源だけへ適用されます。":
       "0 dB preserves the source level. This applies only to this track, separately from the header volume.",
     "Vision Pro内蔵デモ音源を使う": "Use the built-in Vision Pro demo soundtrack",
@@ -1867,10 +1869,11 @@
     [/^([\s\S]*?)（([\s\S]*?)灯）$/, (match, label, count) => `${translateSayTerm(label)} (${count} lights)`],
     [/^「([\s\S]*?)」から新しいショーを作りました。前のショーは一覧に残っています。$/, (match, name) => `Created a new show from “${translateSayTerm(name)}”. The previous show is still in All shows.`],
     [/^生成 ([\s\S]*?)シーン・D2目安 ([\s\S]*?)$/, (match, count, range) => `Creates ${count} scenes · D2 guide ${translateSayTerm(range)}`],
-    [/^エネルギー ([\s\S]*?)$/, (match, energy) => `Energy ${energy.replace(/、/g, ", ")}`],
     [/^([\d.]+)秒$/, "$1 sec"],
     [/^約([\s\S]*?)分$/, "~$1 min"],
     [/^セクション ([\s\S]*?)$/, "Section $1"],
+    [/^([\s\S]*?)を足しました。ここにシーンを追加できます。$/, "Added $1. You can add scenes here."],
+    [/^(\d+)件のショーを、セクションの中にシーンを置く形式へ更新しました。$/, "Updated $1 show(s) so every scene is inside a section."],
     [/^([\s\S]*?) の名前を変える$/, "Rename $1"],
     [/^([\s\S]*?)（元の版から派生）$/, (match, reason) => `${reason === "別バージョンとして複製" ? "Duplicated as another version" : reason} (derived from an earlier version)`],
     [/^([\s\S]*?) ([\s\S]*?)、配置 ([\s\S]*?)、開く$/, "Open $1 $2, $3 placed"],

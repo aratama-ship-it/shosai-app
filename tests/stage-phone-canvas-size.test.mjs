@@ -110,7 +110,8 @@ test("付箋の描画と当たり判定は同じ縦座標換算を使う", () =>
    resizeを保険にするが、携帯のキーボード開閉でも飛ぶので、
    寸法が実際に変わったときだけ描き直すこと（orientを直に繋がない）。 */
 test("向きの通知が来なくてもresizeで寸法を直す保険がある", () => {
-  const hook = source.slice(source.indexOf('window.addEventListener("resize"'));
+  // パネル幅やツアーのresize処理と区別して、寸法更新用ハンドラを検査する。
+  const hook = source.match(/window\.addEventListener\("resize", \(\) => \{\s*if \(!applyCanvasSize\(\)\)/)?.input.slice(source.search(/window\.addEventListener\("resize", \(\) => \{\s*if \(!applyCanvasSize\(\)\)/)) || "";
   assert.ok(hook.startsWith('window.addEventListener("resize"'), "resizeの保険が要る");
   const body = hook.slice(0, hook.indexOf("});") + 3);
   assert.match(body, /if \(!applyCanvasSize\(\)\) return;/,

@@ -1,0 +1,1 @@
+{"kind":"shosai-stage-sketch","version":4,"venues":[],"project":{"title":"x","venue":"proscenium","venueSize":"mid","cast":[{"id":"c","name":"x","color":"#111111"}],"sets":[],"scenes":[{"kind":"scene","depth":0,"id":"a","title":"a","note":"x","pieces":[{"id":"p","type":"performer","castId":"c","u":0.5,"v":0.5,"color":"#111111","pose":"lie_back"}]}]}}

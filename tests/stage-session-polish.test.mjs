@@ -6,7 +6,7 @@ import vm from "node:vm";
 const root = new URL("../", import.meta.url);
 const sessionSource = await readFile(new URL("stage-session.js", root), "utf8");
 const stageSource = await readFile(new URL("stage-sketch.js", root), "utf8");
-const indexSource = await readFile(new URL("index.html", root), "utf8");
+const indexSource = await readFile(new URL("stage.html", root), "utf8");
 const styleSource = await readFile(new URL("style.css", root), "utf8");
 
 function noop() {}
@@ -349,7 +349,7 @@ test("ゲストバッジはguest役割だけで表示され、駒操作のUIと�
     stageSource.indexOf("  function onKeyDown(event) {"),
     stageSource.indexOf("  let facingWheelDelta"),
   );
-  assert.match(keyHandler, /if \(guestSessionActive\(\)\) return;/);
+  assert.match(keyHandler, /if \((?:presenting \|\| )?guestSessionActive\(\)\) return;/);
   const bridge = stageSource.slice(stageSource.indexOf("  window.SHOSAI_STAGE_SESSION_BRIDGE"));
   assert.doesNotMatch(bridge, /op\.kind === "piece\.move"/);
   assert.match(bridge, /op\.kind === "arrows\.add"/);

@@ -2235,6 +2235,8 @@ html.stage-pwa-tablet .stage-sketch-kicker { display: none; }
 
 .stage-rename-modal { max-width: 380px; }
 
+.stage-modal#stage-rename { width: min(520px, calc(100vw - 40px)); max-width: none; }
+
 .stage-rename-section-fields {
   display: grid;
   gap: 6px;
@@ -2253,6 +2255,10 @@ html.stage-pwa-tablet .stage-sketch-kicker { display: none; }
 }
 
 .stage-rename-scene-fields[hidden] { display: none; }
+
+.stage-rename-scene-fields .stage-timeline-cue-facts { margin: 8px 0 6px; }
+
+.stage-rename-scene-fields textarea.stage-text-input { min-height: 96px; }
 
 .stage-rename-scene-fields .stage-control-label { margin-top: 5px; }
 
@@ -2588,19 +2594,13 @@ html.stage-pwa-tablet .stage-sketch-kicker { display: none; }
 
 .stage-scene-beat {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 7px;
   padding: 6px 8px;
   border-left: 2px solid rgba(211, 172, 89, 0.45);
   color: var(--milk-dim);
   font-size: 10px;
   line-height: 1.55;
-}
-
-.stage-scene-beat-energy {
-  color: var(--brass);
-  font-weight: 600;
-  letter-spacing: 0.06em;
 }
 
 /* 光の意図はシーン一覧では一行だけ。照明の設定札ではなく、
@@ -2972,29 +2972,6 @@ canvas[data-tool="note"] { cursor: copy; }
   gap: 9px;
 }
 
-.stage-beat-energy {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-}
-
-.stage-beat-energy-step {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 25px;
-  min-height: 25px;
-  border: 1px solid rgba(211, 172, 89, 0.34);
-  color: var(--milk-dim);
-  font-size: 9px;
-}
-
-.stage-beat-energy-step[data-energy="1"] { background: rgba(168, 75, 38, 0.05); }
-.stage-beat-energy-step[data-energy="2"] { background: rgba(168, 75, 38, 0.10); }
-.stage-beat-energy-step[data-energy="3"] { background: rgba(168, 75, 38, 0.17); }
-.stage-beat-energy-step[data-energy="4"] { background: rgba(168, 75, 38, 0.24); color: var(--milk); }
-.stage-beat-energy-step[data-energy="5"] { background: rgba(168, 75, 38, 0.34); color: var(--paper); }
-
 .stage-beat-template-curve-text,
 .stage-beat-template-hold {
   color: rgba(240, 231, 214, 0.54);
@@ -3051,7 +3028,7 @@ canvas[data-tool="note"] { cursor: copy; }
 }
 
 .stage-roster-kind-open {
-  min-height: 44px;
+  min-height: 36px;
   padding: 6px 10px;
   border: 1px solid var(--line-dark);
   background: var(--desk);
@@ -3135,7 +3112,7 @@ canvas[data-tool="note"] { cursor: copy; }
   bottom: 0;
   z-index: 2;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   margin: 0 -16px;
   padding: 10px 16px 12px;
   border-top: 1px solid var(--line-dark);
@@ -3152,6 +3129,8 @@ canvas[data-tool="note"] { cursor: copy; }
   font-weight: 700;
   letter-spacing: 0.08em;
 }
+
+.stage-kind-submit #stage-kind-model-open[hidden] { display: none; }
 
 .stage-pose-grid {
   display: grid;
@@ -8068,9 +8047,11 @@ html.stage-phone-viewer .stage-single-view-switch { display: none; }
 }
 
 .stage-venue-summary {
-  display: grid;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   min-width: 0;
-  line-height: 1.45;
+  line-height: 1.25;
 }
 
 .stage-venue-summary strong,
@@ -8081,6 +8062,7 @@ html.stage-phone-viewer .stage-single-view-switch { display: none; }
 }
 
 .stage-venue-summary strong {
+  min-width: 0;
   color: var(--milk);
   font-size: 13px;
   font-weight: 500;
@@ -8088,6 +8070,7 @@ html.stage-phone-viewer .stage-single-view-switch { display: none; }
 }
 
 .stage-venue-summary span {
+  flex: 0 0 auto;
   color: var(--milk-dim);
   font-size: 10px;
   letter-spacing: 0.08em;
@@ -8779,8 +8762,8 @@ body.is-panel-dragging {
 
 /* 正面の絵の真上に出す、そのシーンの説明。
    絵より前に出過ぎないよう、見出しは小さく、本文は落ち着いた明度で置く。 */
-/* 絵のすぐ上の2段。上段にシーン送り・転換・一覧、下段に説明を置く。
-   説明が長くなっても、送りの操作位置を押し広げない。 */
+/* 絵のすぐ上のシーン帯。操作と短い説明は一行に置き、説明の可読幅を
+   保てないときだけ説明全体を次行へ送る。 */
 .stage-scene-bar {
   display: flex;
   align-items: center;
@@ -8796,7 +8779,7 @@ body.is-panel-dragging {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1 1 100%;
+  flex: 0 1 auto;
   min-width: 0;
 }
 
@@ -8894,12 +8877,14 @@ body.is-panel-dragging {
   color: var(--milk);
 }
 
-/* 説明は独立した下段で幅いっぱいを取る。
+/* 説明は短文なら操作の右に置く。入力内容から決める希望幅は
+   sceneDescPreferredWidth が渡し、入り切らなければ flex の行全体で次段へ送る。
    ★縦は伸ばさない。伸ばすと、書き込み欄の高さを内容から測る処理
      （growSceneDesc）が空の行でも器の高さを拾い、帯が厚く空いてしまう。 */
 .stage-scene-bar .stage-scene-desc {
-  flex: 1 1 100%;
-  min-width: 0;
+  --scene-desc-preferred-width: 300px;
+  flex: 1 1 var(--scene-desc-preferred-width);
+  min-width: min(100%, var(--scene-desc-preferred-width));
   align-self: flex-start;
   align-items: flex-start;
   padding: 0;
@@ -16192,6 +16177,94 @@ button.stage-timeline-audio-block:focus-visible {
   color: var(--stage-timeline-muted);
   background: rgba(120, 105, 86, 0.12);
   border-style: dashed;
+}
+
+.stage-timeline-audio-block.is-missing {
+  display: block;
+  padding: 0;
+  color: var(--stage-timeline-text);
+  background: rgba(168, 75, 38, 0.15);
+  border-color: rgba(196, 91, 49, 0.9);
+  border-style: dashed;
+}
+
+.stage-timeline-audio-missing-content {
+  position: sticky;
+  left: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: min(720px, calc(100vw - var(--stage-timeline-label-width) - 32px));
+  max-width: 100%;
+  height: 100%;
+  padding: 3px 10px;
+}
+
+.stage-timeline-audio-missing-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: #d97850;
+}
+
+.stage-timeline-audio-missing-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.stage-timeline-audio-missing-copy {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.stage-timeline-audio-missing-copy strong,
+.stage-timeline-audio-missing-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-timeline-audio-missing-copy strong { flex: 0 1 auto; }
+.stage-timeline-audio-missing-copy span {
+  flex: 1 1 auto;
+  color: var(--stage-timeline-muted);
+}
+
+.stage-timeline-audio-relink-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid rgba(239, 231, 214, 0.52);
+  border-radius: 3px;
+  color: var(--stage-timeline-text);
+  background: rgba(25, 21, 18, 0.52);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stage-timeline-audio-block.is-missing:hover .stage-timeline-audio-relink-action,
+.stage-timeline-audio-block.is-missing:focus-visible .stage-timeline-audio-relink-action {
+  border-color: var(--stage-timeline-text);
+  background: rgba(168, 75, 38, 0.32);
+}
+
+@media (max-width: 720px) {
+  .stage-timeline-audio-missing-content { gap: 5px; padding-inline: 7px; }
+  .stage-timeline-audio-missing-copy span { display: none; }
+  .stage-timeline-audio-relink-action { padding-inline: 6px; }
 }
 
 .stage-timeline-scene {

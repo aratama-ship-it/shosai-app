@@ -44,12 +44,12 @@ test("JSONは8セクション／各4シーン／32シーン／3600秒を保つ",
   );
 });
 
-test("JSONは4人、装置・照明、ビート、動線、安全メモを含む", () => {
+test("JSONは4人、装置・照明、役割、動線、安全メモを含む", () => {
   assert.deepEqual(project.cast.map((member) => member.name), ["保管人", "手A", "手B", "こぼれ"]);
   assert.equal(project.sets.length, 15);
   assert.ok(project.sets.some((item) => item.kind === "light"));
   assert.ok(project.sets.some((item) => item.kind === "wall"));
-  assert.ok(scenes.every((scene) => scene.beat.energy >= 1 && scene.beat.energy <= 5));
+  assert.ok(scenes.every((scene) => scene.beat.role));
   assert.ok(scenes.some((scene) => scene.pieces.some((piece) => piece.route)));
   assert.match(scenes.find((scene) => scene.id === "seam-scene-6-3").note, /要検証/);
   assert.match(scenes.find((scene) => scene.id === "seam-scene-7-3").note, /要検証/);

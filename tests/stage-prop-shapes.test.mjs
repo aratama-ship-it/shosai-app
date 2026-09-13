@@ -6,7 +6,7 @@ import vm from "node:vm";
 const root = new URL("../", import.meta.url);
 const stageSource = await readFile(new URL("stage-sketch.js", root), "utf8");
 const fpvSource = await readFile(new URL("stage-first-person.js", root), "utf8");
-const indexSource = await readFile(new URL("index.html", root), "utf8");
+const indexSource = await readFile(new URL("stage.html", root), "utf8");
 
 function bodyBetween(source, startPattern, endPattern) {
   const start = source.indexOf(startPattern);
@@ -16,16 +16,27 @@ function bodyBetween(source, startPattern, endPattern) {
   return source.slice(start, end);
 }
 
-const shapesBlock = bodyBetween(stageSource, "const PROP_SHAPES =", "const PROP_SHAPE_ORDER");
+const shapesBlock = bodyBetween(stageSource, "const boxAt =", "const PROP_SHAPE_ORDER");
 const shapesContext = {};
 vm.runInNewContext(`${shapesBlock}\nthis.shapes = PROP_SHAPES;`, shapesContext);
 const shapes = shapesContext.shapes;
 const shapeIds = [
   "box", "umbrella", "club", "ball", "ring", "staff",
-  "sword", "book", "tophat", "lantern", "flag",
+  "sword", "book", "tophat", "lantern", "flag", "drumset", "taiko", "mask",
+  "ladder", "stepladder", "stairs", "stairs6",
+  "door", "window", "column", "railing", "bridge", "platform", "truss", "cage", "torii", "screen", "frameportal", "framepicture", "framehang", "framecube", "slope",
+  "sofa", "bed", "bookshelf", "dresser", "mirror", "desk", "counter", "fireplace", "phonebooth", "clothesrack",
+  "tree", "rock", "streetlamp", "signboard", "barrel", "planter", "well", "tent",
+  "broom", "bucket", "rope", "bouquet", "glassbottle", "tray", "telephone", "newspaper", "clock", "fan", "scarf",
+  "torch", "candle", "treasurechest", "cane", "handbag", "wagasa", "guitar", "bassguitar", "violin", "trumpet", "accordion",
+  "cigarbox", "devilstick", "poi", "hoop",
+  "grandpiano", "grandpianoopen", "uprightpiano", "micstand", "musicstand", "speaker", "keyboardstand", "djbooth",
+  "rolabola", "germanwheel", "minitramp", "rollingglobe", "russianbar", "crashmat", "crashmatround", "russianswing", "slackline",
+  "walljump", "unicycle", "spiralstairs", "stilts", "cart", "bicycle", "aerialhoop", "aerialstraps",
+  "aerialhammock", "spanishweb", "swingpole", "cello", "doublebass",
 ];
 
-test("PROP_SHAPESは箱と10形を指定順で持ち、表示名・基準寸法・部品を定義する", () => {
+test("PROP_SHAPESは指定順で表示名・基準寸法・部品を定義する", () => {
   assert.deepEqual(Object.keys(shapes), shapeIds);
   shapeIds.forEach((id) => {
     const shape = shapes[id];
@@ -36,6 +47,21 @@ test("PROP_SHAPESは箱と10形を指定順で持ち、表示名・基準寸法�
     if (id === "box") assert.equal(shape.parts, null);
     else assert.ok(Array.isArray(shape.parts) && shape.parts.length > 0, `${id}.parts`);
   });
+});
+
+test("小道具の分類は全ての形を一度ずつ含み、寸法プルダウンにも使う", () => {
+  const groupsBlock = bodyBetween(stageSource, "const PROP_SHAPE_GROUPS = [", "\n  ];") + "\n  ];";
+  const context = {};
+  vm.runInNewContext(`${groupsBlock}\nthis.groups = PROP_SHAPE_GROUPS;`, context);
+  const ids = context.groups.flatMap((group) => group.ids);
+  assert.deepEqual([...ids].sort(), [...shapeIds].sort());
+  assert.equal(new Set(ids).size, ids.length);
+  context.groups.forEach((group) => assert.equal(typeof group.ja, "string"));
+  const groupHelper = bodyBetween(stageSource, "function propShapeGroups", "function renderPropShapeSelect");
+  const render = bodyBetween(stageSource, "function renderPropShapeSelect", "function renderRosterPropChoices");
+  assert.match(groupHelper, /"その他の形"/);
+  assert.match(render, /createElement\("optgroup"\)/);
+  assert.match(render, /optgroup\.label = tx\(group\.ja\)/);
 });
 
 test("握り位置は全プリセットで基準寸法の高さ内にある", () => {
@@ -72,7 +98,7 @@ test("piecePartsのprop分岐はpropShapeを解決してpartBoxesへ一度だけ
   const body = bodyBetween(stageSource, "function pieceParts", "function drawDiabolo");
   assert.match(body, /piece\.type === "prop"/);
   assert.match(body, /scaledPropShape\(piece, d\)/);
-  assert.match(body, /SHOSAI_STAGE_MODELS\.partBoxes\(part\)/);
+  assert.match(body, /SHOSAI_STAGE_MODELS\.partBoxes\(/);
   assert.match(stageSource, /function propShapeOf[\s\S]*?owner\.propShape[\s\S]*?piece\.propShape[\s\S]*?"box"/);
 });
 
@@ -92,16 +118,18 @@ test("3Dのparts分岐は握り点または外接高さ中央から保持の下�
   assert.match(body, /const lift = finite\(box\.lift, 0\) \+ held/);
 });
 
-test("追加行と寸法窓に小道具の形selectがある", () => {
-  assert.match(indexSource, /id="stage-roster-prop-shape"/);
+test("登録窓に絵付きグリッド、寸法窓に形selectがある", () => {
+  assert.match(indexSource, /id="stage-roster-prop-grid"/);
   assert.match(indexSource, /id="stage-setinfo-prop-shape"/);
+  assert.match(stageSource, /function renderRosterPropChoices[\s\S]*?createElement\("canvas"\)/);
+  assert.match(stageSource, /function drawKindPreview\(canvas, kind, color, propShapeId = null\)/);
+  assert.match(stageSource, /pieceParts\(\{ type: kind, dims, facing: 0, propShape:/);
 });
 
 test("出るものは小道具を専用グループと一覧へ分ける", () => {
   assert.match(indexSource, /id="stage-group-props"[\s\S]*?id="stage-prop-list"/);
   const body = bodyBetween(stageSource, "function renderSets()", "/* 照明の一覧");
-  assert.match(body,
-    /renderSetList\(els\.setList, \(item\) => item\.kind !== "light" && item\.kind !== "prop"/);
-  assert.match(body, /renderSetList\(els\.propList, \(item\) => item\.kind === "prop"/);
+  assert.match(body, /renderSetList\(els\.setList, \(item\) => item\.kind !== "light" && !ROSTER_PROP_KINDS\.has\(item\.kind\)/);
+  assert.match(body, /renderSetList\(els\.propList, \(item\) => ROSTER_PROP_KINDS\.has\(item\.kind\)/);
   assert.match(stageSource, /function setListRow[\s\S]*?host\.append\(setListRow\(item\)\)/);
 });

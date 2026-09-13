@@ -113,9 +113,17 @@ function extractObjectDeclaration(source, name) {
 }
 
 function loadPropShapes(stageSource) {
+  // PROP_SHAPES本体はboxAt/ringLoop（丸い輪を作るヘルパー）を内部で使うため、
+  // その宣言（PROP_SHAPESの直前に置かれている）も一緒に取り出して評価する。
+  const helperStart = stageSource.indexOf("const boxAt =");
+  const propShapesStart = stageSource.indexOf("const PROP_SHAPES =");
+  if (helperStart === -1 || propShapesStart === -1 || helperStart >= propShapesStart) {
+    throw new Error("boxAt ヘルパーの宣言位置が想定と異なります（PROP_SHAPESより前にあるはず）。");
+  }
+  const helpers = stageSource.slice(helperStart, propShapesStart);
   const block = extractObjectDeclaration(stageSource, "PROP_SHAPES");
   // eslint-disable-next-line no-new-func
-  return new Function(`${block}; return PROP_SHAPES;`)();
+  return new Function(`${helpers}\n${block}; return PROP_SHAPES;`)();
 }
 
 function loadStringConstant(stageSource, name) {

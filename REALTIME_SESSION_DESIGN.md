@@ -106,8 +106,8 @@ shosai-app はすでに Cloudflare Workers（`wrangler.toml` + `worker.js`、Bas
 
 - 見積もり（推測と明示）: B0が実装2〜4時間規模＋実機検証、B1が同程度。Codex向き。
 - 検証: ブラウザ2窓＋別端末で、snapshot追従・ロール拒否・再接続を確認してから報告する。
-- 注意: `stage.html` は生成物。クライアント変更は `index.html` 側に入れて
-  `build_stage.py` を回す（メモリ `shosai-app-two-html-entries`）。
+- 注意: 2026-09-12以降、舞台スケッチの正本は `stage.html`。クライアント変更は
+  `stage.html` 側に入れ、`build_stage.py` で派生Viewer更新と書斎との分離検証を行う。
   JS変更時は `?v=` と `stage-sw.js` の `CACHE_NAME` を上げる（`shosai-app-cache-bump-required`）。
 
 ## 確定事項（2026-08-20 本人回答）

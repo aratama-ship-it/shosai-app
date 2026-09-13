@@ -5,7 +5,7 @@ import vm from "node:vm";
 
 const source = await readFile(new URL("../stage-machinery.js", import.meta.url), "utf8");
 const sketchSource = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
-const indexSource = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const indexSource = await readFile(new URL("../stage.html", import.meta.url), "utf8");
 const context = { window: {}, Date, Math, JSON };
 vm.runInNewContext(source, context, { filename: "stage-machinery.js" });
 const machinery = context.window.SHOSAI_STAGE_MACHINERY;
@@ -97,7 +97,7 @@ test("場面ごとの転換秒数を正規化し、再生ボタンと行き先�
   assert.match(sketchSource,
     /function normalizeCueSeconds[\s\S]*?value === null[\s\S]*?clamp\(seconds, 0\.2, 10\)/);
   assert.match(sketchSource, /cueSeconds: kind === "scene" \? normalizeCueSeconds\(raw\.cueSeconds\) : null/);
-  assert.match(sketchSource, /const span = sc\(\)\.cueSeconds !== null[\s\S]*?sc\(\)\.cueSeconds \* 1000/);
+  assert.match(sketchSource, /const span = Number\.isFinite\(Number\(durationMs\)\)[\s\S]*?sc\(\)\.cueSeconds \* 1000/);
   assert.match(indexSource, /id="stage-scene-replay"/);
   assert.match(sketchSource, /sceneReplay\.disabled = index <= 0 \|\| !state\.animateScenes/);
   assert.match(sketchSource, /beginSceneAnim\(fromScene\)/);

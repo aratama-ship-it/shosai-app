@@ -8,7 +8,7 @@ from stage_extract import view, modal_html, present_html, tour, ver
 ROOT = Path(__file__).resolve().parent
 scripts = ['stage-venues.js', 'stage-venue-lines.js', 'stage-i18n.js', 'stage-set-model.js', 'stage-machinery.js', 'stage-sketch.js']
 tags = '\n'.join(f'<script src="/study-assets/{ver(name)}"></script>' for name in scripts)
-legacy = re.sub(r'\s(?:src|href|action|poster|srcset)="[^"]*"', "", view + tour + modal_html + present_html)
+legacy = re.sub(r'\s+(?:src|href|action|poster|srcset)="[^"]*"', "", view + tour + modal_html + present_html)
 page = f'''<!doctype html>
 <!-- Generated from stage.html by build_study.py. -->
 <html lang="ja" data-study-renderer>

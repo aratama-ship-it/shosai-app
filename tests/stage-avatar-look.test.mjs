@@ -121,7 +121,7 @@ const context = {
   },
   document: {
     readyState: "complete",
-    documentElement: { classList: createClassList() },
+    documentElement: { classList: createClassList(), dataset: {} },
     body: createElementStub("body"),
     getElementById: elementById,
     createElement: createElementStub,

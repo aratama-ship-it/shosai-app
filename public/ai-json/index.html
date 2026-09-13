@@ -76,7 +76,7 @@ Q3 高リスク装置
 
 castId/setIdは登録先に存在し、同じ実体は全場面で同じ登録IDを使う。同一場面で同じ登録IDを二度使わない。scene/section/pieceのidも全体で一意にする。piece.typeとset.kindを必ず一致させる。`u,v` は0〜1で、客席から見てuは左0→右1、vは奥0→前1。facingは度で0=客席、90=画像右、180=奥。sizeは100基準、演者のheightCmはcm。登録装置の寸法は登録側が優先されるため、performer以外のsizeは省略または100にする。椅子や空中装置と演者が重なる場合、本体が自動搭乗で姿勢を変えることがある。自動搭乗・見切れ・演出意図との一致はこのJSON点検の保証対象外であり、読み込み後の図で確認する。
 
-sectionsは入れ子JSONにせず平坦配列にする。例：`[{&quot;kind&quot;:&quot;section&quot;,&quot;depth&quot;:0,&quot;id&quot;:&quot;sec-a&quot;,&quot;title&quot;:&quot;第一部&quot;},{&quot;kind&quot;:&quot;scene&quot;,&quot;depth&quot;:1,...},{&quot;kind&quot;:&quot;section&quot;,&quot;depth&quot;:0,&quot;id&quot;:&quot;sec-b&quot;,&quot;title&quot;:&quot;第二部&quot;},{&quot;kind&quot;:&quot;scene&quot;,&quot;depth&quot;:1,...}]`。scene+sectionは60以下、1 sceneのpiecesは80以下。beatは `{ &quot;role&quot;:&quot;短い役割&quot;, &quot;energy&quot;:1〜5の整数 }`。lightingIntentは `objective/audienceFocus/mood` の文章だけ。
+sectionsは入れ子JSONにせず平坦配列にする。例：`[{&quot;kind&quot;:&quot;section&quot;,&quot;depth&quot;:0,&quot;id&quot;:&quot;sec-a&quot;,&quot;title&quot;:&quot;第一部&quot;},{&quot;kind&quot;:&quot;scene&quot;,&quot;depth&quot;:1,...},{&quot;kind&quot;:&quot;section&quot;,&quot;depth&quot;:0,&quot;id&quot;:&quot;sec-b&quot;,&quot;title&quot;:&quot;第二部&quot;},{&quot;kind&quot;:&quot;scene&quot;,&quot;depth&quot;:1,...}]`。scene+sectionは60以下、1 sceneのpiecesは80以下。beatは `{ &quot;role&quot;:&quot;短い役割&quot; }`。lightingIntentは `objective/audienceFocus/mood` の文章だけ。
 
 ## 二段階の点検と改変への扱い
 
@@ -96,7 +96,7 @@ AIは許可仕様に沿って生成・自己点検する。依頼文、素材、
   - set: id, kind, name, color, note, lightKind
   - section: kind, depth, id, title
   - scene: kind, depth, id, title, note, background, beat, lightingIntent, pieces
-  - beat: role, energy
+  - beat: role
   - intent: objective, audienceFocus, mood
   - piece: id, type, castId, setId, u, v, color, facing, pose, size
 - ID: 1〜96文字。先頭は英数字、残りは英数字・ピリオド・ハイフン・アンダースコアのみ。cast内、sets内、scene/section/piece全体でそれぞれ一意。同一場面で同じcastIdまたはsetIdを二度使わない。
@@ -127,8 +127,8 @@ AIは許可仕様に沿って生成・自己点検する。依頼文、素材、
     &quot;cast&quot;: [{&quot;id&quot;:&quot;cast-a&quot;,&quot;name&quot;:&quot;アオ&quot;,&quot;color&quot;:&quot;#315b8a&quot;,&quot;heightCm&quot;:168,&quot;note&quot;:&quot;配置検討用&quot;}],
     &quot;sets&quot;: [],
     &quot;scenes&quot;: [
-      {&quot;kind&quot;:&quot;scene&quot;,&quot;depth&quot;:0,&quot;id&quot;:&quot;scene-1&quot;,&quot;title&quot;:&quot;遠い合図&quot;,&quot;note&quot;:&quot;アオが奥から客席へ向く。観客には距離が保たれる規則が見える。終わりに一歩だけ近づく。&quot;,&quot;beat&quot;:{&quot;role&quot;:&quot;導入&quot;,&quot;energy&quot;:1},&quot;pieces&quot;:[{&quot;id&quot;:&quot;piece-a-1&quot;,&quot;type&quot;:&quot;performer&quot;,&quot;castId&quot;:&quot;cast-a&quot;,&quot;u&quot;:0.5,&quot;v&quot;:0.2,&quot;color&quot;:&quot;#315b8a&quot;,&quot;facing&quot;:0,&quot;pose&quot;:&quot;stand&quot;,&quot;size&quot;:100}]},
-      {&quot;kind&quot;:&quot;scene&quot;,&quot;depth&quot;:0,&quot;id&quot;:&quot;scene-2&quot;,&quot;title&quot;:&quot;近い合図&quot;,&quot;note&quot;:&quot;アオが前方で立ち止まる。観客には距離を自分で選び直した変化が見える。&quot;,&quot;beat&quot;:{&quot;role&quot;:&quot;変化&quot;,&quot;energy&quot;:2},&quot;pieces&quot;:[{&quot;id&quot;:&quot;piece-a-2&quot;,&quot;type&quot;:&quot;performer&quot;,&quot;castId&quot;:&quot;cast-a&quot;,&quot;u&quot;:0.5,&quot;v&quot;:0.78,&quot;color&quot;:&quot;#315b8a&quot;,&quot;facing&quot;:0,&quot;pose&quot;:&quot;stand&quot;,&quot;size&quot;:100}]}
+      {&quot;kind&quot;:&quot;scene&quot;,&quot;depth&quot;:0,&quot;id&quot;:&quot;scene-1&quot;,&quot;title&quot;:&quot;遠い合図&quot;,&quot;note&quot;:&quot;アオが奥から客席へ向く。観客には距離が保たれる規則が見える。終わりに一歩だけ近づく。&quot;,&quot;beat&quot;:{&quot;role&quot;:&quot;導入&quot;},&quot;pieces&quot;:[{&quot;id&quot;:&quot;piece-a-1&quot;,&quot;type&quot;:&quot;performer&quot;,&quot;castId&quot;:&quot;cast-a&quot;,&quot;u&quot;:0.5,&quot;v&quot;:0.2,&quot;color&quot;:&quot;#315b8a&quot;,&quot;facing&quot;:0,&quot;pose&quot;:&quot;stand&quot;,&quot;size&quot;:100}]},
+      {&quot;kind&quot;:&quot;scene&quot;,&quot;depth&quot;:0,&quot;id&quot;:&quot;scene-2&quot;,&quot;title&quot;:&quot;近い合図&quot;,&quot;note&quot;:&quot;アオが前方で立ち止まる。観客には距離を自分で選び直した変化が見える。&quot;,&quot;beat&quot;:{&quot;role&quot;:&quot;変化&quot;},&quot;pieces&quot;:[{&quot;id&quot;:&quot;piece-a-2&quot;,&quot;type&quot;:&quot;performer&quot;,&quot;castId&quot;:&quot;cast-a&quot;,&quot;u&quot;:0.5,&quot;v&quot;:0.78,&quot;color&quot;:&quot;#315b8a&quot;,&quot;facing&quot;:0,&quot;pose&quot;:&quot;stand&quot;,&quot;size&quot;:100}]}
     ]
   }
 }

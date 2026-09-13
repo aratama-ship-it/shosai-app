@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const stageSource = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
-const indexSource = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const indexSource = await readFile(new URL("../stage.html", import.meta.url), "utf8");
 
 test("小道具の香盤表は既定ONの機能スイッチとして登録される", () => {
   assert.match(stageSource,

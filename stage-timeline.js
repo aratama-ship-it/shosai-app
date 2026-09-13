@@ -51,14 +51,19 @@
     prev: document.getElementById("stage-timeline-prev"),
     next: document.getElementById("stage-timeline-next"),
     head: document.getElementById("stage-timeline-head"),
+    metronome: document.getElementById("stage-timeline-metronome"),
     anchorHere: document.getElementById("stage-timeline-anchor"),
     clearAnchors: document.getElementById("stage-timeline-clear-anchors"),
     markOne: document.getElementById("stage-timeline-mark-one"),
     loopA: document.getElementById("stage-timeline-loop-a"),
     loopB: document.getElementById("stage-timeline-loop-b"),
     loop: document.getElementById("stage-timeline-loop"),
+    bpmLabel: document.getElementById("stage-timeline-bpm-label"),
     bpm: document.getElementById("stage-timeline-bpm"),
+    autoBpm: document.getElementById("stage-timeline-auto-bpm"),
+    meter: document.getElementById("stage-timeline-meter"),
     realTempo: document.getElementById("stage-timeline-real-tempo"),
+    realTempoReadout: document.getElementById("stage-timeline-real-tempo-readout"),
     grid: document.getElementById("stage-timeline-grid"),
     zoomOut: document.getElementById("stage-timeline-zoom-out"),
     zoomIn: document.getElementById("stage-timeline-zoom-in"),
@@ -165,11 +170,13 @@
   let mode = "normal";
   let timeline = null;
   let timelineWidth = 960;
+  let audioAvailabilityGeneration = 0;
   let seekSeconds = 0;
   let durationEditSectionId = null;
   let pendingUnitChange = null;
   let unitWarningReturnFocus = null;
   let selectedCueId = null;
+  let pendingSceneOpenTimer = 0;
   let cueDetailId = null;
   let cueDetailReturnFocus = null;
   let audioDetailTrackId = null;
@@ -413,6 +420,7 @@
     document.body.classList.toggle("stage-timeline-mode", next === "timeline");
     panel.hidden = next !== "timeline";
     if (next !== "timeline") setSettingsOpen(false);
+    if (next !== "timeline") cancelPendingSceneOpen();
     if (next !== "timeline") closeAudioDetails({ focus: false });
     if (next !== "timeline") pauseSilentPlayback({ update: false });
     els.tabs.forEach((button) => {
@@ -448,9 +456,9 @@
     return out;
   }
 
-  function currentSection(project) {
+  function sectionForScene(project, sceneId) {
     const rows = Array.isArray(project.scenes) ? project.scenes : [];
-    const at = rows.findIndex((row) => row.id === project.activeSceneId);
+    const at = rows.findIndex((row) => row.id === sceneId);
     if (at < 0) return rows.find((row) => row.kind === "section") || null;
     if (rows[at].kind === "section") return rows[at];
     const depth = finite(rows[at].depth, 0);
@@ -458,6 +466,10 @@
       if (rows[i].kind === "section" && finite(rows[i].depth, 0) < depth) return rows[i];
     }
     return null;
+  }
+
+  function currentSection(project) {
+    return sectionForScene(project, project.activeSceneId);
   }
 
   function sectionTimelineUnit(section) {
@@ -1127,6 +1139,49 @@
     return numbers;
   }
 
+  function sceneFactsById(sceneId) {
+    const documentValue = projectDocument();
+    const project = documentValue && documentValue.project;
+    const rows = project && Array.isArray(project.scenes) ? project.scenes : [];
+    const scene = rows.find((row) => row && row.kind === "scene" && row.id === sceneId);
+    if (!project || !scene) return null;
+    const section = sectionForScene(project, scene.id);
+    const choices = formationTimelines(project, section);
+    const available = choices.length ? choices : [fallbackTimeline(project, section)];
+    const selected = timeline && timeline.sectionId === (section && section.id)
+      && timeline.segments.some((segment) => segment.sceneId === scene.id)
+      ? timeline : available.find((choice) => choice.segments.some((segment) => segment.sceneId === scene.id));
+    const segment = selected && selected.segments.find((item) => item.sceneId === scene.id);
+    const numbers = timelineSceneNumberMap(rows);
+    if (!selected || !segment) {
+      return {
+        sceneNumber: numbers.get(scene.id) || "—",
+        section: section ? `${numbers.get(section.id) || "—"}  ${section.title || tx("セクション")}` : "—",
+        position: "—",
+        hold: "—",
+        transition: "—",
+      };
+    }
+    const sceneEnd = Number.isFinite(segment.sceneEnd) ? segment.sceneEnd : segment.end;
+    const transition = segment.transitionId
+      ? selected.transitions.find((item) => item.id === segment.transitionId) : null;
+    const position = sectionTimelineUnit(section) === "count"
+      ? `${Math.round(Math.max(1, secToCount(selected.track, segment.start)) * 10) / 10} ${tx("カウント")}`
+      : formatTime(segment.start, true);
+    return {
+      sceneNumber: numbers.get(scene.id) || "—",
+      section: section
+        ? `${numbers.get(section.id) || "—"}  ${section.title || tx("セクション")}`
+        : selected.sectionTitle || "—",
+      position,
+      hold: formatTime(Math.max(0, sceneEnd - segment.start), true),
+      transition: transition
+        ? formatTime(Math.max(0, transition.end - transition.start), true) : formatTime(0, true),
+    };
+  }
+
+  window.SHOSAI_STAGE_TIMELINE_DETAILS = Object.freeze({ sceneFactsById });
+
   function cueSegment(cue) {
     if (!timeline) return null;
     const legacy = cue.sceneId && timeline.segments.find((segment) => segment.sceneId === cue.sceneId);
@@ -1182,6 +1237,29 @@
         button.setAttribute("aria-pressed", String(button.dataset.cueId === selectedCueId));
       });
     });
+  }
+
+  function cancelPendingSceneOpen() {
+    if (!pendingSceneOpenTimer) return;
+    window.clearTimeout(pendingSceneOpenTimer);
+    pendingSceneOpenTimer = 0;
+  }
+
+  function openTimelineScene(segment) {
+    if (!segment || !segment.sceneId) return;
+    bridge.openSceneById(segment.sceneId);
+    seekSeconds = segment.start;
+    if (els.audio && timeline.trackId && audioMatchesTimeline()) els.audio.currentTime = seekSeconds;
+    updatePlayhead();
+    renderTimeline();
+  }
+
+  function scheduleTimelineSceneOpen(segment) {
+    cancelPendingSceneOpen();
+    pendingSceneOpenTimer = window.setTimeout(() => {
+      pendingSceneOpenTimer = 0;
+      openTimelineScene(segment);
+    }, 220);
   }
 
   function closeCueDetails({ focus = true } = {}) {
@@ -1264,6 +1342,50 @@
     return true;
   }
 
+  function showMissingAudioState(audioBlock, title) {
+    audioBlock.dataset.audioMissing = "true";
+    audioBlock.classList.add("is-missing");
+    audioBlock.replaceChildren();
+
+    const icon = document.createElement("span");
+    icon.className = "stage-timeline-audio-missing-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.innerHTML = '<svg viewBox="0 0 20 20" focusable="false"><path d="M4 3.5h7l4 4V16.5H4z"/><path d="M11 3.5v4h4M7 12.5a3 3 0 1 0 1-2.2M7 9v3h3"/></svg>';
+
+    const copy = document.createElement("span");
+    copy.className = "stage-timeline-audio-missing-copy";
+    const warning = document.createElement("strong");
+    warning.textContent = tx("音源が見つかりません");
+    const registeredTitle = document.createElement("span");
+    registeredTitle.textContent = title;
+    copy.append(warning, registeredTitle);
+
+    const action = document.createElement("span");
+    action.className = "stage-timeline-audio-relink-action";
+    action.textContent = tx("読み込み直す");
+
+    const content = document.createElement("span");
+    content.className = "stage-timeline-audio-missing-content";
+    content.append(icon, copy, action);
+    audioBlock.append(content);
+    audioBlock.title = `${title} — ${tx("音源が見つかりません")}。${tx("読み込み直す")}`;
+    audioBlock.setAttribute("aria-label", `${title}。${tx("音源が見つかりません")}。${tx("読み込み直す")}`);
+  }
+
+  function checkTimelineAudioAvailability(audioBlock, trackId, title) {
+    if (typeof bridge.hasTimelineAudioFile !== "function") return;
+    const generation = ++audioAvailabilityGeneration;
+    Promise.resolve(bridge.hasTimelineAudioFile(trackId)).then((available) => {
+      if (available || generation !== audioAvailabilityGeneration || !audioBlock.isConnected
+          || audioBlock.dataset.trackId !== trackId) return;
+      showMissingAudioState(audioBlock, title);
+    }, () => {
+      if (generation !== audioAvailabilityGeneration || !audioBlock.isConnected
+          || audioBlock.dataset.trackId !== trackId) return;
+      showMissingAudioState(audioBlock, title);
+    });
+  }
+
   function renderCueBlocks(project) {
     Object.values(els.cueLanes).forEach(clearLane);
     const cues = timelineCuePresentations(project);
@@ -1299,20 +1421,35 @@
     const audioBlock = document.createElement(timeline.trackId ? "button" : "div");
     if (timeline.trackId) audioBlock.type = "button";
     audioBlock.className = `stage-timeline-audio-block${timeline.trackId ? "" : " is-empty"}`;
+    audioBlock.dataset.audioMissing = "false";
     audioBlock.textContent = timeline.title;
     audioBlock.title = timeline.trackId
       ? `${timeline.title}（${tx("ダブルクリックで音源情報")}）` : timeline.title;
     if (timeline.trackId) {
       audioBlock.dataset.trackId = timeline.trackId;
-      audioBlock.addEventListener("dblclick", () => openAudioDetails(timeline.trackId, audioBlock));
+      audioBlock.addEventListener("click", () => {
+        if (audioBlock.dataset.audioMissing !== "true"
+            || typeof bridge.openTimelineAudioRelinkPicker !== "function") return;
+        bridge.openTimelineAudioRelinkPicker(timeline.trackId);
+      });
+      audioBlock.addEventListener("dblclick", () => {
+        if (audioBlock.dataset.audioMissing === "true") return;
+        openAudioDetails(timeline.trackId, audioBlock);
+      });
     }
     placeBlock(audioBlock, 0, timeline.duration);
     els.audioLane.append(audioBlock);
+    if (timeline.trackId) {
+      checkTimelineAudioAvailability(audioBlock, timeline.trackId, timeline.title);
+    } else {
+      audioAvailabilityGeneration += 1;
+    }
 
     timeline.segments.forEach((segment, index) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "stage-timeline-scene";
+      if (segment.sceneId) button.dataset.sceneId = segment.sceneId;
       if (segment.sceneId === project.activeSceneId) button.classList.add("is-current");
       const label = document.createElement("span");
       label.className = "stage-timeline-block-label";
@@ -1323,13 +1460,16 @@
       const sceneEnd = Number.isFinite(segment.sceneEnd) ? segment.sceneEnd : segment.end;
       if (pxFor(sceneEnd) - pxFor(segment.start) < 28) button.classList.add("is-compact");
       placeBlock(button, segment.start, sceneEnd);
-      button.addEventListener("click", () => {
+      button.addEventListener("click", (event) => {
         if (!segment.sceneId) return;
-        bridge.openSceneById(segment.sceneId);
-        seekSeconds = segment.start;
-        if (els.audio && timeline.trackId && audioMatchesTimeline()) els.audio.currentTime = seekSeconds;
-        updatePlayhead();
-        renderTimeline();
+        if (event.target.closest(".stage-timeline-block-resize-handle") || event.detail > 1) return;
+        scheduleTimelineSceneOpen(segment);
+      });
+      button.addEventListener("dblclick", (event) => {
+        if (event.target.closest(".stage-timeline-block-resize-handle")) return;
+        event.preventDefault();
+        cancelPendingSceneOpen();
+        if (typeof bridge.openSceneDetailsById === "function") bridge.openSceneDetailsById(segment.sceneId);
       });
       if (timelineContentCanResize()) {
         const previous = timeline.segments[index - 1];
@@ -1514,6 +1654,16 @@
     syncSilentScene(seekSeconds);
   }
 
+  function syncSceneForSeek() {
+    if (!timeline) return;
+    if (silentPlayback) {
+      reanchorSilentPlayback();
+      return;
+    }
+    playbackPosition = null;
+    syncTimelinePlaybackScene(seekSeconds);
+  }
+
   function updatePlayhead() {
     if (!timeline) return;
     const playingThisTimeline = els.audio && audioMatchesTimeline();
@@ -1610,6 +1760,11 @@
     els.unitToggle.dataset.unit = ui.unit;
     els.unitToggle.setAttribute("aria-checked", String(ui.unit === "count"));
     els.unitToggle.disabled = !section || typeof bridge.setSectionTimelineUnit !== "function";
+    const showCountTempo = ui.unit === "count";
+    [els.metronome, els.anchorHere, els.clearAnchors, els.bpmLabel, els.bpm, els.autoBpm,
+      els.meter, els.markOne, els.realTempoReadout].forEach((control) => {
+      control.hidden = !showCountTempo;
+    });
     const countEditing = ui.unit === "count" && canEditCountSync();
     els.anchorHere.disabled = !countEditing;
     els.clearAnchors.disabled = !countEditing || !countSyncPayload(timeline.track).anchors.length;
@@ -1632,7 +1787,7 @@
     const rawSeconds = (event.clientX - rect.left) / Math.max(1, rect.width) * timeline.duration;
     seekSeconds = clamp(snappedSeconds(rawSeconds), 0, timeline.duration);
     if (els.audio && audioMatchesTimeline()) els.audio.currentTime = seekSeconds;
-    reanchorSilentPlayback();
+    syncSceneForSeek();
     updatePlayhead();
   }
 
@@ -2065,7 +2220,7 @@
   els.head.addEventListener("click", () => {
     seekSeconds = 0;
     if (els.audio && audioMatchesTimeline()) els.audio.currentTime = 0;
-    reanchorSilentPlayback();
+    syncSceneForSeek();
     updatePlayhead();
   });
   els.anchorHere.addEventListener("click", anchorCurrentPhraseHead);
@@ -2130,7 +2285,7 @@
         timeline.duration,
       );
       if (els.audio && audioMatchesTimeline()) els.audio.currentTime = seekSeconds;
-      reanchorSilentPlayback();
+      syncSceneForSeek();
       updatePlayhead();
       return;
     }
@@ -2219,6 +2374,10 @@
       if (name === "loadedmetadata" && pendingSeek !== null && audioMatchesTimeline()) {
         els.audio.currentTime = clamp(pendingSeek, 0, Number.isFinite(els.audio.duration) ? els.audio.duration : timeline.duration);
         pendingSeek = null;
+      }
+      if (name === "seeking" && mode === "timeline" && timeline && Number.isFinite(els.audio.currentTime)) {
+        seekSeconds = els.audio.currentTime;
+        syncSceneForSeek();
       }
       if (name === "timeupdate" && ui.loop && ui.loopB > ui.loopA && els.audio.currentTime >= ui.loopB) {
         els.audio.currentTime = ui.loopA;

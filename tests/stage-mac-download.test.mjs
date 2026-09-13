@@ -5,13 +5,12 @@ import test from "node:test";
 const indexSource = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const stageHtml = await readFile(new URL("../stage.html", import.meta.url), "utf8");
 const macHtml = await readFile(new URL("../mac.html", import.meta.url), "utf8");
-const style = await readFile(new URL("../style.css", import.meta.url), "utf8");
 const assetsIgnore = await readFile(new URL("../.assetsignore", import.meta.url), "utf8");
 const buildSource = await readFile(new URL("../build_stage.py", import.meta.url), "utf8");
 
-test("書斎のヘッダーからMac版のページへ行ける", () => {
-  assert.match(indexSource, /<a class="topnav-app" href="mac\.html">/);
-  assert.match(style, /\.topnav-app \{[\s\S]*?color: var\(--brass\);/);
+test("書斎のヘッダーは舞台スケッチ用Mac版の入口を持たない", () => {
+  assert.doesNotMatch(indexSource, /href="mac\.html"/);
+  assert.doesNotMatch(indexSource, /topnav-app/);
 });
 
 /* ★配る製品（stage.html）と身内の机（index.html）は別物。
@@ -23,16 +22,11 @@ test("配布する単独版にはMac版の入口が入らない", () => {
   assert.doesNotMatch(stageHtml, /topnav-app/);
 });
 
-/* 2026-08-28に実際に壊した。index.html のコメントへ舞台スケッチの開始タグを
-   そのまま書いたら、build_stage.py がそこを抽出の開始点と読み違え、
-   単独版が半分の大きさになった（足りないid 300個超で気づけた）。
-   コメントの中であっても、開始タグの文字列は一度しか現れてはいけない。 */
-test("単独版の抽出開始点が index.html にひとつしかない", () => {
-  const anchor = buildSource.match(/html\.index\('(<main id="[^"]+")'\)/);
-  assert.ok(anchor, "build_stage.py の抽出開始点を読み取れること");
-  const occurrences = indexSource.split(anchor[1]).length - 1;
-  assert.equal(occurrences, 1,
-    `${anchor[1]} が index.html に ${occurrences} 個ある。コメントに書いていないか確認すること`);
+test("舞台スケッチはstage.htmlを正本とし、書斎から再生成しない", () => {
+  assert.match(stageHtml, /<main id="view-stage"/);
+  assert.doesNotMatch(indexSource, /<main id="view-stage"/);
+  assert.match(buildSource, /舞台スケッチのHTMLは ``stage\.html`` を直接編集/);
+  assert.doesNotMatch(buildSource, /OUT\.write_text|STAGE\.write_text/);
 });
 
 test("単独版が本体と同じくらいの大きさで書き出されている", () => {

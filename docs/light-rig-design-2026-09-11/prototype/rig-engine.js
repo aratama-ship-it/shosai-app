@@ -168,6 +168,64 @@
     return out.map((o) => ({ t: o.t, v: clamp(o.v / mx, 0, 1) }));
   };
 
+  /* ---------- バーンドア／カッター（2026-09-14 本人要望） ----------
+     バーンドア: 固定灯だけの装備。四方（床・空中なら 奥・手前・下手・上手／奥の壁・客席なら 上・下・下手・上手）
+       から光の縁を切る。fixture.barn = { back, front, left, right } 各 0〜1（0＝開いている、1＝中心まで閉める）。
+       仕込みで決める値なので全シーン共通（fixture.beamDeg と同じ層）。ムービングには付けない（本人指定）。
+     カッター: 光を四角にする。light.shutter = { on, w, h }。このシーンの値（ゴボと同じ層）。
+       w/h は「光の輪に内接する正方形の辺」を1とした比。1.4（≒√2）まで上げるとその向きは輪の外まで開き、
+       もう一方だけが効いた「帯」になる。細かい調整はしない（本人指定「四角形、異なるサイズの四角形」）。
+     どちらも「切る線」の集まりに直してから描く: 世界座標の向き n（外向き）と、中心からの距離（光の半径＝1）。
+     縁の柔らかさ soft も半径に対する比。バーンドアは柔らかく、カッターは硬い。 */
+  const BARN_KEYS = Object.freeze(["back", "front", "left", "right"]);
+  const BARN_SOFT = 0.22, SHUTTER_SOFT = 0.04;
+  const SHUTTER_MIN = 0.1, SHUTTER_MAX = 1.4;
+  const SHUTTER_PRESETS = Object.freeze([
+    { id: "square", name: "正方形", w: 1, h: 1 },
+    { id: "wide", name: "横長", w: 1.4, h: 0.5 },
+    { id: "tall", name: "縦長", w: 0.5, h: 1.4 },
+    { id: "small", name: "小さめ", w: 0.6, h: 0.6 },
+  ]);
+  const newShutter = (over = {}) => ({ on: true, w: 1, h: 1, ...over });
+  const barnOf = (fixture) => {
+    const b = (fixture && fixture.barn) || {}; const o = {};
+    BARN_KEYS.forEach((k) => { o[k] = clamp(finite(b[k], 0), 0, 1); });
+    return o;
+  };
+  const barnActive = (fixture) => Boolean(fixture) && !isMoving(fixture) && BARN_KEYS.some((k) => barnOf(fixture)[k] > 0);
+  const shutterActive = (light) => Boolean(light && light.shutter && light.shutter.on);
+  /* 切る線（世界座標）。vert = "y"（床・空中: 奥⇄手前が y 軸、奥＝−y）／"z"（奥の壁・客席: 上⇄下が z 軸、上＝+z）。
+     返り値 [{ key, n:{x,y,z}, f, soft }]。f は中心までを1とした閉め具合。 */
+  const frameDoors = (fixture, light, vert) => {
+    const out = [];
+    const up = vert === "z" ? { x: 0, y: 0, z: 1 } : { x: 0, y: -1, z: 0 };
+    const axis = { back: up, front: { x: -up.x, y: -up.y, z: -up.z }, left: { x: -1, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 } };
+    if (barnActive(fixture)) {
+      const b = barnOf(fixture);
+      BARN_KEYS.forEach((k) => { if (b[k] > 0) out.push({ key: k, n: axis[k], f: b[k], soft: BARN_SOFT }); });
+    }
+    if (shutterActive(light)) {
+      const s = light.shutter;
+      const fw = 1 - clamp(finite(s.w, 1), SHUTTER_MIN, SHUTTER_MAX + 0.1) / Math.SQRT2;
+      const fh = 1 - clamp(finite(s.h, 1), SHUTTER_MIN, SHUTTER_MAX + 0.1) / Math.SQRT2;
+      if (fw > 0) { out.push({ key: "left", n: axis.left, f: fw, soft: SHUTTER_SOFT }); out.push({ key: "right", n: axis.right, f: fw, soft: SHUTTER_SOFT }); }
+      if (fh > 0) { out.push({ key: "back", n: axis.back, f: fh, soft: SHUTTER_SOFT }); out.push({ key: "front", n: axis.front, f: fh, soft: SHUTTER_SOFT }); }
+    }
+    return out;
+  };
+  /* 面の上の楕円（spotEllipse の ea, eb）の座標系で見た切る線。単位円＝光の輪。
+     世界座標の点 = c + x·ea + y·eb なので、向き n に沿った座標は x·(ea·n) + y·(eb·n)。
+     楕円の n 方向の半径は √((ea·n)²+(eb·n)²) だから、そこを1にそろえると
+     「p·m > d の側を切る」（m = ((ea·n),(eb·n))/半径、d = 1−f）という単位円の上の直線になる。
+     n が面に垂直（床の上で z 軸など）なら半径0で線が引けない＝その面では切らない（null）。 */
+  const doorCutInEllipse = (door, ea, eb) => {
+    const n = door.n;
+    const A = ea.x * n.x + ea.y * n.y + ea.z * n.z, B = eb.x * n.x + eb.y * n.y + eb.z * n.z;
+    const e = Math.hypot(A, B);
+    if (!(e > 1e-9)) return null;
+    return { mx: A / e, my: B / e, d: 1 - clamp(finite(door.f, 0), 0, 1), soft: finite(door.soft, SHUTTER_SOFT) };
+  };
+
   const trussById = (rig, id) => (rig.trusses || []).find((t) => t.id === id) || null;
 
   // 奥から何段目（1始まり）。表示専用。保存はしない
@@ -817,5 +875,6 @@
     makePlanProjector, makeFrontProjector, makeSideProjector, planToUV, frontToUH, sideToVH,
     describeMount, describeCue,
     CURTAIN_KINDS, curtainKindLabel, curtainParts,
+    BARN_KEYS, SHUTTER_PRESETS, SHUTTER_MIN, SHUTTER_MAX, newShutter, barnOf, barnActive, shutterActive, frameDoors, doorCutInEllipse,
   });
 })(typeof window !== "undefined" ? window : globalThis);

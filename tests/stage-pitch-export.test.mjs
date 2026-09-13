@@ -6,7 +6,7 @@ import vm from "node:vm";
 const stageSource = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
 const promptSource = await readFile(new URL("../stage-prompt-i18n.js", import.meta.url), "utf8");
 const i18nSource = await readFile(new URL("../stage-i18n.js", import.meta.url), "utf8");
-const indexSource = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const indexSource = await readFile(new URL("../stage.html", import.meta.url), "utf8");
 const swSource = await readFile(new URL("../stage-sw.js", import.meta.url), "utf8");
 
 const context = {
@@ -135,14 +135,14 @@ test("ピッチ用UI・読み込み順・オフライン登録・作図注記ガ
   assert.match(indexSource, /data-export-purpose="pitch"/);
   assert.match(indexSource, /id="stage-pitch-langs"/);
   const i18nAt = indexSource.search(/stage-i18n\.js\?v=\d+/);
-  const promptAt = indexSource.indexOf("stage-prompt-i18n.js?v=2");
+  const promptAt = indexSource.indexOf("stage-prompt-i18n.js?v=3");
   const sketchAt = indexSource.search(/stage-sketch\.js\?v=\d+/);
   assert.ok(i18nAt >= 0, "stage-i18n.js の参照がない");
   assert.ok(promptAt >= 0, "stage-prompt-i18n.js の参照がない");
   assert.ok(sketchAt >= 0, "stage-sketch.js の参照がない");
   assert.ok(i18nAt < promptAt);
   assert.ok(promptAt < sketchAt);
-  assert.ok(swSource.includes("./stage-prompt-i18n.js?v=2"));
+  assert.ok(swSource.includes("./stage-prompt-i18n.js?v=3"));
   assert.match(stageSource, /if \(!pitchStyle && \(state\.showNames/);
   assert.match(stageSource, /if \(!pitchStyle\) \{\s*drawArrows/);
   assert.match(stageSource, /if \(!pitchStyle && L\.plan && anyRoutesShown/);

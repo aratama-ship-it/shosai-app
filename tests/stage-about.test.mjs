@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 
-const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const html = await readFile(new URL("../stage.html", import.meta.url), "utf8");
 const i18nSource = await readFile(new URL("../stage-i18n.js", import.meta.url), "utf8");
 const stageSource = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
 const japaneseSource = await readFile(
@@ -59,4 +59,10 @@ test("Aboutには独立モーダルと設定内の入口がある", () => {
   assert.match(stageSource, /els\.aboutOpenFromPrefs\.addEventListener\("click", openAboutFromPrefs\)/);
   assert.match(stageSource, /els\.aboutClose\.addEventListener\("click", closeAbout\)/);
   assert.match(stageSource, /els\.aboutBackdrop\.addEventListener\("click", closeAbout\)/);
+});
+
+test("画面下部のAbout入口からPYGMIXの意見フォームへ進める", () => {
+  assert.match(html, /<footer class="stage-app-footer">\s*<button type="button" class="stage-about-link" id="stage-about-open-from-footer">このアプリについて<\/button>/);
+  assert.match(html, /<a class="stage-about-feedback" href="https:\/\/pygmix\.com\/contact" target="_blank" rel="noopener">ご意見・ご感想・ご要望を送る ↗<\/a>/);
+  assert.match(stageSource, /els\.aboutOpenFromFooter\.addEventListener\("click", openAbout\)/);
 });

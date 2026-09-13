@@ -1,0 +1,603 @@
+{
+"kind": "shosai-stage-sketch",
+"version": 4,
+"venues": [],
+"project": {
+"title": "ロミオとジュリエット 小さなサーカス",
+"venue": "proscenium",
+"venueSize": "mid",
+"cast": [
+{
+"id": "cast-romeo",
+"name": "ロミオ",
+"color": "#315B8A"
+},
+{
+"id": "cast-juliet",
+"name": "ジュリエット",
+"color": "#B85C8A"
+},
+{
+"id": "cast-montague",
+"name": "モンタギュー",
+"color": "#4F6D4A"
+},
+{
+"id": "cast-capulet",
+"name": "キャピュレット",
+"color": "#8A4931"
+}
+],
+"sets": [
+{
+"id": "set-trapeze",
+"kind": "trapeze",
+"name": "出会いのブランコ",
+"color": "#6B4E3D"
+},
+{
+"id": "set-light",
+"kind": "light",
+"name": "真上の照明",
+"color": "#FFF4CC",
+"lightKind": "hang"
+},
+{
+"id": "set-bench",
+"kind": "bench",
+"name": "境界のベンチ",
+"color": "#594A42"
+}
+],
+"scenes": [
+{
+"kind": "section",
+"depth": 0,
+"id": "section-meeting",
+"title": "第一部 出会い"
+},
+{
+"kind": "scene",
+"depth": 1,
+"id": "scene-1",
+"title": "二つの家",
+"note": "両家の対立を左右の配置で示す。4人の関係が対照的に見える下書き。"
+,
+"beat": {
+"role": "対立の提示",
+"energy": 2
+},
+"pieces": [
+{
+"id": "piece-1-romeo",
+"type": "performer",
+"castId": "cast-romeo",
+"u": 0.28,
+"v": 0.42,
+"color": "#315B8A",
+"facing": 0,
+"pose": "stand",
+"size": 100
+},
+{
+"id": "piece-1-juliet",
+"type": "performer",
+"castId": "cast-juliet",
+"u": 0.72,
+"v": 0.42,
+"color": "#B85C8A",
+"facing": 0,
+"pose": "stand",
+"size": 100
+},
+{
+"id": "piece-1-montague",
+"type": "performer",
+"castId": "cast-montague",
+"u": 0.2,
+"v": 0.72,
+"color": "#4F6D4A",
+"facing": 0,
+"pose": "stand",
+"size": 100
+},
+{
+"id": "piece-1-capulet",
+"type": "performer",
+"castId": "cast-capulet",
+"u": 0.8,
+"v": 0.72,
+"color": "#8A4931",
+"facing": 0,
+"pose": "stand",
+"size": 100
+},
+{
+"id": "piece-1-light",
+"type": "light",
+"setId": "set-light",
+"u": 0.5,
+"v": 0.5,
+"color": "#FFF4CC"
+}
+]
+},
+{
+"kind": "scene",
+"depth": 1,
+"id": "scene-2",
+"title": "仮面の祝祭",
+"note": "祝祭の中で4人の配置を円環的に見せ、ロミオとジュリエットだけが中央に近い関係になる下書き。"
+,
+"beat": {
+"role": "祝祭",
+"energy": 4
+},
+"pieces": [
+{
+"id": "piece-2-romeo",
+"type": "performer",
+"castId": "cast-romeo",
+"u": 0.42,
+"v": 0.54,
+"color": "#315B8A",
+"facing": 0,
+"pose": "dance1",
+"size": 100
+},
+{
+"id": "piece-2-juliet",
+"type": "performer",
+"castId": "cast-juliet",
+"u": 0.58,
+"v": 0.54,
+"color": "#B85C8A",
+"facing": 180,
+"pose": "dance2",
+"size": 100
+},
+{
+"id": "piece-2-montague",
+"type": "performer",
+"castId": "cast-montague",
+"u": 0.27,
+"v": 0.48,
+"color": "#4F6D4A",
+"facing": 0,
+"pose": "dance3",
+"size": 100
+},
+{
+"id": "piece-2-capulet",
+"type": "performer",
+"castId": "cast-capulet",
+"u": 0.73,
+"v": 0.48,
+"color": "#8A4931",
+"facing": 0,
+"pose": "dance4",
+"size": 100
+},
+{
+"id": "piece-2-light",
+"type": "light",
+"setId": "set-light",
+"u": 0.5,
+"v": 0.5,
+"color": "#FFF4CC"
+}
+]
+},
+{
+"kind": "scene",
+"depth": 1,
+"id": "scene-3",
+"title": "バルコニー",
+"note": "仮定: バルコニーを舞台機構ではなくトラピーズによる抽象的な高低差として図示する。安全未確認。ロミオとジュリエットの距離を上下で表す。"
+,
+"beat": {
+"role": "秘密の出会い",
+"energy": 3
+},
+"pieces": [
+{
+"id": "piece-3-romeo",
+"type": "performer",
+"castId": "cast-romeo",
+"u": 0.5,
+"v": 0.7,
+"color": "#315B8A",
+"facing": 180,
+"pose": "reach",
+"size": 100
+},
+{
+"id": "piece-3-juliet",
+"type": "performer",
+"castId": "cast-juliet",
+"u": 0.5,
+"v": 0.36,
+"color": "#B85C8A",
+"facing": 0,
+"pose": "reach",
+"size": 100
+},
+{
+"id": "piece-3-trapeze",
+"type": "trapeze",
+"setId": "set-trapeze",
+"u": 0.5,
+"v": 0.3,
+"color": "#6B4E3D"
+},
+{
+"id": "piece-3-light",
+"type": "light",
+"setId": "set-light",
+"u": 0.5,
+"v": 0.5,
+"color": "#FFF4CC"
+}
+]
+},
+{
+"kind": "section",
+"depth": 0,
+"id": "section-conflict",
+"title": "第二部 対立"
+},
+{
+"kind": "scene",
+"depth": 1,
+"id": "scene-4",
+"title": "秘密の誓い",
+"note": "二人の誓いを中央の小さな共有空間として示す。両家の人物は外側に配置する。"
+,
+"beat": {
+"role": "誓い",
+"energy": 2
+},
+"pieces": [
+{
+"id": "piece-4-romeo",
+"type": "performer",
+"castId": "cast-romeo",
+"u": 0.44,
+"v": 0.57,
+"color": "#315B8A",
+"facing": 0,
+"pose": "kneel",
+"size": 100
+},
+{
+"id": "piece-4-juliet",
+"type": "performer",
+"castId": "cast-juliet",
+"u": 0.56,
+"v": 0.57,
+"color": "#B85C8A",
+"facing": 180,
+"pose": "kneel",
+"size": 100
+},
+{
+"id": "piece-4-montague",
+"type": "performer",
+"castId": "cast-montague",
+"u": 0.22,
+"v": 0.68,
+"color": "#4F6D4A",
+"facing": 0,
+"pose": "stand",
+"size": 100
+},
+{
+"id": "piece-4-capulet",
+"type": "performer",
+"castId": "cast-capulet",
+"u": 0.78,
+"v": 0.68,
+"color": "#8A4931",
+"facing": 0,
+"pose": "stand",
+"size": 100
+},
+{
+"id": "piece-4-light",
+"type": "light",
+"setId": "set-light",
+"u": 0.5,
+"v": 0.56,
+"color": "#FFF4CC"
+}
+]
+},
+{
+"kind": "scene",
+"depth": 1,
+"id": "scene-5",
+"title": "決闘",
+"note": "対立する二つの側を大きく分け、中央に孤立した関係を置く。身体表現を中心にした下書き。"
+,
+"beat": {
+"role": "衝突",
+"energy": 5
+},
+"pieces": [
+{
+"id": "piece-5-romeo",
+"type": "performer",
+"castId": "cast-romeo",
+"u": 0.4,
+"v": 0.54,
+"color": "#315B8A",
+"facing": 90,
+"pose": "crouch",
+"size": 100
+},
+{
+"id": "piece-5-juliet",
+"type": "performer",
+"castId": "cast-juliet",
+"u": 0.6,
+"v": 0.54,
+"color": "#B85C8A",
+"facing": 270,
+"pose": "stand",
+"size": 100
+},
+{
+"id": "piece-5-montague",
+"type": "performer",
+"castId": "cast-montague",
+"u": 0.22,
+"v": 0.5,
+"color": "#4F6D4A",
+"facing": 90,
+"pose": "open",
+"size": 100
+},
+{
+"id": "piece-5-capulet",
+"type": "performer",
+"castId": "cast-capulet",
+"u": 0.78,
+"v": 0.5,
+"color": "#8A4931",
+"facing": 270,
+"pose": "open",
+"size": 100
+},
+{
+"id": "piece-5-light",
+"type": "light",
+"setId": "set-light",
+"u": 0.5,
+"v": 0.5,
+"color": "#FFF4CC"
+}
+]
+},
+{
+"kind": "scene",
+"depth": 1,
+"id": "scene-6",
+"title": "別れの高低差",
+"note": "安全未確認。トラピーズを二人の間に置き、関係が届かなくなる感覚を高低差で抽象化する。"
+,
+"beat": {
+"role": "別離",
+"energy": 4
+},
+"pieces": [
+{
+"id": "piece-6-romeo",
+"type": "performer",
+"castId": "cast-romeo",
+"u": 0.34,
+"v": 0.66,
+"color": "#315B8A",
+"facing": 0,
+"pose": "reach",
+"size": 100
+},
+{
+"id": "piece-6-juliet",
+"type": "performer",
+"castId": "cast-juliet",
+"u": 0.66,
+"v": 0.38,
+"color": "#B85C8A",
+"facing": 180,
+"pose": "kneel",
+"size": 100
+},
+{
+"id": "piece-6-trapeze",
+"type": "trapeze",
+"setId": "set-trapeze",
+"u": 0.66,
+"v": 0.32,
+"color": "#6B4E3D"
+},
+{
+"id": "piece-6-montague",
+"type": "performer",
+"castId": "cast-montague",
+"u": 0.18,
+"v": 0.78,
+"color": "#4F6D4A",
+"facing": 0,
+"pose": "stand",
+"size": 100
+},
+{
+"id": "piece-6-capulet",
+"type": "performer",
+"castId": "cast-capulet",
+"u": 0.82,
+"v": 0.78,
+"color": "#8A4931",
+"facing": 0,
+"pose": "stand",
+"size": 100
+},
+{
+"id": "piece-6-light",
+"type": "light",
+"setId": "set-light",
+"u": 0.5,
+"v": 0.5,
+"color": "#FFF4CC"
+}
+]
+},
+{
+"kind": "section",
+"depth": 0,
+"id": "section-end",
+"title": "第三部 夜と別れ"
+},
+{
+"kind": "scene",
+"depth": 1,
+"id": "scene-7",
+"title": "眠りの間",
+"note": "安全未確認。トラピーズを中央の象徴として残し、ジュリエットを低い位置、ロミオを対角に置いて二人の認識のずれを示す。"
+,
+"beat": {
+"role": "錯誤",
+"energy": 3
+},
+"pieces": [
+{
+"id": "piece-7-romeo",
+"type": "performer",
+"castId": "cast-romeo",
+"u": 0.32,
+"v": 0.62,
+"color": "#315B8A",
+"facing": 0,
+"pose": "crouch",
+"size": 100
+},
+{
+"id": "piece-7-juliet",
+"type": "performer",
+"castId": "cast-juliet",
+"u": 0.68,
+"v": 0.42,
+"color": "#B85C8A",
+"facing": 180,
+"pose": "supine",
+"size": 100
+},
+{
+"id": "piece-7-trapeze",
+"type": "trapeze",
+"setId": "set-trapeze",
+"u": 0.68,
+"v": 0.32,
+"color": "#6B4E3D"
+},
+{
+"id": "piece-7-montague",
+"type": "performer",
+"castId": "cast-montague",
+"u": 0.18,
+"v": 0.3,
+"color": "#4F6D4A",
+"facing": 0,
+"pose": "kneel",
+"size": 100
+},
+{
+"id": "piece-7-capulet",
+"type": "performer",
+"castId": "cast-capulet",
+"u": 0.82,
+"v": 0.3,
+"color": "#8A4931",
+"facing": 0,
+"pose": "kneel",
+"size": 100
+},
+{
+"id": "piece-7-light",
+"type": "light",
+"setId": "set-light",
+"u": 0.5,
+"v": 0.48,
+"color": "#FFF4CC"
+}
+]
+},
+{
+"kind": "scene",
+"depth": 1,
+"id": "scene-8",
+"title": "二人のあと",
+"note": "悲劇の結末を直接的な死の再現ではなく、二人の位置が空白を残す構図として示す。両家の人物は中央へ向いて立つ。"
+,
+"beat": {
+"role": "余韻",
+"energy": 1
+},
+"pieces": [
+{
+"id": "piece-8-romeo",
+"type": "performer",
+"castId": "cast-romeo",
+"u": 0.42,
+"v": 0.52,
+"color": "#315B8A",
+"facing": 180,
+"pose": "lie",
+"size": 100
+},
+{
+"id": "piece-8-juliet",
+"type": "performer",
+"castId": "cast-juliet",
+"u": 0.58,
+"v": 0.52,
+"color": "#B85C8A",
+"facing": 180,
+"pose": "lie",
+"size": 100
+},
+{
+"id": "piece-8-montague",
+"type": "performer",
+"castId": "cast-montague",
+"u": 0.24,
+"v": 0.58,
+"color": "#4F6D4A",
+"facing": 90,
+"pose": "kneel",
+"size": 100
+},
+{
+"id": "piece-8-capulet",
+"type": "performer",
+"castId": "cast-capulet",
+"u": 0.76,
+"v": 0.58,
+"color": "#8A4931",
+"facing": 270,
+"pose": "kneel",
+"size": 100
+},
+{
+"id": "piece-8-light",
+"type": "light",
+"setId": "set-light",
+"u": 0.5,
+"v": 0.52,
+"color": "#FFF4CC"
+}
+]
+}
+]
+}
+}

@@ -160,8 +160,10 @@
   .transport{display:flex;align-items:center;gap:5px}
   .scenebar .btn.small{min-height:24px;padding:2px 8px;font-size:12px}
   .transport .btn.small{min-height:26px;padding:3px 9px;font-size:14px}
-  .transport .t{font-variant-numeric:tabular-nums;color:var(--brass);min-width:4.2em;text-align:right;font-size:14.5px}
-  .transport .playing{color:var(--milk);background:rgba(168,75,38,.28);border:1px solid var(--rust);padding:2px 8px;font-size:14.5px}
+  /* 再生中はボタン自身が状態を持つ（別に「再生中」の札を出さない・2026-09-14 本人要望）。
+     文字は2文字（再生／停止）で幅が変わらないが、字形差でにじり寄らないよう幅を固定する。 */
+  .transport .btn.small{min-width:4.6em;text-align:center}
+  .transport .btn.small.playing{color:var(--milk);background:rgba(168,75,38,.28);border-color:var(--rust)}
   .canvases{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
   canvas{display:block;width:100%;background:#0d0e10;border:1px solid var(--line-dark);cursor:crosshair;touch-action:none}
   /* T字配置: 上段＝下手｜平面図｜上手、下段＝図に出すもの｜正面図｜凡例 */
@@ -216,7 +218,7 @@
   /* 図の上の横並びバー: 左＝図に出すもの、中央＝シーン送り。
      シーン送りは帯の中身に対してではなく<b>窓の幅そのもの</b>の中央に置く（2026-09-13 本人要望）。
      ヘッダー（.head）と同じ 1fr auto 1fr の3分割にして、右は空列（対称にするための余白）。
-     再生（最初へ／再生／停止／時刻）は同日の要望でパネル側の見出し行へ移した。 */
+     再生（いまは再生／停止のトグル1個）は同日の要望でパネル側の見出し行へ移した。 */
   .figbar{flex:0 0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px 14px;min-height:26px;padding-bottom:5px;margin:0 auto;border-bottom:1px solid var(--line-dark);width:min(100%,var(--band))}
   .fb{display:flex;align-items:center;gap:8px;min-width:0}
   .fb>b{color:var(--brass);font-size:11px;font-weight:600;letter-spacing:.14em;white-space:nowrap}
@@ -274,8 +276,11 @@
      上＝パネル名、下＝シーン送り・再生とオン・オフを右寄せ。 */
   .insphead{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:5px 6px;margin-bottom:6px}
   .insphead .ptitle{margin:0 auto 0 0}
-  .insphead .ontoggle{order:1}
-  .insphead .transport{order:2}
+  /* 2026-09-14: 再生が1ボタンになって横幅が空いたので、2段へ逃がす必要がなくなった。
+     2026-09-13 本人指定の並び「再生はオン・オフの左」に戻す（実測: 1440窓・灯体を選んだ状態で
+     見出しは1段34px・左右のはみ出し0）。 */
+  .insphead .transport{order:1}
+  .insphead .ontoggle{order:2}
   .panelhead-actions{display:contents}
   .panelhead-actions .transport{gap:5px}
   .panelhead-actions .transport .btn.small{min-height:28px;padding:3px 9px;font-size:14px}
@@ -546,7 +551,7 @@
           </span>
           <!-- シーン送りは「照明デザイン」のときだけ中身を出す。
                配置では隠すが場所は残す（図の位置が両ページでずれないように・2026-09-11 本人指摘）。
-               再生（最初へ／再生／停止／時刻）は 2026-09-13 本人要望でパネル側へ移した。 -->
+               再生（いまは再生／停止のトグル1個）は 2026-09-13 本人要望でパネル側へ移した。 -->
           <!-- 中央は「いま画面に出ているデザインがどのキューか」。シーン送りはLX cueパネルの上へ移した
                （2026-09-13 本人要望「もっと大きく」）。中身は app.js が入れる。 -->
           <span class="fb scenebox" id="scenerow">
@@ -629,12 +634,11 @@
             <div class="insphead" id="insphead" hidden>
               <p class="ptitle">照明デザイン</p>
               <div class="panelhead-actions" id="panelhead-actions">
+                <!-- 2026-09-14 本人要望: 最初へ／停止／秒数／再生中の表示をやめ、再生と停止の
+                     トグル1個だけにした。文字は「押すと何が起きるか」を出す（停止中＝再生、
+                     再生中＝停止）。時刻の頭出しは場面を選び直したときに内部で行う（home()）。 -->
                 <span class="transport" id="transport" hidden>
-                  <button type="button" class="btn small" id="t-home">最初へ</button>
                   <button type="button" class="btn small" id="t-play">再生</button>
-                  <button type="button" class="btn small" id="t-stop">停止</button>
-                  <span class="t" id="t-time">0.0秒</span>
-                  <span class="playing" id="t-playing" hidden>再生中</span>
                 </span>
                 <button type="button" class="ontoggle" id="lighttoggle" hidden aria-pressed="false"><span class="sw"></span><b>オフ</b></button>
               </div>
@@ -708,8 +712,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789314855"></script>
-<script src="stage-figure.js?v=1789314855"></script>
-<script src="app.js?v=1789314855"></script>
+<script src="rig-engine.js?v=1789316763"></script>
+<script src="stage-figure.js?v=1789316763"></script>
+<script src="app.js?v=1789316763"></script>
 </body>
 </html>

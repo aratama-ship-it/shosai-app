@@ -4,7 +4,7 @@ import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 const [html, stageSource, styleSource] = await Promise.all([
-  readFile(new URL("index.html", root), "utf8"),
+  readFile(new URL("stage.html", root), "utf8"),
   readFile(new URL("stage-sketch.js", root), "utf8"),
   readFile(new URL("style.css", root), "utf8"),
 ]);
@@ -32,9 +32,11 @@ test("選択更新は早期returnより前に姿勢帯を同期する", () => {
   assert.match(body, /renderPoseStrip\(piece\);[\s\S]*if \(!piece\) return;/);
 });
 
-test("姿勢帯は乗り物を除外し、絵を描いて現在姿勢を中央へ寄せる", () => {
+test("姿勢帯は複数演者から乗り物を除外し、絵を描いて共通姿勢を中央へ寄せる", () => {
   const body = functionBody("renderPoseStrip", "syncInputs");
-  assert.match(body, /mountKindOf\(piece\)/);
+  assert.match(body, /selectedPerformerPieces\(\)/);
+  assert.match(body, /performers\.some\(\(item\) => mountKindOf\(item\)\)/);
+  assert.match(body, /commonPose/);
   assert.match(body, /drawPosePreview\(/);
   assert.match(body, /scrollIntoView/);
 });

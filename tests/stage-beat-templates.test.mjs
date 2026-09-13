@@ -20,33 +20,29 @@ test("D2の10種をすべて生成でき、#2は休憩を通常シーンとし�
   assert.equal(templates.filter((item) => item.available === false).length, 0);
   assert.equal(templates[1].id, "two-part-variety");
   assert.equal(templates[1].roles.length, 9);
-  assert.equal(templates[1].energy.length, 9);
+  assert.equal("energy" in templates[1], false);
   assert.deepEqual(plain(model.rowsForTemplate("two-part-variety")[4]), {
     kind: "scene",
     title: "休憩",
-    beat: { role: "休憩", energy: 4 },
+    beat: { role: "休憩" },
     pieces: [],
   });
 });
 
-test("10種すべてで役割数・エネルギー数・生成シーン数が一致し、配置が空である", () => {
+test("10種すべてで役割数・生成シーン数が一致し、配置とエネルギー値を作らない", () => {
   model.templates.forEach((template) => {
     const rows = plain(model.rowsForTemplate(template.id));
-    assert.equal(template.roles.length, template.energy.length, template.name);
     assert.equal(rows.length, template.roles.length, template.name);
     rows.forEach((row, index) => {
       assert.equal(row.kind, "scene");
       assert.equal(row.title, template.roles[index]);
-      assert.deepEqual(row.beat, {
-        role: template.roles[index],
-        energy: template.energy[index],
-      });
+      assert.deepEqual(row.beat, { role: template.roles[index] });
       assert.deepEqual(row.pieces, []);
     });
   });
 });
 
-test("beatはJSON往復で保持され、sectionでは常にnullになる", () => {
+test("旧energyはJSON往復の互換性用に保持し、新規beatでは作らない", () => {
   const exported = JSON.stringify({
     kind: "shosai-stage-sketch",
     version: 3,
@@ -62,6 +58,7 @@ test("beatはJSON往復で保持され、sectionでは常にnullになる", () =
     role: "中央反転",
     energy: 4,
   });
+  assert.deepEqual(plain(model.normalizeBeat({ role: "新規" })), { role: "新規" });
   assert.equal(model.normalizeSceneBeat("section", imported.project.scenes[1].beat), null);
   assert.deepEqual(imported.project.scenes[0].pieces, []);
 });

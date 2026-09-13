@@ -98,8 +98,8 @@
     { key: "front", kind: "front", name: "客席を含む明かり", nameEn: "Light that includes the house", dia: 6.0, h: 8, srcV: 1.02 },
   ];
 
-  const s = (id, title, durationSeconds, role, energy, note, castMap, setMap, lightMap) => ({
-    id, title, durationSeconds, role, energy, note,
+  const s = (id, title, durationSeconds, role, _unused, note, castMap, setMap, lightMap) => ({
+    id, title, durationSeconds, role, note,
     cast: castMap || {}, sets: setMap || {}, lights: lightMap || {},
   });
   const performer = (u, v, facing, pose) => [u, v, facing || 0, pose || "stand"];

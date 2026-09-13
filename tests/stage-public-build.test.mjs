@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import test from "node:test";
+import vm from "node:vm";
 
 const tryHtml = await readFile(new URL("../try.html", import.meta.url), "utf8");
 const stageHtml = await readFile(new URL("../stage.html", import.meta.url), "utf8");
@@ -42,6 +43,31 @@ test("公開体験版は is-public を付け、専用のCSSとJSを最後に読�
 test("保存は残さない（2つの保存キーを消し、書き込みも止める）", () => {
   assert.match(publicJs, /STORAGE_KEYS = new Set\(\["shosai-stage-sketch-v1", "shosai-stage-shows-v1"\]\)/);
   assert.match(publicJs, /storageProto\.setItem = function/);
+});
+
+test("体験版の追加文言も現在パック→enパックの順で評価する", () => {
+  const start = publicJs.indexOf("  const bridge = () => window.SHOSAI_STAGE_SESSION_BRIDGE;");
+  const end = publicJs.indexOf("  const readDocument = () => {", start);
+  assert.ok(start >= 0 && end > start, "体験版i18nヘルパーを取得できる");
+  const context = {
+    document: { documentElement: { lang: "zh-Hant" } },
+    window: {
+      SHOSAI_I18N_PACKS: {
+        en: { text: { "閉じる": "Close" }, say: [], generated: { sceneTitle: "Scene {n}" } },
+        "zh-Hant": { text: { "体験版": "繁體預覽" }, say: [], generated: {} },
+      },
+    },
+  };
+  vm.runInNewContext(
+    `${publicJs.slice(start, end)}\nwindow.__PUBLIC_I18N = { publicText, publicGenerated };`,
+    context,
+  );
+  assert.equal(context.window.__PUBLIC_I18N.publicText("体験版", "Preview"), "繁體預覽");
+  assert.equal(context.window.__PUBLIC_I18N.publicText("閉じる", "Close fallback"), "Close");
+  assert.equal(context.window.__PUBLIC_I18N.publicGenerated("sceneTitle", "場面 2", "Scene fallback 2", { n: 2 }), "Scene 2");
+  context.document.documentElement.lang = "ja";
+  assert.equal(context.window.__PUBLIC_I18N.publicText("閉じる", "Close"), "閉じる");
+  assert.doesNotMatch(publicJs, /document\.documentElement\.lang === "en"/);
 });
 
 test("体験版の下地は手で組み立てず、書き出した文書を直して戻す", () => {
@@ -99,6 +125,14 @@ test("錠は許可した操作以外へ掛ける（fail-closed）", () => {
   assert.match(publicJs, /if \(!embed\) \{\s*markPhoneSettings\(\);\s*watchPhoneSettings\(\);\s*applyLocks\(\);\s*watchPoseStrip\(\);\s*watchRosterLimits\(\);\s*\}/);
 });
 
+test("体験版はPCでも客席5か所からの見え方を切り替えられる", () => {
+  // LPで案内する範囲。スマホの代替ボタンだけでなく、本体の客席列を開ける。
+  const match = publicJs.match(/const LOCKED_FLOATING_PANELS = \[([\s\S]*?)\];/);
+  assert.ok(match, "図上で錠を掛ける要素を明示する");
+  assert.doesNotMatch(match[1], /\.stage-seat-list/);
+  assert.match(publicJs, /function buildSeatButtons\(container, onPick\)/);
+});
+
 test("★個人データは公開版へ載せない（2026-09-03 公開直前に発見）", () => {
   // stage-shows.local.js は本人の実制作ショー618KB。認証の内側だから積めていた。
   assert.match(buildPublic, /"stage-shows\.local\.js"/);
@@ -114,6 +148,14 @@ test("★配信フォルダは「集めたものだけを配る」形にする�
   assert.match(buildPublic, /def collect_dist/);
 });
 
+test("公開ビルドの検査は、try.htmlだけでなく配信フォルダ全体の古さも止める", () => {
+  // --check は実フォルダを作り直さず、候補を一時フォルダへ生成して内容を比べる。
+  assert.match(buildPublic, /with tempfile\.TemporaryDirectory\(prefix="stage-public-check-"\)/);
+  assert.match(buildPublic, /collect_dist\(\)/);
+  assert.match(buildPublic, /dist_differences\(candidate_dist, saved_dist\)/);
+  assert.match(buildPublic, /公開用の生成物が古いです/);
+});
+
 test("体験版の内部処理は自分の錠を踏まない", () => {
   // タップで演者を選ぶとき、左列の名前ボタンを押して選択を同期している。
   // その左列は錠の対象なので、素通しにしないと舞台を触っただけで
@@ -127,9 +169,13 @@ test("公開版は「体験版」であることを明示し、「β版」とは
   // 「β版」は招待制の製品版を指す言葉。誰でも開ける公開版に出ていると取り違えのもと。
   assert.match(publicJs, /function markAsPreview\(\)/);
   assert.match(publicJs, /\.stage-beta, \.stage-phone-title-beta/);
-  assert.match(publicJs, /badge: "体験版"/);
-  assert.match(publicJs, /badge: "Preview"/);
+  assert.match(publicJs, /badge: publicText\("体験版", "Preview"\)/);
   assert.match(publicJs, /document\.title = text\.title;/);
+  assert.match(publicJs, /storageNotice: publicText\([\s\S]*?"3場面まで。保存されず、再読み込みで見本に戻ります。",[\s\S]*?"Up to three scenes\. Nothing is saved; reloading restores the sample\."/);
+  assert.match(publicJs, /storageNotice\.textContent = text\.storageNotice/);
+  assert.match(publicJs, /3場面まで利用でき、保存されません/);
+  assert.match(publicCss, /body\.is-public \.stage-storage-caution \{\s*color: var\(--paper-line\);/);
+  assert.doesNotMatch(publicCss, /body\.is-public \.stage-storage-caution \{ display: none !important; \}/);
   // 埋め込みでも札を出す（iframeを切り取った絵にも残るように）
   assert.match(publicJs, /stage-public-badge-chip/);
   // 共有の i18n には足さない（版上げがβのテスターまで波及するため）
@@ -198,7 +244,7 @@ test("錠の掛かった欄は畳んだ状態で始める（開くことはで�
 test("製品版ベータの問い合わせは、上部から別ページへ送る", () => {
   assert.match(publicJs, /stage-public-beta-link/);
   assert.match(publicJs, /link\.href = "beta\.html";/);
-  assert.match(publicJs, /betaLink: "製品版ベータ版はコチラからお問い合わせください"/);
+  assert.match(publicJs, /betaLink: publicText\("製品版ベータ版はコチラからお問い合わせください", "Request access to the full beta"\)/);
   // 題（舞台スケッチ／体験版）のすぐ右へ、紹介ページと組にして置く（本人指示 2026-09-04）
   assert.match(publicJs, /const title = head\.firstElementChild;/);
   assert.match(publicJs, /if \(title\) title\.after\(links\); else head\.append\(links\);/);
@@ -214,11 +260,10 @@ test("製品版ベータの問い合わせは、上部から別ページへ送�
 test("体験版から紹介ページ（LP）へ戻れる", () => {
   // 本人指示 2026-09-04。体験版へ直接来た人には、これが何なのかを知る場所が要る。
   assert.match(publicJs, /overview\.className = "stage-public-lp-link";/);
-  assert.match(publicJs, /lpLink: "紹介ページ"/);
-  assert.match(publicJs, /lpLink: "Overview"/);
+  assert.match(publicJs, /lpLink: publicText\("紹介ページ", "Overview"\)/);
   /* ★いま見ている言語を持って行く。LPは ?lang= が無いと端末の言語で決めるので、
        日本語の端末で英語の体験版を見ていた人が、押した先で日本語へ戻ってしまう。 */
-  assert.match(publicJs, /return `\.\/\?lang=\$\{document\.documentElement\.lang === "en" \? "en" : "ja"\}`;/);
+  assert.match(publicJs, /return `\.\/\?lang=\$\{encodeURIComponent\(publicLanguage\(\)\)\}`;/);
   /* ★スマホは見出しの帯ごと出さない（実測: .stage-sketch-head が display:none）。
        上の口が届かないので、最初に出る「PCを勧める」帯にも置く。 */
   assert.match(publicJs, /overview\.className = "stage-public-phone-notice-link";/);
@@ -259,7 +304,7 @@ test("紹介ページは送信前後の流れを3行で示し、戻り先のラ�
        （2026-09-05・アプリ内英語の一巡）。 */
   assert.match(betaPage, /<a class="back" href="\.\/">← Back to the overview<\/a>/);
   assert.doesNotMatch(betaPage, /introduction page/);
-  assert.match(publicJs, /lpLink: "Overview"/);
+  assert.match(publicJs, /lpLink: publicText\("紹介ページ", "Overview"\)/);
   assert.match(publicJs, /See the overview ／ 紹介ページを見る/);
   assert.doesNotMatch(betaPage, /<a class="back"[^>]*>[^<]*(体験版へ戻る|Back to the preview)/);
 });
@@ -326,13 +371,27 @@ test("スマホ体験版では、帯を固定していたころの余白を残�
   assert.match(publicCss, /is-public-embed \.stage-public-venue-bar \{\s*position: fixed;/);
 });
 
-test("設定は開ける。中身は錠だが、言語の切替と閉じるだけ使える", () => {
-  // 本人指示 2026-09-03: 設定画面自体は錠にしない。日英の切替を残す。
+test("設定は開け、言語とv0.3.5の画面スキンを体験版でも切り替えられる", () => {
+  // 本人指示 2026-09-10: 全版へ反映するスキンは体験版でも操作できる。
   assert.match(publicJs, /"stage-prefs-btn", "stage-prefs-close", "stage-lang",/);
+  assert.match(publicJs, /"\.stage-pref-skin",/);
   assert.doesNotMatch(publicJs, /\["#stage-export", "#stage-present-btn", "#stage-prefs-btn"/);
   assert.match(publicCss, /body\.is-public \.stage-modal:not\(#stage-prefs-modal\)/);
   // 項目の一覧は本体がJSで組むので、組み直しを見張って掛け直す
   assert.match(publicJs, /new MutationObserver\(lockInside\)\.observe\(prefs, \{ childList: true, subtree: true \}\)/);
+});
+
+test("v0.3.5の小道具・全画面・画像印刷・整列は体験版でも試せる", () => {
+  for (const id of ["stage-present-btn", "stage-export", "stage-print-btn", "stage-arrange-select"]) {
+    assert.match(publicJs, new RegExp(`"${id}"`), `${id} が体験版の許可対象にある`);
+  }
+  assert.doesNotMatch(publicJs, /\["#stage-export", "#stage-present-btn",/);
+  assert.match(publicCss, /:not\(#stage-kind\):not\(#stage-export-modal\)/);
+  assert.match(publicCss, /:not\(#stage-kind-backdrop\):not\(#stage-export-backdrop\)/);
+  const floating = publicJs.match(/const LOCKED_FLOATING_PANELS = \[([\s\S]*?)\];/);
+  assert.ok(floating);
+  assert.doesNotMatch(floating[1], /\.stage-canvas-tools/);
+  assert.match(publicJs, /root\.querySelectorAll\("\.stage-canvas-tools button, \.stage-canvas-tools select, \.stage-canvas-tools input"\)/);
 });
 
 test("言語を切り替えたら、体験版で足した札とリンクも貼り直す", () => {
@@ -344,10 +403,10 @@ test("言語を切り替えたら、体験版で足した札とリンクも貼�
 
 test("スマホへ最初に出す「PCを勧める」帯は、日本語と英語を並べて出す", () => {
   // この帯は言語の切替へ触れる前に出るので、端末の言語だけで選ばない（本人指示 2026-09-03）
-  assert.match(publicJs, /const JA = "この体験版はスマホでは操作が限られます。PCでのご利用をお勧めします。";/);
-  assert.match(publicJs, /const EN = "The preview is limited on phones\. It works best on a computer\.";/);
+  assert.match(publicJs, /const JA = "この体験版はスマホでは操作が限られます。3場面まで利用でき、保存されません。PCでのご利用をお勧めします。";/);
+  assert.match(publicJs, /const EN = "The preview is limited on phones\. It has up to three scenes and does not save work\. It works best on a computer\.";/);
   assert.match(publicJs, /notice\.append\(message, sub, close, overview\);/);
-  assert.match(publicJs, /close\.textContent = english \? "Continue ／ 続ける" : "続ける ／ Continue";/);
+  assert.match(publicJs, /close\.textContent = japanese \? "続ける ／ Continue" : "Continue ／ 続ける";/);
 });
 
 test("スマホ設定は 日本語 / English / ✕ の一列にし、「端末による違い」は出さない", () => {
@@ -450,8 +509,8 @@ test("LPが入口、体験版は /try.html。動画も配信フォルダへ運�
   assert.match(buildPublic, /"index\.html", english_lp, "LP本体（public-lp\/index\.html の写し）"\)/);
   assert.match(buildPublic, /\(OUT\.read_text\(encoding="utf-8"\), "try\.html", english_try, "体験版"\),/);
   // 日本語版と英語版を同じループで書き出す（片方だけ更新される事故を防ぐ）
-  assert.match(buildPublic, /\(DIST \/ name\)\.write_text\(ja_html, encoding="utf-8"\)/);
-  assert.match(buildPublic, /\(en_dir \/ name\)\.write_text\(en_html, encoding="utf-8"\)/);
+  assert.match(buildPublic, /\(DIST \/ name\)\.write_text\(with_public_analytics\(ja_html\), encoding="utf-8"\)/);
+  assert.match(buildPublic, /\(en_dir \/ name\)\.write_text\(with_public_analytics\(en_html\), encoding="utf-8"\)/);
   assert.match(buildPublic, /for name in \("hero-ja\.mp4", "hero-ja\.webm", "hero-poster\.jpg"\)/);
   // 動画が無ければビルドを止める（黙って欠けたまま配らない）
   assert.match(buildPublic, /raise SystemExit\(f"！LPの動画がない/);
@@ -462,12 +521,10 @@ test("LPは承認済みの文言を使い、詩的な見出しを足さない", 
        会場の話は「12の機能」の05で画像つきに入れ替えた。 */
   assert.doesNotMatch(lpPage, /分けているのは舞台の形ではなく/);
   assert.match(lpPage, /技術図面ではなく、安全を検証したり保証したりするものでもありません/);
-  /* ★版の札。どちらも今あるもの（2026-09-05 実測）。
-     Mac用スタンドアローン版の実体はPWA: stage-sketch.webmanifest が display:standalone、
-     stage-pwa.js が Service Worker を登録する（キャッシュ生成を実測で確認）。
-     ★Electron/Tauri/.dmg が無いことだけを見て「無い」と判断しない。 */
+  /* ネイティブMac版はベータ版の対象外（本人訂正 2026-09-09）。
+     ブラウザ版のPWA対応は維持する。 */
   assert.match(lpPage, /<span data-ja>ブラウザ対応<\/span><span data-en>Runs in the browser<\/span>/);
-  assert.match(lpPage, /<span data-ja>Mac用スタンドアローン対応<\/span><span data-en>Standalone Mac app<\/span>/);
+  assert.match(lpPage, /<span data-ja>ネイティブMac版はベータ版対象外<\/span><span data-en>Native Mac app: not included in beta<\/span>/);
   assert.doesNotMatch(lpPage, /準備中|in preparation/);
   assert.equal(stageManifest.display, "standalone", "スタンドアローンで開く指定がある");
   assert.ok((stageManifest.icons || []).length >= 3, "アイコンがある");
@@ -494,7 +551,7 @@ test("LPの最下部に連絡先として名前を出す", () => {
   /* ★本人指示 2026-09-05: 紹介ページ（beta.html）を挟まず、pygmixの問い合わせフォームへ直接飛ぶ。
        日本語・英語で subject を出し分ける（既存の beta.html と同じURLパターン）。 */
   assert.match(lpPage, /<a href="https:\/\/pygmix\.com\/contact\?category=tool&amp;subject=%E8%88%9E%E5%8F%B0%E3%82%B9%E3%82%B1%E3%83%83%E3%83%81">お問い合わせフォーム<\/a>/);
-  assert.match(lpPage, /<a href="https:\/\/pygmix\.com\/contact\?category=tool&amp;subject=Stage%20Sketch">contact form<\/a>/);
+  assert.match(lpPage, /<a href="https:\/\/pygmix\.com\/contact\?lang=en&amp;category=tool&amp;subject=Stage%20Sketch">contact form<\/a>/);
 });
 
 test("LPのいちばん上に体験版とライセンスへのリンクを置く", () => {
@@ -527,12 +584,11 @@ test("LPの最初の画面に「何のツールか」の一文と二つの入口
   /* 本人承認 2026-09-05「第一弾実装で」。判断用ページ: docs/stage-sketch/2026-09-05_lp-marketing-review/
      それまでは名前→便益の一行→動画で、道具の中身を言う行と、押せるボタンが最初の画面に無かった。 */
   assert.match(lpPage, /<div class="hero-title-row">[\s\S]*?<\/div>\s*<!--[\s\S]*?-->\s*<p class="hero-what"><span data-ja>舞台の立ち位置と動線を、客席からの正面図と真上の平面図で同時に描くツールです。<\/span>/);
-  // 順番: 一文 → 便益の一行 → 二つの入口 → 動画
+  // 順番: 名前の下の一文 → 二つの入口 → 動画
   const what = lpPage.indexOf('<p class="hero-what">');
-  const lead = lpPage.indexOf('<p class="uses-lead">');
   const actions = lpPage.indexOf('<div class="hero-actions">');
   const video = lpPage.indexOf('<figure class="hero-video">');
-  assert.ok(what < lead && lead < actions && actions < video, "一文 → 一行 → 入口 → 動画");
+  assert.ok(what < actions && actions < video, "一文 → 入口 → 動画");
   // 入口は末尾CTAと同じ行き先・同じ文言
   assert.match(lpPage, /<div class="hero-action">\s*<a class="btn btn-main" href="\/try\.html"><span data-ja>体験版を使ってみる<\/span>/);
   assert.match(lpPage, /<div class="hero-action">\s*<a class="btn btn-sub" href="beta\.html"><span data-ja>製品版ベータを使ってみたい<\/span>/);
@@ -543,24 +599,14 @@ test("LPの最初の画面に「何のツールか」の一文と二つの入口
   assert.match(lpPage, /ベータ期間中は無償。お問い合わせ制です。/);
   assert.match(lpPage, /ベータ期間中は無償です。ボタンの先で、お問い合わせの手順をご案内します。/);
   assert.match(betaPage, /ベータ期間中は無償/);
-  // 入口を足したぶん動画の上限を下げる（56vh→50vh）
-  assert.match(lpPage, /\.hero-video video\{ [^}]*max-height:50vh;/);
+  // 入口を足したあとも、動画は最初の画面で過度に縦へ伸びない。
+  assert.match(lpPage, /\.hero-video video\{ [^}]*max-height:58vh;/);
 });
 
-test("LPの hero 直後に証拠帯を置く（第2弾・#3・本人承認「両方進めて」）", () => {
-  /* 4つの事実だけ。★実在会場名は入れない（本人指示 2026-09-05「実在の劇場（…）この文章は消してください」）。
-     ★提携・導入実績・利用者の声に見える表現は入れない。 */
-  const items = (lpPage.match(/<ul class="proof-list">[\s\S]*?<\/ul>/) || [""])[0];
-  assert.equal((items.match(/<li>/g) || []).length, 4, "証拠は4つ");
-  assert.match(items, /元サーカスアーティストが作っています/);
-  assert.match(items, /見本ショー「八人のサーカス」8場面で撮影/);
-  assert.match(items, /ベータ期間中は無償/);
-  assert.match(items, /画面はすべて製品版βの実写/);
-  assert.doesNotMatch(items, /シアタートラム|TOHU|ディヴェール|導入実績|提携/);
-  // 「体験版は3場面」は実装どおり（stage-public.js が場面を3つに切っている）
-  assert.match(items, /そのうち3場面が入った状態で開きます/);
-  assert.match(publicJs, /project\.scenes = \[scene, second, third\];/);
-  assert.match(lpPage, /\.proof\{ padding:var\(--space-4\) 0; border-top:1px solid var\(--line-dark\); border-bottom:1px solid var\(--line-dark\); \}/);
+test("LPから4項目の証拠帯を外す", () => {
+  assert.doesNotMatch(lpPage, /<section class="proof reveal">/);
+  assert.doesNotMatch(lpPage, /proof-list/);
+  assert.doesNotMatch(lpPage, /\.proof\{/);
 });
 
 test("OGP画像は専用の1200×630（第2弾・本人承認）。配信スクリプトが og:image を運ぶ", () => {
@@ -782,19 +828,16 @@ test("体験版の英語は用語集（commit 71db200）にそろえる", () => 
   /* 2026-09-05。LPだけ校閲して、アプリ側の英語が古い言い方のまま残っていた。
      用語集: 体験版=the preview／製品版ベータ=the full beta／演者=performers／
      客席=the house／立ち位置=positions／動線=movement／正面図=front view／平面図=plan view。 */
-  assert.match(publicJs, /betaLink: "Request access to the full beta"/);
+  assert.match(publicJs, /betaLink: publicText\("製品版ベータ版はコチラからお問い合わせください", "Request access to the full beta"\)/);
   assert.match(publicJs, /The full beta lets you add more\./);
-  assert.match(publicJs, /seatLabel: "Which seat in the house you watch from"/);
+  assert.match(publicJs, /seatLabel: publicText\("どの席から舞台を見るか", "Which seat in the house you watch from"\)/);
   assert.match(publicJs, /This is available in the full beta\./);
 
   /* ★錠のラベルの括弧も言語で変える。英語に全角の（）が混じると読み上げが崩れる
        （2026-09-05 実機で "Seat（full version）" を確認）。 */
-  assert.match(publicJs, /\? `\$\{base\} \(in the full version\)`/);
-  assert.match(publicJs, /: `\$\{base\}（製品版で使えます）`/);
-  /* ★「製品版」= the full version と「製品版（β）」= the full beta は書き分ける。
-       LP・紹介ページも同じ書き分けをしているので、片方に寄せない。 */
+  assert.match(publicJs, /publicText\([\s\S]*?`\$\{base\}（製品版で使えます）`,[\s\S]*?`\$\{base\} \(in the full version\)`/);
+  /* ★「製品版」= the full version と「製品版（β）」= the full beta は書き分ける。 */
   assert.match(publicJs, /The full beta lets you add more\./);
-  assert.match(lpPage, /The full version is by request\./);
 
   /* ★会場の名前は製品の会場データ（stage-venues.js の label / stage-i18n.js の venueKind）が正。
        2026-09-05: LPの英語が シャピトー を "big top" と訳しており、アプリの "Big top"
@@ -859,13 +902,12 @@ test("LPのいちばん上から「このアプリについて」へ飛べる", 
   /* ★帯の位置は本人指示で三度動いた: 最下部 → hero直後（「上にしてください」）→
        13の機能の後ろ（2026-09-05 夕・マーケ見直し第2弾 #4・本人承認「両方進めて」）。
        Codexの見立て「初見は機能を先に確かめたい」に本人が同意。文章は削らない。
-       いまの順: hero → 証拠帯 → 13の機能 → このアプリについて → CTA */
+       いまの順: hero → 13の機能 → このアプリについて → CTA */
   const heroEnd = lpPage.indexOf("</header>");
-  const proof = lpPage.indexOf('<section class="proof reveal">');
   const about = lpPage.indexOf('<section class="story reveal" id="about">');
   const tour = lpPage.indexOf('<section class="tour reveal">');
   const cta = lpPage.indexOf('<section class="cta reveal">');
-  assert.ok(heroEnd < proof && proof < tour && tour < about && about < cta, "hero → 証拠帯 → 13の機能 → このアプリについて → CTA の順");
+  assert.ok(heroEnd < tour && tour < about && about < cta, "hero → 13の機能 → このアプリについて → CTA の順");
   assert.match(lpPage, /10年以上、幸運にもいくつもの素晴らしいショーに沢山演者として関わる/);
   assert.match(lpPage, /For more than ten years I have been fortunate to perform/);
   assert.match(lpPage, /#about\{ scroll-margin-top:var\(--space-4\); \}/);
@@ -890,43 +932,28 @@ test("LPのいちばん上に製品の名前を大きく出す", () => {
   assert.doesNotMatch(lpPage, /hero-line|hero-sub|hero-copy/);
   assert.doesNotMatch(lpPage, /<span data-ja>正面と真上、<br>/);
   assert.doesNotMatch(lpPage, /<span data-en>Two views of one stage,<br>/);
-  /* 「PC用として明示する」（2026-09-03の指示）は残す。
-     置き場所は名前の横（本人指示 2026-09-05）。★baselineで揃える（中央揃えにしない）。 */
+  /* 対応範囲は名前の直下に置く。最新の中央揃えレイアウトでも、製品名と札の
+     関係をひとまとまりに保つ。 */
   assert.match(lpPage, /<div class="hero-title-row">\s*\n\s*<h1 class="hero-name">/);
   assert.match(lpPage, /<\/h1>\s*\n\s*<p class="editions">/);
-  assert.match(lpPage, /\.hero-title-row\{ display:flex; align-items:baseline;/);
-  /* ★説明の一文は外した（2026-09-05）。右の欄には「誰が、何に使うか」が入る。 */
+  assert.match(lpPage, /\.hero-title-row\{ display:grid; justify-items:center;/);
+  /* 道具の説明は名前の下、役別のコピーは動画の横へ置く。 */
   assert.doesNotMatch(lpPage, /--fs-hero/);
-  assert.match(lpPage, /\.hero-inner\{ display:grid; gap:var\(--space-5\); grid-template-columns:minmax\(0,1fr\); justify-items:center; \}/);
-  assert.match(lpPage, /grid-template-columns:auto minmax\(260px,1fr\);/);
+  assert.match(lpPage, /<p class="hero-what">/);
+  assert.match(lpPage, /<div class="catchcopy">/);
 });
 
-test("LPの名前の下に「誰が、何に使うか」を置く", () => {
-  // 本人指示 2026-09-04。読む人が自分の側を見つけられるように、役どころを先に出す。
-  /* 一行目は本人が選んだ確定稿（2026-09-05）。日英は対訳ではなく、それぞれの言語で立つ形。
-     ★句読点も含めて本人の指定どおり。勝手に「、」を足さない。 */
-  assert.match(lpPage, /class="uses-lead"><span data-ja>限られたステージ利用時間はもっと質の高い練習へ。<\/span>/);
-  assert.match(lpPage, /<span data-en>The shortest line between imagining and doing\.<\/span>/);
+test("LPの動画横にディレクターとアーティストへ向けた短いコピーを置く", () => {
+  assert.match(lpPage, /<div class="catchcopy">/);
+  assert.match(lpPage, /<span data-ja>ディレクターへ<\/span><span data-en>Director<\/span>/);
+  assert.match(lpPage, /<span data-ja>アーティストへ<\/span><span data-en>Artist<\/span>/);
+  assert.match(lpPage, /伝えたいのは、立ち位置じゃない。/);
+  assert.match(lpPage, /立ち位置は、稽古の前に。/);
   assert.doesNotMatch(lpPage, /使い方は、ひとつではありません。|あなたのチームのために。/);
-  assert.match(lpPage, /<dt><span data-ja>ディレクター<\/span><span data-en>Director<\/span><\/dt>/);
-  assert.match(lpPage, /<dt><span data-ja>アーティスト<\/span><span data-en>Artist<\/span><\/dt>/);
-  assert.match(lpPage, /頭の中にある絵を、目に見える形に。そのまま演者へ渡せます。/);
-  /* 「立ちの練習」は舞台用語に（本人指示 2026-09-05）。立ち稽古ではなく「場当たり」
-     —— 実際の会場で立ち位置ときっかけを確かめる稽古。一行目の「限られたステージ利用時間」と対になる。
-     英語は blocking。 */
-  assert.match(lpPage, /立ち位置は、場当たりの前に。稽古場の時間を、もっと繊細なところへ使えます。/);
   assert.doesNotMatch(lpPage, /立ち稽古/);
   assert.match(lpPage, /Positions settled before the blocking rehearsal\. Rehearsal time goes to the finer work\./);
-  /* ★動画の右へ移したので常に縦積み（本人指示 2026-09-05）。横に二列だと右の欄では狭すぎる。 */
-  assert.match(lpPage, /<div class="hero-uses">\s*\n\s*<dl class="uses-list">/);
-  assert.doesNotMatch(lpPage, /\.uses-list\{ grid-template-columns:repeat\(2/);
-  /* ★本人指示 2026-09-05 で大きくした。一行28px・役の本文17px（760px以下は20/15px）。 */
-  assert.match(lpPage, /font-size:28px; line-height:1\.6;/);
-  assert.match(lpPage, /margin:0; font-family:var\(--sans\); font-size:17px;/);
-  /* ★動画は1:1。枠の幅を高さの上限に合わせないと左右に黒帯が出る（2026-09-05 実測: 両側57px）。
-       上限は 56vh→50vh（同日の第1弾で名前の下に一文と入口を足したため）。枠と動画の両方を同じ値に。 */
-  assert.match(lpPage, /max-width:min\(620px, 50vh\)/);
-  assert.match(lpPage, /\.hero-video video\{ [^}]*max-height:50vh;/);
+  assert.match(lpPage, /\.catchcopy\{/);
+  assert.match(lpPage, /\.hero-video video\{/);
 });
 
 test("LPの下部で13の機能を、画像つきで一つずつ紹介する", () => {
@@ -936,7 +963,7 @@ test("LPの下部で13の機能を、画像つきで一つずつ紹介する", (
        （本人指示 2026-09-05）。 */
   const limits = lpPage.indexOf("<span data-ja>注意点</span>");
   assert.ok(limits > 0, "注意点がある");
-  assert.match(lpPage, /<\/dl>\s*\n\s*<div class="limits">/);
+  assert.match(lpPage, /<div class="catchcopy">[\s\S]*?<\/div>\s*\n\s*<div class="limits">/);
   assert.ok(limits < lpPage.indexOf("</header>"), "注意点はヒーローの中");
   const cta = lpPage.indexOf('<section class="cta reveal">');
   assert.ok(tour > limits && tour < cta, "注意点（上）→ 13の機能 → CTA の順");
@@ -983,8 +1010,8 @@ test("LPの下部で13の機能を、画像つきで一つずつ紹介する", (
   assert.doesNotMatch(lpPage, /25種|Twenty-five|eleven shapes|11の形/);
   assert.match(lpPage, /<h3><span data-ja>演者の姿勢、いろいろ。<\/span><span data-en>A wide range of poses\.<\/span><\/h3>/);
   assert.doesNotMatch(lpPage, /演者の姿勢、\d+種/);
-  // 用語: 立ち稽古ではなく「場当たり」
-  assert.match(lpPage, /立ち位置は、場当たりの前に。/);
+  // 用語: 立ち稽古は避け、稽古前の準備として案内する。
+  assert.match(lpPage, /立ち位置は、稽古の前に。/);
 });
 
 test("Mac用スタンドアローンの入れ方を書く（体験版ではなく製品版が対象）", () => {
@@ -996,8 +1023,9 @@ test("Mac用スタンドアローンの入れ方を書く（体験版ではな�
   assert.match(lpPage, /macOS Sonoma以降/);
   assert.match(lpPage, /On a Mac, choose File → Add to Dock… in Safari/);
   assert.doesNotMatch(lpPage, /体験版を[^。]*Dockに追加/);
-  // 版の札（ブラウザ対応／Mac用スタンドアローン対応）と食い違わせない
-  assert.match(lpPage, /Mac用スタンドアローン対応/);
+  // Dockへの追加をネイティブMac版のベータ対応として案内しない
+  assert.match(lpPage, /ブラウザ版を独立したウィンドウで使えます/);
+  assert.match(lpPage, /ネイティブMac版はベータ版の対象外です/);
   // 製品版だけの機能なので、体験版側の列（.cta-col の1つ目）には置かない
   assert.match(lpPage, /<div class="cta-dock">[\s\S]*?Dockに追加/);
 });

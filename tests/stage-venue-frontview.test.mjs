@@ -6,7 +6,7 @@ import vm from "node:vm";
 const root = new URL("../", import.meta.url);
 const linesSource = await readFile(new URL("stage-venue-lines.js", root), "utf8");
 const venuesSource = await readFile(new URL("stage-venues.js", root), "utf8");
-const indexSource = await readFile(new URL("index.html", root), "utf8");
+const indexSource = await readFile(new URL("stage.html", root), "utf8");
 const stageSource = await readFile(new URL("stage.html", root), "utf8");
 const sketchSource = await readFile(new URL("stage-sketch.js", root), "utf8");
 const i18nSource = await readFile(new URL("stage-i18n.js", root), "utf8");

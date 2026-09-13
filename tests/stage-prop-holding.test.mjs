@@ -4,7 +4,7 @@ import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 const stageSource = await readFile(new URL("stage-sketch.js", root), "utf8");
-const indexSource = await readFile(new URL("index.html", root), "utf8");
+const indexSource = await readFile(new URL("stage.html", root), "utf8");
 const i18nSource = await readFile(new URL("stage-i18n.js", root), "utf8");
 
 function bodyBetween(source, startPattern, endPattern) {

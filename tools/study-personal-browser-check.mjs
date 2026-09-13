@@ -1,0 +1,110 @@
+import { createRequire } from 'node:module';
+import { pathToFileURL, fileURLToPath } from 'node:url';
+import { readFile, writeFile } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const require = createRequire(import.meta.url);
+const imported = await import(pathToFileURL(process.env.STUDY_PLAYWRIGHT || require.resolve('playwright')));
+const { chromium } = imported.default || imported;
+const base = process.env.STUDY_BASE || 'http://127.0.0.1:8798';
+const output = new URL('../docs/study-links/qa/', import.meta.url);
+const browser = await chromium.launch({ headless: true, channel: 'chrome' });
+const auth = user => ({ Authorization: `Basic ${Buffer.from(`${user}:local-${user}`).toString('base64')}` });
+const ownerContext = await browser.newContext({ extraHTTPHeaders: auth('study-owner'), viewport: { width: 1440, height: 1000 } });
+const otherContext = await browser.newContext({ extraHTTPHeaders: auth('study-other') });
+const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+await context.addInitScript(() => { if (window === window.top) { localStorage.setItem('shosai-stage-sketch-v1', 'existing-show-sentinel'); localStorage.setItem('shosai-stage-shows-v1','existing-shelf-sentinel'); } });
+await ownerContext.addInitScript(() => localStorage.setItem('shosai-stage-tour-v1','done'));
+const page = await context.newPage(), errors = [], checks = []; let token;
+page.on('pageerror', error => errors.push(error.message));
+const ready = () => page.waitForFunction(() => /公開された|Showing/.test(document.querySelector('#study-status').textContent));
+const frame = () => page.frames().find(f => f.url().includes('study-frame'));
+try {
+  const document = JSON.parse(await readFile(new URL('../docs/study-links/synthetic-review-show.json', import.meta.url), 'utf8'));
+  document.project.id = 'personal-check-' + crypto.randomUUID();
+  const issued = await ownerContext.request.post(base + '/study/api/owner/shows/' + document.project.id, { data: { document } });
+  assert.equal(issued.status(), 201, await issued.text()); token = (await issued.json()).link.token;
+  const viewApi = base + '/study/api/view/' + token, ownerApi = base + '/study/api/owner/links/' + token;
+  const published = await (await context.request.get(viewApi)).json();
+  const url = base + '/study?lang=ja#' + token;
+  let posts = 0; page.on('request', r => { if (r.method() === 'POST' && r.url().includes('/study/api/')) posts++; });
+  await page.goto(url); await ready();
+  const jpeg = await page.evaluate(() => { const c = document.createElement('canvas'); c.width=32; c.height=24; const x=c.getContext('2d'); x.fillStyle='#ffdc73'; x.fillRect(0,0,32,24); return c.toDataURL('image/jpeg',.8); });
+  await writeFile(new URL('../tests/study-screen-fixture.json', import.meta.url), JSON.stringify({ view: 'front', dataUrl: jpeg })+'\n');
+  await page.locator('#study-note').fill('自分用の立ち位置 <img src=x onerror=alert(1)>');
+  await page.waitForFunction(() => document.querySelector('#study-save-status').textContent === 'この端末に保存済み');
+  await page.locator('#study-pen').click();
+  for (const view of ['front','plan']) {
+    await page.locator('#study-frame-host').evaluate(el => el.scrollIntoView({block:'center'}));
+    const layer = frame().locator(`[data-pen-view="${view}"]`); await layer.scrollIntoViewIfNeeded(); const r = await layer.boundingBox();
+    await page.mouse.move(r.x+r.width*.25,r.y+r.height*.4); await page.mouse.down();
+    await page.mouse.move(r.x+r.width*.5,r.y+r.height*.65,{steps:8}); await page.mouse.move(r.x+r.width*.7,r.y+r.height*.35,{steps:8}); await page.mouse.up();
+  }
+  await page.waitForFunction(() => document.querySelector('#study-pen-status').textContent.includes('線 2本'));
+  assert.equal(posts,0); assert.equal((await (await ownerContext.request.get(ownerApi+'/notes')).json()).notes.length,0);
+  await page.locator('#study-next').click(); assert.equal(await page.locator('#study-note').inputValue(),'');
+  await page.locator('#study-note').fill('場面2の個人メモ'); await page.locator('#study-prev').click();
+  assert.match(await page.locator('#study-note').inputValue(), /自分用/);
+  await page.reload(); await ready(); assert.match(await page.locator('#study-note').inputValue(), /自分用/);
+  assert.match(await page.locator('#study-pen-status').textContent(), /線 2本/);
+  assert.equal(posts,0); checks.push('Private text and both pen views autosave per scene, restore after reload, and never auto-post');
+  await page.locator('#study-name').fill('演者 <A>');
+  await page.locator('#study-send').click(); await page.waitForFunction(() => document.querySelector('#study-note-status').textContent.includes('共有しました'));
+  assert.equal(posts,1); assert.match(await page.locator('#study-note').inputValue(), /自分用/);
+  let notes = (await (await ownerContext.request.get(ownerApi+'/notes')).json()).notes;
+  assert.equal(notes.length,1); assert.equal(notes[0].name,'演者 <A>'); assert.match(notes[0].text,/<img/); assert.equal(notes[0].screens.length,2);
+  assert.equal(notes[0].sceneId,document.project.scenes.find(s=>s.kind==='scene').id);
+  assert.equal(notes[0].screens[0].dataUrl,undefined);
+  const imagePath = ownerApi+`/notes/${notes[0].id}/images/front`;
+  const firstImage = await (await ownerContext.request.get(imagePath)).body(); assert.ok(firstImage.length > 1000);
+  const owner = await ownerContext.newPage(); owner.on('pageerror', error=>errors.push(error.message));
+  await owner.goto(base+'/stage.html?lang=ja'); await owner.waitForFunction(()=>window.SHOSAI_STAGE_STUDY_OWNER);
+  await owner.evaluate(doc => window.SHOSAI_STAGE_SESSION_BRIDGE.applyDocumentString(JSON.stringify(doc)),document);
+  await owner.locator('#stage-share-open').click(); await owner.locator('.stage-share-study-notes summary').click();
+  await owner.waitForFunction(()=>[...document.querySelectorAll('.stage-share-study-notes img')].length===2&&[...document.querySelectorAll('.stage-share-study-notes img')].every(i=>i.complete&&i.naturalWidth>0));
+  assert.equal(await owner.locator('.stage-share-study-note-text img').count(),0); assert.match(await owner.locator('.stage-share-study-notes strong').textContent(),/演者 <A>/);
+  const yellow = await owner.locator('.stage-share-study-notes img').first().evaluate(img=>{const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const ctx=c.getContext('2d');ctx.drawImage(img,0,0);const d=ctx.getImageData(0,0,c.width,c.height).data;let n=0;for(let i=0;i<d.length;i+=4)if(d[i]>210&&d[i+1]>160&&d[i+1]<245&&d[i+2]<150)n++;return n;});
+  assert.ok(yellow>100,'shared JPEG contains yellow pen pixels');
+  await owner.screenshot({path:fileURLToPath(new URL('personal-owner-shared.png',output)),fullPage:true});
+  checks.push('Explicit share sends immutable stage JPEGs with strokes, text, display name and scene; owner UI renders them safely');
+  assert.equal((await context.request.get(imagePath)).status(),401); assert.equal((await otherContext.request.get(imagePath)).status(),404);
+  assert.equal((await context.request.get(viewApi+'/notes')).status(),404);
+  const fresh = await browser.newContext(); const second = await fresh.newPage(); await second.goto(url); await second.waitForFunction(()=>document.querySelector('#study-status').textContent.includes('公開された'));
+  assert.equal(await second.locator('#study-note').inputValue(),''); assert.match(await second.locator('#study-pen-status').textContent(),/線 0本/); await fresh.close();
+  checks.push('Other recipients have no private text/strokes or shared-note list; anonymous and other owners cannot retrieve images');
+  await page.locator('#study-note').fill('共有後に自分だけ追記'); await page.locator('#study-view').selectOption('front');
+  await page.route('**/study/api/view/*/notes',route=>route.abort()); await page.locator('#study-send').click();
+  await page.waitForFunction(()=>document.querySelector('#study-note-status').textContent.includes('送信できません'));
+  assert.equal(await page.locator('#study-note').inputValue(),'共有後に自分だけ追記'); await page.unroute('**/study/api/view/*/notes');
+  assert.deepEqual(await (await ownerContext.request.get(imagePath)).body(),firstImage);
+  // Screen-only sharing is valid; only the currently selected view is included.
+  await page.locator('#study-note').fill(''); await page.locator('#study-send').click();
+  await page.waitForFunction(()=>document.querySelector('#study-note-status').textContent.includes('共有しました'));
+  notes=(await (await ownerContext.request.get(ownerApi+'/notes')).json()).notes; assert.deepEqual(notes[0].screens.map(s=>s.view),['front']); assert.equal(notes[0].text,'');
+  await page.locator('#study-note').fill('共有せず残す自分用メモ'); await page.waitForFunction(()=>document.querySelector('#study-save-status').textContent.includes('保存済み'));
+  document.project.title='Updated personal test'; await ownerContext.request.put(ownerApi,{data:{document}});
+  await page.waitForFunction(()=>document.querySelector('#study-title').textContent==='Updated personal test',{timeout:15000});
+  assert.equal(await page.locator('#study-note').inputValue(),'共有せず残す自分用メモ'); assert.equal(await page.locator('#study-older-note').isVisible(),true);
+  assert.deepEqual(await (await ownerContext.request.get(imagePath)).body(),firstImage);
+  checks.push('Share failures preserve private notes; screen-only selected view works; published update preserves personal notes and old shared images');
+  await page.locator('#study-view').selectOption('both');
+  for(const lang of ['ja','en']){
+    await page.locator('#study-language').selectOption(lang); await ready();
+    for(const [width,height] of [[390,844],[844,390],[768,1024],[1440,1000]]){
+      await page.setViewportSize({width,height}); await page.waitForTimeout(100);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+      const small=await page.locator('button,input,select,textarea').evaluateAll(ns=>ns.filter(n=>n.getClientRects().length&&!n.disabled).filter(n=>n.getBoundingClientRect().width<44||n.getBoundingClientRect().height<44).map(n=>n.id));assert.deepEqual(small,[]);
+      await page.screenshot({path:fileURLToPath(new URL(`personal-${lang}-${width}.png`,output)),fullPage:true});
+    }
+  }
+  await page.evaluate(()=>{const original=Storage.prototype.setItem; Storage.prototype.setItem=function(k,v){if(k.startsWith('stage-study-private-v1:'))throw new Error('synthetic quota'); return original.call(this,k,v);};});
+  await page.locator('#study-note').fill('quota keeps this on screen'); await page.waitForFunction(()=>document.querySelector('#study-save-status').textContent.includes('Could not save'));
+  await page.screenshot({path:fileURLToPath(new URL('personal-storage-error.png',output)),fullPage:true});
+  assert.equal(await page.locator('#study-note').inputValue(),'quota keeps this on screen');
+  assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('shosai-stage-sketch-v1'),localStorage.getItem('shosai-stage-shows-v1')]),['existing-show-sentinel','existing-shelf-sentinel']);
+  assert.deepEqual((await (await context.request.get(viewApi)).json()).document,document);
+  assert.deepEqual(errors,[]); checks.push('Japanese/English at four sizes, 44px targets, storage error UI and untouched existing local shows');
+  await writeFile(new URL('personal-result.json',output),JSON.stringify({checks,errors},null,2)); console.log(JSON.stringify({checks,errors},null,2));
+}finally{
+  if(token)await ownerContext.request.delete(base+'/study/api/owner/links/'+token);
+  await context.close();await ownerContext.close();await otherContext.close();await browser.close();
+}

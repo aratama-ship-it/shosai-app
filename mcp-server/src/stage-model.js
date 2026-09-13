@@ -523,6 +523,9 @@ export function normalizeSceneInput(project, raw, index = 0) {
       ? stringValue(raw.studyBeatId, "studyBeatId", 64, true)
       : null,
     note: stringValue(raw.note, `scenes[${index}].note`, 2000),
+    transitionNote: kind === "scene"
+      ? stringValue(raw.transitionNote, `scenes[${index}].transitionNote`, 1000)
+      : "",
     background: colorValue(raw.background, "#40362d"),
     notes: [],
     pieces: raw.kind === "section" ? [] : normalizePlacements(project, null, placements),
@@ -671,6 +674,10 @@ export function updateScene(document, input) {
   if (!scene) fail(`sceneId ${input.sceneId} が見つかりません。`);
   if (input.title !== undefined) scene.title = stringValue(input.title, "title", 80, true);
   if (input.note !== undefined) scene.note = stringValue(input.note, "note", 2000);
+  if (input.transitionNote !== undefined) {
+    if (scene.kind === "section") fail("セクションには転換メモを設定できません。");
+    scene.transitionNote = stringValue(input.transitionNote, "transitionNote", 1000);
+  }
   if (input.background !== undefined) scene.background = colorValue(input.background, scene.background);
   if (input.depth !== undefined) scene.depth = numberValue(input.depth, "depth", 0, 4, scene.depth);
   if (input.studyBeatId !== undefined) {

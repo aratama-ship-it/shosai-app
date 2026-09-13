@@ -245,6 +245,7 @@ export function buildServer(projectStore = store) {
       title: "編集計画と差分を作る",
       description:
         "現在revisionに対する編集操作をメモリ上で試作し、日本語の差分として保存する。" +
+        "任意のevidenceContextで、出典・直接観察・解釈・舞台案を分離して保持できる。" +
         "projects、exports、revisionは変更せず、配置の未指定値は手動追加と同じ既定値で補完する。" +
         "質問で止まるのは、既存の同名候補が複数あり取り違えると既存配置を壊す場合だけ。",
       inputSchema: planEditSchema,

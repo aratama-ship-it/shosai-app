@@ -3,6 +3,7 @@
 
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 from stage_extract import modal_count, modal_html, present_html, script_srcs, tour, ver, view
@@ -15,12 +16,25 @@ CHECK = "--check" in sys.argv
 # ★独自ドメインへ移すときは、ここと public-lp/index.html・public-beta.html の絶対URLを直す。
 SITE = "https://stagesketch-try.juggler-arata.workers.dev"
 
+# Cloudflare Web Analytics（2026-09-08 本人承認）。token は公開計測用で、認証鍵ではない。
+# 配信する日英6ページだけに付ける。本体・ローカル版・所有権確認HTMLには付けない。
+PUBLIC_ANALYTICS = """<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "faca61ff47514046990fdb0963096c62"}'></script><!-- End Cloudflare Web Analytics -->"""
+
+
+def with_public_analytics(html: str) -> str:
+    """本文を変えずに計測タグを1つ付ける。二重計測や付け忘れはビルドで止める。"""
+    if html.count("</body>") != 1 or "data-cf-beacon" in html:
+        raise SystemExit("！公開ページの計測タグ: body末尾が一意でないか、既にタグがあります")
+    return html.replace("</body>", PUBLIC_ANALYTICS + "\n</body>", 1)
+
 
 # 公開体験版では共有セッションを出さない。読み込むと起動時に /whoami を叩き、
 # 認証の無い公開ホストでは 404 が2件出る（2026-09-03 実測）。機能を隠すだけでなく
 # 読み込み自体を止める。
 PUBLIC_SKIP_JS = {
     "stage-session.js",
+    "stage-study-owner.js",  # The public try page has no editor account or owner API.
+    "stage-usage.js",  # 個別アカウントの計測は認証付きβ本体だけ。
     # ★個人用ショーの同梱データ（618KB・実制作のショー）。認証の内側だから積めていた。
     #   公開版に載せると全部読める。2026-09-03 に公開直前で発見。絶対に外すこと。
     "stage-shows.local.js",
@@ -41,11 +55,11 @@ PUBLIC_SKIP_JS = {
 def public_scripts() -> str:
     lines = []
     for src in script_srcs:
-        bare = src.split("?", 1)[0]
+        bare = src.split("?", 1)[0].lstrip("/")
         if bare == "stage-pwa.js" or bare in PUBLIC_SKIP_JS:
             continue
         lines.append(f'<script src="{src}"></script>')
-    lines.append('<script src="stage-public.js?v=1"></script>')
+    lines.append('<script src="stage-public.js?v=5"></script>')
     return "\n".join(lines)
 
 
@@ -80,7 +94,7 @@ page = f"""<!DOCTYPE html>
 <meta name="theme-color" content="#191512">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
 <link rel="stylesheet" href="{ver('style.css')}">
-<link rel="stylesheet" href="stage-public.css?v=1">
+<link rel="stylesheet" href="stage-public.css?v=2">
 <script>
 /* 公開体験版には認証が無いので /whoami は存在しない。本体は404を正しく受け流すが、
    誰のコンソールにも赤い404が出るのは公開物として避けたい（2026-09-03）。
@@ -121,31 +135,22 @@ page = f"""<!DOCTYPE html>
 </html>
 """
 
-if CHECK:
-    current = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
-    if current == page:
-        print("try.html は index.html と揃っています")
-        sys.exit(0)
-    print("！try.html が古いです。python3 build_public.py で作り直してください")
-    sys.exit(1)
-
-OUT.write_text(page, encoding="utf-8")
-
 js = (HERE / "stage-sketch.js").read_text(encoding="utf-8")
 ids = sorted(set(re.findall(r'getElementById\("([^"]+)"\)', js)))
 missing = [item for item in ids if f'id="{item}"' not in page]
 known_optional = {
     "stage-show-front", "stage-show-plan", "stage-study-body",
     "stage-scene-note-input", "stage-import-notice",
+    # 起動時の控え警告は認証付きβ（.stage-beta）だけで表示する。
+    # 体験版には条件そのものがないため、空のモーダルを配らない。
+    "stage-launch-backup-backdrop", "stage-launch-backup-warning",
+    "stage-launch-backup-close", "stage-launch-backup-export", "stage-launch-backup-continue",
 }
 missing = [item for item in missing if item not in known_optional]
 
-print(f"try.html を書き出しました（{len(page)} 文字）")
-print(f"窓: {modal_count()}枚 / 参照する id: {len(ids)}個")
 if missing:
     print("！足りない id:", ", ".join(missing))
     sys.exit(1)
-print("足りない id はありません")
 
 # --- 配信フォルダを組む -------------------------------------------------
 # ★許可リストではなく「集めたものだけを配る」形にする。
@@ -575,10 +580,10 @@ def collect_dist() -> list[str]:
     en_pages = []
     url_pairs = []
     for ja_html, name, to_english, note in pages:
-        (DIST / name).write_text(ja_html, encoding="utf-8")
+        (DIST / name).write_text(with_public_analytics(ja_html), encoding="utf-8")
         copied.append(f"{name}（{note}）")
         en_html = to_english(ja_html)
-        (en_dir / name).write_text(en_html, encoding="utf-8")
+        (en_dir / name).write_text(with_public_analytics(en_html), encoding="utf-8")
         copied.append(f"en/{name}（英語版・meta英語／本文は共通）")
         en_pages.append(en_html)
         url_pairs.append(check_pair(ja_html, en_html, name))
@@ -674,6 +679,61 @@ def collect_dist() -> list[str]:
 
     return copied
 
+
+def dist_differences(expected: Path, actual: Path) -> list[str]:
+    """同じ公開物を指しているか、ファイル名と内容の両方で比べる。"""
+    expected_files = {
+        item.relative_to(expected).as_posix(): item
+        for item in expected.rglob("*") if item.is_file()
+    }
+    actual_files = {
+        item.relative_to(actual).as_posix(): item
+        for item in actual.rglob("*") if item.is_file()
+    } if actual.is_dir() else {}
+
+    differences = [f"不足: {name}" for name in sorted(expected_files.keys() - actual_files.keys())]
+    differences.extend(f"余分: {name}" for name in sorted(actual_files.keys() - expected_files.keys()))
+    differences.extend(
+        f"内容が古い: {name}"
+        for name in sorted(expected_files.keys() & actual_files.keys())
+        if expected_files[name].read_bytes() != actual_files[name].read_bytes()
+    )
+    return differences
+
+
+if CHECK:
+    try_current = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
+    with tempfile.TemporaryDirectory(prefix="stage-public-check-") as directory:
+        temporary = Path(directory)
+        candidate_try = temporary / "try.html"
+        candidate_dist = temporary / "public-dist"
+        candidate_try.write_text(page, encoding="utf-8")
+
+        # collect_dist は生成した try.html を読むので、検査中だけ候補へ向ける。
+        saved_out, saved_dist = OUT, DIST
+        OUT, DIST = candidate_try, candidate_dist
+        try:
+            collect_dist()
+            differences = dist_differences(candidate_dist, saved_dist)
+        finally:
+            OUT, DIST = saved_out, saved_dist
+
+    stale = []
+    if try_current != page:
+        stale.append("try.html が古い")
+    stale.extend(differences)
+    if stale:
+        print("！公開用の生成物が古いです。python3 build_public.py で作り直してください")
+        for item in stale:
+            print(f"  - {item}")
+        sys.exit(1)
+    print("try.html と配信フォルダ public-dist/ は正本と揃っています")
+    sys.exit(0)
+
+OUT.write_text(page, encoding="utf-8")
+print(f"try.html を書き出しました（{len(page)} 文字）")
+print(f"窓: {modal_count()}枚 / 参照する id: {len(ids)}個")
+print("足りない id はありません")
 
 files = collect_dist()
 print(f"配信フォルダ public-dist/ を作りました（{len(files)}件）")

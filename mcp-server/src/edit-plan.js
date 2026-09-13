@@ -666,6 +666,7 @@ export function createEditPlan(document, input) {
     projectId: input.projectId,
     expectedRevision: input.expectedRevision,
     request: input.request,
+    ...(input.evidenceContext ? { evidenceContext: clone(input.evidenceContext) } : {}),
     status,
     operations,
     diff,

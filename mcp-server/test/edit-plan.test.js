@@ -5,7 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { createEditPlan } from "../src/edit-plan.js";
 import { ProjectStore } from "../src/project-store.js";
-import { planEditSchema } from "../src/schemas.js";
+import { evidenceContextSchema, planEditSchema } from "../src/schemas.js";
 import { GUIDE } from "../src/stage-model.js";
 
 async function temporaryStore() {
@@ -124,6 +124,35 @@ function placementState(piece) {
     size: piece.size,
     facing: piece.facing,
     color: piece.color,
+  };
+}
+
+function sampleEvidenceContext() {
+  return {
+    sources: [{
+      id: "source-1",
+      kind: "local-file",
+      label: "稽古資料.pdf",
+      locator: "/example/稽古資料.pdf",
+      mediaType: "pdf",
+    }],
+    observations: [{
+      id: "observation-1",
+      sourceId: "source-1",
+      locator: "p.12",
+      statement: "人物が円形の台の縁に立っている。",
+      confidence: "direct",
+    }],
+    interpretations: [{
+      id: "interpretation-1",
+      observationIds: ["observation-1"],
+      statement: "円の中心を空けると、ためらいを空間として見せられる可能性がある。",
+      uncertainty: "写真外の動線は分からない。",
+    }],
+    proposal: {
+      summary: "円座を中央から外し、中心の空白を残す。",
+      interpretationIds: ["interpretation-1"],
+    },
   };
 }
 
@@ -673,6 +702,67 @@ test("resolutions are optional for backward compatibility", () => {
     values[key] = result.data;
   }
   assert.equal(values.resolutions, undefined);
+});
+
+test("evidence context keeps sources, observations, interpretations, and one proposal separate", () => {
+  const result = evidenceContextSchema.safeParse(sampleEvidenceContext());
+  assert.equal(result.success, true);
+  assert.equal(result.data.version, 1);
+  assert.equal(result.data.observations[0].statement, "人物が円形の台の縁に立っている。");
+  assert.equal(
+    result.data.interpretations[0].observationIds[0],
+    result.data.observations[0].id,
+  );
+  assert.equal(
+    result.data.proposal.interpretationIds[0],
+    result.data.interpretations[0].id,
+  );
+});
+
+test("evidence context rejects broken and duplicate references", () => {
+  const broken = sampleEvidenceContext();
+  broken.observations[0].sourceId = "source-missing";
+  broken.interpretations[0].observationIds = ["observation-missing"];
+  broken.proposal.interpretationIds = ["interpretation-missing"];
+  broken.sources.push({ ...broken.sources[0] });
+  const result = evidenceContextSchema.safeParse(broken);
+
+  assert.equal(result.success, false);
+  const messages = result.error.issues.map((issue) => issue.message).join("\n");
+  assert.match(messages, /sourceId source-missing がsourcesにありません/);
+  assert.match(messages, /observationId observation-missing がobservationsにありません/);
+  assert.match(messages, /interpretationId interpretation-missing がinterpretationsにありません/);
+  assert.match(messages, /id source-1 がsources内で重複しています/);
+});
+
+test("evidence context remains in the plan and export but not in the canonical project", async () => {
+  const { store, document } = await createSwapShow("evidence-context-show");
+  const evidenceContext = evidenceContextSchema.parse(sampleEvidenceContext());
+  const plan = await store.planEdit({
+    projectId: document.project.id,
+    expectedRevision: 1,
+    request: "資料の空白の読みを、第3場面の円座配置で試す",
+    operations: [replacementOperation(document)],
+    evidenceContext,
+  });
+
+  assert.deepEqual(plan.evidenceContext, evidenceContext);
+  const beforeApply = await store.read(document.project.id);
+  assert.equal("evidenceContext" in beforeApply, false);
+  assert.equal("evidenceContext" in beforeApply.project, false);
+
+  const result = await store.applyEditPlan({
+    planId: plan.planId,
+    projectId: document.project.id,
+    expectedRevision: 1,
+    confirmed: true,
+  });
+  const afterApply = await store.read(document.project.id);
+  assert.equal("evidenceContext" in afterApply, false);
+  assert.equal("evidenceContext" in afterApply.project, false);
+
+  const exported = JSON.parse(await readFile(result.preparedImport.importFile, "utf8"));
+  assert.deepEqual(exported.editSummary.evidenceContext, evidenceContext);
 });
 
 test("validation-error questions do not produce structured clarifications", async () => {

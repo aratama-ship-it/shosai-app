@@ -108,6 +108,8 @@ export const sceneSchema = z.object({
   studyBeatId: z.string().min(1).max(64).optional(),
   note: z.string().max(2000).optional()
     .describe("目的・障害・変化・観客へ見せる情報を簡潔に記録"),
+  transitionNote: z.string().max(1000).optional()
+    .describe("このシーンへ入る転換で行うことのメモ"),
   background: color,
   beat: sceneBeatSchema,
   rehearsal: sceneRehearsalSchema,
@@ -213,6 +215,7 @@ const updateSceneFieldsSchema = z.object({
   sceneId: z.string(),
   title: z.string().min(1).max(80).optional(),
   note: z.string().max(2000).optional(),
+  transitionNote: z.string().max(1000).optional(),
   background: color,
   beat: sceneBeatSchema,
   rehearsal: sceneRehearsalSchema,
@@ -267,6 +270,92 @@ export const editOperationSchema = z.preprocess(
   editOperationDiscriminatedUnion,
 );
 
+const evidenceIdSchema = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$/);
+
+export const evidenceContextSchema = z.object({
+  version: z.literal(1).default(1),
+  sources: z.array(z.object({
+    id: evidenceIdSchema,
+    kind: z.enum(["local-file", "official-web", "book", "research", "user"]),
+    label: z.string().min(1).max(160),
+    locator: z.string().min(1).max(500).optional()
+      .describe("ローカルパス、URL、書誌情報など。内容そのものの証明には使わない"),
+    mediaType: z.enum(["pdf", "image", "web", "text", "other"]).optional(),
+  })).min(1).max(4),
+  observations: z.array(z.object({
+    id: evidenceIdSchema,
+    sourceId: evidenceIdSchema,
+    locator: z.string().min(1).max(200).optional()
+      .describe("ページ、時刻、図番号、画像内の位置など、原資料へ戻るための手掛かり"),
+    statement: z.string().min(1).max(800)
+      .describe("原資料から直接確認できたこと。解釈や舞台案を混ぜない"),
+    confidence: z.enum(["direct", "uncertain"]),
+  })).min(1).max(12),
+  interpretations: z.array(z.object({
+    id: evidenceIdSchema,
+    observationIds: z.array(evidenceIdSchema).min(1).max(8),
+    statement: z.string().min(1).max(800)
+      .describe("観察事実を舞台表現へつなぐ読み。事実として扱わない"),
+    uncertainty: z.string().min(1).max(400).optional(),
+  })).min(1).max(8),
+  proposal: z.object({
+    summary: z.string().min(1).max(800),
+    interpretationIds: z.array(evidenceIdSchema).min(1).max(8),
+  }),
+}).superRefine((value, context) => {
+  const sourceIds = new Set(value.sources.map((source) => source.id));
+  const observationIds = new Set(value.observations.map((observation) => observation.id));
+  const interpretationIds = new Set(value.interpretations.map((interpretation) => interpretation.id));
+
+  for (const [key, values] of [
+    ["sources", value.sources],
+    ["observations", value.observations],
+    ["interpretations", value.interpretations],
+  ]) {
+    const seen = new Set();
+    values.forEach((item, index) => {
+      if (seen.has(item.id)) {
+        context.addIssue({
+          code: "custom",
+          path: [key, index, "id"],
+          message: `id ${item.id} が${key}内で重複しています。`,
+        });
+      }
+      seen.add(item.id);
+    });
+  }
+
+  for (const [index, observation] of value.observations.entries()) {
+    if (!sourceIds.has(observation.sourceId)) {
+      context.addIssue({
+        code: "custom",
+        path: ["observations", index, "sourceId"],
+        message: `sourceId ${observation.sourceId} がsourcesにありません。`,
+      });
+    }
+  }
+  for (const [index, interpretation] of value.interpretations.entries()) {
+    for (const observationId of interpretation.observationIds) {
+      if (!observationIds.has(observationId)) {
+        context.addIssue({
+          code: "custom",
+          path: ["interpretations", index, "observationIds"],
+          message: `observationId ${observationId} がobservationsにありません。`,
+        });
+      }
+    }
+  }
+  for (const interpretationId of value.proposal.interpretationIds) {
+    if (!interpretationIds.has(interpretationId)) {
+      context.addIssue({
+        code: "custom",
+        path: ["proposal", "interpretationIds"],
+        message: `interpretationId ${interpretationId} がinterpretationsにありません。`,
+      });
+    }
+  }
+});
+
 export const planEditSchema = {
   ...mutationBaseSchema,
   request: z.string().min(1).max(500),
@@ -280,6 +369,8 @@ export const planEditSchema = {
     .describe("needs_clarificationで返した同名候補の選択回答。候補外のassetIdは採用しない"),
   questions: z.array(z.string().min(1).max(800)).max(10).optional()
     .describe("既存の同名候補が複数あり、取り違えると既存配置を壊す場合だけ使う確認質問"),
+  evidenceContext: evidenceContextSchema.optional()
+    .describe("任意の根拠パック。出典、直接観察、解釈、舞台案を分離して1つの編集計画へ添える"),
 };
 
 export const applyEditPlanSchema = {

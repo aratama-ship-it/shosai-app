@@ -4,7 +4,7 @@ import test from "node:test";
 import vm from "node:vm";
 
 const sketchSource = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
-const indexSource = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const indexSource = await readFile(new URL("../stage.html", import.meta.url), "utf8");
 const i18nSource = await readFile(new URL("../stage-i18n.js", import.meta.url), "utf8");
 
 test("盆の回転速度は既定0で-30〜30度/秒に正規化する", () => {

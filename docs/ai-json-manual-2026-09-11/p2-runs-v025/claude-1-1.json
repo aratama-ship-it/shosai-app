@@ -1,0 +1,109 @@
+{
+  "kind": "shosai-stage-sketch",
+  "version": 4,
+  "venues": [],
+  "project": {
+    "title": "ロミオとジュリエット―小さなサーカス",
+    "venue": "proscenium",
+    "venueSize": "mid",
+    "cast": [
+      {"id": "cast-romeo", "name": "ロミオ", "color": "#2f5aa8"},
+      {"id": "cast-juliet", "name": "ジュリエット", "color": "#b83280"},
+      {"id": "cast-tybalt", "name": "ティボルト", "color": "#a83232"},
+      {"id": "cast-nurse", "name": "乳母", "color": "#6b8e4e"}
+    ],
+    "sets": [
+      {"id": "set-light1", "kind": "light", "name": "照明1", "color": "#ffffff", "lightKind": "hang"},
+      {"id": "set-tissue1", "kind": "tissue", "name": "シルク1", "color": "#c98fc9"},
+      {"id": "set-trapeze1", "kind": "trapeze", "name": "トラピーズ1", "color": "#8a6d3b"},
+      {"id": "set-cyrwheel1", "kind": "cyrwheel", "name": "サイアーホイール1", "color": "#999999"}
+    ],
+    "scenes": [
+      {"kind": "section", "depth": 0, "id": "sec-1", "title": "第一部　出会いと誓い"},
+      {
+        "kind": "scene", "depth": 1, "id": "scene-1", "title": "仮面の舞踏会",
+        "note": "客席から見て中央でロミオとジュリエットが向き合い、互いに気づく瞬間。ティボルトと乳母は少し離れた位置で周囲を見守る。",
+        "pieces": [
+          {"id": "piece-1-light", "type": "light", "setId": "set-light1", "u": 0.5, "v": 0.5, "color": "#ffffff"},
+          {"id": "piece-1-romeo", "type": "performer", "castId": "cast-romeo", "u": 0.42, "v": 0.55, "color": "#2f5aa8", "facing": 110, "pose": "reach"},
+          {"id": "piece-1-juliet", "type": "performer", "castId": "cast-juliet", "u": 0.58, "v": 0.55, "color": "#b83280", "facing": 250, "pose": "open"},
+          {"id": "piece-1-tybalt", "type": "performer", "castId": "cast-tybalt", "u": 0.2, "v": 0.75, "color": "#a83232", "facing": 60, "pose": "stand"},
+          {"id": "piece-1-nurse", "type": "performer", "castId": "cast-nurse", "u": 0.8, "v": 0.75, "color": "#6b8e4e", "facing": 300, "pose": "stand"}
+        ]
+
+      },
+      {
+        "kind": "scene", "depth": 1, "id": "scene-2", "title": "バルコニーの誓い",
+        "note": "安全未確認。ジュリエットをシルク上方に、ロミオを床上でその真下に配置し、二人の距離と高低差で誓いの場面を表す検討用の図。実施可否・装置設定は本図の対象外。",
+        "pieces": [
+          {"id": "piece-2-light", "type": "light", "setId": "set-light1", "u": 0.5, "v": 0.4, "color": "#ffffff"},
+          {"id": "piece-2-tissue", "type": "tissue", "setId": "set-tissue1", "u": 0.55, "v": 0.3, "color": "#c98fc9"},
+          {"id": "piece-2-juliet", "type": "performer", "castId": "cast-juliet", "u": 0.55, "v": 0.3, "color": "#b83280", "facing": 180, "pose": "reach"},
+          {"id": "piece-2-romeo", "type": "performer", "castId": "cast-romeo", "u": 0.5, "v": 0.75, "color": "#2f5aa8", "facing": 0, "pose": "reach"}
+        ]
+      },
+      {
+        "kind": "scene", "depth": 1, "id": "scene-3", "title": "秘密の結婚",
+        "note": "ロミオとジュリエットが中央で並び立ち、乳母が立会人として傍らに控える配置の検討図。",
+        "pieces": [
+          {"id": "piece-3-light", "type": "light", "setId": "set-light1", "u": 0.5, "v": 0.5, "color": "#ffffff"},
+          {"id": "piece-3-romeo", "type": "performer", "castId": "cast-romeo", "u": 0.46, "v": 0.5, "color": "#2f5aa8", "facing": 90, "pose": "stand"},
+          {"id": "piece-3-juliet", "type": "performer", "castId": "cast-juliet", "u": 0.54, "v": 0.5, "color": "#b83280", "facing": 270, "pose": "stand"},
+          {"id": "piece-3-nurse", "type": "performer", "castId": "cast-nurse", "u": 0.5, "v": 0.68, "color": "#6b8e4e", "facing": 0, "pose": "seiza"}
+        ]
+      },
+      {"kind": "section", "depth": 0, "id": "sec-2", "title": "第二部　対立と追放"},
+      {
+        "kind": "scene", "depth": 1, "id": "scene-4", "title": "ティボルトとの対立",
+        "note": "安全未確認。ティボルトをサイアーホイール上に、ロミオを対面の床上に配置し、対立の勢いを高低差と向き合う構図で示す検討用の図。実施可否・装置設定は本図の対象外。",
+        "pieces": [
+          {"id": "piece-4-light", "type": "light", "setId": "set-light1", "u": 0.5, "v": 0.5, "color": "#ffffff"},
+          {"id": "piece-4-cyrwheel", "type": "cyrwheel", "setId": "set-cyrwheel1", "u": 0.35, "v": 0.5, "color": "#999999"},
+          {"id": "piece-4-tybalt", "type": "performer", "castId": "cast-tybalt", "u": 0.35, "v": 0.5, "color": "#a83232", "facing": 90, "pose": "reach"},
+          {"id": "piece-4-romeo", "type": "performer", "castId": "cast-romeo", "u": 0.68, "v": 0.5, "color": "#2f5aa8", "facing": 270, "pose": "open"}
+        ]
+      },
+
+      {
+        "kind": "scene", "depth": 1, "id": "scene-5", "title": "追放",
+        "note": "ロミオが奥へ向かって走り去り、ジュリエットが手前に一人残る距離感を示す検討用の図。",
+        "pieces": [
+          {"id": "piece-5-light", "type": "light", "setId": "set-light1", "u": 0.5, "v": 0.5, "color": "#ffffff"},
+          {"id": "piece-5-romeo", "type": "performer", "castId": "cast-romeo", "u": 0.7, "v": 0.2, "color": "#2f5aa8", "facing": 180, "pose": "run"},
+          {"id": "piece-5-juliet", "type": "performer", "castId": "cast-juliet", "u": 0.4, "v": 0.8, "color": "#b83280", "facing": 0, "pose": "kneel"}
+        ]
+      },
+      {"kind": "section", "depth": 0, "id": "sec-3", "title": "第三部　悲劇への道"},
+      {
+        "kind": "scene", "depth": 1, "id": "scene-6", "title": "別れの塔",
+        "note": "安全未確認。ジュリエットを一人シルク上方に配置し、孤立と決意を高さで示す検討用の図。実施可否・装置設定は本図の対象外。",
+        "pieces": [
+          {"id": "piece-6-light", "type": "light", "setId": "set-light1", "u": 0.5, "v": 0.4, "color": "#ffffff"},
+          {"id": "piece-6-tissue", "type": "tissue", "setId": "set-tissue1", "u": 0.5, "v": 0.35, "color": "#c98fc9"},
+          {"id": "piece-6-juliet", "type": "performer", "castId": "cast-juliet", "u": 0.5, "v": 0.35, "color": "#b83280", "facing": 0, "pose": "open"}
+        ]
+      },
+      {
+        "kind": "scene", "depth": 1, "id": "scene-7", "title": "毒と眠り",
+        "note": "ジュリエットが手前で横たわり、ロミオが奥から近づく構図で悲劇の瞬間を示す検討用の図。",
+        "pieces": [
+          {"id": "piece-7-light", "type": "light", "setId": "set-light1", "u": 0.5, "v": 0.6, "color": "#ffffff"},
+          {"id": "piece-7-juliet", "type": "performer", "castId": "cast-juliet", "u": 0.5, "v": 0.75, "color": "#b83280", "facing": 90, "pose": "supine"},
+          {"id": "piece-7-romeo", "type": "performer", "castId": "cast-romeo", "u": 0.5, "v": 0.35, "color": "#2f5aa8", "facing": 180, "pose": "walk"}
+        ]
+      },
+      {
+        "kind": "scene", "depth": 1, "id": "scene-8", "title": "終幕",
+        "note": "四人全員が中央付近に集まり、静止した構図で幕を示す検討用の図。",
+        "pieces": [
+
+          {"id": "piece-8-light", "type": "light", "setId": "set-light1", "u": 0.5, "v": 0.5, "color": "#ffffff"},
+          {"id": "piece-8-romeo", "type": "performer", "castId": "cast-romeo", "u": 0.45, "v": 0.55, "color": "#2f5aa8", "facing": 0, "pose": "lie"},
+          {"id": "piece-8-juliet", "type": "performer", "castId": "cast-juliet", "u": 0.55, "v": 0.55, "color": "#b83280", "facing": 0, "pose": "lie"},
+          {"id": "piece-8-tybalt", "type": "performer", "castId": "cast-tybalt", "u": 0.25, "v": 0.7, "color": "#a83232", "facing": 45, "pose": "kneel"},
+          {"id": "piece-8-nurse", "type": "performer", "castId": "cast-nurse", "u": 0.75, "v": 0.7, "color": "#6b8e4e", "facing": 315, "pose": "floorsit"}
+        ]
+      }
+    ]
+  }
+}

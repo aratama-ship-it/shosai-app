@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const stageSource = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
-const indexSource = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const indexSource = await readFile(new URL("../stage.html", import.meta.url), "utf8");
 const i18nSource = await readFile(new URL("../stage-i18n.js", import.meta.url), "utf8");
 
 function functionBody(name, nextName) {

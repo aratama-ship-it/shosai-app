@@ -1,0 +1,75 @@
+// Local synthetic link only; never edit a user's published show or notebook.
+import {createRequire} from 'node:module';
+import {pathToFileURL,fileURLToPath} from 'node:url';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const require=createRequire(import.meta.url);
+const {chromium}=await import(pathToFileURL(process.env.STUDY_PLAYWRIGHT||require.resolve('playwright')));
+const base=process.env.STUDY_BASE||'http://127.0.0.1:8871';
+if(!/^http:\/\/127\.0\.0\.1:\d+$/.test(base)||base.endsWith(':8802'))throw new Error('Dedicated local preview only');
+const out=fileURLToPath(new URL('../docs/study-links/sticky-inline-qa/',import.meta.url));await mkdir(out,{recursive:true});
+const browser=await chromium.launch({headless:true,channel:'chrome'}),context=await browser.newContext({viewport:{width:1440,height:1000}}),page=await context.newPage();
+const owner=await browser.newContext({extraHTTPHeaders:{Authorization:'Basic '+Buffer.from('study-owner:local-study-owner').toString('base64')}});
+const errors=[],checks=[];page.on('pageerror',e=>errors.push(e.message));const pass=s=>{checks.push(s);console.log('PASS',s);};
+const ready=()=>page.waitForFunction(()=>/公開された|Showing published content/.test(document.querySelector('#study-status').textContent));
+const frame=()=>page.frames().find(f=>f.url().includes('/study-frame'));
+const entry=()=>page.evaluate(()=>JSON.parse(Object.entries(localStorage).find(([k])=>k.startsWith('stage-study-notebook-v1:'))[1]).entries['qa-scene-0']);
+const waitText=text=>page.waitForFunction(text=>JSON.parse(Object.entries(localStorage).find(([k])=>k.startsWith('stage-study-notebook-v1:'))[1]).entries['qa-scene-0'].stickies[0].text===text,text);
+const inline=()=>frame().locator('.study-sticky-inline-text');
+const open=async()=>{await page.locator('#study-frame-host').scrollIntoViewIfNeeded();const note=frame().locator('.study-sticky-note').first();await note.scrollIntoViewIfNeeded();await note.dblclick({position:{x:25,y:20}});await inline().waitFor({state:'visible',timeout:3000});assert.ok(await inline().evaluate(e=>e===document.activeElement));};
+try{
+ await page.addInitScript(()=>{if(window===window.top){localStorage.setItem('shosai-stage-sketch-v1','keep-show');localStorage.setItem('shosai-stage-shows-v1','keep-shelf');}});
+ const doc=JSON.parse(await readFile(new URL('../docs/study-links/synthetic-review-show.json',import.meta.url),'utf8'));doc.project.id='inline-'+crypto.randomUUID();
+ const issued=await owner.request.post(base+'/study/api/owner/shows/'+doc.project.id,{data:{document:doc}});assert.equal(issued.status(),201,await issued.text());const token=(await issued.json()).link.token,url=base+'/study?lang=ja#'+token,view=base+'/study/api/view/'+token,manage=base+'/study/api/owner/links/'+token;
+ await writeFile(out+'/preview-url.txt',url+'\n');await page.goto(url);await ready();let shares=0;page.on('request',r=>{if(r.method()==='POST'&&r.url()===view+'/notes')shares++;});
+ await page.locator('#study-sticky').scrollIntoViewIfNeeded();await page.waitForTimeout(350);await page.locator('#study-sticky').click();await page.locator('#study-sticky-front').click();
+ await page.locator('#study-sticky-text').fill('照明待ち');await page.locator('[data-sticky-shape="bubble"]').click();await page.locator('[data-sticky-color="yellow"]').click();await waitText('照明待ち');
+ const original=structuredClone((await entry()).stickies[0]);
+ await open();await page.keyboard.press('End');await page.keyboard.press('Enter');await page.keyboard.insertText('点灯したら中央へ');await waitText('照明待ち\n点灯したら中央へ');
+ assert.equal(await page.locator('#study-sticky-text').inputValue(),'照明待ち\n点灯したら中央へ');assert.ok(await inline().evaluate(e=>e===document.activeElement));
+ await page.keyboard.press('Escape');assert.equal(await inline().count(),0);assert.ok(await frame().locator('.study-sticky-note').evaluate(e=>e===document.activeElement));
+ assert.deepEqual({...((await entry()).stickies[0]),text:original.text},original);
+ pass('Double-click opens inline textarea without sidebar focus jumps; Japanese/newline input mirrors sidebar, preserves shape/color/position, and Esc completes');
+ await page.keyboard.press('Enter');await inline().waitFor();await inline().fill('');await page.keyboard.type('abcdefghijklmnop',{delay:1});await waitText('abcdefghijklmnop');assert.equal(await inline().inputValue(),'abcdefghijklmnop');
+ await page.keyboard.press('ControlOrMeta+a');await page.keyboard.insertText('undo');await page.keyboard.press('ControlOrMeta+z');await waitText('abcdefghijklmnop');await page.keyboard.press('ControlOrMeta+Shift+z');await waitText('undo');
+ const cdp=await context.newCDPSession(page);await inline().fill('');await cdp.send('Input.imeSetComposition',{text:'へんかん',selectionStart:4,selectionEnd:4});await page.keyboard.insertText('変換確定');await waitText('変換確定');assert.equal(await inline().inputValue(),'変換確定');
+ await inline().fill('<img src=x onerror=alert(1)>\n安全な文章');await waitText('<img src=x onerror=alert(1)>\n安全な文章');assert.equal(await frame().locator('.study-sticky-layer img').count(),0);
+ await inline().fill('あ'.repeat(220));await waitText('あ'.repeat(200));assert.equal((await inline().inputValue()).length,200);
+ await page.keyboard.press('ControlOrMeta+Enter');assert.equal(await inline().count(),0);
+ pass('Rapid typing, native text undo/redo, simulated IME commit, plain-text HTML and 200-character limit work; Ctrl/Cmd+Enter finishes');
+ await open();await inline().fill('次の場面へ進む前のメモ');await page.locator('#study-next').click();await frame().waitForFunction(()=>!document.querySelector('.study-sticky-note'));await page.locator('#study-prev').click();await frame().locator('.study-sticky-note').waitFor();await waitText('次の場面へ進む前のメモ');
+ await page.reload();await ready();await open();assert.equal(await inline().inputValue(),'次の場面へ進む前のメモ');await inline().fill('図上から共有する最新メモ');await waitText('図上から共有する最新メモ');
+ const guard=await frame().evaluate(()=>{
+  const input=document.querySelector('.study-sticky-inline-text');const blocked=['s','o','p'].every(key=>{const e=new KeyboardEvent('keydown',{key,metaKey:true,bubbles:true,cancelable:true});input.dispatchEvent(e);return e.defaultPrevented;});
+  const old=document.querySelector('#study-legacy textarea,#study-legacy input');const e=new InputEvent('beforeinput',{inputType:'insertText',data:'blocked',bubbles:true,cancelable:true});old.dispatchEvent(e);
+  return {blocked,legacyBlocked:e.defaultPrevented,owner:typeof window.SHOSAI_STAGE_STUDY_OWNER,bridge:typeof window.SHOSAI_STAGE_SESSION_BRIDGE};
+ });assert.deepEqual(guard,{blocked:true,legacyBlocked:true,owner:'undefined',bridge:'undefined'});assert.equal(shares,0);
+ await page.locator('#study-name').fill('図上入力の演者');await page.locator('#study-send').click();await page.waitForFunction(()=>document.querySelector('#study-note-status').textContent.includes('共有しました'));
+ const shared=(await(await owner.request.get(manage+'/notes')).json()).notes;assert.equal(shared.length,1);const jpg=await(await owner.request.get(`${manage}/notes/${shared[0].id}/images/front`)).body();await writeFile(out+'/shared-front.jpg',jpg);assert.equal(shared[0].name,'図上入力の演者');assert.equal(shares,1);
+ assert.deepEqual((await(await context.request.get(view)).json()).document,doc);assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('shosai-stage-sketch-v1'),localStorage.getItem('shosai-stage-shows-v1')]),['keep-show','keep-shelf']);
+ pass('Scene switch/reload retain text; only the personal input accepts typing, source show/local shows stay intact and explicit sharing exports the latest note');
+ for(const lang of ['ja','en'])for(const [width,height] of [[1440,1000],[768,1024],[390,844],[844,390]]){
+  await page.setViewportSize({width,height});await page.locator('#study-language').selectOption(lang);await ready();await open();
+  const layout=await inline().evaluate(e=>{const root=e.parentElement,b=root.getBoundingClientRect(),l=root.parentElement.getBoundingClientRect(),d=root.querySelector('button').getBoundingClientRect();return{width:b.width,height:b.height,inBounds:b.left>=l.left-1&&b.right<=l.right+1&&b.top>=l.top-1&&b.bottom<=l.bottom+1,hit:d.width>=44&&d.height>=44,label:e.getAttribute('aria-label'),font:getComputedStyle(e).fontSize};});
+  assert.ok(layout.inBounds);assert.ok(layout.hit);assert.equal(layout.label,lang==='ja'?'図上のメモを入力':'Edit note on diagram');assert.equal(layout.font,'15px');
+  await page.screenshot({path:out+`/${lang}-${width}.png`});await frame().locator('.study-sticky-inline-done').click();assert.equal(await inline().count(),0);
+ }
+ pass('Inline editor and Done control fit both drawings at desktop/tablet/portrait/landscape widths; Japanese/English labels and 44px target verified');
+ await page.setViewportSize({width:1440,height:1000});await page.locator('#study-frame-host').scrollIntoViewIfNeeded();
+ const beforeMove=(await entry()).stickies[0],pin=frame().locator('.study-sticky-note').first();await pin.scrollIntoViewIfNeeded();const pinBox=await pin.boundingBox();
+ await page.mouse.move(pinBox.x+20,pinBox.y+20);await page.mouse.down();await page.mouse.move(pinBox.x+70,pinBox.y+55,{steps:6});await page.mouse.up();
+ await page.waitForFunction(x=>JSON.parse(Object.entries(localStorage).find(([k])=>k.startsWith('stage-study-notebook-v1:'))[1]).entries['qa-scene-0'].stickies[0].x>x,beforeMove.x);
+ const handle=frame().locator('.study-sticky-resize').first();const hb=await handle.boundingBox();await page.mouse.move(hb.x+20,hb.y+20);await page.mouse.down();await page.mouse.move(hb.x+65,hb.y+90,{steps:6});await page.mouse.up();
+ await page.waitForFunction(()=>JSON.parse(Object.entries(localStorage).find(([k])=>k.startsWith('stage-study-notebook-v1:'))[1]).entries['qa-scene-0'].stickies[0].width>188);
+ const afterMove=(await entry()).stickies[0];assert.equal(afterMove.text,beforeMove.text);assert.equal(afterMove.color,'yellow');assert.equal(afterMove.shape,'bubble');assert.equal(await inline().count(),0);
+ await page.evaluate(({doc,stickies})=>document.querySelector('#study-frame-host iframe').contentWindow.postMessage({channel:'stage-study',action:'load',document:doc,lang:'en',sceneId:'qa-scene-0',revision:1,stickies,strokes:[],annotationsEditable:false},'*'),{doc,stickies:[afterMove]});
+ await frame().waitForFunction(()=>document.querySelector('.study-sticky-note').tabIndex===-1);
+ assert.ok(await frame().evaluate(()=>{const b=document.querySelector('.study-sticky-note'),e=new MouseEvent('dblclick',{bubbles:true,cancelable:true});b.dispatchEvent(e);return e.defaultPrevented&&!document.querySelector('.study-sticky-inline');}));
+ assert.deepEqual((await entry()).stickies[0],afterMove);
+ pass('Dragging/resizing still work after inline editing; a read-only history renderer refuses the same double-click');
+ const mobile=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true}),touch=await mobile.newPage();await touch.goto(url);await touch.waitForFunction(()=>document.querySelector('#study-status').textContent.includes('公開された'));
+ await touch.locator('#study-sticky').scrollIntoViewIfNeeded();await touch.waitForTimeout(350);await touch.locator('#study-sticky').tap();await touch.locator('#study-sticky-plan').tap();await touch.locator('#study-sticky-text').fill('平面図のメモ');const tf=touch.frames().find(f=>f.url().includes('/study-frame'));
+ await touch.locator('#study-frame-host').scrollIntoViewIfNeeded();const tn=tf.locator('.study-sticky-note');await tn.scrollIntoViewIfNeeded();await tn.dblclick({position:{x:25,y:20}});await tf.locator('.study-sticky-inline-text').waitFor();assert.equal(await tf.locator('.study-sticky-inline-text').evaluate(e=>getComputedStyle(e).fontSize),'16px');await tf.locator('.study-sticky-inline-text').fill('平面図で直接入力');await touch.screenshot({path:out+'/touch-390.png'});await tf.locator('.study-sticky-inline-done').tap();await mobile.close();
+ pass('Plan-view inline editing uses 16px input and a tappable Done button in mobile simulation');
+ assert.deepEqual(errors,[]);await writeFile(out+'/results.json',JSON.stringify({checks,errors,physicalDevice:false,url},null,2));
+}catch(e){await page.screenshot({path:out+'/failure.png',fullPage:true});throw e;}finally{await browser.close();}

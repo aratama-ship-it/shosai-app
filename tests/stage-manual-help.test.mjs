@@ -4,9 +4,8 @@ import test from "node:test";
 import vm from "node:vm";
 
 const root = new URL("../", import.meta.url);
-const [manualSource, indexSource, stageSource, swSource, assetsIgnore, i18nSource] = await Promise.all([
+const [manualSource, stageSource, swSource, assetsIgnore, i18nSource] = await Promise.all([
   readFile(new URL("manual/manual-content.js", root), "utf8"),
-  readFile(new URL("index.html", root), "utf8"),
   readFile(new URL("stage.html", root), "utf8"),
   readFile(new URL("stage-sw.js", root), "utf8"),
   readFile(new URL(".assetsignore", root), "utf8"),
@@ -78,14 +77,15 @@ test("MANUAL_FINDは英語モードで英語の見出し・言い換え語・本
   assert.ok(Array.from(find("盆")).includes("p-machinery"));
 });
 
-test("本文はいまのUIに追随している（地図なし・空にするはシーン欄・はじめての案内）", () => {
+test("本文はいまのUIに追随している（地図なし・シーン作成導線・はじめての案内）", () => {
   const sectionById = new Map(
     manual.chapters.flatMap((chapter) => chapter.sections.map((section) => [section.id, section])),
   );
   const all = Array.from(sectionById.values()).map((section) => section.html).join(" ");
   assert.ok(!all.includes("〈地図〉"), "廃止した〈地図〉が本文に残っていない");
-  assert.ok(sectionById.get("p-scenes").html.includes("舞台を空にする"), "空にするはシーン欄の節にある");
-  assert.ok(!sectionById.get("p-save").html.includes("舞台を空にする"), "保存の節から移動済み");
+  assert.ok(sectionById.get("p-scenes").html.includes("新規シーン"), "新規シーンはシーン欄の節にある");
+  assert.ok(sectionById.get("p-scenes").html.includes("新規セクション"), "新規セクションはシーン欄の節にある");
+  assert.ok(!all.includes("舞台を空にする"), "廃止した空にするが本文に残っていない");
   assert.ok(sectionById.get("tour").html.includes("はじめての案内"), "案内の呼び出し名が現行");
 });
 
@@ -118,22 +118,20 @@ test("冊子の会場の説明が、アプリに入っている会場を取り�
   });
 });
 
-test("正本と単独版に検索・冊子導線と共通データが継承される", () => {
-  for (const source of [indexSource, stageSource]) {
-    for (const value of ["stage-help-open", "stage-manual-open", "manual/manual-content.js?v=3"]) {
-      assert.ok(source.includes(value), `${value} がページにある`);
-    }
-    assert.ok(
-      source.indexOf("manual/manual-content.js?v=3") < source.indexOf("stage-sketch.js?v=318"),
-      "共通マニュアルデータがstage-sketch.jsより先に読み込まれる",
-    );
+test("舞台スケッチ正本に検索・冊子導線と共通データがある", () => {
+  for (const value of ["stage-help-open", "stage-manual-open", "manual/manual-content.js?v=12"]) {
+    assert.ok(stageSource.includes(value), `${value} がページにある`);
   }
+  assert.ok(
+    stageSource.indexOf("manual/manual-content.js?v=12") < stageSource.indexOf("stage-sketch.js?v="),
+    "共通マニュアルデータがstage-sketch.jsより先に読み込まれる",
+  );
 });
 
 test("Service Workerは冊子一式を最新版へキャッシュする", () => {
-  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v194";/);
+  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v463";/);
   for (const entry of [
-    "./manual/manual-content.js?v=3",
+    "./manual/manual-content.js?v=12",
     "./manual/manual-content.js",
     "./manual/manual.html",
   ]) {

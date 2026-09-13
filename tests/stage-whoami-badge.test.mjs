@@ -5,9 +5,9 @@ import test from "node:test";
 import worker, { createSessionToken, isPublicAppShellAsset } from "../worker.js";
 
 const root = new URL("../", import.meta.url);
-const [workerSource, stageSource, swSource, indexSource, styleSource, i18nSource] =
+const [workerSource, stageSource, swSource, stageHtmlSource, styleSource, i18nSource] =
   await Promise.all([
-    "worker.js", "stage-sketch.js", "stage-sw.js", "index.html", "style.css", "stage-i18n.js",
+    "worker.js", "stage-sketch.js", "stage-sw.js", "stage.html", "style.css", "stage-i18n.js",
   ].map((name) => readFile(new URL(name, root), "utf8")));
 
 const SITE = ["arata", "site-pass"];
@@ -137,7 +137,7 @@ test("利用者切り替え時は既定配置へ戻し、全パネルを閉じ�
 });
 
 test("whoami 取得失敗時は表示を hidden のままにする", () => {
-  assert.match(indexSource, /id="stage-session-whoami"[^>]*role="status"[^>]*hidden/);
+  assert.match(stageHtmlSource, /id="stage-session-whoami"[^>]*role="status"[^>]*hidden/);
   const badgeUpdate = stageSource.slice(
     stageSource.indexOf("function updateWhoamiBadge()"),
     stageSource.indexOf("/* ★開く言語はここで決める"),

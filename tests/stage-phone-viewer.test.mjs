@@ -7,7 +7,7 @@ const root = new URL("../", import.meta.url);
 const source = await readFile(new URL("stage-sketch.js", root), "utf8");
 const style = await readFile(new URL("style.css", root), "utf8");
 const i18nSource = await readFile(new URL("stage-i18n.js", root), "utf8");
-const indexHtml = await readFile(new URL("index.html", root), "utf8");
+const indexHtml = await readFile(new URL("stage.html", root), "utf8");
 
 const modelContext = { window: {}, document: { getElementById: () => null } };
 vm.runInNewContext(source, modelContext, { filename: "stage-sketch.js" });
@@ -118,8 +118,10 @@ test("スマホ閲覧機で使う追加日本語はすべて英訳を持つ", ()
 
 test("setLangはスマホ閲覧機の文言をその場で貼り直す", () => {
   assert.match(source, /function setLang\(next\) \{[\s\S]*?applyLang\(\);\s*applyPhoneViewerLang\(\);/);
-  assert.match(source, /langJa\.addEventListener\("click", \(\) => setLang\("ja"\)\)/);
-  assert.match(source, /langEn\.addEventListener\("click", \(\) => setLang\("en"\)\)/);
+  assert.match(source, /langButtons\.forEach\(\(\{ choice, button \}\) => \{\s*button\.addEventListener\("click", \(\) => setLang\(choice\.code\)\);/);
+  for (const code of ["ja", "en", "zh-Hans", "zh-Hant"]) {
+    assert.match(source, new RegExp(`Object\\.freeze\\(\\{ code: "${code}", label:`));
+  }
 });
 
 test("読み込んだJSONはスマホでは編集用比較モーダルを挟まず開く", () => {
@@ -228,24 +230,23 @@ test("スマホの上部の題は、版とβ版をヘッダーの正本から読
   assert.match(style, /html\.stage-phone-viewer \.stage-phone-title-name \{[\s\S]*?font-family: var\(--serif\)/);
 });
 
-test("題の右端に44pxの設定入口があり、言語と「端末による違い」だけを持つ", () => {
+test("題の右端に44pxの設定入口があり、4言語と「端末による違い」だけを持つ", () => {
   /* ★絵文字の「⚙」ではなくSVG（2026-08-26 本人指示。16pxで潰れない形に描き直した）。
      文字へ戻すと、端末のフォント任せの絵になり、他のアイコンと揃わない。 */
   assert.match(source, /makePhoneIconButton\("gear", tx\("設定を開く"\), "stage-phone-title-settings"\)/);
   assert.ok(!/makePhoneButton\("⚙"/.test(source), "設定の入口が絵文字へ戻っていないこと");
   assert.match(source, /if \(guestBadge\) titleBar\.append\(guestBadge\);[\s\S]*?titleBar\.append\(settingsToggle\);/);
   assert.match(style, /\.stage-phone-title \.stage-phone-title-settings \{[\s\S]*?width: 44px;[\s\S]*?height: 44px;/);
-  /* 中身は言語2つ＋「端末による違い」＋閉じる、で全部（E-3・2026-08-29 本人指示で入口を追加）。
+  /* 中身は言語4つ＋「端末による違い」＋閉じる、で全部（E-3・2026-08-29 本人指示で入口を追加）。
      「端末による違い」は表を開くだけの入口で、機能のスイッチではない。
      編集機能のスイッチをここへ足さない方針は変わっていない。 */
-  assert.match(source, /settingsPanel\.append\(settingsTitle, langJa, langEn, reachButton, settingsClose\)/);
-  assert.match(source, /langJa\.setAttribute\("aria-pressed"/);
-  assert.match(source, /langEn\.setAttribute\("aria-pressed"/);
+  assert.match(source, /settingsPanel\.append\(settingsTitle, \.\.\.langButtons\.map\(\(\{ button \}\) => button\), reachButton, settingsClose\)/);
+  assert.match(source, /button\.setAttribute\("aria-pressed", String\(lang === choice\.code\)\)/);
   const settingsBlock = source.slice(source.indexOf("const settingsPanel ="),
     source.indexOf("/* 矢印の中央から開く全画面一覧", source.indexOf("const settingsPanel =")));
-  /* 機能スイッチの混入を止める: この塊で押した状態を持つのは言語の2つだけ */
+  /* 機能スイッチの混入を止める: 押した状態は4言語を生成する共通処理だけが持つ。 */
   const pressedSetters = settingsBlock.match(/\.setAttribute\("aria-pressed"/g) || [];
-  assert.equal(pressedSetters.length, 2, "スマホ設定に状態を持つ項目は言語の2つだけ");
+  assert.equal(pressedSetters.length, 1, "スマホ設定に状態を持つ項目は4言語の共通処理だけ");
 });
 
 test("「端末による違い」の入口はスマホからも開け、狭い画面の一段組みが表側にある", () => {

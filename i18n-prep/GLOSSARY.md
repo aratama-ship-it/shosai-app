@@ -46,6 +46,10 @@
 | 三方囲み（スラスト） | Thrust | plateau tri-frontal ／ scène en éperon | 伸出式舞台 | 三面式舞台（伸出式） | ○ 仏は tri-frontal が現代の現場語 |
 | テント全周（アリーナ） | Big top | chapiteau（piste=リング） | 马戏大棚／环形观众席 | 馬戲帳篷 | ◎ 仏 chapiteau/piste は CNAC 用語集 |
 | 野外ステージ | Outdoor stage | scène extérieure | 户外舞台 | 戶外舞台 | ○ |
+| アリーナ（汎用・仮寸法） | Arena (provisional dimensions) | aréna (dimensions provisoires) | 体育馆（暂定尺寸） | 體育館（暫定尺寸） | △ 簡繁はコンサート会場の汎用ラベルとして要ネイティブ確認→NEEDS_REVIEW |
+| ドーム（汎用・仮寸法） | Dome (provisional dimensions) | dôme (dimensions provisoires) | 穹顶场馆（暂定尺寸） | 巨蛋場館（暫定尺寸） | △ 簡繁で一般的な呼称が異なるため要ネイティブ確認→NEEDS_REVIEW |
+| 野外フェス（汎用・仮寸法） | Outdoor festival (provisional dimensions) | festival en plein air (dimensions provisoires) | 户外音乐节（暂定尺寸） | 戶外音樂祭（暫定尺寸） | △ 台湾は「音樂祭」、大陸は「音乐节」と分ける。要ネイティブ確認→NEEDS_REVIEW |
+| 仮の寸法（図面未照合） | Provisional dimensions (not checked against plans) | dimensions provisoires (plans non vérifiés) | 暂定尺寸（未对照图纸） | 暫定尺寸（未核對圖面） | △ UI注記。簡繁とも現場での据わりを要確認→NEEDS_REVIEW |
 | ブラックボックス | Black box | boîte noire | 黑匣子剧场（小剧场） | 黑盒子劇場（實驗劇場） | ◎ 簡繁で定訳が違う点に注意 |
 | 間口 | Width（proscenium width） | ouverture（du cadre） | 台口宽度 | 舞台開口寬度（台口） | ◎ 簡「台口」=プロセニアム開口 |
 | 奥行 | Depth | profondeur | 舞台进深 | 舞台深度 | ○ |
@@ -56,6 +60,11 @@
 | 楽屋・搬入口 | Load-in door | accès décor／monte-charge | 装卸口（搬景门） | 卸貨入口 | △ 会場エディタの「搬入口」。要確認 |
 | 客席（1階平土間） | Stalls | l'orchestre | 池座 | 一樓觀眾席 | ◎ 簡「池座」は標準。台湾は階数呼び |
 | 2階席・バルコニー | Balcony | le balcon | 楼座（二层） | 二樓觀眾席 | ○ |
+| フロア前方（席の役割名） | Floor front | avant du parterre | 场地前区 | 場地前區 | △ 固有会場名を含めない導出席ラベル。簡繁は要ネイティブ確認→NEEDS_REVIEW |
+| フロア後方（席の役割名） | Floor rear | arrière du parterre | 场地后区 | 場地後區 | △ 固有会場名を含めない導出席ラベル。簡繁は要ネイティブ確認→NEEDS_REVIEW |
+| 下段中央（席の役割名） | Lower tier centre | centre du gradin inférieur | 下层看台中央 | 下層看台中央 | △ 固有会場名を含めない導出席ラベル。簡繁は要ネイティブ確認→NEEDS_REVIEW |
+| 上段中央（席の役割名） | Upper tier centre | centre du gradin supérieur | 上层看台中央 | 上層看台中央 | △ 固有会場名を含めない導出席ラベル。簡繁は要ネイティブ確認→NEEDS_REVIEW |
+| 最上段（席の役割名） | Top tier | dernier rang du gradin supérieur | 看台最高层 | 看台最高層 | △ 固有会場名を含めない導出席ラベル。簡繁は要ネイティブ確認→NEEDS_REVIEW |
 | 最前列 | Front row | le premier rang | 第一排 | 第一排 | ◎ |
 
 ## 3. 幕と舞台機構
@@ -124,6 +133,105 @@
 | 大道具・装置 | Set piece | élément de décor | 布景／装置 | 佈景／裝置 | ◎ |
 | 一輪車 | Unicycle | monocycle | 独轮车 | 獨輪車 | ◎ |
 | エアリアル（総称） | Aerial | aérien（les aériens） | 高空节目 | 空中項目 | ○ |
+
+## 5a. 大道具・小道具の形（PROP_SHAPES、2026-09-11 追加分）
+
+| 日本語 | 英語（現行） | フランス語 | 簡体字 | 繁体字 | 確度・注記 |
+|---|---|---|---|---|---|
+| はしご（立てかけ式） | Ladder | échelle | 梯子 | 梯子 | ○ 一般語。舞台固有の定訳は不要 |
+| 脚立（A型） | Stepladder | escabeau | 人字梯 | A字梯 | △ 簡「人字梯」は一般的、繁は「A字梯／人字梯」併用→NEEDS_REVIEW |
+| 階段（箱階段、4段／6段） | Stairs (4 steps) / (6 steps) | escalier (4 marches / 6 marches) | 台阶（4级／6级） | 樓梯（4階／6階） | △ 舞台用の箱階段は英 stair unit とも。繁の助数詞「階」はネイティブ確認 |
+| スロープ | Ramp | rampe | 斜坡 | 斜坡 | ○ 一般語 |
+| 扉（枠付き） | Door | porte (avec cadre) | 门 | 門 | ○ 一般語 |
+| 窓（窓付きの壁） | Window flat | châssis avec fenêtre | 窗（带窗的墙片） | 窗（帶窗的牆片） | △ 舞台の「flat」は英 flat が定訳。中の説明語はネイティブ確認 |
+| 柱 | Column | colonne | 柱 | 柱 | ○ 一般語 |
+| 手すり・柵 | Railing | garde-corps | 栏杆 | 欄杆 | ○ 一般語 |
+| 橋（渡り廊下） | Bridge | passerelle | 桥（天桥） | 橋（天橋） | △ 中の「天桥」は劇場でキャットウォークも指すためネイティブ確認 |
+| やぐら（高台） | Platform (scaffold) | praticable (échafaudage) | 高台（脚手架） | 高台（鷹架） | △ 仏 praticable は舞台用高台の定訳（○）。中はネイティブ確認 |
+| トラス | Truss | structure / poutre treillis | 桁架 | 桁架 | ○ 照明業界でも桁架が通る |
+| 檻 | Cage | cage | 笼子 | 籠子 | ○ 一般語 |
+| 鳥居 | Torii gate | torii | 鸟居 | 鳥居 | ◎ 固有名詞 |
+| 屏風・衝立 | Folding screen | paravent | 屏风 | 屏風 | ○ 一般語 |
+| 四角い枠（立て） | Square frame (standing) | cadre carré sur pied | 方框（立式） | 方框（立式） | ○ 一般語 |
+| 額縁（立て） | Picture frame (standing) | cadre de tableau sur pied | 画框（立式） | 畫框（立式） | ○ 一般語 |
+| 四角い枠（吊り） | Square frame (hanging) | cadre carré suspendu | 方框（吊挂） | 方框（吊掛） | ○ 一般語 |
+| 立方体の枠（キューブ） | Cube frame | cadre cubique | 立方体框架 | 立方體框架 | ○ 一般語 |
+| 形の分類見出し: 手に持つもの／楽器／登る・上がる／建て込み／その他の形／家具／屋外・情景 | Handheld / Instruments / Climbing / Set pieces / Other shapes / Furniture / Outdoor,scenery | à la main / instruments / pour monter / décor construit / autres formes / mobilier / extérieur,décor | 手持道具／乐器／攀登／布景搭建／其他形状／家具／户外／情景 | 手持道具／樂器／攀登／佈景搭建／其他形狀／家具／戶外／情景 | △ UI見出し。中の「布景搭建」はネイティブ確認 |
+| ソファ | Sofa | canapé | 沙发 | 沙發 | ○ 一般語 |
+| ベッド | Bed | lit | 床 | 床 | ○ 一般語 |
+| 棚・本棚 | Bookshelf | bibliothèque | 书架 | 書架 | ○ 一般語 |
+| タンス・チェスト | Chest of drawers | commode | 五斗柜 | 五斗櫃 | ○ 一般語 |
+| 姿見（鏡） | Standing mirror | miroir sur pied | 穿衣镜 | 穿衣鏡 | ○ 一般語 |
+| デスク（事務机） | Desk | bureau | 书桌 | 書桌 | ○ 一般語 |
+| カウンター（バー・受付） | Bar counter | comptoir | 吧台 | 吧台 | ○ 一般語 |
+| 暖炉 | Fireplace | cheminée | 壁炉 | 壁爐 | ○ 一般語 |
+| 電話ボックス | Phone booth | cabine téléphonique | 电话亭 | 電話亭 | ○ 一般語 |
+| 衣装ラック（ハンガーラック） | Clothes rack | portant à vêtements | 衣架 | 衣架 | ○ 一般語 |
+| 木（立ち木） | Tree | arbre | 树 | 樹 | ○ 一般語 |
+| 岩 | Rock | rocher | 岩石 | 岩石 | ○ 一般語 |
+| 街灯 | Street lamp | réverbère | 路灯 | 路燈 | ○ 一般語 |
+| 看板・のぼり | Sign / banner | enseigne / bannière | 招牌 | 招牌 | ○ 一般語 |
+| 樽 | Barrel | tonneau | 木桶 | 木桶 | ○ 一般語 |
+| 植木鉢・花壇 | Planter | pot de fleurs | 花盆 | 花盆 | ○ 一般語 |
+| 井戸 | Well | puits | 水井 | 水井 | ○ 一般語 |
+| テント・小屋の骨組み | Tent frame | armature de tente | 帐篷骨架 | 帳篷骨架 | ○ 一般語 |
+| 箒（ほうき） | Broom | balai | 扫帚 | 掃帚 | ○ 一般語 |
+| バケツ | Bucket | seau | 水桶 | 水桶 | ○ 一般語 |
+| ロープ（束・張り） | Rope | corde | 绳子 | 繩子 | ○ 一般語 |
+| 花束 | Bouquet | bouquet | 花束 | 花束 | ○ 一般語 |
+| グラス・ボトル | Glass / bottle | verre / bouteille | 杯子／瓶子 | 杯子／瓶子 | ○ 一般語 |
+| トレイ（お盆） | Tray | plateau | 托盘 | 托盤 | ○ 一般語 |
+| 電話（受話器・スマートフォン） | Telephone | téléphone | 电话 | 電話 | ○ 一般語 |
+| 新聞・手紙 | Newspaper / letter | journal / lettre | 报纸／信 | 報紙／信 | ○ 一般語 |
+| 時計（置き時計） | Clock | horloge | 时钟 | 時鐘 | ○ 一般語 |
+| 扇子 | Folding fan | éventail | 折扇 | 摺扇 | ○ 一般語 |
+| 布・ベール・スカーフ | Cloth / veil | tissu / voile | 布／面纱／围巾 | 布／面紗／圍巾 | ○ 一般語 |
+| 松明（たいまつ） | Torch | torche | 火把 | 火把 | ○ 一般語 |
+| ロウソク・燭台 | Candlestick | bougeoir | 烛台 | 燭台 | ○ 一般語 |
+| 宝箱 | Treasure chest | coffre au trésor | 宝箱 | 寶箱 | ○ 一般語 |
+| ステッキ（杖） | Walking cane | canne | 手杖 | 手杖 | ○ 一般語 |
+| ハンドバッグ・鞄 | Handbag | sac à main | 手提包 | 手提包 | ○ 一般語 |
+| 和傘・番傘 | Japanese umbrella | parapluie japonais | 和伞 | 和傘 | ○ 一般語 |
+| ギター | Guitar | guitare | 吉他 | 吉他 | ○ 一般語 |
+| バイオリン | Violin | violon | 小提琴 | 小提琴 | ○ 一般語 |
+| トランペット・管楽器 | Trumpet | trompette | 小号 | 小號 | ○ 一般語 |
+| アコーディオン | Accordion | accordéon | 手风琴 | 手風琴 | ○ 一般語 |
+| シガーボックス | Cigar boxes | boîtes à cigares | 雪茄盒 | 雪茄盒 | ◎ 定訳 |
+| デビルスティック | Devil stick | bâton du diable | 魔杖 | 魔杖 | △ 中の訳語は定訳未満。専門語では「恶魔棒」も使われる→NEEDS_REVIEW |
+| ポイ | Poi | poi | poi流星球 | poi流星球 | △ ポリネシア語由来の固有名。中華圏の定訳は「poi流星球」「流星poi」等ばらつきあり→NEEDS_REVIEW |
+| フープ（フラフープ） | Hula hoop | hula hoop | 呼啦圈 | 呼拉圈 | ○ 一般語 |
+| グランドピアノ | Grand piano | piano à queue | 三角钢琴 | 平台鋼琴 | ○ 一般語 |
+| アップライトピアノ | Upright piano | piano droit | 立式钢琴 | 直立式鋼琴 | ○ 一般語 |
+| マイクスタンド | Mic stand | pied de micro | 麦克风架 | 麥克風架 | ○ 一般語 |
+| 譜面台 | Music stand | pupitre | 谱架 | 譜架 | ○ 一般語 |
+| スピーカー（モニター・PA） | Speaker | enceinte | 音箱 | 音箱 | ○ 一般語 |
+| キーボード（スタンド付き） | Keyboard on stand | clavier sur pied | 电子琴（带架） | 電子琴（附架） | ○ 一般語 |
+| DJブース | DJ booth | cabine DJ | DJ台 | DJ台 | ○ 一般語 |
+| ローラボーラ | Rola bola | rola bola | 圆筒平衡板 | 圓筒平衡板 | △ 中の定訳未満（音写「柔拉波拉」も見る）→NEEDS_REVIEW |
+| ジャーマンホイール（ラート） | German wheel | roue allemande | 德式轮 | 德式輪 | ○ 既存GLOSSARY 5「シルホイール」注記のroue Cyrと混同しない |
+| ミニトランポリン | Mini trampoline | mini-trampoline | 迷你蹦床 | 迷你彈簧床 | ○ 一般語 |
+| 大玉（ローリングボール） | Rolling globe | boule d'équilibre | 大球 | 大球 | ○ 一般語 |
+| ロシアンバー | Russian bar | barre russe | 俄式杠 | 俄式槓 | ○ 一般語 |
+| 落下用マット（クラッシュマット） | Crash mat | tapis de réception | 保护垫 | 保護墊 | ○ 一般語 |
+| 落下用マット（円形） | Crash mat (round) | tapis de réception rond | 保护垫（圆形） | 保護墊（圓形） | ○ 一般語 |
+| 跳び板（ロシアンスイング等の大型器具） | Russian swing | balançoire russe | 俄式秋千 | 俄式鞦韆 | ○ 一般語 |
+| スラックライン | Slackline | slackline | 扁带 | 扁帶 | ○ 一般語 |
+| 跳躍用の壁（ウォールランニング） | Acrobatic wall | mur d'acrobatie | 跳墙 | 跳牆 | △ 中は説明的訳。定訳未満→NEEDS_REVIEW |
+| 一輪車 | Unicycle | monocycle | 独轮车 | 獨輪車 | ○ 一般語 |
+| らせん階段 | Spiral stairs | escalier en colimaçon | 旋转楼梯 | 旋轉樓梯 | ○ 一般語 |
+| 竹馬・スティルト | Stilts | échasses | 高跷 | 高蹺 | ○ 一般語 |
+| 荷車・リヤカー・ワゴン | Cart / wagon | chariot | 手推车 | 手推車 | ○ 一般語 |
+| 自転車 | Bicycle | vélo | 自行车 | 腳踏車 | ○ 一般語 |
+| エアリアルフープ（リラ） | Aerial hoop (lyra) | cerceau aérien / lyra | 空中圆环 | 空中圓環 | ○ 一般語 |
+| ストラップ | Aerial straps | sangles aériennes | 吊带 | 吊帶 | ○ 一般語 |
+| エアリアルハンモック | Aerial hammock | hamac aérien | 空中吊床 | 空中吊床 | ○ 一般語 |
+| スパニッシュウェブ・コルドリス（綱） | Spanish web / corde lisse | corde lisse | 西班牙绳 | 西班牙繩 | ○ 一般語 |
+| スイングポール（振り子式ポール） | Swing pole | mât pendulaire | 摆动杆 | 擺動桿 | △ 中は説明的訳。定訳未満→NEEDS_REVIEW |
+| 分類見出し追加: サーカス器具 | Circus apparatus | agrès de cirque | 杂技器械 | 雜技器械 | ○ 一般語 |
+| ベースギター | Bass guitar | guitare basse | 贝斯 | 貝斯 | ○ 一般語 |
+| チェロ | Cello | violoncelle | 大提琴 | 大提琴 | ○ 一般語 |
+| コントラバス | Double bass | contrebasse | 低音提琴 | 低音提琴 | ○ 一般語（中華圏では「倍大提琴」も使われる→NEEDS_REVIEW） |
+| グランドピアノ（開） | Grand piano (open) | piano à queue (ouvert) | 三角钢琴（开盖） | 平台鋼琴（開蓋） | ○ 一般語 |
 
 ## 6. 稽古・進行・帳票
 

@@ -550,7 +550,9 @@
       else if (m.type === "side") { m.v = Math.min(1, m.v + 0.1); }
       // 種類（固定／ムービング）と広がりを引き継ぐ。渡し忘れると固定灯を複製したのにムービングになる
       // （2026-09-13 発見: ホリゾントライトの複製で確認）。
-      const nf = E.newFixture(uid("f"), state.nextNo++, m, "", f.kind, f.beamDeg); state.rig.fixtures.push(nf); made.push(nf.id);
+      const nf = E.newFixture(uid("f"), state.nextNo++, m, "", f.kind, f.beamDeg);
+      if (f.barn) nf.barn = { ...f.barn };   // バーンドアも仕込みの一部なので引き継ぐ（2026-09-14）
+      state.rig.fixtures.push(nf); made.push(nf.id);
     });
     state.sel = new Set(made);
     commit(`${made.length}灯を複製しました`);
@@ -577,6 +579,8 @@
       const f = fixtureById(id); if (!f || f.mount.type !== "side") return;
       // duplicateSelectedと同じ理由で種類・広がりを引き継ぐ
       const nf = E.newFixture(uid("f"), state.nextNo++, E.mirrorMount(f.mount), f.name ? `${f.name}（反対側）` : "", f.kind, f.beamDeg);
+      // バーンドアは下手⇄上手を入れ替えて写す（反対側から見れば左右が逆になる。2026-09-14）
+      if (f.barn) { const b = E.barnOf(f); nf.barn = { back: b.back, front: b.front, left: b.right, right: b.left }; }
       state.rig.fixtures.push(nf); made.push(nf.id);
     });
     if (!made.length) return;
@@ -714,7 +718,15 @@
   function stop(reason) { if (!state.play.on) return; state.play.on = false; cancelAnimationFrame(state.play.raf); if (reason) toast(reason); renderTransport(); draw(); }
   function home() { stop(); state.play.t = 0; renderTransport(); draw(); }
   function tick(ts) { if (!state.play.on) return; if (!state.play.last) state.play.last = ts; state.play.t += ts - state.play.last; state.play.last = ts; renderTransport(); draw(); state.play.raf = requestAnimationFrame(tick); }
-  function renderTransport() { $("t-time").textContent = `${(state.play.t / 1000).toFixed(1)}秒`; $("t-playing").hidden = !state.play.on; $("t-play").disabled = state.play.on; }
+  function togglePlay() { state.play.on ? stop() : play(); }
+  /* 2026-09-14 本人要望: 操作は再生／停止のトグル1個だけ。秒数と「再生中」の札は出さない。
+     文字は押したら何が起きるかを出す（停止中＝再生・再生中＝停止）。状態はボタンの色でも示す。 */
+  function renderTransport() {
+    const b = $("t-play"); if (!b) return;
+    b.textContent = state.play.on ? "停止" : "再生";
+    b.title = state.play.on ? "動きを止める（Space）" : "動きを再生する（Space）";
+    b.classList.toggle("playing", state.play.on);
+  }
 
   /* ---------- 描画: 平面図 ---------- */
   const isSel = (fid) => state.sel.has(fid);
@@ -788,7 +800,7 @@
           else if (g.kind === "loop" && g.plane === "horizontal") strokeLoop(pctx, P, g);
           pctx.restore(); }
         if (l.surface === "floor" || l.surface === "air") {
-          if (showOn("beam")) { const sp = drawBeam(pctx, s, tp, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv, l, l.surface === "floor" ? "floor" : null, P); litSpots.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); }
+          if (showOn("beam")) { const sp = drawBeam(pctx, s, tp, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv, l, l.surface === "floor" ? "floor" : null, P, frameOf(f, l)); litSpots.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); }
           if (l.surface === "air") {
             // 空中の狙い点は床に落ちない。真上から見ると高さが読めないので、印＋高さ＋床への破線を出す
             pctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.7); pctx.lineWidth = 3; pctx.beginPath();
@@ -808,7 +820,7 @@
           const th = { X: s.X + (th0.X - s.X) * ext, Y: s.Y + (th0.Y - s.Y) * ext };
           if (showOn("beam")) {
             const Tfar = { x: S.x + (T.x - S.x) * ext, y: S.y + (T.y - S.y) * ext, z: S.z + (T.z - S.z) * ext };
-            const sp = drawBeam(pctx, s, th, { S, T: Tfar }, l.color, beamOf(f), dim, B.w / state.dims.W, [1, 1], false, true, lv, l, null, P);
+            const sp = drawBeam(pctx, s, th, { S, T: Tfar }, l.color, beamOf(f), dim, B.w / state.dims.W, [1, 1], false, true, lv, l, null, P, frameOf(f, l));
             litSpots.push({ fromX: s.X, fromY: s.Y, ...sp, lv });
             const R = Math.max(sp.halfW * 0.9, 26) * glareMul(l); drawGlare(pctx, th0.X, th0.Y, R, l.color, lv, dim); litSpots.push(glareHole(th0.X, th0.Y, R, lv));
           }
@@ -1110,9 +1122,9 @@
     const bx = (pb.X - c.X) * BEAM_SOFT, by = (pb.Y - c.Y) * BEAM_SOFT;
     if (!Number.isFinite(ax + ay + bx + by)) return null;
     if (Math.abs(ax * by - ay * bx) < 4) return null;   // 潰れている＝その図では線にしか見えない
-    return { cx: c.X, cy: c.Y, ax, ay, bx, by, fall: E.spotFalloff(world.S, el, surf, 8) };
+    return { cx: c.X, cy: c.Y, ax, ay, bx, by, ea: el.ea, eb: el.eb, fall: E.spotFalloff(world.S, el, surf, 8) };
   }
-  function drawBeam(ctx, from, to, world, color, deg, dim, pxPerM, squash, asLine, noPool, lv, gobo, surf, proj) {
+  function drawBeam(ctx, from, to, world, color, deg, dim, pxPerM, squash, asLine, noPool, lv, gobo, surf, proj, frame) {
     const rM = E.spotRadiusM(world.S, world.T, deg), rPx = Math.max(rM * pxPerM, 3);
     const ell = noPool ? null : poolEllipse(world, deg, surf, proj);
     const [sx, sy] = squash || [1, 1];
@@ -1130,12 +1142,44 @@
     /* 帯の三角の先端（狙い点）は pool の中心とは限らない——斜めに当たるほど pool の中心は
        遠い側へずれる（spotEllipse の性質）。三角の断面は狙い点で、pool（着地の丸み）は
        そこから離れた位置に別で乗る。暗幕の穴をそろえるにはこの両方が要る。 */
-    const ret = () => ({ r: rPx, toX: pool.cx, toY: pool.cy, landX: to.X, landY: to.Y, halfW, ry, lying, asLine, noPool, pool });
+    const ret = () => ({ r: rPx, toX: pool.cx, toY: pool.cy, landX: to.X, landY: to.Y, halfW, ry, lying, asLine, noPool, pool, corners, cuts });
     /* 濃さ＝（選んでいない灯を沈める係数）×（その灯の強さ）。強さは0〜1へ通したあとの値で、
        灯ごとの数値0〜100%を state.levelCurve で曲げたもの（2026-09-13 本人要望）。 */
     const a = (dim ? 0.32 : 1) * E.clamp(E.finite(lv, 1), 0, 1);
     const bx = to.X - from.X, by = to.Y - from.Y, blen = Math.hypot(bx, by) || 1;
     const nx = (-by / blen) * halfW, ny = (bx / blen) * halfW;
+    /* バーンドア／カッター（2026-09-14 本人要望）。「切る線」を2つの形へ写す:
+       ①着地の光だまり: 楕円の座標系（単位円）での半平面（E.doorCutInEllipse）→ 一時キャンバスで destination-out。
+         楕円が出せない図（潰れている・面が無い）は画面での向きで代用する。
+       ②光の帯（三角）: 帯の両端の角を、その向きの切る線がどれだけ効くか（画面での余弦）のぶん内へ寄せる。
+         帯の濃淡（縁の柔らかさ・ゴボの筋）は切る前の幅のまま置き、形だけ切る——筋の位置が光だまりとずれないように。
+       単位円の1は光の輪×BEAM_SOFT なので、距離と柔らかさは BEAM_SOFT で割って合わせる。 */
+    const cuts = [], T = world.T;
+    let cutP = 0, cutM = 0;
+    const corners = { p: { X: to.X + nx, Y: to.Y + ny }, m: { X: to.X - nx, Y: to.Y - ny } };
+    if (frame && T) {
+      const vert = surf === "back" ? "z" : surf === "floor" ? "y" : frame.axis;
+      const doors = E.frameDoors(frame.f, frame.l, vert);
+      const screenDir = (n) => {
+        if (!proj) return null;
+        const a = proj(T), b = proj({ x: T.x + n.x * 0.5, y: T.y + n.y * 0.5, z: T.z + n.z * 0.5 });
+        if (!a || !b) return null;
+        const dx = b.X - a.X, dy = b.Y - a.Y, L = Math.hypot(dx, dy);
+        return L > 1e-6 ? { x: dx / L, y: dy / L } : null;
+      };
+      doors.forEach((dr) => {
+        const sd = screenDir(dr.n);
+        let c = ell ? E.doorCutInEllipse(dr, ell.ea, ell.eb) : null;
+        if (!c && !ell && sd) c = { mx: sd.x, my: sd.y, d: 1 - dr.f, soft: dr.soft };
+        if (c) cuts.push({ mx: c.mx, my: c.my, d: c.d / BEAM_SOFT, soft: c.soft / BEAM_SOFT });
+        if (sd && !asLine && halfW > 0) {
+          const cosv = (sd.x * nx + sd.y * ny) / halfW;
+          if (cosv > 0.05) cutP = Math.max(cutP, dr.f * cosv); else if (cosv < -0.05) cutM = Math.max(cutM, dr.f * -cosv);
+        }
+      });
+      corners.p = { X: to.X + nx * (1 - cutP), Y: to.Y + ny * (1 - cutP) };
+      corners.m = { X: to.X - nx * (1 - cutM), Y: to.Y - ny * (1 - cutM) };
+    }
     ctx.save();
     ctx.globalCompositeOperation = "screen";
     if (asLine) {
@@ -1184,11 +1228,14 @@
       ctx.beginPath();
       ctx.moveTo(from.X, from.Y);                // 灯体は点。点から広がる三角なら捻れない
       if (lying) {
-        ctx.lineTo(to.X + halfW, to.Y);
-        ctx.ellipse(to.X, to.Y, halfW, ry, 0, 0, Math.PI);   // 円の下半分をなぞって左端へ回り込む
+        /* 円の下半分をなぞって左端へ回り込む。角は切る線で内へ寄っていることがある（corners）ので、
+           右の角から始めて、両角の中点を中心にした半円で左の角へ戻る。 */
+        const L = corners.p.X < corners.m.X ? corners.p : corners.m, Rr = L === corners.p ? corners.m : corners.p;
+        ctx.lineTo(Rr.X, Rr.Y);
+        ctx.ellipse((L.X + Rr.X) / 2, to.Y, Math.max(1, (Rr.X - L.X) / 2), ry, 0, 0, Math.PI);
       } else {
-        ctx.lineTo(to.X + nx, to.Y + ny);
-        ctx.lineTo(to.X - nx, to.Y - ny);
+        ctx.lineTo(corners.p.X, corners.p.Y);
+        ctx.lineTo(corners.m.X, corners.m.Y);
       }
       ctx.closePath(); ctx.fill();
     }
@@ -1209,7 +1256,7 @@
     };
     const mask = gobo ? goboMask(gobo, maskR) : null;
     const fall = ell && ell.fall && ell.fall.length > 2 ? ell.fall : null;
-    if (!mask && !fall) {
+    if (!mask && !fall && !cuts.length) {
       ctx.fillStyle = stops(ctx.createRadialGradient(0, 0, 0, 0, 0, R));
       ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
     } else {
@@ -1235,6 +1282,21 @@
       if (mask) {
         tc.globalCompositeOperation = "destination-in";    // 模様の形で光を切り抜く（tmpの中だけの話）
         tc.drawImage(mask.canvas, 0, 0);
+        tc.globalCompositeOperation = "source-over";
+      }
+      if (cuts.length) {
+        /* バーンドア／カッターの切る線。単位円の座標 p で mx·p.x+my·p.y > d の側を消す。
+           一時キャンバスは中心が (s2/2, s2/2)・半径 maskR＝単位1 なので、線の向きへ回してから
+           x = d·maskR より外を消す。縁は soft·maskR の幅で線形に消す（バーンドアは柔らかく、カッターは硬い）。 */
+        tc.globalCompositeOperation = "destination-out";
+        cuts.forEach((c) => {
+          tc.save(); tc.translate(s2 / 2, s2 / 2); tc.rotate(Math.atan2(c.my, c.mx));
+          const x0 = c.d * maskR, sw = Math.max(0.5, c.soft * maskR);
+          const g2 = tc.createLinearGradient(x0 - sw, 0, x0 + sw, 0);
+          g2.addColorStop(0, "rgba(0,0,0,0)"); g2.addColorStop(1, "rgba(0,0,0,1)");
+          tc.fillStyle = g2; tc.fillRect(x0 - sw, -s2, s2 * 2 + sw, s2 * 2);
+          tc.restore();
+        });
         tc.globalCompositeOperation = "source-over";
       }
       const k = R / maskR;
@@ -1287,8 +1349,19 @@
         mctx.lineTo(sp.landX - nx, sp.landY - ny); mctx.lineTo(sp.fromX - nx, sp.fromY - ny);
       } else if (sp.lying) {
         mctx.moveTo(sp.fromX, sp.fromY);
-        mctx.lineTo(sp.landX + sp.halfW, sp.landY);
-        mctx.ellipse(sp.landX, sp.landY, sp.halfW, sp.ry, 0, 0, Math.PI);
+        if (sp.corners) {
+          // バーンドア／カッターで角が内へ寄っているときは drawBeam と同じ角・同じ半円で抜く
+          const cp = sp.corners, L = cp.p.X < cp.m.X ? cp.p : cp.m, Rr = L === cp.p ? cp.m : cp.p;
+          mctx.lineTo(Rr.X, Rr.Y);
+          mctx.ellipse((L.X + Rr.X) / 2, sp.landY, Math.max(1, (Rr.X - L.X) / 2), sp.ry, 0, 0, Math.PI);
+        } else {
+          mctx.lineTo(sp.landX + sp.halfW, sp.landY);
+          mctx.ellipse(sp.landX, sp.landY, sp.halfW, sp.ry, 0, 0, Math.PI);
+        }
+      } else if (sp.corners) {
+        mctx.moveTo(sp.fromX, sp.fromY);
+        mctx.lineTo(sp.corners.p.X, sp.corners.p.Y);
+        mctx.lineTo(sp.corners.m.X, sp.corners.m.Y);
       } else {
         const dx = sp.landX - sp.fromX, dy = sp.landY - sp.fromY, len = Math.hypot(dx, dy) || 1;
         const nx = (-dy / len) * sp.halfW, ny = (dx / len) * sp.halfW;
@@ -1302,6 +1375,13 @@
       // 着地の丸み（pool）も、光と同じ「単位円をここへ写す行列」で抜く
       mctx.save();
       mctx.transform(sp.pool.ax, sp.pool.ay, sp.pool.bx, sp.pool.by, sp.pool.cx, sp.pool.cy);
+      /* バーンドア／カッターの切る線は、光と同じ単位円の座標で clip する（線ごとに半平面を重ねる＝交わり）。
+         柔らかい縁までは真似ない（穴なので硬くてよい）。 */
+      (sp.cuts || []).forEach((c) => {
+        mctx.save(); mctx.rotate(Math.atan2(c.my, c.mx));
+        mctx.beginPath(); mctx.rect(-4, -4, 4 + c.d, 8);
+        mctx.restore(); mctx.clip();
+      });
       const grad = mctx.createRadialGradient(0, 0, 0, 0, 0, 1);
       grad.addColorStop(0, `rgba(255,255,255,${lv})`); grad.addColorStop(0.75, `rgba(255,255,255,${0.9 * lv})`); grad.addColorStop(1, "rgba(255,255,255,0)");
       mctx.fillStyle = grad; mctx.beginPath(); mctx.arc(0, 0, 1, 0, Math.PI * 2); mctx.fill();
@@ -1448,6 +1528,10 @@
   // 円・8の字の下書きは、エンジンが返す点の並びを線でつなぐだけ  // 円・8の字の下書きは、エンジンが返す点の並びを線でつなぐだけ（傾きも8の字もこれで描ける）
   function strokeLoop(ctx, P, g) { ctx.beginPath(); g.pts.forEach((w, i) => { const q = P(w); i ? ctx.lineTo(q.X, q.Y) : ctx.moveTo(q.X, q.Y); }); ctx.stroke(); }
   const beamOf = (f) => { const l = lightOf(f.id); return E.beamDegAt(f, l, phaseOf(f, l)); };
+  /* バーンドア／カッター（2026-09-14）。drawBeam へ渡す「切る線」の元。
+     barn は固定灯の仕込み（fixture.barn）、shutter はこのシーンの値（light.shutter）。
+     axis は奥⇄手前の軸の既定: 床・空中は y、奥の壁・客席は z。drawBeam 側で実際の着地面が分かれば上書きする。 */
+  const frameOf = (f, l) => (E.barnActive(f) || E.shutterActive(l)) ? { f, l, axis: (l && (l.surface === "back" || l.surface === "house")) ? "z" : "y" } : null;
   /* 光の終点。床・奥の壁を狙う光はその面で止まる。空中を狙う光はそこで止まらず、
      床か奥の壁まで進み、どちらにも当たらなければ図の外へ抜ける（2026-09-11 本人指摘）。 */
   /* 客席へ向けた光はどの面にも当たらない。狙い点で止めると図の途中で光が切れて見えるので
@@ -1600,7 +1684,7 @@
           if (cut) { const e2 = P(cut), R2 = Math.max(E.spotRadiusM(S, cut, beamOf(f)) * (B.w / d.W) * 1.2, 20) * glareMul(l);
             drawGlare(fctx, e2.X, e2.Y, R2, l.color, lv * 0.75, dim); litSpotsF.push(glareHole(e2.X, e2.Y, R2, lv * 0.75)); }
         } else { const be = beamEnd(l, S, T), e2 = P(be.world);
-          const sp = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface, lv, l, be.surface, P);
+          const sp = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface, lv, l, be.surface, P, frameOf(f, l));
           litSpotsF.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); } }
       if (l.surface === "air") { const floorY = B.y + B.h; fctx.save(); fctx.setLineDash([5, 6]); fctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.45); fctx.lineWidth = 2; fctx.beginPath(); fctx.moveTo(tp.X, tp.Y); fctx.lineTo(tp.X, floorY); fctx.stroke(); fctx.restore();
         fctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.8); fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(tp.X - 12, tp.Y - 12); fctx.lineTo(tp.X + 12, tp.Y + 12); fctx.moveTo(tp.X + 12, tp.Y - 12); fctx.lineTo(tp.X - 12, tp.Y + 12); fctx.stroke(); fctx.beginPath(); fctx.arc(tp.X, tp.Y, 16, 0, Math.PI * 2); fctx.stroke();
@@ -1646,7 +1730,7 @@
       if (showOn("beam")) { const be = beamEnd(l, S, T);
         if (l.surface === "house") be.world = houseFarPoint(S, T, P, front);
         const e2 = (l.surface === "house" ? houseProjSide(P) : P)(be.world);
-        const sp = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.D, squashFor("side", be.surface || "air"), false, !be.surface, lv, l, be.surface, P);
+        const sp = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.D, squashFor("side", be.surface || "air"), false, !be.surface, lv, l, be.surface, P, frameOf(f, l));
         litSpotsSide.push({ fromX: s0.X, fromY: s0.Y, ...sp, lv });
         if (l.surface === "house") { const R = Math.max(sp.halfW * 1.8, 26) * glareMul(l); drawGlare(fctx, e2.X, e2.Y, R, l.color, lv, dim); litSpotsSide.push(glareHole(e2.X, e2.Y, R, lv)); } }
       if (air) {
@@ -1742,7 +1826,7 @@
         const sq = be.surface === "floor"
           ? [1, Math.min(1, ((L.bottomY - L.floorY) / d.D) / (L.pxPerM * Math.max(0.05, e2.scale || 1)))]
           : squashFor("front", be.surface || "air");
-        const sp = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface, lv, l, be.surface, P);
+        const sp = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface, lv, l, be.surface, P, frameOf(f, l));
         litSpots3D.push({ fromX: s0.X, fromY: s0.Y, ...sp, lv });
       }
       if (showOn("path")) { const g = E.pathGuide(l, d);
@@ -2080,7 +2164,9 @@
     if (ev.key === "Escape" && !$("dialog").hidden) { $("dialog").hidden = true; return; }
     if (ev.key === "Escape") { if (state.drag) { const dg = state.drag; state.drag = null; restore(dg.before); state.dirty = true; } else if (state.tool) { state.tool = null; renderAll(); } else if (state.sel.size) { state.sel.clear(); renderAll(); } return; }
     if (typing) return;
-    if (ev.key === " ") { ev.preventDefault(); state.play.on ? stop() : play(); }
+    /* Space = 再生／停止。再生ボタン自身にフォーカスがあるときは何もしない——
+       ボタンの既定の動作（click）が同じトグルを呼ぶので、ここで拾うと2回走る。 */
+    if (ev.key === " ") { if (document.activeElement !== $("t-play")) { ev.preventDefault(); togglePlay(); } }
     if ((ev.key === "Delete" || ev.key === "Backspace") && state.mode === "place" && state.sel.size) { ev.preventDefault(); removeSelected(); }
     if ((ev.key === "d" || ev.key === "D") && state.mode === "place" && state.sel.size) duplicateSelected();
     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? redo() : undo(); }
@@ -2267,6 +2353,16 @@
     wrap.append(trig, list);
     return wrap;
   }
+  /* バーンドア／カッターの向きの呼び名（2026-09-14）。床・空中は奥⇄手前、奥の壁・客席は上⇄下。
+     まとめて変更では面が混ざるので両方を並記する。 */
+  const frameAxisLabels = (surface) => (surface === "back" || surface === "house") ? { w: "幅", h: "高さ" } : { w: "幅", h: "奥行き" };
+  const barnLabels = (surface) => (surface === "back" || surface === "house") ? { back: "上", front: "下", left: "下手側", right: "上手側" } : { back: "奥側", front: "手前側", left: "下手側", right: "上手側" };
+  const BARN_BULK_LABEL = { back: "奥側・上", front: "手前側・下", left: "下手側", right: "上手側" };
+  const numShutter = { min: 10, max: 140, step: 5, to: (v) => v * 100, from: (n) => n / 100, title: "光の輪に内接する正方形を100とした%" };
+  const shutterText = (v) => `${Math.round(v * 100)}%（${v < 0.35 ? "細い" : v < 0.8 ? "小さめ" : v <= 1.001 ? "いっぱい" : "輪の外まで"}）`;
+  const barnText = (v) => (v < 3 ? "開いている" : v >= 98 ? "中心まで" : `${Math.round(v)}%`);
+  const shutterPresetSeg = (cur, onPick) => seg(E.SHUTTER_PRESETS.map((p2) => [p2.id, p2.name]), cur, (id) => { const p2 = E.SHUTTER_PRESETS.find((q) => q.id === id); if (p2) onPick(p2); });
+  const shutterPresetId = (sh) => { const hit = sh && E.SHUTTER_PRESETS.find((p2) => Math.abs(p2.w - sh.w) < 0.01 && Math.abs(p2.h - sh.h) < 0.01); return hit ? hit.id : ""; };
   /* ぼけの刻み。実際に使うのは0〜30までで、それ以上は使い道がない（2026-09-13 本人確認）ので
      つまみの上限を30にし、その幅を10等分した。保存する値は今までどおり0〜100のままなので、
      前に保存したデザインもそのまま読める。 */
@@ -2664,6 +2760,43 @@
         const sameSoft = softs.size <= 1, nowSoft = sameSoft && softs.size === 1 ? [...softs][0] : SOFT_DEF;
         b.append(field(sameSoft ? "ぼけ" : "ぼけ（バラバラ）", range(0, SOFT_MAX, SOFT_STEP, nowSoft, softText,
           (v) => { bulkEach(ids, (f, l) => { l.goboSoft = v; }); draw(); }, () => commit(`${ids.length}灯の模様のぼけを変えました`), numSoft), true));
+      }
+    }
+
+    // ⑤' カッター（選んだ全灯）／バーンドア（固定灯だけ）（2026-09-14）
+    {
+      const b = sub(null);
+      const ons = lit.map((fid) => E.shutterActive(lightOf(fid)));
+      const allOn = ons.length > 0 && ons.every(Boolean), anyOn = ons.some(Boolean);
+      const head = el("div", "pboxhead"); head.append(el("p", "kicker", "カッター"));
+      head.append(switchBtn(allOn, allOn ? "押すと全灯のカッターを外します" : anyOn ? "一部だけ切っています。押すと全灯そろえて切ります" : "押すと全灯を四角に切ります", () => {
+        if (allOn) { bulkEach(ids, (f, l) => { if (l.shutter) l.shutter = { ...l.shutter, on: false }; }); commit(`${ids.length}灯のカッターを外しました`); }
+        else { bulkEach(ids, (f, l) => { l.shutter = E.newShutter(l.shutter ? { ...l.shutter, on: true } : {}); }); commit(`${ids.length}灯を四角に切りました`); }
+      }, "四角に切る"));
+      b.append(head);
+      if (anyOn) {
+        const on = lit.filter((fid) => E.shutterActive(lightOf(fid)));
+        const ws = new Set(on.map((fid) => Math.round(lightOf(fid).shutter.w * 100))), hs = new Set(on.map((fid) => Math.round(lightOf(fid).shutter.h * 100)));
+        const sameW = ws.size <= 1, sameH = hs.size <= 1;
+        const curId = (sameW && sameH) ? shutterPresetId({ w: [...ws][0] / 100, h: [...hs][0] / 100 }) : "";
+        b.append(field("形", shutterPresetSeg(curId, (p2) => { bulkEach(on, (f, l) => { l.shutter = { ...l.shutter, w: p2.w, h: p2.h }; }); commit(`${on.length}灯のカッターの形をそろえました`); }), true));
+        b.append(field(sameW ? "幅" : "幅（バラバラ）", range(E.SHUTTER_MIN, E.SHUTTER_MAX, 0.05, sameW ? [...ws][0] / 100 : 1, shutterText,
+          (v) => { bulkEach(on, (f, l) => { l.shutter.w = v; }); draw(); }, () => commit(`${on.length}灯のカッターの幅を変えました`), numShutter), true));
+        b.append(field(sameH ? "奥行き・高さ" : "奥行き・高さ（バラバラ）", range(E.SHUTTER_MIN, E.SHUTTER_MAX, 0.05, sameH ? [...hs][0] / 100 : 1, shutterText,
+          (v) => { bulkEach(on, (f, l) => { l.shutter.h = v; }); draw(); }, () => commit(`${on.length}灯のカッターの奥行きを変えました`), numShutter), true));
+      }
+    }
+    {
+      const fixed = ids.map(fixtureById).filter((f) => f && !E.isMoving(f) && f.mount.type !== "cyc");
+      if (fixed.length) {
+        const b = sub(`バーンドア（固定灯${fixed.length}灯）`);
+        E.BARN_KEYS.forEach((k) => {
+          const vals = new Set(fixed.map((f) => Math.round(E.barnOf(f)[k] * 100)));
+          const same = vals.size <= 1, now = same ? [...vals][0] : 0;
+          b.append(field(same ? BARN_BULK_LABEL[k] : `${BARN_BULK_LABEL[k]}（バラバラ）`, range(0, 100, 5, now, barnText,
+            (v) => { fixed.forEach((f) => { f.barn = { ...E.barnOf(f), [k]: v / 100 }; }); draw(); }, () => commit(`${fixed.length}灯のバーンドアを変えました`)), true));
+        });
+        if (fixed.some((f) => E.barnActive(f))) b.append(btn("全部開く", () => { fixed.forEach((f) => { delete f.barn; }); commit(`${fixed.length}灯のバーンドアを開きました`); }, "small quiet"));
       }
     }
 
@@ -3209,6 +3342,36 @@
         }
       }
 
+      /* ⑤' カッター（四角に切る）／バーンドア（四方から切る）（2026-09-14 本人要望）。
+         カッター＝光を四角にする。固定・ムービングの両方で、このシーンの値（ゴボと同じ層）。
+         幅・奥行き（奥の壁・客席なら幅・高さ）の2つと形の見本だけ。細かい調整はしない（本人指定）。
+         バーンドア＝固定灯だけの装備で、仕込みの値（fixture.barn）＝全シーン共通。四方の閉め具合だけを持つ。 */
+      if (f.mount.type !== "cyc") {
+        const b = box(null);
+        const sh = E.shutterActive(l) ? l.shutter : null;
+        const head = el("div", "pboxhead"); head.append(el("p", "kicker", "カッター"));
+        head.append(switchBtn(Boolean(sh), sh ? "光を四角に切っています。押すと丸に戻します（形は覚えておきます）" : "押すと光を四角に切ります（幅と奥行きを決められます）", () => {
+          const l2 = lightOf(fid);
+          if (E.shutterActive(l2)) { l2.shutter = { ...l2.shutter, on: false }; commit("カッターを外しました"); }
+          else { l2.shutter = E.newShutter(l2.shutter ? { ...l2.shutter, on: true } : {}); commit("カッターで四角に切りました"); }
+        }, "四角に切る"));
+        b.append(head);
+        if (sh) {
+          const AX = frameAxisLabels(l.surface);
+          b.append(field("形", shutterPresetSeg(shutterPresetId(sh), (p2) => { l.shutter = { ...l.shutter, w: p2.w, h: p2.h }; commit(); }), true));
+          b.append(field(AX.w, range(E.SHUTTER_MIN, E.SHUTTER_MAX, 0.05, E.clamp(E.finite(sh.w, 1), E.SHUTTER_MIN, E.SHUTTER_MAX), shutterText, (v) => { l.shutter.w = v; draw(); }, () => commit(), numShutter), true));
+          b.append(field(AX.h, range(E.SHUTTER_MIN, E.SHUTTER_MAX, 0.05, E.clamp(E.finite(sh.h, 1), E.SHUTTER_MIN, E.SHUTTER_MAX), shutterText, (v) => { l.shutter.h = v; draw(); }, () => commit(), numShutter), true));
+        }
+      }
+      if (!mover && f.mount.type !== "cyc") {
+        const b = box("バーンドア（四方から切る）");
+        const bd = E.barnOf(f), LB = barnLabels(l.surface);
+        E.BARN_KEYS.forEach((k) => {
+          b.append(field(LB[k], range(0, 100, 5, Math.round(bd[k] * 100), barnText, (v) => { f.barn = { ...E.barnOf(f), [k]: v / 100 }; draw(); }, () => commit()), true));
+        });
+        if (E.barnActive(f)) b.append(btn("全部開く", () => { delete f.barn; commit(`${label(fid)}のバーンドアを開きました`); }, "small quiet"));
+      }
+
       /* ⑤ 位置（ムービングのみ）。スイッチは<b>位置だけ</b>を入り切りする——
          ここを入れても光の強さ・光の広がりはオフのままで、それぞれの箱で別に入れる
          （2026-09-13 本人指定「それぞれの項目がオートメーションのONOFFを持つイメージ」）。 */
@@ -3407,7 +3570,10 @@
      セクションをまたぐときは上のセクション送り、全体から選ぶときは〈すべての場面を見る〉。 */
   $("scene-prev").onclick = () => lxStepScene(-1);
   $("scene-next").onclick = () => lxStepScene(1);
-  $("t-home").onclick = home; $("t-play").onclick = play; $("t-stop").onclick = () => stop();
+  /* マウスで押した後はフォーカスを外す（ボタンが押されたまま残ると、次のSpaceで
+     ボタン発火とキーボード処理の両方が走り、トグルが2回で元へ戻る）。
+     キーボードで押したとき（ev.detail === 0）は外さない。Tabで辿った位置を奪わないため。 */
+  $("t-play").onclick = (ev) => { togglePlay(); if (ev.detail > 0) ev.currentTarget.blur(); };
   $("undo").onclick = undo; $("redo").onclick = redo;
   $("mirror").onclick = mirrorSelected;
   document.querySelectorAll("#filters button").forEach((b) => { b.onclick = () => { state.filter = b.dataset.filter; renderAll(); }; });
@@ -3740,6 +3906,8 @@
         periodSec: "1往復（1周）の秒数", offsetSec: "何秒遅らせて始めるか",
         lx: "そのシーンのLX cue番号の頭2つ { section, no }",
         lxq: "登録した明かりの控え。番号は section-no-seq、cue はそのときの灯の設定一式",
+        barn: "固定灯のバーンドア（仕込み） { back, front, left, right } 各0〜1。0=開いている、1=中心まで閉める。床・空中は back=奥側/front=手前側、奥の壁・客席は back=上/front=下",
+        shutter: "カッター（シーンごと） { on, w, h }。w/h は光の輪に内接する正方形の辺を1とした比（0.1〜1.4）。1.4でその向きは輪の外まで開く",
       },
       rig: JSON.parse(JSON.stringify(state.rig)),
       scenes: state.scenes.map((sc) => ({ id: sc.id, name: sc.name, lx: lxOf(sc), lxq: JSON.parse(JSON.stringify(lxList(sc))), lxEditing: lxEditingOf(sc), cue: JSON.parse(JSON.stringify(sc.cue)) })),

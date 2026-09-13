@@ -23,7 +23,7 @@ const req = (path = "/", headers = NAV, origin = "https://shosai.example") =>
   new Request(`${origin}${path}`, { method: "GET", headers });
 const basic = (user, pass) => ({ Authorization: `Basic ${btoa(`${user}:${pass}`)}` });
 
-async function status(env, headers = NAV, path = "/") {
+async function status(env, headers = NAV, path = "/stage.html") {
   return (await worker.fetch(req(path, headers), env, {})).status;
 }
 
@@ -101,7 +101,7 @@ test("外した人の古いクッキーも通らない", async () => {
 
   const after = list([{ user: "g1", pass: "p1" }]);
   const r = await worker.fetch(
-    new Request("https://shosai.example/db.js", { headers: { Cookie: `shosai_session=${cookie}` } }),
+    new Request("https://shosai.example/db.js", { headers: { Cookie: `__Host-shosai-session=${cookie}` } }),
     after, {},
   );
   assert.equal(r.status, 401, "名簿から消えた人のトークンは通らない");

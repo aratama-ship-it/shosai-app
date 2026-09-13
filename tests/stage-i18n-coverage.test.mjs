@@ -7,11 +7,17 @@ const japanesePattern = /[\u3040-\u30ff\u3400-\u9fff]/;
 const htmlSource = await readFile(new URL("../stage.html", import.meta.url), "utf8");
 const i18nSource = await readFile(new URL("../stage-i18n.js", import.meta.url), "utf8");
 const stageSource = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
+const zhSources = {
+  "zh-Hans": await readFile(new URL("../stage-i18n.zh-Hans.js", import.meta.url), "utf8"),
+  "zh-Hant": await readFile(new URL("../stage-i18n.zh-Hant.js", import.meta.url), "utf8"),
+};
 
 const i18nContext = { window: {} };
 vm.runInNewContext(i18nSource, i18nContext, { filename: "stage-i18n.js" });
 const TEXT = i18nContext.window.SHOSAI_I18N.text;
 const SAY = Array.from(i18nContext.window.SHOSAI_I18N.say);
+Object.values(zhSources).forEach((source) => vm.runInNewContext(source, i18nContext));
+const PACKS = i18nContext.window.SHOSAI_I18N_PACKS;
 
 function normalizeText(value) {
   return value.trim().replace(/\s+/g, " ");
@@ -31,7 +37,12 @@ function stripIgnoredHtml(source) {
     .replace(/<head[\s\S]*?<\/head>/gi, "")
     .replace(/<script\b[\s\S]*?<\/script>/gi, "")
     .replace(/<style\b[\s\S]*?<\/style>/gi, "")
+    .replace(/<select\b[^>]*data-no-i18n[^>]*>[\s\S]*?<\/select>/gi, "")
     .replace(/<!--[\s\S]*?-->/g, "");
+}
+
+function translatedText(code, japanese) {
+  return PACKS[code].text[japanese] || PACKS.en.text[japanese] || japanese;
 }
 
 function extractAnnounceArguments(source) {
@@ -200,6 +211,9 @@ test("stage.htmlの日本語テキストノードはTEXTに登録されている
     .filter((value) => value && japanesePattern.test(value) && !allowlist.has(value));
 
   assert.deepEqual(nodes.filter((value) => !TEXT[value]), []);
+  for (const code of ["zh-Hans", "zh-Hant"]) {
+    assert.deepEqual(nodes.filter((value) => !PACKS[code].text[value] && !PACKS.en.text[value]), [], code);
+  }
 });
 
 test("stage.htmlの日本語属性値はTEXTに登録されている", () => {
@@ -209,6 +223,9 @@ test("stage.htmlの日本語属性値はTEXTに登録されている", () => {
     .filter((value) => value && japanesePattern.test(value) && !allowlist.has(value));
 
   assert.deepEqual(values.filter((value) => !TEXT[value]), []);
+  for (const code of ["zh-Hans", "zh-Hant"]) {
+    assert.deepEqual(values.filter((value) => !PACKS[code].text[value] && !PACKS.en.text[value]), [], code);
+  }
 });
 
 test("stage-sketch.jsのannounce文字列はSAYに登録されている", () => {

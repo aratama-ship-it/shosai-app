@@ -14,7 +14,7 @@ const RULES = {
     set: ["id", "kind", "name", "color", "note", "lightKind"],
     section: ["kind", "depth", "id", "title"],
     scene: ["kind", "depth", "id", "title", "note", "background", "beat", "lightingIntent", "pieces"],
-    beat: ["role", "energy"], intent: ["objective", "audienceFocus", "mood"],
+    beat: ["role"], intent: ["objective", "audienceFocus", "mood"],
     piece: ["id", "type", "castId", "setId", "u", "v", "color", "facing", "pose", "size"]
   },
   lengths: { title: 60, name: 24, registrationNote: 200, sceneNote: 2000, role: 80, objective: 160, audienceFocus: 160, mood: 80 },
@@ -224,9 +224,8 @@ function validateDocument(doc, enums) {
     if (s.kind !== "scene") add(at + ".kind", "sceneまたはsectionだけを使ってください。");
     string(s.note, at + ".note", 0, n.sceneNote);
     if (own(s, "background")) color(s.background, at + ".background");
-    if (own(s, "beat") && keys(s.beat, "beat", at + ".beat", ["role", "energy"])) {
+    if (own(s, "beat") && keys(s.beat, "beat", at + ".beat", ["role"])) {
       string(s.beat.role, at + ".beat.role", 1, n.role, 160, true);
-      number(s.beat.energy, at + ".beat.energy", 1, 5, 1, 5, true, true);
     }
     if (own(s, "lightingIntent") && keys(s.lightingIntent, "intent", at + ".lightingIntent", ["objective", "audienceFocus", "mood"])) {
       for (const key of RULES.fields.intent) string(s.lightingIntent[key], at + ".lightingIntent." + key, 1, n[key], n[key], true);

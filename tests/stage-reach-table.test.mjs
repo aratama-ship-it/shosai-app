@@ -12,7 +12,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const root = new URL("../", import.meta.url);
-const indexHtml = await readFile(new URL("index.html", root), "utf8");
+const indexHtml = await readFile(new URL("stage.html", root), "utf8");
 const stageHtml = await readFile(new URL("stage.html", root), "utf8");
 const source = await readFile(new URL("stage-sketch.js", root), "utf8");
 const style = await readFile(new URL("style.css", root), "utf8");

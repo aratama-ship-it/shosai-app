@@ -1,0 +1,38 @@
+{
+  "release": "v0.3.6",
+  "date": "2026-09-12",
+  "beta": {
+    "status": "published",
+    "url": "https://stagesketch.pygmix.com/stage",
+    "deploymentId": "b502715e-af84-46a3-a1ce-a36a2c419115",
+    "versionId": "b8c7e1bb-f730-469e-92da-8b989ec2a53b",
+    "percentage": 100,
+    "uploadSha256": "1b74f5d60d0f215470a417268e00a5eed24067fa8d984ab4a08d3fbfaa76701f"
+  },
+  "changes": [
+    "panel UI and front, plan, and audience view switching",
+    "scene creation and duplication, background and venue settings",
+    "undo and redo, multi-selection, and alignment",
+    "performer Viewer links",
+    "double-click performer, set, and lighting names to open details and rename",
+    "icon-only fullscreen control aligned with adjacent header actions"
+  ],
+  "verification": {
+    "focusedTests": { "passed": 57, "failed": 0 },
+    "productionPatchTests": { "passed": 26, "failed": 0 },
+    "generatedFrameMatches": true,
+    "localBrowser": [
+      "v0.3.6 label",
+      "2026-09-12 update history"
+    ],
+    "deployment": "v0.3.6 fullscreen icon-only patch receives 100 percent traffic; timeline mode is held from beta",
+    "productionAssetHashes": { "changedApprovedRoutes": 4, "unchangedRoutes": 49, "unexpectedChanges": 0 },
+    "unauthenticatedLiveStatus": 401,
+    "authenticatedLiveBrowser": [
+      "v0.3.6 label",
+      "2026-09-12 update history with four entries",
+      "icon-only fullscreen control",
+      "timeline mode controls absent"
+    ]
+  }
+}

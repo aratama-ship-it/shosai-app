@@ -38,6 +38,15 @@ test("説明はその場で書き直せる（読むだけの札にしない）",
   assert.match(styleSource, /\.stage-scene-desc-text:focus \{[^}]*border-bottom-color: var\(--brass\)/);
 });
 
+test("短い説明は操作の右、可読幅を保てない説明は次行へ送る", () => {
+  assert.match(styleSource, /\.stage-scene-step \{[\s\S]*?flex: 0 1 auto;/);
+  assert.match(styleSource, /--scene-desc-preferred-width: 300px;[\s\S]*?flex: 1 1 var\(--scene-desc-preferred-width\);[\s\S]*?min-width: min\(100%, var\(--scene-desc-preferred-width\)\);/);
+  assert.match(stageSource, /const SCENE_DESC_MIN_INLINE = 260;/);
+  assert.match(stageSource, /const SCENE_DESC_MAX_INLINE = 780;/);
+  assert.match(stageSource, /function sceneDescPreferredWidth\(text\)[\s\S]*?Math\.min\([\s\S]*?SCENE_DESC_MAX_INLINE[\s\S]*?Math\.max\(SCENE_DESC_MIN_INLINE/);
+  assert.match(stageSource, /syncSceneDescPreferredWidth\(\);[\s\S]*?growSceneDesc\(\);/);
+});
+
 test("打っている最中の欄には書き戻さない（変換中の文字が飛ぶため）", () => {
   assert.match(
     stageSource,
@@ -54,10 +63,10 @@ test("シーンの説明は日英どちらでも出る", () => {
 
 /* ---------- プレゼンと印刷 ---------- */
 
-test("プレゼンの説明は全画面の正面図にだけ描く（書き出す画像には焼き付けない）", () => {
-  assert.match(stageSource, /if \(!L\.plan && presenting && target === ctx\) drawSceneCaption\(target\)/);
+test("全画面の説明はメインの図にだけ描く（書き出す画像には焼き付けない）", () => {
+  assert.match(stageSource, /if \(presenting && target === \(fullscreenMainView === "plan" \? planCtx : ctx\)\) drawSceneCaption\(target\)/);
   assert.match(stageSource, /document\.addEventListener\("fullscreenchange"/);
-  assert.match(stageSource, /presenting = document\.fullscreenElement === canvas|const now = document\.fullscreenElement === canvas/);
+  assert.match(stageSource, /const now = document\.fullscreenElement === document\.documentElement/);
 });
 
 test("プレゼンの見出しはシーン名にする（画面の道具の名前は出さない）", () => {

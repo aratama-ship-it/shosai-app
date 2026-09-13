@@ -1,0 +1,102 @@
+// Run against a dedicated synthetic local preview, never a user's live notebook.
+import { createRequire } from 'node:module';
+import { pathToFileURL, fileURLToPath } from 'node:url';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const require = createRequire(import.meta.url);
+const { chromium } = await import(pathToFileURL(process.env.STUDY_PLAYWRIGHT || require.resolve('playwright')));
+const base = process.env.STUDY_BASE || 'http://127.0.0.1:8857';
+if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(base) || base.endsWith(':8802')) throw new Error('Dedicated local preview only');
+const out = fileURLToPath(new URL('../docs/study-links/sticky-qa/',import.meta.url));
+await mkdir(out,{recursive:true});
+const browser = await chromium.launch({headless:true,channel:'chrome'});
+const context = await browser.newContext({viewport:{width:1440,height:1000}}), page = await context.newPage();
+const owner = await browser.newContext({extraHTTPHeaders:{Authorization:'Basic '+Buffer.from('study-owner:local-study-owner').toString('base64')}});
+const checks=[], errors=[]; page.on('pageerror',e=>errors.push(e.message));
+const pass = text => { checks.push(text); console.log('PASS',text); };
+const ready = () => page.waitForFunction(()=>document.querySelector('#study-status').textContent.includes('公開された'));
+const saved = () => page.waitForFunction(()=>document.querySelector('#study-save-status').textContent.includes('この端末に保存済み'));
+const frame = () => page.frames().find(f=>f.url().includes('/study-frame'));
+const notebook = () => page.evaluate(()=>JSON.parse(Object.entries(localStorage).find(([key])=>key.startsWith('stage-study-notebook-v1:'))[1]));
+let stageDoc, token;
+try {
+  await page.addInitScript(()=>{if(window===window.top){localStorage.setItem('shosai-stage-sketch-v1','keep-show');localStorage.setItem('shosai-stage-shows-v1','keep-shelf');}});
+  stageDoc = JSON.parse(await readFile(new URL('../docs/study-links/synthetic-review-show.json',import.meta.url),'utf8'));
+  stageDoc.project.id = 'sticky-check-'+crypto.randomUUID();
+  const issued = await owner.request.post(base+'/study/api/owner/shows/'+stageDoc.project.id,{data:{document:stageDoc}});
+  assert.equal(issued.status(),201,await issued.text()); token=(await issued.json()).link.token;
+  const url=base+'/study?lang=ja#'+token, view=base+'/study/api/view/'+token, manage=base+'/study/api/owner/links/'+token;
+  await writeFile(out+'/preview-url.txt',url+'\n'); await page.goto(url); await ready();
+  let shares=0;page.on('request',r=>{if(r.method()==='POST'&&r.url()===view+'/notes')shares++;});
+  await page.locator('#study-sticky').click();
+  const layer=frame().locator('[data-sticky-view="front"]');await layer.scrollIntoViewIfNeeded();const bounds=await layer.boundingBox();
+  await page.mouse.click(bounds.x+bounds.width*.16,bounds.y+bounds.height*.2);
+  await page.locator('#study-sticky-text').fill('照明が点いたら中央へ\n<img src=x onerror=alert(1)>');await saved();
+  const frontId=(await notebook()).entries['qa-scene-0'].stickies[0].id;
+  assert.equal(await frame().locator('.study-sticky-note img').count(),0);
+  assert.match(await frame().locator('.study-sticky-note').getAttribute('aria-label'),/<img/);
+  await page.locator('#study-sticky-plan').click();await page.locator('#study-sticky-text').fill('この位置で待機');await saved();
+  const beforeDrag=(await notebook()).entries['qa-scene-0'].stickies[0];
+  const front=frame().locator(`[data-sticky-id="${frontId}"]`);await front.scrollIntoViewIfNeeded();const b=await front.boundingBox();
+  await page.mouse.move(b.x+20,b.y+20);await page.mouse.down();await page.mouse.move(b.x+95,b.y+75,{steps:10});await page.mouse.up();await saved();
+  const afterDrag=(await notebook()).entries['qa-scene-0'].stickies[0];assert.ok(afterDrag.x>beforeDrag.x&&afterDrag.y>beforeDrag.y);
+  await page.reload();await ready();assert.equal(await frame().locator('.study-sticky-note').count(),2);
+  assert.deepEqual((await notebook()).entries['qa-scene-0'].stickies[0],afterDrag);assert.equal(shares,0);
+  await page.locator('#study-next').click();assert.equal(await frame().locator('.study-sticky-note').count(),0);
+  await page.locator('#study-prev').click();await page.waitForFunction(()=>document.querySelector('#study-scenes').selectedIndex===0);
+  await frame().locator(`[data-sticky-id="${frontId}"]`).click();await page.locator('#study-sticky-remove').click();await page.locator('#study-sticky-remove-no').click();
+  assert.equal((await notebook()).entries['qa-scene-0'].stickies.length,2);
+  await page.locator('#study-sticky-position').click();await page.keyboard.press('ArrowRight');await saved();
+  assert.ok((await notebook()).entries['qa-scene-0'].stickies[0].x>afterDrag.x);
+  pass('Front click placement, plan addition, XSS-safe editing, drag, keyboard movement, scene switching, reload and cancel removal retain private notes');
+  await page.locator('#study-pen').click();assert.equal(await page.locator('#study-sticky').getAttribute('aria-pressed'),'false');
+  const pen=frame().locator('[data-pen-view="front"]');await pen.scrollIntoViewIfNeeded();const pb=await pen.boundingBox();
+  await page.mouse.move(pb.x+pb.width*.55,pb.y+pb.height*.7);await page.mouse.down();await page.mouse.move(pb.x+pb.width*.7,pb.y+pb.height*.6,{steps:6});await page.mouse.up();await saved();
+  assert.equal((await notebook()).entries['qa-scene-0'].strokes.length,1);
+  await page.locator('#study-name').fill('付箋の演者');await page.locator('#study-send').click();
+  await page.waitForFunction(()=>document.querySelector('#study-note-status').textContent.includes('共有しました'));
+  const shared=(await(await owner.request.get(manage+'/notes')).json()).notes;assert.equal(shared.length,1);assert.equal(shared[0].name,'付箋の演者');assert.equal(shared[0].screens.length,2);
+  for(const screen of shared[0].screens){const image=await owner.request.get(`${manage}/notes/${shared[0].id}/images/${screen.view}`);assert.equal(image.status(),200);await writeFile(out+`/shared-${screen.view}.jpg`,await image.body());}
+  assert.equal((await context.request.get(view+'/notes')).status(),404);
+  const other=await browser.newContext();const otherPage=await other.newPage();await otherPage.goto(url);
+  await otherPage.waitForFunction(()=>document.querySelector('#study-status').textContent.includes('公開された'));
+  const otherFrame=otherPage.frames().find(f=>f.url().includes('/study-frame'));assert.equal(await otherFrame.locator('.study-sticky-note').count(),0);await other.close();
+  assert.equal((await context.request.put(view,{headers:{Origin:base},data:{document:{}}})).status(),404);
+  assert.deepEqual((await(await context.request.get(view)).json()).document,stageDoc);
+  pass('Pen and sticky tools are exclusive; explicit owner sharing includes both views while other readers and source show remain unchanged');
+  for(const lang of ['ja','en']){
+    await page.locator('#study-language').selectOption(lang);await page.locator('#study-sticky').click();
+    await page.locator('#study-sticky-list').selectOption(frontId);
+    for(const [width,height] of [[390,844],[844,390],[768,1024],[1440,1000]]){
+      await page.setViewportSize({width,height});await page.locator('#study-sticky').scrollIntoViewIfNeeded();
+      const result=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,hits:[...document.querySelectorAll('#study-sticky, #study-sticky-panel button, #study-sticky-panel select')].filter(e=>e.getClientRects().length).map(e=>({id:e.id,w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height}))}));
+      assert.equal(result.overflow,false);for(const h of result.hits)assert.ok(h.w>=44&&h.h>=44,h.id);
+      const noteHits=await frame().locator('.study-sticky-note').evaluateAll(nodes=>nodes.map(e=>({w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height})));
+      for(const hit of noteHits)assert.ok(hit.w>=44&&hit.h>=44);
+      await page.screenshot({path:out+`/${lang}-${width}.png`});
+    }
+    await page.locator('#study-sticky').click();
+  }
+  pass('Japanese and English at desktop, tablet, portrait and landscape widths retain 44px tools, readable note editing and no page overflow');
+  await page.locator('#study-language').selectOption('ja');await page.setViewportSize({width:1440,height:1000});
+  const original=(await notebook()).entries['qa-scene-0'];
+  const updated=structuredClone(stageDoc);updated.project.scenes.shift();updated.project.scenes.push({...structuredClone(updated.project.scenes[0]),id:'new-scene',title:'追加された場面'});
+  assert.equal((await owner.request.put(manage,{data:{document:updated}})).status(),200);
+  await page.waitForFunction(()=>document.querySelector('#study-stamp').textContent.includes('公開版 2'),{timeout:15000});
+  await page.locator('#study-history summary').click();
+  await page.locator('#study-history-source').selectOption('0');
+  await page.locator('#study-history-stickies input').nth(1).check();
+  await page.locator('#study-history-copy').click();
+  await page.waitForFunction(()=>document.querySelector('#study-history-status').textContent.includes('引き継ぎました'));
+  const stored=await notebook();assert.deepEqual(stored.entries['qa-scene-0'],original);
+  assert.equal(stored.entries['qa-scene-1'].stickies.length,1);assert.equal(stored.entries['qa-scene-1'].stickies[0].text,'この位置で待機');assert.equal(stored.entries['qa-scene-1'].strokes.length,0);
+  assert.equal(shares,1);await page.locator('#study-history summary').click();
+  await page.reload();await ready();assert.equal(await frame().locator('.study-sticky-note').count(),1);
+  await page.locator('#study-sticky').click();await page.locator('#study-sticky-list').selectOption(stored.entries['qa-scene-1'].stickies[0].id);
+  await page.locator('#study-sticky-remove').click();await page.locator('#study-sticky-remove-yes').click();await saved();
+  assert.equal(await frame().locator('.study-sticky-note').count(),0);assert.deepEqual((await notebook()).entries['qa-scene-0'],original);
+  assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('shosai-stage-sketch-v1'),localStorage.getItem('shosai-stage-shows-v1')]),['keep-show','keep-shelf']);
+  pass('Removed-scene notes survive publication; selecting one sticky copies only it to a current scene, original and local shows retained, confirmed removal affects only the copy');
+  assert.deepEqual(errors,[]);await writeFile(out+'/result.json',JSON.stringify({checks,errors,url},null,2));
+} catch(error) {await page.screenshot({path:out+'/failure.png',fullPage:true}).catch(()=>{});throw error;}
+finally {await browser.close();}

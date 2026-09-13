@@ -8,7 +8,7 @@ import worker from "../worker.js";
 const root = new URL("../", import.meta.url);
 const stageSource = await readFile(new URL("stage-sketch.js", root), "utf8");
 const sessionSource = await readFile(new URL("stage-session.js", root), "utf8");
-const indexSource = await readFile(new URL("index.html", root), "utf8");
+const indexSource = await readFile(new URL("stage.html", root), "utf8");
 const stageHtml = await readFile(new URL("stage.html", root), "utf8");
 const serviceWorkerSource = await readFile(new URL("stage-sw.js", root), "utf8");
 
@@ -39,14 +39,14 @@ test("セッション bridge の shelveNow は shelveCurrent の結果を返す"
   assert.match(bridge, /shelveNow\(\) \{ return shelveCurrent\(\); \},/);
 });
 
-test("変更した2本のJS版とPWAキャッシュ版を正本・単独版・Service Workerで揃える", () => {
-  for (const reference of ["stage-sketch.js?v=318", "stage-session.js?v=14"]) {
-    assert.ok(indexSource.includes(reference), `${reference} が index.html にある`);
+test("変更したJS版とPWAキャッシュ版を正本・単独版・Service Workerで揃える", () => {
+  for (const reference of ["stage-sketch.js?v=469", "stage-timeline.js?v=42", "stage-session.js?v=19"]) {
+    assert.ok(indexSource.includes(reference), `${reference} が stage.html にある`);
     assert.ok(stageHtml.includes(reference), `${reference} が stage.html にある`);
     assert.ok(serviceWorkerSource.includes(`./${reference}`), `${reference} が stage-sw.js にある`);
   }
   // 版は上げるたびにここも更新する（2026-08-26: 発注書Hのゲスト画面変更で v144 → v145）
-  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v194";/);
+  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v463";/);
 });
 
 test("ゲスト参加は false の退避結果を失敗として扱い、role 変更前に中止する", () => {
@@ -192,7 +192,7 @@ function createSessionContext() {
   body.classList.add("is-standalone");
   const document = {
     readyState: "complete",
-    documentElement: { classList: createClassList() },
+    documentElement: { classList: createClassList(), dataset: {} },
     body,
     getElementById: elementById,
     createElement: createElementStub,
@@ -352,11 +352,13 @@ test("上限を超える既存ショーを読み込んでも、61件目以降を
   vm.runInNewContext(stageSource, fixture.context, { filename: "stage-sketch.js" });
 
   const doc = JSON.parse(fixture.context.window.SHOSAI_STAGE_SESSION_BRIDGE.exportDocumentString());
-  assert.equal(doc.project.scenes.length, 61);
-  assert.equal(doc.project.scenes.at(-1).id, "scene-61");
-  assert.equal(doc.project.scenes[0].pieces.length, 81);
-  assert.equal(doc.project.scenes[0].pieces[0].id, "piece-1");
-  assert.equal(doc.project.scenes[0].screenTexts.length, 13);
+  const sceneRows = doc.project.scenes.filter((scene) => scene.kind === "scene");
+  assert.equal(doc.project.scenes.length, 62, "既存の61シーンを包むセクションが1件追加される");
+  assert.equal(sceneRows.length, 61);
+  assert.equal(sceneRows.at(-1).id, "scene-61");
+  assert.equal(sceneRows[0].pieces.length, 81);
+  assert.equal(sceneRows[0].pieces[0].id, "piece-1");
+  assert.equal(sceneRows[0].screenTexts.length, 13);
   assert.equal(doc.project.cast.length, 61);
   assert.equal(doc.project.sets.length, 61);
 });
@@ -471,13 +473,13 @@ test("Worker は片側だけの Secret をローカルでも必ず503にする",
   }
 });
 
-test("Worker は完全な一組と正しい Basic 認証を従来どおり受け付ける", async () => {
+test("Worker は完全な一組と正しい Basic 認証で舞台スケッチを受け付ける", async () => {
   for (const [secrets, credential] of [
     [{ SITE_USER: "owner", SITE_PASS: "owner-pass" }, "owner:owner-pass"],
     [{ GUEST_USER: "guest", GUEST_PASS: "guest-pass" }, "guest:guest-pass"],
   ]) {
     const fixture = workerEnv(secrets);
-    const request = new Request("https://example.com/index.html", {
+    const request = new Request("https://example.com/stage.html", {
       headers: { Authorization: `Basic ${btoa(credential)}` },
     });
     const response = await worker.fetch(request, fixture.env, {});
@@ -491,6 +493,11 @@ const freshSource = sourceBetween(
   stageSource,
   "  const STAGE_KEYS = [",
   "  const STORAGE_KEY = \"shosai-stage-sketch-v1\"",
+);
+const freshLanguageSource = sourceBetween(
+  stageSource,
+  "  function normalizeStageLanguage(code) {",
+  "  function resolveInitialStageLanguage(openLanguage, storage, navigatorLike) {",
 );
 
 function runFresh({ hostname, search = "?fresh", confirmResult = false }) {
@@ -517,7 +524,7 @@ function runFresh({ hostname, search = "?fresh", confirmResult = false }) {
     console: { warn(message) { warnings.push(message); } },
   };
   const outcome = vm.runInNewContext(
-    `(() => {\n${freshSource}\nreturn "continued";\n})()`,
+    `(() => {\n${freshLanguageSource}\n${freshSource}\nreturn "continued";\n})()`,
     context,
     { filename: "stage-sketch-fresh.js" },
   );

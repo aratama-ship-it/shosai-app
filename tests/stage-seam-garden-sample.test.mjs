@@ -6,7 +6,7 @@ import vm from "node:vm";
 const root = new URL("../", import.meta.url);
 const dataSource = await readFile(new URL("stage-samples/index.js", root), "utf8");
 const stageSource = await readFile(new URL("stage-sketch.js", root), "utf8");
-const indexSource = await readFile(new URL("index.html", root), "utf8");
+const indexSource = await readFile(new URL("stage.html", root), "utf8");
 const swSource = await readFile(new URL("stage-sw.js", root), "utf8");
 
 const context = { window: {} };
@@ -32,19 +32,18 @@ test("継ぎ目の庭は8セクションの各4シーンで60分になる", () =
   });
 });
 
-test("32シーンは一意なID、ビート、E1〜E5、配置を持つ", () => {
+test("32シーンは一意なID、役割、配置を持ち、エネルギー値を持たない", () => {
   assert.equal(new Set(scenes.map((scene) => scene.id)).size, 32);
   scenes.forEach((scene) => {
     assert.match(scene.id, /^[1-8]-[1-4]$/);
     assert.ok(scene.title.length > 0);
     assert.ok(scene.role.length > 0);
-    assert.ok(Number.isInteger(scene.energy) && scene.energy >= 1 && scene.energy <= 5);
+    assert.equal("energy" in scene, false);
     assert.ok(scene.note.length >= 20);
     assert.ok(Object.keys(scene.cast).length >= 1);
     assert.ok(Object.keys(scene.sets).length >= 1);
     assert.ok(Object.keys(scene.lights).length >= 1);
   });
-  assert.deepEqual(Array.from(new Set(scenes.map((scene) => scene.energy))).sort(), [1, 2, 3, 4, 5]);
 });
 
 test("崩壊と共同支持の中心場面は安全境界と要検証を本文に残す", () => {
@@ -70,9 +69,9 @@ test("アプリは同梱ショーのデータ棚を先に読み、セクショ�
   assert.match(stageSource, /function bundledSampleById\(id\)/);
   assert.doesNotMatch(stageSource, /const SAMPLE_CAST = \[/);
   assert.match(stageSource, /function buildSeamGardenSampleShow\(\)/);
-  /* 2026-08-28 英語対応: タイトルは言語で titleEn/title を選んでから組む形になった */
+  /* 日英だけを持つ見本は、日本語以外で英語へ落とす languageValue を通して組む。 */
   assert.match(stageSource, /newScene\(`\$\{section\.id\}\. \$\{sectionTitle\}`,[\s\S]*"section", 0\)/);
-  assert.match(stageSource, /newScene\(`\$\{row\.id\} \$\{isEn\(\) && row\.titleEn \? row\.titleEn : row\.title\}`,[\s\S]*"scene", 1\)/);
+  assert.match(stageSource, /newScene\(`\$\{row\.id\} \$\{languageValue\(\(\) => row\.titleEn \|\| row\.title, \(\) => row\.title\)\}`,[\s\S]*"scene", 1\)/);
   assert.match(stageSource, /holdDurationSeconds: row\.durationSeconds/);
   assert.match(stageSource, /transitionToNextSeconds: 0/);
   assert.match(stageSource, /shelveSeamGardenSample\(\);/);

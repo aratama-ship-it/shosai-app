@@ -269,13 +269,12 @@
     visibleSceneRows: visiblePhoneSceneRows,
   });
 
-  /* 段階0のビート骨格。作品の正解ではなく、シーン名・役割・エネルギーだけを
+  /* 段階0のビート骨格。作品の正解ではなく、シーン名と役割だけを
      作るローカルの初期値。演者、道具、照明、背景、技、装置はここへ入れない。
      内容の正本: 2026-07-28_stage-sketch-codex-round2-answer.md D2 */
   const freezeBeatTemplate = (template) => Object.freeze({
     ...template,
     roles: Array.isArray(template.roles) ? Object.freeze(template.roles) : null,
-    energy: Array.isArray(template.energy) ? Object.freeze(template.energy) : null,
   });
   const BEAT_TEMPLATES = Object.freeze([
     // 出典: https://cirque-cnac.bnf.fr/fr/esthetiques/le-cirque-classique
@@ -284,71 +283,76 @@
       range: "8〜12", roles: [
         "全員登場／世界提示", "短い個人番号", "対照的番号", "コミックな転換",
         "主力番号", "集団番号", "全員のfinale",
-      ], energy: [4, 3, 4, 2, 4, 5, 5] }),
+      ] }),
     freezeBeatTemplate({ id: "two-part-variety", number: 2, name: "二部制ヴァラエティ・ビル型",
       range: "8〜12＋休憩", roles: [
         "短い開幕", "小編成", "対照番号", "一部の山", "休憩",
         "複雑な仕込みを要する番号", "再加速", "集団の驚き", "finale",
-      ], energy: [3, 3, 4, 5, 4, 3, 4, 5, 4] }),
+      ] }),
     freezeBeatTemplate({ id: "three-act", number: 3, name: "三幕構成",
       range: "7〜9", roles: [
         "世界と人物", "発端", "目標決定", "障害の増加", "中央反転", "危機", "決断", "結果",
-      ], energy: [1, 2, 3, 3, 4, 5, 4, 2] }),
+      ] }),
     // 出典: https://teachers.yale.edu/curriculum/units/2016/3/5/4
     freezeBeatTemplate({ id: "freytag", number: 4, name: "フライタークのピラミッド",
       range: "6〜8", roles: [
         "提示", "発端", "上昇", "危機", "クライマックス", "下降", "新しい均衡",
-      ], energy: [1, 2, 3, 4, 5, 3, 1] }),
+      ] }),
     // 出典: https://eprints.lib.hokudai.ac.jp/repo/huscap/all/38486/
     freezeBeatTemplate({ id: "kishotenketsu", number: 5, name: "起承転結",
       range: "4（または各節2シーンで8）", roles: [
         "起＝規則提示", "承＝規則を深める", "転＝別の関係を持ち込む", "結＝両者の意味を結ぶ",
-      ], energy: [1, 2, 4, 2] }),
+      ] }),
     // 出典: https://education.nsw.gov.au/teaching-and-learning/curriculum/creative-arts/creative-arts-curriculum-resources-k-12/7-10-curriculum-resources/choreographic-forms
     freezeBeatTemplate({ id: "rondo", number: 6, name: "ロンド形式 A–B–A–C–A–D–A'",
       range: "5〜7", roles: [
         "基準となる身体／道具の規則A", "対照B", "A再演", "別の対照C",
         "A再演", "最大変奏D", "意味が変わったA'",
-      ], energy: [2, 3, 2, 4, 2, 5, 3] }),
+      ] }),
     freezeBeatTemplate({ id: "theme-variations", number: 7, name: "主題と変奏",
       range: "5〜8", roles: [
         "技／関係／道具の主題提示", "速度変奏", "空間変奏", "人数変奏",
         "制約変奏", "要素を引いた版", "統合版",
-      ], energy: [2, 3, 3, 4, 5, 1, 4] }),
+      ] }),
     // 出典: https://education.nsw.gov.au/teaching-and-learning/curriculum/creative-arts/creative-arts-curriculum-resources-k-12/7-10-curriculum-resources/choreographic-forms
     freezeBeatTemplate({ id: "canon-accumulation", number: 8, name: "カノン／アキュムレーション型",
       range: "6〜9", roles: [
         "一人が短い句を提示", "二人目が時間差で入る", "人数と句を蓄積", "層が衝突",
         "全員ユニゾン", "一人ずつ抜ける", "最初の一人へ戻る",
-      ], energy: [1, 2, 3, 4, 5, 3, 1] }),
+      ] }),
     // 出典: https://cnac.fr/sites/default/files/2024-03/Dossier_de_presse_23e_promotion.pdf
     freezeBeatTemplate({ id: "cycle-spiral", number: 9, name: "循環／螺旋ドラマトゥルギー",
       range: "6〜8", roles: [
         "原型となる出来事", "同じ出来事を別人物から見る", "別の客席方向から見る",
         "逆順で再生", "原因と思ったものが結果だったと判明", "変質した原点へ戻る",
-      ], energy: [2, 3, 3, 4, 5, 2] }),
+      ] }),
     freezeBeatTemplate({ id: "single-focus-agres", number: 10,
       name: "単一フォーカス／アグレ・ドラマトゥルギー", range: "6〜9", roles: [
         "安定状態", "道具／身体の規則提示", "最初の逸脱", "能力拡張",
         "失敗または停止", "関係から回復", "最大投入", "残響",
-      ], energy: [1, 2, 3, 4, 2, 3, 5, 1] }),
+      ] }),
   ]);
   const normalizeBeat = (raw) => {
     const beat = raw && typeof raw === "object" ? raw : {};
-    const energy = Number(beat.energy);
-    return {
+    const normalized = {
       role: typeof beat.role === "string" ? beat.role.slice(0, 160) : "",
-      energy: Number.isInteger(energy) && energy >= 1 && energy <= 5 ? energy : null,
     };
+    /* 旧版で保存された値は前版へ戻せるよう往復時だけ保持する。
+       現行UI・テンプレート・新規生成では作成も利用もしない。 */
+    if (Object.prototype.hasOwnProperty.call(beat, "energy")) {
+      const energy = Number(beat.energy);
+      normalized.energy = Number.isInteger(energy) && energy >= 1 && energy <= 5 ? energy : null;
+    }
+    return normalized;
   };
   const normalizeSceneBeat = (kind, raw) => kind === "scene" ? normalizeBeat(raw) : null;
   const beatTemplateRows = (templateId) => {
     const template = BEAT_TEMPLATES.find((item) => item.id === templateId);
-    if (!template || template.available === false || !template.roles || !template.energy) return [];
-    return template.roles.map((role, index) => ({
+    if (!template || template.available === false || !template.roles) return [];
+    return template.roles.map((role) => ({
       kind: "scene",
       title: role,
-      beat: normalizeBeat({ role, energy: template.energy[index] }),
+      beat: normalizeBeat({ role }),
       pieces: [],
     }));
   };
@@ -3942,8 +3946,13 @@
     renameSectionFields: document.getElementById("stage-rename-section-fields"),
     renameSectionNote: document.getElementById("stage-rename-section-note"),
     renameSceneFields: document.getElementById("stage-rename-scene-fields"),
+    renameSceneNumber: document.getElementById("stage-rename-scene-number"),
+    renameSceneSection: document.getElementById("stage-rename-scene-section"),
+    renameScenePosition: document.getElementById("stage-rename-scene-position"),
+    renameSceneHold: document.getElementById("stage-rename-scene-hold"),
+    renameSceneTransition: document.getElementById("stage-rename-scene-transition"),
     renameSubtitle: document.getElementById("stage-rename-subtitle"),
-    renameEnergy: document.getElementById("stage-rename-energy"),
+    renameSceneNote: document.getElementById("stage-rename-scene-note"),
     renameOk: document.getElementById("stage-rename-ok"),
     renameDelete: document.getElementById("stage-rename-delete"),
     renameClose: document.getElementById("stage-rename-close"),
@@ -4243,6 +4252,7 @@
     rosterPropGrid: document.getElementById("stage-roster-prop-grid"),
     modelPicker: document.getElementById("stage-model-picker"),
     modelOpen: document.getElementById("stage-model-open"),
+    kindModelOpen: document.getElementById("stage-kind-model-open"),
     kindModal: document.getElementById("stage-kind"),
     kindTitle: document.getElementById("stage-kind-title"),
     kindBackdrop: document.getElementById("stage-kind-backdrop"),
@@ -4533,6 +4543,7 @@
     const template = packValue("generated", (generated) => generated.sceneTitle);
     return template ? template.replace("{n}", String(n)) : `シーン ${n}`;
   };
+  const sectionTitle = (n) => sx(`セクション ${n}`, `Section ${n}`);
   /* 表記を「場面」から「シーン」へ揃えたので、前に自動で付いた名前も直す。
      手で付けた名前は「場面 3」のような形をしていないので巻き込まない。 */
   const renameAuto = (title) => String(title).replace(/^場面 (\d+)$/, "シーン $1");
@@ -4595,7 +4606,7 @@
     { key: "sceneTiming", label: "シーンの時間", def: false,
       hint: "各シーンに「見せる時間」と「次のシーンへの移動時間」を表示する" },
     { key: "sceneSubtitle", label: "シーンのサブタイトル", def: false,
-      hint: "シーン一覧に構成上の役割とエネルギーをサブタイトルとして表示する。OFFでも内容は消えません" },
+      hint: "シーン一覧に構成上の役割をサブタイトルとして表示する。OFFでも内容は消えません" },
     { key: "sceneTransitions", label: "転換情報", def: false,
       hint: "選択中のシーンの上下に、転換の長さ・暗転・メモを表示する。OFFでも内容は消えません" },
     /* 2026-09-11 本人指示: 光の意図カードは一時的に非表示にする（featureOn側で強制OFF。
@@ -4626,7 +4637,7 @@
     "転換アニメの動画書き出し", "見えない席の検査（遮蔽）", "資料棚からの場面引用",
   ];
   /* ---------- パネルのオン/オフ（PC版だけ） ----------
-     初めて開いた人の机に、道具を全部並べない。音楽・舞台機構・セット登録・背景は
+     初めて開いた人の机に、道具を全部並べない。音楽・舞台機構・セット登録・照明・背景は
      「要ると分かってから出す」もので、最初の一枚を描くのには要らない。
      ★畳む（layout.collapsed）とは別の仕組みにしてある。畳みはショーごとの持ち物で
        書き出しにも乗るが、こちらは端末の設定であり、ショーのデータには入らない。
@@ -4645,7 +4656,7 @@
       hint: "盆・可動デッキ・幕・せりなど、場面ごとに動く舞台機構を置く欄を出す" },
     { key: "panelRigs", panel: "rigs", label: "セット登録", def: false,
       hint: "いまの舞台装置の並びに名前をつけて残し、別の場面で呼び出す欄を出す" },
-    { key: "panelLight", panel: "light", label: "照明", def: true,
+    { key: "panelLight", panel: "light", label: "照明", def: false,
       hint: "照明を置く・光の意図を書く" },
     { key: "panelBackground", panel: "background", label: "背景", def: false,
       hint: "背景の地の色・塗る色・筆の太さなど、背景を描く欄を出す" },
@@ -4913,8 +4924,16 @@
     };
   }
 
+  /* シーンは必ずセクションの中へ置く。新しいショーも旧形式の移行後も、
+     先に入れ物を作ってから最初のシーンを入れる。 */
+  function initialSceneRows(withExample) {
+    const section = newScene(sectionTitle(1), false, "section", 0);
+    const scene = newScene(sceneTitle(1), withExample, "scene", 1);
+    return [section, scene];
+  }
+
   function baseState(withExample) {
-    const scene = newScene(sceneTitle(1), withExample);
+    const [section, scene] = initialSceneRows(withExample);
     return {
       version: 3,
       // Mac/MCP正本で、この端末が最後に確認したrevision。projectへは混ぜない。
@@ -4942,7 +4961,8 @@
         rigs: [],
         // 背景に貼った写真の置き場（id → データURL）。シーンは id で指す
         photos: {},
-        scenes: [scene],
+        sectionsNested: true,
+        scenes: [section, scene],
         activeSceneId: scene.id,
       },
       // 画面の状態。プロジェクトの内容ではないので、共有や書き出しには含めない
@@ -5705,6 +5725,48 @@
     });
   }
 
+  /* セクションが存在しなかった旧ショー、または既存セクションの外に残った
+     ルート直下のシーンを、一つの既定セクションへまとめる。シーン自身のID、
+     順序、配置、音源参照は変えず、追加するのは親となるセクション行だけ。
+     ルート直下の連続範囲ごとに包むため、既存セクションの中身は混ぜない。 */
+  function wrapUnsectionedSceneRuns(scenes, makeSection) {
+    if (!Array.isArray(scenes) || typeof makeSection !== "function") return false;
+    const next = [];
+    let changed = false;
+    for (let index = 0; index < scenes.length;) {
+      const row = scenes[index];
+      if (!row || row.kind !== "scene" || row.depth !== 0) {
+        next.push(row);
+        index += 1;
+        continue;
+      }
+      const section = makeSection();
+      if (!section || section.kind !== "section") return false;
+      next.push(section);
+      changed = true;
+      // 次のルート直下セクションまでを一つのまとまりとして内側へ送る。
+      while (index < scenes.length
+          && !(scenes[index].kind === "section" && scenes[index].depth === 0)) {
+        scenes[index].depth += 1;
+        next.push(scenes[index]);
+        index += 1;
+      }
+    }
+    if (changed) scenes.splice(0, scenes.length, ...next);
+    return changed;
+  }
+
+  function addMissingSceneInsideSection(scenes) {
+    const parentIndex = scenes.findIndex((row) => row && row.kind === "section" && row.depth === 0);
+    if (parentIndex < 0) return initialSceneRows(false);
+    const parent = scenes[parentIndex];
+    let at = parentIndex + 1;
+    while (at < scenes.length && scenes[at].depth > parent.depth) at += 1;
+    const count = scenes.filter((row) => row.kind === "scene").length;
+    scenes.splice(at, 0, newScene(sceneTitle(count + 1), false, "scene", parent.depth + 1));
+    return scenes;
+  }
+
   function normalizeState(raw) {
     if (!raw || typeof raw !== "object") return baseState(true);
     const fallback = baseState(false);
@@ -5722,7 +5784,7 @@
     const venue = VENUES.byId(typeof rawProject.venue === "string" ? rawProject.venue : fallback.project.venue);
     const size = VENUES.sizeById(venue, typeof rawProject.venueSize === "string" ? rawProject.venueSize : "");
     let scenes = Array.isArray(rawProject.scenes) ? rawProject.scenes.map(normalizeScene) : [];
-    if (!scenes.length) scenes = [newScene(sceneTitle(1), false)];
+    if (!scenes.length) scenes = initialSceneRows(false);
     // 字下げは「前の行より2段以上深い」ことがないように詰める
     let prevDepth = -1;
     scenes.forEach((scene) => {
@@ -5730,7 +5792,10 @@
       prevDepth = scene.depth;
     });
     if (!rawProject.sectionsNested) nestLooseSections(scenes);
-    if (!scenes.some((x) => x.kind === "scene")) scenes.push(newScene(sceneTitle(1), false));
+    let generatedSectionCount = scenes.filter((row) => row.kind === "section" && row.depth === 0).length;
+    wrapUnsectionedSceneRuns(scenes,
+      () => newScene(sectionTitle(++generatedSectionCount), false, "section", 0));
+    if (!scenes.some((x) => x.kind === "scene")) scenes = addMissingSceneInsideSection(scenes);
     const wanted = scenes.find((x) => x.id === rawProject.activeSceneId && x.kind === "scene");
     const activeId = wanted ? wanted.id : scenes.find((x) => x.kind === "scene").id;
 
@@ -5879,11 +5944,29 @@
     if (STUDY_READ_ONLY) return { value: baseState(false), restored: false };
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return { value: normalizeState(JSON.parse(saved)), restored: true };
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const needsSectionMigration = Boolean(parsed && !parsed.project && Array.isArray(parsed.pieces))
+          || hasUnsectionedSceneRows(parsed);
+        return {
+          value: normalizeState(parsed),
+          restored: true,
+          sectionMigrationSource: needsSectionMigration ? saved : null,
+        };
+      }
     } catch (_) {
       // 保存領域が使えなくても、舞台スケッチ自体はそのまま利用できる。
     }
     return { value: baseState(true), restored: false };
+  }
+
+  // ルート直下に場面があれば、まだ「セクションの中にシーン」を満たしていない旧形式。
+  // 読み込む入口とショー棚の一括移行で、同じ判定を使う。
+  function hasUnsectionedSceneRows(value) {
+    const project = value && value.project && typeof value.project === "object"
+      ? value.project : value;
+    const rows = Array.isArray(project && project.scenes) ? project.scenes : [];
+    return rows.some((row) => row && row.kind !== "section" && finite(row.depth, 0) === 0);
   }
 
   /* ---------- ショーの棚 ----------
@@ -5967,6 +6050,32 @@
       shelfFailed = true;
       return false;
     }
+  }
+
+  /* 更新時には、いま開いていないショーも含めて棚を一度だけ移行する。
+     先に棚JSONそのものを退避できなければ書き換えない。個別に開くまで待つと、
+     同じアプリ内で「セクション外のシーン」と「新形式」が混在してしまうため。 */
+  function migrateStoredShowShelf() {
+    let rawText = null;
+    try { rawText = localStorage.getItem(SHOWS_KEY); }
+    catch (_) { return { migrated: 0, safe: false }; }
+    if (!rawText) return { migrated: 0, safe: true };
+    const shows = readShows();
+    const ids = Object.keys(shows).filter((id) => hasUnsectionedSceneRows(shows[id] && shows[id].state));
+    if (!ids.length) return { migrated: 0, safe: true };
+    const backupKey = `${SHOWS_KEY}-pre-section-hierarchy-v1`;
+    try {
+      if (localStorage.getItem(backupKey) === null) localStorage.setItem(backupKey, rawText);
+    } catch (_) {
+      return { migrated: 0, safe: false };
+    }
+    ids.forEach((id) => {
+      const entry = shows[id];
+      entry.state = normalizeState(entry.state);
+    });
+    return writeShows(shows)
+      ? { migrated: ids.length, safe: true }
+      : { migrated: 0, safe: false };
   }
 
   // いまのショーを棚へ書き戻す。保存のたびに呼ぶので、一覧は常に最新になる。
@@ -6434,6 +6543,9 @@
       audioPanelSignature = "";
       persistSoon();
       await prepareAudioForCurrentScene({ force: true, continuePlayback: false });
+      window.dispatchEvent(new CustomEvent("stage-timeline-audio-change", {
+        detail: { trackId, reconnected: true },
+      }));
       setAudioStatus(`「${track.title}」の音源をこの端末へ接続しました。`,
         `Reconnected the audio for “${track.title}” on this device.`);
       return true;
@@ -6603,11 +6715,16 @@
     }
   }
 
-  function openCurrentAudioRelinkPicker(input = els.musicRelinkFile) {
-    const trackId = normalizeAudioTrackId("scene", sc().audioTrackId);
-    if (!trackId || !input) return;
-    input.dataset.trackId = trackId;
+  function openAudioRelinkPicker(trackId, input = els.musicRelinkFile) {
+    const normalizedTrackId = normalizeAudioTrackId("scene", trackId);
+    if (!normalizedTrackId || !input) return false;
+    input.dataset.trackId = normalizedTrackId;
     input.click();
+    return true;
+  }
+
+  function openCurrentAudioRelinkPicker(input = els.musicRelinkFile) {
+    return openAudioRelinkPicker(sc().audioTrackId, input);
   }
 
   function initStageAudio() {
@@ -7650,7 +7767,7 @@
         const scene = newScene(`${row.id} ${languageValue(() => row.titleEn || row.title, () => row.title)}`, false, "scene", 1);
         scene.id = `seam-scene-${row.id}`;
         scene.note = languageValue(() => row.noteEn || row.note, () => row.note);
-        scene.beat = normalizeSceneBeat("scene", { role: row.role, energy: row.energy });
+        scene.beat = normalizeSceneBeat("scene", { role: row.role });
         scene.rehearsal = normalizeSceneRehearsal({
           holdDurationSeconds: row.durationSeconds,
           transitionToNextSeconds: 0,
@@ -13528,6 +13645,7 @@
       els.sceneDesc.hidden = !editable;
       if (!editable) return;
       if (document.activeElement !== box && box.value !== text) box.value = text;
+      syncSceneDescPreferredWidth();
       growSceneDesc();
     }
   }
@@ -13535,6 +13653,34 @@
   /* 行数に合わせて高さを詰める。既定の2行分を空けておくと、
      一行しか書いていない場面で絵の上に空白の帯ができる。 */
   const SCENE_DESC_LINE = 19;   // 一行ぶんの高さ(px)。空の欄はこれで確定させる
+  const SCENE_DESC_MIN_INLINE = 260;
+  const SCENE_DESC_MAX_INLINE = 780;
+
+  /* textarea は入力済みの文字列を幅計算へ含めないため、先頭行の文字幅を
+     おおまかに見積もって希望幅として渡す。横幅が足りなければ CSS の flex が
+     説明欄全体を次行へ送るので、操作群も説明文も途中で不自然に潰れない。 */
+  function sceneDescPreferredWidth(text) {
+    const firstLine = String(text || "").split(/\r?\n/, 1)[0];
+    const textWidth = Array.from(firstLine).reduce((width, character) => {
+      if (character === " ") return width + 4;
+      return width + (character.codePointAt(0) <= 0x00ff ? 7 : 12);
+    }, 0);
+    const labelWidth = els.sceneDescLabel
+      ? Math.ceil(els.sceneDescLabel.getBoundingClientRect().width)
+      : 64;
+    return Math.min(
+      SCENE_DESC_MAX_INLINE,
+      Math.max(SCENE_DESC_MIN_INLINE, textWidth + labelWidth + 32),
+    );
+  }
+
+  function syncSceneDescPreferredWidth() {
+    const desc = els.sceneDesc;
+    const box = els.sceneDescText;
+    if (!desc || !box) return;
+    const source = box.value || box.placeholder;
+    desc.style.setProperty("--scene-desc-preferred-width", `${sceneDescPreferredWidth(source)}px`);
+  }
 
   function growSceneDesc() {
     const box = els.sceneDescText;
@@ -13567,6 +13713,7 @@
       const scene = sc();
       if (!scene) return;
       scene.note = els.sceneDescText.value.slice(0, 200);
+      syncSceneDescPreferredWidth();
       growSceneDesc();
       /* シーン一覧側の同じ欄も合わせる（二つの欄が食い違って見えないように）。
          一覧ごと組み直すと打つたびに作り直しになるので、その欄だけ書き換える。 */
@@ -16138,9 +16285,9 @@
   }
 
   function renderSets() {
-    renderSetList(els.setList, (item) => item.kind !== "light" && item.kind !== "prop",
+    renderSetList(els.setList, (item) => item.kind !== "light" && !ROSTER_PROP_KINDS.has(item.kind),
       tx("まだ何も登録していません。名前と形を選んで追加してください。"));
-    renderSetList(els.propList, (item) => item.kind === "prop", "");
+    renderSetList(els.propList, (item) => ROSTER_PROP_KINDS.has(item.kind), "");
     syncRosterGroups();
   }
 
@@ -16759,6 +16906,7 @@
 
   function openLightPresetModal(fromIntent = false) {
     if (!els.lightPresetModal || !els.lightPresetTiles) return;
+    if (!confirmLightingVenueDependency()) return;
     if (els.lightPresetIntentNote) {
       els.lightPresetIntentNote.hidden = !fromIntent;
       if (fromIntent) {
@@ -16801,6 +16949,7 @@
   function buildLightPreset(key) {
     const preset = LIGHT_PRESETS[key];
     if (!preset) return;
+    if (!confirmLightingVenueDependency()) return;
     const scene = sc();
     const specs = preset.build(venueSize());
     if (!canAddSets(specs.length) || !canAddScenePieces(scene, specs.length)) return;
@@ -17276,20 +17425,6 @@
 
       const side = document.createElement("div");
       side.className = "stage-beat-template-side";
-      if (available) {
-        const energy = document.createElement("div");
-        energy.className = "stage-beat-energy";
-        energy.setAttribute("aria-label", sx(`エネルギー ${template.energy.join("、")}`, `Energy ${template.energy.join(", ")}`));
-        template.energy.forEach((value) => {
-          const step = document.createElement("span");
-          step.className = "stage-beat-energy-step";
-          step.dataset.energy = String(value);
-          step.textContent = `E${value}`;
-          energy.append(step);
-        });
-        side.append(energy);
-      }
-
       const apply = document.createElement("button");
       apply.type = "button";
       apply.className = "stage-beat-template-apply";
@@ -17348,6 +17483,31 @@
       ctx2.fill();
       ctx2.globalAlpha = 1;
       ctx2.stroke();
+      ctx2.restore();
+      return;
+    }
+    if (kind === "diabolo") {
+      // 専用描画のディアボロは pieceParts を持たない。小道具一覧でも実物と同じ
+      // 二つのカップと軸が読める見本を描く。
+      const r = Math.min(w, h) * 0.18;
+      const half = Math.min(w * 0.25, r * 1.5);
+      ctx2.save();
+      ctx2.translate(w / 2, h * 0.55);
+      ctx2.strokeStyle = color;
+      ctx2.lineWidth = Math.max(3, r * 0.28);
+      ctx2.beginPath();
+      ctx2.moveTo(-half, 0);
+      ctx2.lineTo(half, 0);
+      ctx2.stroke();
+      ctx2.fillStyle = color;
+      ctx2.strokeStyle = "rgba(0,0,0,0.4)";
+      ctx2.lineWidth = 1.4;
+      [-half, half].forEach((x) => {
+        ctx2.beginPath();
+        ctx2.arc(x, 0, r, 0, Math.PI * 2);
+        ctx2.fill();
+        ctx2.stroke();
+      });
       ctx2.restore();
       return;
     }
@@ -17489,10 +17649,16 @@
     paintBody(ctx, buildRig(poseId, ox, oy, s, s, yaw, 0, null), color, null);
   }
 
+  // ディアボロは専用の向き・持たせる操作を保つため type は変えない。
+  // 出るものでは、小道具と同じ入口・一覧へ分類する。
+  const ROSTER_PROP_KINDS = new Set(["prop", "diabolo"]);
+  const ROSTER_PROP_SPECIAL_KINDS = Object.freeze([
+    { group: "手に持つもの", kind: "diabolo" },
+  ]);
   const ROSTER_KIND_LAYERS = Object.freeze({
     performer: Object.freeze(["performer"]),
-    set: Object.freeze(SET_KIND_ORDER.filter((kind) => kind !== "prop")),
-    prop: Object.freeze(["prop"]),
+    set: Object.freeze(SET_KIND_ORDER.filter((kind) => !ROSTER_PROP_KINDS.has(kind))),
+    prop: Object.freeze(["prop", "diabolo"]),
   });
   let rosterKind = "performer";
   let rosterKindLayer = "performer";
@@ -17595,19 +17761,48 @@
         tile.dataset.rosterSearch = `${label.textContent} ${shapeId} ${tx(group.ja)}`;
         tile.append(canvas, label);
         tile.addEventListener("click", () => {
+          rosterKind = "prop";
           rosterPropShape = shapeId;
           syncRosterColorDefault();
-          setRosterTileSelection(host, "[data-roster-prop-shape]", tile);
+          setRosterTileSelection(host, "[data-roster-prop-shape], [data-roster-prop-kind]", tile);
         });
         tile.addEventListener("dblclick", (event) => {
           event.preventDefault();
+          rosterKind = "prop";
           rosterPropShape = shapeId;
           syncRosterColorDefault();
-          setRosterTileSelection(host, "[data-roster-prop-shape]", tile);
+          setRosterTileSelection(host, "[data-roster-prop-shape], [data-roster-prop-kind]", tile);
           addFromRoster();
         });
         grid.append(tile);
         drawKindPreview(canvas, "prop", "#8b98a1", shapeId);
+      });
+      ROSTER_PROP_SPECIAL_KINDS.filter((choice) => choice.group === group.ja).forEach((choice) => {
+        const tile = document.createElement("button");
+        tile.type = "button";
+        tile.className = `stage-pose-tile${choice.kind === rosterKind ? " is-on" : ""}`;
+        tile.dataset.rosterPropKind = choice.kind;
+        tile.setAttribute("aria-pressed", String(choice.kind === rosterKind));
+        const canvas = document.createElement("canvas");
+        canvas.width = 132;
+        canvas.height = 132;
+        const label = document.createElement("span");
+        label.textContent = setKindName(choice.kind);
+        tile.dataset.rosterSearch = `${label.textContent} ${choice.kind} ${tx(group.ja)}`;
+        tile.append(canvas, label);
+        const choose = () => {
+          rosterKind = choice.kind;
+          syncRosterColorDefault();
+          setRosterTileSelection(host, "[data-roster-prop-shape], [data-roster-prop-kind]", tile);
+        };
+        tile.addEventListener("click", choose);
+        tile.addEventListener("dblclick", (event) => {
+          event.preventDefault();
+          choose();
+          addFromRoster();
+        });
+        grid.append(tile);
+        drawKindPreview(canvas, choice.kind, "#8b98a1");
       });
       section.append(heading, grid);
       host.append(section);
@@ -17720,6 +17915,7 @@
     if (els.kindPerformerFields) els.kindPerformerFields.hidden = rosterKindLayer !== "performer";
     if (els.kindSetFields) els.kindSetFields.hidden = rosterKindLayer !== "set";
     if (els.kindPropFields) els.kindPropFields.hidden = rosterKindLayer !== "prop";
+    if (els.kindModelOpen) els.kindModelOpen.hidden = rosterKindLayer !== "set";
     if (rosterKindLayer === "performer") renderRosterPoseChoices();
     if (rosterKindLayer === "set") renderRosterSetChoices();
     if (rosterKindLayer === "prop") renderRosterPropChoices();
@@ -18196,13 +18392,17 @@
       sceneRow.depth = Math.min(sceneRow.depth, prev + 1);
       prev = sceneRow.depth;
     });
+    let generatedSectionCount = state.project.scenes
+      .filter((row) => row.kind === "section" && row.depth === 0).length;
+    wrapUnsectionedSceneRuns(state.project.scenes,
+      () => newScene(sectionTitle(++generatedSectionCount), false, "section", 0));
   }
 
   function canShiftSceneDepth(scene, step) {
     const list = state.project.scenes;
     const index = list.indexOf(scene);
     if (index < 0) return false;
-    if (step === -1) return scene.depth > 0;
+    if (step === -1) return scene.kind === "scene" ? scene.depth > 1 : scene.depth > 0;
     if (step !== 1 || scene.depth + 1 > MAX_DEPTH || index === 0) return false;
     return scene.depth <= list[index - 1].depth;
   }
@@ -18633,12 +18833,7 @@
           count.textContent = sectionSummary(totals, "list");
           count.title = sectionSummary(totals, "title");
         } else {
-          count.textContent = featureOn("sceneSubtitle") && scene.beat && scene.beat.energy !== null
-            ? `E${scene.beat.energy}・${scene.pieces.length}` : `${scene.pieces.length}`;
-        }
-        if (scene.kind === "scene" && featureOn("sceneSubtitle")
-            && scene.beat && scene.beat.energy !== null) {
-          count.title = `エネルギー ${scene.beat.energy}・配置 ${scene.pieces.length}`;
+          count.textContent = `${scene.pieces.length}`;
         }
 
         button.append(num, name, count);
@@ -18748,16 +18943,12 @@
         if (isOpen && scene.kind === "scene") {
           const body = document.createElement("div");
           body.className = "stage-scene-body";
-          if (featureOn("sceneSubtitle") && scene.beat
-              && (scene.beat.role || scene.beat.energy !== null)) {
+          if (featureOn("sceneSubtitle") && scene.beat && scene.beat.role) {
             const beat = document.createElement("div");
             beat.className = "stage-scene-beat";
-            const energy = document.createElement("span");
-            energy.className = "stage-scene-beat-energy";
-            energy.textContent = scene.beat.energy === null ? "E—" : `E${scene.beat.energy}`;
             const role = document.createElement("span");
             role.textContent = scene.beat.role;
-            beat.append(energy, role);
+            beat.append(role);
             body.append(beat);
           }
           const timing = document.createElement("div");
@@ -19223,12 +19414,19 @@
     if (els.renameSectionNote) els.renameSectionNote.value = scene.kind === "section"
       ? String(scene.note || "").slice(0, 2000) : "";
     if (els.renameSceneFields) els.renameSceneFields.hidden = scene.kind !== "scene";
+    const timelineFacts = scene.kind === "scene"
+      && window.SHOSAI_STAGE_TIMELINE_DETAILS
+      && typeof window.SHOSAI_STAGE_TIMELINE_DETAILS.sceneFactsById === "function"
+      ? window.SHOSAI_STAGE_TIMELINE_DETAILS.sceneFactsById(scene.id) : null;
+    if (els.renameSceneNumber) els.renameSceneNumber.textContent = timelineFacts && timelineFacts.sceneNumber || "—";
+    if (els.renameSceneSection) els.renameSceneSection.textContent = timelineFacts && timelineFacts.section || "—";
+    if (els.renameScenePosition) els.renameScenePosition.textContent = timelineFacts && timelineFacts.position || "—";
+    if (els.renameSceneHold) els.renameSceneHold.textContent = timelineFacts && timelineFacts.hold || "—";
+    if (els.renameSceneTransition) els.renameSceneTransition.textContent = timelineFacts && timelineFacts.transition || "—";
     if (els.renameSubtitle) els.renameSubtitle.value = scene.kind === "scene"
       ? normalizeBeat(scene.beat).role : "";
-    if (els.renameEnergy) {
-      const energy = scene.kind === "scene" ? normalizeBeat(scene.beat).energy : null;
-      els.renameEnergy.value = energy === null ? "" : String(energy);
-    }
+    if (els.renameSceneNote) els.renameSceneNote.value = scene.kind === "scene"
+      ? String(scene.note || "").slice(0, 2000) : "";
     if (els.renameOk) {
       els.renameOk.textContent = tx(scene.kind === "section" ? "保存する" : "変更を保存");
     }
@@ -19290,20 +19488,25 @@
     const titleChanged = Boolean(next && next !== renameTarget.title);
     const currentBeat = normalizeBeat(renameTarget.beat);
     const nextBeat = renameTarget.kind === "scene" ? normalizeBeat({
+      ...currentBeat,
       role: els.renameSubtitle ? els.renameSubtitle.value.trim().slice(0, 160) : currentBeat.role,
-      energy: els.renameEnergy && els.renameEnergy.value ? Number(els.renameEnergy.value) : null,
     }) : currentBeat;
     const beatChanged = renameTarget.kind === "scene"
-      && (nextBeat.role !== currentBeat.role || nextBeat.energy !== currentBeat.energy);
+      && nextBeat.role !== currentBeat.role;
     const currentSectionNote = renameTarget.kind === "section" ? String(renameTarget.note || "") : "";
     const nextSectionNote = renameTarget.kind === "section" && els.renameSectionNote
       ? els.renameSectionNote.value.slice(0, 2000) : currentSectionNote;
     const sectionNoteChanged = renameTarget.kind === "section" && nextSectionNote !== currentSectionNote;
-    if (titleChanged || beatChanged || sectionNoteChanged) {
+    const currentSceneNote = renameTarget.kind === "scene" ? String(renameTarget.note || "") : "";
+    const nextSceneNote = renameTarget.kind === "scene" && els.renameSceneNote
+      ? els.renameSceneNote.value.slice(0, 2000) : currentSceneNote;
+    const sceneNoteChanged = renameTarget.kind === "scene" && nextSceneNote !== currentSceneNote;
+    if (titleChanged || beatChanged || sectionNoteChanged || sceneNoteChanged) {
       checkpoint();
       if (titleChanged) renameTarget.title = next;
       if (beatChanged) renameTarget.beat = nextBeat;
       if (sectionNoteChanged) renameTarget.note = nextSectionNote;
+      if (sceneNoteChanged) renameTarget.note = nextSceneNote;
       renderScenes();
       renderSceneGrid();
       persistSoon();
@@ -19393,6 +19596,7 @@
       id, row, hole, index: i,
       block: 1 + sceneChildren(i).length,
       baseDepth: list[i].depth,
+      kind: list[i].kind,
       dx: ev.clientX - rect.left,
       dy: ev.clientY - rect.top,
       startX: ev.clientX,
@@ -19428,7 +19632,8 @@
     }
     // 横へ引いた量で深さを決める。セクションの中へ入れるための操作
     const step = Math.round((ev.clientX - sceneDrag.startX) / 22);
-    const want = clamp(sceneDrag.baseDepth + step, 0, MAX_DEPTH);
+    const minDepth = sceneDrag.kind === "scene" ? 1 : 0;
+    const want = clamp(sceneDrag.baseDepth + step, minDepth, MAX_DEPTH);
     if (want !== sceneDrag.depth) {
       sceneDrag.depth = want;
       sceneDrag.hole.style.marginLeft = `${want * 14}px`;
@@ -19461,7 +19666,8 @@
         if (seen === at) { target = k; break; }
         seen += 1;
       }
-      const diff = clamp(sceneDrag.depth === undefined ? sceneDrag.baseDepth : sceneDrag.depth, 0, MAX_DEPTH)
+      const minDepth = moving[0].kind === "scene" ? 1 : 0;
+      const diff = clamp(sceneDrag.depth === undefined ? sceneDrag.baseDepth : sceneDrag.depth, minDepth, MAX_DEPTH)
         - moving[0].depth;
       moving.forEach((m) => { m.depth = clamp(m.depth + diff, 0, MAX_DEPTH); });
       list.splice(target, 0, ...moving);
@@ -21090,8 +21296,9 @@ ${propsPlotHtml}
     if (!canAddSceneRows() || !canAddScenePieces({ pieces: [] }, carried.length)) return;
     checkpoint();
     const i = cursorIndex();
-    // セクションを起点にしたときは、その中身として一段内側へ入れる
-    const depth = i >= 0 ? p.scenes[i].depth + (p.scenes[i].kind === "section" ? 1 : 0) : 0;
+    // セクションを起点にしたときは、その中身として一段内側へ入れる。
+    // 正規化済みのシーンから始める場合も、同じ親の下の兄弟として残す。
+    const depth = i >= 0 ? p.scenes[i].depth + (p.scenes[i].kind === "section" ? 1 : 0) : 1;
     const count = p.scenes.filter((x) => x.kind === "scene").length;
     const scene = newScene(sceneTitle(count + 1), false, "scene", depth);
     scene.background = sc().background;      // 劇場は変えず、いまの背景色だけ引き継ぐ
@@ -21136,7 +21343,8 @@ ${propsPlotHtml}
     state.cursorRowId = section.id;
     renderScenes();
     persistSoon();
-    announce(`${section.title}を足しました。下のシーンを一段内側へ入れると、中身になります。`);
+    announce(sx(`${section.title}を足しました。ここにシーンを追加できます。`,
+      `Added ${section.title}. You can add scenes here.`));
   }
 
   // セクションを起点にしたときは、中身ごと複製する
@@ -22644,8 +22852,98 @@ ${propsPlotHtml}
     els.seatMapToggle.hidden = venue().audience !== "front";
   }
 
+  /* 照明は劇場の間口・奥行・高さ・客席方向に合わせた設計であるため、劇場を
+     変えた版へ持ち込まない。現行の照明登録、場面内の照明駒、意図、動きを
+     まとめて数え、分岐前の警告と消去範囲を同じ定義で扱う。 */
+  function lightingDataCounts(project) {
+    const p = project && typeof project === "object" ? project : {};
+    const lightIds = new Set((p.sets || []).filter((item) => item && item.kind === "light")
+      .map((item) => item.id));
+    const scenes = Array.isArray(p.scenes) ? p.scenes : [];
+    const counts = { registrations: lightIds.size, placements: 0, intents: 0, motions: 0, stashes: 0, cues: 0 };
+    scenes.forEach((scene) => {
+      (scene.pieces || []).forEach((piece) => {
+        if (piece && (piece.type === "light" || lightIds.has(piece.setId))) counts.placements += 1;
+      });
+      if (scene.lightingIntent) counts.intents += 1;
+      if (scene.lightMotion) counts.motions += 1;
+      Object.keys(scene.stashed || {}).forEach((id) => { if (lightIds.has(id)) counts.stashes += 1; });
+    });
+    counts.cues = (p.cues || []).filter((cue) => cue && cue.kind === "timeline" && cue.cueType === "light").length;
+    return counts;
+  }
+
+  function hasVenueDependentLighting(project) {
+    return Object.values(lightingDataCounts(project)).some((count) => count > 0);
+  }
+
+  function clearVenueDependentLighting(project) {
+    const p = project && typeof project === "object" ? project : {};
+    const lightIds = new Set((p.sets || []).filter((item) => item && item.kind === "light")
+      .map((item) => item.id));
+    p.sets = (p.sets || []).filter((item) => !item || item.kind !== "light");
+    p.cues = (p.cues || []).filter((cue) => !(cue && cue.kind === "timeline" && cue.cueType === "light"));
+    (p.scenes || []).forEach((scene) => {
+      scene.pieces = (scene.pieces || []).filter((piece) => piece
+        && piece.type !== "light" && !lightIds.has(piece.setId));
+      if (scene.stashed && typeof scene.stashed === "object") {
+        lightIds.forEach((id) => { delete scene.stashed[id]; });
+      }
+      scene.lightingIntent = null;
+      scene.lightMotion = null;
+    });
+  }
+
+  let lightingVenueWarningProjectId = null;
+  function confirmLightingVenueDependency() {
+    if (lightingVenueWarningProjectId === state.project.id) return true;
+    const currentVenue = venueName(venue());
+    const message = sx(
+      `照明は「${currentVenue}」の形・寸法・客席方向に合わせて組みます。\n\n劇場を変えると、新しいバージョンを作成し、照明の登録・配置・意図・動きはすべて消えます。元のショーはショー一覧に残ります。\n\nこの劇場で照明を組みますか？`,
+      `Lighting is designed for the shape, dimensions, and audience direction of “${currentVenue}”.\n\nChanging the venue creates a new version and clears all light registrations, placements, intentions, and motion. The original show remains in All shows.\n\nBuild lighting for this venue?`,
+    );
+    if (!window.confirm(message)) return false;
+    lightingVenueWarningProjectId = state.project.id;
+    return true;
+  }
+
+  function branchForVenueLightingChange(id) {
+    const p = state.project;
+    const nextVenue = VENUES.byId(id);
+    const counts = lightingDataCounts(p);
+    const nextVersion = nextVersionLabel(p.versionLabel);
+    const warning = sx(
+      `劇場を「${venueName(venue())}」から「${venueName(nextVenue)}」へ変えます。\n\n${nextVersion}を新しく作り、照明の登録 ${counts.registrations}件・配置 ${counts.placements}件・照明意図 ${counts.intents}件・光の動き ${counts.motions}件・ライトキュー ${counts.cues}件を消去します。演者・大道具・小道具・シーン・音源は引き継ぎ、元の${p.versionLabel || "v1"}はショー一覧に残ります。\n\n劇場を変えて新しい版を作りますか？`,
+      `Change the venue from “${venueName(venue())}” to “${venueName(nextVenue)}”?\n\nA new ${nextVersion} will be created. It clears ${counts.registrations} light registrations, ${counts.placements} placements, ${counts.intents} lighting intentions, ${counts.motions} light-motion plans, and ${counts.cues} light cues. Cast, scenery, props, scenes, and audio carry forward; the original ${p.versionLabel || "v1"} remains in All shows.\n\nCreate the new version with this venue?`,
+    );
+    if (!window.confirm(warning)) {
+      renderVenueControls();
+      return false;
+    }
+    const copy = JSON.parse(JSON.stringify(p));
+    copy.id = rid("proj");
+    copy.parentVersionId = p.id;
+    copy.branchReason = sx(`劇場を「${venueName(nextVenue)}」へ変更し、照明を組み直すため`, `Venue changed to “${venueName(nextVenue)}”; lighting must be rebuilt.`);
+    copy.createdAt = nowIso();
+    copy.versionLabel = nextVersion;
+    copy.venue = id;
+    copy.venueSize = VENUES.sizeById(nextVenue, p.venueSize).id;
+    copy.venueDims = null;
+    clearVenueDependentLighting(copy);
+    const next = normalizeState({ ...state, project: copy });
+    if (!applyLoadedState(next, sx(`${nextVersion}を作り、劇場を${venueName(nextVenue)}へ変えました。照明はこの劇場用に組み直してください。元の版はショー一覧に残っています。`, `Created ${nextVersion} for ${venueName(nextVenue)}. Rebuild the lighting for this venue; the original version remains in All shows.`))) return false;
+    lightingVenueWarningProjectId = null;
+    if (venue().audience === "round" && tool !== "select") setTool("select");
+    syncSeatMapToggle();
+    return true;
+  }
+
   function setVenue(id) {
     if (state.project.venue === id) return;
+    if (hasVenueDependentLighting(state.project)) {
+      branchForVenueLightingChange(id);
+      return;
+    }
     checkpoint();
     state.project.venue = id;
     state.project.venueSize = VENUES.sizeById(VENUES.byId(id), state.project.venueSize).id;
@@ -25042,10 +25340,12 @@ ${propsPlotHtml}
     return added;
   };
   renderModelPicker();
-  if (els.modelOpen) els.modelOpen.addEventListener("click", () => {
+  const openSetBuilder = () => {
     const builder = window.SHOSAI_STAGE_BUILDER;
     if (builder) builder.open();
-  });
+  };
+  if (els.modelOpen) els.modelOpen.addEventListener("click", openSetBuilder);
+  if (els.kindModelOpen) els.kindModelOpen.addEventListener("click", openSetBuilder);
   window.addEventListener("shosai-stage-models-change", () => {
     renderModelPicker();
     renderSets();
@@ -25078,7 +25378,10 @@ ${propsPlotHtml}
     els.rosterColor.addEventListener("input", () => { rosterColorTouched = true; });
   }
   if (els.rosterSearch) els.rosterSearch.addEventListener("input", applyRosterSearch);
-  const addLight = () => addSetItem("light", els.lightName, els.lightKind && els.lightKind.value);
+  const addLight = () => {
+    if (!confirmLightingVenueDependency()) return;
+    addSetItem("light", els.lightName, els.lightKind && els.lightKind.value);
+  };
   if (els.lightAdd) els.lightAdd.addEventListener("click", addLight);
   if (els.lightName) {
     els.lightName.addEventListener("keydown", (e) => {
@@ -27766,6 +28069,21 @@ ${propsPlotHtml}
       catch (_) { seenTour = true; }
       renderScreenTexts();
       syncScreenTextControls();
+      if (loaded.sectionMigrationSource) {
+        const backupKey = `${STORAGE_KEY}-pre-section-hierarchy-v1:${state.project.id}`;
+        try {
+          localStorage.setItem(backupKey, loaded.sectionMigrationSource);
+          persistSoon();
+        } catch (_) {
+          setSaveStatus("旧シーン構造の控えを保存できなかったため、変換後の自動保存を止めました。ファイルへ書き出してから、もう一度開いてください。", "warn");
+        }
+      }
+      const shelfMigration = migrateStoredShowShelf();
+      if (!shelfMigration.safe) {
+        setSaveStatus("ショー一覧の旧シーン構造を退避できなかったため、一覧全体の変換保存を止めました。ファイルへ書き出すか容量を空けてから、もう一度開いてください。", "warn");
+      } else if (shelfMigration.migrated) {
+        announce(`${shelfMigration.migrated}件のショーを、セクションの中にシーンを置く形式へ更新しました。`);
+      }
       if (!loaded.restored) shelveSample();
       shelveSeamGardenSample();
       syncLocalShows();
@@ -27853,6 +28171,23 @@ ${propsPlotHtml}
       if (!next) return false;
       openScene(next.id, options);
       return state.project.activeSceneId === next.id;
+    },
+    openSceneDetailsById(id) {
+      const scene = state.project.scenes.find((row) => row.kind === "scene" && row.id === id);
+      if (!scene) return false;
+      openRename(scene);
+      return true;
+    },
+    hasTimelineAudioFile(trackId) {
+      const normalizedTrackId = normalizeAudioTrackId("scene", trackId);
+      if (!normalizedTrackId || !audioStore || typeof audioStore.get !== "function") {
+        return Promise.resolve(false);
+      }
+      return audioStore.get(normalizedTrackId)
+        .then((blob) => Boolean(blob instanceof Blob && blob.size > 0), () => false);
+    },
+    openTimelineAudioRelinkPicker(trackId) {
+      return openAudioRelinkPicker(trackId);
     },
     setTimelineAudioGainDb(trackId, value) {
       const track = audioTrackById(trackId);
