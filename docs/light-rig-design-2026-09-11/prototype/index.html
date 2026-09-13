@@ -134,10 +134,13 @@
   .planwrap{align-self:start}
   .planwrap{position:relative;display:flex;flex-direction:column;gap:2px;min-width:0;grid-row:1;grid-column:2}
   .sec{display:flex;flex-direction:column;gap:2px;min-width:0;grid-row:2}
-  .sec.side.l{grid-column:1} .sec.front{grid-column:2} .sec.side.r{grid-column:3}
+  .sec.side.l{grid-column:1} .sec.front{grid-column:2}
   /* 上段の左右＝灯体パネル／設定パネル。幅は下の側面図とそろえる（app.jsが設定） */
   .panel{grid-row:1;min-width:0;min-height:0;overflow:hidden;border:1px solid var(--line-dark);background:rgba(25,21,18,.45);padding:8px;display:flex;flex-direction:column;gap:7px;align-self:stretch}
-  #panel-fixtures{grid-column:1} .panel.insp{grid-column:3}
+  #panel-fixtures{grid-column:1}
+  /* 照明デザインのパネルは上下2段を貫通させて高く使う（2026-09-13 本人要望）。
+     右下にあった「上手を見る」は側面図のタブに畳んだので、この列は丸ごと空いている。 */
+  .panel.insp{grid-column:3;grid-row:1/-1}
   .panel .kicker,.panel .ptitle{margin:0}
   .figgrid canvas{height:200px}
   .figgrid .sechead,.figgrid .viewhead{overflow:hidden}
@@ -147,6 +150,8 @@
   .sec.front .sechead .viewnote{text-align:right}
   .fmode{display:flex;align-items:center;gap:5px;justify-self:center}
   .sechead .viewtitle{font-size:11px;letter-spacing:.08em}
+  .sidemode{flex:0 0 auto}
+  .sidemode button{font-size:10px;letter-spacing:.04em;padding:2px 7px;min-height:20px}
   .sechead .viewnote{font-size:8.5px}
   /* 図の上の横並びバー: 左＝図に出すもの、中央＝シーン送り。
      シーン送りは帯の中身に対してではなく<b>窓の幅そのもの</b>の中央に置く（2026-09-13 本人要望）。
@@ -508,8 +513,15 @@
             <!-- 固定灯のシーン間の食い違い。決まるまで消えないので、設定欄とは別の固定枠に出す -->
             <div id="conflicts"></div>
           </section>
+          <!-- 側面図は1枚。下手と上手を同時に見る必要はないので切り替え式にし、
+               空いた右下を照明デザインパネルが使う（2026-09-13 本人要望）。 -->
           <div class="sec side l">
-            <div class="sechead"><span class="viewtitle">下手を見る</span></div>
+            <div class="sechead">
+              <span class="showtoggles sidemode" id="sidemode" role="group" aria-label="どちら側を見るか">
+                <button type="button" data-side="shimote" aria-pressed="true">下手を見る</button>
+                <button type="button" data-side="kamite" aria-pressed="false">上手を見る</button>
+              </span>
+            </div>
             <canvas id="secL" width="520" height="520"></canvas>
           </div>
           <div class="sec front">
@@ -529,10 +541,6 @@
               </span>
             </div>
             <canvas id="secF" width="780" height="520"></canvas>
-          </div>
-          <div class="sec side r">
-            <div class="sechead"><span class="viewtitle">上手を見る</span></div>
-            <canvas id="secR" width="520" height="520"></canvas>
           </div>
         </div>
         <div class="empty" id="empty" hidden>
@@ -561,8 +569,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789280158"></script>
-<script src="stage-figure.js?v=1789280158"></script>
-<script src="app.js?v=1789280158"></script>
+<script src="rig-engine.js?v=1789280485"></script>
+<script src="stage-figure.js?v=1789280485"></script>
+<script src="app.js?v=1789280485"></script>
 </body>
 </html>

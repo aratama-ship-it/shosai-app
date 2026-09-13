@@ -232,6 +232,7 @@
        保存・Undoの対象にする（2026-09-13 本人決定）。 */
     levelCurve: null,                  // 初期化は下の resetLevelCurve()
     front3d: false,                    // 正面図を擬似パース（本体の正面図と同じ式）で描く
+    sideView: "shimote",               // 側面図はどちら側を見るか。1枚を切り替えて使う（2026-09-13 本人要望）
     /* 3Dで最初に見せる席。2026-09-13 本人決定で2階席。見下ろすので立ち位置の関係が読みやすく、
        灯の当たり先を確かめる最初の1枚に向く（製品 stage-sketch.js の既定は "center"）。
        選択肢の既定（index.html の selected）と必ずそろえること。 */
@@ -320,13 +321,21 @@
   }
 
   /* ---------- 幾何: キャンバスの箱 ---------- */
-  const plan = $("plan"), secF = $("secF"), secL = $("secL"), secR = $("secR");
+  const plan = $("plan"), secF = $("secF"), secL = $("secL");
   const pctx = plan.getContext("2d");
+  /* 側面図は1枚。kind を差し替えて下手・上手を切り替える（2026-09-13 本人要望）。
+     kind を見て描く・当てる処理がそのまま使えるので、図ごとの分岐は増えない。 */
+  const SIDE = { cv: secL, ctx: secL.getContext("2d"), kind: "shimote" };
   const SECS = [
     { cv: secF, ctx: secF.getContext("2d"), kind: "front" },
-    { cv: secL, ctx: secL.getContext("2d"), kind: "shimote" },
-    { cv: secR, ctx: secR.getContext("2d"), kind: "kamite" },
+    SIDE,
   ];
+  let lastSelSig = null;              // 選び直しを見分けるための、選択中の灯の並び
+  function applySideView(v) {
+    state.sideView = v === "kamite" ? "kamite" : "shimote";
+    SIDE.kind = state.sideView;
+    document.querySelectorAll("#sidemode button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.side === state.sideView)));
+  }
   const secOf = (kind) => SECS.find((x) => x.kind === kind);
   /* 舞台の矩形（内部px）。キャンバスの実寸から毎回計算するので、
      モーダルを広げても袖・客席の帯の比率が保たれる。 */
@@ -383,7 +392,7 @@
     set(plan.parentElement, "width", midW);
     set(plan, "height", Math.round(d.D * s) + PAD.planT + PAD.planB);
     set(secF.parentElement, "width", midW); set(secF, "height", secH);
-    [secL, secR].forEach((cv) => { set(cv.parentElement, "width", sideW); set(cv, "height", secH); });
+    set(secL.parentElement, "width", sideW); set(secL, "height", secH);
     // 上段の左右パネルは、真下の側面図と同じ幅にそろえる（6枠がきれいに並ぶ）
     [$("panel-fixtures"), $("panel-insp")].forEach((p) => p && set(p, "width", sideW));
   }
@@ -392,7 +401,7 @@
   function syncCanvasSize() {
     syncFigureSizes();   // 先に各図の表示高さを決めてから内部解像度を合わせる
     const fit = (c) => { const r = c.getBoundingClientRect(); if (!r.width) return; const W = Math.max(300, Math.round(r.width * 2)), H = Math.max(160, Math.round(r.height * 2)); if (c.width !== W || c.height !== H) { c.width = W; c.height = H; } };
-    [plan, secL, secR, secF].forEach(fit);
+    [plan, secL, secF].forEach(fit);
   }
   const secProj = (sec) => (sec.kind === "front"
     ? (state.front3d
@@ -1452,8 +1461,9 @@
   /* ---------- ポインタ操作: 断面図（正面・下手・上手の3面を同時に扱う） ---------- */
   // 4図を一度に出すので「いまどの図を見ているか」の状態は持たない。押された図そのものが向きを決める。
   function bindSection(sec) {
-    const cv = sec.cv, side = sec.kind; // side: "front" | "shimote" | "kamite"
+    const cv = sec.cv;
     cv.addEventListener("pointerdown", (ev) => {
+      const side = sec.kind;   // "front" | "shimote" | "kamite"。切り替えるので都度読む
       const pt = canvasPoint(cv, ev); const B = secBox(cv, side); const P = secProj(sec);
       try { cv.setPointerCapture(ev.pointerId); } catch (_) { /* 合成イベント等 */ }
       if (side !== "front") {
@@ -1475,6 +1485,7 @@
       const f = hitFixtureSec(sec, pt); if (f) { state.sel = ev.shiftKey ? (state.sel.has(f.id) ? (state.sel.delete(f.id), state.sel) : state.sel.add(f.id)) : new Set([f.id]); renderAll(); }
     });
     cv.addEventListener("pointermove", (ev) => {
+      const side = sec.kind;
       const pt = canvasPoint(cv, ev); const B = secBox(cv, side); state.hover = { canvas: sec.kind, ...pt }; const dg = state.drag;
       if (!dg) { if (state.tool === "side" && side !== "front") draw(); return; }
       if (dg.sec && dg.sec !== sec) return; // 掴んだ図の上だけで動かす
@@ -1497,6 +1508,10 @@
     cv.addEventListener("pointerleave", () => { state.hover = null; draw(); });
   }
   SECS.forEach(bindSection);
+  // 側面図をどちら側にするか。選び直しても図の見方は変わらない（向きだけ入れ替わる）
+  document.querySelectorAll("#sidemode button").forEach((b) => {
+    b.onclick = () => { applySideView(b.dataset.side); renderAll(); };
+  });
   // 正面図の描き方（平面／3D）。3Dは本体の正面図と同じ擬似パース（2026-09-11 本人要望）
   document.querySelectorAll("#frontmode button").forEach((b) => {
     b.onclick = () => { state.front3d = b.dataset.front === "3d"; renderAll(); };
@@ -2385,6 +2400,11 @@
     // 4図は常時表示。いま手を入れるべき図に縁を付けて目線を誘導する（切替はしない）
     const selFix = [...state.sel].map(fixtureById).filter(Boolean);
     const sideSel = selFix.find((f) => f.mount.type === "side");
+    /* 選んだ灯が反対の袖なら、側面図をそちらへ回す。ただし「選び直したとき」だけ——
+       毎回やると、タブを手で押しても選択が残っているかぎり戻されてしまう。 */
+    const selSig = [...state.sel].join(",");
+    if (selSig !== lastSelSig) { lastSelSig = selSig; if (sideSel && sideSel.mount.side !== state.sideView) state.sideView = sideSel.mount.side; }
+    applySideView(state.sideView);
     const needsHeightEdit = state.mode === "move" && [...state.sel].some((id) => ["back", "air"].includes((lightOf(id) || {}).surface));
     const focusKind = state.tool === "side" ? (sideSel ? sideSel.mount.side : "shimote")
       : sideSel ? sideSel.mount.side
