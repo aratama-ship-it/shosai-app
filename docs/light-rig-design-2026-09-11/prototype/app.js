@@ -395,12 +395,14 @@
     const g = document.querySelector(".figgrid"); if (!g) return;
     const r = g.getBoundingClientRect(); if (!r.width || !r.height) return;
     const d = state.dims;
-    const chromeW = PAD.planX * 2 + PAD.secX * 4 + PAD.gap * 2;
+    /* 横に要る量。左が2枠（灯体＋LXQ）になったので、側面図の幅を3つぶん見込む
+       （2026-09-13 本人要望で灯体とLXQを横並びにした）。 */
+    const chromeW = PAD.planX * 2 + PAD.secX * 6 + PAD.gap * 3;
     const chromeH = PAD.headPlan + PAD.planT + PAD.planB + PAD.gap + PAD.headSec + PAD.secT + PAD.secB;
-    const s = Math.max(6, Math.min((r.width - chromeW) / (d.W + d.D * 2), (r.height - chromeH) / (d.D + d.H)));
+    const s = Math.max(6, Math.min((r.width - chromeW) / (d.W + d.D * 3), (r.height - chromeH) / (d.D + d.H)));
     const set = (elm, prop, v) => { const now = parseFloat(elm.style[prop]) || 0; if (Math.abs(now - v) > 1) elm.style[prop] = v + "px"; };
     // 上帯・シーン行を図と同じ幅の帯へ寄せる。窓を変えても縦に揃う
-    const band = Math.round((d.W + d.D * 2) * s) + chromeW;
+    const band = Math.round((d.W + d.D * 3) * s) + chromeW;
     const modal = $("modal"); if (modal) modal.style.setProperty("--band", band + "px");
     const secH = Math.round(d.H * s) + PAD.secT + PAD.secB;
     const sideW = Math.round(d.D * s) + PAD.secX * 2, midW = Math.round(d.W * s) + PAD.planX * 2;
@@ -409,7 +411,9 @@
     set(secF.parentElement, "width", midW); set(secF, "height", secH);
     set(secL.parentElement, "width", sideW); set(secL, "height", secH);
     // 上段の左右パネルは、真下の側面図と同じ幅にそろえる（6枠がきれいに並ぶ）
-    [document.querySelector(".leftcol"), $("panel-insp")].forEach((p) => p && set(p, "width", sideW));
+    // 左は「側面図2枚ぶん＋隙間」。中の2枚（灯体・LXQ）が flex:1 1 0 で半分ずつ取る
+    { const lc = document.querySelector(".leftcol"); if (lc) set(lc, "width", sideW * 2 + 8); }
+    set($("panel-insp"), "width", sideW);
   }
   const planProj = () => E.makePlanProjector(state.dims, planBox());
   // キャンバスの内部解像度を表示サイズへ合わせる（拡大してもぼやけない）

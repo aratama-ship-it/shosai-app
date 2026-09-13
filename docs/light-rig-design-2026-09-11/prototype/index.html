@@ -144,13 +144,15 @@
   .sec.side.l{grid-column:1} .sec.front{grid-column:2}
   /* 上段の左右＝灯体パネル／設定パネル。幅は下の側面図とそろえる（app.jsが設定） */
   .panel{grid-row:1;min-width:0;min-height:0;overflow:hidden;border:1px solid var(--line-dark);background:rgba(25,21,18,.45);padding:8px;display:flex;flex-direction:column;gap:7px;align-self:stretch}
-  /* 左列＝LXQ（上）＋灯体（下）。幅は syncFigureSizes が .leftcol へ入れる（真下の側面図と同じ幅）。 */
-  .leftcol{grid-column:1;grid-row:1;display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0;align-self:stretch}
-  .leftcol>.panel{grid-column:auto;grid-row:auto;width:auto;align-self:auto;min-width:0}
-  /* 中身の高さぶん取り、多すぎるときだけ中で巻く。.panel は min-height:0 なので
-     flex-shrink を残すと、下の灯体パネルに押されて見出しだけに潰れる（2026-09-13 実害）。 */
-  #panel-lxq{flex:0 0 auto;max-height:52%;gap:5px}
-  #panel-fixtures{flex:1 1 auto;min-height:0}
+  /* 左は2枠ぶん。灯体（左）とLXQ（右）を<b>横並び</b>にして、どちらも段の高さをまるごと使う
+     （2026-09-13 本人要望「横幅半分のパネルを横並びにして高さを出す」）。
+     幅は syncFigureSizes が .leftcol へ入れる（側面図2枚ぶん＋隙間）。 */
+  .leftcol{grid-column:1;grid-row:1;display:flex;flex-direction:row;gap:8px;min-width:0;min-height:0;align-self:stretch;justify-self:start}
+  .leftcol>.panel{grid-column:auto;grid-row:auto;width:auto;align-self:auto;min-width:0;flex:1 1 0}
+  #panel-lxq{gap:5px}
+  #panel-fixtures{min-height:0}
+  /* 左の枠が2枠ぶんになったので、真下の側面図は左端（灯体の真下）へ寄せる */
+  .sec.side.l{justify-self:start}
   .lxhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:5px 6px}
   .lxhead .ptitle{margin:0}
   .lxhead .ontoggle{min-height:28px;padding:3px 9px 3px 7px;font-size:13px}
@@ -504,16 +506,10 @@
         <!-- 凸の形: 上＝平面図（真上から）、下段＝下手｜客席から（正面）｜上手。
              下段は3つとも縦軸が高さなので、高さの目盛りが横一直線にそろう。 -->
         <div class="figgrid">
-          <!-- 左列は上下2段（2026-09-13 本人要望）。上＝LXQ、下＝灯体の一覧。
-               LXQは照明デザインの中ではなく独立したパネルにする。 -->
+          <!-- 左は2枠ぶんを横並び（2026-09-13 本人要望）。左＝灯体の一覧、右＝LXQ。
+               縦に積むと両方が半分の高さになるので、横に並べて高さをまるごと使う。
+               LXQは照明デザインの中ではなく独立したパネル。 -->
           <div class="leftcol">
-          <section class="panel" id="panel-lxq">
-            <div class="lxhead">
-              <p class="ptitle">LXQ</p>
-              <button type="button" class="ontoggle" id="lxlink" aria-pressed="true"><span class="sw"></span><b><span class="swlab">現在のシーンと連動</span>オン</b></button>
-            </div>
-            <div class="lxbody" id="lxqbox"></div>
-          </section>
           <!-- 上段左＝灯体の一覧（下手を見る図の真上）。2026-09-11 本人要望で左列から移動 -->
           <section class="panel" id="panel-fixtures">
             <!-- 置く操作は灯体の一覧の上（2026-09-13 本人要望で右パネルから移動）。
@@ -538,6 +534,13 @@
             </div>
             <p class="hint" id="sel-count"></p>
             <div class="list" id="list"></div>
+          </section>
+          <section class="panel" id="panel-lxq">
+            <div class="lxhead">
+              <p class="ptitle">LXQ</p>
+              <button type="button" class="ontoggle" id="lxlink" aria-pressed="true"><span class="sw"></span><b><span class="swlab">現在のシーンと連動</span>オン</b></button>
+            </div>
+            <div class="lxbody" id="lxqbox"></div>
           </section>
           </div>
           <div class="planwrap">
@@ -636,8 +639,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789306733"></script>
-<script src="stage-figure.js?v=1789306733"></script>
-<script src="app.js?v=1789306733"></script>
+<script src="rig-engine.js?v=1789307233"></script>
+<script src="stage-figure.js?v=1789307233"></script>
+<script src="app.js?v=1789307233"></script>
 </body>
 </html>
