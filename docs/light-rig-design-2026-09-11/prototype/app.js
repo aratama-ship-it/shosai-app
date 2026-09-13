@@ -231,7 +231,7 @@
        作った色（palette）と同じく<b>ショー共通の持ち物</b>として扱うので、rig・scenes と一緒に
        保存・Undoの対象にする（2026-09-13 本人決定）。 */
     levelCurve: null,                  // 初期化は下の resetLevelCurve()
-    front3d: false,                    // 客席から見る図を擬似パース（本体の正面図と同じ式）で描く
+    front3d: false,                    // 正面図を擬似パース（本体の正面図と同じ式）で描く
     /* 3Dで最初に見せる席。2026-09-13 本人決定で2階席。見下ろすので立ち位置の関係が読みやすく、
        灯の当たり先を確かめる最初の1枚に向く（製品 stage-sketch.js の既定は "center"）。
        選択肢の既定（index.html の selected）と必ずそろえること。 */
@@ -1214,7 +1214,7 @@
     if (state.tool === "side" && hv && hv.canvas === side) { const q = { X: E.clamp(hv.X, B.x, B.x + B.w), Y: E.clamp(hv.Y, B.y, B.y + B.h) }; fctx.strokeStyle = "rgba(240,231,214,0.3)"; fctx.setLineDash([6, 6]); fctx.beginPath(); fctx.moveTo(q.X, B.y + B.h); fctx.lineTo(q.X, q.Y); fctx.stroke(); fctx.setLineDash([]); drawFixtureMark(fctx, q.X, q.Y, "diamond", { ghost: true }); fctx.fillStyle = "rgba(240,231,214,0.85)"; fctx.font = "16px sans-serif"; fctx.fillText(`${side === "shimote" ? "下手" : "上手"}の袖に立てる（クリック）`, q.X + 22, q.Y - 26); }
     if (!state.rig.fixtures.some((f) => f.mount.type === "side" && f.mount.side === side) && state.tool !== "side") { fctx.fillStyle = "rgba(240,231,214,0.45)"; fctx.font = "16px sans-serif"; fctx.fillText(`${side === "shimote" ? "下手" : "上手"}側にスタンド灯はまだありません。右の「SS（袖から横切って）」でこの図をクリックすると立てられます。`, B.x + 10, B.y + B.h / 2); }
   }
-  /* ---------- 描画: 客席から見る（3D・擬似パース） ----------
+  /* ---------- 描画: 正面図（3D・擬似パース） ----------
      舞台スケッチ本体の正面図と同じ式（rig-engine の makeFrontPerspProjector）で描く。
      床は奥から手前へ広がる台形、奥の壁はその上に立つ。高さも奥行きで縮む。 */
   function drawFront3D(sec) {
@@ -1497,7 +1497,7 @@
     cv.addEventListener("pointerleave", () => { state.hover = null; draw(); });
   }
   SECS.forEach(bindSection);
-  // 客席から見る図の描き方（平面／3D）。3Dは本体の正面図と同じ擬似パース（2026-09-11 本人要望）
+  // 正面図の描き方（平面／3D）。3Dは本体の正面図と同じ擬似パース（2026-09-11 本人要望）
   document.querySelectorAll("#frontmode button").forEach((b) => {
     b.onclick = () => { state.front3d = b.dataset.front === "3d"; renderAll(); };
   });

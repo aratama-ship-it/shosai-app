@@ -142,7 +142,7 @@
   .figgrid canvas{height:200px}
   .figgrid .sechead,.figgrid .viewhead{overflow:hidden}
   .sechead{display:flex;gap:6px;align-items:center;min-height:24px;overflow:hidden}
-  /* 客席から見るパネルだけ、見出しの中央に「平面／3D」の切り替えを置く（2026-09-11 本人要望） */
+  /* 正面図のパネルだけ、見出しの中央に「平面／3D」の切り替えを置く（2026-09-11 本人要望） */
   .sec.front .sechead{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center}
   .sec.front .sechead .viewnote{text-align:right}
   .fmode{display:flex;align-items:center;gap:5px;justify-self:center}
@@ -514,9 +514,9 @@
           </div>
           <div class="sec front">
             <div class="sechead">
-              <span class="viewtitle">客席から見る（正面）</span>
+              <span class="viewtitle">正面図</span>
               <span class="fmode">
-                <span class="showtoggles" id="frontmode" role="group" aria-label="客席から見る図の描き方">
+                <span class="showtoggles" id="frontmode" role="group" aria-label="正面図の描き方">
                   <button type="button" data-front="flat" aria-pressed="true">平面</button>
                   <button type="button" data-front="3d" aria-pressed="false">3D</button>
                 </span>
@@ -561,8 +561,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789279868"></script>
-<script src="stage-figure.js?v=1789279868"></script>
-<script src="app.js?v=1789279868"></script>
+<script src="rig-engine.js?v=1789280158"></script>
+<script src="stage-figure.js?v=1789280158"></script>
+<script src="app.js?v=1789280158"></script>
 </body>
 </html>
