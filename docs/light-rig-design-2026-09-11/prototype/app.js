@@ -1018,8 +1018,16 @@
   }
 
   /* ゴボ（模様）の形を、いったん別のキャンバスへ描いて返す（白＝光が通るところ）。
-     ぼけ具合は canvas の filter でぼかす。0でくっきり、上げるほどとろける。 */
+     ぼけ具合は「影（shadowBlur）」でぼかす。0でくっきり、上げるほどとろける。
+
+     なぜ ctx.filter を使わないか（2026-09-13 実機で判明）:
+     canvas の filter は Safari では 18 以降かつ「Canvas Filters」設定を自分で入れたときしか効かない
+     （mdn/browser-compat-data: safari は version_added "18" + preference flag）。
+     しかも対応していない環境では代入しても例外にならず黙って無視されるので、
+     Chrome では効くのに Safari では「つまみを動かしても何も起きない」という形で出る。
+     shadowBlur はどの環境にもあるので、ぼかしはこちらで作る。 */
   const goboMaskCanvas = document.createElement("canvas");
+  const goboBlurCanvas = document.createElement("canvas");
   const goboTmpCanvas = document.createElement("canvas");
   const goboTmp = (size) => { if (goboTmpCanvas.width !== size || goboTmpCanvas.height !== size) { goboTmpCanvas.width = size; goboTmpCanvas.height = size; } return goboTmpCanvas; };
   function goboMask(light, radius) {
@@ -1035,7 +1043,6 @@
     m.setTransform(1, 0, 0, 1, 0, 0); m.clearRect(0, 0, size, size);
     m.translate(size / 2, size / 2);
     m.rotate((E.goboAngleAt(light, state.play.t) * Math.PI) / 180);
-    if (blur > 0.4) m.filter = `blur(${blur.toFixed(2)}px)`;
     m.fillStyle = "#fff";
     const X = (u) => (u - 0.5) * radius * 2, Y = (v) => (v - 0.5) * radius * 2, R = (r) => r * radius * 2;
     m.beginPath();
@@ -1052,11 +1059,22 @@
           m.moveTo(nx, ny); m.lineTo(dx * len + nx, dy * len + ny); m.lineTo(dx * len - nx, dy * len - ny); m.lineTo(-nx, -ny); m.closePath(); } }
     });
     m.fill("evenodd");
-    m.filter = "none";
-    /* 模様の外は光が来ない＝<b>描かない</b>。以前は destination-out で消していたが、
+    /* 模様の外は光が来ない＝描かない。以前は destination-out で消していたが、
        それだと下に描いてある床・枡目・演者まで一緒に消えて、背景より暗い「黒い丸」が出ていた
        （2026-09-13 本人指摘）。光は足すものなので、形の中だけを塗る作りにした。 */
-    return { canvas: mc, size };
+    if (blur <= 0.4) return { canvas: mc, size };
+    /* ぼかす。くっきり描いた形を画面外へ押し出し、その「影」だけを残す——
+       影の色を白にしてあるので、ぼけた白い形＝ぼけた模様がそのまま残る。
+       shadowBlur は仕様上「ぼかし半径の2倍」なので、blur を2倍にして渡す。 */
+    const bc = goboBlurCanvas;
+    if (bc.width !== size || bc.height !== size) { bc.width = size; bc.height = size; }
+    const b2 = bc.getContext("2d");
+    b2.setTransform(1, 0, 0, 1, 0, 0); b2.clearRect(0, 0, size, size);
+    b2.shadowColor = "#ffffff";
+    b2.shadowBlur = blur * 2;
+    b2.shadowOffsetX = size;
+    b2.drawImage(mc, -size, 0);
+    return { canvas: bc, size };
   }
 
   // 円・8の字の下書きは、エンジンが返す点の並びを線でつなぐだけ  // 円・8の字の下書きは、エンジンが返す点の並びを線でつなぐだけ（傾きも8の字もこれで描ける）
@@ -1611,6 +1629,54 @@
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
   const range = (min, max, step, val, fmt, onInput, onChange) => { const w = el("div", "rangewrap"); const i = document.createElement("input"); i.type = "range"; i.min = min; i.max = max; i.step = step; i.value = val; const v = el("span", "val", fmt(val)); i.oninput = () => { v.textContent = fmt(Number(i.value)); onInput(Number(i.value)); }; i.onchange = () => onChange && onChange(Number(i.value)); w.append(i, v); return w; };
 
+  /* 模様（ゴボ）の選び方。13個をいつも並べるとパネルが埋まるので、
+     いまの模様だけを見せ、押したときだけ一覧を開く（2026-09-13 本人要望「クリックしたらプルダウン」）。
+     一覧は浮かせずその場に差し込む——右欄は縦スクロールする枠なので、
+     浮かせると枠で切られて下半分が見えなくなる。
+     並びは「なし → 回して使うもの → 置いて使うもの」。実機のホイールと同じ考え方。 */
+  function goboPicker(curId, mixed, onPick) {
+    const wrap = el("div", "gpick");
+    const trig = document.createElement("button");
+    trig.type = "button"; trig.className = "gpick-t";
+    const face = el("span", "gpick-face"), name = el("span", "gpick-name");
+    const g0 = mixed ? null : E.goboById(curId || "none");
+    face.innerHTML = !g0 || g0.id === "none" ? '<span class="gx">—</span>' : goboThumb(g0);
+    name.textContent = mixed ? "バラバラ" : (g0 && g0.id !== "none" ? g0.name : "なし");
+    trig.append(face, name, el("span", "gpick-caret", "▾"));
+    const list = el("div", "gpick-list"); list.hidden = true;
+    const open = (v) => { list.hidden = !v; trig.setAttribute("aria-expanded", String(v)); };
+    open(false);
+    trig.onclick = () => open(list.hidden);
+    const group = (title, gs) => {
+      if (!gs.length) return;
+      if (title) list.append(el("p", "gpick-cap", title));
+      const grid = el("div", "gobos");
+      gs.forEach((g) => {
+        const gb = document.createElement("button"); gb.type = "button";
+        gb.className = "gobo" + (g.id === "none" ? " none" : "");
+        gb.setAttribute("aria-pressed", String(!mixed && (curId || "none") === g.id));
+        gb.title = g.note ? `${g.name}｜${g.note}` : g.name;
+        gb.innerHTML = g.id === "none" ? '<span class="gx">なし</span>' : goboThumb(g);
+        gb.onclick = () => { open(false); onPick(g.id); };
+        grid.append(gb);
+      });
+      list.append(grid);
+    };
+    group(null, E.GOBOS.filter((g) => g.kind === "none"));
+    group("回して使うもの", E.GOBOS.filter((g) => g.kind === "rot"));
+    group("置いて使うもの", E.GOBOS.filter((g) => g.kind === "stat"));
+    wrap.append(trig, list);
+    return wrap;
+  }
+  /* 回す速さの読み方。つまみは速さそのものなので、向き・速さの言葉・1周の秒数で表す
+     （2026-09-13 本人指摘「回すは回す速度なのでその用に表示」）。 */
+  function spinText(v) {
+    const a = Math.abs(v);
+    if (a < 3) return "止める";
+    const word = a < 15 ? "とてもゆっくり" : a < 35 ? "ゆっくり" : a < 60 ? "ふつう" : a < 85 ? "速い" : "とても速い";
+    return `${v > 0 ? "時計回り" : "反時計回り"}　${word}（1周${(360 / (a * 0.36)).toFixed(1)}秒）`;
+  }
+
   /* T字の下の帯。置く操作と選んだ灯体の操作を、図のすぐ下に置く（2026-09-11 本人要望で右欄・左欄から移動）。
      動きモードでは置くことがないので帯ごと隠し、そのぶん図を大きくする。 */
   // 表記は本体の照明パネルに合わせる（吊り／SS／転がし・吊るのはバトン）。2026-09-11 本人指摘
@@ -1915,22 +1981,16 @@
       const b = sub("模様（ゴボ）");
       const set = new Set(lit.map((fid) => (lightOf(fid) || {}).gobo || "none"));
       const cur = set.size === 1 ? [...set][0] : "";
-      if (set.size > 1) b.append(el("p", "hint", "いまバラバラです。押すと全灯そろいます。"));
-      const pick = document.createElement("div"); pick.className = "gobos";
-      E.GOBOS.forEach((g) => {
-        const gb = document.createElement("button"); gb.type = "button"; gb.className = "gobo" + (g.id === "none" ? " none" : "");
-        gb.setAttribute("aria-pressed", String(cur === g.id));
-        gb.title = g.note ? `${g.name}｜${g.note}` : g.name;
-        gb.innerHTML = g.id === "none" ? '<span class="gx">なし</span>' : goboThumb(g);
-        gb.onclick = () => { bulkEach(ids, (f, l, i, fid) => setLight(fid, { gobo: g.id })); commit(`${ids.length}灯の模様を変えました`); };
-        pick.append(gb);
-      });
-      b.append(pick);
+      if (set.size > 1) b.append(el("p", "hint", "いまバラバラです。選ぶと全灯そろいます。"));
+      b.append(goboPicker(cur, set.size > 1, (id) => {
+        bulkEach(ids, (f, l, i, fid) => setLight(fid, { gobo: id }));
+        commit(`${ids.length}灯の模様を変えました`);
+      }));
       if (cur && cur !== "none") {
         const spins = new Set(lit.map((fid) => Math.round(E.clamp(E.finite((lightOf(fid) || {}).goboSpin, 0), -100, 100))));
         const same = spins.size <= 1, now = same && spins.size === 1 ? [...spins][0] : 0;
-        b.append(field(same ? "回す" : "回す（バラバラ）", range(-100, 100, 5, now, (v) => (Math.abs(v) < 3 ? "止める" : `${v > 0 ? "時計回り" : "反時計回り"}　1周${(360 / (Math.abs(v) * 0.36)).toFixed(1)}秒`),
-          (v) => { bulkEach(ids, (f, l) => { l.goboSpin = v; }); draw(); }, () => commit(`${ids.length}灯の模様の回し方を変えました`)), true));
+        b.append(field(same ? "回す速さ" : "回す速さ（バラバラ）", range(-100, 100, 5, now, spinText,
+          (v) => { bulkEach(ids, (f, l) => { l.goboSpin = v; }); draw(); }, () => commit(`${ids.length}灯の回す速さを変えました`)), true));
         const softs = new Set(lit.map((fid) => Math.round(E.clamp(E.finite((lightOf(fid) || {}).goboSoft, 25), 0, 100))));
         const sameSoft = softs.size <= 1, nowSoft = sameSoft && softs.size === 1 ? [...softs][0] : 25;
         b.append(field(sameSoft ? "ぼけ" : "ぼけ（バラバラ）", range(0, 100, 5, nowSoft, (v) => (v < 8 ? "くっきり" : v < 40 ? `やや柔らかい（${Math.round(v)}）` : v < 75 ? `柔らかい（${Math.round(v)}）` : `とろける（${Math.round(v)}）`),
@@ -2216,21 +2276,12 @@
       {
         const b = box("模様（ゴボ）");
         const cur = l.gobo || "none";
-        const pick = document.createElement("div"); pick.className = "gobos";
-        E.GOBOS.forEach((g) => {
-          const gb = document.createElement("button"); gb.type = "button"; gb.className = "gobo" + (g.id === "none" ? " none" : "");
-          gb.setAttribute("aria-pressed", String(cur === g.id));
-          gb.title = g.note ? `${g.name}｜${g.note}` : g.name;
-          gb.innerHTML = g.id === "none" ? '<span class="gx">なし</span>' : goboThumb(g);
-          gb.onclick = () => { setLight(fid, { gobo: g.id }); commit(); };
-          pick.append(gb);
-        });
-        b.append(pick);
+        b.append(goboPicker(cur, false, (id) => { setLight(fid, { gobo: id }); commit(); }));
         if (cur !== "none") {
           const g = E.goboById(cur);
           b.append(el("p", "hint", `${g.name}　${g.note || ""}`));
           const spin = E.clamp(E.finite(l.goboSpin, 0), -100, 100);
-          b.append(field("回す", range(-100, 100, 5, spin, (v) => (Math.abs(v) < 3 ? "止める" : `${v > 0 ? "時計回り" : "反時計回り"}　1周${(360 / (Math.abs(v) * 0.36)).toFixed(1)}秒`),
+          b.append(field("回す速さ", range(-100, 100, 5, spin, spinText,
             (v) => { l.goboSpin = v; draw(); }, () => commit()), true));
           if (Math.abs(spin) < 3) {
             b.append(field("向き", range(0, 360, 5, E.clamp(E.finite(l.goboAngle, 0), 0, 360), (v) => `${Math.round(v)}°`,

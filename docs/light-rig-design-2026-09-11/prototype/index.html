@@ -252,6 +252,23 @@
   .pbox .pboxhead .kicker{margin:0}
   .pbox .swatches{padding:3px}
   /* ゴボ（模様）の選び方。丸い窓の中に形を見せるので、見本も円で切る。 */
+  /* 模様（ゴボ）はプルダウンで選ぶ（2026-09-13 本人要望）。右欄は縦スクロールする枠なので
+     一覧は浮かせずその場に差し込む——浮かせると枠に切られて下が見えない。 */
+  .gpick{position:relative}
+  .gpick-t{width:100%;display:flex;align-items:center;gap:8px;padding:5px 8px;
+           border:1px solid var(--line-dark);background:#14110e;color:var(--milk);cursor:pointer;text-align:left}
+  .gpick-t:hover{border-color:var(--brass)}
+  .gpick-t[aria-expanded="true"]{border-color:var(--brass);background:rgba(156,130,63,.14)}
+  .gpick-face{flex:0 0 auto;width:24px;height:24px;border:1px solid var(--line-dark);border-radius:50%;
+              background:#0f0d0b;display:grid;place-items:center;overflow:hidden}
+  .gpick-face svg{width:100%;height:100%;display:block}
+  .gpick-face .gx{color:var(--milk-dim);font-size:11px;line-height:1}
+  .gpick-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gpick-caret{flex:0 0 auto;color:var(--milk-dim);font-size:10px}
+  .gpick-t[aria-expanded="true"] .gpick-caret{color:var(--brass)}
+  .gpick-list{margin-top:4px;padding:6px;border:1px solid var(--brass);background:var(--recess)}
+  .gpick-cap{margin:7px 0 3px;font-size:10.5px;letter-spacing:.06em;color:var(--milk-dim)}
+  .gpick-cap:first-child{margin-top:0}
   .gobos{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:4px}
   .gobo{aspect-ratio:1;padding:3px;border:1px solid var(--line-dark);background:#14110e;color:var(--milk);
         cursor:pointer;display:grid;place-items:center;border-radius:50%}
@@ -541,8 +558,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789275441"></script>
-<script src="stage-figure.js?v=1789275441"></script>
-<script src="app.js?v=1789275441"></script>
+<script src="rig-engine.js?v=1789277186"></script>
+<script src="stage-figure.js?v=1789277186"></script>
+<script src="app.js?v=1789277186"></script>
 </body>
 </html>
