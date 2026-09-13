@@ -333,4 +333,9 @@ def patch2(path):
         c = s.count(old); assert c == 1, (path, c, old[:80]); s = s.replace(old, new)
     open(path, "w", encoding="utf-8").write(s); print("app.js: stage 2 を当てました")
 patch2(os.path.join(P, "app.js"))
+
+# ---------------- stage 3（2026-09-14 本人修正: 形の見本を廃止・回転 rot を追加・バーンドアは 2×2 で数字だけ） ----------------
+# stage 3 はアンカー差分にしていない。stage 1+2 を当てた状態から stage 3 へ進めるには、origin/main の
+# 「照明試作: カッターに回転／バーンドア 2×2」コミット以降の prototype/ 3ファイルを正としてそのまま使うこと。
+# （このスクリプトの役目は「一括で消えたときに stage 1+2 まで戻す」まで。）
 print("done")

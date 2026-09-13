@@ -180,13 +180,9 @@
   const BARN_KEYS = Object.freeze(["back", "front", "left", "right"]);
   const BARN_SOFT = 0.22, SHUTTER_SOFT = 0.04;
   const SHUTTER_MIN = 0.1, SHUTTER_MAX = 1.4;
-  const SHUTTER_PRESETS = Object.freeze([
-    { id: "square", name: "正方形", w: 1, h: 1 },
-    { id: "wide", name: "横長", w: 1.4, h: 0.5 },
-    { id: "tall", name: "縦長", w: 0.5, h: 1.4 },
-    { id: "small", name: "小さめ", w: 0.6, h: 0.6 },
-  ]);
-  const newShutter = (over = {}) => ({ on: true, w: 1, h: 1, ...over });
+  /* 形の見本（正方形／横長…）は 2026-09-14 本人指摘で廃止: 幅と奥行きで作れるので要らない。代わりに回転（rot、度）を持つ。 */
+  const SHUTTER_ROT_MAX = 90;
+  const newShutter = (over = {}) => ({ on: true, w: 1, h: 1, rot: 0, ...over });
   const barnOf = (fixture) => {
     const b = (fixture && fixture.barn) || {}; const o = {};
     BARN_KEYS.forEach((k) => { o[k] = clamp(finite(b[k], 0), 0, 1); });
@@ -208,8 +204,13 @@
       const s = light.shutter;
       const fw = 1 - clamp(finite(s.w, 1), SHUTTER_MIN, SHUTTER_MAX + 0.1) / Math.SQRT2;
       const fh = 1 - clamp(finite(s.h, 1), SHUTTER_MIN, SHUTTER_MAX + 0.1) / Math.SQRT2;
-      if (fw > 0) { out.push({ key: "left", n: axis.left, f: fw, soft: SHUTTER_SOFT }); out.push({ key: "right", n: axis.right, f: fw, soft: SHUTTER_SOFT }); }
-      if (fh > 0) { out.push({ key: "back", n: axis.back, f: fh, soft: SHUTTER_SOFT }); out.push({ key: "front", n: axis.front, f: fh, soft: SHUTTER_SOFT }); }
+      /* 回転（2026-09-14 本人要望）: 面の中（x と up が張る面）で四角を回す。バーンドアは回さない（舞台軸に固定）。
+         正の角で、床なら真上から見て時計回り（x → 奥 の向き）、奥の壁なら客席から見て反時計回り（x → 上）。 */
+      const th = (clamp(finite(s.rot, 0), -180, 180) * Math.PI) / 180, cs = Math.cos(th), sn = Math.sin(th);
+      const rx = { x: cs, y: sn * up.y, z: sn * up.z }, ru = { x: -sn, y: cs * up.y, z: cs * up.z };
+      const neg = (v) => ({ x: -v.x, y: -v.y, z: -v.z });
+      if (fw > 0) { out.push({ key: "left", n: neg(rx), f: fw, soft: SHUTTER_SOFT }); out.push({ key: "right", n: rx, f: fw, soft: SHUTTER_SOFT }); }
+      if (fh > 0) { out.push({ key: "back", n: ru, f: fh, soft: SHUTTER_SOFT }); out.push({ key: "front", n: neg(ru), f: fh, soft: SHUTTER_SOFT }); }
     }
     return out;
   };
@@ -875,6 +876,6 @@
     makePlanProjector, makeFrontProjector, makeSideProjector, planToUV, frontToUH, sideToVH,
     describeMount, describeCue,
     CURTAIN_KINDS, curtainKindLabel, curtainParts,
-    BARN_KEYS, SHUTTER_PRESETS, SHUTTER_MIN, SHUTTER_MAX, newShutter, barnOf, barnActive, shutterActive, frameDoors, doorCutInEllipse,
+    BARN_KEYS, SHUTTER_MIN, SHUTTER_MAX, SHUTTER_ROT_MAX, newShutter, barnOf, barnActive, shutterActive, frameDoors, doorCutInEllipse,
   });
 })(typeof window !== "undefined" ? window : globalThis);

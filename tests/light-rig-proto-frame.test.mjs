@@ -15,9 +15,9 @@ const fixed = (barn) => ({ ...E.newFixture("f1", 1, { type: "truss", trussId: "t
 const mover = (barn) => ({ ...E.newFixture("f2", 2, { type: "truss", trussId: "t", u: 0.5 }, "", "moving", 15), barn });
 
 test("公開している一式", () => {
-  ["BARN_KEYS", "SHUTTER_PRESETS", "newShutter", "barnOf", "barnActive", "shutterActive", "frameDoors", "doorCutInEllipse"].forEach((k) => assert.ok(k in E, `${k} が無い`));
+  ["BARN_KEYS", "SHUTTER_ROT_MAX", "newShutter", "barnOf", "barnActive", "shutterActive", "frameDoors", "doorCutInEllipse"].forEach((k) => assert.ok(k in E, `${k} が無い`));
   assert.deepEqual(plain([...E.BARN_KEYS]), ["back", "front", "left", "right"]);
-  assert.equal(E.SHUTTER_PRESETS.length, 4);
+  assert.equal(E.newShutter().rot, 0);
 });
 
 test("バーンドアは固定灯だけ・値は0〜1に丸める・未設定は全部0", () => {
@@ -81,4 +81,17 @@ test("doorCutInEllipse: 斜めの楕円でも、世界座標の手前側が切�
   const ey = Math.hypot(el.ea.y, el.eb.y);
   const lineY = el.c.y + ey * c.d;
   assert.ok(near(lineY, el.c.y + ey * 0.5, 1e-9));
+});
+
+test("カッターの回転: 90°で左右の線が奥⇄手前の軸へ回る（バーンドアは回らない）", () => {
+  const d0 = E.frameDoors(mover(), { shutter: E.newShutter({ w: 0.5, h: 1.0, rot: 0 }) }, "y");
+  const d90 = E.frameDoors(mover(), { shutter: E.newShutter({ w: 0.5, h: 1.0, rot: 90 }) }, "y");
+  const right0 = d0.find((d) => d.key === "right"), right90 = d90.find((d) => d.key === "right");
+  assert.ok(near(right0.n.x, 1, 1e-9) && near(right0.n.y, 0, 1e-9));
+  assert.ok(near(right90.n.x, 0, 1e-9) && near(right90.n.y, -1, 1e-9), "90°で右の線は奥（−y）を向く");
+  const d45 = E.frameDoors(mover(), { shutter: E.newShutter({ rot: 45 }) }, "z");
+  const r45 = d45.find((d) => d.key === "right");
+  assert.ok(near(Math.hypot(r45.n.x, r45.n.y, r45.n.z), 1, 1e-9) && near(r45.n.z, Math.SQRT1_2, 1e-9), "奥の壁では x と z の面で回る");
+  const barn = E.frameDoors(fixed({ left: 0.5 }), { shutter: E.newShutter({ rot: 90 }) }, "y").find((d) => d.key === "left" && d.soft > 0.1);
+  assert.deepEqual(plain(barn.n), { x: -1, y: 0, z: 0 }, "バーンドアは回転の影響を受けない");
 });

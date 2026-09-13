@@ -336,6 +336,13 @@
   /* 模様（ゴボ）はプルダウンで選ぶ（2026-09-13 本人要望）。右欄は縦スクロールする枠なので
      一覧は浮かせずその場に差し込む——浮かせると枠に切られて下が見えない。 */
   .cyckicker{margin:7px 0 3px}
+  /* バーンドアの4本は 2×2（2026-09-14 本人指示）。各マスは 見出し／つまみ＋数値欄 の2段。値の文字は出さない。 */
+  .barn2{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;min-width:0}
+  .barn2 .cell{display:grid;gap:2px;min-width:0}
+  .barn2 .cell>span{font-size:12px;color:var(--milk-dim)}
+  .barn2 .rangewrap{min-width:0}
+  .barn2 .rangewrap input[type=range]{flex:1 1 40px;min-width:36px}
+  .barn2 .rangewrap .val{display:none}
   .gpick{position:relative;min-width:0}   /* .pbox は grid。min-width:auto のままだと枠を押し広げる */
   .gpick-t{width:100%;min-width:0;display:flex;align-items:center;gap:8px;padding:5px 8px;
            border:1px solid var(--line-dark);background:#14110e;color:var(--milk);cursor:pointer;text-align:left}
@@ -712,8 +719,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789317907"></script>
-<script src="stage-figure.js?v=1789317907"></script>
-<script src="app.js?v=1789317907"></script>
+<script src="rig-engine.js?v=1789318966"></script>
+<script src="stage-figure.js?v=1789318966"></script>
+<script src="app.js?v=1789318966"></script>
 </body>
 </html>

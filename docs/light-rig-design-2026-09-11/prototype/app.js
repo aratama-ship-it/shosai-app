@@ -2369,10 +2369,22 @@
   const barnLabels = (surface) => (surface === "back" || surface === "house") ? { back: "上", front: "下", left: "下手側", right: "上手側" } : { back: "奥側", front: "手前側", left: "下手側", right: "上手側" };
   const BARN_BULK_LABEL = { back: "奥側・上", front: "手前側・下", left: "下手側", right: "上手側" };
   const numShutter = { min: 10, max: 140, step: 5, to: (v) => v * 100, from: (n) => n / 100, title: "光の輪に内接する正方形を100とした%" };
-  const shutterText = (v) => `${Math.round(v * 100)}%（${v < 0.35 ? "細い" : v < 0.8 ? "小さめ" : v <= 1.001 ? "いっぱい" : "輪の外まで"}）`;
-  const barnText = (v) => (v < 3 ? "開いている" : v >= 98 ? "中心まで" : `${Math.round(v)}%`);
-  const shutterPresetSeg = (cur, onPick) => seg(E.SHUTTER_PRESETS.map((p2) => [p2.id, p2.name]), cur, (id) => { const p2 = E.SHUTTER_PRESETS.find((q) => q.id === id); if (p2) onPick(p2); });
-  const shutterPresetId = (sh) => { const hit = sh && E.SHUTTER_PRESETS.find((p2) => Math.abs(p2.w - sh.w) < 0.01 && Math.abs(p2.h - sh.h) < 0.01); return hit ? hit.id : ""; };
+  const shutterText = (v) => `${Math.round(v * 100)}%`;   // 形容（小さめ／輪の外まで）は出さない。数字だけ（2026-09-14 本人指示に合わせる）
+  /* バーンドアの数値は数字だけ（2026-09-14 本人指示「開いているとかの情報はいらない」）。
+     4本は縦に並べず 2×2 に置く（同指示「縦に2個、横に2個のほうがコンパクト」）。 */
+  const barnText = () => "";
+  const barnGrid = (labels, valueOf, onInput, onChange) => {
+    const g = el("div", "barn2");
+    E.BARN_KEYS.forEach((k) => {
+      const cell = el("div", "cell"); cell.append(el("span", null, labels[k]));
+      cell.append(range(0, 100, 5, valueOf(k), barnText, (v) => onInput(k, v), () => onChange(k)));
+      g.append(cell);
+    });
+    return g;
+  };
+  /* 形の見本は廃止（2026-09-14 本人指摘「形は幅と奥行きで作れる」）。代わりに回転のつまみ。 */
+  const rotText = (v) => (Math.round(v) === 0 ? "まっすぐ" : `${Math.round(v)}°`);
+  const rotOf = (sh) => E.clamp(E.finite(sh && sh.rot, 0), -E.SHUTTER_ROT_MAX, E.SHUTTER_ROT_MAX);
   /* ぼけの刻み。実際に使うのは0〜30までで、それ以上は使い道がない（2026-09-13 本人確認）ので
      つまみの上限を30にし、その幅を10等分した。保存する値は今までどおり0〜100のままなので、
      前に保存したデザインもそのまま読める。 */
@@ -2788,24 +2800,24 @@
         const on = lit.filter((fid) => E.shutterActive(lightOf(fid)));
         const ws = new Set(on.map((fid) => Math.round(lightOf(fid).shutter.w * 100))), hs = new Set(on.map((fid) => Math.round(lightOf(fid).shutter.h * 100)));
         const sameW = ws.size <= 1, sameH = hs.size <= 1;
-        const curId = (sameW && sameH) ? shutterPresetId({ w: [...ws][0] / 100, h: [...hs][0] / 100 }) : "";
-        b.append(field("形", shutterPresetSeg(curId, (p2) => { bulkEach(on, (f, l) => { l.shutter = { ...l.shutter, w: p2.w, h: p2.h }; }); commit(`${on.length}灯のカッターの形をそろえました`); }), true));
         b.append(field(sameW ? "幅" : "幅（バラバラ）", range(E.SHUTTER_MIN, E.SHUTTER_MAX, 0.05, sameW ? [...ws][0] / 100 : 1, shutterText,
           (v) => { bulkEach(on, (f, l) => { l.shutter.w = v; }); draw(); }, () => commit(`${on.length}灯のカッターの幅を変えました`), numShutter), true));
         b.append(field(sameH ? "奥行き・高さ" : "奥行き・高さ（バラバラ）", range(E.SHUTTER_MIN, E.SHUTTER_MAX, 0.05, sameH ? [...hs][0] / 100 : 1, shutterText,
           (v) => { bulkEach(on, (f, l) => { l.shutter.h = v; }); draw(); }, () => commit(`${on.length}灯のカッターの奥行きを変えました`), numShutter), true));
+        const rots = new Set(on.map((fid) => Math.round(rotOf(lightOf(fid).shutter))));
+        const sameR = rots.size <= 1;
+        b.append(field(sameR ? "回転" : "回転（バラバラ）", range(-E.SHUTTER_ROT_MAX, E.SHUTTER_ROT_MAX, 5, sameR ? [...rots][0] : 0, rotText,
+          (v) => { bulkEach(on, (f, l) => { l.shutter.rot = v; }); draw(); }, () => commit(`${on.length}灯のカッターの回転を変えました`)), true));
       }
     }
     {
       const fixed = ids.map(fixtureById).filter((f) => f && !E.isMoving(f) && f.mount.type !== "cyc");
       if (fixed.length) {
         const b = sub(`バーンドア（固定灯${fixed.length}灯）`);
-        E.BARN_KEYS.forEach((k) => {
-          const vals = new Set(fixed.map((f) => Math.round(E.barnOf(f)[k] * 100)));
-          const same = vals.size <= 1, now = same ? [...vals][0] : 0;
-          b.append(field(same ? BARN_BULK_LABEL[k] : `${BARN_BULK_LABEL[k]}（バラバラ）`, range(0, 100, 5, now, barnText,
-            (v) => { fixed.forEach((f) => { f.barn = { ...E.barnOf(f), [k]: v / 100 }; }); draw(); }, () => commit(`${fixed.length}灯のバーンドアを変えました`)), true));
-        });
+        const same = (k) => new Set(fixed.map((f) => Math.round(E.barnOf(f)[k] * 100)));
+        const LB = {}; E.BARN_KEYS.forEach((k) => { LB[k] = same(k).size <= 1 ? BARN_BULK_LABEL[k] : `${BARN_BULK_LABEL[k]}（バラバラ）`; });
+        b.append(barnGrid(LB, (k) => { const v = same(k); return v.size === 1 ? [...v][0] : 0; },
+          (k, v) => { fixed.forEach((f) => { f.barn = { ...E.barnOf(f), [k]: v / 100 }; }); draw(); }, () => commit(`${fixed.length}灯のバーンドアを変えました`)));
         if (fixed.some((f) => E.barnActive(f))) b.append(btn("全部開く", () => { fixed.forEach((f) => { delete f.barn; }); commit(`${fixed.length}灯のバーンドアを開きました`); }, "small quiet"));
       }
     }
@@ -3368,17 +3380,15 @@
         b.append(head);
         if (sh) {
           const AX = frameAxisLabels(l.surface);
-          b.append(field("形", shutterPresetSeg(shutterPresetId(sh), (p2) => { l.shutter = { ...l.shutter, w: p2.w, h: p2.h }; commit(); }), true));
           b.append(field(AX.w, range(E.SHUTTER_MIN, E.SHUTTER_MAX, 0.05, E.clamp(E.finite(sh.w, 1), E.SHUTTER_MIN, E.SHUTTER_MAX), shutterText, (v) => { l.shutter.w = v; draw(); }, () => commit(), numShutter), true));
           b.append(field(AX.h, range(E.SHUTTER_MIN, E.SHUTTER_MAX, 0.05, E.clamp(E.finite(sh.h, 1), E.SHUTTER_MIN, E.SHUTTER_MAX), shutterText, (v) => { l.shutter.h = v; draw(); }, () => commit(), numShutter), true));
+          b.append(field("回転", range(-E.SHUTTER_ROT_MAX, E.SHUTTER_ROT_MAX, 5, rotOf(sh), rotText, (v) => { l.shutter.rot = v; draw(); }, () => commit()), true));
         }
       }
       if (!mover && f.mount.type !== "cyc") {
         const b = box("バーンドア（四方から切る）");
         const bd = E.barnOf(f), LB = barnLabels(l.surface);
-        E.BARN_KEYS.forEach((k) => {
-          b.append(field(LB[k], range(0, 100, 5, Math.round(bd[k] * 100), barnText, (v) => { f.barn = { ...E.barnOf(f), [k]: v / 100 }; draw(); }, () => commit()), true));
-        });
+        b.append(barnGrid(LB, (k) => Math.round(bd[k] * 100), (k, v) => { f.barn = { ...E.barnOf(f), [k]: v / 100 }; draw(); }, () => commit()));
         if (E.barnActive(f)) b.append(btn("全部開く", () => { delete f.barn; commit(`${label(fid)}のバーンドアを開きました`); }, "small quiet"));
       }
 
@@ -3917,7 +3927,7 @@
         lx: "そのシーンのLX cue番号の頭2つ { section, no }",
         lxq: "登録した明かりの控え。番号は section-no-seq、cue はそのときの灯の設定一式",
         barn: "固定灯のバーンドア（仕込み） { back, front, left, right } 各0〜1。0=開いている、1=中心まで閉める。床・空中は back=奥側/front=手前側、奥の壁・客席は back=上/front=下",
-        shutter: "カッター（シーンごと） { on, w, h }。w/h は光の輪に内接する正方形の辺を1とした比（0.1〜1.4）。1.4でその向きは輪の外まで開く",
+        shutter: "カッター（シーンごと） { on, w, h, rot }。w/h は光の輪に内接する正方形の辺を1とした比（0.1〜1.4）。1.4でその向きは輪の外まで開く。rot は回転（度、-90〜90）",
       },
       rig: JSON.parse(JSON.stringify(state.rig)),
       scenes: state.scenes.map((sc) => ({ id: sc.id, name: sc.name, lx: lxOf(sc), lxq: JSON.parse(JSON.stringify(lxList(sc))), lxEditing: lxEditingOf(sc), cue: JSON.parse(JSON.stringify(sc.cue)) })),
