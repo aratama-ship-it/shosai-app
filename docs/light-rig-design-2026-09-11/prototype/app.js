@@ -460,7 +460,9 @@
   /* 動きの中で広がり・強さが変わる灯（levelTo / beamDegTo）は、いまの位相での値で描く。
      位相は位置の往復とまったく同じ式（rig-engine paramPhase）＝Aで始めの値、Bで終わりの値。 */
   const phaseOf = (f, l) => E.paramPhase(l, cue(), f.id, state.play.t);
-  const litFactorOf = (f, l) => (isLit(l) ? curveAt(E.levelAt(l, phaseOf(f, l)) / 100) : 0);
+  /* ストロボは往復（levelAt）とは別に、いまの瞬間だけ削る掛け算として上乗せする（2026-09-13 本人要望）。
+     ムービングだけが持てる（配置パネルで種類を切り替えても、固定灯では箱ごと出さない）。 */
+  const litFactorOf = (f, l) => (isLit(l) ? curveAt(E.levelAt(l, phaseOf(f, l)) / 100) * E.strobeMul(l && l.strobe, state.play.t) : 0);
   // 点ける。強さが0のまま点けても光らないので、そのときは全開に戻す
   function turnOn(fid) { ensureOn(fid); const l = lightOf(fid); if (l && levelOf(l) <= 0) setLight(fid, { level: 100 }); }
   const LEVEL_WORD = (v) => (v <= 0 ? "消灯" : v < 25 ? "かすか" : v < 55 ? "暗め" : v < 85 ? "普通" : "全開");
@@ -2215,6 +2217,35 @@
             (v) => { movingMovers.forEach((fid) => { const l = lightOf(fid); if (l) l.levelTo = v; }); draw(); },
             () => commit(`${movingMovers.length}灯の終点の強さを変えました`)), true));
       }
+      /* ストロボもムービングだけ。まとめて選んだ全灯に同じ点滅を入れる（2026-09-13 本人要望）。 */
+      if (movers.length) {
+        const strobeOns = new Set(movers.map((fid) => (lightOf(fid) || {}).strobe && (lightOf(fid) || {}).strobe.on === true));
+        const allOn = strobeOns.size === 1 && [...strobeOns][0] === true;
+        const setStrobeAll = (patch) => bulkEach(movers, (f, l) => { l.strobe = { ...l.strobe, ...patch }; });
+        const head = el("div", "pboxhead"); head.append(el("p", "kicker", "ストロボ"));
+        head.append(switchBtn(allOn, allOn ? "点滅しています。押すと止めます" : "押すと全灯に時間で繰り返す点滅を上乗せします", () => {
+          setStrobeAll({ on: !allOn, kind: "sharp", hz: 6, duty: 50, depth: 60 });
+          commit(`${movers.length}灯のストロボを${allOn ? "止めました" : "点けました"}`);
+        }));
+        b.append(head);
+        if (allOn) {
+          const kinds = new Set(movers.map((fid) => ((lightOf(fid) || {}).strobe || {}).kind || "sharp"));
+          const sameKind = kinds.size <= 1, curKind = sameKind ? [...kinds][0] : "sharp";
+          b.append(field(sameKind ? "種類" : "種類（バラバラ）", seg([["sharp", "くっきり"], ["soft", "やわらかい"]], curKind, (v) => { setStrobeAll({ kind: v }); commit(`${movers.length}灯のストロボの種類を変えました`); }), true));
+          const hzs = new Set(movers.map((fid) => Math.round(E.clamp(E.finite(((lightOf(fid) || {}).strobe || {}).hz, 6), 0.5, 20) * 2)));
+          const sameHz = hzs.size <= 1, curHz = sameHz ? [...hzs][0] / 2 : 6;
+          b.append(field(sameHz ? "速さ" : "速さ（バラバラ）", range(0.5, 20, 0.5, curHz, (v) => `1秒に${v % 1 === 0 ? v : v.toFixed(1)}回`, (v) => setStrobeAll({ hz: v }), () => commit(`${movers.length}灯のストロボの速さを変えました`)), true));
+          if (curKind === "sharp") {
+            const duties = new Set(movers.map((fid) => Math.round(E.clamp(E.finite(((lightOf(fid) || {}).strobe || {}).duty, 50), 5, 95))));
+            const sameDuty = duties.size <= 1, curDuty = sameDuty ? [...duties][0] : 50;
+            b.append(field(sameDuty ? "点灯の長さ" : "点灯の長さ（バラバラ）", range(5, 95, 5, curDuty, (v) => `${Math.round(v)}%`, (v) => setStrobeAll({ duty: v }), () => commit(`${movers.length}灯の点灯の長さを変えました`)), true));
+          } else {
+            const depths = new Set(movers.map((fid) => Math.round(E.clamp(E.finite(((lightOf(fid) || {}).strobe || {}).depth, 60), 0, 100))));
+            const sameDepth = depths.size <= 1, curDepth = sameDepth ? [...depths][0] : 60;
+            b.append(field(sameDepth ? "沈む深さ" : "沈む深さ（バラバラ）", range(0, 100, 5, curDepth, (v) => `${Math.round(v)}%`, (v) => setStrobeAll({ depth: v }), () => commit(`${movers.length}灯の沈む深さを変えました`)), true));
+          }
+        }
+      }
     }
 
     /* ④ 光の広がり。ムービングはシーンごとの値（light.beamDeg）、固定灯は仕込みの値（fixture.beamDeg）へ入れる。
@@ -2541,6 +2572,31 @@
         const fmtLv = (v) => (v <= 0 ? "0%（消灯）" : `${Math.round(v)}%（${LEVEL_WORD(v)}）`);
         b.append(field(moving ? "始点" : "強さ", range(0, 100, 1, levelOf(l), fmtLv, (v) => { l.level = v; draw(); }, () => commit()), true));
         if (moving) b.append(field("終点", range(0, 100, 1, E.clamp(E.finite(l.levelTo, levelOf(l)), 0, 100), fmtLv, (v) => { l.levelTo = v; draw(); }, () => commit()), true));
+        /* ストロボ（2026-09-13 本人要望）。ムービングだけが持てる。始点・終点の往復に、
+           時間で繰り返す点滅を上乗せする——往復のどの位置でも同じように点滅する。
+           「くっきり」＝矩形波でパパパッと切り替わる。「やわらかい」＝1−cosの滑らかな明滅で
+           フェード寄りになる。速さ(Hz)と、種類ごとの1つのパラメータ（点灯の長さ／沈む深さ）を持つ。 */
+        if (mover) {
+          const st = l.strobe || {};
+          const on = st.on === true;
+          const head = el("div", "pboxhead"); head.append(el("p", "kicker", "ストロボ"));
+          head.append(switchBtn(on, on ? "点滅しています。押すと止めます" : "押すと時間で繰り返す点滅を上乗せします", () => {
+            setLight(fid, { strobe: { ...st, on: !on, kind: st.kind || "sharp", hz: E.finite(st.hz, 6), duty: E.finite(st.duty, 50), depth: E.finite(st.depth, 60) } });
+            commit(on ? "ストロボを止めました" : "ストロボを点けました");
+          }));
+          b.append(head);
+          if (on) {
+            const setStrobe = (patch) => { const l2 = lightOf(fid); l2.strobe = { ...l2.strobe, ...patch }; };
+            b.append(field("種類", seg([["sharp", "くっきり"], ["soft", "やわらかい"]], st.kind || "sharp", (v) => { setStrobe({ kind: v }); commit(); }), true));
+            const hz = E.clamp(E.finite(st.hz, 6), 0.5, 20);
+            b.append(field("速さ", range(0.5, 20, 0.5, hz, (v) => `1秒に${v % 1 === 0 ? v : v.toFixed(1)}回`, (v) => { setStrobe({ hz: v }); draw(); }, () => commit()), true));
+            if ((st.kind || "sharp") === "sharp") {
+              b.append(field("点灯の長さ", range(5, 95, 5, E.clamp(E.finite(st.duty, 50), 5, 95), (v) => `${Math.round(v)}%（${v < 30 ? "短く鋭い" : v > 70 ? "長め" : "半々"}）`, (v) => { setStrobe({ duty: v }); draw(); }, () => commit()), true));
+            } else {
+              b.append(field("沈む深さ", range(0, 100, 5, E.clamp(E.finite(st.depth, 60), 0, 100), (v) => `${Math.round(v)}%（${v < 30 ? "うっすら" : v > 80 ? "ほぼ消える" : "はっきり"}）`, (v) => { setStrobe({ depth: v }); draw(); }, () => commit()), true));
+            }
+          }
+        }
       }
 
       /* ④ 光の広がり。ムービングはシーンごとにズームできる（実機は7〜50°程度）。
