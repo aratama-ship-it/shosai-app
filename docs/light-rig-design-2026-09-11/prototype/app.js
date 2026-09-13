@@ -47,26 +47,25 @@
   const borderSettingRaw = (t) => { const b = borderSetting(t); return { bottomM: b.bottom, dropM: b.drop }; };
 
   /* 袖幕。客席と平行に吊る平らな幕を、舞台の外側から内側へ legU ぶん入り込ませる。
-     一文字幕と同じ奥行き（バトンの手前）に左右1対ずつ。床から舞台の上端まで。 */
+     いちばん手前（舞台の前端）に左右1対だけ置く。床から舞台の上端まで。
+
+     2026-09-13 本人指摘「2枚目の袖幕が宙に浮いて内側に入ってくる」への対応で1対にした。
+     当初はバトンごとに1対ずつ出していたが、3Dでは
+       ・奥の幕ほど床の線が画面で上がるので、前の床から浮いて見える
+       ・奥ほど遠近で幅が縮むので、同じ位置に吊っても内側へ食い込んで見える
+     という2つが同時に起きる。実際の舞台では、奥の袖幕は手前の袖幕の陰に入って客席からは
+     見えない（そう見えるように奥ほど外へずらして吊る）ので、手前の1対だけを描けば足りる。 */
   function legPieces() {
     const d = state.dims, c = state.curtains;
     const inU = E.clamp(E.finite(c.legU, 0.08), 0, 0.35);
     const outU = 0.12;                        // 舞台の外側へどれだけはみ出させるか（袖の奥を隠すぶん）
-    const ahead = E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.3);
-    const depths = state.rig.trusses.map((t) => E.clamp(E.finite(t.v, 0.5) + ahead, 0, 1));
-    if (state.curtains.pros !== false) depths.push(1);
-    const out = [];
-    depths.forEach((v, i) => {
-      const w = inU + outU;                   // 幕の幅（割合）
-      const last = i === depths.length - 1;
-      [-1, 1].forEach((side) => {
-        const center = side < 0 ? (inU - outU) / 2 : 1 - (inU - outU) / 2;
-        out.push({ id: `leg-${i}-${side}`, kind: "curtain", curtainKind: "border",
-          name: last ? (side < 0 ? "下手袖幕" : "上手袖幕") : "",
-          u: center, v, w, hM: d.H, liftM: 0, open: 0, color: "#000000", facing: 0 });
-      });
-    });
-    return out;
+    const w = inU + outU;
+    return [-1, 1].map((side) => ({
+      id: `leg-${side}`, kind: "curtain", curtainKind: "border",
+      name: side < 0 ? "下手袖幕" : "上手袖幕",
+      u: side < 0 ? (inU - outU) / 2 : 1 - (inU - outU) / 2,
+      v: 1, w, hM: d.H, liftM: 0, open: 0, color: "#000000", facing: 0,
+    }));
   }
 
   function borderPieces() {
