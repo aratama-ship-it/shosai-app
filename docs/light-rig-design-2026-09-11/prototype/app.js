@@ -2770,7 +2770,9 @@
     /* 新規キュー。いま画面に出ている明かりをそのまま持ち上げて次の番号のキューにし、
        そのままそのキューの編集に入る（2026-09-13 本人要望「新規キューを作ってデザインを始める」）。
        前のキューからの続きを作ることが多いので、白紙ではなく<b>いまの明かりから</b>始める。 */
-    b.append(btn(`＋ 新規 LX cue ${lxNo(sc, lxNextSeq(sc))}`, () => {
+    /* 半分幅では「＋ 新規 LX cue 1-1-6」が2行になり、一覧の見える本数を1本食う。
+       パネル名が LX cue なので番号だけで通じる（説明は title に入れてある）。 */
+    b.append(btn(`＋ 新規 ${lxNo(sc, lxNextSeq(sc))}`, () => {
       lxGoto(si);
       const s2 = lxScene(); const seq = lxNextSeq(s2); const id = uid("q");
       s2.lxq = lxList(s2).concat([{ id, seq, name: "", at: new Date().toISOString(), cue: JSON.parse(cueJson(s2.cue)) }]);
