@@ -248,6 +248,10 @@
     slGrad: { from: "#7ab8ff", to: "#ff7a5c" },   // 1灯ずつ色をずらす（グラデーション）の2色（2026-09-12 本人要望）
     /* 「動きの型」欄はアコーディオンで畳んでおく（2026-09-13 本人要望）。
        組の動きはサーチライトと同じ「複数ムービングの動かし方」の欄へ統合した。 */
+    /* LXQパネル（左列の上）。現在のシーンと連動＝いま編集しているシーンのLXQを出す。
+       切ると見ているシーンを固定できる（2026-09-13 本人要望）。 */
+    lxLink: true,
+    lxScene: 0,
     slOpen: { search: false, group: false },
     exporting: false,
   };
@@ -405,7 +409,7 @@
     set(secF.parentElement, "width", midW); set(secF, "height", secH);
     set(secL.parentElement, "width", sideW); set(secL, "height", secH);
     // 上段の左右パネルは、真下の側面図と同じ幅にそろえる（6枠がきれいに並ぶ）
-    [$("panel-fixtures"), $("panel-insp")].forEach((p) => p && set(p, "width", sideW));
+    [document.querySelector(".leftcol"), $("panel-insp")].forEach((p) => p && set(p, "width", sideW));
   }
   const planProj = () => E.makePlanProjector(state.dims, planBox());
   // キャンバスの内部解像度を表示サイズへ合わせる（拡大してもぼやけない）
@@ -2641,46 +2645,76 @@
   const lxNextSeq = (sc) => lxList(sc).reduce((mx, q) => Math.max(mx, E.finite(q.seq, 0)), 0) + 1;
   const cueJson = (c) => JSON.stringify({ lights: (c && c.lights) || {}, groups: (c && c.groups) || [] });
 
+  /* LXQパネルが見ているシーン。連動していれば「いま編集しているシーン」、
+     切ってあれば固定した番号（2026-09-13 本人要望）。 */
+  const lxSceneIndex = () => (state.lxLink ? state.sceneIndex : E.clamp(Math.round(E.finite(state.lxScene, 0)), 0, state.scenes.length - 1));
+  const lxScene = () => state.scenes[lxSceneIndex()];
+  /* パネルから登録・呼び出しをしたら、そのシーンを画面にも出す——
+     何をしたのか見えないまま値だけ変わるのを避ける。連動しているときは何も起きない。 */
+  const lxGoto = (i) => { if (state.sceneIndex !== i) { state.sceneIndex = i; state.sel.clear(); stop(); home(); } };
+
   function renderLxq() {
     const host = $("lxqbox"); if (!host) return;
-    host.innerHTML = ""; host.hidden = state.mode !== "move";
-    if (host.hidden) return;
-    const sc = scene(), x = lxOf(sc), list = lxList(sc), nowJson = cueJson(sc.cue);
-    const b = el("div", "pbox");
-    b.append(el("p", "kicker", "LXキュー"));
+    host.innerHTML = "";
+    const link = $("lxlink");
+    if (link) {
+      link.setAttribute("aria-pressed", String(Boolean(state.lxLink)));
+      link.querySelector("b").innerHTML = `<span class="swlab">現在のシーンと連動</span>${state.lxLink ? "オン" : "オフ"}`;
+      link.title = state.lxLink ? "いま編集しているシーンのLXQを出しています。押すと、いま見ているシーンに固定します" : "見るシーンを固定しています。押すと、いま編集しているシーンに合わせて切り替わります";
+    }
+    const si = lxSceneIndex(), sc = state.scenes[si], x = lxOf(sc), list = lxList(sc), nowJson = cueJson(sc.cue);
+    /* 上は動かない部分（どのシーンか・番号・登録）、下だけ巻く。
+       いちばん押す「登録」が一覧に押し出されないようにする（2026-09-13 実測で隠れた）。 */
+    const b = el("div", "lxtop");
+    /* どのシーンのLXQを出しているか。連動なら読むだけ、切ってあれば選べる。 */
+    if (state.lxLink) {
+      /* 連動しているときのシーン名は図の上の帯が出しているので、ここでは繰り返さない
+         （左列は縦が足りず、1行でも一覧の見える本数が変わる）。 */
+    } else {
+      const selEl = document.createElement("select");
+      state.scenes.forEach((s2, i) => { const o = document.createElement("option"); o.value = i; o.textContent = `シーン ${i + 1}「${s2.name}」`; o.selected = i === si; selEl.append(o); });
+      selEl.onchange = () => { state.lxScene = Number(selEl.value); renderAll(); };
+      b.append(field("見るシーン", selEl, true));
+    }
     /* 番号の頭2つ。シーンに紐づくので、同じシーンで登録したものは全部この2つを共有する。 */
     const numIn = (val, on) => { const i = document.createElement("input"); i.type = "number"; i.className = "numin"; i.min = 1; i.max = 99; i.step = 1; i.value = val;
       i.onchange = () => { const v = E.clamp(Math.round(E.finite(i.value, val)), 1, 99); i.value = v; on(v); }; return i; };
-    const setLx = (patch) => { const s2 = scene(); s2.lx = { ...lxOf(s2), ...patch }; commit(); };
-    b.append(field("セクション", numIn(x.section, (v) => setLx({ section: v }))));
-    b.append(field("シーン", numIn(x.no, (v) => setLx({ no: v }))));
-    b.append(btn(`いまの明かりを LXQ ${lxNo(sc, lxNextSeq(sc))} として登録`, () => {
-      const s2 = scene(); const seq = lxNextSeq(s2);
+    const setLx = (patch) => { const s2 = lxScene(); s2.lx = { ...lxOf(s2), ...patch }; commit(); };
+    // 番号の頭2つは横1行にまとめる（縦を使わない）
+    const nums = el("div", "lxnums");
+    nums.append(el("span", null, "セクション"), numIn(x.section, (v) => setLx({ section: v })),
+      el("span", null, "シーン"), numIn(x.no, (v) => setLx({ no: v })));
+    b.append(nums);
+    b.append(btn(`LXQ ${lxNo(sc, lxNextSeq(sc))} として登録`, () => {
+      lxGoto(si);
+      const s2 = lxScene(); const seq = lxNextSeq(s2);
       s2.lxq = lxList(s2).concat([{ id: uid("q"), seq, name: "", at: new Date().toISOString(), cue: JSON.parse(cueJson(s2.cue)) }]);
       commit(`LXQ ${lxNo(s2, seq)} として登録しました`);
     }, "primary"));
-    if (!list.length) { b.append(el("p", "lxnone", "まだ登録がありません。明かりを作って上のボタンを押すと、このシーンの1本目として登録されます。")); host.append(b); return; }
+    host.append(b);
+    const li = el("div", "lxlist"); host.append(li);
+    if (!list.length) { li.append(el("p", "lxnone", "まだ登録がありません。いまの明かりを上のボタンで登録できます。")); return; }
     [...list].sort((a2, b2) => E.finite(a2.seq, 0) - E.finite(b2.seq, 0)).forEach((q) => {
       const row = el("div", "lxrow" + (cueJson(q.cue) === nowJson ? " cur" : ""));
       const no = el("span", "qno"); no.textContent = lxNo(sc, E.finite(q.seq, 1));
       no.title = q.at ? `登録 ${String(q.at).slice(0, 16).replace("T", " ")}` : "";
       row.append(no);
       const nm = document.createElement("input"); nm.type = "text"; nm.value = q.name || ""; nm.placeholder = "名前（任意）";
-      nm.onchange = () => { const s2 = scene(); const t = lxList(s2).find((z) => z.id === q.id); if (t) { t.name = nm.value.slice(0, 24); commit(); } };
+      nm.onchange = () => { const s2 = lxScene(); const t = lxList(s2).find((z) => z.id === q.id); if (t) { t.name = nm.value.slice(0, 24); commit(); } };
       row.append(nm);
       row.append(btn("呼び出す", () => {
-        const s2 = scene(); const t = lxList(s2).find((z) => z.id === q.id); if (!t) return;
+        lxGoto(si);
+        const s2 = lxScene(); const t = lxList(s2).find((z) => z.id === q.id); if (!t) return;
         s2.cue = JSON.parse(cueJson(t.cue));
         state.sel.clear(); stop(); home();
         commit(`LXQ ${lxNo(s2, E.finite(t.seq, 1))} を呼び出しました`);
       }, "small"));
       row.append(btn("✕", () => {
         dialog(`<p class="ptitle">LXQ ${lxNo(sc, E.finite(q.seq, 1))} を消しますか？</p><p class="hint">登録した明かりの控えだけを消します。いま作業中の明かりはそのままです。</p>`,
-          [["やめる", null], ["消す", () => { const s2 = scene(); s2.lxq = lxList(s2).filter((z) => z.id !== q.id); commit(`LXQ ${lxNo(s2, E.finite(q.seq, 1))} を消しました`); }, "primary"]]);
+          [["やめる", null], ["消す", () => { const s2 = lxScene(); s2.lxq = lxList(s2).filter((z) => z.id !== q.id); commit(`LXQ ${lxNo(s2, E.finite(q.seq, 1))} を消しました`); }, "primary"]]);
       }, "small quiet"));
-      b.append(row);
+      li.append(row);
     });
-    host.append(b);
   }
 
   function renderInspector() {
@@ -3061,6 +3095,8 @@
   /* ---------- ヘッダ・空状態・書き出し ---------- */
   $("mode-place").onclick = () => { state.mode = "place"; stop(); renderAll(); };
   $("mode-move").onclick = () => { state.mode = "move"; state.tool = null; renderAll(); };
+  /* 連動を切った瞬間は「いま見ているシーン」に固定する（見えているものが動かない）。 */
+  if ($("lxlink")) $("lxlink").onclick = () => { if (state.lxLink) { state.lxScene = state.sceneIndex; state.lxLink = false; } else { state.lxLink = true; } renderAll(); };
   $("scene-prev").onclick = () => { state.sceneIndex = (state.sceneIndex + state.scenes.length - 1) % state.scenes.length; home(); renderAll(); };
   $("scene-next").onclick = () => { state.sceneIndex = (state.sceneIndex + 1) % state.scenes.length; home(); renderAll(); };
   $("t-home").onclick = home; $("t-play").onclick = play; $("t-stop").onclick = () => stop();

@@ -144,7 +144,22 @@
   .sec.side.l{grid-column:1} .sec.front{grid-column:2}
   /* 上段の左右＝灯体パネル／設定パネル。幅は下の側面図とそろえる（app.jsが設定） */
   .panel{grid-row:1;min-width:0;min-height:0;overflow:hidden;border:1px solid var(--line-dark);background:rgba(25,21,18,.45);padding:8px;display:flex;flex-direction:column;gap:7px;align-self:stretch}
-  #panel-fixtures{grid-column:1}
+  /* 左列＝LXQ（上）＋灯体（下）。幅は syncFigureSizes が .leftcol へ入れる（真下の側面図と同じ幅）。 */
+  .leftcol{grid-column:1;grid-row:1;display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0;align-self:stretch}
+  .leftcol>.panel{grid-column:auto;grid-row:auto;width:auto;align-self:auto;min-width:0}
+  /* 中身の高さぶん取り、多すぎるときだけ中で巻く。.panel は min-height:0 なので
+     flex-shrink を残すと、下の灯体パネルに押されて見出しだけに潰れる（2026-09-13 実害）。 */
+  #panel-lxq{flex:0 0 auto;max-height:52%;gap:5px}
+  #panel-fixtures{flex:1 1 auto;min-height:0}
+  .lxhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:5px 6px}
+  .lxhead .ptitle{margin:0}
+  .lxhead .ontoggle{min-height:28px;padding:3px 9px 3px 7px;font-size:13px}
+  /* 上（シーン・番号・登録）は動かさず、一覧だけ巻く。 */
+  .lxbody{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;gap:5px;overflow:hidden}
+  .lxtop{flex:0 0 auto;min-width:0;display:flex;flex-direction:column;gap:5px}
+  .lxlist{flex:1;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden}
+  .lxnums{display:flex;align-items:center;gap:5px;flex-wrap:wrap;color:var(--milk-dim);font-size:11.5px}
+  .lxnums .numin{width:58px;min-height:26px;border:1px solid var(--line-dark);background:var(--desk-2);color:var(--milk);font:13px var(--sans);padding:2px 6px;text-align:right;font-variant-numeric:tabular-nums}
   /* 照明デザインのパネルは上下2段を貫通させて高く使う（2026-09-13 本人要望）。
      右下にあった「上手を見る」は側面図のタブに畳んだので、この列は丸ごと空いている。 */
   .panel.insp{grid-column:3;grid-row:1/-1}
@@ -324,8 +339,7 @@
   /* LXキュー。#lxqbox は .inspbody の外（パネル直下）なので、幅の面倒を自分で見る。
      .pbox は display:grid なので、中身が縮まないとパネルごと広がる（HANDOFFの落とし穴）。 */
   #lxqbox{min-width:0}
-  #lxqbox .pbox{min-width:0}
-  #lxqbox .pbox>*{min-width:0}
+  #lxqbox>*{min-width:0}
   #lxqbox .btn{white-space:normal;line-height:1.3}
   #lxqbox .field>.numin{width:84px;justify-self:start;min-height:26px;border:1px solid var(--line-dark);background:var(--desk-2);color:var(--milk);font:13px var(--sans);padding:2px 6px;text-align:right;font-variant-numeric:tabular-nums}
   /* LXキューの一覧。1行＝番号・名前・呼び出す・消す（2026-09-13 本人要望）。 */
@@ -490,6 +504,16 @@
         <!-- 凸の形: 上＝平面図（真上から）、下段＝下手｜客席から（正面）｜上手。
              下段は3つとも縦軸が高さなので、高さの目盛りが横一直線にそろう。 -->
         <div class="figgrid">
+          <!-- 左列は上下2段（2026-09-13 本人要望）。上＝LXQ、下＝灯体の一覧。
+               LXQは照明デザインの中ではなく独立したパネルにする。 -->
+          <div class="leftcol">
+          <section class="panel" id="panel-lxq">
+            <div class="lxhead">
+              <p class="ptitle">LXQ</p>
+              <button type="button" class="ontoggle" id="lxlink" aria-pressed="true"><span class="sw"></span><b><span class="swlab">現在のシーンと連動</span>オン</b></button>
+            </div>
+            <div class="lxbody" id="lxqbox"></div>
+          </section>
           <!-- 上段左＝灯体の一覧（下手を見る図の真上）。2026-09-11 本人要望で左列から移動 -->
           <section class="panel" id="panel-fixtures">
             <!-- 置く操作は灯体の一覧の上（2026-09-13 本人要望で右パネルから移動）。
@@ -515,6 +539,7 @@
             <p class="hint" id="sel-count"></p>
             <div class="list" id="list"></div>
           </section>
+          </div>
           <div class="planwrap">
             <div class="viewhead">
               <span class="viewtitle">平面図（真上から）</span>
@@ -542,9 +567,6 @@
                 <button type="button" class="ontoggle" id="lighttoggle" hidden aria-pressed="false"><span class="sw"></span><b>オフ</b></button>
               </div>
             </div>
-            <!-- LXキュー（本番で読み上げる番号）。いまの明かり一式を「セクション-シーン-連番」で登録する。
-                 2026-09-13 本人要望。中身は app.js の renderLxq が作る。 -->
-            <div id="lxqbox"></div>
             <div id="selacts">
               <p class="ptitle">選んだ灯体</p>
               <div class="tsbtns">
@@ -614,8 +636,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789306005"></script>
-<script src="stage-figure.js?v=1789306005"></script>
-<script src="app.js?v=1789306005"></script>
+<script src="rig-engine.js?v=1789306733"></script>
+<script src="stage-figure.js?v=1789306733"></script>
+<script src="app.js?v=1789306733"></script>
 </body>
 </html>
