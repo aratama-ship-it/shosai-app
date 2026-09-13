@@ -33,17 +33,27 @@
      仕込んだバトンから自動で作るので、データには持たない（バトンを足せば一文字も増える）。
      2026-09-13 本人要望で追加。既定は出さない——出すと灯体が隠れて設計しにくいため、
      「客席から見えていないか」を確かめたいときだけ出す。 */
-  const BORDER_DROP_M = 1.4;          // 布の丈（垂れ下がる長さ）
-  const BORDER_AHEAD_V = 0.04;        // バトンのどれだけ手前に吊るか（奥行きの割合）
   function borderPieces() {
     if (!showOn("border")) return [];
-    const d = state.dims;
-    return state.rig.trusses.map((t, i) => ({
+    const d = state.dims, c = state.curtains;
+    const drop = E.clamp(E.finite(c.borderDrop, 1.4), 0.3, 4);
+    const ahead = E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.3);
+    const list = state.rig.trusses.map((t, i) => ({
       id: `border-${t.id}`, kind: "curtain", name: i === 0 ? "一文字幕" : "", curtainKind: "border",
-      u: 0.5, v: E.clamp(E.finite(t.v, 0.5) + BORDER_AHEAD_V, 0, 1), w: 1.02,
-      hM: BORDER_DROP_M, liftM: Math.max(0, E.finite(t.h, 6) - BORDER_DROP_M),
+      u: 0.5, v: E.clamp(E.finite(t.v, 0.5) + ahead, 0, 1), w: 1.02,
+      hM: drop, liftM: Math.max(0, E.finite(t.h, 6) - drop),
       open: 0, color: "#000000", facing: 0,
     }));
+    /* 前一文字＝いちばん客席側の幕（プロセニアムの上辺）。客席から見える開口の高さを決めるのは
+       これで、ここより上は客席からは見えない。舞台の上端まで届く布なので丈は H - 開口の高さ。
+       2026-09-13 本人要望「一番客席側の膜も表現したい／光源が見えない状況を作りたい」。 */
+    if (c.pros !== false) {
+      const h0 = E.clamp(E.finite(c.prosH, 6.2), 1, d.H);
+      list.push({ id: "border-pros", kind: "curtain", name: "前一文字", curtainKind: "border",
+        u: 0.5, v: 1, w: 1.02, hM: Math.max(0.2, d.H - h0), liftM: h0,
+        open: 0, color: "#000000", facing: 0, solid: true });
+    }
+    return list;
   }
   const state = {
     mode: "place",                     // "place" | "move"
@@ -150,6 +160,15 @@
     dirty: false, history: [], future: [],
     nextNo: 1, seq: 1,
     designName: "",                    // いま編集している照明デザインの名前（保存で付ける）
+    /* 幕の寸法（2026-09-13 本人要望で調整できるようにした）。
+       客席から光源（灯体）が見えないかを確かめるための値なので、舞台ごとに変わる＝
+       rig と同じショー共通の持ち物として保存・Undoの対象にする。
+         borderDrop  一文字幕の丈（m）。バトンの下端からどれだけ垂らすか
+         borderAhead 一文字幕をバトンのどれだけ手前に吊るか（奥行きの割合）
+         pros        前一文字（いちばん客席側の幕）を出すか
+         prosH       その下端＝客席から見える開口の高さ（m）。これより上は客席から見えない
+         legU        袖幕を両端からどれだけ内側へ入れるか（左右の割合） */
+    curtains: { borderDrop: 1.4, borderAhead: 0.04, pros: true, prosH: 6.2, legU: 0.08 },
     /* 作った色。ショー全体で共通なので、どの灯からもワンタッチで使える（2026-09-11 本人要望）。
        配置と同じくショー共通の持ち物なので、rig と一緒に保存・Undoの対象にする。 */
     palette: [],
@@ -210,7 +229,7 @@
   const uid = (p) => `${p}${state.seq++}`;
 
   /* ---------- 履歴（モーダル内Undo） ---------- */
-  const snapshot = () => JSON.stringify({ rig: state.rig, scenes: state.scenes, palette: state.palette, levelCurve: state.levelCurve });
+  const snapshot = () => JSON.stringify({ rig: state.rig, scenes: state.scenes, palette: state.palette, levelCurve: state.levelCurve, curtains: state.curtains });
   /* いま画面に出ている状態（＝最後に commit した時点）の控え。
      履歴へ積みたいのは「変更<b>前</b>」の状態だが、commit は変更が済んだ後に呼ばれるので、
      その時点から変更前を作り直せない。そこで直前の状態をここに1つ持っておく。
@@ -231,6 +250,7 @@
     state.rig = o.rig; state.scenes = o.scenes; if (o.palette) state.palette = o.palette;
     // 強さの効き方。目盛りの数が合うものだけ受け取る（古い記録には無い＝そのときはリニアのまま）
     if (Array.isArray(o.levelCurve) && o.levelCurve.length === LEVEL_CURVE_POINTS) state.levelCurve = o.levelCurve.slice();
+    if (o.curtains) state.curtains = { ...state.curtains, ...o.curtains };
     state.sel = new Set([...state.sel].filter(fixtureById));
     if (state.selTruss && !E.trussById(state.rig, state.selTruss)) state.selTruss = null;
     state.dirty = true;
@@ -766,7 +786,11 @@
       // stage-machinery.js側も既定を黒へ修正済み）。立面での塗りの濃さは
       // 本体側で決めていない試作独自の値——0.55だと後ろの壁いっぱいを覆って灯体の光と競合したので、
       // 「下敷き」らしく控えめな0.3へ落とした（2026-09-13 本人指摘「色が強い」）。
-      ctx.fillStyle = hexA(pc.color || "#000000", 0.3);
+      /* 濃さ。前幕・ホリゾントは「下敷き」なので薄く（0.3）。一文字幕と袖幕は<b>隠すための布</b>なので、
+         隠れているかどうかが読めるよう濃くする。いちばん客席側の前一文字は実際の視界を切るので最も濃い
+         （2026-09-13 本人要望「光源が見えない状況を作りたい」）。 */
+      const solidity = pc.solid ? 0.88 : (pc.curtainKind === "border" || pc.curtainKind === "leg") ? 0.66 : 0.3;
+      ctx.fillStyle = hexA(pc.color || "#000000", solidity);
       ctx.beginPath(); ctx.moveTo(fl.X, fl.Y); ctx.lineTo(fr.X, fr.Y); ctx.lineTo(tr.X, tr.Y); ctx.lineTo(tl.X, tl.Y); ctx.closePath();
       ctx.fill(); ctx.strokeStyle = "rgba(240,231,214,0.22)"; ctx.lineWidth = 1; ctx.stroke();
     });
@@ -1468,6 +1492,29 @@
      動きモードでは置くことがないので帯ごと隠し、そのぶん図を大きくする。 */
   // 表記は本体の照明パネルに合わせる（吊り／SS／転がし・吊るのはバトン）。2026-09-11 本人指摘
   const PLACE_TOOLS = [["truss", "バトンを渡す"], ["fixture", "吊り（バトンから真下へ）"], ["front", "前明かり（客席の上から顔へ）"], ["side", "SS（袖から横切って）"], ["floor", "転がし（床置きから体へ）"]];
+  /* 幕の調整（2026-09-13 本人要望）。客席から光源が見えない状態を作れるように、
+     開口の高さ・一文字幕の丈・袖幕の入り込みを数値で決める。配置タブにだけ出す。 */
+  function renderCurtainBox(host) {
+    if (!host) return;
+    const c = state.curtains, d = state.dims;
+    host = (() => { const b = el("div", "pbox"); b.append(el("p", "kicker", "幕（客席から灯体を隠す）")); host.append(b); return b; })();
+    const legs = () => piecesOf().filter((pc) => pc.curtainKind === "leg");
+    host.append(field("前一文字", seg([["on", "出す"], ["off", "出さない"]], c.pros === false ? "off" : "on", (v) => { c.pros = v === "on"; commit(); }), true));
+    if (c.pros !== false) {
+      host.append(field("開口の高さ", range(1, d.H, 0.1, E.clamp(E.finite(c.prosH, 6.2), 1, d.H), (v) => `${v.toFixed(1)}m（これより上は客席から見えない）`,
+        (v) => { c.prosH = v; draw(); }, () => commit()), true));
+    }
+    host.append(field("一文字幕の丈", range(0.3, 4, 0.1, E.clamp(E.finite(c.borderDrop, 1.4), 0.3, 4), (v) => `${v.toFixed(1)}m`,
+      (v) => { c.borderDrop = v; draw(); }, () => commit()), true));
+    host.append(field("バトンの手前へ", range(0, 0.2, 0.01, E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.2), (v) => `${(v * d.D).toFixed(1)}m`,
+      (v) => { c.borderAhead = v; draw(); }, () => commit()), true));
+    if (legs().length) {
+      host.append(field("袖幕の入り", range(0, 0.25, 0.01, E.clamp(E.finite(c.legU, 0.08), 0, 0.25), (v) => `両端から${(v * d.W).toFixed(1)}m`,
+        (v) => { c.legU = v; legs().forEach((pc) => { pc.u = pc.u < 0.5 ? v : 1 - v; }); draw(); }, () => commit()), true));
+    }
+    host.append(el("p", "note", "一文字幕は「図に出すもの」の〈一文字幕〉で出し入れします。室内灯を消すと合わせると、客席から灯体が見えていないかを確かめられます。"));
+  }
+
   function renderToolStrip() {
     const place = $("placebox"), sel = $("selacts"); if (!place || !sel) return;
     place.hidden = sel.hidden = state.mode !== "place";
@@ -1865,6 +1912,8 @@
         if (!canSpread()) host.append(el("p", "note", "「等間隔に並べる」は同じバトンの3灯以上を選ぶと使えます。"));
         host.append(el("p", "note", "「反対側へコピー」は配置（取り付け位置）だけを下手⇄上手で左右対称に写します（吊り・転がしは左右反転、SSは上手／下手を入れ替え）。オン・オフや動きは「照明デザイン」タブで設定してください。"));
       }
+      // 幕の寸法は選んだものに依らずいつも出す（ショー共通の値なので）
+      renderCurtainBox(host);
       return;
     }
     // ---- 動きモード ----
@@ -2416,6 +2465,7 @@
       scenes: state.scenes.map((sc) => ({ id: sc.id, name: sc.name, cue: JSON.parse(JSON.stringify(sc.cue)) })),
       palette: [...state.palette],
       levelCurve: [...state.levelCurve],
+      curtains: { ...state.curtains },
     };
   }
   /* 取り込み。場面の演者・セットは<b>いまのもの</b>を残し、灯の設定だけ差し替える
@@ -2433,6 +2483,7 @@
     state.rig = o.rig;
     if (Array.isArray(o.palette)) state.palette = [...o.palette];
     if (Array.isArray(o.levelCurve) && o.levelCurve.length === LEVEL_CURVE_POINTS) state.levelCurve = [...o.levelCurve];
+    if (o.curtains) state.curtains = { ...state.curtains, ...o.curtains };
     // 番号の続きをそろえる（読み込んだ灯と番号がぶつからないように）
     state.nextNo = state.rig.fixtures.reduce((mx, f) => Math.max(mx, E.finite(f.no, 0)), 0) + 1;
     state.sceneIndex = Math.min(state.sceneIndex, state.scenes.length - 1);
