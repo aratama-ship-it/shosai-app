@@ -716,13 +716,17 @@
     const litSpots = [];   // 作業灯を消す（ブラックアウト）用。光の当たっている場所だけ集める
     drawCycWashes(pctx, P, state.dims, litSpots);   // 壁の色。演者・セットより先に塗る
     drawPiecesPlan(pctx, P, B);   // 舞台スケッチの配置。光より先に描いて下敷きにする
-    // トラス
+    /* トラス。名前は<b>灯体の印より後に</b>まとめて書く（下の planLabels）——
+       印は下で描くので、ここで書くと文字の上に印が乗って読めなくなる（2026-09-13 本人指摘）。 */
+    const planLabels = [];
     state.rig.trusses.forEach((t) => {
       const Y = B.y + t.v * B.h; const sel = state.selTruss === t.id && state.mode === "place";
       pctx.strokeStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; pctx.lineWidth = sel ? 6 : 4;
       pctx.beginPath(); pctx.moveTo(B.x - 24, Y); pctx.lineTo(B.x + B.w + 24, Y); pctx.stroke();
-      pctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.9)"; pctx.font = "18px sans-serif";
-      pctx.fillText(`${t.label || "バトン"}　奥から${E.trussRow(state.rig, t.id)}列目・奥行き${(t.v * state.dims.D).toFixed(1)}m・高さ約${t.h.toFixed(1)}m${t.tentative ? "（仮の高さ）" : ""}`, B.x - 24, Y - 26);
+      /* 印の上端（ムービングの輪で Y-23）より上へ逃がす。舞台の外へはみ出す時だけ内側へ寄せる。
+         袖にいるSSの印（B.x-44）を板で隠さないよう、書き出しは舞台の中から。 */
+      planLabels.push({ text: `${t.label || "バトン"}　奥から${E.trussRow(state.rig, t.id)}列目・奥行き${(t.v * state.dims.D).toFixed(1)}m・高さ約${t.h.toFixed(1)}m${t.tentative ? "（仮の高さ）" : ""}`,
+        x: B.x + 6, y: Math.max(B.y + 2, Y - 52), color: sel ? "#d3ac59" : "rgba(214,182,110,0.95)" });
     });
     // 予告（ゴースト）
     const hv = state.hover;
@@ -732,7 +736,7 @@
       const gv = snapV(E.clamp((hv.Y - B.y) / B.h, 0, 1)); const Y = B.y + gv * B.h;
       pctx.strokeStyle = "rgba(211,172,89,0.45)"; pctx.setLineDash([12, 8]); pctx.lineWidth = 4;
       pctx.beginPath(); pctx.moveTo(B.x - 24, Y); pctx.lineTo(B.x + B.w + 24, Y); pctx.stroke(); pctx.setLineDash([]);
-      pctx.fillStyle = "rgba(240,231,214,0.8)"; pctx.font = "18px sans-serif"; pctx.fillText(`ここにバトンを渡す（クリック）　奥行き${(gv * state.dims.D).toFixed(1)}m`, B.x + B.w / 2 - 160, Y + 10);
+      planLabels.push({ text: `ここにバトンを渡す（クリック）　奥行き${(gv * state.dims.D).toFixed(1)}m`, x: B.x + B.w / 2 - 160, y: Math.max(B.y + 2, Y - 52), color: "rgba(240,231,214,0.9)" });
     }
     if (state.tool === "fixture" && hv && hv.canvas === "plan") {
       const t = E.trussById(state.rig, state.selTruss);
@@ -793,6 +797,8 @@
       const Y = isFront(f) ? B.y + B.h + FRONT_DY : p.Y;     // 前明かりは客席帯に並べる（実距離は数値で）
       if (showOn("fixtures")) drawFixtureMark(pctx, X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
     });
+    // バトンの名前と予告（印の上に重ねて、暗い板の上に書く）
+    planLabels.forEach((L) => plateText(pctx, L.text, L.x, L.y, { color: L.color }));
     // 作業灯を消す（2026-09-13 本人要望）。灯体の印は暗くしたくないので、印より前・マーキーより後に重ねる
     drawBordersPlan(pctx, P, state.dims);
     if (state.mode === "move" && showOn("blackout")) paintBlackout(pctx, plan, litSpots);
@@ -1399,6 +1405,22 @@
     return { world: land, surface: land.on };      // null＝何にも当たらず抜ける
   }
 
+  /* 図の上に置く文字。灯体の印と重なると読めなくなるので、暗い板を敷いてから書く
+     （2026-09-13 本人指摘「文字が照明の丸や四角に重なって読めない」）。
+     板の幅は実際に測った文字幅から出すので、日本語で長くなっても欠けない。 */
+  function plateText(ctx, text, x, y, o) {
+    const opt = o || {};
+    ctx.save();
+    ctx.font = opt.font || "18px sans-serif";
+    ctx.textAlign = "left"; ctx.textBaseline = "top";
+    const w = ctx.measureText(text).width, h = opt.lineH || 20, pad = opt.pad == null ? 5 : opt.pad;
+    ctx.fillStyle = opt.plate || "rgba(13,14,16,0.82)";
+    ctx.fillRect(x - pad, y - pad, w + pad * 2, h + pad * 2);
+    ctx.fillStyle = opt.color || "rgba(240,231,214,0.9)";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+    return w;
+  }
   function drawFixtureMark(ctx, X, Y, shape, o) {
     const s = 15; ctx.save();
     const fill = o.ghost ? "rgba(240,231,214,0.35)" : o.st === "unset" ? "rgba(13,14,16,1)" : o.st === "off" ? "#2a2520" : (o.color || "#f2ead6");
