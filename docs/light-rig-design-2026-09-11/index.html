@@ -395,7 +395,7 @@ grid にしたことで、<b>前の「子が潰れて文字が重なる」問題
 <li><b>バーンドア</b>: 4本を縦に並べず <b>2×2</b>（奥側｜手前側／下手側｜上手側）。各マスは 見出し／つまみ＋数値欄 の2段、値の文字（「開いている」「中心まで」）は出さない（本人「数字だけで十分」）。CSS <code>.barn2</code>。実測 1440窓・パネル323px: マス131×46px・つまみ57px・数値欄64px・はみ出し0。</li>
 </ul>
 <p class="note">実測画像: <code>evidence/barn-shutter-2026-09-14-f-rotation.png</code>（平面図で 30°／−60° に回った四角、−60°＋手前50%のバーンドア）、<code>evidence/barn-shutter-2026-09-14-g-panel-2x2.png</code>（パネル）。</p>
-<p class="warn">同時編集の事故（2026-09-14 01:34）: 別セッション（再生トグルの作業）が同じ3ファイルを編集中で、一度 origin/main の内容へ戻り、3分後にこちらの変更＋先方の変更を含む内容になった。再適用用に <code>patches/2026-09-14-barn-shutter-apply.py</code>（アンカー方式・冪等）を置いた。</p>
+<p class="warn">同時編集の事故（2026-09-14 01:34）: 同じ3ファイルが一度 origin/main の内容へ戻り、3分後にこちらの変更＋別セッション（再生トグル）の変更を含む内容になった。原因は <b>このリポジトリで走った一括 publish の rebase</b>（<code>git reflog</code>: 01:32 commit → 01:34 <code>rebase (start): checkout origin/main</code> → 01:35 finish → 01:36–37 amend×3 ＝ <code>5fc1473</code>。作者ホスト <code>AratanoMac-mini.local</code> はこのマシン自身）。rebase 中は作業ツリーがベースへ戻るので、同時編集中の他セッションから見ると「消えた」ように見える。対策: 公開では rebase を使わず commit と push だけにする／再適用用に <code>patches/2026-09-14-barn-shutter-apply.py</code>（アンカー方式・冪等）を置いた。どの道具がその publish を実行したかは未特定。</p>
 
 <h2>4-19. 実在の見本を既定に／サーチライトと組をアコーディオンで統合／室内灯を消す（2026-09-13 本人要望）</h2>
 <h3>「8人のサーカス」は実在の見本だった</h3>
