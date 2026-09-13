@@ -3,8 +3,10 @@
  * 設計の正本: ../visual-presets-2026-09-14/DECISION.html（2026-09-14 確定版）
  *   ・常設イメージの仮想仕込み3種（小34／中54／大70要素）。照明バトンは小2・中大3（全ムービングだけ仮想）。
  *   ・あるあるは「配置グループ」で書き、適用時に灯体IDへ確定する（bindings.groups）。
- *   ・patch が既定: setup＝対象灯だけ中立化して作り直す／attributes＝列挙した属性だけ／reset＝全部消す。
- *   ・灯体ID×属性で後勝ち。重ねて使う。取り外せる層は作らない（由来は light.src で表示するだけ）。
+ *   ・明かりのカードは**切り替え式**（2026-09-14 本人指示「選ぶと一個ずつ追加されてしまうので切り替え式に」）:
+ *     押すと全灯を中立化してからそのあるあるだけを点ける＝いつでも1枚だけが乗る。同じカードをもう一度押すと消灯（トグル）。
+ *     初版の「配置グループごとに重ねる（patch）」は廃止。動きのカードは点いているムービングに乗せる（こちらは従来どおり）。
+ *   ・由来は light.src で表示するだけ（取り外せる層は作らない）。
  *
  * ここは DECISION §6 の JSON 形式を「関数を持つ JS オブジェクト」で実装したもの。
  * 幾何（何灯を選ぶ・どこを狙う）は純粋な計算なので、Node の vm で単体テストできる（tests/light-presets.test.mjs）。
@@ -292,10 +294,12 @@
     const ctx = { g, fx, rig, dims, bindings: rig.bindings, choice, E, cue };
     const made = preset.make(ctx).filter((x) => x && fxMap.has(x.fid));
     if (!made.length) return { status: "noop", nextCue: next, changes, targets: [], reason: "この仕込みでは点ける灯が見つかりません" };
-    next.groups = detach(next.groups, scopeIds);
-    scopeIds.forEach((fid) => { next.lights[fid] = { ...neutralLight(fid, rig.bindings, dims, E), src: null }; });
+    /* 切り替え式: 対象グループだけでなく**全灯**を中立化し、動きの組も全部外してから、このあるあるだけを点ける。
+       これで前に乗っていたあるあるは自動的に消え、常に1枚だけが乗る（2026-09-14 本人指示）。 */
+    next.groups = [];
+    (rig.fixtures || []).forEach((f) => { next.lights[f.id] = { ...neutralLight(f.id, rig.bindings, dims, E), src: null }; });
     made.forEach(({ fid, light }) => { const l = { ...next.lights[fid], ...light, groupId: null }; next.lights[fid] = stamp(l, preset.id); changes.push({ fid, attr: "setup", to: preset.id }); });
-    return { status: "applied", nextCue: next, changes, targets: made.map((x) => x.fid), reason: "", choice };
+    return { status: "applied", nextCue: next, changes, targets: made.map((x) => x.fid), reason: "", choice, scopeIds };
   }
 
   /* ---------- 「いまの明かり」チップとカードの状態 ---------- */
@@ -328,11 +332,12 @@
     const g = groupsOf(rig), lights = (cue && cue.lights) || {};
     const scopeIds = [...new Set((preset.scope || []).flatMap((k) => g[k] || []))];
     const mine = scopeIds.filter((id) => lights[id] && lights[id].on === true && lights[id].src && lights[id].src.p === preset.id);
-    const others = scopeIds.filter((id) => lights[id] && lights[id].on === true && !(lights[id].src && lights[id].src.p === preset.id));
     if (mine.length) return { state: mine.some((id) => isAdjusted(lights[id])) ? "adjusted" : "on", note: "" };
+    // 切り替え式なので、いま乗っている別のあるある（どのグループでも）は押すと消える。それを札で予告する
+    const others = Object.keys(lights).filter((id) => lights[id] && lights[id].on === true && !(lights[id].src && lights[id].src.p === preset.id));
     if (others.length) {
       const names = [...new Set(others.map((id) => (lights[id].src && lights[id].src.p ? (presetById(lights[id].src.p) || {}).name : null) || "手で点けた灯"))];
-      return { state: "replaces", note: `${names.join("・")}を置換` };
+      return { state: "replaces", note: `${names.join("・")}から切り替え` };
     }
     return { state: "off", note: "" };
   }

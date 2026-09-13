@@ -53,32 +53,46 @@ test("配置グループの対応表（WASH/SPECIAL/BACK/FL）と固定灯の共
   const s = rigOf("small").rig.bindings.groups; assert.equal(s.WASH.length, 4); assert.equal(s.BACK.length, 6); assert.equal(s.FL.length, 2);
 });
 
-test("setup: 対象灯だけ作り直し、対象外の灯には触れない（重ねる）", () => {
+test("切り替え式: 別のあるあるを押すと前のは消え、常に1枚だけが乗る（2026-09-14 本人指示）", () => {
   const { rig, dims } = rigOf("mid");
   const a = LP.applyPreset({ preset: LP.presetById("cl.all"), rig, dims, cue: emptyCue(), E });
   assert.equal(a.status, "applied"); assert.equal(lit(a.nextCue).length, 12);
   const b = LP.applyPreset({ preset: LP.presetById("cyc.single"), rig, dims, cue: a.nextCue, E });
-  assert.equal(lit(b.nextCue).length, 14, "前明かり12＋ホリ2が重なる");
-  // 入力は変更しない
-  assert.equal(lit(a.nextCue).length, 12);
-  // 由来
+  assert.equal(lit(b.nextCue).length, 2, "ホリ2灯だけ。前明かり12灯は消える");
+  rig.bindings.groups.CL.forEach((id) => assert.equal(b.nextCue.lights[id].on, false));
+  assert.equal(lit(a.nextCue).length, 12, "入力は変更しない");
   const chips = LP.nowChips(b.nextCue, rig);
-  assert.deepEqual(plain(chips.map((c) => c.presetId).sort()), ["cl.all", "cyc.single"]);
-  assert.equal(chips.find((c) => c.presetId === "cyc.single").ids.length, 2);
+  assert.deepEqual(plain(chips.map((c) => c.presetId)), ["cyc.single"], "乗っているのは1枚だけ");
+  assert.equal(chips[0].ids.length, 2);
+  assert.equal(LP.cardState(LP.presetById("cyc.single"), b.nextCue, rig, dims, E).state, "on");
+  const st = LP.cardState(LP.presetById("cl.all"), b.nextCue, rig, dims, E);
+  assert.equal(st.state, "replaces"); assert.equal(st.note, "ホリ・単色から切り替え");
+  assert.equal(LP.cardState(LP.presetById("ss.low"), b.nextCue, rig, dims, E).state, "replaces", "グループが違っても切り替えの札");
+  const c = LP.applyPreset({ preset: LP.presetById("cl.all"), rig, dims, cue: b.nextCue, E });
+  assert.equal(lit(c.nextCue).length, 12);
+  rig.bindings.groups.CY.forEach((id) => assert.equal(c.nextCue.lights[id].on, false));
 });
 
-test("同じ配置グループは後勝ち: ホリ青→ホリ上下2色で置き換わる。前明かりは残る", () => {
+test("同じグループの別案（ホリ単色→ホリ上下2色）も切り替え。上下2色の色が入る", () => {
   const { rig, dims } = rigOf("mid");
-  let c = LP.applyPreset({ preset: LP.presetById("cl.all"), rig, dims, cue: emptyCue(), E }).nextCue;
-  c = LP.applyPreset({ preset: LP.presetById("cyc.single"), rig, dims, cue: c, E }).nextCue;
+  let c = LP.applyPreset({ preset: LP.presetById("cyc.single"), rig, dims, cue: emptyCue(), E }).nextCue;
   assert.equal(LP.cardState(LP.presetById("cyc.two"), c, rig, dims, E).state, "replaces");
   c = LP.applyPreset({ preset: LP.presetById("cyc.two"), rig, dims, cue: c, E }).nextCue;
   const g = rig.bindings.groups;
   assert.equal(c.lights[g["CY.lower"][0]].color, LP.COLOR.O); assert.equal(c.lights[g["CY.upper"][0]].color, LP.COLOR.P);
-  assert.equal(lit(c).length, 14);
+  assert.equal(lit(c).length, 2);
   assert.equal(LP.cardState(LP.presetById("cyc.two"), c, rig, dims, E).state, "on");
-  assert.equal(LP.cardState(LP.presetById("cl.all"), c, rig, dims, E).state, "on");
   assert.equal(LP.cardState(LP.presetById("cyc.single"), c, rig, dims, E).state, "replaces");
+});
+
+test("切り替えは動きの組も外す（前のあるあるに乗せた扇は残らない）", () => {
+  const { rig, dims } = rigOf("mid");
+  let c = LP.applyPreset({ preset: LP.presetById("area.3"), rig, dims, cue: emptyCue(), E }).nextCue;
+  c = LP.applyPreset({ preset: LP.presetById("move.fan"), rig, dims, cue: c, E }).nextCue;
+  assert.equal(c.groups.length, 1);
+  c = LP.applyPreset({ preset: LP.presetById("cyc.single"), rig, dims, cue: c, E }).nextCue;
+  assert.equal(c.groups.length, 0);
+  Object.values(c.lights).forEach((l) => assert.equal((l.path || {}).kind, "still"));
 });
 
 test("前明かり・中央は CL 全体を対象にして面用を消す。色選択は choices で効く", () => {
@@ -88,6 +102,7 @@ test("前明かり・中央は CL 全体を対象にして面用を消す。色�
   assert.equal(lit(c).length, 2);
   const w = LP.applyPreset({ preset: LP.presetById("wash.all"), rig, dims, cue: c, choices: { color: LP.COLOR.B }, E });
   assert.equal(w.status, "applied");
+  assert.equal(lit(w.nextCue).length, w.targets.length, "地明かりに切り替えたので前明かり中央は消える");
   w.targets.forEach((id) => assert.equal(w.nextCue.lights[id].color, LP.COLOR.B));
   assert.equal(w.nextCue.lights[w.targets[0]].beamDeg, 36, "大劇場の地明かりは36°");
 });
@@ -107,8 +122,11 @@ test("動き: 床を狙って点いているムービングだけ。固定灯・
   let c = LP.applyPreset({ preset: LP.presetById("cl.all"), rig, dims, cue: emptyCue(), E }).nextCue;   // 固定灯だけ
   let m = LP.applyPreset({ preset: LP.presetById("move.sweep"), rig, dims, cue: c, E });
   assert.equal(m.status, "noop", "固定灯しか点いていなければ何もしない");
-  const a3 = LP.applyPreset({ preset: LP.presetById("area.3"), rig, dims, cue: c, E }); c = a3.nextCue;   // ムービング3灯・床
-  c = LP.applyPreset({ preset: LP.presetById("fl.back"), rig, dims, cue: c, E }).nextCue;  // 転がし4灯・空中（対象外）
+  c = LP.applyPreset({ preset: LP.presetById("fl.back"), rig, dims, cue: c, E }).nextCue;  // 転がし4灯・空中
+  m = LP.applyPreset({ preset: LP.presetById("move.sweep"), rig, dims, cue: c, E });
+  assert.equal(m.status, "noop", "空中狙いのムービングは対象外");
+  const a3 = LP.applyPreset({ preset: LP.presetById("area.3"), rig, dims, cue: c, E }); c = a3.nextCue;   // ムービング3灯・床（切り替え）
+  rig.bindings.groups.FL.forEach((id) => { c.lights[id] = { ...c.lights[id], on: true, surface: "air" }; });   // 手で転がしを点けても対象外のまま
   m = LP.applyPreset({ preset: LP.presetById("move.fan"), rig, dims, cue: c, E });
   assert.equal(m.status, "applied"); assert.equal(m.targets.length, 3);
   assert.equal(m.nextCue.groups.length, 1); assert.equal(m.nextCue.groups[0].compose, "fan");
@@ -152,6 +170,7 @@ test("30件すべてが3サイズで適用できる（unsupported/例外なし�
     let c = emptyCue();
     // 動きの前提として床を狙うムービングを点けておく
     LP.PRESETS.forEach((p) => {
+      if (p.kind === "motion") c = LP.applyPreset({ preset: LP.presetById("area.3"), rig, dims, cue: c, E }).nextCue;   // 動きの前提: 床を狙うムービング
       const r = LP.applyPreset({ preset: p, rig, dims, cue: c, E, timeMs: 500 });
       assert.notEqual(r.status, "unsupported", `${size}: ${p.id} が未対応`);
       if (r.status === "applied") c = r.nextCue;

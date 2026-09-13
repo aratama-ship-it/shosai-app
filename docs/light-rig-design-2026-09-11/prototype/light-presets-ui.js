@@ -4,6 +4,7 @@
  *   ・右パネル（#panel-insp）に「見本／調整」のタブを足す。調整＝いままでの灯体情報。
  *   ・見本タブ: 上部「いまの明かり」チップ（由来の要約・×なし）→ 明かり／動き の切替 → 名前検索 → 絞り込み → カード格子（2列）。
  *   ・カードはクリック即commit・Undoで戻る。確認や試し表示は挟まない（本人の既存原則）。
+ *   ・明かりのカードは**切り替え式**（2026-09-14 本人指示）: 押すと前のあるあるは消えてそれだけが乗る。乗っているカードをもう一度押すと消灯。
  *   ・カードの状態: 通常／適用中（✓）／適用中・調整あり／「◯◯を置換」／適用不可＋理由。
  *   ・サムネイルは実描画（現在の明かりに重ねた結果）を予定。初版は「どこが点くか」の略図（平面）を描く
  *     — 描画入力の引数化（buildLightingFrame）が済むまでの暫定。宣材風の画像は使わない。
@@ -100,7 +101,7 @@
       <p class="hint">常設の吊位置に倣った<b>仮想仕込み</b>を入れます（シーリング／フロントサイド／バトン（ムービング）／SS 低段・高段／転がし／ホリゾント上下）。
       舞台の大きさもそのサイズに合わせます。${hasRig ? "<b>いまの仕込みと明かりは置き換わります</b>（元に戻すで戻せます）。" : ""}</p>
       <div class="sz">${cards}</div>
-      <p class="note">入れたあと、右の「見本」タブで「照明のあるある」を押すたびに明かりが重なります。</p></div>`, [["やめる", null, "quiet"]]);
+      <p class="note">入れたあと、右の「見本」タブで「照明のあるある」を押すと、その明かりに切り替わります（押すたびに入れ替わり、もう一度押すと消灯）。</p></div>`, [["やめる", null, "quiet"]]);
     document.querySelectorAll("#dialog .lpDlg .sz button").forEach((b) => { b.onclick = () => { $("dialog").hidden = true; installHouseRig(b.dataset.size); }; });
   }
   function installHouseRig(size) {
@@ -117,8 +118,20 @@
 
   /* ---------- 適用 ---------- */
   const cueJson = (c) => JSON.stringify({ lights: c.lights, groups: c.groups });
-  function applyCard(p, choices) {
+  function applyCard(p, choices, opts) {
     const c = H.cue();
+    const toggle = Boolean(opts && opts.toggle);
+    if (toggle && p.kind === "light") {
+      // 乗っているカードをもう一度押したら消灯（切り替え式のトグル）。色や上下手の選び直しはここを通らない
+      const st = LP.cardState(p, c, state.rig, state.dims, E);
+      if (st.state === "on" || st.state === "adjusted") {
+        const off = LP.applyPreset({ preset: LP.presetById("all.off"), rig: state.rig, dims: state.dims, cue: c, E });
+        if (off.status !== "applied") { H.toast("点いている灯がありません"); return; }
+        c.lights = off.nextCue.lights; c.groups = off.nextCue.groups; H.stop();
+        H.commit(`「${p.name}」を消しました`);
+        return;
+      }
+    }
     const r = LP.applyPreset({ preset: p, choices: choices || choiceOf(p), rig: state.rig, dims: state.dims, cue: c, selection: state.sel, timeMs: state.play.t, E, groupId: H.uid("g") });
     if (r.status === "unsupported" || r.status === "noop") { H.toast(r.reason || "変更する明かりがありません"); return; }
     if (cueJson(r.nextCue) === cueJson(c)) { H.toast("いまと同じ明かりです"); return; }   // 同じ結果への再適用は履歴を増やさない
@@ -126,7 +139,7 @@
     if (p.kind === "reset") H.stop();
     const sc = H.scene(), q = H.lxEditingQ(sc);
     const where = q ? `LX cue ${H.lxNo(sc, q.seq)}` : "下書き";
-    H.commit(`「${p.name}」を${where}に当てました（${r.targets.length}灯）`);
+    H.commit(p.kind === "light" ? `「${p.name}」に切り替えました（${r.targets.length}灯・${where}）` : `「${p.name}」を${where}に当てました（${r.targets.length}灯）`);
   }
 
   /* ---------- 略図（どこが点くか。実描画サムネイルまでの暫定） ---------- */
@@ -178,7 +191,10 @@
     if (st.state === "unsupported" || st.state === "disabled") img.append(Object.assign(el("i", "", esc(st.note || "適用不可")), { title: st.note }));
     if (p.kind === "motion" && st.state !== "disabled" && st.note) img.append(el("b", "", esc(st.note)));
     b.append(img, el("div", "nm", esc(p.name)), Object.assign(el("div", "tg", esc(p.lead || "")), { title: p.lead || "" }));
-    b.title = st.state === "unsupported" || st.state === "disabled" ? (st.note || "") : `押すと${p.kind === "reset" ? "全灯を消します" : "いまの明かりに重ねます"}（元に戻せます）`;
+    b.title = st.state === "unsupported" || st.state === "disabled" ? (st.note || "")
+      : p.kind === "reset" ? "押すと全灯を消します（元に戻せます）"
+      : p.kind === "motion" ? "押すと点いているムービングに乗せます（元に戻せます）"
+      : (st.state === "on" || st.state === "adjusted") ? "もう一度押すと消灯します（元に戻せます）" : "押すとこのあるあるに切り替わります（元に戻せます）";
     // 色・上下手の選択（カード内・押すとその選択で適用）
     if (p.choice && st.state !== "unsupported") {
       const o = el("div", "opts"); const cur = choiceOf(p);
@@ -186,7 +202,7 @@
       if (p.choice.side) [["l", "下手"], ["r", "上手"]].forEach(([v, t]) => { const s = el("b", "", t); s.setAttribute("aria-pressed", String(cur.side === v)); s.onclick = (ev) => { ev.stopPropagation(); ui.choices[p.id] = { ...(ui.choices[p.id] || {}), side: v }; applyCard(p); }; o.append(s); });
       b.append(o);
     }
-    b.onclick = () => { if (st.state === "unsupported" || st.state === "disabled") { if (st.note) H.toast(st.note); return; } applyCard(p); };
+    b.onclick = () => { if (st.state === "unsupported" || st.state === "disabled") { if (st.note) H.toast(st.note); return; } applyCard(p, null, { toggle: true }); };
     return b;
   }
 
@@ -211,7 +227,7 @@
     if (chips.length > 4 && !ui.showAllChips) { const m = el("button", "more", `ほか${chips.length - 4}件`); m.type = "button"; m.onclick = () => { ui.showAllChips = true; renderPane(); }; now.append(m); }
     pane.append(now);
     const sc = H.scene(), q = H.lxEditingQ(sc);
-    pane.append(el("p", "lpHint", `押すと${q ? `LX cue ${esc(H.lxNo(sc, q.seq))}` : "いまの下書き"}に重なります（元に戻せます）。元のキューを残すなら先に＋新規キュー。画像はどこが点くかの略図です。`));
+    pane.append(el("p", "lpHint", `明かりは切り替え式: 押すとそのあるあるだけが${q ? `LX cue ${esc(H.lxNo(sc, q.seq))}` : "いまの下書き"}に乗り、前のは消えます。もう一度押すと消灯。動きは点いているムービングに乗ります。元に戻せます。画像はどこが点くかの略図です。`));
     if (!supported) {
       pane.append(el("p", "lpEmpty", "この仕込みでは初版では試せません。左の「ビジュアルから作る」で常設イメージの仮想仕込みを入れると、30件のあるあるを重ねられます。"));
     }
