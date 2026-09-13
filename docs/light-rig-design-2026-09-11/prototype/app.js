@@ -722,14 +722,17 @@
       pctx.strokeStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; pctx.lineWidth = sel ? 6 : 4;
       pctx.beginPath(); pctx.moveTo(B.x - 24, Y); pctx.lineTo(B.x + B.w + 24, Y); pctx.stroke();
       pctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.9)"; pctx.font = "18px sans-serif";
-      pctx.fillText(`${t.label || "バトン"}　奥から${E.trussRow(state.rig, t.id)}列目・高さ約${t.h.toFixed(1)}m${t.tentative ? "（仮の高さ）" : ""}`, B.x - 24, Y - 26);
+      pctx.fillText(`${t.label || "バトン"}　奥から${E.trussRow(state.rig, t.id)}列目・奥行き${(t.v * state.dims.D).toFixed(1)}m・高さ約${t.h.toFixed(1)}m${t.tentative ? "（仮の高さ）" : ""}`, B.x - 24, Y - 26);
     });
     // 予告（ゴースト）
     const hv = state.hover;
     if (state.tool === "truss" && hv && hv.canvas === "plan") {
-      const Y = E.clamp(hv.Y, B.y, B.y + B.h); pctx.strokeStyle = "rgba(211,172,89,0.45)"; pctx.setLineDash([12, 8]); pctx.lineWidth = 4;
+      /* 実際に置く位置は snapV を通す（1mでそろえるときは1m刻み）。予告の線と数字も
+         同じ値で出さないと、出ている奥行きと置かれる場所がずれる（2026-09-13 本人要望で数字を追加）。 */
+      const gv = snapV(E.clamp((hv.Y - B.y) / B.h, 0, 1)); const Y = B.y + gv * B.h;
+      pctx.strokeStyle = "rgba(211,172,89,0.45)"; pctx.setLineDash([12, 8]); pctx.lineWidth = 4;
       pctx.beginPath(); pctx.moveTo(B.x - 24, Y); pctx.lineTo(B.x + B.w + 24, Y); pctx.stroke(); pctx.setLineDash([]);
-      pctx.fillStyle = "rgba(240,231,214,0.8)"; pctx.font = "18px sans-serif"; pctx.fillText("ここにバトンを渡す（クリック）", B.x + B.w / 2 - 110, Y + 10);
+      pctx.fillStyle = "rgba(240,231,214,0.8)"; pctx.font = "18px sans-serif"; pctx.fillText(`ここにバトンを渡す（クリック）　奥行き${(gv * state.dims.D).toFixed(1)}m`, B.x + B.w / 2 - 160, Y + 10);
     }
     if (state.tool === "fixture" && hv && hv.canvas === "plan") {
       const t = E.trussById(state.rig, state.selTruss);
@@ -1995,7 +1998,59 @@
   const field = (lab, node, wide) => { const f = document.createElement("div"); f.className = "field" + (wide ? " wide" : ""); const l = document.createElement("span"); l.textContent = lab; f.append(l, node); return f; };
   const btn = (t, fn, cls) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = t; b.onclick = fn; return b; };
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
-  const range = (min, max, step, val, fmt, onInput, onChange) => { const w = el("div", "rangewrap"); const i = document.createElement("input"); i.type = "range"; i.min = min; i.max = max; i.step = step; i.value = val; const v = el("span", "val", fmt(val)); i.oninput = () => { v.textContent = fmt(Number(i.value)); onInput(Number(i.value)); }; i.onchange = () => onChange && onChange(Number(i.value)); w.append(i, v); return w; };
+  /* つまみ。つまんで動かすほかに、隣の欄へ数値を打ち込んでも決められる（2026-09-13 本人要望）。
+     num を渡すと、数値欄だけ別の単位で扱える——中の値は0〜1のまま、欄はメートル、という使い方。
+       num = { min, max, step, to(中の値)→欄の数値, from(欄の数値)→中の値, title }
+     打っている途中（"1"→"12"）で勝手に丸めないよう、範囲内の値になったときだけ図へ反映し、
+     Enter／欄を離れたときに刻みへそろえて確定する。確定は1回の「元に戻す」にまとまる。 */
+  const stepDec = (step) => (String(step).split(".")[1] || "").length;
+  const range = (min, max, step, val, fmt, onInput, onChange, num) => {
+    const w = el("div", "rangewrap");
+    const i = document.createElement("input");
+    i.type = "range"; i.min = min; i.max = max; i.step = step; i.value = val;
+    const N = num || {};
+    const to = N.to || ((x) => x), from = N.from || ((x) => x);
+    const nStep = N.step == null ? step : N.step, dec = stepDec(nStep);
+    const n = document.createElement("input");
+    n.type = "number"; n.className = "numin";
+    const tidy = (x) => Number(Number(x).toFixed(6));
+    n.min = tidy(N.min == null ? min : N.min); n.max = tidy(N.max == null ? max : N.max); n.step = nStep;
+    if (N.title) n.title = N.title;
+    const v = el("span", "val", fmt(val));
+    let cur = Number(val), dirty = false;
+    const show = (value, src) => {
+      cur = value;
+      if (src !== "range") i.value = value;
+      if (src !== "num") n.value = to(value).toFixed(dec);
+      v.textContent = fmt(value);
+    };
+    show(cur);
+    i.oninput = () => { dirty = true; show(Number(i.value), "range"); onInput(cur); };
+    i.onchange = () => { dirty = false; onChange && onChange(cur); };
+    n.oninput = () => {
+      if (n.value === "") return;                       // 消して打ち直している途中
+      const raw = Number(n.value); if (!Number.isFinite(raw)) return;
+      const value = from(raw); if (!(value >= min && value <= max)) return;   // 範囲外は確定時に丸める
+      dirty = true; show(value, "num"); onInput(cur);
+    };
+    const settle = () => {
+      const raw = Number(n.value);
+      const want = Number.isFinite(raw) ? E.clamp(from(raw), min, max) : cur;
+      const snapped = step > 0 ? E.clamp(Number((Math.round((want - min) / step) * step + min).toFixed(6)), min, max) : want;
+      if (snapped !== cur) { dirty = true; show(snapped); onInput(cur); } else show(cur);
+      if (dirty) { dirty = false; onChange && onChange(cur); }
+    };
+    n.onchange = settle;
+    n.onkeydown = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); n.blur(); } };
+    w.append(i, n, v);
+    return w;
+  };
+  /* 0〜1で持っている位置を、数値欄ではメートルで扱うための対応表。
+     舞台の寸法は後から変わるので、作るたびに今の寸法で組む。 */
+  const numDepth = () => ({ min: 0, max: state.dims.D, step: 0.1, to: (v) => v * state.dims.D, from: (m) => m / state.dims.D, title: "奥の壁からの距離(m)" });
+  const numAcross = () => ({ min: -state.dims.W / 2, max: state.dims.W / 2, step: 0.1, to: (v) => (v - 0.5) * state.dims.W, from: (m) => m / state.dims.W + 0.5, title: "センターからの距離(m)。マイナスが下手" });
+  const depthText = (v) => `奥から${(v * state.dims.D).toFixed(1)}m`;
+  const acrossText = (v) => { const x = (v - 0.5) * state.dims.W; return Math.abs(x) < 0.05 ? "中央" : `${x < 0 ? "下手" : "上手"}${Math.abs(x).toFixed(1)}m`; };
 
   /* 模様（ゴボ）の選び方。13個をいつも並べるとパネルが埋まるので、
      いまの模様だけを見せ、押したときだけ一覧を開く（2026-09-13 本人要望「クリックしたらプルダウン」）。
@@ -2040,6 +2095,8 @@
     return s === 0 ? word : `${word}（${s}/${SOFT_STEPS}）`;
   }
   const softOf = (l) => E.clamp(E.finite(l && l.goboSoft, SOFT_DEF), 0, SOFT_MAX);
+  // 中の値は0〜100のままだが、見せ方（◯/10）と数値欄をそろえる
+  const numSoft = { min: 0, max: SOFT_STEPS, step: 1, to: (v) => v / SOFT_STEP, from: (n) => n * SOFT_STEP, title: `0〜${SOFT_STEPS}` };
   /* 回す速さの読み方。つまみは速さそのものなので、向き・速さの言葉・1周の秒数で表す
      （2026-09-13 本人指摘「回すは回す速度なのでその用に表示」）。 */
   function spinText(v) {
@@ -2080,11 +2137,13 @@
       const acts = el("div", "seg");
       acts.append(btn("バトンに合わせ直す", () => { state.curtains.perBorder = {}; commit("一文字幕をバトンの高さに合わせ直しました"); }, "small quiet"));
       host.append(field("まとめて", acts, true));
-      host.append(field("バトンの手前へ", range(0, 0.2, 0.01, E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.2), (v) => `${(v * d.D).toFixed(1)}m（全部）`,
-        (v) => { c.borderAhead = v; draw(); }, () => commit()), true));
+      host.append(field("バトンの手前へ", range(0, 0.2, 0.01, E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.2), (v) => `${(v * d.D).toFixed(1)}m（全部）`, 
+        (v) => { c.borderAhead = v; draw(); }, () => commit(),
+        { min: 0, max: 0.2 * d.D, step: 0.1, to: (v) => v * d.D, from: (m) => m / d.D, title: "バトンより手前に吊る距離(m)" }), true));
     }
     host.append(field("袖幕の入り", range(0, 0.35, 0.01, E.clamp(E.finite(c.legU, 0.08), 0, 0.35), (v) => `両端から${(v * d.W).toFixed(1)}m`,
-      (v) => { c.legU = v; draw(); }, () => commit()), true));
+      (v) => { c.legU = v; draw(); }, () => commit(),
+      { min: 0, max: 0.35 * d.W, step: 0.1, to: (v) => v * d.W, from: (m) => m / d.W, title: "舞台の端から内側へ入れる量(m)" }), true));
     host.append(el("p", "note", "一文字幕は「図に出すもの」の〈一文字幕〉で出し入れします。作業灯を消すと合わせると、客席から灯体が見えていないかを確かめられます。"));
   }
 
@@ -2415,7 +2474,7 @@
         const softs = new Set(lit.map((fid) => Math.round(softOf(lightOf(fid)) / SOFT_STEP) * SOFT_STEP));
         const sameSoft = softs.size <= 1, nowSoft = sameSoft && softs.size === 1 ? [...softs][0] : SOFT_DEF;
         b.append(field(sameSoft ? "ぼけ" : "ぼけ（バラバラ）", range(0, SOFT_MAX, SOFT_STEP, nowSoft, softText,
-          (v) => { bulkEach(ids, (f, l) => { l.goboSoft = v; }); draw(); }, () => commit(`${ids.length}灯の模様のぼけを変えました`)), true));
+          (v) => { bulkEach(ids, (f, l) => { l.goboSoft = v; }); draw(); }, () => commit(`${ids.length}灯の模様のぼけを変えました`), numSoft), true));
       }
     }
 
@@ -2535,9 +2594,9 @@
       if (!state.sel.size && !state.selTruss) host.append(el("p", "hint", "図か一覧で灯体やバトンを選ぶと、ここに設定が出ます。配置はすべてのシーンで共通です。"));
       const t = E.trussById(state.rig, state.selTruss);
       if (t && !ids.length) {
-        host.append(el("p", "kicker", `バトン（奥から${E.trussRow(state.rig, t.id)}列目）`));
+        host.append(el("p", "kicker", `バトン（奥から${E.trussRow(state.rig, t.id)}列目・奥行き${(t.v * state.dims.D).toFixed(1)}m）`));
         const name = document.createElement("input"); name.type = "text"; name.value = t.label; name.placeholder = "名前（任意）"; name.onchange = () => { t.label = name.value.slice(0, 16); commit(); }; host.append(field("名前", name));
-        host.append(field("奥行き", range(0, 1, 0.01, t.v, (v) => `${(v * state.dims.D).toFixed(1)}m（奥から）`, (v) => { t.v = v; draw(); }, () => commit())));
+        host.append(field("奥行き", range(0, 1, 0.01, t.v, depthText, (v) => { t.v = v; draw(); }, () => commit(), numDepth())));
         host.append(field("高さ", range(2, state.dims.H, 0.1, t.h, (v) => `約${v.toFixed(1)}m${t.tentative ? "（仮の高さ）" : ""}`, (v) => { t.h = v; t.tentative = false; draw(); }, () => commit())));
         host.append(btn("このバトンに灯体を吊る", () => { state.tool = "fixture"; renderAll(); }, "primary"));
         host.append(btn("バトンを削除", () => { const n = state.rig.fixtures.filter((f) => f.mount.trussId === t.id).length; const go = () => { state.rig.fixtures = state.rig.fixtures.filter((f) => f.mount.trussId !== t.id); state.rig.trusses = state.rig.trusses.filter((x) => x.id !== t.id); state.selTruss = null; state.sel.clear(); commit("バトンを削除しました"); }; n ? dialog(`<p>このバトンには${n}灯が吊ってあります。灯体ごと削除しますか？</p>`, [["やめる", null, "quiet"], ["灯体ごと削除", go, "primary"]]) : go(); }, "quiet"));
@@ -2547,12 +2606,12 @@
         host.append(el("p", "kicker", `${label(f.id)}（${E.isMoving(f) ? "ムービング" : "固定"}）　${E.describeMount(f, state.rig)}`));
         const name = document.createElement("input"); name.type = "text"; name.value = f.name; name.placeholder = "例: 中央ムービング"; name.onchange = () => { f.name = name.value.slice(0, 20); commit(); }; host.append(field("名前", name));
         if (m.type === "truss") { const sel = document.createElement("select"); state.rig.trusses.forEach((tt) => { const o = document.createElement("option"); o.value = tt.id; o.textContent = `奥から${E.trussRow(state.rig, tt.id)}列目${tt.label ? "・" + tt.label : ""}`; o.selected = tt.id === m.trussId; sel.append(o); }); sel.onchange = () => { m.trussId = sel.value; state.selTruss = sel.value; commit(); }; host.append(field("吊るバトン", sel));
-          host.append(field("横位置", range(0, 1, 0.01, m.u, (v) => (v < 0.4 ? "下手寄り" : v > 0.6 ? "上手寄り" : "中央"), (v) => { m.u = v; draw(); }, () => commit())));
+          host.append(field("横位置", range(0, 1, 0.01, m.u, acrossText, (v) => { m.u = v; draw(); }, () => commit(), numAcross())));
           const tt = E.trussById(state.rig, m.trussId); host.append(field("高さ", el("span", "val", `約${tt ? tt.h.toFixed(1) : "?"}m（バトンから継承）`))); }
-        if (m.type === "floor") { host.append(field("横位置", range(0, 1, 0.01, m.u, (v) => (v < 0.4 ? "下手寄り" : v > 0.6 ? "上手寄り" : "中央"), (v) => { m.u = v; draw(); }, () => commit()))); host.append(field("奥行き", range(0, 1, 0.01, m.v, (v) => (v < 0.4 ? "奥" : v > 0.6 ? "手前" : "中ほど"), (v) => { m.v = v; draw(); }, () => commit()))); host.append(field("高さ", el("span", "val", "転がし（床）"))); }
-        if (m.type === "side") { host.append(field("取り付け", seg([["shimote", "下手側"], ["kamite", "上手側"]], m.side, (v) => { m.side = v; commit(); }))); host.append(field("奥行き", range(0, 1, 0.01, m.v, (v) => (v < 0.4 ? "奥寄り" : v > 0.6 ? "手前寄り" : "中ほど"), (v) => { m.v = v; draw(); }, () => commit()))); host.append(field("高さ", range(0.3, state.dims.H, 0.1, m.h, (v) => `約${v.toFixed(1)}m`, (v) => { m.h = v; draw(); }, () => commit()))); }
+        if (m.type === "floor") { host.append(field("横位置", range(0, 1, 0.01, m.u, acrossText, (v) => { m.u = v; draw(); }, () => commit(), numAcross()))); host.append(field("奥行き", range(0, 1, 0.01, m.v, depthText, (v) => { m.v = v; draw(); }, () => commit(), numDepth()))); host.append(field("高さ", el("span", "val", "転がし（床）"))); }
+        if (m.type === "side") { host.append(field("取り付け", seg([["shimote", "下手側"], ["kamite", "上手側"]], m.side, (v) => { m.side = v; commit(); }))); host.append(field("奥行き", range(0, 1, 0.01, m.v, depthText, (v) => { m.v = v; draw(); }, () => commit(), numDepth()))); host.append(field("高さ", range(0.3, state.dims.H, 0.1, m.h, (v) => `約${v.toFixed(1)}m`, (v) => { m.h = v; draw(); }, () => commit()))); }
         if (m.type === "front") {
-          host.append(field("横位置", range(0, 1, 0.01, m.u, (v) => (v < 0.4 ? "下手寄り" : v > 0.6 ? "上手寄り" : "中央"), (v) => { m.u = v; draw(); }, () => commit())));
+          host.append(field("横位置", range(0, 1, 0.01, m.u, acrossText, (v) => { m.u = v; draw(); }, () => commit(), numAcross())));
           host.append(field("舞台前から", range(1, 20, 0.5, m.ahead, (v) => `約${v.toFixed(1)}m`, (v) => { m.ahead = v; draw(); }, () => commit())));
           host.append(field("高さ", range(1, 16, 0.1, m.h, (v) => `約${v.toFixed(1)}m`, (v) => { m.h = v; draw(); }, () => commit())));
           host.append(el("p", "note", "客席の上（シーリング）や客席横の壁（フロントサイド）に当たる位置です。平面図では客席側の帯に並べて描き、本当の距離はここの数値が正です。"));
@@ -2759,7 +2818,7 @@
           /* ぼけ具合＝実機でいうフォーカス。くっきり出すと形が読め、ぼかすと質感になる
              （2026-09-13 本人要望）。 */
           b.append(field("ぼけ", range(0, SOFT_MAX, SOFT_STEP, softOf(l), softText,
-            (v) => { l.goboSoft = v; draw(); }, () => commit()), true));
+            (v) => { l.goboSoft = v; draw(); }, () => commit(), numSoft), true));
         }
       }
 

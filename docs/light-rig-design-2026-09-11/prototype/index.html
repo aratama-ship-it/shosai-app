@@ -328,7 +328,12 @@
   /* つまみは全幅に伸ばさず、左に寄せてコンパクトに（2026-09-13 本人要望「バーが長すぎる」）。
      .rangewrap が input+値を横並びにする（range() のJS側でこのクラスを付ける）。 */
   input[type=range]{width:150px;max-width:100%}
-  .rangewrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  /* つまみ＋数値欄＋今の値。数値欄は打ち込み用なので、つまみを縮めてでも同じ行に並べる
+     （2026-09-13 本人要望「スライダーは数値で入力もできるように」）。 */
+  .rangewrap{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .rangewrap input[type=range]{flex:1 1 110px;width:auto;min-width:88px}
+  .rangewrap .numin{flex:0 0 auto;width:58px;min-height:24px;border:1px solid var(--line-dark);background:var(--desk-2);color:var(--milk);font:11px var(--sans);padding:1px 4px;text-align:right;font-variant-numeric:tabular-nums}
+  .rangewrap .numin:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
   .val{color:var(--brass);font-variant-numeric:tabular-nums}
   /* .panel は overflow:hidden なので、選択中スウォッチの outline（枠の外側にはみ出す）が
      左端で切れていた（2026-09-13 本人指摘）。余白を持たせて逃がす。 */
@@ -575,8 +580,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789297117"></script>
-<script src="stage-figure.js?v=1789297117"></script>
-<script src="app.js?v=1789297117"></script>
+<script src="rig-engine.js?v=1789299976"></script>
+<script src="stage-figure.js?v=1789299976"></script>
+<script src="app.js?v=1789299976"></script>
 </body>
 </html>
