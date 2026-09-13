@@ -1983,6 +1983,19 @@ html.stage-pwa-tablet .stage-sketch-kicker { display: none; }
   cursor: default;
 }
 
+.stage-history-actions .stage-ai-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--stage-history-action-height);
+  width: var(--stage-history-action-height);
+  min-width: var(--stage-history-action-height);
+  height: var(--stage-history-action-height);
+  min-height: var(--stage-history-action-height);
+  padding: 0;
+  font-weight: 600;
+}
+
 .stage-history-actions .stage-export {
   display: inline-flex;
   align-items: center;
