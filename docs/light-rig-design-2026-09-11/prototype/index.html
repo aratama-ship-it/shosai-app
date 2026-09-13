@@ -391,15 +391,15 @@
               <button type="button" data-show="pieces" aria-pressed="true" title="舞台スケッチ側で置いてある演者・セットを下敷きに出す">演者・セット</button>
               <button type="button" data-show="border" aria-pressed="false" title="バトンの手前に吊って灯体を客席から隠す短い幕。出すと、客席から灯体が見えていないかを確かめられます">一文字幕</button>
             </span>
-            <!-- 「光」と「室内灯を消す」は照明デザインタブだけのもの。近い働きなので、
+            <!-- 「光」と「作業灯を消す」は照明デザインタブだけのもの。近い働きなので、
                  ほかの「図に出すもの」から離して右端に2つ並べる（2026-09-13 本人要望）。
                  消し具合は全消しだけでなく割合で決められる（同要望）。 -->
             <span class="showtoggles lightgroup" id="lighttoggles" role="group" aria-label="光の見せ方" hidden>
               <button type="button" data-show="beam" aria-pressed="true" title="灯体から出る光を図に出す">光</button>
-              <button type="button" data-show="blackout" aria-pressed="false" title="光が当たっていないところを暗くする">室内灯を消す</button>
+              <button type="button" data-show="blackout" aria-pressed="false" title="光が当たっていないところを暗くする">作業灯を消す</button>
               <span class="dimwrap" id="dimwrap" hidden>
-                <input type="range" id="dim" min="0" max="100" step="5" value="100" aria-label="室内灯をどれだけ消すか">
-                <input type="number" id="dimnum" min="0" max="100" step="5" value="100" aria-label="室内灯をどれだけ消すか（％）">
+                <input type="range" id="dim" min="0" max="100" step="5" value="100" aria-label="作業灯をどれだけ消すか">
+                <input type="number" id="dimnum" min="0" max="100" step="5" value="100" aria-label="作業灯をどれだけ消すか（％）">
                 <span class="t">%</span>
               </span>
             </span>
@@ -532,8 +532,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789272388"></script>
-<script src="stage-figure.js?v=1789272388"></script>
-<script src="app.js?v=1789272388"></script>
+<script src="rig-engine.js?v=1789273167"></script>
+<script src="stage-figure.js?v=1789273167"></script>
+<script src="app.js?v=1789273167"></script>
 </body>
 </html>

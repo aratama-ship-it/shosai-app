@@ -219,7 +219,7 @@
     snap: false,                           // 1mのグリッドに合わせて置く・動かす（本人要望 2026-09-11）
     placeOpen: false,                      // 左パネル上部の「配置」を開いているか（既定は畳む）
     show: { no: true, fixtures: true, beam: true, path: true, grid: true, pieces: true, border: false, blackout: false },
-    /* 室内灯をどれだけ消すか（0〜100%）。100で真っ暗、0で消さないのと同じ
+    /* 作業灯をどれだけ消すか（0〜100%）。100で真っ暗、0で消さないのと同じ
        （2026-09-13 本人要望「押したら全部消えてしまうので、どれくらい消すか決めたい」）。
        図の見え方の設定なので show と同じくUndoの対象にはしない。 */
     dim: 100,
@@ -696,7 +696,7 @@
     if (state.tool === "side" && hv && hv.canvas === "plan") { const side = hv.X < B.x ? "shimote" : hv.X > B.x + B.w ? "kamite" : null; if (side) drawFixtureMark(pctx, side === "shimote" ? B.x - SIDE_DX : B.x + B.w + SIDE_DX, E.clamp(hv.Y, B.y, B.y + B.h), "diamond", { ghost: true }); else { pctx.fillStyle = "rgba(240,231,214,0.6)"; pctx.font = "18px sans-serif"; pctx.fillText("舞台の外側（下手／上手）をクリックしてください", B.x + B.w / 2 - 190, B.y + B.h + 44); } }
 
     // 動き: 軌道・光線
-    const litSpots = [];   // 室内灯を消す（ブラックアウト）用。光の当たっている場所だけ集める
+    const litSpots = [];   // 作業灯を消す（ブラックアウト）用。光の当たっている場所だけ集める
     if (state.mode === "move") {
       state.rig.fixtures.forEach((f) => {
         const l = lightOf(f.id); if (!isLit(l)) return;   // 消灯・強さ0は図に出さない
@@ -729,7 +729,7 @@
       const Y = isFront(f) ? B.y + B.h + FRONT_DY : p.Y;     // 前明かりは客席帯に並べる（実距離は数値で）
       if (showOn("fixtures")) drawFixtureMark(pctx, X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
     });
-    // 室内灯を消す（2026-09-13 本人要望）。灯体の印は暗くしたくないので、印より前・マーキーより後に重ねる
+    // 作業灯を消す（2026-09-13 本人要望）。灯体の印は暗くしたくないので、印より前・マーキーより後に重ねる
     drawBordersPlan(pctx, P, state.dims);
     if (state.mode === "move" && showOn("blackout")) paintBlackout(pctx, plan, litSpots);
     // 範囲選択（マーキー）。灯体の上に重ねて描く
@@ -833,7 +833,7 @@
       /* 前幕・ホリゾントは「下敷き」なので薄く（0.3）。
          一文字幕・袖幕・前一文字は<b>隠すための布</b>なので<b>不透明</b>に塗る。
          2026-09-13 実害: 半透明（0.66〜0.88）で塗ると、光の帯の上に黒が重なった結果が
-         背景（#0d0e10）より暗くなり、室内灯を消したときにマスクの穴からその暗い部分が
+         背景（#0d0e10）より暗くなり、作業灯を消したときにマスクの穴からその暗い部分が
          「黒い光」として見えていた（本人指摘）。布が光を遮るのだから、透かさず塗るのが正しい。
          色は背景よりわずかに明るくして、布そのものの形は輪郭と合わせて読めるようにする。 */
       const masking = pc.solid || pc.curtainKind === "border" || pc.curtainKind === "leg";
@@ -943,7 +943,7 @@
     return rPx;
   }
 
-  /* 室内灯を消す（ブラックアウト。2026-09-13 本人要望「光のあたってないところは真っ暗で見えない」）。
+  /* 作業灯を消す（ブラックアウト。2026-09-13 本人要望「光のあたってないところは真っ暗で見えない」）。
      やり方: オフスクリーンに黒を敷き、destination-out で「光が当たっている場所」だけ穴を開け、
      それを図の上に重ねる。穴は実際のビームの見た目（drawBeamの三角＋光だまり）とは別に、
      着地の光だまり＋出どころから着地までの光の柱をやや広め・柔らかめに取るだけで十分
@@ -1042,7 +1042,7 @@
     state.rig.trusses.forEach((t) => { const Y = B.y + B.h - t.h / d.H * B.h; const sel = state.selTruss === t.id && state.mode === "place"; fctx.strokeStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.lineWidth = sel ? 5 : 3; fctx.beginPath(); fctx.moveTo(B.x - 16, Y); fctx.lineTo(B.x + B.w + 16, Y); fctx.stroke();
       if (sel) { fctx.fillStyle = "#d3ac59"; fctx.fillRect(B.x + B.w + 16, Y - 12, 22, 24); fctx.fillStyle = "#1a1409"; fctx.font = "600 14px sans-serif"; fctx.fillText("↕", B.x + B.w + 20, Y); fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${t.h.toFixed(1)}m（ドラッグ）`, B.x + B.w + 44, Y); } });
     // 光線
-    const litSpotsF = [];   // 室内灯を消す（ブラックアウト）用
+    const litSpotsF = [];   // 作業灯を消す（ブラックアウト）用
     if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; const lv = litFactorOf(f, l); const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
       if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
         const r = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface, lv);
@@ -1084,7 +1084,7 @@
     // トラス（断面＝点）
     state.rig.trusses.forEach((t) => { const q = P({ x: 0, y: t.v * d.D, z: t.h }); const sel = state.selTruss === t.id && state.mode === "place"; fctx.beginPath(); fctx.arc(q.X, q.Y, sel ? 10 : 7, 0, Math.PI * 2); fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.fill(); fctx.fillStyle = "rgba(156,130,63,0.9)"; fctx.font = "14px sans-serif"; fctx.fillText(`奥から${E.trussRow(state.rig, t.id)}列目`, q.X + 12, q.Y - 14); });
     // 光線（この側の灯は濃く、他は薄く）
-    const litSpotsSide = [];   // 室内灯を消す（ブラックアウト）用
+    const litSpotsSide = [];   // 作業灯を消す（ブラックアウト）用
     if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; const lv = litFactorOf(f, l); const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s0 = P(S), tp = P(T); const mine = f.mount.type === "side" && f.mount.side === side; const air = l.surface === "air"; const dim = !(mine || (air && isSel(f.id))) || (state.sel.size && !isSel(f.id));
       if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
         const r = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.D, squashFor("side", be.surface || "air"), false, !be.surface, lv);
@@ -1152,7 +1152,7 @@
       fctx.strokeStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.lineWidth = sel ? 5 : 3; fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke();
       fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.7)"; fctx.font = "15px sans-serif"; fctx.fillText(`${t.label || "バトン"} 高さ${t.h.toFixed(1)}m`, b.X + 10, b.Y); });
     // 光
-    const litSpots3D = [];   // 室内灯を消す（ブラックアウト）用
+    const litSpots3D = [];   // 作業灯を消す（ブラックアウト）用
     if (state.mode === "move") state.rig.fixtures.forEach((f) => {
       const l = lightOf(f.id); if (!isLit(l)) return;
       const lv = litFactorOf(f, l);
@@ -1408,11 +1408,11 @@
 
   /* ---------- 図に出すもの・探す・舞台の大きさ（4図化で空いた場所へ入れた操作） ---------- */
   document.querySelectorAll("#showtoggles button, #lighttoggles button").forEach((b) => {
-    /* 室内灯を消すの入り切りでは、消し具合のつまみの出し入れもいるので renderAll で作り直す。
+    /* 作業灯を消すの入り切りでは、消し具合のつまみの出し入れもいるので renderAll で作り直す。
        ほかは図だけ描き直せば足りる。 */
     b.onclick = () => { state.show[b.dataset.show] = !showOn(b.dataset.show); if (b.dataset.show === "blackout") renderAll(); else { b.setAttribute("aria-pressed", String(showOn(b.dataset.show))); draw(); } };
   });
-  /* 室内灯をどれだけ消すか。つまみと数値入力は同じ値を指す（2026-09-13 本人要望）。 */
+  /* 作業灯をどれだけ消すか。つまみと数値入力は同じ値を指す（2026-09-13 本人要望）。 */
   {
     const setDim = (v, from) => {
       state.dim = E.clamp(E.finite(v, 100), 0, 100);
@@ -1448,7 +1448,7 @@
   /* ---------- 左: 一覧 ---------- */
   // 取り付け場所ごとのまとまり（20灯以上でも追えるように。LuminaPlotのpositions階層に相当）
   /* 取り付け場所ごとの区分。配置でも灯体情報でも同じ見出しを使う（2026-09-11 本人要望。
-     前明かりなのか吊りなのか、1サスなのか2サスなのかが、どちらのページでも分かるように）。 */
+     前明かりなのか吊りなのか、バトン1なのかバトン2なのかが、どちらのページでも分かるように）。 */
   function mountSections(from) {
     const list = from || state.rig.fixtures;
     const secs = [];
@@ -1572,7 +1572,7 @@
     }
     host.append(field("袖幕の入り", range(0, 0.35, 0.01, E.clamp(E.finite(c.legU, 0.08), 0, 0.35), (v) => `両端から${(v * d.W).toFixed(1)}m`,
       (v) => { c.legU = v; draw(); }, () => commit()), true));
-    host.append(el("p", "note", "一文字幕は「図に出すもの」の〈一文字幕〉で出し入れします。室内灯を消すと合わせると、客席から灯体が見えていないかを確かめられます。"));
+    host.append(el("p", "note", "一文字幕は「図に出すもの」の〈一文字幕〉で出し入れします。作業灯を消すと合わせると、客席から灯体が見えていないかを確かめられます。"));
   }
 
   function renderToolStrip() {
@@ -2169,8 +2169,8 @@
     /* 配置はシーン共通なので、シーン送りも再生も照明デザインのときだけ出す（2026-09-11 本人指摘）。
        シーン送りは図の上の帯（場所は残して中身だけ隠す）、再生はパネルの見出し行（丸ごと隠す）。 */
     const inMove = state.mode === "move";
-    /* 「光」と「室内灯を消す」は照明デザインタブだけのもの（2026-09-13 本人要望）。
-       配置タブでは枠ごと隠す。消し具合のつまみは室内灯を消しているときだけ出す。 */
+    /* 「光」と「作業灯を消す」は照明デザインタブだけのもの（2026-09-13 本人要望）。
+       配置タブでは枠ごと隠す。消し具合のつまみは作業灯を消しているときだけ出す。 */
     $("lighttoggles").hidden = !inMove;
     $("dimwrap").hidden = !(inMove && showOn("blackout"));
     { const d = E.clamp(E.finite(state.dim, 100), 0, 100); $("dim").value = d; $("dimnum").value = d; }
@@ -2222,23 +2222,25 @@
      根拠（2026-09-11 閲覧）:
        ・さいたま市文化センター 大ホール 舞台照明設備一覧 … 第1シーリング1.5kw凸×48（8インチ24台2列）、
          第2シーリング2kw凸×32（上下各16台1列）、第1フロントサイド上下各32（4台8段）、
-         1SUS 1kw凸×11＋1kwフレネル×12、SS 舞台上下×各10台、サスバトンは1サス〜5サス。
+         1SUS 1kw凸×11＋1kwフレネル×12、SS 舞台上下×各10台、サスバトンは5本（公開設備表の表記は1サス〜5サス）。
          https://saitama-culture.jp/sculwp/wp-content/uploads/material_stage_sakurasou_202405.pdf
        ・品川 INTERCITY HALL 照明機材リスト（2016/1） … PAR64 500w×120、1kwフレネル×60、SourceFour×30（SS/HS）。
          https://sic-hall.com/pdf/list/light-listn.pdf
        ・萬劇場（小劇場） … CSQ1000w×10・CSQ500w×30・FQ500w×24。https://lasens.com/database/theater-597.html
-       ・位置の呼び名（シーリング＝CL／フロントサイド＝FR／サス＝SUS／1サスは客席に近い方から）
+       ・位置の呼び名（シーリング＝CL／フロントサイド＝FR／サスバトン＝SUS／客席に近い方から数える）
+       ※「サス」は灯体そのものを指す言い方なので、このアプリでは吊り元を「バトン1・バトン2…」と呼ぶ
+         （2026-09-13 本人指摘）。
          https://www.pacnet.co.jp/column/2020/11/24100000.html ／ https://nekolight.com/lite/basic/hall/01.html
-     灯数は「常設の総数」ではなく「1演目で実際に使う目安」。サスの列は客席に近い順に1サス・2サス・3サス。 */
+     灯数は「常設の総数」ではなく「1演目で実際に使う目安」。バトンは客席に近い順にバトン1・バトン2・バトン3。 */
   const spreadU = (n, from = 0.12, to = 0.88) => (n <= 1 ? [0.5] : Array.from({ length: n }, (_, i) => from + (to - from) * i / (n - 1)));
   const RIG_PRESETS = [
     {
       key: "small", name: "小劇場の基本仕込み", count: 20,
       lead: "客席100〜200席くらいの小屋で、芝居を普通に見せる形。",
-      detail: "前明かり6／1サス6／2サス4／SS 下手2・上手2。すべて固定灯（ムービングなし）。",
+      detail: "前明かり6／バトン1に6／バトン2に4／SS 下手2・上手2。すべて固定灯（ムービングなし）。",
       why: "小劇場は常設50〜60灯でも、1演目で回すのは20前後。まず顔が見えて、体に立体感が出る最小構成。",
       build: () => {
-        const b1 = addTrussAt(0.55, 5.5, "1サス"), b2 = addTrussAt(0.3, 5.5, "2サス");
+        const b1 = addTrussAt(0.55, 5.5, "バトン1"), b2 = addTrussAt(0.3, 5.5, "バトン2");
         spreadU(6, 0.15, 0.85).forEach((u) => putFront(u, 5, 6));
         spreadU(6).forEach((u) => putHang(b1, u, "fixed"));
         spreadU(4, 0.2, 0.8).forEach((u) => putHang(b2, u, "fixed"));
@@ -2248,10 +2250,10 @@
     {
       key: "hall", name: "中ホールの基本仕込み", count: 36,
       lead: "500〜1000席のホール。シーリングとフロントサイドが別にある形。",
-      detail: "シーリング8／フロントサイド 下手2・上手2／1サス8／2サス6／3サス4／SS 下手3・上手3。すべて固定灯。",
-      why: "ホールは前明かりが「客席天井のシーリング」と「客席横壁のフロントサイド」に分かれ、サスも3本前後使う（さいたま市文化センター大ホールは1サス〜5サス）。",
+      detail: "シーリング8／フロントサイド 下手2・上手2／バトン1に8／バトン2に6／バトン3に4／SS 下手3・上手3。すべて固定灯。",
+      why: "ホールは前明かりが「客席天井のシーリング」と「客席横壁のフロントサイド」に分かれ、サスバトンも3本前後使う（さいたま市文化センター大ホールは5本）。",
       build: () => {
-        const b1 = addTrussAt(0.58, 6.5, "1サス"), b2 = addTrussAt(0.38, 6.5, "2サス"), b3 = addTrussAt(0.18, 6.5, "3サス");
+        const b1 = addTrussAt(0.58, 6.5, "バトン1"), b2 = addTrussAt(0.38, 6.5, "バトン2"), b3 = addTrussAt(0.18, 6.5, "バトン3");
         spreadU(8, 0.12, 0.88).forEach((u) => putFront(u, 7, 8));
         [0.04, 0.1].forEach((u) => putFront(u, 4, 5.5)); [0.9, 0.96].forEach((u) => putFront(u, 4, 5.5));
         spreadU(8).forEach((u) => putHang(b1, u, "fixed"));
@@ -2263,7 +2265,7 @@
     {
       key: "live", name: "ライブ・コンサート", count: 24,
       lead: "音楽のライブ。動く光が主役で、前明かりは最小限。",
-      detail: "1サス ムービング8／3サス ムービング6／床置き ムービング6／SS 下手2・上手2（固定）。ムービング20・固定4。",
+      detail: "バトン1にムービング8／バトン3にムービング6／床置き ムービング6／SS 下手2・上手2（固定）。ムービング20・固定4。",
       why: "ライブはトラス吊りのムービングと床置き（転がし）で画を作り、顔を平らに見せる前明かりは絞る。",
       build: () => {
         const b1 = addTrussAt(0.55, 6.5, "前バトン"), b3 = addTrussAt(0.15, 6.5, "後バトン");
@@ -2276,10 +2278,10 @@
     {
       key: "play", name: "演劇・素舞台", count: 26,
       lead: "装置の少ない芝居。人の顔と立ち位置がはっきり見えることを優先。",
-      detail: "前明かり8／1サス8／2サス6／SS 下手2・上手2（すべて固定）。",
-      why: "素舞台は「明かりで場所を分ける」ので、前明かりとサスを細かく並べてエリアを作る。動く光は使わない。",
+      detail: "前明かり8／バトン1に8／バトン2に6／SS 下手2・上手2（すべて固定）。",
+      why: "素舞台は「明かりで場所を分ける」ので、前明かりとバトンの灯を細かく並べてエリアを作る。動く光は使わない。",
       build: () => {
-        const b1 = addTrussAt(0.56, 6, "1サス"), b2 = addTrussAt(0.32, 6, "2サス");
+        const b1 = addTrussAt(0.56, 6, "バトン1"), b2 = addTrussAt(0.32, 6, "バトン2");
         spreadU(8, 0.12, 0.88).forEach((u) => putFront(u, 6, 7));
         spreadU(8).forEach((u) => putHang(b1, u, "fixed", 26));
         spreadU(6).forEach((u) => putHang(b2, u, "fixed", 26));
@@ -2289,10 +2291,10 @@
     {
       key: "dance", name: "ダンス", count: 28,
       lead: "体の線を見せたい。横からの光を厚く、前明かりは控えめ。",
-      detail: "前明かり4／1サス6／2サス6／SS 下手3・上手3（固定）／床置き ムービング6。",
+      detail: "前明かり4／バトン1に6／バトン2に6／SS 下手3・上手3（固定）／床置き ムービング6。",
       why: "ダンスは前から当てすぎると体が平らに見えるので、SS（横）と後ろからの抜きを厚くするのが定石。",
       build: () => {
-        const b1 = addTrussAt(0.55, 6.5, "1サス"), b2 = addTrussAt(0.25, 6.5, "2サス");
+        const b1 = addTrussAt(0.55, 6.5, "バトン1"), b2 = addTrussAt(0.25, 6.5, "バトン2");
         spreadU(4, 0.25, 0.75).forEach((u) => putFront(u, 6, 7, 18));
         spreadU(6).forEach((u) => putHang(b1, u, "fixed", 28));
         spreadU(6).forEach((u) => putHang(b2, u, "fixed", 28));
@@ -2303,10 +2305,10 @@
     {
       key: "talk", name: "トーク・発表会", count: 12,
       lead: "人が立って話すだけの会。顔が明るく見えれば足りる。",
-      detail: "前明かり6／1サス4／SS 下手1・上手1（すべて固定）。",
+      detail: "前明かり6／バトン1に4／SS 下手1・上手1（すべて固定）。",
       why: "講演・発表・朗読は顔の明るさが最優先。灯数を絞っても成立する最小構成。",
       build: () => {
-        const b1 = addTrussAt(0.5, 5.5, "1サス");
+        const b1 = addTrussAt(0.5, 5.5, "バトン1");
         spreadU(6, 0.2, 0.8).forEach((u) => putFront(u, 5, 6, 20));
         spreadU(4, 0.25, 0.75).forEach((u) => putHang(b1, u, "fixed", 30));
         putSS("shimote", 0.5, 2, "fixed"); putSS("kamite", 0.5, 2, "fixed");
@@ -2328,10 +2330,10 @@
     {
       key: "circus", name: "サーカス・空中芸", count: 22,
       lead: "空中の演者を追う。高い位置のムービングと、横からの抜きを厚めに。",
-      detail: "前明かり4（固定）／1サス ムービング6／2サス ムービング6／SS 下手3・上手3（固定）。ムービング12・固定10。",
+      detail: "前明かり4（固定）／バトン1にムービング6／バトン2にムービング6／SS 下手3・上手3（固定）。ムービング12・固定10。",
       why: "空中芸は床ではなく空中の一点を狙うので、追える灯＝ムービングが要る。体のシルエットを出すためSSを厚めに立てる。",
       build: () => {
-        const b1 = addTrussAt(0.55, 7, "1サス"), b2 = addTrussAt(0.3, 7, "2サス");
+        const b1 = addTrussAt(0.55, 7, "バトン1"), b2 = addTrussAt(0.3, 7, "バトン2");
         spreadU(4, 0.2, 0.8).forEach((u) => putFront(u, 6, 7));
         spreadU(6).forEach((u) => putHang(b1, u, "moving"));
         spreadU(6).forEach((u) => putHang(b2, u, "moving"));
@@ -2341,7 +2343,7 @@
   ];
   const addTrussAt = (v, h, lbl) => { const t = E.newTruss(uid("t"), v, h, lbl); state.rig.trusses.push(t); return t; };
   const pushFix = (mount, kind, deg) => state.rig.fixtures.push(E.newFixture(uid("f"), state.nextNo++, mount, "", kind, deg));
-  /* 既定の広がり: 前明かりは遠いので細め、サスは中くらい、SSは横から抜くので細め、転がしは広め。
+  /* 既定の広がり: 前明かりは遠いので細め、バトンの灯は中くらい、SSは横から抜くので細め、転がしは広め。
      ムービングは中間（実機のズームは7〜50°）。 */
   const putHang = (t, u, kind, deg) => pushFix({ type: "truss", trussId: t.id, u }, kind, deg || (kind === "moving" ? 14 : 24));
   const putFront = (u, ahead, h, deg) => pushFix({ type: "front", u, ahead, h }, "fixed", deg || 14);
