@@ -719,8 +719,12 @@
   const goboAngleAt = (light, tMs) => {
     if (!light) return 0;
     const spin = clamp(finite(light.goboSpin, 0), -100, 100);
-    if (!spin) return clamp(finite(light.goboAngle, 0), 0, 360);
-    return (finite(light.goboAngle, 0) + (finite(tMs, 0) / 1000) * spin * 0.36) % 360;
+    const base = finite(light.goboAngle, 0);
+    const a = spin ? base + (finite(tMs, 0) / 1000) * spin * 0.36 : base;
+    /* 必ず 0〜360 に畳む。JS の % は符号を残すので、反時計回り（負の速さ）だと負の角が返り、
+       それを goboAngle として再投入した先（帯の筋の断面 goboProfile）が clamp で 0° に潰れて
+       「光だまりは回るのに帯の筋だけ止まる」になっていた（2026-09-13 本人指摘・実測で確認）。 */
+    return ((a % 360) + 360) % 360;
   };
 
   const describeCue = (light, fixture) => {
