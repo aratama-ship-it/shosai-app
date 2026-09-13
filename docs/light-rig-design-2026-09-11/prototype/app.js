@@ -931,10 +931,31 @@
     if (showOn("names")) ctx.fillText(pc.name, lbl.X, lbl.Y + 4); ctx.textAlign = "left";
     ctx.restore();
   }
+  /* 演者より<b>奥</b>にある灯が点いていると、客席からはその演者が影絵（シルエット）に見える。
+     作業灯を消したときだけ、その見え方を絵にする（2026-09-13 本人要望・実際の舞台写真の見え方）。
+     どの灯が当たっているかまでは追わない——逆光があるかどうかだけで決める、絵づくりのための近似。 */
+  function backlitPieces() {
+    const out = new Set();
+    if (!(state.mode === "move" && showOn("blackout"))) return out;
+    const d = state.dims;
+    const lit = state.rig.fixtures
+      .filter((f) => { const l = lightOf(f.id); return isLit(l) && litFactorOf(f, l) > 0.05; })
+      .map((f) => fixtureWorld(f)).filter(Boolean);
+    if (!lit.length) return out;
+    piecesOf().forEach((pc) => {
+      if (pc.kind !== "performer") return;
+      const py = E.clamp(E.finite(pc.v, 0.5), 0, 1) * d.D;
+      if (lit.some((S) => S.y < py - 0.3)) out.add(pc.id);
+    });
+    return out;
+  }
   function drawPiecesUp(ctx, P, pxPerM, opts) {
     if (!showOn("pieces")) return;
     const o = opts || {}, d = state.dims, F = window.STAGE_FIGURE;
+    /* sil＝影絵で描き直す回。光の上へ<b>あとから</b>重ねるので、光が体で遮られて見える。 */
+    const sil = o.silhouette;
     piecesOf().forEach((pc) => {
+      if (sil && !(pc.kind === "performer" && sil.has(pc.id))) return;
       if (pc.kind === "curtain") { drawCurtainUp(ctx, P, pc, d); return; }
       const foot = P({ x: (pc.u - 0.5) * d.W, y: pc.v * d.D, z: 0 });
       const sc = foot.scale == null ? 1 : foot.scale;
@@ -951,9 +972,10 @@
         const stretch = o.stretchAt ? o.stretchAt(pc.v) : 1;
         const zDrop = o.zDropPerM ? o.zDropPerM * H : 0;
         const rig = F.buildRig(pc.pose || "stand", foot.X, foot.Y, H * k, H * k * stretch, yaw, zDrop, null);
-        F.paintShadow(ctx, rig);
-        F.paintBody(ctx, rig, pc.color || "#d8cdb6", null);
+        if (!sil) F.paintShadow(ctx, rig);
+        F.paintBody(ctx, rig, sil ? "#0c0b0a" : (pc.color || "#d8cdb6"), null);
       }
+      if (sil) { ctx.restore(); return; }        // 影絵の回は名前を書かない（光の中の黒い形だけ）
       ctx.fillStyle = "rgba(240,231,214,0.45)"; ctx.font = "14px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top";
       if (showOn("names")) ctx.fillText(pc.name, foot.X, foot.Y + 4); ctx.textAlign = "left";
       ctx.restore();
@@ -1412,8 +1434,24 @@
   const beamOf = (f) => { const l = lightOf(f.id); return E.beamDegAt(f, l, phaseOf(f, l)); };
   /* 光の終点。床・奥の壁を狙う光はその面で止まる。空中を狙う光はそこで止まらず、
      床か奥の壁まで進み、どちらにも当たらなければ図の外へ抜ける（2026-09-11 本人指摘）。 */
+  /* 客席へ向けた光はどの面にも当たらない。狙い点で止めると図の途中で光が切れて見えるので
+     （2026-09-13 本人指摘）、同じ向きへ伸ばして図の外へ抜けさせる。reach＝光源からの長さ(m)。 */
+  const houseRay = (S, T, reach) => {
+    const dx = T.x - S.x, dy = T.y - S.y, dz = T.z - S.z;
+    const len = Math.hypot(dx, dy, dz) || 1, t = Math.max(1, reach) / len;
+    return { x: S.x + dx * t, y: S.y + dy * t, z: S.z + dz * t };
+  };
+  const houseReach = () => Math.hypot(state.dims.W, state.dims.D, state.dims.H) * 1.6;
+  /* 3Dの正面図だけは、遠くまで伸ばすと遠近で画面いっぱいに膨らむので、
+     客席側 y をこの辺りで打ち切る（それでも狙い点より先まで伸びる＝切れて見えない）。 */
+  const houseCapY = (S, W, yMax) => {
+    const dy = W.y - S.y;
+    if (!(dy > 0) || W.y <= yMax) return W;
+    const t = (yMax - S.y) / dy;
+    return { x: S.x + (W.x - S.x) * t, y: yMax, z: S.z + (W.z - S.z) * t };
+  };
   function beamEnd(l, S, T) {
-    if (l && l.surface === "house") return { world: T, surface: null };   // 客席へ向けた光は面に当たらない＝光だまりを描かない
+    if (l && l.surface === "house") return { world: houseRay(S, T, houseReach()), surface: null };   // 客席へ向けた光は面に当たらない＝光だまりを描かない
     if (!l || l.surface !== "air") return { world: T, surface: (l && l.surface) || "floor" };
     const land = E.beamLanding(S, T, state.dims);
     return { world: land, surface: land.on };      // null＝何にも当たらず抜ける
@@ -1517,7 +1555,8 @@
     state.rig.fixtures.forEach((f) => { if (!showOn("fixtures")) return; const S = fixtureWorld(f); if (!S) return; const p = P(S); const Y = isFront(f) ? Math.max(20, p.Y) : p.Y; drawFixtureMark(fctx, p.X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
       if (f.mount.type === "side" && isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${f.mount.h.toFixed(1)}m（ドラッグ）`, p.X + (f.mount.side === "shimote" ? -180 : 26), p.Y - 26); } });
     drawBordersUp(fctx, P, d);
-    if (state.mode === "move" && showOn("blackout")) paintBlackout(fctx, front, litSpotsF);
+    if (state.mode === "move" && showOn("blackout")) { paintBlackout(fctx, front, litSpotsF);
+      drawPiecesUp(fctx, P, B.w / d.W, { yawDeg: 0, silhouette: backlitPieces() }); }
   }
   /* ---------- 描画: 側面図（舞台中央から下手／上手を見る） ---------- */
   function drawSide(sec) {
@@ -1568,7 +1607,8 @@
         fctx.globalAlpha = 0.35; drawFixtureMark(fctx, isFront(f) ? frontX : q.X, q.Y, shapeOf(f.mount), { sel: false, st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) }); fctx.globalAlpha = 1;
       } });
     drawBordersUp(fctx, P, d);
-    if (state.mode === "move" && showOn("blackout")) paintBlackout(fctx, front, litSpotsSide);
+    if (state.mode === "move" && showOn("blackout")) { paintBlackout(fctx, front, litSpotsSide);
+      drawPiecesUp(fctx, P, B.w / d.D, { yawDeg: side === "shimote" ? -90 : 90, silhouette: backlitPieces() }); }
     // 予告
     const hv = state.hover;
     if (state.tool === "side" && hv && hv.canvas === side) { const q = { X: E.clamp(hv.X, B.x, B.x + B.w), Y: E.clamp(hv.Y, B.y, B.y + B.h) }; fctx.strokeStyle = "rgba(240,231,214,0.3)"; fctx.setLineDash([6, 6]); fctx.beginPath(); fctx.moveTo(q.X, B.y + B.h); fctx.lineTo(q.X, q.Y); fctx.stroke(); fctx.setLineDash([]); drawFixtureMark(fctx, q.X, q.Y, "diamond", { ghost: true }); fctx.fillStyle = "rgba(240,231,214,0.85)"; fctx.font = "16px sans-serif"; fctx.fillText(`${side === "shimote" ? "下手" : "上手"}の袖に立てる（クリック）`, q.X + 22, q.Y - 26); }
@@ -1622,7 +1662,7 @@
         /* 3Dでは床の潰れ方を式から出せる。奥行き1mで画面が縦に動く量 ÷ その奥行きでの横1m。
            これが床に落ちた丸の「縦／横」の比になる。壁と空中は客席に正対するので潰さない。 */
         // 客席へ向けた光は、この図では観客に向かってくる。帯は舞台の手前端まで、まぶしさは灯体のまわりに
-        const be = beamEnd(l, S, T), e2 = P(l.surface === "house" ? { ...be.world, y: Math.min(be.world.y, d.D) } : be.world);
+        const be = beamEnd(l, S, T), e2 = P(l.surface === "house" ? houseCapY(S, be.world, d.D * 1.45) : be.world);
         const sq = be.surface === "floor"
           ? [1, Math.min(1, ((L.bottomY - L.floorY) / d.D) / (L.pxPerM * Math.max(0.05, e2.scale || 1)))]
           : squashFor("front", be.surface || "air");
@@ -1638,7 +1678,8 @@
     state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S);
       if (showOn("fixtures")) drawFixtureMark(fctx, p.X, isFront(f) ? Math.max(20, p.Y) : p.Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) }); });
     drawBordersUp(fctx, P, d);
-    if (state.mode === "move" && showOn("blackout")) paintBlackout(fctx, cv, litSpots3D);
+    if (state.mode === "move" && showOn("blackout")) { paintBlackout(fctx, cv, litSpots3D);
+      drawPiecesUp(fctx, P, L.pxPerM, { yawDeg: 0, zDropPerM: (L.bottomY - L.floorY) / d.D, stretchAt: (v) => 1 + L.seat.rise * v, silhouette: backlitPieces() }); }
     fctx.fillStyle = "rgba(240,231,214,0.4)"; fctx.font = "15px sans-serif"; fctx.textBaseline = "top";
     fctx.fillText(`${L.seat.label}から見た形（舞台スケッチの正面図と同じ描き方）`, 8, h - 24);
   }
