@@ -77,6 +77,16 @@ test("転換は次シーンに入る前の区間としてシーン行にも示�
   assert.match(css, /\.stage-timeline-scene-transition-marker \{[\s\S]*?repeating-linear-gradient/);
 });
 
+test("同じセクションのシーン間には0秒でも転換ポイントを必ず示す", () => {
+  assert.match(timeline, /if \(index < scenes\.length - 1\) transitions\.push\(\{/);
+  assert.match(timeline, /title: travel > 0 \? tx\("転換"\) : tx\("転換ポイント"\)/);
+  assert.match(timeline, /sourceSceneId: scene\.id,[\s\S]*?targetSceneId: scenes\[index \+ 1\]\.id,[\s\S]*?isPoint: travel <= 0/);
+  assert.match(timeline, /transition\.sourceSceneId[\s\S]*?segment\.sceneId === transition\.sourceSceneId/);
+  assert.match(timeline, /stage-timeline-transition-block[\s\S]*?if \(isPoint\) block\.classList\.add\("is-point"\)/);
+  assert.match(css, /\.stage-timeline-transition-block\.is-point \{[\s\S]*?width: 3px !important/);
+  assert.match(css, /\.stage-timeline-scene-transition-marker\.is-point::after,[\s\S]*?rotate\(45deg\)/);
+});
+
 test("再生中は転換開始で動かし、転換の長さで次シーンへ到着する", () => {
   assert.match(sketch, /function beginSceneAnim\(fromScene, liveSpinsIn, durationMs = null\)/);
   assert.match(sketch, /transitionDurationMs/);

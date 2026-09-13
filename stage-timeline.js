@@ -660,9 +660,11 @@
   function withSceneTransitionPhases(segments, transitions) {
     const phased = segments.map((segment) => ({ ...segment, sceneEnd: segment.end }));
     (transitions || []).forEach((transition) => {
-      const source = [...phased].reverse().find((segment) => segment.sceneId
-        && transition.start >= segment.start - 1e-6
-        && transition.end <= segment.end + 1e-6);
+      const source = transition.sourceSceneId
+        ? phased.find((segment) => segment.sceneId === transition.sourceSceneId)
+        : [...phased].reverse().find((segment) => segment.sceneId
+          && transition.start >= segment.start - 1e-6
+          && transition.end <= segment.end + 1e-6);
       if (!source) return;
       source.sceneEnd = Math.max(source.start, Math.min(source.sceneEnd, transition.start));
       source.transitionId = transition.id;
@@ -714,6 +716,8 @@
           title: `${tx("転換")} ${index + 1}`,
           start: Math.max(0, countToSec(song.track, startCount)),
           end: Math.max(0, countToSec(song.track, Math.max(startCount + 0.01, endCount))),
+          sourceSceneId: segments[index] && segments[index].sceneId,
+          targetSceneId: segments[index + 1] && segments[index + 1].sceneId,
         };
       });
       const plannedEnd = countToSec(song.track,
@@ -752,11 +756,14 @@
       const travel = rehearsal.transitionToNextSeconds == null ? 0 : Math.max(0, finite(rehearsal.transitionToNextSeconds, 0));
       const duration = sceneTimelineSeconds(scene) * scale;
       const item = { id: scene.id, sceneId: scene.id, title: scene.title || `${tx("シーン")}${index + 1}`, start: at, end: at + duration };
-      if (travel > 0) transitions.push({
+      if (index < scenes.length - 1) transitions.push({
         id: `${scene.id}-transition`,
-        title: tx("転換"),
-        start: at + Math.max(0, hold) * scale,
+        title: travel > 0 ? tx("転換") : tx("転換ポイント"),
+        start: travel > 0 ? at + Math.max(0, hold) * scale : at + duration,
         end: at + duration,
+        sourceSceneId: scene.id,
+        targetSceneId: scenes[index + 1].id,
+        isPoint: travel <= 0,
       });
       at += duration;
       return item;
@@ -1493,17 +1500,23 @@
     timeline.transitions.forEach((transition) => {
       const block = document.createElement("div");
       block.className = "stage-timeline-transition-block";
+      const isPoint = Boolean(transition.isPoint || Math.abs(transition.end - transition.start) < 1e-6);
+      if (isPoint) block.classList.add("is-point");
       const label = document.createElement("span");
       label.className = "stage-timeline-block-label";
       label.textContent = transition.title;
       block.append(label);
-      block.title = `${labelPosition(transition.start)}–${labelPosition(transition.end)} ${transition.title}${timelineContentCanResize() ? `（${tx("左右端をドラッグで長さを調整")}）` : ""}`;
+      block.title = isPoint
+        ? `${labelPosition(transition.end)} ${tx("転換ポイント")}`
+        : `${labelPosition(transition.start)}–${labelPosition(transition.end)} ${transition.title}${timelineContentCanResize() ? `（${tx("左右端をドラッグで長さを調整")}）` : ""}`;
+      block.setAttribute("role", "img");
+      block.setAttribute("aria-label", block.title);
       placeBlock(block, transition.start, transition.end);
       els.transitionsLane.append(block);
 
       const source = timeline.segments.find((segment) => segment.transitionId === transition.id);
       if (!source) return;
-      if (timelineContentCanResize()) {
+      if (!isPoint && timelineContentCanResize()) {
         addTimelineResizeHandle(block, "start", {
           sceneId: source.sceneId,
           part: "hold",
@@ -1520,7 +1533,8 @@
       ));
       const marker = document.createElement("div");
       marker.className = "stage-timeline-scene-transition-marker";
-      if (pxFor(transition.end) - pxFor(transition.start) < 64) marker.classList.add("is-compact");
+      if (isPoint) marker.classList.add("is-point");
+      else if (pxFor(transition.end) - pxFor(transition.start) < 64) marker.classList.add("is-compact");
       marker.setAttribute("aria-hidden", "true");
       marker.textContent = target
         ? `${tx("転換")} → ${target.title}`

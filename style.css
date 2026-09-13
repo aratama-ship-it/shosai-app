@@ -16363,6 +16363,30 @@ body.is-timeline-block-resizing { cursor: ew-resize; user-select: none; -webkit-
 
 .stage-timeline-scene-transition-marker.is-compact { padding-inline: 0; color: transparent; }
 
+.stage-timeline-scene-transition-marker.is-point {
+  width: 3px !important;
+  min-width: 3px;
+  padding: 0;
+  overflow: visible;
+  transform: translateX(-1px);
+  color: transparent;
+  background: var(--stage-timeline-accent);
+  border: 0;
+}
+
+.stage-timeline-scene-transition-marker.is-point::after,
+.stage-timeline-transition-block.is-point::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 1px solid var(--stage-timeline-panel);
+  background: var(--stage-timeline-accent);
+}
+
 .stage-timeline-transition-block {
   display: flex;
   align-items: center;
@@ -16376,6 +16400,17 @@ body.is-timeline-block-resizing { cursor: ew-resize; user-select: none; -webkit-
   font-weight: 700;
   line-height: normal;
 }
+
+.stage-timeline-transition-block.is-point {
+  width: 3px !important;
+  min-width: 3px;
+  padding: 0;
+  overflow: visible;
+  transform: translateX(-1px);
+  background: var(--stage-timeline-accent);
+}
+
+.stage-timeline-transition-block.is-point .stage-timeline-block-label { display: none; }
 
 .stage-timeline-cue {
   display: flex;
