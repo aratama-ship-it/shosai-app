@@ -3083,16 +3083,18 @@
     $("lighttoggles").hidden = !inMove;
     $("dimwrap").hidden = !(inMove && showOn("blackout"));
     { const d = E.clamp(E.finite(state.dim, 100), 0, 100); $("dim").value = d; $("dimnum").value = d; }
-    $("scene-name").textContent = `シーン ${state.sceneIndex + 1}「${scene().name}」`;
+    // シーン名はLXQパネルの上（幅が狭いので「1. 名前」と短く）
+    $("scene-name").textContent = `${state.sceneIndex + 1}. ${scene().name}`;
+    $("scene-name").title = `シーン ${state.sceneIndex + 1}「${scene().name}」`;
     $("scenerow").classList.toggle("off", !inMove);   // 場所は残す（図の位置を両ページで揃える）
     $("insphead").hidden = !inMove;
-    /* いま画面に出ている明かりがどのキューの中身か（2026-09-13 本人要望）。
+    /* 図の上の中央＝いま画面に出ているデザインがどのキューか（2026-09-13 本人要望でいちばん大きく）。
        どのキューにも入っていなければ「未登録の下書き」と出す。 */
-    { const qb = $("qbadge");
-      if (qb) { const sc0 = scene(), q0 = lxEditingQ(sc0);
-        qb.textContent = q0 ? `LXQ ${lxNo(sc0, E.finite(q0.seq, 1))}${q0.name ? `　${q0.name}` : ""}` : "未登録の下書き";
-        qb.classList.toggle("draft", !q0);
-        qb.title = q0 ? "このキューを編集しています。変えたところはそのまま入ります" : "どのキューにも入っていません。LXQパネルの〈＋ 新規キュー〉でキューにできます"; } }
+    { const qn = $("qnow");
+      if (qn) { const sc0 = scene(), q0 = lxEditingQ(sc0);
+        qn.innerHTML = q0 ? `LXQ ${lxNo(sc0, E.finite(q0.seq, 1))}${q0.name ? `<em>${q0.name.replace(/[<>&]/g, "")}</em>` : ""}` : "未登録の下書き";
+        qn.classList.toggle("draft", !q0);
+        qn.title = q0 ? "このキューを編集しています。変えたところはそのまま入ります" : "どのキューにも入っていません。LXQパネルの〈＋ 新規キュー〉でキューにできます"; } }
     $("transport").hidden = !inMove;
     $("empty").hidden = Boolean(state.rig.trusses.length || state.rig.fixtures.length);
     /* いま編集しているデザイン名と、未適用かどうかを1行で出す（2026-09-13 保存機能の追加にあわせて）。 */

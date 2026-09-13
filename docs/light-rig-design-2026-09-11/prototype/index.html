@@ -123,8 +123,16 @@
   /* シーン送り。窓の中央に置き、配置タブでは中身だけ隠す（場所は残して図の位置をそろえる）。 */
   .scenebox{grid-column:2;justify-self:center;gap:12px}
   .scenebox.off>*{visibility:hidden}
-  .scenebar{display:flex;align-items:center;gap:6px}
-  .scenebar .name{font-family:var(--serif);font-size:13.5px;color:var(--milk);white-space:nowrap}
+  .scenebar{display:flex;align-items:center;gap:4px;min-width:0}
+  .scenebar .name{font-family:var(--serif);font-size:13px;color:var(--milk);flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+  /* セットのシーン（LXQパネルの上）。 */
+  .lxscene{display:flex;flex-direction:column;gap:3px;padding-bottom:5px;border-bottom:1px solid var(--line-dark)}
+  .lxscene .kicker{margin:0}
+  .lxscene .scenebar .btn.small{padding:2px 6px;min-height:24px}
+  /* 図の上の中央＝いま画面に出ているデザインがどのキューか。いちばん大きく出す。 */
+  .qnow{font:600 20px/1.2 var(--sans);color:var(--brass);letter-spacing:.04em;white-space:nowrap;display:flex;align-items:baseline;gap:9px}
+  .qnow em{font-style:normal;font-weight:400;font-size:14px;color:var(--milk);font-family:var(--serif);letter-spacing:.06em}
+  .qnow.draft{color:var(--milk-dim);font-weight:400;font-size:15px}
   /* 再生（.transport）は照明デザインパネルの見出し行、オン・オフの左に置く（2026-09-13 本人要望）。 */
   .transport{display:flex;align-items:center;gap:5px}
   .scenebar .btn.small{min-height:24px;padding:2px 8px;font-size:12px}
@@ -242,11 +250,7 @@
      （2026-09-13 実測: 横並びだと6文字の見出しが3行に折り返った）。上下2段にする。
      上＝パネル名、下＝シーン送り・再生とオン・オフを右寄せ。 */
   .insphead{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:5px 6px;margin-bottom:6px}
-  .insphead .ptitle{margin:0}
-  .insptitle{display:flex;align-items:center;gap:7px;margin:0 auto 0 0;min-width:0;flex-wrap:wrap}
-  /* いま編集しているキュー番号。どのキューにも入っていないときは控えめな色にする。 */
-  .qbadge{font:600 12.5px/1 var(--sans);color:#1a1409;background:var(--brass);padding:5px 7px;white-space:nowrap;letter-spacing:.02em}
-  .qbadge.draft{color:var(--milk-dim);background:none;border:1px dashed var(--line-dark);font-weight:400}
+  .insphead .ptitle{margin:0 auto 0 0}
   .insphead .ontoggle{order:1}
   .insphead .transport{order:2}
   .panelhead-actions{display:contents}
@@ -511,12 +515,10 @@
           <!-- シーン送りは「照明デザイン」のときだけ中身を出す。
                配置では隠すが場所は残す（図の位置が両ページでずれないように・2026-09-11 本人指摘）。
                再生（最初へ／再生／停止／時刻）は 2026-09-13 本人要望でパネル側へ移した。 -->
+          <!-- 中央は「いま画面に出ているデザインがどのキューか」。シーン送りはLXQパネルの上へ移した
+               （2026-09-13 本人要望「もっと大きく」）。中身は app.js が入れる。 -->
           <span class="fb scenebox" id="scenerow">
-            <span class="scenebar">
-              <button type="button" class="btn small quiet" id="scene-prev">〈 前</button>
-              <span class="name" id="scene-name"></span>
-              <button type="button" class="btn small quiet" id="scene-next">次 〉</button>
-            </span>
+            <span class="qnow" id="qnow"></span>
           </span>
         </div>
         <!-- 凸の形: 上＝平面図（真上から）、下段＝下手｜客席から（正面）｜上手。
@@ -552,6 +554,15 @@
             <div class="list" id="list"></div>
           </section>
           <section class="panel" id="panel-lxq">
+            <!-- セットのシーン（舞台スケッチ側の場面）。図の上の帯から移設（2026-09-13 本人要望）。 -->
+            <div class="lxscene">
+              <p class="kicker">セットのシーン</p>
+              <span class="scenebar">
+                <button type="button" class="btn small quiet" id="scene-prev" title="前のシーンへ">〈</button>
+                <span class="name" id="scene-name"></span>
+                <button type="button" class="btn small quiet" id="scene-next" title="次のシーンへ">〉</button>
+              </span>
+            </div>
             <div class="lxhead">
               <p class="ptitle">LXQ</p>
               <button type="button" class="ontoggle" id="lxlink" aria-pressed="true"><span class="sw"></span><b><span class="swlab">シーンと連動</span>オン</b></button>
@@ -574,8 +585,7 @@
                  （パネル名「照明デザイン」がわかれば足りる）。配置タブでは丸ごと隠す
                  （配置モードは選んだ灯体／配置(ショー共通)という別の静的見出しを使う）。 -->
             <div class="insphead" id="insphead" hidden>
-              <!-- いま画面に出ている明かりがどのキューの中身か（2026-09-13 本人要望）。中身は app.js が入れる。 -->
-              <div class="insptitle"><p class="ptitle">照明デザイン</p><span class="qbadge" id="qbadge"></span></div>
+              <p class="ptitle">照明デザイン</p>
               <div class="panelhead-actions" id="panelhead-actions">
                 <span class="transport" id="transport" hidden>
                   <button type="button" class="btn small" id="t-home">最初へ</button>
@@ -656,8 +666,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789308783"></script>
-<script src="stage-figure.js?v=1789308783"></script>
-<script src="app.js?v=1789308783"></script>
+<script src="rig-engine.js?v=1789310875"></script>
+<script src="stage-figure.js?v=1789310875"></script>
+<script src="app.js?v=1789310875"></script>
 </body>
 </html>
