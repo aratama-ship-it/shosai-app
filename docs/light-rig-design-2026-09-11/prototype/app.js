@@ -1058,18 +1058,41 @@
          出どころが狙い先の真上にあるときは線が点になるので引かない（本体と同じ）。 */
       if (blen > 6) { ctx.strokeStyle = hexA(color, (dim ? 0.22 : 0.55) * E.clamp(E.finite(lv, 1), 0, 1)); ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(from.X, from.Y); ctx.lineTo(to.X, to.Y); ctx.stroke(); ctx.setLineDash([]); }
     } else {
-      const g = ctx.createLinearGradient(to.X - nx, to.Y - ny, to.X + nx, to.Y + ny);
       const prof = gobo ? goboProfile(gobo) : null;
-      if (!prof) BEAM_EDGE.forEach(([at, w]) => g.addColorStop(at, hexA(color, 0.16 * w * a)));
-      else {
-        /* 模様あり: 縁の柔らかさ（BEAM_EDGE）×断面の明るさ。塞がっている所も
-           もやの分だけ薄く残す（0.12）。完全に消すと筋が宙に浮いて見える。 */
-        const edge = (t) => { for (let i = 1; i < BEAM_EDGE.length; i++) { const [a0, w0] = BEAM_EDGE[i - 1], [a1, w1] = BEAM_EDGE[i];
-          if (t <= a1) return w0 + ((t - a0) / (a1 - a0)) * (w1 - w0); } return 0; };
-        for (let i = 0; i < prof.length; i++) {
-          const t = (i + 0.5) / prof.length;
-          g.addColorStop(t, hexA(color, 0.16 * edge(t) * a * (0.12 + 0.88 * prof[i])));
+      /* 縁の柔らかさ（BEAM_EDGE）を t=0〜1 で引けるようにしたもの。 */
+      const edge = (t) => { for (let i = 1; i < BEAM_EDGE.length; i++) { const [e0, w0] = BEAM_EDGE[i - 1], [e1, w1] = BEAM_EDGE[i];
+        if (t <= e1) return w0 + ((t - e0) / (e1 - e0)) * (w1 - w0); } return 0; };
+      /* 帯を横切る濃淡の並び。t は帯の左端0〜右端1。
+         模様あり: 縁の柔らかさ×断面の明るさ。塞がっている所も
+         もやの分だけ薄く残す（0.12）。完全に消すと筋が宙に浮いて見える。 */
+      const band = [];
+      if (!prof) BEAM_EDGE.forEach(([at, w]) => band.push([at, hexA(color, 0.16 * w * a)]));
+      else for (let i = 0; i < prof.length; i++) { const t = (i + 0.5) / prof.length;
+        band.push([t, hexA(color, 0.16 * edge(t) * a * (0.12 + 0.88 * prof[i]))]); }
+      /* 帯の中の筋は、灯体（点）から放射状に伸びなければならない。
+         createLinearGradient は等値線が平行なので、筋が先端へ収束せず
+         幅がどこでも同じになる（2026-09-13 本人指摘「点からの放射状でなく完全な平行」）。
+         灯体の位置に置いた扇形グラデーション（conic）なら、等値線が
+         灯体から出る半直線そのものになる。塗りは三角1枚のままなので重くならない。
+         各段の角度は帯の端の実座標から出すので、着地側での筋の位置は今までと同じ。
+         conic がない環境（古いSafari等）と、帯が線に潰れているときは今までの平行に戻す。 */
+      let g = null;
+      if (ctx.createConicGradient && blen > 8) {
+        const TAU = Math.PI * 2, wrapA = (v) => ((v % TAU) + TAU) % TAU;
+        const angAt = (t) => Math.atan2(to.Y + (2 * t - 1) * ny - from.Y, to.X + (2 * t - 1) * nx - from.X);
+        const angL = angAt(0), angR = angAt(1);
+        const cw = wrapA(angR - angL) <= Math.PI;          // 帯の左端から右端へ回る向き
+        const start = cw ? angL : angR, sweep = cw ? wrapA(angR - angL) : wrapA(angL - angR);
+        if (sweep > 1e-4) {
+          g = ctx.createConicGradient(start, from.X, from.Y);
+          band.map(([t, col]) => [E.clamp(wrapA(angAt(t) - start) / TAU, 0, 1), col])
+              .sort((p, q) => p[0] - q[0])
+              .forEach(([pos, col]) => g.addColorStop(pos, col));
         }
+      }
+      if (!g) {
+        g = ctx.createLinearGradient(to.X - nx, to.Y - ny, to.X + nx, to.Y + ny);
+        band.forEach(([t, col]) => g.addColorStop(t, col));
       }
       ctx.fillStyle = g;
       ctx.beginPath();
