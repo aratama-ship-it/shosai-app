@@ -131,10 +131,13 @@ test("転換の長さ・暗転・メモは選択中シーンの上下にある�
   assert.match(source, /cueInput\.placeholder = "—"/);
   assert.match(source, /sharedHint\.textContent = `\$\{tx\("空欄は上部のアニメ時間"\)\} \$\{\(state\.sceneAnimMs \/ 1000\)\.toFixed\(1\)\}\$\{tx\("秒"\)\}`/);
   assert.match(source, /const growTransitionNote = \(preserveCurrent = false\) => \{[\s\S]*noteInput\.scrollHeight \+ borderHeight[\s\S]*Math\.max\(46, currentHeight, contentHeight\)/);
-  assert.match(source, /if \(isOpen && featureOn\("sceneTransitions"\)\) \{[\s\S]*if \(previous\) els\.sceneList\.append\(makeSceneTransitionFrame\(previous, scene, "incoming"\)\)/);
-  assert.match(source, /if \(isOpen && featureOn\("sceneTransitions"\)\) \{[\s\S]*if \(next\) els\.sceneList\.append\(makeSceneTransitionFrame\(scene, next, "outgoing"\)\)/);
+  assert.match(source, /const makeSceneTransitionPoint = \(fromScene, toScene\) => \{/);
+  assert.match(source, /point\.setAttribute\("aria-expanded", String\(expanded\)\)/);
+  assert.match(source, /expandedSceneTransitionToId === toScene\.id \|\| expandedBySetting/);
+  assert.match(source, /if \(next\) els\.sceneList\.append\(makeSceneTransitionPoint\(scene, next\)\)/);
+  assert.match(source, /boundary\.append\(makeSceneTransitionFrame\(fromScene, toScene, "between"\)\)/);
   assert.doesNotMatch(source, /delete (?:scene|toScene)\.(?:cueSeconds|blackout|transitionNote)/);
-  assert.match(source, /position === "outgoing" && featureOn\("sceneTiming"\)[\s\S]*makeRehearsalTimeInput\([\s\S]*fromScene,[\s\S]*"transitionToNextSeconds"/);
+  assert.match(source, /\(position === "outgoing" \|\| position === "between"\) && featureOn\("sceneTiming"\)[\s\S]*makeRehearsalTimeInput\([\s\S]*fromScene,[\s\S]*"transitionToNextSeconds"/);
   assert.match(source, /timing\.append\(makeRehearsalTimeInput\(scene, "見せる時間", "holdDurationSeconds"\)\)/);
   assert.match(css, /\.stage-scene-row\.is-open \{[^}]*background:\s*rgba\(168, 75, 38, 0\.11\);/s);
   assert.match(css, /\.stage-scene-row\.is-open \.stage-scene-chip \{[^}]*background:\s*rgba\(168, 75, 38, 0\.16\);/s);
@@ -143,6 +146,8 @@ test("転換の長さ・暗転・メモは選択中シーンの上下にある�
   assert.match(css, /\.stage-scene-transition \{[^}]*gap:\s*4px;[^}]*padding:\s*6px 7px 7px 16px;/s);
   assert.match(css, /\.stage-scene-transition-controls input\[type="number"\] \{[^}]*width:\s*64px;[^}]*min-height:\s*38px;/s);
   assert.match(css, /\.stage-scene-transition-note textarea \{[^}]*width:\s*100%;[^}]*min-height:\s*46px;[^}]*resize:\s*vertical;/s);
+  assert.match(css, /\.stage-scene-transition-point \{[^}]*min-height:\s*30px;[^}]*border:\s*1px solid rgba\(211, 172, 89, 0\.32\);[^}]*background:\s*rgba\(211, 172, 89, 0\.065\);/s);
+  assert.match(css, /\.stage-scene-transition-point-axis::after \{[^}]*width:\s*7px;[^}]*height:\s*7px;[^}]*transform:\s*translateY\(-50%\) rotate\(45deg\);/s);
 });
 
 test("背景の常設アイコンを外し、描画・文字・写真を背景モーダルへ集約する", () => {

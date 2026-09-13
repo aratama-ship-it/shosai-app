@@ -2445,6 +2445,94 @@ html.stage-pwa-tablet .stage-sketch-kicker { display: none; }
 
 .stage-scene-row.is-open .stage-scene-chip.is-open::before { display: none; }
 
+/* 通常モードでもシーン間の境界は必ず見える。長さやメモは押した時だけ開き、
+   一覧を読むための高さは増やしすぎない。 */
+.stage-scene-transition-boundary {
+  display: grid;
+  gap: 0;
+  margin: -2px 3px 4px;
+}
+
+.stage-scene-transition-point {
+  display: grid;
+  grid-template-columns: 18px auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  padding: 3px 7px;
+  border: 1px solid rgba(211, 172, 89, 0.32);
+  background: rgba(211, 172, 89, 0.065);
+  color: var(--milk-dim);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stage-scene-transition-point:hover,
+.stage-scene-transition-point:focus-visible,
+.stage-scene-transition-point[aria-expanded="true"] {
+  border-color: var(--brass);
+  color: var(--milk);
+  outline: none;
+}
+
+.stage-scene-transition-point-axis {
+  position: relative;
+  align-self: stretch;
+  min-height: 22px;
+}
+
+.stage-scene-transition-point-axis::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: -4px;
+  bottom: -4px;
+  width: 1px;
+  background: rgba(211, 172, 89, 0.62);
+}
+
+.stage-scene-transition-point-axis::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  background: var(--brass);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.stage-scene-transition-point-kicker {
+  color: var(--brass);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.stage-scene-transition-point-route,
+.stage-scene-transition-point-summary {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-scene-transition-point-summary { color: var(--brass); }
+.stage-scene-transition-point-summary:empty { display: none; }
+
+.stage-scene-transition-boundary > .stage-scene-transition {
+  margin: 0;
+  border-top: 0;
+}
+
+.stage-scene-transition.is-between::before,
+.stage-scene-transition.is-between::after { display: none; }
+
 /* 転換は場面の中身ではなく、二つの場面をつなぐ札として選択行の上下へ置く。
    錆色の選択枠と競合しないよう、細い真鍮色の線で時間軸を示す。 */
 .stage-scene-transition {

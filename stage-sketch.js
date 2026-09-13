@@ -18508,6 +18508,8 @@
 
   // 「後からまとめる」の開始行。プロジェクトの内容ではないためstateへ保存しない。
   let wrapPickStartId = null;
+  // 常設の転換ポイントから開いた詳細。ショーの内容ではないため保存しない。
+  let expandedSceneTransitionToId = null;
 
   function clearWrapPick() {
     wrapPickStartId = null;
@@ -18722,7 +18724,7 @@
           controls.append(dark);
         }
 
-        if (position === "outgoing" && featureOn("sceneTiming")) {
+        if ((position === "outgoing" || position === "between") && featureOn("sceneTiming")) {
           const movement = makeRehearsalTimeInput(
             fromScene,
             "次のシーンへの移動時間",
@@ -18767,6 +18769,61 @@
 
         frame.append(head, controls, noteLabel);
         return frame;
+      };
+
+      /* 転換の長さが0秒でも、隣り合うシーンの間には必ず境界がある。
+       * 一覧では短い札を常設し、必要なときだけ既存の転換詳細を同じ場所へ開く。 */
+      const makeSceneTransitionPoint = (fromScene, toScene) => {
+        const boundary = document.createElement("div");
+        boundary.className = "stage-scene-transition-boundary";
+        boundary.dataset.transitionFrom = fromScene.id;
+        boundary.dataset.transitionTo = toScene.id;
+
+        const point = document.createElement("button");
+        point.type = "button";
+        point.className = "stage-scene-transition-point";
+        const expandedBySetting = featureOn("sceneTransitions")
+          && (fromScene.id === p.activeSceneId || toScene.id === p.activeSceneId);
+        const expanded = expandedSceneTransitionToId === toScene.id || expandedBySetting;
+        point.setAttribute("aria-expanded", String(expanded));
+        point.setAttribute(
+          "aria-label",
+          `${tx("転換")}: ${fromScene.title} → ${toScene.title}`,
+        );
+        point.title = tx(expanded ? "転換の詳細を閉じる" : "転換の詳細を開く");
+
+        const axis = document.createElement("span");
+        axis.className = "stage-scene-transition-point-axis";
+        axis.setAttribute("aria-hidden", "true");
+        const kicker = document.createElement("span");
+        kicker.className = "stage-scene-transition-point-kicker";
+        kicker.textContent = tx("転換");
+        const route = document.createElement("span");
+        route.className = "stage-scene-transition-point-route";
+        route.textContent = `${sceneNumbers.get(fromScene.id) || ""} → ${sceneNumbers.get(toScene.id) || ""}`;
+        const facts = [];
+        if (toScene.cueSeconds !== null) facts.push(`${toScene.cueSeconds}${tx("秒")}`);
+        if (toScene.blackout) facts.push(tx("暗転"));
+        if (toScene.transitionNote) facts.push(tx("メモ"));
+        const summary = document.createElement("span");
+        summary.className = "stage-scene-transition-point-summary";
+        summary.textContent = facts.join("・");
+        point.append(axis, kicker, route, summary);
+        point.addEventListener("click", () => {
+          expandedSceneTransitionToId = expandedSceneTransitionToId === toScene.id
+            ? null : toScene.id;
+          renderScenes();
+          requestAnimationFrame(() => {
+            const reopened = els.sceneList && els.sceneList.querySelector(
+              `.stage-scene-transition-boundary[data-transition-to="${CSS.escape(toScene.id)}"] .stage-scene-transition-point`,
+            );
+            if (reopened) reopened.focus();
+          });
+        });
+
+        boundary.append(point);
+        if (expanded) boundary.append(makeSceneTransitionFrame(fromScene, toScene, "between"));
+        return boundary;
       };
 
       p.scenes.forEach((scene, i) => {
@@ -19012,14 +19069,10 @@
             requestAnimationFrame(() => growNote(false));
           });
         }
-        if (isOpen && featureOn("sceneTransitions")) {
-          const previous = previousSceneOf(scene);
-          if (previous) els.sceneList.append(makeSceneTransitionFrame(previous, scene, "incoming"));
-        }
         els.sceneList.append(row);
-        if (isOpen && featureOn("sceneTransitions")) {
+        if (scene.kind === "scene") {
           const next = nextSceneOf(scene);
-          if (next) els.sceneList.append(makeSceneTransitionFrame(scene, next, "outgoing"));
+          if (next) els.sceneList.append(makeSceneTransitionPoint(scene, next));
         }
       });
       linkSceneBars();
@@ -19620,7 +19673,8 @@
 
     const host = els.sceneList;
     if (!host) return;
-    const kids = [...host.children].filter((el) => el !== row);
+    const kids = [...host.children].filter((el) => el !== row
+      && (el.dataset.sceneId || el === sceneDrag.hole));
     let ref = null;
     for (let k = 0; k < kids.length; k += 1) {
       if (kids[k] === sceneDrag.hole) continue;
