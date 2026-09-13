@@ -94,7 +94,7 @@
     return list;
   }
   const state = {
-    mode: "place",                     // "place" | "move"
+    mode: "move",                      // "place" | "move"。既定は照明デザイン（2026-09-13 本人指定。こちらを使う頻度が高い）
     dims: { W: 12, D: 8, H: 8 },       // 舞台の幅・奥行き・高さ（m）。右の「舞台の大きさ」で変えられる
     rig: { trusses: [], fixtures: [] },
     /* pieces は「舞台スケッチ側ですでに置かれている演者・セット」。
