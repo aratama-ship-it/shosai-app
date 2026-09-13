@@ -242,7 +242,11 @@
      （2026-09-13 実測: 横並びだと6文字の見出しが3行に折り返った）。上下2段にする。
      上＝パネル名、下＝シーン送り・再生とオン・オフを右寄せ。 */
   .insphead{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:5px 6px;margin-bottom:6px}
-  .insphead .ptitle{margin:0 auto 0 0}
+  .insphead .ptitle{margin:0}
+  .insptitle{display:flex;align-items:center;gap:7px;margin:0 auto 0 0;min-width:0;flex-wrap:wrap}
+  /* いま編集しているキュー番号。どのキューにも入っていないときは控えめな色にする。 */
+  .qbadge{font:600 12.5px/1 var(--sans);color:#1a1409;background:var(--brass);padding:5px 7px;white-space:nowrap;letter-spacing:.02em}
+  .qbadge.draft{color:var(--milk-dim);background:none;border:1px dashed var(--line-dark);font-weight:400}
   .insphead .ontoggle{order:1}
   .insphead .transport{order:2}
   .panelhead-actions{display:contents}
@@ -354,7 +358,12 @@
      名前は縮められるようにして、番号と2つのボタンだけは必ず出す。 */
   .lxrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:3px;align-items:center;min-height:28px;padding:1px 0;min-width:0}
   .lxrow .qno{font:600 11px/1 var(--sans);color:#1a1409;background:var(--brass);padding:4px 4px;white-space:nowrap;letter-spacing:0}
-  .lxrow.cur .qno{background:var(--rust);color:var(--milk)}
+  .lxrow.cur .qno{background:rgba(156,130,63,.45);color:var(--milk)}
+  /* いま編集しているキュー。行ごと枠で囲って、一覧の中で迷わないようにする。 */
+  .lxrow.editing{background:rgba(168,75,38,.18);outline:1px solid var(--rust);outline-offset:-1px;padding:1px 2px}
+  .lxrow.editing .qno{background:var(--rust);color:var(--milk)}
+  .lxrow:not(.editing){cursor:pointer}
+  .lxrow:not(.editing):hover{background:rgba(156,130,63,.12)}
   .lxrow input[type=text]{min-width:0;min-height:24px;padding:2px 4px;font-size:11.5px}
   .lxrow .btn.small{padding:2px 5px;font-size:12px;white-space:nowrap;min-height:24px}
   .lxnone{color:var(--milk-dim);font-size:11.5px;margin:0}
@@ -565,7 +574,8 @@
                  （パネル名「照明デザイン」がわかれば足りる）。配置タブでは丸ごと隠す
                  （配置モードは選んだ灯体／配置(ショー共通)という別の静的見出しを使う）。 -->
             <div class="insphead" id="insphead" hidden>
-              <p class="ptitle">照明デザイン</p>
+              <!-- いま画面に出ている明かりがどのキューの中身か（2026-09-13 本人要望）。中身は app.js が入れる。 -->
+              <div class="insptitle"><p class="ptitle">照明デザイン</p><span class="qbadge" id="qbadge"></span></div>
               <div class="panelhead-actions" id="panelhead-actions">
                 <span class="transport" id="transport" hidden>
                   <button type="button" class="btn small" id="t-home">最初へ</button>
@@ -646,8 +656,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789308339"></script>
-<script src="stage-figure.js?v=1789308339"></script>
-<script src="app.js?v=1789308339"></script>
+<script src="rig-engine.js?v=1789308783"></script>
+<script src="stage-figure.js?v=1789308783"></script>
+<script src="app.js?v=1789308783"></script>
 </body>
 </html>

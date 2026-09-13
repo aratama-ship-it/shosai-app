@@ -285,6 +285,7 @@
      いまと同じ状態の復元になり、以降もずっと1手ぶんずれていた（色を変えて押しても戻らない）。 */
   let baseline = snapshot();
   function commit(label) {
+    lxSyncEditing();                   // 編集中のキューへ書き戻してから記録する（2026-09-13）
     state.history.push(baseline);      // 変更前を記録する
     if (state.history.length > 100) state.history.shift();
     baseline = snapshot();             // ここからが次の「変更前」
@@ -2649,6 +2650,14 @@
   const lxNo = (sc, seq) => { const x = lxOf(sc); return `${x.section}-${x.no}-${seq}`; };
   const lxNextSeq = (sc) => lxList(sc).reduce((mx, q) => Math.max(mx, E.finite(q.seq, 0)), 0) + 1;
   const cueJson = (c) => JSON.stringify({ lights: (c && c.lights) || {}, groups: (c && c.groups) || [] });
+  /* いま画面に出ている明かりが「どのキューの中身か」。`sc.lxEditing` にそのキューのidが入る。
+     null＝どのキューにも入っていない下書き（2026-09-13 本人要望でキュー編集モードにした）。 */
+  const lxEditingOf = (sc) => { const id = sc && sc.lxEditing; return id && lxList(sc).some((q) => q.id === id) ? id : null; };
+  const lxEditingQ = (sc) => { const id = lxEditingOf(sc); return id ? lxList(sc).find((q) => q.id === id) : null; };
+  /* 編集中のキューへ、いまの明かりを書き戻す。commit のたびに呼ぶので「保存」の操作は要らない。 */
+  function lxSyncEditing() {
+    state.scenes.forEach((sc) => { const q = lxEditingQ(sc); if (q) q.cue = JSON.parse(cueJson(sc.cue)); });
+  }
 
   /* LXQパネルが見ているシーン。連動していれば「いま編集しているシーン」、
      切ってあれば固定した番号（2026-09-13 本人要望）。 */
@@ -2691,33 +2700,42 @@
     const nIn = numIn(x.no, (v) => setLx({ no: v })); nIn.title = "シーン番号";
     nums.append(el("span", null, "番号"), sIn, el("span", null, "-"), nIn);
     b.append(nums);
-    b.append(btn(`LXQ ${lxNo(sc, lxNextSeq(sc))} を登録`, () => {
+    /* 新規キュー。いま画面に出ている明かりをそのまま持ち上げて次の番号のキューにし、
+       そのままそのキューの編集に入る（2026-09-13 本人要望「新規キューを作ってデザインを始める」）。
+       前のキューからの続きを作ることが多いので、白紙ではなく<b>いまの明かりから</b>始める。 */
+    b.append(btn(`＋ 新規キュー LXQ ${lxNo(sc, lxNextSeq(sc))}`, () => {
       lxGoto(si);
-      const s2 = lxScene(); const seq = lxNextSeq(s2);
-      s2.lxq = lxList(s2).concat([{ id: uid("q"), seq, name: "", at: new Date().toISOString(), cue: JSON.parse(cueJson(s2.cue)) }]);
-      commit(`LXQ ${lxNo(s2, seq)} として登録しました`);
-    }, "primary"));
+      const s2 = lxScene(); const seq = lxNextSeq(s2); const id = uid("q");
+      s2.lxq = lxList(s2).concat([{ id, seq, name: "", at: new Date().toISOString(), cue: JSON.parse(cueJson(s2.cue)) }]);
+      s2.lxEditing = id;
+      commit(`LXQ ${lxNo(s2, seq)} を作りました。このまま編集できます`);
+    }, "primary", "いま出ている明かりを次の番号のキューにして、そのまま編集を続けます"));
     host.append(b);
     const li = el("div", "lxlist"); host.append(li);
-    if (!list.length) { li.append(el("p", "lxnone", "まだ登録がありません。いまの明かりを上のボタンで登録できます。")); return; }
+    if (!list.length) { li.append(el("p", "lxnone", "まだキューがありません。〈＋ 新規キュー〉でいまの明かりをキューにして、そこから作り込めます。")); return; }
+    const editing = lxEditingOf(sc);
     [...list].sort((a2, b2) => E.finite(a2.seq, 0) - E.finite(b2.seq, 0)).forEach((q) => {
-      const row = el("div", "lxrow" + (cueJson(q.cue) === nowJson ? " cur" : ""));
+      const isEdit = q.id === editing;
+      const row = el("div", "lxrow" + (isEdit ? " editing" : cueJson(q.cue) === nowJson ? " cur" : ""));
+      row.title = isEdit ? "このキューを編集しています（変えたところはそのまま入ります）" : `LXQ ${lxNo(sc, E.finite(q.seq, 1))} を編集する（いまの明かりをこのキューの中身に入れ替えます）`;
       const no = el("span", "qno"); no.textContent = lxNo(sc, E.finite(q.seq, 1));
-      no.title = q.at ? `登録 ${String(q.at).slice(0, 16).replace("T", " ")}` : "";
       row.append(no);
       const nm = document.createElement("input"); nm.type = "text"; nm.value = q.name || ""; nm.placeholder = "名前（任意）";
       nm.onchange = () => { const s2 = lxScene(); const t = lxList(s2).find((z) => z.id === q.id); if (t) { t.name = nm.value.slice(0, 24); commit(); } };
       row.append(nm);
-      row.append(btn("▶", () => {
+      /* 行を押す＝そのキューの編集に入る。名前欄とボタンの上は行の操作にしない。 */
+      row.onclick = (ev) => {
+        if (ev.target.closest("input, button")) return;
+        if (isEdit) return;
         lxGoto(si);
         const s2 = lxScene(); const t = lxList(s2).find((z) => z.id === q.id); if (!t) return;
-        s2.cue = JSON.parse(cueJson(t.cue));
+        s2.cue = JSON.parse(cueJson(t.cue)); s2.lxEditing = t.id;
         state.sel.clear(); stop(); home();
-        commit(`LXQ ${lxNo(s2, E.finite(t.seq, 1))} を呼び出しました`);
-      }, "small", `LXQ ${lxNo(sc, E.finite(q.seq, 1))} を呼び出す（いまの明かりを、この登録で置き換えます）`));
+        commit(`LXQ ${lxNo(s2, E.finite(t.seq, 1))} の編集に入りました`);
+      };
       row.append(btn("✕", () => {
-        dialog(`<p class="ptitle">LXQ ${lxNo(sc, E.finite(q.seq, 1))} を消しますか？</p><p class="hint">登録した明かりの控えだけを消します。いま作業中の明かりはそのままです。</p>`,
-          [["やめる", null], ["消す", () => { const s2 = lxScene(); s2.lxq = lxList(s2).filter((z) => z.id !== q.id); commit(`LXQ ${lxNo(s2, E.finite(q.seq, 1))} を消しました`); }, "primary"]]);
+        dialog(`<p class="ptitle">LXQ ${lxNo(sc, E.finite(q.seq, 1))} を消しますか？</p><p class="hint">このキューを一覧から消します。画面に出ている明かりはそのまま残ります。</p>`,
+          [["やめる", null], ["消す", () => { const s2 = lxScene(); s2.lxq = lxList(s2).filter((z) => z.id !== q.id); if (s2.lxEditing === q.id) s2.lxEditing = null; commit(`LXQ ${lxNo(s2, E.finite(q.seq, 1))} を消しました`); }, "primary"]]);
       }, "small quiet", `LXQ ${lxNo(sc, E.finite(q.seq, 1))} を消す`));
       li.append(row);
     });
@@ -3068,6 +3086,13 @@
     $("scene-name").textContent = `シーン ${state.sceneIndex + 1}「${scene().name}」`;
     $("scenerow").classList.toggle("off", !inMove);   // 場所は残す（図の位置を両ページで揃える）
     $("insphead").hidden = !inMove;
+    /* いま画面に出ている明かりがどのキューの中身か（2026-09-13 本人要望）。
+       どのキューにも入っていなければ「未登録の下書き」と出す。 */
+    { const qb = $("qbadge");
+      if (qb) { const sc0 = scene(), q0 = lxEditingQ(sc0);
+        qb.textContent = q0 ? `LXQ ${lxNo(sc0, E.finite(q0.seq, 1))}${q0.name ? `　${q0.name}` : ""}` : "未登録の下書き";
+        qb.classList.toggle("draft", !q0);
+        qb.title = q0 ? "このキューを編集しています。変えたところはそのまま入ります" : "どのキューにも入っていません。LXQパネルの〈＋ 新規キュー〉でキューにできます"; } }
     $("transport").hidden = !inMove;
     $("empty").hidden = Boolean(state.rig.trusses.length || state.rig.fixtures.length);
     /* いま編集しているデザイン名と、未適用かどうかを1行で出す（2026-09-13 保存機能の追加にあわせて）。 */
@@ -3440,7 +3465,7 @@
         lxq: "登録した明かりの控え。番号は section-no-seq、cue はそのときの灯の設定一式",
       },
       rig: JSON.parse(JSON.stringify(state.rig)),
-      scenes: state.scenes.map((sc) => ({ id: sc.id, name: sc.name, lx: lxOf(sc), lxq: JSON.parse(JSON.stringify(lxList(sc))), cue: JSON.parse(JSON.stringify(sc.cue)) })),
+      scenes: state.scenes.map((sc) => ({ id: sc.id, name: sc.name, lx: lxOf(sc), lxq: JSON.parse(JSON.stringify(lxList(sc))), lxEditing: lxEditingOf(sc), cue: JSON.parse(JSON.stringify(sc.cue)) })),
       palette: [...state.palette],
       levelCurve: [...state.levelCurve],
       curtains: { ...state.curtains },
@@ -3459,6 +3484,7 @@
       return { id: ds.id, name: ds.name || `場面${i + 1}`, pieces: cur ? cur.pieces : [],
         lx: ds.lx || (cur && cur.lx) || { section: 1, no: i + 1 },
         lxq: Array.isArray(ds.lxq) ? ds.lxq : [],
+        lxEditing: ds.lxEditing || null,
         cue: ds.cue || { lights: {}, groups: [] } };
     });
     state.rig = o.rig;
