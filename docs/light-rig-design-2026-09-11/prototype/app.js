@@ -707,7 +707,13 @@
       }
     }
     if (state.tool === "floor" && hv && hv.canvas === "plan" && inBox(hv, B)) drawFixtureMark(pctx, hv.X, hv.Y, "circle", { ghost: true });
-    if (state.tool === "cyc" && hv && hv.canvas === "plan" && inBox(hv, B)) drawFixtureMark(pctx, E.clamp(hv.X, B.x, B.x + B.w), B.y, "bar", { ghost: true });
+    if (state.tool === "cyc" && hv && hv.canvas === "plan" && inBox(hv, B)) {
+      // 実際に置く長さ（既定=幅の90%）で予告する。壁全体を染める前提が分かるように
+      const len = 0.9, cx = E.clamp(hv.X, B.x, B.x + B.w), half = (len * B.w) / 2;
+      pctx.strokeStyle = "rgba(240,231,214,0.55)"; pctx.lineWidth = 8; pctx.setLineDash([]);
+      pctx.beginPath(); pctx.moveTo(cx - half, B.y); pctx.lineTo(cx + half, B.y); pctx.stroke();
+      drawFixtureMark(pctx, cx, B.y, "bar", { ghost: true });
+    }
     if (state.tool === "side" && hv && hv.canvas === "plan") { const side = hv.X < B.x ? "shimote" : hv.X > B.x + B.w ? "kamite" : null; if (side) drawFixtureMark(pctx, side === "shimote" ? B.x - SIDE_DX : B.x + B.w + SIDE_DX, E.clamp(hv.Y, B.y, B.y + B.h), "diamond", { ghost: true }); else { pctx.fillStyle = "rgba(240,231,214,0.6)"; pctx.font = "18px sans-serif"; pctx.fillText("舞台の外側（下手／上手）をクリックしてください", B.x + B.w / 2 - 190, B.y + B.h + 44); } }
 
     // 動き: 軌道・光線
@@ -716,6 +722,14 @@
       state.rig.fixtures.forEach((f) => {
         const l = lightOf(f.id); if (!isLit(l)) return;   // 消灯・強さ0は図に出さない
         const lv = litFactorOf(f, l);
+        if (f.mount.type === "cyc") {
+          // ホリゾントライトは点から広がる光ではなく壁を染める帯。狙い点を持たないので別扱い
+          const dim = state.sel.size && !isSel(f.id);
+          const a = (dim ? 0.32 : 1) * E.clamp(E.finite(lv, 1), 0, 1);
+          const quads = showOn("beam") ? cycWashQuads(f, l, P, state.dims) : null;
+          if (quads) { drawCycWash(pctx, quads, l.color, a); litSpots.push({ cycQuads: quads, lv }); }
+          return;
+        }
         const S = fixtureWorld(f); if (!S) return; const T = targetAt(f.id, state.play.t); if (!T) return;
         const s = P(S), tp = P(T); const sel = isSel(f.id); const dim = state.sel.size && !sel;
         const g = showOn("path") ? E.pathGuide(l, state.dims) : null;
@@ -911,6 +925,67 @@
     side: { floor: [1, 0.16], back: [0.14, 1], air: [1, 1] },
   };
   const squashFor = (view, surface) => (SPOT_SQUASH[view] || SPOT_SQUASH.plan)[surface] || [1, 1];
+  /* ホリゾントライトの帯を描く。1つの点から広がる三角ではなく、壁の一部を横に長く染める形なので
+     drawBeam とは別に持つ（2026-09-13 本人指摘「もとから一列のバー。壁全体を染める前提」）。
+     世界座標のまま横に短冊(segment)へ割ってから図ごとの投影 P に通す——正面図のようにまっすぐな
+     図も、3Dのように奥行きで歪む図も、短冊ごとに近い辺・遠い辺を取るので同じ形で塗れる
+     （1本の勾配だけだと3D側で帯の左右が歪んだときに追従できない）。
+     平面図のように高さが映らない図では、短冊の近い辺と遠い辺が同じ点に潰れる。
+     そのときは面として塗らず、太い線として塗る（＝その一帯が光っていることだけを示す）。 */
+  const CYC_WASH_SEGMENTS = 10;
+  function cycWashQuads(f, l, P, dims) {
+    const deg = E.beamDegOf(f, l);
+    const span = E.cycBarSpan(f, dims, deg);
+    const zFar = span.top ? Math.max(0, span.z0 - span.reach) : Math.min(dims.H, span.z0 + span.reach);
+    const quads = [];
+    for (let i = 0; i < CYC_WASH_SEGMENTS; i++) {
+      const x0 = span.xL + ((span.xR - span.xL) * i) / CYC_WASH_SEGMENTS;
+      const x1 = span.xL + ((span.xR - span.xL) * (i + 1)) / CYC_WASH_SEGMENTS;
+      const nearL = P({ x: x0, y: span.y, z: span.z0 }), nearR = P({ x: x1, y: span.y, z: span.z0 });
+      const farL = P({ x: x0, y: span.y, z: zFar }), farR = P({ x: x1, y: span.y, z: zFar });
+      if (!nearL || !nearR || !farL || !farR) return null;
+      quads.push({ nearL, nearR, farL, farR });
+    }
+    return quads;
+  }
+  const cycQuadFlat = (q) => Math.abs(q.nearL.Y - q.farL.Y) < 2 && Math.abs(q.nearR.Y - q.farR.Y) < 2 && Math.abs(q.nearL.X - q.farL.X) < 2 && Math.abs(q.nearR.X - q.farR.X) < 2;
+  function drawCycWash(ctx, quads, color, a) {
+    if (!quads || !quads.length) return;
+    ctx.save(); ctx.globalCompositeOperation = "screen";
+    quads.forEach((q) => {
+      if (cycQuadFlat(q)) {
+        // 高さが映らない図（真上から）。「この一帯が光っている」ことだけ太い線で示す
+        ctx.strokeStyle = hexA(color, 0.5 * a); ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(q.nearL.X, q.nearL.Y); ctx.lineTo(q.nearR.X, q.nearR.Y); ctx.stroke();
+        return;
+      }
+      const g = ctx.createLinearGradient(q.nearL.X, q.nearL.Y, q.farL.X, q.farL.Y);
+      g.addColorStop(0, hexA(color, 0.55 * a));
+      g.addColorStop(0.55, hexA(color, 0.22 * a));
+      g.addColorStop(1, hexA(color, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(q.nearL.X, q.nearL.Y); ctx.lineTo(q.nearR.X, q.nearR.Y); ctx.lineTo(q.farR.X, q.farR.Y); ctx.lineTo(q.farL.X, q.farL.Y); ctx.closePath();
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+  // 作業灯を消すの穴も同じ短冊で開ける。見た目の帯とまったく同じ形にそろえるため（2026-09-13）
+  function punchCycHole(mctx, quads, lv) {
+    if (!quads) return;
+    quads.forEach((q) => {
+      if (cycQuadFlat(q)) {
+        mctx.strokeStyle = `rgba(255,255,255,${0.85 * lv})`; mctx.lineWidth = 10;
+        mctx.beginPath(); mctx.moveTo(q.nearL.X, q.nearL.Y); mctx.lineTo(q.nearR.X, q.nearR.Y); mctx.stroke();
+        return;
+      }
+      mctx.beginPath();
+      mctx.moveTo(q.nearL.X, q.nearL.Y); mctx.lineTo(q.nearR.X, q.nearR.Y); mctx.lineTo(q.farR.X, q.farR.Y); mctx.lineTo(q.farL.X, q.farL.Y); mctx.closePath();
+      const g = mctx.createLinearGradient(q.nearL.X, q.nearL.Y, q.farL.X, q.farL.Y);
+      g.addColorStop(0, `rgba(255,255,255,${lv})`); g.addColorStop(0.7, `rgba(255,255,255,${0.85 * lv})`); g.addColorStop(1, "rgba(255,255,255,0)");
+      mctx.fillStyle = g; mctx.fill();
+    });
+  }
   /* 面に当たった光だまりを、画面上の楕円として求める。
      世界座標の楕円（rig-engine の spotEllipse）の中心と2本の半径ベクトルを投影するだけ——
      図ごとの見え方（真上・正面・側面・3D）は投影のほうが持っているので、ここでは分けない。
@@ -1068,6 +1143,7 @@
     spots.forEach((sp) => {
       // 灯の強さぶんだけ暗幕を剥がす。20%の灯なら20%ぶんしか明るくならない（2026-09-13）
       const lv = E.clamp(E.finite(sp.lv, 1), 0, 1); if (lv <= 0) return;
+      if (sp.cycQuads) { punchCycHole(mctx, sp.cycQuads, lv); return; }   // ホリゾントライトの帯
       mctx.beginPath();
       if (sp.asLine) {
         /* 真上から見る図では光を三角に開かない（drawBeamと同じ理由）。実際に見えるのは
@@ -1297,7 +1373,14 @@
       if (sel) { fctx.fillStyle = "#d3ac59"; fctx.fillRect(B.x + B.w + 16, Y - 12, 22, 24); fctx.fillStyle = "#1a1409"; fctx.font = "600 14px sans-serif"; fctx.fillText("↕", B.x + B.w + 20, Y); fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${t.h.toFixed(1)}m（ドラッグ）`, B.x + B.w + 44, Y); } });
     // 光線
     const litSpotsF = [];   // 作業灯を消す（ブラックアウト）用
-    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; const lv = litFactorOf(f, l); const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
+    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; const lv = litFactorOf(f, l);
+      if (f.mount.type === "cyc") {
+        const dim = state.sel.size && !isSel(f.id), a = (dim ? 0.32 : 1) * E.clamp(E.finite(lv, 1), 0, 1);
+        const quads = showOn("beam") ? cycWashQuads(f, l, P, d) : null;
+        if (quads) { drawCycWash(fctx, quads, l.color, a); litSpotsF.push({ cycQuads: quads, lv }); }
+        return;
+      }
+      const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
       if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
         const sp = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface, lv, l, be.surface, P);
         litSpotsF.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); }
@@ -1339,7 +1422,8 @@
     state.rig.trusses.forEach((t) => { const q = P({ x: 0, y: t.v * d.D, z: t.h }); const sel = state.selTruss === t.id && state.mode === "place"; fctx.beginPath(); fctx.arc(q.X, q.Y, sel ? 10 : 7, 0, Math.PI * 2); fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.fill(); fctx.fillStyle = "rgba(156,130,63,0.9)"; fctx.font = "14px sans-serif"; fctx.fillText(`奥から${E.trussRow(state.rig, t.id)}列目`, q.X + 12, q.Y - 14); });
     // 光線（この側の灯は濃く、他は薄く）
     const litSpotsSide = [];   // 作業灯を消す（ブラックアウト）用
-    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; const lv = litFactorOf(f, l); const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s0 = P(S), tp = P(T); const mine = f.mount.type === "side" && f.mount.side === side; const air = l.surface === "air"; const dim = !(mine || (air && isSel(f.id))) || (state.sel.size && !isSel(f.id));
+    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; if (f.mount.type === "cyc") return;   // 帯は側面図では出さない（アイコンだけ下の輪で示す）
+      const lv = litFactorOf(f, l); const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s0 = P(S), tp = P(T); const mine = f.mount.type === "side" && f.mount.side === side; const air = l.surface === "air"; const dim = !(mine || (air && isSel(f.id))) || (state.sel.size && !isSel(f.id));
       if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
         const sp = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.D, squashFor("side", be.surface || "air"), false, !be.surface, lv, l, be.surface, P);
         litSpotsSide.push({ fromX: s0.X, fromY: s0.Y, ...sp, lv }); }
@@ -1410,6 +1494,12 @@
     if (state.mode === "move") state.rig.fixtures.forEach((f) => {
       const l = lightOf(f.id); if (!isLit(l)) return;
       const lv = litFactorOf(f, l);
+      if (f.mount.type === "cyc") {
+        const dim = state.sel.size && !isSel(f.id), a = (dim ? 0.32 : 1) * E.clamp(E.finite(lv, 1), 0, 1);
+        const quads = showOn("beam") ? cycWashQuads(f, l, P, d) : null;
+        if (quads) { drawCycWash(fctx, quads, l.color, a); litSpots3D.push({ cycQuads: quads, lv }); }
+        return;
+      }
       const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return;
       const s0 = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
       if (showOn("beam")) {
@@ -1518,8 +1608,9 @@
     if (state.tool === "truss") { addTruss(snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1))); return; }   // addTruss内で灯体配置モードへ移る
     if (state.tool === "fixture") { const t = E.trussById(state.rig, state.selTruss); if (!t) return; const Y = B.y + t.v * B.h; if (Math.abs(pt.Y - Y) < 60 && inBox({ X: pt.X, Y }, B)) { addFixture({ type: "truss", trussId: t.id, u: snapU((pt.X - B.x) / B.w) }); toast(`${label([...state.sel][0])}を奥から${E.trussRow(state.rig, t.id)}列目に置きました`, "元に戻す", undo); } return; }
     if (state.tool === "floor") { if (inBox(pt, B)) { addFixture({ type: "floor", u: snapU((pt.X - B.x) / B.w), v: snapV((pt.Y - B.y) / B.h) }); toast(`${label([...state.sel][0])}を床に置きました`, "元に戻す", undo); } return; }
-    // ホリゾントライトは奥の壁ぎわに固定なので、箱のどこをクリックしても横位置だけを取る
-    if (state.tool === "cyc") { if (inBox(pt, B)) { addFixture({ type: "cyc", u: snapU((pt.X - B.x) / B.w) }, "fixed"); toast(`${label([...state.sel][0])}をホリゾントライトとして置きました`, "元に戻す", undo); } return; }
+    // ホリゾントライトは奥の壁ぎわに固定なので、箱のどこをクリックしても横位置だけを取る。
+    // 長さは既定で幅の90%＝もとから壁全体を染める前提（2026-09-13 本人指摘）
+    if (state.tool === "cyc") { if (inBox(pt, B)) { addFixture({ type: "cyc", u: snapU((pt.X - B.x) / B.w), len: 0.9, rung: "floor" }, "fixed"); toast(`${label([...state.sel][0])}をホリゾントライトとして置きました（長さは配置パネルで調整できます）`, "元に戻す", undo); } return; }
     if (state.tool === "side") { const side = pt.X < B.x ? "shimote" : pt.X > B.x + B.w ? "kamite" : null; if (side) { addFixture({ type: "side", side, v: snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)), h: 2 }); toast(`${label([...state.sel][0])}を${side === "shimote" ? "下手" : "上手"}の袖に立てました`, "元に戻す", undo); } return; }
     if (state.tool === "front") {
       if (pt.Y > B.y + B.h) { addFixture({ type: "front", u: snapU(E.clamp((pt.X - B.x) / B.w, 0, 1)), ahead: 5, h: 7 }, "fixed"); toast(`${label([...state.sel][0])}を前明かりに置きました（舞台前から約5m・高さ約7m）`, "元に戻す", undo); }
@@ -1920,7 +2011,7 @@
       : state.tool === "fixture" ? "平面図の選んだバトンの上をクリックすると灯体を吊れます。"
       : state.tool === "front" ? "平面図の舞台より手前（客席側の帯）をクリックすると置けます。舞台前からの距離と高さは右で直せます。"
       : state.tool === "floor" ? "平面図の舞台の中をクリックすると転がせます。"
-      : state.tool === "cyc" ? "平面図の舞台の中をクリックすると、奥の壁ぎわに横位置だけ決めて置けます。"
+      : state.tool === "cyc" ? "平面図の舞台の中をクリックすると、奥の壁ぎわに横に長いホリゾントライトを1本置けます。長さ・床/上部は右のパネルで調整できます。"
       : state.tool === "side" ? "下手を見る図・上手を見る図をクリックすると、その側の袖に立てられます。"
       : !state.selTruss ? "バトンを選ぶと「吊り」が使えます。" : "";
   }
@@ -2316,14 +2407,24 @@
           host.append(el("p", "note", "客席の上（シーリング）や客席横の壁（フロントサイド）に当たる位置です。平面図では客席側の帯に並べて描き、本当の距離はここの数値が正です。"));
         }
         if (m.type === "cyc") {
-          host.append(field("横位置", range(0, 1, 0.01, m.u, (v) => (v < 0.4 ? "下手寄り" : v > 0.6 ? "上手寄り" : "中央"), (v) => { m.u = v; draw(); }, () => commit())));
-          host.append(field("高さ", el("span", "val", "床（奥の壁ぎわ）")));
-          host.append(el("p", "note", "奥の壁（ホリゾント幕）のすぐ手前・床に一列に並べる地明かりです。奥行きは固定で、横位置だけ動かせます。"));
+          /* もとから壁全体を染める前提の1本のバー（2026-09-13 本人指摘）。並べるのではなく、
+             1本の長さ・横位置・床/上部だけを持つ。 */
+          host.append(field("置き方", seg([["floor", "床から（地明かり）"], ["top", "上部から"]], m.rung === "top" ? "top" : "floor", (v) => { m.rung = v; draw(); }, "col"), true));
+          host.append(field("横位置（中心）", range(0, 1, 0.01, m.u, (v) => (v < 0.4 ? "下手寄り" : v > 0.6 ? "上手寄り" : "中央"), (v) => { m.u = v; draw(); }, () => commit())));
+          host.append(field("長さ", range(0.05, 1, 0.01, E.clamp(E.finite(m.len, 0.9), 0.05, 1), (v) => `幅の${Math.round(v * 100)}%`, (v) => { m.len = v; draw(); }, () => commit()), true));
+          host.append(el("p", "note", `奥の壁（ホリゾント幕）のすぐ手前に置く、横に長い一列の器具です。${m.rung === "top" ? "上部（グリッド際）から下向き" : "床から上向き"}に壁を染めます。奥行きは固定で、横位置・長さだけ動かせます。`));
+        } else {
+          // ムービングかどうか（動きを付けられるのはムービングだけ）。ホリゾントライトは常に固定
+          host.append(field("種類", seg([["moving", "ムービング"], ["fixed", "固定"]], E.isMoving(f) ? "moving" : "fixed", (v) => { f.kind = v; if (v === "fixed") { const l = lightOf(f.id); if (l && l.path && l.path.kind !== "still") { l.path = { kind: "still", a: l.path.a || l.path.c || E.newPoint() }; } } commit(); })));
         }
-        // ムービングかどうか（動きを付けられるのはムービングだけ）
-        host.append(field("種類", seg([["moving", "ムービング"], ["fixed", "固定"]], E.isMoving(f) ? "moving" : "fixed", (v) => { f.kind = v; if (v === "fixed") { const l = lightOf(f.id); if (l && l.path && l.path.kind !== "still") { l.path = { kind: "still", a: l.path.a || l.path.c || E.newPoint() }; } } commit(); })));
-        host.append(field("光の広がり", range(4, 70, 1, f.beamDeg == null ? 18 : f.beamDeg, (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`, (v) => { f.beamDeg = v; draw(); }, () => commit())));
-        host.append(el("p", "note", E.isMoving(f) ? "仕込みの広がりです。ムービングはシーンごとに「灯体情報」でズームできます（実機のズーム範囲はおおむね7〜50°）。" : "固定灯はレンズ／ランプで決まる値で、ショー中は変えられません（PARは玉を替えるしかありません）。"));
+        if (m.type === "cyc") {
+          const reachM = (v) => (E.clamp(((E.clamp(v, 4, 70) - 4) / 66) * 0.7 + 0.15, 0.15, 0.85) * state.dims.H);
+          host.append(field(m.rung === "top" ? "壁を降りる高さ" : "壁を登る高さ", range(4, 70, 1, f.beamDeg == null ? 24 : f.beamDeg, (v) => `約${reachM(v).toFixed(1)}m`, (v) => { f.beamDeg = v; draw(); }, () => commit()), true));
+          host.append(el("p", "note", "固定灯なので、ショー中はここで決めた高さのまま変わりません。"));
+        } else {
+          host.append(field("光の広がり", range(4, 70, 1, f.beamDeg == null ? 18 : f.beamDeg, (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`, (v) => { f.beamDeg = v; draw(); }, () => commit())));
+          host.append(el("p", "note", E.isMoving(f) ? "仕込みの広がりです。ムービングはシーンごとに「灯体情報」でズームできます（実機のズーム範囲はおおむね7〜50°）。" : "固定灯はレンズ／ランプで決まる値で、ショー中は変えられません（PARは玉を替えるしかありません）。"));
+        }
         // 複製・反対側へコピー・削除は図の下の帯へ移した（同じ操作を2か所に置かない）
       } else if (ids.length > 1) {
         host.append(el("p", "kicker", `${ids.length}灯を選択中`));
@@ -2398,8 +2499,10 @@
       }
 
       /* ② 当てる場所・動き。位置に関わるものをここに集める。
-         動かしているときは軌道の種類と始点・終点を、動かしていないときは当てる先だけを持つ。 */
-      {
+         動かしているときは軌道の種類と始点・終点を、動かしていないときは当てる先だけを持つ。
+         ホリゾントライトは狙い点を持たない帯（つねに奥の壁を染める）ので、この箱ごと出さない
+         （2026-09-13 本人指摘「もとから一列のバー」。横位置・長さ・床/上部は配置パネルへ）。 */
+      if (f.mount.type !== "cyc") {
         const b = box("当てる場所・動き");
         b.append(field("当てる場所", seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"]], l.surface, (v) => {
           setLight(fid, { surface: v }); restyleToSurface(fid);
@@ -2442,7 +2545,16 @@
 
       /* ④ 光の広がり。ムービングはシーンごとにズームできる（実機は7〜50°程度）。
          固定灯はレンズ／ランプで決まるので仕込みの値を編集する（シーン別には変わらない）。 */
-      {
+      if (f.mount.type === "cyc") {
+        /* ホリゾントライトは「広がり」ではなく「壁をどこまで登るか」。仕組みは同じ
+           4〜70°のつまみを流用し（f.beamDeg。固定灯なのでショー中は変わらない）、
+           見せ方だけ実際に登る高さ（m）にする（2026-09-13 本人要望に合わせた読み替え）。 */
+        const b = box("光の届く高さ");
+        const reachM = (v) => (E.clamp(((E.clamp(v, 4, 70) - 4) / 66) * 0.7 + 0.15, 0.15, 0.85) * state.dims.H);
+        const top = f.mount.rung === "top";
+        b.append(field(top ? "壁を降りる高さ" : "壁を登る高さ", range(4, 70, 1, f.beamDeg == null ? 24 : f.beamDeg, (v) => `約${reachM(v).toFixed(1)}m`, (v) => { f.beamDeg = v; draw(); }, () => commit()), true));
+        b.append(el("p", "note", `${top ? "上部の器具から下向きに" : "床の器具から上向きに"}、壁のどこまで光が届くかです。横位置・長さ・床/上部の切り替えは配置パネルにあります。`));
+      } else {
         const b = box("光の広がり");
         const fmtDeg = (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`;
         if (mover) {
@@ -2457,7 +2569,7 @@
       /* ⑤ 模様（ゴボ）。光に載せる形。2026-09-13 本人決定「案B」で、実機の絵柄ではなく
          舞台照明の分類名で自前に描いたものを持つ（rig-engine の GOBOS）。
          回す前提のもの（rot）と回さない前提のもの（stat）を分けて並べる——実機のホイールと同じ考え方。 */
-      {
+      if (f.mount.type !== "cyc") {
         const b = box("模様（ゴボ）");
         const cur = l.gobo || "none";
         b.append(goboPicker(cur, false, (id) => { setLight(fid, { gobo: id }); commit(); }));
@@ -2609,23 +2721,24 @@
   const spreadU = (n, from = 0.12, to = 0.88) => (n <= 1 ? [0.5] : Array.from({ length: n }, (_, i) => from + (to - from) * i / (n - 1)));
   const RIG_PRESETS = [
     {
-      key: "small", name: "小劇場の基本仕込み", count: 20,
+      key: "small", name: "小劇場の基本仕込み", count: 21,
       lead: "客席100〜200席くらいの小屋で、芝居を普通に見せる形。",
-      detail: "前明かり6／バトン1に6／バトン2に4／SS 下手2・上手2。すべて固定灯（ムービングなし）。",
-      why: "小劇場は常設50〜60灯でも、1演目で回すのは20前後。まず顔が見えて、体に立体感が出る最小構成。",
+      detail: "前明かり6／バトン1に6／バトン2に4／SS 下手2・上手2／ホリゾントライト1（床・幅85%）。すべて固定灯（ムービングなし）。",
+      why: "小劇場は常設50〜60灯でも、1演目で回すのは20前後。まず顔が見えて、体に立体感が出る最小構成。ホリゾント幕がある小屋がほとんどなので、床から1本焚けるようにしておく。",
       build: () => {
         const b1 = addTrussAt(0.55, 5.5, "バトン1"), b2 = addTrussAt(0.3, 5.5, "バトン2");
         spreadU(6, 0.15, 0.85).forEach((u) => putFront(u, 5, 6));
         spreadU(6).forEach((u) => putHang(b1, u, "fixed"));
         spreadU(4, 0.2, 0.8).forEach((u) => putHang(b2, u, "fixed"));
         [0.35, 0.6].forEach((v) => { putSS("shimote", v, 2.2, "fixed"); putSS("kamite", v, 2.2, "fixed"); });
+        putCyc(0.5, 0.85, "floor");
       },
     },
     {
-      key: "hall", name: "中ホールの基本仕込み", count: 36,
+      key: "hall", name: "中ホールの基本仕込み", count: 37,
       lead: "500〜1000席のホール。シーリングとフロントサイドが別にある形。",
-      detail: "シーリング8／フロントサイド 下手2・上手2／バトン1に8／バトン2に6／バトン3に4／SS 下手3・上手3。すべて固定灯。",
-      why: "ホールは前明かりが「客席天井のシーリング」と「客席横壁のフロントサイド」に分かれ、サスバトンも3本前後使う（さいたま市文化センター大ホールは5本）。",
+      detail: "シーリング8／フロントサイド 下手2・上手2／バトン1に8／バトン2に6／バトン3に4／SS 下手3・上手3／ホリゾントライト1（床・幅90%）。すべて固定灯。",
+      why: "ホールは前明かりが「客席天井のシーリング」と「客席横壁のフロントサイド」に分かれ、サスバトンも3本前後使う（さいたま市文化センター大ホールは5本）。ホリゾント幕と地明かりのバトンが常設のホールが多いので、床の一列も既定で含める。",
       build: () => {
         const b1 = addTrussAt(0.58, 6.5, "バトン1"), b2 = addTrussAt(0.38, 6.5, "バトン2"), b3 = addTrussAt(0.18, 6.5, "バトン3");
         spreadU(8, 0.12, 0.88).forEach((u) => putFront(u, 7, 8));
@@ -2634,6 +2747,7 @@
         spreadU(6).forEach((u) => putHang(b2, u, "fixed"));
         spreadU(4, 0.2, 0.8).forEach((u) => putHang(b3, u, "fixed"));
         [0.3, 0.5, 0.7].forEach((v) => { putSS("shimote", v, 2.5, "fixed"); putSS("kamite", v, 2.5, "fixed"); });
+        putCyc(0.5, 0.9, "floor");
       },
     },
     {
@@ -2650,23 +2764,24 @@
       },
     },
     {
-      key: "play", name: "演劇・素舞台", count: 26,
+      key: "play", name: "演劇・素舞台", count: 27,
       lead: "装置の少ない芝居。人の顔と立ち位置がはっきり見えることを優先。",
-      detail: "前明かり8／バトン1に8／バトン2に6／SS 下手2・上手2（すべて固定）。",
-      why: "素舞台は「明かりで場所を分ける」ので、前明かりとバトンの灯を細かく並べてエリアを作る。動く光は使わない。",
+      detail: "前明かり8／バトン1に8／バトン2に6／SS 下手2・上手2（すべて固定）／ホリゾントライト1（床・幅85%）。",
+      why: "素舞台は「明かりで場所を分ける」ので、前明かりとバトンの灯を細かく並べてエリアを作る。動く光は使わない。装置がないぶん奥の壁がそのまま見えるので、時間帯や場面の色を1枚のホリゾントで作る。",
       build: () => {
         const b1 = addTrussAt(0.56, 6, "バトン1"), b2 = addTrussAt(0.32, 6, "バトン2");
         spreadU(8, 0.12, 0.88).forEach((u) => putFront(u, 6, 7));
         spreadU(8).forEach((u) => putHang(b1, u, "fixed", 26));
         spreadU(6).forEach((u) => putHang(b2, u, "fixed", 26));
         [0.35, 0.6].forEach((v) => { putSS("shimote", v, 2.2, "fixed"); putSS("kamite", v, 2.2, "fixed"); });
+        putCyc(0.5, 0.85, "floor");
       },
     },
     {
-      key: "dance", name: "ダンス", count: 28,
+      key: "dance", name: "ダンス", count: 29,
       lead: "体の線を見せたい。横からの光を厚く、前明かりは控えめ。",
-      detail: "前明かり4／バトン1に6／バトン2に6／SS 下手3・上手3（固定）／床置き ムービング6。",
-      why: "ダンスは前から当てすぎると体が平らに見えるので、SS（横）と後ろからの抜きを厚くするのが定石。",
+      detail: "前明かり4／バトン1に6／バトン2に6／SS 下手3・上手3（固定）／床置き ムービング6／ホリゾントライト1（床・幅85%）。",
+      why: "ダンスは前から当てすぎると体が平らに見えるので、SS（横）と後ろからの抜きを厚くするのが定石。ホリゾントは場面の色気分を1色で変える定番の道具なので、床から1本を既定で含める。",
       build: () => {
         const b1 = addTrussAt(0.55, 6.5, "バトン1"), b2 = addTrussAt(0.25, 6.5, "バトン2");
         spreadU(4, 0.25, 0.75).forEach((u) => putFront(u, 6, 7, 18));
@@ -2674,6 +2789,7 @@
         spreadU(6).forEach((u) => putHang(b2, u, "fixed", 28));
         [0.25, 0.45, 0.7].forEach((v) => { putSS("shimote", v, 2.6, "fixed", 16); putSS("kamite", v, 2.6, "fixed", 16); });
         spreadU(6, 0.15, 0.85).forEach((u) => putFloor(u, 0.1, "moving", 12));
+        putCyc(0.5, 0.85, "floor");
       },
     },
     {
@@ -2723,6 +2839,7 @@
   const putFront = (u, ahead, h, deg) => pushFix({ type: "front", u, ahead, h }, "fixed", deg || 14);
   const putSS = (side, v, h, kind, deg) => pushFix({ type: "side", side, v, h }, kind, deg || (kind === "moving" ? 12 : 20));
   const putFloor = (u, v, kind, deg) => pushFix({ type: "floor", u, v }, kind, deg || (kind === "moving" ? 12 : 30));
+  const putCyc = (u, len, rung, deg) => pushFix({ type: "cyc", u, len, rung }, "fixed", deg || 24);
 
   /* ---------- 強さの効き方（ベロシティカーブ） ----------
      アプリ全体で1本だけ持つ共通の設定（2026-09-13 本人決定）。灯ごとの「強さ」の数値は
