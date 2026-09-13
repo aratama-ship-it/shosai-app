@@ -800,13 +800,19 @@
           /* 客席へ向けた光。狙い点は客席帯に置き（実距離は数値）、光だまりは描かない——
              観客からは光源そのものが見える「目眩まし」なので、狙い点のまわりにふわっと滲ませるだけにする
              （2026-09-13 本人要望「場所を間違えると目眩まし的なエフェクトになる。それもふわっと」）。 */
-          const th = PH(T);
+          /* 真上から見ると、客席へ向かう光は<b>横に開いていく帯</b>として見える（床の光だまりが無いので
+             帯を描かないと何も見えなかった。2026-09-14 本人指摘）。客席帯の位置まで引いてから、
+             さらに枠の外まで伸ばす。 */
+          const th0 = PH(T);
+          const ext = 1 + Math.max(0, (plan.height + 40 - th0.Y) / Math.max(1, th0.Y - s.Y));
+          const th = { X: s.X + (th0.X - s.X) * ext, Y: s.Y + (th0.Y - s.Y) * ext };
           if (showOn("beam")) {
-            const sp = drawBeam(pctx, s, th, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, [1, 1], true, true, lv, l, null, P);
+            const Tfar = { x: S.x + (T.x - S.x) * ext, y: S.y + (T.y - S.y) * ext, z: S.z + (T.z - S.z) * ext };
+            const sp = drawBeam(pctx, s, th, { S, T: Tfar }, l.color, beamOf(f), dim, B.w / state.dims.W, [1, 1], false, true, lv, l, null, P);
             litSpots.push({ fromX: s.X, fromY: s.Y, ...sp, lv });
-            const R = Math.max(sp.halfW * 1.8, 30) * glareMul(l); drawGlare(pctx, th.X, th.Y, R, l.color, lv, dim); litSpots.push(glareHole(th.X, th.Y, R, lv));
+            const R = Math.max(sp.halfW * 0.9, 26) * glareMul(l); drawGlare(pctx, th0.X, th0.Y, R, l.color, lv, dim); litSpots.push(glareHole(th0.X, th0.Y, R, lv));
           }
-          if (!dim) { pctx.fillStyle = hexA(l.color, 0.9); pctx.font = "15px sans-serif"; pctx.textBaseline = "middle"; pctx.fillText(`客席へ 舞台前から${Math.max(0, T.y - state.dims.D).toFixed(1)}m・高さ${T.z.toFixed(1)}m（目眩まし）`, th.X + 22, th.Y); }
+          if (!dim) { pctx.fillStyle = hexA(l.color, 0.9); pctx.font = "15px sans-serif"; pctx.textBaseline = "middle"; pctx.fillText(`客席へ 舞台前から${Math.max(0, T.y - state.dims.D).toFixed(1)}m・高さ${T.z.toFixed(1)}m（目眩まし）`, th0.X + 22, th0.Y); }
         } else if (showOn("beam")) { const sp = drawBeam(pctx, s, { X: s.X, Y: B.y }, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv, l); litSpots.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); }
         // ハンドル（選択灯のみ・床・空中・客席は平面図で位置を動かす）
         if (sel && l.surface !== "back") drawHandles(pctx, PH, l, f.id);
@@ -1472,6 +1478,17 @@
   }
   /* 3Dの正面図だけは、遠くまで伸ばすと遠近で画面いっぱいに膨らむので、
      客席側 y をこの辺りで打ち切る（それでも狙い点より先まで伸びる＝切れて見えない）。 */
+  /* 正面図は奥行きを畳んだ図なので、客席へ向かう光をそのまま先まで描くと
+     「舞台を斜めに降りていく光」に見えてしまう（2026-09-14 本人指摘。真横から見た図では
+     演者に当たっていないのに、正面図では体の上を走って見えた）。
+     舞台の手前端（y = D）で切り、その先は光源まわりの「まぶしさ」で表す。 */
+  const houseCutAtFront = (S, T, D) => {
+    const dy = T.y - S.y;
+    if (!(dy > 1e-6) || S.y >= D - 1e-6) return null;   // 手前端を越えない／すでに客席側にある灯
+    const t = (D - S.y) / dy;
+    if (!(t > 0.02)) return null;
+    return { x: S.x + (T.x - S.x) * t, y: D, z: S.z + (T.z - S.z) * t };
+  };
   const houseCapY = (S, W, yMax) => {
     const dy = W.y - S.y;
     if (!(dy > 0) || W.y <= yMax) return W;
@@ -1568,12 +1585,19 @@
     if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; if (f.mount.type === "cyc") return; const lv = litFactorOf(f, l);
       const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
       if (showOn("beam")) { const be = beamEnd(l, S, T);
-        if (l.surface === "house") be.world = houseFarPoint(S, T, P, front);
+        if (l.surface === "house") be.world = houseCutAtFront(S, T, d.D) || houseFarPoint(S, T, P, front);
         const e2 = P(be.world);
         const sp = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface, lv, l, be.surface, P);
         litSpotsF.push({ fromX: s.X, fromY: s.Y, ...sp, lv });
         // 客席へ向けた光は、客席から見ると灯体そのものがまぶしい。灯体のまわりにふわっと滲ませる
-        if (l.surface === "house") { const gY = isFront(f) ? Math.max(20, s.Y) : s.Y, R = (B.w / d.W) * (0.9 + 2.4 * lv) * glareMul(l); drawGlare(fctx, s.X, gY, R, l.color, lv, dim); litSpotsF.push(glareHole(s.X, gY, R, lv)); } }
+        if (l.surface === "house") {
+          /* 光源そのもののまぶしさ（客席から見ると器具が光って見える）と、
+             手前端で切った先端の滲み。先端に置くことで帯が板のように切れて見えない。 */
+          const gY = isFront(f) ? Math.max(20, s.Y) : s.Y, R = (B.w / d.W) * (0.9 + 2.4 * lv) * glareMul(l);
+          drawGlare(fctx, s.X, gY, R, l.color, lv, dim); litSpotsF.push(glareHole(s.X, gY, R, lv));
+          const R2 = Math.max(sp.halfW * 1.5, 24) * glareMul(l);
+          drawGlare(fctx, e2.X, e2.Y, R2, l.color, lv, dim); litSpotsF.push(glareHole(e2.X, e2.Y, R2, lv));
+        } }
       if (l.surface === "air") { const floorY = B.y + B.h; fctx.save(); fctx.setLineDash([5, 6]); fctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.45); fctx.lineWidth = 2; fctx.beginPath(); fctx.moveTo(tp.X, tp.Y); fctx.lineTo(tp.X, floorY); fctx.stroke(); fctx.restore();
         fctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.8); fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(tp.X - 12, tp.Y - 12); fctx.lineTo(tp.X + 12, tp.Y + 12); fctx.moveTo(tp.X + 12, tp.Y - 12); fctx.lineTo(tp.X - 12, tp.Y + 12); fctx.stroke(); fctx.beginPath(); fctx.arc(tp.X, tp.Y, 16, 0, Math.PI * 2); fctx.stroke();
         if (!dim) { fctx.fillStyle = hexA(l.color, 0.9); fctx.font = "15px sans-serif"; fctx.textBaseline = "bottom"; fctx.fillText(`${T.z.toFixed(1)}m`, tp.X + 20, tp.Y - 6); } }
@@ -1698,14 +1722,17 @@
            これが床に落ちた丸の「縦／横」の比になる。壁と空中は客席に正対するので潰さない。 */
         // 客席へ向けた光は、この図では観客に向かってくる。帯は舞台の手前端まで、まぶしさは灯体のまわりに
         const be = beamEnd(l, S, T);
-        if (l.surface === "house") be.world = houseFarPoint(S, houseCapY(S, be.world, d.D * 1.45), P, cv);
+        if (l.surface === "house") be.world = houseCutAtFront(S, T, d.D) || houseCapY(S, be.world, d.D * 1.2);
         const e2 = P(be.world);
         const sq = be.surface === "floor"
           ? [1, Math.min(1, ((L.bottomY - L.floorY) / d.D) / (L.pxPerM * Math.max(0.05, e2.scale || 1)))]
           : squashFor("front", be.surface || "air");
         const sp = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface, lv, l, be.surface, P);
         litSpots3D.push({ fromX: s0.X, fromY: s0.Y, ...sp, lv });
-        if (l.surface === "house") { const gY = isFront(f) ? Math.max(20, s0.Y) : s0.Y, R = L.pxPerM * Math.max(0.05, s0.scale || 1) * (0.9 + 2.4 * lv) * glareMul(l); drawGlare(fctx, s0.X, gY, R, l.color, lv, dim); litSpots3D.push(glareHole(s0.X, gY, R, lv)); }
+        if (l.surface === "house") { const gY = isFront(f) ? Math.max(20, s0.Y) : s0.Y, R = L.pxPerM * Math.max(0.05, s0.scale || 1) * (0.9 + 2.4 * lv) * glareMul(l);
+          drawGlare(fctx, s0.X, gY, R, l.color, lv, dim); litSpots3D.push(glareHole(s0.X, gY, R, lv));
+          const R2 = Math.max(sp.halfW * 1.5, 24) * glareMul(l);
+          drawGlare(fctx, e2.X, e2.Y, R2, l.color, lv, dim); litSpots3D.push(glareHole(e2.X, e2.Y, R2, lv)); }
       }
       if (showOn("path")) { const g = E.pathGuide(l, d);
         if (g && g.kind === "line") { fctx.save(); fctx.setLineDash([8, 6]); fctx.strokeStyle = "rgba(223,100,51,0.7)"; fctx.lineWidth = 2; const a = P(g.a ? E.pointWorld(g.a, d) : S), b = P(E.pointWorld(g.b, d)); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); fctx.restore(); } }
