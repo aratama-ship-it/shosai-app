@@ -2401,8 +2401,12 @@
       if (movers.length) {
         const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光の強さ"));
         head.append(switchBtn(allLv, allLv ? "強さが動いています。押すと全灯止めます" : lvMovers.length ? "一部だけ動いています。押すと全灯そろえます" : "押すと全灯の強さに始点と終点を置きます", () => {
-          if (allLv) { bulkEach(movers, (f, l) => { delete l.levelTo; }); commit(`${movers.length}灯の強さの動きを止めました`); }
-          else { bulkEach(movers, (f, l) => { l.levelTo = levelOf(l); }); commit(`${movers.length}灯の強さに始点と終点を置きました`); }
+          if (allLv) { bulkEach(movers, (f, l) => { delete l.levelTo; if (l.strobe) l.strobe = { ...l.strobe, on: false }; }); commit(`${movers.length}灯の強さの動きを止めました`); }
+          else {
+            /* 明滅は強さのオートメーションの中身（2026-09-13 本人要望）。既定は点滅しない設定で入れる。 */
+            bulkEach(movers, (f, l) => { l.levelTo = levelOf(l); const st = l.strobe || {}; l.strobe = { on: true, kind: st.kind || "soft", hz: E.finite(st.hz, 6), duty: E.finite(st.duty, 50), depth: E.finite(st.depth, 0) }; });
+            commit(`${movers.length}灯の強さに始点と終点を置きました`);
+          }
         }));
         b.append(head);
       }
@@ -2422,33 +2426,24 @@
             (v) => { lvMovers.forEach((fid) => { const l = lightOf(fid); if (l) l.levelTo = v; }); draw(); },
             () => commit(`${lvMovers.length}灯の終点の強さを変えました`)), true));
       }
-      /* ストロボもムービングだけ。まとめて選んだ全灯に同じ点滅を入れる（2026-09-13 本人要望）。 */
-      if (movers.length) {
-        const strobeOns = new Set(movers.map((fid) => (lightOf(fid) || {}).strobe && (lightOf(fid) || {}).strobe.on === true));
-        const allOn = strobeOns.size === 1 && [...strobeOns][0] === true;
-        const setStrobeAll = (patch) => bulkEach(movers, (f, l) => { l.strobe = { ...l.strobe, ...patch }; });
-        const head = el("div", "pboxhead"); head.append(el("p", "kicker", "ストロボ"));
-        head.append(switchBtn(allOn, allOn ? "点滅しています。押すと止めます" : "押すと全灯に時間で繰り返す点滅を上乗せします", () => {
-          setStrobeAll({ on: !allOn, kind: "sharp", hz: 6, duty: 50, depth: 60 });
-          commit(`${movers.length}灯のストロボを${allOn ? "止めました" : "点けました"}`);
-        }, "ストロボ"));
-        b.append(head);
-        if (allOn) {
-          const kinds = new Set(movers.map((fid) => ((lightOf(fid) || {}).strobe || {}).kind || "sharp"));
-          const sameKind = kinds.size <= 1, curKind = sameKind ? [...kinds][0] : "sharp";
-          b.append(field(sameKind ? "種類" : "種類（バラバラ）", seg([["sharp", "くっきり"], ["soft", "やわらかい"]], curKind, (v) => { setStrobeAll({ kind: v }); commit(`${movers.length}灯のストロボの種類を変えました`); }), true));
-          const hzs = new Set(movers.map((fid) => Math.round(E.clamp(E.finite(((lightOf(fid) || {}).strobe || {}).hz, 6), 0.5, 20) * 2)));
-          const sameHz = hzs.size <= 1, curHz = sameHz ? [...hzs][0] / 2 : 6;
-          b.append(field(sameHz ? "速さ" : "速さ（バラバラ）", range(0.5, 20, 0.5, curHz, (v) => `1秒に${v % 1 === 0 ? v : v.toFixed(1)}回`, (v) => setStrobeAll({ hz: v }), () => commit(`${movers.length}灯のストロボの速さを変えました`)), true));
-          if (curKind === "sharp") {
-            const duties = new Set(movers.map((fid) => Math.round(E.clamp(E.finite(((lightOf(fid) || {}).strobe || {}).duty, 50), 5, 95))));
-            const sameDuty = duties.size <= 1, curDuty = sameDuty ? [...duties][0] : 50;
-            b.append(field(sameDuty ? "点灯の長さ" : "点灯の長さ（バラバラ）", range(5, 95, 5, curDuty, (v) => `${Math.round(v)}%`, (v) => setStrobeAll({ duty: v }), () => commit(`${movers.length}灯の点灯の長さを変えました`)), true));
-          } else {
-            const depths = new Set(movers.map((fid) => Math.round(E.clamp(E.finite(((lightOf(fid) || {}).strobe || {}).depth, 60), 0, 100))));
-            const sameDepth = depths.size <= 1, curDepth = sameDepth ? [...depths][0] : 60;
-            b.append(field(sameDepth ? "沈む深さ" : "沈む深さ（バラバラ）", range(0, 100, 5, curDepth, (v) => `${Math.round(v)}%`, (v) => setStrobeAll({ depth: v }), () => commit(`${movers.length}灯の沈む深さを変えました`)), true));
-          }
+      /* 明滅（旧「ストロボ」）は強さのオートメーションの中身。入れている灯があるときだけ出す。
+         種類は〈ストロボ〉＝旧「くっきり」／〈やわらかい〉の2択（2026-09-13 本人指定）。 */
+      if (lvMovers.length) {
+        const setStrobeAll = (patch) => bulkEach(lvMovers, (f, l) => { l.strobe = { ...l.strobe, on: true, ...patch }; });
+        const kinds = new Set(lvMovers.map((fid) => ((lightOf(fid) || {}).strobe || {}).kind || "soft"));
+        const sameKind = kinds.size <= 1, curKind = sameKind ? [...kinds][0] : "soft";
+        b.append(field(sameKind ? "種類" : "種類（バラバラ）", seg([["sharp", "ストロボ"], ["soft", "やわらかい"]], curKind, (v) => { setStrobeAll({ kind: v }); commit(`${lvMovers.length}灯の明滅の種類を変えました`); }), true));
+        const hzs = new Set(lvMovers.map((fid) => Math.round(E.clamp(E.finite(((lightOf(fid) || {}).strobe || {}).hz, 6), 0.5, 20) * 2)));
+        const sameHz = hzs.size <= 1, curHz = sameHz ? [...hzs][0] / 2 : 6;
+        b.append(field(sameHz ? "速さ" : "速さ（バラバラ）", range(0.5, 20, 0.5, curHz, (v) => `1秒に${v % 1 === 0 ? v : v.toFixed(1)}回`, (v) => setStrobeAll({ hz: v }), () => commit(`${lvMovers.length}灯の明滅の速さを変えました`)), true));
+        if (curKind === "sharp") {
+          const duties = new Set(lvMovers.map((fid) => Math.round(E.clamp(E.finite(((lightOf(fid) || {}).strobe || {}).duty, 50), 5, 95))));
+          const sameDuty = duties.size <= 1, curDuty = sameDuty ? [...duties][0] : 50;
+          b.append(field(sameDuty ? "点灯の長さ" : "点灯の長さ（バラバラ）", range(5, 95, 5, curDuty, (v) => `${Math.round(v)}%`, (v) => setStrobeAll({ duty: v }), () => commit(`${lvMovers.length}灯の点灯の長さを変えました`)), true));
+        } else {
+          const depths = new Set(lvMovers.map((fid) => Math.round(E.clamp(E.finite(((lightOf(fid) || {}).strobe || {}).depth, 0), 0, 100))));
+          const sameDepth = depths.size <= 1, curDepth = sameDepth ? [...depths][0] : 0;
+          b.append(field(sameDepth ? "沈む深さ" : "沈む深さ（バラバラ）", range(0, 100, 5, curDepth, (v) => `${Math.round(v)}%${v < 5 ? "（点滅なし）" : ""}`, (v) => setStrobeAll({ depth: v }), () => commit(`${lvMovers.length}灯の沈む深さを変えました`)), true));
         }
       }
     }
@@ -2787,36 +2782,37 @@
           const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光の強さ"));
           head.append(switchBtn(autoLevel, autoLevel ? "強さが動いています。押すと止めます（始点の値で止まります）" : "押すと強さに始点と終点を置いて動かします", () => {
             const l2 = lightOf(fid);
-            if (autoLevel) { delete l2.levelTo; commit("強さの動きを止めました"); }
-            else { l2.levelTo = levelOf(l2); commit("強さに始点と終点を置きました"); }
+            if (autoLevel) { delete l2.levelTo; if (l2.strobe) l2.strobe = { ...l2.strobe, on: false }; commit("強さの動きを止めました"); }
+            else {
+              l2.levelTo = levelOf(l2);
+              /* 明滅（旧・ストロボ箱）は強さのオートメーションの中身にした（2026-09-13 本人要望）。
+                 入れた瞬間から点滅すると驚くので、既定は「やわらかい・沈む深さ0」＝見た目は変化なし。
+                 種類を〈ストロボ〉にする、または沈む深さを上げると点滅が出る。 */
+              const st0 = l2.strobe || {};
+              l2.strobe = { on: true, kind: st0.kind || "soft", hz: E.finite(st0.hz, 6), duty: E.finite(st0.duty, 50), depth: E.finite(st0.depth, 0) };
+              commit("強さに始点と終点を置きました");
+            }
           }));
           b.append(head);
         }
         b.append(field(autoLevel ? "始点" : "強さ", range(0, 100, 1, levelOf(l), fmtLv, (v) => { l.level = v; draw(); }, () => commit()), true));
         if (autoLevel) b.append(field("終点", range(0, 100, 1, E.clamp(E.finite(l.levelTo, levelOf(l)), 0, 100), fmtLv, (v) => { l.levelTo = v; draw(); }, () => commit()), true));
-        /* ストロボ（2026-09-13 本人要望）。ムービングだけが持てる。始点・終点の往復に、
-           時間で繰り返す点滅を上乗せする——往復のどの位置でも同じように点滅する。
-           「くっきり」＝矩形波でパパパッと切り替わる。「やわらかい」＝1−cosの滑らかな明滅で
-           フェード寄りになる。速さ(Hz)と、種類ごとの1つのパラメータ（点灯の長さ／沈む深さ）を持つ。 */
-        if (mover) {
+        /* 明滅（旧「ストロボ」の箱）。2026-09-13 本人要望で<b>光の強さのオートメーションの中身</b>にした。
+           始点・終点の往復に、時間で繰り返す点滅を上乗せする——往復のどの位置でも同じように点滅する。
+           種類は2択: 〈ストロボ〉＝矩形波でパパパッと切り替わる（旧「くっきり」。これがストロボそのもの）／
+           〈やわらかい〉＝1−cosの滑らかな明滅でフェード寄り。沈む深さ0なら点滅しない＝往復だけになる。
+           速さ(Hz)と、種類ごとの1つのパラメータ（点灯の長さ／沈む深さ）はそのまま残してある。 */
+        if (mover && autoLevel) {
           const st = l.strobe || {};
-          const on = st.on === true;
-          const head = el("div", "pboxhead"); head.append(el("p", "kicker", "ストロボ"));
-          head.append(switchBtn(on, on ? "点滅しています。押すと止めます" : "押すと時間で繰り返す点滅を上乗せします", () => {
-            setLight(fid, { strobe: { ...st, on: !on, kind: st.kind || "sharp", hz: E.finite(st.hz, 6), duty: E.finite(st.duty, 50), depth: E.finite(st.depth, 60) } });
-            commit(on ? "ストロボを止めました" : "ストロボを点けました");
-          }, "ストロボ"));
-          b.append(head);
-          if (on) {
-            const setStrobe = (patch) => { const l2 = lightOf(fid); l2.strobe = { ...l2.strobe, ...patch }; };
-            b.append(field("種類", seg([["sharp", "くっきり"], ["soft", "やわらかい"]], st.kind || "sharp", (v) => { setStrobe({ kind: v }); commit(); }), true));
-            const hz = E.clamp(E.finite(st.hz, 6), 0.5, 20);
-            b.append(field("速さ", range(0.5, 20, 0.5, hz, (v) => `1秒に${v % 1 === 0 ? v : v.toFixed(1)}回`, (v) => { setStrobe({ hz: v }); draw(); }, () => commit()), true));
-            if ((st.kind || "sharp") === "sharp") {
-              b.append(field("点灯の長さ", range(5, 95, 5, E.clamp(E.finite(st.duty, 50), 5, 95), (v) => `${Math.round(v)}%（${v < 30 ? "短く鋭い" : v > 70 ? "長め" : "半々"}）`, (v) => { setStrobe({ duty: v }); draw(); }, () => commit()), true));
-            } else {
-              b.append(field("沈む深さ", range(0, 100, 5, E.clamp(E.finite(st.depth, 60), 0, 100), (v) => `${Math.round(v)}%（${v < 30 ? "うっすら" : v > 80 ? "ほぼ消える" : "はっきり"}）`, (v) => { setStrobe({ depth: v }); draw(); }, () => commit()), true));
-            }
+          const setStrobe = (patch) => { const l2 = lightOf(fid); l2.strobe = { ...l2.strobe, on: true, ...patch }; };
+          const kind = st.kind || "soft";
+          b.append(field("種類", seg([["sharp", "ストロボ"], ["soft", "やわらかい"]], kind, (v) => { setStrobe({ kind: v }); commit(); }), true));
+          const hz = E.clamp(E.finite(st.hz, 6), 0.5, 20);
+          b.append(field("速さ", range(0.5, 20, 0.5, hz, (v) => `1秒に${v % 1 === 0 ? v : v.toFixed(1)}回`, (v) => { setStrobe({ hz: v }); draw(); }, () => commit()), true));
+          if (kind === "sharp") {
+            b.append(field("点灯の長さ", range(5, 95, 5, E.clamp(E.finite(st.duty, 50), 5, 95), (v) => `${Math.round(v)}%（${v < 30 ? "短く鋭い" : v > 70 ? "長め" : "半々"}）`, (v) => { setStrobe({ duty: v }); draw(); }, () => commit()), true));
+          } else {
+            b.append(field("沈む深さ", range(0, 100, 5, E.clamp(E.finite(st.depth, 0), 0, 100), (v) => `${Math.round(v)}%（${v < 5 ? "点滅なし" : v < 30 ? "うっすら" : v > 80 ? "ほぼ消える" : "はっきり"}）`, (v) => { setStrobe({ depth: v }); draw(); }, () => commit()), true));
           }
         }
       }
