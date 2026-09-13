@@ -1962,9 +1962,9 @@
     // 20灯以上でも一度に見渡せるよう、多いときは1行表示へ落とす（2026-09-11 実測で7行しか見えなかった）
     host.classList.toggle("compact", state.rig.fixtures.length > 12);
     // 灯体情報のページは1行が短い（番号・名前・オンオフ）ので、横に2列へ折り返す（2026-09-11 本人要望）
-    /* 横2列は元の幅（2026-09-11 本人要望）。灯体パネルが半分幅になったときは1列へ落とす
-       ——2列のままだと1枠70px前後で名前もオン・オフも読めない（2026-09-13）。 */
-    host.classList.toggle("cols2", host.clientWidth >= 230);
+    /* 一覧は<b>縦1列</b>（2026-09-13 本人指定）。半分幅のパネルでは2列にすると
+       1枠70px前後になり、名前もオン・オフも読めなかった。 */
+    host.classList.remove("cols2");
     const c = cue(); const grouped = new Set(c.groups.flatMap((g) => g.members));
     const row = (f, idx) => { const r = document.createElement("div"); r.className = "row" + (isSel(f.id) ? " sel" : ""); const st = lightState(f.id);
       r.innerHTML = `<span class="no">${idx !== undefined ? idx + 1 + "." : ""}${label(f.id)}</span><span class="nm">${f.name || "名前なし"}<small>${E.describeMount(f, state.rig).replace(/（高さ約\dm）/, "")}</small></span>`;
