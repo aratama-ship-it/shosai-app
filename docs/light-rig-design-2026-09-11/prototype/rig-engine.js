@@ -26,6 +26,10 @@
   const DEFAULT_DIMS = Object.freeze({ W: 12, D: 8, H: 8 });
   const FLOOR_FIXTURE_Z = 0.3;   // 床置きの光源の高さ。実測ではなく描画上の仮定
   const SIDE_OFFSET_M = 0.4;     // 横（ブーム）の光源は舞台端の少し外
+  /* ホリゾントライト（地明かり）は奥の壁（ホリゾント幕）のすぐ手前、床に一列に並べる実機の
+     置き方に合わせる（2026-09-13 本人要望）。v をわずかに手前へ取るのは、壁ぴったり(v=0)だと
+     幕の板と重なって描画が競合するのを避けるため——実機でも幕を焼かないよう少し離して置く。 */
+  const CYC_MOUNT_V = 0.02;
   const SPEED_PERIOD_MS = Object.freeze({ slow: 6000, normal: 3000, fast: 1500 });
   const PLANE_VALUES = Object.freeze(["horizontal", "frontVertical", "sideVertical"]);
 
@@ -171,6 +175,12 @@
        ahead = 舞台の手前端からの距離(m)。高さは客席天井なので舞台のHを超えてよい。 */
     if (m.type === "front") {
       return { x: (clamp(finite(m.u, 0.5), 0, 1) - 0.5) * dims.W, y: dims.D + clamp(finite(m.ahead, 5), 0.5, 20), z: clamp(finite(m.h, 7), 1, 20) };
+    }
+    /* ホリゾントライト（地明かり）。奥の壁ぎわ・床に置き、横位置(u)だけを持つ。
+       高さ0＝床に置いた実機、奥行きは壁のすぐ手前で固定（袖のブームや前明かりと同じく
+       「取り付け方で決まる」位置なので、動かせるのは横位置だけでよい）。 */
+    if (m.type === "cyc") {
+      return { x: (clamp(finite(m.u, 0.5), 0, 1) - 0.5) * dims.W, y: CYC_MOUNT_V * dims.D, z: 0 };
     }
     return null;
   };
@@ -464,6 +474,7 @@
     if (m.type === "floor") return `転がし・${lr(m.u)}・${m.v < 0.4 ? "奥" : m.v > 0.6 ? "手前" : "中ほど"}`;
     if (m.type === "front") return `前明かり・${lr(m.u)}・舞台前から約${Math.round(finite(m.ahead, 5))}m・高さ約${Math.round(finite(m.h, 7))}m`;
     if (m.type === "side") return `SS・${m.side === "shimote" ? "下手" : "上手"}の袖（高さ約${Math.round(m.h)}m）・${m.v < 0.4 ? "奥寄り" : m.v > 0.6 ? "手前寄り" : "中ほど"}`;
+    if (m.type === "cyc") return `ホリゾントライト（奥の壁ぎわ・床）・${lr(m.u)}`;
     return "取り付け未設定";
   };
 
@@ -743,7 +754,7 @@
   };
 
   root.RIG_ENGINE = Object.freeze({
-    DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
+    DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, CYC_MOUNT_V, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
     clamp, finite,
     newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, spotEllipse, spotFalloff, beamLanding, trussById, trussRow, fixtureWorld,
     newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, paramPhase, mountSpot, GOBOS, goboById, goboAngleAt, constrainPointToSurface, periodMs, groupEffect,

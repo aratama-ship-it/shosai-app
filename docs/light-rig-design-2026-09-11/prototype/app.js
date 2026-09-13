@@ -358,7 +358,7 @@
   const FRONT_DY = 58;        // 平面図: 舞台の手前端から下へ（内部px）。PAD.planB*2 に収まること
   const FRONT_DX_SEC = 40;    // 側面図: 手前端から客席側へ（内部px）
   const isFront = (f) => f.mount.type === "front";
-  const shapeOf = (m) => (m.type === "truss" ? "square" : m.type === "floor" ? "circle" : m.type === "front" ? "tri" : "diamond");
+  const shapeOf = (m) => (m.type === "truss" ? "square" : m.type === "floor" ? "circle" : m.type === "front" ? "tri" : m.type === "cyc" ? "bar" : "diamond");
   const planBox = () => {
     const w = plan.width, h = plan.height, d = state.dims;
     const padX = PAD.planX * 2, padT = PAD.planT * 2, padB = PAD.planB * 2;
@@ -501,9 +501,11 @@
     ids.forEach((id) => {
       const f = fixtureById(id); if (!f) return;
       const m = JSON.parse(JSON.stringify(f.mount));
-      if (m.type === "truss" || m.type === "floor") { m.u = m.u + 0.08 <= 1 ? m.u + 0.08 : Math.max(0, m.u - 0.08); }
+      if (m.type === "truss" || m.type === "floor" || m.type === "cyc") { m.u = m.u + 0.08 <= 1 ? m.u + 0.08 : Math.max(0, m.u - 0.08); }
       else if (m.type === "side") { m.v = Math.min(1, m.v + 0.1); }
-      const nf = E.newFixture(uid("f"), state.nextNo++, m, ""); state.rig.fixtures.push(nf); made.push(nf.id);
+      // 種類（固定／ムービング）と広がりを引き継ぐ。渡し忘れると固定灯を複製したのにムービングになる
+      // （2026-09-13 発見: ホリゾントライトの複製で確認）。
+      const nf = E.newFixture(uid("f"), state.nextNo++, m, "", f.kind, f.beamDeg); state.rig.fixtures.push(nf); made.push(nf.id);
     });
     state.sel = new Set(made);
     commit(`${made.length}灯を複製しました`);
@@ -528,7 +530,8 @@
     const made = [];
     [...state.sel].forEach((id) => {
       const f = fixtureById(id); if (!f || f.mount.type !== "side") return;
-      const nf = E.newFixture(uid("f"), state.nextNo++, E.mirrorMount(f.mount), f.name ? `${f.name}（反対側）` : "");
+      // duplicateSelectedと同じ理由で種類・広がりを引き継ぐ
+      const nf = E.newFixture(uid("f"), state.nextNo++, E.mirrorMount(f.mount), f.name ? `${f.name}（反対側）` : "", f.kind, f.beamDeg);
       state.rig.fixtures.push(nf); made.push(nf.id);
     });
     if (!made.length) return;
@@ -547,6 +550,8 @@
   function defaultAim(f) {
     const m = (f && f.mount) || {};
     if (m.type === "floor") return { surface: "air", a: E.newPoint({ u: E.clamp(0.5 + ((m.u || 0.5) - 0.5) * 0.5, 0, 1), v: E.clamp((m.v || 0.5) + 0.05, 0, 1), hM: 3.5 }) };
+    // ホリゾントライトは真上の壁を狙う。高さは幕のちょうど半分あたり＝ウォッシュの定位置
+    if (m.type === "cyc") return { surface: "back", a: E.newPoint({ u: m.u ?? 0.5, v: 0, hM: E.clamp(state.dims.H * 0.55, 0.5, state.dims.H) }) };
     return { surface: "floor", a: E.newPoint({ u: 0.5, v: 0.6, hM: 0 }) };
   }
   function ensureOn(fid) { const l = lightOf(fid); if (!l || l.on !== true) { const a = defaultAim(fixtureById(fid)); setLight(fid, { on: true, surface: a.surface, path: { kind: "still", a: a.a }, speed: "normal", color: (l && l.color) || COLORS[0] }); } }
@@ -702,6 +707,7 @@
       }
     }
     if (state.tool === "floor" && hv && hv.canvas === "plan" && inBox(hv, B)) drawFixtureMark(pctx, hv.X, hv.Y, "circle", { ghost: true });
+    if (state.tool === "cyc" && hv && hv.canvas === "plan" && inBox(hv, B)) drawFixtureMark(pctx, E.clamp(hv.X, B.x, B.x + B.w), B.y, "bar", { ghost: true });
     if (state.tool === "side" && hv && hv.canvas === "plan") { const side = hv.X < B.x ? "shimote" : hv.X > B.x + B.w ? "kamite" : null; if (side) drawFixtureMark(pctx, side === "shimote" ? B.x - SIDE_DX : B.x + B.w + SIDE_DX, E.clamp(hv.Y, B.y, B.y + B.h), "diamond", { ghost: true }); else { pctx.fillStyle = "rgba(240,231,214,0.6)"; pctx.font = "18px sans-serif"; pctx.fillText("舞台の外側（下手／上手）をクリックしてください", B.x + B.w / 2 - 190, B.y + B.h + 44); } }
 
     // 動き: 軌道・光線
@@ -749,7 +755,7 @@
       pctx.fillRect(x, y, mw, mh); pctx.strokeRect(x, y, mw, mh); pctx.restore();
     }
     // 状態
-    const st = state.tool === "truss" ? "バトンを渡す" : state.tool === "fixture" ? "吊り 配置中" : state.tool === "floor" ? "転がし 配置中" : state.tool === "side" ? "SS 配置中" : state.drag ? "ドラッグ調整中" : state.sel.size > 1 ? `${state.sel.size}灯を選択中` : "選択";
+    const st = state.tool === "truss" ? "バトンを渡す" : state.tool === "fixture" ? "吊り 配置中" : state.tool === "floor" ? "転がし 配置中" : state.tool === "cyc" ? "ホリゾントライト 配置中" : state.tool === "side" ? "SS 配置中" : state.drag ? "ドラッグ調整中" : state.sel.size > 1 ? `${state.sel.size}灯を選択中` : "選択";
     $("statebadge").textContent = st;
   }
   const inBox = (p, B) => p.X >= B.x && p.X <= B.x + B.w && p.Y >= B.y && p.Y <= B.y + B.h;
@@ -1250,6 +1256,7 @@
     if (shape === "square") ctx.rect(X - s, Y - s, s * 2, s * 2);
     else if (shape === "circle") ctx.arc(X, Y, s, 0, Math.PI * 2);
     else if (shape === "tri") { ctx.moveTo(X, Y + s * 1.15); ctx.lineTo(X + s * 1.15, Y - s * 0.9); ctx.lineTo(X - s * 1.15, Y - s * 0.9); ctx.closePath(); }
+    else if (shape === "bar") { const w = s * 1.5, h = s * 0.6; ctx.rect(X - w, Y - h, w * 2, h * 2); }   // ホリゾントライト＝地面に並ぶ横長の器具
     else { ctx.moveTo(X, Y - s * 1.2); ctx.lineTo(X + s * 1.2, Y); ctx.lineTo(X, Y + s * 1.2); ctx.lineTo(X - s * 1.2, Y); ctx.closePath(); }
     ctx.fill(); ctx.stroke();
     // ムービングは輪をひとつ足す（形＝仕込み位置、輪＝動かせるかどうか）
@@ -1511,6 +1518,8 @@
     if (state.tool === "truss") { addTruss(snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1))); return; }   // addTruss内で灯体配置モードへ移る
     if (state.tool === "fixture") { const t = E.trussById(state.rig, state.selTruss); if (!t) return; const Y = B.y + t.v * B.h; if (Math.abs(pt.Y - Y) < 60 && inBox({ X: pt.X, Y }, B)) { addFixture({ type: "truss", trussId: t.id, u: snapU((pt.X - B.x) / B.w) }); toast(`${label([...state.sel][0])}を奥から${E.trussRow(state.rig, t.id)}列目に置きました`, "元に戻す", undo); } return; }
     if (state.tool === "floor") { if (inBox(pt, B)) { addFixture({ type: "floor", u: snapU((pt.X - B.x) / B.w), v: snapV((pt.Y - B.y) / B.h) }); toast(`${label([...state.sel][0])}を床に置きました`, "元に戻す", undo); } return; }
+    // ホリゾントライトは奥の壁ぎわに固定なので、箱のどこをクリックしても横位置だけを取る
+    if (state.tool === "cyc") { if (inBox(pt, B)) { addFixture({ type: "cyc", u: snapU((pt.X - B.x) / B.w) }, "fixed"); toast(`${label([...state.sel][0])}をホリゾントライトとして置きました`, "元に戻す", undo); } return; }
     if (state.tool === "side") { const side = pt.X < B.x ? "shimote" : pt.X > B.x + B.w ? "kamite" : null; if (side) { addFixture({ type: "side", side, v: snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)), h: 2 }); toast(`${label([...state.sel][0])}を${side === "shimote" ? "下手" : "上手"}の袖に立てました`, "元に戻す", undo); } return; }
     if (state.tool === "front") {
       if (pt.Y > B.y + B.h) { addFixture({ type: "front", u: snapU(E.clamp((pt.X - B.x) / B.w, 0, 1)), ahead: 5, h: 7 }, "fixed"); toast(`${label([...state.sel][0])}を前明かりに置きました（舞台前から約5m・高さ約7m）`, "元に戻す", undo); }
@@ -1532,7 +1541,7 @@
   plan.addEventListener("pointermove", (ev) => {
     const pt = canvasPoint(plan, ev); const B = planBox(); state.hover = { canvas: "plan", ...pt };
     const dg = state.drag;
-    if (dg && dg.kind === "fixture") { const f = fixtureById(dg.fid); if (f) { const u = snapU(E.clamp((pt.X - B.x) / B.w, 0, 1)), v = snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)); if (f.mount.type === "truss") f.mount.u = u; else if (f.mount.type === "floor") { f.mount.u = u; f.mount.v = v; } else f.mount.v = v; dg.moved = true; } }
+    if (dg && dg.kind === "fixture") { const f = fixtureById(dg.fid); if (f) { const u = snapU(E.clamp((pt.X - B.x) / B.w, 0, 1)), v = snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)); if (f.mount.type === "truss" || f.mount.type === "cyc") f.mount.u = u; else if (f.mount.type === "floor") { f.mount.u = u; f.mount.v = v; } else f.mount.v = v; dg.moved = true; } }
     else if (dg && dg.kind === "truss") { const t = E.trussById(state.rig, dg.tid); if (t) { t.v = snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)); dg.moved = true; } }
     else if (dg && dg.kind === "handle") { const uv = E.planToUV(state.dims, B, pt.X, pt.Y); applyHandleDrag(dg, { u: snapU(uv.u), v: snapV(uv.v) }, dg.axis); }
     else if (dg && dg.kind === "marquee") {
@@ -1708,6 +1717,7 @@
     state.rig.trusses.forEach((t) => secs.push({ key: `t:${t.id}`, name: `吊り・奥から${E.trussRow(state.rig, t.id)}列目${t.label ? "・" + t.label : ""}`, items: list.filter((f) => f.mount.type === "truss" && f.mount.trussId === t.id) }));
     secs.push({ key: "front", name: "前明かり（客席の上）", items: list.filter((f) => f.mount.type === "front") });
     secs.push({ key: "floor", name: "転がし（床置き）", items: list.filter((f) => f.mount.type === "floor") });
+    secs.push({ key: "cyc", name: "ホリゾントライト（奥の壁ぎわ）", items: list.filter((f) => f.mount.type === "cyc") });
     secs.push({ key: "shimote", name: "SS・下手の袖", items: list.filter((f) => f.mount.type === "side" && f.mount.side === "shimote") });
     secs.push({ key: "kamite", name: "SS・上手の袖", items: list.filter((f) => f.mount.type === "side" && f.mount.side === "kamite") });
     return secs.map((x) => ({ ...x, items: x.items.filter(passSearch) })).filter((x) => x.items.length);
@@ -1844,7 +1854,7 @@
   /* T字の下の帯。置く操作と選んだ灯体の操作を、図のすぐ下に置く（2026-09-11 本人要望で右欄・左欄から移動）。
      動きモードでは置くことがないので帯ごと隠し、そのぶん図を大きくする。 */
   // 表記は本体の照明パネルに合わせる（吊り／SS／転がし・吊るのはバトン）。2026-09-11 本人指摘
-  const PLACE_TOOLS = [["truss", "バトンを渡す"], ["fixture", "吊り（バトンから真下へ）"], ["front", "前明かり（客席の上から顔へ）"], ["side", "SS（袖から横切って）"], ["floor", "転がし（床置きから体へ）"]];
+  const PLACE_TOOLS = [["truss", "バトンを渡す"], ["fixture", "吊り（バトンから真下へ）"], ["front", "前明かり（客席の上から顔へ）"], ["side", "SS（袖から横切って）"], ["floor", "転がし（床置きから体へ）"], ["cyc", "ホリゾントライト（奥の壁を焚く）"]];
   /* 幕の調整（2026-09-13 本人要望）。客席から光源が見えない状態を作れるように、
      開口の高さ・一文字幕の丈・袖幕の入り込みを数値で決める。配置タブにだけ出す。 */
   function renderCurtainBox(host) {
@@ -1910,6 +1920,7 @@
       : state.tool === "fixture" ? "平面図の選んだバトンの上をクリックすると灯体を吊れます。"
       : state.tool === "front" ? "平面図の舞台より手前（客席側の帯）をクリックすると置けます。舞台前からの距離と高さは右で直せます。"
       : state.tool === "floor" ? "平面図の舞台の中をクリックすると転がせます。"
+      : state.tool === "cyc" ? "平面図の舞台の中をクリックすると、奥の壁ぎわに横位置だけ決めて置けます。"
       : state.tool === "side" ? "下手を見る図・上手を見る図をクリックすると、その側の袖に立てられます。"
       : !state.selTruss ? "バトンを選ぶと「吊り」が使えます。" : "";
   }
@@ -2303,6 +2314,11 @@
           host.append(field("舞台前から", range(1, 20, 0.5, m.ahead, (v) => `約${v.toFixed(1)}m`, (v) => { m.ahead = v; draw(); }, () => commit())));
           host.append(field("高さ", range(1, 16, 0.1, m.h, (v) => `約${v.toFixed(1)}m`, (v) => { m.h = v; draw(); }, () => commit())));
           host.append(el("p", "note", "客席の上（シーリング）や客席横の壁（フロントサイド）に当たる位置です。平面図では客席側の帯に並べて描き、本当の距離はここの数値が正です。"));
+        }
+        if (m.type === "cyc") {
+          host.append(field("横位置", range(0, 1, 0.01, m.u, (v) => (v < 0.4 ? "下手寄り" : v > 0.6 ? "上手寄り" : "中央"), (v) => { m.u = v; draw(); }, () => commit())));
+          host.append(field("高さ", el("span", "val", "床（奥の壁ぎわ）")));
+          host.append(el("p", "note", "奥の壁（ホリゾント幕）のすぐ手前・床に一列に並べる地明かりです。奥行きは固定で、横位置だけ動かせます。"));
         }
         // ムービングかどうか（動きを付けられるのはムービングだけ）
         host.append(field("種類", seg([["moving", "ムービング"], ["fixed", "固定"]], E.isMoving(f) ? "moving" : "fixed", (v) => { f.kind = v; if (v === "fixed") { const l = lightOf(f.id); if (l && l.path && l.path.kind !== "still") { l.path = { kind: "still", a: l.path.a || l.path.c || E.newPoint() }; } } commit(); })));
