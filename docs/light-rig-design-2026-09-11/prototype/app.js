@@ -395,14 +395,12 @@
     const g = document.querySelector(".figgrid"); if (!g) return;
     const r = g.getBoundingClientRect(); if (!r.width || !r.height) return;
     const d = state.dims;
-    /* 横に要る量。左が2枠（灯体＋LXQ）になったので、側面図の幅を3つぶん見込む
-       （2026-09-13 本人要望で灯体とLXQを横並びにした）。 */
-    const chromeW = PAD.planX * 2 + PAD.secX * 6 + PAD.gap * 3;
+    const chromeW = PAD.planX * 2 + PAD.secX * 4 + PAD.gap * 2;
     const chromeH = PAD.headPlan + PAD.planT + PAD.planB + PAD.gap + PAD.headSec + PAD.secT + PAD.secB;
-    const s = Math.max(6, Math.min((r.width - chromeW) / (d.W + d.D * 3), (r.height - chromeH) / (d.D + d.H)));
+    const s = Math.max(6, Math.min((r.width - chromeW) / (d.W + d.D * 2), (r.height - chromeH) / (d.D + d.H)));
     const set = (elm, prop, v) => { const now = parseFloat(elm.style[prop]) || 0; if (Math.abs(now - v) > 1) elm.style[prop] = v + "px"; };
     // 上帯・シーン行を図と同じ幅の帯へ寄せる。窓を変えても縦に揃う
-    const band = Math.round((d.W + d.D * 3) * s) + chromeW;
+    const band = Math.round((d.W + d.D * 2) * s) + chromeW;
     const modal = $("modal"); if (modal) modal.style.setProperty("--band", band + "px");
     const secH = Math.round(d.H * s) + PAD.secT + PAD.secB;
     const sideW = Math.round(d.D * s) + PAD.secX * 2, midW = Math.round(d.W * s) + PAD.planX * 2;
@@ -411,8 +409,9 @@
     set(secF.parentElement, "width", midW); set(secF, "height", secH);
     set(secL.parentElement, "width", sideW); set(secL, "height", secH);
     // 上段の左右パネルは、真下の側面図と同じ幅にそろえる（6枠がきれいに並ぶ）
-    // 左は「側面図2枚ぶん＋隙間」。中の2枚（灯体・LXQ）が flex:1 1 0 で半分ずつ取る
-    { const lc = document.querySelector(".leftcol"); if (lc) set(lc, "width", sideW * 2 + 8); }
+    /* 左の枠は真下の側面図と同じ1枠ぶん。中の2枚（灯体・LXQ）が flex:1 1 0 で半分ずつ分け合う
+       （2026-09-13 本人指定「横幅をそれぞれ半分にしてコンパクトに収める」）。 */
+    { const lc = document.querySelector(".leftcol"); if (lc) set(lc, "width", sideW); }
     set($("panel-insp"), "width", sideW);
   }
   const planProj = () => E.makePlanProjector(state.dims, planBox());
@@ -1963,7 +1962,9 @@
     // 20灯以上でも一度に見渡せるよう、多いときは1行表示へ落とす（2026-09-11 実測で7行しか見えなかった）
     host.classList.toggle("compact", state.rig.fixtures.length > 12);
     // 灯体情報のページは1行が短い（番号・名前・オンオフ）ので、横に2列へ折り返す（2026-09-11 本人要望）
-    host.classList.toggle("cols2", true);   // 配置・灯体情報とも横2列（2026-09-11 本人要望）
+    /* 横2列は元の幅（2026-09-11 本人要望）。灯体パネルが半分幅になったときは1列へ落とす
+       ——2列のままだと1枠70px前後で名前もオン・オフも読めない（2026-09-13）。 */
+    host.classList.toggle("cols2", host.clientWidth >= 230);
     const c = cue(); const grouped = new Set(c.groups.flatMap((g) => g.members));
     const row = (f, idx) => { const r = document.createElement("div"); r.className = "row" + (isSel(f.id) ? " sel" : ""); const st = lightState(f.id);
       r.innerHTML = `<span class="no">${idx !== undefined ? idx + 1 + "." : ""}${label(f.id)}</span><span class="nm">${f.name || "名前なし"}<small>${E.describeMount(f, state.rig).replace(/（高さ約\dm）/, "")}</small></span>`;
@@ -2026,7 +2027,7 @@
   /* ---------- 右: 設定欄 ---------- */
   const seg = (opts, cur, onPick, cls) => { const s = document.createElement("div"); s.className = "seg " + (cls || ""); opts.forEach(([v, t, dis]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.setAttribute("aria-pressed", String(v === cur)); b.disabled = Boolean(dis); b.onclick = () => onPick(v); s.append(b); }); return s; };
   const field = (lab, node, wide) => { const f = document.createElement("div"); f.className = "field" + (wide ? " wide" : ""); const l = document.createElement("span"); l.textContent = lab; f.append(l, node); return f; };
-  const btn = (t, fn, cls) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = t; b.onclick = fn; return b; };
+  const btn = (t, fn, cls, title) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = t; if (title) b.title = title; b.onclick = fn; return b; };
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
   /* つまみ。つまんで動かすほかに、隣の欄へ数値を打ち込んでも決められる（2026-09-13 本人要望）。
      num を渡すと、数値欄だけ別の単位で扱える——中の値は0〜1のまま、欄はメートル、という使い方。
@@ -2663,7 +2664,7 @@
     const link = $("lxlink");
     if (link) {
       link.setAttribute("aria-pressed", String(Boolean(state.lxLink)));
-      link.querySelector("b").innerHTML = `<span class="swlab">現在のシーンと連動</span>${state.lxLink ? "オン" : "オフ"}`;
+      link.querySelector("b").innerHTML = `<span class="swlab">シーンと連動</span>${state.lxLink ? "オン" : "オフ"}`;
       link.title = state.lxLink ? "いま編集しているシーンのLXQを出しています。押すと、いま見ているシーンに固定します" : "見るシーンを固定しています。押すと、いま編集しているシーンに合わせて切り替わります";
     }
     const si = lxSceneIndex(), sc = state.scenes[si], x = lxOf(sc), list = lxList(sc), nowJson = cueJson(sc.cue);
@@ -2686,10 +2687,11 @@
     const setLx = (patch) => { const s2 = lxScene(); s2.lx = { ...lxOf(s2), ...patch }; commit(); };
     // 番号の頭2つは横1行にまとめる（縦を使わない）
     const nums = el("div", "lxnums");
-    nums.append(el("span", null, "セクション"), numIn(x.section, (v) => setLx({ section: v })),
-      el("span", null, "シーン"), numIn(x.no, (v) => setLx({ no: v })));
+    const sIn = numIn(x.section, (v) => setLx({ section: v })); sIn.title = "セクション番号";
+    const nIn = numIn(x.no, (v) => setLx({ no: v })); nIn.title = "シーン番号";
+    nums.append(el("span", null, "番号"), sIn, el("span", null, "-"), nIn);
     b.append(nums);
-    b.append(btn(`LXQ ${lxNo(sc, lxNextSeq(sc))} として登録`, () => {
+    b.append(btn(`LXQ ${lxNo(sc, lxNextSeq(sc))} を登録`, () => {
       lxGoto(si);
       const s2 = lxScene(); const seq = lxNextSeq(s2);
       s2.lxq = lxList(s2).concat([{ id: uid("q"), seq, name: "", at: new Date().toISOString(), cue: JSON.parse(cueJson(s2.cue)) }]);
@@ -2706,17 +2708,17 @@
       const nm = document.createElement("input"); nm.type = "text"; nm.value = q.name || ""; nm.placeholder = "名前（任意）";
       nm.onchange = () => { const s2 = lxScene(); const t = lxList(s2).find((z) => z.id === q.id); if (t) { t.name = nm.value.slice(0, 24); commit(); } };
       row.append(nm);
-      row.append(btn("呼び出す", () => {
+      row.append(btn("▶", () => {
         lxGoto(si);
         const s2 = lxScene(); const t = lxList(s2).find((z) => z.id === q.id); if (!t) return;
         s2.cue = JSON.parse(cueJson(t.cue));
         state.sel.clear(); stop(); home();
         commit(`LXQ ${lxNo(s2, E.finite(t.seq, 1))} を呼び出しました`);
-      }, "small"));
+      }, "small", `LXQ ${lxNo(sc, E.finite(q.seq, 1))} を呼び出す（いまの明かりを、この登録で置き換えます）`));
       row.append(btn("✕", () => {
         dialog(`<p class="ptitle">LXQ ${lxNo(sc, E.finite(q.seq, 1))} を消しますか？</p><p class="hint">登録した明かりの控えだけを消します。いま作業中の明かりはそのままです。</p>`,
           [["やめる", null], ["消す", () => { const s2 = lxScene(); s2.lxq = lxList(s2).filter((z) => z.id !== q.id); commit(`LXQ ${lxNo(s2, E.finite(q.seq, 1))} を消しました`); }, "primary"]]);
-      }, "small quiet"));
+      }, "small quiet", `LXQ ${lxNo(sc, E.finite(q.seq, 1))} を消す`));
       li.append(row);
     });
   }
