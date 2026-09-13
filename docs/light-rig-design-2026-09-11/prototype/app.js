@@ -2000,6 +2000,10 @@
         const same = spins.size <= 1, now = same && spins.size === 1 ? [...spins][0] : 0;
         b.append(field(same ? "回す速さ" : "回す速さ（バラバラ）", range(-100, 100, 5, now, spinText,
           (v) => { bulkEach(ids, (f, l) => { l.goboSpin = v; }); draw(); }, () => commit(`${ids.length}灯の回す速さを変えました`)), true));
+        const angs = new Set(lit.map((fid) => Math.round(E.clamp(E.finite((lightOf(fid) || {}).goboAngle, 0), 0, 360))));
+        const sameAng = angs.size <= 1, nowAng = sameAng && angs.size === 1 ? [...angs][0] : 0;
+        b.append(field(sameAng ? "向き" : "向き（バラバラ）", range(0, 360, 5, nowAng, (v) => `${Math.round(v)}°`,
+          (v) => { bulkEach(ids, (f, l) => { l.goboAngle = v; }); draw(); }, () => commit(`${ids.length}灯の模様の向きを変えました`)), true));
         const softs = new Set(lit.map((fid) => Math.round(softOf(lightOf(fid)) / SOFT_STEP) * SOFT_STEP));
         const sameSoft = softs.size <= 1, nowSoft = sameSoft && softs.size === 1 ? [...softs][0] : SOFT_DEF;
         b.append(field(sameSoft ? "ぼけ" : "ぼけ（バラバラ）", range(0, SOFT_MAX, SOFT_STEP, nowSoft, softText,
@@ -2290,10 +2294,10 @@
           const spin = E.clamp(E.finite(l.goboSpin, 0), -100, 100);
           b.append(field("回す速さ", range(-100, 100, 5, spin, spinText,
             (v) => { l.goboSpin = v; draw(); }, () => commit()), true));
-          if (Math.abs(spin) < 3) {
-            b.append(field("向き", range(0, 360, 5, E.clamp(E.finite(l.goboAngle, 0), 0, 360), (v) => `${Math.round(v)}°`,
-              (v) => { l.goboAngle = v; draw(); }, () => commit()), true));
-          }
+          /* 向きは回しているときも残す（2026-09-13 本人指定）。回している間は「回り始めの向き」
+             として効くので、灯ごとにずらして揃わないようにするのに使える。 */
+          b.append(field("向き", range(0, 360, 5, E.clamp(E.finite(l.goboAngle, 0), 0, 360), (v) => `${Math.round(v)}°`,
+            (v) => { l.goboAngle = v; draw(); }, () => commit()), true));
           /* ぼけ具合＝実機でいうフォーカス。くっきり出すと形が読め、ぼかすと質感になる
              （2026-09-13 本人要望）。 */
           b.append(field("ぼけ", range(0, SOFT_MAX, SOFT_STEP, softOf(l), softText,
