@@ -131,6 +131,12 @@
   const HOUSE_ROWS = 13;
   const HOUSE_ROW_DEPTH = .92;
   const HOUSE_ROW_RISE = .14;
+  const BOWL_CROWD_MAX = 12000;
+  const BOWL_ROOF = Object.freeze({ domeArcs: 7, domeRadials: 16, trussBeams: 8 });
+  const BOWL_FLOOR = Object.freeze({ acrossBlocks: 5, depthBlocks: 3, aisleWidthM: 1.2 });
+  const BOWL_TIER_STROKE = "rgba(239,231,214,0.10)";
+  const BOWL_ROOF_STROKE = "rgba(156,130,63,0.28)";
+  const BOWL_FLOOR_STROKE = "rgba(0,0,0,0.45)";
 
   /* 客席の床は舞台の床（Y=0）より下にある。額縁劇場でもリング劇場でも、演者を
      見上げる圧はここから生まれる。Vision Proアプリの houseFloorY: -1.0
@@ -407,10 +413,238 @@
     return Math.min(MAX_FRAME_SECONDS, elapsed);
   }
 
-  function clampFree(pos, width, depth, ceiling) {
+  function bowlGeometry(rawVenue, width, depth) {
+    let venue = rawVenue;
+    if (typeof rawVenue === "string") {
+      const venues = window.SHOSAI_VENUES;
+      venue = venues && typeof venues.byId === "function" ? venues.byId(rawVenue) : null;
+    }
+    if (!venue || !venue.bowl) return null;
+    const lines = window.SHOSAI_VENUE_LINES;
+    if (!lines || typeof lines.bowlTiers !== "function") return null;
+    const stageWidth = Math.max(0, finite(width, 12));
+    const stageDepth = Math.max(0, finite(depth, 9));
+    const tiers = Array.from(lines.bowlTiers(venue.bowl, {
+      stageWidthM: stageWidth,
+      stageDepthM: stageDepth,
+    }) || []);
+    const rows = tiers.flatMap((tier) => Array.from(tier.rows || []));
+    if (!rows.length) return null;
+    const farthestDistanceM = Math.max(...rows.map((row) => finite(row.distanceM, 0)));
+    const highestEyeM = Math.max(...rows.map((row) => finite(row.eyeM, 0)));
+    const roof = venue.bowl.roof || {};
+    const roofApexM = roof.kind === "open" ? 0 : Math.max(0, finite(roof.apexM, 0));
+    return {
+      bowl: venue.bowl,
+      tiers,
+      farthestDistanceM,
+      highestEyeM,
+      roofApexM,
+      /* bowlには独立した横幅を持たせていない。全周・三方・正面のいずれも、
+         舞台半幅と最遠段までの距離から器を収める半幅を導く。 */
+      halfWidthM: stageWidth / 2 + farthestDistanceM,
+    };
+  }
+
+  function bowlAudience(rawVenue) {
+    const audience = rawVenue && rawVenue.audience;
+    if (["front", "three", "round"].includes(audience)) return audience;
+    const wrap = rawVenue && rawVenue.bowl && rawVenue.bowl.wrap;
+    return ["front", "three", "round"].includes(wrap) ? wrap : "front";
+  }
+
+  function bowlOrientations(rawVenue) {
+    const audience = bowlAudience(rawVenue);
+    const orientations = ["front"];
+    if (audience === "three" || audience === "round") orientations.push("left", "right");
+    if (audience === "round") orientations.push("rear");
+    return orientations;
+  }
+
+  function orientBowlPoint(orientation, alongM, distanceM, y) {
+    if (orientation === "left") return { x: -distanceM, y, z: alongM };
+    if (orientation === "right") return { x: distanceM, y, z: -alongM };
+    if (orientation === "rear") return { x: alongM, y, z: -distanceM };
+    return { x: alongM, y, z: distanceM };
+  }
+
+  function bowlRowPitch(tier, rowIndex) {
+    const rows = tier.rows || [];
+    if (rows[rowIndex + 1]) return Math.max(.001, rows[rowIndex + 1].distanceM - rows[rowIndex].distanceM);
+    if (rows[rowIndex - 1]) return Math.max(.001, rows[rowIndex].distanceM - rows[rowIndex - 1].distanceM);
+    return Math.max(.001, finite(tier.toM, 0) - finite(tier.fromM, 0));
+  }
+
+  /* 器の客席を描画から切り離した計画。段の距離・床・目線は bowlTiers の値を
+     そのまま持ち、左右は正面列の90度回転、rear は z 反転だけで作る。 */
+  function bowlHouseUnits(rawVenue, width, depth, occupancy) {
+    const geometry = bowlGeometry(rawVenue, width, depth);
+    if (!geometry) return null;
+    const orientations = bowlOrientations(rawVenue);
+    const filled = Number.isFinite(occupancy) ? occupancy : houseModeById(houseModeId).occupancy;
+    const rowWidthM = geometry.halfWidthM * 2;
+    const seatsPerRow = Math.max(1, Math.floor(rowWidthM / .55));
+    const rowCount = geometry.tiers.reduce((sum, tier) => sum + tier.rows.length, 0);
+    const stride = Math.max(1, Math.ceil((seatsPerRow * rowCount * orientations.length) / BOWL_CROWD_MAX));
+    const floorGrid = bowlFloorGrid(rawVenue, width, depth);
+    const units = [];
+    let candidateIndex = 0;
+
+    geometry.tiers.forEach((tier, tierIndex) => {
+      tier.rows.forEach((row, rowIndex) => {
+        const pitchM = bowlRowPitch(tier, rowIndex);
+        const nearM = row.distanceM - pitchM / 2;
+        const farM = row.distanceM + pitchM / 2;
+        const previousFloorM = rowIndex ? tier.rows[rowIndex - 1].floorM : row.floorM;
+        const lastTier = tierIndex === geometry.tiers.length - 1;
+        const lastRow = rowIndex === tier.rows.length - 1;
+        const fill = lastTier && lastRow ? "#0f0d0c" : lastTier ? "#131110" : "#171412";
+        orientations.forEach((orientation, orientationIndex) => {
+          const corners = [
+            orientBowlPoint(orientation, -geometry.halfWidthM, nearM, row.floorM),
+            orientBowlPoint(orientation, geometry.halfWidthM, nearM, row.floorM),
+            orientBowlPoint(orientation, geometry.halfWidthM, farM, row.floorM),
+            orientBowlPoint(orientation, -geometry.halfWidthM, farM, row.floorM),
+          ];
+          const riser = row.floorM > previousFloorM ? [
+            orientBowlPoint(orientation, -geometry.halfWidthM, nearM, previousFloorM),
+            orientBowlPoint(orientation, geometry.halfWidthM, nearM, previousFloorM),
+            orientBowlPoint(orientation, geometry.halfWidthM, nearM, row.floorM),
+            orientBowlPoint(orientation, -geometry.halfWidthM, nearM, row.floorM),
+          ] : null;
+          units.push({
+            type: "tier", orientation, tier: tier.id, row: rowIndex,
+            distanceM: row.distanceM, floorM: row.floorM, eyeM: row.eyeM,
+            center: orientBowlPoint(orientation, 0, row.distanceM, row.floorM),
+            corners, riser, fill,
+          });
+
+          for (let seat = 0; seat < seatsPerRow; seat += 1) {
+            const current = candidateIndex;
+            candidateIndex += 1;
+            if (current % stride) continue;
+            const alongM = (seat - (seatsPerRow - 1) / 2) * .55;
+            const onFrontGrid = tier.mode === "standing" && orientation === "front" && floorGrid &&
+              floorGrid.strips.some((strip) => {
+                const xs = strip.map((point) => point.x);
+                const zs = strip.map((point) => point.z);
+                return alongM >= Math.min(...xs) && alongM <= Math.max(...xs) &&
+                  row.distanceM >= Math.min(...zs) && row.distanceM <= Math.max(...zs);
+              });
+            if (onFrontGrid) continue;
+            const occupied = seatNoise(tierIndex * 1000 + rowIndex, seat, orientationIndex + 17) < filled;
+            if (tier.mode === "standing" && !occupied) continue;
+            const point = orientBowlPoint(orientation, alongM, row.distanceM, row.floorM);
+            units.push({
+              type: "person", orientation, tier: tier.id, row: rowIndex, seat,
+              distanceM: row.distanceM,
+              person: {
+                tier: `bowl-${orientation}`,
+                row: rowIndex,
+                seat,
+                occupied,
+                bowl: true,
+                mode: tier.mode,
+                x: point.x,
+                z: point.z,
+                floorY: row.floorM,
+                headY: row.eyeM,
+              },
+            });
+          }
+        });
+      });
+    });
+    return { geometry, orientations, stride, seatsPerRow, units };
+  }
+
+  function bowlRoofRibs(rawVenue, width, depth) {
+    const geometry = bowlGeometry(rawVenue, width, depth);
+    if (!geometry) return null;
+    const roof = geometry.bowl.roof || {};
+    if (roof.kind === "open") return { kind: "open", arcs: [], radials: [], beams: [] };
+    const apexM = Math.max(0, finite(roof.apexM, 0));
+    const eaveM = Math.max(0, finite(roof.eaveM, 0));
+    const radiusM = geometry.halfWidthM;
+    if (roof.kind === "dome") {
+      const arcs = Array.from({ length: BOWL_ROOF.domeArcs }, (_, index) => {
+        const ratio = (index + 1) / (BOWL_ROOF.domeArcs + 1);
+        return {
+          heightM: eaveM + (apexM - eaveM) * ratio,
+          points: circlePoints(0, eaveM + (apexM - eaveM) * ratio, 0,
+            radiusM * (1 - ratio), 48),
+        };
+      });
+      const radials = Array.from({ length: BOWL_ROOF.domeRadials }, (_, index) => {
+        const angle = index / BOWL_ROOF.domeRadials * Math.PI * 2;
+        return {
+          from: { x: Math.cos(angle) * radiusM, y: eaveM, z: Math.sin(angle) * radiusM },
+          to: { x: 0, y: apexM, z: 0 },
+        };
+      });
+      return { kind: "dome", arcs, radials, beams: [] };
+    }
+    const beams = Array.from({ length: BOWL_ROOF.trussBeams }, (_, index) => {
+      const ratio = (index + 1) / (BOWL_ROOF.trussBeams + 1);
+      const x = -radiusM + radiusM * 2 * ratio;
+      const y = eaveM + (apexM - eaveM) * ratio;
+      return { from: { x, y, z: -radiusM }, to: { x, y, z: radiusM } };
+    });
+    return { kind: "truss", arcs: [], radials: [], beams };
+  }
+
+  function bowlFloorGrid(rawVenue, width, depth) {
+    const geometry = bowlGeometry(rawVenue, width, depth);
+    if (!geometry) return null;
+    const standing = geometry.tiers.find((tier) => tier.mode === "standing" && tier.rows.length);
+    if (!standing) return { strips: [] };
+    const first = standing.rows[0];
+    const last = standing.rows[standing.rows.length - 1];
+    const frontM = first.distanceM - bowlRowPitch(standing, 0) / 2;
+    const backM = last.distanceM + bowlRowPitch(standing, standing.rows.length - 1) / 2;
+    const halfAisle = BOWL_FLOOR.aisleWidthM / 2;
+    const strips = [];
+    for (let index = 1; index < BOWL_FLOOR.acrossBlocks; index += 1) {
+      const x = -geometry.halfWidthM + geometry.halfWidthM * 2 * index / BOWL_FLOOR.acrossBlocks;
+      strips.push([
+        { x: x - halfAisle, y: first.floorM + .001, z: frontM },
+        { x: x + halfAisle, y: first.floorM + .001, z: frontM },
+        { x: x + halfAisle, y: first.floorM + .001, z: backM },
+        { x: x - halfAisle, y: first.floorM + .001, z: backM },
+      ]);
+    }
+    for (let index = 1; index < BOWL_FLOOR.depthBlocks; index += 1) {
+      const z = frontM + (backM - frontM) * index / BOWL_FLOOR.depthBlocks;
+      strips.push([
+        { x: -geometry.halfWidthM, y: first.floorM + .001, z: z - halfAisle },
+        { x: geometry.halfWidthM, y: first.floorM + .001, z: z - halfAisle },
+        { x: geometry.halfWidthM, y: first.floorM + .001, z: z + halfAisle },
+        { x: -geometry.halfWidthM, y: first.floorM + .001, z: z + halfAisle },
+      ]);
+    }
+    return { strips, frontM, backM, floorM: first.floorM };
+  }
+
+  function currentVenueModel() {
+    const id = data && data.venue && data.venue.type;
+    const venues = window.SHOSAI_VENUES;
+    return id && venues && typeof venues.byId === "function" ? venues.byId(id) : null;
+  }
+
+  function clampFree(pos, width, depth, ceiling, rawVenue) {
     const stageWidth = Math.max(0, finite(width, 12));
     const stageDepth = Math.max(0, finite(depth, 9));
     const stageCeiling = Math.max(0, finite(ceiling, 8));
+    const geometry = bowlGeometry(rawVenue, stageWidth, stageDepth);
+    if (geometry) {
+      const side = geometry.halfWidthM + 12;
+      return {
+        x: clamp(finite(pos && pos.x, 0), -side, side),
+        y: clamp(finite(pos && pos.y, 1.35), .2,
+          Math.max(stageCeiling, geometry.highestEyeM, geometry.roofApexM) + 6),
+        z: clamp(finite(pos && pos.z, 0), -(stageDepth / 2 + 8), geometry.farthestDistanceM + 22),
+      };
+    }
     return {
       x: clamp(finite(pos && pos.x, 0), -(stageWidth / 2 + 12), stageWidth / 2 + 12),
       y: clamp(finite(pos && pos.y, 1.35), .2, stageCeiling + 6),
@@ -418,7 +652,7 @@
     };
   }
 
-  function freePresets(width, depth, ceiling) {
+  function freePresets(width, depth, ceiling, rawVenue) {
     const stageWidth = Math.max(0, finite(width, 12));
     const stageDepth = Math.max(0, finite(depth, 9));
     const stageCeiling = Math.max(0, finite(ceiling, 8));
@@ -427,7 +661,7 @@
     const centerZ = stageDepth / 2 + 9;
     const frontZ = stageDepth / 2 + 1.2;
     const seatedEye = HOUSE_PERSON.headYM;
-    return [
+    const presets = [
       { id: "audience-center", name: "客席中央", x: 0,
         y: houseFloorAt(centerZ, stageWidth, stageDepth) + seatedEye, z: centerZ, yaw: 180, pitch: -2 },
       { id: "front-row", name: "最前列", x: 0,
@@ -439,6 +673,35 @@
          置いていたため、壁の裏側が視界を塞いで客席が見えなかった（2026-08-29 修正）。 */
       { id: "upstage", name: "舞台奥", x: 0, y: 1.6, z: -(stageDepth / 2) + 1.2, yaw: 0, pitch: 0 },
     ];
+    const geometry = bowlGeometry(rawVenue, stageWidth, stageDepth);
+    if (!geometry) return presets;
+    const standing = geometry.tiers.find((tier) => tier.mode === "standing" && tier.rows.length);
+    const seated = geometry.tiers.filter((tier) => tier.mode === "seated" && tier.rows.length);
+    const first = (tier) => tier && tier.rows[0];
+    const middle = (tier) => tier && tier.rows[Math.floor((tier.rows.length - 1) / 2)];
+    const last = (tier) => tier && tier.rows[tier.rows.length - 1];
+    const derived = [
+      ["bowl-floor-front", "フロア前方", first(standing)],
+      ["bowl-floor-rear", "フロア後方", last(standing)],
+      ["bowl-lower-centre", "下段中央", middle(seated[0])],
+      ["bowl-upper-centre", "上段中央", middle(seated[1])],
+      ["bowl-top-tier", "最上段", last(seated[seated.length - 1])],
+    ].filter((entry) => entry[2]);
+    const stageHeightM = finite(geometry.bowl.stageHeightM, 0);
+    derived.forEach(([id, name, row]) => {
+      const distanceM = Math.max(.001, finite(row.distanceM, 0));
+      presets.push({
+        id,
+        name,
+        x: 0,
+        y: finite(row.eyeM, 1.2),
+        z: distanceM,
+        yaw: 180,
+        pitch: clamp(-Math.atan((finite(row.eyeM, 1.2) - stageHeightM) / distanceM) * 180 / Math.PI,
+          -89, 89),
+      });
+    });
+    return presets;
   }
 
   function clipPolyNear(points, near = NEAR) {
@@ -571,8 +834,10 @@
   const hitTargets = [];
 
   function text(key) {
-    const dictionary = window.SHOSAI_I18N && window.SHOSAI_I18N.text;
-    return data && data.lang === "en" && dictionary && dictionary[key] || key;
+    const code = data && data.lang;
+    const pack = code && (window.SHOSAI_I18N_PACKS || {})[code];
+    const dictionary = pack && pack.text || (code === "en" && window.SHOSAI_I18N && window.SHOSAI_I18N.text);
+    return dictionary && dictionary[key] || key;
   }
 
   function createElement(tag, id, className) {
@@ -589,27 +854,27 @@
 #stage-fpv-overlay[hidden]{display:none!important}#stage-fpv-overlay{position:fixed;inset:0;z-index:70;background:#0d0a08;color:#e8e2d4;font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;overflow:hidden}
 #stage-fpv-view{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}#stage-fpv-view.dragging{cursor:grabbing}.stage-fpv-hud{position:absolute;color:#e8e2d4;user-select:none;-webkit-user-select:none}
 #stage-fpv-title{top:18px;left:20px;pointer-events:none}#stage-fpv-title .show{font-size:11px;letter-spacing:.12em;opacity:.55;margin-bottom:6px}#stage-fpv-title .act{font-size:11px;opacity:.6;margin-bottom:2px}#stage-fpv-title .scene{font-size:19px;font-weight:600;letter-spacing:.04em}#stage-fpv-title .approx{font-size:10.5px;opacity:.48;margin-top:5px}
-#stage-fpv-minimap{top:16px;right:70px;background:rgba(16,12,9,.72);border:1px solid rgba(232,226,212,.14);border-radius:4px}
+#stage-fpv-minimap{top:16px;right:70px;background:rgba(var(--stage-ui-float-deep-rgb,16,12,9),.72);border:1px solid rgba(232,226,212,.14);border-radius:4px}
 #stage-fpv-whose{left:20px;bottom:102px;font-size:12.5px;opacity:.85;pointer-events:none}#stage-fpv-whose b{font-weight:600}#stage-fpv-whose .m{opacity:.6;margin-left:.6em}
-#stage-fpv-cast{left:20px;bottom:58px;right:220px;display:flex;flex-wrap:wrap;gap:6px}.stage-fpv-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 8px;border-radius:3px;background:rgba(22,16,11,.86);border:1px solid rgba(232,226,212,.16);color:#e8e2d4;font-size:12px;cursor:pointer;font-family:inherit}.stage-fpv-chip:hover{border-color:rgba(232,226,212,.45)}.stage-fpv-chip.on{background:#e8e2d4;color:#14100c;border-color:#e8e2d4}.stage-fpv-chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
-#stage-fpv-presets{left:20px;bottom:18px;right:220px;display:flex;flex-wrap:wrap;gap:5px}.stage-fpv-preset{padding:4px 8px;font-size:11px;background:rgba(22,16,11,.72)}
+#stage-fpv-cast{left:20px;bottom:58px;right:220px;display:flex;flex-wrap:wrap;gap:6px}.stage-fpv-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 8px;border-radius:3px;background:rgba(var(--stage-ui-float-rgb,22,16,11),.86);border:1px solid rgba(232,226,212,.16);color:#e8e2d4;font-size:12px;cursor:pointer;font-family:inherit}.stage-fpv-chip:hover{border-color:rgba(232,226,212,.45)}.stage-fpv-chip.on{background:#e8e2d4;color:#14100c;border-color:#e8e2d4}.stage-fpv-chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
+#stage-fpv-presets{left:20px;bottom:18px;right:220px;display:flex;flex-wrap:wrap;gap:5px}.stage-fpv-preset{padding:4px 8px;font-size:11px;background:rgba(var(--stage-ui-float-rgb,22,16,11),.72)}
 #stage-fpv-panel-toggles{display:flex;flex-direction:column;align-items:stretch;gap:5px}.stage-fpv-panel-toggle{justify-content:center;padding:4px 9px;font-size:11px}
 #stage-fpv-optics{top:174px;right:70px;display:flex;flex-direction:column;align-items:stretch;gap:14px;z-index:71}#stage-fpv-lens,#stage-fpv-house{display:flex;flex-direction:column;align-items:stretch;gap:5px}.stage-fpv-lens-chip,.stage-fpv-house-chip{justify-content:center;padding:4px 9px;font-size:11px}
-.stage-fpv-panel{position:absolute;z-index:71;box-sizing:border-box;overflow:hidden;border:1px solid rgba(232,226,212,.16);border-radius:3px;background:var(--chip,rgba(22,16,11,.94));box-shadow:0 8px 24px rgba(0,0,0,.28);color:#e8e2d4;touch-action:none;user-select:none;-webkit-user-select:none}.stage-fpv-panel[hidden]{display:none!important}.stage-fpv-panel-bar{height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 5px 0 9px;font-size:11px;letter-spacing:.04em;cursor:grab}.stage-fpv-panel-bar:active{cursor:grabbing}.stage-fpv-panel-hide{width:24px;height:22px;padding:0;border:0;background:transparent;color:#e8e2d4;font:16px/20px inherit;cursor:pointer}.stage-fpv-panel canvas{display:block;width:100%;background:#16100b;pointer-events:auto}.stage-fpv-panel-resize{position:absolute;right:0;bottom:0;width:14px;height:14px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 0 45%,rgba(232,226,212,.55) 46% 55%,transparent 56% 65%,rgba(232,226,212,.55) 66% 75%,transparent 76%);touch-action:none}
-#stage-fpv-nav{right:16px;bottom:18px;display:flex;align-items:center;gap:8px}#stage-fpv-nav button{background:rgba(22,16,11,.86);color:#e8e2d4;border:1px solid rgba(232,226,212,.2);border-radius:3px;font-size:13px;padding:7px 12px;cursor:pointer;font-family:inherit}#stage-fpv-nav button:hover{border-color:rgba(232,226,212,.5)}#stage-fpv-count{font-size:11.5px;opacity:.6;min-width:52px;text-align:center}
-#stage-fpv-hint{left:50%;bottom:88px;transform:translateX(-50%);font-size:12.5px;background:rgba(22,16,11,.86);padding:7px 14px;border-radius:3px;opacity:.9;transition:opacity .8s;pointer-events:none;border:1px solid rgba(232,226,212,.14)}#stage-fpv-hint.gone{opacity:0}
-#stage-fpv-keys{left:20px;bottom:146px;pointer-events:none;display:flex;flex-direction:column;gap:4px}#stage-fpv-keys .row{display:flex;align-items:center;gap:8px}#stage-fpv-keys .keys{display:flex;gap:3px}#stage-fpv-keys .key{min-width:10px;padding:2px 5px;border:1px solid rgba(232,226,212,.3);border-bottom-width:2px;border-radius:3px;background:rgba(22,16,11,.78);text-align:center;font-size:10.5px;line-height:1.25;letter-spacing:.02em}#stage-fpv-keys .what{font-size:11px;opacity:.62}
-#stage-fpv-edit{left:50%;bottom:70px;transform:translateX(-50%);max-width:min(760px,86vw);background:rgba(16,12,9,.9);border:1px solid rgba(232,226,212,.18);border-radius:4px;padding:8px 10px}
+.stage-fpv-panel{position:absolute;z-index:71;box-sizing:border-box;overflow:hidden;border:1px solid rgba(232,226,212,.16);border-radius:3px;background:var(--chip,rgba(var(--stage-ui-float-rgb,22,16,11),.94));box-shadow:0 8px 24px rgba(0,0,0,.28);color:#e8e2d4;touch-action:none;user-select:none;-webkit-user-select:none}.stage-fpv-panel[hidden]{display:none!important}.stage-fpv-panel-bar{height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 5px 0 9px;font-size:11px;letter-spacing:.04em;cursor:grab}.stage-fpv-panel-bar:active{cursor:grabbing}.stage-fpv-panel-hide{width:24px;height:22px;padding:0;border:0;background:transparent;color:#e8e2d4;font:16px/20px inherit;cursor:pointer}.stage-fpv-panel canvas{display:block;width:100%;background:#16100b;pointer-events:auto}.stage-fpv-panel-resize{position:absolute;right:0;bottom:0;width:14px;height:14px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 0 45%,rgba(232,226,212,.55) 46% 55%,transparent 56% 65%,rgba(232,226,212,.55) 66% 75%,transparent 76%);touch-action:none}
+#stage-fpv-nav{right:16px;bottom:18px;display:flex;align-items:center;gap:8px}#stage-fpv-nav button{background:rgba(var(--stage-ui-float-rgb,22,16,11),.86);color:#e8e2d4;border:1px solid rgba(232,226,212,.2);border-radius:3px;font-size:13px;padding:7px 12px;cursor:pointer;font-family:inherit}#stage-fpv-nav button:hover{border-color:rgba(232,226,212,.5)}#stage-fpv-count{font-size:11.5px;opacity:.6;min-width:52px;text-align:center}
+#stage-fpv-hint{left:50%;bottom:88px;transform:translateX(-50%);font-size:12.5px;background:rgba(var(--stage-ui-float-rgb,22,16,11),.86);padding:7px 14px;border-radius:3px;opacity:.9;transition:opacity .8s;pointer-events:none;border:1px solid rgba(232,226,212,.14)}#stage-fpv-hint.gone{opacity:0}
+#stage-fpv-keys{left:20px;bottom:146px;pointer-events:none;display:flex;flex-direction:column;gap:4px}#stage-fpv-keys .row{display:flex;align-items:center;gap:8px}#stage-fpv-keys .keys{display:flex;gap:3px}#stage-fpv-keys .key{min-width:10px;padding:2px 5px;border:1px solid rgba(232,226,212,.3);border-bottom-width:2px;border-radius:3px;background:rgba(var(--stage-ui-float-rgb,22,16,11),.78);text-align:center;font-size:10.5px;line-height:1.25;letter-spacing:.02em}#stage-fpv-keys .what{font-size:11px;opacity:.62}
+#stage-fpv-edit{left:50%;bottom:70px;transform:translateX(-50%);max-width:min(760px,86vw);background:rgba(var(--stage-ui-float-deep-rgb,16,12,9),.9);border:1px solid rgba(232,226,212,.18);border-radius:4px;padding:8px 10px}
 #stage-fpv-edit .head{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px}
 #stage-fpv-edit .hint2{font-size:10.5px;opacity:.5;margin:-2px 0 6px}
 #stage-fpv-edit .dot{width:9px;height:9px;border-radius:50%;flex:none}
 #stage-fpv-edit .fv{opacity:.65}
 #stage-fpv-edit-poses{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
-.stage-fpv-pose-tile{flex:none;width:64px;padding:0;border:1px solid rgba(232,226,212,.16);border-radius:3px;background:rgba(22,16,11,.86);color:#e8e2d4;font-size:10px;cursor:pointer;font-family:inherit}
+.stage-fpv-pose-tile{flex:none;width:64px;padding:0;border:1px solid rgba(232,226,212,.16);border-radius:3px;background:rgba(var(--stage-ui-float-rgb,22,16,11),.86);color:#e8e2d4;font-size:10px;cursor:pointer;font-family:inherit}
 .stage-fpv-pose-tile canvas{display:block;width:100%;height:56px;background:transparent}
 .stage-fpv-pose-tile span{display:block;padding:1px 2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stage-fpv-pose-tile.on{background:#e8e2d4;color:#14100c;border-color:#e8e2d4}
-#stage-fpv-toast{left:50%;top:70px;transform:translateX(-50%);font-size:12.5px;background:rgba(22,16,11,.86);padding:7px 14px;border-radius:3px;opacity:0;transition:opacity .4s;pointer-events:none;border:1px solid rgba(232,226,212,.2)}#stage-fpv-toast.show{opacity:1}
+#stage-fpv-toast{left:50%;top:70px;transform:translateX(-50%);font-size:12.5px;background:rgba(var(--stage-ui-float-rgb,22,16,11),.86);padding:7px 14px;border-radius:3px;opacity:0;transition:opacity .4s;pointer-events:none;border:1px solid rgba(232,226,212,.2)}#stage-fpv-toast.show{opacity:1}
 #stage-fpv-fade{position:absolute;inset:0;background:#0d0a08;opacity:0;pointer-events:none;transition:opacity .16s}#stage-fpv-fade.on{opacity:1}#stage-fpv-close{position:absolute;top:14px;right:14px;width:44px;height:44px;padding:0;border:1px solid rgba(255,255,255,.32);border-radius:50%;background:rgba(0,0,0,.45);color:#fff;font-size:20px;line-height:42px;text-align:center;z-index:72;cursor:pointer;-webkit-tap-highlight-color:transparent}
 `;
     (document.head || document.documentElement || document.body).appendChild(style);
@@ -1076,7 +1341,7 @@
   }
 
   function applyFreePreset(id) {
-    const preset = freePresets(W, D, CEIL).find((candidate) => candidate.id === id);
+    const preset = freePresets(W, D, CEIL, currentVenueModel()).find((candidate) => candidate.id === id);
     if (!preset) return;
     clearSelection();
     state.free = { x: preset.x, y: preset.y, z: preset.z, yaw: preset.yaw, pitch: preset.pitch };
@@ -1207,7 +1472,7 @@
       leaveFree({ type: "audience", key: null, name: "" });
     }));
     elements.presets.textContent = "";
-    freePresets(W, D, CEIL).forEach((preset) => {
+    freePresets(W, D, CEIL, currentVenueModel()).forEach((preset) => {
       const button = createElement("button", "", "stage-fpv-chip stage-fpv-preset");
       button.type = "button";
       button.textContent = text(preset.name);
@@ -1550,6 +1815,7 @@
       });
     }
     const pose = body.poseById(body.resolvePoseId(piece, data.pieces));
+    const mask = data.pieces.find((p) => p.heldBy === piece.id && p.holdMode === "face" && p.propShape === "mask");
     const joints = pose.joints;
     const yaw = finite(piece.facing, 0) * Math.PI / 180;
     const cos = Math.cos(yaw);
@@ -1652,13 +1918,20 @@
     }
 
     const look = body.resolveLook ? body.resolveLook(piece, data.cast) : null;
-    paintBody3d(ctx, body, P, rings, wheel, props, eyes, piece.color || "#c9c2b4", look);
+    paintBody3d(ctx, body, P, rings, wheel, props, eyes, piece.color || "#c9c2b4", look, { mask, project, pose, H });
+    data.pieces.filter((p) => p.heldBy === piece.id && p.holdMode !== "face" && p.propShape === "mask")
+      .forEach((item) => {
+        const wrist = joints[item.holdSide === "L" ? "wrL" : "wrR"];
+        body.paintMask(ctx, (x, y, z) => project(wrist[0] + x / H,
+          wrist[1] + (y + item.dims.h / 2 - (item.grip ? item.grip.y : item.dims.h / 2)) / H,
+          wrist[2] + z / H), item.dims, item.color);
+      });
     return { x: foot.x, y: topY + 0.04 * H, z: foot.z };
   }
 
   /* 本編 paintBody の透視投影版。各節の px 換算はその節の s を使う
    * （遠近で手前の腕が太く、奥の腕が細くなる）。 */
-  function paintBody3d(ctx, body, P, rings, wheel, props, eyes, color, look) {
+  function paintBody3d(ctx, body, P, rings, wheel, props, eyes, color, look, { mask, project, pose, H } = {}) {
     ctx.save();
     if (wheel) paintWheel3d(ctx, wheel, P, "far");
     const parts = body.LIMBS.map((limb) => ({
@@ -1706,6 +1979,8 @@
       const angle = len > 0.4 ? Math.atan2(ny, nx) : -Math.PI / 2;
       ctx.fillStyle = color;
       ctx.beginPath();
+      if (mask) body.paintFaceMask(ctx, project, pose, H, mask, false);
+      ctx.beginPath();
       ctx.ellipse(P.head.x, P.head.y,
         Math.max(1.2, 0.065 * P.head.s), Math.max(1.1, 0.048 * P.head.s), angle, 0, Math.PI * 2);
       ctx.fill();
@@ -1720,6 +1995,7 @@
         });
         ctx.fill();
       }
+      if (mask) body.paintFaceMask(ctx, project, pose, H, mask, true);
     });
     if (wheel) paintWheel3d(ctx, wheel, P, "near");
     if (props) paintProps3d(ctx, props);
@@ -1843,7 +2119,7 @@
      プロセニアムの客席とリング客席の両方から使う。 */
   function drawHousePerson(ctx, person) {
     const eye = toCamera({ x: person.x, y: person.headY, z: person.z });
-    if (eye.z <= NEAR || eye.z > 40) return;
+    if (eye.z <= NEAR || (!person.bowl && eye.z > 40)) return;
     const alpha = clamp(.5 - eye.z * .012, .1, .5);
 
     if (!person.occupied) {
@@ -1851,7 +2127,7 @@
          客入れ前（空席）では椅子が主役なので、奥まで描き、段床より明るくして
          列が読めるようにする。満席のときの空席は「隙間」なので控えめでよい。 */
       const emptyHouse = houseModeById(houseModeId).occupancy <= 0;
-      if (eye.z > (emptyHouse ? 40 : 26)) return;
+      if (!person.bowl && eye.z > (emptyHouse ? 40 : 26)) return;
       /* 暗がりの椅子は面より輪郭で読める。塗りを抑えて縁を入れると、
          隣どうしが溶けて壁のように潰れるのを防げる。 */
       const seatAlpha = clamp(.34 - eye.z * .008, .07, .34);
@@ -1937,6 +2213,24 @@
   }
 
   function drawHouse(ctx) {
+    const bowl = bowlHouseUnits(currentVenueModel(), W, D);
+    if (bowl) {
+      const at = (point) => toCamera(point).z;
+      bowl.units.map((unit) => ({
+        ...unit,
+        depth: unit.type === "person"
+          ? at({ x: unit.person.x, y: unit.person.headY, z: unit.person.z })
+          : at(unit.center),
+      })).sort((a, b) => b.depth - a.depth).forEach((unit) => {
+        if (unit.type === "person") {
+          drawHousePerson(ctx, unit.person);
+          return;
+        }
+        if (unit.riser) fillPoly(ctx, unit.riser, unit.fill, BOWL_TIER_STROKE, 1);
+        fillPoly(ctx, unit.corners, unit.fill, BOWL_TIER_STROKE, 1);
+      });
+      return;
+    }
     if (data && data.venue && data.venue.audience === "round") {
       drawRingHouse(ctx);
       return;
@@ -2024,6 +2318,23 @@
   }
 
   function drawShell(ctx) {
+    const venue = currentVenueModel();
+    const geometry = bowlGeometry(venue, W, D);
+    if (geometry) {
+      fillPoly(ctx, [
+        { x: -W / 2, y: 0, z: -D / 2 }, { x: W / 2, y: 0, z: -D / 2 },
+        { x: W / 2, y: 0, z: D / 2 }, { x: -W / 2, y: 0, z: D / 2 },
+      ], "#262019");
+      const roof = bowlRoofRibs(venue, W, D);
+      if (roof) {
+        roof.arcs.forEach((arc) => arc.points.forEach((point, index) => {
+          line3(ctx, point, arc.points[(index + 1) % arc.points.length], BOWL_ROOF_STROKE, 1);
+        }));
+        roof.radials.forEach((rib) => line3(ctx, rib.from, rib.to, BOWL_ROOF_STROKE, 1));
+        roof.beams.forEach((beam) => line3(ctx, beam.from, beam.to, BOWL_ROOF_STROKE, 1));
+      }
+      return;
+    }
     if (data && data.venue && data.venue.audience === "round") {
       /* 全周会場に箱の壁は無い（奥も客席）。地面はHOUSE_FLOOR_Y、舞台の円だけが
          Y=0で高い盆のように立つ。両者の間は縁の壁（舞台の土手）でつなぐ——
@@ -2093,6 +2404,11 @@
     });
   }
 
+  function drawBowlFloorGrid(ctx, venue) {
+    const grid = bowlFloorGrid(venue, W, D);
+    if (grid) grid.strips.forEach((strip) => fillPoly(ctx, strip, BOWL_FLOOR_STROKE));
+  }
+
   function drawProscenium(ctx) {
     const halfWidth = W / 2;
     const z = D / 2 + .02;
@@ -2107,6 +2423,8 @@
   }
 
   function drawPiece(ctx, piece) {
+    // 保持中の仮面は演者の頭・手と一緒に描く。独立して描くと二重表示になる。
+    if (piece.propShape === "mask" && piece.heldBy) return;
     const dims = piece.dims || {};
     /* base は手の高さなので、握り点（無ければ外接の高さ中央）がそこへ来るだけ
        持ち上げる。base をそのまま足すと長い棒の握り位置が手より上へずれる。 */
@@ -2118,6 +2436,27 @@
     const x = point.x;
     const z = point.z;
     const color = piece.color || "#8d8272";
+    if (piece.propShape === "mask" && window.SHOSAI_STAGE_BODY) {
+      const angle = finite(piece.facing, 0) * Math.PI / 180;
+      const lift = piece.heldBy ? heldLift : pieceBaseOf(piece);
+      window.SHOSAI_STAGE_BODY.paintMask(ctx, (mx, my, mz) => {
+        const cam = toCamera({ x: x + mx * Math.cos(angle) + mz * Math.sin(angle),
+          y: lift + dims.h / 2 + my, z: z - mx * Math.sin(angle) + mz * Math.cos(angle) });
+        if (cam.z <= NEAR) return { x: 0, y: 0, z: -cam.z };
+        return { ...toScreen(cam), z: -cam.z };
+      }, dims, color);
+      return;
+    }
+    if (Array.isArray(piece.smoothParts) && window.SHOSAI_STAGE_BODY) {
+      const angle = finite(piece.facing, 0) * Math.PI / 180;
+      const cos = Math.cos(angle), sin = Math.sin(angle);
+      const lift = piece.heldBy ? heldLift : pieceBaseOf(piece);
+      window.SHOSAI_STAGE_BODY.paintSmoothProp(ctx, piece.smoothParts, (px, py, pz) => {
+        const cam = toCamera({ x: x + px * cos - pz * sin, y: lift + py, z: z + px * sin + pz * cos });
+        return cam.z <= NEAR ? null : { ...toScreen(cam), z: -cam.z };
+      }, color);
+      return;
+    }
     if (Array.isArray(piece.parts)) {
       const facing = finite(piece.facing, 0);
       const angle = facing * Math.PI / 180;
@@ -2310,7 +2649,7 @@
     const flatForward = yawForward(state.yaw);
     const speed = pressed.has("ShiftLeft") || pressed.has("ShiftRight") ? 7.2 : 2.4;
     const moved = moveFree(state.free, flatForward, rightOf(flatForward), movementKeys(), dtSeconds, speed);
-    const bounded = clampFree(moved, W, D, CEIL);
+    const bounded = clampFree(moved, W, D, CEIL, currentVenueModel());
     state.free.x = bounded.x;
     state.free.y = bounded.y;
     state.free.z = bounded.z;
@@ -2350,9 +2689,15 @@
     setBasis();
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     ctx.fillStyle = "#0d0a08"; ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    const bowlHouse = Boolean(bowlGeometry(currentVenueModel(), W, D));
     const roundHouse = Boolean(data && data.venue && data.venue.audience === "round");
     const inHouse = camera.z > D / 2;
-    if (roundHouse) {
+    if (bowlHouse) {
+      // 器の床・屋根、遠近順の客席、床格子の順。劇場の箱や額縁は描かない。
+      drawShell(ctx);
+      drawHouse(ctx);
+      drawBowlFloorGrid(ctx, currentVenueModel());
+    } else if (roundHouse) {
       // 全周会場は箱が無い。床を先に敷き、その上へ客席のリングを描く
       drawShell(ctx);
       drawHouse(ctx);
@@ -2374,7 +2719,7 @@
           if (top) queueLabel({ x: top.x, y: top.y + .28, z: top.z }, labelOf(piece), true);
         } else drawPiece(ctx, piece);
       });
-    if (inHouse) drawProscenium(ctx);
+    if (!bowlHouse && inHouse) drawProscenium(ctx);
     const selected = !data.transition && state.sel && data.pieces.find((piece) => (
       piece.id === state.sel && piece.type === "performer" && !piece.exitWalker
     ));
@@ -2670,7 +3015,7 @@
          以前は一覧の先頭＝客席中央（舞台中心から約13.5m）で、舞台が遠く、
          画面の下半分が空の客席で埋まっていた。最前列なら約5.7mで、
          舞台のいちばん前から舞台を見上げる位置になる。 */
-      const presets = freePresets(W, D, CEIL);
+      const presets = freePresets(W, D, CEIL, currentVenueModel());
       const preset = presets.find((candidate) => candidate.id === "front-row") || presets[0];
       state.free = { x: preset.x, y: preset.y, z: preset.z, yaw: preset.yaw, pitch: preset.pitch };
       state.view = { type: "free", key: null, name: "" };
@@ -2742,7 +3087,9 @@
     close,
     _geom: Object.freeze({ toWorld, yawForward, rightOf, clipPolyNear, eyeHeight,
       pieceUOf, pieceVOf, pieceBaseOf, pieceGlowOf,
-      moveFree, clampFree, freePresets, frameDelta, wingWidthFor, wingLegX, wingLegPairs,
+      moveFree, clampFree, freePresets, bowlGeometry, bowlAudience, bowlOrientations,
+      bowlHouseUnits, bowlRoofRibs, bowlFloorGrid,
+      frameDelta, wingWidthFor, wingLegX, wingLegPairs,
       wingLegZs, houseSeatsPerRow, houseRiserRows, facingFromGround, uvFromGround, pickFrom,
       seatNoise, houseSeats, houseBalconyRows, houseRingRows, seatSpanEnds,
       housePerson: () => HOUSE_PERSON, houseSeat: () => HOUSE_SEAT,

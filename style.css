@@ -18,6 +18,9 @@
   /* 8.5〜9.5px の小見出し用。--rust のままだと机の色の上で 2.80〜3.44 しかなく読みにくい。
      色相はそのままに明るくして 4.5:1 を満たす。塗り・線・大きい字は --rust のまま使う。 */
   --rust-ink: #df6433;
+  /* 削除などの危険操作用。13pxの文字でも机の色に対して5.75:1を確保する。 */
+  --danger: #e66b65;
+  --danger-rgb: 230, 107, 101;
   /* 9px前後の小さい字用。--ink-soft(#6a604e)のままだと机の色の上で 2.93:1 しかない。
      色相はそのままに明るくして 5.02:1 にした。大きい字・塗りは --ink-soft のまま使う。 */
   --ink-soft-sm: #93856c;
@@ -27,6 +30,41 @@
   --slate: #8b98a1;
   --serif: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
   --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+}
+
+/* Stage Sketch skins: text and accent colors remain independent of dark surfaces. */
+:root[data-stage-skin="blue-black"] {
+  --desk: #141619;
+  --desk-2: #1b1e22;
+  --desk-3: #23272c;
+  --line-dark: #373d44;
+  --stage-ui-recess-rgb: 13, 14, 16;
+  --stage-ui-seat-rgb: 21, 23, 26;
+  --stage-ui-desk-rgb: 20, 22, 25;
+  --stage-ui-panel-rgb: 27, 30, 34;
+  --stage-ui-scrim-rgb: 7, 8, 9;
+  --stage-ui-pose-rgb: 13, 14, 16;
+  --stage-ui-grid-rgb: 49, 53, 58;
+  --stage-ui-float-rgb: 21, 23, 26;
+  --stage-ui-float-deep-rgb: 13, 14, 16;
+  --stage-ui-rail: #15171a;
+  --stage-ui-phone: #15171a;
+  --stage-ui-raised: var(--desk-2);
+  --stage-ui-desk: var(--desk);
+  --stage-ui-model-base: #0d0e10;
+  --stage-ui-model-head: var(--desk-2);
+  --stage-ui-model-control: var(--desk-3);
+  --stage-ui-model-side: var(--desk);
+}
+
+:lang(zh-Hans) {
+  --sans: "PingFang SC", "Hiragino Sans", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --serif: "Songti SC", "Noto Serif SC", serif;
+}
+
+:lang(zh-Hant) {
+  --sans: "PingFang TC", "Hiragino Sans", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+  --serif: "Songti TC", "Noto Serif TC", serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1602,6 +1640,25 @@ textarea, input[type="text"] {
   margin: 0 auto;
 }
 
+/* 制作面の末尾にだけ置く、小さなアプリ紹介の入口。主操作や作図面と競合させない。 */
+.stage-app-footer {
+  width: 100%;
+  max-width: 3000px;
+  margin: 32px auto 0;
+  text-align: center;
+}
+
+.stage-app-footer .stage-about-link {
+  display: inline;
+  margin: 0;
+  color: var(--ink-soft-sm);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.stage-app-footer .stage-about-link:hover { color: var(--milk-dim); }
+
 .stage-sketch-head {
   display: flex;
   align-items: end;
@@ -1629,6 +1686,46 @@ textarea, input[type="text"] {
   vertical-align: 0.3em;
 }
 
+.stage-release-open {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: 0.5em;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--milk-dim);
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.stage-release-open svg { display: block; width: 18px; height: 18px; }
+.stage-release-open::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: none;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--desk);
+  border-radius: 50%;
+  background: #d34c3d;
+  box-shadow: 0 0 0 0 rgba(211, 76, 61, 0.62);
+}
+.stage-release-open.has-unread::after { display: block; animation: stage-release-notice 1.8s ease-out infinite; }
+@keyframes stage-release-notice {
+  0%, 55% { box-shadow: 0 0 0 0 rgba(211, 76, 61, 0.62); }
+  75%, 100% { box-shadow: 0 0 0 5px rgba(211, 76, 61, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage-release-open.has-unread::after { animation: none; }
+}
+.stage-release-open:hover { color: var(--milk); }
+.stage-release-open:focus-visible { outline: 2px solid var(--rust-ink); outline-offset: 3px; }
+
 .stage-sketch-head h1 {
   color: var(--milk);
   font-family: var(--serif);
@@ -1655,24 +1752,161 @@ textarea, input[type="text"] {
   vertical-align: middle;
 }
 
-/* 保存の注意。題と道具の間、画面の上中央に置く。
-   読ませたいが騒がせたくないので、左に一本の錆色の線だけを引く。 */
+/* 保存の注意。環境設定を開いたとき最初に読む、独立した警告枠。 */
 .stage-storage-caution {
-  flex: 0 1 420px;
-  margin: 0 0 3px;
-  padding-left: 11px;
-  border-left: 2px solid rgba(168, 75, 38, 0.65);
-  color: var(--milk-dim);
-  font-size: 11px;
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 2px solid var(--danger);
+  background: rgba(var(--danger-rgb), 0.08);
+  color: var(--milk);
+  font-size: 13px;
   line-height: 1.65;
   letter-spacing: 0.02em;
 }
 
-/* iPadなどのホーム画面版では、上端の説明を省いて作図面を優先する。 */
-html.stage-pwa-tablet .stage-sketch-kicker,
-html.stage-pwa-tablet .stage-storage-caution {
-  display: none;
+.stage-storage-caution-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
 }
+
+.stage-storage-caution p { margin: 0; }
+
+/* β版を開いた直後の保存データ警告。作図面や初回案内より上で、毎回一度読ませる。 */
+.stage-launch-backup-backdrop {
+  background: rgba(var(--stage-ui-scrim-rgb, 8, 7, 6), 0.86);
+  z-index: 10000;
+}
+
+.stage-modal.stage-launch-backup-warning {
+  width: min(560px, calc(100% - 32px));
+  max-height: calc(100dvh - 48px);
+  border: 2px solid var(--danger);
+  z-index: 10001;
+}
+
+.stage-launch-backup-head {
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom-color: rgba(var(--danger-rgb), 0.46);
+}
+
+.stage-launch-backup-head h2 {
+  flex: 1 1 auto;
+  color: var(--milk);
+  font-size: 20px;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+}
+
+.stage-launch-backup-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  margin: -8px -8px -8px auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--milk-dim);
+  font: 400 28px/1 var(--sans);
+  cursor: pointer;
+}
+
+.stage-launch-backup-close:hover { color: var(--milk); }
+.stage-launch-backup-close:focus-visible {
+  outline: 2px solid var(--milk);
+  outline-offset: 2px;
+}
+
+.stage-launch-backup-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-family: var(--sans);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stage-modal-body.stage-launch-backup-body {
+  padding: 18px 20px 20px;
+}
+
+.stage-launch-backup-lead {
+  margin: 0;
+  color: var(--milk);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+}
+
+.stage-launch-backup-detail {
+  margin: 10px 0 0;
+  color: var(--milk-dim);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.65;
+  letter-spacing: 0.02em;
+}
+
+.stage-launch-backup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.stage-launch-backup-actions button {
+  min-height: 44px;
+  padding: 9px 14px;
+}
+
+.stage-launch-backup-export {
+  border: 1px solid var(--danger);
+  background: var(--danger);
+  color: var(--desk-2);
+  font: 600 13px/1.4 var(--sans);
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.stage-launch-backup-export:hover { filter: brightness(1.08); }
+.stage-launch-backup-export:focus-visible,
+.stage-launch-backup-actions .btn-quiet:focus-visible {
+  outline: 2px solid var(--milk);
+  outline-offset: 3px;
+}
+
+@media (max-width: 520px) {
+  .stage-launch-backup-head { align-items: flex-start; padding: 16px 16px 12px; }
+  .stage-launch-backup-head h2 { font-size: 18px; }
+  .stage-modal-body.stage-launch-backup-body { padding: 16px; }
+  .stage-launch-backup-actions { flex-direction: column; }
+  .stage-launch-backup-actions button { width: 100%; }
+}
+
+/* iPadなどのホーム画面版では、上端のキッカーを省いて作図面を優先する。 */
+html.stage-pwa-tablet .stage-sketch-kicker { display: none; }
 
 .stage-sketch-head > div:first-child > p:last-child {
   color: var(--milk-dim);
@@ -1682,12 +1916,40 @@ html.stage-pwa-tablet .stage-storage-caution {
 }
 
 .stage-history-actions {
+  --stage-history-action-height: 44px;
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+
+/* 再生音量はタイムライン固有の段を使わず、β版の共通操作へ寄せる。 */
+.stage-header-volume {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  min-height: var(--stage-history-action-height);
+  padding: 0 7px;
+  border: 1px solid var(--line-dark);
+  color: var(--milk-dim);
+  white-space: nowrap;
+}
+
+.stage-header-volume span {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.stage-header-volume input {
+  width: 108px;
+  min-height: var(--stage-history-action-height);
+  margin: 0;
+  accent-color: var(--brass);
+}
+
+.stage-header-volume:hover { border-color: var(--brass); }
 
 .stage-history-actions button,
 .stage-history-actions a,
@@ -1696,7 +1958,7 @@ html.stage-pwa-tablet .stage-storage-caution {
 .stage-layer-actions button,
 .stage-minor-action,
 .stage-delete {
-  min-height: 38px;
+  min-height: var(--stage-history-action-height, 38px);
   border: 1px solid var(--line-dark);
   color: var(--milk-dim);
   padding: 6px 11px;
@@ -1734,10 +1996,53 @@ html.stage-pwa-tablet .stage-storage-caution {
 
 .stage-history-actions .stage-export:hover { background: var(--rust); }
 
+/* 図と配布用の紙を持ち出す共通入口。PC・タブレットで同じ紙の線画を使う。 */
+.stage-history-actions .stage-export.stage-export-icon {
+  --stage-export-hit-size: var(--stage-history-action-height);
+  --stage-export-icon-size: 20px;
+  flex: 0 0 var(--stage-export-hit-size);
+  width: var(--stage-export-hit-size);
+  min-width: var(--stage-export-hit-size);
+  min-height: var(--stage-export-hit-size);
+  height: var(--stage-export-hit-size);
+  padding: 0;
+}
+.stage-export-icon svg {
+  display: block;
+  width: var(--stage-export-icon-size);
+  height: var(--stage-export-icon-size);
+}
+
+/* 全画面は定番の記号だけにして、隣のアイコン操作と当たり判定を揃える。 */
+.stage-history-actions .stage-present-icon {
+  --stage-present-hit-size: var(--stage-history-action-height);
+  --stage-present-icon-size: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--stage-present-hit-size);
+  width: var(--stage-present-hit-size);
+  min-width: var(--stage-present-hit-size);
+  min-height: var(--stage-present-hit-size);
+  height: var(--stage-present-hit-size);
+  padding: 0;
+}
+.stage-present-icon > span[aria-hidden="true"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.stage-present-icon svg {
+  display: block;
+  width: var(--stage-present-icon-size);
+  height: var(--stage-present-icon-size);
+}
+
+
 .stage-sketch-grid {
   display: grid;
   /* 右列にも場面など中身のあるパネルが入るので、左右を同じ幅にする */
-  grid-template-columns: 268px minmax(420px, 1fr) 268px;
+  grid-template-columns: var(--stage-left-width, 268px) minmax(420px, 1fr) var(--stage-right-width, 268px);
   grid-template-areas: "tools board inspector";
   gap: 18px;
   align-items: start;
@@ -1757,6 +2062,19 @@ html.stage-pwa-tablet .stage-storage-caution {
   grid-area: inspector;
   min-width: 0;
 }
+
+/* 設定の1列表示。パネルの順番は残したまま片側だけを作業列にする。
+   図面は常に中央の主役なので、片側を空の列として残さず、その幅を作図面へ返す。 */
+.stage-sketch-grid.stage-panels-single:not(.stage-panels-on-right) {
+  grid-template-columns: var(--stage-left-width, 268px) minmax(420px, 1fr);
+  grid-template-areas: "tools board";
+}
+.stage-sketch-grid.stage-panels-single:not(.stage-panels-on-right) .stage-inspector { display: none; }
+.stage-sketch-grid.stage-panels-single.stage-panels-on-right {
+  grid-template-columns: minmax(420px, 1fr) var(--stage-right-width, 268px);
+  grid-template-areas: "board inspector";
+}
+.stage-sketch-grid.stage-panels-single.stage-panels-on-right .stage-toolbox { display: none; }
 
 .stage-tool-section,
 .stage-save-note {
@@ -1783,8 +2101,10 @@ html.stage-pwa-tablet .stage-storage-caution {
 .stage-tool-grid button + button { border-left: 0; }
 
 .stage-tool-grid button[aria-pressed="true"] {
+  position: relative;
+  z-index: 1;
   color: var(--paper);
-  border-color: var(--rust);
+  border: 1px solid var(--rust);
   background: rgba(168,75,38,0.27);
 }
 
@@ -1909,23 +2229,111 @@ html.stage-pwa-tablet .stage-storage-caution {
 
 .stage-rename-modal { max-width: 380px; }
 
+.stage-rename-section-fields {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.stage-rename-section-fields[hidden] { display: none; }
+
+.stage-rename-section-fields .stage-control-label { margin: 0; }
+
+.stage-rename-modal .stage-rename-section-fields textarea.stage-text-input { min-height: 84px; }
+
+.stage-rename-scene-fields {
+  display: grid;
+  gap: 6px;
+}
+
+.stage-rename-scene-fields[hidden] { display: none; }
+
+.stage-rename-scene-fields .stage-control-label { margin-top: 5px; }
+
+.stage-rename-scene-fields select.stage-text-input {
+  min-height: 38px;
+  cursor: pointer;
+}
+
+.stage-rename-subtitle-hint {
+  margin: 0 0 2px;
+  color: var(--milk-dim);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
 .stage-rename-colors {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-dark);
 }
 
 .stage-rename-colors[hidden] { display: none; }
 
+.stage-rename-colors > .stage-control-label { margin: 0; }
+
+.stage-rename-color-picker { width: 100%; }
+
+.stage-rename-color-summary {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto 12px;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-dark);
+  background: rgba(240, 231, 214, 0.025);
+  color: var(--milk);
+  font-size: 11.5px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.stage-rename-color-summary::-webkit-details-marker { display: none; }
+
+.stage-rename-color-summary:hover,
+.stage-rename-color-summary:focus-visible {
+  border-color: var(--brass);
+  outline: none;
+}
+
+.stage-rename-color-preview {
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(240, 231, 214, 0.72);
+  border-radius: 3px;
+}
+
+.stage-rename-color-action { min-width: 0; }
+
+.stage-rename-color-value {
+  color: var(--milk-dim);
+  font-size: 9.5px;
+}
+
+.stage-rename-color-chevron {
+  color: var(--brass);
+  text-align: center;
+}
+
+.stage-rename-color-picker[open] .stage-rename-color-chevron { transform: rotate(180deg); }
+
 .stage-rename-swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(4, 44px);
+  gap: 8px;
+  padding: 10px 0 2px;
 }
 
 .stage-rename-swatch {
-  width: 22px;
-  height: 22px;
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  aspect-ratio: 1;
   padding: 0;
   border: 1px solid transparent;
   border-radius: 3px;
@@ -1944,58 +2352,58 @@ html.stage-pwa-tablet .stage-storage-caution {
   line-height: 1;
 }
 
-/* 劇場の実寸。三つ並べても読めるよう、単位は小さく右へ添える */
-.stage-dim-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 5px;
-  margin: 8px 0 6px;
-}
-
-.stage-dim-cell {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 3px;
-  font-size: 10px;
-  color: var(--milk-dim);
-  letter-spacing: 0.04em;
-}
-
-.stage-dim-cell span { grid-column: 1 / -1; }
-
-.stage-dim-cell input {
-  min-width: 0;
-  min-height: 28px;
-  border: 1px solid var(--line-dark);
-  background: var(--desk-2);
-  color: var(--milk);
-  font-family: var(--sans);
-  font-size: 11.5px;
-  padding: 3px 5px;
-}
-
-.stage-dim-cell input:focus { border-color: var(--brass); outline: none; }
-
-/* 決め打ちの規模を選んでいるあいだは、寸法の欄は読むだけ */
-.stage-dim-cell input:disabled { opacity: 0.42; cursor: default; }
-
-.stage-dim-cell i {
-  font-style: normal;
-  font-size: 9.5px;
-  color: rgba(240, 231, 214, 0.4);
-}
-
-.stage-dim-cell[hidden] { display: none; }
-
-/* 動線の先へ動かした場面を作るボタン。場面の枠の中に置く */
-.stage-scene-apply {
+.stage-rename-modal #stage-rename-ok,
+.stage-rename-modal #stage-rename-delete {
   width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+}
+
+.stage-modal .stage-rename-delete {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.stage-modal .stage-rename-delete:hover,
+.stage-modal .stage-rename-delete:focus-visible {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: rgba(var(--danger-rgb), 0.14);
+}
+
+/* 次の場面を作る入口と、この場面を消す操作を一組にする。 */
+.stage-scene-next-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 6px;
   margin-top: 6px;
+}
+
+.stage-panel .stage-scene-next-row .stage-scene-apply,
+.stage-panel .stage-scene-next-row .stage-scene-row-delete {
+  min-height: 44px;
+  margin: 0;
   font-size: 0.76rem;
 }
 
-.stage-scene-apply:disabled { opacity: 0.4; cursor: default; }
+.stage-scene-apply { width: 100%; }
+
+.stage-panel .stage-scene-next-row .stage-scene-row-delete {
+  width: 44px;
+  padding: 0;
+  border-color: var(--danger);
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.stage-panel .stage-scene-next-row .stage-scene-row-delete:hover,
+.stage-panel .stage-scene-next-row .stage-scene-row-delete:focus-visible {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: rgba(var(--danger-rgb), 0.14);
+}
+
+.stage-panel .stage-scene-next-row .stage-scene-row-delete:disabled { opacity: 0.35; cursor: default; }
 
 .stage-scene-head .stage-scene-chip { width: 100%; min-width: 0; }
 
@@ -2015,15 +2423,156 @@ html.stage-pwa-tablet .stage-storage-caution {
    見出しだけに枠が付いていると、メモがどの場面のものか読み取りにくい。 */
 .stage-scene-row.is-open {
   border-color: var(--rust);
-  background: rgba(168, 75, 38, 0.07);
+  background: rgba(168, 75, 38, 0.11);
 }
 
 .stage-scene-row.is-open .stage-scene-chip {
   border-color: transparent;
-  background: rgba(168, 75, 38, 0.14);
+  background: rgba(168, 75, 38, 0.16);
 }
 
 .stage-scene-row.is-open .stage-scene-chip.is-open::before { display: none; }
+
+/* 転換は場面の中身ではなく、二つの場面をつなぐ札として選択行の上下へ置く。
+   錆色の選択枠と競合しないよう、細い真鍮色の線で時間軸を示す。 */
+.stage-scene-transition {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  margin: -4px 3px 0;
+  padding: 6px 7px 7px 16px;
+  border: 1px solid rgba(211, 172, 89, 0.32);
+  border-left: 2px solid var(--brass);
+  background: rgba(211, 172, 89, 0.065);
+}
+
+.stage-scene-transition::before,
+.stage-scene-transition::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  width: 1px;
+  height: 8px;
+  background: rgba(211, 172, 89, 0.5);
+}
+
+.stage-scene-transition::before { top: -8px; }
+.stage-scene-transition::after { bottom: -8px; }
+.stage-scene-transition.is-incoming::before,
+.stage-scene-transition.is-outgoing::after { display: none; }
+
+.stage-scene-transition-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.stage-scene-transition-kicker {
+  color: var(--brass);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.stage-scene-transition-route {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--milk-dim);
+  font-size: 9.5px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-scene-transition-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 6px;
+}
+
+.stage-scene-transition-controls > label {
+  min-width: 0;
+  color: var(--milk-dim);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.stage-scene-transition-duration,
+.stage-scene-transition-movement {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px 6px;
+}
+
+.stage-scene-transition-duration > span:last-child,
+.stage-scene-transition-movement > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.stage-scene-transition-controls input[type="number"] {
+  min-width: 0;
+  width: 64px;
+  min-height: 38px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+  color: var(--milk);
+  font: 11.5px var(--sans);
+  padding: 4px 6px;
+}
+
+.stage-scene-transition-controls input[type="number"]:focus {
+  border-color: var(--brass);
+  outline: none;
+}
+
+.stage-scene-transition-blackout {
+  min-height: 38px;
+  padding: 0 9px;
+  border: 1px solid var(--line-dark);
+  white-space: nowrap;
+}
+
+.stage-scene-transition-shared {
+  color: var(--milk-dim);
+  font-size: 9px;
+  letter-spacing: 0;
+  white-space: normal;
+}
+
+.stage-scene-transition-movement { grid-column: 1 / -1; }
+
+.stage-scene-transition-note {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: var(--milk-dim);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.stage-scene-transition-note textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46px;
+  padding: 5px 7px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+  color: var(--milk);
+  font: 11.5px/1.45 var(--sans);
+  overflow-y: auto;
+  resize: vertical;
+}
+
+.stage-scene-transition-note textarea:focus {
+  border-color: var(--brass);
+  outline: none;
+}
 
 .stage-scene-body {
   display: grid;
@@ -2115,6 +2664,12 @@ html.stage-pwa-tablet .stage-storage-caution {
   line-height: 1.6;
 }
 
+/* 詳細を開いた時点で既存の文章を末尾まで見せる。高さはJSで内容量に合わせる。 */
+.stage-scene-body textarea.stage-scene-note {
+  overflow-y: auto;
+  resize: vertical;
+}
+
 .stage-rehearsal-time-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2184,6 +2739,7 @@ html.stage-pwa-tablet .stage-storage-caution {
 .stage-scene-chip { position: relative; }
 
 .stage-scene-chip.is-section {
+  min-height: 56px;
   background: rgba(156, 130, 63, 0.08);
   border-color: rgba(156, 130, 63, 0.32);
 }
@@ -2260,7 +2816,7 @@ canvas[data-tool="note"] { cursor: copy; }
 }
 
 #stage-export-pitch-fields > .stage-tool-grid button,
-.stage-pitch-langs button { border-left: 1px solid var(--line-dark); }
+.stage-pitch-langs button { border-left-width: 1px; }
 
 .stage-pitch-caption-check {
   display: flex;
@@ -2299,6 +2855,15 @@ canvas[data-tool="note"] { cursor: copy; }
 }
 
 #stage-export-run { margin-top: 12px; }
+.stage-export-print {
+  --stage-export-print-gap: 20px;
+  --stage-export-print-padding: 16px;
+  --stage-export-print-hit-size: 44px;
+  margin-top: var(--stage-export-print-gap);
+  padding-top: var(--stage-export-print-padding);
+  border-top: 1px solid var(--line-dark);
+}
+.stage-export-print .stage-minor-action { min-height: var(--stage-export-print-hit-size); }
 
 /* ショーの棚。端末に置いた全部を並べ、押すと切り替わる */
 .stage-shows-modal { width: min(520px, calc(100vw - 40px)); }
@@ -2472,6 +3037,116 @@ canvas[data-tool="note"] { cursor: copy; }
    窓の中をずっと繰ることになる（横へ6つ並べれば二段で収まる） */
 .stage-pose-modal { width: min(1020px, calc(100vw - 40px)); }
 
+.stage-roster-kind-openers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  margin-bottom: 9px;
+}
+
+.stage-roster-kind-open {
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk);
+  color: var(--milk-dim);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.stage-roster-kind-open:hover,
+.stage-roster-kind-open:focus-visible { border-color: var(--brass); color: var(--milk); }
+
+.stage-kind-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 100%;
+}
+
+.stage-kind-compact-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.stage-kind-compact-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.stage-kind-form > .stage-control-label,
+.stage-kind-compact-field > .stage-control-label,
+.stage-kind-fields > .stage-control-label,
+.stage-kind-field-title {
+  margin: 0;
+}
+
+.stage-kind-form > .stage-text-input,
+.stage-kind-compact-field > .stage-text-input,
+.stage-kind-form .stage-select {
+  margin-bottom: 0;
+}
+
+.stage-kind-compact-field > .stage-text-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.stage-kind-color-field > input[type="color"] {
+  width: 46px;
+  height: 28px;
+  justify-self: start;
+}
+
+.stage-kind-fields[hidden] { display: none; }
+
+.stage-kind-field-title {
+  color: var(--milk-dim);
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.stage-prop-choice-groups {
+  display: grid;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.stage-prop-choice-group {
+  display: grid;
+  gap: 6px;
+}
+
+.stage-prop-choice-grid { margin-top: 0; }
+
+.stage-kind-submit {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 -16px;
+  padding: 10px 16px 12px;
+  border-top: 1px solid var(--line-dark);
+  background: var(--desk-2);
+}
+
+.stage-kind-submit .btn-quiet {
+  min-width: 200px;
+  min-height: 56px;
+  padding: 10px 28px;
+  border: 3px solid var(--paper);
+  color: var(--paper);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
 .stage-pose-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -2487,13 +3162,25 @@ canvas[data-tool="note"] { cursor: copy; }
   .stage-pose-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
+#stage-kind .stage-pose-grid {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+
+@media (max-width: 1080px) {
+  #stage-kind .stage-pose-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  #stage-kind .stage-pose-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 .stage-pose-tile {
   display: grid;
   justify-items: center;
   gap: 4px;
   padding: 8px 4px 10px;
   border: 1px solid var(--line-dark);
-  background: rgba(13, 12, 11, 0.5);
+  background: rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.5);
   color: var(--milk-dim);
   font-size: 11px;
   letter-spacing: 0.04em;
@@ -2527,7 +3214,7 @@ canvas[data-tool="note"] { cursor: copy; }
   gap: 6px;
   overflow-x: auto;
   padding: 6px 8px;
-  background: rgba(12, 9, 8, 0.82);
+  background: rgba(var(--stage-ui-pose-rgb, 12, 9, 8), 0.82);
   border-top: 1px solid rgba(239, 231, 214, 0.18);
   scrollbar-width: thin;
 }
@@ -2536,7 +3223,7 @@ canvas[data-tool="note"] { cursor: copy; }
   width: 56px;
   padding: 0 0 3px;
   border: 1px solid var(--line-dark);
-  background: rgba(13, 12, 11, 0.5);
+  background: rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.5);
   color: var(--milk-dim);
   font-size: 9.5px;
   letter-spacing: 0.02em;
@@ -2677,10 +3364,13 @@ canvas[data-tool="note"] { cursor: copy; }
 .stage-board-frame {
   position: relative;
   border: 1px solid rgba(156,130,63,0.7);
-  background: #0d0c0b;
+  background: rgb(var(--stage-ui-recess-rgb, 13, 12, 11));
   box-shadow: 0 12px 34px rgba(0,0,0,0.28);
   /* グリッドの列に入るので、canvas の固有幅で押し広げられないようにする */
   min-width: 0;
+  /* ウィンドウ全体ではなく、この図に配られた横幅で操作の密度を切り替える。 */
+  container-type: inline-size;
+  container-name: stage-board;
 }
 
 #stage-canvas,
@@ -2736,6 +3426,15 @@ canvas[data-tool="note"] { cursor: copy; }
   padding-bottom: 8px;
   margin-bottom: 4px;
   border-bottom: 1px dashed var(--line-dark);
+}
+
+.stage-selection-scope {
+  margin: 0 0 10px;
+  padding-left: 9px;
+  border-left: 2px solid var(--brass);
+  color: var(--milk-dim);
+  font-size: 11px;
+  line-height: 1.65;
 }
 
 .stage-layer-actions {
@@ -5955,9 +6654,6 @@ canvas[data-tool="note"] { cursor: copy; }
   .seeds-sub { flex: none; width: 100%; }
 
   .stage-history-actions { justify-content: flex-start; }
-  /* 縦積みになったら、注意書きは幅いっぱいに伸ばす */
-  .stage-storage-caution { flex: 1 1 auto; }
-
   .stage-sketch-grid {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -7018,6 +7714,29 @@ canvas[data-tool="note"] { cursor: copy; }
   letter-spacing: 0.16em;
 }
 
+.stage-venue-choice-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 3px 0 9px;
+}
+
+.stage-venue-choice-row .stage-select,
+.stage-venue-choice-row .stage-venue-custom-open {
+  min-width: 0;
+  min-height: 38px;
+  margin: 0;
+}
+
+.stage-venue-choice-row .stage-venue-custom-open {
+  color: var(--milk);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-align: center;
+}
+
 .stage-select {
   width: 100%;
   min-height: 38px;
@@ -7125,6 +7844,52 @@ canvas[data-tool="note"] { cursor: copy; }
   gap: 22px;
 }
 
+/* 1枚表示のときだけ、いま見ている図の右下からもう一方へ移れる。 */
+.stage-single-view-switch {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 7;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(52px, 1fr));
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid rgba(240, 231, 214, 0.45);
+  background: rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.9);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.34);
+}
+
+.stage-single-view-switch[hidden] { display: none; }
+
+.stage-single-view-switch button {
+  min-width: 52px;
+  min-height: 36px;
+  padding: 5px 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--milk-dim);
+  font-family: var(--sans);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.stage-single-view-switch button:hover,
+.stage-single-view-switch button:focus-visible { border-color: var(--brass); color: var(--paper); }
+
+.stage-single-view-switch button[aria-pressed="true"] {
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.42);
+  color: var(--paper);
+}
+
+/* 平面図の拡大ボタンと同じ右下を奪い合わない。 */
+.stage-board-frame:has(> .stage-single-view-switch:not([hidden])) .stage-zoom-fab { right: 140px; }
+#stage-front-cell:has(> .stage-single-view-switch:not([hidden])) .stage-pose-strip { padding-right: 132px; }
+
+html.stage-pwa-tablet .stage-single-view-switch button { min-height: 44px; }
+html.stage-phone-viewer .stage-single-view-switch { display: none; }
+
 .stage-canvas-caption {
   color: var(--brass);
   font-size: 9.5px;
@@ -7172,6 +7937,67 @@ canvas[data-tool="note"] { cursor: copy; }
   gap: 6px;
 }
 
+.stage-venue-library-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 640px);
+  margin-left: auto;
+}
+
+.stage-venue-library-actions > button,
+.stage-venue-library-actions > .stage-import-label {
+  color: var(--milk);
+  font-family: var(--sans);
+  font-size: 14px;
+  letter-spacing: 0.15em;
+}
+
+.stage-venue-library-actions .stage-minor-action {
+  width: auto;
+  min-height: 44px;
+  margin-top: 0;
+  padding: 7px 6px;
+  border-color: var(--rust);
+  text-align: center;
+  white-space: nowrap;
+}
+
+#stage-venue-editor-save-status:empty,
+#stage-venue-library-status:empty {
+  display: none;
+}
+
+.stage-venue-library-footer {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.stage-venue-apply-button {
+  width: 100%;
+  min-height: 52px;
+  margin: 0;
+  border: 3px solid var(--paper);
+  background: var(--rust);
+  color: var(--milk);
+  font: 700 15px var(--sans);
+  letter-spacing: 0.12em;
+}
+
+.stage-venue-apply-button:hover,
+.stage-venue-apply-button:focus-visible {
+  border-color: var(--milk);
+  filter: brightness(1.08);
+}
+
+.stage-venue-library-feedback {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stage-venue-library-feedback span {
+  min-height: 0;
+}
+
 .stage-import-label {
   display: flex;
   align-items: center;
@@ -7179,30 +8005,94 @@ canvas[data-tool="note"] { cursor: copy; }
   cursor: pointer;
 }
 
-/* ショーのパネルは〈名前と版〉〈ショーを行き来する〉〈ファイルへ出し入れする〉の
-   三つのまとまりでできている。ここだけ縦の刻みと列を一本化する。
-   ・段の間隔は、まとまりの中は6px、まとまりの境目は13px の二種類だけにする
-     （以前は 7/6/9/10/0/10 とばらばらで、境目の10pxより中の0pxが詰まっていたため、
-     〈構成テンプレートから作る〉が下の書き出し行にくっついて読めていた）
-   ・列は 1fr 1fr の一種類だけ。〈複製〉も右列へ入れて、
-     〈新しいショー〉〈読み込む〉と同じ中心線を通す
-   全幅の .stage-minor-action が左寄せなのはアプリ共通の作法（控えめな操作の印）なので、
-   ここでも変えない。まとまりの中へ寄せることで、上の行の続きとして読めるようにする。 */
+/* ショーは絵を見ながら常時編集する対象ではない。パネルには現在の題と版、
+   詳細設定への入口だけを残し、制作面の高さをショー設定で使わない。 */
 .stage-project-section .stage-panel-body,
 .stage-project-section .stage-tablet-panel-page {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: block;
 }
 
-.stage-project-section .stage-text-input { margin-bottom: 0; }
-.stage-project-section .stage-version-row { grid-template-columns: 1fr 1fr; }
-.stage-project-section .stage-version-note { margin: 0; line-height: 1.5; }
-.stage-project-section .stage-minor-action { margin-top: 0; }
-/* まとまりの境目だけ間を広げる。6px の gap と合わせて 13px になる */
-.stage-project-section .stage-io-row { margin-top: 7px; }
-/* 劇場サイズは仕切り線を持つ別の節。以前と同じ16pxの間を保つ */
-.stage-project-section .stage-project-venue { margin-top: 10px; }
+.stage-project-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-project-summary-copy {
+  display: grid;
+  min-width: 0;
+  line-height: 1.45;
+}
+
+.stage-project-summary-copy strong,
+.stage-project-summary-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-project-summary-copy strong {
+  color: var(--milk);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.stage-project-summary-copy span {
+  color: var(--milk-dim);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.stage-project-section .stage-project-summary .stage-minor-action {
+  width: auto;
+  min-height: 44px;
+  margin-top: 0;
+  padding-inline: 10px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ショーと劇場は別の持ち物として並べる。劇場側は現在値と制作入口だけに絞り、
+   詳細なプリセット操作は制作窓へ渡す。 */
+.stage-venue-panel .stage-panel-body {
+  display: grid;
+  gap: 8px;
+}
+
+.stage-venue-summary {
+  display: grid;
+  min-width: 0;
+  line-height: 1.45;
+}
+
+.stage-venue-summary strong,
+.stage-venue-summary span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-venue-summary strong {
+  color: var(--milk);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.stage-venue-summary span {
+  color: var(--milk-dim);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.stage-panel.stage-venue-panel .stage-venue-custom-open {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  text-align: center;
+}
 
 /* ===== 舞台スケッチ: 固定 SceneStudy =====
  * 汎用のカード一覧ではなく、稽古場で横へ書き足す実験記録の欄として見せる。
@@ -7425,18 +8315,15 @@ canvas[data-tool="note"] { cursor: copy; }
   font-weight: 400;
 }
 
-/* 場面を送る列。作る・並べ替える道具とは役目が違うので、上に一段分ける。
-   ★この欄は右の列（268px）に入る。横一列に流すと、つまみが幅0まで潰れて
-   触れなくなる（実際にそうなっていた）。二列の枠で場所を配り切る。 */
+/* 一覧と作成を小さなSVG操作にまとめる。文字はホバー時の説明へ逃がす。 */
 .stage-scene-move {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  display: flex;
   align-items: center;
-  gap: 6px 6px;
+  gap: 4px;
   margin-bottom: 8px;
 }
 
-.stage-scene-move button { min-height: 30px; padding: 4px 6px; }
+.stage-scene-move button { white-space: nowrap; }
 
 .stage-anim-toggle {
   display: flex;
@@ -7475,18 +8362,6 @@ canvas[data-tool="note"] { cursor: copy; }
 
 .stage-anim-speed input:disabled { opacity: 0.35; cursor: default; }
 .stage-anim-speed span { flex: 0 0 auto; min-width: 30px; text-align: right; }
-
-.stage-scene-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.stage-scene-actions button {
-  min-height: 30px;
-  padding: 4px 11px;
-  font-size: 10.5px;
-}
 
 .stage-scene-list {
   display: flex;
@@ -7603,31 +8478,27 @@ canvas[data-tool="note"] { cursor: copy; }
   cursor: pointer;
 }
 
-/* 正面と平面の出し分け。狭い画面では一枚ずつ見る */
-.stage-view-switch {
+/* 正面・平面の表示と上下順を一つの欄で選ぶ。4ボタン分の幅を使わない。 */
+.stage-view-select {
   display: inline-flex;
-  border: 1px solid var(--line-dark);
+  flex: 0 0 auto;
 }
 
-.stage-view-switch button {
+.stage-view-select select {
+  width: 88px;
   min-height: 30px;
-  padding: 4px 11px;
-  border: 0;
-  background: none;
-  color: var(--milk-dim);
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+  color: var(--milk);
   font-family: var(--sans);
   font-size: 10.5px;
   letter-spacing: 0.06em;
+  padding: 4px 7px;
   cursor: pointer;
 }
 
-.stage-view-switch button + button { border-left: 1px solid var(--line-dark); }
-.stage-view-switch button:hover { color: var(--milk); }
-
-.stage-view-switch button[aria-pressed="true"] {
-  color: var(--paper);
-  background: rgba(168, 75, 38, 0.28);
-}
+.stage-view-select select:hover,
+.stage-view-select select:focus { border-color: var(--brass); }
 
 /* 拡大しているときだけ出る、等倍へ戻す札 */
 .stage-zoom-reset[hidden] { display: none; }
@@ -7755,6 +8626,8 @@ canvas[data-tool="note"] { cursor: copy; }
   cursor: pointer;
 }
 
+select.stage-lang { appearance: auto; }
+
 .stage-lang:hover { color: var(--milk); border-color: var(--brass); }
 .stage-lang[aria-pressed="true"] { color: var(--paper); border-color: var(--brass); }
 
@@ -7869,7 +8742,7 @@ body.is-panel-dragging {
 .stage-seat-strip {
   padding: 9px 11px 10px;
   border-bottom: 1px solid var(--line-dark);
-  background: rgba(20, 17, 14, 0.6);
+  background: rgba(var(--stage-ui-seat-rgb, 20, 17, 14), 0.6);
 }
 
 .stage-seat-strip .stage-seat-list {
@@ -7900,9 +8773,8 @@ body.is-panel-dragging {
 
 /* 正面の絵の真上に出す、そのシーンの説明。
    絵より前に出過ぎないよう、見出しは小さく、本文は落ち着いた明度で置く。 */
-/* 絵のすぐ上の「シーンの行」。前後の送りと、その場面の説明を横に並べる。
-   一覧の欄は畳めるので、送りを一覧の中だけに置くと畳んだ瞬間に行き来できなくなる。
-   狭い幅では説明が下へ折り返すが、送りは必ず一行目に残る。 */
+/* 絵のすぐ上の2段。上段にシーン送り・転換・一覧、下段に説明を置く。
+   説明が長くなっても、送りの操作位置を押し広げない。 */
 .stage-scene-bar {
   display: flex;
   align-items: center;
@@ -7918,11 +8790,14 @@ body.is-panel-dragging {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 0 0 auto;
+  flex: 1 1 100%;
+  min-width: 0;
 }
 
 /* いま何場面目か。送りだけでは今どこにいるかが読めない */
 .stage-scene-now {
+  flex: 0 1 auto;
+  min-width: 0;
   font-size: 10.5px;
   letter-spacing: 0.06em;
   color: var(--milk-dim);
@@ -8013,21 +8888,21 @@ body.is-panel-dragging {
   color: var(--milk);
 }
 
-/* 説明は残り幅いっぱいを取る。行の中で一番よく読む部分なので、
-   送りより先に折り返させない。
+/* 説明は独立した下段で幅いっぱいを取る。
    ★縦は伸ばさない。伸ばすと、書き込み欄の高さを内容から測る処理
      （growSceneDesc）が空の行でも器の高さを拾い、帯が厚く空いてしまう。 */
 .stage-scene-bar .stage-scene-desc {
-  flex: 1 1 240px;
+  flex: 1 1 100%;
   min-width: 0;
-  align-self: center;
-  align-items: center;
+  align-self: flex-start;
+  align-items: flex-start;
   padding: 0;
   border-bottom: 0;
   margin-bottom: 0;
 }
 
-.stage-scene-bar .stage-scene-desc-text { align-self: center; }
+.stage-scene-bar .stage-scene-desc-text { align-self: flex-start; }
+.stage-scene-bar .stage-scene-desc-label { padding-top: 2px; }
 
 /* 現在のシーンの曲。音源そのものはIndexedDBへ置き、この帯は一つのaudioを
    全シーンで使い回す。シークは残り幅を取り、狭ければ曲名と一緒に次行へ送る。 */
@@ -8090,6 +8965,7 @@ body.is-panel-dragging {
 
 .stage-music-intro,
 .stage-music-status,
+.stage-music-beta-note,
 .stage-music-local-note,
 .stage-music-assignment p {
   margin: 0;
@@ -8100,6 +8976,13 @@ body.is-panel-dragging {
 .stage-music-intro,
 .stage-music-local-note { color: var(--milk-dim); }
 .stage-music-status { color: var(--brass); }
+.stage-music-beta-note {
+  margin: 0;
+  padding: 7px 9px;
+  border-left: 2px solid var(--rust);
+  background: rgba(168, 75, 38, 0.08);
+  color: var(--milk);
+}
 
 .stage-music-import {
   display: inline-flex;
@@ -8281,7 +9164,7 @@ body.is-panel-dragging {
   margin-bottom: 8px;
   padding: 8px 10px;
   border: 1px solid var(--line-dark);
-  background: rgba(28, 23, 19, 0.88);
+  background: rgba(var(--stage-ui-panel-rgb, 28, 23, 19), 0.88);
   color: var(--milk-dim);
   font-size: 10.5px;
 }
@@ -8408,7 +9291,7 @@ body.is-panel-dragging {
   border: 0;
   border-bottom: 1px solid var(--line-dark);
   border-radius: 0;
-  background: rgba(13, 12, 11, 0.26);
+  background: rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.26);
   color: var(--milk);
   font: 11px/1.5 var(--sans);
   padding: 6px 7px;
@@ -8421,7 +9304,7 @@ body.is-panel-dragging {
 .stage-light-intent select:focus {
   outline: none;
   border-bottom-color: var(--brass);
-  background: rgba(13, 12, 11, 0.42);
+  background: rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.42);
 }
 
 .stage-light-intent input::placeholder,
@@ -8515,6 +9398,162 @@ body.is-panel-dragging {
   .stage-light-intent-foot { align-items: stretch; flex-direction: column; }
 }
 
+/* ---------- 光の動き（案） ----------
+   2026-09-11 本人指示: 光の意図カード（details/summaryのインラインカード）に
+   頼らず、独立したモーダルで組めるようにする。トリガーは照明パネルの
+   「光の動きを組む」ボタン（既存の「プリセットから組む」と同じ場所・同じ見た目）。
+   新しい色・角丸・影・モーションは足さない
+   （design/TOKEN_SHEET_light-motion_2026-09-11.md の値を踏襲、配置のみ変更）。 */
+.stage-light-motion-open { margin-top: 6px; }
+html[data-release-scope="beta-20260912"] .stage-light-motion-open { display: none !important; }
+
+.stage-light-motion-open-summary {
+  display: block;
+  margin-top: 2px;
+  color: rgba(240, 231, 214, 0.5);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0;
+  white-space: normal;
+}
+
+.stage-modal.stage-light-motion-modal { width: min(820px, calc(100vw - 40px)); }
+
+.stage-light-motion-current {
+  margin: 0 0 4px;
+  color: rgba(240, 231, 214, 0.7);
+  font-family: var(--serif);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.stage-light-motion-intro {
+  margin: 0;
+  color: rgba(240, 231, 214, 0.5);
+  font-size: 9.5px;
+  line-height: 1.6;
+}
+
+.stage-light-motion-presets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.stage-light-motion-preset {
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 1px solid var(--line-dark);
+  border-radius: 1px;
+  background: rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.22);
+  color: var(--milk-dim);
+  font: 11px/1.35 var(--sans);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+.stage-light-motion-preset:hover { border-color: var(--brass); color: var(--milk); }
+
+.stage-light-motion-preset[aria-pressed="true"] {
+  border-color: var(--brass);
+  background: rgba(156, 130, 63, 0.22);
+  color: var(--paper);
+}
+
+.stage-light-motion-adjust {
+  display: grid;
+  gap: 7px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(240, 231, 214, 0.14);
+}
+
+.stage-light-motion-adjust[hidden] { display: none; }
+
+.stage-light-motion-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  color: var(--milk-dim);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+}
+
+.stage-light-motion-row[hidden] { display: none; }
+.stage-light-motion-row input[type="range"] { width: 100%; }
+
+.stage-light-motion-seg { display: inline-flex; }
+
+.stage-light-motion-seg button {
+  min-height: 38px;
+  padding: 4px 10px;
+  border: 1px solid var(--line-dark);
+  background: rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.18);
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stage-light-motion-seg button + button { margin-left: -6px; }
+.stage-light-motion-seg button:hover { color: var(--milk); border-color: var(--brass); }
+
+.stage-light-motion-seg button[aria-pressed="true"] {
+  position: relative;
+  z-index: 1;
+  color: var(--paper);
+  border-color: var(--brass);
+  background: rgba(156, 130, 63, 0.24);
+}
+
+.stage-light-motion-seg button:disabled { opacity: 0.32; cursor: default; }
+
+.stage-light-motion-stage {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(240, 231, 214, 0.14);
+}
+
+.stage-light-motion-stage[hidden] { display: none; }
+
+.stage-light-motion-stage canvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--line-dark);
+  background: #0d0e10;
+  display: block;
+}
+
+.stage-light-motion-transport,
+.stage-light-motion-export {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stage-light-motion-transport .btn-quiet,
+.stage-light-motion-export .btn-quiet {
+  min-height: 44px;
+  padding: 6px 14px;
+  font-size: 10.5px;
+}
+
+#stage-light-motion-export-status {
+  color: rgba(240, 231, 214, 0.55);
+  font-size: 9.5px;
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .stage-light-motion-presets { grid-template-columns: minmax(0, 1fr); }
+  .stage-light-motion-row { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* 絵のバーに置く道具の入り切り */
 .stage-canvas-tool {
   border: 1px solid var(--line-dark);
@@ -8529,6 +9568,99 @@ body.is-panel-dragging {
 }
 
 .stage-canvas-tool:hover { color: var(--milk); border-color: var(--brass); }
+
+/* 動線の二操作は、幅があるときだけ文字で読み、狭い図では同じ意味の線画へ替える。 */
+.stage-canvas-tool-icon {
+  display: none;
+  width: 16px;
+  height: 16px;
+}
+
+/* 複数選択は状態を短く常設し、整列対象が意図せず全員へ広がらないようにする。 */
+.stage-multi-select-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 3px 8px;
+  border: 1px solid var(--line-dark);
+  color: var(--milk-dim);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.stage-multi-select-status.is-active {
+  border-color: var(--brass);
+  color: var(--paper);
+  background: rgba(211, 172, 89, 0.12);
+}
+
+/* 選択後は「選択だけ整列」に戻る。OSネイティブの明るい選択肢を使わず、
+   舞台スケッチの暗い操作面のまま形を選ぶ。 */
+.stage-arrange-menu {
+  position: relative;
+  flex: 0 0 auto;
+  width: 112px;
+}
+
+#stage-arrange-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  width: 100%;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.stage-arrange-chevron {
+  width: 12px;
+  height: 8px;
+  flex: 0 0 auto;
+}
+
+.stage-arrange-options {
+  position: absolute;
+  z-index: 12;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: max(100%, 10.5em);
+  padding: 3px;
+  border: 1px solid var(--brass);
+  background: var(--desk);
+}
+
+.stage-arrange-options button {
+  display: block;
+  width: 100%;
+  min-height: 26px;
+  padding: 3px 7px;
+  border: 0;
+  background: transparent;
+  color: var(--milk);
+  font: inherit;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.stage-arrange-options button:hover,
+.stage-arrange-options button:focus-visible {
+  background: rgba(211, 172, 89, 0.16);
+  color: var(--paper);
+  outline: 1px solid var(--brass);
+  outline-offset: -1px;
+}
+
+#stage-arrange-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 
 .stage-canvas-tool[aria-pressed="true"] {
   color: var(--paper);
@@ -8603,6 +9735,31 @@ body.is-panel-dragging {
   align-items: center;
 }
 
+/* Undo／Redoは作図の履歴なので、ページ全体の操作から中央の作図道具へ移す。
+   アイコンだけでも意味が失われないよう、ボタン名はaria-labelに残す。 */
+.stage-center-bar .stage-undo-redo {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.stage-center-bar .stage-undo-redo button {
+  width: 40px;
+  min-width: 40px;
+  padding-left: 0;
+  padding-right: 0;
+  border: 1px solid var(--line-dark);
+  color: var(--milk-dim);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stage-center-bar .stage-undo-redo button + button { border-left: 0; }
+.stage-center-bar .stage-undo-redo button:hover:not(:disabled) { color: var(--milk); border-color: var(--brass); }
+.stage-center-bar .stage-undo-redo button:disabled { opacity: 0.28; cursor: default; }
+.stage-center-bar .stage-history-icon svg { display: block; width: 16px; height: 16px; }
+
 /* 名前の入り切りから右は、絵の見え方の設定。道具の列とは役目が違うので右へ寄せる
    （実際の指定は .stage-name-toggle の margin リセットより後ろにある） */
 
@@ -8622,13 +9779,12 @@ body.is-panel-dragging {
 /* 右寄せは、上の margin:0 より後に置く（先に書くと打ち消される） */
 .stage-center-bar .stage-bar-right { margin-left: auto; }
 
-.stage-center-bar #stage-swap-center { flex: 0 0 auto; }
-
 @media (max-width: 900px) {
   .stage-center-bar .stage-tool-hint { flex-basis: 100%; order: 9; }
 }
 
 .stage-center-bar button { min-height: 30px; font-size: 10.5px; padding: 4px 12px; }
+.stage-center-bar .stage-view-select select { min-height: 27px; }
 .stage-center-bar .stage-tool-grid button { padding: 4px 10px; letter-spacing: 0.04em; }
 
 /* 道具のうち「ものを動かす・照明を動かす・矢印を描く」は記号だけにする。
@@ -8722,7 +9878,7 @@ body.is-panel-dragging {
    ★ .stage-history-actions button（クラス+要素）の font-size: 11px の方が
      .stage-gear-btn（クラスのみ）より詳細度が高く、後で書いても負けて
      字が小さいままになっていた。button. を付けて詳細度を合わせる。 */
-.stage-history-actions button.stage-gear-btn {
+.stage-history-actions button:is(.stage-gear-btn, .stage-panel-visibility-btn) {
   width: 34px;
   min-width: 34px;
   padding-left: 0;
@@ -8734,11 +9890,74 @@ body.is-panel-dragging {
   line-height: 1;
 }
 
-.stage-gear-btn svg {
+.stage-gear-btn svg,
+.stage-panel-visibility-btn svg {
   width: 19px;
   height: 19px;
   display: block;
 }
+
+.stage-panel-visibility-btn > span[aria-hidden="true"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stage-panel-visibility-control {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.stage-panel-visibility-btn[aria-expanded="true"] {
+  color: var(--paper);
+  border-color: var(--brass);
+  background: rgba(211, 172, 89, 0.08);
+}
+
+.stage-panel-visibility-menu {
+  position: absolute;
+  z-index: 24;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 260px;
+  max-height: calc(100vh - 120px);
+  padding: 8px 12px;
+  overflow-y: auto;
+  color: var(--milk);
+  background: var(--desk);
+  border: 1px solid var(--line-dark);
+  border-radius: 4px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38);
+}
+
+.stage-panel-visibility-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--line-dark);
+  color: var(--milk-dim);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.stage-panel-visibility-item:last-child { border-bottom: 0; }
+.stage-panel-visibility-item:hover { color: var(--milk); }
+.stage-panel-visibility-item input {
+  flex: 0 0 auto;
+  width: 16px;
+  min-height: 16px !important;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--brass);
+}
+
+/* iPadとスマホはドロワー、ゲストは共有パネルが表示の正本。 */
+html.stage-pwa-tablet .stage-panel-visibility-control,
+html.stage-phone-viewer .stage-panel-visibility-control,
+body.stage-session-guest .stage-panel-visibility-control { display: none; }
 
 /* 環境設定の中の言語。切り替えの札は右端に置く（他の行は左に印がある） */
 .stage-pref-lang-row {
@@ -8751,7 +9970,7 @@ body.is-panel-dragging {
 
 .stage-pref-lang-row .stage-lang {
   flex: 0 0 auto;
-  min-width: 74px;
+  min-width: 132px;
 }
 
 /* 環境設定の中のショートカット一覧。既定は畳んでおく——毎回開く人のためではなく、
@@ -8807,14 +10026,15 @@ body.is-panel-dragging {
   margin-bottom: 0;
 }
 
-/* 場面の欄は下の縁を掴んで高さを変えられる。
-   入れ子が深くなると320pxでは足りず、狭い窓の中を延々と繰るはめになる。 */
+/* 場面の欄は内容が少なければその高さで閉じ、多ければ画面高の2/3まで広げる。
+   下の縁を引いたときだけ、本人が選んだ高さを固定して覚える。 */
 .stage-col .stage-scene-list {
   flex-direction: column;
   overflow-x: visible;
-  height: 320px;
-  min-height: 120px;
-  max-height: 80vh;
+  height: auto;
+  min-height: 0;
+  max-height: 66.667vh;
+  max-height: 66.667dvh;
   overflow-y: auto;
   resize: vertical;
   padding-right: 2px;
@@ -8852,8 +10072,6 @@ body.is-panel-dragging {
 
 .stage-col .stage-scene-meta { grid-template-columns: 1fr; }
 
-.stage-col .stage-scene-actions { margin-bottom: 8px; }
-
 /* ===== 舞台スケッチ: 文字を詰める =====
    道具の数が多く、パネルを畳んで縦を稼ぐ設計なので、
    ボタンの字も詰めて1行に収める。折り返しは作らない。 */
@@ -8871,6 +10089,16 @@ body.is-panel-dragging {
   padding: 6px 10px;
   white-space: nowrap;
 }
+
+.stage-mask-action,
+#stage-holder-face,
+#stage-wear-select { min-height: 44px; }
+#stage-wear-select { margin-top: 6px; }
+#stage-held-list .stage-cast-row { grid-template-columns: minmax(0, 1fr) auto; }
+#stage-held-list .stage-held-mask { grid-template-columns: 1fr 1fr; margin-bottom: 6px; }
+#stage-held-list .stage-held-mask .stage-cast-name { grid-column: 1 / -1; }
+#stage-held-list .stage-held-mask .btn-quiet { min-height: 44px; }
+
 
 .stage-io-row .btn-quiet,
 .stage-io-row .stage-import-label {
@@ -8899,32 +10127,12 @@ body.is-panel-dragging {
   padding: 5px 6px;
 }
 
-/* シーンの操作は5つを一列に収める。詰めても折り返しはさせない
-   （二段に折れると「足す三兄弟」の並びが読めなくなる） */
-.stage-scene-actions {
-  flex-wrap: nowrap;
-  gap: 3px;
-}
-
-.stage-scene-actions button {
-  min-height: 28px;
-  padding: 3px 5px;
-  font-size: 10px;
-  letter-spacing: 0;
-  white-space: nowrap;
-  flex: 0 1 auto;
-  min-width: 0;
-}
-
 /* 道具の帯の区切り。「動かす」と「背景」は別の仕事なので、
    線は引かずに余白だけで分ける（線を足すと帯が騒がしくなる） */
 .stage-tool-split {
   width: 14px;
   flex: 0 0 auto;
 }
-
-/* 下段（セクション＋・削除）。上段と間を空けず、続きの段として見せる */
-.stage-scene-actions-sub { margin-top: 3px; }
 
 .stage-seat-strip .stage-seat {
   min-height: 28px;
@@ -8935,6 +10143,33 @@ body.is-panel-dragging {
 
 .stage-center-bar button { min-height: 27px; padding: 3px 10px; font-size: 10px; }
 .stage-center-bar .stage-name-toggle { min-height: 27px; padding: 3px 8px; font-size: 10px; }
+
+/* アニメの所要時間は常設せず、アニメへ手を置いた時だけ下へ展開する。 */
+.stage-anim-control {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.stage-center-bar .stage-anim-toggle {
+  min-height: 27px;
+  padding: 3px 8px;
+}
+
+.stage-anim-control .stage-anim-speed {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  display: none;
+  width: 190px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38);
+}
+
+.stage-anim-control:hover .stage-anim-speed,
+.stage-anim-control:focus-within .stage-anim-speed { display: flex; }
 
 /* 入力欄も同じ調子に揃える */
 .stage-panel .stage-text-input,
@@ -8974,26 +10209,6 @@ body.is-panel-dragging {
 
 .stage-cast-add .stage-text-input { margin-bottom: 0; }
 
-/* 追加の口は一つ。名前は広く、種類と追加は下の段へ回す
-   （左の列は狭いので、三つを一列に詰めると名前が読めなくなる） */
-.stage-roster-add {
-  grid-template-columns: minmax(0, 1fr) auto;
-}
-
-.stage-roster-add .stage-text-input { grid-column: 1 / -1; }
-
-.stage-roster-add.is-prop-shape .stage-text-input { grid-column: 1; }
-
-.stage-roster-add .stage-select {
-  grid-column: 1;
-  margin-bottom: 0;
-  min-width: 0;
-}
-
-.stage-roster-add .stage-prop-shape-select { grid-column: 2; }
-
-.stage-roster-add .btn-quiet { grid-column: 2; }
-
 /* 種類ごとの小見出し。中身のある組だけ出す */
 .stage-roster-group { margin-bottom: 10px; }
 .stage-roster-group[hidden] { display: none; }
@@ -9012,6 +10227,31 @@ body.is-panel-dragging {
   max-height: 260px;
   overflow-y: auto;
 }
+
+.stage-roster-group > .stage-cast-list { margin-bottom: 0; }
+.stage-roster-group > .stage-cast-list.is-manual-height { max-height: none; }
+
+.stage-roster-list-resize {
+  display: grid;
+  height: 12px;
+  margin: 1px 0 0;
+  place-items: center;
+  border-top: 1px solid rgba(240, 231, 214, 0.5);
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.stage-roster-list-resize::after {
+  width: 34px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(240, 231, 214, 0.5);
+  content: "";
+}
+
+.stage-roster-list-resize:is(:hover, :focus-visible)::after { background: var(--brass); }
+.stage-roster-list-resize:focus-visible { outline: 2px solid var(--brass); outline-offset: -2px; }
+body.is-roster-list-resizing { cursor: ns-resize; user-select: none; -webkit-user-select: none; }
 
 .stage-cast-empty {
   color: rgba(240, 231, 214, 0.53);
@@ -9122,7 +10362,7 @@ body.is-panel-dragging {
 .stage-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(8, 7, 6, 0.72);
+  background: rgba(var(--stage-ui-scrim-rgb, 8, 7, 6), 0.72);
   z-index: 70;
 }
 
@@ -9143,6 +10383,18 @@ body.is-panel-dragging {
 /* ★窓ごとの幅は .stage-modal より後ろに置く。前に書くと、同じ強さの
    後出しに負けて既定の380pxに戻る（実際に姿勢の窓がそうなっていた）。 */
 .stage-modal.stage-pose-modal { width: min(1020px, calc(100vw - 40px)); }
+.stage-modal#stage-kind {
+  width: min(1240px, calc(100vw - 24px));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#stage-kind .stage-modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 0;
+}
 /* 照明プリセットの見本は、光の重なりと角度を読むための絵。
    380pxの窓に3列だと1枚100px弱しかなく、灯体の数も色の違いも潰れる。 */
 .stage-modal#stage-light-preset-modal { width: min(820px, calc(100vw - 40px)); }
@@ -9152,7 +10404,80 @@ body.is-panel-dragging {
 .stage-modal.stage-rehearsal-export-modal { width: min(560px, calc(100vw - 40px)); }
 .stage-modal.stage-help-modal { width: min(720px, calc(100vw - 40px)); }
 .stage-modal.stage-about-modal { width: min(720px, calc(100vw - 40px)); }
-.stage-modal.stage-venue-editor-modal { width: min(980px, calc(100vw - 40px)); }
+.stage-modal.stage-release-modal { width: min(620px, calc(100vw - 40px)); }
+.stage-modal.stage-scene-create-modal { width: min(720px, calc(100vw - 40px)); }
+.stage-modal.stage-scene-delete-modal { width: min(440px, calc(100vw - 40px)); }
+.stage-modal.stage-timeline-cue-detail-modal { width: min(440px, calc(100vw - 40px)); }
+.stage-modal.stage-timeline-audio-detail-modal { width: min(440px, calc(100vw - 40px)); }
+.stage-modal.stage-timeline-unit-warning-modal { width: min(480px, calc(100vw - 40px)); }
+.stage-timeline-unit-warning-body { display: grid; gap: 14px; }
+.stage-timeline-unit-warning-body > p { margin: 0; color: var(--milk-dim); line-height: 1.7; }
+.stage-timeline-unit-warning-body > p:first-child { color: var(--milk); font-weight: 700; }
+.stage-timeline-unit-warning-body .stage-timeline-unit-warning-caution {
+  padding: 10px 12px;
+  color: var(--milk);
+  background: rgba(168, 75, 38, 0.12);
+  border-left: 2px solid var(--rust);
+}
+.stage-modal.stage-project-settings-modal { width: min(620px, calc(100vw - 40px)); }
+.stage-modal.stage-formation-modal {
+  --formation-shell: #f4efe5;
+  --formation-shell-text: #2b231d;
+  --formation-shell-dim: #5d5148;
+  --formation-shell-line: #8f7f70;
+  width: calc(100vw - 12px);
+  height: calc(100vh - 12px);
+  max-height: calc(100vh - 12px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--formation-shell);
+  border-color: var(--formation-shell-line);
+}
+.stage-formation-modal .stage-modal-head > div { min-width: 0; }
+.stage-formation-modal .stage-modal-head {
+  background: var(--formation-shell);
+  border-bottom-color: var(--formation-shell-line);
+}
+.stage-formation-modal .stage-modal-head h2 { color: var(--formation-shell-text); }
+.stage-formation-modal .stage-modal-close {
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--formation-shell-text);
+  border-color: var(--formation-shell-line);
+}
+.stage-formation-modal .stage-modal-close:hover {
+  color: var(--formation-shell-text);
+  border-color: var(--formation-shell-text);
+  background: rgba(43, 35, 29, 0.08);
+}
+.stage-formation-status {
+  margin: 3px 0 0;
+  color: var(--formation-shell-dim);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.stage-formation-body {
+  min-height: 0;
+  flex: 1;
+  padding: 6px;
+  background: var(--formation-shell);
+}
+.stage-formation-body iframe { display: block; width: 100%; height: 100%; min-height: 560px; border: 0; background: #191512; }
+.stage-section-formation-entry { display: grid; gap: 6px; padding: 6px 8px 8px; }
+.stage-panel .stage-section-formation-entry button { width: 100%; min-height: 44px; }
+.stage-section-formation-entry .stage-section-sync-play {
+  border-color: var(--rust);
+  color: var(--paper);
+}
+body.stage-modal-open .stage-tour { display: none !important; }
+@media (max-width: 720px) {
+  .stage-formation-body iframe { min-height: calc(100vh - 60px); }
+}
+.stage-modal.stage-background-modal { width: min(760px, calc(100vw - 40px)); }
+.stage-modal.stage-venue-editor-modal { width: min(80vw, calc(100vw - 40px)); }
+/* R16: 線の計算と保存データは残し、編集パネルだけを画面・Tab順から外す。 */
+.stage-venue-editor-modal .stage-venue-editor-lines { display: none; }
 .stage-modal.stage-venue-import-modal { width: min(760px, calc(100vw - 40px)); }
 /* 環境設定は項目が増え、380pxの一列では縦に伸びて全体が見渡せなくなっていた。
    窓を広げ、項目一覧を二列にし、ショートカット一覧は右の列へ開いたまま置く。 */
@@ -9210,6 +10535,174 @@ body.is-panel-dragging {
 
 .stage-modal-body { padding: 14px 16px 18px; }
 
+.stage-timeline-cue-detail-body { display: grid; gap: 16px; }
+
+.stage-timeline-cue-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.stage-timeline-cue-facts > div {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line-dark);
+  border-radius: 3px;
+}
+
+.stage-timeline-cue-facts dt {
+  color: var(--milk-dim);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.stage-timeline-cue-facts dd {
+  margin: 3px 0 0;
+  overflow: hidden;
+  color: var(--milk);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-timeline-cue-note { display: grid; gap: 7px; color: var(--milk-dim); font-size: 11px; }
+.stage-timeline-cue-note textarea {
+  width: 100%;
+  min-height: 128px;
+  resize: vertical;
+  padding: 10px;
+  color: var(--milk);
+  background: var(--desk);
+  border: 1px solid var(--line-dark);
+  border-radius: 3px;
+  font: inherit;
+  line-height: 1.6;
+}
+.stage-timeline-cue-note textarea:focus { border-color: var(--rust); outline: 1px solid var(--rust); }
+
+.stage-timeline-cue-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.stage-timeline-cue-detail-actions #stage-timeline-cue-detail-delete {
+  margin-right: auto;
+  color: var(--milk-dim);
+}
+.stage-timeline-cue-detail-actions button {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 96px;
+  min-height: 44px;
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+.stage-timeline-audio-detail-body { display: grid; gap: 16px; }
+
+.stage-timeline-audio-gain {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 12px;
+  padding: 12px;
+  border: 1px solid var(--line-dark);
+  border-radius: 3px;
+}
+
+.stage-timeline-audio-gain-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--milk-dim);
+  font-size: 11px;
+}
+
+.stage-timeline-audio-gain-head output {
+  color: var(--milk);
+  font-variant-numeric: tabular-nums;
+}
+
+.stage-timeline-audio-gain input[type="range"] { width: 100%; min-height: 44px; }
+
+.stage-timeline-audio-gain-number {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--milk-dim);
+}
+
+.stage-timeline-audio-gain-number input {
+  width: 78px;
+  min-height: 44px;
+  padding: 7px 8px;
+  color: var(--milk);
+  background: var(--desk);
+  border: 1px solid var(--line-dark);
+  border-radius: 3px;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.stage-timeline-audio-gain-number input:focus {
+  border-color: var(--rust);
+  outline: 1px solid var(--rust);
+}
+
+.stage-timeline-audio-gain > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--milk-dim);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+/* 背景は常設パネルに細かな操作を詰めず、一つの編集窓へまとめる。
+   描画と素材を二列で見渡せる幅を取り、狭い画面では一列へ戻す。 */
+.stage-background-open { width: 100%; }
+
+.stage-background-intro {
+  margin: 0 0 12px;
+  color: var(--milk-dim);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.stage-background-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.stage-background-drawing,
+.stage-background-modal .stage-screentext-block,
+.stage-background-modal .stage-photo-block {
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line-dark);
+}
+
+.stage-background-drawing { grid-row: span 2; }
+
+.stage-background-tool-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stage-background-tool-actions button { min-height: 44px; }
+
+@media (max-width: 760px) {
+  .stage-background-controls { grid-template-columns: minmax(0, 1fr); }
+  .stage-background-drawing { grid-row: auto; }
+}
+
 /* ===== 会場エディタ: 形・観客・柱／什器／扉・天井（方式仕様 7章の1〜4） ===== */
 
 .stage-venue-editor-modal .stage-modal-body {
@@ -9217,11 +10710,240 @@ body.is-panel-dragging {
   gap: 10px;
 }
 
+.stage-venue-editor-presets {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 3px solid var(--paper);
+}
+
+.stage-venue-editor-presets .stage-venue-choice-row {
+  align-items: end;
+  margin: 0;
+}
+
+.stage-venue-editor-presets .stage-field-row { margin: 0; }
+
+.stage-venue-editor-workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.78fr) minmax(0, 1.45fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.stage-venue-editor-menu,
+.stage-venue-editor-panel {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+.stage-venue-editor-panel { container: stage-venue-editor-panel / inline-size; }
+
+.stage-venue-editor-menu {
+  container: stage-venue-editor-menu / inline-size;
+  max-height: calc(100vh - 130px);
+  padding-right: 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-right: 1px solid var(--line-dark);
+}
+
+.stage-venue-editor-menu > *,
+.stage-venue-editor-panel > *,
+.stage-venue-editor-menu :is(button, input, select) {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .stage-venue-editor-lead,
 .stage-venue-editor-boundary { margin: 0; }
 
-.stage-venue-editor-shapes {
+.stage-venue-editor-metadata {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.stage-venue-editor-metadata .stage-field-row { margin: 0; }
+
+.stage-venue-editor-name-field { grid-column: 1 / -1; }
+
+.stage-venue-editor-metadata .stage-text-input { margin-bottom: 0; }
+
+.stage-required {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 4px;
+  background: var(--rust);
+  color: var(--milk);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.35;
+  vertical-align: 1px;
+}
+
+.stage-venue-save-name-backdrop { z-index: 72; }
+
+.stage-modal.stage-venue-save-name-modal { z-index: 73; }
+
+.stage-venue-conflict-backdrop { z-index: 74; }
+
+.stage-modal.stage-venue-conflict-modal {
+  z-index: 75;
+  width: min(420px, calc(100vw - 40px));
+  background: var(--desk-2);
+}
+
+.stage-venue-discard-backdrop { z-index: 76; }
+
+.stage-modal.stage-venue-discard-modal {
+  z-index: 77;
+  width: min(440px, calc(100vw - 40px));
+  background: var(--desk-2);
+}
+
+.stage-venue-discard-modal .stage-modal-body {
+  display: grid;
+  gap: 14px;
+}
+
+.stage-venue-discard-modal p {
+  margin: 0;
+  color: var(--milk);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.stage-venue-discard-actions {
+  --stage-venue-discard-action-font-size: 14px;
+  --stage-venue-discard-action-line-height: 1.4;
+  --stage-venue-discard-action-letter-spacing: 0.15em;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stage-venue-discard-actions > button {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  margin: 0;
+  padding: 8px 12px;
+  font-family: var(--sans);
+  font-size: var(--stage-venue-discard-action-font-size);
+  font-weight: 400;
+  line-height: var(--stage-venue-discard-action-line-height);
+  letter-spacing: var(--stage-venue-discard-action-letter-spacing);
+  text-align: center;
+  white-space: normal;
+}
+
+.stage-venue-conflict-modal .stage-modal-body {
+  display: grid;
+  gap: 10px;
+}
+
+.stage-venue-conflict-modal p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.stage-venue-conflict-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.stage-venue-conflict-actions > button {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--milk);
+  font: 400 12px var(--sans);
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.stage-venue-save-name-form {
+  display: grid;
+  gap: 10px;
+}
+
+.stage-venue-save-name-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.stage-venue-editor-actions.stage-venue-save-name-actions > .btn-quiet,
+.stage-venue-editor-actions.stage-venue-save-name-actions > .stage-minor-action {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  margin-top: 0;
+  padding: 8px 12px;
+  color: var(--milk);
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.stage-venue-editor-shape-step {
+  display: grid;
+  gap: 3px;
+}
+
+.stage-venue-editor-shape-step h3,
+.stage-venue-editor-shape-step p { margin: 0; }
+
+.stage-venue-editor-shapes,
+.stage-venue-editor-extension-shapes,
+.stage-venue-editor-area-shapes {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+
+.stage-venue-editor-extension-shapes,
+.stage-venue-editor-area-shapes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.stage-venue-editor-shapes button,
+.stage-venue-editor-extension-shapes button,
+.stage-venue-editor-area-shapes button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 6px;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.stage-venue-editor-shapes svg,
+.stage-venue-editor-extension-shapes svg,
+.stage-venue-editor-area-shapes svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.stage-venue-editor-formats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0;
 }
 
@@ -9231,13 +10953,30 @@ body.is-panel-dragging {
 }
 
 .stage-venue-editor-object-tools,
+.stage-venue-editor-format,
+.stage-venue-editor-shape,
+.stage-venue-editor-extension,
 .stage-venue-editor-ceiling,
+.stage-venue-editor-audience-guide,
+.stage-venue-editor-wings-guide,
+.stage-venue-editor-audience-step,
 .stage-venue-editor-lines {
   display: grid;
   gap: 8px;
   padding: 10px;
   border: 1px solid var(--line-dark);
-  background: rgba(25, 21, 18, 0.45);
+  background: rgba(var(--stage-ui-desk-rgb, 25, 21, 18), 0.45);
+}
+
+.stage-venue-editor-audience-guide {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.stage-venue-editor-audience-full {
+  min-width: 104px;
+  min-height: 44px;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .stage-venue-editor-object-tools {
@@ -9246,7 +10985,13 @@ body.is-panel-dragging {
 }
 
 .stage-venue-editor-object-tools > p,
+.stage-venue-editor-format h3,
+.stage-venue-editor-shape h3,
+.stage-venue-editor-extension h3,
 .stage-venue-editor-ceiling h3,
+.stage-venue-editor-audience-guide h3,
+.stage-venue-editor-wings-guide h3,
+.stage-venue-editor-audience-step h3,
 .stage-venue-editor-lines h3 {
   margin: 0;
   color: var(--milk);
@@ -9278,7 +11023,27 @@ body.is-panel-dragging {
 
 .stage-venue-editor-height-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
-.stage-venue-editor-ceiling-heights { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.stage-venue-editor-ceiling-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 180px;
+}
+
+.stage-venue-editor-ceiling-input .stage-text-input {
+  width: 120px;
+  min-width: 0;
+}
+
+.stage-venue-editor-ceiling-input > span {
+  color: var(--milk);
+  font-size: 12px;
+}
+
+.stage-venue-editor-ceiling-help {
+  grid-column: 2;
+  margin: -2px 0 0;
+}
 
 .stage-venue-editor-rigging { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
@@ -9367,16 +11132,64 @@ body.is-panel-dragging {
   letter-spacing: 0.05em;
 }
 
+.stage-venue-editor-canvas-wrap {
+  position: relative;
+  min-width: 0;
+}
+
 #stage-venue-editor-canvas {
   display: block;
   width: 100%;
   height: auto;
-  max-height: min(58vh, 640px);
   aspect-ratio: 3 / 2;
   border: 1px solid var(--line-dark);
   background: var(--desk);
   touch-action: none;
   user-select: none;
+}
+
+.stage-venue-editor-zoom {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(4, 44px);
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+}
+
+.stage-venue-editor-zoom button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid var(--line-dark);
+  background: var(--desk);
+  color: var(--milk);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.stage-venue-editor-zoom button:hover,
+.stage-venue-editor-zoom button:focus-visible {
+  position: relative;
+  z-index: 1;
+  border-color: var(--brass);
+  color: var(--brass);
+}
+
+.stage-venue-editor-zoom button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.stage-venue-editor-zoom svg {
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 
 #stage-venue-editor-canvas:focus {
@@ -9392,23 +11205,55 @@ body.is-panel-dragging {
   line-height: 1.5;
 }
 
-.stage-venue-editor-audience {
+.stage-venue-editor-canvas-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  color: var(--milk-dim);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.stage-venue-editor-movement-swatch {
+  width: 16px;
+  height: 10px;
+  flex: 0 0 16px;
+  border: 1px solid rgba(102, 207, 176, 0.72);
+  background: rgba(73, 177, 145, 0.32);
+}
+
+.stage-venue-editor-audience-swatch {
+  width: 16px;
+  height: 10px;
+  flex: 0 0 16px;
+  border: 1px solid var(--rust);
+  background: rgba(168, 75, 38, 0.32);
+}
+
+.stage-venue-editor-wing-swatch {
+  width: 16px;
+  height: 10px;
+  flex: 0 0 16px;
+  border: 1px dashed var(--milk-dim);
+  background: rgba(var(--stage-ui-paper-rgb, 240, 231, 214), 0.12);
+}
+
+.stage-venue-editor-area-selection {
   display: grid;
-  grid-template-columns: minmax(170px, 1fr) minmax(180px, auto) auto;
+  grid-template-columns: minmax(170px, 1fr) auto;
   align-items: center;
   gap: 8px;
 }
 
-.stage-venue-editor-audience p {
+.stage-venue-editor-area-selection p {
   margin: 0;
   color: var(--milk);
   font-size: 11px;
 }
 
-.stage-venue-editor-audience .stage-toggle { margin: 0; }
-
-.stage-venue-editor-audience .btn-quiet {
-  min-height: 36px;
+.stage-venue-editor-area-selection .btn-quiet {
+  min-height: 44px;
   white-space: nowrap;
 }
 
@@ -9430,6 +11275,53 @@ body.is-panel-dragging {
   min-width: 150px;
   border-color: var(--rust);
 }
+
+/* 左メニューが狭いときは横へ逃がさず、操作を折り返して縦へ伸ばす。 */
+@container stage-venue-editor-menu (max-width: 520px) {
+  .stage-venue-editor-shapes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .stage-venue-editor-extension-shapes,
+  .stage-venue-editor-area-shapes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stage-venue-editor-height-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .stage-venue-editor-object-tools { grid-template-columns: minmax(0, 1fr); }
+  .stage-venue-editor-object-tools > *,
+  .stage-venue-editor-setting,
+  .stage-venue-editor-access-setting { grid-column: 1; }
+}
+
+/* 編集面が狭いときも、観客操作と保存操作を横へはみ出させない。 */
+@container stage-venue-editor-panel (max-width: 520px) {
+  .stage-venue-editor-area-selection { grid-template-columns: minmax(0, 1fr); }
+  .stage-venue-editor-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .stage-venue-editor-actions span { min-height: 1.4em; text-align: left; }
+}
+
+.stage-project-export-actions > button {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  margin-top: 0;
+  font-size: 14px;
+  text-align: center;
+}
+
+.stage-project-settings-modal .stage-modal-body {
+  display: grid;
+  gap: 10px;
+}
+
+.stage-project-settings-modal .stage-control-label,
+.stage-project-settings-modal .stage-text-input,
+.stage-project-settings-modal .stage-version-note,
+.stage-project-settings-modal .stage-minor-action {
+  margin: 0;
+}
+
+.stage-project-settings-modal .stage-project-venue { margin-top: 4px; }
 
 .stage-venue-import-modal .stage-modal-body {
   display: grid;
@@ -9488,15 +11380,35 @@ body.is-panel-dragging {
   white-space: normal;
 }
 
+@media (max-width: 900px) {
+  .stage-venue-editor-workspace { grid-template-columns: 1fr; }
+
+  .stage-venue-editor-menu {
+    max-height: none;
+    padding-right: 0;
+    border-right: 0;
+  }
+}
+
 @media (max-width: 640px) {
   .stage-modal.stage-venue-editor-modal {
     width: calc(100vw - 16px);
     max-height: calc(100dvh - 16px);
   }
 
+  .stage-venue-library-actions { grid-template-columns: 1fr; }
+
   .stage-venue-editor-shapes,
+  .stage-venue-editor-extension-shapes,
+  .stage-venue-editor-area-shapes,
+  .stage-venue-editor-formats,
   .stage-venue-editor-modes,
-  .stage-venue-editor-height-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stage-venue-editor-height-steps,
+  .stage-venue-editor-metadata { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .stage-venue-editor-shapes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .stage-venue-editor-extension-shapes,
+  .stage-venue-editor-area-shapes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
   .stage-venue-editor-object-tools { grid-template-columns: 1fr; }
 
@@ -9507,16 +11419,17 @@ body.is-panel-dragging {
   .stage-venue-editor-setting,
   .stage-venue-editor-access-setting { grid-template-columns: 1fr; }
 
-  .stage-venue-editor-ceiling-heights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stage-venue-editor-ceiling-input { max-width: none; }
+
+  .stage-venue-editor-ceiling-help { grid-column: 1; }
 
   .stage-venue-editor-line-toggles,
   .stage-venue-editor-probe-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .stage-venue-editor-probe-tools label { grid-column: 1 / -1; }
 
-  .stage-venue-editor-audience {
-    grid-template-columns: 1fr;
-  }
+  .stage-venue-editor-audience-guide { grid-template-columns: 1fr; }
+  .stage-venue-editor-area-selection { grid-template-columns: 1fr; }
 
   .stage-venue-editor-actions { align-items: stretch; flex-direction: column; }
   .stage-venue-editor-actions span { min-height: 1.4em; text-align: left; }
@@ -9569,7 +11482,26 @@ body.is-panel-dragging {
   line-height: 1.85;
 }
 
+.stage-about-feedback {
+  display: inline-flex;
+  margin: 0 0 1.5em;
+  color: var(--milk);
+  font-weight: 500;
+  text-underline-offset: 0.2em;
+}
+
+.stage-about-feedback:hover { color: var(--brass); }
+
 .stage-about-copy { margin: 0 0 1.15em; }
+
+.stage-release-body { color: var(--milk-dim); font-size: 13px; line-height: 1.75; }
+.stage-release-lead { margin: 0 0 1.4em; }
+.stage-release-entry { padding-top: 12px; border-top: 1px solid var(--line-dark); }
+.stage-release-entry-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.stage-release-entry h3 { color: var(--milk); font: 500 18px/1.3 var(--serif); }
+.stage-release-entry time { color: var(--milk-dim); font: 11px/1.4 var(--sans); letter-spacing: 0.06em; white-space: nowrap; }
+.stage-release-entry ul { margin: 12px 0 0; padding-left: 1.3em; }
+.stage-release-entry li + li { margin-top: 7px; }
 
 .stage-about-credit {
   margin: 1.8em 0 0;
@@ -9962,9 +11894,23 @@ body.is-panel-dragging {
 .stage-panel .stage-delete,
 .stage-panel .stage-icon-action,
 .stage-panel .stage-color-row input[type="color"],
-.stage-panel .stage-scene-move button,
-.stage-panel .stage-scene-actions button {
+.stage-panel .stage-scene-move button {
   min-height: 38px;
+}
+
+.stage-panel .stage-scene-move button.stage-scene-action-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+}
+
+.stage-scene-action-icon svg {
+  display: block;
+  width: 17px;
+  height: 17px;
 }
 
 /* 背景の写真。地の色・塗りと同じ「背景」の項目に続けて置く */
@@ -10004,6 +11950,69 @@ body.is-panel-dragging {
   align-items: center;
   gap: 8px;
   margin-left: auto;
+}
+
+/* 側パネルを広げると、画面全体が広くても図だけが狭くなる。
+   そのときだけ見出しを一段、操作を二列へ移し、押せない札を作らない。 */
+@container stage-board (max-width: 520px) {
+  .stage-canvas-bar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .stage-canvas-bar .stage-canvas-caption {
+    flex: 0 0 100%;
+  }
+
+  .stage-canvas-tools {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    margin-left: 0;
+    gap: 4px;
+  }
+
+  .stage-canvas-tools > * {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .stage-canvas-tools .stage-canvas-tool,
+  .stage-canvas-tools .stage-canvas-close,
+  .stage-canvas-tools .stage-multi-select-status {
+    min-height: 30px;
+    width: 100%;
+  }
+
+  .stage-canvas-tools .stage-arrange-menu {
+    min-height: 30px;
+    width: 112px;
+    justify-self: start;
+  }
+
+  .stage-canvas-tools #stage-arrange-select {
+    min-height: 30px;
+    width: 100%;
+  }
+
+  .stage-canvas-tools .stage-canvas-toggle {
+    min-height: 30px;
+    justify-content: center;
+    padding: 3px 5px;
+    white-space: nowrap;
+  }
+
+  .stage-canvas-tools .stage-route-action .stage-canvas-tool-label,
+  .stage-canvas-tools .stage-derive-route-action .stage-canvas-tool-label {
+    display: none;
+  }
+
+  .stage-canvas-tools .stage-route-action .stage-canvas-tool-icon,
+  .stage-canvas-tools .stage-derive-route-action .stage-canvas-tool-icon {
+    display: block;
+    margin-inline: auto;
+  }
 }
 
 /* ★席の列は折り返さず、高さを固定する（2026-08-28）。
@@ -10047,10 +12056,6 @@ body.is-panel-dragging {
   background: rgba(168, 75, 38, 0.16);
 }
 
-/* 入れ替えは「どの絵を出すか」の続き。同じ群れの右端に置く */
-.stage-view-switch #stage-swap-center { border-left: 1px solid var(--line-dark); }
-
-
 /* 平面図の拡大ボタン。右下に小さく重ねる。絵の上の道具なので半透明の地 */
 .stage-zoom-fab {
   position: absolute;
@@ -10063,10 +12068,15 @@ body.is-panel-dragging {
 }
 
 .stage-zoom-fab button {
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  aspect-ratio: 1;
+  padding: 0;
+  flex: 0 0 44px;
   border: 1px solid var(--line-dark);
-  background: rgba(13, 12, 11, 0.82);
+  background: rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.82);
   color: var(--milk);
   font-size: 16px;
   line-height: 1;
@@ -10169,6 +12179,13 @@ body.is-panel-dragging {
 .stage-pref-reach-row .stage-minor-action,
 .stage-pref-about-row .stage-minor-action { width: 100%; margin: 0; text-align: left; }
 .stage-pref-about-row { border-bottom: 1px solid rgba(211, 172, 89, 0.14); }
+.stage-pref-layout-reset-row { align-items: flex-start; }
+.stage-pref-layout-reset-row .stage-minor-action {
+  width: auto;
+  margin: 0;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 /* 取り返しのつかない操作。錆色の輪郭で、押す前に一拍おいてもらう。
    赤系の塗りつぶしにはしない（この画面の他の要素より強く見えすぎるため）。 */
 .stage-pref-reset-row { align-items: flex-start; }
@@ -10192,10 +12209,26 @@ body.is-panel-dragging {
   color: rgba(211, 172, 89, 0.85);
 }
 .stage-pref-group:first-child .stage-pref-group-title { margin-top: 12px; }
+.stage-pref-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stage-pref-group-head .stage-pref-group-title { flex: 1 1 auto; }
 .stage-pref-group-hint {
   margin: 0 0 4px;
   font-size: 12px;
-  color: rgba(239, 231, 214, 0.5);
+  color: var(--paper);
+  line-height: 1.55;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 160ms ease-out, margin 160ms ease-out, opacity 160ms ease-out;
+}
+.stage-pref-group.is-help-open > .stage-pref-group-hint {
+  max-height: 72px;
+  margin: 0 0 7px;
+  opacity: 1;
 }
 /* 二列。行の高さは説明文の長さでばらつくので、上端で揃える */
 .stage-pref-grid {
@@ -10203,7 +12236,53 @@ body.is-panel-dragging {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 24px;
 }
-.stage-pref-grid .stage-pref-row { align-items: flex-start; }
+.stage-pref-grid .stage-pref-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  align-items: center;
+  column-gap: 8px;
+}
+.stage-pref-toggle {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 10px;
+  cursor: pointer;
+}
+.stage-pref-toggle-body { min-width: 0; }
+.stage-pref-toggle input { flex: 0 0 auto; }
+.stage-pref-layout-row .stage-pref-toggle-body { display: grid; gap: 5px; }
+.stage-pref-layout-select {
+  width: min(100%, 180px);
+  min-height: 32px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+  color: var(--milk);
+  font-family: var(--sans);
+  font-size: 12px;
+  padding: 4px 7px;
+}
+.stage-pref-layout-select:focus { border-color: var(--brass); }
+.stage-pref-layout-select:disabled { color: var(--muted); cursor: not-allowed; }
+.stage-pref-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid rgba(211, 172, 89, 0.42);
+  color: var(--paper);
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 600;
+}
+.stage-pref-help:hover,
+.stage-pref-help:focus-visible {
+  border-color: var(--brass);
+  background: rgba(156, 130, 63, 0.16);
+}
 /* 窓が縮む幅（横向きでない端末・小さな画面）では一列へ戻す */
 @media (max-width: 1040px) {
   .stage-prefs-modal .stage-modal-body { grid-template-columns: minmax(0, 1fr); }
@@ -10220,6 +12299,20 @@ body.is-panel-dragging {
 }
 .stage-pref-name { font-size: 14px; color: rgba(239, 231, 214, 0.92); white-space: nowrap; }
 .stage-pref-hint { font-size: 12px; color: rgba(239, 231, 214, 0.5); margin: 0; }
+.stage-pref-grid .stage-pref-hint {
+  grid-column: 1 / -1;
+  color: var(--paper);
+  line-height: 1.55;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 160ms ease-out, margin 160ms ease-out, opacity 160ms ease-out;
+}
+.stage-pref-grid .stage-pref-row.is-help-open > .stage-pref-hint {
+  max-height: 112px;
+  margin: 1px 0 5px 26px;
+  opacity: 1;
+}
 .stage-pref-caption-size {
   display: flex;
   align-items: center;
@@ -10240,69 +12333,148 @@ body.is-panel-dragging {
   border-radius: 3px;
   white-space: nowrap;
 }
-/* プレゼン（正面キャンバスの全画面） */
-canvas:fullscreen { object-fit: contain; background: #000; }
-canvas:-webkit-full-screen { object-fit: contain; background: #000; }
-
-.stage-present-overlay { display: none; }
-
-.stage-pseudo-present #stage-canvas {
+@media (prefers-reduced-motion: reduce) {
+  .stage-pref-group-hint,
+  .stage-pref-grid .stage-pref-hint { transition: none; }
+}
+/* 全画面: 図を主役にし、操作は右上・左端・下中央に置く。 */
+.stage-present-overlay {
+  --fullscreen-control: 44px;
+  --fullscreen-control-gap: 8px;
+  --fullscreen-inset: 14px;
+  --fullscreen-drawer: min(320px, calc(100vw - 88px));
+  --fullscreen-mini-width: clamp(160px, 24vw, 280px);
+  --fullscreen-mini-title: 26px;
+  --fullscreen-mini-gap: 12px;
+  display: none;
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
+  z-index: 60;
+  background: #000;
+}
+.stage-fullscreen-root, .stage-fullscreen { overflow: hidden; }
+.stage-fullscreen-root { scrollbar-gutter: auto; }
+.stage-fullscreen .stage-present-overlay { display: block; }
+.stage-present-canvas { position: absolute; inset: 0; pointer-events: none; }
+.stage-fullscreen #stage-present-overlay #stage-present-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
   object-fit: contain;
   background: #000;
-  z-index: 60;
 }
-
-.stage-pseudo-present .stage-present-overlay { display: block; }
-
-.stage-present-zone {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  width: 50%;
+.stage-present-mini {
+  position: absolute;
+  right: max(var(--fullscreen-inset), env(safe-area-inset-right));
+  bottom: calc(max(var(--fullscreen-inset), env(safe-area-inset-bottom)) + var(--fullscreen-control) + var(--fullscreen-mini-gap));
+  width: var(--fullscreen-mini-width);
+  padding: 0;
+  border: 1px solid var(--brass);
+  background: var(--desk);
+  color: var(--paper);
+  text-align: left;
+  z-index: 2;
+  cursor: pointer;
+}
+.stage-present-mini[hidden] { display: none; }
+.stage-present-mini-bar {
   display: flex;
   align-items: center;
-  box-sizing: border-box;
-  padding: 12px;
-  border: 0;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.25);
-  font-size: 28px;
+  justify-content: space-between;
+  height: var(--fullscreen-mini-title);
+  padding: 0 9px;
+  font-size: 11px;
   line-height: 1;
-  z-index: 61;
-  -webkit-tap-highlight-color: transparent;
 }
-
-.stage-present-zone.is-prev {
-  left: 0;
-  justify-content: flex-start;
+.stage-present-mini-view { display: block; aspect-ratio: 16 / 9; pointer-events: none; }
+.stage-fullscreen #stage-present-mini #stage-present-mini-view canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  pointer-events: none;
 }
-
-.stage-present-zone.is-next {
-  right: 0;
-  justify-content: flex-end;
-}
-
-.stage-present-close {
-  position: fixed;
-  top: 14px;
-  right: 14px;
-  width: 44px;
-  height: 44px;
+.stage-present-zone,
+.stage-present-swap,
+.stage-present-close,
+.stage-present-drawer-toggle {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: var(--fullscreen-control);
+  height: var(--fullscreen-control);
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
-  font-size: 20px;
-  line-height: 42px;
-  text-align: center;
-  z-index: 62;
+  border: 1px solid var(--brass);
+  border-radius: 0;
+  background: var(--desk);
+  color: var(--paper);
+  line-height: 1;
+  z-index: 2;
   -webkit-tap-highlight-color: transparent;
 }
+.stage-present-mini:focus-visible,
+.stage-present-zone:focus-visible,
+.stage-present-swap:focus-visible,
+.stage-present-close:focus-visible,
+.stage-present-drawer-toggle:focus-visible {
+  outline: 2px solid var(--paper);
+  outline-offset: 2px;
+}
+.stage-present-swap {
+  top: max(var(--fullscreen-inset), env(safe-area-inset-top));
+  right: calc(max(var(--fullscreen-inset), env(safe-area-inset-right)) + var(--fullscreen-control) + var(--fullscreen-control-gap));
+}
+.stage-present-close {
+  top: max(var(--fullscreen-inset), env(safe-area-inset-top));
+  right: max(var(--fullscreen-inset), env(safe-area-inset-right));
+}
+.stage-present-zone {
+  bottom: max(var(--fullscreen-inset), env(safe-area-inset-bottom));
+  font-size: 28px;
+}
+.stage-present-zone.is-prev { right: calc(50% + 4px); }
+.stage-present-zone.is-next { left: calc(50% + 4px); }
+.is-drawer-open .stage-present-zone.is-prev { right: calc((100% - var(--fullscreen-drawer)) / 2 + 4px); }
+.is-drawer-open .stage-present-zone.is-next { left: calc((100% + var(--fullscreen-drawer)) / 2 + 4px); }
+.stage-present-drawer-toggle {
+  top: calc(50% - var(--fullscreen-control) / 2);
+  left: env(safe-area-inset-left, 0px);
+  font-size: 16px;
+}
+.is-drawer-open .stage-present-drawer-toggle { left: var(--fullscreen-drawer); }
+.stage-present-drawer {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--fullscreen-drawer);
+  background: var(--desk);
+  color: var(--paper);
+  border-right: 1px solid var(--brass);
+  z-index: 3;
+}
+.stage-present-drawer[hidden] { display: none; }
+.stage-present-drawer-toggle { z-index: 4; }
+.stage-present-drawer-body {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: max(var(--fullscreen-inset), env(safe-area-inset-top)) var(--fullscreen-inset) max(var(--fullscreen-inset), env(safe-area-inset-bottom));
+}
+.stage-present-drawer #stage-col-left { display: flex; flex-direction: column; width: auto; min-width: 0; }
+html.stage-pwa-tablet .stage-present-overlay { --fullscreen-drawer: min(380px, calc(100vw - 88px)); }
+html.stage-pwa-tablet .stage-present-drawer-body.is-tablet {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+  overflow: hidden;
+}
+html.stage-pwa-tablet .stage-present-drawer .stage-tablet-rail { overflow-y: auto; }
+html.stage-pwa-tablet .stage-present-drawer .stage-tablet-view-buttons,
+html.stage-pwa-tablet .stage-present-drawer .stage-tablet-rail-separator,
+html.stage-pwa-tablet .stage-present-drawer .stage-tablet-drawer-head button { display: none; }
 
 
 /* ============ iPad PWA専用ワークスペース ============
@@ -10331,6 +12503,9 @@ html.stage-pwa-tablet #view-stage {
     max(4px, env(safe-area-inset-left));
   overflow: hidden;
 }
+
+html.stage-pwa-tablet .stage-app-footer,
+html.stage-phone-viewer .stage-app-footer { display: none; }
 
 html.stage-pwa-tablet .stage-sketch {
   display: grid;
@@ -10367,6 +12542,10 @@ html.stage-pwa-tablet .stage-app-version {
   vertical-align: 0.12em;
 }
 
+html.stage-pwa-tablet .stage-release-open {
+  margin-left: 4px;
+}
+
 html.stage-pwa-tablet .stage-beta { font-size: 9px; }
 html.stage-pwa-tablet .stage-boundary-note { display: none; }
 
@@ -10385,6 +12564,7 @@ html.stage-pwa-tablet .stage-session-whoami {
 
 html.stage-pwa-tablet .stage-tablet-top-controls,
 html.stage-pwa-tablet .stage-tablet-top-controls .stage-tool-grid,
+html.stage-pwa-tablet .stage-tablet-top-controls .stage-undo-redo,
 html.stage-pwa-tablet .stage-tablet-top-controls .stage-history-actions {
   display: flex;
   align-items: center;
@@ -10415,9 +12595,21 @@ html.stage-pwa-tablet .stage-tablet-top-controls button::before {
 }
 
 /* タブレット版は data-tablet-icon の文字を ::before で出す作り。
-   道具と歯車はSVGの絵も持っているので、そのままだと二つ並んで出る。
-   こちらでは文字の方を採るので、SVGは隠す（44px角に二つは入らない）。 */
+   設定・全画面・書き出しは、iPadのフォントで記号が空欄にならないよう
+   本家と同じインラインSVGを使う。 */
 html.stage-pwa-tablet .stage-tablet-top-controls svg { display: none; }
+html.stage-pwa-tablet .stage-tablet-top-controls :is(.stage-gear-btn, #stage-present-btn, .stage-export-icon)::before { content: none; }
+html.stage-pwa-tablet .stage-tablet-top-controls :is(.stage-gear-btn, #stage-present-btn, .stage-export-icon) svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+html.stage-pwa-tablet .stage-tablet-top-controls :is(.stage-gear-btn, #stage-present-btn) > span[aria-hidden="true"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+html.stage-pwa-tablet .stage-tablet-top-controls #stage-present-btn .stage-control-label { display: none; }
 
 html.stage-pwa-tablet .stage-tablet-top-controls #stage-lang {
   flex-basis: 52px;
@@ -10446,7 +12638,7 @@ html.stage-pwa-tablet .stage-sketch-grid {
 }
 
 html.stage-pwa-tablet .stage-sketch-grid.is-tablet-drawer-open {
-  grid-template-columns: 58px clamp(280px, 32vw, 360px) minmax(0, 1fr);
+  grid-template-columns: 58px var(--stage-tablet-drawer-width, clamp(280px, 32vw, 360px)) minmax(0, 1fr);
 }
 
 html.stage-pwa-tablet .stage-toolbox,
@@ -10465,7 +12657,7 @@ html.stage-pwa-tablet .stage-tablet-rail {
   height: 100%;
   padding: 4px;
   border-right: 1px solid var(--line-dark);
-  background: #14110e;
+  background: var(--stage-ui-rail, #14110e);
   overflow: hidden;
 }
 
@@ -10542,7 +12734,7 @@ html.stage-pwa-tablet .stage-tablet-drawer {
   min-height: 0;
   height: 100%;
   border-right: 1px solid var(--line-dark);
-  background: #191512;
+  background: var(--stage-ui-desk, #191512);
   overflow: hidden;
 }
 
@@ -10666,7 +12858,7 @@ html.stage-pwa-tablet .stage-tablet-drawer .stage-scene-list {
   resize: none;
 }
 
-html.stage-pwa-tablet .stage-tablet-drawer .stage-scene-row:not(.is-open) { display: none; }
+html.stage-pwa-tablet .stage-tablet-drawer .stage-scene-row:not(.is-open):not(.is-cursor) { display: none; }
 
 html.stage-pwa-tablet .stage-tablet-display-menu {
   display: grid;
@@ -10676,6 +12868,21 @@ html.stage-pwa-tablet .stage-tablet-display-menu {
   margin: 0;
   padding: 0;
   border: 0;
+}
+
+html.stage-pwa-tablet .stage-tablet-display-menu .stage-anim-control,
+html.stage-pwa-tablet .stage-tablet-display-menu .stage-anim-toggle {
+  width: 100%;
+}
+
+html.stage-pwa-tablet .stage-tablet-display-menu .stage-anim-toggle { min-height: 44px; }
+
+html.stage-pwa-tablet .stage-tablet-display-menu .stage-anim-speed {
+  position: static;
+  display: flex;
+  width: 100%;
+  margin-top: 7px;
+  box-sizing: border-box;
 }
 
 html.stage-pwa-tablet .stage-center-bar { display: none; }
@@ -10790,7 +12997,8 @@ html.stage-pwa-tablet .stage-canvas-bar .stage-seat {
 }
 
 html.stage-pwa-tablet .stage-canvas-bar .stage-canvas-tool,
-html.stage-pwa-tablet .stage-canvas-bar .stage-canvas-toggle {
+html.stage-pwa-tablet .stage-canvas-bar .stage-canvas-toggle,
+html.stage-pwa-tablet .stage-canvas-bar .stage-multi-select-status {
   min-height: 44px;
   padding: 3px 5px;
   font-size: 9px;
@@ -10817,7 +13025,7 @@ html.stage-pwa-tablet .stage-pose-grid {
 
 @media (orientation: portrait) {
   html.stage-pwa-tablet .stage-sketch-grid.is-tablet-drawer-open {
-    grid-template-columns: 58px min(320px, 42vw) minmax(0, 1fr);
+    grid-template-columns: 58px var(--stage-tablet-drawer-width, min(320px, 42vw)) minmax(0, 1fr);
   }
 
   /* ドロワーを開くと図側は約380pxまで細くなる。平面図の11操作を
@@ -10879,7 +13087,7 @@ html.stage-phone-viewer body {
   position: fixed;
   inset: 0;
   padding: 0;
-  background: #0d0c0b;
+  background: rgb(var(--stage-ui-recess-rgb, 13, 12, 11));
 }
 
 html.stage-phone-viewer .spine,
@@ -10972,7 +13180,7 @@ html.stage-phone-viewer .stage-phone-memo {
   gap: 8px;
   padding: 7px 10px;
   border-top: 1px solid var(--line-dark);
-  background: #15120f;
+  background: var(--stage-ui-phone, #15120f);
 }
 
 html.stage-phone-viewer .stage-phone-memo-label {
@@ -10987,7 +13195,7 @@ html.stage-phone-viewer .stage-phone-memo-input {
   min-width: 0;
   padding: 4px 6px;
   border: 1px solid var(--line-dark);
-  background: #1a1612;
+  background: var(--stage-ui-raised, #1a1612);
   color: var(--milk);
   font-family: var(--sans);
   /* ★16px未満にしないこと。iOSは入力欄へ寄るとき画面ごと拡大する（2026-08-24 に対応済みの罠）。 */
@@ -11006,7 +13214,7 @@ html.stage-phone-viewer .stage-phone-title {
   gap: 7px;
   min-width: 0;
   padding: 0 12px;
-  background: #15120f;
+  background: var(--stage-ui-phone, #15120f);
 }
 
 html.stage-phone-viewer .stage-phone-title-name {
@@ -11086,7 +13294,7 @@ html.stage-phone-viewer .stage-phone-toolbar {
   grid-template-rows: 48px;
   min-width: 0;
   border-bottom: 1px solid var(--line-dark);
-  background: #15120f;
+  background: var(--stage-ui-phone, #15120f);
 }
 
 /* 音楽バーの見た目はここにあったが、楽曲をPC専用にして取り除いた（2026-08-24） */
@@ -11182,7 +13390,7 @@ html.stage-phone-viewer .stage-phone-info {
   min-width: 0;
   padding: 6px 8px;
   border-bottom: 1px solid var(--line-dark);
-  background: #1a1612;
+  background: var(--stage-ui-raised, #1a1612);
 }
 
 html.stage-phone-viewer .stage-phone-info[hidden],
@@ -11200,7 +13408,7 @@ html.stage-phone-viewer .stage-phone-source {
   gap: 6px;
   padding: 10px;
   border-bottom: 1px solid var(--line-dark);
-  background: #1a1612;
+  background: var(--stage-ui-raised, #1a1612);
 }
 
 html.stage-phone-viewer .stage-phone-source strong {
@@ -11229,7 +13437,7 @@ html.stage-phone-viewer .stage-phone-settings {
   gap: 6px;
   padding: 10px;
   border-bottom: 1px solid var(--line-dark);
-  background: #1a1612;
+  background: var(--stage-ui-raised, #1a1612);
 }
 
 html.stage-phone-viewer .stage-phone-settings strong {
@@ -11346,7 +13554,7 @@ html.stage-phone-viewer .stage-phone-scene-list {
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
-  background: #15120f;
+  background: var(--stage-ui-phone, #15120f);
   color: var(--milk);
 }
 
@@ -11360,7 +13568,7 @@ html.stage-phone-viewer .stage-phone-scene-list-head {
     max(10px, env(safe-area-inset-right)) 6px
     max(14px, env(safe-area-inset-left));
   border-bottom: 1px solid var(--line-dark);
-  background: #15120f;
+  background: var(--stage-ui-phone, #15120f);
 }
 
 html.stage-phone-viewer .stage-phone-scene-list-head strong {
@@ -11451,7 +13659,7 @@ html.stage-phone-viewer .stage-canvas-bar {
   min-height: 30px;
   padding: 6px 8px;
   border-bottom: 0;
-  background: linear-gradient(rgba(13,12,11,0.78), transparent);
+  background: linear-gradient(rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.78), transparent);
   pointer-events: none;
 }
 
@@ -11588,7 +13796,7 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
     left: max(0px, env(safe-area-inset-left));
     height: 32px;
     padding: 8px 42px 0;
-    background: linear-gradient(rgba(13,12,11,0.72), transparent);
+    background: linear-gradient(rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.72), transparent);
     pointer-events: auto;
   }
 
@@ -11678,7 +13886,288 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
   color: var(--milk);
 }
 
-.stage-scene-grid-open { grid-column: 1 / -1; }
+.stage-scene-grid-open { grid-column: auto; }
+
+/* 次のシーンは、空で始めるか、現在の配置から必要なものだけを受け渡す。 */
+.stage-scene-create-body {
+  display: grid;
+  gap: 14px;
+}
+
+.stage-scene-create-source {
+  margin: 0;
+  color: var(--milk-dim);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.stage-scene-create-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.stage-scene-create-modes legend {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin-bottom: 2px;
+  color: var(--milk);
+  font-size: 11px;
+}
+
+.stage-scene-create-mode {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  min-height: 76px;
+  padding: 11px;
+  border: 1px solid var(--line-dark);
+  background: rgba(var(--stage-ui-desk-rgb, 25, 21, 18), 0.42);
+  color: var(--milk);
+  cursor: pointer;
+}
+
+.stage-scene-create-mode:hover,
+.stage-scene-create-mode:focus-within { border-color: var(--brass); }
+
+.stage-scene-create-mode:has(input:checked) {
+  border-color: var(--rust);
+  background: rgba(168, 75, 38, 0.12);
+}
+
+.stage-scene-create-mode input { margin-top: 3px; }
+
+.stage-scene-create-mode span,
+.stage-scene-create-item span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.stage-scene-create-mode strong,
+.stage-scene-create-item strong { font-size: 11.5px; font-weight: 500; }
+
+.stage-scene-create-mode small,
+.stage-scene-create-item small,
+.stage-scene-create-group-head small {
+  color: var(--milk-dim);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.stage-scene-create-inherit {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  padding: 11px;
+  border: 1px solid var(--line-dark);
+  background: rgba(var(--stage-ui-desk-rgb, 25, 21, 18), 0.3);
+}
+
+.stage-scene-create-inherit[hidden] { display: none; }
+
+.stage-scene-create-inherit-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stage-scene-create-inherit-head h3 {
+  margin: 0;
+  color: var(--milk);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.stage-scene-create-inherit-head span { color: var(--milk-dim); font-size: 10px; }
+
+.stage-scene-create-route-option {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 7px 9px;
+  color: var(--milk);
+  border: 1px solid rgba(240, 231, 214, 0.1);
+  background: rgba(var(--stage-ui-grid-rgb, 64, 54, 45), 0.2);
+  font-size: 11px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.stage-scene-create-route-option:hover,
+.stage-scene-create-route-option:focus-within {
+  border-color: rgba(211, 172, 89, 0.48);
+  background: rgba(211, 172, 89, 0.05);
+}
+
+.stage-scene-create-bulk {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.stage-scene-create-bulk button { min-height: 44px; margin: 0; }
+
+.stage-scene-create-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 8px;
+  max-height: min(42vh, 360px);
+  overflow-y: auto;
+  padding-right: 3px;
+}
+
+.stage-scene-create-group {
+  min-width: 0;
+  border: 1px solid rgba(240, 231, 214, 0.1);
+}
+
+.stage-scene-create-group-head,
+.stage-scene-create-item {
+  display: grid;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 7px 9px;
+  color: var(--milk);
+  cursor: pointer;
+}
+
+.stage-scene-create-group-head {
+  grid-template-columns: 22px 30px minmax(0, 1fr) auto;
+  border-bottom: 1px solid rgba(240, 231, 214, 0.1);
+  background: rgba(var(--stage-ui-grid-rgb, 64, 54, 45), 0.26);
+}
+
+.stage-scene-create-group-head strong { font-size: 11px; font-weight: 500; }
+
+.stage-scene-create-item { grid-template-columns: 22px 24px minmax(0, 1fr); }
+
+.stage-scene-create-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: var(--brass);
+  border: 1px solid rgba(211, 172, 89, 0.22);
+  background: rgba(211, 172, 89, 0.05);
+}
+
+.stage-scene-create-item .stage-scene-create-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--milk-dim);
+  border-color: rgba(240, 231, 214, 0.12);
+  background: transparent;
+}
+
+.stage-scene-create-icon svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.stage-scene-create-item .stage-scene-create-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.stage-scene-create-item > span:last-child {
+  display: grid;
+  min-width: 0;
+}
+
+.stage-scene-create-item + .stage-scene-create-item {
+  border-top: 1px solid rgba(240, 231, 214, 0.07);
+}
+
+.stage-scene-create-group-head:hover,
+.stage-scene-create-item:hover { background: rgba(211, 172, 89, 0.06); }
+
+.stage-scene-create-actions { padding-top: 2px; }
+
+.stage-scene-create-actions > button {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* 削除は小さな×から入るため、実行前に対象と不可逆性を一段分けて確認する。 */
+.stage-scene-delete-body {
+  display: grid;
+  gap: 14px;
+}
+
+.stage-scene-delete-message {
+  margin: 0;
+  color: var(--milk);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.stage-scene-delete-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid rgba(var(--danger-rgb), 0.55);
+  color: var(--danger);
+  font-size: 11px;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.stage-scene-delete-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--danger);
+}
+
+.stage-scene-delete-actions { padding-top: 2px; }
+
+.stage-scene-delete-actions > button {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  font-size: 13px;
+  text-align: center;
+}
+
+#stage-scene-delete-submit {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+#stage-scene-delete-submit:hover:not(:disabled),
+#stage-scene-delete-submit:focus-visible:not(:disabled) {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: rgba(var(--danger-rgb), 0.14);
+}
+
+@media (max-width: 600px) {
+  .stage-modal.stage-scene-create-modal { width: calc(100vw - 12px); }
+  .stage-modal.stage-scene-delete-modal { width: calc(100vw - 12px); }
+  .stage-scene-create-modes { grid-template-columns: minmax(0, 1fr); }
+  .stage-scene-create-list { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* シーンを見渡す窓は広く使う。1180pxでは30場面級のショーで
    一覧の意味（全体を一目で掴む）が薄れた（2026-08-16 本人要望）。
@@ -11769,7 +14258,7 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
   overflow: hidden;
   border: 1px solid var(--line-dark);
   border-radius: 3px;
-  background: rgba(64, 54, 45, 0.34);
+  background: rgba(var(--stage-ui-grid-rgb, 64, 54, 45), 0.34);
   color: var(--milk);
   text-align: left;
 }
@@ -11788,7 +14277,7 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
   overflow: hidden;
   border: 1px solid rgba(240, 231, 214, 0.08);
   border-radius: 2px;
-  background: #0d0c0b;
+  background: rgb(var(--stage-ui-recess-rgb, 13, 12, 11));
 }
 
 .stage-scene-grid-thumb img {
@@ -11841,10 +14330,69 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
 /* ===== 舞台スケッチ: セクションの色・一括開閉・後からまとめる =====
    字下げの空白だけでは親が途切れて見えるため、14pxごとの溝へ親の色を通す。 */
 .stage-scene-head {
-  /* 取っ手・名前の後ろへ、深さ2個・鉛筆・まとめるを一列で置く。
-     色溝は行の左端へ敷くので、ここには持たない。 */
-  grid-template-columns: 16px minmax(0, 1fr) repeat(4, auto);
+  /* 階層・名前変更・まとめる操作は一つの補助メニューへ収納する。 */
+  grid-template-columns: 16px minmax(0, 1fr) auto;
 }
+
+.stage-scene-more { position: relative; }
+
+.stage-scene-more[open] {
+  grid-column: 2 / -1;
+  display: grid;
+  width: 100%;
+}
+
+.stage-scene-more > summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  border: 1px solid transparent;
+  color: rgba(240, 231, 214, 0.58);
+  cursor: pointer;
+  list-style: none;
+  justify-self: end;
+}
+
+.stage-scene-more > summary::-webkit-details-marker { display: none; }
+.stage-scene-more > summary:hover,
+.stage-scene-more > summary:focus-visible,
+.stage-scene-more[open] > summary {
+  color: var(--brass);
+  border-color: rgba(211, 172, 89, 0.45);
+  outline: none;
+}
+
+.stage-scene-more-menu {
+  display: grid;
+  width: min(260px, 100%);
+  margin-top: 4px;
+  justify-self: end;
+  padding: 5px;
+  border: 1px solid var(--line-dark);
+  background: var(--desk-2);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.42);
+}
+
+.stage-scene-more-menu button {
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 0;
+  background: none;
+  color: var(--milk-dim);
+  font-size: 10.5px;
+  text-align: left;
+}
+
+.stage-scene-more-menu button:hover:not(:disabled),
+.stage-scene-more-menu button:focus-visible:not(:disabled) {
+  background: rgba(211, 172, 89, 0.08);
+  color: var(--milk);
+  outline: none;
+}
+
+.stage-scene-more-menu button:disabled { opacity: 0.32; }
 
 /* 行の左に溝を空け、そこへバーを行の高さいっぱいに敷く。
    見出しの中の一列にすると、開いている背の高い行で線が途中で切れる。 */
@@ -11926,9 +14474,8 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
   background: rgba(211, 172, 89, 0.05);
 }
 
-/* 一覧と全開閉を同じ段へ置き、その下に従来の転換設定を保つ。 */
-.stage-scene-grid-open,
-#stage-scene-fold-all { grid-column: auto; }
+/* 一覧は作成アイコンと同じ小さな操作帯へ置く。 */
+.stage-scene-grid-open { grid-column: auto; }
 
 .stage-scene-grid-section {
   padding: 0;
@@ -12018,7 +14565,7 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
   min-height: 27px;
   padding: 3px 8px;
   border: 1px solid var(--line-dark);
-  background: rgba(13, 12, 11, 0.18);
+  background: rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.18);
   color: var(--milk-dim);
   font-size: 9.5px;
   line-height: 1;
@@ -12031,6 +14578,8 @@ html.stage-phone-viewer .stage-note-editor-bar .btn-quiet { min-height: 44px; mi
 .stage-arrow-clear:hover { color: var(--milk); border-color: var(--brass); }
 
 .stage-arrow-choice button[aria-pressed="true"] {
+  position: relative;
+  z-index: 1;
   color: var(--paper);
   border-color: var(--rust);
   background: rgba(168, 75, 38, 0.24);
@@ -12120,7 +14669,7 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   color: #e8e2d4;
-  background: #100d0b;
+  background: var(--stage-ui-model-base, #100d0b);
   font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
 }
 .stage-model-builder[hidden] { display: none; }
@@ -12135,7 +14684,7 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
   gap: 20px;
   padding: 10px 16px;
   border-bottom: 1px solid rgba(232,226,212,.2);
-  background: #211a15;
+  background: var(--stage-ui-model-head, #211a15);
 }
 .stage-model-builder-head h2 { margin: 0; font-size: 18px; }
 .stage-model-builder-close,
@@ -12145,7 +14694,7 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
   border: 1px solid rgba(232,226,212,.24);
   border-radius: 5px;
   color: inherit;
-  background: #2a221c;
+  background: var(--stage-ui-model-control, #2a221c);
   cursor: pointer;
 }
 .stage-model-builder-close { padding: 6px 12px; }
@@ -12156,7 +14705,7 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
 }
 .stage-model-builder-side,
 .stage-model-builder-preview { min-width: 0; min-height: 0; padding: 12px; }
-.stage-model-builder-side { overflow: auto; background: #1a1512; }
+.stage-model-builder-side { overflow: auto; background: var(--stage-ui-model-side, #1a1512); }
 .stage-model-builder-side.is-left { border-right: 1px solid rgba(232,226,212,.15); }
 .stage-model-builder-side.is-right { border-left: 1px solid rgba(232,226,212,.15); }
 .stage-model-builder h3 { margin: 0 0 10px; font-size: 15px; }
@@ -12184,7 +14733,7 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
   border: 1px solid rgba(232,226,212,.25);
   border-radius: 4px;
   color: #efe7d6;
-  background: #100d0b;
+  background: var(--stage-ui-model-base, #100d0b);
 }
 .stage-model-controls h4 { margin: 10px 0 2px; color: #d3ac59; font-size: 12px; }
 .stage-model-controls i { color: rgba(232,226,212,.62); font-size: 11px; font-style: normal; }
@@ -12300,7 +14849,7 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
   border: 1px solid var(--stage-session-pointer-color, #d3ac59);
   border-radius: 3px;
   color: var(--paper);
-  background: rgba(20,17,14,.9);
+  background: rgba(var(--stage-ui-seat-rgb, 20, 17, 14), .9);
   font-size: 10px;
   line-height: 1.2;
   white-space: nowrap;
@@ -12309,13 +14858,13 @@ html.stage-pwa-tablet .stage-arrow-color input[type="color"] { min-height: 40px;
 .stage-modal.stage-session-name-modal { width: min(360px, calc(100vw - 40px)); }
 .stage-session-name-form { display: grid; gap: 12px; }
 
-/* ゲストの目印。題（舞台スケッチ v0.3.4 β版）の右に並べる。
+/* ゲストの目印。題（舞台スケッチ v0.3.6 β版）の右に並べる。
    ★丸い縁・影・独自の背景を持たせないこと。この画面の小さな標し
      （キッカー・版・β版・保存の注意）はどれも縁も影も持たず、
      小さなサンセリフ＋広い字間だけで揃えてある。ピル型にすると
      ここだけ浮く（2026-08-26 本人指摘で固定表示のピルから改めた）。
    左の2pxの線は「読ませたいが騒がせたくないもの」に使う既存の作法
-   （.stage-storage-caution と同じ）。動かない事実である v0.3.4・β版 は
+   （.stage-storage-caution と同じ）。動かない事実である v0.3.6・β版 は
    線を持たないので、線の有無で「いまの状態」と読み分けられる。
    色は真鍮＝共有セッションの色（.stage-session-guest-note と揃える）。 */
 .stage-session-guest-badge {
@@ -12393,7 +14942,7 @@ body.stage-session-guest .stage-panel[data-panel="background"],
 body.stage-session-guest .stage-panel[data-panel="inspector"],
 body.stage-session-guest .stage-panel[data-panel="ask"],
 body.stage-session-guest .stage-panel[data-panel="save"],
-body.stage-session-guest .stage-scene-actions,
+body.stage-session-guest #stage-scene-add,
 body.stage-session-guest .stage-tablet-rail-button[data-tablet-group="show"],
 body.stage-session-guest .stage-tablet-rail-button[data-tablet-group="cast"],
 body.stage-session-guest .stage-tablet-rail-button[data-tablet-group="look"],
@@ -12465,7 +15014,7 @@ body.stage-session-guest .stage-inspector {
    :not() で外さないと、こちらが後勝ちして、そちらのレイアウトを壊す
    （同じ詳細度で、この規則のほうがファイルの後ろにあるため。2026-08-26 検証で判明）。 */
 html:not(.stage-pwa-tablet):not(.stage-phone-viewer) body.stage-session-guest .stage-sketch-grid {
-  grid-template-columns: 268px minmax(420px, 1fr);
+  grid-template-columns: var(--stage-left-width, 268px) minmax(420px, 1fr);
   grid-template-areas: "tools board";
 }
 
@@ -12493,7 +15042,7 @@ body.stage-session-guest #stage-scene-list {
   padding: 10px 22px;
   border: 2px solid var(--stage-session-activity-color, #d3ac59);
   border-radius: 999px;
-  background: rgba(20, 17, 14, 0.94);
+  background: rgba(var(--stage-ui-seat-rgb, 20, 17, 14), 0.94);
   color: var(--paper, #f2e8d8);
   font-size: 17px;
   font-weight: 700;
@@ -12776,8 +15325,10 @@ body.stage-session-guest #stage-scene-list {
   .stage-scene-outdent,
   .stage-scene-indent,
   .stage-scene-pen,
-  .stage-scene-wrap {
+  .stage-scene-wrap,
+  .stage-scene-more > summary {
     min-width: 44px;
+    min-height: 44px;
   }
 
   /* 表示切替のチェックボックス行。ラベルごと押せるが高さ12pxで狙えなかった */
@@ -12798,4 +15349,933 @@ body.stage-session-guest #stage-scene-list {
   height: min(72vh, 760px);
   border: 0;
   background: var(--paper);
+}
+
+/* Device-local skin chooser in Preferences. Sample colors stay fixed for comparison. */
+.stage-pref-skin { padding: 12px 2px; border-bottom: 1px solid var(--line-dark); }
+.stage-pref-skin .stage-pref-name { font-weight: 400; }
+.stage-pref-skin-hint { margin: 0 0 8px; color: var(--milk-dim); font-size: 12px; }
+.stage-pref-skin-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.stage-pref-skin-option {
+  flex: 1 1 170px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 12px;
+  background: var(--desk);
+  border: 1px solid var(--line-dark);
+  border-radius: 3px;
+  color: var(--milk);
+  font: 13px/1.5 var(--sans);
+  text-align: left;
+  cursor: pointer;
+}
+.stage-pref-skin-option > span:last-child { white-space: nowrap; }
+.stage-pref-skin-option::after { content: "✓"; margin-left: auto; visibility: hidden; }
+.stage-pref-skin-option[aria-pressed="true"] { border-color: var(--milk-dim); }
+.stage-pref-skin-option[aria-pressed="true"]::after { visibility: visible; }
+.stage-pref-skin-option:hover { border-color: var(--milk); }
+.stage-pref-skin-option:focus-visible { outline: 2px solid var(--rust-ink); outline-offset: 2px; }
+.stage-pref-skin-swatch {
+  --skin-sample-base: #191512;
+  --skin-sample-panel: #282119;
+  flex: 0 0 32px;
+  height: 24px;
+  border: 1px solid var(--milk-dim);
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--skin-sample-base) 50%, var(--skin-sample-panel) 50%);
+}
+[data-stage-ui-skin="blue-black"] .stage-pref-skin-swatch {
+  --skin-sample-base: #141619;
+  --skin-sample-panel: #23272c;
+}
+
+/* パネル列の境界を掴む。取っ手は列間に置き、入力欄の上を覆わない。 */
+.stage-col, .stage-tablet-drawer { position: relative; }
+.stage-panel-width-handle {
+  --panel-width-hit: 18px;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: calc(-1 * var(--panel-width-hit));
+  width: var(--panel-width-hit);
+  min-height: 44px;
+  z-index: 5;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+.stage-panel-width-handle::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 calc(50% - 1px);
+  width: 2px;
+  background: var(--line-dark);
+}
+.stage-panel-width-handle > span {
+  display: block;
+  position: sticky;
+  top: 35vh;
+  width: 4px;
+  height: 44px;
+  margin: 44px auto 0;
+  background: var(--brass);
+}
+.stage-panel-width-handle[data-panel-width="right"] { right: auto; left: calc(-1 * var(--panel-width-hit)); }
+.stage-panel-width-handle:is(:hover, :focus-visible)::before { background: var(--brass); }
+.stage-panel-width-handle:focus-visible { outline: 2px solid var(--paper); outline-offset: -2px; }
+.stage-panel-width-handle:is([data-panel-width="tablet"], [data-panel-width="fullscreen"]) {
+  --panel-width-hit: 12px;
+  right: 0;
+}
+.stage-present-drawer .stage-panel-width-handle:not([data-panel-width="fullscreen"]) { display: none; }
+.stage-panel-width-handle[data-panel-width="fullscreen"] { z-index: 20; }
+body.is-panel-resizing { cursor: col-resize; user-select: none; -webkit-user-select: none; }
+body.is-panel-resizing .stage-sketch-grid { transition: none; }
+@media (max-width: 1119px) {
+  .stage-panel-width-handle:is([data-panel-width="left"], [data-panel-width="right"]) { display: none; }
+}
+
+/* ============ 舞台編集 / タイムライン表示モード ============
+   同じ舞台編集DOMを二つのモードで共有する。パネルを複製しないため、左右位置・
+   順番・開閉は stage-sketch.js の既存レイアウト状態をそのまま継承する。 */
+:root {
+  --stage-timeline-height: 360px;
+  --stage-timeline-toolbar-height: 104px;
+  --stage-timeline-resize-hit: 12px;
+  --stage-timeline-label-width: 156px;
+  --stage-timeline-panel: #29231e;
+  --stage-timeline-text: #efe7d6;
+  --stage-timeline-muted: #cbbba4;
+  --stage-timeline-accent: #d3ac59;
+  --stage-timeline-transition: #a8bf8a;
+  --stage-timeline-line: #786956;
+  --stage-timeline-cue-light: #d3ac59;
+  --stage-timeline-cue-music: #b85a32;
+  --stage-timeline-cue-dialogue: #a8bf8a;
+}
+
+.stage-workspace-tabs {
+  display: flex;
+  align-items: end;
+  gap: 4px;
+  min-height: 44px;
+  margin-left: 16px;
+}
+
+.stage-brand-block {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.stage-brand-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.stage-workspace-tab {
+  position: relative;
+  min-height: 44px;
+  padding: 0 18px;
+  color: var(--stage-timeline-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: 4px 4px 0 0;
+}
+
+.stage-workspace-tab:hover { color: var(--stage-timeline-text); }
+
+.stage-workspace-tab.is-active {
+  color: var(--stage-timeline-text);
+  font-weight: 700;
+  background: rgba(211, 172, 89, 0.08);
+}
+
+.stage-workspace-tab.is-active::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  bottom: 0;
+  left: 8px;
+  height: 2px;
+  background: var(--stage-timeline-accent);
+}
+
+@media (max-width: 1180px) {
+  .stage-sketch-head { flex-wrap: wrap; }
+  .stage-brand-block { flex: 1 1 520px; }
+}
+
+@media (max-width: 720px) {
+  .stage-brand-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  .stage-workspace-tabs {
+    width: 100%;
+    margin: 4px 0 0;
+  }
+}
+
+body.stage-timeline-mode:not(.stage-fullscreen) {
+  overflow: hidden;
+}
+
+body.stage-timeline-mode:not(.stage-fullscreen) #view-stage {
+  height: calc(100dvh - var(--stage-timeline-height));
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 32px;
+}
+
+body.stage-timeline-mode .stage-canvas-close { display: none; }
+
+.stage-timeline-panel {
+  position: fixed;
+  z-index: 46;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  height: calc(var(--stage-timeline-height) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  overflow: hidden;
+  color: var(--stage-timeline-text);
+  background: var(--stage-timeline-panel);
+  border-top: 1px solid var(--stage-timeline-accent);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.24);
+}
+
+.stage-timeline-resize {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  flex: 0 0 var(--stage-timeline-resize-hit);
+  height: var(--stage-timeline-resize-hit);
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.stage-timeline-resize::before {
+  content: "";
+  position: absolute;
+  inset: -4px 0;
+}
+
+.stage-timeline-resize span {
+  width: 52px;
+  height: 4px;
+  background: var(--stage-timeline-line);
+  border-radius: 999px;
+}
+
+.stage-timeline-resize:is(:hover, :focus-visible) span { background: var(--stage-timeline-accent); }
+.stage-timeline-resize:focus-visible { outline: 2px solid var(--stage-timeline-accent); outline-offset: -2px; }
+body.is-timeline-resizing { cursor: row-resize; user-select: none; -webkit-user-select: none; }
+
+.stage-timeline-toolbar {
+  display: block;
+  flex: 0 0 auto;
+  min-width: 0;
+  border-bottom: 1px solid var(--stage-timeline-line);
+}
+
+.stage-timeline-menu-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 4px 8px;
+}
+
+.stage-timeline-menu-strip.is-source { border-bottom: 1px solid rgba(120, 105, 86, 0.58); }
+
+.stage-timeline-menu-strip button,
+.stage-timeline-menu-strip input,
+.stage-timeline-menu-strip select {
+  min-height: 44px;
+}
+
+.stage-timeline-menu-strip button {
+  flex: 0 0 auto;
+  padding: 0 12px;
+  color: var(--stage-timeline-text);
+  border: 1px solid var(--stage-timeline-line);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.stage-timeline-menu-strip button:hover:not(:disabled) { border-color: var(--stage-timeline-accent); }
+.stage-timeline-menu-strip button:disabled { opacity: 0.4; cursor: default; }
+.stage-timeline-menu-strip button[aria-pressed="true"] { border-color: var(--stage-timeline-accent); }
+.stage-timeline-square { flex-basis: 44px !important; width: 44px; padding: 0 !important; }
+.stage-timeline-square svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.stage-timeline-square .stage-timeline-close-icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.5;
+}
+.stage-timeline-transport-button {
+  display: inline-grid;
+  place-items: center;
+  line-height: 0;
+}
+.stage-timeline-transport-icon .stage-timeline-solid {
+  fill: currentColor;
+  stroke: none;
+}
+.stage-timeline-play-icon .stage-timeline-pause-glyph { display: none; }
+.stage-timeline-play[aria-pressed="true"] .stage-timeline-play-glyph { display: none; }
+.stage-timeline-play[aria-pressed="true"] .stage-timeline-pause-glyph { display: inline; }
+#stage-timeline-metronome .stage-timeline-metronome-icon {
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.9;
+}
+#stage-timeline-song-delete {
+  display: inline-grid;
+  place-items: center;
+  line-height: 0;
+}
+.stage-timeline-menu-spacer { flex: 0 0 8px; min-width: 8px; }
+.stage-timeline-menu-strip.is-source {
+  position: relative;
+  padding-right: 60px;
+}
+.stage-timeline-menu-strip.is-source .stage-timeline-menu-spacer { flex: 1 1 8px; }
+
+.stage-timeline-settings {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+}
+
+.stage-timeline-settings-trigger {
+  display: inline-grid;
+  place-items: center;
+  line-height: 0;
+}
+
+.stage-timeline-settings-trigger[aria-expanded="true"] {
+  color: var(--stage-timeline-text);
+  background: rgba(211, 172, 89, 0.08);
+  border-color: var(--stage-timeline-accent);
+}
+
+.stage-timeline-settings-trigger svg { width: 20px; height: 20px; }
+
+.stage-timeline-settings-panel {
+  position: absolute;
+  z-index: 24;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 260px;
+  max-height: calc(var(--stage-timeline-height) - 60px);
+  padding: 12px;
+  overflow-y: auto;
+  color: var(--stage-timeline-text);
+  background: var(--stage-timeline-panel);
+  border: 1px solid var(--stage-timeline-line);
+  border-radius: 4px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38);
+}
+
+.stage-timeline-settings-panel header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  min-height: 34px;
+  border-bottom: 1px solid rgba(120, 105, 86, 0.58);
+}
+
+.stage-timeline-settings-panel header strong { font-size: 13px; }
+.stage-timeline-settings-panel header span { color: var(--stage-timeline-muted); font-size: 11px; }
+.stage-timeline-settings-panel label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  border-bottom: 1px solid rgba(120, 105, 86, 0.34);
+  cursor: pointer;
+}
+.stage-timeline-settings-panel label:last-child { border-bottom: 0; }
+.stage-timeline-settings-panel input {
+  width: 16px;
+  min-height: 16px !important;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--stage-timeline-accent);
+}
+.stage-timeline-settings-panel label span { font-size: 12px; }
+
+.stage-timeline-play {
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--desk);
+  background: var(--stage-timeline-accent);
+  border: 1px solid var(--stage-timeline-accent);
+  border-radius: 4px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.stage-timeline-play:disabled { opacity: 0.42; cursor: default; }
+
+.stage-timeline-heading {
+  display: grid;
+  flex: 0 0 180px;
+  min-width: 180px;
+  line-height: 1.3;
+}
+
+.stage-timeline-heading strong,
+.stage-timeline-heading span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-timeline-heading strong { font-size: 14px; }
+.stage-timeline-heading span { color: var(--stage-timeline-muted); font-size: 11px; }
+
+.stage-timeline-section-duration {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  color: var(--stage-timeline-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.stage-timeline-section-duration label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stage-timeline-section-duration input[type="number"] {
+  width: 78px;
+  min-height: 44px;
+  padding: 4px 6px;
+  color: var(--stage-timeline-text);
+  background: var(--desk);
+  border: 1px solid var(--stage-timeline-line);
+  border-radius: 4px;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  cursor: ew-resize;
+  appearance: textfield;
+}
+
+.stage-timeline-section-duration input[type="number"]::-webkit-inner-spin-button,
+.stage-timeline-section-duration input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.stage-timeline-section-duration input.is-scrubbing { border-color: var(--stage-timeline-accent); cursor: grabbing; }
+
+.stage-timeline-section-duration input:disabled { opacity: 0.4; }
+
+.stage-timeline-song,
+.stage-timeline-tempo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--stage-timeline-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.stage-timeline-song select {
+  width: min(220px, 20vw);
+  min-height: 44px;
+  padding: 4px 28px 4px 8px;
+  color: var(--stage-timeline-text);
+  background: var(--desk);
+  border: 1px solid var(--stage-timeline-line);
+  border-radius: 4px;
+}
+
+.stage-timeline-unit {
+  display: flex;
+  flex: 0 0 auto;
+  border: 1px solid var(--stage-timeline-line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.stage-timeline-unit button {
+  min-width: 74px;
+  min-height: 42px;
+  padding: 0 10px;
+  color: var(--stage-timeline-muted);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.stage-timeline-unit button[data-unit="count"] {
+  color: var(--desk);
+  font-weight: 700;
+  background: var(--stage-timeline-accent);
+}
+
+.stage-timeline-track-name {
+  flex: 0 1 200px;
+  min-width: 92px;
+  overflow: hidden;
+  color: var(--stage-timeline-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-timeline-tempo input {
+  width: 68px;
+  padding-inline: 8px;
+  color: var(--stage-timeline-text);
+  background: var(--desk);
+  border: 1px solid var(--stage-timeline-line);
+  border-radius: 4px;
+}
+
+.stage-timeline-tempo span { flex: 0 0 auto; }
+.stage-timeline-record { color: #fff4e8 !important; background: var(--rust-ink); border-color: var(--rust-ink) !important; }
+.stage-timeline-toolbar output {
+  flex: 0 0 72px;
+  color: var(--stage-timeline-text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.stage-timeline-viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior-x: contain;
+  background: var(--desk);
+}
+
+.stage-timeline-surface {
+  --stage-timeline-width: 960px;
+  --stage-timeline-playhead-x: 0px;
+  position: relative;
+  width: calc(var(--stage-timeline-label-width) + var(--stage-timeline-width));
+  min-width: 100%;
+}
+
+.stage-timeline-loop-range {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--stage-timeline-label-width) + var(--stage-timeline-loop-start-x, 0px));
+  width: var(--stage-timeline-loop-width, 2px);
+  box-sizing: border-box;
+  background: rgba(211, 172, 89, 0.08);
+  border-right: 2px solid rgba(211, 172, 89, 0.76);
+  border-left: 2px solid rgba(211, 172, 89, 0.76);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.stage-timeline-loop-range[hidden] { display: none; }
+
+.stage-timeline-loop-marker {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  display: grid;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  place-items: center;
+  color: var(--desk);
+  background: var(--stage-timeline-accent);
+  border: 1px solid rgba(25, 21, 18, 0.72);
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.28);
+}
+
+.stage-timeline-loop-marker.is-a { left: 2px; }
+.stage-timeline-loop-marker.is-b { right: 2px; }
+
+.stage-timeline-loop-range.is-active {
+  background: rgba(211, 172, 89, 0.18);
+  border-color: var(--stage-timeline-accent);
+  opacity: 1;
+  box-shadow: inset 0 0 18px rgba(211, 172, 89, 0.2), 0 0 12px rgba(211, 172, 89, 0.26);
+  animation: stage-timeline-loop-glow 2.2s ease-in-out infinite;
+}
+
+@keyframes stage-timeline-loop-glow {
+  0%, 100% { background-color: rgba(211, 172, 89, 0.14); box-shadow: inset 0 0 12px rgba(211, 172, 89, 0.14), 0 0 8px rgba(211, 172, 89, 0.2); }
+  50% { background-color: rgba(211, 172, 89, 0.24); box-shadow: inset 0 0 22px rgba(211, 172, 89, 0.26), 0 0 16px rgba(211, 172, 89, 0.34); }
+}
+
+.stage-timeline-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--stage-timeline-label-width) var(--stage-timeline-width);
+  width: max-content;
+  min-width: 100%;
+  min-height: 28px;
+  height: var(--stage-timeline-row-height, 42px);
+  border-bottom: 1px solid rgba(120, 105, 86, 0.58);
+}
+
+.stage-timeline-row.is-ruler { --stage-timeline-row-height: 32px; }
+.stage-timeline-row.is-count-anchors { --stage-timeline-row-height: 42px; }
+.stage-timeline-row.is-audio { --stage-timeline-row-height: 40px; }
+.stage-timeline-row.is-scenes { --stage-timeline-row-height: 52px; }
+.stage-timeline-row.is-transitions { --stage-timeline-row-height: 48px; }
+.stage-timeline-row.is-cues { --stage-timeline-row-height: 42px; }
+.stage-timeline-row.is-reordering { z-index: 7; opacity: 0.66; }
+.stage-timeline-row[hidden] { display: none; }
+
+.stage-timeline-row-label {
+  position: sticky;
+  z-index: 5;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 4px;
+  color: var(--stage-timeline-muted);
+  background: var(--stage-timeline-panel);
+  border-right: 1px solid var(--stage-timeline-line);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.stage-timeline-row-handle {
+  display: inline-grid;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 100%;
+  min-height: 28px;
+  padding: 0;
+  place-items: center;
+  color: var(--stage-timeline-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 2px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.stage-timeline-row-handle:hover,
+.stage-timeline-row-handle:focus-visible { color: var(--stage-timeline-text); background: rgba(239, 231, 214, 0.06); }
+.stage-timeline-row-handle:active { cursor: grabbing; }
+.stage-timeline-row-handle svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; }
+
+.stage-timeline-row-label > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-timeline-row-add {
+  display: inline-grid;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  margin-left: auto;
+  padding: 0;
+  place-items: center;
+  color: var(--stage-timeline-muted);
+  background: transparent;
+  border: 1px solid var(--stage-timeline-line);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.stage-timeline-row-add:hover,
+.stage-timeline-row-add:focus-visible {
+  color: var(--stage-timeline-text);
+  background: rgba(239, 231, 214, 0.06);
+  border-color: var(--stage-timeline-accent);
+}
+
+.stage-timeline-row-add:disabled { opacity: 0.42; cursor: default; }
+.stage-timeline-row-add svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+
+.stage-timeline-row-label .stage-timeline-row-resize {
+  position: absolute;
+  z-index: 8;
+  bottom: -3px;
+  left: 0;
+  right: 0;
+  height: 7px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.stage-timeline-row-label .stage-timeline-row-resize::after {
+  position: absolute;
+  right: 8px;
+  bottom: 2px;
+  left: 8px;
+  height: 1px;
+  content: "";
+  background: transparent;
+}
+
+.stage-timeline-row-label .stage-timeline-row-resize:hover::after,
+.stage-timeline-row-label .stage-timeline-row-resize:focus-visible::after { background: var(--stage-timeline-accent); }
+
+.stage-timeline-row-content {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  background-image: linear-gradient(to right, rgba(120, 105, 86, 0.22) 1px, transparent 1px);
+  background-size: var(--stage-timeline-grid, 96px) 100%;
+}
+
+.stage-timeline-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(203, 187, 164, 0.42);
+  pointer-events: none;
+}
+
+.stage-timeline-tick span {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  color: var(--stage-timeline-muted);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.stage-timeline-anchor-mark {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  align-items: center;
+  color: var(--stage-timeline-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 2px;
+  font: inherit;
+  text-align: left;
+  transform: translate(-16px, -50%);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.stage-timeline-anchor-mark:hover,
+.stage-timeline-anchor-mark:focus-visible { background: rgba(239, 231, 214, 0.06); }
+.stage-timeline-anchor-mark:focus-visible { outline: 2px solid var(--stage-timeline-accent); outline-offset: 1px; }
+.stage-timeline-anchor-mark.is-start.is-unset { color: var(--rust); }
+.stage-timeline-anchor-mark.is-locked { color: #b98b42; }
+.stage-timeline-anchor-mark.is-open { color: var(--stage-timeline-accent); cursor: ew-resize; }
+.stage-timeline-anchor-mark:disabled { opacity: 0.5; cursor: default; }
+
+.stage-timeline-anchor-icon {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin-left: 7px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.stage-timeline-anchor-icon .stage-timeline-anchor-lock-body { fill: currentColor; stroke: none; }
+.stage-timeline-anchor-icon .stage-timeline-anchor-lock-hole { fill: var(--stage-timeline-panel); stroke: none; }
+
+.stage-timeline-anchor-caption {
+  max-width: var(--stage-timeline-anchor-caption-width, 120px);
+  margin-left: 5px;
+  overflow: hidden;
+  color: currentColor;
+  font-size: 11px;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-timeline-anchor-mark.is-open .stage-timeline-anchor-caption {
+  padding: 0 4px;
+  background: rgba(211, 172, 89, 0.16);
+}
+
+.stage-timeline-audio-block,
+.stage-timeline-scene,
+.stage-timeline-transition-block,
+.stage-timeline-cue {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 3px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.stage-timeline-audio-block {
+  display: flex;
+  align-items: center;
+  top: 5px;
+  height: calc(100% - 10px);
+  padding: 3px 10px;
+  color: var(--stage-timeline-text);
+  background: rgba(211, 172, 89, 0.18);
+  border: 1px solid rgba(211, 172, 89, 0.6);
+  font-size: 12px;
+  line-height: 20px;
+  text-align: left;
+}
+
+button.stage-timeline-audio-block { cursor: pointer; font-family: inherit; }
+button.stage-timeline-audio-block:focus-visible {
+  outline: 2px solid var(--stage-timeline-accent);
+  outline-offset: 1px;
+}
+
+.stage-timeline-audio-block.is-empty {
+  color: var(--stage-timeline-muted);
+  background: rgba(120, 105, 86, 0.12);
+  border-style: dashed;
+}
+
+.stage-timeline-scene {
+  display: flex;
+  align-items: center;
+  top: 5px;
+  height: calc(100% - 10px);
+  min-width: 0;
+  min-height: 0;
+  padding: 0 9px;
+  color: var(--stage-timeline-text);
+  background: var(--stage-timeline-panel);
+  border: 1px solid var(--stage-timeline-line);
+  font-size: 12px;
+  line-height: normal;
+  text-align: left;
+}
+
+.stage-timeline-scene:hover,
+.stage-timeline-scene.is-current { border-color: var(--stage-timeline-accent); }
+.stage-timeline-scene.is-current { box-shadow: inset 0 -2px var(--stage-timeline-accent); }
+.stage-timeline-scene.is-compact { padding-inline: 0; }
+
+.stage-timeline-transition-block {
+  display: flex;
+  align-items: center;
+  top: 5px;
+  height: calc(100% - 10px);
+  min-width: 2px;
+  padding: 0 7px;
+  color: var(--desk);
+  background: var(--stage-timeline-transition);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: normal;
+}
+
+.stage-timeline-cue {
+  display: flex;
+  align-items: center;
+  top: 5px;
+  width: 104px;
+  height: calc(100% - 10px);
+  min-height: 0;
+  padding: 0 8px;
+  overflow: hidden;
+  color: var(--stage-timeline-text);
+  background: var(--stage-timeline-panel);
+  border: 2px solid var(--stage-timeline-line);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: normal;
+  text-align: left;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.stage-timeline-cue[data-cue-type="light"] { border-color: var(--stage-timeline-cue-light); }
+.stage-timeline-cue[data-cue-type="music"] { border-color: var(--stage-timeline-cue-music); }
+.stage-timeline-cue[data-cue-type="dialogue"] { border-color: var(--stage-timeline-cue-dialogue); }
+.stage-timeline-cue:hover { background: rgba(239, 231, 214, 0.08); }
+.stage-timeline-cue[aria-pressed="true"] { box-shadow: inset 0 -3px var(--stage-timeline-text); }
+
+.stage-timeline-playhead {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--stage-timeline-label-width) + var(--stage-timeline-playhead-x));
+  width: 2px;
+  background: var(--rust-ink);
+  pointer-events: none;
+}
+
+.stage-timeline-playhead::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -5px;
+  border-top: 7px solid var(--rust-ink);
+  border-right: 6px solid transparent;
+  border-left: 6px solid transparent;
+}
+
+html.stage-pwa-tablet .stage-workspace-tabs,
+html.stage-pwa-tablet .stage-timeline-panel,
+html.stage-pwa-tablet .stage-header-volume,
+html.stage-phone-viewer .stage-workspace-tabs,
+html.stage-phone-viewer .stage-timeline-panel,
+html.stage-phone-viewer .stage-header-volume,
+html[data-study-renderer] .stage-workspace-tabs,
+html[data-study-renderer] .stage-timeline-panel,
+html[data-study-renderer] .stage-header-volume { display: none !important; }
+
+@media (max-width: 900px) {
+  .stage-timeline-song span,
+  .stage-header-volume span { display: none; }
+  .stage-timeline-unit button { min-width: 54px; padding-inline: 7px; }
+  .stage-timeline-heading { flex-basis: 150px; min-width: 150px; }
+  .stage-timeline-toolbar output { flex-basis: 54px; font-size: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-workspace-tab,
+  .stage-timeline-playhead { transition: none; }
+  .stage-timeline-loop-range.is-active { animation: none; }
 }

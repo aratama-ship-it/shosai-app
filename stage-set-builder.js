@@ -6,21 +6,15 @@
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const finite = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
   const uid = (prefix) => `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
-  const WORDS = {
-    "セットビルダー": "Set Builder", "閉じる": "Close", "モデル": "Models",
-    "新規": "New", "複製": "Duplicate", "名前変更": "Rename", "削除": "Delete",
-    "JSONで書き出す": "Export JSON", "読み込む": "Import", "覚え書き": "Note",
-    "プレビュー": "Preview", "部品": "Parts", "追加": "Add", "上へ": "Move up",
-    "下へ": "Move down", "種類": "Shape", "位置": "Position", "寸法": "Dimensions",
-    "幅": "Width", "奥行き": "Depth", "高さ": "Height", "直径": "Diameter",
-    "回転": "Rotation", "段数": "Steps", "明暗": "Tint", "選択した部品はありません": "No part selected",
-    "このモデルを削除しますか？": "Delete this model?", "部品を削除しますか？": "Delete this part?",
-    "モデル名": "Model name", "読み込めるセットモデルがありません。": "No set models could be imported.",
+  const tm = (group, id, ja) => {
+    const lang = document.documentElement.lang || "ja";
+    if (lang === "ja") return ja;
+    const packs = window.SHOSAI_I18N_PACKS || {};
+    return (packs[lang] && packs[lang].maps && packs[lang].maps[group] && packs[lang].maps[group][id])
+      || (packs.en && packs.en.maps && packs.en.maps[group] && packs.en.maps[group][id])
+      || ja;
   };
-  const isEn = () => {
-    try { return localStorage.getItem("shosai-stage-lang") === "en"; } catch (_) { return false; }
-  };
-  const t = (value) => isEn() && WORDS[value] ? WORDS[value] : value;
+  const t = (value) => tm("setBuilder", value, value);
 
   let library = { version: 1, models: [] };
   let modelId = null;
@@ -37,7 +31,7 @@
     } catch (_) {
       library = { version: 1, models: [] };
     }
-    if (!library.models.length) library.models.push(API().emptyModel(isEn() ? "New set" : "新しいセット"));
+    if (!library.models.length) library.models.push(API().emptyModel(t("新しいセット")));
     modelId = library.models[0].id;
     partId = library.models[0].parts[0] && library.models[0].parts[0].id || null;
   }
@@ -165,7 +159,7 @@
     elements.partList.innerHTML = "";
     const model = selectedModel();
     (model && model.parts || []).forEach((part, index) => {
-      const fallback = isEn() ? part.shape : ({ box: "箱", panel: "パネル", cylinder: "円柱", sphere: "球", step: "階段", ramp: "斜面" }[part.shape]);
+      const fallback = t(({ box: "箱", panel: "パネル", cylinder: "円柱", sphere: "球", step: "階段", ramp: "斜面" }[part.shape]));
       const row = button(`${index + 1}. ${part.name || fallback}`, part.id === partId ? "is-selected" : "", () => {
         partId = part.id; renderParts(); renderControls(); drawPreview();
       });
@@ -229,13 +223,13 @@
   }
 
   function addModel() {
-    const model = API().emptyModel(isEn() ? "New set" : "新しいセット");
+    const model = API().emptyModel(t("新しいセット"));
     library.models.push(model); modelId = model.id; partId = model.parts[0].id; saveNow(); renderAll();
   }
 
   function duplicateModel() {
     const source = selectedModel(); if (!source) return;
-    const copy = API().normalizeModel({ ...source, id: uid("model"), name: `${source.name}${isEn() ? " copy" : "の複製"}`,
+    const copy = API().normalizeModel({ ...source, id: uid("model"), name: `${source.name}${t("の複製")}`,
       updatedAt: new Date().toISOString(), parts: source.parts.map((part) => ({ ...part, id: uid("part") })) });
     library.models.push(copy); modelId = copy.id; partId = copy.parts[0] && copy.parts[0].id || null; saveNow(); renderAll();
   }

@@ -13,6 +13,25 @@
 (function () {
   "use strict";
 
+  /* 配信便ごとの入口制御。未公開機能の保存データと描画互換は残したまま、
+     β 2026-09-12 では本人が選んだ5項目＋Viewer以外を新規作成させない。 */
+  const RELEASE_SCOPE_ID = (() => {
+    if (typeof window.SHOSAI_RELEASE_SCOPE === "string") return window.SHOSAI_RELEASE_SCOPE;
+    try { return new URLSearchParams(location.search).get("releaseScope") || ""; }
+    catch (_) { return ""; }
+  })();
+  const RELEASE_FEATURES = Object.freeze({
+    lightMotion: RELEASE_SCOPE_ID !== "beta-20260912",
+    formationSync: RELEASE_SCOPE_ID !== "beta-20260912",
+    propMask: RELEASE_SCOPE_ID !== "beta-20260912",
+  });
+
+  const STUDY_READ_ONLY = document.documentElement?.hasAttribute?.("data-study-renderer") === true;
+  // Shadow only this module's storage. The renderer additionally runs in an opaque-origin sandbox.
+  const localStorage = STUDY_READ_ONLY
+    ? Object.freeze({ getItem: () => null, setItem() {}, removeItem() {}, key: () => null, length: 0 })
+    : (window.localStorage || globalThis.localStorage);
+
   const nativeDownloadDecisionWaiters = [];
   let nativeDownloadDecisionBridge = null;
 
@@ -37,6 +56,7 @@
   }
 
   async function downloadBlob(blob, filename) {
+    if (STUDY_READ_ONLY) return false;
     const nativeDecision = prepareNativeDownloadDecision();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -53,6 +73,37 @@
     return nativeDecision ? nativeDecision.promise : true;
   }
 
+  function hasProjectSaveLocationPicker() {
+    const bridge = window.stageSketchBridge;
+    return Boolean(bridge && typeof bridge.onDownloadDestinationDecision === "function")
+      || typeof window.showSaveFilePicker === "function";
+  }
+
+  async function saveProjectBlob(blob, filename) {
+    if (STUDY_READ_ONLY) return false;
+    const bridge = window.stageSketchBridge;
+    if ((bridge && typeof bridge.onDownloadDestinationDecision === "function")
+      || typeof window.showSaveFilePicker !== "function") {
+      return await downloadBlob(blob, filename);
+    }
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{
+          description: "JSON",
+          accept: { "application/json": [".json"] },
+        }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return true;
+    } catch (error) {
+      if (error && error.name === "AbortError") return false;
+      throw error;
+    }
+  }
+
   function applyProjectExportOutcome(targetState, didChooseDestination, exportedAt) {
     if (!didChooseDestination) return false;
     targetState.lastExportAt = exportedAt;
@@ -60,25 +111,74 @@
     return true;
   }
 
+  function defaultProjectExportBasename(project) {
+    const source = project && typeof project === "object" ? project : {};
+    const title = (source.title || "show")
+      .replace(/[\\/:*?"<>|\s]+/g, "_")
+      .slice(0, 40) || "show";
+    const version = (source.versionLabel || "v1")
+      .replace(/[\\/:*?"<>|\s]+/g, "_")
+      .slice(0, 24) || "v1";
+    return `${title}-${version}`;
+  }
+
+  function normaliseProjectExportFilename(value) {
+    const withoutExtension = String(value || "").trim().replace(/\.json$/i, "");
+    const clean = withoutExtension
+      .replace(/[\u0000-\u001f\u007f/\\:*?"<>|]+/g, "_")
+      .replace(/\s+/g, " ")
+      .replace(/[. ]+$/g, "")
+      .slice(0, 80)
+      .trim();
+    return `${clean || "show-v1"}.json`;
+  }
+
+  function isProjectExportShortcut(event) {
+    return String(event && event.key || "").toLowerCase() === "s"
+      && Boolean(event && (event.metaKey || event.ctrlKey))
+      && !event.altKey
+      && !event.shiftKey;
+  }
+
   window.SHOSAI_STAGE_DOWNLOAD_MODEL = Object.freeze({
     downloadBlob,
+    saveProjectBlob,
+    hasProjectSaveLocationPicker,
     applyProjectExportOutcome,
+    defaultProjectExportBasename,
+    normaliseProjectExportFilename,
+    isProjectExportShortcut,
   });
 
   /* 初回の言語と、スマホのシーン一覧で見せる行をDOMから切り離して決める。
      同じ判定を実装とNodeテストで共有し、保存済みの「ja」と未保存を混同しない。 */
+  function normalizeStageLanguage(code) {
+    const value = typeof code === "string" ? code.trim().replace(/_/g, "-").toLowerCase() : "";
+    if (value.startsWith("ja")) return "ja";
+    if (["zh-tw", "zh-hant", "zh-hk", "zh-mo"].includes(value)) return "zh-Hant";
+    if (["zh", "zh-cn", "zh-hans", "zh-sg"].includes(value)) return "zh-Hans";
+    if (value.startsWith("en")) return "en";
+    return "en";
+  }
+
+  function loadedStageLanguage(code) {
+    const normalized = normalizeStageLanguage(code);
+    if (normalized === "ja" || normalized === "en") return normalized;
+    return (window.SHOSAI_I18N_PACKS || {})[normalized] ? normalized : "en";
+  }
+
   function resolveInitialStageLanguage(openLanguage, storage, navigatorLike) {
-    if (openLanguage === "en" || openLanguage === "ja") return openLanguage;
+    if (typeof openLanguage === "string" && openLanguage) return loadedStageLanguage(openLanguage);
     try {
       const saved = storage && storage.getItem("shosai-stage-lang");
-      if (saved !== null && saved !== undefined) return saved === "en" ? "en" : "ja";
+      if (saved !== null && saved !== undefined) return loadedStageLanguage(saved);
     } catch (_) { /* 保存先を読めなくても端末言語を試す */ }
     try {
       const primary = navigatorLike && navigatorLike.language;
       const alternatives = navigatorLike && navigatorLike.languages;
       const deviceLanguage = primary || (alternatives && alternatives[0]);
       if (typeof deviceLanguage === "string" && deviceLanguage) {
-        return deviceLanguage.toLowerCase().startsWith("ja") ? "ja" : "en";
+        return loadedStageLanguage(deviceLanguage);
       }
     } catch (_) { /* 端末言語を読めなくても日本語で動く */ }
     return "ja";
@@ -100,7 +200,71 @@
     return visible;
   }
 
+  function stagePackValueForLanguage(code, section, read) {
+    const resolved = loadedStageLanguage(code);
+    if (resolved === "ja") return null;
+    const packs = window.SHOSAI_I18N_PACKS || {};
+    const current = packs[resolved];
+    const currentValue = current && current[section] && read(current[section]);
+    if (currentValue !== undefined && currentValue !== null && currentValue !== "") return currentValue;
+    const english = resolved === "en" ? null : packs.en;
+    const englishValue = english && english[section] && read(english[section]);
+    return englishValue !== undefined && englishValue !== null && englishValue !== "" ? englishValue : null;
+  }
+
+  function translateStageSay(say, message) {
+    for (const [re, translatedValue] of say || []) {
+      re.lastIndex = 0;
+      if (!re.test(message)) continue;
+      re.lastIndex = 0;
+      return message.replace(re, translatedValue);
+    }
+    return null;
+  }
+
+  function stageTextForLanguage(code, japanese) {
+    return stagePackValueForLanguage(code, "text", (text) => text[japanese]) || japanese;
+  }
+
+  function stageTextWithEnglishForLanguage(code, english, japanese) {
+    return loadedStageLanguage(code) === "en" ? english : stageTextForLanguage(code, japanese);
+  }
+
+  function stageLanguageValue(code, english, japanese) {
+    const resolved = loadedStageLanguage(code);
+    if (resolved === "ja") return japanese();
+    if (resolved === "en" || (window.SHOSAI_I18N_PACKS || {})[resolved]) return english();
+    return japanese();
+  }
+
+  window.SHOSAI_STAGE_I18N_MODEL = Object.freeze({
+    text: stageTextForLanguage,
+    textWithEnglish: stageTextWithEnglishForLanguage,
+    map: (code, group, id, japanese) => (
+      stagePackValueForLanguage(code, "maps", (maps) => maps[group] && maps[group][id]) || japanese
+    ),
+    say: (code, japanese, english) => {
+      const resolved = loadedStageLanguage(code);
+      if (resolved === "ja") return japanese;
+      const translated = stagePackValueForLanguage(
+        resolved,
+        "say",
+        (say) => translateStageSay(say, japanese),
+      );
+      if (resolved === "en" && english !== undefined) {
+        return translated === english ? translated : english;
+      }
+      return translated || japanese;
+    },
+    languageValue: (code, english, japanese) => stageLanguageValue(
+      code,
+      () => english,
+      () => japanese,
+    ),
+  });
+
   window.SHOSAI_STAGE_PHONE_VIEWER_MODEL = Object.freeze({
+    normalizeLanguage: normalizeStageLanguage,
     resolveInitialLanguage: resolveInitialStageLanguage,
     visibleSceneRows: visiblePhoneSceneRows,
   });
@@ -277,6 +441,19 @@
     const textContent = Boolean(next.objective || next.audienceFocus || next.mood
       || next.referenceNote || next.implementationNote || next.sourceRefs.length);
     return layerContent || transitionContent || textContent ? next : null;
+  };
+  /* 動く光（案）は光の意図カードの子ではなく、シーン直下の独立した項目にする
+     （2026-09-11 本人指示: 光の意図カードに頼らず、独立したモーダルで組めるように）。
+     正規化・時間計算・描画・書き出しは stage-light-motion.js
+     （window.SHOSAI_STAGE_LIGHT_MOTION）が持つ。中身のない案は保存しない（null）。 */
+  const emptyLightMotion = () => {
+    const motionModel = window.SHOSAI_STAGE_LIGHT_MOTION;
+    return motionModel ? motionModel.empty() : null;
+  };
+  const normalizeLightMotion = (kind, raw) => {
+    if (kind !== "scene") return null;
+    const motionModel = window.SHOSAI_STAGE_LIGHT_MOTION;
+    return motionModel ? motionModel.normalize(raw) : null;
   };
   const LIGHT_INTENT_LAYER_LABELS = Object.freeze({
     ja: { performer: "演者", background: "背景", space: "空間" },
@@ -953,19 +1130,86 @@
    * DOMより前へ純粋関数を置き、旧データ・壊れた読込・再生遷移をNodeでも検査する。 */
   const STAGE_AUDIO_TRACK_LIMIT = 24;
   const STAGE_AUDIO_FILE_MAX_BYTES = 150 * 1024 * 1024;
+  const STAGE_BETA_AUDIO_FILE_MAX_BYTES = 50 * 1024 * 1024;
   const STAGE_AUDIO_ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$/;
+  const isNativeStageSketchRuntime = (bridge = window.stageSketchBridge) => Boolean(
+    bridge
+    && typeof bridge === "object"
+    && typeof bridge.version === "string"
+    && typeof bridge.platform === "string"
+    && bridge.platform.trim(),
+  );
+  const NATIVE_APP_RUNTIME = isNativeStageSketchRuntime();
+  const BETA_BROWSER_AUDIO_RESTRICTIONS = RELEASE_SCOPE_ID === "beta-20260912"
+    && !NATIVE_APP_RUNTIME;
+  const audioFilePolicy = (
+    file,
+    releaseScope = RELEASE_SCOPE_ID,
+    nativeApp = NATIVE_APP_RUNTIME,
+  ) => {
+    if (!file || !Number.isFinite(file.size) || file.size <= 0) return "empty";
+    const beta = releaseScope === "beta-20260912" && nativeApp !== true;
+    const name = String(file.name || "");
+    const mime = String(file.type || "").toLowerCase();
+    const wav = /\.wav$/i.test(name) || ["audio/wav", "audio/wave", "audio/x-wav"].includes(mime);
+    if (beta && wav) return "beta-wav";
+    const maxBytes = beta ? STAGE_BETA_AUDIO_FILE_MAX_BYTES : STAGE_AUDIO_FILE_MAX_BYTES;
+    if (file.size > maxBytes) return beta ? "beta-size" : "size";
+    const compressedExtension = /\.(mp3|m4a|aac)$/i.test(name);
+    const compressedMime = ["audio/mpeg", "audio/mp4", "audio/x-m4a", "audio/aac"].includes(mime);
+    if (compressedExtension || compressedMime || (!beta && wav)) return "";
+    return beta ? "beta-format" : "format";
+  };
+  const normalizeAudioGainDb = (value) => {
+    const number = Number(value);
+    return Number.isFinite(number)
+      ? Math.round(Math.max(-24, Math.min(12, number)) * 2) / 2 : 0;
+  };
+  const countSyncNumber = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+  const normalizeAudioCountSync = (raw) => {
+    const source = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+    const anchors = (Array.isArray(source.anchors) ? source.anchors : [])
+      .map((anchor) => ({
+        count: Math.round(countSyncNumber(anchor && anchor.count, 0) * 1000) / 1000,
+        sec: Math.round(Math.max(0, countSyncNumber(anchor && anchor.sec, 0)) * 1000) / 1000,
+        locked: !anchor || anchor.locked !== false,
+      }))
+      .filter((anchor) => anchor.count > 1)
+      .sort((a, b) => a.count - b.count)
+      .filter((anchor, index, rows) => index === 0 || anchor.count > rows[index - 1].count);
+    const phrases = (Array.isArray(source.phrases) ? source.phrases : [])
+      .map((phrase) => ({
+        fromCount: Math.max(1, countSyncNumber(phrase && phrase.fromCount, 1)),
+        length: Math.max(1, countSyncNumber(phrase && phrase.length, 8)),
+      }))
+      .sort((a, b) => a.fromCount - b.fromCount)
+      .filter((phrase, index, rows) => index === 0 || phrase.fromCount > rows[index - 1].fromCount);
+    if (!phrases.length || phrases[0].fromCount > 1) phrases.unshift({ fromCount: 1, length: 8 });
+    return {
+      countBpm: Math.max(1, Math.min(999, countSyncNumber(source.countBpm, 120))),
+      firstCountSec: Math.round(Math.max(0, countSyncNumber(source.firstCountSec, 0)) * 1000) / 1000,
+      firstSet: Boolean(source.firstSet),
+      firstLocked: Boolean(source.firstLocked),
+      anchors,
+      phrases,
+    };
+  };
   const normalizeAudioTrack = (raw, index = 0) => {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
     const id = typeof raw.id === "string" ? raw.id.trim() : "";
     if (!STAGE_AUDIO_ID_RE.test(id)) return null;
     const rawTitle = typeof raw.title === "string" ? raw.title.trim() : "";
     const duration = Number(raw.durationSeconds);
-    return {
+    const base = {
       id,
       title: (rawTitle || `楽曲 ${index + 1}`).slice(0, 80),
       durationSeconds: Number.isFinite(duration) && duration > 0 && duration <= 86400
         ? duration : null,
+      gainDb: normalizeAudioGainDb(raw.gainDb),
     };
+    const hasCountSync = ["countBpm", "firstCountSec", "firstSet", "firstLocked", "anchors", "phrases"]
+      .some((key) => Object.prototype.hasOwnProperty.call(raw, key));
+    return hasCountSync ? { ...base, ...normalizeAudioCountSync(raw) } : base;
   };
   const normalizeAudioTracks = (raw) => {
     if (!Array.isArray(raw)) return [];
@@ -1004,8 +1248,15 @@
   window.SHOSAI_STAGE_AUDIO_MODEL = Object.freeze({
     trackLimit: STAGE_AUDIO_TRACK_LIMIT,
     fileMaxBytes: STAGE_AUDIO_FILE_MAX_BYTES,
+    betaFileMaxBytes: STAGE_BETA_AUDIO_FILE_MAX_BYTES,
+    nativeAppRuntime: NATIVE_APP_RUNTIME,
+    isNativeAppRuntime: isNativeStageSketchRuntime,
+    betaBrowserRestricted: BETA_BROWSER_AUDIO_RESTRICTIONS,
+    filePolicy: audioFilePolicy,
     normalizeTrack: normalizeAudioTrack,
     normalizeTracks: normalizeAudioTracks,
+    normalizeGainDb: normalizeAudioGainDb,
+    normalizeCountSync: normalizeAudioCountSync,
     normalizeTrackId: normalizeAudioTrackId,
     transition: audioSceneTransition,
     identityDifference: audioIdentityDifference,
@@ -1016,15 +1267,25 @@
   const VENUES = window.SHOSAI_VENUES;
   if (!VENUES) return;
   const stageSketchRoot = canvas.closest(".stage-sketch");
-  const canFetchWhoami = typeof window.fetch === "function";
+  const canFetchWhoami = !STUDY_READ_ONLY && typeof window.fetch === "function";
   if (canFetchWhoami && stageSketchRoot) {
     stageSketchRoot.classList.add("stage-whoami-pending");
     stageSketchRoot.setAttribute("aria-busy", "true");
   }
   // stage-pwa.js は単独版でこのスクリプトより先に読み込む。
   // 通常ブラウザ版は false のままなので、既存の三列レイアウトへ一切介入しない。
+  // 設定から選ぶ iPad 表示モードは、起動時にだけ読む。パネルをドロワーへ移す
+  // 既存の iPad ワークスペースをそのまま使い、途中でDOMを戻して壊さないため。
+  const bootPrefs = (() => {
+    try {
+      const value = JSON.parse(localStorage.getItem("shosai-stage-prefs-v1") || "{}");
+      return value && typeof value === "object" ? value : {};
+    } catch (_) { return {}; }
+  })();
   const tabletPwaActive = window.SHOSAI_TABLET_PWA === true
-    || document.documentElement.classList.contains("stage-pwa-tablet");
+    || document.documentElement.classList.contains("stage-pwa-tablet")
+    || bootPrefs.tabletMode === true;
+  document.documentElement.classList.toggle("stage-pwa-tablet", tabletPwaActive);
   let tabletUi = null;
   /* スマホは編集机ではなく、受け取ったJSONを現場で確認するための閲覧機にする。
      iPadは上の専用PWAへ任せ、短辺600px以下のタッチ端末だけを対象にする。
@@ -1038,7 +1299,7 @@
     && new URLSearchParams(window.location.search).has("phone-viewer-preview");
   const phoneLike = navigator.maxTouchPoints > 0
     && Math.min(window.screen.width, window.screen.height) <= 600;
-  const phoneViewerActive = standaloneStagePage && !tabletPwaActive && (phonePreview || phoneLike);
+  const phoneViewerActive = standaloneStagePage && !tabletPwaActive && (phonePreview || phoneLike) && !STUDY_READ_ONLY;
   const phoneOrientation = window.matchMedia("(orientation: portrait)");
   const tabletOrientation = window.matchMedia("(orientation: portrait)");
   document.documentElement.classList.toggle("stage-phone-viewer", phoneViewerActive);
@@ -1098,8 +1359,9 @@
   }
   applyCanvasSize();
   let intentHatchPattern = null;
-  // プレゼン（正面図だけの全画面）中か。説明の帯を出すかどうかの目印
+  // 正面図の全画面表示中か。説明の帯を出すかどうかの目印
   let presenting = false;
+  let fullscreenMainView = "front";
   let pseudoPresenting = false;
   // ピッチ用の出力を描いている間だけ入る。通常の作図画面には持ち越さない。
   let pitchStyle = null;
@@ -1121,8 +1383,7 @@
      英語圏の人へ「開いたら英語で、案内も英語で始まる」一本のURLとして渡せるように。
      ★選び直しは上の EN／日本語でいつでもできる。URLの指定は開くたびに効くので、
        配るリンクは常にその言語で開く（人に渡す道具なので、開き方が揺れない方を採る）。 */
-  const askedLang = (openArgs.get("lang") || "").toLowerCase();
-  const openLang = askedLang === "en" || askedLang === "ja" ? askedLang : "";
+  const openLang = openArgs.has("lang") ? loadedStageLanguage(openArgs.get("lang")) : "";
   if (openArgs.has("fresh")) {
     /* ?fresh は端末の全ショーを消す。公開URLでは誤クリック・共有リンク・先読みで
        発動しうるので、ローカルでしか効かないようにする。
@@ -1160,6 +1421,8 @@
   const SHOWS_BROKEN_KEY = "shosai-stage-shows-broken-v1"; // 壊れた棚の原文の退避先
   const PREFS_KEY = "shosai-stage-prefs-v1";
   const TOUR_KEY = "shosai-stage-tour-v1";
+  const RELEASE_HISTORY_SEEN_KEY = "shosai-stage-release-history-seen-v1";
+  const RELEASE_HISTORY_CURRENT = "v0.3.6-2026-09-12";
   const LAST_USER_KEY = "shosai-stage-last-user-v1";
   /* ★利用者が替わったときに消すのは、端末の見た目に関するこの2つだけ。
      ショー・棚・モデル・言語の鍵はここへ足さない。 */
@@ -1295,6 +1558,206 @@
     prop: { w: 0.4, d: 0.3, h: 0.4 },
     light: { dia: 4 },                     // 床に落ちる明かりの円の直径
   };
+  const boxAt = (x, y, z, w, d, h, tint) => ({ shape: "box", x, y, z, w, d, h, tint });
+  /* 輪の形（リング・フープ）。4本の直線枠だと四角く見えるため、円周上に小さな立方体を
+     並べて丸く見せる（2026-09-11 QAで「四角く見える」指摘を受けて改善。正面から見ても円に読める）。
+     中心はy=半径の高さ、下端がy=0、上端がy=直径になるよう配置する。 */
+  // 円周上の点を「置く」のではなく、隣り合う点どうしを箱でつないで途切れない輪にする
+  // （2026-09-11 本人指摘: 点々になっていて丸に見えない。滑らかにしたい）。
+  // 各辺の箱はdx・dyに応じて自然と接線方向を向く（右端では縦長、上端では横長になる）ので、
+  // 分割数（segments）を増やすほど輪の輪郭が滑らかになる。
+  /* リング・フープは「平らな輪」ではなく、ホースのような丸い断面の管を輪に曲げたもの
+     （2026-09-11 本人指摘: 厚みに丸みが無く、ただの円に見える）。
+     箱は平らな面しか持てないので、どの角度から見ても丸く見える球を輪の上に隙間なく重ねて
+     並べることで、管の丸い断面を表す（数珠つなぎと同じ考え方）。tubeDiaが管そのものの太さ。 */
+  const ringTube = (segments, radius, tubeDia, tint) => Array.from({ length: segments }, (_, i) => {
+    const a = (i / segments) * Math.PI * 2;
+    const cx = Math.cos(a) * radius;
+    const cy = radius + Math.sin(a) * radius;
+    return { shape: "sphere", x: cx, y: cy - tubeDia / 2, z: 0, dia: tubeDia, tint };
+  });
+  /* 弦楽器の胴・管楽器のベルなど「音を鳴らす部分」の輪郭を、薄い円柱を積んで近似する
+     （2026-09-11 本人指摘「音を鳴らす部分がリアルでない」への対応）。
+     specsは[y, 直径, 高さ, tint]の配列。円柱1本の棒状ではなく、太さが連続的に変わることで
+     くびれ（バイオリン/ギターの胴）やラッパの開き（トランペットのベル）を表す。 */
+  const bodySlices = (specs) => {
+    let y = 0;
+    return specs.map(([dia, h, tint]) => {
+      const part = { shape: "cylinder", y, dia, h, tint };
+      y += h;
+      return part;
+    });
+  };
+  /* 弦楽器の胴は円柱の積層（＝回転体。上から見ても真円）にすると実物と違う。
+     実物は正面から見た幅に対して厚み（前後）がずっと薄い板状（バイオリンで幅20cm程度に対し
+     側板の厚み3〜3.5cm程度＝比率6.5:1ほど）。box（幅wと厚みdを別々に持てる）を積んで
+     「幅は広いが薄い」輪郭にする（2026-09-11 本人指摘: 円柱は軸対称の回転体で厚みが実物と違う）。
+     specsは[幅, 厚み, 高さ, tint]の配列。 */
+  const flatBodySlices = (specs) => {
+    let y = 0;
+    return specs.map(([w, d, h, tint]) => {
+      const part = { shape: "box", y, w, d, h, tint };
+      y += h;
+      return part;
+    });
+  };
+  /* flatBodySlicesは制御点そのものを段にするため、段数が少ないとカクカクした階段状の輪郭になる
+     （2026-09-11 本人指摘）。制御点の間をなめらかに補間しながら、うんと薄い段を数十枚積むことで
+     見た目の輪郭を滑らかにする。points は [高さ, 幅, 厚み, tint] の制御点列（高さ順）。 */
+  const bodyEase = (t) => (1 - Math.cos(Math.max(0, Math.min(1, t)) * Math.PI)) / 2;
+  const sampleProfile = (points, y) => {
+    for (let i = 0; i < points.length - 1; i += 1) {
+      const [y0, w0, d0, t0] = points[i];
+      const [y1, w1, d1, t1] = points[i + 1];
+      if (y <= y1 || i === points.length - 2) {
+        const t = bodyEase((y - y0) / (y1 - y0));
+        return [w0 + (w1 - w0) * t, d0 + (d1 - d0) * t, t0 + (t1 - t0) * t];
+      }
+    }
+    const last = points[points.length - 1];
+    return [last[1], last[2], last[3]];
+  };
+  const smoothFlatBody = (points, segments) => {
+    const total = points[points.length - 1][0];
+    const h = total / segments;
+    return Array.from({ length: segments }, (_, i) => {
+      const y = i * h;
+      const [w, d, tint] = sampleProfile(points, y + h / 2);
+      return { shape: "box", y, w, d, h: h * 1.02, tint };
+    });
+  };
+  /* グランドピアノの「曲線側」（上から見たときだけ分かる輪郭）を薄い箱の並びで近似する。
+     smoothFlatBodyは高さ方向（y）に積むが、ピアノの曲線は水平方向（z、鍵盤側から尾部側）に
+     現れるので、z方向に細かく並べる版を別に用意する。pointsは[z, 左端, 右端, tint]の制御点列
+     （左端はほぼ直線の低音側、右端が丸く張り出す湾曲側、尾部でほぼ1点に収束する）。 */
+  const samplePianoProfile = (points, z) => {
+    for (let i = 0; i < points.length - 1; i += 1) {
+      const [z0, l0, r0, t0] = points[i];
+      const [z1, l1, r1, t1] = points[i + 1];
+      if (z <= z1 || i === points.length - 2) {
+        const t = bodyEase((z - z0) / (z1 - z0));
+        return [l0 + (l1 - l0) * t, r0 + (r1 - r0) * t, t0 + (t1 - t0) * t];
+      }
+    }
+    const last = points[points.length - 1];
+    return [last[1], last[2], last[3]];
+  };
+  const pianoCurveSlices = (points, segments, y, h) => {
+    const total = points[points.length - 1][0];
+    const dz = total / segments;
+    return Array.from({ length: segments }, (_, i) => {
+      const z = i * dz;
+      const [l, r, tint] = samplePianoProfile(points, z + dz / 2);
+      return { shape: "box", x: (l + r) / 2, y, z, w: Math.max(0.01, r - l), d: dz * 1.02, h, tint };
+    });
+  };
+  // 見切り（モールディング）用に輪郭を少しだけ外側へ広げる
+  const padPianoPoints = (points, pad) => points.map(([z, l, r, tint]) => [z, l - pad, r + pad, tint]);
+  /* 蓋（天板）が上がっている状態。実物は低音側（ほぼ直線の縁）で蝶番になっていて、
+     高音側（弧を描く縁）が高く持ち上がる＝天板は水平ではなく傾いている。
+     部品は回転できないので、天板の幅を数段（bands）に分け、低音側から高音側へ段々と
+     高さを上げていくことで「傾いた板」を近似する（2026-09-11 本人指摘: 縁に立つ壁は違和感がある。
+     天板が上がっている状態を作ってほしい、への対応）。 */
+  const pianoOpenLid = (points, segments, bands, baseY, liftHeight, thickness) => {
+    const total = points[points.length - 1][0];
+    const dz = total / segments;
+    const parts = [];
+    for (let i = 0; i < segments; i += 1) {
+      const z = i * dz;
+      const [l, r, tint] = samplePianoProfile(points, z + dz / 2);
+      const width = r - l;
+      for (let b = 0; b < bands; b += 1) {
+        const bandLeft = l + (width * b) / bands;
+        const bandRight = l + (width * (b + 1)) / bands;
+        const y = baseY + (liftHeight * (b + 0.5)) / bands;
+        parts.push({
+          shape: "box", x: (bandLeft + bandRight) / 2, y, z,
+          w: bandRight - bandLeft, d: dz * 1.02, h: thickness,
+          tint: tint * (0.82 + (0.22 * b) / (bands - 1)),
+        });
+        // 段の間の隙間を塞ぐ立ち上がり（実物の階段の「蹴込み」と同じ考え方）。
+        // これが無いと段と段の間が透けて、1枚の傾いた板ではなく複数の板が浮いて見える。
+        if (b < bands - 1) {
+          const yNext = baseY + (liftHeight * (b + 1.5)) / bands;
+          parts.push({
+            shape: "box", x: bandRight, y, z,
+            w: thickness, d: dz * 1.02, h: yNext - y + thickness,
+            tint: tint * (0.82 + (0.22 * b) / (bands - 1)),
+          });
+        }
+      }
+    }
+    return parts;
+  };
+  /* ジャグリング用クラブなど「実際に回転体である」道具の輪郭を、太さを滑らかに補間しながら
+     薄い円柱を積んで近似する（2026-09-11 本人指摘: 段になっていて滑らかでない。実物のクラブの
+     モデルに合わせてほしい）。バイオリン等のsmoothFlatBody（幅と厚みが別＝回転体でない）とは逆に、
+     クラブは実際に軸対称の回転体なので円柱でよい。pointsは[高さ, 直径, tint]の制御点列。 */
+  /* コサイン補間（bodyEase）は制御点ごとに傾きがゼロになるため、点を細かく置くほど
+     輪郭が波打って見える（2026-09-11 本人指摘: もう少し滑らかにしたい）。
+     単調性を保つ3次エルミート補間（PCHIP）に替える。制御点で傾きが連続するので
+     テーパーが一本の流れるような曲線になり、かつ極値を越えて膨らむ誤差も出ない。 */
+  const roundProfileTangents = (points) => {
+    const n = points.length;
+    const secants = [];
+    for (let i = 0; i < n - 1; i += 1) {
+      secants.push((points[i + 1][1] - points[i][1]) / (points[i + 1][0] - points[i][0]));
+    }
+    const tangents = new Array(n);
+    tangents[0] = secants[0];
+    tangents[n - 1] = secants[n - 2];
+    for (let i = 1; i < n - 1; i += 1) {
+      if (secants[i - 1] * secants[i] <= 0) {
+        tangents[i] = 0;   // 極値（ノブの頂点や胴の最太部）では傾きゼロ＝丸い頂点になる
+      } else {
+        const hPrev = points[i][0] - points[i - 1][0];
+        const hNext = points[i + 1][0] - points[i][0];
+        const w1 = 2 * hNext + hPrev;
+        const w2 = hNext + 2 * hPrev;
+        tangents[i] = (w1 + w2) / (w1 / secants[i - 1] + w2 / secants[i]);
+      }
+    }
+    return tangents;
+  };
+  const sampleRoundProfile = (points, tangents, y) => {
+    for (let i = 0; i < points.length - 1; i += 1) {
+      const [y0, d0, t0] = points[i];
+      const [y1, d1, t1] = points[i + 1];
+      if (y <= y1 || i === points.length - 2) {
+        const h = y1 - y0;
+        const t = Math.max(0, Math.min(1, (y - y0) / h));
+        const t2 = t * t;
+        const t3 = t2 * t;
+        const dia = (2 * t3 - 3 * t2 + 1) * d0 + (t3 - 2 * t2 + t) * h * tangents[i]
+          + (-2 * t3 + 3 * t2) * d1 + (t3 - t2) * h * tangents[i + 1];
+        return [Math.max(0.006, dia), t0 + (t1 - t0) * t];
+      }
+    }
+    const last = points[points.length - 1];
+    return [last[1], last[2]];
+  };
+  const smoothRoundBody = (points, segments) => {
+    const total = points[points.length - 1][0];
+    const h = total / segments;
+    const tangents = roundProfileTangents(points);
+    return Array.from({ length: segments }, (_, i) => {
+      const y = i * h;
+      const [dia, tint] = sampleRoundProfile(points, tangents, y + h / 2);
+      return { shape: "cylinder", y, dia, h: h * 1.02, tint };
+    });
+  };
+  /* ジャグリングクラブの実物の比率（2026-09-11 本人指摘: 持ち手がもっと長い）。
+     全長53cmに対し、底のノブ＋細い持ち手が下から約22cm（約4割）を占め、
+     胴の最太部は下から約41cm（約77%）と、かなり上のほうにある。
+     ★上下の先端は円柱の積み重ねだけだと平らに切れて見えるため、球で塞いで丸くする。
+     胴の輪郭（CLUB_PROFILE）は球で隠れる範囲まで含め、球と重ねて隙間を作らない。 */
+  const CLUB_PROFILE = [
+    [0.000, 0.030, 0.70], [0.018, 0.037, 0.76], [0.038, 0.030, 0.78], [0.060, 0.026, 0.80],
+    [0.110, 0.026, 0.82], [0.160, 0.026, 0.83], [0.200, 0.028, 0.85], [0.225, 0.031, 0.87],
+    [0.260, 0.038, 0.90], [0.295, 0.050, 0.94], [0.330, 0.064, 0.98], [0.365, 0.078, 1.02],
+    [0.410, 0.093, 1.07], [0.440, 0.091, 1.05], [0.468, 0.083, 1.01], [0.490, 0.069, 0.96],
+    [0.506, 0.053, 0.90], [0.516, 0.042, 0.86], [0.522, 0.034, 0.83],
+  ];
   const PROP_SHAPES = {
     box: { ja: "箱", en: "Box", dims: { w: 0.4, d: 0.3, h: 0.4 }, grip: null, parts: null },
     umbrella: { ja: "傘", en: "Umbrella", dims: { w: 0.9, d: 0.9, h: 1.08 }, grip: { x: 0, y: 0.30 },
@@ -1305,23 +1768,18 @@
         { shape: "cylinder", y: 0.97, dia: 0.24,  h: 0.06, tint: 1.1 },
         { shape: "cylinder", y: 1.03, dia: 0.035, h: 0.05, tint: 0.7 },
       ] },
+    // 実物のジャグリングクラブの輪郭に合わせ、段差ではなく滑らかな曲線で太さが変わるようにした
+    // （2026-09-11 本人指摘: 段になっていて滑らかでない。実物のモデルに合わせてほしい）
     club: { ja: "クラブ", en: "Club", dims: { w: 0.12, d: 0.12, h: 0.53 }, grip: { x: 0, y: 0.10 },
       parts: [
-        { shape: "sphere",   y: 0,    dia: 0.05 },
-        { shape: "cylinder", y: 0.05, dia: 0.028, h: 0.10, tint: 0.8 },
-        { shape: "cylinder", y: 0.15, dia: 0.045, h: 0.12, tint: 0.95 },
-        { shape: "cylinder", y: 0.27, dia: 0.11,  h: 0.20, tint: 1.1 },
-        { shape: "sphere",   y: 0.47, dia: 0.06,  tint: 1.0 },
+        { shape: "sphere", y: 0, dia: 0.046, tint: 0.74 },        // 底のノブ（丸く塞ぐ）
+        ...smoothRoundBody(CLUB_PROFILE, 120),
+        { shape: "sphere", y: 0.496, dia: 0.034, tint: 0.84 },    // 頂点のドーム（丸く塞ぐ）
       ] },
     ball: { ja: "ボール", en: "Ball", dims: { w: 0.24, d: 0.24, h: 0.24 }, grip: { x: 0, y: 0.12 },
       parts: [ { shape: "sphere", y: 0, dia: 0.24, tint: 1.05 } ] },
     ring: { ja: "リング", en: "Ring", dims: { w: 0.40, d: 0.04, h: 0.40 }, grip: { x: 0, y: 0.03 },
-      parts: [
-        { shape: "box", x: 0,      y: 0.35, w: 0.30, d: 0.04, h: 0.05 },
-        { shape: "box", x: 0,      y: 0,    w: 0.30, d: 0.04, h: 0.05 },
-        { shape: "box", x: -0.175, y: 0.05, w: 0.05, d: 0.04, h: 0.30, tint: 0.95 },
-        { shape: "box", x: 0.175,  y: 0.05, w: 0.05, d: 0.04, h: 0.30, tint: 0.95 },
-      ] },
+      parts: ringTube(128, 0.185, 0.05, 1) },
     /* 棒の握りは手の高さ（立ち姿の手首≒0.75m）と同じにする。これで立って持つと
        下端がちょうど床に着く。0.95にしていたら下端が床を突き抜けた（実際に見た）。 */
     staff: { ja: "棒", en: "Staff", dims: { w: 0.05, d: 0.05, h: 1.60 }, grip: { x: 0, y: 0.75 },
@@ -1363,8 +1821,973 @@
         { shape: "sphere",   x: -0.27, y: 1.25, dia: 0.045, tint: 0.9 },
         { shape: "panel",    x: 0.015, y: 0.84, w: 0.545, d: 0.02, h: 0.38, tint: 1.1 },
       ] },
+    drumset: { ja: "ドラムセット", en: "Drum kit", dims: { w: 2.2, d: 1.8, h: 1.45 }, grip: null,
+      parts: [
+        // 横向きの円筒。鼓面と胴を曲面として描く。
+        { shape: "cylinder", axis: "z", y: 0.05, z: -0.26, w: 0.60, d: 0.48, h: 0.60, tint: 0.8 },
+        { shape: "cylinder", axis: "z", y: 0.05, z: -0.51, w: 0.60, d: 0.02, h: 0.60, tint: 1.2 },
+        { shape: "cylinder", axis: "z", y: 0.05, z: -0.01, w: 0.60, d: 0.02, h: 0.60, tint: 1.2 },
+        // タム2個・フロアタム・スネア。上面の明るい鼓面を分ける。
+        ...[[-0.22, -0.24, 0.65, 0.28, 0.25], [0.18, -0.22, 0.65, 0.32, 0.28],
+          [0.58, 0.23, 0.32, 0.40, 0.38], [-0.48, 0.26, 0.58, 0.34, 0.15]]
+          .flatMap(([x, z, y, dia, h]) => [
+            { shape: "cylinder", x, y: 0, z, dia: 0.045, h: y, tint: 0.55 },
+            { shape: "cylinder", x, y, z, dia, h, tint: 0.85 },
+            { shape: "cylinder", x, y: y + h, z, dia, h: 0.02, tint: 1.2 },
+          ]),
+        // シンバル2枚とハイハット。脚と支柱を含める。
+        ...[[-0.72, -0.43, 1.38, 0.42], [0.72, -0.30, 1.42, 0.50], [-0.80, 0.32, 1.02, 0.32]]
+          .flatMap(([x, z, y, dia]) => [
+            { shape: "box", x, y: 0, z, w: 0.36, d: 0.05, h: 0.035, tint: 0.55 },
+            { shape: "box", x, y: 0, z, w: 0.05, d: 0.36, h: 0.035, tint: 0.55 },
+            { shape: "cylinder", x, y: 0.035, z, dia: 0.025, h: y - 0.035, tint: 0.6 },
+            { shape: "cylinder", x, y, z, dia, h: 0.025, tint: 1.1 },
+          ]),
+        { shape: "cylinder", x: -0.80, y: 0.97, z: 0.32, dia: 0.32, h: 0.025, tint: 1.1 },
+        { shape: "box", y: 0, z: 0.66, w: 0.38, d: 0.32, h: 0.04, tint: 0.55 },
+        { shape: "cylinder", y: 0.04, z: 0.66, dia: 0.05, h: 0.46, tint: 0.6 },
+        { shape: "cylinder", y: 0.50, z: 0.66, dia: 0.32, h: 0.07, tint: 0.55 },
+      ] },
+    taiko: { ja: "大太鼓", en: "Large drum", dims: { w: 1.2, d: 0.9, h: 1.5 }, grip: null,
+      parts: [
+        // 台に横置きした太鼓。鼓面は正面・背面にあり、回転時も胴の奥行きが分かる。
+        ...[-0.48, 0.48].flatMap((x) => [
+          { shape: "box", x, y: 0, w: 0.12, d: 0.90, h: 0.08, tint: 0.55 },
+          { shape: "box", x, y: 0.08, w: 0.10, d: 0.12, h: 0.62, tint: 0.6 },
+        ]),
+        { shape: "box", y: 0.48, w: 1.12, d: 0.12, h: 0.10, tint: 0.6 },
+        { shape: "cylinder", axis: "z", y: 0.50, w: 1, d: 0.66, h: 1, tint: 0.8 },
+        { shape: "cylinder", axis: "z", y: 0.50, z: -0.35, w: 1, d: 0.04, h: 1, tint: 1.2 },
+        { shape: "cylinder", axis: "z", y: 0.50, z: 0.35, w: 1, d: 0.04, h: 1, tint: 1.2 },
+      ] },
   };
+  PROP_SHAPES.mask = { ja: "マスク（仮面）", en: "Mask", dims: { w: 0.18, d: 0.08, h: 0.24 },
+    grip: { x: 0, y: 0.035 }, parts: [
+      // 顎（狭い）→頬→目の高さ（広い）→額（やや狭い）の4段で輪郭を近似
+      // （2026-09-11 QA: 一枚板だと顔に見えない指摘）
+      boxAt(0, 0, 0, 0.11, 0.035, 0.06, 1.05),
+      boxAt(0, 0.06, 0, 0.16, 0.04, 0.07, 1.1),
+      boxAt(0, 0.13, 0, 0.18, 0.04, 0.07, 1.15),
+      boxAt(0, 0.20, 0, 0.14, 0.035, 0.04, 1.05),
+      boxAt(0, 0.10, 0.025, 0.025, 0.055, 0.05, 0.85),
+    ] };
+  /* 登る・上がるための大道具（2026-09-11 本人の希望「はしごと階段がほしい」から）。
+     部品は回転を持てないので、はしごの傾きは短い区間を少しずつ奥へずらして表す。
+     舞台の縮尺では斜めの一本に見え、外接箱も傾きに沿って並ぶ。
+     縦木を count 区間に分け、手前 zFront から奥 zBack へ寄せていく。 */
+  /* 立てかけたはしご・脚立の斜めの支柱。部品を回転できないので、細かい段を少しずつ
+     奥へずらして斜めに見せる。段が粗いと階段状のジグザグが目立つため、countは多めに取る
+     （2026-09-11 本人指摘: 滑らかにしてほしい）。
+     ★第2引数は「1段の高さ」ではなく「支柱全体の高さ」。段数を変えても総高さがずれない。
+     各段の奥行きは（1段あたりのずれ＋extra）。段数を増やすほどextra＝実際の支柱の太さに近づく。 */
+  const ladderRails = (count, height, x, zFront, zBack, w, extra) => {
+    const segH = height / count;
+    const travel = (zFront - zBack) / count;
+    return Array.from({ length: count }, (_, i) => [-x, x].map((side) => ({
+      shape: "box", x: side, y: segH * i, z: zFront - travel * (i + 0.5),
+      w, d: Math.abs(travel) + extra, h: segH * 1.02, tint: 0.85,
+    }))).flat();
+  };
+  // 4隅から頂点へ寄せる斜め材（骨組みの屋根用）。x・y・zを同時に少しずつ動かす。
+  const slantBeam = (count, x0, x1, y0, y1, z0, z1, thick) => {
+    const dx = (x1 - x0) / count, dy = (y1 - y0) / count, dz = (z1 - z0) / count;
+    return Array.from({ length: count }, (_, i) => ({
+      shape: "box", x: x0 + dx * (i + 0.5), y: y0 + dy * i, z: z0 + dz * (i + 0.5),
+      w: Math.abs(dx) + thick, d: Math.abs(dz) + thick, h: Math.abs(dy) + 0.02, tint: 0.85,
+    }));
+  };
+  const stairSteps = (count, w, tread, rise) => Array.from({ length: count }, (_, i) => ({
+    shape: "box", y: 0, z: (tread * count) / 2 - tread * (i + 0.5),
+    w, d: tread, h: rise * (i + 1), tint: 1 + 0.03 * i,
+  }));
+  /* 四角い枠の1周ぶん。左右の柱2本＋上下の桟2本で組む（実物の建て込みと同じ組み方）。
+     outerW/outerH は枠の外形、member は桟の見付け（太さ）、depth は奥行き、
+     y は枠の下端、z は枠の中心。桟は柱の間に収める。 */
+  const frameRing = (outerW, outerH, member, depth, y, z, tint) => {
+    const inner = outerW - member * 2;
+    return [
+      { shape: "box", x: -(outerW - member) / 2, y, z, w: member, d: depth, h: outerH, tint },
+      { shape: "box", x: (outerW - member) / 2, y, z, w: member, d: depth, h: outerH, tint },
+      { shape: "box", x: 0, y, z, w: inner, d: depth, h: member, tint: tint * 0.92 },
+      { shape: "box", x: 0, y: y + outerH - member, z, w: inner, d: depth, h: member, tint: tint * 1.08 },
+    ];
+  };
+  /* 中が空洞の筒（バケツ・樽など）。★円柱を重ねると中身が詰まった塊に見える
+     （2026-09-11 本人指摘）。側面だけを円周上に並べた小さな箱で作り、底は別に1枚入れる。
+     口が広がるテーパーは、高さ方向を bands 段に分けて段ごとの半径を変えて表す。 */
+  const hollowTaper = (bands, segments, y0, h, diaBottom, diaTop, wall, tint) => {
+    const bandH = h / bands;
+    const parts = [];
+    for (let b = 0; b < bands; b += 1) {
+      const t = (b + 0.5) / bands;
+      const r = (diaBottom + (diaTop - diaBottom) * t) / 2;
+      // ★隣どうしを深めに重ねる。接するだけだと格子が見えて編みカゴのようになる
+      const side = Math.max(wall, ((Math.PI * 2 * r) / segments) * 1.45);
+      for (let i = 0; i < segments; i += 1) {
+        const a = (i / segments) * Math.PI * 2;
+        parts.push({
+          shape: "box", x: Math.cos(a) * r, y: y0 + bandH * b, z: Math.sin(a) * r,
+          w: side, d: side, h: bandH * 1.08, tint: tint * (0.97 + 0.06 * t),
+        });
+      }
+    }
+    return parts;
+  };
+  /* 傾いた「板」（譜面台の譜面受け、書見台、スロープの踏み面など）。
+     slantBeamは細い棒用で幅が thick に固定されるため、幅を持つ板はこちらを使う。
+     斜面に沿って薄いスライスへ分け、各スライスを少し重ねて1枚の傾いた面に見せる。
+     y0→y1・z0→z1 が板の傾き、w が板の幅、thick が板の厚み。 */
+  const slantPanel = (segments, w, y0, y1, z0, z1, thick, tint) => {
+    const dy = (y1 - y0) / segments;
+    const dz = (z1 - z0) / segments;
+    return Array.from({ length: segments }, (_, i) => ({
+      shape: "box", x: 0, y: y0 + dy * i, z: z0 + dz * (i + 0.5),
+      w, d: Math.abs(dz) + thick, h: Math.abs(dy) * 1.04, tint,
+    }));
+  };
+  /* 横倒しの円筒（ローラボーラのローラー、一輪車の車輪など）。
+     ★cylinder部品はY方向にしか伸びないので、そのまま使うと必ず「立った筒」になる
+     （2026-09-11 本人指摘：ローラボーラの筒が縦・一輪車の車輪が水平な円盤になっていた）。
+     円の断面を軸と直角な向きへスライスし、各スライスを弦の高さを持つ箱にして並べる。
+     axis "z" = 軸が奥行き方向（左右に転がる／ローラボーラ）、
+     axis "x" = 軸が左右方向（前後に転がる／一輪車・自転車の車輪）。
+     x・y・z は外接箱の基準点で、y は最下点（他の部品と同じ約束）。 */
+  const lyingCylinder = (axis, segments, dia, length, x, y, z, tint) => {
+    const r = dia / 2;
+    const step = (dia / segments) * 1.04; // 隣どうしを少し重ねて継ぎ目を消す
+    return Array.from({ length: segments }, (_, i) => {
+      const off = ((i + 0.5) / segments - 0.5) * dia;
+      const chord = 2 * Math.sqrt(Math.max(0, r * r - off * off));
+      const top = y + r - chord / 2;
+      return axis === "z"
+        ? { shape: "box", x: x + off, y: top, z, w: step, d: length, h: chord, tint }
+        : { shape: "box", x, y: top, z: z + off, w: length, d: step, h: chord, tint };
+    });
+  };
+  PROP_SHAPES.ladder = { ja: "はしご", en: "Ladder", dims: { w: 0.45, d: 0.95, h: 3.2 }, grip: null,
+    parts: [
+      // 立てかけ式。足元が手前（+z）、上端が奥（-z）の壁側へ寄る。
+      ...ladderRails(48, 3.20, 0.20, 0.40, -0.40, 0.045, 0.04),
+      ...Array.from({ length: 8 }, (_, i) => ({
+        shape: "box", y: 0.40 * (i + 1) - 0.035, z: 0.40 - 0.10 * (i + 1),
+        w: 0.36, d: 0.035, h: 0.035, tint: 1.1,
+      })),
+    ] };
+  PROP_SHAPES.stepladder = { ja: "脚立", en: "Stepladder", dims: { w: 0.55, d: 1.10, h: 1.80 }, grip: null,
+    parts: [
+      // A型。手前側（+z）に踏み段、奥側（-z）は支えの脚と横桟。上に天板。
+      ...ladderRails(36, 1.80, 0.25, 0.50, 0.06, 0.04, 0.035),
+      ...ladderRails(36, 1.80, 0.23, -0.50, -0.06, 0.04, 0.035),
+      ...Array.from({ length: 4 }, (_, i) => ({
+        shape: "box", y: 0.36 * (i + 1) - 0.035, z: 0.50 - 0.088 * (i + 1),
+        w: 0.46, d: 0.09, h: 0.035, tint: 1.1,
+      })),
+      ...[2, 4].map((i) => ({
+        shape: "box", y: 0.36 * i - 0.02, z: -(0.50 - 0.088 * i),
+        w: 0.42, d: 0.03, h: 0.03, tint: 0.9,
+      })),
+      { shape: "box", y: 1.76, z: 0, w: 0.52, d: 0.30, h: 0.04, tint: 1.15 },
+    ] };
+  // 箱階段。手前（+z）から奥（-z）へ上がる。段数は形ごとに固定で、高さつまみは1段の高さを変える。
+  PROP_SHAPES.stairs = { ja: "階段（4段）", en: "Stairs (4 steps)", dims: { w: 0.90, d: 1.20, h: 0.80 }, grip: null,
+    parts: stairSteps(4, 0.90, 0.30, 0.20) };
+  PROP_SHAPES.stairs6 = { ja: "階段（6段）", en: "Stairs (6 steps)", dims: { w: 0.90, d: 1.80, h: 1.20 }, grip: null,
+    parts: stairSteps(6, 0.90, 0.30, 0.20) };
+  /* 第2弾前半: 建て込みの箱物11種（2026-09-11、段階計画に沿う）。
+     部品は回転を持てないので、斜め材は縦横の材だけで組む（トラスは格子、屏風は前後のずらし）。 */
+  PROP_SHAPES.door = { ja: "扉", en: "Door", dims: { w: 1.0, d: 0.15, h: 2.1 }, grip: null,
+    parts: [
+      boxAt(-0.47, 0, 0, 0.06, 0.12, 2.1, 0.7), boxAt(0.47, 0, 0, 0.06, 0.12, 2.1, 0.7),
+      boxAt(0, 2.04, 0, 1.0, 0.12, 0.06, 0.7),
+      boxAt(0.02, 0.02, 0, 0.84, 0.04, 2.0, 1.1),
+      { shape: "sphere", x: 0.34, y: 0.98, z: 0.05, dia: 0.05, tint: 0.6 },
+    ] };
+  PROP_SHAPES.window = { ja: "窓（窓付きの壁）", en: "Window flat", dims: { w: 1.6, d: 0.1, h: 2.4 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0, 1.6, 0.06, 2.4, 0.95),
+      boxAt(0, 0.95, 0.02, 0.9, 0.02, 1.1, 1.25),
+      boxAt(0, 0.9, 0.03, 1.0, 0.08, 0.05, 0.7), boxAt(0, 2.05, 0.03, 1.0, 0.08, 0.05, 0.7),
+      boxAt(-0.475, 0.9, 0.03, 0.05, 0.08, 1.2, 0.7), boxAt(0.475, 0.9, 0.03, 0.05, 0.08, 1.2, 0.7),
+      boxAt(0, 0.95, 0.035, 0.03, 0.05, 1.1, 0.7), boxAt(0, 1.485, 0.035, 0.9, 0.05, 0.03, 0.7),
+    ] };
+  PROP_SHAPES.column = { ja: "柱", en: "Column", dims: { w: 0.6, d: 0.6, h: 4.0 }, grip: null,
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.6, h: 0.12, tint: 0.8 },
+      { shape: "cylinder", y: 0.12, dia: 0.4, h: 3.7, tint: 1.0 },
+      { shape: "cylinder", y: 3.82, dia: 0.6, h: 0.18, tint: 0.85 },
+    ] };
+  PROP_SHAPES.railing = { ja: "手すり・柵", en: "Railing", dims: { w: 2.0, d: 0.08, h: 1.0 }, grip: null,
+    parts: [
+      ...[-0.96, -0.48, 0, 0.48, 0.96].map((x) => boxAt(x, 0, 0, 0.05, 0.05, 1.0, 0.8)),
+      boxAt(0, 0.95, 0, 2.0, 0.07, 0.05, 1.05),
+      boxAt(0, 0.48, 0, 1.92, 0.04, 0.04, 0.9), boxAt(0, 0.10, 0, 1.92, 0.04, 0.04, 0.9),
+    ] };
+  PROP_SHAPES.bridge = { ja: "橋（渡り廊下）", en: "Bridge", dims: { w: 1.2, d: 4.0, h: 2.5 }, grip: null,
+    parts: [
+      ...[-0.55, 0.55].flatMap((x) => [-1.9, 1.9].map((z) => boxAt(x, 0, z, 0.1, 0.1, 1.5, 0.75))),
+      boxAt(0, 1.5, 0, 1.2, 4.0, 0.1, 1.05),
+      ...[-0.57, 0.57].flatMap((x) => [-1.9, -0.95, 0, 0.95, 1.9].map((z) => boxAt(x, 1.6, z, 0.05, 0.05, 0.9, 0.8))),
+      boxAt(-0.57, 2.45, 0, 0.05, 4.0, 0.05, 1.0), boxAt(0.57, 2.45, 0, 0.05, 4.0, 0.05, 1.0),
+    ] };
+  PROP_SHAPES.platform = { ja: "やぐら（高台）", en: "Platform (scaffold)", dims: { w: 3.0, d: 1.2, h: 3.0 }, grip: null,
+    parts: [
+      // 4本脚＋中段の横材＋床。手すりは奥と両側だけで、手前は開けて登り降りに使う。
+      ...[-1.45, 1.45].flatMap((x) => [-0.55, 0.55].map((z) => boxAt(x, 0, z, 0.1, 0.1, 2.0, 0.75))),
+      boxAt(0, 1.0, -0.55, 2.9, 0.06, 0.06, 0.8), boxAt(0, 1.0, 0.55, 2.9, 0.06, 0.06, 0.8),
+      boxAt(-1.45, 1.0, 0, 0.06, 1.1, 0.06, 0.8), boxAt(1.45, 1.0, 0, 0.06, 1.1, 0.06, 0.8),
+      boxAt(0, 2.0, 0, 3.0, 1.2, 0.1, 1.05),
+      ...[-1.45, 0, 1.45].map((x) => boxAt(x, 2.1, -0.57, 0.05, 0.05, 0.9, 0.8)),
+      boxAt(-1.45, 2.1, 0.57, 0.05, 0.05, 0.9, 0.8), boxAt(1.45, 2.1, 0.57, 0.05, 0.05, 0.9, 0.8),
+      boxAt(0, 2.95, -0.57, 3.0, 0.05, 0.05, 1.0),
+      boxAt(-1.45, 2.95, 0, 0.05, 1.2, 0.05, 1.0), boxAt(1.45, 2.95, 0, 0.05, 1.2, 0.05, 1.0),
+    ] };
+  PROP_SHAPES.truss = { ja: "トラス", en: "Truss", dims: { w: 4.0, d: 0.3, h: 0.3 }, grip: null,
+    parts: [
+      ...[0, 0.26].flatMap((y) => [-0.13, 0.13].map((z) => boxAt(0, y, z, 4.0, 0.04, 0.04, 0.9))),
+      ...Array.from({ length: 8 }, (_, i) => -1.75 + 0.5 * i).flatMap((x) => [
+        boxAt(x, 0.04, -0.13, 0.04, 0.04, 0.22, 0.8), boxAt(x, 0.04, 0.13, 0.04, 0.04, 0.22, 0.8),
+        boxAt(x, 0, 0, 0.04, 0.26, 0.04, 0.8), boxAt(x, 0.26, 0, 0.04, 0.26, 0.04, 0.8),
+      ]),
+    ] };
+  PROP_SHAPES.cage = { ja: "檻", en: "Cage", dims: { w: 2.0, d: 2.0, h: 2.2 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0, 2.0, 2.0, 0.05, 0.7),
+      ...[-0.97, 0.97].flatMap((x) => [-0.97, 0.97].map((z) => boxAt(x, 0, z, 0.06, 0.06, 2.2, 0.75))),
+      boxAt(0, 2.14, -0.97, 2.0, 0.06, 0.06, 0.75), boxAt(0, 2.14, 0.97, 2.0, 0.06, 0.06, 0.75),
+      boxAt(-0.97, 2.14, 0, 0.06, 2.0, 0.06, 0.75), boxAt(0.97, 2.14, 0, 0.06, 2.0, 0.06, 0.75),
+      ...[-0.72, -0.48, -0.24, 0, 0.24, 0.48, 0.72].flatMap((p) => [
+        boxAt(p, 0.05, -0.97, 0.03, 0.03, 2.09, 0.85), boxAt(p, 0.05, 0.97, 0.03, 0.03, 2.09, 0.85),
+        boxAt(-0.97, 0.05, p, 0.03, 0.03, 2.09, 0.85), boxAt(0.97, 0.05, p, 0.03, 0.03, 2.09, 0.85),
+      ]),
+    ] };
+  PROP_SHAPES.torii = { ja: "鳥居", en: "Torii gate", dims: { w: 3.6, d: 0.5, h: 3.5 }, grip: null,
+    parts: [
+      { shape: "cylinder", x: -1.4, y: 0, dia: 0.3, h: 3.0, tint: 0.95 },
+      { shape: "cylinder", x: 1.4, y: 0, dia: 0.3, h: 3.0, tint: 0.95 },
+      boxAt(0, 2.45, 0, 3.4, 0.18, 0.2, 0.9),
+      boxAt(0, 2.65, 0, 0.2, 0.14, 0.35, 0.9),
+      boxAt(0, 3.0, 0, 3.5, 0.3, 0.18, 0.85),
+      boxAt(0, 3.18, 0, 3.6, 0.36, 0.32, 0.7),
+    ] };
+  PROP_SHAPES.screen = { ja: "屏風・衝立", en: "Folding screen", dims: { w: 2.7, d: 0.5, h: 1.7 }, grip: null,
+    parts: [
+      // 3枚を前後にずらして折れを表す（部品は回転できないため）。
+      boxAt(-0.9, 0, 0.2, 0.88, 0.04, 1.7, 1.0), boxAt(0, 0, -0.2, 0.88, 0.04, 1.7, 1.1), boxAt(0.9, 0, 0.2, 0.88, 0.04, 1.7, 1.0),
+    ] };
+  /* 四角い枠4種（2026-09-11 本人要望）。扉・窓・鳥居はどれも「何かが付いた枠」なので、
+     素の枠が無かった。人がくぐれる大きさ（内法およそ1.8×2.1m）を基準にする。
+     枠の1周は frameRing() で組む。 */
+  PROP_SHAPES.frameportal = { ja: "四角い枠（立て）", en: "Square frame (standing)", dims: { w: 2.0, d: 0.6, h: 2.4 }, grip: null,
+    parts: [
+      // 足。前後に長く出して自立させる（実物と同じで、これが無いと倒れる）
+      boxAt(-0.92, 0, 0, 0.16, 0.60, 0.08, 0.7),
+      boxAt(0.92, 0, 0, 0.16, 0.60, 0.08, 0.7),
+      ...frameRing(2.0, 2.32, 0.10, 0.12, 0.08, 0, 0.95),
+    ] };
+  PROP_SHAPES.framepicture = { ja: "額縁（立て）", en: "Picture frame (standing)", dims: { w: 2.0, d: 0.6, h: 2.4 }, grip: null,
+    parts: [
+      boxAt(-0.9, 0, 0, 0.18, 0.60, 0.08, 0.7),
+      boxAt(0.9, 0, 0, 0.18, 0.60, 0.08, 0.7),
+      // 額の見付けは3段の重なりで表す。前へ行くほど細く明るくして、彫りのある縁に見せる
+      ...frameRing(2.0, 2.32, 0.22, 0.10, 0.08, -0.05, 0.8),
+      ...frameRing(1.94, 2.26, 0.16, 0.06, 0.11, 0.03, 1.0),
+      ...frameRing(1.84, 2.16, 0.07, 0.05, 0.16, 0.07, 1.18),
+    ] };
+  PROP_SHAPES.framehang = { ja: "四角い枠（吊り）", en: "Square frame (hanging)", dims: { w: 2.0, d: 0.12, h: 2.8 }, grip: null,
+    parts: [
+      ...frameRing(2.0, 2.4, 0.10, 0.12, 0, 0, 0.95),
+      // 吊り点。上辺の左右2箇所から上へ伸ばす（エアリアル器具と同じ表し方）
+      ...[-0.6, 0.6].flatMap((x) => [
+        { shape: "cylinder", x, y: 2.4, z: 0, dia: 0.025, h: 0.34, tint: 0.55 },
+        { shape: "sphere", x, y: 2.74, z: 0, dia: 0.06, tint: 0.5 },
+      ]),
+    ] };
+  PROP_SHAPES.framecube = { ja: "立方体の枠（キューブ）", en: "Cube frame", dims: { w: 2.0, d: 2.0, h: 2.0 }, grip: null,
+    parts: [
+      // 12辺。柱4本＋上下の桟8本
+      ...[-0.95, 0.95].flatMap((x) => [-0.95, 0.95].map((z) => boxAt(x, 0, z, 0.10, 0.10, 2.0, 0.85))),
+      ...[-0.95, 0.95].flatMap((z) => [
+        boxAt(0, 0, z, 1.80, 0.10, 0.10, 0.74),
+        boxAt(0, 1.90, z, 1.80, 0.10, 0.10, 1.06),
+      ]),
+      ...[-0.95, 0.95].flatMap((x) => [
+        boxAt(x, 0, 0, 0.10, 1.80, 0.10, 0.74),
+        boxAt(x, 1.90, 0, 0.10, 1.80, 0.10, 1.06),
+      ]),
+    ] };
+  PROP_SHAPES.slope = { ja: "スロープ", en: "Ramp", dims: { w: 1.0, d: 2.5, h: 0.6 }, grip: null,
+    parts: stairSteps(12, 1.0, 2.5 / 12, 0.05).map((part) => ({ ...part, tint: 1 })) };
+  /* 第2弾後半: 家具10種・屋外情景8種（2026-09-11、段階計画に沿う） */
+  PROP_SHAPES.sofa = { ja: "ソファ", en: "Sofa", dims: { w: 1.8, d: 0.9, h: 0.8 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0.02, 1.8, 0.85, 0.35, 0.9),
+      boxAt(0, 0.30, -0.35, 1.8, 0.15, 0.5, 1.0),
+      boxAt(-0.83, 0, 0.02, 0.14, 0.85, 0.55, 1.05), boxAt(0.83, 0, 0.02, 0.14, 0.85, 0.55, 1.05),
+    ] };
+  PROP_SHAPES.bed = { ja: "ベッド", en: "Bed", dims: { w: 1.4, d: 2.0, h: 0.85 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0, 1.4, 2.0, 0.25, 0.85),
+      boxAt(0, 0.25, 0.02, 1.32, 1.9, 0.18, 1.15),
+      boxAt(0, 0.25, -0.94, 1.4, 0.10, 0.60, 0.9),
+    ] };
+  PROP_SHAPES.bookshelf = { ja: "棚・本棚", en: "Bookshelf", dims: { w: 0.9, d: 0.3, h: 1.8 }, grip: null,
+    parts: [
+      boxAt(0, 0, -0.135, 0.9, 0.03, 1.8, 0.85),
+      boxAt(-0.435, 0, 0, 0.03, 0.3, 1.8, 0.85), boxAt(0.435, 0, 0, 0.03, 0.3, 1.8, 0.85),
+      ...[0, 0.36, 0.72, 1.08, 1.44, 1.77].map((y) => boxAt(0, y, 0.01, 0.84, 0.28, 0.03, 1.1)),
+    ] };
+  PROP_SHAPES.dresser = { ja: "タンス・チェスト", en: "Chest of drawers", dims: { w: 1.0, d: 0.45, h: 1.0 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0, 1.0, 0.45, 1.0, 0.9),
+      boxAt(0, 0.97, 0, 1.02, 0.47, 0.04, 1.15),
+      ...[0.06, 0.38, 0.70].map((y) => boxAt(0, y, 0.20, 0.88, 0.05, 0.28, 1.1)),
+      ...[0.20, 0.52, 0.84].map((y) => ({ shape: "sphere", x: 0, y, z: 0.235, dia: 0.03, tint: 0.6 })),
+    ] };
+  PROP_SHAPES.mirror = { ja: "姿見（鏡）", en: "Standing mirror", dims: { w: 0.5, d: 0.35, h: 1.6 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0, 0.35, 0.35, 0.05, 0.75),
+      { shape: "cylinder", x: 0, y: 0.05, z: 0, dia: 0.04, h: 0.30, tint: 0.7 },
+      boxAt(0, 0.35, 0, 0.5, 0.04, 1.2, 1.2),
+    ] };
+  PROP_SHAPES.desk = { ja: "デスク（事務机）", en: "Desk", dims: { w: 1.2, d: 0.6, h: 0.72 }, grip: null,
+    parts: [
+      boxAt(0, 0.68, 0, 1.2, 0.6, 0.04, 1.1),
+      ...[-0.55, 0.55].flatMap((x) => [-0.25, 0.25].map((z) => boxAt(x, 0, z, 0.04, 0.04, 0.68, 0.7))),
+    ] };
+  PROP_SHAPES.counter = { ja: "カウンター（バー・受付）", en: "Bar counter", dims: { w: 2.4, d: 0.6, h: 1.1 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0, 2.4, 0.6, 1.0, 0.85),
+      boxAt(0, 1.0, 0, 2.44, 0.66, 0.06, 1.15),
+      boxAt(0, 0.1, 0.28, 2.3, 0.03, 0.03, 0.6),
+    ] };
+  PROP_SHAPES.fireplace = { ja: "暖炉", en: "Fireplace", dims: { w: 1.4, d: 0.5, h: 1.2 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0, 1.4, 0.5, 1.2, 0.85),
+      boxAt(0, 0.1, 0.15, 0.7, 0.22, 0.7, 0.25),
+      boxAt(0, 0.9, 0, 1.5, 0.55, 0.08, 1.15),
+    ] };
+  PROP_SHAPES.phonebooth = { ja: "電話ボックス", en: "Phone booth", dims: { w: 0.9, d: 0.9, h: 2.3 }, grip: null,
+    parts: [
+      ...[-0.42, 0.42].flatMap((x) => [-0.42, 0.42].map((z) => boxAt(x, 0, z, 0.06, 0.06, 2.3, 0.75))),
+      boxAt(0, 2.24, 0, 0.94, 0.94, 0.10, 0.9),
+      boxAt(0, 0.1, 0.42, 0.8, 0.03, 2.0, 1.2), boxAt(0, 0.1, -0.42, 0.8, 0.03, 2.0, 1.2),
+      boxAt(-0.42, 0.1, 0, 0.03, 0.8, 2.0, 1.2), boxAt(0.42, 0.1, 0, 0.03, 0.8, 2.0, 1.2),
+    ] };
+  PROP_SHAPES.clothesrack = { ja: "衣装ラック（ハンガーラック）", en: "Clothes rack", dims: { w: 1.2, d: 0.5, h: 1.6 }, grip: null,
+    parts: [
+      ...[-0.5, 0.5].flatMap((x) => [-0.22, 0.22].map((z) => boxAt(x, 0, z, 0.04, 0.04, 1.5, 0.75))),
+      boxAt(0, 1.5, 0, 1.2, 0.44, 0.05, 1.1),
+      boxAt(-0.5, 0.75, 0, 0.04, 0.44, 0.04, 0.85), boxAt(0.5, 0.75, 0, 0.04, 0.44, 0.04, 0.85),
+    ] };
+  /* 木は「まっすぐな棒＋大きな球1個」だとアメ玉に見える（2026-09-11 本人指摘）。
+     ①幹は根元が太く上が細いテーパー＋わずかな傾きを持たせる ②枝を数本出す
+     ③葉はひとつの球ではなく大きさ・位置・明るさの違う球を重ねて塊にする、の3点で木らしくする。 */
+  PROP_SHAPES.tree = { ja: "木（立ち木）", en: "Tree", dims: { w: 2.6, d: 2.6, h: 4.6 }, grip: null,
+    parts: [
+      // 幹。根元の張り出しから上へ細くなる。まっすぐ立てず、高さに応じて少しずつ傾ける
+      ...smoothRoundBody([
+        [0.000, 0.58, 0.58], [0.120, 0.44, 0.62], [0.350, 0.38, 0.64], [0.800, 0.33, 0.66],
+        [1.400, 0.28, 0.68], [2.000, 0.24, 0.70], [2.600, 0.20, 0.66], [3.100, 0.15, 0.62],
+      ], 34).map((part) => {
+        const t = part.y / 3.1;
+        return { ...part, x: 0.10 * t * t, z: -0.06 * t * t };
+      }),
+      // 枝（幹から葉の塊へ向かって斜めに出る）
+      // ★葉の塊の下端(y=1.55)より低い位置から出す。葉の中に完全に埋まると枝が見えなくなる
+      ...slantBeam(7, 0.05, 0.62, 1.12, 1.80, 0.02, 0.34, 0.09).map((b) => ({ ...b, tint: 0.62 })),
+      ...slantBeam(7, -0.03, -0.68, 1.26, 1.90, -0.02, -0.26, 0.08).map((b) => ({ ...b, tint: 0.60 })),
+      ...slantBeam(7, 0.01, 0.24, 1.18, 1.72, -0.04, -0.60, 0.07).map((b) => ({ ...b, tint: 0.64 })),
+      // 葉の塊。大きさ・位置・明るさを散らして、ひとつの丸に見えないようにする。
+      // ★下端を幹の途中(y=1.55)まで下ろし、横へ張り出す塊を足す。丸が枝先だけに乗ると
+      //   キノコやロリポップに見えるため、幹を葉が抱き込む高さ関係にする
+      { shape: "sphere", x: 0.00, y: 1.55, z: 0.00, dia: 1.90, tint: 0.95 },
+      { shape: "sphere", x: -0.66, y: 1.72, z: 0.20, dia: 1.28, tint: 0.86 },
+      { shape: "sphere", x: 0.64, y: 1.62, z: -0.22, dia: 1.32, tint: 1.02 },
+      { shape: "sphere", x: 0.10, y: 2.05, z: 0.58, dia: 1.24, tint: 0.90 },
+      { shape: "sphere", x: -0.28, y: 2.15, z: -0.60, dia: 1.20, tint: 1.06 },
+      { shape: "sphere", x: 0.44, y: 2.55, z: 0.18, dia: 1.18, tint: 1.10 },
+      { shape: "sphere", x: -0.46, y: 2.62, z: 0.02, dia: 1.10, tint: 0.96 },
+      { shape: "sphere", x: 0.02, y: 2.92, z: -0.22, dia: 1.12, tint: 1.14 },
+      { shape: "sphere", x: -0.16, y: 3.26, z: 0.18, dia: 0.94, tint: 1.04 },
+      { shape: "sphere", x: 0.14, y: 3.62, z: -0.02, dia: 0.78, tint: 1.16 },
+      { shape: "sphere", x: -0.02, y: 3.92, z: 0.06, dia: 0.68, tint: 1.08 },
+    ] };
+  /* 岩は球を並べると泡の塊に見える（2026-09-11 本人指摘）。岩は角張った面で光を受けるので、
+     平らな面を持つ箱を大きさ・位置・明るさを変えて重ね、下が広く上へ不規則に痩せる塊にする。
+     風化して丸くなった部分だけ小さな球を混ぜる。 */
+  PROP_SHAPES.rock = { ja: "岩", en: "Rock", dims: { w: 1.4, d: 1.2, h: 1.0 }, grip: null,
+    parts: [
+      // ★高さを揃えて積むと階段ピラミッドに見える。y と高さをばらして塊どうしを噛み合わせ、
+      // 左右非対称に張り出させることで、割れた岩らしい不揃いな輪郭にする。
+      // ★頂点は中心ではなく左寄りに置く。中心に積むと左右対称=人工物に見える
+      // 地面に接する割れ塊（四方向へ不揃いに張り出す）
+      boxAt(-0.10, 0.00, 0.00, 1.20, 1.00, 0.34, 0.80),
+      boxAt(0.34, 0.00, -0.08, 0.72, 0.84, 0.26, 0.94),
+      boxAt(-0.22, 0.00, -0.30, 0.80, 0.60, 0.46, 0.72),
+      boxAt(0.10, 0.00, 0.34, 0.66, 0.52, 0.22, 1.00),
+      // 中段。下の塊の途中から生やして、段の切れ目を隠す
+      boxAt(-0.30, 0.26, 0.06, 0.62, 0.66, 0.34, 0.88),
+      boxAt(0.16, 0.20, -0.16, 0.70, 0.62, 0.42, 1.04),
+      boxAt(0.42, 0.22, 0.20, 0.42, 0.44, 0.24, 0.84),
+      boxAt(-0.48, 0.14, -0.24, 0.42, 0.40, 0.30, 0.98),
+      // 上段〜頂点
+      boxAt(-0.14, 0.52, -0.04, 0.52, 0.52, 0.30, 1.12),
+      boxAt(0.18, 0.48, 0.12, 0.38, 0.36, 0.22, 0.90),
+      boxAt(-0.36, 0.44, 0.16, 0.30, 0.30, 0.18, 1.06),
+      boxAt(-0.08, 0.74, -0.10, 0.34, 0.32, 0.26, 1.20),
+      // 風化して角が落ちた部分。箱の稜線に球を噛ませて、全部の角が直角に見えないようにする
+      { shape: "sphere", x: 0.44, y: 0.30, z: 0.28, dia: 0.34, tint: 0.92 },
+      { shape: "sphere", x: -0.52, y: 0.28, z: -0.10, dia: 0.30, tint: 0.86 },
+      { shape: "sphere", x: -0.06, y: 0.68, z: 0.08, dia: 0.30, tint: 1.14 },
+      { shape: "sphere", x: 0.30, y: 0.56, z: -0.22, dia: 0.26, tint: 0.96 },
+    ] };
+  PROP_SHAPES.streetlamp = { ja: "街灯", en: "Street lamp", dims: { w: 0.4, d: 0.4, h: 3.5 }, grip: null,
+    parts: [
+      { shape: "cylinder", x: 0, y: 0, z: 0, dia: 0.4, h: 0.08, tint: 0.7 },
+      { shape: "cylinder", x: 0, y: 0.08, z: 0, dia: 0.09, h: 3.15, tint: 0.85 },
+      boxAt(0, 3.15, 0, 0.4, 0.4, 0.06, 0.9),
+      { shape: "sphere", x: 0, y: 3.15, z: 0, dia: 0.26, tint: 1.2 },
+    ] };
+  PROP_SHAPES.signboard = { ja: "看板・のぼり", en: "Sign / banner", dims: { w: 0.6, d: 0.1, h: 1.8 }, grip: null,
+    parts: [
+      { shape: "cylinder", x: 0, y: 0, z: 0, dia: 0.05, h: 1.2, tint: 0.7 },
+      boxAt(0, 1.2, 0, 0.6, 0.03, 0.6, 1.15),
+    ] };
+  PROP_SHAPES.barrel = { ja: "樽", en: "Barrel", dims: { w: 0.6, d: 0.6, h: 0.9 }, grip: null,
+    parts: [
+      { shape: "cylinder", x: 0, y: 0.03, z: 0, dia: 0.6, h: 0.84, tint: 0.85 },
+      { shape: "cylinder", x: 0, y: 0, z: 0, dia: 0.62, h: 0.05, tint: 0.6 },
+      { shape: "cylinder", x: 0, y: 0.4, z: 0, dia: 0.64, h: 0.05, tint: 0.6 },
+      { shape: "cylinder", x: 0, y: 0.85, z: 0, dia: 0.62, h: 0.05, tint: 0.6 },
+    ] };
+  PROP_SHAPES.planter = { ja: "植木鉢・花壇", en: "Planter", dims: { w: 0.4, d: 0.4, h: 0.55 }, grip: null,
+    parts: [
+      { shape: "cylinder", x: 0, y: 0, z: 0, dia: 0.32, h: 0.4, tint: 0.8 },
+      { shape: "cylinder", x: 0, y: 0.36, z: 0, dia: 0.4, h: 0.06, tint: 0.7 },
+      { shape: "sphere", x: 0, y: 0.40, z: 0, dia: 0.30, tint: 1.0 },
+    ] };
+  PROP_SHAPES.well = { ja: "井戸", en: "Well", dims: { w: 1.0, d: 1.0, h: 1.5 }, grip: null,
+    parts: [
+      { shape: "cylinder", x: 0, y: 0, z: 0, dia: 1.0, h: 0.9, tint: 0.8 },
+      { shape: "cylinder", x: 0, y: 0.85, z: 0, dia: 1.06, h: 0.06, tint: 0.65 },
+      ...[-0.42, 0.42].map((x) => boxAt(x, 0.9, 0, 0.06, 0.06, 0.55, 0.75)),
+      boxAt(0, 1.42, 0, 1.0, 0.5, 0.08, 0.9),
+    ] };
+  PROP_SHAPES.tent = { ja: "テント・小屋の骨組み", en: "Tent frame", dims: { w: 3.0, d: 3.0, h: 2.5 }, grip: null,
+    parts: [
+      // 四隅の柱＋頂上の四角い枠、そこから中央の頂点（ベル型テントの骨組み）へ4本の斜め材を寄せる。
+      ...[-1.45, 1.45].flatMap((x) => [-1.45, 1.45].map((z) => boxAt(x, 0, z, 0.08, 0.08, 1.8, 0.75))),
+      boxAt(0, 1.8, -1.45, 3.0, 0.06, 0.06, 0.85), boxAt(0, 1.8, 1.45, 3.0, 0.06, 0.06, 0.85),
+      boxAt(-1.45, 1.8, 0, 0.06, 3.0, 0.06, 0.85), boxAt(1.45, 1.8, 0, 0.06, 3.0, 0.06, 0.85),
+      ...[[-1.45, -1.45], [1.45, -1.45], [-1.45, 1.45], [1.45, 1.45]]
+        .flatMap(([x, z]) => slantBeam(5, x, 0, 1.8, 2.5, z, 0, 0.05)),
+    ] };
+  /* 第3弾: 手持ち小道具25種（2026-09-11、段階計画に沿う）。
+     いずれも grip（握り位置）を持つ。既存の「手に持つもの」分類へ合流する。
+     ※ cylinder に axis:"z" は使わない（partBoxes 変換でdia→w/dへ写らず1m四方に化ける下地不良があるため、
+     drumset/taiko以外では使用禁止。水平な形は box を横に長くして表す）。 */
+  PROP_SHAPES.broom = { ja: "箒（ほうき）", en: "Broom", dims: { w: 0.14, d: 0.14, h: 1.3 }, grip: { x: 0, y: 1.0 },
+    parts: [
+      { shape: "cylinder", y: 0.3, dia: 0.025, h: 1.0, tint: 0.75 },
+      { shape: "cylinder", y: 0.28, dia: 0.05, h: 0.05, tint: 0.6 },
+      { shape: "cylinder", y: 0, dia: 0.14, h: 0.30, tint: 0.55 },
+    ] };
+  PROP_SHAPES.bucket = { ja: "バケツ", en: "Bucket", dims: { w: 0.33, d: 0.33, h: 0.32 }, grip: { x: 0, y: 0.3 },
+    parts: [
+      // ★側面だけを立てて中を空洞にする（2026-09-11 本人指摘：円柱を重ねると中身が詰まって見える）
+      ...hollowTaper(5, 40, 0.015, 0.265, 0.21, 0.285, 0.016, 0.88),
+      // 底板。空洞の底が見えることで「入れ物」だと分かる
+      { shape: "cylinder", y: 0, z: 0, dia: 0.22, h: 0.02, tint: 0.6 },
+      { shape: "cylinder", y: 0.02, z: 0, dia: 0.195, h: 0.012, tint: 0.5 },
+      // 口の縁（巻き込みリム）。少し外へ張り出して厚みを見せる
+      ...hollowTaper(1, 40, 0.275, 0.022, 0.29, 0.29, 0.022, 0.66),
+      boxAt(0, 0.30, 0, 0.24, 0.02, 0.02, 0.6),
+    ] };
+  PROP_SHAPES.rope = { ja: "ロープ（束・張り）", en: "Rope", dims: { w: 0.28, d: 0.28, h: 0.22 }, grip: { x: 0, y: 0.18 },
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.28, h: 0.22, tint: 0.8 },
+      { shape: "cylinder", y: 0.05, dia: 0.18, h: 0.12, tint: 0.9 },
+    ] };
+  // 一つの丸い塊ではなく、大きさ違いの花の塊を寄せ集め、葉と包み紙も添える
+  // （2026-09-11 本人指摘: 完全な丸だと花に見えない）
+  PROP_SHAPES.bouquet = { ja: "花束", en: "Bouquet", dims: { w: 0.24, d: 0.24, h: 0.48 }, grip: { x: 0, y: 0.05 },
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.03, h: 0.30, tint: 0.6 },
+      // 包み紙（茎の上のほうから花の塊へ向けて広がる紙のコーン）
+      { shape: "cylinder", y: 0.14, dia: 0.05, h: 0.04, tint: 0.9 },
+      { shape: "cylinder", y: 0.18, dia: 0.09, h: 0.04, tint: 0.85 },
+      { shape: "cylinder", y: 0.22, dia: 0.13, h: 0.04, tint: 0.8 },
+      { shape: "cylinder", y: 0.26, dia: 0.17, h: 0.03, tint: 0.75 },
+      // 花の塊。大きさ・位置・明るさをそれぞれ変え、一つの球に見えないようにする
+      { shape: "sphere", x: 0, z: 0, y: 0.29, dia: 0.14, tint: 1.15 },
+      { shape: "sphere", x: -0.07, z: 0.03, y: 0.31, dia: 0.11, tint: 0.95 },
+      { shape: "sphere", x: 0.07, z: -0.02, y: 0.32, dia: 0.12, tint: 1.25 },
+      { shape: "sphere", x: -0.04, z: -0.06, y: 0.35, dia: 0.10, tint: 1.0 },
+      { shape: "sphere", x: 0.05, z: 0.06, y: 0.34, dia: 0.10, tint: 0.85 },
+      { shape: "sphere", x: 0.00, z: 0.08, y: 0.37, dia: 0.09, tint: 1.2 },
+      { shape: "sphere", x: -0.02, z: -0.03, y: 0.39, dia: 0.08, tint: 1.05 },
+      // 葉（花の根元から覗く薄い葉先）
+      boxAt(0.10, 0.24, 0.02, 0.03, 0.008, 0.11, 0.55),
+      boxAt(-0.09, 0.23, -0.02, 0.03, 0.008, 0.10, 0.5),
+      boxAt(0.02, 0.25, -0.09, 0.008, 0.03, 0.10, 0.5),
+    ] };
+  PROP_SHAPES.glassbottle = { ja: "グラス・ボトル", en: "Glass / bottle", dims: { w: 0.08, d: 0.08, h: 0.28 }, grip: { x: 0, y: 0.05 },
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.07, h: 0.20, tint: 0.85 },
+      { shape: "cylinder", y: 0.20, dia: 0.03, h: 0.08, tint: 0.7 },
+    ] };
+  PROP_SHAPES.tray = { ja: "トレイ（お盆）", en: "Tray", dims: { w: 0.35, d: 0.25, h: 0.04 }, grip: { x: 0, y: 0.02 },
+    parts: [
+      boxAt(0, 0, 0, 0.35, 0.25, 0.02, 0.9),
+      boxAt(0, 0.02, 0, 0.35, 0.25, 0.02, 1.1),
+    ] };
+  PROP_SHAPES.telephone = { ja: "電話（受話器・スマートフォン）", en: "Telephone", dims: { w: 0.07, d: 0.02, h: 0.14 }, grip: { x: 0, y: 0.07 },
+    parts: [ boxAt(0, 0, 0, 0.07, 0.02, 0.14, 1.1) ] };
+  PROP_SHAPES.newspaper = { ja: "新聞・手紙", en: "Newspaper / letter", dims: { w: 0.3, d: 0.02, h: 0.4 }, grip: { x: 0, y: 0.2 },
+    parts: [ boxAt(0, 0, 0, 0.3, 0.02, 0.4, 1.05) ] };
+  PROP_SHAPES.clock = { ja: "時計（置き時計）", en: "Clock", dims: { w: 0.15, d: 0.06, h: 0.2 }, grip: { x: 0, y: 0.10 },
+    parts: [
+      boxAt(0, 0, 0, 0.10, 0.06, 0.05, 0.7),
+      boxAt(0, 0.05, 0, 0.14, 0.05, 0.14, 1.1),
+    ] };
+  PROP_SHAPES.fan = { ja: "扇子", en: "Folding fan", dims: { w: 0.30, d: 0.02, h: 0.30 }, grip: { x: -0.02, y: 0.02 },
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.02, h: 0.05, tint: 0.6 },
+      boxAt(0.10, 0.05, 0, 0.26, 0.01, 0.22, 1.15),
+    ] };
+  PROP_SHAPES.scarf = { ja: "布・ベール・スカーフ", en: "Cloth / veil", dims: { w: 1.0, d: 0.02, h: 2.0 }, grip: { x: 0, y: 1.9 },
+    parts: [ boxAt(0, 0, 0, 1.0, 0.01, 2.0, 1.1) ] };
+  PROP_SHAPES.torch = { ja: "松明（たいまつ）", en: "Torch", dims: { w: 0.12, d: 0.12, h: 0.8 }, grip: { x: 0, y: 0.35 },
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.03, h: 0.65, tint: 0.65 },
+      { shape: "sphere", y: 0.62, dia: 0.12, tint: 1.2 },
+    ] };
+  /* ロウソク・燭台。★先端は明るい棒ではなく炎の形にする（2026-09-11 本人指摘）。
+     炎は回転体なので、涙のしずく型の輪郭を smoothRoundBody でなめらかに作り、
+     芯に近いほど明るくして中心が光っているように見せる。 */
+  PROP_SHAPES.candle = { ja: "ロウソク・燭台", en: "Candlestick", dims: { w: 0.1, d: 0.1, h: 0.4 }, grip: { x: 0, y: 0.05 },
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.10, h: 0.025, tint: 0.7 },
+      { shape: "cylinder", y: 0.025, dia: 0.022, h: 0.145, tint: 0.8 },
+      { shape: "sphere", y: 0.075, dia: 0.042, tint: 0.72 },       // 軸の飾り玉
+      { shape: "cylinder", y: 0.17, dia: 0.075, h: 0.012, tint: 0.68 }, // 蝋受け皿
+      { shape: "cylinder", y: 0.182, dia: 0.035, h: 0.028, tint: 0.75 },
+      { shape: "cylinder", y: 0.20, dia: 0.028, h: 0.125, tint: 1.0 },  // ロウソク本体
+      { shape: "cylinder", y: 0.322, dia: 0.031, h: 0.012, tint: 1.06 }, // 溶けて垂れた口
+      { shape: "cylinder", y: 0.332, dia: 0.004, h: 0.012, tint: 0.35 }, // 芯
+      // 炎
+      ...smoothRoundBody([
+        [0.000, 0.010, 1.06], [0.010, 0.026, 1.20], [0.024, 0.030, 1.26],
+        [0.038, 0.024, 1.22], [0.050, 0.014, 1.16], [0.060, 0.004, 1.10],
+      ], 24).map((part) => ({ ...part, y: part.y + 0.336 })),
+    ] };
+  PROP_SHAPES.treasurechest = { ja: "宝箱", en: "Treasure chest", dims: { w: 0.5, d: 0.35, h: 0.35 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0, 0.5, 0.35, 0.25, 0.75),
+      boxAt(0, 0.25, 0, 0.52, 0.36, 0.10, 0.85),
+      boxAt(-0.15, 0, 0, 0.04, 0.37, 0.35, 0.55),
+      boxAt(0.15, 0, 0, 0.04, 0.37, 0.35, 0.55),
+    ] };
+  PROP_SHAPES.cane = { ja: "ステッキ（杖）", en: "Walking cane", dims: { w: 0.06, d: 0.04, h: 0.9 }, grip: { x: 0, y: 0.75 },
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.018, h: 0.78, tint: 0.75 },
+      { shape: "cylinder", y: 0.76, dia: 0.03, h: 0.03, tint: 0.6 },
+      boxAt(0.02, 0.79, 0, 0.05, 0.03, 0.10, 1.1),
+    ] };
+  PROP_SHAPES.handbag = { ja: "ハンドバッグ・鞄", en: "Handbag", dims: { w: 0.3, d: 0.12, h: 0.32 }, grip: { x: 0, y: 0.30 },
+    parts: [
+      boxAt(0, 0, 0, 0.3, 0.12, 0.22, 0.8),
+      boxAt(-0.08, 0.22, 0, 0.02, 0.02, 0.08, 0.6), boxAt(0.08, 0.22, 0, 0.02, 0.02, 0.08, 0.6),
+      boxAt(0, 0.30, 0, 0.18, 0.02, 0.02, 0.6),
+    ] };
+  PROP_SHAPES.wagasa = { ja: "和傘・番傘", en: "Japanese umbrella", dims: { w: 1.1, d: 1.1, h: 1.16 }, grip: { x: 0, y: 0.30 },
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.035, h: 0.85, tint: 0.6 },
+      { shape: "cylinder", y: 0.85, dia: 1.1, h: 0.10, tint: 1.05 },
+      { shape: "cylinder", y: 0.95, dia: 0.7, h: 0.10, tint: 1.1 },
+      { shape: "cylinder", y: 1.05, dia: 0.3, h: 0.06, tint: 1.15 },
+      { shape: "cylinder", y: 1.11, dia: 0.04, h: 0.05, tint: 0.6 },
+    ] };
+  PROP_SHAPES.guitar = { ja: "ギター", en: "Guitar", dims: { w: 0.35, d: 0.115, h: 1.0 }, grip: { x: 0, y: 0.60 },
+    // 胴は幅35cm程度に対し側板の厚みは9〜12cm程度（アコースティックギターの比率。
+    // バイオリンより厚みの比率が大きい）。バイオリンと同じsmoothFlatBodyで
+    // 回転体にせず幅・厚みを別に持たせ、輪郭も滑らかにする（2026-09-11 本人指摘への対応）
+    parts: [
+      ...smoothFlatBody([
+        [0.000, 0.16, 0.06, 0.7], [0.0125, 0.26, 0.09, 0.85], [0.045, 0.32, 0.105, 0.88], [0.0825, 0.35, 0.115, 0.95],
+        [0.1175, 0.33, 0.11, 0.9], [0.1525, 0.27, 0.10, 0.85], [0.1875, 0.20, 0.085, 0.8], [0.2175, 0.24, 0.095, 0.85],
+        [0.2525, 0.30, 0.105, 0.9], [0.2875, 0.33, 0.11, 0.95], [0.32, 0.27, 0.095, 0.85], [0.335, 0.20, 0.08, 0.7],
+      ], 28),
+      { shape: "cylinder", x: 0, y: 0.155, z: 0.05, dia: 0.09, h: 0.012, tint: 0.22 },
+      boxAt(0, 0.335, 0, 0.05, 0.03, 0.53, 0.7),
+      boxAt(0, 0.865, 0, 0.09, 0.02, 0.10, 0.65),
+    ] };
+  PROP_SHAPES.bassguitar = { ja: "ベースギター", en: "Bass guitar", dims: { w: 0.37, d: 0.05, h: 1.2 }, grip: { x: 0, y: 0.75 },
+    // ソリッドボディなので厚みはアコースティックギターよりずっと薄い（4.5〜5cm程度）。
+    // スケール（弦長）がギターより長いぶんネックも長くする。
+    parts: [
+      ...smoothFlatBody([
+        [0.000, 0.17, 0.038, 0.7], [0.013, 0.27, 0.045, 0.85], [0.047, 0.33, 0.048, 0.88], [0.086, 0.37, 0.05, 0.95],
+        [0.122, 0.35, 0.048, 0.9], [0.159, 0.28, 0.045, 0.85], [0.196, 0.21, 0.04, 0.8], [0.227, 0.25, 0.042, 0.85],
+        [0.264, 0.31, 0.046, 0.9], [0.301, 0.35, 0.048, 0.95], [0.335, 0.28, 0.042, 0.85], [0.35, 0.21, 0.038, 0.7],
+      ], 26),
+      boxAt(0, 0.06, 0.024, 0.10, 0.01, 0.03, 0.25),
+      boxAt(0, 0.35, 0, 0.055, 0.03, 0.72, 0.7),
+      boxAt(0, 1.07, 0, 0.10, 0.025, 0.13, 0.65),
+      ...[-0.03, 0.03].flatMap((x) => [0.03, 0.09].map((z0) => ({ shape: "sphere", x, y: 1.16, z: z0 - 0.06, dia: 0.022, tint: 0.6 }))),
+    ] };
+  PROP_SHAPES.violin = { ja: "バイオリン", en: "Violin", dims: { w: 0.27, d: 0.045, h: 0.6 }, grip: { x: 0, y: 0.40 },
+    // 胴は幅20〜27cm程度に対し側板の厚みは3〜4cm程度（実物のバイオリンの比率）。
+    // 制御点の間をなめらかに補間しながら薄い段を28枚積み、輪郭のカクつきを抑える
+    // （2026-09-11 本人指摘: 段が少なくカクカクして見える）
+    parts: [
+      ...smoothFlatBody([
+        [0.000, 0.14, 0.026, 0.75], [0.0115, 0.20, 0.032, 0.85], [0.039, 0.245, 0.038, 0.88], [0.071, 0.265, 0.042, 0.95],
+        [0.1015, 0.24, 0.040, 0.9], [0.1305, 0.19, 0.036, 0.85], [0.158, 0.15, 0.034, 0.8], [0.184, 0.175, 0.036, 0.85],
+        [0.2115, 0.205, 0.038, 0.9], [0.2405, 0.24, 0.040, 0.95], [0.268, 0.20, 0.034, 0.85], [0.281, 0.16, 0.030, 0.75],
+      ], 28),
+      boxAt(-0.055, 0.13, 0.019, 0.014, 0.01, 0.065, 0.25), boxAt(0.055, 0.13, 0.019, 0.014, 0.01, 0.065, 0.25),
+      boxAt(0, 0.281, 0, 0.035, 0.022, 0.27, 0.7),
+      { shape: "sphere", y: 0.545, dia: 0.052, tint: 0.6 },
+    ] };
+  // 縦向きに再構成: 下がマウスピース、上がベル（音を鳴らす部分）が段階的に開く形
+  // （2026-09-11 本人指摘: ベルが球のままでは普通に見える。ここを最重要視して作り直した）
+  PROP_SHAPES.trumpet = { ja: "トランペット・管楽器", en: "Trumpet", dims: { w: 0.19, d: 0.19, h: 0.56 }, grip: { x: 0.07, y: 0.22 },
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.022, h: 0.035, tint: 0.55 },
+      { shape: "cylinder", y: 0.035, dia: 0.028, h: 0.09, tint: 0.75 },
+      ...[-0.05, 0, 0.05].map((x) => ({ shape: "cylinder", x, y: 0.125, dia: 0.042, h: 0.20, tint: 0.8 })),
+      ...[-0.05, 0, 0.05].map((x) => ({ shape: "sphere", x, y: 0.325, dia: 0.045, tint: 0.95 })),
+      { shape: "cylinder", y: 0.325, dia: 0.032, h: 0.04, tint: 0.75 },
+      // ベルの開き（段々太くなる円柱の積層）
+      ...bodySlices([[0.045, 0.03, 0.85], [0.07, 0.03, 0.9], [0.10, 0.03, 0.95], [0.135, 0.035, 1.0], [0.17, 0.04, 1.05]])
+        .map((part) => ({ ...part, y: part.y + 0.365 })),
+      { shape: "cylinder", y: 0.53, dia: 0.175, h: 0.012, tint: 1.2 },
+    ] };
+  // 蛇腹（音を鳴らす部分＝空気を送るふいご）の折り目を再現（2026-09-11、楽器類の作り込みの一環）
+  // 右手側に鍵盤、左手側に手を通すストラップ（実際に音を作る蛇腹と合わせ、演奏する部分を再現）
+  // （2026-09-11 本人指摘: 鍵盤と持ち手が無い）
+  PROP_SHAPES.accordion = { ja: "アコーディオン", en: "Accordion", dims: { w: 0.47, d: 0.205, h: 0.42 }, grip: null,
+    parts: [
+      boxAt(-0.15, 0, 0, 0.10, 0.20, 0.40, 0.75),
+      boxAt(0.15, 0, 0, 0.10, 0.20, 0.40, 0.85),
+      ...Array.from({ length: 7 }, (_, i) => boxAt(-0.086 + i * 0.0287, 0.01, 0, 0.018, 0.20, 0.38, i % 2 ? 1.15 : 0.95)),
+      ...[-0.10, 0.10].map((x) => boxAt(x, 0.40, 0, 0.11, 0.205, 0.02, 0.6)),
+      // 鍵盤（右手側の外側面に、縦に並ぶ白鍵を張り出させる）
+      ...Array.from({ length: 10 }, (_, i) => boxAt(0.222, 0.03 + i * 0.033, 0, 0.045, 0.10, 0.026, 1.3)),
+      ...[1, 4, 6].map((i) => boxAt(0.235, 0.03 + i * 0.033 + 0.016, 0.04, 0.018, 0.045, 0.014, 0.35)),
+      // 持ち手のストラップ（左手側の外側面に、手を通す輪をつける）
+      boxAt(-0.218, 0.13, -0.035, 0.018, 0.018, 0.14, 0.5), boxAt(-0.218, 0.13, 0.035, 0.018, 0.018, 0.14, 0.5),
+      boxAt(-0.228, 0.26, 0, 0.018, 0.09, 0.018, 0.5),
+      // 肩ベルトの付け根（両端の上部）
+      { shape: "sphere", x: -0.19, y: 0.40, z: 0, dia: 0.025, tint: 0.5 },
+      { shape: "sphere", x: 0.19, y: 0.40, z: 0, dia: 0.025, tint: 0.5 },
+    ] };
+  PROP_SHAPES.cigarbox = { ja: "シガーボックス", en: "Cigar boxes", dims: { w: 0.16, d: 0.09, h: 0.06 }, grip: { x: 0, y: 0.03 },
+    parts: [ boxAt(0, 0, 0, 0.16, 0.09, 0.06, 0.85) ] };
+  PROP_SHAPES.devilstick = { ja: "デビルスティック", en: "Devil stick", dims: { w: 0.05, d: 0.05, h: 0.6 }, grip: { x: 0, y: 0.30 },
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.03, h: 0.6, tint: 0.85 },
+      { shape: "cylinder", y: 0, dia: 0.05, h: 0.04, tint: 0.6 },
+      { shape: "cylinder", y: 0.56, dia: 0.05, h: 0.04, tint: 0.6 },
+    ] };
+  PROP_SHAPES.poi = { ja: "ポイ", en: "Poi", dims: { w: 0.10, d: 0.10, h: 0.6 }, grip: { x: 0, y: 0.55 },
+    parts: [
+      { shape: "sphere", y: 0, dia: 0.10, tint: 1.1 },
+      { shape: "cylinder", y: 0.10, dia: 0.01, h: 0.40, tint: 0.5 },
+      { shape: "cylinder", y: 0.50, dia: 0.015, h: 0.10, tint: 0.6 },
+    ] };
+  // 既存のring（0.40m）を約2.25倍したフラフープ。上下左右4本の縁で作る技法をそのまま流用。
+  PROP_SHAPES.hoop = { ja: "フープ（フラフープ）", en: "Hula hoop", dims: { w: 0.9, d: 0.05, h: 0.9 }, grip: { x: 0, y: 0.85 },
+    parts: ringTube(128, 0.43, 0.06, 1.05) };
+  /* 第4弾: 楽器・音響機材の大物7種（2026-09-11、段階計画に沿う）。既存の「楽器」分類へ合流する。 */
+  // 上から見たときの片側だけ丸く張り出す「曲線側」を再現（2026-09-11、楽器類の作り込みの一環）。
+  // 鍵盤側(z=0)から尾部(z=1.85、ほぼ1点)へ向け、低音側はほぼ直線、高音側が弧を描いて張り出す。
+  // ケースの制御点（低音側はほぼ直線・高音側の曲線側が尾部へ収束）。厚み違い2種で使い回す。
+  const GRANDPIANO_PROFILE = [
+    [0.00, -0.70, 0.70, 0.85], [0.25, -0.70, 0.80, 0.88], [0.55, -0.70, 0.95, 0.95], [0.85, -0.70, 0.90, 0.92],
+    [1.15, -0.65, 0.75, 0.88], [1.45, -0.45, 0.50, 0.85], [1.70, -0.15, 0.15, 0.82], [1.85, -0.02, 0.02, 0.8],
+  ];
+  // ケースの厚み(h)を0.15→0.25へ増やし、下端に少し張り出す見切り（モールディング）を足す
+  // （2026-09-11 本人指摘: もう少し厚みがほしい）
+  PROP_SHAPES.grandpiano = { ja: "グランドピアノ", en: "Grand piano", dims: { w: 1.7, d: 1.85, h: 0.86 }, grip: null,
+    parts: [
+      ...pianoCurveSlices(padPianoPoints(GRANDPIANO_PROFILE, 0.025), 40, 0.58, 0.03),
+      ...pianoCurveSlices(GRANDPIANO_PROFILE, 40, 0.61, 0.25),
+      boxAt(0, 0.86, 0.13, 0.30, 0.018, 0.16, 1.05),
+      boxAt(-0.62, 0, 0.14, 0.08, 0.08, 0.58, 0.6), boxAt(0.55, 0, 0.14, 0.08, 0.08, 0.58, 0.6),
+      boxAt(0, 0, 1.78, 0.08, 0.08, 0.58, 0.6),
+    ] };
+  // 蓋を開けた状態の別バリエーション（2026-09-11 本人依頼: 開閉を表現したい）。
+  // 駒の種類を増やさず、閉じた形とは別の小道具の形として選べるようにした（開閉の切り替えボタンではない）。
+  // 段数を増やしてスロープ状に近づけ（10段）、実物にある「つっかい棒」（支柱）を1本だけ再現する
+  // （2026-09-11 本人指摘: 段々に見える→斜めのスロープに／車のボンネットの支えのような支柱がほしい）
+  PROP_SHAPES.grandpianoopen = { ja: "グランドピアノ（開）", en: "Grand piano (open)", dims: { w: 1.7, d: 1.85, h: 1.85 }, grip: null,
+    parts: [
+      ...pianoCurveSlices(padPianoPoints(GRANDPIANO_PROFILE, 0.025), 24, 0.58, 0.03),
+      ...pianoCurveSlices(GRANDPIANO_PROFILE, 24, 0.61, 0.25),
+      ...pianoOpenLid(GRANDPIANO_PROFILE, 24, 10, 0.86, 0.95, 0.02),
+      // 支柱（本人指摘の「車の支えのようなもの」）。高音側の縁の下、胴とほぼ持ち上がった天板の裏を
+      // 斜めに1本つなぐ。z=1.0付近は幅が最も広い弧のあたり（実物でも支柱を立てる位置に近い）。
+      ...slantBeam(6, 0.645, 0.775, 0.86, 1.79, 1.0, 1.0, 0.025),
+      boxAt(-0.62, 0, 0.14, 0.08, 0.08, 0.58, 0.6), boxAt(0.55, 0, 0.14, 0.08, 0.08, 0.58, 0.6),
+      boxAt(0, 0, 1.78, 0.08, 0.08, 0.58, 0.6),
+    ] };
+  PROP_SHAPES.uprightpiano = { ja: "アップライトピアノ", en: "Upright piano", dims: { w: 1.5, d: 0.6, h: 1.2 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0, 1.5, 0.6, 1.2, 0.8),
+      boxAt(0, 0.75, 0.32, 1.4, 0.05, 0.15, 0.6),
+      boxAt(0, 1.18, 0, 1.5, 0.6, 0.05, 1.1),
+    ] };
+  PROP_SHAPES.micstand = { ja: "マイクスタンド", en: "Mic stand", dims: { w: 0.35, d: 0.35, h: 1.5 }, grip: null,
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.35, h: 0.03, tint: 0.7 },
+      { shape: "cylinder", y: 0.03, dia: 0.025, h: 1.35, tint: 0.8 },
+      { shape: "sphere", y: 1.38, dia: 0.08, tint: 1.15 },
+    ] };
+  /* 譜面台。★譜面受けは垂直な板ではなく後ろへ傾いた面（2026-09-11 本人指摘：看板に見えた）。
+     部品を回転できないので、斜面を薄いスライスに分けて1枚の傾いた板に見せる。
+     下端には譜面が滑り落ちないための返し（棚）が付く。脚は実物と同じ三脚。 */
+  PROP_SHAPES.musicstand = { ja: "譜面台", en: "Music stand", dims: { w: 0.5, d: 0.33, h: 1.2 }, grip: null,
+    parts: [
+      // 三脚。中心のハブから3方向へ斜めに下りる
+      { shape: "cylinder", x: 0, y: 0, z: 0, dia: 0.055, h: 0.07, tint: 0.7 },
+      ...[[0, 0.20], [-0.173, -0.10], [0.173, -0.10]].flatMap(([lx, lz]) =>
+        slantBeam(5, 0, lx, 0.005, 0.05, 0, lz, 0.022).map((b) => ({ ...b, tint: 0.65 }))),
+      // 支柱（上段が細くなる伸縮式に見えるよう2段にする）
+      { shape: "cylinder", x: 0, y: 0.04, z: 0, dia: 0.026, h: 0.50, tint: 0.8 },
+      { shape: "cylinder", x: 0, y: 0.54, z: 0, dia: 0.019, h: 0.37, tint: 0.85 },
+      // 譜面受けと支柱をつなぐ首
+      boxAt(0, 0.86, -0.02, 0.05, 0.08, 0.09, 0.7),
+      // 譜面受け（後ろへ約24°傾いた面）
+      ...slantPanel(40, 0.5, 0.89, 1.20, 0.075, -0.065, 0.02, 1.06),
+      // 下端の返し。譜面はここに載る
+      boxAt(0, 0.87, 0.092, 0.5, 0.035, 0.045, 0.92),
+    ] };
+  PROP_SHAPES.speaker = { ja: "スピーカー（モニター・PA）", en: "Speaker", dims: { w: 0.4, d: 0.4, h: 0.6 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0, 0.4, 0.4, 0.6, 0.8),
+      boxAt(0, 0.35, 0.21, 0.25, 0.02, 0.25, 0.4),
+      boxAt(0, 0.10, 0.21, 0.15, 0.02, 0.15, 0.4),
+    ] };
+  PROP_SHAPES.keyboardstand = { ja: "キーボード（スタンド付き）", en: "Keyboard on stand", dims: { w: 1.4, d: 0.4, h: 0.9 }, grip: null,
+    parts: [
+      boxAt(0, 0.75, 0, 1.4, 0.35, 0.06, 1.1),
+      boxAt(-0.55, 0, 0, 0.05, 0.30, 0.75, 0.65), boxAt(0.55, 0, 0, 0.05, 0.30, 0.75, 0.65),
+      boxAt(0, 0.35, 0, 1.3, 0.05, 0.05, 0.6),
+    ] };
+  PROP_SHAPES.djbooth = { ja: "DJブース", en: "DJ booth", dims: { w: 1.8, d: 0.6, h: 1.0 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0, 1.8, 0.6, 1.0, 0.8),
+      boxAt(0, 1.0, 0, 1.84, 0.64, 0.05, 1.15),
+      boxAt(-0.5, 1.0, 0, 0.4, 0.3, 0.04, 0.5), boxAt(0.5, 1.0, 0, 0.4, 0.3, 0.04, 0.5),
+    ] };
+  /* 第5・6弾: 床置きサーカス器具10種＋残り9種（2026-09-11、これで要否リスト83件が出そろう）。
+     ★吊り物5種（aerialhoop/aerialstraps/aerialhammock/spanishweb/swingpole）と竹馬は、床置きの静止した
+     見た目だけを再現した簡易版。トラピーズ/ティシューのような吊り高さ調整・自動高さ変化は実装していない
+     （D3は本人不在のため「まず簡易版を出す」を選択。本格的な吊り駒化は別途判断）。*/
+  /* ローラボーラ。★ローラーは横倒し。演者は正面を向いて乗り、板は左右に傾く＝
+     ローラーの軸は奥行き方向で、左右へ転がる（2026-09-11 本人指摘で縦向きから修正）。 */
+  PROP_SHAPES.rolabola = { ja: "ローラボーラ", en: "Rola bola", dims: { w: 0.7, d: 0.34, h: 0.22 }, grip: null,
+    parts: [
+      ...lyingCylinder("z", 26, 0.18, 0.34, 0, 0, 0, 0.78),
+      // ローラーの端の面（木口）。転がる向きが見た目で分かるよう少し明るくする
+      boxAt(0, 0.02, 0.165, 0.155, 0.01, 0.14, 1.0),
+      boxAt(0, 0.02, -0.165, 0.155, 0.01, 0.14, 1.0),
+      // 板。ローラーの上に載り、端に落下防止の返しが付く
+      boxAt(0, 0.18, 0, 0.70, 0.30, 0.04, 1.08),
+      boxAt(-0.33, 0.14, 0, 0.04, 0.30, 0.04, 0.9),
+      boxAt(0.33, 0.14, 0, 0.04, 0.30, 0.04, 0.9),
+    ] };
+  PROP_SHAPES.germanwheel = { ja: "ジャーマンホイール（ラート）", en: "German wheel", dims: { w: 2.2, d: 0.5, h: 2.2 }, grip: null,
+    parts: [
+      ...[-0.25, 0.25].flatMap((z) => [
+        boxAt(0, 2.14, z, 1.6, 0.06, 0.06, 1.0), boxAt(0, 0, z, 1.6, 0.06, 0.06, 1.0),
+        boxAt(-1.03, 0.06, z, 0.06, 0.06, 2.08, 0.95), boxAt(1.03, 0.06, z, 0.06, 0.06, 2.08, 0.95),
+      ]),
+      boxAt(-1.03, 1.1, 0, 0.05, 0.5, 0.05, 0.85), boxAt(1.03, 1.1, 0, 0.05, 0.5, 0.05, 0.85),
+      boxAt(0, 2.14, 0, 0.05, 0.5, 0.05, 0.85), boxAt(0, 0, 0, 0.05, 0.5, 0.05, 0.85),
+    ] };
+  PROP_SHAPES.minitramp = { ja: "ミニトランポリン", en: "Mini trampoline", dims: { w: 1.2, d: 1.2, h: 0.5 }, grip: null,
+    parts: [
+      boxAt(0, 0.45, 0, 1.2, 1.2, 0.05, 0.85),
+      ...[-0.5, 0.5].flatMap((x) => [-0.5, 0.5].map((z) => boxAt(x, 0, z, 0.06, 0.06, 0.45, 0.6))),
+    ] };
+  PROP_SHAPES.rollingglobe = { ja: "大玉（ローリングボール）", en: "Rolling globe", dims: { w: 0.8, d: 0.8, h: 0.8 }, grip: null,
+    parts: [ { shape: "sphere", y: 0, dia: 0.8, tint: 1.0 } ] };
+  PROP_SHAPES.russianbar = { ja: "ロシアンバー", en: "Russian bar", dims: { w: 4.5, d: 0.08, h: 0.08 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0, 4.5, 0.08, 0.08, 0.85),
+      { shape: "sphere", x: -2.25, y: 0, z: 0, dia: 0.08, tint: 0.9 }, { shape: "sphere", x: 2.25, y: 0, z: 0, dia: 0.08, tint: 0.9 },
+    ] };
+  PROP_SHAPES.crashmat = { ja: "落下用マット（クラッシュマット）", en: "Crash mat", dims: { w: 2.0, d: 3.0, h: 0.3 }, grip: null,
+    parts: [
+      boxAt(0, 0, 0, 2.0, 3.0, 0.3, 0.9),
+      boxAt(0, 0.28, 0, 2.0, 3.0, 0.04, 1.1),
+    ] };
+  /* 円形のクラッシュマット。空中系（フープ・シルク・チャイニーズポール）の真下へ敷くもので、
+     吊り元を中心にどの向きへ落ちても受けられるよう丸い（2026-09-11 本人要望で追加）。
+     ここはcylinderの伸びる向き（Y）と厚みの向きが一致するので、そのまま円柱で作れる。 */
+  PROP_SHAPES.crashmatround = { ja: "落下用マット（円形）", en: "Crash mat (round)", dims: { w: 2.4, d: 2.4, h: 0.3 }, grip: null,
+    parts: [
+      { shape: "cylinder", x: 0, y: 0, z: 0, dia: 2.4, h: 0.26, tint: 0.9 },
+      { shape: "cylinder", x: 0, y: 0.26, z: 0, dia: 2.4, h: 0.035, tint: 1.1 },
+      // 中心の目印（吊り元の真下）。敷く位置合わせの手がかりになる
+      { shape: "cylinder", x: 0, y: 0.295, z: 0, dia: 0.5, h: 0.005, tint: 1.24 },
+    ] };
+  PROP_SHAPES.russianswing = { ja: "跳び板（ロシアンスイング等の大型器具）", en: "Russian swing", dims: { w: 1.6, d: 4.0, h: 3.0 }, grip: null,
+    parts: [
+      ...[-0.7, 0.7].flatMap((x) => [-1.8, 1.8].map((z) => boxAt(x, 0, z, 0.08, 0.08, 2.9, 0.75))),
+      boxAt(0, 2.9, -1.8, 1.5, 0.08, 0.08, 0.9), boxAt(0, 2.9, 1.8, 1.5, 0.08, 0.08, 0.9),
+      boxAt(0, 2.9, 0, 0.08, 3.6, 0.08, 0.9),
+      { shape: "cylinder", x: -0.3, y: 1.2, z: 0, dia: 0.02, h: 1.7, tint: 0.6 },
+      { shape: "cylinder", x: 0.3, y: 1.2, z: 0, dia: 0.02, h: 1.7, tint: 0.6 },
+      boxAt(0, 1.15, 0, 0.8, 0.15, 0.06, 0.8),
+    ] };
+  PROP_SHAPES.slackline = { ja: "スラックライン", en: "Slackline", dims: { w: 0.05, d: 6.0, h: 0.5 }, grip: null,
+    parts: [
+      boxAt(0, 0.45, 0, 0.04, 6.0, 0.02, 0.85),
+      { shape: "cylinder", y: 0, z: -3.0, dia: 0.08, h: 0.45, tint: 0.6 },
+      { shape: "cylinder", y: 0, z: 3.0, dia: 0.08, h: 0.45, tint: 0.6 },
+    ] };
+  PROP_SHAPES.walljump = { ja: "跳躍用の壁（ウォールランニング）", en: "Acrobatic wall", dims: { w: 3.0, d: 0.3, h: 5.0 }, grip: null,
+    parts: [ boxAt(0, 0, 0, 3.0, 0.3, 5.0, 0.85) ] };
+  /* 一輪車。★車輪は進行方向（前後）へ転がる縦の輪。cylinderをそのまま使うと
+     水平に寝た円盤になる（2026-09-11 本人指摘）ので、横倒しの円筒で作る。 */
+  PROP_SHAPES.unicycle = { ja: "一輪車", en: "Unicycle", dims: { w: 0.38, d: 0.5, h: 1.0 }, grip: null,
+    parts: [
+      ...lyingCylinder("x", 30, 0.50, 0.06, 0, 0, 0, 0.55),  // タイヤ
+      ...lyingCylinder("x", 20, 0.36, 0.05, 0, 0.07, 0, 0.88), // リム・スポーク面
+      boxAt(0, 0.225, 0, 0.22, 0.05, 0.05, 0.7),             // 車軸とハブ
+      // フォーク（車軸からシートポストまで）
+      boxAt(-0.05, 0.25, 0, 0.03, 0.05, 0.40, 0.75),
+      boxAt(0.05, 0.25, 0, 0.03, 0.05, 0.40, 0.75),
+      { shape: "cylinder", x: 0, y: 0.62, z: 0, dia: 0.035, h: 0.28, tint: 0.8 },
+      // サドル
+      boxAt(0, 0.90, 0, 0.09, 0.26, 0.05, 0.62),
+      boxAt(0, 0.95, -0.02, 0.11, 0.22, 0.05, 0.68),
+      // クランクとペダル。左右で前後が逆に付く
+      boxAt(-0.10, 0.235, 0.05, 0.12, 0.04, 0.03, 0.72),
+      boxAt(0.10, 0.235, -0.05, 0.12, 0.04, 0.03, 0.72),
+      boxAt(-0.155, 0.215, 0.05, 0.07, 0.10, 0.03, 0.58),
+      boxAt(0.155, 0.215, -0.05, 0.07, 0.10, 0.03, 0.58),
+    ] };
+  // らせん階段。部品は回転できないので、段（小さな踏み板）を円周上の位置へ1段ずつ置いて渦を表す。
+  PROP_SHAPES.spiralstairs = { ja: "らせん階段", en: "Spiral stairs", dims: { w: 1.8, d: 1.8, h: 3.0 }, grip: null,
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.15, h: 3.0, tint: 0.7 },
+      ...Array.from({ length: 12 }, (_, i) => {
+        const a = i * (Math.PI * 2 / 12); const r = 0.55;
+        return boxAt(Math.cos(a) * r, 0.25 * i, Math.sin(a) * r, 0.35, 0.35, 0.05, 1.0 + 0.03 * (i % 2));
+      }),
+    ] };
+  // 竹馬。見た目だけの静止プロップで、装備時に演者の身長が変わる挙動は未実装（本人確認待ち）。
+  PROP_SHAPES.stilts = { ja: "竹馬・スティルト", en: "Stilts", dims: { w: 0.15, d: 0.4, h: 1.5 }, grip: null,
+    parts: [
+      ...[-0.08, 0.08].map((x) => ({ shape: "cylinder", x, y: 0, dia: 0.03, h: 1.5, tint: 0.7 })),
+      ...[-0.08, 0.08].map((x) => boxAt(x, 0.5, 0, 0.10, 0.15, 0.04, 0.6)),
+    ] };
+  PROP_SHAPES.cart = { ja: "荷車・リヤカー・ワゴン（キャスター台）", en: "Cart / wagon", dims: { w: 0.9, d: 1.93, h: 0.8 }, grip: null,
+    parts: [
+      boxAt(0, 0.45, 0, 0.9, 1.5, 0.05, 0.7),
+      boxAt(0, 0.5, 0, 0.9, 1.5, 0.30, 0.85),
+      // ★車輪は縦。同じ理由でローラボーラ・一輪車も直した（2026-09-11）
+      ...[-0.4, 0.4].flatMap((x) => [-0.6, 0.6].flatMap((z) => lyingCylinder("x", 20, 0.35, 0.06, x, 0, z, 0.6))),
+      boxAt(0, 0.55, -0.9, 0.06, 0.5, 0.06, 0.6),
+    ] };
+  /* 自転車。★車輪は前後に転がる縦の輪（横倒しの円筒で作る）。
+     cylinderのまま置くと水平な円盤になる（2026-09-11 一輪車と同じ指摘の波及分）。 */
+  PROP_SHAPES.bicycle = { ja: "自転車", en: "Bicycle", dims: { w: 0.42, d: 1.72, h: 0.8 }, grip: null,
+    parts: [
+      ...lyingCylinder("x", 30, 0.68, 0.05, 0, 0, -0.52, 0.6),
+      ...lyingCylinder("x", 30, 0.68, 0.05, 0, 0, 0.52, 0.6),
+      ...lyingCylinder("x", 20, 0.48, 0.04, 0, 0.10, -0.52, 0.85),
+      ...lyingCylinder("x", 20, 0.48, 0.04, 0, 0.10, 0.52, 0.85),
+      // フレーム（ダイヤモンド型）。斜め材は小さな箱を並べて表す
+      ...slantBeam(6, 0, 0, 0.26, 0.34, -0.10, -0.52, 0.04).map((b) => ({ ...b, tint: 0.8 })), // チェーンステー
+      ...slantBeam(6, 0, 0, 0.26, 0.70, -0.10, -0.26, 0.04).map((b) => ({ ...b, tint: 0.8 })), // シートチューブ
+      ...slantBeam(8, 0, 0, 0.26, 0.64, -0.10, 0.40, 0.04).map((b) => ({ ...b, tint: 0.78 })), // ダウンチューブ
+      ...slantBeam(6, 0, 0, 0.66, 0.70, 0.40, -0.26, 0.04).map((b) => ({ ...b, tint: 0.82 })), // トップチューブ
+      ...slantBeam(6, 0, 0, 0.34, 0.64, 0.52, 0.40, 0.04).map((b) => ({ ...b, tint: 0.8 })),  // フロントフォーク
+      boxAt(0, 0.70, -0.28, 0.10, 0.24, 0.05, 0.55),  // サドル
+      boxAt(0, 0.64, 0.40, 0.04, 0.06, 0.14, 0.7),    // ステム
+      boxAt(0, 0.76, 0.40, 0.42, 0.05, 0.04, 0.6),    // ハンドル
+      boxAt(-0.08, 0.22, -0.10, 0.06, 0.16, 0.03, 0.7), // ペダル
+      boxAt(0.08, 0.22, -0.10, 0.06, 0.16, 0.03, 0.7),
+    ] };
+  // 以下5種は吊り物サーカス器具の簡易版（床置き表示のみ。吊り高さ調整は無し）。
+  PROP_SHAPES.aerialhoop = { ja: "エアリアルフープ（リラ）", en: "Aerial hoop (lyra)", dims: { w: 1.0, d: 0.06, h: 1.4 }, grip: { x: 0, y: 0.94 },
+    parts: [
+      ...ringTube(128, 0.47, 0.06, 1.05),
+      { shape: "cylinder", y: 0.94, dia: 0.03, h: 0.42, tint: 0.55 },
+      { shape: "sphere", y: 1.34, dia: 0.06, tint: 0.5 },
+    ] };
+  PROP_SHAPES.aerialstraps = { ja: "ストラップ", en: "Aerial straps", dims: { w: 0.15, d: 0.06, h: 2.5 }, grip: { x: 0, y: 2.0 },
+    // 上端に吊り金具を示す点を足す（2026-09-11 QA: 床に立っているだけに見える指摘）
+    parts: [
+      boxAt(-0.05, 0, 0, 0.05, 0.02, 2.2, 0.85), boxAt(0.05, 0, 0, 0.05, 0.02, 2.2, 0.85),
+      { shape: "sphere", y: 2.42, dia: 0.06, tint: 0.5 },
+    ] };
+  // 2枚の布が下で袋状に合わさる形。中央へ寄せる帯（2026-09-11 QA: 板2枚に見える指摘への対応）
+  PROP_SHAPES.aerialhammock = { ja: "エアリアルハンモック", en: "Aerial hammock", dims: { w: 1.2, d: 0.15, h: 2.3 }, grip: null,
+    parts: [
+      ...Array.from({ length: 5 }, (_, i) => boxAt(-0.55 + i * 0.06, 1.8 - i * 0.09, 0, 0.14, 0.03, 0.5, 0.9)),
+      ...Array.from({ length: 5 }, (_, i) => boxAt(0.55 - i * 0.06, 1.8 - i * 0.09, 0, 0.14, 0.03, 0.5, 0.9)),
+      boxAt(0, 0, 0, 0.55, 0.15, 0.3, 1.0),
+      { shape: "sphere", y: 2.22, dia: 0.06, tint: 0.5 },
+    ] };
+  PROP_SHAPES.spanishweb = { ja: "スパニッシュウェブ・コルドリス（綱）", en: "Spanish web / corde lisse", dims: { w: 0.15, d: 0.15, h: 2.5 }, grip: { x: 0, y: 0.3 },
+    parts: [
+      { shape: "cylinder", y: 0.3, dia: 0.04, h: 2.1, tint: 0.7 },
+      boxAt(0, 0, 0, 0.14, 0.06, 0.06, 0.9), boxAt(0, 0, 0, 0.06, 0.06, 0.14, 0.9),
+      { shape: "sphere", y: 2.42, dia: 0.06, tint: 0.5 },
+    ] };
+  PROP_SHAPES.swingpole = { ja: "スイングポール（振り子式ポール）", en: "Swing pole", dims: { w: 0.3, d: 0.3, h: 3.7 }, grip: null,
+    // 天井側の支点（振り子の軸）を小さな横棒で示す（2026-09-11 QA: 一本の棒に見える指摘）
+    parts: [
+      { shape: "cylinder", y: 0, dia: 0.12, h: 3.4, tint: 0.75 },
+      { shape: "sphere", y: 3.35, dia: 0.15, tint: 0.6 },
+      boxAt(0, 3.5, 0, 0.3, 0.05, 0.05, 0.6),
+    ] };
+  // チェロ・コントラバスは床に置いた大物として「楽器」分類へ（弦楽器族と同じ輪郭技法・grip無し）
+  PROP_SHAPES.cello = { ja: "チェロ", en: "Cello", dims: { w: 0.44, d: 0.12, h: 1.25 }, grip: null,
+    parts: [
+      ...smoothFlatBody([
+        [0.00, 0.24, 0.09, 0.75], [0.03, 0.34, 0.105, 0.85], [0.10, 0.40, 0.115, 0.88], [0.18, 0.44, 0.12, 0.95],
+        [0.26, 0.40, 0.115, 0.9], [0.33, 0.32, 0.105, 0.85], [0.40, 0.25, 0.095, 0.8], [0.47, 0.29, 0.10, 0.85],
+        [0.54, 0.34, 0.108, 0.9], [0.61, 0.38, 0.114, 0.95], [0.68, 0.31, 0.10, 0.85], [0.72, 0.24, 0.088, 0.75],
+      ], 30),
+      boxAt(-0.09, 0.30, 0.045, 0.022, 0.014, 0.11, 0.25), boxAt(0.09, 0.30, 0.045, 0.022, 0.014, 0.11, 0.25),
+      boxAt(0, 0.72, 0, 0.055, 0.032, 0.42, 0.7),
+      { shape: "sphere", y: 1.12, dia: 0.09, tint: 0.6 },
+    ] };
+  PROP_SHAPES.doublebass = { ja: "コントラバス", en: "Double bass", dims: { w: 0.66, d: 0.185, h: 1.75 }, grip: null,
+    parts: [
+      ...smoothFlatBody([
+        [0.000, 0.36, 0.14, 0.75], [0.045, 0.51, 0.16, 0.85], [0.15, 0.60, 0.175, 0.88], [0.27, 0.66, 0.185, 0.95],
+        [0.39, 0.60, 0.175, 0.9], [0.495, 0.48, 0.16, 0.85], [0.60, 0.38, 0.145, 0.8], [0.705, 0.44, 0.15, 0.85],
+        [0.81, 0.51, 0.163, 0.9], [0.915, 0.57, 0.172, 0.95], [1.02, 0.47, 0.15, 0.85], [1.08, 0.36, 0.132, 0.75],
+      ], 32),
+      boxAt(-0.14, 0.45, 0.07, 0.03, 0.018, 0.17, 0.25), boxAt(0.14, 0.45, 0.07, 0.03, 0.018, 0.17, 0.25),
+      boxAt(0, 1.08, 0, 0.08, 0.045, 0.55, 0.7),
+      { shape: "sphere", y: 1.63, dia: 0.11, tint: 0.6 },
+    ] };
   const PROP_SHAPE_ORDER = Object.keys(PROP_SHAPES);
+  /* プルダウンの分類見出し（2026-09-11 本人選択の案A）。ja は tx() で訳す。
+     新しい形を足したらどこかの分類へ入れる。入れ忘れは「その他の形」へ落ちるだけで選べなくはならない。 */
+  const PROP_SHAPE_GROUPS = [
+    { ja: "手に持つもの", ids: ["box", "umbrella", "club", "ball", "ring", "staff", "sword", "book", "tophat", "lantern", "flag", "mask",
+      "broom", "bucket", "rope", "bouquet", "glassbottle", "tray", "telephone", "newspaper", "clock", "fan", "scarf",
+      "torch", "candle", "treasurechest", "cane", "handbag", "wagasa", "guitar", "violin", "trumpet", "accordion",
+      "cigarbox", "devilstick", "poi", "hoop", "bassguitar"] },
+    { ja: "楽器", ids: ["drumset", "taiko", "grandpiano", "grandpianoopen", "uprightpiano", "micstand", "musicstand", "speaker", "keyboardstand", "djbooth", "cello", "doublebass"] },
+    { ja: "登る・上がる", ids: ["ladder", "stepladder", "stairs", "stairs6", "slope", "spiralstairs"] },
+    { ja: "建て込み", ids: ["door", "window", "column", "railing", "bridge", "platform", "truss", "cage", "torii", "screen", "frameportal", "framepicture", "framehang", "framecube"] },
+    { ja: "家具", ids: ["sofa", "bed", "bookshelf", "dresser", "mirror", "desk", "counter", "fireplace", "phonebooth", "clothesrack"] },
+    { ja: "屋外・情景", ids: ["tree", "rock", "streetlamp", "signboard", "barrel", "planter", "well", "tent", "cart", "bicycle"] },
+    { ja: "サーカス器具", ids: ["rolabola", "germanwheel", "minitramp", "rollingglobe", "russianbar", "crashmat", "crashmatround",
+      "russianswing", "slackline", "walljump", "unicycle", "stilts", "aerialhoop", "aerialstraps", "aerialhammock", "spanishweb", "swingpole"] },
+  ];
   /* 寸法つまみの仕様。項目は種類ごとに違うので、画面はここから組み立てる。
    * HTMLへ固定で並べると、種類を足すたびに二箇所直すことになる。 */
   const DIM_META = {
@@ -1399,10 +2822,8 @@
     pool: { w: "幅", d: "奥行き" },
   };
   function dimLabel(kind, key) {
-    if (isEn()) {
-      return tm("dimBy", `${kind}.${key}`, null) || tm("dim", key, DIM_META[key].label);
-    }
-    return (DIM_LABELS[kind] && DIM_LABELS[kind][key]) || DIM_META[key].label;
+    const japanese = (DIM_LABELS[kind] && DIM_LABELS[kind][key]) || DIM_META[key].label;
+    return tm("dimBy", `${kind}.${key}`, japanese);
   }
 
   // 姿勢・道具・駒・明かりの名前。言語を見て選ぶ
@@ -1417,7 +2838,7 @@
   };
   const venueName = (v) => tm("venue", v.id, v.label);
   const venueShortName = (v) => tm("venueShort", v.id, v.short);
-  const venueNoteText = (v) => tm("venueNote", v.id, v.note);
+  const venueNoteText = (v) => (v.note ? tm("venueNote", v.id, v.note) : "");
   const sizeName = (z) => tm("size", z.id, z.label);
   const seatName = (seat) => tm("seat", seat.id, seat.label);
   const seatShortName = (seat) => tm("seatShort", seat.id, seat.short);
@@ -2388,12 +3809,21 @@
     route: "平面図で演者や物、明かりを掴み、離した所が行き先になります。真ん中の丸を引くと動線が曲がります。",
     note: "何もない所を押すとメモを貼れます。貼ったメモは掴んで動かせます。",
     light: "照明だけを動かします。丸い印が灯体、明るい輪が当たる場所です。",
+    deriveRoute: "次のシーンで動いているものに、いまの位置から行き先までの動線を引きます。",
+    sceneGrid: "全シーンをカードで並べて見渡します。",
+    sceneSection: "シーンをまとめるセクションを追加します。",
+    sceneAdd: "まっさらな新しいシーンを追加します。",
   };
 
   const els = {
     undo: document.getElementById("stage-undo"),
     redo: document.getElementById("stage-redo"),
     export: document.getElementById("stage-export"),
+    launchBackupWarning: document.getElementById("stage-launch-backup-warning"),
+    launchBackupBackdrop: document.getElementById("stage-launch-backup-backdrop"),
+    launchBackupClose: document.getElementById("stage-launch-backup-close"),
+    launchBackupExport: document.getElementById("stage-launch-backup-export"),
+    launchBackupContinue: document.getElementById("stage-launch-backup-continue"),
     lang: document.getElementById("stage-lang"),
     tour: document.getElementById("stage-tour"),
     tourRing: document.getElementById("stage-tour-ring"),
@@ -2416,7 +3846,12 @@
     helpResults: document.getElementById("stage-help-results"),
     helpNote: document.getElementById("stage-help-note"),
     aboutOpenFromPrefs: document.getElementById("stage-about-open-from-prefs"),
+    aboutOpenFromFooter: document.getElementById("stage-about-open-from-footer"),
     aboutModal: document.getElementById("stage-about-modal"),
+    releaseOpen: document.getElementById("stage-release-open"),
+    releaseModal: document.getElementById("stage-release-modal"),
+    releaseBackdrop: document.getElementById("stage-release-backdrop"),
+    releaseClose: document.getElementById("stage-release-close"),
     feedbackOpen: document.getElementById("stage-feedback-open"),
     feedbackModal: document.getElementById("stage-feedback-modal"),
     feedbackBackdrop: document.getElementById("stage-feedback-backdrop"),
@@ -2438,7 +3873,6 @@
     pitchCaption: document.getElementById("stage-pitch-caption"),
     pitchLangs: document.getElementById("stage-pitch-langs"),
     toolHint: document.getElementById("stage-tool-hint"),
-    toolHelp: document.getElementById("stage-tool-help"),
     arrowOptions: document.getElementById("stage-arrow-options"),
     arrowPlaneFloor: document.getElementById("stage-arrow-plane-floor"),
     arrowPlaneAir: document.getElementById("stage-arrow-plane-air"),
@@ -2457,6 +3891,10 @@
     brushSize: document.getElementById("stage-brush-size"),
     brushValue: document.getElementById("stage-brush-value"),
     clearPaint: document.getElementById("stage-clear-paint"),
+    bgOpen: document.getElementById("stage-bg-open"),
+    bgModal: document.getElementById("stage-bg-modal"),
+    bgBackdrop: document.getElementById("stage-bg-backdrop"),
+    bgClose: document.getElementById("stage-bg-close"),
     photoBlock: document.getElementById("stage-photo-block"),
     screenTextInput: document.getElementById("stage-screentext-input"),
     screenTextAdd: document.getElementById("stage-screentext-add"),
@@ -2481,6 +3919,7 @@
     selectionEmpty: document.getElementById("stage-selection-empty"),
     selectionControls: document.getElementById("stage-selection-controls"),
     selectedName: document.getElementById("stage-selected-name"),
+    selectionScope: document.getElementById("stage-selection-scope"),
     fpvOpen: document.getElementById("stage-fpv-open"),
     freecamOpen: document.getElementById("stage-freecam-open"),
     dimsFromSet: document.getElementById("stage-dims-from-set"),
@@ -2490,6 +3929,7 @@
     facingControls: document.getElementById("stage-facing-controls"),
     facingLock: document.getElementById("stage-facing-lock"),
     planRoute: document.getElementById("stage-plan-route"),
+    planDeriveRoute: document.getElementById("stage-plan-derive-route"),
     planNote: document.getElementById("stage-plan-note"),
     frontNote: document.getElementById("stage-front-note"),
     frontZoom: document.getElementById("stage-front-zoom"),
@@ -2499,19 +3939,34 @@
     rename: document.getElementById("stage-rename"),
     renameBackdrop: document.getElementById("stage-rename-backdrop"),
     renameInput: document.getElementById("stage-rename-input"),
+    renameSectionFields: document.getElementById("stage-rename-section-fields"),
+    renameSectionNote: document.getElementById("stage-rename-section-note"),
+    renameSceneFields: document.getElementById("stage-rename-scene-fields"),
+    renameSubtitle: document.getElementById("stage-rename-subtitle"),
+    renameEnergy: document.getElementById("stage-rename-energy"),
     renameOk: document.getElementById("stage-rename-ok"),
+    renameDelete: document.getElementById("stage-rename-delete"),
     renameClose: document.getElementById("stage-rename-close"),
     renameTitle: document.getElementById("stage-rename-title"),
     renameColors: document.getElementById("stage-rename-colors"),
+    renameColorPicker: document.getElementById("stage-rename-color-picker"),
+    renameColorSummary: document.getElementById("stage-rename-color-summary"),
+    renameColorPreview: document.getElementById("stage-rename-color-preview"),
+    renameColorValue: document.getElementById("stage-rename-color-value"),
     renameSwatches: document.getElementById("stage-rename-swatches"),
+    formationModal: document.getElementById("stage-formation-modal"),
+    formationBackdrop: document.getElementById("stage-formation-backdrop"),
+    formationClose: document.getElementById("stage-formation-close"),
+    formationFrame: document.getElementById("stage-formation-frame"),
+    formationStatus: document.getElementById("stage-formation-status"),
     duplicate: document.getElementById("stage-duplicate"),
     delete: document.getElementById("stage-delete"),
-    clear: document.getElementById("stage-clear"),
     saveStatus: document.getElementById("stage-save-status"),
     backupNote: document.getElementById("stage-backup-note"),
     backupHint: document.getElementById("stage-backup-hint"),
     backupExport: document.getElementById("stage-backup-export"),
     musicFile: document.getElementById("stage-music-file"),
+    musicBetaNote: document.getElementById("stage-music-beta-note"),
     musicStatus: document.getElementById("stage-music-status"),
     musicLibrary: document.getElementById("stage-music-library"),
     sceneAudioTrack: document.getElementById("stage-scene-audio-track"),
@@ -2522,6 +3977,7 @@
     musicRelink: document.getElementById("stage-music-relink"),
     musicRelinkFile: document.getElementById("stage-music-relink-file"),
     musicAudio: document.getElementById("stage-music-audio"),
+    resetLayout: document.getElementById("stage-reset-layout"),
     resetAll: document.getElementById("stage-reset-all"),
     sceneMusic: document.getElementById("stage-scene-music"),
     musicToggle: document.getElementById("stage-music-toggle"),
@@ -2560,9 +4016,11 @@
     rehearsalOmittedList: document.getElementById("stage-rehearsal-omitted-list"),
     live: document.getElementById("stage-live"),
     venueSelect: document.getElementById("stage-venue-select"),
+    venueCustomOpen: document.getElementById("stage-venue-custom-open"),
     sizeSelect: document.getElementById("stage-size-select"),
     showFront: document.getElementById("stage-show-front"),
     showPlan: document.getElementById("stage-show-plan"),
+    viewSelect: document.getElementById("stage-view-select"),
     frontCell: document.getElementById("stage-front-cell"),
     planCell: document.getElementById("stage-plan-cell"),
     canvasStack: document.getElementById("stage-canvas-stack"),
@@ -2594,18 +4052,40 @@
     lightReferenceNote: document.getElementById("stage-light-reference-note"),
     lightImplementationNote: document.getElementById("stage-light-implementation-note"),
     lightIntentClear: document.getElementById("stage-light-intent-clear"),
+    lightMotionOpen: document.getElementById("stage-light-motion-open"),
+    lightMotionOpenSummary: document.getElementById("stage-light-motion-open-summary"),
+    lightMotionModal: document.getElementById("stage-light-motion-modal"),
+    lightMotionBackdrop: document.getElementById("stage-light-motion-backdrop"),
+    lightMotionClose: document.getElementById("stage-light-motion-close"),
+    lightMotionSummary: document.getElementById("stage-light-motion-summary-text"),
+    lightMotionPresets: document.getElementById("stage-light-motion-presets"),
+    lightMotionAdjust: document.getElementById("stage-light-motion-adjust"),
+    lightMotionCount: document.getElementById("stage-light-motion-count"),
+    lightMotionRange: document.getElementById("stage-light-motion-range"),
+    lightMotionSpeed: document.getElementById("stage-light-motion-speed"),
+    lightMotionRelationRow: document.getElementById("stage-light-motion-relation-row"),
+    lightMotionRelation: document.getElementById("stage-light-motion-relation"),
+    lightMotionStage: document.getElementById("stage-light-motion-stage"),
+    lightMotionCanvas: document.getElementById("stage-light-motion-canvas"),
+    lightMotionPlay: document.getElementById("stage-light-motion-play"),
+    lightMotionStop: document.getElementById("stage-light-motion-stop"),
+    lightMotionRestart: document.getElementById("stage-light-motion-restart"),
+    lightMotionExport: document.getElementById("stage-light-motion-export"),
+    lightMotionExportStatus: document.getElementById("stage-light-motion-export-status"),
+    lightMotionClear: document.getElementById("stage-light-motion-clear"),
     venueScale: document.getElementById("stage-venue-scale"),
     venueNote: document.getElementById("stage-venue-note"),
     venueMissing: document.getElementById("stage-venue-missing"),
-    venueW: document.getElementById("stage-venue-w"),
-    venueD: document.getElementById("stage-venue-d"),
-    venueH: document.getElementById("stage-venue-h"),
-    venueWLabel: document.getElementById("stage-venue-w-label"),
-    venueDimRow: document.getElementById("stage-venue-dims"),
-    venueDCell: document.getElementById("stage-venue-d-cell"),
-    venueReset: document.getElementById("stage-venue-reset"),
+    venueSummaryTitle: document.getElementById("stage-venue-summary-title"),
+    venueSummarySize: document.getElementById("stage-venue-summary-size"),
     bgSection: document.getElementById("stage-bg-section"),
     seatList: document.getElementById("stage-seat-list"),
+    projectSummaryTitle: document.getElementById("stage-project-summary-title"),
+    projectSummaryVersion: document.getElementById("stage-project-summary-version"),
+    projectSettingsOpen: document.getElementById("stage-project-settings-open"),
+    projectSettingsModal: document.getElementById("stage-project-settings-modal"),
+    projectSettingsBackdrop: document.getElementById("stage-project-settings-backdrop"),
+    projectSettingsClose: document.getElementById("stage-project-settings-close"),
     projectTitle: document.getElementById("stage-project-title"),
     versionLabel: document.getElementById("stage-version-label"),
     versionCopy: document.getElementById("stage-version-copy"),
@@ -2617,11 +4097,32 @@
     sceneResize: document.getElementById("stage-scene-resize"),
     sceneGridOpen: document.getElementById("stage-scene-grid-open"),
     sceneBarGrid: document.getElementById("stage-scene-bar-grid"),
-    sceneFoldAll: document.getElementById("stage-scene-fold-all"),
     reachOpen: document.getElementById("stage-reach-open"),
     reachModal: document.getElementById("stage-reach-modal"),
     reachBackdrop: document.getElementById("stage-reach-backdrop"),
     reachClose: document.getElementById("stage-reach-close"),
+    sceneCreateModal: document.getElementById("stage-scene-create-modal"),
+    sceneCreateBackdrop: document.getElementById("stage-scene-create-backdrop"),
+    sceneCreateClose: document.getElementById("stage-scene-create-close"),
+    sceneCreateForm: document.getElementById("stage-scene-create-form"),
+    sceneCreateSource: document.getElementById("stage-scene-create-source"),
+    sceneCreateBlank: document.getElementById("stage-scene-create-blank"),
+    sceneCreateInherit: document.getElementById("stage-scene-create-inherit"),
+    sceneCreateInheritOptions: document.getElementById("stage-scene-create-inherit-options"),
+    sceneCreateMoveRoutes: document.getElementById("stage-scene-create-move-routes"),
+    sceneCreateSelectAll: document.getElementById("stage-scene-create-select-all"),
+    sceneCreateClear: document.getElementById("stage-scene-create-clear"),
+    sceneCreateList: document.getElementById("stage-scene-create-list"),
+    sceneCreateCount: document.getElementById("stage-scene-create-count"),
+    sceneCreateCancel: document.getElementById("stage-scene-create-cancel"),
+    sceneCreateSubmit: document.getElementById("stage-scene-create-submit"),
+    sceneDeleteModal: document.getElementById("stage-scene-delete-modal"),
+    sceneDeleteBackdrop: document.getElementById("stage-scene-delete-backdrop"),
+    sceneDeleteClose: document.getElementById("stage-scene-delete-close"),
+    sceneDeleteMessage: document.getElementById("stage-scene-delete-message"),
+    sceneDeleteCheck: document.getElementById("stage-scene-delete-check"),
+    sceneDeleteCancel: document.getElementById("stage-scene-delete-cancel"),
+    sceneDeleteSubmit: document.getElementById("stage-scene-delete-submit"),
     sceneGridModal: document.getElementById("stage-scene-grid-modal"),
     sceneGridBackdrop: document.getElementById("stage-scene-grid-backdrop"),
     sceneGridClose: document.getElementById("stage-scene-grid-close"),
@@ -2630,8 +4131,6 @@
     sceneGridPlan: document.getElementById("stage-scene-grid-plan"),
     sceneGridSize: document.getElementById("stage-scene-grid-size"),
     sceneAdd: document.getElementById("stage-scene-add"),
-    sceneDup: document.getElementById("stage-scene-dup"),
-    sceneDel: document.getElementById("stage-scene-del"),
     scenePrev: document.getElementById("stage-scene-prev"),
     sceneNext: document.getElementById("stage-scene-next"),
     sceneReplay: document.getElementById("stage-scene-replay"),
@@ -2653,6 +4152,8 @@
     holderSelect: document.getElementById("stage-holder-select"),
     holderLeft: document.getElementById("stage-holder-left"),
     holderRight: document.getElementById("stage-holder-right"),
+    holderFace: document.getElementById("stage-holder-face"),
+    wearSelect: document.getElementById("stage-wear-select"),
     poleH: document.getElementById("stage-pole-h"),
     poleHValue: document.getElementById("stage-pole-h-value"),
     trapControls: document.getElementById("stage-trap-controls"),
@@ -2666,6 +4167,13 @@
     importSummary: document.getElementById("stage-import-summary"),
     importAsNew: document.getElementById("stage-import-as-new"),
     importReplace: document.getElementById("stage-import-replace"),
+    projectExportModal: document.getElementById("stage-project-export-modal"),
+    projectExportBackdrop: document.getElementById("stage-project-export-backdrop"),
+    projectExportForm: document.getElementById("stage-project-export-form"),
+    projectExportName: document.getElementById("stage-project-export-name"),
+    projectExportDestination: document.getElementById("stage-project-export-destination"),
+    projectExportClose: document.getElementById("stage-project-export-close"),
+    projectExportCancel: document.getElementById("stage-project-export-cancel"),
     venueExportModal: document.getElementById("stage-venue-export-modal"),
     venueExportBackdrop: document.getElementById("stage-venue-export-backdrop"),
     venueExportInclude: document.getElementById("stage-venue-export-include"),
@@ -2674,17 +4182,31 @@
     venueExportStop: document.getElementById("stage-venue-export-stop"),
     printBtn: document.getElementById("stage-print-btn"),
     prefsBtn: document.getElementById("stage-prefs-btn"),
+    panelsToggle: document.getElementById("stage-panels-toggle"),
+    panelsMenu: document.getElementById("stage-panels-menu"),
     prefsModal: document.getElementById("stage-prefs-modal"),
     prefsBackdrop: document.getElementById("stage-prefs-backdrop"),
     prefsClose: document.getElementById("stage-prefs-close"),
     prefsList: document.getElementById("stage-prefs-list"),
+    skinButtons: Array.from(document.querySelectorAll("[data-stage-ui-skin]")),
     prefKeysBody: document.getElementById("stage-pref-keys-body"),
     presentBtn: document.getElementById("stage-present-btn"),
     presentOverlay: document.getElementById("stage-present-overlay"),
+    presentCanvas: document.getElementById("stage-present-canvas"),
+    presentMini: document.getElementById("stage-present-mini"),
+    presentMiniView: document.getElementById("stage-present-mini-view"),
+    presentMiniLabel: document.getElementById("stage-present-mini-label"),
+    presentDrawer: document.getElementById("stage-present-drawer"),
+    presentDrawerBody: document.getElementById("stage-present-drawer-body"),
+    presentDrawerToggle: document.getElementById("stage-present-drawer-toggle"),
     presentPrev: document.getElementById("stage-present-prev"),
     presentNext: document.getElementById("stage-present-next"),
+    presentSwap: document.getElementById("stage-present-swap"),
     presentClose: document.getElementById("stage-present-close"),
+    arrangeMenu: document.getElementById("stage-arrange-menu"),
     arrangeSelect: document.getElementById("stage-arrange-select"),
+    arrangeOptions: document.getElementById("stage-arrange-options"),
+    multiSelectStatus: document.getElementById("stage-multi-select-status"),
     trapSit: document.getElementById("stage-trap-sit"),
     trapHang: document.getElementById("stage-trap-hang"),
     diaboloLay: document.getElementById("stage-diabolo-lay"),
@@ -2715,15 +4237,21 @@
     profileColor: document.getElementById("stage-profile-color"),
     profileNote: document.getElementById("stage-profile-note"),
     rosterName: document.getElementById("stage-roster-name"),
-    rosterKind: document.getElementById("stage-roster-kind"),
-    rosterKindLabel: document.getElementById("stage-roster-kind-label"),
-    rosterPropShape: document.getElementById("stage-roster-prop-shape"),
+    rosterColor: document.getElementById("stage-roster-color"),
+    rosterSearch: document.getElementById("stage-roster-search"),
+    rosterKindOpeners: Array.from(document.querySelectorAll("[data-roster-kind-layer]")),
+    rosterPropGrid: document.getElementById("stage-roster-prop-grid"),
     modelPicker: document.getElementById("stage-model-picker"),
     modelOpen: document.getElementById("stage-model-open"),
     kindModal: document.getElementById("stage-kind"),
+    kindTitle: document.getElementById("stage-kind-title"),
     kindBackdrop: document.getElementById("stage-kind-backdrop"),
     kindClose: document.getElementById("stage-kind-close"),
     kindGrid: document.getElementById("stage-kind-grid"),
+    kindPerformerFields: document.getElementById("stage-kind-performer-fields"),
+    kindSetFields: document.getElementById("stage-kind-set-fields"),
+    kindPropFields: document.getElementById("stage-kind-prop-fields"),
+    rosterPoseGrid: document.getElementById("stage-roster-pose-grid"),
     rosterAdd: document.getElementById("stage-roster-add"),
     rosterEmpty: document.getElementById("stage-roster-empty"),
     groupCast: document.getElementById("stage-group-cast"),
@@ -2766,7 +4294,6 @@
     rigSave: document.getElementById("stage-rig-save"),
     machineryCurtainKind: document.getElementById("stage-machinery-curtain-kind"),
     machineryPresets: document.getElementById("stage-machinery-presets"),
-    sceneAddRig: document.getElementById("stage-scene-add-rig"),
     sceneSection: document.getElementById("stage-scene-section"),
     setInfo: document.getElementById("stage-setinfo"),
     setInfoBackdrop: document.getElementById("stage-setinfo-backdrop"),
@@ -2830,9 +4357,14 @@
     showLightNames: document.getElementById("stage-show-light-names"),
     showSeatMap: document.getElementById("stage-show-seatmap"),
     seatMapToggle: document.getElementById("stage-seatmap-toggle"),
-    depthLabelBack: document.getElementById("stage-depth-back"),
-    depthLabelFront: document.getElementById("stage-depth-front"),
   };
+
+  if (BETA_BROWSER_AUDIO_RESTRICTIONS) {
+    const betaAudioAccept = "audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,.mp3,.m4a,.aac";
+    if (els.musicBetaNote) els.musicBetaNote.hidden = false;
+    if (els.musicFile) els.musicFile.accept = betaAudioAccept;
+    if (els.musicRelinkFile) els.musicRelinkFile.accept = betaAudioAccept;
+  }
 
   const LANG_KEY = "shosai-stage-lang";
 
@@ -2849,6 +4381,14 @@
   const sceneGridThumbs = new Map();
   let sceneGridGeneration = 0;
   let sceneGridFrame = 0;
+  let sceneCreateSourceId = null;
+  let sceneCreateMode = null;
+  let sceneCreateReturnFocus = null;
+  let sceneDeleteTarget = null;
+  let sceneDeleteReturnFocus = null;
+  const sceneCreateSelection = new Set();
+  const sceneCreateGroupInputs = new Map();
+  const sceneCreateItemInputs = new Map();
   const ZOOM_MIN = 1;
   const ZOOM_MAX = 5;
 
@@ -2868,14 +4408,104 @@
      画面に固定で置いてある文言は、切り替えのときだけ文字を差し替える
      （静的な文言は書き換わらないので、これで足りる）。
      中で組み立てる名前（姿勢・道具・劇場・席）は、作るたびに言語を見て選ぶ。 */
-  const I18N = window.SHOSAI_I18N || { text: {}, maps: {} };
   let lang = "ja";
-  const isEn = () => lang === "en";
+  const STAGE_LANGUAGE_CHOICES = Object.freeze([
+    Object.freeze({ code: "ja", label: "日本語" }),
+    Object.freeze({ code: "en", label: "English" }),
+    Object.freeze({ code: "zh-Hans", label: "中文（简体）" }),
+    Object.freeze({ code: "zh-Hant", label: "中文（繁體）" }),
+  ]);
+  const availableStageLanguageChoices = () => STAGE_LANGUAGE_CHOICES.filter((choice) => (
+    choice.code === "ja" || Boolean((window.SHOSAI_I18N_PACKS || {})[choice.code])
+  ));
+  const packValue = (section, read) => {
+    return stagePackValueForLanguage(lang, section, read);
+  };
   // 固定文言。日本語そのものを鍵にする
-  const tx = (ja) => (isEn() && I18N.text[ja]) || ja;
+  const tx = (ja) => packValue("text", (text) => text[ja]) || ja;
+  const textWithEnglishOverride = (english, japanese) => (
+    stageTextWithEnglishForLanguage(lang, english, japanese)
+  );
+  const languageValue = (english, japanese) => stageLanguageValue(lang, english, japanese);
+  const translateSay = translateStageSay;
+  const sx = (message, englishFallback) => {
+    if (lang === "ja") return message;
+    const translated = packValue("say", (say) => translateSay(say, message));
+    if (lang === "en" && englishFallback !== undefined) {
+      return translated === englishFallback ? translated : englishFallback;
+    }
+    return translated || message;
+  };
   // 組み立てる名前。id を鍵にする
-  const tm = (group, id, ja) => (isEn() && I18N.maps[group] && I18N.maps[group][id]) || ja;
+  const tm = (group, id, ja) => packValue("maps", (maps) => maps[group] && maps[group][id]) || ja;
   let signedInUser = "";
+  const MANAGED_BACKUP_WARNING_EXEMPT_USER = "guest1";
+  let launchBackupWarningOpen = false;
+
+  function shouldShowLaunchBackupWarning() {
+    return standaloneStagePage
+      && Boolean(document.querySelector(".stage-beta"))
+      && signedInUser !== MANAGED_BACKUP_WARNING_EXEMPT_USER;
+  }
+
+  function closeLaunchBackupWarning(resumeTour = true) {
+    if (!launchBackupWarningOpen) return;
+    launchBackupWarningOpen = false;
+    if (els.launchBackupWarning) els.launchBackupWarning.hidden = true;
+    if (els.launchBackupBackdrop) els.launchBackupBackdrop.hidden = true;
+    const stageView = document.getElementById("view-stage");
+    if (stageView) stageView.inert = false;
+    if (resumeTour) syncStageTourContext();
+  }
+
+  function openLaunchBackupWarning() {
+    if (!shouldShowLaunchBackupWarning() || !els.launchBackupWarning) return false;
+    launchBackupWarningOpen = true;
+    hideTour();
+    const stageView = document.getElementById("view-stage");
+    if (stageView) stageView.inert = true;
+    els.launchBackupWarning.hidden = false;
+    if (els.launchBackupBackdrop) els.launchBackupBackdrop.hidden = false;
+    requestAnimationFrame(() => els.launchBackupExport?.focus({ preventScroll: true }));
+    return true;
+  }
+
+  if (els.launchBackupContinue) {
+    els.launchBackupContinue.addEventListener("click", () => closeLaunchBackupWarning(true));
+  }
+  if (els.launchBackupClose) {
+    els.launchBackupClose.addEventListener("click", () => closeLaunchBackupWarning(true));
+  }
+  if (els.launchBackupBackdrop) {
+    els.launchBackupBackdrop.addEventListener("click", () => closeLaunchBackupWarning(true));
+  }
+  if (els.launchBackupExport) {
+    els.launchBackupExport.addEventListener("click", () => {
+      closeLaunchBackupWarning(false);
+      exportProject();
+    });
+  }
+  document.addEventListener("keydown", (event) => {
+    if (!launchBackupWarningOpen) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const actions = [els.launchBackupClose, els.launchBackupExport, els.launchBackupContinue].filter(Boolean);
+    if (!actions.length) return;
+    const first = actions[0];
+    const last = actions[actions.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
   function updateWhoamiBadge() {
     const badge = document.getElementById("stage-session-whoami");
     if (!badge) return;
@@ -2899,11 +4529,14 @@
     try { localStorage.setItem(LANG_KEY, lang); } catch (_) { /* 覚えられなくても動く */ }
   }
   // 見本と場面の名前。作った時点の言語で決まり、そのまま持ち物として残る
-  const sceneTitle = (n) => (isEn() ? `Scene ${n}` : `シーン ${n}`);
+  const sceneTitle = (n) => {
+    const template = packValue("generated", (generated) => generated.sceneTitle);
+    return template ? template.replace("{n}", String(n)) : `シーン ${n}`;
+  };
   /* 表記を「場面」から「シーン」へ揃えたので、前に自動で付いた名前も直す。
      手で付けた名前は「場面 3」のような形をしていないので巻き込まない。 */
   const renameAuto = (title) => String(title).replace(/^場面 (\d+)$/, "シーン $1");
-  const untitledShow = () => (isEn() ? "Untitled show" : "無題のショー");
+  const untitledShow = () => packValue("generated", (generated) => generated.untitledShow) || "無題のショー";
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const validColor = (value, fallback) =>
@@ -2953,18 +4586,25 @@
      端末ごとの設定。ショーのデータには入れない（共有・書き出しに混ざらない）。
      新しい機能は原則ここに並べ、切れるようにしておく（本人の方針）。 */
   const FEATURES = [
-    { key: "presentation", label: "プレゼンモード",
-      hint: "上部の「プレゼン」で正面図だけを全画面に。矢印キーでシーン送り、Escで戻る" },
-    { key: "presentCaption", label: "プレゼンの説明",
-      hint: "全画面のプレゼンで、絵の下にシーン名と説明を出す" },
+    { key: "presentation", label: "全画面表示",
+      hint: "上部の「全画面」またはFキーで図を全画面に。右下の小窓で正面と平面を入れ替えられます" },
+    { key: "presentCaption", label: "全画面の説明",
+      hint: "全画面表示で、絵の下にシーン名と説明を出す" },
     { key: "blackout", label: "暗転で始まるシーン",
       hint: "シーンの欄に「暗転」の印が出て、その転換は一度真っ暗になってから明ける" },
     { key: "sceneTiming", label: "シーンの時間", def: false,
       hint: "各シーンに「見せる時間」と「次のシーンへの移動時間」を表示する" },
-    { key: "lightIntent", label: "光の意図", def: false,
-      hint: "「光で何を起こしたい？」のカードと、図へ重ねる作図の印。OFFでも書いた内容は消えない" },
-    { key: "lineup", label: "整列（一列・円・V字）",
-      hint: "平面図の「動線を描く」の横に整列のプルダウンが出て、舞台上の演者を並べ直す" },
+    { key: "sceneSubtitle", label: "シーンのサブタイトル", def: false,
+      hint: "シーン一覧に構成上の役割とエネルギーをサブタイトルとして表示する。OFFでも内容は消えません" },
+    { key: "sceneTransitions", label: "転換情報", def: false,
+      hint: "選択中のシーンの上下に、転換の長さ・暗転・メモを表示する。OFFでも内容は消えません" },
+    /* 2026-09-11 本人指示: 光の意図カードは一時的に非表示にする（featureOn側で強制OFF。
+       下のFEATURE_DEFAULTSにも載せない＝設定パネルの一覧に出さない）。
+       データ・正規化関数（emptyLightingIntent等）は残す＝既存の保存データを壊さない。 */
+    { key: "lightMotion", label: "光の動き（案）", def: false,
+      hint: "照明パネルに「光の動きを組む」を出す。動く光の型（左右に往復・扇・交差・円・順に）を選んで再生し、動画・図・一文を書き出せる" },
+    { key: "lineup", label: "複数選択と整列",
+      hint: "平面図でドラッグまたはShiftクリックして選び、選択したものだけを並べ直す" },
     { key: "busyness", label: "転換の忙しさ診断", def: false,
       hint: "ショー地図に、転換ごとの移動量・動く人数・出入りの数を出す" },
     { key: "crossing", label: "動線の交差警告", def: false,
@@ -2983,7 +4623,7 @@
       hint: "書き出しモーダルに「ピッチとして」が出る。作図の線を落とし、光と空気を効かせた一枚絵と、生成AI用の条件文を出す" },
   ];
   const FEATURES_PLANNED = [
-    "転換アニメの動画書き出し", "見えない席の検査（遮蔽）", "複数選択と整形", "資料棚からの場面引用",
+    "転換アニメの動画書き出し", "見えない席の検査（遮蔽）", "資料棚からの場面引用",
   ];
   /* ---------- パネルのオン/オフ（PC版だけ） ----------
      初めて開いた人の机に、道具を全部並べない。音楽・舞台機構・セット登録・背景は
@@ -2993,31 +4633,111 @@
      ★iPadのPWAとスマホの閲覧機は対象外。あちらは左ドロワー・閲覧UIが正本で、
        ここで消すと出し戻す入り口がなくなる。 */
   const PANEL_FEATURES = [
-    { key: "panelMusic", panel: "music", label: "音楽パネル", def: false,
+    { key: "panelProject", panel: "project", label: "ショー", def: true,
+      hint: "ショーを開く・書き出す" },
+    { key: "panelVenue", panel: "venue", label: "劇場", def: true,
+      hint: "劇場形式を選び、カスタムステージを制作する" },
+    { key: "panelMusic", panel: "music", label: "音楽", def: false,
       hint: "端末内の楽曲を読み込み、流れているシーンへ割り当てる欄を出す" },
-    { key: "panelMachinery", panel: "machinery", label: "舞台機構パネル", def: false,
+    { key: "panelCast", panel: "cast", label: "出るもの", def: true,
+      hint: "この舞台に出る演者と舞台セットを、まとめてここに登録します。 寸法や色はここで決め、シーンごとに舞台の上か裏かを切り替えます。明かりは別の項目です。追加したものはそのシーンの舞台に出ます。" },
+    { key: "panelMachinery", panel: "machinery", label: "舞台機構", def: false,
       hint: "盆・可動デッキ・幕・せりなど、場面ごとに動く舞台機構を置く欄を出す" },
-    { key: "panelRigs", panel: "rigs", label: "セット登録パネル", def: false,
+    { key: "panelRigs", panel: "rigs", label: "セット登録", def: false,
       hint: "いまの舞台装置の並びに名前をつけて残し、別の場面で呼び出す欄を出す" },
-    { key: "panelBackground", panel: "background", label: "背景パネル", def: false,
+    { key: "panelLight", panel: "light", label: "照明", def: true,
+      hint: "照明を置く・光の意図を書く" },
+    { key: "panelBackground", panel: "background", label: "背景", def: false,
       hint: "背景の地の色・塗る色・筆の太さなど、背景を描く欄を出す" },
+    { key: "panelScenes", panel: "scenes", label: "シーン", def: true,
+      hint: "シーンを足す・並べ替える" },
+    { key: "panelInspector", panel: "inspector", label: "選んだもの", def: true,
+      hint: "舞台の上で選ぶと、姿勢・向き・重なりを変えられます。名前・色・寸法は「出るもの」の一覧で決めます。" },
+    { key: "panelAsk", panel: "ask", label: "AI指示", def: true,
+      hint: "AI指示" },
   ];
   let prefs = {};
   try { prefs = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}") || {}; } catch (_) { prefs = {}; }
+  // Store the skin as a device preference; venue surface colors adapt during drawing.
+  function applyUiSkin() {
+    const skin = prefs.uiSkin === "blue-black" ? "blue-black" : "warm-black";
+    const standalone = document.body.classList.contains("is-standalone");
+    const active = standalone || !location.hash || location.hash === "#stage";
+    if (active) document.documentElement.dataset.stageSkin = skin;
+    else delete document.documentElement.dataset.stageSkin;
+    els.skinButtons.forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.stageUiSkin === skin));
+    });
+    if (standalone) {
+      const themeMeta = document.querySelector('meta[name="theme-color"]');
+      if (themeMeta) themeMeta.content = skin === "blue-black" ? "#141619" : "#191512";
+    }
+  }
+  applyUiSkin();
+  window.addEventListener("hashchange", applyUiSkin);
   const FEATURE_DEFAULTS = {};
   [...FEATURES, ...PANEL_FEATURES].forEach((f) => {
     FEATURE_DEFAULTS[f.key] = f.def === undefined ? true : f.def;
   });
-  const featureOn = (key) => (prefs[key] === undefined
-    ? (FEATURE_DEFAULTS[key] === undefined ? true : FEATURE_DEFAULTS[key])
-    : Boolean(prefs[key]));
+  const featureOn = (key) => {
+    // 2026-09-11 本人指示: 光の意図カードを非表示にする。以前ONにしていた端末の
+    // 保存値（prefs.lightIntent）があっても無視する。カード・比較欄・図の重ねは
+    // すべてこの一箇所（lightIntentOverlayOn等）から連鎖してOFFになる。
+    if (key === "lightIntent") return false;
+    return prefs[key] === undefined
+      ? (FEATURE_DEFAULTS[key] === undefined ? true : FEATURE_DEFAULTS[key])
+      : Boolean(prefs[key]);
+  };
   function savePrefs() {
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (_) { /* 保存できなくても動く */ }
   }
+  // 机のパネルは端末ごとの見え方。ショーの layout は二列の並びとして残し、
+  // 一列用の順番は prefs に分けるので、表示を切り替えても片方が片方を壊さない。
+  // モード定義はヘッダーのタブを正本にする。今後モードが増えても環境設定へ自動で並ぶ。
+  const workspaceModeDefinitions = () => (
+    [...document.querySelectorAll("#stage-workspace-tabs [data-stage-workspace-mode]")].map((button) => ({
+      key: button.dataset.stageWorkspaceMode,
+      label: button.textContent.trim(),
+      defaultPanelLayout: button.dataset.stagePanelLayoutDefault === "single" ? "single" : "split",
+    })).filter((definition) => definition.key)
+  );
+  const currentWorkspaceMode = () => {
+    const requested = document.body.dataset.stageWorkspaceMode || "normal";
+    return workspaceModeDefinitions().some((definition) => definition.key === requested) ? requested : "normal";
+  };
+  const panelLayoutMode = (workspace = currentWorkspaceMode()) => {
+    const saved = prefs.panelLayoutByWorkspace && typeof prefs.panelLayoutByWorkspace === "object"
+      ? prefs.panelLayoutByWorkspace[workspace] : null;
+    if (saved === "single" || saved === "split") return saved;
+    // 旧版の通常モード設定だけはそのまま引き継ぐ。
+    if (workspace === "normal" && (prefs.panelLayoutMode === "single" || prefs.panelLayoutMode === "split")) {
+      return prefs.panelLayoutMode;
+    }
+    const definition = workspaceModeDefinitions().find((candidate) => candidate.key === workspace);
+    return definition ? definition.defaultPanelLayout : "split";
+  };
+  const panelSingleSide = (workspace = currentWorkspaceMode()) => {
+    const saved = prefs.panelSingleSideByWorkspace && typeof prefs.panelSingleSideByWorkspace === "object"
+      ? prefs.panelSingleSideByWorkspace[workspace] : null;
+    if (saved === "left" || saved === "right") return saved;
+    // 旧版の全モード共通設定は、モード別の値がないときだけ引き継ぐ。
+    return prefs.panelSingleSide === "right" ? "right" : "left";
+  };
+  const panelColumnsForCurrentMode = () => (
+    panelLayoutMode() === "single" ? [panelSingleSide()] : ["left", "right"]
+  );
+  const panelSingleOrder = () => (
+    prefs.panelSingleOrder && typeof prefs.panelSingleOrder === "object" ? prefs.panelSingleOrder : {}
+  );
   const rehearsalSeconds = (value) => {
     if (value === undefined || value === null || value === "") return null;
     const number = Number(value);
     return Number.isFinite(number) && number >= 0 ? Math.min(number, 86400) : null;
+  };
+  const timelineSeconds = (value) => {
+    if (value === undefined || value === null || value === "") return null;
+    const number = Number(value);
+    return Number.isFinite(number) && number >= 0.1 ? number : null;
   };
   const normalizeProjectRehearsal = (raw) => ({
     version: 1,
@@ -3063,7 +4783,7 @@
     const limit = PROJECT_LIMITS[limitKey];
     const current = Array.isArray(list) ? list.length : 0;
     if (current + count <= limit) return true;
-    if (isEn()) {
+    announce(languageValue(() => {
       const names = {
         "シーンとセクション": "Scenes and sections",
         "このシーンの駒": "Pieces in this scene",
@@ -3077,10 +4797,8 @@
         "セット登録の駒": "Pieces in a saved rig",
         "背景写真": "Background photos",
       };
-      announce(`${names[label] || label} can contain up to ${limit} items. Remove one before adding another.`);
-      return false;
-    }
-    announce(`${label}は${limit}件までです。不要なものを外してから追加してください。`);
+      return `${names[label] || label} can contain up to ${limit} items. Remove one before adding another.`;
+    }, () => `${label}は${limit}件までです。不要なものを外してから追加してください。`));
     return false;
   }
 
@@ -3119,7 +4837,7 @@
     ],
   };
   const SAMPLE = (SHOW_LIBRARY && SHOW_LIBRARY.starter) || FALLBACK_STARTER;
-  const sampleName = (s) => (isEn() ? s.en : s.ja);
+  const sampleName = (s) => (languageValue(() => (s.en), () => (s.ja)));
   const sampleCast = () => SAMPLE.cast.map((s) => ({
     id: s.id, name: sampleName(s), color: s.color,
     heightCm: DEFAULT_HEIGHT_CM, note: "", locked: false,
@@ -3177,10 +4895,20 @@
       arrows: [],
       beat: normalizeSceneBeat(sceneKind, null),
       rehearsal: sceneKind === "scene" ? normalizeSceneRehearsal(null) : null,
+      // 音源を使わないタイムラインで、このセクション全体を何秒として扱うか。
+      timelineDurationSeconds: null,
+      // セクションごとに時間式／カウント式のどちらで時間軸を読むか。
+      timelineUnit: sceneKind === "section" ? "time" : null,
       cueSeconds: null,
+      // このシーンへ入る転換で行うこと。転換時間・暗転と同じ到着側シーンへ持たせる。
+      transitionNote: "",
       // このシーンで流れている曲。再生位置や音源Blobは保存しない。
       audioTrackId: null,
+      // セクション側は交換パッケージ、生成シーン側は元フォーメーションとの札を持つ。
+      formation: null,
+      formationLink: null,
       lightingIntent: null,
+      lightMotion: null,
       facingLock: false,
     };
   }
@@ -3204,6 +4932,8 @@
         rehearsal: normalizeProjectRehearsal(null),
         // 曲名などの小さな情報だけ。音源本体はstage-audio-store.jsのIndexedDBへ置く。
         audioTracks: [],
+        // タイムライン上のキュー。位置はシーンIDとシーン内秒数で持つ。
+        cues: [],
         // このショーに出る人。場面ごとの在／不在は pieces 側で決まる
         cast: withExample ? sampleCast() : [],
         // このショーで使う台や道具。寸法はここが正本で、置いた分はこれを参照する
@@ -3246,8 +4976,9 @@
       closedSections: {},
       // 並べ替えや追加の起点になる行。セクションも起点になれる
       cursorRowId: null,
-      // 場面の欄の高さ(px)。引いて変えたら覚えておく
-      sceneListHeight: 320,
+      // 場面の欄は内容に合わせる。引いて変えた場合だけ固定高を覚えておく。
+      sceneListHeightMode: "auto",
+      sceneListHeight: null,
       seat: "center",
       // パネルの置き場所と開閉。中央は絵の順序だけを持つ
       layout: defaultLayout(),
@@ -3267,18 +4998,18 @@
      使わないものは畳めるようにする。中央は絵だけで、上下の入れ替えのみ。 */
   /* 演者・舞台セット・光は「出るもの」一枚にまとめた（cast）。
    * 登録・出し入れ・寸法の仕組みが同じものを三つに割ると、目が三度行き来する。 */
-  const PANELS = ["project", "music", "cast", "machinery", "rigs", "light", "background", "study", "scenes", "inspector", "save", "session", "ask"];
+  const PANELS = ["project", "venue", "music", "cast", "machinery", "rigs", "light", "background", "study", "scenes", "inspector", "save", "session", "ask"];
 
   function defaultLayout() {
     return {
       // 場面は絵のすぐ右に置く（順番を見ながら描くため）
       cols: {
-        project: "left", music: "left", cast: "left", machinery: "left", rigs: "left", light: "left", background: "left",
+        project: "left", venue: "left", music: "left", cast: "left", machinery: "left", rigs: "left", light: "left", background: "left",
         study: "right", scenes: "right", inspector: "right", save: "right",
         session: "right", ask: "right",
       },
       order: {
-        project: 0, music: 1, cast: 2, machinery: 3, rigs: 4, light: 5, background: 6,
+        project: 0, venue: 1, music: 2, cast: 3, machinery: 4, rigs: 5, light: 6, background: 7,
         study: -1, scenes: 0, inspector: 1, save: 2, session: 3, ask: 4,
       },
       /* 共有は「会議のときだけ開く」もの。畳んだ状態から始める。
@@ -3322,7 +5053,7 @@
     const ja = ["客席", "客席・上手寄り", "上手", "奥・上手寄り", "奥（背中）", "奥・下手寄り", "下手", "客席・下手寄り"];
     const en = ["house", "house / stage left", "stage left", "upstage / stage left",
       "upstage (back)", "upstage / stage right", "stage right", "house / stage right"];
-    const words = isEn() ? en : ja;
+    const words = languageValue(() => (en), () => (ja));
     if (d < 23 || d >= 338) return words[0];
     if (d < 68) return words[1];
     if (d < 113) return words[2];
@@ -3437,6 +5168,7 @@
       // 持たれる側から、同じシーンの演者と左右どちらの手かを指す
       heldBy: typeof piece.heldBy === "string" ? piece.heldBy : null,
       holdSide: piece.holdSide === "L" ? "L" : "R",
+      holdMode: piece.holdMode === "face" ? "face" : "hand",
       // 布のどの高さを掴むか（床から・m）。掴んでいない間も持ち歩く
       tissueH: clamp(finite(piece.tissueH, 4), 0, 10),
       // トラピーズの乗り方（座る／ぶら下がる）。降りている間も持ち歩く
@@ -3735,6 +5467,72 @@
     return Number.isFinite(seconds) ? clamp(seconds, 0.2, 10) : null;
   }
 
+  function jsonClone(value, fallback = null) {
+    try { return JSON.parse(JSON.stringify(value)); } catch (_) { return fallback; }
+  }
+
+  const TIMELINE_CUE_TYPES = new Set(["light", "music", "dialogue"]);
+
+  function normalizeProjectCues(raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw.map((cue) => {
+      if (!cue || typeof cue !== "object" || Array.isArray(cue)) return null;
+      // 台本側など、別用途の既存キューは形を決め直さずそのまま保つ。
+      if (cue.kind !== "timeline") return jsonClone(cue);
+      const cueType = TIMELINE_CUE_TYPES.has(cue.cueType) ? cue.cueType : null;
+      if (!cueType) return null;
+      const base = {
+        id: typeof cue.id === "string" ? cue.id : rid("cue"),
+        kind: "timeline",
+        cueType,
+        memo: typeof cue.memo === "string" ? cue.memo.slice(0, 2000) : "",
+      };
+      // 現行形はセクション全体の絶対秒。直前の試作で保存した
+      // sceneId + offsetSeconds も捨てず、読める互換形として残す。
+      const sectionId = typeof cue.sectionId === "string" ? cue.sectionId : null;
+      if (sectionId) return {
+        ...base,
+        sectionId,
+        atSeconds: Math.round(clamp(finite(cue.atSeconds, 0), 0, 86400) * 10) / 10,
+      };
+      const sceneId = typeof cue.sceneId === "string" ? cue.sceneId : null;
+      if (!sceneId) return null;
+      return {
+        ...base,
+        sceneId,
+        offsetSeconds: Math.round(clamp(finite(cue.offsetSeconds, 0), 0, 86400) * 10) / 10,
+      };
+    }).filter(Boolean);
+  }
+
+  function normalizeSectionFormation(kind, raw) {
+    if (kind !== "section" || !raw || typeof raw !== "object") return null;
+    const pkg = raw.package && raw.package.format === "formation-exchange"
+      ? jsonClone(raw.package) : null;
+    if (!pkg || !pkg.formation) return null;
+    const audioTrackBySong = {};
+    Object.entries(raw.audioTrackBySong || {}).forEach(([songId, trackId]) => {
+      if (typeof songId === "string" && STAGE_AUDIO_ID_RE.test(String(trackId || ""))) {
+        audioTrackBySong[songId] = trackId;
+      }
+    });
+    return { version: 1, package: pkg, audioTrackBySong };
+  }
+
+  function normalizeFormationLink(kind, raw) {
+    if (kind !== "scene" || !raw || typeof raw !== "object") return null;
+    const text = (key) => typeof raw[key] === "string" && raw[key] ? raw[key] : null;
+    const documentId = text("documentId"), songId = text("songId"), sourceSegmentId = text("sourceSegmentId");
+    if (!documentId || !songId || !sourceSegmentId) return null;
+    return {
+      version: 1,
+      documentId, songId, sourceSegmentId,
+      sourceFrameId: text("sourceFrameId"),
+      startCount: finite(raw.startCount, 1),
+      endCount: raw.endCount === null ? null : finite(raw.endCount, null),
+    };
+  }
+
   function normalizeScene(raw, index) {
     const fallbackBg = "#40362d";
     const kind = raw.kind === "section" ? "section" : "scene";
@@ -3761,9 +5559,16 @@
         ? raw.screenTexts.map(normalizeScreenText).filter(Boolean) : [],
       beat: normalizeSceneBeat(kind, raw.beat),
       rehearsal: kind === "scene" ? normalizeSceneRehearsal(raw.rehearsal) : null,
+      timelineDurationSeconds: kind === "section" ? timelineSeconds(raw.timelineDurationSeconds) : null,
+      timelineUnit: kind === "section" && raw.timelineUnit === "count" ? "count" : "time",
       cueSeconds: kind === "scene" ? normalizeCueSeconds(raw.cueSeconds) : null,
+      transitionNote: kind === "scene" && typeof raw.transitionNote === "string"
+        ? raw.transitionNote.slice(0, 1000) : "",
       audioTrackId: normalizeAudioTrackId(kind, raw.audioTrackId),
+      formation: normalizeSectionFormation(kind, raw.formation),
+      formationLink: normalizeFormationLink(kind, raw.formationLink),
       lightingIntent: normalizeLightingIntent(kind, raw.lightingIntent),
+      lightMotion: normalizeLightMotion(kind, raw.lightMotion),
       // 誤ってホイールへ触れても向きが変わらないよう、シーンごとに持つ
       facingLock: kind === "scene" ? Boolean(raw.facingLock) : false,
       // 暗転で始まるシーン（転換が一度真っ暗になってから明ける）
@@ -3783,7 +5588,12 @@
     list.forEach((piece) => {
       if (!piece.heldBy) return;
       const holder = byId.get(piece.heldBy);
-      const slot = `${piece.heldBy}:${piece.holdSide === "L" ? "L" : "R"}`;
+      if (piece.holdMode === "face" && !isMask(piece, project)) {
+        piece.heldBy = null;
+        piece.holdMode = "hand";
+        return;
+      }
+      const slot = `${piece.heldBy}:${piece.holdMode === "face" ? "face" : piece.holdSide === "L" ? "L" : "R"}`;
       if (!holder || holder.type !== "performer" || !isHoldable(piece, project) || occupied.has(slot)) {
         piece.heldBy = null;
         return;
@@ -3944,6 +5754,7 @@
         venueSize: size.id,
         rehearsal: normalizeProjectRehearsal(rawProject.rehearsal),
         audioTracks: normalizeAudioTracks(rawProject.audioTracks),
+        cues: normalizeProjectCues(rawProject.cues),
         /* 規模の実寸。選んだ規模の値を土台に、ここで上書きした分だけ差し替える。
          * 実際の劇場は「中劇場」で括れない（間口12.4m・高さ7.2mのような値になる）。 */
         venueDims: normalizeVenueDims(rawProject.venueDims, size),
@@ -4045,7 +5856,11 @@
       closedSections: (raw.closedSections && typeof raw.closedSections === "object" && !Array.isArray(raw.closedSections))
         ? raw.closedSections : {},
       cursorRowId: typeof raw.cursorRowId === "string" ? raw.cursorRowId : null,
-      sceneListHeight: clamp(finite(raw.sceneListHeight, 320), 120, 1200),
+      // 旧版の固定320pxは、本人指定の「内容に合わせて最大画面高の2/3」へ移行する。
+      // 新しい手動調整だけを固定高として引き継ぐ。
+      sceneListHeightMode: raw.sceneListHeightMode === "manual" ? "manual" : "auto",
+      sceneListHeight: raw.sceneListHeightMode === "manual"
+        ? clamp(finite(raw.sceneListHeight, 320), 120, 1200) : null,
       layout: normalizeLayout(raw.layout),
       seat: (typeof raw.seat === "string" && raw.seat.startsWith("approx-"))
         ? raw.seat
@@ -4061,6 +5876,7 @@
   }
 
   function loadState() {
+    if (STUDY_READ_ONLY) return { value: baseState(false), restored: false };
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) return { value: normalizeState(JSON.parse(saved)), restored: true };
@@ -4209,10 +6025,12 @@
   let state = loaded.value;
   let tool = "select";
   let selectedId = null;
+  let selectedIds = new Set();
   let selectedNoteId = null;
   // いま選んでいるスクリーンの文字（掴んで動かす・つまみで直す対象）
   let selectedTextId = null;
   let pointerAction = null;
+  let selectionMarquee = null;
   // 確定前の自由矢印。ショーの保存やUndoへは、指を離した時点で初めて入れる。
   let arrowDraft = null;
   let history = [];
@@ -4253,7 +6071,7 @@
   function audioFileTitle(file) {
     const name = String((file && file.name) || "").trim();
     const withoutExt = name.replace(/\.(mp3|m4a|wav|aac)$/i, "").trim();
-    return (withoutExt || (isEn() ? "Music" : "楽曲")).slice(0, 80);
+    return (withoutExt || (tx("楽曲"))).slice(0, 80);
   }
 
   function formatAudioTime(value) {
@@ -4267,7 +6085,7 @@
   }
 
   function setAudioStatus(ja, en) {
-    if (els.musicStatus) els.musicStatus.textContent = isEn() ? (en || ja) : ja;
+    if (els.musicStatus) els.musicStatus.textContent = languageValue(() => (en || ja), () => (ja));
   }
 
   function revokeAudioObjectUrl() {
@@ -4322,12 +6140,12 @@
     const assignedId = normalizeAudioTrackId("scene", sc().audioTrackId);
     const track = audioTrackById(assignedId);
     const title = track ? track.title : (assignedId
-      ? (isEn() ? "Unknown track" : "不明な楽曲")
-      : (isEn() ? "No music" : "音なし"));
+      ? (tx("不明な楽曲"))
+      : (tx("音なし")));
     const currentReady = Boolean(assignedId && audioPlayback.trackId === assignedId && audioPlayback.ready);
     const playing = Boolean(currentReady && els.musicAudio && !els.musicAudio.paused && !els.musicAudio.ended);
     const missing = Boolean(assignedId && audioPlayback.trackId === assignedId && audioPlayback.missing);
-    const displayTitle = missing ? `${title}${isEn() ? " (file missing)" : "（音源なし）"}` : title;
+    const displayTitle = missing ? `${title}${tx("（音源なし）")}` : title;
 
     if (els.musicCurrent) els.musicCurrent.textContent = displayTitle;
     if (els.musicToggle) {
@@ -4335,8 +6153,8 @@
       els.musicToggle.textContent = playing ? "❚❚" : "▶";
       els.musicToggle.setAttribute("aria-pressed", String(playing));
       els.musicToggle.setAttribute("aria-label", playing
-        ? (isEn() ? "Pause the current scene's music" : "現在のシーンの曲を一時停止")
-        : (isEn() ? "Play music for the current scene" : "現在のシーンの曲を再生"));
+        ? (tx("現在のシーンの曲を一時停止"))
+        : (tx("現在のシーンの曲を再生")));
     }
     if (els.musicRestart) els.musicRestart.disabled = !currentReady;
     if (els.musicRelink) els.musicRelink.hidden = !missing;
@@ -4352,7 +6170,7 @@
     if (!els.musicAudio || !audioPlayback.ready) return false;
     try {
       await els.musicAudio.play();
-      setAudioStatus(isEn() ? "Playing." : "再生しています。", "Playing.");
+      setAudioStatus(tx("再生しています。"), "Playing.");
       syncAudioControls();
       return true;
     } catch (_) {
@@ -4454,18 +6272,18 @@
   }
 
   function validAudioFile(file) {
-    if (!file || !Number.isFinite(file.size) || file.size <= 0) {
-      return isEn() ? "Choose a non-empty audio file." : "中身のある音源ファイルを選んでください。";
+    const problem = audioFilePolicy(file);
+    if (problem === "empty") return tx("中身のある音源ファイルを選んでください。");
+    if (problem === "beta-wav") {
+      return tx("ベータ版ではWAV音源を読み込めません。MP3またはM4A/AACへ変換してください。");
     }
-    if (file.size > STAGE_AUDIO_FILE_MAX_BYTES) {
-      return isEn() ? "Audio files must be 150 MB or smaller." : "音源は150MB以下にしてください。";
+    if (problem === "beta-size") {
+      return tx("ベータ版では音源を50MB以下にしてください。MP3またはM4A/AACへ変換すると容量を抑えられます。");
     }
-    const extensionOk = /\.(mp3|m4a|wav|aac)$/i.test(String(file.name || ""));
-    const mimeOk = ["audio/mpeg", "audio/mp4", "audio/x-m4a", "audio/wav", "audio/wave", "audio/x-wav", "audio/aac"]
-      .includes(String(file.type || "").toLowerCase());
-    return extensionOk || mimeOk ? "" : (isEn()
-      ? "Use an MP3, M4A/AAC or WAV file."
-      : "MP3、M4A/AAC、WAVの音源を選んでください。");
+    if (problem === "beta-format") return tx("ベータ版で読み込める音源はMP3またはM4A/AACです。");
+    if (problem === "size") return tx("音源は150MB以下にしてください。");
+    if (problem === "format") return tx("MP3、M4A/AAC、WAVの音源を選んでください。");
+    return "";
   }
 
   function probeAudioFile(file) {
@@ -4545,7 +6363,7 @@
         "This audio cannot be played. Choose an MP3, M4A/AAC or WAV file.");
       return false;
     }
-    const track = { id: rid("track"), title: audioFileTitle(file), durationSeconds: duration };
+    const track = { id: rid("track"), title: audioFileTitle(file), durationSeconds: duration, gainDb: 0 };
     setAudioStatus(`「${track.title}」を端末へ保存しています…`, `Saving “${track.title}” on this device…`);
     try {
       await audioStore.put(track.id, file);
@@ -4596,10 +6414,8 @@
     const difference = audioIdentityDifference(existingTrack, candidateTitle, duration);
     if (existingTrack && (difference.titleChanged || difference.durationChanged)) {
       const oldDuration = existingTrack.durationSeconds
-        ? formatAudioTime(existingTrack.durationSeconds) : (isEn() ? "unknown" : "不明");
-      const warning = isEn()
-        ? `This may be a different track.\nRegistered: ${existingTrack.title} (${oldDuration})\nSelected: ${candidateTitle} (${formatAudioTime(duration)})\nReconnect using this file?`
-        : `別の曲を選んでいる可能性があります。\n登録: ${existingTrack.title}（${oldDuration}）\n選択: ${candidateTitle}（${formatAudioTime(duration)}）\nこのファイルで接続しますか？`;
+        ? formatAudioTime(existingTrack.durationSeconds) : textWithEnglishOverride("unknown", "不明");
+      const warning = sx(`別の曲を選んでいる可能性があります。\n登録: ${existingTrack.title}（${oldDuration}）\n選択: ${candidateTitle}（${formatAudioTime(duration)}）\nこのファイルで接続しますか？`, `This may be a different track.\nRegistered: ${existingTrack.title} (${oldDuration})\nSelected: ${candidateTitle} (${formatAudioTime(duration)})\nReconnect using this file?`);
       if (!window.confirm(warning)) {
         setAudioStatus("音源の再接続を中止しました。", "Audio reconnection was cancelled.");
         return false;
@@ -4610,7 +6426,7 @@
       let track = existingTrack;
       if (!track) {
         checkpoint();
-        track = { id: trackId, title: candidateTitle, durationSeconds: duration };
+        track = { id: trackId, title: candidateTitle, durationSeconds: duration, gainDb: 0 };
         audioTracks().push(track);
       } else {
         track.durationSeconds = duration;
@@ -4675,9 +6491,7 @@
     const track = audioTrackById(trackId);
     if (!track) return;
     const used = state.project.scenes.filter((scene) => scene.audioTrackId === trackId).length;
-    const warning = isEn()
-      ? `Remove “${track.title}” from this show${used ? ` and ${used} assigned ${used === 1 ? "scene" : "scenes"}` : ""}? You can undo this until the page is closed.`
-      : `「${track.title}」をこのショーから外します${used ? `。割り当て済みの${used}シーンからも外れます` : ""}。ページを閉じるまでは「一つ戻す」で戻せます。`;
+    const warning = sx(`「${track.title}」をこのショーから外します${used ? `。割り当て済みの${used}シーンからも外れます` : ""}。ページを閉じるまでは「一つ戻す」で戻せます。`, `Remove “${track.title}” from this show${used ? ` and ${used} assigned ${used === 1 ? "scene" : "scenes"}` : ""}? You can undo this until the page is closed.`);
     if (!window.confirm(warning)) return;
     const affectsCurrent = sc().audioTrackId === trackId;
     checkpoint();
@@ -4708,7 +6522,7 @@
     els.sceneAudioTrack.replaceChildren();
     const none = document.createElement("option");
     none.value = "";
-    none.textContent = isEn() ? "No music" : "音なし";
+    none.textContent = tx("音なし");
     els.sceneAudioTrack.append(none);
     tracks.forEach((track) => {
       const option = document.createElement("option");
@@ -4719,7 +6533,7 @@
     if (currentId && !audioTrackById(currentId)) {
       const unknown = document.createElement("option");
       unknown.value = currentId;
-      unknown.textContent = isEn() ? "Unknown track (reconnect required)" : "不明な楽曲（音源の再接続が必要）";
+      unknown.textContent = tx("不明な楽曲（音源の再接続が必要）");
       els.sceneAudioTrack.append(unknown);
     }
     els.sceneAudioTrack.value = currentId || "";
@@ -4736,10 +6550,8 @@
       title.textContent = track.title;
       const meta = document.createElement("span");
       const assigned = state.project.scenes.filter((scene) => scene.audioTrackId === track.id).length;
-      const duration = track.durationSeconds ? formatAudioTime(track.durationSeconds) : (isEn() ? "duration unknown" : "尺を確認中");
-      meta.textContent = isEn()
-        ? `${duration} · ${assigned} ${assigned === 1 ? "scene" : "scenes"}`
-        : `${duration}・${assigned}シーン`;
+      const duration = track.durationSeconds ? formatAudioTime(track.durationSeconds) : (tx("尺を確認中"));
+      meta.textContent = sx(`${duration}・${assigned}シーン`, `${duration} · ${assigned} ${assigned === 1 ? "scene" : "scenes"}`);
       choose.append(title, meta);
       choose.addEventListener("click", () => {
         selectedAudioTrackId = track.id;
@@ -4750,7 +6562,7 @@
       remove.type = "button";
       remove.className = "stage-music-track-remove";
       remove.textContent = "×";
-      remove.setAttribute("aria-label", isEn() ? `Remove ${track.title}` : `${track.title}を外す`);
+      remove.setAttribute("aria-label", sx(`${track.title}を外す`, `Remove ${track.title}`));
       remove.addEventListener("click", () => removeAudioTrack(track.id));
       row.append(choose, remove);
       els.musicLibrary.append(row);
@@ -4776,7 +6588,7 @@
         copy.textContent = `${sceneNumber}. ${sceneNavigationTitle(scene, sceneNumber - 1)}`;
         if (other) {
           const note = document.createElement("em");
-          note.textContent = isEn() ? ` · currently ${other.title}` : `・現在は「${other.title}」`;
+          note.textContent = sx(`・現在は「${other.title}」`, ` · currently ${other.title}`);
           copy.append(note);
         }
         checkbox.addEventListener("change", () => {
@@ -4871,6 +6683,593 @@
     syncAudioControls();
   }
 
+  /* ---------- セクションのフォーメーション ----------
+   * iframe は記録UIだけを受け持つ。キャスト・舞台寸法・セットは Stage Sketch が正本、
+   * 音源Blobは既存の IndexedDB、交換JSONはセクションに保存する。 */
+  let formationModalSectionId = null;
+  let formationPlaybackRaf = 0;
+  // セクションから始めた再生だけが持つ、複数楽曲の順番。通常のシーン再生とは混ぜない。
+  let formationSectionPlayback = null;
+
+  const formationFrames = (song) => (Array.isArray(song && song.frames) ? song.frames : [])
+    .filter((frame) => Number.isFinite(Number(frame && frame.count)))
+    .slice().sort((a, b) => Number(a.count) - Number(b.count));
+
+  function formationGroupsFor(song) {
+    const frames = formationFrames(song);
+    const byId = new Map(frames.map((frame) => [frame.id, frame]));
+    const groups = (song && song.scenePlan && Array.isArray(song.scenePlan.segments)
+      ? song.scenePlan.segments : [])
+      .filter((segment) => byId.has(segment.fromFrameId))
+      .map((segment) => ({ ...segment, count: Number(byId.get(segment.fromFrameId).count) }))
+      .sort((a, b) => a.count - b.count);
+    if (frames.length && (!groups.length || groups[0].count > Number(frames[0].count) + 1e-9)) {
+      groups.unshift({ id: "sg-head", fromFrameId: frames[0].id, title: "", note: "", count: Number(frames[0].count), implicit: true });
+    }
+    return groups;
+  }
+
+  function formationAnchors(track) {
+    const bpm = Math.max(1, finite(track && track.countBpm, 120));
+    const first = Math.max(0, finite(track && track.firstCountSec, 0));
+    const map = new Map();
+    (Array.isArray(track && track.anchors) ? track.anchors : []).forEach((anchor) => {
+      const count = Number(anchor && anchor.count), sec = Number(anchor && anchor.sec);
+      if (Number.isFinite(count) && Number.isFinite(sec) && count > 1 && sec >= 0) map.set(count, sec);
+    });
+    const out = [{ count: 1, sec: first }];
+    [...map.entries()].sort((a, b) => a[0] - b[0]).forEach(([count, sec]) => {
+      if (sec > out[out.length - 1].sec) out.push({ count, sec });
+    });
+    out.bpm = bpm;
+    return out;
+  }
+
+  function formationCountToSec(track, count) {
+    const anchors = formationAnchors(track);
+    if (anchors.length === 1) return anchors[0].sec + (count - 1) * 60 / anchors.bpm;
+    const slope = (a, b) => (b.sec - a.sec) / (b.count - a.count);
+    if (count <= anchors[0].count) return anchors[0].sec + (count - anchors[0].count) * slope(anchors[0], anchors[1]);
+    for (let i = 0; i < anchors.length - 1; i += 1) {
+      if (count <= anchors[i + 1].count) return anchors[i].sec + (count - anchors[i].count) * slope(anchors[i], anchors[i + 1]);
+    }
+    const n = anchors.length;
+    return anchors[n - 1].sec + (count - anchors[n - 1].count) * slope(anchors[n - 2], anchors[n - 1]);
+  }
+
+  function formationSecToCount(track, sec) {
+    const anchors = formationAnchors(track);
+    if (anchors.length === 1) return 1 + (sec - anchors[0].sec) * anchors.bpm / 60;
+    const slope = (a, b) => (b.sec - a.sec) / (b.count - a.count);
+    if (sec <= anchors[0].sec) return anchors[0].count + (sec - anchors[0].sec) / slope(anchors[0], anchors[1]);
+    for (let i = 0; i < anchors.length - 1; i += 1) {
+      if (sec <= anchors[i + 1].sec) return anchors[i].count + (sec - anchors[i].sec) / slope(anchors[i], anchors[i + 1]);
+    }
+    const n = anchors.length;
+    return anchors[n - 1].count + (sec - anchors[n - 1].sec) / slope(anchors[n - 2], anchors[n - 1]);
+  }
+
+  function formationPoseAt(song, castId, count) {
+    const frames = formationFrames(song); if (!frames.length) return null;
+    let prev = frames[0], next = null;
+    for (const frame of frames) { if (Number(frame.count) <= count) prev = frame; else { next = frame; break; } }
+    const a = prev.poses && prev.poses[castId]; if (!a) return null;
+    const b = next && next.poses && next.poses[castId];
+    const facing = (pose) => ((finite(pose && pose.facing, 0) % 360) + 360) % 360;
+    if (!b || Number(next.count) <= Number(prev.count)) return { u: finite(a.u, .5), v: finite(a.v, .5), facing: facing(a) };
+    const travel = Math.max(0, finite(next.travel, 4));
+    const lead = clamp(finite(b.lead, 0), -16, 64), early = clamp(finite(b.early, 0), -16, 64);
+    const start = Math.max(Number(prev.count), Number(next.count) - travel - lead);
+    const end = Math.max(start + 1e-6, Number(next.count) - early);
+    if (count <= start) return { u: finite(a.u, .5), v: finite(a.v, .5), facing: facing(a) };
+    if (count >= end) return { u: finite(b.u, .5), v: finite(b.v, .5), facing: facing(b) };
+    const t = clamp((count - start) / (end - start), 0, 1), e = t * t * (3 - 2 * t), k = 1 - e;
+    const cu = Number.isFinite(Number(b.cu)) ? Number(b.cu) : (finite(a.u, .5) + finite(b.u, .5)) / 2;
+    const cv = Number.isFinite(Number(b.cv)) ? Number(b.cv) : (finite(a.v, .5) + finite(b.v, .5)) / 2;
+    const fa = facing(a), delta = ((facing(b) - fa + 540) % 360) - 180;
+    return {
+      u: k * k * finite(a.u, .5) + 2 * k * e * cu + e * e * finite(b.u, .5),
+      v: k * k * finite(a.v, .5) + 2 * k * e * cv + e * e * finite(b.v, .5),
+      facing: (fa + delta * e + 360) % 360,
+    };
+  }
+
+  function sectionFirstScene(section) {
+    const rows = state.project.scenes, at = rows.indexOf(section);
+    for (let i = at + 1; i < rows.length && rows[i].depth > section.depth; i += 1) {
+      if (rows[i].kind === "scene") return rows[i];
+    }
+    return sc();
+  }
+
+  /* セクションを初めて記録画面へ渡すときも、先頭だけでなく既存の子シーンを
+     すべてシーンの頭として渡す。ここでは並び順を正本として使い、セクションの
+     外へ出た時点で止めるので、後続セクションのシーンを混ぜない。 */
+  function sectionSceneRows(section) {
+    const rows = state.project.scenes, at = rows.indexOf(section), out = [];
+    for (let i = at + 1; i < rows.length && rows[i].depth > section.depth; i += 1) {
+      if (rows[i].kind === "scene") out.push(rows[i]);
+    }
+    return out;
+  }
+
+  function formationPosesForScene(scene) {
+    const performers = new Map((scene && scene.pieces || []).filter((piece) => piece.type === "performer" && piece.castId)
+      .map((piece) => [piece.castId, piece]));
+    const poses = {};
+    state.project.cast.forEach((member, index) => {
+      const piece = performers.get(member.id);
+      poses[member.id] = piece
+        ? { u: piece.u, v: piece.v, facing: piece.facing }
+        : { u: .15 + .7 * (state.project.cast.length <= 1 ? .5 : index / (state.project.cast.length - 1)), v: .55, facing: 0 };
+    });
+    return poses;
+  }
+
+  /* 楽曲未設定の既存シーンでは、稽古用の保持時間を仮の120 BPMカウントへ換算する。
+     保持時間が無い通常の新規シーンだけは、短い8カウントを既定にする。 */
+  function formationSceneDurationCounts(scene, bpm) {
+    const rehearsal = scene && scene.rehearsal && typeof scene.rehearsal === "object" ? scene.rehearsal : {};
+    const seconds = (key) => {
+      const raw = rehearsal[key];
+      if (raw === null || raw === undefined || raw === "") return null;
+      const value = Number(raw);
+      return Number.isFinite(value) && value >= 0 ? value : null;
+    };
+    const hold = seconds("holdDurationSeconds"), transition = seconds("transitionToNextSeconds");
+    const totalSeconds = (hold === null ? 4 : hold) + (transition === null ? 0 : transition);
+    return Math.max(1, Math.round(totalSeconds * Math.max(1, finite(bpm, 120)) / 60));
+  }
+
+  function formationSetPoses(scene) {
+    const poses = {};
+    (scene && Array.isArray(scene.pieces) ? scene.pieces : []).forEach((piece) => {
+      if (!piece.setId) return;
+      poses[piece.setId] = { u: finite(piece.u, .5), v: finite(piece.v, .5), facing: finite(piece.facing, 0) };
+    });
+    return poses;
+  }
+
+  function makeFormationPackage(section) {
+    const sources = sectionSceneRows(section), size = venueSize(), bpm = 120;
+    if (!sources.length) sources.push(sectionFirstScene(section));
+    const songId = rid("fsong"), documentId = rid("formation");
+    let count = 1;
+    const frames = sources.map((source, index) => {
+      const frame = {
+        id: rid("fframe"), count, poses: formationPosesForScene(source), setPoses: formationSetPoses(source),
+        note: String(source && source.note || "").slice(0, 200), travel: index ? 4 : 0,
+        // 反映時はこの既存シーンを更新し、新しい行を重複作成しない。
+        sourceStageSceneId: source && source.kind === "scene" ? source.id : null,
+      };
+      count += formationSceneDurationCounts(source, bpm);
+      return frame;
+    });
+    const song = {
+      id: songId,
+      track: { name: String(section.title || ""), countBpm: bpm, firstCountSec: 0, firstSet: false, firstLocked: false,
+        anchors: [], meters: [{ fromCount: 1, beatsPerBar: 4, beatUnit: 4 }], phrases: [{ fromCount: 1, length: 8 }] },
+      frames,
+      scenePlan: { segments: frames.map((frame, index) => ({
+        id: rid("fsegment"), fromFrameId: frame.id,
+        title: String(sources[index] && sources[index].title || "").slice(0, 40),
+        note: String(sources[index] && sources[index].note || "").slice(0, 80),
+        boundaryReasons: ["stage-scene"],
+      })), endCount: count, upgradedToPerFrame: true }, heroCount: 1,
+    };
+    return {
+      format: "formation-exchange", version: 1,
+      sync: { documentId, revisionId: rid("revision"), baseRevisionId: null, tombstones: [], savedBy: "stage-sketch", savedAt: nowIso() },
+      formation: { track: song.track, stage: { widthM: size.width, depthM: size.depth }, cast: [], sets: [],
+        frames: song.frames, scenePlan: song.scenePlan, heroCount: 1, songs: [song], songId },
+      stageSketch: { links: {}, segmentExtras: {}, framePoseExtras: {} },
+    };
+  }
+
+  function formationPackageFor(section) {
+    const pkg = jsonClone(section.formation && section.formation.package, null) || makeFormationPackage(section);
+    const f = pkg.formation, size = venueSize(), fallback = sectionFirstScene(section);
+    f.stage = { widthM: size.width, depthM: size.depth };
+    f.cast = state.project.cast.map((member) => ({ ...jsonClone(member, {}), locked: true }));
+    f.sets = state.project.sets.map((item) => ({ id: item.id, name: item.name, color: item.color,
+      kind: item.kind, dims: jsonClone(item.dims, {}), locked: true }));
+    (Array.isArray(f.songs) ? f.songs : []).forEach((song) => {
+      formationFrames(song).forEach((frame) => {
+        const linked = state.project.scenes.find((row) => row.formationLink
+          && row.formationLink.documentId === pkg.sync.documentId
+          && row.formationLink.songId === song.id
+          && row.formationLink.sourceFrameId === frame.id);
+        const source = typeof frame.sourceStageSceneId === "string"
+          ? state.project.scenes.find((row) => row.id === frame.sourceStageSceneId) : null;
+        frame.setPoses = formationSetPoses(linked || source || fallback);
+      });
+    });
+    const active = (f.songs || []).find((song) => song.id === f.songId) || (f.songs || [])[0];
+    if (active) { f.track = active.track; f.frames = active.frames; f.scenePlan = active.scenePlan; f.heroCount = active.heroCount; }
+    return pkg;
+  }
+
+  async function formationAudioPayload(section) {
+    const items = [];
+    if (!section.formation || !audioStore) return items;
+    for (const [songId, trackId] of Object.entries(section.formation.audioTrackBySong || {})) {
+      const track = audioTrackById(trackId); if (!track) continue;
+      try {
+        const blob = await audioStore.get(trackId);
+        if (blob) items.push({ songId, name: track.title, durationSeconds: track.durationSeconds, blob });
+      } catch (_) { /* 再接続は既存の音源UIへ任せる */ }
+    }
+    return items;
+  }
+
+  function setFormationStatus(ja, en) {
+    if (els.formationStatus) els.formationStatus.textContent = sx(ja, en || ja);
+  }
+
+  function formationSectionChoices() {
+    return state.project.scenes.filter((row) => row.kind === "section").map((section) => ({
+      id: section.id,
+      title: section.title || "無題のセクション",
+      depth: finite(section.depth, 0),
+    }));
+  }
+
+  async function sendFormationInit(section) {
+    if (!els.formationFrame || !els.formationFrame.contentWindow) return;
+    const audios = await formationAudioPayload(section);
+    if (formationModalSectionId !== section.id) return;
+    els.formationFrame.contentWindow.postMessage({ type: "stage-sketch-formation:init",
+      package: formationPackageFor(section), audios, sections: formationSectionChoices(), sectionId: section.id }, location.origin);
+    setFormationStatus(`${section.title}・${state.project.cast.length}人・セット${state.project.sets.length}件`,
+      `${section.title} · ${state.project.cast.length} performers · ${state.project.sets.length} sets`);
+  }
+
+  function openFormationModal(section) {
+    if (!section || section.kind !== "section" || !els.formationModal || document.body.classList.contains("is-public")) return;
+    hideTour();
+    formationModalSectionId = section.id;
+    els.formationBackdrop.hidden = false; els.formationModal.hidden = false;
+    setFormationStatus("セクションの演者・舞台・セットを読み込んでいます。", "Loading the section cast, stage and sets.");
+    els.formationFrame.src = "formation/prototype/record-from-video.html?v=62&embed=1&cast=locked";
+    document.body.classList.add("stage-modal-open");
+  }
+
+  function closeFormationModal() {
+    formationModalSectionId = null;
+    if (els.formationModal) els.formationModal.hidden = true;
+    if (els.formationBackdrop) els.formationBackdrop.hidden = true;
+    if (els.formationFrame) els.formationFrame.src = "about:blank";
+    document.body.classList.remove("stage-modal-open");
+  }
+
+  function formationSceneTitle(song, songIndex, group, groupIndex, songCount) {
+    const base = `シーン${groupIndex + 1}${group && group.title ? `　${group.title}` : ""}`;
+    const songName = String(song && song.track && song.track.name || `曲${songIndex + 1}`).replace(/\.[^.]+$/, "");
+    return songCount > 1 ? `${songName} — ${base}` : base;
+  }
+
+  function cloneFormationSets(scene) {
+    return (scene && scene.pieces || []).filter((piece) => piece.type !== "performer").map(copyPiece);
+  }
+
+  async function importFormationAudios(section, songs, audios) {
+    const map = { ...((section.formation && section.formation.audioTrackBySong) || {}) };
+    for (const entry of (Array.isArray(audios) ? audios : [])) {
+      if (!entry || !(entry.blob instanceof Blob) || typeof entry.songId !== "string") continue;
+      let trackId = map[entry.songId];
+      let track = audioTrackById(trackId);
+      if (!track) {
+        if (audioTracks().length >= STAGE_AUDIO_TRACK_LIMIT) throw new Error(`楽曲は${STAGE_AUDIO_TRACK_LIMIT}曲までです。`);
+        trackId = rid("track");
+        track = { id: trackId, title: String(entry.name || "音源").replace(/\.[^.]+$/, ""),
+          durationSeconds: Number.isFinite(Number(entry.durationSeconds)) ? Number(entry.durationSeconds) : null,
+          gainDb: 0 };
+        await audioStore.put(trackId, entry.blob);
+        audioTracks().push(track);
+      } else {
+        await audioStore.put(trackId, entry.blob);
+      }
+      map[entry.songId] = trackId;
+    }
+    songs.forEach((song) => {
+      const existing = audioTrackById(map[song.id]);
+      if (existing && song.track && song.track.name) existing.title = String(song.track.name).replace(/\.[^.]+$/, "");
+    });
+    return map;
+  }
+
+  async function stashFormationPackage(section, pkg, audios) {
+    if (!section || section.kind !== "section" || !pkg || pkg.format !== "formation-exchange" || !pkg.formation) {
+      throw new Error("シーンのデータを保管できませんでした。");
+    }
+    const songs = Array.isArray(pkg.formation.songs) ? pkg.formation.songs.filter((song) => song && song.id) : [];
+    if (!songs.length) throw new Error("曲のデータがありません。");
+    if (!pkg.sync || !pkg.sync.documentId) throw new Error("シーンの識別子がありません。");
+    if (!audioStore && Array.isArray(audios) && audios.length) throw new Error("この端末では音源を保存できません。");
+    checkpoint();
+    const audioTrackBySong = await importFormationAudios(section, songs, audios);
+    section.formation = { version: 1, package: jsonClone(pkg), audioTrackBySong };
+    persistSoon();
+  }
+
+  async function applyFormationPackage(section, pkg, audios, options = {}) {
+    if (!section || section.kind !== "section" || !pkg || pkg.format !== "formation-exchange" || !pkg.formation) return false;
+    const f = pkg.formation, songs = Array.isArray(f.songs) ? f.songs.filter((song) => song && song.id) : [];
+    if (!songs.length) throw new Error("曲のデータがありません。");
+    const documentId = pkg.sync && pkg.sync.documentId;
+    if (!documentId) throw new Error("シーンの識別子がありません。");
+    const specs = [];
+    songs.forEach((song, songIndex) => formationGroupsFor(song).forEach((group, groupIndex, groups) => {
+      specs.push({ song, songIndex, group, groupIndex, groups });
+    }));
+    const existing = state.project.scenes.filter((row) => row.formationLink && row.formationLink.documentId === documentId);
+    const sectionSceneIds = new Set(sectionSceneRows(section).map((row) => row.id));
+    const sourceSceneFor = (spec) => {
+      const head = formationFrames(spec.song).find((frame) => frame.id === spec.group.fromFrameId);
+      return head && sectionSceneIds.has(head.sourceStageSceneId)
+        ? state.project.scenes.find((row) => row.id === head.sourceStageSceneId) : null;
+    };
+    const newCount = specs.filter((spec) => !existing.some((row) => row.formationLink.songId === spec.song.id
+      && row.formationLink.sourceSegmentId === spec.group.id) && !sourceSceneFor(spec)).length;
+    if (!canAddSceneRows(newCount)) throw new Error("シーン数の上限を超えます。");
+    if (state.project.cast.length + state.project.sets.length > PROJECT_LIMITS.piecesPerScene) throw new Error("1シーンの駒数の上限を超えます。");
+    if (!audioStore && audios && audios.length) throw new Error("この端末では音源を保存できません。");
+
+    checkpoint();
+    const audioTrackBySong = await importFormationAudios(section, songs, audios);
+    const baseScene = sectionFirstScene(section), insertAt = (() => {
+      const rows = state.project.scenes, start = rows.indexOf(section); let at = start + 1;
+      while (at < rows.length && rows[at].depth > section.depth) at += 1;
+      return at;
+    })();
+    const created = [];
+    specs.forEach((spec) => {
+      const { song, songIndex, group, groupIndex, groups } = spec;
+      const frames = formationFrames(song), head = frames.find((frame) => frame.id === group.fromFrameId) || frames[0];
+      let scene = state.project.scenes.find((row) => row.formationLink
+        && row.formationLink.documentId === documentId
+        && row.formationLink.songId === song.id
+        && row.formationLink.sourceSegmentId === group.id);
+      if (!scene) scene = sourceSceneFor(spec);
+      const isNew = !scene;
+      if (isNew) {
+        scene = newScene("", false, "scene", Math.min(MAX_DEPTH, section.depth + 1));
+        scene.background = baseScene.background;
+        scene.pieces = cloneFormationSets(baseScene);
+        created.push(scene);
+      }
+      const nextGroup = groups[groupIndex + 1] || null;
+      scene.title = formationSceneTitle(song, songIndex, group, groupIndex, songs.length).slice(0, 40);
+      scene.note = String(group.note || (head && head.note) || "").slice(0, 200);
+      scene.audioTrackId = audioTrackBySong[song.id] || null;
+      scene.formationLink = { version: 1, documentId, songId: song.id, sourceSegmentId: group.id,
+        sourceFrameId: head && head.id || null, startCount: group.count,
+        endCount: nextGroup ? nextGroup.count : (song.scenePlan && song.scenePlan.endCount != null ? Number(song.scenePlan.endCount) : null) };
+      state.project.cast.forEach((member) => {
+        const pose = formationPoseAt(song, member.id, group.count); if (!pose) return;
+        let piece = (scene.pieces || []).find((item) => item.type === "performer" && item.castId === member.id);
+        if (!piece) {
+          piece = normalizePiece({ id: nextId(), type: "performer", castId: member.id, u: pose.u, v: pose.v,
+            facing: pose.facing, color: member.color, size: 100, pose: "stand" }, scene.pieces.length);
+          scene.pieces.push(piece);
+        }
+        piece.u = pose.u; piece.v = pose.v; piece.facing = pose.facing;
+        if (nextGroup) {
+          const to = formationPoseAt(song, member.id, nextGroup.count);
+          if (to && (Math.abs(to.u - pose.u) > 1e-4 || Math.abs(to.v - pose.v) > 1e-4)) {
+            const dest = formationFrames(song).find((frame) => frame.id === nextGroup.fromFrameId);
+            const dp = dest && dest.poses && dest.poses[member.id];
+            piece.route = { u: to.u, v: to.v,
+              bu: Number.isFinite(Number(dp && dp.cu)) ? Number(dp.cu) : (pose.u + to.u) / 2,
+              bv: Number.isFinite(Number(dp && dp.cv)) ? Number(dp.cv) : (pose.v + to.v) / 2 };
+          } else piece.route = null;
+        } else piece.route = null;
+      });
+    });
+    if (created.length) state.project.scenes.splice(insertAt, 0, ...created);
+    section.formation = { version: 1, package: jsonClone(pkg), audioTrackBySong };
+    state.project.sectionsNested = true;
+    const first = specs.length && state.project.scenes.find((row) => row.formationLink
+      && row.formationLink.documentId === documentId
+      && row.formationLink.songId === specs[0].song.id
+      && row.formationLink.sourceSegmentId === specs[0].group.id);
+    if (first) { state.project.activeSceneId = first.id; state.cursorRowId = first.id; }
+    audioPanelSignature = "";
+    renderScenes(); renderCast(); renderSets(); render(); persistSoon();
+    if (options.closeModal !== false) closeFormationModal();
+    if (!options.silent) announce(`${songs.length}曲・${specs.length}個のシーンを反映しました。`);
+    return true;
+  }
+
+  function clearFormationPlayback() {
+    if (formationPlaybackRaf) cancelAnimationFrame(formationPlaybackRaf);
+    formationPlaybackRaf = 0;
+    state.project.scenes.forEach((scene) => (scene.pieces || []).forEach((piece) => {
+      if (piece._formationPlayback) {
+        delete piece.animU; delete piece.animV; delete piece.animFacing; delete piece._formationPlayback;
+      }
+    }));
+  }
+
+  function formationOwnerByDocument(documentId) {
+    return state.project.scenes.find((row) => row.kind === "section" && row.formation
+      && row.formation.package && row.formation.package.sync
+      && row.formation.package.sync.documentId === documentId) || null;
+  }
+
+  /* ミュージックシンクから舞台スケッチへ反映済みで、音源とシーン頭の両方が
+     結び付いている楽曲だけを再生対象にする。端末内Blobの有無は非同期なので、
+     押した時に既存の音源再接続案内へ渡す。 */
+  function formationSectionPlaybackItems(section) {
+    const saved = section && section.kind === "section" && section.formation;
+    const pkg = saved && saved.package;
+    const formation = pkg && pkg.format === "formation-exchange" && pkg.formation;
+    const documentId = pkg && pkg.sync && pkg.sync.documentId;
+    const songs = formation && Array.isArray(formation.songs) ? formation.songs : [];
+    if (!documentId || !songs.length) return [];
+    const childIds = new Set(sectionSceneRows(section).map((row) => row.id));
+    return songs.map((song) => {
+      const groups = formationGroupsFor(song);
+      const firstGroup = groups[0];
+      const trackId = saved.audioTrackBySong && saved.audioTrackBySong[song.id];
+      if (!firstGroup || !trackId || !audioTrackById(trackId)) return null;
+      const scene = state.project.scenes.find((row) => childIds.has(row.id)
+        && row.kind === "scene" && row.audioTrackId === trackId && row.formationLink
+        && row.formationLink.documentId === documentId
+        && row.formationLink.songId === song.id
+        && row.formationLink.sourceSegmentId === firstGroup.id);
+      return scene ? { songId: song.id, trackId, sceneId: scene.id } : null;
+    }).filter(Boolean);
+  }
+
+  async function playFormationSectionItem(index) {
+    const run = formationSectionPlayback;
+    const section = run && state.project.scenes.find((row) => row.id === run.sectionId && row.kind === "section");
+    const item = section && formationSectionPlaybackItems(section)
+      .find((candidate) => candidate.songId === run.songIds[index]);
+    if (!section || !item || !els.musicAudio) {
+      formationSectionPlayback = null;
+      announce(tx("このセクションの音源とシーンを再生できませんでした。"));
+      return false;
+    }
+    run.index = index;
+    els.musicAudio.pause();
+    clearFormationPlayback();
+    openScene(item.sceneId);
+    if (state.project.activeSceneId !== item.sceneId) {
+      formationSectionPlayback = null;
+      return false;
+    }
+    audioPlayback.playAfterLoad = true;
+    const prepared = await prepareAudioForCurrentScene({ continuePlayback: true, force: true });
+    if (!prepared) {
+      formationSectionPlayback = null;
+      announce(tx("この端末に音源がありません。音楽パネルから元ファイルを接続してください。"));
+      return false;
+    }
+    if (audioPlayback.ready && audioPlayback.trackId === item.trackId) {
+      els.musicAudio.currentTime = 0;
+      await tryPlayCurrentAudio();
+    }
+    return true;
+  }
+
+  async function playFormationSection(section) {
+    const items = formationSectionPlaybackItems(section);
+    if (!items.length) return false;
+    const documentId = section.formation.package.sync.documentId;
+    formationSectionPlayback = {
+      sectionId: section.id,
+      documentId,
+      songIds: items.map((item) => item.songId),
+      index: 0,
+    };
+    return playFormationSectionItem(0);
+  }
+
+  async function advanceFormationSectionPlayback() {
+    const run = formationSectionPlayback;
+    if (!run) return false;
+    const link = sc() && sc().formationLink;
+    if (!link || link.documentId !== run.documentId || link.songId !== run.songIds[run.index]) {
+      formationSectionPlayback = null;
+      return false;
+    }
+    const nextIndex = run.index + 1;
+    if (nextIndex >= run.songIds.length) {
+      formationSectionPlayback = null;
+      return false;
+    }
+    return playFormationSectionItem(nextIndex);
+  }
+
+  function syncFormationPlaybackAtTime() {
+    const link = sc() && sc().formationLink;
+    if (!link || !els.musicAudio || audioPlayback.trackId !== sc().audioTrackId) return false;
+    const owner = formationOwnerByDocument(link.documentId), pkg = owner && owner.formation.package;
+    const song = pkg && pkg.formation && (pkg.formation.songs || []).find((item) => item.id === link.songId);
+    if (!song) return false;
+    const count = formationSecToCount(song.track, finite(els.musicAudio.currentTime, 0));
+    const groups = formationGroupsFor(song); let currentGroup = groups[0];
+    groups.forEach((group) => { if (group.count <= count + 1e-9) currentGroup = group; });
+    const target = currentGroup && state.project.scenes.find((row) => row.formationLink
+      && row.formationLink.documentId === link.documentId && row.formationLink.songId === link.songId
+      && row.formationLink.sourceSegmentId === currentGroup.id);
+    if (target && target.id !== state.project.activeSceneId) {
+      clearFormationPlayback();
+      state.project.activeSceneId = target.id; state.cursorRowId = target.id;
+      selectedId = null; renderScenes(); renderCast(); renderSets(); updateInspector(); persistSoon();
+    }
+    (sc().pieces || []).forEach((piece) => {
+      if (piece.type !== "performer" || !piece.castId) return;
+      const pose = formationPoseAt(song, piece.castId, count); if (!pose) return;
+      piece.animU = pose.u; piece.animV = pose.v; piece.animFacing = pose.facing; piece._formationPlayback = true;
+    });
+    render();
+    return true;
+  }
+
+  function startFormationPlayback() {
+    if (formationPlaybackRaf || !syncFormationPlaybackAtTime()) return;
+    const step = () => {
+      formationPlaybackRaf = 0;
+      if (!els.musicAudio || els.musicAudio.paused || els.musicAudio.ended) return;
+      if (!syncFormationPlaybackAtTime()) { clearFormationPlayback(); render(); return; }
+      formationPlaybackRaf = requestAnimationFrame(step);
+    };
+    formationPlaybackRaf = requestAnimationFrame(step);
+  }
+
+  if (els.formationClose) els.formationClose.addEventListener("click", closeFormationModal);
+  if (els.formationBackdrop) els.formationBackdrop.addEventListener("click", closeFormationModal);
+  window.addEventListener("message", async (event) => {
+    if (event.origin !== location.origin || !els.formationFrame || event.source !== els.formationFrame.contentWindow) return;
+    const message = event.data || {};
+    const section = state.project.scenes.find((row) => row.id === formationModalSectionId && row.kind === "section");
+    if (!section) return;
+    if (message.type === "stage-sketch-formation:ready") { await sendFormationInit(section); return; }
+    if (message.type === "stage-sketch-formation:select-section") {
+      const next = state.project.scenes.find((row) => row.id === message.sectionId && row.kind === "section");
+      if (!next || next.id === section.id) return;
+      setFormationStatus("いまのセクションを保管して切り替えています。", "Saving the current section before switching.");
+      try {
+        await stashFormationPackage(section, message.package, message.audios);
+        formationModalSectionId = next.id;
+        await sendFormationInit(next);
+      } catch (error) {
+        els.formationFrame.contentWindow.postMessage({ type: "stage-sketch-formation:section-switch-error", sectionId: section.id,
+          message: error && error.message ? error.message : "セクションを切り替えられませんでした。" }, location.origin);
+        setFormationStatus(error && error.message ? error.message : "セクションを切り替えられませんでした。", "Could not switch sections.");
+      }
+      return;
+    }
+    if (message.type === "stage-sketch-formation:apply") {
+      setFormationStatus("舞台スケッチへ反映しています。", "Applying to Stage Sketch.");
+      try { await applyFormationPackage(section, message.package, message.audios); }
+      catch (error) { setFormationStatus(error && error.message ? error.message : "反映できませんでした。", "Could not apply the formation."); }
+    }
+    if (message.type === "stage-sketch-formation:sync-audio") {
+      setFormationStatus("音源を舞台スケッチへ接続しています。", "Connecting the audio to Stage Sketch.");
+      try {
+        await applyFormationPackage(section, message.package, message.audios, { closeModal: false, silent: true });
+        setFormationStatus("音源を接続しました。セクションの再生ボタンから確認できます。", "Audio connected. Use the section play button to check it.");
+      } catch (error) {
+        setFormationStatus(error && error.message ? error.message : "音源を接続できませんでした。", "Could not connect the audio.");
+      }
+    }
+  });
+
+  if (els.musicAudio) {
+    els.musicAudio.addEventListener("play", startFormationPlayback);
+    els.musicAudio.addEventListener("pause", () => { if (sc().formationLink) syncFormationPlaybackAtTime(); });
+    els.musicAudio.addEventListener("seeking", () => { if (sc().formationLink) syncFormationPlaybackAtTime(); });
+    els.musicAudio.addEventListener("ended", () => {
+      clearFormationPlayback();
+      render();
+      void advanceFormationSectionPlayback();
+    });
+  }
+
   /* ---------- 固定 SceneStudy ----------
    * 知識ベース全体とは接続しない。同梱した固定データだけを読み、
    * 8ビートを通常の「場面」へ変換する。配置は初期仮説で、以後は
@@ -4907,7 +7306,7 @@
     const available = SCENE_STUDIES[0];
     if (!available) {
       els.studyBody.append(studyNode("p", "stage-study-empty",
-        isEn() ? "No fixed SceneStudy is bundled." : "同梱された固定SceneStudyはありません。"));
+        tx("同梱された固定SceneStudyはありません。")));
       return;
     }
 
@@ -4915,28 +7314,24 @@
     if (!study) {
       els.studyBody.append(
         studyNode("p", "stage-study-status",
-          isEn()
-            ? `FIXED STUDY / ${available.scope.targetDurationSeconds}s / ${available.scope.performers} performer`
-            : `固定スタディ / ${available.scope.targetDurationSeconds}秒 / ${available.scope.performers}人`),
+          sx(`固定スタディ / ${available.scope.targetDurationSeconds}秒 / ${available.scope.performers}人`, `FIXED STUDY / ${available.scope.targetDurationSeconds}s / ${available.scope.performers} performer`)),
         studyNode("h3", "stage-study-title", available.title),
         studyNode("p", "stage-study-input", available.fixedInput)
       );
       const button = studyNode("button", "stage-study-open",
-        isEn() ? "Open the 8 beats as another show" : "8ビートを別ショーとして開く");
+        tx("8ビートを別ショーとして開く"));
       button.type = "button";
       button.addEventListener("click", () => openFixedSceneStudy(available));
       els.studyBody.append(button);
       els.studyBody.append(studyNode("p", "stage-study-save-note",
-        isEn()
-          ? "Your current show stays in All shows. The study opens separately and saves only in this browser."
-          : "現在のショーは一覧に残します。固定案は別ショーで開き、配置変更はこのブラウザ内だけに保存します。"));
+        tx("現在のショーは一覧に残します。固定案は別ショーで開き、配置変更はこのブラウザ内だけに保存します。")));
 
-      const source = studyDetail(isEn() ? "What is fixed?" : "何が固定されているか");
+      const source = studyDetail(tx("何が固定されているか"));
       appendStudyList(source.body,
-        isEn() ? "FROM THE EXISTING PLAN" : "既存計画から",
+        tx("既存計画から"),
         available.factsFromExistingPlan);
       source.body.append(studyNode("p", "stage-study-source",
-        isEn() ? `Bundled from: ${available.sourceJson}` : `同梱元: ${available.sourceJson}`));
+        sx(`同梱元: ${available.sourceJson}`, `Bundled from: ${available.sourceJson}`)));
       els.studyBody.append(source.details);
       return;
     }
@@ -4951,21 +7346,19 @@
 
     els.studyBody.append(
       studyNode("p", "stage-study-status",
-        isEn()
-          ? `FIXED STUDY / ${study.scope.targetDurationSeconds}s / PLACEMENT DRAFT`
-          : `固定案 / ${study.scope.targetDurationSeconds}秒 / 配置は初期仮説`),
+        sx(`固定案 / ${study.scope.targetDurationSeconds}秒 / 配置は初期仮説`, `FIXED STUDY / ${study.scope.targetDurationSeconds}s / PLACEMENT DRAFT`)),
       studyNode("h3", "stage-study-title", study.title)
     );
 
     const rail = studyNode("div", "stage-study-rail");
     rail.setAttribute("role", "group");
-    rail.setAttribute("aria-label", isEn() ? "Switch study beat" : "スタディのビートを切り替える");
+    rail.setAttribute("aria-label", tx("スタディのビートを切り替える"));
     study.beats.forEach((beat) => {
       const scene = scenesByBeat.get(beat.id);
       const button = studyNode("button", "stage-study-beat-button", beat.id);
       button.type = "button";
       button.disabled = !scene;
-      button.title = `${beat.label} / ${beat.durationSeconds}${isEn() ? "s" : "秒"}`;
+      button.title = `${beat.label} / ${beat.durationSeconds}${languageValue(() => ("s"), () => ("秒"))}`;
       button.setAttribute("aria-pressed", String(Boolean(activeBeat && activeBeat.id === beat.id)));
       if (scene) button.addEventListener("click", () => openScene(scene.id));
       rail.append(button);
@@ -4974,20 +7367,18 @@
 
     if (!activeBeat) {
       els.studyBody.append(studyNode("p", "stage-study-empty",
-        isEn()
-          ? "This scene is outside the fixed 8 beats. Choose a beat above to return."
-          : "このシーンは固定8ビートの外です。上の番号を押すとスタディへ戻れます。"));
+        tx("このシーンは固定8ビートの外です。上の番号を押すとスタディへ戻れます。")));
     } else {
       const heading = studyNode("div", "stage-study-beat-head");
       const number = studyNode("span", "stage-study-beat-number",
-        `${activeBeat.id} / ${study.beats.length}　${activeBeat.durationSeconds}${isEn() ? "s" : "秒"}`);
+        `${activeBeat.id} / ${study.beats.length}　${activeBeat.durationSeconds}${languageValue(() => ("s"), () => ("秒"))}`);
       heading.append(number, studyNode("h4", "", activeBeat.label));
       els.studyBody.append(heading);
 
       [
-        [isEn() ? "ACTION" : "行為", activeBeat.action],
-        [isEn() ? "VISIBLE RULE" : "観客に見える規則", activeBeat.visibleRule],
-        [isEn() ? "CHANGE" : "このビートで変わること", activeBeat.change],
+        [tx("行為"), activeBeat.action],
+        [tx("観客に見える規則"), activeBeat.visibleRule],
+        [tx("このビートで変わること"), activeBeat.change],
       ].forEach(([label, value]) => {
         const field = studyNode("div", "stage-study-field");
         field.append(studyNode("span", "", label), studyNode("p", "", value));
@@ -4995,9 +7386,7 @@
       });
 
       const cards = studyDetail(
-        isEn()
-          ? `Direction cards (${activeBeat.appliedCardIds.length})`
-          : `適用した演出カード（${activeBeat.appliedCardIds.length}件）`
+        sx(`適用した演出カード（${activeBeat.appliedCardIds.length}件）`, `Direction cards (${activeBeat.appliedCardIds.length})`)
       );
       const cardList = studyNode("ul", "stage-study-card-list");
       activeBeat.appliedCardIds.forEach((id) => {
@@ -5009,26 +7398,24 @@
       els.studyBody.append(cards.details);
     }
 
-    const boundary = studyDetail(isEn() ? "Facts, interpretation, open choices" : "事実・解釈・未決定");
+    const boundary = studyDetail(tx("事実・解釈・未決定"));
     appendStudyList(boundary.body,
-      isEn() ? "FROM THE EXISTING PLAN" : "既存計画から",
+      tx("既存計画から"),
       study.factsFromExistingPlan);
     appendStudyList(boundary.body,
-      isEn() ? "CREATIVE INTERPRETATION" : "今回の制作解釈",
+      tx("今回の制作解釈"),
       [
         `目的: ${study.creativeInterpretation.objective}`,
         `障害: ${study.creativeInterpretation.obstacle}`,
         `葛藤: ${study.creativeInterpretation.conflict}`,
       ]);
     appendStudyList(boundary.body,
-      isEn() ? "OPEN" : "本人確認待ち",
+      tx("本人確認待ち"),
       study.unknownsForUserReview);
     els.studyBody.append(boundary.details);
 
     els.studyBody.append(studyNode("p", "stage-study-save-note",
-      isEn()
-        ? "Switch beats to compare positions. Every beat is a separate scene; edits auto-save only in this browser."
-        : "番号を切り替えて配置差を見ます。各ビートは別シーンで、変更はこのブラウザ内へ自動保存されます。"));
+      tx("番号を切り替えて配置差を見ます。各ビートは別シーンで、変更はこのブラウザ内へ自動保存されます。")));
   }
 
   function openFixedSceneStudy(study) {
@@ -5128,35 +7515,37 @@
     const fresh = baseState(false);
     const p = fresh.project;
     p.id = source.id;
-    p.title = isEn() && source.titleEn ? source.titleEn : source.title;
+    p.title = languageValue(() => source.titleEn || source.title, () => source.title);
     p.versionLabel = source.versionLabel;
     p.venue = source.venue;
     p.venueSize = source.venueSize;
     p.sampleSource = source.sourceMarkdown || "";
-    p.sampleBoundaries = isEn() && Array.isArray(source.boundariesEn)
-      ? source.boundariesEn.slice()
-      : (Array.isArray(source.boundaries) ? source.boundaries.slice() : []);
+    p.sampleBoundaries = languageValue(
+      () => (Array.isArray(source.boundariesEn) ? source.boundariesEn.slice()
+        : (Array.isArray(source.boundaries) ? source.boundaries.slice() : [])),
+      () => (Array.isArray(source.boundaries) ? source.boundaries.slice() : []),
+    );
     const castId = {}; const setId = {}; const lightId = {};
     p.cast = SAMPLE_CAST.map((c) => {
       castId[c.key] = `sample-cast-${c.key}`;
-      return { id: castId[c.key], name: isEn() && c.nameEn ? c.nameEn : c.name, color: c.color,
+      return { id: castId[c.key], name: languageValue(() => c.nameEn || c.name, () => c.name), color: c.color,
         heightCm: c.h, note: "", locked: false };
     });
     p.sets = SAMPLE_SETS.map((x) => {
       setId[x.key] = `sample-set-${x.key}`;
-      return { id: setId[x.key], kind: x.kind, name: isEn() && x.nameEn ? x.nameEn : x.name, color: x.color,
+      return { id: setId[x.key], kind: x.kind, name: languageValue(() => x.nameEn || x.name, () => x.name), color: x.color,
         dims: normalizeDims(x.kind, { dims: x.dims }), note: "", locked: false,
         flown: Boolean(x.flown), wires: 2, framed: false, lightKind: "hang" };
     }).concat(SAMPLE_LIGHTS.map((x) => {
       lightId[x.key] = `sample-light-${x.key}`;
-      return { id: lightId[x.key], kind: "light", name: isEn() && x.nameEn ? x.nameEn : x.name, color: "#d3ac59",
+      return { id: lightId[x.key], kind: "light", name: languageValue(() => x.nameEn || x.name, () => x.name), color: "#d3ac59",
         dims: normalizeDims("light", { dims: { dia: x.dia } }), note: "",
         locked: false, flown: false, wires: 2, framed: false, lightKind: x.kind };
     }));
 
     p.scenes = SAMPLE_SCENES.map((row, i) => {
-      const scene = newScene(isEn() && row.titleEn ? row.titleEn : row.title, false);
-      scene.note = isEn() && row.noteEn ? row.noteEn : row.note;
+      const scene = newScene(languageValue(() => row.titleEn || row.title, () => row.title), false);
+      scene.note = languageValue(() => row.noteEn || row.note, () => row.note);
       const pieces = [];
       Object.keys(row.cast || {}).forEach((key) => {
         const [u, v, facing, pose] = row.cast[key];
@@ -5199,15 +7588,17 @@
     const fresh = baseState(false);
     const p = fresh.project;
     p.id = source.id;
-    p.title = isEn() && source.titleEn ? source.titleEn : source.title;
+    p.title = languageValue(() => source.titleEn || source.title, () => source.title);
     p.versionLabel = source.versionLabel;
     p.venue = source.venue;
     p.venueSize = source.venueSize;
     p.rehearsal = normalizeProjectRehearsal(null);
     p.sampleSource = source.sourceMarkdown;
-    p.sampleBoundaries = isEn() && Array.isArray(source.boundariesEn)
-      ? source.boundariesEn.slice()
-      : (Array.isArray(source.boundaries) ? source.boundaries.slice() : []);
+    p.sampleBoundaries = languageValue(
+      () => (Array.isArray(source.boundariesEn) ? source.boundariesEn.slice()
+        : (Array.isArray(source.boundaries) ? source.boundaries.slice() : [])),
+      () => (Array.isArray(source.boundaries) ? source.boundaries.slice() : []),
+    );
 
     const castId = {};
     const setId = {};
@@ -5216,7 +7607,7 @@
       castId[member.key] = `seam-cast-${member.key}`;
       return {
         id: castId[member.key],
-        name: isEn() && member.nameEn ? member.nameEn : member.name,
+        name: languageValue(() => member.nameEn || member.name, () => member.name),
         color: member.color,
         heightCm: member.h,
         note: "",
@@ -5227,7 +7618,7 @@
       setId[item.key] = `seam-set-${item.key}`;
       return {
         id: setId[item.key], kind: item.kind,
-        name: isEn() && item.nameEn ? item.nameEn : item.name, color: item.color,
+        name: languageValue(() => item.nameEn || item.name, () => item.name), color: item.color,
         dims: normalizeDims(item.kind, { dims: item.dims }), note: "", locked: false,
         flown: Boolean(item.flown), wires: 2, framed: false, lightKind: "hang",
       };
@@ -5235,7 +7626,7 @@
       lightId[item.key] = `seam-light-${item.key}`;
       return {
         id: lightId[item.key], kind: "light",
-        name: isEn() && item.nameEn ? item.nameEn : item.name, color: "#d3ac59",
+        name: languageValue(() => item.nameEn || item.name, () => item.name), color: "#d3ac59",
         dims: normalizeDims("light", { dims: { dia: item.dia } }), note: "",
         locked: false, flown: false, wires: 2, framed: false, lightKind: item.kind,
       };
@@ -5243,19 +7634,22 @@
 
     const rows = [];
     source.sections.forEach((section) => {
-      const sectionTitle = isEn() && section.titleEn ? section.titleEn : section.title;
+      const sectionTitle = languageValue(() => section.titleEn || section.title, () => section.title);
       const sectionScene = newScene(`${section.id}. ${sectionTitle}`, false, "section", 0);
       sectionScene.id = `seam-section-${section.id}`;
-      sectionScene.note = (isEn() && section.summaryEn ? section.summaryEn : section.summary) || "";
+      sectionScene.note = languageValue(
+        () => section.summaryEn || section.summary,
+        () => section.summary,
+      ) || "";
       sectionScene.pieces = [];
       sectionScene.beat = null;
       sectionScene.rehearsal = null;
       rows.push(sectionScene);
 
       section.scenes.forEach((row) => {
-        const scene = newScene(`${row.id} ${isEn() && row.titleEn ? row.titleEn : row.title}`, false, "scene", 1);
+        const scene = newScene(`${row.id} ${languageValue(() => row.titleEn || row.title, () => row.title)}`, false, "scene", 1);
         scene.id = `seam-scene-${row.id}`;
-        scene.note = isEn() && row.noteEn ? row.noteEn : row.note;
+        scene.note = languageValue(() => row.noteEn || row.note, () => row.note);
         scene.beat = normalizeSceneBeat("scene", { role: row.role, energy: row.energy });
         scene.rehearsal = normalizeSceneRehearsal({
           holdDurationSeconds: row.durationSeconds,
@@ -5425,7 +7819,7 @@
        近似に効く中身（観客領域・床の輪郭）もキーに含める */
     const venueId = (v.id || "") + "|" +
       JSON.stringify(v.venueV2.audience || []) + "|" +
-      JSON.stringify((v.venueV2.floor && v.venueV2.floor.outline) || []);
+      JSON.stringify(v.venueV2.floor || {});
     if (approxFrontSeatCache.venueId !== venueId) {
       const lines = window.SHOSAI_VENUE_LINES;
       const seats = lines && typeof lines.approxFrontSeats === "function"
@@ -5441,8 +7835,8 @@
     if (approx) return approx.find((seat) => seat.id === id) || approx[0] || VENUES.seatById("center");
     return VENUES.seatById(id);
   }
-  /* 実効の寸法。選んだ規模に、手で入れた実寸を重ねたもの。
-   * 円形（リング）は間口・奥行きと同じ値を持たせる（真円なので一つの数で決まる）。 */
+  /* 実効の寸法。旧ショーに手入力寸法が残っている場合だけ読み込み互換として重ねる。
+   * 新しい会場は会場エディタで作り、ここでは寸法を直接編集しない。 */
   const venueSize = () => {
     const base = VENUES.sizeById(venue(), state.project.venueSize);
     const over = state.project.venueDims;
@@ -5719,7 +8113,7 @@
     renderSets();
     renderLights();
     renderRigs();
-    syncRosterPropShape();
+    renderRosterKindLayer();
     if (els.setInfoPropShapeRow && !els.setInfoPropShapeRow.hidden) {
       const item = currentSetItem();
       renderPropShapeSelect(els.setInfoPropShape, item && item.propShape);
@@ -5760,15 +8154,11 @@
     if (!els.backupNote) return;
     const n = state.editsSinceExport || 0;
     if (!state.lastExportAt) {
-      els.backupNote.textContent = isEn()
-        ? "No file export yet."
-        : "ファイルへの書き出しはまだありません。";
+      els.backupNote.textContent = tx("ファイルへの書き出しはまだありません。");
     } else {
       const at = new Date(state.lastExportAt);
       const stamp = isNaN(at) ? "?" : `${at.getMonth() + 1}/${at.getDate()} ${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
-      els.backupNote.textContent = isEn()
-        ? `Last file export: ${stamp} (${n} ${n === 1 ? "change" : "changes"} since)`
-        : `最後のファイル書き出し: ${stamp}（それから${n}回の変更）`;
+      els.backupNote.textContent = sx(`最後のファイル書き出し: ${stamp}（それから${n}回の変更）`, `Last file export: ${stamp} (${n} ${n === 1 ? "change" : "changes"} since)`);
     }
     if (els.backupHint) els.backupHint.hidden = n < BACKUP_HINT_AFTER;
   }
@@ -5795,35 +8185,28 @@
   }
 
   function persistSoon() {
+    if (STUDY_READ_ONLY) return;
     clearTimeout(saveTimer);
-    setSaveStatus(isEn() ? "Saving\u2026" : "変更を保存しています…");
+    setSaveStatus(tx("変更を保存しています…") || "Saving…");
     saveTimer = setTimeout(() => {
       try {
         localStorage.setItem(STORAGE_KEY, snapshot());
         shelveCurrent();
         /* 現在ショーと棚は別の保存。棚だけ失敗することがあるので分けて伝える */
         if (shelfCorrupt) {
-          setSaveStatus(isEn()
-            ? `Saved \u201c${state.project.title}\u201d. The show shelf is damaged, so shelf updates are paused to avoid deleting your other shows. Export to a file, then rebuild the shelf from the show list.`
-            : `「${state.project.title}」は保存しました。ただしショー一覧の控えが壊れているため、一覧の更新を止めています（残っている他のショーを消さないためです）。ファイルへ書き出してから、ショー一覧で作り直してください。`,
+          setSaveStatus(sx(`「${state.project.title}」は保存しました。ただしショー一覧の控えが壊れているため、一覧の更新を止めています（残っている他のショーを消さないためです）。ファイルへ書き出してから、ショー一覧で作り直してください。`, `Saved \u201c${state.project.title}\u201d. The show shelf is damaged, so shelf updates are paused to avoid deleting your other shows. Export to a file, then rebuild the shelf from the show list.`),
             "warn");
         } else if (shelfFailed) {
-          setSaveStatus(isEn()
-            ? `Saved \u201c${state.project.title}\u201d, but the show shelf is out of space \u2014 export to a file to keep a copy.`
-            : `「${state.project.title}」を保存しましたが、ショー一覧の控えは容量不足で更新できていません。ファイルへ書き出してください。`,
+          setSaveStatus(sx(`「${state.project.title}」を保存しましたが、ショー一覧の控えは容量不足で更新できていません。ファイルへ書き出してください。`, `Saved \u201c${state.project.title}\u201d, but the show shelf is out of space \u2014 export to a file to keep a copy.`),
             "warn");
         } else {
-          setSaveStatus(isEn()
-            ? `Saved \u201c${state.project.title}\u201d.`
-            : `「${state.project.title}」を保存しました。`);
+          setSaveStatus(sx(`「${state.project.title}」を保存しました。`, `Saved \u201c${state.project.title}\u201d.`));
         }
         updateBackupNote();
       } catch (_) {
         /* 「画像を書き出して」と案内していたが、いまは書き出しボタンが
            警告のすぐ隣にある。そちらへ導く（2026-08-24 P1-7対応）。 */
-        setSaveStatus(isEn()
-          ? "Could not save on this device. Export the show to a file to keep your work."
-          : "この端末へ保存できませんでした。ファイルへ書き出して残してください。",
+        setSaveStatus(tx("この端末へ保存できませんでした。ファイルへ書き出して残してください。"),
           "warn");
       }
       try { if (window.SHOSAI_STAGE_SESSION_HOOKS?.onLocalChange) window.SHOSAI_STAGE_SESSION_HOOKS.onLocalChange(); } catch (_) { /* セッション未使用なら何もしない */ }
@@ -5835,11 +8218,7 @@
      * 名前や数は捕捉して埋め直す。呼び出し77箇所へ三項演算子を撒くより、
      * 出口一箇所で変える方が漏れが出ない。合わない文はそのまま出す
      * （日本語が出たら、それが「表に無い」という印になる）。 */
-    if (isEn() && I18N.say) {
-      for (const [re, en] of I18N.say) {
-        if (re.test(message)) { message = message.replace(re, en); break; }
-      }
-    }
+    message = sx(message);
     els.live.textContent = "";
     requestAnimationFrame(() => { els.live.textContent = message; });
   }
@@ -5989,9 +8368,10 @@
     if (!list.length) {
       const empty = document.createElement("p");
       empty.className = "stage-cast-empty";
-      empty.textContent = isEn()
-        ? "No screen text yet. Type a word and press Project."
-        : "まだありません。言葉を入れて〈映す〉を押してください。";
+      empty.textContent = textWithEnglishOverride(
+        "No screen text yet. Type a word and press Project.",
+        "まだありません。言葉を入れて〈映す〉を押してください。",
+      );
       host.append(empty);
     }
     list.forEach((t) => {
@@ -6016,7 +8396,7 @@
       del.type = "button";
       del.className = "stage-cast-remove";
       del.textContent = "✕";
-      del.setAttribute("aria-label", isEn() ? "Remove this text" : "この文字を消す");
+      del.setAttribute("aria-label", tx("この文字を消す"));
       del.addEventListener("click", () => {
         checkpoint();
         sc().screenTexts = (sc().screenTexts || []).filter((x) => x.id !== t.id);
@@ -6344,6 +8724,19 @@
       if (!piece.heldBy) return;
       const holder = pieces.find((other) => other.id === piece.heldBy && other.type === "performer");
       if (!holder) { piece.heldBy = null; return; }
+      if (piece.holdMode === "face" && isMask(piece)) {
+        const H = pieceHeightM(holder) * (holder.size / 100);
+        const pose = poseById(resolvePoseId(holder, pieces));
+        const head = maskFacePoint(pose, H, [0, 0, 0]);
+        const yaw = finite(holder.facing, 0) * Math.PI / 180;
+        piece.u = holder.u + H * (head[0] * Math.cos(yaw) + head[2] * Math.sin(yaw)) / size.width;
+        piece.v = holder.v + H * (-head[0] * Math.sin(yaw) + head[2] * Math.cos(yaw)) / size.depth;
+        piece.base = finite(holder.base, 0) + head[1] * H;
+        piece.facing = holder.facing;
+        piece.supportId = null;
+        piece.route = null;
+        return;
+      }
       const side = piece.holdSide === "L" ? -1 : 1;
       const rad = (finite(holder.facing, 0) * Math.PI) / 180;
       const across = side * 0.28;
@@ -6506,7 +8899,7 @@
       head[0] + f[0] * 0.048 + wide[0] * EYE_SEP * side,
       head[1] + f[1] * 0.048 + wide[1] * EYE_SEP * side,
       head[2] + f[2] * 0.048 + wide[2] * EYE_SEP * side));
-    return { P, rings, ux, uy, faceAt, eyes, facing: f, wheel, props };
+    return { P, rings, ux, uy, faceAt, eyes, facing: f, wheel, props, project, pose };
   }
 
   /* 何に乗っているか。"pole"＝ポールに付く／"chair"＝椅子に座る／null＝普通 */
@@ -6531,7 +8924,7 @@
             ? "trapeze_hang"
           : (mount === "chair" ? "sit" : piece.pose);
     const rig = buildRig(poseId, pos.x, pos.rawY === undefined ? pos.y : pos.rawY,
-      H * per.x, H * per.y, ((piece.facing || 0) * Math.PI) / 180, zDrop, L.plan ? null : L.tilt);
+      H * per.x, H * per.y, ((piece.animFacing !== undefined ? piece.animFacing : piece.facing || 0) * Math.PI) / 180, zDrop, L.plan ? null : L.tilt);
     rig.per = per;
     rig.H = H;
     return rig;
@@ -6550,6 +8943,18 @@
     const free = { ...piece, heldBy: null };
     const box = selectionBounds(free, L);
     const shape = free.type === "prop" ? scaledPropShape(free, pieceDims(free)) : null;
+    if (piece.holdMode === "face" && isMask(piece)) {
+      const dims = pieceDims(piece);
+      const points = [-1, 1].flatMap((x) => [-1, 1].map((y) => {
+        const point = maskFacePoint(rig.pose, rig.H, [x * dims.w / 2, y * dims.h / 2, 0]);
+        return rig.project(...point);
+      }));
+      const x = Math.min(...points.map((p) => p.x));
+      const y = Math.min(...points.map((p) => p.y));
+      return { free, dx: 0, dy: 0, bounds: { x, y,
+        w: Math.max(3, Math.max(...points.map((p) => p.x)) - x),
+        h: Math.max(3, Math.max(...points.map((p) => p.y)) - y) } };
+    }
     const grip = shape && shape.grip;
     const bounds = grip ? propPartsBounds(pieceParts(free)) : null;
     if (grip && bounds && bounds.maxX > bounds.minX && bounds.maxY > bounds.minY) {
@@ -6633,6 +9038,8 @@
          首は胴の一部として描いてあるので、ここに輪郭線は引かない。 */
       target.fillStyle = color;
       target.beginPath();
+      if (rig.mask) paintFaceMask(target, rig.project, rig.pose, rig.H, rig.mask, false);
+      target.beginPath();
       target.ellipse(P.head.x, P.head.y,
         Math.max(1.2, 0.065 * ux), Math.max(1.1, 0.048 * ux), angle, 0, Math.PI * 2);
       target.fill();
@@ -6649,6 +9056,7 @@
         });
         target.fill();
       }
+      if (rig.mask) paintFaceMask(target, rig.project, rig.pose, rig.H, rig.mask, true);
     });
 
     if (rig.wheel) paintWheel(target, rig, "near");
@@ -6743,7 +9151,7 @@
   /* 3Dカメラ（stage-first-person.js）へ体モデルを貸し出す窓口。
    * FPVは読み込み順で先に評価されるため、FPV側は描画時に遅延参照する。 */
   window.SHOSAI_STAGE_BODY = Object.freeze({
-    poseById, resolvePoseId,
+    poseById, resolvePoseId, maskFacePoint, paintMask, paintFaceMask, paintSmoothProp,
     normalizeLook, resolveLook,
     topKindById, bottomKindById, hairStyleById, lengthById, sleeveById,
     LENGTHS, SLEEVES, TOP_KINDS, BOTTOM_KINDS, HAIR_STYLES,
@@ -6756,6 +9164,8 @@
   // 正面から見た演者
   function drawPerformer(target, piece, pos, scale, L) {
     const rig = performerRig(piece, pos, L);
+    const mask = sc().pieces.find((p) => p.heldBy === piece.id && p.holdMode === "face" && isMask(p));
+    if (mask) rig.mask = { dims: pieceDims(mask), color: mask.color };
     const P = rig.P;
     const look = resolveLook(piece, state.project.cast);
     target.save();
@@ -6884,6 +9294,60 @@
     return piece && PROP_SHAPES[piece.propShape] ? piece.propShape : "box";
   }
 
+  function isMask(piece, project) {
+    if (!piece || piece.type !== "prop") return false;
+    const source = project || state.project;
+    const owner = piece.setId && (source.sets || []).find((item) => item.id === piece.setId);
+    return (owner ? owner.propShape : piece.propShape) === "mask";
+  }
+
+  // 顔の位置と仮面の向きを同じ骨格から作る。寝姿・前屈・台上でも頭へ追従する。
+  function maskFacePoint(pose, height, point) {
+    const up = norm3(pose.joints.head.map((v, i) => v - pose.joints.neck[i]));
+    const right = norm3(cross3(up, pose.face));
+    const front = norm3(cross3(right, up));
+    return pose.joints.head.map((v, i) => v + front[i] * 0.049
+      + (right[i] * point[0] + up[i] * point[1] + front[i] * point[2]) / height);
+  }
+
+  function paintFaceMask(target, project, pose, height, mask, inFront) {
+    const at = project(...maskFacePoint(pose, height, [0, 0, 0]));
+    const head = project(...pose.joints.head);
+    if ((at.z >= head.z) !== inFront) return;
+    paintMask(target, (x, y, z) => project(...maskFacePoint(pose, height, [x, y, z])), mask.dims, mask.color);
+  }
+
+  // 正面・手持ち・3Dで共用する薄い楕円の仮面。目・口は前面にだけ描く。
+  function paintMask(target, project, dims, color) {
+    const outline = (z) => Array.from({ length: 32 }, (_, i) => {
+      const a = i * Math.PI / 16;
+      return project(Math.cos(a) * dims.w / 2, Math.sin(a) * dims.h / 2, z);
+    });
+    const front = outline(dims.d * 0.15);
+    const back = outline(-dims.d * 0.15);
+    const forward = project(0, 0, dims.d).z >= project(0, 0, 0).z;
+    const polygon = (points, fill) => {
+      target.beginPath();
+      points.forEach((p, i) => { if (i) target.lineTo(p.x, p.y); else target.moveTo(p.x, p.y); });
+      target.closePath(); target.fillStyle = fill; target.fill();
+    };
+    target.save();
+    polygon(forward ? back : front, mixToward(color, 0.25));
+    polygon(forward ? front : back, color);
+    if (forward) {
+      const opening = (cx, cy, rx, ry) => polygon(Array.from({ length: 16 }, (_, i) => {
+        const a = i * Math.PI / 8;
+        return project(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry, dims.d * 0.16);
+      }), "#221d18");
+      [-1, 1].forEach((side) => opening(side * dims.w * 0.21, dims.h * 0.12, dims.w * 0.13, dims.h * 0.07));
+      opening(0, -dims.h * 0.26, dims.w * 0.12, dims.h * 0.035);
+      polygon([project(0, dims.h * 0.08, dims.d * 0.16),
+        project(-dims.w * 0.07, -dims.h * 0.12, dims.d * 0.16),
+        project(0, -dims.h * 0.12, dims.d * 0.5)], mixToward(color, 0.25));
+    }
+    target.restore();
+  }
+
   function scaledPropShape(piece, dims) {
     const id = propShapeOf(piece);
     const preset = PROP_SHAPES[id];
@@ -6892,6 +9356,7 @@
     const sz = dims.d / preset.dims.d;
     const parts = preset.parts && preset.parts.map((part) => ({
       shape: part.shape,
+      axis: part.axis,
       x: finite(part.x, 0) * sx,
       y: finite(part.y, 0) * sy,
       z: finite(part.z, 0) * sz,
@@ -6906,6 +9371,76 @@
       parts,
       grip: preset.grip ? { x: preset.grip.x * sx, y: preset.grip.y * sy } : null,
     };
+  }
+
+  // 打楽器用の連続した面。箱を積み重ねず、鼓面は1枚、側面は円周でつなぐ。
+  function smoothPropFaces(parts) {
+    const faces = [];
+    const add = (points, tint) => {
+      const a = points[0], b = points[1], c = points[2];
+      const normal = norm3(cross3(b.map((v, i) => v - a[i]), c.map((v, i) => v - b[i])));
+      const light = 0.74 + 0.26 * Math.max(0, normal[1] * 0.8 - normal[0] * 0.35 - normal[2] * 0.45);
+      faces.push({ points, shade: Math.max(0, 1 - tint * light) });
+    };
+    parts.forEach((part) => {
+      const x = part.x || 0, y = part.y || 0, z = part.z || 0;
+      const w = part.w || part.dia, d = part.d || part.dia, h = part.h;
+      const tint = part.tint === undefined ? 1 : part.tint;
+      if (part.shape === "cylinder") {
+        const horizontal = part.axis === "z";
+        const rings = [0, 1].map((end) => Array.from({ length: 64 }, (_, i) => {
+          const a = i * Math.PI / 32;
+          return horizontal
+            ? [x + Math.cos(a) * w / 2, y + h / 2 + Math.sin(a) * h / 2, z + (end - 0.5) * d]
+            : [x + Math.cos(a) * w / 2, y + end * h, z + Math.sin(a) * d / 2];
+        }));
+        add(horizontal ? rings[0].slice().reverse() : rings[0], tint);
+        add(horizontal ? rings[1] : rings[1].slice().reverse(), tint);
+        for (let i = 0; i < 64; i += 1) {
+          const j = (i + 1) % 64;
+          add(horizontal
+            ? [rings[0][i], rings[0][j], rings[1][j], rings[1][i]]
+            : [rings[0][i], rings[1][i], rings[1][j], rings[0][j]], tint);
+        }
+      } else {
+        const v = [[-1, 0, -1], [1, 0, -1], [1, 0, 1], [-1, 0, 1],
+          [-1, 1, -1], [1, 1, -1], [1, 1, 1], [-1, 1, 1]]
+          .map(([a, b, c]) => [x + a * w / 2, y + b * h, z + c * d / 2]);
+        [[0, 1, 2, 3], [4, 7, 6, 5], [0, 4, 5, 1], [1, 5, 6, 2], [2, 6, 7, 3], [3, 7, 4, 0]]
+          .forEach((indices) => add(indices.map((i) => v[i]), tint));
+      }
+    });
+    return faces;
+  }
+
+  function paintSmoothProp(target, parts, project, color) {
+    const faces = smoothPropFaces(parts).map((face) => {
+      const points = face.points.map((p) => project(...p));
+      if (points.some((p) => !p || !Number.isFinite(p.x + p.y + p.z))) return null;
+      return { points, shade: face.shade, depth: points.reduce((sum, p) => sum + p.z, 0) / points.length };
+    }).filter(Boolean).sort((a, b) => a.depth - b.depth);
+    target.save();
+    target.lineWidth = 0.5;
+    target.lineJoin = "round";
+    faces.forEach((face) => {
+      target.fillStyle = target.strokeStyle = mixToward(color, face.shade);
+      target.beginPath();
+      face.points.forEach((p, i) => i ? target.lineTo(p.x, p.y) : target.moveTo(p.x, p.y));
+      target.closePath(); target.fill(); target.stroke();
+    });
+    target.restore();
+  }
+
+  function drawSmoothStageProp(target, piece, L) {
+    const parts = scaledPropShape(piece, pieceDims(piece)).parts;
+    const yaw = finite(piece.facing, 0) * Math.PI / 180;
+    const cos = Math.cos(yaw), sin = Math.sin(yaw);
+    paintSmoothProp(target, parts, (x, y, z) => {
+      const dw = x * cos - z * sin, dd = x * sin + z * cos;
+      const p = floorPoint(piece, dw, dd, L);
+      return { x: p.x, y: L.plan ? p.y : L.tilt(p.rawY - y * perMetre(p, L).y),
+        z: L.plan ? y : -dd + y * 0.35 };
+    }, piece.color);
   }
 
   function propPartsBounds(parts) {
@@ -6936,7 +9471,9 @@
     if (piece.type === "prop") {
       const shape = scaledPropShape(piece, d);
       if (shape.parts && window.SHOSAI_STAGE_MODELS) {
-        return shape.parts.flatMap((part) => window.SHOSAI_STAGE_MODELS.partBoxes(part));
+        // 曲面の表示とは別に、選択・支持判定へは外接箱を渡す。
+        return shape.parts.flatMap((part) => window.SHOSAI_STAGE_MODELS.partBoxes(
+          part.axis === "z" ? { ...part, shape: "box" } : part));
       }
       return [{ ox: 0, oz: 0, w: d.w, d: d.d, h: d.h, lift: 0, tint: 1 }];
     }
@@ -8072,6 +10609,7 @@
     piece = effectivelyPlacedPiece(piece);
     const held = heldFrontPlacement(piece, L);
     if (held) {
+      if (held.bounds) return held.bounds;
       const box = selectionBounds(held.free, L);
       return { x: box.x + held.dx, y: box.y + held.dy, w: box.w, h: box.h };
     }
@@ -8787,11 +11325,27 @@
     target.restore();
   }
 
+  function drawSelectionMarquee(target, marquee) {
+    if (!marquee) return;
+    const x = Math.min(marquee.start.x, marquee.current.x);
+    const y = Math.min(marquee.start.y, marquee.current.y);
+    const w = Math.abs(marquee.current.x - marquee.start.x);
+    const h = Math.abs(marquee.current.y - marquee.start.y);
+    if (w < 1 && h < 1) return;
+    target.save();
+    target.fillStyle = "rgba(211,172,89,0.10)";
+    target.strokeStyle = "#d3ac59";
+    target.lineWidth = 1.5;
+    target.setLineDash([6, 5]);
+    target.fillRect(x, y, w, h);
+    target.strokeRect(x, y, w, h);
+    target.restore();
+  }
+
   /* 絵の中へ組み立てて描く文。語順が言語で変わるので、鍵引きでは足りない。 */
-  const ringLabel = (dia) => (isEn() ? `Ring — ${dia}m across` : `リング 直径${dia}m`);
-  const sightLabel = (limit) => (isEn()
-    ? `The house shows direction, not distance (${limit.m}m ≈ ${tx(limit.label)})`
-    : `客席の広がりは方向の目安です（${limit.m}mで${limit.label}）`);
+  const ringLabel = (dia) => (sx(`リング 直径${dia}m`, `Ring — ${dia}m across`));
+  // 平面図の上端余白が24pxのときも、13pxの寸法文字がキャンバスから欠けない位置。
+  const PLAN_WIDTH_LABEL_MIN_Y = 12;
 
   function label(target, text, x, y, align) {
     if (pitchStyle) return;
@@ -8806,6 +11360,42 @@
   }
 
   /* ---------- 舞台そのものの描画（形式ごと） ---------- */
+
+  // Neutral venue surfaces follow the skin without rewriting scene or object colors.
+  const STAGE_COOL_SURFACES = Object.freeze({
+    "#40362d": "#2b2e33",
+    "#0d0c0b": "#0d0e10",
+    "#12100e": "#111316",
+    "#0c0a09": "#0b0c0e",
+    "#211b17": "#1c1f23",
+    "#0f0d0c": "#101114",
+    "#3a322a": "#303338",
+    "#28211b": "#24272b",
+    "#1b1512": "#17191c",
+    "#0c0908": "#0b0c0e",
+    "#070606": "#060708",
+    "#11100f": "#101113",
+    "#141110": "#121417",
+    "#241d18": "#202327",
+    "#141210": "#131518",
+    "#120f0d": "#111316",
+    "#14110e": "#131518",
+    "#201b16": "#1b1e22",
+    "#181411": "#16181b",
+    "#3e342a": "#303338",
+    "#1a1612": "#191c20",
+    "#0a0908": "#090a0c",
+    "#0b0a09": "#0a0b0d",
+    "#100e0c": "#0f1113",
+    "#1f1a16": "#1b1e22",
+    "#c4ac84": "#a2a8b1",
+  });
+  function stageSurfaceColor(warmColor) {
+    return prefs.uiSkin === "blue-black" ? (STAGE_COOL_SURFACES[warmColor] || warmColor) : warmColor;
+  }
+  function stageBackdropColor(color) {
+    return String(color).toLowerCase() === "#40362d" ? stageSurfaceColor("#40362d") : color;
+  }
 
   function drawFrontVenue(target, L) {
     const v = L.venue;
@@ -8866,7 +11456,7 @@
 
     // ---- 奥 ----
     if (wall) {
-      target.fillStyle = sc().background;
+      target.fillStyle = stageBackdropColor(sc().background);
       target.fillRect(wall.x, wall.y, wall.w, wall.h);
       // 実在会場の奥壁の造作（黒扉など）。地の色の上、写真・塗りの下。
       // 背景を塗れば黒扉の前に吊った幕として自然に覆われる
@@ -8877,7 +11467,7 @@
           const x1 = place(u1, 0, L).x;
           const x2 = place(u2, 0, L).x;
           const topY = Math.max(wall.y, stagePoint(u1, 0, feature.heightM, L).y);
-          target.fillStyle = "#12100e";
+          target.fillStyle = stageSurfaceColor("#12100e");
           target.fillRect(x1, topY, x2 - x1, L.floorY - topY);
           // 引き分け扉の合わせ目
           target.strokeStyle = "rgba(239,231,214,0.10)";
@@ -8916,7 +11506,7 @@
     // 全周形式は奥も客席。背景の壁を持たないので、客席の段だけを描く
     if (roundHouse) {
       target.save();
-      target.fillStyle = "rgba(18,15,13,0.95)";
+      target.fillStyle = rgba(stageSurfaceColor("#120f0d"), 0.95);
       target.fillRect(0, back.y, W, L.floorY - back.y);
       target.strokeStyle = "rgba(239,231,214,0.1)";
       target.lineWidth = 1;
@@ -8946,7 +11536,7 @@
     // スラストは左右にも客席がある
     if (v.audience === "three") {
       target.save();
-      target.fillStyle = "rgba(20,17,14,0.55)";
+      target.fillStyle = rgba(stageSurfaceColor("#14110e"), 0.55);
       target.fillRect(0, L.floorY - 30, back.x - 4, H - L.floorY + 30);
       target.fillRect(back.x + back.w + 4, L.floorY - 30, W - back.x - back.w, H - L.floorY + 30);
       label(target, "客席", back.x / 2, L.floorY + 90);
@@ -8990,10 +11580,10 @@
     if (realShape) {
       // 立ち入れない領域は床を敷かず、奈落のような暗がりとして残す
       trapezoidFloorPath();
-      target.fillStyle = "#0c0a09";
+      target.fillStyle = stageSurfaceColor("#0c0a09");
       target.fill();
     }
-    target.fillStyle = "#211b17";
+    target.fillStyle = stageSurfaceColor("#211b17");
     floorPath();
     target.fill();
 
@@ -9039,7 +11629,7 @@
       if (wall && realShape.farSpan) {
         const leftEdge = place(realShape.uOf(realShape.farSpan.lo), 0, L).x;
         const rightEdge = place(realShape.uOf(realShape.farSpan.hi), 0, L).x;
-        target.fillStyle = "#0f0d0c";
+        target.fillStyle = stageSurfaceColor("#0f0d0c");
         if (leftEdge > wall.x) target.fillRect(wall.x, wall.y, leftEdge - wall.x, wall.h);
         if (rightEdge < wall.x + wall.w) {
           target.fillRect(rightEdge, wall.y, wall.x + wall.w - rightEdge, wall.h);
@@ -9061,7 +11651,7 @@
           if (realShape.inside(mx, y + EPS) && !realShape.inside(mx, y - EPS)) {
             // 客席を向く壁は照明を受けて明るい（実会場写真ではブロック壁）
             quads.push({ order: y, u1: realShape.uOf(x1), v1: realShape.vOf(y),
-              u2: realShape.uOf(x2), v2: realShape.vOf(y), tone: "#3a322a" });
+              u2: realShape.uOf(x2), v2: realShape.vOf(y), tone: stageSurfaceColor("#3a322a") });
           }
         } else if (Math.abs(a[0] - b[0]) < 1e-6) {
           // 奥行き方向に走る壁（絞りの側面）
@@ -9074,7 +11664,7 @@
               !realShape.inside(x - toCentre, (y1 + y2) / 2)) {
             // 奥行きに走る側面は影に入るぶん一段沈む
             quads.push({ order: y2 - 0.001, u1: realShape.uOf(x), v1: realShape.vOf(y1),
-              u2: realShape.uOf(x), v2: realShape.vOf(y2), tone: "#28211b" });
+              u2: realShape.uOf(x), v2: realShape.vOf(y2), tone: stageSurfaceColor("#28211b") });
           }
         }
       }
@@ -9108,8 +11698,8 @@
     if (apron > 0 && !roundHouse) {
       const faceBottom = Math.min(H, L.apronBottom);
       const face = target.createLinearGradient(0, L.bottomY, 0, faceBottom);
-      face.addColorStop(0, "#1b1512");
-      face.addColorStop(1, "#0c0908");
+      face.addColorStop(0, stageSurfaceColor("#1b1512"));
+      face.addColorStop(1, stageSurfaceColor("#0c0908"));
       target.fillStyle = face;
       target.fillRect(0, L.bottomY, W, faceBottom - L.bottomY);
       target.strokeStyle = "rgba(239,231,214,0.18)";
@@ -9119,10 +11709,9 @@
       target.lineTo(W, L.bottomY);
       target.stroke();
       if (faceBottom < H - 2) {
-        target.fillStyle = "#070606";
+        target.fillStyle = stageSurfaceColor("#070606");
         target.fillRect(0, faceBottom, W, H - faceBottom);
       }
-      label(target, "舞台の立ち上がり", 96, Math.min(faceBottom - 16, H - 14));
     }
 
     // リングの縁
@@ -9139,7 +11728,7 @@
 
     // ---- 枠 ----
     // 近い席では奥の面が画面の上へ抜ける（back.y が負）。その場合は天を塗らない。
-    target.fillStyle = "#11100f";
+    target.fillStyle = stageSurfaceColor("#11100f");
     if (back.y > 0) target.fillRect(0, 0, W, back.y);
     if (v.frame) {
       /* 額縁はいちばん手前（v=1）の面にある。奥の壁の幅で描いていたころは、
@@ -9197,7 +11786,7 @@
         target.save();
         target.globalAlpha = Math.min(1, lookUp * 6);
         ceilPath();
-        target.fillStyle = "#141110";
+        target.fillStyle = stageSurfaceColor("#141110");
         target.fill();
         ceilPath();
         target.clip();
@@ -9273,9 +11862,9 @@
       [-1, 1].forEach((side) => {
         const edge = side < 0 ? 0 : W;
         const space = target.createLinearGradient(L.centerX, 0, edge, 0);
-        space.addColorStop(0, "rgba(62,52,42,0.95)");
-        space.addColorStop(0.55, "rgba(26,22,18,0.95)");
-        space.addColorStop(1, "rgba(10,9,8,0.95)");
+        space.addColorStop(0, rgba(stageSurfaceColor("#3e342a"), 0.95));
+        space.addColorStop(0.55, rgba(stageSurfaceColor("#1a1612"), 0.95));
+        space.addColorStop(1, rgba(stageSurfaceColor("#0a0908"), 0.95));
         target.fillStyle = space;
         target.fillRect(Math.min(L.centerX, edge), legTop, Math.abs(edge - L.centerX), L.bottomY - legTop);
       });
@@ -9292,9 +11881,9 @@
           const outer = place(side < 0 ? -wingU : 1 + wingU, vAt, L).x; // その外側
 
           const cloth = target.createLinearGradient(outer, 0, inner, 0);
-          cloth.addColorStop(0, `rgba(11,10,9,${0.97 * shade})`);
-          cloth.addColorStop(0.7, `rgba(16,14,12,${0.95 * shade})`);
-          cloth.addColorStop(1, `rgba(31,26,22,${0.93 * shade})`);
+          cloth.addColorStop(0, rgba(stageSurfaceColor("#0b0a09"), 0.97 * shade));
+          cloth.addColorStop(0.7, rgba(stageSurfaceColor("#100e0c"), 0.95 * shade));
+          cloth.addColorStop(1, rgba(stageSurfaceColor("#1f1a16"), 0.93 * shade));
           target.fillStyle = cloth;
           target.fillRect(Math.min(outer, inner), legTop, Math.abs(inner - outer), floorAt - legTop);
 
@@ -9310,7 +11899,7 @@
           }
 
           // 内側の縁。舞台の明かりを拾って光るので、ここだけが袖の輪郭になる
-          target.strokeStyle = `rgba(196,172,132,${0.16 + i * 0.06})`;
+          target.strokeStyle = rgba(stageSurfaceColor("#c4ac84"), 0.16 + i * 0.06);
           target.lineWidth = 2;
           target.beginPath();
           target.moveTo(inner, legTop);
@@ -9359,8 +11948,18 @@
     const v = L.venue;
     const s = L.stage;
     const outline = v.outline;
-    const xs = outline.map((point) => point[0]);
-    const ys = outline.map((point) => point[1]);
+    const stageExtensions = (v.stageExtensions || [])
+      .filter((item) => item && Array.isArray(item.polygon) && item.polygon.length >= 3);
+    const stagePolygons = [outline].concat(stageExtensions.map((item) => item.polygon));
+    const mergedPolygons = [outline].concat(stageExtensions
+      .filter((item) => item.merged)
+      .map((item) => item.polygon));
+    const unmergedPolygons = stageExtensions
+      .filter((item) => !item.merged)
+      .map((item) => item.polygon);
+    const stagePoints = stagePolygons.flat();
+    const xs = stagePoints.map((point) => point[0]);
+    const ys = stagePoints.map((point) => point[1]);
     const bounds = {
       minX: Math.min(...xs), maxX: Math.max(...xs),
       minY: Math.min(...ys), maxY: Math.max(...ys),
@@ -9371,8 +11970,7 @@
       x: s.x + (((point[0] - bounds.minX) / width) * s.w),
       y: s.y + (((point[1] - bounds.minY) / depth) * s.h),
     });
-    const polygonPath = (points) => {
-      target.beginPath();
+    const appendPolygonPath = (points) => {
       points.forEach((point, index) => {
         const at = pointAt(point);
         if (index) target.lineTo(at.x, at.y);
@@ -9380,9 +11978,67 @@
       });
       target.closePath();
     };
+    const polygonPath = (points) => {
+      target.beginPath();
+      appendPolygonPath(points);
+    };
+    const pointOnSegment = (point, a, b) => {
+      const crossValue = ((b[0] - a[0]) * (point[1] - a[1])) - ((b[1] - a[1]) * (point[0] - a[0]));
+      return Math.abs(crossValue) < 0.0001 &&
+        point[0] >= Math.min(a[0], b[0]) - 0.0001 && point[0] <= Math.max(a[0], b[0]) + 0.0001 &&
+        point[1] >= Math.min(a[1], b[1]) - 0.0001 && point[1] <= Math.max(a[1], b[1]) + 0.0001;
+    };
+    const pointStrictlyInside = (point, polygon) => {
+      if (polygon.some((corner, index) => pointOnSegment(point, corner, polygon[(index + 1) % polygon.length]))) return false;
+      let inside = false;
+      for (let current = 0, previous = polygon.length - 1;
+        current < polygon.length; previous = current, current += 1) {
+        const a = polygon[current];
+        const b = polygon[previous];
+        const crosses = ((a[1] > point[1]) !== (b[1] > point[1])) &&
+          point[0] < (((b[0] - a[0]) * (point[1] - a[1])) / (b[1] - a[1])) + a[0];
+        if (crosses) inside = !inside;
+      }
+      return inside;
+    };
+    const strokeExposedEdges = (polygons) => {
+      polygons.forEach((polygon, polygonIndex) => {
+        const others = polygons.filter((_, index) => index !== polygonIndex);
+        polygon.forEach((from, edgeIndex) => {
+          const to = polygon[(edgeIndex + 1) % polygon.length];
+          const canvasFrom = pointAt(from);
+          const canvasTo = pointAt(to);
+          const canvasLength = Math.hypot(canvasTo.x - canvasFrom.x, canvasTo.y - canvasFrom.y);
+          const steps = Math.min(96, Math.max(1, Math.ceil(canvasLength / 5)));
+          for (let stepIndex = 0; stepIndex < steps; stepIndex += 1) {
+            const startAmount = stepIndex / steps;
+            const endAmount = (stepIndex + 1) / steps;
+            const middleAmount = (startAmount + endAmount) / 2;
+            const middle = [
+              from[0] + ((to[0] - from[0]) * middleAmount),
+              from[1] + ((to[1] - from[1]) * middleAmount),
+            ];
+            if (others.some((other) => pointStrictlyInside(middle, other))) continue;
+            const start = pointAt([
+              from[0] + ((to[0] - from[0]) * startAmount),
+              from[1] + ((to[1] - from[1]) * startAmount),
+            ]);
+            const end = pointAt([
+              from[0] + ((to[0] - from[0]) * endAmount),
+              from[1] + ((to[1] - from[1]) * endAmount),
+            ]);
+            target.beginPath();
+            target.moveTo(start.x, start.y);
+            target.lineTo(end.x, end.y);
+            target.stroke();
+          }
+        });
+      });
+    };
 
     target.save();
-    target.fillStyle = "rgba(32,27,22,0.9)";
+    target.fillStyle = rgba(stageSurfaceColor("#201b16"), 0.9);
+    let genericAudienceLabelDrawn = false;
     (v.audienceAreas || []).forEach((area) => {
       if (!area || !Array.isArray(area.polygon) || area.polygon.length < 3) return;
       polygonPath(area.polygon);
@@ -9390,18 +12046,34 @@
       const center = area.polygon.reduce((sum, point) => [sum[0] + point[0], sum[1] + point[1]], [0, 0])
         .map((value) => value / area.polygon.length);
       const at = pointAt(center);
-      label(target, area.mode === "seated" ? "客席（座り）" : "客席（立ち見）", at.x, at.y);
+      const audienceLabel = area.mode === "audience"
+        ? "客席"
+        : (area.mode === "seated" ? "客席（座り）" : "客席（立ち見）");
+      if (area.mode !== "audience" || !genericAudienceLabelDrawn) {
+        label(target, audienceLabel, at.x, at.y);
+        if (area.mode === "audience") genericAudienceLabelDrawn = true;
+      }
     });
     target.restore();
 
     target.save();
-    polygonPath(outline);
-    target.fillStyle = "#241d18";
+    target.beginPath();
+    stagePolygons.forEach(appendPolygonPath);
+    target.fillStyle = stageSurfaceColor("#241d18");
     target.fill();
     target.strokeStyle = "rgba(156,130,63,0.55)";
     target.lineWidth = 2;
-    target.stroke();
-    polygonPath(outline);
+    if (mergedPolygons.length > 1) {
+      strokeExposedEdges(mergedPolygons);
+      unmergedPolygons.forEach((polygon) => {
+        polygonPath(polygon);
+        target.stroke();
+      });
+    } else {
+      target.stroke();
+    }
+    target.beginPath();
+    stagePolygons.forEach(appendPolygonPath);
     target.clip();
     const step = L.size.width > 14 ? 2 : 1;
     target.strokeStyle = "rgba(239,231,214,0.07)";
@@ -9422,19 +12094,15 @@
     }
     target.restore();
 
-    label(target, `${tx("間口")} ${L.size.width}m`, s.x + s.w / 2, s.y - 22);
+    label(target, `${tx("間口")} ${L.size.width}m`, s.x + s.w / 2, Math.max(PLAN_WIDTH_LABEL_MIN_Y, s.y - 22));
     label(target, `${tx("奥行")} ${L.size.depth}m`, s.x - 46, s.y + s.h / 2);
-    if ((v.audienceAreas || []).length) {
-      const limit = VENUES.sightLimits[0];
-      label(target, sightLabel(limit), W / 2, H - 16);
-    }
   }
 
   function drawPlanVenue(target, L) {
     const v = L.venue;
     const s = L.stage;
 
-    target.fillStyle = "#141210";
+    target.fillStyle = stageSurfaceColor("#141210");
     target.fillRect(0, 0, W, H);
 
     // 輪郭を持つのは作成会場と実在会場プリセット。どちらも実際の形で描く
@@ -9460,7 +12128,7 @@
       }
       target.save();
       wingRects.forEach((r) => {
-        target.fillStyle = "rgba(24,20,17,0.9)";
+        target.fillStyle = rgba(stageSurfaceColor("#181411"), 0.9);
         target.fillRect(r.x, r.y, r.w, r.h);
         target.strokeStyle = "rgba(239,231,214,0.16)";
         target.setLineDash([5, 5]);
@@ -9474,7 +12142,7 @@
 
     // 客席
     target.save();
-    target.fillStyle = "rgba(32,27,22,0.9)";
+    target.fillStyle = rgba(stageSurfaceColor("#201b16"), 0.9);
     if (v.audience === "front") {
       target.fillRect(s.x - 40, s.y + s.h + 14, s.w + 80, H - (s.y + s.h) - 30);
       label(target, "客席", W / 2, s.y + s.h + 58);
@@ -9506,7 +12174,7 @@
       const cx = s.x + s.w / 2;
       const cy = s.y + s.h / 2;
       const r = Math.min(s.w, s.h) / 2;
-      target.fillStyle = "#241d18";
+      target.fillStyle = stageSurfaceColor("#241d18");
       target.beginPath();
       target.arc(cx, cy, r, 0, Math.PI * 2);
       target.fill();
@@ -9519,7 +12187,7 @@
         label(target, ringLabel(L.size.ring), cx, cy + (L.size.ring * L.pxPerM) / 2 + 18);
       }
     } else {
-      target.fillStyle = "#241d18";
+      target.fillStyle = stageSurfaceColor("#241d18");
       target.fillRect(s.x, s.y, s.w, s.h);
       target.strokeStyle = "rgba(156,130,63,0.4)";
       target.lineWidth = 2;
@@ -9549,7 +12217,7 @@
     target.restore();
 
     // 寸法の目安
-    label(target, `${tx("間口")} ${L.size.width}m`, s.x + s.w / 2, s.y - 22);
+    label(target, `${tx("間口")} ${L.size.width}m`, s.x + s.w / 2, Math.max(PLAN_WIDTH_LABEL_MIN_Y, s.y - 22));
     label(target, `${tx("奥行")} ${L.size.depth}m`, s.x - 46, s.y + s.h / 2);
 
     // 屋外は柵とFOHの距離
@@ -9570,13 +12238,6 @@
       target.restore();
     }
 
-    // 客席は「どちらを向いているか」を示すためのもので、実距離では描いていない
-    // （20m先まで実寸で描くと舞台が小さくなりすぎ、置けなくなる）。
-    // 距離の目安は言葉で添える。
-    if (v.audience !== "none") {
-      const limit = VENUES.sightLimits[0];
-      label(target, sightLabel(limit), W / 2, H - 16);
-    }
   }
 
   /* 重ねを出すか。カードを開いている間は自動で出し、加えてトグルで
@@ -9932,7 +12593,7 @@
   }
 
   function drawLightIntentOverlay(target, L) {
-    // 書き出し・印刷・プレゼンには作図注記を焼き付けない
+    // 書き出し・印刷・全画面には作図注記を焼き付けない
     if (target !== ctx && target !== planCtx) return;
     if (presenting) return;
     const plan = lightIntentOverlayPlan(sc().lightingIntent);
@@ -9993,10 +12654,10 @@
       if (entry) {
         const at = lightIntentTagPosition(key, performers, L);
         if (at) {
-          const lang = isEn() ? "en" : "ja";
+          const code = lang;
           tags.push({
             ...at,
-            text: `「${LIGHT_INTENT_LAYER_LABELS[lang][key]}: ${LIGHT_INTENT_VALUE_LABELS[lang][entry.value]}」`,
+            text: `「${LIGHT_INTENT_LAYER_LABELS[code][key]}: ${LIGHT_INTENT_VALUE_LABELS[code][entry.value]}」`,
           });
         }
       }
@@ -10033,17 +12694,31 @@
       target.translate(-pos.x, -pos.y);
     }
     if (piece.type === "light") drawLight(target, piece, pos, scale, L);
+    else if (piece.type === "prop" && ["drumset", "taiko"].includes(propShapeOf(piece))) {
+      drawSmoothStageProp(target, piece, L);
+    }
     else if (L.plan && ["revolve", "deck", "curtain", "pool", "seri"].includes(piece.type)) {
       drawSolid(target, piece, pos, scale, L);
     }
     else if (L.plan) drawPlanPiece(target, piece, pos, scale, L);
     else if (piece.type === "performer") drawPerformer(target, piece, pos, scale, L);
+    else if (isMask(piece)) {
+      const dims = pieceDims(piece);
+      const yaw = finite(piece.facing, 0) * Math.PI / 180;
+      paintMask(target, (x, y, z) => {
+        const p = floorPoint(piece, x * Math.cos(yaw) + z * Math.sin(yaw),
+          x * Math.sin(yaw) - z * Math.cos(yaw), L);
+        return { x: p.x, y: L.tilt(p.rawY - (y + dims.h / 2) * perMetre(p, L).y),
+          z: -x * Math.sin(yaw) + z * Math.cos(yaw) };
+      }, dims, piece.color);
+    }
     else if (SOLID_TYPES[piece.type]) drawSolid(target, piece, pos, scale, L);
     else if (piece.type === "sphere") drawSphere(target, piece, pos, scale, L);
     if (lean) target.restore();
   }
 
   function drawHeldFrontPiece(target, piece, L) {
+    if (piece.holdMode === "face" && isMask(piece)) return;
     const held = heldFrontPlacement(piece, L);
     if (!held) return;
     target.save();
@@ -10207,7 +12882,60 @@
     target.restore();
   }
 
-  function drawStage(target, showSelection, view) {
+  /* 図の上に描く名前札。描画と当たり判定で同じ寸法を使い、
+   * 「名前の部分をダブルクリック」が見た目どおりの範囲で働くようにする。 */
+  function pieceNameTag(target, piece, L, shown) {
+    const wanted = piece.type === "performer" ? state.showNames
+      : piece.type === "light" ? state.showLightNames
+      : state.showSetNames;
+    if (!wanted) return null;
+    const text = pieceLabel(piece);
+    if (!text) return null;
+    const visualPiece = effectivelyPlacedPiece(piece);
+    const pos = placePiece(visualPiece, L);
+    const scale = pieceScale(visualPiece, pos, L);
+    const bounds = selectionBounds(visualPiece, L);
+    let y = bounds.y - (L.plan ? 9 : 10);
+    if (piece.heldBy && piece.holdMode === "face" && state.showNames) {
+      const holder = shown.find((item) => item.id === piece.heldBy);
+      if (holder) y = Math.min(y, selectionBounds(effectivelyPlacedPiece(holder), L).y - 34);
+    }
+    const font = `${Math.max(10, Math.round(13 * (L.plan ? 1 : Math.min(1.4, scale))))}px 'Hiragino Kaku Gothic ProN', sans-serif`;
+    target.save();
+    target.font = font;
+    const textWidth = target.measureText(text).width;
+    target.restore();
+    return {
+      piece, text, font, x: pos.x, y,
+      left: pos.x - textWidth / 2 - 6,
+      top: y - 15,
+      width: textWidth + 12,
+      height: 18,
+    };
+  }
+
+  function backstageNameTag(target, ghost, L) {
+    if (!L.plan || !state.showNames) return null;
+    const pos = place(ghost.u, ghost.v, L);
+    const text = ghost.member.name;
+    const font = "12px 'Hiragino Kaku Gothic ProN', sans-serif";
+    target.save();
+    target.font = font;
+    const textWidth = target.measureText(text).width;
+    target.restore();
+    return {
+      castId: ghost.member.id, text, font, x: pos.x, y: pos.y - 21,
+      left: pos.x - textWidth / 2 - 5,
+      top: pos.y - 30,
+      width: textWidth + 10,
+      height: 17,
+    };
+  }
+
+  /* opts.noZoom: 二本指の拡大を無視して等倍で描く。
+     「照明を組む」画面が正面図を借りるときに使う（モーダルの中で拡大は要らない）。
+     既定（未指定）はこれまでどおり zoomOf(view) を掛ける。 */
+  function drawStage(target, showSelection, view, opts) {
     const L = layout(view);
     refreshBases(L.size);
     buildPaintLayer(L);
@@ -10215,10 +12943,10 @@
     target.save();
     target.setTransform(S, 0, 0, S, 0, 0);
     target.clearRect(0, 0, W, H);
-    target.fillStyle = "#0d0c0b";
+    target.fillStyle = stageSurfaceColor("#0d0c0b");
     target.fillRect(0, 0, W, H);
     // 二本指で拡大しているぶんを、ここで一度だけかける
-    const zs = zoomOf(view);
+    const zs = (opts && opts.noZoom) ? { z: 1, ox: 0, oy: 0 } : zoomOf(view);
     if (zs.z !== 1 || zs.ox || zs.oy) {
       target.setTransform(zs.z * S, 0, 0, zs.z * S, -zs.ox * zs.z * S, -zs.oy * zs.z * S);
     }
@@ -10279,27 +13007,16 @@
     // 名前。頭上（平面では点の脇）に小さく置く。演者・装置・照明は別々に出し入れする
     if (!pitchStyle && (state.showNames || state.showSetNames || state.showLightNames)) {
       shown.forEach((piece) => {
-        const wanted = piece.type === "performer" ? state.showNames
-          : piece.type === "light" ? state.showLightNames
-          : state.showSetNames;
-        if (!wanted) return;
-        const labelText = pieceLabel(piece);
-        if (!labelText) return;
-        const visualPiece = effectivelyPlacedPiece(piece);
-        const pos = placePiece(visualPiece, L);
-        const scale = pieceScale(visualPiece, pos, L);
-        const b = selectionBounds(visualPiece, L);
-        const x = L.plan ? pos.x : pos.x;
-        const y = L.plan ? b.y - 9 : b.y - 10;
+        const tag = pieceNameTag(target, piece, L, shown);
+        if (!tag) return;
         target.save();
-        target.font = `${Math.max(10, Math.round(13 * (L.plan ? 1 : Math.min(1.4, scale))))}px 'Hiragino Kaku Gothic ProN', sans-serif`;
+        target.font = tag.font;
         target.textAlign = "center";
         target.textBaseline = "bottom";
-        const w = target.measureText(labelText).width;
         target.fillStyle = "rgba(13,12,11,0.66)";
-        target.fillRect(x - w / 2 - 6, y - 15, w + 12, 18);
+        target.fillRect(tag.left, tag.top, tag.width, tag.height);
         target.fillStyle = "rgba(239,231,214,0.9)";
-        target.fillText(labelText, x, y);
+        target.fillText(tag.text, tag.x, tag.y);
         target.restore();
       });
     }
@@ -10347,8 +13064,10 @@
     if (lightIntentOverlayOn()) drawLightIntentOverlay(target, L);
 
     if (showSelection) {
-      const selected = sc().pieces.find((piece) => piece.id === selectedId);
-      if (selected) drawSelection(target, selected, L);
+      // 平面で囲んだ対象は正面でも同じだけ囲み、二つの図の選択状態を一致させる。
+      const selected = selectedPieces();
+      selected.forEach((piece) => drawSelection(target, piece, L));
+      if (L.plan) drawSelectionMarquee(target, selectionMarquee);
     }
 
     /* 暗転で始まるシーンへの転換。前半で落ちて後半で明ける（山なりの黒幕）。
@@ -10365,7 +13084,7 @@
       target.fillStyle = edgeShade;
       target.fillRect(0, 0, W, H);
       /* 見る位置の小図。客席が正面だけの劇場でしか意味を持たない。
-         プレゼン中は出さない（見せる相手に必要なのは場面であって、
+         全画面中は出さない（見せる相手に必要なのは場面であって、
          いまどの席から描いているかという作り手側の道具ではない）。 */
       if (!pitchStyle && state.showSeatMap && L.venue.audience === "front" && !(presenting && target === ctx) && !L.venue.custom) drawSeatMap(target, L);
     }
@@ -10408,28 +13127,26 @@
         drawPlanPiece(target, ghost, pos, 1, L);
         target.restore();
         if (state.showNames) {
+          const tag = backstageNameTag(target, g, L);
+          if (!tag) return;
           target.save();
           target.globalAlpha = 0.7;
           target.fillStyle = "rgba(13,12,11,0.85)";
-          const nm = g.member.name;
-          target.font = "12px 'Hiragino Kaku Gothic ProN', sans-serif";
-          const w = target.measureText(nm).width + 10;
-          target.fillRect(pos.x - w / 2, pos.y - 30, w, 17);
+          target.font = tag.font;
+          target.fillRect(tag.left, tag.top, tag.width, tag.height);
           target.fillStyle = "rgba(240,231,214,0.8)";
           target.textAlign = "center";
           target.textBaseline = "middle";
-          target.fillText(nm, pos.x, pos.y - 21);
+          target.fillText(tag.text, tag.x, tag.y);
           target.restore();
         }
       });
     }
     // 通常の駒・注記・操作表示を描き終えたあと、保存前のAI下書きを最後に重ねる。
     if (!pitchStyle) drawStageAskOverlay(target, L, leanAt);
-    /* プレゼン中のシーンの説明。全画面になるのは canvas だけなので、
-       HTMLで置いた欄は出てこない。見せている絵の中へ字で描く。
-       ★描くのは全画面の正面図だけ。編集中の画面と、書き出す画像には出さない
-         （絵の上に字が焼き付いてしまうため）。 */
-    if (!L.plan && presenting && target === ctx) drawSceneCaption(target);
+    /* シーンの説明は全画面のメインの図だけに描く。
+       小窓・編集中の画面・書き出す画像には焼き付けない。 */
+    if (presenting && target === (fullscreenMainView === "plan" ? planCtx : ctx)) drawSceneCaption(target);
     target.restore();
   }
 
@@ -10521,10 +13238,10 @@
   const registeredProps = () => (state.project.sets || []).filter((item) => item.kind === "prop");
 
   function propHolderName(holder) {
-    if (!holder) return isEn() ? "Performer" : "演者";
+    if (!holder) return tx("演者");
     const member = holder.castId
       ? (state.project.cast || []).find((item) => item.id === holder.castId) : null;
-    return (member && member.name) || pieceLabel(holder) || (isEn() ? "Performer" : "演者");
+    return (member && member.name) || pieceLabel(holder) || (tx("演者"));
   }
 
   function propPlotState(scene, prop) {
@@ -10539,7 +13256,7 @@
         kind: "held", prop, piece, holder,
         // シーン複製で駒idが変わっても、名簿札（または元の駒札）なら同じ人を追える。
         holderKey: holder.castId || holder.originId || holder.id,
-        side: piece.holdSide === "L" ? "L" : "R",
+        side: piece.holdMode === "face" ? "face" : piece.holdSide === "L" ? "L" : "R",
       };
     }
     if (!onStageArea(piece.u, piece.v)) return { kind: "absent", prop, piece };
@@ -10571,7 +13288,7 @@
     return before.holderKey !== after.holderKey || before.side !== after.side;
   }
 
-  function propFloorSide(u, en = isEn()) {
+  function propFloorSide(u, en = languageValue(() => true, () => false)) {
     /* 既存バミリの off > 0 = 上手 = SL と同じ向き。
        したがって u が大きい側を上手、小さい側を下手とする。 */
     if (u < 0.4) return en ? "stage right" : "下手";
@@ -10579,14 +13296,15 @@
     return en ? "centre" : "中央";
   }
 
-  function propHeldLabel(entry, en = isEn(), includeHand = false) {
+  function propHeldLabel(entry, en = languageValue(() => true, () => false), includeHand = false) {
     const name = propHolderName(entry.holder);
+    if (entry.side === "face") return `${name}${en ? " (face)" : "（顔）"}`;
     if (!includeHand) return name;
     if (en) return `${name} (${entry.side})`;
     return `${name}（${entry.side === "L" ? "左" : "右"}）`;
   }
 
-  function propSceneSummary(scene, en = isEn()) {
+  function propSceneSummary(scene, en = languageValue(() => true, () => false)) {
     return registeredProps().map((prop) => {
       const entry = propPlotState(scene, prop);
       if (entry.kind === "absent") return null;
@@ -10597,7 +13315,7 @@
     }).filter(Boolean);
   }
 
-  function propMovesBetweenScenes(previousScene, scene, en = isEn()) {
+  function propMovesBetweenScenes(previousScene, scene, en = languageValue(() => true, () => false)) {
     // 最初のシーンには比較元が無い。「登場」は二つ目以降の absent → present に限る。
     if (!previousScene) return [];
     return registeredProps().map((prop) => {
@@ -10607,25 +13325,33 @@
       const name = prop.name;
       if (before.kind === "absent") {
         if (after.kind === "held") {
-          const holder = propHeldLabel(after, en);
+          const holder = propHolderName(after.holder);
+          if (after.side === "face") return en ? `${name}: ${holder} enters wearing it` : `${name}: ${holder}が顔につけて登場`;
           return en ? `${name}: ${holder} enters with it` : `${name}: ${holder}が持って登場`;
         }
         return en ? `${name}: enters (on floor)` : `${name}: 床へ登場`;
       }
       if (after.kind === "absent") return en ? `${name}: cleared` : `${name}: はける`;
       if (before.kind === "held" && after.kind === "floor") {
-        const holder = propHeldLabel(before, en);
+        const holder = propHolderName(before.holder);
+        if (before.side === "face") return en ? `${name}: ${holder} removes it and sets it down` : `${name}: ${holder}が顔から外して置く`;
         return en ? `${name}: ${holder} sets it down` : `${name}: ${holder}が置く`;
       }
       if (before.kind === "floor" && after.kind === "held") {
-        const holder = propHeldLabel(after, en);
+        const holder = propHolderName(after.holder);
+        if (after.side === "face") return en ? `${name}: ${holder} puts it on` : `${name}: ${holder}が顔につける`;
         return en ? `${name}: ${holder} picks it up` : `${name}: ${holder}が取る`;
       }
       /* 同じ人の持ち替えを「A（左）→ A（右）」と書くと受け渡しに読める（実際に読んだ）。
          人が変わるときだけ矢印にして、持ち替えは持ち替えと言い切る。 */
       const handChangedOnly = before.holderKey === after.holderKey;
       if (handChangedOnly) {
-        const holder = propHeldLabel(before, en);
+        const holder = propHolderName(before.holder);
+        if (before.side === "face" || after.side === "face") {
+          return after.side === "face"
+            ? (en ? `${name}: ${holder} puts it on` : `${name}: ${holder}が顔につける`)
+            : (en ? `${name}: ${holder} removes it and holds it` : `${name}: ${holder}が顔から外して手に持つ`);
+        }
         const hands = before.side === "L" ? (en ? "L→R" : "左→右") : (en ? "R→L" : "右→左");
         return en ? `${name}: ${holder} switches hands (${hands})`
           : `${name}: ${holder}が持ち替え（${hands}）`;
@@ -10642,21 +13368,78 @@
     const moves = index < 0 ? [] : propMovesBetweenScenes(index > 0 ? scenes[index - 1] : null, scene);
     els.propMoves.hidden = !moves.length;
     els.propMoves.textContent = moves.length
-      ? `${isEn() ? "Props" : "小道具"}: ${moves.join(isEn() ? " / " : " ／ ")}` : "";
+      ? `${tx("小道具")}: ${moves.join(tx(" ／ "))}` : "";
   }
 
+  /* ---------- 正面図を貸し出す窓口 ----------
+     「照明を組む」画面（stage-light-rig.js）が、正面図の3Dをここから借りる。
+     幕・ホリゾント・舞台の立ち上がり・客席・姿勢つきの演者・会場の種類は本体が描き、
+     光だけを上へ重ねる。**向こうで描き直さない**——写すと本体を直すたびにズレるため。
+
+     戻り値の point() は「描画先キャンバスの画素」で返す（倍率を掛け済み）。
+     drawStage は描き終わりに transform を戻すので、呼び手はそのまま重ねてよい。 */
+  window.SHOSAI_STAGE_VIEW = Object.freeze({
+    /* target: 描画先の 2D コンテキスト。opts.seat で席を指定（未指定は今の席）。
+       opts.hideLightPieces: 既存の照明駒を出さない（照明を組む画面では別物なので既定で隠す）。 */
+    renderFront(target, opts) {
+      const o = opts || {};
+      const prevSeat = state.seat;
+      const prevLights = state.showLightsFront;
+      try {
+        if (o.seat && o.seat !== state.seat) state.seat = o.seat;
+        if (o.hideLightPieces !== false) state.showLightsFront = false;
+        const L = layout("front");
+        drawStage(target, false, "front", { noZoom: true });
+        const S = (target && target.canvas ? target.canvas.width : W) / W;
+        return {
+          scale: S,
+          logical: { w: W, h: H },
+          // 舞台の点（左右u・奥行きv・高さm）→ 描画先の画素
+          point: (u, v, hM) => { const p = stagePoint(u, v, hM, L); return { x: p.x * S, y: p.y * S }; },
+          pxPerM: L.pxPerM * S,
+          seat: L.seat ? { id: L.seat.id, label: L.seat.label } : null,
+          size: { width: L.size.width, depth: L.size.depth, height: L.size.height },
+        };
+      } finally {
+        state.seat = prevSeat;
+        state.showLightsFront = prevLights;
+      }
+    },
+    // 選べる席（会場によって中身が変わる）
+    seats() {
+      const v = venue();
+      const list = approxFrontSeatsForVenue(v) || VENUES.seats;
+      return list.map((seat) => ({ id: seat.id, label: seat.label, short: seat.short }));
+    },
+    currentSeat: () => state.seat,
+    // いまのシーンの駒（照明を組む画面が下敷きに使う。読むだけ）
+    scenePieces: () => sc().pieces.filter((p) => p.type !== "light")
+      .map((p) => ({ id: p.id, type: p.type, name: pieceLabel(p), u: pieceU(p), v: pieceV(p) })),
+    venueSize: () => ({ ...venueSize() }),
+  });
+
   function render(forceCanvases = false) {
+    syncMultiSelectionControls();
+    if (STUDY_READ_ONLY) {
+      canvas.setAttribute("aria-label", `${sc().title}: ${tx("正面図")}`);
+      if (planCanvas) planCanvas.setAttribute("aria-label", `${sc().title}: ${tx("平面図")}`);
+      drawStage(ctx, false, "front");
+      if (planCtx) drawStage(planCtx, false, "plan");
+      return;
+    }
     enforceTabletSingleView();
     enforcePhoneViews();
     syncArrowOptions();
     syncLightIntentCard();
     syncLightIntentDock();
     syncLightIntentCompare();
+    if (els.lightMotionModal && !els.lightMotionModal.hidden) syncLightMotionModal();
+    updateLightMotionTriggerSummary();
     const v = venue();
     const size = venueSize();
     const counts = Object.keys(PIECE_TYPES)
       .map((type) => `${pieceTypeName(type)} ${sc().pieces.filter((piece) => piece.type === type).length}`)
-      .join(isEn() ? ", " : "、");
+      .join(tx("、"));
 
     // 閉じてもバーは残す。ここから開き直せるので「見る向き」の項目は要らない。
     // セル自体は隠さない（隠すとバーごと消え、開き直す入口が無くなる）
@@ -10666,27 +13449,22 @@
     if (els.planInner) els.planInner.hidden = !state.showPlan;
     if (els.frontCell) els.frontCell.classList.toggle("is-closed", !state.showFront);
     if (els.planCell) els.planCell.classList.toggle("is-closed", !state.showPlan);
+    syncSingleViewSwitches();
     document.querySelectorAll("[data-toggle-view]").forEach((b) => {
       const open = b.dataset.toggleView === "front" ? state.showFront : state.showPlan;
       // 開閉であることが記号で分かるように三角にする（✕だと消去に見える）
       b.textContent = open ? "▾" : "▸";
       b.setAttribute("aria-expanded", String(open));
-      b.setAttribute("aria-label", isEn()
-        ? `${open ? "Close" : "Open"} the ${b.dataset.toggleView === "front" ? "front" : "plan"} view`
-        : `${b.dataset.toggleView === "front" ? "正面" : "平面"}の絵を${open ? "閉じる" : "開く"}`);
+      b.setAttribute("aria-label", sx(`${b.dataset.toggleView === "front" ? "正面" : "平面"}の絵を${open ? "閉じる" : "開く"}`, `${open ? "Close" : "Open"} the ${b.dataset.toggleView === "front" ? "front" : "plan"} view`));
     });
 
-    if (state.showFront || forceCanvases) {
+    if (state.showFront || forceCanvases || presenting) {
       drawStage(ctx, true, "front");
-      canvas.setAttribute("aria-label", isEn()
-        ? `Front view of ${venueName(v)} (${sizeName(size)}) from ${seatName(VENUES.seatById(state.seat))}. ${counts}. ${sc().strokes.length} backdrop strokes.`
-        : `${v.label}（${size.label}）を${VENUES.seatById(state.seat).label}から見た正面図。${counts}。背景の線${sc().strokes.length}本。`);
+      canvas.setAttribute("aria-label", sx(`${v.label}（${size.label}）を${VENUES.seatById(state.seat).label}から見た正面図。${counts}。背景の線${sc().strokes.length}本。`, `Front view of ${venueName(v)} (${sizeName(size)}) from ${seatName(VENUES.seatById(state.seat))}. ${counts}. ${sc().strokes.length} backdrop strokes.`));
     }
-    if ((state.showPlan || forceCanvases) && planCtx) {
+    if ((state.showPlan || forceCanvases || presenting) && planCtx) {
       drawStage(planCtx, true, "plan");
-      planCanvas.setAttribute("aria-label", isEn()
-        ? `Plan view of ${venueName(v)} (${sizeName(size)}) from above. ${counts}.`
-        : `${v.label}（${size.label}）を上から見た平面図。${counts}。`);
+      planCanvas.setAttribute("aria-label", sx(`${v.label}（${size.label}）を上から見た平面図。${counts}。`, `Plan view of ${venueName(v)} (${sizeName(size)}) from above. ${counts}.`));
     }
     if (els.frontCaption) {
       const L = layout("front");
@@ -10767,7 +13545,7 @@
     if (!box.value) { box.style.height = `${SCENE_DESC_LINE}px`; return; }
     // 書いてあるときは、いったん0まで潰してから中身の高さを測る
     box.style.height = "0px";
-    box.style.height = `${Math.min(96, Math.max(SCENE_DESC_LINE, box.scrollHeight))}px`;
+    box.style.height = `${Math.max(SCENE_DESC_LINE, box.scrollHeight)}px`;
   }
 
   /* 幅が決まってから測り直す。
@@ -10794,7 +13572,7 @@
          一覧ごと組み直すと打つたびに作り直しになるので、その欄だけ書き換える。 */
       const twin = document.getElementById("stage-scene-note-input");
       if (twin && twin !== document.activeElement) twin.value = scene.note;
-      // プレゼン中は絵の中に字で描いているので、そちらも描き直す
+      // 全画面中は絵の中に字で描いているので、そちらも描き直す
       if (presenting) render();
       persistSoon();
     });
@@ -10813,7 +13591,7 @@
     const intent = saved || emptyLightingIntent();
     if (els.lightIntentSummary) {
       els.lightIntentSummary.textContent = saved
-        ? lightingIntentSummary(saved, isEn(), 150)
+        ? lightingIntentSummary(saved, languageValue(() => true, () => false), 150)
         : tx("光で何を起こしたい？");
     }
     const setValue = (element, value) => {
@@ -10847,13 +13625,13 @@
   const lightIntentCompareText = () => {
     const intent = normalizeLightingIntent("scene", sc().lightingIntent);
     if (!intent) return tx("指定なし");
-    const lang = isEn() ? "en" : "ja";
+    const code = lang;
     const parts = ["performer", "space", "background"].flatMap((key) => {
       const value = intent.layers[key].intent;
       if (value === "unspecified") return [];
-      return [`${LIGHT_INTENT_LAYER_LABELS[lang][key]}=${LIGHT_INTENT_VALUE_LABELS[lang][value]}`];
+      return [`${LIGHT_INTENT_LAYER_LABELS[code][key]}=${LIGHT_INTENT_VALUE_LABELS[code][value]}`];
     });
-    return parts.join(isEn() ? " / " : " ／ ") || tx("指定なし");
+    return parts.join(tx(" ／ ")) || tx("指定なし");
   };
 
   const lightIntentLightsText = () => {
@@ -10861,16 +13639,12 @@
     const counts = Object.fromEntries(order.map((key) => [key, 0]));
     const lights = sc().pieces.filter((piece) => piece.type === "light");
     lights.forEach((piece) => { counts[lightKindOf(pieceSet(piece))] += 1; });
-    if (!lights.length) return isEn() ? "0 lights" : "0個";
-    const names = isEn()
-      ? { hang: "hang", ss: "SS", front: "front", floor: "floor" }
-      : { hang: "吊り", ss: "SS", front: "前明かり", floor: "転がし" };
+    if (!lights.length) return tx("0個");
+    const names = languageValue(() => ({ hang: "hang", ss: "SS", front: "front", floor: "floor" }), () => ({ hang: "吊り", ss: "SS", front: "前明かり", floor: "転がし" }));
     const detail = order.filter((key) => counts[key])
-      .map((key) => `${names[key]}${isEn() ? " " : ""}${counts[key]}`)
-      .join(isEn() ? ", " : "・");
-    return isEn()
-      ? `${lights.length} ${lights.length === 1 ? "light" : "lights"} (${detail})`
-      : `${lights.length}個（${detail}）`;
+      .map((key) => `${names[key]}${lang === "ja" ? "" : " "}${counts[key]}`)
+      .join(tx("・"));
+    return sx(`${lights.length}個（${detail}）`, `${lights.length} ${lights.length === 1 ? "light" : "lights"} (${detail})`);
   };
 
   function syncLightIntentCompare() {
@@ -10988,6 +13762,393 @@
     });
   }
 
+
+  /* ---------- 光の動き（案） ----------
+     機材（灯体・DMX・パン/チルト）を持たない、動く光のスケッチ。
+     シーン直下の独立した項目 scene.lightMotion に保存する（光の意図カードの子ではない。
+     2026-09-11 本人指示: 光の意図カードに頼らず、独立したモーダルで組めるようにする）。
+     正規化は stage-light-motion.js の window.SHOSAI_STAGE_LIGHT_MOTION が持つ。
+     経緯: docs/light-ui-brainstorm-2026-09-11/spec.html（本人承認 2026-09-11、
+     配置は実装時に本人指示でモーダルへ変更）。
+
+     プレビュー再生は requestAnimationFrame（見た目優先）。
+     書き出しは別経路（captureStream(0)+固定ステップ、順0で実機検証済み）を使う。
+     どちらも同じ drawFrame() を呼ぶので、画面と書き出しが食い違わない。 */
+  /* 要約文の動詞句は、本数を表す主語（光1本が／光2本が）を前に足す前提で作る。
+     ボタンの表示名（stage-i18n.js側）とは別の辞書にする。「2本が交差する」を
+     ボタンの表示名にそのまま使うと、要約文で「光2本が2本が交差する」のように
+     本数が二重に出てしまうため（実機確認で発見・2026-09-11修正）。 */
+  const LIGHT_MOTION_PHRASE_LABELS = Object.freeze({
+    ja: {
+      sweep: "左右に往復する", fan: "扇のように開閉する", cross: "交差する",
+      circle: "円を描く", chase: "順に動く",
+    },
+    // 英語は本数（単数/複数）で動詞が変わらないよう、動名詞で揃える
+    en: {
+      sweep: "sweeping side to side", fan: "fanning open and closed",
+      cross: "crossing", circle: "circling", chase: "chasing in sequence",
+    },
+  });
+  const LIGHT_MOTION_SPEED_LABELS = Object.freeze({
+    ja: { slow: "ゆっくり", normal: "普通の速さ", fast: "速く" },
+    en: { slow: "slowly", normal: "at a normal pace", fast: "quickly" },
+  });
+
+  function lightMotionCurrentMotion() {
+    const scene = sc();
+    if (!scene || scene.kind !== "scene") return null;
+    return normalizeLightMotion("scene", scene.lightMotion);
+  }
+
+  // 光の意図カードと同じ考え方: 変更前と変更後を比べ、実質的な変化がなければ
+  // チェックポイントを積まない・保存しない（連打しても「一つ戻す」が汚れない）。
+  function mutateLightMotion(mutator, message) {
+    const scene = sc();
+    if (!scene || scene.kind !== "scene") return;
+    const model = window.SHOSAI_STAGE_LIGHT_MOTION;
+    const before = normalizeLightMotion("scene", scene.lightMotion);
+    const draft = before ? { ...before } : (model ? model.empty() : null);
+    mutator(draft);
+    const next = normalizeLightMotion("scene", draft);
+    if (JSON.stringify(before) === JSON.stringify(next)) return;
+    checkpoint();
+    scene.lightMotion = next;
+    renderScenes();
+    syncLightMotionModal();
+    updateLightMotionTriggerSummary();
+    persistSoon();
+    announce(message);
+  }
+
+  function lightMotionSummaryText(motion, en) {
+    const langKey = en ? "en" : "ja";
+    const phrase = LIGHT_MOTION_PHRASE_LABELS[langKey][motion.presetId] || motion.presetId;
+    const speed = LIGHT_MOTION_SPEED_LABELS[langKey][motion.speed] || motion.speed;
+    if (en) {
+      const count = motion.count === 2 ? "Two lights" : "One light";
+      return `${count}, ${phrase}, ${speed}.`;
+    }
+    const count = motion.count === 2 ? "光2本が" : "光1本が";
+    return `${count}${phrase}（${speed}）。`;
+  }
+
+  function lightMotionDrawOpts(motion) {
+    const en = languageValue(() => true, () => false);
+    return {
+      label: en ? "Light motion — concept" : "光の動き・案",
+      footNote: en
+        ? "A motion concept. Fixture positions, DMX and safety are not shown."
+        : "光の動きの案です。灯体位置・DMX・安全性は示しません。",
+      fontFamily: '"Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif',
+      bg: "#0d0e10",
+    };
+  }
+
+  let lightMotionPlaying = false;
+  let lightMotionRaf = 0;
+  let lightMotionLastTick = 0;
+  let lightMotionElapsedMs = 0;
+  let lightMotionSyncedSceneId = null;
+
+  function lightMotionStopPlayback() {
+    lightMotionPlaying = false;
+    if (lightMotionRaf) cancelAnimationFrame(lightMotionRaf);
+    lightMotionRaf = 0;
+    lightMotionLastTick = 0;
+  }
+
+  function lightMotionDrawCurrent() {
+    const canvas = els.lightMotionCanvas;
+    const motion = lightMotionCurrentMotion();
+    const model = window.SHOSAI_STAGE_LIGHT_MOTION;
+    if (!canvas || !motion || !model) return;
+    const ctx = canvas.getContext && canvas.getContext("2d");
+    if (!ctx) return;
+    model.drawFrame(ctx, canvas.width, canvas.height, motion, lightMotionElapsedMs, lightMotionDrawOpts(motion));
+  }
+
+  function lightMotionTick(ts) {
+    if (!lightMotionPlaying) return;
+    if (!lightMotionLastTick) lightMotionLastTick = ts;
+    lightMotionElapsedMs += ts - lightMotionLastTick;
+    lightMotionLastTick = ts;
+    lightMotionDrawCurrent();
+    lightMotionRaf = requestAnimationFrame(lightMotionTick);
+  }
+
+  function lightMotionPlay() {
+    if (!lightMotionCurrentMotion() || lightMotionPlaying) return;
+    lightMotionPlaying = true;
+    lightMotionLastTick = 0;
+    lightMotionRaf = requestAnimationFrame(lightMotionTick);
+  }
+
+  function lightMotionRestartPlayback() {
+    lightMotionStopPlayback();
+    lightMotionElapsedMs = 0;
+    lightMotionDrawCurrent();
+  }
+
+  // パラメータを変える操作は、必ず頭（フレーム0）へ戻してから適用する。
+  // 動きの途中で型や範囲が変わると、いま何を見ているのか分からなくなるため。
+  function lightMotionApplyChange(mutator, message) {
+    lightMotionStopPlayback();
+    lightMotionElapsedMs = 0;
+    mutateLightMotion(mutator, message);
+  }
+
+  // 照明パネルの「光の動きを組む」ボタン自体の表示（現在の案を短く示す）。
+  // モーダルを開いていなくても、シーン切替や書き換えのたびに更新する。
+  function updateLightMotionTriggerSummary() {
+    if (!els.lightMotionOpenSummary) return;
+    const motion = lightMotionCurrentMotion();
+    const en = languageValue(() => true, () => false);
+    els.lightMotionOpenSummary.textContent = motion
+      ? lightMotionSummaryText(motion, en)
+      : tx("動く光の案はまだありません");
+  }
+
+  function syncLightMotionModal() {
+    if (!els.lightMotionModal || els.lightMotionModal.hidden) return;
+
+    if (lightMotionModalSceneId !== (sc() && sc().id)) {
+      lightMotionModalSceneId = sc() && sc().id;
+      lightMotionStopPlayback();
+      lightMotionElapsedMs = 0;
+    }
+
+    const motion = lightMotionCurrentMotion();
+    const model = window.SHOSAI_STAGE_LIGHT_MOTION;
+
+    if (els.lightMotionSummary) {
+      els.lightMotionSummary.textContent = motion
+        ? lightMotionSummaryText(motion, languageValue(() => true, () => false))
+        : tx("動く光の案はまだありません");
+    }
+    if (els.lightMotionPresets) {
+      Array.from(els.lightMotionPresets.querySelectorAll("[data-light-motion-preset]")).forEach((btn) => {
+        btn.setAttribute("aria-pressed", String(Boolean(motion) && motion.presetId === btn.dataset.lightMotionPreset));
+      });
+    }
+
+    const hasMotion = Boolean(motion);
+    if (els.lightMotionAdjust) els.lightMotionAdjust.hidden = !hasMotion;
+    if (els.lightMotionStage) els.lightMotionStage.hidden = !hasMotion;
+    if (els.lightMotionClear) els.lightMotionClear.disabled = !hasMotion;
+
+    if (!hasMotion) return;
+
+    const forcedCount = model ? model.FIXED_COUNT_PRESETS[motion.presetId] : null;
+    if (els.lightMotionCount) {
+      Array.from(els.lightMotionCount.querySelectorAll("button")).forEach((btn) => {
+        const value = Number(btn.dataset.lightMotionCount);
+        btn.setAttribute("aria-pressed", String(motion.count === value));
+        btn.disabled = Boolean(forcedCount);
+      });
+    }
+    if (els.lightMotionRange && document.activeElement !== els.lightMotionRange) {
+      els.lightMotionRange.value = String(motion.range);
+    }
+    if (els.lightMotionSpeed) {
+      Array.from(els.lightMotionSpeed.querySelectorAll("button")).forEach((btn) => {
+        btn.setAttribute("aria-pressed", String(motion.speed === btn.dataset.lightMotionSpeed));
+      });
+    }
+    if (els.lightMotionRelationRow) els.lightMotionRelationRow.hidden = motion.count !== 2;
+    if (els.lightMotionRelation) {
+      Array.from(els.lightMotionRelation.querySelectorAll("button")).forEach((btn) => {
+        btn.setAttribute("aria-pressed", String(motion.relation === btn.dataset.lightMotionRelation));
+      });
+    }
+    lightMotionDrawCurrent();
+  }
+
+  let lightMotionModalSceneId = null;
+
+  function openLightMotionModal() {
+    if (!RELEASE_FEATURES.lightMotion || !els.lightMotionModal) return;
+    const scene = sc();
+    if (!scene || scene.kind !== "scene") return;
+    els.lightMotionModal.hidden = false;
+    if (els.lightMotionBackdrop) els.lightMotionBackdrop.hidden = false;
+    lightMotionModalSceneId = null; // 開くたび必ず頭から（前回の再生位置を持ち越さない）
+    syncLightMotionModal();
+  }
+
+  function closeLightMotionModal() {
+    if (!els.lightMotionModal) return;
+    lightMotionStopPlayback();
+    els.lightMotionModal.hidden = true;
+    if (els.lightMotionBackdrop) els.lightMotionBackdrop.hidden = true;
+  }
+
+  if (els.lightMotionOpen) {
+    els.lightMotionOpen.hidden = !RELEASE_FEATURES.lightMotion;
+    if (RELEASE_FEATURES.lightMotion) els.lightMotionOpen.addEventListener("click", openLightMotionModal);
+  }
+  if (els.lightMotionClose) els.lightMotionClose.addEventListener("click", closeLightMotionModal);
+  if (els.lightMotionBackdrop) els.lightMotionBackdrop.addEventListener("click", closeLightMotionModal);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && els.lightMotionModal && !els.lightMotionModal.hidden) {
+      closeLightMotionModal();
+    }
+  });
+
+  if (els.lightMotionPresets) {
+    els.lightMotionPresets.addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-light-motion-preset]");
+      if (!btn) return;
+      const model = window.SHOSAI_STAGE_LIGHT_MOTION;
+      if (!model) return;
+      const presetId = btn.dataset.lightMotionPreset;
+      lightMotionApplyChange((draft) => {
+        const defaults = model.defaultsForPreset(presetId);
+        draft.presetId = presetId;
+        draft.count = defaults.count || draft.count || 1;
+        draft.relation = defaults.relation || draft.relation || "together";
+      }, "光の動きを選びました。");
+    });
+  }
+
+  function lightMotionBindSeg(container, dataAttr, applyFn) {
+    if (!container) return;
+    container.addEventListener("click", (event) => {
+      const btn = event.target.closest(`[${dataAttr}]`);
+      if (!btn || btn.disabled) return;
+      applyFn(btn);
+    });
+  }
+
+  lightMotionBindSeg(els.lightMotionCount, "data-light-motion-count", (btn) => {
+    const value = Number(btn.dataset.lightMotionCount);
+    lightMotionApplyChange((draft) => {
+      if (!draft.presetId) return;
+      draft.count = value;
+    }, "光の動きの本数を変えました。");
+  });
+  lightMotionBindSeg(els.lightMotionSpeed, "data-light-motion-speed", (btn) => {
+    const value = btn.dataset.lightMotionSpeed;
+    lightMotionApplyChange((draft) => {
+      if (!draft.presetId) return;
+      draft.speed = value;
+    }, "光の動きの速さを変えました。");
+  });
+  lightMotionBindSeg(els.lightMotionRelation, "data-light-motion-relation", (btn) => {
+    const value = btn.dataset.lightMotionRelation;
+    lightMotionApplyChange((draft) => {
+      if (!draft.presetId) return;
+      draft.relation = value;
+    }, "光の動きの関係を変えました。");
+  });
+
+  if (els.lightMotionRange) {
+    // ドラッグ中はプレビューだけ更新し、離した時に一度だけ保存する
+    // （光の意図の文章欄と同じ考え方。ドラッグのたびに一つ戻すを積まない）。
+    els.lightMotionRange.addEventListener("input", () => {
+      const motion = lightMotionCurrentMotion();
+      const model = window.SHOSAI_STAGE_LIGHT_MOTION;
+      const canvas = els.lightMotionCanvas;
+      if (!motion || !model || !canvas) return;
+      const preview = { ...motion, range: clamp(Number(els.lightMotionRange.value), 0.2, 1) };
+      const ctx = canvas.getContext("2d");
+      model.drawFrame(ctx, canvas.width, canvas.height, preview, lightMotionElapsedMs, lightMotionDrawOpts(preview));
+    });
+    els.lightMotionRange.addEventListener("change", () => {
+      const value = clamp(Number(els.lightMotionRange.value), 0.2, 1);
+      lightMotionApplyChange((draft) => {
+        if (!draft.presetId) return;
+        draft.range = value;
+      }, "光の動きの範囲を変えました。");
+    });
+  }
+
+  if (els.lightMotionPlay) els.lightMotionPlay.addEventListener("click", lightMotionPlay);
+  if (els.lightMotionStop) els.lightMotionStop.addEventListener("click", lightMotionStopPlayback);
+  if (els.lightMotionRestart) els.lightMotionRestart.addEventListener("click", lightMotionRestartPlayback);
+
+  function triggerLightMotionDownload(blob, filename) {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  function lightMotionExportText(motion, scene, en) {
+    const summary = lightMotionSummaryText(motion, en);
+    const title = (scene && scene.title) || (en ? "Untitled scene" : "無題のシーン");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const lines = en ? [
+      "Light motion — concept", "",
+      `Scene: ${title}`, `Date: ${dateStr}`, "",
+      summary, "",
+      "This is a motion concept, not fixture positions, DMX or safety.",
+    ] : [
+      "光の動き・案", "",
+      `シーン: ${title}`, `出力日: ${dateStr}`, "",
+      summary, "",
+      "光の動きの案です。灯体位置・DMX・安全性は示しません。",
+    ];
+    return lines.join("\n");
+  }
+
+  if (els.lightMotionExport) {
+    els.lightMotionExport.addEventListener("click", async () => {
+      const motion = lightMotionCurrentMotion();
+      const model = window.SHOSAI_STAGE_LIGHT_MOTION;
+      const canvas = els.lightMotionCanvas;
+      if (!motion || !model || !canvas) return;
+      const scene = sc();
+      const en = languageValue(() => true, () => false);
+      const status = els.lightMotionExportStatus;
+      const setStatus = (text) => { if (status) status.textContent = text; };
+      els.lightMotionExport.disabled = true;
+      lightMotionStopPlayback();
+      setStatus(tx("書き出し中…"));
+      try {
+        const ctx = canvas.getContext("2d");
+        const opts = lightMotionDrawOpts(motion);
+        const videoResult = await model.exportVideo(canvas, ctx, motion, { ...opts, durationMs: 4000 });
+        lightMotionDrawCurrent();
+        const baseName = `light-motion-${(scene && scene.id) || "scene"}`;
+        if (videoResult.ok) {
+          const ext = videoResult.mime.startsWith("video/mp4") ? "mp4" : "webm";
+          triggerLightMotionDownload(videoResult.blob, `${baseName}.${ext}`);
+        }
+        const snapshotBlob = await model.exportSnapshotBlob(motion, {
+          ...opts,
+          panelWidth: 320,
+          panelHeight: 180,
+          frameLabels: en ? ["start", "turn", "return"] : ["始め", "折り返し", "戻り"],
+        });
+        triggerLightMotionDownload(snapshotBlob, `${baseName}.png`);
+        const textBlob = new Blob([lightMotionExportText(motion, scene, en)], { type: "text/plain;charset=utf-8" });
+        triggerLightMotionDownload(textBlob, `${baseName}.txt`);
+        setStatus("");
+        announce(videoResult.ok
+          ? "光の動きを書き出しました。"
+          : "動画の書き出しに対応していない環境です。図と一文だけ書き出します。");
+      } catch (err) {
+        setStatus("");
+        announce("書き出しに失敗しました。");
+      } finally {
+        els.lightMotionExport.disabled = false;
+      }
+    });
+  }
+
+  if (els.lightMotionClear) {
+    els.lightMotionClear.addEventListener("click", () => {
+      // presetIdを外すと正規化がnullを返す＝保存側で「消した」ことになる
+      // （プリセット未選択は中身なしという既存の原則と同じ経路）。
+      lightMotionApplyChange((draft) => { draft.presetId = null; },
+        "光の動きを消しました。一つ戻すで復元できます。");
+    });
+  }
+
   /* ---------- 劇場のUI ---------- */
 
   /* ---------- パネルの組み立てと並べ替え ---------- */
@@ -10997,6 +14158,274 @@
     right: document.getElementById("stage-col-right"),
     center: document.getElementById("stage-col-center"),
   };
+
+  // 横幅はショーではなく、この端末の画面設定。通常列と引き出しを別々に覚える。
+  let panelWidthUi = null;
+  function syncPanelWidths() {
+    const ui = panelWidthUi;
+    if (!ui) return;
+    const saved = (ui.drag ? ui.drag.widths : prefs.panelWidths) || {};
+    const wanted = (key, fallback) => Number.isFinite(saved[key]) ? saved[key] : fallback;
+    const gridWidth = ui.grid.getBoundingClientRect().width;
+    const guest = document.body.classList.contains("stage-session-guest");
+    const single = !tabletUi && !phoneViewerActive && panelLayoutMode() === "single";
+    const singleSide = single ? panelSingleSide() : null;
+    const space = Math.max(480, gridWidth - 420 - (single || guest ? 18 : 36));
+    let left = singleSide === "right" ? 0 : clamp(wanted("left", 268), 240, 480);
+    let right = singleSide === "left" || guest ? 0 : clamp(wanted("right", 268), 240, 480);
+    if (!single && left + right > space) {
+      const base = guest ? 240 : 480;
+      const factor = Math.max(0, (space - base) / (left + right - base));
+      left = 240 + (left - 240) * factor;
+      if (!guest) right = 240 + (right - 240) * factor;
+    }
+    const tabletDefault = window.innerHeight > window.innerWidth
+      ? Math.min(320, window.innerWidth * 0.42) : clamp(window.innerWidth * 0.32, 280, 360);
+    const tabletMax = Math.max(240, Math.min(480, gridWidth - 58 - 280));
+    const fullscreenKey = tabletUi ? "fullscreenTablet" : "fullscreen";
+    const fullscreenMin = tabletUi ? 338 : 280;
+    const fullscreenMax = Math.max(fullscreenMin, Math.min(520, window.innerWidth - 88));
+    ui.widths = {
+      left: Math.round(left), right: Math.round(right),
+      tablet: Math.round(clamp(wanted("tablet", tabletDefault), 240, tabletMax)),
+      fullscreen: Math.round(clamp(wanted(fullscreenKey, tabletUi ? 380 : 320), fullscreenMin, fullscreenMax)),
+    };
+    ui.limits = {
+      left: singleSide === "right" ? [0, 0] : [240, Math.min(480, space - right)],
+      right: singleSide === "left" || guest ? [0, 0] : [240, Math.max(240, Math.min(480, space - left))],
+      tablet: [240, tabletMax], fullscreen: [fullscreenMin, fullscreenMax],
+    };
+    const write = (el, key, value) => {
+      if (el && el.style.getPropertyValue(key) !== value) el.style.setProperty(key, value);
+    };
+    write(ui.grid, "--stage-left-width", `${ui.widths.left}px`);
+    write(ui.grid, "--stage-right-width", `${ui.widths.right}px`);
+    write(ui.grid, "--stage-tablet-drawer-width", `${ui.widths.tablet}px`);
+    write(els.presentOverlay, "--fullscreen-drawer", `${ui.widths.fullscreen}px`);
+    ui.handles.forEach((handle) => {
+      const key = handle.dataset.panelWidth;
+      const [min, max] = ui.limits[key];
+      handle.setAttribute("aria-valuemin", String(Math.round(min)));
+      handle.setAttribute("aria-valuemax", String(Math.round(max)));
+      handle.setAttribute("aria-valuenow", String(ui.widths[key]));
+      handle.setAttribute("aria-valuetext", `${ui.widths[key]}px`);
+    });
+  }
+
+  function initPanelWidths() {
+    if (panelWidthUi || phoneViewerActive || STUDY_READ_ONLY) return;
+    const grid = document.querySelector(".stage-sketch-grid");
+    if (!grid) return;
+    const ui = panelWidthUi = { grid, handles: [], drag: null, frame: 0 };
+    const preferenceKey = (key) => key === "fullscreen" && tabletUi ? "fullscreenTablet" : key;
+    const readPrefs = () => ({ ...(prefs.panelWidths || {}) });
+    const finish = (commit) => {
+      const drag = ui.drag;
+      if (!drag) return;
+      ui.drag = null;
+      document.body.classList.remove("is-panel-resizing");
+      if (drag.handle.hasPointerCapture(drag.pointerId)) drag.handle.releasePointerCapture(drag.pointerId);
+      if (commit) { prefs.panelWidths = drag.widths; savePrefs(); }
+      syncPanelWidths();
+    };
+    const reset = (key) => {
+      finish(false);
+      const next = readPrefs();
+      delete next[preferenceKey(key)];
+      prefs.panelWidths = next;
+      savePrefs(); syncPanelWidths();
+    };
+    const mount = (host, key, name) => {
+      if (!host) return;
+      const handle = document.createElement("div");
+      handle.className = "stage-panel-width-handle";
+      handle.dataset.panelWidth = key;
+      handle.tabIndex = 0;
+      handle.setAttribute("role", "separator");
+      handle.setAttribute("aria-orientation", "vertical");
+      handle.setAttribute("aria-label", name);
+      handle.title = "ドラッグで幅を変更。左右キーで調整、ダブルクリックまたはEnterで元に戻す";
+      if (host.id) handle.setAttribute("aria-controls", host.id);
+      const grip = document.createElement("span");
+      grip.setAttribute("aria-hidden", "true");
+      handle.append(grip);
+      host.append(handle);
+      ui.handles.push(handle);
+      handle.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0 || event.isPrimary === false || ui.drag) return;
+        event.preventDefault(); event.stopPropagation();
+        syncPanelWidths();
+        ui.drag = { handle, key, pointerId: event.pointerId, startX: event.clientX, startWidth: ui.widths[key], widths: readPrefs() };
+        handle.setPointerCapture(event.pointerId);
+        handle.focus({ preventScroll: true });
+        document.body.classList.add("is-panel-resizing");
+      });
+      handle.addEventListener("pointermove", (event) => {
+        const drag = ui.drag;
+        if (!drag || drag.handle !== handle || event.pointerId !== drag.pointerId) return;
+        event.preventDefault();
+        const [min, max] = ui.limits[key];
+        const direction = key === "right" ? -1 : 1;
+        drag.widths[preferenceKey(key)] = Math.round(clamp(drag.startWidth + direction * (event.clientX - drag.startX), min, max));
+        if (!ui.frame) ui.frame = requestAnimationFrame(() => { ui.frame = 0; syncPanelWidths(); });
+      });
+      handle.addEventListener("pointerup", (event) => {
+        if (ui.drag && event.pointerId === ui.drag.pointerId) finish(true);
+      });
+      handle.addEventListener("pointercancel", () => finish(false));
+      handle.addEventListener("lostpointercapture", () => finish(false));
+      handle.addEventListener("dblclick", (event) => { event.preventDefault(); reset(key); });
+      handle.addEventListener("keydown", (event) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End", "Enter", "Escape"].includes(event.key)) return;
+        event.preventDefault(); event.stopPropagation();
+        if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey) return;
+        if (event.key === "Escape") { finish(false); return; }
+        if (event.key === "Enter") { reset(key); return; }
+        syncPanelWidths();
+        const [min, max] = ui.limits[key];
+        const direction = (event.key === "ArrowRight" ? 1 : -1) * (key === "right" ? -1 : 1);
+        const next = event.key === "Home" ? min : event.key === "End" ? max
+          : ui.widths[key] + direction * (event.shiftKey ? 30 : 10);
+        const widths = readPrefs();
+        widths[preferenceKey(key)] = Math.round(clamp(next, min, max));
+        prefs.panelWidths = widths;
+        savePrefs(); syncPanelWidths();
+      });
+    };
+    if (tabletUi) mount(tabletUi.drawer, "tablet", "引き出しの幅");
+    else {
+      // 列数を設定で切り替えても、読み込み直さず両方の取っ手を復帰できるよう
+      // 常に二つ作る。1列中は使わない側の列ごと隠れる。
+      mount(colEls.left, "left", "左パネルの幅");
+      mount(colEls.right, "right", "右パネルの幅");
+    }
+    mount(els.presentDrawer, "fullscreen", "引き出しの幅");
+    ui.observer = new ResizeObserver(syncPanelWidths);
+    ui.observer.observe(grid);
+    window.addEventListener("resize", () => { finish(false); syncPanelWidths(); });
+    window.addEventListener("blur", () => finish(false));
+    syncPanelWidths();
+  }
+
+  // 演者・舞台セット・小道具の一覧高は、この端末だけの見え方として別々に覚える。
+  // 一覧の全高まで広げられるので、内側のスクロールを使わず外側のパネルで読める。
+  let rosterListHeightUi = null;
+  function initRosterListHeights() {
+    if (rosterListHeightUi || phoneViewerActive || STUDY_READ_ONLY) return;
+    const handles = Array.from(document.querySelectorAll("[data-roster-list-resize]"));
+    if (!handles.length) return;
+    const ui = rosterListHeightUi = { handles: [], drag: null, frame: 0 };
+    const readPrefs = () => ({ ...(prefs.rosterListHeights || {}) });
+    const listFor = (handle) => document.getElementById(handle.getAttribute("aria-controls"));
+    const fullHeight = (list) => {
+      // 手動で内容より高くしていると scrollHeight もその高さになるため、
+      // 一度だけ自動高へ戻して「全項目がちょうど収まる高さ」を測る。
+      const inlineHeight = list.style.height;
+      const wasManual = list.classList.contains("is-manual-height");
+      list.classList.remove("is-manual-height");
+      list.style.removeProperty("height");
+      const measured = Math.ceil(list.scrollHeight);
+      if (inlineHeight) list.style.height = inlineHeight;
+      list.classList.toggle("is-manual-height", wasManual);
+      return measured;
+    };
+    const apply = () => {
+      const saved = (ui.drag ? ui.drag.heights : prefs.rosterListHeights) || {};
+      ui.handles.forEach((handle) => {
+        const key = handle.dataset.rosterListResize;
+        const list = listFor(handle);
+        if (!list) return;
+        const max = fullHeight(list);
+        const min = Math.min(80, max);
+        const wanted = max > 0 && Number.isFinite(saved[key]) ? clamp(saved[key], min, max) : null;
+        list.classList.toggle("is-manual-height", wanted !== null);
+        if (wanted === null) list.style.removeProperty("height");
+        else list.style.height = `${Math.round(wanted)}px`;
+        const current = Math.round(list.getBoundingClientRect().height);
+        handle.setAttribute("aria-valuemin", String(min));
+        handle.setAttribute("aria-valuemax", String(max));
+        handle.setAttribute("aria-valuenow", String(current));
+        handle.setAttribute("aria-valuetext", `${current}px`);
+      });
+    };
+    const finish = (commit) => {
+      const drag = ui.drag;
+      if (!drag) return;
+      ui.drag = null;
+      document.body.classList.remove("is-roster-list-resizing");
+      if (drag.handle.hasPointerCapture(drag.pointerId)) drag.handle.releasePointerCapture(drag.pointerId);
+      if (commit) { prefs.rosterListHeights = drag.heights; savePrefs(); }
+      apply();
+    };
+    const reset = (key) => {
+      finish(false);
+      const next = readPrefs();
+      delete next[key];
+      prefs.rosterListHeights = next;
+      savePrefs(); apply();
+    };
+    handles.forEach((handle) => {
+      const list = listFor(handle);
+      if (!list) return;
+      const key = handle.dataset.rosterListResize;
+      handle.title = "ドラッグで高さを変更。上下キーで調整、ダブルクリックまたはEnterで元に戻す";
+      ui.handles.push(handle);
+      handle.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0 || event.isPrimary === false || ui.drag) return;
+        event.preventDefault(); event.stopPropagation();
+        apply();
+        ui.drag = {
+          handle, key, pointerId: event.pointerId, startY: event.clientY,
+          startHeight: list.getBoundingClientRect().height,
+          maxHeight: fullHeight(list), heights: readPrefs(),
+        };
+        handle.setPointerCapture(event.pointerId);
+        handle.focus({ preventScroll: true });
+        document.body.classList.add("is-roster-list-resizing");
+      });
+      handle.addEventListener("pointermove", (event) => {
+        const drag = ui.drag;
+        if (!drag || drag.handle !== handle || event.pointerId !== drag.pointerId) return;
+        event.preventDefault();
+        const minHeight = Math.min(80, drag.maxHeight);
+        drag.heights[key] = Math.round(clamp(
+          drag.startHeight + (event.clientY - drag.startY), minHeight, drag.maxHeight,
+        ));
+        if (!ui.frame) ui.frame = requestAnimationFrame(() => { ui.frame = 0; apply(); });
+      });
+      handle.addEventListener("pointerup", (event) => {
+        if (ui.drag && event.pointerId === ui.drag.pointerId) finish(true);
+      });
+      handle.addEventListener("pointercancel", () => finish(false));
+      handle.addEventListener("lostpointercapture", () => finish(false));
+      handle.addEventListener("dblclick", (event) => { event.preventDefault(); reset(key); });
+      handle.addEventListener("keydown", (event) => {
+        if (!["ArrowUp", "ArrowDown", "Home", "End", "Enter"].includes(event.key)) return;
+        event.preventDefault(); event.stopPropagation();
+        if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey) return;
+        if (event.key === "Enter") { reset(key); return; }
+        const max = fullHeight(list);
+        const min = Math.min(80, max);
+        const current = list.getBoundingClientRect().height;
+        const nextHeight = event.key === "Home" ? min : event.key === "End" ? max
+          : current + (event.key === "ArrowDown" ? 1 : -1) * (event.shiftKey ? 60 : 20);
+        const next = readPrefs();
+        next[key] = Math.round(clamp(nextHeight, min, max));
+        prefs.rosterListHeights = next;
+        savePrefs(); apply();
+      });
+    });
+    ui.observer = new MutationObserver(() => {
+      if (!ui.frame) ui.frame = requestAnimationFrame(() => { ui.frame = 0; apply(); });
+    });
+    ui.handles.forEach((handle) => {
+      const list = listFor(handle);
+      if (list) ui.observer.observe(list, { childList: true });
+    });
+    window.addEventListener("resize", () => { finish(false); apply(); });
+    window.addEventListener("blur", () => finish(false));
+    apply();
+  }
 
   function panelEl(id) {
     return document.querySelector(`[data-panel="${id}"]`);
@@ -11069,6 +14498,14 @@
     button.setAttribute("aria-label", tx(label));
   }
 
+  function syncPhoneLanguageButtons() {
+    if (!phoneUi || !phoneUi.langButtons) return;
+    phoneUi.langButtons.forEach(({ choice, button }) => {
+      button.textContent = choice.label;
+      button.setAttribute("aria-pressed", String(lang === choice.code));
+    });
+  }
+
   function applyPhoneViewerLang() {
     if (!phoneUi) return;
     phoneUi.toolbar.setAttribute("aria-label", tx("スマホ閲覧用の操作"));
@@ -11101,12 +14538,9 @@
     setPhoneIconButtonLang(phoneUi.settingsToggle, "設定を開く");
     phoneUi.settingsPanel.setAttribute("aria-label", tx("設定"));
     phoneUi.settingsTitle.textContent = tx("設定");
-    setPhoneButtonLang(phoneUi.langJa, "日本語", "日本語に切り替える");
-    setPhoneButtonLang(phoneUi.langEn, "English", "英語に切り替える");
+    syncPhoneLanguageButtons();
     setPhoneButtonLang(phoneUi.reachButton, "端末による違い", "端末による違いを開く");
     setPhoneButtonLang(phoneUi.settingsClose, "閉じる", "設定を閉じる");
-    phoneUi.langJa.setAttribute("aria-pressed", String(!isEn()));
-    phoneUi.langEn.setAttribute("aria-pressed", String(isEn()));
     phoneUi.sceneList.setAttribute("aria-label", tx("全画面のシーン一覧"));
     phoneUi.sceneListTitle.textContent = tx("シーン");
     setPhoneIconButtonLang(phoneUi.sceneListClose, "全画面のシーン一覧を閉じる");
@@ -11222,8 +14656,7 @@
     phoneUi.viewToggle.textContent = tx(nextView === "plan" ? "平面図へ" : "正面図へ");
     phoneUi.viewToggle.setAttribute("aria-label", tx(nextView === "plan"
       ? "平面図へ切り替える" : "正面図へ切り替える"));
-    phoneUi.langJa.setAttribute("aria-pressed", String(!isEn()));
-    phoneUi.langEn.setAttribute("aria-pressed", String(isEn()));
+    syncPhoneLanguageButtons();
   }
 
   function initPhoneViewerWorkspace() {
@@ -11300,16 +14733,18 @@
     settingsPanel.hidden = true;
     const settingsTitle = document.createElement("strong");
     settingsTitle.textContent = tx("設定");
-    const langJa = makePhoneButton(tx("日本語"), tx("日本語に切り替える"));
-    langJa.setAttribute("aria-pressed", String(!isEn()));
-    const langEn = makePhoneButton("English", tx("英語に切り替える"));
-    langEn.setAttribute("aria-pressed", String(isEn()));
+    const langButtons = availableStageLanguageChoices().map((choice) => {
+      const button = makePhoneButton(choice.label, choice.label);
+      button.dataset.noI18n = "";
+      button.setAttribute("aria-pressed", String(lang === choice.code));
+      return { choice, button };
+    });
     /* 「なぜスマホは機能が少ないのか」に答える表への入口。
        スマホだけ入口が無く、欠落が意図的だと確かめる術が画面に無かった（E-3）。
        表そのものは窓（stage-reach-modal）が狭い画面用の一段組みを持っている。 */
     const reachButton = makePhoneButton(tx("端末による違い"), tx("端末による違いを開く"));
     const settingsClose = makePhoneButton(tx("閉じる"), tx("設定を閉じる"));
-    settingsPanel.append(settingsTitle, langJa, langEn, reachButton, settingsClose);
+    settingsPanel.append(settingsTitle, ...langButtons.map(({ button }) => button), reachButton, settingsClose);
 
     /* 矢印の中央から開く全画面一覧。段組みの子にせず body 直下へ置く。 */
     const sceneList = document.createElement("section");
@@ -11433,7 +14868,7 @@
       scenePrev, sceneCurrent, sceneNext, infoPanel, infoProject, infoScene,
       sceneNote, memoBar, memoLabel, memoInput,
       sourcePanel, sourceTitle, fileButton, seamSampleButton, sampleButton, sourceClose, fileInput,
-      exportButton, settingsPanel, settingsTitle, langJa, langEn, reachButton, settingsClose,
+      exportButton, settingsPanel, settingsTitle, langButtons, reachButton, settingsClose,
       sceneList, sceneListTitle, sceneListClose, sceneListScroll, sceneListRows,
       saveNotice, saveNoticeText, saveNoticeExport, saveNoticeClose,
       infoOpen: false, sourceOpen: false, settingsOpen: false, sceneListOpen: false,
@@ -11506,8 +14941,9 @@
       phoneUi.settingsOpen = false;
       syncPhoneViewer();
     });
-    langJa.addEventListener("click", () => setLang("ja"));
-    langEn.addEventListener("click", () => setLang("en"));
+    langButtons.forEach(({ choice, button }) => {
+      button.addEventListener("click", () => setLang(choice.code));
+    });
     viewToggle.addEventListener("click", () => {
       enforcePhoneViews(viewToggle.dataset.phoneView);
       applyLayout();
@@ -11555,20 +14991,20 @@
      デスクトップのパネルを複製せず、PWAでだけ左ドロワーへ移して使う。
      同じinput/buttonを動かすので、保存や描画の処理は一系統のまま保てる。 */
   const TABLET_MENU_GROUPS = [
-    { id: "show", icon: "▣", label: "ショー", panels: ["project", "study"] },
+    { id: "show", icon: "▣", label: "ショー", panels: ["project", "venue", "study"] },
     /* 音楽はPC専用と決めたので、ここには載せない（2026-08-24 本人判断）。
        ★"music" を足し戻さないこと。足すなら方針の再判断から。 */
     { id: "cast", icon: "●", label: "出演・装置", panels: ["cast", "rigs"] },
     { id: "look", icon: "☀", label: "照明・背景", panels: ["light", "background"] },
     { id: "scenes", icon: "◫", label: "シーン", panels: ["scenes"] },
     { id: "inspect", icon: "◎", label: "選んだもの", panels: ["inspector"] },
-    /* 共有は机では独立したパネルだが、iPadでは従来どおり「保存・設定」の中に置く。
-       ここへ載せ忘れると、iPadから共有セッションへ入る道が消える。 */
+    /* 保存パネルはPC・iPadとも非表示。共有は机では独立したパネルだが、
+       iPadでは表示設定と同じグループに置き、共有セッションへの入口を保つ。 */
     /* ⚙だけ絵文字ではなくSVG（他の帯アイコン=▣●☀◫◎は形の記号で機種依存の色差が出ないが、
        ⚙はUnicodeの絵文字扱いを受けやすく、機種のフォント任せの絵になって他アイコンと不揃いになる。
        ブラウザ版の歯車・スマホ閲覧機の設定歯車と同じSVG＝PHONE_ICON_SVG.gearを共有する。2026-08-30 対応）。 */
     { id: "settings", icon: "⚙", iconSvg: PHONE_ICON_SVG.gear,
-      label: "保存・設定", panels: ["save", "session"], special: "display" },
+      label: "共有・設定", panels: ["session"], special: "display" },
   ];
 
   function makeTabletButton(iconText, label, className, iconSvg) {
@@ -11749,13 +15185,17 @@
     const board = document.getElementById("stage-col-center");
     const centerBar = board && board.querySelector(":scope > .stage-center-bar");
     const header = document.querySelector(".stage-sketch-head");
+    const undoRedo = centerBar && centerBar.querySelector(".stage-undo-redo");
     const toolGrid = centerBar && centerBar.querySelector(".stage-tool-grid");
-    const nameToggles = centerBar ? [...centerBar.querySelectorAll(".stage-name-toggle")] : [];
+    const nameToggles = centerBar
+      ? [...centerBar.querySelectorAll(".stage-name-toggle, .stage-anim-control")]
+      : [];
     const historyActions = document.querySelector(".stage-sketch-head .stage-history-actions");
     if (!grid || !board || !header) return;
 
     const topControls = document.createElement("div");
     topControls.className = "stage-tablet-top-controls";
+    if (undoRedo) topControls.append(undoRedo);
     if (toolGrid) topControls.append(toolGrid);
     if (historyActions) topControls.append(historyActions);
     header.append(topControls);
@@ -11928,7 +15368,7 @@
         help.className = "stage-panel-help";
         help.textContent = "?";
         help.setAttribute("aria-pressed", "false");
-        help.setAttribute("aria-label", isEn() ? `About ${tx(el.dataset.title || id)}` : `${el.dataset.title || id}の説明を出す`);
+        help.setAttribute("aria-label", sx(`${el.dataset.title || id}の説明を出す`, `About ${tx(el.dataset.title || id)}`));
         help.title = tx("この項目の説明");
         help.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -12036,7 +15476,7 @@
   function columnAt(x) {
     let best = null;
     let near = Infinity;
-    ["left", "right"].forEach((col) => {
+    panelColumnsForCurrentMode().forEach((col) => {
       const host = colEls[col];
       if (!host) return;
       const r = host.getBoundingClientRect();
@@ -12097,11 +15537,24 @@
     justDragged = true;
     setTimeout(() => { justDragged = false; }, 60);
     commitLayoutFromDom();
-    announce(`${el.dataset.title || id}を${col === "left" ? "左" : "右"}の列へ移しました。`);
+    announce(panelLayoutMode() === "single"
+      ? `${el.dataset.title || id}の並び順を変えました。`
+      : `${el.dataset.title || id}を${col === "left" ? "左" : "右"}の列へ移しました。`);
   }
 
   // 並びの正本は画面。動かし終えたら、そのまま状態へ書き戻す
   function commitLayoutFromDom() {
+    if (panelLayoutMode() === "single") {
+      const host = colEls[panelSingleSide()];
+      if (!host) return;
+      const next = { ...panelSingleOrder() };
+      [...host.children]
+        .filter((el) => el.dataset && el.dataset.panel)
+        .forEach((el, i) => { next[el.dataset.panel] = i; });
+      prefs.panelSingleOrder = next;
+      savePrefs();
+      return;
+    }
     ["left", "right"].forEach((col) => {
       const host = colEls[col];
       if (!host) return;
@@ -12127,7 +15580,26 @@
     // iPad PWAではパネルの置き場所は左ドロワーが正本。
     // デスクトップ時だけ、従来どおり左右の列へ並べる。
     if (!tabletUi) {
-      ["left", "right"].forEach((col) => {
+      if (!phoneViewerActive) {
+      const grid = document.querySelector(".stage-sketch-grid");
+      const single = panelLayoutMode() === "single";
+      if (grid) {
+        grid.classList.toggle("stage-panels-single", single);
+        grid.classList.toggle("stage-panels-on-right", single && panelSingleSide() === "right");
+      }
+      if (single) {
+        const oneColumnOrder = panelSingleOrder();
+        const ids = [...PANELS].sort((a, b) => {
+          const fallback = (id) => (L.cols[id] === "left" ? 0 : PANELS.length) + L.order[id];
+          return (Number.isFinite(oneColumnOrder[a]) ? oneColumnOrder[a] : fallback(a))
+            - (Number.isFinite(oneColumnOrder[b]) ? oneColumnOrder[b] : fallback(b));
+        });
+        ids.forEach((id) => {
+          const el = panelEl(id);
+          const host = colEls[panelSingleSide()];
+          if (el && host) host.append(el);
+        });
+      } else ["left", "right"].forEach((col) => {
         const ids = PANELS.filter((id) => L.cols[id] === col).sort((a, b) => L.order[a] - L.order[b]);
         ids.forEach((id) => {
           /* ゲスト参加中の共有パネルは stage-session.js が左列の先頭へ移している。
@@ -12138,6 +15610,7 @@
           if (el && colEls[col]) colEls[col].append(el);
         });
       });
+      }
     }
     PANELS.forEach((id) => {
       const el = panelEl(id);
@@ -12186,19 +15659,60 @@
      こちらは見出しごと消す。並び順は state.layout に残したままなので、
      設定で戻せば元の位置へ戻る。 */
   function applyPanelVisibility() {
-    const deskUi = !tabletUi && !phoneViewerActive;
-    PANEL_FEATURES.forEach((f) => {
+    const deskUi = !tabletUi && !phoneViewerActive
+      && !document.body.classList.contains("stage-session-guest");
+    PANEL_FEATURES.filter((f) => panelEl(f.panel)).forEach((f) => {
       const el = panelEl(f.panel);
       if (!el) return;
       el.hidden = deskUi ? !featureOn(f.key) : false;
     });
   }
 
-  function swapCenter() {
-    state.layout.centerOrder = state.layout.centerOrder.slice().reverse();
-    applyLayout();
-    persistSoon();
-    announce(`${state.layout.centerOrder[0] === "front" ? "正面" : "平面"}を上にしました。`);
+  /* ヘッダーから、環境設定と同じパネル別ON/OFFへ直接届く小さな一覧。
+     項目と保存値は PANEL_FEATURES / prefs を共用し、二重の設定にはしない。 */
+  function renderPanelVisibilityMenu() {
+    if (!els.panelsMenu) return;
+    els.panelsMenu.replaceChildren();
+    PANEL_FEATURES.filter((f) => panelEl(f.panel)).forEach((f) => {
+      const item = document.createElement("label");
+      item.className = "stage-panel-visibility-item";
+      item.title = tx(f.hint);
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = featureOn(f.key);
+      box.addEventListener("change", () => {
+        prefs[f.key] = box.checked;
+        savePrefs();
+        applyFeatureFlags();
+        renderScenes();
+        render();
+        announce(box.checked ? `設定「${f.label}」をONにしました。` : `設定「${f.label}」をOFFにしました。`);
+      });
+      const name = document.createElement("span");
+      name.textContent = tx(f.label);
+      item.append(box, name);
+      els.panelsMenu.append(item);
+    });
+  }
+
+  function closePanelVisibilityMenu(returnFocus = false) {
+    if (!els.panelsMenu || els.panelsMenu.hidden) return;
+    els.panelsMenu.hidden = true;
+    if (els.panelsToggle) {
+      els.panelsToggle.setAttribute("aria-expanded", "false");
+      if (returnFocus) els.panelsToggle.focus();
+    }
+  }
+
+  function togglePanelVisibilityMenu() {
+    if (!els.panelsToggle || !els.panelsMenu || tabletUi || phoneViewerActive
+      || document.body.classList.contains("stage-session-guest")) return;
+    const opening = els.panelsMenu.hidden;
+    if (!opening) { closePanelVisibilityMenu(); return; }
+    renderPanelVisibilityMenu();
+    els.panelsMenu.hidden = false;
+    els.panelsToggle.setAttribute("aria-expanded", "true");
+    els.panelsMenu.querySelector("input")?.focus();
   }
 
   /* ---------- 登場人物 ----------
@@ -12288,9 +15802,7 @@
     if (!cast.length) {
       const empty = document.createElement("p");
       empty.className = "stage-cast-empty";
-      empty.textContent = isEn()
-        ? "No one registered yet. Enter a name and add them."
-        : "まだ誰も登録していません。名前を入れて追加してください。";
+      empty.textContent = tx("まだ誰も登録していません。名前を入れて追加してください。");
       els.castList.append(empty);
       return;
     }
@@ -12326,15 +15838,15 @@
       profile.type = "button";
       profile.className = "stage-cast-profile";
       profile.textContent = "…";
-      profile.title = isEn() ? `${member.name} — profile (height and notes)` : `${member.name}のプロフィール（身長など）`;
-      profile.setAttribute("aria-label", isEn() ? `Open ${member.name}\u2019s profile` : `${member.name}のプロフィールを開く`);
+      profile.title = sx(`${member.name}のプロフィール（身長など）`, `${member.name} — profile (height and notes)`);
+      profile.setAttribute("aria-label", sx(`${member.name}のプロフィールを開く`, `Open ${member.name}\u2019s profile`));
       profile.addEventListener("click", () => openProfile(member.id));
 
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "stage-cast-remove";
       remove.textContent = "✕";
-      remove.setAttribute("aria-label", isEn() ? `Remove ${member.name} from the cast` : `${member.name}を名簿から外す`);
+      remove.setAttribute("aria-label", sx(`${member.name}を名簿から外す`, `Remove ${member.name} from the cast`));
       remove.addEventListener("click", () => removeCastMember(member.id));
 
       row.append(swatch, name, status, lockButton(member, member.name), profile, remove);
@@ -12362,7 +15874,7 @@
   function kindSwatch(item, kind, label, onPick) {
     const wrap = document.createElement("label");
     wrap.className = "stage-kind-swatch";
-    wrap.title = isEn() ? `Change the colour of ${label}` : `${label}の色を変える`;
+    wrap.title = sx(`${label}の色を変える`, `Change the colour of ${label}`);
     wrap.style.color = item.color;
     const glyph = document.createElement("span");
     glyph.className = "stage-kind-glyph";
@@ -12371,7 +15883,7 @@
     input.type = "color";
     input.className = "stage-kind-input";
     input.value = item.color;
-    input.setAttribute("aria-label", isEn() ? `Colour of ${label}` : `${label}の色`);
+    input.setAttribute("aria-label", sx(`${label}の色`, `Colour of ${label}`));
     input.addEventListener("input", () => {
       wrap.style.color = input.value;
       onPick(input.value);
@@ -12419,9 +15931,7 @@
     button.className = "stage-cast-lock";
     button.textContent = item.locked ? "🔒" : "🔓";
     button.setAttribute("aria-pressed", String(Boolean(item.locked)));
-    button.title = isEn()
-      ? (item.locked ? `Unlock ${label} (it can move again)` : `Lock ${label} (it stops moving)`)
-      : (item.locked ? `${label}の錠を外す（動かせるようになります）` : `${label}に錠を掛ける（動かなくなります）`);
+    button.title = languageValue(() => (item.locked ? `Unlock ${label} (it can move again)` : `Lock ${label} (it stops moving)`), () => (item.locked ? `${label}の錠を外す（動かせるようになります）` : `${label}に錠を掛ける（動かなくなります）`));
     button.setAttribute("aria-label", button.title);
     button.addEventListener("click", () => {
       checkpoint();
@@ -12447,7 +15957,7 @@
     (state.project.cast || []).forEach((c) => used.add(c.name));
     (state.project.sets || []).forEach((s) => used.add(s.name));
     // 英語では語と数字の間に空白を入れる（Performer 2）。日本語は詰める（演者2）
-    const join = (n) => (isEn() ? `${head} ${n}` : `${head}${n}`);
+    const join = (n) => (sx(`${head}${n}`, `${head} ${n}`));
     let n = 1;
     while (used.has(join(n))) n += 1;
     return join(n);
@@ -12484,18 +15994,19 @@
     announce(`名簿から${added.length}人をキャストへ加えました（${added.join("・")}）。舞台へ出すには一覧の「舞台裏」を押してください。`);
   }
 
-  function addCastMember(nameInput) {
+  function addCastMember(nameInput, poseId = "stand", pieceColor) {
     const input = nameInput || els.rosterName;
     const raw = (input && input.value || "").trim() || autoName(pieceTypeName("performer"));
-    if (!canAddCast() || !canAddScenePieces(sc())) return;
+    if (!canAddCast() || !canAddScenePieces(sc())) return false;
     checkpoint();
     const member = {
-      id: rid("cast"), name: raw.slice(0, 24), color: nextPieceColor(state.project.cast.length),
+      id: rid("cast"), name: raw.slice(0, 24),
+      color: validColor(pieceColor, nextPieceColor(state.project.cast.length)),
       heightCm: DEFAULT_HEIGHT_CM, note: "", locked: false,
     };
     state.project.cast.push(member);
     // 登録したものは、そのままこの場面の舞台へ出す（出すのが普通で、裏に置くのが例外）
-    placeCastPiece(member);
+    placeCastPiece(member, poseId);
     if (input) input.value = "";
     renderCast();
     renderSets();
@@ -12508,10 +16019,11 @@
     render();
     persistSoon();
     announce(`${raw}を名簿へ加え、このシーンの舞台へ出しました。`);
+    return true;
   }
 
   // 演者をこの場面の舞台へ置く。登録した直後にも、あとから出すときにも通す
-  function placeCastPiece(member) {
+  function placeCastPiece(member, poseId = "stand") {
     const scene = sc();
     if (!canAddScenePieces(scene)) return null;
     const count = scene.pieces.filter((p) => p.type === "performer").length;
@@ -12521,6 +16033,7 @@
       u: clamp(0.5 + ((count % 5) - 2) * 0.09, 0.06, 0.94),
       v: clamp(0.6 + (count % 3) * 0.07, 0.05, 0.95),
       size: 100, color: member.color || state.pieceColor, name: "",
+      pose: poseById(poseId).id,
     }, 0);
     scene.pieces.push(piece);
     selectedId = piece.id;
@@ -12608,7 +16121,7 @@
       const model = stageModel(item.modelId);
       const extent = model && window.SHOSAI_STAGE_MODELS.modelExtent(model);
       return extent ? `${Math.round(extent.w * 100)}×${Math.round(extent.d * 100)}×${Math.round(extent.h * 100)}cm`
-        : (isEn() ? "Model unavailable" : "モデルがありません");
+        : (tx("モデルがありません"));
     }
     if (item.kind === "sphere") {
       return d.lift > 0.05 ? `⌀${cmText(d.dia)} ／ 床上${cmText(d.lift)}` : `⌀${cmText(d.dia)}`;
@@ -12626,8 +16139,7 @@
 
   function renderSets() {
     renderSetList(els.setList, (item) => item.kind !== "light" && item.kind !== "prop",
-      isEn() ? "Nothing registered yet. Enter a name, pick a kind, and add it."
-        : "まだ何も登録していません。名前と形を選んで追加してください。");
+      tx("まだ何も登録していません。名前と形を選んで追加してください。"));
     renderSetList(els.propList, (item) => item.kind === "prop", "");
     syncRosterGroups();
   }
@@ -12642,9 +16154,7 @@
     if (!lights.length) {
       const empty = document.createElement("p");
       empty.className = "stage-cast-empty";
-      empty.textContent = isEn()
-        ? "No lights yet. Pick a type, enter a name, and add it."
-        : "まだ登録していません。種類を選び、名前を入れて追加してください。";
+      empty.textContent = tx("まだ登録していません。種類を選び、名前を入れて追加してください。");
       host.append(empty);
       syncRosterGroups();
       return;
@@ -12657,7 +16167,7 @@
     if (groupsSeen.length) {
       const head = document.createElement("p");
       head.className = "stage-roster-head";
-      head.textContent = isEn() ? "Preset rigs" : "プリセットの組";
+      head.textContent = tx("プリセットの組");
       const box = document.createElement("div");
       box.className = "stage-cast-list";
       host.append(head, box);
@@ -12688,7 +16198,7 @@
         del.type = "button";
         del.className = "stage-cast-remove";
         del.textContent = "✕";
-        del.setAttribute("aria-label", isEn() ? "Remove this rig" : "この組を外す");
+        del.setAttribute("aria-label", tx("この組を外す"));
         del.addEventListener("click", () => removeLightGroup(gid));
         row.append(dot, name, toggle, split, del);
         box.append(row);
@@ -12748,9 +16258,7 @@
     const items = groupItems(groupId);
     if (!items.length) return;
     const ids = new Set(items.map((t) => t.id));
-    if (!window.confirm(isEn()
-      ? `Remove ${groupTitle(groupId)}? The lights disappear from every scene.`
-      : `${groupTitle(groupId)}を外します。全てのシーンからこの組の明かりが消えます。`)) return;
+    if (!window.confirm(sx(`${groupTitle(groupId)}を外します。全てのシーンからこの組の明かりが消えます。`, `Remove ${groupTitle(groupId)}? The lights disappear from every scene.`))) return;
     checkpoint();
     state.project.sets = state.project.sets.filter((t) => !ids.has(t.id));
     state.project.scenes.forEach((scene) => {
@@ -12821,17 +16329,15 @@
     detail.className = "stage-cast-profile";
     detail.textContent = "…";
     const what = light ? tx("直径") : tx("寸法");
-    detail.title = isEn()
-      ? `Change the ${light ? "pool diameter" : "size"} of ${item.name} (now ${setDimLabel(item)})`
-      : `${item.name}の${what}を変える（いまは ${setDimLabel(item)}）`;
-    detail.setAttribute("aria-label", isEn() ? `Open the size of ${item.name}` : `${item.name}の${what}を開く`);
+    detail.title = sx(`${item.name}の${what}を変える（いまは ${setDimLabel(item)}）`, `Change the ${light ? "pool diameter" : "size"} of ${item.name} (now ${setDimLabel(item)})`);
+    detail.setAttribute("aria-label", sx(`${item.name}の${what}を開く`, `Open the size of ${item.name}`));
     detail.addEventListener("click", () => openSetInfo(item.id));
 
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "stage-cast-remove";
     remove.textContent = "✕";
-    remove.setAttribute("aria-label", isEn() ? `Remove ${item.name} from the set list` : `${item.name}を舞台セットから外す`);
+    remove.setAttribute("aria-label", sx(`${item.name}を舞台セットから外す`, `Remove ${item.name} from the set list`));
     remove.addEventListener("click", () => removeSetItem(item.id));
 
     /* 一段にまとめる。名前の右へ寸法を小さく置き、名前が長ければそちらを詰める。
@@ -12857,13 +16363,19 @@
     });
   }
 
-  function addSetItem(kind, nameInput, lightKind, modelId, propShape) {
+  function defaultSetColor(kind, propShape) {
+    return kind === "light" ? "#d3ac59"
+      : kind === "prop" && propShape === "mask" ? "#efe7d6"
+        : nextPieceColor(state.project.sets.length + 2);
+  }
+
+  function addSetItem(kind, nameInput, lightKind, modelId, propShape, pieceColor) {
     const chosenModel = kind === "model" ? stageModel(modelId) : null;
     const shape = kind === "prop" && PROP_SHAPES[propShape] ? propShape : "box";
     const raw = (nameInput && nameInput.value || "").trim()
       || (chosenModel && chosenModel.name)
       || autoName(kind === "prop" && shape !== "box" ? propShapeName(shape) : setKindName(kind));
-    if (!canAddSets() || !canAddScenePieces(sc())) return;
+    if (!canAddSets() || !canAddScenePieces(sc())) return false;
     checkpoint();
     const lk = kind === "light" && LIGHT_KINDS[lightKind] ? lightKind : "hang";
     const dims = kind === "prop" ? { ...PROP_SHAPES[shape].dims } : normalizeDims(kind, {});
@@ -12875,7 +16387,7 @@
     if (flownOnly && dims) dims.lift = kind === "tissue" ? 7.4 : 2.6;
     const item = {
       id: rid("set"), kind, name: raw.slice(0, 24),
-      color: kind === "light" ? "#d3ac59" : nextPieceColor(state.project.sets.length + 2),
+      color: validColor(pieceColor, defaultSetColor(kind, shape)),
       modelId: kind === "model" ? modelId : null,
       propShape: shape,
       dims, note: "", locked: false, flown: flownOnly, wires: 2, framed: false, lightKind: lk,
@@ -12894,6 +16406,7 @@
     announce(kind === "light"
       ? `${raw}を${lightKindName(lk)}へ加えてONにしました。`
       : `${raw}を舞台セットへ加え、このシーンの舞台へ出しました。`);
+    return true;
   }
 
   // 舞台セット・明かりをこの場面へ置く。登録した直後にも、あとから出すときにも通す
@@ -13250,9 +16763,7 @@
       els.lightPresetIntentNote.hidden = !fromIntent;
       if (fromIntent) {
         const intent = lightIntentCompareText();
-        els.lightPresetIntentNote.textContent = isEn()
-          ? `Lighting intention: ${intent} — This is a list of candidates. It is not guaranteed to match the intention. The intention stays after you build.`
-          : `光の意図: ${intent} — これは候補の一覧です。意図と一致する保証はありません。組んだあとも光の意図は残ります。`;
+        els.lightPresetIntentNote.textContent = sx(`光の意図: ${intent} — これは候補の一覧です。意図と一致する保証はありません。組んだあとも光の意図は残ります。`, `Lighting intention: ${intent} — This is a list of candidates. It is not guaranteed to match the intention. The intention stays after you build.`);
       }
     }
     els.lightPresetTiles.innerHTML = "";
@@ -13362,7 +16873,7 @@
   const groupTitle = (groupId) => {
     const items = groupItems(groupId);
     const label = (items[0] && items[0].groupLabel) || "照明の組";
-    return isEn() ? `${tx(label)} (${items.length} lights)` : `${label}（${items.length}灯）`;
+    return sx(`${label}（${items.length}灯）`, `${tx(label)} (${items.length} lights)`);
   };
 
   // 明かりは「舞台の上か裏か」ではなく、点いているか消えているかで言う
@@ -13453,13 +16964,11 @@
 
   function showSwitchFailure(which) {
     const current = which === "current";
-    const message = isEn()
-      ? (current
+    const message = languageValue(() => (current
         ? "Could not preserve the show you have open, so the switch was stopped. Export it to a file or make room in the show shelf, then try again."
-        : "Could not add the next show to the show shelf, so the switch was stopped. The current show is still open. Export it to a file or make room in the show shelf, then try again.")
-      : (current
+        : "Could not add the next show to the show shelf, so the switch was stopped. The current show is still open. Export it to a file or make room in the show shelf, then try again."), () => (current
         ? "いま開いているショーを一覧へ退避できなかったため、切り替えを止めました。ファイルへ書き出すか、ショー一覧を整理してから、もう一度お試しください。"
-        : "次のショーを一覧へ保存できなかったため、切り替えを止めました。いまのショーは開いたままです。ファイルへ書き出すか、ショー一覧を整理してから、もう一度お試しください。");
+        : "次のショーを一覧へ保存できなかったため、切り替えを止めました。いまのショーは開いたままです。ファイルへ書き出すか、ショー一覧を整理してから、もう一度お試しください。"));
     setSaveStatus(message, "warn");
     announce(message);
   }
@@ -13541,9 +17050,7 @@
     delete shows[id];
     if (!writeShows(shows)) {
       renderShows();
-      announce(isEn()
-        ? "Could not update the show shelf, so nothing was deleted."
-        : "ショー一覧を更新できなかったため、消していません。");
+      announce("ショー一覧を更新できなかったため、消していません。");
       return;
     }
     renderShows();
@@ -13576,13 +17083,9 @@
         exportFailureNotice("ショーを書き出せませんでした。もう一度お試しください。");
         return;
       }
-      ask = isEn()
-        ? "The damaged show shelf was sent to your downloads. Did the file save correctly? Choose OK to rebuild the shelf and remove the damaged data from this device. Choose Cancel to change nothing."
-        : "壊れたショー一覧をファイルへ書き出しました。ダウンロードを確認できましたか？ OKを押すと一覧を作り直し、端末内の壊れたデータを消します。キャンセルすると何も変更しません。";
+      ask = tx("壊れたショー一覧をファイルへ書き出しました。ダウンロードを確認できましたか？ OKを押すと一覧を作り直し、端末内の壊れたデータを消します。キャンセルすると何も変更しません。");
     } else {
-      ask = isEn()
-        ? "There is no damaged data left to export. Rebuild the show shelf? The show you have open now is preserved."
-        : "書き出せる壊れたデータは残っていません。ショー一覧を作り直しますか？ いま開いているショーは残ります。";
+      ask = tx("書き出せる壊れたデータは残っていません。ショー一覧を作り直しますか？ いま開いているショーは残ります。");
     }
     if (!window.confirm(ask)) return;
 
@@ -13591,7 +17094,7 @@
     shelfCorrupt = false;
     shelveCurrent();      // いま開いているショーを起点に作り直す
     renderShows();
-    announce(isEn() ? "Rebuilt the show shelf." : "ショー一覧を作り直しました。");
+    announce("ショー一覧を作り直しました。");
   }
 
   function renderShows() {
@@ -13611,17 +17114,15 @@
       copy.className = "stage-show-open";
       const title = document.createElement("strong");
       title.className = "stage-show-title";
-      title.textContent = isEn() ? "Show shelf updates are paused" : "ショー一覧の更新を止めています";
+      title.textContent = tx("ショー一覧の更新を止めています");
       const detail = document.createElement("span");
       detail.className = "stage-show-meta";
-      detail.textContent = isEn()
-        ? "To avoid deleting your other shows, nothing is written to the damaged shelf. “Rebuild show shelf” exports the damaged data to a file before removing it. Exporting the show you have open is a good idea first."
-        : "勝手に他のショーを消さないため、壊れた一覧には書き込みません。「ショー一覧を作り直す」を押すと、壊れた元データをファイルへ書き出してから消します。先に、開いているショーもファイルへ書き出しておくと安全です。";
+      detail.textContent = tx("勝手に他のショーを消さないため、壊れた一覧には書き込みません。「ショー一覧を作り直す」を押すと、壊れた元データをファイルへ書き出してから消します。先に、開いているショーもファイルへ書き出しておくと安全です。");
       copy.append(title, detail);
       const rebuild = document.createElement("button");
       rebuild.type = "button";
       rebuild.className = "stage-minor-action";
-      rebuild.textContent = isEn() ? "Rebuild show shelf" : "ショー一覧を作り直す";
+      rebuild.textContent = tx("ショー一覧を作り直す");
       rebuild.addEventListener("click", rebuildShelf);
       warning.append(copy, rebuild);
       els.showList.append(warning);
@@ -13657,6 +17158,61 @@
     });
   }
 
+  function syncProjectSummary() {
+    const project = state && state.project ? state.project : {};
+    const title = String(project.title || "").trim() || tx("無題のショー");
+    const version = String(project.versionLabel || "").trim() || "—";
+    if (els.projectSummaryTitle) {
+      els.projectSummaryTitle.textContent = title;
+      els.projectSummaryTitle.title = title;
+    }
+    if (els.projectSummaryVersion) {
+      els.projectSummaryVersion.textContent = version;
+      els.projectSummaryVersion.title = version;
+    }
+  }
+
+  let projectSettingsReturnFocus = null;
+  let backgroundReturnFocus = null;
+
+  function openBackgroundModal() {
+    if (!els.bgModal) return;
+    backgroundReturnFocus = document.activeElement;
+    els.bgModal.hidden = false;
+    if (els.bgBackdrop) els.bgBackdrop.hidden = false;
+    if (els.bgClose) els.bgClose.focus();
+  }
+
+  function closeBackgroundModal() {
+    if (els.bgModal) els.bgModal.hidden = true;
+    if (els.bgBackdrop) els.bgBackdrop.hidden = true;
+    const target = backgroundReturnFocus;
+    backgroundReturnFocus = null;
+    if (target && target.isConnected && typeof target.focus === "function") {
+      target.focus({ preventScroll: true });
+    }
+  }
+
+  function openProjectSettings() {
+    if (!els.projectSettingsModal) return;
+    projectSettingsReturnFocus = document.activeElement;
+    if (els.projectTitle) els.projectTitle.value = state.project.title;
+    if (els.versionLabel) els.versionLabel.value = state.project.versionLabel;
+    els.projectSettingsModal.hidden = false;
+    if (els.projectSettingsBackdrop) els.projectSettingsBackdrop.hidden = false;
+    if (els.projectTitle) els.projectTitle.focus();
+  }
+
+  function closeProjectSettings() {
+    if (els.projectSettingsModal) els.projectSettingsModal.hidden = true;
+    if (els.projectSettingsBackdrop) els.projectSettingsBackdrop.hidden = true;
+    const target = projectSettingsReturnFocus;
+    projectSettingsReturnFocus = null;
+    if (target && target.isConnected && typeof target.focus === "function") {
+      target.focus({ preventScroll: true });
+    }
+  }
+
   function openShows() {
     if (!els.showsModal) return;
     renderShows();
@@ -13686,9 +17242,7 @@
     });
     fresh.project.activeSceneId = fresh.project.scenes[0].id;
     fresh.layout = state.layout;
-    if (!applyLoadedState(normalizeState(fresh), isEn()
-      ? `Created a new show from “${tx(template.name)}”. The previous show is still in All shows.`
-      : `「${template.name}」から新しいショーを作りました。前のショーは一覧に残っています。`)) return;
+    if (!applyLoadedState(normalizeState(fresh), sx(`「${template.name}」から新しいショーを作りました。前のショーは一覧に残っています。`, `Created a new show from “${tx(template.name)}”. The previous show is still in All shows.`))) return;
     closeBeatTemplates();
     renderShows();
   }
@@ -13714,9 +17268,7 @@
 
       const count = document.createElement("p");
       count.className = "stage-beat-template-count";
-      count.textContent = isEn()
-        ? `Creates ${template.roles.length} scenes · D2 guide ${tx(template.range)}`
-        : `生成 ${template.roles.length}シーン・D2目安 ${template.range}`;
+      count.textContent = sx(`生成 ${template.roles.length}シーン・D2目安 ${template.range}`, `Creates ${template.roles.length} scenes · D2 guide ${tx(template.range)}`);
       const roles = document.createElement("p");
       roles.className = "stage-beat-template-roles";
       roles.textContent = template.roles.map((role) => tx(role)).join(" → ");
@@ -13727,9 +17279,7 @@
       if (available) {
         const energy = document.createElement("div");
         energy.className = "stage-beat-energy";
-        energy.setAttribute("aria-label", isEn()
-          ? `Energy ${template.energy.join(", ")}`
-          : `エネルギー ${template.energy.join("、")}`);
+        energy.setAttribute("aria-label", sx(`エネルギー ${template.energy.join("、")}`, `Energy ${template.energy.join(", ")}`));
         template.energy.forEach((value) => {
           const step = document.createElement("span");
           step.className = "stage-beat-energy-step";
@@ -13774,7 +17324,7 @@
    * （真横から起こすと、車も綱渡りもティーターボードも細い板に潰れて見分けがつかない）。
    * 舞台の絵と同じ部品（pieceParts）から起こすので、
    * 一覧の絵と実際に置かれる物が食い違わない。 */
-  function drawKindPreview(canvas, kind, color) {
+  function drawKindPreview(canvas, kind, color, propShapeId = null) {
     const ctx2 = canvas.getContext("2d");
     const w = canvas.width;
     const h = canvas.height;
@@ -13801,7 +17351,8 @@
       ctx2.restore();
       return;
     }
-    const dims = normalizeDims(kind, {});
+    const propShape = kind === "prop" && PROP_SHAPES[propShapeId] ? PROP_SHAPES[propShapeId] : null;
+    const dims = propShape ? { ...propShape.dims } : normalizeDims(kind, {});
     if (kind === "sphere") {
       // 球は部品を持たない（円ひとつで決まる）ので、ここで描く
       const r = Math.min(w, h) * 0.32;
@@ -13825,7 +17376,7 @@
     }
     const modelPreview = kind === "model" && stageModelLibrary().models[0];
     const parts = modelPreview ? window.SHOSAI_STAGE_MODELS.modelBoxes(modelPreview)
-      : pieceParts({ type: kind, dims, facing: 0 });
+      : pieceParts({ type: kind, dims, facing: 0, propShape: propShape ? propShapeId : null });
     if (!parts || !parts.length) return;
     /* トラピーズの吊りロープは、舞台では吊物の描画が引くので pieceParts に無い。
        見本ではバー一本になり、床に置いた板と見分けがつかないので、ここで足す。 */
@@ -13938,30 +17489,137 @@
     paintBody(ctx, buildRig(poseId, ox, oy, s, s, yaw, 0, null), color, null);
   }
 
-  const ROSTER_KINDS = ["performer"].concat(SET_KIND_ORDER);
+  const ROSTER_KIND_LAYERS = Object.freeze({
+    performer: Object.freeze(["performer"]),
+    set: Object.freeze(SET_KIND_ORDER.filter((kind) => kind !== "prop")),
+    prop: Object.freeze(["prop"]),
+  });
   let rosterKind = "performer";
+  let rosterKindLayer = "performer";
+  let rosterPose = "stand";
+  let rosterPropShape = "box";
+  let rosterColorTouched = false;
+
+  function rosterDefaultColor() {
+    return rosterKindLayer === "performer"
+      ? nextPieceColor(state.project.cast.length)
+      : defaultSetColor(rosterKind, rosterPropShape);
+  }
+
+  function syncRosterColorDefault() {
+    if (els.rosterColor && !rosterColorTouched) els.rosterColor.value = rosterDefaultColor();
+  }
+
+  function rosterSelectedColor() {
+    return validColor(els.rosterColor && els.rosterColor.value, rosterDefaultColor());
+  }
+
+  function rosterSearchKey(value) {
+    return String(value || "").normalize("NFKC").toLocaleLowerCase();
+  }
+
+  function applyRosterSearch() {
+    const words = rosterSearchKey(els.rosterSearch && els.rosterSearch.value)
+      .trim().split(/\s+/).filter(Boolean);
+    const host = rosterKindLayer === "performer" ? els.rosterPoseGrid
+      : rosterKindLayer === "set" ? els.kindGrid : els.rosterPropGrid;
+    if (!host) return;
+    host.querySelectorAll("[data-roster-search]").forEach((tile) => {
+      const haystack = rosterSearchKey(tile.dataset.rosterSearch);
+      tile.hidden = !words.every((word) => haystack.includes(word));
+    });
+    if (rosterKindLayer === "prop") {
+      host.querySelectorAll(".stage-prop-choice-group").forEach((section) => {
+        section.hidden = !section.querySelector("[data-roster-search]:not([hidden])");
+      });
+    }
+    if (rosterKindLayer === "set" && els.modelPicker) {
+      const modelTile = host.querySelector('[data-roster-kind-choice="model"]');
+      els.modelPicker.hidden = rosterKind !== "model" || Boolean(modelTile && modelTile.hidden);
+    }
+  }
+
+  function propShapeGroups(selected) {
+    const grouped = new Set(PROP_SHAPE_GROUPS.flatMap((group) => group.ids));
+    const rest = PROP_SHAPE_ORDER.filter((key) => !grouped.has(key));
+    return PROP_SHAPE_GROUPS.concat(rest.length ? [{ ja: "その他の形", ids: rest }] : [])
+      .map((group) => ({
+        ...group,
+        ids: group.ids.filter((key) => PROP_SHAPES[key]
+          && (RELEASE_FEATURES.propMask || key !== "mask" || selected === "mask")),
+      }))
+      .filter((group) => group.ids.length);
+  }
 
   function renderPropShapeSelect(select, value) {
     if (!select) return;
     const selected = PROP_SHAPES[value] ? value : "box";
     select.innerHTML = "";
-    PROP_SHAPE_ORDER.forEach((key) => {
-      const option = document.createElement("option");
-      option.value = key;
-      option.textContent = propShapeName(key);
-      select.append(option);
+    propShapeGroups(selected).forEach((group) => {
+      const optgroup = document.createElement("optgroup");
+      optgroup.label = tx(group.ja);
+      group.ids.forEach((key) => {
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = propShapeName(key);
+        optgroup.append(option);
+      });
+      select.append(optgroup);
     });
     select.value = selected;
   }
 
-  function syncRosterPropShape() {
-    if (!els.rosterPropShape) return;
-    const showing = rosterKind === "prop";
-    const before = els.rosterPropShape.value;
-    renderPropShapeSelect(els.rosterPropShape, before);
-    els.rosterPropShape.hidden = !showing;
-    const row = els.rosterPropShape.closest(".stage-roster-add");
-    if (row) row.classList.toggle("is-prop-shape", showing);
+  function renderRosterPropChoices() {
+    const host = els.rosterPropGrid;
+    if (!host) return;
+    host.innerHTML = "";
+    propShapeGroups(rosterPropShape).forEach((group) => {
+      const section = document.createElement("section");
+      section.className = "stage-prop-choice-group";
+      const heading = document.createElement("p");
+      heading.className = "stage-kind-field-title";
+      heading.textContent = tx(group.ja);
+      const grid = document.createElement("div");
+      grid.className = "stage-pose-grid stage-prop-choice-grid";
+      group.ids.forEach((shapeId) => {
+        const tile = document.createElement("button");
+        tile.type = "button";
+        tile.className = `stage-pose-tile${shapeId === rosterPropShape ? " is-on" : ""}`;
+        tile.dataset.rosterPropShape = shapeId;
+        tile.setAttribute("aria-pressed", String(shapeId === rosterPropShape));
+        const canvas = document.createElement("canvas");
+        canvas.width = 132;
+        canvas.height = 132;
+        const label = document.createElement("span");
+        label.textContent = propShapeName(shapeId);
+        tile.dataset.rosterSearch = `${label.textContent} ${shapeId} ${tx(group.ja)}`;
+        tile.append(canvas, label);
+        tile.addEventListener("click", () => {
+          rosterPropShape = shapeId;
+          syncRosterColorDefault();
+          setRosterTileSelection(host, "[data-roster-prop-shape]", tile);
+        });
+        tile.addEventListener("dblclick", (event) => {
+          event.preventDefault();
+          rosterPropShape = shapeId;
+          syncRosterColorDefault();
+          setRosterTileSelection(host, "[data-roster-prop-shape]", tile);
+          addFromRoster();
+        });
+        grid.append(tile);
+        drawKindPreview(canvas, "prop", "#8b98a1", shapeId);
+      });
+      section.append(heading, grid);
+      host.append(section);
+    });
+  }
+
+  function setRosterTileSelection(host, selector, selected) {
+    host.querySelectorAll(selector).forEach((tile) => {
+      const isSelected = tile === selected;
+      tile.classList.toggle("is-on", isSelected);
+      tile.setAttribute("aria-pressed", String(isSelected));
+    });
   }
 
   function renderModelPicker() {
@@ -13980,39 +17638,113 @@
     if (!models.length) {
       const option = document.createElement("option");
       option.value = "";
-      option.textContent = isEn() ? "Build a set first" : "先にセットを組んでください";
+      option.textContent = tx("先にセットを組んでください");
       els.modelPicker.append(option);
     }
   }
 
-  function openKindModal() {
-    if (!els.kindModal) return;
-    const grid = els.kindGrid;
+  function renderRosterPoseChoices() {
+    const grid = els.rosterPoseGrid;
+    if (!grid) return;
     grid.innerHTML = "";
-    ROSTER_KINDS.forEach((kind) => {
+    POSES.forEach((pose) => {
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = `stage-pose-tile${pose.id === rosterPose ? " is-on" : ""}`;
+      tile.dataset.rosterPose = pose.id;
+      tile.setAttribute("aria-pressed", String(pose.id === rosterPose));
+      const canvas = document.createElement("canvas");
+      canvas.width = 132;
+      canvas.height = 148;
+      const label = document.createElement("span");
+      label.textContent = poseName(pose);
+      tile.dataset.rosterSearch = `${label.textContent} ${pose.id}`;
+      tile.append(canvas, label);
+      tile.addEventListener("click", () => {
+        rosterPose = pose.id;
+        setRosterTileSelection(grid, "[data-roster-pose]", tile);
+      });
+      tile.addEventListener("dblclick", (event) => {
+        event.preventDefault();
+        rosterPose = pose.id;
+        setRosterTileSelection(grid, "[data-roster-pose]", tile);
+        addFromRoster();
+      });
+      grid.append(tile);
+      drawPosePreview(canvas, pose.id, nextPieceColor(state.project.cast.length));
+    });
+  }
+
+  function renderRosterSetChoices() {
+    const grid = els.kindGrid;
+    if (!grid) return;
+    grid.innerHTML = "";
+    ROSTER_KIND_LAYERS.set.forEach((kind) => {
       const tile = document.createElement("button");
       tile.type = "button";
       tile.className = `stage-pose-tile${kind === rosterKind ? " is-on" : ""}`;
+      tile.dataset.rosterKindChoice = kind;
+      tile.setAttribute("aria-pressed", String(kind === rosterKind));
       const canvas = document.createElement("canvas");
       canvas.width = 132;
       canvas.height = 132;
       const label = document.createElement("span");
-      label.textContent = kind === "performer" ? tx("演者") : setKindName(kind);
+      label.textContent = setKindName(kind);
+      const modelNames = kind === "model" ? stageModelLibrary().models.map((model) => model.name).join(" ") : "";
+      tile.dataset.rosterSearch = `${label.textContent} ${kind} ${modelNames}`;
       tile.append(canvas, label);
       tile.addEventListener("click", () => {
         rosterKind = kind;
-        if (els.rosterKindLabel) els.rosterKindLabel.textContent = label.textContent;
+        syncRosterColorDefault();
         renderModelPicker();
-        syncRosterPropShape();
-        closeKindModal();
-        if (kind === "model" && els.modelPicker) els.modelPicker.focus();
-        else if (els.rosterName) els.rosterName.focus();
+        setRosterTileSelection(grid, "[data-roster-kind-choice]", tile);
+      });
+      tile.addEventListener("dblclick", (event) => {
+        event.preventDefault();
+        rosterKind = kind;
+        syncRosterColorDefault();
+        renderModelPicker();
+        setRosterTileSelection(grid, "[data-roster-kind-choice]", tile);
+        addFromRoster();
       });
       grid.append(tile);
-      drawKindPreview(canvas, kind, kind === "performer" ? "#a84b26" : "#8b98a1");
+      drawKindPreview(canvas, kind, "#8b98a1");
     });
+  }
+
+  function renderRosterKindLayer() {
+    if (els.kindTitle) {
+      const labels = { performer: "演者", set: "大道具", prop: "小道具" };
+      els.kindTitle.textContent = tx(labels[rosterKindLayer] || "種類を選ぶ");
+    }
+    if (els.kindPerformerFields) els.kindPerformerFields.hidden = rosterKindLayer !== "performer";
+    if (els.kindSetFields) els.kindSetFields.hidden = rosterKindLayer !== "set";
+    if (els.kindPropFields) els.kindPropFields.hidden = rosterKindLayer !== "prop";
+    if (rosterKindLayer === "performer") renderRosterPoseChoices();
+    if (rosterKindLayer === "set") renderRosterSetChoices();
+    if (rosterKindLayer === "prop") renderRosterPropChoices();
+    renderModelPicker();
+    applyRosterSearch();
+  }
+
+  function openKindModal(layer) {
+    if (!els.kindModal || !ROSTER_KIND_LAYERS[layer]) return;
+    rosterKindLayer = layer;
+    if (layer === "performer") {
+      rosterKind = "performer";
+      rosterPose = "stand";
+    } else if (layer === "prop") {
+      rosterKind = "prop";
+    } else if (!ROSTER_KIND_LAYERS.set.includes(rosterKind)) {
+      rosterKind = ROSTER_KIND_LAYERS.set[0];
+    }
+    rosterColorTouched = false;
+    syncRosterColorDefault();
+    if (els.rosterSearch) els.rosterSearch.value = "";
+    renderRosterKindLayer();
     els.kindModal.hidden = false;
     els.kindBackdrop.hidden = false;
+    if (els.rosterName) els.rosterName.focus();
   }
 
   function closeKindModal() {
@@ -14022,15 +17754,17 @@
   }
 
   function openPoseModal() {
+    const performers = selectedPerformerPieces();
     const piece = selectedPiece();
-    if (!piece || piece.type !== "performer" || !els.poseModal) return;
+    if (!piece || !performers.length || performers.some((item) => mountKindOf(item)) || !els.poseModal) return;
     const grid = els.poseGrid;
     grid.innerHTML = "";
     POSES.forEach((pose) => {
+      const shared = performers.every((item) => item.pose === pose.id);
       const tile = document.createElement("button");
       tile.type = "button";
-      tile.className = `stage-pose-tile${pose.id === piece.pose ? " is-on" : ""}`;
-      tile.setAttribute("aria-pressed", String(pose.id === piece.pose));
+      tile.className = `stage-pose-tile${shared ? " is-on" : ""}`;
+      tile.setAttribute("aria-pressed", String(shared));
       const canvas = document.createElement("canvas");
       canvas.width = 132;
       canvas.height = 148;
@@ -14040,13 +17774,8 @@
       grid.append(tile);
       drawPosePreview(canvas, pose.id, piece.color);
       tile.addEventListener("click", () => {
-        checkpoint();
-        piece.pose = pose.id;
+        applyPoseToSelection(pose);
         closePoseModal();
-        updateInspector();
-        render();
-        persistSoon();
-        announce(`姿勢を「${poseName(pose)}」にしました。`);
       });
     });
     els.poseModal.hidden = false;
@@ -14110,11 +17839,11 @@
       makeId: (prefix) => prefix === "piece" ? nextId() : rid(prefix),
       normalizeDims,
       normalizePiece,
-      isEn: isEn(),
+      isEn: languageValue(() => true, () => false),
     });
     selectedId = created.length ? created[created.length - 1].piece.id : null;
     renderSets(); renderScenes(); updateInspector(); render(); persistSoon();
-    announce(`${isEn() ? preset.nameEn : preset.nameJa}を舞台へ置きました。`);
+    announce(`${languageValue(() => (preset.nameEn), () => (preset.nameJa))}を舞台へ置きました。`);
   }
 
   function renderMachineryPresets() {
@@ -14129,7 +17858,7 @@
       const button = document.createElement("button");
       button.type = "button";
       button.className = "btn-quiet";
-      button.textContent = isEn() ? (preset.nameEn || preset.nameJa) : preset.nameJa;
+      button.textContent = languageValue(() => (preset.nameEn || preset.nameJa), () => (preset.nameJa));
       button.title = preset.sourceNote || "";
       button.addEventListener("click", () => applyMachineryPreset(preset));
       const badge = document.createElement("span");
@@ -14171,9 +17900,7 @@
       /* 小道具を登録しに来て、この欄で迷った実例がある（2026-08-20）。
          ここは「組んだ立体」を残す欄で、一つずつの登録は「出るもの」の仕事。
          その分かれ道を、空のときだけ一行で示す。 */
-      empty.textContent = isEn()
-        ? "Nothing saved yet. Lay out the set, then save it under a name. To add a single prop or furniture piece, use \"Cast & set\"."
-        : "まだ残していません。並べ終えたら名前をつけて残してください。小道具や家具を一つずつ登録するのは「出るもの」からです。";
+      empty.textContent = tx("まだ残していません。並べ終えたら名前をつけて残してください。小道具や家具を一つずつ登録するのは「出るもの」からです。");
       els.rigList.append(empty);
       return;
     }
@@ -14357,6 +18084,7 @@
     els.setInfo.hidden = false;
     els.setInfoBackdrop.hidden = false;
     els.setInfoName.focus();
+    els.setInfoName.select();
   }
 
   function closeSetInfo() {
@@ -14381,6 +18109,7 @@
     els.profile.hidden = false;
     els.profileBackdrop.hidden = false;
     els.profileName.focus();
+    els.profileName.select();
   }
 
   function closeProfile() {
@@ -14530,23 +18259,24 @@
   }
 
   function sectionDurationText(seconds) {
-    if (seconds < 60) return isEn() ? `${Math.round(seconds)} sec` : `${Math.round(seconds)}秒`;
-    return isEn() ? `~${Math.round(seconds / 60)} min` : `約${Math.round(seconds / 60)}分`;
+    if (seconds < 60) return lang === "en" ? `${Math.round(seconds)} sec` : `${Math.round(seconds)}${tx("秒")}`;
+    return sx(`約${Math.round(seconds / 60)}分`, `~${Math.round(seconds / 60)} min`);
   }
 
   function sectionSummary(totals, place) {
     const showTime = featureOn("sceneTiming") && totals.seconds > 0;
     const duration = showTime ? sectionDurationText(totals.seconds) : "";
     if (place === "list") return showTime ? `${totals.scenes}・${duration}` : `${totals.scenes}`;
-    if (isEn()) {
+    return languageValue(() => {
       const scenes = `${totals.scenes} ${totals.scenes === 1 ? "scene" : "scenes"}`;
       if (!showTime) return scenes;
       return place === "title" ? `${scenes} · total ${duration}` : `${scenes} · ${duration}`;
-    }
-    if (!showTime) return `${totals.scenes}場面`;
-    return place === "title"
-      ? `${totals.scenes}場面・合計 ${duration}`
-      : `${totals.scenes}場面・${duration}`;
+    }, () => {
+      if (!showTime) return `${totals.scenes}場面`;
+      return place === "title"
+        ? `${totals.scenes}場面・合計 ${duration}`
+        : `${totals.scenes}場面・${duration}`;
+    });
   }
 
   // 畳んだセクションの中にいるか
@@ -14622,7 +18352,7 @@
 
     checkpoint();
     const count = list.filter((row) => row.kind === "section").length;
-    const section = newScene(isEn() ? `Section ${count + 1}` : `セクション ${count + 1}`,
+    const section = newScene(sx(`セクション ${count + 1}`, `Section ${count + 1}`),
       false, "section", depth);
     const sceneCount = chosen.filter((row) => row.kind === "scene").length;
     chosen.forEach((row) => { row.depth += 1; });
@@ -14687,6 +18417,156 @@
        * 深さごとの数え札を持ち、浅い所へ戻ったら深い側は捨てる。 */
       const sceneNumbers = sceneNumberMap(p.scenes);
       const sectionStack = [];
+
+      const makeRehearsalTimeInput = (ownerScene, labelJa, key) => {
+        const label = document.createElement("label");
+        const title = document.createElement("span");
+        title.textContent = tx(labelJa);
+        const value = document.createElement("span");
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = "0";
+        input.max = "86400";
+        input.step = "0.1";
+        input.inputMode = "decimal";
+        input.value = ownerScene.rehearsal && ownerScene.rehearsal[key] !== null
+          ? String(ownerScene.rehearsal[key]) : "";
+        input.setAttribute("aria-label", tx(`${labelJa}（秒）`));
+        input.addEventListener("input", () => {
+          if (!ownerScene.rehearsal) ownerScene.rehearsal = normalizeSceneRehearsal(null);
+          ownerScene.rehearsal[key] = rehearsalSeconds(input.value);
+          persistSoon();
+          if (els.rehearsalExportModal && !els.rehearsalExportModal.hidden) {
+            refreshRehearsalExport();
+          }
+        });
+        input.addEventListener("change", () => {
+          renderScenes();
+          renderSceneGrid();
+        });
+        value.append(input, document.createTextNode(` ${tx("秒")}`));
+        label.append(title, value);
+        return label;
+      };
+
+      /* 転換は到着側シーンのデータだが、UIでは二つのシーンの間へ置く。
+       * 選択中の上は「前→現在」、下は「現在→次」を同じ形で見せる。 */
+      const makeSceneTransitionFrame = (fromScene, toScene, position) => {
+        const frame = document.createElement("div");
+        frame.className = `stage-scene-transition is-${position}`;
+        frame.dataset.transitionFrom = fromScene.id;
+        frame.dataset.transitionTo = toScene.id;
+        frame.setAttribute("role", "group");
+        frame.setAttribute("aria-label", `${tx("転換")}: ${fromScene.title} → ${toScene.title}`);
+
+        const head = document.createElement("div");
+        head.className = "stage-scene-transition-head";
+        const kicker = document.createElement("span");
+        kicker.className = "stage-scene-transition-kicker";
+        kicker.textContent = tx("転換");
+        const route = document.createElement("span");
+        route.className = "stage-scene-transition-route";
+        route.textContent = `${fromScene.title} → ${toScene.title}`;
+        route.title = route.textContent;
+        head.append(kicker, route);
+
+        const controls = document.createElement("div");
+        controls.className = "stage-scene-transition-controls";
+        const cueLabel = document.createElement("label");
+        cueLabel.className = "stage-scene-transition-duration";
+        cueLabel.title = tx("空欄は上部のアニメ時間");
+        const cueTitle = document.createElement("span");
+        cueTitle.textContent = tx("転換の長さ");
+        const cueValue = document.createElement("span");
+        const cueInput = document.createElement("input");
+        cueInput.type = "number";
+        cueInput.min = "0.2";
+        cueInput.max = "10";
+        cueInput.step = "0.1";
+        cueInput.inputMode = "decimal";
+        cueInput.placeholder = "—";
+        cueInput.value = toScene.cueSeconds === null ? "" : String(toScene.cueSeconds);
+        cueInput.setAttribute(
+          "aria-label",
+          `${tx("転換の長さ（秒）")}: ${fromScene.title} → ${toScene.title}。${tx("空欄は上部のアニメ時間")}`,
+        );
+        cueInput.addEventListener("input", () => {
+          toScene.cueSeconds = normalizeCueSeconds(cueInput.value);
+          persistSoon();
+        });
+        cueValue.append(cueInput, document.createTextNode(` ${tx("秒")}`));
+        const sharedHint = document.createElement("span");
+        sharedHint.className = "stage-scene-transition-shared";
+        sharedHint.textContent = `${tx("空欄は上部のアニメ時間")} ${(state.sceneAnimMs / 1000).toFixed(1)}${tx("秒")}`;
+        cueLabel.append(cueTitle, cueValue, sharedHint);
+        controls.append(cueLabel);
+
+        if (featureOn("blackout")) {
+          const dark = document.createElement("label");
+          dark.className = "stage-canvas-toggle stage-scene-transition-blackout";
+          dark.title = tx("このシーンへの転換を、一度真っ暗にしてから明ける");
+          const darkBox = document.createElement("input");
+          darkBox.type = "checkbox";
+          darkBox.checked = Boolean(toScene.blackout);
+          darkBox.addEventListener("change", () => {
+            checkpoint();
+            toScene.blackout = darkBox.checked;
+            persistSoon();
+            announce(toScene.blackout ? "暗転で始まるシーンにしました。" : "暗転をやめました。");
+          });
+          const darkWord = document.createElement("span");
+          darkWord.textContent = tx("暗転");
+          dark.append(darkBox, darkWord);
+          controls.append(dark);
+        }
+
+        if (position === "outgoing" && featureOn("sceneTiming")) {
+          const movement = makeRehearsalTimeInput(
+            fromScene,
+            "次のシーンへの移動時間",
+            "transitionToNextSeconds",
+          );
+          movement.className = "stage-scene-transition-movement";
+          controls.append(movement);
+        }
+
+        const noteLabel = document.createElement("label");
+        noteLabel.className = "stage-scene-transition-note";
+        const noteTitle = document.createElement("span");
+        noteTitle.textContent = tx("転換メモ");
+        const noteInput = document.createElement("textarea");
+        noteInput.className = "stage-text-input";
+        noteInput.rows = 1;
+        noteInput.maxLength = 1000;
+        noteInput.value = toScene.transitionNote || "";
+        noteInput.placeholder = tx("演者・舞台セット・きっかけなど、この転換で行うこと");
+        noteInput.setAttribute(
+          "aria-label",
+          `${tx("転換メモ")}: ${fromScene.title} → ${toScene.title}`,
+        );
+        const growTransitionNote = (preserveCurrent = false) => {
+          const currentHeight = preserveCurrent ? noteInput.getBoundingClientRect().height : 0;
+          const computed = getComputedStyle(noteInput);
+          const borderHeight = parseFloat(computed.borderTopWidth) + parseFloat(computed.borderBottomWidth);
+          noteInput.style.height = "0px";
+          const contentHeight = noteInput.scrollHeight + borderHeight;
+          noteInput.style.height = `${Math.max(46, currentHeight, contentHeight)}px`;
+        };
+        noteInput.addEventListener("input", () => {
+          toScene.transitionNote = noteInput.value.slice(0, 1000);
+          growTransitionNote(true);
+          persistSoon();
+        });
+        noteLabel.append(noteTitle, noteInput);
+        requestAnimationFrame(() => {
+          growTransitionNote(false);
+          requestAnimationFrame(() => growTransitionNote(false));
+        });
+
+        frame.append(head, controls, noteLabel);
+        return frame;
+      };
+
       p.scenes.forEach((scene, i) => {
         const numberText = sceneNumbers.get(scene.id) || String(i + 1);
         sectionStack.length = scene.depth;
@@ -14699,6 +18579,7 @@
 
         const row = document.createElement("div");
         row.className = `stage-scene-row${isOpen ? " is-open" : ""}${scene.id === wrapPickStartId ? " is-wrap-start" : ""}`;
+        row.classList.toggle("is-cursor", isCursor);
         row.dataset.sceneId = scene.id;
         row.dataset.depth = String(scene.depth);
         // 左端に空ける溝。バーはこの中へ、行の高さいっぱいに敷く
@@ -14750,16 +18631,16 @@
           count.textContent = sectionSummary(totals, "list");
           count.title = sectionSummary(totals, "title");
         } else {
-          count.textContent = scene.beat && scene.beat.energy !== null
+          count.textContent = featureOn("sceneSubtitle") && scene.beat && scene.beat.energy !== null
             ? `E${scene.beat.energy}・${scene.pieces.length}` : `${scene.pieces.length}`;
         }
-        if (scene.kind === "scene" && scene.beat && scene.beat.energy !== null) {
+        if (scene.kind === "scene" && featureOn("sceneSubtitle")
+            && scene.beat && scene.beat.energy !== null) {
           count.title = `エネルギー ${scene.beat.energy}・配置 ${scene.pieces.length}`;
         }
 
         button.append(num, name, count);
-        /* 名前を直す入口は鉛筆。行そのものを入力欄にすると、
-         * 掴んで並べ替える手つきと取り合いになる（実際に効かなくなっていた）。 */
+        /* 名前はダブルクリックでも直せる。階層操作は常設せず補助メニューへまとめる。 */
         button.title = tx(scene.kind === "section" ? "押すと開閉します" : "押すと開きます");
         button.addEventListener("dblclick", (e) => {
           e.preventDefault();
@@ -14785,59 +18666,67 @@
           focusSceneChip(scene.id);
         });
         head.append(grip, button);
-        // 深さと名前の操作は選んでいる行にだけ。全行に出すと並びが読みにくくなる
-        if (isCursor && !wrapPickStartId) {
-          const outdent = document.createElement("button");
-          outdent.type = "button";
-          outdent.className = "stage-scene-outdent";
-          outdent.textContent = "⇤";
-          outdent.title = tx("一段外へ出す");
-          outdent.setAttribute("aria-label", outdent.title);
-          outdent.disabled = !canShiftSceneDepth(scene, -1);
-          outdent.addEventListener("click", (event) => {
-            event.stopPropagation();
-            shiftSceneDepth(scene, -1);
-          });
-          const indent = document.createElement("button");
-          indent.type = "button";
-          indent.className = "stage-scene-indent";
-          indent.textContent = "⇥";
-          indent.title = tx("一段内側へ入れる");
-          indent.setAttribute("aria-label", indent.title);
-          indent.disabled = !canShiftSceneDepth(scene, 1);
-          indent.addEventListener("click", (event) => {
-            event.stopPropagation();
-            shiftSceneDepth(scene, 1);
-          });
-          const pen = document.createElement("button");
-          pen.type = "button";
-          pen.className = "stage-scene-pen";
-          pen.textContent = "✎";
-          pen.title = tx("名前を変える");
-          pen.setAttribute("aria-label", isEn() ? `Rename ${scene.title}` : `${scene.title} の名前を変える`);
-          pen.addEventListener("click", (e) => { e.stopPropagation(); openRename(scene); });
-          head.append(outdent, indent, pen);
-          if (scene.kind === "scene") {
-            const wrap = document.createElement("button");
-            wrap.type = "button";
-            wrap.className = "stage-scene-wrap";
-            wrap.textContent = "⊂";
-            wrap.title = tx("ここから範囲をまとめて新しいセクションにする");
-            wrap.setAttribute("aria-label", wrap.title);
-            wrap.addEventListener("click", (event) => {
+        // セクションは開閉とダブルクリック編集だけに絞り、補助メニューを出さない。
+        if (isCursor && !wrapPickStartId && scene.kind === "scene") {
+          const more = document.createElement("details");
+          more.className = "stage-scene-more";
+          const summary = document.createElement("summary");
+          summary.textContent = "…";
+          summary.title = tx("その他のシーン操作");
+          summary.setAttribute("aria-label", summary.title);
+          const menu = document.createElement("div");
+          menu.className = "stage-scene-more-menu";
+          const menuButton = (label, action) => {
+            const item = document.createElement("button");
+            item.type = "button";
+            item.textContent = tx(label);
+            item.addEventListener("click", (event) => {
               event.stopPropagation();
-              beginWrapPick(scene.id);
+              more.open = false;
+              action();
             });
-            head.append(wrap);
-          }
+            menu.append(item);
+            return item;
+          };
+          const outdent = menuButton("一段外へ出す", () => shiftSceneDepth(scene, -1));
+          outdent.disabled = !canShiftSceneDepth(scene, -1);
+          const indent = menuButton("一段内側へ入れる", () => shiftSceneDepth(scene, 1));
+          indent.disabled = !canShiftSceneDepth(scene, 1);
+          menuButton("名前を変える", () => openRename(scene));
+          menuButton("ここから範囲をまとめて新しいセクションにする", () => beginWrapPick(scene.id));
+          more.append(summary, menu);
+          head.append(more);
         }
         row.append(bars, head);
+
+        if (RELEASE_FEATURES.formationSync && isCursor && scene.kind === "section" && !wrapPickStartId
+            && !document.body.classList.contains("is-public")) {
+          const entry = document.createElement("div");
+          entry.className = "stage-section-formation-entry";
+          if (formationSectionPlaybackItems(scene).length) {
+            const play = document.createElement("button");
+            play.type = "button";
+            play.className = "stage-minor-action stage-section-sync-play";
+            play.textContent = `▶ ${tx("舞台スケッチで再生")}`;
+            play.title = tx("このセクションの音楽とシーンを最初から再生");
+            play.addEventListener("click", () => { void playFormationSection(scene); });
+            entry.append(play);
+          }
+          const open = document.createElement("button");
+          open.type = "button"; open.className = "btn-quiet";
+          // この入口は、未作成・作成済みの区別ではなく、音源と動きを扱う別アプリを開く操作として示す。
+          open.textContent = tx("ミュージックシンクを開く");
+          open.title = tx("このセクションのミュージックシンクを開く");
+          open.addEventListener("click", () => openFormationModal(scene));
+          entry.append(open); row.append(entry);
+        }
 
         if (scene.kind === "scene" && scene.lightingIntent) {
           const lightSummary = document.createElement("div");
           lightSummary.className = "stage-scene-light-summary";
-          lightSummary.textContent = lightingIntentSummary(scene.lightingIntent, isEn(), 96);
-          lightSummary.title = lightingIntentSummary(scene.lightingIntent, isEn(), 220);
+          const useEnglish = languageValue(() => true, () => false);
+          lightSummary.textContent = lightingIntentSummary(scene.lightingIntent, useEnglish, 96);
+          lightSummary.title = lightingIntentSummary(scene.lightingIntent, useEnglish, 220);
           row.append(lightSummary);
         }
 
@@ -14847,7 +18736,7 @@
           const track = audioTrackById(scene.audioTrackId);
           musicSummary.textContent = track
             ? track.title
-            : (isEn() ? "Audio file needs reconnecting" : "音源の再接続が必要");
+            : (tx("音源の再接続が必要"));
           musicSummary.title = musicSummary.textContent;
           row.append(musicSummary);
         }
@@ -14857,7 +18746,8 @@
         if (isOpen && scene.kind === "scene") {
           const body = document.createElement("div");
           body.className = "stage-scene-body";
-          if (scene.beat && (scene.beat.role || scene.beat.energy !== null)) {
+          if (featureOn("sceneSubtitle") && scene.beat
+              && (scene.beat.role || scene.beat.energy !== null)) {
             const beat = document.createElement("div");
             beat.className = "stage-scene-beat";
             const energy = document.createElement("span");
@@ -14870,84 +18760,11 @@
           }
           const timing = document.createElement("div");
           timing.className = "stage-rehearsal-time-grid stage-scene-rehearsal-times";
-          const makeTimingInput = (labelJa, key) => {
-            const label = document.createElement("label");
-            const title = document.createElement("span");
-            title.textContent = tx(labelJa);
-            const value = document.createElement("span");
-            const input = document.createElement("input");
-            input.type = "number";
-            input.min = "0";
-            input.max = "86400";
-            input.step = "0.1";
-            input.inputMode = "decimal";
-            input.value = scene.rehearsal && scene.rehearsal[key] !== null
-              ? String(scene.rehearsal[key]) : "";
-            input.setAttribute("aria-label", tx(`${labelJa}（秒）`));
-            input.addEventListener("input", () => {
-              if (!scene.rehearsal) scene.rehearsal = normalizeSceneRehearsal(null);
-              scene.rehearsal[key] = rehearsalSeconds(input.value);
-              persistSoon();
-              if (els.rehearsalExportModal && !els.rehearsalExportModal.hidden) {
-                refreshRehearsalExport();
-              }
-            });
-            input.addEventListener("change", () => {
-              renderScenes();
-              renderSceneGrid();
-            });
-            const unit = document.createTextNode(` ${tx("秒")}`);
-            value.append(input, unit);
-            label.append(title, value);
-            return label;
-          };
-          const cueLabel = document.createElement("label");
-          cueLabel.title = tx("この場面へ入る転換の再生時間。空なら設定の共通値");
-          const cueTitle = document.createElement("span");
-          cueTitle.textContent = tx("転換の長さ");
-          const cueValue = document.createElement("span");
-          const cueInput = document.createElement("input");
-          cueInput.type = "number";
-          cueInput.min = "0.2";
-          cueInput.max = "10";
-          cueInput.step = "0.1";
-          cueInput.inputMode = "decimal";
-          cueInput.placeholder = tx("共通");
-          cueInput.value = scene.cueSeconds === null ? "" : String(scene.cueSeconds);
-          cueInput.setAttribute("aria-label", tx("転換の長さ（秒）"));
-          cueInput.addEventListener("input", () => {
-            scene.cueSeconds = normalizeCueSeconds(cueInput.value);
-            persistSoon();
-          });
-          cueValue.append(cueInput, document.createTextNode(` ${tx("秒")}`));
-          cueLabel.append(cueTitle, cueValue);
-          timing.append(cueLabel);
           if (featureOn("sceneTiming")) {
-            timing.append(
-              makeTimingInput("見せる時間", "holdDurationSeconds"),
-              makeTimingInput("次のシーンへの移動時間", "transitionToNextSeconds"),
-            );
-          }
-          if (featureOn("blackout")) {
-            const dark = document.createElement("label");
-            dark.className = "stage-canvas-toggle";
-            dark.title = tx("このシーンへの転換を、一度真っ暗にしてから明ける");
-            const darkBox = document.createElement("input");
-            darkBox.type = "checkbox";
-            darkBox.checked = Boolean(scene.blackout);
-            darkBox.addEventListener("change", () => {
-              checkpoint();
-              scene.blackout = darkBox.checked;
-              persistSoon();
-              announce(scene.blackout ? "暗転で始まるシーンにしました。" : "暗転をやめました。");
-            });
-            const darkWord = document.createElement("span");
-            darkWord.textContent = tx("暗転");
-            dark.append(darkBox, darkWord);
-            timing.append(dark);
+            timing.append(makeRehearsalTimeInput(scene, "見せる時間", "holdDurationSeconds"));
           }
           const note = document.createElement("textarea");
-          note.className = "stage-text-input";
+          note.className = "stage-text-input stage-scene-note";
           note.rows = 2;
           note.maxLength = 200;
           note.value = scene.note || "";
@@ -14956,8 +18773,16 @@
           /* 開いているのがいまの場面なら、絵の上の欄と対になる。
              片方を打ったときに、もう片方だけを書き換えるための目印。 */
           if (scene.id === state.project.activeSceneId) note.id = "stage-scene-note-input";
+          const growNote = (preserveCurrent = false) => {
+            const currentHeight = preserveCurrent ? note.getBoundingClientRect().height : 0;
+            const borderHeight = Math.max(0, note.offsetHeight - note.clientHeight);
+            note.style.height = "0px";
+            const contentHeight = note.scrollHeight + borderHeight;
+            note.style.height = `${Math.ceil(Math.max(46, currentHeight, contentHeight))}px`;
+          };
           note.addEventListener("input", () => {
             scene.note = note.value.slice(0, 200);
+            growNote(true);
             // 絵の上の「シーンの説明」も打ちながら追いかける
             if (scene.id === state.project.activeSceneId) {
               syncSceneDesc();
@@ -14965,49 +18790,60 @@
             }
             persistSoon();
           });
+          const nextRow = document.createElement("div");
+          nextRow.className = "stage-scene-next-row";
           const apply = document.createElement("button");
           apply.type = "button";
           apply.className = "btn-quiet stage-scene-apply";
-          apply.textContent = tm("misc", "applyRoute", "動線の先へ動かしたシーンを作る");
-          apply.title = tx("このシーンを写し、動線を引いた演者を行き先へ移したシーンを次に作ります");
-          apply.disabled = !(scene.pieces || []).some((piece) => piece.route);
-          apply.addEventListener("click", () => applyRoutes(scene));
-          /* 逆向きの操作。次のシーンで動かしてあるものから動線を起こす。
-             次のシーンが無ければ押せない（押しても何も起きない札を出さない）。 */
-          const derive = document.createElement("button");
-          derive.type = "button";
-          derive.className = "btn-quiet stage-scene-apply";
-          derive.textContent = tm("misc", "deriveRoute", "次のシーンとの差から動線を引く");
-          derive.title = tx("次のシーンで動いているものに、いまの位置から行き先までの動線を引きます");
-          const nextScene = nextSceneOf(scene);
-          derive.disabled = !nextScene
-            || (!movedPairs(scene, nextScene).length && !exitPieces(scene, nextScene).length);
-          derive.addEventListener("click", () => deriveRoutes(scene));
+          apply.textContent = tx("次のシーンをつくる");
+          apply.title = tx("まっさらなシーン、または現在のシーンから引き継いだシーンを次に作ります");
+          apply.addEventListener("click", () => openSceneCreate(scene, apply));
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "btn-quiet stage-scene-row-delete";
+          remove.textContent = "✕";
+          remove.title = tx("このシーンを削除");
+          remove.setAttribute("aria-label", tx("このシーンを削除"));
+          remove.disabled = state.project.scenes.filter((row) => row.kind === "scene").length <= 1;
+          remove.addEventListener("click", () => openSceneDelete(scene, remove));
+          nextRow.append(apply, remove);
           if (timing.childElementCount) body.append(timing);
-          body.append(note, apply, derive);
+          body.append(note, nextRow);
           row.append(body);
+          /* 行をDOMへ置き、幅と折り返しが確定した後に全文の高さを測る。
+             次のフレームでもう一度測り、フォント適用直後の高さ差も拾う。 */
+          requestAnimationFrame(() => {
+            growNote(false);
+            requestAnimationFrame(() => growNote(false));
+          });
+        }
+        if (isOpen && featureOn("sceneTransitions")) {
+          const previous = previousSceneOf(scene);
+          if (previous) els.sceneList.append(makeSceneTransitionFrame(previous, scene, "incoming"));
         }
         els.sceneList.append(row);
+        if (isOpen && featureOn("sceneTransitions")) {
+          const next = nextSceneOf(scene);
+          if (next) els.sceneList.append(makeSceneTransitionFrame(scene, next, "outgoing"));
+        }
       });
       linkSceneBars();
     }
+    if (els.planDeriveRoute) {
+      const current = sc();
+      const next = nextSceneOf(current);
+      els.planDeriveRoute.disabled = !next
+        || (!movedPairs(current, next).length && !exitPieces(current, next).length);
+    }
     if (els.projectTitle && document.activeElement !== els.projectTitle) els.projectTitle.value = p.title;
     if (els.versionLabel && document.activeElement !== els.versionLabel) els.versionLabel.value = p.versionLabel;
+    syncProjectSummary();
     if (els.versionNote) {
       els.versionNote.textContent = p.parentVersionId
-        ? (isEn() ? `${p.branchReason || "Duplicated as another version"} (derived from an earlier version)`
-          : `${p.branchReason || "別バージョンとして複製"}（元の版から派生）`)
-        : (isEn() ? "The first version of this show." : "このショーの最初の版です。");
+        ? (sx(`${p.branchReason || "別バージョンとして複製"}（元の版から派生）`, `${p.branchReason || "Duplicated as another version"} (derived from an earlier version)`))
+        : (tx("このショーの最初の版です。"));
     }
     const idx = cursorIndex();
-    if (els.sceneDel) els.sceneDel.disabled = p.scenes.filter((x) => x.kind === "scene").length <= 1;
-    if (els.sceneFoldAll) {
-      const sections = p.scenes.filter((row) => row.kind === "section");
-      const hasOpen = sections.some((section) => !state.closedSections[section.id]);
-      els.sceneFoldAll.hidden = sections.length === 0;
-      els.sceneFoldAll.textContent = tx(hasOpen ? "▸ 畳む" : "▾ 開く");
-      els.sceneFoldAll.title = tx(hasOpen ? "セクションをすべて畳む" : "セクションをすべて開く");
-    }
     renderSceneStudy();
     syncSceneBar();
     syncTabletSceneBar();
@@ -15094,9 +18930,7 @@
       const card = document.createElement("button");
       card.type = "button";
       card.className = `stage-scene-grid-card${scene.id === state.project.activeSceneId ? " is-current" : ""}`;
-      card.setAttribute("aria-label", isEn()
-        ? `Open ${numberText} ${scene.title}, ${scene.pieces.length} placed`
-        : `${numberText} ${scene.title}、配置 ${scene.pieces.length}、開く`);
+      card.setAttribute("aria-label", sx(`${numberText} ${scene.title}、配置 ${scene.pieces.length}、開く`, `Open ${numberText} ${scene.title}, ${scene.pieces.length} placed`));
       card.addEventListener("click", () => {
         openScene(scene.id);
         closeSceneGrid();
@@ -15114,7 +18948,7 @@
       const title = document.createElement("strong");
       title.textContent = `${scene.studyBeatId || numberText} ${scene.title}`.trim();
       const count = document.createElement("span");
-      count.textContent = isEn() ? `${scene.pieces.length} placed` : `配置 ${scene.pieces.length}`;
+      count.textContent = sx(`配置 ${scene.pieces.length}`, `${scene.pieces.length} placed`);
       caption.append(title, count);
       card.append(picture, caption);
       els.sceneGrid.append(card);
@@ -15153,7 +18987,7 @@
     if (jobs.length) sceneGridFrame = requestAnimationFrame(drawChunk);
   }
 
-  // カードの列幅。プレゼン字幕サイズと同じく prefs に覚えさせる
+  // カードの列幅。全画面字幕サイズと同じく prefs に覚えさせる
   function applySceneGridSize() {
     const size = clamp(finite(prefs.sceneGridSize, 220), 150, 420);
     if (els.sceneGrid) els.sceneGrid.style.setProperty("--scene-grid-size", `${size}px`);
@@ -15174,6 +19008,166 @@
     if (els.reachModal) els.reachModal.hidden = true;
     if (els.reachBackdrop) els.reachBackdrop.hidden = true;
     if (els.reachOpen) els.reachOpen.focus();
+  }
+
+  const sceneCreateGroup = (piece) => (piece && piece.type === "performer"
+    ? "performer"
+    : (piece && piece.type === "light"
+      ? "light"
+      : (piece && piece.type === "prop" ? "prop" : "set")));
+
+  function sceneCreateGroupLabel(group) {
+    if (group === "performer") return tx("すべての演者");
+    if (group === "prop") return tx("すべての小道具");
+    if (group === "light") return tx("すべての照明");
+    return tx("すべての舞台セット");
+  }
+
+  function sceneCreateGroupIcon(group) {
+    const icons = {
+      performer: '<circle cx="12" cy="7" r="3"></circle><path d="M5 21v-2a7 7 0 0 1 14 0v2M12 10v6M8.5 13h7"></path>',
+      set: '<path d="m4 8 8-4 8 4-8 4-8-4Zm0 0v8l8 4 8-4V8M12 12v8"></path>',
+      prop: '<rect x="4" y="8" width="16" height="11" rx="1"></rect><path d="M9 8V5h6v3M8 12v3M16 12v3M4 13h16"></path>',
+      light: '<path d="M8 4h8l-1 8H9L8 4Zm4 8v5M8 20h8M4 7H2M22 7h-2M5 2 3.5.5M19 2l1.5-1.5"></path>',
+    };
+    const icon = document.createElement("span");
+    icon.className = "stage-scene-create-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">${icons[group] || icons.set}</svg>`;
+    return icon;
+  }
+
+  function sceneCreateSourceScene() {
+    return sceneCreateSourceId
+      ? state.project.scenes.find((row) => row.id === sceneCreateSourceId && row.kind === "scene")
+      : null;
+  }
+
+  function syncSceneCreateSelection() {
+    const source = sceneCreateSourceScene();
+    const pieces = source ? (source.pieces || []) : [];
+    sceneCreateItemInputs.forEach((input, id) => { input.checked = sceneCreateSelection.has(id); });
+    sceneCreateGroupInputs.forEach((input, group) => {
+      const groupPieces = pieces.filter((piece) => sceneCreateGroup(piece) === group);
+      const checked = groupPieces.filter((piece) => sceneCreateSelection.has(piece.id)).length;
+      input.checked = Boolean(groupPieces.length) && checked === groupPieces.length;
+      input.indeterminate = checked > 0 && checked < groupPieces.length;
+    });
+    if (els.sceneCreateCount) {
+      els.sceneCreateCount.textContent = sx(
+        `${sceneCreateSelection.size} / ${pieces.length} 選択中`,
+        `${sceneCreateSelection.size} / ${pieces.length} selected`,
+      );
+    }
+    if (els.sceneCreateSubmit) {
+      els.sceneCreateSubmit.disabled = !sceneCreateMode
+        || (sceneCreateMode === "inherit" && sceneCreateSelection.size < 1);
+    }
+  }
+
+  function renderSceneCreateList() {
+    if (!els.sceneCreateList) return;
+    els.sceneCreateList.innerHTML = "";
+    sceneCreateGroupInputs.clear();
+    sceneCreateItemInputs.clear();
+    const source = sceneCreateSourceScene();
+    const pieces = source ? (source.pieces || []) : [];
+    ["performer", "set", "prop", "light"].forEach((group) => {
+      const members = pieces.filter((piece) => sceneCreateGroup(piece) === group);
+      if (!members.length) return;
+      const block = document.createElement("section");
+      block.className = "stage-scene-create-group";
+      const heading = document.createElement("label");
+      heading.className = "stage-scene-create-group-head";
+      const groupInput = document.createElement("input");
+      groupInput.type = "checkbox";
+      groupInput.addEventListener("change", () => {
+        members.forEach((piece) => {
+          if (groupInput.checked) sceneCreateSelection.add(piece.id);
+          else sceneCreateSelection.delete(piece.id);
+        });
+        syncSceneCreateSelection();
+      });
+      sceneCreateGroupInputs.set(group, groupInput);
+      const title = document.createElement("strong");
+      title.textContent = sceneCreateGroupLabel(group);
+      const total = document.createElement("small");
+      total.textContent = sx(`${members.length}点`, `${members.length} items`);
+      heading.append(groupInput, sceneCreateGroupIcon(group), title, total);
+      const list = document.createElement("div");
+      list.className = "stage-scene-create-items";
+      members.forEach((piece) => {
+        const row = document.createElement("label");
+        row.className = "stage-scene-create-item";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.value = piece.id;
+        input.addEventListener("change", () => {
+          if (input.checked) sceneCreateSelection.add(piece.id);
+          else sceneCreateSelection.delete(piece.id);
+          syncSceneCreateSelection();
+        });
+        sceneCreateItemInputs.set(piece.id, input);
+        const words = document.createElement("span");
+        const name = document.createElement("strong");
+        name.textContent = pieceLabel(piece);
+        const kind = document.createElement("small");
+        kind.textContent = piece.route
+          ? sx(`${pieceTypeName(piece.type)}・動線の先へ移動`, `${pieceTypeName(piece.type)} · moves to route end`)
+          : pieceTypeName(piece.type);
+        words.append(name, kind);
+        row.append(input, sceneCreateGroupIcon(group), words);
+        list.append(row);
+      });
+      block.append(heading, list);
+      els.sceneCreateList.append(block);
+    });
+    syncSceneCreateSelection();
+  }
+
+  function setSceneCreateMode(mode) {
+    sceneCreateMode = mode === "inherit" ? "inherit" : (mode === "blank" ? "blank" : null);
+    if (els.sceneCreateBlank) els.sceneCreateBlank.checked = sceneCreateMode === "blank";
+    if (els.sceneCreateInherit) els.sceneCreateInherit.checked = sceneCreateMode === "inherit";
+    if (els.sceneCreateInheritOptions) els.sceneCreateInheritOptions.hidden = sceneCreateMode !== "inherit";
+    syncSceneCreateSelection();
+  }
+
+  function openSceneCreate(scene, returnFocus) {
+    if (!scene || scene.kind !== "scene" || !els.sceneCreateModal || !els.sceneCreateBackdrop) return;
+    sceneCreateSourceId = scene.id;
+    sceneCreateMode = null;
+    sceneCreateReturnFocus = returnFocus || null;
+    sceneCreateSelection.clear();
+    (scene.pieces || []).forEach((piece) => sceneCreateSelection.add(piece.id));
+    if (els.sceneCreateSource) {
+      els.sceneCreateSource.textContent = sx(
+        `「${scene.title}」の次に作ります。`,
+        `The new scene will follow “${scene.title}”.`,
+      );
+    }
+    const hasPieces = Boolean((scene.pieces || []).length);
+    if (els.sceneCreateInherit) els.sceneCreateInherit.disabled = !hasPieces;
+    if (els.sceneCreateMoveRoutes) els.sceneCreateMoveRoutes.checked = true;
+    renderSceneCreateList();
+    setSceneCreateMode(hasPieces ? "inherit" : "blank");
+    els.sceneCreateModal.hidden = false;
+    els.sceneCreateBackdrop.hidden = false;
+    const initialChoice = hasPieces ? els.sceneCreateInherit : els.sceneCreateBlank;
+    if (initialChoice) initialChoice.focus();
+  }
+
+  function closeSceneCreate() {
+    if (els.sceneCreateModal) els.sceneCreateModal.hidden = true;
+    if (els.sceneCreateBackdrop) els.sceneCreateBackdrop.hidden = true;
+    const target = sceneCreateReturnFocus;
+    sceneCreateSourceId = null;
+    sceneCreateMode = null;
+    sceneCreateReturnFocus = null;
+    sceneCreateSelection.clear();
+    sceneCreateGroupInputs.clear();
+    sceneCreateItemInputs.clear();
+    if (target && target.isConnected && typeof target.focus === "function") target.focus();
   }
 
   function openSceneGrid() {
@@ -15205,12 +19199,38 @@
   /* 名前を変える小窓。場面にもセクションにも同じものを使う。 */
   let renameTarget = null;
 
+  function updateRenameColorSummary(scene) {
+    if (!scene || scene.kind !== "section") return;
+    const explicitIndex = SECTION_COLORS.indexOf(scene.color);
+    const label = explicitIndex < 0 ? "自動" : `色 ${explicitIndex + 1}`;
+    if (els.renameColorPreview) els.renameColorPreview.style.backgroundColor = sectionColor(scene);
+    if (els.renameColorValue) els.renameColorValue.textContent = tx(label);
+    if (els.renameColorSummary) {
+      els.renameColorSummary.setAttribute("aria-label", `${tx("色を選ぶ")}: ${tx(label)}`);
+    }
+  }
+
   function openRename(scene) {
     if (!scene || !els.rename) return;
     renameTarget = scene;
-    els.renameTitle.textContent = tx(scene.kind === "section" ? "セクションの名前と色" : "シーンの名前");
+    els.renameTitle.textContent = tx(scene.kind === "section" ? "セクションの詳細" : "シーンの詳細");
     els.renameInput.value = scene.title;
+    if (els.renameSectionFields) els.renameSectionFields.hidden = scene.kind !== "section";
+    if (els.renameSectionNote) els.renameSectionNote.value = scene.kind === "section"
+      ? String(scene.note || "").slice(0, 2000) : "";
+    if (els.renameSceneFields) els.renameSceneFields.hidden = scene.kind !== "scene";
+    if (els.renameSubtitle) els.renameSubtitle.value = scene.kind === "scene"
+      ? normalizeBeat(scene.beat).role : "";
+    if (els.renameEnergy) {
+      const energy = scene.kind === "scene" ? normalizeBeat(scene.beat).energy : null;
+      els.renameEnergy.value = energy === null ? "" : String(energy);
+    }
+    if (els.renameOk) {
+      els.renameOk.textContent = tx(scene.kind === "section" ? "保存する" : "変更を保存");
+    }
     if (els.renameColors) els.renameColors.hidden = scene.kind !== "section";
+    if (els.renameColorPicker) els.renameColorPicker.open = false;
+    if (els.renameDelete) els.renameDelete.hidden = scene.kind !== "section";
     if (els.renameSwatches) {
       els.renameSwatches.innerHTML = "";
       if (scene.kind === "section") {
@@ -15236,12 +19256,15 @@
             els.renameSwatches.querySelectorAll(".stage-rename-swatch").forEach((button) => {
               button.setAttribute("aria-pressed", String(button === swatch));
             });
+            updateRenameColorSummary(renameTarget);
+            if (els.renameColorPicker) els.renameColorPicker.open = false;
             renderScenes();
             renderSceneGrid();
             persistSoon();
           });
           els.renameSwatches.append(swatch);
         });
+        updateRenameColorSummary(scene);
       }
     }
     els.rename.hidden = false;
@@ -15260,22 +19283,63 @@
   function commitRename() {
     if (!renameTarget) return;
     const next = els.renameInput.value.trim().slice(0, 40);
-    if (next && next !== renameTarget.title) {
+    const titleChanged = Boolean(next && next !== renameTarget.title);
+    const currentBeat = normalizeBeat(renameTarget.beat);
+    const nextBeat = renameTarget.kind === "scene" ? normalizeBeat({
+      role: els.renameSubtitle ? els.renameSubtitle.value.trim().slice(0, 160) : currentBeat.role,
+      energy: els.renameEnergy && els.renameEnergy.value ? Number(els.renameEnergy.value) : null,
+    }) : currentBeat;
+    const beatChanged = renameTarget.kind === "scene"
+      && (nextBeat.role !== currentBeat.role || nextBeat.energy !== currentBeat.energy);
+    const currentSectionNote = renameTarget.kind === "section" ? String(renameTarget.note || "") : "";
+    const nextSectionNote = renameTarget.kind === "section" && els.renameSectionNote
+      ? els.renameSectionNote.value.slice(0, 2000) : currentSectionNote;
+    const sectionNoteChanged = renameTarget.kind === "section" && nextSectionNote !== currentSectionNote;
+    if (titleChanged || beatChanged || sectionNoteChanged) {
       checkpoint();
-      renameTarget.title = next;
+      if (titleChanged) renameTarget.title = next;
+      if (beatChanged) renameTarget.beat = nextBeat;
+      if (sectionNoteChanged) renameTarget.note = nextSectionNote;
       renderScenes();
+      renderSceneGrid();
       persistSoon();
     }
     closeRename();
   }
 
   if (els.renameOk) els.renameOk.addEventListener("click", commitRename);
+  if (els.renameDelete) {
+    els.renameDelete.addEventListener("click", () => {
+      if (!renameTarget || renameTarget.kind !== "section") return;
+      const target = renameTarget;
+      closeRename();
+      openSceneDelete(target);
+    });
+  }
   if (els.renameClose) els.renameClose.addEventListener("click", closeRename);
   if (els.renameBackdrop) els.renameBackdrop.addEventListener("click", closeRename);
   if (els.renameInput) {
     els.renameInput.addEventListener("keydown", (e) => {
       e.stopPropagation();
       if (e.key === "Enter") { e.preventDefault(); commitRename(); }
+      if (e.key === "Escape") { e.preventDefault(); closeRename(); }
+    });
+  }
+  [els.renameSubtitle, els.renameEnergy].forEach((field) => {
+    if (!field) return;
+    field.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); commitRename(); }
+      if (e.key === "Escape") { e.preventDefault(); closeRename(); }
+    });
+  });
+  if (els.renameSectionNote) {
+    els.renameSectionNote.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !e.isComposing) {
+        e.preventDefault();
+        commitRename();
+      }
       if (e.key === "Escape") { e.preventDefault(); closeRename(); }
     });
   }
@@ -15315,7 +19379,7 @@
   function beginSceneDrag(id, row, ev) {
     const list = state.project.scenes;
     const i = list.findIndex((x) => x.id === id);
-    if (i < 0) return;
+    if (i < 0) return false;
     const rect = row.getBoundingClientRect();
     const hole = document.createElement("div");
     hole.className = "stage-scene-hole";
@@ -15860,10 +19924,13 @@
      残りは道具ではない決まったキー。押す場所が要るものは、そう書いておく。 */
   const FIXED_KEYS = [
     ["シーンを送る", "↑ ↓ ← →"],
+    ["全画面", "F"],
+    ["正面と平面を入れ替える", "X"],
+    ["ショーを書き出す", "⌘S"],
     ["一つ戻す", "⌘Z"],
     ["やり直す", "⇧⌘Z"],
     ["選んだものを消す", "Delete"],
-    ["窓を閉じる・プレゼンを終える", "Esc"],
+    ["窓を閉じる・全画面を終了", "Esc"],
   ];
 
   function renderPrefKeys() {
@@ -15892,16 +19959,50 @@
     });
     const note = document.createElement("p");
     note.className = "stage-pref-hint";
-    note.textContent = tx("文字を打っている最中は効きません。WindowsとLinuxでは⌘をCtrlに読み替えてください。");
+    note.textContent = tx("文字入力中も⌘Sは使えます。ほかの舞台操作は、文字入力を優先します。WindowsとLinuxでは⌘をCtrlに読み替えてください。");
     host.append(note);
+  }
+
+  /* 環境設定の「？」。通常時は設定名だけを読み、「？」を押した時だけ
+     説明を開く。タップ・マウス・キーボードで同じ開閉状態を使い、説明を
+     常時表示して項目ごとの高さを増やさない。 */
+  let prefHelpSequence = 0;
+  function prefHelp(root, label, text, hint) {
+    const hintId = `stage-pref-help-${++prefHelpSequence}`;
+    hint.id = hintId;
+    hint.setAttribute("aria-hidden", "true");
+    const help = document.createElement("button");
+    help.type = "button";
+    help.className = "stage-pref-help";
+    help.textContent = "?";
+    help.setAttribute("aria-label", `${tx(label)}: ${tx("説明")}`);
+    help.setAttribute("aria-controls", hintId);
+    help.setAttribute("aria-expanded", "false");
+    help.addEventListener("click", () => {
+      const open = help.getAttribute("aria-expanded") !== "true";
+      root.classList.toggle("is-help-open", open);
+      help.setAttribute("aria-expanded", String(open));
+      hint.setAttribute("aria-hidden", String(!open));
+    });
+    help.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      root.classList.remove("is-help-open");
+      help.setAttribute("aria-expanded", "false");
+      hint.setAttribute("aria-hidden", "true");
+      event.preventDefault();
+    });
+    return help;
   }
 
   /* 環境設定の一行。パネルのオン/オフも機能のオン/オフも同じ形なので、
      組み立ては一箇所で持つ（片方だけ手触りが変わるのを避ける）。 */
   function prefRow(f) {
     const isCaption = f.key === "presentCaption";
-    const row = document.createElement(isCaption ? "div" : "label");
+    const row = document.createElement("div");
     row.className = "stage-pref-row";
+    // ? はチェックを切り替えるためのラベルの外に置く（押し間違いを防ぐ）。
+    const toggle = document.createElement(isCaption ? "div" : "label");
+    toggle.className = "stage-pref-toggle";
     const box = document.createElement("input");
     box.type = "checkbox";
     if (isCaption) box.id = "stage-pref-present-caption";
@@ -15916,7 +20017,8 @@
       render();
       announce(box.checked ? `設定「${f.label}」をONにしました。` : `設定「${f.label}」をOFFにしました。`);
     });
-    const body = document.createElement("span");
+    const body = document.createElement("div");
+    body.className = "stage-pref-toggle-body";
     const name = document.createElement(isCaption ? "label" : "span");
     name.className = "stage-pref-name";
     if (isCaption) name.htmlFor = box.id;
@@ -15924,7 +20026,7 @@
     const hint = document.createElement("p");
     hint.className = "stage-pref-hint";
     hint.textContent = tx(f.hint);
-    body.append(name, hint);
+    body.append(name);
     if (isCaption) {
       const sizeRow = document.createElement("span");
       sizeRow.className = "stage-pref-caption-size";
@@ -15955,8 +20057,99 @@
       });
       body.append(sizeRow);
     }
-    row.append(box, body);
+    toggle.append(box, body);
+    row.append(toggle, prefHelp(row, f.label, f.hint, hint), hint);
     return row;
+  }
+
+  function prefSelectRow(label, value, options, hint, onChange) {
+    const row = document.createElement("div");
+    row.className = "stage-pref-row stage-pref-layout-row";
+    const body = document.createElement("label");
+    body.className = "stage-pref-toggle-body";
+    const name = document.createElement("span");
+    name.className = "stage-pref-name";
+    name.textContent = tx(label);
+    const select = document.createElement("select");
+    select.className = "stage-pref-layout-select";
+    select.setAttribute("aria-label", tx(label));
+    options.forEach(([optionValue, optionLabel]) => {
+      const option = document.createElement("option");
+      option.value = optionValue;
+      option.textContent = tx(optionLabel);
+      option.selected = optionValue === value;
+      select.append(option);
+    });
+    select.addEventListener("change", () => onChange(select.value));
+    const note = document.createElement("p");
+    note.className = "stage-pref-hint";
+    note.textContent = tx(hint);
+    body.append(name, select);
+    row.append(body, prefHelp(row, label, hint, note), note);
+    return row;
+  }
+
+  function panelLayoutPrefsGroup() {
+    const nativeTablet = window.SHOSAI_TABLET_PWA === true;
+    const hintText = nativeTablet
+      ? "このiPad PWAでは常に有効です。"
+      : "2列表示では左右に分け、1列表示では全パネルを一方の列へ並べます。";
+    const section = prefGroup("パネルの表示スタイル", hintText);
+    const definitions = workspaceModeDefinitions();
+    definitions.forEach((definition) => {
+      const options = [["split", "2列表示"], ["single-left", "1列・左"], ["single-right", "1列・右"]];
+      if (definition.key === "normal") options.push(["ipad", "iPad表示モード"]);
+      const value = definition.key === "normal" && tabletUi
+        ? "ipad"
+        : (panelLayoutMode(definition.key) === "single"
+          ? `single-${panelSingleSide(definition.key)}`
+          : "split");
+      const row = prefSelectRow(definition.label, value, options, hintText, (next) => {
+        if (nativeTablet) return;
+        if (definition.key === "normal" && next === "ipad") {
+          prefs.tabletMode = true;
+          savePrefs();
+          window.setTimeout(() => window.location.reload(), 80);
+          return;
+        }
+        const nextLayout = next === "single-left" || next === "single-right" ? "single" : "split";
+        const nextSide = next === "single-right" ? "right" : "left";
+        if (definition.key === "normal") {
+          prefs.tabletMode = false;
+          prefs.panelLayoutMode = nextLayout;
+          if (nextLayout === "single") prefs.panelSingleSide = nextSide;
+        }
+        prefs.panelLayoutByWorkspace = {
+          ...(prefs.panelLayoutByWorkspace && typeof prefs.panelLayoutByWorkspace === "object"
+            ? prefs.panelLayoutByWorkspace : {}),
+          [definition.key]: nextLayout,
+        };
+        if (nextLayout === "single") {
+          prefs.panelSingleSideByWorkspace = {
+            ...(prefs.panelSingleSideByWorkspace && typeof prefs.panelSingleSideByWorkspace === "object"
+              ? prefs.panelSingleSideByWorkspace : {}),
+            [definition.key]: nextSide,
+          };
+        }
+        savePrefs();
+        if (tabletUi && definition.key === "normal") {
+          window.setTimeout(() => window.location.reload(), 80);
+          return;
+        }
+        if (definition.key === currentWorkspaceMode()) {
+          applyLayout();
+          syncPanelWidths();
+        }
+        renderPrefs();
+      });
+      const select = row.querySelector("select");
+      if (select) {
+        select.dataset.stageWorkspacePanelLayout = definition.key;
+        if (nativeTablet) select.disabled = true;
+      }
+      section.grid.append(row);
+    });
+    return section.group;
   }
 
   /* 一群ぶんの器。見出し・添え書き・二列の枠を返す */
@@ -15966,12 +20159,17 @@
     const head = document.createElement("h3");
     head.className = "stage-pref-group-title";
     head.textContent = tx(title);
-    group.append(head);
     if (lead) {
+      const headRow = document.createElement("div");
+      headRow.className = "stage-pref-group-head";
+      headRow.append(head);
       const note = document.createElement("p");
       note.className = "stage-pref-group-hint";
       note.textContent = tx(lead);
-      group.append(note);
+      headRow.append(prefHelp(group, title, lead, note));
+      group.append(headRow, note);
+    } else {
+      group.append(head);
     }
     const grid = document.createElement("div");
     grid.className = "stage-pref-grid";
@@ -15986,30 +20184,13 @@
     const host = els.prefsList;
     if (!host) return;
     host.innerHTML = "";
-    // パネルのオン/オフはPCの三列UIの話。iPad・スマホでは出さない
-    if (!tabletUi && !phoneViewerActive) {
-      const panels = prefGroup("パネルのオン/オフ",
-        "左の列に並べる欄です。OFFにしても、そこで作った内容は消えません。");
-      PANEL_FEATURES.forEach((f) => { panels.grid.append(prefRow(f)); });
-      host.append(panels.group);
-    }
+    if (!phoneViewerActive) host.append(panelLayoutPrefsGroup());
     const features = prefGroup("機能のオン/オフ", "");
     FEATURES.forEach((f) => { features.grid.append(prefRow(f)); });
-    FEATURES_PLANNED.forEach((label) => {
-      const row = document.createElement("div");
-      row.className = "stage-pref-row is-planned";
-      const tag = document.createElement("span");
-      tag.className = "stage-pref-tag";
-      tag.textContent = tx("準備中");
-      const name = document.createElement("span");
-      name.className = "stage-pref-name";
-      name.textContent = tx(label);
-      row.append(tag, name);
-      features.grid.append(row);
-    });
     host.append(features.group);
   }
   function openPrefs() {
+    closePanelVisibilityMenu();
     renderPrefs();
     renderPrefKeys();
     if (els.prefsModal) els.prefsModal.hidden = false;
@@ -16054,7 +20235,7 @@
       return;
     }
 
-    const en = isEn();
+    const en = languageValue(() => true, () => false);
     let ids;
     try {
       ids = window.MANUAL_FIND(query, en ? "en" : "ja");
@@ -16133,22 +20314,23 @@
       try { return (JSON.parse(localStorage.getItem(SHOWS_KEY) || "[]") || []).length; }
       catch (_) { return 0; }
     })();
-    const en = isEn();
-    const first = en
-      ? `Reset this device to how it was the very first time you opened Stage Sketch.\n\n`
+    const first = languageValue(
+      () => `Reset this device to how it was the very first time you opened Stage Sketch.\n\n`
         + `• ${showCount} show(s) kept on this device\n`
         + `• Display settings, language, and whether you have seen the tour\n`
         + `• Set pieces you built, and any music you loaded\n\n`
-        + `Files you have already exported are not touched. Continue?`
-      : `この端末の舞台スケッチを、はじめて開いたときの状態に戻します。\n\n`
+        + `Files you have already exported are not touched. Continue?`,
+      () => `この端末の舞台スケッチを、はじめて開いたときの状態に戻します。\n\n`
         + `・この端末に置いたショー ${showCount}本\n`
         + `・表示の設定、言語、案内を見たかどうか\n`
         + `・組んだセットの型、読み込んだ音源\n\n`
-        + `書き出し済みのファイルは消えません。続けますか？`;
+        + `書き出し済みのファイルは消えません。続けますか？`,
+    );
     if (!window.confirm(first)) return;
-    const second = en
-      ? "Really reset? This cannot be undone.\n\nIf you want to keep anything, stop here and use Export to save it to a file first."
-      : "本当に戻しますか。この操作は取り消せません。\n\n残したいものがあるなら、いったんやめて〈書き出す〉でファイルに保存してください。";
+    const second = languageValue(
+      () => "Really reset? This cannot be undone.\n\nIf you want to keep anything, stop here and use Export to save it to a file first.",
+      () => "本当に戻しますか。この操作は取り消せません。\n\n残したいものがあるなら、いったんやめて〈書き出す〉でファイルに保存してください。",
+    );
     if (!window.confirm(second)) return;
 
     /* 明示した鍵に加え、shosai- で始まる鍵を総ざらいで消す。
@@ -16176,6 +20358,21 @@
     window.location.reload();
   }
 
+  /* ショーの内容や環境設定を消さず、机の組み方だけを配布時へ戻す。
+     二列の左右位置・順番・開閉はショー側、幅・一列/iPad表示は端末設定側に
+     分かれているため、両方のレイアウト項目だけを明示して戻す。 */
+  function resetPanelLayoutToDistributionDefault() {
+    const message = tx("パネル配置を初期状態に戻しますか？ショーの内容、スキン、機能設定は変わりません。");
+    if (!window.confirm(message)) return;
+    state.layout = defaultLayout();
+    ["panelLayoutMode", "panelLayoutByWorkspace", "panelSingleSide", "panelSingleSideByWorkspace", "panelSingleOrder", "panelWidths", "rosterListHeights", "tabletMode"].forEach((key) => {
+      delete prefs[key];
+    });
+    savePrefs();
+    persistSoon();
+    window.setTimeout(() => window.location.reload(), 260);
+  }
+
   function openManualBook() {
     window.open("manual/manual.html", "_blank", "noopener");
   }
@@ -16183,7 +20380,7 @@
   /* クイックガイドは日本語版と英語版を別ファイルで持つ（本文が絵と一体のため、
      冊子のような1データ2表示にはしていない）。表示中の言語の方を開く。 */
   function openQuickGuide() {
-    window.open(isEn() ? "manual/quick-en.html" : "manual/quick.html", "_blank", "noopener");
+    window.open(lang === "ja" ? "manual/quick.html" : "manual/quick-en.html", "_blank", "noopener");
   }
 
   function openAbout() {
@@ -16194,6 +20391,38 @@
   function closeAbout() {
     if (els.aboutModal) els.aboutModal.hidden = true;
     if (els.aboutBackdrop) els.aboutBackdrop.hidden = true;
+  }
+
+  function releaseHistoryHasUnread() {
+    try { return localStorage.getItem(RELEASE_HISTORY_SEEN_KEY) !== RELEASE_HISTORY_CURRENT; }
+    catch (_) { return true; }
+  }
+
+  function syncReleaseNotification() {
+    if (!els.releaseOpen) return;
+    const unread = releaseHistoryHasUnread();
+    const label = tx(unread ? "アップデート履歴（新着あり）" : "アップデート履歴");
+    els.releaseOpen.classList.toggle("has-unread", unread);
+    els.releaseOpen.setAttribute("aria-label", label);
+    els.releaseOpen.title = label;
+  }
+
+  function markReleaseHistorySeen() {
+    try { localStorage.setItem(RELEASE_HISTORY_SEEN_KEY, RELEASE_HISTORY_CURRENT); }
+    catch (_) { /* 保存できない端末では、次回も新着として知らせる */ }
+    syncReleaseNotification();
+  }
+
+  function openReleaseHistory() {
+    markReleaseHistorySeen();
+    if (els.releaseModal) els.releaseModal.hidden = false;
+    if (els.releaseBackdrop) els.releaseBackdrop.hidden = false;
+    if (els.releaseClose) els.releaseClose.focus();
+  }
+
+  function closeReleaseHistory() {
+    if (els.releaseModal) els.releaseModal.hidden = true;
+    if (els.releaseBackdrop) els.releaseBackdrop.hidden = true;
   }
 
   /* 感想・改善点の送信窓。送り先は FEEDBACK_URL（Googleフォーム）で、
@@ -16224,7 +20453,8 @@
   function applyFeatureFlags() {
     applyPanelVisibility();
     if (els.presentBtn) els.presentBtn.hidden = !featureOn("presentation");
-    if (els.arrangeSelect) els.arrangeSelect.hidden = !featureOn("lineup");
+    if (els.arrangeMenu) els.arrangeMenu.hidden = !featureOn("lineup");
+    syncMultiSelectionControls();
     // 光の意図: カード・重ねのトグル・照らし合わせをまとめて出し入れする
     if (els.frontLightIntent) {
       const on = featureOn("lightIntent");
@@ -16241,42 +20471,155 @@
     if (els.exportPurposeBlock) updateExportPurposeUi();
   }
 
-  /* ---------- プレゼンモード ----------
-     正面のキャンバスをそのまま全画面へ。矢印キーのシーン送りは
-     いつもの割り当てが効き、Escで戻る（ブラウザの全画面をそのまま使う）。 */
-  function enterPseudoPresentation() {
-    pseudoPresenting = true;
-    presenting = true;
-    document.body.classList.add("stage-pseudo-present");
-    if (els.presentOverlay) els.presentOverlay.setAttribute("aria-hidden", "false");
+  /* ---------- 全画面表示 ----------
+     ページを全画面にし、正面図と操作を同じ表示層へ置く。
+     既存の図・パネルを一時的に移し、終了時に元の位置へ戻す。 */
+  let fullscreenHome = null;
+  let fullscreenTransitionPending = false;
+
+  function fullscreenModalOpen() {
+    return [...document.querySelectorAll('[role="dialog"]')]
+      .some((dialog) => dialog.getClientRects().length > 0);
+  }
+
+  function setFullscreenDrawer(open, restoreFocus = true) {
+    if (!els.presentDrawer || !els.presentDrawerToggle) return;
+    els.presentDrawer.hidden = !open;
+    els.presentOverlay.classList.toggle("is-drawer-open", open);
+    const button = els.presentDrawerToggle;
+    const label = open ? "パネルを閉じる" : "パネルを開く";
+    button.setAttribute("aria-expanded", String(open));
+    button.setAttribute("aria-label", tx(label));
+    button.title = tx(label);
+    button.dataset.jaAria = label;
+    button.dataset.jaTitle = label;
+    button.querySelector("span").textContent = open ? "◀" : "▶";
+    if (open && tabletUi && tabletUi.drawer.hidden) openTabletGroup(tabletUi.groupId);
+    if (!open && restoreFocus) button.focus({ preventScroll: true });
+  }
+
+  function setFullscreenView(which) {
+    fullscreenMainView = which === "plan" && planCanvas ? "plan" : "front";
+    const main = fullscreenMainView === "plan" ? planCanvas : canvas;
+    const other = fullscreenMainView === "plan" ? canvas : planCanvas;
+    els.presentCanvas.append(main);
+    if (other) els.presentMiniView.append(other);
+    els.presentMini.hidden = !other;
+    els.presentOverlay.dataset.mainView = fullscreenMainView;
+    els.presentMiniLabel.textContent = tx(fullscreenMainView === "plan" ? "正面図" : "平面図");
     syncCanvasResolution();
     render();
-    announce("プレゼンモードです。左右のタップでシーン送り、✕で戻ります。");
+  }
+
+  function swapFullscreenViews() {
+    if (!presenting || fullscreenTransitionPending || !planCanvas || fullscreenModalOpen()) return false;
+    const camera = document.querySelector("#stage-fpv-overlay");
+    if (camera && camera.getClientRects().length) return false;
+    setFullscreenView(fullscreenMainView === "front" ? "plan" : "front");
+    return true;
+  }
+
+  function prepareFullscreenView() {
+    if (fullscreenHome) return;
+    const view = document.getElementById("view-stage");
+    fullscreenHome = {
+      focus: document.activeElement, view, inert: view ? view.inert : false, nodes: [],
+      tablet: tabletUi ? { hidden: tabletUi.drawer.hidden, groupId: tabletUi.groupId, pageIndex: tabletUi.pageIndex } : null,
+    };
+    const move = (node, host) => {
+      if (!node || !host) return;
+      const marker = document.createComment("fullscreen-home");
+      node.before(marker);
+      fullscreenHome.nodes.push({ node, marker });
+      host.append(node);
+    };
+    move(canvas, els.presentCanvas);
+    move(planCanvas, els.presentMiniView);
+    if (tabletUi) {
+      move(tabletUi.rail, els.presentDrawerBody);
+      move(tabletUi.drawer, els.presentDrawerBody);
+    } else move(colEls.left, els.presentDrawerBody);
+    els.presentDrawerBody.classList.toggle("is-tablet", Boolean(tabletUi));
+    presenting = true;
+    document.body.classList.add("stage-fullscreen");
+    document.documentElement.classList.add("stage-fullscreen-root");
+    if (view) view.inert = true;
+    if (els.presentBtn) els.presentBtn.setAttribute("aria-pressed", "true");
+    if (els.presentOverlay) els.presentOverlay.setAttribute("aria-hidden", "false");
+    setFullscreenDrawer(false, false);
+    setFullscreenView(state.showPlan && !state.showFront ? "plan" : "front");
+  }
+
+  function finishFullscreenView() {
+    const saved = fullscreenHome;
+    if (!saved) return;
+    setFullscreenDrawer(false, false);
+    saved.nodes.forEach(({ node, marker }) => marker.replaceWith(node));
+    if (saved.tablet && tabletUi) {
+      tabletUi.groupId = saved.tablet.groupId;
+      tabletUi.pageIndex = saved.tablet.pageIndex;
+      showTabletDrawerPage();
+      if (saved.tablet.hidden) closeTabletDrawer();
+      else {
+        tabletUi.drawer.hidden = false;
+        tabletUi.grid.classList.add("is-tablet-drawer-open");
+        syncTabletWorkspace();
+      }
+    }
+    presenting = false;
+    pseudoPresenting = false;
+    document.body.classList.remove("stage-fullscreen", "stage-pseudo-present");
+    document.documentElement.classList.remove("stage-fullscreen-root");
+    if (saved.view) saved.view.inert = saved.inert;
+    if (els.presentBtn) els.presentBtn.setAttribute("aria-pressed", "false");
+    if (els.presentOverlay) els.presentOverlay.setAttribute("aria-hidden", "true");
+    fullscreenHome = null;
+    syncCanvasResolution();
+    render();
+    if (saved.focus && saved.focus.isConnected) saved.focus.focus({ preventScroll: true });
+    announce("全画面表示を終了しました。");
+  }
+
+  function enterPseudoPresentation() {
+    prepareFullscreenView();
+    pseudoPresenting = true;
+    document.body.classList.add("stage-pseudo-present");
+    els.presentClose.focus({ preventScroll: true });
+    announce("全画面表示です。下の矢印でシーン送り、右上のボタン・F・Escで戻ります。");
   }
 
   function exitPseudoPresentation() {
-    pseudoPresenting = false;
-    presenting = false;
-    document.body.classList.remove("stage-pseudo-present");
-    if (els.presentOverlay) els.presentOverlay.setAttribute("aria-hidden", "true");
-    syncCanvasResolution();
-    render();
-    announce("プレゼンを終えました。");
+    finishFullscreenView();
   }
 
   function startPresentation() {
-    const cv = canvas;
+    prepareFullscreenView();
+    const cv = document.documentElement;
     if (!cv || !cv.requestFullscreen) {
       enterPseudoPresentation();
       return;
     }
-    cv.requestFullscreen().then(() => {
-      cv.focus();
-      announce("プレゼンモードです。矢印キーでシーン送り、Escで戻ります。");
+    return cv.requestFullscreen().then(() => {
+      els.presentClose.focus({ preventScroll: true });
+      syncCanvasResolution();
+      render();
+      announce("全画面表示です。矢印キーでシーン送り、FまたはEscで戻ります。");
     }).catch(() => {
       announce("この環境では全画面にできませんでした。");
       enterPseudoPresentation();
     });
+  }
+
+  async function toggleStageFullscreen() {
+    if (fullscreenTransitionPending) return;
+    fullscreenTransitionPending = true;
+    try {
+      if (pseudoPresenting) exitPseudoPresentation();
+      else if (presenting && document.fullscreenElement === document.documentElement) await document.exitFullscreen();
+      else await startPresentation();
+    } finally {
+      fullscreenTransitionPending = false;
+    }
   }
 
   /* 大きな表示では内部解像度も追従させ、線や文字の粗さを抑える。
@@ -16319,49 +20662,100 @@
     requestAnimationFrame(syncCanvasResolution);
   });
 
-  /* 全画面かどうか。プレゼン中だけ、シーンの説明を絵の中へ描く。
+  /* 全画面かどうか。全画面中だけ、シーンの説明を絵の中へ描く。
      入るときも出るときも描き直しがいる（出たあと字が残らないように）。 */
   document.addEventListener("fullscreenchange", () => {
     if (pseudoPresenting) return;
-    const now = document.fullscreenElement === canvas;
-    if (now === presenting) return;
-    presenting = now;
-    syncCanvasResolution();
-    render();
+    const now = document.fullscreenElement === document.documentElement;
+    if (!now && presenting) finishFullscreenView();
+    else if (now && presenting) { syncCanvasResolution(); render(); }
   });
 
   document.addEventListener("keydown", (event) => {
-    if (!pseudoPresenting) return;
+    if (!presenting) return;
     if (event.key !== "Escape" || event.defaultPrevented) return;
     event.preventDefault();
-    exitPseudoPresentation();
+    if (fullscreenModalOpen()) return;
+    if (pseudoPresenting) exitPseudoPresentation();
+    else toggleStageFullscreen();
   });
 
-  /* ---------- 整列（舞台上の演者全員） ----------
+  // 全画面の入口と同じ可否を守る。入力中やダイアログ操作中のFは奪わない。
+  document.addEventListener("keydown", (event) => {
+    if (String(event.key || "").toLowerCase() !== "f" || event.defaultPrevented) return;
+    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    if (event.repeat || event.isComposing || event.keyCode === 229 || isTyping(event.target)) return;
+    if (fullscreenModalOpen()) return;
+    const fullscreen = presenting;
+    if (!fullscreen) {
+      const view = document.getElementById("view-stage");
+      const button = els.presentBtn;
+      if (!view || view.hidden || phoneViewerActive || !featureOn("presentation")) return;
+      if (!button || button.hidden || button.disabled || button.offsetParent === null) return;
+      if (button.getAttribute("aria-disabled") === "true" || button.dataset.publicLock) return;
+      if (document.body.classList.contains("stage-session-guest")) return;
+
+    }
+    event.preventDefault();
+    if (fullscreen) toggleStageFullscreen();
+    else els.presentBtn.click();
+  });
+
+  // 図の交換は全画面中だけ。文字入力や別の操作面へXを通す。
+  document.addEventListener("keydown", (event) => {
+    if (String(event.key || "").toLowerCase() !== "x" || event.defaultPrevented) return;
+    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    if (event.repeat || event.isComposing || event.keyCode === 229 || isTyping(event.target)) return;
+    if (swapFullscreenViews()) event.preventDefault();
+  });
+
+  /* ---------- 整列（平面図で選択したものだけ） ----------
      ★いまの位置関係をなるべく保つ（本人指定）。誰がどこへ行くかが
        席替えのように入れ替わると、並べた瞬間に配置の意味が壊れるため。
-       一列とV字は左右の順、円はいまの重心から見た角度の順をそのまま使う。 */
+       横・斜め・V字は左右の順、縦は奥行きの順、円は重心から見た角度の順を使う。 */
   function lineupPerformers(shape) {
-    const people = (sc().pieces || []).filter((piece) =>
-      piece.type === "performer" && onStageArea(piece.u, piece.v));
-    if (people.length < 2) { announce("並べ替える演者が足りません（舞台上に2人以上）。"); return; }
+    if (!["row", "column", "diagonal-up", "diagonal-down", "circle", "vee", "inverted-vee"].includes(shape)) return;
+    const items = selectedPieces().filter((piece) =>
+      piece.type !== "light" && !piece.heldBy && !isLocked(piece)
+      && (state.showFlown || !isFlown(piece)) && onStageArea(piece.u, piece.v));
+    if (items.length < 2) { announce("整列するものを2つ以上選択してください。"); return; }
     checkpoint();
-    const n = people.length;
+    const n = items.length;
     if (shape === "row") {
       // 左右の順を保ち、奥行きはいまの平均へ
-      const ordered = people.slice().sort((a, b) => a.u - b.u);
+      const ordered = items.slice().sort((a, b) => a.u - b.u);
       const v = ordered.reduce((t, piece) => t + piece.v, 0) / n;
       ordered.forEach((piece, i) => {
         piece.u = n === 1 ? 0.5 : 0.15 + (0.7 * i) / (n - 1);
         piece.v = clamp(v, 0.1, 0.95);
       });
-      announce("舞台上の演者を等間隔の一列に並べました。");
+      announce("選択したものを等間隔の横1列に並べました。");
+    } else if (shape === "column") {
+      // 奥から手前の順を保ち、左右位置はいまの平均へ
+      const ordered = items.slice().sort((a, b) => a.v - b.v);
+      const u = ordered.reduce((t, piece) => t + piece.u, 0) / n;
+      ordered.forEach((piece, i) => {
+        piece.u = clamp(u, 0.1, 0.95);
+        piece.v = 0.15 + (0.7 * i) / (n - 1);
+      });
+      announce("選択したものを等間隔の縦1列に並べました。");
+    } else if (shape === "diagonal-up" || shape === "diagonal-down") {
+      // 平面図はvが大きいほど下（手前）。左右の順を保って2方向へ並べる
+      const ordered = items.slice().sort((a, b) => a.u - b.u);
+      ordered.forEach((piece, i) => {
+        const t = i / (n - 1);
+        piece.u = 0.15 + 0.7 * t;
+        piece.v = shape === "diagonal-up" ? 0.85 - 0.7 * t : 0.15 + 0.7 * t;
+      });
+      announce(shape === "diagonal-up"
+        ? "選択したものを斜め1列（／）に並べました。"
+        : "選択したものを斜め1列（＼）に並べました。");
     } else if (shape === "circle") {
       /* いまの重心から見た角度の順で、等間隔の円に置き直す。
          始まりの角度も一人目のいまの角度に合わせるので、全員が「近くの席」へ入る */
-      const cu = people.reduce((t, piece) => t + piece.u, 0) / n;
-      const cv2 = people.reduce((t, piece) => t + piece.v, 0) / n;
-      const ordered = people.slice().sort((a, b) =>
+      const cu = items.reduce((t, piece) => t + piece.u, 0) / n;
+      const cv2 = items.reduce((t, piece) => t + piece.v, 0) / n;
+      const ordered = items.slice().sort((a, b) =>
         Math.atan2(a.v - cv2, a.u - cu) - Math.atan2(b.v - cv2, b.u - cu));
       const startA = Math.atan2(ordered[0].v - cv2, ordered[0].u - cu);
       const r = Math.min(0.3, 0.1 + n * 0.03);
@@ -16370,17 +20764,20 @@
         piece.u = clamp(0.5 + Math.cos(a) * r, 0.05, 0.95);
         piece.v = clamp(0.5 + Math.sin(a) * r * 0.8, 0.08, 0.95);
       });
-      announce("舞台上の演者を円に並べました。");
+      announce("選択したものを円に並べました。");
     } else {
-      // V字。左右の順のまま、左側の人は左の腕へ・真ん中の人が頂点へ
-      const ordered = people.slice().sort((a, b) => a.u - b.u);
+      // 左右の順を保つ。逆V字は既存のV字を前後に反転する
+      const ordered = items.slice().sort((a, b) => a.u - b.u);
       const mid = (n - 1) / 2;
       ordered.forEach((piece, i) => {
         const off = i - mid;
         piece.u = clamp(0.5 + off * 0.09, 0.05, 0.95);
-        piece.v = clamp(0.35 + Math.abs(off) * 0.1, 0.08, 0.95);
+        const v = clamp(0.35 + Math.abs(off) * 0.1, 0.08, 0.95);
+        piece.v = shape === "inverted-vee" ? 1 - v : v;
       });
-      announce("舞台上の演者をV字に並べました。");
+      announce(shape === "inverted-vee"
+        ? "選択したものを逆V字に並べました。"
+        : "選択したものをV字に並べました。");
     }
     render();
     persistSoon();
@@ -16424,7 +20821,7 @@
     const pc = document.createElement("canvas"); pc.width = W; pc.height = H;
     const fctx = fc.getContext("2d");
     const pctx = pc.getContext("2d");
-    const en = isEn();
+    const en = languageValue(() => true, () => false);
     const parts = [];
     // セクション見出しも順番どおりに差し込む
     let sceneN = 0;
@@ -16699,7 +21096,7 @@ ${propsPlotHtml}
     renderSets();
     renderLights();
     renderRigs();
-    syncRosterPropShape();
+    renderRosterKindLayer();
     if (els.setInfoPropShapeRow && !els.setInfoPropShapeRow.hidden) {
       const item = currentSetItem();
       renderPropShapeSelect(els.setInfoPropShape, item && item.propShape);
@@ -16722,7 +21119,7 @@ ${propsPlotHtml}
     const i = cursorIndex();
     const depth = i >= 0 ? p.scenes[i].depth : 0;
     const count = p.scenes.filter((x) => x.kind === "section").length;
-    const section = newScene(isEn() ? `Section ${count + 1}` : `セクション ${count + 1}`, false, "section", depth);
+    const section = newScene(sx(`セクション ${count + 1}`, `Section ${count + 1}`), false, "section", depth);
     const at = i >= 0 ? i + 1 + sceneChildren(i).length : p.scenes.length;
     p.scenes.splice(at, 0, section);
     state.cursorRowId = section.id;
@@ -16755,11 +21152,8 @@ ${propsPlotHtml}
     return copy;
   }
 
-  /* 動線の先へ演者を動かした場面を、この場面の次に作る。
-   * 「引いた線のとおりに動いた後」を確かめるのが動線を引く目的なので、
-   * 手で置き直させない。写した先では動線は消える（もう済んだ動きなので）。 */
   /* ---------- 次のシーンから動線を起こす ----------
-     applyRoutes（動線 → 次のシーン）のちょうど逆。
+     「次のシーンをつくる」で動線を実らせる向きのちょうど逆。
      先に次のシーンを作ってから並べ替えることの方が多いので、
      「もう動かしてある差」から動線を引き直せると、置き直す手間が要らない。
      同じものが次のシーンでどれかは twinOf で照合する（登録の札→写しの元）。 */
@@ -16860,35 +21254,71 @@ ${propsPlotHtml}
         : `${total}本の動線を引きました。`));
   }
 
-  function applyRoutes(scene) {
+  /* 選んだ駒だけへ新しい札を配る。手に持つ関係は両方が選ばれたときだけ残し、
+     指定時だけ動線の行き先へ移す。元シーンの駒は一切書き換えない。 */
+  function inheritedScenePieces(sourcePieces, selectedIds, idFactory = nextId, moveToRouteEnd = true) {
+    const selected = new Set(Array.from(selectedIds || []));
+    const swap = new Map();
+    const entries = (sourcePieces || [])
+      .filter((piece) => selected.has(piece.id))
+      .map((piece) => {
+        const copy = JSON.parse(JSON.stringify(piece));
+        const id = idFactory();
+        swap.set(piece.id, id);
+        copy.id = id;
+        copy.originId = piece.originId || piece.id;
+        return { copy, wasHeld: Boolean(piece.heldBy) };
+      });
+    entries.forEach(({ copy, wasHeld }) => {
+      copy.heldBy = copy.heldBy ? (swap.get(copy.heldBy) || null) : null;
+      if (moveToRouteEnd && !wasHeld && copy.route) {
+        const routeU = Number(copy.route.u);
+        const routeV = Number(copy.route.v);
+        copy.u = Math.max(-0.5, Math.min(1.5, Number.isFinite(routeU) ? routeU : 0.5));
+        copy.v = Math.max(-0.5, Math.min(1, Number.isFinite(routeV) ? routeV : 0.5));
+      }
+      copy.route = null;
+      copy.supportId = null;
+      copy.base = 0;
+    });
+    return entries.map(({ copy }) => copy);
+  }
+
+  function buildNextScene(source, mode, selectedIds, moveToRouteEnd = true) {
+    const count = state.project.scenes.filter((row) => row.kind === "scene").length;
+    const next = newScene(
+      mode === "inherit" ? sx(`${source.title} の続き`, `${source.title} – continuation`) : sceneTitle(count + 1),
+      false,
+      "scene",
+      source.depth,
+    );
+    // 地の色だけは同じ舞台の基準として残す。描画・写真・注釈は場面固有なので持ち越さない。
+    next.background = source.background || next.background;
+    if (mode === "inherit") {
+      next.pieces = inheritedScenePieces(source.pieces, selectedIds, nextId, moveToRouteEnd);
+    }
+    return next;
+  }
+
+  function createNextScene(source, mode, selectedIds, moveToRouteEnd = true) {
     const p = state.project;
-    const i = p.scenes.indexOf(scene);
+    const i = p.scenes.indexOf(source);
     if (i < 0) return;
-    if (!(scene.pieces || []).some((piece) => piece.route)) {
-      announce("このシーンには動線がありません。平面図で行き先を引いてください。");
+    const picked = mode === "inherit" ? Array.from(selectedIds || []) : [];
+    if (mode === "inherit" && !picked.length) {
+      announce(tx("引き継ぐものを1つ以上選んでください。"));
       return;
     }
-    if (!canAddSceneRows() || !hasCapacity(scene.pieces, "piecesPerScene", 0, "このシーンの駒")) return;
+    if (!canAddSceneRows() || !hasCapacity(picked, "piecesPerScene", 0, "このシーンの駒")) return;
     checkpoint();
-    const copy = cloneScene(scene);
-    copy.title = `${scene.title} の続き`;
-    copy.note = "";
-    let moved = 0;
-    copy.pieces.forEach((piece) => {
-      if (piece.heldBy || !piece.route) return;
-      /* 動かすのは駒の居場所だけ。明かりの場合、これは「当てる先」であって
-       * 灯体（beam.u/v）ではない。灯体はその場に残り、光が振られる。 */
-      piece.u = clamp(piece.route.u, -0.5, 1.5);   // 袖へはける動線もそのまま実る
-      piece.v = clamp(piece.route.v, -0.5, 1);
-      piece.route = null;
-      moved += 1;
-    });
-    p.scenes.splice(i + 1, 0, copy);
-    p.activeSceneId = copy.id;
-    state.cursorRowId = copy.id;
+    const next = buildNextScene(source, mode, picked, moveToRouteEnd);
+    p.scenes.splice(i + 1, 0, next);
+    p.activeSceneId = next.id;
+    state.cursorRowId = next.id;
     selectedId = null;
     selectedNoteId = null;
     closeNoteEditor();
+    closeSceneCreate();
     renderScenes();
     renderCast();
     renderSets();
@@ -16900,7 +21330,7 @@ ${propsPlotHtml}
     updateInspector();
     render();
     persistSoon();
-    announce(`${moved}名（点）を動線の先へ動かしたシーンを作りました。`);
+    announce(tx("次のシーンを作りました。"));
   }
 
   function duplicateScene() {
@@ -16933,20 +21363,57 @@ ${propsPlotHtml}
     announce(`${cur.title}を複製しました。前のシーンから少しずつ動かすときに使えます。`);
   }
 
-
-  // セクションを消すときは、中に入れた場面ごと消える
-  function deleteScene() {
+  function sceneDeleteDetails(targetScene = null) {
     const p = state.project;
-    const i = cursorIndex();
-    if (i < 0) return;
+    const i = targetScene ? p.scenes.indexOf(targetScene) : cursorIndex();
+    if (i < 0) return null;
     const cur = p.scenes[i];
     const kids = sceneChildren(i);
     const kidScenes = kids.filter((x) => x.kind === "scene").length;
-    if (p.scenes.filter((x) => x.kind === "scene").length - 1 - kidScenes < 1) return;
-    const warn = kids.length
-      ? `「${cur.title}」を、中に入れた${kids.length}件ごと削除します。置いたものと塗りは戻せません。`
-      : `「${cur.title}」を削除します。このシーンに置いたものと塗りは戻せません。`;
-    if (!window.confirm(warn)) return;
+    const sceneLoss = (cur.kind === "scene" ? 1 : 0) + kidScenes;
+    if (p.scenes.filter((x) => x.kind === "scene").length - sceneLoss < 1) {
+      announce(tx("シーンがひとつしかありません。"));
+      return null;
+    }
+    const message = cur.kind === "section"
+      ? (kids.length
+        ? sx(`「${cur.title}」セクションと、中に入れた${kids.length}件を削除します。`,
+          `Delete “${cur.title}” and its ${kids.length} contained items.`)
+        : sx(`「${cur.title}」セクションを削除します。`, `Delete the “${cur.title}” section.`))
+      : sx(`「${cur.title}」を削除します。`, `Delete “${cur.title}”.`);
+    return { p, i, cur, kids, message };
+  }
+
+  function openSceneDelete(targetScene, returnFocus = null) {
+    const details = sceneDeleteDetails(targetScene);
+    if (!details || !els.sceneDeleteModal || !els.sceneDeleteBackdrop) return false;
+    sceneDeleteTarget = details.cur;
+    sceneDeleteReturnFocus = returnFocus || null;
+    if (els.sceneDeleteMessage) {
+      els.sceneDeleteMessage.textContent = `${details.message} ${tx("削除したものは元に戻せません。")}`;
+    }
+    if (els.sceneDeleteCheck) els.sceneDeleteCheck.checked = false;
+    if (els.sceneDeleteSubmit) els.sceneDeleteSubmit.disabled = true;
+    els.sceneDeleteModal.hidden = false;
+    els.sceneDeleteBackdrop.hidden = false;
+    if (els.sceneDeleteCheck) els.sceneDeleteCheck.focus();
+    return true;
+  }
+
+  function closeSceneDelete(restoreFocus = true) {
+    if (els.sceneDeleteModal) els.sceneDeleteModal.hidden = true;
+    if (els.sceneDeleteBackdrop) els.sceneDeleteBackdrop.hidden = true;
+    const target = sceneDeleteReturnFocus;
+    sceneDeleteTarget = null;
+    sceneDeleteReturnFocus = null;
+    if (restoreFocus && target && target.isConnected && typeof target.focus === "function") target.focus();
+  }
+
+  // セクションを消すときは、中に入れた場面ごと消える。確認は専用モーダルで済ませてから呼ぶ。
+  function deleteScene(targetScene = null) {
+    const details = sceneDeleteDetails(targetScene);
+    if (!details) return false;
+    const { p, i, cur, kids } = details;
     checkpoint();
     p.scenes.splice(i, 1 + kids.length);
     const nextScene = p.scenes.slice(i).find((x) => x.kind === "scene")
@@ -16966,6 +21433,7 @@ ${propsPlotHtml}
     render();
     persistSoon();
     announce(`${cur.title}を削除しました。`);
+    return true;
   }
 
   // バージョン複製: いまのプロジェクトを丸ごと写し、別の版として続ける。
@@ -17009,21 +21477,91 @@ ${propsPlotHtml}
     return `${label || "v1"} の改訂`;
   }
 
-  function closeVenueExportConfirm() {
-    if (els.venueExportModal) els.venueExportModal.hidden = true;
-    if (els.venueExportBackdrop) els.venueExportBackdrop.hidden = true;
+  let pendingProjectExportFilename = "";
+  let projectExportReturnFocus = null;
+
+  function restoreProjectExportFocus() {
+    const target = projectExportReturnFocus;
+    projectExportReturnFocus = null;
+    if (target && target.isConnected && typeof target.focus === "function") {
+      target.focus({ preventScroll: true });
+    }
   }
 
-  async function writeProjectExport(includeVenue) {
+  function closeProjectExportName(restoreFocus = true) {
+    if (els.projectExportModal) els.projectExportModal.hidden = true;
+    if (els.projectExportBackdrop) els.projectExportBackdrop.hidden = true;
+    if (restoreFocus) restoreProjectExportFocus();
+  }
+
+  function closeVenueExportConfirm(restoreFocus = true) {
+    if (els.venueExportModal) els.venueExportModal.hidden = true;
+    if (els.venueExportBackdrop) els.venueExportBackdrop.hidden = true;
+    pendingProjectExportFilename = "";
+    if (restoreFocus) restoreProjectExportFocus();
+  }
+
+  function takePendingProjectExportFilename() {
+    const filename = pendingProjectExportFilename
+      || normaliseProjectExportFilename(defaultProjectExportBasename(state.project));
+    pendingProjectExportFilename = "";
+    return filename;
+  }
+
+  function openVenueExportConfirmOrWrite(filename) {
+    const venueData = bundledVenueForProject(state.project);
+    if (venueData && venueData.provenance && venueData.provenance.sharing === "internal-only") {
+      pendingProjectExportFilename = filename;
+      if (els.venueExportModal) els.venueExportModal.hidden = false;
+      if (els.venueExportBackdrop) els.venueExportBackdrop.hidden = false;
+      if (els.venueExportInclude) els.venueExportInclude.focus();
+      return;
+    }
+    pendingProjectExportFilename = "";
+    writeProjectExport(true, filename);
+  }
+
+  function openProjectExportName() {
+    const filename = normaliseProjectExportFilename(defaultProjectExportBasename(state.project));
+    if (!els.projectExportModal || !els.projectExportName) {
+      openVenueExportConfirmOrWrite(filename);
+      return;
+    }
+    projectExportReturnFocus = document.activeElement;
+    els.projectExportName.value = filename;
+    if (els.projectExportDestination) {
+      els.projectExportDestination.textContent = tx(hasProjectSaveLocationPicker()
+        ? "書き出すと、次に保存先を選べます。"
+        : "このブラウザで設定されているダウンロード先へ書き出します。");
+    }
+    els.projectExportModal.hidden = false;
+    if (els.projectExportBackdrop) els.projectExportBackdrop.hidden = false;
+    els.projectExportName.focus();
+    els.projectExportName.select();
+  }
+
+  function commitProjectExportName() {
+    if (!els.projectExportName) return;
+    if (!els.projectExportName.value.trim()) {
+      els.projectExportName.reportValidity();
+      return;
+    }
+    const filename = normaliseProjectExportFilename(els.projectExportName.value);
+    closeProjectExportName(false);
+    openVenueExportConfirmOrWrite(filename);
+  }
+
+  async function writeProjectExport(
+    includeVenue,
+    filename = normaliseProjectExportFilename(defaultProjectExportBasename(state.project)),
+  ) {
     try {
       /* かつてこのローカル変数を document と名付けていて、グローバルの document を
          覆い隠していた。document.createElement が落ち、書き出しが無反応になっていた。 */
       const exportDoc = makeProjectExportDocument(state.project, includeVenue);
       const data = JSON.stringify(exportDoc, null, 2);
       const blob = new Blob([data], { type: "application/json" });
-      const safe = (state.project.title || "show").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 40);
-      const version = (state.project.versionLabel || "v1").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 24);
-      const didChooseDestination = await downloadBlob(blob, `${safe}-${version}.json`);
+      const didChooseDestination = await saveProjectBlob(blob, filename);
       if (!applyProjectExportOutcome(state, didChooseDestination, nowIso())) {
         announce("書き出しをやめました。");
         return;
@@ -17036,22 +21574,16 @@ ${propsPlotHtml}
     } catch (error) {
       console.error("stage export: ショーを書き出せませんでした", error);
       exportFailureNotice("ショーを書き出せませんでした。もう一度お試しください。");
+    } finally {
+      restoreProjectExportFocus();
     }
   }
 
   function exportProject() {
-    const venueData = bundledVenueForProject(state.project);
-    if (venueData && venueData.provenance && venueData.provenance.sharing === "internal-only") {
-      if (els.venueExportModal) els.venueExportModal.hidden = false;
-      if (els.venueExportBackdrop) els.venueExportBackdrop.hidden = false;
-      if (els.venueExportInclude) els.venueExportInclude.focus();
-      return;
-    }
-    writeProjectExport(true);
+    openProjectExportName();
   }
 
   function rehearsalIssueText(item) {
-    if (!isEn()) return item.messageJa;
     const text = {
       invalid_project: "The project data is invalid.",
       invalid_stage_dimensions: "Stage width and depth must be numbers greater than zero.",
@@ -17069,7 +21601,7 @@ ${propsPlotHtml}
       invalid_duration: "A rehearsal duration is invalid.",
       missing_rehearsal_timing: "Some scenes do not have rehearsal durations yet.",
     };
-    return text[item.code] || item.messageJa;
+    return languageValue(() => text[item.code] || item.messageJa, () => item.messageJa);
   }
 
   function rehearsalOmittedText(item) {
@@ -17095,7 +21627,7 @@ ${propsPlotHtml}
       scene_notes: "Scene notes and sticky notes",
       backgrounds: "Backdrops, photos and drawing",
     };
-    return `${(isEn() ? en : ja)[item.code] || item.code} (${item.count})`;
+    return `${(languageValue(() => (en), () => (ja)))[item.code] || item.code} (${item.count})`;
   }
 
   function rehearsalExporter() {
@@ -17106,9 +21638,7 @@ ${propsPlotHtml}
     const api = rehearsalExporter();
     if (!api || !els.rehearsalCheck) {
       if (els.rehearsalCheck) {
-        els.rehearsalCheck.textContent = isEn()
-          ? "The rehearsal JSON converter could not be loaded."
-          : "稽古用JSONの変換器を読み込めませんでした。";
+        els.rehearsalCheck.textContent = tx("稽古用JSONの変換器を読み込めませんでした。");
         els.rehearsalCheck.className = "stage-rehearsal-check has-errors";
       }
       if (els.rehearsalExportRun) els.rehearsalExportRun.disabled = true;
@@ -17131,17 +21661,11 @@ ${propsPlotHtml}
     const summary = document.createElement("p");
     summary.className = "stage-rehearsal-check-summary";
     if (inspection.errors.length) {
-      summary.textContent = isEn()
-        ? `${inspection.errors.length} issue(s) must be fixed before export.`
-        : `書き出し前に直す項目が${inspection.errors.length}件あります。`;
+      summary.textContent = sx(`書き出し前に直す項目が${inspection.errors.length}件あります。`, `${inspection.errors.length} issue(s) must be fixed before export.`);
     } else if (inspection.missingTimingScenes.length) {
-      summary.textContent = isEn()
-        ? `${inspection.missingTimingScenes.length} scene(s) still need durations.`
-        : `${inspection.missingTimingScenes.length}シーンの時間が未入力です。`;
+      summary.textContent = sx(`${inspection.missingTimingScenes.length}シーンの時間が未入力です。`, `${inspection.missingTimingScenes.length} scene(s) still need durations.`);
     } else {
-      summary.textContent = isEn()
-        ? "The project passed the rehearsal JSON checks."
-        : "稽古用JSONの検査に通りました。";
+      summary.textContent = tx("稽古用JSONの検査に通りました。");
     }
     els.rehearsalCheck.append(summary);
 
@@ -17167,9 +21691,7 @@ ${propsPlotHtml}
       els.rehearsalOmittedList.innerHTML = "";
       if (!inspection.omittedFeatures.length) {
         const row = document.createElement("li");
-        row.textContent = isEn()
-          ? "No omitted features are currently used in this show."
-          : "現在のショーで該当するものはありません。";
+        row.textContent = tx("現在のショーで該当するものはありません。");
         els.rehearsalOmittedList.append(row);
       } else {
         inspection.omittedFeatures.forEach((item) => {
@@ -17371,15 +21893,11 @@ ${propsPlotHtml}
     const b = importCounts(next);
     const head = document.createElement("p");
     head.className = "stage-profile-hint";
-    head.textContent = isEn()
-      ? `File: “${next.project.title}” (${next.project.versionLabel || "v1"}) — currently open: “${state.project.title}”`
-      : `ファイル:「${next.project.title}」（${next.project.versionLabel || "v1"}） ／ いま開いているのは「${state.project.title}」`;
+    head.textContent = sx(`ファイル:「${next.project.title}」（${next.project.versionLabel || "v1"}） ／ いま開いているのは「${state.project.title}」`, `File: “${next.project.title}” (${next.project.versionLabel || "v1"}) — currently open: “${state.project.title}”`);
     host.append(head);
     const table = document.createElement("p");
     table.className = "stage-profile-hint";
-    table.textContent = isEn()
-      ? `Scenes ${a.scenes}→${b.scenes} · Cast ${a.cast}→${b.cast} · Sets ${a.sets}→${b.sets} · Lights ${a.lights}→${b.lights}`
-      : `シーン ${a.scenes}→${b.scenes} ／ 演者 ${a.cast}→${b.cast} ／ セット ${a.sets}→${b.sets} ／ 照明 ${a.lights}→${b.lights}`;
+    table.textContent = sx(`シーン ${a.scenes}→${b.scenes} ／ 演者 ${a.cast}→${b.cast} ／ セット ${a.sets}→${b.sets} ／ 照明 ${a.lights}→${b.lights}`, `Scenes ${a.scenes}→${b.scenes} · Cast ${a.cast}→${b.cast} · Sets ${a.sets}→${b.sets} · Lights ${a.lights}→${b.lights}`);
     host.append(table);
     // シーン名の見比べ: ファイルに新しく入っている名前と、置き換えると消える名前
     const mine = new Set(a.titles);
@@ -17389,20 +21907,19 @@ ${propsPlotHtml}
     if (added.length) {
       const line = document.createElement("p");
       line.className = "stage-profile-hint";
-      line.textContent = isEn()
-        ? `New in file: ${added.join(" / ")}`
-        : `ファイル側にだけあるシーン: ${added.join(" ／ ")}`;
+      line.textContent = sx(`ファイル側にだけあるシーン: ${added.join(" ／ ")}`, `New in file: ${added.join(" / ")}`);
       host.append(line);
     }
     if (lost.length) {
       const line = document.createElement("p");
       line.className = "stage-profile-hint";
-      line.textContent = isEn()
-        ? `Only in the current show (lost if replaced): ${lost.join(" / ")}`
-        : `いまのショーにだけあるシーン（置き換えると消える）: ${lost.join(" ／ ")}`;
+      line.textContent = sx(`いまのショーにだけあるシーン（置き換えると消える）: ${lost.join(" ／ ")}`, `Only in the current show (lost if replaced): ${lost.join(" / ")}`);
       host.append(line);
     }
-    const editDetails = normalizeImportEditSummary(editSummary, isEn());
+    const editDetails = normalizeImportEditSummary(
+      editSummary,
+      languageValue(() => true, () => false),
+    );
     if (editDetails) {
       const section = document.createElement("section");
       section.setAttribute("aria-label", editDetails.heading);
@@ -17416,8 +21933,8 @@ ${propsPlotHtml}
         line.textContent = `${label}: ${value}`;
         section.append(line);
       };
-      appendDetail(isEn() ? "Request" : "指示", editDetails.request);
-      appendDetail(isEn() ? "Summary" : "概要", editDetails.summary);
+      appendDetail(tx("指示"), editDetails.request);
+      appendDetail(tx("概要"), editDetails.summary);
       if (editDetails.baseRevision && editDetails.appliedRevision) {
         appendDetail("Revision", `${editDetails.baseRevision} → ${editDetails.appliedRevision}`);
       }
@@ -17435,7 +21952,7 @@ ${propsPlotHtml}
       });
       if (editDetails.warnings.length) {
         const warningHeading = document.createElement("h4");
-        warningHeading.textContent = isEn() ? "Warnings" : "警告";
+        warningHeading.textContent = tx("警告");
         section.append(warningHeading);
         const warnings = document.createElement("ul");
         editDetails.warnings.forEach((text) => {
@@ -17661,7 +22178,7 @@ ${propsPlotHtml}
       "指示に含まれない値は、舞台スケッチの既定値で埋めて必ず operations を作ってください。",
       "名前・位置・姿勢・向き・大きさ・色が未指定でも質問せず、既定値で配置してください。",
       "questions で止まるのは、既存の演者・セットのどれを指すか複数候補があり、取り違えると既存の配置を壊す場合だけです。",
-      `自動名の言語は現在の表示に合わせ、add_placementのplacement.languageを${isEn() ? "en" : "ja"}にしてください。`,
+      `自動名の言語は現在の表示に合わせ、add_placementのplacement.languageを${lang}にしてください。`,
       "成功した計画が返った時点で必ず終了してください。",
       "stage_sketch_apply_edit_plan は決して呼ばないでください。",
       "ソースコードや作業フォルダ内の他ファイルは編集しないでください。",
@@ -17715,7 +22232,7 @@ ${propsPlotHtml}
         showStageAskError,
         {
           expectedRevision: state.mcpRevision,
-          language: isEn() ? "en" : "ja",
+          language: lang,
           confirmFirstSync: (message) => window.confirm(message),
           onWritten: (revision) => {
             state.mcpRevision = revision;
@@ -17952,22 +22469,40 @@ ${propsPlotHtml}
     const current = venue();
     const size = venueSize();
 
+    if (els.venueSummaryTitle) {
+      els.venueSummaryTitle.textContent = current.missing ? current.label : venueName(current);
+      els.venueSummaryTitle.title = els.venueSummaryTitle.textContent;
+    }
+    if (els.venueSummarySize) {
+      els.venueSummarySize.textContent = sizeName(size);
+      els.venueSummarySize.title = els.venueSummarySize.textContent;
+    }
+
     /* 形式の選択肢は毎回組み直す。一度だけ作る作りだと、
      * 言語を変えても中の名前が日本語のまま残る。 */
     if (els.venueSelect) {
       els.venueSelect.innerHTML = "";
-      VENUES.list.forEach((v) => {
+      const choices = VENUES.list;
+      choices.forEach((v) => {
         const opt = document.createElement("option");
         opt.value = v.id;
-        opt.textContent = isEn() ? `${venueName(v)} (${venueShortName(v)})` : `${venueName(v)}（${venueShortName(v)}）`;
+        opt.textContent = sx(`${venueName(v)}（${venueShortName(v)}）`, `${venueName(v)} (${venueShortName(v)})`);
         els.venueSelect.append(opt);
       });
-      if (current.missing) {
+      // 初期一覧にない会場でも、開いたショーで使用中なら名前を表示する。
+      if (!choices.some((v) => v.id === current.id)) {
         const opt = document.createElement("option");
         opt.value = current.id;
-        opt.textContent = `${current.label}（${current.id}）`;
+        opt.textContent = current.missing ? `${current.label}（${current.id}）`
+          : sx(`${venueName(current)}（${venueShortName(current)}）`, `${venueName(current)} (${venueShortName(current)})`);
         els.venueSelect.append(opt);
       }
+      // 会場を自分で作る入口も、既存形式と同じ選択欄の末尾に置く。
+      // 実在する会場IDと衝突しない値にし、選択してもプロジェクト状態には保存しない。
+      const custom = document.createElement("option");
+      custom.value = "__create_custom_venue__";
+      custom.textContent = tx("カスタム");
+      els.venueSelect.append(custom);
     }
     if (els.venueSelect) els.venueSelect.value = current.id;
 
@@ -17991,61 +22526,32 @@ ${propsPlotHtml}
         const opt = document.createElement("option");
         opt.value = s2.id;
         const bits = current.audience === "round"
-          ? (isEn() ? `⌀${s2.width}m` : `直径${s2.width}m`)
+          ? (sx(`直径${s2.width}m`, `⌀${s2.width}m`))
           : `${s2.width}×${s2.depth}m`;
         opt.textContent = `${sizeName(s2)} — ${bits}`;
         els.sizeSelect.append(opt);
       });
-      /* 決め打ちの規模と同じ並びに「カスタム」を置く。
-       * 実寸を手で入れることは、規模を選ぶことと同じ層の決めごとなので、
-       * 別の欄へ追い出さない。 */
-      const custom = document.createElement("option");
-      custom.value = "custom";
-      const dims = state.project.venueDims;
-      const bits = dims
-        ? (current.audience === "round"
-          ? (isEn() ? `⌀${size.width}m` : `直径${size.width}m`)
-          : `${size.width}×${size.depth}m`)
-        : (isEn() ? "enter sizes" : "寸法を入れる");
-      custom.textContent = `${isEn() ? "Custom" : "カスタム"} — ${bits}`;
-      els.sizeSelect.append(custom);
-      els.sizeSelect.value = state.project.venueDims ? "custom" : size.id;
-    }
-
-    /* 実寸の欄。円形は一つの数（直径）で決まるので、奥行きの欄は畳む。
-     * ★プリセットを選んでいるあいだは欄ごと出さない。触れない欄を灰色で
-     *   並べておくより、カスタムを選んだときに現れる方が用が分かる。 */
-    if (els.venueW) {
-      const custom = Boolean(state.project.venueDims);
-      if (els.venueDimRow) els.venueDimRow.hidden = !custom;
-      [els.venueW, els.venueD, els.venueH].forEach((input) => {
-        if (input) input.disabled = !custom;
-      });
-      const round = current.audience === "round";
-      if (els.venueWLabel) {
-        els.venueWLabel.textContent = round
-          ? (isEn() ? "Diameter" : "直径")
-          : (isEn() ? "Width" : "間口");
-      }
-      if (els.venueDCell) els.venueDCell.hidden = round;
-      const put = (input, value) => {
-        if (input && document.activeElement !== input) input.value = String(value);
-      };
-      put(els.venueW, size.width);
-      put(els.venueD, size.depth);
-      put(els.venueH, size.height || 6);
-      if (els.venueReset) els.venueReset.hidden = !state.project.venueDims;
+      els.sizeSelect.value = size.id;
     }
 
     if (els.venueScale) {
-      const en = isEn();
+      const japaneseBits = current.audience === "round"
+        ? [`直径 ${size.width}m`]
+        : [`間口 ${size.width}m`, `奥行 ${size.depth}m`];
+      if (size.height) japaneseBits.push(`高さ ${size.height}m`);
+      if (size.seats) japaneseBits.push(`客席 約${size.seats}席`);
+      if (size.crowd) japaneseBits.push(`観客 〜${size.crowd.toLocaleString()}人`);
+      const japaneseScale = japaneseBits.join(" ・ ") + `（${current.source}）`;
       const bits = current.audience === "round"
-        ? [`${en ? "Diameter" : "直径"} ${size.width}m`]
-        : [`${en ? "Width" : "間口"} ${size.width}m`, `${en ? "Depth" : "奥行"} ${size.depth}m`];
-      if (size.height) bits.push(`${en ? "Height" : "高さ"} ${size.height}m`);
-      if (size.seats) bits.push(en ? `about ${size.seats} seats` : `客席 約${size.seats}席`);
-      if (size.crowd) bits.push(en ? `up to ${size.crowd.toLocaleString()} people` : `観客 〜${size.crowd.toLocaleString()}人`);
-      els.venueScale.textContent = bits.join(en ? " · " : " ・ ") + (en ? "" : `（${current.source}）`);
+        ? [`Diameter ${size.width}m`]
+        : [`Width ${size.width}m`, `Depth ${size.depth}m`];
+      if (size.height) bits.push(`Height ${size.height}m`);
+      if (size.seats) bits.push(`about ${size.seats} seats`);
+      if (size.crowd) bits.push(`up to ${size.crowd.toLocaleString()} people`);
+      els.venueScale.textContent = languageValue(
+        () => bits.join(" · "),
+        () => japaneseScale,
+      );
     }
 
     // 見る位置の小図は、客席が正面だけの劇場でしか意味を持たない
@@ -18142,28 +22648,62 @@ ${propsPlotHtml}
   }
 
   function setVenueSize(id) {
-    if (id === "custom") {
-      // いまの見た目のまま手入力へ移る。数字が飛ばないように、いまの値を写す
-      if (state.project.venueDims) return;
-      checkpoint();
-      const now = venueSize();
-      state.project.venueDims = normalizeVenueDims(
-        { width: now.width, depth: now.depth, height: now.height }, now);
-      renderVenueControls();
-      render();
-      persistSoon();
-      announce(isEn() ? "Custom sizes. Enter the numbers." : "カスタムにしました。寸法を入れてください。");
-      return;
-    }
     if (state.project.venueSize === id && !state.project.venueDims) return;
     checkpoint();
     state.project.venueSize = id;
-    // 規模を選び直したら、手で入れた実寸は捨てる（選んだ規模の値が出るべき）
+    // 規模を選び直したら、旧データに残る手入力寸法は外す。
     state.project.venueDims = null;
     renderVenueControls();
     render();
     persistSoon();
     announce(`規模を${sizeName(venueSize())}にしました。`);
+  }
+
+  /* 劇場形式プリセットとカスタム制作を別々の選択状態にしない。
+   * 制作画面へ現在の会場・規模を渡し、床・客席・天井の初期形を同時に入れ替える。 */
+  function syncVenueEditorTemplate() {
+    window.dispatchEvent(new CustomEvent("stage-venue-editor-template", {
+      detail: {
+        venueId: state.project.venue,
+        sizeId: state.project.venueSize,
+      },
+    }));
+  }
+
+  function previewVenueEditorTemplate(venueId, requestedSizeId) {
+    const selectedVenue = VENUES.byId(venueId);
+    const selectedSize = VENUES.sizeById(selectedVenue, requestedSizeId);
+    if (els.venueSelect) els.venueSelect.value = selectedVenue.id;
+    if (els.sizeSelect) {
+      els.sizeSelect.innerHTML = "";
+      selectedVenue.sizes.forEach((size) => {
+        const option = document.createElement("option");
+        option.value = size.id;
+        const dimensions = selectedVenue.audience === "round"
+          ? sx(`直径${size.width}m`, `⌀${size.width}m`)
+          : `${size.width}×${size.depth}m`;
+        option.textContent = `${sizeName(size)} — ${dimensions}`;
+        els.sizeSelect.append(option);
+      });
+      els.sizeSelect.value = selectedSize.id;
+    }
+    if (els.venueNote) {
+      const note = selectedVenue.missing ? "" : (venueNoteText(selectedVenue) || "");
+      els.venueNote.textContent = note;
+      els.venueNote.hidden = !note;
+    }
+    if (els.venueScale) {
+      const dimensions = selectedVenue.audience === "round"
+        ? [`直径 ${selectedSize.width}m`]
+        : [`間口 ${selectedSize.width}m`, `奥行 ${selectedSize.depth}m`];
+      if (selectedSize.height) dimensions.push(`高さ ${selectedSize.height}m`);
+      if (selectedSize.seats) dimensions.push(`客席 約${selectedSize.seats}席`);
+      if (selectedSize.crowd) dimensions.push(`観客 〜${selectedSize.crowd.toLocaleString()}人`);
+      els.venueScale.textContent = `${dimensions.join(" ・ ")}（${selectedVenue.source}）`;
+    }
+    window.dispatchEvent(new CustomEvent("stage-venue-editor-template", {
+      detail: { venueId: selectedVenue.id, sizeId: selectedSize.id },
+    }));
   }
 
 
@@ -18269,13 +22809,16 @@ ${propsPlotHtml}
     const width = venueSize().width || 12;
     const off = (u - 0.5) * width;
     if (Math.abs(off) < 0.15) return tm("misc", "centre", "中央");
-    if (isEn()) return `${Math.abs(off).toFixed(1)} m ${off > 0 ? "stage left" : "stage right"}`;
-    return `${off > 0 ? "上手" : "下手"}へ${Math.abs(off).toFixed(1)}m`;
+    const japaneseDirection = off > 0 ? "上手へ" : "下手へ";
+    return languageValue(
+      () => `${Math.abs(off).toFixed(1)} m ${tx(japaneseDirection)}`,
+      () => `${japaneseDirection}${Math.abs(off).toFixed(1)}m`,
+    );
   }
 
   function depthText(v) {
     const depth = venueSize().depth || 9;
-    return isEn() ? `${(v * depth).toFixed(1)} m from upstage` : `奥から${(v * depth).toFixed(1)}m`;
+    return sx(`奥から${(v * depth).toFixed(1)}m`, `${(v * depth).toFixed(1)} m from upstage`);
   }
 
   function selectedNote() {
@@ -18315,6 +22858,133 @@ ${propsPlotHtml}
 
   function selectedPiece() {
     return sc().pieces.find((piece) => piece.id === selectedId) || null;
+  }
+
+  function normalizeSelectedIds() {
+    const valid = new Set((sc().pieces || []).map((piece) => piece.id));
+    selectedIds.forEach((id) => {
+      if (!valid.has(id)) selectedIds.delete(id);
+    });
+    if (!selectedId || !valid.has(selectedId)) {
+      selectedId = null;
+      selectedIds.clear();
+      return selectedIds;
+    }
+    // 既存の単体選択処理がprimaryだけを切り替えた場合は、古い複数選択を残さない。
+    if (!selectedIds.has(selectedId)) selectedIds = new Set([selectedId]);
+    return selectedIds;
+  }
+
+  function selectedPieces() {
+    const ids = normalizeSelectedIds();
+    return (sc().pieces || []).filter((piece) => ids.has(piece.id));
+  }
+
+  function selectedPerformerPieces() {
+    const pieces = selectedPieces();
+    return pieces.length && pieces.every((piece) => piece.type === "performer") ? pieces : [];
+  }
+
+  function selectedFacingPieces() {
+    const pieces = selectedPieces();
+    if (pieces.length > 1) return selectedPerformerPieces();
+    const piece = pieces[0];
+    return piece && (piece.type === "performer" || SOLID_TYPES[piece.type]) ? [piece] : [];
+  }
+
+  /* 複数の駒を掴んだとき、選択内の間隔を変えずに平行移動する。
+     端へ着いたら一人ずつ潰さず、隊形全体をそこで止める。DOMやstateから
+     切り離した純粋関数にして、人数と舞台端の組み合わせを数値で検証する。 */
+  function groupedDragPositions(entries, anchorId, targetU, targetV, bounds) {
+    if (!Array.isArray(entries) || entries.length < 2) return entries || [];
+    const anchor = entries.find((entry) => entry.id === anchorId);
+    if (!anchor) return entries.map((entry) => ({ ...entry }));
+    const uValues = entries.map((entry) => entry.u);
+    const vValues = entries.map((entry) => entry.v);
+    const rawDu = targetU - anchor.u;
+    const rawDv = targetV - anchor.v;
+    const du = Math.min(bounds.uMax - Math.max(...uValues),
+      Math.max(bounds.uMin - Math.min(...uValues), rawDu));
+    const dv = Math.min(bounds.vMax - Math.max(...vValues),
+      Math.max(bounds.vMin - Math.min(...vValues), rawDv));
+    const tidy = (value) => Number(value.toFixed(12));
+    return entries.map((entry) => ({ id: entry.id, u: tidy(entry.u + du), v: tidy(entry.v + dv) }));
+  }
+
+  function applyPoseToSelection(pose) {
+    const performers = selectedPerformerPieces();
+    if (!pose || !performers.length || performers.some((piece) => mountKindOf(piece))) return 0;
+    const changed = performers.filter((piece) => piece.pose !== pose.id);
+    if (!changed.length) return 0;
+    checkpoint();
+    changed.forEach((piece) => { piece.pose = pose.id; });
+    updateInspector();
+    render();
+    persistSoon();
+    announce(performers.length > 1
+      ? sx(`${performers.length}人の姿勢を「${poseName(pose)}」にしました。`,
+        `Changed the pose of ${performers.length} performers to “${poseName(pose)}”.`)
+      : sx(`姿勢を「${poseName(pose)}」にしました。`, `Pose changed to “${poseName(pose)}”.`));
+    return changed.length;
+  }
+
+  function setSelectedPieces(ids, primaryId = null) {
+    const valid = new Set((sc().pieces || []).map((piece) => piece.id));
+    selectedIds = new Set((ids || []).filter((id) => valid.has(id)));
+    const ordered = Array.from(selectedIds);
+    selectedId = primaryId && selectedIds.has(primaryId)
+      ? primaryId
+      : (ordered[ordered.length - 1] || null);
+    syncMultiSelectionControls();
+  }
+
+  function syncMultiSelectionControls() {
+    const count = normalizeSelectedIds().size;
+    const enabled = featureOn("lineup");
+    if (els.multiSelectStatus) {
+      els.multiSelectStatus.hidden = !enabled || count < 2;
+      els.multiSelectStatus.textContent = count > 1
+        ? sx(`${count}件選択中`, `${count} selected`)
+        : "";
+      els.multiSelectStatus.classList.toggle("is-active", count > 1);
+      els.multiSelectStatus.title = tx("ドラッグで囲うか、Shiftを押しながら選択");
+    }
+    if (els.arrangeSelect) {
+      els.arrangeSelect.disabled = !enabled || count < 2;
+      els.arrangeSelect.title = count < 2
+        ? tx("整列するものを2つ以上選択してください")
+        : tx("選択したものだけ整列");
+      if (els.arrangeSelect.disabled) closeArrangeMenu();
+    }
+  }
+
+  function closeArrangeMenu() {
+    if (!els.arrangeOptions || els.arrangeOptions.hidden) return;
+    els.arrangeOptions.hidden = true;
+    if (els.arrangeSelect) els.arrangeSelect.setAttribute("aria-expanded", "false");
+  }
+
+  function toggleArrangeMenu() {
+    if (!els.arrangeSelect || !els.arrangeOptions || els.arrangeSelect.disabled) return;
+    const open = els.arrangeOptions.hidden;
+    els.arrangeOptions.hidden = !open;
+    els.arrangeSelect.setAttribute("aria-expanded", String(open));
+    if (open) els.arrangeOptions.querySelector("[data-arrange-shape]")?.focus();
+  }
+
+  function planPiecesInsideMarquee(marquee, L) {
+    const x0 = Math.min(marquee.start.x, marquee.current.x);
+    const x1 = Math.max(marquee.start.x, marquee.current.x);
+    const y0 = Math.min(marquee.start.y, marquee.current.y);
+    const y1 = Math.max(marquee.start.y, marquee.current.y);
+    return (sc().pieces || []).filter((piece) => {
+      if (piece.type === "light" || piece.heldBy || isLocked(piece)) return false;
+      if (!state.showFlown && isFlown(piece)) return false;
+      const bounds = selectionBounds(piece, L);
+      const cx = bounds.x + bounds.w / 2;
+      const cy = bounds.y + bounds.h / 2;
+      return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1;
+    });
   }
 
   function guestSessionActive() {
@@ -18374,6 +23044,9 @@ ${propsPlotHtml}
       pointerAction = null;
     }
     tool = nextTool;
+    if (tool !== "select" && normalizeSelectedIds().size > 1) {
+      setSelectedPieces(selectedId ? [selectedId] : [], selectedId);
+    }
     /* 見えないものは掴めない決まりなので、道具を持ったら対象を出す。
        明かりの道具→両図の照明ON、動線の道具→動線ON（つまみも合わせる）。 */
     if (tool === "light" && (!state.showLightsFront || !state.showLightsPlan)) {
@@ -18410,12 +23083,12 @@ ${propsPlotHtml}
   const heldItemName = (piece) => pieceLabel(piece) || pieceTypeName(piece.type);
   const performerName = (piece) => pieceLabel(piece) || (() => {
     const performers = sc().pieces.filter((candidate) => candidate.type === "performer");
-    return isEn() ? `Performer ${performers.indexOf(piece) + 1}` : `演者${performers.indexOf(piece) + 1}`;
+    return sx(`演者${performers.indexOf(piece) + 1}`, `Performer ${performers.indexOf(piece) + 1}`);
   })();
 
   function freeHoldSide(holderId, ignoreId, preferred) {
     const used = new Set(sc().pieces
-      .filter((piece) => piece.heldBy === holderId && piece.id !== ignoreId)
+      .filter((piece) => piece.heldBy === holderId && piece.id !== ignoreId && piece.holdMode !== "face")
       .map((piece) => piece.holdSide === "L" ? "L" : "R"));
     const order = preferred === "L" ? ["L", "R"] : ["R", "L"];
     return order.find((side) => !used.has(side)) || null;
@@ -18439,16 +23112,36 @@ ${propsPlotHtml}
     }
     piece.heldBy = holder.id;
     piece.holdSide = side;
+    piece.holdMode = "hand";
     piece.route = null;
     finishHoldingChange(`${heldItemName(piece)}を${performerName(holder)}に持たせました。`);
+    return true;
+  }
+
+  function canWearMask(piece, holder) {
+    return Boolean(piece && holder && holder.type === "performer" && isMask(piece) && isHoldable(piece)
+      && !sc().pieces.some((other) => other.id !== piece.id && other.heldBy === holder.id && other.holdMode === "face"));
+  }
+
+  function wearMaskBy(piece, holder) {
+    if (!canWearMask(piece, holder)) {
+      announce(tx("顔にはすでに仮面がついています。"));
+      return false;
+    }
+    piece.heldBy = holder.id;
+    piece.holdMode = "face";
+    piece.route = null;
+    finishHoldingChange(tx("仮面を顔につけました。"));
     return true;
   }
 
   function dropHeldPiece(piece) {
     if (!piece || !piece.heldBy) return;
     const name = heldItemName(piece);
+    const worn = piece.holdMode === "face";
     piece.heldBy = null;
-    finishHoldingChange(`${name}を手放しました。`);
+    piece.holdMode = "hand";
+    finishHoldingChange(worn ? tx("仮面を外しました。") : `${name}を手放しました。`);
   }
 
   function syncHoldingControls(piece) {
@@ -18458,19 +23151,37 @@ ${propsPlotHtml}
       els.heldList.innerHTML = "";
       sc().pieces.filter((item) => item.heldBy === piece.id).forEach((item) => {
         const row = document.createElement("div");
-        row.className = "stage-cast-row";
+        row.className = isMask(item) ? "stage-cast-row stage-held-mask" : "stage-cast-row";
         const name = document.createElement("span");
         name.className = "stage-cast-name";
         name.textContent = heldItemName(item);
         const drop = document.createElement("button");
         drop.type = "button";
         drop.className = "btn-quiet";
-        drop.textContent = tx("手放す");
+        drop.textContent = tx(item.holdMode === "face" ? "外す" : "手放す");
         drop.addEventListener("click", () => {
           checkpoint();
           dropHeldPiece(item);
         });
-        row.append(name, drop);
+        row.append(name);
+        if (isMask(item)) {
+          const mode = document.createElement("button");
+          mode.type = "button";
+          mode.className = "btn-quiet stage-mask-action";
+          mode.textContent = tx(item.holdMode === "face" ? "手に持つ" : "顔につける");
+          mode.addEventListener("click", () => {
+            const wearing = item.holdMode === "face";
+            if (wearing ? !freeHoldSide(piece.id, item.id, item.holdSide) : !canWearMask(item, piece)) {
+              announce(tx(wearing ? "両手がふさがっています。" : "顔にはすでに仮面がついています。"));
+              return;
+            }
+            checkpoint();
+            if (wearing) holdPieceBy(item, piece, item.holdSide);
+            else wearMaskBy(item, piece);
+          });
+          row.append(mode);
+        }
+        row.append(drop);
         els.heldList.append(row);
       });
       els.holdSelect.innerHTML = "";
@@ -18489,10 +23200,28 @@ ${propsPlotHtml}
         && !sc().pieces.some((candidate) => candidate.setId === item.id)).forEach((item) => {
         const option = document.createElement("option");
         option.value = `set:${item.id}`;
-        option.textContent = `${isEn() ? "Backstage: " : "舞台裏："}${item.name}`;
+        option.textContent = `${tx("舞台裏：")}${item.name}`;
         els.holdSelect.append(option);
       });
       els.holdSelect.value = "";
+      if (els.wearSelect) {
+        els.wearSelect.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = tx("顔につける…");
+        els.wearSelect.append(placeholder);
+        const options = sc().pieces.filter((item) => isMask(item) && isHoldable(item)
+          && (!item.heldBy || item.heldBy === piece.id) && item.holdMode !== "face" && onStageArea(item.u, item.v))
+          .map((item) => ({ value: `piece:${item.id}`, name: heldItemName(item) }));
+        (state.project.sets || []).filter((item) => item.kind === "prop" && item.propShape === "mask" && !item.flown
+          && !sc().pieces.some((p) => p.setId === item.id)).forEach((item) => options.push({ value: `set:${item.id}`, name: item.name }));
+        options.forEach((item) => {
+          const option = document.createElement("option");
+          option.value = item.value; option.textContent = item.name; els.wearSelect.append(option);
+        });
+        els.wearSelect.hidden = !options.length;
+        els.wearSelect.disabled = sc().pieces.some((item) => item.heldBy === piece.id && item.holdMode === "face");
+      }
     }
 
     const held = Boolean(piece && isHoldable(piece) && piece.heldBy);
@@ -18510,12 +23239,19 @@ ${propsPlotHtml}
       els.holderSelect.append(option);
     });
     els.holderSelect.value = piece.heldBy;
-    if (els.holderLeft) els.holderLeft.setAttribute("aria-pressed", String(piece.holdSide === "L"));
-    if (els.holderRight) els.holderRight.setAttribute("aria-pressed", String(piece.holdSide !== "L"));
+    if (els.holderLeft) els.holderLeft.setAttribute("aria-pressed", String(piece.holdMode !== "face" && piece.holdSide === "L"));
+    if (els.holderRight) els.holderRight.setAttribute("aria-pressed", String(piece.holdMode !== "face" && piece.holdSide !== "L"));
+    if (els.holderFace) {
+      els.holderFace.hidden = !isMask(piece);
+      els.holderFace.setAttribute("aria-pressed", String(piece.holdMode === "face"));
+    }
   }
 
   function updateInspector() {
     const piece = selectedPiece();
+    const pieces = selectedPieces();
+    const multi = pieces.length > 1;
+    const performers = selectedPerformerPieces();
     if (els.facingLock) {
       const locked = Boolean(sc().facingLock);
       els.facingLock.textContent = locked ? "🔒" : "🔓";
@@ -18530,15 +23266,34 @@ ${propsPlotHtml}
      * ここで勝手に出すと、畳んだはずの文が選ぶたびに戻ってくる。 */
     els.selectionControls.hidden = !piece;
     renderPoseStrip(piece);
-    if (els.fpvOpen) els.fpvOpen.hidden = !(piece && piece.type === "performer");
-    syncHoldingControls(piece);
+    if (els.fpvOpen) els.fpvOpen.hidden = multi || !(piece && piece.type === "performer");
+    syncHoldingControls(multi ? null : piece);
     if (!piece) return;
-    const sameType = sc().pieces.filter((candidate) => candidate.type === piece.type);
-    els.selectedName.textContent = `${pieceTypeName(piece.type)} ${sameType.indexOf(piece) + 1}`;
-    syncDimControls(piece);
-    const mount = mountKindOf(piece);
+    if (multi) {
+      els.selectedName.textContent = performers.length === pieces.length
+        ? sx(`${pieces.length}人の演者`, `${pieces.length} performers`)
+        : sx(`${pieces.length}件を選択`, `${pieces.length} items selected`);
+    } else {
+      const sameType = sc().pieces.filter((candidate) => candidate.type === piece.type);
+      els.selectedName.textContent = `${pieceTypeName(piece.type)} ${sameType.indexOf(piece) + 1}`;
+    }
+    if (els.selectionScope) {
+      els.selectionScope.hidden = !multi;
+      if (multi) {
+        els.selectionScope.textContent = performers.length === pieces.length
+          ? sx("ドラッグで全員の位置を動かせます。姿勢と向きの変更は、選んだ全員に反映します。",
+            "Drag to move everyone. Pose and facing changes apply to every selected performer.")
+          : sx("ドラッグで、選んだものの位置をまとめて動かせます。",
+            "Drag to move the selected items together.");
+      }
+    }
+    syncDimControls(multi ? null : piece);
+    const mount = multi ? null : mountKindOf(piece);
     if (els.piecePose) {
-      const isPerformer = piece.type === "performer";
+      const isPerformer = multi ? performers.length === pieces.length : piece.type === "performer";
+      const mounted = isPerformer && performers.some((item) => mountKindOf(item));
+      const commonPose = isPerformer && performers.every((item) => item.pose === performers[0].pose)
+        ? performers[0].pose : null;
       /* 乗り物の上では姿勢を選べない。何で決まっているかが読めるよう、
          札には乗り方をそのまま出す。 */
       if (els.poseLabel) {
@@ -18547,15 +23302,16 @@ ${propsPlotHtml}
           : mount === "trapeze"
             ? poseName(poseById(piece.trapMode === "hang" ? "trapeze_hang" : "trapeze_sit"))
             : mount === "tissue" ? tx("布に掴まる")
-            : poseName(poseById(piece.pose));
+          : multi && !commonPose ? sx("複数の姿勢", "Mixed poses")
+            : poseName(poseById(commonPose || piece.pose));
       }
-      els.piecePose.disabled = !isPerformer || Boolean(mount);
+      els.piecePose.disabled = !isPerformer || Boolean(mount) || Boolean(mounted);
       els.piecePose.hidden = !isPerformer;
       const row = els.piecePose.previousElementSibling;
       if (row) row.hidden = !isPerformer;
     }
     if (els.poleControls) {
-      const onPole = mount === "pole";
+      const onPole = !multi && mount === "pole";
       els.poleControls.hidden = !onPole;
       if (onPole) {
         const holder = sc().pieces.find((other) => other.id === piece.supportId);
@@ -18568,7 +23324,7 @@ ${propsPlotHtml}
       }
     }
     if (els.trapControls) {
-      const onTrap = mount === "trapeze";
+      const onTrap = !multi && mount === "trapeze";
       els.trapControls.hidden = !onTrap;
       if (onTrap) {
         els.trapSit.setAttribute("aria-pressed", String(piece.trapMode !== "hang"));
@@ -18576,7 +23332,7 @@ ${propsPlotHtml}
       }
     }
     if (els.diaboloControls) {
-      const onDiabolo = piece.type === "diabolo";
+      const onDiabolo = !multi && piece.type === "diabolo";
       els.diaboloControls.hidden = !onDiabolo;
       if (onDiabolo) {
         els.diaboloLay.setAttribute("aria-pressed", String(piece.diaboloMode !== "stand"));
@@ -18584,7 +23340,7 @@ ${propsPlotHtml}
       }
     }
     if (els.tissueControls) {
-      const onTissue = mount === "tissue";
+      const onTissue = !multi && mount === "tissue";
       els.tissueControls.hidden = !onTissue;
       if (onTissue) {
         const holder = sc().pieces.find((other) => other.id === piece.supportId);
@@ -18599,18 +23355,26 @@ ${propsPlotHtml}
       }
     }
     if (els.pieceFacing) {
-      // 向きは演者と台に効く。球は回しても見た目が変わらない
-      const isPerformer = piece.type === "performer" || Boolean(SOLID_TYPES[piece.type]);
+      // 複数では演者だけをまとめて向ける。台などを混ぜた選択へは一部だけ適用しない。
+      const facingPieces = selectedFacingPieces();
+      const isPerformer = facingPieces.length > 0;
       // フェーダーは中央が客席向き。保存は0〜359なので、180を超える分は負へ折り返す
-      const deg = ((Number(piece.facing) || 0) % 360 + 360) % 360;
+      const commonFacing = isPerformer && facingPieces.every((item) => item.facing === facingPieces[0].facing)
+        ? facingPieces[0].facing : null;
+      const deg = ((Number(commonFacing === null ? piece.facing : commonFacing) || 0) % 360 + 360) % 360;
       els.pieceFacing.value = String(deg > 180 ? deg - 360 : deg);
       els.pieceFacing.disabled = !isPerformer;
       // 効かないつまみは出さない。明かりや球を選ぶたび、灰色の「向き」が場所を取る
       if (els.facingControls) els.facingControls.hidden = !isPerformer;
       if (els.facingValue) {
-        els.facingValue.textContent = isPerformer ? facingLabel(piece.facing) : "―";
+        els.facingValue.textContent = !isPerformer ? "―"
+          : commonFacing === null ? sx("複数の向き", "Mixed directions")
+            : facingLabel(commonFacing);
       }
     }
+    if (els.duplicate) els.duplicate.hidden = multi;
+    if (els.pieceLock) els.pieceLock.hidden = multi;
+    if (els.delete) els.delete.hidden = multi;
   }
 
   /* 正面図の下の姿勢帯。毎回39枚を描き直すと重いので、
@@ -18618,13 +23382,16 @@ ${propsPlotHtml}
   let poseStripFor = "";
   function renderPoseStrip(piece) {
     if (!els.poseStrip) return;
-    const show = Boolean(piece && piece.type === "performer" && !mountKindOf(piece));
+    const performers = selectedPerformerPieces();
+    const show = Boolean(piece && performers.length && !performers.some((item) => mountKindOf(item)));
     els.poseStrip.hidden = !show;
     if (!show) { poseStripFor = ""; return; }
-    const buildKey = `${piece.id}|${piece.color}|${lang}`;
+    const commonPose = performers.every((item) => item.pose === performers[0].pose)
+      ? performers[0].pose : null;
+    const buildKey = `${performers.map((item) => `${item.id}:${item.color}`).join("|")}|${lang}`;
     if (poseStripFor === buildKey) {
       els.poseStrip.querySelectorAll(".stage-pose-strip-tile").forEach((tile) => {
-        const on = tile.dataset.pose === piece.pose;
+        const on = tile.dataset.pose === commonPose;
         tile.classList.toggle("is-on", on);
         tile.setAttribute("aria-pressed", String(on));
         if (on && tile.scrollIntoView) tile.scrollIntoView({ inline: "center", block: "nearest" });
@@ -18636,9 +23403,9 @@ ${propsPlotHtml}
     POSES.forEach((pose) => {
       const tile = document.createElement("button");
       tile.type = "button";
-      tile.className = `stage-pose-strip-tile${pose.id === piece.pose ? " is-on" : ""}`;
+      tile.className = `stage-pose-strip-tile${pose.id === commonPose ? " is-on" : ""}`;
       tile.dataset.pose = pose.id;
-      tile.setAttribute("aria-pressed", String(pose.id === piece.pose));
+      tile.setAttribute("aria-pressed", String(pose.id === commonPose));
       tile.title = poseName(pose);
       const canvas = document.createElement("canvas");
       canvas.width = 112;
@@ -18649,15 +23416,7 @@ ${propsPlotHtml}
       els.poseStrip.appendChild(tile);
       drawPosePreview(canvas, pose.id, piece.color);
       tile.addEventListener("click", () => {
-        const current = selectedPiece();
-        if (!current || current.type !== "performer" || mountKindOf(current)
-          || current.pose === pose.id) return;
-        checkpoint();
-        current.pose = pose.id;
-        updateInspector();
-        render();
-        persistSoon();
-        announce(`姿勢を「${poseName(pose)}」にしました。`);
+        applyPoseToSelection(pose);
       });
     });
     const active = els.poseStrip.querySelector(".is-on");
@@ -18665,8 +23424,12 @@ ${propsPlotHtml}
   }
 
   function syncInputs() {
-    if (els.sceneList && state.sceneListHeight) {
-      els.sceneList.style.height = `${state.sceneListHeight}px`;
+    if (els.sceneList) {
+      if (state.sceneListHeightMode === "manual" && state.sceneListHeight) {
+        els.sceneList.style.height = `${state.sceneListHeight}px`;
+      } else {
+        els.sceneList.style.removeProperty("height");
+      }
     }
     els.background.value = sc().background;
     syncPhotoControls();
@@ -18688,7 +23451,7 @@ ${propsPlotHtml}
     if (els.animMs) {
       if (document.activeElement !== els.animMs) els.animMs.value = String(state.sceneAnimMs / 1000);
       els.animMs.disabled = !state.animateScenes;
-      if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}${isEn() ? "s" : "秒"}`;
+      if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}${languageValue(() => ("s"), () => ("秒"))}`;
     }
     syncSeatMapToggle();
   }
@@ -18809,6 +23572,30 @@ ${propsPlotHtml}
     if (!pointerAction || pointerAction.pointerId !== event.pointerId) return;
     const el = pointerAction.el || canvas;
     try { if (el.hasPointerCapture(event.pointerId)) el.releasePointerCapture(event.pointerId); } catch (_) { /* 同上 */ }
+    if (pointerAction.kind === "marquee") {
+      const action = pointerAction;
+      pointerAction = null;
+      selectionMarquee = null;
+      el.dataset.dragging = "false";
+      if (event.type === "pointercancel") {
+        setSelectedPieces(action.beforeIds, action.primaryId);
+      } else if (action.moved) {
+        const hits = planPiecesInsideMarquee({ start: action.start, current: action.current }, layout("plan"));
+        const ids = new Set(action.additive ? action.beforeIds : []);
+        hits.forEach((piece) => ids.add(piece.id));
+        const ordered = Array.from(ids);
+        const primary = action.additive && ids.has(action.primaryId)
+          ? action.primaryId
+          : ordered[ordered.length - 1];
+        setSelectedPieces(ordered, primary);
+        announce(ids.size ? `${ids.size}件を選択しました。` : "囲いの中に選択できるものがありません。");
+      } else if (!action.additive) {
+        setSelectedPieces([]);
+      }
+      updateInspector();
+      render();
+      return;
+    }
     if (pointerAction.kind === "arrow") {
       const action = pointerAction;
       if (event.type !== "pointercancel" && arrowDraft && arrowDraft.points.length < 400) {
@@ -18848,27 +23635,34 @@ ${propsPlotHtml}
       ? { id: pointerAction.id, view: pointerAction.view } : null;
     const drewRoute = pointerAction.kind === "route";
     const dragSync = pointerAction.kind === "drag" && pointerAction.moved
-      ? { id: pointerAction.id, u: pointerAction.startU, v: pointerAction.startV } : null;
+      ? (pointerAction.groupStart || [
+        { id: pointerAction.id, u: pointerAction.startU, v: pointerAction.startV },
+      ]) : null;
     // 動線は一本引けば用が済む。引いたらそのまま動かす手に戻す
     const backToSelect = Boolean(pointerAction.fromRouteTool);
     pointerAction = null;
     el.dataset.dragging = "false";
     if (changed) persistSoon();
     if (dragSync) {
-      const piece = sc().pieces.find((candidate) => candidate.id === dragSync.id);
-      if (piece) {
-        syncRouteFromPrev(piece, dragSync.u, dragSync.v);
+      let lockedSeri = false;
+      dragSync.forEach((start) => {
+        const piece = sc().pieces.find((candidate) => candidate.id === start.id);
+        if (!piece) return;
+        syncRouteFromPrev(piece, start.u, start.v);
         if (piece.type === "seri") {
           setLocked(piece, true);
-          renderSets();
-          updateInspector();
-          render();
-          persistSoon();
-          announce("せりを置きました。錠を掛けました（せりの位置は動きません）。動かすには一覧の🔒を外します。");
+          lockedSeri = true;
         }
+      });
+      if (lockedSeri) {
+        renderSets();
+        updateInspector();
+        render();
+        persistSoon();
+        announce("せりを置きました。錠を掛けました（せりの位置は動きません）。動かすには一覧の🔒を外します。");
       }
     }
-    // 動線を引き終えたら、場面の欄の「動線の先へ動かした場面を作る」が押せるようになる
+    // 動線を引き終えたら、次のシーン作成モーダルの一覧へ行き先ありの表示を反映する
     if (drewRoute) renderScenes();
     if (backToSelect) setTool("select");
     // 掴んだだけで離した＝書き直したい、と読む
@@ -18925,6 +23719,7 @@ ${propsPlotHtml}
     if (pointerAction) {
       pointerAction.el.dataset.dragging = "false";
       if (pointerAction.kind === "arrow") arrowDraft = null;
+      if (pointerAction.kind === "marquee") selectionMarquee = null;
       pointerAction = null;
       render();
     }
@@ -19156,12 +23951,16 @@ ${propsPlotHtml}
       selectedNoteId = null;
       // 選んでいる駒の動線の取っ手は、駒そのものより先に拾う
       const current = selectedPiece();
-      let handle = view === "plan" ? routeHandleAt(point, current, L) : null;
+      const extendingSelection = view === "plan" && event.shiftKey;
+      const multiSelectionActive = normalizeSelectedIds().size > 1;
+      let handle = view === "plan" && !extendingSelection && !multiSelectionActive
+        ? routeHandleAt(point, current, L) : null;
       let already = false;
       /* はけの自動動線の取っ手。掴んだ瞬間に piece.route へ実体化して、
          袖のどちら側・どの深さへはけるかを手で決められる（本人の指定）。
          checkpoint は実体化の前に一度だけ（掴む→戻す、で線ごと消える）。 */
-      if (!handle && view === "plan" && current && !current.route) {
+      if (!handle && view === "plan" && !extendingSelection && !multiSelectionActive
+        && current && !current.route) {
         const auto = exitRouteFor(current, nextSceneOf(sc()));
         const grabbed = auto ? routeHandleAtFor(point, current, auto, L) : null;
         if (grabbed) {
@@ -19198,13 +23997,25 @@ ${propsPlotHtml}
           hit = piece;
         }
       }
-      selectedId = hit ? hit.id : null;
+      // Shiftクリックは既存の選択へ追加／解除する。移動は始めない。
+      if (view === "plan" && event.shiftKey && hit) {
+        const ids = new Set(normalizeSelectedIds());
+        if (ids.has(hit.id)) ids.delete(hit.id); else ids.add(hit.id);
+        const ordered = Array.from(ids);
+        setSelectedPieces(ordered, ids.has(hit.id) ? hit.id : ordered[ordered.length - 1]);
+        updateInspector();
+        render();
+        announce(ids.size ? `${ids.size}件を選択しました。` : "複数選択を解除しました。");
+        return;
+      }
+      const keepGroup = hit && normalizeSelectedIds().size > 1
+        && normalizeSelectedIds().has(hit.id);
+      if (hit && !keepGroup) setSelectedPieces([hit.id], hit.id);
       updateInspector();
       render();
       if (!hit) {
-        /* 平面図を拡大しているときは、何もない所を掴むと見える場所が動く。
-           等倍では全体が見えているので、掴んでも何も起きない。 */
-        if (view === "plan" && zoomOf("plan").z > 1.001) {
+        /* 拡大中の平面移動はOptionドラッグ。通常のドラッグは囲い選択に使う。 */
+        if (view === "plan" && event.altKey && zoomOf("plan").z > 1.001) {
           const rect = el.getBoundingClientRect();
           const zs = zoomOf("plan");
           capture(el, event.pointerId);
@@ -19216,6 +24027,22 @@ ${propsPlotHtml}
           };
           return;
         }
+        if (view === "plan") {
+          const beforeIds = Array.from(normalizeSelectedIds());
+          capture(el, event.pointerId);
+          el.dataset.dragging = "true";
+          selectionMarquee = { start: point, current: point };
+          pointerAction = {
+            kind: "marquee", pointerId: event.pointerId, el, view,
+            start: point, current: point, moved: false,
+            additive: event.shiftKey, beforeIds, primaryId: selectedId,
+          };
+          render();
+          return;
+        }
+        setSelectedPieces([]);
+        updateInspector();
+        render();
         // 舞台が一度に入らない席では、何もない所を掴むと視線を左右に振れる
         if (view === "front" && (L.panRange > 0 || L.panRangeY > 0)) {
           capture(el, event.pointerId);
@@ -19241,6 +24068,7 @@ ${propsPlotHtml}
         offsetX: point.x - pos.x, offsetY: point.y - pos.y,
         before: snapshot(), moved: false,
         startU: hit.u, startV: hit.v,
+        groupStart: keepGroup ? selectedPieces().map((item) => ({ id: item.id, u: item.u, v: item.v })) : null,
       };
       return;
     }
@@ -19270,6 +24098,61 @@ ${propsPlotHtml}
     render();
   }
 
+  function pointInsideTag(point, tag) {
+    return point.x >= tag.left && point.x <= tag.left + tag.width
+      && point.y >= tag.top && point.y <= tag.top + tag.height;
+  }
+
+  /* Canvas の名前は DOM 要素ではないため、描画に使った名前札の矩形をもう一度求める。
+   * 後から描いた札を先に見るので、名前が重なっていても見えている側が開く。 */
+  function nameDetailTargetAt(point, L, target) {
+    if (L.plan && state.showNames) {
+      const ghosts = backstageGhosts();
+      for (let i = ghosts.length - 1; i >= 0; i -= 1) {
+        const ghost = ghosts[i];
+        if (sceneAnim && sceneAnim.exits
+          && sceneAnim.exits.some((entry) => entry.piece.castId === ghost.member.id)) continue;
+        const tag = backstageNameTag(target, ghost, L);
+        if (tag && pointInsideTag(point, tag)) return { castId: tag.castId, piece: null };
+      }
+    }
+    const shown = sc().pieces.filter((piece) => !(L.plan && !state.showFlown && isFlown(piece)));
+    for (let i = shown.length - 1; i >= 0; i -= 1) {
+      const piece = shown[i];
+      if (!piece.castId && !piece.setId) continue;
+      const tag = pieceNameTag(target, piece, L, shown);
+      if (tag && pointInsideTag(point, tag)) return { castId: piece.castId || null, piece };
+    }
+    return null;
+  }
+
+  function openNameDetailTarget(target) {
+    if (!target) return false;
+    if (target.piece) {
+      setSelectedPieces([target.piece.id], target.piece.id);
+      updateInspector();
+      render();
+    }
+    if (target.castId) {
+      openProfile(target.castId);
+      return true;
+    }
+    const item = target.piece && pieceSet(target.piece);
+    if (!item) return false;
+    openSetInfo(item.id);
+    return true;
+  }
+
+  function onCanvasNameDoubleClick(event) {
+    if (tabletPwaActive || phoneViewerActive) event.preventDefault();
+    if (STUDY_READ_ONLY || guestSessionActive() || phoneViewerActive || presenting) return;
+    const el = event.currentTarget;
+    const target = nameDetailTargetAt(pointFromEvent(event), layout(viewOf(el)), el.getContext("2d"));
+    if (!target || !openNameDetailTarget(target)) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
   /* 手の形で「掴める」を伝える。写真の道具と同じ作法。
    * 触っているものを毎回当てて決めるので、駒の上と何もない所で形が変わる。 */
   function cursorFor(el, event) {
@@ -19280,6 +24163,8 @@ ${propsPlotHtml}
     const view = viewOf(el);
     const L = layout(view);
     const point = pointFromEvent(event);
+    if (!presenting && (tool === "select" || tool === "light")
+      && nameDetailTargetAt(point, L, el.getContext("2d"))) return "pointer";
     if (tool === "arrow") {
       return event.altKey && arrowAt(point, L, view) >= 0 ? "not-allowed" : "crosshair";
     }
@@ -19293,18 +24178,20 @@ ${propsPlotHtml}
     if (noteAt(point, L, view)) return "grab";
     if (screenTextAt(point, L)) return "grab";
     const current = selectedPiece();
-    if (view === "plan" && routeHandleAt(point, current, L)) return "grab";
+    const multiSelectionActive = normalizeSelectedIds().size > 1;
+    if (view === "plan" && !multiSelectionActive && routeHandleAt(point, current, L)) return "grab";
     // はけの自動動線の取っ手にも指の形を出す（掴めば実体化する）
-    if (view === "plan" && current && !current.route) {
+    if (view === "plan" && !multiSelectionActive && current && !current.route) {
       const auto = exitRouteFor(current, nextSceneOf(sc()));
       if (auto && routeHandleAtFor(point, current, auto, L)) return "grab";
     }
     // 錠が掛かったものは hitTest が返さないので、指の形も変わらない
     const hit = hitTest(point, L);
-    if (hit) return "grab";
+    if (hit) return view === "plan" && event.shiftKey ? "copy" : "grab";
     if (view === "plan" && ghostAt(point, L)) return "grab";
     if (view === "front" && (L.panRange > 0 || L.panRangeY > 0)) return "grab";
-    if (view === "plan" && zoomOf("plan").z > 1.001) return "grab";
+    if (view === "plan" && event.altKey && zoomOf("plan").z > 1.001) return "grab";
+    if (view === "plan") return "crosshair";
     return "default";
   }
 
@@ -19345,6 +24232,16 @@ ${propsPlotHtml}
         pointerAction.moved = true;
         render();
       }
+      return;
+    }
+
+    if (pointerAction.kind === "marquee") {
+      pointerAction.current = point;
+      pointerAction.moved = pointerAction.moved
+        || Math.hypot(point.x - pointerAction.start.x, point.y - pointerAction.start.y)
+          * zoomOf("plan").z >= 4;
+      selectionMarquee = { start: pointerAction.start, current: point };
+      render();
       return;
     }
 
@@ -19471,7 +24368,8 @@ ${propsPlotHtml}
       if (!pointerAction.moved) {
         recordBefore(pointerAction.before);
         pointerAction.moved = true;
-        bringToTop(piece);   // 動かしたものが、重なった相手の上に乗る
+        // 複数移動では選択内の重なり順も隊形の一部として保つ。
+        if (!pointerAction.groupStart) bringToTop(piece);
       }
       let px = point.x - pointerAction.offsetX;
       let py = point.y - pointerAction.offsetY;
@@ -19485,6 +24383,21 @@ ${propsPlotHtml}
         }
       }
       const next = fromScreen(px, py, L);
+      if (pointerAction.groupStart && pointerAction.groupStart.length > 1) {
+        const bounds = L.plan ? planBounds() : { uMin: 0, uMax: 1, vMin: 0, vMax: 1 };
+        const moved = groupedDragPositions(
+          pointerAction.groupStart, pointerAction.id, next.u, next.v, bounds,
+        );
+        const byId = new Map(moved.map((entry) => [entry.id, entry]));
+        selectedPieces().forEach((item) => {
+          const position = byId.get(item.id);
+          if (!position) return;
+          item.u = position.u;
+          item.v = position.v;
+        });
+        render();
+        return;
+      }
       // 組の明かりは一体で動く。どの一つを掴んでも組ごと平行移動する
       const dragGroup = piece.type === "light" ? lightGroupOf(piece) : null;
       if (dragGroup) {
@@ -19518,7 +24431,8 @@ ${propsPlotHtml}
   }
 
   function onKeyDown(event) {
-    if (guestSessionActive()) return;
+    // 全画面では、駒の選択が残っていても矢印キーをシーン送りへ渡す。
+    if (presenting || guestSessionActive()) return;
     const note = selectedNote();
     if (note && (event.key === "Delete" || event.key === "Backspace")) {
       event.preventDefault();
@@ -19585,10 +24499,10 @@ ${propsPlotHtml}
 
   function onFacingWheel(event) {
     if (guestSessionActive()) return;
-    const piece = selectedPiece();
-    if (!piece || (piece.type !== "performer" && !SOLID_TYPES[piece.type])) return;
+    const facingPieces = selectedFacingPieces();
+    const piece = facingPieces.find((item) => onFacingWheelTarget(event, item));
+    if (!piece) return;
     // 近くに居ないうちは、向きロックの知らせも出さずに素通しする
-    if (!onFacingWheelTarget(event, piece)) return;
     const scene = sc();
     if (scene.facingLock) {
       if (!facingLockNotices.has(scene.id)) {
@@ -19599,7 +24513,7 @@ ${propsPlotHtml}
     }
 
     const now = performance.now();
-    const context = `${scene.id}:${piece.id}`;
+    const context = `${scene.id}:${facingPieces.map((item) => item.id).join(",")}`;
     if (context !== facingWheelContext || now - facingWheelLastAt >= 600) {
       facingWheelDelta = 0;
       facingWheelCheckpointed = false;
@@ -19621,12 +24535,10 @@ ${propsPlotHtml}
     facingWheelDelta -= notches * 20;
     const amount = event.shiftKey ? 5 : 15;
     // 平面図は向きを負角で描くため、下スクロールは値を引くと見た目が時計回りになる
-    piece.facing = (((Number(piece.facing) || 0) - notches * amount) % 360 + 360) % 360;
-    if (els.pieceFacing) {
-      const deg = piece.facing > 180 ? piece.facing - 360 : piece.facing;
-      els.pieceFacing.value = String(deg);
-    }
-    if (els.facingValue) els.facingValue.textContent = facingLabel(piece.facing);
+    facingPieces.forEach((item) => {
+      item.facing = (((Number(item.facing) || 0) - notches * amount) % 360 + 360) % 360;
+    });
+    updateInspector();
     render();
     persistSoon();
   }
@@ -19639,9 +24551,7 @@ ${propsPlotHtml}
     el.addEventListener("pointercancel", finishPointer);
     el.addEventListener("keydown", onKeyDown);
     el.addEventListener("wheel", onFacingWheel, { passive: false });
-    el.addEventListener("dblclick", (event) => {
-      if (tabletPwaActive || phoneViewerActive) event.preventDefault();
-    });
+    el.addEventListener("dblclick", onCanvasNameDoubleClick);
   });
 
   document.querySelectorAll("[data-stage-tool]").forEach((button) => {
@@ -19808,49 +24718,29 @@ ${propsPlotHtml}
   if (els.showPlan) {
     els.showPlan.addEventListener("change", (e) => setViewShown("plan", e.target.checked));
   }
-  /* 実寸の手入力。選んだ規模を土台に、触った値だけ上書きする。
-   * 尺は全部ここから引かれるので、変えた瞬間に人も道具も一緒に縮む。 */
-  [["venueW", "width"], ["venueD", "depth"], ["venueH", "height"]].forEach(([key, field]) => {
-    const input = els[key];
-    if (!input) return;
-    const apply = () => {
-      const size = VENUES.sizeById(venue(), state.project.venueSize);
-      const lim = VENUE_LIMITS[field];
-      const value = Math.round(clamp(finite(input.value, size[field] || lim[0]), lim[0], lim[1]) * 10) / 10;
-      const next = Object.assign({}, state.project.venueDims || {});
-      next[field] = value;
-      state.project.venueDims = normalizeVenueDims(next, size);
-      input.value = String(value);
-      renderVenueControls();
-      render();
-      persistSoon();
-    };
-    input.addEventListener("change", () => { checkpoint(); apply(); });
-    input.addEventListener("keydown", (e) => {
-      e.stopPropagation();
-      if (e.key === "Enter") { e.preventDefault(); input.blur(); }
-    });
-  });
-  if (els.venueReset) {
-    els.venueReset.addEventListener("click", () => {
-      if (!state.project.venueDims) return;
-      checkpoint();
-      state.project.venueDims = null;
-      renderVenueControls();
-      render();
-      persistSoon();
-      announce(`${sizeName(venueSize())}の寸法に戻しました。`);
+  if (els.venueSelect) {
+    els.venueSelect.addEventListener("change", (e) => {
+      if (e.target.value === "__create_custom_venue__") {
+        // モーダルを閉じた後も、選択中の会場は変えない。
+        e.target.value = state.project.venue;
+        syncVenueEditorTemplate();
+        return;
+      }
+      previewVenueEditorTemplate(e.target.value, state.project.venueSize);
     });
   }
-
-  if (els.venueSelect) {
-    els.venueSelect.addEventListener("change", (e) => setVenue(e.target.value));
+  if (els.venueCustomOpen) {
+    els.venueCustomOpen.addEventListener("click", () => {
+      syncVenueEditorTemplate();
+      window.dispatchEvent(new Event("stage-venue-editor-open"));
+    });
   }
   window.addEventListener("stage-venue-library-changed", renderVenueControls);
   window.addEventListener("stage-venue-saved", (event) => {
     const saved = event.detail && event.detail.venue;
     if (saved && typeof saved.id === "string") setVenue(saved.id);
   });
+  window.addEventListener("stage-venue-editor-closed", renderVenueControls);
   document.querySelectorAll("[data-toggle-view]").forEach((button) => {
     button.addEventListener("click", () => {
       const which = button.dataset.toggleView;
@@ -19860,46 +24750,69 @@ ${propsPlotHtml}
       syncCanvasResolution();
     });
   });
-  /* 道具の説明も畳んでおき、「?」で出す。中央のバーは道具そのものが並ぶ場所なので、
-   * 説明が居座ると道具の列が押し出される（項目の説明と同じ扱いにそろえる）。 */
-  if (els.toolHelp) {
-    els.toolHelp.addEventListener("click", () => {
-      const texts = [els.toolHint, ...document.querySelectorAll(".stage-canvas-help")].filter(Boolean);
-      const show = texts[0].hidden;
-      texts.forEach((el) => { el.hidden = !show; });
-      els.toolHelp.setAttribute("aria-pressed", String(show));
-    });
-  }
-
   if (els.frontZoom) els.frontZoom.addEventListener("click", () => resetZoom("front"));
   if (els.planZoom) els.planZoom.addEventListener("click", () => resetZoom("plan"));
 
-  /* 正面と平面の出し分け。狭い画面では二つ並べると絵が小さくなるので、
-   * タップで一枚ずつ見られるようにする。 */
-  document.querySelectorAll("[data-show-view]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const which = button.dataset.showView;
-      if (which === "both") { state.showFront = true; state.showPlan = true; }
-      else { state.showFront = which === "front"; state.showPlan = which === "plan"; }
+  /* 正面・平面の表示と上下順を一つのプルダウンで切り替える。 */
+  if (els.viewSelect) {
+    els.viewSelect.addEventListener("change", () => {
+      const value = els.viewSelect.value;
+      if (value === "front") {
+        state.showFront = true;
+        state.showPlan = false;
+      } else if (value === "plan") {
+        state.showFront = false;
+        state.showPlan = true;
+      } else {
+        state.showFront = true;
+        state.showPlan = true;
+        state.layout.centerOrder = value === "both-plan" ? ["plan", "front"] : ["front", "plan"];
+      }
       applyLayout();
       syncViewSwitch();
       render();
       persistSoon();
     });
+  }
+
+  document.querySelectorAll("[data-single-view-target]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = button.dataset.singleViewTarget;
+      if ((target === "front" && state.showFront && !state.showPlan)
+        || (target === "plan" && state.showPlan && !state.showFront)) return;
+      state.showFront = target === "front";
+      state.showPlan = target === "plan";
+      applyLayout();
+      syncViewSwitch();
+      render();
+      syncCanvasResolution();
+      persistSoon();
+      const targetLabel = target === "front" ? "正面図" : "平面図";
+      announce(`${targetLabel}へ切り替えました。配置はそのまま残ります。`);
+    });
   });
 
-  function syncViewSwitch() {
-    document.querySelectorAll("[data-show-view]").forEach((button) => {
-      const which = button.dataset.showView;
-      const on = which === "both"
-        ? (state.showFront && state.showPlan)
-        : (which === "front" ? state.showFront && !state.showPlan : state.showPlan && !state.showFront);
-      button.setAttribute("aria-pressed", String(on));
+  function syncSingleViewSwitches() {
+    const single = state.showFront !== state.showPlan;
+    document.querySelectorAll("[data-single-view-switch]").forEach((group) => {
+      const owner = group.dataset.singleViewSwitch;
+      const ownerShown = owner === "front" ? state.showFront : state.showPlan;
+      group.hidden = !single || !ownerShown;
+      group.querySelectorAll("[data-single-view-target]").forEach((button) => {
+        const pressed = button.dataset.singleViewTarget === (state.showFront ? "front" : "plan");
+        button.setAttribute("aria-pressed", String(pressed));
+      });
     });
   }
 
-  const swapBtn = document.getElementById("stage-swap-center");
-  if (swapBtn) swapBtn.addEventListener("click", swapCenter);
+  function syncViewSwitch() {
+    if (!els.viewSelect) return;
+    if (state.showFront && state.showPlan) {
+      els.viewSelect.value = state.layout.centerOrder[0] === "plan" ? "both-plan" : "both-front";
+    } else {
+      els.viewSelect.value = state.showPlan ? "plan" : "front";
+    }
+  }
 
   if (els.showNames) {
     els.showNames.addEventListener("change", (e) => {
@@ -19934,6 +24847,97 @@ ${propsPlotHtml}
     });
   }
   if (els.piecePose) els.piecePose.addEventListener("click", openPoseModal);
+  if (els.bgOpen) els.bgOpen.addEventListener("click", openBackgroundModal);
+  [els.bgClose, els.bgBackdrop].filter(Boolean)
+    .forEach((element) => element.addEventListener("click", closeBackgroundModal));
+  if (els.bgModal) {
+    els.bgModal.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeBackgroundModal();
+    });
+    els.bgModal.querySelectorAll("[data-stage-tool]").forEach((button) => {
+      button.addEventListener("click", closeBackgroundModal);
+    });
+  }
+  if (els.projectSettingsOpen) els.projectSettingsOpen.addEventListener("click", openProjectSettings);
+  [els.projectSettingsClose, els.projectSettingsBackdrop].filter(Boolean)
+    .forEach((element) => element.addEventListener("click", closeProjectSettings));
+  if (els.projectSettingsModal) {
+    els.projectSettingsModal.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeProjectSettings();
+    });
+  }
+  if (els.sceneCreateBlank) {
+    els.sceneCreateBlank.addEventListener("change", () => {
+      if (els.sceneCreateBlank.checked) setSceneCreateMode("blank");
+    });
+  }
+  if (els.sceneCreateInherit) {
+    els.sceneCreateInherit.addEventListener("change", () => {
+      if (els.sceneCreateInherit.checked) setSceneCreateMode("inherit");
+    });
+  }
+  if (els.sceneCreateSelectAll) {
+    els.sceneCreateSelectAll.addEventListener("click", () => {
+      const source = sceneCreateSourceScene();
+      sceneCreateSelection.clear();
+      if (source) (source.pieces || []).forEach((piece) => sceneCreateSelection.add(piece.id));
+      syncSceneCreateSelection();
+    });
+  }
+  if (els.sceneCreateClear) {
+    els.sceneCreateClear.addEventListener("click", () => {
+      sceneCreateSelection.clear();
+      syncSceneCreateSelection();
+    });
+  }
+  if (els.sceneCreateForm) {
+    els.sceneCreateForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const source = sceneCreateSourceScene();
+      if (!source || !sceneCreateMode) return;
+      createNextScene(
+        source,
+        sceneCreateMode,
+        sceneCreateSelection,
+        Boolean(els.sceneCreateMoveRoutes && els.sceneCreateMoveRoutes.checked),
+      );
+    });
+  }
+  [els.sceneCreateClose, els.sceneCreateCancel, els.sceneCreateBackdrop].filter(Boolean)
+    .forEach((element) => element.addEventListener("click", closeSceneCreate));
+  if (els.sceneCreateModal) {
+    els.sceneCreateModal.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeSceneCreate();
+    });
+  }
+  [els.sceneDeleteClose, els.sceneDeleteCancel, els.sceneDeleteBackdrop].filter(Boolean)
+    .forEach((element) => element.addEventListener("click", closeSceneDelete));
+  if (els.sceneDeleteCheck) {
+    els.sceneDeleteCheck.addEventListener("change", () => {
+      if (els.sceneDeleteSubmit) els.sceneDeleteSubmit.disabled = !els.sceneDeleteCheck.checked;
+    });
+  }
+  if (els.sceneDeleteSubmit) {
+    els.sceneDeleteSubmit.addEventListener("click", () => {
+      if (!sceneDeleteTarget || !els.sceneDeleteCheck || !els.sceneDeleteCheck.checked) return;
+      const target = sceneDeleteTarget;
+      closeSceneDelete(false);
+      deleteScene(target);
+    });
+  }
+  if (els.sceneDeleteModal) {
+    els.sceneDeleteModal.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeSceneDelete();
+    });
+  }
   if (els.showsOpen) els.showsOpen.addEventListener("click", openShows);
   if (els.showNew) els.showNew.addEventListener("click", newShow);
   if (els.showsClose) els.showsClose.addEventListener("click", closeShows);
@@ -19941,17 +24945,6 @@ ${propsPlotHtml}
   if (els.sceneGridOpen) els.sceneGridOpen.addEventListener("click", openSceneGrid);
   // 絵のすぐ上の帯からも一覧へ。シーンの欄を畳んでいても飛べる
   if (els.sceneBarGrid) els.sceneBarGrid.addEventListener("click", openSceneGrid);
-  if (els.sceneFoldAll) {
-    els.sceneFoldAll.addEventListener("click", () => {
-      const sections = state.project.scenes.filter((row) => row.kind === "section");
-      const hasOpen = sections.some((section) => !state.closedSections[section.id]);
-      if (hasOpen) sections.forEach((section) => { state.closedSections[section.id] = true; });
-      else state.closedSections = {};
-      renderScenes();
-      renderSceneGrid();
-      persistSoon();
-    });
-  }
   if (els.sceneGridClose) els.sceneGridClose.addEventListener("click", closeSceneGrid);
   if (els.sceneGridBackdrop) els.sceneGridBackdrop.addEventListener("click", closeSceneGrid);
   if (els.reachOpen) els.reachOpen.addEventListener("click", openReachTable);
@@ -19968,6 +24961,7 @@ ${propsPlotHtml}
   }
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && els.feedbackModal && !els.feedbackModal.hidden) closeFeedback();
+    if (event.key === "Escape" && els.releaseModal && !els.releaseModal.hidden) closeReleaseHistory();
     if (event.key === "Escape" && els.sceneGridModal && !els.sceneGridModal.hidden) closeSceneGrid();
     if (event.key === "Escape" && els.reachModal && !els.reachModal.hidden) closeReachTable();
     if (event.key === "Escape" && els.helpModal && !els.helpModal.hidden) closeManualHelp();
@@ -19984,10 +24978,11 @@ ${propsPlotHtml}
   if (els.poseBackdrop) els.poseBackdrop.addEventListener("click", closePoseModal);
   if (els.pieceFacing) {
     els.pieceFacing.addEventListener("input", (e) => {
-      const piece = selectedPiece();
-      if (!piece || (piece.type !== "performer" && !SOLID_TYPES[piece.type])) return;
-      piece.facing = ((Number(e.target.value) % 360) + 360) % 360;   // フェーダーは-180〜180
-      if (els.facingValue) els.facingValue.textContent = facingLabel(piece.facing);
+      const pieces = selectedFacingPieces();
+      if (!pieces.length) return;
+      const facing = ((Number(e.target.value) % 360) + 360) % 360;   // フェーダーは-180〜180
+      pieces.forEach((piece) => { piece.facing = facing; });
+      if (els.facingValue) els.facingValue.textContent = facingLabel(facing);
       render();
     });
   }
@@ -20005,26 +25000,29 @@ ${propsPlotHtml}
         : "向きロックを外しました。");
     });
   }
-  /* 追加の口は一つ。種類だけ選ばせる。演者と物と光で入り口を分けると、
-   * 「これはどこから足すのか」を毎回思い出すことになる。 */
+  /* 追加する対象を先に三分類し、その対象に必要な名前・種類・姿勢を同じ窓で決める。 */
   const addFromRoster = () => {
-    if (rosterKind === "performer") { addCastMember(els.rosterName); return; }
-    if (rosterKind === "light") { addSetItem("light", els.rosterName, "hang"); return; }
-    if (rosterKind === "model") {
+    let added = false;
+    if (rosterKind === "performer") {
+      added = addCastMember(els.rosterName, rosterPose, rosterSelectedColor());
+    } else if (rosterKind === "light") {
+      added = addSetItem("light", els.rosterName, "hang", null, null, rosterSelectedColor());
+    } else if (rosterKind === "model") {
       const modelId = els.modelPicker && els.modelPicker.value;
       if (!stageModel(modelId)) {
         const builder = window.SHOSAI_STAGE_BUILDER;
         if (builder) builder.open();
-        return;
+        return false;
       }
-      addSetItem("model", els.rosterName, null, modelId);
-      return;
+      added = addSetItem("model", els.rosterName, null, modelId, null, rosterSelectedColor());
+    } else {
+      added = addSetItem(SET_KINDS[rosterKind] ? rosterKind : "block", els.rosterName, null, null,
+        rosterPropShape, rosterSelectedColor());
     }
-    addSetItem(SET_KINDS[rosterKind] ? rosterKind : "block", els.rosterName, null, null,
-      els.rosterPropShape && els.rosterPropShape.value);
+    if (added) closeKindModal();
+    return added;
   };
   renderModelPicker();
-  syncRosterPropShape();
   if (els.modelOpen) els.modelOpen.addEventListener("click", () => {
     const builder = window.SHOSAI_STAGE_BUILDER;
     if (builder) builder.open();
@@ -20036,9 +25034,17 @@ ${propsPlotHtml}
     updateInspector();
     render();
   });
-  if (els.rosterKind) els.rosterKind.addEventListener("click", openKindModal);
+  els.rosterKindOpeners.forEach((button) => {
+    button.addEventListener("click", () => openKindModal(button.dataset.rosterKindLayer));
+  });
   if (els.kindClose) els.kindClose.addEventListener("click", closeKindModal);
   if (els.kindBackdrop) els.kindBackdrop.addEventListener("click", closeKindModal);
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !els.kindModal || els.kindModal.hidden) return;
+    closeKindModal();
+    const opener = els.rosterKindOpeners.find((button) => button.dataset.rosterKindLayer === rosterKindLayer);
+    if (opener) opener.focus();
+  });
   if (els.lightPresetOpen) els.lightPresetOpen.addEventListener("click", () => openLightPresetModal(false));
   if (els.lightIntentPresets) els.lightIntentPresets.addEventListener("click", () => openLightPresetModal(true));
   if (els.lightPresetClose) els.lightPresetClose.addEventListener("click", closeLightPresetModal);
@@ -20049,6 +25055,10 @@ ${propsPlotHtml}
     }
   });
   if (els.rosterAdd) els.rosterAdd.addEventListener("click", addFromRoster);
+  if (els.rosterColor) {
+    els.rosterColor.addEventListener("input", () => { rosterColorTouched = true; });
+  }
+  if (els.rosterSearch) els.rosterSearch.addEventListener("input", applyRosterSearch);
   const addLight = () => addSetItem("light", els.lightName, els.lightKind && els.lightKind.value);
   if (els.lightAdd) els.lightAdd.addEventListener("click", addLight);
   if (els.lightName) {
@@ -20064,6 +25074,9 @@ ${propsPlotHtml}
   // 平面図のバーからも動線の入り切りができる。平面を見ながら手を伸ばす距離を短くする
   if (els.planRoute) {
     els.planRoute.addEventListener("click", () => setTool(tool === "route" ? "select" : "route"));
+  }
+  if (els.planDeriveRoute) {
+    els.planDeriveRoute.addEventListener("click", () => deriveRoutes(sc()));
   }
   // メモは正面にも平面にも貼れるので、入り切りは両方の絵の上に置く
   [els.planNote, els.frontNote].forEach((button) => {
@@ -20233,6 +25246,7 @@ ${propsPlotHtml}
       const item = currentSetItem();
       if (!item) return;
       item.name = e.target.value.slice(0, 24);
+      els.setInfoTitle.textContent = `${item.name}（${setKindName(item.kind)}）`;
       renderSets();
       renderLights();
       render();
@@ -20261,6 +25275,7 @@ ${propsPlotHtml}
       item.propShape = next;
       item.dims = { ...PROP_SHAPES[next].dims };
       if (Number.isFinite(lift)) item.dims.lift = lift;
+      state.project.scenes.forEach((scene) => normalizeHolds(scene.pieces, state.project));
       openSetInfo(item.id);
       renderSets();
       renderScenes();
@@ -20439,11 +25454,38 @@ ${propsPlotHtml}
   if (els.sceneReplay) els.sceneReplay.addEventListener("click", replaySceneTransition);
   if (els.presentPrev) els.presentPrev.addEventListener("click", () => stepScene(-1));
   if (els.presentNext) els.presentNext.addEventListener("click", () => stepScene(1));
-  if (els.presentClose) els.presentClose.addEventListener("click", exitPseudoPresentation);
-  function openFpv(initialPieceId, initialView, returnFocus) {
+  if (els.presentClose) els.presentClose.addEventListener("click", toggleStageFullscreen);
+  if (els.presentSwap) els.presentSwap.addEventListener("click", swapFullscreenViews);
+  if (els.presentMini) els.presentMini.addEventListener("click", swapFullscreenViews);
+  if (els.presentDrawerToggle) els.presentDrawerToggle.addEventListener("click", () => {
+    setFullscreenDrawer(els.presentDrawer.hidden);
+  });
+  if (els.presentOverlay) els.presentOverlay.addEventListener("keydown", (event) => {
+    if (event.key !== "Tab" || !presenting || fullscreenModalOpen()) return;
+    const buttons = [...els.presentOverlay.querySelectorAll('button, input, select, textarea, a[href], [tabindex="0"]')]
+      .filter((node) => !node.disabled && !node.closest('[inert]') && node.getClientRects().length);
+    const first = buttons[0], last = buttons[buttons.length - 1];
+    if (!first) return;
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  });
+  function setFreecamWorkspaceActive(active) {
+    if (!els.freecamOpen) return;
+    const workspaceTabs = [...document.querySelectorAll("#stage-workspace-tabs [data-stage-workspace-mode]")];
+    els.freecamOpen.classList.toggle("is-active", active);
+    els.freecamOpen.setAttribute("aria-pressed", String(active));
+    workspaceTabs.forEach((button) => {
+      const selected = !active
+        && button.dataset.stageWorkspaceMode === (document.body.dataset.stageWorkspaceMode || "normal");
+      button.classList.toggle("is-active", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+  }
+
+  function openFpv(initialPieceId, initialView, returnFocus, workspace3d = false) {
     const fpv = window.SHOSAI_STAGE_FPV;
-    if (!fpv) return;
-    fpv.open({
+    if (!fpv) return false;
+    const opened = fpv.open({
       initialPieceId,
       initialView,
       read: () => {
@@ -20482,8 +25524,10 @@ ${propsPlotHtml}
               ...visual,
               route: visualRoute,
               dims,
+              propShape: propShape ? propShape.id : visual.propShape,
               parts: visual.type === "prop" || ["revolve", "deck", "curtain", "pool", "seri"].includes(visual.type)
                 ? pieceParts(visual) : undefined,
+              smoothParts: propShape && ["drumset", "taiko"].includes(propShape.id) ? propShape.parts : null,
               grip: propShape ? propShape.grip : null,
               model: visual.type === "model" && owner ? stageModel(owner.modelId) : null,
             };
@@ -20581,8 +25625,13 @@ ${propsPlotHtml}
       listPoses: () => POSES.map((p) => ({ id: p.id, label: poseName(p) })),
       drawPosePreview: (canvas, poseId, color) => drawPosePreview(canvas, poseId, color),
       facingLabel,
-      onClose: () => returnFocus && returnFocus.focus(),
+      onClose: () => {
+        if (workspace3d) setFreecamWorkspaceActive(false);
+        if (returnFocus) returnFocus.focus();
+      },
     });
+    if (!opened && workspace3d) setFreecamWorkspaceActive(false);
+    return Boolean(opened);
   }
   if (els.fpvOpen) {
     els.fpvOpen.addEventListener("click", () => {
@@ -20592,7 +25641,10 @@ ${propsPlotHtml}
     });
   }
   if (els.freecamOpen) {
-    els.freecamOpen.addEventListener("click", () => openFpv(undefined, "free", els.freecamOpen));
+    els.freecamOpen.addEventListener("click", () => {
+      setFreecamWorkspaceActive(true);
+      openFpv(undefined, "free", els.freecamOpen, true);
+    });
   }
   if (els.animScenes) {
     els.animScenes.addEventListener("change", (e) => {
@@ -20611,7 +25663,10 @@ ${propsPlotHtml}
   if (els.animMs) {
     els.animMs.addEventListener("input", (e) => {
       state.sceneAnimMs = clamp(finite(e.target.value, 2) * 1000, 200, 3000);
-      if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}${isEn() ? "s" : "秒"}`;
+      if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}${languageValue(() => ("s"), () => ("秒"))}`;
+      document.querySelectorAll(".stage-scene-transition-shared").forEach((hint) => {
+        hint.textContent = `${tx("空欄は上部のアニメ時間")} ${(state.sceneAnimMs / 1000).toFixed(1)}${tx("秒")}`;
+      });
       persistSoon();
     });
   }
@@ -20651,7 +25706,6 @@ ${propsPlotHtml}
   });
 
   if (els.sceneAdd) els.sceneAdd.addEventListener("click", () => addScene(false));
-  if (els.sceneAddRig) els.sceneAddRig.addEventListener("click", () => addScene(true));
   /* 場面の欄の高さ。下の取っ手を引いて変える。
      ブラウザ既定の掴み手は地の色に沈んで見えないので、自前で持つ。 */
   if (els.sceneResize && els.sceneList) {
@@ -20660,8 +25714,9 @@ ${propsPlotHtml}
       const startH = els.sceneList.getBoundingClientRect().height;
       const move = (ev) => {
         ev.preventDefault();
-        const next = clamp(startH + (ev.clientY - startY), 120, window.innerHeight * 0.8);
+        const next = clamp(startH + (ev.clientY - startY), 120, window.innerHeight * 2 / 3);
         els.sceneList.style.height = `${Math.round(next)}px`;
+        state.sceneListHeightMode = "manual";
         state.sceneListHeight = Math.round(next);
       };
       const up = () => {
@@ -20681,33 +25736,50 @@ ${propsPlotHtml}
       if (e.key === "Enter") { e.preventDefault(); saveRig(); }
     });
   }
-  if (els.sceneDup) els.sceneDup.addEventListener("click", duplicateScene);
-  if (els.sceneDel) els.sceneDel.addEventListener("click", deleteScene);
   if (els.projectTitle) {
     els.projectTitle.addEventListener("input", (e) => {
       state.project.title = e.target.value.slice(0, 60);
+      syncProjectSummary();
       persistSoon();
     });
   }
   if (els.versionLabel) {
     els.versionLabel.addEventListener("input", (e) => {
       state.project.versionLabel = e.target.value.slice(0, 16);
+      syncProjectSummary();
       persistSoon();
     });
   }
   if (els.versionCopy) els.versionCopy.addEventListener("click", duplicateVersion);
   if (els.exportJson) els.exportJson.addEventListener("click", exportProject);
   if (els.backupExport) els.backupExport.addEventListener("click", exportProject);
+  if (els.projectExportForm) {
+    els.projectExportForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      commitProjectExportName();
+    });
+  }
+  [els.projectExportClose, els.projectExportCancel, els.projectExportBackdrop].filter(Boolean)
+    .forEach((element) => element.addEventListener("click", () => closeProjectExportName()));
+  if (els.projectExportModal) {
+    els.projectExportModal.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeProjectExportName();
+    });
+  }
   if (els.venueExportInclude) {
     els.venueExportInclude.addEventListener("click", () => {
-      closeVenueExportConfirm();
-      writeProjectExport(true);
+      const filename = takePendingProjectExportFilename();
+      closeVenueExportConfirm(false);
+      writeProjectExport(true, filename);
     });
   }
   if (els.venueExportWithout) {
     els.venueExportWithout.addEventListener("click", () => {
-      closeVenueExportConfirm();
-      writeProjectExport(false);
+      const filename = takePendingProjectExportFilename();
+      closeVenueExportConfirm(false);
+      writeProjectExport(false, filename);
     });
   }
   [els.venueExportCancel, els.venueExportStop, els.venueExportBackdrop].filter(Boolean)
@@ -20747,7 +25819,9 @@ ${propsPlotHtml}
     });
   }
   if (els.sizeSelect) {
-    els.sizeSelect.addEventListener("change", (e) => setVenueSize(e.target.value));
+    els.sizeSelect.addEventListener("change", (e) => {
+      previewVenueEditorTemplate(els.venueSelect ? els.venueSelect.value : state.project.venue, e.target.value);
+    });
   }
 
   document.querySelectorAll("[data-stage-bg]").forEach((button) => {
@@ -20826,9 +25900,9 @@ ${propsPlotHtml}
   }
 
   function machineryStateText(value, format) {
-    if (format === "deg") return isEn() ? `${value}°` : `${value}度`;
-    if (format === "degPerSec") return isEn() ? `${value} °/s` : `${value} 度/秒`;
-    if (format === "open") return isEn() ? `${Math.round(value)}% open` : `${Math.round(value)}%開`;
+    if (format === "deg") return sx(`${value}度`, `${value}°`);
+    if (format === "degPerSec") return sx(`${value} 度/秒`, `${value} °/s`);
+    if (format === "open") return sx(`${Math.round(value)}%開`, `${Math.round(value)}% open`);
     return `${value.toFixed(2)}m`;
   }
 
@@ -20854,7 +25928,7 @@ ${propsPlotHtml}
     if (!specs || !previous || !priorPiece) return "";
     const before = specs.map((spec) => `${tm("machineryState", spec.key, spec.label)}${machineryStateText(machineryStateValue(priorPiece, spec), spec.format)}`).join("・");
     const after = specs.map((spec) => `${tm("machineryState", spec.key, spec.label)}${machineryStateText(machineryStateValue(piece, spec), spec.format)}`).join("・");
-    return isEn() ? `Previous scene: ${before} → this scene: ${after}` : `前の場面: ${before} → この場面: ${after}`;
+    return sx(`前の場面: ${before} → この場面: ${after}`, `Previous scene: ${before} → this scene: ${after}`);
   }
 
   function deckHasFloorPiece(piece) {
@@ -20881,12 +25955,8 @@ ${propsPlotHtml}
       els.dimsFromSet.hidden = !owner;
       if (owner) {
         els.dimsFromSet.textContent = registered
-          ? (isEn()
-            ? `Name, colour and size come from \u201c${registered.name}\u201d (${setDimLabel(registered)}).`
-            : `名前・色・寸法は「${registered.name}」で決めます（${setDimLabel(registered)}）。`)
-          : (isEn()
-            ? `Name, colour and height come from \u201c${member.name}\u201d (${member.heightCm}cm).`
-            : `名前・色・身長は「${member.name}」で決めます（${member.heightCm}cm）。`);
+          ? (sx(`名前・色・寸法は「${registered.name}」で決めます（${setDimLabel(registered)}）。`, `Name, colour and size come from \u201c${registered.name}\u201d (${setDimLabel(registered)}).`))
+          : (sx(`名前・色・身長は「${member.name}」で決めます（${member.heightCm}cm）。`, `Name, colour and height come from \u201c${member.name}\u201d (${member.heightCm}cm).`));
       }
     }
     if (els.liftControls) {
@@ -21003,20 +26073,16 @@ ${propsPlotHtml}
       els.pieceLock.textContent = locked ? "🔒" : "🔓";
       const lockWord = locked ? tx("錠を外す") : tx("動かないようにする");
       els.pieceLock.setAttribute("aria-label", lockWord);
-      els.pieceLock.title = isEn()
-        ? (owner
+      els.pieceLock.title = languageValue(() => (owner
           ? `${lockWord} (the lock of \u201c${owner.name}\u201d. While locked it will not move in any scene)`
-          : `${lockWord} (while locked, dragging will not move it)`)
-        : (owner
+          : `${lockWord} (while locked, dragging will not move it)`), () => (owner
           ? `${lockWord}（「${owner.name}」の錠。掛けているあいだ、どのシーンでも動きません）`
-          : `${lockWord}（掛けているあいだ、掴んでも動きません）`);
+          : `${lockWord}（掛けているあいだ、掴んでも動きません）`));
     }
     if (els.openSetInfo) {
       els.openSetInfo.hidden = !owner;
       els.openSetInfo.textContent = registered ? tm("misc", "dims", "寸法") : tm("misc", "profile", "身長");
-      els.openSetInfo.title = isEn()
-        ? (registered ? `Open the size of \u201c${registered.name}\u201d` : (member ? `Open \u201c${member.name}\u201d\u2019s profile` : ""))
-        : (registered ? `「${registered.name}」の寸法を開く` : (member ? `「${member.name}」のプロフィールを開く` : ""));
+      els.openSetInfo.title = languageValue(() => (registered ? `Open the size of \u201c${registered.name}\u201d` : (member ? `Open \u201c${member.name}\u201d\u2019s profile` : "")), () => (registered ? `「${registered.name}」の寸法を開く` : (member ? `「${member.name}」のプロフィールを開く` : "")));
     }
   }
 
@@ -21036,9 +26102,7 @@ ${propsPlotHtml}
       if (els.photoNote) {
         const src = (state.project.photos || {})[photo.id] || "";
         const kb = Math.round(src.length / 1024);
-        els.photoNote.textContent = isEn()
-          ? `About ${kb} KB, kept in this browser with the show.`
-          : `およそ${kb}KB。ショーと一緒にこの端末へ保存されます。`;
+        els.photoNote.textContent = sx(`およそ${kb}KB。ショーと一緒にこの端末へ保存されます。`, `About ${kb} KB, kept in this browser with the show.`);
       }
     }
   }
@@ -21199,11 +26263,16 @@ ${propsPlotHtml}
       nodes.forEach((node) => {
         if (node.parentNode && node.parentNode.closest("[data-no-i18n]")) return;
         const raw = node.__ja === undefined ? node.nodeValue : node.__ja;
+        // Japanese has no translation pack; restore remembered text before the pack lookup.
+        if (lang === "ja" && node.__ja !== undefined) {
+          node.nodeValue = raw;
+          return;
+        }
         // HTMLの改行や字下げで空白が入るので、鍵を引くときは詰めてから照らす
         const key = raw.trim().replace(/\s+/g, " ");
-        if (!key || !I18N.text[key]) return;
+        if (!key || !packValue("text", (text) => text[key])) return;
         if (node.__ja === undefined) node.__ja = raw;
-        node.nodeValue = isEn() ? I18N.text[key] : raw;
+        node.nodeValue = lang === "ja" ? raw : tx(key);
       });
     };
     const swapAttr = (root, attr, store) => {
@@ -21214,7 +26283,8 @@ ${propsPlotHtml}
           el.dataset[store] = now;
         }
         const ja = el.dataset[store];
-        el.setAttribute(attr, isEn() ? (I18N.text[ja.trim()] || ja) : ja);
+        const translated = packValue("text", (text) => text[ja.trim()]);
+        el.setAttribute(attr, lang === "ja" ? ja : (translated || ja));
       });
     };
     const roots = [
@@ -21224,7 +26294,7 @@ ${propsPlotHtml}
       ...document.querySelectorAll(".stage-modal, .stage-present-overlay"),
     ].filter(Boolean);
     // 読み上げや行分けのために、文書そのものの言語も合わせる
-    document.documentElement.lang = isEn() ? "en" : "ja";
+    document.documentElement.lang = lang;
     roots.forEach((root) => {
       swapText(root);
       swapAttr(root, "placeholder", "jaPh");
@@ -21232,17 +26302,17 @@ ${propsPlotHtml}
       swapAttr(root, "aria-label", "jaAria");
     });
     if (els.lang) {
-      els.lang.textContent = isEn() ? "日本語" : "EN";
-      els.lang.setAttribute("aria-pressed", String(isEn()));
+      els.lang.value = lang;
     }
     updateWhoamiBadge();
     updateBackupNote();
-    document.documentElement.lang = isEn() ? "en" : "ja";
+    syncReleaseNotification();
+    document.documentElement.lang = lang;
   }
 
   // 言語を変えると、中で組み立てている名前も作り直す必要がある
   function setLang(next) {
-    lang = next === "en" ? "en" : "ja";
+    lang = loadedStageLanguage(next);
     try { localStorage.setItem(LANG_KEY, lang); } catch (_) { /* 保存できなくても動く */ }
     applyLang();
     applyPhoneViewerLang();
@@ -21256,7 +26326,7 @@ ${propsPlotHtml}
     if (els.helpModal && !els.helpModal.hidden) renderManualHelp();
     renderMachineryPresets();
     renderModelPicker();
-    if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}${isEn() ? "s" : "秒"}`;
+    if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}${languageValue(() => ("s"), () => ("秒"))}`;
     // 共有セッションのパネルは data-no-i18n（自前管理）。フックで引き直してもらう
     try { window.SHOSAI_STAGE_SESSION_HOOKS?.relabel?.(); } catch (_) { /* 未読込なら次の描画で揃う */ }
     renderCast();
@@ -21273,7 +26343,7 @@ ${propsPlotHtml}
   }
 
   if (els.lang) {
-    els.lang.addEventListener("click", () => setLang(isEn() ? "ja" : "en"));
+    els.lang.addEventListener("change", () => setLang(els.lang.value));
   }
 
   /* ---------- 使い方の案内 ----------
@@ -21328,8 +26398,8 @@ ${propsPlotHtml}
       at: '[data-panel="scenes"]',
       begin: () => { tourMark.scenes = state.project.scenes.length; },
       done: () => state.project.scenes.length > tourMark.scenes,
-      ja: ["次のシーンを作る", "シーンの欄の〈動線の先へ動かしたシーンを作る〉を押してください。動線の先へ動いた状態が、次のシーンとして作られます。"],
-      en: ["Make the next scene", "Press “Make a scene at the end of the routes”. The state after the move becomes the next scene."],
+      ja: ["次のシーンを作る", "シーンの欄の〈次のシーンをつくる〉を押し、〈現在のシーンから引き継ぐ〉を選んでください。引き継いだ演者は、動線の先へ移動します。"],
+      en: ["Make the next scene", "Press “Create next scene”, choose “Inherit from current scene”, then select what to keep. Performers with routes move to their destinations."],
     },
     {
       at: ".stage-scene-move",
@@ -21355,8 +26425,8 @@ ${propsPlotHtml}
     },
     {
       at: "#stage-export",
-      ja: ["持ち出す", "〈画像を書き出す〉で、正面・平面・全シーンを画像にできます。作ったものはこの端末のブラウザにだけ保存されます。以上です、あとは自由に。"],
-      en: ["Take it with you", "Export image saves the front view, the plan, or every scene. Your work lives only in this browser. That's it — go ahead."],
+      ja: ["持ち出す", "紙のアイコン〈画像・印刷〉で、正面・平面・全シーンを画像にしたり、印刷用ページを開いたりできます。作ったものはこの端末のブラウザにだけ保存されます。以上です、あとは自由に。"],
+      en: ["Take it with you", "The paper icon (Images & print) saves the front view, the plan, or every scene, and opens a print sheet. Your work lives only in this browser. That's it — go ahead."],
     },
   ];
 
@@ -21464,17 +26534,17 @@ ${propsPlotHtml}
     tourAt = clamp(index, 0, TOUR.length - 1);
     const step = TOUR[tourAt];
     if (step.begin) step.begin();
-    const words = isEn() ? step.en : step.ja;
+    const words = languageValue(() => (step.en), () => (step.ja));
     els.tour.hidden = false;
     els.tourStep.textContent = `${tourAt + 1} / ${TOUR.length}`;
     els.tourTitle.textContent = words[0];
     els.tourBody.textContent = words[1];
     els.tourPrev.disabled = tourAt === 0;
     els.tourNext.textContent = tourAt === TOUR.length - 1
-      ? (isEn() ? "Done" : "はじめる")
-      : (isEn() ? "Next" : "次へ");
-    els.tourClose.textContent = isEn() ? "Close" : "閉じる";
-    els.tourPrev.textContent = isEn() ? "Back" : "戻る";
+      ? (tx("はじめる"))
+      : (tx("次へ"));
+    els.tourClose.textContent = tx("閉じる");
+    els.tourPrev.textContent = tx("戻る");
     const target = tourTarget(step);
     if (target) target.scrollIntoView({ block: "center", behavior: "smooth" });
     // 巻き終わるのを待ってから枠を当てる
@@ -21501,9 +26571,7 @@ ${propsPlotHtml}
     els.feedback.addEventListener("click", () => {
       closePrefs();
       if (FEEDBACK_URL) { openFeedback(); return; }
-      const words = isEn()
-        ? "The feedback form is not set up yet. Please tell the maker directly for now."
-        : "感想の送り先（フォーム）はまだ用意できていません。いまは直接お知らせください。";
+      const words = tx("感想の送り先（フォーム）はまだ用意できていません。いまは直接お知らせください。");
       setSaveStatus(words);
       announce(words);
     });
@@ -21543,6 +26611,18 @@ ${propsPlotHtml}
     return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
   }
 
+  /* 保存に近い操作として⌘S／Ctrl+Sで名前確認を開く。
+   * ショー名を入力中でも使えるが、すでに別の窓を開いている間は重ねない。 */
+  document.addEventListener("keydown", (event) => {
+    if (event.defaultPrevented || !isProjectExportShortcut(event)) return;
+    const view = document.getElementById("view-stage");
+    if (STUDY_READ_ONLY || !view || view.hidden) return;
+    event.preventDefault();
+    if (event.repeat || event.isComposing || event.keyCode === 229) return;
+    if (presenting || fullscreenModalOpen()) return;
+    exportProject();
+  });
+
   document.addEventListener("keydown", (event) => {
     if (event.key !== "z" && event.key !== "Z") return;
     if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
@@ -21551,22 +26631,6 @@ ${propsPlotHtml}
     if (isTyping(event.target)) return;
     event.preventDefault();
     if (event.shiftKey) redo(); else undo();
-  });
-
-  els.clear.addEventListener("click", () => {
-    if (!window.confirm(`「${sc().title}」に置いたものと背景の塗りをすべて消しますか？（他のシーンはそのままです）`)) return;
-    checkpoint();
-    const cur = sc();
-    cur.pieces = [];
-    cur.strokes = [];
-    selectedId = null;
-    syncInputs();
-    renderScenes();
-    renderVenueControls();
-    updateInspector();
-    render();
-    persistSoon();
-    announce("舞台を空にしました。");
   });
 
   /* ---------- 画像の書き出し ----------
@@ -21908,7 +26972,7 @@ ${propsPlotHtml}
     if (selectedPitchLangs === null) {
       const stored = Array.isArray(prefs.pitchLangs)
         ? prefs.pitchLangs.filter((code) => available.includes(code)) : [];
-      selectedPitchLangs = new Set(stored.length ? stored : [isEn() ? "en" : "ja"]);
+      selectedPitchLangs = new Set(stored.length ? stored : [lang]);
     }
     if (!selectedPitchLangs.size) selectedPitchLangs.add("ja");
   }
@@ -21944,7 +27008,7 @@ ${propsPlotHtml}
     if (els.exportDraftFields) els.exportDraftFields.hidden = exportPurpose === "pitch";
     if (els.exportPitchFields) els.exportPitchFields.hidden = exportPurpose !== "pitch";
     if (els.exportTitle) {
-      els.exportTitle.textContent = tx(exportPurpose === "pitch" ? "ピッチ用に書き出す" : "画像を書き出す");
+      els.exportTitle.textContent = tx("画像・印刷");
     }
     document.querySelectorAll("[data-export-purpose]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.exportPurpose === exportPurpose));
@@ -21982,9 +27046,13 @@ ${propsPlotHtml}
     const scenes = exportTargets().length;
     const views = exportViews().length;
     const total = scenes * views;
-    els.exportNote.textContent = total > 1
+    const note = total > 1
       ? `${scenes}シーン × ${views === 2 ? "正面と平面" : "1枚"} ＝ 合計${total}枚をZIP 1個にまとめます。`
       : "1枚を落とします。";
+    const english = total > 1
+      ? `${scenes} scenes × ${views === 2 ? "front and plan" : "1 image"} = ${total} images in 1 ZIP.`
+      : "1 image will be downloaded.";
+    els.exportNote.textContent = sx(note, english);
   }
 
   function stampNow() {
@@ -22388,6 +27456,29 @@ ${propsPlotHtml}
       if (!holdPieceBy(piece, holder, side)) updateInspector();
     });
   }
+  if (els.wearSelect) {
+    els.wearSelect.addEventListener("change", () => {
+      const holder = selectedPiece();
+      const [source, id] = els.wearSelect.value.split(":");
+      if (!holder || holder.type !== "performer" || !id) return;
+      let piece = source === "piece" ? sc().pieces.find((p) => p.id === id) : null;
+      const item = source === "set" ? state.project.sets.find((p) => p.id === id) : null;
+      const candidate = piece || (item && { type: item.kind, setId: item.id });
+      if (!canWearMask(candidate, holder)) { updateInspector(); return; }
+      checkpoint();
+      if (!piece) piece = placeSetPiece(item);
+      selectedId = holder.id;
+      wearMaskBy(piece, holder);
+    });
+  }
+  if (els.holderFace) {
+    els.holderFace.addEventListener("click", () => {
+      const piece = selectedPiece();
+      const holder = piece && sc().pieces.find((p) => p.id === piece.heldBy);
+      if (!piece || piece.holdMode === "face" || !canWearMask(piece, holder)) return;
+      checkpoint(); wearMaskBy(piece, holder);
+    });
+  }
   if (els.holderSelect) {
     els.holderSelect.addEventListener("change", () => {
       const piece = selectedPiece();
@@ -22400,6 +27491,12 @@ ${propsPlotHtml}
       }
       if (nextId === piece.heldBy) return;
       const holder = sc().pieces.find((candidate) => candidate.id === nextId && candidate.type === "performer");
+      if (piece.holdMode === "face") {
+        if (!canWearMask(piece, holder)) {
+          updateInspector(); announce(tx("顔にはすでに仮面がついています。")); return;
+        }
+        checkpoint(); wearMaskBy(piece, holder); return;
+      }
       const side = holder && freeHoldSide(holder.id, piece.id, "R");
       if (!holder || !side) {
         updateInspector();
@@ -22413,13 +27510,14 @@ ${propsPlotHtml}
   if (els.holderLeft) {
     const changeHoldSide = (side) => {
       const piece = selectedPiece();
-      if (!piece || !piece.heldBy || piece.holdSide === side) return;
+      if (!piece || !piece.heldBy || (piece.holdMode !== "face" && piece.holdSide === side)) return;
       if (freeHoldSide(piece.heldBy, piece.id, side) !== side) {
         announce("両手がふさがっています。");
         return;
       }
       checkpoint();
       piece.holdSide = side;
+      piece.holdMode = "hand";
       finishHoldingChange("");
     };
     els.holderLeft.addEventListener("click", () => changeHoldSide("L"));
@@ -22459,30 +27557,66 @@ ${propsPlotHtml}
     });
   }
   if (els.printBtn) els.printBtn.addEventListener("click", openPrintPage);
+  els.skinButtons.forEach((button) => button.addEventListener("click", () => {
+    prefs.uiSkin = button.dataset.stageUiSkin === "blue-black" ? "blue-black" : "warm-black";
+    savePrefs();
+    applyUiSkin();
+    sceneGridThumbs.clear();
+    render(true);
+    renderSceneGrid();
+  }));
   if (els.prefsBtn) els.prefsBtn.addEventListener("click", openPrefs);
+  if (els.panelsToggle) els.panelsToggle.addEventListener("click", togglePanelVisibilityMenu);
   if (els.prefsClose) els.prefsClose.addEventListener("click", closePrefs);
   if (els.prefsBackdrop) els.prefsBackdrop.addEventListener("click", closePrefs);
+  window.addEventListener("stage-workspace-mode-change", () => {
+    if (tabletUi || phoneViewerActive) return;
+    applyLayout();
+    syncPanelWidths();
+    if (els.prefsModal && !els.prefsModal.hidden) renderPrefs();
+  });
   if (els.helpOpen) els.helpOpen.addEventListener("click", openManualHelpFromPrefs);
   if (els.manualOpen) els.manualOpen.addEventListener("click", openManualBook);
+  if (els.resetLayout) els.resetLayout.addEventListener("click", resetPanelLayoutToDistributionDefault);
   if (els.resetAll) els.resetAll.addEventListener("click", resetToFirstRun);
   if (els.quickOpen) els.quickOpen.addEventListener("click", openQuickGuide);
   if (els.helpClose) els.helpClose.addEventListener("click", closeManualHelp);
   if (els.helpBackdrop) els.helpBackdrop.addEventListener("click", closeManualHelp);
   if (els.helpFind) els.helpFind.addEventListener("input", renderManualHelp);
   if (els.aboutOpenFromPrefs) els.aboutOpenFromPrefs.addEventListener("click", openAboutFromPrefs);
+  if (els.aboutOpenFromFooter) els.aboutOpenFromFooter.addEventListener("click", openAbout);
+  if (els.releaseOpen) els.releaseOpen.addEventListener("click", openReleaseHistory);
+  if (els.releaseClose) els.releaseClose.addEventListener("click", closeReleaseHistory);
+  if (els.releaseBackdrop) els.releaseBackdrop.addEventListener("click", closeReleaseHistory);
   if (els.feedbackOpen) els.feedbackOpen.addEventListener("click", openFeedback);
   if (els.feedbackClose) els.feedbackClose.addEventListener("click", closeFeedback);
   if (els.feedbackBackdrop) els.feedbackBackdrop.addEventListener("click", closeFeedback);
   if (els.aboutClose) els.aboutClose.addEventListener("click", closeAbout);
   if (els.aboutBackdrop) els.aboutBackdrop.addEventListener("click", closeAbout);
-  if (els.presentBtn) els.presentBtn.addEventListener("click", startPresentation);
-  if (els.arrangeSelect) {
-    els.arrangeSelect.addEventListener("change", (e) => {
-      const shape = e.target.value;
-      e.target.selectedIndex = 0;   // 「押すたびに選ぶ」道具として使う
-      if (shape) lineupPerformers(shape);
+  if (els.presentBtn) els.presentBtn.addEventListener("click", toggleStageFullscreen);
+  if (els.arrangeSelect) els.arrangeSelect.addEventListener("click", toggleArrangeMenu);
+  if (els.arrangeOptions) {
+    els.arrangeOptions.addEventListener("click", (event) => {
+      const item = event.target.closest("[data-arrange-shape]");
+      if (!item) return;
+      closeArrangeMenu();
+      lineupPerformers(item.dataset.arrangeShape);
     });
   }
+  document.addEventListener("pointerdown", (event) => {
+    if (els.arrangeMenu && !els.arrangeMenu.contains(event.target)) closeArrangeMenu();
+    if (els.panelsMenu && !els.panelsMenu.hidden
+      && !els.panelsMenu.contains(event.target) && !els.panelsToggle?.contains(event.target)) {
+      closePanelVisibilityMenu();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && els.arrangeOptions && !els.arrangeOptions.hidden) closeArrangeMenu();
+    if (event.key === "Escape" && els.panelsMenu && !els.panelsMenu.hidden) {
+      event.preventDefault();
+      closePanelVisibilityMenu(true);
+    }
+  });
   if (els.importClose) els.importClose.addEventListener("click", closeImportPreview);
   if (els.importBackdrop) els.importBackdrop.addEventListener("click", closeImportPreview);
   if (els.importAsNew) els.importAsNew.addEventListener("click", () => confirmImport(true));
@@ -22541,6 +27675,7 @@ ${propsPlotHtml}
   function syncStageTourContext() {
     clearTimeout(tourLaunchTimer);
     tourLaunchTimer = null;
+    if (launchBackupWarningOpen) return;
     if (!stageTourContextActive()) {
       if (tourAt >= 0) hideTour();
       return;
@@ -22557,11 +27692,13 @@ ${propsPlotHtml}
   window.addEventListener("hashchange", () => setTimeout(syncStageTourContext, 0));
 
   function finishInitialStageSetup(identity) {
+    if (STUDY_READ_ONLY) return;
     try {
       signedInUser = identity && identity.user ? identity.user : "";
       if (identity && identity.switched) {
         /* ショー本体・棚・モデル・言語は触らず、画面の持ち方だけを新しい人向けへ戻す。 */
         prefs = {};
+        applyUiSkin();
         selectedPitchStyle = "theatre";
         selectedPitchSize = "2";
         selectedPitchLangs = null;
@@ -22578,6 +27715,9 @@ ${propsPlotHtml}
       applyLayout();
       initTabletPwaWorkspace();
       initPhoneViewerWorkspace();
+      initPanelWidths();
+      initRosterListHeights();
+      syncPanelWidths();
       syncInputs();
       renderScenes();
       renderCast();
@@ -22616,10 +27756,13 @@ ${propsPlotHtml}
       // ?seam-sample は8セクション／32シーンの「継ぎ目の庭」を直接開く。
       if (openArgs.has("seam-sample")) openSeamGardenSampleShow();
 
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", syncStageTourContext);
-      } else {
-        syncStageTourContext();
+      const launchWarningShown = openLaunchBackupWarning();
+      if (!launchWarningShown) {
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", syncStageTourContext);
+        } else {
+          syncStageTourContext();
+        }
       }
     } finally {
       if (stageSketchRoot) {
@@ -22637,9 +27780,196 @@ ${propsPlotHtml}
     finishInitialStageSetup(null);
   }
 
+  if (STUDY_READ_ONLY) {
+    // Only presentation state is mutable. No editor, save, export or session bridge is exposed.
+    window.SHOSAI_STAGE_STUDY_RENDERER = Object.freeze({
+      load(doc, language) {
+        stopSceneAnim(); stopSpinRun();
+        lang = language === "en" ? "en" : "ja";
+        const imported = prepareProjectImportDocument(doc);
+        state = normalizeState({ ...baseState(false), project: imported.project });
+        state.project.audioTracks = [];
+        state.project.scenes.forEach(scene => { scene.audioTrackId = null; });
+        state.showFront = state.showPlan = true;
+        state.showSeatMap = false;
+        state.animateScenes = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        render(); syncCanvasResolution();
+      },
+      scene(id) {
+        const next = state.project.scenes.find(s => s.kind === "scene" && s.id === id);
+        if (!next) return;
+        stopSceneAnim(); stopSpinRun();
+        state.project.activeSceneId = next.id;
+        render();
+      },
+      replay() { replaySceneTransition(); },
+      stop() { stopSceneAnim(); stopSpinRun(); render(); },
+      resize() { syncCanvasResolution(); render(); },
+      camera(id) {
+        if (VENUES.seats.some(seat => seat.id === id)) { state.seat = id; state.showSeatMap = false; render(); }
+        return { seat: state.seat, seats: VENUES.seats.map(seat => ({ id: seat.id, label: seatName(seat) })) };
+      },
+    });
+    return;
+  }
+  window.SHOSAI_STAGE_STUDY_OWNER = Object.freeze({
+    snapshot() {
+      const doc = makeProjectExportDocument(state.project, true);
+      // Animation overlays are temporary presentation fields, never published as positions.
+      for (const scene of doc.project.scenes) for (const piece of scene.pieces || []) {
+        for (const key of Object.keys(piece)) if (key.startsWith("anim")) delete piece[key];
+      }
+      return doc;
+    },
+    isEnglish() { return languageValue(() => true, () => false); },
+    // Models held only in the local library are disclosed alongside local audio.
+    hasLocalModels() { return (state.project.sets || []).some(s => s.modelId); },
+  });
   window.SHOSAI_STAGE_SESSION_BRIDGE = Object.freeze({
     exportDocumentString() {
       return JSON.stringify(makeProjectExportDocument(state.project, true));
+    },
+    openSceneById(id) {
+      const next = state.project.scenes.find((row) => row.kind === "scene" && row.id === id);
+      if (!next) return false;
+      openScene(next.id);
+      return state.project.activeSceneId === next.id;
+    },
+    setTimelineAudioGainDb(trackId, value) {
+      const track = audioTrackById(trackId);
+      if (!track) return false;
+      const gainDb = normalizeAudioGainDb(value);
+      if (track.gainDb === gainDb) return true;
+      checkpoint();
+      track.gainDb = gainDb;
+      audioPanelSignature = "";
+      persistSoon();
+      window.dispatchEvent(new CustomEvent("stage-timeline-audio-change", {
+        detail: { trackId, gainDb },
+      }));
+      return true;
+    },
+    setTimelineCountSync(identity = {}, value = {}) {
+      let track = null;
+      if (identity.source === "formation") {
+        const section = state.project.scenes.find((row) => row.kind === "section" && row.id === identity.sectionId);
+        const songs = section && section.formation && section.formation.package
+          && section.formation.package.formation && section.formation.package.formation.songs;
+        track = Array.isArray(songs)
+          ? (songs.find((song) => song && song.id === identity.songId) || {}).track : null;
+      } else if (typeof identity.trackId === "string") {
+        track = audioTrackById(identity.trackId);
+      }
+      if (!track || typeof track !== "object") return false;
+      const next = normalizeAudioCountSync(value);
+      const current = normalizeAudioCountSync(track);
+      if (JSON.stringify(current) === JSON.stringify(next)) return jsonClone(next);
+      checkpoint();
+      Object.assign(track, next);
+      persistSoon();
+      window.dispatchEvent(new CustomEvent("stage-timeline-count-sync-change", {
+        detail: {
+          source: identity.source === "formation" ? "formation" : "audio",
+          sectionId: identity.sectionId || null,
+          songId: identity.songId || null,
+          trackId: identity.trackId || null,
+        },
+      }));
+      return jsonClone(next);
+    },
+    setSectionTimelineDurationSeconds(id, value, options = {}) {
+      const section = state.project.scenes.find((row) => row.kind === "section" && row.id === id);
+      const seconds = timelineSeconds(value);
+      if (!section || seconds === null) return false;
+      const current = section.timelineDurationSeconds;
+      if (current !== seconds) {
+        if (options.checkpoint) checkpoint();
+        section.timelineDurationSeconds = seconds;
+        persistSoon();
+      }
+      if (options.finalize) {
+        renderScenes();
+        renderSceneGrid();
+      }
+      return true;
+    },
+    setSectionTimelineUnit(id, value) {
+      const section = state.project.scenes.find((row) => row.kind === "section" && row.id === id);
+      const unit = value === "count" ? "count" : "time";
+      if (!section) return false;
+      if (section.timelineUnit === unit) return true;
+      checkpoint();
+      section.timelineUnit = unit;
+      persistSoon();
+      window.dispatchEvent(new CustomEvent("stage-timeline-unit-change", {
+        detail: { sectionId: section.id, unit },
+      }));
+      return true;
+    },
+    addTimelineCue(type, sectionId, atSeconds) {
+      if (!TIMELINE_CUE_TYPES.has(type)) return null;
+      const section = state.project.scenes.find((row) => row.kind === "section" && row.id === sectionId);
+      if (!section) return null;
+      const cue = {
+        id: rid("cue"),
+        kind: "timeline",
+        cueType: type,
+        sectionId,
+        atSeconds: Math.round(clamp(finite(atSeconds, 0), 0, 86400) * 10) / 10,
+        memo: "",
+      };
+      checkpoint();
+      if (!Array.isArray(state.project.cues)) state.project.cues = [];
+      state.project.cues.push(cue);
+      persistSoon();
+      window.dispatchEvent(new CustomEvent("stage-timeline-cues-change"));
+      return jsonClone(cue);
+    },
+    updateTimelineCue(id, patch = {}) {
+      const cues = Array.isArray(state.project.cues) ? state.project.cues : [];
+      const cue = cues.find((item) => item && item.kind === "timeline" && item.id === id);
+      if (!cue) return null;
+      const memo = typeof patch.memo === "string" ? patch.memo.slice(0, 2000) : "";
+      if (cue.memo === memo) return jsonClone(cue);
+      checkpoint();
+      cue.memo = memo;
+      persistSoon();
+      window.dispatchEvent(new CustomEvent("stage-timeline-cues-change"));
+      return jsonClone(cue);
+    },
+    removeTimelineCue(id) {
+      const cues = Array.isArray(state.project.cues) ? state.project.cues : [];
+      const at = cues.findIndex((cue) => cue && cue.kind === "timeline" && cue.id === id);
+      if (at < 0) return false;
+      checkpoint();
+      cues.splice(at, 1);
+      persistSoon();
+      window.dispatchEvent(new CustomEvent("stage-timeline-cues-change"));
+      return true;
+    },
+    addTimelineSceneAfter(sceneId) {
+      const scene = state.project.scenes.find((row) => row.kind === "scene" && row.id === sceneId);
+      if (!scene) return null;
+      if (state.project.activeSceneId !== scene.id) openScene(scene.id);
+      const before = state.project.scenes.length;
+      addScene(false);
+      if (state.project.scenes.length <= before) return null;
+      window.dispatchEvent(new CustomEvent("stage-timeline-structure-change"));
+      return jsonClone(sc());
+    },
+    addTimelineTransition(sceneId, seconds = 4) {
+      const scene = state.project.scenes.find((row) => row.kind === "scene" && row.id === sceneId);
+      if (!scene) return false;
+      if (!scene.rehearsal) scene.rehearsal = normalizeSceneRehearsal(null);
+      if (finite(scene.rehearsal.transitionToNextSeconds, 0) > 0) return false;
+      const duration = Math.round(clamp(finite(seconds, 4), 0.1, 86400) * 10) / 10;
+      checkpoint();
+      scene.rehearsal.transitionToNextSeconds = duration;
+      renderScenes();
+      renderSceneGrid();
+      persistSoon();
+      window.dispatchEvent(new CustomEvent("stage-timeline-structure-change"));
+      return true;
     },
     applyDocumentString(text) {
       /* 受信docを現在のプロジェクトとして開く。壊れたJSONはfalseを返して何もしない */
@@ -22699,6 +28029,6 @@ ${propsPlotHtml}
       });
       render(); persistSoon();
     },
-    isEnglish() { return isEn(); },
+    isEnglish() { return languageValue(() => true, () => false); },
   });
 })();

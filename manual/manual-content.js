@@ -24,7 +24,7 @@
  * （Add to Home Screen）に合わせる。
  *
  * 根拠: 文言はすべて実画面・index.html・stage-sketch.js・stage-i18n.js から
- * 採った（2026-08-28 更新。地図の廃止・舞台を空にするの移動・
+ * 採った（2026-08-28 更新。地図の廃止・
  * 「使い方」→「はじめての案内」への改称を反映済み）。推測で書かない。
  */
 window.MANUAL_CONTENT = {
@@ -112,8 +112,8 @@ window.MANUAL_CONTENT = {
           id: "after-tour", title: "案内のあとに試す三つ", titleEn: "Three things to try after the tour",
           keywords: ["次に", "続き", "劇場", "セット", "転換"],
           keywordsEn: ["next", "what now", "venue", "set", "transition"],
-          html: "<ul><li>〈劇場サイズ〉で形式と規模を選び直す。額縁舞台から巡演テント、全周の円形舞台まであり、実在の劇場（シアタートラム・TOHU・シルク・ディヴェール）も入っています。</li><li>〈出るもの〉→〈セットを組む〉で、台や道具を自分の形に組んでみる。</li><li>シーンの欄で〈転換の長さ〉と〈暗転〉を決めて、場面の流れを通しで見る。</li></ul>",
-          htmlEn: "<ul><li>Re-choose the form and size under 〈Venue size〉 — from a proscenium frame to a touring tent to a full circle, including three real venues (Theatre Tram, TOHU, Cirque d'Hiver).</li><li>Use 〈Cast &amp; set〉 → 〈Build a set〉 to shape a platform or a prop of your own.</li><li>In the Scenes panel, set 〈Transition duration〉 and 〈Blackout〉, then watch the show flow end to end.</li></ul>"
+          html: "<ul><li>〈劇場サイズ〉で形式と規模を選び直す。額縁舞台から巡演テント、全周の円形舞台まであり、実在の劇場（シアタートラム・TOHU・シルク・ディヴェール）も入っています。</li><li>〈出るもの〉→〈セットを組む〉で、台や道具を自分の形に組んでみる。</li><li>シーンを開き、上下に出る転換枠で〈転換の長さ〉と〈暗転〉を決めて、場面の流れを通しで見る。</li></ul>",
+          htmlEn: "<ul><li>Re-choose the form and size under 〈Venue size〉 — from a proscenium frame to a touring tent to a full circle, including three real venues (Theatre Tram, TOHU, Cirque d'Hiver).</li><li>Use 〈Cast &amp; set〉 → 〈Build a set〉 to shape a platform or a prop of your own.</li><li>Open a scene, then use the transition frames above and below it to set 〈Transition duration〉 and 〈Blackout〉 before watching the show flow end to end.</li></ul>"
         }
       ]
     },
@@ -125,8 +125,8 @@ window.MANUAL_CONTENT = {
           id: "topbar", title: "上のバー", titleEn: "The top bar",
           keywords: ["戻す", "アンドゥ", "やり直す", "取り消し", "間違えた", "設定"],
           keywordsEn: ["undo", "redo", "mistake", "revert", "settings"],
-          html: "<p>〈一つ戻す〉〈やり直す〉は操作の取り消しです。間違えたらまずここ。〈プレゼン〉は正面図だけを全画面で見せます（矢印キーでシーン送り、Escで戻る）。〈画像を書き出す〉は絵をファイルにします。</p><p>歯車の〈設定〉には、機能のオン/オフと言語切替のほか、「使い方」のまとまり（クイックガイド・はじめての案内・使い方をさがす・使いかたの冊子・感想を送る）、〈端末による違い〉〈このアプリについて〉〈設定をリセット〉が入っています。</p>",
-          htmlEn: "<p>〈Undo〉 and 〈Redo〉 take operations back — when something goes wrong, start here. 〈Present〉 shows the front view alone, full screen (arrow keys step the scenes, Esc returns). 〈Export image〉 turns the picture into a file.</p><p>The gear, 〈Settings〉, holds the feature switches and the language toggle, plus the help group (Quick Guide, First-time tour, Search the Guide, Guide Booklet, Send feedback), along with 〈Differences by device〉, 〈About This App〉 and 〈Reset this device〉.</p>"
+          html: "<p>〈一つ戻す〉〈やり直す〉は操作の取り消しです。間違えたらまずここ。〈全画面〉またはFキーで図を全画面にします。全画面中は右上の入れ替えアイコン・右下の小窓・Xキーで正面と平面を入れ替えられます（矢印キーでシーン送り、FまたはEscで戻る）。〈画像を書き出す〉は絵をファイルにします。</p><p>歯車の〈設定〉には、機能のオン/オフと言語切替のほか、「使い方」のまとまり（クイックガイド・はじめての案内・使い方をさがす・使いかたの冊子・感想を送る）、〈端末による違い〉〈このアプリについて〉〈設定をリセット〉が入っています。</p>",
+          htmlEn: "<p>〈Undo〉 and 〈Redo〉 take operations back — when something goes wrong, start here. 〈Full screen〉 or the F key opens the current view full screen. While in full screen, use the top-right swap icon, click the bottom-right preview, or press X to swap front and plan (arrow keys step the scenes, F or Esc returns). 〈Export image〉 turns the picture into a file.</p><p>The gear, 〈Settings〉, holds the feature switches and the language toggle, plus the help group (Quick Guide, First-time tour, Search the Guide, Guide Booklet, Send feedback), along with 〈Differences by device〉, 〈About This App〉 and 〈Reset this device〉.</p>"
         },
         {
           id: "tools", title: "道具の持ち替え", titleEn: "Changing tools",
@@ -215,10 +215,10 @@ window.MANUAL_CONTENT = {
         },
         {
           id: "p-scenes", title: "シーン", titleEn: "Scenes",
-          keywords: ["場面", "追加", "削除", "並べ替え", "セクション", "一覧", "暗転", "動線", "空にする"],
-          keywordsEn: ["scene", "add", "delete", "reorder", "section", "grid", "blackout", "route", "clear"],
-          html: "<p>場面の束ね方を決める欄です。〈新規シーン〉のほか、〈動線の先へ動かしたシーンを作る〉を使うと、いま引いてある動線の行き先がそのまま次の場面になります。逆に〈次のシーンとの差から動線を引く〉こともできます。</p><p>〈セクション+〉で幕・章のまとまりを作り、〈⊞ 一覧〉で全シーンを並べて見渡せます。転換ごとに〈転換の長さ〉と〈暗転〉を決められます。〈削除〉はシーンごと消し、その隣の〈舞台を空にする〉はいまのシーンに置いたものと背景の塗りだけを消します（他のシーンはそのまま）。</p>",
-          htmlEn: "<p>Where the scenes are gathered into a show. Besides 〈New scene〉, 〈Make a scene at the end of the routes〉 turns the destinations of the routes you have drawn into the next scene. The reverse also works: 〈Draw routes from the next scene〉.</p><p>〈Section+〉 groups scenes into acts, and 〈⊞ Grid〉 lays every scene out at a glance. Each transition takes its own 〈Transition duration〉 and 〈Blackout〉. 〈Delete〉 removes a whole scene; next to it, 〈Clear the stage〉 empties only what is placed in the current scene and its backdrop paint (other scenes are untouched).</p>"
+          keywords: ["場面", "追加", "削除", "並べ替え", "セクション", "一覧", "暗転", "動線"],
+          keywordsEn: ["scene", "add", "delete", "reorder", "section", "grid", "blackout", "route"],
+          html: "<p>上部の〈新規セクション〉のフォルダー＋アイコンと〈新規シーン〉の用紙＋アイコンから、幕・章のまとまりや新しい場面を追加できます。一覧アイコンでは全シーンを並べて見渡せます。各アイコンにカーソルを合わせると名前と説明が出ます。</p><p>シーンを開くと説明を全文表示し、選択中シーンの上下に転換枠が出ます。上は前のシーンから現在へ、下は現在から次への転換です。ここで〈転換の長さ〉と〈暗転〉を設定できます。〈次のシーンをつくる〉では、まっさらな場面にするか、現在の演者・舞台セット・小道具・照明を選んで引き継ぐかを決められます。隣の赤い〈✕〉では確認の窓が開き、チェックしてから削除します。</p><p>平面図の〈動線を描く〉と〈次から引く〉は、図の幅が狭くなると線画アイコンへ切り替わり、操作全体は2列で表示されます。</p><p>シーンをダブルクリックすると、名前・サブタイトル・エネルギーを編集できます。サブタイトルを一覧に出すかどうかは〈設定〉→〈シーンのサブタイトル〉で切り替えます。初期状態はOFFですが、隠しても書いた内容は消えません。</p>",
+          htmlEn: "<p>Use the folder-plus 〈New section〉 icon and the page-plus 〈New scene〉 icon at the top to add an act or chapter section, or a new scene. The grid icon lays every scene out at a glance. Point to an icon to see its name and explanation.</p><p>Open a scene to see its full description and transition frames above and below the selected scene. The upper frame is the transition from the previous scene; the lower one leads to the next scene. Set 〈Transition duration〉 and 〈Blackout〉 in those frames. 〈Create next scene〉 lets you start blank or choose which performers, stage sets, props, and lights to carry forward. The red 〈✕〉 opens a confirmation window; tick its checkbox before deletion.</p><p>In the plan view, 〈Draw route〉 and 〈Draw from next〉 switch to line icons when the board becomes narrow, while the complete control strip rearranges into two columns.</p>"
         },
         {
           id: "p-inspector", title: "選んだもの", titleEn: "Selection",

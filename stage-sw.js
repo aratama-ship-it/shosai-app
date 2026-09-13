@@ -1,27 +1,34 @@
-const CACHE_NAME = "stage-sketch-pwa-v194";
+const CACHE_NAME = "stage-sketch-pwa-v436";
 const APP_SHELL = [
   "./stage.html",
-  "./style.css?v=229",
-  "./stage-venues.js?v=25",
-  "./stage-venue-lines.js?v=4",
-  "./stage-i18n.js?v=97",
-  "./stage-prompt-i18n.js?v=2",
+  "./style.css?v=342",
+  "./stage-venues.js?v=30",
+  "./stage-venue-lines.js?v=6",
+  "./stage-i18n.js?v=172",
+  "./stage-i18n.zh-Hans.js?v=62",
+  "./stage-i18n.zh-Hant.js?v=62",
+  "./stage-prompt-i18n.js?v=3",
   "./stage-rehearsal-export.js?v=1",
   "./stage-samples/index.js?v=2",
   "./stage-set-model.js?v=1",
-  "./stage-set-builder.js?v=1",
+  "./stage-set-builder.js?v=2",
   "./stage-machinery.js?v=2",
-  "./stage-first-person.js?v=24",
+  "./stage-first-person.js?v=29",
   "./stage-audio-store.js?v=2",
-  "./manual/manual-content.js?v=3",
+  "./stage-light-motion.js?v=1",
+  "./manual/manual-content.js?v=11",
   "./manual/manual-content.js",
   "./manual/manual.html",
   "./manual/quick.html",
   "./manual/quick-en.html",
-  "./stage-sketch.js?v=318",
-  "./stage-session.js?v=14",
-  "./stage-venue-editor.js?v=7",
-  "./stage-pwa.js?v=8",
+  "./stage-sketch.js?v=453",
+  "./stage-timeline.js?v=31",
+  "./stage-session.js?v=18",
+  "./stage-study-owner.js?v=23",
+  "./stage-study.css?v=21",
+  "./stage-usage.js?v=2",
+  "./stage-venue-editor.js?v=20",
+  "./stage-pwa.js?v=9",
   "./stage-sketch.webmanifest",
   "./icons/stage-sketch-180.png",
   "./icons/stage-sketch-192.png",
@@ -34,7 +41,7 @@ const STAGE_PATHS = new Set([
   new URL("./stage.html", self.location.href).pathname,
   new URL("./stage", self.location.href).pathname,
 ]);
-const APP_SHELL_URLS = new Set(APP_SHELL.map((path) => new URL(path, self.location.href).href));
+const APP_SHELL_PATHS = new Set(APP_SHELL.map((path) => new URL(path, self.location.href).pathname));
 
 /* 保存するときは「リダイレクトを経ていない素の応答」に写し直す。
    /stage.html は配信層が /stage へ307で送るため、素直に保存すると redirected の印が
@@ -69,26 +76,68 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => Promise.allSettled(APP_SHELL.map((url) => putCleanCopy(cache, url))))
-      .then(() => self.skipWaiting())
+      .then(() => caches.open(CACHE_NAME))
+      .then((cache) => hasCompleteAppShell(cache))
+      // 途中で通信が切れた更新を、使えている旧版へ上書きしない。
+      // 完全なapp shellを用意できたときだけ新しいWorkerへ切り替える。
+      .then((ready) => { if (ready) return self.skipWaiting(); })
   );
 });
+
+async function hasCompleteAppShell(cache) {
+  const entries = await Promise.all(APP_SHELL.map((url) => cache.match(url)));
+  return entries.every(Boolean);
+}
+
+/* 旧Workerが保存したapp shellは、更新が完成するまで非常用として残す。
+   新版が空のままactivateされると、通信不能の端末は次の起動時に画面もJSも失う。
+   現在のshellが揃ったことを確認できた時だけ片付ける。 */
+async function removePreviousCachesWhenReady() {
+  const cache = await caches.open(CACHE_NAME);
+  if (!await hasCompleteAppShell(cache)) return false;
+  const keys = await caches.keys();
+  await Promise.all(
+    keys
+      .filter((key) => key.startsWith("stage-sketch-pwa-") && key !== CACHE_NAME)
+      .map((key) => caches.delete(key))
+  );
+  return true;
+}
+
+async function cachedAppShellResponse(request, { stageDocument = false } = {}) {
+  const keys = await caches.keys();
+  for (const key of keys) {
+    if (!key.startsWith("stage-sketch-pwa-")) continue;
+    const cache = await caches.open(key);
+    const exact = await cache.match(request);
+    if (exact) return exact;
+    if (stageDocument) {
+      const stage = await cache.match("./stage.html");
+      if (stage) return stage;
+    }
+  }
+  return undefined;
+}
 
 /* ページ側がキャッシュを補うために、保存先と一覧を教える。
    一覧をページ側へ書き写すと版がずれていくので、ここを唯一の出どころにする。 */
 self.addEventListener("message", (event) => {
-  if (!event.data || event.data.type !== "app-shell") return;
-  const port = event.ports && event.ports[0];
-  if (!port) return;
-  port.postMessage({ cacheName: CACHE_NAME, urls: APP_SHELL });
+  if (!event.data) return;
+  if (event.data.type === "app-shell") {
+    const port = event.ports && event.ports[0];
+    if (!port) return;
+    port.postMessage({ cacheName: CACHE_NAME, urls: APP_SHELL });
+    return;
+  }
+  if (event.data.type === "app-shell-ready") {
+    const cleanup = removePreviousCachesWhenReady();
+    if (typeof event.waitUntil === "function") event.waitUntil(cleanup);
+  }
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(
-      keys
-        .filter((key) => key.startsWith("stage-sketch-pwa-") && key !== CACHE_NAME)
-        .map((key) => caches.delete(key))
-    )).then(() => self.clients.claim())
+    Promise.all([self.clients.claim(), removePreviousCachesWhenReady()])
   );
 });
 
@@ -96,6 +145,14 @@ self.addEventListener("fetch", (event) => {
   const request = event.request;
   const url = new URL(request.url);
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
+  // Reader login, notebooks and viewer scripts are online-only and never cached.
+  if (['/stage-study-viewer.js', '/stage-study-sync.js', '/stage-study-private.js',
+       '/stage-study-frame.js', '/stage-study-pen.js', '/stage-study-continuity.js', '/stage-study-sticky.js',
+       '/stage-study-phone.css', '/stage-study-phone.js',
+       '/stage-study-navigation.css', '/stage-study-navigation.js'].includes(url.pathname)) return;
+  // Study documents and API responses must always revalidate online; never store bearer content.
+  if (url.pathname === "/study" || url.pathname.startsWith("/study/")
+      || url.pathname === "/study.html" || url.pathname.startsWith("/study-frame")) return;
 
   // 画面本体はオンライン時に最新版を優先し、通信できない時だけ保存版へ戻る。
   if (request.mode === "navigate") {
@@ -122,20 +179,24 @@ self.addEventListener("fetch", (event) => {
           event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put("./stage.html", copy)));
         }
         return response;
-      }).catch(() => caches.match("./stage.html"))
+      }).catch(() => cachedAppShellResponse(request, { stageDocument: true }))
     );
     return;
   }
 
-  // 版番号つきのCSS/JSは同じ版を即座に返す。版番号が上がれば別URLとして取得される。
-  if (!APP_SHELL_URLS.has(request.url)) return;
+  // 版番号つきのCSS/JSは同じ版を即座に返す。新しい版がまだ無いときも、通信不能なら
+  // 旧shellの同じ資材を返せるよう、URLの検索文字列ではなくパスで見分ける。
+  if (!APP_SHELL_PATHS.has(url.pathname)) return;
   event.respondWith(
-    caches.match(request).then((cached) => cached || fetch(request).then((response) => {
-      if (response.ok) {
-        const copy = response.clone();
-        event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)));
-      }
-      return response;
-    }))
+    caches.open(CACHE_NAME).then((cache) => cache.match(request)).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)));
+        }
+        return response;
+      }).catch(() => cachedAppShellResponse(request));
+    })
   );
 });

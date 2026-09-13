@@ -155,6 +155,10 @@
         // 一件の失敗で残りを止めない。取れたものだけでも保存しておく。
       }
     }
+    // 新しいWorkerは、必要な資材が揃うまで旧キャッシュを残している。
+    // ページ側で補充できたことを知らせてから、はじめて旧版を片付ける。
+    const entries = await Promise.all(shell.urls.map((url) => cache.match(url)));
+    if (entries.every(Boolean)) worker.postMessage({ type: "app-shell-ready" });
     return filled;
   }
 

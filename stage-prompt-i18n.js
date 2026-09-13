@@ -25,7 +25,8 @@
     { code: "ja", label: "日本語" },
     { code: "en", label: "English" },
     { code: "fr", label: "Français" },
-    { code: "zh", label: "中文" },
+    { code: "zh", label: "中文（简体）" },
+    { code: "zh-Hant", label: "中文（繁體）" },
     { code: "ko", label: "한국어" },
   ];
 
@@ -84,6 +85,19 @@
       refNote: "注：请将与本文一同导出的PNG作为参考图。人数、站位和比例以参考图为准。",
       seenFromHouse: "从观众席看",
     },
+    "zh-Hant": {
+      style: "畫面風格", venue: "場地", camera: "鏡頭", stage: "舞台上",
+      light: "光", avoid: "不要出現",
+      performers: "演員", sets: "裝置",
+      objective: "希望在觀眾身上發生什麼", focus: "觀眾看向哪裡",
+      layerPerformer: "演員", layerBackground: "背景", layerSpace: "空間",
+      mood: "氛圍", colors: "燈光顏色",
+      ownWords: "以下是導演本人的原話（日文原文）。請尊重這一意圖。",
+      camera1: "從觀眾席正面看到的一個畫面。視線高度約1.2米。整個舞台入鏡。16:9。",
+      avoid1: "文字、標誌、字幕、浮水印、觀眾的面孔，以及此處未描述的任何人或物。",
+      refNote: "註：請將與本文一同匯出的PNG作為參考圖。人數、站位和比例以參考圖為準。",
+      seenFromHouse: "從觀眾席看",
+    },
     ko: {
       style: "화면 스타일", venue: "공연장", camera: "카메라", stage: "무대 위",
       light: "빛", avoid: "넣지 말 것",
@@ -126,6 +140,12 @@
       poster: "演出海报的主图。中央一个画面，四周留白。不要文字。",
       render: "照片级3D渲染。像在真实剧场拍摄的质感、景深、物理正确的照明。严格遵照参考图的构图、人数、站位和比例。",
     },
+    "zh-Hant": {
+      theatre: "舞台攝影。從觀眾席看到的昏暗劇場。演員以剪影和輪廓光呈現，地面上有一道光和它的反射。",
+      paper: "舞台美術的概念草圖。紙上水墨與淡彩。可以保留起稿的線條。",
+      poster: "演出海報的主圖。中央一個畫面，四周留白。不要文字。",
+      render: "照片級3D算圖。像在真實劇場拍攝的質感、景深、物理正確的照明。嚴格遵照參考圖的構圖、人數、站位和比例。",
+    },
     ko: {
       theatre: "무대 사진. 객석에서 본 어두운 극장. 출연자는 실루엣과 윤곽광으로 보이고, 바닥에 빛줄기와 그 반사가 있다.",
       paper: "무대미술 콘셉트 스케치. 종이에 먹과 옅은 채색. 작도선이 남아 있어도 좋다.",
@@ -141,6 +161,9 @@
     en: { left: "on the left as seen from the house", center: "at centre", right: "on the right as seen from the house" },
     fr: { left: "à gauche vu de la salle", center: "au centre", right: "à droite vu de la salle" },
     zh: { left: "从观众席看的左侧", center: "中央", right: "从观众席看的右侧" },
+    "zh-Hant": {
+      left: "從觀眾席看的左側", center: "中央", right: "從觀眾席看的右側",
+    },
     ko: { left: "객석에서 볼 때 왼쪽", center: "중앙", right: "객석에서 볼 때 오른쪽" },
   };
 
@@ -149,6 +172,9 @@
     en: { back: "upstage, at the back", mid: "mid-stage", front: "downstage, near the front edge" },
     fr: { back: "au lointain, au fond du plateau", mid: "au milieu du plateau", front: "en avant-scène, près du bord" },
     zh: { back: "舞台深处", mid: "舞台中部", front: "舞台前沿附近" },
+    "zh-Hant": {
+      back: "舞台深處", mid: "舞台中段", front: "舞台前緣附近",
+    },
     ko: { back: "무대 안쪽", mid: "무대 가운데", front: "무대 앞쪽 가장자리 근처" },
   };
 
@@ -159,6 +185,13 @@
     en: { proscenium: "a proscenium theatre with a framed stage", thrust: "a thrust stage surrounded by the house on three sides", arena: "a circus big top with the audience all the way around", outdoor: "a temporary outdoor stage", blackbox: "a black box, house position variable" },
     fr: { proscenium: "un théâtre à l'italienne, plateau encadré", thrust: "un plateau tri-frontal, public sur trois côtés", arena: "un chapiteau de cirque, public tout autour de la piste", outdoor: "une scène extérieure temporaire", blackbox: "une boîte noire, position du public variable" },
     zh: { proscenium: "镜框式舞台的剧场", thrust: "三面被观众席围绕的伸出式舞台", arena: "观众席环绕一周的马戏帐篷", outdoor: "户外临时舞台", blackbox: "黑匣子剧场，观众席位置可变" },
+    "zh-Hant": {
+      proscenium: "鏡框式舞台的劇場",
+      thrust: "三面被觀眾席圍繞的伸出式舞台",
+      arena: "觀眾席環繞一周的馬戲帳篷",
+      outdoor: "戶外臨時舞台",
+      blackbox: "黑盒子劇場，觀眾席位置可變",
+    },
     ko: { proscenium: "프로시니엄 무대의 극장", thrust: "삼면을 객석이 둘러싼 돌출 무대", arena: "객석이 한 바퀴 둘러싼 서커스 텐트", outdoor: "야외 가설 무대", blackbox: "블랙박스 극장, 객석 위치는 가변" },
   };
 
@@ -229,6 +262,22 @@
       lie: "俯卧", supine: "仰卧", sidelie: "侧卧",
       trapeze_sit: "坐在吊杠横杆上", trapeze_hang: "悬挂在吊杠横杆上",
     },
+    "zh-Hant": {
+      stand: "站立", walk: "行走中", reach: "雙臂高舉", open: "雙臂張開",
+      sit: "坐著", crouch: "蹲著", kneel: "單膝跪地", handstand: "倒立",
+      floorsit: "抱膝而坐", agura: "盤腿坐", seiza: "正坐（跪坐）", longsit: "伸腿而坐",
+      hizadachi: "雙膝跪立", yankee: "深蹲", allfours: "四肢著地", dogeza: "俯身叩首，額頭觸地",
+      run: "奔跑中", backflip: "後手翻中", hat: "戴著帽子",
+      sideflip: "側空翻中",
+      sing: "手持麥克風演唱", juggle: "拋接雜耍中", guitar: "彈吉他", trumpet: "吹小號",
+      dance1: "舞蹈，雙臂上舉", dance2: "舞蹈，前弓步", dance3: "舞蹈，低身舒展",
+      dance4: "舞蹈，騰空中", dance5: "舞蹈，身體扭轉",
+      windmill: "風車（windmill）動作中", skate: "穿著輪式溜冰鞋", unicycle: "騎獨輪車",
+      skateboard: "踩滑板", bicycle: "騎腳踏車",
+      cyr: "在Cyr輪（大環）中", tuck: "團身空翻中",
+      lie: "俯臥", supine: "仰臥", sidelie: "側臥",
+      trapeze_sit: "坐在鞦韆橫桿上", trapeze_hang: "懸掛在鞦韆橫桿上",
+    },
     ko: {
       stand: "서 있음", walk: "걷는 중", reach: "두 팔을 위로 들고 있음", open: "두 팔을 벌리고 있음",
       sit: "앉아 있음", crouch: "쪼그려 앉아 있음", kneel: "한쪽 무릎을 꿇고 있음", handstand: "물구나무서기 중",
@@ -286,6 +335,15 @@
       car: "汽车", seri: "舞台升降台", light: "灯具", model: "自行搭建的组合装置",
       revolve: "转台（旋转舞台）", deck: "可移动或倾斜的台面", curtain: "幕布", pool: "水池，或可移动的水池地面",
     },
+    "zh-Hant": {
+      performer: "演員", block: "台面平台（台箱）", table: "桌子", chair: "椅子", bench: "長凳",
+      stool: "圓凳", wall: "景片", sphere: "球體", prop: "小道具",
+      trapeze: "從吊桿垂下的高空鞦韆", cyrwheel: "Cyr輪（大環）", diabolo: "扯鈴", pole: "中國竿",
+      teeter: "蹺蹺板（韓式跳板）", tissue: "從吊桿垂下的綢吊", wire: "鋼索（走鋼索用）",
+      suitcase: "行李箱", trampoline: "彈翻床", cane: "倒立桿",
+      car: "汽車", seri: "舞台升降台", light: "燈具", model: "自行搭建的組合裝置",
+      revolve: "旋轉舞台（轉台）", deck: "可移動或傾斜的平台", curtain: "布幕", pool: "水池，或可移動的水池地面",
+    },
     ko: {
       performer: "출연자", block: "평대（단）", table: "테이블", chair: "의자", bench: "벤치",
       stool: "스툴", wall: "벽 세트", sphere: "구체", prop: "소품",
@@ -303,7 +361,10 @@
     ja: { hang: "吊り（サス）", ss: "サイドスポット", front: "前明かり", floor: "転がし" },
     en: { hang: "an overhead light", ss: "a side light", front: "a front light", floor: "a floor light" },
     fr: { hang: "une douche", ss: "un latéral", front: "une face", floor: "un rasant de sol" },
-    zh: { hang: "顶光", ss: "侧光", front: "面光", floor: "地排光（地面光）" },
+    zh: { hang: "顶光", ss: "侧光", front: "面光", floor: "流动光（地面侧光）" },
+    "zh-Hant": {
+      hang: "頂光", ss: "側光", front: "面光", floor: "地面側光（落地燈）",
+    },
     ko: { hang: "탑라이트（서스펜션）", ss: "사이드라이트", front: "프론트라이트（면광）", floor: "플로어라이트（바닥광）" },
   };
 
@@ -311,7 +372,10 @@
     ja: { hang: "バトンから真下へ落ちる", ss: "袖から舞台を横切る", front: "客席上から顔へ当たる", floor: "床から体へ当たる" },
     en: { hang: "falling straight down from the bar", ss: "cutting across the stage from the wing", front: "from over the house onto the face", floor: "from the floor up onto the body" },
     fr: { hang: "tombant à la verticale depuis la perche", ss: "traversant le plateau depuis les coulisses", front: "depuis la salle, sur le visage", floor: "depuis le sol, sur le corps" },
-    zh: { hang: "从吊杆垂直落下", ss: "从侧幕横穿舞台", front: "从观众席上方打在脸上", floor: "从地面向上打在身体上" },
+    zh: { hang: "从吊杆垂直落下", ss: "从侧幕横穿舞台", front: "从观众席上方打在脸上", floor: "流动灯从地面向上打在身体上" },
+    "zh-Hant": {
+      hang: "從吊桿垂直落下", ss: "從側台橫穿舞台", front: "從觀眾席上方打在臉上", floor: "從地面向上打在身體上",
+    },
     ko: { hang: "바텐에서 수직으로 떨어짐", ss: "무대 옆에서 무대를 가로지름", front: "객석 위에서 얼굴로", floor: "바닥에서 몸으로" },
   };
 
@@ -323,6 +387,10 @@
     en: { reveal: "clearly revealed", soften: "softened", conceal: "concealed", silhouette: "left as silhouette only", separate: "separated from the background", transform: "made to read as something else", unspecified: "unspecified" },
     fr: { reveal: "clairement révélé", soften: "adouci", conceal: "dissimulé", silhouette: "réduit à la silhouette", separate: "détaché du fond", transform: "donné à voir comme autre chose", unspecified: "non précisé" },
     zh: { reveal: "清楚地显现", soften: "柔化", conceal: "隐去", silhouette: "只留轮廓", separate: "与背景分离", transform: "看起来像别的东西", unspecified: "未指定" },
+    "zh-Hant": {
+      reveal: "清楚地顯現", soften: "柔化", conceal: "隱去", silhouette: "只留輪廓",
+      separate: "與背景分離", transform: "看起來像別的東西", unspecified: "未指定",
+    },
     ko: { reveal: "분명하게 드러냄", soften: "부드럽게 함", conceal: "감춤", silhouette: "윤곽만 남김", separate: "배경에서 분리", transform: "다른 것으로 보이게 함", unspecified: "지정 없음" },
   };
 
@@ -340,8 +408,16 @@
       "piece.teeter",   // 「跷板」「弹板」のどちらが通りやすいか未確認
       "piece.block",    // 舞台用語としての「平台」の中国語圏での通り方が未確認
       "pose.windmill",  // 「托马斯全旋」は体操の技名。ブレイキン文脈で通じるか未確認
-      "lightKind.floor", // 「地排光」は主にホリゾント用。転がし全般を指すか未確認
     ],
+    "zh-Hant": [
+    "piece.cyrwheel",  // Cyr輪／大環——台湾サーカス界（FOCA等）での通りを確認
+    "piece.teeter",    // 蹺蹺板／韓式跳板——現場の呼び方
+    "piece.pole",      // 中國竿／爬竿
+    "piece.tissue",    // 綢吊／空中絲帶
+    "piece.block",     // 台面平台（台箱）——箱馬相当の現場語
+    "lightKind.floor", // 地面側光——台湾の現場語
+    "pose.windmill",   // ブレイキン技名の呼び方
+  ],
     ko: [
       "piece.teeter",   // 「티터보드」の音写で通じるはずだが未確認
       "piece.block",    // 「평대」が韓国の舞台現場で通じるか未確認

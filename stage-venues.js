@@ -354,6 +354,100 @@
     }),
   ];
 
+  /* 3Dカメラで遠方から見るための汎用会場。ここに置く数値は判断用HTML 5-3の
+   * 仮スキーマ、または既存プリセットの舞台寸法をそのまま再利用する。
+   * 実在会場の値ではなく、図面照合前の土台なので unverified を外さない。 */
+  const WIDE_BOWL_TIERS = [
+    { id: "floor", fromM: 6, toM: 55, floorM: 0, mode: "standing", rowPitchM: 0.8 },
+    { id: "lower", fromM: 55, toM: 78, floorM: 1.2, mode: "seated", rowPitchM: 0.85, riseM: 0.3 },
+    { id: "upper", fromM: 84, toM: 120, floorM: 18, mode: "seated", rowPitchM: 0.8, riseM: 0.45 },
+  ];
+  const WIDE_BOWL_NOTE = "一般的な範囲からの仮値。図面未照合";
+  const wideConcertVenue = ({ id, label, short, kind, roofKind, wrap, stage, tiers }) => {
+    const variant = {
+      id: `${id}-provisional`,
+      label: "仮の寸法（図面未照合）",
+      floor: { outline: rectangleOutline(stage.width, stage.depth), levels: [] },
+      ceiling: {
+        heightM: stage.height,
+        rigging: stage.rigging,
+        note: "舞台寸法は既存プリセットの値を再利用。会場の器は図面未照合。",
+      },
+      audience: [],
+      fixtures: [],
+      access: [],
+      capacity: {},
+    };
+    const bowl = {
+      kind,
+      wrap,
+      stageHeightM: 1.6,
+      cMm: 90,
+      tiers: clone(tiers),
+      roof: { kind: roofKind, apexM: 56, eaveM: 23 },
+      confidence: "unverified",
+      provenance: { note: WIDE_BOWL_NOTE, reference: "" },
+    };
+    return {
+      format: "venue-v2",
+      id,
+      label,
+      basis: id,
+      scale: { gridM: 1, confidence: "approx" },
+      floor: variant.floor,
+      ceiling: variant.ceiling,
+      audience: variant.audience,
+      fixtures: variant.fixtures,
+      access: variant.access,
+      provenance: {
+        source: "preset",
+        confidence: "unverified",
+        sharing: "ok",
+        note: WIDE_BOWL_NOTE,
+      },
+      confidence: "unverified",
+      wideVenue: true,
+      short,
+      note: "仮の寸法（図面未照合）。実名会場ではありません。",
+      reference: "docs/WIDE_VENUE_VIEW_WORKORDER_2026-09-11.md",
+      bowl,
+      sizes: [variant],
+    };
+  };
+
+  VENUES_V2.push(
+    wideConcertVenue({
+      id: "arena-concert",
+      label: "アリーナ（仮の寸法）",
+      short: "アリーナ",
+      kind: "arena",
+      roofKind: "truss",
+      wrap: "three",
+      stage: { width: 18, depth: 12, height: 12, rigging: "full" },
+      tiers: WIDE_BOWL_TIERS,
+    }),
+    wideConcertVenue({
+      id: "dome-concert",
+      label: "ドーム（仮の寸法）",
+      short: "ドーム",
+      kind: "dome",
+      roofKind: "dome",
+      wrap: "three",
+      stage: { width: 18, depth: 12, height: 12, rigging: "full" },
+      tiers: WIDE_BOWL_TIERS,
+    }),
+    wideConcertVenue({
+      id: "festival-field",
+      label: "野外フェス（仮の寸法）",
+      short: "野外フェス",
+      kind: "field",
+      roofKind: "open",
+      wrap: "front",
+      stage: { width: 12, depth: 12, height: 9, rigging: "limited" },
+      tiers: WIDE_BOWL_TIERS.slice(0, 1),
+    }),
+  );
+
   /* ── サーカスの形式プリセット（2026-08-28 追加）──────────────
    * 既存の〈ビッグトップ〉は形式の見取り図（リング13mの円と機械的な客席帯）で、
    * 値がテストで固定されているため触らない。ここでは実際の運用寸法を持つ形式を足す。 */
@@ -777,6 +871,12 @@
     frame: venue.fixtures.some((fixture) => fixture.type === "wall" && fixture.frame === true),
     sizes: venue.sizes.map(legacySize),
     source: venue.reference,
+    ...(venue.wideVenue ? { wideVenue: true } : {}),
+    ...(venue.bowl ? {
+      bowl: clone(venue.bowl),
+      confidence: venue.confidence,
+      provenance: clone(venue.provenance),
+    } : {}),
     // 実在会場は平面図で長方形ではなく実際の輪郭を描く（custom は使わない。
     // custom にすると正面図が近似席の描画へ落ちるため、輪郭だけを渡す）
     ...(venue.realVenue ? {
@@ -800,8 +900,29 @@
     venue.id = venue.id.trim().slice(0, 100);
     venue.label = venue.label.trim().slice(0, 100);
     venue.basis = typeof venue.basis === "string" ? venue.basis : "custom";
+    const stageFormats = ["theatre", "thrust", "in-the-round"];
+    if (!stageFormats.includes(venue.stageFormat) && venue.basis === "custom") {
+      venue.stageFormat = "theatre";
+    } else if (!stageFormats.includes(venue.stageFormat)) {
+      delete venue.stageFormat;
+    }
     venue.scale = venue.scale && typeof venue.scale === "object"
       ? venue.scale : { gridM: 1, confidence: "approx" };
+    if (Array.isArray(venue.floor.extensions)) {
+      venue.floor.extensions = venue.floor.extensions
+        .filter((item) => item && Array.isArray(item.polygon) &&
+          item.polygon.length >= 3 && item.polygon.every(validPoint))
+        .map((item, index) => ({
+          id: typeof item.id === "string" && item.id.trim()
+            ? item.id.trim().slice(0, 100) : `stage-extension-${index + 1}`,
+          shape: ["rectangle", "circle", "custom"].includes(item.shape) ? item.shape : "rectangle",
+          polygon: item.polygon.map((point) => point.slice()),
+          ...(item.merged === true ? { merged: true } : {}),
+          ...(item.cutout === true ? { cutout: true } : {}),
+        }));
+    } else {
+      delete venue.floor.extensions;
+    }
     venue.floor.levels = Array.isArray(venue.floor.levels) ? venue.floor.levels : [];
     venue.ceiling = venue.ceiling && typeof venue.ceiling === "object"
       ? venue.ceiling : { heightM: 6, rigging: "none", note: "高さ・吊り条件は要確認。" };
@@ -809,6 +930,17 @@
       ? venue.audience.filter((area) => area && Array.isArray(area.polygon) &&
         area.polygon.length >= 3 && area.polygon.every(validPoint))
       : [];
+    if (Array.isArray(venue.stageWings)) {
+      venue.stageWings = venue.stageWings
+        .filter((area) => area && Array.isArray(area.polygon) &&
+          area.polygon.length >= 3 && area.polygon.every(validPoint))
+        .map((area) => ({
+          ...area,
+          side: ["left", "right", "custom"].includes(area.side) ? area.side : "custom",
+        }));
+    } else {
+      delete venue.stageWings;
+    }
     venue.fixtures = Array.isArray(venue.fixtures) ? venue.fixtures : [];
     venue.access = Array.isArray(venue.access) ? venue.access : [];
     const provenance = venue.provenance && typeof venue.provenance === "object"
@@ -840,7 +972,10 @@
     return venue;
   };
 
+  let studyVenueLibrary = [];
+  const studyVenueMode = () => typeof document !== "undefined" && document.documentElement?.hasAttribute?.("data-study-renderer") === true;
   const readLibrary = () => {
+    if (studyVenueMode()) return clone(studyVenueLibrary);
     try {
       const raw = window.localStorage.getItem(LIBRARY_KEY);
       if (!raw) return [];
@@ -853,6 +988,7 @@
   };
 
   const writeLibrary = (venues) => {
+    if (studyVenueMode()) { studyVenueLibrary = clone(venues); return true; }
     try {
       window.localStorage.setItem(LIBRARY_KEY, JSON.stringify(venues));
       return true;
@@ -915,7 +1051,9 @@
   };
 
   const customLegacyVenue = (venue) => {
-    const dimensions = outlineDimensions(venue.floor.outline);
+    const stageExtensions = Array.isArray(venue.floor.extensions) ? venue.floor.extensions : [];
+    const stagePoints = venue.floor.outline.concat(stageExtensions.flatMap((item) => item.polygon));
+    const dimensions = outlineDimensions(stagePoints);
     const height = Number(venue.ceiling && venue.ceiling.heightM);
     return {
       id: venue.id,
@@ -934,6 +1072,7 @@
       source: venue.provenance.source,
       custom: true,
       outline: clone(venue.floor.outline),
+      stageExtensions: clone(stageExtensions),
       audienceAreas: clone(venue.audience),
       venueV2: clone(venue),
     };
@@ -964,20 +1103,98 @@
       return custom ? customLegacyVenue(custom) : missingVenue(id);
     })();
 
+  const seatRepresentatives = (tiers) => tiers.flatMap((tier, tierIndex) => {
+    if (!tier.rows.length) return [];
+    if (tier.mode === "standing") {
+      return [
+        { row: tier.rows[0], position: "front" },
+        { row: tier.rows[tier.rows.length - 1], position: "back" },
+      ];
+    }
+    const middle = tier.rows[Math.floor((tier.rows.length - 1) / 2)];
+    if (tierIndex === tiers.length - 1) {
+      return [
+        { row: middle, position: "middle" },
+        { row: tier.rows[tier.rows.length - 1], position: "top" },
+      ];
+    }
+    return [{ row: middle, position: "middle" }];
+  });
+
+  const derivedSeatRole = (tier, position) => {
+    if (tier.mode === "standing") return position === "front" ? "floor-front" : "floor-back";
+    if (position === "top") return "upper-top";
+    return tier.id === "lower" ? "lower-middle" : "upper-middle";
+  };
+  const DERIVED_SEAT_LABELS = Object.freeze({
+    "floor-front": "アリーナ前",
+    "floor-back": "アリーナ後",
+    "lower-middle": "スタンド下段",
+    "upper-middle": "スタンド上段",
+    "upper-top": "最上段",
+  });
+
+  const seatsFor = (venue, size) => {
+    if (!venue || !venue.bowl) return SEATS;
+    const lines = window.SHOSAI_VENUE_LINES;
+    if (!lines || typeof lines.bowlTiers !== "function" || typeof lines.deriveSeat !== "function") return [];
+    const selectedSize = size || (Array.isArray(venue.sizes) ? venue.sizes[0] : null);
+    const dimensions = selectedSize && selectedSize.floor && Array.isArray(selectedSize.floor.outline)
+      ? outlineDimensions(selectedSize.floor.outline)
+      : {
+          width: Number(selectedSize && selectedSize.width) || 0,
+          depth: Number(selectedSize && selectedSize.depth) || 0,
+        };
+    const tiers = lines.bowlTiers(venue.bowl, {
+      stageWidthM: dimensions.width,
+      stageDepthM: dimensions.depth,
+    });
+    return seatRepresentatives(tiers).map(({ row, position }) => {
+      const tier = tiers.find((item) => item.rows.includes(row));
+      const i18nKey = derivedSeatRole(tier, position);
+      const label = DERIVED_SEAT_LABELS[i18nKey];
+      const seat = lines.deriveSeat({
+        id: `${venue.id}-${tier.id}-${position}`,
+        label,
+        short: label,
+        distanceM: row.distanceM,
+        eyeM: row.eyeM,
+        offsetM: 0,
+        depthM: dimensions.depth,
+        heightM: Number(venue.bowl.stageHeightM) || 1.6,
+        stageWidthM: dimensions.width,
+        fovDeg: Number(venue.bowl.fovDeg) || 60,
+        mode: tier.mode,
+      });
+      seat.plan.tier = tier.id;
+      seat.plan.floorM = row.floorM;
+      seat.i18nKey = i18nKey;
+      return seat;
+    }).sort((a, b) => a.eye - b.eye);
+  };
+
   migrateLegacyDrafts();
 
+  // 実在劇場は配布時の選択肢に含めない。汎用の広い会場は3Dカメラで使う。
+  // ID参照と、本人が取り込んだ会場ライブラリも使えるように残す。
   window.SHOSAI_VENUES = {
-    get list() { return VENUES.concat(readLibrary().map(customLegacyVenue)); },
+    get list() {
+      return VENUES.filter((venue) => !venue.realVenue)
+        .concat(readLibrary().map(customLegacyVenue));
+    },
     byId: legacyVenueById,
     sizeById: (venue, sizeId) => (venue.sizes.find((s) => s.id === sizeId) || venue.sizes[0]),
     seats: SEATS,
+    seatsFor,
     // 分からない席は先頭（最前列）ではなく中央へ落とす。並びは近い順なので、
     // 先頭を既定にすると初回や壊れた保存でいきなり最前列の絵になってしまう
     seatById: (id) => SEATS.find((s) => s.id === id) || SEATS.find((s) => s.id === "center") || SEATS[0],
     sightLimits: SIGHT_LIMITS,
     outdoorMarks: OUTDOOR_MARKS,
     v2: {
-      get list() { return VENUES_V2.concat(readLibrary()); },
+      get list() {
+        return VENUES_V2.filter((venue) => !venue.realVenue).concat(readLibrary());
+      },
       byId: venueV2ById,
     },
     library: {

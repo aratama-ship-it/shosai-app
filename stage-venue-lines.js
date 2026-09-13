@@ -21,6 +21,27 @@
   });
   const GRID_M = 0.2;
   const EPSILON = 0.000001;
+  const BOWL_DEFAULTS = Object.freeze({
+    canvasWidth: 1280,
+    canvasHeight: 720,
+    baseHeight: 720,
+    seatedEyeM: 1.2,
+    standingEyeM: 1.55,
+    standingHeadM: 1.65,
+    headDiameterM: 0.2,
+    seatedRowPitchM: 0.85,
+    standingRowPitchM: 0.8,
+    cMm: 90,
+    cOptionsMm: Object.freeze([60, 90, 120]),
+    riserMinM: 0.3,
+    riserMaxM: 0.45,
+    stepMaxM: 0.54,
+    fovDeg: 60,
+    fovOptionsDeg: Object.freeze([40, 60]),
+    autoFovMaxDeg: 110,
+    tiltUpMaxDeg: 34,
+    tiltDownMaxDeg: 16,
+  });
 
   const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
   const distance = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
@@ -78,6 +99,91 @@
 
   function distancePointToPolygon(point, polygon) {
     return pointInPolygon(point, polygon) ? 0 : distancePointToPolygonBoundary(point, polygon);
+  }
+
+  function floorPolygons(floor) {
+    const outline = floor && Array.isArray(floor.outline) ? floor.outline : [];
+    const extensions = floor && Array.isArray(floor.extensions) ? floor.extensions : [];
+    return [outline].concat(extensions.map((item) => item.polygon))
+      .filter((polygon) => Array.isArray(polygon) && polygon.length >= 3);
+  }
+
+  function floorPoints(floor) {
+    return floorPolygons(floor).flat();
+  }
+
+  function pointOnFloor(point, floor) {
+    return floorPolygons(floor).some((polygon) => pointInPolygon(point, polygon));
+  }
+
+  function segmentIntersectionAmounts(a, b, c, d) {
+    const ray = [b[0] - a[0], b[1] - a[1]];
+    const other = [d[0] - c[0], d[1] - c[1]];
+    const offset = [c[0] - a[0], c[1] - a[1]];
+    const denominator = (ray[0] * other[1]) - (ray[1] * other[0]);
+    if (Math.abs(denominator) > EPSILON) {
+      const amount = ((offset[0] * other[1]) - (offset[1] * other[0])) / denominator;
+      const otherAmount = ((offset[0] * ray[1]) - (offset[1] * ray[0])) / denominator;
+      return amount >= -EPSILON && amount <= 1 + EPSILON &&
+        otherAmount >= -EPSILON && otherAmount <= 1 + EPSILON
+        ? [clamp(amount, 0, 1)] : [];
+    }
+    if (Math.abs((offset[0] * ray[1]) - (offset[1] * ray[0])) > EPSILON) return [];
+    const lengthSquared = (ray[0] * ray[0]) + (ray[1] * ray[1]);
+    if (lengthSquared <= EPSILON) return [];
+    const first = ((offset[0] * ray[0]) + (offset[1] * ray[1])) / lengthSquared;
+    const endOffset = [d[0] - a[0], d[1] - a[1]];
+    const second = ((endOffset[0] * ray[0]) + (endOffset[1] * ray[1])) / lengthSquared;
+    const start = Math.max(0, Math.min(first, second));
+    const end = Math.min(1, Math.max(first, second));
+    return start <= end + EPSILON ? [clamp(start, 0, 1), clamp(end, 0, 1)] : [];
+  }
+
+  function floorBoundarySegments(floor) {
+    const polygons = floorPolygons(floor);
+    const segments = [];
+    polygons.forEach((polygon, polygonIndex) => {
+      polygon.forEach((corner, cornerIndex) => {
+        const next = polygon[(cornerIndex + 1) % polygon.length];
+        const amounts = [0, 1];
+        polygons.forEach((other, otherIndex) => {
+          if (otherIndex === polygonIndex) return;
+          other.forEach((otherCorner, otherCornerIndex) => {
+            amounts.push(...segmentIntersectionAmounts(
+              corner,
+              next,
+              otherCorner,
+              other[(otherCornerIndex + 1) % other.length],
+            ));
+          });
+        });
+        const uniqueAmounts = amounts.sort((first, second) => first - second)
+          .filter((amount, index, sorted) => index === 0 || amount - sorted[index - 1] > EPSILON);
+        const dx = next[0] - corner[0];
+        const dy = next[1] - corner[1];
+        const length = Math.max(EPSILON, Math.hypot(dx, dy));
+        const normal = [(-dy / length) * 0.001, (dx / length) * 0.001];
+        for (let index = 0; index < uniqueAmounts.length - 1; index += 1) {
+          const fromAmount = uniqueAmounts[index];
+          const toAmount = uniqueAmounts[index + 1];
+          if (toAmount - fromAmount <= EPSILON) continue;
+          const from = [corner[0] + (dx * fromAmount), corner[1] + (dy * fromAmount)];
+          const to = [corner[0] + (dx * toAmount), corner[1] + (dy * toAmount)];
+          const middle = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
+          const bothSidesAreFloor =
+            pointOnFloor([middle[0] + normal[0], middle[1] + normal[1]], floor) &&
+            pointOnFloor([middle[0] - normal[0], middle[1] - normal[1]], floor);
+          if (!bothSidesAreFloor) segments.push([from, to]);
+        }
+      });
+    });
+    return segments;
+  }
+
+  function distancePointToFloorBoundary(point, floor, boundarySegments) {
+    const segments = boundarySegments || floorBoundarySegments(floor);
+    return segments.reduce((nearest, segment) =>
+      Math.min(nearest, distancePointToSegment(point, segment[0], segment[1])), Infinity);
   }
 
   function polygonBounds(polygon) {
@@ -138,7 +244,7 @@
     const seats = Array.isArray(rawSeats) ? rawSeats : [];
     if (!venue.audience.length || venue.floor.outline.length < 3 || !seats.length) return [];
 
-    const bounds = polygonBounds(venue.floor.outline);
+    const bounds = polygonBounds(floorPoints(venue.floor));
     const width = bounds.maxX - bounds.minX;
     const centerX = (bounds.minX + bounds.maxX) / 2;
     const sideSeat = seats.find((seat) => seat && seat.id === "side");
@@ -150,7 +256,7 @@
       .filter((sample) => validPoint(sample.point) && validPoint(sample.areaCenter))
       .map((sample) => ({
         ...sample,
-        distanceM: distancePointToPolygonBoundary(sample.point, venue.floor.outline),
+        distanceM: distancePointToFloorBoundary(sample.point, venue.floor),
       }))
       .sort((a, b) => a.distanceM - b.distanceM);
     if (!samples.length) return [];
@@ -176,12 +282,149 @@
     }).filter(Boolean);
   }
 
+  /* 正面図の「引いた席」だけを、距離・目の高さ・画角から導く。
+   * 既存5席は stage-venues.js の手調整値のまま残し、この関数へ通さない。 */
+  function deriveSeat(raw) {
+    const distanceM = Math.max(EPSILON, Number(raw && raw.distanceM) || 0);
+    const eyeM = Number(raw && raw.eyeM) || 0;
+    const offsetM = Number(raw && raw.offsetM) || 0;
+    const depthM = Math.max(0, Number(raw && raw.depthM) || 0);
+    const heightM = Math.max(0, Number(raw && raw.heightM) || 0);
+    const stageWidthM = Math.max(EPSILON, Number(raw && raw.stageWidthM) || 1);
+    const fovDeg = clamp(Number(raw && raw.fovDeg) || BOWL_DEFAULTS.fovDeg, 1,
+      BOWL_DEFAULTS.autoFovMaxDeg);
+    const mode = raw && raw.mode === "standing" ? "standing" : "seated";
+    const width = Math.max(EPSILON, Number(raw && raw.canvasWidth) || BOWL_DEFAULTS.canvasWidth);
+    const height = Math.max(EPSILON, Number(raw && raw.canvasHeight) || BOWL_DEFAULTS.canvasHeight);
+    const focal = width / (2 * Math.tan((fovDeg * Math.PI) / 360));
+    const pxPerM = focal / distanceM;
+    const span = 1 + (depthM / distanceM);
+    const frontW = (pxPerM * stageWidthM) / width;
+    const backW = frontW / span;
+    const floorBandPx = focal * Math.max(0, eyeM) *
+      ((1 / distanceM) - (1 / (distanceM + Math.max(EPSILON, depthM))));
+    const floorY = (height - floorBandPx) / 2;
+    const bottomY = floorY + floorBandPx;
+    const lookRatio = clamp(-eyeM / distanceM,
+      -Math.tan((BOWL_DEFAULTS.tiltDownMaxDeg * Math.PI) / 180),
+      Math.tan((BOWL_DEFAULTS.tiltUpMaxDeg * Math.PI) / 180));
+    const id = String(raw && raw.id || "derived-seat");
+    const label = String(raw && raw.label || id);
+
+    return {
+      id,
+      label,
+      short: String(raw && raw.short || label),
+      note: `${Math.round(distanceM)}m・目の高さ${eyeM.toFixed(1)}m`,
+      eye: distanceM,
+      plan: {
+        x: 0.5 + (offsetM / stageWidthM),
+        y: distanceM,
+        tier: mode === "standing" ? "floor" : "stand",
+        mode,
+        eyeM,
+        floorM: eyeM - (mode === "standing" ? BOWL_DEFAULTS.standingEyeM : BOWL_DEFAULTS.seatedEyeM),
+      },
+      floorY: floorY * (BOWL_DEFAULTS.baseHeight / height),
+      bottomY: bottomY * (BOWL_DEFAULTS.baseHeight / height),
+      backW,
+      frontW,
+      shift: clamp(-offsetM / distanceM, -1, 1),
+      rise: lookRatio,
+      apron: pxPerM * heightM * (BOWL_DEFAULTS.baseHeight / height),
+      derived: true,
+    };
+  }
+
+  function occlusionFloorM(raw) {
+    const eyeM = Number(raw && raw.eyeM) || 0;
+    const aheadM = Number(raw && raw.aheadM) || 0;
+    const rowPitchM = Math.max(EPSILON, Number(raw && raw.rowPitchM) || 0);
+    const distanceM = Math.max(0, Number(raw && raw.distanceM) || 0);
+    const stageHeightM = Number(raw && raw.stageHeightM) || 0;
+    return {
+      floorM: eyeM + ((aheadM - eyeM) * (distanceM / rowPitchM)) - stageHeightM,
+      basis: aheadM > eyeM ? "head" : "eye",
+    };
+  }
+
+  function riserForConstantC(raw) {
+    const cM = Math.max(0, Number(raw && raw.cMm) || BOWL_DEFAULTS.cMm) / 1000;
+    const rowPitchM = Math.max(EPSILON,
+      Number(raw && raw.rowPitchM) || BOWL_DEFAULTS.seatedRowPitchM);
+    const focusM = Math.max(EPSILON, Number(raw && raw.focusM) || rowPitchM);
+    const rows = Math.max(0, Math.floor(Number(raw && raw.rows) || 0));
+    let floorM = Number(raw && raw.startFloorM) || 0;
+    let previous = BOWL_DEFAULTS.riserMinM;
+    return Array.from({ length: rows }, (_, index) => {
+      const distanceM = focusM + (index * rowPitchM);
+      const eyeM = floorM + BOWL_DEFAULTS.seatedEyeM;
+      const requiredEyeM = (eyeM + cM) * ((distanceM + rowPitchM) / distanceM);
+      const exactRiserM = requiredEyeM - eyeM;
+      const riserM = clamp(Math.max(previous, exactRiserM),
+        BOWL_DEFAULTS.riserMinM,
+        Math.min(BOWL_DEFAULTS.riserMaxM, BOWL_DEFAULTS.stepMaxM));
+      floorM += riserM;
+      previous = riserM;
+      return riserM;
+    });
+  }
+
+  function bowlTiers(rawBowl, _stage) {
+    const bowl = rawBowl && typeof rawBowl === "object" ? rawBowl : {};
+    const tiers = Array.isArray(bowl.tiers) ? bowl.tiers : [];
+    return tiers.map((tier, tierIndex) => {
+      const fromM = Math.max(0, Number(tier && tier.fromM) || 0);
+      const toM = Math.max(fromM, Number(tier && tier.toM) || fromM);
+      const mode = tier && tier.mode === "standing" ? "standing" : "seated";
+      const rowPitchM = Math.max(EPSILON, Number(tier && tier.rowPitchM) ||
+        (mode === "standing" ? BOWL_DEFAULTS.standingRowPitchM : BOWL_DEFAULTS.seatedRowPitchM));
+      const floorM = Number(tier && tier.floorM) || 0;
+      const rowCount = Math.floor(((toM - fromM) + EPSILON) / rowPitchM) + 1;
+      const risers = mode === "seated" ? riserForConstantC({
+        cMm: bowl.cMm,
+        rowPitchM,
+        focusM: fromM,
+        startFloorM: floorM,
+        rows: Math.max(0, rowCount - 1),
+      }) : [];
+      let currentFloorM = floorM;
+      const rows = Array.from({ length: rowCount }, (_, rowIndex) => {
+        if (rowIndex > 0 && mode === "seated") currentFloorM += risers[rowIndex - 1];
+        return {
+          distanceM: fromM + (rowIndex * rowPitchM),
+          floorM: currentFloorM,
+          eyeM: currentFloorM + (mode === "standing"
+            ? BOWL_DEFAULTS.standingEyeM : BOWL_DEFAULTS.seatedEyeM),
+        };
+      });
+      return {
+        id: String(tier && tier.id || `tier-${tierIndex + 1}`),
+        fromM,
+        toM,
+        floorM,
+        rows,
+        mode,
+      };
+    });
+  }
+
   function normalizedVenue(raw) {
     const outline = raw && raw.floor && Array.isArray(raw.floor.outline)
       ? raw.floor.outline.filter(validPoint) : [];
     return {
       floor: {
         outline,
+        extensions: raw && raw.floor && Array.isArray(raw.floor.extensions)
+          ? raw.floor.extensions
+            .filter((item) => item && Array.isArray(item.polygon) &&
+              item.polygon.length >= 3 && item.polygon.every(validPoint))
+            .map((item) => ({
+              id: String(item.id || ""),
+              shape: item.shape === "circle" ? "circle" : "rectangle",
+              polygon: item.polygon.map((point) => point.slice()),
+            }))
+          : [],
         levels: raw && raw.floor && Array.isArray(raw.floor.levels)
           ? raw.floor.levels.filter((level) => level && Array.isArray(level.polygon) &&
             level.polygon.length >= 3 && level.polygon.every(validPoint))
@@ -217,11 +460,11 @@
     return distancePointToPolygon(point, shape.polygon);
   }
 
-  function movementStatusForVenue(venue, point) {
-    const outline = venue.floor.outline;
+  function movementStatusForVenue(venue, point, boundarySegments) {
     const reasons = [];
-    if (outline.length < 3 || !pointInPolygon(point, outline)) reasons.push("outside-floor");
-    if (outline.length >= 3 && distancePointToPolygonBoundary(point, outline) < CLEARANCE.wallM - EPSILON) {
+    if (!pointOnFloor(point, venue.floor)) reasons.push("outside-floor");
+    if (floorPolygons(venue.floor).length &&
+        distancePointToFloorBoundary(point, venue.floor, boundarySegments) < CLEARANCE.wallM - EPSILON) {
       reasons.push("wall");
     }
     venue.fixtures.forEach((fixture) => {
@@ -282,8 +525,9 @@
 
   function computeMovement(rawVenue) {
     const venue = normalizedVenue(rawVenue);
-    const areas = maskRuns(venue.floor.outline, (point) =>
-      movementStatusForVenue(venue, point).allowed ? "movable" : null);
+    const boundarySegments = floorBoundarySegments(venue.floor);
+    const areas = maskRuns(floorPoints(venue.floor), (point) =>
+      movementStatusForVenue(venue, point, boundarySegments).allowed ? "movable" : null);
     const movableExtensions = venue.fixtures
       .filter((fixture) => fixture.movable === true)
       .map((fixture) => fixtureShape(fixture))
@@ -297,7 +541,7 @@
     const outline = venue.floor.outline;
     const fallback = outline.length >= 3 ? polygonCentroid(outline) : [0, 0];
     const requestedAt = rawProbe && validPoint(rawProbe.at) ? rawProbe.at.slice() : fallback;
-    const at = outline.length >= 3 && pointInPolygon(requestedAt, outline) ? requestedAt : fallback;
+    const at = pointOnFloor(requestedAt, venue.floor) ? requestedAt : fallback;
     const requestedTool = rawProbe && FALL_RULES[rawProbe.tool] ? rawProbe.tool : "unspecified";
     const aerialUnavailable = requestedTool === "aerial" && venue.ceiling.rigging === "none";
     const tool = aerialUnavailable ? "unspecified" : requestedTool;
@@ -395,8 +639,8 @@
       .map(fixtureShape)
       .filter(Boolean);
     if (!observers.length || !fixedShapes.length) return { observers, areas: [] };
-    const areas = maskRuns(venue.floor.outline, (point) => {
-      if (!pointInPolygon(point, venue.floor.outline) ||
+    const areas = maskRuns(floorPoints(venue.floor), (point) => {
+      if (!pointOnFloor(point, venue.floor) ||
           fixedShapes.some((shape) => distancePointToShape(point, shape) <= EPSILON)) return null;
       const hidden = observers.reduce((count, observer) =>
         count + (sightBlocked(observer, point, fixedShapes) ? 1 : 0), 0);
@@ -430,7 +674,7 @@
     return [a[0] + ((b[0] - a[0]) * amount), a[1] + ((b[1] - a[1]) * amount)];
   }
 
-  function contourSegments(outline, rows, limitM) {
+  function contourSegments(outline, rows, limitM, contains = (point) => pointInPolygon(point, outline)) {
     if (!rows.length || outline.length < 3) return [];
     const bounds = polygonBounds(outline);
     const columns = Math.max(1, Math.ceil((bounds.maxX - bounds.minX) / GRID_M));
@@ -452,12 +696,12 @@
         if (crossings.length === 2) {
           const middle = [(crossings[0][0] + crossings[1][0]) / 2,
             (crossings[0][1] + crossings[1][1]) / 2];
-          if (pointInPolygon(middle, outline)) segments.push(crossings);
+          if (contains(middle)) segments.push(crossings);
         } else if (crossings.length === 4) {
           [[crossings[0], crossings[1]], [crossings[2], crossings[3]]].forEach((segment) => {
             const middle = [(segment[0][0] + segment[1][0]) / 2,
               (segment[0][1] + segment[1][1]) / 2];
-            if (pointInPolygon(middle, outline)) segments.push(segment);
+            if (contains(middle)) segments.push(segment);
           });
         }
       }
@@ -467,8 +711,16 @@
 
   function computeSightLimits(rawVenue, rawLimits) {
     const venue = normalizedVenue(rawVenue);
+    const stagePoints = floorPoints(venue.floor);
     const rows = venue.audience
-      .map((area) => closestFrontSegment(area.polygon, venue.floor.outline))
+      .map((area) => {
+        let nearest = null;
+        floorPolygons(venue.floor).forEach((polygon) => {
+          const candidate = closestFrontSegment(area.polygon, polygon);
+          if (candidate && (!nearest || candidate.distanceM < nearest.distanceM)) nearest = candidate;
+        });
+        return nearest;
+      })
       .filter(Boolean);
     const limits = Array.isArray(rawLimits) ? rawLimits : [];
     return limits
@@ -477,7 +729,8 @@
         m: Number(limit.m),
         label: String(limit.label || `${limit.m}m`),
         note: String(limit.note || ""),
-        segments: contourSegments(venue.floor.outline, rows, Number(limit.m)),
+        segments: contourSegments(stagePoints, rows, Number(limit.m),
+          (point) => pointOnFloor(point, venue.floor)),
       }))
       .filter((limit) => limit.segments.length > 0);
   }
@@ -495,13 +748,22 @@
   }
 
   window.SHOSAI_VENUE_LINES = Object.freeze({
-    constants: Object.freeze({ clearance: CLEARANCE, fallRules: FALL_RULES, gridM: GRID_M }),
+    constants: Object.freeze({
+      clearance: CLEARANCE,
+      fallRules: FALL_RULES,
+      gridM: GRID_M,
+      bowl: BOWL_DEFAULTS,
+    }),
     pointInPolygon,
     movementStatusAt,
     fallRadiusM,
     closestFrontSegment,
     polygonCentroid,
     approxFrontSeats,
+    deriveSeat,
+    bowlTiers,
+    occlusionFloorM,
+    riserForConstantC,
     normalizeProbe,
     computeMovement,
     computeFall,

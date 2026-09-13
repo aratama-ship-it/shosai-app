@@ -7,7 +7,14 @@
   const $ = (id) => document.getElementById(id);
   const els = {
     panel: $("stage-session-panel"),
+    shareOpen: $("stage-share-open"),
+    shareClose: $("stage-share-close"),
+    shareBackdrop: $("stage-share-backdrop"),
+    shareTitle: $("stage-share-title"),
     summary: $("stage-session-summary"),
+    sharePanelHint: $("stage-share-panel-hint"),
+    realtimeTitle: $("stage-share-realtime-title"),
+    realtimeHint: $("stage-share-realtime-hint"),
     hostControls: $("stage-session-host-controls"),
     hostNameLabel: $("stage-session-host-name-label"),
     hostName: $("stage-session-host-name"),
@@ -67,7 +74,7 @@
   let applyReleaseTimer = null;
   let applyGeneration = 0;
   let awaitingInitialGuestDocument = false;
-  let sessionPanelHome = null;
+  let shareModalTrigger = null;
   const sentArrowOps = new Set();
   const remotePointers = new Map();
 
@@ -91,8 +98,30 @@
     return japanese;
   }
 
+  function shareText(japanese, english) {
+    return sessionEnglish() ? english : japanese;
+  }
+
+  function applyShareLabels() {
+    const title = shareText("共有", "Share");
+    els.panel.dataset.title = title;
+    els.panel.setAttribute("aria-label", title);
+    if (els.shareTitle) els.shareTitle.textContent = title;
+    if (els.shareOpen) els.shareOpen.textContent = title;
+    if (els.shareClose) els.shareClose.setAttribute("aria-label", shareText("閉じる", "Close"));
+    if (els.sharePanelHint) els.sharePanelHint.textContent = shareText(
+      "二つの共有方法があります。会議中に同じ状態を見ながら話すなら「リアルタイム共有」。事前に各自で確認し、必要なメモだけ送ってもらうなら「演者事前学習リンク」です。",
+      "Choose live sharing to discuss the same show together during a meeting. Choose a performer rehearsal link for people to review a fixed snapshot beforehand and send only the notes they choose."
+    );
+    if (els.realtimeTitle) els.realtimeTitle.textContent = shareText("リアルタイム共有（会議用）", "Live sharing (for meetings)");
+    if (els.realtimeHint) els.realtimeHint.textContent = shareText(
+      "同じショーを開いたまま、会議中に配置や注釈を一緒に確認します。",
+      "Keep the same show open while you review placements and annotations together during a meeting."
+    );
+  }
+
   function applySessionLabels() {
-    els.panel.hidden = false;
+    applyShareLabels();
     if (els.summary) els.summary.textContent = sessionText("リアルタイム共有（会議用）");
     if (els.hostNameLabel) els.hostNameLabel.textContent = sessionText("表示名");
     els.start.textContent = sessionText("セッションを開始");
@@ -272,40 +301,33 @@
     });
   }
 
-  /* 左列（.stage-toolbox）は iPad PWA と スマホ閲覧機では display:none になっている
-   * （style.css:10251 / :10679）。そこへセッション欄を移すと、ゲストは接続状態も
-   * 「最新を取り直す」も「ホスト接続切れ」も参加者一覧も**すべて失う**。
-   * これらの端末では移さず、保存パネルの中（＝タブレットの「保存・設定」ドロワー。
-   * G-3でこのレールだけは隠していない）に置いたままにする。
-   * ★この判定を外さないこと。2026-08-26の検証で見つけた欠落。 */
-  function deskColumnsInUse() {
-    const root = document.documentElement;
-    if (!root || !root.classList) return true;
-    return !root.classList.contains("stage-pwa-tablet")
-      && !root.classList.contains("stage-phone-viewer");
-  }
-
-  function moveSessionPanelToGuestColumn() {
-    if (!deskColumnsInUse()) return false;
-    const leftColumn = $("stage-col-left");
-    if (!leftColumn || typeof leftColumn.insertBefore !== "function") return false;
-    if (!sessionPanelHome) {
-      sessionPanelHome = {
-        parent: els.panel.parentNode,
-        nextSibling: els.panel.nextSibling,
-      };
-    }
-    leftColumn.insertBefore(els.panel, leftColumn.firstChild);
+  function openShareModal(trigger) {
+    if (!els.panel) return false;
+    shareModalTrigger = trigger || shareModalTrigger;
+    // The dedicated performer-link entry reuses this modal. Every ordinary
+    // Share open must first restore this modal's own labels and semantics.
+    applyShareLabels();
+    els.panel.hidden = false;
+    if (els.shareBackdrop) els.shareBackdrop.hidden = false;
+    // Keep the legacy marker for host-recovery consumers; visibility is controlled by hidden.
     els.panel.open = true;
+    // The rehearsal-link owner controls live inside this modal. Tell it which
+    // show is current every time the modal is opened, rather than retaining a
+    // previous show's publication state.
+    if (typeof document.dispatchEvent === "function" && typeof Event === "function") {
+      document.dispatchEvent(new Event("shosai:share-open"));
+    }
     return true;
   }
 
-  function restoreSessionPanelHome() {
-    if (!sessionPanelHome || !sessionPanelHome.parent) return false;
-    const { parent, nextSibling } = sessionPanelHome;
-    if (nextSibling && nextSibling.parentNode === parent) parent.insertBefore(els.panel, nextSibling);
-    else parent.append(els.panel);
-    sessionPanelHome = null;
+  function closeShareModal() {
+    if (!els.panel || els.panel.hidden) return false;
+    els.panel.hidden = true;
+    if (els.shareBackdrop) els.shareBackdrop.hidden = true;
+    els.panel.open = false;
+    const trigger = shareModalTrigger;
+    shareModalTrigger = null;
+    if (trigger && typeof trigger.focus === "function") trigger.focus();
     return true;
   }
 
@@ -330,7 +352,7 @@
 
   function enterGuestSessionMode() {
     document.body.classList.add("stage-session-guest");
-    moveSessionPanelToGuestColumn();
+    openShareModal();
     if (typeof bridge.enterGuestMode === "function") {
       try { bridge.enterGuestMode(); } catch (_) { /* 表示制限に失敗しても受信防御は保つ */ }
     }
@@ -525,7 +547,6 @@
   }
 
   function updateRoleUi() {
-    els.panel.open = Boolean(role);
     els.start.disabled = Boolean(role);
     if (els.hostName) els.hostName.disabled = Boolean(role);
     if (els.invite) els.invite.hidden = role !== "host" || !roomId;
@@ -764,7 +785,7 @@
     renderParticipants(lastParticipants);
   }
 
-  window.SHOSAI_STAGE_SESSION_HOOKS = { onLocalChange, restoreSessionPanelHome, relabel };
+  window.SHOSAI_STAGE_SESSION_HOOKS = { onLocalChange, openShareModal, closeShareModal, relabel };
 
   function pointerHost() {
     return els.planCanvas && els.planCanvas.parentElement;
@@ -838,7 +859,7 @@
     if (els.url) els.url.value = "";
     if (els.reconnect) els.reconnect.hidden = true;
     updateRoleUi();
-    els.panel.open = true;
+    openShareModal();
     setStatus(message, true);
   }
 
@@ -1220,6 +1241,17 @@
   }
 
   if (els.hostName) els.hostName.value = readStoredName("ホスト");
+  if (els.shareOpen) els.shareOpen.addEventListener("click", () => openShareModal(els.shareOpen));
+  if (els.shareClose) els.shareClose.addEventListener("click", closeShareModal);
+  if (els.shareBackdrop) els.shareBackdrop.addEventListener("click", closeShareModal);
+  if (typeof document.addEventListener === "function") {
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !els.panel.hidden) {
+        event.preventDefault();
+        closeShareModal();
+      }
+    });
+  }
   applySessionLabels();
   void refreshStoredHostSession();
   renderParticipants([]);
@@ -1228,7 +1260,7 @@
   const invitedRoom = invitedRoomId();
   if (invitedRoom) {
     revealStageView();
-    els.panel.open = true;
+    openShareModal();
     setStatus("表示名を入力して参加してください。");
     showGuestNameModal(invitedRoom);
   }

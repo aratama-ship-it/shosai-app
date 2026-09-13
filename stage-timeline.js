@@ -1,0 +1,1992 @@
+/* 舞台スケッチの表示モードと下部タイムライン。
+ * 舞台・シーン・パネルは stage-sketch.js が正本。このファイルは同じDOMを保ったまま
+ * 表示モードだけを切り替え、セクションに保存済みのミュージックシンクを時間軸へ読む。 */
+(function () {
+  "use strict";
+
+  const root = document.documentElement;
+  const bridge = window.SHOSAI_STAGE_SESSION_BRIDGE;
+  const tabs = document.getElementById("stage-workspace-tabs");
+  const panel = document.getElementById("stage-timeline-panel");
+  if (!tabs || !panel || !bridge || root.hasAttribute("data-study-renderer")
+      || root.classList.contains("stage-phone-viewer") || root.classList.contains("stage-pwa-tablet")) {
+    if (tabs) tabs.hidden = true;
+    if (panel) panel.hidden = true;
+    return;
+  }
+
+  const UI_KEY = "shosai-stage-timeline-ui-v1";
+  const DEFAULT_HEIGHT = 360;
+  const MIN_HEIGHT = 260;
+  const ZOOM_MIN = 0.05;
+  const ZOOM_MAX = 12;
+  const ZOOM_FACTOR = 1.3;
+  const ROW_KEYS = ["ruler", "anchors", "audio", "scenes", "transitions", "light", "music", "dialogue"];
+  const DEFAULT_ROW_HEIGHTS = Object.freeze({
+    ruler: 32, anchors: 42, audio: 40, scenes: 52, transitions: 48, light: 42, music: 42, dialogue: 42,
+  });
+  const ROW_MAX_HEIGHT = 320;
+  const MAX_TIMELINE_WIDTH = 16000000;
+  const CUE_TYPES = ["light", "music", "dialogue"];
+  const CUE_WIDTH = 104;
+  const AUDIO_GAIN_MIN_DB = -24;
+  const AUDIO_GAIN_MAX_DB = 12;
+  const els = {
+    tabs: [...tabs.querySelectorAll("[data-stage-workspace-mode]")],
+    viewSelect: document.getElementById("stage-view-select"),
+    play: document.getElementById("stage-timeline-play"),
+    section: document.getElementById("stage-timeline-section"),
+    status: document.getElementById("stage-timeline-status"),
+    sectionDurationNumber: document.getElementById("stage-timeline-section-duration-number"),
+    songLabel: document.getElementById("stage-timeline-song-label"),
+    songSelect: document.getElementById("stage-timeline-song-select"),
+    songDelete: document.getElementById("stage-timeline-song-delete"),
+    trackName: document.getElementById("stage-timeline-track-name"),
+    addAudio: document.getElementById("stage-timeline-add-audio"),
+    addScene: document.getElementById("stage-timeline-add-scene"),
+    addTransition: document.getElementById("stage-timeline-add-transition"),
+    volume: document.getElementById("stage-timeline-volume"),
+    settingsTrigger: document.getElementById("stage-timeline-settings-trigger"),
+    settingsPanel: document.getElementById("stage-timeline-settings-panel"),
+    prev: document.getElementById("stage-timeline-prev"),
+    next: document.getElementById("stage-timeline-next"),
+    head: document.getElementById("stage-timeline-head"),
+    anchorHere: document.getElementById("stage-timeline-anchor"),
+    clearAnchors: document.getElementById("stage-timeline-clear-anchors"),
+    markOne: document.getElementById("stage-timeline-mark-one"),
+    loopA: document.getElementById("stage-timeline-loop-a"),
+    loopB: document.getElementById("stage-timeline-loop-b"),
+    loop: document.getElementById("stage-timeline-loop"),
+    bpm: document.getElementById("stage-timeline-bpm"),
+    realTempo: document.getElementById("stage-timeline-real-tempo"),
+    grid: document.getElementById("stage-timeline-grid"),
+    zoomOut: document.getElementById("stage-timeline-zoom-out"),
+    zoomIn: document.getElementById("stage-timeline-zoom-in"),
+    resize: document.getElementById("stage-timeline-resize"),
+    unitToggle: document.getElementById("stage-timeline-unit-toggle"),
+    unitWarningBackdrop: document.getElementById("stage-timeline-unit-warning-backdrop"),
+    unitWarningModal: document.getElementById("stage-timeline-unit-warning-modal"),
+    unitWarningSummary: document.getElementById("stage-timeline-unit-warning-summary"),
+    unitWarningClose: document.getElementById("stage-timeline-unit-warning-close"),
+    unitWarningCancel: document.getElementById("stage-timeline-unit-warning-cancel"),
+    unitWarningConfirm: document.getElementById("stage-timeline-unit-warning-confirm"),
+    position: document.getElementById("stage-timeline-position"),
+    viewport: document.getElementById("stage-timeline-viewport"),
+    surface: document.getElementById("stage-timeline-surface"),
+    loopRange: document.getElementById("stage-timeline-loop-range"),
+    rulerLabel: document.getElementById("stage-timeline-ruler-label"),
+    ruler: document.getElementById("stage-timeline-ruler"),
+    anchorsLane: document.getElementById("stage-timeline-anchors"),
+    audioLane: document.getElementById("stage-timeline-audio"),
+    scenesLane: document.getElementById("stage-timeline-scenes"),
+    transitionsLane: document.getElementById("stage-timeline-transitions"),
+    cueLanes: {
+      light: document.getElementById("stage-timeline-light-cues"),
+      music: document.getElementById("stage-timeline-music-cues"),
+      dialogue: document.getElementById("stage-timeline-dialogue-cues"),
+    },
+    addCueButtons: [...panel.querySelectorAll("[data-stage-timeline-add-cue]")],
+    cueDetailBackdrop: document.getElementById("stage-timeline-cue-detail-backdrop"),
+    cueDetailModal: document.getElementById("stage-timeline-cue-detail-modal"),
+    cueDetailTitle: document.getElementById("stage-timeline-cue-detail-title"),
+    cueDetailScene: document.getElementById("stage-timeline-cue-detail-scene"),
+    cueDetailPosition: document.getElementById("stage-timeline-cue-detail-position"),
+    cueDetailNote: document.getElementById("stage-timeline-cue-detail-note"),
+    cueDetailClose: document.getElementById("stage-timeline-cue-detail-close"),
+    cueDetailSave: document.getElementById("stage-timeline-cue-detail-save"),
+    cueDetailDelete: document.getElementById("stage-timeline-cue-detail-delete"),
+    audioDetailBackdrop: document.getElementById("stage-timeline-audio-detail-backdrop"),
+    audioDetailModal: document.getElementById("stage-timeline-audio-detail-modal"),
+    audioDetailTitle: document.getElementById("stage-timeline-audio-detail-title"),
+    audioDetailName: document.getElementById("stage-timeline-audio-detail-name"),
+    audioDetailDuration: document.getElementById("stage-timeline-audio-detail-duration"),
+    audioGainRange: document.getElementById("stage-timeline-audio-gain-range"),
+    audioGainNumber: document.getElementById("stage-timeline-audio-gain-number"),
+    audioGainValue: document.getElementById("stage-timeline-audio-gain-value"),
+    audioDetailClose: document.getElementById("stage-timeline-audio-detail-close"),
+    audioDetailCancel: document.getElementById("stage-timeline-audio-detail-cancel"),
+    audioDetailSave: document.getElementById("stage-timeline-audio-detail-save"),
+    playhead: document.getElementById("stage-timeline-playhead"),
+    audio: document.getElementById("stage-music-audio"),
+    musicFile: document.getElementById("stage-music-file"),
+    musicToggle: document.getElementById("stage-music-toggle"),
+    sceneList: document.getElementById("stage-scene-list"),
+    rows: [...panel.querySelectorAll("[data-stage-timeline-row]")],
+    rowHandles: [...panel.querySelectorAll(".stage-timeline-row-handle")],
+    rowResizers: [...panel.querySelectorAll(".stage-timeline-row-resize")],
+    rowVisibilityInputs: [...panel.querySelectorAll("[data-stage-timeline-row-visibility]")],
+  };
+
+  const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+  const tx = (japanese) => {
+    const model = window.SHOSAI_STAGE_I18N_MODEL;
+    return model && typeof model.text === "function" ? model.text(root.lang || "ja", japanese) : japanese;
+  };
+  const readUi = () => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(UI_KEY) || "{}");
+      return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+    } catch (_) { return {}; }
+  };
+  const ui = readUi();
+  ui.mode = ui.mode === "timeline" ? "timeline" : "normal";
+  ui.unit = ui.unit === "count" ? "count" : "time";
+  ui.zoom = clamp(finite(ui.zoom, 1), ZOOM_MIN, ZOOM_MAX);
+  ui.height = finite(ui.height, DEFAULT_HEIGHT);
+  ui.volume = clamp(finite(ui.volume, 100), 0, 100);
+  ui.grid = [0.25, 0.5, 1].includes(finite(ui.grid, 0.25)) ? finite(ui.grid, 0.25) : 0.25;
+  ui.loopA = Math.max(0, finite(ui.loopA, 0));
+  ui.loopB = Math.max(0, finite(ui.loopB, 0));
+  ui.loop = Boolean(ui.loop);
+  ui.songBySection = ui.songBySection && typeof ui.songBySection === "object"
+    ? ui.songBySection : {};
+  if (Array.isArray(ui.rowOrder)) {
+    ui.rowOrder = [...new Set(ui.rowOrder.filter((key) => ROW_KEYS.includes(key)))];
+    if (ui.anchorLaneOrderVersion !== 1) {
+      ui.rowOrder = ui.rowOrder.filter((key) => key !== "anchors");
+      const rulerIndex = ui.rowOrder.indexOf("ruler");
+      ui.rowOrder.splice(rulerIndex < 0 ? 0 : rulerIndex + 1, 0, "anchors");
+      ui.anchorLaneOrderVersion = 1;
+    }
+    ROW_KEYS.forEach((key) => { if (!ui.rowOrder.includes(key)) ui.rowOrder.push(key); });
+  } else {
+    ui.rowOrder = [...ROW_KEYS];
+    ui.anchorLaneOrderVersion = 1;
+  }
+  ui.rowHeights = ui.rowHeights && typeof ui.rowHeights === "object" ? ui.rowHeights : {};
+  ui.rowVisibility = ui.rowVisibility && typeof ui.rowVisibility === "object" ? ui.rowVisibility : {};
+  ROW_KEYS.forEach((key) => {
+    const minimum = key === "ruler" ? 28 : 32;
+    ui.rowHeights[key] = clamp(finite(ui.rowHeights[key], DEFAULT_ROW_HEIGHTS[key]), minimum, ROW_MAX_HEIGHT);
+    ui.rowVisibility[key] = ui.rowVisibility[key] !== false;
+  });
+
+  let mode = "normal";
+  let timeline = null;
+  let timelineWidth = 960;
+  let seekSeconds = 0;
+  let durationEditSectionId = null;
+  let pendingUnitChange = null;
+  let unitWarningReturnFocus = null;
+  let selectedCueId = null;
+  let cueDetailId = null;
+  let cueDetailReturnFocus = null;
+  let audioDetailTrackId = null;
+  let audioDetailReturnFocus = null;
+  let audioDetailPreviewGainDb = null;
+  let audioGraph = null;
+  let audioGraphFailed = false;
+  let pendingSeek = null;
+  let resizeTimer = 0;
+  let timelineResize = null;
+  let silentPlayback = null;
+  let durationScrub = null;
+  let rowResize = null;
+  let rowReorder = null;
+  let anchorDrag = null;
+  let suppressAnchorClick = false;
+
+  function saveUi() {
+    try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (_) { /* 表示設定なしでも編集は続ける */ }
+  }
+
+  function normalizedAudioGainDb(value) {
+    const number = Number(value);
+    return Number.isFinite(number)
+      ? Math.round(clamp(number, AUDIO_GAIN_MIN_DB, AUDIO_GAIN_MAX_DB) * 2) / 2 : 0;
+  }
+
+  function activeAudioTrack() {
+    const documentValue = projectDocument();
+    const tracks = documentValue && documentValue.project && Array.isArray(documentValue.project.audioTracks)
+      ? documentValue.project.audioTracks : [];
+    const trackId = audioDetailTrackId || (timeline && timeline.trackId);
+    return tracks.find((track) => track.id === trackId) || null;
+  }
+
+  function activeAudioGainDb() {
+    if (audioDetailTrackId && audioDetailPreviewGainDb !== null) return audioDetailPreviewGainDb;
+    const track = activeAudioTrack();
+    return normalizedAudioGainDb(track && track.gainDb);
+  }
+
+  function applyAudioLevels(gainDb = activeAudioGainDb()) {
+    if (!els.audio) return;
+    const master = clamp(ui.volume / 100, 0, 1);
+    const factor = 10 ** (normalizedAudioGainDb(gainDb) / 20);
+    if (audioGraph) {
+      els.audio.volume = master;
+      audioGraph.gain.gain.value = factor;
+    } else {
+      // Web Audio非対応時も減衰は維持する。増幅はブラウザのvolume上限まで。
+      els.audio.volume = clamp(master * factor, 0, 1);
+    }
+  }
+
+  async function ensureAudioGainGraph() {
+    if (!els.audio || audioGraphFailed) return null;
+    try {
+      if (!audioGraph) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) {
+          audioGraphFailed = true;
+          applyAudioLevels();
+          return null;
+        }
+        const context = new AudioContextClass();
+        const source = context.createMediaElementSource(els.audio);
+        const gain = context.createGain();
+        source.connect(gain);
+        gain.connect(context.destination);
+        audioGraph = { context, source, gain };
+      }
+      if (audioGraph.context.state === "suspended") {
+        try { await audioGraph.context.resume(); } catch (_) { /* 次のユーザー操作で再試行する */ }
+      }
+      applyAudioLevels();
+      return audioGraph;
+    } catch (_) {
+      audioGraphFailed = true;
+      audioGraph = null;
+      applyAudioLevels();
+      return null;
+    }
+  }
+
+  function rowMinimumHeight(key) { return key === "ruler" ? 28 : 32; }
+
+  function applyRowLayout({ save = false } = {}) {
+    const rows = new Map(els.rows.map((row) => [row.dataset.stageTimelineRow, row]));
+    ui.rowOrder.forEach((key) => {
+      const row = rows.get(key);
+      if (row) els.surface.insertBefore(row, els.playhead);
+    });
+    els.rows.forEach((row) => {
+      const key = row.dataset.stageTimelineRow;
+      const height = clamp(finite(ui.rowHeights[key], DEFAULT_ROW_HEIGHTS[key]), rowMinimumHeight(key), ROW_MAX_HEIGHT);
+      ui.rowHeights[key] = height;
+      row.hidden = !ui.rowVisibility[key] || (key === "anchors" && ui.unit !== "count");
+      row.style.setProperty("--stage-timeline-row-height", `${height}px`);
+      const separator = row.querySelector(".stage-timeline-row-resize");
+      if (separator) {
+        separator.setAttribute("aria-valuemin", String(rowMinimumHeight(key)));
+        separator.setAttribute("aria-valuemax", String(ROW_MAX_HEIGHT));
+        separator.setAttribute("aria-valuenow", String(Math.round(height)));
+      }
+    });
+    els.rowVisibilityInputs.forEach((input) => {
+      input.checked = ui.rowVisibility[input.value] !== false;
+    });
+    if (save) saveUi();
+  }
+
+  function setSettingsOpen(open, { focus = false } = {}) {
+    const next = Boolean(open);
+    els.settingsPanel.hidden = !next;
+    els.settingsTrigger.setAttribute("aria-expanded", String(next));
+    if (focus) {
+      const target = next ? els.rowVisibilityInputs[0] : els.settingsTrigger;
+      if (target) target.focus({ preventScroll: true });
+    }
+  }
+
+  function setRowHeight(key, value, { save = false } = {}) {
+    if (!ROW_KEYS.includes(key)) return;
+    ui.rowHeights[key] = clamp(Math.round(finite(value, DEFAULT_ROW_HEIGHTS[key])), rowMinimumHeight(key), ROW_MAX_HEIGHT);
+    applyRowLayout({ save });
+  }
+
+  function moveRowByKeyboard(key, direction) {
+    const at = ui.rowOrder.indexOf(key);
+    const to = clamp(at + direction, 0, ui.rowOrder.length - 1);
+    if (at < 0 || at === to) return;
+    [ui.rowOrder[at], ui.rowOrder[to]] = [ui.rowOrder[to], ui.rowOrder[at]];
+    applyRowLayout({ save: true });
+    const row = els.rows.find((candidate) => candidate.dataset.stageTimelineRow === key);
+    const handle = row && row.querySelector(".stage-timeline-row-handle");
+    if (handle) handle.focus();
+  }
+
+  function maxTimelineHeight() {
+    return Math.max(MIN_HEIGHT, Math.min(Math.round(window.innerHeight * 0.72), window.innerHeight - 160));
+  }
+
+  function applyTimelineHeight(nextHeight = ui.height, { save = false } = {}) {
+    ui.height = clamp(Math.round(finite(nextHeight, DEFAULT_HEIGHT)), MIN_HEIGHT, maxTimelineHeight());
+    root.style.setProperty("--stage-timeline-height", `${ui.height}px`);
+    if (els.resize) {
+      els.resize.setAttribute("aria-valuemax", String(maxTimelineHeight()));
+      els.resize.setAttribute("aria-valuenow", String(ui.height));
+    }
+    if (save) saveUi();
+  }
+
+  function clickElement(element) {
+    if (element && !element.disabled) element.click();
+  }
+
+  function projectDocument() {
+    try {
+      const documentValue = JSON.parse(bridge.exportDocumentString());
+      return documentValue && documentValue.project ? documentValue : null;
+    } catch (_) { return null; }
+  }
+
+  function sceneTimelineSeconds(scene) {
+    const rehearsal = scene && scene.rehearsal || {};
+    const hold = rehearsal.holdDurationSeconds == null ? 4 : Math.max(0, finite(rehearsal.holdDurationSeconds, 4));
+    const travel = rehearsal.transitionToNextSeconds == null ? 0 : Math.max(0, finite(rehearsal.transitionToNextSeconds, 0));
+    return Math.max(0.1, hold + travel);
+  }
+
+  function derivedSectionDuration(project, section) {
+    return Math.max(0.1, childScenes(project, section).reduce((sum, scene) => sum + sceneTimelineSeconds(scene), 0));
+  }
+
+  function sectionDurationSeconds(project, section) {
+    const saved = section && section.timelineDurationSeconds;
+    return saved === null || saved === undefined
+      ? derivedSectionDuration(project, section)
+      : Math.max(0.1, finite(saved, derivedSectionDuration(project, section)));
+  }
+
+  function syncSectionDurationControls(project) {
+    const section = currentSection(project);
+    const disabled = !section || typeof bridge.setSectionTimelineDurationSeconds !== "function";
+    els.sectionDurationNumber.disabled = disabled;
+    if (disabled) return;
+    const seconds = Math.round(sectionDurationSeconds(project, section) * 10) / 10;
+    els.sectionDurationNumber.value = String(seconds);
+  }
+
+  function normalizedSectionDuration(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.round(Math.max(number, 0.1) * 10) / 10 : null;
+  }
+
+  function writeCurrentSectionDuration(value, { render = false, finalize = false } = {}) {
+    const documentValue = projectDocument();
+    const section = documentValue && currentSection(documentValue.project);
+    const seconds = normalizedSectionDuration(value);
+    if (!section || seconds === null || typeof bridge.setSectionTimelineDurationSeconds !== "function") {
+      if (finalize && documentValue) syncSectionDurationControls(documentValue.project);
+      return false;
+    }
+    const changed = Math.abs(sectionDurationSeconds(documentValue.project, section) - seconds) > 1e-9;
+    const checkpoint = changed && durationEditSectionId !== section.id;
+    const applied = bridge.setSectionTimelineDurationSeconds(section.id, seconds, { checkpoint, finalize });
+    if (!applied) return false;
+    if (changed) durationEditSectionId = section.id;
+    els.sectionDurationNumber.value = String(seconds);
+    if (render) renderTimeline();
+    return true;
+  }
+
+  function finishSectionDurationEdit(value) {
+    writeCurrentSectionDuration(value, { render: true, finalize: true });
+    durationEditSectionId = null;
+  }
+
+  function currentViewValue() {
+    const value = els.viewSelect && els.viewSelect.value;
+    return ["front", "plan", "both-front", "both-plan"].includes(value) ? value : "front";
+  }
+
+  function setStageView(value) {
+    if (!els.viewSelect || els.viewSelect.value === value) return;
+    els.viewSelect.value = value;
+    els.viewSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function applyMode(nextMode, { initial = false } = {}) {
+    const next = nextMode === "timeline" ? "timeline" : "normal";
+    if (!initial && next === mode) return;
+    const outgoingView = currentViewValue();
+    if (mode === "normal") ui.normalView = outgoingView;
+    else ui.timelineView = outgoingView;
+
+    mode = next;
+    ui.mode = next;
+    document.body.dataset.stageWorkspaceMode = next;
+    document.body.classList.toggle("stage-timeline-mode", next === "timeline");
+    panel.hidden = next !== "timeline";
+    if (next !== "timeline") setSettingsOpen(false);
+    if (next !== "timeline") closeAudioDetails({ focus: false });
+    if (next !== "timeline") pauseSilentPlayback({ update: false });
+    els.tabs.forEach((button) => {
+      const active = button.dataset.stageWorkspaceMode === next;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    window.dispatchEvent(new CustomEvent("stage-workspace-mode-change", { detail: { mode: next } }));
+
+    if (next === "timeline") {
+      const target = ["front", "plan", "both-front", "both-plan"].includes(ui.timelineView)
+        ? ui.timelineView : "plan";
+      ui.timelineView = target;
+      setStageView(target);
+      applyTimelineHeight();
+      renderTimeline();
+    } else {
+      const target = ["front", "plan", "both-front", "both-plan"].includes(ui.normalView)
+        ? ui.normalView : outgoingView;
+      setStageView(target);
+    }
+    saveUi();
+  }
+
+  function childScenes(project, section) {
+    const rows = Array.isArray(project.scenes) ? project.scenes : [];
+    if (!section) return rows.filter((row) => row && row.kind === "scene");
+    const at = rows.findIndex((row) => row.id === section.id);
+    const out = [];
+    for (let i = at + 1; i < rows.length && finite(rows[i].depth, 0) > finite(section.depth, 0); i += 1) {
+      if (rows[i].kind === "scene") out.push(rows[i]);
+    }
+    return out;
+  }
+
+  function currentSection(project) {
+    const rows = Array.isArray(project.scenes) ? project.scenes : [];
+    const at = rows.findIndex((row) => row.id === project.activeSceneId);
+    if (at < 0) return rows.find((row) => row.kind === "section") || null;
+    if (rows[at].kind === "section") return rows[at];
+    const depth = finite(rows[at].depth, 0);
+    for (let i = at - 1; i >= 0; i -= 1) {
+      if (rows[i].kind === "section" && finite(rows[i].depth, 0) < depth) return rows[i];
+    }
+    return null;
+  }
+
+  function sectionTimelineUnit(section) {
+    return section && section.timelineUnit === "count" ? "count" : "time";
+  }
+
+  function closeUnitWarning({ focus = true } = {}) {
+    if (!els.unitWarningModal || els.unitWarningModal.hidden) return;
+    els.unitWarningModal.hidden = true;
+    els.unitWarningBackdrop.hidden = true;
+    const target = unitWarningReturnFocus;
+    pendingUnitChange = null;
+    unitWarningReturnFocus = null;
+    if (focus && target && target.isConnected) target.focus({ preventScroll: true });
+  }
+
+  function openUnitWarning() {
+    const documentValue = projectDocument();
+    const section = documentValue && currentSection(documentValue.project);
+    if (!section || !els.unitWarningModal || typeof bridge.setSectionTimelineUnit !== "function") return;
+    const next = sectionTimelineUnit(section) === "count" ? "time" : "count";
+    pendingUnitChange = { sectionId: section.id, next };
+    unitWarningReturnFocus = els.unitToggle;
+    els.unitWarningSummary.textContent = tx(next === "count"
+      ? "このセクションをカウント式で表示します。"
+      : "このセクションを時間式で表示します。");
+    els.unitWarningConfirm.textContent = tx(next === "count"
+      ? "カウント式に切り替える"
+      : "時間式に切り替える");
+    els.unitWarningBackdrop.hidden = false;
+    els.unitWarningModal.hidden = false;
+    els.unitWarningConfirm.focus({ preventScroll: true });
+  }
+
+  function confirmUnitWarning() {
+    const pending = pendingUnitChange;
+    if (!pending || typeof bridge.setSectionTimelineUnit !== "function") return;
+    if (!bridge.setSectionTimelineUnit(pending.sectionId, pending.next)) return;
+    ui.unit = pending.next;
+    closeUnitWarning({ focus: false });
+    renderTimeline();
+    els.unitToggle.focus({ preventScroll: true });
+  }
+
+  function anchorsFor(track) {
+    const bpm = Math.max(1, finite(track && track.countBpm, 120));
+    const first = Math.max(0, finite(track && track.firstCountSec, 0));
+    const map = new Map();
+    (Array.isArray(track && track.anchors) ? track.anchors : []).forEach((anchor) => {
+      const count = finite(anchor && anchor.count, NaN);
+      const sec = finite(anchor && anchor.sec, NaN);
+      if (Number.isFinite(count) && Number.isFinite(sec) && count > 1 && sec >= 0) map.set(count, sec);
+    });
+    const out = [{ count: 1, sec: first, locked: Boolean(track && track.firstLocked) }];
+    [...map.entries()].sort((a, b) => a[0] - b[0]).forEach(([count, sec]) => {
+      const raw = (track.anchors || []).find((anchor) => Math.abs(finite(anchor && anchor.count, NaN) - count) < 1e-6);
+      if (sec > out[out.length - 1].sec) out.push({ count, sec, locked: !raw || raw.locked !== false });
+    });
+    out.bpm = bpm;
+    return out;
+  }
+
+  function countToSec(track, count) {
+    const anchors = anchorsFor(track);
+    if (anchors.length === 1) return anchors[0].sec + (count - 1) * 60 / anchors.bpm;
+    const slope = (a, b) => (b.sec - a.sec) / (b.count - a.count);
+    if (count <= anchors[0].count) return anchors[0].sec + (count - anchors[0].count) * slope(anchors[0], anchors[1]);
+    for (let i = 0; i < anchors.length - 1; i += 1) {
+      if (count <= anchors[i + 1].count) return anchors[i].sec + (count - anchors[i].count) * slope(anchors[i], anchors[i + 1]);
+    }
+    const end = anchors.length - 1;
+    return anchors[end].sec + (count - anchors[end].count) * slope(anchors[end - 1], anchors[end]);
+  }
+
+  function secToCount(track, sec) {
+    const anchors = anchorsFor(track);
+    if (anchors.length === 1) return 1 + (sec - anchors[0].sec) * anchors.bpm / 60;
+    const slope = (a, b) => (b.sec - a.sec) / (b.count - a.count);
+    if (sec <= anchors[0].sec) return anchors[0].count + (sec - anchors[0].sec) / slope(anchors[0], anchors[1]);
+    for (let i = 0; i < anchors.length - 1; i += 1) {
+      if (sec <= anchors[i + 1].sec) return anchors[i].count + (sec - anchors[i].sec) / slope(anchors[i], anchors[i + 1]);
+    }
+    const end = anchors.length - 1;
+    return anchors[end].count + (sec - anchors[end].sec) / slope(anchors[end - 1], anchors[end]);
+  }
+
+  function countSyncPayload(track) {
+    const phrases = (Array.isArray(track && track.phrases) ? track.phrases : [])
+      .map((phrase) => ({
+        fromCount: Math.max(1, finite(phrase && phrase.fromCount, 1)),
+        length: Math.max(1, finite(phrase && phrase.length, 8)),
+      }))
+      .sort((a, b) => a.fromCount - b.fromCount);
+    if (!phrases.length || phrases[0].fromCount > 1) phrases.unshift({ fromCount: 1, length: 8 });
+    return {
+      countBpm: Math.max(1, finite(track && track.countBpm, 120)),
+      firstCountSec: Math.max(0, finite(track && track.firstCountSec, 0)),
+      firstSet: Boolean(track && track.firstSet),
+      firstLocked: Boolean(track && track.firstLocked),
+      anchors: anchorsFor(track).slice(1).map((anchor) => ({
+        count: anchor.count,
+        sec: anchor.sec,
+        locked: anchor.locked !== false,
+      })),
+      phrases,
+    };
+  }
+
+  function phraseInfo(track, count) {
+    const phrases = countSyncPayload(track).phrases;
+    let number = 0;
+    for (let index = 0; index < phrases.length; index += 1) {
+      const current = phrases[index];
+      const next = phrases[index + 1];
+      const end = next ? next.fromCount : Infinity;
+      if (count >= current.fromCount && count < end) {
+        const offset = Math.floor((count - current.fromCount) / current.length);
+        return {
+          number: number + offset + 1,
+          head: current.fromCount + offset * current.length,
+          length: current.length,
+        };
+      }
+      if (next) number += Math.ceil((next.fromCount - current.fromCount) / current.length);
+    }
+    return { number: Math.floor((count - 1) / 8) + 1, head: Math.floor((count - 1) / 8) * 8 + 1, length: 8 };
+  }
+
+  function phraseHeadCounts(track, lastCount) {
+    const phrases = countSyncPayload(track).phrases;
+    const heads = new Set([1]);
+    phrases.forEach((phrase, index) => {
+      const next = phrases[index + 1];
+      const end = next ? next.fromCount : lastCount + phrase.length;
+      for (let count = phrase.fromCount; count <= Math.min(lastCount + 1e-6, end - 1e-6); count += phrase.length) {
+        heads.add(Math.round(count * 1000) / 1000);
+      }
+    });
+    anchorsFor(track).forEach((anchor) => heads.add(anchor.count));
+    return [...heads].sort((a, b) => a - b);
+  }
+
+  function effectiveTempo(track, count) {
+    const anchors = anchorsFor(track);
+    if (anchors.length < 2) return anchors.bpm;
+    let pair = [anchors[0], anchors[1]];
+    for (let index = 0; index < anchors.length - 1; index += 1) {
+      if (count >= anchors[index].count && count <= anchors[index + 1].count) pair = [anchors[index], anchors[index + 1]];
+    }
+    if (count > anchors[anchors.length - 1].count) pair = anchors.slice(-2);
+    return 60 * (pair[1].count - pair[0].count) / Math.max(0.001, pair[1].sec - pair[0].sec);
+  }
+
+  function canEditCountSync() {
+    return Boolean(timeline && typeof bridge.setTimelineCountSync === "function"
+      && (timeline.source === "formation" || timeline.trackId));
+  }
+
+  function persistCountSync(track) {
+    if (!canEditCountSync()) return false;
+    return Boolean(bridge.setTimelineCountSync({
+      source: timeline.source,
+      sectionId: timeline.sectionId,
+      songId: timeline.songId,
+      trackId: timeline.trackId,
+    }, countSyncPayload(track)));
+  }
+
+  function formationGroups(song) {
+    const frames = (Array.isArray(song && song.frames) ? song.frames : [])
+      .filter((frame) => Number.isFinite(Number(frame && frame.count)))
+      .slice().sort((a, b) => finite(a.count) - finite(b.count));
+    const byId = new Map(frames.map((frame) => [frame.id, frame]));
+    const groups = (song && song.scenePlan && Array.isArray(song.scenePlan.segments)
+      ? song.scenePlan.segments : [])
+      .filter((segment) => byId.has(segment.fromFrameId))
+      .map((segment) => ({ ...segment, count: finite(byId.get(segment.fromFrameId).count) }))
+      .sort((a, b) => a.count - b.count);
+    if (frames.length && (!groups.length || groups[0].count > finite(frames[0].count) + 1e-9)) {
+      groups.unshift({ id: "timeline-head", fromFrameId: frames[0].id, count: finite(frames[0].count), implicit: true });
+    }
+    return { frames, byId, groups };
+  }
+
+  function formationTimelines(project, section) {
+    const saved = section && section.formation;
+    const pkg = saved && saved.package;
+    const formation = pkg && pkg.format === "formation-exchange" && pkg.formation;
+    const documentId = pkg && pkg.sync && pkg.sync.documentId;
+    const songs = formation && Array.isArray(formation.songs) ? formation.songs : [];
+    if (!documentId || !songs.length) return [];
+    const children = childScenes(project, section);
+    const trackById = new Map((project.audioTracks || []).map((track) => [track.id, track]));
+    return songs.map((song, songIndex) => {
+      const { byId, groups } = formationGroups(song);
+      if (!groups.length) return null;
+      const trackId = saved.audioTrackBySong && saved.audioTrackBySong[song.id];
+      const audioTrack = trackById.get(trackId) || null;
+      const segments = groups.map((group, index) => {
+        const next = groups[index + 1];
+        const frame = byId.get(group.fromFrameId);
+        const linked = children.find((scene) => scene.formationLink
+          && scene.formationLink.documentId === documentId
+          && scene.formationLink.songId === song.id
+          && scene.formationLink.sourceSegmentId === group.id);
+        const source = frame && children.find((scene) => scene.id === frame.sourceStageSceneId);
+        const scene = linked || source || null;
+        const endCount = next ? next.count : finite(song.scenePlan && song.scenePlan.endCount, group.count + 8);
+        return {
+          id: group.id,
+          sceneId: scene && scene.id,
+          title: String((scene && scene.title) || group.title || `${tx("シーン")}${index + 1}`),
+          start: Math.max(0, countToSec(song.track, group.count)),
+          end: Math.max(0.1, countToSec(song.track, Math.max(group.count + 0.01, endCount))),
+          count: group.count,
+        };
+      });
+      const transitions = groups.slice(1).map((group, index) => {
+        const frame = byId.get(group.fromFrameId) || {};
+        const poses = Object.values(frame.poses || {});
+        const travel = Math.max(0, finite(frame.travel, 4));
+        const startCount = Math.min(...poses.map((pose) => group.count - travel - finite(pose && pose.lead, 0)), group.count - travel);
+        const endCount = Math.max(...poses.map((pose) => group.count - finite(pose && pose.early, 0)), group.count);
+        return {
+          id: `${group.id}-transition`,
+          title: `${tx("転換")} ${index + 1}`,
+          start: Math.max(0, countToSec(song.track, startCount)),
+          end: Math.max(0, countToSec(song.track, Math.max(startCount + 0.01, endCount))),
+        };
+      });
+      const plannedEnd = countToSec(song.track,
+        finite(song.scenePlan && song.scenePlan.endCount, groups[groups.length - 1].count + 8));
+      const duration = Math.max(1, finite(audioTrack && audioTrack.durationSeconds, 0), plannedEnd,
+        ...segments.map((segment) => segment.end));
+      return {
+        sectionId: section.id,
+        sectionTitle: section.title || tx("無題のセクション"),
+        songId: song.id,
+        title: String((song.track && song.track.name) || (audioTrack && audioTrack.title) || `${tx("音源")}${songIndex + 1}`),
+        track: song.track || { countBpm: 120, firstCountSec: 0, anchors: [] },
+        trackId: trackId || null,
+        gainDb: normalizedAudioGainDb(audioTrack && audioTrack.gainDb),
+        duration,
+        segments,
+        transitions,
+        source: "formation",
+      };
+    }).filter(Boolean);
+  }
+
+  function fallbackTimeline(project, section) {
+    const scenes = childScenes(project, section);
+    const active = scenes.find((scene) => scene.id === project.activeSceneId) || scenes[0] || null;
+    const trackId = active && active.audioTrackId || (scenes.find((scene) => scene.audioTrackId) || {}).audioTrackId || null;
+    const audioTrack = (project.audioTracks || []).find((track) => track.id === trackId) || null;
+    const baseDuration = Math.max(0.1, scenes.reduce((sum, scene) => sum + sceneTimelineSeconds(scene), 0));
+    const desiredDuration = section ? sectionDurationSeconds(project, section) : baseDuration;
+    const scale = desiredDuration / baseDuration;
+    let at = 0;
+    const transitions = [];
+    const segments = scenes.map((scene, index) => {
+      const rehearsal = scene.rehearsal || {};
+      const hold = rehearsal.holdDurationSeconds == null ? 4 : Math.max(0, finite(rehearsal.holdDurationSeconds, 4));
+      const travel = rehearsal.transitionToNextSeconds == null ? 0 : Math.max(0, finite(rehearsal.transitionToNextSeconds, 0));
+      const duration = sceneTimelineSeconds(scene) * scale;
+      const item = { id: scene.id, sceneId: scene.id, title: scene.title || `${tx("シーン")}${index + 1}`, start: at, end: at + duration };
+      if (travel > 0) transitions.push({
+        id: `${scene.id}-transition`,
+        title: tx("転換"),
+        start: at + Math.max(0, hold) * scale,
+        end: at + duration,
+      });
+      at += duration;
+      return item;
+    });
+    return {
+      sectionId: section && section.id || null,
+      sectionTitle: section && section.title || project.title || tx("ショー全体"),
+      songId: "fallback",
+      title: audioTrack && audioTrack.title || tx("音源未設定"),
+      track: audioTrack || { countBpm: 120, firstCountSec: 0, firstSet: false, firstLocked: false, anchors: [], phrases: [{ fromCount: 1, length: 8 }] },
+      trackId,
+      gainDb: normalizedAudioGainDb(audioTrack && audioTrack.gainDb),
+      duration: trackId
+        ? Math.max(8, at, finite(audioTrack && audioTrack.durationSeconds, 0))
+        : desiredDuration,
+      segments,
+      transitions,
+      source: "fallback",
+    };
+  }
+
+  function timelineChoices() {
+    const documentValue = projectDocument();
+    if (!documentValue) return { project: null, section: null, choices: [] };
+    const project = documentValue.project;
+    const section = currentSection(project);
+    const choices = formationTimelines(project, section);
+    return { project, section, choices: choices.length ? choices : [fallbackTimeline(project, section)] };
+  }
+
+  function pxFor(seconds) {
+    return clamp(seconds, 0, timeline ? timeline.duration : 0) / Math.max(0.001, timeline ? timeline.duration : 1) * timelineWidth;
+  }
+
+  function zoomBy(factor, clientX = null) {
+    if (!timeline || mode !== "timeline") return;
+    const rect = els.viewport.getBoundingClientRect();
+    const labelWidth = finite(getComputedStyle(root).getPropertyValue("--stage-timeline-label-width"), 156);
+    const anchorX = Number.isFinite(clientX) ? clientX : rect.left + rect.width / 2;
+    const visibleX = clamp(anchorX - rect.left - labelWidth, 0, Math.max(1, rect.width - labelWidth));
+    const secondsAtAnchor = clamp((els.viewport.scrollLeft + visibleX) / Math.max(1, timelineWidth) * timeline.duration,
+      0, timeline.duration);
+    const nextZoom = clamp(ui.zoom * factor, ZOOM_MIN, ZOOM_MAX);
+    if (Math.abs(nextZoom - ui.zoom) < 1e-9) return;
+    ui.zoom = nextZoom;
+    renderTimeline();
+    els.viewport.scrollLeft = Math.max(0, secondsAtAnchor / timeline.duration * timelineWidth - visibleX);
+    saveUi();
+  }
+
+  function isTextEntry(target) {
+    return Boolean(target && (target.closest("input, select, textarea") || target.isContentEditable));
+  }
+
+  function snappedSeconds(seconds) {
+    if (!timeline || ui.unit !== "count") return seconds;
+    const count = secToCount(timeline.track, seconds);
+    return countToSec(timeline.track, Math.round(count / ui.grid) * ui.grid);
+  }
+
+  function formatTime(seconds, tenths = false) {
+    const value = Math.max(0, finite(seconds, 0));
+    const minutes = Math.floor(value / 60);
+    const rest = value - minutes * 60;
+    return tenths
+      ? `${minutes}:${rest.toFixed(1).padStart(4, "0")}`
+      : `${minutes}:${String(Math.floor(rest)).padStart(2, "0")}`;
+  }
+
+  function labelPosition(seconds) {
+    if (!timeline) return "0:00";
+    if (ui.unit === "count") {
+      const count = Math.max(1, secToCount(timeline.track, seconds));
+      return `${Math.round(count * 10) / 10} ${tx("カウント")}`;
+    }
+    return formatTime(seconds, true);
+  }
+
+  function clearLane(lane) { while (lane && lane.firstChild) lane.firstChild.remove(); }
+
+  function niceTimelineStep(minimum) {
+    const safe = Math.max(0.001, finite(minimum, 1));
+    const power = 10 ** Math.floor(Math.log10(safe));
+    const unit = safe / power;
+    return (unit <= 1 ? 1 : unit <= 2 ? 2 : unit <= 5 ? 5 : 10) * power;
+  }
+
+  function renderRuler() {
+    clearLane(els.ruler);
+    if (!timeline) return;
+    const pxPerSec = timelineWidth / timeline.duration;
+    const fragment = document.createDocumentFragment();
+    if (ui.unit === "time") {
+      const step = niceTimelineStep(76 / Math.max(0.000001, pxPerSec));
+      for (let sec = 0; sec <= timeline.duration + 1e-6; sec += step) {
+        fragment.append(makeTick(sec, formatTime(sec)));
+      }
+      els.surface.style.setProperty("--stage-timeline-grid", `${Math.max(1, step * pxPerSec)}px`);
+    } else {
+      const secPerCount = 60 / Math.max(1, finite(timeline.track && timeline.track.countBpm, 120));
+      const step = niceTimelineStep(76 / Math.max(0.000001, secPerCount * pxPerSec));
+      const firstCount = Math.max(1, Math.ceil(secToCount(timeline.track, 0) / step) * step);
+      const lastCount = secToCount(timeline.track, timeline.duration);
+      for (let count = firstCount; count <= lastCount + 1e-6; count += step) {
+        const sec = countToSec(timeline.track, count);
+        if (sec >= 0 && sec <= timeline.duration) fragment.append(makeTick(sec, String(Math.round(count))));
+      }
+      els.surface.style.setProperty("--stage-timeline-grid", `${Math.max(1, step * secPerCount * pxPerSec)}px`);
+    }
+    els.ruler.append(fragment);
+  }
+
+  function makeTick(seconds, label) {
+    const tick = document.createElement("i");
+    tick.className = "stage-timeline-tick";
+    tick.style.left = `${pxFor(seconds)}px`;
+    const text = document.createElement("span");
+    text.textContent = label;
+    tick.append(text);
+    return tick;
+  }
+
+  function anchorRecord(track, count) {
+    if (count <= 1) return {
+      count: 1,
+      sec: Math.max(0, finite(track && track.firstCountSec, 0)),
+      set: Boolean(track && track.firstSet),
+      locked: Boolean(track && track.firstLocked),
+      start: true,
+    };
+    const anchor = (Array.isArray(track && track.anchors) ? track.anchors : [])
+      .find((item) => Math.abs(finite(item && item.count, NaN) - count) < 1e-6);
+    return anchor ? {
+      count,
+      sec: Math.max(0, finite(anchor.sec, countToSec(track, count))),
+      set: true,
+      locked: anchor.locked !== false,
+      start: false,
+    } : { count, sec: countToSec(track, count), set: false, locked: false, start: false };
+  }
+
+  function anchorIconMarkup(state) {
+    if (state === "unset") return '<svg class="stage-timeline-anchor-icon" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="5.5"></circle></svg>';
+    const shackle = state === "locked"
+      ? '<path d="M5.2 7.6V5.8a3.8 3.8 0 0 1 7.6 0v1.8"></path>'
+      : '<path d="M6.2 7.6V5.8a3.8 3.8 0 0 1 7.3-1.5"></path>';
+    return `<svg class="stage-timeline-anchor-icon" viewBox="0 0 18 18" aria-hidden="true">${shackle}<rect class="stage-timeline-anchor-lock-body" x="3.4" y="7.2" width="11.2" height="8.2" rx="1"></rect><rect class="stage-timeline-anchor-lock-hole" x="8.1" y="10" width="1.8" height="3.2" rx=".8"></rect></svg>`;
+  }
+
+  function anchorLabel(record) {
+    if (record.start) return `開始 ${record.sec.toFixed(3)}s`;
+    return `第${phraseInfo(timeline.track, record.count).number} ${record.sec.toFixed(3)}s`;
+  }
+
+  function anchorActionLabel(record) {
+    const name = record.start ? tx("開始位置") : `${tx("第")}${phraseInfo(timeline.track, record.count).number}`;
+    if (!record.set) return `${name}。${tx("押すとこの位置を固定します")}`;
+    if (record.locked) return `${name} ${record.sec.toFixed(3)}秒。${tx("押すと鍵を開きます")}`;
+    return record.start
+      ? `${name} ${record.sec.toFixed(3)}秒。${tx("横へドラッグして調整。押すと鍵を閉じます")}`
+      : `${name} ${record.sec.toFixed(3)}秒。${tx("横へドラッグして調整。押すと丸へ戻します")}`;
+  }
+
+  function writeAnchorRecord(track, record) {
+    const sync = countSyncPayload(track);
+    if (record.count <= 1) {
+      sync.firstCountSec = Math.max(0, record.sec);
+      sync.firstSet = Boolean(record.set);
+      sync.firstLocked = Boolean(record.locked);
+    } else {
+      sync.anchors = sync.anchors.filter((anchor) => Math.abs(anchor.count - record.count) > 1e-6);
+      if (record.set) sync.anchors.push({ count: record.count, sec: Math.max(0, record.sec), locked: Boolean(record.locked) });
+      sync.anchors.sort((a, b) => a.count - b.count);
+    }
+    return { ...track, ...sync };
+  }
+
+  function cycleAnchor(count) {
+    if (!canEditCountSync() || suppressAnchorClick) return;
+    const current = anchorRecord(timeline.track, count);
+    let next;
+    if (!current.set) next = { ...current, sec: countToSec(timeline.track, count), set: true, locked: true };
+    else if (current.locked) next = { ...current, locked: false };
+    else if (current.start) next = { ...current, locked: true };
+    else next = { ...current, set: false, locked: false };
+    const updated = writeAnchorRecord(timeline.track, next);
+    if (!persistCountSync(updated)) return;
+    renderTimeline();
+  }
+
+  function beginAnchorDrag(event, record) {
+    if (event.button !== 0 || !record.set || record.locked || !canEditCountSync()) return;
+    anchorDrag = {
+      pointerId: event.pointerId,
+      count: record.count,
+      startX: event.clientX,
+      startSec: record.sec,
+      originalTrack: timeline.track,
+      moved: false,
+      button: event.currentTarget,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function continueAnchorDrag(event) {
+    if (!anchorDrag || event.pointerId !== anchorDrag.pointerId) return;
+    const deltaX = event.clientX - anchorDrag.startX;
+    if (!anchorDrag.moved && Math.abs(deltaX) < 4) return;
+    anchorDrag.moved = true;
+    const anchors = anchorsFor(anchorDrag.originalTrack);
+    const index = anchors.findIndex((anchor) => Math.abs(anchor.count - anchorDrag.count) < 1e-6);
+    const minimum = index > 0 ? anchors[index - 1].sec + 0.001 : 0;
+    const maximum = index >= 0 && index < anchors.length - 1
+      ? anchors[index + 1].sec - 0.001 : timeline.duration;
+    const seconds = clamp(anchorDrag.startSec + deltaX / Math.max(1, timelineWidth) * timeline.duration,
+      minimum, Math.max(minimum, maximum));
+    const record = { ...anchorRecord(anchorDrag.originalTrack, anchorDrag.count), sec: seconds };
+    timeline.track = writeAnchorRecord(anchorDrag.originalTrack, record);
+    anchorDrag.button.style.left = `${pxFor(seconds)}px`;
+    const caption = anchorDrag.button.querySelector(".stage-timeline-anchor-caption");
+    if (caption) caption.textContent = anchorLabel(record);
+    event.preventDefault();
+  }
+
+  function endAnchorDrag(event) {
+    if (!anchorDrag || event.pointerId !== anchorDrag.pointerId) return;
+    const moved = anchorDrag.moved;
+    const original = anchorDrag.originalTrack;
+    anchorDrag = null;
+    if (!moved) return;
+    suppressAnchorClick = true;
+    window.setTimeout(() => { suppressAnchorClick = false; }, 0);
+    if (!persistCountSync(timeline.track)) timeline.track = original;
+    renderTimeline();
+  }
+
+  function cancelAnchorDrag(event) {
+    if (!anchorDrag || event.pointerId !== anchorDrag.pointerId) return;
+    timeline.track = anchorDrag.originalTrack;
+    anchorDrag = null;
+    renderTimeline();
+  }
+
+  function renderAnchorLane() {
+    clearLane(els.anchorsLane);
+    if (!timeline || ui.unit !== "count" || !els.anchorsLane) return;
+    const lastCount = Math.max(1, secToCount(timeline.track, timeline.duration));
+    const counts = phraseHeadCounts(timeline.track, lastCount);
+    const editable = canEditCountSync();
+    counts.forEach((count, index) => {
+      const seconds = countToSec(timeline.track, count);
+      if (seconds < 0 || seconds > timeline.duration) return;
+      const record = anchorRecord(timeline.track, count);
+      const state = !record.set ? "unset" : record.locked ? "locked" : "open";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `stage-timeline-anchor-mark is-${state}${record.start ? " is-start" : ""}`;
+      button.dataset.anchorCount = String(count);
+      button.style.left = `${pxFor(seconds)}px`;
+      const nextSeconds = index < counts.length - 1 ? countToSec(timeline.track, counts[index + 1]) : timeline.duration;
+      button.style.setProperty("--stage-timeline-anchor-caption-width", `${Math.max(0, pxFor(nextSeconds) - pxFor(seconds) - 42)}px`);
+      button.disabled = !editable;
+      button.setAttribute("aria-label", anchorActionLabel(record));
+      button.title = button.getAttribute("aria-label");
+      button.innerHTML = `${anchorIconMarkup(state)}${record.set || record.start ? `<span class="stage-timeline-anchor-caption">${record.set ? anchorLabel(record) : tx("開始位置")}</span>` : ""}`;
+      button.addEventListener("click", () => cycleAnchor(count));
+      button.addEventListener("pointerdown", (event) => beginAnchorDrag(event, record));
+      button.addEventListener("pointermove", continueAnchorDrag);
+      button.addEventListener("pointerup", endAnchorDrag);
+      button.addEventListener("pointercancel", cancelAnchorDrag);
+      els.anchorsLane.append(button);
+    });
+  }
+
+  function markFirstCount() {
+    if (!canEditCountSync() || ui.unit !== "count") return false;
+    const current = anchorRecord(timeline.track, 1);
+    const updated = writeAnchorRecord(timeline.track, {
+      ...current,
+      sec: clamp(seekSeconds, 0, timeline.duration),
+      set: true,
+      locked: true,
+    });
+    if (!persistCountSync(updated)) return false;
+    renderTimeline();
+    return true;
+  }
+
+  function anchorCurrentPhraseHead() {
+    if (!canEditCountSync() || ui.unit !== "count") return false;
+    const count = secToCount(timeline.track, seekSeconds);
+    const info = phraseInfo(timeline.track, count);
+    const previousHead = info.head;
+    const nextHead = info.head + info.length;
+    const head = Math.abs(count - previousHead) <= Math.abs(nextHead - count) ? previousHead : nextHead;
+    if (Math.abs(count - head) > info.length * 0.4) {
+      els.status.textContent = tx("まとまりの頭に近い位置で押してください");
+      return false;
+    }
+    const current = anchorRecord(timeline.track, head);
+    const updated = writeAnchorRecord(timeline.track, {
+      ...current,
+      sec: clamp(seekSeconds, 0, timeline.duration),
+      set: true,
+      locked: current.set ? current.locked : true,
+    });
+    if (!persistCountSync(updated)) return false;
+    renderTimeline();
+    return true;
+  }
+
+  function clearCountAnchors() {
+    if (!canEditCountSync() || ui.unit !== "count") return false;
+    const sync = countSyncPayload(timeline.track);
+    if (!sync.anchors.length) return false;
+    sync.anchors = [];
+    if (!persistCountSync({ ...timeline.track, ...sync })) return false;
+    renderTimeline();
+    return true;
+  }
+
+  function placeBlock(element, start, end) {
+    const left = pxFor(start);
+    const right = pxFor(Math.max(start, end));
+    element.style.left = `${left}px`;
+    element.style.width = `${Math.max(2, right - left)}px`;
+  }
+
+  function cueTypeLabel(type) {
+    if (type === "light") return tx("ライトキュー");
+    if (type === "music") return tx("音楽キュー");
+    return tx("セリフキュー");
+  }
+
+  function cuePrefix(type) {
+    if (type === "light") return "LXcue";
+    if (type === "music") return "Mcue";
+    return "VOXcue";
+  }
+
+  // 本体のシーン一覧と同じ階層番号を使う。番号自体は保存せず、並び替え後も
+  // 現在のシーン構造から組み直すため、途中挿入でも連番が自然に更新される。
+  function timelineSceneNumberMap(rows) {
+    const counters = [];
+    const numbers = new Map();
+    (rows || []).forEach((scene) => {
+      const depth = Math.max(0, Math.floor(finite(scene && scene.depth, 0)));
+      counters[depth] = (counters[depth] || 0) + 1;
+      counters.length = depth + 1;
+      numbers.set(scene.id, counters.join("-"));
+    });
+    return numbers;
+  }
+
+  function cueSegment(cue) {
+    if (!timeline) return null;
+    const legacy = cue.sceneId && timeline.segments.find((segment) => segment.sceneId === cue.sceneId);
+    if (legacy) return legacy;
+    return timeline.segments.find((segment) => cue.seconds >= segment.start - 1e-6
+      && cue.seconds < segment.end - 1e-6 && segment.sceneId)
+      || [...timeline.segments].reverse().find((segment) => segment.sceneId && cue.seconds >= segment.start - 1e-6)
+      || timeline.segments.find((segment) => segment.sceneId) || null;
+  }
+
+  function timelineCues(project) {
+    if (!timeline) return [];
+    const segments = new Map(timeline.segments.map((segment) => [segment.sceneId, segment]));
+    return (Array.isArray(project.cues) ? project.cues : [])
+      .filter((cue) => cue && cue.kind === "timeline" && CUE_TYPES.includes(cue.cueType))
+      .map((cue) => {
+        if (cue.sectionId === timeline.sectionId) {
+          return { ...cue, seconds: clamp(finite(cue.atSeconds, 0), 0, timeline.duration) };
+        }
+        // 直前の試作で保存したシーン相対キューも、そのシーンがこのセクション内なら表示する。
+        const segment = segments.get(cue.sceneId);
+        if (!segment) return null;
+        const offset = clamp(finite(cue.offsetSeconds, 0), 0, Math.max(0, segment.end - segment.start));
+        return { ...cue, seconds: segment.start + offset };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.seconds - b.seconds);
+  }
+
+  function timelineCuePresentations(project) {
+    const sceneNumbers = timelineSceneNumberMap(project.scenes);
+    const ordinals = new Map();
+    return timelineCues(project).map((cue) => {
+      const segment = cueSegment(cue);
+      const sceneId = segment && segment.sceneId || "show";
+      const sceneNumber = sceneNumbers.get(sceneId) || "1";
+      const ordinalKey = `${cue.cueType}:${sceneId}`;
+      const ordinal = (ordinals.get(ordinalKey) || 0) + 1;
+      ordinals.set(ordinalKey, ordinal);
+      return {
+        ...cue,
+        sceneId,
+        sceneNumber,
+        sceneTitle: segment && segment.title || tx("シーン"),
+        displayName: `${cuePrefix(cue.cueType)} ${sceneNumber}-${ordinal}`,
+      };
+    });
+  }
+
+  function syncCueSelection() {
+    Object.values(els.cueLanes).forEach((lane) => {
+      [...lane.querySelectorAll(".stage-timeline-cue")].forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.cueId === selectedCueId));
+      });
+    });
+  }
+
+  function closeCueDetails({ focus = true } = {}) {
+    if (!els.cueDetailModal || els.cueDetailModal.hidden) return;
+    els.cueDetailModal.hidden = true;
+    els.cueDetailBackdrop.hidden = true;
+    const target = cueDetailReturnFocus;
+    cueDetailId = null;
+    cueDetailReturnFocus = null;
+    if (focus && target && target.isConnected) target.focus({ preventScroll: true });
+  }
+
+  function openCueDetails(cue, returnFocus) {
+    if (!cue || !els.cueDetailModal) return;
+    cueDetailId = cue.id;
+    cueDetailReturnFocus = returnFocus || null;
+    els.cueDetailTitle.textContent = cue.displayName;
+    els.cueDetailScene.textContent = `${cue.sceneNumber}  ${cue.sceneTitle}`;
+    els.cueDetailPosition.textContent = labelPosition(cue.seconds);
+    els.cueDetailNote.value = String(cue.memo || "");
+    els.cueDetailBackdrop.hidden = false;
+    els.cueDetailModal.hidden = false;
+    els.cueDetailNote.focus({ preventScroll: true });
+  }
+
+  function formatGainDb(value) {
+    const gainDb = normalizedAudioGainDb(value);
+    return `${gainDb > 0 ? "+" : ""}${gainDb} dB`;
+  }
+
+  function setAudioGainEditorValue(value) {
+    const gainDb = normalizedAudioGainDb(value);
+    audioDetailPreviewGainDb = gainDb;
+    els.audioGainRange.value = String(gainDb);
+    els.audioGainNumber.value = String(gainDb);
+    els.audioGainValue.textContent = formatGainDb(gainDb);
+    applyAudioLevels(gainDb);
+  }
+
+  function closeAudioDetails({ focus = true } = {}) {
+    if (!els.audioDetailModal || els.audioDetailModal.hidden) return;
+    els.audioDetailModal.hidden = true;
+    els.audioDetailBackdrop.hidden = true;
+    const target = audioDetailReturnFocus;
+    audioDetailTrackId = null;
+    audioDetailReturnFocus = null;
+    audioDetailPreviewGainDb = null;
+    applyAudioLevels();
+    if (focus && target && target.isConnected) target.focus({ preventScroll: true });
+  }
+
+  function openAudioDetails(trackId, returnFocus) {
+    if (!trackId || !els.audioDetailModal) return;
+    const documentValue = projectDocument();
+    const track = documentValue && documentValue.project
+      && (documentValue.project.audioTracks || []).find((item) => item.id === trackId);
+    if (!track) return;
+    audioDetailTrackId = track.id;
+    audioDetailReturnFocus = returnFocus || null;
+    els.audioDetailTitle.textContent = tx("音源情報");
+    els.audioDetailName.textContent = track.title || tx("音源");
+    els.audioDetailDuration.textContent = Number.isFinite(Number(track.durationSeconds))
+      ? formatTime(track.durationSeconds, true) : "—";
+    els.audioDetailBackdrop.hidden = false;
+    els.audioDetailModal.hidden = false;
+    setAudioGainEditorValue(track.gainDb);
+    void ensureAudioGainGraph();
+    els.audioGainRange.focus({ preventScroll: true });
+  }
+
+  function saveAudioDetails() {
+    if (!audioDetailTrackId || typeof bridge.setTimelineAudioGainDb !== "function") return false;
+    const trackId = audioDetailTrackId;
+    const gainDb = normalizedAudioGainDb(els.audioGainNumber.value);
+    if (!bridge.setTimelineAudioGainDb(trackId, gainDb)) return false;
+    closeAudioDetails({ focus: false });
+    renderTimeline();
+    const audioBlock = els.audioLane.querySelector(".stage-timeline-audio-block");
+    if (audioBlock) audioBlock.focus({ preventScroll: true });
+    return true;
+  }
+
+  function renderCueBlocks(project) {
+    Object.values(els.cueLanes).forEach(clearLane);
+    const cues = timelineCuePresentations(project);
+    if (selectedCueId && !cues.some((cue) => cue.id === selectedCueId)) selectedCueId = null;
+    cues.forEach((cue) => {
+      const lane = els.cueLanes[cue.cueType];
+      if (!lane) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "stage-timeline-cue";
+      button.dataset.cueId = cue.id;
+      button.dataset.cueType = cue.cueType;
+      button.setAttribute("aria-pressed", String(cue.id === selectedCueId));
+      button.textContent = cue.displayName;
+      button.title = `${labelPosition(cue.seconds)}  ${cue.displayName}（${tx("選択してDeleteで削除")}）`;
+      button.style.left = `${clamp(pxFor(cue.seconds) - 4, 0, Math.max(0, timelineWidth - CUE_WIDTH))}px`;
+      button.addEventListener("click", () => {
+        selectedCueId = cue.id;
+        syncCueSelection();
+        button.focus();
+      });
+      button.addEventListener("dblclick", () => openCueDetails(cue, button));
+      lane.append(button);
+    });
+  }
+
+  function renderBlocks(project) {
+    clearLane(els.audioLane);
+    clearLane(els.scenesLane);
+    clearLane(els.transitionsLane);
+    Object.values(els.cueLanes).forEach(clearLane);
+    if (!timeline) return;
+    const audioBlock = document.createElement(timeline.trackId ? "button" : "div");
+    if (timeline.trackId) audioBlock.type = "button";
+    audioBlock.className = `stage-timeline-audio-block${timeline.trackId ? "" : " is-empty"}`;
+    audioBlock.textContent = timeline.title;
+    audioBlock.title = timeline.trackId
+      ? `${timeline.title}（${tx("ダブルクリックで音源情報")}）` : timeline.title;
+    if (timeline.trackId) {
+      audioBlock.dataset.trackId = timeline.trackId;
+      audioBlock.addEventListener("dblclick", () => openAudioDetails(timeline.trackId, audioBlock));
+    }
+    placeBlock(audioBlock, 0, timeline.duration);
+    els.audioLane.append(audioBlock);
+
+    timeline.segments.forEach((segment, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "stage-timeline-scene";
+      if (segment.sceneId === project.activeSceneId) button.classList.add("is-current");
+      button.textContent = `${index + 1}  ${segment.title}`;
+      button.title = `${labelPosition(segment.start)}  ${segment.title}`;
+      button.disabled = !segment.sceneId;
+      if (pxFor(segment.end) - pxFor(segment.start) < 28) button.classList.add("is-compact");
+      placeBlock(button, segment.start, segment.end);
+      button.addEventListener("click", () => {
+        if (!segment.sceneId) return;
+        bridge.openSceneById(segment.sceneId);
+        seekSeconds = segment.start;
+        if (els.audio && timeline.trackId && audioMatchesTimeline()) els.audio.currentTime = seekSeconds;
+        updatePlayhead();
+        renderTimeline();
+      });
+      els.scenesLane.append(button);
+    });
+
+    timeline.transitions.forEach((transition) => {
+      const block = document.createElement("div");
+      block.className = "stage-timeline-transition-block";
+      block.textContent = transition.title;
+      block.title = `${labelPosition(transition.start)}–${labelPosition(transition.end)} ${transition.title}`;
+      placeBlock(block, transition.start, transition.end);
+      els.transitionsLane.append(block);
+    });
+    renderCueBlocks(project);
+  }
+
+  function audioMatchesTimeline() {
+    if (!timeline || !timeline.trackId) return false;
+    const documentValue = projectDocument();
+    const project = documentValue && documentValue.project;
+    const active = project && (project.scenes || []).find((scene) => scene.id === project.activeSceneId);
+    return Boolean(active && active.audioTrackId === timeline.trackId);
+  }
+
+  function pauseSilentPlayback({ update = true } = {}) {
+    if (!silentPlayback) return;
+    if (silentPlayback.frame) window.cancelAnimationFrame(silentPlayback.frame);
+    silentPlayback = null;
+    if (update) updatePlayhead();
+  }
+
+  function segmentAt(seconds) {
+    if (!timeline) return null;
+    const containing = timeline.segments.find((segment) => (
+      seconds >= segment.start - 1e-6 && seconds < segment.end - 1e-6 && segment.sceneId
+    ));
+    if (containing) return containing;
+    return [...timeline.segments].reverse().find((segment) => (
+      segment.sceneId && seconds >= segment.start - 1e-6
+    )) || timeline.segments.find((segment) => segment.sceneId) || null;
+  }
+
+  function syncSilentScene(seconds) {
+    if (!silentPlayback) return;
+    const segment = segmentAt(seconds);
+    if (!segment || silentPlayback.sceneId === segment.sceneId) return;
+    silentPlayback.sceneId = segment.sceneId;
+    bridge.openSceneById(segment.sceneId);
+  }
+
+  function silentPlaybackFrame(now) {
+    if (!silentPlayback || !timeline) return;
+    let next = silentPlayback.startSeconds + (now - silentPlayback.startedAt) / 1000;
+    if (ui.loop && ui.loopB > ui.loopA && next >= ui.loopB) {
+      const span = ui.loopB - ui.loopA;
+      next = ui.loopA + ((next - ui.loopA) % span);
+      silentPlayback.startedAt = now;
+      silentPlayback.startSeconds = next;
+      silentPlayback.sceneId = null;
+    }
+    if (next >= timeline.duration) {
+      seekSeconds = timeline.duration;
+      syncSilentScene(seekSeconds);
+      pauseSilentPlayback({ update: false });
+      updatePlayhead();
+      return;
+    }
+    seekSeconds = clamp(next, 0, timeline.duration);
+    syncSilentScene(seekSeconds);
+    updatePlayhead();
+    if (silentPlayback) silentPlayback.frame = window.requestAnimationFrame(silentPlaybackFrame);
+  }
+
+  function startSilentPlayback() {
+    if (!timeline || timeline.trackId || !timeline.segments.some((segment) => segment.sceneId)) return;
+    if (seekSeconds >= timeline.duration - 1e-6) seekSeconds = 0;
+    const target = segmentAt(seekSeconds);
+    if (!target) return;
+    bridge.openSceneById(target.sceneId);
+    silentPlayback = {
+      startedAt: performance.now(),
+      startSeconds: seekSeconds,
+      sceneId: target.sceneId,
+      frame: 0,
+    };
+    updatePlayhead();
+    silentPlayback.frame = window.requestAnimationFrame(silentPlaybackFrame);
+  }
+
+  function reanchorSilentPlayback() {
+    if (!silentPlayback) return;
+    silentPlayback.startedAt = performance.now();
+    silentPlayback.startSeconds = seekSeconds;
+    silentPlayback.sceneId = null;
+    syncSilentScene(seekSeconds);
+  }
+
+  function updatePlayhead() {
+    if (!timeline) return;
+    const playingThisTimeline = els.audio && audioMatchesTimeline();
+    if (!silentPlayback && playingThisTimeline && Number.isFinite(els.audio.currentTime)) seekSeconds = els.audio.currentTime;
+    seekSeconds = clamp(seekSeconds, 0, timeline.duration);
+    els.surface.style.setProperty("--stage-timeline-playhead-x", `${pxFor(seekSeconds)}px`);
+    els.position.textContent = labelPosition(seekSeconds);
+    const playing = Boolean(silentPlayback
+      || (playingThisTimeline && els.audio && !els.audio.paused && !els.audio.ended));
+    els.play.setAttribute("aria-pressed", String(playing));
+    const playLabel = tx(playing ? "タイムラインを一時停止" : "タイムラインを再生");
+    els.play.setAttribute("aria-label", playLabel);
+    els.play.title = playLabel;
+  }
+
+  function renderLoopRange() {
+    const hasRange = Boolean(timeline && ui.loopB > ui.loopA);
+    els.loopRange.hidden = !hasRange;
+    els.loopRange.classList.toggle("is-active", hasRange && ui.loop);
+    if (!hasRange) return;
+    const start = pxFor(ui.loopA);
+    const end = pxFor(ui.loopB);
+    els.loopRange.style.setProperty("--stage-timeline-loop-start-x", `${start}px`);
+    els.loopRange.style.setProperty("--stage-timeline-loop-width", `${Math.max(2, end - start)}px`);
+  }
+
+  function renderTimeline() {
+    if (mode !== "timeline") return;
+    const { project, choices } = timelineChoices();
+    if (!project || !choices.length) return;
+    const scopeId = choices[0].sectionId || "show";
+    const remembered = ui.songBySection[scopeId];
+    timeline = choices.find((choice) => choice.segments.some((segment) => segment.sceneId === project.activeSceneId))
+      || choices.find((choice) => choice.songId === remembered)
+      || choices[0];
+    ui.songBySection[scopeId] = timeline.songId;
+    seekSeconds = clamp(seekSeconds, 0, timeline.duration);
+
+    const section = currentSection(project);
+    ui.unit = sectionTimelineUnit(section);
+    syncSectionDurationControls(project);
+    els.section.textContent = timeline.sectionTitle;
+    els.status.textContent = timeline.source === "formation"
+      ? `${timeline.title}・${timeline.segments.length}${tx("シーン")}`
+      : timeline.trackId
+        ? tx("セクション時間で再生")
+        : tx("音源なし・セクション時間で再生");
+    els.play.disabled = !timeline.segments.some((segment) => segment.sceneId);
+    const activeSegment = segmentAt(seekSeconds);
+    const activeSegmentIndex = activeSegment
+      ? timeline.segments.findIndex((segment) => segment.sceneId === activeSegment.sceneId) : -1;
+    els.addScene.disabled = typeof bridge.addTimelineSceneAfter !== "function" || !activeSegment;
+    els.addTransition.disabled = typeof bridge.addTimelineTransition !== "function"
+      || activeSegmentIndex < 0 || activeSegmentIndex >= timeline.segments.length - 1;
+    els.addAudio.disabled = !els.musicFile;
+    els.addCueButtons.forEach((button) => {
+      button.disabled = typeof bridge.addTimelineCue !== "function"
+        || !timeline.sectionId || !timeline.segments.some((segment) => segment.sceneId);
+    });
+    els.songLabel.hidden = false;
+    els.songSelect.disabled = choices.length <= 1;
+    els.songDelete.disabled = !timeline.trackId;
+    els.trackName.textContent = timeline.title || tx("音源なし");
+    els.trackName.title = els.trackName.textContent;
+    els.bpm.value = String(Math.round(finite(timeline.track && timeline.track.countBpm, 120)));
+    els.realTempo.textContent = effectiveTempo(timeline.track, secToCount(timeline.track, seekSeconds)).toFixed(1);
+    els.volume.value = String(ui.volume);
+    applyAudioLevels(timeline.gainDb);
+    const hasLoopRange = ui.loopB > ui.loopA;
+    els.loop.setAttribute("aria-pressed", String(ui.loop));
+    els.loopA.setAttribute("aria-pressed", String(hasLoopRange));
+    els.loopB.setAttribute("aria-pressed", String(hasLoopRange));
+    const snapLabel = ui.grid === 1 ? "1" : ui.grid === 0.5 ? "1/2" : "1/4";
+    els.grid.textContent = `${tx("スナップ")} ${snapLabel}`;
+    clearLane(els.songSelect);
+    choices.forEach((choice) => {
+      const option = document.createElement("option");
+      option.value = choice.songId;
+      option.textContent = choice.title;
+      option.selected = choice.songId === timeline.songId;
+      els.songSelect.append(option);
+    });
+
+    const labelWidth = finite(getComputedStyle(root).getPropertyValue("--stage-timeline-label-width"), 156);
+    const available = Math.max(640, els.viewport.clientWidth - labelWidth);
+    const baseWidth = ui.unit === "time"
+      ? timeline.duration * 80
+      : Math.max(1, secToCount(timeline.track, timeline.duration) - secToCount(timeline.track, 0)) * 44;
+    timelineWidth = Math.min(MAX_TIMELINE_WIDTH, Math.max(available, baseWidth * ui.zoom));
+    els.surface.style.setProperty("--stage-timeline-width", `${timelineWidth}px`);
+    renderLoopRange();
+    els.rulerLabel.textContent = tx(ui.unit === "count" ? "カウント" : "時間");
+    els.unitToggle.textContent = tx(ui.unit === "count" ? "カウント式" : "時間式");
+    els.unitToggle.dataset.unit = ui.unit;
+    els.unitToggle.setAttribute("aria-checked", String(ui.unit === "count"));
+    els.unitToggle.disabled = !section || typeof bridge.setSectionTimelineUnit !== "function";
+    const countEditing = ui.unit === "count" && canEditCountSync();
+    els.anchorHere.disabled = !countEditing;
+    els.clearAnchors.disabled = !countEditing || !countSyncPayload(timeline.track).anchors.length;
+    els.markOne.disabled = !countEditing;
+    els.zoomOut.disabled = ui.zoom <= ZOOM_MIN + 1e-9;
+    els.zoomIn.disabled = ui.zoom >= ZOOM_MAX - 1e-9;
+    els.zoomOut.title = `${tx("縮小")} (${ui.zoom.toFixed(2)}×)`;
+    els.zoomIn.title = `${tx("拡大")} (${ui.zoom.toFixed(2)}×)`;
+    applyRowLayout();
+    renderRuler();
+    renderAnchorLane();
+    renderBlocks(project);
+    updatePlayhead();
+    saveUi();
+  }
+
+  function seekFromPointer(event) {
+    if (!timeline) return;
+    const rect = els.ruler.getBoundingClientRect();
+    const rawSeconds = (event.clientX - rect.left) / Math.max(1, rect.width) * timeline.duration;
+    seekSeconds = clamp(snappedSeconds(rawSeconds), 0, timeline.duration);
+    if (els.audio && audioMatchesTimeline()) els.audio.currentTime = seekSeconds;
+    reanchorSilentPlayback();
+    updatePlayhead();
+  }
+
+  async function toggleTimelinePlayback() {
+    if (!timeline || els.play.disabled) return;
+    if (silentPlayback) {
+      pauseSilentPlayback();
+      return;
+    }
+    if (!timeline.trackId) {
+      startSilentPlayback();
+      return;
+    }
+    if (!els.audio || !els.musicToggle) return;
+    await ensureAudioGainGraph();
+    if (audioMatchesTimeline() && !els.audio.paused) {
+      els.audio.pause();
+      return;
+    }
+    const target = timeline.segments.find((segment) => seekSeconds >= segment.start && seekSeconds < segment.end && segment.sceneId)
+      || timeline.segments.find((segment) => segment.sceneId);
+    if (!target) return;
+    bridge.openSceneById(target.sceneId);
+    pendingSeek = seekSeconds;
+    if (els.audio.readyState >= 1 && audioMatchesTimeline()) {
+      els.audio.currentTime = clamp(pendingSeek, 0, Number.isFinite(els.audio.duration) ? els.audio.duration : timeline.duration);
+      pendingSeek = null;
+    }
+    els.musicToggle.click();
+  }
+
+  function moveToSegment(direction) {
+    if (!timeline || !timeline.segments.length) return;
+    const activeIndex = timeline.segments.findIndex((segment) =>
+      seekSeconds >= segment.start - 1e-6 && seekSeconds < segment.end - 1e-6);
+    const nextIndex = clamp((activeIndex < 0 ? 0 : activeIndex) + direction, 0, timeline.segments.length - 1);
+    const target = timeline.segments[nextIndex];
+    seekSeconds = target.start;
+    if (target.sceneId) bridge.openSceneById(target.sceneId);
+    if (els.audio && audioMatchesTimeline()) els.audio.currentTime = seekSeconds;
+    reanchorSilentPlayback();
+    updatePlayhead();
+    renderTimeline();
+  }
+
+  function addCueAtPlayhead(type) {
+    if (!CUE_TYPES.includes(type) || typeof bridge.addTimelineCue !== "function") return;
+    if (!timeline || !timeline.sectionId || !segmentAt(seekSeconds)) return;
+    const cue = bridge.addTimelineCue(type, timeline.sectionId,
+      clamp(seekSeconds, 0, timeline.duration));
+    if (!cue) return;
+    selectedCueId = cue.id;
+    renderTimeline();
+  }
+
+  function addSceneAtPlayhead() {
+    if (!timeline || typeof bridge.addTimelineSceneAfter !== "function") return false;
+    const segment = segmentAt(seekSeconds);
+    if (!segment || !segment.sceneId) return false;
+    const scene = bridge.addTimelineSceneAfter(segment.sceneId);
+    if (!scene) return false;
+    renderTimeline();
+    return true;
+  }
+
+  function addTransitionAtPlayhead() {
+    if (!timeline || typeof bridge.addTimelineTransition !== "function") return false;
+    const segment = segmentAt(seekSeconds);
+    const index = segment ? timeline.segments.findIndex((candidate) => candidate.sceneId === segment.sceneId) : -1;
+    if (!segment || !segment.sceneId || index < 0 || index >= timeline.segments.length - 1) return false;
+    const added = bridge.addTimelineTransition(segment.sceneId, 4);
+    if (!added) return false;
+    renderTimeline();
+    return true;
+  }
+
+  function saveCueDetails() {
+    if (!cueDetailId || typeof bridge.updateTimelineCue !== "function") return false;
+    const updated = bridge.updateTimelineCue(cueDetailId, { memo: els.cueDetailNote.value });
+    if (!updated) return false;
+    closeCueDetails({ focus: false });
+    renderTimeline();
+    const selected = document.querySelector(`.stage-timeline-cue[data-cue-id="${CSS.escape(updated.id)}"]`);
+    if (selected) selected.focus({ preventScroll: true });
+    return true;
+  }
+
+  function deleteCueFromDetails() {
+    if (!cueDetailId) return false;
+    selectedCueId = cueDetailId;
+    closeCueDetails({ focus: false });
+    return removeSelectedCue();
+  }
+
+  function removeSelectedCue() {
+    if (!selectedCueId || typeof bridge.removeTimelineCue !== "function") return false;
+    const removed = bridge.removeTimelineCue(selectedCueId);
+    if (!removed) return false;
+    if (cueDetailId === selectedCueId) closeCueDetails({ focus: false });
+    selectedCueId = null;
+    renderTimeline();
+    return true;
+  }
+
+  function removeCurrentTrack() {
+    if (!timeline || !timeline.trackId) return;
+    const documentValue = projectDocument();
+    const tracks = documentValue && Array.isArray(documentValue.project.audioTracks)
+      ? documentValue.project.audioTracks : [];
+    const index = tracks.findIndex((track) => track.id === timeline.trackId);
+    const buttons = [...document.querySelectorAll(".stage-music-track-remove")];
+    if (index >= 0 && buttons[index]) buttons[index].click();
+  }
+
+  function beginTimelineResize(event) {
+    if (event.button !== 0) return;
+    timelineResize = { pointerId: event.pointerId, startY: event.clientY, startHeight: ui.height };
+    els.resize.setPointerCapture(event.pointerId);
+    document.body.classList.add("is-timeline-resizing");
+    event.preventDefault();
+  }
+
+  function continueTimelineResize(event) {
+    if (!timelineResize || event.pointerId !== timelineResize.pointerId) return;
+    applyTimelineHeight(timelineResize.startHeight + timelineResize.startY - event.clientY);
+  }
+
+  function endTimelineResize(event) {
+    if (!timelineResize || event.pointerId !== timelineResize.pointerId) return;
+    timelineResize = null;
+    document.body.classList.remove("is-timeline-resizing");
+    applyTimelineHeight(ui.height, { save: true });
+    renderTimeline();
+  }
+
+  function beginDurationScrub(event) {
+    if (event.button !== 0 || els.sectionDurationNumber.disabled) return;
+    const value = normalizedSectionDuration(els.sectionDurationNumber.value);
+    if (value === null) return;
+    durationScrub = { pointerId: event.pointerId, startX: event.clientX, startValue: value, moved: false };
+    els.sectionDurationNumber.setPointerCapture(event.pointerId);
+    els.sectionDurationNumber.focus({ preventScroll: true });
+  }
+
+  function continueDurationScrub(event) {
+    if (!durationScrub || event.pointerId !== durationScrub.pointerId) return;
+    const pixels = event.clientX - durationScrub.startX;
+    if (!durationScrub.moved && Math.abs(pixels) < 3) return;
+    durationScrub.moved = true;
+    els.sectionDurationNumber.classList.add("is-scrubbing");
+    const step = event.shiftKey ? 10 : 1;
+    const seconds = Math.max(0.1, durationScrub.startValue + Math.trunc(pixels / 3) * step);
+    writeCurrentSectionDuration(seconds, { render: true });
+    event.preventDefault();
+  }
+
+  function endDurationScrub(event) {
+    if (!durationScrub || event.pointerId !== durationScrub.pointerId) return;
+    const moved = durationScrub.moved;
+    durationScrub = null;
+    els.sectionDurationNumber.classList.remove("is-scrubbing");
+    if (moved) finishSectionDurationEdit(els.sectionDurationNumber.value);
+  }
+
+  function beginRowResize(event) {
+    if (event.button !== 0) return;
+    const row = event.currentTarget.closest("[data-stage-timeline-row]");
+    if (!row) return;
+    const key = row.dataset.stageTimelineRow;
+    rowResize = {
+      pointerId: event.pointerId,
+      key,
+      startY: event.clientY,
+      startHeight: ui.rowHeights[key],
+      handle: event.currentTarget,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  }
+
+  function continueRowResize(event) {
+    if (!rowResize || event.pointerId !== rowResize.pointerId) return;
+    setRowHeight(rowResize.key, rowResize.startHeight + event.clientY - rowResize.startY);
+    event.preventDefault();
+  }
+
+  function endRowResize(event) {
+    if (!rowResize || event.pointerId !== rowResize.pointerId) return;
+    const key = rowResize.key;
+    rowResize = null;
+    setRowHeight(key, ui.rowHeights[key], { save: true });
+  }
+
+  function beginRowReorder(event) {
+    if (event.button !== 0) return;
+    const row = event.currentTarget.closest("[data-stage-timeline-row]");
+    if (!row) return;
+    rowReorder = { pointerId: event.pointerId, startY: event.clientY, row, moved: false };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget.focus({ preventScroll: true });
+    event.preventDefault();
+  }
+
+  function continueRowReorder(event) {
+    if (!rowReorder || event.pointerId !== rowReorder.pointerId) return;
+    if (!rowReorder.moved && Math.abs(event.clientY - rowReorder.startY) < 4) return;
+    rowReorder.moved = true;
+    rowReorder.row.classList.add("is-reordering");
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-stage-timeline-row]");
+    if (!target || target === rowReorder.row || target.parentElement !== els.surface) return;
+    const after = event.clientY > target.getBoundingClientRect().top + target.getBoundingClientRect().height / 2;
+    const reference = after ? target.nextElementSibling : target;
+    els.surface.insertBefore(rowReorder.row, reference === els.playhead ? els.playhead : reference);
+    ui.rowOrder = [...els.surface.querySelectorAll(":scope > [data-stage-timeline-row]")]
+      .map((row) => row.dataset.stageTimelineRow);
+    event.preventDefault();
+  }
+
+  function endRowReorder(event) {
+    if (!rowReorder || event.pointerId !== rowReorder.pointerId) return;
+    rowReorder.row.classList.remove("is-reordering");
+    const moved = rowReorder.moved;
+    rowReorder = null;
+    if (moved) saveUi();
+  }
+
+  els.tabs.forEach((button) => button.addEventListener("click", () => applyMode(button.dataset.stageWorkspaceMode)));
+  els.settingsTrigger.addEventListener("click", () => {
+    const open = els.settingsPanel.hidden;
+    setSettingsOpen(open, { focus: open });
+  });
+  els.rowVisibilityInputs.forEach((input) => input.addEventListener("change", () => {
+    if (!ROW_KEYS.includes(input.value)) return;
+    ui.rowVisibility[input.value] = input.checked;
+    applyRowLayout({ save: true });
+  }));
+  els.unitToggle.addEventListener("click", () => {
+    openUnitWarning();
+  });
+  els.sectionDurationNumber.addEventListener("input", () => {
+    const seconds = normalizedSectionDuration(els.sectionDurationNumber.value);
+    if (seconds === null) return;
+    writeCurrentSectionDuration(seconds);
+  });
+  els.sectionDurationNumber.addEventListener("change", () => {
+    finishSectionDurationEdit(els.sectionDurationNumber.value);
+  });
+  els.sectionDurationNumber.addEventListener("pointerdown", beginDurationScrub);
+  els.sectionDurationNumber.addEventListener("pointermove", continueDurationScrub);
+  els.sectionDurationNumber.addEventListener("pointerup", endDurationScrub);
+  els.sectionDurationNumber.addEventListener("pointercancel", endDurationScrub);
+  els.rowResizers.forEach((separator) => {
+    separator.addEventListener("pointerdown", beginRowResize);
+    separator.addEventListener("pointermove", continueRowResize);
+    separator.addEventListener("pointerup", endRowResize);
+    separator.addEventListener("pointercancel", endRowResize);
+    separator.addEventListener("keydown", (event) => {
+      if (!event.currentTarget.closest("[data-stage-timeline-row]")) return;
+      const key = event.currentTarget.closest("[data-stage-timeline-row]").dataset.stageTimelineRow;
+      if (!["ArrowUp", "ArrowDown", "Home"].includes(event.key)) return;
+      event.preventDefault();
+      const amount = event.shiftKey ? 16 : 4;
+      const next = event.key === "Home" ? DEFAULT_ROW_HEIGHTS[key]
+        : ui.rowHeights[key] + (event.key === "ArrowDown" ? amount : -amount);
+      setRowHeight(key, next, { save: true });
+    });
+  });
+  els.rowHandles.forEach((handle) => {
+    handle.addEventListener("pointerdown", beginRowReorder);
+    handle.addEventListener("pointermove", continueRowReorder);
+    handle.addEventListener("pointerup", endRowReorder);
+    handle.addEventListener("pointercancel", endRowReorder);
+    handle.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+      event.preventDefault();
+      const key = event.currentTarget.closest("[data-stage-timeline-row]").dataset.stageTimelineRow;
+      moveRowByKeyboard(key, event.key === "ArrowUp" ? -1 : 1);
+    });
+  });
+  els.songSelect.addEventListener("change", () => {
+    if (!timeline) return;
+    pauseSilentPlayback({ update: false });
+    ui.songBySection[timeline.sectionId] = els.songSelect.value;
+    seekSeconds = 0;
+    const selected = timelineChoices().choices.find((choice) => choice.songId === els.songSelect.value);
+    const firstScene = selected && selected.segments.find((segment) => segment.sceneId);
+    if (firstScene) bridge.openSceneById(firstScene.sceneId);
+    renderTimeline();
+  });
+  els.addAudio.addEventListener("click", () => clickElement(els.musicFile));
+  els.addScene.addEventListener("click", addSceneAtPlayhead);
+  els.addTransition.addEventListener("click", addTransitionAtPlayhead);
+  els.songDelete.addEventListener("click", removeCurrentTrack);
+  els.volume.addEventListener("input", () => {
+    ui.volume = clamp(finite(els.volume.value, 100), 0, 100);
+    applyAudioLevels();
+    saveUi();
+  });
+  els.prev.addEventListener("click", () => moveToSegment(-1));
+  els.next.addEventListener("click", () => moveToSegment(1));
+  els.head.addEventListener("click", () => {
+    seekSeconds = 0;
+    if (els.audio && audioMatchesTimeline()) els.audio.currentTime = 0;
+    reanchorSilentPlayback();
+    updatePlayhead();
+  });
+  els.anchorHere.addEventListener("click", anchorCurrentPhraseHead);
+  els.clearAnchors.addEventListener("click", clearCountAnchors);
+  els.markOne.addEventListener("click", markFirstCount);
+  els.addCueButtons.forEach((button) => button.addEventListener("click", () => {
+    addCueAtPlayhead(button.dataset.stageTimelineAddCue);
+  }));
+  els.cueDetailClose.addEventListener("click", () => closeCueDetails());
+  els.cueDetailBackdrop.addEventListener("click", () => closeCueDetails());
+  els.cueDetailSave.addEventListener("click", saveCueDetails);
+  els.cueDetailDelete.addEventListener("click", deleteCueFromDetails);
+  els.audioDetailClose.addEventListener("click", () => closeAudioDetails());
+  els.audioDetailCancel.addEventListener("click", () => closeAudioDetails());
+  els.audioDetailBackdrop.addEventListener("click", () => closeAudioDetails());
+  els.audioDetailSave.addEventListener("click", saveAudioDetails);
+  els.unitWarningClose.addEventListener("click", () => closeUnitWarning());
+  els.unitWarningCancel.addEventListener("click", () => closeUnitWarning());
+  els.unitWarningBackdrop.addEventListener("click", () => closeUnitWarning());
+  els.unitWarningConfirm.addEventListener("click", confirmUnitWarning);
+  [els.audioGainRange, els.audioGainNumber].forEach((input) => {
+    input.addEventListener("input", () => {
+      if (input === els.audioGainNumber && input.value === "") return;
+      setAudioGainEditorValue(input.value);
+    });
+  });
+  els.loopA.addEventListener("click", () => {
+    ui.loopA = seekSeconds;
+    if (ui.loopB <= ui.loopA) ui.loopB = Math.min(timeline ? timeline.duration : ui.loopA, ui.loopA + 4);
+    renderTimeline();
+  });
+  els.loopB.addEventListener("click", () => {
+    ui.loopB = Math.max(ui.loopA, seekSeconds);
+    renderTimeline();
+  });
+  els.loop.addEventListener("click", () => {
+    ui.loop = !ui.loop;
+    renderTimeline();
+  });
+  els.grid.addEventListener("click", () => {
+    ui.grid = ui.grid === 0.25 ? 0.5 : ui.grid === 0.5 ? 1 : 0.25;
+    renderTimeline();
+  });
+  els.zoomOut.addEventListener("click", () => zoomBy(1 / ZOOM_FACTOR));
+  els.zoomIn.addEventListener("click", () => zoomBy(ZOOM_FACTOR));
+  els.ruler.addEventListener("pointerdown", seekFromPointer);
+  els.viewport.addEventListener("wheel", (event) => {
+    if (event.metaKey || event.ctrlKey) {
+      event.preventDefault();
+      zoomBy(event.deltaY < 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR, event.clientX);
+      return;
+    }
+    if (!timeline || mode !== "timeline") return;
+    const rawDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    const delta = event.deltaMode === 1 ? rawDelta * 16 : rawDelta;
+    if (!delta) return;
+    event.preventDefault();
+    if (event.shiftKey) {
+      seekSeconds = clamp(
+        seekSeconds - delta / Math.max(1, timelineWidth) * timeline.duration,
+        0,
+        timeline.duration,
+      );
+      if (els.audio && audioMatchesTimeline()) els.audio.currentTime = seekSeconds;
+      reanchorSilentPlayback();
+      updatePlayhead();
+      return;
+    }
+    els.viewport.scrollLeft += delta;
+  }, { passive: false });
+  els.play.addEventListener("click", () => { void toggleTimelinePlayback(); });
+  if (els.musicToggle) {
+    els.musicToggle.addEventListener("pointerdown", () => { void ensureAudioGainGraph(); });
+  }
+  els.resize.addEventListener("pointerdown", beginTimelineResize);
+  els.resize.addEventListener("pointermove", continueTimelineResize);
+  els.resize.addEventListener("pointerup", endTimelineResize);
+  els.resize.addEventListener("pointercancel", endTimelineResize);
+  els.resize.addEventListener("dblclick", () => {
+    applyTimelineHeight(DEFAULT_HEIGHT, { save: true });
+    renderTimeline();
+  });
+  els.resize.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown" && event.key !== "Home") return;
+    event.preventDefault();
+    const next = event.key === "Home" ? DEFAULT_HEIGHT : ui.height + (event.key === "ArrowUp" ? 24 : -24);
+    applyTimelineHeight(next, { save: true });
+    renderTimeline();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && els.unitWarningModal && !els.unitWarningModal.hidden) {
+      event.preventDefault();
+      closeUnitWarning();
+      return;
+    }
+    if (event.key === "Escape" && els.audioDetailModal && !els.audioDetailModal.hidden) {
+      event.preventDefault();
+      closeAudioDetails();
+      return;
+    }
+    if (event.key === "Escape" && els.cueDetailModal && !els.cueDetailModal.hidden) {
+      event.preventDefault();
+      closeCueDetails();
+      return;
+    }
+    if (event.key === "Escape" && !els.settingsPanel.hidden) {
+      event.preventDefault();
+      setSettingsOpen(false, { focus: true });
+      return;
+    }
+    if (mode !== "timeline" || isTextEntry(event.target)) return;
+    if (!event.metaKey && !event.ctrlKey && !event.altKey
+        && (event.code === "Space" || event.key === " ")) {
+      if (!els.settingsPanel.hidden || document.querySelector(".stage-modal:not([hidden])")) return;
+      event.preventDefault();
+      if (!event.repeat) void toggleTimelinePlayback();
+      return;
+    }
+    if (!event.metaKey && !event.ctrlKey && !event.altKey
+        && (event.key === "Delete" || event.key === "Backspace") && selectedCueId) {
+      event.preventDefault();
+      removeSelectedCue();
+      return;
+    }
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (!["+", "=", ";", "-", "_"].includes(event.key)) return;
+    event.preventDefault();
+    zoomBy(event.key === "-" || event.key === "_" ? 1 / ZOOM_FACTOR : ZOOM_FACTOR);
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (els.settingsPanel.hidden || els.settingsTrigger.contains(event.target)
+        || els.settingsPanel.contains(event.target)) return;
+    setSettingsOpen(false);
+  });
+  els.viewSelect.addEventListener("change", () => {
+    const value = currentViewValue();
+    if (mode === "timeline") ui.timelineView = value;
+    else ui.normalView = value;
+    saveUi();
+  });
+
+  ["loadedmetadata", "durationchange", "timeupdate", "play", "pause", "ended", "seeking"].forEach((name) => {
+    els.audio.addEventListener(name, () => {
+      if (name === "play") pauseSilentPlayback({ update: false });
+      if (name === "loadedmetadata" && pendingSeek !== null && audioMatchesTimeline()) {
+        els.audio.currentTime = clamp(pendingSeek, 0, Number.isFinite(els.audio.duration) ? els.audio.duration : timeline.duration);
+        pendingSeek = null;
+      }
+      if (name === "timeupdate" && ui.loop && ui.loopB > ui.loopA && els.audio.currentTime >= ui.loopB) {
+        els.audio.currentTime = ui.loopA;
+      }
+      updatePlayhead();
+    });
+  });
+
+  if (els.sceneList) {
+    new MutationObserver(() => {
+      if (mode === "timeline") renderTimeline();
+    }).observe(els.sceneList, { childList: true, subtree: false });
+  }
+  window.addEventListener("stage-timeline-cues-change", () => {
+    if (mode === "timeline") renderTimeline();
+  });
+  window.addEventListener("stage-timeline-audio-change", () => {
+    if (mode === "timeline") renderTimeline();
+    else applyAudioLevels();
+  });
+  window.addEventListener("stage-timeline-structure-change", () => {
+    if (mode === "timeline") renderTimeline();
+  });
+  window.addEventListener("stage-timeline-count-sync-change", () => {
+    if (mode === "timeline") renderTimeline();
+  });
+  window.addEventListener("stage-timeline-unit-change", () => {
+    if (mode === "timeline") renderTimeline();
+  });
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      applyTimelineHeight();
+      renderTimeline();
+    }, 100);
+  });
+
+  els.volume.value = String(ui.volume);
+  applyAudioLevels();
+  applyRowLayout();
+  applyTimelineHeight();
+  applyMode(ui.mode, { initial: true });
+}());
