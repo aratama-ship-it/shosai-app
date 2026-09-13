@@ -33,17 +33,33 @@
      仕込んだバトンから自動で作るので、データには持たない（バトンを足せば一文字も増える）。
      2026-09-13 本人要望で追加。既定は出さない——出すと灯体が隠れて設計しにくいため、
      「客席から見えていないか」を確かめたいときだけ出す。 */
+  /* バトン1本ぶんの一文字幕の寸法。上書きが無ければ、そのバトンの高さと既定の丈から決める
+     （バトンを上げ下げすれば一文字も付いてくる）。1枚でも触ると、その枚だけ上書きが入る。 */
+  function borderSetting(t) {
+    const c = state.curtains, o = (c.perBorder && c.perBorder[t.id]) || {};
+    const drop = E.clamp(E.finite(o.dropM, E.finite(c.borderDrop, 1.4)), 0.3, 6);
+    const bottom = E.clamp(E.finite(o.bottomM, Math.max(0, E.finite(t.h, 6) - drop)), 0, state.dims.H);
+    return { drop, bottom, 既定のまま: o.dropM == null && o.bottomM == null };
+  }
+  const setBorder = (t, patch) => {
+    const c = state.curtains; if (!c.perBorder) c.perBorder = {};
+    c.perBorder[t.id] = { ...borderSettingRaw(t), ...patch };
+  };
+  const borderSettingRaw = (t) => { const b = borderSetting(t); return { bottomM: b.bottom, dropM: b.drop }; };
+
   function borderPieces() {
     if (!showOn("border")) return [];
     const d = state.dims, c = state.curtains;
-    const drop = E.clamp(E.finite(c.borderDrop, 1.4), 0.3, 4);
     const ahead = E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.3);
-    const list = state.rig.trusses.map((t, i) => ({
-      id: `border-${t.id}`, kind: "curtain", name: i === 0 ? "一文字幕" : "", curtainKind: "border",
-      u: 0.5, v: E.clamp(E.finite(t.v, 0.5) + ahead, 0, 1), w: 1.02,
-      hM: drop, liftM: Math.max(0, E.finite(t.h, 6) - drop),
-      open: 0, color: "#000000", facing: 0,
-    }));
+    const list = state.rig.trusses.map((t, i) => {
+      const b = borderSetting(t);
+      return {
+        id: `border-${t.id}`, kind: "curtain", name: i === 0 ? "一文字幕" : "", curtainKind: "border",
+        u: 0.5, v: E.clamp(E.finite(t.v, 0.5) + ahead, 0, 1), w: 1.02,
+        hM: b.drop, liftM: b.bottom,
+        open: 0, color: "#000000", facing: 0,
+      };
+    });
     /* 前一文字＝いちばん客席側の幕（プロセニアムの上辺）。客席から見える開口の高さを決めるのは
        これで、ここより上は客席からは見えない。舞台の上端まで届く布なので丈は H - 開口の高さ。
        2026-09-13 本人要望「一番客席側の膜も表現したい／光源が見えない状況を作りたい」。 */
@@ -167,15 +183,19 @@
          borderAhead 一文字幕をバトンのどれだけ手前に吊るか（奥行きの割合）
          pros        前一文字（いちばん客席側の幕）を出すか
          prosH       その下端＝客席から見える開口の高さ（m）。これより上は客席から見えない
-         legU        袖幕を両端からどれだけ内側へ入れるか（左右の割合） */
-    curtains: { borderDrop: 1.4, borderAhead: 0.04, pros: true, prosH: 6.2, legU: 0.08 },
+         legU        袖幕を両端からどれだけ内側へ入れるか（左右の割合）
+         perBorder   一文字幕ごとの上書き { バトンid: {bottomM, dropM} }。
+                     入っていないバトンは、そのバトンの高さと既定の丈から自動で決まる
+                     （2026-09-13 本人要望「一文字幕ごとに調整したい」）。
+                     実際の舞台でも一文字は1枚ずつ高さを決める（客席の視線に合わせて前ほど低く吊る）。 */
+    curtains: { borderDrop: 1.4, borderAhead: 0.04, pros: true, prosH: 6.2, legU: 0.08, perBorder: {} },
     /* 作った色。ショー全体で共通なので、どの灯からもワンタッチで使える（2026-09-11 本人要望）。
        配置と同じくショー共通の持ち物なので、rig と一緒に保存・Undoの対象にする。 */
     palette: [],
     hover: null, drag: null,
     collapsed: new Set(), filter: "all",   // 一覧: 取り付け場所ごとの折り畳みと絞り込み（20灯以上向け）
     snap: false,                           // 1mのグリッドに合わせて置く・動かす（本人要望 2026-09-11）
-    show: { no: true, beam: true, path: true, grid: true, pieces: true, border: false, blackout: false },
+    show: { no: true, fixtures: true, beam: true, path: true, grid: true, pieces: true, border: false, blackout: false },
     /* 室内灯をどれだけ消すか（0〜100%）。100で真っ暗、0で消さないのと同じ
        （2026-09-13 本人要望「押したら全部消えてしまうので、どれくらい消すか決めたい」）。
        図の見え方の設定なので show と同じくUndoの対象にはしない。 */
@@ -684,7 +704,7 @@
       const S = fixtureWorld(f); if (!S) return; const p = P(S);
       const X = f.mount.type === "side" ? (f.mount.side === "shimote" ? B.x - SIDE_DX : B.x + B.w + SIDE_DX) : p.X;
       const Y = isFront(f) ? B.y + B.h + FRONT_DY : p.Y;     // 前明かりは客席帯に並べる（実距離は数値で）
-      drawFixtureMark(pctx, X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
+      if (showOn("fixtures")) drawFixtureMark(pctx, X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
     });
     // 室内灯を消す（2026-09-13 本人要望）。灯体の印は暗くしたくないので、印より前・マーキーより後に重ねる
     drawBordersPlan(pctx, P, state.dims);
@@ -734,7 +754,8 @@
     if (["drop", "cyc"].includes(pc.curtainKind) && open >= 100) return;
     const panels = curtainPanelsWorld(pc, d);
     ctx.save();
-    ctx.strokeStyle = hexA(pc.color || "#000000", 0.9); ctx.lineWidth = 7; ctx.lineCap = "butt";
+    const masking = pc.solid || pc.curtainKind === "border" || pc.curtainKind === "leg";
+    ctx.strokeStyle = masking ? "#111214" : hexA(pc.color || "#000000", 0.9); ctx.lineWidth = 7; ctx.lineCap = "butt";
     panels.forEach((part) => {
       const a = P({ x: part.leftX, y: part.leftY, z: 0 }), b = P({ x: part.rightX, y: part.rightY, z: 0 });
       ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
@@ -786,11 +807,14 @@
       // stage-machinery.js側も既定を黒へ修正済み）。立面での塗りの濃さは
       // 本体側で決めていない試作独自の値——0.55だと後ろの壁いっぱいを覆って灯体の光と競合したので、
       // 「下敷き」らしく控えめな0.3へ落とした（2026-09-13 本人指摘「色が強い」）。
-      /* 濃さ。前幕・ホリゾントは「下敷き」なので薄く（0.3）。一文字幕と袖幕は<b>隠すための布</b>なので、
-         隠れているかどうかが読めるよう濃くする。いちばん客席側の前一文字は実際の視界を切るので最も濃い
-         （2026-09-13 本人要望「光源が見えない状況を作りたい」）。 */
-      const solidity = pc.solid ? 0.88 : (pc.curtainKind === "border" || pc.curtainKind === "leg") ? 0.66 : 0.3;
-      ctx.fillStyle = hexA(pc.color || "#000000", solidity);
+      /* 前幕・ホリゾントは「下敷き」なので薄く（0.3）。
+         一文字幕・袖幕・前一文字は<b>隠すための布</b>なので<b>不透明</b>に塗る。
+         2026-09-13 実害: 半透明（0.66〜0.88）で塗ると、光の帯の上に黒が重なった結果が
+         背景（#0d0e10）より暗くなり、室内灯を消したときにマスクの穴からその暗い部分が
+         「黒い光」として見えていた（本人指摘）。布が光を遮るのだから、透かさず塗るのが正しい。
+         色は背景よりわずかに明るくして、布そのものの形は輪郭と合わせて読めるようにする。 */
+      const masking = pc.solid || pc.curtainKind === "border" || pc.curtainKind === "leg";
+      ctx.fillStyle = masking ? "#111214" : hexA(pc.color || "#000000", 0.3);
       ctx.beginPath(); ctx.moveTo(fl.X, fl.Y); ctx.lineTo(fr.X, fr.Y); ctx.lineTo(tr.X, tr.Y); ctx.lineTo(tl.X, tl.Y); ctx.closePath();
       ctx.fill(); ctx.strokeStyle = "rgba(240,231,214,0.22)"; ctx.lineWidth = 1; ctx.stroke();
     });
@@ -1011,7 +1035,7 @@
       }
     });
     // 灯体
-    state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S); const Y = isFront(f) ? Math.max(20, p.Y) : p.Y; drawFixtureMark(fctx, p.X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
+    state.rig.fixtures.forEach((f) => { if (!showOn("fixtures")) return; const S = fixtureWorld(f); if (!S) return; const p = P(S); const Y = isFront(f) ? Math.max(20, p.Y) : p.Y; drawFixtureMark(fctx, p.X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
       if (f.mount.type === "side" && isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${f.mount.h.toFixed(1)}m（ドラッグ）`, p.X + (f.mount.side === "shimote" ? -180 : 26), p.Y - 26); } });
     drawBordersUp(fctx, P, d);
     if (state.mode === "move" && showOn("blackout")) paintBlackout(fctx, front, litSpotsF);
@@ -1054,11 +1078,12 @@
     // 灯体: この側のスタンド灯は床からの縦線＋印。他は小さく薄く
     state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const q = P(S);
       if (f.mount.type === "side" && f.mount.side === side) { fctx.strokeStyle = "rgba(240,231,214,0.5)"; fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(q.X, B.y + B.h); fctx.lineTo(q.X, q.Y); fctx.stroke(); fctx.beginPath(); fctx.moveTo(q.X - 14, B.y + B.h); fctx.lineTo(q.X + 14, B.y + B.h); fctx.stroke();
-        drawFixtureMark(fctx, q.X, q.Y, "diamond", { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "" });
+        if (showOn("fixtures")) drawFixtureMark(fctx, q.X, q.Y, "diamond", { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "" });
         if (isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${f.mount.h.toFixed(1)}m・${f.mount.v < 0.4 ? "奥寄り" : f.mount.v > 0.6 ? "手前寄り" : "中ほど"}（ドラッグで奥行きと高さ）`, q.X + 22, q.Y - 26); } }
       else if (f.mount.type !== "side") {
         // 前明かりは舞台より手前（客席側）。側面図では手前端の外に一定距離で並べ、高さは実尺で描く
         const frontX = side === "shimote" ? B.x + B.w + FRONT_DX_SEC : B.x - FRONT_DX_SEC;
+        if (!showOn("fixtures")) return;
         fctx.globalAlpha = 0.35; drawFixtureMark(fctx, isFront(f) ? frontX : q.X, q.Y, shapeOf(f.mount), { sel: false, st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) }); fctx.globalAlpha = 1;
       } });
     drawBordersUp(fctx, P, d);
@@ -1126,7 +1151,7 @@
     });
     // 灯体
     state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S);
-      drawFixtureMark(fctx, p.X, isFront(f) ? Math.max(20, p.Y) : p.Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) }); });
+      if (showOn("fixtures")) drawFixtureMark(fctx, p.X, isFront(f) ? Math.max(20, p.Y) : p.Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) }); });
     drawBordersUp(fctx, P, d);
     if (state.mode === "move" && showOn("blackout")) paintBlackout(fctx, cv, litSpots3D);
     fctx.fillStyle = "rgba(240,231,214,0.4)"; fctx.font = "15px sans-serif"; fctx.textBaseline = "top";
@@ -1504,10 +1529,25 @@
       host.append(field("開口の高さ", range(1, d.H, 0.1, E.clamp(E.finite(c.prosH, 6.2), 1, d.H), (v) => `${v.toFixed(1)}m（これより上は客席から見えない）`,
         (v) => { c.prosH = v; draw(); }, () => commit()), true));
     }
-    host.append(field("一文字幕の丈", range(0.3, 4, 0.1, E.clamp(E.finite(c.borderDrop, 1.4), 0.3, 4), (v) => `${v.toFixed(1)}m`,
-      (v) => { c.borderDrop = v; draw(); }, () => commit()), true));
-    host.append(field("バトンの手前へ", range(0, 0.2, 0.01, E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.2), (v) => `${(v * d.D).toFixed(1)}m`,
-      (v) => { c.borderAhead = v; draw(); }, () => commit()), true));
+    /* 一文字幕はバトンごとに1枚ずつ決める（2026-09-13 本人要望）。
+       実際の舞台でも、客席の視線に合わせて前の一文字ほど低く吊る。 */
+    if (state.rig.trusses.length) {
+      host.append(el("p", "kicker sub2", "一文字幕（バトンごと）"));
+      state.rig.trusses.forEach((t) => {
+        const b = borderSetting(t);
+        const nm = `奥から${E.trussRow(state.rig, t.id)}列目${t.label ? "・" + t.label : ""}`;
+        host.append(el("p", "hint", `${nm}（バトン 約${E.finite(t.h, 6).toFixed(1)}m)${b.既定のまま ? "" : "・個別に調整"}`));
+        host.append(field("下端の高さ", range(0, d.H, 0.1, b.bottom, (v) => `${v.toFixed(1)}m${v >= E.finite(t.h, 6) ? "（バトンより上）" : ""}`,
+          (v) => { setBorder(t, { bottomM: v }); draw(); }, () => commit()), true));
+        host.append(field("丈", range(0.3, 6, 0.1, b.drop, (v) => `${v.toFixed(1)}m`,
+          (v) => { setBorder(t, { dropM: v }); draw(); }, () => commit()), true));
+      });
+      const acts = el("div", "seg");
+      acts.append(btn("バトンに合わせ直す", () => { state.curtains.perBorder = {}; commit("一文字幕をバトンの高さに合わせ直しました"); }, "small quiet"));
+      host.append(field("まとめて", acts, true));
+      host.append(field("バトンの手前へ", range(0, 0.2, 0.01, E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.2), (v) => `${(v * d.D).toFixed(1)}m（全部）`,
+        (v) => { c.borderAhead = v; draw(); }, () => commit()), true));
+    }
     if (legs().length) {
       host.append(field("袖幕の入り", range(0, 0.25, 0.01, E.clamp(E.finite(c.legU, 0.08), 0, 0.25), (v) => `両端から${(v * d.W).toFixed(1)}m`,
         (v) => { c.legU = v; legs().forEach((pc) => { pc.u = pc.u < 0.5 ? v : 1 - v; }); draw(); }, () => commit()), true));
