@@ -30,20 +30,23 @@
      置き方に合わせる（2026-09-13 本人要望）。v をわずかに手前へ取るのは、壁ぴったり(v=0)だと
      幕の板と重なって描画が競合するのを避けるため——実機でも幕を焼かないよう少し離して置く。
      2026-09-13 本人指摘で作り直し: 個別に並べるものではなく「もとから一列のバー」で、
-     壁全体を染める前提。持つ値は 横位置(u)・長さ(len, 0〜1)・置き方(rung: floor=床から上向き
-     ／top=上部から下向き)。fixtureWorld は選択やハンドルの基準になる「バーの中心点」を返し、
+     壁全体を染める前提。持つ値は 長さ(len, 0〜1)・置き方(rung: floor=床から上向き
+     ／top=上部から下向き)・届く高さ(reachM, m)。横位置は中央固定（同日の指摘「中央しか
+     ありえない」）。fixtureWorld は選択やアイコンの基準になる「バーの中心点」を返し、
      実際の帯（左右の端・登る高さ）は cycBarSpan で別に持つ。 */
   const CYC_MOUNT_V = 0.02;
+  const CYC_REACH_MAX = 10;     // 届く高さの上限(m)。2026-09-13 本人指定
   /* バーの世界座標での帯。xL/xR＝左右の端、y＝奥行き、z0＝光源の高さ（床=0／上部=dims.H）、
-     reach＝壁を登る／降りる高さ（m）。reach は広がり(deg, 4〜70°)を 0.15〜0.85 の割合へ
-     ゆるく対応させ、壁の高さに掛けて求める——実機の「広がりが大きいほど遠くまで届く」に近い。 */
-  const cycBarSpan = (fixture, dims, deg) => {
+     reach＝壁を登る／降りる高さ(m)。以前は広がり(度)から割合で出していたが、
+     「10mまで出せるように」との指定（2026-09-13）で実寸のまま持つことにした。
+     壁より高くは出しても見えないので、描くときに壁の高さで止める。 */
+  const cycBarSpan = (fixture, dims) => {
     const m = (fixture && fixture.mount) || {};
-    const u = clamp(finite(m.u, 0.5), 0, 1), len = clamp(finite(m.len, 0.9), 0.05, 1);
-    const half = (len * dims.W) / 2, cx = (u - 0.5) * dims.W;
+    const len = clamp(finite(m.len, 0.9), 0.05, 1);
+    const half = (len * dims.W) / 2;
     const top = m.rung === "top";
-    const ratio = clamp(((clamp(finite(deg, 24), 4, 70) - 4) / 66) * 0.7 + 0.15, 0.15, 0.85);
-    return { xL: cx - half, xR: cx + half, y: CYC_MOUNT_V * dims.D, z0: top ? dims.H : 0, top, reach: ratio * dims.H };
+    const reach = clamp(finite(m.reachM, 4), 0.3, CYC_REACH_MAX);
+    return { xL: -half, xR: half, y: CYC_MOUNT_V * dims.D, z0: top ? dims.H : 0, top, reach };
   };
   const SPEED_PERIOD_MS = Object.freeze({ slow: 6000, normal: 3000, fast: 1500 });
   const PLANE_VALUES = Object.freeze(["horizontal", "frontVertical", "sideVertical"]);
@@ -195,7 +198,7 @@
        高さ0＝床に置いた実機、奥行きは壁のすぐ手前で固定（袖のブームや前明かりと同じく
        「取り付け方で決まる」位置なので、動かせるのは横位置だけでよい）。 */
     if (m.type === "cyc") {
-      return { x: (clamp(finite(m.u, 0.5), 0, 1) - 0.5) * dims.W, y: CYC_MOUNT_V * dims.D, z: m.rung === "top" ? dims.H : 0 };
+      return { x: 0, y: CYC_MOUNT_V * dims.D, z: m.rung === "top" ? dims.H : 0 };   // 横は中央固定
     }
     return null;
   };
@@ -512,7 +515,7 @@
     if (m.type === "floor") return `転がし・${lr(m.u)}・${m.v < 0.4 ? "奥" : m.v > 0.6 ? "手前" : "中ほど"}`;
     if (m.type === "front") return `前明かり・${lr(m.u)}・舞台前から約${Math.round(finite(m.ahead, 5))}m・高さ約${Math.round(finite(m.h, 7))}m`;
     if (m.type === "side") return `SS・${m.side === "shimote" ? "下手" : "上手"}の袖（高さ約${Math.round(m.h)}m）・${m.v < 0.4 ? "奥寄り" : m.v > 0.6 ? "手前寄り" : "中ほど"}`;
-    if (m.type === "cyc") return `ホリゾントライト（${m.rung === "top" ? "上部から" : "床から"}）・幅約${Math.round(clamp(finite(m.len, 0.9), 0.05, 1) * 100)}%・${lr(m.u)}`;
+    if (m.type === "cyc") return `ホリゾントライト（${m.rung === "top" ? "上" : "床"}）・幅約${Math.round(clamp(finite(m.len, 0.9), 0.05, 1) * 100)}%`;
     return "取り付け未設定";
   };
 
@@ -792,7 +795,7 @@
   };
 
   root.RIG_ENGINE = Object.freeze({
-    DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, CYC_MOUNT_V, cycBarSpan, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
+    DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, CYC_MOUNT_V, CYC_REACH_MAX, cycBarSpan, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
     clamp, finite,
     newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, spotEllipse, spotFalloff, beamLanding, trussById, trussRow, fixtureWorld,
     newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, strobeMul, paramPhase, mountSpot, GOBOS, goboById, goboAngleAt, constrainPointToSurface, periodMs, groupEffect,

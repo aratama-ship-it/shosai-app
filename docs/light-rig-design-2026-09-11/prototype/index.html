@@ -259,6 +259,7 @@
   /* ゴボ（模様）の選び方。丸い窓の中に形を見せるので、見本も円で切る。 */
   /* 模様（ゴボ）はプルダウンで選ぶ（2026-09-13 本人要望）。右欄は縦スクロールする枠なので
      一覧は浮かせずその場に差し込む——浮かせると枠に切られて下が見えない。 */
+  .cyckicker{margin:7px 0 3px}
   .gpick{position:relative;min-width:0}   /* .pbox は grid。min-width:auto のままだと枠を押し広げる */
   .gpick-t{width:100%;min-width:0;display:flex;align-items:center;gap:8px;padding:5px 8px;
            border:1px solid var(--line-dark);background:#14110e;color:var(--milk);cursor:pointer;text-align:left}
@@ -460,6 +461,10 @@
               <p class="ptitle">配置（ショー共通）</p>
               <button type="button" class="btn small" id="presets" style="width:100%;margin-bottom:5px">よくある仕込みから選ぶ</button>
               <div class="seg col" id="place-tools"></div>
+              <!-- ホリゾントライトは置き場所が決まっている（奥の壁ぎわ・中央）ので、
+                   クリックして置く道具ではなく「あり／なし」の2択にした（2026-09-13 本人指定）。 -->
+              <p class="kicker cyckicker">ホリゾントライト</p>
+              <div class="seg col" id="cyc-tools"></div>
               <p class="note" id="place-note"></p>
             </div>
             <p class="ptitle">灯体</p>
@@ -569,8 +574,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789291613"></script>
-<script src="stage-figure.js?v=1789291613"></script>
-<script src="app.js?v=1789291613"></script>
+<script src="rig-engine.js?v=1789292761"></script>
+<script src="stage-figure.js?v=1789292761"></script>
+<script src="app.js?v=1789292761"></script>
 </body>
 </html>
