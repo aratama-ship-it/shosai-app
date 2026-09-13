@@ -133,6 +133,9 @@
   .qnow{font:600 20px/1.2 var(--sans);color:var(--brass);letter-spacing:.04em;white-space:nowrap;display:flex;align-items:baseline;gap:9px}
   .qnow em{font-style:normal;font-weight:400;font-size:14px;color:var(--milk);font-family:var(--serif);letter-spacing:.06em}
   .qnow.draft{color:var(--milk-dim);font-weight:400;font-size:15px}
+  /* 前後の LX cue へ。中央の表示の左右に置く（2026-09-13 本人要望）。 */
+  .qnav{min-height:30px;padding:2px 10px;font-size:15px;line-height:1}
+  .scenebox{align-items:center}
   /* 再生（.transport）は照明デザインパネルの見出し行、オン・オフの左に置く（2026-09-13 本人要望）。 */
   .transport{display:flex;align-items:center;gap:5px}
   .scenebar .btn.small{min-height:24px;padding:2px 8px;font-size:12px}
@@ -518,7 +521,9 @@
           <!-- 中央は「いま画面に出ているデザインがどのキューか」。シーン送りはLX cueパネルの上へ移した
                （2026-09-13 本人要望「もっと大きく」）。中身は app.js が入れる。 -->
           <span class="fb scenebox" id="scenerow">
+            <button type="button" class="btn small quiet qnav" id="q-prev">〈</button>
             <span class="qnow" id="qnow"></span>
+            <button type="button" class="btn small quiet qnav" id="q-next">〉</button>
           </span>
         </div>
         <!-- 凸の形: 上＝平面図（真上から）、下段＝下手｜客席から（正面）｜上手。
@@ -666,8 +671,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789311154"></script>
-<script src="stage-figure.js?v=1789311154"></script>
-<script src="app.js?v=1789311154"></script>
+<script src="rig-engine.js?v=1789311311"></script>
+<script src="stage-figure.js?v=1789311311"></script>
+<script src="app.js?v=1789311311"></script>
 </body>
 </html>

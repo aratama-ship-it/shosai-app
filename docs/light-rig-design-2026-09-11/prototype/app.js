@@ -2666,6 +2666,24 @@
   /* パネルから登録・呼び出しをしたら、そのシーンを画面にも出す——
      何をしたのか見えないまま値だけ変わるのを避ける。連動しているときは何も起きない。 */
   const lxGoto = (i) => { if (state.sceneIndex !== i) { state.sceneIndex = i; state.sel.clear(); stop(); home(); } };
+  /* その LX cue の編集に入る。画面の明かりを中身で置き換え、編集中の印を移す。
+     一覧の行クリックと、図の上の中央にある前後ボタンの両方から呼ぶ（2026-09-13）。 */
+  function lxEnterCue(si, id) {
+    lxGoto(si);
+    const s2 = state.scenes[si]; const t = lxList(s2).find((z) => z.id === id); if (!t) return;
+    s2.cue = JSON.parse(cueJson(t.cue)); s2.lxEditing = t.id;
+    state.sel.clear(); stop(); home();
+    commit(`LX cue ${lxNo(s2, E.finite(t.seq, 1))} の編集に入りました`);
+  }
+  /* いまのシーンの LX cue を番号順に並べ、前後の行き先を返す。
+     どの LX cue にも入っていない下書きのときは、前は無し・次は1本目にする。 */
+  function lxNeighbors() {
+    const sc = scene(), list = [...lxList(sc)].sort((a, b) => E.finite(a.seq, 0) - E.finite(b.seq, 0));
+    if (!list.length) return { list, prev: null, next: null };
+    const i = list.findIndex((q) => q.id === lxEditingOf(sc));
+    if (i < 0) return { list, prev: null, next: list[0] };
+    return { list, prev: i > 0 ? list[i - 1] : null, next: i < list.length - 1 ? list[i + 1] : null };
+  }
 
   function renderLxq() {
     const host = $("lxqbox"); if (!host) return;
@@ -2727,11 +2745,7 @@
       row.onclick = (ev) => {
         if (ev.target.closest("input, button")) return;
         if (isEdit) return;
-        lxGoto(si);
-        const s2 = lxScene(); const t = lxList(s2).find((z) => z.id === q.id); if (!t) return;
-        s2.cue = JSON.parse(cueJson(t.cue)); s2.lxEditing = t.id;
-        state.sel.clear(); stop(); home();
-        commit(`LX cue ${lxNo(s2, E.finite(t.seq, 1))} の編集に入りました`);
+        lxEnterCue(si, q.id);
       };
       row.append(btn("✕", () => {
         dialog(`<p class="ptitle">LX cue ${lxNo(sc, E.finite(q.seq, 1))} を消しますか？</p><p class="hint">この LX cue を一覧から消します。画面に出ている明かりはそのまま残ります。</p>`,
@@ -3095,6 +3109,12 @@
         qn.innerHTML = q0 ? `LX cue ${lxNo(sc0, E.finite(q0.seq, 1))}${q0.name ? `<em>${q0.name.replace(/[<>&]/g, "")}</em>` : ""}` : "未登録の下書き";
         qn.classList.toggle("draft", !q0);
         qn.title = q0 ? "この LX cue を編集しています。変えたところはそのまま入ります" : "どの LX cue にも入っていません。LX cue パネルの〈＋ 新規 LX cue〉で1本にできます"; } }
+    /* 中央の表示の左右＝前後の LX cue へ。行き先が無ければ押せなくする。 */
+    { const nb = lxNeighbors(), sc0 = scene();
+      const set2 = (id, q, word) => { const b = $(id); if (!b) return;
+        b.disabled = !q; b.hidden = state.mode !== "move";
+        b.title = q ? `${word}の LX cue ${lxNo(sc0, E.finite(q.seq, 1))}${q.name ? `「${q.name}」` : ""} へ` : `${word}の LX cue はありません`; };
+      set2("q-prev", nb.prev, "前"); set2("q-next", nb.next, "次"); }
     $("transport").hidden = !inMove;
     $("empty").hidden = Boolean(state.rig.trusses.length || state.rig.fixtures.length);
     /* いま編集しているデザイン名と、未適用かどうかを1行で出す（2026-09-13 保存機能の追加にあわせて）。 */
@@ -3130,6 +3150,8 @@
   $("mode-move").onclick = () => { state.mode = "move"; state.tool = null; renderAll(); };
   /* 連動を切った瞬間は「いま見ているシーン」に固定する（見えているものが動かない）。 */
   if ($("lxlink")) $("lxlink").onclick = () => { if (state.lxLink) { state.lxScene = state.sceneIndex; state.lxLink = false; } else { state.lxLink = true; } renderAll(); };
+  $("q-prev").onclick = () => { const q = lxNeighbors().prev; if (q) lxEnterCue(state.sceneIndex, q.id); };
+  $("q-next").onclick = () => { const q = lxNeighbors().next; if (q) lxEnterCue(state.sceneIndex, q.id); };
   $("scene-prev").onclick = () => { state.sceneIndex = (state.sceneIndex + state.scenes.length - 1) % state.scenes.length; home(); renderAll(); };
   $("scene-next").onclick = () => { state.sceneIndex = (state.sceneIndex + 1) % state.scenes.length; home(); renderAll(); };
   $("t-home").onclick = home; $("t-play").onclick = play; $("t-stop").onclick = () => stop();
