@@ -2313,10 +2313,16 @@
        ①光の色 → ②当てる場所・動き → ③光の強さ → ④光の広がり → ⑤動かす。
        オン・オフだけは単灯と違って右上のボタンが使えないので、箱の前に置く。 */
     const sub = (title) => { const b = el("div", "pbox"); if (title) b.append(el("p", "kicker", title)); add(b); return b; };
-    /* その灯が「動いている」か。単灯と同じ決め方——軌道が動きなし以外、または強さ・広がりに終点がある。 */
-    const isMovingLight = (fid) => { const l = lightOf(fid); if (!l || l.on !== true) return false; const pp = l.path || {}; return pp.kind !== "still" || l.levelTo != null || l.beamDegTo != null; };
-    const movingMovers = movers.filter(isMovingLight);
-    const allMoving = movers.length > 0 && movingMovers.length === movers.length;
+    /* 単灯と同じで、オートメーションは項目ごとに見る（2026-09-13 本人指定）。
+       位置＝軌道が「動きなし」以外／強さ＝levelTo がある／広がり＝beamDegTo がある。 */
+    const litLight = (fid) => { const l = lightOf(fid); return l && l.on === true ? l : null; };
+    const posMovers = movers.filter((fid) => { const l = litLight(fid); return l && (l.path || {}).kind !== "still"; });
+    const lvMovers = movers.filter((fid) => { const l = litLight(fid); return l && l.levelTo != null; });
+    const spMovers = movers.filter((fid) => { const l = litLight(fid); return l && l.beamDegTo != null; });
+    const allPos = movers.length > 0 && posMovers.length === movers.length;
+    const allLv = movers.length > 0 && lvMovers.length === movers.length;
+    const allSp = movers.length > 0 && spMovers.length === movers.length;
+    const movingMovers = movers.filter((fid) => { const l = litLight(fid); return l && ((l.path || {}).kind !== "still" || l.levelTo != null || l.beamDegTo != null); });
     const someMoving = movingMovers.length > 0;
 
     /* --- 1) いま効く一括変更 --- */
@@ -2376,7 +2382,7 @@
 
     // ② 当てる場所・動き
     {
-      const b = sub("当てる場所・動き");
+      const b = sub("当てる場所・軌道");
       const surs = new Set(lit.map((fid) => lightOf(fid).surface || "floor"));
       b.append(field(surs.size > 1 ? "当てる場所（バラバラ）" : "当てる場所",
         seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], surs.size === 1 ? [...surs][0] : null, (v) => {
@@ -2401,22 +2407,30 @@
     /* ③ 光の強さ。0は消灯と同じ（2026-09-13 本人決定）。目盛りはリニアのままで、
        見える明るさへの効き方だけを環境設定のカーブで決める。 */
     {
-      const b = sub("光の強さ");
+      const b = sub(movers.length ? null : "光の強さ");
+      if (movers.length) {
+        const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光の強さ"));
+        head.append(switchBtn(allLv, allLv ? "強さが動いています。押すと全灯止めます" : lvMovers.length ? "一部だけ動いています。押すと全灯そろえます" : "押すと全灯の強さに始点と終点を置きます", () => {
+          if (allLv) { bulkEach(movers, (f, l) => { delete l.levelTo; }); commit(`${movers.length}灯の強さの動きを止めました`); }
+          else { bulkEach(movers, (f, l) => { l.levelTo = levelOf(l); }); commit(`${movers.length}灯の強さに始点と終点を置きました`); }
+        }));
+        b.append(head);
+      }
       const fmtLv = (v) => (v <= 0 ? "0%（消灯）" : `${Math.round(v)}%（${LEVEL_WORD(v)}）`);
       const lvs = new Set(lit.map((fid) => Math.round(levelOf(lightOf(fid)))));
       const same = lvs.size <= 1;
       const cur = same && lvs.size === 1 ? [...lvs][0] : 100;
-      b.append(field(someMoving ? (same ? "始点" : "始点（バラバラ）") : (same ? "強さ" : "強さ（バラバラ）"),
+      b.append(field(lvMovers.length ? (same ? "始点" : "始点（バラバラ）") : (same ? "強さ" : "強さ（バラバラ）"),
         range(0, 100, 1, cur, fmtLv,
           (v) => { bulkEach(ids, (f, l) => { l.level = v; }); draw(); },
           () => commit(`${ids.length}灯の強さを変えました`)), true));
-      if (someMoving) {
-        const tos = new Set(movingMovers.map((fid) => Math.round(E.clamp(E.finite((lightOf(fid) || {}).levelTo, levelOf(lightOf(fid))), 0, 100))));
+      if (lvMovers.length) {
+        const tos = new Set(lvMovers.map((fid) => Math.round(E.clamp(E.finite((lightOf(fid) || {}).levelTo, levelOf(lightOf(fid))), 0, 100))));
         const sameTo = tos.size <= 1, curTo = sameTo && tos.size === 1 ? [...tos][0] : 100;
         b.append(field(sameTo ? "終点" : "終点（バラバラ）",
           range(0, 100, 1, curTo, fmtLv,
-            (v) => { movingMovers.forEach((fid) => { const l = lightOf(fid); if (l) l.levelTo = v; }); draw(); },
-            () => commit(`${movingMovers.length}灯の終点の強さを変えました`)), true));
+            (v) => { lvMovers.forEach((fid) => { const l = lightOf(fid); if (l) l.levelTo = v; }); draw(); },
+            () => commit(`${lvMovers.length}灯の終点の強さを変えました`)), true));
       }
       /* ストロボもムービングだけ。まとめて選んだ全灯に同じ点滅を入れる（2026-09-13 本人要望）。 */
       if (movers.length) {
@@ -2452,7 +2466,15 @@
     /* ④ 光の広がり。ムービングはシーンごとの値（light.beamDeg）、固定灯は仕込みの値（fixture.beamDeg）へ入れる。
        混ざって選ばれていても、それぞれ正しいほうへ入る（本人要望の「太さを一括で」）。 */
     {
-      const b = sub("光の広がり");
+      const b = sub(movers.length ? null : "光の広がり");
+      if (movers.length) {
+        const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光の広がり"));
+        head.append(switchBtn(allSp, allSp ? "広がりが動いています。押すと全灯止めます" : spMovers.length ? "一部だけ動いています。押すと全灯そろえます" : "押すと全灯の広がりに始点と終点を置きます", () => {
+          if (allSp) { bulkEach(movers, (f, l) => { delete l.beamDegTo; }); commit(`${movers.length}灯の広がりの動きを止めました`); }
+          else { bulkEach(movers, (f, l) => { l.beamDegTo = E.beamDegOf(f, l); }); commit(`${movers.length}灯の広がりに始点と終点を置きました`); }
+        }));
+        b.append(head);
+      }
       const fmtDeg = (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`;
       const degs = ids.map((fid) => Math.round(E.beamDegOf(fixtureById(fid), lightOf(fid) || {})));
       const same = allSame(degs);
@@ -2462,15 +2484,15 @@
         bulkEach(ids, (f, l) => { if (E.isMoving(f)) l.beamDeg = v; else f.beamDeg = v; });
         quiet ? draw() : commit();
       };
-      b.append(field(someMoving ? (same ? "始点" : "始点（バラバラ）") : (same ? "広がり" : "広がり（バラバラ）"),
+      b.append(field(spMovers.length ? (same ? "始点" : "始点（バラバラ）") : (same ? "広がり" : "広がり（バラバラ）"),
         range(4, 70, 1, now, fmtDeg, (v) => put(v, true), () => put(E.finite(sp.beamDeg, now))), true));
-      if (someMoving) {
-        const tos = new Set(movingMovers.map((fid) => { const l = lightOf(fid) || {}; return Math.round(E.clamp(E.finite(l.beamDegTo, E.beamDegOf(fixtureById(fid), l)), 5, 55)); }));
+      if (spMovers.length) {
+        const tos = new Set(spMovers.map((fid) => { const l = lightOf(fid) || {}; return Math.round(E.clamp(E.finite(l.beamDegTo, E.beamDegOf(fixtureById(fid), l)), 5, 55)); }));
         const sameTo = tos.size <= 1, curTo = sameTo && tos.size === 1 ? [...tos][0] : 24;
         b.append(field(sameTo ? "終点" : "終点（バラバラ）",
           range(5, 55, 1, curTo, fmtDeg,
-            (v) => { movingMovers.forEach((fid) => { const l = lightOf(fid); if (l) l.beamDegTo = v; }); draw(); },
-            () => commit(`${movingMovers.length}灯の終点の広がりを変えました`)), true));
+            (v) => { spMovers.forEach((fid) => { const l = lightOf(fid); if (l) l.beamDegTo = v; }); draw(); },
+            () => commit(`${spMovers.length}灯の終点の広がりを変えました`)), true));
       }
     }
 
@@ -2500,29 +2522,28 @@
       }
     }
 
-    /* ⑥ 動かす（ムービングを選んでいるときだけ）。単灯と同じ考え方——入れると②③④に始点と終点ができ、
-       ここで運び方（時間・ずらす刻み）をまとめて決める。全灯そろって動いているときだけスイッチがオン。 */
+    /* ⑤ 位置（ムービングを選んでいるときだけ）。単灯と同じで、ここは<b>位置だけ</b>を入り切りする。
+       強さ・広がりは③④のスイッチが持つ（2026-09-13 本人指定）。
+       運び方（時間・ずらす刻み）は3つで共通なので、どれかが動いていれば下に出す。 */
     if (movers.length) {
       const b = sub(null);
-      const head = el("div", "pboxhead"); head.append(el("p", "kicker", `動かす（ムービング${movers.length}灯）`));
-      head.append(switchBtn(allMoving,
-        allMoving ? "動かしています。押すと全灯を止めます（始点の値で止まります）"
-          : someMoving ? "一部だけ動いています。押すと全灯そろって動かします"
-          : "押すと全灯に始点と終点を置いて動かします",
+      const head = el("div", "pboxhead"); head.append(el("p", "kicker", `位置（ムービング${movers.length}灯）`));
+      head.append(switchBtn(allPos,
+        allPos ? "位置が動いています。押すと全灯を止めます（いまの位置で止まります）"
+          : posMovers.length ? "一部だけ動いています。押すと全灯そろって動かします"
+          : "押すと全灯の位置に始点と終点を置きます",
         () => {
-          if (allMoving) {
-            bulkEach(movers, (f, l) => { const pt = currentPoint(l); l.path = { kind: "still", a: { ...pt } }; delete l.levelTo; delete l.beamDegTo; });
-            commit(`${movers.length}灯の動きを止めました（始点の値で止まっています）`);
+          if (allPos) {
+            bulkEach(movers, (f, l) => { const pt = currentPoint(l); l.path = { kind: "still", a: { ...pt } }; });
+            commit(`${movers.length}灯の位置の動きを止めました（いまの位置で止まっています）`);
           } else {
-            bulkEach(movers, (f, l, i, fid) => {
-              if (((lightOf(fid) || {}).path || {}).kind === "still") setKind(fid, "line");
-              const l2 = lightOf(fid); l2.levelTo = levelOf(l2); l2.beamDegTo = E.beamDegOf(f, l2);
-            });
-            commit(`${movers.length}灯に始点と終点を置きました`);
+            bulkEach(movers, (f, l, i, fid) => { if (((lightOf(fid) || {}).path || {}).kind === "still") setKind(fid, "line"); });
+            commit(`${movers.length}灯の位置に始点と終点を置きました`);
           }
         }));
       b.append(head);
       if (someMoving) {
+        b.append(el("p", "kicker sub2", "動きの時間（位置・強さ・広がりで共通）"));
         // 1往復（1周）の時間とオフセットの刻み。動きを持つムービングだけに入る
         b.append(field("1往復の時間", range(1, 30, 0.5, sp.periodSec, (v) => `${v.toFixed(1)}秒`, (v) => { sp.periodSec = v; bulkEach(movers, (f, l) => { l.periodSec = v; }); draw(); }, () => commit())));
         b.append(field("ずらす刻み", range(0, 3, 0.1, sp.stepSec, (v) => (v < 0.05 ? "ずらさない（全灯そろう）" : `${v.toFixed(1)}秒ずつ`), (v) => {
@@ -2678,16 +2699,19 @@
         host.append(el("p", "hint", "この灯はいま消えています。右上の〈オフ〉を押して点けると、色・当てる場所・強さ・広がりを決められます。"));
         return;
       }
-      /* ---- 欄の構成（2026-09-13 本人要望） ----
-         ①光の色 → ②当てる場所・動き（位置に関わるものを1箱） → ③光の強さ → ④光の広がり →
-         ⑤動かす（ムービングのみ）。
-         「動かす」を入れると②③④のすべてに始点と終点ができ、⑤でその運び方（時間・切り返し・
-         向き・遅れ）をまとめて決める。動かしていないときは各箱が1つの値だけを持つ。
-         動かしているかどうかは別の旗を持たず、データから決める:
-           位置の軌道が「動きなし」以外 or 強さ・広がりに終点がある ＝ 動かしている。 */
+      /* ---- 欄の構成（2026-09-13 本人要望で作り直し） ----
+         ①光の色 → ②当てる場所 → ③光の強さ → ④光の広がり → ⑤位置 → ⑥動きの時間。
+         **オートメーション（自動で動かす）は項目ごとに持つ**。位置を動かしても、
+         光の強さ・光の広がりは勝手にはオンにならない（同日 本人指定）。
+         旗は別に持たず、これまでどおりデータから決める:
+           位置 ＝ 軌道が「動きなし」以外／強さ ＝ levelTo がある／広がり ＝ beamDegTo がある。
+         運び方（時間・切り返し・遅れ）は3つで共通なので、どれかが動いていれば⑥に出す。 */
       const p = l.path || { kind: "still" };
       const mover = E.isMoving(f);
-      const moving = mover && (p.kind !== "still" || l.levelTo != null || l.beamDegTo != null);
+      const autoPos = mover && p.kind !== "still";          // 位置のオートメーション
+      const autoLevel = mover && l.levelTo != null;          // 光の強さのオートメーション
+      const autoSpread = mover && l.beamDegTo != null;       // 光の広がりのオートメーション
+      const anyAuto = autoPos || autoLevel || autoSpread;
       const box = (title) => { const b = el("div", "pbox"); if (title) b.append(el("p", "kicker", title)); host.append(b); return b; };
       const heightField = (b, label2, point) => {
         if (l.surface === "floor") return; // 床は高さ0固定。UIに出さない
@@ -2734,17 +2758,16 @@
          ホリゾントライトは狙い点を持たない帯（つねに奥の壁を染める）ので、この箱ごと出さない
          （2026-09-13 本人指摘「もとから一列のバー」。横位置・長さ・床/上部は配置パネルへ）。 */
       if (f.mount.type !== "cyc") {
-        const b = box("当てる場所・動き");
+        const b = box("当てる場所・軌道");
         b.append(field("当てる場所", seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], l.surface, (v) => {
           setLight(fid, { surface: v }); restyleToSurface(fid);
           const l2 = lightOf(fid); if (l2.path && l2.path.kind === "circle") l2.path.plane = (v === "back" || v === "house") ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
           commit();
         }), true));
         if (l.surface === "house") b.append(el("p", "hint", "客席へ向けた光。客席からは光源そのものが見える（目眩まし）ので、図では光だまりでなく灯体・狙い点のまわりの滲みで表します。高さは舞台の床から。平面図では左右だけ動かせます。"));
-        if (moving) {
-          /* 軌道の種類。「動きなし」は位置だけ止めて、強さ・広がりの往復は続ける。 */
-          b.append(field("動き", seg([["still", "動きなし"], ["line", "往復"], ["circle", "円"], ["eight", "8の字"]], p.kind, (v) => { setKind(fid, v); commit(); }), true));
-          if (p.kind === "still") { b.append(el("p", "hint", "位置は動かさず、強さ・広がりだけが 始点→終点→始点 と往復します。")); heightField(b, "高さ", p.a); }
+        if (autoPos) {
+          /* 軌道の形。止める／動かすは⑤「位置」のスイッチが持つので、ここには「動きなし」を置かない。 */
+          b.append(field("軌道", seg([["line", "往復"], ["circle", "円"], ["eight", "8の字"]], p.kind, (v) => { setKind(fid, v); commit(); }), true));
           if (p.kind === "line") { heightField(b, "始点の高さ", p.a); heightField(b, "終点の高さ", p.b); }
           if (p.kind === "circle" || p.kind === "eight") {
             if (l.surface === "air") b.append(field("回る面", seg([["horizontal", "水平"], ["frontVertical", "客席側から見た縦"], ["sideVertical", "舞台横から見た縦"]], p.plane || "horizontal", (v) => { p.plane = v; commit(); }, "col"), true));
@@ -2762,6 +2785,7 @@
           }
         } else {
           heightField(b, "高さ", p.a || E.newPoint());
+          if (mover) b.append(el("p", "hint", "位置は止めています。下の〈位置〉を入れると動かせます（強さ・広がりは別々に入れます）。"));
           if (!mover && p.kind !== "still") b.append(el("p", "warn", "⚠ この灯には動きが付いたままです。固定灯なので実際には動きません。"));
         }
       }
@@ -2769,10 +2793,20 @@
       /* ③ 光の強さ。0まで下げると消灯と同じ扱いになり、図から消える（2026-09-13 本人決定）。
          動かしているときは始点と終点を持ち、位置と同じ位相で往復する。効き方（カーブ）は環境設定。 */
       {
-        const b = box("光の強さ");
+        const b = box(mover ? null : "光の強さ");
         const fmtLv = (v) => (v <= 0 ? "0%（消灯）" : `${Math.round(v)}%（${LEVEL_WORD(v)}）`);
-        b.append(field(moving ? "始点" : "強さ", range(0, 100, 1, levelOf(l), fmtLv, (v) => { l.level = v; draw(); }, () => commit()), true));
-        if (moving) b.append(field("終点", range(0, 100, 1, E.clamp(E.finite(l.levelTo, levelOf(l)), 0, 100), fmtLv, (v) => { l.levelTo = v; draw(); }, () => commit()), true));
+        /* 強さだけのオートメーション。位置を動かしていても、ここを入れるまで強さは変わらない。 */
+        if (mover) {
+          const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光の強さ"));
+          head.append(switchBtn(autoLevel, autoLevel ? "強さが動いています。押すと止めます（始点の値で止まります）" : "押すと強さに始点と終点を置いて動かします", () => {
+            const l2 = lightOf(fid);
+            if (autoLevel) { delete l2.levelTo; commit("強さの動きを止めました"); }
+            else { l2.levelTo = levelOf(l2); commit("強さに始点と終点を置きました"); }
+          }));
+          b.append(head);
+        }
+        b.append(field(autoLevel ? "始点" : "強さ", range(0, 100, 1, levelOf(l), fmtLv, (v) => { l.level = v; draw(); }, () => commit()), true));
+        if (autoLevel) b.append(field("終点", range(0, 100, 1, E.clamp(E.finite(l.levelTo, levelOf(l)), 0, 100), fmtLv, (v) => { l.levelTo = v; draw(); }, () => commit()), true));
         /* ストロボ（2026-09-13 本人要望）。ムービングだけが持てる。始点・終点の往復に、
            時間で繰り返す点滅を上乗せする——往復のどの位置でも同じように点滅する。
            「くっきり」＝矩形波でパパパッと切り替わる。「やわらかい」＝1−cosの滑らかな明滅で
@@ -2810,12 +2844,22 @@
         b.append(field(top ? "壁を降りる高さ" : "壁を登る高さ", range(0.5, E.CYC_REACH_MAX, 0.5, E.clamp(E.finite(f.mount.reachM, 4), 0.5, E.CYC_REACH_MAX), (v) => `${v.toFixed(1)}m`, (v) => { f.mount.reachM = v; draw(); }, () => commit()), true));
         b.append(el("p", "note", `${top ? "上の器具から下向きに" : "床の器具から上向きに"}、壁のどこまで光が届くかです。長さは配置パネル、置く・外すは配置パネルの「ホリゾントライト」で切り替えます。`));
       } else {
-        const b = box("光の広がり");
+        const b = box(mover ? null : "光の広がり");
         const fmtDeg = (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`;
+        if (mover) {
+          /* 広がりだけのオートメーション。位置・強さとは独立に入り切りする。 */
+          const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光の広がり"));
+          head.append(switchBtn(autoSpread, autoSpread ? "広がりが動いています。押すと止めます（始点の値で止まります）" : "押すと広がりに始点と終点を置いて動かします", () => {
+            const l2 = lightOf(fid);
+            if (autoSpread) { delete l2.beamDegTo; commit("広がりの動きを止めました"); }
+            else { l2.beamDegTo = E.beamDegOf(f, l2); commit("広がりに始点と終点を置きました"); }
+          }));
+          b.append(head);
+        }
         b.append(el("p", "hint", "平面図の赤い丸の上でスクロールしても変えられます（下へ回すと広がる・上へ回すと絞る）。"));
         if (mover) {
-          b.append(field(moving ? "始点" : "広がり", range(5, 55, 1, E.beamDegOf(f, l), fmtDeg, (v) => { l.beamDeg = v; draw(); }, () => commit()), true));
-          if (moving) b.append(field("終点", range(5, 55, 1, E.clamp(E.finite(l.beamDegTo, E.beamDegOf(f, l)), 5, 55), fmtDeg, (v) => { l.beamDegTo = v; draw(); }, () => commit()), true));
+          b.append(field(autoSpread ? "始点" : "広がり", range(5, 55, 1, E.beamDegOf(f, l), fmtDeg, (v) => { l.beamDeg = v; draw(); }, () => commit()), true));
+          if (autoSpread) b.append(field("終点", range(5, 55, 1, E.clamp(E.finite(l.beamDegTo, E.beamDegOf(f, l)), 5, 55), fmtDeg, (v) => { l.beamDegTo = v; draw(); }, () => commit()), true));
           if (l.beamDeg != null) b.append(btn(`仕込みの広がり（${Math.round(f.beamDeg == null ? 18 : f.beamDeg)}°）に戻す`, () => { delete l.beamDeg; if (l.beamDegTo != null) l.beamDegTo = E.beamDegOf(f, l); commit(); }, "small quiet"));
         } else {
           b.append(field("広がり", range(4, 70, 1, f.beamDeg == null ? 24 : f.beamDeg, fmtDeg, (v) => { f.beamDeg = v; draw(); }, () => commit()), true));
@@ -2844,27 +2888,36 @@
         }
       }
 
-      /* ⑥ 動かす（ムービングのみ）。入れると②③④に始点と終点ができる。
-         運び方（時間・切り返し・向き・遅れ）はここで一括に決める（2026-09-13 本人要望）。 */
+      /* ⑤ 位置（ムービングのみ）。スイッチは<b>位置だけ</b>を入り切りする——
+         ここを入れても光の強さ・光の広がりはオフのままで、それぞれの箱で別に入れる
+         （2026-09-13 本人指定「それぞれの項目がオートメーションのONOFFを持つイメージ」）。 */
       if (mover) {
         const b = box(null);
-        const head = el("div", "pboxhead"); head.append(el("p", "kicker", "動かす"));
-        head.append(switchBtn(moving, moving ? "動かしています。押すと止めます（始点の値で止まります）" : "押すと始点と終点を置いて動かします", () => {
-          if (moving) {
+        const head = el("div", "pboxhead"); head.append(el("p", "kicker", "位置"));
+        head.append(switchBtn(autoPos, autoPos ? "位置が動いています。押すと止めます（いまの位置で止まります）" : "押すと始点と終点を置いて位置を動かします", () => {
+          if (autoPos) {
             const a = currentPoint(l);
             setLight(fid, { path: { kind: "still", a: { ...a } } });
-            const l2 = lightOf(fid); delete l2.levelTo; delete l2.beamDegTo;
-            commit("動きを止めました（始点の値で止まっています）");
+            commit("位置の動きを止めました（いまの位置で止まっています）");
           } else {
             setKind(fid, "line");
-            const l2 = lightOf(fid); l2.levelTo = levelOf(l2); l2.beamDegTo = E.beamDegOf(f, l2);
-            commit("始点と終点を置きました。②③④で終点の値を決められます");
+            commit("位置に始点と終点を置きました。②で軌道の形と高さを決められます");
           }
         }));
         b.append(head);
-        if (moving) {
+        if (autoPos && (lightOf(fid).path || {}).kind === "line") {
+          b.append(field("始め方", seg([["a", "始点 → 終点"], ["b", "終点 → 始点"]], p.start || "a", (v) => { p.start = v; commit(); })));
+        }
+        if (!autoPos) b.append(el("p", "hint", "位置は止まったままです。光の強さ・光の広がりだけを動かすこともできます。"));
+      }
+
+      /* ⑥ 動きの時間。位置・強さ・広がりで<b>共通</b>の運び方なので、どれか1つでも
+         動いていれば出す（2026-09-13 本人要望のオートメーション化に合わせて別の箱に分けた）。 */
+      if (mover) {
+        const b = anyAuto || (state.copiedPath && state.copiedPath.from !== fid) ? box(null) : null;
+        if (b && anyAuto) {
+          b.append(el("p", "kicker", "動きの時間（位置・強さ・広がりで共通）"));
           const kind = (lightOf(fid).path || {}).kind;
-          if (kind === "line") b.append(field("始め方", seg([["a", "始点 → 終点"], ["b", "終点 → 始点"]], p.start || "a", (v) => { p.start = v; commit(); })));
           // 端での運び方（2026-09-12 本人指定で「切り返し」＝リニア／イーズ）。位置・強さ・広がりに共通
           b.append(field("切り返し", seg([["linear", "リニア"], ["ease", "イーズ"]], p.easing || "ease", (v) => { p.easing = v; commit(); })));
           const label1 = kind === "line" ? "1往復の時間" : kind === "still" ? "変化の1往復の時間" : "1周の時間";
@@ -2881,7 +2934,7 @@
           }, "small"));
           b.append(field("動きのコピー", acts));
         }
-        if (state.copiedPath && state.copiedPath.from !== fid) {
+        if (b && state.copiedPath && state.copiedPath.from !== fid) {
           const c = state.copiedPath;
           b.append(field("貼り付け", btn(`${c.label}の動きを貼り付ける`, () => {
             setLight(fid, { path: JSON.parse(JSON.stringify(c.path)), speed: c.speed, periodSec: c.periodSec, beamDeg: c.beamDeg, beamDegTo: c.beamDegTo, levelTo: c.levelTo });
