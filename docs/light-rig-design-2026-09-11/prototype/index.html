@@ -251,6 +251,15 @@
   .pbox .pboxhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .pbox .pboxhead .kicker{margin:0}
   .pbox .swatches{padding:3px}
+  /* ゴボ（模様）の選び方。丸い窓の中に形を見せるので、見本も円で切る。 */
+  .gobos{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:4px}
+  .gobo{aspect-ratio:1;padding:3px;border:1px solid var(--line-dark);background:#14110e;color:var(--milk);
+        cursor:pointer;display:grid;place-items:center;border-radius:50%}
+  .gobo:hover{border-color:var(--brass)}
+  .gobo[aria-pressed="true"]{border-color:var(--brass);background:rgba(156,130,63,.20);outline:1px solid var(--brass)}
+  .gobo svg{width:100%;height:100%;display:block}
+  .gobo.none{color:var(--milk-dim);font-size:9.5px;letter-spacing:.04em}
+  .gobo .gx{display:block}
   /* サーチライト（複数ムービングを一撃で組む）。まとまりが見えるよう枠で囲う */
   .slbox{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;align-content:start;border:1px solid var(--line-dark);background:var(--recess);padding:8px;margin-bottom:2px}
   .slbox>*{grid-column:1/-1;min-width:0}
@@ -532,8 +541,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789273167"></script>
-<script src="stage-figure.js?v=1789273167"></script>
-<script src="app.js?v=1789273167"></script>
+<script src="rig-engine.js?v=1789274575"></script>
+<script src="stage-figure.js?v=1789274575"></script>
+<script src="app.js?v=1789274575"></script>
 </body>
 </html>

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ゴボ実装のためのリサーチ — 照明デザインモード（2026-09-13）</title>
+<style>
+  :root{
+    --desk:#191512;--desk-2:#201b16;--line:#382f25;--milk:#efe7d6;--milk-dim:rgba(240,231,214,.62);
+    --brass:#9c823f;--rust:#a84b26;--rust-ink:#df6433;--recess:rgba(13,12,11,.3);
+    --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
+    --serif:"Hiragino Mincho ProN","Yu Mincho",serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#12100e;color:var(--milk);font-family:var(--sans);font-size:15px;line-height:1.85}
+  .wrap{max-width:960px;margin:0 auto;padding:34px 22px 90px}
+  h1{font:500 26px/1.45 var(--serif);letter-spacing:.06em;margin:0 0 6px}
+  .sub{color:var(--milk-dim);font-size:13px;margin:0 0 30px}
+  h2{font:600 17px/1.5 var(--sans);letter-spacing:.06em;color:var(--brass);margin:40px 0 12px;
+     border-bottom:1px solid var(--line);padding-bottom:7px}
+  h3{font:600 14.5px/1.6 var(--sans);margin:24px 0 8px;color:var(--milk)}
+  p{margin:0 0 13px}
+  .lead{background:var(--desk-2);border:1px solid var(--line);border-left:3px solid var(--brass);
+        padding:16px 18px;margin:0 0 26px}
+  .lead p:last-child{margin-bottom:0}
+  table{width:100%;border-collapse:collapse;margin:14px 0 18px;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--recess);color:var(--brass);font-weight:600;font-size:12.5px;letter-spacing:.04em}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .src{font-size:12px;color:var(--milk-dim)}
+  .src a{color:var(--brass)}
+  a{color:var(--brass)}
+  ul,ol{margin:0 0 14px;padding-left:1.35em}
+  li{margin:0 0 7px}
+  .warn{border:1px solid var(--rust);background:rgba(168,75,38,.10);padding:14px 16px;margin:16px 0}
+  .warn b{color:var(--rust-ink)}
+  .card{border:1px solid var(--line);background:var(--desk-2);padding:16px 18px;margin:0 0 14px}
+  .card h3{margin-top:0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .tag{display:inline-block;font-size:11px;letter-spacing:.08em;padding:2px 8px;border:1px solid var(--line);
+       border-radius:2px;color:var(--milk-dim);margin-right:6px;white-space:nowrap}
+  .tag.ok{border-color:var(--brass);color:var(--brass)}
+  .tag.ng{border-color:var(--rust);color:var(--rust-ink)}
+  .rec{border:1px solid var(--brass);background:rgba(156,130,63,.10);padding:16px 18px;margin:18px 0}
+  .rec h3{margin-top:0;color:var(--brass)}
+  .foot{margin-top:44px;padding-top:14px;border-top:1px solid var(--line);color:var(--milk-dim);font-size:12.5px}
+  .patterns{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0 20px}
+  .pat{border:1px solid var(--line);background:var(--recess);padding:10px}
+  .pat svg{display:block;width:100%;height:82px;background:#0d0e10;border:1px solid var(--line)}
+  .pat b{display:block;font-size:12.5px;margin-top:7px;color:var(--milk)}
+  .pat small{display:block;font-size:11px;color:var(--milk-dim);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>ゴボ実装のためのリサーチ</h1>
+<p class="sub">照明デザインモード（舞台スケッチ）／ 2026-09-13 調査 ／ 出典はすべてメーカー公式資料</p>
+
+<div class="lead">
+  <p><b>判断してほしいこと</b>：ゴボをどの粒度で実装するか、3案のうちどれで進めるか。</p>
+  <p>結論から言うと、<b>案B（分類ベースの内蔵ライブラリ）を推奨</b>します。有名ブランドの機種に実際に何枚入っているかは公式資料で裏が取れましたが、<b>絵柄そのものを写すのは権利上できません</b>。実務でも通じる分類名で自前の絵柄を持つのが、現実的で使いやすい落としどころです。</p>
+</div>
+
+<h2>1. 有名ブランドの機種に実際に入っている枚数</h2>
+
+<p>ムービングライトは「回転ゴボ（rotating／ローテート）」と「固定ゴボ（static／スタティック）」の2枚のホイールを持つのが標準です。回転ゴボは1枚ずつ角度を決められ、回し続けたり細かく揺らしたり（シェイク）できます。固定ゴボは枚数が多い代わりに回りません。</p>
+
+<table>
+  <thead>
+    <tr><th>機種</th><th>ブランド</th><th class="num">回転ゴボ</th><th class="num">固定ゴボ</th><th>その他</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>MAC Encore Two</td><td>Martin（HARMAN）</td><td class="num">7</td><td class="num">11</td><td>ホイール2枚。仕様書に「Two gobo wheels (7 rotating, 11 static)」</td></tr>
+    <tr><td>MegaPointe</td><td>Robe</td><td class="num">9＋open</td><td class="num">14＋open</td><td>アニメーションホイール併載。回転ゴボは交換可（純正のみ）</td></tr>
+    <tr><td>Sharpy Plus</td><td>Claypaky</td><td class="num">8</td><td class="num">18</td><td>合計26。固定側の6枚はビーム絞り（最小0.5°）</td></tr>
+    <tr><td>PLUTO600 PROFILE MK2</td><td>イースペック（日本）</td><td class="num">7＋白</td><td class="num">10＋白</td><td>双方向回転・シェイク・アニメーションホイールあり</td></tr>
+  </tbody>
+</table>
+
+<p class="src">出典（2026-09-13 閲覧）：
+<a href="https://www.martin.com/en-US/products/mac-encore-two">Martin MAC Encore Two 製品ページ</a>と同社スペックシート／
+<a href="https://www.robe.cz/res/downloads/catalogues/ROBE_MegaPointe_leaflet.pdf">Robe MegaPointe リーフレット</a>／
+<a href="https://www.claypaky.it/products/sharpy-plus/">Claypaky Sharpy Plus 製品ページ</a>／
+<a href="https://e-spec.co.jp/lights/pluto600-profile/">イースペック PLUTO600 PROFILE MK2</a>
+</p>
+
+<div class="card">
+  <h3>ここから言えること</h3>
+  <ul>
+    <li><b>枚数の目安は回転7〜9枚・固定10〜18枚</b>。機種が違っても、この幅にほぼ収まります。</li>
+    <li><b>固定ゴボには「絵柄でないもの」が混ざる</b>。Sharpy Plus は固定18枚のうち6枚がビーム絞りです。枚数だけを真似しても意味がない、ということでもあります。</li>
+    <li><b>回転ゴボは交換前提</b>。Robe の公式一覧は「どの機種にどの寸法のゴボが入るか」の表で、現場で中身を入れ替えることが前提になっています。つまり<b>「内蔵の絵柄」は固定ではない</b>——機種の付属品にすぎません。</li>
+  </ul>
+</div>
+
+<h2>2. ゴボの寸法規格</h2>
+
+<p>絵柄を持つなら、いずれ「この灯体に入るか」を言えたほうがよくなります。規格は2系統あります。</p>
+
+<h3>従来灯（エリプソイダル）— Rosco の標準サイズ</h3>
+<table>
+  <thead><tr><th>サイズ名</th><th class="num">外径</th><th class="num">画像径</th><th>対応</th></tr></thead>
+  <tbody>
+    <tr><td>A</td><td class="num">100 mm</td><td class="num">75 mm</td><td>一般的なエリプソイダル</td></tr>
+    <tr><td>S</td><td class="num">92 mm</td><td class="num">79 mm</td><td>ETC Source Four（スチールのみ）</td></tr>
+    <tr><td>B</td><td class="num">86 mm</td><td class="num">64.5 mm</td><td>エリプソイダルの業界標準</td></tr>
+    <tr><td>M</td><td class="num">66 mm</td><td class="num">48 mm</td><td>小型エリプソイダル</td></tr>
+    <tr><td>E</td><td class="num">37.5 mm</td><td class="num">28 mm</td><td>ミニエリプソイダル</td></tr>
+  </tbody>
+</table>
+<p class="src">出典：<a href="https://us.rosco.com/en/standard-gobo-sizes">Rosco「Standard Gobo Sizes」</a>（2026-09-13 閲覧）</p>
+
+<h3>ムービングライト — 機種ごとに違う</h3>
+<p>ムービングは共通規格がなく、機種ごとに寸法が決まります。Robe の公式一覧から抜粋します。</p>
+<table>
+  <thead><tr><th>機種</th><th>ホイール</th><th class="num">外径</th><th class="num">最大画像径</th><th class="num">厚み</th></tr></thead>
+  <tbody>
+    <tr><td>Robin MegaPointe</td><td>回転</td><td class="num">15.8 mm</td><td class="num">12.5 mm</td><td class="num">1.1〜2 mm</td></tr>
+    <tr><td>Robin Pointe</td><td>回転</td><td class="num">15.8 mm</td><td class="num">12.5 mm</td><td class="num">1.1〜1.5 mm</td></tr>
+    <tr><td>Robin Esprite</td><td>固定／回転</td><td class="num">26.8 mm</td><td class="num">23.5 mm</td><td class="num">1.1／1〜3.5 mm</td></tr>
+    <tr><td>Robin BMFL Spot</td><td>回転×2</td><td class="num">30.9 mm</td><td class="num">25 mm</td><td class="num">1〜3.5 mm</td></tr>
+    <tr><td>Robin Forte</td><td>回転×2</td><td class="num">30.9 mm</td><td class="num">25 mm</td><td class="num">1〜3.5 mm</td></tr>
+  </tbody>
+</table>
+<p class="src">出典：<a href="https://www.robelighting.com/res/downloads/gobo_config/Robe_Fixtures_Gobos_overview.pdf">Robe「Replaceable gobos in Robe fixtures」</a>（PDF、2026-09-13 閲覧）。同資料には熱の都合でスチール・アルミが使えない機種の注記もあります。</p>
+
+<h2>3. 絵柄の分類（実務で通っている呼び名）</h2>
+
+<p>Rosco のカタログはスチール製だけで21分類あります。これは<b>絵柄そのものではなく分類名</b>なので、そのまま参考にできます。</p>
+
+<table>
+  <thead><tr><th>系統</th><th>分類名</th></tr></thead>
+  <tbody>
+    <tr><td>崩し・質感</td><td>Breakups／Foliage Breakups／Abstract</td></tr>
+    <tr><td>自然</td><td>Trees &amp; Flowers／Clouds &amp; Sky／Water &amp; Sky／Fire &amp; Ice／Boundaries &amp; Wildlife</td></tr>
+    <tr><td>建築・生活</td><td>Windows, Doors &amp; Blinds／Architectural &amp; Retail／Churches &amp; Heraldics</td></tr>
+    <tr><td>図形・記号</td><td>Graphics／Graphics &amp; Grills／Symbols &amp; Signs／Text／Rotation</td></tr>
+    <tr><td>用途別</td><td>Dance／Weddings／Occasions &amp; Holidays／World Around Us</td></tr>
+  </tbody>
+</table>
+<p class="src">出典：<a href="https://us.rosco.com/en/products/catalog/gobos">Rosco ゴボカタログ</a>（2026-09-13 閲覧）。ガラス製・プラスチック製にはさらに別の分類群があります。</p>
+
+<div class="card">
+  <h3>舞台でよく使う「効き方」で言うと</h3>
+  <p>分類は多いですが、舞台の明かりとして実際に効くのは次の4つに集約できます。この4つを押さえれば、ショーの絵作りはほぼ賄えます。</p>
+  <ul>
+    <li><b>ブレイクアップ（崩し）</b>— 均一な光を割って質感を作る。いちばん使う。</li>
+    <li><b>フォリッジ（木漏れ日）</b>— 屋外・森・窓の外。物語の場所を決める。</li>
+    <li><b>ウィンドウ（窓・格子）</b>— 室内、牢、光の差し込み。方向感が出る。</li>
+    <li><b>線・ドット・放射</b>— 抽象。ライブやダンスで空間そのものを作る。</li>
+  </ul>
+</div>
+
+<h2>4. 権利の確認（ここが実装方針を決めます）</h2>
+
+<div class="warn">
+  <p><b>有名ブランドに内蔵されている絵柄を、そのまま写して載せることはできません。</b></p>
+  <p>ゴボの絵柄はメーカー（Rosco、Apollo、GAM、および灯体メーカー各社）がデザインした<b>著作物</b>です。各社とも「あなたの絵柄でカスタムゴボを作る」サービスを持っており、そこでは<b>入稿した本人が権利を持っていること</b>が前提になっています。裏返せば、他社のカタログ絵柄を写して自分のアプリに載せるのは、この前提に反します。</p>
+  <p>一方で、<b>分類名（Breakup、Foliage など）と、そこに属する絵柄を自分で描くこと</b>は問題ありません。「木漏れ日」「格子窓」は特定企業のものではなく、舞台照明の共有語彙です。</p>
+  <p class="src">判断の根拠：各社のカスタムゴボ受注ページが一様に「入稿者が権利を持つ原稿」を条件にしていること（<a href="https://www.gobosource.com/gos/custom-gobos-c-22.html">GoboSource</a>、<a href="https://www.machineartist.com/gobos/custom-gobos">Machine Artist</a>、<a href="https://progobo.com/product/custom-steel-gobo-upload-your-own-art/">ProGobo</a>）。<b>ここは法律の専門家に当たったものではなく、一般的な著作権の考え方に基づく整理です。</b>商用公開の前に確認することをおすすめします。</p>
+</div>
+
+<h2>5. 実装の3案</h2>
+
+<div class="grid2">
+  <div class="card">
+    <h3>案A：機種の再現</h3>
+    <p><span class="tag ng">非推奨</span></p>
+    <p>MAC Encore Two なら回転7・固定11、という具合に機種ごとのホイール構成を持つ。</p>
+    <p><b>できること</b>：実機に近い操作感。<br>
+    <b>できないこと</b>：絵柄は写せないので、結局「7枚の何か」になる。機種が増えるたび保守が要る。</p>
+  </div>
+  <div class="card">
+    <h3>案B：分類ベースの内蔵ライブラリ</h3>
+    <p><span class="tag ok">推奨</span></p>
+    <p>実務の分類（ブレイクアップ／フォリッジ／ウィンドウ／線・ドット）で、自前の絵柄を10〜16枚持つ。回転・固定の区別と、回転・シェイクは実機どおり。</p>
+    <p><b>できること</b>：権利の問題がない。照明さんに伝わる言葉で選べる。絵柄を足すのも容易。<br>
+    <b>できないこと</b>：特定機種の見た目そのままにはならない。</p>
+  </div>
+  <div class="card">
+    <h3>案C：持ち込み</h3>
+    <p><span class="tag">将来</span></p>
+    <p>白黒画像やSVGを読み込んでゴボにする。</p>
+    <p><b>できること</b>：ロゴや実際に使うゴボを持ち込める。<br>
+    <b>できないこと</b>：最初の一歩には重い。案Bの上に足すのが自然。</p>
+  </div>
+  <div class="card">
+    <h3>共通して要るもの</h3>
+    <p>どの案でも、灯体1台ぶんのデータに次が増えます。</p>
+    <ul>
+      <li>ゴボの種類（どれを入れるか）</li>
+      <li>回すか止めるか、角度、回す速さと向き</li>
+      <li>動きの中で変える場合の始点・終点（いまの強さ・広がりと同じ扱い）</li>
+    </ul>
+  </div>
+</div>
+
+<div class="rec">
+  <h3>推奨：案Bで始める</h3>
+  <p>内蔵ライブラリは<b>回転8枚・固定12枚</b>を目安にします。調べた4機種（回転7〜9・固定10〜18）の中央あたりで、実機の感覚から外れません。内訳は次のとおりです。</p>
+  <ul>
+    <li><b>回転ゴボ8枚</b>：ブレイクアップ3（粗・中・細）、フォリッジ2（木漏れ日・葉）、放射1、同心円1、ドット1</li>
+    <li><b>固定ゴボ12枚</b>：上の8枚に、格子窓、縦スリット、横スリット、三角の抜き を足した12枚</li>
+  </ul>
+  <p>絵柄は<b>SVGで自前で描きます</b>。ベクターなので拡大しても粗が出ず、光の広がりに合わせて投影の大きさを変えられます。下は実際に描いた試作です。</p>
+
+  <div class="patterns">
+    <div class="pat">
+      <svg viewBox="0 0 100 100" aria-label="粗いブレイクアップ">
+        <g fill="#efe7d6" opacity=".85">
+          <path d="M12 18 L38 10 L44 34 L18 42 Z"/><path d="M52 14 L84 22 L76 46 L48 38 Z"/>
+          <path d="M8 52 L34 48 L40 78 L14 86 Z"/><path d="M50 56 L82 52 L88 82 L56 88 Z"/>
+        </g>
+      </svg>
+      <b>ブレイクアップ（粗）</b><small>光を大きく割る。質感の基本</small>
+    </div>
+    <div class="pat">
+      <svg viewBox="0 0 100 100" aria-label="細かいブレイクアップ">
+        <g fill="#efe7d6" opacity=".85">
+          <circle cx="20" cy="22" r="9"/><circle cx="46" cy="14" r="6"/><circle cx="72" cy="26" r="10"/>
+          <circle cx="30" cy="50" r="7"/><circle cx="58" cy="46" r="5"/><circle cx="84" cy="56" r="7"/>
+          <circle cx="16" cy="76" r="8"/><circle cx="44" cy="82" r="6"/><circle cx="70" cy="78" r="9"/>
+        </g>
+      </svg>
+      <b>ブレイクアップ（細）</b><small>ざらついた質感。床に敷く</small>
+    </div>
+    <div class="pat">
+      <svg viewBox="0 0 100 100" aria-label="木漏れ日">
+        <g fill="#efe7d6" opacity=".8">
+          <ellipse cx="24" cy="20" rx="13" ry="8" transform="rotate(-24 24 20)"/>
+          <ellipse cx="58" cy="16" rx="10" ry="6" transform="rotate(18 58 16)"/>
+          <ellipse cx="80" cy="34" rx="12" ry="7" transform="rotate(-12 80 34)"/>
+          <ellipse cx="36" cy="48" rx="9" ry="6" transform="rotate(32 36 48)"/>
+          <ellipse cx="66" cy="60" rx="13" ry="8" transform="rotate(-30 66 60)"/>
+          <ellipse cx="20" cy="72" rx="11" ry="7" transform="rotate(14 20 72)"/>
+          <ellipse cx="48" cy="84" rx="10" ry="6" transform="rotate(-20 48 84)"/>
+        </g>
+      </svg>
+      <b>フォリッジ（木漏れ日）</b><small>屋外・森。場所を決める</small>
+    </div>
+    <div class="pat">
+      <svg viewBox="0 0 100 100" aria-label="格子窓">
+        <g fill="#efe7d6" opacity=".85">
+          <rect x="14" y="14" width="30" height="30"/><rect x="56" y="14" width="30" height="30"/>
+          <rect x="14" y="56" width="30" height="30"/><rect x="56" y="56" width="30" height="30"/>
+        </g>
+      </svg>
+      <b>ウィンドウ（格子窓）</b><small>室内。差し込む方向が出る</small>
+    </div>
+    <div class="pat">
+      <svg viewBox="0 0 100 100" aria-label="放射">
+        <g stroke="#efe7d6" stroke-width="5" opacity=".85">
+          <line x1="50" y1="50" x2="50" y2="4"/><line x1="50" y1="50" x2="83" y2="17"/>
+          <line x1="50" y1="50" x2="96" y2="50"/><line x1="50" y1="50" x2="83" y2="83"/>
+          <line x1="50" y1="50" x2="50" y2="96"/><line x1="50" y1="50" x2="17" y2="83"/>
+          <line x1="50" y1="50" x2="4" y2="50"/><line x1="50" y1="50" x2="17" y2="17"/>
+        </g>
+      </svg>
+      <b>放射</b><small>回すと強い。ライブ向き</small>
+    </div>
+    <div class="pat">
+      <svg viewBox="0 0 100 100" aria-label="同心円">
+        <g fill="none" stroke="#efe7d6" stroke-width="5" opacity=".85">
+          <circle cx="50" cy="50" r="12"/><circle cx="50" cy="50" r="26"/><circle cx="50" cy="50" r="40"/>
+        </g>
+      </svg>
+      <b>同心円</b><small>波紋・水面。ゆっくり回す</small>
+    </div>
+    <div class="pat">
+      <svg viewBox="0 0 100 100" aria-label="縦スリット">
+        <g fill="#efe7d6" opacity=".85">
+          <rect x="10" y="6" width="9" height="88"/><rect x="29" y="6" width="9" height="88"/>
+          <rect x="48" y="6" width="9" height="88"/><rect x="67" y="6" width="9" height="88"/>
+          <rect x="86" y="6" width="9" height="88"/>
+        </g>
+      </svg>
+      <b>縦スリット</b><small>牢・ブラインド。切り取る</small>
+    </div>
+    <div class="pat">
+      <svg viewBox="0 0 100 100" aria-label="ドット">
+        <g fill="#efe7d6" opacity=".85">
+          <circle cx="22" cy="22" r="7"/><circle cx="50" cy="22" r="7"/><circle cx="78" cy="22" r="7"/>
+          <circle cx="22" cy="50" r="7"/><circle cx="50" cy="50" r="7"/><circle cx="78" cy="50" r="7"/>
+          <circle cx="22" cy="78" r="7"/><circle cx="50" cy="78" r="7"/><circle cx="78" cy="78" r="7"/>
+        </g>
+      </svg>
+      <b>ドット</b><small>抽象。等間隔の点</small>
+    </div>
+  </div>
+  <p class="src">上の8枚はこのページのために新しく描いたもので、特定メーカーのカタログを写したものではありません。</p>
+</div>
+
+<h2>6. 不確かなこと・これから確かめること</h2>
+<ul>
+  <li><b>権利の整理は法律の専門家に当たっていません。</b> 一般的な著作権の考え方と、各社のカスタムゴボ受注条件から組み立てた整理です。公開・商用の前に確認してください。</li>
+  <li><b>MAC Encore Two の固定ゴボ11枚の内訳</b>（絵柄か、ビーム絞りなどが混ざるか）は仕様書に書かれていません。Sharpy Plus は6枚がビーム絞りと明記されているので、機種によって事情が違います。</li>
+  <li><b>投影の見え方をどこまで描くか</b>は未検討です。いまのアプリは光を「帯＋当たった輪」で描いているので、そこに模様を重ねる描き方を別途決める必要があります。</li>
+  <li><b>ゴボの前にプリズムがあるか</b>（分身させる効果）も実機にはありますが、今回は調べていません。</li>
+</ul>
+
+<div class="foot">
+  <p>調査日 2026-09-13。出典はすべてメーカー公式（Martin／Robe／Claypaky／イースペック／Rosco）の同日閲覧。
+  この文書は判断用で、実装はまだ行っていません。</p>
+</div>
+
+</div>
+</body>
+</html>

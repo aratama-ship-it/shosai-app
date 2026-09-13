@@ -709,7 +709,7 @@
           else if (g.kind === "loop" && g.plane === "horizontal") strokeLoop(pctx, P, g);
           pctx.restore(); }
         if (l.surface === "floor" || l.surface === "air") {
-          if (showOn("beam")) { const r = drawBeam(pctx, s, tp, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv); litSpots.push({ fromX: s.X, fromY: s.Y, toX: tp.X, toY: tp.Y, r, lv }); }
+          if (showOn("beam")) { const r = drawBeam(pctx, s, tp, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv, l); litSpots.push({ fromX: s.X, fromY: s.Y, toX: tp.X, toY: tp.Y, r, lv }); }
           if (l.surface === "air") {
             // 空中の狙い点は床に落ちない。真上から見ると高さが読めないので、印＋高さ＋床への破線を出す
             pctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.7); pctx.lineWidth = 3; pctx.beginPath();
@@ -717,7 +717,7 @@
             pctx.beginPath(); pctx.arc(tp.X, tp.Y, 22, 0, Math.PI * 2); pctx.stroke();
             if (!dim) { pctx.fillStyle = hexA(l.color, 0.9); pctx.font = "17px sans-serif"; pctx.textBaseline = "bottom"; pctx.fillText(`空中 ${T.z.toFixed(1)}m`, tp.X + 26, tp.Y - 8); }
           } // 床の輪は drawBeam が広がりから描く
-        } else if (showOn("beam")) { const r = drawBeam(pctx, s, { X: s.X, Y: B.y }, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv); litSpots.push({ fromX: s.X, fromY: s.Y, toX: s.X, toY: B.y, r, lv }); }
+        } else if (showOn("beam")) { const r = drawBeam(pctx, s, { X: s.X, Y: B.y }, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv, l); litSpots.push({ fromX: s.X, fromY: s.Y, toX: s.X, toY: B.y, r, lv }); }
         // ハンドル（選択灯のみ・床と空中は平面図で位置を動かす）
         if (sel && l.surface !== "back") drawHandles(pctx, P, l, f.id);
       });
@@ -896,7 +896,7 @@
     side: { floor: [1, 0.16], back: [0.14, 1], air: [1, 1] },
   };
   const squashFor = (view, surface) => (SPOT_SQUASH[view] || SPOT_SQUASH.plan)[surface] || [1, 1];
-  function drawBeam(ctx, from, to, world, color, deg, dim, pxPerM, squash, asLine, noPool, lv) {
+  function drawBeam(ctx, from, to, world, color, deg, dim, pxPerM, squash, asLine, noPool, lv, gobo) {
     const rM = E.spotRadiusM(world.S, world.T, deg), rPx = Math.max(rM * pxPerM, 3);
     const [sx, sy] = squash || [1, 1];
     const halfW = Math.max(rPx * sx * BEAM_SOFT, 3);
@@ -939,6 +939,7 @@
     pool.addColorStop(1, hexA(color, 0));
     ctx.translate(to.X, to.Y); ctx.scale(1, ry / halfW);
     ctx.fillStyle = pool; ctx.beginPath(); ctx.arc(0, 0, halfW, 0, Math.PI * 2); ctx.fill();
+    if (gobo) paintGobo(ctx, gobo, halfW, state.play.t);
     ctx.restore();
     return rPx;
   }
@@ -982,6 +983,63 @@
       mctx.fillStyle = grad; mctx.beginPath(); mctx.arc(sp.toX, sp.toY, r, 0, Math.PI * 2); mctx.fill();
     });
     ctx.save(); ctx.globalCompositeOperation = "source-over"; ctx.drawImage(mc, 0, 0); ctx.restore();
+  }
+
+  /* 選ぶボタンに出す小さな見本。描画に使うのと同じ形（GOBOS の shapes）から作るので、
+     一覧の見た目と実際に出る模様が必ず一致する。 */
+  function goboThumb(g) {
+    const parts = g.shapes.map((sp) => {
+      const k = sp[0], P = (v) => (v * 100).toFixed(1);
+      if (k === "poly") return `<polygon points="${sp[1].map(([u, v]) => `${P(u)},${P(v)}`).join(" ")}"/>`;
+      if (k === "circle") return `<circle cx="${P(sp[1])}" cy="${P(sp[2])}" r="${P(sp[3])}"/>`;
+      if (k === "rect") return `<rect x="${P(sp[1])}" y="${P(sp[2])}" width="${P(sp[3])}" height="${P(sp[4])}"/>`;
+      if (k === "ellipse") return `<ellipse cx="${P(sp[1])}" cy="${P(sp[2])}" rx="${P(sp[3])}" ry="${P(sp[4])}" transform="rotate(${E.finite(sp[5], 0)} ${P(sp[1])} ${P(sp[2])})"/>`;
+      if (k === "ring") { const r = sp[1] * 100, w = sp[2] * 100;
+        return `<circle cx="50" cy="50" r="${(r + w / 2).toFixed(1)}" fill="none" stroke="currentColor" stroke-width="${w.toFixed(1)}"/>`; }
+      if (k === "spoke") { const c = sp[1], hw = sp[2] * 100, len = sp[3] * 100;
+        return Array.from({ length: c }, (_, i) => { const a = (i / c) * 360;
+          return `<rect x="50" y="${(50 - hw).toFixed(1)}" width="${len.toFixed(1)}" height="${(hw * 2).toFixed(1)}" transform="rotate(${a} 50 50)"/>`; }).join(""); }
+      return "";
+    }).join("");
+    return `<svg viewBox="0 0 100 100" aria-hidden="true"><g fill="currentColor">${parts}</g></svg>`;
+  }
+
+  /* ゴボ（模様）を光だまりの中へ重ねる。
+     2026-09-13 本人決定「案B」。実機の絵柄は写せないので、分類名で自前に描いた形（rig-engine の GOBOS）を使う。
+     やり方は「光だまりをいったん描いたあと、模様の<b>影になるところ</b>を destination-out で抜く」。
+     光そのものを塗り直すのではなく穴を開けるので、色・強さ・広がりの計算に手を入れずに済む。
+     ctx は呼び手側で to.X/to.Y へ移動し、床の潰れ（ry/halfW）も掛けた状態で渡す。 */
+  function paintGobo(ctx, light, radius, tMs) {
+    const g = light && light.gobo && light.gobo !== "none" ? E.goboById(light.gobo) : null;
+    if (!g || !g.shapes.length || radius < 6) return;
+    const ang = (E.goboAngleAt(light, tMs) * Math.PI) / 180;
+    ctx.save();
+    ctx.rotate(ang);
+    ctx.globalCompositeOperation = "destination-out";
+    /* 抜く濃さ。1.0にすると模様の外が完全に消えて「光が無い」ように見えるので、
+       芯が残る程度に留める（実測で0.72が、模様は読めるが光の存在も残る境目）。 */
+    ctx.fillStyle = "rgba(0,0,0,0.72)"; ctx.strokeStyle = "rgba(0,0,0,0.72)";
+    // 模様の座標は 0〜1。中心を原点にして半径ぶんへ伸ばす
+    const X = (u) => (u - 0.5) * radius * 2, Y = (v) => (v - 0.5) * radius * 2, R = (r) => r * radius * 2;
+    /* 光が通るところ＝shapes。抜きたいのは<b>その外側</b>なので、
+       いったん全面を抜いてから、shapes を source-over で戻す……のではなく、
+       「偶奇の塗り分け」で外周と模様を1つのパスにして一度に抜く。 */
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);      // 外周（抜く側）
+    g.shapes.forEach((sp) => {
+      const k = sp[0];
+      if (k === "poly") { sp[1].forEach(([u, v], i) => { const x = X(u), y = Y(v); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); }
+      else if (k === "circle") { ctx.moveTo(X(sp[1]) + R(sp[3]), Y(sp[2])); ctx.arc(X(sp[1]), Y(sp[2]), R(sp[3]), 0, Math.PI * 2); }
+      else if (k === "rect") { const x = X(sp[1]), y = Y(sp[2]), w = R(sp[3]), h = R(sp[4]); ctx.moveTo(x, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + h); ctx.lineTo(x, y + h); ctx.closePath(); }
+      else if (k === "ellipse") { ctx.moveTo(X(sp[1]) + R(sp[3]), Y(sp[2])); ctx.ellipse(X(sp[1]), Y(sp[2]), R(sp[3]), R(sp[4]), (E.finite(sp[5], 0) * Math.PI) / 180, 0, Math.PI * 2); }
+      else if (k === "ring") { const rr = R(sp[1]), w = R(sp[2]); ctx.moveTo(rr + w, 0); ctx.arc(0, 0, rr + w, 0, Math.PI * 2); ctx.moveTo(rr, 0); ctx.arc(0, 0, rr, 0, Math.PI * 2, true); }
+      else if (k === "spoke") { const cnt = sp[1], hw = R(sp[2]), len = R(sp[3]);
+        for (let i = 0; i < cnt; i++) { const a = (i / cnt) * Math.PI * 2;
+          const dx = Math.cos(a), dy = Math.sin(a), nx = -dy * hw, ny = dx * hw;
+          ctx.moveTo(nx, ny); ctx.lineTo(dx * len + nx, dy * len + ny); ctx.lineTo(dx * len - nx, dy * len - ny); ctx.lineTo(-nx, -ny); ctx.closePath(); } }
+    });
+    ctx.fill("evenodd");
+    ctx.restore();
   }
 
   // 円・8の字の下書きは、エンジンが返す点の並びを線でつなぐだけ（傾きも8の字もこれで描ける）
@@ -1045,7 +1103,7 @@
     const litSpotsF = [];   // 作業灯を消す（ブラックアウト）用
     if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; const lv = litFactorOf(f, l); const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
       if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
-        const r = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface, lv);
+        const r = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface, lv, l);
         litSpotsF.push({ fromX: s.X, fromY: s.Y, toX: e2.X, toY: e2.Y, r, lv }); }
       if (l.surface === "air") { const floorY = B.y + B.h; fctx.save(); fctx.setLineDash([5, 6]); fctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.45); fctx.lineWidth = 2; fctx.beginPath(); fctx.moveTo(tp.X, tp.Y); fctx.lineTo(tp.X, floorY); fctx.stroke(); fctx.restore();
         fctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.8); fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(tp.X - 12, tp.Y - 12); fctx.lineTo(tp.X + 12, tp.Y + 12); fctx.moveTo(tp.X + 12, tp.Y - 12); fctx.lineTo(tp.X - 12, tp.Y + 12); fctx.stroke(); fctx.beginPath(); fctx.arc(tp.X, tp.Y, 16, 0, Math.PI * 2); fctx.stroke();
@@ -1087,7 +1145,7 @@
     const litSpotsSide = [];   // 作業灯を消す（ブラックアウト）用
     if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; const lv = litFactorOf(f, l); const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s0 = P(S), tp = P(T); const mine = f.mount.type === "side" && f.mount.side === side; const air = l.surface === "air"; const dim = !(mine || (air && isSel(f.id))) || (state.sel.size && !isSel(f.id));
       if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
-        const r = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.D, squashFor("side", be.surface || "air"), false, !be.surface, lv);
+        const r = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.D, squashFor("side", be.surface || "air"), false, !be.surface, lv, l);
         litSpotsSide.push({ fromX: s0.X, fromY: s0.Y, toX: e2.X, toY: e2.Y, r, lv }); }
       if (air) {
         fctx.save(); fctx.setLineDash([5, 6]); fctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.45); fctx.lineWidth = 2; fctx.beginPath(); fctx.moveTo(tp.X, tp.Y); fctx.lineTo(tp.X, B.y + B.h); fctx.stroke(); fctx.restore();
@@ -1165,7 +1223,7 @@
         const sq = be.surface === "floor"
           ? [1, Math.min(1, ((L.bottomY - L.floorY) / d.D) / (L.pxPerM * Math.max(0.05, e2.scale || 1)))]
           : squashFor("front", be.surface || "air");
-        const r = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface, lv);
+        const r = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface, lv, l);
         litSpots3D.push({ fromX: s0.X, fromY: s0.Y, toX: e2.X, toY: e2.Y, r, lv });
       }
       if (showOn("path")) { const g = E.pathGuide(l, d);
@@ -1835,7 +1893,31 @@
       }
     }
 
-    /* ⑤ 動かす（ムービングを選んでいるときだけ）。単灯と同じ考え方——入れると②③④に始点と終点ができ、
+    // ⑤ 模様（ゴボ）。選んだ灯すべてへ同じ模様を入れる
+    {
+      const b = sub("模様（ゴボ）");
+      const set = new Set(lit.map((fid) => (lightOf(fid) || {}).gobo || "none"));
+      const cur = set.size === 1 ? [...set][0] : "";
+      if (set.size > 1) b.append(el("p", "hint", "いまバラバラです。押すと全灯そろいます。"));
+      const pick = document.createElement("div"); pick.className = "gobos";
+      E.GOBOS.forEach((g) => {
+        const gb = document.createElement("button"); gb.type = "button"; gb.className = "gobo" + (g.id === "none" ? " none" : "");
+        gb.setAttribute("aria-pressed", String(cur === g.id));
+        gb.title = g.note ? `${g.name}｜${g.note}` : g.name;
+        gb.innerHTML = g.id === "none" ? '<span class="gx">なし</span>' : goboThumb(g);
+        gb.onclick = () => { bulkEach(ids, (f, l, i, fid) => setLight(fid, { gobo: g.id })); commit(`${ids.length}灯の模様を変えました`); };
+        pick.append(gb);
+      });
+      b.append(pick);
+      if (cur && cur !== "none") {
+        const spins = new Set(lit.map((fid) => Math.round(E.clamp(E.finite((lightOf(fid) || {}).goboSpin, 0), -100, 100))));
+        const same = spins.size <= 1, now = same && spins.size === 1 ? [...spins][0] : 0;
+        b.append(field(same ? "回す" : "回す（バラバラ）", range(-100, 100, 5, now, (v) => (Math.abs(v) < 3 ? "止める" : `${v > 0 ? "時計回り" : "反時計回り"}　1周${(360 / (Math.abs(v) * 0.36)).toFixed(1)}秒`),
+          (v) => { bulkEach(ids, (f, l) => { l.goboSpin = v; }); draw(); }, () => commit(`${ids.length}灯の模様の回し方を変えました`)), true));
+      }
+    }
+
+    /* ⑥ 動かす（ムービングを選んでいるときだけ）。単灯と同じ考え方——入れると②③④に始点と終点ができ、
        ここで運び方（時間・ずらす刻み）をまとめて決める。全灯そろって動いているときだけスイッチがオン。 */
     if (movers.length) {
       const b = sub(null);
@@ -2107,7 +2189,36 @@
         }
       }
 
-      /* ⑤ 動かす（ムービングのみ）。入れると②③④に始点と終点ができる。
+      /* ⑤ 模様（ゴボ）。光に載せる形。2026-09-13 本人決定「案B」で、実機の絵柄ではなく
+         舞台照明の分類名で自前に描いたものを持つ（rig-engine の GOBOS）。
+         回す前提のもの（rot）と回さない前提のもの（stat）を分けて並べる——実機のホイールと同じ考え方。 */
+      {
+        const b = box("模様（ゴボ）");
+        const cur = l.gobo || "none";
+        const pick = document.createElement("div"); pick.className = "gobos";
+        E.GOBOS.forEach((g) => {
+          const gb = document.createElement("button"); gb.type = "button"; gb.className = "gobo" + (g.id === "none" ? " none" : "");
+          gb.setAttribute("aria-pressed", String(cur === g.id));
+          gb.title = g.note ? `${g.name}｜${g.note}` : g.name;
+          gb.innerHTML = g.id === "none" ? '<span class="gx">なし</span>' : goboThumb(g);
+          gb.onclick = () => { setLight(fid, { gobo: g.id }); commit(); };
+          pick.append(gb);
+        });
+        b.append(pick);
+        if (cur !== "none") {
+          const g = E.goboById(cur);
+          b.append(el("p", "hint", `${g.name}　${g.note || ""}`));
+          const spin = E.clamp(E.finite(l.goboSpin, 0), -100, 100);
+          b.append(field("回す", range(-100, 100, 5, spin, (v) => (Math.abs(v) < 3 ? "止める" : `${v > 0 ? "時計回り" : "反時計回り"}　1周${(360 / (Math.abs(v) * 0.36)).toFixed(1)}秒`),
+            (v) => { l.goboSpin = v; draw(); }, () => commit()), true));
+          if (Math.abs(spin) < 3) {
+            b.append(field("向き", range(0, 360, 5, E.clamp(E.finite(l.goboAngle, 0), 0, 360), (v) => `${Math.round(v)}°`,
+              (v) => { l.goboAngle = v; draw(); }, () => commit()), true));
+          }
+        }
+      }
+
+      /* ⑥ 動かす（ムービングのみ）。入れると②③④に始点と終点ができる。
          運び方（時間・切り返し・向き・遅れ）はここで一括に決める（2026-09-13 本人要望）。 */
       if (mover) {
         const b = box(null);

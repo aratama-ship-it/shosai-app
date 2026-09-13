@@ -110,6 +110,9 @@
    *   level: 0..100,                   // 強さ（調光）。0は消灯と同じ扱い（2026-09-13 本人決定）。
    *   levelTo: 0..100 | 省略,          // 動きの中で強さを変えるときの「終わり」の値（ムービングのみ）。
    *   beamDegTo: 4..70 | 省略,         // 同じく「終わり」の広がり（ズーム）。始めは level / beamDeg。
+   *   gobo: "none"|GOBOSのid,          // 光に載せる模様（ゴボ）。既定は "none"
+   *   goboSpin: -100..100,             // 模様を回す速さと向き（0=止める、負=反時計回り）
+   *   goboAngle: 0..360,               // 止めているときの角度（度）
    *                                    // 位置の往復と同じ位相で 始め→終わり→始め と往復する（2026-09-13 本人要望）。
    *                                    // 目盛りそのものはリニア。見える明るさへの効き方（カーブ）は
    *                                    // アプリ全体で1つの設定として app.js 側が持つ。
@@ -414,6 +417,64 @@
   const isLit = (light) => Boolean(light) && light.on === true
     && Math.max(levelOf(light), light.levelTo == null ? 0 : clamp(finite(light.levelTo, 0), 0, 100)) > 0;
 
+  /* ---------- ゴボ（模様） ----------
+     2026-09-13 本人決定「案B」。実機に内蔵されている絵柄そのものは写せない（各社のデザイン＝著作物）ので、
+     舞台照明で通っている<b>分類名</b>で自前の絵柄を持つ。分類の出典は Rosco のカタログ区分
+     （Breakups／Foliage／Windows, Doors & Blinds／Abstract ほか。2026-09-13 閲覧）。
+     枚数は調べた4機種（回転7〜9・固定10〜18: MAC Encore Two / MegaPointe / Sharpy Plus /
+     PLUTO600 PROFILE MK2）の中央あたりに合わせ、回す前提のものを rot、回さないものを stat とした。
+     絵柄は「丸い窓の中の、光が通るところ」を 0〜1 の座標で持つ。描く側はこれを拡大して使う。 */
+  const GOBOS = [
+    { id: "none", name: "なし", kind: "none", shapes: [] },
+    /* 回す前提（回転ゴボ相当）8種 */
+    { id: "break-coarse", name: "ブレイクアップ（粗）", kind: "rot", note: "光を大きく割る。質感の基本",
+      shapes: [["poly", [[.12,.18],[.38,.10],[.44,.34],[.18,.42]]], ["poly", [[.52,.14],[.84,.22],[.76,.46],[.48,.38]]],
+               ["poly", [[.08,.52],[.34,.48],[.40,.78],[.14,.86]]], ["poly", [[.50,.56],[.82,.52],[.88,.82],[.56,.88]]]] },
+    { id: "break-mid", name: "ブレイクアップ（中）", kind: "rot", note: "中くらいの崩し。いちばん使いやすい",
+      shapes: [["poly", [[.16,.14],[.40,.18],[.34,.40],[.12,.34]]], ["poly", [[.56,.10],[.82,.16],[.86,.38],[.60,.34]]],
+               ["poly", [[.10,.56],[.36,.54],[.40,.78],[.14,.82]]], ["poly", [[.54,.60],[.84,.58],[.80,.84],[.52,.86]]],
+               ["poly", [[.40,.42],[.58,.44],[.54,.58],[.38,.56]]]] },
+    { id: "break-fine", name: "ブレイクアップ（細）", kind: "rot", note: "ざらついた質感。床に敷く",
+      shapes: [["circle", .20,.22,.09], ["circle", .46,.14,.06], ["circle", .72,.26,.10], ["circle", .30,.50,.07],
+               ["circle", .58,.46,.05], ["circle", .84,.56,.07], ["circle", .16,.76,.08], ["circle", .44,.82,.06],
+               ["circle", .70,.78,.09]] },
+    { id: "foliage", name: "フォリッジ（木漏れ日）", kind: "rot", note: "屋外・森。場所を決める",
+      shapes: [["ellipse", .24,.20,.13,.08,-24], ["ellipse", .58,.16,.10,.06,18], ["ellipse", .80,.34,.12,.07,-12],
+               ["ellipse", .36,.48,.09,.06,32], ["ellipse", .66,.60,.13,.08,-30], ["ellipse", .20,.72,.11,.07,14],
+               ["ellipse", .48,.84,.10,.06,-20]] },
+    { id: "leaves", name: "葉", kind: "rot", note: "葉の形をはっきり出す",
+      shapes: [["ellipse", .30,.26,.16,.07,-35], ["ellipse", .66,.30,.15,.06,30], ["ellipse", .24,.60,.14,.06,25],
+               ["ellipse", .62,.66,.16,.07,-28], ["ellipse", .46,.46,.12,.05,10]] },
+    { id: "radial", name: "放射", kind: "rot", note: "回すと強い。ライブ向き",
+      shapes: [["spoke", 8, .06, .48]] },
+    { id: "rings", name: "同心円", kind: "rot", note: "波紋・水面。ゆっくり回す",
+      shapes: [["ring", .12, .05], ["ring", .26, .05], ["ring", .40, .05]] },
+    { id: "dots", name: "ドット", kind: "rot", note: "抽象。等間隔の点",
+      shapes: [["circle", .22,.22,.07], ["circle", .50,.22,.07], ["circle", .78,.22,.07],
+               ["circle", .22,.50,.07], ["circle", .50,.50,.07], ["circle", .78,.50,.07],
+               ["circle", .22,.78,.07], ["circle", .50,.78,.07], ["circle", .78,.78,.07]] },
+    /* 回さない前提（固定ゴボ相当）4種 */
+    { id: "window", name: "格子窓", kind: "stat", note: "室内。差し込む方向が出る",
+      shapes: [["rect", .14,.14,.30,.30], ["rect", .56,.14,.30,.30], ["rect", .14,.56,.30,.30], ["rect", .56,.56,.30,.30]] },
+    { id: "slit-v", name: "縦スリット", kind: "stat", note: "牢・ブラインド。切り取る",
+      shapes: [["rect", .10,.04,.09,.92], ["rect", .29,.04,.09,.92], ["rect", .48,.04,.09,.92],
+               ["rect", .67,.04,.09,.92], ["rect", .86,.04,.09,.92]] },
+    { id: "slit-h", name: "横スリット", kind: "stat", note: "ブラインド越しの光",
+      shapes: [["rect", .04,.10,.92,.09], ["rect", .04,.29,.92,.09], ["rect", .04,.48,.92,.09],
+               ["rect", .04,.67,.92,.09], ["rect", .04,.86,.92,.09]] },
+    { id: "triangle", name: "三角の抜き", kind: "stat", note: "図形。鋭さを出す",
+      shapes: [["poly", [[.50,.10],[.88,.80],[.12,.80]]]] },
+  ];
+  const goboById = (id) => GOBOS.find((g) => g.id === id) || GOBOS[0];
+  /* いまの模様の回転角（度）。回す速さ goboSpin が0なら goboAngle で止まる。
+     回すときは経過時間に比例させる（100で毎秒36度＝10秒で1周）。 */
+  const goboAngleAt = (light, tMs) => {
+    if (!light) return 0;
+    const spin = clamp(finite(light.goboSpin, 0), -100, 100);
+    if (!spin) return clamp(finite(light.goboAngle, 0), 0, 360);
+    return (finite(light.goboAngle, 0) + (finite(tMs, 0) / 1000) * spin * 0.36) % 360;
+  };
+
   const describeCue = (light, fixture) => {
     if (!light || light.on === null || light.on === undefined) return "未設定";
     if (light.on === false) return "消灯";
@@ -422,6 +483,8 @@
     const strength = lvTo != null && Math.round(lvTo) !== Math.round(lv)
       ? `強さ${Math.round(lv)}%→${Math.round(lvTo)}%で`
       : (lv >= 100 ? "" : `強さ${Math.round(lv)}%で`);
+    const gb = light.gobo && light.gobo !== "none" ? goboById(light.gobo) : null;
+    const goboText = gb ? `。模様は「${gb.name}」${clamp(finite(light.goboSpin, 0), -100, 100) ? "（回す）" : ""}` : "";
     // ムービングが動きの中でズームするときだけ、広がりの変化を添える
     const zoom = fixture && isMoving(fixture) && light.beamDegTo != null
       && Math.round(light.beamDegTo) !== Math.round(beamDegOf(fixture, light))
@@ -431,10 +494,10 @@
     const path = light.path || {};
     if (path.kind === "line") {
       const diag = Math.abs((path.a.hM || 0) - (path.b.hM || 0)) > 0.15 ? "（斜めの軌道）" : "";
-      return `${strength}${face}の${posWord(path.a)}〜${posWord(path.b)}を往復${diag}（${sp}）。${path.start === "b" ? posWord(path.b) : posWord(path.a)}から開始${zoom}`;
+      return `${strength}${face}の${posWord(path.a)}〜${posWord(path.b)}を往復${diag}（${sp}）。${path.start === "b" ? posWord(path.b) : posWord(path.a)}から開始${zoom}${goboText}`;
     }
-    if (path.kind === "circle") return `${strength}${face}の${posWord(path.c)}を中心に半径約${Math.round(path.r * 10) / 10}mで${PLANE_LABEL[path.plane] || "水平の円"}・${path.dir === "ccw" ? "反時計回り" : "時計回り"}（${sp}）${zoom}`;
-    return `${strength}${face}の${posWord(path.a || newPoint())}を静止で当てる${zoom}`;
+    if (path.kind === "circle") return `${strength}${face}の${posWord(path.c)}を中心に半径約${Math.round(path.r * 10) / 10}mで${PLANE_LABEL[path.plane] || "水平の円"}・${path.dir === "ccw" ? "反時計回り" : "時計回り"}（${sp}）${zoom}${goboText}`;
+    return `${strength}${face}の${posWord(path.a || newPoint())}を静止で当てる${zoom}${goboText}`;
   };
 
   /* 下手⇄上手のコピー（配置のみ。2026-09-11 本人回答＝初回は配置だけでよい）。
@@ -487,7 +550,7 @@
     DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
     clamp, finite,
     newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, beamLanding, trussById, trussRow, fixtureWorld,
-    newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, paramPhase, mountSpot, constrainPointToSurface, periodMs, groupEffect,
+    newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, paramPhase, mountSpot, GOBOS, goboById, goboAngleAt, constrainPointToSurface, periodMs, groupEffect,
     pointWorld, planeVec, circleOffset, eightOffset, targetAt, pathGuide, mirrorMount,
     FRONT_SEATS, frontPerspSetup, makeFrontPerspProjector, frontPerspToUH,
     makePlanProjector, makeFrontProjector, makeSideProjector, planToUV, frontToUH, sideToVH,
