@@ -164,6 +164,14 @@
      文字は2文字（再生／停止）で幅が変わらないが、字形差でにじり寄らないよう幅を固定する。 */
   .transport .btn.small{min-width:4.6em;text-align:center}
   .transport .btn.small.playing{color:var(--milk);background:rgba(168,75,38,.28);border-color:var(--rust)}
+  /* コピー／ペーストは再生より一段控えめ（再生が主操作）。幅は「ペースト」に合わせて固定し、
+     使える・使えないで列が動かないようにする（2026-09-14）。 */
+  .transport .btn.small.xfer{min-width:5.4em;color:var(--milk-dim)}
+  .transport .btn.small.xfer:not([disabled]){color:var(--milk)}
+  .transport .btn.small.xfer[disabled]{opacity:.42;cursor:default;border-color:var(--line-dark)}
+  .transport .btn.small.xfer[disabled]:hover{border-color:var(--line-dark)}
+  /* ペースト直後の合図。色だけに頼らず、文字も「入れました」に一瞬変える（JS側） */
+  .transport .btn.small.xfer.done{color:var(--milk);border-color:var(--brass)}
   .canvases{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
   canvas{display:block;width:100%;background:#0d0e10;border:1px solid var(--line-dark);cursor:crosshair;touch-action:none}
   /* T字配置: 上段＝下手｜平面図｜上手、下段＝図に出すもの｜正面図｜凡例 */
@@ -457,6 +465,24 @@
   .swatches button.custom{box-shadow:inset 0 0 0 2px rgba(13,12,11,.55),inset 0 0 0 3px rgba(240,231,214,.5)}
   /* 色を作る。ブラウザの色見本をそのまま開く */
   .swatches .mkcolor{width:22px;height:22px;padding:0;border:1px dashed var(--brass);background:var(--recess);cursor:pointer}
+  /* 色見本の並びの最後に置く「グラデーション」の入口（2026-09-14 本人要望）。
+     見本と同じ22pxの高さの枠にして、色の列の一部に見えるようにする。 */
+  /* width は .swatches button の 22px、min-height は .btn の 34px を打ち消す必要がある */
+  .swatches .gradbtn{width:auto;height:22px;min-height:22px;padding:0 7px;
+    border:1px solid var(--brass);background:var(--recess);
+    color:var(--milk);font-size:10.5px;line-height:1;letter-spacing:.04em;cursor:pointer;white-space:nowrap}
+  .swatches .gradbtn:hover{background:rgba(156,130,63,.18)}
+  /* グラデーションのポップアップ */
+  .gradslots{display:flex;gap:10px;margin:12px 0 6px}
+  .gradslot{flex:1 1 0;display:flex;align-items:center;gap:8px;padding:7px 9px;
+    border:1px solid var(--line-dark);background:var(--recess);cursor:pointer;text-align:left}
+  .gradslot[aria-pressed="true"]{border-color:var(--brass);background:rgba(156,130,63,.14)}
+  .gradslot .chip{width:26px;height:18px;flex:0 0 auto;border:1px solid var(--line-dark)}
+  .gradslot .chip.empty{background:repeating-linear-gradient(45deg,#2a241c 0 4px,#1a1611 4px 8px)}
+  .gradslot b{font-size:11.5px;font-weight:600;color:var(--milk);display:block}
+  .gradslot span{font-size:10.5px;color:var(--milk-dim)}
+  .gradprev{display:flex;gap:2px;margin:10px 0 2px;min-height:20px}
+  .gradprev i{flex:1 1 0;height:20px;border:1px solid rgba(0,0,0,.35)}
   .swatches .mkcolor::-webkit-color-swatch-wrapper{padding:2px}
   .swatches .mkcolor::-webkit-color-swatch{border:none;border-radius:1px}
   .note{color:var(--milk-dim);font-size:11.5px;line-height:1.6;margin:0}
@@ -644,7 +670,11 @@
                 <!-- 2026-09-14 本人要望: 最初へ／停止／秒数／再生中の表示をやめ、再生と停止の
                      トグル1個だけにした。文字は「押すと何が起きるか」を出す（停止中＝再生、
                      再生中＝停止）。時刻の頭出しは場面を選び直したときに内部で行う（home()）。 -->
+                <!-- 2026-09-14 本人要望: 再生の左隣にコピー／ペースト。
+                     同じ種類の灯体どうし（ムービング↔ムービング／固定↔固定／cyc↔cyc）だけ通す。 -->
                 <span class="transport" id="transport" hidden>
+                  <button type="button" class="btn small xfer" id="t-copy" disabled>コピー</button>
+                  <button type="button" class="btn small xfer" id="t-paste" disabled>ペースト</button>
                   <button type="button" class="btn small" id="t-play">再生</button>
                 </span>
                 <button type="button" class="ontoggle" id="lighttoggle" hidden aria-pressed="false"><span class="sw"></span><b>オフ</b></button>
@@ -713,14 +743,16 @@
       <label class="vrow"><span>高さ</span><input type="range" id="dimH" min="4" max="16" step="1" value="8"><span class="val" id="dimHv">8m</span></label>
       <p class="note">4つの図と1mの線は、この寸法に合わせて描き直します。</p>
     </div>
-    <p class="foot">選択 <b>クリック</b>　複数 <b>Shift</b>　解除 <b>Esc</b>　再生 <b>Space</b>　／　灯体の位置と動きを伝えるための案です。機種・回路・DMX・照度・設置の安全性は示しません。</p>
+    <p class="foot">選択 <b>クリック</b>　複数 <b>Shift</b>　解除 <b>Esc</b>　再生 <b>Space</b>　設定をコピー <b>⌘C</b>　貼る <b>⌘P</b>　狙い点を縦横だけに動かす <b>Shift+ドラッグ</b>　／　灯体の位置と動きを伝えるための案です。機種・回路・DMX・照度・設置の安全性は示しません。</p>
   </div>
   <div class="dialog" id="dialog" hidden></div>
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789318966"></script>
-<script src="stage-figure.js?v=1789318966"></script>
-<script src="app.js?v=1789318966"></script>
+<script src="rig-engine.js?v=1789323922"></script>
+<script src="stage-figure.js?v=1789323922"></script>
+<script src="app.js?v=1789323922"></script>
+<script src="light-presets.js?v=1789323922"></script>
+<script src="light-presets-ui.js?v=1789323922"></script>
 </body>
 </html>

@@ -94,6 +94,7 @@
     return list;
   }
   const state = {
+    clip: null,                        // 設定のコピー元。{ kind, from, light, fixture }（2026-09-14）。undo の対象にしない
     mode: "move",                      // "place" | "move"。既定は照明デザイン（2026-09-13 本人指定。こちらを使う頻度が高い）
     dims: { W: 12, D: 8, H: 8 },       // 舞台の幅・奥行き・高さ（m）。右の「舞台の大きさ」で変えられる
     rig: { trusses: [], fixtures: [] },
@@ -726,6 +727,94 @@
     b.textContent = state.play.on ? "停止" : "再生";
     b.title = state.play.on ? "動きを止める（Space）" : "動きを再生する（Space）";
     b.classList.toggle("playing", state.play.on);
+    renderXfer();
+  }
+
+  /* ---------- 設定のコピー＆ペースト（2026-09-14 本人要望） ----------
+     「同じ種類の灯体どうし」だけ通す。種類は kindKey で決める:
+       moving（ムービング）／fixed（固定）／cyc（ホリゾント）。
+     cyc を別扱いにするのは、位置が中央固定で持ち物（長さ・届く高さ）が他と違うため。
+     コピーするのは<b>そのシーンの設定一式</b>（色・強さ・当てる場所・狙い点と動き・広がり・
+     ゴボ・ストロボ・カッター）＋固定灯だけ仕込み側の広がりとバーンドア。
+     コピーしないもの: 取り付け位置・番号・名前（＝どの灯かを決めるもの）と groupId
+     （組は他の灯との関係なので、持ち込むと無関係な灯が同じ組に入ってしまう）。 */
+  const kindKey = (f) => (!f ? null : f.mount && f.mount.type === "cyc" ? "cyc" : E.isMoving(f) ? "moving" : "fixed");
+  const KIND_NAME = { moving: "ムービング", fixed: "固定", cyc: "ホリゾント" };
+  const clone = (v) => (v == null ? v : JSON.parse(JSON.stringify(v)));
+
+  function copySettings() {
+    const ids = [...state.sel];
+    if (ids.length !== 1) { toast("コピーは灯体を1つだけ選んでください"); return; }
+    const fid = ids[0], f = fixtureById(fid); if (!f) return;
+    const l = lightOf(fid);
+    if (!l) { toast(`${label(fid)}にはまだ設定がありません`); return; }
+    const { groupId, ...rest } = l;   // 組は持ち込まない
+    state.clip = {
+      kind: kindKey(f), from: label(fid), light: clone(rest),
+      fixture: { beamDeg: f.beamDeg, barn: clone(f.barn) },
+    };
+    renderXfer();
+    toast(`${label(fid)}の設定をコピーしました`);
+  }
+
+  function pasteSettings() {
+    const clip = state.clip;
+    if (!clip) { toast("先にコピーしてください"); return; }
+    const ids = [...state.sel];
+    if (!ids.length) { toast("貼り付ける灯体を選んでください"); return; }
+    const hit = ids.filter((id) => kindKey(fixtureById(id)) === clip.kind);
+    const skipped = ids.length - hit.length;
+    if (!hit.length) {
+      toast(`種類が違うので貼れません（コピー元は${KIND_NAME[clip.kind] || clip.kind}）`);
+      return;
+    }
+    const c = cue();
+    hit.forEach((fid) => {
+      const f = fixtureById(fid); if (!f) return;
+      /* 差分の重ね合わせ（setLight）ではなく<b>丸ごと置き換える</b>。
+         重ねると、コピー元に無い項目（貼り先だけが持つゴボ等）が残って
+         「同じ設定にしたのに見た目が違う」が起きる。組だけは貼り先のものを残す。 */
+      const keepGroup = (c.lights[fid] || {}).groupId ?? null;
+      c.lights[fid] = { ...clone(clip.light), groupId: keepGroup };
+      if (clip.kind === "fixed") {
+        if (clip.fixture.beamDeg != null) f.beamDeg = clip.fixture.beamDeg;
+        if (clip.fixture.barn) f.barn = clone(clip.fixture.barn);
+      }
+    });
+    state.slLive = "";   // 手で貼った値をサーチライトのつまみに上書きさせない
+    const msg = `${clip.from}の設定を${hit.length}灯へ貼りました`
+      + (skipped ? `（種類が違う${skipped}灯は変えていません）` : "");
+    commit(msg);
+    flashXfer();
+  }
+
+  function xferState() {
+    const ids = [...state.sel];
+    const canCopy = ids.length === 1 && Boolean(fixtureById(ids[0]));
+    const clip = state.clip;
+    const hit = clip ? ids.filter((id) => kindKey(fixtureById(id)) === clip.kind).length : 0;
+    return { canCopy, canPaste: Boolean(clip) && hit > 0, hit, ids, clip };
+  }
+
+  function renderXfer() {
+    const c = $("t-copy"), p = $("t-paste"); if (!c || !p) return;
+    const s = xferState();
+    c.disabled = !s.canCopy;
+    c.title = s.canCopy
+      ? `${label(s.ids[0])}の設定をコピー（⌘C）`
+      : s.ids.length ? "灯体を1つだけ選ぶとコピーできます" : "灯体を選ぶとコピーできます";
+    p.disabled = !s.canPaste;
+    p.title = !s.clip ? "先にコピーしてください（⌘P）"
+      : s.canPaste ? `${s.clip.from}の設定を${s.hit}灯へ貼る（⌘P）`
+      : `コピー元は${KIND_NAME[s.clip.kind] || s.clip.kind}。同じ種類の灯体を選んでください`;
+  }
+
+  /* 貼った直後の合図。トーストは画面の端に出るので、押したボタンの側でも1秒だけ知らせる */
+  function flashXfer() {
+    const p = $("t-paste"); if (!p) return;
+    p.classList.add("done"); p.textContent = "貼りました";
+    clearTimeout(flashXfer._t);
+    flashXfer._t = setTimeout(() => { p.classList.remove("done"); p.textContent = "ペースト"; }, 1000);
   }
 
   /* ---------- 描画: 平面図 ---------- */
@@ -1982,7 +2071,7 @@
     const dg = state.drag;
     if (dg && dg.kind === "fixture") { const f = fixtureById(dg.fid); if (f) { const u = snapU(E.clamp((pt.X - B.x) / B.w, 0, 1)), v = snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)); if (f.mount.type === "cyc") { /* 中央固定。動かさない */ } else if (f.mount.type === "truss") f.mount.u = u; else if (f.mount.type === "floor") { f.mount.u = u; f.mount.v = v; } else f.mount.v = v; dg.moved = true; } }
     else if (dg && dg.kind === "truss") { const t = E.trussById(state.rig, dg.tid); if (t) { t.v = snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)); dg.moved = true; } }
-    else if (dg && dg.kind === "handle") { const uv = E.planToUV(state.dims, B, pt.X, pt.Y); applyHandleDrag(dg, { u: snapU(uv.u), v: snapV(uv.v) }, dg.axis); }
+    else if (dg && dg.kind === "handle") { dg.lock = ev.shiftKey; const uv = E.planToUV(state.dims, B, pt.X, pt.Y); applyHandleDrag(dg, { u: snapU(uv.u), v: snapV(uv.v) }, dg.axis); }
     else if (dg && dg.kind === "marquee") {
       dg.x1 = pt.X; dg.y1 = pt.Y;
       if (!dg.moved && Math.hypot(dg.x1 - dg.x0, dg.y1 - dg.y0) > 4) dg.moved = true;
@@ -2058,9 +2147,29 @@
       return;
     }
     const g0 = dg.g0 || { u: 0, v: 0, hM: 0 };
-    const du = values.u == null ? 0 : values.u - g0.u;
-    const dv = values.v == null ? 0 : values.v - g0.v;
-    const dh = values.hM == null ? 0 : values.hM - g0.hM;
+    let du = values.u == null ? 0 : values.u - g0.u;
+    let dv = values.v == null ? 0 : values.v - g0.v;
+    let dh = values.hM == null ? 0 : values.hM - g0.hM;
+
+    /* Shiftを押している間は、どちらか1軸だけに動かす（2026-09-14 本人要望）。
+       u・v は0〜1の正規化値で、舞台が横長なら同じ数値でも実距離が違う。
+       そのまま比べると狭い側へ寄りやすいので、<b>メートルに直してから</b>大きい方を選ぶ。
+       いちど決めた軸は Shift を離すまで変えない（斜めで軸がちらつくのを防ぐ）。
+       離せばその場から自由に動かせる。しきい値は実距離2cm——押した瞬間の微動で軸が決まらないように。 */
+    if (dg.lock) {
+      const d2 = state.dims;
+      const m = { u: Math.abs(du) * d2.W, v: Math.abs(dv) * d2.D, h: Math.abs(dh) };
+      if (!dg.lockAxis && Math.max(m.u, m.v, m.h) > 0.02) {
+        dg.lockAxis = m.u >= m.v && m.u >= m.h ? "u" : m.v >= m.h ? "v" : "h";
+      }
+      if (dg.lockAxis) {
+        if (dg.lockAxis !== "u") du = 0;
+        if (dg.lockAxis !== "v") dv = 0;
+        if (dg.lockAxis !== "h") dh = 0;
+      }
+    } else if (dg.lockAxis) {
+      dg.lockAxis = null;   // Shiftを離したら固定を解く
+    }
     targets.forEach((h) => {
       const l = lightOf(h.fid); const p = l && l.path; if (!p) return;
       const target = h.handle === "c" ? p.c : (p.kind === "still" ? (p.a = p.a || E.newPoint()) : p[h.handle]);
@@ -2110,6 +2219,7 @@
       if (dg.kind === "trussH") { const t = E.trussById(state.rig, dg.tid); if (t) { t.h = E.clamp(snapH((B.y + B.h - pt.Y) / B.h * state.dims.H), 2, state.dims.H); t.tentative = false; dg.moved = true; } }
       else if (dg.kind === "sideH") { const f = fixtureById(dg.fid); if (f) { f.mount.h = E.clamp(snapH((B.y + B.h - pt.Y) / B.h * state.dims.H), 0.3, state.dims.H); dg.moved = true; } }
       else if (dg.kind === "handle" && dg.axis === "uh") {
+        dg.lock = ev.shiftKey;
         // 3Dのときは擬似パースの逆算。奥行きは動かさないので、いまの点のvを渡す
         const cur = (() => { const l = lightOf(dg.fid); const pth = l && l.path; const t = !pth ? null : dg.handle === "c" ? pth.c : pth[dg.handle] || pth.a; return t ? t.v : 0.5; })();
         const uh = (side === "front" && state.front3d)
@@ -2121,7 +2231,7 @@
         const adj = houseAimFromCut(dg.fid, uh);
         applyHandleDrag(dg, { u: snapU(adj.u), hM: snapH(adj.h) }, "uh");
       }
-      else if (dg.kind === "handle" && dg.axis === "vh") { const vh = E.sideToVH(state.dims, B, side, pt.X, pt.Y); applyHandleDrag(dg, { v: snapV(vh.v), hM: snapH(vh.h) }, "vh"); }
+      else if (dg.kind === "handle" && dg.axis === "vh") { dg.lock = ev.shiftKey; const vh = E.sideToVH(state.dims, B, side, pt.X, pt.Y); applyHandleDrag(dg, { v: snapV(vh.v), hM: snapH(vh.h) }, "vh"); }
       draw(); if (dg.kind !== "handle") renderInspector();
     });
     cv.addEventListener("dblclick", (ev) => { ev.preventDefault(); toggleLightOf(hitFixtureSec(sec, canvasPoint(cv, ev))); });
@@ -2177,6 +2287,14 @@
     /* Space = 再生／停止。再生ボタン自身にフォーカスがあるときは何もしない——
        ボタンの既定の動作（click）が同じトグルを呼ぶので、ここで拾うと2回走る。 */
     if (ev.key === " ") { if (document.activeElement !== $("t-play")) { ev.preventDefault(); togglePlay(); } }
+    /* 設定のコピー＆ペースト（2026-09-14 本人指定で ⌘C / ⌘P。⌘V も慣れで押すので受ける）。
+       ⌘P はブラウザの印刷なので preventDefault が要る。
+       画面の文字を選んでいるときの ⌘C は本来のコピーに譲る。 */
+    if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && !ev.altKey) {
+      const k = ev.key.toLowerCase();
+      if (k === "c" && !String(window.getSelection()).length) { ev.preventDefault(); copySettings(); return; }
+      if (k === "p" || k === "v") { ev.preventDefault(); pasteSettings(); return; }
+    }
     if ((ev.key === "Delete" || ev.key === "Backspace") && state.mode === "place" && state.sel.size) { ev.preventDefault(); removeSelected(); }
     if ((ev.key === "d" || ev.key === "D") && state.mode === "place" && state.sel.size) duplicateSelected();
     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? redo() : undo(); }
@@ -2273,7 +2391,10 @@
 
   /* ---------- 右: 設定欄 ---------- */
   const seg = (opts, cur, onPick, cls) => { const s = document.createElement("div"); s.className = "seg " + (cls || ""); opts.forEach(([v, t, dis]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.setAttribute("aria-pressed", String(v === cur)); b.disabled = Boolean(dis); b.onclick = () => onPick(v); s.append(b); }); return s; };
-  const field = (lab, node, wide) => { const f = document.createElement("div"); f.className = "field" + (wide ? " wide" : ""); const l = document.createElement("span"); l.textContent = lab; f.append(l, node); return f; };
+  /* lab に null / "" を渡すとラベルを出さない（2026-09-14 本人要望。箱の見出しと同じ言葉が
+     二重に出るのをやめるため）。空の <span> を残すと .field の1列目・.field.wide の1行目が
+     空き枠として残るので、要素ごと作らない。 */
+  const field = (lab, node, wide) => { const f = document.createElement("div"); f.className = "field" + (wide ? " wide" : "") + (lab ? "" : " nolabel"); if (lab) { const l = document.createElement("span"); l.textContent = lab; f.append(l); } f.append(node); return f; };
   const btn = (t, fn, cls, title) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = t; if (title) b.title = title; b.onclick = fn; return b; };
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
   /* つまみ。つまんで動かすほかに、隣の欄へ数値を打ち込んでも決められる（2026-09-13 本人要望）。
@@ -2567,6 +2688,63 @@
   }
   const bulkLive = (ids) => ids.filter((fid) => { const l = lightOf(fid); return l && l.on === true; });
 
+  /* ---------- グラデーション（1灯ずつ色をずらす）----------
+     2026-09-14 本人要望で、常時出していた「始めの色／終わりの色」の欄をやめ、
+     色見本の列にある〈グラデーション〉から開くポップアップにした。
+     操作は<b>選んだ順</b>: 1つ目に押した色が【最初の色】、2つ目が【最後の色】。
+     3つ目を押すとまた【最初の色】から入り直す（押し間違えても閉じずに直せる）。
+     枠を直接押せば、どちらへ入れるかを選び直せる。
+     並び順は「選んだ順」なので、そこだけは文章で明示する（下手→上手ではない）。 */
+  function openGradientDialog(lit) {
+    const g = state.slGrad;
+    const pickState = { from: g.from, to: g.to, next: "from" };
+    const chips = [...COLORS, ...state.palette];
+    dialog(
+      `<p class="ptitle">グラデーション</p>
+       <p class="hint">色を2つ、順に押してください。1つ目が【最初の色】、2つ目が【最後の色】になります。
+       あいだの灯には2色を混ぜた色が入ります。<b>並ぶ順は選んだ順</b>で、舞台の下手→上手の位置順ではありません。</p>
+       <div class="gradslots" id="gslots">
+         <button type="button" class="gradslot" data-k="from"><span class="chip" id="gchip-from"></span><span><b>最初の色</b><span>1灯目</span></span></button>
+         <button type="button" class="gradslot" data-k="to"><span class="chip" id="gchip-to"></span><span><b>最後の色</b><span>${lit.length}灯目</span></span></button>
+       </div>
+       <div class="swatches" id="gsw"></div>
+       <p class="kicker" style="margin-top:12px">こうなります（${lit.length}灯）</p>
+       <div class="gradprev" id="gprev"></div>`,
+      [["やめる", null, "quiet"],
+       [`${lit.length}灯へ配る`, () => {
+         g.from = pickState.from; g.to = pickState.to;
+         lit.forEach((fid, i) => { const t = lit.length > 1 ? i / (lit.length - 1) : 0; setLight(fid, { color: lerpColor(g.from, g.to, t) }); });
+         commit(`${lit.length}灯の色をグラデーションにしました`);
+       }, "primary"]]
+    );
+    const sync = () => {
+      ["from", "to"].forEach((k) => {
+        const chip = document.getElementById("gchip-" + k);
+        if (chip) { chip.style.background = pickState[k]; chip.classList.remove("empty"); }
+      });
+      document.querySelectorAll("#gslots .gradslot").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === pickState.next)));
+      const prev = document.getElementById("gprev"); if (!prev) return;
+      prev.innerHTML = "";
+      lit.forEach((_, i) => {
+        const t = lit.length > 1 ? i / (lit.length - 1) : 0;
+        const s = document.createElement("i"); s.style.background = lerpColor(pickState.from, pickState.to, t); prev.append(s);
+      });
+    };
+    const take = (c) => { pickState[pickState.next] = c; pickState.next = pickState.next === "from" ? "to" : "from"; sync(); };
+    const sw = document.getElementById("gsw");
+    chips.forEach((c) => {
+      const b = document.createElement("button"); b.type = "button"; b.style.background = c; b.title = c;
+      b.onclick = () => take(c); sw.append(b);
+    });
+    const pick = document.createElement("input"); pick.type = "color"; pick.className = "mkcolor";
+    pick.value = pickState.next === "from" ? pickState.from : pickState.to;
+    pick.title = "色を作る";
+    pick.onchange = () => take(pick.value);
+    sw.append(pick);
+    document.querySelectorAll("#gslots .gradslot").forEach((b) => { b.onclick = () => { pickState.next = b.dataset.k; sync(); }; });
+    sync();
+  }
+
   function renderBulk(host, ids) {
     if (ids.length < 2) return;
     const sp = state.sl, d = state.dims;
@@ -2638,31 +2816,18 @@
         put(c);
       };
       sw.append(pick);
-      if (cols.size > 1) b.append(el("p", "hint", "いまバラバラです。押すと全灯そろいます。"));
+      /* 1灯ずつ色をずらす（グラデーション）。2026-09-14 本人要望で、色見本の列の最後に置いた
+         〈グラデーション〉からポップアップを開く形にした（始めの色・終わりの色を常時出す欄はやめた）。
+         ポップアップでは<b>選んだ順</b>に【最初の色】【最後の色】へ入る。 */
+      if (lit.length >= 2) sw.append(btn("グラデーション", () => openGradientDialog(lit), "gradbtn", `${lit.length}灯へ色を順に配る`));
       b.append(sw);
-      // 1灯ずつ色をずらす（グラデーション）。選んだ順に始めの色→終わりの色へ按分する（2026-09-12 本人要望）
-      if (lit.length >= 2) {
-        const g = state.slGrad;
-        const mkColorInput = (key, def) => {
-          const inp = document.createElement("input"); inp.type = "color"; inp.className = "mkcolor";
-          inp.value = /^#[0-9a-f]{6}$/i.test(g[key] || "") ? g[key] : def;
-          inp.oninput = () => { g[key] = inp.value; };
-          return inp;
-        };
-        b.append(field("始めの色", mkColorInput("from", "#7ab8ff")));
-        b.append(field("終わりの色", mkColorInput("to", "#ff7a5c")));
-        b.append(btn(`${lit.length}灯へグラデーションで配る`, () => {
-          lit.forEach((fid, i) => { const t = lit.length > 1 ? i / (lit.length - 1) : 0; setLight(fid, { color: lerpColor(g.from, g.to, t) }); });
-          commit(`${lit.length}灯の色をグラデーションにしました`);
-        }, "small primary"));
-      }
     }
 
     // ② 当てる場所（軌道は⑤「位置」へ移した）
     {
       const b = sub("当てる場所");
       const surs = new Set(lit.map((fid) => lightOf(fid).surface || "floor"));
-      b.append(field(surs.size > 1 ? "当てる場所（バラバラ）" : "当てる場所",
+      b.append(field(surs.size > 1 ? "バラバラ" : null,
         seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], surs.size === 1 ? [...surs][0] : null, (v) => {
           bulkEach(ids, (f, l, i, fid) => {
             setLight(fid, { surface: v }); restyleToSurface(fid);
@@ -2692,7 +2857,7 @@
       const lvs = new Set(lit.map((fid) => Math.round(levelOf(lightOf(fid)))));
       const same = lvs.size <= 1;
       const cur = same && lvs.size === 1 ? [...lvs][0] : 100;
-      b.append(field(lvMovers.length ? (same ? "始点" : "始点（バラバラ）") : (same ? "強さ" : "強さ（バラバラ）"),
+      b.append(field(lvMovers.length ? (same ? "始点" : "始点（バラバラ）") : (same ? null : "バラバラ"),
         range(0, 100, 1, cur, fmtLv,
           (v) => { bulkEach(ids, (f, l) => { l.level = v; }); draw(); },
           () => commit(`${ids.length}灯の強さを変えました`)), true));
@@ -2747,7 +2912,7 @@
         bulkEach(ids, (f, l) => { if (E.isMoving(f)) l.beamDeg = v; else f.beamDeg = v; });
         quiet ? draw() : commit();
       };
-      b.append(field(spMovers.length ? (same ? "始点" : "始点（バラバラ）") : (same ? "広がり" : "広がり（バラバラ）"),
+      b.append(field(spMovers.length ? (same ? "始点" : "始点（バラバラ）") : (same ? null : "バラバラ"),
         range(4, 70, 1, now, fmtDeg, (v) => put(v, true), () => put(E.finite(sp.beamDeg, now))), true));
       if (spMovers.length) {
         const tos = new Set(spMovers.map((fid) => { const l = lightOf(fid) || {}; return Math.round(E.clamp(E.finite(l.beamDegTo, E.beamDegOf(fixtureById(fid), l)), 5, 55)); }));
@@ -2860,58 +3025,57 @@
           sp.stepSec = v; let i = 0; bulkEach(movers, (f, l) => { l.offsetSec = Math.round(i * v * 10) / 10; i += 1; }); draw();
         }, () => commit())));
       }
-    }
 
-    /* --- 2) 動きの型（サーチライト・組） ---
-       複数選択時の「動かし方」はここへ集約する（2026-09-13 本人要望「組の動きもサーチライト機能に
-       含まれるのでまとめて」）。どちらもムービングだけが対象。最初はどちらも畳んでおく
-       （本人要望「サーチライトは最初アコーディオンで畳んでおきましょう」）。 */
-    const accHead = (text, key, onToggle) => {
-      const open = state.slOpen[key];
-      const h = el("p", "kicker sub2 accordion");
-      h.innerHTML = `<span class="accicon">${open ? "▾" : "▸"}</span>${text}`;
-      h.onclick = () => { state.slOpen[key] = !state.slOpen[key]; if (onToggle) onToggle(); else renderInspector(); };
-      add(h);
-      return open;
-    };
-    if (movers.length >= 2) {
-      const live = () => state.slLive === movers.join(",");
-      const touch = () => { if (live()) applySearchlight(movers, true); };
-      const settle = () => { if (live()) commit(); };
-      const hNow = slHeight(movers);
-      const open = accHead(`動きの型（サーチライト・ムービング${movers.length}灯）${live() ? "　当たっています" : ""}`, "search");
-      if (open) {
-        add(field("振り方", seg(SL_FORMS, sp.form, (v) => { sp.form = v; if (live()) applySearchlight(movers); else renderAll(); }), true));
-        add(field(sp.form === "cone" ? "散らす幅" : "振り幅", range(0.2, 1, 0.05, sp.span, (v) => `舞台幅の${Math.round(v * 100)}%（約${(v * d.W).toFixed(1)}m）`, (v) => { sp.span = v; touch(); }, settle)));
-        /* 高さ0＝床を舐める。バトンに吊ったムービングは下にしか振れないので、これが既定（2026-09-12 本人指摘）。 */
-        add(field("高さ", range(0, d.H, 0.1, hNow, (v) => (v <= 0.05 ? "0m" : `${v.toFixed(1)}m（空中）`), (v) => { sp.hM = v; touch(); }, settle)));
-        add(field("奥行き", range(0, 1, 0.05, slDepth(), (v) => `${(v * d.D).toFixed(1)}m（${v < 0.3 ? "奥" : v > 0.7 ? "前" : "中ほど"}）`, (v) => { sp.vv = v; touch(); }, settle)));
-        if (sp.form !== "cone") add(field("切り返し", seg([["linear", "リニア"], ["ease", "イーズ"]], sp.easing, (v) => { sp.easing = v; if (live()) applySearchlight(movers); else renderAll(); })));
-        add(btn(live() ? `${movers.length}灯に当て直す` : `${movers.length}灯にこの型を当てる`, () => applySearchlight(movers), "primary"));
-      }
-      /* 組（一緒に動く・鏡・順番・扇・交差）。任意の軌道を保ったまま「動きの関係」だけ足す、
-         サーチライトより自由度の高いもう一つの型。対象はムービングだけに揃えた
-         （固定灯は動かないので組む意味がない）。 */
-      const gs = [...new Set(movers.map((id) => groupOf(id)).filter(Boolean))];
-      const same = gs.length === 1 && gs[0].members.length === movers.length && movers.every((id) => gs[0].members.includes(id));
-      const openG = accHead(`組の動き（一緒に動く・鏡・順番・扇・交差）${same ? "　編集中" : ""}`, "group");
-      if (openG) {
-        const REL = [["together", "一緒に動く"], ["mirror", "鏡のように動く"], ["sequential", "順番に動く"], ["fan", "扇に開く・閉じる"], ["cross", "交差して入れ替わる"]];
-        if (same) {
-          const g = gs[0]; const gi = cue().groups.indexOf(g);
-          add(el("p", "hint", `組${gi + 1}「${groupName(g)}」を編集中`));
-          add(field("動き方", seg(REL, g.compose || g.relation, (v) => makeGroup(g.members, v)), true));
-          if (g.relation === "sequential") add(field("ずらす時間", range(100, 1500, 50, g.delayMs, (v) => `${(v / 1000).toFixed(2)}秒ずつ`, (v) => { g.delayMs = v; draw(); }, () => commit())));
-          const ol = el("div", "seg col grouplist");
-          g.members.forEach((m, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = `${i + 1}. ${label(m)} ${fixtureById(m).name || ""}${i > 0 ? "　▲ 前へ" : ""}`; b.onclick = () => { if (i > 0) { [g.members[i - 1], g.members[i]] = [g.members[i], g.members[i - 1]]; commit(); } }; ol.append(b); });
-          add(field("この組の灯体", ol, true));
-          add(btn("組を解散する", () => { cue().groups = cue().groups.filter((x) => x !== g); g.members.forEach((m) => setLight(m, { groupId: null })); commit("組を解散しました"); }, "small quiet"));
-        } else {
-          add(el("p", "hint", "選んだムービングで組の動きをつくる"));
-          add(field("動き方", seg(REL, null, (v) => makeGroup(movers, v)), true));
+      const addP = (n) => b.append(n);   // ここから下は⑤位置の箱の中へ入れる
+      /* --- 動きの型と組の動きを1つにまとめ、⑤位置の中へ入れた（2026-09-14 本人要望）---
+         どちらも「複数のムービングをどう連携させるか」なので、別々のアコーディオンに分けず
+         1つにした。対象はムービングだけ。既定は畳んだまま（2026-09-13 本人要望）。
+         組の状態（編集中かどうか）も見出しに出したいので、gs / same は開く前に読む。 */
+      const accHead = (text, key, onToggle) => {
+        const open = state.slOpen[key];
+        const h = el("p", "kicker sub2 accordion");
+        h.innerHTML = `<span class="accicon">${open ? "▾" : "▸"}</span>${text}`;
+        h.onclick = () => { state.slOpen[key] = !state.slOpen[key]; if (onToggle) onToggle(); else renderInspector(); };
+        addP(h);
+        return open;
+      };
+      if (movers.length >= 2) {
+        const live = () => state.slLive === movers.join(",");
+        const touch = () => { if (live()) applySearchlight(movers, true); };
+        const settle = () => { if (live()) commit(); };
+        const hNow = slHeight(movers);
+        const gs = [...new Set(movers.map((id) => groupOf(id)).filter(Boolean))];
+        const same = gs.length === 1 && gs[0].members.length === movers.length && movers.every((id) => gs[0].members.includes(id));
+        const open = accHead(`動きの型・組の動き（ムービング${movers.length}灯）${live() ? "　当たっています" : same ? "　組を編集中" : ""}`, "search");
+        if (open) {
+          addP(field("連携", seg(SL_FORMS, sp.form, (v) => { sp.form = v; if (live()) applySearchlight(movers); else renderAll(); }), true));
+          addP(field(sp.form === "cone" ? "散らす幅" : "振り幅", range(0.2, 1, 0.05, sp.span, (v) => `舞台幅の${Math.round(v * 100)}%（約${(v * d.W).toFixed(1)}m）`, (v) => { sp.span = v; touch(); }, settle)));
+          /* 高さ0＝床を舐める。バトンに吊ったムービングは下にしか振れないので、これが既定（2026-09-12 本人指摘）。 */
+          addP(field("高さ", range(0, d.H, 0.1, hNow, (v) => (v <= 0.05 ? "0m" : `${v.toFixed(1)}m（空中）`), (v) => { sp.hM = v; touch(); }, settle)));
+          addP(field("奥行き", range(0, 1, 0.05, slDepth(), (v) => `${(v * d.D).toFixed(1)}m（${v < 0.3 ? "奥" : v > 0.7 ? "前" : "中ほど"}）`, (v) => { sp.vv = v; touch(); }, settle)));
+          if (sp.form !== "cone") addP(field("切り返し", seg([["linear", "リニア"], ["ease", "イーズ"]], sp.easing, (v) => { sp.easing = v; if (live()) applySearchlight(movers); else renderAll(); })));
+          addP(btn(live() ? `${movers.length}灯に当て直す` : `${movers.length}灯にこの型を当てる`, () => applySearchlight(movers), "primary"));
+          /* ここから組の動き。軌道はそのままに、灯どうしの関係だけ足す
+             （固定灯は動かないので対象はムービングだけ）。 */
+          addP(el("p", "kicker sub2", "組の動き（軌道はそのままに、灯どうしの関係だけ足す）"));
+          const REL = [["together", "一緒に動く"], ["mirror", "鏡のように動く"], ["sequential", "順番に動く"], ["fan", "扇に開く・閉じる"], ["cross", "交差して入れ替わる"]];
+          if (same) {
+            const g = gs[0]; const gi = cue().groups.indexOf(g);
+            addP(el("p", "hint", `組${gi + 1}「${groupName(g)}」を編集中`));
+            addP(field("動き方", seg(REL, g.compose || g.relation, (v) => makeGroup(g.members, v)), true));
+            if (g.relation === "sequential") addP(field("ずらす時間", range(100, 1500, 50, g.delayMs, (v) => `${(v / 1000).toFixed(2)}秒ずつ`, (v) => { g.delayMs = v; draw(); }, () => commit())));
+            const ol = el("div", "seg col grouplist");
+            g.members.forEach((m, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = `${i + 1}. ${label(m)} ${fixtureById(m).name || ""}${i > 0 ? "　▲ 前へ" : ""}`; b.onclick = () => { if (i > 0) { [g.members[i - 1], g.members[i]] = [g.members[i], g.members[i - 1]]; commit(); } }; ol.append(b); });
+            addP(field("この組の灯体", ol, true));
+            addP(btn("組を解散する", () => { cue().groups = cue().groups.filter((x) => x !== g); g.members.forEach((m) => setLight(m, { groupId: null })); commit("組を解散しました"); }, "small quiet"));
+          } else {
+            addP(el("p", "hint", "選んだムービングで組の動きをつくる"));
+            addP(field("動き方", seg(REL, null, (v) => makeGroup(movers, v)), true));
+          }
         }
       }
     }
+
     host.append(box);
   }
 
@@ -3117,6 +3281,7 @@
     const host = $("insp"); host.innerHTML = "";
     const ids = [...state.sel];
     syncLightToggle(ids);
+    renderXfer();   // コピー／ペーストの可否は選択で変わる。選択だけを更新する経路でも追従させる
     if (state.mode === "place") {
       // 見出しは静的な「選んだ灯体」／下の層の「配置（ショー共通）」が持つので、ここでは出さない
       if (!state.sel.size && !state.selTruss) host.append(el("p", "hint", "図か一覧で灯体やバトンを選ぶと、ここに設定が出ます。配置はすべてのシーンで共通です。"));
@@ -3245,7 +3410,7 @@
          （2026-09-13 本人指摘「もとから一列のバー」。横位置・長さ・床/上部は配置パネルへ）。 */
       if (f.mount.type !== "cyc") {
         const b = box("当てる場所");
-        b.append(field("当てる場所", seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], l.surface, (v) => {
+        b.append(field(null, seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], l.surface, (v) => {
           setLight(fid, { surface: v }); restyleToSurface(fid);
           const l2 = lightOf(fid); if (l2.path && l2.path.kind === "circle") l2.path.plane = (v === "back" || v === "house") ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
           commit();
@@ -3288,7 +3453,7 @@
           }));
           b.append(head);
         }
-        b.append(field(autoLevel ? "始点" : "強さ", range(0, 100, 1, levelOf(l), fmtLv, (v) => { l.level = v; draw(); }, () => commit()), true));
+        b.append(field(autoLevel ? "始点" : null, range(0, 100, 1, levelOf(l), fmtLv, (v) => { l.level = v; draw(); }, () => commit()), true));
         if (autoLevel) b.append(field("終点", range(0, 100, 1, E.clamp(E.finite(l.levelTo, levelOf(l)), 0, 100), fmtLv, (v) => { l.levelTo = v; draw(); }, () => commit()), true));
         /* 明滅（旧「ストロボ」の箱）。2026-09-13 本人要望で<b>光の強さのオートメーションの中身</b>にした。
            始点・終点の往復に、時間で繰り返す点滅を上乗せする——往復のどの位置でも同じように点滅する。
@@ -3334,11 +3499,11 @@
         }
         b.append(el("p", "hint", "平面図の赤い丸の上でスクロールしても変えられます（下へ回すと広がる・上へ回すと絞る）。"));
         if (mover) {
-          b.append(field(autoSpread ? "始点" : "広がり", range(5, 55, 1, E.beamDegOf(f, l), fmtDeg, (v) => { l.beamDeg = v; draw(); }, () => commit()), true));
+          b.append(field(autoSpread ? "始点" : null, range(5, 55, 1, E.beamDegOf(f, l), fmtDeg, (v) => { l.beamDeg = v; draw(); }, () => commit()), true));
           if (autoSpread) b.append(field("終点", range(5, 55, 1, E.clamp(E.finite(l.beamDegTo, E.beamDegOf(f, l)), 5, 55), fmtDeg, (v) => { l.beamDegTo = v; draw(); }, () => commit()), true));
           if (l.beamDeg != null) b.append(btn(`仕込みの広がり（${Math.round(f.beamDeg == null ? 18 : f.beamDeg)}°）に戻す`, () => { delete l.beamDeg; if (l.beamDegTo != null) l.beamDegTo = E.beamDegOf(f, l); commit(); }, "small quiet"));
         } else {
-          b.append(field("広がり", range(4, 70, 1, f.beamDeg == null ? 24 : f.beamDeg, fmtDeg, (v) => { f.beamDeg = v; draw(); }, () => commit()), true));
+          b.append(field(null, range(4, 70, 1, f.beamDeg == null ? 24 : f.beamDeg, fmtDeg, (v) => { f.beamDeg = v; draw(); }, () => commit()), true));
         }
       }
 
@@ -3540,7 +3705,9 @@
     $("seat").hidden = !state.front3d;
     $("filters").hidden = state.mode !== "move";
     document.querySelectorAll("#filters button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filter === state.filter)));
-    renderLxq(); renderList(); renderInspector(); renderFixedConflicts(); renderTransport(); draw();
+    renderLxq(); renderList(); renderInspector(); renderFixedConflicts();
+    if (window.LIGHT_PRESETS_UI) window.LIGHT_PRESETS_UI.refresh();   // 右パネルの「見本」タブ（light-presets-ui.js）
+    renderTransport(); draw();
   }
 
   /* ---------- ヘッダ・空状態・書き出し ---------- */
@@ -3594,6 +3761,10 @@
      ボタン発火とキーボード処理の両方が走り、トグルが2回で元へ戻る）。
      キーボードで押したとき（ev.detail === 0）は外さない。Tabで辿った位置を奪わないため。 */
   $("t-play").onclick = (ev) => { togglePlay(); if (ev.detail > 0) ev.currentTarget.blur(); };
+  /* コピー／ペーストも同じ理由でマウス操作のときだけフォーカスを外す
+     （押したまま残ると、次のショートカットがボタンの既定動作と二重に走る） */
+  $("t-copy").onclick = (ev) => { copySettings(); if (ev.detail > 0) ev.currentTarget.blur(); };
+  $("t-paste").onclick = (ev) => { pasteSettings(); if (ev.detail > 0) ev.currentTarget.blur(); };
   $("undo").onclick = undo; $("redo").onclick = redo;
   $("mirror").onclick = mirrorSelected;
   document.querySelectorAll("#filters button").forEach((b) => { b.onclick = () => { state.filter = b.dataset.filter; renderAll(); }; });
@@ -4047,7 +4218,9 @@
   loadCircus8Demo();
 
   // 試作の検証用。製品では出さない（状態を外から読めるようにしておく）
-  window.__RIG = { state, E, planBox, secBox, secOf, SECS };
+  window.__RIG = { state, E, planBox, secBox, secOf, SECS,
+    /* 「照明のあるある」（light-presets-ui.js）との接続点。app.js の内部関数をここだけから貸す（2026-09-14）。 */
+    hooks: { cue, scene, setLight, ensureOn, commit, uid, lightOf, fixtureById, toast, dialog, undo, label, renderAll, draw, stop, home, lxEditingQ, lxNo, defaultAim, COLORS } };
 
   /* ブラウザの大きさに追従する。モーダルだからと固定にしない（2026-09-11 本人要望）。
      rAFで1回にまとめる（ドラッグ中の連続リサイズで描き直しが溜まらないように）。 */
