@@ -1033,10 +1033,13 @@
   function goboMask(light, radius) {
     const g = light && light.gobo && light.gobo !== "none" ? E.goboById(light.gobo) : null;
     if (!g || !g.shapes.length) return null;
-    const soft = E.clamp(E.finite(light.goboSoft, 25), 0, 100);
+    const soft = E.clamp(E.finite(light.goboSoft, 24), 0, 100);   // 既定はUIの SOFT_DEF と同じ
     const blur = (soft / 100) * radius * 0.35;          // ぼけ幅は光だまりの大きさに比例させる
+    /* 外周の余白。ぼかしたぶん形がはみ出すので、その幅だけ広く取る。
+       大きさは必ず偶数にする——奇数だと中心が半画素ずれ、ぼけを1段変えただけで
+       模様全体が1px横に飛ぶ（2026-09-13 実測でこの飛びを確認）。 */
     const pad = Math.ceil(blur * 2 + 2);
-    const size = Math.ceil(radius * 2) + pad * 2;
+    const size = 2 * Math.ceil(radius + pad);
     if (size < 4 || size > 2200) return null;
     const mc = goboMaskCanvas; mc.width = size; mc.height = size;
     const m = mc.getContext("2d");
@@ -1062,7 +1065,9 @@
     /* 模様の外は光が来ない＝描かない。以前は destination-out で消していたが、
        それだと下に描いてある床・枡目・演者まで一緒に消えて、背景より暗い「黒い丸」が出ていた
        （2026-09-13 本人指摘）。光は足すものなので、形の中だけを塗る作りにした。 */
-    if (blur <= 0.4) return { canvas: mc, size };
+    /* しきい値を低くしてある。つまみは0〜30を10等分した細かい刻みなので、
+       ここを高くすると小さい光だまりで1段目が「0と同じ」になってしまう（2026-09-13 実測）。 */
+    if (blur <= 0.12) return { canvas: mc, size };
     /* ぼかす。くっきり描いた形を画面外へ押し出し、その「影」だけを残す——
        影の色を白にしてあるので、ぼけた白い形＝ぼけた模様がそのまま残る。
        shadowBlur は仕様上「ぼかし半径の2倍」なので、blur を2倍にして渡す。 */
@@ -1668,6 +1673,16 @@
     wrap.append(trig, list);
     return wrap;
   }
+  /* ぼけの刻み。実際に使うのは0〜30までで、それ以上は使い道がない（2026-09-13 本人確認）ので
+     つまみの上限を30にし、その幅を10等分した。保存する値は今までどおり0〜100のままなので、
+     前に保存したデザインもそのまま読める。 */
+  const SOFT_MAX = 30, SOFT_STEPS = 10, SOFT_STEP = SOFT_MAX / SOFT_STEPS, SOFT_DEF = 24;
+  function softText(v) {
+    const s = Math.round(v / SOFT_STEP);
+    const word = s === 0 ? "くっきり" : s <= 3 ? "ほんのり" : s <= 6 ? "やや柔らかい" : s <= 8 ? "柔らかい" : "とろける";
+    return s === 0 ? word : `${word}（${s}/${SOFT_STEPS}）`;
+  }
+  const softOf = (l) => E.clamp(E.finite(l && l.goboSoft, SOFT_DEF), 0, SOFT_MAX);
   /* 回す速さの読み方。つまみは速さそのものなので、向き・速さの言葉・1周の秒数で表す
      （2026-09-13 本人指摘「回すは回す速度なのでその用に表示」）。 */
   function spinText(v) {
@@ -1991,9 +2006,9 @@
         const same = spins.size <= 1, now = same && spins.size === 1 ? [...spins][0] : 0;
         b.append(field(same ? "回す速さ" : "回す速さ（バラバラ）", range(-100, 100, 5, now, spinText,
           (v) => { bulkEach(ids, (f, l) => { l.goboSpin = v; }); draw(); }, () => commit(`${ids.length}灯の回す速さを変えました`)), true));
-        const softs = new Set(lit.map((fid) => Math.round(E.clamp(E.finite((lightOf(fid) || {}).goboSoft, 25), 0, 100))));
-        const sameSoft = softs.size <= 1, nowSoft = sameSoft && softs.size === 1 ? [...softs][0] : 25;
-        b.append(field(sameSoft ? "ぼけ" : "ぼけ（バラバラ）", range(0, 100, 5, nowSoft, (v) => (v < 8 ? "くっきり" : v < 40 ? `やや柔らかい（${Math.round(v)}）` : v < 75 ? `柔らかい（${Math.round(v)}）` : `とろける（${Math.round(v)}）`),
+        const softs = new Set(lit.map((fid) => Math.round(softOf(lightOf(fid)) / SOFT_STEP) * SOFT_STEP));
+        const sameSoft = softs.size <= 1, nowSoft = sameSoft && softs.size === 1 ? [...softs][0] : SOFT_DEF;
+        b.append(field(sameSoft ? "ぼけ" : "ぼけ（バラバラ）", range(0, SOFT_MAX, SOFT_STEP, nowSoft, softText,
           (v) => { bulkEach(ids, (f, l) => { l.goboSoft = v; }); draw(); }, () => commit(`${ids.length}灯の模様のぼけを変えました`)), true));
       }
     }
@@ -2289,7 +2304,7 @@
           }
           /* ぼけ具合＝実機でいうフォーカス。くっきり出すと形が読め、ぼかすと質感になる
              （2026-09-13 本人要望）。 */
-          b.append(field("ぼけ", range(0, 100, 5, E.clamp(E.finite(l.goboSoft, 25), 0, 100), (v) => (v < 8 ? "くっきり" : v < 40 ? `やや柔らかい（${Math.round(v)}）` : v < 75 ? `柔らかい（${Math.round(v)}）` : `とろける（${Math.round(v)}）`),
+          b.append(field("ぼけ", range(0, SOFT_MAX, SOFT_STEP, softOf(l), softText,
             (v) => { l.goboSoft = v; draw(); }, () => commit()), true));
         }
       }
