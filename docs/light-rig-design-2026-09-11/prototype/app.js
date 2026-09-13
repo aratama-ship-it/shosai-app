@@ -1033,7 +1033,7 @@
   function goboMask(light, radius) {
     const g = light && light.gobo && light.gobo !== "none" ? E.goboById(light.gobo) : null;
     if (!g || !g.shapes.length) return null;
-    const soft = E.clamp(E.finite(light.goboSoft, 24), 0, 100);   // 既定はUIの SOFT_DEF と同じ
+    const soft = E.clamp(E.finite(light.goboSoft, 6), 0, 100);    // 既定はUIの SOFT_DEF と同じ（2/10）
     const blur = (soft / 100) * radius * 0.35;          // ぼけ幅は光だまりの大きさに比例させる
     /* 外周の余白。ぼかしたぶん形がはみ出すので、その幅だけ広く取る。
        大きさは必ず偶数にする——奇数だと中心が半画素ずれ、ぼけを1段変えただけで
@@ -1676,7 +1676,7 @@
   /* ぼけの刻み。実際に使うのは0〜30までで、それ以上は使い道がない（2026-09-13 本人確認）ので
      つまみの上限を30にし、その幅を10等分した。保存する値は今までどおり0〜100のままなので、
      前に保存したデザインもそのまま読める。 */
-  const SOFT_MAX = 30, SOFT_STEPS = 10, SOFT_STEP = SOFT_MAX / SOFT_STEPS, SOFT_DEF = 24;
+  const SOFT_MAX = 30, SOFT_STEPS = 10, SOFT_STEP = SOFT_MAX / SOFT_STEPS, SOFT_DEF = 6;  // 既定＝2/10（2026-09-13 本人指定）
   function softText(v) {
     const s = Math.round(v / SOFT_STEP);
     const word = s === 0 ? "くっきり" : s <= 3 ? "ほんのり" : s <= 6 ? "やや柔らかい" : s <= 8 ? "柔らかい" : "とろける";
