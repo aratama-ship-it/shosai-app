@@ -281,6 +281,12 @@
   .panel .inspbody>*{flex:0 0 auto;min-width:0}
   .list>*{flex:0 0 auto}
   .panel .sub{flex:0 0 auto;margin-top:6px;padding-top:7px;border-top:1px solid var(--line-dark);background:var(--recess);margin-left:-8px;margin-right:-8px;margin-bottom:-8px;padding-left:8px;padding-right:8px;padding-bottom:8px}
+  /* パネルの<b>上</b>に置く層（配置）。罫線と余白を下向きに付け替える。 */
+  .panel .sub.subtop{margin-top:-8px;margin-bottom:6px;padding-top:8px;padding-bottom:8px;border-top:0;border-bottom:1px solid var(--line-dark)}
+  /* 畳んだときは見出しだけ残す（中身は隠して一覧に高さを渡す） */
+  .panel .sub.folded>*:not(.ptitle){display:none}
+  .panel .sub.subtop .ptitle{margin:0}
+  .panel .sub .accicon{display:inline-block;width:1em;color:var(--milk-dim)}
   .panel .sub .kicker,.panel .sub .ptitle{margin:0 0 5px}
   .panel .sub .note{margin:5px 0 0}
   input[type=text],select{width:100%;min-height:32px;border:1px solid var(--line-dark);background:var(--desk-2);color:var(--milk);font:11px var(--sans);padding:5px 8px}
@@ -414,6 +420,14 @@
         <div class="figgrid">
           <!-- 上段左＝灯体の一覧（下手から見る図の真上）。2026-09-11 本人要望で左列から移動 -->
           <section class="panel" id="panel-fixtures">
+            <!-- 置く操作は灯体の一覧の上（2026-09-13 本人要望で右パネルから移動）。
+                 「置く→一覧に増える」が同じ列で続くので、視線が左右に飛ばない。 -->
+            <div class="sub subtop" id="placebox">
+              <p class="ptitle">配置（ショー共通）</p>
+              <button type="button" class="btn small" id="presets" style="width:100%;margin-bottom:5px">よくある仕込みから選ぶ</button>
+              <div class="seg col" id="place-tools"></div>
+              <p class="note" id="place-note"></p>
+            </div>
             <p class="ptitle">灯体</p>
             <input type="search" id="search" class="search" placeholder="番号・名前で探す" aria-label="灯体を探す">
             <div class="filters" id="filters" role="group" aria-label="絞り込み">
@@ -464,12 +478,6 @@
             <div class="inspbody" id="insp"></div>
             <!-- 固定灯のシーン間の食い違い。決まるまで消えないので、設定欄とは別の固定枠に出す -->
             <div id="conflicts"></div>
-            <div class="sub" id="placebox">
-              <p class="ptitle">配置（ショー共通）</p>
-              <button type="button" class="btn small" id="presets" style="width:100%;margin-bottom:5px">よくある仕込みから選ぶ</button>
-              <div class="seg col" id="place-tools"></div>
-              <p class="note" id="place-note"></p>
-            </div>
           </section>
           <div class="sec side l">
             <div class="sechead"><span class="viewtitle">下手から見る</span></div>
@@ -524,8 +532,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789267841"></script>
-<script src="stage-figure.js?v=1789267841"></script>
-<script src="app.js?v=1789267841"></script>
+<script src="rig-engine.js?v=1789269237"></script>
+<script src="stage-figure.js?v=1789269237"></script>
+<script src="app.js?v=1789269237"></script>
 </body>
 </html>

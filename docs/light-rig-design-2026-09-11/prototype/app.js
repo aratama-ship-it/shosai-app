@@ -195,6 +195,7 @@
     hover: null, drag: null,
     collapsed: new Set(), filter: "all",   // 一覧: 取り付け場所ごとの折り畳みと絞り込み（20灯以上向け）
     snap: false,                           // 1mのグリッドに合わせて置く・動かす（本人要望 2026-09-11）
+    placeOpen: false,                      // 左パネル上部の「配置」を開いているか（既定は畳む）
     show: { no: true, fixtures: true, beam: true, path: true, grid: true, pieces: true, border: false, blackout: false },
     /* 室内灯をどれだけ消すか（0〜100%）。100で真っ暗、0で消さないのと同じ
        （2026-09-13 本人要望「押したら全部消えてしまうので、どれくらい消すか決めたい」）。
@@ -1557,6 +1558,17 @@
 
   function renderToolStrip() {
     const place = $("placebox"), sel = $("selacts"); if (!place || !sel) return;
+    /* 置く道具（バトンを渡す／吊り／前明かり／SS／転がし）は縦に5つ並ぶので、
+       左の灯体パネルへ移すと一覧が1行まで潰れる（2026-09-13 実測36px）。
+       見出しを押して畳めるようにし、既定は畳む——置くのは最初だけで、あとは一覧を見る時間が長いため。 */
+    const title = place.querySelector(".ptitle");
+    if (title && !title.dataset.acc) {
+      title.dataset.acc = "1"; title.style.cursor = "pointer"; title.title = "押すと開閉します";
+      title.onclick = () => { state.placeOpen = !state.placeOpen; renderAll(); };
+    }
+    const open = Boolean(state.placeOpen);
+    if (title) title.innerHTML = `<span class="accicon">${open ? "▾" : "▸"}</span>配置（ショー共通）`;
+    place.classList.toggle("folded", !open);
     place.hidden = sel.hidden = state.mode !== "place";
     if (place.hidden) { $("place-note").textContent = ""; return; }
     const host = $("place-tools"); host.innerHTML = "";
