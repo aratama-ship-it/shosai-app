@@ -825,7 +825,7 @@
             const R = Math.max(sp.halfW * 0.9, 26) * glareMul(l); drawGlare(pctx, th0.X, th0.Y, R, l.color, lv, dim); litSpots.push(glareHole(th0.X, th0.Y, R, lv));
           }
           if (!dim) { pctx.fillStyle = hexA(l.color, 0.9); pctx.font = "15px sans-serif"; pctx.textBaseline = "middle"; pctx.fillText(`客席へ 舞台前から${Math.max(0, T.y - state.dims.D).toFixed(1)}m・高さ${T.z.toFixed(1)}m（目眩まし）`, th0.X + 22, th0.Y); }
-        } else if (showOn("beam")) { const sp = drawBeam(pctx, s, { X: s.X, Y: B.y }, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv, l); litSpots.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); }
+        } else if (showOn("beam")) { const sp = drawBeam(pctx, s, { X: s.X, Y: B.y }, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv, l, null, P, frameOf(f, l)); litSpots.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); }
         // ハンドル（選択灯のみ・床・空中・客席は平面図で位置を動かす）
         if (sel && l.surface !== "back") drawHandles(pctx, PH, l, f.id);
       });
@@ -1156,7 +1156,10 @@
        単位円の1は光の輪×BEAM_SOFT なので、距離と柔らかさは BEAM_SOFT で割って合わせる。 */
     const cuts = [], T = world.T;
     let cutP = 0, cutM = 0;
-    const corners = { p: { X: to.X + nx, Y: to.Y + ny }, m: { X: to.X - nx, Y: to.Y - ny } };
+    /* 帯の裾の向き。潰れた図（lying）では裾は水平（to.X±halfW, to.Y）で、半楕円もそこから始まる——
+       帯に垂直な (nx,ny) を裾にすると半楕円と角が離れて余分な線が出る（Codex レビュー 2026-09-14 で発見・修正）。 */
+    const bnx = lying ? halfW : nx, bny = lying ? 0 : ny;
+    const corners = { p: { X: to.X + bnx, Y: to.Y + bny }, m: { X: to.X - bnx, Y: to.Y - bny } };
     if (frame && T) {
       const vert = surf === "back" ? "z" : surf === "floor" ? "y" : frame.axis;
       const doors = E.frameDoors(frame.f, frame.l, vert);
@@ -1168,17 +1171,24 @@
         return L > 1e-6 ? { x: dx / L, y: dy / L } : null;
       };
       doors.forEach((dr) => {
-        const sd = screenDir(dr.n);
         let c = ell ? E.doorCutInEllipse(dr, ell.ea, ell.eb) : null;
-        if (!c && !ell && sd) c = { mx: sd.x, my: sd.y, d: 1 - dr.f, soft: dr.soft };
-        if (c) cuts.push({ mx: c.mx, my: c.my, d: c.d / BEAM_SOFT, soft: c.soft / BEAM_SOFT });
-        if (sd && !asLine && halfW > 0) {
-          const cosv = (sd.x * nx + sd.y * ny) / halfW;
-          if (cosv > 0.05) cutP = Math.max(cutP, dr.f * cosv); else if (cosv < -0.05) cutM = Math.max(cutM, dr.f * -cosv);
-        }
+        if (!c && !ell) { const sd = screenDir(dr.n); if (sd) c = { mx: sd.x, my: sd.y, d: 1 - dr.f, soft: dr.soft }; }
+        if (c) cuts.push({ mx: c.mx, my: c.my, d: c.d / BEAM_SOFT, soft: c.soft / BEAM_SOFT, f: dr.f });
       });
-      corners.p = { X: to.X + nx * (1 - cutP), Y: to.Y + ny * (1 - cutP) };
-      corners.m = { X: to.X - nx * (1 - cutM), Y: to.Y - ny * (1 - cutM) };
+      /* 帯の角をどちら側へ寄せるかは、光だまりの切る線を<b>画面に写した法線</b>で決める。
+         単位円→画面の行列 M（pool の ax,ay / bx,by）に対し、線の法線は M⁻ᵀ·m。
+         世界座標の向きをそのまま投影すると、遠近の強い正面図3Dで符号が逆になる場合があった（Codex レビュー 2026-09-14）。 */
+      if (!asLine) {
+        const det = pool.ax * pool.by - pool.bx * pool.ay, bl = Math.hypot(bnx, bny);
+        if (Math.abs(det) > 1e-9 && bl > 1e-9) cuts.forEach((c) => {
+          const sx = (pool.by * c.mx - pool.ay * c.my) / det, sy = (-pool.bx * c.mx + pool.ax * c.my) / det;
+          const L = Math.hypot(sx, sy); if (!(L > 1e-9)) return;
+          const cosv = (sx * bnx + sy * bny) / (L * bl);
+          if (cosv > 0.05) cutP = Math.max(cutP, c.f * cosv); else if (cosv < -0.05) cutM = Math.max(cutM, c.f * -cosv);
+        });
+      }
+      corners.p = { X: to.X + bnx * (1 - cutP), Y: to.Y + bny * (1 - cutP) };
+      corners.m = { X: to.X - bnx * (1 - cutM), Y: to.Y - bny * (1 - cutM) };
     }
     ctx.save();
     ctx.globalCompositeOperation = "screen";
