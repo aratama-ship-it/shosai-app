@@ -125,9 +125,10 @@
   .scenebar .name{font-family:var(--serif);font-size:13.5px;color:var(--milk);white-space:nowrap}
   /* 再生（.transport）は照明デザインパネルの見出し行、オン・オフの左に置く（2026-09-13 本人要望）。 */
   .transport{display:flex;align-items:center;gap:5px}
-  .transport .btn.small,.scenebar .btn.small{min-height:24px;padding:2px 8px;font-size:12px}
-  .transport .t{font-variant-numeric:tabular-nums;color:var(--brass);min-width:4.2em;text-align:right;font-size:12.5px}
-  .transport .playing{color:var(--milk);background:rgba(168,75,38,.28);border:1px solid var(--rust);padding:2px 8px;font-size:12.5px}
+  .scenebar .btn.small{min-height:24px;padding:2px 8px;font-size:12px}
+  .transport .btn.small{min-height:26px;padding:3px 9px;font-size:14px}
+  .transport .t{font-variant-numeric:tabular-nums;color:var(--brass);min-width:4.2em;text-align:right;font-size:14.5px}
+  .transport .playing{color:var(--milk);background:rgba(168,75,38,.28);border:1px solid var(--rust);padding:2px 8px;font-size:14.5px}
   .canvases{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
   canvas{display:block;width:100%;background:#0d0e10;border:1px solid var(--line-dark);cursor:crosshair;touch-action:none}
   /* T字配置: 上段＝下手｜平面図｜上手、下段＝図に出すもの｜正面図｜凡例 */
@@ -218,15 +219,17 @@
   /* パネル幅（実測340px前後）だと見出し「照明デザイン」とボタン列を横一列にできない
      （2026-09-13 実測: 横並びだと6文字の見出しが3行に折り返った）。上下2段にする。
      上＝パネル名、下＝シーン送り・再生とオン・オフを右寄せ。 */
-  .insphead{display:flex;flex-direction:column;gap:5px;margin-bottom:6px}
-  .insphead .ptitle{margin:0}
-  .panelhead-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px}
-  .panelhead-actions .transport{gap:6px}
-  .panelhead-actions .transport .btn.small{min-height:26px;padding:2px 9px;font-size:12px}
+  .insphead{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:5px 6px;margin-bottom:6px}
+  .insphead .ptitle{margin:0 auto 0 0}
+  .insphead .ontoggle{order:1}
+  .insphead .transport{order:2}
+  .panelhead-actions{display:contents}
+  .panelhead-actions .transport{gap:5px}
+  .panelhead-actions .transport .btn.small{min-height:28px;padding:3px 9px;font-size:14px}
   /* オン・オフ。押すたびに切り替わる1つのボタンで、いまの状態をそのまま表示する
      （2026-09-13 本人要望「オンとオフの切り替え式に」「ちょっと大きめに」）。 */
-  .ontoggle{display:inline-flex;align-items:center;gap:8px;
-    min-height:34px;padding:4px 13px 4px 9px;border:1px solid var(--line-dark);background:var(--recess);
+  .ontoggle{display:inline-flex;align-items:center;gap:7px;
+    min-height:34px;padding:4px 11px 4px 8px;border:1px solid var(--line-dark);background:var(--recess);
     color:var(--milk-dim);font:600 15px/1 var(--sans);letter-spacing:.1em;cursor:pointer}
   .ontoggle:hover{border-color:var(--brass)}
   .ontoggle .sw{width:30px;height:16px;border:1px solid var(--line-dark);background:#14110e;position:relative;border-radius:9px}
@@ -593,8 +596,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789301084"></script>
-<script src="stage-figure.js?v=1789301084"></script>
-<script src="app.js?v=1789301084"></script>
+<script src="rig-engine.js?v=1789301616"></script>
+<script src="stage-figure.js?v=1789301616"></script>
+<script src="app.js?v=1789301616"></script>
 </body>
 </html>
