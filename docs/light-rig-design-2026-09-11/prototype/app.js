@@ -1638,7 +1638,8 @@
      いまの模様だけを見せ、押したときだけ一覧を開く（2026-09-13 本人要望「クリックしたらプルダウン」）。
      一覧は浮かせずその場に差し込む——右欄は縦スクロールする枠なので、
      浮かせると枠で切られて下半分が見えなくなる。
-     並びは「なし → 回して使うもの → 置いて使うもの」。実機のホイールと同じ考え方。 */
+     一覧は縦に1行ずつ、丸1個と名前だけ（2026-09-13 本人指定）——横に並べると選択画面が
+     横長になり、どれを見ているのか追いにくい。用途の説明は title に逃がす。 */
   function goboPicker(curId, mixed, onPick) {
     const wrap = el("div", "gpick");
     const trig = document.createElement("button");
@@ -1652,24 +1653,17 @@
     const open = (v) => { list.hidden = !v; trig.setAttribute("aria-expanded", String(v)); };
     open(false);
     trig.onclick = () => open(list.hidden);
-    const group = (title, gs) => {
-      if (!gs.length) return;
-      if (title) list.append(el("p", "gpick-cap", title));
-      const grid = el("div", "gobos");
-      gs.forEach((g) => {
-        const gb = document.createElement("button"); gb.type = "button";
-        gb.className = "gobo" + (g.id === "none" ? " none" : "");
-        gb.setAttribute("aria-pressed", String(!mixed && (curId || "none") === g.id));
-        gb.title = g.note ? `${g.name}｜${g.note}` : g.name;
-        gb.innerHTML = g.id === "none" ? '<span class="gx">なし</span>' : goboThumb(g);
-        gb.onclick = () => { open(false); onPick(g.id); };
-        grid.append(gb);
-      });
-      list.append(grid);
-    };
-    group(null, E.GOBOS.filter((g) => g.kind === "none"));
-    group("回して使うもの", E.GOBOS.filter((g) => g.kind === "rot"));
-    group("置いて使うもの", E.GOBOS.filter((g) => g.kind === "stat"));
+    E.GOBOS.forEach((g) => {
+      const it = document.createElement("button"); it.type = "button"; it.className = "gpick-i";
+      it.setAttribute("aria-pressed", String(!mixed && (curId || "none") === g.id));
+      it.title = g.note ? `${g.name}｜${g.note}` : g.name;
+      const fc = el("span", "gobo" + (g.id === "none" ? " none" : ""));
+      fc.innerHTML = g.id === "none" ? '<span class="gx">—</span>' : goboThumb(g);
+      it.append(fc, el("span", "gpick-iname"));
+      it.lastChild.textContent = g.name;
+      it.onclick = () => { open(false); onPick(g.id); };
+      list.append(it);
+    });
     wrap.append(trig, list);
     return wrap;
   }
@@ -2293,8 +2287,6 @@
         const cur = l.gobo || "none";
         b.append(goboPicker(cur, false, (id) => { setLight(fid, { gobo: id }); commit(); }));
         if (cur !== "none") {
-          const g = E.goboById(cur);
-          b.append(el("p", "hint", `${g.name}　${g.note || ""}`));
           const spin = E.clamp(E.finite(l.goboSpin, 0), -100, 100);
           b.append(field("回す速さ", range(-100, 100, 5, spin, spinText,
             (v) => { l.goboSpin = v; draw(); }, () => commit()), true));

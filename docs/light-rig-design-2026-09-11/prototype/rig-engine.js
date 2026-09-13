@@ -425,6 +425,36 @@
      枚数は調べた4機種（回転7〜9・固定10〜18: MAC Encore Two / MegaPointe / Sharpy Plus /
      PLUTO600 PROFILE MK2）の中央あたりに合わせ、回す前提のものを rot、回さないものを stat とした。
      絵柄は「丸い窓の中の、光が通るところ」を 0〜1 の座標で持つ。描く側はこれを拡大して使う。 */
+  /* 渦巻きを「帯」の多角形にして返す（0〜1の座標）。外へ向かう縁をたどってから
+     内側の縁を戻ることで、閉じた1本の帯になる——fill でも SVG の polygon でも同じに描ける。
+     2026-09-13 本人指摘「同心円は存在しない。渦巻きに変える」。実機の spiral ゴボと同じ考え方。 */
+  function spiralBand(turns, rMax, w, steps) {
+    const out = [], inn = [], TAU = Math.PI * 2;
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps, a = t * TAU * turns, r = rMax * t;
+      const co = Math.cos(a), si = Math.sin(a);
+      out.push([0.5 + co * (r + w / 2), 0.5 + si * (r + w / 2)]);
+      inn.push([0.5 + co * Math.max(r - w / 2, 0), 0.5 + si * Math.max(r - w / 2, 0)]);
+    }
+    return out.concat(inn.reverse());
+  }
+  /* 木漏れ日の抜けを撒く。実機のフォリッジは抜けの数がずっと多い（2026-09-13 本人指摘）ので、
+     数を増やして大小をばらけさせる。乱数は種を固定した自前の式——毎回まったく同じ形になる。 */
+  function foliageShapes(count, seed) {
+    let x = seed >>> 0;
+    const rnd = () => { x = (x * 1664525 + 1013904223) >>> 0; return x / 4294967296; };
+    const out = [];
+    while (out.length < count) {
+      const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * 0.44;     // 円のなかへ均等に撒く
+      const u = 0.5 + Math.cos(a) * r, v = 0.5 + Math.sin(a) * r;
+      const big = rnd() < 0.3;                                        // 3割だけ大きめの抜け
+      const rx = (big ? 0.045 : 0.022) + rnd() * (big ? 0.035 : 0.020);
+      out.push(["ellipse", +u.toFixed(3), +v.toFixed(3), +rx.toFixed(3),
+                +(rx * (0.5 + rnd() * 0.4)).toFixed(3), Math.round(rnd() * 180 - 90)]);
+    }
+    return out;
+  }
+
   const GOBOS = [
     { id: "none", name: "なし", kind: "none", shapes: [] },
     /* 回す前提（回転ゴボ相当）8種 */
@@ -439,17 +469,12 @@
       shapes: [["circle", .20,.22,.09], ["circle", .46,.14,.06], ["circle", .72,.26,.10], ["circle", .30,.50,.07],
                ["circle", .58,.46,.05], ["circle", .84,.56,.07], ["circle", .16,.76,.08], ["circle", .44,.82,.06],
                ["circle", .70,.78,.09]] },
-    { id: "foliage", name: "フォリッジ（木漏れ日）", kind: "rot", note: "屋外・森。場所を決める",
-      shapes: [["ellipse", .24,.20,.13,.08,-24], ["ellipse", .58,.16,.10,.06,18], ["ellipse", .80,.34,.12,.07,-12],
-               ["ellipse", .36,.48,.09,.06,32], ["ellipse", .66,.60,.13,.08,-30], ["ellipse", .20,.72,.11,.07,14],
-               ["ellipse", .48,.84,.10,.06,-20]] },
-    { id: "leaves", name: "葉", kind: "rot", note: "葉の形をはっきり出す",
-      shapes: [["ellipse", .30,.26,.16,.07,-35], ["ellipse", .66,.30,.15,.06,30], ["ellipse", .24,.60,.14,.06,25],
-               ["ellipse", .62,.66,.16,.07,-28], ["ellipse", .46,.46,.12,.05,10]] },
+    { id: "foliage", name: "木漏れ日", kind: "rot", note: "フォリッジ。屋外・森。場所を決める",
+      shapes: foliageShapes(42, 20260913) },
     { id: "radial", name: "放射", kind: "rot", note: "回すと強い。ライブ向き",
       shapes: [["spoke", 8, .06, .48]] },
-    { id: "rings", name: "同心円", kind: "rot", note: "波紋・水面。ゆっくり回す",
-      shapes: [["ring", .12, .05], ["ring", .26, .05], ["ring", .40, .05]] },
+    { id: "spiral", name: "渦巻き", kind: "rot", note: "回すと吸い込まれて見える",
+      shapes: [["poly", spiralBand(2.6, 0.44, 0.055, 140)]] },
     { id: "dots", name: "ドット", kind: "rot", note: "抽象。等間隔の点",
       shapes: [["circle", .22,.22,.07], ["circle", .50,.22,.07], ["circle", .78,.22,.07],
                ["circle", .22,.50,.07], ["circle", .50,.50,.07], ["circle", .78,.50,.07],
