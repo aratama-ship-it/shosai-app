@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>試作: 照明を組む — 舞台スケッチ（判断用・製品ではない）</title>
+<title>試作: 照明デザインモード — 舞台スケッチ（判断用・製品ではない）</title>
 <style>
   :root{
     --desk:#191512;--desk-2:#201b16;--desk-3:#282119;--line-dark:#382f25;
@@ -346,7 +346,13 @@
 <div class="proto-note">試作（クリックできる設計案）— 製品コードとは無関係。1440×900想定。</div>
 <div class="modal" id="modal">
   <header class="head">
-    <h1>照明を組む</h1>
+    <!-- 名前（2026-09-13 本人決定で「照明を組む」から改名）。
+         本体では右のパネル群ではなく<b>上部の「編集モード」タブ</b>へ3つ目として入る予定
+         （いまは 通常モード／タイムラインモード の2つ）。同じ列に並ぶので語法をそろえて
+         「照明デザインモード」。中のタブ（配置／照明デザイン）は素の名詞なので重ならない。
+         本体へ移すとこの見出しは編集モードのタブに置き換わる＝試作の中だけの暫定表示。
+         リリース中の版に影響しないよう、本体の右パネル「照明」は当面そのまま残す（本人方針）。 -->
+    <h1>照明デザインモード</h1>
     <div class="modes" role="group" aria-label="モード">
       <button type="button" id="mode-place" aria-pressed="true">配置</button>
       <button type="button" id="mode-move" aria-pressed="false">照明デザイン</button>
@@ -516,8 +522,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789257791"></script>
-<script src="stage-figure.js?v=1789257791"></script>
-<script src="app.js?v=1789257791"></script>
+<script src="rig-engine.js?v=1789264796"></script>
+<script src="stage-figure.js?v=1789264796"></script>
+<script src="app.js?v=1789264796"></script>
 </body>
 </html>
