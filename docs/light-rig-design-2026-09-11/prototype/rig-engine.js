@@ -463,6 +463,13 @@
     if (piece.curtainKind === "drop" || piece.curtainKind === "cyc") {
       return [{ ox: 0, w: dims.w, h: dims.h, lift: lift + dims.h * open }];
     }
+    /* 一文字幕（いちもんじまく）。バトンの手前に吊る短い横長の幕で、客席から
+       灯体とバトンを隠すためのもの。左右に開かず1枚のまま、上から下へ垂れる。
+       dims.h が布の丈（垂れ下がる長さ）、dims.lift がその下端の高さ。
+       2026-09-13 本人要望で追加（本体 stage-machinery.js には無い種類）。 */
+    if (piece.curtainKind === "border") {
+      return [{ ox: 0, w: dims.w, h: dims.h, lift }];
+    }
     const gathered = dims.w * 0.08;
     const panelWidth = Math.max(gathered, dims.w * (1 - open) / 2);
     const offset = (dims.w - panelWidth) / 2;

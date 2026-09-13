@@ -19,7 +19,32 @@
     { id: "cur-front", kind: "curtain", name: "前幕", curtainKind: "front", u: 0.5, v: 0.97, w: 1.0, hM: 7.5, open: 100, color: "#000000", facing: 0 },
     // 色は本体の既定と同じ（stage-machinery.js:193 は幕の種類を問わず同じ既定色を使う）
     { id: "cur-cyc", kind: "curtain", name: "ホリゾント幕", curtainKind: "cyc", u: 0.5, v: 0.04, w: 1.04, hM: 6.5, open: 0, color: "#000000", facing: 0 },
+    /* 袖幕（そでまく）。本体の「前幕ひとそろい」（stage-machinery.js builtInPresets）に
+       入っている leg をそのまま移植（2026-09-13 本人要望）。facing 90 で幅の軸が奥行き方向を向く＝
+       舞台の左右に立つ壁になる。前幕と同じ「中央から左右2枚」の形なので curtainParts はそのまま使える。
+       本体は幅に間口(12m)を使うが、ここでは奥行き方向に立つので奥行き(8m)ぶん＝w:0.67にした
+       （本体の値のままだと舞台の前後へ2mずつはみ出す）。
+       名前は本体では u=.08 を「上手袖幕」としているが、このアプリの約束は u=0 が下手なので、
+       図の左右と食い違わないよう下手／上手を入れ替えてある。 */
+    { id: "cur-leg-shimote", kind: "curtain", name: "下手袖幕", curtainKind: "leg", u: 0.08, v: 0.5, w: 0.67, hM: 8, open: 0, color: "#000000", facing: 90 },
+    { id: "cur-leg-kamite", kind: "curtain", name: "上手袖幕", curtainKind: "leg", u: 0.92, v: 0.5, w: 0.67, hM: 8, open: 0, color: "#000000", facing: 90 },
   ];
+  /* 一文字幕（いちもんじまく）。バトンごとに、その少し手前へ吊って灯体とバトンを客席から隠す幕。
+     仕込んだバトンから自動で作るので、データには持たない（バトンを足せば一文字も増える）。
+     2026-09-13 本人要望で追加。既定は出さない——出すと灯体が隠れて設計しにくいため、
+     「客席から見えていないか」を確かめたいときだけ出す。 */
+  const BORDER_DROP_M = 1.4;          // 布の丈（垂れ下がる長さ）
+  const BORDER_AHEAD_V = 0.04;        // バトンのどれだけ手前に吊るか（奥行きの割合）
+  function borderPieces() {
+    if (!showOn("border")) return [];
+    const d = state.dims;
+    return state.rig.trusses.map((t, i) => ({
+      id: `border-${t.id}`, kind: "curtain", name: i === 0 ? "一文字幕" : "", curtainKind: "border",
+      u: 0.5, v: E.clamp(E.finite(t.v, 0.5) + BORDER_AHEAD_V, 0, 1), w: 1.02,
+      hM: BORDER_DROP_M, liftM: Math.max(0, E.finite(t.h, 6) - BORDER_DROP_M),
+      open: 0, color: "#000000", facing: 0,
+    }));
+  }
   const state = {
     mode: "place",                     // "place" | "move"
     dims: { W: 12, D: 8, H: 8 },       // 舞台の幅・奥行き・高さ（m）。右の「舞台の大きさ」で変えられる
@@ -131,7 +156,7 @@
     hover: null, drag: null,
     collapsed: new Set(), filter: "all",   // 一覧: 取り付け場所ごとの折り畳みと絞り込み（20灯以上向け）
     snap: false,                           // 1mのグリッドに合わせて置く・動かす（本人要望 2026-09-11）
-    show: { no: true, beam: true, path: true, grid: true, pieces: true, blackout: false },
+    show: { no: true, beam: true, path: true, grid: true, pieces: true, border: false, blackout: false },
     /* 室内灯をどれだけ消すか（0〜100%）。100で真っ暗、0で消さないのと同じ
        （2026-09-13 本人要望「押したら全部消えてしまうので、どれくらい消すか決めたい」）。
        図の見え方の設定なので show と同じくUndoの対象にはしない。 */
@@ -642,6 +667,7 @@
       drawFixtureMark(pctx, X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
     });
     // 室内灯を消す（2026-09-13 本人要望）。灯体の印は暗くしたくないので、印より前・マーキーより後に重ねる
+    drawBordersPlan(pctx, P, state.dims);
     if (state.mode === "move" && showOn("blackout")) paintBlackout(pctx, plan, litSpots);
     // 範囲選択（マーキー）。灯体の上に重ねて描く
     if (state.drag && state.drag.kind === "marquee" && state.drag.moved) {
@@ -668,7 +694,8 @@
   function curtainPanelsWorld(pc, d) {
     const wM = E.finite(pc.w, 1) * d.W;
     const hM = Math.min(E.finite(pc.hM, 6), d.H);
-    const parts = E.curtainParts(pc, { w: wM, h: hM, lift: 0 });
+    // 一文字幕だけは床から立つのではなく、上から垂れる＝下端の高さ（liftM）を持つ
+    const parts = E.curtainParts(pc, { w: wM, h: hM, lift: E.clamp(E.finite(pc.liftM, 0), 0, d.H) });
     const rad = ((pc.facing || 0) * Math.PI) / 180;
     const cos = Math.cos(rad), sin = Math.sin(rad);
     const cx = (pc.u - 0.5) * d.W, cy = pc.v * d.D;
@@ -698,6 +725,12 @@
     ctx.fillText(pc.name, lp.X, lp.Y + 6); ctx.textAlign = "left";
     ctx.restore();
   }
+  /* 一文字幕。灯体を<b>描いたあと</b>に重ねる——客席から見て隠れているかを確かめるための幕なので、
+     灯体の上に載せないと意味がない。ただし完全に塗り潰すと設計できないので、
+     布は濃いめの半透明にして、下の灯体がうっすら透ける（2026-09-13 本人要望）。 */
+  function drawBordersPlan(ctx, P, d) { borderPieces().forEach((pc) => drawCurtainPlan(ctx, P, pc, d)); }
+  function drawBordersUp(ctx, P, d) { borderPieces().forEach((pc) => drawCurtainUp(ctx, P, pc, d)); }
+
   function drawPiecesPlan(ctx, P, B) {
     if (!showOn("pieces")) return;
     const d = state.dims, pxM = B.w / d.W;
@@ -956,6 +989,7 @@
     // 灯体
     state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S); const Y = isFront(f) ? Math.max(20, p.Y) : p.Y; drawFixtureMark(fctx, p.X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
       if (f.mount.type === "side" && isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${f.mount.h.toFixed(1)}m（ドラッグ）`, p.X + (f.mount.side === "shimote" ? -180 : 26), p.Y - 26); } });
+    drawBordersUp(fctx, P, d);
     if (state.mode === "move" && showOn("blackout")) paintBlackout(fctx, front, litSpotsF);
   }
   /* ---------- 描画: 側面図（舞台中央から下手／上手を見る） ---------- */
@@ -1003,6 +1037,7 @@
         const frontX = side === "shimote" ? B.x + B.w + FRONT_DX_SEC : B.x - FRONT_DX_SEC;
         fctx.globalAlpha = 0.35; drawFixtureMark(fctx, isFront(f) ? frontX : q.X, q.Y, shapeOf(f.mount), { sel: false, st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) }); fctx.globalAlpha = 1;
       } });
+    drawBordersUp(fctx, P, d);
     if (state.mode === "move" && showOn("blackout")) paintBlackout(fctx, front, litSpotsSide);
     // 予告
     const hv = state.hover;
@@ -1068,6 +1103,7 @@
     // 灯体
     state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S);
       drawFixtureMark(fctx, p.X, isFront(f) ? Math.max(20, p.Y) : p.Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) }); });
+    drawBordersUp(fctx, P, d);
     if (state.mode === "move" && showOn("blackout")) paintBlackout(fctx, cv, litSpots3D);
     fctx.fillStyle = "rgba(240,231,214,0.4)"; fctx.font = "15px sans-serif"; fctx.textBaseline = "top";
     fctx.fillText(`${L.seat.label}から見た形（舞台スケッチの正面図と同じ描き方）`, 8, h - 24);
