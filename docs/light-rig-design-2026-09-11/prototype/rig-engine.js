@@ -36,6 +36,9 @@
      実際の帯（左右の端・登る高さ）は cycBarSpan で別に持つ。 */
   const CYC_MOUNT_V = 0.02;
   const CYC_REACH_MAX = 10;     // 届く高さの上限(m)。2026-09-13 本人指定
+  /* 客席へ向けた光（surface: "house"）の狙い点は舞台の手前端(v=1)から aheadM(m) だけ客席側。
+     前明かりの ahead と同じ考え方で、上限も同じ20m（2026-09-13 本人要望「当てる場所に客席方面」）。 */
+  const HOUSE_AHEAD_MAX = 20;
   /* バーの世界座標での帯。xL/xR＝左右の端、y＝奥行き、z0＝光源の高さ（床=0／上部=dims.H）、
      reach＝壁を登る／降りる高さ(m)。以前は広がり(度)から割合で出していたが、
      「10mまで出せるように」との指定（2026-09-13）で実寸のまま持つことにした。
@@ -217,7 +220,7 @@
    *                                    // 位置の往復と同じ位相で 始め→終わり→始め と往復する（2026-09-13 本人要望）。
    *                                    // 目盛りそのものはリニア。見える明るさへの効き方（カーブ）は
    *                                    // アプリ全体で1つの設定として app.js 側が持つ。
-   *   surface: "floor"|"back"|"air",   // UI上の制約プリセット（データの座標変換には使わない）
+   *   surface: "floor"|"back"|"air"|"house",   // UI上の制約プリセット。house＝客席へ向ける（狙い点は aheadM を持つ）
    *   path:
    *       {kind:"still", a:Point3}
    *     | {kind:"line", a:Point3, b:Point3, start:"a"|"b"}                       // 高さも別々に持てる＝斜め往復
@@ -240,6 +243,9 @@
     if (surface === "floor") q.hM = 0;
     else if (surface === "back") { q.v = 0; if (q.hM <= 0) q.hM = clamp(dims.H * 0.5, 0.5, dims.H); }
     else if (surface === "air" && q.hM <= 0) q.hM = clamp(4, 0.5, dims.H);
+    /* 客席: 手前端(v=1)から aheadM だけ客席側。高さは舞台の床から測る。
+       既定の 1.2m は座った観客の目の高さ寄り（舞台が客席床より約1m高いぶん、目線は舞台床の少し上）。 */
+    else if (surface === "house") { q.v = 1; q.aheadM = clamp(finite(p && p.aheadM, 6), 0.5, HOUSE_AHEAD_MAX); if (q.hM <= 0) q.hM = clamp(1.2, 0, dims.H); }
     return q;
   };
 
@@ -270,7 +276,8 @@
   // Point3 → 世界座標（この一本だけで床・奥壁・空中すべてを扱う。2026-09-11 第3ラウンドで統一）
   const pointWorld = (p, dims) => ({
     x: (clamp(finite(p && p.u, 0.5), 0, 1) - 0.5) * dims.W,
-    y: clamp(finite(p && p.v, 0.5), 0, 1) * dims.D,
+    // aheadM を持つ点（客席へ向けた狙い点）だけ舞台の外(y > D)へ出る。持たない点は従来どおり舞台の中
+    y: clamp(finite(p && p.v, 0.5), 0, 1) * dims.D + clamp(finite(p && p.aheadM, 0), 0, HOUSE_AHEAD_MAX),
     z: clamp(finite(p && p.hM, 0), 0, dims.H),
   });
 
@@ -375,7 +382,7 @@
       if (path.dir === "ccw") ang = -ang;
       if (mirror) ang = Math.PI - ang;
       const o = (path.kind === "eight" ? eightOffset : circleOffset)(path.plane, ang, r, r2, path.tilt);
-      return { x: c.x + o.dx, y: clamp(c.y + o.dy, 0, dims.D), z: clamp(c.z + o.dz, 0, dims.H), phase: saw(t) };
+      return { x: c.x + o.dx, y: clamp(c.y + o.dy, 0, dims.D + HOUSE_AHEAD_MAX), z: clamp(c.z + o.dz, 0, dims.H), phase: saw(t) };
     }
     return { ...pointWorld(path.a, dims), phase: 0 };
   };
@@ -532,7 +539,9 @@
     return "";
   };
 
-  const posWord = (p) => `${p.u < 0.4 ? "下手" : p.u > 0.6 ? "上手" : "中央"}・奥から${(p.v * 100).toFixed(0)}%${p.hM > 0.05 ? `・高さ約${p.hM.toFixed(1)}m` : ""}`;
+  const posWord = (p) => (finite(p && p.aheadM, 0) > 0
+    ? `${p.u < 0.4 ? "下手" : p.u > 0.6 ? "上手" : "中央"}・舞台前から約${finite(p.aheadM, 0).toFixed(1)}m${p.hM > 0.05 ? `・高さ約${p.hM.toFixed(1)}m` : ""}`
+    : `${p.u < 0.4 ? "下手" : p.u > 0.6 ? "上手" : "中央"}・奥から${(p.v * 100).toFixed(0)}%${p.hM > 0.05 ? `・高さ約${p.hM.toFixed(1)}m` : ""}`);
   const PLANE_LABEL = { horizontal: "水平の円", frontVertical: "客席側から見た縦の円", sideVertical: "舞台横から見た縦の円" };
 
   /* 強さ（調光）。未設定の灯は 100 とみなす＝これまでの「点いていれば全開」と同じ見え方になる。
@@ -741,7 +750,7 @@
     const zoom = fixture && isMoving(fixture) && light.beamDegTo != null
       && Math.round(light.beamDegTo) !== Math.round(beamDegOf(fixture, light))
       ? `。広がりは${Math.round(beamDegOf(fixture, light))}°→${Math.round(light.beamDegTo)}°` : "";
-    const face = light.surface === "back" ? "奥壁" : light.surface === "air" ? "空中" : "床";
+    const face = light.surface === "back" ? "奥壁" : light.surface === "air" ? "空中" : light.surface === "house" ? "客席（目眩まし）" : "床";
     const sp = { slow: "ゆっくり", normal: "普通の速さ", fast: "速く" }[light.speed] || "普通の速さ";
     const path = light.path || {};
     if (path.kind === "line") {
@@ -799,7 +808,7 @@
   };
 
   root.RIG_ENGINE = Object.freeze({
-    DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, CYC_MOUNT_V, CYC_REACH_MAX, cycBarSpan, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
+    DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, CYC_MOUNT_V, CYC_REACH_MAX, HOUSE_AHEAD_MAX, cycBarSpan, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
     clamp, finite,
     newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, spotEllipse, spotFalloff, beamLanding, trussById, trussRow, fixtureWorld,
     newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, strobeMul, paramPhase, mountSpot, GOBOS, goboById, goboAngleAt, constrainPointToSurface, periodMs, groupEffect,

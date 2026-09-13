@@ -218,7 +218,7 @@
     collapsed: new Set(), filter: "all",   // 一覧: 取り付け場所ごとの折り畳みと絞り込み（20灯以上向け）
     snap: false,                           // 1mのグリッドに合わせて置く・動かす（本人要望 2026-09-11）
     placeOpen: false,                      // 左パネル上部の「配置」を開いているか（既定は畳む）
-    show: { no: true, fixtures: true, beam: true, path: true, grid: true, pieces: true, border: false, blackout: false },
+    show: { no: true, fixtures: true, beam: true, path: true, grid: true, pieces: true, names: true, border: false, blackout: false },
     /* 作業灯をどれだけ消すか（0〜100%）。100で真っ暗、0で消さないのと同じ
        （2026-09-13 本人要望「押したら全部消えてしまうので、どれくらい消すか決めたい」）。
        図の見え方の設定なので show と同じくUndoの対象にはしない。 */
@@ -357,6 +357,17 @@
      本当の距離は番号の横と設定欄に数値で出す。 */
   const FRONT_DY = 58;        // 平面図: 舞台の手前端から下へ（内部px）。PAD.planB*2 に収まること
   const FRONT_DX_SEC = 40;    // 側面図: 手前端から客席側へ（内部px）
+  /* 客席へ向けた狙い点（surface: "house"）は舞台の外(y > D)にある。前明かりと同じく、
+     平面図では舞台の手前端の下の客席帯に、側面図では手前端の外に「一定距離」で出す（実距離は数値で）。
+     P を包んで舞台の外の点だけ置き換える。灯体の位置には使わない（前明かりの光の出どころは従来どおり）。
+     2026-09-13 本人要望「当てる場所に客席方面を足す」。 */
+  const HOUSE_DY = 30;        // 平面図: 手前端から下へ（内部px）。前明かりの列(FRONT_DY)より手前
+  const houseProjPlan = (P, B) => (w) => { const q = P(w); if (w && w.y > state.dims.D + 1e-6) q.Y = B.y + B.h + HOUSE_DY; return q; };
+  const houseProjSide = (P) => (w) => {
+    const q = P(w); const D = state.dims.D;
+    if (w && w.y > D + 1e-6) { const fx = P({ x: 0, y: D, z: 0 }).X, bx = P({ x: 0, y: 0, z: 0 }).X; q.X = fx + Math.sign(fx - bx || 1) * FRONT_DX_SEC; }
+    return q;
+  };
   const isFront = (f) => f.mount.type === "front";
   const shapeOf = (m) => (m.type === "truss" ? "square" : m.type === "floor" ? "circle" : m.type === "front" ? "tri" : m.type === "cyc" ? "bar" : "diamond");
   const planBox = () => {
@@ -579,7 +590,7 @@
   // 「当てる場所」を切り替えた直後、いまの狙い点を新しい制約（床=高さ0／奥壁=奥行き0／空中=自由）へ合わせる
   function restyleToSurface(fid) {
     const l = lightOf(fid); if (!l || !l.path) return;
-    const fix = (p) => p && Object.assign(p, E.constrainPointToSurface(p, l.surface, state.dims));
+    const fix = (p) => { if (!p) return; if (l.surface !== "house") delete p.aheadM; Object.assign(p, E.constrainPointToSurface(p, l.surface, state.dims)); };
     if (l.path.kind === "circle") fix(l.path.c); else { fix(l.path.a); fix(l.path.b); }
   }
   function setKind(fid, kind) {
@@ -733,6 +744,7 @@
 
     // 動き: 軌道・光線（ホリゾントライトの帯は上で先に塗ってある）
     if (state.mode === "move") {
+      const PH = houseProjPlan(P, B);   // 客席へ向けた狙い点だけ客席帯へ
       state.rig.fixtures.forEach((f) => {
         const l = lightOf(f.id); if (!isLit(l)) return;   // 消灯・強さ0は図に出さない
         if (f.mount.type === "cyc") return;
@@ -741,7 +753,7 @@
         const s = P(S), tp = P(T); const sel = isSel(f.id); const dim = state.sel.size && !sel;
         const g = showOn("path") ? E.pathGuide(l, state.dims) : null;
         if (g) { pctx.save(); pctx.setLineDash([10, 8]); pctx.strokeStyle = sel ? "rgba(223,100,51,0.9)" : "rgba(223,100,51,0.35)"; pctx.lineWidth = 2;
-          if (g.kind === "line") { const a = P(g.a), b = P(g.b); pctx.beginPath(); pctx.moveTo(a.X, a.Y); pctx.lineTo(b.X, b.Y); pctx.stroke(); }
+          if (g.kind === "line") { const a = PH(g.a), b = PH(g.b); pctx.beginPath(); pctx.moveTo(a.X, a.Y); pctx.lineTo(b.X, b.Y); pctx.stroke(); }
           else if (g.kind === "loop" && g.plane === "horizontal") strokeLoop(pctx, P, g);
           pctx.restore(); }
         if (l.surface === "floor" || l.surface === "air") {
@@ -753,10 +765,23 @@
             pctx.beginPath(); pctx.arc(tp.X, tp.Y, 22, 0, Math.PI * 2); pctx.stroke();
             if (!dim) { pctx.fillStyle = hexA(l.color, 0.9); pctx.font = "17px sans-serif"; pctx.textBaseline = "bottom"; pctx.fillText(`空中 ${T.z.toFixed(1)}m`, tp.X + 26, tp.Y - 8); }
           } // 床の輪は drawBeam が広がりから描く
+        } else if (l.surface === "house") {
+          /* 客席へ向けた光。狙い点は客席帯に置き（実距離は数値）、光だまりは描かない——
+             観客からは光源そのものが見える「目眩まし」なので、狙い点のまわりにふわっと滲ませるだけにする
+             （2026-09-13 本人要望「場所を間違えると目眩まし的なエフェクトになる。それもふわっと」）。 */
+          const th = PH(T);
+          if (showOn("beam")) {
+            const sp = drawBeam(pctx, s, th, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, [1, 1], true, true, lv, l, null, P);
+            litSpots.push({ fromX: s.X, fromY: s.Y, ...sp, lv });
+            const R = Math.max(sp.halfW * 1.8, 30); drawGlare(pctx, th.X, th.Y, R, l.color, lv, dim); litSpots.push(glareHole(th.X, th.Y, R, lv));
+          }
+          if (!dim) { pctx.fillStyle = hexA(l.color, 0.9); pctx.font = "15px sans-serif"; pctx.textBaseline = "middle"; pctx.fillText(`客席へ 舞台前から${Math.max(0, T.y - state.dims.D).toFixed(1)}m・高さ${T.z.toFixed(1)}m（目眩まし）`, th.X + 22, th.Y); }
         } else if (showOn("beam")) { const sp = drawBeam(pctx, s, { X: s.X, Y: B.y }, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv, l); litSpots.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); }
-        // ハンドル（選択灯のみ・床と空中は平面図で位置を動かす）
-        if (sel && l.surface !== "back") drawHandles(pctx, P, l, f.id);
+        // ハンドル（選択灯のみ・床・空中・客席は平面図で位置を動かす）
+        if (sel && l.surface !== "back") drawHandles(pctx, PH, l, f.id);
       });
+      // 赤い丸の上でホイールを回しているあいだ、いまの広がりを横に出す
+      if (state.spreadHint) { const h = state.spreadHint; const txt = `広がり ${h.deg}°`; pctx.save(); pctx.font = "600 17px sans-serif"; pctx.textBaseline = "bottom"; pctx.lineWidth = 5; pctx.strokeStyle = "rgba(13,14,16,0.9)"; pctx.fillStyle = "#f2ead6"; pctx.strokeText(txt, h.X + 18, h.Y - 16); pctx.fillText(txt, h.X + 18, h.Y - 16); pctx.restore(); }
     }
     // 灯体
     state.rig.fixtures.forEach((f) => {
@@ -822,7 +847,7 @@
     const mid = panels[0];
     const lp = P({ x: (mid.leftX + mid.rightX) / 2, y: (mid.leftY + mid.rightY) / 2, z: 0 });
     ctx.fillStyle = "rgba(240,231,214,0.5)"; ctx.font = "13px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top";
-    ctx.fillText(pc.name, lp.X, lp.Y + 6); ctx.textAlign = "left";
+    if (showOn("names")) ctx.fillText(pc.name, lp.X, lp.Y + 6); ctx.textAlign = "left";
     ctx.restore();
   }
   /* 一文字幕。灯体を<b>描いたあと</b>に重ねる——客席から見て隠れているかを確かめるための幕なので、
@@ -842,7 +867,7 @@
       ctx.fillStyle = "rgba(240,231,214,0.16)"; ctx.strokeStyle = "rgba(240,231,214,0.4)"; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.ellipse(q.X, q.Y, rw, rd, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = "rgba(240,231,214,0.5)"; ctx.font = "15px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top";
-      ctx.fillText(pc.name, q.X, q.Y + rd + 4); ctx.textAlign = "left";
+      if (showOn("names")) ctx.fillText(pc.name, q.X, q.Y + rd + 4); ctx.textAlign = "left";
       ctx.restore();
     });
   }
@@ -880,7 +905,7 @@
     const p0 = panels[0];
     const lbl = P({ x: (p0.leftX + p0.rightX) / 2, y: (p0.leftY + p0.rightY) / 2, z: p0.lift });
     ctx.fillStyle = "rgba(240,231,214,0.45)"; ctx.font = "14px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top";
-    ctx.fillText(pc.name, lbl.X, lbl.Y + 4); ctx.textAlign = "left";
+    if (showOn("names")) ctx.fillText(pc.name, lbl.X, lbl.Y + 4); ctx.textAlign = "left";
     ctx.restore();
   }
   function drawPiecesUp(ctx, P, pxPerM, opts) {
@@ -907,7 +932,7 @@
         F.paintBody(ctx, rig, pc.color || "#d8cdb6", null);
       }
       ctx.fillStyle = "rgba(240,231,214,0.45)"; ctx.font = "14px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top";
-      ctx.fillText(pc.name, foot.X, foot.Y + 4); ctx.textAlign = "left";
+      if (showOn("names")) ctx.fillText(pc.name, foot.X, foot.Y + 4); ctx.textAlign = "left";
       ctx.restore();
     });
   }
@@ -1365,6 +1390,7 @@
   /* 光の終点。床・奥の壁を狙う光はその面で止まる。空中を狙う光はそこで止まらず、
      床か奥の壁まで進み、どちらにも当たらなければ図の外へ抜ける（2026-09-11 本人指摘）。 */
   function beamEnd(l, S, T) {
+    if (l && l.surface === "house") return { world: T, surface: null };   // 客席へ向けた光は面に当たらない＝光だまりを描かない
     if (!l || l.surface !== "air") return { world: T, surface: (l && l.surface) || "floor" };
     const land = E.beamLanding(S, T, state.dims);
     return { world: land, surface: land.on };      // null＝何にも当たらず抜ける
@@ -1387,6 +1413,17 @@
     if (o.no) { ctx.fillStyle = o.sel ? "#1a1409" : "rgba(240,231,214,0.95)"; if (o.sel) { ctx.fillStyle = "#d3ac59"; ctx.fillRect(X - 22, Y + s + 4, 44, 22); ctx.fillStyle = "#1a1409"; } ctx.font = "600 16px sans-serif"; ctx.textBaseline = "top"; ctx.textAlign = "center"; ctx.fillText(o.no, X, Y + s + 6); ctx.textAlign = "left"; }
     ctx.restore();
   }
+  /* 客席へ向けた光の「目眩まし」。輪郭のある光だまりではなく、点のまわりにふわっと滲む光として描く。
+     R は明るさに比例させる（強いほど滲みが大きい）。作業灯を消すときは同じ丸を穴にする（glareHole）。 */
+  function drawGlare(ctx, X, Y, R, color, lv, dim) {
+    if (!(lv > 0) || !(R > 0)) return;
+    const a = (dim ? 0.3 : 1) * E.clamp(lv, 0, 1);
+    ctx.save(); ctx.globalCompositeOperation = "screen";
+    const g = ctx.createRadialGradient(X, Y, 0, X, Y, R);
+    g.addColorStop(0, hexA(color, 0.5 * a)); g.addColorStop(0.3, hexA(color, 0.2 * a)); g.addColorStop(0.7, hexA(color, 0.06 * a)); g.addColorStop(1, hexA(color, 0));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(X, Y, R, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+  const glareHole = (X, Y, R, lv) => ({ fromX: X, fromY: Y, landX: X, landY: Y, toX: X, toY: Y, r: R, halfW: 0.5, ry: 0.5, lying: false, asLine: false, noPool: false, pool: { cx: X, cy: Y, ax: R, ay: 0, bx: 0, by: R }, lv });
   function drawHandles(ctx, P, l, fid) {
     const p = l.path || {}; const d = state.dims;
     const hp = (pt, txt, filled) => { const q = P(E.pointWorld(pt, d)); ctx.beginPath(); ctx.arc(q.X, q.Y, 12, 0, Math.PI * 2); ctx.fillStyle = filled ? "#df6433" : "#201b16"; ctx.strokeStyle = "#df6433"; ctx.lineWidth = 3; ctx.fill(); ctx.stroke(); if (txt) { ctx.fillStyle = "#efe7d6"; ctx.font = "600 16px sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "center"; ctx.fillText(txt, q.X, q.Y + 1); ctx.textAlign = "left"; } return q; };
@@ -1424,11 +1461,13 @@
       const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
       if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
         const sp = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface, lv, l, be.surface, P);
-        litSpotsF.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); }
+        litSpotsF.push({ fromX: s.X, fromY: s.Y, ...sp, lv });
+        // 客席へ向けた光は、客席から見ると灯体そのものがまぶしい。灯体のまわりにふわっと滲ませる
+        if (l.surface === "house") { const gY = isFront(f) ? Math.max(20, s.Y) : s.Y, R = (B.w / d.W) * (0.9 + 2.4 * lv); drawGlare(fctx, s.X, gY, R, l.color, lv, dim); litSpotsF.push(glareHole(s.X, gY, R, lv)); } }
       if (l.surface === "air") { const floorY = B.y + B.h; fctx.save(); fctx.setLineDash([5, 6]); fctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.45); fctx.lineWidth = 2; fctx.beginPath(); fctx.moveTo(tp.X, tp.Y); fctx.lineTo(tp.X, floorY); fctx.stroke(); fctx.restore();
         fctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.8); fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(tp.X - 12, tp.Y - 12); fctx.lineTo(tp.X + 12, tp.Y + 12); fctx.moveTo(tp.X + 12, tp.Y - 12); fctx.lineTo(tp.X - 12, tp.Y + 12); fctx.stroke(); fctx.beginPath(); fctx.arc(tp.X, tp.Y, 16, 0, Math.PI * 2); fctx.stroke();
         if (!dim) { fctx.fillStyle = hexA(l.color, 0.9); fctx.font = "15px sans-serif"; fctx.textBaseline = "bottom"; fctx.fillText(`${T.z.toFixed(1)}m`, tp.X + 20, tp.Y - 6); } }
-      if (l.surface === "back" || l.surface === "air") {
+      if (l.surface === "back" || l.surface === "air" || l.surface === "house") {
         const g = showOn("path") ? E.pathGuide(l, d) : null;
         if (g && g.kind === "line") { fctx.save(); fctx.setLineDash([8, 6]); fctx.strokeStyle = "rgba(223,100,51,0.7)"; fctx.lineWidth = 2; const a = P(g.a), b = P(g.b); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); fctx.restore(); }
         if (g && g.kind === "loop" && g.plane === "frontVertical") { fctx.save(); fctx.setLineDash([8, 6]); fctx.strokeStyle = "rgba(223,100,51,0.7)"; fctx.lineWidth = 2; strokeLoop(fctx, P, g); fctx.restore(); }
@@ -1465,9 +1504,10 @@
     const litSpotsSide = [];   // 作業灯を消す（ブラックアウト）用
     if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; if (f.mount.type === "cyc") return;   // 帯は側面図では出さない（アイコンだけ下の輪で示す）
       const lv = litFactorOf(f, l); const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s0 = P(S), tp = P(T); const mine = f.mount.type === "side" && f.mount.side === side; const air = l.surface === "air"; const dim = !(mine || (air && isSel(f.id))) || (state.sel.size && !isSel(f.id));
-      if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
+      if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = (l.surface === "house" ? houseProjSide(P) : P)(be.world);
         const sp = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.D, squashFor("side", be.surface || "air"), false, !be.surface, lv, l, be.surface, P);
-        litSpotsSide.push({ fromX: s0.X, fromY: s0.Y, ...sp, lv }); }
+        litSpotsSide.push({ fromX: s0.X, fromY: s0.Y, ...sp, lv });
+        if (l.surface === "house") { const R = Math.max(sp.halfW * 1.8, 26); drawGlare(fctx, e2.X, e2.Y, R, l.color, lv, dim); litSpotsSide.push(glareHole(e2.X, e2.Y, R, lv)); } }
       if (air) {
         fctx.save(); fctx.setLineDash([5, 6]); fctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.45); fctx.lineWidth = 2; fctx.beginPath(); fctx.moveTo(tp.X, tp.Y); fctx.lineTo(tp.X, B.y + B.h); fctx.stroke(); fctx.restore();
         fctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.8); fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(tp.X - 12, tp.Y - 12); fctx.lineTo(tp.X + 12, tp.Y + 12); fctx.moveTo(tp.X + 12, tp.Y - 12); fctx.lineTo(tp.X - 12, tp.Y + 12); fctx.stroke(); fctx.beginPath(); fctx.arc(tp.X, tp.Y, 16, 0, Math.PI * 2); fctx.stroke();
@@ -1542,16 +1582,18 @@
       if (showOn("beam")) {
         /* 3Dでは床の潰れ方を式から出せる。奥行き1mで画面が縦に動く量 ÷ その奥行きでの横1m。
            これが床に落ちた丸の「縦／横」の比になる。壁と空中は客席に正対するので潰さない。 */
-        const be = beamEnd(l, S, T), e2 = P(be.world);
+        // 客席へ向けた光は、この図では観客に向かってくる。帯は舞台の手前端まで、まぶしさは灯体のまわりに
+        const be = beamEnd(l, S, T), e2 = P(l.surface === "house" ? { ...be.world, y: Math.min(be.world.y, d.D) } : be.world);
         const sq = be.surface === "floor"
           ? [1, Math.min(1, ((L.bottomY - L.floorY) / d.D) / (L.pxPerM * Math.max(0.05, e2.scale || 1)))]
           : squashFor("front", be.surface || "air");
         const sp = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface, lv, l, be.surface, P);
         litSpots3D.push({ fromX: s0.X, fromY: s0.Y, ...sp, lv });
+        if (l.surface === "house") { const gY = isFront(f) ? Math.max(20, s0.Y) : s0.Y, R = L.pxPerM * Math.max(0.05, s0.scale || 1) * (0.9 + 2.4 * lv); drawGlare(fctx, s0.X, gY, R, l.color, lv, dim); litSpots3D.push(glareHole(s0.X, gY, R, lv)); }
       }
       if (showOn("path")) { const g = E.pathGuide(l, d);
         if (g && g.kind === "line") { fctx.save(); fctx.setLineDash([8, 6]); fctx.strokeStyle = "rgba(223,100,51,0.7)"; fctx.lineWidth = 2; const a = P(g.a ? E.pointWorld(g.a, d) : S), b = P(E.pointWorld(g.b, d)); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); fctx.restore(); } }
-      if (isSel(f.id) && (l.surface === "back" || l.surface === "air")) drawHandles(fctx, (pt) => P(pt), l, f.id);
+      if (isSel(f.id) && (l.surface === "back" || l.surface === "air" || l.surface === "house")) drawHandles(fctx, (pt) => P(pt), l, f.id);
     });
     // 灯体
     state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S);
@@ -1652,7 +1694,7 @@
       return;
     }
     // 選択モード
-    if (state.mode === "move") { const hh = hitHandle(pt, planProj(), ["floor", "air"]); if (hh) { startHandleDrag(hh, "uv"); return; } }
+    if (state.mode === "move") { const hh = hitHandle(pt, houseProjPlan(planProj(), B), ["floor", "air", "house"]); if (hh) { startHandleDrag(hh, "uv"); return; } }
     const f = hitFixturePlan(pt);
     if (f) { if (ev.shiftKey) { state.sel.has(f.id) ? state.sel.delete(f.id) : state.sel.add(f.id); } else if (!state.sel.has(f.id)) state.sel = new Set([f.id]); state.selTruss = f.mount.type === "truss" ? f.mount.trussId : state.selTruss; if (state.mode === "place" && !ev.shiftKey) state.drag = { kind: "fixture", fid: f.id, before: snapshot(), moved: false, startU: f.mount.u, startV: f.mount.v, X0: pt.X, Y0: pt.Y }; renderAll(); return; }
     if (state.mode === "place") { const t = hitTrussPlan(pt); if (t) { state.selTruss = t.id; state.sel.clear(); state.drag = { kind: "truss", tid: t.id, before: snapshot(), moved: false }; renderAll(); return; } }
@@ -1689,6 +1731,34 @@
   };
   plan.addEventListener("pointerup", endDrag); plan.addEventListener("pointercancel", endDrag);
   plan.addEventListener("pointerleave", () => { state.hover = null; draw(); });
+  /* 平面図の狙い点（赤い丸）の上でホイール／トラックパッドを回すと、その灯の広がりが変わる
+     （2026-09-13 本人要望「ドラッグで移動、スクロールで広がりをコントロール」）。
+     下へ回すと広がり、上へ回すと絞る。ドラッグと同じく、同じ当てる場所の選択灯にまとめて効く。
+     ムービングはシーンの値（light.beamDeg）、固定灯は仕込みの値（fixture.beamDeg）へ入る。
+     連続した操作は1回の「元に戻す」にまとめる（手が止まって0.4秒後に確定）。 */
+  let wheelTimer = 0;
+  plan.addEventListener("wheel", (ev) => {
+    if (state.mode !== "move" || state.drag) return;
+    const pt = canvasPoint(plan, ev);
+    const hh = hitHandle(pt, houseProjPlan(planProj(), planBox()), ["floor", "air", "house"]);
+    if (!hh || hh.handle === "r") return;
+    ev.preventDefault();
+    if (state.play.on) stop("調整するため再生を止めました");
+    const step = ev.deltaMode === 1 ? Math.sign(ev.deltaY) * 2 : (E.clamp(Math.round(ev.deltaY / 12), -4, 4) || Math.sign(ev.deltaY));
+    if (!step) return;
+    const ids = [...new Set([hh.fid, ...handleTargets(hh).map((h) => h.fid)])];
+    let shown = null;
+    ids.forEach((fid) => {
+      const f = fixtureById(fid), l = lightOf(fid); if (!f || !l) return;
+      const next = E.clamp(Math.round(E.beamDegOf(f, l) + step), 4, 70);
+      if (E.isMoving(f)) l.beamDeg = next; else f.beamDeg = next;
+      if (fid === hh.fid) shown = next;
+    });
+    state.spreadHint = { deg: shown, X: pt.X, Y: pt.Y };
+    draw();
+    clearTimeout(wheelTimer);
+    wheelTimer = setTimeout(() => { state.spreadHint = null; commit(`${ids.length > 1 ? `${ids.length}灯` : label(hh.fid)}の広がりを${shown}°にしました`); }, 400);
+  }, { passive: false });
   /* 図の灯体をダブルクリックでオン／オフ（2026-09-11 本人要望）。
      配置のページで押したときは、灯体情報のページへ移って点ける。 */
   function toggleLightOf(f) {
@@ -1729,6 +1799,7 @@
       if (axis === "uv") { target.u = E.clamp(u0 + du, 0, 1); target.v = E.clamp(v0 + dv, 0, 1); }
       else if (axis === "uh") { target.u = E.clamp(u0 + du, 0, 1); target.hM = E.clamp(hh0 + dh, 0, d.H); }
       else if (axis === "vh") { target.v = E.clamp(v0 + dv, 0, 1); target.hM = E.clamp(hh0 + dh, 0, d.H); }
+      if (l.surface === "house") target.v = 1;   // 客席へ向けた点は手前端に固定（客席側の距離は数値で決める）
     });
   }
 
@@ -1755,7 +1826,7 @@
         if (!(side === "front" && state.front3d)) { const t2 = state.rig.trusses.find((tt) => Math.abs(pt.Y - (B.y + B.h - tt.h / state.dims.H * B.h)) < 12); if (t2) { state.selTruss = t2.id; state.sel.clear(); renderAll(); } }
         return;
       }
-      const hh = hitHandle(pt, P, ["back", "air"]); if (hh) { startHandleDrag(hh, "uh", sec); return; }
+      const hh = hitHandle(pt, P, ["back", "air", "house"]); if (hh) { startHandleDrag(hh, "uh", sec); return; }
       const f = hitFixtureSec(sec, pt); if (f) { state.sel = ev.shiftKey ? (state.sel.has(f.id) ? (state.sel.delete(f.id), state.sel) : state.sel.add(f.id)) : new Set([f.id]); renderAll(); }
     });
     cv.addEventListener("pointermove", (ev) => {
@@ -2113,7 +2184,7 @@
         const names = v.scenes.map((i) => `シーン${i + 1}「${state.scenes[i].name}」`).join("・");
         const l = v.light;
         const b = btn(`${names} にそろえる`, () => unifyFixed(f, l), "small");
-        b.title = `当てる先＝${l.surface === "air" ? "空中" : l.surface === "back" ? "奥の壁" : "床"}／広がり${Math.round(E.beamDegOf(f, l))}°`;
+        b.title = `当てる先＝${l.surface === "air" ? "空中" : l.surface === "back" ? "奥の壁" : l.surface === "house" ? "客席" : "床"}／広がり${Math.round(E.beamDegOf(f, l))}°`;
         acts.append(b);
       });
       row.append(acts); box.append(row);
@@ -2227,10 +2298,10 @@
       const b = sub("当てる場所・動き");
       const surs = new Set(lit.map((fid) => lightOf(fid).surface || "floor"));
       b.append(field(surs.size > 1 ? "当てる場所（バラバラ）" : "当てる場所",
-        seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"]], surs.size === 1 ? [...surs][0] : null, (v) => {
+        seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], surs.size === 1 ? [...surs][0] : null, (v) => {
           bulkEach(ids, (f, l, i, fid) => {
             setLight(fid, { surface: v }); restyleToSurface(fid);
-            const l2 = lightOf(fid); if (l2.path && (l2.path.kind === "circle" || l2.path.kind === "eight")) l2.path.plane = v === "back" ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
+            const l2 = lightOf(fid); if (l2.path && (l2.path.kind === "circle" || l2.path.kind === "eight")) l2.path.plane = (v === "back" || v === "house") ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
           });
           commit(`${ids.length}灯の当てる場所を変えました`);
         }), true));
@@ -2539,6 +2610,8 @@
       const box = (title) => { const b = el("div", "pbox"); if (title) b.append(el("p", "kicker", title)); host.append(b); return b; };
       const heightField = (b, label2, point) => {
         if (l.surface === "floor") return; // 床は高さ0固定。UIに出さない
+        // 客席: 手前端からどれだけ客席側か。前明かりの「舞台前から」と同じ尺度
+        if (l.surface === "house") b.append(field(label2.replace("高さ", "舞台前から"), range(0.5, E.HOUSE_AHEAD_MAX, 0.5, point.aheadM || 6, (v) => `約${v.toFixed(1)}m`, (v) => { point.aheadM = v; draw(); }, () => commit())));
         b.append(field(label2, range(0, state.dims.H, 0.1, point.hM || 0, (v) => `約${v.toFixed(1)}m`, (v) => { point.hM = v; draw(); }, () => commit())));
       };
 
@@ -2581,11 +2654,12 @@
          （2026-09-13 本人指摘「もとから一列のバー」。横位置・長さ・床/上部は配置パネルへ）。 */
       if (f.mount.type !== "cyc") {
         const b = box("当てる場所・動き");
-        b.append(field("当てる場所", seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"]], l.surface, (v) => {
+        b.append(field("当てる場所", seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], l.surface, (v) => {
           setLight(fid, { surface: v }); restyleToSurface(fid);
-          const l2 = lightOf(fid); if (l2.path && l2.path.kind === "circle") l2.path.plane = v === "back" ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
+          const l2 = lightOf(fid); if (l2.path && l2.path.kind === "circle") l2.path.plane = (v === "back" || v === "house") ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
           commit();
         }), true));
+        if (l.surface === "house") b.append(el("p", "hint", "客席へ向けた光。客席からは光源そのものが見える（目眩まし）ので、図では光だまりでなく灯体・狙い点のまわりの滲みで表します。高さは舞台の床から。平面図では左右だけ動かせます。"));
         if (moving) {
           /* 軌道の種類。「動きなし」は位置だけ止めて、強さ・広がりの往復は続ける。 */
           b.append(field("動き", seg([["still", "動きなし"], ["line", "往復"], ["circle", "円"], ["eight", "8の字"]], p.kind, (v) => { setKind(fid, v); commit(); }), true));
@@ -2657,6 +2731,7 @@
       } else {
         const b = box("光の広がり");
         const fmtDeg = (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`;
+        b.append(el("p", "hint", "平面図の赤い丸の上でスクロールしても変えられます（下へ回すと広がる・上へ回すと絞る）。"));
         if (mover) {
           b.append(field(moving ? "始点" : "広がり", range(5, 55, 1, E.beamDegOf(f, l), fmtDeg, (v) => { l.beamDeg = v; draw(); }, () => commit()), true));
           if (moving) b.append(field("終点", range(5, 55, 1, E.clamp(E.finite(l.beamDegTo, E.beamDegOf(f, l)), 5, 55), fmtDeg, (v) => { l.beamDegTo = v; draw(); }, () => commit()), true));
@@ -2773,7 +2848,7 @@
     const selSig = [...state.sel].join(",");
     if (selSig !== lastSelSig) { lastSelSig = selSig; if (sideSel && sideSel.mount.side !== state.sideView) state.sideView = sideSel.mount.side; }
     applySideView(state.sideView);
-    const needsHeightEdit = state.mode === "move" && [...state.sel].some((id) => ["back", "air"].includes((lightOf(id) || {}).surface));
+    const needsHeightEdit = state.mode === "move" && [...state.sel].some((id) => ["back", "air", "house"].includes((lightOf(id) || {}).surface));
     const focusKind = state.tool === "side" ? (sideSel ? sideSel.mount.side : "shimote")
       : sideSel ? sideSel.mount.side
       : needsHeightEdit ? "front" : null;
