@@ -123,6 +123,7 @@
     play: { on: false, t: 0, last: 0, raf: 0 },
     dirty: false, history: [], future: [],
     nextNo: 1, seq: 1,
+    designName: "",                    // いま編集している照明デザインの名前（保存で付ける）
     /* 作った色。ショー全体で共通なので、どの灯からもワンタッチで使える（2026-09-11 本人要望）。
        配置と同じくショー共通の持ち物なので、rig と一緒に保存・Undoの対象にする。 */
     palette: [],
@@ -130,6 +131,10 @@
     collapsed: new Set(), filter: "all",   // 一覧: 取り付け場所ごとの折り畳みと絞り込み（20灯以上向け）
     snap: false,                           // 1mのグリッドに合わせて置く・動かす（本人要望 2026-09-11）
     show: { no: true, beam: true, path: true, grid: true, pieces: true, blackout: false },
+    /* 室内灯をどれだけ消すか（0〜100%）。100で真っ暗、0で消さないのと同じ
+       （2026-09-13 本人要望「押したら全部消えてしまうので、どれくらい消すか決めたい」）。
+       図の見え方の設定なので show と同じくUndoの対象にはしない。 */
+    dim: 100,
     /* 強さ（調光）の効き方。灯ごとの数値（0〜100%）は目盛りどおりのリニアで、
        その数値が「見える明るさ」へどう効くかだけをこのカーブで決める
        （音楽のベロシティカーブと同じ考え方。2026-09-13 本人要望）。
@@ -849,7 +854,10 @@
     mctx.setTransform(1, 0, 0, 1, 0, 0);
     mctx.clearRect(0, 0, mc.width, mc.height);
     mctx.globalCompositeOperation = "source-over";
-    mctx.fillStyle = "#0d0e10"; mctx.fillRect(0, 0, mc.width, mc.height);
+    /* 暗幕の濃さ＝どれだけ消すか。100%で真っ暗、50%なら半分だけ沈む。
+       穴（光の当たっているところ）の開け方は変えないので、光と地の差はそのまま保たれる。 */
+    const dim = E.clamp(E.finite(state.dim, 100), 0, 100) / 100;
+    mctx.fillStyle = `rgba(13,14,16,${dim})`; mctx.fillRect(0, 0, mc.width, mc.height);
     mctx.globalCompositeOperation = "destination-out";
     spots.forEach((sp) => {
       // 灯の強さぶんだけ暗幕を剥がす。20%の灯なら20%ぶんしか明るくならない（2026-09-13）
@@ -1290,9 +1298,22 @@
   if ($("snap")) $("snap").addEventListener("change", () => { state.snap = $("snap").checked; draw(); });
 
   /* ---------- 図に出すもの・探す・舞台の大きさ（4図化で空いた場所へ入れた操作） ---------- */
-  document.querySelectorAll("#showtoggles button").forEach((b) => {
-    b.onclick = () => { state.show[b.dataset.show] = !showOn(b.dataset.show); b.setAttribute("aria-pressed", String(showOn(b.dataset.show))); draw(); };
+  document.querySelectorAll("#showtoggles button, #lighttoggles button").forEach((b) => {
+    /* 室内灯を消すの入り切りでは、消し具合のつまみの出し入れもいるので renderAll で作り直す。
+       ほかは図だけ描き直せば足りる。 */
+    b.onclick = () => { state.show[b.dataset.show] = !showOn(b.dataset.show); if (b.dataset.show === "blackout") renderAll(); else { b.setAttribute("aria-pressed", String(showOn(b.dataset.show))); draw(); } };
   });
+  /* 室内灯をどれだけ消すか。つまみと数値入力は同じ値を指す（2026-09-13 本人要望）。 */
+  {
+    const setDim = (v, from) => {
+      state.dim = E.clamp(E.finite(v, 100), 0, 100);
+      if (from !== "range" && $("dim")) $("dim").value = state.dim;
+      if (from !== "num" && $("dimnum")) $("dimnum").value = state.dim;
+      draw();
+    };
+    if ($("dim")) $("dim").addEventListener("input", () => setDim(Number($("dim").value), "range"));
+    if ($("dimnum")) $("dimnum").addEventListener("input", () => setDim(Number($("dimnum").value), "num"));
+  }
   if ($("search")) $("search").addEventListener("input", () => { state.search = $("search").value.trim(); renderList(); });
   // 舞台の大きさ: 図の縮尺と1m吸着の基準が変わるので、動かすたびに描き直す
   [["dimW", "W", "m"], ["dimD", "D", "m"], ["dimH", "H", "m"]].forEach(([id, key]) => {
@@ -1991,12 +2012,20 @@
     /* 配置はシーン共通なので、シーン送りも再生も照明デザインのときだけ出す（2026-09-11 本人指摘）。
        シーン送りは図の上の帯（場所は残して中身だけ隠す）、再生はパネルの見出し行（丸ごと隠す）。 */
     const inMove = state.mode === "move";
+    /* 「光」と「室内灯を消す」は照明デザインタブだけのもの（2026-09-13 本人要望）。
+       配置タブでは枠ごと隠す。消し具合のつまみは室内灯を消しているときだけ出す。 */
+    $("lighttoggles").hidden = !inMove;
+    $("dimwrap").hidden = !(inMove && showOn("blackout"));
+    { const d = E.clamp(E.finite(state.dim, 100), 0, 100); $("dim").value = d; $("dimnum").value = d; }
     $("scene-name").textContent = `シーン ${state.sceneIndex + 1}「${scene().name}」`;
     $("scenerow").classList.toggle("off", !inMove);   // 場所は残す（図の位置を両ページで揃える）
     $("insphead").hidden = !inMove;
     $("transport").hidden = !inMove;
     $("empty").hidden = Boolean(state.rig.trusses.length || state.rig.fixtures.length);
-    $("dirty").textContent = state.dirty ? "未適用の変更あり" : ""; $("dirty").classList.toggle("ok", !state.dirty);
+    /* いま編集しているデザイン名と、未適用かどうかを1行で出す（2026-09-13 保存機能の追加にあわせて）。 */
+    { const nm = state.designName ? `「${state.designName}」` : "";
+      $("dirty").textContent = state.dirty ? `${nm}未適用の変更あり` : nm;
+      $("dirty").classList.toggle("ok", !state.dirty); }
     $("undo").disabled = !state.history.length; $("redo").disabled = !state.future.length;
     // 4図は常時表示。いま手を入れるべき図に縁を付けて目線を誘導する（切替はしない）
     const selFix = [...state.sel].map(fixtureById).filter(Boolean);
@@ -2008,7 +2037,7 @@
     SECS.forEach((sec) => sec.cv.parentElement.classList.toggle("focus", sec.kind === focusKind));
     renderToolStrip();   // 帯の出し入れで図に使える高さが変わるので、寸法合わせより先に
     syncCanvasSize();
-    document.querySelectorAll("#showtoggles button").forEach((b) => b.setAttribute("aria-pressed", String(showOn(b.dataset.show))));
+    document.querySelectorAll("#showtoggles button, #lighttoggles button").forEach((b) => b.setAttribute("aria-pressed", String(showOn(b.dataset.show))));
     document.querySelectorAll("#frontmode button").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.front === "3d") === Boolean(state.front3d))));
     $("seat").hidden = !state.front3d;
     $("filters").hidden = state.mode !== "move";
@@ -2028,6 +2057,7 @@
   $("dup").onclick = duplicateSelected; $("del").onclick = removeSelected; $("spread").onclick = spreadSelected;
   $("presets").onclick = openPresets;
   $("prefs").onclick = openPrefs;        // 環境設定（歯車）
+  $("save").onclick = openDesigns;       // 照明デザインを名前を付けて保存
   $("empty-presets").onclick = openPresets;
   $("empty-truss").onclick = () => { state.tool = "truss"; $("empty").hidden = true; renderAll(); $("empty").hidden = true; };
   /* ---------- よくある仕込み（プリセット） ----------
@@ -2309,6 +2339,135 @@
     } catch (e) { toast("書き出しに失敗しました: " + (e && e.message)); }
     band.hidden = true; bar.style.width = "0%"; state.exporting = false; state.play.t = 0; renderAll();
   };
+  /* ---------- 照明デザインの保存（名前を付けて残す） ----------
+     2026-09-13 本人要望。後で舞台スケッチ本体が取り込めるよう、<b>アプリに依らない形</b>で持つ。
+
+     書式（1ファイル＝1つの照明デザイン）:
+       format   "shosai.light-design" 固定。取り込む側はこれを見て判別する
+       version  書式の版。増えたら取り込む側で分岐する
+       name     デザイン名（本人が付ける）
+       savedAt  保存した時刻（ISO8601）
+       stage    舞台の大きさ {W,D,H}（m）。u/v を実寸に戻すのに要る
+       rig      仕込み（バトンと灯体）。ショー共通
+       scenes   場面ごとの灯の設定。{id,name,cue:{lights,groups}} だけを持ち、
+                演者・セット（pieces）は<b>持たない</b>——あれは舞台スケッチ側の持ち物なので、
+                取り込むときは向こうの場面へ cue だけを載せる
+       palette  作った色（ショー共通）
+       levelCurve 強さの効き方（全灯共通のカーブ）
+       coords   座標と単位の約束。取り込む側が推測しなくて済むように文字で書いておく
+
+     保存先はこのブラウザ（localStorage）。ファイル書き出し／読み込みもできるので、
+     別の環境や本体へはファイルで渡す。 */
+  const DESIGN_FORMAT = "shosai.light-design";
+  const DESIGN_VERSION = 1;
+  const DESIGN_STORE = "shosai.lightDesigns.v1";
+
+  function buildDesign(name) {
+    return {
+      format: DESIGN_FORMAT, version: DESIGN_VERSION,
+      name: String(name || "名前なし").slice(0, 60),
+      savedAt: new Date().toISOString(),
+      app: "照明を組む（試作）",
+      stage: { ...state.dims },
+      coords: {
+        u: "左右 0=下手 〜 1=上手", v: "奥行き 0=最奥 〜 1=最前（客席側）", hM: "床からの高さ（m）",
+        level: "強さ 0〜100（0は消灯と同じ）", levelTo: "動きの終点の強さ（無ければ変化なし）",
+        beamDeg: "光の広がり（度）", beamDegTo: "動きの終点の広がり（無ければ変化なし）",
+        periodSec: "1往復（1周）の秒数", offsetSec: "何秒遅らせて始めるか",
+      },
+      rig: JSON.parse(JSON.stringify(state.rig)),
+      scenes: state.scenes.map((sc) => ({ id: sc.id, name: sc.name, cue: JSON.parse(JSON.stringify(sc.cue)) })),
+      palette: [...state.palette],
+      levelCurve: [...state.levelCurve],
+    };
+  }
+  /* 取り込み。場面の演者・セットは<b>いまのもの</b>を残し、灯の設定だけ差し替える
+     （デザインは灯の話なので、舞台スケッチ側の駒を上書きしない）。 */
+  function applyDesign(o) {
+    if (!o || o.format !== DESIGN_FORMAT) throw new Error("この形式は読めません（照明デザインのファイルではありません）");
+    if (Number(o.version) > DESIGN_VERSION) throw new Error("新しい版の形式です。このアプリでは読めません");
+    if (!o.rig || !Array.isArray(o.scenes)) throw new Error("中身が足りません（仕込みか場面がありません）");
+    if (o.stage) state.dims = { W: E.finite(o.stage.W, 12), D: E.finite(o.stage.D, 8), H: E.finite(o.stage.H, 8) };
+    const byId = new Map(state.scenes.map((sc) => [sc.id, sc]));
+    state.scenes = o.scenes.map((ds, i) => {
+      const cur = byId.get(ds.id) || state.scenes[i];
+      return { id: ds.id, name: ds.name || `場面${i + 1}`, pieces: cur ? cur.pieces : [], cue: ds.cue || { lights: {}, groups: [] } };
+    });
+    state.rig = o.rig;
+    if (Array.isArray(o.palette)) state.palette = [...o.palette];
+    if (Array.isArray(o.levelCurve) && o.levelCurve.length === LEVEL_CURVE_POINTS) state.levelCurve = [...o.levelCurve];
+    // 番号の続きをそろえる（読み込んだ灯と番号がぶつからないように）
+    state.nextNo = state.rig.fixtures.reduce((mx, f) => Math.max(mx, E.finite(f.no, 0)), 0) + 1;
+    state.sceneIndex = Math.min(state.sceneIndex, state.scenes.length - 1);
+    state.sel.clear(); state.selTruss = state.rig.trusses[0] ? state.rig.trusses[0].id : null;
+    state.designName = o.name || "";
+    state.history = []; state.future = []; state.dirty = false; baseline = snapshot();
+    renderAll();
+  }
+  const readStore = () => { try { const raw = localStorage.getItem(DESIGN_STORE); const a = raw ? JSON.parse(raw) : []; return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+  const writeStore = (list) => { try { localStorage.setItem(DESIGN_STORE, JSON.stringify(list)); return true; } catch (e) { toast("このブラウザに保存できませんでした（容量かプライベートモードの可能性）"); return false; } };
+  const designFileName = (name) => `${(name || "照明デザイン").replace(/[\\/:*?"<>|]/g, "_")}.lightdesign.json`;
+
+  function openDesigns() {
+    const list = readStore();
+    const rows = list.length
+      ? list.map((d, i) => `<div class="dsrow" data-i="${i}">
+          <span class="dsname">${(d.name || "名前なし").replace(/</g, "&lt;")}<small>${(d.savedAt || "").slice(0, 16).replace("T", " ")}　灯${(d.rig && d.rig.fixtures ? d.rig.fixtures.length : 0)}・場面${(d.scenes || []).length}</small></span>
+          <span class="dsacts">
+            <button type="button" class="btn small" data-act="load" data-i="${i}">呼び出す</button>
+            <button type="button" class="btn small quiet" data-act="file" data-i="${i}">ファイルへ</button>
+            <button type="button" class="btn small quiet" data-act="del" data-i="${i}">削除</button>
+          </span></div>`).join("")
+      : `<p class="hint">まだ保存された照明デザインはありません。</p>`;
+    dialog(`<p class="kicker">照明デザインを保存する</p>
+      <div class="field wide"><span>デザイン名</span><input type="text" id="dsname" maxlength="60" placeholder="例: オープニング案A" value="${(state.designName || "").replace(/"/g, "&quot;")}"></div>
+      <div class="dsbtns">
+        <button type="button" class="btn small primary" id="dssave">この名前で保存</button>
+        <button type="button" class="btn small" id="dsfile">ファイルへ書き出す</button>
+        <button type="button" class="btn small quiet" id="dsopen">ファイルから読み込む</button>
+      </div>
+      <input type="file" id="dspick" accept=".json,application/json" hidden>
+      <p class="hint">保存先はこのブラウザです。別の環境や舞台スケッチ本体へ渡すときはファイルにします。
+      ファイルは<b>アプリに依らない形</b>（format: ${DESIGN_FORMAT}）なので、本体側で取り込めます。
+      演者・セットは含めません——あれは舞台スケッチ側の持ち物で、取り込むときは向こうの場面へ灯の設定だけが載ります。</p>
+      <p class="prefname">保存したデザイン</p>
+      <div class="dslist">${rows}</div>`, [["閉じる", null, "primary"]]);
+
+    const nameNow = () => ($("dsname") ? $("dsname").value.trim() : "");
+    if ($("dssave")) $("dssave").onclick = () => {
+      const nm = nameNow(); if (!nm) { toast("デザイン名を入れてください"); return; }
+      const all = readStore();
+      const at = all.findIndex((d) => d.name === nm);
+      const d = buildDesign(nm);
+      if (at >= 0) all[at] = d; else all.push(d);
+      if (!writeStore(all)) return;
+      state.designName = nm; renderAll();
+      $("dialog").hidden = true;
+      toast(at >= 0 ? `「${nm}」を上書き保存しました` : `「${nm}」を保存しました`);
+    };
+    if ($("dsfile")) $("dsfile").onclick = () => {
+      const nm = nameNow() || "照明デザイン";
+      const d = buildDesign(nm);
+      download(new Blob([JSON.stringify(d, null, 2)], { type: "application/json" }), designFileName(nm));
+      state.designName = nm; renderAll();
+      toast(`「${nm}」をファイルに書き出しました`);
+    };
+    if ($("dsopen")) $("dsopen").onclick = () => $("dspick") && $("dspick").click();
+    if ($("dspick")) $("dspick").onchange = async () => {
+      const f = $("dspick").files && $("dspick").files[0]; if (!f) return;
+      try { applyDesign(JSON.parse(await f.text())); $("dialog").hidden = true; toast(`「${state.designName || f.name}」を読み込みました`); }
+      catch (e) { toast(`読み込めませんでした: ${e.message}`); }
+    };
+    document.querySelectorAll("#dialog .dsrow button").forEach((b) => {
+      b.onclick = () => {
+        const all = readStore(); const i = Number(b.dataset.i); const d = all[i]; if (!d) return;
+        if (b.dataset.act === "load") { try { applyDesign(d); $("dialog").hidden = true; toast(`「${d.name}」を呼び出しました`); } catch (e) { toast(`読み込めませんでした: ${e.message}`); } }
+        if (b.dataset.act === "file") download(new Blob([JSON.stringify(d, null, 2)], { type: "application/json" }), designFileName(d.name));
+        if (b.dataset.act === "del") { all.splice(i, 1); if (writeStore(all)) { openDesigns(); toast(`「${d.name}」を削除しました`); } }
+      };
+    });
+  }
+
   function download(blob, name) { if (!blob) return; const u = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = u; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); }
 
   /* 「8人のサーカス」を既定の起点にする（2026-09-13 本人要望「デフォルトで読み込んでほしい」）。
