@@ -510,19 +510,41 @@
     }
     return out.concat(inn.reverse());
   }
-  /* 木漏れ日の抜けを撒く。実機のフォリッジは抜けの数がずっと多い（2026-09-13 本人指摘）ので、
-     数を増やして大小をばらけさせる。乱数は種を固定した自前の式——毎回まったく同じ形になる。 */
+  /* 木漏れ日（フォリッジ）の抜けを撒く。
+     実機の見本を見ると、抜けは滑らかな楕円ではなく「ぎざぎざの不定形」で、
+     ごく小さな粒から大きな塊まで大きさの幅が広く、近いもの同士がつながって枝のような
+     かたまりになる（2026-09-13 本人が参考画像を提示。中身は写さず、性質だけ取り入れた）。
+     そこで:
+       ・頂点ごとに半径と角度をばらした多角形にして、縁をとがらせる
+       ・大きさはべき分布寄り（小さいものが多く、たまに大きい）
+       ・4割ほどは既にある抜けのそばへ置く。nonzero で塗るので重なって1つの塊になる
+     粒は細かい。実機の見本は直径の1/30ほどの粒から1/8ほどの塊まで混ざる。
+     白と黒がおよそ半々になる数にしてある（下の呼び出しで500個。実測50.0%）。
+     乱数は種を固定した自前の式——毎回まったく同じ形になる。
+     ＊数や大きさを変えたら割合も変わる。半々を保ちたいときは測り直すこと。 */
   function foliageShapes(count, seed) {
     let x = seed >>> 0;
     const rnd = () => { x = (x * 1664525 + 1013904223) >>> 0; return x / 4294967296; };
-    const out = [];
-    while (out.length < count) {
-      const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * 0.44;     // 円のなかへ均等に撒く
-      const u = 0.5 + Math.cos(a) * r, v = 0.5 + Math.sin(a) * r;
-      const big = rnd() < 0.3;                                        // 3割だけ大きめの抜け
-      const rx = (big ? 0.045 : 0.022) + rnd() * (big ? 0.035 : 0.020);
-      out.push(["ellipse", +u.toFixed(3), +v.toFixed(3), +rx.toFixed(3),
-                +(rx * (0.5 + rnd() * 0.4)).toFixed(3), Math.round(rnd() * 180 - 90)]);
+    const TAU = Math.PI * 2, out = [], seeds = [];
+    for (let i = 0; i < count; i++) {
+      let u, v;
+      if (seeds.length && rnd() < 0.45) {            // 既にある抜けの近くへ＝つながって枝になる
+        const q = seeds[(rnd() * seeds.length) | 0];
+        const a = rnd() * TAU, d = 0.012 + rnd() * 0.028;
+        u = q[0] + Math.cos(a) * d; v = q[1] + Math.sin(a) * d;
+      } else {                                       // 円のなかへ均等に撒く
+        const a = rnd() * TAU, r = Math.sqrt(rnd()) * 0.47;
+        u = 0.5 + Math.cos(a) * r; v = 0.5 + Math.sin(a) * r;
+      }
+      seeds.push([u, v]);
+      const base = 0.007 + Math.pow(rnd(), 2.4) * 0.042;   // 小さいものが多く、たまに大きい
+      const n = 7 + Math.floor(rnd() * 6), rot = rnd() * TAU, pts = [];
+      for (let k = 0; k < n; k++) {
+        const a = rot + (k / n) * TAU + (rnd() - 0.5) * 0.75;   // 角度もばらす＝とがる
+        const rr = base * (0.35 + rnd() * 1.3);
+        pts.push([+(u + Math.cos(a) * rr).toFixed(3), +(v + Math.sin(a) * rr).toFixed(3)]);
+      }
+      out.push(["poly", pts]);
     }
     return out;
   }
@@ -542,7 +564,7 @@
                ["circle", .58,.46,.05], ["circle", .84,.56,.07], ["circle", .16,.76,.08], ["circle", .44,.82,.06],
                ["circle", .70,.78,.09]] },
     { id: "foliage", name: "木漏れ日", kind: "rot", note: "フォリッジ。屋外・森。場所を決める",
-      shapes: foliageShapes(42, 20260913) },
+      shapes: foliageShapes(500, 20260913) },
     { id: "radial", name: "放射", kind: "rot", note: "回すと強い。ライブ向き",
       shapes: [["spoke", 8, .06, .48]] },
     { id: "spiral", name: "渦巻き", kind: "rot", note: "回すと吸い込まれて見える",

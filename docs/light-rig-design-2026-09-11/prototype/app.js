@@ -1068,7 +1068,9 @@
 
   /* 選ぶボタンに出す小さな見本。描画に使うのと同じ形（GOBOS の shapes）から作るので、
      一覧の見た目と実際に出る模様が必ず一致する。 */
+  const goboThumbCache = new Map();
   function goboThumb(g) {
+    const hit = goboThumbCache.get(g.id); if (hit) return hit;
     const parts = g.shapes.map((sp) => {
       const k = sp[0], P = (v) => (v * 100).toFixed(1);
       if (k === "poly") return `<polygon points="${sp[1].map(([u, v]) => `${P(u)},${P(v)}`).join(" ")}"/>`;
@@ -1082,7 +1084,9 @@
           return `<rect x="50" y="${(50 - hw).toFixed(1)}" width="${len.toFixed(1)}" height="${(hw * 2).toFixed(1)}" transform="rotate(${a} 50 50)"/>`; }).join(""); }
       return "";
     }).join("");
-    return `<svg viewBox="0 0 100 100" aria-hidden="true"><g fill="currentColor">${parts}</g></svg>`;
+    const svg = `<svg viewBox="0 0 100 100" aria-hidden="true"><g fill="currentColor">${parts}</g></svg>`;
+    goboThumbCache.set(g.id, svg);
+    return svg;
   }
 
   /* ゴボ（模様）の形を、いったん別のキャンバスへ描いて返す（白＝光が通るところ）。
@@ -1094,6 +1098,29 @@
      しかも対応していない環境では代入しても例外にならず黙って無視されるので、
      Chrome では効くのに Safari では「つまみを動かしても何も起きない」という形で出る。
      shadowBlur はどの環境にもあるので、ぼかしはこちらで作る。 */
+  /* 描く形は灯ごと・図ごと・毎コマ組み直すと重い（木漏れ日は多角形が数百）。
+     単位の形空間（−0.5〜0.5）で1度だけ組んで使い回す。あとは拡大して塗るだけ。 */
+  const goboPathCache = new Map();
+  function goboPath(g) {
+    const hit = goboPathCache.get(g.id); if (hit) return hit;
+    const p = new Path2D();
+    const X = (u) => u - 0.5, Y = (v) => v - 0.5;
+    g.shapes.forEach((sp) => {
+      const k = sp[0];
+      if (k === "poly") { sp[1].forEach(([u, v], i) => { const x = X(u), y = Y(v); i ? p.lineTo(x, y) : p.moveTo(x, y); }); p.closePath(); }
+      else if (k === "circle") { p.moveTo(X(sp[1]) + sp[3], Y(sp[2])); p.arc(X(sp[1]), Y(sp[2]), sp[3], 0, Math.PI * 2); }
+      else if (k === "rect") { const x = X(sp[1]), y = Y(sp[2]), w = sp[3], h = sp[4]; p.moveTo(x, y); p.lineTo(x + w, y); p.lineTo(x + w, y + h); p.lineTo(x, y + h); p.closePath(); }
+      else if (k === "ellipse") { p.moveTo(X(sp[1]) + sp[3], Y(sp[2])); p.ellipse(X(sp[1]), Y(sp[2]), sp[3], sp[4], (E.finite(sp[5], 0) * Math.PI) / 180, 0, Math.PI * 2); }
+      else if (k === "ring") { const rr = sp[1], w = sp[2]; p.moveTo(rr + w, 0); p.arc(0, 0, rr + w, 0, Math.PI * 2); p.moveTo(rr, 0); p.arc(0, 0, rr, 0, Math.PI * 2, true); }
+      else if (k === "spoke") { const cnt = sp[1], hw = sp[2], len = sp[3];
+        for (let i = 0; i < cnt; i++) { const a = (i / cnt) * Math.PI * 2;
+          const dx = Math.cos(a), dy = Math.sin(a), nx = -dy * hw, ny = dx * hw;
+          p.moveTo(nx, ny); p.lineTo(dx * len + nx, dy * len + ny); p.lineTo(dx * len - nx, dy * len - ny); p.lineTo(-nx, -ny); p.closePath(); } }
+    });
+    goboPathCache.set(g.id, p);
+    return p;
+  }
+
   const goboMaskCanvas = document.createElement("canvas");
   const goboBlurCanvas = document.createElement("canvas");
   const goboTmpCanvas = document.createElement("canvas");
@@ -1115,21 +1142,12 @@
     m.translate(size / 2, size / 2);
     m.rotate((E.goboAngleAt(light, state.play.t) * Math.PI) / 180);
     m.fillStyle = "#fff";
-    const X = (u) => (u - 0.5) * radius * 2, Y = (v) => (v - 0.5) * radius * 2, R = (r) => r * radius * 2;
-    m.beginPath();
-    g.shapes.forEach((sp) => {
-      const k = sp[0];
-      if (k === "poly") { sp[1].forEach(([u, v], i) => { const x = X(u), y = Y(v); i ? m.lineTo(x, y) : m.moveTo(x, y); }); m.closePath(); }
-      else if (k === "circle") { m.moveTo(X(sp[1]) + R(sp[3]), Y(sp[2])); m.arc(X(sp[1]), Y(sp[2]), R(sp[3]), 0, Math.PI * 2); }
-      else if (k === "rect") { const x = X(sp[1]), y = Y(sp[2]), w = R(sp[3]), h = R(sp[4]); m.moveTo(x, y); m.lineTo(x + w, y); m.lineTo(x + w, y + h); m.lineTo(x, y + h); m.closePath(); }
-      else if (k === "ellipse") { m.moveTo(X(sp[1]) + R(sp[3]), Y(sp[2])); m.ellipse(X(sp[1]), Y(sp[2]), R(sp[3]), R(sp[4]), (E.finite(sp[5], 0) * Math.PI) / 180, 0, Math.PI * 2); }
-      else if (k === "ring") { const rr = R(sp[1]), w = R(sp[2]); m.moveTo(rr + w, 0); m.arc(0, 0, rr + w, 0, Math.PI * 2); m.moveTo(rr, 0); m.arc(0, 0, rr, 0, Math.PI * 2, true); }
-      else if (k === "spoke") { const cnt = sp[1], hw = R(sp[2]), len = R(sp[3]);
-        for (let i = 0; i < cnt; i++) { const a = (i / cnt) * Math.PI * 2;
-          const dx = Math.cos(a), dy = Math.sin(a), nx = -dy * hw, ny = dx * hw;
-          m.moveTo(nx, ny); m.lineTo(dx * len + nx, dy * len + ny); m.lineTo(dx * len - nx, dy * len - ny); m.lineTo(-nx, -ny); m.closePath(); } }
-    });
-    m.fill("evenodd");
+    /* 塗り分けは nonzero（既定）。evenodd だと重なった抜け同士が打ち消し合って穴になり、
+       一覧の見本（SVGは既定が nonzero）と実際に出る模様が食い違う。
+       同心リングは内側の弧を逆回りで引いてあるので、nonzero でも輪のまま抜ける。
+       2026-09-13、木漏れ日の抜けを増やしたときにこの食い違いが出て判明。 */
+    m.scale(radius * 2, radius * 2);
+    m.fill(goboPath(g));
     /* 模様の外は光が来ない＝描かない。以前は destination-out で消していたが、
        それだと下に描いてある床・枡目・演者まで一緒に消えて、背景より暗い「黒い丸」が出ていた
        （2026-09-13 本人指摘）。光は足すものなので、形の中だけを塗る作りにした。 */
