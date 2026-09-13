@@ -946,7 +946,18 @@
       if (blen > 6) { ctx.strokeStyle = hexA(color, (dim ? 0.22 : 0.55) * E.clamp(E.finite(lv, 1), 0, 1)); ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(from.X, from.Y); ctx.lineTo(to.X, to.Y); ctx.stroke(); ctx.setLineDash([]); }
     } else {
       const g = ctx.createLinearGradient(to.X - nx, to.Y - ny, to.X + nx, to.Y + ny);
-      BEAM_EDGE.forEach(([at, w]) => g.addColorStop(at, hexA(color, 0.16 * w * a)));
+      const prof = gobo ? goboProfile(gobo) : null;
+      if (!prof) BEAM_EDGE.forEach(([at, w]) => g.addColorStop(at, hexA(color, 0.16 * w * a)));
+      else {
+        /* 模様あり: 縁の柔らかさ（BEAM_EDGE）×断面の明るさ。塞がっている所も
+           もやの分だけ薄く残す（0.12）。完全に消すと筋が宙に浮いて見える。 */
+        const edge = (t) => { for (let i = 1; i < BEAM_EDGE.length; i++) { const [a0, w0] = BEAM_EDGE[i - 1], [a1, w1] = BEAM_EDGE[i];
+          if (t <= a1) return w0 + ((t - a0) / (a1 - a0)) * (w1 - w0); } return 0; };
+        for (let i = 0; i < prof.length; i++) {
+          const t = (i + 0.5) / prof.length;
+          g.addColorStop(t, hexA(color, 0.16 * edge(t) * a * (0.12 + 0.88 * prof[i])));
+        }
+      }
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.moveTo(from.X, from.Y);                // 灯体は点。点から広がる三角なら捻れない
@@ -1119,6 +1130,39 @@
     });
     goboPathCache.set(g.id, p);
     return p;
+  }
+
+  /* ゴボを入れた光の帯は、三角にべったり広がらない。模様の抜けごとに細い筋が出て、
+     塞がっている所は暗い（2026-09-13 本人指摘）。
+     正確には抜け1つ1つが細い円錐になって伸びるのだが、図は2Dなので
+     「帯の横方向に沿った断面」＝マスクの中央帯を横に走査した明るさの並びで足りる。
+     この並びをそのまま帯のグラデーションの段にする——塗りは今までどおり三角1枚なので重くならない。
+     走査結果は（模様・向き・ぼけ）ごとに作り置き。回している間も5°刻みで使い回す。 */
+  const goboProfileCache = new Map();
+  const PROFILE_N = 48, PROFILE_R = 40;
+  function goboProfile(light) {
+    if (!light || !light.gobo || light.gobo === "none") return null;
+    const ang = Math.round(E.goboAngleAt(light, state.play.t) / 5) * 5;
+    const soft = Math.round(E.clamp(E.finite(light.goboSoft, 6), 0, 100));
+    const key = `${light.gobo}|${ang}|${soft}`;
+    const hit = goboProfileCache.get(key); if (hit) return hit;
+    const mask = goboMask({ ...light, goboAngle: ang, goboSpin: 0 }, PROFILE_R);
+    if (!mask) return null;
+    const sz = mask.size, ctx2 = mask.canvas.getContext("2d");
+    const data = ctx2.getImageData(0, 0, sz, sz).data;
+    const cx = sz / 2, cy = sz / 2, band = PROFILE_R * 0.35;   // 中央の帯だけ見る＝手前の筋がはっきり出る
+    const prof = new Array(PROFILE_N).fill(0);
+    let mx = 0;
+    for (let i = 0; i < PROFILE_N; i++) {
+      const x = Math.round(cx - PROFILE_R + ((i + 0.5) / PROFILE_N) * PROFILE_R * 2);
+      let sum = 0, cnt = 0;
+      for (let y = Math.round(cy - band); y <= Math.round(cy + band); y++) { sum += data[(y * sz + x) * 4 + 3]; cnt++; }
+      prof[i] = cnt ? sum / cnt / 255 : 0; mx = Math.max(mx, prof[i]);
+    }
+    const out = mx > 0 ? prof.map((v) => v / mx) : null;
+    if (goboProfileCache.size > 400) goboProfileCache.clear();   // 回し続けても膨らまないように
+    goboProfileCache.set(key, out);
+    return out;
   }
 
   const goboMaskCanvas = document.createElement("canvas");
