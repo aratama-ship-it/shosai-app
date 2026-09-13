@@ -14,6 +14,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import vm from "node:vm";
 
 const root = new URL("../", import.meta.url);
 const swSource = await readFile(new URL("stage-sw.js", root), "utf8");
@@ -46,7 +47,63 @@ test("installは取れたものだけ保存し、失敗しても完了する", (
     /Promise\.allSettled\(APP_SHELL\.map\(\(url\) => putCleanCopy\(cache, url\)\)\)/,
     "APP_SHELLを1件ずつ入れ、失敗を握り潰して先へ進むこと",
   );
-  assert.match(swSource, /skipWaiting\(\)/);
+  assert.match(swSource, /hasCompleteAppShell\(cache\)/);
+  assert.match(swSource, /then\(\(ready\) => \{ if \(ready\) return self\.skipWaiting\(\); \}\)/);
+});
+
+test("途中で通信が切れた更新は、旧キャッシュを消さずオフライン起動にも戻れる", async () => {
+  const listeners = {};
+  const stores = new Map();
+  const base = "https://stage.example/";
+  const keyFor = (input) => new URL(typeof input === "string" ? input : input.url, base).href;
+  const cacheFor = (name) => {
+    if (!stores.has(name)) stores.set(name, new Map());
+    const store = stores.get(name);
+    return {
+      async match(input) { return store.get(keyFor(input)); },
+      async put(input, response) { store.set(keyFor(input), response); },
+    };
+  };
+  let skipped = false;
+  const context = {
+    URL,
+    Response,
+    Promise,
+    fetch: async () => { throw new Error("interrupted"); },
+    caches: {
+      open: async (name) => cacheFor(name),
+      keys: async () => [...stores.keys()],
+      delete: async (name) => stores.delete(name),
+    },
+    self: {
+      location: { href: `${base}stage-sw.js`, origin: "https://stage.example" },
+      addEventListener(type, listener) { listeners[type] = listener; },
+      skipWaiting: async () => { skipped = true; },
+      clients: { claim: async () => {} },
+    },
+  };
+  await cacheFor("stage-sketch-pwa-v195").put(
+    "./stage.html",
+    new Response("previous offline page"),
+  );
+  vm.runInNewContext(swSource, context);
+
+  let pending;
+  listeners.install({ waitUntil(value) { pending = value; } });
+  await pending;
+  listeners.activate({ waitUntil(value) { pending = value; } });
+  await pending;
+
+  let response;
+  listeners.fetch({
+    request: { method: "GET", mode: "navigate", url: `${base}stage` },
+    respondWith(value) { response = value; },
+    waitUntil() {},
+  });
+
+  assert.equal(skipped, false, "資材が空の更新をすぐ有効化しない");
+  assert.ok(stores.has("stage-sketch-pwa-v195"), "動作済みの旧キャッシュを残す");
+  assert.equal(await (await response).text(), "previous offline page");
 });
 
 test("保存物からリダイレクトの印を剥がしている", () => {
@@ -83,7 +140,7 @@ test("navigateはnavigator.onLineで判定しない", () => {
      navigator.onLine を使わず、実際にfetchを試みて結果で判断すること。 */
   const navigateBlock = swCode.slice(
     swCode.indexOf('request.mode === "navigate"'),
-    swCode.indexOf("APP_SHELL_URLS.has(request.url)"),
+    swCode.indexOf("APP_SHELL_PATHS.has(url.pathname)"),
   );
   assert.ok(navigateBlock.length > 0, "navigateの分岐が見つかること");
   assert.ok(
@@ -95,7 +152,7 @@ test("navigateはnavigator.onLineで判定しない", () => {
   // ネットワークが本当に届かない（fetch自体が失敗する）ときだけ保存版へ落ちる
   assert.match(
     navigateBlock,
-    /\.catch\(\(\) => caches\.match\("\.\/stage\.html"\)\)/,
+    /\.catch\(\(\) => cachedAppShellResponse\(request, \{ stageDocument: true \}\)\)/,
     "fetch失敗時だけ保存版から返すこと",
   );
 });
@@ -110,8 +167,10 @@ test("画面本体はページ側が毎回入れ直す", () => {
 test("Service Workerが保存先と一覧をページへ渡せる", () => {
   // 一覧をページ側へ書き写すと版がずれるので、出どころはstage-sw.jsひとつに保つ。
   assert.match(swSource, /addEventListener\("message"/);
-  assert.match(swSource, /type !== "app-shell"/);
+  assert.match(swSource, /event\.data\.type === "app-shell"/);
   assert.match(swSource, /postMessage\(\{ cacheName: CACHE_NAME, urls: APP_SHELL \}\)/);
+  assert.match(swSource, /event\.data\.type === "app-shell-ready"/);
+  assert.match(swSource, /removePreviousCachesWhenReady\(\)/);
 });
 
 test("ページ側が登録のあとにキャッシュを補う", () => {
@@ -132,6 +191,7 @@ test("ページ側の取得は認証が乗る形で行う", () => {
     "同一オリジンの資格情報を付けて取ること",
   );
   assert.match(pwaSource, /if \(!response\.ok\) continue;/, "失敗した応答を保存しないこと");
+  assert.match(pwaSource, /worker\.postMessage\(\{ type: "app-shell-ready" \}\)/);
 });
 
 test("充填が止まらないよう守りが入っている", () => {

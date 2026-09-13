@@ -1987,13 +1987,6 @@ html.stage-pwa-tablet .stage-sketch-kicker { display: none; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 var(--stage-history-action-height);
-  width: var(--stage-history-action-height);
-  min-width: var(--stage-history-action-height);
-  height: var(--stage-history-action-height);
-  min-height: var(--stage-history-action-height);
-  padding: 0;
-  font-weight: 600;
 }
 
 .stage-history-actions .stage-export {
@@ -9887,15 +9880,20 @@ html[data-release-scope="beta-20260912"] .stage-light-motion-open { display: non
   color: var(--milk-dim);
 }
 
-/* 上部の歯車。字を置かず正方形にして、隣の「プレゼン」と役目を分ける。
+/* 上部の設定とパネル設定。共通ヘッダー高と同じ正方形にして、
+   全画面・書き出しを含む右上のアイコン群で当たり判定をそろえる。
    ★ .stage-history-actions button（クラス+要素）の font-size: 11px の方が
      .stage-gear-btn（クラスのみ）より詳細度が高く、後で書いても負けて
      字が小さいままになっていた。button. を付けて詳細度を合わせる。 */
 .stage-history-actions button:is(.stage-gear-btn, .stage-panel-visibility-btn) {
-  width: 34px;
-  min-width: 34px;
-  padding-left: 0;
-  padding-right: 0;
+  --stage-header-icon-hit-size: var(--stage-history-action-height);
+  --stage-header-icon-size: 22px;
+  flex: 0 0 var(--stage-header-icon-hit-size);
+  width: var(--stage-header-icon-hit-size);
+  min-width: var(--stage-header-icon-hit-size);
+  height: var(--stage-header-icon-hit-size);
+  min-height: var(--stage-header-icon-hit-size);
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -9905,8 +9903,8 @@ html[data-release-scope="beta-20260912"] .stage-light-motion-open { display: non
 
 .stage-gear-btn svg,
 .stage-panel-visibility-btn svg {
-  width: 19px;
-  height: 19px;
+  width: var(--stage-header-icon-size);
+  height: var(--stage-header-icon-size);
   display: block;
 }
 
@@ -12605,6 +12603,14 @@ html.stage-pwa-tablet .stage-tablet-top-controls button {
 html.stage-pwa-tablet .stage-tablet-top-controls button::before {
   content: attr(data-tablet-icon);
   font-size: 17px;
+}
+
+html.stage-pwa-tablet .stage-tablet-top-controls .stage-ai-link {
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 3px;
 }
 
 /* タブレット版は data-tablet-icon の文字を ::before で出す作り。
@@ -16152,6 +16158,7 @@ body.is-timeline-resizing { cursor: row-resize; user-select: none; -webkit-user-
 .stage-timeline-audio-block,
 .stage-timeline-scene,
 .stage-timeline-transition-block,
+.stage-timeline-scene-transition-marker,
 .stage-timeline-cue {
   position: absolute;
   box-sizing: border-box;
@@ -16207,6 +16214,81 @@ button.stage-timeline-audio-block:focus-visible {
 .stage-timeline-scene.is-current { border-color: var(--stage-timeline-accent); }
 .stage-timeline-scene.is-current { box-shadow: inset 0 -2px var(--stage-timeline-accent); }
 .stage-timeline-scene.is-compact { padding-inline: 0; }
+
+.stage-timeline-block-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-timeline-block-resize-handle {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.stage-timeline-block-resize-handle.is-start { left: 0; }
+.stage-timeline-block-resize-handle.is-end { right: 0; }
+.stage-timeline-block-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--stage-timeline-accent);
+  opacity: 0;
+}
+.stage-timeline-block-resize-handle.is-start::after { left: 2px; }
+.stage-timeline-block-resize-handle.is-end::after { right: 2px; }
+.stage-timeline-scene:hover .stage-timeline-block-resize-handle::after,
+.stage-timeline-transition-block:hover .stage-timeline-block-resize-handle::after,
+body.is-timeline-block-resizing .stage-timeline-block-resize-handle::after { opacity: 1; }
+body.is-timeline-block-resizing { cursor: ew-resize; user-select: none; -webkit-user-select: none; }
+
+.stage-timeline-resize-delta {
+  position: fixed;
+  z-index: 100;
+  transform: translate(10px, -50%);
+  min-width: 60px;
+  padding: 4px 7px;
+  border: 1px solid var(--stage-timeline-accent);
+  border-radius: 3px;
+  background: var(--stage-timeline-panel);
+  color: var(--stage-timeline-text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.stage-timeline-scene-transition-marker {
+  display: flex;
+  align-items: center;
+  z-index: 2;
+  top: 5px;
+  height: calc(100% - 10px);
+  min-width: 2px;
+  padding: 0 6px;
+  overflow: hidden;
+  color: var(--stage-timeline-text);
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(211, 172, 89, 0.38) 0 3px,
+    rgba(211, 172, 89, 0.12) 3px 6px
+  );
+  border-inline: 1px dashed var(--stage-timeline-accent);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: normal;
+  pointer-events: none;
+}
+
+.stage-timeline-scene-transition-marker.is-compact { padding-inline: 0; color: transparent; }
 
 .stage-timeline-transition-block {
   display: flex;

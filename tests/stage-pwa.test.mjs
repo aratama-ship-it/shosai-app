@@ -5,10 +5,9 @@ import vm from "node:vm";
 
 const root = new URL("../", import.meta.url);
 const manifest = JSON.parse(await readFile(new URL("stage-sketch.webmanifest", root), "utf8"));
-const buildSource = await readFile(new URL("build_stage.py", root), "utf8");
 const pwaSource = await readFile(new URL("stage-pwa.js", root), "utf8");
 const swSource = await readFile(new URL("stage-sw.js", root), "utf8");
-const indexSource = await readFile(new URL("index.html", root), "utf8");
+const indexSource = await readFile(new URL("stage.html", root), "utf8");
 const styleSource = await readFile(new URL("style.css", root), "utf8");
 const stageSource = await readFile(new URL("stage-sketch.js", root), "utf8");
 const stageHtml = await readFile(new URL("stage.html", root), "utf8");
@@ -22,11 +21,11 @@ test("ホーム画面から舞台スケッチ単独版をstandaloneで開く", (
 });
 
 test("iPad用メタ情報とホーム画面アイコンを単独版へ組み込む", () => {
-  assert.match(buildSource, /apple-mobile-web-app-capable" content="yes"/);
-  assert.match(buildSource, /rel="manifest" href="stage-sketch\.webmanifest"/);
-  assert.match(buildSource, /rel="apple-touch-icon" href="icons\/stage-sketch-180\.png"/);
-  assert.match(buildSource, /rel="icon" href="icons\/stage-sketch-192\.png"/);
-  assert.match(buildSource, /stage-pwa\.js\?v=\d+/);
+  assert.match(stageHtml, /apple-mobile-web-app-capable" content="yes"/);
+  assert.match(stageHtml, /rel="manifest" href="stage-sketch\.webmanifest"/);
+  assert.match(stageHtml, /rel="apple-touch-icon" href="icons\/stage-sketch-180\.png"/);
+  assert.match(stageHtml, /rel="icon" href="icons\/stage-sketch-192\.png"/);
+  assert.match(stageHtml, /stage-pwa\.js\?v=\d+/);
 
   // 版番号そのものは毎回上がる（上げないとキャッシュが更新されない）ので、
   // 数字を直書きせず「順序」と「三箇所の一致」を見る。
@@ -43,20 +42,18 @@ test("iPad用メタ情報とホーム画面アイコンを単独版へ組み込�
   assert.deepEqual(at, [...at].sort((a, b) => a - b),
     "読み込み順が 同梱ショー → PWA → 本体 になっていない");
 
-  // 版番号は index.html が正本。stage.html と stage-sw.js がそれに追随しているか。
+  // 版番号は stage.html が正本。stage-sw.js がそれに追随しているか。
   // ここが食い違うと、直したのに画面へ反映されない（2026-08-08に実際に踏んだ）。
   for (const name of ["stage-sketch.js", "stage-venues.js", "stage-venue-lines.js",
     "stage-venue-editor.js", "stage-samples/index.js", "stage-rehearsal-export.js"]) {
-    assert.equal(ver(stageHtml, name), ver(indexSource, name),
-      `${name} の版番号が index.html と stage.html で食い違う（build_stage.py の実行忘れ）`);
     assert.equal(ver(swSource, name), ver(indexSource, name),
-      `${name} の版番号が index.html と stage-sw.js で食い違う（Service Worker の更新忘れ）`);
+      `${name} の版番号が stage.html と stage-sw.js で食い違う（Service Worker の更新忘れ）`);
   }
 
   assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v\d+"/);
 });
 
-test("iPadのホーム画面版だけ上部の補足文を隠す", () => {
+test("iPadのホーム画面版は上部のキッカーだけ隠し、保存警告は設定内に残す", () => {
   assert.match(pwaSource, /display-mode: standalone/);
   assert.match(pwaSource, /window\.navigator\.standalone === true/);
   assert.match(pwaSource, /navigator\.maxTouchPoints > 1/);
@@ -65,7 +62,19 @@ test("iPadのホーム画面版だけ上部の補足文を隠す", () => {
   assert.match(pwaSource, /window\.SHOSAI_TABLET_PWA = tabletPwa/);
   assert.match(pwaSource, /classList\.toggle\("stage-pwa-tablet", tabletPwa\)/);
   assert.match(styleSource, /html\.stage-pwa-tablet \.stage-sketch-kicker/);
-  assert.match(styleSource, /html\.stage-pwa-tablet \.stage-storage-caution/);
+  assert.doesNotMatch(styleSource, /html\.stage-pwa-tablet \.stage-storage-caution/);
+});
+
+test("保存警告はヘッダーから環境設定の最上段へ移し、赤い枠で示す", () => {
+  const header = indexSource.match(/<header class="stage-sketch-head">[\s\S]*?<\/header>/)?.[0] || "";
+  const prefs = indexSource.match(/id="stage-prefs-modal"[\s\S]*?<\/aside>[\s\S]*?<\/div>/)?.[0] || "";
+  const cautionAt = prefs.indexOf('class="stage-storage-caution"');
+  const prefsMainAt = prefs.indexOf('class="stage-prefs-main"');
+  assert.doesNotMatch(header, /stage-storage-caution/);
+  assert.ok(cautionAt >= 0 && cautionAt < prefsMainAt, "保存警告が設定内容の先頭にある");
+  assert.match(prefs, /class="stage-storage-caution" role="alert"/);
+  assert.match(prefs, /class="stage-storage-caution-mark" aria-hidden="true">!</);
+  assert.match(styleSource, /\.stage-storage-caution \{[\s\S]*?grid-column: 1 \/ -1;[\s\S]*?border: 2px solid var\(--danger\);/);
 });
 
 test("使い方・About・感想は上部ではなく設定内にまとめる", () => {
@@ -95,7 +104,7 @@ test("使い方のまとまりは言語設定のすぐ下に置き、既定で�
 test("舞台スケッチ名の右側に小さなアプリ版番号を表示する", () => {
   assert.match(
     indexSource,
-    /舞台スケッチ<span class="stage-app-version">v0\.3\.4<\/span><span class="stage-beta">β版<\/span>/,
+    /舞台スケッチ<span class="stage-app-version">v0\.3\.6<\/span><span class="stage-beta">β版<\/span>/,
   );
   assert.match(styleSource, /\.stage-app-version \{[\s\S]*?font-size: 0\.38em;/);
 });
@@ -162,7 +171,7 @@ test("Service Workerは資料棚など同一サイトの別画面へ介入しな
   );
   const entries = [...setBlock.matchAll(/new URL\(/g)];
   assert.equal(entries.length, 2, "STAGE_PATHSは stage.html と stage の2つだけに保つ");
-  assert.match(swSource, /if \(!APP_SHELL_URLS\.has\(request\.url\)\) return/);
+  assert.match(swSource, /if \(!APP_SHELL_PATHS\.has\(url\.pathname\)\) return/);
 });
 
 test("オフライン用CSSとJSの版は現在のHTML参照と揃う", () => {
@@ -172,6 +181,8 @@ test("オフライン用CSSとJSの版は現在のHTML参照と揃う", () => {
     "stage-venue-lines.js",
     "stage-venue-editor.js",
     "stage-i18n.js",
+    "stage-i18n.zh-Hans.js",
+    "stage-i18n.zh-Hant.js",
     "stage-rehearsal-export.js",
     "stage-sketch.js",
   ];
@@ -180,7 +191,7 @@ test("オフライン用CSSとJSの版は現在のHTML参照と揃う", () => {
     assert.ok(ref, `${name} の版番号がindex.htmlにある`);
     assert.ok(swSource.includes(`./${ref[0]}`), `${ref[0]} がオフライン対象にある`);
   });
-  assert.ok(swSource.includes("./stage-pwa.js?v=8"));
+  assert.ok(swSource.includes("./stage-pwa.js?v=9"));
 });
 
 /* iPad左レールの設定歯車はSVG（他の帯アイコンは形の記号のまま。2026-08-30・E-2）。
@@ -216,17 +227,27 @@ test("iPad PWAは縦画面で二面、横画面で単一図の専用ワークス
   assert.match(stageSource, /initTabletPwaWorkspace\(\)/);
 });
 
-test("PCとiPadの劇場サイズはショーメニュー内にまとめる", () => {
-  const projectPanel = indexSource.match(/<section class="stage-panel stage-project-section"[\s\S]*?<section class="stage-panel" data-panel="cast"/)?.[0] || "";
-  assert.match(projectPanel, /data-tablet-page-title="劇場サイズ"/);
-  assert.match(projectPanel, /id="stage-venue-select"/);
-  assert.match(projectPanel, /id="stage-size-select"/);
-  assert.doesNotMatch(indexSource, /data-panel="venue"/);
-  assert.match(stageSource, /panels: \["project", "study"\]/);
+test("PCとiPadでショーの次に劇場パネルを分け、プリセットを制作画面へまとめる", () => {
+  const projectPanel = indexSource.match(/<section class="stage-panel stage-project-section"[\s\S]*?<section class="stage-panel stage-venue-panel"/)?.[0] || "";
+  const venuePanel = indexSource.match(/<section class="stage-panel stage-venue-panel"[\s\S]*?<section class="stage-panel stage-music-panel"/)?.[0] || "";
+  const settingsModal = indexSource.match(/id="stage-project-settings-modal"[\s\S]*?id="stage-shows-backdrop"/)?.[0] || "";
+  const venueEditor = indexSource.match(/id="stage-venue-editor-modal"[\s\S]*?id="stage-venue-import-backdrop"/)?.[0] || "";
+  assert.match(projectPanel, /id="stage-project-summary-title"/);
+  assert.match(projectPanel, /id="stage-project-summary-version"/);
+  assert.match(projectPanel, /id="stage-project-settings-open"/);
+  assert.doesNotMatch(projectPanel, /id="stage-venue-select"/);
+  assert.doesNotMatch(settingsModal, /id="stage-venue-select"/);
+  assert.match(venuePanel, /data-panel="venue"[^>]*data-title="劇場"/);
+  assert.match(venuePanel, /id="stage-venue-custom-open"/);
+  assert.match(venueEditor, /id="stage-venue-select-label"[^>]*for="stage-venue-select">劇場形式プリセット</);
+  assert.match(venueEditor, /id="stage-venue-select"/);
+  assert.match(venueEditor, /id="stage-size-select"/);
+  assert.match(stageSource, /panels: \["project", "venue", "study"\]/);
 });
 
 test("iPadの描画道具と主要操作は上部へ常設する", () => {
   assert.match(stageSource, /className = "stage-tablet-top-controls"/);
+  assert.match(stageSource, /if \(undoRedo\) topControls\.append\(undoRedo\)/);
   assert.match(stageSource, /if \(toolGrid\) topControls\.append\(toolGrid\)/);
   assert.match(stageSource, /if \(historyActions\) topControls\.append\(historyActions\)/);
   assert.match(styleSource, /html\.stage-pwa-tablet \.stage-tablet-top-controls button \{[\s\S]*?min-height: 44px;/);
@@ -288,16 +309,21 @@ test("iPad PWAはページをスクロールせず、ドロワーで図を切ら
   assert.match(stageSource, /pageNext\.textContent = "次へ"/);
 });
 
-test("長いiPadメニューは意味のまとまりでページ分割する", () => {
+test("長いiPadメニューは意味のまとまりでページ分割し、ショー詳細はモーダルへ外す", () => {
   const breaks = [...indexSource.matchAll(/data-tablet-break-before/g)];
-  assert.ok(breaks.length >= 7);
+  const projectSettingsModal = indexSource.match(
+    /<div class="stage-modal stage-project-settings-modal"[\s\S]*?<div class="stage-modal-backdrop" id="stage-shows-backdrop"/,
+  )?.[0] || "";
+  assert.ok(breaks.length >= 6);
+  assert.ok(projectSettingsModal);
+  assert.doesNotMatch(projectSettingsModal, /data-tablet-break-before/);
   assert.match(stageSource, /hasAttribute\("data-tablet-break-before"\)/);
   assert.match(stageSource, /stage-tablet-panel-page/);
   assert.match(styleSource, /\.stage-tablet-panel-page\[hidden\] \{ display: none; \}/);
 });
 
 test("通常ブラウザ用の三列レイアウトは残す", () => {
-  assert.match(styleSource, /\.stage-sketch-grid \{[\s\S]*?grid-template-columns: 268px minmax\(420px, 1fr\) 268px;/);
+  assert.match(styleSource, /\.stage-sketch-grid \{[\s\S]*?grid-template-columns: var\(--stage-left-width, 268px\) minmax\(420px, 1fr\) var\(--stage-right-width, 268px\);/);
   assert.match(stageSource, /if \(!tabletUi\) \{[\s\S]*?\["left", "right"\]\.forEach/);
 });
 

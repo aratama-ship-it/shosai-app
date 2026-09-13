@@ -19677,15 +19677,15 @@
     return liveSpins;
   }
 
-  function beginSceneAnim(fromScene, liveSpinsIn) {
+  function beginSceneAnim(fromScene, liveSpinsIn, durationMs = null) {
     stopSceneAnim();
     const liveSpins = liveSpinsIn && liveSpinsIn.size ? liveSpinsIn : captureLiveSpins();
     pauseSpinRun();
-    if (!state.animateScenes || !fromScene) return;
+    if (!state.animateScenes || !fromScene) return false;
     const rows = state.project.scenes.filter((row) => row.kind === "scene");
     const wasAt = rows.findIndex((row) => row.id === fromScene.id);
     const nowAt = rows.findIndex((row) => row.id === state.project.activeSceneId);
-    if (wasAt < 0 || nowAt < 0 || nowAt <= wasAt) return;
+    if (wasAt < 0 || nowAt < 0 || nowAt <= wasAt) return false;
     const pieces = [];
     sc().pieces.forEach((piece) => {
       const twin = twinOf(piece, fromScene.pieces || []);
@@ -19795,11 +19795,13 @@
     });
     /* 暗転で始まるシーンへの転換は、動きが無くても暗転の幕だけは掛ける */
     const blackout = featureOn("blackout") && Boolean(sc().blackout);
-    if (!pieces.length && !exits.length && !blackout) return;
+    if (!pieces.length && !exits.length && !blackout) return false;
     const movers = pieces.concat(exits);
-    const span = sc().cueSeconds !== null
-      ? sc().cueSeconds * 1000
-      : clamp(finite(state.sceneAnimMs, 2000), 200, 3000);
+    const span = Number.isFinite(Number(durationMs))
+      ? clamp(Number(durationMs), 100, 86400000)
+      : sc().cueSeconds !== null
+        ? sc().cueSeconds * 1000
+        : clamp(finite(state.sceneAnimMs, 2000), 200, 3000);
     const start = performance.now();
     const step = (now) => {
       const t = clamp((now - start) / span, 0, 1);
@@ -19878,7 +19880,11 @@
       stopSceneAnim();
       render();
     };
-    sceneAnim = { pieces, exits, blackout, progress: 0, raf: requestAnimationFrame(step) };
+    sceneAnim = { pieces, exits, blackout, progress: 0, raf: 0 };
+    // 切替直後に行き先の絵を一度だけ描いてから rAF を待つと、転換の始まりで別フレームが瞬く。
+    // 最初の描画を同期して前シーンの座標へ戻してから、以後のフレームを予約する。
+    step(start);
+    return true;
   }
 
   /* ---------- ショー地図 ----------
@@ -21041,7 +21047,7 @@ ${propsPlotHtml}
     beginSceneAnim(fromScene);
   }
 
-  function openScene(id) {
+  function openScene(id, options = {}) {
     /* 共有セッションのゲストはシーンを切り替えられない（ホストのシーンに追従する）。
        ホストからの同期は applyDocumentString が activeSceneId を直接差し替えるため、
        このガードの影響を受けない。 */
@@ -21071,8 +21077,9 @@ ${propsPlotHtml}
     renderScreenTexts();
     syncScreenTextControls();
     updateInspector();
-    render();
-    beginSceneAnim(before, liveSpins);
+    // 転換の初期姿勢を先に書き込む。開始済みなら beginSceneAnim がその姿勢を一度だけ描く。
+    // 動きが無い切替だけは、ここで通常描画する。
+    if (!beginSceneAnim(before, liveSpins, options.transitionDurationMs)) render();
     persistSoon();
     announce(`${sc().title}を開きました。`);
   }
@@ -27841,10 +27848,10 @@ ${propsPlotHtml}
     exportDocumentString() {
       return JSON.stringify(makeProjectExportDocument(state.project, true));
     },
-    openSceneById(id) {
+    openSceneById(id, options = {}) {
       const next = state.project.scenes.find((row) => row.kind === "scene" && row.id === id);
       if (!next) return false;
-      openScene(next.id);
+      openScene(next.id, options);
       return state.project.activeSceneId === next.id;
     },
     setTimelineAudioGainDb(trackId, value) {
@@ -27902,6 +27909,48 @@ ${propsPlotHtml}
       if (options.finalize) {
         renderScenes();
         renderSceneGrid();
+      }
+      return true;
+    },
+    setTimelineScenePartDuration(sectionId, sceneId, part, value, sectionDurationValue, options = {}) {
+      const sectionIndex = state.project.scenes.findIndex((row) => row.kind === "section" && row.id === sectionId);
+      if (sectionIndex < 0 || (part !== "hold" && part !== "transition")) return false;
+      const section = state.project.scenes[sectionIndex];
+      const scene = sceneChildren(sectionIndex).find((row) => row.kind === "scene" && row.id === sceneId);
+      const duration = timelineSeconds(value);
+      const sectionDuration = timelineSeconds(sectionDurationValue);
+      if (!scene || duration === null || sectionDuration === null) return false;
+      if (!scene.rehearsal) scene.rehearsal = normalizeSceneRehearsal(null);
+      const key = part === "transition" ? "transitionToNextSeconds" : "holdDurationSeconds";
+      const current = scene.rehearsal[key] == null
+        ? (part === "transition" ? 0 : 4)
+        : finite(scene.rehearsal[key], part === "transition" ? 0 : 4);
+      const currentSectionDuration = section.timelineDurationSeconds;
+      const timingChanged = Math.abs(current - duration) > 1e-9
+        || currentSectionDuration === null || currentSectionDuration === undefined
+        || Math.abs(finite(currentSectionDuration, -1) - sectionDuration) > 1e-9;
+      const rippleFrom = Number(options.rippleFromSeconds);
+      const rippleSeconds = Number(options.rippleSeconds);
+      const canRipple = options.finalize && Number.isFinite(rippleFrom)
+        && Number.isFinite(rippleSeconds) && Math.abs(rippleSeconds) > 1e-9;
+      const cues = Array.isArray(state.project.cues) ? state.project.cues : [];
+      const cuesToShift = canRipple ? cues.filter((cue) => cue && cue.kind === "timeline"
+        && cue.sectionId === section.id && cue.atSeconds !== null && cue.atSeconds !== undefined
+        && finite(cue.atSeconds, -1) >= rippleFrom - 1e-6) : [];
+      if (!timingChanged && !cuesToShift.length) return true;
+      if (options.checkpoint) checkpoint();
+      scene.rehearsal[key] = duration;
+      section.timelineDurationSeconds = sectionDuration;
+      cuesToShift.forEach((cue) => {
+        cue.atSeconds = Math.max(0, Math.round((finite(cue.atSeconds, 0) + rippleSeconds) * 10) / 10);
+      });
+      persistSoon();
+      if (options.finalize) {
+        renderScenes();
+        renderSceneGrid();
+        window.dispatchEvent(new CustomEvent("stage-timeline-structure-change", {
+          detail: { sectionId: section.id, sceneId: scene.id, part },
+        }));
       }
       return true;
     },
