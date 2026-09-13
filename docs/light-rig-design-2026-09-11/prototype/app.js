@@ -323,6 +323,12 @@
     const acts = document.createElement("div"); acts.className = "acts";
     buttons.forEach(([label, fn, cls]) => { const b = document.createElement("button"); b.className = "btn " + (cls || ""); b.textContent = label; b.onclick = () => { d.hidden = true; fn && fn(); }; acts.append(b); });
     box.append(acts); d.append(box);
+    /* 外側（暗いところ）を押したら閉じる（2026-09-13 本人要望）。
+       中身の上で押して外で離した場合に閉じないよう、押した場所も見る。
+       閉じるだけで、ボタンに付いている処理は動かさない＝「やめる」と同じ扱い。 */
+    let downOnBackdrop = false;
+    d.onpointerdown = (ev) => { downOnBackdrop = ev.target === d; };
+    d.onpointerup = (ev) => { if (downOnBackdrop && ev.target === d) d.hidden = true; downOnBackdrop = false; };
   }
 
   /* ---------- 幾何: キャンバスの箱 ---------- */
@@ -1928,6 +1934,7 @@
   /* ---------- キーボード ---------- */
   document.addEventListener("keydown", (ev) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName);
+    if (ev.key === "Escape" && !$("dialog").hidden) { $("dialog").hidden = true; return; }
     if (ev.key === "Escape") { if (state.drag) { const dg = state.drag; state.drag = null; restore(dg.before); state.dirty = true; } else if (state.tool) { state.tool = null; renderAll(); } else if (state.sel.size) { state.sel.clear(); renderAll(); } return; }
     if (typing) return;
     if (ev.key === " ") { ev.preventDefault(); state.play.on ? stop() : play(); }
@@ -1963,9 +1970,9 @@
     // 20灯以上でも一度に見渡せるよう、多いときは1行表示へ落とす（2026-09-11 実測で7行しか見えなかった）
     host.classList.toggle("compact", state.rig.fixtures.length > 12);
     // 灯体情報のページは1行が短い（番号・名前・オンオフ）ので、横に2列へ折り返す（2026-09-11 本人要望）
-    /* 一覧は<b>縦1列</b>（2026-09-13 本人指定）。半分幅のパネルでは2列にすると
-       1枠70px前後になり、名前もオン・オフも読めなかった。 */
-    host.classList.remove("cols2");
+    /* 幅があるときだけ横2列（配置モードは LX cue パネルが隠れて枠いっぱいに広がる）。
+       半分幅では2列にすると1枠70px前後になり、名前もオン・オフも読めない（2026-09-13）。 */
+    host.classList.toggle("cols2", host.clientWidth >= 230);
     const c = cue(); const grouped = new Set(c.groups.flatMap((g) => g.members));
     const row = (f, idx) => { const r = document.createElement("div"); r.className = "row" + (isSel(f.id) ? " sel" : ""); const st = lightState(f.id);
       r.innerHTML = `<span class="no">${idx !== undefined ? idx + 1 + "." : ""}${label(f.id)}</span><span class="nm">${f.name || "名前なし"}<small>${E.describeMount(f, state.rig).replace(/（高さ約\dm）/, "")}</small></span>`;
@@ -2699,6 +2706,20 @@
     lxGotoScene(list[j].i);
   }
 
+  /* 並び替え。つまんだ LX cue を落とし先の位置へ入れ直し、番号（連番）を1から振り直す
+     （2026-09-13 本人要望。キュー番号は進行順そのものなので、並べ替えたら番号も付け直す）。 */
+  function lxReorder(si, dragId, dropId) {
+    if (!dragId || dragId === dropId) return;
+    const sc = state.scenes[si]; const list = [...lxList(sc)].sort((a, b) => E.finite(a.seq, 0) - E.finite(b.seq, 0));
+    const from = list.findIndex((q) => q.id === dragId), to = list.findIndex((q) => q.id === dropId);
+    if (from < 0 || to < 0) return;
+    const [moved] = list.splice(from, 1);
+    list.splice(to, 0, moved);
+    list.forEach((q, i) => { q.seq = i + 1; });
+    sc.lxq = list;
+    commit(`LX cue の順番を変えました（${lxNo(sc, E.finite(moved.seq, 1))} へ）`);
+  }
+
   /* いまのシーンの LX cue を番号順に並べ、前後の行き先を返す。
      どの LX cue にも入っていない下書きのときは、前は無し・次は1本目にする。 */
   function lxNeighbors() {
@@ -2711,6 +2732,10 @@
 
   function renderLxq() {
     const host = $("lxqbox"); if (!host) return;
+    /* 配置モードでは LX cue は使わないので、パネルごと隠して灯体に枠を明け渡す
+       （2026-09-13 本人要望。灯体は左の枠いっぱい＝以前の広さに戻る）。 */
+    const panel = $("panel-lxq"); if (panel) panel.hidden = state.mode !== "move";
+    if (state.mode !== "move") { host.innerHTML = ""; return; }
     host.innerHTML = "";
     const link = $("lxlink");
     if (link) {
@@ -2761,6 +2786,15 @@
       const row = el("div", "lxrow" + (isEdit ? " editing" : cueJson(q.cue) === nowJson ? " cur" : ""));
       row.title = isEdit ? "この LX cue を編集しています（変えたところはそのまま入ります）" : `LX cue ${lxNo(sc, E.finite(q.seq, 1))} を編集する（画面の明かりをこの中身に入れ替えます）`;
       const no = el("span", "qno"); no.textContent = lxNo(sc, E.finite(q.seq, 1));
+      /* 番号をつまんで上下に落とすと並びが変わる。行ごと掴めるようにすると
+         名前欄の文字が選べなくなるので、掴めるのは番号だけにする。 */
+      no.draggable = true;
+      no.title = "つまんで上下に動かすと順番を変えられます";
+      no.ondragstart = (ev) => { ev.dataTransfer.setData("text/plain", q.id); ev.dataTransfer.effectAllowed = "move"; row.classList.add("dragging"); };
+      no.ondragend = () => { row.classList.remove("dragging"); li.querySelectorAll(".lxrow").forEach((r) => r.classList.remove("dropto")); };
+      row.ondragover = (ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; row.classList.add("dropto"); };
+      row.ondragleave = () => row.classList.remove("dropto");
+      row.ondrop = (ev) => { ev.preventDefault(); row.classList.remove("dropto"); lxReorder(si, ev.dataTransfer.getData("text/plain"), q.id); };
       row.append(no);
       const nm = document.createElement("input"); nm.type = "text"; nm.value = q.name || ""; nm.placeholder = "名前（任意）";
       nm.onchange = () => { const s2 = lxScene(); const t = lxList(s2).find((z) => z.id === q.id); if (t) { t.name = nm.value.slice(0, 24); commit(); } };
