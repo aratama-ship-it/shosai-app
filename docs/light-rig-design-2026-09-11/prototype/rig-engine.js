@@ -561,6 +561,69 @@
      ＊数や大きさを変えたら割合も変わる。半々を保ちたいときは測り直すこと。 */
   function foliageShapes(count, seed) { return jaggedShapes(count, seed, {}); }
 
+  /* 格子窓・縦スリット（牢格子）は同じ構造——「窓の矩形をcols×rowsに割って、
+     目地（gutter）ぶん痩せさせた矩形を敷き詰める」。違いは列数・行数・目地の太さだけ。
+     実機のRosco写真を実測して決めた数値（2026-09-13 本人指摘で見直し。中身は写さず
+     寸法比だけ測って使った）:
+       Industrial Window（77279）: 8列×4行、窓は円の直径の70%×51%、目地は桝目の16%
+       Jail Bars（77980）: 縦9列×4段、窓は44%×75%、縦の目地45%（太い鉄格子）・横の目地15%
+     bw,bh＝窓の幅・高さ（円の直径=1に対する比）。gx,gy＝目地の太さ（桝目に対する比、0〜1）。 */
+  function gridShapes(cols, rows, bw, bh, gx, gy) {
+    const x0 = 0.5 - bw / 2, y0 = 0.5 - bh / 2, pitchX = bw / cols, pitchY = bh / rows;
+    const cw = pitchX * (1 - gx), ch = pitchY * (1 - gy);
+    const out = [];
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      out.push(["rect", +(x0 + c * pitchX + (pitchX - cw) / 2).toFixed(4), +(y0 + r * pitchY + (pitchY - ch) / 2).toFixed(4),
+        +cw.toFixed(4), +ch.toFixed(4)]);
+    }
+    return out;
+  }
+  /* 横スリット（ブラインド）は格子とは別の構造——薄いスラットが横一列に並び、
+     縦方向は「細い脚・広い本体・細い脚」の3本の帯に分かれる（実機のRosco 77702を実測）。
+     窓は46%×75%、スラット42本・目地45%（帯と帯の隙間がほぼ同じ太さ）。
+     左右の脚は本体の約1/6の幅で、間に窓幅の6%ぶんの隙間がある。 */
+  function blindShapes(slats, bw, bh, bandW, gapW, gy) {
+    const x0 = 0.5 - bw / 2, y0 = 0.5 - bh / 2, pitchY = bh / slats, sh = pitchY * (1 - gy);
+    const midW = bw - 2 * bandW - 2 * gapW;
+    const bands = [[x0, bandW], [x0 + bandW + gapW, midW], [x0 + bw - bandW, bandW]];
+    const out = [];
+    for (let i = 0; i < slats; i++) {
+      const y = y0 + i * pitchY + (pitchY - sh) / 2;
+      bands.forEach(([bx, bwid]) => out.push(["rect", +bx.toFixed(4), +y.toFixed(4), +bwid.toFixed(4), +sh.toFixed(4)]));
+    }
+    return out;
+  }
+  /* 放射（ワゴンホイール）。実機のRosco Cart Spokes（78165）を実測すると、羽根は
+     ハブから外周へ向けて幅が広がる台形で、まっすぐな棒ではなくハブに丸い抜きがある
+     （実測: 13枚・ハブ半径は円の23.7%）。等幅の rect ではなく、ハブ側をすぼめた
+     四角形（poly）にして、中心にハブの丸を1つ足す。 */
+  function radialWedgeShapes(count, hubR, outerR, hubHalfDeg, outerHalfDeg) {
+    const out = [["circle", 0.5, 0.5, hubR]];
+    const step = 360 / count;
+    for (let i = 0; i < count; i++) {
+      const mid = i * step, hh = (hubHalfDeg * Math.PI) / 180, oh = (outerHalfDeg * Math.PI) / 180;
+      const a = (mid * Math.PI) / 180;
+      const pt = (r, da) => [+(0.5 + Math.cos(a + da) * r).toFixed(4), +(0.5 + Math.sin(a + da) * r).toFixed(4)];
+      out.push(["poly", [pt(hubR * 0.94, -hh), pt(outerR, -oh), pt(outerR, oh), pt(hubR * 0.94, hh)]]);
+    }
+    return out;
+  }
+  /* ドット（不規則な散らし穴）。実機のRosco Dot Breakup（77053）を実測すると、
+     等間隔の格子ではなく、小さい粒がほとんどでたまに大きい粒が混じる不規則な散らし
+     （実測: 258個・直径は円の直径の1.4〜5.2%・面積の約14%が抜け）。 */
+  function dotShapes(count, seed, minR, rangeR, pow) {
+    let x = seed >>> 0;
+    const rnd = () => { x = (x * 1664525 + 1013904223) >>> 0; return x / 4294967296; };
+    const out = [];
+    for (let i = 0; i < count; i++) {
+      const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * 0.47;
+      const u = 0.5 + Math.cos(a) * r, v = 0.5 + Math.sin(a) * r;
+      const rad = minR + Math.pow(rnd(), pow) * rangeR;
+      out.push(["circle", +u.toFixed(4), +v.toFixed(4), +rad.toFixed(4)]);
+    }
+    return out;
+  }
+
   const GOBOS = [
     { id: "none", name: "なし", kind: "none", shapes: [] },
     /* 回す前提（回転ゴボ相当）8種 */
@@ -580,22 +643,18 @@
     { id: "foliage", name: "木漏れ日", kind: "rot", note: "フォリッジ。屋外・森。場所を決める",
       shapes: foliageShapes(500, 20260913) },
     { id: "radial", name: "放射", kind: "rot", note: "回すと強い。ライブ向き",
-      shapes: [["spoke", 8, .06, .48]] },
+      shapes: radialWedgeShapes(13, 0.1185, 0.48, 1.5, 8.5) },
     { id: "spiral", name: "渦巻き", kind: "rot", note: "回すと吸い込まれて見える",
       shapes: [["poly", spiralBand(2.6, 0.44, 0.055, 140)]] },
-    { id: "dots", name: "ドット", kind: "rot", note: "抽象。等間隔の点",
-      shapes: [["circle", .22,.22,.07], ["circle", .50,.22,.07], ["circle", .78,.22,.07],
-               ["circle", .22,.50,.07], ["circle", .50,.50,.07], ["circle", .78,.50,.07],
-               ["circle", .22,.78,.07], ["circle", .50,.78,.07], ["circle", .78,.78,.07]] },
+    { id: "dots", name: "ドット", kind: "rot", note: "抽象。不規則な散らし",
+      shapes: dotShapes(205, 20260913, 0.007, 0.0193, 3.4) },
     /* 回さない前提（固定ゴボ相当）4種 */
     { id: "window", name: "格子窓", kind: "stat", note: "室内。差し込む方向が出る",
-      shapes: [["rect", .14,.14,.30,.30], ["rect", .56,.14,.30,.30], ["rect", .14,.56,.30,.30], ["rect", .56,.56,.30,.30]] },
-    { id: "slit-v", name: "縦スリット", kind: "stat", note: "牢・ブラインド。切り取る",
-      shapes: [["rect", .10,.04,.09,.92], ["rect", .29,.04,.09,.92], ["rect", .48,.04,.09,.92],
-               ["rect", .67,.04,.09,.92], ["rect", .86,.04,.09,.92]] },
+      shapes: gridShapes(8, 4, 0.70, 0.51, 0.16, 0.16) },
+    { id: "slit-v", name: "縦スリット", kind: "stat", note: "牢格子。切り取る",
+      shapes: gridShapes(9, 4, 0.44, 0.75, 0.45, 0.15) },
     { id: "slit-h", name: "横スリット", kind: "stat", note: "ブラインド越しの光",
-      shapes: [["rect", .04,.10,.92,.09], ["rect", .04,.29,.92,.09], ["rect", .04,.48,.92,.09],
-               ["rect", .04,.67,.92,.09], ["rect", .04,.86,.92,.09]] },
+      shapes: blindShapes(42, 0.46, 0.75, 0.078, 0.045, 0.45) },
     /* 2026-09-13 本人指摘「三角はない。縦じま・横じまはあるけど」で、三角の抜きを雲に差し替えた。
        雲は Rosco のカタログにも Clouds & Sky として分類がある実在の系統。 */
     { id: "clouds", name: "雲", kind: "stat", note: "空・幻想。ぼかして使う",
