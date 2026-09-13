@@ -2626,6 +2626,63 @@
     tgl.onclick = () => { if (isLit(lightOf(fid))) setLight(fid, { on: false }); else turnOn(fid); commit(); };
   }
 
+  /* ---------- LXキュー（本番で読み上げる番号） ----------
+     いまの明かり一式（そのシーンの cue）を「セクション-シーン-連番」で登録する（2026-09-13 本人要望）。
+     セクション1・シーン1なら 1-1-1 → 1-1-2 → … と連番だけが増える。
+     番号はシーンが持ち（`sc.lx = {section, no}`）、登録した明かりはシーンの中に並ぶ（`sc.lxq`）。
+     登録は「いまの明かりの控え」なので、あとから呼び出すと作業中の明かりへ書き戻す。 */
+  const lxOf = (sc) => {
+    const lx = (sc && sc.lx) || {};
+    return { section: E.clamp(Math.round(E.finite(lx.section, 1)), 1, 99),
+      no: E.clamp(Math.round(E.finite(lx.no, state.scenes.indexOf(sc) + 1)), 1, 99) };
+  };
+  const lxList = (sc) => (sc && Array.isArray(sc.lxq) ? sc.lxq : []);
+  const lxNo = (sc, seq) => { const x = lxOf(sc); return `${x.section}-${x.no}-${seq}`; };
+  const lxNextSeq = (sc) => lxList(sc).reduce((mx, q) => Math.max(mx, E.finite(q.seq, 0)), 0) + 1;
+  const cueJson = (c) => JSON.stringify({ lights: (c && c.lights) || {}, groups: (c && c.groups) || [] });
+
+  function renderLxq() {
+    const host = $("lxqbox"); if (!host) return;
+    host.innerHTML = ""; host.hidden = state.mode !== "move";
+    if (host.hidden) return;
+    const sc = scene(), x = lxOf(sc), list = lxList(sc), nowJson = cueJson(sc.cue);
+    const b = el("div", "pbox");
+    b.append(el("p", "kicker", "LXキュー"));
+    /* 番号の頭2つ。シーンに紐づくので、同じシーンで登録したものは全部この2つを共有する。 */
+    const numIn = (val, on) => { const i = document.createElement("input"); i.type = "number"; i.className = "numin"; i.min = 1; i.max = 99; i.step = 1; i.value = val;
+      i.onchange = () => { const v = E.clamp(Math.round(E.finite(i.value, val)), 1, 99); i.value = v; on(v); }; return i; };
+    const setLx = (patch) => { const s2 = scene(); s2.lx = { ...lxOf(s2), ...patch }; commit(); };
+    b.append(field("セクション", numIn(x.section, (v) => setLx({ section: v }))));
+    b.append(field("シーン", numIn(x.no, (v) => setLx({ no: v }))));
+    b.append(btn(`いまの明かりを LXQ ${lxNo(sc, lxNextSeq(sc))} として登録`, () => {
+      const s2 = scene(); const seq = lxNextSeq(s2);
+      s2.lxq = lxList(s2).concat([{ id: uid("q"), seq, name: "", at: new Date().toISOString(), cue: JSON.parse(cueJson(s2.cue)) }]);
+      commit(`LXQ ${lxNo(s2, seq)} として登録しました`);
+    }, "primary"));
+    if (!list.length) { b.append(el("p", "lxnone", "まだ登録がありません。明かりを作って上のボタンを押すと、このシーンの1本目として登録されます。")); host.append(b); return; }
+    [...list].sort((a2, b2) => E.finite(a2.seq, 0) - E.finite(b2.seq, 0)).forEach((q) => {
+      const row = el("div", "lxrow" + (cueJson(q.cue) === nowJson ? " cur" : ""));
+      const no = el("span", "qno"); no.textContent = lxNo(sc, E.finite(q.seq, 1));
+      no.title = q.at ? `登録 ${String(q.at).slice(0, 16).replace("T", " ")}` : "";
+      row.append(no);
+      const nm = document.createElement("input"); nm.type = "text"; nm.value = q.name || ""; nm.placeholder = "名前（任意）";
+      nm.onchange = () => { const s2 = scene(); const t = lxList(s2).find((z) => z.id === q.id); if (t) { t.name = nm.value.slice(0, 24); commit(); } };
+      row.append(nm);
+      row.append(btn("呼び出す", () => {
+        const s2 = scene(); const t = lxList(s2).find((z) => z.id === q.id); if (!t) return;
+        s2.cue = JSON.parse(cueJson(t.cue));
+        state.sel.clear(); stop(); home();
+        commit(`LXQ ${lxNo(s2, E.finite(t.seq, 1))} を呼び出しました`);
+      }, "small"));
+      row.append(btn("✕", () => {
+        dialog(`<p class="ptitle">LXQ ${lxNo(sc, E.finite(q.seq, 1))} を消しますか？</p><p class="hint">登録した明かりの控えだけを消します。いま作業中の明かりはそのままです。</p>`,
+          [["やめる", null], ["消す", () => { const s2 = scene(); s2.lxq = lxList(s2).filter((z) => z.id !== q.id); commit(`LXQ ${lxNo(s2, E.finite(q.seq, 1))} を消しました`); }, "primary"]]);
+      }, "small quiet"));
+      b.append(row);
+    });
+    host.append(b);
+  }
+
   function renderInspector() {
     const host = $("insp"); host.innerHTML = "";
     const ids = [...state.sel];
@@ -2998,7 +3055,7 @@
     $("seat").hidden = !state.front3d;
     $("filters").hidden = state.mode !== "move";
     document.querySelectorAll("#filters button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filter === state.filter)));
-    renderList(); renderInspector(); renderFixedConflicts(); renderTransport(); draw();
+    renderLxq(); renderList(); renderInspector(); renderFixedConflicts(); renderTransport(); draw();
   }
 
   /* ---------- ヘッダ・空状態・書き出し ---------- */
@@ -3337,9 +3394,11 @@
         level: "強さ 0〜100（0は消灯と同じ）", levelTo: "動きの終点の強さ（無ければ変化なし）",
         beamDeg: "光の広がり（度）", beamDegTo: "動きの終点の広がり（無ければ変化なし）",
         periodSec: "1往復（1周）の秒数", offsetSec: "何秒遅らせて始めるか",
+        lx: "そのシーンのLXキュー番号の頭2つ { section, no }",
+        lxq: "登録した明かりの控え。番号は section-no-seq、cue はそのときの灯の設定一式",
       },
       rig: JSON.parse(JSON.stringify(state.rig)),
-      scenes: state.scenes.map((sc) => ({ id: sc.id, name: sc.name, cue: JSON.parse(JSON.stringify(sc.cue)) })),
+      scenes: state.scenes.map((sc) => ({ id: sc.id, name: sc.name, lx: lxOf(sc), lxq: JSON.parse(JSON.stringify(lxList(sc))), cue: JSON.parse(JSON.stringify(sc.cue)) })),
       palette: [...state.palette],
       levelCurve: [...state.levelCurve],
       curtains: { ...state.curtains },
@@ -3355,7 +3414,10 @@
     const byId = new Map(state.scenes.map((sc) => [sc.id, sc]));
     state.scenes = o.scenes.map((ds, i) => {
       const cur = byId.get(ds.id) || state.scenes[i];
-      return { id: ds.id, name: ds.name || `場面${i + 1}`, pieces: cur ? cur.pieces : [], cue: ds.cue || { lights: {}, groups: [] } };
+      return { id: ds.id, name: ds.name || `場面${i + 1}`, pieces: cur ? cur.pieces : [],
+        lx: ds.lx || (cur && cur.lx) || { section: 1, no: i + 1 },
+        lxq: Array.isArray(ds.lxq) ? ds.lxq : [],
+        cue: ds.cue || { lights: {}, groups: [] } };
     });
     state.rig = o.rig;
     if (Array.isArray(o.palette)) state.palette = [...o.palette];

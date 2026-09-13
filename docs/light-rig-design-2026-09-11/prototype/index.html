@@ -321,6 +321,20 @@
   /* 選んだ灯体の操作（パネルの先頭・メイン） */
   .tsbtns{display:grid;grid-template-columns:1fr 1fr;gap:4px}
   .tsbtns .btn{min-height:28px;padding:2px 6px;font-size:12px;white-space:nowrap}
+  /* LXキュー。#lxqbox は .inspbody の外（パネル直下）なので、幅の面倒を自分で見る。
+     .pbox は display:grid なので、中身が縮まないとパネルごと広がる（HANDOFFの落とし穴）。 */
+  #lxqbox{min-width:0}
+  #lxqbox .pbox{min-width:0}
+  #lxqbox .pbox>*{min-width:0}
+  #lxqbox .btn{white-space:normal;line-height:1.3}
+  #lxqbox .field>.numin{width:84px;justify-self:start;min-height:26px;border:1px solid var(--line-dark);background:var(--desk-2);color:var(--milk);font:13px var(--sans);padding:2px 6px;text-align:right;font-variant-numeric:tabular-nums}
+  /* LXキューの一覧。1行＝番号・名前・呼び出す・消す（2026-09-13 本人要望）。 */
+  .lxrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:4px;align-items:center;min-height:30px;padding:2px 0;min-width:0}
+  .lxrow .qno{font:600 12.5px/1 var(--sans);color:#1a1409;background:var(--brass);padding:4px 6px;white-space:nowrap;letter-spacing:.02em}
+  .lxrow.cur .qno{background:var(--rust);color:var(--milk)}
+  .lxrow input[type=text]{min-height:26px;padding:2px 6px;font-size:12px}
+  .lxrow .btn.small{padding:2px 6px;font-size:11.5px;white-space:nowrap}
+  .lxnone{color:var(--milk-dim);font-size:11.5px;margin:0}
   /* 配置＝サブの層。パネルの下に沈める */
   #selacts{flex:0 0 auto;margin-bottom:8px}
   /* 設定欄は縦積み（flex column）に戻した（2026-09-13 実害で発覚）。
@@ -528,6 +542,9 @@
                 <button type="button" class="ontoggle" id="lighttoggle" hidden aria-pressed="false"><span class="sw"></span><b>オフ</b></button>
               </div>
             </div>
+            <!-- LXキュー（本番で読み上げる番号）。いまの明かり一式を「セクション-シーン-連番」で登録する。
+                 2026-09-13 本人要望。中身は app.js の renderLxq が作る。 -->
+            <div id="lxqbox"></div>
             <div id="selacts">
               <p class="ptitle">選んだ灯体</p>
               <div class="tsbtns">
@@ -597,8 +614,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789305271"></script>
-<script src="stage-figure.js?v=1789305271"></script>
-<script src="app.js?v=1789305271"></script>
+<script src="rig-engine.js?v=1789306005"></script>
+<script src="stage-figure.js?v=1789306005"></script>
+<script src="app.js?v=1789306005"></script>
 </body>
 </html>
