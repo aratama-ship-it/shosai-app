@@ -71,6 +71,52 @@
     return Math.max(0.12, d * Math.tan(clamp(finite(deg, 18), 4, 70) * Math.PI / 360));
   };
 
+  /* 面に当たった光の形。円錐を斜めに切ると円ではなく楕円になる（2026-09-13 本人要望）。
+     丸いのは真下（床）・真正面（奥の壁）に落としたときだけ。
+
+     S＝灯体、T＝軸が面に当たる点、deg＝広がり（全角）、surface＝"floor"(z=0) か "back"(y=0)。
+     返すのは面の上の楕円で、c＝中心、ea＝長半径ベクトル、eb＝短半径ベクトル（世界座標m）。
+     ＊中心は T ではない。斜めになるほど灯体から遠い側へずれる。
+
+     導き方: 頂点A・軸u・半角θ・面の法線n とし、面上の点Pで (P−A)·u = |P−A|cosθ を解く。
+     Aの真下を原点、傾いた向きをxに取ると
+       K x² + cos²θ y² − 2H sinφcosφ x − H²(cos²φ − cos²θ) = 0   （K = cos²θ − sin²φ）
+     で、平方完成すると右辺が H²cos²θsin²θ/K にまとまる。そこから
+       長半径 a = H cosθ sinθ / K、短半径 b = H sinθ / √K、中心のずれ = H tanφ sin²θ / K
+     （H＝灯体から面までの垂線、φ＝軸と法線のなす角）。φ=0 なら a=b=H tanθ で円に戻る。 */
+  const spotEllipse = (S, T, deg, surface) => {
+    if (!S || !T) return null;
+    const n = surface === "back" ? { x: 0, y: 1, z: 0 } : surface === "floor" ? { x: 0, y: 0, z: 1 } : null;
+    if (!n) return null;
+    const th = (clamp(finite(deg, 18), 4, 70) * Math.PI) / 360;      // 半角
+    const wx = T.x - S.x, wy = T.y - S.y, wz = T.z - S.z;
+    const d = Math.hypot(wx, wy, wz);
+    if (!(d > 1e-6)) return null;
+    const ux = wx / d, uy = wy / d, uz = wz / d;
+    const cosPhi = -(ux * n.x + uy * n.y + uz * n.z);
+    if (!(cosPhi > 1e-3)) return null;            // 面と平行、または裏から当たっている
+    const H = d * cosPhi;                         // 灯体から面までの垂線の長さ
+    // 面に沿う向き（軸の面内成分）。長さは sinφ
+    let ex = ux + cosPhi * n.x, ey = uy + cosPhi * n.y, ez = uz + cosPhi * n.z;
+    const sinPhi = Math.min(1, Math.hypot(ex, ey, ez));
+    if (sinPhi < 1e-6) { ex = 1; ey = 0; ez = 0; }            // 真っすぐ当たっている＝円
+    else { ex /= sinPhi; ey /= sinPhi; ez /= sinPhi; }
+    const cosTh = Math.cos(th), sinTh = Math.sin(th);
+    /* K が0に近い＝面をなめる角度。本来は放物線・双曲線になって無限に伸びるが、
+       図としては意味がないので「長いほう÷短いほう」が6倍を超えないところで止める。 */
+    const K = Math.max(cosTh * cosTh - sinPhi * sinPhi, (cosTh * cosTh) / 36);
+    const a = (H * cosTh * sinTh) / K;
+    const b = (H * sinTh) / Math.sqrt(K);
+    const off = (H * (sinPhi / cosPhi) * sinTh * sinTh) / K;
+    const fx = n.y * ez - n.z * ey, fy = n.z * ex - n.x * ez, fz = n.x * ey - n.y * ex;   // n × e
+    return {
+      c: { x: T.x + ex * off, y: T.y + ey * off, z: T.z + ez * off },
+      ea: { x: ex * a, y: ey * a, z: ez * a },
+      eb: { x: fx * b, y: fy * b, z: fz * b },
+      a, b, off, tiltDeg: (Math.asin(sinPhi) * 180) / Math.PI,
+    };
+  };
+
   const trussById = (rig, id) => (rig.trusses || []).find((t) => t.id === id) || null;
 
   // 奥から何段目（1始まり）。表示専用。保存はしない
@@ -578,7 +624,7 @@
   root.RIG_ENGINE = Object.freeze({
     DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
     clamp, finite,
-    newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, beamLanding, trussById, trussRow, fixtureWorld,
+    newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, spotEllipse, beamLanding, trussById, trussRow, fixtureWorld,
     newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, paramPhase, mountSpot, GOBOS, goboById, goboAngleAt, constrainPointToSurface, periodMs, groupEffect,
     pointWorld, planeVec, circleOffset, eightOffset, targetAt, pathGuide, mirrorMount,
     FRONT_SEATS, frontPerspSetup, makeFrontPerspProjector, frontPerspToUH,

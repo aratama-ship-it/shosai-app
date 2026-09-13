@@ -718,7 +718,7 @@
           else if (g.kind === "loop" && g.plane === "horizontal") strokeLoop(pctx, P, g);
           pctx.restore(); }
         if (l.surface === "floor" || l.surface === "air") {
-          if (showOn("beam")) { const r = drawBeam(pctx, s, tp, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv, l); litSpots.push({ fromX: s.X, fromY: s.Y, toX: tp.X, toY: tp.Y, r, lv }); }
+          if (showOn("beam")) { const sp = drawBeam(pctx, s, tp, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv, l, l.surface === "floor" ? "floor" : null, P); litSpots.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); }
           if (l.surface === "air") {
             // 空中の狙い点は床に落ちない。真上から見ると高さが読めないので、印＋高さ＋床への破線を出す
             pctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.7); pctx.lineWidth = 3; pctx.beginPath();
@@ -726,7 +726,7 @@
             pctx.beginPath(); pctx.arc(tp.X, tp.Y, 22, 0, Math.PI * 2); pctx.stroke();
             if (!dim) { pctx.fillStyle = hexA(l.color, 0.9); pctx.font = "17px sans-serif"; pctx.textBaseline = "bottom"; pctx.fillText(`空中 ${T.z.toFixed(1)}m`, tp.X + 26, tp.Y - 8); }
           } // 床の輪は drawBeam が広がりから描く
-        } else if (showOn("beam")) { const r = drawBeam(pctx, s, { X: s.X, Y: B.y }, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv, l); litSpots.push({ fromX: s.X, fromY: s.Y, toX: s.X, toY: B.y, r, lv }); }
+        } else if (showOn("beam")) { const sp = drawBeam(pctx, s, { X: s.X, Y: B.y }, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv, l); litSpots.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); }
         // ハンドル（選択灯のみ・床と空中は平面図で位置を動かす）
         if (sel && l.surface !== "back") drawHandles(pctx, P, l, f.id);
       });
@@ -905,8 +905,29 @@
     side: { floor: [1, 0.16], back: [0.14, 1], air: [1, 1] },
   };
   const squashFor = (view, surface) => (SPOT_SQUASH[view] || SPOT_SQUASH.plan)[surface] || [1, 1];
-  function drawBeam(ctx, from, to, world, color, deg, dim, pxPerM, squash, asLine, noPool, lv, gobo) {
+  /* 面に当たった光だまりを、画面上の楕円として求める。
+     世界座標の楕円（rig-engine の spotEllipse）の中心と2本の半径ベクトルを投影するだけ——
+     図ごとの見え方（真上・正面・側面・3D）は投影のほうが持っているので、ここでは分けない。
+     面を真横から見ている図では2本が一直線に潰れる。そのときは今までの squash の描き方に戻す。 */
+  function poolEllipse(world, deg, surf, proj) {
+    if (!proj || !surf) return null;
+    const el = E.spotEllipse(world.S, world.T, deg, surf);
+    if (!el) return null;
+    const add = (p, v) => ({ x: p.x + v.x, y: p.y + v.y, z: p.z + v.z });
+    const c = proj(el.c), pa = proj(add(el.c, el.ea)), pb = proj(add(el.c, el.eb));
+    if (!c || !pa || !pb) return null;
+    const ax = (pa.X - c.X) * BEAM_SOFT, ay = (pa.Y - c.Y) * BEAM_SOFT;
+    const bx = (pb.X - c.X) * BEAM_SOFT, by = (pb.Y - c.Y) * BEAM_SOFT;
+    if (!Number.isFinite(ax + ay + bx + by)) return null;
+    if (Math.abs(ax * by - ay * bx) < 4) return null;   // 潰れている＝その図では線にしか見えない
+    return { cx: c.X, cy: c.Y, ax, ay, bx, by };
+  }
+  function drawBeam(ctx, from, to, world, color, deg, dim, pxPerM, squash, asLine, noPool, lv, gobo, surf, proj) {
     const rM = E.spotRadiusM(world.S, world.T, deg), rPx = Math.max(rM * pxPerM, 3);
+    const ell = noPool ? null : poolEllipse(world, deg, surf, proj);
+    const ret = () => (ell
+      ? { r: rPx, toX: ell.cx, toY: ell.cy, ax: ell.ax, ay: ell.ay, bx: ell.bx, by: ell.by }
+      : { r: rPx, toX: to.X, toY: to.Y });
     const [sx, sy] = squash || [1, 1];
     const halfW = Math.max(rPx * sx * BEAM_SOFT, 3);
     const ry = Math.max(rPx * sy * BEAM_SOFT, 1.5);
@@ -940,30 +961,47 @@
     }
     // 当たったところ。帯の裾と同じ広さまで半影を伸ばす（境目が線で出ないように）
     // 何にも当たらず図の外へ抜ける光は、丸を描かない（丸い当たりを描くと光る玉に見える）
-    if (noPool) { ctx.restore(); return rPx; }
-    const pool = ctx.createRadialGradient(0, 0, 0, 0, 0, halfW);
-    pool.addColorStop(0, hexA(color, 0.34 * a));
-    pool.addColorStop(0.55 / BEAM_SOFT, hexA(color, 0.16 * a));
-    pool.addColorStop(1 / BEAM_SOFT, hexA(color, 0.05 * a));
-    pool.addColorStop(1, hexA(color, 0));
-    ctx.translate(to.X, to.Y); ctx.scale(1, ry / halfW);
-    const mask = gobo ? goboMask(gobo, halfW) : null;
-    if (!mask) { ctx.fillStyle = pool; ctx.beginPath(); ctx.arc(0, 0, halfW, 0, Math.PI * 2); ctx.fill(); }
-    else {
+    if (noPool) { ctx.restore(); return ret(); }
+    /* 楕円が出せた図では、単位円を楕円へ写す行列を掛けてから半径1で描く。
+       そうすると光だまり・グラデーション・模様がまとめて同じ歪み方をする。 */
+    let R, maskR;
+    if (ell) {
+      ctx.transform(ell.ax, ell.ay, ell.bx, ell.by, ell.cx, ell.cy);
+      R = 1;
+      maskR = Math.max(Math.hypot(ell.ax, ell.ay), Math.hypot(ell.bx, ell.by), 3);
+    } else {
+      ctx.translate(to.X, to.Y); ctx.scale(1, ry / halfW);
+      R = halfW; maskR = halfW;
+    }
+    const stops = (g, rad) => {
+      g.addColorStop(0, hexA(color, 0.34 * a));
+      g.addColorStop(0.55 / BEAM_SOFT, hexA(color, 0.16 * a));
+      g.addColorStop(1 / BEAM_SOFT, hexA(color, 0.05 * a));
+      g.addColorStop(1, hexA(color, 0));
+      return g;
+    };
+    const mask = gobo ? goboMask(gobo, maskR) : null;
+    if (!mask) {
+      ctx.fillStyle = stops(ctx.createRadialGradient(0, 0, 0, 0, 0, R));
+      ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
+    } else {
       /* 模様の形にだけ光を置く。別キャンバスで「光だまり×模様」を作ってから1枚で載せるので、
-         下に描いてあるものは何も消えない。 */
+         下に描いてあるものは何も消えない。一時キャンバスはpxのままなので、
+         最後に R/maskR を掛けて、いまの空間（楕円なら単位円）へ合わせる。 */
       const s2 = mask.size, tmp = goboTmp(s2), tc = tmp.getContext("2d");
       tc.setTransform(1, 0, 0, 1, 0, 0); tc.clearRect(0, 0, s2, s2);
       tc.save(); tc.translate(s2 / 2, s2 / 2);
-      tc.fillStyle = pool; tc.beginPath(); tc.arc(0, 0, halfW, 0, Math.PI * 2); tc.fill();
+      tc.fillStyle = stops(tc.createRadialGradient(0, 0, 0, 0, 0, maskR));
+      tc.beginPath(); tc.arc(0, 0, maskR, 0, Math.PI * 2); tc.fill();
       tc.restore();
       tc.globalCompositeOperation = "destination-in";      // 模様の形で光を切り抜く（tmpの中だけの話）
       tc.drawImage(mask.canvas, 0, 0);
       tc.globalCompositeOperation = "source-over";
-      ctx.drawImage(tmp, -s2 / 2, -s2 / 2);
+      const k = R / maskR;
+      ctx.scale(k, k); ctx.drawImage(tmp, -s2 / 2, -s2 / 2);
     }
     ctx.restore();
-    return rPx;
+    return ret();
   }
 
   /* 作業灯を消す（ブラックアウト。2026-09-13 本人要望「光のあたってないところは真っ暗で見えない」）。
@@ -1000,9 +1038,17 @@
       mctx.lineTo(sp.toX - nx * w1, sp.toY - ny * w1);
       mctx.lineTo(sp.fromX - nx * w0, sp.fromY - ny * w0);
       mctx.closePath(); mctx.fillStyle = `rgba(255,255,255,${0.85 * lv})`; mctx.fill();
-      const grad = mctx.createRadialGradient(sp.toX, sp.toY, 0, sp.toX, sp.toY, r);
+      /* 穴の形は光だまりに合わせる。斜めに当たって伸びているのに丸で抜くと、
+         伸びた先が暗いまま残って光が途中で切れて見える（2026-09-13）。 */
+      const oval = sp.ax != null && Math.abs(sp.ax * sp.by - sp.ay * sp.bx) > 4;
+      mctx.save();
+      if (oval) mctx.transform(sp.ax * 1.15, sp.ay * 1.15, sp.bx * 1.15, sp.by * 1.15, sp.toX, sp.toY);
+      else mctx.translate(sp.toX, sp.toY);
+      const R2 = oval ? 1 : r;
+      const grad = mctx.createRadialGradient(0, 0, 0, 0, 0, R2);
       grad.addColorStop(0, `rgba(255,255,255,${lv})`); grad.addColorStop(0.75, `rgba(255,255,255,${0.9 * lv})`); grad.addColorStop(1, "rgba(255,255,255,0)");
-      mctx.fillStyle = grad; mctx.beginPath(); mctx.arc(sp.toX, sp.toY, r, 0, Math.PI * 2); mctx.fill();
+      mctx.fillStyle = grad; mctx.beginPath(); mctx.arc(0, 0, R2, 0, Math.PI * 2); mctx.fill();
+      mctx.restore();
     });
     ctx.save(); ctx.globalCompositeOperation = "source-over"; ctx.drawImage(mc, 0, 0); ctx.restore();
   }
@@ -1152,8 +1198,8 @@
     const litSpotsF = [];   // 作業灯を消す（ブラックアウト）用
     if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; const lv = litFactorOf(f, l); const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
       if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
-        const r = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface, lv, l);
-        litSpotsF.push({ fromX: s.X, fromY: s.Y, toX: e2.X, toY: e2.Y, r, lv }); }
+        const sp = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface, lv, l, be.surface, P);
+        litSpotsF.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); }
       if (l.surface === "air") { const floorY = B.y + B.h; fctx.save(); fctx.setLineDash([5, 6]); fctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.45); fctx.lineWidth = 2; fctx.beginPath(); fctx.moveTo(tp.X, tp.Y); fctx.lineTo(tp.X, floorY); fctx.stroke(); fctx.restore();
         fctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.8); fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(tp.X - 12, tp.Y - 12); fctx.lineTo(tp.X + 12, tp.Y + 12); fctx.moveTo(tp.X + 12, tp.Y - 12); fctx.lineTo(tp.X - 12, tp.Y + 12); fctx.stroke(); fctx.beginPath(); fctx.arc(tp.X, tp.Y, 16, 0, Math.PI * 2); fctx.stroke();
         if (!dim) { fctx.fillStyle = hexA(l.color, 0.9); fctx.font = "15px sans-serif"; fctx.textBaseline = "bottom"; fctx.fillText(`${T.z.toFixed(1)}m`, tp.X + 20, tp.Y - 6); } }
@@ -1194,8 +1240,8 @@
     const litSpotsSide = [];   // 作業灯を消す（ブラックアウト）用
     if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; const lv = litFactorOf(f, l); const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s0 = P(S), tp = P(T); const mine = f.mount.type === "side" && f.mount.side === side; const air = l.surface === "air"; const dim = !(mine || (air && isSel(f.id))) || (state.sel.size && !isSel(f.id));
       if (showOn("beam")) { const be = beamEnd(l, S, T), e2 = P(be.world);
-        const r = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.D, squashFor("side", be.surface || "air"), false, !be.surface, lv, l);
-        litSpotsSide.push({ fromX: s0.X, fromY: s0.Y, toX: e2.X, toY: e2.Y, r, lv }); }
+        const sp = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.D, squashFor("side", be.surface || "air"), false, !be.surface, lv, l, be.surface, P);
+        litSpotsSide.push({ fromX: s0.X, fromY: s0.Y, ...sp, lv }); }
       if (air) {
         fctx.save(); fctx.setLineDash([5, 6]); fctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.45); fctx.lineWidth = 2; fctx.beginPath(); fctx.moveTo(tp.X, tp.Y); fctx.lineTo(tp.X, B.y + B.h); fctx.stroke(); fctx.restore();
         fctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.8); fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(tp.X - 12, tp.Y - 12); fctx.lineTo(tp.X + 12, tp.Y + 12); fctx.moveTo(tp.X + 12, tp.Y - 12); fctx.lineTo(tp.X - 12, tp.Y + 12); fctx.stroke(); fctx.beginPath(); fctx.arc(tp.X, tp.Y, 16, 0, Math.PI * 2); fctx.stroke();
@@ -1272,8 +1318,8 @@
         const sq = be.surface === "floor"
           ? [1, Math.min(1, ((L.bottomY - L.floorY) / d.D) / (L.pxPerM * Math.max(0.05, e2.scale || 1)))]
           : squashFor("front", be.surface || "air");
-        const r = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface, lv, l);
-        litSpots3D.push({ fromX: s0.X, fromY: s0.Y, toX: e2.X, toY: e2.Y, r, lv });
+        const sp = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface, lv, l, be.surface, P);
+        litSpots3D.push({ fromX: s0.X, fromY: s0.Y, ...sp, lv });
       }
       if (showOn("path")) { const g = E.pathGuide(l, d);
         if (g && g.kind === "line") { fctx.save(); fctx.setLineDash([8, 6]); fctx.strokeStyle = "rgba(223,100,51,0.7)"; fctx.lineWidth = 2; const a = P(g.a ? E.pointWorld(g.a, d) : S), b = P(E.pointWorld(g.b, d)); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); fctx.restore(); } }
