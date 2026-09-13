@@ -2675,6 +2675,30 @@
     state.sel.clear(); stop(); home();
     commit(`LX cue ${lxNo(s2, E.finite(t.seq, 1))} の編集に入りました`);
   }
+  /* ---------- セクション（シーンの上の層） ----------
+     セクション番号はシーンが持っている（`sc.lx.section`）ので、実在するセクションは
+     シーンから数え上げる。セクションを送る＝そのセクションの最初のシーンへ移る。
+     シーン送りは<b>いまのセクションの中だけ</b>を回る（2026-09-13 本人要望「別レイヤー」）。 */
+  const lxSections = () => [...new Set(state.scenes.map((sc) => lxOf(sc).section))].sort((a, b) => a - b);
+  const lxCurSection = () => lxOf(scene()).section;
+  const lxScenesIn = (sec) => state.scenes.map((sc, i) => ({ sc, i })).filter((x) => lxOf(x.sc).section === sec);
+  function lxGotoScene(i) {
+    if (i < 0 || i >= state.scenes.length || i === state.sceneIndex) return;
+    state.sceneIndex = i; state.sel.clear(); stop(); home(); renderAll();
+  }
+  function lxStepSection(dir) {
+    const secs = lxSections(), cur = lxCurSection();
+    const i = secs.indexOf(cur); if (i < 0) return;
+    const target = secs[(i + dir + secs.length) % secs.length];
+    const list = lxScenesIn(target); if (list.length) lxGotoScene(list[0].i);
+  }
+  function lxStepScene(dir) {
+    const list = lxScenesIn(lxCurSection()); if (!list.length) return;
+    const i = list.findIndex((x) => x.i === state.sceneIndex);
+    const j = i < 0 ? 0 : (i + dir + list.length) % list.length;
+    lxGotoScene(list[j].i);
+  }
+
   /* いまのシーンの LX cue を番号順に並べ、前後の行き先を返す。
      どの LX cue にも入っていない下書きのときは、前は無し・次は1本目にする。 */
   function lxNeighbors() {
@@ -3097,9 +3121,15 @@
     $("lighttoggles").hidden = !inMove;
     $("dimwrap").hidden = !(inMove && showOn("blackout"));
     { const d = E.clamp(E.finite(state.dim, 100), 0, 100); $("dim").value = d; $("dimnum").value = d; }
-    // シーン名はLX cueパネルの上（幅が狭いので「1. 名前」と短く）
-    $("scene-name").textContent = `${state.sceneIndex + 1}. ${scene().name}`;
-    $("scene-name").title = `シーン ${state.sceneIndex + 1}「${scene().name}」`;
+    /* 場面の2段（LX cueパネルの上）。上＝セクション、下＝そのセクションの中のシーン。 */
+    { const secs = lxSections(), cur = lxCurSection(), inSec = lxScenesIn(cur);
+      const pos = inSec.findIndex((x) => x.i === state.sceneIndex) + 1;
+      $("sec-name").textContent = `${cur}`;
+      $("sec-name").title = `セクション ${cur}（全${secs.length}）・シーン${inSec.length}件`;
+      $("sec-prev").disabled = $("sec-next").disabled = secs.length < 2;
+      $("scene-name").textContent = `${pos || 1}. ${scene().name}`;
+      $("scene-name").title = `シーン ${state.sceneIndex + 1}「${scene().name}」（セクション${cur}の${pos}/${inSec.length}）`;
+      $("scene-prev").disabled = $("scene-next").disabled = inSec.length < 2; }
     $("scenerow").classList.toggle("off", !inMove);   // 場所は残す（図の位置を両ページで揃える）
     $("insphead").hidden = !inMove;
     /* 図の上の中央＝いま画面に出ているデザインがどのキューか（2026-09-13 本人要望でいちばん大きく）。
@@ -3150,10 +3180,48 @@
   $("mode-move").onclick = () => { state.mode = "move"; state.tool = null; renderAll(); };
   /* 連動を切った瞬間は「いま見ているシーン」に固定する（見えているものが動かない）。 */
   if ($("lxlink")) $("lxlink").onclick = () => { if (state.lxLink) { state.lxScene = state.sceneIndex; state.lxLink = false; } else { state.lxLink = true; } renderAll(); };
+  $("sec-prev").onclick = () => lxStepSection(-1);
+  $("sec-next").onclick = () => lxStepSection(1);
+  $("allscenes").onclick = () => openAllScenes();
+  /* すべての場面の一覧。セクション→シーン→そのシーンの LX cue を並べ、押せばそこへ移る。
+     セクションやシーンが増えても全体を一度に見渡せるように（2026-09-13 本人要望）。 */
+  function openAllScenes() {
+    const esc = (t) => String(t).replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
+    const secs = lxSections();
+    const body = secs.map((sec) => {
+      const scenes = lxScenesIn(sec).map(({ sc, i }) => {
+        const qs = [...lxList(sc)].sort((a, b) => E.finite(a.seq, 0) - E.finite(b.seq, 0));
+        const editing = lxEditingOf(sc);
+        const chips = qs.length
+          ? qs.map((q) => `<button type="button" class="allq${q.id === editing ? " editing" : ""}" data-scene="${i}" data-q="${q.id}" title="${esc(q.name || "")}">${lxNo(sc, E.finite(q.seq, 1))}</button>`).join("")
+          : `<span class="allnone">LX cue なし</span>`;
+        return `<div class="allscene${i === state.sceneIndex ? " cur" : ""}">
+            <span class="allsname" data-scene="${i}" role="button" tabindex="0">${esc(sc.name)}<small>シーン${i + 1}・LX cue ${qs.length}本</small></span>
+            <span class="allqs">${chips}</span>
+          </div>`;
+      }).join("");
+      return `<div class="allsec"><p class="kicker">セクション ${sec}</p>${scenes}</div>`;
+    }).join("");
+    dialog(`<p class="ptitle">すべての場面と LX cue</p>
+      <p class="hint">シーン名を押すとそのシーンへ、番号を押すとその LX cue の編集に入ります。セクション番号は LX cue パネルの〈番号〉で変えられます。</p>
+      <div class="alllist">${body}</div>`, [["閉じる", null]]);
+    const d = $("dialog");
+    d.querySelectorAll("[data-scene]").forEach((elm) => {
+      const go = () => {
+        d.hidden = true;
+        const i = Number(elm.dataset.scene);
+        if (elm.dataset.q) lxEnterCue(i, elm.dataset.q); else lxGotoScene(i);
+      };
+      elm.onclick = go;
+      elm.onkeydown = (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); } };
+    });
+  }
   $("q-prev").onclick = () => { const q = lxNeighbors().prev; if (q) lxEnterCue(state.sceneIndex, q.id); };
   $("q-next").onclick = () => { const q = lxNeighbors().next; if (q) lxEnterCue(state.sceneIndex, q.id); };
-  $("scene-prev").onclick = () => { state.sceneIndex = (state.sceneIndex + state.scenes.length - 1) % state.scenes.length; home(); renderAll(); };
-  $("scene-next").onclick = () => { state.sceneIndex = (state.sceneIndex + 1) % state.scenes.length; home(); renderAll(); };
+  /* シーン送りは<b>いまのセクションの中だけ</b>を回る（2026-09-13 本人要望でセクションを層にした）。
+     セクションをまたぐときは上のセクション送り、全体から選ぶときは〈すべての場面を見る〉。 */
+  $("scene-prev").onclick = () => lxStepScene(-1);
+  $("scene-next").onclick = () => lxStepScene(1);
   $("t-home").onclick = home; $("t-play").onclick = play; $("t-stop").onclick = () => stop();
   $("undo").onclick = undo; $("redo").onclick = redo;
   $("mirror").onclick = mirrorSelected;
