@@ -938,8 +938,21 @@
     pool.addColorStop(1 / BEAM_SOFT, hexA(color, 0.05 * a));
     pool.addColorStop(1, hexA(color, 0));
     ctx.translate(to.X, to.Y); ctx.scale(1, ry / halfW);
-    ctx.fillStyle = pool; ctx.beginPath(); ctx.arc(0, 0, halfW, 0, Math.PI * 2); ctx.fill();
-    if (gobo) paintGobo(ctx, gobo, halfW, state.play.t);
+    const mask = gobo ? goboMask(gobo, halfW) : null;
+    if (!mask) { ctx.fillStyle = pool; ctx.beginPath(); ctx.arc(0, 0, halfW, 0, Math.PI * 2); ctx.fill(); }
+    else {
+      /* 模様の形にだけ光を置く。別キャンバスで「光だまり×模様」を作ってから1枚で載せるので、
+         下に描いてあるものは何も消えない。 */
+      const s2 = mask.size, tmp = goboTmp(s2), tc = tmp.getContext("2d");
+      tc.setTransform(1, 0, 0, 1, 0, 0); tc.clearRect(0, 0, s2, s2);
+      tc.save(); tc.translate(s2 / 2, s2 / 2);
+      tc.fillStyle = pool; tc.beginPath(); tc.arc(0, 0, halfW, 0, Math.PI * 2); tc.fill();
+      tc.restore();
+      tc.globalCompositeOperation = "destination-in";      // 模様の形で光を切り抜く（tmpの中だけの話）
+      tc.drawImage(mask.canvas, 0, 0);
+      tc.globalCompositeOperation = "source-over";
+      ctx.drawImage(tmp, -s2 / 2, -s2 / 2);
+    }
     ctx.restore();
     return rPx;
   }
@@ -1004,45 +1017,49 @@
     return `<svg viewBox="0 0 100 100" aria-hidden="true"><g fill="currentColor">${parts}</g></svg>`;
   }
 
-  /* ゴボ（模様）を光だまりの中へ重ねる。
-     2026-09-13 本人決定「案B」。実機の絵柄は写せないので、分類名で自前に描いた形（rig-engine の GOBOS）を使う。
-     やり方は「光だまりをいったん描いたあと、模様の<b>影になるところ</b>を destination-out で抜く」。
-     光そのものを塗り直すのではなく穴を開けるので、色・強さ・広がりの計算に手を入れずに済む。
-     ctx は呼び手側で to.X/to.Y へ移動し、床の潰れ（ry/halfW）も掛けた状態で渡す。 */
-  function paintGobo(ctx, light, radius, tMs) {
+  /* ゴボ（模様）の形を、いったん別のキャンバスへ描いて返す（白＝光が通るところ）。
+     ぼけ具合は canvas の filter でぼかす。0でくっきり、上げるほどとろける。 */
+  const goboMaskCanvas = document.createElement("canvas");
+  const goboTmpCanvas = document.createElement("canvas");
+  const goboTmp = (size) => { if (goboTmpCanvas.width !== size || goboTmpCanvas.height !== size) { goboTmpCanvas.width = size; goboTmpCanvas.height = size; } return goboTmpCanvas; };
+  function goboMask(light, radius) {
     const g = light && light.gobo && light.gobo !== "none" ? E.goboById(light.gobo) : null;
-    if (!g || !g.shapes.length || radius < 6) return;
-    const ang = (E.goboAngleAt(light, tMs) * Math.PI) / 180;
-    ctx.save();
-    ctx.rotate(ang);
-    ctx.globalCompositeOperation = "destination-out";
-    /* 抜く濃さ。1.0にすると模様の外が完全に消えて「光が無い」ように見えるので、
-       芯が残る程度に留める（実測で0.72が、模様は読めるが光の存在も残る境目）。 */
-    ctx.fillStyle = "rgba(0,0,0,0.72)"; ctx.strokeStyle = "rgba(0,0,0,0.72)";
-    // 模様の座標は 0〜1。中心を原点にして半径ぶんへ伸ばす
+    if (!g || !g.shapes.length) return null;
+    const soft = E.clamp(E.finite(light.goboSoft, 25), 0, 100);
+    const blur = (soft / 100) * radius * 0.35;          // ぼけ幅は光だまりの大きさに比例させる
+    const pad = Math.ceil(blur * 2 + 2);
+    const size = Math.ceil(radius * 2) + pad * 2;
+    if (size < 4 || size > 2200) return null;
+    const mc = goboMaskCanvas; mc.width = size; mc.height = size;
+    const m = mc.getContext("2d");
+    m.setTransform(1, 0, 0, 1, 0, 0); m.clearRect(0, 0, size, size);
+    m.translate(size / 2, size / 2);
+    m.rotate((E.goboAngleAt(light, state.play.t) * Math.PI) / 180);
+    if (blur > 0.4) m.filter = `blur(${blur.toFixed(2)}px)`;
+    m.fillStyle = "#fff";
     const X = (u) => (u - 0.5) * radius * 2, Y = (v) => (v - 0.5) * radius * 2, R = (r) => r * radius * 2;
-    /* 光が通るところ＝shapes。抜きたいのは<b>その外側</b>なので、
-       いったん全面を抜いてから、shapes を source-over で戻す……のではなく、
-       「偶奇の塗り分け」で外周と模様を1つのパスにして一度に抜く。 */
-    ctx.beginPath();
-    ctx.arc(0, 0, radius, 0, Math.PI * 2);      // 外周（抜く側）
+    m.beginPath();
     g.shapes.forEach((sp) => {
       const k = sp[0];
-      if (k === "poly") { sp[1].forEach(([u, v], i) => { const x = X(u), y = Y(v); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); }
-      else if (k === "circle") { ctx.moveTo(X(sp[1]) + R(sp[3]), Y(sp[2])); ctx.arc(X(sp[1]), Y(sp[2]), R(sp[3]), 0, Math.PI * 2); }
-      else if (k === "rect") { const x = X(sp[1]), y = Y(sp[2]), w = R(sp[3]), h = R(sp[4]); ctx.moveTo(x, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + h); ctx.lineTo(x, y + h); ctx.closePath(); }
-      else if (k === "ellipse") { ctx.moveTo(X(sp[1]) + R(sp[3]), Y(sp[2])); ctx.ellipse(X(sp[1]), Y(sp[2]), R(sp[3]), R(sp[4]), (E.finite(sp[5], 0) * Math.PI) / 180, 0, Math.PI * 2); }
-      else if (k === "ring") { const rr = R(sp[1]), w = R(sp[2]); ctx.moveTo(rr + w, 0); ctx.arc(0, 0, rr + w, 0, Math.PI * 2); ctx.moveTo(rr, 0); ctx.arc(0, 0, rr, 0, Math.PI * 2, true); }
+      if (k === "poly") { sp[1].forEach(([u, v], i) => { const x = X(u), y = Y(v); i ? m.lineTo(x, y) : m.moveTo(x, y); }); m.closePath(); }
+      else if (k === "circle") { m.moveTo(X(sp[1]) + R(sp[3]), Y(sp[2])); m.arc(X(sp[1]), Y(sp[2]), R(sp[3]), 0, Math.PI * 2); }
+      else if (k === "rect") { const x = X(sp[1]), y = Y(sp[2]), w = R(sp[3]), h = R(sp[4]); m.moveTo(x, y); m.lineTo(x + w, y); m.lineTo(x + w, y + h); m.lineTo(x, y + h); m.closePath(); }
+      else if (k === "ellipse") { m.moveTo(X(sp[1]) + R(sp[3]), Y(sp[2])); m.ellipse(X(sp[1]), Y(sp[2]), R(sp[3]), R(sp[4]), (E.finite(sp[5], 0) * Math.PI) / 180, 0, Math.PI * 2); }
+      else if (k === "ring") { const rr = R(sp[1]), w = R(sp[2]); m.moveTo(rr + w, 0); m.arc(0, 0, rr + w, 0, Math.PI * 2); m.moveTo(rr, 0); m.arc(0, 0, rr, 0, Math.PI * 2, true); }
       else if (k === "spoke") { const cnt = sp[1], hw = R(sp[2]), len = R(sp[3]);
         for (let i = 0; i < cnt; i++) { const a = (i / cnt) * Math.PI * 2;
           const dx = Math.cos(a), dy = Math.sin(a), nx = -dy * hw, ny = dx * hw;
-          ctx.moveTo(nx, ny); ctx.lineTo(dx * len + nx, dy * len + ny); ctx.lineTo(dx * len - nx, dy * len - ny); ctx.lineTo(-nx, -ny); ctx.closePath(); } }
+          m.moveTo(nx, ny); m.lineTo(dx * len + nx, dy * len + ny); m.lineTo(dx * len - nx, dy * len - ny); m.lineTo(-nx, -ny); m.closePath(); } }
     });
-    ctx.fill("evenodd");
-    ctx.restore();
+    m.fill("evenodd");
+    m.filter = "none";
+    /* 模様の外は光が来ない＝<b>描かない</b>。以前は destination-out で消していたが、
+       それだと下に描いてある床・枡目・演者まで一緒に消えて、背景より暗い「黒い丸」が出ていた
+       （2026-09-13 本人指摘）。光は足すものなので、形の中だけを塗る作りにした。 */
+    return { canvas: mc, size };
   }
 
-  // 円・8の字の下書きは、エンジンが返す点の並びを線でつなぐだけ（傾きも8の字もこれで描ける）
+  // 円・8の字の下書きは、エンジンが返す点の並びを線でつなぐだけ  // 円・8の字の下書きは、エンジンが返す点の並びを線でつなぐだけ（傾きも8の字もこれで描ける）
   function strokeLoop(ctx, P, g) { ctx.beginPath(); g.pts.forEach((w, i) => { const q = P(w); i ? ctx.lineTo(q.X, q.Y) : ctx.moveTo(q.X, q.Y); }); ctx.stroke(); }
   const beamOf = (f) => { const l = lightOf(f.id); return E.beamDegAt(f, l, phaseOf(f, l)); };
   /* 光の終点。床・奥の壁を狙う光はその面で止まる。空中を狙う光はそこで止まらず、
@@ -1914,6 +1931,10 @@
         const same = spins.size <= 1, now = same && spins.size === 1 ? [...spins][0] : 0;
         b.append(field(same ? "回す" : "回す（バラバラ）", range(-100, 100, 5, now, (v) => (Math.abs(v) < 3 ? "止める" : `${v > 0 ? "時計回り" : "反時計回り"}　1周${(360 / (Math.abs(v) * 0.36)).toFixed(1)}秒`),
           (v) => { bulkEach(ids, (f, l) => { l.goboSpin = v; }); draw(); }, () => commit(`${ids.length}灯の模様の回し方を変えました`)), true));
+        const softs = new Set(lit.map((fid) => Math.round(E.clamp(E.finite((lightOf(fid) || {}).goboSoft, 25), 0, 100))));
+        const sameSoft = softs.size <= 1, nowSoft = sameSoft && softs.size === 1 ? [...softs][0] : 25;
+        b.append(field(sameSoft ? "ぼけ" : "ぼけ（バラバラ）", range(0, 100, 5, nowSoft, (v) => (v < 8 ? "くっきり" : v < 40 ? `やや柔らかい（${Math.round(v)}）` : v < 75 ? `柔らかい（${Math.round(v)}）` : `とろける（${Math.round(v)}）`),
+          (v) => { bulkEach(ids, (f, l) => { l.goboSoft = v; }); draw(); }, () => commit(`${ids.length}灯の模様のぼけを変えました`)), true));
       }
     }
 
@@ -2215,6 +2236,10 @@
             b.append(field("向き", range(0, 360, 5, E.clamp(E.finite(l.goboAngle, 0), 0, 360), (v) => `${Math.round(v)}°`,
               (v) => { l.goboAngle = v; draw(); }, () => commit()), true));
           }
+          /* ぼけ具合＝実機でいうフォーカス。くっきり出すと形が読め、ぼかすと質感になる
+             （2026-09-13 本人要望）。 */
+          b.append(field("ぼけ", range(0, 100, 5, E.clamp(E.finite(l.goboSoft, 25), 0, 100), (v) => (v < 8 ? "くっきり" : v < 40 ? `やや柔らかい（${Math.round(v)}）` : v < 75 ? `柔らかい（${Math.round(v)}）` : `とろける（${Math.round(v)}）`),
+            (v) => { l.goboSoft = v; draw(); }, () => commit()), true));
         }
       }
 
