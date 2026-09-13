@@ -19,16 +19,15 @@
     { id: "cur-front", kind: "curtain", name: "前幕", curtainKind: "front", u: 0.5, v: 0.97, w: 1.0, hM: 7.5, open: 100, color: "#000000", facing: 0 },
     // 色は本体の既定と同じ（stage-machinery.js:193 は幕の種類を問わず同じ既定色を使う）
     { id: "cur-cyc", kind: "curtain", name: "ホリゾント幕", curtainKind: "cyc", u: 0.5, v: 0.04, w: 1.04, hM: 6.5, open: 0, color: "#000000", facing: 0 },
-    /* 袖幕（そでまく）。本体の「前幕ひとそろい」（stage-machinery.js builtInPresets）に
-       入っている leg をそのまま移植（2026-09-13 本人要望）。facing 90 で幅の軸が奥行き方向を向く＝
-       舞台の左右に立つ壁になる。前幕と同じ「中央から左右2枚」の形なので curtainParts はそのまま使える。
-       本体は幅に間口(12m)を使うが、ここでは奥行き方向に立つので奥行き(8m)ぶん＝w:0.67にした
-       （本体の値のままだと舞台の前後へ2mずつはみ出す）。
-       名前は本体では u=.08 を「上手袖幕」としているが、このアプリの約束は u=0 が下手なので、
-       図の左右と食い違わないよう下手／上手を入れ替えてある。 */
-    { id: "cur-leg-shimote", kind: "curtain", name: "下手袖幕", curtainKind: "leg", u: 0.08, v: 0.5, w: 0.67, hM: 8, open: 0, color: "#000000", facing: 90 },
-    { id: "cur-leg-kamite", kind: "curtain", name: "上手袖幕", curtainKind: "leg", u: 0.92, v: 0.5, w: 0.67, hM: 8, open: 0, color: "#000000", facing: 90 },
   ];
+  /* 袖幕は下の maskingPieces() で作る。
+     2026-09-13 本人指摘「舞台袖の膜の方向がおかしい／演者が切れる」で作り直した。
+     本体（stage-machinery.js の leg）は facing 90 ＝ 奥行き方向に走る壁として持っている。
+     これを3Dで塗ると、壁の奥の端と手前の端が画面の別の位置へ写るので<b>幅のある帯</b>になり、
+     その帯の中に立っている演者（舞台の隅）が隠れてしまう（実測: 帯は画面X 197〜259、
+     ジンは246＝帯の中。奥行きの前後を見ないで塗るため、内側にいる人まで覆う）。
+     実際の袖幕は客席と平行に吊る平らな幕で、客席からは両端の細い縦帯に見える。
+     その形にすると帯が舞台の外側だけになり、演者を横切らない。 */
   /* 一文字幕（いちもんじまく）。バトンごとに、その少し手前へ吊って灯体とバトンを客席から隠す幕。
      仕込んだバトンから自動で作るので、データには持たない（バトンを足せば一文字も増える）。
      2026-09-13 本人要望で追加。既定は出さない——出すと灯体が隠れて設計しにくいため、
@@ -47,11 +46,35 @@
   };
   const borderSettingRaw = (t) => { const b = borderSetting(t); return { bottomM: b.bottom, dropM: b.drop }; };
 
-  function borderPieces() {
-    if (!showOn("border")) return [];
+  /* 袖幕。客席と平行に吊る平らな幕を、舞台の外側から内側へ legU ぶん入り込ませる。
+     一文字幕と同じ奥行き（バトンの手前）に左右1対ずつ。床から舞台の上端まで。 */
+  function legPieces() {
     const d = state.dims, c = state.curtains;
+    const inU = E.clamp(E.finite(c.legU, 0.08), 0, 0.35);
+    const outU = 0.12;                        // 舞台の外側へどれだけはみ出させるか（袖の奥を隠すぶん）
     const ahead = E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.3);
-    const list = state.rig.trusses.map((t, i) => {
+    const depths = state.rig.trusses.map((t) => E.clamp(E.finite(t.v, 0.5) + ahead, 0, 1));
+    if (state.curtains.pros !== false) depths.push(1);
+    const out = [];
+    depths.forEach((v, i) => {
+      const w = inU + outU;                   // 幕の幅（割合）
+      const last = i === depths.length - 1;
+      [-1, 1].forEach((side) => {
+        const center = side < 0 ? (inU - outU) / 2 : 1 - (inU - outU) / 2;
+        out.push({ id: `leg-${i}-${side}`, kind: "curtain", curtainKind: "border",
+          name: last ? (side < 0 ? "下手袖幕" : "上手袖幕") : "",
+          u: center, v, w, hM: d.H, liftM: 0, open: 0, color: "#000000", facing: 0 });
+      });
+    });
+    return out;
+  }
+
+  function borderPieces() {
+    const d = state.dims, c = state.curtains;
+    const legs = legPieces();                 // 袖幕は舞台の造りなので、一文字のトグルに関わらず出す
+    if (!showOn("border")) return legs;
+    const ahead = E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.3);
+    const list = legs.concat(state.rig.trusses.map((t, i) => {
       const b = borderSetting(t);
       return {
         id: `border-${t.id}`, kind: "curtain", name: i === 0 ? "一文字幕" : "", curtainKind: "border",
@@ -59,7 +82,7 @@
         hM: b.drop, liftM: b.bottom,
         open: 0, color: "#000000", facing: 0,
       };
-    });
+    }));
     /* 前一文字＝いちばん客席側の幕（プロセニアムの上辺）。客席から見える開口の高さを決めるのは
        これで、ここより上は客席からは見えない。舞台の上端まで届く布なので丈は H - 開口の高さ。
        2026-09-13 本人要望「一番客席側の膜も表現したい／光源が見えない状況を作りたい」。 */
@@ -1524,7 +1547,6 @@
     if (!host) return;
     const c = state.curtains, d = state.dims;
     host = (() => { const b = el("div", "pbox"); b.append(el("p", "kicker", "幕（客席から灯体を隠す）")); host.append(b); return b; })();
-    const legs = () => piecesOf().filter((pc) => pc.curtainKind === "leg");
     host.append(field("前一文字", seg([["on", "出す"], ["off", "出さない"]], c.pros === false ? "off" : "on", (v) => { c.pros = v === "on"; commit(); }), true));
     if (c.pros !== false) {
       host.append(field("開口の高さ", range(1, d.H, 0.1, E.clamp(E.finite(c.prosH, 6.2), 1, d.H), (v) => `${v.toFixed(1)}m（これより上は客席から見えない）`,
@@ -1549,10 +1571,8 @@
       host.append(field("バトンの手前へ", range(0, 0.2, 0.01, E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.2), (v) => `${(v * d.D).toFixed(1)}m（全部）`,
         (v) => { c.borderAhead = v; draw(); }, () => commit()), true));
     }
-    if (legs().length) {
-      host.append(field("袖幕の入り", range(0, 0.25, 0.01, E.clamp(E.finite(c.legU, 0.08), 0, 0.25), (v) => `両端から${(v * d.W).toFixed(1)}m`,
-        (v) => { c.legU = v; legs().forEach((pc) => { pc.u = pc.u < 0.5 ? v : 1 - v; }); draw(); }, () => commit()), true));
-    }
+    host.append(field("袖幕の入り", range(0, 0.35, 0.01, E.clamp(E.finite(c.legU, 0.08), 0, 0.35), (v) => `両端から${(v * d.W).toFixed(1)}m`,
+      (v) => { c.legU = v; draw(); }, () => commit()), true));
     host.append(el("p", "note", "一文字幕は「図に出すもの」の〈一文字幕〉で出し入れします。室内灯を消すと合わせると、客席から灯体が見えていないかを確かめられます。"));
   }
 
