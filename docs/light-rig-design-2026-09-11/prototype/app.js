@@ -2380,9 +2380,9 @@
       }
     }
 
-    // ② 当てる場所・動き
+    // ② 当てる場所（軌道は⑤「位置」へ移した）
     {
-      const b = sub("当てる場所・軌道");
+      const b = sub("当てる場所");
       const surs = new Set(lit.map((fid) => lightOf(fid).surface || "floor"));
       b.append(field(surs.size > 1 ? "当てる場所（バラバラ）" : "当てる場所",
         seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], surs.size === 1 ? [...surs][0] : null, (v) => {
@@ -2392,16 +2392,6 @@
           });
           commit(`${ids.length}灯の当てる場所を変えました`);
         }), true));
-      /* 軌道の種類。まとめて変更では「どれかにそろえる」だけを出す（1灯ずつの始点・終点は単灯側で決める）。
-         型から作りたいときは下の「動きの型（サーチライト・組）」を使う。 */
-      if (movers.length) {
-        const kinds = new Set(movers.map((fid) => ((lightOf(fid) || {}).path || {}).kind || "still"));
-        b.append(field(kinds.size > 1 ? "動き（バラバラ）" : "動き",
-          seg([["still", "動きなし"], ["line", "往復"], ["circle", "円"], ["eight", "8の字"]], kinds.size === 1 ? [...kinds][0] : null, (v) => {
-            bulkEach(movers, (f, l, i, fid) => setKind(fid, v));
-            commit(`${movers.length}灯の動きを変えました`);
-          }), true));
-      }
     }
 
     /* ③ 光の強さ。0は消灯と同じ（2026-09-13 本人決定）。目盛りはリニアのままで、
@@ -2441,7 +2431,7 @@
         head.append(switchBtn(allOn, allOn ? "点滅しています。押すと止めます" : "押すと全灯に時間で繰り返す点滅を上乗せします", () => {
           setStrobeAll({ on: !allOn, kind: "sharp", hz: 6, duty: 50, depth: 60 });
           commit(`${movers.length}灯のストロボを${allOn ? "止めました" : "点けました"}`);
-        }));
+        }, "ストロボ"));
         b.append(head);
         if (allOn) {
           const kinds = new Set(movers.map((fid) => ((lightOf(fid) || {}).strobe || {}).kind || "sharp"));
@@ -2542,6 +2532,16 @@
           }
         }));
       b.append(head);
+      /* 軌道の形。まとめて変更では「どれかにそろえる」だけを出す（1灯ずつの始点・終点は単灯側で決める）。
+         型から作りたいときは下の「動きの型（サーチライト・組）」を使う。②から移設（2026-09-13 本人指摘）。 */
+      if (posMovers.length) {
+        const kinds = new Set(posMovers.map((fid) => ((lightOf(fid) || {}).path || {}).kind || "still"));
+        b.append(field(kinds.size > 1 ? "軌道（バラバラ）" : "軌道",
+          seg([["line", "往復"], ["circle", "円"], ["eight", "8の字"]], kinds.size === 1 ? [...kinds][0] : null, (v) => {
+            bulkEach(posMovers, (f, l, i, fid) => setKind(fid, v));
+            commit(`${posMovers.length}灯の軌道を変えました`);
+          }), true));
+      }
       if (someMoving) {
         b.append(el("p", "kicker sub2", "動きの時間（位置・強さ・広がりで共通）"));
         // 1往復（1周）の時間とオフセットの刻み。動きを持つムービングだけに入る
@@ -2608,11 +2608,14 @@
   /* パネル右上のオン・オフ。1灯を選んでいるときだけ出す。
      押すたびに切り替わる1つのボタンにした（2026-09-13 本人要望）——未設定と消灯を分けて見せず、
      「いま光っているか」だけを示す。未設定の灯を押したら、その場で点いた状態から始める。 */
-  /* 右上のオン・オフと同じ見た目の切り替え（「動かす」で使う）。押すたびに反転する。 */
-  function switchBtn(on, title, onToggle) {
+  /* 右上のオン・オフと同じ見た目の切り替え（位置・強さ・広がりのオートメーションで使う）。
+     「オン／オフ」だけだと何の入り切りか分からないので、必ず対象の名前を添える
+     （2026-09-13 本人指摘）。既定は「オートメーション」。 */
+  function switchBtn(on, title, onToggle, word) {
     const b = document.createElement("button"); b.type = "button"; b.className = "ontoggle";
     b.setAttribute("aria-pressed", String(on)); b.title = title;
-    b.innerHTML = `<span class="sw"></span><b>${on ? "オン" : "オフ"}</b>`;
+    const w = word === undefined ? "オートメーション" : word;
+    b.innerHTML = `<span class="sw"></span><b>${w ? `<span class="swlab">${w}</span>` : ""}${on ? "オン" : "オフ"}</b>`;
     b.onclick = onToggle; return b;
   }
 
@@ -2753,40 +2756,25 @@
         }
       }
 
-      /* ② 当てる場所・動き。位置に関わるものをここに集める。
-         動かしているときは軌道の種類と始点・終点を、動かしていないときは当てる先だけを持つ。
+      /* ② 当てる場所。どの面を狙うかと、動かさないときの狙い先だけを持つ。
+         軌道（往復・円・8の字）とその寸法は⑤「位置」へ移した（2026-09-13 本人指摘
+         「軌道は動きの位置の方に置くべきもの」）。
          ホリゾントライトは狙い点を持たない帯（つねに奥の壁を染める）ので、この箱ごと出さない
          （2026-09-13 本人指摘「もとから一列のバー」。横位置・長さ・床/上部は配置パネルへ）。 */
       if (f.mount.type !== "cyc") {
-        const b = box("当てる場所・軌道");
+        const b = box("当てる場所");
         b.append(field("当てる場所", seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], l.surface, (v) => {
           setLight(fid, { surface: v }); restyleToSurface(fid);
           const l2 = lightOf(fid); if (l2.path && l2.path.kind === "circle") l2.path.plane = (v === "back" || v === "house") ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
           commit();
         }), true));
         if (l.surface === "house") b.append(el("p", "hint", "客席へ向けた光。客席からは光源そのものが見える（目眩まし）ので、図では光だまりでなく灯体・狙い点のまわりの滲みで表します。高さは舞台の床から。平面図では左右だけ動かせます。"));
-        if (autoPos) {
-          /* 軌道の形。止める／動かすは⑤「位置」のスイッチが持つので、ここには「動きなし」を置かない。 */
-          b.append(field("軌道", seg([["line", "往復"], ["circle", "円"], ["eight", "8の字"]], p.kind, (v) => { setKind(fid, v); commit(); }), true));
-          if (p.kind === "line") { heightField(b, "始点の高さ", p.a); heightField(b, "終点の高さ", p.b); }
-          if (p.kind === "circle" || p.kind === "eight") {
-            if (l.surface === "air") b.append(field("回る面", seg([["horizontal", "水平"], ["frontVertical", "客席側から見た縦"], ["sideVertical", "舞台横から見た縦"]], p.plane || "horizontal", (v) => { p.plane = v; commit(); }, "col"), true));
-            b.append(field("回る向き", seg([["cw", "時計回り"], ["ccw", "反時計回り"]], p.dir, (v) => { p.dir = v; commit(); })));
-            /* 円は2軸で持つ＝楕円にできる（2026-09-11 本人要望）。軸の呼び名は面で変わる。 */
-            const AXIS = { horizontal: ["左右のふくらみ", "奥行きのふくらみ"], frontVertical: ["左右のふくらみ", "高さのふくらみ"], sideVertical: ["奥行きのふくらみ", "高さのふくらみ"] }[p.plane || "horizontal"];
-            const lim = Math.max(state.dims.W, state.dims.H) / 2;
-            b.append(field(AXIS[0], range(0.3, lim, 0.1, p.r, (v) => `約${v.toFixed(1)}m`, (v) => { p.r = v; draw(); }, () => commit())));
-            b.append(field(AXIS[1], range(0.3, lim, 0.1, p.r2 == null ? p.r : p.r2, (v) => `約${v.toFixed(1)}m`, (v) => { p.r2 = v; draw(); }, () => commit())));
-            b.append(field("傾き", range(-90, 90, 5, p.tilt == null ? 0 : p.tilt, (v) => (Math.round(v) === 0 ? "まっすぐ" : `${Math.round(v)}°`), (v) => { p.tilt = v; draw(); }, () => commit())));
-            { const rr = p.r2 == null ? p.r : p.r2, tl = Math.round(p.tilt || 0);
-              if (Math.abs(rr - p.r) >= 0.05 || tl) b.append(btn(p.kind === "eight" ? "傾きと形をそろえる" : "まん丸・まっすぐに戻す", () => { p.r2 = p.r; p.tilt = 0; commit(); }, "small quiet")); }
-            heightField(b, "中心の高さ", p.c);
-            b.append(field("始める位置", range(0, 1, 0.05, p.start || 0, (v) => `${Math.round(v * 360)}°`, (v) => { p.start = v; draw(); }, () => commit())));
-          }
-        } else {
+        if (!autoPos) {
           heightField(b, "高さ", p.a || E.newPoint());
-          if (mover) b.append(el("p", "hint", "位置は止めています。下の〈位置〉を入れると動かせます（強さ・広がりは別々に入れます）。"));
+          if (mover) b.append(el("p", "hint", "位置は止めています。下の〈位置〉を入れると、軌道と動く範囲を決められます（強さ・広がりは別々に入れます）。"));
           if (!mover && p.kind !== "still") b.append(el("p", "warn", "⚠ この灯には動きが付いたままです。固定灯なので実際には動きません。"));
+        } else {
+          b.append(el("p", "hint", "狙い先は下の〈位置〉で決めます（軌道・始点・終点）。"));
         }
       }
 
@@ -2818,7 +2806,7 @@
           head.append(switchBtn(on, on ? "点滅しています。押すと止めます" : "押すと時間で繰り返す点滅を上乗せします", () => {
             setLight(fid, { strobe: { ...st, on: !on, kind: st.kind || "sharp", hz: E.finite(st.hz, 6), duty: E.finite(st.duty, 50), depth: E.finite(st.depth, 60) } });
             commit(on ? "ストロボを止めました" : "ストロボを点けました");
-          }));
+          }, "ストロボ"));
           b.append(head);
           if (on) {
             const setStrobe = (patch) => { const l2 = lightOf(fid); l2.strobe = { ...l2.strobe, ...patch }; };
@@ -2905,10 +2893,31 @@
           }
         }));
         b.append(head);
-        if (autoPos && (lightOf(fid).path || {}).kind === "line") {
-          b.append(field("始め方", seg([["a", "始点 → 終点"], ["b", "終点 → 始点"]], p.start || "a", (v) => { p.start = v; commit(); })));
+        if (autoPos) {
+          /* 軌道の形とその寸法。止める／動かすは上のスイッチが持つので「動きなし」は置かない。
+             ②から移設（2026-09-13 本人指摘「軌道は位置の方に置くべきもの」）。 */
+          b.append(field("軌道", seg([["line", "往復"], ["circle", "円"], ["eight", "8の字"]], p.kind, (v) => { setKind(fid, v); commit(); }), true));
+          if (p.kind === "line") {
+            b.append(field("始め方", seg([["a", "始点 → 終点"], ["b", "終点 → 始点"]], p.start || "a", (v) => { p.start = v; commit(); })));
+            heightField(b, "始点の高さ", p.a); heightField(b, "終点の高さ", p.b);
+          }
+          if (p.kind === "circle" || p.kind === "eight") {
+            if (l.surface === "air") b.append(field("回る面", seg([["horizontal", "水平"], ["frontVertical", "客席側から見た縦"], ["sideVertical", "舞台横から見た縦"]], p.plane || "horizontal", (v) => { p.plane = v; commit(); }, "col"), true));
+            b.append(field("回る向き", seg([["cw", "時計回り"], ["ccw", "反時計回り"]], p.dir, (v) => { p.dir = v; commit(); })));
+            /* 円は2軸で持つ＝楕円にできる（2026-09-11 本人要望）。軸の呼び名は面で変わる。 */
+            const AXIS = { horizontal: ["左右のふくらみ", "奥行きのふくらみ"], frontVertical: ["左右のふくらみ", "高さのふくらみ"], sideVertical: ["奥行きのふくらみ", "高さのふくらみ"] }[p.plane || "horizontal"];
+            const lim = Math.max(state.dims.W, state.dims.H) / 2;
+            b.append(field(AXIS[0], range(0.3, lim, 0.1, p.r, (v) => `約${v.toFixed(1)}m`, (v) => { p.r = v; draw(); }, () => commit())));
+            b.append(field(AXIS[1], range(0.3, lim, 0.1, p.r2 == null ? p.r : p.r2, (v) => `約${v.toFixed(1)}m`, (v) => { p.r2 = v; draw(); }, () => commit())));
+            b.append(field("傾き", range(-90, 90, 5, p.tilt == null ? 0 : p.tilt, (v) => (Math.round(v) === 0 ? "まっすぐ" : `${Math.round(v)}°`), (v) => { p.tilt = v; draw(); }, () => commit())));
+            { const rr = p.r2 == null ? p.r : p.r2, tl = Math.round(p.tilt || 0);
+              if (Math.abs(rr - p.r) >= 0.05 || tl) b.append(btn(p.kind === "eight" ? "傾きと形をそろえる" : "まん丸・まっすぐに戻す", () => { p.r2 = p.r; p.tilt = 0; commit(); }, "small quiet")); }
+            heightField(b, "中心の高さ", p.c);
+            b.append(field("始める位置", range(0, 1, 0.05, p.start || 0, (v) => `${Math.round(v * 360)}°`, (v) => { p.start = v; draw(); }, () => commit())));
+          }
+        } else {
+          b.append(el("p", "hint", "位置は止まったままです。光の強さ・光の広がりだけを動かすこともできます。"));
         }
-        if (!autoPos) b.append(el("p", "hint", "位置は止まったままです。光の強さ・光の広がりだけを動かすこともできます。"));
       }
 
       /* ⑥ 動きの時間。位置・強さ・広がりで<b>共通</b>の運び方なので、どれか1つでも
