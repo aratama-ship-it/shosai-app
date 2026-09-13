@@ -510,59 +510,73 @@
     }
     return out.concat(inn.reverse());
   }
-  /* 木漏れ日（フォリッジ）の抜けを撒く。
-     実機の見本を見ると、抜けは滑らかな楕円ではなく「ぎざぎざの不定形」で、
-     ごく小さな粒から大きな塊まで大きさの幅が広く、近いもの同士がつながって枝のような
-     かたまりになる（2026-09-13 本人が参考画像を提示。中身は写さず、性質だけ取り入れた）。
-     そこで:
+  /* ぎざぎざの不定形を撒く汎用の生成器。
+     木漏れ日（フォリッジ）の参考画像から取り入れた性質（2026-09-13 本人提示。中身は写さず
+     性質だけ取り入れた）をそのまま流用し、ブレイクアップ3種（粗・中・細）にも使う——
+     実機のブレイクアップも木漏れ日も「不定形が敷き詰まった質感」という点では同じ作り方で
+     足りる。違いは粒の大きさと数だけ（2026-09-13 本人指定「同じ生成器で作り直す」）。
        ・頂点ごとに半径と角度をばらした多角形にして、縁をとがらせる
        ・大きさはべき分布寄り（小さいものが多く、たまに大きい）
-       ・4割ほどは既にある抜けのそばへ置く。nonzero で塗るので重なって1つの塊になる
-     粒は細かい。実機の見本は直径の1/30ほどの粒から1/8ほどの塊まで混ざる。
-     白と黒がおよそ半々になる数にしてある（下の呼び出しで500個。実測50.0%）。
-     乱数は種を固定した自前の式——毎回まったく同じ形になる。
-     ＊数や大きさを変えたら割合も変わる。半々を保ちたいときは測り直すこと。 */
-  function foliageShapes(count, seed) {
+       ・一定の割合で既にある抜けのそばへ置く。nonzero で塗るので重なって塊になる
+     opts:
+       count   個数（多いほど白黒半々に近づく。下の呼び出しごとに実測して選んである）
+       spread  円のどこまで撒くか（0〜0.5）
+       cluster 新しい抜けを「既にある抜けの近く」に置く確率（0〜1）。高いほどつながって塊になる
+       near    [最小距離, 距離の幅]。cluster で置くときの、近くの範囲
+       min,range,pow  大きさ = min + rnd()^pow × range（pow を上げるほど小さいものに寄る）
+       vmin,vrange    頂点の数（vmin 〜 vmin+vrange-1）
+       jitter  頂点の角度のばらつき（大きいほど尖る）
+       lo,hi   頂点ごとの半径のばらつき（lo 〜 lo+hi 倍）
+     乱数は種を固定した自前の式——毎回まったく同じ形になる。 */
+  function jaggedShapes(count, seed, opts) {
+    const o = Object.assign({ spread: 0.47, cluster: 0.45, near: [0.012, 0.028],
+      min: 0.007, range: 0.042, pow: 2.4, vmin: 7, vrange: 6, jitter: 0.75, lo: 0.35, hi: 1.3 }, opts);
     let x = seed >>> 0;
     const rnd = () => { x = (x * 1664525 + 1013904223) >>> 0; return x / 4294967296; };
     const TAU = Math.PI * 2, out = [], seeds = [];
     for (let i = 0; i < count; i++) {
       let u, v;
-      if (seeds.length && rnd() < 0.45) {            // 既にある抜けの近くへ＝つながって枝になる
+      if (seeds.length && rnd() < o.cluster) {        // 既にある抜けの近くへ＝つながって塊になる
         const q = seeds[(rnd() * seeds.length) | 0];
-        const a = rnd() * TAU, d = 0.012 + rnd() * 0.028;
+        const a = rnd() * TAU, d = o.near[0] + rnd() * o.near[1];
         u = q[0] + Math.cos(a) * d; v = q[1] + Math.sin(a) * d;
       } else {                                       // 円のなかへ均等に撒く
-        const a = rnd() * TAU, r = Math.sqrt(rnd()) * 0.47;
+        const a = rnd() * TAU, r = Math.sqrt(rnd()) * o.spread;
         u = 0.5 + Math.cos(a) * r; v = 0.5 + Math.sin(a) * r;
       }
       seeds.push([u, v]);
-      const base = 0.007 + Math.pow(rnd(), 2.4) * 0.042;   // 小さいものが多く、たまに大きい
-      const n = 7 + Math.floor(rnd() * 6), rot = rnd() * TAU, pts = [];
+      const base = o.min + Math.pow(rnd(), o.pow) * o.range;   // 小さいものが多く、たまに大きい
+      const n = o.vmin + Math.floor(rnd() * o.vrange), rot = rnd() * TAU, pts = [];
       for (let k = 0; k < n; k++) {
-        const a = rot + (k / n) * TAU + (rnd() - 0.5) * 0.75;   // 角度もばらす＝とがる
-        const rr = base * (0.35 + rnd() * 1.3);
+        const a = rot + (k / n) * TAU + (rnd() - 0.5) * o.jitter;   // 角度もばらす＝とがる
+        const rr = base * (o.lo + rnd() * o.hi);
         pts.push([+(u + Math.cos(a) * rr).toFixed(3), +(v + Math.sin(a) * rr).toFixed(3)]);
       }
       out.push(["poly", pts]);
     }
     return out;
   }
+  /* 木漏れ日はこの生成器の既定値（粒は細かい。実機の見本は直径の1/30ほどの粒から
+     1/8ほどの塊まで混ざる）。白と黒がおよそ半々になる数（500個。実測50.0%）。
+     ＊数や大きさを変えたら割合も変わる。半々を保ちたいときは測り直すこと。 */
+  function foliageShapes(count, seed) { return jaggedShapes(count, seed, {}); }
 
   const GOBOS = [
     { id: "none", name: "なし", kind: "none", shapes: [] },
     /* 回す前提（回転ゴボ相当）8種 */
+    /* 3種とも jaggedShapes（木漏れ日と同じ生成器）で作る。粗・中・細は粒の大きさと数だけの
+       違いにした（2026-09-13 本人指定「同じ生成器で作り直す」）。もとは手で置いた4〜9個の
+       多角形・円で、木漏れ日と密度がまるで揃っていなかった。
+       白と黒がおよそ半々になる数を、木漏れ日と同じやり方で実測して選んである。 */
     { id: "break-coarse", name: "ブレイクアップ（粗）", kind: "rot", note: "光を大きく割る。質感の基本",
-      shapes: [["poly", [[.12,.18],[.38,.10],[.44,.34],[.18,.42]]], ["poly", [[.52,.14],[.84,.22],[.76,.46],[.48,.38]]],
-               ["poly", [[.08,.52],[.34,.48],[.40,.78],[.14,.86]]], ["poly", [[.50,.56],[.82,.52],[.88,.82],[.56,.88]]]] },
+      shapes: jaggedShapes(23, 20260913, { spread: 0.42, cluster: 0.1, near: [0.02, 0.04],
+        min: 0.045, range: 0.075, pow: 1.5, jitter: 0.65, lo: 0.55, hi: 1.0, vmin: 6, vrange: 4 }) },
     { id: "break-mid", name: "ブレイクアップ（中）", kind: "rot", note: "中くらいの崩し。いちばん使いやすい",
-      shapes: [["poly", [[.16,.14],[.40,.18],[.34,.40],[.12,.34]]], ["poly", [[.56,.10],[.82,.16],[.86,.38],[.60,.34]]],
-               ["poly", [[.10,.56],[.36,.54],[.40,.78],[.14,.82]]], ["poly", [[.54,.60],[.84,.58],[.80,.84],[.52,.86]]],
-               ["poly", [[.40,.42],[.58,.44],[.54,.58],[.38,.56]]]] },
+      shapes: jaggedShapes(86, 20260913, { spread: 0.46, cluster: 0.35, near: [0.018, 0.032],
+        min: 0.025, range: 0.058, pow: 1.8, jitter: 0.7, lo: 0.45, hi: 1.2, vmin: 6, vrange: 5 }) },
     { id: "break-fine", name: "ブレイクアップ（細）", kind: "rot", note: "ざらついた質感。床に敷く",
-      shapes: [["circle", .20,.22,.09], ["circle", .46,.14,.06], ["circle", .72,.26,.10], ["circle", .30,.50,.07],
-               ["circle", .58,.46,.05], ["circle", .84,.56,.07], ["circle", .16,.76,.08], ["circle", .44,.82,.06],
-               ["circle", .70,.78,.09]] },
+      shapes: jaggedShapes(1660, 20260913, { spread: 0.47, cluster: 0.55, near: [0.007, 0.016],
+        min: 0.004, range: 0.018, pow: 1.7, jitter: 0.9, lo: 0.4, hi: 1.3, vmin: 6, vrange: 5 }) },
     { id: "foliage", name: "木漏れ日", kind: "rot", note: "フォリッジ。屋外・森。場所を決める",
       shapes: foliageShapes(500, 20260913) },
     { id: "radial", name: "放射", kind: "rot", note: "回すと強い。ライブ向き",
