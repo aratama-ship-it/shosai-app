@@ -117,6 +117,32 @@
     };
   };
 
+  /* 光だまりの中の明るさの落ち方（2026-09-13 本人要望）。
+     斜めに当たると遠い側ほど暗い。理由は2つで、どちらも掛け算で効く:
+       ・距離が伸びるぶん薄まる（距離の二乗に反比例）
+       ・面に浅く当たるぶん、同じ光が広い面積へ延びる（入射角の余弦。ランバートの余弦則）
+     長軸に沿って t=−1（灯体に近い側）〜+1（遠い側）で標本を取り、
+     いちばん明るいところが1になるようそろえて返す。
+     ＊そろえるのは「灯ごとの明るさの差」を変えないため。ここで足すのは光だまりの中の濃淡だけ。 */
+  const spotFalloff = (S, el, surface, steps) => {
+    if (!S || !el) return null;
+    const n = surface === "back" ? { x: 0, y: 1, z: 0 } : surface === "floor" ? { x: 0, y: 0, z: 1 } : null;
+    if (!n) return null;
+    const N = Math.max(2, Math.round(finite(steps, 8)));
+    const out = [];
+    for (let i = 0; i <= N; i++) {
+      const t = -1 + (2 * i) / N;
+      const px = el.c.x + el.ea.x * t, py = el.c.y + el.ea.y * t, pz = el.c.z + el.ea.z * t;
+      const dx = S.x - px, dy = S.y - py, dz = S.z - pz;
+      const r2 = Math.max(dx * dx + dy * dy + dz * dz, 1e-6), r = Math.sqrt(r2);
+      const cosI = Math.max(0, (dx * n.x + dy * n.y + dz * n.z) / r);
+      out.push({ t, v: cosI / r2 });
+    }
+    const mx = out.reduce((m, o) => Math.max(m, o.v), 0);
+    if (!(mx > 0)) return null;
+    return out.map((o) => ({ t: o.t, v: clamp(o.v / mx, 0, 1) }));
+  };
+
   const trussById = (rig, id) => (rig.trusses || []).find((t) => t.id === id) || null;
 
   // 奥から何段目（1始まり）。表示専用。保存はしない
@@ -624,7 +650,7 @@
   root.RIG_ENGINE = Object.freeze({
     DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
     clamp, finite,
-    newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, spotEllipse, beamLanding, trussById, trussRow, fixtureWorld,
+    newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, spotEllipse, spotFalloff, beamLanding, trussById, trussRow, fixtureWorld,
     newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, paramPhase, mountSpot, GOBOS, goboById, goboAngleAt, constrainPointToSurface, periodMs, groupEffect,
     pointWorld, planeVec, circleOffset, eightOffset, targetAt, pathGuide, mirrorMount,
     FRONT_SEATS, frontPerspSetup, makeFrontPerspProjector, frontPerspToUH,

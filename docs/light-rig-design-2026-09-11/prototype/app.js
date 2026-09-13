@@ -920,7 +920,7 @@
     const bx = (pb.X - c.X) * BEAM_SOFT, by = (pb.Y - c.Y) * BEAM_SOFT;
     if (!Number.isFinite(ax + ay + bx + by)) return null;
     if (Math.abs(ax * by - ay * bx) < 4) return null;   // 潰れている＝その図では線にしか見えない
-    return { cx: c.X, cy: c.Y, ax, ay, bx, by };
+    return { cx: c.X, cy: c.Y, ax, ay, bx, by, fall: E.spotFalloff(world.S, el, surf, 8) };
   }
   function drawBeam(ctx, from, to, world, color, deg, dim, pxPerM, squash, asLine, noPool, lv, gobo, surf, proj) {
     const rM = E.spotRadiusM(world.S, world.T, deg), rPx = Math.max(rM * pxPerM, 3);
@@ -981,22 +981,35 @@
       return g;
     };
     const mask = gobo ? goboMask(gobo, maskR) : null;
-    if (!mask) {
+    const fall = ell && ell.fall && ell.fall.length > 2 ? ell.fall : null;
+    if (!mask && !fall) {
       ctx.fillStyle = stops(ctx.createRadialGradient(0, 0, 0, 0, 0, R));
       ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
     } else {
-      /* 模様の形にだけ光を置く。別キャンバスで「光だまり×模様」を作ってから1枚で載せるので、
-         下に描いてあるものは何も消えない。一時キャンバスはpxのままなので、
-         最後に R/maskR を掛けて、いまの空間（楕円なら単位円）へ合わせる。 */
-      const s2 = mask.size, tmp = goboTmp(s2), tc = tmp.getContext("2d");
+      /* 模様や濃淡は別キャンバスで「光だまり×模様×減衰」を作ってから1枚で載せる。
+         どれも α の掛け算なので順番は問わないし、下に描いてあるものは何も消えない。
+         一時キャンバスはpxのままなので、最後に R/maskR を掛けていまの空間へ合わせる。 */
+      const s2 = mask ? mask.size : Math.ceil(maskR * 2) + 4;
+      const tmp = goboTmp(s2), tc = tmp.getContext("2d");
       tc.setTransform(1, 0, 0, 1, 0, 0); tc.clearRect(0, 0, s2, s2);
       tc.save(); tc.translate(s2 / 2, s2 / 2);
       tc.fillStyle = stops(tc.createRadialGradient(0, 0, 0, 0, 0, maskR));
       tc.beginPath(); tc.arc(0, 0, maskR, 0, Math.PI * 2); tc.fill();
+      if (fall) {
+        /* 長軸に沿った濃淡。一時キャンバスの横向き＝楕円の長軸なので、そのまま左右に引ける。
+           左が灯体に近い側（明るい）、右が遠い側（暗い）。 */
+        const lg = tc.createLinearGradient(-maskR, 0, maskR, 0);
+        fall.forEach((q) => lg.addColorStop(E.clamp((q.t + 1) / 2, 0, 1), `rgba(255,255,255,${q.v.toFixed(4)})`));
+        tc.globalCompositeOperation = "destination-in";
+        tc.fillStyle = lg; tc.fillRect(-s2 / 2, -s2 / 2, s2, s2);
+        tc.globalCompositeOperation = "source-over";
+      }
       tc.restore();
-      tc.globalCompositeOperation = "destination-in";      // 模様の形で光を切り抜く（tmpの中だけの話）
-      tc.drawImage(mask.canvas, 0, 0);
-      tc.globalCompositeOperation = "source-over";
+      if (mask) {
+        tc.globalCompositeOperation = "destination-in";    // 模様の形で光を切り抜く（tmpの中だけの話）
+        tc.drawImage(mask.canvas, 0, 0);
+        tc.globalCompositeOperation = "source-over";
+      }
       const k = R / maskR;
       ctx.scale(k, k); ctx.drawImage(tmp, -s2 / 2, -s2 / 2);
     }
