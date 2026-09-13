@@ -34,6 +34,43 @@
   let demoStopped = false;
 
   const bridge = () => window.SHOSAI_STAGE_SESSION_BRIDGE;
+  const publicLanguage = () => document.documentElement.lang || "ja";
+  const translatePublicSay = (say, message) => {
+    for (const [re, translatedValue] of say || []) {
+      re.lastIndex = 0;
+      if (!re.test(message)) continue;
+      re.lastIndex = 0;
+      return message.replace(re, translatedValue);
+    }
+    return null;
+  };
+  const publicText = (ja, englishFallback) => {
+    const lang = publicLanguage();
+    if (lang === "ja") return ja;
+    const packs = window.SHOSAI_I18N_PACKS || {};
+    for (const code of lang === "en" ? ["en"] : [lang, "en"]) {
+      const candidate = packs[code];
+      if (!candidate) continue;
+      if (candidate.text && candidate.text[ja]) return candidate.text[ja];
+      const sayValue = translatePublicSay(candidate.say, ja);
+      if (sayValue) return sayValue;
+    }
+    return englishFallback;
+  };
+  const publicGenerated = (key, ja, englishFallback, values = {}) => {
+    const lang = publicLanguage();
+    if (lang === "ja") return ja;
+    const packs = window.SHOSAI_I18N_PACKS || {};
+    let template = null;
+    for (const code of lang === "en" ? ["en"] : [lang, "en"]) {
+      template = packs[code] && packs[code].generated && packs[code].generated[key];
+      if (template) break;
+    }
+    return Object.entries(values).reduce(
+      (value, [name, replacement]) => value.replace(`{${name}}`, String(replacement)),
+      template || englishFallback,
+    );
+  };
   const readDocument = () => {
     try { return JSON.parse(bridge().exportDocumentString()); }
     catch (_) { return null; }
@@ -60,7 +97,7 @@
        （スマホで選びにくいという本人の指摘。2026-09-03）。 */
     project.venueSize = "small";
     delete project.venueDims;
-    project.title = document.documentElement.lang === "en" ? "Preview" : "体験版";
+    project.title = publicText("体験版", "Preview");
     // 演者は3人まで。体験版は「動かす」だけの場所にする。
     const keep = new Set(
       scene.pieces.filter((piece) => piece.type === "performer").slice(0, 3).map((piece) => piece.id)
@@ -71,17 +108,16 @@
     /* 場面は3つ仕込む（本人指示 2026-09-03: 切替と転換の動きで利用イメージが湧くように）。
        ★足す・消すはできない。★駒のidは場面間で同じにする——転換アニメは同じidの駒を
          前の場面の位置から動かすので、idが違うと消えて現れるだけになる。 */
-    const english = document.documentElement.lang === "en";
     const performers = scene.pieces.filter((piece) => piece.type === "performer");
     const cloneScene = (title, mutate) => {
       const copy = JSON.parse(JSON.stringify(scene));
       copy.id = `public-scene-${title.index}`;
-      copy.title = english ? `Scene ${title.index}` : `場面 ${title.index}`;
+      copy.title = publicGenerated("sceneTitle", `場面 ${title.index}`, `Scene ${title.index}`, { n: title.index });
       copy.pieces.forEach((piece, order) => { if (piece.type === "performer") mutate(piece, order); });
       return copy;
     };
     scene.id = "public-scene-1";
-    scene.title = english ? "Scene 1" : "場面 1";
+    scene.title = publicGenerated("sceneTitle", "場面 1", "Scene 1", { n: 1 });
     const second = cloneScene({ index: 2 }, (piece, order) => {
       // 左右を入れ替え、少し奥へ
       piece.u = Math.max(0.12, Math.min(0.88, 1 - piece.u));
@@ -109,15 +145,16 @@
   const PUBLIC_MAX_SETS = 2;
 
   function limitNote(group) {
-    const english = document.documentElement.lang === "en";
     if (group === "cast") {
-      return english
-        ? `The preview holds up to ${PUBLIC_MAX_PERFORMERS} performers. The full beta lets you add more.`
-        : `体験版で置ける演者は${PUBLIC_MAX_PERFORMERS}人までです。製品版（β）ではもっと足せます。`;
+      return publicText(
+        `体験版で置ける演者は${PUBLIC_MAX_PERFORMERS}人までです。製品版（β）ではもっと足せます。`,
+        `The preview holds up to ${PUBLIC_MAX_PERFORMERS} performers. The full beta lets you add more.`,
+      );
     }
-    return english
-      ? `The preview holds up to ${PUBLIC_MAX_SETS} set pieces. The full beta lets you add more.`
-      : `体験版で置ける舞台セットは${PUBLIC_MAX_SETS}つまでです。製品版（β）ではもっと足せます。`;
+    return publicText(
+      `体験版で置ける舞台セットは${PUBLIC_MAX_SETS}つまでです。製品版（β）ではもっと足せます。`,
+      `The preview holds up to ${PUBLIC_MAX_SETS} set pieces. The full beta lets you add more.`,
+    );
   }
 
   /* ---- 人を足す（スマホの体験版・本人指示 2026-09-03） ----
@@ -134,13 +171,12 @@
       showLockedNote(limitNote("cast"));
       return false;
     }
-    const english = document.documentElement.lang === "en";
     const n = (project.cast || []).length;
     const letter = String.fromCharCode(65 + (n % 26));
     const castId = `public-cast-${n + 1}`;
     const color = PUBLIC_PALETTE[n % PUBLIC_PALETTE.length];
     project.cast = (project.cast || []).concat([{
-      id: castId, name: english ? `Performer ${letter}` : `演者${letter}`,
+      id: castId, name: publicText(`演者${letter}`, `Performer ${letter}`),
       color, heightCm: 170, note: "", locked: false,
     }]);
     const sample = here[0] || {};
@@ -192,10 +228,9 @@
     host.prepend(bar);
 
     function sync() {
-      const english = document.documentElement.lang === "en";
-      bar.setAttribute("aria-label", english ? "Choose a venue" : "会場を切り替える");
+      bar.setAttribute("aria-label", publicText("会場を切り替える", "Choose a venue"));
       buttons.forEach((button) => {
-        button.textContent = english ? button.dataset.en : button.dataset.ja;
+        button.textContent = publicText(button.dataset.ja, button.dataset.en);
         button.setAttribute("aria-pressed", String(button.dataset.venue === select.value));
       });
       if (!selectedPerformerId) status.textContent = "";
@@ -240,10 +275,15 @@
   }
 
   function railLabels() {
-    const english = document.documentElement.lang === "en";
-    return english
-      ? { add: "+1", addLabel: "Add a performer", seat: "Seat", seatLabel: "Which seat in the house you watch from", settings: "Settings", settingsLabel: "Open settings", close: "Close" }
-      : { add: "＋人", addLabel: "人を足す", seat: "客席", seatLabel: "どの席から舞台を見るか", settings: "設定", settingsLabel: "設定を開く", close: "閉じる" };
+    return {
+      add: publicText("＋人", "+1"),
+      addLabel: publicText("人を足す", "Add a performer"),
+      seat: publicText("客席", "Seat"),
+      seatLabel: publicText("どの席から舞台を見るか", "Which seat in the house you watch from"),
+      settings: publicText("設定", "Settings"),
+      settingsLabel: publicText("設定を開く", "Open settings"),
+      close: publicText("閉じる", "Close"),
+    };
   }
 
   /* 縦向き: 図の上に一列（＋人・客席の札）。 */
@@ -368,7 +408,6 @@
   function markPhoneSettings() {
     const panel = document.querySelector(".stage-phone-settings");
     if (!panel) return;
-    const english = document.documentElement.lang === "en";
     const buttons = [...panel.querySelectorAll("button")];
     if (!buttons.length) return;
 
@@ -385,7 +424,7 @@
 
     if (close) {
       close.classList.add("stage-public-lang", "stage-public-close");
-      const label = english ? "Close settings" : "設定を閉じる";
+      const label = publicText("設定を閉じる", "Close settings");
       // ★同じ値でも書けば変化として見張りに拾われる。必要なときだけ書く
       if (close.textContent !== "✕") close.textContent = "✕";
       if (close.getAttribute("aria-label") !== label) close.setAttribute("aria-label", label);
@@ -423,25 +462,25 @@
        この帯は言語の切替へ触れる前に、いちばん最初に出る。端末の言語だけで
        選ぶと、日本語の端末を使う英語話者には英文が届かない。両方見せて迷いを無くす。
        先に出すのは端末の言語の方。 */
-    const english = document.documentElement.lang === "en";
-    const JA = "この体験版はスマホでは操作が限られます。PCでのご利用をお勧めします。";
-    const EN = "The preview is limited on phones. It works best on a computer.";
+    const japanese = publicLanguage() === "ja";
+    const JA = "この体験版はスマホでは操作が限られます。3場面まで利用でき、保存されません。PCでのご利用をお勧めします。";
+    const EN = "The preview is limited on phones. It has up to three scenes and does not save work. It works best on a computer.";
     const message = document.createElement("p");
-    message.textContent = english ? EN : JA;
+    message.textContent = publicText(JA, EN);
     const sub = document.createElement("p");
     sub.className = "stage-public-phone-notice-sub";
-    sub.textContent = english ? JA : EN;
-    sub.lang = english ? "ja" : "en";
+    sub.textContent = japanese ? EN : JA;
+    sub.lang = japanese ? "en" : "ja";
     const close = document.createElement("button");
     close.type = "button";
-    close.textContent = english ? "Continue ／ 続ける" : "続ける ／ Continue";
+    close.textContent = japanese ? "続ける ／ Continue" : "Continue ／ 続ける";
     close.addEventListener("click", () => notice.remove());
     /* ★スマホでは見出しの帯ごと出さないので、上の「紹介ページ」の口が届かない。
        この帯はスマホで最初に出るので、ここへ置く（本人指示 2026-09-04）。 */
     const overview = document.createElement("a");
     overview.className = "stage-public-phone-notice-link";
     overview.href = lpHref();
-    overview.textContent = english ? "See the overview ／ 紹介ページを見る" : "紹介ページを見る ／ See the overview";
+    overview.textContent = japanese ? "紹介ページを見る ／ See the overview" : "See the overview ／ 紹介ページを見る";
     notice.append(message, sub, close, overview);
     document.body.append(notice);
     close.focus();
@@ -620,10 +659,10 @@
         try { castButtons[castIndex].click(); }
         finally { internalClick = false; }
       }
-      const english = document.documentElement.lang === "en";
-      status.textContent = english
-        ? `${cast ? cast.name : "Performer"} selected`
-        : `${cast ? cast.name : "演者"}を選択`;
+      status.textContent = publicText(
+        `${cast ? cast.name : "演者"}を選択`,
+        `${cast ? cast.name : "Performer"} selected`,
+      );
       canvas.setAttribute("aria-describedby", "stage-public-selection-status");
       return;
     }
@@ -726,7 +765,7 @@
     const button = document.createElement("button");
     button.type = "button";
     button.className = "stage-public-motion-button";
-    button.textContent = document.documentElement.lang === "en" ? "Move" : "動かす";
+    button.textContent = publicText("動かす", "Move");
     button.addEventListener("click", () => playDemo(button), { once: true });
     const host = document.getElementById("stage-col-center");
     if (host) host.insertBefore(button, host.children[1] || null);
@@ -743,9 +782,10 @@
     "stage-undo", "stage-redo",
     // 場面の切替と転換の再生は開ける。足す・消す・複製は閉じたまま（2026-09-03）
     "stage-scene-prev", "stage-scene-next", "stage-scene-replay",
-    /* 設定は開ける。中身は錠だが、日本語⇄英語の切替だけは使えるようにする
-       （本人指示 2026-09-03）。 */
+    /* 設定と言語に加え、v0.3.5で全版へ反映する見た目・確認操作を開ける。
+       3場面・未保存・共有なし、という体験版の境界は別に保つ（本人指示 2026-09-10）。 */
     "stage-prefs-btn", "stage-prefs-close", "stage-lang",
+    "stage-present-btn", "stage-export", "stage-print-btn", "stage-arrange-select",
   ]);
   const UNLOCKED_CLOSEST = [
     // 欄の見出しは開閉のボタン。錠が掛かっていても畳めるようにする（本人指示 2026-09-03）。
@@ -757,6 +797,7 @@
     ".stage-public-popover",       // その選択肢
     ".stage-phone-title-settings", // スマホの歯車（設定を開く）
     ".stage-public-lang",          // スマホ設定の中の 日本語 / English
+    ".stage-pref-skin",            // v0.3.5: 赤黒 / 青黒のスキン
     ".stage-view-switch",          // 正面 / 平面 / 両方
     ".stage-public-venue-bar",     // 埋め込みで足す会場の帯
     ".stage-public-phone-notice",  // PCを勧める帯の「続ける」
@@ -764,9 +805,10 @@
   ];
 
   function lockLabel() {
-    return document.documentElement.lang === "en"
-      ? 'This is available in the full beta. The preview lets you move performers and change the venue.'
-      : 'この機能は製品版（β）で使えます。体験版では、演者を動かすことと会場を変えることができます。';
+    return publicText(
+      "この機能は製品版（β）で使えます。体験版では、演者を動かすことと会場を変えることができます。",
+      "This is available in the full beta. The preview lets you move performers and change the venue.",
+    );
   }
 
   function showLockedNote(message) {
@@ -798,16 +840,16 @@
     if (el.dataset.publicLock) return;
     el.dataset.publicLock = kind;
     el.setAttribute("aria-disabled", "true");
-    const english = document.documentElement.lang === "en";
     const base = el.getAttribute("aria-label") || (el.textContent || "").trim().slice(0, 24);
     /* ★括弧も言語で変える。英語の読み上げに全角の（）が混じると読みが崩れる
        （2026-09-05 実機で "Seat（full version）" を確認）。
        ★日本語が「製品版」なので英語も the full version。「製品版（β）」＝the full beta
          とは書き分ける（LP・紹介ページも同じ書き分けをしている）。 */
     if (base) {
-      el.setAttribute("aria-label", english
-        ? `${base} (in the full version)`
-        : `${base}（製品版で使えます）`);
+      el.setAttribute("aria-label", publicText(
+        `${base}（製品版で使えます）`,
+        `${base} (in the full version)`,
+      ));
     }
   }
 
@@ -833,28 +875,20 @@
   /* 紹介ページ（LP）へは、いま見ている言語を持って行く。LPは ?lang= が無いと端末の言語で決めるので、
      日本語の端末で英語の体験版を見ていた人が、押した先で日本語へ戻ってしまう。 */
   function lpHref() {
-    return `./?lang=${document.documentElement.lang === "en" ? "en" : "ja"}`;
+    return `./?lang=${encodeURIComponent(publicLanguage())}`;
   }
 
   function previewLabels() {
-    const english = (() => {
-      try { const b = bridge(); if (b && typeof b.isEnglish === "function") return b.isEnglish(); }
-      catch (_) { /* 読めなければ lang 属性で判断する */ }
-      return document.documentElement.lang === "en";
-    })();
-    return english
-      ? {
-        badge: "Preview",
-        title: "Stage Sketch (Preview)",
-        betaLink: "Request access to the full beta",
-        lpLink: "Overview",
-      }
-      : {
-        badge: "体験版",
-        title: "舞台スケッチ（体験版）",
-        betaLink: "製品版ベータ版はコチラからお問い合わせください",
-        lpLink: "紹介ページ",
-      };
+    return {
+      badge: publicText("体験版", "Preview"),
+      title: publicText("舞台スケッチ（体験版）", "Stage Sketch (Preview)"),
+      storageNotice: publicText(
+        "3場面まで。保存されず、再読み込みで見本に戻ります。",
+        "Up to three scenes. Nothing is saved; reloading restores the sample.",
+      ),
+      betaLink: publicText("製品版ベータ版はコチラからお問い合わせください", "Request access to the full beta"),
+      lpLink: publicText("紹介ページ", "Overview"),
+    };
   }
 
   /* ---- 姿勢は5つだけ（本人指示 2026-09-03） --------------------------
@@ -917,6 +951,8 @@
       el.classList.add("stage-public-badge");
     });
     document.title = text.title;
+    const storageNotice = document.querySelector(".stage-storage-caution");
+    if (storageNotice) storageNotice.textContent = text.storageNotice;
 
     // 埋め込みは帯の中へ小さく出す。iframe を切り取った絵にも「体験版」が残るように。
     if (embed) {
@@ -1087,9 +1123,21 @@
     }
 
     // 3) 欄に入っていないもの（シーンの帯・上の並び・図の上の道具）
-    [".stage-canvas-tools", ".stage-seat-list", ".stage-zoom-fab",
-     ".stage-light-intent", ".stage-light-intent-compare", ".stage-phone-info"]
+    // 客席は体験版で開ける。スマホだけ別の札で開ける状態にせず、PCでも本体の
+    // 5つの客席ボタンをそのまま使う（LPの案内と同じ範囲）。
+    const LOCKED_FLOATING_PANELS = [
+      ".stage-zoom-fab",
+      ".stage-light-intent", ".stage-light-intent-compare", ".stage-phone-info",
+    ];
+    LOCKED_FLOATING_PANELS
       .forEach((selector) => root.querySelectorAll(selector).forEach((el) => lockElement(el, "panel")));
+    /* 平面図の道具列は、v0.3.5の整列だけを開ける。親全体をaria-disabledにすると
+       許可したselectまで無効として扱われるため、未許可の操作へ個別に錠を掛ける。 */
+    root.querySelectorAll(".stage-canvas-tools button, .stage-canvas-tools select, .stage-canvas-tools input")
+      .forEach((el) => {
+        if (isUnlocked(el)) return;
+        lockElement(el, "control");
+      });
 
     /* 上部のボタン列は「開けるもの（一つ戻す・やり直す）以外は全部錠」にする。
        ★以前は錠にするものを名指ししていたため、あとから足した「感想を送る」が
@@ -1113,7 +1161,7 @@
     /* ★#stage-fpv-open（この人の視界）は「選んだもの」の中にある。欄ごと開けたので、
          ここで名指しして錠にする。中身は stage-first-person.js が要るが、
          軽くするために配信から外してある。押せてしまうと何も起きない。 */
-    ["#stage-export", "#stage-present-btn", "#stage-freecam-open", "#stage-fpv-open"]
+    ["#stage-freecam-open", "#stage-fpv-open"]
       .forEach((selector) => root.querySelectorAll(selector).forEach((el) => lockElement(el, "control")));
 
     // 道具は「ものを動かす」だけ開ける

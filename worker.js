@@ -1,8 +1,17 @@
+import { handleReaderAuth } from './study-reader-auth.js';
+import { handleReaderApi } from './study-reader-api.js';
+export { StudyReaderAuth } from './study-reader-auth.js';
+export { StudyReaderAccount } from './study-reader-account.js';
+import { handleStudyApi, serveStudyAsset } from "./study-links.js";
+export { StudyLinks } from "./study-links.js";
+
 import { SessionRoom } from "./session-room.js";
+import { handleUsageRequest } from "./usage-metrics.js";
 
 export { SessionRoom };
+export { UsageMetrics } from "./usage-metrics.js";
 
-// サイト全体をBasic認証で保護する（制作の書斎、全タブ共通）。
+// サイト全体を認証で保護する。SITE_USERは書斎全体、ゲストは舞台スケッチだけ。
 //
 // wrangler.toml の run_worker_first により、静的アセットより必ず先にここを通る。
 // 正しければ env.ASSETS.fetch(request) で通常の静的ファイル配信へ渡す。
@@ -178,14 +187,155 @@ function handleBetaStatusRequest(request, env) {
   });
 }
 
+/* ゲストへ渡す静的ファイルは明示する。stage-*.js / manual/* のような広い許可は
+   個人ショーや将来追加する内部資料まで通すので使わない。
+   tests/worker-guest-scope.test.mjs が単独ページ・PWA・ガイドの依存との整合を検査する。 */
+const GUEST_STAGE_DOCUMENTS = new Set(["/stage.html", "/stage"]);
+const GUEST_STAGE_ASSETS = new Set([
+  ...GUEST_STAGE_DOCUMENTS,
+  "/style.css", "/stage-sw.js", "/stage-pwa.js", "/stage-sketch.js", "/stage-timeline.js",
+  "/stage-venues.js", "/stage-venue-lines.js", "/stage-i18n.js",
+  "/stage-i18n.zh-Hans.js", "/stage-i18n.zh-Hant.js",
+  "/stage-prompt-i18n.js", "/stage-rehearsal-export.js", "/stage-samples/index.js",
+  "/stage-set-model.js", "/stage-set-builder.js", "/stage-machinery.js",
+  "/stage-first-person.js", "/stage-audio-store.js", "/stage-light-motion.js", "/stage-light-rig.js",
+  "/formation/prototype/record-from-video.html",
+  "/stage-session.js", "/stage-usage.js",
+  "/stage-venue-editor.js", "/stage-sketch.webmanifest",
+  "/stage-study-owner.js", "/stage-study.css",
+  "/manual/manual-content.js", "/manual/manual.html", "/manual/manual",
+  "/manual/quick.html", "/manual/quick", "/manual/quick-en.html", "/manual/quick-en",
+  "/manual/QuickGuide_2026-08-28.pdf", "/manual/GuideBooklet_2026-08-29.pdf",
+  "/manual/クイックガイド_2026-08-28.pdf", "/manual/使いかたの冊子_2026-08-29.pdf",
+  ...["cover-trapeze", "duo-front", "duo-plan", "cast-poses-props", "scene-map"]
+    .flatMap((name) => [`/manual/img/${name}.png`, `/manual/img/${name}-en.png`]),
+].map((path) => encodeURI(path)));
+
+function isGuestAccount(user, env) {
+  // null は認証を設定していないローカル開発だけ。ゲストの名簿labelは権限に使わない。
+  return user !== null && user !== env.SITE_USER;
+}
+
+function isGuestStageAsset(request) {
+  if (request.method !== "GET" && request.method !== "HEAD") return false;
+  return GUEST_STAGE_ASSETS.has(new URL(request.url).pathname);
+}
+
+function guestStageEntry(value) {
+  const url = new URL(safeNextPath(value), "https://stage.invalid");
+  if (GUEST_STAGE_DOCUMENTS.has(url.pathname)) return url.pathname + url.search + url.hash;
+  // 書斎や未知の戻り先からは舞台へ。言語だけ引き継ぎ、書斎のhash等は持ち込まない。
+  const lang = url.searchParams.get("lang");
+  return "/stage.html" + (lang === "en" || lang === "ja" ? `?lang=${lang}` : "");
+}
+
+function guestForbidden() {
+  return new Response("このアカウントでは舞台スケッチのみ利用できます。\nThis account can access Stage Sketch only.", {
+    status: 403,
+    headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+  });
+}
+
+function stageAssetRequest(request) {
+  if (!GUEST_STAGE_DOCUMENTS.has(new URL(request.url).pathname)
+    && !["/stage-venues.js", "/stage-sw.js"].includes(new URL(request.url).pathname)) return request;
+  // 既存HTMLのvalidatorやRangeで304/206を返すと、名称・ゲスト用の変換を飛ばしてしまう。
+  const headers = new Headers(request.headers);
+  for (const name of ["If-None-Match", "If-Modified-Since", "If-Match", "If-Unmodified-Since", "If-Range", "Range"]) headers.delete(name);
+  return new Request(request, { headers });
+}
+
+async function authenticatedAssetResponse(response, request, guest = false, releaseScope = "") {
+  const headers = new Headers(response.headers);
+  // 本人用・ゲスト用の応答をHTTPキャッシュで混ぜない。PWAは安全なshellを明示保存する。
+  headers.set("Cache-Control", "private, no-store");
+  headers.set("Vary", "Cookie, Authorization");
+  // 2026-09-09: 実在3会場はベータの選択肢から一時非表示。配信素材と保存済みIDは保持する。
+  const path = new URL(request.url).pathname;
+  if (request.method === "GET" && response.status === 200
+    && ["/stage-venues.js", "/stage-sw.js"].includes(path)
+    && /(?:javascript|ecmascript)/i.test(headers.get("Content-Type") || "")) {
+    let script = await response.text();
+    if (path === "/stage-venues.js") {
+      script += `
+;(() => {
+  const hidden = new Set(["theatre-tram", "tohu", "cirque-dhiver"]);
+  const venues = window.SHOSAI_VENUES;
+  for (const catalog of [venues, venues && venues.v2]) {
+    if (!catalog) continue;
+    const descriptor = Object.getOwnPropertyDescriptor(catalog, "list");
+    if (!descriptor || typeof descriptor.get !== "function") continue;
+    Object.defineProperty(catalog, "list", { ...descriptor,
+      get() { return descriptor.get.call(this).filter(venue => !hidden.has(venue.id)); }
+    });
+  }
+})();
+`;
+    } else {
+      // PWAにも新しい会場一覧を取得させる。元のキャッシュ世代に追随する。
+      script = script.replace(/(const CACHE_NAME = ")([^"]+)(";)/,
+        '$1$2-hide-real-venues-20260909$3');
+    }
+    for (const name of ["Content-Length", "Content-Encoding", "ETag", "Last-Modified"]) headers.delete(name);
+    return new Response(script, { status: 200, headers });
+  }
+  if (request.method === "GET" && response.status === 200
+    && GUEST_STAGE_DOCUMENTS.has(new URL(request.url).pathname)
+    && (headers.get("Content-Type") || "").includes("text/html")) {
+    // 既存の配信素材を維持するWorker単独更新でも、単独ページの名称をそろえる。
+    let html = (await response.text()).replace(/<title>[^<]*<\/title>/, "<title>舞台スケッチ | Stage Sketch</title>");
+    if (/^[a-z0-9-]{1,40}$/i.test(releaseScope)) {
+      const scope = JSON.stringify(releaseScope);
+      const scopeScript = `<script>window.SHOSAI_RELEASE_SCOPE=${scope};document.documentElement.dataset.releaseScope=${scope};<\/script>`;
+      html = html.replace("</head>", `${scopeScript}\n</head>`);
+    }
+    if (guest) {
+      // build_stage.pyの既知のscriptタグだけ外す。実データURLへの直接アクセスも別途拒否する。
+      html = html.replace(/<script\s+src="stage-shows\.local\.js(?:\?[^"<>]*)?"\s*>\s*<\/script>/g, "");
+    }
+    for (const name of ["Content-Length", "Content-Encoding", "ETag", "Last-Modified"]) headers.delete(name);
+    return new Response(html, { status: 200, headers });
+  }
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+async function serveStageGuestAsset(request, env) {
+  const url = new URL(request.url);
+  if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/") {
+    return new Response(null, {
+      status: 303,
+      headers: { "Location": guestStageEntry(url.pathname + url.search), "Cache-Control": "no-store" },
+    });
+  }
+  if (!isGuestStageAsset(request)) return guestForbidden();
+
+  const response = await env.ASSETS.fetch(stageAssetRequest(request));
+  const location = response.headers.get("Location");
+  if (location) {
+    const destination = new URL(location, request.url);
+    if (destination.origin !== url.origin
+      || !(GUEST_STAGE_ASSETS.has(destination.pathname) || isPublicAppShellAsset(new Request(destination)))) {
+      return guestForbidden();
+    }
+  }
+  return authenticatedAssetResponse(response, request, true, env.STAGE_RELEASE_SCOPE || "");
+}
+
 async function serveAuthenticatedRequest(request, env, user) {
+  const studyResponse = await handleStudyApi(request, env, user);
+  if (studyResponse) return studyResponse;
+  const studyAsset = await serveStudyAsset(request, env);
+  if (studyAsset) return studyAsset;
+  const usageResponse = await handleUsageRequest(request, env, user);
+  if (usageResponse) return usageResponse;
   const whoamiResponse = handleWhoamiRequest(request, user);
   if (whoamiResponse) return whoamiResponse;
   const betaStatusResponse = handleBetaStatusRequest(request, env);
   if (betaStatusResponse) return betaStatusResponse;
   const sessionResponse = await handleSessionRequest(request, env, user);
   if (sessionResponse) return sessionResponse;
-  return env.ASSETS.fetch(request);
+  if (isGuestAccount(user, env)) return serveStageGuestAsset(request, env);
+  return authenticatedAssetResponse(await env.ASSETS.fetch(stageAssetRequest(request)), request, false, env.STAGE_RELEASE_SCOPE || "");
 }
 
 /* ホーム画面へ追加したPWAの見た目に必要な、中身を持たない静的資源だけを認証の外へ出す。
@@ -322,6 +472,8 @@ function clearedSessionCookie() {
 export function safeNextPath(value) {
   if (typeof value !== "string" || !value.startsWith("/")) return "/";
   if (value.startsWith("//")) return "/";
+  // URLパーサーはバックスラッシュを/として解釈する。外部ホストや不正URLにしない。
+  if (value.includes("\\")) return "/";
   if (/[\u0000-\u001f\u007f]/.test(value)) return "/";
   return value;
 }
@@ -354,13 +506,15 @@ const SIGN_IN_ERROR_EN = {
 };
 
 function signInPage({ next = "/", error = "" } = {}) {
+  const english = new URL(safeNextPath(next), "https://stage.invalid").searchParams.get("lang") === "en";
+  const title = english ? "Stage Sketch" : "舞台スケッチ";
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>制作の書斎</title>
+<title>${title}</title>
 <link rel="icon" href="/icons/stage-sketch-192.png" sizes="192x192" type="image/png">
 <style>
   :root {
@@ -479,7 +633,7 @@ function signInPage({ next = "/", error = "" } = {}) {
   .en { color: var(--ink-soft); font-weight: normal; }
   .lede .en { display: block; font-size: 11px; letter-spacing: 0.04em; margin-top: 3px; }
   label .en { font-size: 10px; margin-left: 7px; letter-spacing: 0.05em; }
-  button[type="submit"] .en { font-size: 11px; margin-left: 8px; opacity: 0.75; }
+  button[type="submit"] .en { font-size: 11px; margin-left: 8px; color: inherit; opacity: 1; }
   .note .en { display: block; margin-top: 4px; }
   .alert .en { display: block; margin-top: 3px; font-size: 10.5px; }
   .note {
@@ -512,8 +666,8 @@ function signInPage({ next = "/", error = "" } = {}) {
   <main class="stand">
     <form class="sheet" method="POST" action="${escapeHtml(SIGN_IN_PATH)}">
       <img class="mark" src="/icons/stage-sketch-192.png" alt="" width="54" height="54">
-      <h1>制作の書斎</h1>
-      <p class="lede">舞台をつくるための机と、資料棚。<span class="en">A desk and a shelf for building stage work.</span></p>
+      <h1>${title}</h1>
+      <p class="lede">舞台スケッチへログイン<span class="en">Sign in to Stage Sketch.</span></p>
       <hr class="rule">
       ${error ? `<p class="alert" role="alert">${escapeHtml(error)}${
         SIGN_IN_ERROR_EN[error] ? `<span class="en">${escapeHtml(SIGN_IN_ERROR_EN[error])}</span>` : ""
@@ -558,7 +712,7 @@ function htmlResponse(body, status = 200) {
   });
 }
 
-async function handleSignIn(request, url, accounts) {
+async function handleSignIn(request, url, accounts, env) {
   if (request.method === "GET" || request.method === "HEAD") {
     return htmlResponse(signInPage({ next: safeNextPath(url.searchParams.get("next")) }));
   }
@@ -592,7 +746,7 @@ async function handleSignIn(request, url, accounts) {
   return new Response(null, {
     status: 303,
     headers: {
-      "Location": next,
+      "Location": isGuestAccount(matched[0], env) ? guestStageEntry(next) : next,
       "Set-Cookie": sessionCookie(token),
       "Cache-Control": "no-store",
     },
@@ -668,6 +822,8 @@ function parseGuestAccounts(value, siteUser, legacyGuestUser) {
 
 export default {
   async fetch(request, env, ctx) {
+    const readerAuth = await handleReaderAuth(request, env);
+    if (readerAuth) return readerAuth;
     // アイコンとmanifestは認証の手前で返す（上のコメントの理由による）。
     if (isPublicAppShellAsset(request)) {
       return env.ASSETS.fetch(request);
@@ -684,6 +840,7 @@ export default {
     );
     // 片方だけ入っている組は設定ミス。両方空（＝その入口を使わない）は正常。
     const misconfigured = pairs.some(([u, p]) => Boolean(u) !== Boolean(p))
+      || Boolean(env.SITE_USER && env.GUEST_USER && env.SITE_USER === env.GUEST_USER)
       || guestConfig.misconfigured;
     const accounts = [
       ...pairs.filter(([u, p]) => u && p),
@@ -693,7 +850,8 @@ export default {
     // 全入口が未設定で通せるのはローカルだけ。設定ミスはローカルでも止める。
     if (accounts.length === 0 || misconfigured) {
       if (isLocalHost(request) && !misconfigured) {
-        return serveAuthenticatedRequest(request, env, null);
+        const reader = await handleReaderApi(request, env);
+        return reader || serveAuthenticatedRequest(request, env, null);
       }
       return new Response("認証設定が未完了のため停止しています。", {
         status: 503,
@@ -727,8 +885,18 @@ export default {
 
     // ログイン画面そのものは認証の外に置く（でないと入る手段が無くなる）。
     if (url.pathname === SIGN_IN_PATH) {
-      return handleSignIn(request, url, accounts);
+      return handleSignIn(request, url, accounts, env);
     }
+
+    // Public study access is exact-path only; optional identity is verified, never supplied by the viewer.
+    const studyPath = url.pathname;
+    if (studyPath === "/study/api/me" || studyPath.startsWith("/study/api/me/") || studyPath.startsWith("/study/api/view/")) {
+      const identity = await readSessionToken(readCookie(request, SESSION_COOKIE), accounts, nowSeconds)
+        || matchBasicAuth(request, accounts)?.[0] || null;
+      return handleReaderApi(request, env, identity);
+    }
+    const studyAsset = await serveStudyAsset(request, env);
+    if (studyAsset) return studyAsset;
 
     // ① クッキー。アプリの再起動をまたいで残り、Service Workerの取得にも付く。
     const cookieUser = await readSessionToken(
@@ -746,6 +914,8 @@ export default {
       const token = await createSessionToken(basicAccount[0], basicAccount[1], nowSeconds);
       return withSessionCookie(response, token);
     }
+
+    if (url.pathname.startsWith("/study/api/")) return handleStudyApi(request, env, null);
 
     /* ③ どちらも無い場合。
        画面遷移ならログイン画面へ送る。CSSやJSの取得にHTMLを返すと、

@@ -1,6 +1,6 @@
 /* 制作の書斎 — Phase 0 プロトタイプ
    触れるのは画面遷移・資料を置く・根拠を開く・画像比較・判断の記録（メモリ上のみ）。
-   検索・AI・共有は未実装。舞台スケッチだけは別ファイルで端末内保存する。 */
+   検索・AI・共有は未実装。舞台スケッチとは別のアプリとして動く。 */
 
 (function () {
   "use strict";
@@ -4070,7 +4070,6 @@
           </section>
           <footer class="apparatus-card-foot">
             <p>このカードは構想と問い合わせ準備のための資料です。構造、リギング、水、人体吊りの施工図や安全判断には使えません。</p>
-            <a href="#stage">舞台スケッチで配置を考える →</a>
           </footer>
         </div>
       </article>`;
@@ -4150,7 +4149,7 @@
   }
 
   // ---------- 画面切り替え（ハッシュルーター） ----------
-  const VIEWS = ["db", "apparatus", "companies", "roster", "desk", "stage", "seeds", "mondo"];
+  const VIEWS = ["db", "apparatus", "companies", "roster", "desk", "seeds", "mondo"];
 
   function showView(name) {
     $$(".view").forEach((v) => (v.hidden = true));
@@ -4163,9 +4162,8 @@
   }
 
   function route() {
-    /* 開いた直後の画面は舞台スケッチ（2026-08-16 本人指定）。
-       URLに#が付いているときは従来どおりその画面を尊重する。 */
-    const h = location.hash || "#stage";
+    /* 書斎の入口は資料棚。舞台スケッチは独立した stage.html で扱う。 */
+    const h = location.hash || "#db";
     if (h.startsWith("#db/")) {
       showView("db");
       selectWork(decodeURIComponent(h.slice(4)));

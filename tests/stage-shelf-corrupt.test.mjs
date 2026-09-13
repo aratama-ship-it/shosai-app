@@ -139,7 +139,7 @@ function createFixture(initial = {}, options = {}) {
   };
   const document = {
     readyState: "complete",
-    documentElement: { classList: createClassList() },
+    documentElement: { classList: createClassList(), dataset: {} },
     body: createElementStub("body"),
     getElementById: elementById,
     createElement(tagName) {

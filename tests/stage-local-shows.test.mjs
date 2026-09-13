@@ -5,7 +5,7 @@ import vm from "node:vm";
 
 const root = new URL("../", import.meta.url);
 const stageSource = await readFile(new URL("stage-sketch.js", root), "utf8");
-const indexSource = await readFile(new URL("index.html", root), "utf8");
+const indexSource = await readFile(new URL("stage.html", root), "utf8");
 const stageHtml = await readFile(new URL("stage.html", root), "utf8");
 const gitignoreSource = await readFile(new URL(".gitignore", root), "utf8");
 const generatorSource = await readFile(new URL("build_stage_shows_local.py", root), "utf8");

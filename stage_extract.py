@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""index.html から舞台スケッチ単独ページ用の断片を共有して取り出す。"""
+"""独立した舞台スケッチ正本 stage.html から共有断片を取り出す。"""
 
 import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-SRC = HERE / "index.html"
+SRC = HERE / "stage.html"
 
-# 他のタブ（資料棚・名簿・机・スクラップブック）のためのもの。
+# 過去の結合版が混ざったときに書斎側のスクリプトを除外する安全網。
 SKIP_JS = {
     "db.js", "data.js", "book-seeds.js", "shelf-classification.js",
     "stage-apparatus-data.js", "desk-media.js", "app.js", "roster.js",
@@ -41,7 +41,7 @@ present_html = _present.group(0).rstrip() if _present else ""
 
 
 def ver(name: str) -> str:
-    """index.html が参照する ``?v=`` 付きのファイル名を返す。"""
+    """stage.html が参照する ``?v=`` 付きのファイル名を返す。"""
     match = re.search(re.escape(name) + r'(\?v=\d+)?', html)
     return match.group(0) if match else name
 
@@ -56,4 +56,3 @@ for _src in re.findall(r'<script src="([^"]+)"', html):
 def modal_count() -> int:
     """生成後の診断表示に使うモーダル断片数。"""
     return len(_modals)
-

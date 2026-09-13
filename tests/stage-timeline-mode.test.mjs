@@ -385,7 +385,7 @@ test("カウント式だけに丸・閉じた鍵・開いた鍵の合わせレ�
   assert.match(css, /\.stage-timeline-anchor-mark\.is-open \{[\s\S]*?cursor: ew-resize/);
 });
 
-test("追加資源は本体とPWAで同じ版を読む", () => {
+test("追加資源は本体・PWA・ゲスト許可で同じ版を読む", () => {
   for (const asset of [
     "style.css", "stage-sketch.js", "stage-timeline.js", "stage-i18n.js",
     "stage-i18n.zh-Hans.js", "stage-i18n.zh-Hant.js",
@@ -395,4 +395,5 @@ test("追加資源は本体とPWAで同じ版を読む", () => {
     assert.ok(version, `${asset} の版がstage.htmlにありません`);
     assert.match(sw, new RegExp(`\\./${escaped}\\?v=${version}`));
   }
+  assert.match(worker, /"\/stage-timeline\.js"/);
 });

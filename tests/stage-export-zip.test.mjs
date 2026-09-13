@@ -5,7 +5,7 @@ import vm from "node:vm";
 import zlib from "node:zlib";
 
 const stageSource = await readFile(new URL("../stage-sketch.js", import.meta.url), "utf8");
-const indexSource = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const indexSource = await readFile(new URL("../stage.html", import.meta.url), "utf8");
 const stageHtmlSource = await readFile(new URL("../stage.html", import.meta.url), "utf8");
 const swSource = await readFile(new URL("../stage-sw.js", import.meta.url), "utf8");
 

@@ -7,7 +7,7 @@ const root = new URL("../", import.meta.url);
 const sessionSource = await readFile(new URL("stage-session.js", root), "utf8");
 const roomSource = await readFile(new URL("session-room.js", root), "utf8");
 const stageSketchSource = await readFile(new URL("stage-sketch.js", root), "utf8");
-const indexSource = await readFile(new URL("index.html", root), "utf8");
+const indexSource = await readFile(new URL("stage.html", root), "utf8");
 const stageHtmlSource = await readFile(new URL("stage.html", root), "utf8");
 const styleSource = await readFile(new URL("style.css", root), "utf8");
 const i18nSource = await readFile(new URL("stage-i18n.js", root), "utf8");
@@ -557,27 +557,29 @@ test("ホスト不在帯は上部中央・読み上げ通知・操作透過で�
   assert.match(block, /pointer-events: none/);
 });
 
-test("ゲスト時はセッション欄を左列の先頭へ移し、元の親と次兄弟の位置へ戻せる", async () => {
+test("ゲスト時は共有モーダルを開き、左列へ移動しない", async () => {
   const fixture = createFixture({ invited: true });
   const panel = fixture.elementById("stage-session-panel");
   assert.equal(panel.parentNode, fixture.sessionPanelHome);
   assert.equal(panel.nextSibling, fixture.sessionPanelNextSibling);
 
   await fixture.joinGuest();
-  assert.equal(fixture.leftColumn.firstChild, panel);
-  assert.equal(panel.open, true);
-
-  assert.equal(fixture.window.SHOSAI_STAGE_SESSION_HOOKS.restoreSessionPanelHome(), true);
+  assert.equal(fixture.document.body.classList.contains("stage-session-guest"), true);
   assert.equal(panel.parentNode, fixture.sessionPanelHome);
   assert.equal(panel.nextSibling, fixture.sessionPanelNextSibling);
   assert.equal(fixture.leftColumn.firstChild, fixture.leftColumnFirstChild);
+  assert.equal(panel.hidden, false);
+  assert.equal(panel.open, true);
+
+  await fixture.elementById("stage-share-close").dispatch("click");
+  assert.equal(panel.hidden, true);
+  await fixture.elementById("stage-share-open").dispatch("click");
+  assert.equal(panel.hidden, false);
 });
 
-/* ★左列は iPad PWA と スマホ閲覧機では display:none（style.css:10251 / :10679）。
-   そこへ移すとゲストは接続状態も「最新を取り直す」も失うため、移してはいけない。
-   2026-08-26 の検証で見つけた欠落。この判定を外さないこと。 */
+/* 共有はグローバルモーダルなので、左列を隠す端末でも同じ導線を使える。 */
 for (const rootClass of ["stage-pwa-tablet", "stage-phone-viewer"]) {
-  test(`${rootClass} ではセッション欄を左列へ移さない（左列が display:none のため）`, async () => {
+  test(`${rootClass} でも共有モーダルを開ける`, async () => {
     const fixture = createFixture({ invited: true, rootClass });
     const panel = fixture.elementById("stage-session-panel");
 
@@ -586,10 +588,11 @@ for (const rootClass of ["stage-pwa-tablet", "stage-phone-viewer"]) {
     assert.equal(fixture.document.body.classList.contains("stage-session-guest"), true,
       "ゲスト判定そのものは付く");
     assert.equal(panel.parentNode, fixture.sessionPanelHome,
-      "セッション欄は保存パネルの中に残る");
+      "共有モーダルはグローバルDOM位置に残る");
     assert.equal(panel.nextSibling, fixture.sessionPanelNextSibling);
     assert.equal(fixture.leftColumn.firstChild, fixture.leftColumnFirstChild,
       "左列の中身は動かない");
+    assert.equal(panel.hidden, false);
   });
 }
 
@@ -667,35 +670,32 @@ test("ゲスト用CSSは編集・管理パネルを隠し、classを外せば通
   assert.match(block, /body\.stage-session-guest \.stage-inspector \{\s*display: none/);
   assert.match(
     block,
-    /body\.stage-session-guest \.stage-sketch-grid \{[\s\S]*?grid-template-columns: 268px minmax\(420px, 1fr\);[\s\S]*?grid-template-areas: "tools board";/,
+    /body\.stage-session-guest \.stage-sketch-grid \{[\s\S]*?grid-template-columns: var\(--stage-left-width, 268px\) minmax\(420px, 1fr\);[\s\S]*?grid-template-areas: "tools board";/,
   );
   assert.match(
     styleSource,
-    /\.stage-sketch-grid \{[\s\S]*?grid-template-columns: 268px minmax\(420px, 1fr\) 268px;[\s\S]*?grid-template-areas: "tools board inspector";/,
+    /\.stage-sketch-grid \{[\s\S]*?grid-template-columns: var\(--stage-left-width, 268px\) minmax\(420px, 1fr\) var\(--stage-right-width, 268px\);[\s\S]*?grid-template-areas: "tools board inspector";/,
     "ゲストクラスが無い通常画面は3列のまま",
   );
-  /* 共有は「保存」から独立したパネルになったので、保存は丸ごと隠す（2026-08-28）。
-     以前は同居していたため、保存の頭と中身を一つずつ避けていた。 */
+  /* 共有は上部ボタンから開くモーダルなので、保存パネルは丸ごと隠せる。 */
   assert.match(block, /body\.stage-session-guest \.stage-panel\[data-panel="save"\],/);
   assert.doesNotMatch(block, /data-panel="save"\] > \.stage-panel-body > :not\(#stage-session-panel\)/,
-    "保存の中から共有を避ける書き方は残っていない");
+    "保存の中に共有を残す例外はない");
   for (const html of [indexSource, stageHtmlSource]) {
-    const savePanel = html.slice(
-      html.indexOf('<section class="stage-panel stage-save-note" data-panel="save"'),
-      html.indexOf('data-panel="session"'),
-    );
+    const savePanel = html.slice(html.indexOf('<section class="stage-panel stage-save-note" data-panel="save"'), html.indexOf('<section class="stage-panel" data-panel="ask"'));
     assert.match(savePanel, /class="stage-panel-body"/);
     assert.doesNotMatch(savePanel, /id="stage-session-panel"/,
       "共有は保存パネルの外にある");
-    assert.match(html, /<section class="stage-panel" data-panel="session"[\s\S]*?id="stage-session-panel"/,
-      "共有は独立したパネルとして置かれている");
-    assert.match(html, /data-panel="session" data-title="リアルタイム共有"/);
+    assert.match(html, /id="stage-share-open"[^>]*aria-controls="stage-session-panel"/);
+    assert.match(html, /class="stage-modal stage-share-modal" id="stage-session-panel"[\s\S]*?id="stage-share-title"/,
+      "共有は独立したモーダルとして置かれている");
+    assert.doesNotMatch(html, /data-panel="session"/);
   }
   assert.doesNotMatch(block, /body\.stage-session-guest #stage-session-panel/,
     "共有セッション欄そのものは隠さない");
   assert.match(block, /body\.stage-session-guest #stage-present-btn/);
   for (const html of [indexSource, stageHtmlSource]) assert.match(html, /id="stage-present-btn"/);
-  assert.match(block, /body\.stage-session-guest \.stage-scene-actions/);
+  assert.match(block, /body\.stage-session-guest #stage-scene-add/);
   assert.match(block, /body\.stage-session-guest #stage-undo/);
   assert.match(block, /body\.stage-session-guest \[data-stage-tool\]:not\(\[data-stage-tool="arrow"\]\)/);
   for (const group of ["show", "cast", "look", "inspect"]) {
@@ -715,7 +715,7 @@ test("ゲスト用CSSは編集・管理パネルを隠し、classを外せば通
   assert.match(guestMode, /\["show", "cast", "look", "inspect"\]\.includes\(tabletUi\.groupId\)/);
   assert.match(guestMode, /closeTabletDrawer\(\)/, "開いていた編集ドロワーも閉じる");
   assert.equal((sessionSource.match(/enterGuestSessionMode\(\);/g) || []).length, 2,
-    "ゲストになる2経路は同じ移設関数を使う");
+    "ゲストになる2経路は同じ共有モーダル導線を使う");
 });
 
 test("追加した日本語UI文字列には英訳がある", () => {
