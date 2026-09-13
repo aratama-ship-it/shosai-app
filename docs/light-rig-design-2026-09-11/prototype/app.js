@@ -599,7 +599,17 @@
     if (m.type === "cyc") return { surface: "back", a: E.newPoint({ u: 0.5, v: 0, hM: E.clamp(state.dims.H * 0.55, 0.5, state.dims.H) }) };
     return { surface: "floor", a: E.newPoint({ u: 0.5, v: 0.6, hM: 0 }) };
   }
-  function ensureOn(fid) { const l = lightOf(fid); if (!l || l.on !== true) { const a = defaultAim(fixtureById(fid)); setLight(fid, { on: true, surface: a.surface, path: { kind: "still", a: a.a }, speed: "normal", color: (l && l.color) || COLORS[0] }); } }
+  /* 点ける。**一度でも設定した灯の中身は上書きしない**。
+     以前は `on !== true` ならいつでも既定を流し込んでいたため、図でダブルクリックして
+     消す→点け直すたびに、狙い先・色・軌道・模様などが既定へ戻っていた（2026-09-13 本人指摘の不具合）。
+     既定を入れるのは「まだ一度も点けていない灯（設定が無い or on が未設定）」だけにする。 */
+  function ensureOn(fid) {
+    const l = lightOf(fid);
+    const fresh = !l || l.on === null || l.on === undefined;
+    if (!fresh) { if (l.on !== true) setLight(fid, { on: true }); return; }
+    const a = defaultAim(fixtureById(fid));
+    setLight(fid, { on: true, surface: a.surface, path: { kind: "still", a: a.a }, speed: "normal", color: (l && l.color) || COLORS[0] });
+  }
   function currentPoint(l) { const p = l.path || {}; return (p.kind === "circle" || p.kind === "eight") ? p.c : (p.a || E.newPoint()); }
   // 「当てる場所」を切り替えた直後、いまの狙い点を新しい制約（床=高さ0／奥壁=奥行き0／空中=自由）へ合わせる
   function restyleToSurface(fid) {
