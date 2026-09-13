@@ -17915,6 +17915,8 @@
       name.className = "stage-cast-name-input";
       name.value = rig.name;
       name.maxLength = 24;
+      name.autocomplete = "off";
+      name.setAttribute("data-1p-ignore", "true");
       name.setAttribute("aria-label", tx("セット登録の名前"));
       name.addEventListener("input", () => {
         rig.name = name.value.slice(0, 24);
@@ -18767,6 +18769,8 @@
           note.className = "stage-text-input stage-scene-note";
           note.rows = 2;
           note.maxLength = 200;
+          note.autocomplete = "off";
+          note.setAttribute("data-1p-ignore", "true");
           note.value = scene.note || "";
           note.placeholder = tm("misc", "sceneNoteHint", "このシーンのメモ（何が起きるか）");
           note.setAttribute("aria-label", tx("シーンのメモ"));
@@ -23086,6 +23090,15 @@ ${propsPlotHtml}
     return sx(`演者${performers.indexOf(piece) + 1}`, `Performer ${performers.indexOf(piece) + 1}`);
   })();
 
+  function selectedPieceTitle(piece) {
+    if (!piece) return "";
+    const owner = lockOwner(piece);
+    const name = String((owner && owner.name) || piece.name || "").trim();
+    if (name) return name;
+    const sameType = sc().pieces.filter((candidate) => candidate.type === piece.type);
+    return `${pieceTypeName(piece.type)} ${sameType.indexOf(piece) + 1}`;
+  }
+
   function freeHoldSide(holderId, ignoreId, preferred) {
     const used = new Set(sc().pieces
       .filter((piece) => piece.heldBy === holderId && piece.id !== ignoreId && piece.holdMode !== "face")
@@ -23274,8 +23287,7 @@ ${propsPlotHtml}
         ? sx(`${pieces.length}人の演者`, `${pieces.length} performers`)
         : sx(`${pieces.length}件を選択`, `${pieces.length} items selected`);
     } else {
-      const sameType = sc().pieces.filter((candidate) => candidate.type === piece.type);
-      els.selectedName.textContent = `${pieceTypeName(piece.type)} ${sameType.indexOf(piece) + 1}`;
+      els.selectedName.textContent = selectedPieceTitle(piece);
     }
     if (els.selectionScope) {
       els.selectionScope.hidden = !multi;

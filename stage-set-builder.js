@@ -192,6 +192,7 @@
     const nameLabel = document.createElement("label");
     const nameText = document.createElement("span"); nameText.textContent = t("名前");
     const name = document.createElement("input"); name.type = "text"; name.maxLength = 24; name.value = part.name;
+    name.autocomplete = "off"; name.setAttribute("data-1p-ignore", "true");
     name.addEventListener("input", () => { part.name = name.value.slice(0, 24); touchModel(); renderParts(); });
     nameLabel.append(nameText, name); elements.controls.append(nameLabel);
     const shapeLabel = document.createElement("label");

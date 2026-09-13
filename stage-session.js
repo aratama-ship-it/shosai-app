@@ -1039,7 +1039,8 @@
         <form class="stage-session-name-form" id="stage-session-name-form">
           <label class="stage-session-field" for="stage-session-name-input">
             <span>表示名</span>
-            <input type="text" id="stage-session-name-input" maxlength="50" autocomplete="name" required>
+            <input type="text" id="stage-session-name-input" maxlength="50"
+                   autocomplete="off" data-1p-ignore required>
           </label>
           <button type="submit" class="stage-minor-action" id="stage-session-join">参加する</button>
         </form>

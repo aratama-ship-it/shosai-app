@@ -212,6 +212,7 @@
               <p class="stage-cast-hint">いまの舞台装置の並びに名前をつけて残します。別のシーンで呼び出したり、いまの並びへ足したりできます。演者は含みません。</p>
               <div class="stage-cast-add">
                 <input id="stage-rig-name" class="stage-text-input" type="text" maxlength="24"
+                       autocomplete="off" data-1p-ignore
                        placeholder="名前を入れて残す" aria-label="セット登録の名前">
                 <button type="button" id="stage-rig-save" class="btn-quiet">残す</button>
               </div>
@@ -226,6 +227,7 @@
                 「照明を動かす」に切り替えると、灯体の丸い印と、当たる輪をそれぞれ掴んで動かせます。動線を引くと、灯体はそのままで当たる先だけが動きます。</p>
               <div class="stage-cast-add stage-roster-add">
                 <input id="stage-light-name" class="stage-text-input" type="text" maxlength="24"
+                       autocomplete="off" data-1p-ignore
                        placeholder="名前を入れて追加" aria-label="照明の名前">
                 <select id="stage-light-kind" class="stage-select" aria-label="照明の種類">
                   <option value="hang">吊り（バトンから真下へ）</option>
@@ -301,6 +303,7 @@
               <label class="stage-control-label">スクリーンの文字</label>
               <div class="stage-cast-add stage-roster-add">
                 <input id="stage-screentext-input" class="stage-text-input" type="text" maxlength="60"
+                       autocomplete="off" data-1p-ignore
                        placeholder="例: 三回宙返り / ドン / 10年後" aria-label="スクリーンへ映す文字">
                 <button type="button" id="stage-screentext-add" class="btn-quiet">映す</button>
               </div>
@@ -397,7 +400,8 @@
               <label class="stage-scene-desc-label" id="stage-scene-desc-label"
                      for="stage-scene-desc-text">シーンの説明</label>
               <textarea class="stage-scene-desc-text" id="stage-scene-desc-text" rows="1"
-                        maxlength="200" placeholder="この場面で何が起きるか"></textarea>
+                        maxlength="200" autocomplete="off" data-1p-ignore
+                        placeholder="この場面で何が起きるか"></textarea>
               <p id="stage-prop-moves" class="stage-prop-moves" hidden></p>
             </div>
             <div class="stage-scene-music" id="stage-scene-music">
@@ -475,11 +479,13 @@
                   <label>
                     <span>何を起こしたい？</span>
                     <textarea id="stage-light-objective" rows="2" maxlength="160"
+                              autocomplete="off" data-1p-ignore
                               placeholder="光によって、この場面に起こしたい変化"></textarea>
                   </label>
                   <label>
                     <span>観客はどこを見る？</span>
                     <textarea id="stage-light-audience-focus" rows="2" maxlength="160"
+                              autocomplete="off" data-1p-ignore
                               placeholder="見てほしい対象と、まだ見せない対象"></textarea>
                   </label>
                 </div>
@@ -498,6 +504,7 @@
                       <option value="transform">変化させる</option>
                     </select>
                     <input id="stage-light-layer-performer-note" maxlength="160"
+                           autocomplete="off" data-1p-ignore
                            aria-label="演者の見せ方の補足" placeholder="例: 顔は出さず、身体の輪郭だけ">
                   </label>
                   <label class="stage-light-layer-row">
@@ -512,6 +519,7 @@
                       <option value="transform">変化させる</option>
                     </select>
                     <input id="stage-light-layer-space-note" maxlength="160"
+                           autocomplete="off" data-1p-ignore
                            aria-label="空間の見せ方の補足" placeholder="例: 足元から奥へ細い通路だけを開く">
                   </label>
                   <label class="stage-light-layer-row">
@@ -526,6 +534,7 @@
                       <option value="transform">変化させる</option>
                     </select>
                     <input id="stage-light-layer-background-note" maxlength="160"
+                           autocomplete="off" data-1p-ignore
                            aria-label="背景の見せ方の補足" placeholder="例: 具体物が判別できない程度に沈める">
                   </label>
                 </fieldset>
@@ -570,6 +579,7 @@
                   <label class="stage-light-transition-note">
                     <span>合図の具体</span>
                     <input id="stage-light-trigger-note" maxlength="160"
+                           autocomplete="off" data-1p-ignore
                            placeholder="例: 演者が中央で完全に止まった瞬間">
                   </label>
                 </fieldset>
@@ -578,16 +588,19 @@
                   <summary>雰囲気・参照・実装候補</summary>
                   <label>
                     <span>雰囲気・質感</span>
-                    <input id="stage-light-mood" maxlength="80" placeholder="例: 時間が止まり、身体の境界だけが浮く">
+                    <input id="stage-light-mood" maxlength="80" autocomplete="off" data-1p-ignore
+                           placeholder="例: 時間が止まり、身体の境界だけが浮く">
                   </label>
                   <label>
                     <span>参照メモ</span>
                     <textarea id="stage-light-reference-note" rows="2" maxlength="200"
+                              autocomplete="off" data-1p-ignore
                               placeholder="写真・本・過去作品の、どこを参照するか"></textarea>
                   </label>
                   <label>
                     <span>実装候補</span>
                     <textarea id="stage-light-implementation-note" rows="2" maxlength="300"
+                              autocomplete="off" data-1p-ignore
                               placeholder="灯体・方向・色などの候補。採用前に照明担当者へ確認"></textarea>
                   </label>
                 </details>
@@ -974,6 +987,7 @@
           <section class="stage-panel" data-panel="ask" data-title="AI指示" id="stage-ask-panel" aria-label="AI指示">
             <div class="stage-panel-body">
               <textarea id="stage-ask-input" class="stage-text-input" rows="4" maxlength="500"
+                        autocomplete="off" data-1p-ignore
                         placeholder="例: 3場面目の円座を、2場面目のものに入れ替えて"></textarea>
               <div id="stage-ask-idle">
                 <button type="button" class="btn-quiet" id="stage-ask-run">頼む</button>
@@ -1222,7 +1236,8 @@
     </dl>
     <label class="stage-timeline-cue-note" for="stage-timeline-cue-detail-note">
       <span>メモ</span>
-      <textarea id="stage-timeline-cue-detail-note" maxlength="2000"></textarea>
+      <textarea id="stage-timeline-cue-detail-note" maxlength="2000"
+                autocomplete="off" data-1p-ignore></textarea>
     </label>
     <footer class="stage-timeline-cue-detail-actions">
       <button type="button" class="btn-quiet" id="stage-timeline-cue-detail-delete">削除する</button>
@@ -1311,7 +1326,8 @@
   </header>
   <div class="stage-modal-body">
     <label class="stage-control-label" for="stage-profile-name">名前</label>
-    <input id="stage-profile-name" class="stage-text-input" type="text" maxlength="24">
+    <input id="stage-profile-name" class="stage-text-input" type="text" maxlength="24"
+           autocomplete="off" data-1p-ignore>
 
     <label class="stage-control-label" for="stage-profile-height">
       身長 <span id="stage-profile-height-value">165</span> cm
@@ -1324,6 +1340,7 @@
 
     <label class="stage-control-label" for="stage-profile-note">メモ</label>
     <textarea id="stage-profile-note" class="stage-text-input" rows="3" maxlength="200"
+              autocomplete="off" data-1p-ignore
               placeholder="役どころ、得意な技、注意点など"></textarea>
   </div>
 </div>
@@ -1499,7 +1516,8 @@
         <div class="stage-session-host-controls" id="stage-session-host-controls">
           <label class="stage-session-field" for="stage-session-host-name">
             <span id="stage-session-host-name-label"></span>
-            <input type="text" id="stage-session-host-name" maxlength="50" autocomplete="name">
+            <input type="text" id="stage-session-host-name" maxlength="50"
+                   autocomplete="off" data-1p-ignore>
           </label>
           <button type="button" class="stage-minor-action" id="stage-session-start"></button>
           <button type="button" class="btn-quiet" id="stage-session-resume" hidden></button>
@@ -1507,7 +1525,7 @@
         <div class="stage-session-invite" id="stage-session-invite" hidden>
           <label class="stage-session-field" for="stage-session-url"><span id="stage-session-url-label"></span></label>
           <div class="stage-session-copy-row">
-            <input type="text" id="stage-session-url" readonly>
+            <input type="text" id="stage-session-url" autocomplete="off" data-1p-ignore readonly>
             <button type="button" class="btn-quiet" id="stage-session-copy"></button>
           </div>
         </div>
@@ -1594,14 +1612,17 @@
   </header>
   <div class="stage-modal-body">
     <label class="stage-control-label" for="stage-rename-input">名前</label>
-    <input id="stage-rename-input" class="stage-text-input" type="text" maxlength="40">
+    <input id="stage-rename-input" class="stage-text-input" type="text" maxlength="40"
+           autocomplete="off" data-1p-ignore>
     <div class="stage-rename-section-fields" id="stage-rename-section-fields" hidden>
       <label class="stage-control-label" for="stage-rename-section-note">メモ</label>
-      <textarea id="stage-rename-section-note" class="stage-text-input" maxlength="2000"></textarea>
+      <textarea id="stage-rename-section-note" class="stage-text-input" maxlength="2000"
+                autocomplete="off" data-1p-ignore></textarea>
     </div>
     <div class="stage-rename-scene-fields" id="stage-rename-scene-fields" hidden>
       <label class="stage-control-label" for="stage-rename-subtitle">サブタイトル</label>
-      <input id="stage-rename-subtitle" class="stage-text-input" type="text" maxlength="160">
+      <input id="stage-rename-subtitle" class="stage-text-input" type="text" maxlength="160"
+             autocomplete="off" data-1p-ignore>
       <label class="stage-control-label" for="stage-rename-energy">エネルギー</label>
       <select id="stage-rename-energy" class="stage-text-input">
         <option value="">未設定</option>
@@ -1656,11 +1677,13 @@
   <div class="stage-modal-body">
     <label class="stage-control-label" for="stage-project-title">ショーの名前</label>
     <input id="stage-project-title" class="stage-text-input" type="text"
-           maxlength="60" placeholder="無題のショー" aria-label="ショーの名前">
+           maxlength="60" autocomplete="off" data-1p-ignore
+           placeholder="無題のショー" aria-label="ショーの名前">
     <label class="stage-control-label" for="stage-version-label">バージョン名</label>
     <div class="stage-version-row">
       <input id="stage-version-label" class="stage-text-input stage-version-input" type="text"
-             maxlength="16" placeholder="v1" aria-label="バージョン名">
+             maxlength="16" autocomplete="off" data-1p-ignore
+             placeholder="v1" aria-label="バージョン名">
       <button type="button" id="stage-version-copy" class="btn-quiet">複製</button>
     </div>
     <p class="stage-version-note" id="stage-version-note"></p>
@@ -2110,7 +2133,7 @@
   </header>
   <div class="stage-modal-body stage-help-body">
     <input id="stage-help-find" class="stage-text-input" type="search"
-           placeholder="例：保存 ／ 消えた ／ 盆" autocomplete="off">
+           placeholder="例：保存 ／ 消えた ／ 盆" autocomplete="off" data-1p-ignore>
     <div class="stage-help-results" id="stage-help-results"></div>
     <p class="stage-help-note" id="stage-help-note" role="status">言葉を入れると、冊子から該当箇所だけを出します。</p>
   </div>
@@ -2211,7 +2234,7 @@
         <div class="stage-kind-compact-field">
           <label class="stage-control-label" for="stage-roster-name">名前</label>
           <input id="stage-roster-name" class="stage-text-input" type="text" maxlength="24"
-                 placeholder="名前を入れて追加">
+                 autocomplete="off" data-1p-ignore placeholder="名前を入れて追加">
         </div>
         <div class="stage-kind-compact-field stage-kind-color-field">
           <label class="stage-control-label" for="stage-roster-color">色</label>
@@ -2220,7 +2243,7 @@
         <div class="stage-kind-compact-field">
           <label class="stage-control-label" for="stage-roster-search">検索</label>
           <input id="stage-roster-search" class="stage-text-input" type="search"
-                 autocomplete="off" placeholder="検索">
+                 autocomplete="off" data-1p-ignore placeholder="検索">
         </div>
       </div>
       <section class="stage-kind-fields" id="stage-kind-performer-fields">
@@ -2266,7 +2289,8 @@
   </header>
   <div class="stage-modal-body">
     <label class="stage-control-label" for="stage-setinfo-name">名前</label>
-    <input id="stage-setinfo-name" class="stage-text-input" type="text" maxlength="24">
+    <input id="stage-setinfo-name" class="stage-text-input" type="text" maxlength="24"
+           autocomplete="off" data-1p-ignore>
 
     <div id="stage-setinfo-lightkind" hidden>
       <label class="stage-control-label" for="stage-setinfo-kind">種類</label>
@@ -2309,6 +2333,7 @@
 
     <label class="stage-control-label" for="stage-setinfo-note">メモ</label>
     <textarea id="stage-setinfo-note" class="stage-text-input" rows="3" maxlength="200"
+              autocomplete="off" data-1p-ignore
               placeholder="出し入れの段取り、重さ、注意点など"></textarea>
   </div>
 </div>
@@ -2342,7 +2367,7 @@
       <div class="stage-field-row stage-venue-editor-name-field">
         <label class="stage-field-label" for="stage-venue-editor-name">劇場名</label>
         <input type="text" class="stage-text-input" id="stage-venue-editor-name" maxlength="100"
-               placeholder="例: 大広間（仮）">
+               autocomplete="off" data-1p-ignore placeholder="例: 大広間（仮）">
       </div>
       <div class="stage-field-row">
         <label class="stage-field-label" for="stage-venue-editor-source">出所</label>
@@ -2561,7 +2586,7 @@
     <form id="stage-venue-save-name-form" class="stage-venue-save-name-form">
       <label class="stage-control-label" for="stage-venue-save-name">劇場名 <span class="stage-required">必須</span></label>
       <input id="stage-venue-save-name" class="stage-text-input" type="text"
-             maxlength="100" required autocomplete="off">
+             maxlength="100" required autocomplete="off" data-1p-ignore>
       <footer class="stage-venue-editor-actions stage-venue-save-name-actions">
         <button type="button" class="btn-quiet" id="stage-venue-save-name-cancel">やめる</button>
         <button type="submit" class="stage-minor-action">ライブラリに保存</button>
@@ -2623,7 +2648,7 @@
     <form id="stage-project-export-form">
       <label class="stage-control-label" for="stage-project-export-name">ファイル名</label>
       <input id="stage-project-export-name" class="stage-text-input" type="text"
-             maxlength="80" required autocomplete="off" spellcheck="false"
+             maxlength="80" required autocomplete="off" data-1p-ignore spellcheck="false"
              aria-describedby="stage-project-export-hint">
       <p class="stage-profile-hint" id="stage-project-export-hint">この名前は書き出すファイルだけに使います。ショー名は変わりません。<br><span id="stage-project-export-destination"></span></p>
       <footer class="stage-venue-editor-actions stage-project-export-actions">
@@ -2681,7 +2706,7 @@
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=2"></script>
 <script src="stage-set-model.js?v=1"></script>
-<script src="stage-set-builder.js?v=2"></script>
+<script src="stage-set-builder.js?v=3"></script>
 <script src="stage-machinery.js?v=2"></script>
 <script src="stage-first-person.js?v=29"></script>
 <script src="stage-shows.local.js?v=1"></script>
@@ -2689,9 +2714,9 @@
 <script src="stage-light-motion.js?v=1"></script>
 <script src="manual/manual-content.js?v=11"></script>
 <script src="stage-pwa.js?v=9"></script>
-<script src="stage-sketch.js?v=453"></script>
+<script src="stage-sketch.js?v=454"></script>
 <script src="stage-timeline.js?v=31"></script>
-<script src="stage-session.js?v=18"></script>
+<script src="stage-session.js?v=19"></script>
 <script src="stage-study-owner.js?v=23"></script>
 <script src="stage-usage.js?v=2"></script>
 <script src="stage-venue-editor.js?v=20"></script>
