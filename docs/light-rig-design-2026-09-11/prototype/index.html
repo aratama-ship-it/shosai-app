@@ -223,8 +223,10 @@
   .fmode{display:flex;align-items:center;gap:0;justify-self:center;white-space:nowrap}
   .sec.front #frontmode{display:flex;flex:0 0 auto;flex-wrap:nowrap}
   .sec.front #frontmode button,.sec.front .seatsel{box-sizing:border-box;min-height:24px;height:24px;font:10.5px var(--sans)}
-  .sec.front #frontmode button{padding:2px 8px}
-  .sec.front .seatsel{width:106px;margin-left:-1px;padding:1px 22px 1px 8px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk);border-radius:0}
+.sec.front #frontmode button{width:39px;padding:2px 0;text-align:center}
+.sec.front .seatsel{width:106px;margin-left:-1px;padding:1px 22px 1px 8px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk);border-radius:0;color-scheme:dark}
+.sec.front .seatsel option{background:var(--desk-2);color:var(--milk)}
+.sec.front .seatsel:disabled{background:var(--desk-3);color:var(--milk-dim);border-color:var(--line-dark);opacity:1;cursor:not-allowed}
   .sechead .viewtitle{font-size:11px;letter-spacing:.08em}
   .sidemode{flex:0 0 auto}
   .sidemode button{font-size:10px;letter-spacing:.04em;padding:2px 7px;min-height:20px}
@@ -759,7 +761,7 @@
 <script src="rig-engine.js?v=1789357787"></script>
 <script src="stage-figure.js?v=1789357787"></script>
 <script src="volume-light.js?v=1789396700"></script>
-<script src="app.js?v=1789397400"></script>
+<script src="app.js?v=1789397500"></script>
 <script src="light-presets.js?v=1789357787"></script>
 <script src="light-presets-ui.js?v=1789397300"></script>
 </body>
