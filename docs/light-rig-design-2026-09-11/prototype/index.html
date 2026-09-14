@@ -471,6 +471,8 @@
   .rangewrap .numin{flex:0 0 auto;width:64px;min-height:26px;border:1px solid var(--line-dark);background:var(--desk-2);color:var(--milk);font:13px var(--sans);padding:1px 4px;text-align:right;font-variant-numeric:tabular-nums}
   .rangewrap .numin:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
   .val{color:var(--brass);font-variant-numeric:tabular-nums}
+  /* 右側の照明デザインは、数値入力が正本。割合・語感の補助表示は出さない。 */
+  #panel-insp.move-ui .val{display:none}
   /* .panel は overflow:hidden なので、選択中スウォッチの outline（枠の外側にはみ出す）が
      左端で切れていた（2026-09-13 本人指摘）。余白を持たせて逃がす。 */
   /* 選んだ色の輪（outline 2px + offset 1px＝3px 外へ出る）ぶんを左に空ける。
@@ -775,7 +777,7 @@
 <script src="rig-engine.js?v=20260915-3"></script>
 <script src="stage-figure.js?v=20260915-1"></script>
 <script src="volume-light.js?v=20260915-2"></script>
-<script src="app.js?v=20260915-11"></script>
+<script src="app.js?v=20260915-12"></script>
 <script src="light-presets.js?v=1789357787"></script>
 <script src="light-presets-ui.js?v=20260915-1"></script>
 <!-- 選択灯「型」P1: 本体ではなく、この試作だけへ隔離接続する。 -->
