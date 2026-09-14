@@ -3670,8 +3670,6 @@
             heightField(b, "中心の高さ", p.c);
             b.append(field("始める位置", range(0, 1, 0.05, p.start || 0, (v) => `${Math.round(v * 360)}°`, (v) => { p.start = v; draw(); }, () => commit())));
           }
-        } else {
-          b.append(el("p", "hint", "位置は止まったままです。光の強さ・光の広がりだけを動かすこともできます。"));
         }
       }
 
