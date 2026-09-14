@@ -2750,7 +2750,7 @@
   /* T字の下の帯。置く操作と選んだ灯体の操作を、図のすぐ下に置く（2026-09-11 本人要望で右欄・左欄から移動）。
      動きモードでは置くことがないので帯ごと隠し、そのぶん図を大きくする。 */
   // 表記は本体の照明パネルに合わせる（吊り／SS／転がし・吊るのはバトン）。2026-09-11 本人指摘
-  const PLACE_TOOLS = [["truss", "バトンを渡す"], ["fixture", "吊り（バトンから真下へ）"], ["front", "前明かり（客席の上から顔へ）"], ["side", "SS（袖から横切って）"], ["floor", "転がし（床置きから体へ）"], ["border", "一文字幕を設置"], ["masking", "前一文字・袖幕"]];
+  const PLACE_TOOLS = [["truss", "バトンを渡す"], ["fixture", "吊り"], ["front", "前明かり"], ["side", "SS"], ["floor", "転がし"], ["border", "一文字幕を設置"], ["masking", "前一文字・袖幕"]];
   /* 幕は灯体の共通設定ではない。配置の道具から開く二つの独立パネルに分け、
      選んだ灯体の右欄を幕の設定で埋めない。 */
   function renderBorderBox(host) {
@@ -2802,14 +2802,14 @@
       title.onclick = () => { state.placeOpen = !state.placeOpen; renderAll(); };
     }
     const open = Boolean(state.placeOpen);
-    if (title) title.innerHTML = `<span class="accicon">${open ? "▾" : "▸"}</span>配置（ショー共通）`;
+    if (title) title.innerHTML = `<span class="accicon">${open ? "▾" : "▸"}</span>機材設置`;
     place.classList.toggle("folded", !open);
     place.hidden = state.mode !== "place";
     if (place.hidden) { $("place-note").textContent = ""; return; }
     const host = $("place-tools"); host.innerHTML = "";
     PLACE_TOOLS.forEach(([k, t]) => {
       const b = document.createElement("button"); b.type = "button";
-      b.textContent = state.tool === k ? (k === "border" || k === "masking" ? "閉じる（Esc）" : "置くのを終える（Esc）") : t;
+      b.textContent = state.tool === k ? (k === "border" || k === "masking" ? "閉じる" : "置くのを終える") : t;
       b.title = { truss: "灯体を吊るバトンを渡す", fixture: "選んだバトンに灯体を吊る", front: "客席の上（シーリング・フロントサイド）に灯体を置く", floor: "灯体を床に転がす", side: "灯体を袖（上手／下手）に立てる", border: "一文字幕をバトンごとに設置・調整する", masking: "前一文字と袖幕を調整する" }[k];
       b.setAttribute("aria-pressed", String(state.tool === k));
       b.disabled = k === "fixture" && !state.selTruss;
@@ -2822,7 +2822,7 @@
     const cycHost = $("cyc-tools");
     if (cycHost) {
       cycHost.innerHTML = "";
-      [["floor", "床から（地明かり）"], ["top", "上から"]].forEach(([rung, labelText]) => {
+      [["floor", "床から"], ["top", "上から"]].forEach(([rung, labelText]) => {
         const has = cycFixtures(rung);
         const b = document.createElement("button"); b.type = "button";
         b.textContent = `${labelText}　${has.length ? "あり" : "なし"}`;

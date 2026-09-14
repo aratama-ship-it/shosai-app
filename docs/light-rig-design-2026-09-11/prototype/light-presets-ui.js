@@ -86,7 +86,7 @@
   insphead.after(tabs); tabs.after(pane);
 
   // 入口: 灯体パネルの「よくある仕込みから選ぶ」の直下
-  const entry = el("button", "btn small", "ビジュアルから作る（常設イメージの仮想仕込み）"); entry.type = "button"; entry.id = "lpEntry";
+  const entry = el("button", "btn small", "ビジュアルから作る"); entry.type = "button"; entry.id = "lpEntry";
   entry.title = "劇場サイズに合う仮想仕込みを入れ、右の「見本」タブから照明のあるあるを当てていきます";
   const presetsBtn = $("presets"); if (presetsBtn) presetsBtn.after(entry);
   entry.onclick = openEntry;
