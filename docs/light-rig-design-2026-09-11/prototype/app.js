@@ -465,7 +465,8 @@
      （2026-09-11 本人判断で「動き」は固定灯では設定できない。古いデータの保険も兼ねる）。 */
   const targetAt = (fid, t) => {
     const light = lightOf(fid), fixture = fixtureById(fid);
-    // 選択灯「型」の再現可能なランダム移動。固定seedの経路だけを試作側で評価する。
+    /* P1の再現可能なランダム移動。P0 engine がある試作ページだけで解釈し、
+       既存の path / 保存形式 / 本体の lightMotion には一切手を入れない。 */
     const selectedPresetEngine = window.SELECTED_LIGHT_PRESETS_ENGINE;
     if (E.isMoving(fixture) && light && light.path && light.path.kind === "wander" && selectedPresetEngine) {
       const point = selectedPresetEngine.wanderPoint(light.path, t, {
@@ -2664,7 +2665,7 @@
   }
 
   function renderToolStrip() {
-    const place = $("placebox"), sel = $("selacts"); if (!place || !sel) return;
+    const place = $("placebox"); if (!place) return;
     /* 置く道具（バトンを渡す／吊り／前明かり／SS／転がし）は縦に5つ並ぶので、
        左の灯体パネルへ移すと一覧が1行まで潰れる（2026-09-13 実測36px）。
        見出しを押して畳めるようにし、既定は畳む——置くのは最初だけで、あとは一覧を見る時間が長いため。 */
@@ -2676,7 +2677,7 @@
     const open = Boolean(state.placeOpen);
     if (title) title.innerHTML = `<span class="accicon">${open ? "▾" : "▸"}</span>配置（ショー共通）`;
     place.classList.toggle("folded", !open);
-    place.hidden = sel.hidden = state.mode !== "place";
+    place.hidden = state.mode !== "place";
     if (place.hidden) { $("place-note").textContent = ""; return; }
     const host = $("place-tools"); host.innerHTML = "";
     PLACE_TOOLS.forEach(([k, t]) => {
@@ -3780,6 +3781,9 @@
       $("scene-prev").disabled = $("scene-next").disabled = inSec.length < 2; }
     $("scenerow").classList.toggle("off", !inMove);   // 場所は残す（図の位置を両ページで揃える）
     $("insphead").hidden = !inMove;
+    /* 複製・左右コピー・等間隔・削除は、仕込みを変える「配置」だけの操作。
+       照明デザインでは実行できないので、無効のまま残さず枠ごと隠す。 */
+    $("selacts").hidden = inMove;
     /* 図の上の中央＝いま画面に出ているデザインがどのキューか（2026-09-13 本人要望でいちばん大きく）。
        どのキューにも入っていなければ「未登録の下書き」と出す。 */
     { const qn = $("qnow");

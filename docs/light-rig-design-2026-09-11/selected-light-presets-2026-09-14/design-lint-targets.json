@@ -1,0 +1,27 @@
+[
+  {
+    "name": "panel",
+    "url": "http://127.0.0.1:8792/DECISION.html",
+    "note": "compact panel"
+  },
+  {
+    "name": "library-modal",
+    "url": "http://127.0.0.1:8792/DECISION.html?modal=library",
+    "note": "full preset library"
+  },
+  {
+    "name": "flash-modal",
+    "url": "http://127.0.0.1:8792/DECISION.html?modal=library&preset=flash",
+    "note": "flash preset review"
+  },
+  {
+    "name": "random-audience-modal",
+    "url": "http://127.0.0.1:8792/DECISION.html?modal=library&preset=random",
+    "note": "seeded stage and audience motion"
+  },
+  {
+    "name": "area-modal",
+    "url": "http://127.0.0.1:8792/DECISION.html?modal=library&preset=area",
+    "note": "static multi-light range coverage"
+  }
+]

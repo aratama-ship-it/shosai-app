@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>舞台スケッチ — 複数選択したライトの「型」UI提案</title>
+<style>
+:root{--desk:#191512;--desk2:#201b16;--desk3:#282119;--line:#382f25;--milk:#efe7d6;--dim:rgba(240,231,214,.64);--brass:#9c823f;--rust:#df6433;--ink:#1a1409;--paper:#f1ede4;--paper-ink:#24211d;--paper-dim:#665f54;--sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;--serif:"Hiragino Mincho ProN","Yu Mincho",serif}
+*{box-sizing:border-box}[hidden]{display:none!important}html{scroll-behavior:smooth}body{margin:0;background:#e9e4da;color:var(--paper-ink);font-family:var(--sans);line-height:1.7}button{font:inherit}a{color:#73591d}.wrap{width:min(1180px,calc(100% - 32px));margin:auto}.hero{background:var(--desk);color:var(--milk);border-bottom:3px solid var(--brass);padding:44px 0 36px}.eyebrow{margin:0 0 10px;color:#d3ac59;font-size:12px;letter-spacing:.16em}.hero h1{font:500 clamp(25px,4vw,42px)/1.28 var(--serif);letter-spacing:.04em;max-width:930px;margin:0 0 14px}.lead{max-width:780px;margin:0;color:var(--dim)}.badges{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}.badge{border:1px solid var(--line);padding:5px 9px;font-size:12px;color:var(--dim)}.badge.proposal{border-color:var(--brass);color:var(--milk)}main{padding:34px 0 70px}.decision{background:white;border-left:5px solid var(--brass);padding:22px 24px;margin-bottom:28px;box-shadow:0 8px 22px rgba(36,33,29,.08)}h2{font:600 22px/1.35 var(--serif);margin:38px 0 14px}h3{font-size:15px;margin:24px 0 8px}.decision h2{margin:0 0 8px}.decision p{margin:0}.rec{font-weight:700}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.card{background:var(--paper);border:1px solid #d0c8ba;padding:18px}.card h3{margin:0 0 6px}.card p{margin:0;color:var(--paper-dim);font-size:14px}.good{border-top:3px solid var(--brass)}.muted{color:var(--paper-dim);font-size:13px}.mock-shell{background:#100e0c;border:1px solid #2f2922;color:var(--milk);padding:12px;overflow:auto;box-shadow:0 18px 44px rgba(36,33,29,.22)}.mock-app{min-width:900px;height:610px;display:grid;grid-template-columns:1fr 305px;gap:8px;background:var(--desk);border:1px solid var(--line)}.stage{position:relative;overflow:hidden;background:#0d0e10;display:grid;place-items:center}.stage::before{content:"平面図（真上から）";position:absolute;top:12px;left:14px;color:#b49a60;font-size:11px;letter-spacing:.08em}.stage-plan{position:relative;width:76%;height:68%;border:1px solid #6d5c41;background:linear-gradient(rgba(156,130,63,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(156,130,63,.08) 1px,transparent 1px);background-size:10% 12.5%}.audience{position:absolute;bottom:-28px;left:0;width:100%;text-align:center;color:var(--dim);font-size:10px}.fixture{position:absolute;top:-9px;width:18px;height:18px;border:1px solid var(--brass);transform:rotate(45deg);background:#17130f}.fixture::after{content:"";position:absolute;inset:5px;border:1px solid #d3ac59}.f1{left:8%}.f2{left:24%}.f3{left:40%}.f4{left:56%}.f5{left:72%}.f6{left:88%}.beam{position:absolute;top:10px;height:240px;width:2px;background:linear-gradient(#d3ac59,rgba(211,172,89,.05));transform-origin:top;opacity:.8;transition:transform .18s ease}.b1{left:9%;transform:rotate(-12deg)}.b2{left:25%;transform:rotate(-8deg)}.b3{left:41%;transform:rotate(-4deg)}.b4{left:57%;transform:rotate(4deg)}.b5{left:73%;transform:rotate(8deg)}.b6{left:89%;transform:rotate(12deg)}.stage-plan[data-look="mirror"] .b1,.stage-plan[data-look="cross"] .b1{transform:rotate(34deg)}.stage-plan[data-look="mirror"] .b2{transform:rotate(22deg)}.stage-plan[data-look="mirror"] .b3{transform:rotate(10deg)}.stage-plan[data-look="mirror"] .b4{transform:rotate(-10deg)}.stage-plan[data-look="mirror"] .b5{transform:rotate(-22deg)}.stage-plan[data-look="mirror"] .b6,.stage-plan[data-look="cross"] .b6{transform:rotate(-34deg)}.stage-plan[data-look="fan"] .b1{transform:rotate(26deg)}.stage-plan[data-look="fan"] .b2{transform:rotate(18deg)}.stage-plan[data-look="fan"] .b3{transform:rotate(7deg)}.stage-plan[data-look="fan"] .b4{transform:rotate(-7deg)}.stage-plan[data-look="fan"] .b5{transform:rotate(-18deg)}.stage-plan[data-look="fan"] .b6{transform:rotate(-26deg)}.aim{position:absolute;width:14px;height:14px;border-radius:50%;border:1px solid #f2ead6;background:rgba(242,234,214,.18);bottom:14%;transform:translateX(-50%)}.a1{left:14%}.a2{left:28%}.a3{left:42%}.a4{left:58%}.a5{left:72%}.a6{left:86%}.stage-status{position:absolute;left:14px;bottom:12px;border-left:2px solid var(--brass);padding:5px 8px;background:rgba(13,14,16,.82);font-size:11px}.panel{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--line);background:var(--desk2)}.panel-head{padding:10px 9px 7px;border-bottom:1px solid var(--line)}.ptitle{margin:0 0 7px;color:#d3ac59;font-size:14.5px;letter-spacing:.10em}.top-tabs,.kind-tabs,.order{display:grid}.top-tabs{grid-template-columns:repeat(3,1fr)}.kind-tabs{grid-template-columns:repeat(3,1fr);padding:8px 8px 0}.order{grid-template-columns:1fr 1fr;margin-top:7px}.tab,.kind,.order button{border:1px solid var(--line);background:rgba(13,12,11,.3);color:var(--dim);cursor:pointer;min-height:44px}.tab+.tab,.kind+.kind,.order button+button{margin-left:-1px}.tab[aria-selected="true"],.kind[aria-pressed="true"],.order button[aria-pressed="true"]{position:relative;z-index:1;border-color:var(--brass);color:var(--milk);background:rgba(156,130,63,.22)}.pane{display:none;min-height:0;flex:1}.pane.active{display:flex;flex-direction:column}.summary{padding:8px;border-bottom:1px solid var(--line)}.summary strong{display:block;color:var(--milk);font-size:13px}.summary span{font-size:11px;color:var(--dim)}.summary em{font-style:normal;color:var(--rust)}.preset-grid{padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px;overflow:auto}.preset{position:relative;min-height:104px;padding:5px;border:1px solid var(--line);background:#181410;color:var(--milk);text-align:left;cursor:pointer}.preset:hover,.preset:focus-visible{outline:2px solid var(--brass);outline-offset:-2px}.preset.active{border-color:var(--brass);background:rgba(156,130,63,.12)}.preset.active::after{content:"✓ 適用済み";position:absolute;top:4px;right:4px;padding:1px 4px;background:var(--brass);color:var(--ink);font-size:8.5px;font-weight:700}.mini{display:block;width:100%;height:49px;margin-bottom:4px;background:#0d0e10;border:1px solid #282119}.preset b{display:block;font-size:11.5px;line-height:1.35}.preset small{display:block;margin-top:2px;color:var(--dim);font-size:9.5px}.empty-pane{padding:24px 16px;color:var(--dim);font-size:12px}.adjust-box{margin:8px;padding:9px;border:1px solid var(--line);background:rgba(13,12,11,.3)}.adjust-box label{display:block;color:#d3ac59;font-size:11px;margin-bottom:4px}.adjust-box input{width:100%}.jump{width:100%;margin-top:8px;min-height:44px;border:1px solid var(--brass);background:rgba(156,130,63,.18);color:var(--milk);cursor:pointer}.feedback{padding:8px;border-top:1px solid var(--line);font-size:10.5px;color:var(--dim)}.feedback b{color:var(--milk)}.legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px;color:var(--paper-dim);font-size:12px}.legend span::before{content:"";display:inline-block;width:9px;height:9px;margin-right:5px;border:1px solid var(--brass)}table{width:100%;border-collapse:collapse;background:white;font-size:13px}th,td{padding:10px 11px;border-bottom:1px solid #ddd6ca;vertical-align:top;text-align:left}th{background:#2a241e;color:var(--milk);font-weight:600}td:first-child{font-weight:700;white-space:nowrap}.tag{display:inline-block;border:1px solid #b9ad98;padding:1px 5px;margin:1px;font-size:11px}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:stretch}.step{position:relative;background:white;border-top:3px solid var(--brass);padding:13px;font-size:13px}.step:not(:last-child)::after{content:"→";position:absolute;right:-10px;top:40%;z-index:2;color:#7c693c;font-weight:700}.step b{display:block;margin-bottom:4px}.sources li{margin:7px 0}.sources a{display:inline-flex;min-height:44px;align-items:center}.note{background:#f8f4ec;border:1px solid #d9cfbe;padding:14px 16px;color:var(--paper-dim);font-size:13px}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.beam{transition:none}}@media(max-width:780px){.grid2{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.step:not(:last-child)::after{content:"↓";right:auto;left:50%;top:auto;bottom:-17px}.wrap{width:min(100% - 20px,1180px)}.mock-shell{margin-inline:-10px}.hero{padding-top:30px}}
+</style>
+<style>
+.mock-app{position:relative}.mock-app.modal-open>.panel{visibility:hidden}.stage-plan[data-look="curtain"] .beam{transform:rotate(0deg)}.open-library{margin:8px;width:calc(100% - 16px);min-height:44px;border:1px solid var(--brass);background:rgba(156,130,63,.18);color:var(--milk);cursor:pointer}.open-library:focus-visible,.modal-close:focus-visible,.library-filter:focus-visible,.library-card:focus-visible,.apply-preset:focus-visible{outline:2px solid #d3ac59;outline-offset:2px}.preset-modal{position:absolute;inset:0;z-index:20;display:grid;place-items:center}.modal-backdrop{position:absolute;inset:0;background:rgba(6,5,4,.72)}.library-dialog{position:relative;display:flex;flex-direction:column;width:min(960px,calc(100% - 48px));height:min(540px,calc(100% - 40px));border:1px solid var(--brass);background:var(--desk2);color:var(--milk);box-shadow:0 20px 60px rgba(0,0,0,.55)}.modal-head{display:flex;align-items:center;gap:12px;min-height:58px;padding:7px 8px 7px 14px;border-bottom:1px solid var(--line)}.modal-head h3{margin:0;color:#d3ac59;font-size:15px;letter-spacing:.08em}.modal-head span{color:var(--dim);font-size:11px}.modal-close{margin-left:auto;width:44px;height:44px;border:1px solid var(--line);background:#17130f;color:var(--milk);cursor:pointer}.modal-tools{display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--line)}.modal-tools label{font-size:11px;color:var(--dim)}.modal-tools input{min-width:0;flex:1;height:44px;padding:0 12px;border:1px solid #5a4c3c;background:#100e0c;color:var(--milk);font:inherit}.result-count{min-width:92px;text-align:right;color:var(--dim);font-size:11px}.library-body{display:grid;grid-template-columns:138px minmax(0,1fr) 226px;min-height:0;flex:1}.library-nav{padding:8px;border-right:1px solid var(--line);overflow:auto}.library-filter{display:block;width:100%;min-height:44px;border:1px solid transparent;background:transparent;color:var(--dim);text-align:left;padding:0 10px;cursor:pointer}.library-filter[aria-pressed="true"]{border-color:var(--brass);background:rgba(156,130,63,.18);color:var(--milk)}.library-filter+.library-filter{margin-top:3px}.library-list{min-width:0;padding:8px;overflow:auto}.library-list-title{display:flex;justify-content:space-between;gap:8px;margin:0 0 7px;color:var(--dim);font-size:10.5px}.library-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.library-card{min-width:0;min-height:112px;padding:5px;border:1px solid var(--line);background:#181410;color:var(--milk);text-align:left;cursor:pointer}.library-card[aria-selected="true"]{border-color:var(--brass);background:rgba(156,130,63,.14)}.library-card svg{display:block;width:100%;height:54px;margin-bottom:4px;background:#0d0e10;border:1px solid #282119}.library-card b{display:block;font-size:11.5px;line-height:1.35}.library-card small{display:block;color:var(--dim);font-size:9.5px}.library-detail{display:flex;flex-direction:column;min-height:0;padding:10px;border-left:1px solid var(--line);background:#181410}.detail-preview{height:108px;border:1px solid var(--line);background:#0d0e10;margin-bottom:9px;display:grid;place-items:center}.detail-preview svg{width:90%;height:86px}.library-detail h4{margin:0 0 4px;color:var(--milk);font-size:14px}.library-detail p{margin:0 0 7px;color:var(--dim);font-size:10.5px;line-height:1.5}.scope-list{margin:0 0 8px;padding:0;list-style:none;font-size:10.5px}.scope-list b{color:#d3ac59}.flash-options{margin-top:auto;padding-top:7px;border-top:1px solid var(--line)}.flash-options label{display:block;color:#d3ac59;font-size:10.5px}.flash-options select{width:100%;height:44px;margin:4px 0 6px;border:1px solid #5a4c3c;background:#100e0c;color:var(--milk);font:inherit}.flash-notice{border-left:3px solid var(--rust);padding:6px 7px;background:rgba(223,100,51,.08);color:#f0c0ad;font-size:10px;line-height:1.45}.apply-preset{width:100%;min-height:48px;margin-top:auto;border:2px solid var(--brass);background:var(--brass);color:var(--ink);font-weight:700;cursor:pointer}.detail-help{display:block;margin-top:5px;color:var(--dim);font-size:9.5px;text-align:center}@media(max-width:780px){.library-dialog{width:calc(100% - 16px);height:calc(100% - 16px)}.library-body{grid-template-columns:1fr}.library-nav{display:flex;gap:4px;border-right:0;border-bottom:1px solid var(--line);overflow:auto}.library-filter{width:auto;min-width:max-content}.library-filter+.library-filter{margin-top:0}.library-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.library-detail{border-left:0;border-top:1px solid var(--line);max-height:210px}.detail-preview{display:none}.flash-options{margin-top:0}}
+</style>
+<style>
+code{font-family:var(--sans)}.library-dialog{height:min(570px,calc(100% - 40px))}.library-detail{overflow:auto}.detail-options{padding-top:7px;border-top:1px solid var(--line)}.detail-options label:not(.check-row){display:block;color:#d3ac59;font-size:10.5px}.detail-options select{width:100%;height:44px;margin:4px 0 6px;border:1px solid #5a4c3c;background:#100e0c;color:var(--milk);font:inherit}.secondary-action{width:100%;min-height:44px;margin:4px 0 6px;border:1px solid #5a4c3c;background:#100e0c;color:var(--milk);cursor:pointer;font:inherit}.seed-status{display:block;color:var(--dim);font-size:9.5px;line-height:1.45}.check-row{display:flex;align-items:center;gap:8px;min-height:44px;color:var(--milk);font-size:10.5px}.check-row input{width:18px;height:18px}.zone-notice{border-left:3px solid var(--brass);padding:6px 7px;background:rgba(156,130,63,.08);color:#e6d7b4;font-size:10px;line-height:1.45}.stage-plan[data-look^="wander"] .b1{transform:rotate(31deg)}.stage-plan[data-look^="wander"] .b2{transform:rotate(-17deg)}.stage-plan[data-look^="wander"] .b3{transform:rotate(9deg)}.stage-plan[data-look^="wander"] .b4{transform:rotate(-29deg)}.stage-plan[data-look^="wander"] .b5{transform:rotate(24deg)}.stage-plan[data-look^="wander"] .b6{transform:rotate(-7deg)}.stage-plan[data-look="area-full"] .aim{bottom:20%}.stage-plan[data-look="area-half"] .aim{left:auto}.stage-plan[data-look="area-half"] .a1{left:9%}.stage-plan[data-look="area-half"] .a2{left:17%}.stage-plan[data-look="area-half"] .a3{left:25%}.stage-plan[data-look="area-half"] .a4{left:33%}.stage-plan[data-look="area-half"] .a5{left:41%}.stage-plan[data-look="area-half"] .a6{left:49%}.stage-plan[data-look="area-custom"] .aim{bottom:28%}.apply-preset{flex:none}@media(max-width:780px){.detail-options{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}.zone-notice,.seed-status,.check-row{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+  <p class="eyebrow">STAGE SKETCH / LIGHTING DESIGN / DECISION PROPOSAL</p>
+  <h1>複数選択したライトに<br>「型」を当てる</h1>
+  <p class="lead">一手で関係を整え、結果は各灯の実際の値として残す。適用後は、いまある「調整」でどこまでも直せます。</p>
+  <div class="badges"><span class="badge proposal">基本方針確認済み・拡張提案</span><span class="badge">舞台スケッチ本体は未変更</span><span class="badge">ローカル判断資料</span><span class="badge">更新日 2026-09-14</span></div>
+</div></header>
+<main class="wrap">
+  <section class="decision">
+    <h2>まず判断してほしいこと</h2>
+    <p><span class="rec">確認済みの「見本｜型｜調整」を保ち、右パネルはよく使う型、全32件は検索できるモーダルへ分けます。</span>新しく「範囲」を設け、再現できる疑似ランダム移動と、舞台全体・半分・指定範囲を複数灯で覆う型を追加します。</p>
+  </section>
+
+  <div class="grid2">
+    <article class="card good"><h3>今回の型</h3><p>選択中の灯だけを対象に、狙い・動き・配り方の関係を整えます。灯体を新しく置いたり、別の灯を勝手に選んだりしません。</p></article>
+    <article class="card"><h3>既存の見本との違い</h3><p>「見本」は仕込み全体から明かりを作る入口。「型」は手元の選択へ働く道具。用途を分けることで、全体プリセットと一括編集が混ざりません。</p></article>
+  </div>
+
+  <h2>触れる画面案</h2>
+  <p class="muted">下のカードとタブは操作できます。「すべての型を見る（32）」でモーダル案が開きます。URL末尾の <code>?modal=library&amp;preset=random</code> と <code>preset=area</code> で追加案を直接確認できます。</p>
+  <div class="mock-shell">
+    <div class="mock-app">
+      <div class="stage">
+        <div class="stage-plan" id="stagePlan" data-look="fan">
+          <i class="fixture f1"></i><i class="fixture f2"></i><i class="fixture f3"></i><i class="fixture f4"></i><i class="fixture f5"></i><i class="fixture f6"></i>
+          <i class="beam b1"></i><i class="beam b2"></i><i class="beam b3"></i><i class="beam b4"></i><i class="beam b5"></i><i class="beam b6"></i>
+          <i class="aim a1"></i><i class="aim a2"></i><i class="aim a3"></i><i class="aim a4"></i><i class="aim a5"></i><i class="aim a6"></i>
+          <span class="audience">客席</span>
+        </div>
+        <div class="stage-status" id="stageStatus">ムービング6灯を選択中</div>
+      </div>
+      <aside class="panel" aria-label="照明デザインの右パネル">
+        <div class="panel-head"><p class="ptitle">照明デザイン</p><div class="top-tabs" role="tablist" aria-label="照明デザインの作り方">
+          <button class="tab" role="tab" aria-selected="false" data-pane="sample">見本</button>
+          <button class="tab" role="tab" aria-selected="true" data-pane="types">型</button>
+          <button class="tab" role="tab" aria-selected="false" data-pane="adjust">調整</button>
+        </div></div>
+        <section class="pane" id="sample"><div class="empty-pane"><b>見本</b><br>仕込み全体から明かりを作る既存案の入口です。選択した灯の関係を変える「型」とは分けます。</div></section>
+        <section class="pane active" id="types">
+          <div class="summary"><strong>6灯に型を当てる</strong><span id="summaryText">ムービング6灯・<em>扇・開閉　調整あり</em></span>
+            <div class="order" role="group" aria-label="型を配る順番"><button aria-pressed="true">↔ 下手→上手</button><button aria-pressed="false">選んだ順</button></div>
+          </div>
+          <div class="kind-tabs" role="group" aria-label="型の種類"><button class="kind" aria-pressed="false" data-kind="aim">狙い</button><button class="kind" aria-pressed="true" data-kind="motion">動き</button><button class="kind" aria-pressed="false" data-kind="value">配り方</button></div>
+          <button class="open-library" id="openLibrary" type="button">すべての型を見る（32）</button>
+          <div class="preset-grid" id="motionGrid">
+            <button class="preset" data-look="sweep" data-name="そろえて往復"><svg class="mini" viewBox="0 0 120 49" aria-hidden="true"><path d="M14 30H106" stroke="#d3ac59" stroke-width="2"/><path d="m14 30 8-5m-8 5 8 5m84-5-8-5m8 5-8 5" stroke="#d3ac59"/><circle cx="60" cy="30" r="4" fill="#efe7d6"/></svg><b>そろえて往復</b><small>位置・時間だけ</small></button>
+            <button class="preset" data-look="mirror" data-name="鏡"><svg class="mini" viewBox="0 0 120 49" aria-hidden="true"><path d="M14 35 55 14M106 35 65 14" stroke="#d3ac59" stroke-width="2"/><path d="M60 8v34" stroke="#6d5c41" stroke-dasharray="3 3"/></svg><b>鏡</b><small>位置・関係だけ</small></button>
+            <button class="preset active" data-look="fan" data-name="扇・開閉"><svg class="mini" viewBox="0 0 120 49" aria-hidden="true"><path d="M60 39 18 12M60 39 40 10M60 39 60 8M60 39 80 10M60 39 102 12" stroke="#d3ac59" stroke-width="1.7"/></svg><b>扇・開閉</b><small>位置・時間だけ</small></button>
+            <button class="preset" data-look="cross" data-name="交差して入れ替わる"><svg class="mini" viewBox="0 0 120 49" aria-hidden="true"><path d="M18 12 102 38M102 12 18 38" stroke="#d3ac59" stroke-width="2"/><circle cx="60" cy="25" r="4" fill="#efe7d6"/></svg><b>交差して入れ替わる</b><small>位置・関係だけ</small></button>
+            <button class="preset" data-look="chase" data-name="順送り"><svg class="mini" viewBox="0 0 120 49" aria-hidden="true"><circle cx="22" cy="25" r="4" fill="#efe7d6"/><circle cx="50" cy="25" r="4" fill="#d3ac59"/><circle cx="78" cy="25" r="4" fill="#9c823f"/><path d="M14 39h90" stroke="#d3ac59" stroke-dasharray="4 3"/><path d="m104 39-8-5m8 5-8 5" stroke="#d3ac59"/></svg><b>順送り</b><small>時間差だけ</small></button>
+            <button class="preset" data-look="circle" data-name="それぞれ円"><svg class="mini" viewBox="0 0 120 49" aria-hidden="true"><circle cx="30" cy="25" r="13" fill="none" stroke="#d3ac59" stroke-width="2"/><circle cx="60" cy="25" r="13" fill="none" stroke="#d3ac59" stroke-width="2"/><circle cx="90" cy="25" r="13" fill="none" stroke="#d3ac59" stroke-width="2"/></svg><b>それぞれ円</b><small>位置・時間だけ</small></button>
+          </div>
+          <div class="preset-grid" id="aimGrid" hidden>
+            <button class="preset" data-look="focus" data-name="一点へ集める"><svg class="mini" viewBox="0 0 120 49"><path d="M10 8 60 38M34 8 60 38M86 8 60 38M110 8 60 38" stroke="#d3ac59"/><circle cx="60" cy="38" r="4" fill="#efe7d6"/></svg><b>一点へ集める</b><small>狙いだけ</small></button>
+            <button class="preset" data-look="row" data-name="横一列"><svg class="mini" viewBox="0 0 120 49"><path d="M10 10 18 36M30 10 38 36M50 10 54 36M70 10 66 36M90 10 82 36M110 10 102 36" stroke="#d3ac59"/><path d="M15 38h90" stroke="#6d5c41"/></svg><b>横一列</b><small>狙いだけ</small></button>
+            <button class="preset" data-look="depth" data-name="奥から手前"><svg class="mini" viewBox="0 0 120 49"><path d="M60 6v36" stroke="#6d5c41"/><circle cx="60" cy="10" r="3" fill="#d3ac59"/><circle cx="60" cy="20" r="3" fill="#d3ac59"/><circle cx="60" cy="30" r="3" fill="#d3ac59"/><circle cx="60" cy="40" r="3" fill="#d3ac59"/></svg><b>奥から手前</b><small>狙いだけ</small></button>
+            <button class="preset" data-look="cross" data-name="交差"><svg class="mini" viewBox="0 0 120 49"><path d="M14 8 104 40M106 8 16 40" stroke="#d3ac59" stroke-width="2"/></svg><b>交差</b><small>狙いだけ</small></button>
+          </div>
+          <div class="preset-grid" id="valueGrid" hidden>
+            <button class="preset" data-look="alternate" data-name="2色交互"><svg class="mini" viewBox="0 0 120 49"><circle cx="15" cy="25" r="7" fill="#7ab8ff"/><circle cx="33" cy="25" r="7" fill="#ffd27a"/><circle cx="51" cy="25" r="7" fill="#7ab8ff"/><circle cx="69" cy="25" r="7" fill="#ffd27a"/><circle cx="87" cy="25" r="7" fill="#7ab8ff"/><circle cx="105" cy="25" r="7" fill="#ffd27a"/></svg><b>2色交互</b><small>色だけ</small></button>
+            <button class="preset" data-look="gradient" data-name="色のグラデーション"><svg class="mini" viewBox="0 0 120 49"><defs><linearGradient id="g"><stop stop-color="#7ab8ff"/><stop offset="1" stop-color="#ffd27a"/></linearGradient></defs><rect x="10" y="18" width="100" height="14" fill="url(#g)"/></svg><b>色のグラデーション</b><small>色だけ</small></button>
+            <button class="preset" data-look="center" data-name="中央を明るく"><svg class="mini" viewBox="0 0 120 49"><rect x="10" y="34" width="12" height="7" fill="#9c823f"/><rect x="28" y="28" width="12" height="13" fill="#b79a51"/><rect x="46" y="14" width="12" height="27" fill="#efe7d6"/><rect x="64" y="14" width="12" height="27" fill="#efe7d6"/><rect x="82" y="28" width="12" height="13" fill="#b79a51"/><rect x="100" y="34" width="12" height="7" fill="#9c823f"/></svg><b>中央を明るく</b><small>強さだけ</small></button>
+            <button class="preset" data-look="outside" data-name="外側を明るく"><svg class="mini" viewBox="0 0 120 49"><rect x="10" y="14" width="12" height="27" fill="#efe7d6"/><rect x="28" y="25" width="12" height="16" fill="#b79a51"/><rect x="46" y="34" width="12" height="7" fill="#9c823f"/><rect x="64" y="34" width="12" height="7" fill="#9c823f"/><rect x="82" y="25" width="12" height="16" fill="#b79a51"/><rect x="100" y="14" width="12" height="27" fill="#efe7d6"/></svg><b>外側を明るく</b><small>強さだけ</small></button>
+          </div>
+          <div class="feedback" id="feedback"><b>扇・開閉</b>を6灯に適用済み。一つ戻すで戻せます。</div>
+        </section>
+        <section class="pane" id="adjust"><div class="adjust-box"><label for="span">振り幅</label><input id="span" type="range" min="20" max="100" value="80"><div class="muted">舞台幅の <span id="spanValue">80</span>%</div><button class="jump" data-pane="types">型から選ぶ</button></div></section>
+      </aside>
+      <div class="preset-modal" id="presetModal" role="dialog" aria-modal="true" aria-labelledby="libraryTitle" hidden>
+        <div class="modal-backdrop" data-close-library></div>
+        <section class="library-dialog">
+          <header class="modal-head"><div><h3 id="libraryTitle">すべての型</h3><span>ムービング6灯に適用・固定灯はそのまま</span></div><button class="modal-close" type="button" aria-label="型の一覧を閉じる" data-close-library>×</button></header>
+          <div class="modal-tools"><label for="presetSearch">検索</label><input id="presetSearch" type="search" placeholder="名前、動き、範囲で探す"><span class="result-count" id="resultCount">17件を表示</span></div>
+          <div class="library-body">
+            <nav class="library-nav" aria-label="型の分類">
+              <button class="library-filter" type="button" aria-pressed="true" data-family="all">すべて　32</button>
+              <button class="library-filter" type="button" aria-pressed="false" data-family="aim">狙い　5</button>
+              <button class="library-filter" type="button" aria-pressed="false" data-family="area">範囲　6</button>
+              <button class="library-filter" type="button" aria-pressed="false" data-family="motion">動き　8</button>
+              <button class="library-filter" type="button" aria-pressed="false" data-family="value">配り方　4</button>
+              <button class="library-filter" type="button" aria-pressed="false" data-family="show">演出　4</button>
+              <button class="library-filter" type="button" aria-pressed="false" data-family="flash">点滅　5</button>
+            </nav>
+            <div class="library-list">
+              <p class="library-list-title"><span>1回クリックで内容を見る</span><span>試作では代表17件</span></p>
+              <div class="library-grid" id="libraryGrid">
+                <button class="library-card" type="button" aria-selected="true" data-family="show" data-look="curtain" data-name="ライトカーテン" data-change="狙い・広がり" data-keep="色・強さ・時間"><svg viewBox="0 0 120 54" aria-hidden="true"><path d="M14 8v38M33 8v38M52 8v38M71 8v38M90 8v38M109 8v38" stroke="#d3ac59" stroke-width="2"/><path d="M8 46h106" stroke="#6d5c41"/></svg><b>ライトカーテン</b><small>狙い・広がり</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="show" data-look="fan" data-name="カーテン開閉" data-change="狙い・動き・時間" data-keep="色・強さ"><svg viewBox="0 0 120 54" aria-hidden="true"><path d="M60 47 14 9M60 47 37 7M60 47 83 7M60 47 106 9" stroke="#d3ac59" stroke-width="2"/><path d="m11 8 9 1-3 8m92-9-9 1 3 8" fill="none" stroke="#efe7d6"/></svg><b>カーテン開閉</b><small>狙い・動き・時間</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="show" data-look="chase" data-name="カーテン走り" data-change="強さ・時間差" data-keep="狙い・色"><svg viewBox="0 0 120 54" aria-hidden="true"><path d="M14 9v36M33 9v36M52 9v36M71 9v36M90 9v36M109 9v36" stroke="#6d5c41"/><path d="M52 9v36M71 9v36" stroke="#d3ac59" stroke-width="4"/><path d="M12 49h96m0 0-8-5m8 5-8 5" stroke="#efe7d6"/></svg><b>カーテン走り</b><small>強さ・時間差</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="show" data-look="wave" data-name="カーテン波" data-change="動き・時間差" data-keep="色・強さ"><svg viewBox="0 0 120 54" aria-hidden="true"><path d="M13 28c15-25 29 25 45 0s30-25 49 0" fill="none" stroke="#d3ac59" stroke-width="2"/><path d="M13 9v37M32 9v37M51 9v37M70 9v37M89 9v37M108 9v37" stroke="#6d5c41"/></svg><b>カーテン波</b><small>動き・時間差</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="motion" data-mode="wander" data-look="wander-stage" data-name="舞台をランダムに巡る" data-change="軌道・速さ・時間差" data-keep="色・強さ・広がり・模様"><svg viewBox="0 0 120 54" aria-hidden="true"><rect x="7" y="7" width="106" height="40" fill="none" stroke="#6d5c41"/><path d="M13 38c17-38 29 19 45-10S83 49 108 15M15 17c20 27 39-18 54 13s25-18 38 4" fill="none" stroke="#d3ac59" stroke-width="1.7" stroke-dasharray="4 2"/></svg><b>舞台をランダムに巡る</b><small>再現できる不規則な動き</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="motion" data-mode="wander" data-audience="true" data-look="wander-audience" data-name="舞台・客席をランダムに巡る" data-change="軌道・速さ・時間差・動ける範囲" data-keep="色・強さ・広がり・模様"><svg viewBox="0 0 120 54" aria-hidden="true"><rect x="7" y="6" width="106" height="24" fill="none" stroke="#6d5c41"/><path d="M7 35h106" stroke="#6d5c41" stroke-dasharray="3 2"/><text x="50" y="48" fill="#efe7d6" font-size="8">客席</text><path d="M12 20c17-25 28 11 45-4s27 31 51 17" fill="none" stroke="#d3ac59" stroke-width="2"/></svg><b>舞台・客席をランダムに巡る</b><small>指定した2領域だけ</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="area" data-mode="area" data-area="full" data-look="area-full" data-name="舞台全体" data-change="狙い・広がり・任意で強さ" data-keep="色・模様・動き"><svg viewBox="0 0 120 54" aria-hidden="true"><rect x="8" y="7" width="104" height="40" fill="rgba(211,172,89,.14)" stroke="#6d5c41"/><circle cx="28" cy="20" r="4" fill="#efe7d6"/><circle cx="60" cy="20" r="4" fill="#efe7d6"/><circle cx="92" cy="20" r="4" fill="#efe7d6"/><circle cx="28" cy="36" r="4" fill="#efe7d6"/><circle cx="60" cy="36" r="4" fill="#efe7d6"/><circle cx="92" cy="36" r="4" fill="#efe7d6"/></svg><b>舞台全体</b><small>6灯で範囲を覆う</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="area" data-mode="area" data-area="left" data-look="area-half" data-name="下手半分" data-change="狙い・広がり・任意で強さ" data-keep="色・模様・動き"><svg viewBox="0 0 120 54" aria-hidden="true"><rect x="8" y="7" width="52" height="40" fill="rgba(211,172,89,.18)" stroke="#d3ac59"/><rect x="60" y="7" width="52" height="40" fill="none" stroke="#6d5c41"/><circle cx="22" cy="18" r="3" fill="#efe7d6"/><circle cx="42" cy="18" r="3" fill="#efe7d6"/><circle cx="22" cy="35" r="3" fill="#efe7d6"/><circle cx="42" cy="35" r="3" fill="#efe7d6"/></svg><b>下手半分</b><small>半分を複数灯で覆う</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="area" data-mode="area" data-area="custom" data-look="area-custom" data-name="指定範囲" data-change="狙い・広がり・任意で強さ" data-keep="色・模様・動き"><svg viewBox="0 0 120 54" aria-hidden="true"><rect x="8" y="7" width="104" height="40" fill="none" stroke="#6d5c41"/><path d="M31 14 93 18 84 42 25 35Z" fill="rgba(211,172,89,.18)" stroke="#d3ac59" stroke-width="2"/><circle cx="45" cy="24" r="3" fill="#efe7d6"/><circle cx="68" cy="24" r="3" fill="#efe7d6"/><circle cx="55" cy="34" r="3" fill="#efe7d6"/></svg><b>指定範囲</b><small>舞台図で囲んで配る</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="flash" data-look="flash-all" data-name="全灯ストロボ" data-change="強さ・点滅時間" data-keep="狙い・色・動き"><svg viewBox="0 0 120 54" aria-hidden="true"><path d="M10 40h15V14h15v26h15V14h15v26h15V14h25" fill="none" stroke="#d3ac59" stroke-width="2"/><text x="88" y="12" fill="#efe7d6" font-size="8">静止図</text></svg><b>全灯ストロボ</b><small>強さ・点滅時間</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="flash" data-look="flash-alt" data-name="交互ストロボ" data-change="強さ・位相" data-keep="狙い・色・動き"><svg viewBox="0 0 120 54" aria-hidden="true"><circle cx="18" cy="27" r="8" fill="#efe7d6"/><circle cx="39" cy="27" r="8" fill="#6d5c41"/><circle cx="60" cy="27" r="8" fill="#efe7d6"/><circle cx="81" cy="27" r="8" fill="#6d5c41"/><circle cx="102" cy="27" r="8" fill="#efe7d6"/></svg><b>交互ストロボ</b><small>強さ・位相</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="flash" data-look="flash-left" data-name="左から右ストロボ" data-change="強さ・時間差" data-keep="狙い・色・動き"><svg viewBox="0 0 120 54" aria-hidden="true"><circle cx="18" cy="27" r="9" fill="#efe7d6"/><circle cx="39" cy="27" r="7" fill="#d3ac59"/><circle cx="60" cy="27" r="6" fill="#9c823f"/><circle cx="81" cy="27" r="5" fill="#6d5c41"/><circle cx="102" cy="27" r="4" fill="#382f25"/><path d="M12 46h96m0 0-8-5m8 5-8 5" stroke="#d3ac59"/></svg><b>左から右ストロボ</b><small>強さ・時間差</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="flash" data-look="flash-center" data-name="中央から外ストロボ" data-change="強さ・位相" data-keep="狙い・色・動き"><svg viewBox="0 0 120 54" aria-hidden="true"><circle cx="18" cy="27" r="5" fill="#6d5c41"/><circle cx="39" cy="27" r="7" fill="#d3ac59"/><circle cx="60" cy="27" r="9" fill="#efe7d6"/><circle cx="81" cy="27" r="7" fill="#d3ac59"/><circle cx="102" cy="27" r="5" fill="#6d5c41"/><path d="M60 45 15 45m45 0 45 0" stroke="#efe7d6"/></svg><b>中央から外ストロボ</b><small>強さ・位相</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="flash" data-look="flash-random" data-name="ランダム瞬き" data-change="強さ・時間差" data-keep="狙い・色・動き"><svg viewBox="0 0 120 54" aria-hidden="true"><circle cx="19" cy="18" r="6" fill="#9c823f"/><circle cx="42" cy="34" r="9" fill="#efe7d6"/><circle cx="65" cy="16" r="4" fill="#6d5c41"/><circle cx="83" cy="35" r="6" fill="#d3ac59"/><circle cx="104" cy="21" r="8" fill="#efe7d6"/></svg><b>ランダム瞬き</b><small>強さ・時間差</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="aim" data-look="focus" data-name="一点へ集める" data-change="狙い" data-keep="色・強さ・動き"><svg viewBox="0 0 120 54" aria-hidden="true"><path d="M12 8 60 45M35 8 60 45M85 8 60 45M108 8 60 45" stroke="#d3ac59"/><circle cx="60" cy="45" r="4" fill="#efe7d6"/></svg><b>一点へ集める</b><small>狙い</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="motion" data-look="mirror" data-name="鏡" data-change="位置・関係" data-keep="色・強さ"><svg viewBox="0 0 120 54" aria-hidden="true"><path d="M14 42 55 13M106 42 65 13" stroke="#d3ac59" stroke-width="2"/><path d="M60 7v41" stroke="#6d5c41" stroke-dasharray="3 3"/></svg><b>鏡</b><small>位置・関係</small></button>
+                <button class="library-card" type="button" aria-selected="false" data-family="value" data-look="gradient" data-name="色のグラデーション" data-change="色" data-keep="狙い・強さ・動き"><svg viewBox="0 0 120 54" aria-hidden="true"><defs><linearGradient id="modalGradient"><stop stop-color="#7ab8ff"/><stop offset="1" stop-color="#ffd27a"/></linearGradient></defs><rect x="10" y="19" width="100" height="16" fill="url(#modalGradient)"/></svg><b>色のグラデーション</b><small>色</small></button>
+              </div>
+            </div>
+            <aside class="library-detail" aria-live="polite">
+              <div class="detail-preview" id="detailPreview"><svg viewBox="0 0 120 54" aria-hidden="true"><path d="M14 8v38M33 8v38M52 8v38M71 8v38M90 8v38M109 8v38" stroke="#d3ac59" stroke-width="2"/><path d="M8 46h106" stroke="#6d5c41"/></svg></div>
+              <h4 id="detailName">ライトカーテン</h4>
+              <p id="detailSummary">ムービング6灯へ、下手→上手の順で適用します。</p>
+              <ul class="scope-list"><li><b>変える:</b> <span id="detailChange">狙い・広がり</span></li><li><b>保つ:</b> <span id="detailKeep">色・強さ・時間</span></li></ul>
+              <div class="flash-options" id="flashOptions" hidden><label for="flashSpeed">画面上の点滅速度</label><select id="flashSpeed"><option>ゆっくり　1回/秒</option><option selected>標準　2回/秒</option><option>上限　3回/秒</option></select><div class="flash-notice">強い点滅を含む型です。カード選択だけでは再生しません。画面プレビューは3回/秒以下に制限し、会場での安全判断とは分けます。</div></div>
+              <div class="detail-options" id="wanderOptions" hidden>
+                <label for="wanderSpeed">速さ</label><select id="wanderSpeed"><option>ゆっくり</option><option selected>標準</option><option>速い</option></select>
+                <label for="wanderIrregularity">不規則さ</label><select id="wanderIrregularity"><option>控えめ</option><option selected>自然</option><option>大きい</option></select>
+                <button class="secondary-action" id="rerollWander" type="button">別のばらつき</button><small class="seed-status" id="seedStatus">ばらつき #2841を保存。同じキューでは同じ動きを再現します。</small>
+                <div class="zone-notice" id="audienceNotice" hidden>動ける範囲は舞台＋指定した客席領域だけ。これは図上の演出案で、会場・観客への安全判断ではありません。</div>
+              </div>
+              <div class="detail-options" id="areaOptions" hidden>
+                <label for="areaTarget">照らす範囲</label><select id="areaTarget"><option value="full">舞台全体</option><option value="left">下手半分</option><option value="right">上手半分</option><option value="front">前半分</option><option value="back">奥半分</option><option value="custom">指定範囲</option></select>
+                <label class="check-row"><input id="alignIntensity" type="checkbox" checked>強さもそろえる</label>
+                <button class="secondary-action" id="drawArea" type="button">舞台図で範囲を指定</button><div class="zone-notice">狙い点を範囲内へ規則的に配る近似です。均一な照度は保証しません。</div>
+              </div>
+              <button class="apply-preset" id="applyLibraryPreset" type="button">この型を適用</button><small class="detail-help">適用後に閉じ、舞台全体で確認</small>
+            </aside>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <div class="legend"><span>通常ボタン</span><span>真鍮枠＋✓＝直近に適用</span><span>文字「調整あり」＝あとから変更</span></div>
+
+  <h2>プリセットの種類</h2>
+  <table>
+    <thead><tr><th>分類</th><th>初版候補</th><th>変えるもの</th><th>変えないもの</th></tr></thead>
+    <tbody>
+      <tr><td>狙い</td><td>一点へ集める／横一列／奥から手前／交差／扇に開く</td><td>当てる面・狙い点</td><td>色、強さ、広がり、模様、時間</td></tr>
+      <tr><td>範囲</td><td>舞台全体／下手半分／上手半分／前半分／奥半分／指定範囲</td><td>狙い・広がり・任意で強さ</td><td>色、模様、動き</td></tr>
+      <tr><td>動き</td><td>そろえて往復／鏡／扇・開閉／交差して入れ替わる／順送り／それぞれ円／舞台をランダムに巡る／舞台・客席をランダムに巡る</td><td>軌道・周期・ずらし・関係・動ける範囲</td><td>色、強さ、広がり、模様</td></tr>
+      <tr><td>配り方</td><td>2色交互／色グラデーション／中央を明るく／外側を明るく</td><td>カード名に書いた属性だけ</td><td>狙い・軌道・それ以外の属性</td></tr>
+      <tr><td>演出</td><td>ライトカーテン／カーテン開閉／カーテン走り／カーテン波</td><td>カードごとに明記した狙い・広がり・動き・時間</td><td>記載のない色・強さ・模様</td></tr>
+      <tr><td>点滅</td><td>全灯／交互／左→右／中央→外ストロボ／ランダム瞬き</td><td>強さ・シャッターの時間・位相</td><td>狙い、色、移動軌道</td></tr>
+    </tbody>
+  </table>
+  <p class="note"><b>全体は32件を想定:</b> 狙い5＋範囲6＋動き8＋配り方4＋演出4＋点滅5。右パネルへ全件を並べず、最近／よく使う型だけを残します。範囲は「止めた複数灯で場所を覆う」目的が狙い1点とは違うため独立させます。</p>
+
+  <h2>「ランダム」は再現できる規則性にする</h2>
+  <div class="grid2">
+    <article class="card good"><h3>推奨: 固定seedの疑似ランダム</h3><p>複数の滑らかな経路に、灯ごとに違う周期・方向・位相を与えます。一見ばらばらでも、同じキューを再生すれば同じ動きです。「別のばらつき」を押したときだけ組み合わせを変えます。</p></article>
+    <article class="card"><h3>避ける: 毎フレーム完全ランダム</h3><p>細かく震えたり、急に向きが飛んだり、次の再生で見た目が変わるため、演出の修正や再現に向きません。動ける範囲の外へ出ない保証も作りにくくなります。</p></article>
+  </div>
+  <p class="note"><b>客席を含む型:</b> 舞台領域と、舞台図で明示した客席領域の和集合だけを通します。図上の動きの提案であり、灯体・吊り位置・観客への照射・現場安全を判定する機能ではありません。</p>
+
+  <h2>止めた複数灯で範囲を照らす</h2>
+  <p>全体・左右半分・前後半分・指定ポリゴンの中へ狙い点を規則的に配り、灯の物理順または短い割り当てで結びます。不要な光線の交差を減らしつつ、<code>強さもそろえる</code> がONなら強度もまとめます。これは見た目を組む幾何学的な近似で、照度計算ではありません。</p>
+
+  <h2>あとから調整できる仕組み</h2>
+  <div class="flow">
+    <div class="step"><b>1. 複数選択</b>2灯以上を選ぶ</div>
+    <div class="step"><b>2. 型を押す</b>対応灯だけへ即適用</div>
+    <div class="step"><b>3. 実値になる</b>各灯の値として保存</div>
+    <div class="step"><b>4. 調整</b>既存のつまみ・ハンドルで直す</div>
+    <div class="step"><b>5. 戻せる</b>適用全体をUndo 1回</div>
+  </div>
+  <p>プリセットへの「生きた参照」は残しません。あとから定義が変わっても既存キューは勝手に変わらず、手動調整は正本の値になります。カード由来は「何から始めたか」を示すだけです。</p>
+
+  <h2>なぜこのUIか</h2>
+  <div class="grid2">
+    <article class="card good"><h3>A. 右パネル＋モーダル（推奨）</h3><p>右パネルは日常の近道、モーダルは32件を検索する棚にします。適用後にモーダルを閉じるため、「全体を作る」「型を探す」「舞台で確かめる」「値を直す」が分かれます。</p></article>
+    <article class="card"><h3>B. まとめて変更の中へアコーディオン</h3><p>今のサーチライトに近い一方、すでに長い設定欄をさらに押し下げます。型の数が10件を超えると探しにくいため不採用。</p></article>
+    <article class="card"><h3>C. モーダルだけ</h3><p>毎回一覧を開くと、よく使う型まで遠くなります。全画面ではなく外周に舞台を残し、内部は静止プレビュー、確定後は閉じる形に限定します。</p></article>
+    <article class="card"><h3>UI文言</h3><p>画面では専門語の「プリセット」より短い「型」を主にします。説明や書き出し仕様では「選択灯プリセット」を使えば検索性も保てます。</p></article>
+  </div>
+
+  <h2>適用ルール</h2>
+  <ul>
+    <li>カードはトグルではなく実行ボタン。同じカードを再度押すと、その型が担当する属性だけを既定へ整え直します。</li>
+    <li>混在選択は黙って一部適用しません。カード上に「ムービング6灯に適用・固定2灯はそのまま」と先に出します。</li>
+    <li>横方向の型は既定で舞台上の下手→上手順。必要なら「選んだ順」に切り替えます。</li>
+    <li>右パネルの近道は即適用。モーダルは1回クリックで選択し、固定された「この型を適用」で確定します。適用後は閉じ、再び開いたとき検索・分類・スクロール位置を保ちます。</li>
+    <li>点滅以外はPCのダブルクリックでも適用可能。点滅はカード選択だけで再生せず、速度・対象・変更範囲を同じモーダル内で確認します。</li>
+    <li>点滅以外に追加確認ダイアログは出さず、既存のUndoとtoastで回復します。点滅も別モーダルを重ねません。</li>
+    <li>客席を含むランダム移動と「指定範囲」は、動ける領域を同じモーダルで確認・指定してから適用します。ダブルクリック即時適用の対象外です。</li>
+    <li>ランダム移動はseedをキューに保存し、再生ごとに変えません。<code>別のばらつき</code>は明示操作としてUndo対象にします。</li>
+    <li>範囲型は近い灯から近い狙い点へ割り当てることを既定とし、演出上交差させたい場合だけ「選んだ順」へ切り替えます。</li>
+  </ul>
+
+  <h2>根拠と境界</h2>
+  <ul class="sources">
+    <li><b>現在のローカル試作（確認済み）:</b> 右パネルは約305pxで、複数選択時の「まとめて変更」は色・当てる場所・強さ・広がり・位置・時間まで縦に長い。サーチライトは「そろえて振る／扇に開く／交差する／まわす」、組の動きは「一緒／鏡／順番／扇／交差」を持つ。今回の案はこの実装を分類し直す提案です。</li>
+    <li><b>ETC Eos（公式）:</b> プリセットは強さ・位置・色・ビーム等をまとめられ、パレットは属性単位で扱う。今回の「属性の担当範囲を分ける」考え方の参照。<a href="https://www.etcconnect.com/WebDocs/Controls/EosFamilyOnlineHelp/en/Content/11_Presets/About_Presets.htm">About Presets</a></li>
+    <li><b>grandMA3（公式）:</b> 選択・値・個別フェード・ディレイ・位相を組み合わせるレシピと、動的な選択へ値の範囲を配る考え方がある。今回の「選択へ型を適用」「順序に沿って値を配る」の参照。<a href="https://help.malighting.com/grandMA3/2.3/HTML/presets.html">Presets</a>／<a href="https://help.malighting.com/grandMA3/2.0/HTML/presets_recipes.html">Recipe Presets</a></li>
+    <li><b>grandMA3 Phaser（公式）:</b> 複数ステップの値、速度、灯ごとの位相で動的な効果を作る。ライトカーテンの走り・波、点滅の順序設計の参照。<a href="https://help.malighting.com/grandMA3/2.3/HTML/phaser.html">Phasers</a></li>
+    <li><b>ETC Eos Effects Editor（公式）:</b> Random Modifierには毎回変わる設定に加えて数値seedがあり、同じランダム挙動を保持できる。今回の既定を「再現できる疑似ランダム」にする直接の参照。<a href="https://www.etcconnect.com/WebDocs/Controls/EosFamilyOnlineHelp/en/Content/14_Effects/01_Effects_Editor/About_the_Effects_Editor.htm">About the Effects Editor</a></li>
+    <li><b>grandMA3 MAtricks（公式）:</b> 同じ灯数とShuffle値なら同じ選択順が得られ、Phase・Speedを灯の並びへ配れる。灯ごとの差を作りつつ再現する設計の参照。<a href="https://help.malighting.com/grandMA3/2.4/HTML/matricks.html">MAtricks</a>／<a href="https://help.malighting.com/grandMA3/2.3/HTML/operate_selection.html">Selection Grid</a></li>
+    <li><b>W3C WCAG（公式）:</b> Web画面の点滅は1秒に3回以下、または定められた閾値以下を求める。試作画面では自動点滅を使わず、将来プレビューを付けても3回/秒以下に制限する。これは舞台現場の安全承認を意味しない。<a href="https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html">Three Flashes or Below Threshold</a></li>
+    <li><b>W3C APG（公式）:</b> 実行後も同じ文脈に留まる操作ではフォーカスをボタンへ残す。カードはON/OFF状態を持つトグルではないため、通常ボタンとして扱う。<a href="https://www.w3.org/WAI/ARIA/apg/patterns/button/">Button Pattern</a></li>
+  </ul>
+  <p class="note"><b>未確認:</b> 実際の舞台制作者が最初に欲しい型の優先順位、客席領域の初期形状、固定灯を含む混在選択の期待、iPad実機でのカード密度。ここは実装前に短い本人確認と、実装後の端末確認が必要です。灯体位置・DMX・照度・設置安全を示す機能ではありません。</p>
+</main>
+<script>
+const tabs=[...document.querySelectorAll('.tab')];
+function showPane(id){tabs.forEach(b=>b.setAttribute('aria-selected',String(b.dataset.pane===id)));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('active',p.id===id));}
+tabs.forEach(b=>b.addEventListener('click',()=>showPane(b.dataset.pane)));
+document.querySelectorAll('.jump').forEach(b=>b.addEventListener('click',()=>showPane(b.dataset.pane)));
+const grids={aim:document.getElementById('aimGrid'),motion:document.getElementById('motionGrid'),value:document.getElementById('valueGrid')};
+document.querySelectorAll('.kind').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.kind').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));Object.entries(grids).forEach(([k,g])=>g.hidden=k!==b.dataset.kind);}));
+document.querySelectorAll('.order button').forEach(b=>b.addEventListener('click',()=>document.querySelectorAll('.order button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))));
+document.querySelectorAll('.preset').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.preset').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('stagePlan').dataset.look=b.dataset.look;document.getElementById('stageStatus').textContent=`「${b.dataset.name}」をムービング6灯に適用`;document.getElementById('summaryText').innerHTML=`ムービング6灯・<em>${b.dataset.name}</em>`;document.getElementById('feedback').innerHTML=`<b>${b.dataset.name}</b>を6灯に適用しました。一つ戻すで戻せます。`;}));
+const span=document.getElementById('span');span.addEventListener('input',()=>{document.getElementById('spanValue').textContent=span.value;document.getElementById('summaryText').innerHTML='ムービング6灯・<em>扇・開閉　調整あり</em>';document.getElementById('stageStatus').textContent='振り幅を手動で調整中';});
+const presetModal=document.getElementById('presetModal');
+const openLibrary=document.getElementById('openLibrary');
+const presetSearch=document.getElementById('presetSearch');
+const libraryCards=[...document.querySelectorAll('.library-card')];
+const libraryFilters=[...document.querySelectorAll('.library-filter')];
+const flashOptions=document.getElementById('flashOptions');
+const wanderOptions=document.getElementById('wanderOptions');
+const areaOptions=document.getElementById('areaOptions');
+const audienceNotice=document.getElementById('audienceNotice');
+const areaTarget=document.getElementById('areaTarget');
+let currentFamily='all';
+let selectedLibraryCard=libraryCards[0];
+let wanderSeed=2841;
+function openPresetLibrary(){document.querySelector('.mock-app').classList.add('modal-open');presetModal.hidden=false;presetSearch.focus();}
+function closePresetLibrary(){presetModal.hidden=true;document.querySelector('.mock-app').classList.remove('modal-open');openLibrary.focus();}
+function filterLibrary(){const query=presetSearch.value.trim().toLocaleLowerCase('ja');let visible=0;libraryCards.forEach(card=>{const familyMatch=currentFamily==='all'||card.dataset.family===currentFamily;const text=`${card.dataset.name} ${card.dataset.change}`.toLocaleLowerCase('ja');const show=familyMatch&&(!query||text.includes(query));card.hidden=!show;if(show)visible+=1;});document.getElementById('resultCount').textContent=`${visible}件を表示`;}
+function selectLibraryCard(card){
+  if(!card)return;
+  libraryCards.forEach(item=>item.setAttribute('aria-selected',String(item===card)));
+  selectedLibraryCard=card;
+  document.getElementById('detailPreview').innerHTML=card.querySelector('svg').outerHTML;
+  document.getElementById('detailName').textContent=card.dataset.name;
+  document.getElementById('detailChange').textContent=card.dataset.change;
+  document.getElementById('detailKeep').textContent=card.dataset.keep;
+  const isFlash=card.dataset.family==='flash';
+  const isWander=card.dataset.mode==='wander';
+  const isArea=card.dataset.mode==='area';
+  flashOptions.hidden=!isFlash;
+  wanderOptions.hidden=!isWander;
+  areaOptions.hidden=!isArea;
+  audienceNotice.hidden=card.dataset.audience!=='true';
+  if(isArea)areaTarget.value=card.dataset.area||'custom';
+  document.getElementById('detailSummary').textContent=isArea?'選んだ6灯を、範囲内へ規則的に配ります。':isWander?(card.dataset.audience==='true'?'舞台＋指定した客席領域の中だけを巡ります。':'舞台領域の中だけを滑らかに巡ります。'):'ムービング6灯へ、下手→上手の順で適用します。';
+  document.getElementById('applyLibraryPreset').textContent=isFlash?'点滅を適用':isWander?'この動きを適用':isArea?'この範囲へ配る':'この型を適用';
+}
+function applyLibraryCard(){
+  const card=selectedLibraryCard;
+  document.getElementById('stagePlan').dataset.look=card.dataset.look;
+  const flash=card.dataset.family==='flash';
+  const area=card.dataset.mode==='area';
+  const audience=card.dataset.audience==='true';
+  document.getElementById('stageStatus').textContent=flash?`「${card.dataset.name}」を適用（画面の自動点滅なし）`:area?`6灯で「${card.dataset.name}」を照らす配置に適用`:audience?`「${card.dataset.name}」を指定した舞台＋客席領域に適用`:`「${card.dataset.name}」をムービング6灯に適用`;
+  document.getElementById('summaryText').innerHTML=`ムービング6灯・<em>${card.dataset.name}</em>`;
+  document.getElementById('feedback').innerHTML=`<b>${card.dataset.name}</b>を6灯に適用しました。一つ戻すで戻せます。`;
+  closePresetLibrary();
+}
+function canQuickApply(card){return card.dataset.family!=='flash'&&card.dataset.audience!=='true'&&card.dataset.area!=='custom';}
+openLibrary.addEventListener('click',openPresetLibrary);
+document.querySelectorAll('[data-close-library]').forEach(item=>item.addEventListener('click',closePresetLibrary));
+presetSearch.addEventListener('input',filterLibrary);
+libraryFilters.forEach(button=>button.addEventListener('click',()=>{currentFamily=button.dataset.family;libraryFilters.forEach(item=>item.setAttribute('aria-pressed',String(item===button)));filterLibrary();}));
+libraryCards.forEach(card=>{card.addEventListener('click',()=>selectLibraryCard(card));card.addEventListener('dblclick',()=>{if(canQuickApply(card)){selectLibraryCard(card);applyLibraryCard();}});});
+document.getElementById('applyLibraryPreset').addEventListener('click',applyLibraryCard);
+document.getElementById('rerollWander').addEventListener('click',()=>{wanderSeed=(wanderSeed*73+41)%10000;document.getElementById('seedStatus').textContent=`ばらつき #${String(wanderSeed).padStart(4,'0')}を保存。同じキューでは同じ動きを再現します。`;});
+document.getElementById('drawArea').addEventListener('click',()=>{areaTarget.value='custom';document.getElementById('detailSummary').textContent='舞台図で囲んだ範囲へ、選んだ6灯を規則的に配ります。';});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!presetModal.hidden)closePresetLibrary();});
+const previewParams=new URLSearchParams(location.search);
+if(previewParams.get('preset')==='flash')selectLibraryCard(libraryCards.find(card=>card.dataset.look==='flash-all'));
+if(previewParams.get('preset')==='random')selectLibraryCard(libraryCards.find(card=>card.dataset.look==='wander-audience'));
+if(previewParams.get('preset')==='area')selectLibraryCard(libraryCards.find(card=>card.dataset.look==='area-custom'));
+if(previewParams.get('modal')==='library')openPresetLibrary();
+</script>
+</body>
+</html>

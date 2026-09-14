@@ -413,7 +413,7 @@
   /* ストロボ（ムービングの光の強さに載せる、時間で繰り返す点滅）。2026-09-13 本人要望。
      始点・終点の往復（levelAt）とは別枠——強さの「値」ではなく「その瞬間どれだけ削るか」の
      掛け算にして、上に載せるだけで足す（往復のどの位置でも同じように点滅する）。
-       light.strobe = { on, kind:"sharp"|"soft", hz(0.5〜20), duty(5〜95, sharp用), depth(0〜100, soft用) }
+       light.strobe = { on, kind:"sharp"|"soft", hz(0.5〜20), duty(5〜95, sharp用), depth(0〜100, soft用), phaseNorm(0〜1) }
      kind="sharp"（くっきり）＝矩形波。1周期のうち duty% だけ全開、残りは真っ暗——「パパパッ」。
      kind="soft"（やわらかい）＝なめらかな明滅（1−cos）。0では全開のまま、100で完全に沈む
      ところまで——「ちょっとフェード寄り」。
@@ -423,7 +423,7 @@
     const hz = clamp(finite(strobe.hz, 6), 0.5, 20);
     const period = 1000 / hz;
     const t = finite(tMs, 0);
-    const phase = (((t % period) + period) % period) / period;   // 0..1、絶対時刻からいつでも同じ位相
+    const phase = ((((t % period) + period) % period) / period + clamp(finite(strobe.phaseNorm, 0), 0, 1)) % 1;
     if (strobe.kind === "soft") {
       const depth = clamp(finite(strobe.depth, 60), 0, 100) / 100;
       const wave = (1 - Math.cos(phase * 2 * Math.PI)) / 2;      // 0（明）→1（暗）→0（明）と滑らかに1往復

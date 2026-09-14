@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>舞台スケッチ — 選択灯「型」実装契約</title>
+<style>
+:root{--desk:#191512;--desk2:#282119;--line:#4b4032;--milk:#efe7d6;--dim:#aaa092;--brass:#9c823f;--rust:#ad4d2d;--paper:#f1ede4;--ink:#24211d;--quiet:#665f54;--sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;--serif:"Hiragino Mincho ProN","Yu Mincho",serif}*{box-sizing:border-box}body{margin:0;background:#e9e4da;color:var(--ink);font-family:var(--sans);line-height:1.7}.wrap{width:min(1080px,calc(100% - 32px));margin:auto}.hero{padding:42px 0 34px;background:var(--desk);border-bottom:3px solid var(--brass);color:var(--milk)}.kicker{margin:0 0 8px;color:#d3ac59;font-size:12px;letter-spacing:.16em}.hero h1{margin:0;font:500 clamp(26px,4vw,40px)/1.35 var(--serif);letter-spacing:.04em}.hero p{max-width:780px;margin:14px 0 0;color:#d7ccba}.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.badge{border:1px solid var(--line);padding:4px 8px;font-size:12px}.badge.hot{border-color:var(--brass);color:#fff5dc}main{padding:30px 0 70px}h2{margin:38px 0 12px;font:600 23px/1.4 var(--serif)}h3{margin:0 0 7px;font-size:16px}.notice{background:#fff;border-left:5px solid var(--brass);padding:18px 20px;box-shadow:0 8px 20px rgba(36,33,29,.07)}.notice p{margin:0}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.card{background:var(--paper);border:1px solid #d0c8ba;padding:16px}.card p{margin:0;color:var(--quiet);font-size:14px}.card b{color:#6f551a}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.step{position:relative;background:#fff;border-top:3px solid var(--brass);padding:13px;font-size:13px}.step:not(:last-child):after{content:"→";position:absolute;z-index:1;right:-11px;top:37%;color:#806a37;font-weight:bold}table{width:100%;border-collapse:collapse;background:#fff;font-size:13px}th,td{padding:10px 11px;border-bottom:1px solid #ddd6ca;text-align:left;vertical-align:top}th{background:var(--desk2);color:var(--milk);font-weight:600}td:first-child{font-weight:700;white-space:nowrap}.code{margin:12px 0;padding:14px 16px;background:#181410;border-left:4px solid var(--brass);color:#e9dfcf;overflow:auto;font:12px/1.65 var(--sans);letter-spacing:.02em;white-space:pre}.safe{border:1px solid #d5c2a1;background:#fbf7ed;padding:14px 16px;font-size:13px}.safe b{color:#73591d}.boundary{display:grid;grid-template-columns:1fr 1fr;gap:12px}.no,.yes{padding:16px;border:1px solid #d0c8ba}.no{background:#f8eae4;border-top:4px solid var(--rust)}.yes{background:#f7f3e9;border-top:4px solid var(--brass)}.no p,.yes p{margin:0;color:var(--quiet);font-size:14px}.checks{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:0;padding:0;list-style:none}.checks li{min-height:44px;padding:9px 11px;background:#fff;border-left:3px solid var(--brass);font-size:13px}.muted{color:var(--quiet);font-size:13px}a{display:inline-flex;align-items:center;min-height:44px;color:#73591d}footer{padding:22px 0 36px;border-top:1px solid #d0c8ba;color:var(--quiet);font-size:13px}@media(max-width:760px){.wrap{width:min(100% - 20px,1080px)}.grid,.boundary,.checks{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.step:not(:last-child):after{content:"↓";top:auto;bottom:-18px;right:auto;left:50%}table{font-size:12px}.hero{padding-top:30px}}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+  <p class="kicker">STAGE SKETCH / SELECTED-LIGHT PRESETS / IMPLEMENTATION CONTRACT</p>
+  <h1>選択灯「型」を、あとから直せる<br>実値として保存するための契約</h1>
+  <p>32型の画面案を、試作で実装できる粒度へ下ろしたものです。ランダムは seed を持つ疑似ランダム、範囲は決定的な配り方、適用は一回のUndoです。</p>
+  <div class="badges"><span class="badge hot">P0純関数・検証済み</span><span class="badge">舞台スケッチ本体は未変更</span><span class="badge">保存形式の変更を承認しない</span><span class="badge">2026-09-14</span></div>
+</div></header>
+<main class="wrap">
+  <section class="notice"><h2>今回、決めたこと</h2><p><b>型は選択中の灯へ値を書き込む一括操作です。</b> 適用後は既存の調整でそのまま直せ、型の定義を後から変えても過去のキューは動きません。型を“生きたレイヤー”として積み重ねる設計にはしません。</p></section>
+
+  <h2>既存機能と混ぜない</h2>
+  <div class="boundary">
+    <article class="no"><h3>触らないもの</h3><p><b>`scene.lightMotion`</b> は灯体・DMX・パン/チルトを持たない、シーン単位の「光の動き（案）」です。本体の照明プリセットも新しいライト駒を作る機能です。どちらにも今回の選択灯型を書き込みません。</p></article>
+    <article class="yes"><h3>最初に作るもの</h3><p><b>試作 cue に対する純関数の属性パッチ</b>です。選択済みフィクスチャだけを対応判定し、狙い・動き・配り方など、カードが担当する属性だけを更新します。</p></article>
+  </div>
+
+  <h2>型ごとの「変えるもの／保つもの」</h2>
+  <table><thead><tr><th>家族</th><th>変えるもの</th><th>保つもの</th><th>対応条件</th></tr></thead><tbody>
+    <tr><td>狙い</td><td>静止狙い点</td><td>色・強さ・ビーム・ゴボ・点滅</td><td>狙いを変えられる灯</td></tr>
+    <tr><td>範囲</td><td>狙い点・ビーム幅・任意の強さ</td><td>色・ゴボ・点滅</td><td>狙いを変えられる灯</td></tr>
+    <tr><td>動き</td><td>経路・周期・位相・関係</td><td>色・強さ・ビーム・ゴボ・点滅</td><td>ムービング灯</td></tr>
+    <tr><td>配り方</td><td>色または強さ</td><td>狙い・動き・ビーム・ゴボ</td><td>該当属性を持つ灯</td></tr>
+    <tr><td>演出／点滅</td><td>カードに明記した属性だけ</td><td>担当外の全属性</td><td>カードごとの対応条件</td></tr>
+  </tbody></table>
+  <p class="muted">範囲型の「強さもそろえる」は既定ON。OFFなら強さを書きません。混在選択は、たとえば「ムービング6灯に適用・固定2灯はそのまま」と適用前に見せます。</p>
+
+  <h2>ランダムに見える動きは、固定seedで作る</h2>
+  <div class="grid">
+    <article class="card"><h3>保存する</h3><p><b>seed、経路版、許可領域、周期、ゆらぎ、位相、灯の順番</b>。同じキューを開けば、同じ見た目を再現します。</p></article>
+    <article class="card"><h3>再生時にする</h3><p>seed と灯の順番から滑らかな閉じた経路を純関数で導きます。毎フレーム乱数を振らず、細かな震えや再生ごとの変化を避けます。</p></article>
+    <article class="card"><h3>「別のばらつき」</h3><p>新しい seed を明示して確定します。これは一回のUndoで戻り、再生・リロードでは勝手に変わりません。</p></article>
+  </div>
+  <pre class="code">{ kind: "wander", seed: 2841, pathVersion: 1,
+  regionIds: ["stage"], loopSec: 10,
+  irregularity: 0.55, phaseNorm: 0.33, fixtureRank: 2 }</pre>
+  <p class="safe"><b>客席を含む型:</b> 舞台と、舞台図で明示した客席マスクの内側だけを通します。これは図上の動きの提案であり、設備・演者・観客への照射や現場安全を判定する機能ではありません。</p>
+
+  <h2>範囲を複数灯で明るくする</h2>
+  <div class="grid">
+    <article class="card"><h3>既定の5範囲</h3><p>舞台全体、下手半分、上手半分、前半分、奥半分は名前だけで再現できます。</p></article>
+    <article class="card"><h3>指定範囲 v1</h3><p>舞台図をドラッグして作る正規化矩形に限定します。端点をそろえ、範囲外・極小範囲を検査します。</p></article>
+    <article class="card"><h3>配り方</h3><p>灯と狙い点を物理的な下手→上手順で安定して結びます。「選んだ順」を明示した時だけ選択順を使います。</p></article>
+  </div>
+  <p class="muted">ポリゴン指定と最短マッチングは将来候補です。v1 は再現性と説明可能性を優先し、均等格子と安定ソートにします。照度計算・均一照明の保証ではありません。</p>
+
+  <h2>適用は一回のトランザクション</h2>
+  <div class="flow"><div class="step"><b>1. 事前判定</b>対応灯、除外理由、領域を確認</div><div class="step"><b>2. パッチ生成</b>元cueを変えず、担当属性だけ計算</div><div class="step"><b>3. 正規化</b>無効値を除き、no-opなら中止</div><div class="step"><b>4. 一回だけ記録</b>checkpoint → 書き込み → 保存</div><div class="step"><b>5. 通知</b>再描画し、対象とUndoを伝える</div></div>
+  <p class="muted">スライダーや範囲ハンドルの途中操作はドラフト表示だけ。確定時に一度だけ履歴へ積みます。未知キー、担当外属性、非対象灯は保持します。</p>
+
+  <h2>本体へつなぐ前の合格ライン</h2>
+  <ul class="checks"><li>同じseed・灯順・時刻なら同じ位置</li><li>seed変更時だけ経路パラメータが変わる</li><li>全サンプル点が許可領域に収まる</li><li>入力配列の順に結果が左右されない</li><li>範囲6種が正規化される</li><li>混在選択は非対応灯を変えず理由を返す</li><li>担当外属性と未知キーが保存される</li><li>適用と再抽選が各一回のUndoで戻る</li><li>no-opで履歴・保存・通知を増やさない</li><li>旧cueと未知の経路版を壊さない</li></ul>
+
+  <h2>P0 / P1の現在地</h2>
+  <div class="boundary"><article class="yes"><h3>実装・確認済み</h3><p>32型の宣言、選択灯への不変パッチ、固定seedのwander、客席マスク必須判定、範囲6種、属性保全、no-op判定を隔離した純関数として実装しました。既存の照明デザイン試作では、2灯以上の選択時だけ入口を出し、検索・カテゴリ付きの32型モーダルからcueへ一括適用します。6灯への適用と一手Undoをブラウザで確認済みです。</p></article><article class="no"><h3>接続しない範囲</h3><p>舞台スケッチ本体、保存済みプロジェクト、ベータ、公開物には接続していません。客席まで漂う型は、会場ごとの客席マスクが未接続のため試作でも無効にしています。</p></article></div>
+  <p class="muted">実装: <a href="selected-light-presets-engine.js">P0純関数</a> ／ <a href="selected-light-presets-ui.js">P1試作UI</a> ／ 検証: <a href="selected-light-presets-engine.test.mjs">11件の単体試験</a></p>
+
+  <h2>次に所有者が決めること</h2>
+  <div class="notice"><p>本体に選択灯フィクスチャをどう保存するか、客席マスクを誰がどの図面から定義するか、点滅の現場上限をどこで扱うか、指定範囲を矩形で始めてよいか。この4点は保存互換性または現場責任を変えるため、<b>試作P0の後・本体接続の前</b>に判断します。</p></div>
+  <p class="muted">詳細な識別子、データ例、段階的な実装順は <a href="IMPLEMENTATION_CONTRACT.md">Markdown実装契約</a> に併記しています。画面案は <a href="DECISION.html">選択灯「型」UI提案</a> を参照してください。</p>
+</main>
+<footer><div class="wrap">ローカル判断資料。舞台スケッチ本体、保存済みプロジェクト、ベータ、公開物は変更していません。</div></footer>
+</body>
+</html>
