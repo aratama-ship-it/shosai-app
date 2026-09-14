@@ -441,6 +441,17 @@
   .panel .sub{flex:0 0 auto;margin-top:6px;padding-top:7px;border-top:1px solid var(--line-dark);background:var(--recess);margin-left:-8px;margin-right:-8px;margin-bottom:-8px;padding-left:8px;padding-right:8px;padding-bottom:8px}
   /* パネルの<b>上</b>に置く層（配置）。罫線と余白を下向きに付け替える。 */
   .panel .sub.subtop{margin-top:-8px;margin-bottom:6px;padding-top:8px;padding-bottom:8px;border-top:0;border-bottom:1px solid var(--line-dark)}
+  /* 配置は最初から見せる。入口2つ／置く道具／ホリゾントをそれぞれ一行の役割にして、
+     仕込み中でも灯体一覧の高さを残す（2026-09-15 本人要望）。 */
+  #placebox:not(.folded){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 5px;align-items:center}
+  #placebox .ptitle{grid-column:1/-1;margin:0}
+  #placebox #presets,#placebox #lpEntry{grid-column:span 2;width:auto !important;margin:0 !important;min-height:28px;padding:3px 5px;font-size:11.5px;line-height:1.2;white-space:normal}
+  #placebox #place-tools{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}
+  #placebox #place-tools button{min-height:28px;margin:0 !important;padding:3px 4px;text-align:center !important;font-size:11px;line-height:1.2;white-space:normal}
+  #placebox .cyckicker{grid-column:1;margin:0;align-self:center;white-space:nowrap;font-size:11px;letter-spacing:.06em}
+  #placebox #cyc-tools{grid-column:2/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}
+  #placebox #cyc-tools button{min-height:28px;margin:0 !important;padding:3px 4px;text-align:center;font-size:11px;line-height:1.2;white-space:normal}
+  #placebox #place-note{grid-column:1/-1;margin:0;font-size:10.5px;line-height:1.35}
   /* 畳んだときは見出しだけ残す（中身は隠して一覧に高さを渡す） */
   .panel .sub.folded>*:not(.ptitle){display:none}
   .panel .sub.subtop .ptitle{margin:0}
@@ -762,7 +773,7 @@
 <script src="rig-engine.js?v=20260915-1"></script>
 <script src="stage-figure.js?v=20260915-1"></script>
 <script src="volume-light.js?v=20260915-2"></script>
-<script src="app.js?v=20260915-2"></script>
+<script src="app.js?v=20260915-3"></script>
 <script src="light-presets.js?v=1789357787"></script>
 <script src="light-presets-ui.js?v=1789397300"></script>
 <!-- 選択灯「型」P1: 本体ではなく、この試作だけへ隔離接続する。 -->
