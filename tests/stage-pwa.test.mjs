@@ -286,10 +286,13 @@ test("iPad PWAの姿勢と種類は5列で選べる", () => {
   assert.match(styleSource, /html\.stage-pwa-tablet \.stage-pose-grid \{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);/);
 });
 
-test("サンプルのシーン番号を現在位置の後ろへ重ねて表示しない", () => {
-  assert.match(stageSource, /function sceneNavigationTitle\(scene, index\)/);
-  assert.match(stageSource, /sceneNavigationTitle\(scene, index\)/);
-  assert.match(stageSource, /tabletUi\.sceneCurrent\.textContent = `\$\{index \+ 1\} \/ \$\{Math\.max\(1, scenes\.length\)\}  \$\{sceneNavigationTitle\(scene, index\)\}`/);
+test("現在シーンの表示は全体数を出さず階層番号とタイトルを並べる", () => {
+  assert.match(stageSource, /function sceneNavigationTitle\(scene\)/);
+  assert.match(stageSource, /function sceneCurrentLabel\(scene, index\)[\s\S]*?sceneNumberMap\(state\.project\.scenes\)[\s\S]*?sceneNavigationTitle\(scene\)/);
+  assert.match(stageSource, /els\.sceneNow\.textContent = scene \? sceneCurrentLabel\(scene, index\) : ""/);
+  assert.match(stageSource, /phoneUi\.sceneCurrent\.textContent = sceneCurrentLabel\(scene, index\)/);
+  assert.match(stageSource, /phoneUi\.infoScene\.textContent = sceneCurrentLabel\(scene, index\)/);
+  assert.match(stageSource, /tabletUi\.sceneCurrent\.textContent = sceneCurrentLabel\(scene, index\)/);
 });
 
 test("iPad PWAではブラウザのダブルタップ拡大を起こさない", () => {

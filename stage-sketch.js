@@ -7054,7 +7054,7 @@
         const copy = document.createElement("span");
         const other = scene.audioTrackId && scene.audioTrackId !== selected.id
           ? audioTrackById(scene.audioTrackId) : null;
-        copy.textContent = `${sceneNumber}. ${sceneNavigationTitle(scene, sceneNumber - 1)}`;
+        copy.textContent = `${sceneNumber}. ${sceneNavigationTitle(scene)}`;
         if (other) {
           const note = document.createElement("em");
           note.textContent = sx(`・現在は「${other.title}」`, ` · currently ${other.title}`);
@@ -14017,9 +14017,7 @@
     if (els.sceneNext) els.sceneNext.disabled = index >= scenes.length - 1;
     if (els.sceneNow) {
       const scene = scenes[index] || sc();
-      els.sceneNow.textContent = scene
-        ? `${index + 1} / ${Math.max(1, scenes.length)}　${sceneNavigationTitle(scene, index)}`.trimEnd()
-        : "";
+      els.sceneNow.textContent = scene ? sceneCurrentLabel(scene, index) : "";
     }
   }
 
@@ -14989,9 +14987,15 @@
     return phoneOrientation.matches;
   }
 
-  function sceneNavigationTitle(scene, index) {
+  function sceneNavigationTitle(scene) {
     const title = String((scene && scene.title) || "");
-    return title.replace(new RegExp(`^\\s*${index + 1}\\s+`), "");
+    return title.replace(/^\s*\d+(?:-\d+)*\s+/, "");
+  }
+
+  function sceneCurrentLabel(scene, index) {
+    if (!scene) return "";
+    const number = sceneNumberMap(state.project.scenes).get(scene.id) || String(index + 1);
+    return `${number} ${sceneNavigationTitle(scene)}`.trim();
   }
 
   function enforcePhoneViews(preferred) {
@@ -15176,13 +15180,12 @@
     const found = scenes.findIndex((row) => row.id === state.project.activeSceneId);
     const index = found < 0 ? 0 : found;
     const scene = scenes[index] || sc();
-    const navigationTitle = sceneNavigationTitle(scene, index);
-    phoneUi.sceneCurrent.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${navigationTitle}`;
+    phoneUi.sceneCurrent.textContent = sceneCurrentLabel(scene, index);
     phoneUi.scenePrev.disabled = index <= 0;
     phoneUi.sceneNext.disabled = index >= scenes.length - 1;
     phoneUi.projectName.textContent = state.project.title || tx("舞台スケッチ");
     phoneUi.infoProject.textContent = `${state.project.title || tx("舞台スケッチ")}  ${state.project.versionLabel || ""}`.trim();
-    phoneUi.infoScene.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${navigationTitle}`;
+    phoneUi.infoScene.textContent = sceneCurrentLabel(scene, index);
     if (document.activeElement !== phoneUi.sceneNote) phoneUi.sceneNote.value = scene.note || "";
     if (document.activeElement !== phoneUi.memoInput) phoneUi.memoInput.value = scene.note || "";
     phoneUi.infoToggle.setAttribute("aria-pressed", String(phoneUi.infoOpen));
@@ -15655,7 +15658,7 @@
     const scenes = state.project.scenes.filter((row) => row.kind === "scene");
     const index = Math.max(0, scenes.findIndex((row) => row.id === state.project.activeSceneId));
     const scene = scenes[index] || sc();
-    tabletUi.sceneCurrent.textContent = `${index + 1} / ${Math.max(1, scenes.length)}  ${sceneNavigationTitle(scene, index)}`;
+    tabletUi.sceneCurrent.textContent = sceneCurrentLabel(scene, index);
     tabletUi.scenePrev.disabled = index <= 0;
     tabletUi.sceneNext.disabled = index >= scenes.length - 1;
     // 曲名は添えない（楽曲はPC専用・2026-08-24 本人判断）

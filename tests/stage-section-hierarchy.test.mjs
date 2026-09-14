@@ -99,6 +99,39 @@ test("すでに全シーンがセクション配下なら移行は何も変え�
   assert.deepEqual(rows.map((row) => row.depth), [0, 1]);
 });
 
+test("現在シーンの通し表記は親セクションを含む階層番号である", () => {
+  const start = source.indexOf("function sceneNumberMap");
+  const end = source.indexOf("\n  // 「後からまとめる」", start);
+  assert.ok(start >= 0 && end > start, "階層番号の関数が見つかる");
+  const sandbox = {};
+  vm.runInNewContext(`${source.slice(start, end)}\nthis.numberMap = sceneNumberMap;`, sandbox);
+  const rows = [
+    { id: "section-1", kind: "section", depth: 0 },
+    { id: "scene-1", kind: "scene", depth: 1 },
+    { id: "scene-2", kind: "scene", depth: 1 },
+    { id: "section-2", kind: "section", depth: 0 },
+    { id: "scene-3", kind: "scene", depth: 1 },
+  ];
+  const numbers = sandbox.numberMap(rows);
+  assert.equal(numbers.get("scene-1"), "1-1");
+  assert.equal(numbers.get("scene-2"), "1-2");
+  assert.equal(numbers.get("scene-3"), "2-1");
+  const labelsStart = source.indexOf("function sceneNavigationTitle");
+  const labelsEnd = source.indexOf("\n  function enforcePhoneViews", labelsStart);
+  assert.ok(labelsStart >= 0 && labelsEnd > labelsStart, "現在シーン表示の関数が見つかる");
+  const labeler = {
+    state: { project: { scenes: rows } },
+    sceneNumberMap: sandbox.numberMap,
+  };
+  vm.runInNewContext(`${source.slice(labelsStart, labelsEnd)}\nthis.label = sceneCurrentLabel;`, labeler);
+  assert.equal(labeler.label({ id: "scene-1", title: "1 背面の展示" }, 0), "1-1 背面の展示");
+  assert.equal(labeler.label({ id: "scene-3", title: "2-1 正面の展示" }, 2), "2-1 正面の展示");
+  assert.match(source, /function sceneCurrentLabel\(scene, index\)[\s\S]*?sceneNumberMap\(state\.project\.scenes\)[\s\S]*?sceneNavigationTitle\(scene\)/);
+  assert.match(source, /els\.sceneNow\.textContent = scene \? sceneCurrentLabel\(scene, index\) : ""/);
+  assert.match(source, /phoneUi\.sceneCurrent\.textContent = sceneCurrentLabel\(scene, index\)/);
+  assert.match(source, /tabletUi\.sceneCurrent\.textContent = sceneCurrentLabel\(scene, index\)/);
+});
+
 test("ショー一覧の旧形式も、棚全体の控えを取ってから一括移行する", () => {
   const shelf = {
     old: { savedAt: "2026-09-14", state: { project: { id: "old", scenes: [{ id: "scene-a", kind: "scene", depth: 0 }] } } },
