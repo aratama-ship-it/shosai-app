@@ -268,7 +268,10 @@
     const sample = inMove && ui.tab === "sample";
     tabSample.setAttribute("aria-pressed", String(sample)); tabAdjust.setAttribute("aria-pressed", String(!sample));
     pane.hidden = !sample;
-    if (selacts) selacts.hidden = sample; insp.hidden = sample; if (conflicts) conflicts.hidden = sample;
+    // 複製・左右コピー・等間隔・削除は、配置モードのための操作。
+    // 「調整」タブでも照明デザイン中に再表示してはいけない。
+    if (selacts) selacts.hidden = inMove || sample;
+    insp.hidden = sample; if (conflicts) conflicts.hidden = sample;
     if (sample) renderPane();
   }
   window.LIGHT_PRESETS_UI = { refresh, ui, applyCard, installHouseRig, openEntry };
