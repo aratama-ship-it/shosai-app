@@ -2825,8 +2825,9 @@
     const add = (n) => box.append(n);
     add(el("p", "kicker", `まとめて変更（${ids.length}灯）`));
     /* 欄の並びは単灯と同じ箱構成にそろえる（2026-09-13 本人要望）:
-       ①光の色 → ②当てる場所・動き → ③光の強さ → ④光の広がり → ⑤動かす。
+       ①光の色 → ②狙い（位置を含む） → ③光の強さ → ④光の広がり。
        オン・オフだけは単灯と違って右上のボタンが使えないので、箱の前に置く。 */
+    let aimPanel = null;
     const sub = (title) => { const b = el("div", "pbox"); if (title) b.append(el("p", "kicker", title)); add(b); return b; };
     /* 単灯と同じで、オートメーションは項目ごとに見る（2026-09-13 本人指定）。
        位置＝軌道が「動きなし」以外／強さ＝levelTo がある／広がり＝beamDegTo がある。 */
@@ -2882,9 +2883,9 @@
       b.append(sw);
     }
 
-    // ② 当てる場所（軌道は⑤「位置」へ移した）
+    // ② 狙い（当てる面と、位置・動きの情報をまとめる）
     {
-      const b = sub("当てる場所");
+      const b = aimPanel = sub("狙い");
       const surs = new Set(lit.map((fid) => lightOf(fid).surface || "floor"));
       b.append(field(surs.size > 1 ? "バラバラ" : null,
         seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], surs.size === 1 ? [...surs][0] : null, (v) => {
@@ -2892,7 +2893,7 @@
             setLight(fid, { surface: v }); restyleToSurface(fid);
             const l2 = lightOf(fid); if (l2.path && (l2.path.kind === "circle" || l2.path.kind === "eight")) l2.path.plane = (v === "back" || v === "house") ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
           });
-          commit(`${ids.length}灯の当てる場所を変えました`);
+          commit(`${ids.length}灯の狙いを変えました`);
         }), true));
     }
 
@@ -3047,12 +3048,13 @@
       }
     }
 
-    /* ⑤ 位置（ムービングを選んでいるときだけ）。単灯と同じで、ここは<b>位置だけ</b>を入り切りする。
+    /* 位置（ムービングを選んでいるときだけ）。②「狙い」の中で位置情報をまとめて扱う。
+       ここは<b>位置だけ</b>を入り切りする。
        強さ・広がりは③④のスイッチが持つ（2026-09-13 本人指定）。
        運び方（時間・ずらす刻み）は3つで共通なので、どれかが動いていれば下に出す。 */
     if (movers.length) {
-      const b = sub(null);
-      const head = el("div", "pboxhead"); head.append(el("p", "kicker", `位置（ムービング${movers.length}灯）`));
+      const b = aimPanel;
+      const head = el("div", "pboxhead aim-subhead"); head.append(el("p", "kicker", `位置（ムービング${movers.length}灯）`));
       head.append(switchBtn(allPos,
         allPos ? "位置が動いています。押すと全灯を止めます（いまの位置で止まります）"
           : posMovers.length ? "一部だけ動いています。押すと全灯そろって動かします"
@@ -3086,7 +3088,7 @@
         }, () => commit())));
       }
 
-      const addP = (n) => b.append(n);   // ここから下は⑤位置の箱の中へ入れる
+      const addP = (n) => b.append(n);   // 位置の設定も「狙い」パネル内へ入れる
       /* --- 動きの型と組の動きを1つにまとめ、⑤位置の中へ入れた（2026-09-14 本人要望）---
          どちらも「複数のムービングをどう連携させるか」なので、別々のアコーディオンに分けず
          1つにした。対象はムービングだけ。既定は畳んだまま（2026-09-13 本人要望）。
@@ -3416,11 +3418,11 @@
       /* オン・オフはパネル右上のボタンへ集約した（2026-09-13 本人要望）。
          本文からは2択の欄を外し、消えている灯ではそこへ誘導するだけにする。 */
       if (!l || l.on !== true) {
-        host.append(el("p", "hint", "この灯はいま消えています。右上の〈オフ〉を押して点けると、色・当てる場所・強さ・広がりを決められます。"));
+      host.append(el("p", "hint", "この灯はいま消えています。右上の〈オフ〉を押して点けると、色・狙い・強さ・広がりを決められます。"));
         return;
       }
       /* ---- 欄の構成（2026-09-13 本人要望で作り直し） ----
-         ①光の色 → ②当てる場所 → ③光の強さ → ④光の広がり → ⑤位置 → ⑥動きの時間。
+         ①光の色 → ②狙い（位置情報も含む） → ③光の強さ → ④光の広がり → ⑤動きの時間。
          **オートメーション（自動で動かす）は項目ごとに持つ**。位置を動かしても、
          光の強さ・光の広がりは勝手にはオンにならない（同日 本人指定）。
          旗は別に持たず、これまでどおりデータから決める:
@@ -3433,6 +3435,7 @@
       const autoSpread = mover && l.beamDegTo != null;       // 光の広がりのオートメーション
       const anyAuto = autoPos || autoLevel || autoSpread;
       const box = (title) => { const b = el("div", "pbox"); if (title) b.append(el("p", "kicker", title)); host.append(b); return b; };
+      let aimPanel = null;
       const heightField = (b, label2, point) => {
         if (l.surface === "floor") return; // 床は高さ0固定。UIに出さない
         // 客席: 手前端からどれだけ客席側か。前明かりの「舞台前から」と同じ尺度
@@ -3473,13 +3476,12 @@
         }
       }
 
-      /* ② 当てる場所。どの面を狙うかと、動かさないときの狙い先だけを持つ。
-         軌道（往復・円・8の字）とその寸法は⑤「位置」へ移した（2026-09-13 本人指摘
-         「軌道は動きの位置の方に置くべきもの」）。
+      /* ② 狙い。どの面を狙うかと、狙い点・位置情報をまとめる。
+         ムービングの位置を動かす設定は、この箱の中に区切って置く。
          ホリゾントライトは狙い点を持たない帯（つねに奥の壁を染める）ので、この箱ごと出さない
          （2026-09-13 本人指摘「もとから一列のバー」。横位置・長さ・床/上部は配置パネルへ）。 */
       if (f.mount.type !== "cyc") {
-        const b = box("当てる場所");
+        const b = aimPanel = box("狙い");
         b.append(field(null, seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], l.surface, (v) => {
           setLight(fid, { surface: v }); restyleToSurface(fid);
           const l2 = lightOf(fid); if (l2.path && l2.path.kind === "circle") l2.path.plane = (v === "back" || v === "house") ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
@@ -3498,7 +3500,7 @@
           heightField(b, "高さ", p.a || E.newPoint());
           if (!mover && p.kind !== "still") b.append(el("p", "warn", "⚠ この灯には動きが付いたままです。固定灯なので実際には動きません。"));
         } else {
-          b.append(el("p", "hint", "狙い先は下の〈位置〉で決めます（軌道・始点・終点）。"));
+          b.append(el("p", "hint", "位置の動きはこの欄で設定します（軌道・始点・終点）。"));
         }
       }
 
@@ -3629,12 +3631,12 @@
         if (E.barnActive(f)) b.append(btn("全部開く", () => { delete f.barn; commit(`${label(fid)}のバーンドアを開きました`); }, "small quiet"));
       }
 
-      /* ⑤ 位置（ムービングのみ）。スイッチは<b>位置だけ</b>を入り切りする——
+      /* 位置（ムービングのみ）。②「狙い」の中へ統合。スイッチは<b>位置だけ</b>を入り切りする——
          ここを入れても光の強さ・光の広がりはオフのままで、それぞれの箱で別に入れる
          （2026-09-13 本人指定「それぞれの項目がオートメーションのONOFFを持つイメージ」）。 */
       if (mover) {
-        const b = box(null);
-        const head = el("div", "pboxhead"); head.append(el("p", "kicker", "位置"));
+        const b = aimPanel;
+        const head = el("div", "pboxhead aim-subhead"); head.append(el("p", "kicker", "位置"));
         head.append(switchBtn(autoPos, autoPos ? "位置が動いています。押すと止めます（いまの位置で止まります）" : "押すと始点と終点を置いて位置を動かします", () => {
           if (autoPos) {
             const a = currentPoint(l);
@@ -3642,7 +3644,7 @@
             commit("位置の動きを止めました（いまの位置で止まっています）");
           } else {
             setKind(fid, "line");
-            commit("位置に始点と終点を置きました。②で軌道の形と高さを決められます");
+            commit("位置に始点と終点を置きました。「狙い」で軌道の形と高さを決められます");
           }
         }));
         b.append(head);

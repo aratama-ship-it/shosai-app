@@ -342,12 +342,13 @@
   .seg.col.grouplist{flex-direction:row;flex-wrap:wrap;align-items:flex-start;max-height:150px;overflow-y:auto}
   .seg.col.grouplist button{text-align:center;white-space:nowrap;flex:0 0 auto}
   .seg.col.grouplist button+button{margin-left:-1px;margin-top:0}
-  /* 照明デザイン（単灯）の箱。色／当てる場所・動き／強さ／広がり／動かす を1箱ずつ
+  /* 照明デザイン（単灯）の箱。色／狙い（位置を含む）／強さ／広がり／動かす を1箱ずつ
      （2026-09-13 本人要望）。中は縦積み。見出し(.kicker)は箱の中で余白を持たない。 */
   .pbox{border:1px solid var(--line-dark);background:var(--recess);padding:8px;display:grid;gap:7px}
   .pbox>.kicker{margin:0}
   .pbox .pboxhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .pbox .pboxhead .kicker{margin:0}
+  .pbox .pboxhead.aim-subhead{margin-top:1px;padding-top:7px;border-top:1px solid var(--line-dark)}
   .pbox .swatches{padding:3px}
   /* ゴボ（模様）の選び方。丸い窓の中に形を見せるので、見本も円で切る。 */
   /* 模様（ゴボ）はプルダウンで選ぶ（2026-09-13 本人要望）。右欄は縦スクロールする枠なので
@@ -763,7 +764,7 @@
 <script src="rig-engine.js?v=1789357787"></script>
 <script src="stage-figure.js?v=1789357787"></script>
 <script src="volume-light.js?v=1789396700"></script>
-<script src="app.js?v=1789397800"></script>
+<script src="app.js?v=1789397801"></script>
 <script src="light-presets.js?v=1789357787"></script>
 <script src="light-presets-ui.js?v=1789397300"></script>
 </body>
