@@ -110,6 +110,32 @@ test("シーンと転換の左右端をドラッグして長さを変え、後�
   assert.match(css, /\.stage-timeline-resize-delta \{[\s\S]*?position: fixed;[\s\S]*?pointer-events: none;/);
 });
 
+test("0秒転換も右側の広いドラッグ域から転換時間を作れる", () => {
+  assert.match(timeline, /if \(isPoint\) \{[\s\S]*?block\.classList\.add\("is-expandable-point"\)[\s\S]*?addTimelineResizeHandle\(block, "end", \{[\s\S]*?part: "transition"/);
+  assert.match(timeline, /転換ポイント[\s\S]*?右へドラッグして転換を作る/);
+  assert.match(css, /\.stage-timeline-transition-block\.is-point\.is-expandable-point \.stage-timeline-block-resize-handle\.is-end \{[\s\S]*?width: 24px/);
+  assert.match(css, /is-expandable-point \.stage-timeline-block-resize-handle\.is-end::before \{[\s\S]*?content: "\+"/);
+  assert.match(timeline, /function beginBlockResize\(event, descriptor\)[\s\S]*?lockedTimelineSceneAfter/);
+});
+
+test("シーンとキューは右クリックで時刻を固定し、保存後のリップル移動から守る", () => {
+  for (const id of ["stage-timeline-lock-menu", "stage-timeline-lock-menu-action"]) {
+    assert.match(html, new RegExp(`id="${id}"`));
+  }
+  assert.match(timeline, /button\.addEventListener\("contextmenu", \(event\) => openTimelineLockMenu\(event, \{/);
+  assert.match(timeline, /block\.addEventListener\("contextmenu", \(event\) => openTimelineLockMenu/);
+  assert.match(timeline, /この時刻を固定/);
+  assert.match(timeline, /時刻固定を解除/);
+  assert.match(timeline, /if \(cue\.timelinePositionLocked\)[\s\S]*?右クリックで解除できます/);
+  assert.match(timeline, /function lockedTimelineSceneAfter[\s\S]*?timelinePositionLocked/);
+  assert.match(sketch, /timelinePositionLocked === true \? \{ timelinePositionLocked: true \} : \{\}/);
+  assert.match(sketch, /setTimelinePositionLocked\(kind, id, value\)[\s\S]*?item\.timelinePositionLocked = locked/);
+  assert.match(sketch, /!cue\.timelinePositionLocked[\s\S]*?finite\(cue\.atSeconds, -1\) >= rippleFrom/);
+  assert.match(sketch, /if \(timingChanged && fixedFollowingScene\) return false/);
+  assert.match(css, /\.stage-timeline-lock-menu \{[\s\S]*?min-width: 184px/);
+  assert.match(css, /\.stage-timeline-time-lock \{[\s\S]*?width: 13px/);
+});
+
 test("転換の最初の描画は前シーンの位置から始め、行き先を一瞬だけ描かない", () => {
   assert.match(sketch, /sceneAnim = \{ pieces, exits, blackout, progress: 0, raf: 0,[\s\S]*?step\(start\);/);
   assert.match(sketch, /function beginSceneAnim\(fromScene, liveSpinsIn, durationMs = null, timelineProgress = null\)[\s\S]*?return true;/);

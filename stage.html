@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=361">
+<link rel="stylesheet" href="style.css?v=362">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -1234,6 +1234,11 @@
       <button type="button" class="stage-about-link" id="stage-about-open-from-footer">このアプリについて</button>
     </footer>
   </main>
+
+<div class="stage-timeline-lock-menu" id="stage-timeline-lock-menu" role="menu"
+     aria-label="タイムラインの時刻固定" hidden>
+  <button type="button" id="stage-timeline-lock-menu-action" role="menuitem"></button>
+</div>
 
 <div class="stage-modal-backdrop" id="stage-timeline-cue-detail-backdrop" hidden></div>
 <div class="stage-modal stage-timeline-cue-detail-modal" id="stage-timeline-cue-detail-modal"
@@ -2731,7 +2736,7 @@
 <script src="manual/manual-content.js?v=12"></script>
 <script src="stage-pwa.js?v=9"></script>
   <script src="stage-sketch.js?v=476"></script>
-<script src="stage-timeline.js?v=48"></script>
+<script src="stage-timeline.js?v=49"></script>
 <script src="stage-session.js?v=19"></script>
 <script src="stage-study-owner.js?v=23"></script>
 <script src="stage-usage.js?v=2"></script>

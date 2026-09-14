@@ -5516,6 +5516,7 @@
         atSeconds: Math.round(clamp(finite(cue.atSeconds, 0), 0, 86400) * 10) / 10,
         ...(typeof cue.songId === "string" && cue.songId && cue.songId !== "fallback"
           ? { songId: cue.songId } : {}),
+        ...(cue.timelinePositionLocked === true ? { timelinePositionLocked: true } : {}),
       };
       const sceneId = typeof cue.sceneId === "string" ? cue.sceneId : null;
       if (!sceneId) return null;
@@ -5593,6 +5594,8 @@
       lightMotion: normalizeLightMotion(kind, raw.lightMotion),
       // 誤ってホイールへ触れても向きが変わらないよう、シーンごとに持つ
       facingLock: kind === "scene" ? Boolean(raw.facingLock) : false,
+      // タイムラインで右クリックして固定した場面の開始時刻。未指定は従来どおり可動。
+      ...(kind === "scene" && raw.timelinePositionLocked === true ? { timelinePositionLocked: true } : {}),
       // 暗転で始まるシーン（転換が一度真っ暗になってから明ける）
       blackout: kind === "scene" ? Boolean(raw.blackout) : false,
       /* 舞台から下げたものの置き場所の控え（setId ごとに一つ）。
@@ -28475,6 +28478,10 @@ ${propsPlotHtml}
         ? (part === "transition" ? 0 : 4)
         : finite(scene.rehearsal[key], part === "transition" ? 0 : 4);
       const currentSectionDuration = section.timelineDurationSeconds;
+      const sectionScenes = sceneChildren(sectionIndex).filter((row) => row.kind === "scene");
+      const sourceAt = sectionScenes.findIndex((row) => row.id === scene.id);
+      const fixedFollowingScene = sourceAt < 0 ? null
+        : sectionScenes.slice(sourceAt + 1).find((row) => row.timelinePositionLocked) || null;
       const timingChanged = Math.abs(current - duration) > 1e-9
         || currentSectionDuration === null || currentSectionDuration === undefined
         || Math.abs(finite(currentSectionDuration, -1) - sectionDuration) > 1e-9;
@@ -28485,7 +28492,8 @@ ${propsPlotHtml}
       const cues = Array.isArray(state.project.cues) ? state.project.cues : [];
       const cuesToShift = canRipple ? cues.filter((cue) => cue && cue.kind === "timeline"
         && cue.sectionId === section.id && cue.atSeconds !== null && cue.atSeconds !== undefined
-        && finite(cue.atSeconds, -1) >= rippleFrom - 1e-6) : [];
+        && !cue.timelinePositionLocked && finite(cue.atSeconds, -1) >= rippleFrom - 1e-6) : [];
+      if (timingChanged && fixedFollowingScene) return false;
       if (!timingChanged && !cuesToShift.length) return true;
       if (options.checkpoint) checkpoint();
       scene.rehearsal[key] = duration;
@@ -28548,6 +28556,9 @@ ${propsPlotHtml}
         : cue.atSeconds;
       const sectionId = typeof patch.sectionId === "string" && patch.sectionId ? patch.sectionId : cue.sectionId;
       const songId = typeof patch.songId === "string" && patch.songId ? patch.songId : cue.songId;
+      if (cue.timelinePositionLocked && (cue.atSeconds !== atSeconds || cue.sectionId !== sectionId || cue.songId !== songId)) {
+        return jsonClone(cue);
+      }
       if (cue.memo === memo && cue.atSeconds === atSeconds && cue.sectionId === sectionId && cue.songId === songId) {
         return jsonClone(cue);
       }
@@ -28559,6 +28570,22 @@ ${propsPlotHtml}
       persistSoon();
       window.dispatchEvent(new CustomEvent("stage-timeline-cues-change"));
       return jsonClone(cue);
+    },
+    setTimelinePositionLocked(kind, id, value) {
+      const locked = Boolean(value);
+      const item = kind === "cue"
+        ? (state.project.cues || []).find((cue) => cue && cue.kind === "timeline" && cue.id === id)
+        : state.project.scenes.find((scene) => scene && scene.kind === "scene" && scene.id === id);
+      if (!item) return null;
+      if (Boolean(item.timelinePositionLocked) === locked) return jsonClone(item);
+      checkpoint();
+      item.timelinePositionLocked = locked;
+      persistSoon();
+      window.dispatchEvent(new CustomEvent(kind === "cue"
+        ? "stage-timeline-cues-change" : "stage-timeline-structure-change", {
+        detail: { id: item.id, locked },
+      }));
+      return jsonClone(item);
     },
     removeTimelineCue(id) {
       const cues = Array.isArray(state.project.cues) ? state.project.cues : [];

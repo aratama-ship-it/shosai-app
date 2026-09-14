@@ -16581,6 +16581,34 @@ body.is-timeline-block-resizing { cursor: ew-resize; user-select: none; -webkit-
 
 .stage-timeline-transition-block.is-point .stage-timeline-block-label { display: none; }
 
+/* 0秒でも点の右側24pxを掴める。菱形と＋印は「この点から転換を広げる」目印。 */
+.stage-timeline-transition-block.is-point.is-expandable-point { overflow: visible; }
+.stage-timeline-transition-block.is-point.is-expandable-point .stage-timeline-block-resize-handle.is-end {
+  right: -11px;
+  width: 24px;
+}
+.stage-timeline-transition-block.is-point.is-expandable-point .stage-timeline-block-resize-handle.is-end::after {
+  right: 11px;
+  opacity: 1;
+}
+.stage-timeline-transition-block.is-point.is-expandable-point .stage-timeline-block-resize-handle.is-end::before {
+  content: "+";
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  width: 14px;
+  height: 14px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--stage-timeline-accent);
+  background: var(--stage-timeline-panel);
+  color: var(--stage-timeline-accent);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .stage-timeline-cue {
   display: flex;
   align-items: center;
@@ -16607,8 +16635,53 @@ body.is-timeline-block-resizing { cursor: ew-resize; user-select: none; -webkit-
 .stage-timeline-cue:hover { background: rgba(239, 231, 214, 0.08); }
 .stage-timeline-cue[aria-pressed="true"] { box-shadow: inset 0 -3px var(--stage-timeline-text); }
 .stage-timeline-cue { touch-action: none; }
+.stage-timeline-cue-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.stage-timeline-time-lock {
+  display: inline-grid;
+  flex: 0 0 13px;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  margin-inline-start: 5px;
+  color: var(--stage-timeline-accent);
+  pointer-events: none;
+}
+.stage-timeline-time-lock svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.stage-timeline-scene.is-time-locked,
+.stage-timeline-transition-block.is-time-locked,
+.stage-timeline-cue.is-time-locked { box-shadow: inset 0 2px var(--stage-timeline-accent); }
+.stage-timeline-cue.is-time-locked { cursor: default; }
 .stage-timeline-cue.is-dragging { cursor: grabbing; opacity: 0.86; }
 body.is-timeline-cue-dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+
+.stage-timeline-lock-menu {
+  position: fixed;
+  z-index: 120;
+  min-width: 184px;
+  border: 1px solid var(--stage-timeline-line);
+  background: var(--stage-timeline-panel);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+}
+.stage-timeline-lock-menu button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--stage-timeline-text);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: left;
+}
+.stage-timeline-lock-menu button:hover,
+.stage-timeline-lock-menu button:focus-visible {
+  background: rgba(211, 172, 89, 0.15);
+  outline: none;
+}
 
 .stage-timeline-playhead {
   position: absolute;

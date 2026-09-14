@@ -47,5 +47,5 @@ test("入力欄修正のJavaScriptは新しいPWAキャッシュ参照で配る"
     assert.ok(html.includes(asset), `${asset} が画面から参照される`);
     assert.ok(serviceWorker.includes(`./${asset}`), `${asset} がPWAキャッシュと一致する`);
   }
-  assert.match(serviceWorker, /stage-sketch-pwa-v474/);
+  assert.match(serviceWorker, /stage-sketch-pwa-v475/);
 });
