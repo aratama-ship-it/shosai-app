@@ -1636,9 +1636,39 @@
     return documentValue && documentValue.project ? documentValue.project.activeSceneId : null;
   }
 
+  function dispatchTimelineCuePasses(fromSeconds, toSeconds, { includeStart = false } = {}) {
+    if (!timeline || !Number.isFinite(toSeconds)) return;
+    const project = projectDocument()?.project;
+    if (!project) return;
+    const lower = Number.isFinite(fromSeconds) ? fromSeconds : toSeconds;
+    if (toSeconds + 1e-6 < lower) return;
+    const cues = timelineCuePresentations(project).filter((cue) => {
+      const afterStart = includeStart ? cue.seconds >= lower - 1e-6 : cue.seconds > lower + 1e-6;
+      return afterStart && cue.seconds <= toSeconds + 1e-6;
+    });
+    if (!cues.length) return;
+    window.dispatchEvent(new CustomEvent("stage-timeline-cue-passed", {
+      detail: {
+        sectionId: timeline.sectionId,
+        songId: timeline.songId,
+        fromSeconds: lower,
+        toSeconds,
+        cues: cues.map((cue) => ({
+          id: cue.id,
+          cueType: cue.cueType,
+          displayName: cue.displayName,
+          positionLabel: labelPosition(cue.seconds),
+          memo: cue.memo || "",
+        })),
+      },
+    }));
+  }
+
   // The transport supplies an absolute position, never a second animation clock.
-  function syncTimelinePlaybackScene(seconds, { reset = false } = {}) {
+  // キューの合図も再生時だけ出す。シークして情報を確認する操作では図を点滅させない。
+  function syncTimelinePlaybackScene(seconds, { reset = false, cuePlayback = false, includeCueAtPosition = false } = {}) {
     if (mode !== "timeline" || !timeline) return;
+    const previousPosition = playbackPosition;
     const phase = timelineTransitionAt(seconds);
     const target = timeline.source === "formation" ? segmentAt(seconds)
       : phase ? phase.target : segmentAt(seconds);
@@ -1655,6 +1685,9 @@
       // Older cached hosts can still switch scenes until their update is activated.
       bridge.openSceneById(target.sceneId);
     }
+    if (cuePlayback) {
+      dispatchTimelineCuePasses(previousPosition, seconds, { includeStart: includeCueAtPosition });
+    }
   }
 
   let audioPlaybackFrame = 0;
@@ -1669,16 +1702,16 @@
       audioPlaybackFrame = 0;
       if (mode !== "timeline" || !audioMatchesTimeline() || els.audio.paused || els.audio.ended) return;
       if (ui.loop && ui.loopB > ui.loopA && els.audio.currentTime >= ui.loopB) els.audio.currentTime = ui.loopA;
-      syncTimelinePlaybackScene(els.audio.currentTime);
+      syncTimelinePlaybackScene(els.audio.currentTime, { cuePlayback: true });
       updatePlayhead();
       audioPlaybackFrame = window.requestAnimationFrame(sample);
     };
     audioPlaybackFrame = window.requestAnimationFrame(sample);
   }
 
-  function syncSilentScene(seconds) {
+  function syncSilentScene(seconds, { cuePlayback = false } = {}) {
     if (!silentPlayback) return;
-    syncTimelinePlaybackScene(seconds);
+    syncTimelinePlaybackScene(seconds, { cuePlayback });
     const segment = segmentAt(seconds);
     if (segment) silentPlayback.sceneId = segment.sceneId;
   }
@@ -1696,13 +1729,13 @@
     }
     if (next >= timeline.duration) {
       seekSeconds = timeline.duration;
-      syncSilentScene(seekSeconds);
+      syncSilentScene(seekSeconds, { cuePlayback: true });
       pauseSilentPlayback({ update: false });
       updatePlayhead();
       return;
     }
     seekSeconds = clamp(next, 0, timeline.duration);
-    syncSilentScene(seekSeconds);
+    syncSilentScene(seekSeconds, { cuePlayback: true });
     updatePlayhead();
     if (silentPlayback) silentPlayback.frame = window.requestAnimationFrame(silentPlaybackFrame);
   }
@@ -1712,8 +1745,8 @@
     if (seekSeconds >= timeline.duration - 1e-6) seekSeconds = 0;
     const target = segmentAt(seekSeconds);
     if (!target) return;
-    playbackPosition = seekSeconds;
-    syncTimelinePlaybackScene(seekSeconds, { reset: true });
+    playbackPosition = null;
+    syncTimelinePlaybackScene(seekSeconds, { reset: true, cuePlayback: true, includeCueAtPosition: true });
     silentPlayback = {
       startedAt: performance.now(),
       startSeconds: seekSeconds,
@@ -2457,8 +2490,10 @@
       if (name === "play") {
         pauseSilentPlayback({ update: false });
         if (mode === "timeline" && audioMatchesTimeline()) {
-          playbackPosition = Number.isFinite(els.audio.currentTime) ? els.audio.currentTime : null;
-          syncTimelinePlaybackScene(playbackPosition || 0, { reset: true });
+          playbackPosition = null;
+          syncTimelinePlaybackScene(Number.isFinite(els.audio.currentTime) ? els.audio.currentTime : 0, {
+            reset: true, cuePlayback: true, includeCueAtPosition: true,
+          });
           startAudioPlaybackFrames();
         }
       }

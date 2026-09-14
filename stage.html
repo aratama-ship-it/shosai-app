@@ -694,6 +694,12 @@
               <div class="stage-canvas-wrap">
                 <canvas id="stage-canvas" width="1280" height="720" tabindex="0"
                         role="img" aria-label="演者と物を配置し、背景を塗れる正面から見た舞台"></canvas>
+                <div class="stage-timeline-cue-pop" data-stage-timeline-cue-pop role="status"
+                     aria-live="polite" aria-atomic="true" hidden>
+                  <strong class="stage-timeline-cue-pop-title"></strong>
+                  <span class="stage-timeline-cue-pop-position"></span>
+                  <span class="stage-timeline-cue-pop-memo" hidden></span>
+                </div>
                 <!-- 選んだ演者の姿勢を選ぶ帯。舞台下端へ半透明で重ねる。 -->
                 <div class="stage-pose-strip" id="stage-pose-strip" hidden></div>
               </div>
@@ -775,6 +781,11 @@
                 <div class="stage-depth-label stage-depth-back">奥（背面）</div>
                 <canvas id="stage-plan-canvas" width="1280" height="720" tabindex="0"
                         role="img" aria-label="舞台と客席を上から見た平面図"></canvas>
+                <div class="stage-timeline-cue-pop" data-stage-timeline-cue-pop aria-hidden="true" hidden>
+                  <strong class="stage-timeline-cue-pop-title"></strong>
+                  <span class="stage-timeline-cue-pop-position"></span>
+                  <span class="stage-timeline-cue-pop-memo" hidden></span>
+                </div>
                 <!-- 拡大の押しボタン。指のピンチが無いPCのための入口。
                      拡大中は何もない所を掴むと見える場所を動かせる -->
                 <div class="stage-zoom-fab">
@@ -2721,8 +2732,8 @@
 <script src="stage-light-motion.js?v=1"></script>
 <script src="manual/manual-content.js?v=12"></script>
 <script src="stage-pwa.js?v=9"></script>
-  <script src="stage-sketch.js?v=473"></script>
-<script src="stage-timeline.js?v=46"></script>
+  <script src="stage-sketch.js?v=474"></script>
+<script src="stage-timeline.js?v=47"></script>
 <script src="stage-session.js?v=19"></script>
 <script src="stage-study-owner.js?v=23"></script>
 <script src="stage-usage.js?v=2"></script>

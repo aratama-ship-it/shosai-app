@@ -284,6 +284,19 @@ test("キューはダブルクリックで詳細とメモを開き、詳細ま�
   assert.match(css, /\.stage-modal\.stage-timeline-cue-detail-modal \{ width: min\(440px/);
 });
 
+test("再生で通過したキューは、機器を実行せず舞台図へ一時表示する", () => {
+  assert.equal((html.match(/data-stage-timeline-cue-pop/g) || []).length, 2);
+  assert.match(html, /data-stage-timeline-cue-pop role="status"[\s\S]*?aria-live="polite"/);
+  assert.match(html, /data-stage-timeline-cue-pop aria-hidden="true"/);
+  assert.match(timeline, /function dispatchTimelineCuePasses[\s\S]*?new CustomEvent\("stage-timeline-cue-passed"/);
+  assert.match(timeline, /syncTimelinePlaybackScene\(els\.audio\.currentTime, \{ cuePlayback: true \}\)/);
+  assert.match(timeline, /syncTimelinePlaybackScene\(seekSeconds, \{ reset: true, cuePlayback: true, includeCueAtPosition: true \}\)/);
+  assert.match(sketch, /window\.addEventListener\("stage-timeline-cue-passed"[\s\S]*?showTimelineCuePop/);
+  assert.match(sketch, /実行指示ではなく、打ち合わせ用/);
+  assert.match(css, /\.stage-timeline-cue-pop \{[\s\S]*?pointer-events: none;/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.stage-timeline-cue-pop\.is-visible/);
+});
+
 test("ミュージックシンクの操作列を二段で並べ、未接続の編集操作は無効で示す", () => {
   for (const id of [
     "stage-timeline-song-select", "stage-timeline-song-delete",

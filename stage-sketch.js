@@ -8367,6 +8367,48 @@
     requestAnimationFrame(() => { els.live.textContent = message; });
   }
 
+  let timelineCuePopTimer = 0;
+  function timelineCuePopDurationMs() {
+    const raw = getComputedStyle(document.documentElement)
+      .getPropertyValue("--stage-timeline-cue-pop-duration").trim();
+    return Math.max(0, Number.parseFloat(raw) || 1800);
+  }
+
+  // 実行指示ではなく、打ち合わせ用に「いま通過した記号」を図へ重ねるだけの表示。
+  function showTimelineCuePop(detail) {
+    const cues = Array.isArray(detail && detail.cues) ? detail.cues : [];
+    const cue = cues[cues.length - 1];
+    if (!cue) return;
+    const title = String(cue.displayName || "キュー");
+    const position = String(cue.positionLabel || "");
+    const memo = String(cue.memo || "").trim();
+    const overflow = cues.length > 1 ? `・ほか${cues.length - 1}件` : "";
+    const pops = [...document.querySelectorAll("[data-stage-timeline-cue-pop]")];
+    if (!pops.length) return;
+    window.clearTimeout(timelineCuePopTimer);
+    pops.forEach((pop) => {
+      pop.querySelector(".stage-timeline-cue-pop-title").textContent = title;
+      pop.querySelector(".stage-timeline-cue-pop-position").textContent = `${position}${overflow}`;
+      const memoNode = pop.querySelector(".stage-timeline-cue-pop-memo");
+      memoNode.textContent = memo;
+      memoNode.hidden = !memo;
+      pop.hidden = false;
+      pop.classList.remove("is-visible");
+      void pop.offsetWidth;
+      pop.classList.add("is-visible");
+    });
+    timelineCuePopTimer = window.setTimeout(() => {
+      pops.forEach((pop) => {
+        pop.classList.remove("is-visible");
+        pop.hidden = true;
+      });
+    }, timelineCuePopDurationMs());
+  }
+
+  window.addEventListener("stage-timeline-cue-passed", (event) => {
+    showTimelineCuePop(event.detail);
+  });
+
   function rgba(hex, alpha) {
     const value = parseInt(hex.slice(1), 16);
     return `rgba(${(value >> 16) & 255},${(value >> 8) & 255},${value & 255},${alpha})`;
