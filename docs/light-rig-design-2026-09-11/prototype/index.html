@@ -326,6 +326,13 @@
      .col（回る面など、文言が長く縦積みのままにしたいもの）は対象外にする。 */
   .field .seg:not(.col){flex-wrap:nowrap;width:100%}
   .field .seg:not(.col) button{flex:1 1 0;min-width:0;text-align:center;white-space:normal;line-height:1.25}
+  /* 狙う面は、図中の狙い点と同じ色の丸で先に読み分ける。文字も残すので、色だけに意味を預けない。 */
+  .seg.target-surface button{display:inline-flex;align-items:center;justify-content:center;gap:5px}
+  .seg.target-surface button::before{content:"";width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:var(--target-dot);box-shadow:0 0 0 1px rgba(240,231,214,.24)}
+  .seg.target-surface .target-floor{--target-dot:#df6433}
+  .seg.target-surface .target-air{--target-dot:#7ab8ff}
+  .seg.target-surface .target-back{--target-dot:#8be08b}
+  .seg.target-surface .target-house{--target-dot:#ffd27a}
   .seg button[aria-pressed="true"]{color:var(--milk);border-color:var(--brass);background:rgba(156,130,63,.24)}
   /* 触れているだけの隣のボタンが、選んでいるボタんより手前に出ないよう段を分ける
      （2026-09-13 実害: 隣をホバーすると選択枠の縁がまた欠けた。z-indexが同値でDOM順の後勝ちだったため）。 */
@@ -780,7 +787,7 @@
 <script src="rig-engine.js?v=20260915-3"></script>
 <script src="stage-figure.js?v=20260915-1"></script>
 <script src="volume-light.js?v=20260915-2"></script>
-<script src="app.js?v=20260915-13"></script>
+<script src="app.js?v=20260915-14"></script>
 <script src="light-presets.js?v=1789357787"></script>
 <script src="light-presets-ui.js?v=20260915-2"></script>
 <!-- 選択灯「型」P1: 本体ではなく、この試作だけへ隔離接続する。 -->
