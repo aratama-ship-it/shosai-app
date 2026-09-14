@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import vm from "node:vm";
 
 const root = new URL("../", import.meta.url);
 const html = await readFile(new URL("stage.html", root), "utf8");
@@ -130,8 +131,8 @@ test("シーン・音源・転換の固定端とキュー点ロックを保存�
   assert.match(css, /\.stage-timeline-lock-indicator\.is-start \{[^}]*\}/);
   assert.match(css, /\.stage-timeline-lock-indicator\.is-end \{[^}]*var\(--stage-timeline-transition\)/);
   assert.match(timeline, /stage-timeline-lock-change/);
-  assert.match(html, /stage-timeline.js\?v=60/);
-  assert.match(sw, /stage-timeline.js\?v=60/);
+  assert.match(html, /stage-timeline.js\?v=61/);
+  assert.match(sw, /stage-timeline.js\?v=61/);
 });
 
 test("転換の最初の描画は前シーンの位置から始め、行き先を一瞬だけ描かない", () => {
@@ -373,6 +374,20 @@ test("音源ブロックのダブルクリックで音源別ゲインを編集�
   assert.match(timeline, /bridge\.setTimelineAudioGainDb\(trackId, gainDb\)/);
   assert.match(sketch, /setTimelineAudioGainDb\(trackId, value\)[\s\S]*?track\.gainDb = gainDb/);
   assert.match(css, /\.stage-modal\.stage-timeline-audio-detail-modal \{ width: min\(440px/);
+});
+
+test("音源ブロックの終端は実音源の長さまでで、セクション終端を超えない", () => {
+  const helper = timeline.match(/function audioBlockEndSeconds\(currentTimeline, audioTrack\) \{[\s\S]*?\n  \}/)?.[0];
+  assert.ok(helper, "音源ブロック用の尺計算が定義されている");
+  const context = {
+    finite: (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback,
+  };
+  vm.runInNewContext(`${helper}\nglobalThis.audioBlockEndSeconds = audioBlockEndSeconds`, context);
+  const end = context.audioBlockEndSeconds;
+  assert.equal(end({ duration: 180 }, { durationSeconds: 42 }), 42);
+  assert.equal(end({ duration: 30 }, { durationSeconds: 42 }), 30);
+  assert.equal(end({ duration: 180 }, { durationSeconds: null }), 180);
+  assert.match(timeline, /placeBlock\(audioBlock, 0, audioBlockEndSeconds\(timeline, audioTrack\)\)/);
 });
 
 test("端末内の音源が欠落したら同じ音源枠から再接続し、タイムライン情報を作り直さない", () => {

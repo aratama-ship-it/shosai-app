@@ -1108,6 +1108,14 @@
     element.style.width = `${Math.max(2, right - left)}px`;
   }
 
+  function audioBlockEndSeconds(currentTimeline, audioTrack) {
+    const sectionEnd = Math.max(0, finite(currentTimeline && currentTimeline.duration, 0));
+    const sourceDuration = Number(audioTrack && audioTrack.durationSeconds);
+    return Number.isFinite(sourceDuration) && sourceDuration > 0
+      ? Math.min(sectionEnd, sourceDuration)
+      : sectionEnd;
+  }
+
   // 舞台スケッチ自身の秒ベース時間軸だけをここで編集する。Music Sync から
   // 読んだ拍ベースの区間は、元アプリ側のデータを黙って書き換えないため表示専用にする。
   function timelineContentCanResize() {
@@ -1568,7 +1576,7 @@
         target: "audio", trackId: timeline.trackId,
       }, audioTrack && audioTrack.timelineLockEdge));
     }
-    placeBlock(audioBlock, 0, timeline.duration);
+    placeBlock(audioBlock, 0, audioBlockEndSeconds(timeline, audioTrack));
     els.audioLane.append(audioBlock);
     if (timeline.trackId) {
       checkTimelineAudioAvailability(audioBlock, timeline.trackId, timeline.title);
