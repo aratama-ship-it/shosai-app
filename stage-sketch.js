@@ -23258,6 +23258,20 @@ ${propsPlotHtml}
   /* 拾えるものは道具で変わる。明かりは物と重なって置くのが普通なので、
    * 同じ手つきで両方を掴めるようにすると、狙ったほうが取れない。
    * 「動かす」では物だけ、「照明を動かす」では照明だけを拾う。 */
+  function pieceAtSelectionBounds(point, pieces, boundsFor) {
+    let best = null;
+    let bestArea = Infinity;
+    for (let i = pieces.length - 1; i >= 0; i -= 1) {
+      const piece = pieces[i];
+      const bounds = boundsFor(piece);
+      if (!bounds || point.x < bounds.x || point.x > bounds.x + bounds.w
+        || point.y < bounds.y || point.y > bounds.y + bounds.h) continue;
+      const area = bounds.w * bounds.h;
+      if (area < bestArea) { best = piece; bestArea = area; }
+    }
+    return best;
+  }
+
   function hitTest(point, L) {
     const wantLight = tool === "light";
     /* 動線は明かりにも引ける。灯体はその場に残したまま、
@@ -23269,24 +23283,17 @@ ${propsPlotHtml}
        ★重なっているときは、囲いの面積が小さいものを優先して掴む。
        広い台の上の演者が、台に負けて掴めないことがないように。
        同じ面積なら、上に描かれている方（並びの後ろ）を取る。 */
-    let best = null;
-    let bestArea = Infinity;
-    for (let i = sc().pieces.length - 1; i >= 0; i -= 1) {
-      const piece = sc().pieces[i];
-      if (!anyKind && (piece.type === "light") !== wantLight) continue;
-      if (anyKind && piece.heldBy) continue;
+    const candidates = sc().pieces.filter((piece) => {
+      if (!anyKind && (piece.type === "light") !== wantLight) return false;
+      if (anyKind && piece.heldBy) return false;
       // 平面図で隠している吊物は掴めない（見えないものを掴むことになるため）
-      if (L.plan && !state.showFlown && isFlown(piece)) continue;
+      if (L.plan && !state.showFlown && isFlown(piece)) return false;
       // 消している図の照明も同じ（見えないものを掴ませない）
       if (piece.type === "light"
-        && !(L.plan ? state.showLightsPlan : state.showLightsFront)) continue;
-      if (isLocked(piece)) continue;
-      const b = selectionBounds(piece, L);
-      if (point.x < b.x || point.x > b.x + b.w || point.y < b.y || point.y > b.y + b.h) continue;
-      const area = b.w * b.h;
-      if (area < bestArea) { best = piece; bestArea = area; }
-    }
-    return best;
+        && !(L.plan ? state.showLightsPlan : state.showLightsFront)) return false;
+      return !isLocked(piece);
+    });
+    return pieceAtSelectionBounds(point, candidates, (piece) => selectionBounds(piece, L));
   }
 
   // 灯体の印を掴んだか。当たる場所より先に見る（重なることがあるため）
@@ -24645,7 +24652,18 @@ ${propsPlotHtml}
       const tag = pieceNameTag(target, piece, L, shown);
       if (tag && pointInsideTag(point, tag)) return { castId: piece.castId || null, piece };
     }
-    return null;
+    // 名前札が無い場所でも、選択道具で拾える演者・登録道具の範囲なら詳細を開ける。
+    if (tool !== "select" && tool !== "light") return null;
+    const selectable = sc().pieces.filter((piece) => {
+      if (!piece.castId && !piece.setId) return false;
+      if ((piece.type === "light") !== (tool === "light")) return false;
+      if (L.plan && !state.showFlown && isFlown(piece)) return false;
+      if (piece.type === "light"
+        && !(L.plan ? state.showLightsPlan : state.showLightsFront)) return false;
+      return !isLocked(piece);
+    });
+    const piece = pieceAtSelectionBounds(point, selectable, (item) => selectionBounds(item, L));
+    return piece ? { castId: piece.castId || null, piece } : null;
   }
 
   function openNameDetailTarget(target) {
