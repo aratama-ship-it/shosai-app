@@ -36,7 +36,7 @@ test("1枚表示では表示中パネルの右下に正面・平面の切り替�
   assert.match(source, /const single = state\.showFront !== state\.showPlan/);
   assert.match(source, /group\.hidden = !single \|\| !ownerShown/);
   assert.match(source, /state\.showFront = target === "front";[\s\S]*?state\.showPlan = target === "plan";/);
-  assert.match(css, /\.stage-single-view-switch \{[\s\S]*?position: absolute;[\s\S]*?right: 12px;[\s\S]*?bottom: 12px;/);
+  assert.match(css, /\.stage-single-view-switch \{[\s\S]*?position: absolute;[\s\S]*?right: 12px;[\s\S]*?bottom: 12px;[\s\S]*?grid-template-columns: minmax\(52px, 1fr\);/);
   assert.match(css, /\.stage-single-view-switch button\[aria-pressed="true"\]/);
 });
 
