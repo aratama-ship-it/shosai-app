@@ -3773,7 +3773,9 @@
     syncCanvasSize();
     document.querySelectorAll("#showtoggles button, #lighttoggles button").forEach((b) => b.setAttribute("aria-pressed", String(showOn(b.dataset.show))));
     document.querySelectorAll("#frontmode button").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.front === "3d") === Boolean(state.front3d))));
-    $("seat").hidden = !state.front3d;
+    // 3Dの席は平面時にも表示して、切替欄の幅と高さを固定する。
+    // 選んだ席は3Dへ切り替えたときにそのまま反映する。
+    $("seat").hidden = false;
     $("filters").hidden = state.mode !== "move";
     document.querySelectorAll("#filters button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filter === state.filter)));
     renderLxq(); renderList(); renderInspector(); renderFixedConflicts();

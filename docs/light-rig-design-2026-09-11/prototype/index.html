@@ -218,7 +218,13 @@
   /* 正面図のパネルだけ、見出しの中央に「平面／3D」の切り替えを置く（2026-09-11 本人要望） */
   .sec.front .sechead{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center}
   .sec.front .sechead .viewnote{text-align:right}
-  .fmode{display:flex;align-items:center;gap:5px;justify-self:center}
+  /* 正面図の見方は、平面／3D／3Dの席を常に1行で並べる。
+     3Dへ切り替えた瞬間に席の欄を足して折り返さないよう、平面時も席を表示する。 */
+  .fmode{display:flex;align-items:center;gap:0;justify-self:center;white-space:nowrap}
+  .sec.front #frontmode{display:flex;flex:0 0 auto;flex-wrap:nowrap}
+  .sec.front #frontmode button,.sec.front .seatsel{box-sizing:border-box;min-height:24px;height:24px;font:10.5px var(--sans)}
+  .sec.front #frontmode button{padding:2px 8px}
+  .sec.front .seatsel{width:106px;margin-left:-1px;padding:1px 22px 1px 8px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk);border-radius:0}
   .sechead .viewtitle{font-size:11px;letter-spacing:.08em}
   .sidemode{flex:0 0 auto}
   .sidemode button{font-size:10px;letter-spacing:.04em;padding:2px 7px;min-height:20px}
@@ -713,7 +719,7 @@
                   <button type="button" data-front="flat" aria-pressed="true">平面</button>
                   <button type="button" data-front="3d" aria-pressed="false">3D</button>
                 </span>
-                <select id="seat" class="seatsel" aria-label="どの席から見るか" hidden>
+                <select id="seat" class="seatsel" aria-label="3Dでどの席から見るか" title="3Dで見る席を選ぶ">
                   <option value="front">1階 前方</option>
                   <option value="center">1階 中央</option>
                   <option value="rear">1階 後方</option>
@@ -753,7 +759,7 @@
 <script src="rig-engine.js?v=1789357787"></script>
 <script src="stage-figure.js?v=1789357787"></script>
 <script src="volume-light.js?v=1789396700"></script>
-<script src="app.js?v=1789397100"></script>
+<script src="app.js?v=1789397400"></script>
 <script src="light-presets.js?v=1789357787"></script>
 <script src="light-presets-ui.js?v=1789397300"></script>
 </body>
