@@ -111,7 +111,7 @@ test("劇場パネルから制作画面へ入り、制作画面の冒頭でプ�
     /\.stage-venue-library-actions > button,[\s\S]*?color: var\(--milk\);[\s\S]*?font-family: var\(--sans\);[\s\S]*?font-size: 14px;/);
   assert.match(styleSource,
     /@media \(max-width: 640px\)[\s\S]*?\.stage-venue-library-actions \{ grid-template-columns: 1fr; \}/);
-  assert.match(styleSource, /\.stage-panel\.stage-venue-panel \.stage-venue-custom-open \{[\s\S]*?min-height: 44px;/);
+  assert.match(styleSource, /\.stage-panel\.stage-venue-panel \.stage-venue-custom-open \{[\s\S]*?min-height: 38px;/);
   assert.match(styleSource, /\.stage-venue-editor-presets \{[\s\S]*?padding: 12px;[\s\S]*?border: 3px solid var\(--paper\);/);
   assert.match(indexSource,
     /id="stage-venue-editor-shape-title">2\. メインの形を選択してください[\s\S]*?data-venue-editor-shape="rectangle"[^>]*>[\s\S]*?<span>長方形<\/span>[\s\S]*?data-venue-editor-shape="freeform"[^>]*>[\s\S]*?<span>カスタム<\/span>/);

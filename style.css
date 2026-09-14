@@ -8173,7 +8173,8 @@ html.stage-phone-viewer .stage-single-view-switch { display: none; }
 
 .stage-panel.stage-venue-panel .stage-venue-custom-open {
   width: 100%;
-  min-height: 44px;
+  /* 劇場パネルでは設定窓を開くだけの入口。側パネルの標準操作高にそろえる。 */
+  min-height: 38px;
   margin: 0;
   text-align: center;
 }
