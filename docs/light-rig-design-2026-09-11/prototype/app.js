@@ -10,7 +10,16 @@
   /* 光条・光だまり・まぶしさ・人物の受光を、全図で同じ見え方へ固定する。
      灯の強さやLX cueには入れないので、保存済みの照明データは変わらない。 */
   const VISUAL_GAIN = 1.8;
-  const visualAlpha = (value) => E.clamp(E.finite(value, 0) * VISUAL_GAIN, 0, 1);
+  const VISUAL_KNEE = 1 / VISUAL_GAIN;
+  const VISUAL_TOP = 1.45; // 最大値では中域の飽和後にも明るさを約45%上積みする
+  const displayLevel = (value) => {
+    const v = E.clamp(E.finite(value, 0), 0, 1);
+    return v <= VISUAL_KNEE ? v : VISUAL_KNEE + ((v - VISUAL_KNEE) / (1 - VISUAL_KNEE)) * (VISUAL_TOP - VISUAL_KNEE);
+  };
+  const visualAlpha = (value) => {
+    const v = E.clamp(E.finite(value, 0), 0, 1);
+    return v <= VISUAL_KNEE ? v * VISUAL_GAIN : 1 + ((v - VISUAL_KNEE) / (1 - VISUAL_KNEE)) * (VISUAL_TOP - 1);
+  };
   const $ = (id) => document.getElementById(id);
 
   /* ---------- 状態 ---------- */
@@ -1077,7 +1086,8 @@
     const all = performerBeams(), beams = state.rig.fixtures.flatMap(f => {
       const l = lightOf(f.id); if (!isLit(l) || !["air", "house"].includes(l.surface) || f.mount.type === "cyc") return [];
       const S = fixtureWorld(f), T = targetAt(f.id, state.play.t);
-      const b = V.compile({S,T,deg:beamOf(f),level:litFactorOf(f,l)*(state.sel.size&&!isSel(f.id)?.32:1),color:l.color,doors:E.frameDoors(f,l,l.surface==='house'?'z':'y'),profile:goboProfile(l),f,l});
+      const beamLevel = litFactorOf(f, l) * (state.sel.size && !isSel(f.id) ? 0.32 : 1);
+      const b = V.compile({S,T,deg:beamOf(f),level:displayLevel(beamLevel),color:l.color,doors:E.frameDoors(f,l,l.surface==='house'?'z':'y'),profile:goboProfile(l),f,l});
       return b ? [b] : [];
     });
     const yawDeg = kind === "shimote" ? -90 : kind === "kamite" ? 90 : 0;
@@ -2453,7 +2463,7 @@
   /* lab に null / "" を渡すとラベルを出さない（2026-09-14 本人要望。箱の見出しと同じ言葉が
      二重に出るのをやめるため）。空の <span> を残すと .field の1列目・.field.wide の1行目が
      空き枠として残るので、要素ごと作らない。 */
-  const field = (lab, node, wide) => { const f = document.createElement("div"); f.className = "field" + (wide ? " wide" : "") + (lab ? "" : " nolabel"); if (lab) { const l = document.createElement("span"); l.textContent = lab; f.append(l); } f.append(node); return f; };
+  const field = (lab, node, wide) => { const f = document.createElement("div"); const hasRange = Boolean(node && node.classList && node.classList.contains("rangewrap")); f.className = "field" + (wide ? " wide" : "") + (lab ? "" : " nolabel") + (hasRange ? " rangefield" : ""); if (lab) { const l = document.createElement("span"); l.textContent = lab; f.append(l); } f.append(node); return f; };
   const btn = (t, fn, cls, title) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = t; if (title) b.title = title; b.onclick = fn; return b; };
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
   /* つまみ。つまんで動かすほかに、隣の欄へ数値を打ち込んでも決められる（2026-09-13 本人要望）。
@@ -2804,6 +2814,13 @@
     sync();
   }
 
+  function appendHazeControl(box) {
+    const hazeControl = range(0, 100, 1, V.haze(cue()), (v) => `${v}%`, (v) => { cue().environment = { ...(cue().environment || {}), haze: v }; draw(); }, () => commit());
+    hazeControl.querySelectorAll("input").forEach((i) => i.setAttribute("aria-label", i.type === "range" ? "このLX cueのもや" : "このLX cueのもや（数値）"));
+    box.append(field("もや", hazeControl));
+  }
+  const hazePanel = () => { const b = el("div", "pbox"); b.append(el("p", "kicker", "光の広がり")); appendHazeControl(b); return b; };
+
   function renderBulk(host, ids) {
     if (ids.length < 2) return;
     const sp = state.sl, d = state.dims;
@@ -2963,6 +2980,7 @@
         }));
         b.append(head);
       }
+      appendHazeControl(b);
       const fmtDeg = (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`;
       const degs = ids.map((fid) => Math.round(E.beamDegOf(fixtureById(fid), lightOf(fid) || {})));
       const same = allSame(degs);
@@ -3349,14 +3367,6 @@
       distanceButton.onclick = () => { distanceMetric = !distanceMetric; syncCanvasSize(); renderAll(); };
     }
     const ids = [...state.sel];
-    if (state.mode === 'move') {
-      const box=el('div','pbox option-b-controls');
-      box.append(el('p','kicker','もや'));
-      const hazeControl=range(0,100,1,V.haze(cue()),v=>`${v}%`,v=>{cue().environment={...(cue().environment||{}),haze:v};draw();},()=>commit());
-      hazeControl.querySelectorAll('input').forEach(i=>i.setAttribute('aria-label',i.type==='range'?'このLX cueのもや':'このLX cueのもや（数値）'));box.append(hazeControl);
-      box.append(el('p','note','空中・客席向けの光条に反映します。'));
-      host.append(box);
-    }
     syncLightToggle(ids);
     renderXfer();   // コピー／ペーストの可否は選択で変わる。選択だけを更新する経路でも追従させる
     if (state.mode === "place") {
@@ -3414,7 +3424,7 @@
     }
     // ---- 動きモード ----
     // パネル名「照明デザイン」は静的HTML(#insphead)へ移した。ここでは繰り返さない。
-    if (!ids.length) { host.append(el("p", "hint", "灯体を選んでください。")); return; }
+    if (!ids.length) { host.append(hazePanel()); host.append(el("p", "hint", "灯体を選んでください。")); return; }
     if (ids.length === 1) {
       const fid = ids[0]; const f = fixtureById(fid); const l = lightOf(fid);
       host.append(el("p", "kicker", `${label(fid)}（${E.isMoving(f) ? "ムービング" : "固定"}）　${f.name || ""}`));
@@ -3423,7 +3433,8 @@
       /* オン・オフはパネル右上のボタンへ集約した（2026-09-13 本人要望）。
          本文からは2択の欄を外し、消えている灯ではそこへ誘導するだけにする。 */
       if (!l || l.on !== true) {
-      host.append(el("p", "hint", "この灯はいま消えています。右上の〈オフ〉を押して点けると、色・狙い・強さ・広がりを決められます。"));
+        host.append(hazePanel());
+        host.append(el("p", "hint", "この灯はいま消えています。右上の〈オフ〉を押して点けると、色・狙い・強さ・広がりを決められます。"));
         return;
       }
       /* ---- 欄の構成（2026-09-13 本人要望で作り直し） ----
@@ -3558,6 +3569,7 @@
         const top = f.mount.rung === "top";
         b.append(field(top ? "壁を降りる高さ" : "壁を登る高さ", range(0.5, E.CYC_REACH_MAX, 0.5, E.clamp(E.finite(f.mount.reachM, 4), 0.5, E.CYC_REACH_MAX), (v) => `${v.toFixed(1)}m`, (v) => { f.mount.reachM = v; draw(); }, () => commit()), true));
         b.append(el("p", "note", `${top ? "上の器具から下向きに" : "床の器具から上向きに"}、壁のどこまで光が届くかです。長さは配置パネル、置く・外すは配置パネルの「ホリゾントライト」で切り替えます。`));
+        const spread = box("光の広がり"); appendHazeControl(spread);
       } else {
         const b = box(mover ? null : "光の広がり");
         const fmtDeg = (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`;
@@ -3571,6 +3583,7 @@
           }));
           b.append(head);
         }
+        appendHazeControl(b);
         b.append(el("p", "hint beam-scroll-help", "平面図の赤い丸の上でスクロールしても変えられます（下へ回すと広がる・上へ回すと絞る）。"));
         if (mover) {
           b.append(field(autoSpread ? "始点" : null, range(5, 55, 1, E.beamDegOf(f, l), fmtDeg, (v) => { l.beamDeg = v; draw(); }, () => commit()), true));
