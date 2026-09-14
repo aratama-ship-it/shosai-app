@@ -864,29 +864,38 @@
     return m;
   };
 
-  /* 2灯を舞台のセンター線で対称に保つための配置用の純関数。
-     吊りは同じバトン上、SS は下手／上手の対でだけ使える。描画や保存の状態は持たず、
-     app.js がドラッグ中に source の変更を partner へ渡す。 */
-  const pairMirrorCompatible = (source, partner) => {
-    if (!source || !partner || source.type !== partner.type) return false;
-    if (source.type === "truss") return Boolean(source.trussId) && source.trussId === partner.trussId;
-    return source.type === "floor" || source.type === "front" || source.type === "side";
+  /* 2灯の照射先・軌道を舞台センター線で鏡映する純関数。
+     器具の取り付け位置や、相手灯の色・強さ・点灯状態には触れない。 */
+  const mirrorAimCompatible = (source, partner) => {
+    const a = source && source.path, b = partner && partner.path;
+    return Boolean(a && b && source.surface === partner.surface && a.kind === b.kind
+      && ["still", "line", "circle", "eight"].includes(a.kind));
   };
-  const mirrorPairMount = (source, partner) => {
+  const mirrorAimPoint = (point) => ({
+    ...JSON.parse(JSON.stringify(point || newPoint())),
+    u: Number((1 - clamp(finite(point && point.u, 0.5), 0, 1)).toFixed(6)),
+  });
+  const mirrorAimPath = (source, partner) => {
     const next = JSON.parse(JSON.stringify(partner || {}));
-    if (!pairMirrorCompatible(source, partner)) return next;
-    if (source.type === "side") {
-      next.side = source.side === "shimote" ? "kamite" : "shimote";
-      next.v = clamp(finite(source.v, 0.5), 0, 1);
-      next.h = Math.max(0.3, finite(source.h, 2));
-      return next;
+    if (!mirrorAimCompatible(source, partner)) return next;
+    const path = JSON.parse(JSON.stringify(source.path));
+    if (path.kind === "still") path.a = mirrorAimPoint(path.a);
+    else if (path.kind === "line") { path.a = mirrorAimPoint(path.a); path.b = mirrorAimPoint(path.b); }
+    else {
+      path.c = mirrorAimPoint(path.c);
+      /* 舞台横から見た縦軌道は左右(x)成分を持たないため、中心だけ写す。
+         それ以外は軌道面を鏡映する。円は進行方向を反転し、8の字は半周位相をずらす。 */
+      if ((path.plane || "horizontal") !== "sideVertical") {
+        path.tilt = -finite(path.tilt, 0);
+        if (path.kind === "circle") {
+          path.start = ((finite(path.start, 0) + 0.5) % 1 + 1) % 1;
+          path.dir = path.dir === "ccw" ? "cw" : "ccw";
+        } else {
+          path.start = ((finite(path.start, 0) + 0.5) % 1 + 1) % 1;
+        }
+      }
     }
-    next.u = Number((1 - clamp(finite(source.u, 0.5), 0, 1)).toFixed(6));
-    if (source.type === "floor") next.v = clamp(finite(source.v, 0.5), 0, 1);
-    if (source.type === "front") {
-      next.ahead = Math.max(0, finite(source.ahead, 5));
-      next.h = Math.max(0.3, finite(source.h, 7));
-    }
+    next.path = path;
     return next;
   };
 
@@ -895,7 +904,7 @@
     clamp, finite,
     newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, spotEllipse, spotFalloff, beamLanding, trussById, trussRow, fixtureWorld,
     newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, strobeMul, paramPhase, mountSpot, GOBOS, goboById, goboAngleAt, constrainPointToSurface, periodMs, groupEffect,
-    pointWorld, planeVec, circleOffset, eightOffset, targetAt, pathGuide, mirrorMount, pairMirrorCompatible, mirrorPairMount,
+    pointWorld, planeVec, circleOffset, eightOffset, targetAt, pathGuide, mirrorMount, mirrorAimCompatible, mirrorAimPoint, mirrorAimPath,
     FRONT_SEATS, frontPerspSetup, makeFrontPerspProjector, frontPerspToUH,
     makePlanProjector, makeFrontProjector, makeSideProjector, planToUV, frontToUH, sideToVH,
     describeMount, describeCue,

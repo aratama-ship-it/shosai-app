@@ -199,8 +199,8 @@
     ],
     sceneIndex: 0,
     sel: new Set(), selTruss: null,
-    // 配置モードだけの一時的な2灯連動。保存・Undoのデータには入れない。
-    pairMirror: null,
+    // 照明デザインモードだけの一時的な狙い位置の左右連動。保存データには入れない。
+    aimMirror: null,
     tool: null,                        // null | "truss" | "fixture" | "floor" | "side"
     play: { on: false, t: 0, last: 0, raf: 0 },
     dirty: false, history: [], future: [],
@@ -319,7 +319,7 @@
     if (o.curtains) state.curtains = { ...state.curtains, ...o.curtains };
     state.sel = new Set([...state.sel].filter(fixtureById));
     if (state.selTruss && !E.trussById(state.rig, state.selTruss)) state.selTruss = null;
-    state.pairMirror = null;
+    state.aimMirror = null;
     state.dirty = true;
     renderAll();
   }
@@ -613,29 +613,35 @@
      この操作に意味がある。吊り・転がしは平面図の中で左右対称に写しても使う場面がないうえ、
      選んだだけで有効に見えると事故のもとになる（2026-09-11 本人指摘）。 */
   const canMirror = () => { const fs = [...state.sel].map(fixtureById).filter(Boolean); return fs.length > 0 && fs.every((f) => f.mount.type === "side"); };
-  const selectedMirrorPair = () => {
+  const selectedAimPair = () => {
     const fs = [...state.sel].map(fixtureById).filter(Boolean);
-    return fs.length === 2 && E.pairMirrorCompatible(fs[0].mount, fs[1].mount) ? fs : null;
+    if (fs.length !== 2) return null;
+    const a = lightOf(fs[0].id), b = lightOf(fs[1].id);
+    return E.mirrorAimCompatible(a, b) ? fs : null;
   };
-  const mirrorPairActive = () => {
-    const fs = selectedMirrorPair();
-    if (!fs || !Array.isArray(state.pairMirror) || state.pairMirror.length !== 2) return null;
-    return fs.every((f) => state.pairMirror.includes(f.id)) ? fs : null;
+  const aimMirrorActive = () => {
+    if (state.mode !== "move") return null;
+    const fs = selectedAimPair();
+    if (!fs || !Array.isArray(state.aimMirror) || state.aimMirror.length !== 2) return null;
+    return fs.every((f) => state.aimMirror.includes(f.id)) ? fs : null;
   };
-  const syncMirrorPartner = (source) => {
-    const pair = mirrorPairActive();
+  const syncAimPartner = (source) => {
+    const pair = aimMirrorActive();
     if (!pair || !source || !pair.some((f) => f.id === source.id)) return;
     const partner = pair.find((f) => f.id !== source.id);
-    if (partner) partner.mount = E.mirrorPairMount(source.mount, partner.mount);
+    const sourceLight = lightOf(source.id), partnerLight = partner && lightOf(partner.id);
+    if (sourceLight && partnerLight) cue().lights[partner.id] = E.mirrorAimPath(sourceLight, partnerLight);
   };
-  function toggleMirrorPair() {
-    const pair = selectedMirrorPair();
+  function toggleAimMirror() {
+    const pair = selectedAimPair();
     if (!pair) return;
-    if (mirrorPairActive()) { state.pairMirror = null; toast("左右反転モードをオフにしました"); renderAll(); return; }
+    if (aimMirrorActive()) { state.aimMirror = null; toast("照射位置の左右反転をオフにしました"); renderAll(); return; }
     const [source, partner] = pair;
-    partner.mount = E.mirrorPairMount(source.mount, partner.mount);
-    state.pairMirror = [source.id, partner.id];
-    commit(`${label(source.id)}と${label(partner.id)}を左右対称にそろえました`);
+    const sourceLight = lightOf(source.id), partnerLight = lightOf(partner.id);
+    if (!sourceLight || !partnerLight) return;
+    cue().lights[partner.id] = E.mirrorAimPath(sourceLight, partnerLight);
+    state.aimMirror = [source.id, partner.id];
+    commit(`${label(source.id)}と${label(partner.id)}の照射位置を左右対称にしました`);
   }
   function mirrorSelected() {
     if (!canMirror()) return;
@@ -2173,6 +2179,7 @@
   };
 
   /* 掴んだハンドルと一緒に動かす、ほかの選択中の灯のハンドルを集める。
+     照射位置左右反転モード中は掴んだ灯だけを直接更新し、鏡映した軌道を相手へ渡す。
      動かし方は<b>差分</b>——掴んだ点が動いたぶんだけ、相手も動かす。
        ・同じ点を共有している灯（「そろえて振る」のA・B）は、同じ点のまま一緒に動く。
        ・灯ごとに違う点を持つ灯（「まわす」の円の中心、「扇に開く」の外側の端）は、
@@ -2188,7 +2195,9 @@
     const src = lightOf(hh.fid); const sp = src && src.path; if (!sp) return [];
     const grabbed = hh.handle === "r" ? null : pathPoint(sp, hh.handle);
     const out = [];
-    [...state.sel].forEach((fid) => {
+    const aimPair = aimMirrorActive();
+    const selectedIds = aimPair ? [hh.fid] : [...state.sel];
+    selectedIds.forEach((fid) => {
       const l = lightOf(fid); const p = l && l.path; if (!p || !isLit(l)) return;
       if (hh.handle === "r") { if (p.kind === "circle" || p.kind === "eight") out.push({ fid, handle: "r", r0: p.r }); return; }
       if (l.surface !== src.surface) return;          // 当てる場所が違う灯は巻き込まない
@@ -2237,7 +2246,7 @@
       let selectionChanged = false;
       if (ev.shiftKey) { state.sel.has(f.id) ? state.sel.delete(f.id) : state.sel.add(f.id); selectionChanged = true; }
       else if (!state.sel.has(f.id)) { state.sel = new Set([f.id]); selectionChanged = true; }
-      if (selectionChanged) state.pairMirror = null;
+      if (selectionChanged) state.aimMirror = null;
       state.selTruss = f.mount.type === "truss" ? f.mount.trussId : state.selTruss;
       if (state.mode === "place" && !ev.shiftKey) state.drag = { kind: "fixture", fid: f.id, before: snapshot(), moved: false, startU: f.mount.u, startV: f.mount.v, X0: pt.X, Y0: pt.Y };
       renderAll(); return;
@@ -2248,13 +2257,13 @@
        「選択を外す」として従来どおり働く。Shiftはいまの選択に足していく。 */
     state.drag = { kind: "marquee", x0: pt.X, y0: pt.Y, x1: pt.X, y1: pt.Y, base: new Set(state.sel), moved: false };
     if (!ev.shiftKey) state.sel.clear();
-    state.pairMirror = null;
+    state.aimMirror = null;
     renderAll();
   });
   plan.addEventListener("pointermove", (ev) => {
     const pt = canvasPoint(plan, ev); const B = planBox(); state.hover = { canvas: "plan", ...pt };
     const dg = state.drag;
-    if (dg && dg.kind === "fixture") { const f = fixtureById(dg.fid); if (f) { const u = snapU(E.clamp((pt.X - B.x) / B.w, 0, 1)), v = snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)); if (f.mount.type === "cyc") { /* 中央固定。動かさない */ } else if (f.mount.type === "truss") f.mount.u = u; else if (f.mount.type === "floor") { f.mount.u = u; f.mount.v = v; } else f.mount.v = v; syncMirrorPartner(f); dg.moved = true; } }
+    if (dg && dg.kind === "fixture") { const f = fixtureById(dg.fid); if (f) { const u = snapU(E.clamp((pt.X - B.x) / B.w, 0, 1)), v = snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)); if (f.mount.type === "cyc") { /* 中央固定。動かさない */ } else if (f.mount.type === "truss") f.mount.u = u; else if (f.mount.type === "floor") { f.mount.u = u; f.mount.v = v; } else f.mount.v = v; dg.moved = true; } }
     else if (dg && dg.kind === "truss") { const t = E.trussById(state.rig, dg.tid); if (t) { t.v = snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)); dg.moved = true; } }
     else if (dg && dg.kind === "handle") { dg.lock = ev.shiftKey; const uv = E.planToUV(state.dims, B, pt.X, pt.Y); applyHandleDrag(dg, { u: snapU(uv.u), v: snapV(uv.v), aheadM: distanceMetric ? ((pt.Y-B.y)/B.h-1)*state.dims.D : undefined }, dg.axis); }
     else if (dg && dg.kind === "marquee") {
@@ -2329,6 +2338,7 @@
       const rNew = axis === "vh" ? Math.abs(values.v * d.D - cw.y) : Math.abs((values.u - 0.5) * d.W - cw.x);
       const dr = E.clamp(rNew, 0.3, Math.max(d.W, d.H)) - (dg.r0 || 0);
       targets.forEach((h) => { const l = lightOf(h.fid); if (l && l.path) l.path.r = E.clamp((h.r0 || 0) + dr, 0.3, Math.max(d.W, d.H)); });
+      syncAimPartner(fixtureById(dg.fid));
       return;
     }
     const g0 = dg.g0 || { u: 0, v: 0, hM: 0 };
@@ -2367,6 +2377,7 @@
       else if (axis === "vh") { target.v = E.clamp(v0 + dv, 0, 1); target.hM = E.clamp(hh0 + dh, 0, d.H); }
       if (l.surface === "house") {target.v=1;if(distanceMetric&&(axis==="uv"||axis==="vh")&&values.aheadM!=null)target.aheadM=E.clamp((h.ahead0??target.aheadM??6)+dv*d.D,.5,E.HOUSE_AHEAD_MAX);}
     });
+    syncAimPartner(fixtureById(dg.fid));
   }
 
   /* ---------- ポインタ操作: 断面図（正面・下手・上手の3面を同時に扱う） ---------- */
@@ -2386,18 +2397,18 @@
           let selectionChanged = false;
           if (ev.shiftKey) { state.sel.has(f.id) ? state.sel.delete(f.id) : state.sel.add(f.id); selectionChanged = true; }
           else if (!state.sel.has(f.id)) { state.sel = new Set([f.id]); selectionChanged = true; }
-          if (selectionChanged) state.pairMirror = null;
+          if (selectionChanged) state.aimMirror = null;
           if (state.mode === "place" && !ev.shiftKey) state.drag = { kind: "sideVH", fid: f.id, sec, before: snapshot(), moved: false };
           renderAll(); return;
         }
-        if (!ev.shiftKey) { state.sel.clear(); state.pairMirror = null; renderAll(); }
+        if (!ev.shiftKey) { state.sel.clear(); state.aimMirror = null; renderAll(); }
         return;
       }
       if (state.mode === "place") {
         const t = E.trussById(state.rig, state.selTruss);
         if (t && !(side === "front" && state.front3d)) { const Y = B.y + B.h - t.h / state.dims.H * B.h; if (pt.X > B.x + B.w && Math.abs(pt.Y - Y) < 24) { state.drag = { kind: "trussH", tid: t.id, sec, before: snapshot(), moved: false }; return; } }
         const f = hitFixtureSec(sec, pt); if (f) {
-          if (!state.sel.has(f.id)) { state.sel = new Set([f.id]); state.pairMirror = null; }
+          if (!state.sel.has(f.id)) { state.sel = new Set([f.id]); state.aimMirror = null; }
           if (f.mount.type === "side") state.drag = { kind: "sideH", fid: f.id, sec, before: snapshot(), moved: false };
           renderAll(); return;
         }
@@ -2409,7 +2420,7 @@
         let selectionChanged = false;
         if (ev.shiftKey) { state.sel.has(f.id) ? state.sel.delete(f.id) : state.sel.add(f.id); selectionChanged = true; }
         else if (!state.sel.has(f.id)) { state.sel = new Set([f.id]); selectionChanged = true; }
-        if (selectionChanged) state.pairMirror = null;
+        if (selectionChanged) state.aimMirror = null;
         renderAll();
       }
     });
@@ -2418,9 +2429,9 @@
       const pt = canvasPoint(cv, ev); const B = secBox(cv, side); state.hover = { canvas: sec.kind, ...pt }; const dg = state.drag;
       if (!dg) { if (state.tool === "side" && side !== "front") draw(); return; }
       if (dg.sec && dg.sec !== sec) return; // 掴んだ図の上だけで動かす
-      if (dg.kind === "sideVH") { const f = fixtureById(dg.fid); if (f) { const vh = E.sideToVH(state.dims, B, side, pt.X, pt.Y); f.mount.v = snapV(vh.v); f.mount.h = E.clamp(snapH(vh.h), 0.3, state.dims.H); syncMirrorPartner(f); dg.moved = true; } draw(); renderInspector(); return; }
+      if (dg.kind === "sideVH") { const f = fixtureById(dg.fid); if (f) { const vh = E.sideToVH(state.dims, B, side, pt.X, pt.Y); f.mount.v = snapV(vh.v); f.mount.h = E.clamp(snapH(vh.h), 0.3, state.dims.H); dg.moved = true; } draw(); renderInspector(); return; }
       if (dg.kind === "trussH") { const t = E.trussById(state.rig, dg.tid); if (t) { t.h = E.clamp(snapH((B.y + B.h - pt.Y) / B.h * state.dims.H), 2, state.dims.H); t.tentative = false; dg.moved = true; } }
-      else if (dg.kind === "sideH") { const f = fixtureById(dg.fid); if (f) { f.mount.h = E.clamp(snapH((B.y + B.h - pt.Y) / B.h * state.dims.H), 0.3, state.dims.H); syncMirrorPartner(f); dg.moved = true; } }
+      else if (dg.kind === "sideH") { const f = fixtureById(dg.fid); if (f) { f.mount.h = E.clamp(snapH((B.y + B.h - pt.Y) / B.h * state.dims.H), 0.3, state.dims.H); dg.moved = true; } }
       else if (dg.kind === "handle" && dg.axis === "uh") {
         dg.lock = ev.shiftKey;
         // 3Dのときは擬似パースの逆算。奥行きは動かさないので、いまの点のvを渡す
@@ -2555,7 +2566,7 @@
         let selectionChanged = false;
         if (ev.shiftKey) { isSel(f.id) ? state.sel.delete(f.id) : state.sel.add(f.id); selectionChanged = true; }
         else if (!isSel(f.id)) { state.sel = new Set([f.id]); selectionChanged = true; }
-        if (selectionChanged) state.pairMirror = null;
+        if (selectionChanged) state.aimMirror = null;
         if (f.mount.type === "truss") state.selTruss = f.mount.trussId;
         renderAll();
       }; return r; };
@@ -2566,7 +2577,7 @@
         const open = !state.collapsed.has(sec.key);
         h.innerHTML = `<span>${open ? "▾" : "▸"} ${sec.name}</span><small>${sec.items.length}灯　列を選ぶ</small>`;
         h.querySelector("span").onclick = (ev) => { ev.stopPropagation(); open ? state.collapsed.add(sec.key) : state.collapsed.delete(sec.key); renderAll(); };
-        h.querySelector("small").onclick = (ev) => { ev.stopPropagation(); state.sel = new Set(sec.items.map((f) => f.id)); state.pairMirror = null; const first = sec.items[0]; if (first && first.mount.type === "truss") state.selTruss = first.mount.trussId; renderAll(); };
+        h.querySelector("small").onclick = (ev) => { ev.stopPropagation(); state.sel = new Set(sec.items.map((f) => f.id)); state.aimMirror = null; const first = sec.items[0]; if (first && first.mount.type === "truss") state.selTruss = first.mount.trussId; renderAll(); };
         host.append(h);
         if (open) sec.items.forEach((f) => host.append(row(f)));
       });
@@ -2577,11 +2588,6 @@
       // ホリゾントライトは床・上それぞれ1本。複製・削除は配置パネルの「あり／なし」に任せる
       $("dup").disabled = !state.sel.size || cycOnly; $("del").disabled = !state.sel.size || cycOnly; $("spread").disabled = !canSpread();
       $("mirror").disabled = !canMirror();
-      const pair = selectedMirrorPair(), activePair = mirrorPairActive(), pairButton = $("pair-mirror");
-      pairButton.hidden = state.sel.size !== 2;
-      pairButton.disabled = !pair;
-      pairButton.setAttribute("aria-pressed", String(Boolean(activePair)));
-      pairButton.title = pair ? "舞台のセンター線で左右対称にそろえ、一方を動かすともう一方も追従します" : "同じバトンの吊り、同じ種類の床・前明かり、またはSSの2灯で使えます";
       $("spread").title = canSpread() ? "" : "同じバトンの3灯以上を選ぶと使えます";
       $("mirror").title = canMirror() ? "下手⇄上手へ配置だけを写します" : "SS（袖）の灯を選ぶと使えます";
       return;
@@ -2603,7 +2609,6 @@
     if (!state.rig.fixtures.length) host.innerHTML = '<p class="hint" style="padding:6px">灯体はまだありません。</p>';
     $("sel-count").textContent = state.sel.size > 1 ? `${state.sel.size}灯を選択中` : "";
     $("dup").disabled = true; $("del").disabled = true; $("spread").disabled = true; $("mirror").disabled = true;
-    $("pair-mirror").hidden = true; $("pair-mirror").disabled = true; $("pair-mirror").setAttribute("aria-pressed", "false");
   }
 
   /* ---------- 右: 設定欄 ---------- */
@@ -3907,6 +3912,19 @@
       // 消す操作はパネル右上のオン・オフへ一本化した（2026-09-13 本人要望）。
       return;
     }
+    // 2灯の照射位置を舞台中央線で鏡映する一時モード。配置位置や他の灯体設定は同期しない。
+    if (ids.length === 2) {
+      const pair = selectedAimPair();
+      const active = aimMirrorActive();
+      const mirrorButton = btn("照射位置を左右反転", toggleAimMirror, "small quiet");
+      mirrorButton.id = "aim-mirror";
+      mirrorButton.disabled = !pair;
+      mirrorButton.title = pair
+        ? "狙い先と照射軌道を舞台中央線で鏡映します。灯体の設置位置は動きません"
+        : "同じ照射面・同じ軌道種類の2灯を選ぶと使えます";
+      mirrorButton.setAttribute("aria-pressed", String(Boolean(active)));
+      host.append(mirrorButton);
+    }
     // 複数（「組の動き」も含めて renderBulk 側の「まとめて変更」枠に集約した。2026-09-13 本人要望）
     host.append(el("p", "kicker", `${ids.length}灯を選択中`));
     renderBulk(host, ids);
@@ -3988,7 +4006,7 @@
   }
 
   /* ---------- ヘッダ・空状態・書き出し ---------- */
-  $("mode-place").onclick = () => { state.mode = "place"; stop(); renderAll(); };
+  $("mode-place").onclick = () => { state.mode = "place"; state.aimMirror = null; stop(); renderAll(); };
   $("mode-move").onclick = () => {
     state.mode = "move";
     state.tool = null;
@@ -4051,7 +4069,6 @@
   $("undo").onclick = undo; $("redo").onclick = redo;
   $("runtime-reset").onclick = resetRuntime;
   $("mirror").onclick = mirrorSelected;
-  $("pair-mirror").onclick = toggleMirrorPair;
   document.querySelectorAll("#filters button").forEach((b) => { b.onclick = () => { state.filter = b.dataset.filter; renderAll(); }; });
   $("dup").onclick = duplicateSelected; $("del").onclick = removeSelected; $("spread").onclick = spreadSelected;
   $("presets").onclick = openPresets;

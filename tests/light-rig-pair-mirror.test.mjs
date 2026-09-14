@@ -3,45 +3,68 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 
+/* 照明デザイン試作の2灯照射位置左右反転。配置位置でなく照射先・軌道を検証する。 */
 const source = await readFile(new URL("../docs/light-rig-design-2026-09-11/prototype/rig-engine.js", import.meta.url), "utf8");
 const context = { window: {} };
 vm.runInNewContext(source, context, { filename: "rig-engine.js" });
 const E = context.window.RIG_ENGINE;
 const plain = (v) => JSON.parse(JSON.stringify(v));
+const near = (a, b, tolerance = 1e-6) => Math.abs(a - b) <= tolerance;
+const dims = { W: 12, D: 8, H: 8 };
+const cue = { groups: [] };
+const light = (path, extra = {}) => E.newLightCue({ on: true, surface: "air", path, speed: "normal", ...extra });
 
-test("左右反転モードは対応する2灯の組合せだけを受け付ける", () => {
-  assert.equal(E.pairMirrorCompatible({ type: "truss", trussId: "t1" }, { type: "truss", trussId: "t1" }), true);
-  assert.equal(E.pairMirrorCompatible({ type: "truss", trussId: "t1" }, { type: "truss", trussId: "t2" }), false);
-  assert.equal(E.pairMirrorCompatible({ type: "side", side: "shimote" }, { type: "side", side: "kamite" }), true);
-  assert.equal(E.pairMirrorCompatible({ type: "floor" }, { type: "front" }), false);
-  assert.equal(E.pairMirrorCompatible({ type: "cyc" }, { type: "cyc" }), false);
+test("左右反転は同じ照射面・同じ軌道種類の2灯だけに使える", () => {
+  assert.equal(E.mirrorAimCompatible(light({ kind: "still", a: E.newPoint() }), light({ kind: "still", a: E.newPoint() })), true);
+  assert.equal(E.mirrorAimCompatible(light({ kind: "line", a: E.newPoint(), b: E.newPoint() }), light({ kind: "line", a: E.newPoint(), b: E.newPoint() })), true);
+  assert.equal(E.mirrorAimCompatible(light({ kind: "circle", c: E.newPoint() }), light({ kind: "circle", c: E.newPoint() })), true);
+  assert.equal(E.mirrorAimCompatible(light({ kind: "eight", c: E.newPoint() }), light({ kind: "eight", c: E.newPoint() })), true);
+  assert.equal(E.mirrorAimCompatible(light({ kind: "still", a: E.newPoint() }), { ...light({ kind: "still", a: E.newPoint() }), surface: "floor" }), false);
+  assert.equal(E.mirrorAimCompatible(light({ kind: "line", a: E.newPoint(), b: E.newPoint() }), light({ kind: "still", a: E.newPoint() })), false);
+  assert.equal(E.mirrorAimCompatible(light(null), light(null)), false);
 });
 
-test("吊りと床置きは舞台のセンター線で横位置を反転する", () => {
-  const trussSource = { type: "truss", trussId: "t1", u: 0.18 };
-  const trussPartner = { type: "truss", trussId: "t1", u: 0.64 };
-  assert.deepEqual(plain(E.mirrorPairMount(trussSource, trussPartner)), { type: "truss", trussId: "t1", u: 0.82 });
-
-  const floorSource = { type: "floor", u: 0.24, v: 0.73 };
-  const floorPartner = { type: "floor", u: 0.6, v: 0.1 };
-  assert.deepEqual(plain(E.mirrorPairMount(floorSource, floorPartner)), { type: "floor", u: 0.76, v: 0.73 });
+test("停止中の照射先と往復軌道の両端を舞台中央で鏡映し、灯体設定を保つ", () => {
+  const sourceLight = light({ kind: "line", a: E.newPoint({ u: 0.2, v: 0.15, hM: 1.1 }), b: E.newPoint({ u: 0.4, v: 0.75, hM: 5.4 }), start: "b", easing: "linear" }, { color: "#ff0000", level: 82, periodSec: 2.4 });
+  const partner = light({ kind: "line", a: E.newPoint(), b: E.newPoint(), easing: "ease" }, { color: "#0000ff", level: 31, on: true, periodSec: 2.4 });
+  const beforeSource = plain(sourceLight), beforePartner = plain(partner);
+  const mirrored = E.mirrorAimPath(sourceLight, partner);
+  assert.deepEqual(plain(mirrored.path.a), { u: 0.8, v: 0.15, hM: 1.1 });
+  assert.deepEqual(plain(mirrored.path.b), { u: 0.6, v: 0.75, hM: 5.4 });
+  assert.deepEqual(plain([mirrored.color, mirrored.level, mirrored.on, mirrored.periodSec]), ["#0000ff", 31, true, 2.4]);
+  assert.deepEqual(plain(sourceLight), beforeSource, "基準灯は変更しない");
+  assert.deepEqual(plain(partner), beforePartner, "相手灯の入力も破壊しない");
+  for (const time of [0, 450, 1200, 1950, 2700]) {
+    const a = E.targetAt(sourceLight, cue, "a", time, dims);
+    const b = E.targetAt(mirrored, cue, "b", time, dims);
+    assert.ok(near(b.x, -a.x) && near(b.y, a.y) && near(b.z, a.z), `往復の ${time}ms`);
+  }
 });
 
-test("SSと前明かりは左右反転と共通の位置パラメータを同時に写す", () => {
-  const sideSource = { type: "side", side: "shimote", v: 0.42, h: 3.5 };
-  const sidePartner = { type: "side", side: "shimote", v: 0.8, h: 1.2 };
-  assert.deepEqual(plain(E.mirrorPairMount(sideSource, sidePartner)), { type: "side", side: "kamite", v: 0.42, h: 3.5 });
+test("停止点・円・8の字は軌道面ごとに照射軌跡を幾何学的に鏡映する", () => {
+  const still = light({ kind: "still", a: E.newPoint({ u: 0.18, v: 0.62, hM: 2.7 }) });
+  const stillMirror = E.mirrorAimPath(still, light(still.path));
+  const a0 = E.targetAt(still, cue, "a", 0, dims), b0 = E.targetAt(stillMirror, cue, "b", 0, dims);
+  assert.ok(near(b0.x, -a0.x) && near(b0.y, a0.y) && near(b0.z, a0.z));
 
-  const frontSource = { type: "front", u: 0.37, ahead: 7, h: 8.2 };
-  const frontPartner = { type: "front", u: 0.5, ahead: 2, h: 4 };
-  assert.deepEqual(plain(E.mirrorPairMount(frontSource, frontPartner)), { type: "front", u: 0.63, ahead: 7, h: 8.2 });
+  for (const kind of ["circle", "eight"]) {
+    for (const plane of ["horizontal", "frontVertical", "sideVertical"]) {
+      for (const dir of ["cw", "ccw"]) {
+        const path = { kind, c: E.newPoint({ u: 0.29, v: 0.48, hM: 3.7 }), r: 1.6, r2: 0.9, tilt: 27, plane, dir, start: 0.13 };
+        const aLight = light(path, { periodSec: 3.2 });
+        const bLight = E.mirrorAimPath(aLight, light({ ...path, c: E.newPoint() }, { periodSec: 3.2 }));
+        for (const time of [0, 320, 840, 1730, 2940]) {
+          const a = E.targetAt(aLight, cue, "a", time, dims);
+          const b = E.targetAt(bLight, cue, "b", time, dims);
+          assert.ok(near(b.x, -a.x) && near(b.y, a.y) && near(b.z, a.z), `${kind}/${plane}/${dir} ${time}ms: ${JSON.stringify({ a, b })}`);
+        }
+      }
+    }
+  }
 });
 
-test("対応しない組合せでは相手の配置を変えず、入力も破壊しない", () => {
-  const sourceMount = { type: "truss", trussId: "t1", u: 0.2 };
-  const partnerMount = { type: "truss", trussId: "t2", u: 0.7 };
-  const beforeSource = plain(sourceMount), beforePartner = plain(partnerMount);
-  assert.deepEqual(plain(E.mirrorPairMount(sourceMount, partnerMount)), beforePartner);
-  assert.deepEqual(plain(sourceMount), beforeSource);
-  assert.deepEqual(plain(partnerMount), beforePartner);
+test("互換でない灯は相手の狙いを変えない", () => {
+  const sourceLight = light({ kind: "still", a: E.newPoint({ u: 0.2 }) });
+  const partner = { ...light({ kind: "line", a: E.newPoint({ u: 0.4 }), b: E.newPoint({ u: 0.6 }) }), level: 43 };
+  assert.deepEqual(plain(E.mirrorAimPath(sourceLight, partner)), plain(partner));
 });
