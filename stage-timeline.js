@@ -1671,9 +1671,12 @@
     timeline.transitions.forEach((transition) => {
       const block = document.createElement("div");
       block.className = "stage-timeline-transition-block";
-      const source = timeline.segments.find((segment) => segment.transitionId === transition.id);
+      const sourceIndex = timeline.segments.findIndex((segment) => segment.transitionId === transition.id);
+      const source = sourceIndex >= 0 ? timeline.segments[sourceIndex] : null;
+      const destination = sourceIndex >= 0 ? timeline.segments[sourceIndex + 1] : null;
+      const positionLockSceneId = destination?.sceneId || source?.sceneId;
       const isPoint = Boolean(transition.isPoint || Math.abs(transition.end - transition.start) < 1e-6);
-      const positionLocked = source && timelinePositionLocked(project, "scene", source.sceneId);
+      const positionLocked = positionLockSceneId && timelinePositionLocked(project, "scene", positionLockSceneId);
       if (isPoint) block.classList.add("is-point");
       if (positionLocked) block.classList.add("is-time-locked");
       const label = document.createElement("span");
@@ -1693,7 +1696,7 @@
       }
       if (positionLocked) block.insertAdjacentHTML("beforeend", timelineLockIcon());
       block.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
-        kind: "scene", id: source.sceneId, locked: positionLocked, label: transition.title, returnFocus: block,
+        kind: "scene", id: positionLockSceneId, locked: positionLocked, label: transition.title, returnFocus: block,
       }));
       if (timelineContentCanResize()) {
         if (isPoint) {
