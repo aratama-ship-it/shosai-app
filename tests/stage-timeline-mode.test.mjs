@@ -492,7 +492,11 @@ test("Eでタイムラインをしまい、上端のドラッグで開き直せ�
   assert.match(timeline, /function continueTimelineResize\(event\)[\s\S]*?timelineResize\.collapsed[\s\S]*?startY - event\.clientY[\s\S]*?stage-timeline-reveal-height/);
   assert.match(timeline, /applyTimelineHeight\(visibleHeight, \{ save: false \}\);/);
   assert.match(timeline, /setTimelineCollapsed\(false, \{ save: true \}\);/);
-  assert.match(css, /\.stage-timeline-panel\.is-collapsed \{[\s\S]*?transform: translateY\(calc\(100% - var\(--stage-timeline-reveal-height\)\)\)/);
+  assert.match(timeline, /getComputedStyle\(root\)\.getPropertyValue\("--stage-timeline-collapse-handle-height"\)/);
+  assert.match(css, /--stage-timeline-collapse-handle-width: 112px;[\s\S]*?--stage-timeline-collapse-handle-height: 44px;/);
+  assert.match(css, /\.stage-timeline-panel\.is-collapsed \{[\s\S]*?transform: translateY\(calc\(100% - var\(--stage-timeline-reveal-height\)\)\)[\s\S]*?pointer-events: none;/);
+  assert.match(css, /\.stage-timeline-panel\.is-collapsed \.stage-timeline-resize \{[\s\S]*?align-self: center;[\s\S]*?width: var\(--stage-timeline-collapse-handle-width\);[\s\S]*?height: var\(--stage-timeline-collapse-handle-height\);[\s\S]*?pointer-events: auto;/);
+  assert.match(css, /\.stage-timeline-panel\.is-collapsed \.stage-timeline-resize::before \{ inset: 0; \}/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.stage-timeline-panel \{ transition: none; \}/);
 });
 

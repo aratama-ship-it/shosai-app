@@ -406,7 +406,7 @@
   }
 
   function timelineResizeHandleHeight() {
-    const height = Number.parseFloat(getComputedStyle(root).getPropertyValue("--stage-timeline-resize-hit"));
+    const height = Number.parseFloat(getComputedStyle(root).getPropertyValue("--stage-timeline-collapse-handle-height"));
     return Number.isFinite(height) && height > 0 ? height : 1;
   }
 
