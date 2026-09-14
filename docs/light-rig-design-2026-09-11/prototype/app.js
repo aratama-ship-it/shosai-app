@@ -3569,14 +3569,14 @@
   function renderInspector() {
     const host = $("insp"); host.innerHTML = "";
     const ids = [...state.sel];
+    let hazeBox = null;
     if (state.mode === 'move') {
-      const box=el('div','pbox option-b-controls');
-      box.append(el('p','kicker','もや'));
+      hazeBox=el('div','pbox option-b-controls');
+      hazeBox.append(el('p','kicker','もや'));
       const hazeControl=range(0,100,1,0,v=>`${v}%`,()=>{},()=>{});
-      hazeControl.querySelectorAll('input').forEach(i=>{i.disabled=true;i.setAttribute('aria-label',i.type==='range'?'もや（現在は使えません）':'もやの数値（現在は使えません）');});box.append(hazeControl);
+      hazeControl.querySelectorAll('input').forEach(i=>{i.disabled=true;i.setAttribute('aria-label',i.type==='range'?'もや（現在は使えません）':'もやの数値（現在は使えません）');});hazeBox.append(hazeControl);
       const row=el('div','row'); for(const name of ['なし','うっすら','濃い']) { const b=btn(name,()=>{},'small'); b.disabled=true; row.append(b); }
-      box.append(row);box.append(el('p','note','軽量化のため、もやは0で固定しています。'));
-      host.append(box);
+      hazeBox.append(row);hazeBox.append(el('p','note','軽量化のため、もやは0で固定しています。'));
     }
     syncLightToggle(ids);
     renderXfer();   // コピー／ペーストの可否は選択で変わる。選択だけを更新する経路でも追従させる
@@ -3622,7 +3622,7 @@
     }
     // ---- 動きモード ----
     // パネル名「照明デザイン」は静的HTML(#insphead)へ移した。ここでは繰り返さない。
-    if (!ids.length) { host.append(el("p", "hint", "灯体を選んでください。")); return; }
+    if (!ids.length) { host.append(el("p", "hint", "灯体を選んでください。")); if (hazeBox) host.append(hazeBox); return; }
     if (ids.length === 1) {
       const fid = ids[0]; const f = fixtureById(fid); const l = lightOf(fid);
       host.append(el("p", "kicker", `${label(fid)}（${E.isMoving(f) ? "ムービング" : "固定"}）　${f.name || ""}`));
@@ -3926,6 +3926,7 @@
         }
       }
       // 消す操作はパネル右上のオン・オフへ一本化した（2026-09-13 本人要望）。
+      if (hazeBox) host.append(hazeBox);
       return;
     }
     // 2灯の照射位置を舞台中央線で鏡映する一時モード。配置位置や他の灯体設定は同期しない。
@@ -3944,6 +3945,7 @@
     // 複数（「組の動き」も含めて renderBulk 側の「まとめて変更」枠に集約した。2026-09-13 本人要望）
     host.append(el("p", "kicker", `${ids.length}灯を選択中`));
     renderBulk(host, ids);
+    if (hazeBox) host.append(hazeBox);
   }
 
 
