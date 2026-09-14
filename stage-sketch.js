@@ -20322,7 +20322,8 @@
   const FIXED_KEYS = [
     ["シーンを送る", "↑ ↓ ← →"],
     ["全画面", "F"],
-    ["正面と平面を入れ替える", "X"],
+    ["表示する図を切り替える（両方表示中は上下順を変更）", "T"],
+    ["全画面で正面と平面を入れ替える", "X"],
     ["ショーを書き出す", "⌘S"],
     ["一つ戻す", "⌘Z"],
     ["やり直す", "⇧⌘Z"],
@@ -21096,6 +21097,24 @@
     event.preventDefault();
     if (fullscreen) toggleStageFullscreen();
     else els.presentBtn.click();
+  });
+
+  // Tは表示図を切り替える。片面表示なら反対の図へ、両面表示なら上下順だけを替える。
+  document.addEventListener("keydown", (event) => {
+    if (String(event.key || "").toLowerCase() !== "t" || event.defaultPrevented) return;
+    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    if (event.repeat || event.isComposing || event.keyCode === 229 || isTyping(event.target)) return;
+    if (phoneViewerActive || presenting || fullscreenModalOpen()) return;
+    const view = document.getElementById("view-stage");
+    if (!view || view.hidden || !els.viewSelect) return;
+    const current = els.viewSelect.value;
+    const next = current === "front" ? "plan"
+      : current === "plan" ? "front"
+        : current === "both-plan" ? "both-front" : "both-plan";
+    if (next === current) return;
+    event.preventDefault();
+    els.viewSelect.value = next;
+    els.viewSelect.dispatchEvent(new Event("change", { bubbles: true }));
   });
 
   // 図の交換は全画面中だけ。文字入力や別の操作面へXを通す。
@@ -25297,6 +25316,7 @@ ${propsPlotHtml}
 
   function syncSingleViewSwitches() {
     const single = state.showFront !== state.showPlan;
+    if (els.canvasStack) els.canvasStack.classList.toggle("is-single-view", single);
     document.querySelectorAll("[data-single-view-switch]").forEach((group) => {
       const owner = group.dataset.singleViewSwitch;
       const ownerShown = owner === "front" ? state.showFront : state.showPlan;
