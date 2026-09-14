@@ -28,6 +28,17 @@ test("現在のシーン表示はタイトルが読み取りやすく、目に�
   assert.match(styleSource, /\.stage-scene-now \{[\s\S]*?font-size: clamp\(13px, 1\.1vw, 16px\);[\s\S]*?font-weight: 700;[\s\S]*?color: var\(--paper\);/);
 });
 
+test("現在シーン帯は歌名と時間を省き、再生操作を残して説明を中央に揃える", () => {
+  const bar = stageHtml.slice(stageHtml.indexOf('id="stage-scene-bar"'), stageHtml.indexOf('class="stage-center-bar"'));
+  assert.match(bar, /id="stage-music-current" hidden/);
+  assert.match(bar, /id="stage-music-time" hidden/);
+  assert.match(bar, /id="stage-music-toggle"/);
+  assert.match(bar, /id="stage-music-restart"/);
+  assert.match(bar, /id="stage-music-seek"/);
+  assert.match(styleSource, /\.stage-scene-bar \.stage-scene-desc \{[\s\S]*?align-self: center;[\s\S]*?align-items: center;/);
+  assert.match(styleSource, /\.stage-scene-bar \.stage-scene-desc-text \{ align-self: center; \}/);
+});
+
 test("送りは一覧の欄の中には残さない（二重に置かない）", () => {
   const panel = stageHtml.slice(stageHtml.indexOf('data-panel="scenes"'));
   const body = panel.slice(0, panel.indexOf('id="stage-scene-list"'));

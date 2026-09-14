@@ -8945,18 +8945,17 @@ body.is-panel-dragging {
   --scene-desc-preferred-width: 300px;
   flex: 1 1 var(--scene-desc-preferred-width);
   min-width: min(100%, var(--scene-desc-preferred-width));
-  align-self: flex-start;
-  align-items: flex-start;
+  align-self: center;
+  align-items: center;
   padding: 0;
   border-bottom: 0;
   margin-bottom: 0;
 }
 
-.stage-scene-bar .stage-scene-desc-text { align-self: flex-start; }
-.stage-scene-bar .stage-scene-desc-label { padding-top: 2px; }
+.stage-scene-bar .stage-scene-desc-text { align-self: center; }
+.stage-scene-bar .stage-scene-desc-label { padding-top: 0; }
 
-/* 現在のシーンの曲。音源そのものはIndexedDBへ置き、この帯は一つのaudioを
-   全シーンで使い回す。シークは残り幅を取り、狭ければ曲名と一緒に次行へ送る。 */
+/* 現在のシーンの曲。歌名と時間はこの帯では省き、再生・先頭・シーク操作を残す。 */
 .stage-scene-music {
   display: flex;
   align-items: center;

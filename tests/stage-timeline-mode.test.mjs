@@ -318,10 +318,12 @@ test("ミュージックシンクの操作列を二段で並べ、未接続の�
     "stage-timeline-clear-anchors", "stage-timeline-loop-a", "stage-timeline-loop-b",
     "stage-timeline-loop", "stage-timeline-bpm", "stage-timeline-auto-bpm", "stage-timeline-mark-one",
     "stage-timeline-grid", "stage-timeline-zoom-out", "stage-timeline-zoom-in",
-    "stage-timeline-split", "stage-timeline-record", "stage-timeline-record-next",
+    "stage-timeline-split",
     "stage-timeline-add-scene", "stage-timeline-add-transition",
     "stage-timeline-add-light-cue", "stage-timeline-add-music-cue", "stage-timeline-add-dialogue-cue",
   ]) assert.match(html, new RegExp(`id="${id}"`));
+  assert.match(html, /id="stage-timeline-record"[^>]*disabled hidden/);
+  assert.match(html, /id="stage-timeline-record-next"[^>]*disabled hidden/);
   assert.doesNotMatch(html, /id="stage-timeline-(?:save|load)"/);
   assert.doesNotMatch(timeline, /stage-timeline-(?:save|load)|els\.(?:save|load)/);
   assert.doesNotMatch(html, /id="stage-timeline-(?:undo|redo)"/);

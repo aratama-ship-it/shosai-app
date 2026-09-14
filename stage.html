@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=376">
+<link rel="stylesheet" href="style.css?v=377">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -423,10 +423,10 @@
                       aria-label="現在のシーンの曲を再生" aria-pressed="false">▶</button>
               <button type="button" class="btn-quiet stage-music-restart" id="stage-music-restart"
                       aria-label="曲の先頭へ戻す" title="曲の先頭へ戻す">↺</button>
-              <span class="stage-music-current" id="stage-music-current">音なし</span>
+              <span class="stage-music-current" id="stage-music-current" hidden>音なし</span>
               <input type="range" class="stage-music-seek" id="stage-music-seek"
                      min="0" max="0" step="0.1" value="0" aria-label="曲の再生位置" disabled>
-              <span class="stage-music-time" id="stage-music-time">0:00 / 0:00</span>
+              <span class="stage-music-time" id="stage-music-time" hidden>0:00 / 0:00</span>
             </div>
           </div>
 
@@ -1140,8 +1140,8 @@
             <button type="button" class="stage-timeline-square" id="stage-timeline-zoom-in"
                     aria-label="タイムラインを拡大" title="拡大（＋ キー、Cmd+ホイール）">＋</button>
             <button type="button" id="stage-timeline-split" disabled>シーン分割</button>
-            <button type="button" class="stage-timeline-record" id="stage-timeline-record" disabled>記録</button>
-            <button type="button" class="stage-timeline-record" id="stage-timeline-record-next" disabled>記録して次へ ▶</button>
+            <button type="button" class="stage-timeline-record" id="stage-timeline-record" disabled hidden>記録</button>
+            <button type="button" class="stage-timeline-record" id="stage-timeline-record-next" disabled hidden>記録して次へ ▶</button>
             <output id="stage-timeline-position">0:00</output>
           </div>
         </header>
