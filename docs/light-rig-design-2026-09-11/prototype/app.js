@@ -463,7 +463,18 @@
   const fixtureWorld = (f) => E.fixtureWorld(f, state.rig, state.dims);
   /* 固定灯は時間で動かない。向きは仕込みで決まるので、往復や円が付いていても止めた位置で描く
      （2026-09-11 本人判断で「動き」は固定灯では設定できない。古いデータの保険も兼ねる）。 */
-  const targetAt = (fid, t) => E.targetAt(lightOf(fid), cueWithPeriods(), fid, E.isMoving(fixtureById(fid)) ? t : 0, state.dims);
+  const targetAt = (fid, t) => {
+    const light = lightOf(fid), fixture = fixtureById(fid);
+    // 選択灯「型」の再現可能なランダム移動。固定seedの経路だけを試作側で評価する。
+    const selectedPresetEngine = window.SELECTED_LIGHT_PRESETS_ENGINE;
+    if (E.isMoving(fixture) && light && light.path && light.path.kind === "wander" && selectedPresetEngine) {
+      const point = selectedPresetEngine.wanderPoint(light.path, t, {
+        stage: { kind: "rect", u0: 0, v0: 0, u1: 1, v1: 1 },
+      });
+      if (point) return E.pointWorld(point, state.dims);
+    }
+    return E.targetAt(light, cueWithPeriods(), fid, E.isMoving(fixture) ? t : 0, state.dims);
+  };
   // rig-engine の周期表は固定なので、本試作の秒数（4/2/1）へ合わせるため speed を経由せず delay を秒数基準に
   function cueWithPeriods() { return cue(); }
 
@@ -3816,6 +3827,7 @@
     document.querySelectorAll("#filters button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filter === state.filter)));
     renderLxq(); renderList(); renderInspector(); renderFixedConflicts();
     if (window.LIGHT_PRESETS_UI) window.LIGHT_PRESETS_UI.refresh();   // 右パネルの「見本」タブ（light-presets-ui.js）
+    if (window.SELECTED_LIGHT_PRESETS_UI) window.SELECTED_LIGHT_PRESETS_UI.refresh(); // 選択灯「型」タブ
     renderTransport(); draw();
   }
 
