@@ -62,11 +62,11 @@ test("一覧は開閉状態・外側クリック・Escを扱い、PCでだけ表
 
 test("正本・PWAキャッシュの版を更新する", async () => {
   const sw = await readFile(new URL("../stage-sw.js", import.meta.url), "utf8");
-  assert.match(html, /style\.css\?v=373/);
+  assert.match(html, /style\.css\?v=374/);
   assert.match(html, /stage-sketch\.js\?v=487/);
   assert.match(html, /stage-i18n\.js\?v=180/);
-  assert.match(sw, /stage-sketch-pwa-v495/);
-  assert.match(sw, /style\.css\?v=373/);
+  assert.match(sw, /stage-sketch-pwa-v496/);
+  assert.match(sw, /style\.css\?v=374/);
   assert.match(sw, /stage-sketch\.js\?v=487/);
   assert.match(sw, /stage-i18n\.js\?v=180/);
 });

@@ -110,7 +110,7 @@ test("セクション操作は上部と詳細モーダルへ整理する", () =>
   assert.match(css, /\.stage-rename-modal #stage-rename-ok,[\s\S]*\.stage-rename-modal #stage-rename-delete \{[^}]*width:\s*100%;[^}]*min-height:\s*44px;[^}]*margin-top:\s*8px;/s);
   assert.match(css, /\.stage-modal \.stage-rename-delete \{[^}]*border-color:\s*var\(--danger\);[^}]*color:\s*var\(--danger\);/s);
   assert.match(css, /\.stage-scene-chip\.is-section \{[^}]*min-height:\s*56px;[^}]*background:/s);
-  assert.match(css, /\.stage-scene-chip \{[^}]*min-height:\s*40px;/s);
+  assert.match(css, /\.stage-scene-chip \{[^}]*min-height:\s*32px;/s);
 });
 
 test("開いたシーンの説明は初期表示から全文が見える高さへ伸びる", () => {

@@ -48,7 +48,8 @@ test("scene creation controls keep compact modal and 44px targets", () => {
   assert.match(style, /\.stage-modal\.stage-scene-create-modal\s*\{[^}]*width:\s*min\(720px,/s);
   assert.match(style, /\.stage-modal\.stage-scene-delete-modal\s*\{[^}]*width:\s*min\(440px,/s);
   assert.match(style, /\.stage-scene-next-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 44px/s);
-  assert.match(style, /\.stage-panel \.stage-scene-next-row \.stage-scene-apply,\s*\.stage-panel \.stage-scene-next-row \.stage-scene-row-delete\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(style, /\.stage-panel \.stage-scene-next-row \.stage-scene-apply\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(style, /\.stage-panel \.stage-scene-next-row \.stage-scene-row-delete\s*\{[^}]*height:\s*31px;[^}]*min-height:\s*31px;[^}]*align-self:\s*center;/s);
   assert.match(style, /\.stage-panel \.stage-scene-next-row \.stage-scene-row-delete\s*\{[^}]*border-color:\s*var\(--danger\)[^}]*color:\s*var\(--danger\)/s);
   assert.match(style, /\.stage-scene-create-list\s*\{[^}]*overflow-y:\s*auto/s);
   assert.match(style, /\.stage-scene-create-list\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);

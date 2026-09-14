@@ -2391,9 +2391,16 @@ html.stage-pwa-tablet .stage-sketch-kicker { display: none; }
   margin-top: 6px;
 }
 
-.stage-panel .stage-scene-next-row .stage-scene-apply,
-.stage-panel .stage-scene-next-row .stage-scene-row-delete {
+.stage-panel .stage-scene-next-row .stage-scene-apply {
   min-height: 44px;
+  margin: 0;
+  font-size: 0.76rem;
+}
+
+.stage-panel .stage-scene-next-row .stage-scene-row-delete {
+  height: 31px;
+  min-height: 31px;
+  align-self: center;
   margin: 0;
   font-size: 0.76rem;
 }
@@ -8415,7 +8422,7 @@ html.stage-phone-viewer .stage-single-view-switch { display: none; }
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 32px;
   min-width: 150px;
   padding: 6px 11px;
   border: 1px solid var(--line-dark);
