@@ -16007,7 +16007,6 @@ body.is-timeline-resizing { cursor: row-resize; user-select: none; -webkit-user-
 }
 
 .stage-timeline-tempo span { flex: 0 0 auto; }
-.stage-timeline-record { color: #fff4e8 !important; background: var(--rust-ink); border-color: var(--rust-ink) !important; }
 .stage-timeline-toolbar output {
   flex: 0 0 72px;
   color: var(--stage-timeline-text);
