@@ -7,20 +7,10 @@
   "use strict";
   const E = window.RIG_ENGINE, V = window.VOLUME_LIGHT;
   let distanceMetric = false, spatialQuick = false;
-  /* 図の見え方だけをまとめて強める倍率。灯の強さやLX cueには入れず、ブラウザごとの表示設定として持つ。
-     そのため、同じ照明データを開いても保存済みのキューや他の利用者の見え方は変わらない。 */
-  const VISUAL_GAIN_KEY = "shosai.lightVisualGain.v1", DEFAULT_VISUAL_GAIN = 1.4;
-  let visualGain = (() => {
-    try {
-      const stored = window.localStorage.getItem(VISUAL_GAIN_KEY);
-      if (stored == null) return DEFAULT_VISUAL_GAIN;
-      const value = Number(stored);
-      return Number.isFinite(value) ? E.clamp(value, 0.6, 1.8) : DEFAULT_VISUAL_GAIN;
-    } catch (_) { return DEFAULT_VISUAL_GAIN; }
-  })();
-  const visualAlpha = (value) => E.clamp(E.finite(value, 0) * visualGain, 0, 1);
-  const setVisualGain = (value) => { visualGain = E.clamp(E.finite(value, DEFAULT_VISUAL_GAIN), 0.6, 1.8); draw(); };
-  const saveVisualGain = () => { try { window.localStorage.setItem(VISUAL_GAIN_KEY, String(visualGain)); } catch (_) {} };
+  /* 光条・光だまり・まぶしさ・人物の受光を、全図で同じ見え方へ固定する。
+     灯の強さやLX cueには入れないので、保存済みの照明データは変わらない。 */
+  const VISUAL_GAIN = 1.8;
+  const visualAlpha = (value) => E.clamp(E.finite(value, 0) * VISUAL_GAIN, 0, 1);
   const $ = (id) => document.getElementById(id);
 
   /* ---------- 状態 ---------- */
@@ -1092,7 +1082,7 @@
     });
     const yawDeg = kind === "shimote" ? -90 : kind === "kamite" ? 90 : 0;
     const people = kind === "plan" || !showOn("pieces") ? [] : piecesOf().filter(p=>p.kind==="performer");
-    V.render(ctx,P,state.dims,kind,beams,people,p=>drawPiecesUp(ctx,P,k,{...options,yawDeg,only:p.id,relight:showOn("blackout"),beams:all}),V.haze(cue()),Boolean(state.drag||state.play.on||spatialQuick),visualGain);
+    V.render(ctx,P,state.dims,kind,beams,people,p=>drawPiecesUp(ctx,P,k,{...options,yawDeg,only:p.id,relight:showOn("blackout"),beams:all}),V.haze(cue()),Boolean(state.drag||state.play.on||spatialQuick),VISUAL_GAIN);
     for (const b of beams) {
       const q=P(b.S), w=V.glareWeight(b,kind);
       if(w>0) drawGlare(ctx,q.X,q.Y,k*.8*glareMul(b.l),b.color,b.level*w,false);
@@ -1124,7 +1114,7 @@
       if (!(level > 0) || !S || !T) return [];
       const end = beamEnd(l, S, T), frame = frameOf(f, l);
       const axis = end.surface === "back" ? "z" : end.surface === "floor" ? "y" : frame ? frame.axis : "y";
-      return [{ S, T, level: level * visualGain, deg: beamOf(f), color: l.color, doors: frame ? E.frameDoors(f, l, axis) : [] }];
+      return [{ S, T, level: level * VISUAL_GAIN, deg: beamOf(f), color: l.color, doors: frame ? E.frameDoors(f, l, axis) : [] }];
     });
   }
   function drawPiecesUp(ctx, P, pxPerM, opts) {
@@ -3350,14 +3340,6 @@
     const host = $("insp"); host.innerHTML = "";
     const ids = [...state.sel];
     if (state.mode === 'move') {
-      const displayBox=el('div','pbox option-b-controls');
-      displayBox.append(el('p','kicker','表現の明るさ · 全灯'));
-      const gainControl=range(60,180,1,Math.round(visualGain*100),v=>`${Math.round(v)}%`,v=>setVisualGain(v/100),()=>saveVisualGain());
-      gainControl.querySelectorAll('input').forEach(i=>i.setAttribute('aria-label',i.type==='range'?'全灯の表現の明るさ':'全灯の表現の明るさ（数値）'));displayBox.append(gainControl);
-      const gainRow=el('div','row'); for(const [name,value] of [['基準',100],['強め',140],['際立たせる',180]]) gainRow.append(btn(name,()=>{setVisualGain(value/100);saveVisualGain();renderInspector();},'small'));
-      displayBox.append(gainRow);
-      displayBox.append(el('p','note','光条・光だまり・まぶしさ・演者への見え方をまとめて調整します。灯の強さ・LX cue・保存データは変えません。'));
-      host.append(displayBox);
       const box=el('div','pbox option-b-controls');
       box.append(el('p','kicker','もや · このLX cue'));
       const hazeControl=range(0,100,1,V.haze(cue()),v=>`${v}%`,v=>{cue().environment={...(cue().environment||{}),haze:v};draw();},()=>commit());
