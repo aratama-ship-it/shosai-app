@@ -19509,7 +19509,13 @@
         point.addEventListener("click", () => {
           expandedSceneTransitionToId = expandedSceneTransitionToId === toScene.id
             ? null : toScene.id;
-          renderScenes();
+          const canPreview = state.animateScenes
+            && !document.body.classList.contains("stage-session-guest");
+          if (canPreview) {
+            openScene(toScene.id, { transitionFromSceneId: fromScene.id });
+          } else {
+            renderScenes();
+          }
           requestAnimationFrame(() => {
             const reopened = els.sceneList && els.sceneList.querySelector(
               `.stage-scene-transition-boundary[data-transition-to="${CSS.escape(toScene.id)}"] .stage-scene-transition-point`,
@@ -22015,7 +22021,19 @@ ${propsPlotHtml}
     closeNoteEditor();
     selectedNoteId = null;
     state.cursorRowId = id;
-    if (state.project.activeSceneId === id) { renderScenes(); return; }
+    const transitionFromScene = options.transitionFromSceneId
+      ? state.project.scenes.find(
+        (row) => row.kind === "scene" && row.id === options.transitionFromSceneId,
+      ) || null
+      : null;
+    if (state.project.activeSceneId === id) {
+      const liveSpins = transitionFromScene && state.animateScenes ? captureLiveSpins() : null;
+      renderScenes();
+      if (transitionFromScene && state.animateScenes) {
+        beginSceneAnim(transitionFromScene, liveSpins, options.transitionDurationMs);
+      }
+      return;
+    }
     const before = sc();
     continueAudioOnNextSceneSync = Boolean(
       els.musicAudio && !els.musicAudio.paused && audioPlayback.ready
@@ -22036,7 +22054,7 @@ ${propsPlotHtml}
     updateInspector();
     // 転換の初期姿勢を先に書き込む。開始済みなら beginSceneAnim がその姿勢を一度だけ描く。
     // 動きが無い切替だけは、ここで通常描画する。
-    if (!beginSceneAnim(before, liveSpins, options.transitionDurationMs)) render();
+    if (!beginSceneAnim(transitionFromScene || before, liveSpins, options.transitionDurationMs)) render();
     persistSoon();
     announce(`${sc().title}を開きました。`);
   }

@@ -137,7 +137,8 @@ test("シーン・音源・転換の固定端とキュー点ロックを保存�
 test("転換の最初の描画は前シーンの位置から始め、行き先を一瞬だけ描かない", () => {
   assert.match(sketch, /sceneAnim = \{ pieces, exits, blackout, progress: 0, raf: 0 \};[\s\S]*?step\(start\);/);
   assert.match(sketch, /function beginSceneAnim\(fromScene, liveSpinsIn, durationMs = null\)[\s\S]*?return true;/);
-  assert.match(sketch, /updateInspector\(\);[\s\S]*?if \(!beginSceneAnim\(before, liveSpins, options\.transitionDurationMs\)\) render\(\);/);
+  assert.match(sketch, /updateInspector\(\);[\s\S]*?if \(!beginSceneAnim\(transitionFromScene \|\| before, liveSpins, options\.transitionDurationMs\)\) render\(\);/);
+  assert.match(sketch, /const transitionFromScene = options\.transitionFromSceneId[\s\S]*?beginSceneAnim\(transitionFromScene, liveSpins, options\.transitionDurationMs\)/);
 });
 
 test("時間表示は時刻だけ、カウント表示はカウントだけを目盛りに置く", () => {

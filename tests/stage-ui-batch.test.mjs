@@ -136,6 +136,8 @@ test("転換の長さ・暗転・メモは選択中シーンの上下にある�
   assert.match(source, /const growTransitionNote = \(preserveCurrent = false\) => \{[\s\S]*noteInput\.scrollHeight \+ borderHeight[\s\S]*Math\.max\(46, currentHeight, contentHeight\)/);
   assert.match(source, /const makeSceneTransitionPoint = \(fromScene, toScene\) => \{/);
   assert.match(source, /point\.setAttribute\("aria-expanded", String\(expanded\)\)/);
+  assert.match(source, /const canPreview = state\.animateScenes[\s\S]*?openScene\(toScene\.id, \{ transitionFromSceneId: fromScene\.id \}\)/);
+  assert.match(source, /beginSceneAnim\(transitionFromScene \|\| before, liveSpins, options\.transitionDurationMs\)/);
   assert.match(source, /expandedSceneTransitionToId === toScene\.id \|\| expandedBySetting/);
   assert.match(source, /if \(next\) els\.sceneList\.append\(makeSceneTransitionPoint\(scene, next\)\)/);
   assert.match(source, /boundary\.append\(makeSceneTransitionFrame\(fromScene, toScene, "between"\)\)/);
