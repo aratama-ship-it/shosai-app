@@ -3015,10 +3015,11 @@
       const ons = lit.map((fid) => E.shutterActive(lightOf(fid)));
       const allOn = ons.length > 0 && ons.every(Boolean), anyOn = ons.some(Boolean);
       const head = el("div", "pboxhead"); head.append(el("p", "kicker", "カッター"));
-      head.append(switchBtn(allOn, allOn ? "押すと全灯のカッターを外します" : anyOn ? "一部だけ切っています。押すと全灯そろえて切ります" : "押すと全灯を四角に切ります", () => {
-        if (allOn) { bulkEach(ids, (f, l) => { if (l.shutter) l.shutter = { ...l.shutter, on: false }; }); commit(`${ids.length}灯のカッターを外しました`); }
-        else { bulkEach(ids, (f, l) => { l.shutter = E.newShutter(l.shutter ? { ...l.shutter, on: true } : {}); }); commit(`${ids.length}灯を四角に切りました`); }
-      }, "四角に切る"));
+      head.append(switchBtn(allOn,
+        allOn ? "押すと全灯のカッターをオフにします" : anyOn ? "一部だけオンです。押すと全灯をオンにします" : "押すと全灯のカッターをオンにします", () => {
+          if (allOn) { bulkEach(ids, (f, l) => { if (l.shutter) l.shutter = { ...l.shutter, on: false }; }); commit(`${ids.length}灯のカッターをオフにしました`); }
+          else { bulkEach(ids, (f, l) => { l.shutter = E.newShutter(l.shutter ? { ...l.shutter, on: true } : {}); }); commit(`${ids.length}灯のカッターをオンにしました`); }
+        }, ""));
       b.append(head);
       if (anyOn) {
         const on = lit.filter((fid) => E.shutterActive(lightOf(fid)));
@@ -3608,11 +3609,11 @@
         const b = box(null);
         const sh = E.shutterActive(l) ? l.shutter : null;
         const head = el("div", "pboxhead"); head.append(el("p", "kicker", "カッター"));
-        head.append(switchBtn(Boolean(sh), sh ? "光を四角に切っています。押すと丸に戻します（形は覚えておきます）" : "押すと光を四角に切ります（幅と奥行きを決められます）", () => {
+        head.append(switchBtn(Boolean(sh), sh ? "押すとカッターをオフにします" : "押すとカッターをオンにします", () => {
           const l2 = lightOf(fid);
-          if (E.shutterActive(l2)) { l2.shutter = { ...l2.shutter, on: false }; commit("カッターを外しました"); }
-          else { l2.shutter = E.newShutter(l2.shutter ? { ...l2.shutter, on: true } : {}); commit("カッターで四角に切りました"); }
-        }, "四角に切る"));
+          if (E.shutterActive(l2)) { l2.shutter = { ...l2.shutter, on: false }; commit("カッターをオフにしました"); }
+          else { l2.shutter = E.newShutter(l2.shutter ? { ...l2.shutter, on: true } : {}); commit("カッターをオンにしました"); }
+        }, ""));
         b.append(head);
         if (sh) {
           const AX = frameAxisLabels(l.surface);
