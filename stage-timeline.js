@@ -204,6 +204,7 @@
   let anchorDrag = null;
   let cueDrag = null;
   let audioDrag = null;
+  let audioClick = null;
   let suppressCueClickUntil = 0;
   let suppressAudioClickUntil = 0;
   let timelineLockMenuTarget = null;
@@ -1661,26 +1662,36 @@
     return Math.round(clamp(snappedSeconds(audioDrag.startSeconds + delta), 0, maxStart) * 10) / 10;
   }
 
+  function rememberAudioDetailsClick(dragging) {
+    const now = performance.now();
+    const previous = audioClick;
+    audioClick = null;
+    if (previous && previous.trackId === dragging.trackId && previous.button === dragging.button
+        && now - previous.at <= 420) {
+      openAudioDetails(dragging.trackId, dragging.button);
+      return true;
+    }
+    audioClick = { trackId: dragging.trackId, button: dragging.button, at: now };
+    return false;
+  }
+
   function beginAudioDrag(event, clip, button, audioRangeLock) {
     if (event.button !== undefined && event.button !== 0) return;
-    if (audioRangeLock) {
-      els.status.textContent = tx("この音源は開始または終了が固定中です。右クリックで解除できます。");
-      return;
-    }
-    if (!audioTimelineCanDrag(clip) || button.dataset.audioMissing === "true") return;
+    if (button.dataset.audioMissing === "true") return;
     audioDrag = {
       pointerId: event.pointerId,
-      sectionId: timeline.sectionId,
+      sectionId: timeline && timeline.sectionId,
       sceneId: clip.sourceSceneId,
+      trackId: clip.trackId,
       button,
       startX: event.clientX,
       startSeconds: clip.start,
       nextSeconds: clip.start,
       duration: Math.max(0.1, clip.end - clip.start),
+      canDrag: audioTimelineCanDrag(clip) && !audioRangeLock,
+      audioRangeLock,
       moved: false,
     };
-    button.classList.add("is-dragging");
-    document.body.classList.add("is-timeline-audio-dragging");
     try { els.viewport.setPointerCapture(event.pointerId); } catch (_) { /* 捕捉できなくても終端を拾う */ }
   }
 
@@ -1688,6 +1699,16 @@
     if (!audioDrag || event.pointerId !== audioDrag.pointerId) return;
     if (!audioDrag.moved && Math.abs(event.clientX - audioDrag.startX) < 3) return;
     audioDrag.moved = true;
+    audioClick = null;
+    if (!audioDrag.canDrag) {
+      if (audioDrag.audioRangeLock) {
+        els.status.textContent = tx("この音源は開始または終了が固定中です。右クリックで解除できます。");
+      }
+      event.preventDefault();
+      return;
+    }
+    audioDrag.button.classList.add("is-dragging");
+    document.body.classList.add("is-timeline-audio-dragging");
     audioDrag.nextSeconds = audioDragSeconds(event);
     audioDrag.button.style.left = `${pxFor(audioDrag.nextSeconds)}px`;
     event.preventDefault();
@@ -1700,7 +1721,11 @@
     dragging.button.classList.remove("is-dragging");
     document.body.classList.remove("is-timeline-audio-dragging");
     try { els.viewport.releasePointerCapture(event.pointerId); } catch (_) { /* 既に解放済み */ }
-    if (!dragging.moved || Math.abs(dragging.nextSeconds - dragging.startSeconds) < 1e-9) return;
+    if (!dragging.moved) {
+      rememberAudioDetailsClick(dragging);
+      return;
+    }
+    if (!dragging.canDrag || Math.abs(dragging.nextSeconds - dragging.startSeconds) < 1e-9) return;
     const updated = bridge.setTimelineAudioStartSeconds(dragging.sectionId, dragging.sceneId,
       dragging.nextSeconds, { checkpoint: true });
     suppressAudioClickUntil = performance.now() + 400;
@@ -1785,10 +1810,6 @@
         if (audioBlock.dataset.audioMissing !== "true"
             || typeof bridge.openTimelineAudioRelinkPicker !== "function") return;
         bridge.openTimelineAudioRelinkPicker(clip.trackId);
-      });
-      audioBlock.addEventListener("dblclick", () => {
-        if (audioBlock.dataset.audioMissing === "true") return;
-        openAudioDetails(clip.trackId, audioBlock);
       });
       audioBlock.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
         kind: "audio", id: clip.trackId, lockedEdge: audioRangeLock, label: clip.title, returnFocus: audioBlock,

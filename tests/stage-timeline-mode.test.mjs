@@ -407,7 +407,9 @@ test("音源ブロックのダブルクリックで音源別ゲインを編集�
   ]) assert.match(html, new RegExp(`id="${id}"`));
   assert.match(html, /id="stage-timeline-audio-gain-range" min="-24" max="12" step="0\.5"/);
   assert.match(timeline, /const audioClips = Array\.isArray\(timeline\.audioClips\)/);
-  assert.match(timeline, /audioBlock\.addEventListener\("dblclick", \(\) => \{[\s\S]*?openAudioDetails\(clip\.trackId, audioBlock\)/);
+  assert.match(timeline, /function rememberAudioDetailsClick\(dragging\)[\s\S]*?openAudioDetails\(dragging\.trackId, dragging\.button\)/);
+  assert.match(timeline, /if \(!dragging\.moved\) \{[\s\S]*?rememberAudioDetailsClick\(dragging\)/);
+  assert.doesNotMatch(timeline, /audioBlock\.addEventListener\("dblclick"/);
   assert.match(timeline, /const factor = 10 \*\* \(normalizedAudioGainDb\(gainDb\) \/ 20\)/);
   assert.match(timeline, /createMediaElementSource\(els\.audio\)[\s\S]*?createGain\(\)[\s\S]*?gain\.connect\(context\.destination\)/);
   assert.match(timeline, /bridge\.setTimelineAudioGainDb\(trackId, gainDb\)/);
