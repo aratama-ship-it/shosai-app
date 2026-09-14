@@ -914,7 +914,7 @@
   }
 
   /* ===== paintBody（本体 8066-8159） ===== */
-  function paintBody(target, rig, color, look) {
+  function paintBody(target, rig, color, look, shade) {
     const P = rig.P;
     const ux = rig.ux;
     const uy = rig.uy;
@@ -934,7 +934,7 @@
     parts.forEach((part) => {
       if (part.kind === "limb") {
         const far = part.z < -0.02;
-        target.fillStyle = far ? mixToward(color, 0.26) : color;
+        target.fillStyle = shade ? shade(part) : far ? mixToward(color, 0.26) : color;
         const taper = LIMB_TAPER[part.limb.kind];
         const nodes = limbNodes(part.limb.pts.map((k) => P[k]), part.limb.kind);
         taperedChain(target, nodes, taper.map((r) => Math.max(0.8, r * ux)));
@@ -965,7 +965,7 @@
       if (part.kind === "torso") {
         /* 胴。首から股まで断面を積んだ外周をそのままなぞる。
            ★凸包で取ってはいけない（くびれが埋まって樽になる）。 */
-        target.fillStyle = color;
+        target.fillStyle = shade ? shade(part) : color;
         smoothClosedPath(target, torsoOutline(rig.rings));
         target.fill();
         return;
@@ -982,7 +982,7 @@
          見た目の均整にいちばん効くため（2026-08-16 本人「もう少しスタイルを良く」）。
          縦半径だけ意図して小さくしてある。リアル側へ戻すときは縦を 0.068 に戻せばよい。
          首は胴の一部として描いてあるので、ここに輪郭線は引かない。 */
-      target.fillStyle = color;
+      target.fillStyle = shade ? shade(part) : color;
       target.beginPath();
       if (rig.mask) paintFaceMask(target, rig.project, rig.pose, rig.H, rig.mask, false);
       target.beginPath();
@@ -1018,5 +1018,64 @@
       Math.max(3, (maxX - minX) / 2 + 0.03 * rig.ux), Math.max(1.2, 0.022 * rig.uy), 0, 0, Math.PI * 2);
     target.fill(); target.restore();
   }
-  root.STAGE_FIGURE = Object.freeze({ BASE_JOINTS, POSES, poseById, buildRig, paintBody, paintShadow, DEFAULT_HEIGHT_CM });
+  /* 照明試作だけの受光。保存値を変えず、世界座標の円錐と見えている面を評価する。
+     投影上の帯の重なりや「奥に点灯灯がある」だけでは人物を明暗に分類しない。
+     rgb は照度ではなくプレビューの表示値。間接光・ゴボの細模様・人物間の遮光は扱わない。 */
+  const dotLight = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+  const unitLight = (a) => { const l = Math.hypot(a.x, a.y, a.z); return l > 1e-8 ? { x: a.x / l, y: a.y / l, z: a.z / l } : null; };
+  const rgbLight = (hex) => { const n = parseInt(hex.replace('#', ''), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  function bodyLightSample(point, normal, beams, color) {
+    const energy = [0, 0, 0], base = rgbLight(color), dark = [12, 11, 10];
+    for (const b of beams) {
+      if (!(b.level > 0)) continue;
+      const axis = unitLight({ x: b.T.x - b.S.x, y: b.T.y - b.S.y, z: b.T.z - b.S.z });
+      if (!axis) continue;
+      const delta = { x: point.x - b.S.x, y: point.y - b.S.y, z: point.z - b.S.z };
+      const along = dotLight(delta, axis);
+      if (!(along > 1e-6)) continue;
+      const radial = { x: delta.x - along * axis.x, y: delta.y - along * axis.y, z: delta.z - along * axis.z };
+      const radius = along * Math.tan(clamp(b.deg, 1, 150) * Math.PI / 360);
+      const r = Math.hypot(radial.x, radial.y, radial.z) / radius;
+      if (!(r < 1)) continue;
+      const incoming = unitLight({ x: -delta.x, y: -delta.y, z: -delta.z });
+      // 見えている面の法線との内積で決める。光源の前後で一律に切ると横光まで消える。
+      let amount = b.level * clamp((1 - r) / 0.18, 0, 1) * Math.max(0, dotLight(normal, incoming));
+      for (const door of b.doors || []) {
+        const parallel = dotLight(door.n, axis);
+        const n = unitLight({ x: door.n.x - parallel * axis.x, y: door.n.y - parallel * axis.y, z: door.n.z - parallel * axis.z });
+        if (!n) continue;
+        const gap = 1 - door.f - dotLight(radial, n) / radius;
+        amount *= clamp(gap / Math.max(0.001, door.soft), 0, 1);
+      }
+      const tint = rgbLight(b.color || '#ffffff');
+      for (let c = 0; c < 3; c++) energy[c] += amount * tint[c] / 255;
+    }
+    // 前明かりを足したら単調に明るくなる。逆光の灯数で前面を再び暗くしない。
+    return energy.map((e, c) => Math.round(dark[c] + (Math.max(dark[c], base[c]) - dark[c]) * (1 - Math.exp(-2 * e))));
+  }
+  function bodyLightPaint(target, rig, pc, dims, viewYaw, beams) {
+    const H = pc.hM || DEFAULT_HEIGHT_CM / 100, a = (pc.facing || 0) * Math.PI / 180;
+    const v = viewYaw * Math.PI / 180, view = { x: -Math.sin(v), y: Math.cos(v), z: 0 };
+    const right = { x: Math.cos(v), y: Math.sin(v), z: 0 };
+    return (part) => {
+      const keys = part.kind === 'head' ? ['head'] : part.kind === 'torso' ? ['shL', 'shR', 'hipL', 'hipR'] : part.limb.pts;
+      const j = keys.reduce((sum, k) => sum.map((n, i) => n + rig.pose.joints[k][i] / keys.length), [0, 0, 0]);
+      const center = { x: (pc.u - 0.5) * dims.W + H * (j[0] * Math.cos(a) + j[2] * Math.sin(a)),
+        y: pc.v * dims.D + H * (-j[0] * Math.sin(a) + j[2] * Math.cos(a)), z: H * j[1] };
+      const half = H * (part.kind === 'head' ? 0.048 : part.kind === 'torso' ? 0.1075 : 0.035);
+      const px = keys.reduce((n, k) => n + rig.P[k].x / keys.length, 0);
+      const py = keys.reduce((n, k) => n + rig.P[k].y / keys.length, 0);
+      const width = Math.max(1, half * rig.ux / H);
+      const gradient = target.createLinearGradient(px - width, py, px + width, py);
+      for (const s of [-1, -0.5, 0, 0.5, 1]) {
+        const side = s * 0.92, front = Math.sqrt(1 - side * side);
+        const normal = unitLight({ x: right.x * side + view.x * front, y: right.y * side + view.y * front, z: 0.18 });
+        const point = { x: center.x + right.x * half * s, y: center.y + right.y * half * s, z: center.z };
+        const rgb = bodyLightSample(point, normal, beams, pc.color || '#d8cdb6');
+        gradient.addColorStop((s + 1) / 2, `rgb(${rgb.join(',')})`);
+      }
+      return gradient;
+    };
+  }
+  root.STAGE_FIGURE = Object.freeze({ BASE_JOINTS, POSES, poseById, buildRig, paintBody, paintShadow, DEFAULT_HEIGHT_CM, bodyLightSample, bodyLightPaint });
 })(typeof window !== "undefined" ? window : globalThis);

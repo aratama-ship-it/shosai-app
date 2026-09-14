@@ -1048,31 +1048,26 @@
     if (showOn("names")) ctx.fillText(pc.name, lbl.X, lbl.Y + 4); ctx.textAlign = "left";
     ctx.restore();
   }
-  /* 演者より<b>奥</b>にある灯が点いていると、客席からはその演者が影絵（シルエット）に見える。
-     作業灯を消したときだけ、その見え方を絵にする（2026-09-13 本人要望・実際の舞台写真の見え方）。
-     どの灯が当たっているかまでは追わない——逆光があるかどうかだけで決める、絵づくりのための近似。 */
-  function backlitPieces() {
-    const out = new Set();
-    if (!(state.mode === "move" && showOn("blackout"))) return out;
-    const d = state.dims;
-    const lit = state.rig.fixtures
-      .filter((f) => { const l = lightOf(f.id); return isLit(l) && litFactorOf(f, l) > 0.05; })
-      .map((f) => fixtureWorld(f)).filter(Boolean);
-    if (!lit.length) return out;
-    piecesOf().forEach((pc) => {
-      if (pc.kind !== "performer") return;
-      const py = E.clamp(E.finite(pc.v, 0.5), 0, 1) * d.D;
-      if (lit.some((S) => S.y < py - 0.3)) out.add(pc.id);
+  /* 人物を塗り直すための実際の照射。選択による帯のdimは人物の受光へ混ぜない。
+     cycは壁を照らす専用灯なので、人物への直射としては数えない。 */
+  function performerBeams() {
+    return state.rig.fixtures.flatMap((f) => {
+      const l = lightOf(f.id);
+      if (!isLit(l) || f.mount.type === "cyc") return [];
+      const level = litFactorOf(f, l), S = fixtureWorld(f), T = targetAt(f.id, state.play.t);
+      if (!(level > 0) || !S || !T) return [];
+      const end = beamEnd(l, S, T), frame = frameOf(f, l);
+      const axis = end.surface === "back" ? "z" : end.surface === "floor" ? "y" : frame ? frame.axis : "y";
+      return [{ S, T, level, deg: beamOf(f), color: l.color, doors: frame ? E.frameDoors(f, l, axis) : [] }];
     });
-    return out;
   }
   function drawPiecesUp(ctx, P, pxPerM, opts) {
     if (!showOn("pieces")) return;
     const o = opts || {}, d = state.dims, F = window.STAGE_FIGURE;
-    /* sil＝影絵で描き直す回。光の上へ<b>あとから</b>重ねるので、光が体で遮られて見える。 */
-    const sil = o.silhouette;
+    /* 暗幕の後に、不透明な人物を受光色で塗り直す。逆光と前明かりが共存しても黒で上書きしない。 */
+    const relight = o.relight, beams = relight ? performerBeams() : null;
     piecesOf().forEach((pc) => {
-      if (sil && !(pc.kind === "performer" && sil.has(pc.id))) return;
+      if (relight && pc.kind !== "performer") return;
       if (pc.kind === "curtain") { drawCurtainUp(ctx, P, pc, d); return; }
       const foot = P({ x: (pc.u - 0.5) * d.W, y: pc.v * d.D, z: 0 });
       const sc = foot.scale == null ? 1 : foot.scale;
@@ -1089,10 +1084,11 @@
         const stretch = o.stretchAt ? o.stretchAt(pc.v) : 1;
         const zDrop = o.zDropPerM ? o.zDropPerM * H : 0;
         const rig = F.buildRig(pc.pose || "stand", foot.X, foot.Y, H * k, H * k * stretch, yaw, zDrop, null);
-        if (!sil) F.paintShadow(ctx, rig);
-        F.paintBody(ctx, rig, sil ? "#0c0b0a" : (pc.color || "#d8cdb6"), null);
+        if (!relight) F.paintShadow(ctx, rig);
+        F.paintBody(ctx, rig, pc.color || "#d8cdb6", null,
+          relight ? F.bodyLightPaint(ctx, rig, pc, d, o.yawDeg || 0, beams) : null);
       }
-      if (sil) { ctx.restore(); return; }        // 影絵の回は名前を書かない（光の中の黒い形だけ）
+      if (relight) { ctx.restore(); return; }    // 名前と足元の影は二重に描かない
       ctx.fillStyle = "rgba(240,231,214,0.45)"; ctx.font = "14px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top";
       if (showOn("names")) ctx.fillText(pc.name, foot.X, foot.Y + 4); ctx.textAlign = "left";
       ctx.restore();
@@ -1800,7 +1796,7 @@
       if (f.mount.type === "side" && isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${f.mount.h.toFixed(1)}m（ドラッグ）`, p.X + (f.mount.side === "shimote" ? -180 : 26), p.Y - 26); } });
     drawBordersUp(fctx, P, d);
     if (state.mode === "move" && showOn("blackout")) { paintBlackout(fctx, front, litSpotsF);
-      drawPiecesUp(fctx, P, B.w / d.W, { yawDeg: 0, silhouette: backlitPieces() }); }
+      drawPiecesUp(fctx, P, B.w / d.W, { yawDeg: 0, relight: true }); }
   }
   /* ---------- 描画: 側面図（舞台中央から下手／上手を見る） ---------- */
   function drawSide(sec) {
@@ -1854,7 +1850,7 @@
       } });
     drawBordersUp(fctx, P, d);
     if (state.mode === "move" && showOn("blackout")) { paintBlackout(fctx, front, litSpotsSide);
-      drawPiecesUp(fctx, P, B.w / d.D, { yawDeg: side === "shimote" ? -90 : 90, silhouette: backlitPieces() }); }
+      drawPiecesUp(fctx, P, B.w / d.D, { yawDeg: side === "shimote" ? -90 : 90, relight: true }); }
     // 予告
     const hv = state.hover;
     if (state.tool === "side" && hv && hv.canvas === side) { const q = { X: E.clamp(hv.X, B.x, B.x + B.w), Y: E.clamp(hv.Y, B.y, B.y + B.h) }; fctx.strokeStyle = "rgba(240,231,214,0.3)"; fctx.setLineDash([6, 6]); fctx.beginPath(); fctx.moveTo(q.X, B.y + B.h); fctx.lineTo(q.X, q.Y); fctx.stroke(); fctx.setLineDash([]); drawFixtureMark(fctx, q.X, q.Y, "diamond", { ghost: true }); fctx.fillStyle = "rgba(240,231,214,0.85)"; fctx.font = "16px sans-serif"; fctx.fillText(`${side === "shimote" ? "下手" : "上手"}の袖に立てる（クリック）`, q.X + 22, q.Y - 26); }
@@ -1937,7 +1933,7 @@
       if (showOn("fixtures")) drawFixtureMark(fctx, p.X, isFront(f) ? Math.max(20, p.Y) : p.Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) }); });
     drawBordersUp(fctx, P, d);
     if (state.mode === "move" && showOn("blackout")) { paintBlackout(fctx, cv, litSpots3D);
-      drawPiecesUp(fctx, P, L.pxPerM, { yawDeg: 0, zDropPerM: (L.bottomY - L.floorY) / d.D, stretchAt: (v) => 1 + L.seat.rise * v, silhouette: backlitPieces() }); }
+      drawPiecesUp(fctx, P, L.pxPerM, { yawDeg: 0, zDropPerM: (L.bottomY - L.floorY) / d.D, stretchAt: (v) => 1 + L.seat.rise * v, relight: true }); }
     fctx.fillStyle = "rgba(240,231,214,0.4)"; fctx.font = "15px sans-serif"; fctx.textBaseline = "top";
     fctx.fillText(`${L.seat.label}から見た形（舞台スケッチの正面図と同じ描き方）`, 8, h - 24);
   }
