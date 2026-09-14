@@ -118,20 +118,27 @@ test("0秒転換も右側の広いドラッグ域から転換時間を作れる"
   assert.match(timeline, /function beginBlockResize\(event, descriptor\)[\s\S]*?lockedTimelineSceneAfter/);
 });
 
-test("シーンとキューは右クリックで時刻を固定し、保存後のリップル移動から守る", () => {
-  for (const id of ["stage-timeline-lock-menu", "stage-timeline-lock-menu-action"]) {
+test("時間帯は開始・終了を選んで固定し、キューは一点を固定する", () => {
+  for (const id of ["stage-timeline-lock-menu", "stage-timeline-lock-menu-start", "stage-timeline-lock-menu-end", "stage-timeline-lock-menu-clear", "stage-timeline-lock-menu-cue"]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
   assert.match(timeline, /button\.addEventListener\("contextmenu", \(event\) => openTimelineLockMenu\(event, \{/);
   assert.match(timeline, /block\.addEventListener\("contextmenu", \(event\) => openTimelineLockMenu/);
+  assert.match(timeline, /開始時刻を固定/);
+  assert.match(timeline, /終了時刻を固定/);
+  assert.match(timeline, /固定を解除/);
   assert.match(timeline, /この時刻を固定/);
   assert.match(timeline, /時刻固定を解除/);
   assert.match(timeline, /if \(cue\.timelinePositionLocked\)[\s\S]*?右クリックで解除できます/);
-  assert.match(timeline, /function lockedTimelineSceneAfter[\s\S]*?timelinePositionLocked/);
-  assert.match(sketch, /timelinePositionLocked === true \? \{ timelinePositionLocked: true \} : \{\}/);
+  assert.match(timeline, /function timelineRangeLock\(project, kind, id\)/);
+  assert.match(timeline, /kind: "audio", id: timeline\.trackId, lockedEdge: audioRangeLock/);
+  assert.match(timeline, /kind: "transition", id: positionLockSceneId, lockedEdge: rangeLock/);
+  assert.match(sketch, /raw\.timelineRangeLock === "start" \|\| raw\.timelineRangeLock === "end"/);
+  assert.match(sketch, /raw\.timelinePositionLocked === true \? \{ timelineRangeLock: "start" \} : \{\}/);
   assert.match(sketch, /setTimelinePositionLocked\(kind, id, value\)[\s\S]*?item\.timelinePositionLocked = locked/);
+  assert.match(sketch, /setTimelineRangeLock\(kind, id, value\)[\s\S]*?transitionRangeLock/);
   assert.match(sketch, /!cue\.timelinePositionLocked[\s\S]*?finite\(cue\.atSeconds, -1\) >= rippleFrom/);
-  assert.match(sketch, /if \(timingChanged && fixedFollowingScene\) return false/);
+  assert.match(sketch, /if \(timingChanged && \(fixedFollowingScene \|\| ownLockedEdge\)\) return false/);
   assert.match(css, /\.stage-timeline-lock-menu \{[\s\S]*?min-width: 184px/);
   assert.match(css, /\.stage-timeline-time-lock \{[\s\S]*?width: 13px/);
 });

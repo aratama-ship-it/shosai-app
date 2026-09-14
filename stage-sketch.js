@@ -1211,9 +1211,15 @@
         ? duration : null,
       gainDb: normalizeAudioGainDb(raw.gainDb),
     };
+    const timelineRangeLock = raw.timelineRangeLock === "start" || raw.timelineRangeLock === "end"
+      ? raw.timelineRangeLock : null;
     const hasCountSync = ["countBpm", "firstCountSec", "firstSet", "firstLocked", "anchors", "phrases"]
       .some((key) => Object.prototype.hasOwnProperty.call(raw, key));
-    return hasCountSync ? { ...base, ...normalizeAudioCountSync(raw) } : base;
+    return {
+      ...base,
+      ...(timelineRangeLock ? { timelineRangeLock } : {}),
+      ...(hasCountSync ? normalizeAudioCountSync(raw) : {}),
+    };
   };
   const normalizeAudioTracks = (raw) => {
     if (!Array.isArray(raw)) return [];
@@ -5594,8 +5600,13 @@
       lightMotion: normalizeLightMotion(kind, raw.lightMotion),
       // 誤ってホイールへ触れても向きが変わらないよう、シーンごとに持つ
       facingLock: kind === "scene" ? Boolean(raw.facingLock) : false,
-      // タイムラインで右クリックして固定した場面の開始時刻。未指定は従来どおり可動。
-      ...(kind === "scene" && raw.timelinePositionLocked === true ? { timelinePositionLocked: true } : {}),
+      // 時間帯を持つシーンは開始・終了のどちらを固定するかを記録する。
+      // 以前の真偽値は開始固定として読み替えるため、既存ショーを変えずに読める。
+      ...(kind === "scene" && (raw.timelineRangeLock === "start" || raw.timelineRangeLock === "end")
+        ? { timelineRangeLock: raw.timelineRangeLock }
+        : kind === "scene" && raw.timelinePositionLocked === true ? { timelineRangeLock: "start" } : {}),
+      ...(kind === "scene" && (raw.transitionRangeLock === "start" || raw.transitionRangeLock === "end")
+        ? { transitionRangeLock: raw.transitionRangeLock } : {}),
       // 暗転で始まるシーン（転換が一度真っ暗になってから明ける）
       blackout: kind === "scene" ? Boolean(raw.blackout) : false,
       /* 舞台から下げたものの置き場所の控え（setId ごとに一つ）。
@@ -28480,8 +28491,15 @@ ${propsPlotHtml}
       const currentSectionDuration = section.timelineDurationSeconds;
       const sectionScenes = sceneChildren(sectionIndex).filter((row) => row.kind === "scene");
       const sourceAt = sectionScenes.findIndex((row) => row.id === scene.id);
+      const sceneRangeLock = (row) => row && (row.timelineRangeLock === "start" || row.timelineRangeLock === "end"
+        ? row.timelineRangeLock : row.timelinePositionLocked === true ? "start" : null);
+      const transitionRangeLock = (row) => row && (row.transitionRangeLock === "start" || row.transitionRangeLock === "end"
+        ? row.transitionRangeLock : null);
       const fixedFollowingScene = sourceAt < 0 ? null
-        : sectionScenes.slice(sourceAt + 1).find((row) => row.timelinePositionLocked) || null;
+        : sectionScenes.slice(sourceAt + 1).find((row) => sceneRangeLock(row) || transitionRangeLock(row)) || null;
+      const ownLockedEdge = part === "hold"
+        ? (sceneRangeLock(scene) === "end" || transitionRangeLock(scene) === "start")
+        : transitionRangeLock(scene) === "end";
       const timingChanged = Math.abs(current - duration) > 1e-9
         || currentSectionDuration === null || currentSectionDuration === undefined
         || Math.abs(finite(currentSectionDuration, -1) - sectionDuration) > 1e-9;
@@ -28493,7 +28511,7 @@ ${propsPlotHtml}
       const cuesToShift = canRipple ? cues.filter((cue) => cue && cue.kind === "timeline"
         && cue.sectionId === section.id && cue.atSeconds !== null && cue.atSeconds !== undefined
         && !cue.timelinePositionLocked && finite(cue.atSeconds, -1) >= rippleFrom - 1e-6) : [];
-      if (timingChanged && fixedFollowingScene) return false;
+      if (timingChanged && (fixedFollowingScene || ownLockedEdge)) return false;
       if (!timingChanged && !cuesToShift.length) return true;
       if (options.checkpoint) checkpoint();
       scene.rehearsal[key] = duration;
@@ -28584,6 +28602,32 @@ ${propsPlotHtml}
       window.dispatchEvent(new CustomEvent(kind === "cue"
         ? "stage-timeline-cues-change" : "stage-timeline-structure-change", {
         detail: { id: item.id, locked },
+      }));
+      return jsonClone(item);
+    },
+    setTimelineRangeLock(kind, id, value) {
+      const edge = value === "start" || value === "end" ? value : null;
+      let item = null;
+      let property = "timelineRangeLock";
+      if (kind === "audio") {
+        item = audioTrackById(id);
+      } else {
+        item = state.project.scenes.find((scene) => scene && scene.kind === "scene" && scene.id === id);
+        if (kind === "transition") property = "transitionRangeLock";
+      }
+      if (!item) return null;
+      const current = item[property] === "start" || item[property] === "end"
+        ? item[property] : kind === "scene" && item.timelinePositionLocked ? "start" : null;
+      if (current === edge) return jsonClone(item);
+      checkpoint();
+      if (edge) item[property] = edge;
+      else delete item[property];
+      // 旧版の開始固定はこの変更時にだけ新しい範囲表現へ移す。
+      if (kind === "scene") delete item.timelinePositionLocked;
+      persistSoon();
+      window.dispatchEvent(new CustomEvent(kind === "audio"
+        ? "stage-timeline-audio-change" : "stage-timeline-structure-change", {
+        detail: { id: item.id, kind, edge },
       }));
       return jsonClone(item);
     },

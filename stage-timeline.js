@@ -101,7 +101,10 @@
     cueDetailSave: document.getElementById("stage-timeline-cue-detail-save"),
     cueDetailDelete: document.getElementById("stage-timeline-cue-detail-delete"),
     lockMenu: document.getElementById("stage-timeline-lock-menu"),
-    lockMenuAction: document.getElementById("stage-timeline-lock-menu-action"),
+    lockMenuStart: document.getElementById("stage-timeline-lock-menu-start"),
+    lockMenuEnd: document.getElementById("stage-timeline-lock-menu-end"),
+    lockMenuClear: document.getElementById("stage-timeline-lock-menu-clear"),
+    lockMenuCue: document.getElementById("stage-timeline-lock-menu-cue"),
     audioDetailBackdrop: document.getElementById("stage-timeline-audio-detail-backdrop"),
     audioDetailModal: document.getElementById("stage-timeline-audio-detail-modal"),
     audioDetailTitle: document.getElementById("stage-timeline-audio-detail-title"),
@@ -1440,14 +1443,24 @@
 
   function timelinePositionLocked(project, kind, id) {
     if (!project || !id) return false;
-    if (kind === "cue") {
-      return Boolean((project.cues || []).find((cue) => cue && cue.kind === "timeline" && cue.id === id)?.timelinePositionLocked);
-    }
-    return Boolean((project.scenes || []).find((scene) => scene && scene.kind === "scene" && scene.id === id)?.timelinePositionLocked);
+    return kind === "cue" && Boolean((project.cues || []).find((cue) => cue && cue.kind === "timeline" && cue.id === id)?.timelinePositionLocked);
   }
 
-  function timelineLockIcon() {
-    return '<span class="stage-timeline-time-lock" aria-hidden="true"><svg viewBox="0 0 16 16" focusable="false"><rect x="3.5" y="7" width="9" height="6.5" rx="1"></rect><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"></path></svg></span>';
+  function timelineRangeLock(project, kind, id) {
+    if (!project || !id) return null;
+    if (kind === "audio") {
+      const lock = (project.audioTracks || []).find((track) => track && track.id === id)?.timelineRangeLock;
+      return lock === "start" || lock === "end" ? lock : null;
+    }
+    const scene = (project.scenes || []).find((row) => row && row.kind === "scene" && row.id === id);
+    const lock = kind === "transition" ? scene?.transitionRangeLock : scene?.timelineRangeLock;
+    if (lock === "start" || lock === "end") return lock;
+    return kind === "scene" && scene?.timelinePositionLocked ? "start" : null;
+  }
+
+  function timelineLockIcon(edge = null) {
+    const label = edge === "start" ? tx("開始固定") : edge === "end" ? tx("終了固定") : tx("時刻固定");
+    return `<span class="stage-timeline-time-lock${edge ? ` is-${edge}` : ""}" aria-hidden="true" title="${label}"><svg viewBox="0 0 16 16" focusable="false"><rect x="3.5" y="7" width="9" height="6.5" rx="1"></rect><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"></path></svg></span>`;
   }
 
   function closeTimelineLockMenu({ focus = false } = {}) {
@@ -1459,20 +1472,29 @@
   }
 
   function openTimelineLockMenu(event, target) {
-    if (!target || !target.id || !els.lockMenu || !els.lockMenuAction
-        || typeof bridge.setTimelinePositionLocked !== "function") return;
+    if (!target || !target.id || !els.lockMenu || !els.lockMenuStart || !els.lockMenuEnd
+        || !els.lockMenuClear || !els.lockMenuCue) return;
+    const cueTarget = target.kind === "cue";
+    if ((cueTarget && typeof bridge.setTimelinePositionLocked !== "function")
+        || (!cueTarget && typeof bridge.setTimelineRangeLock !== "function")) return;
     event.preventDefault();
     event.stopPropagation();
     timelineLockMenuTarget = target;
-    els.lockMenuAction.textContent = target.locked ? tx("時刻固定を解除") : tx("この時刻を固定");
-    els.lockMenuAction.title = target.label || tx("タイムラインの時刻");
+    els.lockMenuStart.hidden = cueTarget;
+    els.lockMenuEnd.hidden = cueTarget;
+    els.lockMenuClear.hidden = cueTarget || !target.lockedEdge;
+    els.lockMenuCue.hidden = !cueTarget;
+    els.lockMenuStart.textContent = target.lockedEdge === "start" ? tx("開始時刻を固定中") : tx("開始時刻を固定");
+    els.lockMenuEnd.textContent = target.lockedEdge === "end" ? tx("終了時刻を固定中") : tx("終了時刻を固定");
+    els.lockMenuCue.textContent = target.locked ? tx("時刻固定を解除") : tx("この時刻を固定");
+    [els.lockMenuStart, els.lockMenuEnd, els.lockMenuClear, els.lockMenuCue].forEach((button) => { button.title = target.label || tx("タイムライン"); });
     els.lockMenu.hidden = false;
     const rect = els.lockMenu.getBoundingClientRect();
     const left = clamp(event.clientX, 8, Math.max(8, window.innerWidth - rect.width - 8));
     const top = clamp(event.clientY, 8, Math.max(8, window.innerHeight - rect.height - 8));
     els.lockMenu.style.left = `${left}px`;
     els.lockMenu.style.top = `${top}px`;
-    els.lockMenuAction.focus({ preventScroll: true });
+    (cueTarget ? els.lockMenuCue : target.lockedEdge === "end" ? els.lockMenuEnd : els.lockMenuStart).focus({ preventScroll: true });
   }
 
   function lockedTimelineSceneAfter(project, sourceSceneId) {
@@ -1481,7 +1503,8 @@
     if (sourceAt < 0) return null;
     return timeline.segments.slice(sourceAt + 1).map((segment) => (project.scenes || [])
       .find((scene) => scene && scene.kind === "scene" && scene.id === segment.sceneId))
-      .find((scene) => scene && scene.timelinePositionLocked) || null;
+      .find((scene) => scene && (timelineRangeLock(project, "scene", scene.id)
+        || timelineRangeLock(project, "transition", scene.id))) || null;
   }
 
   function cueDragSeconds(event) {
@@ -1592,10 +1615,13 @@
     const audioBlock = document.createElement(timeline.trackId ? "button" : "div");
     if (timeline.trackId) audioBlock.type = "button";
     audioBlock.className = `stage-timeline-audio-block${timeline.trackId ? "" : " is-empty"}`;
+    const audioRangeLock = timelineRangeLock(project, "audio", timeline.trackId);
+    if (audioRangeLock) audioBlock.classList.add("is-time-locked", `is-time-locked-${audioRangeLock}`);
     audioBlock.dataset.audioMissing = "false";
     audioBlock.textContent = timeline.title;
     audioBlock.title = timeline.trackId
       ? `${timeline.title}（${tx("ダブルクリックで音源情報")}）` : timeline.title;
+    if (audioRangeLock) audioBlock.title += `（${audioRangeLock === "start" ? tx("開始時刻固定中") : tx("終了時刻固定中")}）`;
     if (timeline.trackId) {
       audioBlock.dataset.trackId = timeline.trackId;
       audioBlock.addEventListener("click", () => {
@@ -1607,7 +1633,11 @@
         if (audioBlock.dataset.audioMissing === "true") return;
         openAudioDetails(timeline.trackId, audioBlock);
       });
+      audioBlock.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
+        kind: "audio", id: timeline.trackId, lockedEdge: audioRangeLock, label: timeline.title, returnFocus: audioBlock,
+      }));
     }
+    if (audioRangeLock) audioBlock.insertAdjacentHTML("beforeend", timelineLockIcon(audioRangeLock));
     placeBlock(audioBlock, 0, timeline.duration);
     els.audioLane.append(audioBlock);
     if (timeline.trackId) {
@@ -1621,15 +1651,15 @@
       button.type = "button";
       button.className = "stage-timeline-scene";
       if (segment.sceneId) button.dataset.sceneId = segment.sceneId;
-      const positionLocked = timelinePositionLocked(project, "scene", segment.sceneId);
-      if (positionLocked) button.classList.add("is-time-locked");
+      const rangeLock = timelineRangeLock(project, "scene", segment.sceneId);
+      if (rangeLock) button.classList.add("is-time-locked", `is-time-locked-${rangeLock}`);
       if (segment.sceneId === project.activeSceneId) button.classList.add("is-current");
       const label = document.createElement("span");
       label.className = "stage-timeline-block-label";
       label.textContent = `${index + 1}  ${segment.title}`;
       button.append(label);
-      if (positionLocked) button.insertAdjacentHTML("beforeend", timelineLockIcon());
-      button.title = `${labelPosition(segment.start)}  ${segment.title}${positionLocked ? `（${tx("時刻固定中")}）` : timelineContentCanResize() ? `（${tx("左右端をドラッグで長さを調整")}）` : ""}`;
+      if (rangeLock) button.insertAdjacentHTML("beforeend", timelineLockIcon(rangeLock));
+      button.title = `${labelPosition(segment.start)}  ${segment.title}${rangeLock ? `（${rangeLock === "start" ? tx("開始時刻固定中") : tx("終了時刻固定中")}）` : timelineContentCanResize() ? `（${tx("左右端をドラッグで長さを調整")}）` : ""}`;
       button.setAttribute("aria-label", button.title);
       button.disabled = !segment.sceneId;
       const sceneEnd = Number.isFinite(segment.sceneEnd) ? segment.sceneEnd : segment.end;
@@ -1647,7 +1677,7 @@
         if (typeof bridge.openSceneDetailsById === "function") bridge.openSceneDetailsById(segment.sceneId);
       });
       button.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
-        kind: "scene", id: segment.sceneId, locked: positionLocked, label: segment.title, returnFocus: button,
+        kind: "scene", id: segment.sceneId, lockedEdge: rangeLock, label: segment.title, returnFocus: button,
       }));
       if (timelineContentCanResize()) {
         const previous = timeline.segments[index - 1];
@@ -1673,12 +1703,11 @@
       block.className = "stage-timeline-transition-block";
       const sourceIndex = timeline.segments.findIndex((segment) => segment.transitionId === transition.id);
       const source = sourceIndex >= 0 ? timeline.segments[sourceIndex] : null;
-      const destination = sourceIndex >= 0 ? timeline.segments[sourceIndex + 1] : null;
-      const positionLockSceneId = destination?.sceneId || source?.sceneId;
+      const positionLockSceneId = source?.sceneId;
       const isPoint = Boolean(transition.isPoint || Math.abs(transition.end - transition.start) < 1e-6);
-      const positionLocked = positionLockSceneId && timelinePositionLocked(project, "scene", positionLockSceneId);
+      const rangeLock = positionLockSceneId && timelineRangeLock(project, "transition", positionLockSceneId);
       if (isPoint) block.classList.add("is-point");
-      if (positionLocked) block.classList.add("is-time-locked");
+      if (rangeLock) block.classList.add("is-time-locked", `is-time-locked-${rangeLock}`);
       const label = document.createElement("span");
       label.className = "stage-timeline-block-label";
       label.textContent = transition.title;
@@ -1686,7 +1715,7 @@
       block.title = isPoint
         ? `${labelPosition(transition.end)} ${tx("転換ポイント")}${timelineContentCanResize() ? `（${tx("右へドラッグして転換を作る")}）` : ""}`
         : `${labelPosition(transition.start)}–${labelPosition(transition.end)} ${transition.title}${timelineContentCanResize() ? `（${tx("左右端をドラッグで長さを調整")}）` : ""}`;
-      if (positionLocked) block.title += `（${tx("時刻固定中")}）`;
+      if (rangeLock) block.title += `（${rangeLock === "start" ? tx("開始時刻固定中") : tx("終了時刻固定中")}）`;
       block.setAttribute("role", "img");
       block.setAttribute("aria-label", block.title);
       placeBlock(block, transition.start, transition.end);
@@ -1694,9 +1723,9 @@
         els.transitionsLane.append(block);
         return;
       }
-      if (positionLocked) block.insertAdjacentHTML("beforeend", timelineLockIcon());
+      if (rangeLock) block.insertAdjacentHTML("beforeend", timelineLockIcon(rangeLock));
       block.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
-        kind: "scene", id: positionLockSceneId, locked: positionLocked, label: transition.title, returnFocus: block,
+        kind: "transition", id: positionLockSceneId, lockedEdge: rangeLock, label: transition.title, returnFocus: block,
       }));
       if (timelineContentCanResize()) {
         if (isPoint) {
@@ -2231,9 +2260,20 @@
     const section = project && (project.scenes || []).find((row) => row.kind === "section" && row.id === timeline.sectionId);
     const scene = project && (project.scenes || []).find((row) => row.kind === "scene" && row.id === descriptor.sceneId);
     if (!section || !scene) return;
+    const sceneRangeLock = timelineRangeLock(project, "scene", scene.id);
+    const transitionRangeLock = timelineRangeLock(project, "transition", scene.id);
+    const ownLockedEdge = descriptor.part === "hold"
+      ? (sceneRangeLock === "end" ? "scene-end" : transitionRangeLock === "start" ? "transition-start" : null)
+      : (transitionRangeLock === "end" ? "transition-end" : null);
+    if (ownLockedEdge) {
+      els.status.textContent = ownLockedEdge === "scene-end"
+        ? `${scene.title} ${tx("の終了時刻は固定中です。右クリックで解除してください。")}`
+        : `${tx("転換の")}${ownLockedEdge === "transition-start" ? tx("開始") : tx("終了")}${tx("時刻は固定中です。右クリックで解除してください。")}`;
+      return;
+    }
     const fixedScene = lockedTimelineSceneAfter(project, descriptor.sceneId);
     if (fixedScene) {
-      els.status.textContent = `${fixedScene.title} ${tx("は時刻固定中です。右クリックで解除してから前の区間を調整してください。")}`;
+      els.status.textContent = `${fixedScene.title} ${tx("に固定された時刻があります。右クリックで解除してから前の区間を調整してください。")}`;
       return;
     }
     const baseDuration = derivedSectionDuration(project, section);
@@ -2441,14 +2481,25 @@
   els.sectionDurationNumber.addEventListener("pointermove", continueDurationScrub);
   els.sectionDurationNumber.addEventListener("pointerup", endDurationScrub);
   els.sectionDurationNumber.addEventListener("pointercancel", endDurationScrub);
-  els.lockMenuAction.addEventListener("click", () => {
+  els.lockMenuCue.addEventListener("click", () => {
     const target = timelineLockMenuTarget;
-    if (!target || typeof bridge.setTimelinePositionLocked !== "function") return;
+    if (!target || target.kind !== "cue" || typeof bridge.setTimelinePositionLocked !== "function") return;
     const updated = bridge.setTimelinePositionLocked(target.kind, target.id, !target.locked);
     closeTimelineLockMenu();
     if (!updated) return;
     renderTimeline();
   });
+  const setTimelineRangeLockFromMenu = (edge) => {
+    const target = timelineLockMenuTarget;
+    if (!target || target.kind === "cue" || typeof bridge.setTimelineRangeLock !== "function") return;
+    const updated = bridge.setTimelineRangeLock(target.kind, target.id, edge);
+    closeTimelineLockMenu();
+    if (!updated) return;
+    renderTimeline();
+  };
+  els.lockMenuStart.addEventListener("click", () => setTimelineRangeLockFromMenu("start"));
+  els.lockMenuEnd.addEventListener("click", () => setTimelineRangeLockFromMenu("end"));
+  els.lockMenuClear.addEventListener("click", () => setTimelineRangeLockFromMenu(null));
   document.addEventListener("pointerdown", (event) => {
     if (els.lockMenu && !els.lockMenu.hidden && !els.lockMenu.contains(event.target)) closeTimelineLockMenu();
   });
