@@ -43,6 +43,7 @@ test("1枚表示では表示中パネルの右下に正面・平面の切り替�
 
 test("片面表示では見出し帯を外し、席と図の操作を図の隅へ残す", () => {
   assert.match(source, /canvasStack\.classList\.toggle\("is-single-view", single\)/);
+  assert.match(css, /#stage-canvas-stack\.is-single-view > \.stage-board-frame\.is-closed \{\s*display: none;/);
   assert.match(css, /#stage-canvas-stack\.is-single-view[\s\S]*?\.stage-canvas-bar \{\s*display: contents;/);
   assert.match(css, /#stage-canvas-stack\.is-single-view[\s\S]*?\.stage-canvas-caption,[\s\S]*?\.stage-profile-hint/);
   assert.match(css, /#stage-canvas-stack\.is-single-view[\s\S]*?\.stage-canvas-tools \{[\s\S]*?position: absolute;[\s\S]*?top: 8px;[\s\S]*?right: 8px;/);

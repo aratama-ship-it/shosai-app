@@ -16806,3 +16806,8 @@ html:not(.stage-phone-viewer) #stage-canvas-stack.is-single-view .stage-board-fr
     max-width: none;
   }
 }
+
+/* 片面表示では閉じた側のバーも枠ごと隠す。反対の図へは表示中の図の切替ボタンから戻れる。 */
+#stage-canvas-stack.is-single-view > .stage-board-frame.is-closed {
+  display: none;
+}

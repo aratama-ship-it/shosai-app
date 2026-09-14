@@ -13678,8 +13678,7 @@
       .map((type) => `${pieceTypeName(type)} ${sc().pieces.filter((piece) => piece.type === type).length}`)
       .join(tx("、"));
 
-    // 閉じてもバーは残す。ここから開き直せるので「見る向き」の項目は要らない。
-    // セル自体は隠さない（隠すとバーごと消え、開き直す入口が無くなる）
+    // 片面表示で閉じた図はCSSで枠ごと隠し、表示中の図の切替ボタンから戻せるようにする。
     if (els.frontCell) els.frontCell.hidden = false;
     if (els.planCell) els.planCell.hidden = false;
     if (els.frontInner) els.frontInner.hidden = !state.showFront;
