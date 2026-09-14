@@ -5769,6 +5769,23 @@
     return scenes;
   }
 
+  /* 階層から出す番号は表示専用で、ショーデータの場面名には保存しない。
+     自動生成JSONが同じ番号を場面名の先頭へ入れていても、読み込み後は一つの
+     番号札だけを使う。現在の構造と一致する場合に限るので、「2-2」という
+     作品固有の名称や、並び替え前の古い番号を勝手に消さない。 */
+  function mergeGeneratedSceneNumberIntoHierarchy(scenes) {
+    const numbers = sceneNumberMap(scenes);
+    scenes.forEach((scene) => {
+      const number = numbers.get(scene.id);
+      const title = typeof scene.title === "string" ? scene.title.trim() : "";
+      if (!number || !title) return;
+      const escaped = number.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const prefix = new RegExp(`^${escaped}(?:(?:[\\s\\u3000]+)|(?:[.．:：、][\\s\\u3000]*))+`);
+      const merged = title.replace(prefix, "").trim();
+      if (merged) scene.title = merged;
+    });
+  }
+
   function normalizeState(raw) {
     if (!raw || typeof raw !== "object") return baseState(true);
     const fallback = baseState(false);
@@ -5798,6 +5815,7 @@
     wrapUnsectionedSceneRuns(scenes,
       () => newScene(sectionTitle(++generatedSectionCount), false, "section", 0));
     if (!scenes.some((x) => x.kind === "scene")) scenes = addMissingSceneInsideSection(scenes);
+    mergeGeneratedSceneNumberIntoHierarchy(scenes);
     const wanted = scenes.find((x) => x.id === rawProject.activeSceneId && x.kind === "scene");
     const activeId = wanted ? wanted.id : scenes.find((x) => x.kind === "scene").id;
 

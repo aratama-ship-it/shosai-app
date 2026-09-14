@@ -16,6 +16,6 @@ test("設定とパネル設定は44pxの正方形でアイコンを22pxにする
 
 test("新しいCSS版を画面とPWAキャッシュで一致させる", () => {
   assert.match(html, /style\.css\?v=358/);
-  assert.match(serviceWorker, /stage-sketch-pwa-v465/);
+  assert.match(serviceWorker, /stage-sketch-pwa-v470/);
   assert.match(serviceWorker, /style\.css\?v=358/);
 });
