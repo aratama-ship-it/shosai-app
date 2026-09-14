@@ -6,7 +6,7 @@
 (function () {
   "use strict";
   const E = window.RIG_ENGINE, V = window.VOLUME_LIGHT;
-  let distanceMetric = false, spatialQuick = false;
+  let distanceMetric = false, spatialQuick = false, frontFocus = false;
   /* 光条・光だまり・まぶしさ・人物の受光を、全図で同じ見え方へ固定する。
      灯の強さやLX cueには入れないので、保存済みの照明データは変わらない。 */
   const VISUAL_GAIN = 1.8;
@@ -444,6 +444,12 @@
     syncFigureSizes();   // 先に各図の表示高さを決めてから内部解像度を合わせる
     const fit = (c) => { const r = c.getBoundingClientRect(); if (!r.width) return; const W = Math.max(300, Math.round(r.width * 2)), H = Math.max(160, Math.round(r.height * 2)); if (c.width !== W || c.height !== H) { c.width = W; c.height = H; } };
     [plan, secL, secF].forEach(fit);
+  }
+  function setFrontFocus(on) {
+    frontFocus = Boolean(on);
+    document.body.classList.toggle("front-focus", frontFocus);
+    // 表示領域が切り替わった後の実寸で内部キャンバスも作り直す。
+    requestAnimationFrame(renderAll);
   }
   const secProj = (sec) => (sec.kind === "front"
     ? (state.front3d
@@ -2351,8 +2357,16 @@
   document.addEventListener("keydown", (ev) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName);
     if (ev.key === "Escape" && !$("dialog").hidden) { $("dialog").hidden = true; return; }
-    if (ev.key === "Escape") { if (state.drag) { const dg = state.drag; state.drag = null; restore(dg.before); state.dirty = true; } else if (state.tool) { state.tool = null; renderAll(); } else if (state.sel.size) { state.sel.clear(); renderAll(); } return; }
     if (typing) return;
+    /* 正面図を大きく表示している間も Space は再生／停止へ渡す。
+       Space 以外の操作キーは、編集画面へ戻るためだけに使う。 */
+    if (frontFocus) {
+      if (ev.key === " ") { if (document.activeElement !== $("t-play")) { ev.preventDefault(); togglePlay(); } return; }
+      if (!/^(Shift|Control|Alt|Meta|CapsLock)$/.test(ev.key)) { ev.preventDefault(); setFrontFocus(false); }
+      return;
+    }
+    if (ev.key === "Escape") { if (state.drag) { const dg = state.drag; state.drag = null; restore(dg.before); state.dirty = true; } else if (state.tool) { state.tool = null; renderAll(); } else if (state.sel.size) { state.sel.clear(); renderAll(); } return; }
+    if ((ev.key === "f" || ev.key === "F") && !ev.metaKey && !ev.ctrlKey && !ev.altKey) { ev.preventDefault(); setFrontFocus(true); return; }
     /* Space = 再生／停止。再生ボタン自身にフォーカスがあるときは何もしない——
        ボタンの既定の動作（click）が同じトグルを呼ぶので、ここで拾うと2回走る。 */
     if (ev.key === " ") { if (document.activeElement !== $("t-play")) { ev.preventDefault(); togglePlay(); } }

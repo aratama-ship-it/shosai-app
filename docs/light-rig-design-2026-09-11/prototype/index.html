@@ -182,6 +182,16 @@
   /* 上段は残りの高さいっぱい。図は上に貼り付け、余ったぶんは左右のパネル（一覧・設定）が使う。
      窓が縦に大きいほど一覧が長く見えるようになる（2026-09-11 本人要望） */
   .figgrid{flex:1;min-height:0;display:grid;grid-template-columns:auto auto auto;grid-template-rows:minmax(0,1fr) auto;gap:8px 8px;justify-content:center;align-content:stretch;justify-items:center}
+  /* 正面図だけを見る表示。Fで入り、Spaceは再生／停止のまま、ほかのキーで編集画面へ戻る。
+     ブラウザの全画面APIは使わず、試作の窓の中を図へ明け渡すので戻る操作を一手に保つ。 */
+  body.front-focus{display:block;padding:0}
+  .front-focus .proto-note,.front-focus .head,.front-focus .figbar,.front-focus .leftcol,.front-focus .planwrap,.front-focus .panel.insp,.front-focus .sec.side,.front-focus .foot{display:none}
+  .front-focus .modal{width:100vw;height:100vh;border:0;box-shadow:none;grid-template-rows:minmax(0,1fr)}
+  .front-focus .body,.front-focus .canvases{gap:0;padding:0}
+  .front-focus .figgrid{display:flex;width:100%;height:100%;align-items:stretch;justify-content:stretch}
+  .front-focus .sec.front{display:flex;flex:1 1 auto;width:100% !important;height:100%;padding:12px;gap:6px}
+  .front-focus .sec.front .sechead{flex:0 0 24px}
+  .front-focus .sec.front canvas{flex:1 1 auto;width:100% !important;height:0 !important;min-height:0}
   .planwrap{align-self:start}
   .planwrap{position:relative;display:flex;flex-direction:column;gap:2px;min-width:0;grid-row:1;grid-column:2}
   .sec{display:flex;flex-direction:column;gap:2px;min-width:0;grid-row:2}
@@ -766,7 +776,7 @@
       <label class="vrow"><span>高さ</span><input type="range" id="dimH" min="4" max="16" step="1" value="8"><span class="val" id="dimHv">8m</span></label>
       <p class="note">4つの図と1mの線は、この寸法に合わせて描き直します。</p>
     </div>
-    <p class="foot">選択 <b>クリック</b>　複数 <b>Shift</b>　解除 <b>Esc</b>　再生 <b>Space</b>　設定をコピー <b>⌘C</b>　貼る <b>⌘P</b>　狙い点を縦横だけに動かす <b>Shift+ドラッグ</b>　／　灯体の位置と動きを伝えるための案です。機種・回路・DMX・照度・設置の安全性は示しません。</p>
+    <p class="foot">選択 <b>クリック</b>　複数 <b>Shift</b>　解除 <b>Esc</b>　再生 <b>Space</b>　正面図を大きく <b>F</b>　設定をコピー <b>⌘C</b>　貼る <b>⌘P</b>　狙い点を縦横だけに動かす <b>Shift+ドラッグ</b>　／　灯体の位置と動きを伝えるための案です。機種・回路・DMX・照度・設置の安全性は示しません。</p>
   </div>
   <div class="dialog" id="dialog" hidden></div>
 </div>
@@ -775,7 +785,7 @@
 <script src="rig-engine.js?v=1789404900"></script>
 <script src="stage-figure.js?v=1789357787"></script>
 <script src="volume-light.js?v=1789396700"></script>
-<script src="app.js?v=1789406200"></script>
+<script src="app.js?v=1789417600"></script>
 <script src="light-presets.js?v=1789357787"></script>
 <script src="light-presets-ui.js?v=1789397300"></script>
 </body>
