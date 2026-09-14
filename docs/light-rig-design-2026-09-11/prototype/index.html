@@ -157,7 +157,7 @@
   /* 前後の LX cue へ。中央の表示の左右に置く（2026-09-13 本人要望）。 */
   .qnav{min-height:30px;padding:2px 10px;font-size:15px;line-height:1}
   .scenebox{align-items:center}
-  /* 再生（.transport）は照明デザインパネルの見出し行、オン・オフの左に置く（2026-09-13 本人要望）。 */
+  /* コピー／ペースト（.transport）は照明デザインパネルの見出し行に置く。 */
   .transport{display:flex;align-items:center;gap:5px}
   .scenebar .btn.small{min-height:24px;padding:2px 8px;font-size:12px}
   .transport .btn.small{min-height:26px;padding:3px 9px;font-size:14px}
@@ -165,6 +165,12 @@
      文字は2文字（再生／停止）で幅が変わらないが、字形差でにじり寄らないよう幅を固定する。 */
   .transport .btn.small{min-width:4.6em;text-align:center}
   .transport .btn.small.playing{color:var(--milk);background:rgba(168,75,38,.28);border-color:var(--rust)}
+  /* 再生は、作業灯を消す操作と同じ図上部の帯で扱う。止まっているときは
+     「オートメーション再生」、再生中は「オートメーション停止」と押した結果を示す。 */
+  .lightgroup #t-play{min-height:22px;padding:1px 9px;font-size:11.5px;white-space:nowrap}
+  .lightgroup #t-play.playing{color:var(--milk);background:rgba(168,75,38,.28);border-color:var(--rust)}
+  .lightgroup #t-play:disabled{opacity:.42;cursor:default;color:var(--milk-dim);border-color:var(--line-dark)}
+  .lightgroup #t-play:disabled:hover{border-color:var(--line-dark)}
   /* コピー／ペーストは再生より一段控えめ（再生が主操作）。幅は「ペースト」に合わせて固定し、
      使える・使えないで列が動かないようにする（2026-09-14）。 */
   .transport .btn.small.xfer{min-width:5.4em;color:var(--milk-dim)}
@@ -603,6 +609,7 @@
                 <input type="number" id="dimnum" min="0" max="100" step="5" value="100" aria-label="作業灯をどれだけ消すか（％）">
                 <span class="t">%</span>
               </span>
+              <button type="button" class="btn small" id="t-play" disabled>オートメーション再生</button>
             </span>
           </span>
           <!-- シーン送りは「照明デザイン」のときだけ中身を出す。
@@ -683,22 +690,18 @@
           </div>
           <!-- 上段右＝選んだ灯体（メイン）と配置（サブ・下の層）。2026-09-11 本人要望 -->
           <section class="panel insp" id="panel-insp">
-            <!-- 照明デザインの見出し行: 左＝パネル名、右＝シーン送り・再生とオン・オフ。
+            <!-- 照明デザインの見出し行: 左＝パネル名、右＝コピー／ペーストとオン・オフ。
                  2026-09-13 本人要望で図の上の帯から移設し、シーン名の表示はやめた
                  （パネル名「照明デザイン」がわかれば足りる）。配置タブでは丸ごと隠す
                  （配置モードは灯体情報／機材設置という別の静的見出しを使う）。 -->
             <div class="insphead" id="insphead" hidden>
               <p class="ptitle">照明デザイン</p>
               <div class="panelhead-actions" id="panelhead-actions">
-                <!-- 2026-09-14 本人要望: 最初へ／停止／秒数／再生中の表示をやめ、再生と停止の
-                     トグル1個だけにした。文字は「押すと何が起きるか」を出す（停止中＝再生、
-                     再生中＝停止）。時刻の頭出しは場面を選び直したときに内部で行う（home()）。 -->
-                <!-- 2026-09-14 本人要望: 再生の左隣にコピー／ペースト。
+                <!-- 2026-09-14 本人要望: コピー／ペースト。
                      同じ種類の灯体どうし（ムービング↔ムービング／固定↔固定／cyc↔cyc）だけ通す。 -->
                 <span class="transport" id="transport" hidden>
                   <button type="button" class="btn small xfer" id="t-copy" disabled>コピー</button>
                   <button type="button" class="btn small xfer" id="t-paste" disabled>ペースト</button>
-                  <button type="button" class="btn small" id="t-play">再生</button>
                 </span>
                 <button type="button" class="ontoggle" id="lighttoggle" hidden aria-pressed="false"><span class="sw"></span><b>オフ</b></button>
               </div>
@@ -777,7 +780,7 @@
 <script src="rig-engine.js?v=20260915-3"></script>
 <script src="stage-figure.js?v=20260915-1"></script>
 <script src="volume-light.js?v=20260915-2"></script>
-<script src="app.js?v=20260915-12"></script>
+<script src="app.js?v=20260915-13"></script>
 <script src="light-presets.js?v=1789357787"></script>
 <script src="light-presets-ui.js?v=20260915-2"></script>
 <!-- 選択灯「型」P1: 本体ではなく、この試作だけへ隔離接続する。 -->

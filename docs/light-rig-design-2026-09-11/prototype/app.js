@@ -802,17 +802,31 @@
   const groupName = (g) => ({ together: "一緒に動く", mirror: "鏡のように動く", sequential: "順番に動く" }[g.relation] || "") + (g.compose === "fan" ? "（扇）" : g.compose === "cross" ? "（交差）" : "");
 
   /* ---------- 再生 ---------- */
-  function play() { if (state.play.on) return; state.play.on = true; state.play.last = 0; state.play.raf = requestAnimationFrame(tick); renderTransport(); renderRuntimeStatus(); }
+  /* 現在のLX cueに、実際に時間で変わる灯があるか。オートメーションの入口と同じ定義にする:
+     位置＝軌道が「動きなし」以外／強さ＝levelTo／広がり＝beamDegTo。
+     消えている灯は再生しても見えないため、対象には数えない。 */
+  function cueHasAutomation() {
+    return state.rig.fixtures.some((f) => {
+      if (!E.isMoving(f)) return false;
+      const l = lightOf(f.id); if (!l || l.on !== true) return false;
+      const p = l.path || { kind: "still" };
+      return p.kind !== "still" || l.levelTo != null || l.beamDegTo != null;
+    });
+  }
+  function play() { if (state.play.on || !cueHasAutomation()) { renderTransport(); return; } state.play.on = true; state.play.last = 0; state.play.raf = requestAnimationFrame(tick); renderTransport(); renderRuntimeStatus(); }
   function stop(reason) { if (!state.play.on) return; state.play.on = false; cancelAnimationFrame(state.play.raf); if (reason) toast(reason); renderTransport(); draw(); }
   function home() { stop(); state.play.t = 0; renderTransport(); draw(); }
   function tick(ts) { if (!state.play.on) return; if (!state.play.last) state.play.last = ts; state.play.t += ts - state.play.last; state.play.last = ts; renderTransport(); draw(); state.play.raf = requestAnimationFrame(tick); }
   function togglePlay() { state.play.on ? stop() : play(); }
-  /* 2026-09-14 本人要望: 操作は再生／停止のトグル1個だけ。秒数と「再生中」の札は出さない。
-     文字は押したら何が起きるかを出す（停止中＝再生・再生中＝停止）。状態はボタンの色でも示す。 */
+  /* オートメーションがないLX cueでは、再生できる対象がないので無効にする。
+     再生中に最後のオートメーションを止めた場合も、次の描画で静かに停止する。 */
   function renderTransport() {
     const b = $("t-play"); if (!b) return;
-    b.textContent = state.play.on ? "停止" : "再生";
-    b.title = state.play.on ? "動きを止める（Space）" : "動きを再生する（Space）";
+    const hasAutomation = cueHasAutomation();
+    if (state.play.on && !hasAutomation) { state.play.on = false; cancelAnimationFrame(state.play.raf); }
+    b.disabled = !hasAutomation;
+    b.textContent = state.play.on ? "オートメーション停止" : "オートメーション再生";
+    b.title = state.play.on ? "オートメーションを止める（Space）" : hasAutomation ? "このLX cueのオートメーションを再生する（Space）" : "このLX cueにはオートメーションがありません";
     b.classList.toggle("playing", state.play.on);
     renderXfer();
   }
@@ -2483,7 +2497,7 @@
   if ($("snap")) $("snap").addEventListener("change", () => { state.snap = $("snap").checked; draw(); });
 
   /* ---------- 図に出すもの・探す・舞台の大きさ（4図化で空いた場所へ入れた操作） ---------- */
-  document.querySelectorAll("#showtoggles button, #lighttoggles button").forEach((b) => {
+  document.querySelectorAll("#showtoggles button, #lighttoggles button[data-show]").forEach((b) => {
     /* 作業灯を消すの入り切りでは、消し具合のつまみの出し入れもいるので renderAll で作り直す。
        ほかは図だけ描き直せば足りる。 */
     b.onclick = () => { state.show[b.dataset.show] = !showOn(b.dataset.show); if (b.dataset.show === "blackout") renderAll(); else { b.setAttribute("aria-pressed", String(showOn(b.dataset.show))); draw(); } };
@@ -4013,7 +4027,7 @@
     SECS.forEach((sec) => sec.cv.parentElement.classList.toggle("focus", sec.kind === focusKind));
     renderToolStrip();   // 帯の出し入れで図に使える高さが変わるので、寸法合わせより先に
     syncCanvasSize();
-    document.querySelectorAll("#showtoggles button, #lighttoggles button").forEach((b) => b.setAttribute("aria-pressed", String(showOn(b.dataset.show))));
+    document.querySelectorAll("#showtoggles button, #lighttoggles button[data-show]").forEach((b) => b.setAttribute("aria-pressed", String(showOn(b.dataset.show))));
     document.querySelectorAll("#frontmode button").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.front === "3d") === Boolean(state.front3d))));
     $("seat").hidden = !state.front3d;
     $("filters").hidden = state.mode !== "move";
