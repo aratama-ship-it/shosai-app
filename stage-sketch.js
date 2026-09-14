@@ -7128,6 +7128,9 @@
         audioPanelSignature = "";
         renderAudioPanel(true);
         persistSoon();
+        window.dispatchEvent(new CustomEvent("stage-timeline-audio-change", {
+          detail: { trackId: track.id, durationSeconds: duration },
+        }));
       }
       setAudioStatus(track ? `「${track.title}」を再生できます。` : "曲を再生できます。",
         track ? `“${track.title}” is ready to play.` : "The track is ready to play.");

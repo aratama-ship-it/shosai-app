@@ -104,6 +104,10 @@ test("再接続候補は曲名と5%超の尺差を検知する", () => {
   });
 });
 
+test("再生メタデータで音源尺が補正されたらタイムラインをすぐ再描画する", () => {
+  assert.match(stageSource, /els\.musicAudio\.addEventListener\("loadedmetadata", \(\) => \{[\s\S]*?track\.durationSeconds = duration;[\s\S]*?new CustomEvent\("stage-timeline-audio-change", \{[\s\S]*?durationSeconds: duration/);
+});
+
 test("新規・読込・書出しのstateへ音源参照だけを接続する", () => {
   assert.match(stageSource, /audioTracks: \[\],/);
   assert.match(stageSource, /audioTrackId: null,/);
