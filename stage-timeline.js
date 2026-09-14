@@ -719,32 +719,57 @@
     return phased;
   }
 
-  // 音源があるタイムラインは、実ファイルの終了より先へ伸ばさない。
-  // シーン計画や拍の見積りが長くても、再生できない余白を表示しないための上限。
+  // セクションは演目全体の時計、音源はその中に置く帯として別々に扱う。
+  // 音源の実尺でシーン・転換・キューの時計を切り詰めない。
   function audioTimelineDuration(track) {
     const duration = finite(track && track.durationSeconds, 0);
     return duration > 0 ? duration : null;
   }
 
-  function capTimelineItemsToDuration(items, duration) {
-    return (items || []).flatMap((item) => {
-      const start = clamp(finite(item && item.start, 0), 0, duration);
-      const end = clamp(finite(item && item.end, start), 0, duration);
-      return end > start + 1e-6 ? [{ ...item, start, end }] : [];
-    });
+  function audioClip(track, start, end, fallbackTitle) {
+    const safeStart = Math.max(0, finite(start, 0));
+    const safeEnd = Math.max(safeStart, finite(end, safeStart));
+    if (!track || safeEnd <= safeStart + 1e-6) return null;
+    return {
+      trackId: track.id,
+      title: String(track.title || fallbackTitle || tx("音源")),
+      start: safeStart,
+      end: safeEnd,
+      gainDb: normalizedAudioGainDb(track.gainDb),
+    };
   }
 
-  function capTimelineToAudio(timelineValue, audioTrack) {
-    const duration = audioTimelineDuration(audioTrack);
-    if (duration === null) return timelineValue;
-    const segments = capTimelineItemsToDuration(timelineValue.segments, duration);
-    const transitions = capTimelineItemsToDuration(timelineValue.transitions, duration);
-    return {
-      ...timelineValue,
-      duration,
-      segments: withSceneTransitionPhases(segments, transitions),
-      transitions,
+  // 同じ音源が連続して割り当てられたシーンは、一本の帯として表示する。
+  // 次のシーンが別曲または無音なら、既存再生と同じくそこで帯も終える。
+  function sceneAudioClips(project, segments, duration) {
+    const tracks = new Map((project.audioTracks || []).map((track) => [track.id, track]));
+    const clips = [];
+    let run = null;
+    const closeRun = () => {
+      if (!run) return;
+      const actualDuration = audioTimelineDuration(run.track);
+      const end = Math.min(duration, run.end,
+        actualDuration === null ? run.end : run.start + actualDuration);
+      const clip = audioClip(run.track, run.start, end);
+      if (clip) clips.push(clip);
+      run = null;
     };
+    (segments || []).forEach((segment) => {
+      const trackId = typeof segment.audioTrackId === "string" ? segment.audioTrackId : null;
+      const track = trackId && tracks.get(trackId);
+      if (!track) {
+        closeRun();
+        return;
+      }
+      if (run && run.track.id === track.id && segment.start <= run.end + 1e-6) {
+        run.end = Math.max(run.end, segment.end);
+        return;
+      }
+      closeRun();
+      run = { track, start: segment.start, end: segment.end };
+    });
+    closeRun();
+    return clips;
   }
 
   function formationTimelines(project, section) {
@@ -778,6 +803,7 @@
           start: Math.max(0, countToSec(song.track, group.count)),
           end: Math.max(0.1, countToSec(song.track, Math.max(group.count + 0.01, endCount))),
           count: group.count,
+          audioTrackId: trackId || null,
         };
       });
       const transitions = groups.slice(1).map((group, index) => {
@@ -797,9 +823,13 @@
       });
       const plannedEnd = countToSec(song.track,
         finite(song.scenePlan && song.scenePlan.endCount, groups[groups.length - 1].count + 8));
-      const duration = Math.max(1, plannedEnd,
+      const plannedDuration = Math.max(1, plannedEnd,
         ...segments.map((segment) => segment.end));
-      return capTimelineToAudio({
+      const duration = section ? sectionDurationSeconds(project, section) : plannedDuration;
+      const audioEnd = Math.min(duration, audioTimelineDuration(audioTrack) || duration);
+      const audioClips = audioTrack
+        ? [audioClip(audioTrack, 0, audioEnd, `${tx("音源")}${songIndex + 1}`)].filter(Boolean) : [];
+      return {
         sectionId: section.id,
         sectionTitle: section.title || tx("無題のセクション"),
         songId: song.id,
@@ -808,10 +838,11 @@
         trackId: trackId || null,
         gainDb: normalizedAudioGainDb(audioTrack && audioTrack.gainDb),
         duration,
+        audioClips,
         segments: withSceneTransitionPhases(segments, transitions),
         transitions,
         source: "formation",
-      }, audioTrack);
+      };
     }).filter(Boolean);
   }
 
@@ -830,7 +861,14 @@
       const hold = rehearsal.holdDurationSeconds == null ? 4 : Math.max(0, finite(rehearsal.holdDurationSeconds, 4));
       const travel = rehearsal.transitionToNextSeconds == null ? 0 : Math.max(0, finite(rehearsal.transitionToNextSeconds, 0));
       const duration = sceneTimelineSeconds(scene) * scale;
-      const item = { id: scene.id, sceneId: scene.id, title: scene.title || `${tx("シーン")}${index + 1}`, start: at, end: at + duration };
+      const item = {
+        id: scene.id,
+        sceneId: scene.id,
+        title: scene.title || `${tx("シーン")}${index + 1}`,
+        start: at,
+        end: at + duration,
+        audioTrackId: scene.audioTrackId || null,
+      };
       if (index < scenes.length - 1) transitions.push({
         id: `${scene.id}-transition`,
         title: travel > 0 ? tx("転換") : tx("転換ポイント"),
@@ -843,7 +881,7 @@
       at += duration;
       return item;
     });
-    return capTimelineToAudio({
+    return {
       sectionId: section && section.id || null,
       sectionTitle: section && section.title || project.title || tx("ショー全体"),
       songId: "fallback",
@@ -852,10 +890,11 @@
       trackId,
       gainDb: normalizedAudioGainDb(audioTrack && audioTrack.gainDb),
       duration: desiredDuration,
+      audioClips: sceneAudioClips(project, segments, desiredDuration),
       segments: withSceneTransitionPhases(segments, transitions),
       transitions,
       source: "fallback",
-    }, audioTrack);
+    };
   }
 
   function timelineChoices() {
@@ -1453,9 +1492,8 @@
     audioBlock.setAttribute("aria-label", `${title}。${tx("音源が見つかりません")}。${tx("読み込み直す")}`);
   }
 
-  function checkTimelineAudioAvailability(audioBlock, trackId, title) {
+  function checkTimelineAudioAvailability(audioBlock, trackId, title, generation) {
     if (typeof bridge.hasTimelineAudioFile !== "function") return;
-    const generation = ++audioAvailabilityGeneration;
     Promise.resolve(bridge.hasTimelineAudioFile(trackId)).then((available) => {
       if (available || generation !== audioAvailabilityGeneration || !audioBlock.isConnected
           || audioBlock.dataset.trackId !== trackId) return;
@@ -1638,39 +1676,44 @@
     clearLane(els.transitionsLane);
     Object.values(els.cueLanes).forEach(clearLane);
     if (!timeline) return;
-    const audioBlock = document.createElement(timeline.trackId ? "button" : "div");
-    if (timeline.trackId) audioBlock.type = "button";
-    audioBlock.className = `stage-timeline-audio-block${timeline.trackId ? "" : " is-empty"}`;
-    const audioRangeLock = timelineRangeLock(project, "audio", timeline.trackId);
-    if (audioRangeLock) audioBlock.classList.add("is-time-locked", `is-time-locked-${audioRangeLock}`);
-    audioBlock.dataset.audioMissing = "false";
-    audioBlock.textContent = timeline.title;
-    audioBlock.title = timeline.trackId
-      ? `${timeline.title}（${tx("ダブルクリックで音源情報")}）` : timeline.title;
-    if (audioRangeLock) audioBlock.title += `（${audioRangeLock === "start" ? tx("開始時刻固定中") : tx("終了時刻固定中")}）`;
-    if (timeline.trackId) {
-      audioBlock.dataset.trackId = timeline.trackId;
+    const availabilityGeneration = ++audioAvailabilityGeneration;
+    const audioClips = Array.isArray(timeline.audioClips) ? timeline.audioClips : [];
+    if (!audioClips.length) {
+      const audioBlock = document.createElement("div");
+      audioBlock.className = "stage-timeline-audio-block is-empty";
+      audioBlock.textContent = tx("音源未設定");
+      audioBlock.title = tx("このセクションには音源がありません");
+      placeBlock(audioBlock, 0, timeline.duration);
+      els.audioLane.append(audioBlock);
+    }
+    audioClips.forEach((clip) => {
+      const audioBlock = document.createElement("button");
+      audioBlock.type = "button";
+      audioBlock.className = "stage-timeline-audio-block";
+      const audioRangeLock = timelineRangeLock(project, "audio", clip.trackId);
+      if (audioRangeLock) audioBlock.classList.add("is-time-locked", `is-time-locked-${audioRangeLock}`);
+      audioBlock.dataset.audioMissing = "false";
+      audioBlock.dataset.trackId = clip.trackId;
+      audioBlock.textContent = clip.title;
+      audioBlock.title = `${clip.title}（${labelPosition(clip.start)}–${labelPosition(clip.end)}・${tx("ダブルクリックで音源情報")}）`;
+      if (audioRangeLock) audioBlock.title += `（${audioRangeLock === "start" ? tx("開始時刻固定中") : tx("終了時刻固定中")}）`;
       audioBlock.addEventListener("click", () => {
         if (audioBlock.dataset.audioMissing !== "true"
             || typeof bridge.openTimelineAudioRelinkPicker !== "function") return;
-        bridge.openTimelineAudioRelinkPicker(timeline.trackId);
+        bridge.openTimelineAudioRelinkPicker(clip.trackId);
       });
       audioBlock.addEventListener("dblclick", () => {
         if (audioBlock.dataset.audioMissing === "true") return;
-        openAudioDetails(timeline.trackId, audioBlock);
+        openAudioDetails(clip.trackId, audioBlock);
       });
       audioBlock.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
-        kind: "audio", id: timeline.trackId, lockedEdge: audioRangeLock, label: timeline.title, returnFocus: audioBlock,
+        kind: "audio", id: clip.trackId, lockedEdge: audioRangeLock, label: clip.title, returnFocus: audioBlock,
       }));
-    }
-    if (audioRangeLock) audioBlock.insertAdjacentHTML("beforeend", timelineLockIcon(audioRangeLock));
-    placeBlock(audioBlock, 0, timeline.duration);
-    els.audioLane.append(audioBlock);
-    if (timeline.trackId) {
-      checkTimelineAudioAvailability(audioBlock, timeline.trackId, timeline.title);
-    } else {
-      audioAvailabilityGeneration += 1;
-    }
+      if (audioRangeLock) audioBlock.insertAdjacentHTML("beforeend", timelineLockIcon(audioRangeLock));
+      placeBlock(audioBlock, clip.start, clip.end);
+      els.audioLane.append(audioBlock);
+      checkTimelineAudioAvailability(audioBlock, clip.trackId, clip.title, availabilityGeneration);
+    });
 
     timeline.segments.forEach((segment, index) => {
       const button = document.createElement("button");

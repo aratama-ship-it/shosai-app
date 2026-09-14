@@ -131,7 +131,7 @@ test("時間帯は開始・終了を選んで固定し、キューは一点を�
   assert.match(timeline, /時刻固定を解除/);
   assert.match(timeline, /if \(cue\.timelinePositionLocked\)[\s\S]*?右クリックで解除できます/);
   assert.match(timeline, /function timelineRangeLock\(project, kind, id\)/);
-  assert.match(timeline, /kind: "audio", id: timeline\.trackId, lockedEdge: audioRangeLock/);
+  assert.match(timeline, /kind: "audio", id: clip\.trackId, lockedEdge: audioRangeLock/);
   assert.match(timeline, /kind: "transition", id: positionLockSceneId, lockedEdge: rangeLock/);
   assert.match(sketch, /raw\.timelineRangeLock === "start" \|\| raw\.timelineRangeLock === "end"/);
   assert.match(sketch, /raw\.timelinePositionLocked === true \? \{ timelineRangeLock: "start" \} : \{\}/);
@@ -267,12 +267,14 @@ test("音源なしでもセクション時間を内部時計として再生す�
   assert.match(timeline, /duration: desiredDuration/);
 });
 
-test("音源があるタイムラインは実ファイルの終端を越えて表示しない", () => {
-  assert.match(timeline, /function audioTimelineDuration\(track\)[\s\S]*?duration > 0 \? duration : null/);
-  assert.match(timeline, /function capTimelineItemsToDuration\(items, duration\)[\s\S]*?end > start \+ 1e-6/);
-  assert.match(timeline, /function capTimelineToAudio\(timelineValue, audioTrack\)[\s\S]*?duration,[\s\S]*?withSceneTransitionPhases\(segments, transitions\)/);
-  assert.match(timeline, /return capTimelineToAudio\(\{[\s\S]*?source: "formation",[\s\S]*?\}, audioTrack\)/);
-  assert.match(timeline, /return capTimelineToAudio\(\{[\s\S]*?source: "fallback",[\s\S]*?\}, audioTrack\)/);
+test("セクション時間を全体幅にし、音源は実尺の帯として複数置ける", () => {
+  assert.match(timeline, /function sceneAudioClips\(project, segments, duration\)[\s\S]*?audioTimelineDuration\(run\.track\)/);
+  assert.match(timeline, /const end = Math\.min\(duration, run\.end,[\s\S]*?run\.start \+ actualDuration\)/);
+  assert.match(timeline, /const duration = section \? sectionDurationSeconds\(project, section\) : plannedDuration/);
+  assert.match(timeline, /audioClips: sceneAudioClips\(project, segments, desiredDuration\)/);
+  assert.match(timeline, /const audioClips = Array\.isArray\(timeline\.audioClips\) \? timeline\.audioClips : \[\]/);
+  assert.match(timeline, /placeBlock\(audioBlock, clip\.start, clip\.end\)/);
+  assert.doesNotMatch(timeline, /function capTimelineToAudio\(/);
 });
 
 test("各編集レーンの追加操作を左ラベルへ揃え、キューをシーン単位で連番表示する", () => {
@@ -399,8 +401,8 @@ test("音源ブロックのダブルクリックで音源別ゲインを編集�
     "stage-timeline-audio-detail-cancel", "stage-timeline-audio-detail-save",
   ]) assert.match(html, new RegExp(`id="${id}"`));
   assert.match(html, /id="stage-timeline-audio-gain-range" min="-24" max="12" step="0\.5"/);
-  assert.match(timeline, /document\.createElement\(timeline\.trackId \? "button" : "div"\)/);
-  assert.match(timeline, /audioBlock\.addEventListener\("dblclick", \(\) => \{[\s\S]*?openAudioDetails\(timeline\.trackId, audioBlock\)/);
+  assert.match(timeline, /const audioClips = Array\.isArray\(timeline\.audioClips\)/);
+  assert.match(timeline, /audioBlock\.addEventListener\("dblclick", \(\) => \{[\s\S]*?openAudioDetails\(clip\.trackId, audioBlock\)/);
   assert.match(timeline, /const factor = 10 \*\* \(normalizedAudioGainDb\(gainDb\) \/ 20\)/);
   assert.match(timeline, /createMediaElementSource\(els\.audio\)[\s\S]*?createGain\(\)[\s\S]*?gain\.connect\(context\.destination\)/);
   assert.match(timeline, /bridge\.setTimelineAudioGainDb\(trackId, gainDb\)/);
@@ -412,9 +414,9 @@ test("端末内の音源が欠落したら同じ音源枠から再接続し、�
   assert.match(sketch, /hasTimelineAudioFile\(trackId\)[\s\S]*?audioStore\.get\(normalizedTrackId\)/);
   assert.match(sketch, /openTimelineAudioRelinkPicker\(trackId\)[\s\S]*?openAudioRelinkPicker\(trackId\)/);
   assert.match(sketch, /audioStore\.put\(trackId, file\)[\s\S]*?stage-timeline-audio-change[\s\S]*?reconnected: true/);
-  assert.match(timeline, /function checkTimelineAudioAvailability\(audioBlock, trackId, title\)/);
+  assert.match(timeline, /function checkTimelineAudioAvailability\(audioBlock, trackId, title, generation\)/);
   assert.match(timeline, /showMissingAudioState\(audioBlock, title\)/);
-  assert.match(timeline, /audioBlock\.dataset\.audioMissing !== "true"[\s\S]*?bridge\.openTimelineAudioRelinkPicker\(timeline\.trackId\)/);
+  assert.match(timeline, /audioBlock\.dataset\.audioMissing !== "true"[\s\S]*?bridge\.openTimelineAudioRelinkPicker\(clip\.trackId\)/);
   assert.match(timeline, /音源が見つかりません/);
   assert.match(timeline, /読み込み直す/);
   assert.match(css, /\.stage-timeline-audio-block\.is-missing \{[\s\S]*?border-style: dashed/);
