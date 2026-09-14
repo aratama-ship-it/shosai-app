@@ -399,6 +399,8 @@
   /* 選んだ灯体の操作（パネルの先頭・メイン） */
   .tsbtns{display:grid;grid-template-columns:1fr 1fr;gap:4px}
   .tsbtns .btn{min-height:28px;padding:2px 6px;font-size:12px;white-space:nowrap}
+  #pair-mirror{grid-column:1/-1}
+  #pair-mirror[aria-pressed="true"]{color:var(--milk);border-color:var(--brass);background:rgba(156,130,63,.22)}
   /* LX cue。#lxqbox は .inspbody の外（パネル直下）なので、幅の面倒を自分で見る。
      .pbox は display:grid なので、中身が縮まないとパネルごと広がる（HANDOFFの落とし穴）。 */
   #lxqbox{min-width:0}
@@ -706,6 +708,7 @@
                 <button type="button" class="btn quiet" id="mirror" disabled>反対側へコピー</button>
                 <button type="button" class="btn quiet" id="spread" disabled>等間隔に並べる</button>
                 <button type="button" class="btn quiet" id="del" disabled>削除</button>
+                <button type="button" class="btn quiet" id="pair-mirror" hidden disabled aria-pressed="false">左右反転モード</button>
               </div>
             </div>
             <div class="inspbody" id="insp"></div>
@@ -770,10 +773,10 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=20260915-1"></script>
+<script src="rig-engine.js?v=20260915-2"></script>
 <script src="stage-figure.js?v=20260915-1"></script>
 <script src="volume-light.js?v=20260915-2"></script>
-<script src="app.js?v=20260915-3"></script>
+<script src="app.js?v=20260915-4"></script>
 <script src="light-presets.js?v=1789357787"></script>
 <script src="light-presets-ui.js?v=1789397300"></script>
 <!-- 選択灯「型」P1: 本体ではなく、この試作だけへ隔離接続する。 -->

@@ -864,12 +864,38 @@
     return m;
   };
 
+  /* 2灯を舞台のセンター線で対称に保つための配置用の純関数。
+     吊りは同じバトン上、SS は下手／上手の対でだけ使える。描画や保存の状態は持たず、
+     app.js がドラッグ中に source の変更を partner へ渡す。 */
+  const pairMirrorCompatible = (source, partner) => {
+    if (!source || !partner || source.type !== partner.type) return false;
+    if (source.type === "truss") return Boolean(source.trussId) && source.trussId === partner.trussId;
+    return source.type === "floor" || source.type === "front" || source.type === "side";
+  };
+  const mirrorPairMount = (source, partner) => {
+    const next = JSON.parse(JSON.stringify(partner || {}));
+    if (!pairMirrorCompatible(source, partner)) return next;
+    if (source.type === "side") {
+      next.side = source.side === "shimote" ? "kamite" : "shimote";
+      next.v = clamp(finite(source.v, 0.5), 0, 1);
+      next.h = Math.max(0.3, finite(source.h, 2));
+      return next;
+    }
+    next.u = Number((1 - clamp(finite(source.u, 0.5), 0, 1)).toFixed(6));
+    if (source.type === "floor") next.v = clamp(finite(source.v, 0.5), 0, 1);
+    if (source.type === "front") {
+      next.ahead = Math.max(0, finite(source.ahead, 5));
+      next.h = Math.max(0.3, finite(source.h, 7));
+    }
+    return next;
+  };
+
   root.RIG_ENGINE = Object.freeze({
     DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, CYC_MOUNT_V, CYC_REACH_MAX, HOUSE_AHEAD_MAX, cycBarSpan, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
     clamp, finite,
     newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, spotEllipse, spotFalloff, beamLanding, trussById, trussRow, fixtureWorld,
     newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, strobeMul, paramPhase, mountSpot, GOBOS, goboById, goboAngleAt, constrainPointToSurface, periodMs, groupEffect,
-    pointWorld, planeVec, circleOffset, eightOffset, targetAt, pathGuide, mirrorMount,
+    pointWorld, planeVec, circleOffset, eightOffset, targetAt, pathGuide, mirrorMount, pairMirrorCompatible, mirrorPairMount,
     FRONT_SEATS, frontPerspSetup, makeFrontPerspProjector, frontPerspToUH,
     makePlanProjector, makeFrontProjector, makeSideProjector, planToUV, frontToUH, sideToVH,
     describeMount, describeCue,
