@@ -15,7 +15,7 @@ const fixed = (barn) => ({ ...E.newFixture("f1", 1, { type: "truss", trussId: "t
 const mover = (barn) => ({ ...E.newFixture("f2", 2, { type: "truss", trussId: "t", u: 0.5 }, "", "moving", 15), barn });
 
 test("公開している一式", () => {
-  ["BARN_KEYS", "SHUTTER_ROT_MAX", "newShutter", "barnOf", "barnActive", "shutterActive", "frameDoors", "doorCutInEllipse"].forEach((k) => assert.ok(k in E, `${k} が無い`));
+  ["BARN_KEYS", "SHUTTER_ROT_MAX", "newShutter", "barnOf", "barnActive", "shutterActive", "shutterEdgeDistance", "frameDoors", "doorCutInEllipse"].forEach((k) => assert.ok(k in E, `${k} が無い`));
   assert.deepEqual(plain([...E.BARN_KEYS]), ["back", "front", "left", "right"]);
   assert.equal(E.newShutter().rot, 0);
 });
@@ -38,12 +38,17 @@ test("frameDoors: バーンドアは閉めた方向だけ、軸は床(y)と奥�
   assert.deepEqual(plain(dz[0].n), { x: 0, y: 0, z: 1 });      // 上＝+z
 });
 
-test("frameDoors: カッターは4本の硬い線。1.0で内接正方形、√2以上はその向きを切らない", () => {
+test("frameDoors: 1.0で内接正方形、1.0超は円弧が戻り、1.4で元の円になる", () => {
   const sq = E.frameDoors(mover(), { shutter: E.newShutter() }, "y");
   assert.equal(sq.length, 4);
   sq.forEach((d) => { assert.ok(near(d.f, 1 - 1 / Math.SQRT2, 1e-9)); assert.ok(d.soft < 0.1, "カッターは硬い"); });
-  const band = E.frameDoors(mover(), { shutter: { on: true, w: 1.45, h: 0.5 } }, "y");
-  assert.deepEqual(plain(band.map((d) => d.key)), ["back", "front"], "幅を√2以上にすると左右は切らない");
+  const middle = E.frameDoors(mover(), { shutter: E.newShutter({ w: 1.2, h: 1.2 }) }, "y");
+  assert.equal(middle.length, 4);
+  middle.forEach((d) => assert.ok(d.f > 0 && d.f < sq[0].f, "100超では刃が円周へ退く"));
+  const round = E.frameDoors(mover(), { shutter: E.newShutter({ w: 1.4, h: 1.4 }) }, "y");
+  assert.equal(round.length, 0, "幅・高さ140では刃が完全に抜け、元の円になる");
+  const band = E.frameDoors(mover(), { shutter: { on: true, w: 1.4, h: 0.5 } }, "y");
+  assert.deepEqual(plain(band.map((d) => d.key)), ["back", "front"], "幅140では左右の刃だけが完全に抜ける");
   assert.ok(near(band[0].f, 1 - 0.5 / Math.SQRT2, 1e-9));
   assert.equal(E.frameDoors(mover(), { shutter: { on: false, w: 0.5, h: 0.5 } }, "y").length, 0, "オフなら無し");
   assert.equal(E.shutterActive(null), false);

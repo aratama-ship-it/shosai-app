@@ -172,9 +172,10 @@
      バーンドア: 固定灯だけの装備。四方（床・空中なら 奥・手前・下手・上手／奥の壁・客席なら 上・下・下手・上手）
        から光の縁を切る。fixture.barn = { back, front, left, right } 各 0〜1（0＝開いている、1＝中心まで閉める）。
        仕込みで決める値なので全シーン共通（fixture.beamDeg と同じ層）。ムービングには付けない（本人指定）。
-     カッター: 光を四角にする。light.shutter = { on, w, h }。このシーンの値（ゴボと同じ層）。
-       w/h は「光の輪に内接する正方形の辺」を1とした比。1.4（≒√2）まで上げるとその向きは輪の外まで開き、
-       もう一方だけが効いた「帯」になる。細かい調整はしない（本人指定「四角形、異なるサイズの四角形」）。
+     カッター: 円形の光を4枚の刃で切る。light.shutter = { on, w, h }。このシーンの値（ゴボと同じ層）。
+       w/h の1.0までは「光の輪に内接する正方形の辺」を1とした比。1.0を超えたら刃が円周へ退き、
+       1.4でその向きの刃が光の輪から完全に抜ける。したがって幅・高さを上げるほど四隅に円弧が戻り、
+       両方1.4なら元の円になる（2026-09-14 本人指摘）。
      どちらも「切る線」の集まりに直してから描く: 世界座標の向き n（外向き）と、中心からの距離（光の半径＝1）。
      縁の柔らかさ soft も半径に対する比。バーンドアは柔らかく、カッターは硬い。 */
   const BARN_KEYS = Object.freeze(["back", "front", "left", "right"]);
@@ -190,6 +191,16 @@
   };
   const barnActive = (fixture) => Boolean(fixture) && !isMoving(fixture) && BARN_KEYS.some((k) => barnOf(fixture)[k] > 0);
   const shutterActive = (light) => Boolean(light && light.shutter && light.shutter.on);
+  /* カッター刃の中心からの距離（光の半径=1）。
+     1.0では円に内接する四角なので 1/√2。そこから最大値までは刃を円周へ戻す。
+     UIの最大値1.4は√2の丸め値だが、0.01だけ刃が残る旧計算では最大でも平らな辺が見えたため、
+     表示上の最大値を物理的な「刃が完全に抜けた状態」へ正規化する。 */
+  const shutterEdgeDistance = (value) => {
+    const v = clamp(finite(value, 1), SHUTTER_MIN, SHUTTER_MAX);
+    if (v <= 1) return v / Math.SQRT2;
+    const reopen = (v - 1) / (SHUTTER_MAX - 1);
+    return Math.SQRT1_2 + (1 - Math.SQRT1_2) * reopen;
+  };
   /* 切る線（世界座標）。vert = "y"（床・空中: 奥⇄手前が y 軸、奥＝−y）／"z"（奥の壁・客席: 上⇄下が z 軸、上＝+z）。
      返り値 [{ key, n:{x,y,z}, f, soft }]。f は中心までを1とした閉め具合。 */
   const frameDoors = (fixture, light, vert) => {
@@ -202,15 +213,15 @@
     }
     if (shutterActive(light)) {
       const s = light.shutter;
-      const fw = 1 - clamp(finite(s.w, 1), SHUTTER_MIN, SHUTTER_MAX + 0.1) / Math.SQRT2;
-      const fh = 1 - clamp(finite(s.h, 1), SHUTTER_MIN, SHUTTER_MAX + 0.1) / Math.SQRT2;
+      const fw = 1 - shutterEdgeDistance(s.w);
+      const fh = 1 - shutterEdgeDistance(s.h);
       /* 回転（2026-09-14 本人要望）: 面の中（x と up が張る面）で四角を回す。バーンドアは回さない（舞台軸に固定）。
          正の角で、床なら真上から見て時計回り（x → 奥 の向き）、奥の壁なら客席から見て反時計回り（x → 上）。 */
       const th = (clamp(finite(s.rot, 0), -180, 180) * Math.PI) / 180, cs = Math.cos(th), sn = Math.sin(th);
       const rx = { x: cs, y: sn * up.y, z: sn * up.z }, ru = { x: -sn, y: cs * up.y, z: cs * up.z };
       const neg = (v) => ({ x: -v.x, y: -v.y, z: -v.z });
-      if (fw > 0) { out.push({ key: "left", n: neg(rx), f: fw, soft: SHUTTER_SOFT }); out.push({ key: "right", n: rx, f: fw, soft: SHUTTER_SOFT }); }
-      if (fh > 0) { out.push({ key: "back", n: ru, f: fh, soft: SHUTTER_SOFT }); out.push({ key: "front", n: neg(ru), f: fh, soft: SHUTTER_SOFT }); }
+      if (fw > 1e-9) { out.push({ key: "left", n: neg(rx), f: fw, soft: SHUTTER_SOFT }); out.push({ key: "right", n: rx, f: fw, soft: SHUTTER_SOFT }); }
+      if (fh > 1e-9) { out.push({ key: "back", n: ru, f: fh, soft: SHUTTER_SOFT }); out.push({ key: "front", n: neg(ru), f: fh, soft: SHUTTER_SOFT }); }
     }
     return out;
   };
@@ -876,6 +887,6 @@
     makePlanProjector, makeFrontProjector, makeSideProjector, planToUV, frontToUH, sideToVH,
     describeMount, describeCue,
     CURTAIN_KINDS, curtainKindLabel, curtainParts,
-    BARN_KEYS, SHUTTER_MIN, SHUTTER_MAX, SHUTTER_ROT_MAX, newShutter, barnOf, barnActive, shutterActive, frameDoors, doorCutInEllipse,
+    BARN_KEYS, SHUTTER_MIN, SHUTTER_MAX, SHUTTER_ROT_MAX, newShutter, barnOf, barnActive, shutterActive, shutterEdgeDistance, frameDoors, doorCutInEllipse,
   });
 })(typeof window !== "undefined" ? window : globalThis);
