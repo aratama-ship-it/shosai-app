@@ -1,0 +1,438 @@
+{
+  "chromium": {
+    "baseline": {
+      "floor": {
+        "hashes": {
+          "plan": 11988956,
+          "front": 89088901,
+          "front3d": 4085217136,
+          "shimote": 3572526485,
+          "kamite": 718737505
+        },
+        "frontPixel": 456,
+        "unchanged": true
+      },
+      "wall": {
+        "hashes": {
+          "plan": 856991308,
+          "front": 3302586426,
+          "front3d": 3838115212,
+          "shimote": 3902774007,
+          "kamite": 3859852445
+        },
+        "frontPixel": 456,
+        "unchanged": true
+      },
+      "floor-selected": {
+        "hashes": {
+          "plan": 3137774837,
+          "front": 2490186327,
+          "front3d": 3001689291,
+          "shimote": 3572526485,
+          "kamite": 718737505
+        },
+        "frontPixel": 456,
+        "unchanged": true
+      },
+      "wall-selected": {
+        "hashes": {
+          "plan": 4011275668,
+          "front": 4251714332,
+          "front3d": 729363785,
+          "shimote": 3902774007,
+          "kamite": 3859852445
+        },
+        "frontPixel": 456,
+        "unchanged": true
+      },
+      "mixed0": {
+        "hashes": {
+          "plan": 2679742596,
+          "front": 177918734,
+          "front3d": 459712870,
+          "shimote": 897150562,
+          "kamite": 2307621256
+        },
+        "frontPixel": 456,
+        "unchanged": true
+      },
+      "mixed35": {
+        "hashes": {
+          "plan": 2679742596,
+          "front": 177918734,
+          "front3d": 459712870,
+          "shimote": 897150562,
+          "kamite": 2307621256
+        },
+        "frontPixel": 456,
+        "unchanged": true
+      },
+      "mixed70": {
+        "hashes": {
+          "plan": 2679742596,
+          "front": 177918734,
+          "front3d": 459712870,
+          "shimote": 897150562,
+          "kamite": 2307621256
+        },
+        "frontPixel": 456,
+        "unchanged": true
+      },
+      "back35": {
+        "hashes": {
+          "plan": 831042127,
+          "front": 853553564,
+          "front3d": 4101664888,
+          "shimote": 2671148472,
+          "kamite": 3779974348
+        },
+        "frontPixel": 33,
+        "unchanged": true
+      },
+      "head35": {
+        "hashes": {
+          "plan": 2932303029,
+          "front": 2983623162,
+          "front3d": 3817392449,
+          "shimote": 734761780,
+          "kamite": 1670944975
+        },
+        "frontPixel": 33,
+        "unchanged": true
+      }
+    },
+    "candidate": {
+      "floor": {
+        "hashes": {
+          "plan": 11988956,
+          "front": 89088901,
+          "front3d": 4085217136,
+          "shimote": 3572526485,
+          "kamite": 718737505
+        },
+        "frontPixel": 456,
+        "unchanged": true
+      },
+      "wall": {
+        "hashes": {
+          "plan": 856991308,
+          "front": 3302586426,
+          "front3d": 3838115212,
+          "shimote": 3902774007,
+          "kamite": 3859852445
+        },
+        "frontPixel": 456,
+        "unchanged": true
+      },
+      "floor-selected": {
+        "hashes": {
+          "plan": 3137774837,
+          "front": 2490186327,
+          "front3d": 3001689291,
+          "shimote": 3572526485,
+          "kamite": 718737505
+        },
+        "frontPixel": 456,
+        "unchanged": true
+      },
+      "wall-selected": {
+        "hashes": {
+          "plan": 4011275668,
+          "front": 4251714332,
+          "front3d": 729363785,
+          "shimote": 3902774007,
+          "kamite": 3859852445
+        },
+        "frontPixel": 456,
+        "unchanged": true
+      },
+      "mixed0": {
+        "hashes": {
+          "plan": 1455060304,
+          "front": 2260432401,
+          "front3d": 3561199449,
+          "shimote": 379813541,
+          "kamite": 1721098405
+        },
+        "frontPixel": 456,
+        "unchanged": true
+      },
+      "mixed35": {
+        "hashes": {
+          "plan": 2613388065,
+          "front": 1947590310,
+          "front3d": 2141074815,
+          "shimote": 1361852077,
+          "kamite": 3877107893
+        },
+        "frontPixel": 498,
+        "unchanged": true
+      },
+      "mixed70": {
+        "hashes": {
+          "plan": 4113946648,
+          "front": 3196097590,
+          "front3d": 1811821088,
+          "shimote": 629662457,
+          "kamite": 2728860151
+        },
+        "frontPixel": 553,
+        "unchanged": true
+      },
+      "back35": {
+        "hashes": {
+          "plan": 2159496818,
+          "front": 3376032290,
+          "front3d": 2601900872,
+          "shimote": 2549401397,
+          "kamite": 802335771
+        },
+        "frontPixel": 96,
+        "unchanged": true
+      },
+      "head35": {
+        "hashes": {
+          "plan": 4247052374,
+          "front": 3740876828,
+          "front3d": 3657862231,
+          "shimote": 1905304574,
+          "kamite": 3299681543
+        },
+        "frontPixel": 33,
+        "unchanged": true
+      }
+    },
+    "storage": {
+      "same": true,
+      "b": 82,
+      "a": 17,
+      "unknown": [
+        1,
+        2
+      ]
+    },
+    "ui": {
+      "haze": true,
+      "undo": true,
+      "displayDoesNotAim": true
+    }
+  },
+  "webkit": {
+    "baseline": {
+      "floor": {
+        "hashes": {
+          "plan": 2560556403,
+          "front": 3235806195,
+          "front3d": 2403249183,
+          "shimote": 3166891906,
+          "kamite": 1883954618
+        },
+        "frontPixel": 413,
+        "unchanged": true
+      },
+      "wall": {
+        "hashes": {
+          "plan": 70891332,
+          "front": 487626872,
+          "front3d": 2282977155,
+          "shimote": 3603161343,
+          "kamite": 3687041965
+        },
+        "frontPixel": 413,
+        "unchanged": true
+      },
+      "floor-selected": {
+        "hashes": {
+          "plan": 3085738287,
+          "front": 3931874407,
+          "front3d": 1735859395,
+          "shimote": 3166891906,
+          "kamite": 1883954618
+        },
+        "frontPixel": 413,
+        "unchanged": true
+      },
+      "wall-selected": {
+        "hashes": {
+          "plan": 1210490177,
+          "front": 4138047471,
+          "front3d": 2200952685,
+          "shimote": 3603161343,
+          "kamite": 3687041965
+        },
+        "frontPixel": 413,
+        "unchanged": true
+      },
+      "mixed0": {
+        "hashes": {
+          "plan": 660938499,
+          "front": 488073655,
+          "front3d": 1893323437,
+          "shimote": 3393122087,
+          "kamite": 487152179
+        },
+        "frontPixel": 413,
+        "unchanged": true
+      },
+      "mixed35": {
+        "hashes": {
+          "plan": 660938499,
+          "front": 488073655,
+          "front3d": 1893323437,
+          "shimote": 3393122087,
+          "kamite": 487152179
+        },
+        "frontPixel": 413,
+        "unchanged": true
+      },
+      "mixed70": {
+        "hashes": {
+          "plan": 660938499,
+          "front": 488073655,
+          "front3d": 1893323437,
+          "shimote": 3393122087,
+          "kamite": 487152179
+        },
+        "frontPixel": 413,
+        "unchanged": true
+      },
+      "back35": {
+        "hashes": {
+          "plan": 2403759786,
+          "front": 149653281,
+          "front3d": 1182033635,
+          "shimote": 837982823,
+          "kamite": 938677371
+        },
+        "frontPixel": 33,
+        "unchanged": true
+      },
+      "head35": {
+        "hashes": {
+          "plan": 1062402598,
+          "front": 1479533007,
+          "front3d": 652636806,
+          "shimote": 1382991185,
+          "kamite": 1733139229
+        },
+        "frontPixel": 33,
+        "unchanged": true
+      }
+    },
+    "candidate": {
+      "floor": {
+        "hashes": {
+          "plan": 2560556403,
+          "front": 3235806195,
+          "front3d": 2403249183,
+          "shimote": 3166891906,
+          "kamite": 1883954618
+        },
+        "frontPixel": 413,
+        "unchanged": true
+      },
+      "wall": {
+        "hashes": {
+          "plan": 70891332,
+          "front": 487626872,
+          "front3d": 2282977155,
+          "shimote": 3603161343,
+          "kamite": 3687041965
+        },
+        "frontPixel": 413,
+        "unchanged": true
+      },
+      "floor-selected": {
+        "hashes": {
+          "plan": 3085738287,
+          "front": 3931874407,
+          "front3d": 1735859395,
+          "shimote": 3166891906,
+          "kamite": 1883954618
+        },
+        "frontPixel": 413,
+        "unchanged": true
+      },
+      "wall-selected": {
+        "hashes": {
+          "plan": 1210490177,
+          "front": 4138047471,
+          "front3d": 2200952685,
+          "shimote": 3603161343,
+          "kamite": 3687041965
+        },
+        "frontPixel": 413,
+        "unchanged": true
+      },
+      "mixed0": {
+        "hashes": {
+          "plan": 845723332,
+          "front": 1184165902,
+          "front3d": 2575268298,
+          "shimote": 3877903100,
+          "kamite": 1085572269
+        },
+        "frontPixel": 413,
+        "unchanged": true
+      },
+      "mixed35": {
+        "hashes": {
+          "plan": 2171223358,
+          "front": 219751659,
+          "front3d": 1125359965,
+          "shimote": 2117438378,
+          "kamite": 1368731213
+        },
+        "frontPixel": 456,
+        "unchanged": true
+      },
+      "mixed70": {
+        "hashes": {
+          "plan": 3536797887,
+          "front": 1251581956,
+          "front3d": 3542436431,
+          "shimote": 1670646250,
+          "kamite": 1348906471
+        },
+        "frontPixel": 524,
+        "unchanged": true
+      },
+      "back35": {
+        "hashes": {
+          "plan": 681968631,
+          "front": 3152748768,
+          "front3d": 3236805109,
+          "shimote": 1132665538,
+          "kamite": 210979081
+        },
+        "frontPixel": 96,
+        "unchanged": true
+      },
+      "head35": {
+        "hashes": {
+          "plan": 3051761481,
+          "front": 1057004567,
+          "front3d": 703100813,
+          "shimote": 4235541929,
+          "kamite": 3808742647
+        },
+        "frontPixel": 33,
+        "unchanged": true
+      }
+    },
+    "storage": {
+      "same": true,
+      "b": 82,
+      "a": 17,
+      "unknown": [
+        1,
+        2
+      ]
+    },
+    "ui": {
+      "haze": true,
+      "undo": true,
+      "displayDoesNotAim": true
+    }
+  }
+}

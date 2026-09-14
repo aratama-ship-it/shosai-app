@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>判断資料: 逆光（客席・空中を狙う光）の再設計 — 舞台スケッチ照明試作</title>
+<style>
+:root{
+  --desk:#191512;--desk-2:#201b16;--desk-3:#282119;--line-dark:#382f25;
+  --milk:#efe7d6;--milk-dim:rgba(240,231,214,.6);--brass:#9c823f;--rust:#a84b26;--rust-ink:#df6433;
+  --gold:#d3ac59;--canvas:#0d0e10;--warn:#c9873a;
+  --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
+  --serif:"Hiragino Mincho ProN","Yu Mincho",serif;
+  --fs-h1:26px;--fs-h2:20px;--fs-h3:17px;--fs-body:16px;--fs-small:14px;
+  --sp-1:6px;--sp-2:12px;--sp-3:20px;--sp-4:32px;--radius:6px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--desk);color:var(--milk);font-family:var(--sans);font-size:var(--fs-body);line-height:1.75;overflow-wrap:break-word}
+main{max-width:1060px;margin:0 auto;padding:var(--sp-3)}
+h1{font-family:var(--serif);font-size:var(--fs-h1);line-height:1.4;margin:.2em 0 .4em;color:var(--milk)}
+h2{font-size:var(--fs-h2);border-left:4px solid var(--brass);padding-left:10px;margin:2.2em 0 .6em;line-height:1.4}
+h3{font-size:var(--fs-h3);color:var(--gold);margin:1.6em 0 .4em}
+p{margin:.5em 0}
+a{color:var(--gold)}
+code,.mono{font-family:ui-monospace,Menlo,monospace;font-size:.92em;background:var(--desk-3);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+table{border-collapse:collapse;width:100%;margin:.6em 0;font-size:var(--fs-small)}
+.tablewrap{overflow-x:auto;margin:.6em 0;-webkit-overflow-scrolling:touch}
+.tablewrap table{margin:0;min-width:620px}
+.tablewrap .thint{display:none;position:sticky;left:0;font-size:12.5px;color:var(--milk-dim);padding:2px 0 4px}
+@media (max-width:720px){.tablewrap .thint{display:block}}
+th,td{border:1px solid var(--line-dark);padding:6px 9px;vertical-align:top;text-align:left}
+th{background:var(--desk-3)}
+.card{background:var(--desk-2);border:1px solid var(--line-dark);border-radius:var(--radius);padding:var(--sp-2) var(--sp-3);margin:var(--sp-2) 0}
+.card.reco{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass)}
+.card.oos{border-style:dashed;opacity:.9}
+.tag{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:9px;border:1px solid var(--line-dark);margin-right:6px;vertical-align:1px;white-space:nowrap}
+.tag.reco{background:var(--brass);color:#17120a;border-color:var(--brass);font-weight:600}
+.tag.fact{background:#243020;color:#cfe0b8;border-color:#3c5030}
+.tag.guess{background:#332a1a;color:#e8c98a;border-color:#5a4a28}
+.tag.open{background:#3a2420;color:#f0b8a0;border-color:#6a4038}
+.tag.drop{background:#2a2a2e;color:#b9b9c2;border-color:#4a4a52}
+.tag.quote{background:#20262e;color:#b8cbe0;border-color:#38485a}
+.notice{background:#2a2016;border:1px solid var(--warn);border-radius:var(--radius);padding:10px 16px;margin:0 0 var(--sp-3);font-size:var(--fs-small);color:#eed9b0}
+.summ{background:var(--desk-2);border:1px solid var(--brass);border-radius:var(--radius);padding:var(--sp-2) var(--sp-3)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:var(--sp-2)}
+figure{margin:var(--sp-2) 0;background:var(--canvas);border:1px solid var(--line-dark);border-radius:var(--radius);padding:var(--sp-1)}
+figcaption{font-size:var(--fs-small);color:var(--milk-dim);padding:4px 6px 2px;line-height:1.6}
+svg{display:block;width:100%;height:auto}
+.small{font-size:var(--fs-small);color:var(--milk-dim)}
+blockquote{border-left:3px solid var(--rust-ink);margin:.8em 0;padding:.1em 0 .1em 12px;color:var(--milk)}
+ul,ol{padding-left:1.5em}
+li{margin:.25em 0}
+.ansbtn{font:inherit;font-size:var(--fs-small);background:var(--desk-3);color:var(--milk);border:1px solid var(--line-dark);border-radius:4px;padding:6px 14px;margin:3px 4px 3px 0;cursor:pointer;min-height:44px}
+.ansbtn.sel{background:var(--brass);color:#17120a;border-color:var(--brass);font-weight:700}
+.ansbtn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.ansrow{margin:.6em 0 .9em}
+.ansrow .q{font-weight:600}
+#anscopy{background:var(--rust-ink);color:#170c06;font-weight:700;border:none;border-radius:4px;padding:8px 18px;font-size:var(--fs-body);cursor:pointer}
+#ansout{width:100%;min-height:5em;background:var(--canvas);color:var(--milk);border:1px solid var(--line-dark);border-radius:4px;font-family:ui-monospace,Menlo,monospace;font-size:12px;padding:8px;margin-top:8px}
+textarea.note{width:100%;min-height:3em;background:var(--canvas);color:var(--milk);border:1px solid var(--line-dark);border-radius:4px;font:inherit;font-size:var(--fs-small);padding:6px}
+.toc{columns:2;column-gap:24px;font-size:var(--fs-small)}
+@media (max-width:700px){.toc{columns:1}}
+.legend{font-size:12.5px;color:var(--milk-dim)}
+</style>
+</head>
+<body>
+<main>
+<p class="card"><b>2026-09-14 更新：</b>本人は案Bと回答済みの設計方針を採用し、人物修正の公開・案Bの実装を承認しました。以下は設計会議時点の資料です。現在の進捗・残る判断は <a href="REVIEW_B.html">案Bの比較試作</a> にまとめています。</p>
+
+<div class="notice">
+<b>正式指定先の完成版</b>（2026-09-14）。本資料は<b>設計提案であり未承認・未実装</b>。
+参照コードはすべて<b>会議時点（2026-09-14 深夜）の読取</b>——コードは並行更新中のため本資料は会議時点に限定し、現行版の再検証は未実施。
+経緯: 会議途中に元資料（MEETING・HANDOFF）と本成果物の初稿の参照が一時できなくなり、/tmp へ退避して作業を継続した（原因未確認）。
+最終確認で元資料と、同じ会議の初稿（Round 2 回答の追記前）の存在を確認し、この指定先の2成果物を最新版へ更新した。
+<b>添付画像の元パスは依然参照不能。</b>
+</div>
+
+<h1>逆光（客席・空中を狙う光）の再設計<br><span style="font-size:15px;color:var(--milk-dim)">舞台スケッチ 照明デザイン試作 — 判断用資料（2026-09-14・Fable×Astra 二者会議 全2ラウンドの成果物）</span></h1>
+
+<p class="legend">表記の区別 — <span class="tag quote">文書中の本人発言（要約）</span>会議文書が引用していた本人発言の要約（逐語ではない。今回の会議を命じた本人の直接指示とも別）／<span class="tag fact">事実</span>会議時点で実測・実読したこと／<span class="tag guess">仮説・提案値</span>未計測・未確認／<span class="tag open">本人判断</span>選んでもらう点／<span class="tag drop">撤回</span>会議で棄却したFable初期案。<b>本資料の「推奨」「合意」はすべてAI二者のもので、本人は未承認。</b></p>
+
+<div class="summ">
+<p><b>決めてほしいこと（5つ）</b> — ページ末尾の<a href="#answer">回答パネル</a>のボタンで選んでコピーできます。</p>
+<ol>
+<li><b>採用する設計</b>: <a href="#plans">案A（最小修正）／案B（分離モデル・AI推奨）</a>。案Cは今回の範囲外として見送り。</li>
+<li><b>床・壁の温存範囲</b>: <a href="#haze">「床壁だけの場面は画素同一・逆光が混ざる場面は見え方が変わる」を受け入れるか、混在場面も現状のままにするか</a></li>
+<li><b>もやの保存先</b>: <a href="#haze">ショー全体で1つか、場面（LX cue）ごとか</a></li>
+<li><b>正面図2Dの光条</b>: <a href="#shaft">操作しやすさを保った抑えた光条でよいか、写真並みの迫力まで2Dで狙うか</a></li>
+<li><b>UIの細部</b>: <a href="#ui">平面・側面のドラッグで「舞台前からの距離」も動かすか／側面図の帯の暗さを他図と統一するか</a></li>
+</ol>
+</div>
+
+<h2 id="toc">目次</h2>
+<div class="toc"><ol>
+<li><a href="#problem">何が起きているか</a></li>
+<li><a href="#evidence">証拠の状態</a></li>
+<li><a href="#root">矛盾の根っこ</a></li>
+<li><a href="#plans">案の比較（A/B＋範囲外C）</a></li>
+<li><a href="#views">3図の描き方（模式図）</a></li>
+<li><a href="#agenda">8議題の結論一覧</a></li>
+<li><a href="#shaft">正面図の光条（核）</a></li>
+<li><a href="#sil">影絵の判定</a></li>
+<li><a href="#haze">もや・床壁の温存境界</a></li>
+<li><a href="#ui">UI案</a></li>
+<li><a href="#tokens">デザイントークンシート</a></li>
+<li><a href="#verify">検証計画</a></li>
+<li><a href="#risk">不確実性・影響範囲</a></li>
+<li><a href="#next">次の行動</a></li>
+<li><a href="#answer">回答パネル</a></li>
+<li><a href="#meeting">会議の記録</a></li>
+</ol></div>
+
+<h2 id="problem">1. 何が起きているか</h2>
+<p><span class="tag quote">文書中の本人発言（要約）</span>（会議文書 MEETING §1 に引用されていた本人発言をFableが要約したもの。逐語引用ではない）:</p>
+<blockquote>床を狙っているもの、奥の壁を狙っているものは完璧に作動しているが、<b>逆光になるパターンが現実世界のものとは明らかに異なり、再現がうまくできていない。そこをどう再現するかをシステムレベルで考えてほしい</b>。基本は正面図のドラッグ・ターゲットのドラッグで操作したい。パラメータが必要なら照明デザインパネルから。目的は写真のような"それっぽさ"（アイデア出し用）で、物理的厳密さではない。</blockquote>
+<p><span class="tag fact">事実</span>個別対処は4回繰り返して限界（宙で切れる→枠外へ延長→三角の違和感→滲みだけ、の経緯が文書に記録）。現状の逆光表現は「光源の丸い滲み＋手前端の滲み」の2層で、<b>光条（シャフト）が無い</b>。影絵は「光源が演者より奥にあるか」だけで決まり、<b>演者より奥に点灯している灯がある場面では、前明かりが強くても黒いまま</b>になる。側面図では今回問題のhouse吊り灯（その側のSSでない灯）の帯が0.32倍に減光される（<b>選択中のair灯は例外</b>。SS用の図だった頃の名残・会議時点のコードで確認）。</p>
+
+<h2 id="evidence">2. 証拠の状態</h2>
+<div class="tablewrap" role="region" tabindex="0" aria-label="証拠の状態の表（横にスクロールできます）"><div class="thint">表は横にスクロールできます →</div>
+<table>
+<tr><th>証拠</th><th>状態</th><th>扱い</th></tr>
+<tr><td>実舞台の参考写真（複数光条・もや・演者影絵・床に赤い反射…という説明）</td><td><b>未着</b>（本人へ問い合わせ中）</td><td>会議文書の説明文だけが根拠。§5の「実物の見え方」図は<b>仮説</b>と明記。写真到着後に照合する</td></tr>
+<tr><td>現行アプリのスクリーンショット2枚</td><td>1枚目はFableがReadで目視（会話記録に画像あり）。2枚目は会話記録上の画像応答はあるが、再確認前に参照不能になり<b>Read実行の立証は不完全</b>。Astraには2枚とも添付したが、Astraは「説明文のみを参照した」と自己申告。<b>元パスは依然参照不能</b>（原因未確認）</td><td>目視記録（notes.md §0）のみを根拠にし、画素の断定はしない。再添付があれば本資料へ埋め込む</td></tr>
+<tr><td><code>prototype/app.js</code></td><td>会議中も<b>別セッションが並行編集中</b>（読取間で SHA-256 が 1a333c3f… → 442b6d32… → 5a8335eb… と変化）</td><td>行番号・実装の引用はすべて会議時点。会議中の無変更はハッシュでは証明できない。コードは並行更新中のため本資料は会議時点に限定し、現行版の再検証は未実施（ファイル自体は窓口確認時点で存在）</td></tr>
+<tr><td>会議の元文書（MEETING・HANDOFF）と本成果物の初稿</td><td>会議途中に<b>一時参照不能</b>（原因未確認・削除と断定しない）→ 最終確認で再び参照可能。初稿は同じ会議のRound 2追記前の版と確認（sha256で照合）</td><td>参照不能の間は /tmp へ退避して作業。現在は本指定先の2成果物を最新版へ更新済み</td></tr>
+</table>
+</div>
+
+<h2 id="root">3. 矛盾の根っこ</h2>
+<p>3つの図は畳んでいる軸が違う。客席へ向く光は、平面図では「横に開く帯」、側面図では「前へ進む帯」、正面図では「こちらへ来る光」になる。正面図に帯（三角）を描くと投影上は下へ降りるだけなので「舞台へ降りる光」に見える——ここが最初の誤り。滲みだけにすると今度は光条の迫力が消えた。<b>正面図で光条をどう表すかがシステムとして未定義</b>だったのが核。</p>
+<p><span class="tag fact">AI合意（Round 1）</span>正面直交図では奥行きの違う点が同じ画素に重なるため<b>「投影上の重なり」＝「実際に当たっている」ではない</b>。直接照射は世界座標で判定する。また<b>正面直交図と客席からの透視像（写真）は別物</b>で、評価基準を分ける。</p>
+
+<h2 id="plans">4. 案の比較</h2>
+<p class="small">Round 2 の整理: <b>今回の選択肢は A と B</b>。C は「今回の制約（床・壁狙いを触らない）の範囲外」であり、実行可能な第三案として並べると承認範囲が曖昧になるため、<b>見送りの比較資料</b>として下に置く（Astra指摘を採用）。</p>
+
+<div class="card">
+<p><span class="tag">案A</span><b>最小修正</b> — データ変更なし・差分最小</p>
+<ul>
+<li>正面図（2D/3D）の客席・空中向けに「光条レイヤー」を1本追加（世界座標の円錐→投影輪郭→光源起点の放射塗り）。</li>
+<li>もや1つまみ（光条と帯のαのみ。まぶしさは独立）。既定値で床壁の帯の倍率が1.0になる恒等点カーブ。</li>
+<li>影絵の判定・側面図の暗さは現状のまま。</li>
+</ul>
+<p class="small">長所: 実装が小さい・床壁への波及が最小。短所: 「奥の灯が点いていると前明かりが強くても影絵のまま」問題と側面の薄さが残る。<span class="tag guess">注意</span>「α倍率1だから床壁への影響を封じた」とまでは言えない（Round 2）——影響の確認自体はV4で行う。</p>
+</div>
+
+<div class="card reco">
+<p><span class="tag reco">AI推奨（本人未承認）</span><span class="tag">案B</span><b>分離モデル</b> — 保存データはそのまま、描画と判定を4レイヤーに分ける</p>
+<ul>
+<li><b>既存照明データの読み書きを変更しない設計</b>（正本は現行の「当てる場所＋狙い点＋舞台前から距離＋軌道」のまま。互換性はV5の検証で確認するまで「完全」とは断定しない——Round 2）。描画・判定だけ毎フレーム向き <code>d=normalize(T−S)</code> を導出して1本のレイで統一。</li>
+<li><b>4レイヤー分離</b>: ①光条（空中の散乱。もやが駆動）②光だまり（面への入射。床壁の現行コードを温存）③身体の明暗（影絵＝前後の明るさ対比）④まぶしさ（glare。光源が観察側を向く度合いで変調——ただしビーム角・遮蔽を無視する粗い重みである限界つき）。</li>
+<li><b>奥行き対応の合成</b>: 光条を奥行き区間で分割し、奥から「光条区間→演者→光条区間…」と交互に描く（光源位置だけでの2分類は不採用——Round 2）。演者の奥行きが近ければ群にまとめる。側面図は奥行き軸がxなので順序を流用しない。</li>
+<li>正面2Dにも<b>抑えた光条</b>を出す（§7の表示規約つき）。3D（擬似パース）が「写真らしさ」の主担当。</li>
+<li>側面図の暗さは「選択中で自分が非選択のときだけ沈める」への統一を提案（<span class="tag open">本人判断</span>）。</li>
+</ul>
+<p class="small"><b>Round 2 の合意水準</b>: 合意したのは<b>この「分離する構造」まで</b>。奥行き分割の刻み・影絵の式・数値はすべて<b>隔離試作で比較検証してから確定</b>する候補（未確定のまま実装本番へ持ち込まない）。もやの値の保存先も未定（既存JSONを変えないなら表示設定として別保存、試作中はセッション内のみ）。</p>
+</div>
+
+<div class="card oos">
+<p><span class="tag drop">今回は範囲外・見送り</span><span class="tag">参考C</span><b>方向（pan/tilt）を正本にして全面移行</b></p>
+<ul>
+<li>見送りの理由: 保存形式の変更＋移行が必須／床壁挙動の等価性検証が重い／点の補間と角度の補間は別物で既存の軌道（往復・円・8の字）の意味が変わる／「床・壁狙いを触らない」という今回の制約の範囲外（Round 1 判定・Round 2 で確定）。</li>
+<li class="small">「実機と同型」という利点にも限定がつく: pan/tilt を保存するだけでは実機の可動範囲・回転経路までは再現しない（Round 2）。将来、製品統合で実機どおりの表示が要る場合は、案Bの「導出した向き」を表示・書き出しに使えば正本を変えずに足せる。検討したい場合は範囲の再設定から。</li>
+</ul>
+</div>
+
+<div class="tablewrap" role="region" tabindex="0" aria-label="3案の比較表（横にスクロールできます）"><div class="thint">表は横にスクロールできます →</div>
+<table>
+<tr><th></th><th>案A 最小修正</th><th>案B 分離モデル（AI推奨）</th><th>参考C（範囲外）</th></tr>
+<tr><td>保存データ</td><td>変更なし</td><td>変更なし（読み書き不変の設計。V5で確認）</td><td>形式変更＋移行必須</td></tr>
+<tr><td>床壁狙いへの影響</td><td>最小（V4で確認）</td><td>床壁だけの場面は画素同一が目標。混在場面は見え方が変わり得る（<a href="#haze">§9</a>・本人判断）</td><td>全面再検証</td></tr>
+<tr><td>正面図の光条</td><td>出る</td><td>出る（2D/3Dで基準を分ける）</td><td>描画は結局A/Bと同じ物が必要</td></tr>
+<tr><td>影絵の誤判定（奥の灯が点いていると前明かりが強くても黒い）</td><td><b>残る</b></td><td>改善を目指す（対比モデル・<b>未検証</b>。式は隔離試作で確定）</td><td>判定は別実装（未検証）</td></tr>
+<tr><td>側面図が薄い</td><td>残る</td><td>統一案を提示（本人判断）</td><td>同左</td></tr>
+<tr><td>実装量（目安）</td><td>小</td><td>中（＋隔離試作1回）</td><td>大</td></tr>
+</table>
+</div>
+
+<h2 id="views">5. 3図それぞれの描き方（模式図）</h2>
+<p class="legend">以下は<b>模式図</b>（コードの出力ではない）。「実物の見え方」は未着写真の<b>説明文からの仮説</b>。「現状」はスクショの目視記録とコード読取（会議時点）の再構成。</p>
+
+<h3>正面図（2D・奥行きを畳んだ直交図）</h3>
+<div class="grid2">
+<figure>
+<svg viewBox="0 0 460 240" role="img" aria-label="現状の正面図の模式図">
+<rect width="460" height="240" fill="#0d0e10"/>
+<rect x="30" y="20" width="400" height="170" fill="rgba(255,255,255,0.03)" stroke="#3a332a"/>
+<line x1="30" y1="60" x2="430" y2="60" stroke="#9c823f" stroke-width="2"/>
+<radialGradient id="g1"><stop offset="0" stop-color="rgba(242,234,214,0.5)"/><stop offset="0.35" stop-color="rgba(242,234,214,0.18)"/><stop offset="1" stop-color="rgba(242,234,214,0)"/></radialGradient>
+<circle cx="230" cy="60" r="58" fill="url(#g1)"/>
+<circle cx="230" cy="128" r="44" fill="url(#g1)" opacity="0.75"/>
+<circle cx="230" cy="150" r="6" fill="#df6433"/>
+<g fill="#050505">
+<ellipse cx="120" cy="176" rx="9" ry="16"/><circle cx="120" cy="153" r="7"/>
+<ellipse cx="290" cy="176" rx="9" ry="16"/><circle cx="290" cy="153" r="7"/>
+<ellipse cx="360" cy="176" rx="9" ry="16"/><circle cx="360" cy="153" r="7"/>
+</g>
+<text x="36" y="215" fill="#8f8677" font-size="12">滲みが2段浮かぶだけ。光条なし・方向も読めない</text>
+</svg>
+<figcaption><b>現状</b>: 光源の滲み＋手前端の滲み（コード上は glare 2発＝光源と手前端カット点 lv×0.75・会議時点）。「こちらへ来る光」に見えない。</figcaption>
+</figure>
+<figure>
+<svg viewBox="0 0 460 240" role="img" aria-label="案Bの正面図の模式図">
+<rect width="460" height="240" fill="#0d0e10"/>
+<rect x="30" y="20" width="400" height="170" fill="rgba(255,255,255,0.03)" stroke="#3a332a"/>
+<line x1="30" y1="60" x2="430" y2="60" stroke="#9c823f" stroke-width="2"/>
+<defs>
+<linearGradient id="fan" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="rgba(242,234,214,0.30)"/><stop offset="0.65" stop-color="rgba(242,234,214,0.10)"/><stop offset="1" stop-color="rgba(242,234,214,0)"/>
+</linearGradient>
+</defs>
+<path d="M230,60 L196,150 L212,150 L230,60 L226,150 L236,150 L230,60 L250,150 L264,150 Z" fill="url(#fan)"/>
+<path d="M230,60 L190,152 L270,152 Z" fill="url(#fan)" opacity="0.5"/>
+<line x1="30" y1="150" x2="430" y2="150" stroke="#5a4a28" stroke-dasharray="5 5"/>
+<text x="322" y="146" fill="#8f8677" font-size="11">手前端の通過高さ（ここで消える）</text>
+<radialGradient id="g2"><stop offset="0" stop-color="rgba(242,234,214,0.55)"/><stop offset="1" stop-color="rgba(242,234,214,0)"/></radialGradient>
+<circle cx="230" cy="60" r="34" fill="url(#g2)"/>
+<circle cx="230" cy="150" r="6" fill="none" stroke="#df6433" stroke-width="3"/>
+<g fill="#050505">
+<ellipse cx="120" cy="176" rx="9" ry="16"/><circle cx="120" cy="153" r="7"/>
+<ellipse cx="290" cy="176" rx="9" ry="16"/><circle cx="290" cy="153" r="7"/>
+<ellipse cx="360" cy="176" rx="9" ry="16"/><circle cx="360" cy="153" r="7"/>
+</g>
+<text x="36" y="215" fill="#8f8677" font-size="12">筋は光源へ収束・手前端では発光させず消える・照射は別レイヤー</text>
+</svg>
+<figcaption><b>案B</b>: 光源起点の放射光条（空中の通り道を示す表示）＋まぶしさ。狙いハンドル（橙）は手前端の通過点のまま（掴む場所＝見える場所）。</figcaption>
+</figure>
+</div>
+<figure>
+<svg viewBox="0 0 460 200" role="img" aria-label="実物の見え方の仮説図（客席からの透視像）">
+<rect width="460" height="200" fill="#0d0e10"/>
+<defs><linearGradient id="fanH" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="rgba(242,220,200,0.4)"/><stop offset="1" stop-color="rgba(242,220,200,0)"/></linearGradient></defs>
+<path d="M150,40 L40,200 L110,200 Z" fill="url(#fanH)"/>
+<path d="M230,36 L170,200 L290,200 Z" fill="url(#fanH)"/>
+<path d="M310,40 L350,200 L430,200 Z" fill="url(#fanH)"/>
+<circle cx="150" cy="40" r="12" fill="rgba(255,240,220,0.9)"/>
+<circle cx="230" cy="36" r="13" fill="rgba(255,240,220,0.95)"/>
+<circle cx="310" cy="40" r="12" fill="rgba(255,240,220,0.9)"/>
+<g fill="#050505">
+<ellipse cx="150" cy="170" rx="12" ry="22"/><circle cx="150" cy="139" r="9"/>
+<ellipse cx="300" cy="172" rx="12" ry="22"/><circle cx="300" cy="141" r="9"/>
+</g>
+<rect x="0" y="188" width="460" height="12" fill="rgba(168,75,38,0.25)"/>
+<text x="10" y="20" fill="#c9873a" font-size="12">【仮説】写真は未着。会議文書の説明文（複数光条・もや・影絵・床の赤い反射）からの再構成</text>
+</svg>
+<figcaption><span class="tag guess">仮説</span>客席からの透視像。透視像では光条が画面下へ大きく開く。<b>正面図（直交図）はこれと同じにはならない</b>——3D（擬似パース）図が「写真らしさ」の主担当、2Dは方向が読める抑えた光条（役割分担は<span class="tag open">本人判断</span> Q4）。</figcaption>
+</figure>
+
+<h3>平面図・側面図</h3>
+<div class="grid2">
+<figure>
+<svg viewBox="0 0 460 210" role="img" aria-label="平面図の案">
+<rect width="460" height="210" fill="#0d0e10"/>
+<rect x="60" y="20" width="340" height="120" fill="rgba(255,255,255,0.03)" stroke="#3a332a"/>
+<defs><linearGradient id="fanP" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="rgba(242,234,214,0.32)"/><stop offset="1" stop-color="rgba(242,234,214,0.02)"/></linearGradient></defs>
+<path d="M230,45 L150,210 L310,210 Z" fill="url(#fanP)"/>
+<rect x="230" y="41" width="9" height="9" fill="#f2ead6"/>
+<line x1="60" y1="140" x2="400" y2="140" stroke="#3a332a"/>
+<text x="404" y="144" fill="#8f8677" font-size="11">手前端</text>
+<line x1="60" y1="168" x2="400" y2="168" stroke="#5a4a28" stroke-dasharray="4 4"/>
+<text x="404" y="172" fill="#8f8677" font-size="11">客席帯</text>
+<circle cx="230" cy="168" r="7" fill="#df6433"/>
+<path d="M226,190 L230,198 L234,190" fill="none" stroke="#df6433" stroke-width="2"/>
+<line x1="230" y1="168" x2="230" y2="196" stroke="#df6433" stroke-width="2"/>
+<text x="246" y="192" fill="#df6433" font-size="12">下へ引く＝舞台前から遠く（本人判断 Q5a・向きも変わる操作）</text>
+<text x="66" y="34" fill="#8f8677" font-size="12">帯（三角）で横の開き。左右ドラッグ＋ホイールで広がり（既存）</text>
+</svg>
+<figcaption><b>平面図（案B）</b>: 帯が客席帯を通って枠外へ。会議時点のコードは帯を描く呼び出しだが、スクショの目視では点線に見えた——食い違いは<a href="#verify">検証V0</a>で原因特定。</figcaption>
+</figure>
+<figure>
+<svg viewBox="0 0 460 210" role="img" aria-label="側面図の案">
+<rect width="460" height="210" fill="#0d0e10"/>
+<rect x="130" y="20" width="270" height="160" fill="rgba(255,255,255,0.03)" stroke="#3a332a"/>
+<defs><linearGradient id="fanS" x1="1" y1="0" x2="0" y2="0.35">
+<stop offset="0" stop-color="rgba(242,234,214,0.30)"/><stop offset="1" stop-color="rgba(242,234,214,0)"/></linearGradient></defs>
+<path d="M330,44 L0,120 L0,190 Z" fill="url(#fanS)"/>
+<rect x="325" y="39" width="10" height="10" fill="#f2ead6"/>
+<line x1="130" y1="180" x2="400" y2="180" stroke="#3a332a"/>
+<g fill="#050505">
+<ellipse cx="250" cy="164" rx="8" ry="15"/><circle cx="250" cy="143" r="7"/>
+<ellipse cx="200" cy="164" rx="8" ry="15"/><circle cx="200" cy="143" r="7"/>
+</g>
+<text x="20" y="30" fill="#8f8677" font-size="12">← 客席側へ枠外まで。演者の頭上を通る＝当たっていないことが読める図</text>
+<text x="136" y="202" fill="#8f8677" font-size="12">帯の濃さの統一（0.32倍固定をやめる）は本人判断 Q5b</text>
+</svg>
+<figcaption><b>側面図（案B）</b>: 前後の進みを担当。通過高さの確認はこの図が受け持つ（正面図の光条は照射を描かないため）。</figcaption>
+</figure>
+</div>
+
+<h2 id="agenda">6. 8議題の結論一覧（Round 2 最終・AI合意＝本人未承認）</h2>
+<div class="tablewrap" role="region" tabindex="0" aria-label="8議題の結論一覧の表（横にスクロールできます）"><div class="thint">表は横にスクロールできます →</div>
+<table>
+<tr><th>議題</th><th>合意できた構造</th><th>残る未合意・隔離試作で検証</th><th>本人判断</th></tr>
+<tr><td>1. 狙いの持ち方</td><td>既存正本（面＋狙い点＋距離＋軌道）を保持し、方向は毎フレーム導出</td><td>退化ケース（S=T等）の扱い・新設定の保存先</td><td>案A/Bの選択（全面移行Cは今回見送り）</td></tr>
+<tr><td>2. もや</td><td>1本のつまみ・現場語彙の目盛り札・まぶしさは独立</td><td>カーブ・恒等点H0の値・保存先の実装</td><td>ショー共通か場面別か／床壁への作用範囲</td></tr>
+<tr><td>3. 正面図の光条（核）</td><td>2Dにも出す。世界円錐→投影輪郭が先、塗りは後。前端は非発光</td><td>正対光（投影が点に近い）の描き方・フェード形状・誤読防止ラベル</td><td>2Dで必要な再現度（抑えめか写真並みか）</td></tr>
+<tr><td>4. 影絵</td><td>「身体への照射」と「背景との対比」を分離した連続量</td><td>F/Bの尺度の正規化・サンプル点・閾値</td><td>自動近似の見え方を採用できるか（隔離試作を見て判断）</td></tr>
+<tr><td>5. 合成の順序</td><td>奥の光条／身体／手前の光条を分ける。「作業灯を消す」は照明条件として扱う</td><td>奥行き区間の刻み・群分け・旧暗幕方式との接続</td><td>混在場面の見え方変更を受け入れるか</td></tr>
+<tr><td>6. UI</td><td>正面ドラッグ主導線・ハンドルと数値入力の併用・通過点は発光させない</td><td>距離比例表示の実寸検討・逆変換の設計</td><td>平面・側面で距離もドラッグしたいか</td></tr>
+<tr><td>7. 性能・互換</td><td>固定条件で新旧比較・旧データ保持・<code>ctx.filter</code>不使用</td><td>Safari実機・p95計測・フォールバックの代替（扇形ポリゴン等）</td><td>普段使う環境と許容する操作感</td></tr>
+<tr><td>8. 側面図の暗さ</td><td>現行0.32倍は「編集上の減光」（SS強調）だと整理</td><td>統一した場合の画素差分の確認</td><td>灯の比較優先か、その側のSS強調優先か</td></tr>
+</table>
+</div>
+
+<h2 id="shaft">7. 正面図の光条（核）</h2>
+<p><b>技術方針（A/B共通）</b>: 先に世界座標の円錐（光源S・向きd・開き角θ）から<b>その図への投影輪郭</b>を求め、内部を光源起点の放射グラデーションで塗る。conic gradient は「塗り方」であって幾何ではない——輪郭が先（Round 1 合意）。</p>
+<p><b>表示規約の最終言語化（Round 2・Astra案を採用）</b>:</p>
+<blockquote><b>正面図の光条は空中の通り道を示す。投影上の重なりを、身体や床への照射として描かない。面の光だまりは世界座標の交差から別に描く。舞台手前端は発光させず、方向ハンドルと側面図で通過高さを確認できる。</b></blockquote>
+<ul>
+<li>当初の3条件のうち<span class="tag drop">撤回</span>「床の行に光条画素ゼロ」は<b>過剰として撤回</b>（実際に床へ届く光・円錐の裾まで消してしまう——Round 2）。旧検証の「胸の行の光画素ゼロ」も全ケース共通の合格条件にはしない（限定条件の回帰例としてのみ維持——Round 1）。</li>
+<li>「放射性」も万能ではない: 正対する光（投影軸が点に近づく）には一律適用できない。また放射する下向きの形は床狙いでも生じるため、<b>形だけで誤読は完全に防げない</b>——選択中の灯に「客席へ／床に届く」等の短い表示ラベルを添える案を検討対象に含める。</li>
+</ul>
+
+<h2 id="sil">8. 影絵の判定（対比モデル・構造のみ合意）</h2>
+<p>現行は「点いている灯の光源が演者より0.3m奥にあれば影絵」だけで決まり、奥に点灯灯がある場面では前明かりが強くても黒いままになる。案Bの構造（改善を目指す設計・未検証）:</p>
+<ul>
+<li><b>F（前面の明るさ）</b>= 演者より客席側の点灯灯のうち、円錐が演者（胸・頭の2点を初期近似）を含むものの寄与。<b>検査用の幾何判定（内外のブール）と、描画用の柔らかい重みを分ける</b>（硬い判定を明暗に直結させると境界で急変する——Round 2）。円錐判定式（Astra・Round 1）: <code>a=(Q−S)·d&gt;0 かつ |(Q−S)−ad| ≤ a·tan(θ/2)</code>。</li>
+<li><b>B（背面の明るさ）</b>= 胸・頭から<b>奥へ伸ばした視線上の少数点</b>で、円錐内の散乱寄与を距離重み付きでサンプル＋<b>壁明かり（cyc等）を別項で加算</b>。平面図の横断判定だけでは高さ違いの光まで数えるため不採用（Round 2）。もやゼロでも「明るい壁を背負う影絵」を扱える。</li>
+<li><b>sil（影絵の濃さ）</b>= FとBを<b>正規化してから</b>比較する連続量。<span class="tag guess">仮値</span>smoothstep の t0=0.05・k=0.25 は「試す仮値としては可、妥当な開始値とはまだ判断できない」（Round 2）——<b>隔離試作の実測で校正してから確定</b>。</li>
+<li>もやは影絵を<b>直接決めない</b>。間接影響は両向き——背後を明るくして輪郭を立てることもあれば、<b>手前の散乱で身体との明暗差を弱めることもある</b>（Round 1）。リムライトは第2段階のオプション。</li>
+</ul>
+
+<h2 id="haze">9. もや（ヘイズ）と床・壁の温存境界</h2>
+<ul>
+<li><b>操作は1本のつまみ</b>（0〜100）。目盛りに現場の言葉の札「なし／うっすら／濃い」（押すと該当値へ・数値入力併設）。</li>
+<li><b>内部の効き方は分ける</b>: 光条の濃さは大きく、床壁の帯はわずかに、まぶしさ（glare）は動かさない（独立つまみのまま）。同倍率で全部を上げると滲みが再び光条を埋める（Round 1）。</li>
+<li><b>値の保存先は未定</b>: 既存照明JSONを変えない前提なら、表示設定として別保存するか、試作中はセッション内のみ（Round 2）。</li>
+</ul>
+<p><b>「床・壁を触らない」の境界（Round 2 で二分・<span class="tag open">本人判断 Q2</span>）</b>:</p>
+<div class="tablewrap" role="region" tabindex="0" aria-label="床・壁の温存境界の表（横にスクロールできます）"><div class="thint">表は横にスクロールできます →</div>
+<table>
+<tr><th>境界案</th><th>内容</th><th>帰結</th></tr>
+<tr><td>(a) 場面単位の温存</td><td><b>床壁だけの場面</b>は既定もやH0で従来の描画経路を使い、全図の<b>画素同一</b>を目標にする。<b>逆光が混ざる場面</b>は床壁の幾何・光だまりのレイヤーは保持するが、新しい散乱・影絵が重なるので最終画像は変わり得る</td><td>案Bの合成変更・影絵改善と両立する。混在場面の見え方は変わる</td></tr>
+<tr><td>(b) 全場面の最終像温存</td><td>混在場面でも床壁狙いの見え方を画素レベルで変えない</td><td><b>案Bの共通合成変更・側面dim統一と両立しない</b>（Round 2）。光条を独立レイヤーとして上に重ねるだけの案A寄りに縮退</td></tr>
+</table>
+</div>
+<p class="small">恒等点（既定値H0で帯の倍率1.0）は「必要条件であって、画素同一を保証する十分条件ではない」（Round 2）。同一性の確認はV4の実測で行う。</p>
+
+<h2 id="ui">10. UI案</h2>
+<ul>
+<li><b>主導線は現状踏襲</b>: 正面図ドラッグ（通過点の左右＋高さ。赤い丸＝手前端の通過点で、見える場所と掴む場所が同じ）。<b>通過点を発光点にはしない</b>（操作用の点と光の見た目の分離——Round 1 Astra提案を採用）。</li>
+<li><b>パネルの最小集合</b>（客席・空中向け選択時）: 広がり（°）／まぶしさ（0.2〜3）／高さ（m）／舞台前から（m）＋もや。全て数値入力併設（既存 <code>range()</code> の数値欄の仕組みを流用）。</li>
+<li><span class="tag open">本人判断 Q5a</span><b>平面・側面ドラッグに「舞台前から距離」を足すか</b>: 平面=左右＋距離（客席帯を実距離比例にし目盛りを明示）、側面=距離＋高さ（幅位置は保持）。<b>注意: 距離を変えると狙い点へ向く角度も変わる</b>（「同じ向きのまま遠くへ」とは別の操作。狙い点編集の規約として明示する——Round 2）。遠方まで実距離比例にすると舞台が小さくなり操作性が落ちる場合は、現行の固定帯＋数値入力を残す。<b>採否は配置案の実寸比較で決める</b>（隔離試作に含める）。</li>
+<li><span class="tag open">本人判断 Q5b</span><b>側面図の帯の暗さ</b>: 0.32倍固定を「選択中で自分が非選択のときだけ沈める」へ統一するか。現状は「その側のSSを強調する」表示として機能している面もある（Round 2 の整理）。</li>
+</ul>
+<figure>
+<svg viewBox="0 0 640 300" role="img" aria-label="正面図の通過点ハンドルと照明デザインパネルの関係の模式図">
+<rect width="640" height="300" fill="#0d0e10"/>
+<!-- 左: 正面図ミニチュア -->
+<rect x="16" y="24" width="330" height="240" fill="rgba(255,255,255,0.02)" stroke="#382f25"/>
+<text x="24" y="44" fill="#8f8677" font-size="12">正面図（主導線: ドラッグ）</text>
+<line x1="36" y1="80" x2="330" y2="80" stroke="#9c823f" stroke-width="2"/>
+<defs><linearGradient id="fanU" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="rgba(242,234,214,0.28)"/><stop offset="1" stop-color="rgba(242,234,214,0)"/></linearGradient></defs>
+<path d="M183,80 L150,200 L216,200 Z" fill="url(#fanU)"/>
+<line x1="36" y1="200" x2="330" y2="200" stroke="#5a4a28" stroke-dasharray="5 5"/>
+<circle cx="183" cy="200" r="8" fill="none" stroke="#df6433" stroke-width="3"/>
+<path d="M150,200 h-22 M216,200 h22" stroke="#df6433" stroke-width="2"/>
+<path d="M183,168 v-16 M183,232 v16" stroke="#df6433" stroke-width="2"/>
+<text x="200" y="218" fill="#df6433" font-size="11">通過点ハンドル：</text>
+<text x="200" y="233" fill="#df6433" font-size="11">左右・高さ（発光しない）</text>
+<text x="42" y="252" fill="#8f8677" font-size="12">光条・まぶしさは表示レイヤー（掴む対象ではない）</text>
+<!-- 右: パネルのモック（幅280px相当） -->
+<rect x="366" y="24" width="258" height="252" fill="#201b16" stroke="#382f25"/>
+<text x="378" y="46" fill="#d3ac59" font-size="13">照明デザインパネル（幅280px・提案）</text>
+<g font-size="12" fill="#efe7d6">
+<text x="378" y="72">広がり</text><rect x="440" y="64" width="110" height="4" rx="2" fill="#382f25"/><circle cx="492" cy="66" r="6" fill="#efe7d6"/><rect x="560" y="58" width="52" height="18" fill="#0d0e10" stroke="#382f25"/><text x="566" y="72" fill="#efe7d6">14°</text>
+<text x="378" y="104">まぶしさ</text><rect x="440" y="96" width="110" height="4" rx="2" fill="#382f25"/><circle cx="478" cy="98" r="6" fill="#efe7d6"/><rect x="560" y="90" width="52" height="18" fill="#0d0e10" stroke="#382f25"/><text x="566" y="104" fill="#efe7d6">1.0</text>
+<text x="378" y="136">狙い点高さ</text><rect x="440" y="128" width="110" height="4" rx="2" fill="#382f25"/><circle cx="504" cy="130" r="6" fill="#efe7d6"/><rect x="560" y="122" width="52" height="18" fill="#0d0e10" stroke="#382f25"/><text x="566" y="136" fill="#efe7d6">4.2m</text>
+<text x="378" y="168">舞台前から</text><rect x="466" y="160" width="84" height="4" rx="2" fill="#382f25"/><circle cx="512" cy="162" r="6" fill="#efe7d6"/><rect x="560" y="154" width="52" height="18" fill="#0d0e10" stroke="#382f25"/><text x="566" y="168" fill="#efe7d6">6.0m</text>
+</g>
+<line x1="378" y1="184" x2="612" y2="184" stroke="#382f25"/>
+<g font-size="12" fill="#efe7d6">
+<text x="378" y="206">もや</text><rect x="440" y="198" width="110" height="4" rx="2" fill="#382f25"/><circle cx="480" cy="200" r="6" fill="#efe7d6"/>
+<text x="378" y="228" fill="#8f8677">札: なし ／ うっすら ／ 濃い</text>
+<text x="378" y="250" fill="#c9873a">※もやは灯ごとの値ではない。全体／場面のどちらの</text>
+<text x="378" y="266" fill="#c9873a">　スコープに置くかは未選択（Q3）</text>
+</g>
+<!-- 対応線 -->
+<path d="M191,196 C300,150 330,140 366,132" fill="none" stroke="#9c823f" stroke-width="1.5" stroke-dasharray="4 4"/>
+<path d="M191,204 C300,190 330,172 366,164" fill="none" stroke="#9c823f" stroke-width="1.5" stroke-dasharray="4 4"/>
+<text x="286" y="126" fill="#9c823f" font-size="11">同じ狙いを反映</text>
+</svg>
+<figcaption><b>UI案の模式図</b>（静的な図・非縮尺・動作する試作ではない）: 左＝正面図の通過点ハンドル（ドラッグで左右・高さ）。右＝パネルの数値欄（広がり・まぶしさ・狙い点高さ・舞台前から）。houseでは通過点の高さと狙い点の高さ（hM）は同じ値ではなく、座標変換を介して<b>同じ狙い（向き）を反映する</b>関係（提案）。もやは灯の設定ではなく、置き場所（ショー全体／場面ごと）が<span class="tag open">本人判断 Q3</span>。</figcaption>
+</figure>
+
+<h3 id="uitokens">10.1 操作UIの数値（11.3にも再掲）</h3>
+<p class="small">下の§11.3にトークンとしてまとめた。パネル幅280px（HANDOFF記載の過去測定に基づく提案・今回未測定）・タップ対象44px（提案）・ハンドル可視半径12px（既存コード値・今回の描画実測ではない）／当たり判定22px以上（提案）など。</p>
+
+<h2 id="tokens">11. デザイントークンシート（design-web Step 2）</h2>
+<p class="small">コンセプト1行: 「暗い作業机の上で、光だけが実物の癖(放射・逆光・もや)で立ち上がる」。UIの器（配色・文字・余白・モーション）は既存試作のトークンを変更しない。新規は描画レイヤーの数値が中心。<b>下表の提案値はすべて未計測の出発点で、隔離試作の実測（§12）で校正してから確定する</b>（Round 2 合意）。</p>
+
+<h3>11.1 既存UIトークン（変更なし・コントラストは実測済み）</h3>
+<div class="tablewrap" role="region" tabindex="0" aria-label="既存UIトークンの表（横にスクロールできます）"><div class="thint">表は横にスクロールできます →</div>
+<table>
+<tr><th>トークン</th><th>値</th><th>役割</th><th>コントラスト実測（2026-09-14・contrast.mjs）</th></tr>
+<tr><td><code>--desk / --desk-2 / --desk-3</code></td><td>#191512 / #201b16 / #282119</td><td>地・パネル・持ち上げ</td><td>—</td></tr>
+<tr><td><code>--milk</code></td><td>#efe7d6</td><td>本文</td><td>対 #201b16 = <b>13.88:1</b>（AA本文 OK）</td></tr>
+<tr><td><code>--brass</code></td><td>#9c823f</td><td>見出し・強調枠</td><td>対 #201b16 = <b>4.62:1</b>（AA本文 OK）</td></tr>
+<tr><td><code>--rust-ink</code></td><td>#df6433</td><td>ハンドル・操作色</td><td>対 #0d0e10（図の地）= <b>5.53:1</b>（UI 3:1 OK）</td></tr>
+<tr><td><code>--line-dark</code>／図の地</td><td>#382f25／#0d0e10</td><td>罫線／キャンバス背景</td><td>—</td></tr>
+</table>
+</div>
+
+<h3>11.2 新規: 描画トークン（<span class="tag guess">提案値・未計測</span>＝隔離試作で校正する候補）</h3>
+<div class="tablewrap" role="region" tabindex="0" aria-label="新規描画トークンの表（横にスクロールできます）"><div class="thint">表は横にスクロールできます →</div>
+<table>
+<tr><th>トークン（JS定数）</th><th>提案値</th><th>意味</th></tr>
+<tr><td><code>HAZE_DEFAULT</code>（H0）</td><td>35 / 100</td><td>恒等点候補。目盛り札: なし=0／うっすら=35／濃い=70</td></tr>
+<tr><td><code>SHAFT_ALPHA_MAX</code></td><td>0.30</td><td>もや100時の光条中心α。会議時点の帯基準0.16とglare中心0.5の間</td></tr>
+<tr><td><code>SHAFT_ALPHA(haze)</code></td><td>0.30 × (haze/100)^1.4</td><td>非線形（薄いもやでは光条が急に出ない）。haze=0で光条ゼロ</td></tr>
+<tr><td><code>BAND_ALPHA_MUL(haze)</code></td><td>clamp(haze/35, 0.5, 2.0)</td><td>床壁の帯の倍率。H0=35で1.0（恒等点）。境界(b)採用時は床壁に適用しない</td></tr>
+<tr><td><code>SHAFT_EDGE_SOFT</code></td><td>開き角の20%</td><td>放射扇の縁のフェード幅</td></tr>
+<tr><td><code>SHAFT_NEAR_PASS_MUL</code></td><td>0.6</td><td>演者より手前の光条区間の減衰（奥の区間比）</td></tr>
+<tr><td><code>GLARE_VIEW_W</code></td><td>g = max(0, −d·v̂)²（v̂=観察者→シーン）</td><td>光源が観察側を向く度合いの粗い重み。ビーム角・遮蔽は無視する限界あり（Round 2）。既存glareのstop（0/0.3/0.7/1→α0.5/0.2/0.06/0）は変更しない</td></tr>
+<tr><td><code>SIL_T0 / SIL_K</code></td><td>0.05 / 0.25</td><td>影絵対比smoothstepの仮値（F/B正規化後に校正——Round 2）</td></tr>
+<tr><td>タイポ・余白・モーション</td><td>変更なし</td><td>もやのつまみ等は既存パネル部品を流用。新書体・新モーションは足さない</td></tr>
+</table>
+</div>
+
+<h3>11.3 操作UIトークン（既存コード値と提案値を区別）</h3>
+<div class="tablewrap" role="region" tabindex="0" aria-label="操作UIトークンの表（横にスクロールできます）"><div class="thint">表は横にスクロールできます →</div>
+<table>
+<tr><th>トークン</th><th>値</th><th>出どころ</th></tr>
+<tr><td>パネル幅</td><td>280px</td><td><span class="tag guess">提案値</span>HANDOFF（会議時点に読了）に記載の過去測定268〜305pxに基づく。今回は未測定</td></tr>
+<tr><td>操作行の高さ・タップ対象</td><td>44px 以上</td><td><span class="tag guess">提案値</span>（タップ基準）</td></tr>
+<tr><td>狙いハンドルの可視半径</td><td>12px</td><td><span class="tag fact">既存コード値</span>drawHandles の円半径12px（会議時点のコード読取。今回の描画実測ではない）</td></tr>
+<tr><td>狙いハンドルの当たり判定半径</td><td>22px 以上</td><td><span class="tag guess">提案値</span>可視より大きく取る（現行の当たり判定は未実測）</td></tr>
+<tr><td>数値欄の幅</td><td>58px</td><td><span class="tag fact">既存コード/CSS値</span>.numin の58px（会議時点のコード読取。今回の描画実測ではない）</td></tr>
+<tr><td>focusリング</td><td>2px solid #d3ac59・offset 2px</td><td><span class="tag guess">提案値</span>キーボード操作の可視化</td></tr>
+<tr><td>もやの目盛り札</td><td>「なし／うっすら／濃い」＝0／35／70</td><td><span class="tag guess">提案値</span>押すと該当値へ。数値入力併設</td></tr>
+</table>
+</div>
+
+<h2 id="verify">12. 検証計画（実装フェーズ・Round 2 の修正を反映）</h2>
+<p class="small">閾値はすべて<span class="tag guess">提案値</span>で、<b>校正用シーンと合否判定用シーンを分けて</b>運用する（Round 2）。実測の作法: 1フレーム目は古い絵を掴むので2回描いてから読む／ローカルは nohup でサーバーを切り離す（HANDOFF記載・会議時点）。</p>
+<div class="tablewrap" role="region" tabindex="0" aria-label="検証計画の表（横にスクロールできます）"><div class="thint">表は横にスクロールできます →</div>
+<table>
+<tr><th>#</th><th>対象</th><th>方法と合格条件（提案）</th></tr>
+<tr><td>V0</td><td>平面図の「点線に見えた」食い違い</td><td>現行版でhouse灯を点け、平面図の帯領域の光画素数を実測。帯が描かれているか・αが低いだけか・版差かを特定</td></tr>
+<tr><td>V1</td><td>円錐判定</td><td>単体テスト。境界±εに加え <b>S=T・光源の後方・軸上・ビームの裾だけ接触・床壁の有限範囲</b>（Round 2 追加）</td></tr>
+<tr><td>V2</td><td>光条の放射性</td><td>頂点回帰＋2深度相関（既存手法の再利用）。<b>構造のある筋・十分な投影長のケースに限定</b>（無地・正対光では未定義）。閾値0.95/0.7は過去結果からの一般化をせず、新旧候補での識別力を確認してから確定</td></tr>
+<tr><td>V3</td><td>影絵の対比</td><td>ケース: 前明かり単灯／逆光単灯／両方／<b>背景を外す逆光・頭上通過・明るい壁＋もやゼロ・強い前明かり・全消灯・前後に並ぶ演者</b>（Round 2 追加）。「逆光単灯→必ず1」のような決め打ちはしない。<b>sil値と最終画素を別に測る</b></td></tr>
+<tr><td>V4</td><td>床壁の温存</td><td><b>先に境界(a)/(b)を本人が確定</b>→床壁だけの場面はH0で修正前後の全図画素差分0を目標。混在・選択あり・側面も検査。並行編集と切り分けるため、実装開始時に固定基準版を取って比較</td></tr>
+<tr><td>V5</td><td>保存互換</td><td>初回読込だけでなく<b>編集→保存→再読込</b>、全周期の狙い点 targetAt(t)、未知フィールド保持、もやの保存先。キー順でなく値・構造の保持で判定</td></tr>
+<tr><td>V6</td><td>Safari</td><td><b>強制フォールバック検査とSafari実機検査を分ける</b>。現行の線形gradientフォールバックでは放射性の合格は期待できない→<b>扇形ポリゴン等の代替を用意</b>（Round 2）。<code>ctx.filter</code>は使わない</td></tr>
+<tr><td>V7</td><td>性能</td><td>ウォームアップ後の連続描画・ドラッグ操作で<b>中央値とp95</b>を計測。灯数・演者数・画面サイズ・DPR・ゴボ・もやを固定して記録。上限は本人と相談</td></tr>
+<tr><td>V8</td><td>操作の整合（Round 2 追加）</td><td>表示切替・選択・もや操作で<b>照明の狙い（保存値）が変わらない</b>こと／ドラッグとハンドルの位置一致／Undoで戻ること</td></tr>
+</table>
+</div>
+
+<h2 id="risk">13. 不確実性・影響範囲</h2>
+<ul>
+<li><span class="tag guess">未確認</span><b>実舞台写真が未着</b>。光条の本数・太さ・色・床反射の実際は説明文ベースの仮説。床の赤い反射が逆光灯由来かも未確定（Round 1）。写真到着後、§5の仮説図と§11.2の提案値を照合・修正する。</li>
+<li><span class="tag guess">未確認</span>スクショの元パスが参照不能のため、V0の食い違いは再現からやり直し。</li>
+<li><b>元資料の所在</b>: 会議途中に一時参照不能になったが、最終確認で MEETING・HANDOFF・本成果物フォルダは再び参照可能（原因未確認）。<b>添付2画像の元パスのみ依然参照不能</b>。同フォルダの「notes 2.md」は同期競合コピーの可能性があるため触らず本人へ報告のみ。</li>
+<li><b>並行編集</b>: app.js は別セッションが編集中（会議中にSHA遷移を確認）。実装着手時は最新版を読み直し、mtime・担当範囲を確認してから触る。</li>
+<li><b>レイアウト検査は完了・操作検証は未実施</b>: 窓口の初回検査（390px幅で文書全体が537pxへ拡張＝表が原因）を受けて全表を横スクロールのラッパーに収め、<b>改訂後の再検査で解消を確認</b>——viewport 390px時 documentElement.scrollWidth 375 ≤ innerWidth 390、1280px時 1265 ≤ 1280（差15pxはスクロールバー分。判定は scrollWidth ≤ innerWidth で等号必須ではない）。選択状態0・aria-pressed付き回答ボタン22個も確認。ただし選択・コピー操作は本人の回答を代行しないため未操作＝<b>操作の成功は未検証</b>。これは資料レイアウトの検査であり、光の描画表現やSafariの検証ではない。</li>
+<li><b>床壁への波及</b>: 案Bの合成順変更は床壁の描画順にも触れる。境界(b)を選ぶ場合は案A寄りへ縮退。</li>
+<li><b>Safari実機確認</b>は従来から未実施。今回の追加描画も同じ残タスクに乗る。</li>
+</ul>
+
+<h2 id="next">14. 次の行動</h2>
+<ol>
+<li>本人が<a href="#answer">回答パネル</a>の5項目を選ぶ（＋自由記入）。<b>これは設計判断であり、実装承認とは別</b>。モデルは増やさず回答を待つ。</li>
+<li>実舞台写真の再添付（届き次第、仮説図と提案値を照合して本資料を更新）。</li>
+<li>承認後: <b>隔離試作</b>（奥行き分割・影絵対比・距離ドラッグの実寸比較・数値校正）→ V0〜V8 → 本実装。承認前に app.js は書き換えない。</li>
+</ol>
+
+<h2 id="answer">15. 回答パネル</h2>
+<p class="small">ボタンはこのページ内の選択表示だけで、<b>どこにも送信されません</b>（この端末のブラウザにのみ記憶）。選び終えたら「回答をコピー」で文面を作り、そのままFableへ貼り付けてください。貼り付けられた回答は<b>設計上の希望</b>として受け取ります。<b>実装着手は別途、本人の明示承認があってから</b>です。</p>
+<div class="card">
+<div class="ansrow" data-q="Q1 採用する設計">
+<div class="q">Q1. 採用する設計（案Cは範囲外・検討したい場合は自由記入へ）</div>
+<button class="ansbtn" data-v="案A 最小修正">案A 最小修正</button>
+<button class="ansbtn" data-v="案B 分離モデル（AI推奨）">案B 分離モデル（AI推奨）</button>
+<button class="ansbtn" data-v="保留">保留</button>
+</div>
+<div class="ansrow" data-q="Q2 床・壁の温存範囲">
+<div class="q">Q2. 床・壁の温存範囲</div>
+<button class="ansbtn" data-v="(a) 床壁だけの場面は同一・逆光が混ざる場面は見え方が変わってよい">(a) 場面単位の温存</button>
+<button class="ansbtn" data-v="(b) 混在場面も床壁の見え方は変えない（案A寄りに縮退）">(b) 全場面の最終像温存</button>
+<button class="ansbtn" data-v="保留">保留</button>
+</div>
+<div class="ansrow" data-q="Q3 もやの保存先">
+<div class="q">Q3. もやの保存先</div>
+<button class="ansbtn" data-v="ショー全体で1つ">ショー全体で1つ</button>
+<button class="ansbtn" data-v="場面（LX cue）ごと">場面ごと</button>
+<button class="ansbtn" data-v="保留">保留</button>
+</div>
+<div class="ansrow" data-q="Q4 正面図2Dの光条">
+<div class="q">Q4. 正面図2Dの光条</div>
+<button class="ansbtn" data-v="操作しやすさ優先の抑えた光条（AI推奨）">抑えた光条（AI推奨）</button>
+<button class="ansbtn" data-v="写真並みの迫力まで2Dで狙う">写真並みを2Dでも</button>
+<button class="ansbtn" data-v="光条は3Dのみ・2Dは現状のまま">3Dのみ</button>
+<button class="ansbtn" data-v="保留">保留</button>
+</div>
+<div class="ansrow" data-q="Q5a 平面・側面ドラッグで距離">
+<div class="q">Q5a. 平面・側面のドラッグで「舞台前から」も動かす（向きも一緒に変わる操作）</div>
+<button class="ansbtn" data-v="動かす（実寸比較の試作を見てから最終確定）">動かす（試作で確認）</button>
+<button class="ansbtn" data-v="現状のまま（位置固定＋数値入力）">現状のまま</button>
+<button class="ansbtn" data-v="保留">保留</button>
+</div>
+<div class="ansrow" data-q="Q5b 側面図の帯の暗さ">
+<div class="q">Q5b. 側面図の帯の暗さ（0.32倍固定）</div>
+<button class="ansbtn" data-v="他の図と同じ基準に統一（灯の比較優先）">統一する</button>
+<button class="ansbtn" data-v="現状維持（その側のSS強調を残す）">現状維持</button>
+<button class="ansbtn" data-v="保留">保留</button>
+</div>
+<div class="ansrow" data-q="Q6 リムライト">
+<div class="q">Q6. リムライト（影絵の輪郭の明縁・第2段階）</div>
+<button class="ansbtn" data-v="第2段階でやる">やる</button>
+<button class="ansbtn" data-v="不要">不要</button>
+<button class="ansbtn" data-v="保留">保留</button>
+</div>
+<div class="ansrow">
+<div class="q">補足・別案（自由記入）</div>
+<textarea class="note" id="freenote" placeholder="例: 写真はあとで送る／案Cも検討したい／光条の本数を増やしたい 等"></textarea>
+</div>
+<p><button id="anscopy">回答をコピー</button> <span class="small" id="copiedmsg"></span></p>
+<textarea id="ansout" readonly placeholder="「回答をコピー」を押すとここに文面が出ます（クリップボードにも入ります）"></textarea>
+<p class="small">状態: 未回答（選択はまだFableに渡っていません。貼り付けられた文面は<b>設計希望の回答</b>として扱い、実装許可とはしません）</p>
+</div>
+
+<h2 id="meeting">16. 会議の記録</h2>
+<ul>
+<li><b>Astra実起動の根拠</b>: codex exec 実行ログ — OpenAI Codex v0.153.4／model <code>gpt-6-astra</code>／sandbox <code>read-only</code>／reasoning effort <code>high</code>／session id <code>01a09b90-7d74-7430-ade6-1cd5735419fb</code>（Round 2 は同セッションを resume）。生回答: <code>/tmp/backlight-r1.answer.md</code>・<code>/tmp/backlight-r2.answer.md</code>（一時領域）。要旨と発言記録は同フォルダの <a href="notes.md">notes.md</a>。</li>
+<li><b>Fableの撤回（Astraの反証による・棄却された初期案として記録）</b>: ①「狙い点→向きの無損失変換」②「手前端の滲み・同心楕円の多重重ね」③「円錐内なら影絵・背後灯の合計lv＝黒さ」④「全図共通の固定合成順」⑤検証条件「床の行に光条画素ゼロ」。</li>
+<li>「反証5点」は呼び出し窓口が設定した検討観点であり、本人の逐語指定ではない。</li>
+<li>Round 2 の合意水準: <b>「分離する構造」までがAI合意</b>。近似方法と数値は隔離試作の検証候補。写真一致・数値閾値・性能・Safariは未確認。<b>本人の承認はまだ何も得ていない。</b></li>
+<li><b>参照リンク（Astraが会議中に確認した外部一次資料。現場写真の代替ではない）</b>:
+<a href="https://www.pbr-book.org/4ed/Volume_Scattering/Phase_Functions">pbr-book 4ed: Phase Functions</a>（散乱の方向依存）／
+<a href="https://pbr-book.org/4ed/Volume_Scattering/Transmittance">同: Transmittance</a>（透過・減衰）／
+<a href="https://www.pbr-book.org/4ed/Cameras_and_Film/Projective_Camera_Models">同: Projective Camera Models</a>（直交投影と透視投影の区別）。</li>
+</ul>
+
+<script>
+(function(){
+  var KEY="backlight-redesign-answers-v2";
+  var saved={};
+  try{ saved=JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){}
+  document.querySelectorAll(".ansrow[data-q]").forEach(function(row){
+    var q=row.dataset.q;
+    row.setAttribute("role","group");
+    row.setAttribute("aria-label",q);
+    row.querySelectorAll(".ansbtn").forEach(function(b){
+      var on = saved[q]===b.dataset.v;
+      if(on) b.classList.add("sel");
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.addEventListener("click",function(){
+        row.querySelectorAll(".ansbtn").forEach(function(x){x.classList.remove("sel");x.setAttribute("aria-pressed","false");});
+        b.classList.add("sel"); b.setAttribute("aria-pressed","true"); saved[q]=b.dataset.v;
+        try{ localStorage.setItem(KEY,JSON.stringify(saved)); }catch(e){}
+      });
+    });
+  });
+  var note=document.getElementById("freenote");
+  if(saved.__note) note.value=saved.__note;
+  note.addEventListener("input",function(){ saved.__note=note.value;
+    try{ localStorage.setItem(KEY,JSON.stringify(saved)); }catch(e){} });
+  document.getElementById("anscopy").addEventListener("click",function(){
+    var lines=["【逆光再設計の回答 2026-09-14】","※設計希望の回答であり、実装許可ではありません"];
+    document.querySelectorAll(".ansrow[data-q]").forEach(function(row){
+      var sel=row.querySelector(".ansbtn.sel");
+      lines.push(row.dataset.q+" → "+(sel?sel.dataset.v:"（未選択）"));
+    });
+    if(note.value.trim()) lines.push("補足: "+note.value.trim());
+    var text=lines.join("\n");
+    document.getElementById("ansout").value=text;
+    var done=function(ok){ document.getElementById("copiedmsg").textContent= ok?"コピーしました":"下の枠から手動でコピーしてください"; };
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(function(){done(true);},function(){done(false);}); }
+    else done(false);
+  });
+})();
+</script>
+</main>
+</body>
+</html>

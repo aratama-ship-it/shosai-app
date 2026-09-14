@@ -1,0 +1,62 @@
+{
+  "chromium": {
+    "before": {
+      "medianMs": 28.400000005960464,
+      "p95Ms": 30.5,
+      "samples": 30,
+      "warmup": 20,
+      "lamps": 8,
+      "people": 8,
+      "haze": 70,
+      "viewport": [
+        1800,
+        1300
+      ],
+      "dpr": 1
+    },
+    "after": {
+      "medianMs": 11.399999998509884,
+      "p95Ms": 12.299999997019768,
+      "samples": 30,
+      "warmup": 20,
+      "lamps": 8,
+      "people": 8,
+      "haze": 70,
+      "viewport": [
+        1800,
+        1300
+      ],
+      "dpr": 1
+    }
+  },
+  "webkit": {
+    "before": {
+      "medianMs": 95,
+      "p95Ms": 98,
+      "samples": 30,
+      "warmup": 20,
+      "lamps": 8,
+      "people": 8,
+      "haze": 70,
+      "viewport": [
+        1800,
+        1300
+      ],
+      "dpr": 1
+    },
+    "after": {
+      "medianMs": 25,
+      "p95Ms": 37,
+      "samples": 30,
+      "warmup": 20,
+      "lamps": 8,
+      "people": 8,
+      "haze": 70,
+      "viewport": [
+        1800,
+        1300
+      ],
+      "dpr": 1
+    }
+  }
+}

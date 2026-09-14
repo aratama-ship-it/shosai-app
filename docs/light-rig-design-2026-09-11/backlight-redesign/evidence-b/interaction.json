@@ -1,0 +1,36 @@
+{
+  "chromium": {
+    "planDrag": true,
+    "sideDrag": true,
+    "undo": true,
+    "performance": {
+      "medianMs": 95.20000000298023,
+      "p95Ms": 97.30000000074506,
+      "lamps": 8,
+      "people": 8,
+      "haze": 70,
+      "viewport": [
+        1800,
+        1300
+      ],
+      "dpr": 1
+    }
+  },
+  "webkit": {
+    "planDrag": true,
+    "sideDrag": true,
+    "undo": true,
+    "performance": {
+      "medianMs": 57,
+      "p95Ms": 58,
+      "lamps": 8,
+      "people": 8,
+      "haze": 70,
+      "viewport": [
+        1800,
+        1300
+      ],
+      "dpr": 1
+    }
+  }
+}
