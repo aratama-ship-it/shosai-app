@@ -15725,7 +15725,7 @@
     const undoRedo = centerBar && centerBar.querySelector(".stage-undo-redo");
     const toolGrid = centerBar && centerBar.querySelector(".stage-tool-grid");
     const nameToggles = centerBar
-      ? [...centerBar.querySelectorAll(".stage-name-toggle, .stage-anim-control")]
+      ? [...centerBar.querySelectorAll(".stage-name-toggle")]
       : [];
     const historyActions = document.querySelector(".stage-sketch-head .stage-history-actions");
     if (!grid || !board || !header) return;
@@ -19368,7 +19368,7 @@
         controls.className = "stage-scene-transition-controls";
         const cueLabel = document.createElement("label");
         cueLabel.className = "stage-scene-transition-duration";
-        cueLabel.title = tx("空欄は上部のアニメ時間");
+        cueLabel.title = tx("空欄は設定の転換時間");
         const cueTitle = document.createElement("span");
         cueTitle.textContent = tx("転換の長さ");
         const cueValue = document.createElement("span");
@@ -19382,7 +19382,7 @@
         cueInput.value = toScene.cueSeconds === null ? "" : String(toScene.cueSeconds);
         cueInput.setAttribute(
           "aria-label",
-          `${tx("転換の長さ（秒）")}: ${fromScene.title} → ${toScene.title}。${tx("空欄は上部のアニメ時間")}`,
+          `${tx("転換の長さ（秒）")}: ${fromScene.title} → ${toScene.title}。${tx("空欄は設定の転換時間")}`,
         );
         cueInput.addEventListener("input", () => {
           toScene.cueSeconds = normalizeCueSeconds(cueInput.value);
@@ -19391,7 +19391,7 @@
         cueValue.append(cueInput, document.createTextNode(` ${tx("秒")}`));
         const sharedHint = document.createElement("span");
         sharedHint.className = "stage-scene-transition-shared";
-        sharedHint.textContent = `${tx("空欄は上部のアニメ時間")} ${(state.sceneAnimMs / 1000).toFixed(1)}${tx("秒")}`;
+        sharedHint.textContent = `${tx("空欄は設定の転換時間")} ${(state.sceneAnimMs / 1000).toFixed(1)}${tx("秒")}`;
         cueLabel.append(cueTitle, cueValue, sharedHint);
         controls.append(cueLabel);
 
@@ -26815,7 +26815,7 @@ ${propsPlotHtml}
       if (els.animMs) els.animMs.disabled = !state.animateScenes;
       syncSceneBar();
       persistSoon();
-      announce(state.animateScenes ? "アニメーションを入れました。" : "アニメーションを切りました。");
+      announce(state.animateScenes ? "転換アニメーションを入れました。" : "転換アニメーションを切りました。");
     });
   }
   document.addEventListener("visibilitychange", () => syncSpinRun());
@@ -26825,7 +26825,7 @@ ${propsPlotHtml}
       state.sceneAnimMs = clamp(finite(e.target.value, 2) * 1000, 200, 3000);
       if (els.animMsValue) els.animMsValue.textContent = `${(state.sceneAnimMs / 1000).toFixed(1)}${languageValue(() => ("s"), () => ("秒"))}`;
       document.querySelectorAll(".stage-scene-transition-shared").forEach((hint) => {
-        hint.textContent = `${tx("空欄は上部のアニメ時間")} ${(state.sceneAnimMs / 1000).toFixed(1)}${tx("秒")}`;
+        hint.textContent = `${tx("空欄は設定の転換時間")} ${(state.sceneAnimMs / 1000).toFixed(1)}${tx("秒")}`;
       });
       persistSoon();
     });

@@ -43,14 +43,17 @@ test("次のシーンから動線を引く操作は平面図の動線ボタン�
   assert.match(css, /\.stage-board-frame\s*\{[^}]*container-type:\s*inline-size;[^}]*container-name:\s*stage-board;/s);
 });
 
-test("アニメは照明名の直後にあり、時間はホバーかフォーカス時に展開する", () => {
-  const lightNames = html.indexOf('id="stage-show-light-names"');
-  const animation = html.indexOf('id="stage-anim-control"');
-  assert.ok(lightNames >= 0 && animation > lightNames);
-  assert.match(html, /id="stage-anim-scenes" checked/);
-  assert.match(html, /id="stage-anim-ms" min="0\.2" max="3" step="0\.05"/);
-  assert.match(css, /\.stage-anim-control:hover \.stage-anim-speed,[\s\S]*\.stage-anim-control:focus-within \.stage-anim-speed \{ display: flex; \}/);
-  assert.match(css, /\.stage-anim-control \.stage-anim-speed \{[\s\S]*width: 190px;/);
+test("転換アニメーションと時間の設定は環境設定にある", () => {
+  const prefs = between(html, 'id="stage-prefs-modal"', 'id="stage-prefs-list"');
+  const centre = between(html, '<div class="stage-center-bar">', '<div class="stage-canvas-stack"');
+  assert.match(prefs, /id="stage-anim-scenes" checked/);
+  assert.match(prefs, /<span>転換アニメーション<\/span>/);
+  assert.match(prefs, /id="stage-anim-ms" min="0\.2" max="3" step="0\.05"/);
+  assert.match(prefs, /転換時間/);
+  assert.match(prefs, /ショーに保存されます/);
+  assert.doesNotMatch(centre, /stage-anim-scenes|stage-anim-ms/);
+  assert.match(css, /\.stage-pref-row\.stage-transition-animation-pref \{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto;/);
+  assert.match(source, /state\.animateScenes = e\.target\.checked/);
 });
 
 test("正面図と平面図の説明ラベルを図の上へ重ねない", () => {
@@ -129,7 +132,7 @@ test("転換の長さ・暗転・メモは選択中シーンの上下にある�
   assert.match(source, /noteInput\.value = toScene\.transitionNote \|\| ""/);
   assert.match(source, /toScene\.transitionNote = noteInput\.value\.slice\(0, 1000\)/);
   assert.match(source, /cueInput\.placeholder = "—"/);
-  assert.match(source, /sharedHint\.textContent = `\$\{tx\("空欄は上部のアニメ時間"\)\} \$\{\(state\.sceneAnimMs \/ 1000\)\.toFixed\(1\)\}\$\{tx\("秒"\)\}`/);
+  assert.match(source, /sharedHint\.textContent = `\$\{tx\("空欄は設定の転換時間"\)\} \$\{\(state\.sceneAnimMs \/ 1000\)\.toFixed\(1\)\}\$\{tx\("秒"\)\}`/);
   assert.match(source, /const growTransitionNote = \(preserveCurrent = false\) => \{[\s\S]*noteInput\.scrollHeight \+ borderHeight[\s\S]*Math\.max\(46, currentHeight, contentHeight\)/);
   assert.match(source, /const makeSceneTransitionPoint = \(fromScene, toScene\) => \{/);
   assert.match(source, /point\.setAttribute\("aria-expanded", String\(expanded\)\)/);

@@ -8402,44 +8402,6 @@ html.stage-phone-viewer .stage-single-view-switch { display: none; }
 
 .stage-scene-move button { white-space: nowrap; }
 
-.stage-anim-toggle {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-  color: var(--milk-dim);
-  font-size: 10.5px;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  user-select: none;
-}
-
-.stage-anim-toggle input { width: 12px; height: 12px; margin: 0; accent-color: var(--rust); }
-.stage-anim-toggle:hover { color: var(--milk); }
-
-/* 転換にかける時間。入り切りのすぐ隣に置く */
-.stage-anim-speed {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-  color: var(--milk-dim);
-  font-size: 10.5px;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-}
-
-.stage-anim-speed input[type="range"] {
-  flex: 1 1 auto;
-  width: auto;
-  min-width: 0;
-  margin: 0;
-  accent-color: var(--rust);
-}
-
-.stage-anim-speed input:disabled { opacity: 0.35; cursor: default; }
-.stage-anim-speed span { flex: 0 0 auto; min-width: 30px; text-align: right; }
-
 .stage-scene-list {
   display: flex;
   gap: 7px;
@@ -10229,32 +10191,52 @@ body.stage-session-guest .stage-panel-visibility-control { display: none; }
 .stage-center-bar button { min-height: 27px; padding: 3px 10px; font-size: 10px; }
 .stage-center-bar .stage-name-toggle { min-height: 27px; padding: 3px 8px; font-size: 10px; }
 
-/* アニメの所要時間は常設せず、アニメへ手を置いた時だけ下へ展開する。 */
-.stage-anim-control {
-  position: relative;
-  flex: 0 0 auto;
+/* 転換アニメーションはショーに保存する設定として、環境設定にまとめる。 */
+.stage-pref-row.stage-transition-animation-pref {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px 14px;
+  padding: 10px 2px;
 }
 
-.stage-center-bar .stage-anim-toggle {
-  min-height: 27px;
-  padding: 3px 8px;
+.stage-transition-animation-copy { min-width: 0; }
+.stage-transition-animation-pref .stage-transition-animation-toggle {
+  width: fit-content;
+  min-height: 32px;
+  padding: 4px 8px;
 }
 
-.stage-anim-control .stage-anim-speed {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 30;
-  display: none;
-  width: 190px;
-  padding: 8px 10px;
-  border: 1px solid var(--line-dark);
-  background: var(--desk-2);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38);
+.stage-transition-animation-pref .stage-pref-hint {
+  margin-top: 4px;
+  line-height: 1.55;
 }
 
-.stage-anim-control:hover .stage-anim-speed,
-.stage-anim-control:focus-within .stage-anim-speed { display: flex; }
+.stage-transition-animation-speed {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto minmax(80px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 420px);
+  color: var(--milk-dim);
+  font-size: 11px;
+}
+
+.stage-pref-row.stage-transition-animation-pref input {
+  margin: 0;
+}
+
+.stage-transition-animation-speed input {
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--rust);
+}
+
+.stage-transition-animation-speed input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 /* 入力欄も同じ調子に揃える */
 .stage-panel .stage-text-input,
@@ -13012,21 +12994,6 @@ html.stage-pwa-tablet .stage-tablet-display-menu {
   margin: 0;
   padding: 0;
   border: 0;
-}
-
-html.stage-pwa-tablet .stage-tablet-display-menu .stage-anim-control,
-html.stage-pwa-tablet .stage-tablet-display-menu .stage-anim-toggle {
-  width: 100%;
-}
-
-html.stage-pwa-tablet .stage-tablet-display-menu .stage-anim-toggle { min-height: 44px; }
-
-html.stage-pwa-tablet .stage-tablet-display-menu .stage-anim-speed {
-  position: static;
-  display: flex;
-  width: 100%;
-  margin-top: 7px;
-  box-sizing: border-box;
 }
 
 html.stage-pwa-tablet .stage-center-bar { display: none; }
