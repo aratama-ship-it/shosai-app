@@ -229,11 +229,12 @@
 .sec.front .seatsel option{background:var(--desk-2);color:var(--milk)}
 .sec.front .seatsel:disabled{background:var(--desk-3);color:var(--milk-dim);border-color:var(--line-dark);opacity:1;cursor:not-allowed}
   .sechead .viewtitle{font-size:11px;letter-spacing:.08em}
-  .sidemode{flex:0 0 auto}
-  .sidemode button{box-sizing:border-box;width:65px;min-width:0;font-size:9px;letter-spacing:0;padding:2px 1px;min-height:20px;white-space:nowrap}
-  .distancecontrol{display:flex;align-items:center;flex:0 0 auto;margin-left:3px;padding-left:6px;border-left:1px solid var(--line-dark)}
+  /* 側面図の見方と距離表示は、同じ高さ・文字サイズの横ツール列としてそろえる。 */
+  .sidemode,.distancecontrol{display:inline-flex;align-items:stretch;flex:0 0 auto;height:24px}
+  .sidemode button{box-sizing:border-box;width:65px;min-width:0;min-height:24px;height:24px;font-size:9.5px;letter-spacing:0;padding:2px 2px;white-space:nowrap}
+  .distancecontrol{margin-left:3px;padding-left:6px;border-left:1px solid var(--line-dark)}
   .distancecontrol[hidden]{display:none}
-  .distancecontrol .btn.small{box-sizing:border-box;min-height:20px;height:20px;padding:2px 3px;font-size:9px;letter-spacing:0;white-space:nowrap}
+  .distancecontrol .btn.small{box-sizing:border-box;min-height:24px;height:24px;padding:2px 5px;font-size:9.5px;letter-spacing:0;white-space:nowrap}
   .sechead .viewnote{font-size:8.5px}
   /* 図の上の横並びバー: 左＝図に出すもの、中央＝シーン送り。
      シーン送りは帯の中身に対してではなく<b>窓の幅そのもの</b>の中央に置く（2026-09-13 本人要望）。
