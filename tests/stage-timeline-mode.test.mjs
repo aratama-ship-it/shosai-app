@@ -250,7 +250,7 @@ test("各編集レーンの追加操作を左ラベルへ揃え、キューを�
   assert.equal((html.match(/class="stage-timeline-row-add"/g) || []).length, 6);
   assert.match(sketch, /cues: \[\]/);
   assert.match(sketch, /cues: normalizeProjectCues\(rawProject\.cues\)/);
-  assert.match(sketch, /addTimelineCue\(type, sectionId, atSeconds\)[\s\S]*?kind: "timeline"[\s\S]*?cueType: type[\s\S]*?sectionId[\s\S]*?atSeconds[\s\S]*?memo: ""/);
+  assert.match(sketch, /addTimelineCue\(type, sectionId, atSeconds, scope = \{\}\)[\s\S]*?kind: "timeline"[\s\S]*?cueType: type[\s\S]*?sectionId[\s\S]*?atSeconds[\s\S]*?memo: ""/);
   assert.match(sketch, /removeTimelineCue\(id\)[\s\S]*?checkpoint\(\)[\s\S]*?cues\.splice/);
   assert.match(sketch, /addTimelineSceneAfter\(sceneId\)[\s\S]*?addScene\(false\)/);
   assert.match(sketch, /addTimelineTransition\(sceneId, seconds = 4\)[\s\S]*?transitionToNextSeconds = duration/);

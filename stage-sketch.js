@@ -5514,6 +5514,8 @@
         ...base,
         sectionId,
         atSeconds: Math.round(clamp(finite(cue.atSeconds, 0), 0, 86400) * 10) / 10,
+        ...(typeof cue.songId === "string" && cue.songId && cue.songId !== "fallback"
+          ? { songId: cue.songId } : {}),
       };
       const sceneId = typeof cue.sceneId === "string" ? cue.sceneId : null;
       if (!sceneId) return null;
@@ -18703,9 +18705,9 @@
         controls.className = "stage-scene-transition-controls";
         const cueLabel = document.createElement("label");
         cueLabel.className = "stage-scene-transition-duration";
-        cueLabel.title = tx("空欄は上部のアニメ時間");
+        cueLabel.title = tx("空欄は上部のアニメ時間。旧保存値があれば互換表示します");
         const cueTitle = document.createElement("span");
-        cueTitle.textContent = tx("転換の長さ");
+        cueTitle.textContent = tx("転換時間");
         const cueValue = document.createElement("span");
         const cueInput = document.createElement("input");
         cueInput.type = "number";
@@ -18714,13 +18716,17 @@
         cueInput.step = "0.1";
         cueInput.inputMode = "decimal";
         cueInput.placeholder = "—";
-        cueInput.value = toScene.cueSeconds === null ? "" : String(toScene.cueSeconds);
+        const plannedSeconds = fromScene.rehearsal && Number(fromScene.rehearsal.transitionToNextSeconds);
+        cueInput.value = Number.isFinite(plannedSeconds) && plannedSeconds > 0
+          ? String(plannedSeconds) : toScene.cueSeconds === null ? "" : String(toScene.cueSeconds);
         cueInput.setAttribute(
           "aria-label",
-          `${tx("転換の長さ（秒）")}: ${fromScene.title} → ${toScene.title}。${tx("空欄は上部のアニメ時間")}`,
+          `${tx("転換時間（秒）")}: ${fromScene.title} → ${toScene.title}。${tx("空欄は上部のアニメ時間")}`,
         );
         cueInput.addEventListener("input", () => {
-          toScene.cueSeconds = normalizeCueSeconds(cueInput.value);
+          if (!fromScene.rehearsal) fromScene.rehearsal = normalizeSceneRehearsal(null);
+          fromScene.rehearsal.transitionToNextSeconds = normalizeCueSeconds(cueInput.value);
+          toScene.cueSeconds = null;
           persistSoon();
         });
         cueValue.append(cueInput, document.createTextNode(` ${tx("秒")}`));
@@ -18747,16 +18753,6 @@
           darkWord.textContent = tx("暗転");
           dark.append(darkBox, darkWord);
           controls.append(dark);
-        }
-
-        if ((position === "outgoing" || position === "between") && featureOn("sceneTiming")) {
-          const movement = makeRehearsalTimeInput(
-            fromScene,
-            "次のシーンへの移動時間",
-            "transitionToNextSeconds",
-          );
-          movement.className = "stage-scene-transition-movement";
-          controls.append(movement);
         }
 
         const noteLabel = document.createElement("label");
@@ -20083,11 +20079,16 @@
     const blackout = featureOn("blackout") && Boolean(sc().blackout);
     if (!pieces.length && !exits.length && !blackout) return false;
     const movers = pieces.concat(exits);
+    const sourceTransition = fromScene && fromScene.rehearsal
+      ? Number(fromScene.rehearsal.transitionToNextSeconds) : NaN;
+    const legacyArrivalTransition = sc().cueSeconds === null ? NaN : Number(sc().cueSeconds);
     const span = durationMs != null && Number.isFinite(Number(durationMs))
       ? clamp(Number(durationMs), 100, 86400000)
-      : sc().cueSeconds !== null
-        ? sc().cueSeconds * 1000
-        : clamp(finite(state.sceneAnimMs, 2000), 200, 3000);
+      : Number.isFinite(sourceTransition) && sourceTransition > 0
+        ? clamp(sourceTransition * 1000, 100, 86400000)
+        : Number.isFinite(legacyArrivalTransition) && legacyArrivalTransition > 0
+          ? clamp(legacyArrivalTransition * 1000, 100, 86400000)
+          : clamp(finite(state.sceneAnimMs, 2000), 200, 3000);
     const start = performance.now();
     // Both transports sample the same curve; only normal mode owns a wall-clock RAF.
     const sample = (value) => {
@@ -28455,16 +28456,19 @@ ${propsPlotHtml}
       }));
       return true;
     },
-    addTimelineCue(type, sectionId, atSeconds) {
+    addTimelineCue(type, sectionId, atSeconds, scope = {}) {
       if (!TIMELINE_CUE_TYPES.has(type)) return null;
       const section = state.project.scenes.find((row) => row.kind === "section" && row.id === sectionId);
       if (!section) return null;
+      const songId = typeof scope.songId === "string" && scope.songId && scope.songId !== "fallback"
+        ? scope.songId : null;
       const cue = {
         id: rid("cue"),
         kind: "timeline",
         cueType: type,
         sectionId,
         atSeconds: Math.round(clamp(finite(atSeconds, 0), 0, 86400) * 10) / 10,
+        ...(songId ? { songId } : {}),
         memo: "",
       };
       checkpoint();

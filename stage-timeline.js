@@ -144,6 +144,9 @@
   ui.loopA = Math.max(0, finite(ui.loopA, 0));
   ui.loopB = Math.max(0, finite(ui.loopB, 0));
   ui.loop = Boolean(ui.loop);
+  ui.loopsByTimeline = ui.loopsByTimeline && typeof ui.loopsByTimeline === "object"
+    && !Array.isArray(ui.loopsByTimeline) ? ui.loopsByTimeline : {};
+  ui.loopScopeKey = typeof ui.loopScopeKey === "string" ? ui.loopScopeKey : "";
   ui.songBySection = ui.songBySection && typeof ui.songBySection === "object"
     ? ui.songBySection : {};
   if (Array.isArray(ui.rowOrder)) {
@@ -169,6 +172,7 @@
 
   let mode = "normal";
   let timeline = null;
+  let activeLoopScopeKey = "";
   let timelineWidth = 960;
   let audioAvailabilityGeneration = 0;
   let seekSeconds = 0;
@@ -197,6 +201,37 @@
 
   function saveUi() {
     try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (_) { /* 表示設定なしでも編集は続ける */ }
+  }
+
+  function timelineLoopScopeKey(value = timeline) {
+    return value ? `${value.sectionId || "show"}\u001f${value.songId || "fallback"}` : "";
+  }
+
+  function normalizedLoopRange(raw) {
+    return { loopA: Math.max(0, finite(raw && raw.loopA, 0)), loopB: Math.max(0, finite(raw && raw.loopB, 0)), loop: Boolean(raw && raw.loop) };
+  }
+
+  function activateTimelineLoopScope() {
+    const key = timelineLoopScopeKey();
+    if (!key || key === activeLoopScopeKey) return;
+    let next = ui.loopsByTimeline[key];
+    if (!next) {
+      next = ui.loopScopeKey ? {} : { loopA: ui.loopA, loopB: ui.loopB, loop: ui.loop };
+      ui.loopsByTimeline[key] = normalizedLoopRange(next);
+      ui.loopScopeKey = key;
+    }
+    const range = normalizedLoopRange(next);
+    ui.loopA = range.loopA; ui.loopB = range.loopB; ui.loop = range.loop;
+    activeLoopScopeKey = key;
+  }
+
+  function saveTimelineLoopScope() {
+    const key = timelineLoopScopeKey();
+    if (!key) return;
+    ui.loopsByTimeline[key] = normalizedLoopRange(ui);
+    ui.loopScopeKey = key;
+    activeLoopScopeKey = key;
+    saveUi();
   }
 
   function normalizedAudioGainDb(value) {
@@ -1210,6 +1245,7 @@
       .filter((cue) => cue && cue.kind === "timeline" && CUE_TYPES.includes(cue.cueType))
       .map((cue) => {
         if (cue.sectionId === timeline.sectionId) {
+          if (cue.songId && cue.songId !== timeline.songId) return null;
           return { ...cue, seconds: clamp(finite(cue.atSeconds, 0), 0, timeline.duration) };
         }
         // 直前の試作で保存したシーン相対キューも、そのシーンがこのセクション内なら表示する。
@@ -1739,10 +1775,11 @@
     if (!project || !choices.length) return;
     const scopeId = choices[0].sectionId || "show";
     const remembered = ui.songBySection[scopeId];
-    timeline = choices.find((choice) => choice.segments.some((segment) => segment.sceneId === project.activeSceneId))
-      || choices.find((choice) => choice.songId === remembered)
+    timeline = choices.find((choice) => choice.songId === remembered)
+      || choices.find((choice) => choice.segments.some((segment) => segment.sceneId === project.activeSceneId))
       || choices[0];
     ui.songBySection[scopeId] = timeline.songId;
+    activateTimelineLoopScope();
     bridge.setTimelineAudioContext?.({
       projectId: project.id,
       trackId: timeline.trackId,
@@ -1885,7 +1922,8 @@
     if (!CUE_TYPES.includes(type) || typeof bridge.addTimelineCue !== "function") return;
     if (!timeline || !timeline.sectionId || !segmentAt(seekSeconds)) return;
     const cue = bridge.addTimelineCue(type, timeline.sectionId,
-      clamp(seekSeconds, 0, timeline.duration));
+      clamp(seekSeconds, 0, timeline.duration),
+      timeline.source === "formation" ? { songId: timeline.songId } : {});
     if (!cue) return;
     selectedCueId = cue.id;
     renderTimeline();
@@ -2248,6 +2286,7 @@
     if (!timeline) return;
     pauseSilentPlayback({ update: false });
     ui.songBySection[timeline.sectionId] = els.songSelect.value;
+    saveUi();
     seekSeconds = 0;
     const selected = timelineChoices().choices.find((choice) => choice.songId === els.songSelect.value);
     const firstScene = selected && selected.segments.find((segment) => segment.sceneId);
@@ -2298,14 +2337,17 @@
   els.loopA.addEventListener("click", () => {
     ui.loopA = seekSeconds;
     if (ui.loopB <= ui.loopA) ui.loopB = Math.min(timeline ? timeline.duration : ui.loopA, ui.loopA + 4);
+    saveTimelineLoopScope();
     renderTimeline();
   });
   els.loopB.addEventListener("click", () => {
     ui.loopB = Math.max(ui.loopA, seekSeconds);
+    saveTimelineLoopScope();
     renderTimeline();
   });
   els.loop.addEventListener("click", () => {
     ui.loop = !ui.loop;
+    saveTimelineLoopScope();
     renderTimeline();
   });
   els.grid.addEventListener("click", () => {

@@ -121,7 +121,7 @@ test("開いたシーンの説明は初期表示から全文が見える高さ�
 test("転換の長さ・暗転・メモは選択中シーンの上下にあるシーン間の枠で編集する", () => {
   assert.match(source, /\{ key: "sceneTransitions", label: "転換情報", def: false,/);
   assert.match(source, /const makeSceneTransitionFrame = \(fromScene, toScene, position\) => \{/);
-  assert.match(source, /toScene\.cueSeconds = normalizeCueSeconds\(cueInput\.value\)/);
+  assert.match(source, /fromScene\.rehearsal\.transitionToNextSeconds = normalizeCueSeconds\(cueInput\.value\)/);
   assert.match(source, /darkBox\.checked = Boolean\(toScene\.blackout\)/);
   assert.match(source, /toScene\.blackout = darkBox\.checked/);
   assert.match(source, /transitionNote: kind === "scene" && typeof raw\.transitionNote === "string"[\s\S]*raw\.transitionNote\.slice\(0, 1000\)/);
@@ -137,7 +137,7 @@ test("転換の長さ・暗転・メモは選択中シーンの上下にある�
   assert.match(source, /if \(next\) els\.sceneList\.append\(makeSceneTransitionPoint\(scene, next\)\)/);
   assert.match(source, /boundary\.append\(makeSceneTransitionFrame\(fromScene, toScene, "between"\)\)/);
   assert.doesNotMatch(source, /delete (?:scene|toScene)\.(?:cueSeconds|blackout|transitionNote)/);
-  assert.match(source, /\(position === "outgoing" \|\| position === "between"\) && featureOn\("sceneTiming"\)[\s\S]*makeRehearsalTimeInput\([\s\S]*fromScene,[\s\S]*"transitionToNextSeconds"/);
+  assert.doesNotMatch(source, /"次のシーンへの移動時間"/);
   assert.match(source, /timing\.append\(makeRehearsalTimeInput\(scene, "見せる時間", "holdDurationSeconds"\)\)/);
   assert.match(css, /\.stage-scene-row\.is-open \{[^}]*background:\s*rgba\(168, 75, 38, 0\.11\);/s);
   assert.match(css, /\.stage-scene-row\.is-open \.stage-scene-chip \{[^}]*background:\s*rgba\(168, 75, 38, 0\.16\);/s);
