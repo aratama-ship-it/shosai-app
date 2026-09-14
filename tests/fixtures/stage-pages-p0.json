@@ -1,0 +1,160 @@
+{
+  "version": 3,
+  "project": {
+    "id": "audit-project",
+    "title": "監査用合成ショー",
+    "versionLabel": "v1",
+    "parentVersionId": null,
+    "branchReason": "",
+    "createdAt": "2026-09-14T02:56:05.761Z",
+    "venue": "proscenium",
+    "venueSize": "mid",
+    "rehearsal": {
+      "version": 1,
+      "primaryMode": "ordered",
+      "soundtrack": null
+    },
+    "audioTracks": [],
+    "cues": [],
+    "cast": [
+      {
+        "id": "stage-sample-cast-1",
+        "name": "演者A",
+        "color": "#a84b26",
+        "heightCm": 165,
+        "note": "",
+        "locked": false
+      }
+    ],
+    "sets": [],
+    "rigs": [],
+    "photos": {},
+    "sectionsNested": true,
+    "scenes": [
+      {
+        "id": "audit-section",
+        "kind": "section",
+        "depth": 0,
+        "color": null,
+        "title": "監査用セクション",
+        "note": "",
+        "background": "#40362d",
+        "notes": [],
+        "pieces": [],
+        "strokes": [],
+        "arrows": [],
+        "beat": null,
+        "rehearsal": null,
+        "timelineDurationSeconds": 5,
+        "timelineUnit": "time",
+        "cueSeconds": null,
+        "transitionNote": "",
+        "audioTrackId": null,
+        "formation": null,
+        "formationLink": null,
+        "lightingIntent": null,
+        "lightMotion": null,
+        "facingLock": false
+      },
+      {
+        "id": "audit-s1",
+        "kind": "scene",
+        "depth": 1,
+        "color": null,
+        "title": "監査シーン1",
+        "note": "",
+        "background": "#40362d",
+        "notes": [],
+        "pieces": [
+          {
+            "id": "audit-piece",
+            "type": "performer",
+            "castId": "stage-sample-cast-1",
+            "u": 0.2,
+            "v": 0.5,
+            "size": 105,
+            "color": "#a84b26",
+            "name": "",
+            "base": 0,
+            "supportId": null,
+            "originId": "audit-piece",
+            "facing": 0,
+            "pose": "stand",
+            "route": null
+          }
+        ],
+        "strokes": [],
+        "arrows": [],
+        "beat": {
+          "role": ""
+        },
+        "rehearsal": {
+          "holdDurationSeconds": 1,
+          "transitionToNextSeconds": 2
+        },
+        "timelineDurationSeconds": null,
+        "timelineUnit": null,
+        "cueSeconds": 2,
+        "transitionNote": "",
+        "audioTrackId": null,
+        "formation": null,
+        "formationLink": null,
+        "lightingIntent": null,
+        "lightMotion": null,
+        "facingLock": false
+      },
+      {
+        "id": "audit-s2",
+        "kind": "scene",
+        "depth": 1,
+        "color": null,
+        "title": "監査シーン2",
+        "note": "",
+        "background": "#40362d",
+        "notes": [],
+        "pieces": [
+          {
+            "id": "audit-piece2",
+            "type": "performer",
+            "castId": "stage-sample-cast-1",
+            "u": 0.8,
+            "v": 0.5,
+            "size": 105,
+            "color": "#a84b26",
+            "name": "",
+            "base": 0,
+            "supportId": null,
+            "originId": "audit-piece",
+            "facing": 0,
+            "pose": "stand",
+            "route": null
+          }
+        ],
+        "strokes": [],
+        "arrows": [],
+        "beat": {
+          "role": ""
+        },
+        "rehearsal": {
+          "holdDurationSeconds": 2,
+          "transitionToNextSeconds": 0
+        },
+        "timelineDurationSeconds": null,
+        "timelineUnit": null,
+        "cueSeconds": 2,
+        "transitionNote": "",
+        "audioTrackId": null,
+        "formation": null,
+        "formationLink": null,
+        "lightingIntent": null,
+        "lightMotion": null,
+        "facingLock": false
+      }
+    ],
+    "activeSceneId": "audit-s1"
+  },
+  "animateScenes": true,
+  "sceneAnimMs": 2000,
+  "showFront": true,
+  "showPlan": true
+}

@@ -5978,6 +5978,9 @@
      ★黙って {} に落として書き直すと、読めなかった他のショーが
        いま開いている1本で置き換わって消える。それを防ぐための関所。 */
   let shelfCorrupt = false;
+  // A failed migration backup blocks current-show and shelf writes for this launch.
+  // Editing and JSON export remain available; restart only after preserving the draft.
+  let sectionMigrationSaveWarning = "";
 
   function markShelfCorrupt(rawText) {
     if (shelfCorrupt) return;
@@ -6028,7 +6031,7 @@
   }
 
   function pruneOrphanAudioSoon() {
-    if (!audioStore || typeof audioStore.pruneExcept !== "function") return;
+    if (sectionMigrationSaveWarning || !audioStore || typeof audioStore.pruneExcept !== "function") return;
     const liveIds = liveAudioTrackIdsForGc();
     if (!liveIds) return;
     setTimeout(() => { audioStore.pruneExcept(liveIds).catch(() => {}); }, 0);
@@ -6041,7 +6044,7 @@
   function writeShows(shows) {
     /* 棚が壊れているときは絶対に書かない。ここで書くと、読めなかったショーが
        いま開いている1本で置き換わって消える。 */
-    if (shelfCorrupt) return false;
+    if (shelfCorrupt || sectionMigrationSaveWarning) return false;
     try {
       localStorage.setItem(SHOWS_KEY, JSON.stringify(shows));
       shelfFailed = false;
@@ -6108,7 +6111,7 @@
       if (!requestedId) project.id = rid("show");
       return;
     }
-    const savedProject = existing.state.project || {};
+    const savedProject = existing.project || {};
     const importedProject = { ...project };
     const savedComparable = { ...savedProject };
     delete importedProject.id;
@@ -6155,6 +6158,16 @@
   let audioPanelSignature = "";
   let audioLoadGeneration = 0;
   let continueAudioOnNextSceneSync = false;
+  // Runtime-only transport source; never rewrite scene assignments or show JSON.
+  let timelineAudioContext = null;
+  function currentAudioTrackId() {
+    const context = timelineAudioContext;
+    if (document.body.dataset.stageWorkspaceMode === "timeline" && context
+        && context.projectId === state.project.id
+        && context.sceneIds.includes(state.project.activeSceneId)
+        && audioTrackById(context.trackId)) return context.trackId;
+    return normalizeAudioTrackId("scene", sc().audioTrackId);
+  }
   const audioPlayback = {
     trackId: null,
     objectUrl: null,
@@ -6204,6 +6217,7 @@
   }
 
   function clearAudioEngine() {
+    timelineAudioContext = null;
     audioLoadGeneration += 1;
     if (els.musicAudio) {
       els.musicAudio.pause();
@@ -6246,7 +6260,7 @@
        押せないボタンと「音なし 0:00 / 0:00」だけが並んでいても意味がなく、
        場面の情報を1段ぶん押し下げるだけだった（2026-08-28 本人指摘）。 */
     if (els.sceneMusic) els.sceneMusic.hidden = audioTracks().length === 0;
-    const assignedId = normalizeAudioTrackId("scene", sc().audioTrackId);
+    const assignedId = currentAudioTrackId();
     const track = audioTrackById(assignedId);
     const title = track ? track.title : (assignedId
       ? (tx("不明な楽曲"))
@@ -6292,7 +6306,7 @@
   }
 
   async function prepareAudioForCurrentScene(options = {}) {
-    const nextId = normalizeAudioTrackId("scene", sc().audioTrackId);
+    const nextId = currentAudioTrackId();
     const transition = audioSceneTransition(audioPlayback.trackId, nextId, options.continuePlayback);
 
     if (!options.force && nextId && audioPlayback.trackId === nextId) {
@@ -6363,7 +6377,8 @@
   }
 
   async function toggleAudioPlayback() {
-    if (!sc().audioTrackId) {
+    const trackId = currentAudioTrackId();
+    if (!trackId) {
       setAudioStatus("このシーンには曲が割り当てられていません。",
         "No track is assigned to this scene.");
       return;
@@ -6372,7 +6387,7 @@
       els.musicAudio.pause();
       return;
     }
-    if (audioPlayback.ready && audioPlayback.trackId === sc().audioTrackId) {
+    if (audioPlayback.ready && audioPlayback.trackId === trackId) {
       await tryPlayCurrentAudio();
       return;
     }
@@ -6724,7 +6739,7 @@
   }
 
   function openCurrentAudioRelinkPicker(input = els.musicRelinkFile) {
-    return openAudioRelinkPicker(sc().audioTrackId, input);
+    return openAudioRelinkPicker(currentAudioTrackId(), input);
   }
 
   function initStageAudio() {
@@ -6741,7 +6756,7 @@
     if (els.musicRelink) els.musicRelink.addEventListener("click", () => openCurrentAudioRelinkPicker());
     if (els.musicRelinkFile) els.musicRelinkFile.addEventListener("change", async () => {
       const file = els.musicRelinkFile.files && els.musicRelinkFile.files[0];
-      const trackId = els.musicRelinkFile.dataset.trackId || sc().audioTrackId;
+      const trackId = els.musicRelinkFile.dataset.trackId || currentAudioTrackId();
       els.musicRelinkFile.value = "";
       if (file) await relinkAudioFile(trackId, file);
     });
@@ -8304,8 +8319,16 @@
   function persistSoon() {
     if (STUDY_READ_ONLY) return;
     clearTimeout(saveTimer);
+    if (sectionMigrationSaveWarning) {
+      setSaveStatus(sectionMigrationSaveWarning, "warn");
+      return;
+    }
     setSaveStatus(tx("変更を保存しています…") || "Saving…");
     saveTimer = setTimeout(() => {
+      if (sectionMigrationSaveWarning) {
+        setSaveStatus(sectionMigrationSaveWarning, "warn");
+        return;
+      }
       try {
         localStorage.setItem(STORAGE_KEY, snapshot());
         shelveCurrent();
@@ -13596,7 +13619,7 @@
     syncPropMoves();
     syncPhoneViewer();
     renderAudioPanel();
-    const wantedAudioId = normalizeAudioTrackId("scene", sc().audioTrackId);
+    const wantedAudioId = currentAudioTrackId();
     const missingAudioMetadata = Boolean(wantedAudioId && !audioTrackById(wantedAudioId));
     if (wantedAudioId !== audioPlayback.trackId || (missingAudioMetadata && !audioPlayback.missing)) {
       const shouldContinue = continueAudioOnNextSceneSync;
@@ -28081,6 +28104,19 @@ ${propsPlotHtml}
         state.layout = closedDefaultLayout();
       }
 
+      // Complete backup decisions before initialization can save or prune media.
+      if (loaded.sectionMigrationSource) {
+        try {
+          localStorage.setItem(`${STORAGE_KEY}-pre-section-hierarchy-v1:${state.project.id}`, loaded.sectionMigrationSource);
+        } catch (_) {
+          sectionMigrationSaveWarning = "旧シーン構造の控えを保存できなかったため、自動保存とショー一覧の更新を止めています。作業内容をファイルへ書き出してから、容量を空けてもう一度開いてください。";
+        }
+      }
+      const shelfMigration = sectionMigrationSaveWarning
+        ? { migrated: 0, safe: false } : migrateStoredShowShelf();
+      if (!shelfMigration.safe && !sectionMigrationSaveWarning) {
+        sectionMigrationSaveWarning = "ショー一覧の旧シーン構造を退避・保存できなかったため、自動保存と一覧の更新を止めています。作業内容をファイルへ書き出してから、容量を空けてもう一度開いてください。";
+      }
       initStageAskPanel();
       buildPanelHeads();
       bridgeSessionPanelOpen();
@@ -28123,19 +28159,12 @@ ${propsPlotHtml}
       catch (_) { seenTour = true; }
       renderScreenTexts();
       syncScreenTextControls();
-      if (loaded.sectionMigrationSource) {
-        const backupKey = `${STORAGE_KEY}-pre-section-hierarchy-v1:${state.project.id}`;
-        try {
-          localStorage.setItem(backupKey, loaded.sectionMigrationSource);
-          persistSoon();
-        } catch (_) {
-          setSaveStatus("旧シーン構造の控えを保存できなかったため、変換後の自動保存を止めました。ファイルへ書き出してから、もう一度開いてください。", "warn");
-        }
+      if (sectionMigrationSaveWarning) {
+        setSaveStatus(sectionMigrationSaveWarning, "warn");
+      } else if (loaded.sectionMigrationSource) {
+        persistSoon();
       }
-      const shelfMigration = migrateStoredShowShelf();
-      if (!shelfMigration.safe) {
-        setSaveStatus("ショー一覧の旧シーン構造を退避できなかったため、一覧全体の変換保存を止めました。ファイルへ書き出すか容量を空けてから、もう一度開いてください。", "warn");
-      } else if (shelfMigration.migrated) {
+      if (shelfMigration.migrated) {
         announce(`${shelfMigration.migrated}件のショーを、セクションの中にシーンを置く形式へ更新しました。`);
       }
       if (!loaded.restored) shelveSample();
@@ -28219,6 +28248,17 @@ ${propsPlotHtml}
   window.SHOSAI_STAGE_SESSION_BRIDGE = Object.freeze({
     exportDocumentString() {
       return JSON.stringify(makeProjectExportDocument(state.project, true));
+    },
+    setTimelineAudioContext(context) {
+      timelineAudioContext = context && context.projectId === state.project.id
+        && typeof context.trackId === "string" && Array.isArray(context.sceneIds)
+        ? { projectId: context.projectId, trackId: context.trackId, sceneIds: context.sceneIds.filter((id) => typeof id === "string") }
+        : null;
+      if (currentAudioTrackId() !== audioPlayback.trackId) prepareAudioForCurrentScene();
+      else syncAudioControls();
+    },
+    getAudioPlaybackState() {
+      return { trackId: audioPlayback.trackId, ready: audioPlayback.ready, loading: audioPlayback.loading };
     },
     openSceneById(id, options = {}) {
       const next = state.project.scenes.find((row) => row.kind === "scene" && row.id === id);

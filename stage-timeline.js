@@ -423,6 +423,7 @@
     if (next !== "timeline") cancelPendingSceneOpen();
     if (next !== "timeline") closeAudioDetails({ focus: false });
     if (next !== "timeline") pauseSilentPlayback({ update: false });
+    if (next !== "timeline") bridge.setTimelineAudioContext?.(null);
     els.tabs.forEach((button) => {
       const active = button.dataset.stageWorkspaceMode === next;
       button.classList.toggle("is-active", active);
@@ -1548,9 +1549,13 @@
 
   function audioMatchesTimeline() {
     if (!timeline || !timeline.trackId) return false;
-    const documentValue = projectDocument();
-    const project = documentValue && documentValue.project;
-    const active = project && (project.scenes || []).find((scene) => scene.id === project.activeSceneId);
+    if (typeof bridge.getAudioPlaybackState === "function") {
+      const playback = bridge.getAudioPlaybackState();
+      return playback.trackId === timeline.trackId && playback.ready;
+    }
+    // During a cache update the older host may still expose the previous bridge.
+    const project = projectDocument()?.project;
+    const active = project?.scenes.find((scene) => scene.id === project.activeSceneId);
     return Boolean(active && active.audioTrackId === timeline.trackId);
   }
 
@@ -1714,6 +1719,11 @@
       || choices.find((choice) => choice.songId === remembered)
       || choices[0];
     ui.songBySection[scopeId] = timeline.songId;
+    bridge.setTimelineAudioContext?.({
+      projectId: project.id,
+      trackId: timeline.trackId,
+      sceneIds: timeline.segments.map((segment) => segment.sceneId).filter(Boolean),
+    });
     seekSeconds = clamp(seekSeconds, 0, timeline.duration);
 
     const section = currentSection(project);
