@@ -1,10 +1,10 @@
 <!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>逆光・案Bの比較試作</title>
 <style>:root{color-scheme:dark;--paper:#efe7d6;--desk:#201b16;--accent:#d3ac59}*{box-sizing:border-box}body{margin:0;background:#191512;color:var(--paper);font:16px/1.8 system-ui,sans-serif}main{max-width:1200px;margin:auto;padding:28px 24px 70px}h1{font-size:28px;line-height:1.5}h2{font-size:22px;margin-top:42px}p{max-width:75ch}a{color:#d3ac59;text-underline-offset:4px}button{font:inherit;color:var(--paper);background:var(--desk);border:1px solid #9c823f;min-height:44px;padding:6px 18px;cursor:pointer}button[aria-pressed=true]{background:#554627}button:focus-visible,a:focus-visible{outline:2px solid #d3ac59;outline-offset:3px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.small{font-size:14px;color:#c1b7a7}.status{border-left:3px solid #9c823f;padding:10px 18px;background:#201b16}figure{margin:0;border:1px solid #514531;padding:12px}figure img{display:block;width:100%;height:auto}figcaption{margin-bottom:8px}.choices{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}table{border-collapse:collapse;width:100%;min-width:560px}td,th{text-align:left;padding:10px;border-bottom:1px solid #514531}.table{overflow:auto}li{margin:8px 0}@media(max-width:700px){main{padding:18px 14px 50px}.grid{grid-template-columns:1fr}h1{font-size:24px}}</style>
-<main><p class="small">2026-09-14 · 人物修正は公開済み／案Bは比較試作として公開</p>
+<main><p class="small">2026-09-14 · 既存GitHub照明テスターへ案Bを導入</p>
 <h1>逆光の表現を分け、距離操作を比べる</h1>
 <p class="status"><b>今回見るところ：</b>「固定帯」と「実寸」のどちらで距離を調整しやすいか。実寸表示では、平面図の上下ドラッグ、側面図の左右ドラッグで「舞台前から」の距離が動きます。実寸比較後に最終確定する、というご指定を引き継いでいます。</p>
-<p><a href="https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/prototype/">公開版：前・横からの人物照明修正</a> · <a href="prototype-b/?example=back">案B：逆光の確認例を開く</a> · <a href="prototype-b/?example=mixed">案B：前明かりも足した例を開く</a></p>
-<p class="small">確認例はこの試作のために作った照明設定です。元の添付スクリーンショットの保存データや実舞台写真の再現ではありません。案Bは別の保存領域を使い、製品本体には統合していません。</p>
+<p><a href="https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/prototype/">いつもの照明テスターを開く（案B導入）</a> · <a href="prototype-b/?example=back">案B：逆光の確認例を開く</a> · <a href="prototype-b/?example=mixed">案B：前明かりも足した例を開く</a></p>
+<p class="small">確認例はこの試作のために作った照明設定です。元の添付スクリーンショットの保存データや実舞台写真の再現ではありません。既存GitHub照明テスターは従来の保存一覧を引き継いでいます。比較用の別URLは専用の保存領域を使います。舞台スケッチのベータ版には統合していません。</p>
 <h2>1. もやと光条</h2>
 <p>狙い点・軌道は保持し、そこから導く円錐の中の空気を描きます。面の光だまり、人物の受光、光源のまぶしさは別に扱います。舞台の手前端や狙い点を発光させません。</p>
 <div class="choices" role="group" aria-label="同じ明かりでもやだけ比較"><button data-haze="0" aria-pressed="false">もや 0</button><button data-haze="35" aria-pressed="true">もや 35</button><button data-haze="70" aria-pressed="false">もや 70</button></div>
@@ -20,7 +20,7 @@
 <h2>4. 外出中に進めた改善</h2>
 <p>光が通らない画素を計算対象から外し、光条の各層に専用の描画用キャンバスを割り当てました。静止時の解像度と光の式を維持し、操作中だけ光条を粗く描きます。操作後とウインドウ切替時には精細表示へ戻します。</p>
 <p>案Bの保存一覧が壊れている場合は上書きを止め、編集中の内容をファイルへ書き出せるようにしました。不正な読み込みや描画途中の失敗では、元の編集内容へ戻します。容量不足でも既存の保存内容を保持します。</p>
-<p class="small">案B専用の使い捨てデータで検証しています。<a href="evidence-b/storage.json">保存の失敗系・再読み込み結果</a>。本体の保存領域や公開中の照明試作は変更していません。</p>
+<p class="small">案B専用の使い捨てデータで検証しています。<a href="evidence-b/storage.json">保存の失敗系・再読み込み結果</a>。この検証は単独比較試作での記録です。その後、既存GitHubテスターへの導入に際して旧データの読込・編集・再保存・ファイル往復と、導入前の控え・保存失敗時の保護も両ブラウザで確認しました。</p>
 <h2>5. 検証と残る範囲</h2>
 <p>このMacのSafariアプリでも、前明かりあり／逆光のみの人物表示、もや35→70、固定帯→実寸の切替結果を確認しました。速度の数値は下のPlaywright WebKit試験によるもので、Safari実機の計測値ではありません。</p>
 <ul><li>関連単体テスト35件。円錐、有限の床壁交差、カッター、人物の前・横の受光、描画領域の最適化を検査。</li><li>ChromiumとWebKitで新旧の描画、もや操作、LX cue保存・再読込、未知のcueフィールドの保持、Undoを検査。詳細は<a href="evidence-b/results.json">結果JSON</a>。</li><li>平面・側面の距離ドラッグとUndoを実ポインターで確認。WebKitの座標丸めを含め画面上1.1px以内。<a href="evidence-b/interaction.json">操作結果</a>。</li><li>動きの計算をするrig-engine.jsは基準版と同じ内容。リムライトは第2段階のまま。</li></ul>
