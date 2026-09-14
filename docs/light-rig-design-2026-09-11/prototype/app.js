@@ -2825,12 +2825,12 @@
     const add = (n) => box.append(n);
     add(el("p", "kicker", `まとめて変更（${ids.length}灯）`));
     /* 欄の並びは単灯と同じ箱構成にそろえる（2026-09-13 本人要望）:
-       ①光の色 → ②狙い（位置を含む） → ③光の強さ → ④光の広がり。
+       ①光の色 → ②狙い（軌道を含む） → ③光の強さ → ④光の広がり。
        オン・オフだけは単灯と違って右上のボタンが使えないので、箱の前に置く。 */
     let aimPanel = null;
     const sub = (title) => { const b = el("div", "pbox"); if (title) b.append(el("p", "kicker", title)); add(b); return b; };
     /* 単灯と同じで、オートメーションは項目ごとに見る（2026-09-13 本人指定）。
-       位置＝軌道が「動きなし」以外／強さ＝levelTo がある／広がり＝beamDegTo がある。 */
+       狙い＝軌道が「動きなし」以外／強さ＝levelTo がある／広がり＝beamDegTo がある。 */
     const litLight = (fid) => { const l = lightOf(fid); return l && l.on === true ? l : null; };
     const posMovers = movers.filter((fid) => { const l = litLight(fid); return l && (l.path || {}).kind !== "still"; });
     const lvMovers = movers.filter((fid) => { const l = litLight(fid); return l && l.levelTo != null; });
@@ -2883,7 +2883,7 @@
       b.append(sw);
     }
 
-    // ② 狙い（当てる面と、位置・動きの情報をまとめる）
+    // ② 狙い（当てる面、狙い点、オートメーションをまとめる）
     {
       const b = aimPanel = sub("狙い");
       const surs = new Set(lit.map((fid) => lightOf(fid).surface || "floor"));
@@ -3048,24 +3048,22 @@
       }
     }
 
-    /* 位置（ムービングを選んでいるときだけ）。②「狙い」の中で位置情報をまとめて扱う。
-       ここは<b>位置だけ</b>を入り切りする。
-       強さ・広がりは③④のスイッチが持つ（2026-09-13 本人指定）。
-       運び方（時間・ずらす刻み）は3つで共通なので、どれかが動いていれば下に出す。 */
+    /* 狙いのオートメーション（ムービングを選んでいるときだけ）。
+       強さ・広がりはそれぞれのスイッチで独立し、運び方（時間・ずらす刻み）は共通にする。 */
     if (movers.length) {
       const b = aimPanel;
-      const head = el("div", "pboxhead aim-subhead"); head.append(el("p", "kicker", `位置（ムービング${movers.length}灯）`));
+      const head = el("div", "pboxhead aim-subhead"); head.append(el("p", "kicker", `オートメーション（ムービング${movers.length}灯）`));
       head.append(switchBtn(allPos,
-        allPos ? "位置が動いています。押すと全灯を止めます（いまの位置で止まります）"
-          : posMovers.length ? "一部だけ動いています。押すと全灯そろって動かします"
-          : "押すと全灯の位置に始点と終点を置きます",
+        allPos ? "狙いが動いています。押すと全灯を現在の狙いで止めます"
+          : posMovers.length ? "一部の狙いが動いています。押すと全灯のオートメーションをオンにします"
+          : "押すと全灯の狙いに始点と終点を設定して動かします",
         () => {
           if (allPos) {
             bulkEach(movers, (f, l) => { const pt = currentPoint(l); l.path = { kind: "still", a: { ...pt } }; });
-            commit(`${movers.length}灯の位置の動きを止めました（いまの位置で止まっています）`);
+            commit(`${movers.length}灯の狙いオートメーションをオフにしました`);
           } else {
             bulkEach(movers, (f, l, i, fid) => { if (((lightOf(fid) || {}).path || {}).kind === "still") setKind(fid, "line"); });
-            commit(`${movers.length}灯の位置に始点と終点を置きました`);
+            commit(`${movers.length}灯の狙いオートメーションをオンにしました`);
           }
         }));
       b.append(head);
@@ -3080,7 +3078,7 @@
           }), true));
       }
       if (someMoving) {
-        b.append(el("p", "kicker sub2", "動きの時間（位置・強さ・広がりで共通）"));
+        b.append(el("p", "kicker sub2", "動きの時間（狙い・強さ・広がりで共通）"));
         // 1往復（1周）の時間とオフセットの刻み。動きを持つムービングだけに入る
         b.append(field("1往復の時間", range(1, 30, 0.5, sp.periodSec, (v) => `${v.toFixed(1)}秒`, (v) => { sp.periodSec = v; bulkEach(movers, (f, l) => { l.periodSec = v; }); draw(); }, () => commit())));
         b.append(field("ずらす刻み", range(0, 3, 0.1, sp.stepSec, (v) => (v < 0.05 ? "ずらさない（全灯そろう）" : `${v.toFixed(1)}秒ずつ`), (v) => {
@@ -3088,8 +3086,8 @@
         }, () => commit())));
       }
 
-      const addP = (n) => b.append(n);   // 位置の設定も「狙い」パネル内へ入れる
-      /* --- 動きの型と組の動きを1つにまとめ、⑤位置の中へ入れた（2026-09-14 本人要望）---
+      const addP = (n) => b.append(n);   // 狙いのオートメーション設定も同じパネルに置く
+      /* --- 動きの型と組の動きを1つにまとめ、⑤狙いオートメーションの中へ入れた（2026-09-14 本人要望）---
          どちらも「複数のムービングをどう連携させるか」なので、別々のアコーディオンに分けず
          1つにした。対象はムービングだけ。既定は畳んだまま（2026-09-13 本人要望）。
          組の状態（編集中かどうか）も見出しに出したいので、gs / same は開く前に読む。 */
@@ -3144,7 +3142,7 @@
   /* パネル右上のオン・オフ。1灯を選んでいるときだけ出す。
      押すたびに切り替わる1つのボタンにした（2026-09-13 本人要望）——未設定と消灯を分けて見せず、
      「いま光っているか」だけを示す。未設定の灯を押したら、その場で点いた状態から始める。 */
-  /* 右上のオン・オフと同じ見た目の切り替え（位置・強さ・広がりのオートメーションで使う）。
+  /* 右上のオン・オフと同じ見た目の切り替え（狙い・強さ・広がりのオートメーションで使う）。
      「オン／オフ」だけだと何の入り切りか分からないので、必ず対象の名前を添える
      （2026-09-13 本人指摘）。既定は「オートメーション」。 */
   function switchBtn(on, title, onToggle, word) {
@@ -3429,15 +3427,15 @@
         return;
       }
       /* ---- 欄の構成（2026-09-13 本人要望で作り直し） ----
-         ①光の色 → ②狙い（位置情報も含む） → ③光の強さ → ④光の広がり → ⑤動きの時間。
-         **オートメーション（自動で動かす）は項目ごとに持つ**。位置を動かしても、
+         ①光の色 → ②狙い（狙い点とオートメーションを含む） → ③光の強さ → ④光の広がり → ⑤動きの時間。
+         **オートメーション（自動で動かす）は項目ごとに持つ**。狙いを動かしても、
          光の強さ・光の広がりは勝手にはオンにならない（同日 本人指定）。
          旗は別に持たず、これまでどおりデータから決める:
-           位置 ＝ 軌道が「動きなし」以外／強さ ＝ levelTo がある／広がり ＝ beamDegTo がある。
+           狙い ＝ 軌道が「動きなし」以外／強さ ＝ levelTo がある／広がり ＝ beamDegTo がある。
          運び方（時間・切り返し・遅れ）は3つで共通なので、どれかが動いていれば⑥に出す。 */
       const p = l.path || { kind: "still" };
       const mover = E.isMoving(f);
-      const autoPos = mover && p.kind !== "still";          // 位置のオートメーション
+      const autoPos = mover && p.kind !== "still";          // 狙いのオートメーション
       const autoLevel = mover && l.levelTo != null;          // 光の強さのオートメーション
       const autoSpread = mover && l.beamDegTo != null;       // 光の広がりのオートメーション
       const anyAuto = autoPos || autoLevel || autoSpread;
@@ -3483,8 +3481,8 @@
         }
       }
 
-      /* ② 狙い。どの面を狙うかと、狙い点・位置情報をまとめる。
-         ムービングの位置を動かす設定は、この箱の中に区切って置く。
+      /* ② 狙い。どの面を狙うかと狙い点、狙いのオートメーションをまとめる。
+         ムービングのオートメーション設定は、この箱の中に区切って置く。
          ホリゾントライトは狙い点を持たない帯（つねに奥の壁を染める）ので、この箱ごと出さない
          （2026-09-13 本人指摘「もとから一列のバー」。横位置・長さ・床/上部は配置パネルへ）。 */
       if (f.mount.type !== "cyc") {
@@ -3498,22 +3496,20 @@
           /* まぶしさ（光源から丸く広がるほう）の大きさ。光の帯とは別のレイヤーなので別に決める。 */
           b.append(field("まぶしさ", range(0.2, 3, 0.1, glareMul(l),
             (v) => `${v.toFixed(1)}倍（${v < 0.6 ? "小さく締まる" : v > 1.6 ? "視界が飛ぶ" : "普通"}）`,
-            (v) => { l.glare = v; draw(); }, () => commit()), true));
+            (v) => { l.glare = v; draw(); }, () => commit())));
         }
         if (!autoPos) {
           heightField(b, "高さ", p.a || E.newPoint());
           if (!mover && p.kind !== "still") b.append(el("p", "warn", "⚠ この灯には動きが付いたままです。固定灯なので実際には動きません。"));
-        } else {
-          b.append(el("p", "hint", "位置の動きはこの欄で設定します（軌道・始点・終点）。"));
         }
       }
 
       /* ③ 光の強さ。0まで下げると消灯と同じ扱いになり、図から消える（2026-09-13 本人決定）。
-         動かしているときは始点と終点を持ち、位置と同じ位相で往復する。効き方（カーブ）は環境設定。 */
+         動かしているときは始点と終点を持ち、狙いと同じ位相で往復する。効き方（カーブ）は環境設定。 */
       {
         const b = box(mover ? null : "光の強さ");
         const fmtLv = (v) => (v <= 0 ? "0%（消灯）" : `${Math.round(v)}%（${LEVEL_WORD(v)}）`);
-        /* 強さだけのオートメーション。位置を動かしていても、ここを入れるまで強さは変わらない。 */
+        /* 強さだけのオートメーション。狙いを動かしていても、ここを入れるまで強さは変わらない。 */
         if (mover) {
           const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光の強さ"));
           head.append(switchBtn(autoLevel, autoLevel ? "強さが動いています。押すと止めます（始点の値で止まります）" : "押すと強さに始点と終点を置いて動かします", () => {
@@ -3566,7 +3562,7 @@
         const b = box(mover ? null : "光の広がり");
         const fmtDeg = (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`;
         if (mover) {
-          /* 広がりだけのオートメーション。位置・強さとは独立に入り切りする。 */
+          /* 広がりだけのオートメーション。狙い・強さとは独立に入り切りする。 */
           const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光の広がり"));
           head.append(switchBtn(autoSpread, autoSpread ? "広がりが動いています。押すと止めます（始点の値で止まります）" : "押すと広がりに始点と終点を置いて動かします", () => {
             const l2 = lightOf(fid);
@@ -3635,26 +3631,24 @@
         if (E.barnActive(f)) b.append(btn("全部開く", () => { delete f.barn; commit(`${label(fid)}のバーンドアを開きました`); }, "small quiet"));
       }
 
-      /* 位置（ムービングのみ）。②「狙い」の中へ統合。スイッチは<b>位置だけ</b>を入り切りする——
-         ここを入れても光の強さ・光の広がりはオフのままで、それぞれの箱で別に入れる
-         （2026-09-13 本人指定「それぞれの項目がオートメーションのONOFFを持つイメージ」）。 */
+      /* 狙いのオートメーション（ムービングのみ）。ここだけを入り切りし、
+         光の強さ・光の広がりはオフのまま、それぞれの欄で個別に設定する。 */
       if (mover) {
         const b = aimPanel;
-        const head = el("div", "pboxhead aim-subhead"); head.append(el("p", "kicker", "位置"));
-        head.append(switchBtn(autoPos, autoPos ? "位置が動いています。押すと止めます（いまの位置で止まります）" : "押すと始点と終点を置いて位置を動かします", () => {
+        const head = el("div", "pboxhead aim-subhead"); head.append(el("p", "kicker", "オートメーション"));
+        head.append(switchBtn(autoPos, autoPos ? "狙いが動いています。押すと現在の狙いで止めます" : "押すと始点と終点を設定し、狙いを動かします", () => {
           if (autoPos) {
             const a = currentPoint(l);
             setLight(fid, { path: { kind: "still", a: { ...a } } });
-            commit("位置の動きを止めました（いまの位置で止まっています）");
+            commit("狙いのオートメーションをオフにしました");
           } else {
             setKind(fid, "line");
-            commit("位置に始点と終点を置きました。「狙い」で軌道の形と高さを決められます");
+            commit("狙いのオートメーションをオンにしました");
           }
         }));
         b.append(head);
         if (autoPos) {
-          /* 軌道の形とその寸法。止める／動かすは上のスイッチが持つので「動きなし」は置かない。
-             ②から移設（2026-09-13 本人指摘「軌道は位置の方に置くべきもの」）。 */
+          /* 軌道の形と寸法。停止／開始は上のオートメーションスイッチで切り替える。 */
           b.append(field("軌道", seg([["line", "往復"], ["circle", "円"], ["eight", "8の字"]], p.kind, (v) => { setKind(fid, v); commit(); }), true));
           if (p.kind === "line") {
             b.append(field("始め方", seg([["a", "始点 → 終点"], ["b", "終点 → 始点"]], p.start || "a", (v) => { p.start = v; commit(); })));
@@ -3672,19 +3666,19 @@
             { const rr = p.r2 == null ? p.r : p.r2, tl = Math.round(p.tilt || 0);
               if (Math.abs(rr - p.r) >= 0.05 || tl) b.append(btn(p.kind === "eight" ? "傾きと形をそろえる" : "まん丸・まっすぐに戻す", () => { p.r2 = p.r; p.tilt = 0; commit(); }, "small quiet")); }
             heightField(b, "中心の高さ", p.c);
-            b.append(field("始める位置", range(0, 1, 0.05, p.start || 0, (v) => `${Math.round(v * 360)}°`, (v) => { p.start = v; draw(); }, () => commit())));
+            b.append(field("開始角度", range(0, 1, 0.05, p.start || 0, (v) => `${Math.round(v * 360)}°`, (v) => { p.start = v; draw(); }, () => commit())));
           }
         }
       }
 
-      /* ⑥ 動きの時間。位置・強さ・広がりで<b>共通</b>の運び方なので、どれか1つでも
+      /* ⑥ 動きの時間。狙い・強さ・広がりで<b>共通</b>の運び方なので、どれか1つでも
          動いていれば出す（2026-09-13 本人要望のオートメーション化に合わせて別の箱に分けた）。 */
       if (mover) {
         const b = anyAuto || (state.copiedPath && state.copiedPath.from !== fid) ? box(null) : null;
         if (b && anyAuto) {
-          b.append(el("p", "kicker", "動きの時間（位置・強さ・広がりで共通）"));
+          b.append(el("p", "kicker", "動きの時間（狙い・強さ・広がりで共通）"));
           const kind = (lightOf(fid).path || {}).kind;
-          // 端での運び方（2026-09-12 本人指定で「切り返し」＝リニア／イーズ）。位置・強さ・広がりに共通
+          // 端での運び方（2026-09-12 本人指定で「切り返し」＝リニア／イーズ）。狙い・強さ・広がりに共通
           b.append(field("切り返し", seg([["linear", "リニア"], ["ease", "イーズ"]], p.easing || "ease", (v) => { p.easing = v; commit(); })));
           const label1 = kind === "line" ? "1往復の時間" : kind === "still" ? "変化の1往復の時間" : "1周の時間";
           b.append(field(label1, seg([["slow", "ゆっくり 4秒"], ["normal", "普通 2秒"], ["fast", "速い 1秒"]], l.periodSec == null ? l.speed : null, (v) => { setLight(fid, { speed: v, periodSec: null }); commit(); }), true));
