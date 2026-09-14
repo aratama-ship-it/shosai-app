@@ -226,7 +226,7 @@
     collapsed: new Set(), filter: "all",   // 一覧: 取り付け場所ごとの折り畳みと絞り込み（20灯以上向け）
     snap: false,                           // 1mのグリッドに合わせて置く・動かす（本人要望 2026-09-11）
     placeOpen: true,                       // 配置モードでは、置く道具を最初から見せる
-    show: { no: true, fixtures: true, beam: true, path: true, grid: true, pieces: true, names: true, border: false, blackout: true },
+    show: { no: true, fixtures: true, beam: true, path: true, grid: true, pieces: true, names: true, border: false, blackout: false },
     /* 作業灯をどれだけ消すか（0〜100%）。100で真っ暗、0で消さないのと同じ
        （2026-09-13 本人要望「押したら全部消えてしまうので、どれくらい消すか決めたい」）。
        図の見え方の設定なので show と同じくUndoの対象にはしない。 */
@@ -4026,8 +4026,6 @@
   $("mode-move").onclick = () => {
     state.mode = "move";
     state.tool = null;
-    // 照明デザインに入る瞬間は、常に灯の見え方から始める（2026-09-14 本人指定）。
-    state.show.blackout = true;
     renderAll();
   };
   /* 連動を切った瞬間は「いま見ているシーン」に固定する（見えているものが動かない）。 */
@@ -4565,7 +4563,7 @@
     for(let i=0;i<2;i++){const id='example-f'+i,u=.3+i*.4;
       state.rig.fixtures.push(E.newFixture(id,i+5,{type:'front',u,ahead:4,h:4},'前明かり','fixed',16));
       cue().lights[id]=E.newLightCue({on:frontOn,surface:'air',color:'#f2ead6',path:{kind:'still',a:{u,v:.65,hM:1.2}}});}
-    state.mode='move';state.show.blackout=true;state.dim=100;state.sel=new Set(['example-r1']);
+    state.mode='move';state.show.blackout=false;state.dim=100;state.sel=new Set(['example-r1']);
     state.history=[];state.future=[];baseline=snapshot();
   }
 
