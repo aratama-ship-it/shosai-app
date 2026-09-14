@@ -15710,7 +15710,15 @@ body.stage-timeline-mode .stage-canvas-close { display: none; }
   background: var(--stage-timeline-panel);
   border-top: 1px solid var(--stage-timeline-accent);
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.24);
+  transition: transform 180ms ease;
 }
+
+.stage-timeline-panel.is-collapsed {
+  --stage-timeline-reveal-height: var(--stage-timeline-resize-hit);
+  transform: translateY(calc(100% - var(--stage-timeline-reveal-height)));
+}
+
+body.is-timeline-resizing .stage-timeline-panel { transition: none; }
 
 .stage-timeline-resize {
   position: relative;
@@ -16742,7 +16750,8 @@ html[data-study-renderer] .stage-header-volume { display: none !important; }
 
 @media (prefers-reduced-motion: reduce) {
   .stage-workspace-tab,
-  .stage-timeline-playhead { transition: none; }
+  .stage-timeline-playhead,
+  .stage-timeline-panel { transition: none; }
   .stage-timeline-loop-range.is-active { animation: none; }
 }
 

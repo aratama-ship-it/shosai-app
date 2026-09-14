@@ -484,6 +484,18 @@ test("タイムラインは上端のドラッグとキーで高さを変え、�
   assert.match(css, /\.stage-timeline-resize[\s\S]*?cursor: row-resize/);
 });
 
+test("Eでタイムラインをしまい、上端のドラッグで開き直せる", () => {
+  assert.match(html, /id="stage-timeline-resize"[\s\S]*?aria-keyshortcuts="E"/);
+  assert.match(timeline, /ui\.collapsed = Boolean\(ui\.collapsed\)/);
+  assert.match(timeline, /function setTimelineCollapsed\(collapsed[\s\S]*?panel\.classList\.toggle\("is-collapsed", next\)[\s\S]*?element\.inert = next/);
+  assert.match(timeline, /mode !== "timeline" \|\| isTextEntry\(event\.target\)[\s\S]*?event\.code === "KeyE"[\s\S]*?setTimelineCollapsed\(!ui\.collapsed, \{ save: true \}\)/);
+  assert.match(timeline, /function continueTimelineResize\(event\)[\s\S]*?timelineResize\.collapsed[\s\S]*?startY - event\.clientY[\s\S]*?stage-timeline-reveal-height/);
+  assert.match(timeline, /applyTimelineHeight\(visibleHeight, \{ save: false \}\);/);
+  assert.match(timeline, /setTimelineCollapsed\(false, \{ save: true \}\);/);
+  assert.match(css, /\.stage-timeline-panel\.is-collapsed \{[\s\S]*?transform: translateY\(calc\(100% - var\(--stage-timeline-reveal-height\)\)\)/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.stage-timeline-panel \{ transition: none; \}/);
+});
+
 test("吸着単位は数値だけでなくスナップ名を付けて表示する", () => {
   assert.match(html, /id="stage-timeline-grid" title="スナップ単位" data-no-i18n>スナップ 1\/4<\/button>/);
   assert.match(timeline, /els\.grid\.textContent = `\$\{tx\("スナップ"\)\} \$\{snapLabel\}`/);
