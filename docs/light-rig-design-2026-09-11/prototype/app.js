@@ -551,7 +551,24 @@
   function addFixture(mount, kind) {
     const f = E.newFixture(uid("f"), state.nextNo++, mount, "", kind);
     state.rig.fixtures.push(f);
-    state.sel = new Set([f.id]);
+    /* SSは片袖だけでは使わず、反対袖にも同じ奥行き・高さ・種類で一対を立てる。
+       ここで同時に作れば、平面図と両側面図のどこから置いても、Undo 1回で一組を戻せる。 */
+    if (mount.type === "side") {
+      const partner = E.newFixture(
+        uid("f"),
+        state.nextNo++,
+        E.mirrorMount(mount),
+        "",
+        kind,
+        f.beamDeg,
+      );
+      if (f.barn) {
+        const b = E.barnOf(f);
+        partner.barn = { back: b.back, front: b.front, left: b.right, right: b.left };
+      }
+      state.rig.fixtures.push(partner);
+      state.sel = new Set([f.id, partner.id]);
+    } else state.sel = new Set([f.id]);
     commit();
     return f;
   }
@@ -2233,7 +2250,7 @@
     if (state.tool === "truss") { addTruss(snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1))); return; }   // addTruss内で灯体配置モードへ移る
     if (state.tool === "fixture") { const t = E.trussById(state.rig, state.selTruss); if (!t) return; const Y = B.y + t.v * B.h; if (Math.abs(pt.Y - Y) < 60 && inBox({ X: pt.X, Y }, B)) { addFixture({ type: "truss", trussId: t.id, u: snapU((pt.X - B.x) / B.w) }); toast(`${label([...state.sel][0])}を奥から${E.trussRow(state.rig, t.id)}列目に置きました`, "元に戻す", undo); } return; }
     if (state.tool === "floor") { if (inBox(pt, B)) { addFixture({ type: "floor", u: snapU((pt.X - B.x) / B.w), v: snapV((pt.Y - B.y) / B.h) }); toast(`${label([...state.sel][0])}を床に置きました`, "元に戻す", undo); } return; }
-    if (state.tool === "side") { const side = pt.X < B.x ? "shimote" : pt.X > B.x + B.w ? "kamite" : null; if (side) { addFixture({ type: "side", side, v: snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)), h: 2 }); toast(`${label([...state.sel][0])}を${side === "shimote" ? "下手" : "上手"}の袖に立てました`, "元に戻す", undo); } return; }
+    if (state.tool === "side") { const side = pt.X < B.x ? "shimote" : pt.X > B.x + B.w ? "kamite" : null; if (side) { addFixture({ type: "side", side, v: snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)), h: 2 }); toast(`${side === "shimote" ? "下手" : "上手"}と反対側の袖にSSを一対で立てました`, "元に戻す", undo); } return; }
     if (state.tool === "front") {
       if (pt.Y > B.y + B.h) { addFixture({ type: "front", u: snapU(E.clamp((pt.X - B.x) / B.w, 0, 1)), ahead: 5, h: 7 }, "fixed"); toast(`${label([...state.sel][0])}を前明かりに置きました（舞台前から約5000mm・高さ約7000mm）`, "元に戻す", undo); }
       else toast("舞台より手前（客席側の帯）をクリックしてください");
@@ -2390,7 +2407,7 @@
       try { cv.setPointerCapture(ev.pointerId); } catch (_) { /* 合成イベント等 */ }
       if (state.tool === "border" || state.tool === "masking") return;
       if (side !== "front") {
-        if (state.tool === "side") { const vh = E.sideToVH(state.dims, B, side, pt.X, pt.Y); addFixture({ type: "side", side, v: snapV(vh.v), h: Math.max(0.3, snapH(vh.h)) }); toast(`${label([...state.sel][0])}を${side === "shimote" ? "下手" : "上手"}の袖に立てました`, "元に戻す", undo); return; }
+        if (state.tool === "side") { const vh = E.sideToVH(state.dims, B, side, pt.X, pt.Y); addFixture({ type: "side", side, v: snapV(vh.v), h: Math.max(0.3, snapH(vh.h)) }); toast(`${side === "shimote" ? "下手" : "上手"}と反対側の袖にSSを一対で立てました`, "元に戻す", undo); return; }
         if (state.mode === "move") { const hh = hitHandle(pt, P, distanceMetric ? ["air","house"] : ["air"]); if (hh) { startHandleDrag(hh, "vh", sec); return; } }
         const f = hitFixtureSec(sec, pt);
         if (f) {
