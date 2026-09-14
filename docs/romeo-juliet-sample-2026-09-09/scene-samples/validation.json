@@ -1,0 +1,24 @@
+{
+  "scenes": 12,
+  "japaneseLinesPerScene": [
+    11,
+    11,
+    8,
+    11,
+    10,
+    11,
+    10,
+    10,
+    10,
+    8,
+    10,
+    10
+  ],
+  "totalJapaneseLines": 120,
+  "sourceSlicesExact": true,
+  "speakerAttributionVerified": true,
+  "allNonblankInternalGapsDisclosed": true,
+  "reusedMeetingBaselineUnchanged": true,
+  "sourceSha256": "5a2037a19e60cccb67b3f5fc93a12cb65c58694ce6a1dc61d0d67d0d2502b3b4",
+  "indexSha256": "71bd51fb770f80a217e32fd1307e583ab4ab92490d3c0fa9e8c487ed9197ba05"
+}

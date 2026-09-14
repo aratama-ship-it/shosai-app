@@ -1,0 +1,26 @@
+{
+  "scope": "Static contract page only",
+  "viewports": [
+    {
+      "width": 1280,
+      "height": 1000,
+      "body_overflow": false
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "body_overflow": false
+    }
+  ],
+  "links": {
+    "people-time-2026-09-09.html": 200,
+    "SHARED_PEOPLE_CUES_TIME_CONTRACT_2026-09-09.md": 200,
+    "shared-contract-fixture-2026-09-09.json": 200,
+    "shared-contract-cases-2026-09-09.json": 200,
+    "TOKEN_SHEET_shared_contract_2026-09-09.md": 200,
+    "handoff-2026-09-09.html": 200
+  },
+  "html_sha256": "1fd1c5d69a7aaf785e2153f41b73c5466606c6127e7c1e12d448e828167de5ef",
+  "details_expand": true,
+  "page_errors": []
+}

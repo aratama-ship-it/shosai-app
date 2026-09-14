@@ -1,0 +1,172 @@
+{
+  "release": "viewer-beta-20260912",
+  "deploymentRule": "npx wrangler deploy --config docs/viewer-integration-20260912/release/wrangler.viewer-beta.toml --keep-assets",
+  "retained": "Existing authenticated beta assets remain served by the current ASSETS binding.",
+  "overlaid": "Only Viewer HTML, Viewer UI assets, and iframe rendering dependencies are embedded.",
+  "inputs": [
+    {
+      "filename": "index.html",
+      "mode": "viewer",
+      "bytes": 178041,
+      "sha256": "33e91f9aa9aab84c563b97de61c279b8ed522145a61d2465603d2fd3284c66ec"
+    },
+    {
+      "filename": "stage.html",
+      "mode": "viewer",
+      "bytes": 150718,
+      "sha256": "5c5589b541153e180165ed8722dbbc0c7fb301b396c75ed8cab41ec187df8ae6"
+    },
+    {
+      "filename": "stage-session.js",
+      "mode": "viewer",
+      "bytes": 51636,
+      "sha256": "0857e5710019644882552e4a2cbd4e6bd586774b184f8c0dc5d534d7050db5ec"
+    },
+    {
+      "filename": "stage-study-owner.js",
+      "mode": "viewer",
+      "bytes": 30839,
+      "sha256": "ea2b988633f8d8ad2dfc43f4eb5507cf04450fc3f9ab0ee3167d36181f8d573e"
+    },
+    {
+      "filename": "stage-study.css",
+      "mode": "viewer",
+      "bytes": 32517,
+      "sha256": "c34d4b1303fcac541c3219730f2eb9ad8c3c20d3259445d7a6c7a80413abb7f1"
+    },
+    {
+      "filename": "stage-sw.js",
+      "mode": "viewer",
+      "bytes": 9473,
+      "sha256": "d84cd8e8322a8742aa27f5558565b06ad2de3fc99988b22da303906107a23b89"
+    },
+    {
+      "filename": "study.html",
+      "mode": "viewer",
+      "bytes": 21392,
+      "sha256": "9070f9622c56deca42fb0d9ac12431645438c3a072eaab42ad05c620e9b1a079"
+    },
+    {
+      "filename": "study-frame.html",
+      "mode": "viewer",
+      "bytes": 149954,
+      "sha256": "5f4e12658a908dea9b8fa8f5203bbcda8c294fb66824447d0af8171afa7c6c74"
+    },
+    {
+      "filename": "stage-study-viewer.js",
+      "mode": "viewer",
+      "bytes": 50375,
+      "sha256": "1b98d32bc986c74c51f0bf8cff0b3e7fda038be3aaaa1e700324f88a28c6921e"
+    },
+    {
+      "filename": "stage-study-frame.js",
+      "mode": "viewer",
+      "bytes": 6920,
+      "sha256": "992c6fe4f93e132dcb7d2d05aa5dadba3c90953fccc8b5609ae283b13e9d5e2e"
+    },
+    {
+      "filename": "stage-study-pen.js",
+      "mode": "viewer",
+      "bytes": 7306,
+      "sha256": "556c0ee93c076c8507afa9f6de267514ff2c03818bec6629b1400ed65c1a414f"
+    },
+    {
+      "filename": "stage-study-private.js",
+      "mode": "viewer",
+      "bytes": 4694,
+      "sha256": "b8cca456054d69bf166dca5954aba5f209d9291a67560a5663cd30a020cfc3e0"
+    },
+    {
+      "filename": "stage-study-sync.js",
+      "mode": "viewer",
+      "bytes": 5662,
+      "sha256": "b5b07eea195e6b6c18549af592480a8e2599eca339fdd89dac862931cdf12452"
+    },
+    {
+      "filename": "stage-study-continuity.js",
+      "mode": "viewer",
+      "bytes": 12710,
+      "sha256": "1d284ec83d56e27bda6e262ebf540ac75f732a13d517ff4b5adbb4b580db71e3"
+    },
+    {
+      "filename": "stage-study-sticky.js",
+      "mode": "viewer",
+      "bytes": 20766,
+      "sha256": "214b5c346faeb87ae7291f9cf3231dae7554a39e74c9eab6d5e0962b9dd26511"
+    },
+    {
+      "filename": "stage-study.css",
+      "mode": "viewer",
+      "bytes": 32517,
+      "sha256": "c34d4b1303fcac541c3219730f2eb9ad8c3c20d3259445d7a6c7a80413abb7f1"
+    },
+    {
+      "filename": "stage-study-phone.css",
+      "mode": "viewer",
+      "bytes": 7979,
+      "sha256": "e69d639b82673c0f220a2aff5db7e437fb8b1f8d2e87264c6dc0f4c248f5cade"
+    },
+    {
+      "filename": "stage-study-phone.js",
+      "mode": "viewer",
+      "bytes": 10035,
+      "sha256": "db40bede4b17a7383da4ec05f01434e7ceecf0abbb83bd31e21a4d8db45b1713"
+    },
+    {
+      "filename": "stage-study-navigation.css",
+      "mode": "viewer",
+      "bytes": 1951,
+      "sha256": "3f9918f31cae4760f23ae4366d3b54e1db51255e4c70acf906fc1807328fde1f"
+    },
+    {
+      "filename": "stage-study-navigation.js",
+      "mode": "viewer",
+      "bytes": 7715,
+      "sha256": "5e20a6de48d4f70287cba2655da96cc66d69f7d20d65859f2ece97947b7ed6c0"
+    },
+    {
+      "filename": "style.css",
+      "mode": "frame",
+      "bytes": 360659,
+      "sha256": "ed8a32d09d845eb00464013e975a7ce1abe3ac811d3b828b16fab3ea5bd44fca"
+    },
+    {
+      "filename": "stage-venues.js",
+      "mode": "frame",
+      "bytes": 54431,
+      "sha256": "45c6eb62ca32b854d63420cd46cda4316334fa799e4a90f87759a7d75556d601"
+    },
+    {
+      "filename": "stage-venue-lines.js",
+      "mode": "frame",
+      "bytes": 26728,
+      "sha256": "e1acf9544394a226c17c35f2edd9ef3189592947bf4477ed878a68ebe0438976"
+    },
+    {
+      "filename": "stage-i18n.js",
+      "mode": "frame",
+      "bytes": 148031,
+      "sha256": "819ce9c0026a7c7366e937b302e830310884f1292f2bf7b14c1467127df68a26"
+    },
+    {
+      "filename": "stage-set-model.js",
+      "mode": "frame",
+      "bytes": 6008,
+      "sha256": "12d9afb4185eef66d4aa5951de53a6f86837bb0110893bd300d221d8dffc21c7"
+    },
+    {
+      "filename": "stage-machinery.js",
+      "mode": "frame",
+      "bytes": 10541,
+      "sha256": "1e5b2a519dfd1535da1baeea2c965ee73b8c8e98e08deca6639cfb907a678598"
+    },
+    {
+      "filename": "stage-sketch.js",
+      "mode": "frame",
+      "bytes": 1285370,
+      "sha256": "f4756f0bb293537059640212300caecd5f111d34cda1f3438eb24375ea680a68"
+    }
+  ],
+  "workerBytes": 3287356,
+  "workerSha256": "502c13ea135290a797fe813557f25f5c273a6c5b9d3d97192105ce4e49af75eb"
+}

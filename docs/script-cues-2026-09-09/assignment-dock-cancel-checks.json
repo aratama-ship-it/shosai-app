@@ -1,0 +1,12 @@
+{
+  "passed": 6,
+  "checks": [
+    "resize cancels active drag",
+    "pointercancel leaves assignments untouched",
+    "two annotations on one line remain separately selectable",
+    "emulated touch preview preserves current data",
+    "emulated touch drop reassigns selected annotation",
+    "detail text is not horizontally clipped"
+  ],
+  "scope": "Chromium, touch is CDP emulation not physical iPad"
+}

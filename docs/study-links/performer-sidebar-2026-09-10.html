@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>演者画面 — 側面ツールとメモの確認</title>
+<link rel="stylesheet" href="../../style.css?v=231"><style>
+body{max-width:1100px;margin:auto;padding:24px;color:var(--paper);background:var(--desk);font:15px/1.75 var(--sans)}body::before{display:none}h1{font:500 28px/1.5 var(--serif)}h2{font:500 18px/1.5 var(--sans);color:var(--brass);margin:24px 0 12px}p,ul{margin:12px 0}ul{padding-left:24px}a{color:var(--paper);text-decoration:underline}a:focus-visible{outline:2px solid var(--brass);outline-offset:3px}img{width:100%;height:auto;border:1px solid var(--line-dark)}code{overflow-wrap:anywhere;font-size:14px}section{border-top:1px solid var(--line-dark);margin-top:24px}figure{margin:16px 0}figcaption{font-size:14px;color:var(--ink-soft-sm)}.actions{display:flex;flex-wrap:wrap;gap:12px}.actions a{display:inline-flex;min-height:44px;align-items:center;padding:8px 12px;border:1px solid var(--ink-soft-sm)}
+</style></head><body>
+<h1>演者画面：舞台図の横で書き込む</h1>
+<p>2026-09-10。ローカル実装済み。本家の書体・配色と、右側の道具・メモの使い心地を確認してください。</p>
+<div class="actions"><a href="/study?lang=ja#a0ec8f4b764141f11ee0b14b579cd41cfcb18c5ea5e3fa9a">演者画面を開く（8802の既存ショー）</a><a href="../../design/TOKEN_SHEET_study-links_2026-09-09.md">デザイントークン</a></div>
+<section><h2>今回の利用者体験</h2>
+<ul><li>幅700px以上では、正面図・平面図を左の作図領域いっぱいに縦積み。右側に場面移動、再生、表示切替、ペン、自分用メモ、共有を配置。</li><li>本家の明朝タイトル、角ゴシックの操作文字、暖色の暗い机、細い罫線、錆色の選択状態を使用。</li><li>前後・再生・停止・ペン・線を戻す・線を消す・共有・履歴開閉をSVG化。日英のラベルとツールチップ、44pxの操作域、フォーカスを維持。</li><li>右側の列はスクロールに追従し、長いメモや履歴は列内でスクロール。幅699px以下は作図幅を優先して操作・メモを下へ配置。</li><li>保存説明の二重表示を解消。個人メモの自動保存と、オーナーへの明示共有は従来どおり。</li></ul>
+<figure><img src="sidebar-qa/ja-1440.png" alt="舞台図の右側にSVGツールと自分用メモを置いたPC画面"><figcaption>ローカルChrome 1440×1000。確認専用の合成ショー。実際の共有リンクは上のボタンから。</figcaption></figure></section>
+<section><h2>検証結果</h2>
+<ul><li>全Nodeテスト：877 / 877成功。Worker認可・既存ゲスト権限・リアルタイム共有の関連テストを含む。</li><li>実SQLiteの事前学習Worker：28 / 28成功。既存リアルタイム共有の実Worker接続：13 / 13成功。</li><li>新しいブラウザ検証：4グループ成功、pageerror 0。両図への描画、消去キャンセル、Undo、再読み込みでメモ保持、場面移動、表示名・画像付き共有、日英切替後のSVG保持、図の比率、履歴開閉、既存ローカルショーの保全を確認。</li><li>Chromeで日本語・英語 × 390×844、844×390、768×1024、1440×1000。横のはみ出しなし、対象操作44px以上。</li><li>design-lint：390×844 / 1440×900でNG0・WARN0・測定不可0。文字コントラスト最悪4.91:1。Canvas内の図の識別は別途目視。</li><li>変更JSと検証スクリプトの構文、build_stage.py --check、build_public.py --check、git diff --check：成功。</li></ul>
+<p><a href="sidebar-qa/node-final.log">Nodeログ</a> · <a href="sidebar-qa/worker.log">Workerログ</a> · <a href="sidebar-qa/browser-final.log">ブラウザ操作</a> · <a href="sidebar-qa/design-lint/report.md">デザイン実測</a> · <a href="sidebar-qa/preservation.json">既存ファイル保全</a></p>
+<p><a href="sidebar-qa/en-1440.png">英語PC</a> · <a href="sidebar-qa/ja-768.png">タブレット幅</a> · <a href="sidebar-qa/ja-390.png">スマホ縦幅</a> · <a href="sidebar-qa/en-844.png">スマホ横幅</a></p></section>
+<section><h2>変更ファイルと配信</h2>
+<p>画面：<code>study.html / stage-study.css / stage-study-viewer.js</code>。版の整合：<code>stage-study-owner.js / index.html / stage-sw.js / build_study.py</code>。生成：<code>stage.html / study-frame.html</code>。版の期待値：<code>tests/study-links.test.mjs / tests/stage-manual-help.test.mjs / tests/stage-session-shelve.test.mjs</code>。再検証：<code>tools/study-sidebar-browser-check.mjs</code>。トークンシートとこの確認記録。</p>
+<p>SVGは既存HTMLへ直接同梱し、新しい公開資源・ワイルドカード・認証例外は追加していません。本家・ベータのCSS参照を15、owner JSを16、viewer JSを9、PWAキャッシュを216へ揃えました。index.htmlが正本です。</p>
+<p>サーバーの保存形式・認可方式は変更していません。今回のUI変更による追加Cloudflare binding・migrationは不要です。初回の機能公開には、従来のStudyLinks / StudyReaderAuth / StudyReaderAccountとv3・v4 migrationが必要です。<a href="continuity-implementation-2026-09-10.html">機能全体の保存・認可と適用手順</a>。</p></section>
+<section><h2>未確認と作業範囲</h2>
+<p>iPhone / iPadの実機、Safariでのタッチ・ソフトキーボード・ペン操作、演者本人の使い心地は未確認です。次は実機で図とメモの往復を確認するのが適切です。</p>
+<p>デプロイ、公開、push、commit、外部送信、秘密情報の登録は行っていません。着手時の1807ファイルと照合し、今回対象の13ファイル以外の1794ファイルは同一、欠損0。既存の未コミット差分を巻き戻していません。8802の既存招待と保存データも維持しています。</p></section>
+</body></html>

@@ -1,0 +1,93 @@
+{
+  "results": [
+    {
+      "name": "desktop-ja",
+      "measure": {
+        "x": 1146,
+        "y": 745.625,
+        "width": 280,
+        "height": 184.375
+      },
+      "initialMain": "front",
+      "checks": "opposite view, localized label, 16:9, lower-right bounds, live scene update in both canvases, click/Enter/Space swap, no scene edits, drawer visible, original canvas locations and view preference restored"
+    },
+    {
+      "name": "desktop-plan-en",
+      "measure": {
+        "x": 1146,
+        "y": 745.625,
+        "width": 280,
+        "height": 184.375
+      },
+      "initialMain": "plan",
+      "checks": "opposite view, localized label, 16:9, lower-right bounds, live scene update in both canvases, click/Enter/Space swap, no scene edits, drawer visible, original canvas locations and view preference restored"
+    },
+    {
+      "name": "desktop-front-zh-Hans",
+      "measure": {
+        "x": 1146,
+        "y": 745.625,
+        "width": 280,
+        "height": 184.375
+      },
+      "initialMain": "front",
+      "checks": "opposite view, localized label, 16:9, lower-right bounds, live scene update in both canvases, click/Enter/Space swap, no scene edits, drawer visible, original canvas locations and view preference restored"
+    },
+    {
+      "name": "desktop-zh-Hant",
+      "measure": {
+        "x": 1146,
+        "y": 745.625,
+        "width": 280,
+        "height": 184.375
+      },
+      "initialMain": "front",
+      "checks": "opposite view, localized label, 16:9, lower-right bounds, live scene update in both canvases, click/Enter/Space swap, no scene edits, drawer visible, original canvas locations and view preference restored"
+    },
+    {
+      "name": "tablet-landscape",
+      "measure": {
+        "x": 764.25,
+        "y": 532.890625,
+        "width": 245.75,
+        "height": 165.109375
+      },
+      "initialMain": "plan",
+      "checks": "opposite view, localized label, 16:9, lower-right bounds, live scene update in both canvases, click/Enter/Space swap, no scene edits, drawer visible, original canvas locations and view preference restored"
+    },
+    {
+      "name": "tablet-portrait",
+      "measure": {
+        "x": 569.6875,
+        "y": 823.453125,
+        "width": 184.3125,
+        "height": 130.546875
+      },
+      "initialMain": "front",
+      "checks": "opposite view, localized label, 16:9, lower-right bounds, live scene update in both canvases, click/Enter/Space swap, no scene edits, drawer visible, original canvas locations and view preference restored"
+    },
+    {
+      "name": "no-api",
+      "measure": {
+        "x": 1146,
+        "y": 745.625,
+        "width": 280,
+        "height": 184.375
+      },
+      "initialMain": "front",
+      "checks": "opposite view, localized label, 16:9, lower-right bounds, live scene update in both canvases, click/Enter/Space swap, no scene edits, drawer visible, original canvas locations and view preference restored"
+    },
+    {
+      "name": "rejected-api",
+      "measure": {
+        "x": 1146,
+        "y": 745.625,
+        "width": 280,
+        "height": 184.375
+      },
+      "initialMain": "plan",
+      "checks": "opposite view, localized label, 16:9, lower-right bounds, live scene update in both canvases, click/Enter/Space swap, no scene edits, drawer visible, original canvas locations and view preference restored"
+    }
+  ],
+  "errors": []
+}

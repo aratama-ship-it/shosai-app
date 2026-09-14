@@ -1,0 +1,45 @@
+{
+  "status": "verified",
+  "activeVersion": "252cc4f8-d07b-4464-bdcb-2df7a983f281",
+  "checkedAt": "2026-09-12T13:44:33.111Z",
+  "checkedAssets": [
+    {
+      "route": "/stage",
+      "local": "stage.html",
+      "sha256": "9347cf4a0bc94559cff49a9f0e675cc08ea2ba75c174519c658adf65bad55f01"
+    },
+    {
+      "route": "/stage.html",
+      "local": "stage.html",
+      "sha256": "9347cf4a0bc94559cff49a9f0e675cc08ea2ba75c174519c658adf65bad55f01"
+    },
+    {
+      "route": "/style.css",
+      "local": "style.css",
+      "sha256": "ce4db448b9463dc2e0167c18a79c6d4a710801f6a14a86f2f9b3cf0416608b65"
+    },
+    {
+      "route": "/stage-sw.js",
+      "local": "stage-sw.js",
+      "sha256": "f67942927d29b5d9dfc30c0e0ac8a335c7c6f594a39bc96e00856cb0deb3ad5c"
+    },
+    {
+      "route": "/stage-timeline.js",
+      "local": "stage-timeline.js",
+      "sha256": "07b5aa389749880a2a60d9f4973f53dd708902c55ab70e8f59d1d7ac5ab68635"
+    },
+    {
+      "route": "/study-frame",
+      "local": "study-frame.html",
+      "sha256": "b661ab49c3746774d664a0e0ab316f294f8c89c7c393068ee857c05ecc4c5169"
+    },
+    {
+      "route": "/study-assets/style.css",
+      "local": "style.css",
+      "sha256": "ce4db448b9463dc2e0167c18a79c6d4a710801f6a14a86f2f9b3cf0416608b65"
+    }
+  ],
+  "unauthenticatedStageStatus": 401,
+  "betaActive": true,
+  "publicViewerStatus": 200
+}

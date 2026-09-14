@@ -1,0 +1,388 @@
+TAP version 13
+# Subtest: 描画の拡大率は描き先のcanvasから導く（書き出しは等倍のまま）
+ok 1 - 描画の拡大率は描き先のcanvasから導く（書き出しは等倍のまま）
+  ---
+  duration_ms: 0.955417
+  type: 'test'
+  ...
+# Subtest: 表示サイズに合わせて内部解像度を上げる（上限3倍）
+ok 2 - 表示サイズに合わせて内部解像度を上げる（上限3倍）
+  ---
+  duration_ms: 0.369333
+  type: 'test'
+  ...
+# Subtest: 広い画面では盤面が広がる（max-width 3000px）
+ok 3 - 広い画面では盤面が広がる（max-width 3000px）
+  ---
+  duration_ms: 0.1015
+  type: 'test'
+  ...
+# Subtest: 初回の解像度合わせはResizeObserver任せにしない（初回通知が来ない環境がある）
+ok 4 - 初回の解像度合わせはResizeObserver任せにしない（初回通知が来ない環境がある）
+  ---
+  duration_ms: 0.121291
+  type: 'test'
+  ...
+# Subtest: サイズが変わる操作の後は解像度を合わせ直す（プレゼン出入り・絵の開閉）
+ok 5 - サイズが変わる操作の後は解像度を合わせ直す（プレゼン出入り・絵の開閉）
+  ---
+  duration_ms: 0.259083
+  type: 'test'
+  ...
+# Subtest: 表示に要る画素数まで内部解像度を落とす（下限0.5倍）。縦横比は幅の倍率に追従する
+ok 6 - 表示に要る画素数まで内部解像度を落とす（下限0.5倍）。縦横比は幅の倍率に追従する
+  ---
+  duration_ms: 0.257667
+  type: 'test'
+  ...
+# Subtest: スマホでは奥行きの札を見出しの帯の下へ逃がす（英語で重なる）
+ok 7 - スマホでは奥行きの札を見出しの帯の下へ逃がす（英語で重なる）
+  ---
+  duration_ms: 0.115875
+  type: 'test'
+  ...
+# Subtest: 読み込み完了後にも解像度を合わせ直す（スマホの組み替え後に通知が来ない環境がある）
+ok 8 - 読み込み完了後にも解像度を合わせ直す（スマホの組み替え後に通知が来ない環境がある）
+  ---
+  duration_ms: 0.263791
+  type: 'test'
+  ...
+# Subtest: 初回描画（finishInitialStageSetup）の直後にも解像度を合わせ直す
+ok 9 - 初回描画（finishInitialStageSetup）の直後にも解像度を合わせ直す
+  ---
+  duration_ms: 0.341791
+  type: 'test'
+  ...
+# Subtest: マニュアル正本は10章35節を検索に使える構造で持つ
+ok 10 - マニュアル正本は10章35節を検索に使える構造で持つ
+  ---
+  duration_ms: 0.421209
+  type: 'test'
+  ...
+# Subtest: MANUAL_FINDは全語ANDで検索し、noindex本文を除外する
+ok 11 - MANUAL_FINDは全語ANDで検索し、noindex本文を除外する
+  ---
+  duration_ms: 0.498792
+  type: 'test'
+  ...
+# Subtest: 全章・全節に英語の対訳が揃い、日本語が漏れていない
+ok 12 - 全章・全節に英語の対訳が揃い、日本語が漏れていない
+  ---
+  duration_ms: 0.6005
+  type: 'test'
+  ...
+# Subtest: MANUAL_FINDは英語モードで英語の見出し・言い換え語・本文を引く
+ok 13 - MANUAL_FINDは英語モードで英語の見出し・言い換え語・本文を引く
+  ---
+  duration_ms: 0.579
+  type: 'test'
+  ...
+# Subtest: 本文はいまのUIに追随している（地図なし・空にするはシーン欄・はじめての案内）
+ok 14 - 本文はいまのUIに追随している（地図なし・空にするはシーン欄・はじめての案内）
+  ---
+  duration_ms: 0.142208
+  type: 'test'
+  ...
+# Subtest: 冊子の会場の説明が、アプリに入っている会場を取りこぼしていない
+ok 15 - 冊子の会場の説明が、アプリに入っている会場を取りこぼしていない
+  ---
+  duration_ms: 4.35075
+  type: 'test'
+  ...
+# Subtest: 正本と単独版に検索・冊子導線と共通データが継承される
+ok 16 - 正本と単独版に検索・冊子導線と共通データが継承される
+  ---
+  duration_ms: 0.363667
+  type: 'test'
+  ...
+# Subtest: Service Workerは冊子一式を最新版へキャッシュする
+ok 17 - Service Workerは冊子一式を最新版へキャッシュする
+  ---
+  duration_ms: 0.076542
+  type: 'test'
+  ...
+# Subtest: manualディレクトリは配信除外されていない
+ok 18 - manualディレクトリは配信除外されていない
+  ---
+  duration_ms: 0.278375
+  type: 'test'
+  ...
+# Subtest: 使い方検索の新ラベルは英訳表に登録されている
+ok 19 - 使い方検索の新ラベルは英訳表に登録されている
+  ---
+  duration_ms: 1.626625
+  type: 'test'
+  ...
+# Subtest: ホーム画面から舞台スケッチ単独版をstandaloneで開く
+ok 20 - ホーム画面から舞台スケッチ単独版をstandaloneで開く
+  ---
+  duration_ms: 0.448166
+  type: 'test'
+  ...
+# Subtest: iPad用メタ情報とホーム画面アイコンを単独版へ組み込む
+ok 21 - iPad用メタ情報とホーム画面アイコンを単独版へ組み込む
+  ---
+  duration_ms: 1.411291
+  type: 'test'
+  ...
+# Subtest: iPadのホーム画面版だけ上部の補足文を隠す
+ok 22 - iPadのホーム画面版だけ上部の補足文を隠す
+  ---
+  duration_ms: 0.074958
+  type: 'test'
+  ...
+# Subtest: 使い方・About・感想は上部ではなく設定内にまとめる
+ok 23 - 使い方・About・感想は上部ではなく設定内にまとめる
+  ---
+  duration_ms: 0.29525
+  type: 'test'
+  ...
+# Subtest: 使い方のまとまりは言語設定のすぐ下に置き、既定では畳んでおく
+ok 24 - 使い方のまとまりは言語設定のすぐ下に置き、既定では畳んでおく
+  ---
+  duration_ms: 0.140375
+  type: 'test'
+  ...
+# Subtest: 舞台スケッチ名の右側に小さなアプリ版番号を表示する
+ok 25 - 舞台スケッチ名の右側に小さなアプリ版番号を表示する
+  ---
+  duration_ms: 0.071334
+  type: 'test'
+  ...
+# Subtest: PWA登録はHTTP上だけで行い、舞台スケッチの保存データには触れない
+ok 26 - PWA登録はHTTP上だけで行い、舞台スケッチの保存データには触れない
+  ---
+  duration_ms: 0.164
+  type: 'test'
+  ...
+# Subtest: 起動時にベータ版の提供状態を確認し、終了時だけゲートを表示する
+ok 27 - 起動時にベータ版の提供状態を確認し、終了時だけゲートを表示する
+  ---
+  duration_ms: 0.052041
+  type: 'test'
+  ...
+# Subtest: ベータ状態の確認が通信不能でも、保存済みPWAを閉じない
+ok 28 - ベータ状態の確認が通信不能でも、保存済みPWAを閉じない
+  ---
+  duration_ms: 3.325625
+  type: 'test'
+  ...
+# Subtest: Service Workerは資料棚など同一サイトの別画面へ介入しない
+ok 29 - Service Workerは資料棚など同一サイトの別画面へ介入しない
+  ---
+  duration_ms: 0.306458
+  type: 'test'
+  ...
+# Subtest: オフライン用CSSとJSの版は現在のHTML参照と揃う
+ok 30 - オフライン用CSSとJSの版は現在のHTML参照と揃う
+  ---
+  duration_ms: 0.754708
+  type: 'test'
+  ...
+# Subtest: iPad左レールの設定アイコンは絵文字ではなくSVG（他の帯アイコンと共有の歯車）
+ok 31 - iPad左レールの設定アイコンは絵文字ではなくSVG（他の帯アイコンと共有の歯車）
+  ---
+  duration_ms: 2.129584
+  type: 'test'
+  ...
+# Subtest: iPad PWAは縦画面で二面、横画面で単一図の専用ワークスペースを組み立てる
+ok 32 - iPad PWAは縦画面で二面、横画面で単一図の専用ワークスペースを組み立てる
+  ---
+  duration_ms: 2.517458
+  type: 'test'
+  ...
+# Subtest: PCとiPadの劇場サイズはショーメニュー内にまとめる
+ok 33 - PCとiPadの劇場サイズはショーメニュー内にまとめる
+  ---
+  duration_ms: 0.246417
+  type: 'test'
+  ...
+# Subtest: iPadの描画道具と主要操作は上部へ常設する
+ok 34 - iPadの描画道具と主要操作は上部へ常設する
+  ---
+  duration_ms: 0.352333
+  type: 'test'
+  ...
+# Subtest: iPadの正面図と平面図は各図の上部にPC版と同じ操作を残す
+ok 35 - iPadの正面図と平面図は各図の上部にPC版と同じ操作を残す
+  ---
+  duration_ms: 0.584625
+  type: 'test'
+  ...
+# Subtest: iPad PWA横画面は一個のボタンで正面図と平面図を交互に切り替える
+ok 36 - iPad PWA横画面は一個のボタンで正面図と平面図を交互に切り替える
+  ---
+  duration_ms: 0.984459
+  type: 'test'
+  ...
+# Subtest: iPad PWA縦画面は正面図と平面図を上下に隙間なく並べる
+ok 37 - iPad PWA縦画面は正面図と平面図を上下に隙間なく並べる
+  ---
+  duration_ms: 0.360042
+  type: 'test'
+  ...
+# Subtest: iPad PWAの姿勢と種類は5列で選べる
+ok 38 - iPad PWAの姿勢と種類は5列で選べる
+  ---
+  duration_ms: 0.104792
+  type: 'test'
+  ...
+# Subtest: サンプルのシーン番号を現在位置の後ろへ重ねて表示しない
+ok 39 - サンプルのシーン番号を現在位置の後ろへ重ねて表示しない
+  ---
+  duration_ms: 0.201208
+  type: 'test'
+  ...
+# Subtest: iPad PWAではブラウザのダブルタップ拡大を起こさない
+ok 40 - iPad PWAではブラウザのダブルタップ拡大を起こさない
+  ---
+  duration_ms: 0.632583
+  type: 'test'
+  ...
+# Subtest: iPad PWAはページをスクロールせず、ドロワーで図を切らずに縮める
+ok 41 - iPad PWAはページをスクロールせず、ドロワーで図を切らずに縮める
+  ---
+  duration_ms: 0.5985
+  type: 'test'
+  ...
+# Subtest: 長いiPadメニューは意味のまとまりでページ分割する
+ok 42 - 長いiPadメニューは意味のまとまりでページ分割する
+  ---
+  duration_ms: 0.233
+  type: 'test'
+  ...
+# Subtest: 通常ブラウザ用の三列レイアウトは残す
+ok 43 - 通常ブラウザ用の三列レイアウトは残す
+  ---
+  duration_ms: 0.359209
+  type: 'test'
+  ...
+# Subtest: 標準アイコンとマスク可能アイコンを宣言する
+ok 44 - 標準アイコンとマスク可能アイコンを宣言する
+  ---
+  duration_ms: 2.371875
+  type: 'test'
+  ...
+# Subtest: シーンの説明と前後の送りは、道具の行と絵の間の「シーンの行」に置く
+ok 45 - シーンの説明と前後の送りは、道具の行と絵の間の「シーンの行」に置く
+  ---
+  duration_ms: 0.493459
+  type: 'test'
+  ...
+# Subtest: 送りは一覧の欄の中には残さない（二重に置かない）
+ok 46 - 送りは一覧の欄の中には残さない（二重に置かない）
+  ---
+  duration_ms: 0.061375
+  type: 'test'
+  ...
+# Subtest: 説明はその場で書き直せる（読むだけの札にしない）
+ok 47 - 説明はその場で書き直せる（読むだけの札にしない）
+  ---
+  duration_ms: 0.228583
+  type: 'test'
+  ...
+# Subtest: 打っている最中の欄には書き戻さない（変換中の文字が飛ぶため）
+ok 48 - 打っている最中の欄には書き戻さない（変換中の文字が飛ぶため）
+  ---
+  duration_ms: 0.4725
+  type: 'test'
+  ...
+# Subtest: シーンの説明は日英どちらでも出る
+ok 49 - シーンの説明は日英どちらでも出る
+  ---
+  duration_ms: 1.550084
+  type: 'test'
+  ...
+# Subtest: 全画面の説明はメインの図にだけ描く（書き出す画像には焼き付けない）
+ok 50 - 全画面の説明はメインの図にだけ描く（書き出す画像には焼き付けない）
+  ---
+  duration_ms: 0.235417
+  type: 'test'
+  ...
+# Subtest: プレゼンの見出しはシーン名にする（画面の道具の名前は出さない）
+ok 51 - プレゼンの見出しはシーン名にする（画面の道具の名前は出さない）
+  ---
+  duration_ms: 0.141084
+  type: 'test'
+  ...
+# Subtest: 説明の帯は絵の拡大・移動に付き合わせない
+ok 52 - 説明の帯は絵の拡大・移動に付き合わせない
+  ---
+  duration_ms: 0.121209
+  type: 'test'
+  ...
+# Subtest: 印刷用ページはシーンの説明を見出し付きで絵の前に出す
+ok 53 - 印刷用ページはシーンの説明を見出し付きで絵の前に出す
+  ---
+  duration_ms: 0.513208
+  type: 'test'
+  ...
+# Subtest: 舞台から下げるとき、出し直すための置き場所を控える
+ok 54 - 舞台から下げるとき、出し直すための置き場所を控える
+  ---
+  duration_ms: 0.374666
+  type: 'test'
+  ...
+# Subtest: 演者の舞台上／舞台裏も同じ控えで立ち位置を保つ
+ok 55 - 演者の舞台上／舞台裏も同じ控えで立ち位置を保つ
+  ---
+  duration_ms: 0.194791
+  type: 'test'
+  ...
+# Subtest: 消す操作も控えを残す（下げるのと同じ結果にする）
+ok 56 - 消す操作も控えを残す（下げるのと同じ結果にする）
+  ---
+  duration_ms: 0.194125
+  type: 'test'
+  ...
+# Subtest: 控えの鍵は舞台セットと名簿の両方を生きているとみなす
+ok 57 - 控えの鍵は舞台セットと名簿の両方を生きているとみなす
+  ---
+  duration_ms: 0.069167
+  type: 'test'
+  ...
+# Subtest: 照明の組も同じ控えを使い、無いときだけ組んだ置き場へ戻す
+ok 58 - 照明の組も同じ控えを使い、無いときだけ組んだ置き場へ戻す
+  ---
+  duration_ms: 0.14025
+  type: 'test'
+  ...
+# Subtest: 控えるのは登録から引き直せないものだけ
+ok 59 - 控えるのは登録から引き直せないものだけ
+  ---
+  duration_ms: 0.215
+  type: 'test'
+  ...
+# Subtest: 登録を外したら控えも捨てる
+ok 60 - 登録を外したら控えも捨てる
+  ---
+  duration_ms: 0.155709
+  type: 'test'
+  ...
+# Subtest: 行き場のない控えは読み込みのときに掃く
+ok 61 - 行き場のない控えは読み込みのときに掃く
+  ---
+  duration_ms: 0.111958
+  type: 'test'
+  ...
+# Subtest: 控えは保存にも残り、読み直しても形が揃う
+ok 62 - 控えは保存にも残り、読み直しても形が揃う
+  ---
+  duration_ms: 0.079333
+  type: 'test'
+  ...
+# Subtest: 平面図は床から高い順に重ね、演者を最後に描く
+ok 63 - 平面図は床から高い順に重ね、演者を最後に描く
+  ---
+  duration_ms: 0.1745
+  type: 'test'
+  ...
+1..63
+# tests 63
+# suites 0
+# pass 63
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 59.756417

@@ -1,0 +1,138 @@
+{
+  "url": "http://127.0.0.1:8950/stage.html?seam-sample&timeline-count-controls-check=1",
+  "checkedAt": "2026-09-13T15:26:31.669Z",
+  "timeBefore": {
+    "stage-timeline-metronome": {
+      "hidden": true,
+      "disabled": true,
+      "display": "none"
+    },
+    "stage-timeline-anchor": {
+      "hidden": true,
+      "disabled": true,
+      "display": "none"
+    },
+    "stage-timeline-clear-anchors": {
+      "hidden": true,
+      "disabled": true,
+      "display": "none"
+    },
+    "stage-timeline-bpm-label": {
+      "hidden": true,
+      "display": "none"
+    },
+    "stage-timeline-bpm": {
+      "hidden": true,
+      "disabled": true,
+      "display": "none"
+    },
+    "stage-timeline-auto-bpm": {
+      "hidden": true,
+      "disabled": true,
+      "display": "none"
+    },
+    "stage-timeline-meter": {
+      "hidden": true,
+      "display": "none"
+    },
+    "stage-timeline-mark-one": {
+      "hidden": true,
+      "disabled": true,
+      "display": "none"
+    },
+    "stage-timeline-real-tempo-readout": {
+      "hidden": true,
+      "display": "none"
+    }
+  },
+  "count": {
+    "stage-timeline-metronome": {
+      "hidden": false,
+      "disabled": true,
+      "display": "grid"
+    },
+    "stage-timeline-anchor": {
+      "hidden": false,
+      "disabled": true,
+      "display": "block"
+    },
+    "stage-timeline-clear-anchors": {
+      "hidden": false,
+      "disabled": true,
+      "display": "block"
+    },
+    "stage-timeline-bpm-label": {
+      "hidden": false,
+      "display": "block"
+    },
+    "stage-timeline-bpm": {
+      "hidden": false,
+      "disabled": true,
+      "display": "block"
+    },
+    "stage-timeline-auto-bpm": {
+      "hidden": false,
+      "disabled": true,
+      "display": "block"
+    },
+    "stage-timeline-meter": {
+      "hidden": false,
+      "display": "block"
+    },
+    "stage-timeline-mark-one": {
+      "hidden": false,
+      "disabled": true,
+      "display": "block"
+    },
+    "stage-timeline-real-tempo-readout": {
+      "hidden": false,
+      "display": "block"
+    }
+  },
+  "timeAfter": {
+    "stage-timeline-metronome": {
+      "hidden": true,
+      "disabled": true,
+      "display": "none"
+    },
+    "stage-timeline-anchor": {
+      "hidden": true,
+      "disabled": true,
+      "display": "none"
+    },
+    "stage-timeline-clear-anchors": {
+      "hidden": true,
+      "disabled": true,
+      "display": "none"
+    },
+    "stage-timeline-bpm-label": {
+      "hidden": true,
+      "display": "none"
+    },
+    "stage-timeline-bpm": {
+      "hidden": true,
+      "disabled": true,
+      "display": "none"
+    },
+    "stage-timeline-auto-bpm": {
+      "hidden": true,
+      "disabled": true,
+      "display": "none"
+    },
+    "stage-timeline-meter": {
+      "hidden": true,
+      "display": "none"
+    },
+    "stage-timeline-mark-one": {
+      "hidden": true,
+      "disabled": true,
+      "display": "none"
+    },
+    "stage-timeline-real-tempo-readout": {
+      "hidden": true,
+      "display": "none"
+    }
+  },
+  "timeScreenshot": "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/native-music-edit-2026-09-12/timeline-time-controls-1440x1000.png",
+  "countScreenshot": "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/native-music-edit-2026-09-12/timeline-count-controls-1440x1000.png"
+}

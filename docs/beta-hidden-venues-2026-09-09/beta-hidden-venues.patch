@@ -1,0 +1,48 @@
+--- a/worker.js
++++ b/worker.js
+@@ -226,7 +226,8 @@
+ }
+ 
+ function stageAssetRequest(request) {
+-  if (!GUEST_STAGE_DOCUMENTS.has(new URL(request.url).pathname)) return request;
++  if (!GUEST_STAGE_DOCUMENTS.has(new URL(request.url).pathname)
++    && !["/stage-venues.js", "/stage-sw.js"].includes(new URL(request.url).pathname)) return request;
+   // 既存HTMLのvalidatorやRangeで304/206を返すと、名称・ゲスト用の変換を飛ばしてしまう。
+   const headers = new Headers(request.headers);
+   for (const name of ["If-None-Match", "If-Modified-Since", "If-Match", "If-Unmodified-Since", "If-Range", "Range"]) headers.delete(name);
+@@ -238,6 +239,35 @@
+   // 本人用・ゲスト用の応答をHTTPキャッシュで混ぜない。PWAは安全なshellを明示保存する。
+   headers.set("Cache-Control", "private, no-store");
+   headers.set("Vary", "Cookie, Authorization");
++  // 2026-09-09: 実在3会場はベータの選択肢から一時非表示。配信素材と保存済みIDは保持する。
++  const path = new URL(request.url).pathname;
++  if (request.method === "GET" && response.status === 200
++    && ["/stage-venues.js", "/stage-sw.js"].includes(path)
++    && /(?:javascript|ecmascript)/i.test(headers.get("Content-Type") || "")) {
++    let script = await response.text();
++    if (path === "/stage-venues.js") {
++      script += `
++;(() => {
++  const hidden = new Set(["theatre-tram", "tohu", "cirque-dhiver"]);
++  const venues = window.SHOSAI_VENUES;
++  for (const catalog of [venues, venues && venues.v2]) {
++    if (!catalog) continue;
++    const descriptor = Object.getOwnPropertyDescriptor(catalog, "list");
++    if (!descriptor || typeof descriptor.get !== "function") continue;
++    Object.defineProperty(catalog, "list", { ...descriptor,
++      get() { return descriptor.get.call(this).filter(venue => !hidden.has(venue.id)); }
++    });
++  }
++})();
++`;
++    } else {
++      // PWAにも新しい会場一覧を取得させる。元のキャッシュ世代に追随する。
++      script = script.replace(/(const CACHE_NAME = ")([^"]+)(";)/,
++        '$1$2-hide-real-venues-20260909$3');
++    }
++    for (const name of ["Content-Length", "Content-Encoding", "ETag", "Last-Modified"]) headers.delete(name);
++    return new Response(script, { status: 200, headers });
++  }
+   if (request.method === "GET" && response.status === 200
+     && GUEST_STAGE_DOCUMENTS.has(new URL(request.url).pathname)
+     && (headers.get("Content-Type") || "").includes("text/html")) {

@@ -1,0 +1,41 @@
+{
+  "results": [
+    {
+      "name": "desktop-ja",
+      "normal": {
+        "text": "間口 12m",
+        "x": 640,
+        "y": 2,
+        "top": -3.4235000610351562,
+        "bottom": 7.860501289367676,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.592968761920929,
+        "width": 759,
+        "height": 427
+      },
+      "full": {
+        "text": "間口 12m",
+        "x": 640,
+        "y": 2,
+        "top": -3.4235000610351562,
+        "bottom": 7.860501289367676,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 1.125,
+        "width": 1440,
+        "height": 810
+      },
+      "mini": {
+        "text": "間口 12m",
+        "x": 640,
+        "y": 2,
+        "top": -3.4235000610351562,
+        "bottom": 7.860501289367676,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.5,
+        "width": 640,
+        "height": 360
+      }
+    }
+  ],
+  "errors": []
+}

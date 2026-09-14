@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>舞台スケッチ「光の動き（案）」再設計仕様 v0.1 — 2026-09-11</title>
+<style>
+  :root{--ink:#26221c;--paper:#f6f1e7;--line:#cfc4ae;--muted:#6e6558;--accent:#8a3b1f;--ok:#3f6b46;--hold:#8a6d1f;--card:#fffdf8;--desk:#201b16;--milk:#efe7d6;--brass:#9c823f;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;line-height:1.7;font-size:15px}
+  main{max-width:980px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:17px;margin:40px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--ink)}
+  h3{font-size:15px;margin:22px 0 8px}
+  .meta{color:var(--muted);font-size:13px;margin-bottom:24px}
+  .ask{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--accent);padding:16px 20px;margin:20px 0}
+  .ask h2{margin-top:0;border:none;padding:0;font-size:16px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px;background:var(--card)}
+  th,td{border:1px solid var(--line);padding:8px 10px;vertical-align:top;text-align:left}
+  th{background:#ede5d3;font-weight:600}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:700px){.cols{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);padding:12px 16px}
+  .card h3{margin-top:0}
+  pre{background:#2a2620;color:#f2eadb;padding:14px 16px;border-radius:4px;font-size:13px;line-height:1.6;overflow:auto}
+  .panel{background:var(--desk);color:var(--milk);border:1px solid #382f25;width:268px;padding:12px 10px;font-size:12px;line-height:1.6;font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans",sans-serif}
+  .panel .h{color:var(--brass);font-size:10px;letter-spacing:.16em;margin:10px 0 5px}
+  .panel .h:first-child{margin-top:0}
+  .panel .grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .panel .b{border:1px solid #382f25;min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px 6px;border-radius:1px}
+  .panel .b.on{border-color:var(--brass);background:#282119}
+  .panel .row{display:grid;grid-template-columns:64px 1fr;gap:6px;min-height:38px;align-items:center}
+  .panel .sel{border:1px solid #382f25;background:#282119;padding:6px 9px;min-height:38px;display:flex;align-items:center}
+  .panel .seg{display:flex;border:1px solid #382f25}
+  .panel .seg span{flex:1;text-align:center;padding:8px 0;min-height:38px}
+  .panel .seg span.on{background:#282119;color:var(--milk);border-bottom:2px solid var(--brass)}
+  .panel .act{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:10px}
+  .panel .act .b{min-height:44px}
+  .panel .exp{border:1px solid var(--brass);min-height:44px;display:flex;align-items:center;justify-content:center;margin-top:8px;letter-spacing:.1em}
+  .panel .note{color:rgba(240,231,214,.55);font-size:10px;line-height:1.6;margin-top:8px}
+  .panel .hint{color:rgba(240,231,214,.55);font-size:10px}
+  .wire{display:grid;grid-template-columns:268px 1fr;gap:18px;align-items:start}
+  @media (max-width:700px){.wire{grid-template-columns:1fr}}
+  .src{font-size:13px;color:var(--muted)}
+  .fact{color:var(--ok);font-weight:600}.guess{color:var(--hold);font-weight:600}
+  a{color:var(--accent)}
+  .note{font-size:13px;color:var(--muted)}
+  code{background:#ede5d3;padding:0 4px;border-radius:2px;font-size:13px}
+</style>
+</head>
+<body>
+<main>
+<h1>舞台スケッチ「光の動き（案）」再設計仕様 v0.1</h1>
+<div class="meta">2026-09-11 ／ Claude（Fable 5.1）× Codex（gpt-6-astra）4ラウンドの結論を仕様に落としたもの ／ 状態: <b>2026-09-11 本人OK（3点承認）。対象端末＝<u>PCブラウザ・舞台スケッチ本体内</u>（iPad/iPhoneは後日）。順0（PC）合格。製品コード未変更・未公開</b><br>
+経緯と根拠は <a href="index.html">index.html（ブレスト総括）</a>。トークンシートは <a href="../../design/TOKEN_SHEET_light-motion_2026-09-11.md">design/TOKEN_SHEET_light-motion_2026-09-11.md</a>。</div>
+
+<section class="ask">
+<h2>確認済み（2026-09-11 本人「全部OK」）</h2>
+<ol>
+  <li><b>初回プリセット6種</b>（左右に往復／扇に開く・閉じる／2本が交差／円を描く／順に動く／点滅する）で、天平さんの「最初の一場面」が組めそうか。足りない型があれば1つ挙げてほしい。</li>
+  <li><b>入口の優先</b>: 「舞台登録なしの空ステージ」を順1（既存シーンより先）に置く案でよいか。</li>
+  <li><b>動画の音声</b>: 初回は音声なし（BPMは数値／タップ入力）。曲を付けた動画は2回目。これでよいか。</li>
+</ol>
+</section>
+
+<h2>0. 対象端末（2026-09-11 本人決定）</h2>
+<p><b>まずPCブラウザで、舞台スケッチ本体の中で動くこと。</b> iPad・iPhone版は「また今度」。この決定で変わる点:</p>
+<ul>
+<li>順0の技術検証はPC（Chromium）で合格済み。iOS Safariの動画生成・LINE共有の確認は保留。</li>
+<li>左パネル268pxは既存PCレイアウト（tools 268 / board / inspector 268）の値。PCではホバーとキーボード（Space＝再生/停止、Esc＝停止）を使ってよい。タップ44px基準は据え置き（後日のiPadで再利用）。</li>
+<li>書き出しの共有は「ダウンロード（MP4・PNG・テキスト）」を既定。<code>navigator.share</code> はHTTPS配信かつ対応端末のときだけ表示。</li>
+<li>書き出し中に画面を隠すとフレームが欠ける（PCでも別タブに切り替えると同じ）。書き出し中はモーダルで「このまま」を表示。</li>
+</ul>
+<h2>1. 一文の定義</h2>
+<p><b>舞台の絵の上で、見せたい光の形や動き、変わるタイミングを作り、再生できます。動きの動画と図、短い説明を照明担当者へ渡して、実現方法を相談できます。作るのは演出意図のスケッチです。灯体・回路・DMXの設計、実際の明るさや照射可否の検証、照明機器の操作は行いません。</b></p>
+<p class="note">見出し語は「照明を作る」ではなく「光の見え方と動きを作って伝える」。理由: 天平さんが挫折したのは照明ソフトの学習コスト（機材・数値中心）であり、そこへ戻らないため。</p>
+
+<h2>2. 設計メモ（design-web Step 1・5つの問い）</h2>
+<table>
+<tr><th style="width:26%">誰が・どの場面で</th><td>演者・演出家が、稽古〜照明打合せ前に、iPad（横持ち）で自分の場面の「動く光」を作り、照明プランナーへLINE等で渡す。受け手はスマホで見る。</td></tr>
+<tr><th>どんな気分に</th><td>作っている間: 「動画を切り抜くより早く、思った動きになった」。渡した後: 「これは案だと伝わり、照明さんから代案が返ってくる」。</td></tr>
+<tr><th>固有の核</th><td>照明を作るのではなく<b>「光の動きを演出の言葉で作る」</b>。機材を持たないこと自体が核。舞台スケッチの「技術図面ではなく意思疎通のスケッチ」という既存の立場の延長。</td></tr>
+<tr><th>踏襲／外す</th><td>踏襲: 既存の側パネル語彙（真鍮見出し・乳白文字・44pxタップ）、意図カード、動線再生。外す: 照明卓風の数値UI、灯体アイコン、ビームの物理レンダリング、手描き風で「案」を装う演出。</td></tr>
+<tr><th>守る機能条件</th><td>PCの左パネル268px幅で1画面往復。全欄必須にしない。安全判定を与えない。既存データ（version 3／4）と往復できる。動画はiPadで生成→スマホで再生できる形式だけ採用。</td></tr>
+</table>
+
+<h2>3. プリセット（主入口）</h2>
+<table>
+<thead><tr><th style="width:20%">表示名（演者向け）</th><th style="width:18%">照明語（補助表示）</th><th>初期値</th><th style="width:12%">初回</th></tr></thead>
+<tbody>
+<tr><td>左右に往復</td><td>sweep／bounce</td><td>1本、範囲=中、速さ=普通。「サーチライトのように左右に探す」を説明文に</td><td>○</td></tr>
+<tr><td>扇に開く・閉じる</td><td>fan</td><td>2本、対称、半周期ずらし</td><td>○</td></tr>
+<tr><td>2本が交差する</td><td>cross</td><td>2本、向かい合わせ（半周期ずらし）</td><td>○</td></tr>
+<tr><td>円を描く</td><td>circle</td><td>1本、円の大きさ=中</td><td>○</td></tr>
+<tr><td>順に動く</td><td>chase／sequential</td><td>2本、順にずらし</td><td>○</td></tr>
+<tr><td>点滅する</td><td>strobe</td><td>全体、普通、合図まで。データ上は各光の <code>flash</code> 属性</td><td>○</td></tr>
+<tr><td>端から端へ移る</td><td>ramp／fly</td><td>—</td><td>2回目</td></tr>
+<tr><td>波のようにずれる</td><td>wave／phase offset</td><td>—</td><td>2回目</td></tr>
+<tr><td>ばらばらに動く</td><td>random／staggered</td><td>—</td><td>2回目</td></tr>
+</tbody></table>
+<p class="note">照明語は表示名の横に薄く出すだけ。書き出しには演者向け表示名と説明文を載せ、照明語は括弧で併記。「fan」「wave」「fly」は現場で意味の幅があるため説明文を必須にする（一般知識・Codex指摘）。</p>
+<p><b>調整項目は3つだけ</b>: 本数（1／2）、範囲（小〜大）、速さ（ゆっくり／普通／速い、または拍）。光の関係（一緒に／向かい合わせ／順に）は複数本のときだけ表示。太さ・色は初期値固定で、2回目に開く。</p>
+
+<h2>4. タイミング（BPM）とストロボ</h2>
+<div class="cols">
+<div class="card"><h3>拍に合わせる</h3>
+<ul>
+<li><b>1周期＝左端→右端→左端</b>（往復）。片道は別の状態として保存。</li>
+<li>既定: 合図で端から開始、半周期で反対端、1周期で元の端、以後繰り返し。「中央から開始」「拍頭で折り返す」は2回目。</li>
+<li>BPMは数値入力またはタップ。曲全体で一定として再生（途中のテンポ変化は未対応と明示）。舞台スケッチには現在BPMの概念が無い（コード確認済み）。</li>
+<li>1周期＝1／2／4／8拍。「速さ」と「拍に合わせる」は別の項目。</li>
+<li>複数本の時間差は自由指定せず、プリセットで固定（対称＝半周期、順に＝一定間隔）。</li>
+</ul></div>
+<div class="card"><h3>点滅（ストロボ）</h3>
+<ul>
+<li>入力: 速さ（遅い／普通／速い、または1拍・2拍・8分・16分）、範囲（全体／一部／選んだ光）、長さ（1拍／2拍／合図まで）、きっかけ、点滅後（止まる／通常点灯／消える）。</li>
+<li>照度・周波数の数値・発光方式は入力させない。</li>
+<li>点滅を指定したときだけ質問を提案（下記文面）。プレビューは自動再生しない（突然の点滅を避ける操作上の配慮であり、安全判定ではない）。</li>
+</ul>
+<pre>点滅を含む案です。光過敏発作などへの影響は、
+条件や人によって異なります。会場・照明担当者と、
+実施条件・事前告知・代替表現を相談しますか。
+舞台スケッチは安全性を判定しません。
+［質問に追加］［今回は追加しない］</pre>
+</div>
+</div>
+
+<h2>5. 側パネル（PC・左268px。iPad横持ちでも同幅）</h2>
+<div class="wire">
+<div class="panel">
+  <div class="h">光の動き（案）</div>
+  <div class="hint">プリセットを選ぶ</div>
+  <div class="grid">
+    <div class="b">左右に往復</div><div class="b">扇に開く</div>
+    <div class="b on">2本が交差</div><div class="b">円を描く</div>
+    <div class="b">順に動く</div><div class="b">点滅する</div>
+  </div>
+  <div class="h">動きの調整</div>
+  <div class="row"><span>本数</span><div class="seg"><span>1</span><span class="on">2</span></div></div>
+  <div class="row"><span>範囲</span><div class="sel">小 ─────●─── 大</div></div>
+  <div class="row"><span>速さ</span><div class="seg"><span>ゆっくり</span><span class="on">普通</span><span>速い</span></div></div>
+  <div class="row"><span>光の関係</span><div class="seg"><span>一緒に</span><span class="on">向かい合わせ</span><span>順に</span></div></div>
+  <div class="h">タイミング</div>
+  <div class="row"><span>拍に合わせる</span><div class="seg"><span class="on">オフ</span><span>オン</span></div></div>
+  <div class="row"><span>繰り返し</span><div class="seg"><span>1回</span><span class="on">合図まで</span></div></div>
+  <div class="h">点滅</div>
+  <div class="row"><span>点滅</span><div class="seg"><span class="on">なし</span><span>あり</span></div></div>
+  <div class="act"><div class="b">▶ 再生</div><div class="b">■ 停止</div><div class="b">|◀ 最初から</div></div>
+  <div class="exp">動画＋図＋一文を書き出す</div>
+  <div class="note">光の動きの案です。灯体位置・DMX・安全性は示しません。</div>
+</div>
+<div>
+<h3>構成の理由</h3>
+<ul>
+<li>上から「選ぶ→調整→再生→書き出す」の一方向。1画面で往復でき、中央の正面図は常に見える。</li>
+<li>プリセットは2列グリッド・各44px以上（既存の「次のシーン作成モーダル」と同じタップ基準）。一覧は静止サムネ、<b>選択中だけループ再生</b>（6〜10個同時再生はiPadの負荷と視線散乱が勝つ、Codex推測）。動きを減らす設定では静止。</li>
+<li>「拍に合わせる」をオンにすると「1周期 1／2／4／8拍」「BPM 数値／タップ」「開始位置 端から」が下に開く。オフのときは既存の「速さ」で再生。</li>
+<li>「点滅 あり」で速さ・範囲・長さ・点滅後が開き、質問の提案が1回だけ出る。</li>
+<li>再生は明示ボタン。指を離した瞬間の自動再生や、一覧サムネの一斉再生はしない。</li>
+<li>現在地表現は既存語彙（真鍮の下線＋背景一段明るく）の2種。新しい色・角丸・影は足さない。</li>
+<li>末尾の注記は常時表示。書き出した動画と図にも同文を焼き込む。</li>
+</ul>
+<h3>正面図側の描画</h3>
+<ul>
+<li>光線は既存の照明駒（灯体の丸＋プール）を使わない。出どころは「図の仮位置」として薄い点で示し、会場の設置候補には変換しない。</li>
+<li>実線＝いまの一瞬、破線＝動く範囲、矢印＝方向、ラベル「光の動き・案」。同時に見える本数と説明用の線を混ぜない。</li>
+<li>奥行きの編集は初回なし（正面図固定）。平面図は2回目。</li>
+</ul>
+</div>
+</div>
+
+<h2>6. 書き出し（順0で先に成立を確認）</h2>
+<table>
+<tr><th style="width:18%">動画</th><td>短いループまたは指定回数。音声なし（初回）。「光の動きの案／灯体位置・DMX・安全性は示さない／シーン名・版・出力日」を焼き込む。形式はiPad Safariで生成→保存→LINE相当で受け渡し→iPhone/Androidで再生できたものだけ採用（MP4候補。舞台スケッチには録画コードが現在無い）。</td></tr>
+<tr><th>1枚図</th><td>同じ再生データから始め・折り返し・終わりを切り出し。凡例「実線＝一瞬の例、破線＝動く範囲」「灯体位置・照射可能範囲ではない」。</td></tr>
+<tr><th>一文＋相談欄</th><td>「細い光2本が舞台奥で互いに横切る。速さ普通、合図まで繰り返し。色・出どころ・本数は相談したい。」＋守りたい条件／変えてよいこと／相談したいこと。既存の打合せ用出力（キューシート拡張）へ同じ案IDで接続。</td></tr>
+<tr><th>順0の結果</th><td>2026-09-11 デスクトップChromiumで MP4(avc1) 生成・再生OK。rAF駆動は非表示時に0バイト→固定ステップ＋requestFrame方式に変更。iPad実機・LINE共有は未確認（<a href="export-test/RESULTS.md">export-test/RESULTS.md</a>）。</td></tr>
+<tr><th>失敗時</th><td>成果物ごとに「動画だけ保存済み」等の状態を表示。3点で異なるリビジョンを混ぜない。</td></tr>
+</table>
+
+<h2>7. データ構造（骨子）</h2>
+<pre>scene.lightingIntent.lightMotion = {
+  version: 1,
+  coordinateSpace: "front",            // "plan" は後から
+  beams: [{ id, width, color, visible, presetId, relation,
+            path: { kind: "line"|"circle"|"polyline", points: [...], loop: "once"|"ping-pong"|"untilCue" } }],
+  timing: { mode: "free"|"fixed-bpm"|"tap", bpm, cycleBeats: 1|2|4|8, startPhase: "edge", repeat },
+  flash:  { enabled, beatDivision, scope, durationBeats, after: "hold"|"normal"|"off" },
+  cues:   [{ triggerType, triggerRef, action: "start"|"stop"|"hold"|"flash" }],
+  references: [{ ref, range, focus }],
+  notes:  { keep, flexible, ask },
+  origin: { kind: "standalone"|"scene", sceneId, revision }
+}</pre>
+<ul>
+<li>正本は意図カード内。動画・PNG・GIFは派生物。</li>
+<li>時間の正本は秒ではなく<b>位相／拍</b>。BPM→秒は再生時に導出。<code>durationMs</code> を正本にしない。再生位置は保存・Undoの対象にしない（既存の音源処理と同じ方針）。</li>
+<li>舞台登録なし入口は「最小プロジェクト（空ステージ＋シーン1）」として同じ形式で保存。既存ショーへは「新しいシーンとして追加／選択シーンの案へコピー／別案として追加」を本人が選ぶ。自動上書きしない。同じシーンに既存の案があれば置換でなく別案。</li>
+<li>単独入口で作らないもの: 独自アカウント、独自共有基盤、機材DB、独自会場形式、専用保存形式。</li>
+</ul>
+
+<h2>8. 2週間の試作順（最終）</h2>
+<table>
+<thead><tr><th style="width:8%">順</th><th style="width:26%">範囲</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>書き出し成立の確認</td><td>仮の1本を再生→iPadで動画保存→別端末で再生。形式確定。ここが通らなければ順1以降を見直す。</td></tr>
+<tr><td>1</td><td>舞台登録なしの最小入口</td><td>空ステージを1タップ、正面図、光1本、最小の意図カード。既存シーンからも同じ編集画面。</td></tr>
+<tr><td>2</td><td>プリセット主入口</td><td>5種（往復／扇／交差／円／順に）。調整は本数・範囲・速さ。</td></tr>
+<tr><td>3</td><td>再生と出力</td><td>再生・停止・最初から。2本までの同時再生。動画・図・一文の一括出力。相談3欄・参照区間・返答記録へ接続。<b>ここで天平さんに1場面作ってもらい「動画切り抜きより早いか」を測る。</b></td></tr>
+<tr><td>4</td><td>BPMの薄い実装</td><td>固定BPM（数値／タップ）、1周期＝1・2・4・8拍、開始は端から固定。</td></tr>
+<tr><td>5</td><td>点滅の薄い実装</td><td>「点滅する」プリセット、速さ・範囲・長さ・きっかけ、質問の提案。</td></tr>
+<tr><td>2回目</td><td>後送り</td><td>自由なぞり、3D編集、個別位相、テンポマップ、音声付き動画、GIF、太さ・色の細調整、複雑な点滅、照明さん側の直接入力、会場条件照合、機材候補・DMX変換。</td></tr>
+</tbody></table>
+
+<h2>9. 既存コードとの接続点（実装者向け）</h2>
+<ul>
+<li><code>normalizeScene()</code>／<code>normalizeLightingIntent()</code>（stage-sketch.js 391付近）: <code>lightMotion</code> を落とさず、version 3／4と往復。</li>
+<li>保存・読込・Undo／Redo: 意図カードと同じ経路（<code>checkpoint()</code>・<code>persistSoon()</code>）。</li>
+<li>正面図レンダラー（<code>drawFrontVenue</code> 系）: 光線の描画と再生。既存の動線再生（requestAnimationFrameの<code>run.raf</code>ループ・16594付近）の補間を再利用できるか確認。</li>
+<li>音楽パネル: BPM参照の入口だけ。再生位置を正本化しない（4772付近の設計と同じ）。</li>
+<li>打合せ出力: 既存キューシート（17612付近）を拡張し、動画・図・一文・相談欄・返答を同じ案IDへ。</li>
+<li><code>stage-i18n.js</code>: 演者向け語を主、照明語は補助。i18n-prep のGLOSSARYと矛盾させない。</li>
+<li>Service Worker・<code>?v=</code>: 製品へ組み込むときだけ全箇所一括で上げる（既存の運用ノート）。</li>
+<li>テスト: 新旧データ往復／複数光線の順序と位相／1周期の端点定義／BPM導出の再現性／点滅設定の保存／3点出力の同一リビジョン／単独→既存シーンの明示的取り込み／既存の意図・照明駒・音楽を上書きしないこと。</li>
+</ul>
+
+<h2>10. 根拠と信頼度</h2>
+<ul class="src">
+<li><span class="fact">一次（本人共有）</span> 天平さんの証言と3問への回答（<a href="evidence-user-voice-2026-09-11.md">evidence-user-voice-2026-09-11.md</a>）。n=1。</li>
+<li><span class="fact">存在確認済み（Codex引用）</span> <a href="https://www.etcconnect.com/webdocs/Controls/HOG/HTML/en/sect-table_effects.htm">ETC Hog エフェクト表</a>（sine/step/ramp/random/circle/fly、rate/size/offset/bounce/sync は卓側の概念）／<a href="https://go.epilepsy.com/what-is-epilepsy/seizure-triggers/photosensitivity">Epilepsy Foundation 光過敏</a>（Claudeの存在確認では403で未確認。Codex引用の要旨: 影響は頻度・明るさ・コントラスト・距離と個人差）／<a href="https://www.capture.se/Products/Capture/Overview">Capture</a>。</li>
+<li><span class="fact">コード確認（Claude）</span> BPMの概念なし／MediaRecorder・captureStream未使用／動線再生とシーン転換のアニメーションあり／左パネル268px・選択部品38px・見出し10px真鍮。</li>
+<li><span class="guess">推測・仮説</span> 「2分以内」「動画切り抜きより速い」「一覧の一斉ループ再生は重い」は未検証。プリセット語彙が照明プランナーに通じるかは順3で確認。</li>
+</ul>
+<p class="note">記録: <a href="codex-prompt-round4.md">R4問</a>／<a href="codex-round4.answer.md">R4答</a>。ローカル確認用・外部共有しない。</p>
+</main>
+</body>
+</html>

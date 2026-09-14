@@ -1,0 +1,18 @@
+PASS owner issues real SQLite snapshot
+PASS opaque session persisted in SQLite
+PASS invitation connects account
+PASS bounded long Japanese text and all 32768 points save across chunks
+PASS session remains valid after process restart
+PASS personal note survives process restart
+PASS text and normalized pen points roundtrip exactly
+PASS historical text and strokes remain private and intact
+PASS current and historical pinned notes survive SQLite restart
+PASS pinned note shape, color and dimensions survive SQLite restart
+PASS idempotent retry after restart keeps version 1
+PASS real SQLite transaction accepts one competing edit and rejects one
+PASS account switch rejects stale tab header
+PASS second reader has no first reader notes
+PASS owner cannot read private notes
+PASS revocation also blocks private notebook access
+PASS logout remains revoked after restart
+Reader SQLite runtime: 17/17 passed

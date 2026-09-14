@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stage Sketch｜M6 暗転転換・サンプル採用</title>
+<style>
+:root{
+  --ground:#efe7d6;--paper:#fffaf0;--ink:#2b2620;--muted:#6a604e;--line:#75664f;
+  --stage:#171310;--stage-line:#d3ac59;--confirmed:#245963;--proposal:#8f5f19;
+  --unknown:#8f3e1e;--selected:#315f4c;--focus:#0b6f9c;--shadow:rgba(43,38,32,.14)
+}
+*{box-sizing:border-box}
+html{background:var(--ground);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif}
+body{margin:0;font-size:17px;line-height:1.8}
+a{color:#174f72;text-underline-offset:3px}
+button,textarea{font:inherit}
+button:focus-visible,a:focus-visible,textarea:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+header,main,footer{width:min(1180px,calc(100% - 32px));margin-inline:auto}
+header{padding:40px 0 24px}
+h1,h2,h3{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;letter-spacing:.02em}
+h1{font-size:clamp(27px,4vw,34px);line-height:1.4;margin:8px 0 12px}
+h2{font-size:25px;line-height:1.5;margin:0 0 16px}
+h3{font-size:19px;line-height:1.5;margin:0 0 8px}
+p{margin:0 0 16px}
+.eyebrow{font-size:14px;font-weight:700;letter-spacing:.08em;color:var(--muted)}
+.lead{max-width:48em}
+.status-row,.links,.legend{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.tag{display:inline-flex;align-items:center;min-height:32px;padding:3px 10px;border:1px solid currentColor;font-size:14px;font-weight:700;background:var(--paper)}
+.tag.confirmed{color:var(--confirmed)}.tag.proposal{color:var(--proposal)}.tag.unknown{color:var(--unknown)}
+.paper{background:var(--paper);border:1px solid var(--line);box-shadow:5px 6px 0 var(--shadow);padding:clamp(20px,4vw,40px);margin:0 0 32px}
+.notice{border-left:6px solid var(--proposal)}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:24px}
+.fact{background:var(--paper);padding:16px}.fact strong{display:block;font-size:25px;line-height:1.5}.fact span{font-size:14px;color:var(--muted)}
+.stage-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.stage-card{border:1px solid var(--line);background:#f8f0e3;padding:16px}
+.stage-card:first-child,.stage-card:last-child{grid-column:1/-1}
+.stage-card h3{font-family:inherit;font-weight:700}
+.stage-card p{font-size:14px;line-height:1.65;color:var(--muted);margin:8px 0 0}
+.stage-wrap{background:var(--stage);border:1px solid #332b23;padding:8px;aspect-ratio:12/9}
+.stage-wrap svg{display:block;width:100%;height:100%;color:#f9f1e5}
+.legend{font-size:14px;margin:0 0 20px}.legend-item{display:inline-flex;gap:6px;align-items:center}
+.dot{width:14px;height:14px;border:2px solid var(--ink);border-radius:50%;display:inline-block}.dot.carrier{border-color:var(--proposal);box-shadow:0 0 0 2px var(--paper)}.dot.mask{background:var(--paper)}
+.sequence{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin:20px 0 28px;counter-reset:step}
+.sequence div{position:relative;padding:12px 10px;border-top:3px solid var(--line);font-size:14px}
+.sequence div::before{counter-increment:step;content:counter(step);display:block;width:28px;height:28px;margin-top:-28px;margin-bottom:8px;background:var(--paper);border:2px solid var(--line);text-align:center;line-height:24px;font-weight:700}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+ul{padding-left:1.4em}.unknown-list li{margin:6px 0}
+.decision{border-top:1px solid var(--line);padding:24px 0}.decision:first-of-type{border-top:0;padding-top:0}
+.choices{display:grid;gap:10px}
+.choice{width:100%;min-height:48px;text-align:left;border:2px solid var(--line);background:#fffdf8;color:var(--ink);padding:12px 14px;cursor:pointer}
+.choice:hover{border-color:var(--proposal)}.choice[aria-pressed="true"]{background:var(--selected);border-color:var(--selected);color:white}
+.choice strong{display:inline-block;min-width:2em}
+label[for="comment"]{display:block;font-weight:700;margin-top:20px}
+textarea{width:100%;min-height:100px;border:2px solid var(--line);background:white;padding:12px;color:var(--ink)}
+.answer{background:#1e1a16;color:#f9f1e5;padding:16px;white-space:pre-wrap;min-height:120px;font-family:inherit;font-size:14px;line-height:1.7}
+.action-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+.action{display:inline-flex;justify-content:center;align-items:center;min-height:48px;border:2px solid var(--ink);background:var(--ink);color:white;padding:10px 18px;font-weight:700;text-decoration:none;cursor:pointer}
+.action.secondary{background:transparent;color:var(--ink)}
+.links>a:not(.action){display:inline-flex;align-items:center;min-height:44px;padding:6px 0}
+.small{font-size:14px;color:var(--muted)}code{font-family:inherit;overflow-wrap:anywhere}
+footer{padding:0 0 64px;color:var(--muted);font-size:14px}
+@media(max-width:760px){
+  .facts,.stage-grid,.split{grid-template-columns:1fr}.stage-card:first-child,.stage-card:last-child{grid-column:auto}
+  .sequence{grid-template-columns:1fr}.sequence div{border-top:0;border-left:3px solid var(--line);padding-left:20px}
+  .sequence div::before{margin:0 0 6px -36px;display:inline-block}
+}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">STAGE SKETCH / ROMEO &amp; JULIET / M6</div>
+  <h1>乱戦の暗転から、仮面舞踏会のバーが現れるまで</h1>
+  <p class="lead">本人が決めた転換条件を、既存のQ02とQ03の間に3枚の技術確認図として置き、サンプルとして採用した配置です。図は暗転中の作業を見るためのもので、客席へ見せる場面や現場GOではありません。</p>
+  <div class="status-row">
+    <span class="tag confirmed">本人確定：15件</span>
+    <span class="tag proposal">AI原案・サンプル採用：座標・順序・3配置</span>
+    <span class="tag unknown">未確認：実物・稽古・安全</span>
+  </div>
+</header>
+<main>
+  <section class="paper notice" aria-labelledby="now">
+    <h2 id="now">今回、サンプルとして採用したこと</h2>
+    <p>ロレンス修道士担当とジョン修道士担当を右袖寄りへ置き、バー搬入を変化の中ほどへ入れました。配置の流れ、2人がバー固定後に仮面を着ける順、技術図3枚という分け方は、2026年9月12日に本人回答Aで採用されました。</p>
+    <div class="facts">
+      <div class="fact"><strong>3枚</strong><span>追加する暗転中の技術図</span></div>
+      <div class="fact"><strong>10名</strong><span>全場面で同じcastIdを維持</span></div>
+      <div class="fact"><strong>未計測</strong><span>時間値はnullのまま保持</span></div>
+    </div>
+  </section>
+
+  <section class="paper" aria-labelledby="flow">
+    <h2 id="flow">5枚で見る転換</h2>
+    <div class="sequence" aria-label="転換の順序">
+      <div>Q02<br>暗転直前</div><div>第一波<br>バーなし</div><div>中ほど<br>バー搬入</div><div>固定後<br>最終変化</div><div>Q03<br>再照明待ち</div>
+    </div>
+    <div class="legend">
+      <span class="legend-item"><i class="dot"></i>演者枠</span>
+      <span class="legend-item"><i class="dot carrier"></i>バー担当2枠</span>
+      <span class="legend-item"><i class="dot mask"></i>仮面装着済み</span>
+      <span class="legend-item">客席から見て右袖＝図の右</span>
+    </div>
+    <div id="stages" class="stage-grid"></div>
+  </section>
+
+  <section class="paper" aria-labelledby="basis">
+    <h2 id="basis">確定したことと、確定していないこと</h2>
+    <div class="split">
+      <div>
+        <h3>本人確定</h3>
+        <ul>
+          <li>ロレンス修道士担当とジョン修道士担当の2人が役を離れる。</li>
+          <li>右袖からキャスター付き一体型バーを押して固定する。</li>
+          <li>バーは変化の最初にも最後にも置かない。</li>
+          <li>全員が仮面を事前携帯し、暗転中に着ける。</li>
+          <li>2人は設置後もバー係として残る。</li>
+          <li>5条件を舞台監督が手動確認して再照明する。</li>
+        </ul>
+      </div>
+      <div>
+        <h3>未確認のまま残す</h3>
+        <ul id="unknowns" class="unknown-list"></ul>
+      </div>
+    </div>
+    <p class="small">既存の「別スタッフが設置」「転換込み20秒」は古い仮案です。この候補では採用せず、元資料だけを保存しています。</p>
+  </section>
+
+  <section class="paper" id="decisions" aria-labelledby="decision-title">
+    <h2 id="decision-title">採用した回答</h2>
+    <p>正式記録は3項目ともAです。ボタンは採用内容の確認と再検討文の作成に使えます。ここで選び直しても画面内だけに保存され、正式記録、元のショー、サンプルJSONは変更しません。</p>
+
+    <div class="decision" data-decision="M6-C1" data-label="配置案の扱い">
+      <h3>M6-C1　配置案の扱い</h3>
+      <div class="choices">
+        <button class="choice" type="button" data-choice="A" aria-pressed="false"><strong>A</strong> サンプル候補としてこの配置を採用する</button>
+        <button class="choice" type="button" data-choice="B" aria-pressed="false"><strong>B</strong> 担当2枠は維持し、事前位置とバー係位置だけ再提案する</button>
+        <button class="choice" type="button" data-choice="C" aria-pressed="false"><strong>C</strong> 10名全体の配置を再提案する</button>
+      </div>
+    </div>
+    <div class="decision" data-decision="M6-C2" data-label="バー担当2枠の仮面">
+      <h3>M6-C2　バー担当2枠が仮面を着ける時点</h3>
+      <div class="choices">
+        <button class="choice" type="button" data-choice="A" aria-pressed="false"><strong>A</strong> 現案どおり、バー固定後に着けてバー係の位置へ移る</button>
+        <button class="choice" type="button" data-choice="B" aria-pressed="false"><strong>B</strong> バーを押し始める前に着ける</button>
+        <button class="choice" type="button" data-choice="C" aria-pressed="false"><strong>C</strong> 時点は未決定のままにする</button>
+      </div>
+    </div>
+    <div class="decision" data-decision="M6-C3" data-label="暗転中の技術図">
+      <h3>M6-C3　暗転中の技術図の枚数</h3>
+      <div class="choices">
+        <button class="choice" type="button" data-choice="A" aria-pressed="false"><strong>A</strong> 現案どおり3枚で進める</button>
+        <button class="choice" type="button" data-choice="B" aria-pressed="false"><strong>B</strong> 4枚にして、バー固定と仮面装着を分ける</button>
+        <button class="choice" type="button" data-choice="C" aria-pressed="false"><strong>C</strong> 2枚にまとめる</button>
+      </div>
+    </div>
+    <label for="comment">補足（任意）</label>
+    <textarea id="comment" placeholder="位置や順序で気になる点があれば書いてください。"></textarea>
+    <h3>表示中の回答</h3>
+    <pre id="answer" class="answer" aria-live="polite">3項目を選ぶと、回答文がここに表示されます。</pre>
+    <div class="action-row">
+      <button id="copy" class="action" type="button">回答をコピー</button>
+      <button id="clear" class="action secondary" type="button">採用回答Aに戻す</button>
+    </div>
+  </section>
+
+  <section class="paper" aria-labelledby="files">
+    <h2 id="files">Stage Sketchで試すファイル</h2>
+    <p>採用済みサンプルを確認する場合も、現在のショーを上書きせず「別のショーとして開く」を使います。</p>
+    <div class="links">
+      <a class="action" href="romeo-juliet-m6-transition-candidate.stage-sketch.json" download>候補JSONを保存</a>
+      <a class="action secondary" href="../index.html">元の全体サンプルへ戻る</a>
+      <a href="ai-input.json">AI入力</a>
+      <a href="ai-proposal.json">AI提案</a>
+      <a href="owner-approval-2026-09-12.json">本人回答</a>
+      <a href="candidate-manifest.json">検証用台帳</a>
+    </div>
+    <p class="small">候補SHA-256: <code>__CANDIDATE_SHA__</code></p>
+  </section>
+</main>
+<footer>
+  <p>ローカル確認用。公開・送信・製品反映は行っていません。</p>
+</footer>
+<script id="review-data" type="application/json">__REVIEW_DATA__</script>
+<script>
+(() => {
+  "use strict";
+  const data = JSON.parse(document.getElementById("review-data").textContent);
+  const ns = "http://www.w3.org/2000/svg";
+  const roles = {
+    "rj-cast-romeo":"01","rj-cast-juliet":"02","rj-cast-friar-lawrence":"03",
+    "rj-cast-benvolio":"04","rj-cast-tybalt":"05","rj-cast-mercutio":"06",
+    "rj-cast-nurse":"07","rj-cast-capulet":"08","rj-cast-montague":"09",
+    "rj-cast-friar-john":"10"
+  };
+  const carriers = new Set(["rj-cast-friar-lawrence","rj-cast-friar-john"]);
+  const svgEl = (name, attrs) => {
+    const el = document.createElementNS(ns, name);
+    Object.entries(attrs || {}).forEach(([key,value]) => el.setAttribute(key, String(value)));
+    return el;
+  };
+  const addText = (svg, x, y, value, attrs) => {
+    const el = svgEl("text", Object.assign({x,y}, attrs || {}));
+    el.textContent = value;
+    svg.appendChild(el);
+    return el;
+  };
+  const stageRoot = document.getElementById("stages");
+  data.scenes.forEach((scene, sceneIndex) => {
+    const card = document.createElement("article");
+    card.className = "stage-card";
+    const heading = document.createElement("h3");
+    heading.textContent = scene.title;
+    const wrap = document.createElement("div");
+    wrap.className = "stage-wrap";
+    const svg = svgEl("svg", {viewBox:"0 0 120 92",role:"img","aria-label":scene.title+" の平面配置"});
+    const defs = svgEl("defs");
+    const marker = svgEl("marker",{id:"arrow-"+sceneIndex,markerWidth:6,markerHeight:6,refX:5,refY:3,orient:"auto"});
+    marker.appendChild(svgEl("path",{d:"M0,0 L6,3 L0,6 z",fill:"#d3ac59"}));
+    defs.appendChild(marker); svg.appendChild(defs);
+    svg.appendChild(svgEl("rect",{x:4,y:4,width:100,height:75,fill:"#171310",stroke:"#d3ac59","stroke-width":0.8}));
+    addText(svg,54,88,"客席",{fill:"#efe7d6","font-size":4,"text-anchor":"middle"});
+    addText(svg,111,40,"右袖",{fill:"#d3ac59","font-size":4,"text-anchor":"middle",transform:"rotate(90 111 40)"});
+    const masked = new Set(scene.pieces.filter(p => p.heldBy).map(p => p.heldBy));
+    scene.pieces.filter(p => p.type !== "performer" && !p.heldBy).forEach(piece => {
+      const x = 4 + piece.u * 100;
+      const y = 4 + piece.v * 75;
+      if (piece.route) {
+        svg.appendChild(svgEl("line",{
+          x1:x,y1:y,x2:4+piece.route.u*100,y2:4+piece.route.v*75,
+          stroke:"#d3ac59","stroke-width":1.2,"stroke-dasharray":"3 2",
+          "marker-end":"url(#arrow-"+sceneIndex+")"
+        }));
+      }
+      const width = piece.type === "wall" ? 25 : 21;
+      const height = piece.type === "wall" ? 2.5 : 6;
+      svg.appendChild(svgEl("rect",{
+        x:x-width/2,y:y-height/2,width,height,fill:piece.color,stroke:"#efe7d6","stroke-width":0.6
+      }));
+    });
+    scene.pieces.filter(p => p.type === "performer").forEach(piece => {
+      const x = 4 + piece.u * 100;
+      const y = 4 + piece.v * 75;
+      if (piece.route) {
+        svg.appendChild(svgEl("path",{
+          d:"M "+x+" "+y+" Q "+(4+piece.route.bu*100)+" "+(4+piece.route.bv*75)+" "+(4+piece.route.u*100)+" "+(4+piece.route.v*75),
+          fill:"none",stroke:"#d3ac59","stroke-width":0.9,"stroke-dasharray":"2 1.5",
+          "marker-end":"url(#arrow-"+sceneIndex+")"
+        }));
+      }
+      const group = svgEl("g");
+      const title = svgEl("title");
+      title.textContent = (roles[piece.castId] || "?") + " " + (piece.name || "");
+      group.appendChild(title);
+      group.appendChild(svgEl("circle",{
+        cx:x,cy:y,r:carriers.has(piece.castId)?4.7:3.8,fill:piece.color,
+        stroke:carriers.has(piece.castId)?"#f0a43c":"#efe7d6",
+        "stroke-width":carriers.has(piece.castId)?1.6:0.8
+      }));
+      if (masked.has(piece.id)) {
+        group.appendChild(svgEl("path",{
+          d:"M "+(x-3)+" "+(y-1)+" Q "+x+" "+(y-3.2)+" "+(x+3)+" "+(y-1),
+          fill:"none",stroke:"#fffaf0","stroke-width":1.4
+        }));
+      }
+      const label = svgEl("text",{x,y:y+1.5,fill:"#ffffff","font-size":3.4,"font-weight":700,"text-anchor":"middle"});
+      label.textContent = roles[piece.castId] || "?";
+      group.appendChild(label);
+      svg.appendChild(group);
+    });
+    wrap.appendChild(svg);
+    const note = document.createElement("p");
+    note.textContent = scene.note;
+    card.append(heading,wrap,note);
+    stageRoot.appendChild(card);
+  });
+  const unknownList = document.getElementById("unknowns");
+  data.unknowns.forEach(value => {
+    const li = document.createElement("li");
+    li.textContent = value;
+    unknownList.appendChild(li);
+  });
+
+  const key = "stage-sketch-m6-sample-decisions-v2";
+  const approvedSelections = Object.fromEntries(data.approval.decisions.map(item => [item.id,item.choice]));
+  const selections = Object.assign({},approvedSelections);
+  const answer = document.getElementById("answer");
+  const comment = document.getElementById("comment");
+  const decisionNodes = [...document.querySelectorAll(".decision[data-decision]")];
+  const rebuild = () => {
+    const lines = ["Stage Sketch M6転換サンプルの表示回答",""];
+    decisionNodes.forEach(node => {
+      const id = node.dataset.decision;
+      const button = node.querySelector('.choice[data-choice="'+(selections[id] || "")+'"]');
+      lines.push(id+" "+node.dataset.label);
+      lines.push(button ? button.textContent.trim().replace(/\s+/g," ") : "未回答");
+      lines.push("");
+    });
+    if (comment.value.trim()) lines.push("補足："+comment.value.trim());
+    answer.textContent = lines.join("\n").trim();
+    localStorage.setItem(key,JSON.stringify({selections,comment:comment.value}));
+  };
+  document.querySelectorAll(".choice").forEach(button => {
+    button.addEventListener("click",() => {
+      const node = button.closest(".decision");
+      node.querySelectorAll(".choice").forEach(item => item.setAttribute("aria-pressed","false"));
+      button.setAttribute("aria-pressed","true");
+      selections[node.dataset.decision] = button.dataset.choice;
+      rebuild();
+    });
+  });
+  comment.addEventListener("input",rebuild);
+  document.getElementById("copy").addEventListener("click",async event => {
+    const text = answer.textContent;
+    try { await navigator.clipboard.writeText(text); }
+    catch (_) {
+      const range = document.createRange(); range.selectNodeContents(answer);
+      const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range);
+      document.execCommand("copy"); selection.removeAllRanges();
+    }
+    event.currentTarget.textContent = "コピーしました";
+    setTimeout(() => { event.currentTarget.textContent = "回答をコピー"; },1200);
+  });
+  document.getElementById("clear").addEventListener("click",() => {
+    Object.keys(selections).forEach(key => delete selections[key]);
+    Object.assign(selections,approvedSelections);
+    document.querySelectorAll(".choice").forEach(item => item.setAttribute("aria-pressed","false"));
+    Object.entries(selections).forEach(([id,choice]) => {
+      const button = document.querySelector('.decision[data-decision="'+id+'"] .choice[data-choice="'+choice+'"]');
+      if (button) button.setAttribute("aria-pressed","true");
+    });
+    comment.value = ""; localStorage.removeItem(key); rebuild();
+  });
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) || "{}");
+    Object.assign(selections,saved.selections || {});
+    comment.value = saved.comment || "";
+    Object.entries(selections).forEach(([id,choice]) => {
+      const button = document.querySelector('.decision[data-decision="'+id+'"] .choice[data-choice="'+choice+'"]');
+      if (button) button.setAttribute("aria-pressed","true");
+    });
+  } catch (_) {}
+  rebuild();
+})();
+</script>
+</body>
+</html>

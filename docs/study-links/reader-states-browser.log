@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "legacy device notes are imported only on explicit action",
+    "failed sync displays pending, never a false saved status",
+    "pending note survives reload and syncs after reconnect",
+    "actual mouse click shares the screen",
+    "visible keyboard focus",
+    "account switch blocks stale tab writes in the live browser"
+  ],
+  "errors": []
+}

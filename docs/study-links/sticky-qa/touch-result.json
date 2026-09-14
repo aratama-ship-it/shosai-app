@@ -1,0 +1,12 @@
+{
+  "passed": [
+    "touch placement and Japanese text",
+    "touch drag",
+    "orientation keeps normalized coordinates",
+    "touch cancellation and reload preserve notes",
+    "16 note limit",
+    "malformed frame messages rejected"
+  ],
+  "errors": [],
+  "physicalDevice": false
+}

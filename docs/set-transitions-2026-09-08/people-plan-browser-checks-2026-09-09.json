@@ -1,0 +1,224 @@
+{
+  "url": "http://127.0.0.1:8936/people-plan-trial-2026-09-09.html",
+  "checks": [
+    {
+      "name": "normal completion 15 and zero slack",
+      "passed": true
+    },
+    {
+      "name": "one source row for shared carry, two person bars",
+      "passed": true
+    },
+    {
+      "name": "three physical people",
+      "passed": true
+    },
+    {
+      "name": "zero wait is not a work bar",
+      "passed": true
+    },
+    {
+      "name": "late appearance propagates to 18 and 3 shortage",
+      "passed": true
+    },
+    {
+      "name": "C holds occupation during 8-11 wait",
+      "passed": true
+    },
+    {
+      "name": "warning links to critical source including appearance",
+      "passed": true
+    },
+    {
+      "name": "warning detail receives keyboard focus",
+      "passed": true
+    },
+    {
+      "name": "clear selection returns to heading",
+      "passed": true
+    },
+    {
+      "name": "18 versus 12 gives 6 shortage",
+      "passed": true
+    },
+    {
+      "name": "undo restores deadline but keeps appearance edit",
+      "passed": true
+    },
+    {
+      "name": "preset resets previous conditions",
+      "passed": true
+    },
+    {
+      "name": "fixed extra work conflicts with put, hold, pickup",
+      "passed": true
+    },
+    {
+      "name": "conflicts do not silently reschedule work or imply validity",
+      "passed": true
+    },
+    {
+      "name": "overlap link selects wait and extra",
+      "passed": true
+    },
+    {
+      "name": "switching extra crew moves conflicts and clears selection",
+      "passed": true
+    },
+    {
+      "name": "B assignment yields conflicts with B tasks",
+      "passed": true
+    },
+    {
+      "name": "unknown extra retains activity without inventing crew bar",
+      "passed": true
+    },
+    {
+      "name": "unknown join cannot become established plan",
+      "passed": true
+    },
+    {
+      "name": "unknown join removes only corresponding C slots, retains A",
+      "passed": true
+    },
+    {
+      "name": "unknown join with extra C preserves one C approach conflict",
+      "passed": true
+    },
+    {
+      "name": "unknown Q13 does not keep old valid result",
+      "passed": true
+    },
+    {
+      "name": "known work remains while unknown ending is not drawn",
+      "passed": true
+    },
+    {
+      "name": "late cue extends both assigned waiting people",
+      "passed": true
+    },
+    {
+      "name": "early cue still awaits pickup readiness",
+      "passed": true
+    },
+    {
+      "name": "unknown deadline preserves completion but comparison unknown",
+      "passed": true
+    },
+    {
+      "name": "unknown appearance preserves C arrival and withholds dependent work",
+      "passed": true
+    },
+    {
+      "name": "unknown work duration preserves preceding carry",
+      "passed": true
+    },
+    {
+      "name": "placement time six gives 18 total",
+      "passed": true
+    },
+    {
+      "name": "decimal input remains precise",
+      "passed": true
+    },
+    {
+      "name": "invalid input blocks old results: abc",
+      "passed": true
+    },
+    {
+      "name": "invalid input blocks old results: -1",
+      "passed": true
+    },
+    {
+      "name": "invalid input blocks old results: 21",
+      "passed": true
+    },
+    {
+      "name": "invalid input blocks old results: 0.01",
+      "passed": true
+    },
+    {
+      "name": "invalid input blocks old results: 1e1",
+      "passed": true
+    },
+    {
+      "name": "undo invalid draft returns last accepted conditions",
+      "passed": true
+    },
+    {
+      "name": "reload clears local trial changes",
+      "passed": true
+    },
+    {
+      "name": "no product persistence keys or databases written",
+      "passed": true
+    },
+    {
+      "name": "zero wait has accessible source detail",
+      "passed": true
+    },
+    {
+      "name": "no page overflow with expanded rows at 390",
+      "passed": true
+    },
+    {
+      "name": "visible controls meet 44px at 390",
+      "passed": true
+    },
+    {
+      "name": "expanded details and warning button centers uncovered at 390",
+      "passed": true
+    },
+    {
+      "name": "warning selection preserves timeline scroll at 390",
+      "passed": true
+    },
+    {
+      "name": "person names remain fixed during horizontal scroll at 390",
+      "passed": true
+    },
+    {
+      "name": "no page overflow with expanded rows at 1440",
+      "passed": true
+    },
+    {
+      "name": "visible controls meet 44px at 1440",
+      "passed": true
+    },
+    {
+      "name": "expanded details and warning button centers uncovered at 1440",
+      "passed": true
+    },
+    {
+      "name": "warning selection preserves timeline scroll at 1440",
+      "passed": true
+    },
+    {
+      "name": "person names remain fixed during horizontal scroll at 1440",
+      "passed": true
+    },
+    {
+      "name": "no unhandled runtime errors in valid flows",
+      "passed": true
+    },
+    {
+      "name": "stale-core blocks controls and results",
+      "passed": true
+    },
+    {
+      "name": "fixture-http-failure blocks controls and results",
+      "passed": true
+    },
+    {
+      "name": "fixture-mismatch blocks controls and results",
+      "passed": true
+    },
+    {
+      "name": "ui-load-failure blocks controls and results",
+      "passed": true
+    }
+  ],
+  "passed": 54,
+  "total": 54,
+  "runtimeErrors": []
+}

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>舞台スケッチ 監査対応の実装手順書 2026-09-09</title>
+<style>
+  :root{--ink:#1d1a16;--sub:#5b554c;--line:#d9d2c5;--paper:#fbf8f2;--card:#fff;--hi:#b3261e;--mid:#9a6b00;--low:#2f6b4f;--info:#3c5a80;--tag:#efe9dd;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.75 -apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
+  main{max-width:980px;margin:0 auto;padding:24px 18px 80px}
+  h1{font-size:24px;line-height:1.35;margin:0 0 6px}
+  h2{font-size:19px;margin:40px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+  .meta{color:var(--sub);font-size:14px}
+  .lead{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--info);padding:14px 16px;border-radius:8px;margin:18px 0}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:12px 0}
+  .step h3{margin:0 0 6px;font-size:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .tag{font-size:12px;padding:1px 8px;border-radius:999px;color:#fff;white-space:nowrap}
+  .t-you{background:var(--hi)}.t-codex{background:var(--info)}.t-claude{background:var(--low)}.t-night{background:var(--mid)}
+  .kind{font-size:12px;padding:1px 8px;border-radius:999px;background:var(--tag);color:var(--sub)}
+  code{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:#f1ede4;padding:1px 5px;border-radius:4px;word-break:break-all}
+  pre{background:#1f1c18;color:#f3efe6;padding:10px 12px;border-radius:8px;overflow:auto;font-size:13px;margin:8px 0}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+  th{background:var(--tag)}
+  ul,ol{padding-left:1.3em}
+  li{margin:3px 0}
+  .note{font-size:14px;color:var(--sub)}
+  .ok{color:var(--low)}.ng{color:var(--hi)}
+</style>
+</head>
+<body>
+<main>
+<h1>監査対応の実装手順書：実装の日に上から順に流す</h1>
+<p class="meta">2026-09-09・Claude（Fable 5.1）。<a href="../SYSTEM_AUDIT_2026-09-09.html">監査レポート</a>の A/B/C 項目を、実装の日に一気に進められる順番に並べ替えた。<strong>この時点で製品コードは1行も変えていない。</strong>各段の発注書・材料はこのフォルダにある。担当の色：<span class="tag t-you">本人</span>＝判断か実機か本番操作、<span class="tag t-codex">Codex</span>＝仕様確定済みの実装、<span class="tag t-claude">Claude</span>＝検証・設計判断、<span class="tag t-night">夜間可</span>＝判断を含まない。</p>
+
+<p class="note">エージェント向けの入口は <a href="START_HERE.md">START_HERE.md</a>。リファクタ以外の逐次修正（小道具・姿勢・文言・デザイン）の候補は <a href="SMALL_FIXES_CANDIDATES_2026-09-09.html"><strong>SMALL_FIXES_CANDIDATES_2026-09-09.html</strong></a>（P/Q/W/D/X の番号で1件ずつ発注できる）。</p>
+<section class="lead">
+  <h2 style="border:0;margin:0 0 8px;font-size:17px">始める前に決めること（5分）</h2>
+  <table>
+    <tr><th>#</th><th>判断</th><th>選択肢</th><th>推奨</th><th>影響する段</th></tr>
+    <tr><td>D-a</td><td>設計フォルダ（PNG 中心・85MB）を公開リポジトリへ入れるか</td><td>A そのまま／B PNG は archives へ退避して文書だけ／C 追跡しない</td><td><strong>B</strong></td><td>段1 コミット④</td></tr>
+    <tr><td>D-b</td><td>サインインの試行制限の置き場所</td><td>a Cloudflare ダッシュボード／b Worker 内 DO／c 両方</td><td><strong>a</strong>（本人がダッシュボードで設定）</td><td>段5</td></tr>
+    <tr><td>D-c</td><td>frame-ancestors を先行して入れるか</td><td>入れる／保留</td><td><strong>入れる</strong>（低リスク）</td><td>段5</td></tr>
+    <tr><td>D-d</td><td>クライアントの異常把握</td><td>0 何もしない／1 端末内ログ欄／2 匿名ビーコン</td><td><strong>1</strong></td><td>段9（別発注）</td></tr>
+    <tr><td>D-e</td><td><code>.git</code>（106MB）の扱い</td><td><code>git gc</code> だけ／<code>--separate-git-dir</code> で iCloud 外へ</td><td>まず <code>git gc</code></td><td>段2</td></tr>
+    <tr><td>D-f</td><td>退避コピー48件（23MB）</td><td>archives へ退避（4段階）／据え置き</td><td>退避</td><td>段10</td></tr>
+  </table>
+</section>
+
+<h2>段0　並行セッションの確認と検査の現在地（3分）</h2>
+<div class="step">
+  <h3><span class="tag t-you">本人</span> 他の Codex／Claude セッションが同じツリーを触っていないか</h3>
+<pre>cd "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app"
+pgrep -fl "codex|claude" | grep -v grep
+CHECK_ROOT="$PWD" zsh docs/system-audit-2026-09-09/check.sh.draft --allow-dirty</pre>
+  <p class="note">9/9 の試走結果：構文 ✓／stage.html ✓／<span class="ng">public-dist ✗（古い）</span>／tests 804 ✓／mcp 42 ✓。段1の前に <code>python3 build_public.py</code> で赤を消す（生成物のみ・追跡外）。</p>
+</div>
+
+<h2>段1　コミット（A-1・A-3）— 本番と履歴を一致させる（15分）</h2>
+<div class="step">
+  <h3><span class="tag t-you">本人</span> または実装セッション　<span class="kind">材料: A1_commit_split_plan.md</span></h3>
+  <ol>
+    <li><code>python3 build_public.py</code>（A-3 を緑に）</li>
+    <li>①ゲストアクセス：<code>git apply --cached docs/guest-access-2026-09-08/guest-access.patch</code> ＋ 新規3件を add → commit（一時クローンで当たることを検証済み）</li>
+    <li>②残りの製品コード（利用計測・SW修正・整列7形状・9/7 フォローアップ）→ commit。「未デプロイ」をメッセージに残す</li>
+    <li>③ <code>mcp-server/</code> → commit</li>
+    <li>④ 設計フォルダ（D-a の答えに従う）→ commit</li>
+    <li><code>git status --short</code> が空、<code>node tests/index.mjs</code> 緑を確認</li>
+  </ol>
+  <p class="note">段1が終わるまで <code>wrangler deploy</code> をしない。②の中の利用計測は DO 移行（<code>v2-usage-metrics</code>）を含むので、デプロイは段4の実機確認とまとめて1回。</p>
+</div>
+
+<h2>段2　リポジトリの掃除（A-7・A-10）（5分・<span class="tag t-night">夜間可</span>）</h2>
+<div class="step">
+  <h3><span class="tag t-you">本人</span></h3>
+<pre>git gc                      # loose 2,760個 → pack へ（README の運用どおり）
+git stash list              # stash@{0} 2026-08-23 が不要なら: git stash drop stash@{0}
+du -sh .git</pre>
+  <p class="note">リモートの <code>agent/db-shelf-split</code> ブランチは不要なら本人が削除（AIは消さない）。<code>--separate-git-dir</code> への移行（D-e）は別日に。</p>
+</div>
+
+<h2>段3　SW の版ずれ対策（A-2）（Codex 2〜3時間）</h2>
+<div class="step">
+  <h3><span class="tag t-codex">Codex</span> 実装 → <span class="tag t-claude">Claude</span> 検証　<span class="kind">発注書: WO_A2_sw_update_consistency.md</span></h3>
+  <p>再現スクリプト <code>repro-a2-sw-mixed-version.mjs</code> をそのままテストに移す。navigate の put を「shell が揃っている時だけ」に、<code>cachedAppShellResponse</code> は「揃っているキャッシュ」を優先。編集が全部終わってから版上げ3点セット（<code>index.html</code> の <code>?v=</code>、<code>stage-sw.js</code> の <code>CACHE_NAME</code>＋<code>APP_SHELL</code>、<code>build_stage.py</code>）。</p>
+<pre>codex exec --skip-git-repo-check --sandbox workspace-write -m gpt-5.6-sol -c model_reasoning_effort=medium \
+  -C "$PWD" "最初に「/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/AGENTS.md」を読む。次に docs/system-audit-2026-09-09/WO_A2_sw_update_consistency.md の発注書どおりに実装し、完了条件をすべて満たしてから報告する。版上げは最後に1回。" &lt;/dev/null</pre>
+  <p class="note">Codex の版は実行前に <code>codex --version</code>。既定モデルが対応外に変わることがあるので <code>-m</code> を明示（メモリ）。</p>
+</div>
+
+<h2>段4　デプロイと実機確認（C-2）（本人 20分）</h2>
+<div class="step">
+  <h3><span class="tag t-you">本人</span>　<span class="kind">材料: C2_ipad_pwa_update_checklist.md</span></h3>
+  <ol>
+    <li><code>./check.sh</code>（段6で置いていなければ草案を <code>CHECK_ROOT</code> 付きで）が緑</li>
+    <li><code>npx wrangler deploy</code>（β本体。利用計測の DO 移行が同時に走る）／体験版に効く変更があれば <code>python3 build_public.py &amp;&amp; npx wrangler deploy -c wrangler.public.toml</code></li>
+    <li>iPad チェックリスト 1〜9 を通す。3・4・6・7 が○で合格。×なら段3へ差し戻し</li>
+    <li>合格を <code>docs/QA_PWA_UPDATE_&lt;日付&gt;.md</code> に残す。Usage 管理者ページ（<code>/usage</code> 相当・URL は IMPLEMENTATION.md）が開くことも確認</li>
+  </ol>
+</div>
+
+<h2>段5　Worker の防御（A-4・A-5）（Codex 1時間＋本人のダッシュボード操作）</h2>
+<div class="step">
+  <h3><span class="tag t-you">本人</span> D-b・D-c を決める → <span class="tag t-codex">Codex</span>　<span class="kind">発注書: WO_A4_A5_worker_hardening.md</span></h3>
+  <p>D-b=a なら Cloudflare ダッシュボードで <code>/sign-in</code> POST の Rate Limiting（同一IP 10回/分）を本人が設定。コード側は <code>X-Frame-Options: DENY</code>＋<code>frame-ancestors 'none'</code>、CSP は Report-Only で1週間観察。デプロイは段4と同じ手順。</p>
+</div>
+
+<h2>段6　検査を1コマンドに（B-8）・最小 Lint（B-7）（Codex 1時間・<span class="tag t-night">夜間可</span>）</h2>
+<div class="step">
+  <h3><span class="tag t-codex">Codex</span>　<span class="kind">発注書: WO_B7_B8_lint_and_check.md／草案: check.sh.draft, eslint.config.mjs.draft</span></h3>
+  <p><code>check.sh.draft</code> は 9/9 に試走済み（そのまま <code>shosai-app/check.sh</code> に置ける）。ESLint は <code>node_modules</code> を iCloud に置かない形で（発注書参照）。初回の <code>no-undef</code> 指摘は直さず件数報告。以後、デプロイ前は必ず <code>./check.sh</code>。</p>
+</div>
+
+<h2>段7　テストの穴埋め（A-9）（Codex 1〜2時間・<span class="tag t-night">夜間可</span>）</h2>
+<div class="step">
+  <h3><span class="tag t-codex">Codex</span>　<span class="kind">発注書: WO_A9_tests_lineup_admin.md</span></h3>
+  <p>整列7形状（<a href="../HANDOFF_LINEUP_2026-09-09.html">整列の引き継ぎ</a>参照）と <code>usage-admin-page.js</code> のテスト。製品コードを外へ出す必要が出たら先に本人へ提案。</p>
+</div>
+
+<h2>段8　リファクタ本体：B-2 → B-3 → B-4 → B-1（順序厳守）</h2>
+<div class="step">
+  <h3><span class="tag t-codex">Codex</span> 実装 → <span class="tag t-claude">Claude</span> 検証</h3>
+  <table>
+    <tr><th>順</th><th>発注書</th><th>要点</th><th>受け入れの芯</th><th>目安</th></tr>
+    <tr><td>1</td><td><a href="WO_B2_asset_manifest.md">WO-B2 資材一覧の一元化</a></td><td><code>build_stage.py</code> が <code>stage-sw.js</code> の APP_SHELL を生成。<code>--check</code> で worker の許可リスト不足も検出</td><td>生成直後の出力が今の stage-sw.js と1文字も違わない</td><td>半日</td></tr>
+    <tr><td>2</td><td><a href="WO_B3_i18n_ternaries.md">WO-B3 i18n 三項演算子</a></td><td>154件を <code>tx()</code>／SAY へ（<a href="B3_isEn_ternary_sites.md">対訳表</a>）</td><td>英語UIの innerText 差分 0、<code>isEn() ?</code> 0件</td><td>半日</td></tr>
+    <tr><td>3</td><td><a href="WO_B4_css_split.md">WO-B4 CSS</a></td><td>第1段＝重複19件の統合、第2段＝<code>stage.css</code> 分離</td><td>3幅×日英の getComputedStyle 差分 0</td><td>1日</td></tr>
+    <tr><td>4</td><td><a href="WO_B1_split_stage_sketch.md">WO-B1 分割 第1段（体モデル）</a></td><td>外部参照23個の (d) から。(a) 会場描画は63個で最後（<a href="B1_split_dependency_map.md">依存マップ</a>）</td><td>見本ショーの描画ハッシュ一致・既存テスト全緑</td><td>1日</td></tr>
+  </table>
+  <p class="note">B-6（同名関数の統合）は<strong>取り下げ</strong>：7組すべて中身が別物（一致率 ≤0.12、<a href="B6_same_name_functions.md">比較表</a>）。B-5（worker.js のモジュール分割）は段5と同時にやると安いが、急がない。</p>
+</div>
+
+<h2>段9　判断待ちの小物</h2>
+<div class="step">
+  <h3><span class="tag t-you">本人</span></h3>
+  <ul>
+    <li>C-1 異常把握：<a href="C1_error_beacon_options.md">選択肢</a>（推奨＝端末内ログ欄）。決まったら発注書化</li>
+    <li>C-5 README：<a href="README_DRAFT_2026-09-09.md">改訂草案</a>を読んで採否。採用なら <code>README.md</code> を差し替え（B-2 完了後は版上げの記述を2点に直す）</li>
+    <li>C-4 docs 索引：<code>docs/INDEX.md</code> は生成済み。<code>python3 docs/system-audit-2026-09-09/make_docs_index.py</code> を夜間タスク（毎日 4:20 案）にするか</li>
+    <li>B-8 の夜間化：<code>check.sh --allow-dirty</code> を毎日回して <code>overnight-runs/</code> へ残すか</li>
+  </ul>
+</div>
+
+<h2>段10　退避コピーの整理（A-6・A-8）（4段階・削除は本人）</h2>
+<div class="step">
+  <h3><span class="tag t-you">本人</span>　<span class="kind">材料: A8_backup_files_ledger.md（SHA256付き）</span></h3>
+  <ol>
+    <li>退避：<code>claude-files-archives/shosai-snapshots/2026-09-09_backup-files/</code> へコピー、台帳の SHA256 と照合</li>
+    <li>稼働確認：<code>./check.sh --allow-dirty</code> 緑、<code>grep -l "_backup_" *.js *.py tests/*.mjs</code> が参照0件</li>
+    <li>承認：本人が台帳を見て OK</li>
+    <li>削除：本人の操作で。<code>SHOWS_INVENTORY 2.md</code>（本体と同一の競合コピー）も同じ流れで</li>
+  </ol>
+</div>
+
+<h2>完了の定義</h2>
+<ul>
+  <li><span class="ok">段1〜4</span>：<code>git status</code> 空・本番＝HEAD・iPad チェックリスト合格・<code>./check.sh</code> 緑</li>
+  <li><span class="ok">段5〜7</span>：ヘッダ付与済み・Rate Limiting 設定済み・check.sh 常設・新テスト2本</li>
+  <li><span class="ok">段8</span>：4発注書の受け入れ条件がすべて数値で報告されている（差分0・ハッシュ一致）</li>
+</ul>
+<p class="note">監査時点の確認範囲と未確認事項は<a href="../SYSTEM_AUDIT_2026-09-09.html">監査レポート</a>末尾を参照。このフォルダは <code>docs/</code> 配下のため配信対象外。</p>
+</main>
+</body>
+</html>

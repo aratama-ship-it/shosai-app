@@ -1,0 +1,24 @@
+{
+  "status": "verified",
+  "activeVersion": "b8c7e1bb-f730-469e-92da-8b989ec2a53b",
+  "deploymentId": "b502715e-af84-46a3-a1ce-a36a2c419115",
+  "checkedAt": "2026-09-12T14:00:17.158Z",
+  "changedRoutes": [
+    "/stage",
+    "/stage-sw.js",
+    "/stage.html",
+    "/style.css"
+  ],
+  "unchangedRouteCount": 49,
+  "sourceSha256": "1b74f5d60d0f215470a417268e00a5eed24067fa8d984ab4a08d3fbfaa76701f",
+  "stage": {
+    "version": "v0.3.6",
+    "fullscreenIconOnly": true,
+    "timelineModeIncluded": false,
+    "stylesheetRevision": 291,
+    "serviceWorkerCache": "stage-sketch-pwa-v343"
+  },
+  "unauthenticatedStageStatus": 401,
+  "betaActive": true,
+  "publicViewerStatus": 200
+}

@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "Private text and both pen views autosave per scene, restore after reload, and never auto-post",
+    "Explicit share sends immutable stage JPEGs with strokes, text, display name and scene; owner UI renders them safely",
+    "Other recipients have no private text/strokes or shared-note list; anonymous and other owners cannot retrieve images",
+    "Share failures preserve private notes; screen-only selected view works; published update preserves personal notes and old shared images",
+    "Japanese/English at four sizes, 44px targets, storage error UI and untouched existing local shows"
+  ],
+  "errors": []
+}

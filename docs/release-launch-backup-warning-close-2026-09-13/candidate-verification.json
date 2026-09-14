@@ -1,0 +1,29 @@
+{
+  "status": "verified",
+  "checkedAt": "2026-09-13T10:29:23.234Z",
+  "baselineVersion": "92ba680c-6849-40f5-91a7-74264444e30f",
+  "baselineSourceSha256": "1ae389cca1067e8f239e3fe437fa789d9439f1ad5199f991f8bebb37ff5100d5",
+  "candidateSourceSha256": "b0e07f79257b6c7c85ef14a44a0936605fe785428af407570d38652a1e82cf6f",
+  "changedRoutes": [
+    "/stage",
+    "/stage-sketch.js",
+    "/stage-sw.js",
+    "/stage.html",
+    "/style.css"
+  ],
+  "unchangedRouteCount": 48,
+  "warning": {
+    "exactJapaneseCopyPreserved": true,
+    "guest1OnlyExemptionPreserved": true,
+    "closeButtonAdded": true,
+    "backdropDismissAdded": true,
+    "launchSemanticsUnchanged": true
+  },
+  "compatibility": {
+    "existingFeatures": "48 unchanged effective routes; five routes restore byte-for-byte after removing close controls and cache reference bumps",
+    "projectRoundtrip": "project serialization, import, export, autosave, and migration code is byte-identical to the active beta",
+    "audioContinuity": "audio code and assets are byte-identical to the active beta",
+    "storageFailureSafety": "storage and recovery code is byte-identical; dismiss handlers do not write browser storage",
+    "updateAndRollback": "active Worker source preserved with SHA-256; candidate only advances changed asset and PWA cache references"
+  }
+}

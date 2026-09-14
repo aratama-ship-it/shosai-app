@@ -1,0 +1,16 @@
+{
+  "url": "http://127.0.0.1:18760/docs/romeo-juliet-sample-2026-09-09/decision-sheet/",
+  "checks": [
+    "initial_state_0_of_21",
+    "recommended_fill_preserves_existing_choice",
+    "unanswered_filter",
+    "local_storage_reload",
+    "machine_readable_export",
+    "json_download",
+    "clipboard_summary",
+    "no_horizontal_overflow_1440_and_390",
+    "standalone_file_mode_no_external_requests"
+  ],
+  "pageErrors": [],
+  "status": "PASS"
+}

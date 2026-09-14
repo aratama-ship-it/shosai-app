@@ -1,0 +1,104 @@
+{
+  "checks": [
+    "invitation requires free sign-in, then opens show",
+    "private text and front/plan ink save without sharing",
+    "separate phone context loads same account text and both drawings",
+    "phone changes arrive on PC without reload",
+    "another reader has a separate empty notebook",
+    "explicit sharing sends verified name, note and two stage images to owner only",
+    "pen, notes and sharing never change the published show",
+    "one reader library contains invitations from two owners",
+    "simultaneous device edits preserve both versions and explicit resolution syncs",
+    "Japanese/English desktop/tablet/phone portrait/landscape layouts, full-width desktop drawings and 44px controls",
+    "sign-out revokes reader access"
+  ],
+  "geometry": [
+    {
+      "lang": "ja",
+      "width": 1440,
+      "height": 1000,
+      "scroll": 1440,
+      "frame": 1408,
+      "bad": []
+    },
+    {
+      "lang": "ja",
+      "width": 1024,
+      "height": 768,
+      "scroll": 1024,
+      "frame": 992,
+      "bad": []
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "height": 844,
+      "scroll": 390,
+      "frame": 358,
+      "bad": []
+    },
+    {
+      "lang": "ja",
+      "width": 844,
+      "height": 390,
+      "scroll": 844,
+      "frame": 812,
+      "bad": []
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "height": 1000,
+      "scroll": 1440,
+      "frame": 1408,
+      "bad": []
+    },
+    {
+      "lang": "en",
+      "width": 1024,
+      "height": 768,
+      "scroll": 1024,
+      "frame": 992,
+      "bad": []
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "height": 844,
+      "scroll": 390,
+      "frame": 358,
+      "bad": []
+    },
+    {
+      "lang": "en",
+      "width": 844,
+      "height": 390,
+      "scroll": 844,
+      "frame": 812,
+      "bad": []
+    }
+  ],
+  "errors": [],
+  "links": [
+    {
+      "token": "f90b6811084324c09aa46e001b438ce3366c6e5cfe1755fb",
+      "showId": "reader-check-05cee889-f16a-4adb-8ca7-e6e0d64dfd43",
+      "title": "演者アカウント確認 / Reader account",
+      "createdAt": "2026-09-09T10:59:55.249Z",
+      "updatedAt": "2026-09-09T10:59:55.249Z",
+      "revokedAt": null,
+      "revision": 1,
+      "noteCount": 0
+    },
+    {
+      "token": "f1fc45dbdb74fa016e1f02c9b92a7fb20f61b1a122afd7ea",
+      "showId": "reader-check-bdc5b681-a690-4468-b3c6-2c3c73615a87",
+      "title": "別のオーナーのショー / Another owner",
+      "createdAt": "2026-09-09T10:59:55.255Z",
+      "updatedAt": "2026-09-09T10:59:55.255Z",
+      "revokedAt": null,
+      "revision": 1,
+      "noteCount": 0
+    }
+  ]
+}

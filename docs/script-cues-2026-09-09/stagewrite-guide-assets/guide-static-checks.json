@@ -1,0 +1,17 @@
+{
+  "stagewrite-guide.html": {
+    "bytes": 26431,
+    "source_image_count": 8,
+    "duplicate_ids": 0,
+    "missing_links": []
+  },
+  "stagewrite-guide-offline.html": {
+    "bytes": 1046705,
+    "source_image_count": 8,
+    "duplicate_ids": 0,
+    "missing_links": []
+  },
+  "embedded_images_match_source": true,
+  "main_and_offline_scripts_match": true,
+  "notes": "8枚の参照画像を対象とし、srcなしの拡大用imgは除外。リンクはローカル参照の存在確認で、外部リンクのHTTP検査ではない。"
+}

@@ -1,0 +1,30 @@
+{
+  "sourceExact": true,
+  "speeches": 11,
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "noHorizontalOverflow": true,
+      "allTextareasFit": true,
+      "sourceAndDraftMatch": true,
+      "baselineToggle": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "noHorizontalOverflow": true,
+      "allTextareasFit": true,
+      "sourceAndDraftMatch": true,
+      "baselineToggle": true
+    }
+  ],
+  "editAndExports": {
+    "txtIncludesCurrentText": true,
+    "jsonSeparatesRevision": true,
+    "baselineAndEnglishUnchanged": true,
+    "unadopted": true
+  },
+  "pageErrors": [],
+  "browserVersion": "151.0.7922.34"
+}

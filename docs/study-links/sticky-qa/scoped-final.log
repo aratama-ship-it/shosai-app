@@ -1,0 +1,484 @@
+TAP version 13
+# Subtest: 受け取ったopの取り込みはリモート由来として扱う
+ok 1 - 受け取ったopの取り込みはリモート由来として扱う
+  ---
+  duration_ms: 0.508542
+  type: 'test'
+  ...
+# Subtest: メッセージ処理から直接applyGuestOpを呼ばない
+ok 2 - メッセージ処理から直接applyGuestOpを呼ばない
+  ---
+  duration_ms: 0.075
+  type: 'test'
+  ...
+# Subtest: ホストとゲストは許可された矢印opだけを受け取る
+ok 3 - ホストとゲストは許可された矢印opだけを受け取る
+  ---
+  duration_ms: 0.092959
+  type: 'test'
+  ...
+# Subtest: ゲストは矢印だけを差分の基準にも当てる
+ok 4 - ゲストは矢印だけを差分の基準にも当てる
+  ---
+  duration_ms: 0.087834
+  type: 'test'
+  ...
+# Subtest: ホストは落ち着いてから正本を配り直す
+ok 5 - ホストは落ち着いてから正本を配り直す
+  ---
+  duration_ms: 0.145958
+  type: 'test'
+  ...
+# Subtest: サーバはopを送信者以外のゲストへも中継する
+ok 6 - サーバはopを送信者以外のゲストへも中継する
+  ---
+  duration_ms: 0.050208
+  type: 'test'
+  ...
+# Subtest: サーバーの汎用中継は変更せず、opを送れる役割も今までどおりゲストだけ
+ok 7 - サーバーの汎用中継は変更せず、opを送れる役割も今までどおりゲストだけ
+  ---
+  duration_ms: 0.116917
+  type: 'test'
+  ...
+# Subtest: docを配れるのは今もホストだけ
+ok 8 - docを配れるのは今もホストだけ
+  ---
+  duration_ms: 0.040333
+  type: 'test'
+  ...
+# Subtest: 共有docはDurable Objectの保存上限より前で拒否し、保存確認後だけ配る
+ok 9 - 共有docはDurable Objectの保存上限より前で拒否し、保存確認後だけ配る
+  ---
+  duration_ms: 0.245916
+  type: 'test'
+  ...
+# Subtest: ホストは保存確認が来るまで送信済みとして扱わず、大きすぎるdocを送らない
+ok 10 - ホストは保存確認が来るまで送信済みとして扱わず、大きすぎるdocを送らない
+  ---
+  duration_ms: 0.30025
+  type: 'test'
+  ...
+# Subtest: beta bearer invitation opens all scenes without Google or a reader account; manual snapshots survive restart
+ok 11 - beta bearer invitation opens all scenes without Google or a reader account; manual snapshots survive restart
+  ---
+  duration_ms: 19.929791
+  type: 'test'
+  ...
+# Subtest: anonymous access requires both explicit flags and never becomes an account permission
+ok 12 - anonymous access requires both explicit flags and never becomes an account permission
+  ---
+  duration_ms: 6.456
+  type: 'test'
+  ...
+# Subtest: beta anonymous path exposes only exact viewer assets and target token operations
+ok 13 - beta anonymous path exposes only exact viewer assets and target token operations
+  ---
+  duration_ms: 6.59025
+  type: 'test'
+  ...
+# Subtest: explicit anonymous share retains display name as plain text and only owner can list it
+ok 14 - explicit anonymous share retains display name as plain text and only owner can list it
+  ---
+  duration_ms: 3.667792
+  type: 'test'
+  ...
+# Subtest: anonymous note validation, cross-origin protection, request bounds and rate limit remain effective
+ok 15 - anonymous note validation, cross-origin protection, request bounds and rate limit remain effective
+  ---
+  duration_ms: 7.112
+  type: 'test'
+  ...
+# Subtest: revoked, missing and malformed tokens share the same error for viewing, status and posts
+ok 16 - revoked, missing and malformed tokens share the same error for viewing, status and posts
+  ---
+  duration_ms: 5.7745
+  type: 'test'
+  ...
+# Subtest: scene identity tolerates rename/reorder but detects pieces, venue dimensions and shared assets
+ok 17 - scene identity tolerates rename/reorder but detects pieces, venue dimensions and shared assets
+  ---
+  duration_ms: 7.909
+  type: 'test'
+  ...
+# Subtest: old snapshots survive update/restart; deleted/added scenes remain in their correct revisions
+ok 18 - old snapshots survive update/restart; deleted/added scenes remain in their correct revisions
+  ---
+  duration_ms: 16.23725
+  type: 'test'
+  ...
+# Subtest: historical views obey revocation, strict paths, read-only methods and owner isolation
+ok 19 - historical views obey revocation, strict paths, read-only methods and owner isolation
+  ---
+  duration_ms: 7.462666
+  type: 'test'
+  ...
+# Subtest: history limits refuse the new update without dropping earlier publications or owner feedback
+ok 20 - history limits refuse the new update without dropping earlier publications or owner feedback
+  ---
+  duration_ms: 42.792083
+  type: 'test'
+  ...
+# Subtest: unchanged drawings continue; changed drawings start clean while preserving the complete old note
+ok 21 - unchanged drawings continue; changed drawings start clean while preserving the complete old note
+  ---
+  duration_ms: 1.172
+  type: 'test'
+  ...
+# Subtest: deleted scenes stay listed and selected text/strokes copy to any current scene, keeping both originals
+ok 22 - deleted scenes stay listed and selected text/strokes copy to any current scene, keeping both originals
+  ---
+  duration_ms: 6.773542
+  type: 'test'
+  ...
+# Subtest: bounded note history rejects nested/malformed entries and overflow, preserving storage
+ok 23 - bounded note history rejects nested/malformed entries and overflow, preserving storage
+  ---
+  duration_ms: 0.687958
+  type: 'test'
+  ...
+# Subtest: verified stable notebook IDs reconnect device notes on reissue without touching the legacy key or another show
+ok 24 - verified stable notebook IDs reconnect device notes on reissue without touching the legacy key or another show
+  ---
+  duration_ms: 0.565833
+  type: 'test'
+  ...
+# Subtest: server notebook identity survives reissue and is distinct for another owner of the same show ID
+ok 25 - server notebook identity survives reissue and is distinct for another owner of the same show ID
+  ---
+  duration_ms: 4.220042
+  type: 'test'
+  ...
+# Subtest: feedback inbox accessible heading does not collide with the existing product-feedback dialog
+ok 26 - feedback inbox accessible heading does not collide with the existing product-feedback dialog
+  ---
+  duration_ms: 0.862875
+  type: 'test'
+  ...
+# Subtest: 発行時の全場面を凍結し明示更新でだけ同じリンクを変更する
+ok 27 - 発行時の全場面を凍結し明示更新でだけ同じリンクを変更する
+  ---
+  duration_ms: 23.442
+  type: 'test'
+  ...
+# Subtest: 閲覧トークンは編集・メモ一覧・所有者の代理操作を許可しない
+ok 28 - 閲覧トークンは編集・メモ一覧・所有者の代理操作を許可しない
+  ---
+  duration_ms: 8.35625
+  type: 'test'
+  ...
+# Subtest: メモは対象場面・時刻・投稿者とともにオーナーだけへ返し更新後も保持
+ok 29 - メモは対象場面・時刻・投稿者とともにオーナーだけへ返し更新後も保持
+  ---
+  duration_ms: 5.079666
+  type: 'test'
+  ...
+# Subtest: 無効化・未知・不正トークンは同じ応答で、既存閲覧者の再取得・投稿を止める
+ok 30 - 無効化・未知・不正トークンは同じ応答で、既存閲覧者の再取得・投稿を止める
+  ---
+  duration_ms: 17.406666
+  type: 'test'
+  ...
+# Subtest: 発行上限はオーナーごとに10ショーで、別オーナーの発行枠を消費しない
+ok 31 - 発行上限はオーナーごとに10ショーで、別オーナーの発行枠を消費しない
+  ---
+  duration_ms: 6.765292
+  type: 'test'
+  ...
+# Subtest: オーナーは自分の保存済みリンクだけを一覧し、無効化後に任意のショーを削除できる
+ok 32 - オーナーは自分の保存済みリンクだけを一覧し、無効化後に任意のショーを削除できる
+  ---
+  duration_ms: 4.869334
+  type: 'test'
+  ...
+# Subtest: 全体1000件の緊急上限はオーナー枠に余裕があっても発行を止める
+ok 33 - 全体1000件の緊急上限はオーナー枠に余裕があっても発行を止める
+  ---
+  duration_ms: 0.538166
+  type: 'test'
+  ...
+# Subtest: 旧owner indexから件数を復元し、区切り文字を含む別ownerを数えない
+ok 34 - 旧owner indexから件数を復元し、区切り文字を含む別ownerを数えない
+  ---
+  duration_ms: 1.247875
+  type: 'test'
+  ...
+# Subtest: 無効化後の再発行は新しいtokenへ交換し、古い公開内容とメモを回収する
+ok 35 - 無効化後の再発行は新しいtokenへ交換し、古い公開内容とメモを回収する
+  ---
+  duration_ms: 2.679583
+  type: 'test'
+  ...
+# Subtest: オーナーだけがメモを全削除でき、連番と保存件数を分けて再投稿できる
+ok 36 - オーナーだけがメモを全削除でき、連番と保存件数を分けて再投稿できる
+  ---
+  duration_ms: 2.177208
+  type: 'test'
+  ...
+# Subtest: 失効済み保存データの削除だけが発行枠を戻し、旧tokenを残さない
+ok 37 - 失効済み保存データの削除だけが発行枠を戻し、旧tokenを残さない
+  ---
+  duration_ms: 2.277792
+  type: 'test'
+  ...
+# Subtest: メモの型・文字数・リクエスト量・場面・連投・保存上限をサーバーで検証する
+ok 38 - メモの型・文字数・リクエスト量・場面・連投・保存上限をサーバーで検証する
+  ---
+  duration_ms: 3.511084
+  type: 'test'
+  ...
+# Subtest: 公開例外は明示資源・対象token APIだけで、編集画面・棚・名簿・他ショーへ抜けない
+ok 39 - 公開例外は明示資源・対象token APIだけで、編集画面・棚・名簿・他ショーへ抜けない
+  ---
+  duration_ms: 1.4915
+  type: 'test'
+  ...
+# Subtest: APIはno-store、発行競合は一つだけ、認証境界は交換可能
+ok 40 - APIはno-store、発行競合は一つだけ、認証境界は交換可能
+  ---
+  duration_ms: 0.881709
+  type: 'test'
+  ...
+# Subtest: 描画依存と正本の生成、ローカル保存の隔離、解析と編集入口の不在
+ok 41 - 描画依存と正本の生成、ローカル保存の隔離、解析と編集入口の不在
+  ---
+  duration_ms: 2.696625
+  type: 'test'
+  ...
+# Subtest: 本家とベータの入口・SW・Worker許可がそろい、体験版へ管理入口を混ぜない
+ok 42 - 本家とベータの入口・SW・Worker許可がそろい、体験版へ管理入口を混ぜない
+  ---
+  duration_ms: 2.192417
+  type: 'test'
+  ...
+# Subtest: 共有パネルは会議用同期と演者事前学習リンクを分け、説明と管理入口を持つ
+ok 43 - 共有パネルは会議用同期と演者事前学習リンクを分け、説明と管理入口を持つ
+  ---
+  duration_ms: 1.092833
+  type: 'test'
+  ...
+# Subtest: private text and strokes survive reload with scene and token isolation; show keys untouched
+ok 44 - private text and strokes survive reload with scene and token isolation; show keys untouched
+  ---
+  duration_ms: 2.28675
+  type: 'test'
+  ...
+# Subtest: private store merges other scenes and preserves old revision for an explicit warning
+ok 45 - private store merges other scenes and preserves old revision for an explicit warning
+  ---
+  duration_ms: 0.374917
+  type: 'test'
+  ...
+# Subtest: unreadable private data is never overwritten; quota failure retains current notes in memory
+ok 46 - unreadable private data is never overwritten; quota failure retains current notes in memory
+  ---
+  duration_ms: 0.599875
+  type: 'test'
+  ...
+# Subtest: private data validation limits structure, coordinates, text and storage size
+ok 47 - private data validation limits structure, coordinates, text and storage size
+  ---
+  duration_ms: 0.36225
+  type: 'test'
+  ...
+# Subtest: free login creates isolated HttpOnly sessions; anonymous, forged cookies and editor access fail
+ok 48 - free login creates isolated HttpOnly sessions; anonymous, forged cookies and editor access fail
+  ---
+  duration_ms: 25.810583
+  type: 'test'
+  ...
+# Subtest: one reader joins different owners, notes survive a new device and storage restart, other accounts cannot read them
+ok 49 - one reader joins different owners, notes survive a new device and storage restart, other accounts cannot read them
+  ---
+  duration_ms: 22.531459
+  type: 'test'
+  ...
+# Subtest: CAS protects concurrent changes and retry is idempotent; a stale device gets both versions
+ok 50 - CAS protects concurrent changes and retry is idempotent; a stale device gets both versions
+  ---
+  duration_ms: 5.786334
+  type: 'test'
+  ...
+# Subtest: explicit sharing uses verified reader display name, sends no private account permission and stays owner only
+ok 51 - explicit sharing uses verified reader display name, sends no private account permission and stays owner only
+  ---
+  duration_ms: 2.986417
+  type: 'test'
+  ...
+# Subtest: revocation blocks private notebook reads/writes, old tokens fail, reissue reconnects stable notebook
+ok 52 - revocation blocks private notebook reads/writes, old tokens fail, reissue reconnects stable notebook
+  ---
+  duration_ms: 7.1385
+  type: 'test'
+  ...
+# Subtest: logout revokes the server session; expired sessions and cross-origin writes fail closed
+ok 53 - logout revokes the server session; expired sessions and cross-origin writes fail closed
+  ---
+  duration_ms: 1.683375
+  type: 'test'
+  ...
+# Subtest: private notes enforce types, size, coordinates, scene ownership and rate limits without storing IP/UA
+ok 54 - private notes enforce types, size, coordinates, scene ownership and rate limits without storing IP/UA
+  ---
+  duration_ms: 53.80375
+  type: 'test'
+  ...
+# Subtest: Google RS256 validation rejects wrong signature, audience, issuer, nonce and expiry
+ok 55 - Google RS256 validation rejects wrong signature, audience, issuer, nonce and expiry
+  ---
+  duration_ms: 152.417333
+  type: 'test'
+  ...
+# Subtest: Google login state keeps invite server-side, binds browser and consumes once; missing config does not bypass login
+ok 56 - Google login state keeps invite server-side, binds browser and consumes once; missing config does not bypass login
+  ---
+  duration_ms: 1.579125
+  type: 'test'
+  ...
+# Subtest: an old tab cannot write its personal notes or shared screen into a newly signed-in account
+ok 57 - an old tab cannot write its personal notes or shared screen into a newly signed-in account
+  ---
+  duration_ms: 2.283459
+  type: 'test'
+  ...
+# Subtest: OAuth callback exchanges a code, validates Google signature and returns the original invite; cancel keeps it retryable
+ok 58 - OAuth callback exchanges a code, validates Google signature and returns the original invite; cancel keeps it retryable
+  ---
+  duration_ms: 109.255209
+  type: 'test'
+  ...
+# Subtest: library and notebook storage ceilings fail safely without discarding saved notes
+ok 59 - library and notebook storage ceilings fail safely without discarding saved notes
+  ---
+  duration_ms: 1.171291
+  type: 'test'
+  ...
+# Subtest: editor login does not silently replace a signed-out performer account
+ok 60 - editor login does not silently replace a signed-out performer account
+  ---
+  duration_ms: 1.045458
+  type: 'test'
+  ...
+# Subtest: pinned notes sync privately across devices, survive restart and follow normal authorization and CAS
+ok 61 - pinned notes sync privately across devices, survive restart and follow normal authorization and CAS
+  ---
+  duration_ms: 4.149542
+  type: 'test'
+  ...
+# Subtest: shared screens accept bounded JPEGs and derive dimensions from the file
+ok 62 - shared screens accept bounded JPEGs and derive dimensions from the file
+  ---
+  duration_ms: 0.938625
+  type: 'test'
+  ...
+# Subtest: only the matching owner can retrieve shared images, including after update/restart/revocation
+ok 63 - only the matching owner can retrieve shared images, including after update/restart/revocation
+  ---
+  duration_ms: 24.494542
+  type: 'test'
+  ...
+# Subtest: screen-only shares are valid; malformed images, byte quotas and request sizes are enforced
+ok 64 - screen-only shares are valid; malformed images, byte quotas and request sizes are enforced
+  ---
+  duration_ms: 4.55275
+  type: 'test'
+  ...
+# Subtest: clear, reissue and purge remove stored note-image chunks as part of the owner lifecycle
+ok 65 - clear, reissue and purge remove stored note-image chunks as part of the owner lifecycle
+  ---
+  duration_ms: 5.91075
+  type: 'test'
+  ...
+# Subtest: pinned-only notes survive reload and never replace local shows or another invite notebook
+ok 66 - pinned-only notes survive reload and never replace local shows or another invite notebook
+  ---
+  duration_ms: 2.337333
+  type: 'test'
+  ...
+# Subtest: client and server reject malformed, duplicate, oversized and off-diagram pinned notes
+ok 67 - client and server reject malformed, duplicate, oversized and off-diagram pinned notes
+  ---
+  duration_ms: 2.306292
+  type: 'test'
+  ...
+# Subtest: changed and removed scenes keep pinned-only history; selected notes copy without changing the original
+ok 68 - changed and removed scenes keep pinned-only history; selected notes copy without changing the original
+  ---
+  duration_ms: 2.110583
+  type: 'test'
+  ...
+# Subtest: copy limits and unreadable pinned-note data preserve originals
+ok 69 - copy limits and unreadable pinned-note data preserve originals
+  ---
+  duration_ms: 0.716791
+  type: 'test'
+  ...
+# Subtest: managed/legacy guest: Basicと既存Cookieで書斎・データ・未知の資源を配信しない
+ok 70 - managed/legacy guest: Basicと既存Cookieで書斎・データ・未知の資源を配信しない
+  ---
+  duration_ms: 68.695542
+  type: 'test'
+  ...
+# Subtest: SITE_USERは従来の書斎・資料・個人ショーを読み、HTTPキャッシュでは共有しない
+ok 71 - SITE_USERは従来の書斎・資料・個人ショーを読み、HTTPキャッシュでは共有しない
+  ---
+  duration_ms: 6.154417
+  type: 'test'
+  ...
+# Subtest: ゲストへ返す単独HTMLから個人ショーのscriptだけを外す
+ok 72 - ゲストへ返す単独HTMLから個人ショーのscriptだけを外す
+  ---
+  duration_ms: 2.862875
+  type: 'test'
+  ...
+# Subtest: 配信済みの旧HTMLも本人・ゲストの名称だけを更新し、本人のショーは保持する
+ok 73 - 配信済みの旧HTMLも本人・ゲストの名称だけを更新し、本人のショーは保持する
+  ---
+  duration_ms: 5.381125
+  type: 'test'
+  ...
+# Subtest: ゲストの舞台編集・PWA・ガイドの依存資源がすべて通る
+ok 74 - ゲストの舞台編集・PWA・ガイドの依存資源がすべて通る
+  ---
+  duration_ms: 14.796833
+  type: 'test'
+  ...
+# Subtest: 本人用のvalidator・Rangeを引き継がず、ゲスト用HTMLを必ず変換する
+ok 75 - 本人用のvalidator・Rangeを引き継がず、ゲスト用HTMLを必ず変換する
+  ---
+  duration_ms: 1.367625
+  type: 'test'
+  ...
+# Subtest: ゲストのrootとログイン戻り先は舞台へ・英語指定と招待セッションを保持
+ok 76 - ゲストのrootとログイン戻り先は舞台へ・英語指定と招待セッションを保持
+  ---
+  duration_ms: 3.59175
+  type: 'test'
+  ...
+# Subtest: 配信層の正規URL転送は許可し、書斎・外部への転送は拒否
+ok 77 - 配信層の正規URL転送は許可し、書斎・外部への転送は拒否
+  ---
+  duration_ms: 0.5645
+  type: 'test'
+  ...
+# Subtest: サインインの名称は舞台スケッチ、英語招待ではStage Sketch
+ok 78 - サインインの名称は舞台スケッチ、英語招待ではStage Sketch
+  ---
+  duration_ms: 0.485208
+  type: 'test'
+  ...
+# Subtest: 本人用と旧ゲスト用の同名設定を拒否して権限の取り違えを防ぐ
+ok 79 - 本人用と旧ゲスト用の同名設定を拒否して権限の取り違えを防ぐ
+  ---
+  duration_ms: 0.292792
+  type: 'test'
+  ...
+1..79
+# tests 79
+# suites 0
+# pass 79
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 445.611792

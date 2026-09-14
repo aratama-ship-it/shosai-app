@@ -1,0 +1,26 @@
+{
+  "stage.html": {
+    "sha256": "caac0e5378f522607f99264a216490f51c127898946735ac3338b90052b57cb7",
+    "expected": "caac0e5378f522607f99264a216490f51c127898946735ac3338b90052b57cb7",
+    "matches": true,
+    "bytes": 194791
+  },
+  "stage-sketch.js": {
+    "sha256": "00fb330f429fb92335990e0279ad92524c43e2213945e371e609e44ff06ad5c6",
+    "expected": "00fb330f429fb92335990e0279ad92524c43e2213945e371e609e44ff06ad5c6",
+    "matches": true,
+    "bytes": 1371980
+  },
+  "stage-timeline.js": {
+    "sha256": "09ffe258c692b71d45b53c0c9aafc67c74cb2556a1d43e68dc5e0319a51c5b2a",
+    "expected": "09ffe258c692b71d45b53c0c9aafc67c74cb2556a1d43e68dc5e0319a51c5b2a",
+    "matches": true,
+    "bytes": 113262
+  },
+  "stage-sw.js": {
+    "sha256": "88bf2f178630d4ef676ec733d976f81e8cace51b0eb938430d77f1120bbc668f",
+    "expected": "88bf2f178630d4ef676ec733d976f81e8cace51b0eb938430d77f1120bbc668f",
+    "matches": true,
+    "bytes": 9537
+  }
+}

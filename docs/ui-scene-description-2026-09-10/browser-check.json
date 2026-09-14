@@ -1,0 +1,365 @@
+{
+  "results": [
+    {
+      "name": "wide-ja",
+      "measurement": {
+        "step": {
+          "x": 365,
+          "y": 191.8125,
+          "width": 1219,
+          "height": 34,
+          "bottom": 225.8125
+        },
+        "desc": {
+          "x": 365,
+          "y": 233.8125,
+          "width": 1219,
+          "height": 37
+        },
+        "bar": {
+          "x": 354,
+          "width": 1241
+        },
+        "text": {
+          "clientHeight": 36,
+          "scrollHeight": 37,
+          "value": "目的: ボールを拾って中央へ戻す。障害: 拾うたび別のボールが動き、三点の追跡が床のジャグリングへ変わる。視覚変化: 中央の縦光を空にし、上手側だけが色を持つ。技: ローリング、床面の三球、落下を振付に含めるフィジカルコメディ。要検証: 落下を雑に見せず、再現可能なスコアとして固定できるか。"
+        },
+        "buttons": [
+          {
+            "id": "stage-scene-prev",
+            "x": 365,
+            "right": 463.671875,
+            "y": 193.3125,
+            "height": 31
+          },
+          {
+            "id": "stage-scene-next",
+            "x": 563.828125,
+            "right": 662.5,
+            "y": 193.3125,
+            "height": 31
+          },
+          {
+            "id": "stage-scene-replay",
+            "x": 670.5,
+            "right": 731.40625,
+            "y": 193.3125,
+            "height": 31
+          },
+          {
+            "id": "stage-scene-bar-grid",
+            "x": 741.40625,
+            "right": 771.40625,
+            "y": 191.8125,
+            "height": 34
+          }
+        ],
+        "overflow": false
+      },
+      "maxLengthHeight": 315,
+      "checks": "navigation top row, description full width below, entire long note and 200-character multiline note visible, scene navigation keeps correct note, short/empty field shrinks"
+    },
+    {
+      "name": "desktop-ja",
+      "measurement": {
+        "step": {
+          "x": 365,
+          "y": 228.8125,
+          "width": 739,
+          "height": 34,
+          "bottom": 262.8125
+        },
+        "desc": {
+          "x": 365,
+          "y": 270.8125,
+          "width": 739,
+          "height": 56
+        },
+        "bar": {
+          "x": 354,
+          "width": 761
+        },
+        "text": {
+          "clientHeight": 55,
+          "scrollHeight": 56,
+          "value": "目的: ボールを拾って中央へ戻す。障害: 拾うたび別のボールが動き、三点の追跡が床のジャグリングへ変わる。視覚変化: 中央の縦光を空にし、上手側だけが色を持つ。技: ローリング、床面の三球、落下を振付に含めるフィジカルコメディ。要検証: 落下を雑に見せず、再現可能なスコアとして固定できるか。"
+        },
+        "buttons": [
+          {
+            "id": "stage-scene-prev",
+            "x": 365,
+            "right": 463.671875,
+            "y": 230.3125,
+            "height": 31
+          },
+          {
+            "id": "stage-scene-next",
+            "x": 563.828125,
+            "right": 662.5,
+            "y": 230.3125,
+            "height": 31
+          },
+          {
+            "id": "stage-scene-replay",
+            "x": 670.5,
+            "right": 731.40625,
+            "y": 230.3125,
+            "height": 31
+          },
+          {
+            "id": "stage-scene-bar-grid",
+            "x": 741.40625,
+            "right": 771.40625,
+            "y": 228.8125,
+            "height": 34
+          }
+        ],
+        "overflow": false
+      },
+      "maxLengthHeight": 315,
+      "checks": "navigation top row, description full width below, entire long note and 200-character multiline note visible, scene navigation keeps correct note, short/empty field shrinks"
+    },
+    {
+      "name": "narrow-ja",
+      "measurement": {
+        "step": {
+          "x": 376,
+          "y": 312,
+          "width": 398,
+          "height": 34,
+          "bottom": 346
+        },
+        "desc": {
+          "x": 376,
+          "y": 354,
+          "width": 398,
+          "height": 112
+        },
+        "bar": {
+          "x": 365,
+          "width": 420
+        },
+        "text": {
+          "clientHeight": 111,
+          "scrollHeight": 112,
+          "value": "目的: ボールを拾って中央へ戻す。障害: 拾うたび別のボールが動き、三点の追跡が床のジャグリングへ変わる。視覚変化: 中央の縦光を空にし、上手側だけが色を持つ。技: ローリング、床面の三球、落下を振付に含めるフィジカルコメディ。要検証: 落下を雑に見せず、再現可能なスコアとして固定できるか。"
+        },
+        "buttons": [
+          {
+            "id": "stage-scene-prev",
+            "x": 376,
+            "right": 474.671875,
+            "y": 313.5,
+            "height": 31
+          },
+          {
+            "id": "stage-scene-next",
+            "x": 568.515625,
+            "right": 667.1875,
+            "y": 313.5,
+            "height": 31
+          },
+          {
+            "id": "stage-scene-replay",
+            "x": 675.1875,
+            "right": 736.09375,
+            "y": 313.5,
+            "height": 31
+          },
+          {
+            "id": "stage-scene-bar-grid",
+            "x": 746.09375,
+            "right": 774,
+            "y": 312,
+            "height": 34
+          }
+        ],
+        "overflow": false
+      },
+      "maxLengthHeight": 315,
+      "checks": "navigation top row, description full width below, entire long note and 200-character multiline note visible, scene navigation keeps correct note, short/empty field shrinks"
+    },
+    {
+      "name": "narrow-en",
+      "measurement": {
+        "step": {
+          "x": 376,
+          "y": 312,
+          "width": 398,
+          "height": 34,
+          "bottom": 346
+        },
+        "desc": {
+          "x": 376,
+          "y": 354,
+          "width": 398,
+          "height": 112
+        },
+        "bar": {
+          "x": 365,
+          "width": 420
+        },
+        "text": {
+          "clientHeight": 111,
+          "scrollHeight": 112,
+          "value": "目的: ボールを拾って中央へ戻す。障害: 拾うたび別のボールが動き、三点の追跡が床のジャグリングへ変わる。視覚変化: 中央の縦光を空にし、上手側だけが色を持つ。技: ローリング、床面の三球、落下を振付に含めるフィジカルコメディ。要検証: 落下を雑に見せず、再現可能なスコアとして固定できるか。"
+        },
+        "buttons": [
+          {
+            "id": "stage-scene-prev",
+            "x": 376,
+            "right": 468.640625,
+            "y": 313.5,
+            "height": 31
+          },
+          {
+            "id": "stage-scene-next",
+            "x": 563.5625,
+            "right": 632.96875,
+            "y": 313.5,
+            "height": 31
+          },
+          {
+            "id": "stage-scene-replay",
+            "x": 640.96875,
+            "right": 736.53125,
+            "y": 313.5,
+            "height": 31
+          },
+          {
+            "id": "stage-scene-bar-grid",
+            "x": 746.53125,
+            "right": 774,
+            "y": 312,
+            "height": 34
+          }
+        ],
+        "overflow": false
+      },
+      "maxLengthHeight": 315,
+      "checks": "navigation top row, description full width below, entire long note and 200-character multiline note visible, scene navigation keeps correct note, short/empty field shrinks"
+    },
+    {
+      "name": "desktop-zh-Hans",
+      "measurement": {
+        "step": {
+          "x": 365,
+          "y": 228.8125,
+          "width": 739,
+          "height": 34,
+          "bottom": 262.8125
+        },
+        "desc": {
+          "x": 365,
+          "y": 270.8125,
+          "width": 739,
+          "height": 56
+        },
+        "bar": {
+          "x": 354,
+          "width": 761
+        },
+        "text": {
+          "clientHeight": 55,
+          "scrollHeight": 56,
+          "value": "目的: ボールを拾って中央へ戻す。障害: 拾うたび別のボールが動き、三点の追跡が床のジャグリングへ変わる。視覚変化: 中央の縦光を空にし、上手側だけが色を持つ。技: ローリング、床面の三球、落下を振付に含めるフィジカルコメディ。要検証: 落下を雑に見せず、再現可能なスコアとして固定できるか。"
+        },
+        "buttons": [
+          {
+            "id": "stage-scene-prev",
+            "x": 365,
+            "right": 441.78125,
+            "y": 230.8125,
+            "height": 30
+          },
+          {
+            "id": "stage-scene-next",
+            "x": 526.046875,
+            "right": 602.828125,
+            "y": 230.8125,
+            "height": 30
+          },
+          {
+            "id": "stage-scene-replay",
+            "x": 610.828125,
+            "right": 671.734375,
+            "y": 230.8125,
+            "height": 30
+          },
+          {
+            "id": "stage-scene-bar-grid",
+            "x": 681.734375,
+            "right": 711.734375,
+            "y": 228.8125,
+            "height": 34
+          }
+        ],
+        "overflow": false
+      },
+      "maxLengthHeight": 315,
+      "checks": "navigation top row, description full width below, entire long note and 200-character multiline note visible, scene navigation keeps correct note, short/empty field shrinks"
+    },
+    {
+      "name": "desktop-zh-Hant",
+      "measurement": {
+        "step": {
+          "x": 365,
+          "y": 228.8125,
+          "width": 739,
+          "height": 34,
+          "bottom": 262.8125
+        },
+        "desc": {
+          "x": 365,
+          "y": 270.8125,
+          "width": 739,
+          "height": 56
+        },
+        "bar": {
+          "x": 354,
+          "width": 761
+        },
+        "text": {
+          "clientHeight": 55,
+          "scrollHeight": 56,
+          "value": "目的: ボールを拾って中央へ戻す。障害: 拾うたび別のボールが動き、三点の追跡が床のジャグリングへ変わる。視覚変化: 中央の縦光を空にし、上手側だけが色を持つ。技: ローリング、床面の三球、落下を振付に含めるフィジカルコメディ。要検証: 落下を雑に見せず、再現可能なスコアとして固定できるか。"
+        },
+        "buttons": [
+          {
+            "id": "stage-scene-prev",
+            "x": 365,
+            "right": 441.78125,
+            "y": 230.8125,
+            "height": 30
+          },
+          {
+            "id": "stage-scene-next",
+            "x": 526.046875,
+            "right": 602.828125,
+            "y": 230.8125,
+            "height": 30
+          },
+          {
+            "id": "stage-scene-replay",
+            "x": 610.828125,
+            "right": 671.734375,
+            "y": 230.8125,
+            "height": 30
+          },
+          {
+            "id": "stage-scene-bar-grid",
+            "x": 681.734375,
+            "right": 711.734375,
+            "y": 228.8125,
+            "height": 34
+          }
+        ],
+        "overflow": false
+      },
+      "maxLengthHeight": 315,
+      "checks": "navigation top row, description full width below, entire long note and 200-character multiline note visible, scene navigation keeps correct note, short/empty field shrinks"
+    }
+  ],
+  "errors": []
+}

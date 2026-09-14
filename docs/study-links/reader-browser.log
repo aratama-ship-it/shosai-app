@@ -1,0 +1,28 @@
+PASS invitation requires free sign-in, then opens show
+PASS private text and front/plan ink save without sharing
+PASS separate phone context loads same account text and both drawings
+PASS phone changes arrive on PC without reload
+PASS another reader has a separate empty notebook
+PASS explicit sharing sends verified name, note and two stage images to owner only
+PASS pen, notes and sharing never change the published show
+PASS one reader library contains invitations from two owners
+PASS simultaneous device edits preserve both versions and explicit resolution syncs
+PASS Japanese/English desktop/tablet/phone portrait/landscape layouts, full-width desktop drawings and 44px controls
+PASS sign-out revokes reader access
+{
+  "checks": [
+    "invitation requires free sign-in, then opens show",
+    "private text and front/plan ink save without sharing",
+    "separate phone context loads same account text and both drawings",
+    "phone changes arrive on PC without reload",
+    "another reader has a separate empty notebook",
+    "explicit sharing sends verified name, note and two stage images to owner only",
+    "pen, notes and sharing never change the published show",
+    "one reader library contains invitations from two owners",
+    "simultaneous device edits preserve both versions and explicit resolution syncs",
+    "Japanese/English desktop/tablet/phone portrait/landscape layouts, full-width desktop drawings and 44px controls",
+    "sign-out revokes reader access"
+  ],
+  "errors": [],
+  "reviewURL": "http://127.0.0.1:8800/study?lang=ja#f90b6811084324c09aa46e001b438ce3366c6e5cfe1755fb"
+}

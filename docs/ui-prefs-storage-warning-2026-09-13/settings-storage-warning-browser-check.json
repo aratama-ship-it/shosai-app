@@ -1,0 +1,68 @@
+{
+  "url": "http://127.0.0.1:8957/stage.html?storage-warning-final=1",
+  "checkedAt": "2026-09-13T12:23:58.305Z",
+  "text": "! 描いたものはこの端末のブラウザにだけ保存されます。設定や容量で消えることがあるので、区切りごとに〈書き出す〉からファイルへ控えを取ってください。",
+  "timelineSnapLabel": "スナップ 1/4",
+  "loopRange": {
+    "hidden": false,
+    "active": true,
+    "width": 480,
+    "height": 298,
+    "animationName": "stage-timeline-loop-glow",
+    "markerA": "A",
+    "markerB": "B"
+  },
+  "settingsPanelToggleRemoved": true,
+  "separateSingleSideRowRemoved": true,
+  "headerPanelMenuVisible": true,
+  "panelLayoutOptions": {
+    "normal": [
+      {
+        "value": "split",
+        "label": "2列表示"
+      },
+      {
+        "value": "single-left",
+        "label": "1列・左"
+      },
+      {
+        "value": "single-right",
+        "label": "1列・右"
+      },
+      {
+        "value": "ipad",
+        "label": "iPad表示モード"
+      }
+    ],
+    "timeline": [
+      {
+        "value": "split",
+        "label": "2列表示"
+      },
+      {
+        "value": "single-left",
+        "label": "1列・左"
+      },
+      {
+        "value": "single-right",
+        "label": "1列・右"
+      }
+    ]
+  },
+  "geometry": {
+    "role": "alert",
+    "warningTop": 98.25,
+    "warningBottom": 154.25,
+    "warningWidth": 1146,
+    "mainTop": 172.25,
+    "borderTopWidth": "2px",
+    "borderRightWidth": "2px",
+    "borderBottomWidth": "2px",
+    "borderLeftWidth": "2px",
+    "borderColor": "rgb(230, 107, 101)",
+    "backgroundColor": "rgba(230, 107, 101, 0.08)",
+    "fontSize": "13px"
+  },
+  "targetErrors": [],
+  "unrelatedErrors": []
+}

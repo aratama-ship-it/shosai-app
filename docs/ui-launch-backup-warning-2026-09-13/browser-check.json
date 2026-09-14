@@ -1,0 +1,43 @@
+{
+  "url": "http://127.0.0.1:8957/stage.html?launch-backup-final=1",
+  "checkedAt": "2026-09-13T12:24:03.295Z",
+  "regularUser": {
+    "warningShownFirst": true,
+    "shownAgainAfterReload": true,
+    "escapeCannotDismiss": true,
+    "closeButtonDismisses": true,
+    "backdropDismisses": true,
+    "exportOpensExistingProjectExport": true,
+    "desktop": {
+      "title": "保存データの控えを取ってください",
+      "lead": "舞台スケッチのβ版は、更新の影響でこの端末に保存したショーを開けなくなる可能性があります。定期的にファイルへ書き出してください。",
+      "role": "dialog",
+      "ariaModal": "true",
+      "width": 560,
+      "height": 240.5625,
+      "top": 329.71875,
+      "bottom": 570.28125,
+      "borderWidth": "2px",
+      "borderColor": "rgb(230, 107, 101)",
+      "exportHeight": 44,
+      "continueHeight": 44,
+      "closeWidth": 44,
+      "closeHeight": 44
+    }
+  },
+  "mobile": {
+    "left": 16,
+    "right": 359,
+    "top": 255.625,
+    "bottom": 588.375,
+    "firstWidth": 307,
+    "secondWidth": 307,
+    "firstTop": 472.375,
+    "secondTop": 526.375,
+    "closeWidth": 44,
+    "closeHeight": 44
+  },
+  "guest1Exempt": true,
+  "unknownIdentityWarned": true,
+  "errors": []
+}

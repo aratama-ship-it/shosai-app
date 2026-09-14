@@ -1,0 +1,9 @@
+{
+  "report": "390/1440: no overflow",
+  "demo": "http://127.0.0.1:8802/study?lang=ja#9b58a1484cce7abda749738a2d1d51b566ae6fa2dd4b75f8",
+  "anonymousViewer": true,
+  "focus": {
+    "outlineWidth": "2px",
+    "outlineColor": "rgb(212, 173, 118)"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "date": "2026-09-09",
+  "request": "巡礼という言い回しをまずかえたいです",
+  "reason": "日本語の台詞では呼び名を使わず、祈る行為として表す。聖者・祈り・手から唇へ移る比喩は残す。",
+  "previousDraftSha256": {
+    "translation-draft": "9c33f8a65155e9bd0c55de57d705bea6d40de21df14e5c2405de8b0a96540348",
+    "translation-three-scenes": "aaa589d743347f1d65a8b686a36b3762b6bf39014d9e7e71d3fb962501706404",
+    "scene-samples": "36d4352fc01e19bb083977c90f7ffd157027efe74fb2b70778d348734938d12a"
+  },
+  "changes": [
+    {
+      "speechId": "RJ-I-5-D01",
+      "before": "この唇は、頬を染めた二人の巡礼。\nやさしい口づけで、手の無礼を清めようと待っています。",
+      "after": "この唇も、祈るようにあなたへ近づき、\nやさしい口づけで、手の無礼を清めたいのです。"
+    },
+    {
+      "speechId": "RJ-I-5-D02",
+      "before": "聖者にも手があり、巡礼はその手に触れるもの。\n手のひらを合わせる――それが巡礼の口づけです。",
+      "after": "聖者にも手があり、祈る人はその手に触れるもの。\n手のひらを合わせる――それで十分な口づけです。"
+    },
+    {
+      "speechId": "RJ-I-5-D03",
+      "before": "聖者にも唇はあるでしょう。巡礼にも。",
+      "after": "聖者にも唇はあるでしょう。祈る人にも。"
+    }
+  ],
+  "status": "user_requested_wording_revision",
+  "adoptedAsFinalTranslation": false
+}

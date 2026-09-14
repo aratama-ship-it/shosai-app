@@ -1,0 +1,27 @@
+{
+  "parent": "19a6a8eca8b7767071d80400441070189253d5bf",
+  "tree": "92f5e4d22a7d0b80dd84126a8d6acac40f4d8c2c",
+  "index": "/var/folders/sz/p1txffwx2b5ghzrmff0f5cfr0000gn/T/stage-transport-index-ta03u0zv/index",
+  "files": [
+    "stage-sketch.js",
+    "stage-timeline.js",
+    "stage.html",
+    "stage-sw.js",
+    "tests/stage-timeline-mode.test.mjs",
+    "tests/stage-formation-integration.test.mjs",
+    "tests/stage-session-shelve.test.mjs",
+    "tests/stage-machinery.test.mjs",
+    "tests/stage-timeline-transport.browser.mjs"
+  ],
+  "hashes": {
+    "stage-sketch.js": "00fb330f429fb92335990e0279ad92524c43e2213945e371e609e44ff06ad5c6",
+    "stage-timeline.js": "09ffe258c692b71d45b53c0c9aafc67c74cb2556a1d43e68dc5e0319a51c5b2a",
+    "stage.html": "caac0e5378f522607f99264a216490f51c127898946735ac3338b90052b57cb7",
+    "stage-sw.js": "88bf2f178630d4ef676ec733d976f81e8cace51b0eb938430d77f1120bbc668f",
+    "tests/stage-timeline-mode.test.mjs": "42f7feff4de8ce33157c9afd3f56b15be56c4e344850ee319bf1bacbb0a6281d",
+    "tests/stage-formation-integration.test.mjs": "b80ce01a49badb007e131e2afc8f0235e170a69de175edc7d63af15670e9092c",
+    "tests/stage-session-shelve.test.mjs": "75f4daa17064f57a464bac02326812c4ec2e49bb25d9ec28db7149994d76f452",
+    "tests/stage-machinery.test.mjs": "d07d816df755370a580e6d6b30ac4b120a0f0aa24b040929d755167ee7328965",
+    "tests/stage-timeline-transport.browser.mjs": "fb122655187637c46ba70b794af2abe055c4beb592da7088b0ddd4b8431e79b9"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "passed": 17,
+  "checks": [
+    "cancel in-flight PDF load cannot commit later",
+    "phone PDF text can be assigned with keyboard alternative",
+    "phone imported PDF stays inside horizontally scrollable pane",
+    "Japanese Shift_JIS CSV detected explicitly",
+    "nonstandard Japanese headers can be mapped manually",
+    "unmapped field preserved after application",
+    "ragged CSV rejected",
+    "duplicate headers rejected",
+    "empty headers rejected",
+    "unclosed quote rejected",
+    "row limit enforced",
+    "required number mapping enforced",
+    "duplicate source mapping rejected",
+    "unknown type and column preserved",
+    "migrated formula-like strings escaped on export",
+    "failed replacement selection clears stale preview candidate",
+    "extra flows have no JavaScript errors"
+  ],
+  "errors": []
+}

@@ -1,0 +1,75 @@
+{
+  "scope": "次の試作で検証するケース定義。機能実装の合格証拠ではない。",
+  "cases": [
+    {
+      "id": "normal",
+      "change": "none",
+      "expected": {
+        "exitEndMs": 15000,
+        "shortfallMs": 0
+      }
+    },
+    {
+      "id": "appearance-late",
+      "change": "appearance-end offsetMs=4000",
+      "expected": {
+        "exitEndMs": 18000,
+        "shortfallMs": 3000,
+        "C_wait": [
+          8000,
+          11000
+        ]
+      }
+    },
+    {
+      "id": "q13-unknown",
+      "change": "origin-q13 offsetFromBaseMs=null",
+      "expected": {
+        "exitEndMs": null,
+        "shortfallMs": null,
+        "putEndMs": 7000
+      }
+    },
+    {
+      "id": "deadline-unknown",
+      "change": "deadline expression=unknown",
+      "expected": {
+        "exitEndMs": 15000,
+        "shortfallMs": null
+      }
+    },
+    {
+      "id": "person-unresolved",
+      "change": "pickup slot-2 personId=null/resolution=unresolved",
+      "expected": "担当未確定。計画全体を確認済みにしない"
+    },
+    {
+      "id": "cue-repeated",
+      "change": "同一contextへcue-Q13の別originを追加",
+      "expected": "反復cue非対応。単一起点へ統合しない"
+    },
+    {
+      "id": "18-vs-12",
+      "change": "appearance-end offsetMs=4000; deadline offsetMs=12000",
+      "expected": {
+        "exitEndMs": 18000,
+        "shortfallMs": 6000
+      }
+    },
+    {
+      "id": "owner-broken",
+      "change": "q12 ownerRef=missing-origin",
+      "expected": "参照切れ。適合にはしない"
+    },
+    {
+      "id": "point-cycle",
+      "change": "pickup-startがpickup-endへ依存",
+      "expected": "時点循環。影響範囲の時刻は未解決"
+    },
+    {
+      "id": "person-overlap",
+      "change": "Aの固定した別作業6〜9秒を追加",
+      "expected": "put/hold-A/pickupと重複。並べ直さない"
+    }
+  ]
+}

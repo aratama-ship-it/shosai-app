@@ -1,0 +1,567 @@
+{
+  "schema": "stage-sketch.scene-blocking-plan.v1",
+  "id": "RJ-BLOCK-01",
+  "sceneId": "RJ-DIR-01",
+  "updated": "2026-09-11",
+  "status": "assistant_decision_authorized_by_user_unrehearsed",
+  "sourceEntryIds": [
+    "RJ-NOTE-0023",
+    "RJ-NOTE-0024",
+    "RJ-NOTE-0025",
+    "RJ-NOTE-0026",
+    "RJ-NOTE-0034"
+  ],
+  "decisionBoundary": "ベンヴォーリオとティーボルトだけが名前のある役として登場する。ほかの8名は、各役を担当する俳優がこの場面だけ匿名の街の群衆を兼ねる。配役名は俳優枠を識別するために使い、ロミオやジュリエット本人がこの乱闘に参加したという物語にはしない。",
+  "referenceStage": {
+    "venue": "proscenium",
+    "venueSize": "mid",
+    "widthM": 12,
+    "depthM": 9,
+    "heightM": 8,
+    "status": "reference_assumption_pending_actual_venue",
+    "audienceView": "u=0が客席から見て左、u=1が右。v=0が舞台奥、v=1が舞台前。",
+    "displayFormula": "x_m=(u-0.5)*12、y_m=(v-0.5)*9。xの負値は客席左、yの負値は舞台奥。"
+  },
+  "castPalette": [
+    {
+      "roleId": "ROMEO",
+      "shortLabel": "ロ",
+      "color": "#5f7386"
+    },
+    {
+      "roleId": "JULIET",
+      "shortLabel": "ジ",
+      "color": "#a84b26"
+    },
+    {
+      "roleId": "FRIAR_LAWRENCE",
+      "shortLabel": "ロ修",
+      "color": "#77865f"
+    },
+    {
+      "roleId": "FRIAR_JOHN",
+      "shortLabel": "ジ修",
+      "color": "#8b98a1"
+    },
+    {
+      "roleId": "MONTAGUE",
+      "shortLabel": "モ",
+      "color": "#6d6657"
+    },
+    {
+      "roleId": "CAPULET",
+      "shortLabel": "キ",
+      "color": "#b36b3c"
+    },
+    {
+      "roleId": "MERCUTIO",
+      "shortLabel": "マ",
+      "color": "#d3ac59"
+    },
+    {
+      "roleId": "NURSE",
+      "shortLabel": "乳",
+      "color": "#7a5a6e"
+    },
+    {
+      "roleId": "BENVOLIO",
+      "shortLabel": "ベ",
+      "color": "#416a7a"
+    },
+    {
+      "roleId": "TYBALT",
+      "shortLabel": "テ",
+      "color": "#8f3e1e"
+    }
+  ],
+  "centerPair": {
+    "members": [
+      "BENVOLIO",
+      "TYBALT"
+    ],
+    "characterStatus": "named_characters",
+    "action": "四隅の乱闘中、ベンヴォーリオは中央から手を広げて争いを止めようとする。ティボルトはその制止を受けず見据える。最後の乱闘が止まる瞬間、ティボルトがベンヴォーリオの制止を決闘へ変えようとし、剣が触れる前に暗転する。",
+    "startSeparationM": 1.44,
+    "challengeSeparationM": 0.96
+  },
+  "cornerPairs": [
+    {
+      "id": "PAIR-UL",
+      "region": "upstage_left",
+      "regionLabel": "奥・客席左",
+      "roleHolders": [
+        "ROMEO",
+        "JULIET"
+      ],
+      "characterStatus": "anonymous_young_crowd",
+      "movementQuality": "勢いが呼吸と鏡写しの動きへ変わる。",
+      "outcome": "reconcile",
+      "outcomeLabel": "和解",
+      "resolution": "互いの呼吸がそろい、手を下ろして一度だけ相手を認め、奥右の組とほぼ同時に退く。",
+      "endAtSeconds": 115
+    },
+    {
+      "id": "PAIR-UR",
+      "region": "upstage_right",
+      "regionLabel": "奥・客席右",
+      "roleHolders": [
+        "FRIAR_LAWRENCE",
+        "FRIAR_JOHN"
+      ],
+      "characterStatus": "anonymous_peace_seeking_bystanders",
+      "movementQuality": "争いを止めようとして衝突した身体が、同じ目的に気づく。",
+      "outcome": "reconcile",
+      "outcomeLabel": "和解",
+      "resolution": "片方がもう片方を立たせ、互いに支えを解き、奥左の組とほぼ同時に退く。",
+      "endAtSeconds": 128
+    },
+    {
+      "id": "PAIR-DL",
+      "region": "downstage_left",
+      "regionLabel": "手前・客席左",
+      "roleHolders": [
+        "MONTAGUE",
+        "CAPULET"
+      ],
+      "characterStatus": "anonymous_older_household_retainers",
+      "movementQuality": "重く頑固な押し合い。どちらも譲らず、勝者を作らない。",
+      "outcome": "both_damaged",
+      "outcomeLabel": "双方がダメージ",
+      "resolution": "同時に体勢を崩し、互いを支えず、それぞれ外側へよろめいて退く。",
+      "endAtSeconds": 143
+    },
+    {
+      "id": "PAIR-DR",
+      "region": "downstage_right",
+      "regionLabel": "手前・客席右",
+      "roleHolders": [
+        "MERCUTIO",
+        "NURSE"
+      ],
+      "characterStatus": "anonymous_street_crowd",
+      "movementQuality": "素早く挑発的なリズムと、低く踏ん張る防御が衝突する。喜劇には寄せすぎない。",
+      "outcome": "both_damaged",
+      "outcomeLabel": "双方がダメージ",
+      "resolution": "互いに踏み込みすぎて同時に崩れる。この組だけが最後まで動き、中央でティボルトの挑発が見えた瞬間に外へ退く。",
+      "endAtSeconds": 180
+    }
+  ],
+  "timing": {
+    "totalSeconds": 180,
+    "status": "approximate_unrehearsed",
+    "beats": [
+      {
+        "id": "A",
+        "fromSeconds": 0,
+        "toSeconds": 115,
+        "label": "四隅の乱闘／中央の制止"
+      },
+      {
+        "id": "B",
+        "fromSeconds": 115,
+        "toSeconds": 155,
+        "label": "三組が順に収束"
+      },
+      {
+        "id": "C",
+        "fromSeconds": 155,
+        "toSeconds": 180,
+        "label": "六人が散開／制止へ一歩"
+      },
+      {
+        "id": "D",
+        "fromSeconds": 180,
+        "toSeconds": 180,
+        "label": "中央の制止への挑発／即ブラックアウト"
+      }
+    ]
+  },
+  "lighting": {
+    "general": "四隅を含む全体を抑えた明るさで見せる。",
+    "center": "ベンヴォーリオとティーボルトを中程度のスポットで分離する。",
+    "finalTransition": "ティボルトがベンヴォーリオの制止を挑発へ変えようとした瞬間に即ブラックアウト。剣は触れさせない。",
+    "status": "intent_only_fixture_levels_unresolved"
+  },
+  "cueSnapshots": [
+    {
+      "id": "RJ01-A",
+      "title": "A｜乱戦と制止",
+      "holdDurationSeconds": 115,
+      "note": "四組が四隅で同時に乱闘する。中央でベンヴォーリオは両手を広げて制止し、ティボルトはその制止を受けず見据える。",
+      "positions": [
+        {
+          "roleId": "ROMEO",
+          "u": 0.16,
+          "v": 0.22,
+          "facing": 90,
+          "pose": "reach"
+        },
+        {
+          "roleId": "JULIET",
+          "u": 0.24,
+          "v": 0.22,
+          "facing": 270,
+          "pose": "open"
+        },
+        {
+          "roleId": "FRIAR_LAWRENCE",
+          "u": 0.76,
+          "v": 0.22,
+          "facing": 90,
+          "pose": "open"
+        },
+        {
+          "roleId": "FRIAR_JOHN",
+          "u": 0.84,
+          "v": 0.22,
+          "facing": 270,
+          "pose": "reach"
+        },
+        {
+          "roleId": "MONTAGUE",
+          "u": 0.16,
+          "v": 0.78,
+          "facing": 90,
+          "pose": "reach"
+        },
+        {
+          "roleId": "CAPULET",
+          "u": 0.24,
+          "v": 0.78,
+          "facing": 270,
+          "pose": "reach"
+        },
+        {
+          "roleId": "MERCUTIO",
+          "u": 0.76,
+          "v": 0.78,
+          "facing": 90,
+          "pose": "crouch"
+        },
+        {
+          "roleId": "NURSE",
+          "u": 0.84,
+          "v": 0.78,
+          "facing": 270,
+          "pose": "open"
+        },
+        {
+          "roleId": "BENVOLIO",
+          "u": 0.44,
+          "v": 0.5,
+          "facing": 90,
+          "pose": "open"
+        },
+        {
+          "roleId": "TYBALT",
+          "u": 0.56,
+          "v": 0.5,
+          "facing": 270,
+          "pose": "reach"
+        }
+      ]
+    },
+    {
+      "id": "RJ01-B",
+      "title": "B｜三組が順に収束",
+      "holdDurationSeconds": 40,
+      "note": "奥左、奥右、手前左が順に和解または双方の負傷で収束する。手前右だけが動き続け、中央ではベンヴォーリオが制止を続け、ティボルトが応じない。",
+      "positions": [
+        {
+          "roleId": "ROMEO",
+          "u": 0.18,
+          "v": 0.22,
+          "facing": 90,
+          "pose": "open",
+          "route": {
+            "u": 0.1,
+            "v": 0.12,
+            "bu": 0.14,
+            "bv": 0.16
+          }
+        },
+        {
+          "roleId": "JULIET",
+          "u": 0.25,
+          "v": 0.22,
+          "facing": 270,
+          "pose": "open",
+          "route": {
+            "u": 0.3,
+            "v": 0.08,
+            "bu": 0.27,
+            "bv": 0.14
+          }
+        },
+        {
+          "roleId": "FRIAR_LAWRENCE",
+          "u": 0.75,
+          "v": 0.22,
+          "facing": 90,
+          "pose": "reach",
+          "route": {
+            "u": 0.7,
+            "v": 0.08,
+            "bu": 0.73,
+            "bv": 0.14
+          }
+        },
+        {
+          "roleId": "FRIAR_JOHN",
+          "u": 0.82,
+          "v": 0.22,
+          "facing": 270,
+          "pose": "kneel",
+          "route": {
+            "u": 0.9,
+            "v": 0.12,
+            "bu": 0.86,
+            "bv": 0.16
+          }
+        },
+        {
+          "roleId": "MONTAGUE",
+          "u": 0.18,
+          "v": 0.78,
+          "facing": 90,
+          "pose": "crouch",
+          "route": {
+            "u": 0.1,
+            "v": 0.88,
+            "bu": 0.14,
+            "bv": 0.84
+          }
+        },
+        {
+          "roleId": "CAPULET",
+          "u": 0.25,
+          "v": 0.78,
+          "facing": 270,
+          "pose": "crouch",
+          "route": {
+            "u": 0.3,
+            "v": 0.92,
+            "bu": 0.27,
+            "bv": 0.86
+          }
+        },
+        {
+          "roleId": "MERCUTIO",
+          "u": 0.75,
+          "v": 0.78,
+          "facing": 90,
+          "pose": "crouch"
+        },
+        {
+          "roleId": "NURSE",
+          "u": 0.82,
+          "v": 0.78,
+          "facing": 270,
+          "pose": "open"
+        },
+        {
+          "roleId": "BENVOLIO",
+          "u": 0.44,
+          "v": 0.5,
+          "facing": 90,
+          "pose": "open"
+        },
+        {
+          "roleId": "TYBALT",
+          "u": 0.56,
+          "v": 0.5,
+          "facing": 270,
+          "pose": "reach"
+        }
+      ]
+    },
+    {
+      "id": "RJ01-C",
+      "title": "C｜散開と最後の一組",
+      "holdDurationSeconds": 25,
+      "note": "先に収束した六人が四隅から外へ散る。手前右の二人だけが動き続け、中央ではベンヴォーリオが制止へ一歩踏み出し、ティボルトが間合いを詰める。",
+      "positions": [
+        {
+          "roleId": "ROMEO",
+          "u": 0.1,
+          "v": 0.12,
+          "facing": 270,
+          "pose": "walk"
+        },
+        {
+          "roleId": "JULIET",
+          "u": 0.3,
+          "v": 0.08,
+          "facing": 0,
+          "pose": "walk"
+        },
+        {
+          "roleId": "FRIAR_LAWRENCE",
+          "u": 0.7,
+          "v": 0.08,
+          "facing": 0,
+          "pose": "walk"
+        },
+        {
+          "roleId": "FRIAR_JOHN",
+          "u": 0.9,
+          "v": 0.12,
+          "facing": 90,
+          "pose": "walk"
+        },
+        {
+          "roleId": "MONTAGUE",
+          "u": 0.1,
+          "v": 0.88,
+          "facing": 270,
+          "pose": "crouch"
+        },
+        {
+          "roleId": "CAPULET",
+          "u": 0.3,
+          "v": 0.92,
+          "facing": 0,
+          "pose": "crouch"
+        },
+        {
+          "roleId": "MERCUTIO",
+          "u": 0.75,
+          "v": 0.78,
+          "facing": 90,
+          "pose": "crouch",
+          "route": {
+            "u": 0.7,
+            "v": 0.92,
+            "bu": 0.74,
+            "bv": 0.88
+          }
+        },
+        {
+          "roleId": "NURSE",
+          "u": 0.82,
+          "v": 0.78,
+          "facing": 270,
+          "pose": "open",
+          "route": {
+            "u": 0.9,
+            "v": 0.88,
+            "bu": 0.86,
+            "bv": 0.86
+          }
+        },
+        {
+          "roleId": "BENVOLIO",
+          "u": 0.44,
+          "v": 0.5,
+          "facing": 90,
+          "pose": "open",
+          "route": {
+            "u": 0.46,
+            "v": 0.5,
+            "bu": 0.45,
+            "bv": 0.5
+          }
+        },
+        {
+          "roleId": "TYBALT",
+          "u": 0.56,
+          "v": 0.5,
+          "facing": 270,
+          "pose": "reach",
+          "route": {
+            "u": 0.54,
+            "v": 0.5,
+            "bu": 0.55,
+            "bv": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "id": "RJ01-D",
+      "title": "D｜制止への挑発と暗転",
+      "holdDurationSeconds": 0,
+      "note": "手前右の二人が退く瞬間に、ベンヴォーリオが制止の手を出し、ティボルトがそれを決闘への挑発に変えようとする。剣が触れる前にブラックアウトするゼロ秒のキューマーカー。",
+      "positions": [
+        {
+          "roleId": "ROMEO",
+          "u": 0.1,
+          "v": 0.12,
+          "facing": 270,
+          "pose": "walk"
+        },
+        {
+          "roleId": "JULIET",
+          "u": 0.3,
+          "v": 0.08,
+          "facing": 0,
+          "pose": "walk"
+        },
+        {
+          "roleId": "FRIAR_LAWRENCE",
+          "u": 0.7,
+          "v": 0.08,
+          "facing": 0,
+          "pose": "walk"
+        },
+        {
+          "roleId": "FRIAR_JOHN",
+          "u": 0.9,
+          "v": 0.12,
+          "facing": 90,
+          "pose": "walk"
+        },
+        {
+          "roleId": "MONTAGUE",
+          "u": 0.1,
+          "v": 0.88,
+          "facing": 270,
+          "pose": "crouch"
+        },
+        {
+          "roleId": "CAPULET",
+          "u": 0.3,
+          "v": 0.92,
+          "facing": 0,
+          "pose": "crouch"
+        },
+        {
+          "roleId": "MERCUTIO",
+          "u": 0.7,
+          "v": 0.92,
+          "facing": 0,
+          "pose": "walk"
+        },
+        {
+          "roleId": "NURSE",
+          "u": 0.9,
+          "v": 0.88,
+          "facing": 90,
+          "pose": "walk"
+        },
+        {
+          "roleId": "BENVOLIO",
+          "u": 0.46,
+          "v": 0.5,
+          "facing": 90,
+          "pose": "open"
+        },
+        {
+          "roleId": "TYBALT",
+          "u": 0.54,
+          "v": 0.5,
+          "facing": 270,
+          "pose": "reach"
+        }
+      ]
+    }
+  ],
+  "safetyBoundary": "座標と動線は約3分版のブロッキング検討用であり、安全間隔、殺陣、接触、武器、転倒、身体能力を保証しない。俳優の身体条件と実寸舞台を確認し、ファイトディレクター等と稽古で決める。",
+  "unresolved": [
+    "10名の俳優名、身長、利き側、身体能力と、役の担当者をこの仮配置へ割り当てたときの調整。",
+    "実会場の寸法、袖、客席からの見切れを踏まえた座標と退場経路の変換。",
+    "接触しない距離を含む制止と挑発の身体表現、武器や道具の有無と安全手順。",
+    "照明の灯数、色、照度、スポット径、音楽と効果音。",
+    "稽古による約3分の配分、順に収束する流れの読みやすさ、匿名群衆としての衣裳・見え方の確認。"
+  ]
+}

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>舞台スケッチ｜整列4種類追加・一括反映用引き継ぎ</title>
+<style>
+:root{--paper:#fbf8f2;--ink:#1d1a16;--sub:#5b554c;--link:#3c5a80;--line:#d9d2c5;--space:18px}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.75 -apple-system,"Hiragino Sans",sans-serif}
+main{max-width:980px;margin:auto;padding:24px var(--space) 40px}h1{font-size:24px;line-height:1.35;margin:0 0 12px}h2{font-size:19px;margin:40px 0 12px}p{margin:8px 0}
+.meta{color:var(--sub)}.status{border-block:2px solid var(--link);padding:18px 0;margin:24px 0}.status>strong{display:block;font-size:19px}
+a{color:var(--link);text-underline-offset:.2em;display:inline-block;min-width:44px;min-height:44px;padding-block:8px}nav{display:flex;flex-wrap:wrap;gap:8px 24px}nav a{display:inline-flex;align-items:center}
+ul,ol{padding-left:24px}li{margin:8px 0}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:14px;overflow-wrap:anywhere}pre{white-space:pre-wrap;border:1px solid var(--line);padding:18px}
+dl{margin:0}dl>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:18px;border-bottom:1px solid var(--line);padding:12px 0}dt{font-weight:600;overflow-wrap:anywhere}dd{margin:0;min-width:0}
+details{border-top:1px solid var(--line);margin-top:24px}summary{cursor:pointer;min-height:44px;padding:8px 0;font-weight:600}
+@media(max-width:600px){dl>div{grid-template-columns:minmax(0,1fr);gap:8px}h1{font-size:24px}}
+</style>
+</head>
+<body><main>
+<p class="meta">2026-09-09記録 / 舞台スケッチ / 整理ID: LINEUP-2026-09-09</p>
+<h1>整列4種類の追加を、次回の一括反映に含める</h1>
+<section class="status" aria-label="現在の状態">
+<strong>ローカル実装済み・一括反映待ち</strong>
+<p>「逆V字」「縦1列」「斜め1列（／）」「斜め1列（＼）」を追加済み。既存の3種類と合わせて<strong>全7形状</strong>。次の実装担当は現在のコードを読み、他の変更と統合して反映する。</p>
+<p>この変更について、本タスクではコミット・公開・配布・Macアプリの再ビルドを行っていない。本人から「後でまとめて実装するときの対象として残す」と依頼あり。</p>
+</section>
+<nav aria-label="引き継ぎ先">
+<a href="system-audit-2026-09-09/A1_commit_split_plan.md">統合計画の②</a>
+<a href="system-audit-2026-09-09/WO_A9_tests_lineup_admin.md">A-9 整列テストの発注書</a>
+<a href="../stage.html">ローカル実装を開く</a>
+</nav>
+
+<h2>今回追加した動作</h2>
+<dl>
+<div><dt>縦1列 <code>column</code></dt><dd>奥から手前の順を保つ。左右位置は元の平均、奥行きは等間隔。</dd></div>
+<div><dt>斜め1列（／）<code>diagonal-up</code></dt><dd>左右の順を保ち、平面図の左下から右上へ並べる。</dd></div>
+<div><dt>斜め1列（＼）<code>diagonal-down</code></dt><dd>左右の順を保ち、平面図の左上から右下へ並べる。</dd></div>
+<div><dt>逆V字 <code>inverted-vee</code></dt><dd>既存V字を前後に反転する。左右位置は維持し、奥行きは <code>v → 1-v</code>。</dd></div>
+</dl>
+<p>既存は横1列 <code>row</code>、円 <code>circle</code>、V字 <code>vee</code>。「一列」の表示は「横1列」に変更した。既存V字の向きと配置を維持し、逆V字をその反転として追加している。</p>
+<p>入口は平面図の「整列」。舞台上の演者が2人以上いる場合に実行し、舞台裏の演者と装置は対象外。既存の取り消し・やり直し・自動保存につながる。設定内の項目名、英語の選択肢と完了通知も更新した。</p>
+
+<h2>統合するときに拾うファイル</h2>
+<p>対象リポジトリ: <code>show-creative-ideas/shosai-app</code>。記録時のHEAD: <code>6e4ba1dc97f1c629243e2f5609d45960d3a2dc98</code>。変更は未コミットの作業ツリーにある。</p>
+<dl>
+<div><dt><a href="../stage-sketch.js">stage-sketch.js</a></dt><dd><code>lineupPerformers(shape)</code> と <code>lineup</code> の設定ラベル。4形状の分岐、未知の形状での無変更ガード。</dd></div>
+<div><dt><a href="../index.html">index.html</a></dt><dd>正本。<code>#stage-arrange-select</code> の選択肢と、JS/CSSの参照版。</dd></div>
+<div><dt><a href="../stage-i18n.js">stage-i18n.js</a></dt><dd>TEXT / SAY の英訳。形状名・設定ラベル・完了通知。</dd></div>
+<div><dt><a href="../style.css">style.css</a></dt><dd>整列メニューを <code>width:7em; flex-shrink:0</code> に固定。長い選択肢で隣の道具を圧迫しない。</dd></div>
+<div><dt><a href="../stage-sw.js">stage-sw.js</a></dt><dd>JS/CSSの参照版とPWAキャッシュ版を同期。</dd></div>
+<div><dt><a href="../stage.html">stage.html</a></dt><dd>生成物。<code>python3 build_stage.py</code> でindex.htmlから再生成する。</dd></div>
+<div><dt>既存テスト3本</dt><dd><code>tests/stage-manual-help.test.mjs</code>、<code>tests/stage-session-shelve.test.mjs</code>、<code>tests/stage-venue-library.test.mjs</code>。資材・キャッシュの版番号の期待値を更新。</dd></div>
+<div><dt><a href="../design/TOKEN_SHEET_lineup_2026-09-09.md">デザイントークン・検証記録</a></dt><dd>配置数値、メニュー寸法、実施済み確認と未確認事項。</dd></div>
+</dl>
+<p><strong>版番号は記録時の値:</strong> stage-sketch <code>319</code>、stage-i18n <code>99</code>、style <code>230</code>、PWAキャッシュ <code>199</code>。一括反映時はその時点の最新番号へ合わせる。</p>
+
+<h2>検証済みと、後で行うこと</h2>
+<dl>
+<div><dt>実施済み（2026-09-09）</dt><dd>関連Nodeテスト103件成功。実装関数の7形状×2・3・5・12人＝28ケースで順序・等間隔・前後反転・範囲内・対象外の保持・変更前の履歴保存を確認。0・1人、未知形状は無変更。</dd></div>
+<div><dt>ブラウザ確認済み</dt><dd>ローカルで演者5人、新規4形状、取り消し・やり直し、日英切替。HTML生成整合、JS構文、差分の空白検査も成功。</dd></div>
+<div><dt>継続する検証</dt><dd>103件は既存の関連テスト。形状ごとの28ケースはその場で実行した確認で、専用の永続テストは未追加。<a href="system-audit-2026-09-09/WO_A9_tests_lineup_admin.md">A-9</a> の整列テストを後続作業で追加する。</dd></div>
+<div><dt>未確認・未実施</dt><dd>統合後の再検証、公開用生成物への反映と配信内容の確認、Macアプリ再ビルド、実機タブレット確認。</dd></div>
+</dl>
+<details><summary>画面全体のデザイン点検について</summary><p>design-lint（1440×900）はNG117件・WARN6件。既存の小さい操作部品、行高、書体数、被覆等を含む。整列メニューも既存の高さ26pxを継承し、44pxのタップ基準は満たしていない。今回の追加を画面全体・実機対応の合格判定とはしていない。</p></details>
+
+<h2>次回の一括反映手順</h2>
+<ol>
+<li>現在の作業ツリーと上記ファイルを読み直し、追加4形状が残っているかを照合する。利用計測・SW更新などの差分が同じファイルに重なっているため、ファイル全体の復元や無条件の一括ステージは避け、対象の差分を確認する。</li>
+<li><a href="system-audit-2026-09-09/A1_commit_split_plan.md">統合計画の②</a> にこの整列変更と本資料を含める。整列は「追加4種類、合計7形状」として扱う。</li>
+<li>A-9の形状テストを追加し、資材の版を揃えて <code>build_stage.py</code> を実行。関連テストと全体の必要な検証を通す。</li>
+<li>公開用・Macアプリなど、その回に反映する配布先の生成と確認を行う。公開・配布の実行はその回の本人指示に従う。</li>
+</ol>
+<details><summary>再検証コマンド（リポジトリ直下から）</summary><pre>python3 build_stage.py --check
+node --check stage-sketch.js
+node --check stage-i18n.js
+node --check stage-sw.js
+git diff --check
+node --test tests/stage-i18n.test.mjs tests/stage-i18n-coverage.test.mjs tests/stage-pwa.test.mjs tests/stage-pwa-offline-warm.test.mjs tests/stage-manual-help.test.mjs tests/stage-session-shelve.test.mjs tests/stage-venue-library.test.mjs</pre></details>
+<p class="meta">この資料は一括反映対象の記録。関連資料: <a href="SYSTEM_AUDIT_2026-09-09.html">システム監査</a> / <a href="INDEX.md">docs索引</a>。一時サーバーが止まっていても、このHTMLファイルから内容を確認できる。</p>
+</main></body></html>

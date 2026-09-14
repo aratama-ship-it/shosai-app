@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>舞台スケッチ — シーンパネルの整理案</title>
+  <style>
+    :root { --desk:#191512; --raised:#201b16; --line:#4a3b2c; --paper:#efe7d6; --muted:#b7aa95; --rust:#df6433; --brass:#c4aa61; --shadow:0 18px 48px #09070577; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--desk); color:var(--paper); font-family:"Hiragino Sans","Yu Gothic",sans-serif; line-height:1.6; }
+    main { width:min(1100px,calc(100% - 32px)); margin:42px auto 80px; }
+    .eyebrow { margin:0 0 8px; color:var(--brass); font-size:12px; letter-spacing:.14em; }
+    h1 { margin:0; font-size:clamp(26px,4vw,42px); line-height:1.2; letter-spacing:.03em; }
+    .lead { max-width:760px; margin:18px 0 0; color:var(--muted); }
+    .notice { margin:26px 0; padding:14px 16px; border-left:3px solid var(--rust); background:#281c16; color:#ead9c7; font-size:14px; }
+    .facts { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:28px 0 38px; }
+    .fact { padding:14px; border:1px solid var(--line); background:var(--raised); }
+    .fact b { display:block; color:var(--brass); font-size:12px; letter-spacing:.08em; }
+    .fact span { display:block; margin-top:5px; font-size:14px; }
+    section { margin-top:36px; }
+    h2 { margin:0 0 14px; font-size:21px; }
+    h3 { margin:0; font-size:15px; }
+    .recommend { border:1px solid var(--brass); background:linear-gradient(90deg,#251c16,#201b16); padding:22px; }
+    .tag { display:inline-block; margin-bottom:9px; padding:2px 8px; border:1px solid var(--brass); color:var(--brass); font-size:11px; letter-spacing:.1em; }
+    .grid { display:grid; grid-template-columns:minmax(280px,1.15fr) minmax(240px,.85fr); gap:24px; align-items:start; margin-top:20px; }
+    .wire { padding:13px; border:1px solid var(--line); background:#17120f; box-shadow:var(--shadow); font-size:13px; }
+    .wire-head { display:flex; align-items:center; gap:8px; padding:4px 2px 12px; border-bottom:1px solid var(--line); }
+    .wire-title { margin-right:auto; font-weight:700; }
+    button { min-height:36px; border:1px solid #70533b; border-radius:2px; padding:6px 10px; background:#281d16; color:var(--paper); font:inherit; cursor:pointer; }
+    button:hover, button:focus-visible, button[aria-pressed="true"] { border-color:var(--brass); color:#fff5df; outline:none; }
+    .primary { border-color:var(--rust); background:#3d2118; }
+    .list { margin-top:8px; }
+    .row { display:grid; grid-template-columns:20px 1fr auto; gap:8px; align-items:center; padding:10px 5px; border-bottom:1px solid #372a20; }
+    .row.active { background:#332119; border-left:2px solid var(--rust); padding-left:3px; }
+    .num,.summary { color:var(--muted); font-size:11px; }
+    .more { min-width:36px; padding:4px; background:transparent; border-color:transparent; font-size:18px; line-height:1; }
+    .menu { margin:10px 0 2px 29px; padding:6px; border:1px solid var(--brass); background:#2a1e16; }
+    .menu button { display:block; width:100%; min-height:34px; border:0; text-align:left; background:transparent; }
+    .menu button small { display:block; color:var(--muted); font-size:10px; }
+    .menu button:hover { background:#38271c; }
+    .arrow { color:var(--brass); }
+    .notes { margin:0; padding-left:20px; color:var(--muted); font-size:14px; }
+    .notes li { margin:0 0 10px; }
+    .ownership { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .ownership article { min-height:132px; padding:16px; border:1px solid var(--line); background:var(--raised); }
+    .ownership p { margin:7px 0 0; color:var(--muted); font-size:13px; }
+    .folder { padding:18px; border:1px dashed #806647; background:#1b1511; }
+    .folder ul { margin:8px 0 0; padding-left:20px; color:var(--muted); font-size:14px; }
+    .choice { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+    .choice button { min-height:42px; }
+    .choice-result { min-height:25px; margin:12px 0 0; color:var(--brass); font-size:14px; }
+    .status { margin-top:26px; color:var(--muted); font-size:12px; }
+    @media (max-width:720px) { main { width:min(100% - 24px,1100px); margin-top:24px; } .facts,.grid,.ownership { grid-template-columns:1fr; } .recommend { padding:16px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">STAGE SKETCH · LOCAL REVIEW · 2026-09-10</p>
+    <h1>シーンパネルを「選ぶ場所」へ戻す</h1>
+    <p class="lead">現在のパネルは、転換の設定・動線の生成・シーン作成・複製・フォルダー・破壊的操作が同じ面に並んでいます。乱雑に見える原因はボタン数だけでなく、<strong>使う瞬間が異なる操作を同じ優先度で置いていること</strong>です。</p>
+
+    <div class="notice">この資料は実装案ではありません。添付画面と現在の実装を基にした情報設計の提案です。既存の未確定変更には触れていません。</div>
+
+    <div class="facts">
+      <div class="fact"><b>いまの主役</b><span>シーンを選び、舞台の状態を読むこと</span></div>
+      <div class="fact"><b>混ざっている操作</b><span>作成・転換・整理・削除の4種類</span></div>
+      <div class="fact"><b>すでに決まった移設</b><span>アニメは上部ツール列、差分からの導線は平面ツール列</span></div>
+    </div>
+
+    <section class="recommend">
+      <span class="tag">推奨案</span>
+      <h2>「＋ シーン」だけを常設し、作り方は開いて選ぶ</h2>
+      <p class="lead">空の場面、セット・照明の持越し、全複製、動線の終点反映は、どれも「次のシーンを作る」ための分岐です。4つを同じ入口に集めると、作成前に何を引き継ぐかを読めます。削除や舞台を空にする操作は選択中の行の <strong>…</strong> に分けます。</p>
+
+      <div class="grid">
+        <div class="wire" aria-label="推奨するシーンパネルのワイヤーフレーム">
+          <div class="wire-head">
+            <span class="wire-title">シーン <span class="summary">12</span></span>
+            <button class="primary" type="button" data-create-open aria-expanded="true">＋ シーン <span class="arrow">▾</span></button>
+            <button type="button" title="シーン一覧を広げる">⊞</button>
+          </div>
+          <div class="menu" data-create-menu>
+            <button type="button">空のシーンを作る<small>配置を持ち越さずに始める</small></button>
+            <button type="button">セット・照明を引き継ぐ<small>演者は持ち越さない</small></button>
+            <button type="button">すべてを複製する<small>現在のシーンを出発点にする</small></button>
+            <button type="button">動線の終点を反映して作る<small>到達位置を次のシーンへ渡す</small></button>
+          </div>
+          <div class="list">
+            <div class="row"><span class="num">01</span><span>導入</span><span class="summary">配置 4</span></div>
+            <div class="row"><span class="num">02</span><span>広がる</span><span class="summary">配置 7</span></div>
+            <div class="row active"><span class="num">03</span><span>風が吹く</span><button class="more" type="button" title="このシーンの操作">…</button></div>
+            <div class="row"><span class="num">04</span><span>交差</span><span class="summary">配置 8</span></div>
+          </div>
+        </div>
+        <div>
+          <h3>この形で解くこと</h3>
+          <ul class="notes">
+            <li>パネルを開いた直後は、一覧を読む視線が作成ボタン群に奪われない。</li>
+            <li>「＋セット」と「＋全部」の違いを、実行前に短い説明で確認できる。</li>
+            <li>選択中のシーンだけに操作を寄せるため、削除対象を取り違えにくい。</li>
+            <li>ダブルクリックによる名前変更は残し、鉛筆や入れ子アイコンは復活させない。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>操作の置き場所を、使うタイミングで分ける</h2>
+      <div class="ownership">
+        <article><h3>シーンパネル</h3><p>選択、一覧、＋シーン、選択中シーンの「…」。ここでは場面の流れを読む。</p></article>
+        <article><h3>平面ツール列</h3><p>「次のシーンから動線を引く」を「導線を描く」の横へ。配置を見ながら使う。</p></article>
+        <article><h3>上部ツール列</h3><p>「アニメ」を照明名の右へ。オンのときだけ、タップ／ホバーで時間スライダーを下に展開する。</p></article>
+        <article><h3>選択中シーンの「…」</h3><p>「舞台を空にする」「シーンを削除」を分け、確認対象と影響範囲を明示する。ブラウザ標準ダイアログは使わない。</p></article>
+      </div>
+    </section>
+
+    <section class="folder">
+      <span class="tag">フォルダーは別設計</span>
+      <h2>フォルダーの使いやすさを決めてから、追加する</h2>
+      <p class="lead">現在の「セクション＋」と入れ子矢印を残すと、フォルダーの責任範囲が曖昧なままになります。フォルダーを採用するなら、最低限この4点を一緒に決める必要があります。</p>
+      <ul>
+        <li>フォルダーは何をまとめるのか（連続するシーンだけか、任意のシーンか）。</li>
+        <li>作成・名称変更・開閉・ドラッグ投入の入口をどこに置くか。</li>
+        <li>フォルダーを畳んだとき、現在のシーン・件数・次の場面がどう読めるか。</li>
+        <li>フォルダー間へ移動した際に、シーン順と転換関係をどう保つか。</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>今回の提案をどう扱うか</h2>
+      <p class="lead">推奨は「＋シーンに作成方法を集約する」です。フォルダーは、先に操作の意味を固める独立テーマとして切り分けます。</p>
+      <div class="choice" role="group" aria-label="提案への回答">
+        <button type="button" data-choice="推奨案を採用：＋シーンのメニュー案で設計を進める">推奨案を採用</button>
+        <button type="button" data-choice="保留：シーン作成の入口は後で決める">保留</button>
+        <button type="button" data-choice="フォルダーの操作設計から先に検討する">フォルダーを先に設計</button>
+      </div>
+      <p class="choice-result" id="choice-result" aria-live="polite">まだ選択されていません。</p>
+    </section>
+
+    <p class="status">根拠: 添付スクリーンショット、<code>index.html</code> のシーン操作構造、<code>stage-sketch.js</code> の選択行への操作群移設。外部送信・公開・実装はしていません。</p>
+  </main>
+  <script>
+    const opener = document.querySelector('[data-create-open]');
+    const menu = document.querySelector('[data-create-menu]');
+    opener.addEventListener('click', () => {
+      const open = opener.getAttribute('aria-expanded') !== 'true';
+      opener.setAttribute('aria-expanded', String(open));
+      menu.hidden = !open;
+    });
+    document.querySelectorAll('[data-choice]').forEach((button) => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('[data-choice]').forEach((item) => item.setAttribute('aria-pressed', 'false'));
+        button.setAttribute('aria-pressed', 'true');
+        document.querySelector('#choice-result').textContent = `選択: ${button.dataset.choice}`;
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+{
+  "date": "2026-09-10",
+  "name": "Stage Sketch Viewer",
+  "node": {
+    "passed": 877,
+    "failed": 0
+  },
+  "browser": [
+    "Japanese and English live header, role copy, separate show heading",
+    "390x844 and 1440x900 render and design-lint: NG0 WARN0 unmeasurable0"
+  ],
+  "checks": [
+    "JavaScript syntax",
+    "build_stage.py --check",
+    "build_public.py --check",
+    "git diff --check"
+  ],
+  "physicalDevices": "not verified",
+  "deployed": false,
+  "changed": [
+    "build_study.py",
+    "design/TOKEN_SHEET_study-links_2026-09-09.md",
+    "stage-study-owner.js",
+    "stage-study-viewer.js",
+    "stage-study.css",
+    "study-frame.html",
+    "study.html",
+    "tests/study-links.test.mjs",
+    "index.html",
+    "stage-sw.js",
+    "stage.html",
+    "tests/stage-manual-help.test.mjs",
+    "tests/stage-session-shelve.test.mjs"
+  ],
+  "missing": [],
+  "unchanged": 1815
+}

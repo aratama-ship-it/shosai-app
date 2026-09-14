@@ -1,0 +1,249 @@
+{
+  "kind": "shosai-stage-sketch",
+  "version": 4,
+  "project": {
+    "id": "review-0cd83482-1bd9-4c5c-ad2c-acdefadca03f",
+    "title": "稽古前の確認 / Rehearsal",
+    "versionLabel": "v1",
+    "parentVersionId": null,
+    "branchReason": "",
+    "createdAt": "2026-09-09T09:14:52.864Z",
+    "venue": "proscenium",
+    "venueSize": "mid",
+    "rehearsal": {
+      "version": 1,
+      "primaryMode": "ordered",
+      "soundtrack": null
+    },
+    "audioTracks": [],
+    "cast": [
+      {
+        "id": "stage-sample-cast-1",
+        "name": "演者A",
+        "color": "#a84b26",
+        "heightCm": 165,
+        "note": "",
+        "locked": false
+      },
+      {
+        "id": "stage-sample-cast-2",
+        "name": "演者B",
+        "color": "#77865f",
+        "heightCm": 165,
+        "note": "",
+        "locked": false
+      }
+    ],
+    "sets": [
+      {
+        "id": "stage-sample-set-1",
+        "kind": "block",
+        "name": "台",
+        "color": "#efe7d6",
+        "dims": {
+          "w": 1.7952000000000001,
+          "d": 0.5808,
+          "h": 1.056
+        },
+        "note": "",
+        "locked": false,
+        "flown": false,
+        "wires": 2,
+        "framed": false,
+        "lightKind": "hang"
+      }
+    ],
+    "rigs": [],
+    "photos": {},
+    "scenes": [
+      {
+        "id": "qa-scene-0",
+        "kind": "scene",
+        "depth": 0,
+        "color": null,
+        "title": "入場 / Entrance",
+        "note": "",
+        "background": "#40362d",
+        "notes": [],
+        "pieces": [
+          {
+            "id": "stage-sample-performer-1",
+            "type": "performer",
+            "castId": "stage-sample-cast-1",
+            "u": 0.25,
+            "v": 0.5,
+            "size": 105,
+            "color": "#a84b26",
+            "name": "",
+            "base": 0,
+            "supportId": null
+          },
+          {
+            "id": "stage-sample-performer-2",
+            "type": "performer",
+            "castId": "stage-sample-cast-2",
+            "u": 0.45,
+            "v": 0.5,
+            "size": 92,
+            "color": "#77865f",
+            "name": "",
+            "base": 0,
+            "supportId": null
+          },
+          {
+            "id": "stage-sample-block-1",
+            "type": "block",
+            "setId": "stage-sample-set-1",
+            "u": 0.51,
+            "v": 0.7,
+            "size": 88,
+            "color": "#efe7d6",
+            "name": "",
+            "base": 0,
+            "supportId": null
+          }
+        ],
+        "strokes": [],
+        "arrows": [],
+        "beat": {
+          "role": "",
+          "energy": null
+        },
+        "rehearsal": {
+          "holdDurationSeconds": null,
+          "transitionToNextSeconds": null
+        },
+        "cueSeconds": null,
+        "audioTrackId": null,
+        "lightingIntent": null,
+        "facingLock": false
+      },
+      {
+        "id": "qa-scene-1",
+        "kind": "scene",
+        "depth": 0,
+        "color": null,
+        "title": "交差 / Crossing",
+        "note": "",
+        "background": "#40362d",
+        "notes": [],
+        "pieces": [
+          {
+            "id": "stage-sample-performer-1",
+            "type": "performer",
+            "castId": "stage-sample-cast-1",
+            "u": 0.3,
+            "v": 0.6,
+            "size": 105,
+            "color": "#a84b26",
+            "name": "",
+            "base": 0,
+            "supportId": null
+          },
+          {
+            "id": "stage-sample-performer-2",
+            "type": "performer",
+            "castId": "stage-sample-cast-2",
+            "u": 0.5,
+            "v": 0.6,
+            "size": 92,
+            "color": "#77865f",
+            "name": "",
+            "base": 0,
+            "supportId": null
+          },
+          {
+            "id": "stage-sample-block-1",
+            "type": "block",
+            "setId": "stage-sample-set-1",
+            "u": 0.51,
+            "v": 0.7,
+            "size": 88,
+            "color": "#efe7d6",
+            "name": "",
+            "base": 0,
+            "supportId": null
+          }
+        ],
+        "strokes": [],
+        "arrows": [],
+        "beat": {
+          "role": "",
+          "energy": null
+        },
+        "rehearsal": {
+          "holdDurationSeconds": null,
+          "transitionToNextSeconds": null
+        },
+        "cueSeconds": null,
+        "audioTrackId": null,
+        "lightingIntent": null,
+        "facingLock": false
+      },
+      {
+        "id": "qa-scene-2",
+        "kind": "scene",
+        "depth": 0,
+        "color": null,
+        "title": "終景 / Finale",
+        "note": "",
+        "background": "#40362d",
+        "notes": [],
+        "pieces": [
+          {
+            "id": "stage-sample-performer-1",
+            "type": "performer",
+            "castId": "stage-sample-cast-1",
+            "u": 0.35,
+            "v": 0.7,
+            "size": 105,
+            "color": "#a84b26",
+            "name": "",
+            "base": 0,
+            "supportId": null
+          },
+          {
+            "id": "stage-sample-performer-2",
+            "type": "performer",
+            "castId": "stage-sample-cast-2",
+            "u": 0.55,
+            "v": 0.7,
+            "size": 92,
+            "color": "#77865f",
+            "name": "",
+            "base": 0,
+            "supportId": null
+          },
+          {
+            "id": "stage-sample-block-1",
+            "type": "block",
+            "setId": "stage-sample-set-1",
+            "u": 0.51,
+            "v": 0.7,
+            "size": 88,
+            "color": "#efe7d6",
+            "name": "",
+            "base": 0,
+            "supportId": null
+          }
+        ],
+        "strokes": [],
+        "arrows": [],
+        "beat": {
+          "role": "",
+          "energy": null
+        },
+        "rehearsal": {
+          "holdDurationSeconds": null,
+          "transitionToNextSeconds": null
+        },
+        "cueSeconds": null,
+        "audioTrackId": null,
+        "lightingIntent": null,
+        "facingLock": false
+      }
+    ],
+    "activeSceneId": "qa-scene-0"
+  },
+  "venues": []
+}

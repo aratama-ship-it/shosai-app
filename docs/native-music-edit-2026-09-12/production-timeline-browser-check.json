@@ -1,0 +1,80 @@
+{
+  "url": "http://127.0.0.1:8941/stage.html?seam-sample",
+  "checkedAt": "2026-09-12T13:08:12.349Z",
+  "normalPanels": {
+    "left": [
+      "project",
+      "music",
+      "cast",
+      "machinery",
+      "rigs",
+      "light",
+      "background"
+    ],
+    "right": [
+      "scenes",
+      "inspector",
+      "save"
+    ],
+    "collapsed": []
+  },
+  "firstTimelinePanels": {
+    "left": [
+      "project",
+      "music",
+      "cast",
+      "machinery",
+      "rigs",
+      "light",
+      "background"
+    ],
+    "right": [
+      "scenes",
+      "inspector",
+      "save"
+    ],
+    "collapsed": []
+  },
+  "fullscreenControl": {
+    "width": 44,
+    "height": 44,
+    "exportWidth": 44,
+    "exportHeight": 44,
+    "iconWidth": 20,
+    "iconHeight": 20,
+    "visibleText": "",
+    "accessibleName": "Full screen"
+  },
+  "wideHeader": {
+    "parentClass": "stage-brand-row",
+    "titleRight": 448.078125,
+    "tabsLeft": 464.078125,
+    "bottomDelta": 0,
+    "overlapsCaution": false,
+    "overlapsActions": false
+  },
+  "narrowHeader": {
+    "parentClass": "stage-brand-row",
+    "titleRight": 427.875,
+    "tabsLeft": 443.875,
+    "bottomDelta": 0,
+    "overlapsCaution": false,
+    "overlapsActions": false
+  },
+  "timeLabelCount": 61,
+  "countLabelCount": 37,
+  "sceneBlockCount": 4,
+  "narrow": {
+    "viewportWidth": 1024,
+    "toolbarWidth": 1009,
+    "panelRight": 1009,
+    "panelHeight": 248,
+    "horizontalScroll": true
+  },
+  "errors": [],
+  "missingResources": [
+    "http://127.0.0.1:8941/beta-status",
+    "http://127.0.0.1:8941/whoami",
+    "http://127.0.0.1:8941/usage/config"
+  ]
+}

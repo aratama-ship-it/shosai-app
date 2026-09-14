@@ -1,0 +1,26 @@
+最初に "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/AGENTS.md" を読むこと。
+対象: "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/"。新規 stage-i18n.zh-Hans.js / stage-i18n.zh-Hant.js、index.html、style.css、stage-sketch.js（言語選択UIのみ）、stage-prompt-i18n.js、tests/。
+目的: 実装。docs/I18N_ZH_WORKORDER_2026-09-09.md の §3.2 を、§6 R3 の完了条件まで。
+確定仕様: §3.2 の1〜6。訳文はドラフトから一字も変えない。訳語を新しく決めない。
+  製品名の表記は §0-b の決定: ② 英名 "Stage Sketch"（ドラフトの 舞台速寫／舞台速写 は出さない。§3.2-6 の②の手順）。
+未決事項: §4 の4件は実装せず、報告の末尾に提案として書く。
+制約: §5。i18n-prep/ は読むだけ（コピー元）。版上げ（?v= / CACHE_NAME / build_stage.py）はこのラウンドでは**しない**。
+完了報告: 変更・新規ファイル／各テストの追加内容と結果／かな漏れ検査の実測（0件の証拠、あれば全件）／
+  スクリーンショットの保存先／初回ロード増分の実測（KB・ms）／§4 への提案／ドラフトの NEEDS_REVIEW をそのまま転記。
+補足（R2b の実績を引き継ぐ。必ず読む）:
+  - R2b で実装済みの前提: window.SHOSAI_I18N_PACKS.en が {text, maps, say, generated}。stage-sketch.js の packValue() が「現在言語のパック → en パック → 日本語原文」の順で引く。
+    normalizeStageLanguage() は読み込まれていないパックの言語を en へ落とす（77〜89行）。stage-public.js と stage-set-builder.js は既にパック参照。
+  - 編集前に stage-sketch.js / stage-i18n.js / index.html / style.css / stage-prompt-i18n.js を <name>_backup_2026-09-09-before-zh.<ext> の名で複製する。
+  - 製品名（§0-b=②英名）: コピーした stage-i18n.zh-Hant.js 内の「舞台速寫」（9箇所）と stage-i18n.zh-Hans.js 内の「舞台速写」（9箇所）を、文中も含めてすべて "Stage Sketch" に置換する
+    （中西混植は STYLE どおり前後に空白を入れない）。置換した鍵の一覧を i18n-prep/NEEDS_REVIEW.md に「## 2026-09-09 製品名を英名に置換した鍵」として記録。i18n-prep/ のドラフト自体は触らない。
+    これ以外の訳文は一字も変えない（diff で「グローバル名の行」と「製品名の置換」だけが差であることを報告に示す）。
+  - 言語選択UIの説明文「画面の文字を日本語と英語で切り替えます。」は鍵も文言も変えない（本人判断待ち。報告の §4 提案欄に「4言語になったので文言更新が要る」と書く）。
+  - innerText の基準値（R2b 完了時・ローカルHTTP 127.0.0.1:18431＋隔離した新規 Chrome プロファイル）:
+      ?lang=en → d10ed544fa5093bec741ec4490312aa1cf99564928b291374647de66852a6fc6（2474 bytes）
+      ?lang=ja → 7063741df129ce2a8192510c638c250228760339ad541a5b6b65623a8d8c3154（3340 bytes）
+    言語選択UIをセレクトへ変えると設定モーダル内の文字が変わりうる。基準と差分が出た場合は「セレクトの選択肢文字だけ」であることを差分全件で示す。
+  - かな漏れ検査: ?lang=zh-Hant / ?lang=zh-Hans で開き、道具列・設定モーダル・シーン一覧・出るもの・明かり・書き出しの各パネルを開いた状態で document.body.innerText を取り、
+    [぀-ヿ] に当たる文字列を data-no-i18n 配下と利用者データを除いて全件列挙（0件が目標。残るなら鍵と理由を表に）。
+  - スクリーンショットは docs/i18n-zh-2026-09/ へ（zh-Hant・zh-Hans それぞれ正面図と設定モーダル）。
+  - 版上げ（?v= / CACHE_NAME / build_stage.py）はしない。stage.html は生成物なので触らない（検証は index.html を直接開いてよい。stage.html と index.html の関係は build_stage.py 冒頭を読む）。
+  - コミットしない。git add -A しない。判断が要る不整合が出たら止めて報告する。

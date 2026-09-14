@@ -1,0 +1,323 @@
+{
+  "schema": "stage-sketch.cast-summary.v1",
+  "updated": "2026-09-09",
+  "status": "current_roles_not_actor_assignments",
+  "sources": [
+    "../scene-samples/draft.json",
+    "../direction-notes/scene-notes.json"
+  ],
+  "summary": {
+    "performerCount": 10,
+    "namedRoles": 10,
+    "speakingRoles": 9,
+    "silentNamedRoles": 1,
+    "dedicatedEnsembleCount": 0,
+    "ensemblePerformedByNamedCast": true,
+    "actorAssignments": null,
+    "namedRoleDoublingRequired": false
+  },
+  "decisions": [
+    {
+      "id": "RJ-CAST-DECISION-001",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "rawText": "じゃあ１０名でやりましょう",
+      "decision": "The show uses 10 performers. Each performer holds one of the 10 named roles and joins ensemble functions when available."
+    }
+  ],
+  "groups": [
+    {
+      "id": "principal",
+      "label": "中心人物",
+      "roles": [
+        {
+          "id": "ROMEO",
+          "name": "ロミオ",
+          "affiliation": "モンタギュー家",
+          "function": "ジュリエットと恋に落ち、追放と手紙の行き違いを経て墓所へ向かう。",
+          "scenes": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            10,
+            11,
+            12
+          ],
+          "dialogueScenes": [
+            2,
+            4,
+            5,
+            6
+          ],
+          "actionOnlyScenes": [
+            3,
+            10,
+            11,
+            12
+          ]
+        },
+        {
+          "id": "JULIET",
+          "name": "ジュリエット",
+          "affiliation": "キャピュレット家",
+          "function": "ロミオとの結婚を選び、望まない結婚を拒み、仮死の計画を実行する。",
+          "scenes": [
+            2,
+            3,
+            4,
+            6,
+            7,
+            8,
+            9,
+            11,
+            12
+          ],
+          "dialogueScenes": [
+            2,
+            3,
+            4,
+            6,
+            7,
+            8,
+            9,
+            11
+          ],
+          "actionOnlyScenes": [
+            12
+          ]
+        }
+      ]
+    },
+    {
+      "id": "supporting",
+      "label": "名前のある役",
+      "roles": [
+        {
+          "id": "FRIAR_LAWRENCE",
+          "name": "ロレンス修道士",
+          "affiliation": "両家の外",
+          "function": "秘密の結婚と仮死の計画を助け、終幕では真相を語る中心になる。",
+          "scenes": [
+            4,
+            8,
+            11,
+            12
+          ],
+          "dialogueScenes": [
+            4,
+            8
+          ],
+          "actionOnlyScenes": [
+            11,
+            12
+          ]
+        },
+        {
+          "id": "BENVOLIO",
+          "name": "ベンヴォーリオ",
+          "affiliation": "モンタギュー家",
+          "function": "冒頭の争いを止めようとし、決闘では傷ついたマーキューシオを支える。",
+          "scenes": [
+            1,
+            5
+          ],
+          "dialogueScenes": [
+            1
+          ],
+          "actionOnlyScenes": [
+            5
+          ]
+        },
+        {
+          "id": "TYBALT",
+          "name": "ティボルト",
+          "affiliation": "キャピュレット家",
+          "function": "両家の対立を体現し、マーキューシオとロミオの決闘を引き起こす。",
+          "scenes": [
+            1,
+            5
+          ],
+          "dialogueScenes": [
+            1,
+            5
+          ],
+          "actionOnlyScenes": []
+        },
+        {
+          "id": "MERCUTIO",
+          "name": "マーキューシオ",
+          "affiliation": "両家の外・ロミオの友人",
+          "function": "ティボルトとの決闘で命を落とし、ロミオの報復を引き起こす。",
+          "scenes": [
+            5
+          ],
+          "dialogueScenes": [
+            5
+          ],
+          "actionOnlyScenes": []
+        },
+        {
+          "id": "NURSE",
+          "name": "乳母",
+          "affiliation": "キャピュレット家",
+          "function": "現在の短い台本では、窓辺の場面で家の中からジュリエットを呼ぶ。",
+          "scenes": [
+            3
+          ],
+          "dialogueScenes": [
+            3
+          ],
+          "actionOnlyScenes": [],
+          "performanceNote": "現行の抜粋では舞台外からの声。"
+        },
+        {
+          "id": "CAPULET",
+          "name": "キャピュレット",
+          "affiliation": "キャピュレット家",
+          "function": "ジュリエットに結婚を迫る父。終幕でモンタギューへ手を差し出す。",
+          "scenes": [
+            7,
+            12
+          ],
+          "dialogueScenes": [
+            7,
+            12
+          ],
+          "actionOnlyScenes": []
+        },
+        {
+          "id": "MONTAGUE",
+          "name": "モンタギュー",
+          "affiliation": "モンタギュー家",
+          "function": "ロミオの父。終幕でジュリエットの像を建てると申し出る。",
+          "scenes": [
+            12
+          ],
+          "dialogueScenes": [
+            12
+          ],
+          "actionOnlyScenes": []
+        },
+        {
+          "id": "FRIAR_JOHN",
+          "name": "ジョン修道士",
+          "affiliation": "両家の外",
+          "function": "ロミオへ届かなかった手紙を運ぶ。現在の第10場面では台詞を使わず、移動だけで表現する。",
+          "scenes": [
+            10
+          ],
+          "dialogueScenes": [],
+          "actionOnlyScenes": [
+            10
+          ]
+        }
+      ]
+    }
+  ],
+  "ensemble": {
+    "id": "ENSEMBLE",
+    "name": "アンサンブル／その他のアーティスト",
+    "dedicatedCount": 0,
+    "sourcePool": "the_10_named_role_performers_when_available",
+    "scenes": [
+      1,
+      2,
+      4,
+      11,
+      12
+    ],
+    "functions": [
+      "第1場面の四隅で2名ずつ行う四つの乱闘",
+      "第2場面の仮面を着けたパーティーの人々",
+      "第4場面で背中を見せて並ぶ人々",
+      "第11場面で左右を隔てる人の川",
+      "第12場面で一人ずつロレンス修道士の周囲へ集まる人々"
+    ],
+    "namedRoleDoubling": false,
+    "ensembleDuty": "scene_by_scene_rotation"
+  },
+  "notCurrentlyCast": [
+    {
+      "name": "大公",
+      "status": "story_context_only",
+      "note": "第1・第12場面の原作上の役割はあるが、現在の短い台本には台詞・動きが確定していない。"
+    },
+    {
+      "name": "パリス",
+      "status": "mentioned_not_onstage",
+      "note": "第7場面の台詞では名前が出るが、現在の演出では舞台に出さない。"
+    },
+    {
+      "name": "両家の母親・バルサザー・見張りなど",
+      "status": "omitted_or_unresolved",
+      "note": "原作には登場するが、現在の12場面版では独立した配役として確定していない。"
+    }
+  ],
+  "scene1Deployment": {
+    "status": "assistant_decision_authorized_by_user_unrehearsed",
+    "durationSeconds": 180,
+    "durationStatus": "approximate_unrehearsed",
+    "sourceEntryIds": [
+      "RJ-NOTE-0023",
+      "RJ-NOTE-0024",
+      "RJ-NOTE-0025",
+      "RJ-NOTE-0026"
+    ],
+    "namedCharactersOnStage": [
+      "BENVOLIO",
+      "TYBALT"
+    ],
+    "ensembleRoleHolders": [
+      "ROMEO",
+      "JULIET",
+      "FRIAR_LAWRENCE",
+      "FRIAR_JOHN",
+      "MONTAGUE",
+      "CAPULET",
+      "MERCUTIO",
+      "NURSE"
+    ],
+    "characterContinuity": "中央二役以外は、役名の人物としてではなく、その俳優が匿名の群衆役を兼ねる。",
+    "cornerPairs": [
+      {
+        "id": "PAIR-UL",
+        "regionLabel": "奥・客席左",
+        "roleHolders": [
+          "ROMEO",
+          "JULIET"
+        ],
+        "outcome": "和解"
+      },
+      {
+        "id": "PAIR-UR",
+        "regionLabel": "奥・客席右",
+        "roleHolders": [
+          "FRIAR_LAWRENCE",
+          "FRIAR_JOHN"
+        ],
+        "outcome": "和解"
+      },
+      {
+        "id": "PAIR-DL",
+        "regionLabel": "手前・客席左",
+        "roleHolders": [
+          "MONTAGUE",
+          "CAPULET"
+        ],
+        "outcome": "双方がダメージ"
+      },
+      {
+        "id": "PAIR-DR",
+        "regionLabel": "手前・客席右",
+        "roleHolders": [
+          "MERCUTIO",
+          "NURSE"
+        ],
+        "outcome": "双方がダメージ／最後まで動く"
+      }
+    ],
+    "blockingPlan": "../direction-notes/scene-01-blocking-plan.json"
+  }
+}

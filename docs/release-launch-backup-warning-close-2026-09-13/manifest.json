@@ -1,0 +1,86 @@
+{
+  "scriptName": "shosai-app",
+  "preparedAt": "2026-09-13T10:29:19.400Z",
+  "baselineVersion": "92ba680c-6849-40f5-91a7-74264444e30f",
+  "baselineDeploymentId": "8dda9328-989d-4784-81f9-ac891f7a6f65",
+  "baselineSourceSha256": "1ae389cca1067e8f239e3fe437fa789d9439f1ad5199f991f8bebb37ff5100d5",
+  "candidateSourceSha256": "b0e07f79257b6c7c85ef14a44a0936605fe785428af407570d38652a1e82cf6f",
+  "changedRoutes": [
+    "/stage",
+    "/stage-sketch.js",
+    "/stage-sw.js",
+    "/stage.html",
+    "/style.css"
+  ],
+  "baselineRouteHashes": {
+    "/stage": "48b3a5f7fd0861cdd38db1b373ea4e75b27358f892792e7991c38a8b2db819a5",
+    "/stage-sketch.js": "6a39fba029788d7517c34db0c2b57dd2a78e44a4de09472635288af6aabe6b11",
+    "/stage-sw.js": "44de71b4cc2b0ea88e8beffd86afdb87e9d456df523fc2cb131f580e97866cd1",
+    "/stage.html": "48b3a5f7fd0861cdd38db1b373ea4e75b27358f892792e7991c38a8b2db819a5",
+    "/style.css": "43bde1de83d33677071cca5e7e21825aec5ef50c23b8f9ef133d8730cc7c148c"
+  },
+  "candidateRouteHashes": {
+    "/stage": "0aefa90d461d478997abac33529f0456d2fef7b831eda21fcbc589a9fb741614",
+    "/stage-sketch.js": "e100e761aae60c59252f15c0f6bee9780760f874331aa0b7899a7fa4e6febfd2",
+    "/stage-sw.js": "540ec61d5022b5b7e86820de7dc525848e7fd76cdc5e865492aba02ce300255c",
+    "/stage.html": "0aefa90d461d478997abac33529f0456d2fef7b831eda21fcbc589a9fb741614",
+    "/style.css": "8ff85786faec7e1dea44330848165768afa00200c03c97b4c98d59365e28bb56"
+  },
+  "revision": {
+    "style": "292 -> 293",
+    "sketch": "416 -> 417",
+    "cache": "344 -> 345"
+  },
+  "retainedBindings": [
+    {
+      "name": "ASSETS",
+      "type": "assets",
+      "class_name": null
+    },
+    {
+      "name": "GUEST_ACCOUNTS",
+      "type": "secret_text",
+      "class_name": null
+    },
+    {
+      "name": "SESSION_ROOM",
+      "type": "durable_object_namespace",
+      "class_name": "SessionRoom"
+    },
+    {
+      "name": "SITE_PASS",
+      "type": "secret_text",
+      "class_name": null
+    },
+    {
+      "name": "SITE_USER",
+      "type": "secret_text",
+      "class_name": null
+    },
+    {
+      "name": "STAGE_BETA_ACTIVE",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STAGE_RELEASE_SCOPE",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STAGE_USAGE_ENABLED",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STUDY_ALLOW_ANONYMOUS",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STUDY_LINKS",
+      "type": "durable_object_namespace",
+      "class_name": "StudyLinks"
+    }
+  ]
+}

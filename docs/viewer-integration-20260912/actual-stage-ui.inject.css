@@ -1,0 +1,165 @@
+/* Local-only entry placement. Every other rule comes from Stage Sketch's real style.css. */
+#stage-viewer-link-open {
+  position: relative;
+  border-color: #81bfd4;
+  color: #d9f1f8;
+  background: rgba(129, 191, 212, 0.1);
+}
+
+#stage-viewer-link-open::after {
+  content: "入口案";
+  position: absolute;
+  top: -9px;
+  right: -1px;
+  padding: 1px 4px;
+  color: #191512;
+  background: #81bfd4;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-share-panel-hint,
+#stage-session-panel.stage-viewer-link-mode .stage-share-live {
+  display: none;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-share-study {
+  padding-top: 0;
+  border-top: 0;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-share-study {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px 6px;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-share-channel-head,
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-explanations {
+  grid-column: 1 / -1;
+}
+
+#stage-session-panel.stage-viewer-link-mode #stage-share-study-action,
+#stage-session-panel.stage-viewer-link-mode #stage-share-study-action > .stage-share-study-block:not(.stage-share-study-confirm),
+#stage-session-panel.stage-viewer-link-mode #stage-share-study-action .stage-share-study-actions {
+  display: contents;
+}
+
+#stage-session-panel.stage-viewer-link-mode #stage-share-study-action > *:not(.stage-share-study-copy):not(.stage-share-study-muted),
+#stage-session-panel.stage-viewer-link-mode #stage-share-study-action .stage-share-study-block > *:not(.stage-share-study-actions) {
+  grid-column: 1 / -1;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-field-label {
+  order: 1;
+  grid-column: 1 / -1;
+}
+
+#stage-session-panel.stage-viewer-link-mode #study-owner-url {
+  order: 2;
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-copy-action,
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-open-action {
+  order: 3;
+  grid-column: 1 / 2;
+  justify-self: stretch;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-open-action {
+  order: 4;
+  grid-column: 2 / 3;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-create-action {
+  order: 3;
+  grid-column: 1 / -1;
+  justify-self: stretch;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-share-study-project { order: 5; }
+#stage-session-panel.stage-viewer-link-mode .stage-share-study-meta { order: 6; }
+#stage-session-panel.stage-viewer-link-mode .stage-share-study-status { order: 7; }
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-update-action,
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-revoke-action {
+  order: 8;
+  grid-column: 1 / 2;
+  justify-self: stretch;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-revoke-action {
+  order: 9;
+  grid-column: 2 / 3;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-extra-action {
+  order: 10;
+  grid-column: 1 / -1;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-share-study-confirm { order: 11; }
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-feedback { order: 12; }
+#stage-session-panel.stage-viewer-link-mode .stage-share-study-notes-title { order: 13; }
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-refresh { order: 14; }
+#stage-session-panel.stage-viewer-link-mode .stage-share-study-note-list { order: 15; }
+#stage-session-panel.stage-viewer-link-mode .stage-share-study-library-title { order: 16; }
+#stage-session-panel.stage-viewer-link-mode .stage-share-study-library { order: 17; }
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-explanations {
+  order: 100;
+  margin-top: 2px;
+  padding-top: 5px;
+  border-top: 1px solid var(--line-dark);
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-explanations summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--milk-dim);
+  font-size: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-explanations summary::-webkit-details-marker {
+  display: none;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-explanations summary::after {
+  content: "+";
+  margin-left: auto;
+  padding-left: 12px;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-explanations[open] summary::after {
+  content: "−";
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-explanation-body {
+  display: grid;
+  gap: 8px;
+  padding: 0 0 8px;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-link-explanations summary:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 3px;
+}
+
+#stage-session-panel.stage-viewer-link-mode .stage-viewer-entry-intro {
+  margin: 0;
+  color: var(--milk-dim);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+@media (max-width: 760px) {
+  #stage-viewer-link-open {
+    flex: 1 1 auto;
+  }
+}

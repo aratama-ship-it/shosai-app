@@ -1,0 +1,50 @@
+[
+  {
+    "file": "stage.html",
+    "live_sha256": "919989219f4bf464b30797256cb6309ed97b0f5c3d406ad51ce02594d701eb23",
+    "local_sha256": "919989219f4bf464b30797256cb6309ed97b0f5c3d406ad51ce02594d701eb23",
+    "equal": true
+  },
+  {
+    "file": "stage-sketch.js",
+    "live_sha256": "c153e84a087b6c87c1f1ebf6ed1d232740db604fc25ae83ce74f1047adad2a78",
+    "local_sha256": "c153e84a087b6c87c1f1ebf6ed1d232740db604fc25ae83ce74f1047adad2a78",
+    "equal": true
+  },
+  {
+    "file": "stage-timeline.js",
+    "live_sha256": "bf00adf0bfa7c08331c8e8004f23717ce7ff5541519a4c4d4ff67a4a70d7c63e",
+    "local_sha256": "bf00adf0bfa7c08331c8e8004f23717ce7ff5541519a4c4d4ff67a4a70d7c63e",
+    "equal": true
+  },
+  {
+    "file": "style.css",
+    "live_sha256": "3f9157769c6b1f1624a9f13d4a5fd12218f57152d2a850af6964d621a23d0f82",
+    "local_sha256": "3f9157769c6b1f1624a9f13d4a5fd12218f57152d2a850af6964d621a23d0f82",
+    "equal": true
+  },
+  {
+    "file": "stage-sw.js",
+    "live_sha256": "54f62d798a57ce253cde94636da4e7ac63ac5dc0ec5f370f6a16404281ed0cfd",
+    "local_sha256": "54f62d798a57ce253cde94636da4e7ac63ac5dc0ec5f370f6a16404281ed0cfd",
+    "equal": true
+  },
+  {
+    "file": "stage-audio-store.js",
+    "live_sha256": "199d30808ac9242040c4967cc7d75dbb1db98aa1717e91e019ed2a9e96fa654f",
+    "local_sha256": "199d30808ac9242040c4967cc7d75dbb1db98aa1717e91e019ed2a9e96fa654f",
+    "equal": true
+  },
+  {
+    "file": "stage-session.js",
+    "live_sha256": "939723ca8c13892b4a20886c22ca274c2189ce676c59dccdc457c3e1f4d8785c",
+    "local_sha256": "939723ca8c13892b4a20886c22ca274c2189ce676c59dccdc457c3e1f4d8785c",
+    "equal": true
+  },
+  {
+    "file": "formation/prototype/record-from-video.html",
+    "live_sha256": "558b9712b243884998ba619cbde3220ad3c105eac46fcb225cdc4b731a88adf8",
+    "local_sha256": "558b9712b243884998ba619cbde3220ad3c105eac46fcb225cdc4b731a88adf8",
+    "equal": true
+  }
+]

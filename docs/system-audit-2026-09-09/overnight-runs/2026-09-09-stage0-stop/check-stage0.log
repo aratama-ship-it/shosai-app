@@ -1,0 +1,32 @@
+Command: CHECK_ROOT="$PWD" zsh docs/system-audit-2026-09-09/check.sh.draft --allow-dirty
+Source: captured exec stdout from this session (merged initial and completion chunks)
+Exit code: 0
+
+== 0 未コミットの変更 ==
+  ✓ （--allow-dirty）確認を省略
+
+== 1 構文（node --check） ==
+  ✓ 全ファイル通過
+
+== 2 stage.html が index.html と揃っているか ==
+study-frame.html matches index.html
+stage.html は index.html と揃っています
+  ✓ 揃っている
+
+== 3 体験版の生成物（public-dist） ==
+try.html と配信フォルダ public-dist/ は正本と揃っています
+  ✓ 最新
+
+== 4 tests/（node:test） ==
+  # tests 828
+  # pass 828
+  # fail 0
+  ✓ 失敗0
+
+== 5 mcp-server（npm test） ==
+  # tests 42
+  # pass 42
+  # fail 0
+  ✓ 失敗0
+
+配ってよい状態です（npx wrangler deploy）

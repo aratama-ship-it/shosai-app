@@ -1,0 +1,1475 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+model: gpt-6-astra
+provider: openai
+approval: on-request
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a09b8e-1622-7933-b75d-f9764a1ec457
+--------
+user
+第2ラウンド。Fable（Claude）からの反論と、具体化の依頼です。前ラウンドの3点に答えたうえで、数値・一覧・形式まで落としてください（読み取りのみ、ファイルは書かない）。
+
+## 反論1: 「縮退適用を初版から外す」— 半分同意、半分反対
+同意: 初版の適用対象はフルリグ3種だけでよい。任意rigへの割当アルゴリズムは後段。
+反対: **プリセットの記述形式には初日から `requires`（必須／補助の配置グループと灯数）を持たせる**べき。理由は2つ。①既存8種の仕込みで作業中の人が「見本を試す」入口に来たとき、「このrigでは主題が成立しない」と3状態で言えるのは `requires` があるときだけ。②書き出しで照明さんに「この見本に最低限必要なもの」を渡せる（灯数でなく配置グループ単位）。実装は「フルリグ以外では見本タブに『この仕込みでは試せません（必要: 前明かり左右・バトン2本）』と出すだけ」で足りる。
+→ これに反論があれば。無ければ `requires` の最小の書き方を決めてください。
+
+## 反論2: 「層＝部分変更」— 同意。ただし呼び名と単位
+同意: 初版は「全体の見本（置換・未使用灯は消灯）」＋「部分変更（明示した配置グループ×属性だけ後勝ち）」。取り外せる層は作らない。由来チップは表示のみ。
+確認したい点: 部分変更の単位は**配置グループ**（例「背景だけ夕焼け」＝上下ホリゾントだけ）で固定してよいか。それとも「使い道」（顔／輪郭／床／背景／空間）で切るべきか。本人は非専門家なので「背景」「顔」「輪郭」の言葉のほうが伝わる、と私は考える。**内部は配置グループ、表示は使い道**の二重にするなら、その対応表を決めてほしい。
+
+## 反論3: 「試し表示と採用を分ける」— 反対寄り。テンポと既存原則との衝突
+本人の既存決定: 「取り消せる操作に確認を挟まない」（2026-09-11、プリセット適用は確認なしで一撃・toastの元に戻すで取消）。この原則に従うと、**カードのクリック＝即commit（Undo可）**が自然で、試し表示という中間状態は増やしたくない。
+あなたが挙げたリスク（`lxSyncEditing` が commit で編集中キューへ書き戻す）は、即commitなら「編集中キューが変わる」のが本人の意図そのものなので問題にならない。問題になるのは「隣のカードも見比べたい」ときで、それは **Undo→別カード** で足りるのではないか。
+ただし「新規キューにする」は別ボタンとして残す（既存の〈＋新規キュー〉がいまの明かりから始まるので、「見本を当てる→＋新規」の順でも成立する）。
+→ 反論があれば。特に「一覧で連続クリックして見比べる」体験が Undo で本当に足りるか、あなたの見立てを。
+
+## 具体化の依頼（ここが本題。数値で）
+### A. フルリグ3種の配置表
+小 8×7×6 ／ 中 12×9×8 ／ 大 18×12×12 それぞれについて、**配置グループごとに 灯数・kind(moving/fixed)・座標（u, v, h または ahead, h）・既定の広がり(°)** を表にしてください。試作の `mount` 形式（truss{trussId,u}／front{u,ahead,h}／side{side,v,h}／floor{u,v}／cyc{len,rung,reachM}）に落とせる粒度で。
+あなたの指摘（SSは低い・高いの2段、前明かりは狙い点への角度を保つ、床置きは奥端・両端、バトン高さは劇場高に比例させない）を反映して。角度の根拠（前明かり45°前後など）は出典か「慣習として」と明記。
+### B. 完成ルック24＋部分変更6の一覧（初版）
+Fable案の候補を置きます。**削る・入れ替える・名前を直す**をしてください。各ルックに 使う配置グループ／狙い（ゾーン or 空中 or 客席）／色／動きの有無／サムネイルの代表時刻 を1行で。
+候補（地上の身体・道具を優先。本人の回答待ちだが仮でこれを軸に）:
+1 全員の顔を見せる 2 中央の一人だけ 3 二人を別々の色で 4 体の輪郭を見せる 5 床に細い通り道 6 影絵にする（逆光・前なし）
+7 上から柱を落とす 8 背景だけ夕焼け 9 夜の青 10 昼の白 11 赤一色 12 奥から光が開く（扇）
+13 ゆっくり往復（鏡） 14 交差 15 床で円を描く 16 順に走る 17 空中の一点 18 空中で往復
+19 客席へ向ける 20 点滅 21 暗転前の一灯 22 トークの顔だけ 23 舞台の縁を残す 24 全部消す（暗転）
+部分変更6: 背景の色を替える／顔の強さを替える／輪郭の色を替える／動きの速さを替える／全部を暖色に／全部を冷色に
+### C. プリセットのJSON（1件の完全な例）
+「中央の一人だけ」と「背景だけ夕焼け」の2件を、実際に使える形で。`requires`、配置グループ→割当規則、ゾーン、色、level、beamDeg、path、thumbnailTimeMs、words/tags を含む。適用関数のシグネチャと返り値（割当・変更属性・由来）も。
+### D. サムネイル描画の境界
+`drawFront3D()` から切り出すべき「描画入力」の項目一覧（state のどのフィールドを引数化するか）。試作コードを読んで具体的に。
+### E. UIの寸法（右パネル「見本」タブ）
+1440×900・右パネル約305pxを前提に、カード幅・高さ・格子の列数・画像サイズ・名前とタグの文字サイズ・絞り込みチップの行構成を数値で。既存トークン（milk/brass/rust-ink、.ptitle 14.5px、.btn 34px）を継承。
+
+最後に「合意」「未合意」「本人に聞くこと（第1ラウンドの3問に追加があれば）」を箇条書きで固定してください。
+
+codex
+Astraで、3つの反論への判断と、配置・プリセット・描画入力の契約まで具体化します。即適用は既存の本人決定を優先して再検討し、現行コードを読み直して数値案との食い違いを確認します。ファイルは変更しません。
+exec
+/bin/zsh -lc "sed -n '1,48p' '/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/AGENTS.md'; tail -22 '/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/_claude-rules/dev-preferences.md'; rg -n 'function drawFront3D|function (secBox|secProj|drawPiecesUp|drawBlackout|drawBeam)|const (secBox|secProj|litFactorOf|beamOf|lightOf|fixtureWorld|targetAt)|function (litFactorOf|beamOf|showOn)' prototype/app.js; rg -n 'light-rig|照明デザイン' /Users/arata/.codex/memories/MEMORY.md" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+ exited 1 in 0ms:
+# Codex グローバル設定
+
+> **生成物。直接編集しない。** 共通部分は `_claude-rules/config-src/00-common.md`、固有部分は
+> `_claude-rules/config-src/10-codex.md` を編集し、`bash "_claude-rules/config-src/build.sh"` で再生成する
+> （CLAUDE.md と AGENTS.md の共通ルールを1ソースに揃えるため。最終生成 2026-09-09）。
+> 詳細版は別ファイル。**該当作業に入る前に必ずリンク先を読むこと。** ここは要点だけ。
+> - デザイン（UI・Web・アプリ・資料・ビジュアル）→ [_claude-rules/design-policy.md](_claude-rules/design-policy.md)
+> - コーディング作業（Codexへの委譲）→ [_claude-rules/codex-delegation.md](_claude-rules/codex-delegation.md)
+> - 定期タスクの作成・更新 → [_claude-rules/scheduled-tasks.md](_claude-rules/scheduled-tasks.md)
+> - ファイル作成・大きな書き換え・ディレクトリ操作 → [_claude-rules/workspace-icloud.md](_claude-rules/workspace-icloud.md)
+> - 開発・制作の修正フィードバック（方向性学習） → [_claude-rules/dev-preferences.md](_claude-rules/dev-preferences.md)
+> - トークン節約 → [_claude-rules/token-cost.md](_claude-rules/token-cost.md)
+> - 対話式日記 → `apps/life-app/digital-legacy/corpus/methods/dialogue-journal.md`
+> - 旧版バックアップ: iCloud直下の `claude-files-archives/claude-config/`（`_claude-rules/` の更新時はここへも複製）
+
+## 基本の行動原理（最優先）
+
+ハルシネーションを極力避けたい。常に守ること。
+
+- **事実を述べるときは必ずソースと信頼度を確認する。** 裏取りできていない情報を確定事実として書かない。
+- **情報源の信頼度に注意する。** SNS・個人ブログ等は禁止ではないが慎重に扱い、可能なら公式・一次情報で
+  裏を取る。出典と信頼度をユーザーに明示する。
+- **推測は「仮説を立てて検証する」。** 憶測で断定せず、検証できるものは検証し、
+  できない場合は「これは推測」と明示する。
+- **不明な事実は推測で埋めず、先に確認できる情報源を調べる。** 既存仕様と本人の意図から決められる
+  可逆的な実装上の選択は、必要に応じて前提を明示して進める。
+- 成果の方向、範囲、権限、費用、外部への影響が実質的に変わる場合は、該当部分を短く質問する。
+  回答が必要な部分は保留し、それに依存しない承認済み作業を続ける。同じ対象・操作の許可を繰り返し求めない。
+  「提案だけ」「まだ変更しない」という指定は、実装の許可として扱わない。
+
+## 曖昧な依頼への対応（特に画像生成）
+
+解釈で成果物の方向が大きく変わる曖昧な依頼は、勝手に補完して着手せず、短く具体的な確認質問を先にする。
+画像生成では用途・主題・構図・画風・縦横比・配色・文字・避けたい要素のうち、結果を大きく変える未確定事項を聞き返し、
+回答後は原則として方向性の異なる3案程度を短いラベル付きで提示する（生成できる環境なら3種の結果で示す）。
+本人が1案指定・確認不要・案数を明示した場合はその指定を優先する。
+
+## 思考言語（推論の内部言語）
+
+テーマが**日本固有でない**場合は、**内部の思考（推論）を英語**で行う。入出力は日本語のまま。
+
+- 対象例: 世界の株価・海外市場・海外情勢・海外企業・英語圏の技術/文化
+- 例外（日本語で推論してよい）: 日本人作詞家の歌詞分析、日本国内の事情、日本語の言葉遊び・語感
+- 迷ったら「そのテーマの一次情報・本場が日本語か否か」で判断する
+
+## 判断・創作時のメモリ参照
+
+創作・企画・レビュー・重要な判断（案の良し悪しの評価、方向性の決定など）では、共有メモリの
+- 2026-09-13 [UI/自動化の粒度] ×1 — 時間で変化させる要素が複数ある編集画面では、自動化のオン・オフを一括スイッチにせず項目ごとに持たせる。一つを動かしても他は止まったままにし、共通の運び方（時間・補間・遅れ）だけを別枠にまとめる。止める選択肢を種類セレクタとスイッチに二重に置かない
+- 2026-09-13 [UI/選択対象の見出し] ×1 — 選択中の対象を示すパネル見出しには、内部の種類・通し番号ではなく、図や名簿で利用者が識別している登録名を出す。登録名がない対象だけ種類と通し番号へ戻し、複数選択時は名前の列挙ではなく人数・件数の要約を保つ。
+- 2026-09-13 [UI/状態間の時間基準] ×1 — シーン間の転換のように二つの状態をつなぐ時間は、後の状態へ入った後に重ねず、**前の状態の末尾から始めて終端を次の状態の開始とする**。時間軸では独立レーンだけに閉じず、元の状態レーンにも同じ始終端を破線・帯・短いラベルで示し、再生中にどの状態を保つかを境界と一致させる。
+- 2026-09-13 [UI/編集欄を認証欄と誤認させない] ×1 — ログインではない制作アプリの名前・検索・メモ欄は、ブラウザやパスワード管理拡張の推測へ任せず、HTML標準の自動入力無効化と利用中の拡張向け除外指定を静的HTML・動的生成の両方へ付ける。PWAではスクリプトとキャッシュ識別子も更新し、旧生成コードが残らないことを実画面の全欄走査で確認する。
+- 2026-09-13 [UI/状態スイッチの文言] ×1 — オン・オフの切り替えには対象の名前を必ず添える。囲みの見出しで文脈が分かるつもりでも、スイッチ単体で何を切り替えるか読めるようにする。設定項目は、値の性質ではなく利用者が操作する対象ごとの箱へ置く
+- 2026-09-13 [実装/時間軸と実演の同期] ×1 — タイムライン上の帯を正しく前へ置くだけでは、実演の開始が別の既定時間へ残る。**帯の開始・終了を再生イベントへ接続し、実演アニメーションの尺にも同じ秒数を渡す**。音源あり／なし、通常再生／区間ループの全経路で境界を越えた瞬間に始め、帯の終端で到着することを確認する。
+- 2026-09-13 [UI/時間軸の区間は端を直接つかんで伸縮する] ×1 — シーンや転換の長さは数値欄へ戻らせず、**帯の左右端をドラッグして変えられる**ようにする。境界を動かしたら後続の帯・キューも同じ差分だけ追従させ、1回のドラッグはUndo 1件にまとめる。別アプリ由来で正本を持たない帯は、見た目だけで書き換え可能に見せない。
+- 2026-09-13 [設計/現場の番号体系] ×1 — 現場で読み上げる番号（キュー番号など）を持たせるときは、通し番号ひとつにせず、実際の呼び方の階層をそのまま構造にする。上位の番号は所属する単位が持ち、末尾の連番だけが増える形にすると、上位を振り直しても一覧が追従する
+- 2026-09-13 [実装/アニメーションは開始姿勢を同期描画する] ×1 — 状態切替直後に次の状態を一度描いてからアニメーションを予約すると、転換開始で行き先が1フレームだけ瞬く。**アニメーションの開始値を同じイベント内で書き込み、その姿勢を描いてから次のフレームを予約する**。開始時のチラつきは補間式ではなく、描画順を確認して直す。
+- 2026-09-13 [協働/提案した次の一手は実行まで進める] ×1 — 実装後に「次の提案」として示した小さな改善は、本人が依頼した時点で確認待ちの宿題へ戻さない。保存データや公開状態を変えない範囲で、**提案の実装・回帰確認・ローカル確認まで一続きで行う**。人の視覚判断が必要な部分だけを、検証済みの技術的事実と分けて残す。
+- 2026-09-13 [実装/失われたローカル素材は同じ枠から再接続する] ×1 — ブラウザ保存の音源・画像などが見つからない場合、時間軸や参照IDを消して作り直させず、**欠落している枠そのものに再選択の導線を出す**。再接続では編集情報を保持し、素材の曲名・尺などを検査して相違時だけ確認する。
+- 2026-09-13 [UI/編集対象を常に明示] ×1 — 保存済みの項目を選んで作り込む画面では、いま編集しているのがどれかを見出しに常時出し、一覧側でも同じ行を強調する。保存ボタンを置かずに編集対象へ直接書き戻す場合ほど、対象の表示と「どれにも属さない下書き」の状態を明確にする
+- 2026-09-13 [UI/時間軸の詳細を見る操作] ×1 — タイムライン上のシーン・音源・キューなど、帯の中身を詳しく読む操作はダブルクリックへ揃える。単クリックの選択・移動と端ドラッグの長さ変更は維持し、「見る」要望では編集機能まで広げない。
+- 2026-09-14 [UI/モード専用操作の表示] ×1 — 複数モードで同じ道具列を共有するとき、現在のモードで意味を持たない専用操作は無効状態で残さず非表示にする。切替時は同じ位置へ戻し、他モードの操作や保存値は変えない。
+- 2026-09-14 [設計/階層データの不変条件] ×1 — 中核データに親子関係を定めたら、新規作成・読込・移動・並べ替えの全入口で同じ不変条件を守る。旧形式を一括移行するときは、親だけを追加して既存要素のID・順序・参照を保ち、変換前の控えを取れない場合は自動保存を止める。
+- 2026-09-14 [描画/遮蔽の順序] ×1 — 光と物体が重なる絵では、物体を先に描いて光を被せると物体が光に溶ける。手前にあるものが光を遮る見え方を出すには、光と減光を塗り終えたあとに物体をもう一度暗く重ねる。到達先を持たない光線は終点で止めず画面外まで伸ばす
+- 2026-09-14 [コード/初期化は初回だけ] ×1 — 「有効にする」処理で既定値を流し込むときは、未設定かどうかを見て初回だけにする。無効状態を未設定と同じ扱いにすると、切り替えるたびに利用者の作り込みが消える。無効化側が値を保っていても、有効化側が上書きすれば結果は同じ
+- 2026-09-14 [描画/投影の性質ごとに描き分ける] ×1 — 同じ対象を複数の投影図で見せる場合、一つの図で正しい描き方が他の図では誤解を生む。畳まれた軸に沿って進むものは、その図では奥行きの境界で止めて別の記号に置き換える。図の見た目を合わせるより、各図で読み取れる意味が実物と一致することを優先する
+- 2026-09-14 [UI/同じ対象の詳細は一つに統括する] ×1 — 同じシーンや素材の詳細を一覧・タイムラインなど複数の入口から開く場合、入口ごとの別モーダルを増やさない。**同じ正本の詳細画面へ接続し、分散している編集項目と読取情報を一か所へまとめる**。入口固有の位置・尺などは同じ画面内の読取欄として補う。
+- 2026-09-14 [設計/依存データの版分岐] ×1 — 劇場などの上位条件に依存する設計データは、条件変更時に旧版を棚へ確保して新しい版へ分岐し、依存データだけを明示して消去する。開始前と変更時の両方で、消える対象と保持される対象を警告する。
+- 2026-09-14 [互換/廃止機能の旧値] ×1 — 保存済み作品が持つ機能を廃止するときは、画面・新規生成・現行仕様から外しても、害がなければ旧値を読み書きの往復では保持する。過去版へ戻したときの情報を消さず、現行版では非表示・非利用であることをテストで分けて確認する。
+- 2026-09-14 [UI/相反する2状態はトグル1個] ×1 — 再生と停止のように同時に成立しない操作は、ボタンを並べて片方を無効化せず**1個のトグルへ畳む**。文字は「押すと何が起きるか」を出し、状態はボタン自身の色で示して「再生中」等の別の札を足さない。頭出し・経過秒数のような補助表示は、本人がその数字を見て判断する用途がない限り置かない。操作列が短くなったら、幅不足のために2段へ逃がしていたレイアウトも本来の並びへ戻す
+274:  const lightOf = (fid) => cue().lights[fid] || null;
+390:  const secBox = (cv, kind) => {
+431:  const secProj = (sec) => (sec.kind === "front"
+440:  const fixtureWorld = (f) => E.fixtureWorld(f, state.rig, state.dims);
+443:  const targetAt = (fid, t) => E.targetAt(lightOf(fid), cueWithPeriods(), fid, E.isMoving(fixtureById(fid)) ? t : 0, state.dims);
+490:  const litFactorOf = (f, l) => (isLit(l) ? curveAt(E.levelAt(l, phaseOf(f, l)) / 100) * E.strobeMul(l && l.strobe, state.play.t) : 0);
+980:  function drawPiecesUp(ctx, P, pxPerM, opts) {
+1127:  function drawBeam(ctx, from, to, world, color, deg, dim, pxPerM, squash, asLine, noPool, lv, gobo, surf, proj, frame) {
+1530:  const beamOf = (f) => { const l = lightOf(f.id); return E.beamDegAt(f, l, phaseOf(f, l)); };
+1767:  function drawFront3D(sec) {
+
+exec
+/bin/zsh -lc "sed -n '260,279p' prototype/app.js; sed -n '370,499p' prototype/app.js; sed -n '945,1026p' prototype/app.js" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+exec
+/bin/zsh -lc "sed -n '1767,1888p' prototype/app.js; sed -n '1280,1366p' prototype/app.js" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+ succeeded in 0ms:
+  function drawFront3D(sec) {
+    const fctx = sec.ctx, cv = sec.cv, w = cv.width, h = cv.height;
+    const B = secBox(cv, "front"), d = state.dims, P = secProj(sec);
+    const L = E.frontPerspSetup(d, B, state.seat);
+    fctx.clearRect(0, 0, w, h); fctx.fillStyle = "#0d0e10"; fctx.fillRect(0, 0, w, h);
+    const at = (u, v, hM) => P({ x: (u - 0.5) * d.W, y: v * d.D, z: hM || 0 });
+    // 床（奥から手前へ広がる台形）
+    const bl = at(0, 0, 0), br = at(1, 0, 0), fl = at(0, 1, 0), fr = at(1, 1, 0);
+    fctx.fillStyle = "rgba(255,255,255,0.05)"; fctx.beginPath();
+    fctx.moveTo(bl.X, bl.Y); fctx.lineTo(br.X, br.Y); fctx.lineTo(fr.X, fr.Y); fctx.lineTo(fl.X, fl.Y); fctx.closePath(); fctx.fill();
+    // 客席側の暗がり
+    fctx.fillStyle = "rgba(156,130,63,0.05)"; fctx.fillRect(0, Math.min(fl.Y, fr.Y), w, h - Math.min(fl.Y, fr.Y));
+    // 1mの枡（床）
+    if (showOn("grid")) {
+      fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.lineWidth = 1;
+      for (let m = 1; m < d.W; m++) { const u = m / d.W; const a = at(u, 0, 0), b = at(u, 1, 0); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); }
+      for (let m = 1; m < d.D; m++) { const v = m / d.D; const a = at(0, v, 0), b = at(1, v, 0); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); }
+    }
+    // 奥の壁
+    const tl = at(0, 0, d.H), tr = at(1, 0, d.H);
+    fctx.fillStyle = "rgba(255,255,255,0.03)"; fctx.beginPath();
+    fctx.moveTo(bl.X, bl.Y); fctx.lineTo(br.X, br.Y); fctx.lineTo(tr.X, tr.Y); fctx.lineTo(tl.X, tl.Y); fctx.closePath(); fctx.fill();
+    fctx.strokeStyle = "rgba(239,231,214,0.25)"; fctx.stroke();
+    // 高さの目盛り（奥の壁の左）
+    fctx.fillStyle = "rgba(240,231,214,0.45)"; fctx.font = "16px sans-serif"; fctx.textBaseline = "middle";
+    [2, 4, 6, 8].filter((m) => m <= d.H).forEach((m) => { const q = at(0, 0, m); fctx.fillText(`${m}m`, q.X - 42, q.Y); fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.beginPath(); fctx.moveTo(q.X, q.Y); fctx.lineTo(at(1, 0, m).X, at(1, 0, m).Y); fctx.stroke(); });
+    fctx.fillText("下手", Math.max(6, bl.X - 42), fl.Y - 18); fctx.fillText("上手", Math.min(w - 40, br.X + 8), fr.Y - 18);
+    const litSpots3D = [];   // 作業灯を消す（ブラックアウト）用
+    drawCycWashes(fctx, P, d, litSpots3D);   // 壁の色。演者・セットより先に塗る
+    drawPiecesUp(fctx, P, L.pxPerM, { yawDeg: 0, zDropPerM: (L.bottomY - L.floorY) / d.D, stretchAt: (v) => 1 + L.seat.rise * v });
+    // バトン（奥行きのある横線）
+    state.rig.trusses.forEach((t) => { const a = at(0, t.v, t.h), b = at(1, t.v, t.h); const sel = state.selTruss === t.id && state.mode === "place";
+      fctx.strokeStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.lineWidth = sel ? 5 : 3; fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke();
+      fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.7)"; fctx.font = "15px sans-serif"; fctx.fillText(`${t.label || "バトン"} 高さ${t.h.toFixed(1)}m`, b.X + 10, b.Y); });
+    // 光（ホリゾントライトの帯は上で先に塗ってある）
+    if (state.mode === "move") state.rig.fixtures.forEach((f) => {
+      const l = lightOf(f.id); if (!isLit(l)) return;
+      if (f.mount.type === "cyc") return;
+      const lv = litFactorOf(f, l);
+      const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return;
+      const s0 = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
+      if (showOn("beam")) {
+        /* 3Dでは床の潰れ方を式から出せる。奥行き1mで画面が縦に動く量 ÷ その奥行きでの横1m。
+           これが床に落ちた丸の「縦／横」の比になる。壁と空中は客席に正対するので潰さない。 */
+        /* 客席へ向けた光は3Dでも帯を描かない（理由は2Dの正面図と同じ）。
+           光源のまぶしさと、手前端を通るあたりの滲みだけで表す（2026-09-14 本人指摘）。 */
+        if (l.surface === "house") {
+          const cut = houseCutAtFront(S, T, d.D);
+          const gY0 = isFront(f) ? Math.max(20, s0.Y) : s0.Y;
+          const Rg = L.pxPerM * Math.max(0.05, s0.scale || 1) * (0.9 + 2.4 * lv) * glareMul(l);
+          drawGlare(fctx, s0.X, gY0, Rg, l.color, lv, dim); litSpots3D.push(glareHole(s0.X, gY0, Rg, lv));
+          if (cut) { const e3 = P(cut);
+            const R3 = Math.max(E.spotRadiusM(S, cut, beamOf(f)) * L.pxPerM * Math.max(0.05, e3.scale || 1) * 1.2, 18) * glareMul(l);
+            drawGlare(fctx, e3.X, e3.Y, R3, l.color, lv * 0.75, dim); litSpots3D.push(glareHole(e3.X, e3.Y, R3, lv * 0.75)); }
+          if (isSel(f.id)) drawHandles(fctx, houseHandleProj(P, S, d.D), l, f.id);
+          return;
+        }
+        const be = beamEnd(l, S, T);
+        const e2 = P(be.world);
+        const sq = be.surface === "floor"
+          ? [1, Math.min(1, ((L.bottomY - L.floorY) / d.D) / (L.pxPerM * Math.max(0.05, e2.scale || 1)))]
+          : squashFor("front", be.surface || "air");
+        const sp = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface, lv, l, be.surface, P, frameOf(f, l));
+        litSpots3D.push({ fromX: s0.X, fromY: s0.Y, ...sp, lv });
+      }
+      if (showOn("path")) { const g = E.pathGuide(l, d);
+        if (g && g.kind === "line") { fctx.save(); fctx.setLineDash([8, 6]); fctx.strokeStyle = "rgba(223,100,51,0.7)"; fctx.lineWidth = 2; const a = P(g.a ? E.pointWorld(g.a, d) : S), b = P(E.pointWorld(g.b, d)); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); fctx.restore(); } }
+      if (isSel(f.id) && (l.surface === "back" || l.surface === "air")) drawHandles(fctx, (pt) => P(pt), l, f.id);
+    });
+    // 灯体
+    state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S);
+      if (showOn("fixtures")) drawFixtureMark(fctx, p.X, isFront(f) ? Math.max(20, p.Y) : p.Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) }); });
+    drawBordersUp(fctx, P, d);
+    if (state.mode === "move" && showOn("blackout")) { paintBlackout(fctx, cv, litSpots3D);
+      drawPiecesUp(fctx, P, L.pxPerM, { yawDeg: 0, zDropPerM: (L.bottomY - L.floorY) / d.D, stretchAt: (v) => 1 + L.seat.rise * v, silhouette: backlitPieces() }); }
+    fctx.fillStyle = "rgba(240,231,214,0.4)"; fctx.font = "15px sans-serif"; fctx.textBaseline = "top";
+    fctx.fillText(`${L.seat.label}から見た形（舞台スケッチの正面図と同じ描き方）`, 8, h - 24);
+  }
+
+  function draw() { drawPlan(); SECS.forEach((sec) => (sec.kind === "front" ? (state.front3d ? drawFront3D(sec) : drawFront(sec)) : drawSide(sec))); }
+
+  /* ---------- 当たり判定 ---------- */
+  // 灯体の平面図上の画面座標。当たり判定と範囲選択（マーキー）の両方で使う共通の式。
+  function fixturePlanXY(f, P, B) { const S = fixtureWorld(f); if (!S) return null; const p = P(S); const X = f.mount.type === "side" ? (f.mount.side === "shimote" ? B.x - SIDE_DX : B.x + B.w + SIDE_DX) : p.X; const Y = isFront(f) ? B.y + B.h + FRONT_DY : p.Y; return { X, Y }; }
+  function hitFixturePlan(pt) { const P = planProj(), B = planBox(); let best = null; state.rig.fixtures.forEach((f) => { const xy = fixturePlanXY(f, P, B); if (!xy) return; if (Math.hypot(pt.X - xy.X, pt.Y - xy.Y) < 22) best = f; }); return best; }
+  function hitFixtureSec(sec, pt) { const P = secProj(sec); let best = null; state.rig.fixtures.forEach((f) => { if (sec.kind !== "front" && !(f.mount.type === "side" && f.mount.side === sec.kind)) return; const S = fixtureWorld(f); if (!S) return; const p = P(S); if (Math.hypot(pt.X - p.X, pt.Y - p.Y) < 22) best = f; }); return best; }
+  function hitTrussPlan(pt) { const B = planBox(); return state.rig.trusses.find((t) => Math.abs(pt.Y - (B.y + t.v * B.h)) < 14 && pt.X > B.x - 30 && pt.X < B.x + B.w + 30) || null; }
+  // 円の半径ハンドルの世界座標。面ごとに「その面が本当の円として見える図」の軸へオフセットする
+  // （水平＝平面図でu方向、正面に垂直＝正面図でu方向、側面に垂直＝側面図でv方向）
+  function circleRadiusWorld(c, r, plane, d, tilt) {
+    const cw = E.pointWorld(c, d), o = E.planeVec(plane, r, 0, tilt);
+    return { x: cw.x + o.dx, y: cw.y + o.dy, z: cw.z + o.dz };
+  }
+  // 返すのは handle（"a"|"b"|"c"|"r"）。drag の kind（"handle"）と別名にしておかないと、
+  // 展開（...hh）で kind が上書きされて掴めても動かない（2026-09-11 修正）。
+  /* 掴めるハンドルを探す（平面図=floor/air・正面図=back/air・側面図=air）。
+     選択中のどの灯でも掴める。複数選んでいるときは、最後に描かれた灯（手前）から順に見る。 */
+  function hitHandle(pt, P, allowedSurfaces, projFor) {
+    const ids = [...state.sel]; const d = state.dims;
+    const pr = (fid) => (projFor ? projFor(fid) : P);
+    const near = (pt3, fid) => { const q = pr(fid)(E.pointWorld(pt3, d)); return Math.hypot(pt.X - q.X, pt.Y - q.Y) < 18; };
+    for (let i = ids.length - 1; i >= 0; i--) {
+      const fid = ids[i], l = lightOf(fid);
+      if (!isLit(l) || !allowedSurfaces.includes(l.surface)) continue;
+      const p = l.path || {};
+      if (p.kind === "line") { if (near(p.a, fid)) return { fid, handle: "a" }; if (near(p.b, fid)) return { fid, handle: "b" }; }
+      else if (p.kind === "circle" || p.kind === "eight") { const rq = pr(fid)(circleRadiusWorld(p.c, p.r, p.plane, d, p.tilt)); if (Math.hypot(pt.X - rq.X, pt.Y - rq.Y) < 18) return { fid, handle: "r" }; if (near(p.c, fid)) return { fid, handle: "c" }; }
+      else if (near(p.a || E.newPoint(), fid)) return { fid, handle: "a" };
+    }
+    return null;
+  }
+  /* 手前端の通過点（画面で掴んでいる位置）から、狙い点の u・高さへ戻す。
+     通過点は光源と狙い点を t:1 で内分した点なので、その逆をたどる。 */
+  function houseAimFromCut(fid, uh) {
+    const l = lightOf(fid), d = state.dims;
+    if (!l || l.surface !== "house") return { u: uh.u, h: uh.h };
+    const f = fixtureById(fid), S = f && fixtureWorld(f);
+    const p = l.path || {}; const pt = p.kind === "circle" || p.kind === "eight" ? p.c : (p.a || E.newPoint());
+    const T = E.pointWorld(pt, d);
+    if (!S || !(T.y - S.y > 1e-6) || S.y >= d.D - 1e-6) return { u: uh.u, h: uh.h };
+    const t = (d.D - S.y) / (T.y - S.y);
+    if (!(t > 0.02)) return { u: uh.u, h: uh.h };
+      }
+      tc.restore();
+      if (mask) {
+        tc.globalCompositeOperation = "destination-in";    // 模様の形で光を切り抜く（tmpの中だけの話）
+        tc.drawImage(mask.canvas, 0, 0);
+        tc.globalCompositeOperation = "source-over";
+      }
+      if (cuts.length) {
+        /* バーンドア／カッターの切る線。単位円の座標 p で mx·p.x+my·p.y > d の側を消す。
+           一時キャンバスは中心が (s2/2, s2/2)・半径 maskR＝単位1 なので、線の向きへ回してから
+           x = d·maskR より外を消す。縁は soft·maskR の幅で線形に消す（バーンドアは柔らかく、カッターは硬い）。 */
+        tc.globalCompositeOperation = "destination-out";
+        cuts.forEach((c) => {
+          tc.save(); tc.translate(s2 / 2, s2 / 2); tc.rotate(Math.atan2(c.my, c.mx));
+          const x0 = c.d * maskR, sw = Math.max(0.5, c.soft * maskR);
+          const g2 = tc.createLinearGradient(x0 - sw, 0, x0 + sw, 0);
+          g2.addColorStop(0, "rgba(0,0,0,0)"); g2.addColorStop(1, "rgba(0,0,0,1)");
+          tc.fillStyle = g2; tc.fillRect(x0 - sw, -s2, s2 * 2 + sw, s2 * 2);
+          tc.restore();
+        });
+        tc.globalCompositeOperation = "source-over";
+      }
+      const k = R / maskR;
+      ctx.scale(k, k); ctx.drawImage(tmp, -s2 / 2, -s2 / 2);
+    }
+    ctx.restore();
+    return ret();
+  }
+
+  /* 作業灯を消す（ブラックアウト。2026-09-13 本人要望「光のあたってないところは真っ暗で見えない」）。
+     やり方: オフスクリーンに黒を敷き、destination-out で「光が当たっている場所」だけ穴を開け、
+     それを図の上に重ねる。穴は実際のビームの見た目（drawBeamの三角＋光だまり）とは別に、
+     着地の光だまり＋出どころから着地までの光の柱をやや広め・柔らかめに取るだけで十分
+     （マスクなので厳密に一致していなくてよい）。図ごとにオフスクリーンを1枚持って使い回す。 */
+  const blackoutCanvases = new WeakMap();
+  function paintBlackout(ctx, canvas, spots) {
+    let mc = blackoutCanvases.get(canvas);
+    if (!mc || mc.width !== canvas.width || mc.height !== canvas.height) {
+      mc = document.createElement("canvas"); mc.width = canvas.width; mc.height = canvas.height;
+      blackoutCanvases.set(canvas, mc);
+    }
+    const mctx = mc.getContext("2d");
+    mctx.setTransform(1, 0, 0, 1, 0, 0);
+    mctx.clearRect(0, 0, mc.width, mc.height);
+    mctx.globalCompositeOperation = "source-over";
+    /* 暗幕の濃さ＝どれだけ消すか。100%で真っ暗、50%なら半分だけ沈む。
+       穴（光の当たっているところ）の開け方は変えないので、光と地の差はそのまま保たれる。 */
+    const dim = E.clamp(E.finite(state.dim, 100), 0, 100) / 100;
+    mctx.fillStyle = `rgba(13,14,16,${dim})`; mctx.fillRect(0, 0, mc.width, mc.height);
+    mctx.globalCompositeOperation = "destination-out";
+    /* 穴の形は、実際に見えている光の輪郭と同じにする。
+       前は「だいたい光だまりに合わせた台形」を別に作っていたため、光の帯（芯が濃く縁が薄い
+       三角）より台形のほうが広く、穴の縁が地のまま明るく残って「細い光の三角」の外側に
+       もう1枚「薄く広い三角（面光源のように見えるもの）」が重なって見えていた
+       （2026-09-13 本人指摘。screenshot: 灯体の根元から幅を持って始まる灰色の帯）。
+       直し方は「別に作らない」——drawBeam が実際に塗る三角＋着地の丸みと、同じ式・同じ値
+       （halfW・ry・lying・pool。ret() で公開）で穴を組む。三角の先端は必ず点になる。 */
+    spots.forEach((sp) => {
+      // 灯の強さぶんだけ暗幕を剥がす。20%の灯なら20%ぶんしか明るくならない（2026-09-13）
+      const lv = E.clamp(E.finite(sp.lv, 1), 0, 1); if (lv <= 0) return;
+      if (sp.cycQuads) { punchCycHole(mctx, sp.cycQuads, lv); return; }   // ホリゾントライトの帯
+      mctx.beginPath();
+      if (sp.asLine) {
+        /* 真上から見る図では光を三角に開かない（drawBeamと同じ理由）。実際に見えるのは
+           細い破線だけなので、穴もその太さに合わせた細い帯にする。太い三角を穴にすると
+           そこだけ地が明るく見えてしまう。 */
+        const dx = sp.landX - sp.fromX, dy = sp.landY - sp.fromY, len = Math.hypot(dx, dy) || 1;
+        const nx = (-dy / len) * 5, ny = (dx / len) * 5;
+        mctx.moveTo(sp.fromX + nx, sp.fromY + ny); mctx.lineTo(sp.landX + nx, sp.landY + ny);
+        mctx.lineTo(sp.landX - nx, sp.landY - ny); mctx.lineTo(sp.fromX - nx, sp.fromY - ny);
+      } else if (sp.lying) {
+        mctx.moveTo(sp.fromX, sp.fromY);
+        if (sp.corners) {
+          // バーンドア／カッターで角が内へ寄っているときは drawBeam と同じ角・同じ半円で抜く
+          const cp = sp.corners, L = cp.p.X < cp.m.X ? cp.p : cp.m, Rr = L === cp.p ? cp.m : cp.p;
+          mctx.lineTo(Rr.X, Rr.Y);
+          mctx.ellipse((L.X + Rr.X) / 2, sp.landY, Math.max(1, (Rr.X - L.X) / 2), sp.ry, 0, 0, Math.PI);
+        } else {
+          mctx.lineTo(sp.landX + sp.halfW, sp.landY);
+          mctx.ellipse(sp.landX, sp.landY, sp.halfW, sp.ry, 0, 0, Math.PI);
+        }
+      } else if (sp.corners) {
+        mctx.moveTo(sp.fromX, sp.fromY);
+        mctx.lineTo(sp.corners.p.X, sp.corners.p.Y);
+        mctx.lineTo(sp.corners.m.X, sp.corners.m.Y);
+      } else {
+        const dx = sp.landX - sp.fromX, dy = sp.landY - sp.fromY, len = Math.hypot(dx, dy) || 1;
+
+ succeeded in 0ms:
+  const periodMs = (light) => (SPEED_SEC[light && light.speed] || 2) * 1000;
+  const COLORS = ["#f2ead6", "#ffd27a", "#ff7a5c", "#7ab8ff", "#8be08b", "#d98cf0"];
+  // 色の補間（1灯ずつ色をずらす＝グラデーション用。2026-09-12 本人要望）。16進 → rgb → 線形補間 → 16進
+  const hexToRgb = (hex) => { const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || "") || []; return [1, 2, 3].map((i) => parseInt(m[i] || "ff", 16)); };
+  const rgbToHex = (rgb) => "#" + rgb.map((v) => Math.round(E.clamp(v, 0, 255)).toString(16).padStart(2, "0")).join("");
+  const lerpColor = (a, b, t) => { const A = hexToRgb(a), B = hexToRgb(b); return rgbToHex(A.map((v, i) => v + (B[i] - v) * t)); };
+
+  /* 1mグリッドへの吸着。u・vは正規化座標なので、いったん実寸(m)へ直して丸め、また割合へ戻す。
+     舞台の幅・奥行きが整数mでない場合も、端を越えないようにクランプする。 */
+  const snapU = (u) => (state.snap ? E.clamp((Math.round((u - 0.5) * state.dims.W) / state.dims.W) + 0.5, 0, 1) : u);
+  const snapV = (v) => (state.snap ? E.clamp(Math.round(v * state.dims.D) / state.dims.D, 0, 1) : v);
+  const snapH = (h) => (state.snap ? E.clamp(Math.round(h), 0, state.dims.H) : h);
+  const scene = () => state.scenes[state.sceneIndex];
+  const cue = () => scene().cue;
+  const lightOf = (fid) => cue().lights[fid] || null;
+  const fixtureById = (id) => state.rig.fixtures.find((f) => f.id === id) || null;
+  const groupOf = (fid) => cue().groups.find((g) => g.members.includes(fid)) || null;
+  const uid = (p) => `${p}${state.seq++}`;
+
+  /* ---------- 履歴（モーダル内Undo） ---------- */
+  const FRONT_DX_SEC = 40;    // 側面図: 手前端から客席側へ（内部px）
+  /* 客席へ向けた狙い点（surface: "house"）は舞台の外(y > D)にある。前明かりと同じく、
+     平面図では舞台の手前端の下の客席帯に、側面図では手前端の外に「一定距離」で出す（実距離は数値で）。
+     P を包んで舞台の外の点だけ置き換える。灯体の位置には使わない（前明かりの光の出どころは従来どおり）。
+     2026-09-13 本人要望「当てる場所に客席方面を足す」。 */
+  const HOUSE_DY = 30;        // 平面図: 手前端から下へ（内部px）。前明かりの列(FRONT_DY)より手前
+  const houseProjPlan = (P, B) => (w) => { const q = P(w); if (w && w.y > state.dims.D + 1e-6) q.Y = B.y + B.h + HOUSE_DY; return q; };
+  const houseProjSide = (P) => (w) => {
+    const q = P(w); const D = state.dims.D;
+    if (w && w.y > D + 1e-6) { const fx = P({ x: 0, y: D, z: 0 }).X, bx = P({ x: 0, y: 0, z: 0 }).X; q.X = fx + Math.sign(fx - bx || 1) * FRONT_DX_SEC; }
+    return q;
+  };
+  const isFront = (f) => f.mount.type === "front";
+  const shapeOf = (m) => (m.type === "truss" ? "square" : m.type === "floor" ? "circle" : m.type === "front" ? "tri" : m.type === "cyc" ? "bar" : "diamond");
+  const planBox = () => {
+    const w = plan.width, h = plan.height, d = state.dims;
+    const padX = PAD.planX * 2, padT = PAD.planT * 2, padB = PAD.planB * 2;
+    return fitBox({ x: padX, y: padT, w: w - padX * 2, h: h - padT - padB }, d.W / d.D);
+  };
+  // kind: "front"（横軸＝幅）／"shimote"・"kamite"（横軸＝奥行き）。縦軸はどちらも高さ
+  const secBox = (cv, kind) => {
+    const d = state.dims, padX = PAD.secX * 2;
+    const avail = { x: padX, y: PAD.secT * 2, w: cv.width - padX * 2, h: cv.height - (PAD.secT + PAD.secB) * 2 };
+    return fitBox(avail, (kind === "front" ? d.W : d.D) / d.H);
+  };
+  /* 凸の形で、4図すべてを**同じ縮尺**（1mがどの図でも同じ長さ）にする（2026-09-11 本人要望）。
+     下段（下手・正面・上手）は縦軸がどれも高さなので、高さの目盛りが横一直線にそろう。
+     上に載る平面図は正面図と同じ幅（＝同じ間口）なので、真上と正面で灯体が同じ横位置に立つ。
+       横に要る量 = (D + W + D)×s ＋ 余白と隙間
+       縦に要る量 = (D + H)×s ＋ 見出しと余白
+     s（1mあたりのpx）はその2つの小さいほう。 */
+  function syncFigureSizes() {
+    const g = document.querySelector(".figgrid"); if (!g) return;
+    const r = g.getBoundingClientRect(); if (!r.width || !r.height) return;
+    const d = state.dims;
+    const chromeW = PAD.planX * 2 + PAD.secX * 4 + PAD.gap * 2;
+    const chromeH = PAD.headPlan + PAD.planT + PAD.planB + PAD.gap + PAD.headSec + PAD.secT + PAD.secB;
+    const s = Math.max(6, Math.min((r.width - chromeW) / (d.W + d.D * 2), (r.height - chromeH) / (d.D + d.H)));
+    const set = (elm, prop, v) => { const now = parseFloat(elm.style[prop]) || 0; if (Math.abs(now - v) > 1) elm.style[prop] = v + "px"; };
+    // 上帯・シーン行を図と同じ幅の帯へ寄せる。窓を変えても縦に揃う
+    const band = Math.round((d.W + d.D * 2) * s) + chromeW;
+    const modal = $("modal"); if (modal) modal.style.setProperty("--band", band + "px");
+    const secH = Math.round(d.H * s) + PAD.secT + PAD.secB;
+    const sideW = Math.round(d.D * s) + PAD.secX * 2, midW = Math.round(d.W * s) + PAD.planX * 2;
+    set(plan.parentElement, "width", midW);
+    set(plan, "height", Math.round(d.D * s) + PAD.planT + PAD.planB);
+    set(secF.parentElement, "width", midW); set(secF, "height", secH);
+    set(secL.parentElement, "width", sideW); set(secL, "height", secH);
+    // 上段の左右パネルは、真下の側面図と同じ幅にそろえる（6枠がきれいに並ぶ）
+    /* 左の枠は真下の側面図と同じ1枠ぶん。中の2枚（灯体・LX cue）が flex:1 1 0 で半分ずつ分け合う
+       （2026-09-13 本人指定「横幅をそれぞれ半分にしてコンパクトに収める」）。 */
+    { const lc = document.querySelector(".leftcol"); if (lc) set(lc, "width", sideW); }
+    set($("panel-insp"), "width", sideW);
+  }
+  const planProj = () => E.makePlanProjector(state.dims, planBox());
+  // キャンバスの内部解像度を表示サイズへ合わせる（拡大してもぼやけない）
+  function syncCanvasSize() {
+    syncFigureSizes();   // 先に各図の表示高さを決めてから内部解像度を合わせる
+    const fit = (c) => { const r = c.getBoundingClientRect(); if (!r.width) return; const W = Math.max(300, Math.round(r.width * 2)), H = Math.max(160, Math.round(r.height * 2)); if (c.width !== W || c.height !== H) { c.width = W; c.height = H; } };
+    [plan, secL, secF].forEach(fit);
+  }
+  const secProj = (sec) => (sec.kind === "front"
+    ? (state.front3d
+        ? E.makeFrontPerspProjector(state.dims, secBox(sec.cv, "front"), state.seat)
+        : E.makeFrontProjector(state.dims, secBox(sec.cv, "front")))
+    : E.makeSideProjector(state.dims, secBox(sec.cv, sec.kind), sec.kind));
+  const canvasPoint = (c, ev) => { const r = c.getBoundingClientRect(); return { X: (ev.clientX - r.left) * c.width / r.width, Y: (ev.clientY - r.top) * c.height / r.height }; };
+  // 図に出すもの（番号・光・動く範囲・1mの線）。図が4つに増えたぶん、間引けるようにする
+  const showOn = (key) => state.show[key] !== false;
+
+  const fixtureWorld = (f) => E.fixtureWorld(f, state.rig, state.dims);
+  /* 固定灯は時間で動かない。向きは仕込みで決まるので、往復や円が付いていても止めた位置で描く
+     （2026-09-11 本人判断で「動き」は固定灯では設定できない。古いデータの保険も兼ねる）。 */
+  const targetAt = (fid, t) => E.targetAt(lightOf(fid), cueWithPeriods(), fid, E.isMoving(fixtureById(fid)) ? t : 0, state.dims);
+  // rig-engine の周期表は固定なので、本試作の秒数（4/2/1）へ合わせるため speed を経由せず delay を秒数基準に
+  function cueWithPeriods() { return cue(); }
+
+  /* ---------- 強さ（調光） ----------
+     0は消灯と同じ扱い（2026-09-13 本人決定）。on を false にしなくても、強さ0なら図から消える。
+     一覧の「オン／オフ」も実際に光っているかで出し分ける（数字が0なのにオンと出ると読めないため）。 */
+  const levelOf = (l) => E.levelOf(l);
+  const isLit = (l) => E.isLit(l);
+  /* カーブは「動かせる点」で持つ（2026-09-13 本人要望「一点を動かしたら滑らかな弧になるように」）。
+     0%・25%・50%・75%・100% の5点。横位置は固定で、縦だけドラッグして決める。
+     以前はなぞった跡を33目盛りそのまま覚えていたので、線がガタついた。 */
+  const LEVEL_CURVE_POINTS = 5;
+  function resetLevelCurve() {
+    state.levelCurve = Array.from({ length: LEVEL_CURVE_POINTS }, (_, i) => i / (LEVEL_CURVE_POINTS - 1));
+  }
+  resetLevelCurve();   // 既定はリニア。state の宣言直後ではなくここで呼ぶ（定数がまだ初期化前のため）
+  /* 入力（0〜1）→ 出る明るさ（0〜1）。点と点の間は単調3次補間（Fritsch–Carlson）でつなぐ。
+     ふつうの3次曲線と違って行き過ぎ（オーバーシュート）が出ないので、
+     「つまみを上げたのに暗くなる」区間ができない。1点動かすとその周りが滑らかな弧になる。
+     入力0は必ず0＝消灯（どう動かしても「0なのに光る」は作らせない）。 */
+  function curveAt(x) {
+    const p = state.levelCurve;
+    if (!Array.isArray(p) || p.length < 2) return E.clamp(x, 0, 1);
+    const n = p.length - 1, h = 1 / n;
+    const t = E.clamp(x, 0, 1) * n;
+    const i = Math.min(n - 1, Math.floor(t)), u = t - i;
+    const d = []; for (let k = 0; k < n; k++) d.push((p[k + 1] - p[k]) / h);   // 各区間の傾き
+    const m = new Array(n + 1);
+    m[0] = d[0]; m[n] = d[n - 1];
+    for (let k = 1; k < n; k++) m[k] = (d[k - 1] * d[k] <= 0) ? 0 : (d[k - 1] + d[k]) / 2;
+    for (let k = 0; k < n; k++) {                                             // 行き過ぎを抑える
+      if (d[k] === 0) { m[k] = 0; m[k + 1] = 0; continue; }
+      const a = m[k] / d[k], b = m[k + 1] / d[k], q = a * a + b * b;
+      if (q > 9) { const tau = 3 / Math.sqrt(q); m[k] = tau * a * d[k]; m[k + 1] = tau * b * d[k]; }
+    }
+    const u2 = u * u, u3 = u2 * u;
+    return E.clamp((2 * u3 - 3 * u2 + 1) * p[i] + (u3 - 2 * u2 + u) * h * m[i]
+      + (-2 * u3 + 3 * u2) * p[i + 1] + (u3 - u2) * h * m[i + 1], 0, 1);
+  }
+  // その灯が図の上でどれだけ濃く出るか（0〜1）。消灯・強さ0は0。
+  const litFactor = (l) => (isLit(l) ? curveAt(levelOf(l) / 100) : 0);
+  /* 動きの中で広がり・強さが変わる灯（levelTo / beamDegTo）は、いまの位相での値で描く。
+     位相は位置の往復とまったく同じ式（rig-engine paramPhase）＝Aで始めの値、Bで終わりの値。 */
+  const phaseOf = (f, l) => E.paramPhase(l, cue(), f.id, state.play.t);
+  /* ストロボは往復（levelAt）とは別に、いまの瞬間だけ削る掛け算として上乗せする（2026-09-13 本人要望）。
+     ムービングだけが持てる（配置パネルで種類を切り替えても、固定灯では箱ごと出さない）。 */
+  const litFactorOf = (f, l) => (isLit(l) ? curveAt(E.levelAt(l, phaseOf(f, l)) / 100) * E.strobeMul(l && l.strobe, state.play.t) : 0);
+  // 点ける。強さが0のまま点けても光らないので、そのときは全開に戻す
+  function turnOn(fid) { ensureOn(fid); const l = lightOf(fid); if (l && levelOf(l) <= 0) setLight(fid, { level: 100 }); }
+  const LEVEL_WORD = (v) => (v <= 0 ? "消灯" : v < 25 ? "かすか" : v < 55 ? "暗め" : v < 85 ? "普通" : "全開");
+
+  /* 一覧や絞り込みに出す状態。未設定と消灯は分けず、どちらも「オフ」として見せる
+     （2026-09-13 本人要望「つけるという表現はなしに／最初から全部オフに」）。
+     データの上では未設定（on:null）のままなので、まとめて変更が「未設定は点けてから」を判断できる。 */
+  const lightState = (fid) => { const l = lightOf(fid); if (!l || l.on !== true || levelOf(l) <= 0) return "off"; return (l.path && l.path.kind !== "still") ? "move" : "on"; };
+  const STATE_LABEL = { off: "オフ", on: "オン", move: "動き" };
+      /* 前幕・ホリゾントは「下敷き」なので薄く（0.3）。
+         一文字幕・袖幕・前一文字は<b>隠すための布</b>なので<b>不透明</b>に塗る。
+         2026-09-13 実害: 半透明（0.66〜0.88）で塗ると、光の帯の上に黒が重なった結果が
+         背景（#0d0e10）より暗くなり、作業灯を消したときにマスクの穴からその暗い部分が
+         「黒い光」として見えていた（本人指摘）。布が光を遮るのだから、透かさず塗るのが正しい。
+         色は背景よりわずかに明るくして、布そのものの形は輪郭と合わせて読めるようにする。 */
+      const masking = pc.solid || pc.curtainKind === "border" || pc.curtainKind === "leg";
+      ctx.fillStyle = masking ? "#111214" : hexA(pc.color || "#000000", 0.3);
+      ctx.beginPath(); ctx.moveTo(fl.X, fl.Y); ctx.lineTo(fr.X, fr.Y); ctx.lineTo(tr.X, tr.Y); ctx.lineTo(tl.X, tl.Y); ctx.closePath();
+      ctx.fill(); ctx.strokeStyle = "rgba(240,231,214,0.22)"; ctx.lineWidth = 1; ctx.stroke();
+    });
+    const p0 = panels[0];
+    const lbl = P({ x: (p0.leftX + p0.rightX) / 2, y: (p0.leftY + p0.rightY) / 2, z: p0.lift });
+    ctx.fillStyle = "rgba(240,231,214,0.45)"; ctx.font = "14px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    if (showOn("names")) ctx.fillText(pc.name, lbl.X, lbl.Y + 4); ctx.textAlign = "left";
+    ctx.restore();
+  }
+  /* 演者より<b>奥</b>にある灯が点いていると、客席からはその演者が影絵（シルエット）に見える。
+     作業灯を消したときだけ、その見え方を絵にする（2026-09-13 本人要望・実際の舞台写真の見え方）。
+     どの灯が当たっているかまでは追わない——逆光があるかどうかだけで決める、絵づくりのための近似。 */
+  function backlitPieces() {
+    const out = new Set();
+    if (!(state.mode === "move" && showOn("blackout"))) return out;
+    const d = state.dims;
+    const lit = state.rig.fixtures
+      .filter((f) => { const l = lightOf(f.id); return isLit(l) && litFactorOf(f, l) > 0.05; })
+      .map((f) => fixtureWorld(f)).filter(Boolean);
+    if (!lit.length) return out;
+    piecesOf().forEach((pc) => {
+      if (pc.kind !== "performer") return;
+      const py = E.clamp(E.finite(pc.v, 0.5), 0, 1) * d.D;
+      if (lit.some((S) => S.y < py - 0.3)) out.add(pc.id);
+    });
+    return out;
+  }
+  function drawPiecesUp(ctx, P, pxPerM, opts) {
+    if (!showOn("pieces")) return;
+    const o = opts || {}, d = state.dims, F = window.STAGE_FIGURE;
+    /* sil＝影絵で描き直す回。光の上へ<b>あとから</b>重ねるので、光が体で遮られて見える。 */
+    const sil = o.silhouette;
+    piecesOf().forEach((pc) => {
+      if (sil && !(pc.kind === "performer" && sil.has(pc.id))) return;
+      if (pc.kind === "curtain") { drawCurtainUp(ctx, P, pc, d); return; }
+      const foot = P({ x: (pc.u - 0.5) * d.W, y: pc.v * d.D, z: 0 });
+      const sc = foot.scale == null ? 1 : foot.scale;
+      const k = pxPerM * sc;
+      ctx.save();
+      if (pc.kind !== "performer" || !F) {
+        const top = P({ x: (pc.u - 0.5) * d.W, y: pc.v * d.D, z: pc.hM });
+        const h = Math.abs(foot.Y - top.Y), w = 0.9 * k;
+        ctx.fillStyle = "rgba(240,231,214,0.15)"; ctx.strokeStyle = "rgba(240,231,214,0.4)"; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.rect(foot.X - w, foot.Y - h, w * 2, h); ctx.fill(); ctx.stroke();
+      } else {
+        const H = pc.hM || F.DEFAULT_HEIGHT_CM / 100;
+        const yaw = (((pc.facing || 0) + (o.yawDeg || 0)) * Math.PI) / 180;
+        const stretch = o.stretchAt ? o.stretchAt(pc.v) : 1;
+        const zDrop = o.zDropPerM ? o.zDropPerM * H : 0;
+        const rig = F.buildRig(pc.pose || "stand", foot.X, foot.Y, H * k, H * k * stretch, yaw, zDrop, null);
+        if (!sil) F.paintShadow(ctx, rig);
+        F.paintBody(ctx, rig, sil ? "#0c0b0a" : (pc.color || "#d8cdb6"), null);
+      }
+      if (sil) { ctx.restore(); return; }        // 影絵の回は名前を書かない（光の中の黒い形だけ）
+      ctx.fillStyle = "rgba(240,231,214,0.45)"; ctx.font = "14px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+      if (showOn("names")) ctx.fillText(pc.name, foot.X, foot.Y + 4); ctx.textAlign = "left";
+      ctx.restore();
+    });
+  }
+
+  /* 光の帯と、当たったところ。舞台スケッチ本体の drawLight と同じ組み立て方にする
+     （stage-sketch.js: BEAM_SOFT / BEAM_EDGE / 「帯の裾を円の左右の端へ着け、下半分の弧でつないで
+     一続きの輪郭として塗る」）。2026-09-11 本人指摘「平面として接地している感じがない」への対応。
+
+     要点は3つ:
+       ① 裾を「光の進む向きと直角」に取らない。斜めから差し込むほど裾が床の下へ潜り、
+          床を突き抜けたように見える。裾は床に落ちた円の左右の端（水平）へ着ける。
+       ② 帯と円を別々に塗らない。裾の水平線が円を切って「半円が2つ」に見える。
+          下半分の弧でつないで一続きのパスにする。
+       ③ 濃さは進む向きと直角のグラデーションで、芯が濃く両縁で消える。輪郭線は引かない。 */
+  const BEAM_SOFT = 1.26;
+  const BEAM_EDGE = [[0, 0], [0.18, 0.30], [0.5, 1], [0.82, 0.30], [1, 0]];
+  /* 光だまりの形は、その面をどの向きから見るかで変わる。床の丸は真上から見たときだけ丸。
+     squash = [横, 縦] の比。横に潰れている図では①②の描き方に切り替える。 */
+
+exec
+/bin/zsh -lc "rg -n 'state\\.|scene\\(|showOn\\(|selected|lightOf|cue\\(' prototype/app.js | awk -F: '"'$1>=1000 && $1<=1560'"'; rg -n 'ptitle|\\.insp|\\.panel|\\.pgrid|\\.pcard' prototype/index.html | head -32; sed -n '1,63p' HANDOFF.md; sed -n '437,475p' HANDOFF.md" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+ succeeded in 0ms:
+1008:      if (showOn("names")) ctx.fillText(pc.name, foot.X, foot.Y + 4); ctx.textAlign = "left";
+1081:    if (state.mode !== "move" || !showOn("beam")) return;
+1082:    state.rig.fixtures.forEach((f) => {
+1084:      const l = lightOf(f.id); if (!isLit(l)) return;
+1086:      const dim = state.sel.size && !isSel(f.id);
+1147:       灯ごとの数値0〜100%を state.levelCurve で曲げたもの（2026-09-13 本人要望）。 */
+1327:    const dim = E.clamp(E.finite(state.dim, 100), 0, 100) / 100;
+1458:    const ang = Math.round(E.goboAngleAt(light, state.play.t) / 5) * 5;
+1500:    m.rotate((E.goboAngleAt(light, state.play.t) * Math.PI) / 180);
+1530:  const beamOf = (f) => { const l = lightOf(f.id); return E.beamDegAt(f, l, phaseOf(f, l)); };
+1544:  const houseReach = () => Math.hypot(state.dims.W, state.dims.D, state.dims.H) * 1.6;
+68:  .ptitle{color:var(--brass);font-size:14.5px;font-weight:600;letter-spacing:.1em;margin:0 0 6px;line-height:1.35}
+181:  .panel{grid-row:1;min-width:0;min-height:0;overflow:hidden;border:1px solid var(--line-dark);background:rgba(25,21,18,.45);padding:8px;display:flex;flex-direction:column;gap:7px;align-self:stretch}
+186:  .leftcol>.panel{grid-column:auto;grid-row:auto;width:auto;align-self:auto;min-width:0;flex:1 1 0}
+191:  .lxhead .ptitle{margin:0}
+205:  .panel.insp{grid-column:3;grid-row:1/-1}
+206:  .panel .kicker,.panel .ptitle{margin:0}
+269:  .panel.insp{gap:0;position:relative}
+277:  .insphead{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:5px 6px;margin-bottom:6px}
+278:  .insphead .ptitle{margin:0 auto 0 0}
+282:  .insphead .transport{order:1}
+283:  .insphead .ontoggle{order:2}
+284:  .panelhead-actions{display:contents}
+285:  .panelhead-actions .transport{gap:5px}
+286:  .panelhead-actions .transport .btn.small{min-height:28px;padding:3px 9px;font-size:14px}
+322:     上のグリッド事故は「スクロールする display:grid」が原因で、ここは親(.inspbody)が
+382:  /* LX cue。#lxqbox は .inspbody の外（パネル直下）なので、幅の面倒を自分で見る。
+418:  .panel .inspbody{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:7px}
+419:  .panel .inspbody>*{flex:0 0 auto;min-width:0}
+421:  .panel .sub{flex:0 0 auto;margin-top:6px;padding-top:7px;border-top:1px solid var(--line-dark);background:var(--recess);margin-left:-8px;margin-right:-8px;margin-bottom:-8px;padding-left:8px;padding-right:8px;padding-bottom:8px}
+423:  .panel .sub.subtop{margin-top:-8px;margin-bottom:6px;padding-top:8px;padding-bottom:8px;border-top:0;border-bottom:1px solid var(--line-dark)}
+425:  .panel .sub.folded>*:not(.ptitle){display:none}
+426:  .panel .sub.subtop .ptitle{margin:0}
+427:  .panel .sub .accicon{display:inline-block;width:1em;color:var(--milk-dim)}
+428:  .panel .sub .kicker,.panel .sub .ptitle{margin:0 0 5px}
+429:  .panel .sub .note{margin:5px 0 0}
+441:  /* .panel は overflow:hidden なので、選択中スウォッチの outline（枠の外側にはみ出す）が
+444:     以前は margin-left:-3px で相殺していたが、スクロール枠（.inspbody の overflow-x:hidden）の
+463:  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+464:  .pcard{display:flex;flex-direction:column;gap:4px;text-align:left;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk-dim);padding:10px 12px;cursor:pointer;font:inherit}
+465:  .pcard:hover{border-color:var(--brass);background:rgba(156,130,63,.14)}
+472:  .dialog .in:has(.pgrid){max-width:760px}
+575:              <p class="ptitle">配置（ショー共通）</p>
+# 引き継ぎ: 舞台スケッチ「照明デザインモード」試作（2026-09-13 時点）
+
+このファイル単体で引き継げるように書いてある。別マシン・別セッションでもまずこれを読む。
+
+## 0. これは何か
+
+舞台照明の仕込みと当たり方を、触って判断するためのクリック可能な試作。
+**製品コードとは独立した単体の試作**で、`docs/` 配下に置かれ GitHub Pages で公開されている。
+製品本体（`stage-sketch.js` 等）にはまだ統合していない。
+
+- 置き場: `show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11/prototype/`
+  （iCloud上。パスに空白があるので**引用符必須**）
+- 構成: `index.html`（マークアップ＋CSS）／`app.js`（UI・描画）／
+  `rig-engine.js`（純粋な幾何・時間の関数）／`stage-figure.js`（人物の絵）
+- 公開URL: https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/prototype/
+- 公開済みの最新コミット: `fd1d784`（`?v=1789314855`。直前は `94128b7`／`?v=1789314003`）
+- リポジトリ: `aratama-ship-it/shosai-app`
+
+## 1. 着手前に必ず読む（本人指示・2026-09-13）
+
+`shosai-app/AGENTS.md` と `shosai-app/BETA_UPDATE_SAFETY.md` を**全文読む**。
+舞台スケッチの既存ユーザー保護（機能の退行・保存データの破損を止める）規則。
+
+**ただし適用範囲に注意**: この試作は `docs/` 配下の独立物で、ベータの配布物・保存形式・
+音楽パネルのいずれにも触れていない。よって停止条件には該当しない。
+**製品本体へ統合する段階になったら話が変わる**ので、そのときは規則どおり警告と検証を行う。
+
+## 2. 絶対に守る運用ルール（別セッションが同じリポジトリを同時編集している）
+
+**作業ツリーとローカル main に触らない。** 他のセッションが `app.js` 等を編集中で、
+`git status` には常に自分と無関係な変更が並んでいる。
+
+- **禁止**: `git add -A` ／ 素の `git commit` ／ `git merge` ／ `git pull` ／ `git reset --hard`
+- **公開は必ず一時インデックス経由**（作業ツリーを一切触らない）:
+
+```bash
+cd "<repo>"
+git fetch origin main -q
+D=docs/light-rig-design-2026-09-11/prototype
+export GIT_INDEX_FILE=$(mktemp /tmp/rigidx.XXXXXX) && rm -f "$GIT_INDEX_FILE"
+git read-tree origin/main
+for f in app.js index.html rig-engine.js; do
+  H=$(git hash-object -w "$D/$f"); git update-index --cacheinfo 100644,"$H","$D/$f"
+done
+TREE=$(git write-tree); PARENT=$(git rev-parse origin/main)
+SHA=$(git commit-tree "$TREE" -p "$PARENT" -m "メッセージ")
+REF="refs/heads/main"; git push origin "${SHA}:${REF}"
+```
+
+- **`"${SHA}:${REF}"` と必ず波括弧で書く。** Bashツールはzshなので `"$SHA:refs/..."` と書くと
+  `:r` がzshの修飾子として食われ、`...efs/heads/main` になって push が失敗する（実際に踏んだ）。
+- 変更したファイルだけ `update-index` する。差分確認は
+  `git hash-object <file>` と `git rev-parse origin/main:<path>` の比較で行う。
+- Pages は手動で起こしてポーリング:
+  `gh api -X POST repos/aratama-ship-it/shosai-app/pages/builds` →
+  `gh api repos/aratama-ship-it/shosai-app/pages/builds/latest --jq .status` が `built` になるまで。
+- **JS/CSSを変えたら必ず `?v=` を上げる**（`index.html` の3本まとめて）:
+  `V=$(date +%s); sed -i '' "s/\.js?v=[0-9]*\"/.js?v=$V\"/g" index.html`
+- 公開後は curl で実物を確認する（ローカルHEAD＝公開版と決めつけない）:
+  `curl -s "<URL>app.js?v=<V>" | grep -c "<入れたはずの識別子>"`
+
+## 3. 検証のやり方
+
+
+## 5. 実際に踏んだ落とし穴（同じ穴を掘らないこと）
+
+- **Safari は canvas の `ctx.filter` が既定で無効**。代入しても例外が出ず黙って無視される＝
+  「Chromeでは効くが本人の環境だけ無反応」になる。ぼかしは `shadowBlur` で作ってある。
+  描画系APIを足すときは着手前に Safari を名指しで互換確認する。
+- **`RIG_ENGINE` は `Object.freeze` 済み**。監視のための monkey-patch は黙って失敗する
+  （呼び出し回数0と誤報告した）。`app.js` 側に一時フックを置いて、公開前に消す。
+- **変更直後の最初のフレームは古い絵を掴む**。実測前にフレームを1〜2回空読みして温める。
+- **明るさ重心と幾何中心は別物**。減衰の検証は必ずアプリが使っている楕円中心で行う。
+- **`evenodd` だと重なった開口が打ち消し合う**。マスクは `nonzero` で塗る。
+- **`.pbox` は `display:grid`** なので、中身が広いとパネルごと広がる。`min-width:0` を当てる。
+- **スクロールする親で `display:grid` の自動行を大量に積むと行高が0に潰れる**ことがある。
+- **JS の `%` は符号を残す**。回す向きを負の速さで表す設計では、角度・位相を返す関数の側で
+  `((a % 360) + 360) % 360` に畳む。下流の丸め・範囲制限に負値を渡すと、片方の向きだけ黙って壊れる。
+  **正方向で動いた確認を両方向の確認と見なさない。** 検証は「同じ角になる時計回りと反時計回りの
+  画素一致」のような対照条件で行う（今回はこれで修正前0画素／修正後一致を確認）。
+- **平行か放射かの判定法**（今回使った決め手）: 光線の両縁から最小二乗で頂点を求め、
+  **同じ角度範囲を2つの深さで走査して相関**を取る。放射なら深さによらず一致、
+  平行なら深さ比で縮めたときだけ一致する。
+  実測: 修正後 放射0.991/平行0.563、修正前 放射0.612/平行0.996。
+  対照実験として `CanvasRenderingContext2D.prototype.createConicGradient` を実行時に
+  消して旧挙動を再現し、両方を測って比べた。**片方の環境で動いたことは動作確認ではない。**
+
+## 5.5 次の会議へ（2026-09-14）
+**「空中・客席を狙う光（逆光）」は個別対処の限界に達した**（本人「いまだにうまくいかない」）。
+設計から見直す会議用プロンプトを同フォルダに置いた: **`MEETING_backlight-redesign.md`**（Fable×Astra の二者で議論し、
+判断用 HTML を出す。実装は本人承認後）。床・奥壁狙いは完璧に動いているので触らない。
+
+## 6. 残っているタスク
+
+1. **Safari 実機確認**（未実施）— ゴボの筋が灯体へ収束するか、ぼけのつまみが効くか。
+   `createConicGradient` は Safari 16以降。エンジン差は無反応の形で出るのでここでしか分からない。
+2. **製品の編集モードへ3タブ目として統合** — 別セッションが `stage-sketch.js` を
+   編集中のため保留（`project_formation_app` のM4まで本体を触らない約束）。
+   着手時は §1 の AGENTS.md / BETA_UPDATE_SAFETY.md の規則が**本当に効く**。
+3. **製品側で `shosai.light-design` 形式の読み込み**を実装（書き出しは試作側にある）。
+4. **製品との値合わせ** — `stage-venues.js` の座席数、`stage-sketch.js` の幕の既定色・
+   既定座席・脚の向き。
+
+exec
+/bin/zsh -lc "sed -n '1800,1851p' prototype/app.js; rg -n 'const piecesOf|function piecesOf|const beamFrame|function beamFrame|const state|frameFor|evaluate' prototype/app.js; sed -n '1530,1590p' prototype/app.js; rg -n 'frame|shutter|barn|cutter|strobe|glare' prototype/rig-engine.js | head -30" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+ succeeded in 0ms:
+      fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.7)"; fctx.font = "15px sans-serif"; fctx.fillText(`${t.label || "バトン"} 高さ${t.h.toFixed(1)}m`, b.X + 10, b.Y); });
+    // 光（ホリゾントライトの帯は上で先に塗ってある）
+    if (state.mode === "move") state.rig.fixtures.forEach((f) => {
+      const l = lightOf(f.id); if (!isLit(l)) return;
+      if (f.mount.type === "cyc") return;
+      const lv = litFactorOf(f, l);
+      const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return;
+      const s0 = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
+      if (showOn("beam")) {
+        /* 3Dでは床の潰れ方を式から出せる。奥行き1mで画面が縦に動く量 ÷ その奥行きでの横1m。
+           これが床に落ちた丸の「縦／横」の比になる。壁と空中は客席に正対するので潰さない。 */
+        /* 客席へ向けた光は3Dでも帯を描かない（理由は2Dの正面図と同じ）。
+           光源のまぶしさと、手前端を通るあたりの滲みだけで表す（2026-09-14 本人指摘）。 */
+        if (l.surface === "house") {
+          const cut = houseCutAtFront(S, T, d.D);
+          const gY0 = isFront(f) ? Math.max(20, s0.Y) : s0.Y;
+          const Rg = L.pxPerM * Math.max(0.05, s0.scale || 1) * (0.9 + 2.4 * lv) * glareMul(l);
+          drawGlare(fctx, s0.X, gY0, Rg, l.color, lv, dim); litSpots3D.push(glareHole(s0.X, gY0, Rg, lv));
+          if (cut) { const e3 = P(cut);
+            const R3 = Math.max(E.spotRadiusM(S, cut, beamOf(f)) * L.pxPerM * Math.max(0.05, e3.scale || 1) * 1.2, 18) * glareMul(l);
+            drawGlare(fctx, e3.X, e3.Y, R3, l.color, lv * 0.75, dim); litSpots3D.push(glareHole(e3.X, e3.Y, R3, lv * 0.75)); }
+          if (isSel(f.id)) drawHandles(fctx, houseHandleProj(P, S, d.D), l, f.id);
+          return;
+        }
+        const be = beamEnd(l, S, T);
+        const e2 = P(be.world);
+        const sq = be.surface === "floor"
+          ? [1, Math.min(1, ((L.bottomY - L.floorY) / d.D) / (L.pxPerM * Math.max(0.05, e2.scale || 1)))]
+          : squashFor("front", be.surface || "air");
+        const sp = drawBeam(fctx, s0, e2, { S, T: be.world }, l.color, beamOf(f), dim, L.pxPerM * Math.max(0.05, e2.scale || 1), sq, false, !be.surface, lv, l, be.surface, P, frameOf(f, l));
+        litSpots3D.push({ fromX: s0.X, fromY: s0.Y, ...sp, lv });
+      }
+      if (showOn("path")) { const g = E.pathGuide(l, d);
+        if (g && g.kind === "line") { fctx.save(); fctx.setLineDash([8, 6]); fctx.strokeStyle = "rgba(223,100,51,0.7)"; fctx.lineWidth = 2; const a = P(g.a ? E.pointWorld(g.a, d) : S), b = P(E.pointWorld(g.b, d)); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); fctx.restore(); } }
+      if (isSel(f.id) && (l.surface === "back" || l.surface === "air")) drawHandles(fctx, (pt) => P(pt), l, f.id);
+    });
+    // 灯体
+    state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const p = P(S);
+      if (showOn("fixtures")) drawFixtureMark(fctx, p.X, isFront(f) ? Math.max(20, p.Y) : p.Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) }); });
+    drawBordersUp(fctx, P, d);
+    if (state.mode === "move" && showOn("blackout")) { paintBlackout(fctx, cv, litSpots3D);
+      drawPiecesUp(fctx, P, L.pxPerM, { yawDeg: 0, zDropPerM: (L.bottomY - L.floorY) / d.D, stretchAt: (v) => 1 + L.seat.rise * v, silhouette: backlitPieces() }); }
+    fctx.fillStyle = "rgba(240,231,214,0.4)"; fctx.font = "15px sans-serif"; fctx.textBaseline = "top";
+    fctx.fillText(`${L.seat.label}から見た形（舞台スケッチの正面図と同じ描き方）`, 8, h - 24);
+  }
+
+  function draw() { drawPlan(); SECS.forEach((sec) => (sec.kind === "front" ? (state.front3d ? drawFront3D(sec) : drawFront(sec)) : drawSide(sec))); }
+
+  /* ---------- 当たり判定 ---------- */
+  // 灯体の平面図上の画面座標。当たり判定と範囲選択（マーキー）の両方で使う共通の式。
+  function fixturePlanXY(f, P, B) { const S = fixtureWorld(f); if (!S) return null; const p = P(S); const X = f.mount.type === "side" ? (f.mount.side === "shimote" ? B.x - SIDE_DX : B.x + B.w + SIDE_DX) : p.X; const Y = isFront(f) ? B.y + B.h + FRONT_DY : p.Y; return { X, Y }; }
+  function hitFixturePlan(pt) { const P = planProj(), B = planBox(); let best = null; state.rig.fixtures.forEach((f) => { const xy = fixturePlanXY(f, P, B); if (!xy) return; if (Math.hypot(pt.X - xy.X, pt.Y - xy.Y) < 22) best = f; }); return best; }
+96:  const state = {
+865:  const piecesOf = () => (scene().pieces || []);
+  const beamOf = (f) => { const l = lightOf(f.id); return E.beamDegAt(f, l, phaseOf(f, l)); };
+  /* バーンドア／カッター（2026-09-14）。drawBeam へ渡す「切る線」の元。
+     barn は固定灯の仕込み（fixture.barn）、shutter はこのシーンの値（light.shutter）。
+     axis は奥⇄手前の軸の既定: 床・空中は y、奥の壁・客席は z。drawBeam 側で実際の着地面が分かれば上書きする。 */
+  const frameOf = (f, l) => (E.barnActive(f) || E.shutterActive(l)) ? { f, l, axis: (l && (l.surface === "back" || l.surface === "house")) ? "z" : "y" } : null;
+  /* 光の終点。床・奥の壁を狙う光はその面で止まる。空中を狙う光はそこで止まらず、
+     床か奥の壁まで進み、どちらにも当たらなければ図の外へ抜ける（2026-09-11 本人指摘）。 */
+  /* 客席へ向けた光はどの面にも当たらない。狙い点で止めると図の途中で光が切れて見えるので
+     （2026-09-13 本人指摘）、同じ向きへ伸ばして図の外へ抜けさせる。reach＝光源からの長さ(m)。 */
+  const houseRay = (S, T, reach) => {
+    const dx = T.x - S.x, dy = T.y - S.y, dz = T.z - S.z;
+    const len = Math.hypot(dx, dy, dz) || 1, t = Math.max(1, reach) / len;
+    return { x: S.x + dx * t, y: S.y + dy * t, z: S.z + dz * t };
+  };
+  const houseReach = () => Math.hypot(state.dims.W, state.dims.D, state.dims.H) * 1.6;
+  /* 図の外へ<b>必ず</b>抜けるところまで伸ばす（2026-09-13 本人指摘「まだ切れている」）。
+     平面の投影は一次なので、画面上で枠を越える倍率をそのまま世界座標へ掛ければよい
+     （P(S + m(T−S)) = P(S) + m(P(T)−P(S))）。遠近の図は一次ではないので、
+     その値から始めて外に出るまで少しずつ伸ばす。必要な最小限だけ伸ばす——
+     伸ばすほど光の輪も太くなるので、むやみに遠くへは飛ばさない。 */
+  function houseFarPoint(S, T, P, cv) {
+    const pad = 60, s0 = P(S), e0 = P(T);
+    const dx = e0.X - s0.X, dy = e0.Y - s0.Y;
+    const hit = (v, dv, lo, hi) => { const out = []; if (dv > 1e-6) out.push((hi - v) / dv); if (dv < -1e-6) out.push((lo - v) / dv); return out; };
+    const cands = [...hit(s0.X, dx, -pad, cv.width + pad), ...hit(s0.Y, dy, -pad, cv.height + pad)].filter((v) => v > 0.05);
+    let m = cands.length ? Math.min(...cands) * 1.15 : 8;
+    if (!Number.isFinite(m)) m = 8;
+    m = E.clamp(m, 1.3, 80);
+    const at = (k) => ({ x: S.x + (T.x - S.x) * k, y: S.y + (T.y - S.y) * k, z: S.z + (T.z - S.z) * k });
+    const outside = (q) => !q || q.X < -pad + 10 || q.Y < -pad + 10 || q.X > cv.width + pad - 10 || q.Y > cv.height + pad - 10;
+    for (let i = 0; i < 6 && !outside(P(at(m))); i++) m = Math.min(80, m * 1.6);
+    return at(m);
+  }
+  /* 3Dの正面図だけは、遠くまで伸ばすと遠近で画面いっぱいに膨らむので、
+     客席側 y をこの辺りで打ち切る（それでも狙い点より先まで伸びる＝切れて見えない）。 */
+  /* 正面図は奥行きを畳んだ図なので、客席へ向かう光をそのまま先まで描くと
+     「舞台を斜めに降りていく光」に見えてしまう（2026-09-14 本人指摘。真横から見た図では
+     演者に当たっていないのに、正面図では体の上を走って見えた）。
+     舞台の手前端（y = D）で切り、その先は光源まわりの「まぶしさ」で表す。 */
+  const houseCutAtFront = (S, T, D) => {
+    const dy = T.y - S.y;
+    if (!(dy > 1e-6) || S.y >= D - 1e-6) return null;   // 手前端を越えない／すでに客席側にある灯
+    const t = (D - S.y) / dy;
+    if (!(t > 0.02)) return null;
+    return { x: S.x + (T.x - S.x) * t, y: D, z: S.z + (T.z - S.z) * t };
+  };
+  /* 正面図では帯を舞台の手前端で切っているので、狙い点の赤い丸もそこへ寄せる
+     （そのまま置くと帯の倍くらい先にあって掴みにくい。2026-09-14 本人指摘）。
+     描くときと掴むときで同じ変換を通すので、見えている場所＝掴める場所になる。 */
+  const houseHandleProj = (P, S, D) => (w) => P(w && w.y > D + 1e-6 && S ? (houseCutAtFront(S, w, D) || w) : w);
+  const houseCapY = (S, W, yMax) => {
+    const dy = W.y - S.y;
+    if (!(dy > 0) || W.y <= yMax) return W;
+    const t = (yMax - S.y) / dy;
+    return { x: S.x + (W.x - S.x) * t, y: yMax, z: S.z + (W.z - S.z) * t };
+  };
+  function beamEnd(l, S, T) {
+    if (l && l.surface === "house") return { world: houseRay(S, T, houseReach()), surface: null };   // 客席へ向けた光は面に当たらない＝光だまりを描かない
+    if (!l || l.surface !== "air") return { world: T, surface: (l && l.surface) || "floor" };
+    const land = E.beamLanding(S, T, state.dims);
+    return { world: land, surface: land.on };      // null＝何にも当たらず抜ける
+173:       から光の縁を切る。fixture.barn = { back, front, left, right } 各 0〜1（0＝開いている、1＝中心まで閉める）。
+175:     カッター: 光を四角にする。light.shutter = { on, w, h }。このシーンの値（ゴボと同じ層）。
+190:  const barnOf = (fixture) => {
+191:    const b = (fixture && fixture.barn) || {}; const o = {};
+195:  const barnActive = (fixture) => Boolean(fixture) && !isMoving(fixture) && BARN_KEYS.some((k) => barnOf(fixture)[k] > 0);
+196:  const shutterActive = (light) => Boolean(light && light.shutter && light.shutter.on);
+199:  const frameDoors = (fixture, light, vert) => {
+203:    if (barnActive(fixture)) {
+204:      const b = barnOf(fixture);
+207:    if (shutterActive(light)) {
+208:      const s = light.shutter;
+404:       light.strobe = { on, kind:"sharp"|"soft", hz(0.5〜20), duty(5〜95, sharp用), depth(0〜100, soft用) }
+409:  const strobeMul = (strobe, tMs) => {
+410:    if (!strobe || !strobe.on) return 1;
+411:    const hz = clamp(finite(strobe.hz, 6), 0.5, 20);
+415:    if (strobe.kind === "soft") {
+416:      const depth = clamp(finite(strobe.depth, 60), 0, 100) / 100;
+420:    const duty = clamp(finite(strobe.duty, 50), 5, 95) / 100;
+872:    newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, strobeMul, paramPhase, mountSpot, GOBOS, goboById, goboAngleAt, constrainPointToSurface, periodMs, groupEffect,
+878:    BARN_KEYS, SHUTTER_PRESETS, SHUTTER_MIN, SHUTTER_MAX, newShutter, barnOf, barnActive, shutterActive, frameDoors, doorCutInEllipse,
+
+web search: 
+web search: site.etcconnect.com stage lighting 45 degrees front lighting ...
+codex
+即適用への反論は撤回します。全体ルックが毎回完成状態へ置換されるなら、A→BはUndoを挟まず直接クリックで比較できます。ただし「見本を当てる→新規キュー」では元のキューも変更済みになるため、元を残したい場合は「新規キュー→見本」の順が必要です。
+
+現行コードには前ラウンド後のバーンドア／カッターも加わっています。今回のJSONでは全体置換時のカッター初期化を定め、サムネイルの入力にも取り込みます。
+exec
+/bin/zsh -lc "sed -n '96,117p' prototype/app.js; sed -n '180,228p' prototype/app.js; sed -n '861,895p' prototype/app.js; rg -n 'function drawBordersUp|const label|function label|gobo.*Cache|\\bPAD\\b' prototype/app.js | head -18; sed -n '324,414p' prototype/rig-engine.js; sed -n '173,202p' prototype/rig-engine.js" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+ succeeded in 0ms:
+  const state = {
+    mode: "move",                      // "place" | "move"。既定は照明デザイン（2026-09-13 本人指定。こちらを使う頻度が高い）
+    dims: { W: 12, D: 8, H: 8 },       // 舞台の幅・奥行き・高さ（m）。右の「舞台の大きさ」で変えられる
+    rig: { trusses: [], fixtures: [] },
+    /* pieces は「舞台スケッチ側ですでに置かれている演者・セット」。
+       製品では本体の scene.pieces をそのまま読む（このアプリからは変えない・読むだけ）。
+       試作では、光の当たり方を確かめられるように仮の配置を入れてある（2026-09-11 本人要望）。
+       持つのは 左右u・奥行きv・高さ(m)・名前・種類・向き・色・姿勢（演者のみ）。
+       演者の色 color は本体 paintBody() が元から受け取れる引数で、試作側の drawPiecesUp も
+       pc.color を読んでいた（未使用だったのはこの見本データに値が無かっただけ）。
+       衣装・髪は本体側にまだ描画がない（TOP_KINDS/BOTTOM_KINDS/HAIR_STYLES の shells/parts が
+       空＝データの器だけで、paintBody() も look 引数を受け取るが中で使っていない。段階0のまま）。
+       移植できるのは実在する描画だけなので、ここでは持ち込まない（2026-09-13 本人要望への回答）。
+       幕・ホリゾントは stage-machinery.js の machineryParts() curtain分岐を移植（rig-engine.js
+       curtainParts）。前幕とホリゾント幕の2枚を見本として置く。
+       演者・配置・姿勢は舞台スケッチ本体に同梱の見本ショー「見本: 八人のサーカス」
+       （stage-samples/index.js の eightCircus, id: sample-eight-circus-v1）をそのまま移植した
+       （2026-09-13 本人指摘。当初は自作の仮データを使っていたが、実在する見本があった）。
+       8場面・8人（ミナ/リク/カイ/ソラ/ノア/ジン/ユキ/レン）・台/チャイニーズポール/トラピーズを
+       そのシーンで使うぶんだけ入れてある。姿勢・色・身長(cm→m)・向きは出典の値そのまま。 */
+    scenes: [
+      { id: "s1", name: "1 オープニング", cue: { lights: {}, groups: [] }, pieces: [
+      ] },
+      { id: "s8", name: "8 エンディング・楽器", cue: { lights: {}, groups: [] }, pieces: [
+        { id: "p-jin", kind: "performer", name: "ジン", u: 0.44, v: 0.24, hM: 1.82, pose: "trumpet", facing: 0, color: "#77865f" },
+        { id: "p-ren", kind: "performer", name: "レン", u: 0.58, v: 0.24, hM: 1.74, pose: "guitar", facing: 0, color: "#6d6657" },
+        { id: "p-mina", kind: "performer", name: "ミナ", u: 0.28, v: 0.6, hM: 1.68, pose: "sit", facing: 20, color: "#a84b26" },
+        { id: "p-riku", kind: "performer", name: "リク", u: 0.42, v: 0.66, hM: 1.76, pose: "sit", facing: 10, color: "#77865f" },
+        { id: "p-kai", kind: "performer", name: "カイ", u: 0.58, v: 0.66, hM: 1.71, pose: "sit", facing: 350, color: "#9c823f" },
+        { id: "p-sora", kind: "performer", name: "ソラ", u: 0.72, v: 0.6, hM: 1.58, pose: "sit", facing: 340, color: "#6d6657" },
+        { id: "p-noa", kind: "performer", name: "ノア", u: 0.2, v: 0.5, hM: 1.63, pose: "sit", facing: 30, color: "#a84b26" },
+        { id: "p-yuki", kind: "performer", name: "ユキ", u: 0.8, v: 0.5, hM: 1.55, pose: "sit", facing: 330, color: "#9c823f" },
+        { id: "set-deck", kind: "set", name: "台", u: 0.5, v: 0.24, hM: 0.5 },
+        ...DEFAULT_CURTAINS,
+      ] },
+    ],
+    sceneIndex: 0,
+    sel: new Set(), selTruss: null,
+    tool: null,                        // null | "truss" | "fixture" | "floor" | "side"
+    play: { on: false, t: 0, last: 0, raf: 0 },
+    dirty: false, history: [], future: [],
+    nextNo: 1, seq: 1,
+    designName: "",                    // いま編集している照明デザインの名前（保存で付ける）
+    /* 幕の寸法（2026-09-13 本人要望で調整できるようにした）。
+       客席から光源（灯体）が見えないかを確かめるための値なので、舞台ごとに変わる＝
+       rig と同じショー共通の持ち物として保存・Undoの対象にする。
+         borderDrop  一文字幕の丈（m）。バトンの下端からどれだけ垂らすか
+         borderAhead 一文字幕をバトンのどれだけ手前に吊るか（奥行きの割合）
+         pros        前一文字（いちばん客席側の幕）を出すか
+         prosH       その下端＝客席から見える開口の高さ（m）。これより上は客席から見えない
+         legU        袖幕を両端からどれだけ内側へ入れるか（左右の割合）
+         perBorder   一文字幕ごとの上書き { バトンid: {bottomM, dropM} }。
+                     入っていないバトンは、そのバトンの高さと既定の丈から自動で決まる
+                     （2026-09-13 本人要望「一文字幕ごとに調整したい」）。
+                     実際の舞台でも一文字は1枚ずつ高さを決める（客席の視線に合わせて前ほど低く吊る）。 */
+    curtains: { borderDrop: 1.4, borderAhead: 0.04, pros: true, prosH: 6.2, legU: 0.08, perBorder: {} },
+    /* 作った色。ショー全体で共通なので、どの灯からもワンタッチで使える（2026-09-11 本人要望）。
+       配置と同じくショー共通の持ち物なので、rig と一緒に保存・Undoの対象にする。 */
+    palette: [],
+    hover: null, drag: null,
+    collapsed: new Set(), filter: "all",   // 一覧: 取り付け場所ごとの折り畳みと絞り込み（20灯以上向け）
+    snap: false,                           // 1mのグリッドに合わせて置く・動かす（本人要望 2026-09-11）
+    placeOpen: false,                      // 左パネル上部の「配置」を開いているか（既定は畳む）
+    show: { no: true, fixtures: true, beam: true, path: true, grid: true, pieces: true, names: true, border: false, blackout: false },
+    /* 作業灯をどれだけ消すか（0〜100%）。100で真っ暗、0で消さないのと同じ
+       （2026-09-13 本人要望「押したら全部消えてしまうので、どれくらい消すか決めたい」）。
+       図の見え方の設定なので show と同じくUndoの対象にはしない。 */
+    dim: 100,
+    /* 強さ（調光）の効き方。灯ごとの数値（0〜100%）は目盛りどおりのリニアで、
+       その数値が「見える明るさ」へどう効くかだけをこのカーブで決める
+       （音楽のベロシティカーブと同じ考え方。2026-09-13 本人要望）。
+     照射先での輪の半径 = 距離×tan(広がり/2) まで開く三角形として描く。
+     真上から見て真下を照らす灯は投影すると長さが0になるので、輪は必ず別に描く。 */
+  /* 舞台スケッチ側の配置（演者・セット）。光がどこへ当たるかを確かめるための下敷きなので、
+     姿勢や向きは描かず、実寸の高さと立ち位置だけを影絵で出す。光より先に描いて、光を上に重ねる。 */
+  const piecesOf = () => (scene().pieces || []);
+  /* 幕・ホリゾントの板（1〜2枚）を世界座標(m)の左右端点で返す。ox は向き(facing)を
+     織り込んだベクトルへ変換してあるので、どの図の projector へ渡しても回転・遠近が
+     自動で正しくなる（出典: rig-engine.js curtainParts ＝ stage-machinery.js machineryParts の移植）。 */
+  function curtainPanelsWorld(pc, d) {
+    const wM = E.finite(pc.w, 1) * d.W;
+    const hM = Math.min(E.finite(pc.hM, 6), d.H);
+    // 一文字幕だけは床から立つのではなく、上から垂れる＝下端の高さ（liftM）を持つ
+    const parts = E.curtainParts(pc, { w: wM, h: hM, lift: E.clamp(E.finite(pc.liftM, 0), 0, d.H) });
+    const rad = ((pc.facing || 0) * Math.PI) / 180;
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    const cx = (pc.u - 0.5) * d.W, cy = pc.v * d.D;
+    return parts.map((part) => {
+      const px = cx + part.ox * cos, py = cy + part.ox * sin, halfW = part.w / 2;
+      return {
+        leftX: px - halfW * cos, leftY: py - halfW * sin,
+        rightX: px + halfW * cos, rightY: py + halfW * sin,
+        lift: part.lift, h: part.h,
+      };
+    });
+  }
+  function drawCurtainPlan(ctx, P, pc, d) {
+    // 振り落とし・ホリゾントは全開（100%）で上へ消える＝平面図からも消える（本体と同じ規則）
+    const open = E.clamp(E.finite(pc.open, 0), 0, 100);
+    if (["drop", "cyc"].includes(pc.curtainKind) && open >= 100) return;
+    const panels = curtainPanelsWorld(pc, d);
+    ctx.save();
+    const masking = pc.solid || pc.curtainKind === "border" || pc.curtainKind === "leg";
+    ctx.strokeStyle = masking ? "#111214" : hexA(pc.color || "#000000", 0.9); ctx.lineWidth = 7; ctx.lineCap = "butt";
+    panels.forEach((part) => {
+      const a = P({ x: part.leftX, y: part.leftY, z: 0 }), b = P({ x: part.rightX, y: part.rightY, z: 0 });
+364:  const PAD = { planX: 32, planT: 20, planB: 46, secX: 32, secT: 14, secB: 15, headPlan: 26, headSec: 26, gap: 8 };
+365:  const SIDE_DX = 44;   // 内部px。PAD.planX*2(=64) − 印の半径15 より小さくする
+369:  const FRONT_DY = 58;        // 平面図: 舞台の手前端から下へ（内部px）。PAD.planB*2 に収まること
+386:    const padX = PAD.planX * 2, padT = PAD.planT * 2, padB = PAD.planB * 2;
+391:    const d = state.dims, padX = PAD.secX * 2;
+392:    const avail = { x: padX, y: PAD.secT * 2, w: cv.width - padX * 2, h: cv.height - (PAD.secT + PAD.secB) * 2 };
+405:    const chromeW = PAD.planX * 2 + PAD.secX * 4 + PAD.gap * 2;
+406:    const chromeH = PAD.headPlan + PAD.planT + PAD.planB + PAD.gap + PAD.headSec + PAD.secT + PAD.secB;
+412:    const secH = Math.round(d.H * s) + PAD.secT + PAD.secB;
+413:    const sideW = Math.round(d.D * s) + PAD.secX * 2, midW = Math.round(d.W * s) + PAD.planX * 2;
+415:    set(plan, "height", Math.round(d.D * s) + PAD.planT + PAD.planB);
+593:  const label = (fid) => { const f = fixtureById(fid); return f ? `${E.isMoving(f) ? "M" : "L"}${String(f.no).padStart(2, "0")}` : ""; };
+908:  function drawBordersUp(ctx, P, d) { borderPieces().forEach((pc) => drawCurtainUp(ctx, P, pc, d)); }
+1395:  const goboThumbCache = new Map();
+1397:    const hit = goboThumbCache.get(g.id); if (hit) return hit;
+1412:    goboThumbCache.set(g.id, svg);
+1427:  const goboPathCache = new Map();
+1429:    const hit = goboPathCache.get(g.id); if (hit) return hit;
+   */
+  const groupEffect = (cue, fixtureId) => {
+    const g = (cue.groups || []).find((x) => x.members.includes(fixtureId));
+    if (!g) return { phaseShiftMs: 0, mirror: false };
+    const idx = g.members.indexOf(fixtureId);
+    if (g.relation === "sequential") return { phaseShiftMs: -idx * finite(g.delayMs, 400), mirror: false };
+    if (g.relation === "mirror") return { phaseShiftMs: 0, mirror: idx % 2 === 1 };
+    return { phaseShiftMs: 0, mirror: false };
+  };
+
+  // Point3 → 世界座標（この一本だけで床・奥壁・空中すべてを扱う。2026-09-11 第3ラウンドで統一）
+  const pointWorld = (p, dims) => ({
+    x: (clamp(finite(p && p.u, 0.5), 0, 1) - 0.5) * dims.W,
+    // aheadM を持つ点（客席へ向けた狙い点）だけ舞台の外(y > D)へ出る。持たない点は従来どおり舞台の中
+    y: clamp(finite(p && p.v, 0.5), 0, 1) * dims.D + clamp(finite(p && p.aheadM, 0), 0, HOUSE_AHEAD_MAX),
+    z: clamp(finite(p && p.hM, 0), 0, dims.H),
+  });
+
+  // 軌道面ごとの円周上オフセット（世界座標のdx,dy,dz）
+  /* 円・8の字は「その面の中の2軸」で作る。r＝1軸目、r2＝2軸目（省くと真円）、tilt＝面の中での傾き（度）。
+     軸の向きは面ごとに決まる: 水平＝1軸目が左右・2軸目が奥行き／客席側から見た縦＝左右・高さ／
+     舞台横から見た縦＝奥行き・高さ。2026-09-11 本人要望で楕円・傾き・8の字を追加。 */
+  const planeVec = (plane, a, b, tiltDeg) => {
+    const th = (finite(tiltDeg, 0) * Math.PI) / 180;
+    if (th) { const c = Math.cos(th), sn = Math.sin(th); const a2 = a * c - b * sn; b = a * sn + b * c; a = a2; }
+    if (plane === "frontVertical") return { dx: a, dy: 0, dz: b };   // 客席側から見た縦
+    if (plane === "sideVertical") return { dx: 0, dy: a, dz: b };    // 舞台横から見た縦
+    return { dx: a, dy: b, dz: 0 };                                  // 水平（既定）
+  };
+  const circleOffset = (plane, ang, r, r2, tiltDeg) =>
+    planeVec(plane, Math.cos(ang) * r, Math.sin(ang) * (r2 == null ? r : r2), tiltDeg);
+  /* 8の字（ジェロノのレムニスケート）。1軸目が sin、2軸目が sin(2θ)。
+     θが一周する間に2軸目が2往復するので、横長の∞を描く。 */
+  const eightOffset = (plane, ang, r, r2, tiltDeg) =>
+    planeVec(plane, Math.sin(ang) * r, Math.sin(ang * 2) * (r2 == null ? r : r2), tiltDeg);
+
+  /* 周期の中の「いま」。0〜1が周期1回ぶん。組の順番送りと一灯ずつのオフセットを織り込む。
+     一灯ずつの遅らせ（オフセット秒）は組の順番送りとは別に持てるので、
+     組にしていない灯どうしでも波をずらせる（2026-09-12 本人要望）。 */
+  const cycleT = (light, cue, fixtureId, tMs) => {
+    const { phaseShiftMs, mirror } = groupEffect(cue, fixtureId);
+    const offsetMs = clamp(finite(light.offsetSec, 0), -60, 60) * 1000;
+    return { t: (tMs + phaseShiftMs - offsetMs) / periodMs(light), mirror };
+  };
+  /* 往復の位相（0＝A側・1＝B側）。位置の往復と、広がり・強さの往復が同じ式を使う。
+     往復の運び方（2026-09-11 本人要望）:
+       "linear"＝端で急に折り返す機械的な動き。卓のフェードをそのまま当てた感じ。
+       "ease"（既定）＝端で減速して止まり、また加速する。ムービングのヨークは
+       止まる前に減速するので、実物はこちらに近い。式は cos の半周期（ease-in-out）。 */
+  const swingPhase = (light, t, mirror) => {
+    const path = light.path || {};
+    let p = tri(t);
+    if ((path.easing || "ease") === "ease") p = 0.5 - Math.cos(p * Math.PI) / 2;
+    if (path.kind === "line" && path.start === "b") p = 1 - p;
+    if (mirror) p = 1 - p;
+    return p;
+  };
+  /* 広がり・強さが「動きの中で変わる」ときの位相（0＝始めの値・1＝終わりの値）。
+     往復（line）は位置とまったく同じ位相＝Aで始めの値、Bで終わりの値になる。
+     円・8の字・動きなしは、1周（1周期）で 始め→終わり→始め と往復させる（2026-09-13）。 */
+  const paramPhase = (light, cue, fixtureId, tMs) => {
+    if (!light) return 0;
+    const { t, mirror } = cycleT(light, cue, fixtureId, tMs);
+    return swingPhase(light, t, mirror);
+  };
+  /* 時刻 tMs における広がり（°）と強さ（0〜100）。終わりの値を持たない灯はそのままの値。 */
+  const beamDegAt = (fixture, light, phase) => {
+    const base = beamDegOf(fixture, light);
+    if (!isMoving(fixture) || !light || light.beamDegTo == null) return base;
+    return base + (clamp(finite(light.beamDegTo, base), 4, 70) - base) * clamp(finite(phase, 0), 0, 1);
+  };
+  const levelAt = (light, phase) => {
+    const base = levelOf(light);
+    if (!light || light.levelTo == null) return base;
+    return base + (clamp(finite(light.levelTo, base), 0, 100) - base) * clamp(finite(phase, 0), 0, 1);
+  };
+
+  /* ストロボ（ムービングの光の強さに載せる、時間で繰り返す点滅）。2026-09-13 本人要望。
+     始点・終点の往復（levelAt）とは別枠——強さの「値」ではなく「その瞬間どれだけ削るか」の
+     掛け算にして、上に載せるだけで足す（往復のどの位置でも同じように点滅する）。
+       light.strobe = { on, kind:"sharp"|"soft", hz(0.5〜20), duty(5〜95, sharp用), depth(0〜100, soft用) }
+     kind="sharp"（くっきり）＝矩形波。1周期のうち duty% だけ全開、残りは真っ暗——「パパパッ」。
+     kind="soft"（やわらかい）＝なめらかな明滅（1−cos）。0では全開のまま、100で完全に沈む
+     ところまで——「ちょっとフェード寄り」。
+     tMs は絶対時刻でよい（周期で割った余りしか使わない＝どこから再生しても同じ位相になる）。 */
+  const strobeMul = (strobe, tMs) => {
+    if (!strobe || !strobe.on) return 1;
+    const hz = clamp(finite(strobe.hz, 6), 0.5, 20);
+    const period = 1000 / hz;
+    const t = finite(tMs, 0);
+    const phase = (((t % period) + period) % period) / period;   // 0..1、絶対時刻からいつでも同じ位相
+       から光の縁を切る。fixture.barn = { back, front, left, right } 各 0〜1（0＝開いている、1＝中心まで閉める）。
+       仕込みで決める値なので全シーン共通（fixture.beamDeg と同じ層）。ムービングには付けない（本人指定）。
+     カッター: 光を四角にする。light.shutter = { on, w, h }。このシーンの値（ゴボと同じ層）。
+       w/h は「光の輪に内接する正方形の辺」を1とした比。1.4（≒√2）まで上げるとその向きは輪の外まで開き、
+       もう一方だけが効いた「帯」になる。細かい調整はしない（本人指定「四角形、異なるサイズの四角形」）。
+     どちらも「切る線」の集まりに直してから描く: 世界座標の向き n（外向き）と、中心からの距離（光の半径＝1）。
+     縁の柔らかさ soft も半径に対する比。バーンドアは柔らかく、カッターは硬い。 */
+  const BARN_KEYS = Object.freeze(["back", "front", "left", "right"]);
+  const BARN_SOFT = 0.22, SHUTTER_SOFT = 0.04;
+  const SHUTTER_MIN = 0.1, SHUTTER_MAX = 1.4;
+  const SHUTTER_PRESETS = Object.freeze([
+    { id: "square", name: "正方形", w: 1, h: 1 },
+    { id: "wide", name: "横長", w: 1.4, h: 0.5 },
+    { id: "tall", name: "縦長", w: 0.5, h: 1.4 },
+    { id: "small", name: "小さめ", w: 0.6, h: 0.6 },
+  ]);
+  const newShutter = (over = {}) => ({ on: true, w: 1, h: 1, ...over });
+  const barnOf = (fixture) => {
+    const b = (fixture && fixture.barn) || {}; const o = {};
+    BARN_KEYS.forEach((k) => { o[k] = clamp(finite(b[k], 0), 0, 1); });
+    return o;
+  };
+  const barnActive = (fixture) => Boolean(fixture) && !isMoving(fixture) && BARN_KEYS.some((k) => barnOf(fixture)[k] > 0);
+  const shutterActive = (light) => Boolean(light && light.shutter && light.shutter.on);
+  /* 切る線（世界座標）。vert = "y"（床・空中: 奥⇄手前が y 軸、奥＝−y）／"z"（奥の壁・客席: 上⇄下が z 軸、上＝+z）。
+     返り値 [{ key, n:{x,y,z}, f, soft }]。f は中心までを1とした閉め具合。 */
+  const frameDoors = (fixture, light, vert) => {
+    const out = [];
+    const up = vert === "z" ? { x: 0, y: 0, z: 1 } : { x: 0, y: -1, z: 0 };
+    const axis = { back: up, front: { x: -up.x, y: -up.y, z: -up.z }, left: { x: -1, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 } };
+
+web search: 
+web search: https://blog.etcconnect.com/stage-lighting-design-part-5?hs_amp=true
+exec
+/bin/zsh -lc "sed -n '890,918p' prototype/app.js; sed -n '225,242p' prototype/app.js; sed -n '284,310p' prototype/app.js; rg -n 'seat|normalizeSeat|frontPerspSetup|periodMs|groupEffect' prototype/rig-engine.js | head -19" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+ succeeded in 0ms:
+    const panels = curtainPanelsWorld(pc, d);
+    ctx.save();
+    const masking = pc.solid || pc.curtainKind === "border" || pc.curtainKind === "leg";
+    ctx.strokeStyle = masking ? "#111214" : hexA(pc.color || "#000000", 0.9); ctx.lineWidth = 7; ctx.lineCap = "butt";
+    panels.forEach((part) => {
+      const a = P({ x: part.leftX, y: part.leftY, z: 0 }), b = P({ x: part.rightX, y: part.rightY, z: 0 });
+      ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
+    });
+    const mid = panels[0];
+    const lp = P({ x: (mid.leftX + mid.rightX) / 2, y: (mid.leftY + mid.rightY) / 2, z: 0 });
+    ctx.fillStyle = "rgba(240,231,214,0.5)"; ctx.font = "13px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    if (showOn("names")) ctx.fillText(pc.name, lp.X, lp.Y + 6); ctx.textAlign = "left";
+    ctx.restore();
+  }
+  /* 一文字幕。灯体を<b>描いたあと</b>に重ねる——客席から見て隠れているかを確かめるための幕なので、
+     灯体の上に載せないと意味がない。ただし完全に塗り潰すと設計できないので、
+     布は濃いめの半透明にして、下の灯体がうっすら透ける（2026-09-13 本人要望）。 */
+  function drawBordersPlan(ctx, P, d) { borderPieces().forEach((pc) => drawCurtainPlan(ctx, P, pc, d)); }
+  function drawBordersUp(ctx, P, d) { borderPieces().forEach((pc) => drawCurtainUp(ctx, P, pc, d)); }
+
+  function drawPiecesPlan(ctx, P, B) {
+    if (!showOn("pieces")) return;
+    const d = state.dims, pxM = B.w / d.W;
+    piecesOf().forEach((pc) => {
+      if (pc.kind === "curtain") { drawCurtainPlan(ctx, P, pc, d); return; }
+      const q = P({ x: (pc.u - 0.5) * d.W, y: pc.v * d.D, z: 0 });
+      const rw = Math.max(4, (pc.kind === "set" ? 0.9 : 0.45) * pxM), rd = Math.max(3, (pc.kind === "set" ? 0.9 : 0.3) * pxM);
+      ctx.save();
+      ctx.fillStyle = "rgba(240,231,214,0.16)"; ctx.strokeStyle = "rgba(240,231,214,0.4)"; ctx.lineWidth = 1.5;
+    dim: 100,
+    /* 強さ（調光）の効き方。灯ごとの数値（0〜100%）は目盛りどおりのリニアで、
+       その数値が「見える明るさ」へどう効くかだけをこのカーブで決める
+       （音楽のベロシティカーブと同じ考え方。2026-09-13 本人要望）。
+       アプリ全体で1本だけ持つ共通の設定なので、灯ごとにも場面ごとにも変わらない。
+       値は入力0〜1を等間隔に切った LEVEL_CURVE_STEPS+1 個の出力（0〜1）。既定はリニア。
+       作った色（palette）と同じく<b>ショー共通の持ち物</b>として扱うので、rig・scenes と一緒に
+       保存・Undoの対象にする（2026-09-13 本人決定）。 */
+    levelCurve: null,                  // 初期化は下の resetLevelCurve()
+    front3d: false,                    // 正面図を擬似パース（本体の正面図と同じ式）で描く
+    sideView: "shimote",               // 側面図はどちら側を見るか。1枚を切り替えて使う（2026-09-13 本人要望）
+    /* 3Dで最初に見せる席。2026-09-13 本人決定で2階席。見下ろすので立ち位置の関係が読みやすく、
+       灯の当たり先を確かめる最初の1枚に向く（製品 stage-sketch.js の既定は "center"）。
+       選択肢の既定（index.html の selected）と必ずそろえること。 */
+    seat: "balcony",
+    search: "",
+    copiedPath: null,   // 動きのコピー（灯から灯へ写す。2026-09-12 本人要望）
+    /* サーチライト＝複数のムービングを空へ振る定番の見せ方。選んで、数値を決めて、一撃で当てる。
+     2026-09-13 修正: これが無く「変更<b>後</b>」を積んでいたため、1回目の「元に戻す」が
+     いまと同じ状態の復元になり、以降もずっと1手ぶんずれていた（色を変えて押しても戻らない）。 */
+  let baseline = snapshot();
+  function commit(label) {
+    lxSyncEditing();                   // 編集中のキューへ書き戻してから記録する（2026-09-13）
+    state.history.push(baseline);      // 変更前を記録する
+    if (state.history.length > 100) state.history.shift();
+    baseline = snapshot();             // ここからが次の「変更前」
+    state.future.length = 0;
+    state.dirty = true;
+    if (label) toast(label, "元に戻す", undo);
+    renderAll();
+  }
+  function restore(json) {
+    const o = JSON.parse(json);
+    state.rig = o.rig; state.scenes = o.scenes; if (o.palette) state.palette = o.palette;
+    // 強さの効き方。目盛りの数が合うものだけ受け取る（古い記録には無い＝そのときはリニアのまま）
+    if (Array.isArray(o.levelCurve) && o.levelCurve.length === LEVEL_CURVE_POINTS) state.levelCurve = o.levelCurve.slice();
+    if (o.curtains) state.curtains = { ...state.curtains, ...o.curtains };
+    state.sel = new Set([...state.sel].filter(fixtureById));
+    if (state.selTruss && !E.trussById(state.rig, state.selTruss)) state.selTruss = null;
+    state.dirty = true;
+    renderAll();
+  }
+  /* 戻す・やり直すでも控えを更新する。控えがずれると、次の commit で積む「変更前」が狂う。 */
+  function undo() { if (!state.history.length) return; state.future.push(baseline); const json = state.history.pop(); baseline = json; restore(json); }
+  function redo() { if (!state.future.length) return; state.history.push(baseline); const json = state.future.pop(); baseline = json; restore(json); }
+312:  const periodMs = (light) => {
+325:  const groupEffect = (cue, fixtureId) => {
+364:    const { phaseShiftMs, mirror } = groupEffect(cue, fixtureId);
+366:    return { t: (tMs + phaseShiftMs - offsetMs) / periodMs(light), mirror };
+534:  const frontPerspSetup = (dims, box, seatId) => {
+535:    const seat = FRONT_SEATS[seatId] || FRONT_SEATS.center;
+537:    const floorY = box.y + seat.floorY * k;
+538:    const bottomY = box.y + seat.bottomY * k;
+539:    const span = seat.frontW / seat.backW;                 // 手前は奥の何倍に見えるか
+541:    const pxPerM = Math.min((box.w * seat.frontW) / dims.W, headroom / ((dims.H || 8) / span));
+543:    return { seat, floorY, bottomY, pxPerM, frontW, backW: frontW / span, centerX: box.x + box.w / 2, span };
+546:  const makeFrontPerspProjector = (dims, box, seatId) => {
+547:    const L = frontPerspSetup(dims, box, seatId);
+553:      const stretch = 1 + L.seat.rise * v;
+559:  const frontPerspToUH = (dims, box, seatId, X, Y, v) => {
+560:    const L = frontPerspSetup(dims, box, seatId);
+565:    const stretch = 1 + L.seat.rise * vv;
+872:    newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, strobeMul, paramPhase, mountSpot, GOBOS, goboById, goboAngleAt, constrainPointToSurface, periodMs, groupEffect,
+874:    FRONT_SEATS, frontPerspSetup, makeFrontPerspProjector, frontPerspToUH,
+
+exec
+/bin/zsh -lc "rg -n 'glareMul|glare:|l.glare|speed:|periodSec' prototype/app.js | head -28; sed -n '320,338p' prototype/rig-engine.js; sed -n '30,78p' prototype/rig-engine.js; sed -n '18,53p' prototype/app.js; rg -n 'function borderPieces' prototype/app.js; sed -n '1,45p' '/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/.agents/skills/design-web/tools/contrast.mjs'" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+ succeeded in 0ms:
+246:    sl: { form: "sweep", span: 0.8, hM: null, vv: 0.4, periodSec: 6, beamDeg: 8, stepSec: 0.5, easing: "linear" },
+615:    setLight(fid, { on: true, surface: a.surface, path: { kind: "still", a: a.a }, speed: "normal", color: (l && l.color) || COLORS[0] });
+705:        periodSec: sp.periodSec, offsetSec: Math.round(i * sp.stepSec * 10) / 10,
+825:            const R = Math.max(sp.halfW * 0.9, 26) * glareMul(l); drawGlare(pctx, th0.X, th0.Y, R, l.color, lv, dim); litSpots.push(glareHole(th0.X, th0.Y, R, lv));
+1630:  const glareMul = (l) => E.clamp(E.finite(l && l.glare, 1), 0.2, 3);
+1682:          const gY = isFront(f) ? Math.max(20, s.Y) : s.Y, R = (B.w / d.W) * (0.9 + 2.4 * lv) * glareMul(l);
+1684:          if (cut) { const e2 = P(cut), R2 = Math.max(E.spotRadiusM(S, cut, beamOf(f)) * (B.w / d.W) * 1.2, 20) * glareMul(l);
+1735:        if (l.surface === "house") { const R = Math.max(sp.halfW * 1.8, 26) * glareMul(l); drawGlare(fctx, e2.X, e2.Y, R, l.color, lv, dim); litSpotsSide.push(glareHole(e2.X, e2.Y, R, lv)); } }
+1816:          const Rg = L.pxPerM * Math.max(0.05, s0.scale || 1) * (0.9 + 2.4 * lv) * glareMul(l);
+1819:            const R3 = Math.max(E.spotRadiusM(S, cut, beamOf(f)) * L.pxPerM * Math.max(0.05, e3.scale || 1) * 1.2, 18) * glareMul(l);
+2560:      const secs = movers.map((fid) => { const l = lightOf(fid); return l && l.on === true ? (l.periodSec == null ? SPEED_SEC[l.speed] || 2 : l.periodSec) : null; }).filter((x) => x != null);
+2561:      if (allSame(secs)) sp.periodSec = E.clamp(secs[0], 1, 30);
+2836:        b.append(field("1往復の時間", range(1, 30, 0.5, sp.periodSec, (v) => `${v.toFixed(1)}秒`, (v) => { sp.periodSec = v; bulkEach(movers, (f, l) => { l.periodSec = v; }); draw(); }, () => commit())));
+3234:          b.append(field("まぶしさ", range(0.2, 3, 0.1, glareMul(l),
+3236:            (v) => { l.glare = v; draw(); }, () => commit()), true));
+3429:          b.append(field(label1, seg([["slow", "ゆっくり 4秒"], ["normal", "普通 2秒"], ["fast", "速い 1秒"]], l.periodSec == null ? l.speed : null, (v) => { setLight(fid, { speed: v, periodSec: null }); commit(); }), true));
+3430:          const secNow = l.periodSec == null ? E.SPEED_PERIOD_MS[l.speed] / 1000 : l.periodSec;
+3431:          b.append(field("秒で決める", range(0.4, 30, 0.1, secNow, (v) => `${v.toFixed(1)}秒${l.periodSec == null ? "（未使用）" : ""}`, (v) => { l.periodSec = v; draw(); }, () => commit())));
+3432:          if (l.periodSec != null) b.append(btn("秒の指定をやめて3段に戻す", () => { delete l.periodSec; commit(); }, "small quiet"));
+3437:            state.copiedPath = { from: fid, label: label(fid), path: JSON.parse(JSON.stringify(p)), speed: l.speed, periodSec: l.periodSec, beamDeg: l.beamDeg, beamDegTo: l.beamDegTo, levelTo: l.levelTo };
+3445:            setLight(fid, { path: JSON.parse(JSON.stringify(c.path)), speed: c.speed, periodSec: c.periodSec, beamDeg: c.beamDeg, beamDegTo: c.beamDegTo, levelTo: c.levelTo });
+3906:        periodSec: "1往復（1周）の秒数", offsetSec: "何秒遅らせて始めるか",
+
+  /* 組の効果を位相へ反映する。
+   *   together … 全員同じ位相／sequential … メンバー順にdelayMsずつ遅らせる
+   *   mirror   … 先頭以外は軌道を鏡映（line: 端を入れ替え／circle: 回転を反転・中心は保持）
+   */
+  const groupEffect = (cue, fixtureId) => {
+    const g = (cue.groups || []).find((x) => x.members.includes(fixtureId));
+    if (!g) return { phaseShiftMs: 0, mirror: false };
+    const idx = g.members.indexOf(fixtureId);
+    if (g.relation === "sequential") return { phaseShiftMs: -idx * finite(g.delayMs, 400), mirror: false };
+    if (g.relation === "mirror") return { phaseShiftMs: 0, mirror: idx % 2 === 1 };
+    return { phaseShiftMs: 0, mirror: false };
+  };
+
+  // Point3 → 世界座標（この一本だけで床・奥壁・空中すべてを扱う。2026-09-11 第3ラウンドで統一）
+  const pointWorld = (p, dims) => ({
+    x: (clamp(finite(p && p.u, 0.5), 0, 1) - 0.5) * dims.W,
+    // aheadM を持つ点（客席へ向けた狙い点）だけ舞台の外(y > D)へ出る。持たない点は従来どおり舞台の中
+    y: clamp(finite(p && p.v, 0.5), 0, 1) * dims.D + clamp(finite(p && p.aheadM, 0), 0, HOUSE_AHEAD_MAX),
+     置き方に合わせる（2026-09-13 本人要望）。v をわずかに手前へ取るのは、壁ぴったり(v=0)だと
+     幕の板と重なって描画が競合するのを避けるため——実機でも幕を焼かないよう少し離して置く。
+     2026-09-13 本人指摘で作り直し: 個別に並べるものではなく「もとから一列のバー」で、
+     壁全体を染める前提。持つ値は 長さ(len, 0〜1)・置き方(rung: floor=床から上向き
+     ／top=上部から下向き)・届く高さ(reachM, m)。横位置は中央固定（同日の指摘「中央しか
+     ありえない」）。fixtureWorld は選択やアイコンの基準になる「バーの中心点」を返し、
+     実際の帯（左右の端・登る高さ）は cycBarSpan で別に持つ。 */
+  const CYC_MOUNT_V = 0.02;
+  const CYC_REACH_MAX = 10;     // 届く高さの上限(m)。2026-09-13 本人指定
+  /* 客席へ向けた光（surface: "house"）の狙い点は舞台の手前端(v=1)から aheadM(m) だけ客席側。
+     前明かりの ahead と同じ考え方で、上限も同じ20m（2026-09-13 本人要望「当てる場所に客席方面」）。 */
+  const HOUSE_AHEAD_MAX = 20;
+  /* バーの世界座標での帯。xL/xR＝左右の端、y＝奥行き、z0＝光源の高さ（床=0／上部=dims.H）、
+     reach＝壁を登る／降りる高さ(m)。以前は広がり(度)から割合で出していたが、
+     「10mまで出せるように」との指定（2026-09-13）で実寸のまま持つことにした。
+     壁より高くは出しても見えないので、描くときに壁の高さで止める。 */
+  const cycBarSpan = (fixture, dims) => {
+    const m = (fixture && fixture.mount) || {};
+    const len = clamp(finite(m.len, 0.9), 0.05, 1);
+    const half = (len * dims.W) / 2;
+    const top = m.rung === "top";
+    const reach = clamp(finite(m.reachM, 4), 0.3, CYC_REACH_MAX);
+    return { xL: -half, xR: half, y: CYC_MOUNT_V * dims.D, z0: top ? dims.H : 0, top, reach };
+  };
+  const SPEED_PERIOD_MS = Object.freeze({ slow: 6000, normal: 3000, fast: 1500 });
+  const PLANE_VALUES = Object.freeze(["horizontal", "frontVertical", "sideVertical"]);
+
+  /* ---------- rig（ショー共通） ---------- */
+  const newTruss = (id, v, h, label) => ({ id, v: clamp(finite(v, 0.2), 0, 1), h: clamp(finite(h, 6), 2, 14), label: label || "" });
+
+  // mount: {type:"truss", trussId, u} | {type:"floor", u, v} | {type:"side", side:"kamite"|"shimote", v, h}
+  /* kind: "moving"＝ムービング（動きを付けられる）／"fixed"＝固定（向きは仕込みで決まる）。
+     既定はムービング。fixed の灯には往復・円を付けさせない（2026-09-11 本人要望）。 */
+  const newFixture = (id, no, mount, name, kind, beamDeg) => ({
+    id, no, name: name || "", mount,
+    kind: kind === "fixed" ? "fixed" : "moving",
+    // 光の広がり（度）。ムービングのズーム範囲は実機で 7°〜50°（PLUTO600 PROFILE MK2）。
+    // 固定灯はランプ／レンズで決まり、ショー中は変えられない（PARは玉を替えるしかない）。
+    beamDeg: clamp(finite(beamDeg, kind === "fixed" ? 24 : 15), 4, 70),
+  });
+  const isMoving = (fixture) => (fixture && fixture.kind) !== "fixed";
+  /* いま実際に出ている広がり。ムービングだけ、このシーンのズーム（light.beamDeg）で上書きできる。
+     固定灯は仕込みの値（fixture.beamDeg）のまま。 */
+  const beamDegOf = (fixture, light) => {
+    const base = clamp(finite(fixture && fixture.beamDeg, 18), 4, 70);
+    if (!isMoving(fixture) || !light || light.beamDeg == null) return base;
+    return clamp(finite(light.beamDeg, base), 4, 70);
+  };
+  /* 光は狙った点で止まらない。そこを過ぎた光は床か奥の壁まで進み、どちらにも当たらなければ
+       図の中に収まる 1.0（間口と同じ幅）にしてある。 */
+    { id: "cur-front", kind: "curtain", name: "前幕", curtainKind: "front", u: 0.5, v: 0.97, w: 1.0, hM: 7.5, open: 100, color: "#000000", facing: 0 },
+    // 色は本体の既定と同じ（stage-machinery.js:193 は幕の種類を問わず同じ既定色を使う）
+    { id: "cur-cyc", kind: "curtain", name: "ホリゾント幕", curtainKind: "cyc", u: 0.5, v: 0.04, w: 1.04, hM: 6.5, open: 0, color: "#000000", facing: 0 },
+  ];
+  /* 袖幕は下の maskingPieces() で作る。
+     2026-09-13 本人指摘「舞台袖の膜の方向がおかしい／演者が切れる」で作り直した。
+     本体（stage-machinery.js の leg）は facing 90 ＝ 奥行き方向に走る壁として持っている。
+     これを3Dで塗ると、壁の奥の端と手前の端が画面の別の位置へ写るので<b>幅のある帯</b>になり、
+     その帯の中に立っている演者（舞台の隅）が隠れてしまう（実測: 帯は画面X 197〜259、
+     ジンは246＝帯の中。奥行きの前後を見ないで塗るため、内側にいる人まで覆う）。
+     実際の袖幕は客席と平行に吊る平らな幕で、客席からは両端の細い縦帯に見える。
+     その形にすると帯が舞台の外側だけになり、演者を横切らない。 */
+  /* 一文字幕（いちもんじまく）。バトンごとに、その少し手前へ吊って灯体とバトンを客席から隠す幕。
+     仕込んだバトンから自動で作るので、データには持たない（バトンを足せば一文字も増える）。
+     2026-09-13 本人要望で追加。既定は出さない——出すと灯体が隠れて設計しにくいため、
+     「客席から見えていないか」を確かめたいときだけ出す。 */
+  /* バトン1本ぶんの一文字幕の寸法。上書きが無ければ、そのバトンの高さと既定の丈から決める
+     （バトンを上げ下げすれば一文字も付いてくる）。1枚でも触ると、その枚だけ上書きが入る。 */
+  function borderSetting(t) {
+    const c = state.curtains, o = (c.perBorder && c.perBorder[t.id]) || {};
+    const drop = E.clamp(E.finite(o.dropM, E.finite(c.borderDrop, 1.4)), 0.3, 6);
+    const bottom = E.clamp(E.finite(o.bottomM, Math.max(0, E.finite(t.h, 6) - drop)), 0, state.dims.H);
+    return { drop, bottom, 既定のまま: o.dropM == null && o.bottomM == null };
+  }
+  const setBorder = (t, patch) => {
+    const c = state.curtains; if (!c.perBorder) c.perBorder = {};
+    c.perBorder[t.id] = { ...borderSettingRaw(t), ...patch };
+  };
+  const borderSettingRaw = (t) => { const b = borderSetting(t); return { bottomM: b.bottom, dropM: b.drop }; };
+
+  /* 袖幕。客席と平行に吊る平らな幕を、舞台の外側から内側へ legU ぶん入り込ませる。
+     いちばん手前（舞台の前端）に左右1対だけ置く。床から舞台の上端まで。
+
+     2026-09-13 本人指摘「2枚目の袖幕が宙に浮いて内側に入ってくる」への対応で1対にした。
+     当初はバトンごとに1対ずつ出していたが、3Dでは
+71:  function borderPieces() {
+#!/usr/bin/env node
+// WCAG 2.x コントラスト比の計算（design-webスキル用）
+// 使い方: node contrast.mjs "#文字色" "#背景色" [ "#文字色2" "#背景色2" ... ]
+// 判定: AA本文=4.5:1以上 / AA大きな文字・UI部品=3:1以上（WCAG 2.x）
+
+function relLum(hex) {
+  let h = hex.replace(/^#/, "");
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) {
+    console.error(`不正な色指定: ${hex}（#RGB か #RRGGBB で指定）`);
+    process.exit(1);
+  }
+  const [r, g, b] = [0, 2, 4]
+    .map((i) => parseInt(h.slice(i, i + 2), 16) / 255)
+    .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+const args = process.argv.slice(2);
+if (args.length < 2 || args.length % 2 !== 0) {
+  console.error('使い方: node contrast.mjs "#文字色" "#背景色" [ペアを追加可]');
+  process.exit(1);
+}
+
+for (let i = 0; i < args.length; i += 2) {
+  const [fg, bg] = [args[i], args[i + 1]];
+  const [l1, l2] = [relLum(fg), relLum(bg)];
+  const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+  const r = Math.round(ratio * 100) / 100;
+  const aaBody = ratio >= 4.5 ? "OK" : "NG";
+  const aaLarge = ratio >= 3 ? "OK" : "NG";
+  console.log(`${fg} on ${bg}: ${r}:1  AA本文(4.5): ${aaBody}  AA大文字/UI(3.0): ${aaLarge}`);
+}
+
+exec
+/bin/zsh -lc "node '/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/.agents/skills/design-web/tools/contrast.mjs' '#efe7d6' '#201b16' '#9c823f' '#201b16' '#df6433' '#201b16'" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+ succeeded in 0ms:
+#efe7d6 on #201b16: 13.88:1  AA本文(4.5): OK  AA大文字/UI(3.0): OK
+#9c823f on #201b16: 4.62:1  AA本文(4.5): OK  AA大文字/UI(3.0): OK
+#df6433 on #201b16: 4.89:1  AA本文(4.5): OK  AA大文字/UI(3.0): OK
+
+exec
+/bin/zsh -lc "sed -n '70,95p' prototype/app.js; sed -n '308,319p' prototype/rig-engine.js; sed -n '52,77p' prototype/rig-engine.js; rg -n 'const PAD|pros|stage' prototype/app.js | head -5" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11
+ succeeded in 0ms:
+
+  function borderPieces() {
+    const d = state.dims, c = state.curtains;
+    const legs = legPieces();                 // 袖幕は舞台の造りなので、一文字のトグルに関わらず出す
+    if (!showOn("border")) return legs;
+    const ahead = E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.3);
+    const list = legs.concat(state.rig.trusses.map((t, i) => {
+      const b = borderSetting(t);
+      return {
+        id: `border-${t.id}`, kind: "curtain", name: i === 0 ? "一文字幕" : "", curtainKind: "border",
+        u: 0.5, v: E.clamp(E.finite(t.v, 0.5) + ahead, 0, 1), w: 1.02,
+        hM: b.drop, liftM: b.bottom,
+        open: 0, color: "#000000", facing: 0,
+      };
+    }));
+    /* 前一文字＝いちばん客席側の幕（プロセニアムの上辺）。客席から見える開口の高さを決めるのは
+       これで、ここより上は客席からは見えない。舞台の上端まで届く布なので丈は H - 開口の高さ。
+       2026-09-13 本人要望「一番客席側の膜も表現したい／光源が見えない状況を作りたい」。 */
+    if (c.pros !== false) {
+      const h0 = E.clamp(E.finite(c.prosH, 6.2), 1, d.H);
+      list.push({ id: "border-pros", kind: "curtain", name: "前一文字", curtainKind: "border",
+        u: 0.5, v: 1, w: 1.02, hM: Math.max(0.2, d.H - h0), liftM: h0,
+        open: 0, color: "#000000", facing: 0, solid: true });
+    }
+    return list;
+  }
+  };
+
+  /* 1往復（1周）の時間。任意の秒数 periodSec を持っていればそれが優先。
+     持っていなければ従来どおり speed の3段（2026-09-12 本人要望で秒数指定を追加）。 */
+  const periodMs = (light) => {
+    const sec = light && light.periodSec;
+    if (Number.isFinite(Number(sec)) && Number(sec) > 0) return clamp(Number(sec), 0.2, 120) * 1000;
+    return SPEED_PERIOD_MS[light && light.speed] || SPEED_PERIOD_MS.normal;
+  };
+
+  const tri = (t) => { const m = ((t % 1) + 1) % 1; return m < 0.5 ? m * 2 : 2 - m * 2; };
+  const saw = (t) => ((t % 1) + 1) % 1;
+    return { xL: -half, xR: half, y: CYC_MOUNT_V * dims.D, z0: top ? dims.H : 0, top, reach };
+  };
+  const SPEED_PERIOD_MS = Object.freeze({ slow: 6000, normal: 3000, fast: 1500 });
+  const PLANE_VALUES = Object.freeze(["horizontal", "frontVertical", "sideVertical"]);
+
+  /* ---------- rig（ショー共通） ---------- */
+  const newTruss = (id, v, h, label) => ({ id, v: clamp(finite(v, 0.2), 0, 1), h: clamp(finite(h, 6), 2, 14), label: label || "" });
+
+  // mount: {type:"truss", trussId, u} | {type:"floor", u, v} | {type:"side", side:"kamite"|"shimote", v, h}
+  /* kind: "moving"＝ムービング（動きを付けられる）／"fixed"＝固定（向きは仕込みで決まる）。
+     既定はムービング。fixed の灯には往復・円を付けさせない（2026-09-11 本人要望）。 */
+  const newFixture = (id, no, mount, name, kind, beamDeg) => ({
+    id, no, name: name || "", mount,
+    kind: kind === "fixed" ? "fixed" : "moving",
+    // 光の広がり（度）。ムービングのズーム範囲は実機で 7°〜50°（PLUTO600 PROFILE MK2）。
+    // 固定灯はランプ／レンズで決まり、ショー中は変えられない（PARは玉を替えるしかない）。
+    beamDeg: clamp(finite(beamDeg, kind === "fixed" ? 24 : 15), 4, 70),
+  });
+  const isMoving = (fixture) => (fixture && fixture.kind) !== "fixed";
+  /* いま実際に出ている広がり。ムービングだけ、このシーンのズーム（light.beamDeg）で上書きできる。
+     固定灯は仕込みの値（fixture.beamDeg）のまま。 */
+  const beamDegOf = (fixture, light) => {
+    const base = clamp(finite(fixture && fixture.beamDeg, 18), 4, 70);
+    if (!isMoving(fixture) || !light || light.beamDeg == null) return base;
+    return clamp(finite(light.beamDeg, base), 4, 70);
+  };
+20:    // 色は本体の既定と同じ（stage-machinery.js:193 は幕の種類を問わず同じ既定色を使う）
+25:     本体（stage-machinery.js の leg）は facing 90 ＝ 奥行き方向に走る壁として持っている。
+88:    if (c.pros !== false) {
+89:      const h0 = E.clamp(E.finite(c.prosH, 6.2), 1, d.H);
+90:      list.push({ id: "border-pros", kind: "curtain", name: "前一文字", curtainKind: "border",
+
+codex
+配置は小40・中54・大72要素の案にします。SSを同じ奥行き位置の低段・高段に分けた増分で、ホリゾント2列を含むモデル上の数です。前明かりには中央専用の左右1組を確保し、3サイズとも同じ「中央の一人だけ」を呼べる構成にします。
+
+部分変更は、初版では色と強さの6件に絞る案です。速さの変更にはグループの遅れとの整合が必要で、「全部を暖色に」は顔の白まで変えてしまうため、用途が明確な変更を先に揃えます。

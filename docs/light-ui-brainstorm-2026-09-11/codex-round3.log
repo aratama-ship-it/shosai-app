@@ -1,0 +1,850 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-ui-brainstorm-2026-09-11
+model: gpt-6-astra
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a08c52-0499-7162-93c2-59014be071d3
+--------
+user
+第3ラウンドです。第2ラウンドの回答（「光の動き（案）」は意図カードに属する図上表現／型ラベルより短文＋範囲＋合図＋参照区間／tempoと動作速度は分ける／ヘイズ質問の文面修正／P0-1〜P0-3＋P0.5）は受け入れます。
+
+## 新しい一次情報（これが今回の要望の出所）
+要望を出した出演者・天平さんと本人のLINE（2026-09-11 2:22〜2:24）。本人が「そもそも競合がない可能性があるって感じですか」と聞いたのに対する返答を、画面の文言のまま転記します。
+> 照明の操作用ソフトでシュミレーション画面が見れるものはあるけど、演者や演出家がそれを使うためにわざわざ照明ソフトを覚えてるケースは見たことないな
+> 俺はそれをやろうと思ったけど照明ソフトが使いにくすぎて、結局自分が出演した動画を切り取って説明した方が早いわってなった
+
+本人（ショー制作者）の方向づけ（2:29）:
+> システムとして照明を作れるアプリを作ってしまって、舞台スケッチに組み込むという流れになりそう
+
+競合確認（Claude・Web検索、信頼度低〜中）: プロ向けビジュアライザ（L8／Capture／DMXDesktop／Vectorworks Vision）はDMX・卓前提。iPadの日本語アプリは卓の操作シミュレータや住宅照明。「演者・演出家が動く光のイメージを素早く作って照明さんへ渡す」道具は見つからず。
+
+## この証言が第1・2ラウンドの結論に与える影響（Claudeの見立て）
+1. あなたは「動く光は静止図＋参照動画で足りる、アニメーションは見送り」と推した。しかし当事者の実体験は「欲しかったのは動きを見せる手段。既存ソフトで挫折し、自分の出演動画を切り抜いた」。つまり参照動画ではなく**自分の舞台の動きを自分で作りたかった**。「決定事項に見える」懸念より「動きを見せられないと動画切り抜きに負ける」実需が重い、と私は判断を変える。
+2. ただし「照明を作れるアプリ」を機材シミュレータ（灯体・DMX・パン/チルト）として作れば、天平さんが挫折した照明ソフトと同じ学習コストに戻る。落とし所は**「機材は持たないが、光の動きは再生できる」スケッチ**＝動画切り抜きより速く作れ、動画と同じくらい伝わる出力。
+3. 基準を「動画切り抜き」に置く: 入力は2分以内、出力は照明さんがスマホ（LINE）で見られる短いループ動画/GIF＋1枚図＋一文。
+
+## Claude(私)の案 — 舞台スケッチ内の「光の動きスケッチ」モジュール
+L. **プリミティブは3つだけ**: 光線（beam: 太さ・色・見えるか）、通り道（path: 図上に指でなぞる線、または始点→終点＋往復/円/横切る）、拍（timing: 既存の音楽錨・カウントに乗せる。曲の秒数か「合図」）。灯体・DMX・角度数値は持たない。「どこから出るか」は任意（未指定なら奥壁上や客席上方の既定）。
+M. **作り方は「なぞって、再生」**: 正面図（または3D簡易ビュー）で光線をドラッグしてなぞると通り道になる。再生ボタンで動く。天平さんが動画で説明したことを、自分の舞台の絵の上で再現する。
+N. **出力は3点セット**: ①短いループ動画/GIF（スマホで見られる）、②1枚図（始め・折り返し・終わりの小図＋凡例「案・灯体位置ではない」）、③一文＋相談欄（第2ラウンドの打合せ用出力に接続）。
+O. **「案」の担保はアニメーションの質で**: 手描き風の光線・ラフな線・「案」の透かし。滑らかな物理レンダリングにしない（前回の懸念への回答）。
+P. **既存資産の再利用**: 舞台スケッチには既に 正面図の3D簡易描画、演者の動線再生、シーン内キーフレーム構想（前日ブレストの⑦⑨）、音楽の錨がある。光の通り道はこれらと同じ時間軸に乗せる。
+Q. **モジュール境界**: 舞台スケッチ本体に組み込むが、意図カード・照明駒・打合せ出力とは「光の動き（案）」を介して接続。単独でも使える（演者が自分の演目だけで開く）。
+
+## あなたへの依頼（順番にすべて答える）
+1. **証言の重み付け**: 天平さんの実体験（n=1）は、あなたの「静止図＋参照動画で足りる」判断を覆すか。覆すなら何が変わり、覆さないなら理由。「決定事項に見える」懸念と「動きを見せる実需」をどう両立させるか。
+2. **L〜Qの批評**: 特に(a)プリミティブ3つで「サーチライトのような動く光」を表現できるか、足りないもの1つ・削るもの1つ。(b)「なぞって再生」は2分以内に作れるか。iPadで指でなぞる操作の落とし穴。(c)出力の3点セットは照明プランナーに実際に役立つか、逆に「この通りやれ」と読まれる危険とその回避策。
+3. **「照明を作れるアプリ」の定義**: 本人が言う「システムとして照明を作れる」を、機材シミュレータへ戻さずに満たす定義を1段落で。何を「作れる」と言い、何は「作らない」と明言するか（LP・説明文に使える文言で）。
+4. **既存舞台スケッチとの統合案**: 別アプリ→組み込み と 最初から本体のモジュール の比較。データ（シーン・音楽錨・動線）の共有、コード分離、公開単位の観点で推奨を1つ。
+5. **MVPの再定義**: 第2ラウンドのP0-1〜P0-3＋P0.5に、この「光の動きスケッチ」をどう組み替えるか。最初の2週間で「天平さんが動画切り抜きより速いと感じる」ための最小機能を、優先順位付きで。検証方法（天平さんに1場面作ってもらう等）も。
+6. **逆張り**: 「動画切り抜きに勝てないのだから、舞台スケッチは動画の切り抜きに『自分の舞台の絵と一文』を添える機能に徹すべき」という立場から、最小案を述べる。
+7. **本人に確認すべき未決事項**を最大3問。
+
+出力は日本語、見出し付きMarkdown、事実と推測を分ける。ファイルは変更しない。
+codex
+天平さんの証言を受けて、静止図を先行させる判断を見直します。「動きを作って渡したい」という需要と、「2分以内・動画切り抜きより速い」という未検証の目標を分け、既存の再生・音楽機能も読み取りで確認します。今回も、批評と統合判断にはSolが適しています。
+
+exec
+/bin/zsh -lc "rg -n 'TextQuoteSelector|project.cues|stage-workflow-store|music|音楽' /Users/arata/.codex/memories/MEMORY.md | head -22" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-ui-brainstorm-2026-09-11
+ succeeded in 0ms:
+145:- script-cues-2026-09-09, project.cues, TextQuoteSelector, TextPositionSelector, stage-workflow-store.js, stage-workflow-panel.js, openScene, SHOSAI_STAGE_SESSION_BRIDGE, stage-sketch-pwa-v199, 57 pass
+160:- Use `project.cues[]` as the shared cue source: the script owns position, transitions own work/waiting/geometry/assignee, and reverse lists are derived. Anchor script text by ID + character range + context; do not make page, line, or displayed Q number canonical. A lost anchor becomes 「位置を選び直す」/「要確認」, never a cue deletion. [Task 2]
+185:- For 「いろんな日本の芸能が関連する学校や、エンタメ会社等」を「徹底的にリサーチ」 -> cover theatre, dance, stage technology, music, arts/cultural tourism, and production companies; distinguish official activity, intended use, and contact route from unproven adoption. [Task 1]
+199:scope: Review the C++20 cross-shell synth architecture and extend the existing modulation Matrix without mistaking test/lint evidence for musical or device validation.
+200:applies_to: cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/apps/music-plugins/synth-engine; reuse_rule=reuse for this synth-engine/random-scale-keys family after rechecking dirty status, parameter schema, canonical documentation, and owner approval.
+225:- Complete and present a review-only decision artifact before coding. Preserve a dirty tree and enumerate task-local files rather than treating a 53-file/~4,900-line accumulated commit as a narrow release. Tests do not establish physical-speaker, Safari, touch, or musical usefulness; obtain explicit approval before push/Pages publication. [Task 1]
+230:applies_to: cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/apps/music-plugins/audio-tools/sfx-design-study; reuse_rule=reuse for this local SFX study after checking current engine version and the user's selected listening direction; do not generalize P3 beyond this comparison or claim creative quality from automated checks.
+259:- The working artifact is `apps/music-plugins/audio-tools/sfx-design-study/`: human entry `index.html`, canonical notes `PROJECT_NOTES.md`, and numeric design `design/TOKEN_SHEET.md`. Compare A「音のしぐさを移す」, B「ありえない素材を触る」, and C「音を会話させる」; the initial prototype uses independent timbre and temporal gesture (volume, pitch, gaps, repetition). Synplant, GameSynth, Patatap, and W3C APG Radio were official-reference inputs, but no hands-on use/listening was verified. [Task 1]
+586:# Task Group: Bounded overnight work, coordinate contracts, and local music-sync review
+606:- rollout_summaries/2026-09-01T15-49-01-mY0I-juggling_music_reactor_wave1_wave2_sync_audition.md (cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/apps/utility-app/juggling-music-reactor, rollout_path=/Users/arata/.codex/sessions/2026/09/02/rollout-2026-09-02T00-49-01-01a05da8-d952-7323-9a34-0fca37d0125c.jsonl, updated_at=2026-09-07T03:06:07+00:00, thread_id=01a05da8-d952-7323-9a34-0fca37d0125c, success: Wave 2 implemented and tested; owner listening check remains)
+829:- For this kind of music aid, the user prioritized 「簡単にメロディをチェック」 and 「どの鍵盤にどのキーが対応するかは自由に決める」 -> default to a small immediate-check tool with user-controlled key mapping rather than a feature-heavy DAW-like app. [Task 1]
+2240:- decor-record-player, SVG, flat plan, tone-arm, M982 334, music click area, no overlap
+2247:- When the user said "ウェブサイトと身体表現ラボは一旦消してだいじょうぶです。PYGMIXとしての活動にするので" -> make the personal site photo/music/video-first; remove ordinary navigation while preserving source pages for a reversible future migration. [Task 1]
+2253:- The shared nav on `index.html`, `photo.html`, `music.html`, and `video.html` is `[写真, 音楽制作, 映像]`. `web.html` and `lab.html` remain as unlinked migration material. Build is unnecessary; locally serve with `python3 -m http.server 8932 --directory .`. [Task 1]
+2563:- 教養としてのeiga.pdf, 02_音楽・エンターテインメント, 整理履歴, SHA-256, root-level PDFs, one-book intake
+2575:- For new-PDF intake, first inventory the library root, move only collision-free files, then verify source disappearance, destination presence, zero root-level PDFs, and unchanged hashes. The recorded one-book move placed `教養としてのeiga.pdf` into `02_音楽・エンターテインメント/` without updating OCR or catalog because bibliographic/content confirmation was still pending. [Task 3]
+2718:- rollout_summaries/2026-07-28T16-54-19-FJCe-music_performance_audio_editor_requirements.md (cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files, rollout_path=/Users/arata/.codex/archived_sessions/rollout-2026-07-29T01-54-19-019fa9a6-0ac9-7042-a9f9-7f815df37d4e.jsonl, updated_at=2026-07-30T03:05:24+00:00, thread_id=019fa9a6-0ac9-7042-a9f9-7f815df37d4e, partial: desktop-first requirements; no implementation)
+2722:- audio-editor, waveform, performance-music, fade-in, fade-out, trim, cut, download, desktop, non-destructive
+2728:- rollout_summaries/2026-09-06T08-40-51-vvWb-music_crossfade_editor_implementation_and_samples.md (cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files, rollout_path=/Users/arata/.codex/sessions/2026/09/06/rollout-2026-09-06T17-40-51-01a075e0-a23a-7f80-ac16-6417712ea39b.jsonl, updated_at=2026-09-07T17:52:55+00:00, thread_id=01a075e0-a23a-7f80-ac16-6417712ea39b, success: local editor, generated samples, core/browser/limit checks completed; listening and non-Chromium coverage remain open)
+2738:- rollout_summaries/2026-09-06T08-40-51-vvWb-music_crossfade_editor_implementation_and_samples.md (cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files, rollout_path=/Users/arata/.codex/sessions/2026/09/06/rollout-2026-09-06T17-40-51-01a075e0-a23a-7f80-ac16-6417712ea39b.jsonl, updated_at=2026-09-07T17:52:55+00:00, thread_id=01a075e0-a23a-7f80-ac16-6417712ea39b, success: two technically validated original WAV samples generated; listening quality unreviewed)
+2756:- The user said "ダウンロードを想定しています" -> make a newly edited audio-file download mandatory, not only in-app playback. For performance music, prioritize a focused fade/trim tool rather than a general DAW. [Task 1]
+2758:- For a user with little music training, make crossfade direct: 「音源を並べる → つなぎ目を選ぶ → 重なる長さを変える → その部分だけ聴く」; avoid making seconds, bars, or BPM prerequisites. Keep a full single timeline plus magnification of only the selected junction. [Task 2]
+
+exec
+/bin/zsh -lc "rg --files ../.. -g '*music*' -g '*play*' -g '*timeline*' -g '*keyframe*' -g '*cue*' -g AGENTS.md | head -65" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-ui-brainstorm-2026-09-11
+ succeeded in 0ms:
+../../overnight-runs/2026-08-20-prop-render-scan/logs/app-hash-timeline.log
+../../docs/project-contract-2026-09-09/workflow-timeline-fixture-2026-09-09.json
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js
+../../docs/project-contract-2026-09-09/workflow-timeline-fixture-2026-09-09-before-delivery-2026-09-09.json
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js
+../../docs/project-contract-2026-09-09/workflow-timeline-fixture-2026-09-09-before-receiver-2026-09-09.json
+../../docs/project-contract-2026-09-09/workflow-timeline-fixture-2026-09-09-before-notes-2026-09-09.json
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.html
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.html
+../../docs/project-contract-2026-09-09/validate-workflow-timeline-fixture.mjs
+../../docs/project-contract-2026-09-09/workflow-timeline-fixture-2026-09-09-before-markup-2026-09-09.json
+../../docs/set-transitions-2026-09-08/people-plan-mobile-timeline-2026-09-09.png
+../../docs/romeo-juliet-sample-2026-09-09/translation-three-scenes/cue-proposals.json
+../../docs/romeo-juliet-sample-2026-09-09/translation-three-scenes/qa/cues-390.png
+../../docs/romeo-juliet-sample-2026-09-09/translation-three-scenes/qa/cues-1440.png
+../../docs/script-cues-2026-09-09/script-cue-storage.js
+../../docs/script-cues-2026-09-09/stagewrite-guide-assets/05-cue-edit.jpg
+../../docs/script-cues-2026-09-09/stagewrite-guide-assets/05-cue-edit.png
+../../docs/script-cues-2026-09-09/stagewrite-guide-assets/migration-page-1-cue.jpg
+../../docs/script-cues-2026-09-09/stagewrite-guide-assets/08-cue-range.png
+../../docs/script-cues-2026-09-09/stagewrite-guide-assets/08-cue-range.jpg
+../../docs/study-links/qa/display-name-en-1440.png
+../../docs/study-links/qa/display-name-en-390.png
+../../docs/study-links/qa/display-name-owner.png
+../../docs/study-links/qa/display-name-result.json
+../../docs/study-links/qa/display-name-ja-390.png
+../../docs/study-links/qa/display-name-ja-1440.png
+
+exec
+/bin/zsh -lc "rg -n 'anchor|Anchor|キーフレーム|keyframe|音楽.*錨|動線.*再生|route.*play|play.*route' '../../stage-sketch.js' '../../stage-music.js' '../../docs' -g '*.md' -g '*.js' | head -90" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-ui-brainstorm-2026-09-11
+ succeeded in 0ms:
+rg: ../../stage-music.js: No such file or directory (os error 2)
+../../stage-sketch.js:22772:      en: ["Watch the change", "Go back with ◀ Previous and forward with Next ▶ (the ↑↓ keys work too). Moving forward plays the travel along the routes."],
+../../docs/set-transitions-2026-09-08/claude-review.md:18:- **案1・2（平面図維持＋転換入口＋手順表）: 採用**。ゼロから要る能力は順序・担当・同時性であり、既存資産（動線曲線、袖ゴースト、機構補間）は再生側で流用できる。
+../../docs/set-transitions-2026-09-08/SHARED_PEOPLE_CUES_TIME_CONTRACT_2026-09-09.md:69:| anchor(originId, offsetMs) | 確認した起点からの相対時点。出番が合図より前なら負のoffsetも可 |
+../../docs/project-contract-2026-09-09/WORKFLOW_IO_AUDIT_2026-09-09.md:27:| 台本キュー試作 | `docs/script-cues-2026-09-09/script-cue-storage.js` は `stage-sketch-script-cues` IndexedDB に PDF File / Q / anchor / 割当を一件保存する。CSVはQ表だけを入出力する。 | **製品外の試作として可**。projectId binding、製品schema、同期、外部書出しはない。 | companion fileの fixture / validator を基に、製品統合用のID・revision・asset境界を実装する。試作の保存形式を製品形式に昇格させない。 |
+../../docs/project-contract-2026-09-09/WORKFLOW_IO_AUDIT_2026-09-09.md:44:3. PDF Blobはmetadataから分離し、asset欠損時も cue / anchor / activity / review を失わずに再接続を求める。
+../../docs/project-contract-2026-09-09/workflow-receiver-view-2026-09-09-before-notes-2026-09-09.js:37:  function anchorsFor(cueId) {
+../../docs/project-contract-2026-09-09/workflow-receiver-view-2026-09-09-before-notes-2026-09-09.js:38:    return model.fixture.script.anchors.filter((anchor) => anchor.target?.kind === 'cue' && anchor.target.id === cueId);
+../../docs/project-contract-2026-09-09/workflow-receiver-view-2026-09-09-before-notes-2026-09-09.js:42:    const activityIds = new Set(anchorsFor(cueId).flatMap((anchor) => anchor.activityRefs || []));
+../../docs/project-contract-2026-09-09/workflow-receiver-view-2026-09-09-before-notes-2026-09-09.js:129:  function renderChecklist(cue, assignment, hasAnchor) {
+../../docs/project-contract-2026-09-09/workflow-receiver-view-2026-09-09-before-notes-2026-09-09.js:134:      hasAnchor ? '台本参照と転換activityの有無を確認した' : '未割当のまま要確認と認識した',
+../../docs/project-contract-2026-09-09/workflow-receiver-view-2026-09-09-before-notes-2026-09-09.js:173:    const hasAnchor = anchorsFor(cue.id).length > 0;
+../../docs/project-contract-2026-09-09/workflow-receiver-view-2026-09-09-before-notes-2026-09-09.js:185:    if (!hasAnchor) {
+../../docs/project-contract-2026-09-09/workflow-receiver-view-2026-09-09-before-notes-2026-09-09.js:194:    renderChecklist(cue, assignment, hasAnchor);
+../../docs/fable-revision-study-20260911/WORKORDER_R1_EDITION_RECEIPT_2026-09-11.md:36:- 用語: companion workflow v1（cueId／anchor／activity／review）、共通契約 v1（personId／assignment）
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:16:  function anchorsFor(cueId) {
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:17:    return model.fixture.script.anchors.filter((anchor) => anchor.target?.kind === 'cue' && anchor.target.id === cueId);
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:20:  function activitiesFor(anchors) {
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:21:    const ids = new Set(anchors.flatMap((anchor) => anchor.activityRefs || []));
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:49:    const anchors = anchorsFor(cue.id);
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:50:    const activities = activitiesFor(anchors);
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:51:    if (!anchors.length) return { label: '台本 未割当', detail: '紙面位置と転換を要確認', anchors, activities };
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:52:    if (!activities.length) return { label: '転換 未接続', detail: 'activityを要確認', anchors, activities };
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:53:    return { label: reviewFor(cue.id)?.status === 'confirmed' ? '確認済み' : '要確認', detail: activities.map((activity) => activity.label).join(' / '), anchors, activities };
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:78:    if (status.anchors.length) {
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:79:      const anchor = status.anchors[0];
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:80:      const documentValue = find(model.fixture.script.documents, anchor.documentId);
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:81:      const reference = make('div', 'anchor-reference');
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:82:      reference.append(make('span', 'page-mark', `${documentValue?.label || '台本'} / ${anchor.pageIndex + 1}頁`), make('p', '', `「${anchor.quote}」`));
+../../docs/project-contract-2026-09-09/workflow-timeline-view-2026-09-09.js:127:    const unassigned = cues.filter((cue) => !anchorsFor(cue.id).length).length;
+../../docs/TESTER_MANUAL_PLAN_2026-08-27.md:103:  「くわしくはマニュアルの該当章へ」リンク（`manual.html#anchor`）。
+../../docs/project-contract-2026-09-09/WORKFLOW_ANNOTATION_CONTRACT_2026-09-09.md:32:- 正本の人物配置・大道具配置・Q・台本anchorは参照だけにし、注釈編集で変更しない。
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:10:  function cueForAnchor(anchor) {
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:11:    return anchor?.target?.kind === 'cue'
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:12:      ? findById(model.fixture.script.cues, anchor.target.id)
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:16:  function anchorsForCue(cueId) {
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:17:    return (model.fixture.script.anchors || []).filter((anchor) => cueForAnchor(anchor)?.id === cueId);
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:20:  function activitiesForAnchors(anchors) {
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:21:    const ids = new Set(anchors.flatMap((anchor) => anchor.activityRefs || []));
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:37:      const anchors = anchorsForCue(item.id);
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:46:      button.querySelector('.cue-state').textContent = anchors.length ? '紙面あり' : '未割当';
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:52:  function renderPaper(cue, anchors) {
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:55:    byId('paper-copy').textContent = anchors.length
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:59:    page.querySelector('.anchor-marker')?.remove();
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:60:    page.querySelector('.anchor-quote')?.remove();
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:61:    if (!anchors.length) return;
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:63:    const anchor = anchors[0];
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:64:    const [left, top, right, bottom] = anchor.rect;
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:67:    marker.className = 'anchor-marker';
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:72:    marker.setAttribute('aria-label', `${cue.number}の台本位置。${anchor.quote}`);
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:76:    quote.className = 'anchor-quote';
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:77:    quote.textContent = `「${anchor.quote}」`;
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:84:    if (point.expression?.kind === 'anchor') return 'Qの開始';
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:126:  function renderFacts(cue, anchors, activities) {
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:129:    byId('anchor-count').textContent = anchors.length ? `紙面位置 ${anchors.length}件` : '紙面位置 未割当';
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:137:    const anchors = anchorsForCue(cue.id);
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:138:    const activities = activitiesForAnchors(anchors);
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:140:    renderPaper(cue, anchors);
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09-before-timeline.js:142:    renderFacts(cue, anchors, activities);
+../../docs/light-ui-brainstorm-2026-09-11/codex-prompt-round3.md:19:L. **プリミティブは3つだけ**: 光線（beam: 太さ・色・見えるか）、通り道（path: 図上に指でなぞる線、または始点→終点＋往復/円/横切る）、拍（timing: 既存の音楽錨・カウントに乗せる。曲の秒数か「合図」）。灯体・DMX・角度数値は持たない。「どこから出るか」は任意（未指定なら奥壁上や客席上方の既定）。
+../../docs/light-ui-brainstorm-2026-09-11/codex-prompt-round3.md:23:P. **既存資産の再利用**: 舞台スケッチには既に 正面図の3D簡易描画、演者の動線再生、シーン内キーフレーム構想（前日ブレストの⑦⑨）、音楽の錨がある。光の通り道はこれらと同じ時間軸に乗せる。
+../../docs/light-ui-brainstorm-2026-09-11/codex-prompt-round3.md:30:4. **既存舞台スケッチとの統合案**: 別アプリ→組み込み と 最初から本体のモジュール の比較。データ（シーン・音楽錨・動線）の共有、コード分離、公開単位の観点で推奨を1つ。
+../../docs/project-contract-2026-09-09/PROJECT_WORKFLOW_CONTRACT_2026-09-09.md:15:3. Q定義の `cueId`、紙面の `scriptAnchor`、転換・出番・個人予定の `activityId` を別IDにする。PDF座標だけからactivity、人物、所要、GOを自動生成しない。
+../../docs/project-contract-2026-09-09/PROJECT_WORKFLOW_CONTRACT_2026-09-09.md:16:4. script anchor は一つの cue または scene を対象にする。activity との関係は0件以上の明示参照で表し、一つのQを複数箇所へ置く場合はanchorを分ける。
+../../docs/project-contract-2026-09-09/PROJECT_WORKFLOW_CONTRACT_2026-09-09.md:52:| Qと台本 | workflow.script | cueId / documentId / anchorId | assetId、sceneId、activityId | PDF Blob、描画キャッシュ |
+../../docs/project-contract-2026-09-09/PROJECT_WORKFLOW_CONTRACT_2026-09-09.md:53:| 人物・転換・予定 | workflow.coordination | personId / activityId / pointId / windowId | cueId、sceneId、anchorId | 人物別表の計算済み複製 |
+../../docs/project-contract-2026-09-09/PROJECT_WORKFLOW_CONTRACT_2026-09-09.md:61:- `anchors[]`: `anchorId`、`documentId`、0始まりの`pageIndex`、正規化矩形 `[left, top, right, bottom]`、引用断片、`target`、`activityRefs[]`、意味の状態、`revision`。
+../../docs/project-contract-2026-09-09/PROJECT_WORKFLOW_CONTRACT_2026-09-09.md:62:- `target` は `{kind:"cue", id:cueId}` または `{kind:"scene", id:sceneId}`。anchorの移動はtargetの意味変更ではない。
+../../docs/project-contract-2026-09-09/PROJECT_WORKFLOW_CONTRACT_2026-09-09.md:83:| PDF版を追加 | 旧documentと旧anchor | 新版への付替え候補。旧anchorを削除しない |
+../../docs/project-contract-2026-09-09/PROJECT_WORKFLOW_CONTRACT_2026-09-09.md:85:| 担当・手順・所要・scene/cast/set参照 | 無関係なanchor | 関係activityと空間/時間確認 |
+../../docs/project-contract-2026-09-09/PROJECT_WORKFLOW_CONTRACT_2026-09-09.md:86:| PDF assetが端末にない | anchor、Q、activity、過去の位置 | asset読込みと位置確認。時間を0にしない |
+../../docs/project-contract-2026-09-09/PROJECT_WORKFLOW_CONTRACT_2026-09-09.md:107:合格条件は、PDF差替えで既存anchorを失わない、PDF座標だけで時間・担当を作らない、同一activityを二重計上しない、asset欠損を空き/0秒へ変えない、未対応経路がworkflowを黙って保存しない、である。
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:10:  function cueForAnchor(anchor) {
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:11:    return anchor?.target?.kind === 'cue'
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:12:      ? findById(model.fixture.script.cues, anchor.target.id)
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:16:  function anchorsForCue(cueId) {
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:17:    return (model.fixture.script.anchors || []).filter((anchor) => cueForAnchor(anchor)?.id === cueId);
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:20:  function activitiesForAnchors(anchors) {
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:21:    const ids = new Set(anchors.flatMap((anchor) => anchor.activityRefs || []));
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:37:      const anchors = anchorsForCue(item.id);
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:46:      button.querySelector('.cue-state').textContent = anchors.length ? '紙面あり' : '未割当';
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:52:  function renderPaper(cue, anchors) {
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:55:    byId('paper-copy').textContent = anchors.length
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:59:    page.querySelector('.anchor-marker')?.remove();
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:60:    page.querySelector('.anchor-quote')?.remove();
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:61:    if (!anchors.length) return;
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:63:    const anchor = anchors[0];
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:64:    const [left, top, right, bottom] = anchor.rect;
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:67:    marker.className = 'anchor-marker';
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:72:    marker.setAttribute('aria-label', `${cue.number}の台本位置。${anchor.quote}`);
+../../docs/project-contract-2026-09-09/workflow-view-2026-09-09.js:76:    quote.className = 'anchor-quote';
+
+exec
+/bin/zsh -lc "rg -n 'music|audio|beat|anchor|keyframe|duration|routeAnim' '../../stage-sketch.js' | head -70" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-ui-brainstorm-2026-09-11
+ succeeded in 0ms:
+324:    const beat = raw && typeof raw === "object" ? raw : {};
+325:    const energy = Number(beat.energy);
+327:      role: typeof beat.role === "string" ? beat.role.slice(0, 160) : "",
+332:  const beatTemplateRows = (templateId) => {
+338:      beat: normalizeBeat({ role, energy: template.energy[index] }),
+347:    rowsForTemplate: beatTemplateRows,
+356:    "unknown", "scene-start", "action", "line", "music", "time", "manual",
+1113:    const duration = Number(raw.durationSeconds);
+1117:      durationSeconds: Number.isFinite(duration) && duration > 0 && duration <= 86400
+1118:        ? duration : null,
+1134:  const audioSceneTransition = (currentTrackId, nextTrackId, wasPlaying) => {
+1141:  const audioIdentityDifference = (track, candidateTitle, candidateDuration) => {
+1144:    const previousDuration = Number(track && track.durationSeconds);
+1151:      durationChanged: Boolean(comparableDurations
+1161:    transition: audioSceneTransition,
+1162:    identityDifference: audioIdentityDifference,
+2978:    musicFile: document.getElementById("stage-music-file"),
+2979:    musicStatus: document.getElementById("stage-music-status"),
+2980:    musicLibrary: document.getElementById("stage-music-library"),
+2981:    sceneAudioTrack: document.getElementById("stage-scene-audio-track"),
+2982:    musicAssignment: document.getElementById("stage-music-assignment"),
+2983:    musicAssignmentTitle: document.getElementById("stage-music-assignment-title"),
+2984:    musicClearScenes: document.getElementById("stage-music-clear-scenes"),
+2985:    musicSceneList: document.getElementById("stage-music-scene-list"),
+2986:    musicRelink: document.getElementById("stage-music-relink"),
+2987:    musicRelinkFile: document.getElementById("stage-music-relink-file"),
+2988:    musicAudio: document.getElementById("stage-music-audio"),
+2990:    sceneMusic: document.getElementById("stage-scene-music"),
+2991:    musicToggle: document.getElementById("stage-music-toggle"),
+2992:    musicRestart: document.getElementById("stage-music-restart"),
+2993:    musicCurrent: document.getElementById("stage-music-current"),
+2994:    musicSeek: document.getElementById("stage-music-seek"),
+2995:    musicTime: document.getElementById("stage-music-time"),
+3200:    beatTemplatesOpen: document.getElementById("stage-beat-templates-open"),
+3201:    beatTemplatesModal: document.getElementById("stage-beat-templates"),
+3202:    beatTemplatesBackdrop: document.getElementById("stage-beat-templates-backdrop"),
+3203:    beatTemplatesClose: document.getElementById("stage-beat-templates-close"),
+3204:    beatTemplateList: document.getElementById("stage-beat-template-list"),
+3523:    { key: "panelMusic", panel: "music", label: "音楽パネル", def: false,
+3720:      beat: normalizeSceneBeat(sceneKind, null),
+3724:      audioTrackId: null,
+3747:        // 曲名などの小さな情報だけ。音源本体はstage-audio-store.jsのIndexedDBへ置く。
+3748:        audioTracks: [],
+3812:  const PANELS = ["project", "music", "cast", "machinery", "rigs", "light", "background", "study", "scenes", "inspector", "save", "session", "ask"];
+3818:        project: "left", music: "left", cast: "left", machinery: "left", rigs: "left", light: "left", background: "left",
+3823:        project: 0, music: 1, cast: 2, machinery: 3, rigs: 4, light: 5, background: 6,
+4305:      beat: normalizeSceneBeat(kind, raw.beat),
+4308:      audioTrackId: normalizeAudioTrackId(kind, raw.audioTrackId),
+4494:        audioTracks: normalizeAudioTracks(rawProject.audioTracks),
+4660:    const ids = new Set(audioTracks().map((track) => track.id));
+4671:      const tracks = entry && entry.state && entry.state.project && entry.state.project.audioTracks;
+4681:    if (!audioStore || typeof audioStore.pruneExcept !== "function") return;
+4684:    setTimeout(() => { audioStore.pruneExcept(liveIds).catch(() => {}); }, 0);
+4773:   * audio要素は一つだけ。シーンを送っても同じtrackIdならsrc/currentTimeへ触れず、
+4775:  const audioStore = window.SHOSAI_STAGE_AUDIO_STORE || null;
+4776:  let selectedAudioTrackId = (state.project.audioTracks[0] && state.project.audioTracks[0].id) || null;
+4777:  let audioPanelSignature = "";
+4778:  let audioLoadGeneration = 0;
+4780:  const audioPlayback = {
+4789:  function audioTracks() {
+4790:    if (!Array.isArray(state.project.audioTracks)) state.project.audioTracks = [];
+4791:    return state.project.audioTracks;
+4794:  function audioTrackById(id) {
+4795:    return audioTracks().find((track) => track.id === id) || null;
+4799:    return audioTrackById(sc().audioTrackId);
+4802:  function audioFileTitle(file) {
+4819:    if (els.musicStatus) els.musicStatus.textContent = languageValue(() => (en || ja), () => (ja));
+4823:    if (!audioPlayback.objectUrl) return;
+4824:    try { window.URL.revokeObjectURL(audioPlayback.objectUrl); } catch (_) { /* 破棄済みでも続ける */ }
+4825:    audioPlayback.objectUrl = null;
+
+exec
+/bin/zsh -lc "rg --files ../.. -g '*.js' -g '*.md' -g '"'!docs/**'"' -g '"'!node_modules/**'"' | rg 'audio|sound|music|stage-.*\\.js"'$|KEYFRAME|MUSIC'"' | head -50" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-ui-brainstorm-2026-09-11
+ succeeded in 0ms:
+../../stage-sketch_backup_2026-08-20-before-fpv-body.js
+../../stage-study-pen.js
+../../stage-machinery.js
+../../stage-sketch_backup_2026-08-20-before-prop-list.js
+../../stage-session.js
+../../stage-sketch_backup_2026-08-20-before-avatar-look.js
+../../stage-public.js
+../../stage-audio-store.js
+../../stage-study-sync.js
+../../stage-sw_backup_2026-08-08.js
+../../stage-prompt-i18n_backup_2026-09-09-before-zh.js
+../../stage-sketch_backup_2026-08-14.js
+../../stage-i18n_backup_2026-09-09-before-i18n-packs.js
+../../stage-sw_backup_2026-09-09-before-bump.js
+../../stage-sketch_backup_2026-09-11-before-ladder.js
+../../stage-first-person.js
+../../stage-sketch_backup_2026-08-20-before-handoff-line.js
+../../stage-rehearsal-export.js
+../../stage-study-private.js
+../../stage-prompt-i18n.js
+../../stage-pwa.js
+../../stage-set-builder_backup_2026-09-09-before-b3.js
+../../i18n-prep/stage-i18n.zh-Hant.draft.js
+../../i18n-prep/stage-i18n.zh-Hans.draft.js
+../../i18n-prep/stage-prompt-i18n.zh-Hant.draft.js
+../../i18n-prep/stage-i18n.fr.draft.js
+../../stage-sketch_backup_2026-08-17-before-neck3.js
+../../stage-sketch_backup_2026-08-20-before-fpv-edit.js
+../../stage-sketch_backup_2026-08-19-before-machinery.js
+../../stage-apparatus-data.js
+../../stage-i18n.zh-Hans.js
+../../stage-sw_backup_2026-08-20-before-session.js
+../../stage-first-person_backup_2026-08-20-before-fpv-move.js
+../../stage-first-person_backup_2026-08-28-before-lens.js
+../../stage-venues.js
+../../stage-public_backup_2026-09-09-before-i18n-packs.js
+../../stage-study-owner.js
+../../stage-first-person_backup_2026-08-20-before-prop-shapes.js
+../../stage-sketch_backup_2026-08-20-before-props-plot.js
+../../stage-sketch_backup_2026-09-09-before-r5.js
+../../stage-sketch_backup_2026-08-17-before-neck2.js
+../../stage-sketch_backup_2026-08-20-before-session.js
+../../stage-venue-editor.js
+../../stage-sketch_backup_2026-09-09-before-i18n-packs.js
+../../stage-sketch_backup_2026-09-09-before-b3.js
+../../stage-sketch_backup_2026-08-20-before-prop-shapes.js
+../../stage-venue-lines.js
+../../stage-sketch_backup_2026-08-19-before-machinery2.js
+../../stage-sketch_backup_2026-08-20-before-props.js
+../../stage-sketch_backup_2026-08-20-before-fpv-transition.js
+
+web search: 
+web search: https://www.capture.se/Products/Capture/Overview
+exec
+/bin/zsh -lc "rg -n 'anchor|Anchor|keyframe|keyFrame|audio.*[Ss]tart|music.*[Cc]ue|music.*[Aa]nchor|音楽.*錨|錨|再生.*秒|routeAnimation|transitionDuration' '../../stage-sketch.js' '../../stage-workflow-store.js' '../../stage-i18n.js' | head -70" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-ui-brainstorm-2026-09-11
+ succeeded in 0ms:
+rg: ../../stage-workflow-store.js: No such file or directory (os error 2)
+
+exec
+/bin/zsh -lc "sed -n '4770,4804p' '../../stage-sketch.js'
+sed -n '125,149p' /Users/arata/.codex/memories/MEMORY.md" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-ui-brainstorm-2026-09-11
+ succeeded in 0ms:
+  let controlBefore = null;
+
+  /* ---------- シーンの音楽 ----------
+   * audio要素は一つだけ。シーンを送っても同じtrackIdならsrc/currentTimeへ触れず、
+   * 曲が変わる時だけIndexedDBからBlobを取り直す。再生位置は保存・Undoしない。 */
+  const audioStore = window.SHOSAI_STAGE_AUDIO_STORE || null;
+  let selectedAudioTrackId = (state.project.audioTracks[0] && state.project.audioTracks[0].id) || null;
+  let audioPanelSignature = "";
+  let audioLoadGeneration = 0;
+  let continueAudioOnNextSceneSync = false;
+  const audioPlayback = {
+    trackId: null,
+    objectUrl: null,
+    ready: false,
+    loading: false,
+    missing: false,
+    playAfterLoad: false,
+  };
+
+  function audioTracks() {
+    if (!Array.isArray(state.project.audioTracks)) state.project.audioTracks = [];
+    return state.project.audioTracks;
+  }
+
+  function audioTrackById(id) {
+    return audioTracks().find((track) => track.id === id) || null;
+  }
+
+  function currentSceneAudioTrack() {
+    return audioTrackById(sc().audioTrackId);
+  }
+
+  function audioFileTitle(file) {
+    const name = String((file && file.name) || "").trim();
+    const withoutExt = name.replace(/\.(mp3|m4a|wav|aac)$/i, "").trim();
+applies_to: cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app; reuse_rule=reuse for Stage Sketch transition design after rechecking current data contracts and active worktree ownership; do not promote provisional field data into product rules.
+
+## Task 1: セット転換の要件・検証準備
+
+### rollout_summary_files
+
+- rollout_summaries/2026-09-08T14-34-27-Pbg8-stage_sketch_set_transition_design_discovery.md (cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app, rollout_path=/Users/arata/.codex/archived_sessions/rollout-2026-09-08T23-34-27-01a08171-17c8-7f53-b301-4199a9d42c7c.jsonl, updated_at=2026-09-09T04:46:47+00:00, thread_id=01a08171-17c8-7f53-b301-4199a9d42c7c, partial: design/field sheet only; no product implementation)
+
+### keywords
+
+- Stage Sketch, set transition, sceneAnimMs, cueSeconds, rehearsal.transitionToNextSeconds, route, twinOf, beginSceneAnim, Claude Code Fable, field-case-2026-09-09.html
+
+## Task 2: 台本・キュー設計と現場Qビューのローカル実装
+
+### rollout_summary_files
+
+- rollout_summaries/2026-09-08T16-43-50-PtCH-stage_sketch_script_cues_and_workflow_scene_navigation.md (cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas, rollout_path=/Users/arata/.codex/sessions/2026/09/09/rollout-2026-09-09T01-43-50-01a081e7-8b69-79e2-8b58-320aaab6b84b.jsonl, updated_at=2026-09-09T11:51:34+00:00, thread_id=01a081e7-8b69-79e2-8b58-320aaab6b84b, success: local Q timeline/scene navigation verified; no push/deploy/share)
+
+### keywords
+
+- script-cues-2026-09-09, project.cues, TextQuoteSelector, TextPositionSelector, stage-workflow-store.js, stage-workflow-panel.js, openScene, SHOSAI_STAGE_SESSION_BRIDGE, stage-sketch-pwa-v199, 57 pass
+
+## User preferences
+
+- When the user says 「１２ともにです」 -> treat transition playback/placement and the who-when-what procedure as one minimal design entrance, not mutually exclusive features. [Task 1]
+
+web search: 
+web search: https://www.w3.org/TR/pointerevents3/
+codex
+**今回は判断を変えます。「光の動きを自分で作り、再生して渡す」をMVPの中心に置きます。** 静止図と参照動画は補助へ下げます。
+
+ただし、Claudeの見立てには二つ飛躍があります。証言は「自分の舞台上で動きを作るUI」の仕様までは確定していません。また、**「動画切り抜きより速い」は採用条件ではなく、これから検証する仮説**です。
+
+以下、［証言］は今回提示された本人たちの発言、［確認］は資料・コードの確認、［提案・推測］は設計判断です。ファイルは変更していません。
+
+## 1. 証言の重み付け：何を覆すか
+
+［証言］天平さんは照明ソフトの利用を試み、使いにくさから出演動画の切り抜きへ切り替えています。単なる「こんな機能が欲しい」より強い情報です。**目的のために既に時間を使い、代替手段も選んでいる**からです。
+
+［提案・推測］これによって、次の判断を覆します。
+
+- **変更前**：動く光の作成は、静止図と参照で不足が確認されてから。
+- **変更後**：まず動く光を作れる最小体験を試し、動画切り抜きと比較する。
+
+一方、次はまだ確定しません。
+
+| 証言が裏づけること | 証言だけでは裏づけないこと |
+|---|---|
+| 少なくとも一人に、既存ソフトでは満たせなかった需要がある | 同様の需要の広さ、競合不在 |
+| 動画は本人が選んだ有効な説明手段である | 自作アニメーションが動画と同程度に伝わること |
+| 操作を覚える負担が利用を妨げた | 指でなぞる操作が最適であること |
+| 新しい手段を試す理由がある | 二分以内で完成すること |
+
+「自分の舞台の動きを自分で作りたかった」は、文脈に合う有力な解釈です。ただし、転記された発言だけからは、既存照明ソフトで具体的に何を作ろうとしたかまでは分かりません。
+
+**「決定事項に見える」懸念は、再生をやめる理由から、出力の意味を設計する条件へ移します。** 動きは明確に見せ、その中の何が希望で何が例示かを明記します。
+
+なお、競合の「見つからなかった」は維持してよいですが、「ない」には進めません。Captureの公式紹介でも設計・文書化・可視化を扱っており、今回の一覧をすべて「卓操作前提」と一括するのは粗い整理です。操作負担の比較には別途実機評価が必要です。[Capture公式概要](https://www.capture.se/Products/Capture/Overview)
+
+## 2. L〜Qの批評
+
+### L：三つのプリミティブはよいが、定義を直す
+
+［提案］**「光の形／動かし方／時間」の三つなら成立します。** ただし、現在のbeam＋pathでは、サーチライトの見え方を決める情報が一つ欠けています。
+
+**足すものは「光線の向きがどう変わるか」。**
+
+点が通り道を移動するだけでは、次を区別できません。
+
+- 同じ場所から出た光が、向きを振る。
+- 向きを保った光の帯が、横へ移動する。
+
+必要なのは灯体のパン／チルトではなく、**絵としての光線の両端や向き**です。「光の先を動かす」「光全体を動かす」を区別すれば、機材をモデル化せずに扱えます。最初のサーチライト用途には前者を優先します。
+
+**削るものは、必須の「拍」モデル。**
+
+音楽の錨、カウント、曲の秒数、手動の合図は同じものではありません。最初は「動く速さ」「繰り返すか」「始めと終わり」で再生できるようにし、音楽との接続は必要な場合だけ開きます。
+
+また、**未指定の出どころを客席上方などに黙って補う案には反対**です。図を成立させる仮の出どころは使えますが、「図の仮位置」として見せ、会場内の設置候補には変換しません。未指定の意図と描画上の既定値は分けます。
+
+### M：「なぞって、再生」は有望。ただし最短とは限らない
+
+［提案・推測］単純な往復なら、自由になぞるより、**始めと終わりを置いて「往復」を選ぶ方が速く修正しやすい**可能性があります。
+
+最初の入口は次を推します。
+
+> 光を置く → 光の先を始め・終わりへ動かす → 再生 → 速さを変える
+
+自由になぞる操作は、曲線を描きたい場合の追加手段です。
+
+iPadで考慮すべき落とし穴は次のとおりです。
+
+| 落とし穴［推測］ | 対応案 |
+|---|---|
+| 指で光の先が隠れる | 光線本体より大きな操作点。触れている位置を補助表示 |
+| 舞台の移動・拡大と描画が競合する | 「動きを描く」を明示。描画中に視点を動かさない |
+| 手ぶれや迷いまで動きになる | なぞる操作は基本的に形だけを採り、速度は別に設定 |
+| 平滑化で意図した角や停止が消える | 勝手に丸めすぎず、取り消し・描き直しを一手で |
+| 3Dで触った点の奥行きが分からない | 最初は固定した正面図。奥行きの操作は見送る |
+| 指を離した瞬間に予期せず再生する | 明示的な再生ボタンを使う |
+
+［確認］ブラウザではパン・ズームと独自の指操作の扱いを決める必要があり、操作途中のキャンセルも発生し得ます。描画途中の線を完成扱いにしない処理が必要です。[W3C Pointer Events](https://www.w3.org/TR/pointerevents3/)
+
+**二分以内かは未検証です。** 特に、舞台を作る時間、参照を探す時間、出力する時間を除いた計測だけでは、動画切り抜きとの比較になりません。
+
+### N：三点セットは有効。ただし「三つ作る」操作にしない
+
+［提案］同じスケッチから、次を一括生成するなら有効です。
+
+1. 動きを読む短い動画
+2. 範囲と前後を確認する一枚図
+3. 守りたい点・変更可能な点を伝える一文
+
+**動画を編集し、別に図を描き、別に文章を整えるなら、二分目標から離れます。** 一枚図は再生データの代表時点から生成し、意味を変えずに選び直せる形にします。
+
+最初の動画形式はMP4を候補とし、GIF併設は後回しにします。ただし、iPadからの生成・保存と、LINEで受け取ったスマホでの再生まで確認してから採用します。ブラウザの形式対応判定だけでは出力成功は保証できません。[W3C MediaStream Recording](https://www.w3.org/TR/mediastream-recording/)
+
+ループにも注意が必要です。**一度だけの演出を説明用に繰り返すことと、演出自体が反復することを区別**します。書き出し時に勝手に終点から始点へ光を戻してはいけません。
+
+### O：「案」をラフさで担保する案は捨てる
+
+［提案］**手描き風は任意の見た目であり、合意状態の表現には使いません。**
+
+動きの滑らかさが要望の中心なのに、案らしくするために線を揺らしたり再生を粗くしたりすれば、伝えるべき内容を壊します。ラフな動画でも「この通りに」という指定には読まれます。
+
+担保するのは画質ではなく、次の明示です。
+
+> **光の動きの案**  
+> 往復の範囲と速さを相談したい。出どころ・色・本数は変更できる。
+
+動画単体で転送されても分かるよう、短いラベルは動画にも残します。照度や実際の光線可視性を再現したような数値・表示は付けません。
+
+### P：再利用に賛成。ただし「同じ時間軸が既にある」は未確認
+
+［確認］今回読んだコードには、音源のシーン割当と、同じ曲なら再生位置を保つ処理があります。一方、その箇所では再生位置を保存・Undoしない設計が明記されています。[現在の音楽処理](</Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/stage-sketch.js:4772>)
+
+**音源を再生できることと、編集・保存・書き出しに使える共通時間軸があることは別です。** 音楽錨との接続やシーン内キーフレームの製品実装は、今回の限定した読み取りでは確認できていません。構想を完成済みの資産として工数から差し引かない方がよいです。
+
+［提案］既存の描画や曲線計算は再利用しつつ、動く光にはまず短い説明区間の時間を持たせます。音源や合図には参照で接続し、未確定の合図へ勝手に秒数を与えません。
+
+### Q：本体モジュール化に賛成。単独利用は入口の違いにする
+
+［提案］「演目だけで開く」は有効ですが、最初から別製品として成立させる必要はありません。
+
+同じモジュールを、既存シーンからも、最小の一場面からも開けるようにします。保存形式や共有方法を二つ持つ構成は避けます。
+
+## 3. 「照明を作れるアプリ」の定義
+
+［提案：説明文案］
+
+> **舞台の絵の上で、見せたい光の形や動き、変わるタイミングを作り、再生できます。動きの動画と図、短い説明を照明担当者へ渡して、実現方法を相談できます。作るのは演出意図のスケッチです。灯体・回路・DMXの設計、実際の明るさや照射可否の検証、照明機器の操作は行いません。**
+
+「照明を作れる」だけを単独で見出しにすると、実際の照明設計・制御まで含むように読まれます。主表示は **「光の見え方と動きを作って伝える」**程度まで具体化することを推します。
+
+## 4. 統合案：最初から本体のモジュールを推奨
+
+| 観点 | 別アプリから後で組み込む | 最初から本体のモジュール |
+|---|---|---|
+| シーン・舞台データ | 仮の舞台形式と後日の変換が必要になりやすい | 既存シーンを参照できる |
+| 音楽錨・動線 | 独自の時間管理を作って重複しやすい | 接続先の契約を先にそろえられる |
+| コード分離 | 別アプリでも密結合は起こる | 描画・再生・編集・出力を分けて独立検証できる |
+| 公開単位 | 公開・保存・配布の経路が増える | 本体内の限定機能として段階的に出せる |
+| 単独利用 | 専用入口を作りやすい | 最小の一場面を渡す入口で対応できる |
+
+［提案］**本体用の独立モジュール＋開発用の小さな試験画面**が最適です。試験画面は動作確認用で、別製品にはしません。
+
+データの境界は次のようにします。
+
+- シーン・演者・セット・音源は、既存の正本を参照する。
+- 光の動きは、シーンの意図カードに属する案として保存する。
+- 音楽や合図へ接続するときは、元の識別子を参照する。
+- 動画と一枚図は、同じ版のスケッチから生成する。
+- 返答記録は案に対応させ、返答によって案を自動変更しない。
+
+再生と動画出力が同じ時刻の状態を描く仕組みにすれば、「画面では合っていたのに動画では違う」を検証しやすくなります。
+
+## 5. MVPの再定義：二週間で試すもの
+
+**前回の「相談欄→出力→返答→動く図」という順を組み替えます。今回は「作る→再生→スマホで受け取る」を先に通します。**
+
+以下は工数保証ではなく、二週間の試作を絞るための優先順位です。
+
+### 最優先：書き出しの成立を早期に確認する
+
+最初に仮の一本を動かし、対象iPadで短い動画を生成・保存し、受け手側のスマホで再生確認します。
+
+出力を最後に回して、編集だけ完成した状態を作らないためです。外部送信の実操作は本人に行ってもらいます。
+
+### 第1週：一場面を作って渡せるようにする
+
+| 優先 | 最小機能 | 範囲 |
+|---|---|---|
+| 1 | 既存シーンから開く | 正面図を使用。舞台を作り直させない |
+| 2 | 一本の光を振る | 始め・終わり、往復、速さ、太さ・色 |
+| 3 | 再生して直す | 再生・停止・頭へ戻る・Undo。少ない操作で範囲を修正 |
+| 4 | 動画を書き出す | 短い区間。案の表示と一文を付ける |
+| 5 | 図を自動生成する | 始め・折り返し等を同じ再生データから切り出す |
+
+一本から始めるのは検証を小さくするためです。天平さんの対象場面が複数光線を必須とするなら、**二本の交差・同時再生までを最小範囲へ入れ替えます**。一本しか動かない試作で複数光線の要望を検証したことにはしません。
+
+### 第2週：本人の操作で不足した点を直す
+
+- 天平さんに実際の一場面を作ってもらい、途中で教えずに観察する。
+- 引っかかった操作を直す。自由なぞりは、端点操作で足りなかった場合に追加する。
+- 既存の相談3欄と打合せ用出力へ接続する。動画作成の前には全欄入力を要求しない。
+- 音楽との正確な関係が対象場面の核心なら、対象区間への接続を優先する。
+- 返答はまず質問に対応する短い打合せメモで記録する。状態管理の拡張は後にする。
+
+前回のP0.5だった「図上の動き」は主機能へ昇格します。一方、全種類の動作、3D編集、音楽のカウント編集、GIF併設、独立アプリ公開は初回試作から外します。
+
+### 「動画切り抜きより速い」の検証方法
+
+［提案］比較対象は機能数ではなく、**照明さんに渡せる説明を完成させる作業全体**です。
+
+1. 天平さんが説明したい一場面を決める。
+2. 普段の「出演動画を選ぶ・切る・説明を添える」方法で準備してもらう。
+3. 同じ意図を試作で作ってもらう。舞台・素材の準備時間も別途記録する。
+4. 照明プランナーに両方を見てもらい、方向・範囲・速度・光どうしの関係・未決事項を読み取ってもらう。
+5. 天平さんに一箇所変更してもらい、直して渡し直す時間も比較する。
+
+**二分は「既存シーンを開いてから、渡せる出力ができるまで」の暫定目標**とし、初回の準備時間を別表示します。本人の意図がまだ固まっていない時間も区別します。
+
+成功は「二分で何か動いた」ではありません。**準備・修正が負担にならず、照明さんが重要な動きを同じ意味で読み取れたか**です。初回は動画に負けても、参照動画にない動きの作成や変更で価値が出る可能性があります。
+
+## 6. 逆張り：動画切り抜きを中心にした最小案
+
+［提案］別の動画編集ソフトを作らず、既存の切り抜きにStage Sketchが文脈を足す案です。
+
+> 切り抜き動画を選ぶ → 自分の舞台図で範囲を示す → 「動画のどこを、ここで使いたいか」を一文で書く → まとめて渡す
+
+初期機能は次だけで足ります。
+
+- 切り抜き済み動画の取り込み、または参照先と区間の記録
+- 舞台図への範囲・矢印の注記
+- 「参照する点」「変更したい点」の一文
+- 動画と図の対応が分かる出力
+
+この案が勝つのは、**本人が適切な映像を既に持ち、動きの質感が重要で、舞台固有の違いを注記で説明できる場合**です。実写には光線、煙、身体、衣装の関係が含まれ、簡略アニメーションでは伝えにくい情報があります。
+
+ただし、前例のない動きを考えるときや、「この光だけ逆へ動かしたい」と変更するときには弱い。したがって、**既存映像の説明を速くする道具と、新しい動きを作る道具は、比較しつつ両方残せます。**
+
+## 7. 本人に確認すべき未決事項
+
+1. **最初に天平さんが作りたい一場面は、一本の往復で説明できますか。それとも複数の光の交差・時間差が不可欠ですか。** 最小の再生機能が変わります。
+2. **その場面では、動く感じを見せれば十分ですか。それとも実際の音楽の特定の音に、折り返しや交差を合わせて渡す必要がありますか。** 音楽接続と動画への音声同梱の優先順位が変わります。
+3. **天平さんは舞台スケッチの既存シーンから始められますか。それとも舞台を登録せず、すぐ一場面を作る入口が必要ですか。** 二分目標に含める準備と、単独利用の入口が変わります。
+
+今回の提案は、アニメーションを中心に据え直すところまでです。未確認なのは作成速度、出力互換性、照明プランナーの読み取り精度です。次は**対象の一場面を決め、その場面だけ作成・再生・受け渡しできる試作の仕様を固める**ことを推します。おすすめモデルはSolです。
+
+
+tokens used
+37,072
+**今回は判断を変えます。「光の動きを自分で作り、再生して渡す」をMVPの中心に置きます。** 静止図と参照動画は補助へ下げます。
+
+ただし、Claudeの見立てには二つ飛躍があります。証言は「自分の舞台上で動きを作るUI」の仕様までは確定していません。また、**「動画切り抜きより速い」は採用条件ではなく、これから検証する仮説**です。
+
+以下、［証言］は今回提示された本人たちの発言、［確認］は資料・コードの確認、［提案・推測］は設計判断です。ファイルは変更していません。
+
+## 1. 証言の重み付け：何を覆すか
+
+［証言］天平さんは照明ソフトの利用を試み、使いにくさから出演動画の切り抜きへ切り替えています。単なる「こんな機能が欲しい」より強い情報です。**目的のために既に時間を使い、代替手段も選んでいる**からです。
+
+［提案・推測］これによって、次の判断を覆します。
+
+- **変更前**：動く光の作成は、静止図と参照で不足が確認されてから。
+- **変更後**：まず動く光を作れる最小体験を試し、動画切り抜きと比較する。
+
+一方、次はまだ確定しません。
+
+| 証言が裏づけること | 証言だけでは裏づけないこと |
+|---|---|
+| 少なくとも一人に、既存ソフトでは満たせなかった需要がある | 同様の需要の広さ、競合不在 |
+| 動画は本人が選んだ有効な説明手段である | 自作アニメーションが動画と同程度に伝わること |
+| 操作を覚える負担が利用を妨げた | 指でなぞる操作が最適であること |
+| 新しい手段を試す理由がある | 二分以内で完成すること |
+
+「自分の舞台の動きを自分で作りたかった」は、文脈に合う有力な解釈です。ただし、転記された発言だけからは、既存照明ソフトで具体的に何を作ろうとしたかまでは分かりません。
+
+**「決定事項に見える」懸念は、再生をやめる理由から、出力の意味を設計する条件へ移します。** 動きは明確に見せ、その中の何が希望で何が例示かを明記します。
+
+なお、競合の「見つからなかった」は維持してよいですが、「ない」には進めません。Captureの公式紹介でも設計・文書化・可視化を扱っており、今回の一覧をすべて「卓操作前提」と一括するのは粗い整理です。操作負担の比較には別途実機評価が必要です。[Capture公式概要](https://www.capture.se/Products/Capture/Overview)
+
+## 2. L〜Qの批評
+
+### L：三つのプリミティブはよいが、定義を直す
+
+［提案］**「光の形／動かし方／時間」の三つなら成立します。** ただし、現在のbeam＋pathでは、サーチライトの見え方を決める情報が一つ欠けています。
+
+**足すものは「光線の向きがどう変わるか」。**
+
+点が通り道を移動するだけでは、次を区別できません。
+
+- 同じ場所から出た光が、向きを振る。
+- 向きを保った光の帯が、横へ移動する。
+
+必要なのは灯体のパン／チルトではなく、**絵としての光線の両端や向き**です。「光の先を動かす」「光全体を動かす」を区別すれば、機材をモデル化せずに扱えます。最初のサーチライト用途には前者を優先します。
+
+**削るものは、必須の「拍」モデル。**
+
+音楽の錨、カウント、曲の秒数、手動の合図は同じものではありません。最初は「動く速さ」「繰り返すか」「始めと終わり」で再生できるようにし、音楽との接続は必要な場合だけ開きます。
+
+また、**未指定の出どころを客席上方などに黙って補う案には反対**です。図を成立させる仮の出どころは使えますが、「図の仮位置」として見せ、会場内の設置候補には変換しません。未指定の意図と描画上の既定値は分けます。
+
+### M：「なぞって、再生」は有望。ただし最短とは限らない
+
+［提案・推測］単純な往復なら、自由になぞるより、**始めと終わりを置いて「往復」を選ぶ方が速く修正しやすい**可能性があります。
+
+最初の入口は次を推します。
+
+> 光を置く → 光の先を始め・終わりへ動かす → 再生 → 速さを変える
+
+自由になぞる操作は、曲線を描きたい場合の追加手段です。
+
+iPadで考慮すべき落とし穴は次のとおりです。
+
+| 落とし穴［推測］ | 対応案 |
+|---|---|
+| 指で光の先が隠れる | 光線本体より大きな操作点。触れている位置を補助表示 |
+| 舞台の移動・拡大と描画が競合する | 「動きを描く」を明示。描画中に視点を動かさない |
+| 手ぶれや迷いまで動きになる | なぞる操作は基本的に形だけを採り、速度は別に設定 |
+| 平滑化で意図した角や停止が消える | 勝手に丸めすぎず、取り消し・描き直しを一手で |
+| 3Dで触った点の奥行きが分からない | 最初は固定した正面図。奥行きの操作は見送る |
+| 指を離した瞬間に予期せず再生する | 明示的な再生ボタンを使う |
+
+［確認］ブラウザではパン・ズームと独自の指操作の扱いを決める必要があり、操作途中のキャンセルも発生し得ます。描画途中の線を完成扱いにしない処理が必要です。[W3C Pointer Events](https://www.w3.org/TR/pointerevents3/)
+
+**二分以内かは未検証です。** 特に、舞台を作る時間、参照を探す時間、出力する時間を除いた計測だけでは、動画切り抜きとの比較になりません。
+
+### N：三点セットは有効。ただし「三つ作る」操作にしない
+
+［提案］同じスケッチから、次を一括生成するなら有効です。
+
+1. 動きを読む短い動画
+2. 範囲と前後を確認する一枚図
+3. 守りたい点・変更可能な点を伝える一文
+
+**動画を編集し、別に図を描き、別に文章を整えるなら、二分目標から離れます。** 一枚図は再生データの代表時点から生成し、意味を変えずに選び直せる形にします。
+
+最初の動画形式はMP4を候補とし、GIF併設は後回しにします。ただし、iPadからの生成・保存と、LINEで受け取ったスマホでの再生まで確認してから採用します。ブラウザの形式対応判定だけでは出力成功は保証できません。[W3C MediaStream Recording](https://www.w3.org/TR/mediastream-recording/)
+
+ループにも注意が必要です。**一度だけの演出を説明用に繰り返すことと、演出自体が反復することを区別**します。書き出し時に勝手に終点から始点へ光を戻してはいけません。
+
+### O：「案」をラフさで担保する案は捨てる
+
+［提案］**手描き風は任意の見た目であり、合意状態の表現には使いません。**
+
+動きの滑らかさが要望の中心なのに、案らしくするために線を揺らしたり再生を粗くしたりすれば、伝えるべき内容を壊します。ラフな動画でも「この通りに」という指定には読まれます。
+
+担保するのは画質ではなく、次の明示です。
+
+> **光の動きの案**  
+> 往復の範囲と速さを相談したい。出どころ・色・本数は変更できる。
+
+動画単体で転送されても分かるよう、短いラベルは動画にも残します。照度や実際の光線可視性を再現したような数値・表示は付けません。
+
+### P：再利用に賛成。ただし「同じ時間軸が既にある」は未確認
+
+［確認］今回読んだコードには、音源のシーン割当と、同じ曲なら再生位置を保つ処理があります。一方、その箇所では再生位置を保存・Undoしない設計が明記されています。[現在の音楽処理](</Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/stage-sketch.js:4772>)
+
+**音源を再生できることと、編集・保存・書き出しに使える共通時間軸があることは別です。** 音楽錨との接続やシーン内キーフレームの製品実装は、今回の限定した読み取りでは確認できていません。構想を完成済みの資産として工数から差し引かない方がよいです。
+
+［提案］既存の描画や曲線計算は再利用しつつ、動く光にはまず短い説明区間の時間を持たせます。音源や合図には参照で接続し、未確定の合図へ勝手に秒数を与えません。
+
+### Q：本体モジュール化に賛成。単独利用は入口の違いにする
+
+［提案］「演目だけで開く」は有効ですが、最初から別製品として成立させる必要はありません。
+
+同じモジュールを、既存シーンからも、最小の一場面からも開けるようにします。保存形式や共有方法を二つ持つ構成は避けます。
+
+## 3. 「照明を作れるアプリ」の定義
+
+［提案：説明文案］
+
+> **舞台の絵の上で、見せたい光の形や動き、変わるタイミングを作り、再生できます。動きの動画と図、短い説明を照明担当者へ渡して、実現方法を相談できます。作るのは演出意図のスケッチです。灯体・回路・DMXの設計、実際の明るさや照射可否の検証、照明機器の操作は行いません。**
+
+「照明を作れる」だけを単独で見出しにすると、実際の照明設計・制御まで含むように読まれます。主表示は **「光の見え方と動きを作って伝える」**程度まで具体化することを推します。
+
+## 4. 統合案：最初から本体のモジュールを推奨
+
+| 観点 | 別アプリから後で組み込む | 最初から本体のモジュール |
+|---|---|---|
+| シーン・舞台データ | 仮の舞台形式と後日の変換が必要になりやすい | 既存シーンを参照できる |
+| 音楽錨・動線 | 独自の時間管理を作って重複しやすい | 接続先の契約を先にそろえられる |
+| コード分離 | 別アプリでも密結合は起こる | 描画・再生・編集・出力を分けて独立検証できる |
+| 公開単位 | 公開・保存・配布の経路が増える | 本体内の限定機能として段階的に出せる |
+| 単独利用 | 専用入口を作りやすい | 最小の一場面を渡す入口で対応できる |
+
+［提案］**本体用の独立モジュール＋開発用の小さな試験画面**が最適です。試験画面は動作確認用で、別製品にはしません。
+
+データの境界は次のようにします。
+
+- シーン・演者・セット・音源は、既存の正本を参照する。
+- 光の動きは、シーンの意図カードに属する案として保存する。
+- 音楽や合図へ接続するときは、元の識別子を参照する。
+- 動画と一枚図は、同じ版のスケッチから生成する。
+- 返答記録は案に対応させ、返答によって案を自動変更しない。
+
+再生と動画出力が同じ時刻の状態を描く仕組みにすれば、「画面では合っていたのに動画では違う」を検証しやすくなります。
+
+## 5. MVPの再定義：二週間で試すもの
+
+**前回の「相談欄→出力→返答→動く図」という順を組み替えます。今回は「作る→再生→スマホで受け取る」を先に通します。**
+
+以下は工数保証ではなく、二週間の試作を絞るための優先順位です。
+
+### 最優先：書き出しの成立を早期に確認する
+
+最初に仮の一本を動かし、対象iPadで短い動画を生成・保存し、受け手側のスマホで再生確認します。
+
+出力を最後に回して、編集だけ完成した状態を作らないためです。外部送信の実操作は本人に行ってもらいます。
+
+### 第1週：一場面を作って渡せるようにする
+
+| 優先 | 最小機能 | 範囲 |
+|---|---|---|
+| 1 | 既存シーンから開く | 正面図を使用。舞台を作り直させない |
+| 2 | 一本の光を振る | 始め・終わり、往復、速さ、太さ・色 |
+| 3 | 再生して直す | 再生・停止・頭へ戻る・Undo。少ない操作で範囲を修正 |
+| 4 | 動画を書き出す | 短い区間。案の表示と一文を付ける |
+| 5 | 図を自動生成する | 始め・折り返し等を同じ再生データから切り出す |
+
+一本から始めるのは検証を小さくするためです。天平さんの対象場面が複数光線を必須とするなら、**二本の交差・同時再生までを最小範囲へ入れ替えます**。一本しか動かない試作で複数光線の要望を検証したことにはしません。
+
+### 第2週：本人の操作で不足した点を直す
+
+- 天平さんに実際の一場面を作ってもらい、途中で教えずに観察する。
+- 引っかかった操作を直す。自由なぞりは、端点操作で足りなかった場合に追加する。
+- 既存の相談3欄と打合せ用出力へ接続する。動画作成の前には全欄入力を要求しない。
+- 音楽との正確な関係が対象場面の核心なら、対象区間への接続を優先する。
+- 返答はまず質問に対応する短い打合せメモで記録する。状態管理の拡張は後にする。
+
+前回のP0.5だった「図上の動き」は主機能へ昇格します。一方、全種類の動作、3D編集、音楽のカウント編集、GIF併設、独立アプリ公開は初回試作から外します。
+
+### 「動画切り抜きより速い」の検証方法
+
+［提案］比較対象は機能数ではなく、**照明さんに渡せる説明を完成させる作業全体**です。
+
+1. 天平さんが説明したい一場面を決める。
+2. 普段の「出演動画を選ぶ・切る・説明を添える」方法で準備してもらう。
+3. 同じ意図を試作で作ってもらう。舞台・素材の準備時間も別途記録する。
+4. 照明プランナーに両方を見てもらい、方向・範囲・速度・光どうしの関係・未決事項を読み取ってもらう。
+5. 天平さんに一箇所変更してもらい、直して渡し直す時間も比較する。
+
+**二分は「既存シーンを開いてから、渡せる出力ができるまで」の暫定目標**とし、初回の準備時間を別表示します。本人の意図がまだ固まっていない時間も区別します。
+
+成功は「二分で何か動いた」ではありません。**準備・修正が負担にならず、照明さんが重要な動きを同じ意味で読み取れたか**です。初回は動画に負けても、参照動画にない動きの作成や変更で価値が出る可能性があります。
+
+## 6. 逆張り：動画切り抜きを中心にした最小案
+
+［提案］別の動画編集ソフトを作らず、既存の切り抜きにStage Sketchが文脈を足す案です。
+
+> 切り抜き動画を選ぶ → 自分の舞台図で範囲を示す → 「動画のどこを、ここで使いたいか」を一文で書く → まとめて渡す
+
+初期機能は次だけで足ります。
+
+- 切り抜き済み動画の取り込み、または参照先と区間の記録
+- 舞台図への範囲・矢印の注記
+- 「参照する点」「変更したい点」の一文
+- 動画と図の対応が分かる出力
+
+この案が勝つのは、**本人が適切な映像を既に持ち、動きの質感が重要で、舞台固有の違いを注記で説明できる場合**です。実写には光線、煙、身体、衣装の関係が含まれ、簡略アニメーションでは伝えにくい情報があります。
+
+ただし、前例のない動きを考えるときや、「この光だけ逆へ動かしたい」と変更するときには弱い。したがって、**既存映像の説明を速くする道具と、新しい動きを作る道具は、比較しつつ両方残せます。**
+
+## 7. 本人に確認すべき未決事項
+
+1. **最初に天平さんが作りたい一場面は、一本の往復で説明できますか。それとも複数の光の交差・時間差が不可欠ですか。** 最小の再生機能が変わります。
+2. **その場面では、動く感じを見せれば十分ですか。それとも実際の音楽の特定の音に、折り返しや交差を合わせて渡す必要がありますか。** 音楽接続と動画への音声同梱の優先順位が変わります。
+3. **天平さんは舞台スケッチの既存シーンから始められますか。それとも舞台を登録せず、すぐ一場面を作る入口が必要ですか。** 二分目標に含める準備と、単独利用の入口が変わります。
+
+今回の提案は、アニメーションを中心に据え直すところまでです。未確認なのは作成速度、出力互換性、照明プランナーの読み取り精度です。次は**対象の一場面を決め、その場面だけ作成・再生・受け渡しできる試作の仕様を固める**ことを推します。おすすめモデルはSolです。
+
+
+exit=0

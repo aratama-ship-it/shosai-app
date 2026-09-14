@@ -1,0 +1,32 @@
+{
+  "beta": {
+    "url": "https://stagesketch.pygmix.com/stage?lang=ja",
+    "version": "67415b62-fdb0-42a3-bcd3-091f4c3abb80",
+    "deployment": "5eb46dca-7050-46ba-9e43-75810a08eefc",
+    "percent": 100
+  },
+  "preview": {
+    "url": "https://stagesketch-try.juggler-arata.workers.dev/try?lang=ja",
+    "version": "6356982f-2623-4462-b2b9-e7b6c2b9bf6d",
+    "fileCount": 44
+  },
+  "validation": {
+    "unitTests": 894,
+    "releaseChecks": 82,
+    "liveByteComparisons": 70,
+    "basicAndPublicGuards": 4,
+    "cookieGuards": 4,
+    "publicBrowser": [
+      "Japanese and English initial venue lists have 7 generic choices",
+      "scene description sits below navigation and wraps to 37px height",
+      "template button hidden with zero dimensions",
+      "left and right width separator controls rendered"
+    ],
+    "betaBrowser": "Earlier local UI and venue-file import verification; post-release beta verified through authenticated HTTP and Cookie requests",
+    "preservedPreviewLimits": true,
+    "notes": [
+      "Public preview venue import, full screen and export remain locked by its existing feature limits.",
+      "English preview locked-control accessibility suffix still contains Japanese; observed existing localization issue outside this UI release."
+    ]
+  }
+}

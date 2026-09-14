@@ -1,0 +1,21 @@
+{
+  "unitTests": {
+    "pass": 174,
+    "fail": 7,
+    "failures": [
+      "QuotaExceededError で退避できないときはゲスト参加を開始しない",
+      "現在ショーを棚へ退避できなければ、新しいショーへ切り替えない",
+      "上限を超える既存ショーを読み込んでも、61件目以降を黙って切り捨てない",
+      "通常の新規シーン操作は60行で止まり、既存データを変えない",
+      "現在ショーは退避できても次ショーが棚へ入らなければ、現在ショーを開いたまま止める",
+      "ショー棚が壊れているときは原文を保ち、新しいショーへ切り替えない",
+      "会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う"
+    ]
+  },
+  "previousLabelPositionAlsoFails": true,
+  "baselineAdditionalFailures": [
+    "変更した2本のJS版とPWAキャッシュ版を正本・単独版・Service Workerで揃える"
+  ],
+  "baselineNote": "Baseline comparison read the live shared tree after another task advanced the cache version; it also failed the old fixed cache assertion. No shared source was reverted.",
+  "finalSourceSha256": "f14a7e38c81654db4421d6e5db03107499392896bda424ec15369dc2262cf89c"
+}

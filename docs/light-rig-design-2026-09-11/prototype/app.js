@@ -11,9 +11,6 @@
      灯の強さやLX cueには入れないので、保存済みの照明データは変わらない。 */
   const VISUAL_GAIN = 1.8;
   const visualAlpha = (value) => E.clamp(E.finite(value, 0) * VISUAL_GAIN, 0, 1);
-  /* 狙い点は面の種類を色で即読できる。文字・面名も残すので色だけに依存しない。 */
-  const TARGET_MARK_COLOR = Object.freeze({ floor: "#df6433", air: "#7ab8ff", back: "#8be08b", house: "#ffd27a" });
-  const targetMarkColor = (surface) => TARGET_MARK_COLOR[surface] || TARGET_MARK_COLOR.floor;
   const $ = (id) => document.getElementById(id);
 
   /* ---------- 状態 ---------- */
@@ -229,7 +226,7 @@
     collapsed: new Set(), filter: "all",   // 一覧: 取り付け場所ごとの折り畳みと絞り込み（20灯以上向け）
     snap: false,                           // 1mのグリッドに合わせて置く・動かす（本人要望 2026-09-11）
     placeOpen: true,                       // 配置モードでは、置く道具を最初から見せる
-    show: { no: true, fixtures: true, beam: true, path: true, grid: true, pieces: true, names: true, border: false, blackout: false },
+    show: { no: true, fixtures: true, beam: true, path: true, grid: true, pieces: true, names: true, border: false, blackout: true },
     /* 作業灯をどれだけ消すか（0〜100%）。100で真っ暗、0で消さないのと同じ
        （2026-09-13 本人要望「押したら全部消えてしまうので、どれくらい消すか決めたい」）。
        図の見え方の設定なので show と同じくUndoの対象にはしない。 */
@@ -554,24 +551,7 @@
   function addFixture(mount, kind) {
     const f = E.newFixture(uid("f"), state.nextNo++, mount, "", kind);
     state.rig.fixtures.push(f);
-    /* SSは片袖だけでは使わず、反対袖にも同じ奥行き・高さ・種類で一対を立てる。
-       ここで同時に作れば、平面図と両側面図のどこから置いても、Undo 1回で一組を戻せる。 */
-    if (mount.type === "side") {
-      const partner = E.newFixture(
-        uid("f"),
-        state.nextNo++,
-        E.mirrorMount(mount),
-        "",
-        kind,
-        f.beamDeg,
-      );
-      if (f.barn) {
-        const b = E.barnOf(f);
-        partner.barn = { back: b.back, front: b.front, left: b.right, right: b.left };
-      }
-      state.rig.fixtures.push(partner);
-      state.sel = new Set([f.id, partner.id]);
-    } else state.sel = new Set([f.id]);
+    state.sel = new Set([f.id]);
     commit();
     return f;
   }
@@ -805,31 +785,17 @@
   const groupName = (g) => ({ together: "一緒に動く", mirror: "鏡のように動く", sequential: "順番に動く" }[g.relation] || "") + (g.compose === "fan" ? "（扇）" : g.compose === "cross" ? "（交差）" : "");
 
   /* ---------- 再生 ---------- */
-  /* 現在のLX cueに、実際に時間で変わる灯があるか。オートメーションの入口と同じ定義にする:
-     位置＝軌道が「動きなし」以外／強さ＝levelTo／広がり＝beamDegTo。
-     消えている灯は再生しても見えないため、対象には数えない。 */
-  function cueHasAutomation() {
-    return state.rig.fixtures.some((f) => {
-      if (!E.isMoving(f)) return false;
-      const l = lightOf(f.id); if (!l || l.on !== true) return false;
-      const p = l.path || { kind: "still" };
-      return p.kind !== "still" || l.levelTo != null || l.beamDegTo != null;
-    });
-  }
-  function play() { if (state.play.on || !cueHasAutomation()) { renderTransport(); return; } state.play.on = true; state.play.last = 0; state.play.raf = requestAnimationFrame(tick); renderTransport(); renderRuntimeStatus(); }
+  function play() { if (state.play.on) return; state.play.on = true; state.play.last = 0; state.play.raf = requestAnimationFrame(tick); renderTransport(); renderRuntimeStatus(); }
   function stop(reason) { if (!state.play.on) return; state.play.on = false; cancelAnimationFrame(state.play.raf); if (reason) toast(reason); renderTransport(); draw(); }
   function home() { stop(); state.play.t = 0; renderTransport(); draw(); }
   function tick(ts) { if (!state.play.on) return; if (!state.play.last) state.play.last = ts; state.play.t += ts - state.play.last; state.play.last = ts; renderTransport(); draw(); state.play.raf = requestAnimationFrame(tick); }
   function togglePlay() { state.play.on ? stop() : play(); }
-  /* オートメーションがないLX cueでは、再生できる対象がないので無効にする。
-     再生中に最後のオートメーションを止めた場合も、次の描画で静かに停止する。 */
+  /* 2026-09-14 本人要望: 操作は再生／停止のトグル1個だけ。秒数と「再生中」の札は出さない。
+     文字は押したら何が起きるかを出す（停止中＝再生・再生中＝停止）。状態はボタンの色でも示す。 */
   function renderTransport() {
     const b = $("t-play"); if (!b) return;
-    const hasAutomation = cueHasAutomation();
-    if (state.play.on && !hasAutomation) { state.play.on = false; cancelAnimationFrame(state.play.raf); }
-    b.disabled = !hasAutomation;
-    b.textContent = state.play.on ? "オートメーション停止" : "オートメーション再生";
-    b.title = state.play.on ? "オートメーションを止める（Space）" : hasAutomation ? "このLX cueのオートメーションを再生する（Space）" : "このLX cueにはオートメーションがありません";
+    b.textContent = state.play.on ? "停止" : "再生";
+    b.title = state.play.on ? "動きを止める（Space）" : "動きを再生する（Space）";
     b.classList.toggle("playing", state.play.on);
     renderXfer();
   }
@@ -1931,19 +1897,19 @@
   }
   const glareHole = (X, Y, R, lv) => ({ fromX: X, fromY: Y, landX: X, landY: Y, toX: X, toY: Y, r: R, halfW: 0.5, ry: 0.5, lying: false, asLine: false, noPool: false, pool: { cx: X, cy: Y, ax: R, ay: 0, bx: 0, by: R }, lv });
   function drawHandles(ctx, P, l, fid) {
-    const p = l.path || {}; const d = state.dims, color = targetMarkColor(l.surface);
-    const hp = (pt, txt, filled) => { const q = P(E.pointWorld(pt, d)); ctx.beginPath(); ctx.arc(q.X, q.Y, 12, 0, Math.PI * 2); ctx.fillStyle = filled ? color : "#201b16"; ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.fill(); ctx.stroke(); if (txt) { ctx.fillStyle = "#efe7d6"; ctx.font = "600 16px sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "center"; ctx.fillText(txt, q.X, q.Y + 1); ctx.textAlign = "left"; } return q; };
+    const p = l.path || {}; const d = state.dims;
+    const hp = (pt, txt, filled) => { const q = P(E.pointWorld(pt, d)); ctx.beginPath(); ctx.arc(q.X, q.Y, 12, 0, Math.PI * 2); ctx.fillStyle = filled ? "#df6433" : "#201b16"; ctx.strokeStyle = "#df6433"; ctx.lineWidth = 3; ctx.fill(); ctx.stroke(); if (txt) { ctx.fillStyle = "#efe7d6"; ctx.font = "600 16px sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "center"; ctx.fillText(txt, q.X, q.Y + 1); ctx.textAlign = "left"; } return q; };
     if (p.kind === "line") {
       const a = hp(p.a, "A", p.start !== "b"), b = hp(p.b, "B", p.start === "b");
-      const from = p.start === "b" ? b : a, to = p.start === "b" ? a : b; arrow(ctx, from, to, color);
+      const from = p.start === "b" ? b : a, to = p.start === "b" ? a : b; arrow(ctx, from, to);
     } else if (p.kind === "circle" || p.kind === "eight") {
       const c = hp(p.c, "", false); const rq = P(circleRadiusWorld(p.c, p.r, p.plane, d, p.tilt));
-      ctx.beginPath(); ctx.arc(rq.X, rq.Y, 10, 0, Math.PI * 2); ctx.fillStyle = "#201b16"; ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(rq.X, rq.Y, 10, 0, Math.PI * 2); ctx.fillStyle = "#201b16"; ctx.strokeStyle = "#df6433"; ctx.lineWidth = 3; ctx.fill(); ctx.stroke();
       ctx.fillStyle = "rgba(240,231,214,0.8)"; ctx.font = "15px sans-serif"; ctx.fillText(`半径 ${mmText(p.r)}`, rq.X + 14, rq.Y - 8);
       ctx.fillText(p.dir === "ccw" ? "反時計回り" : "時計回り", c.X + 14, c.Y - 22);
     } else hp(p.a || { u: 0.5, v: 0.6 }, "", true);
   }
-  function arrow(ctx, from, to, color) { const dx = to.X - from.X, dy = to.Y - from.Y, L = Math.hypot(dx, dy) || 1; const ux = dx / L, uy = dy / L; const sx = from.X + ux * 20, sy = from.Y + uy * 20, ex = from.X + ux * Math.min(L * 0.45, 90), ey = from.Y + uy * Math.min(L * 0.45, 90); ctx.strokeStyle = color || "#df6433"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke(); ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex - ux * 14 - uy * 9, ey - uy * 14 + ux * 9); ctx.lineTo(ex - ux * 14 + uy * 9, ey - uy * 14 - ux * 9); ctx.closePath(); ctx.fillStyle = color || "#df6433"; ctx.fill(); }
+  function arrow(ctx, from, to) { const dx = to.X - from.X, dy = to.Y - from.Y, L = Math.hypot(dx, dy) || 1; const ux = dx / L, uy = dy / L; const sx = from.X + ux * 20, sy = from.Y + uy * 20, ex = from.X + ux * Math.min(L * 0.45, 90), ey = from.Y + uy * Math.min(L * 0.45, 90); ctx.strokeStyle = "#df6433"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke(); ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex - ux * 14 - uy * 9, ey - uy * 14 + ux * 9); ctx.lineTo(ex - ux * 14 + uy * 9, ey - uy * 14 - ux * 9); ctx.closePath(); ctx.fillStyle = "#df6433"; ctx.fill(); }
 
   /* ---------- 描画: 正面図 ---------- */
   function drawFront(sec) {
@@ -2267,7 +2233,7 @@
     if (state.tool === "truss") { addTruss(snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1))); return; }   // addTruss内で灯体配置モードへ移る
     if (state.tool === "fixture") { const t = E.trussById(state.rig, state.selTruss); if (!t) return; const Y = B.y + t.v * B.h; if (Math.abs(pt.Y - Y) < 60 && inBox({ X: pt.X, Y }, B)) { addFixture({ type: "truss", trussId: t.id, u: snapU((pt.X - B.x) / B.w) }); toast(`${label([...state.sel][0])}を奥から${E.trussRow(state.rig, t.id)}列目に置きました`, "元に戻す", undo); } return; }
     if (state.tool === "floor") { if (inBox(pt, B)) { addFixture({ type: "floor", u: snapU((pt.X - B.x) / B.w), v: snapV((pt.Y - B.y) / B.h) }); toast(`${label([...state.sel][0])}を床に置きました`, "元に戻す", undo); } return; }
-    if (state.tool === "side") { const side = pt.X < B.x ? "shimote" : pt.X > B.x + B.w ? "kamite" : null; if (side) { addFixture({ type: "side", side, v: snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)), h: 2 }); toast(`${side === "shimote" ? "下手" : "上手"}と反対側の袖にSSを一対で立てました`, "元に戻す", undo); } return; }
+    if (state.tool === "side") { const side = pt.X < B.x ? "shimote" : pt.X > B.x + B.w ? "kamite" : null; if (side) { addFixture({ type: "side", side, v: snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)), h: 2 }); toast(`${label([...state.sel][0])}を${side === "shimote" ? "下手" : "上手"}の袖に立てました`, "元に戻す", undo); } return; }
     if (state.tool === "front") {
       if (pt.Y > B.y + B.h) { addFixture({ type: "front", u: snapU(E.clamp((pt.X - B.x) / B.w, 0, 1)), ahead: 5, h: 7 }, "fixed"); toast(`${label([...state.sel][0])}を前明かりに置きました（舞台前から約5000mm・高さ約7000mm）`, "元に戻す", undo); }
       else toast("舞台より手前（客席側の帯）をクリックしてください");
@@ -2424,7 +2390,7 @@
       try { cv.setPointerCapture(ev.pointerId); } catch (_) { /* 合成イベント等 */ }
       if (state.tool === "border" || state.tool === "masking") return;
       if (side !== "front") {
-        if (state.tool === "side") { const vh = E.sideToVH(state.dims, B, side, pt.X, pt.Y); addFixture({ type: "side", side, v: snapV(vh.v), h: Math.max(0.3, snapH(vh.h)) }); toast(`${side === "shimote" ? "下手" : "上手"}と反対側の袖にSSを一対で立てました`, "元に戻す", undo); return; }
+        if (state.tool === "side") { const vh = E.sideToVH(state.dims, B, side, pt.X, pt.Y); addFixture({ type: "side", side, v: snapV(vh.v), h: Math.max(0.3, snapH(vh.h)) }); toast(`${label([...state.sel][0])}を${side === "shimote" ? "下手" : "上手"}の袖に立てました`, "元に戻す", undo); return; }
         if (state.mode === "move") { const hh = hitHandle(pt, P, distanceMetric ? ["air","house"] : ["air"]); if (hh) { startHandleDrag(hh, "vh", sec); return; } }
         const f = hitFixtureSec(sec, pt);
         if (f) {
@@ -2500,7 +2466,7 @@
   if ($("snap")) $("snap").addEventListener("change", () => { state.snap = $("snap").checked; draw(); });
 
   /* ---------- 図に出すもの・探す・舞台の大きさ（4図化で空いた場所へ入れた操作） ---------- */
-  document.querySelectorAll("#showtoggles button, #lighttoggles button[data-show]").forEach((b) => {
+  document.querySelectorAll("#showtoggles button, #lighttoggles button").forEach((b) => {
     /* 作業灯を消すの入り切りでは、消し具合のつまみの出し入れもいるので renderAll で作り直す。
        ほかは図だけ描き直せば足りる。 */
     b.onclick = () => { state.show[b.dataset.show] = !showOn(b.dataset.show); if (b.dataset.show === "blackout") renderAll(); else { b.setAttribute("aria-pressed", String(showOn(b.dataset.show))); draw(); } };
@@ -2646,7 +2612,7 @@
   }
 
   /* ---------- 右: 設定欄 ---------- */
-  const seg = (opts, cur, onPick, cls) => { const s = document.createElement("div"); s.className = "seg " + (cls || ""); opts.forEach(([v, t, dis, markerClass]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; if (markerClass) b.classList.add(markerClass); b.setAttribute("aria-pressed", String(v === cur)); b.disabled = Boolean(dis); b.onclick = () => onPick(v); s.append(b); }); return s; };
+  const seg = (opts, cur, onPick, cls) => { const s = document.createElement("div"); s.className = "seg " + (cls || ""); opts.forEach(([v, t, dis]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.setAttribute("aria-pressed", String(v === cur)); b.disabled = Boolean(dis); b.onclick = () => onPick(v); s.append(b); }); return s; };
   /* lab に null / "" を渡すとラベルを出さない（2026-09-14 本人要望。箱の見出しと同じ言葉が
      二重に出るのをやめるため）。空の <span> を残すと .field の1列目・.field.wide の1行目が
      空き枠として残るので、要素ごと作らない。 */
@@ -2848,7 +2814,7 @@
     const host = $("place-tools"); host.innerHTML = "";
     PLACE_TOOLS.forEach(([k, t]) => {
       const b = document.createElement("button"); b.type = "button";
-      b.textContent = t;
+      b.textContent = state.tool === k ? (k === "border" || k === "masking" ? "閉じる" : "置くのを終える") : t;
       b.title = { truss: "灯体を吊るバトンを渡す", fixture: "選んだバトンに灯体を吊る", front: "客席の上（シーリング・フロントサイド）に灯体を置く", floor: "灯体を床に転がす", side: "灯体を袖（上手／下手）に立てる", border: "一文字幕をバトンごとに設置・調整する", masking: "前一文字と袖幕を調整する" }[k];
       b.setAttribute("aria-pressed", String(state.tool === k));
       b.disabled = k === "fixture" && !state.selTruss;
@@ -2874,7 +2840,7 @@
     $("place-note").textContent =
       state.tool === "truss" ? "平面図をクリックすると、その奥行きにバトンを渡します。"
       : state.tool === "fixture" ? "平面図の選んだバトンの上をクリックすると灯体を吊れます。"
-      : state.tool === "front" ? ""
+      : state.tool === "front" ? "平面図の舞台より手前（客席側の帯）をクリックすると置けます。舞台前からの距離と高さは右で直せます。"
       : state.tool === "floor" ? "平面図の舞台の中をクリックすると転がせます。"
       : state.tool === "side" ? "下手を見る図・上手を見る図をクリックすると、その側の袖に立てられます。"
       : state.tool === "border" ? "右のパネルで、バトンごとの一文字幕を設置・調整します。"
@@ -3586,21 +3552,21 @@
   function renderInspector() {
     const host = $("insp"); host.innerHTML = "";
     const ids = [...state.sel];
-    let hazeBox = null;
     if (state.mode === 'move') {
-      hazeBox=el('div','pbox option-b-controls');
-      hazeBox.append(el('p','kicker','もや'));
+      const box=el('div','pbox option-b-controls');
+      box.append(el('p','kicker','もや'));
       const hazeControl=range(0,100,1,0,v=>`${v}%`,()=>{},()=>{});
-      hazeControl.querySelectorAll('input').forEach(i=>{i.disabled=true;i.setAttribute('aria-label',i.type==='range'?'もや（現在は使えません）':'もやの数値（現在は使えません）');});hazeBox.append(hazeControl);
+      hazeControl.querySelectorAll('input').forEach(i=>{i.disabled=true;i.setAttribute('aria-label',i.type==='range'?'もや（現在は使えません）':'もやの数値（現在は使えません）');});box.append(hazeControl);
       const row=el('div','row'); for(const name of ['なし','うっすら','濃い']) { const b=btn(name,()=>{},'small'); b.disabled=true; row.append(b); }
-      hazeBox.append(row);hazeBox.append(el('p','note','軽量化のため、もやは0で固定しています。'));
+      box.append(row);box.append(el('p','note','軽量化のため、もやは0で固定しています。'));
+      host.append(box);
     }
     syncLightToggle(ids);
     renderXfer();   // コピー／ペーストの可否は選択で変わる。選択だけを更新する経路でも追従させる
     if (state.mode === "place") {
       if (state.tool === "border") { renderBorderBox(host); return; }
       if (state.tool === "masking") { renderMaskingBox(host); return; }
-      // 見出しは静的な「灯体情報」／下の層の「機材設置」が持つので、ここでは出さない
+      // 見出しは静的な「選んだ灯体」／下の層の「配置（ショー共通）」が持つので、ここでは出さない
       if (!state.sel.size && !state.selTruss) host.append(el("p", "hint", "図か一覧で灯体やバトンを選ぶと、ここに設定が出ます。配置はすべてのシーンで共通です。"));
       const t = E.trussById(state.rig, state.selTruss);
       if (t && !ids.length) {
@@ -3624,6 +3590,7 @@
           host.append(field("横位置", range(0, 1, 0.01, m.u, acrossText, (v) => { m.u = v; draw(); }, () => commit(), numAcross())));
           host.append(field("舞台前から", range(1, 20, 0.5, m.ahead, (v) => `約${mmText(v)}`, (v) => { m.ahead = v; draw(); }, () => commit(), numMm(1, 20, 0.5, "舞台前からの距離(mm)"))));
           host.append(field("高さ", range(1, 16, 0.1, m.h, (v) => `約${mmText(v)}`, (v) => { m.h = v; draw(); }, () => commit(), numMm(1, 16, 0.1, "前明かりの高さ(mm)"))));
+          host.append(el("p", "note", "客席の上（シーリング）や客席横の壁（フロントサイド）に当たる位置です。平面図では客席側の帯に並べて描き、本当の距離はここの数値が正です。"));
         }
         if (m.type !== "cyc") {
           // ムービングかどうか（動きを付けられるのはムービングだけ）。ホリゾントライトは常に固定
@@ -3639,7 +3606,7 @@
     }
     // ---- 動きモード ----
     // パネル名「照明デザイン」は静的HTML(#insphead)へ移した。ここでは繰り返さない。
-    if (!ids.length) { host.append(el("p", "hint", "灯体を選んでください。")); if (hazeBox) host.append(hazeBox); return; }
+    if (!ids.length) { host.append(el("p", "hint", "灯体を選んでください。")); return; }
     if (ids.length === 1) {
       const fid = ids[0]; const f = fixtureById(fid); const l = lightOf(fid);
       host.append(el("p", "kicker", `${label(fid)}（${E.isMoving(f) ? "ムービング" : "固定"}）　${f.name || ""}`));
@@ -3718,13 +3685,13 @@
          （2026-09-13 本人指摘「もとから一列のバー」。横位置・長さ・床/上部は配置パネルへ）。 */
       if (f.mount.type !== "cyc") {
         const b = box("当てる場所");
-        b.append(field(null, seg([["floor", "床", false, "target-floor"], ["air", "空中", false, "target-air"], ["back", "奥の壁", false, "target-back"], ["house", "客席", false, "target-house"]], l.surface, (v) => {
+        b.append(field(null, seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], l.surface, (v) => {
           setLight(fid, { surface: v }); restyleToSurface(fid);
           const l2 = lightOf(fid); if (l2.path && l2.path.kind === "circle") l2.path.plane = (v === "back" || v === "house") ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
           commit();
-        }, "target-surface"), true));
+        }), true));
         if (l.surface === "house") {
-
+          b.append(el("p", "hint", "空中の光条と光源のまぶしさを分けて表示します。正面図の赤い丸は舞台手前の通過点です。高さは舞台の床から。距離表示を実寸にすると、平面・側面のドラッグで舞台前からの距離も動かせます。"));
         }
         if (l.surface === "house" || l.surface === "air") {
           /* まぶしさ（光源から丸く広がるほう）の大きさ。光の帯とは別のレイヤーなので別に決める。 */
@@ -3807,11 +3774,10 @@
           }));
           b.append(head);
         }
-
+        b.append(el("p", "hint", "平面図の赤い丸の上でスクロールしても変えられます（下へ回すと広がる・上へ回すと絞る）。"));
         if (mover) {
           b.append(field(autoSpread ? "始点" : null, range(5, 55, 1, E.beamDegOf(f, l), fmtDeg, (v) => { l.beamDeg = v; draw(); }, () => commit()), true));
           if (autoSpread) b.append(field("終点", range(5, 55, 1, E.clamp(E.finite(l.beamDegTo, E.beamDegOf(f, l)), 5, 55), fmtDeg, (v) => { l.beamDegTo = v; draw(); }, () => commit()), true));
-          if (l.beamDeg != null) b.append(btn(`仕込みの広がり（${Math.round(f.beamDeg == null ? 16 : f.beamDeg)}°）に戻す`, () => { delete l.beamDeg; if (l.beamDegTo != null) l.beamDegTo = E.beamDegOf(f, l); commit(); }, "small quiet"));
         } else {
           b.append(field(null, range(4, 70, 1, f.beamDeg == null ? 16 : f.beamDeg, fmtDeg, (v) => { f.beamDeg = v; draw(); }, () => commit()), true));
         }
@@ -3907,7 +3873,7 @@
             b.append(field("始める位置", range(0, 1, 0.05, p.start || 0, (v) => `${Math.round(v * 360)}°`, (v) => { p.start = v; draw(); }, () => commit())));
           }
         } else {
-
+          b.append(el("p", "hint", "位置は止まったままです。光の強さ・光の広がりだけを動かすこともできます。"));
         }
       }
 
@@ -3943,7 +3909,6 @@
         }
       }
       // 消す操作はパネル右上のオン・オフへ一本化した（2026-09-13 本人要望）。
-      if (hazeBox) host.append(hazeBox);
       return;
     }
     // 2灯の照射位置を舞台中央線で鏡映する一時モード。配置位置や他の灯体設定は同期しない。
@@ -3962,7 +3927,6 @@
     // 複数（「組の動き」も含めて renderBulk 側の「まとめて変更」枠に集約した。2026-09-13 本人要望）
     host.append(el("p", "kicker", `${ids.length}灯を選択中`));
     renderBulk(host, ids);
-    if (hazeBox) host.append(hazeBox);
   }
 
 
@@ -3975,7 +3939,6 @@
     /* 配置はシーン共通なので、シーン送りも再生も照明デザインのときだけ出す（2026-09-11 本人指摘）。
        シーン送りは図の上の帯（場所は残して中身だけ隠す）、再生はパネルの見出し行（丸ごと隠す）。 */
     const inMove = state.mode === "move";
-    $("panel-insp").classList.toggle("move-ui", inMove);
     /* 「光」と「作業灯を消す」は照明デザインタブだけのもの（2026-09-13 本人要望）。
        配置タブでは枠ごと隠す。消し具合のつまみは作業灯を消しているときだけ出す。 */
     $("lighttoggles").hidden = !inMove;
@@ -4030,7 +3993,7 @@
     SECS.forEach((sec) => sec.cv.parentElement.classList.toggle("focus", sec.kind === focusKind));
     renderToolStrip();   // 帯の出し入れで図に使える高さが変わるので、寸法合わせより先に
     syncCanvasSize();
-    document.querySelectorAll("#showtoggles button, #lighttoggles button[data-show]").forEach((b) => b.setAttribute("aria-pressed", String(showOn(b.dataset.show))));
+    document.querySelectorAll("#showtoggles button, #lighttoggles button").forEach((b) => b.setAttribute("aria-pressed", String(showOn(b.dataset.show))));
     document.querySelectorAll("#frontmode button").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.front === "3d") === Boolean(state.front3d))));
     $("seat").hidden = !state.front3d;
     $("filters").hidden = state.mode !== "move";
@@ -4046,6 +4009,8 @@
   $("mode-move").onclick = () => {
     state.mode = "move";
     state.tool = null;
+    // 照明デザインに入る瞬間は、常に灯の見え方から始める（2026-09-14 本人指定）。
+    state.show.blackout = true;
     renderAll();
   };
   /* 連動を切った瞬間は「いま見ているシーン」に固定する（見えているものが動かない）。 */
@@ -4583,7 +4548,7 @@
     for(let i=0;i<2;i++){const id='example-f'+i,u=.3+i*.4;
       state.rig.fixtures.push(E.newFixture(id,i+5,{type:'front',u,ahead:4,h:4},'前明かり','fixed',16));
       cue().lights[id]=E.newLightCue({on:frontOn,surface:'air',color:'#f2ead6',path:{kind:'still',a:{u,v:.65,hM:1.2}}});}
-    state.mode='move';state.show.blackout=false;state.dim=100;state.sel=new Set(['example-r1']);
+    state.mode='move';state.show.blackout=true;state.dim=100;state.sel=new Set(['example-r1']);
     state.history=[];state.future=[];baseline=snapshot();
   }
 

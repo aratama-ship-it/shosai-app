@@ -1,0 +1,11 @@
+{
+  "passed": 6,
+  "checks": [
+    "short landscape preserves an editable visible table row",
+    "short landscape keeps apply control within viewport",
+    "duplicate table number cannot be applied",
+    "modal close restores focus to Q-sheet entry",
+    "several Q labels on one line remain available",
+    "more labels do not widen the entire page"
+  ]
+}

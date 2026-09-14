@@ -1,0 +1,85 @@
+{
+  "capturedAt": "2026-09-09",
+  "source": "Stage Write Web 2.10.29 / synthetic test production",
+  "screenshots": [
+    {
+      "path": "stagewrite-guide-assets/01-workspace.jpg",
+      "mimeType": "image/jpeg",
+      "bytes": 49331,
+      "sha256": "6d7b969a279ec8055c1758984c9f313f025896069e286fa89e10dc58e722c49b"
+    },
+    {
+      "path": "stagewrite-guide-assets/02-pdf-menu.jpg",
+      "mimeType": "image/jpeg",
+      "bytes": 53215,
+      "sha256": "f1350fce09810ffa659a69d4bee1811b351c2d2fe971f6f125baee3a812d8e38"
+    },
+    {
+      "path": "stagewrite-guide-assets/03-new-pdf-warning.jpg",
+      "mimeType": "image/jpeg",
+      "bytes": 39963,
+      "sha256": "cb93fd71cf7b3c5ba67680dd62f8f5be290e9195717dfd425855222350676b47"
+    },
+    {
+      "path": "stagewrite-guide-assets/04-replace-page-warning.jpg",
+      "mimeType": "image/jpeg",
+      "bytes": 39564,
+      "sha256": "30a70caa0d76ccf8af9fd61ec3ce087dac92926f33b77a35a53aec2989bfd4dc"
+    },
+    {
+      "path": "stagewrite-guide-assets/05-cue-edit.jpg",
+      "mimeType": "image/jpeg",
+      "bytes": 60025,
+      "sha256": "35035e410375dfeb47e89ae9cf0cea5dd93ad5b5e7e78a8793b07d1aa98c6326"
+    },
+    {
+      "path": "stagewrite-guide-assets/06-export-menu-history.jpg",
+      "mimeType": "image/jpeg",
+      "bytes": 57153,
+      "sha256": "df4e9430eea93caff3bce75859b093801f90bc237175b334c80fb69409f52fb9"
+    },
+    {
+      "path": "stagewrite-guide-assets/07-print-options.jpg",
+      "mimeType": "image/jpeg",
+      "bytes": 32998,
+      "sha256": "005b87a50e817322b9c3787d75fc8b6c37d54728cf0f4203a509c86efac4cf8a"
+    },
+    {
+      "path": "stagewrite-guide-assets/08-cue-range.jpg",
+      "mimeType": "image/jpeg",
+      "bytes": 50441,
+      "sha256": "661e92910b9123db240efb8de2cc4911d14307afdc43123e26dfe19fe66eca52"
+    }
+  ],
+  "note": "Capture API returned JPEG bytes. The original files named .png are retained; .jpg copies have identical bytes.",
+  "pdfVerification": {
+    "date": "2026-09-09",
+    "files": [
+      {
+        "path": "output/pdf/stagewrite-production-export-2026-09-09.pdf",
+        "bytes": 307138,
+        "sha256": "df669b0b6642dc2532825adfa105447a5c2e7c32e0a893c8ea93e6a3f0603b22"
+      },
+      {
+        "path": "stagewrite-guide-assets/export-page-1.png",
+        "bytes": 82408,
+        "sha256": "9a3bbcdab25a01cc96881498d79f4c20e5df6902a40110b4f3a89bd7b2485cc5"
+      },
+      {
+        "path": "stagewrite-guide-assets/export-page-2.png",
+        "bytes": 79070,
+        "sha256": "42cd16b9cb6612cbbf05254d4da9ce4a47e37fba5fd12110e1e8db7b2e339e42"
+      },
+      {
+        "path": "stagewrite-guide-assets/migration-page-1-cue.jpg",
+        "bytes": 89528,
+        "sha256": "2a2fe59a0e9d5f9b2f8e3f79297d884687b7a29577c7d74d8548fb0eaccaf387"
+      },
+      {
+        "path": "stagewrite-guide-assets/migration-page-2.jpg",
+        "bytes": 79661,
+        "sha256": "5e4d9a258d36288b1bbe9d15d28709bbea1a2b0a865d419d1d95b8d816b1161a"
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "name": "claude-2-1: 読み込みキャンセルで現在のショーが変わらない",
+    "ok": true,
+    "detail": "title=無題のショー"
+  },
+  {
+    "name": "claude-2-1: 読み込み後の意味保持",
+    "ok": true,
+    "detail": "scenes=3"
+  },
+  {
+    "name": "claude-2-1: 全場面を選んで撮影",
+    "ok": true,
+    "detail": "3/3 場面（qa/claude-2-1-<sceneId>.png）"
+  },
+  {
+    "name": "claude-2-1: 書き出し→再読み込みの往復一致",
+    "ok": true,
+    "detail": "version=4"
+  },
+  {
+    "name": "claude-2-1: 同じ project.id の再読み込みが別ショーになる",
+    "ok": true,
+    "detail": "show-mtwk2fit-do23 ≠ show-mtwk2jfk-dtit"
+  },
+  {
+    "name": "ページエラーなし",
+    "ok": true,
+    "detail": ""
+  }
+]

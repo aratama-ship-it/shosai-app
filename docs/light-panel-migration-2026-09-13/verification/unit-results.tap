@@ -1,0 +1,94 @@
+TAP version 13
+# Subtest: whole source including unknowns/audio/sections restored exactly; no source mutation
+ok 1 - whole source including unknowns/audio/sections restored exactly; no source mutation
+  ---
+  duration_ms: 3.604041
+  type: 'test'
+  ...
+# Subtest: scene IDs/order and individual on/off/color/targets/levels survive
+ok 2 - scene IDs/order and individual on/off/color/targets/levels survive
+  ---
+  duration_ms: 0.607875
+  type: 'test'
+  ...
+# Subtest: source positions become separate variants, never overwrite another scene
+ok 3 - source positions become separate variants, never overwrite another scene
+  ---
+  duration_ms: 0.288209
+  type: 'test'
+  ...
+# Subtest: OFF stashed aim and intensity retained; no-position registrations remain unknown
+ok 4 - OFF stashed aim and intensity retained; no-position registrations remain unknown
+  ---
+  duration_ms: 0.2225
+  type: 'test'
+  ...
+# Subtest: unregistered lights with equal names and piece IDs across scenes stay separate
+ok 5 - unregistered lights with equal names and piece IDs across scenes stay separate
+  ---
+  duration_ms: 0.168708
+  type: 'test'
+  ...
+# Subtest: angle converted by distance, beam limits and unsupported motion are visible
+ok 6 - angle converted by distance, beam limits and unsupported motion are visible
+  ---
+  duration_ms: 0.32
+  type: 'test'
+  ...
+# Subtest: preset and groups carry origin and ID with no inferred motion
+ok 7 - preset and groups carry origin and ID with no inferred motion
+  ---
+  duration_ms: 0.23825
+  type: 'test'
+  ...
+# Subtest: migration and save/load/edit/export repeat without duplication or loss of original
+ok 8 - migration and save/load/edit/export repeat without duplication or loss of original
+  ---
+  duration_ms: 0.669375
+  type: 'test'
+  ...
+# Subtest: unknown versions, invalid/dangling/duplicate refs, malformed values fail before any mutation
+ok 9 - unknown versions, invalid/dangling/duplicate refs, malformed values fail before any mutation
+  ---
+  duration_ms: 1.155584
+  type: 'test'
+  ...
+# Subtest: source text mismatch and damaged migration envelope refused
+ok 10 - source text mismatch and damaged migration envelope refused
+  ---
+  duration_ms: 0.903417
+  type: 'test'
+  ...
+# Subtest: unknown venue dimensions require input; partial overrides keep known base; custom venue includes extensions
+ok 11 - unknown venue dimensions require input; partial overrides keep known base; custom venue includes extensions
+  ---
+  duration_ms: 0.757333
+  type: 'test'
+  ...
+# Subtest: legacy source and aimed points retain outside coordinates in new geometry engine
+ok 12 - legacy source and aimed points retain outside coordinates in new geometry engine
+  ---
+  duration_ms: 15.72325
+  type: 'test'
+  ...
+# Subtest: v3 snapshots supported; explicit null is not silently replaced with invented coordinates
+ok 13 - v3 snapshots supported; explicit null is not silently replaced with invented coordinates
+  ---
+  duration_ms: 0.367958
+  type: 'test'
+  ...
+# Subtest: partially configured unknown source survives save without becoming a visible fixture
+ok 14 - partially configured unknown source survives save without becoming a visible fixture
+  ---
+  duration_ms: 0.352458
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 67.014792

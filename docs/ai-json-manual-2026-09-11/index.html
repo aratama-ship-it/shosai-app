@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>舞台スケッチ「AI作成マニュアル」設計計画（2026-09-11）— 判断用</title>
+<!--
+  デザイントークン（2026-09-10 第三者レビューHTMLと同一）
+  配色: 紙 #f6f2ea / 本文 #1f1a16 / 弱 #6b6258 / 罫 #ded6c8 / 朱 #b4502a
+        事実 #2f5f8a / 推測 #7a5a9a / 仮案 #a8802a / 良 #5f7d6b
+  文字: 本文16px/1.8, 見出し 28/22/18px, 小 13px。余白: 8の倍数。最大幅1040px
+  コントラスト: 本文 13.9:1, 弱色 5.6:1, 朱 5.0:1（AA）
+-->
+<style>
+  :root{--paper:#f6f2ea;--ink:#1f1a16;--muted:#6b6258;--line:#ded6c8;--accent:#b4502a;
+        --hi:#b4502a;--mid:#a8802a;--lo:#5f7d6b;--fact:#2f5f8a;--guess:#7a5a9a;--draft:#a8802a;--card:#fffdf9}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif;font-size:16px;line-height:1.8}
+  main{max-width:1040px;margin:0 auto;padding:32px 24px 96px}
+  h1{font-size:28px;line-height:1.35;margin:0 0 8px}
+  h2{font-size:22px;margin:48px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:18px;margin:24px 0 8px}
+  p{margin:0 0 12px}
+  .lead{color:var(--muted);font-size:14px;margin-bottom:24px}
+  .decide{background:var(--card);border:2px solid var(--accent);border-radius:8px;padding:16px 20px;margin:16px 0}
+  .decide h2{margin:0 0 8px;border:0;padding:0;font-size:20px;color:var(--accent)}
+  .decide ol{margin:0;padding-left:22px}
+  .decide li{margin-bottom:10px}
+  .rec{font-weight:700;color:var(--accent)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px}
+  .card h3{margin-top:0}
+  .tag{display:inline-block;font-size:13px;line-height:1;padding:5px 8px;border-radius:4px;color:#fff;margin-right:6px;vertical-align:middle}
+  .t-hi{background:var(--hi)} .t-mid{background:var(--mid)} .t-lo{background:var(--lo)}
+  .t-fact{background:var(--fact)} .t-guess{background:var(--guess)} .t-draft{background:var(--draft)} .t-ok{background:#4d7a4a}
+  table{width:100%;border-collapse:collapse;background:var(--card);font-size:15px;margin:12px 0 20px}
+  th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+  th{background:#efe8dc;font-weight:700}
+  ul{margin:0 0 12px;padding-left:22px}
+  li{margin-bottom:6px}
+  .good{border-left:4px solid var(--lo);padding-left:14px}
+  .bad{border-left:4px solid var(--hi);padding-left:14px}
+  .small{font-size:13px;color:var(--muted)}
+  a{color:var(--fact)}
+  code{font-size:14px;background:#efe8dc;padding:1px 5px;border-radius:3px}
+  pre{white-space:pre-wrap;background:#efe8dc;padding:12px;border-radius:6px;font-size:13px;line-height:1.5}
+  details{margin:8px 0} summary{cursor:pointer;font-weight:700}
+  @media (max-width:640px){main{padding:20px 16px 64px} h1{font-size:24px} table{font-size:14px} th,td{padding:8px}}
+</style>
+</head>
+<body>
+<main>
+
+<p class="lead">舞台スケッチ／AI作成マニュアル 設計計画 ／ 作成 2026-09-11 ／ 設計: Claude Fable 5.1 ／ 独立レビュー: Codex gpt-6-astra（read-only・effort high・約16万トークン）／ 主要指摘はClaudeがコードで再確認済み ／ 状態: <span class="tag t-ok">D1〜D8承認済み・P1完了</span></p>
+<h1>舞台スケッチ「AI作成マニュアル」— 各ユーザーが自分のAIに下書きを任せられるようにする設計計画</h1>
+<p>目的は、ユーザーが自分の使うAI（ChatGPT・Claude.ai・Gemini等）にマニュアルを読ませ、舞台スケッチの「保存 &gt; 読み込む」で開けるショーJSONを吐かせられるようにすること。既存のローカルMCP（<code>mcp-server/</code>）は本人・開発者用に残し、配布しない。<strong>マニュアルはMCPではない</strong>（文書であり、検証・履歴・ロックは持たない）。その分、読み込み側の寛容さと、文書の正確さが成否を決める。</p>
+
+<section class="card good" style="margin:16px 0">
+  <h3><span class="tag t-ok">P1完了</span> 進捗（2026-09-11 深夜・本人承認「全部賛成」後）</h3>
+  <ul>
+    <li>Codex gpt-5.6-terra が本文・見本2本・自己点検表・検査器を作成。Claude が独立検証し、ブラウザ往復検査（Playwright）を全項目合格まで補修した。</li>
+    <li><strong>検証で契約の誤りが2件見つかり訂正済み</strong>: ①<code>endstage</code> はアプリに存在しない会場 ②規模は会場ごとに異なり、無い規模は黙って最小へ落ちる（blackbox+large → small を実測）。D3「P1から機械検証必須」の判断が的中した実例。</li>
+    <li>成果: <a href="../ai-json-manual/AI_MANUAL_ja.md">AI_MANUAL_ja.md</a>（v0.1.1）／<a href="../ai-json-manual/samples/sample-minimal.json">sample-minimal.json</a>／<a href="../ai-json-manual/samples/sample-standard.json">sample-standard.json</a>／検査器 <code>tools/ai-json-check.mjs</code>・<code>tools/ai-json-browser-check.mjs</code>／報告 <a href="P1_REPORT.md">P1_REPORT.md</a>／証拠 <code>qa/</code>（10枚）</li>
+    <li><strong>v0.2.0（本人指示・2026-09-11）</strong>: 足りない情報があれば、JSONの前に本人の判断シートと同型の<strong>質問票</strong>（推奨＋理由＋A/B/C＋保留／別案）を1回出す仕組みを本文へ追加。保留は推奨案で仮採用し note に「仮定:」を残す。</li>
+    <li><strong>模擬P2 完了（2026-09-11）</strong>: 履歴なしの Sonnet に本文だけを渡し、課題1（欠落入力）は質問票6問→回答→JSON、課題2（全指定）は質問なしでJSON。2本とも検査器0件・ブラウザ往復全合格。見つかった問題（質問の混在・仮定の置き場・頼んでいない任意項目の追加）は v0.2.1 で対処、詳細は <a href="P2_LEDGER.md">P2_LEDGER.md</a> の模擬P2節。</li>
+    <li><strong>本番P2 ChatGPT 2本（2026-09-11）</strong>: 質問票6問→回答→JSON、および全指定→JSON。課題1の初回は castId の綴り違い6件（検査器で検出・NG本文を貼ると1回で修正）。<strong>NG版をそのまま読み込むとブラウザは止まらず、別人物として描く</strong>（P4の判断材料）。両AIで「依頼にない lightingIntent を足す」が再現 → v0.2.2 で禁止行追加。</li>
+    <li><strong>本番P2 完了 5/6本（2026-09-11）</strong>: ChatGPT 2本・Claude.ai 1本・Gemini 2本。開けた率 5/5、意味保持は初回 3/5 → NG本文を1回貼れば 5/5。質問票は 3/3 で妥当。<strong>黙った変形が2種で実証</strong>（参照切れ→別人物、色の先頭空白→全員既定色）。Claude.ai 課題2はログアウトで未実施。詳細 <a href="P2_LEDGER.md">P2_LEDGER.md</a>。</li>
+    <li><strong>P4 承認（2026-09-11「全部通してください」）→ P3＋P4B 実装完了</strong>: 公開ページ <code>public/ai-json/</code>（本文コピー・見本DL・JSON点検・修正依頼文コピー）と共有判定関数 <code>tools/ai-json-check-core.mjs</code>。Claude が独立検証し全項目合格（CLI回帰・分類一致・ビルド再現・PC/390px）。本体ファイルは未変更。判断用 <a href="P4_DECISION.html">P4_DECISION.html</a>／報告 <a href="P3_P4B_REPORT.md">P3_P4B_REPORT.md</a>。</li>
+    <li><strong>P2 完走 6/6（2026-09-11）</strong>: claude.ai のセッション切れをご本人が Google 再ログインで解消。Claude.ai 課題2（全指定・質問なし）も検査器0件・ブラウザ往復全合格で完了。開けた率 6/6、意味保持は初回4/6→修正後6/6、質問票3/3妥当。詳細 <a href="P2_LEDGER.md">P2_LEDGER.md</a>。</li>
+    <li><strong>本人判断（2026-09-11）</strong>: ゲスト公開は見送り、本人限定のまま。マニュアルの「受け取り手順」に点検ページへの導線を追加（本文 v0.2.4。公開ページも再ビルド済み・見本一致・検査器回帰OK）。</li>
+    <li>現状で一区切り。残るのは実運用での使い勝手確認のみ。台帳と課題文は <a href="P2_LEDGER.md">P2_LEDGER.md</a>（課題1は質問票が出るかを見る欠落入力、課題2は全部指定）。</li>
+  </ul>
+</section>
+<section class="decide">
+  <h2>判断してほしいこと（8件）</h2>
+  <ol>
+    <li><strong>D1. 対象フォーマット。</strong> AIに書かせるのは、ブラウザが読む形そのもの（<code>kind:"shosai-stage-sketch"</code>・数値 <code>version:4</code>・<code>project</code>・<code>venues:[]</code>）。MCP入力形（placements）は使わない。<span class="rec">推奨: 採用（Claude・Astra一致）</span></li>
+    <li><strong>D2. 配布形態。</strong> 公開サイトに「AIに作らせる」ページ1枚（本文コピー／Markdown DL・見本DL・読み込み手順）＋アプリの保存パネルからリンク。<span class="rec">推奨: 採用（一致）</span></li>
+    <li><strong>D3. 検証の置き場。</strong> Claude案は「P1は文書の自己点検表のみ」。Astraは「P1から開発側の機械検証（構造・enum・参照整合・正規化前後の意味保持・保存往復）を必須に」。<span class="rec">推奨: Astra案。</span>理由: 読み込みは失敗せず「意図が黙って変わる」ので、文書だけでは欠落を検出できない（下の事実③④⑤）。アプリ内の点検表示は引き続き先送り。</li>
+    <li><strong>D4. 正本の責任分担。</strong> Claude案「食い違ったら常にマニュアルを直す」は撤回。Astra案「ブラウザ入出力契約＝現行コード、創作の変換方針＝PLAYBOOK、配布本文＝その対象サブセット」＋enum・見本・本文の整合チェックをP1から持つ。<span class="rec">推奨: Astra案</span></li>
+    <li><strong>D5. 照明の生成範囲。</strong> ドラフトの「4種のlightKindをpieceに書く」は<strong>成立しない</strong>（lightKindはsets側、beam省略は真上6mに固定）。P1は照明駒を <code>hang</code>（真上）に限定し、横・前・床から当てたい意図は <code>lightingIntent</code> の文章で残す。4種を描画まで扱うのは別判断。<span class="rec">推奨: hang限定で開始</span></li>
+    <li><strong>D6. 生成対象の種類。</strong> 列挙できる27種のうち、P1で「生成をサポートする」種類を明示的に選ぶ（案: performer / block / table / chair / bench / stool / wall / sphere / suitcase / light の10種＋高リスク装置は trapeze / tissue / cyrwheel / pole を「注意付き」で許可）。<code>model</code>・<code>prop</code>・舞台機構（seri/revolve/deck/curtain/pool）は対象外とし、noteで提案させる。<span class="rec">推奨: この案で開始し、P2で拡張を判断</span></li>
+    <li><strong>D7. 新規下書き専用にする。</strong> 既存ショーの修正・再生成は扱わない（サブセットで再生成すると写真・注釈・音源・機構状態が失われる）。<span class="rec">推奨: 採用</span></li>
+    <li><strong>D8. 公開時の契約文言。</strong> 「配置・照明・姿勢は検討用の図で、実施可能性や安全承認を表さない」「特定AIでの生成成功・秘密保持は保証しない」「共有セッション中はホストの変更が同期されるので、私的な検討は共有終了後に」「外部AIへ渡す素材はユーザー自身の判断」。<span class="rec">推奨: この4点を最低限入れる</span></li>
+  </ol>
+  <p class="small">D1・D2・D7は両者一致で判断コストは低い。D3〜D6はAstraの指摘でClaude案を修正したもの。</p>
+</section>
+
+<h2>要約</h2>
+<div class="grid">
+  <div class="card good"><h3>やること</h3>
+    <ul>
+      <li>AIに貼る本文1ファイル（日本語・自己完結）＋本文内の完全例1本（1演者・2場面）</li>
+      <li>ダウンロード見本2本（最小／標準8場面・section・照明hang・beat付き）</li>
+      <li>AI用の自己点検表（本文末尾に同梱）</li>
+      <li>開発側の機械検証スクリプト（raw JSON検査＋正規化前後の意味保持＋往復）</li>
+      <li>P2で外部AI3種×課題2種の通し試験。P3で公開ページ＋英語版</li>
+    </ul></div>
+  <div class="card bad"><h3>やらないこと</h3>
+    <ul>
+      <li>MCPの配布・リモート化（本人用に温存）</li>
+      <li>AIに動線・姿勢の細部・美術の色・安全判断をさせる</li>
+      <li>ブラウザへの自動適用（ユーザーが「読み込む」を選ぶまで反映しない。既定は「別のショーとして開く」）</li>
+      <li>既存ショーの修正（D7）／Mac版「AI指示」・共有セッションとの統合（境界だけ明記）</li>
+      <li>アプリ内の「AI JSON点検」表示（P2の結果で再判断）</li>
+    </ul></div>
+</div>
+
+<h2>確定した事実（コード確認・2026-09-11）</h2>
+<p><span class="tag t-fact">事実</span>はClaudeが <code>stage-sketch.js</code> を直接読んで確認。<span class="tag t-guess">Astra指摘・Claude未再確認</span>はAstraが行番号つきで示したがClaudeは再確認していないもの。</p>
+<table>
+<tr><th style="width:38%">事実</th><th>影響・マニュアルでの扱い</th></tr>
+<tr><td><span class="tag t-fact">事実</span>① 読み込みは寛容。<code>{project:{scenes:[…]}}</code> または素の project を受理し、<code>kind</code>・<code>version</code> は検証しない。会場同梱を処理するのは数値の <code>version === 4</code> のときだけ（importProject L18149〜、prepareProjectImportDocument L697〜）</td><td>外枠は数値 version 4・<code>venues:[]</code> に固定。同梱会場はプレビューより前にライブラリへ保存され取り消せないため、AIに <code>venues</code> を書かせない</td></tr>
+<tr><td><span class="tag t-fact">事実</span>② 未知フィールドは黙って落ち、範囲外の数値は clamp、不正な色は既定色、不明な <code>type</code> は <code>performer</code>、不明な set.kind は <code>block</code>（normalizeScene L4001〜、normalizePiece L3669〜、sets正規化 L4229〜）</td><td>AIが独自フィールドを足しても気づけない。機械検証（D3）が要る根拠</td></tr>
+<tr><td><span class="tag t-fact">事実</span>③ 姿勢IDはブラウザに48種（stand/walk/…/lie/supine/sidelie 等）。MCPの列挙にある <code>lie_back / lie_front / lie_side</code> はブラウザに存在せず <code>stand</code> に化ける（POSES L1757〜、L3710）</td><td>ドラフトの姿勢一覧は誤り。マニュアルの enum はブラウザ側から採る（D4の根拠）</td></tr>
+<tr><td><span class="tag t-fact">事実</span>④ <code>lightKind</code> を保持するのは <code>sets[]</code> だけで、<code>pieces[]</code> の lightKind は捨てられる。<code>beam</code> 省略時は「対象の真上・高さ6m・床へ照射」に固定（normalizeBeam L3641、L4263）</td><td>ドラフトの照明設計は不成立。D5の根拠</td></tr>
+<tr><td><span class="tag t-fact">事実</span>⑤ 駒の色は <code>pieces[].color</code> が正で、省略時は <code>#a84b26</code>。cast の色は読み込み時に駒へコピーされない（L3681）</td><td>見本と本文で piece 側にも color を明示させる</td></tr>
+<tr><td><span class="tag t-fact">事実</span>⑥ 什器が演者の頭上に乗る既知問題は、現行コードで chair/table/bench/stool を支え候補から常に除外し、他は設置面積で除外するよう修正済み（supportUnder L6395〜）。配列順は依然として効く</td><td>ドラフトの「什器を演者より前に並べる」規則は一般化しない。「同一場面の駒は 什器→演者 の順を推奨」程度に弱める</td></tr>
+<tr><td><span class="tag t-fact">事実</span>⑦ 読み込みを止める条件は、ファイル読取失敗・JSON構文エラー・<code>project.scenes</code> が配列でない場合だけ（L18152〜18175）</td><td>「読み込めた＝意図どおり」ではないと本文に明記</td></tr>
+<tr><td><span class="tag t-guess">Astra指摘・未再確認</span>⑧ <code>u:null, v:null, size:null</code> は <code>Number(null)=0</code> により 0, 0, 55 になる（L3158・L3678）。<code>scenes:[null]</code> 等は正規化中の例外で、整ったエラーにならない</td><td>「省略可」と「null可」を同義にしない。null要素を検査器の負のケースに入れる</td></tr>
+<tr><td><span class="tag t-guess">Astra指摘・未再確認</span>⑨ 未解決の castId/setId は読み込みを止めず文字列のまま残る。名前からの再接続はない。同一場面で同じ castId を複数回使うと場面間照合が曖昧になる（L3683・L16176）</td><td>「同じ実体は場面をまたいで同じ登録ID、同一場面の別個体は別登録ID」を規則にする</td></tr>
+<tr><td><span class="tag t-guess">Astra指摘・未再確認</span>⑩ <code>flown/wires</code> を書かなくても trapeze/tissue は吊物になり、近接する演者はポール等へ自動的に取り付く（L4253・L6529）</td><td>「危険な値を書かない＝安全な図」ではない。D8の文言の根拠</td></tr>
+<tr><td><span class="tag t-guess">Astra指摘・未再確認</span>⑪ 既存の <code>check-object-on-performer.mjs</code> は解析失敗でも exit 0 になり得る（L323・L330）</td><td>P1の完了条件として単独で使わない</td></tr>
+</table>
+
+<h2>Claude案とAstra指摘の対比（差があった点だけ）</h2>
+<table>
+<tr><th style="width:18%">論点</th><th style="width:30%">Claude案（ドラフト）</th><th style="width:30%">Astra</th><th>統合後</th></tr>
+<tr><td>検証</td><td>P1は自己点検表のみ。JSON Schemaは任意</td><td>P1から機械検証必須（構造・enum・参照・意味保持・往復）</td><td>Astra案。読み込みは失敗しないので文書では検出できない</td></tr>
+<tr><td>正本</td><td>マニュアルが正本。食い違えばマニュアルを直す</td><td>契約はコード、方針はPLAYBOOK、本文はサブセット。整合チェックを持つ</td><td>Astra案。「仕様変更か不具合か」を判断できる形</td></tr>
+<tr><td>照明</td><td>pieces に lightKind 4種</td><td>不成立。hang限定＋lightingIntent</td><td>Astra案（事実④で裏取り済み）</td></tr>
+<tr><td>姿勢・種類</td><td>MCPの列挙を転記</td><td>ブラウザの列挙が正。生成サポート種類を明示的に選ぶ</td><td>Astra案（事実③で裏取り済み）</td></tr>
+<tr><td>P4の発動条件</td><td>参照切れ・未知フィールド起因の失敗が2件以上</td><td>意図の黙った変形が1件でも再現し文書で防げなければ検討</td><td>Astra案</td></tr>
+<tr><td>P1完了条件</td><td>見本2本の読み込み＋既存スキャナ0件</td><td>全場面の表示確認・往復・負のケース・保存失敗経路を追加</td><td>Astra案（下の段階表）</td></tr>
+<tr><td>実装担当</td><td>Codex medium</td><td>仕様確定後は Terra</td><td>Codex gpt-5.6-terra・medium（本人承認後）</td></tr>
+</table>
+
+<h2>AIに書かせる範囲（統合版サブセット）</h2>
+<pre>{
+  "kind": "shosai-stage-sketch", "version": 4, "venues": [],
+  "project": {
+    "title", "venue"(5種のいずれか), "venueSize"(small|mid|large),
+    "cast":  [{ "id", "name", "color", "heightCm"? , "note"? }],
+    "sets":  [{ "id", "kind"(D6の許可種類), "name", "color", "note"?, "lightKind":"hang"(kind=lightのみ) }],
+    "scenes": [
+      { "kind":"section", "depth":0, "title" },                      ← 駒・beatは書かない
+      { "kind":"scene", "depth":1, "id", "title", "note"(行為/規則/変化), "background"?,
+        "beat": { "role", "energy"(1-5) }, "lightingIntent"?: { "objective", "audienceFocus", "mood" },
+        "pieces": [
+          { "id", "type":"performer", "castId", "u", "v", "color", "facing"?, "pose"?(ブラウザ48種), "size"? },
+          { "id", "type":(set.kindと一致), "setId", "u", "v", "color" }
+        ] }
+    ]
+  }
+}</pre>
+<p>書かせない: <code>route</code>（動線）、<code>strokes/arrows/notes/photo/screenTexts</code>、<code>heldBy/holdSide</code>、<code>base/supportId</code>、<code>beam</code>、舞台機構の値、<code>stashed/locked</code>、<code>flown/wires</code>、<code>venues[]</code> の中身、<code>rehearsal</code> の秒数、<code>mcpMeta/editSummary/appliedRevision</code>。</p>
+
+<h2>本文に必ず入れる要素（Astra第4節を採用）</h2>
+<ul>
+  <li>出力形式の固定: UTF-8の単一JSON。説明文・コードフェンス・コメント・末尾カンマ・<code>...</code> やプレースホルダを入れない</li>
+  <li>必須／任意／条件付き必須の表。「省略時に何になるか」「nullを許すか（許さない）」「置く階層」を併記</li>
+  <li>参照の規則: performer は castId、それ以外は setId。set.kind と piece.type を一致させる。登録IDは場面をまたいで固定、scene/piece の id は明示し重複させない</li>
+  <li>座標契約: 客席から見て u は左0→右1、v は奥0→前1。facing は度（0=客席）。size は100が基準、heightCm は cm。P1の生成範囲は u,v とも 0〜1</li>
+  <li>section の並べ方の具体例（平坦な配列で depth 0/1）</li>
+  <li>生成上限（scene+section 合計60、1場面80駒）と、失敗時は理由と修正版の完全JSONを返す指示</li>
+  <li>創作上の制約の入力欄: 人数・会場・場面数・使える道具・採用済み要素。実測値を捏造せず、仮定は note に明記。PLAYBOOKの6〜9ビートを場面数指定へ無条件適用しない</li>
+  <li>ユーザーの受け取り手順: PCは比較画面→「別のショーとして開く」、スマホは比較画面なしで即保存、保存失敗時の扱い、全場面を見てから判断</li>
+  <li>入れない表現: 「自己点検済み＝読み込み保証」「読み込み成功＝意図どおり」「安全警告なし＝安全」</li>
+</ul>
+
+<h2>段階計画（統合版）</h2>
+<table>
+<tr><th style="width:8%">段階</th><th style="width:34%">内容</th><th style="width:18%">担当（案）</th><th>完了条件</th></tr>
+<tr><td>P0</td><td>ドラフトの契約修正（姿勢・照明・色・種類・null）。本人のD1〜D8判断を反映した発注書</td><td>Claude</td><td>発注書に停止条件・検証手順・許可種類表が入っている</td></tr>
+<tr><td>P1</td><td>本文（ja）・本文内完全例1本・見本2本・自己点検表・機械検証スクリプト</td><td>Codex gpt-5.6-terra・medium（仕様確定済み委譲）</td><td>①raw JSON検査（構文・階層・型・許可キー・enum・非空ID・一意性・参照先・type/kind一致）②正規化前後の照合（人数・道具・場面順・階層・名前・色・姿勢・座標・照明意図の保持）③全場面を正面図・平面図で表示確認 ④読み込み→別ショー→書き出し→再読み込みの往復一致 ⑤キャンセル・同一ID・保存失敗・スマホ経路で既存状態が壊れない ⑥負のケース（MCP形誤投入・未知type・不明姿勢・参照切れ・null要素・文字列数値・重複ID）を検査器が検出</td></tr>
+<tr><td>P2</td><td>通し試験: 外部AI3種（ChatGPT / Claude.ai / Gemini）× 課題2種（8場面サーカス／3場面ダンス）</td><td>本人＋Claude</td><td>「開けた率」と「意味が保たれた率」を分けて記録。初回成功／修正後成功／意味の欠落／手作業回数を台帳化。再現する欠落は公開前に本文で解消</td></tr>
+<tr><td>P3</td><td>公開ページ＋保存パネルからのリンク＋英語版（キー・enumは翻訳せず値だけ英語）</td><td>Codex</td><td>公開URLで本文コピー・見本DLができ、配信本文と見本の版が一致。英語UI上でも同じJSONを確認</td></tr>
+<tr><td>P4（条件付き）</td><td>読み込み時の「AI JSON点検」表示、または端末内チェッカーの配布</td><td>判断待ち</td><td>P2で「意図の黙った変形」が1件でも再現し、文書修正で防げない場合に着手</td></tr>
+</table>
+
+<h2>リスク・未確認</h2>
+<ul>
+  <li><span class="tag t-hi">高</span>「読み込めたが意図と違う」を文書だけでは防げない。P1の機械検証と、本文の「読み込み成功＝意図どおりではない」明記で緩和</li>
+  <li><span class="tag t-mid">中</span>本文の長さと生成成功率の関係は<strong>推測</strong>。P2で本文長の違いを比較する</li>
+  <li><span class="tag t-mid">中</span>Astra指摘⑧〜⑪はClaude未再確認。P0の契約修正時に行番号で再確認する</li>
+  <li><span class="tag t-lo">低</span>Mac版のAI採用経路はv3を要求。ファイル読み込み（v4）と同一機能として案内しない</li>
+  <li><span class="tag t-lo">低</span>公開環境の版とP1で試した実装が同じかを、P3で記録する</li>
+</ul>
+
+<h2>次の行動</h2>
+<ol>
+  <li>本人がD1〜D8を判断（「推奨どおり」の一言でも可）</li>
+  <li>ClaudeがP0: ドラフトを契約修正し、P1の発注書（Codex向け・停止条件つき）を作る</li>
+  <li>P1をCodex（gpt-5.6-terra・medium）へ委譲。夜間実行に適する（判断を含まず、完了条件が機械検証で閉じる）</li>
+</ol>
+
+<h2>資料</h2>
+<ul>
+  <li>Claudeの設計ドラフト（レビュー前・誤りを含む原本）: <a href="DESIGN_DRAFT_claude.md">DESIGN_DRAFT_claude.md</a></li>
+  <li>Astraのレビュー全文（生出力）: <a href="REVIEW_astra_raw.md">REVIEW_astra_raw.md</a>（session id 01a08c27-9143-7583-8072-a0446c28b320）</li>
+  <li>MCPの変換規則（創作方針の正本）: <a href="../../mcp-server/PLAYBOOK.md">mcp-server/PLAYBOOK.md</a> ／ MCP README: <a href="../../mcp-server/README.md">mcp-server/README.md</a></li>
+  <li>既存の最小v4見本（説明用・机が block になる欠点あり）: <a href="../project-contract-2026-09-09/stage-sketch-v4-binding-fixture-2026-09-09.json">stage-sketch-v4-binding-fixture-2026-09-09.json</a></li>
+</ul>
+<p class="small">本文書はローカル確認用。公開・外部共有しない。事実の確認日はすべて 2026-09-11。</p>
+</main>
+</body>
+</html>

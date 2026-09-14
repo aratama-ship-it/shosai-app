@@ -1,0 +1,19 @@
+Read-only independent review for the user, who explicitly requested Claude Code Fable together with Codex Astra.
+Do not edit files, run shell commands, use browser, send messages, or take external actions. Read only these named files. Do not read product files, private show material, credentials, or project-wide instructions outside this scope. Return Japanese.
+
+Project directory: /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+Files (all under docs/set-transitions-2026-09-08/):
+- people-plan-core-2026-09-09.mjs
+- people-plan-ui-2026-09-09.mjs
+- people-plan-trial-2026-09-09.html
+- people-plan-core-2026-09-09.test.mjs
+- shared-contract-fixture-2026-09-09.json
+- SHARED_PEOPLE_CUES_TIME_CONTRACT_2026-09-09.md (only if needed for an ambiguity)
+
+Decision: Is this bounded local prototype faithful enough to let the owner test per-person scheduling and warning causes? This is new implementation, separate from the previous contract design review. Product saving, actual script/PDF connection, arbitrary assignment/route optimization, live GO and publication remain out of scope. It loads only the fixed fictional fixture with a pinned hash, and exposes six configuration fields. No untrusted file import is provided.
+
+Verified so far: 24 Node tests pass, including normal completion at 15 s / zero slack; appearance ending at 4 s gives 18 s / 3 s shortage and C waits 8-11 s; extra fixed work at 6-9 s overlaps A's put/hold/pickup without being rescheduled; unknown cue preserves earlier known work. Browser QA is being performed independently now.
+
+Challenge calculation and UI together: actual person identity, exclusive wait occupation, known/unknown/invalid propagation, separation of numerical time result from unresolved crews/conflicts, [start,end) overlap, controlling versus mandatory timing branches, fixed assignment scope when join is unresolved, input invalidation/undo, stale version/fetch failure. Focus on concrete defects reachable through this UI first. Treat broader malformed import/schema validation as future scope unless it compromises the fixed-fixture prototype.
+
+Return: (1) concise verdict, (2) concrete defects with paths/lines and reproducing input, distinguishing verified facts from hypotheses, (3) smallest missing test, (4) held product-integration requirements. If there is no blocker, say so; do not invent issues. Do not claim browser or tests executed.

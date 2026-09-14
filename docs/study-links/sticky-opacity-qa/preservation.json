@@ -1,0 +1,29 @@
+{
+  "changedSinceStart": [
+    "build_study.py",
+    "design/TOKEN_SHEET_fullscreen_2026-09-10.md",
+    "design/TOKEN_SHEET_study-links_2026-09-09.md",
+    "index.html",
+    "manual/manual-content.js",
+    "stage-first-person.js",
+    "stage-i18n.js",
+    "stage-i18n.zh-Hans.js",
+    "stage-i18n.zh-Hant.js",
+    "stage-sketch.js",
+    "stage-study-private.js",
+    "stage-study-sticky.js",
+    "stage-study-viewer.js",
+    "stage-study.css",
+    "stage-sw.js",
+    "stage.html",
+    "study-frame.html",
+    "study-reader-account.js",
+    "study.html",
+    "style.css",
+    "tests/stage-manual-help.test.mjs",
+    "tests/stage-session-shelve.test.mjs",
+    "tests/study-sticky.test.mjs",
+    "tools/study-reader-runtime-check.mjs"
+  ],
+  "missingSinceStart": []
+}

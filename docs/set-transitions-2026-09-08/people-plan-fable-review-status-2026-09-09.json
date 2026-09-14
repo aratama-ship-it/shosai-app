@@ -1,0 +1,58 @@
+{
+  "requestedModel": "fable",
+  "reviewModel": "claude-fable-5",
+  "reviewedVersion": "people-plan-2026-09-09-r1",
+  "reviewExecution": "success after explicit approval of the six files and request",
+  "reviewReceived": true,
+  "durationMs": 315467,
+  "permissionDenials": [],
+  "modelUsage": {
+    "claude-haiku-4-5-20251001": {
+      "inputTokens": 1513,
+      "outputTokens": 16,
+      "cacheReadInputTokens": 0,
+      "cacheCreationInputTokens": 0,
+      "webSearchRequests": 0,
+      "costUSD": 0.001593,
+      "contextWindow": 200000,
+      "maxOutputTokens": 32000,
+      "canonicalModel": "claude-haiku-4-5",
+      "provider": "firstParty"
+    },
+    "claude-fable-5": {
+      "inputTokens": 8,
+      "outputTokens": 23093,
+      "cacheReadInputTokens": 71949,
+      "cacheCreationInputTokens": 37387,
+      "webSearchRequests": 0,
+      "costUSD": 1.9744189999999997,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 64000,
+      "canonicalModel": "claude-fable-5",
+      "provider": "firstParty"
+    }
+  },
+  "requestFile": "people-plan-review-request.txt",
+  "reviewFile": "people-plan-fable-review-2026-09-09.md",
+  "reviewedHashesFile": "people-plan-fable-reviewed-hashes-2026-09-09.json",
+  "priorRejectionResolved": true,
+  "verdict": "No blocker found within the fixed-fixture local prototype scope. Not production approval.",
+  "adopted": [
+    "unknown appearance end regression coverage",
+    "unresolved join plus extra C regression coverage",
+    "clear wording for unknown interval endpoints"
+  ],
+  "postReviewVersion": "people-plan-2026-09-09-r2",
+  "postReviewValidation": {
+    "nodeTests": {
+      "pass": 26,
+      "total": 26
+    },
+    "browserChecks": {
+      "pass": 54,
+      "total": 54
+    },
+    "runtimeErrors": 0,
+    "additionalVisualCheck": "390px unknown interval wording and footer review entry checked"
+  }
+}

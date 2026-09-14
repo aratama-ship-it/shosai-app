@@ -1,0 +1,12 @@
+{
+  "capturedAt": "2026-09-13T11:54:35.767528+00:00",
+  "betaVersion": "433c22ac-f953-4d05-8179-d757759ff7ee",
+  "betaWorkerSha256": "b0e07f79257b6c7c85ef14a44a0936605fe785428af407570d38652a1e82cf6f",
+  "prototypeFiles": {
+    "docs/light-rig-design-2026-09-11/prototype/index.html": "8f5356668403b777fe5a8b034ebca9d37d61ac2e2c79bd889009e1e665b5d2fb",
+    "docs/light-rig-design-2026-09-11/prototype/app.js": "c31347201d97a05b1d4be3f3c6b8057801337864f9825dbc7ee222127eb85c5f",
+    "docs/light-rig-design-2026-09-11/prototype/rig-engine.js": "b8025064de541e22f0bea8dd12d7cc324dafb69c59d91be233d3f55e89578999",
+    "docs/light-rig-design-2026-09-11/prototype/stage-figure.js": "5d5d5a68ac7b3f698bc4bf83a829f454f4bf0d836f491ee37f90b8206ee0409e"
+  },
+  "betaVenueModuleSha256": "45c6eb62ca32b854d63420cd46cda4316334fa799e4a90f87759a7d75556d601"
+}

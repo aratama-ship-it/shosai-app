@@ -1,0 +1,41 @@
+{
+  "changedTrackedFiles": [
+    "README.md",
+    "build_public.py",
+    "build_stage.py",
+    "index.html",
+    "stage-sketch.js",
+    "stage-sw.js",
+    "stage-venues.js",
+    "stage.html",
+    "tests/stage-manual-help.test.mjs",
+    "tests/stage-session-shelve.test.mjs",
+    "tests/stage-venue-library.test.mjs",
+    "try.html",
+    "worker.js",
+    "wrangler.toml"
+  ],
+  "unrelatedTrackedDirtyFilesPreservedByteForByte": [
+    "mcp-server/README.md",
+    "mcp-server/src/edit-plan.js",
+    "mcp-server/src/project-store.js",
+    "mcp-server/src/schemas.js",
+    "mcp-server/src/server.js",
+    "mcp-server/test/edit-plan.test.js",
+    "public-beta.html",
+    "public-lp/index.html",
+    "stage-i18n.js",
+    "stage-public.css",
+    "stage-public.js",
+    "stage-pwa.js",
+    "style.css",
+    "tests/stage-public-build.test.mjs",
+    "tests/stage-pwa-offline-warm.test.mjs",
+    "tests/stage-pwa.test.mjs",
+    "tests/worker-guest-accounts-verify.test.mjs",
+    "tests/worker-session-login.test.mjs"
+  ],
+  "unexpectedTrackedChanges": [],
+  "baselineBackup": "/tmp/stage-study-baseline-20260909",
+  "note": "Shared file edits preserve the initial work; expected JS/cache version advances are included. Existing untracked documentation was not edited."
+}

@@ -1,0 +1,57 @@
+{
+  "kind": "fable-revision-study-fixture",
+  "contractVersion": 1,
+  "scope": "架空の小公演『灯台と三人』。反証シナリオ専用の合成データ。製品読込不可。実在の人物・公演・名簿とは無関係。",
+  "workflowRevision": 1,
+  "people": [
+    { "id": "p-s", "label": "S（舞台監督）", "departments": ["stage"], "roles": ["chief", "caller"] },
+    { "id": "p-a", "label": "A（演者）", "departments": ["cast"], "roles": ["performer"] },
+    { "id": "p-b", "label": "B（演者）", "departments": ["cast"], "roles": ["performer"] },
+    { "id": "p-c", "label": "C（演者・転換兼務）", "departments": ["cast", "stage"], "roles": ["performer", "crew"] },
+    { "id": "p-d", "label": "D（演者・代役候補）", "departments": ["cast"], "roles": ["performer"] },
+    { "id": "p-k", "label": "K（裏方・転換）", "departments": ["stage"], "roles": ["crew"], "device": false },
+    { "id": "p-l", "label": "L（照明オペ）", "departments": ["lx"], "roles": ["operator"] },
+    { "id": "p-m", "label": "M（音響オペ）", "departments": ["snd"], "roles": ["operator"] }
+  ],
+  "scenes": [
+    { "id": "sc1", "label": "1 灯台の朝", "castPersonIds": ["p-a"], "propHolders": [] },
+    { "id": "sc2", "label": "2 三人の到着", "castPersonIds": ["p-a", "p-b", "p-c"], "propHolders": [] },
+    { "id": "sc3", "label": "3 扉", "castPersonIds": ["p-a", "p-b"], "propHolders": [] },
+    { "id": "sc4", "label": "4 食卓", "castPersonIds": ["p-a", "p-c"], "propHolders": [{ "propId": "prop-table", "personId": "p-a" }] },
+    { "id": "sc5", "label": "5 消灯", "castPersonIds": ["p-a", "p-b", "p-c", "p-d"], "propHolders": [] }
+  ],
+  "props": [
+    { "id": "prop-table", "label": "机" },
+    { "id": "prop-lamp", "label": "ランプ" }
+  ],
+  "documents": [
+    { "id": "doc-v1", "label": "台本 v1", "status": "current" }
+  ],
+  "cues": [
+    { "id": "q1", "number": "LX 1", "department": "lx", "sceneId": "sc1", "description": "灯台の朝の明かり" },
+    { "id": "q5", "number": "SND 5", "department": "snd", "sceneId": "sc2", "description": "波の音" },
+    { "id": "q7", "number": "LX 7", "department": "lx", "sceneId": "sc3", "description": "扉が開く光" },
+    { "id": "q8", "number": "SND 8", "department": "snd", "sceneId": "sc3", "description": "風" },
+    { "id": "q9", "number": "LX 9", "department": "lx", "sceneId": null, "description": "転換の明かり（T1のGO）" },
+    { "id": "q12", "number": "LX 12", "department": "lx", "sceneId": "sc4", "description": "食卓の明かり" },
+    { "id": "q13", "number": "SND 13", "department": "snd", "sceneId": "sc5", "description": "消灯の音" },
+    { "id": "q99", "number": "Q 99", "department": null, "sceneId": "sc5", "description": "部門未設定の仮Q（未割当の例）" }
+  ],
+  "anchors": [
+    { "id": "an-q7", "documentId": "doc-v1", "pageIndex": 1, "quote": "扉を開けて", "speakerPersonId": "p-b", "target": { "kind": "cue", "id": "q7" }, "semanticStatus": "confirmed" },
+    { "id": "an-q8", "documentId": "doc-v1", "pageIndex": 1, "quote": "風が強い", "speakerPersonId": "p-a", "target": { "kind": "cue", "id": "q8" }, "semanticStatus": "confirmed" },
+    { "id": "an-sc4", "documentId": "doc-v1", "pageIndex": 2, "quote": "（食卓）", "speakerPersonId": null, "target": { "kind": "scene", "id": "sc4" }, "semanticStatus": "confirmed" },
+    { "id": "an-q13", "documentId": "doc-v1", "pageIndex": 2, "quote": "おやすみ", "speakerPersonId": "p-d", "target": { "kind": "cue", "id": "q13" }, "semanticStatus": "confirmed" }
+  ],
+  "activities": [
+    { "id": "act-duet", "owner": "script", "label": "AとBの掛け合い（3 扉）", "sceneRefs": ["sc3"], "cueRefs": ["q7"], "propRefs": [], "assignments": [{ "slotId": "slot-1", "personId": "p-a" }, { "slotId": "slot-2", "personId": "p-b" }] },
+    { "id": "act-carry-table", "owner": "transition", "label": "T1 机を運ぶ（3→4）", "sceneRefs": ["sc3", "sc4"], "cueRefs": ["q9"], "propRefs": ["prop-table"], "assignments": [{ "slotId": "slot-1", "personId": "p-k" }, { "slotId": "slot-2", "personId": "p-c" }] },
+    { "id": "act-sit", "owner": "script", "label": "Aが食卓につく（4）", "sceneRefs": ["sc4"], "cueRefs": ["q12"], "propRefs": ["prop-table"], "assignments": [{ "slotId": "slot-1", "personId": "p-a" }] },
+    { "id": "act-lamp", "owner": "transition", "label": "T2 ランプを袖へ（4→5）", "sceneRefs": ["sc4", "sc5"], "cueRefs": [], "propRefs": ["prop-lamp"], "assignments": [{ "slotId": "slot-1", "personId": null }] }
+  ],
+  "notes": [
+    { "id": "n1", "authorPersonId": "p-m", "department": "snd", "visibility": "department", "cueId": "q8", "text": "風は3秒でフェード" },
+    { "id": "n2", "authorPersonId": "p-b", "department": "cast", "visibility": "private", "cueId": "q7", "text": "扉は左手で" },
+    { "id": "n3", "authorPersonId": "p-l", "department": "lx", "visibility": "department", "cueId": "q99", "text": "仮Qの扱いは未定" }
+  ]
+}

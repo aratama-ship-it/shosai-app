@@ -1,0 +1,12 @@
+PASS create in real SQLite
+PASS save chunked screen
+PASS list contains metadata only
+PASS image chunks reassemble byte for byte
+PASS scene/name/revision survive update and process restart
+PASS image no-store after restart
+PASS image survives process restart
+PASS another owner denied
+PASS anonymous denied
+PASS revoked viewer denied
+PASS received image retained for owner after revoke
+Shared screen SQLite runtime: 11/11 passed

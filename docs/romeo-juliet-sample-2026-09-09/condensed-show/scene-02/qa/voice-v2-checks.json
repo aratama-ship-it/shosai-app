@@ -1,0 +1,25 @@
+{
+  "checks": [
+    {
+      "viewport": [
+        1440,
+        900
+      ],
+      "http": 200,
+      "anonymousOffstageVoice": true,
+      "noNurseCharacterInPromiseMovement": true,
+      "overflow": false
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "http": 200,
+      "anonymousOffstageVoice": true,
+      "noNurseCharacterInPromiseMovement": true,
+      "overflow": false
+    }
+  ],
+  "errors": []
+}

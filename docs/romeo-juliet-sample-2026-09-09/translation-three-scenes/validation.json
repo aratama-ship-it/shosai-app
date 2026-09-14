@@ -1,0 +1,14 @@
+{
+  "englishSourceExact": true,
+  "nonblankSourceCoverage": "complete in all three declared ranges",
+  "uniqueBlockIds": true,
+  "firstMeetingBaselineUnchanged": true,
+  "sceneCount": 3,
+  "speechCount": 34,
+  "standaloneDirectionCount": 6,
+  "cueCount": 8,
+  "repeatedCurseOccurrencesJa": 3,
+  "repeatedCurseOccurrencesEn": 3,
+  "sourceSha256": "5a2037a19e60cccb67b3f5fc93a12cb65c58694ce6a1dc61d0d67d0d2502b3b4",
+  "indexSha256": "216fe64fb8ed2816fb4fd2007352ffe8f1522e959ab3fd67bf6603b1df8f2df8"
+}

@@ -1,0 +1,370 @@
+{
+  "url": "https://aratama-ship-it.github.io/shosai-app/stage.html?seam-sample&release=3b57854-live",
+  "checkedAt": "2026-09-13T12:29:59.667Z",
+  "normalPanels": {
+    "left": [
+      "project",
+      "venue",
+      "music",
+      "cast",
+      "machinery",
+      "rigs",
+      "light",
+      "background"
+    ],
+    "right": [
+      "scenes",
+      "inspector",
+      "save"
+    ],
+    "collapsed": []
+  },
+  "firstTimelinePanels": {
+    "left": [
+      "project",
+      "venue",
+      "music",
+      "cast",
+      "machinery",
+      "rigs",
+      "light",
+      "background",
+      "scenes",
+      "inspector",
+      "save"
+    ],
+    "right": [],
+    "collapsed": []
+  },
+  "defaultModeLayouts": {
+    "normal": "split",
+    "timeline": "single-left"
+  },
+  "unitLabels": [
+    "時間式"
+  ],
+  "sectionDuration": {
+    "order": {
+      "heading": 0,
+      "duration": 1,
+      "unit": 2
+    },
+    "before": 300,
+    "unlimited": {
+      "stored": 90000,
+      "sceneHold": 60,
+      "number": 90000
+    },
+    "direct": {
+      "stored": 12.3,
+      "sceneHold": 60,
+      "number": 12.3
+    },
+    "drag": {
+      "stored": 18.3,
+      "number": 18.3
+    },
+    "undo": 12.3,
+    "redo": 18.3
+  },
+  "laneLayout": {
+    "initialOrder": [
+      "ruler",
+      "anchors",
+      "audio",
+      "scenes",
+      "transitions",
+      "light",
+      "music",
+      "dialogue"
+    ],
+    "reordered": [
+      "audio",
+      "ruler",
+      "anchors",
+      "scenes",
+      "transitions",
+      "light",
+      "music",
+      "dialogue"
+    ],
+    "audioHeightBefore": 40,
+    "audioHeightExpanded": 84,
+    "audioHeightReset": 40
+  },
+  "laneVisibility": {
+    "inputCount": 8,
+    "hiddenStored": false,
+    "settingsGeometry": {
+      "triggerWidth": 44,
+      "triggerHeight": 44,
+      "panelWidth": 260,
+      "panelRight": 1417,
+      "viewportWidth": 1440
+    }
+  },
+  "fullscreenControl": {
+    "width": 44,
+    "height": 44,
+    "exportWidth": 44,
+    "exportHeight": 44,
+    "iconWidth": 20,
+    "iconHeight": 20,
+    "visibleText": "",
+    "accessibleName": "全画面"
+  },
+  "wideHeader": {
+    "parentClass": "stage-brand-row",
+    "titleRight": 417.046875,
+    "tabsLeft": 433.046875,
+    "bottomDelta": 0,
+    "overlapsCaution": false,
+    "overlapsActions": false
+  },
+  "narrowHeader": {
+    "parentClass": "stage-brand-row",
+    "titleRight": 398.4375,
+    "tabsLeft": 414.4375,
+    "bottomDelta": 0,
+    "overlapsCaution": false,
+    "overlapsActions": false
+  },
+  "timeLabelCount": 19,
+  "countLabelCount": 18,
+  "silentPlayback": {
+    "before": "0:00.0",
+    "during": "0:00.3",
+    "sceneIds": [
+      "seam-scene-1-1",
+      "seam-scene-1-2"
+    ],
+    "activeScene": "seam-scene-1-2"
+  },
+  "audioGain": {
+    "trackId": "timeline-browser-gain",
+    "saved": 6,
+    "undone": 0
+  },
+  "cues": {
+    "saved": [
+      {
+        "type": "light",
+        "sectionId": "seam-section-1",
+        "atSeconds": 0
+      },
+      {
+        "type": "light",
+        "sectionId": "seam-section-1",
+        "atSeconds": 0.1
+      },
+      {
+        "type": "music",
+        "sectionId": "seam-section-1",
+        "atSeconds": 0.1
+      },
+      {
+        "type": "dialogue",
+        "sectionId": "seam-section-1",
+        "atSeconds": 0.1
+      },
+      {
+        "type": "light",
+        "sectionId": "seam-section-1",
+        "atSeconds": 0.2
+      }
+    ],
+    "lanes": {
+      "light": 3,
+      "music": 1,
+      "dialogue": 1
+    },
+    "savedMemo": "青へ転じる。次の台詞を待つ。 ",
+    "deleteUndoCount": 5
+  },
+  "addedTransitionSeconds": 4,
+  "sceneCountBefore": 32,
+  "sceneBlockCount": 4,
+  "menuState": {
+    "stripCount": 2,
+    "themeAbsent": true,
+    "saveLoadAbsent": true,
+    "historyAbsent": true,
+    "skinSettingsRemain": true,
+    "allRendered": true,
+    "unsupportedDisabled": true
+  },
+  "headerVolume": {
+    "inHeader": true,
+    "inTimeline": false,
+    "beforeFeedback": true,
+    "width": 108,
+    "value": "100"
+  },
+  "rowAddControls": {
+    "stage-timeline-add-audio": {
+      "rowKey": "audio",
+      "inLabel": true,
+      "width": 32,
+      "height": 32,
+      "iconCenterDeltaX": 0,
+      "iconCenterDeltaY": 0,
+      "labelledBy": "stage-timeline-audio-label stage-timeline-add-item-help"
+    },
+    "stage-timeline-add-scene": {
+      "rowKey": "scenes",
+      "inLabel": true,
+      "width": 32,
+      "height": 32,
+      "iconCenterDeltaX": 0,
+      "iconCenterDeltaY": 0,
+      "labelledBy": "stage-timeline-scenes-label stage-timeline-add-item-help"
+    },
+    "stage-timeline-add-transition": {
+      "rowKey": "transitions",
+      "inLabel": true,
+      "width": 32,
+      "height": 32,
+      "iconCenterDeltaX": 0,
+      "iconCenterDeltaY": 0,
+      "labelledBy": "stage-timeline-transitions-label stage-timeline-add-item-help"
+    },
+    "stage-timeline-add-light-cue": {
+      "rowKey": "light",
+      "inLabel": true,
+      "width": 32,
+      "height": 32,
+      "iconCenterDeltaX": 0,
+      "iconCenterDeltaY": 0,
+      "labelledBy": "stage-timeline-light-label stage-timeline-add-cue-help"
+    },
+    "stage-timeline-add-music-cue": {
+      "rowKey": "music",
+      "inLabel": true,
+      "width": 32,
+      "height": 32,
+      "iconCenterDeltaX": 0,
+      "iconCenterDeltaY": 0,
+      "labelledBy": "stage-timeline-music-label stage-timeline-add-cue-help"
+    },
+    "stage-timeline-add-dialogue-cue": {
+      "rowKey": "dialogue",
+      "inLabel": true,
+      "width": 32,
+      "height": 32,
+      "iconCenterDeltaX": 0,
+      "iconCenterDeltaY": 0,
+      "labelledBy": "stage-timeline-dialogue-label stage-timeline-add-cue-help"
+    }
+  },
+  "iconControls": {
+    "controls": {
+      "stage-timeline-song-delete": {
+        "text": "",
+        "label": "この楽曲を削除",
+        "title": "この楽曲を削除",
+        "width": 44,
+        "height": 44,
+        "iconWidth": 16,
+        "iconHeight": 16,
+        "iconCenterDeltaX": 0,
+        "iconCenterDeltaY": 0
+      },
+      "stage-timeline-head": {
+        "text": "",
+        "label": "先頭へ",
+        "title": "先頭へ",
+        "width": 44,
+        "height": 44,
+        "iconWidth": 20,
+        "iconHeight": 20,
+        "iconCenterDeltaX": 0,
+        "iconCenterDeltaY": 0
+      },
+      "stage-timeline-prev": {
+        "text": "",
+        "label": "前のシーンへ",
+        "title": "前のシーンへ",
+        "width": 44,
+        "height": 44,
+        "iconWidth": 20,
+        "iconHeight": 20,
+        "iconCenterDeltaX": 0,
+        "iconCenterDeltaY": 0
+      },
+      "stage-timeline-play": {
+        "text": "",
+        "label": "タイムラインを再生",
+        "title": "タイムラインを再生",
+        "width": 44,
+        "height": 44,
+        "iconWidth": 20,
+        "iconHeight": 20,
+        "iconCenterDeltaX": 0,
+        "iconCenterDeltaY": 0
+      },
+      "stage-timeline-next": {
+        "text": "",
+        "label": "次のシーンへ",
+        "title": "次のシーンへ",
+        "width": 44,
+        "height": 44,
+        "iconWidth": 20,
+        "iconHeight": 20,
+        "iconCenterDeltaX": 0,
+        "iconCenterDeltaY": 0
+      },
+      "stage-timeline-metronome": {
+        "text": "",
+        "label": "メトロノーム",
+        "title": "メトロノーム",
+        "width": 44,
+        "height": 44,
+        "iconWidth": 28,
+        "iconHeight": 28,
+        "iconCenterDeltaX": 0,
+        "iconCenterDeltaY": 0
+      }
+    },
+    "order": [
+      "stage-timeline-head",
+      "stage-timeline-prev",
+      "stage-timeline-play",
+      "stage-timeline-next",
+      "stage-timeline-metronome"
+    ],
+    "splitLabel": "シーン分割"
+  },
+  "zoom": {
+    "before": 1620,
+    "after": 2059.1875,
+    "reset": 1620,
+    "widestTimeline": {
+      "zoomTitle": "縮小 (0.05×)",
+      "zoomOutDisabled": true,
+      "surfaceWidth": 1425,
+      "viewportWidth": 1425,
+      "horizontalScroll": false
+    }
+  },
+  "expandedHeight": 446,
+  "narrow": {
+    "viewportWidth": 1024,
+    "toolbarWidth": 1009,
+    "panelRight": 1009,
+    "panelHeight": 360,
+    "horizontalScroll": true
+  },
+  "narrowSettings": {
+    "left": 741,
+    "right": 1001,
+    "width": 260,
+    "viewportWidth": 1024
+  },
+  "errors": [],
+  "missingResources": [
+    "https://aratama-ship-it.github.io/shosai-app/stage-shows.local.js?v=1",
+    "https://aratama-ship-it.github.io/beta-status",
+    "https://aratama-ship-it.github.io/whoami",
+    "https://aratama-ship-it.github.io/usage/config"
+  ]
+}

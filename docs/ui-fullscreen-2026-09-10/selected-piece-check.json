@@ -1,0 +1,5 @@
+{
+  "passed": true,
+  "selected": "台・箱 1",
+  "checks": "F enters with selected piece; Delete does not delete; ArrowLeft changes scene without moving selected piece; F exits"
+}

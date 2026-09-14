@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>一括publish 監査 — 舞台スケッチ 2026-09-14</title>
+<style>
+  :root{
+    --desk-1:#17130f; --desk-2:#201b16; --desk-3:#282119;
+    --milk:#efe7d6; --milk-2:#a79c86; --brass:#9c823f; --rust-ink:#df6433;
+    --line:rgba(239,231,214,.12);
+    --sans:"Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--desk-1);color:var(--milk);
+    font:14.5px/1.85 var(--sans);-webkit-font-smoothing:antialiased;padding:28px 28px 64px}
+  .wrap{max-width:980px;margin:0 auto}
+  .prose{max-width:46em}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:8px}
+  h1{font:600 26px/1.35 var(--sans);letter-spacing:.10em;margin:0 0 6px}
+  .meta{font-size:12.5px;line-height:1.7;color:var(--milk-2);margin:0}
+  .meta code{font:12.5px/1.7 var(--mono);color:var(--milk)}
+
+  .ask{background:var(--desk-2);border:1px solid var(--line);border-left:3px solid var(--brass);
+    padding:20px 22px;margin:22px 0 0}
+  .ask h2{font:600 18px/1.7 var(--sans);margin:0 0 10px;letter-spacing:.02em}
+  .ask ol{margin:0;padding-left:1.4em}
+  .ask li{margin-bottom:8px}
+  .ask li:last-child{margin-bottom:0}
+  .ask b{color:var(--milk)}
+
+  section{margin-top:36px}
+  h2.sec{font:600 15px/1.4 var(--sans);letter-spacing:.10em;color:var(--brass);
+    margin:0 0 14px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+  h3{font:600 14.5px/1.6 var(--sans);margin:20px 0 8px;letter-spacing:.03em}
+  p{margin:0 0 12px}
+  .card{background:var(--desk-2);border:1px solid var(--line);padding:20px 22px;margin-bottom:14px}
+  .note{font-size:12.5px;line-height:1.7;color:var(--milk-2)}
+  code{font:12.5px/1.7 var(--mono);background:var(--desk-3);padding:1px 5px;color:var(--milk)}
+
+  /* 確定度。色ではなく言葉と縦罫で分ける */
+  .tag{display:inline-block;font-size:11.5px;letter-spacing:.1em;padding:1px 7px;
+    border:1px solid var(--line);color:var(--milk-2);vertical-align:.12em;margin-right:6px}
+  .tag.unk{color:var(--rust-ink);border-color:var(--rust-ink)}
+  .unconfirmed{border-left:3px solid var(--rust-ink);padding-left:14px;margin:14px 0}
+
+  /* 時刻タイムライン＝この資料の主役 */
+  .tl{margin:4px 0 0;padding:0;list-style:none}
+  .tl li{display:grid;grid-template-columns:92px 1fr;gap:0 18px;position:relative;
+    padding:0 0 16px}
+  .tl li::before{content:"";position:absolute;left:92px;top:9px;bottom:-2px;width:2px;
+    background:var(--brass);opacity:.45}
+  .tl li:last-child::before{display:none}
+  .tl li::after{content:"";position:absolute;left:89px;top:9px;width:8px;height:8px;
+    background:var(--brass)}
+  .tl .t{font:12.5px/1.75 var(--mono);color:var(--brass);text-align:right;white-space:nowrap}
+  .tl .b{padding-left:14px}
+  .tl .b b{display:block;font-weight:600}
+  .tl .b span{font-size:12.5px;line-height:1.7;color:var(--milk-2);display:block}
+  .tl li.key .b b{color:var(--rust-ink)}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.6;margin:10px 0 4px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{background:var(--desk-3);font-size:14px;font-weight:600;color:var(--milk);
+    letter-spacing:.04em;border-bottom:1px solid var(--line)}
+  td.n{font:12.5px/1.6 var(--mono);white-space:nowrap;color:var(--milk-2)}
+  tbody tr:last-child td{border-bottom:none}
+
+  details{border:1px solid var(--line);background:var(--desk-2);padding:0;margin:10px 0}
+  summary{cursor:pointer;padding:11px 16px;font-size:13.5px;color:var(--milk);
+    transition:background 120ms}
+  summary:hover{background:var(--desk-3)}
+  details[open] summary{border-bottom:1px solid var(--line)}
+  details .body{padding:14px 16px}
+  details .body ul{margin:0;padding-left:1.3em;font-size:12.5px;line-height:1.85;color:var(--milk-2)}
+  details .body code{font-size:11.5px}
+
+  .opts{display:grid;gap:12px;margin-top:6px}
+  .opt{background:var(--desk-2);border:1px solid var(--line);padding:18px 20px}
+  .opt.rec{border-color:var(--brass)}
+  .opt h4{font:600 14.5px/1.5 var(--sans);margin:0 0 4px}
+  .opt .lead{font-size:12.5px;color:var(--brass);letter-spacing:.08em;margin:0 0 8px}
+  .opt p{margin:0 0 8px;font-size:13.5px;line-height:1.75}
+  .opt dl{margin:0;font-size:12.5px;line-height:1.75}
+  .opt dt{color:var(--milk-2);float:left;clear:left;width:4.2em}
+  .opt dd{margin:0 0 2px 4.6em}
+
+  footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--line);
+    font-size:12.5px;line-height:1.8;color:var(--milk-2)}
+
+  @media (max-width:700px){
+    body{padding:16px 16px 48px}
+    h1{font-size:21px}
+    .tl li{grid-template-columns:1fr;gap:0}
+    .tl li::before,.tl li::after{display:none}
+    .tl .t{text-align:left}
+    .tl .b{padding-left:0;border-left:2px solid var(--brass);padding-left:12px;margin-top:2px}
+    table,thead,tbody,tr,th,td{display:block}
+    thead{position:absolute;left:-9999px}
+    tr{border-bottom:1px solid var(--line);padding:8px 0}
+    tbody tr:last-child{border-bottom:none}
+    td{border:none;padding:2px 0}
+    td::before{content:attr(data-l);display:block;font-size:11.5px;letter-spacing:.08em;
+      color:var(--milk-2)}
+    .opt dt{float:none;width:auto}
+    .opt dd{margin-left:0;margin-bottom:8px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition-duration:0ms!important}}
+  @media print{body{background:#fff;color:#000}.card,.opt,details{background:none;border-color:#999}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="prose">
+  <h1>一括publish 監査</h1>
+  <p class="meta">
+    舞台スケッチ／<code>aratama-ship-it/shosai-app</code>（<b style="color:var(--rust-ink)">公開リポジトリ</b>）<br>
+    対象コミット <code>5fc1473</code>「Publish latest Stage Sketch updates」 2026-09-14 01:32:54 ／ 204ファイル<br>
+    作成 2026-09-14 Claude（Opus 5）／ ローカル閲覧用・公開しない
+  </p>
+</header>
+
+<div class="ask prose">
+  <h2>決めていただきたいこと</h2>
+  <ol>
+    <li><b>片付け</b>：公開物に実害は見つかりませんでした。ただし<b>ローカルに iCloud 競合コピーが 1,181 件</b>あり、うち9件が原因でテストが1件落ちています。これを片付けてよいか。</li>
+    <li><b>運用</b>：この一括publishは <code>HANDOFF.md</code> §2 の禁止事項に当たる手順で行われました。<b>今後どう扱うか</b>（下の3案から）。</li>
+  </ol>
+</div>
+
+<!-- ================= ① 棚卸し ================= -->
+<section>
+  <h2 class="sec">① 何が公開されたか</h2>
+
+  <div class="card prose">
+    <p><span class="tag">確定</span><b>秘密情報・個人情報の流出はありません。</b></p>
+    <p class="note">追加された123ファイル全文を、メールアドレス・APIキー・トークン・秘密鍵・パスワードのパターンで走査して該当0件。<code>wrangler.toml</code> の差分は Durable Object のバインディングとマイグレーション定義のみ（資格情報なし）。<code>TOKENS.md</code> はデザイントークン。<code>p2-runs/*.json</code> は架空の検証データ（「ロミオとジュリエット 小さなサーカス版」）。</p>
+    <p><span class="tag">確定</span><b><code>.gitignore</code> の除外を破ったファイルは0件。</b></p>
+    <p class="note">追加123件を <code>git check-ignore</code> で全件照合して0件。iCloud 競合コピーは <code>.gitignore</code> の <code>* 2.*</code> で除外されており、<b>1件も公開されていません</b>。</p>
+  </div>
+
+  <h3>内訳（204 = 新規追加123 ＋ 変更81 ＋ 削除0）</h3>
+  <table>
+    <thead><tr><th>置き場</th><th>件数</th><th>中身</th></tr></thead>
+    <tbody>
+      <tr><td data-l="置き場"><code>tests/</code></td><td data-l="件数" class="n">84</td><td data-l="中身">自動テスト。利用者には配信されない</td></tr>
+      <tr><td data-l="置き場"><code>tools/</code></td><td data-l="件数" class="n">49</td><td data-l="中身">開発用の検査スクリプト。同上</td></tr>
+      <tr><td data-l="置き場"><code>docs/</code></td><td data-l="件数" class="n">31</td><td data-l="中身">設計資料・検証記録・照明試作</td></tr>
+      <tr><td data-l="置き場">ルート直下</td><td data-l="件数" class="n">18</td><td data-l="中身"><b>製品本体を含む</b>（下記）</td></tr>
+      <tr><td data-l="置き場"><code>mcp-server/</code></td><td data-l="件数" class="n">8</td><td data-l="中身">MCPサーバ実装</td></tr>
+      <tr><td data-l="置き場"><code>public/</code> ほか</td><td data-l="件数" class="n">14</td><td data-l="中身">AI向けJSON仕様・i18n下書き・LP</td></tr>
+    </tbody>
+  </table>
+
+  <details>
+    <summary>製品本体として公開されたファイル（35件）を開く</summary>
+    <div class="body">
+      <ul>
+        <li>アプリ本体: <code>stage-sketch.js</code> <code>stage-timeline.js</code> <code>stage-sw.js</code> <code>stage.html</code> <code>style.css</code></li>
+        <li>多言語: <code>stage-i18n.js</code> <code>stage-i18n.zh-Hans.js</code> <code>stage-i18n.zh-Hant.js</code></li>
+        <li>公開ページ: <code>try.html</code> <code>public-beta.html</code> <code>mac.html</code> <code>study-frame.html</code> <code>public-lp/index.html</code></li>
+        <li>ビルド: <code>build_public.py</code> <code>build_study.py</code> ／ 設定: <code>wrangler.toml</code></li>
+        <li>MCP: <code>mcp-server/src/*.js</code>（5本）ほか</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="card prose">
+    <p><span class="tag">確定</span><b>ベータ利用者への影響はありません。</b></p>
+    <p class="note"><code>README.md</code> L119 のとおり、β版は <b>Cloudflare Worker から配信</b>されており、GitHub の main とは配信経路が別です。リポジトリに <code>.github/workflows</code> は存在せず（Pages のビルド以外に自動デプロイはなし）、push で Worker が更新されることはありません。したがって <code>BETA_UPDATE_SAFETY.md</code> の停止条件には該当しません。<br>
+    変わったのは <b>GitHub Pages の内容</b>です（<code>try.html</code> <code>stage.html</code> <code>public-beta.html</code> <code>mac.html</code> はいずれも HTTP 200 で生存を確認）。</p>
+  </div>
+
+  <h3>テスト結果</h3>
+  <div class="card prose">
+    <p><code>node --test tests/</code> ＝ <b>1,228件中 1,227 pass / 1 fail</b>。</p>
+    <p>落ちているのは <code>tests/ai-json-check.test.mjs:82</code>「all nine original negative fixtures stay negative」。<b>fixture が9件のはずが18件</b>ある、という失敗です。</p>
+    <p><span class="tag">確定</span>原因は <b>iCloud の同期競合コピー9件</b>（<code>dangling-ref 2.json</code> など）。9件とも中身は元ファイルと<b>完全に同一</b>で、<code>git ls-files</code> 上は正しく9件のみ。<b>公開物の欠陥ではなく、このMacのローカル環境の問題</b>です。競合コピーを片付ければ解消します。</p>
+  </div>
+
+  <div class="card prose">
+    <p><span class="tag">確定</span><b>リポジトリ内の iCloud 競合コピーは 1,181 件。</b></p>
+    <p class="note">内訳の例: <code>CLAUDE 2.md</code> <code>AGENTS 2.md</code> <code>BETA_UPDATE_SAFETY 2.md</code>、<code>design/TOKEN_SHEET_* 2.md</code> 多数、<code>tools/* 2.mjs</code> 多数。<br>
+    <b>今回の一括publishが原因ではありません</b>——01:30以降に作られたものは2件だけで、大半は 09-11・09-13・08-23 のものです。公開もされていません（<code>.gitignore</code> で除外済み）。<br>
+    CLAUDE.md の方針により、競合コピーは<b>AIが勝手に削除せず報告</b>しています。</p>
+  </div>
+</section>
+
+<!-- ================= ② 経路 ================= -->
+<section>
+  <h2 class="sec">② この一括publishはどこから来たか</h2>
+
+  <p class="prose"><span class="tag">確定</span><code>git reflog</code> に全手順が残っていました。<b>別マシンでも自動処理でもなく、この Mac mini のこの作業ツリーで</b>、01:30〜01:37 の7分間に行われています。</p>
+
+  <ul class="tl">
+    <li><div class="t">01:30</div><div class="b"><b>reset: moving to HEAD</b><span>作業ツリーの状態を確認する操作</span></div></li>
+    <li><div class="t">01:32:54</div><div class="b"><b>commit: Publish latest Stage Sketch updates</b><span>作業ツリー全体を1コミットに（<code>10a876d</code>・204ファイル）</span></div></li>
+    <li class="key"><div class="t">01:34</div><div class="b"><b>rebase (start): checkout origin/main</b><span>★ 別セッションが観測した「3ファイルが origin/main の内容へ戻った」現象の正体。rebase 中は作業ツリーが一時的にベースコミットの内容に置き換わるため、その瞬間にファイルを読んだセッションには巻き戻って見える</span></div></li>
+    <li><div class="t">01:35</div><div class="b"><b>rebase (continue) → (finish)</b><span><code>fd1d784</code> の上へ載せ直して <code>4e4fb2d</code></span></div></li>
+    <li><div class="t">01:36–01:37</div><div class="b"><b>commit (amend) ×3</b><span><code>860d368</code> → <code>dec5b7e</code> → <code>5fc1473</code></span></div></li>
+    <li><div class="t">01:38:52</div><div class="b"><b>GitHub Pages ビルド開始 → 01:39:33 built</b><span>公開反映</span></div></li>
+  </ul>
+
+  <div class="card prose">
+    <p><b>これは <code>HANDOFF.md</code> §2 の禁止事項に当たります。</b>同節は「作業ツリーとローカル main に触らない」「<code>git add -A</code> ／ 素の <code>git commit</code> ／ <code>git merge</code> ／ <code>git pull</code> ／ <code>git reset --hard</code> は禁止」「公開は必ず一時インデックス経由」と定めています。rebase による作業ツリーの一時巻き戻しは、そこで想定されている以上に他セッションへ影響します。</p>
+    <p><span class="tag">確定</span>過去40コミットを調べた範囲で、<b>50ファイルを超える大量コミットは今回が唯一</b>です。常態化した経路ではなく単発です。</p>
+  </div>
+
+  <div class="unconfirmed prose">
+    <p><span class="tag unk">未確認</span><b>どの道具が実行したかは特定できていません。</b></p>
+    <p class="note">ワークスペース全体を検索しても「Publish latest Stage Sketch updates」という文言を出すスクリプトは存在しませんでした（該当したのは今回私が書いた記録2件のみ）。英語の定型文・amend の反復・rebase という並びから <b>GUIツール（GitHub Desktop 等）か手操作</b>の可能性が高いと考えますが、これは推測です。<br>
+    <b>心当たりがあれば教えてください。</b>特定できると、下の案の選び方が変わります。</p>
+  </div>
+</section>
+
+<!-- ================= 判断 ================= -->
+<section>
+  <h2 class="sec">運用をどうするか — 3案</h2>
+  <div class="opts">
+
+    <div class="opt rec">
+      <p class="lead">推奨</p>
+      <h4>案C　用途で使い分ける（試作＝一時インデックス／製品リリース＝一括＋事前確認）</h4>
+      <p>実際に目的が2種類あります。試作の小さな反復（今日だけで十数回）に一時インデックスは合理的で、逆に製品リリースで204ファイルを1件ずつ <code>update-index</code> するのは現実的ではありません。両方を認め、<b>一括側にだけ「実行前に出るものを一覧で見る」手順を必須にする</b>。</p>
+      <dl>
+        <dt>利点</dt><dd>今のやり方を否定せずに済む。事故の芽（意図しない同梱）だけを潰せる</dd>
+        <dt>代償</dt><dd>ルールが2本になる。どちらを使うかの判断が要る</dd>
+        <dt>要追加</dt><dd>一括publish の前に <code>git status --short</code> と差分一覧を出して本人が見る、他セッションの稼働確認、テスト通過の確認</dd>
+      </dl>
+    </div>
+
+    <div class="opt">
+      <h4>案A　一括publishをやめ、一時インデックスに一本化する</h4>
+      <p>現行 <code>HANDOFF.md</code> §2 をそのまま守る。</p>
+      <dl>
+        <dt>利点</dt><dd>ルールが1本。他セッションを絶対に巻き込まない</dd>
+        <dt>代償</dt><dd>製品リリースのようにファイル数が多い公開が極端に面倒。守られなくなる恐れ</dd>
+      </dl>
+    </div>
+
+    <div class="opt">
+      <h4>案B　一括publishを正式手順に昇格させ、一時インデックスをやめる</h4>
+      <p>作業ツリー全体の公開を標準にし、<code>check-beta-update-safety.py</code> の実行を毎回必須にする。</p>
+      <dl>
+        <dt>利点</dt><dd>手順が1本で、実際に行われているやり方に合う</dd>
+        <dt>代償</dt><dd><b>同時編集と両立しない。</b>複数セッションが並行する今の体制では、他人の書きかけを常時巻き込む</dd>
+      </dl>
+    </div>
+
+  </div>
+
+  <div class="card prose" style="margin-top:14px">
+    <h3 style="margin-top:0">どの案でも先に決めたい1点</h3>
+    <p><b>rebase を使わない</b>ことだけは共通で入れたいところです。今回いちばん害が大きかったのは公開内容ではなく、<b>01:34 に作業ツリーが一時的に巻き戻り、並行セッションが自分の変更を失ったと誤認したこと</b>でした。公開そのものは <code>commit</code> と <code>push</code> だけで足ります。</p>
+  </div>
+</section>
+
+<section>
+  <h2 class="sec">その後（01:47 時点）</h2>
+  <div class="card prose">
+    <p>この監査の対象は <code>5fc1473</code> のままですが、<b><code>origin/main</code> はその後 <code>5c17c88</code> まで進んでいます</b>（バーンドア／カッターのセッションが、決められた一時インデックス経由で2コミットを上乗せ）。</p>
+    <p class="note">実測で確認: <code>origin/main</code> = <code>5c17c88</code>／Pages <code>built</code>（16:48:19Z・エラーなし）／作業ツリーの <code>app.js</code> <code>index.html</code> <code>rig-engine.js</code> は3本とも origin と同一ハッシュ／live の <code>?v=1789317907</code>・再生トグル健在（<code>togglePlay</code> 3件・旧ID 0件）。</p>
+    <p><span class="tag">確定</span><b>「別マシンから来た」説は否定されました。</b></p>
+    <p class="note">並行セッションからは「<code>5fc1473</code> の作者 <code>arata@AratanoMac-mini.local</code> は別マシンで、01:34 の巻き戻りは iCloud 経由の伝播ではないか」という見立てが出ましたが、<b>このマシンの <code>hostname</code> 自体が <code>AratanoMac-mini.local</code></b> です。加えて <code>git reflog</code>（ローカル専用で、リモートからも iCloud からも同期されない）に commit と rebase の一部始終が残っています。<b>この作業ツリーで実行されたことが確定</b>です。<br>
+    この違いは対策に効きます。iCloud 由来なら手の打ちようがありませんが、rebase なら<b>「公開時に rebase を使わない」だけで防げます</b>。</p>
+  </div>
+</section>
+
+<footer class="prose">
+  <p><b>この資料の根拠</b>：<code>git reflog</code> ／ <code>git diff --name-status fd1d784 5fc1473</code> ／ <code>git check-ignore</code> 全件照合 ／ 追加123ファイルの全文パターン走査 ／ <code>gh api repos/.../pages/builds/latest</code> ／ <code>node --test tests/</code>（1,228件）／ Pages 上の4ページへの HTTP 実測。すべて 2026-09-14 01:30–01:55 に実行。</p>
+  <p>トークンシート: <code>design/TOKEN_SHEET_publish-audit_2026-09-14.md</code>（配色は contrast.mjs で実測）。<br>
+  この資料はローカル閲覧用です。公開・外部共有はしていません。</p>
+</footer>
+
+</div>
+</body>
+</html>

@@ -300,7 +300,7 @@
   }
   function renderTypePane() {
     const count = selectedIds().length;
-    typePane.innerHTML = `<div class="slp-summary"><b>${count}灯に型を当てる</b><span>型は値を書き込みます。後から「単体設定」で個別に変えられます。</span></div><p class="ptitle">最近使った型</p>`;
+    typePane.innerHTML = `<div class="slp-summary"><b>${count}灯に型を当てる</b><span>型は値を書き込みます。後から「調整」で個別に変えられます。</span></div><p class="ptitle">最近使った型</p>`;
     const applied = sharedAppliedPresets();
     if (applied.length) {
       const current = document.createElement("section"); current.className = "slp-current"; current.setAttribute("aria-label", "現在の型");
@@ -333,8 +333,8 @@
     const tabs = document.querySelector(".lpTabs"); if (!tabs) return null;
     let tab = $("slp-tab");
     if (!tab) {
-      tab = document.createElement("button"); tab.type = "button"; tab.id = "slp-tab"; tab.className = "slp-tab"; tab.textContent = "複数連携";
-      const adjust = [...tabs.querySelectorAll("button")].find((button) => button.textContent.trim() === "単体設定"); tabs.insertBefore(tab, adjust || null);
+      tab = document.createElement("button"); tab.type = "button"; tab.id = "slp-tab"; tab.className = "slp-tab"; tab.textContent = "型";
+      const adjust = [...tabs.querySelectorAll("button")].find((button) => button.textContent.trim() === "調整"); tabs.insertBefore(tab, adjust || null);
       tab.onclick = () => { if (selectedIds().length < 2) { H.toast("2灯以上を選ぶと型を使えます"); return; } ui.panel = "type"; refresh(); };
     }
     /* 見本／調整は既存UIが内部で直ちに再描画するため、親要素のbubbleではなく各ボタンのcaptureで先に型表示を外す。 */

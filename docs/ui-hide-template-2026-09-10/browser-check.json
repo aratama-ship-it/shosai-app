@@ -1,0 +1,37 @@
+{
+  "results": [
+    {
+      "name": "desktop",
+      "hidden": true,
+      "display": "none",
+      "rects": 0,
+      "modal": true,
+      "templates": 10
+    },
+    {
+      "name": "fullscreen",
+      "hidden": true,
+      "display": "none",
+      "rects": 0,
+      "modal": true,
+      "templates": 10
+    },
+    {
+      "name": "restored",
+      "hidden": true,
+      "display": "none",
+      "rects": 0,
+      "modal": true,
+      "templates": 10
+    },
+    {
+      "name": "tablet",
+      "hidden": true,
+      "display": "none",
+      "rects": 0,
+      "modal": true,
+      "templates": 10
+    }
+  ],
+  "errors": []
+}

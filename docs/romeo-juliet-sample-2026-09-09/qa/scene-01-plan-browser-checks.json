@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-09-09",
+  "baseUrl": "http://127.0.0.1:18744",
+  "results": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "status": 200,
+      "stageMarkers": 10,
+      "pairCards": 4,
+      "coordinateRows": 10,
+      "horizontalOverflow": false,
+      "pageErrors": [],
+      "consoleErrors": []
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "status": 200,
+      "stageMarkers": 10,
+      "pairCards": 4,
+      "coordinateRows": 10,
+      "horizontalOverflow": false,
+      "pageErrors": [],
+      "consoleErrors": []
+    }
+  ],
+  "servedArtifact": {
+    "version": 3,
+    "castCount": 10,
+    "sceneEntries": 5
+  },
+  "directionNotebook": {
+    "status": 200,
+    "artifactLinkVerified": true
+  }
+}

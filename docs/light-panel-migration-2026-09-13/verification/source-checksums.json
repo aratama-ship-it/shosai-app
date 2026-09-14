@@ -1,0 +1,12 @@
+{
+  "light-panel-migration.js": "e7a1c9293a1b9c07f20a85454fc3e737581fb473d1bf3f8f36cf1a65bdf62e73",
+  "venue-dimensions.js": "fd381f2f1c08a7b9f058f1d3b30e9f128a9c180ab3c33cd0c77736699e2fddbc",
+  "demo/app.js": "a12afe72acf01fdcec4d900396d96f14d608846508213344f34ade387060fa72",
+  "demo/index.html": "3ee8ffa67529544f1667e597257d49d221ba83eaf9ee963f2a4a497e10d6e35f",
+  "demo/migration-ui.js": "e486840b610c49d6ef29dd762455a879e6f9625f576788117dedb552038686c3",
+  "demo/rig-engine.js": "52f6af28a924bc47cad7a76c8b9d2fc6eb9900425da691dbd87c1a772ba530f0",
+  "demo/stage-figure.js": "5d5d5a68ac7b3f698bc4bf83a829f454f4bf0d836f491ee37f90b8206ee0409e",
+  "tests/beta-restore-check.mjs": "16bcb091b5616a260597c947a4e8cd64db1a00a2682fbe639004a495855a7f96",
+  "tests/browser-check.mjs": "e3bef6bb53828161bfc81e98030660499ffb12b98dde4cf65f05535336538f57",
+  "tests/migration.test.cjs": "52fc8816f4f18e91b1158ac818b21c57d72ab997cd1da0725bc8b0b5fd69fa3e"
+}

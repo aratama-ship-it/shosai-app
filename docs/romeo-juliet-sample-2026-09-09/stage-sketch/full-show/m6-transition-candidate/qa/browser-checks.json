@@ -1,0 +1,25 @@
+{
+  "status": "pass",
+  "baseUrl": "file:///Users/arata/Library/Mobile%20Documents/com~apple~CloudDocs/claude%20code%20files/show-creative-ideas/shosai-app",
+  "candidateSha256": "815971b60c2604a29719784a3a84e0a7594299a4fb5066adb615260849b65735",
+  "approvalStatus": "owner_approved_for_sample",
+  "approvedChoices": {
+    "M6-C1": "A",
+    "M6-C2": "A",
+    "M6-C3": "A"
+  },
+  "isolatedBrowserStorage": true,
+  "userBrowserStorageModified": false,
+  "viewports": [
+    "1440x1000",
+    "390x844"
+  ],
+  "stageViewsChecked": 5,
+  "decisionGroupsChecked": 3,
+  "horizontalOverflow": 0,
+  "pageErrors": [],
+  "checks": [
+    "Decision page: owner-approved A/A/A preselected, 5 diagrams, 3 button groups, local answer assembly, 1440/390 overflow 0, choice buttons >=44px",
+    "Stage Sketch isolated import: comparison shown, opened as separate show, 34 section/scene rows, 31 scenes, 10 cast, 13 sets, 5 target layouts retained"
+  ]
+}

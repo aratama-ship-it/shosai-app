@@ -1,0 +1,17 @@
+{
+  "betaVersion": "433c22ac-f953-4d05-8179-d757759ff7ee",
+  "tested": "Captured beta code in isolated Chromium: open old show, export, migrate, edit new lighting, restore original, reopen through beta importer, full exported JSON equality",
+  "sceneIds": [
+    "sec",
+    "scene-a",
+    "scene-b",
+    "scene-c"
+  ],
+  "audioTrackIds": [
+    "music-1"
+  ],
+  "errors": [],
+  "missingAssets": [
+    "/stage-shows.local.js"
+  ]
+}

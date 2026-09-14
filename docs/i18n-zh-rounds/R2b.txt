@@ -1,0 +1,23 @@
+最初に "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/AGENTS.md" を読むこと。
+対象: "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/" の stage-sketch.js / stage-i18n.js / stage-set-builder.js / stage-public.js / tests/。
+目的: 実装。docs/I18N_ZH_WORKORDER_2026-09-09.md の §3.1 を、§5 の制約で、§6 R2 の完了条件まで。
+確定仕様: §3.1 の1〜5。日英の見え方を一切変えない（innerText 一致が条件）。window.SHOSAI_I18N は残す。
+未決事項: なし（判断が要る箇所が出たら止めて報告）。
+制約: §5 のとおり。isEn() を新規に増やさない。stage.html を手で触らない。
+完了報告: 変更ファイル／normalizeStageLanguage の表と対応テスト／innerText 一致の実測手順と結果／node tests/index.mjs の結果／触らなかった isEn() の残件数と内訳（分岐・書式）。
+補足（R1/R1b の実績を引き継ぐ）:
+  - 編集前に stage-sketch.js / stage-i18n.js / stage-set-builder.js / stage-public.js を <name>_backup_2026-09-09-before-i18n-packs.js の名で複製する。
+  - §3.1 には R1 の成果物（sx / languageValue）の扱いが追記されている。必ず読む。
+  - innerText の基準値（R1b 完了時・ローカルHTTP 127.0.0.1:18431＋隔離した新規 Chrome プロファイル、document.body.innerText の SHA-256）:
+      ?lang=en → d10ed544fa5093bec741ec4490312aa1cf99564928b291374647de66852a6fc6（2474 bytes）
+      ?lang=ja → 7063741df129ce2a8192510c638c250228760339ad541a5b6b65623a8d8c3154（3340 bytes）
+    R2 完了後に同じ手順で両方が一致すること。加えて ?lang=zh-Hant と ?lang=zh-TW で開いたときの innerText が ?lang=en と一致すること（パック未読込の言語は en へ落ちる仕様）。
+  - コミットしない。git add -A しない。作業ツリーには他セッションの未コミット変更がある。
+
+【R2b＝再開の指示。前回（R2）の停止報告への回答】
+  発注書 §3.1 の 3・4・4b を確定した（読み直すこと）。要点:
+  1. Set Builder の WORDS 38語は TEXT へ混ぜず、en パックの MAPS 群 "setBuilder"（id＝日本語）に収録。t(value) は tm("setBuilder", value, value) 相当へ。衝突4件はこれで解消（文脈別キーは作らない）。
+  2. stage-public.js は現存する全件（14件）を新規則へ。
+  3. 取り落としの順序を全言語で「その言語のパック → en パック → 日本語原文」に統一（TEXT / MAPS / SAY / generated）。中国語ドラフトに無い鍵は英語に落ちる。R3 のドラフト無変更制約はこの順序で整合する（ドラフトへの追記はしない）。
+  4. 追加した MAPS 群 setBuilder の id 一覧を i18n-prep/NEEDS_REVIEW.md に「## 2026-09-09 追加 MAPS 群 setBuilder（未訳）」として記録。
+  この方針で最初にバックアップを作り、R2 を最後まで実装・検証して報告する。判断が要る新しい不整合が出たら、同じように止めて報告する。

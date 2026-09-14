@@ -1,0 +1,32 @@
+{
+  "count": 25,
+  "checks": [
+    "dedicated layout preview served",
+    "default push keeps left menus collapsed and script right",
+    "opening left reduces stage width while retaining script",
+    "panels have distinct non-overlapping horizontal regions",
+    "without script preserves page and selection",
+    "return restores same page and scroll",
+    "annotation selection does not change displayed stage",
+    "explicit view displays linked scene",
+    "folded script has visible reopen control",
+    "reopen preserves page and annotation",
+    "wide dock shows left and right together",
+    "narrow width opens left and folds right",
+    "narrow width can return to script",
+    "focus does not remain inside a folded panel",
+    "phone uses one readable pane",
+    "phone returns to stage without losing data",
+    "phone can open left controls",
+    "phone can restore script through left controls",
+    "no whole-page horizontal overflow 1440",
+    "no whole-page horizontal overflow 1280",
+    "no whole-page horizontal overflow 1024",
+    "no whole-page horizontal overflow 820",
+    "no whole-page horizontal overflow 390",
+    "no whole-page horizontal overflow 844",
+    "no JavaScript errors"
+  ],
+  "errors": [],
+  "scope": "fixed HTML/SVG layout, no real PDF, physical tablet, cross-pane DnD or product save"
+}

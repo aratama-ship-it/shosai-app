@@ -1,0 +1,96 @@
+{
+  "results": [
+    {
+      "name": "desktop-ja",
+      "url": "http://127.0.0.1:8847/stage.html?lang=ja&verify=export-print-20260910",
+      "measure": {
+        "width": 44,
+        "height": 44,
+        "svgWidth": 20,
+        "svgHeight": 20,
+        "svgDisplay": "block",
+        "pseudo": "none"
+      },
+      "printButtonHeight": 44
+    },
+    {
+      "name": "desktop-en",
+      "url": "http://127.0.0.1:8847/stage.html?lang=en&verify=export-print-20260910",
+      "measure": {
+        "width": 44,
+        "height": 44,
+        "svgWidth": 20,
+        "svgHeight": 20,
+        "svgDisplay": "block",
+        "pseudo": "none"
+      },
+      "printButtonHeight": 44
+    },
+    {
+      "name": "desktop-zh-Hans",
+      "url": "http://127.0.0.1:8847/stage.html?lang=zh-Hans&verify=export-print-20260910",
+      "measure": {
+        "width": 44,
+        "height": 44,
+        "svgWidth": 20,
+        "svgHeight": 20,
+        "svgDisplay": "block",
+        "pseudo": "none"
+      },
+      "printButtonHeight": 44
+    },
+    {
+      "name": "desktop-zh-Hant",
+      "url": "http://127.0.0.1:8847/stage.html?lang=zh-Hant&verify=export-print-20260910",
+      "measure": {
+        "width": 44,
+        "height": 44,
+        "svgWidth": 20,
+        "svgHeight": 20,
+        "svgDisplay": "block",
+        "pseudo": "none"
+      },
+      "printButtonHeight": 44
+    },
+    {
+      "name": "tablet-landscape",
+      "url": "http://127.0.0.1:8847/stage.html?lang=ja&verify=export-print-20260910&tablet-pwa-preview",
+      "measure": {
+        "width": 44,
+        "height": 44,
+        "svgWidth": 20,
+        "svgHeight": 20,
+        "svgDisplay": "block",
+        "pseudo": "none"
+      },
+      "printButtonHeight": 44
+    },
+    {
+      "name": "tablet-portrait",
+      "url": "http://127.0.0.1:8847/stage.html?lang=ja&verify=export-print-20260910&tablet-pwa-preview",
+      "measure": {
+        "width": 44,
+        "height": 44,
+        "svgWidth": 20,
+        "svgHeight": 20,
+        "svgDisplay": "block",
+        "pseudo": "none"
+      },
+      "printButtonHeight": 44
+    }
+  ],
+  "errors": [],
+  "checked": [
+    "entry icon and accessibility",
+    "print entry only in export dialog",
+    "4 language labels",
+    "tablet portrait and landscape",
+    "print 2 scenes / 4 rendered images",
+    "print layout toggle",
+    "print keeps saved show and selection",
+    "PNG signature",
+    "ZIP 4 images",
+    "pitch mode keeps print entry",
+    "served HTML SHA256 matches source"
+  ]
+}

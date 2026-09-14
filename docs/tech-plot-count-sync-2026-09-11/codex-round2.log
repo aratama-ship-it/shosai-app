@@ -1,0 +1,359 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+model: gpt-6-astra
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a08c2c-fa64-7922-b9bf-88eb558afda7
+--------
+user
+第2ラウンドです。前回の批評はほぼ受け入れます（カウント錨と自動送りの分離、映像面を先に、受渡し資料の実物を集める）。補足の事実: タイムライン不採用の「理由」は発注書に記録がなく（「場面＝キュー。タイムラインUIは作らない。新データモデルなし」とだけある）、本人へ確認が必要です。CLUB SEATAの提出書類は公式ページで裏取りできました（STAGEセッティング記入シート／セットリスト＆音響・照明注文シート／Input plan／DANCE照明要望シート／音源）。
+
+以下を短く（全体1,800字以内・見出し付き）。
+1. 映像面オブジェクトの最小データモデル案。舞台スケッチは位置を正規化座標(u,v)で持ち会場を替えても配置が残るが、機材の実寸は伸縮させない規則が必要と指摘された。位置=正規化・寸法=メートル絶対、高さ・向き・静止画像、の折り合いを具体的に（フィールド名の例と、既存の小道具駒(prop shapes)の拡張で済ませる案 vs 新種別を作る案の比較）。
+2. 音楽の錨の最小仕様: 固定テンポ＋第1カウントの秒位置＋各場面の到達カウント、という前提で、場面一覧に何をどう表示し、「そこから稽古する」再生をどう始めるか。表記は「8カウント×n＋拍」か「小節・拍」か、ダンス／サーカス／演劇の現場語彙から1つ選んで理由を。
+3. 本人への確認質問: タイムライン不採用の理由を確定させる2〜3択の聞き方（「横長UIの操作性」「作品を固定時間に従属させたくない」「別の理由」）と、答えごとに自動送りをどう扱うか。
+4. 逆張り: 「この3領域（技術プロット・照明映像プロット・カウント同期）は全部やらず、他ツールの図面PDFを場面に貼れるだけにする」と主張する場合の最強の論拠と、その案が負ける条件。
+5. 最終: 採用順を再掲し、各項目に「本人が判断すべきこと」を1行ずつ付ける。
+codex
+今回は、既存の小道具駒に収まる案と、将来の自動送りを含めない音楽の錨を具体化します。提案の範囲で、`stage-sketch.js`の関連箇所だけ読み取り確認します。
+exec
+/bin/zsh -lc "rg -n -m 35 'propShapes|propShape|shape:|shape ===|shape ===|\\.shape|rotation|heightM|widthM' stage-sketch.js" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+ succeeded in 0ms:
+1455:        { shape: "cylinder", y: 0,    dia: 0.03,  h: 0.78, tint: 0.7 },
+1456:        { shape: "cylinder", y: 0.78, dia: 0.90,  h: 0.09, tint: 1.0 },
+1457:        { shape: "cylinder", y: 0.87, dia: 0.58,  h: 0.10, tint: 1.05 },
+1458:        { shape: "cylinder", y: 0.97, dia: 0.24,  h: 0.06, tint: 1.1 },
+1459:        { shape: "cylinder", y: 1.03, dia: 0.035, h: 0.05, tint: 0.7 },
+1463:        { shape: "sphere",   y: 0,    dia: 0.05 },
+1464:        { shape: "cylinder", y: 0.05, dia: 0.028, h: 0.10, tint: 0.8 },
+1465:        { shape: "cylinder", y: 0.15, dia: 0.045, h: 0.12, tint: 0.95 },
+1466:        { shape: "cylinder", y: 0.27, dia: 0.11,  h: 0.20, tint: 1.1 },
+1467:        { shape: "sphere",   y: 0.47, dia: 0.06,  tint: 1.0 },
+1470:      parts: [ { shape: "sphere", y: 0, dia: 0.24, tint: 1.05 } ] },
+1473:        { shape: "box", x: 0,      y: 0.35, w: 0.30, d: 0.04, h: 0.05 },
+1474:        { shape: "box", x: 0,      y: 0,    w: 0.30, d: 0.04, h: 0.05 },
+1475:        { shape: "box", x: -0.175, y: 0.05, w: 0.05, d: 0.04, h: 0.30, tint: 0.95 },
+1476:        { shape: "box", x: 0.175,  y: 0.05, w: 0.05, d: 0.04, h: 0.30, tint: 0.95 },
+1482:        { shape: "cylinder", y: 0,    dia: 0.045, h: 0.04, tint: 0.6 },
+1483:        { shape: "cylinder", y: 0.04, dia: 0.035, h: 1.52, tint: 0.9 },
+1484:        { shape: "cylinder", y: 1.56, dia: 0.045, h: 0.04, tint: 0.6 },
+1488:        { shape: "sphere",   y: 0,    dia: 0.045, tint: 0.55 },
+1489:        { shape: "cylinder", y: 0.03, dia: 0.035, h: 0.21, tint: 0.6 },
+1490:        { shape: "box",      y: 0.24, w: 0.15,  d: 0.04,  h: 0.03, tint: 0.65 },
+1491:        { shape: "box",      y: 0.27, w: 0.045, d: 0.015, h: 0.72, tint: 1.2 },
+1495:        { shape: "box", y: 0,    w: 0.20,  d: 0.26, h: 0.055, tint: 0.7 },
+1496:        { shape: "box", y: 0.01, w: 0.185, d: 0.24, h: 0.04,  tint: 1.2 },
+1500:        { shape: "cylinder", y: 0,     dia: 0.32, h: 0.025, tint: 0.6 },
+1501:        { shape: "cylinder", y: 0.025, dia: 0.18, h: 0.16,  tint: 0.55 },
+1502:        { shape: "cylinder", y: 0.03,  dia: 0.19, h: 0.035, tint: 0.95 },
+1506:        { shape: "cylinder", y: 0,     dia: 0.15, h: 0.025, tint: 0.6 },
+1507:        { shape: "cylinder", y: 0.025, dia: 0.12, h: 0.15,  tint: 1.2 },
+1508:        { shape: "cylinder", y: 0.175, dia: 0.15, h: 0.035, tint: 0.6 },
+1509:        { shape: "box", x: -0.05, y: 0.21,  w: 0.015, d: 0.015, h: 0.045, tint: 0.65 },
+1510:        { shape: "box", x: 0.05,  y: 0.21,  w: 0.015, d: 0.015, h: 0.045, tint: 0.65 },
+1511:        { shape: "box", x: 0,     y: 0.255, w: 0.115, d: 0.015, h: 0.02,  tint: 0.65 },
+1515:        { shape: "cylinder", x: -0.27, y: 0,    dia: 0.025, h: 1.25, tint: 0.7 },
+1516:        { shape: "sphere",   x: -0.27, y: 1.25, dia: 0.045, tint: 0.9 },
+
+exec
+/bin/zsh -lc "rg -n -m 15 'PROP_SHAPES|propShape|propShapes|widthM|heightM|rotationDeg|type === .prop|kind === .prop|shapeId' stage-sketch.js" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+ succeeded in 0ms:
+1451:  const PROP_SHAPES = {
+1559:  PROP_SHAPES.mask = { ja: "マスク（仮面）", en: "Mask", dims: { w: 0.18, d: 0.08, h: 0.24 },
+1564:  const PROP_SHAPE_ORDER = Object.keys(PROP_SHAPES);
+1609:  const propShapeName = (key) => {
+1610:    const shape = PROP_SHAPES[key] || PROP_SHAPES.box;
+1611:    return tm("propShape", PROP_SHAPES[key] ? key : "box", shape.ja);
+3695:      propShape: typeof piece.propShape === "string" ? piece.propShape : null,
+3781:    const base = type === "prop" && piece && PROP_SHAPES[piece.propShape]
+3782:      ? PROP_SHAPES[piece.propShape].dims : PIECE_DIMS[type];
+3801:    if (kind === "prop") {
+3802:      const presetMin = Math.min(...PROP_SHAPE_ORDER.map((id) => PROP_SHAPES[id].dims[key]));
+3882:    return (piece.type === "prop" || longest <= 1.2) && !flown;
+4238:                propShape: kind === "prop" && PROP_SHAPES[t && t.propShape] ? t.propShape : "box",
+5981:      renderPropShapeSelect(els.setInfoPropShape, item && item.propShape);
+6807:    const shape = free.type === "prop" ? scaledPropShape(free, pieceDims(free)) : null;
+
+exec
+/bin/zsh -lc "sed -n '3676,3715p' stage-sketch.js
+sed -n '3773,3852p' stage-sketch.js
+sed -n '4214,4253p' stage-sketch.js" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+ succeeded in 0ms:
+      type,
+      // 袖に置けるので、枠の外も少しだけ許す（実際の枠は fromScreen が締める）
+      u: clamp(finite(legacy ? legacy.u : piece.u, 0.5), -0.5, 1.5),
+      v: clamp(finite(legacy ? legacy.v : piece.v, 0.6), -0.5, 1),
+      size: clamp(finite(piece.size, 100), 55, 180),
+      color: validColor(piece.color, "#a84b26"),
+      name: typeof piece.name === "string" ? piece.name.slice(0, 24) : "",
+      castId: typeof piece.castId === "string" ? piece.castId : null,
+      lookMode: ["cast", "plain", "custom"].includes(piece.lookMode) ? piece.lookMode : "cast",
+      look: normalizeLook(piece && piece.look),
+      setId: typeof piece.setId === "string" ? piece.setId : null,
+      /* 写したもとの駒の札。場面を写すと札は配り直されるので、
+       * 登録の無い駒（最初から置いてある例など）は、これが無いと
+       * 前の場面の自分と結び付けられない（転換で動かせない）。 */
+      originId: typeof piece.originId === "string" ? piece.originId : null,
+      // 体の向き（度）。0=客席を向く、90=上手を向く、180=背中
+      facing: clamp(finite(piece.facing, 0), 0, 359),
+      dims: normalizeDims(type, piece),
+      // 登録の無いAI JSONでも形だけ指定できる。未知値は描画時に箱へ戻す
+      propShape: typeof piece.propShape === "string" ? piece.propShape : null,
+      // ポールに付いたときの持ち場（左右と握りの高さ）。付いていない間も持ち歩く
+      poleSide: piece.poleSide === "L" ? "L" : "R",
+      poleH: clamp(finite(piece.poleH, 2.5), 0.8, 9),
+      // 持たれる側から、同じシーンの演者と左右どちらの手かを指す
+      heldBy: typeof piece.heldBy === "string" ? piece.heldBy : null,
+      holdSide: piece.holdSide === "L" ? "L" : "R",
+      holdMode: piece.holdMode === "face" ? "face" : "hand",
+      // 布のどの高さを掴むか（床から・m）。掴んでいない間も持ち歩く
+      tissueH: clamp(finite(piece.tissueH, 4), 0, 10),
+      // トラピーズの乗り方（座る／ぶら下がる）。降りている間も持ち歩く
+      trapMode: piece.trapMode === "hang" ? "hang" : "sit",
+      // ディアボロの置き方。古い保存や未指定は、舞台で形が読みやすい横置きに揃える
+      diaboloMode: piece.diaboloMode === "stand" ? "stand" : "lay",
+      // 姿勢。用意したものの中から選ぶ（形そのものは編集させない）
+      pose: POSES.some((p) => p.id === piece.pose) ? piece.pose : "stand",
+      /* 動線。この場面のあいだに、その駒がどこへ動くか。
+       * 始点は駒そのものなので持たない（駒を動かせば矢印もついてくる）。
+       * u,v が行き先、bu,bv が曲がり具合の control 点。真ん中に置けば直線になる。 */
+      route: normalizeRoute(piece && piece.route),
+      // 床からの高さ(m)と、支えている駒。どちらも置き場所から毎回引き直す派生値
+    return {
+      u, v,
+      bu: clamp(finite(raw.bu, 0.5), -0.2, 1.2),
+      bv: clamp(finite(raw.bv, 0.5), -0.2, 1.2),
+    };
+  }
+
+  function normalizeDims(type, piece) {
+    const base = type === "prop" && piece && PROP_SHAPES[piece.propShape]
+      ? PROP_SHAPES[piece.propShape].dims : PIECE_DIMS[type];
+    if (!base) return null;
+    const fixed = type === "wall" ? { d: WALL_THICKNESS } : null;
+    const old = piece && piece.dims ? piece.dims : null;
+    const k = clamp(finite(piece && piece.size, 100), 55, 180) / 100;
+    const out = {};
+    Object.keys(base).forEach((key) => {
+      const meta = dimMeta(type, key);
+      const fallback = key === "lift" ? base[key] : base[key] * k;
+      out[key] = clamp(finite(old ? old[key] : fallback, base[key]), meta.min, meta.max);
+    });
+    if (fixed) Object.assign(out, fixed);
+    return out;
+  }
+
+  /* ディアボロは一般的な家具より小さい。共通下限を下げると既存道具の
+   * つまみの範囲まで変わるため、この種類だけ実寸を保持できる下限にする。 */
+  function dimMeta(kind, key) {
+    const meta = DIM_META[key];
+    if (kind === "prop") {
+      const presetMin = Math.min(...PROP_SHAPE_ORDER.map((id) => PROP_SHAPES[id].dims[key]));
+      return Object.assign({}, meta, { min: Math.min(meta.min, presetMin) });
+    }
+    if (kind === "diabolo") return Object.assign({}, meta, { min: 0.05, max: 0.5 });
+    if (kind === "revolve" && key === "dia") return Object.assign({}, meta, { min: 2, max: 30 });
+    if (kind === "deck" && key === "w") return Object.assign({}, meta, { max: 16 });
+    if (kind === "curtain" && key === "w") return Object.assign({}, meta, { max: 60 });
+    if (kind === "curtain" && key === "h") return Object.assign({}, meta, { max: 9 });
+    if (kind === "pool" && key === "w") return Object.assign({}, meta, { max: 16 });
+    return meta;
+  }
+
+  // 寸法の正本。舞台セットに登録したものは、そちらを引く。
+  // 登録側を直せば、置いてある全ての場面の見え方が同時に変わる。
+  /* 寸法つまみを組み立てる。項目は種類ごとに違うので、HTMLへ固定で並べず
+   * ここから作る。dims オブジェクトへ直に書き込むので、
+   * 「駒そのもの」でも「舞台セットの正本」でも同じ関数で使える。 */
+  function buildDimControls(host, prefix, kind, dims, onChange, flown) {
+    if (!host) return;
+    host.innerHTML = "";
+    if (!dims) return;
+    Object.keys(dims).forEach((key) => {
+      const meta = dimMeta(kind, key);
+      if (!meta) return;
+      // 壁の厚みは固定。触らせないので、つまみも出さない
+      if (kind === "wall" && key === "d") return;
+      // 地上高は、吊っているものと浮いている球にだけ意味がある
+      if (key === "lift" && SOLID_TYPES[kind] && !flown && kind !== "curtain") return;
+      const label = document.createElement("label");
+      label.className = "stage-control-label stage-range-label";
+      label.htmlFor = `${prefix}-${key}`;
+      const name = document.createElement("span");
+      name.textContent = dimLabel(kind, key);
+      const value = document.createElement("span");
+      value.textContent = cmText(dims[key]);
+      label.append(name, value);
+
+      const input = document.createElement("input");
+      input.type = "range";
+      input.id = `${prefix}-${key}`;
+      input.min = String(meta.min);
+      input.max = String(meta.max);
+      input.step = String(meta.step);
+      input.value = String(dims[key]);
+      input.addEventListener("input", () => {
+        dims[key] = clamp(Number(input.value), meta.min, meta.max);
+        value.textContent = cmText(dims[key]);
+        onChange();
+      });
+      host.append(label, input);
+    });
+        audioTracks: normalizeAudioTracks(rawProject.audioTracks),
+        /* 規模の実寸。選んだ規模の値を土台に、ここで上書きした分だけ差し替える。
+         * 実際の劇場は「中劇場」で括れない（間口12.4m・高さ7.2mのような値になる）。 */
+        venueDims: normalizeVenueDims(rawProject.venueDims, size),
+        cast: Array.isArray(rawProject.cast)
+          ? rawProject.cast.map((c, i) => ({
+              id: typeof c.id === "string" ? c.id : rid("cast"),
+              name: typeof c.name === "string" && c.name.trim() ? c.name.slice(0, 24) : `演者 ${i + 1}`,
+              color: validColor(c.color, "#a84b26"),
+              heightCm: clamp(finite(c.heightCm, DEFAULT_HEIGHT_CM), 120, 210),
+              note: typeof c.note === "string" ? c.note.slice(0, 200) : "",
+              locked: Boolean(c.locked),
+              look: normalizeLook(c && c.look),
+            }))
+          : [],
+        sets: Array.isArray(rawProject.sets)
+          ? rawProject.sets.map((t, i) => {
+              const kind = SET_KINDS[t && t.kind] ? t.kind : (t && t.kind === "ring" ? "sphere" : "block");
+              return {
+                id: typeof t.id === "string" ? t.id : rid("set"),
+                kind,
+                name: typeof t.name === "string" && t.name.trim() ? t.name.slice(0, 24) : `セット ${i + 1}`,
+                color: validColor(t.color, "#8b98a1"),
+                modelId: kind === "model" && typeof t.modelId === "string" ? t.modelId : null,
+                propShape: kind === "prop" && PROP_SHAPES[t && t.propShape] ? t.propShape : "box",
+                dims: (() => {
+                  const d = normalizeDims(kind, t);
+                  // 吊物にできる形は、地上高の置き場を必ず持つ
+                  if (d && SOLID_TYPES[kind] && d.lift === undefined) {
+                    d.lift = clamp(finite(t && t.dims && t.dims.lift, 0), 0, 10);
+                  }
+                  return d;
+                })(),
+                note: typeof t.note === "string" ? t.note.slice(0, 200) : "",
+                locked: Boolean(t.locked),
+                /* 吊物。天井からワイヤーで吊り下がっているもの。
+                 * 何かの上に乗ることも、何かを乗せることもない。
+                 * 代わりに地上高（dims.lift）で高さを決める。
+                 * 吊物にしかならない道具（FLOWN_ONLY）は読み込み時に必ず吊りへ直す。 */
+                flown: Boolean(FLOWN_ONLY[kind] || t.flown),
+
+codex
+### 1. 映像面：まず小道具駒の拡張
+
+コードには既に`propShape`、実寸の`dims`、向きの`facing`があります。最小案は次です。
+
+- `type:"prop", propShape:"screen"`
+- `u,v`：面の下辺中央を床へ投影した位置。既存の正規化座標。
+- `dims:{w,h,d,lift}`：幅・高さ・厚さ・床から下辺までの高さ。すべてメートル。
+- `facing`：水平回転。既存規約の0°＝客席向き。初期は垂直面に限定。
+- `imageAssetId:null`：任意の静止画像。縦横比を保って面内に収める。
+
+会場変更では`u,v`から実位置だけ再計算し、寸法・高さ・向きを保持。収まらなくても自動縮小・移動しません。寸法は既存のセット正本を使い、二重管理を避けます。画像は共有先・オフラインでも参照できる保存方法が必要です。
+
+| 案 | 利点／負担 |
+|---|---|
+| 小道具拡張 | 配置・選択・寸法編集を再利用できる。ただし画像描画、保存、共有への追加は必要 |
+| 新種別`videoSurface` | 将来の床面・傾斜面などを独立して扱いやすい。種別判定や各ビューへの対応が広がる |
+
+**初期は小道具拡張を推奨。** ただし追加フィールドも保存形式の変更なので、「新データモデルなし」に収まるとはまだ断定できません。
+
+### 2. 音楽の錨：到達配置から稽古を始める
+
+曲に`countBpm`と`firstCountSec`、場面に`trackId`と`arrivalCount`を持たせます。`arrivalCount`は1始まりの整数、`countBpm`は「1分間に数えるカウント数」です。
+
+`到達秒＝firstCountSec＋(arrivalCount−1)×60/countBpm`
+
+表記は**8カウント単位**を選びます。音楽の小節と振付のまとまりを同一視せず、ダンスを含む作品で使うという設計判断です。現場全体の共通語とは断定しません。
+
+一覧は「曲A｜第3エイト・1｜0:12.0」。これは17カウント目。曖昧な「3×8＋1」は使いません。カウントを正本、秒を計算表示にします。
+
+「ここから稽古」で、**場面の到達配置を即表示し、対応秒から音楽を再生**。転換補間は挟まず、場面送りは手動です。音源未読込・曲外の位置なら開始できない理由を表示します。
+
+### 3. 本人への聞き方と分岐
+
+「タイムラインを作らないと決めた主な理由は、次のどれに近いですか。」
+
+- **横長UIの操作性**：自動送りは別機能として検討可能。ただし採用済みとは扱わない。
+- **作品を固定時間に従属させたくない**：自動送りは外し、錨・任意位置再生・手動GOに限定。
+- **別の理由**：避けたかった具体的な操作・状況を聞き、自動送りの判断を保留。
+
+併せて「新データモデルなし」は独立した構造の禁止か、保存項目の追加も含むかを確認します。
+
+### 4. 全部やらずPDFだけ、の最強の論拠
+
+**専門家が更新する正本を増やさず、演出家の説明に必要な資料へすぐ到達できれば十分**という立場です。入力・変換・改訂追従の負担を抑え、個人開発を見え方の共有に集中できます。PDFにも版・保存・共有の設計は必要ですが、専門形式の意味を解釈する責任は小さい。
+
+この案が負けるのは、PDFを見ながら同じ位置を何度も転記する、席ごとの映像面の遮蔽を判断できない、稽古のたびに音楽位置を探し直す、という負担が実例で繰り返し確認されたときです。
+
+### 5. 採用順と本人の判断
+
+1. **映像面の最小形**  
+   判断：垂直な静止画像付きの面だけで、解決したい相談に足りるか。
+2. **実物の受渡し資料を集め、参照・出力を絞る**  
+   判断：既存資料の何を置き換え、何をそのまま貼るか。
+3. **音楽の錨＋そこから稽古**  
+   判断：固定カウントと到達配置からの再生で足りるか。自動送りは別採否。
+tokens used
+58,501
+### 1. 映像面：まず小道具駒の拡張
+
+コードには既に`propShape`、実寸の`dims`、向きの`facing`があります。最小案は次です。
+
+- `type:"prop", propShape:"screen"`
+- `u,v`：面の下辺中央を床へ投影した位置。既存の正規化座標。
+- `dims:{w,h,d,lift}`：幅・高さ・厚さ・床から下辺までの高さ。すべてメートル。
+- `facing`：水平回転。既存規約の0°＝客席向き。初期は垂直面に限定。
+- `imageAssetId:null`：任意の静止画像。縦横比を保って面内に収める。
+
+会場変更では`u,v`から実位置だけ再計算し、寸法・高さ・向きを保持。収まらなくても自動縮小・移動しません。寸法は既存のセット正本を使い、二重管理を避けます。画像は共有先・オフラインでも参照できる保存方法が必要です。
+
+| 案 | 利点／負担 |
+|---|---|
+| 小道具拡張 | 配置・選択・寸法編集を再利用できる。ただし画像描画、保存、共有への追加は必要 |
+| 新種別`videoSurface` | 将来の床面・傾斜面などを独立して扱いやすい。種別判定や各ビューへの対応が広がる |
+
+**初期は小道具拡張を推奨。** ただし追加フィールドも保存形式の変更なので、「新データモデルなし」に収まるとはまだ断定できません。
+
+### 2. 音楽の錨：到達配置から稽古を始める
+
+曲に`countBpm`と`firstCountSec`、場面に`trackId`と`arrivalCount`を持たせます。`arrivalCount`は1始まりの整数、`countBpm`は「1分間に数えるカウント数」です。
+
+`到達秒＝firstCountSec＋(arrivalCount−1)×60/countBpm`
+
+表記は**8カウント単位**を選びます。音楽の小節と振付のまとまりを同一視せず、ダンスを含む作品で使うという設計判断です。現場全体の共通語とは断定しません。
+
+一覧は「曲A｜第3エイト・1｜0:12.0」。これは17カウント目。曖昧な「3×8＋1」は使いません。カウントを正本、秒を計算表示にします。
+
+「ここから稽古」で、**場面の到達配置を即表示し、対応秒から音楽を再生**。転換補間は挟まず、場面送りは手動です。音源未読込・曲外の位置なら開始できない理由を表示します。
+
+### 3. 本人への聞き方と分岐
+
+「タイムラインを作らないと決めた主な理由は、次のどれに近いですか。」
+
+- **横長UIの操作性**：自動送りは別機能として検討可能。ただし採用済みとは扱わない。
+- **作品を固定時間に従属させたくない**：自動送りは外し、錨・任意位置再生・手動GOに限定。
+- **別の理由**：避けたかった具体的な操作・状況を聞き、自動送りの判断を保留。
+
+併せて「新データモデルなし」は独立した構造の禁止か、保存項目の追加も含むかを確認します。
+
+### 4. 全部やらずPDFだけ、の最強の論拠
+
+**専門家が更新する正本を増やさず、演出家の説明に必要な資料へすぐ到達できれば十分**という立場です。入力・変換・改訂追従の負担を抑え、個人開発を見え方の共有に集中できます。PDFにも版・保存・共有の設計は必要ですが、専門形式の意味を解釈する責任は小さい。
+
+この案が負けるのは、PDFを見ながら同じ位置を何度も転記する、席ごとの映像面の遮蔽を判断できない、稽古のたびに音楽位置を探し直す、という負担が実例で繰り返し確認されたときです。
+
+### 5. 採用順と本人の判断
+
+1. **映像面の最小形**  
+   判断：垂直な静止画像付きの面だけで、解決したい相談に足りるか。
+2. **実物の受渡し資料を集め、参照・出力を絞る**  
+   判断：既存資料の何を置き換え、何をそのまま貼るか。
+3. **音楽の錨＋そこから稽古**  
+   判断：固定カウントと到達配置からの再生で足りるか。自動送りは別採否。

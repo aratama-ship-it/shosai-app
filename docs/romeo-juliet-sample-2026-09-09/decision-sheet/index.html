@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>ロミオとジュリエット｜本人判断シート</title>
+  <style>
+    :root {
+      --bg: #efe7d6;
+      --paper: #fffaf0;
+      --text: #2b2620;
+      --muted: #6a604e;
+      --line: #75664f;
+      --romeo: #8f3e1e;
+      --juliet: #245963;
+      --recommend: #f5ead5;
+      --selected: #e7efe8;
+      --warning: #f3e3d6;
+      --white: #ffffff;
+      --shadow: 0 14px 34px rgba(62, 50, 31, 0.12);
+      --sans: "Hiragino Kaku Gothic ProN", "Yu Gothic", "YuGothic", sans-serif;
+      --serif: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(90deg, rgba(143, 62, 30, .065) 0 50%, rgba(36, 89, 99, .065) 50% 100%),
+        var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 17px;
+      line-height: 1.75;
+    }
+
+    button, input, textarea { font: inherit; }
+    button, a, input, textarea { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible {
+      outline: 3px solid #c76827;
+      outline-offset: 3px;
+    }
+    a { color: var(--juliet); text-underline-offset: .18em; }
+    button { min-height: 44px; }
+
+    .masthead {
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 250, 240, .94);
+    }
+    .masthead__inner,
+    .page {
+      width: min(1120px, calc(100% - 48px));
+      margin-inline: auto;
+    }
+    .masthead__inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 32px;
+      align-items: end;
+      padding: 34px 0 28px;
+    }
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--romeo);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, legend {
+      font-family: var(--serif);
+      font-weight: 700;
+      letter-spacing: .025em;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 38px);
+      line-height: 1.42;
+    }
+    .subtitle {
+      max-width: 48em;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+    .family-key {
+      display: flex;
+      gap: 18px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .family-key li::before {
+      content: "";
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      margin-right: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .family-key__romeo { color: var(--romeo); }
+    .family-key__juliet { color: var(--juliet); }
+
+    .page { padding: 32px 0 72px; }
+    .progress-panel {
+      position: sticky;
+      z-index: 20;
+      top: 0;
+      display: grid;
+      grid-template-columns: minmax(170px, .85fr) minmax(280px, 1.7fr);
+      gap: 24px;
+      align-items: center;
+      margin-bottom: 24px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      background: rgba(255, 250, 240, .97);
+      box-shadow: 0 8px 22px rgba(62, 50, 31, .08);
+    }
+    .progress-copy {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .progress-count {
+      color: var(--romeo);
+      font-family: var(--serif);
+      font-size: 25px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+    .progress-label { color: var(--muted); font-size: 13px; }
+    .progress-track {
+      height: 9px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--bg);
+    }
+    .progress-bar {
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, var(--romeo), var(--juliet));
+      transition: width .18s ease-out;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 24px;
+    }
+    .button {
+      min-height: 44px;
+      padding: 9px 14px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--paper);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .button:hover { background: var(--recommend); }
+    .button--primary {
+      border-color: var(--romeo);
+      background: var(--romeo);
+      color: var(--white);
+    }
+    .button--primary:hover { background: #743116; }
+    .button--quiet { color: var(--muted); font-weight: 600; }
+    .button[aria-pressed="true"] {
+      border-color: var(--juliet);
+      background: var(--selected);
+      color: #183f47;
+    }
+    .save-state {
+      min-height: 26px;
+      margin: -10px 0 22px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .contents {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 32px;
+      align-items: start;
+    }
+    .contents-nav {
+      position: sticky;
+      top: 105px;
+      border-top: 3px solid var(--text);
+      padding-top: 12px;
+    }
+    .contents-nav strong {
+      display: block;
+      margin-bottom: 8px;
+      font-family: var(--serif);
+      font-size: 17px;
+    }
+    .contents-nav a {
+      display: block;
+      min-height: 44px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(117, 102, 79, .35);
+      color: var(--text);
+      font-size: 14px;
+      text-decoration: none;
+    }
+    .contents-nav a:hover { color: var(--romeo); }
+
+    .paper {
+      min-width: 0;
+      padding: 34px clamp(18px, 4vw, 48px) 48px;
+      border: 1px solid rgba(117, 102, 79, .7);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .intro {
+      max-width: 50em;
+      margin: 0 0 24px;
+    }
+    .rule {
+      margin: 12px 0 30px;
+      border: 0;
+      border-top: 1px solid var(--line);
+    }
+    details.fixed-decisions {
+      margin-bottom: 38px;
+      border-block: 1px solid var(--line);
+      background: #f8f0e1;
+    }
+    details.fixed-decisions summary {
+      min-height: 48px;
+      padding: 10px 4px;
+      cursor: pointer;
+      font-family: var(--serif);
+      font-weight: 700;
+    }
+    .fixed-list {
+      columns: 2;
+      column-gap: 36px;
+      margin: 0;
+      padding: 4px 24px 22px 28px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .fixed-list li {
+      break-inside: avoid;
+      margin-bottom: 7px;
+    }
+
+    .group { scroll-margin-top: 116px; }
+    .group + .group { margin-top: 54px; }
+    .group-head {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 14px;
+      align-items: baseline;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--text);
+    }
+    .group-index {
+      color: var(--romeo);
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .group h2 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.5;
+    }
+    .group-note {
+      grid-column: 2;
+      margin: -5px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .decision {
+      position: relative;
+      scroll-margin-top: 116px;
+      margin: 0 0 30px;
+      padding: 0 0 0 20px;
+      border-left: 3px solid var(--line);
+    }
+    .decision[data-answered="true"] { border-left-color: #4f735a; }
+    .decision[hidden] { display: none; }
+    .decision__topline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .decision__id {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+    }
+    .decision__status {
+      padding: 1px 8px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.7;
+    }
+    .decision[data-answered="true"] .decision__status {
+      border-color: #4f735a;
+      background: var(--selected);
+      color: #284b34;
+    }
+    .decision fieldset {
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+    .decision legend {
+      width: 100%;
+      margin: 0 0 6px;
+      padding: 0;
+      font-size: 20px;
+      line-height: 1.55;
+    }
+    .premise {
+      max-width: 50em;
+      margin: 0 0 13px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .options {
+      display: grid;
+      gap: 8px;
+    }
+    .option {
+      position: relative;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 10px;
+      min-height: 58px;
+      padding: 12px 14px;
+      border: 1px solid rgba(117, 102, 79, .65);
+      background: var(--white);
+      cursor: pointer;
+    }
+    .option:hover { border-color: var(--text); }
+    .option--recommended { background: var(--recommend); }
+    .option:has(input:checked) {
+      border: 2px solid #4f735a;
+      padding: 11px 13px;
+      background: var(--selected);
+    }
+    .option input {
+      width: 19px;
+      height: 19px;
+      margin: 4px 0 0;
+      accent-color: #365f43;
+    }
+    .option__title {
+      display: block;
+      font-weight: 750;
+      line-height: 1.55;
+    }
+    .option__tag {
+      display: inline-block;
+      margin-left: 7px;
+      padding: 0 6px;
+      border: 1px solid var(--romeo);
+      color: var(--romeo);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.7;
+      vertical-align: .15em;
+    }
+    .option__impact {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .note-label {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .decision-note,
+    .production-input {
+      display: block;
+      width: 100%;
+      min-height: 46px;
+      margin-top: 4px;
+      padding: 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: #fffdf8;
+      color: var(--text);
+      resize: vertical;
+    }
+
+    .production {
+      margin-top: 54px;
+      padding-top: 28px;
+      border-top: 3px double var(--text);
+      scroll-margin-top: 116px;
+    }
+    .production h2 { margin: 0 0 8px; font-size: 26px; }
+    .production > p { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+    .production-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 22px; }
+    .production-grid label { font-weight: 700; }
+    .production-input { min-height: 112px; font-weight: 400; }
+
+    .finish {
+      margin-top: 42px;
+      padding: 26px 0 0;
+      border-top: 1px solid var(--line);
+    }
+    .finish h2 { margin: 0 0 8px; font-size: 23px; }
+    .finish p { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+    .source-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px dotted var(--line);
+      font-size: 13px;
+    }
+    .source-links a {
+      display: inline-flex;
+      min-height: 44px;
+      align-items: center;
+    }
+    .toast {
+      position: fixed;
+      z-index: 50;
+      right: 20px;
+      bottom: 20px;
+      max-width: min(360px, calc(100vw - 40px));
+      padding: 11px 15px;
+      border: 1px solid var(--line);
+      background: var(--text);
+      color: var(--paper);
+      box-shadow: var(--shadow);
+      font-size: 14px;
+    }
+    .toast[hidden] { display: none; }
+
+    @media (max-width: 860px) {
+      .masthead__inner { grid-template-columns: 1fr; gap: 18px; }
+      .contents { grid-template-columns: 1fr; }
+      .contents-nav {
+        position: static;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px 14px;
+        border-top-width: 2px;
+      }
+      .contents-nav strong { width: 100%; }
+      .contents-nav a { min-height: 44px; border-bottom: 0; }
+      .fixed-list { columns: 1; }
+    }
+    @media (max-width: 720px) {
+      body { font-size: 16px; }
+      .masthead__inner, .page { width: min(100% - 24px, 1120px); }
+      .masthead__inner { padding: 24px 0 20px; }
+      .page { padding-top: 12px; }
+      .progress-panel {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-inline: -12px;
+        padding: 12px;
+      }
+      .toolbar { display: grid; grid-template-columns: 1fr; }
+      .button { width: 100%; }
+      .paper { padding: 24px 16px 36px; }
+      .decision { padding-left: 12px; }
+      .group-head { gap: 8px; }
+      .group-note { grid-column: 1 / -1; }
+      .production-grid { grid-template-columns: 1fr; }
+      .family-key { white-space: normal; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .progress-bar { transition: none; }
+    }
+    @media print {
+      body { background: #fff; font-size: 11pt; }
+      .masthead, .paper { background: #fff; box-shadow: none; }
+      .page, .masthead__inner { width: 100%; }
+      .progress-panel { position: static; box-shadow: none; }
+      .toolbar, .contents-nav, .save-state, .toast, .source-links { display: none !important; }
+      .contents { display: block; }
+      .paper { border: 0; padding-inline: 0; }
+      .decision { break-inside: avoid; }
+      .decision .option:not(:has(input:checked)) { display: none; }
+      .decision[data-answered="false"] .option { display: grid; }
+      .decision-note:placeholder-shown { display: none; }
+      details.fixed-decisions { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead__inner">
+      <div>
+        <p class="eyebrow">Stage Sketch sample · owner decisions</p>
+        <h1>ロミオとジュリエット<br>本人判断シート</h1>
+        <p class="subtitle">決定済みの演出を守りながら、通し上演稿と舞台スケッチへ反映する前に必要な判断を、一度にまとめました。</p>
+      </div>
+      <ul class="family-key" aria-label="家の色分け">
+        <li class="family-key__romeo">ロミオ／モンタギュー</li>
+        <li class="family-key__juliet">ジュリエット／キャピュレット</li>
+      </ul>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="progress-panel" aria-labelledby="progress-title">
+      <div class="progress-copy">
+        <strong class="progress-count" id="progress-count">0 / 21</strong>
+        <span class="progress-label" id="progress-title">判断済み</span>
+      </div>
+      <div class="progress-track" role="progressbar" aria-label="回答の進み具合" aria-valuemin="0" aria-valuemax="21" aria-valuenow="0">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+    </section>
+
+    <div class="toolbar" aria-label="判断シートの操作">
+      <button class="button button--primary" type="button" id="recommend-all">未回答に推奨案を入れる</button>
+      <button class="button" type="button" id="unanswered-only" aria-pressed="false">未回答だけ表示</button>
+      <button class="button" type="button" id="copy-answers">回答をコピー</button>
+      <button class="button" type="button" id="download-json">回答JSONを保存</button>
+      <button class="button" type="button" id="print-sheet">印刷</button>
+      <button class="button button--quiet" type="button" id="clear-answers">入力を消す</button>
+    </div>
+    <p class="save-state" id="save-state" aria-live="polite">このHTML内に自動保存します。外部には送信しません。</p>
+
+    <div class="contents">
+      <nav class="contents-nav" aria-label="判断項目の目次">
+        <strong>判断の順序</strong>
+        <a href="#group-overall">A　全体方針（6）</a>
+        <a href="#group-design">B　美術・音（5）</a>
+        <a href="#group-scenes">C　場面詳細（9）</a>
+        <a href="#group-apply">D　反映範囲（1）</a>
+        <a href="#production-inputs">制作条件（任意）</a>
+      </nav>
+
+      <article class="paper">
+        <p class="intro">各項目で一つ選んでください。<strong>「保留」も回答として記録</strong>されます。推奨案は制作をつなぎやすい仮案ですが、最初から選択済みにはしていません。自由記入には、案の修正や組み合わせを書けます。</p>
+        <hr class="rule">
+
+        <details class="fixed-decisions">
+          <summary>すでに決まっていることを見る（再判断不要）</summary>
+          <ul class="fixed-list">
+            <li>全体は3つの大場面、出演者は10名。</li>
+            <li>ロミオ側は赤、ジュリエット側は青。修道士・使者・匿名役は中立色。</li>
+            <li>家を分ける場面は客席から見て左がモンタギュー、右がキャピュレット。</li>
+            <li>冒頭だけは家で左右を分けず、四隅の乱闘と中央のベンヴォーリオ／ティボルト。</li>
+            <li>周囲の乱闘が止まり、中央の二人が戦い始める瞬間に暗転。約3分、照明は過剰にしない。</li>
+            <li>仮面舞踏会は10名全員が仮面。奥にバーのようなセット、ロミオとジュリエットは右斜め手前。</li>
+            <li>窓辺は同じ右斜め手前を使い、仮面の群衆はいない。</li>
+            <li>袖から呼ぶのは乳母ではなく大道具さん。俳優を追加しない。</li>
+            <li>結婚はロレンスが中央。7名は客席に背を向け、二人は別々の斜め方向から入る。</li>
+            <li>決闘はロミオがティボルトを無視して去り、見失ったティボルトとマルキーシオが戦う。</li>
+            <li>ロミオが止めに入りマルキーシオが傷つき、ロミオはその瞬間に報復する。</li>
+            <li>ジュリエットは薬で仮死状態になり、その間ロミオはマントヴァにいる。</li>
+            <li>手紙は使者とロミオのすれ違いで簡略化し、追いかけっこは比喩的なサーカス表現にする。</li>
+            <li>終盤は左の墓所、右のロレンスと使者、中央の人による非干渉領域を同時に見せる。</li>
+            <li>ロミオが先に死に、ジュリエットが目覚めて後から死ぬ。この版ではロレンスは二人の死後に到着。</li>
+            <li>結末はロレンスを中央に、人が一人ずつ集まる。悲しみと真実の共有から和解へ進む。</li>
+          </ul>
+        </details>
+
+        <div id="decision-groups"></div>
+
+        <section class="production" id="production-inputs">
+          <h2>制作条件の追記</h2>
+          <p>分かる範囲だけで大丈夫です。ここは芸術上の21判断には数えません。未入力の項目は、実測・本人確認が必要な情報として残ります。</p>
+          <div class="production-grid">
+            <label>会場名・舞台寸法
+              <textarea class="production-input" data-production="venue" placeholder="例：間口8m、奥行6m、客席から見た段差など"></textarea>
+            </label>
+            <label>出演者名・身長など
+              <textarea class="production-input" data-production="cast" placeholder="配役や身体条件が分かれば記入"></textarea>
+            </label>
+            <label>使える技術・身体上の制約
+              <textarea class="production-input" data-production="skills" placeholder="例：床技、ジャグリング、アクロバット、避けたい接触"></textarea>
+            </label>
+            <label>照明・音響・スタッフ・稽古条件
+              <textarea class="production-input" data-production="resources" placeholder="例：スポット数、音響再生方法、転換人員、稽古日数"></textarea>
+            </label>
+          </div>
+        </section>
+
+        <section class="finish">
+          <h2>回答がまとまったら</h2>
+          <p>「回答をコピー」を押して、この会話へ貼ってください。機械可読の記録も残す場合は「回答JSONを保存」を使えます。選択しただけでは、通し稿や舞台スケッチの正本は変更されません。</p>
+          <div class="toolbar">
+            <button class="button button--primary" type="button" data-action="copy">回答をコピー</button>
+            <button class="button" type="button" data-action="download">回答JSONを保存</button>
+          </div>
+          <div class="source-links">
+            <a href="../full-show/ロミオとジュリエット_通し上演稿_オフライン.html">通し上演稿を見る</a>
+            <a href="../stage-sketch/full-show/index.html">Stage Sketch用サンプルを見る</a>
+          </div>
+        </section>
+      </article>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <noscript><p style="padding:24px;background:#fffaf0">この判断シートは選択内容の保存と書き出しにJavaScriptを使います。ブラウザでJavaScriptを有効にしてください。</p></noscript>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const SCHEMA = "romeo-juliet.user-decisions.v1";
+      const STORAGE_KEY = "romeo-juliet-decision-sheet-v1";
+      const SOURCE = {
+        generatedOn: "2026-09-11",
+        show: { path: "../full-show/show.json", sha256: "34d9339a3c5d59c8095ee6d909b912a081b88359eecf7551e5eaddd7e256f1f6" },
+        notes: { path: "../direction-notes/scene-notes.json", sha256: "c95c0bb3fbff81bf20fe2fadfbbad014357851458aad94d2529581d4cd6a39bf" },
+        handoff: { path: "../stage-sketch/full-show/romeo-juliet-full-show.handoff.json", sha256: "66e7996fca6d295a5d4de59e44518901e471c7022ff6593f6834d8badcc795ec" }
+      };
+
+      const GROUPS = [
+        { id: "overall", index: "A", title: "全体方針", note: "上演の長さと語り口を決めます。後の細部判断の基準になります。" },
+        { id: "design", index: "B", title: "美術・音", note: "色分け以外の衣裳、仮面、装置、道具、音の密度を決めます。" },
+        { id: "scenes", index: "C", title: "場面詳細", note: "身体表現と重要な時間差を、観客にどう見せるかを決めます。" },
+        { id: "apply", index: "D", title: "反映範囲", note: "この回答を受け取った次の作業で、どこまで正本へ反映するかを指定します。" }
+      ];
+
+      const hold = {
+        id: "hold",
+        title: "保留",
+        impact: "今は決めず、現在の仮案を未確定のまま次の検討へ渡します。"
+      };
+
+      const DECISIONS = [
+        {
+          id: "RJ-DEC-01", group: "overall", title: "本編の目標尺をどこに置きますか？",
+          premise: "現在の通し稿は本編29分05秒、カーテンコール約60秒を本編外に置く提案です。",
+          options: [
+            { id: "current-29", title: "本編29分05秒を基準にする", impact: "今ある19キューと28構成図を保ち、稽古で数分単位の調整を行います。", recommended: true },
+            { id: "compress-25", title: "約25分へ圧縮する", impact: "場面の余韻と移動を削り、物語の到達点を優先します。" },
+            { id: "expand-35", title: "約35分へ広げる", impact: "人物関係と死後の静けさを増やせますが、サンプルとしては情報量が増えます。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-02", group: "overall", title: "Stage Sketch上の場面とキューの階層をどうしますか？",
+          premise: "現在は3つの大場面の中に19の物語キューと28の舞台構成図があります。",
+          options: [
+            { id: "three-19-28", title: "3大場面＋19キュー＋28構成図", impact: "上演のまとまりと細かな編集点を両立し、現在のサンプルを活かせます。", recommended: true },
+            { id: "native-19", title: "19キューをすべて独立場面にする", impact: "各所へ直接移動しやすくなりますが、ショー全体の見通しが細切れになります。" },
+            { id: "native-3", title: "3大場面だけにする", impact: "一覧は短くなりますが、細かな位置と転換を別の情報として管理する必要があります。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-03", group: "overall", title: "セリフの密度をどこに置きますか？",
+          premise: "現在は現代的で舞台らしい部分訳を使い、重要な箇所を行動でつなぐ構成です。",
+          options: [
+            { id: "current-action-led", title: "現在の部分訳＋行動中心", impact: "観客が筋を追える量を残し、身体表現とセリフの両方をサンプル化できます。", recommended: true },
+            { id: "more-dialogue", title: "セリフを増やす", impact: "人物の感情は説明しやすくなりますが、転換と身体表現の尺が減ります。" },
+            { id: "near-nonverbal", title: "ほぼ無言劇へ寄せる", impact: "サーカス性は強まりますが、原作の言葉と製品の台本キュー例が少なくなります。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-04", group: "overall", title: "演劇とサーカスの比率をどうしますか？",
+          premise: "決闘、手紙のすれ違い、人の川に、比喩としてサーカス技術を使う案があります。",
+          options: [
+            { id: "theatre-with-circus-turns", title: "演劇を軸に、転機だけサーカス", impact: "人物と物語を主役にしつつ、製品サンプルとして身体キューの幅を見せられます。", recommended: true },
+            { id: "circus-throughout", title: "全編にサーカスの身体言語を通す", impact: "独自性は強まりますが、技能と稽古条件が作品全体を左右します。" },
+            { id: "straight-theatre", title: "ほぼストレートプレイにする", impact: "台本の比較はしやすくなりますが、サーカス演出のサンプル性が弱まります。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-05", group: "overall", title: "場面転換をどの言語で統一しますか？",
+          premise: "冒頭など指定済みの暗転は残し、それ以外を観客に見せるかが未確定です。",
+          options: [
+            { id: "visible-performer-transitions", title: "出演者が見えるまま転換する", impact: "群衆が次の空間を作る流れを作品の一部にでき、少人数公演にも合います。", recommended: true },
+            { id: "more-blackouts", title: "暗転を増やして切り替える", impact: "場所は明確になりますが、流れが区切られ、上演時間も読みづらくなります。" },
+            { id: "visible-crew", title: "スタッフの転換として明示する", impact: "劇場性を前面に出せますが、大道具さんの扱いと全体の様式を揃える必要があります。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-06", group: "overall", title: "音楽と生音の基本構成をどうしますか？",
+          premise: "現在は7つの音楽モチーフの案だけがあり、実音源と作曲はまだありません。",
+          options: [
+            { id: "score-plus-body", title: "7モチーフの音源＋足音・呼吸・身体音", impact: "場面の区切りと人の身体を両方聴かせられ、後から音源を差し替えやすい構成です。", recommended: true },
+            { id: "recorded-only", title: "録音音源を中心にする", impact: "再現性は上がりますが、出演者による時間の伸縮が音に反映しにくくなります。" },
+            { id: "body-sound-only", title: "作曲音源を使わず、生音だけにする", impact: "身体表現は鮮明になりますが、情景の変化を照明と動きだけで支える必要があります。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-07", group: "design", title: "衣裳の時代と基本形をどうしますか？",
+          premise: "家の色は決定済みですが、衣裳の年代と、同じ俳優が役を兼ねる時の見分け方は未確定です。",
+          options: [
+            { id: "contemporary-neutral", title: "現代的な中立色＋着脱式の赤・青", impact: "兼役と群衆への移行が早く、家の色も読み取りやすくなります。", recommended: true },
+            { id: "renaissance", title: "ルネサンス期を思わせる衣裳", impact: "原作世界は伝わりますが、転換用の衣裳管理と制作量が増えます。" },
+            { id: "contemporary-circus", title: "現代サーカスの大胆な衣裳", impact: "視覚的な個性は強まりますが、人物関係より技能者の個性が先に見える可能性があります。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-08", group: "design", title: "仮面舞踏会の仮面をどう揃えますか？",
+          premise: "10名全員が仮面を着けることと、バーのような室内空間は決定済みです。",
+          options: [
+            { id: "same-neutral-masks", title: "全員ほぼ同じ中立色の仮面", impact: "素性を隠す意味が強まり、仮面の下の赤・青が見えた瞬間に家の違いが出ます。", recommended: true },
+            { id: "family-color-masks", title: "赤と青で家を分けた仮面", impact: "観客には分かりやすい一方、二人が互いの家を知らない感覚は弱くなります。" },
+            { id: "individual-masks", title: "人物ごとに違う仮面", impact: "華やかになりますが、10種の意匠と役の意味づけが必要です。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-09", group: "design", title: "舞台装置の量と素材感をどうしますか？",
+          premise: "必要な装置はバーと低い台を中心に整理できています。舞台寸法は未実測です。",
+          options: [
+            { id: "bar-and-bench", title: "中立的なバー＋一台の低い台", impact: "同じ物を窓、寝台、棺台、墓へ見立て、転換そのものを見せられます。", recommended: true },
+            { id: "realistic-modules", title: "部屋と墓所を作る可動装置", impact: "場所は具体的になりますが、制作費、収納、転換時間が増えます。" },
+            { id: "almost-empty", title: "ほぼ空舞台にする", impact: "身体だけに集中できますが、バーの室内感と仮死から墓への変化を別の手段で示します。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-10", group: "design", title: "小道具はどの程度具体的に見せますか？",
+          premise: "現在は仮面、象徴的な剣、薬瓶、封書、毒杯、短剣、低い台などを追跡しています。",
+          options: [
+            { id: "small-symbolic-props", title: "小さく明確な象徴的小道具", impact: "薬、手紙、毒、死因を読み取れる量を残し、扱いの安全性と転換の速さを保ちます。", recommended: true },
+            { id: "realistic-props", title: "写実的な小道具", impact: "物語は具体的になりますが、武器や毒の表現に細かな安全設計が必要です。" },
+            { id: "body-only-props", title: "道具をほぼ使わず身体で示す", impact: "統一感は出ますが、手紙の失敗や仮死薬を観客に伝える工夫が増えます。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-11", group: "design", title: "照明の基本パレットをどうしますか？",
+          premise: "赤・青は家の識別色ですが、全編を二色で塗り分けるかは決まっていません。",
+          options: [
+            { id: "warm-neutral-local-color", title: "暖かい中立色＋局所的な焦点と色", impact: "肌と身体を見せながら、必要な時だけ赤・青やスポットを意味として使えます。", recommended: true },
+            { id: "saturated-split", title: "赤と青を広く左右に分ける", impact: "両家は明快ですが、冒頭の四隅乱闘や中立領域との例外処理が増えます。" },
+            { id: "monochrome", title: "ほぼ単色で彫刻的に見せる", impact: "身体の形は強く出ますが、家の色分けを衣裳だけで担います。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-12", group: "scenes", title: "決闘の接触レベルをどうしますか？",
+          premise: "物語上の順序は決定済みです。具体的な振付は会場、技能、ファイト指導の確認前です。",
+          options: [
+            { id: "body-symbolic-weapons", title: "身体中心＋象徴的な武器、刃同士は接触させない", impact: "サンプル段階の安全境界を守りつつ、後から専門家と接触量を上げられます。", recommended: true },
+            { id: "staged-blade-contact", title: "舞台用の剣で接触を見せる", impact: "決闘は明快ですが、武器、床、距離、指導者、稽古時間の確定が前提です。" },
+            { id: "weaponless-fight", title: "武器を使わず身体だけで戦う", impact: "抽象度は揃いますが、ティボルトの脅威と死因を別の身体記号で示します。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-13", group: "scenes", title: "マルキーシオとティボルトの死をどう対にしますか？",
+          premise: "二つの死が短時間で続くため、観客が因果と報復を見失わない形が必要です。",
+          options: [
+            { id: "matched-counterweight", title: "均衡が崩れる同型の動き＋落下後の静止", impact: "最初の死が次の死を生むことを、同じ身体モチーフで見せられます。", recommended: true },
+            { id: "separate-sharp-falls", title: "二人を別々の鋭い倒れ方にする", impact: "人物差は出ますが、二つの死を結ぶ構造は音や照明で補います。" },
+            { id: "silhouette-blackout", title: "影と暗転で抽象化する", impact: "直接的な暴力を避けられますが、マルキーシオの死を受けた即時報復の連続性が弱まります。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-14", group: "scenes", title: "追放後の夜明けの別れをどう厚くしますか？",
+          premise: "二人は結婚後も同居しておらず、密かに過ごした一夜の終わりです。この場面に群衆は不要という判断済みです。",
+          options: [
+            { id: "duet-dawn-separation", title: "二人だけで、明かり・呼吸・手の離れ方を描く", impact: "夜を長く信じたい二人と、逃げなければならない現実を小さな動きで厚くできます。", recommended: true },
+            { id: "ensemble-dawn", title: "群衆が夜と夜明けを身体で作る", impact: "視覚的には豊かですが、二人だけにする決定を変更することになります。" },
+            { id: "time-projection", title: "時刻や空の変化を投影で示す", impact: "状況は伝わりますが、機材と映像制作が必要になります。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-15", group: "scenes", title: "仮死から葬送・墓所への変化をどう見せますか？",
+          premise: "ジュリエットの薬と仮死状態は決定済みです。低い台をどこまで変身させるかを決めます。",
+          options: [
+            { id: "visible-bench-transform", title: "低い台を寝台→棺台→墓へ見えるまま変える", impact: "同じ身体が家族の視線で死者へ変わる過程と、転換キューを同時に見せられます。", recommended: true },
+            { id: "hidden-transform", title: "暗転中に寝台から墓所へ替える", impact: "場所は明確ですが、舞台転換の見せ場は減ります。" },
+            { id: "floor-no-furniture", title: "台を使わず床上で表現する", impact: "最小構成になりますが、バー以外の装置を使い回すサンプルが減ります。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-16", group: "scenes", title: "手紙のすれ違いを、どのサーカス言語で見せますか？",
+          premise: "現実的な追跡ではなく、使者とロミオが届かない時間を比喩的にすれ違う場面です。",
+          options: [
+            { id: "human-time-canon", title: "人だけで時間差のカノンを作る", impact: "六人ほどの波、向き、反復で距離を作り、装置なしで後の人の川へつなげられます。", recommended: true },
+            { id: "traveling-floor-acrobatics", title: "床のアクロバットで横切る", impact: "速度と危うさは出ますが、出演者の技能と床条件に依存します。" },
+            { id: "letter-object-manipulation", title: "封書のオブジェクト操作を中心にする", impact: "失敗した手紙は明快ですが、人で隔たりを作る方向から少し離れます。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-17", group: "scenes", title: "中央の「人の川」はどの接触レベルにしますか？",
+          premise: "左の墓所と右のロレンスたちを隔てる六人が、互いに干渉できない領域を作ります。",
+          options: [
+            { id: "wave-canon-low-contact", title: "波とカノン、低接触で流れの向きを変える", impact: "人だけで越えられない時間を作り、会場や身体条件に合わせて密度を調整できます。", recommended: true },
+            { id: "supported-contact-current", title: "支え合い・持ち上げを含む強い流れ", impact: "川の圧力は増しますが、接触技術と専用稽古が必要です。" },
+            { id: "corridor-lines", title: "直線の隊列と通路で隔てる", impact: "位置キューは明快ですが、即興的な川の感覚は弱まります。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-18", group: "scenes", title: "墓所でジュリエットが目覚める間をどうしますか？",
+          premise: "ロミオが先に死に、ジュリエットが遅れて目覚める順序は決定済みです。",
+          options: [
+            { id: "two-river-waves", title: "ロミオの死後、人の川が二波動いてから目覚める", impact: "取り返せない時間を観客が感じた後、ジュリエットが毒杯を見る流れを作れます。", recommended: true },
+            { id: "wake-sooner", title: "ロミオが倒れた直後に目覚める", impact: "緊迫感は増しますが、声や手があと少し届かなかった悲劇に近づきます。" },
+            { id: "long-full-silence", title: "完全な静止と無音を長く置いてから目覚める", impact: "死の重さは増しますが、上演時間と観客の集中を稽古で調整する必要があります。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-19", group: "scenes", title: "両家の和解をどの身体像で終えますか？",
+          premise: "二人の死とロレンスの告白を受け、人が一人ずつ中央に集まる流れは決定済みです。",
+          options: [
+            { id: "restrained-low-handshake", title: "低い姿勢で、ためらいのある握手", impact: "突然の仲直りにせず、悲しみの中で最初の接触だけを選ぶ結末になります。", recommended: true },
+            { id: "near-no-contact", title: "触れずに近くへ立つ", impact: "和解を約束ではなく可能性として残します。" },
+            { id: "embrace", title: "抱擁で明確に和解する", impact: "終幕の解放感は強くなりますが、変化が急に見えないよう前段を厚くします。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-20", group: "scenes", title: "本編の終わりからカーテンコールへどう移りますか？",
+          premise: "現在は本編外に約60秒のカーテンコールを置く提案です。",
+          options: [
+            { id: "eight-second-blackout-bow", title: "8秒の静止・暗転後、約60秒の別枠カーテンコール", impact: "悲劇の余韻と出演者への拍手を分け、尺の計測も明確にできます。", recommended: true },
+            { id: "immediate-bow", title: "終幕の像からすぐ礼へ移る", impact: "進行は短くなりますが、最後の悲しみがほどけるのも早くなります。" },
+            { id: "omit-curtain-call", title: "製品サンプルからはカーテンコールを外す", impact: "物語キューだけに集中できますが、ショー全体の終演処理例がなくなります。" }, hold
+          ]
+        },
+        {
+          id: "RJ-DEC-21", group: "apply", title: "回答後、どの資料まで反映しますか？",
+          premise: "判断シートの選択自体は正本を変更しません。次の作業範囲をここで指定できます。",
+          options: [
+            { id: "apply-all-with-history", title: "通し稿・Stage Sketchサンプル・引継ぎJSONへ反映", impact: "選択と旧案の対応を残し、3資料の内容を揃えます。", recommended: true },
+            { id: "record-only", title: "判断だけ記録し、まだ正本へ反映しない", impact: "次の推敲まで現行サンプルを固定します。" },
+            { id: "show-only", title: "通し上演稿だけ更新する", impact: "文章と演出を先に固め、Stage Sketchデータは後でまとめて更新します。" }, hold
+          ]
+        }
+      ];
+
+      const state = loadState();
+      let unansweredOnly = false;
+      let toastTimer = null;
+
+      const groupsRoot = document.getElementById("decision-groups");
+      const progressCount = document.getElementById("progress-count");
+      const progressTrack = document.querySelector(".progress-track");
+      const progressBar = document.getElementById("progress-bar");
+      const saveState = document.getElementById("save-state");
+      const toast = document.getElementById("toast");
+
+      function blankState() {
+        return { schema: SCHEMA, answers: {}, productionInputs: {}, updatedAt: null };
+      }
+
+      function loadState() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+          if (parsed && parsed.schema === SCHEMA) {
+            return {
+              schema: SCHEMA,
+              answers: parsed.answers && typeof parsed.answers === "object" ? parsed.answers : {},
+              productionInputs: parsed.productionInputs && typeof parsed.productionInputs === "object" ? parsed.productionInputs : {},
+              updatedAt: parsed.updatedAt || null
+            };
+          }
+        } catch (error) {
+          console.warn("Saved decisions could not be loaded.", error);
+        }
+        return blankState();
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;"
+        })[char]);
+      }
+
+      function render() {
+        groupsRoot.innerHTML = GROUPS.map((group) => {
+          const items = DECISIONS.filter((item) => item.group === group.id);
+          return `
+            <section class="group" id="group-${group.id}" aria-labelledby="group-title-${group.id}">
+              <div class="group-head">
+                <span class="group-index">${group.index}</span>
+                <h2 id="group-title-${group.id}">${group.title}</h2>
+                <p class="group-note">${group.note}</p>
+              </div>
+              ${items.map(renderDecision).join("")}
+            </section>`;
+        }).join("");
+
+        document.querySelectorAll(".decision input[type=radio]").forEach((input) => {
+          input.addEventListener("change", onChoiceChange);
+        });
+        document.querySelectorAll(".decision-note").forEach((input) => {
+          input.addEventListener("input", onNoteChange);
+        });
+        document.querySelectorAll(".production-input").forEach((input) => {
+          input.value = state.productionInputs[input.dataset.production] || "";
+          input.addEventListener("input", onProductionInput);
+        });
+        updateUI();
+      }
+
+      function renderDecision(decision) {
+        const saved = state.answers[decision.id] || {};
+        const options = decision.options.map((option) => {
+          const checked = saved.choiceId === option.id ? " checked" : "";
+          const recommendClass = option.recommended ? " option--recommended" : "";
+          const tag = option.recommended ? '<span class="option__tag">AI推奨</span>' : "";
+          return `
+            <label class="option${recommendClass}">
+              <input type="radio" name="${decision.id}" value="${escapeHtml(option.id)}"${checked}>
+              <span>
+                <span class="option__title">${escapeHtml(option.title)}${tag}</span>
+                <span class="option__impact">${escapeHtml(option.impact)}</span>
+              </span>
+            </label>`;
+        }).join("");
+        return `
+          <article class="decision" id="${decision.id}" data-decision-id="${decision.id}" data-answered="${saved.choiceId ? "true" : "false"}">
+            <div class="decision__topline">
+              <span class="decision__id">${decision.id}</span>
+              <span class="decision__status">${saved.choiceId ? "回答済み" : "未回答"}</span>
+            </div>
+            <fieldset>
+              <legend>${escapeHtml(decision.title)}</legend>
+              <p class="premise">${escapeHtml(decision.premise)}</p>
+              <div class="options">${options}</div>
+            </fieldset>
+            <label class="note-label" for="note-${decision.id}">補足・案の修正（任意）</label>
+            <textarea class="decision-note" id="note-${decision.id}" data-note-for="${decision.id}" rows="2" placeholder="例：推奨案を基準に、ここだけ変更したい">${escapeHtml(saved.note || "")}</textarea>
+          </article>`;
+      }
+
+      function getDecision(id) {
+        return DECISIONS.find((item) => item.id === id);
+      }
+
+      function onChoiceChange(event) {
+        const id = event.target.name;
+        const decision = getDecision(id);
+        const option = decision.options.find((item) => item.id === event.target.value);
+        const previous = state.answers[id] || {};
+        state.answers[id] = {
+          choiceId: option.id,
+          choiceLabel: option.title,
+          kind: option.id === "hold" ? "hold" : option.recommended ? "recommended" : "alternative",
+          note: previous.note || ""
+        };
+        save("選択を保存しました");
+        updateUI();
+      }
+
+      function onNoteChange(event) {
+        const id = event.target.dataset.noteFor;
+        const previous = state.answers[id] || {};
+        state.answers[id] = { ...previous, note: event.target.value };
+        if (!state.answers[id].choiceId && !event.target.value) delete state.answers[id];
+        save("補足を保存しました", false);
+      }
+
+      function onProductionInput(event) {
+        state.productionInputs[event.target.dataset.production] = event.target.value;
+        save("制作条件を保存しました", false);
+      }
+
+      function save(message, announce = true) {
+        state.updatedAt = new Date().toISOString();
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          saveState.textContent = `${message}（${new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}）`;
+        } catch (error) {
+          saveState.textContent = "ブラウザ内へ保存できませんでした。回答JSONを保存してください。";
+          console.warn("Decisions could not be saved.", error);
+        }
+        if (announce) showToast(message);
+      }
+
+      function updateUI() {
+        const answered = DECISIONS.filter((decision) => state.answers[decision.id]?.choiceId).length;
+        progressCount.textContent = `${answered} / ${DECISIONS.length}`;
+        progressTrack.setAttribute("aria-valuenow", String(answered));
+        progressBar.style.width = `${answered / DECISIONS.length * 100}%`;
+
+        document.querySelectorAll(".decision").forEach((article) => {
+          const hasAnswer = Boolean(state.answers[article.dataset.decisionId]?.choiceId);
+          article.dataset.answered = String(hasAnswer);
+          article.querySelector(".decision__status").textContent = hasAnswer ? "回答済み" : "未回答";
+          article.hidden = unansweredOnly && hasAnswer;
+        });
+
+        document.querySelectorAll(".group").forEach((group) => {
+          const visible = [...group.querySelectorAll(".decision")].some((item) => !item.hidden);
+          group.hidden = unansweredOnly && !visible;
+        });
+      }
+
+      function setRecommendedForUnanswered() {
+        let filled = 0;
+        DECISIONS.forEach((decision) => {
+          if (state.answers[decision.id]?.choiceId) return;
+          const option = decision.options.find((item) => item.recommended);
+          state.answers[decision.id] = {
+            choiceId: option.id,
+            choiceLabel: option.title,
+            kind: "recommended",
+            note: state.answers[decision.id]?.note || ""
+          };
+          const input = document.querySelector(`input[name="${decision.id}"][value="${option.id}"]`);
+          if (input) input.checked = true;
+          filled += 1;
+        });
+        if (filled) {
+          save(`${filled}件の未回答に推奨案を入れました`);
+          updateUI();
+        } else {
+          showToast("未回答の項目はありません");
+        }
+      }
+
+      function collectExport() {
+        const decisions = DECISIONS.map((decision) => {
+          const answer = state.answers[decision.id] || {};
+          const option = decision.options.find((item) => item.id === answer.choiceId);
+          return {
+            id: decision.id,
+            group: decision.group,
+            question: decision.title,
+            status: option ? (option.id === "hold" ? "held" : "answered") : "unanswered",
+            selectedOptionId: option?.id || null,
+            selectedOptionLabel: option?.title || null,
+            selectionKind: option ? (option.id === "hold" ? "hold" : option.recommended ? "recommended" : "alternative") : null,
+            note: answer.note || ""
+          };
+        });
+        const answeredCount = decisions.filter((item) => item.status !== "unanswered").length;
+        return {
+          schema: SCHEMA,
+          work: { title: "ロミオとジュリエット", purpose: "Stage Sketch show sample" },
+          generatedAt: new Date().toISOString(),
+          source: SOURCE,
+          applicationStatus: "decisions_only_not_applied",
+          progress: { answered: answeredCount, total: decisions.length, complete: answeredCount === decisions.length },
+          decisions,
+          productionInputs: {
+            venue: state.productionInputs.venue || "",
+            cast: state.productionInputs.cast || "",
+            skills: state.productionInputs.skills || "",
+            resources: state.productionInputs.resources || ""
+          }
+        };
+      }
+
+      function buildSummary() {
+        const data = collectExport();
+        const lines = [
+          "ロミオとジュリエット｜本人判断シート",
+          `回答: ${data.progress.answered} / ${data.progress.total}`,
+          "",
+          ...GROUPS.flatMap((group) => {
+            const decisions = data.decisions.filter((item) => item.group === group.id);
+            return [
+              `【${group.index} ${group.title}】`,
+              ...decisions.flatMap((item) => {
+                const chosen = item.selectedOptionLabel || "未回答";
+                const note = item.note ? [`  補足: ${item.note}`] : [];
+                return [`${item.id}: ${chosen}`, ...note];
+              }),
+              ""
+            ];
+          }),
+          "【制作条件（任意）】",
+          `会場・寸法: ${data.productionInputs.venue || "未入力"}`,
+          `出演者: ${data.productionInputs.cast || "未入力"}`,
+          `技術・制約: ${data.productionInputs.skills || "未入力"}`,
+          `技術・稽古条件: ${data.productionInputs.resources || "未入力"}`,
+          "",
+          "この回答はまだ通し稿・Stage Sketch正本へ反映されていません。"
+        ];
+        return lines.join("\n");
+      }
+
+      async function copyAnswers() {
+        const summary = buildSummary();
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(summary);
+          } else {
+            const helper = document.createElement("textarea");
+            helper.value = summary;
+            helper.setAttribute("readonly", "");
+            helper.style.position = "fixed";
+            helper.style.opacity = "0";
+            document.body.appendChild(helper);
+            helper.select();
+            const ok = document.execCommand("copy");
+            helper.remove();
+            if (!ok) throw new Error("copy command failed");
+          }
+          showToast("回答をコピーしました。この会話へ貼り付けられます");
+        } catch (error) {
+          console.warn("Copy failed.", error);
+          showToast("コピーできませんでした。JSON保存を使ってください");
+        }
+      }
+
+      function downloadJson() {
+        const data = collectExport();
+        const stamp = new Date().toISOString().slice(0, 10);
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `romeo-juliet-decisions-${stamp}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+        showToast(`回答JSONを保存しました（${data.progress.answered} / ${data.progress.total}件）`);
+      }
+
+      function clearAll() {
+        const ok = window.confirm("21件の選択、補足、制作条件をこのHTMLから消します。よろしいですか？");
+        if (!ok) return;
+        state.answers = {};
+        state.productionInputs = {};
+        state.updatedAt = new Date().toISOString();
+        try { localStorage.removeItem(STORAGE_KEY); } catch (error) { console.warn(error); }
+        document.querySelectorAll("input[type=radio]").forEach((input) => { input.checked = false; });
+        document.querySelectorAll("textarea").forEach((input) => { input.value = ""; });
+        saveState.textContent = "入力を消しました。";
+        updateUI();
+        showToast("入力を消しました");
+      }
+
+      function showToast(message) {
+        clearTimeout(toastTimer);
+        toast.textContent = message;
+        toast.hidden = false;
+        toastTimer = setTimeout(() => { toast.hidden = true; }, 3000);
+      }
+
+      document.getElementById("recommend-all").addEventListener("click", setRecommendedForUnanswered);
+      document.getElementById("unanswered-only").addEventListener("click", (event) => {
+        unansweredOnly = !unansweredOnly;
+        event.currentTarget.setAttribute("aria-pressed", String(unansweredOnly));
+        event.currentTarget.textContent = unansweredOnly ? "すべての項目を表示" : "未回答だけ表示";
+        updateUI();
+      });
+      document.getElementById("copy-answers").addEventListener("click", copyAnswers);
+      document.getElementById("download-json").addEventListener("click", downloadJson);
+      document.getElementById("print-sheet").addEventListener("click", () => window.print());
+      document.getElementById("clear-answers").addEventListener("click", clearAll);
+      document.querySelector('[data-action="copy"]').addEventListener("click", copyAnswers);
+      document.querySelector('[data-action="download"]').addEventListener("click", downloadJson);
+
+      window.RJ_DECISION_SHEET = {
+        schema: SCHEMA,
+        decisions: DECISIONS,
+        collect: collectExport,
+        summary: buildSummary,
+        storageKey: STORAGE_KEY
+      };
+
+      render();
+    })();
+  </script>
+</body>
+</html>

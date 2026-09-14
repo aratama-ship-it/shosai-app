@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "Cyan brand, primary action, active pen and sticky tools; main rust token and font size retained",
+    "JA/EN at 1440, 768, 390 and 844 pixels: no horizontal overflow, side placement and 44px controls",
+    "Keyboard focus uses visible 2px cyan outline",
+    "No page errors and no study API writes during appearance checks"
+  ],
+  "url": "http://127.0.0.1:8802/study?lang=ja#a0ec8f4b764141f11ee0b14b579cd41cfcb18c5ea5e3fa9a",
+  "errors": [],
+  "apiWrites": []
+}

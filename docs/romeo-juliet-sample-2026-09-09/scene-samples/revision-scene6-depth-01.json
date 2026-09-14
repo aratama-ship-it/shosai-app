@@ -1,0 +1,29 @@
+{
+  "date": "2026-09-09",
+  "status": "ai_draft_not_adopted",
+  "userRequest": "追放と夜明けの別れのシーンでは何が描かれていますか。内容が薄く感じます。",
+  "diagnosis": "The previous excerpt stopped at the nightingale-versus-lark exchange and did not show the physical departure or the tomb premonition.",
+  "previousFiles": {
+    "selections.json": "63ebd422154e9811b252330c4dfa2342b36ecbad3e699c8b4daf8a5243a8682f",
+    "draft.json": "97f36176763e110fab21b657930745461725820838fe14f2fb16521cf87c98de",
+    "../direction-notes/scene-notes.json": "38527047ff90a02630ff4c8e799dc3013c7844879d63b8e4e2db865a2b1e1799"
+  },
+  "previousScene6": {
+    "lineCount": 10,
+    "scope": "nightingale_and_lark_exchange",
+    "jaDraft": "ジュリエット　もう行ってしまうの？　まだ夜明けには早い。\n　今、あなたの耳を驚かせたのは、ナイチンゲール。\n　朝を告げるヒバリではないわ。\n　毎晩、あのザクロの木で鳴く鳥よ。\n　信じて。あれはナイチンゲール。\nロミオ　ヒバリだ。朝を告げる鳥の声だよ。\n　見て。東の雲を裂く、あの意地悪な光を。\n　夜のともしびは燃え尽きて、\n　朝が霧の山の上で、つま先立ちしている。\n　行けば生きられる。ここに残れば、死ななくてはならない。"
+  },
+  "newScene6": {
+    "expectedLineCount": 11,
+    "scope": "denial_departure_and_tomb_premonition",
+    "dramaticChange": [
+      "deny_dawn",
+      "accept_separation",
+      "romeo_physically_descends",
+      "question_future_reunion",
+      "foreshadow_tomb"
+    ]
+  },
+  "adopted": false,
+  "finalPolishingByUser": true
+}

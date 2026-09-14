@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "mouse front and touch plan draw annotations without changing stage canvas",
+    "strokes belong to the selected scene",
+    "Japanese and English at four sizes: no overflow, 44px controls, aligned normalized strokes",
+    "undo, cancel clear, and confirm clear",
+    "published snapshot and existing local show remain unchanged; editor bridge stays absent"
+  ],
+  "errors": []
+}

@@ -91,13 +91,6 @@
       dialogue: document.getElementById("stage-timeline-dialogue-cues"),
     },
     addCueButtons: [...panel.querySelectorAll("[data-stage-timeline-add-cue]")],
-    timelineDeleteBackdrop: document.getElementById("stage-timeline-delete-backdrop"),
-    timelineDeleteModal: document.getElementById("stage-timeline-delete-modal"),
-    timelineDeleteTitle: document.getElementById("stage-timeline-delete-title"),
-    timelineDeleteMessage: document.getElementById("stage-timeline-delete-message"),
-    timelineDeleteClose: document.getElementById("stage-timeline-delete-close"),
-    timelineDeleteCancel: document.getElementById("stage-timeline-delete-cancel"),
-    timelineDeleteConfirm: document.getElementById("stage-timeline-delete-confirm"),
     cueDetailBackdrop: document.getElementById("stage-timeline-cue-detail-backdrop"),
     cueDetailModal: document.getElementById("stage-timeline-cue-detail-modal"),
     cueDetailTitle: document.getElementById("stage-timeline-cue-detail-title"),
@@ -107,11 +100,6 @@
     cueDetailClose: document.getElementById("stage-timeline-cue-detail-close"),
     cueDetailSave: document.getElementById("stage-timeline-cue-detail-save"),
     cueDetailDelete: document.getElementById("stage-timeline-cue-detail-delete"),
-    lockMenu: document.getElementById("stage-timeline-lock-menu"),
-    lockMenuStart: document.getElementById("stage-timeline-lock-menu-start"),
-    lockMenuEnd: document.getElementById("stage-timeline-lock-menu-end"),
-    lockMenuClear: document.getElementById("stage-timeline-lock-menu-clear"),
-    lockMenuCue: document.getElementById("stage-timeline-lock-menu-cue"),
     audioDetailBackdrop: document.getElementById("stage-timeline-audio-detail-backdrop"),
     audioDetailModal: document.getElementById("stage-timeline-audio-detail-modal"),
     audioDetailTitle: document.getElementById("stage-timeline-audio-detail-title"),
@@ -120,7 +108,6 @@
     audioGainRange: document.getElementById("stage-timeline-audio-gain-range"),
     audioGainNumber: document.getElementById("stage-timeline-audio-gain-number"),
     audioGainValue: document.getElementById("stage-timeline-audio-gain-value"),
-    audioFadeOut: document.getElementById("stage-timeline-audio-fade-out"),
     audioDetailClose: document.getElementById("stage-timeline-audio-detail-close"),
     audioDetailCancel: document.getElementById("stage-timeline-audio-detail-cancel"),
     audioDetailSave: document.getElementById("stage-timeline-audio-detail-save"),
@@ -152,15 +139,11 @@
   ui.unit = ui.unit === "count" ? "count" : "time";
   ui.zoom = clamp(finite(ui.zoom, 1), ZOOM_MIN, ZOOM_MAX);
   ui.height = finite(ui.height, DEFAULT_HEIGHT);
-  ui.collapsed = Boolean(ui.collapsed);
   ui.volume = clamp(finite(ui.volume, 100), 0, 100);
   ui.grid = [0.25, 0.5, 1].includes(finite(ui.grid, 0.25)) ? finite(ui.grid, 0.25) : 0.25;
   ui.loopA = Math.max(0, finite(ui.loopA, 0));
   ui.loopB = Math.max(0, finite(ui.loopB, 0));
   ui.loop = Boolean(ui.loop);
-  ui.loopsByTimeline = ui.loopsByTimeline && typeof ui.loopsByTimeline === "object"
-    && !Array.isArray(ui.loopsByTimeline) ? ui.loopsByTimeline : {};
-  ui.loopScopeKey = typeof ui.loopScopeKey === "string" ? ui.loopScopeKey : "";
   ui.songBySection = ui.songBySection && typeof ui.songBySection === "object"
     ? ui.songBySection : {};
   if (Array.isArray(ui.rowOrder)) {
@@ -186,7 +169,6 @@
 
   let mode = "normal";
   let timeline = null;
-  let activeLoopScopeKey = "";
   let timelineWidth = 960;
   let audioAvailabilityGeneration = 0;
   let seekSeconds = 0;
@@ -194,9 +176,6 @@
   let pendingUnitChange = null;
   let unitWarningReturnFocus = null;
   let selectedCueId = null;
-  let selectedTimelineTarget = null;
-  let pendingTimelineDelete = null;
-  let pendingTimelineDeleteReturnFocus = null;
   let pendingSceneOpenTimer = 0;
   let cueDetailId = null;
   let cueDetailReturnFocus = null;
@@ -214,48 +193,10 @@
   let rowResize = null;
   let rowReorder = null;
   let anchorDrag = null;
-  let cueDrag = null;
-  let audioDrag = null;
-  let audioTrimDrag = null;
-  let audioClick = null;
-  let suppressCueClickUntil = 0;
-  let suppressAudioClickUntil = 0;
-  let timelineLockMenuTarget = null;
   let suppressAnchorClick = false;
 
   function saveUi() {
     try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (_) { /* 表示設定なしでも編集は続ける */ }
-  }
-
-  function timelineLoopScopeKey(value = timeline) {
-    return value ? `${value.sectionId || "show"}\u001f${value.songId || "fallback"}` : "";
-  }
-
-  function normalizedLoopRange(raw) {
-    return { loopA: Math.max(0, finite(raw && raw.loopA, 0)), loopB: Math.max(0, finite(raw && raw.loopB, 0)), loop: Boolean(raw && raw.loop) };
-  }
-
-  function activateTimelineLoopScope() {
-    const key = timelineLoopScopeKey();
-    if (!key || key === activeLoopScopeKey) return;
-    let next = ui.loopsByTimeline[key];
-    if (!next) {
-      next = ui.loopScopeKey ? {} : { loopA: ui.loopA, loopB: ui.loopB, loop: ui.loop };
-      ui.loopsByTimeline[key] = normalizedLoopRange(next);
-      ui.loopScopeKey = key;
-    }
-    const range = normalizedLoopRange(next);
-    ui.loopA = range.loopA; ui.loopB = range.loopB; ui.loop = range.loop;
-    activeLoopScopeKey = key;
-  }
-
-  function saveTimelineLoopScope() {
-    const key = timelineLoopScopeKey();
-    if (!key) return;
-    ui.loopsByTimeline[key] = normalizedLoopRange(ui);
-    ui.loopScopeKey = key;
-    activeLoopScopeKey = key;
-    saveUi();
   }
 
   function normalizedAudioGainDb(value) {
@@ -281,7 +222,7 @@
   function applyAudioLevels(gainDb = activeAudioGainDb()) {
     if (!els.audio) return;
     const master = clamp(ui.volume / 100, 0, 1);
-    const factor = 10 ** (normalizedAudioGainDb(gainDb) / 20) * timelineAudioFadeMultiplier();
+    const factor = 10 ** (normalizedAudioGainDb(gainDb) / 20);
     if (audioGraph) {
       els.audio.volume = master;
       audioGraph.gain.gain.value = factor;
@@ -289,22 +230,6 @@
       // Web Audio非対応時も減衰は維持する。増幅はブラウザのvolume上限まで。
       els.audio.volume = clamp(master * factor, 0, 1);
     }
-  }
-
-  function timelineAudioFadeMultiplier() {
-    if (!timeline || !els.audio || !audioMatchesTimeline()) return 1;
-    const current = finite(els.audio.currentTime, seekSeconds);
-    const clips = (timeline.audioClips || []).filter((clip) => clip.trackId === timeline.trackId);
-    const clip = clips.find((item) => current >= item.start - 1e-6 && current <= item.end + 1e-6);
-    if (!clip) {
-      const last = [...clips].reverse().find((item) => current > item.end + 1e-6);
-      return last && last.fadeOut ? 0 : 1;
-    }
-    if (!clip.fadeOut) return 1;
-    const fadeSeconds = Math.min(1, Math.max(0.1, clip.end - clip.start));
-    if (current >= clip.end) return 0;
-    if (current <= clip.end - fadeSeconds) return 1;
-    return clamp((clip.end - current) / fadeSeconds, 0, 1);
   }
 
   async function ensureAudioGainGraph() {
@@ -405,27 +330,6 @@
     if (save) saveUi();
   }
 
-  function timelineResizeHandleHeight() {
-    const height = Number.parseFloat(getComputedStyle(root).getPropertyValue("--stage-timeline-collapse-handle-height"));
-    return Number.isFinite(height) && height > 0 ? height : 1;
-  }
-
-  function setTimelineCollapsed(collapsed, { save = false } = {}) {
-    const next = Boolean(collapsed);
-    if (next && panel.contains(document.activeElement) && document.activeElement !== els.resize) {
-      els.resize.focus({ preventScroll: true });
-    }
-    ui.collapsed = next;
-    if (next) panel.style.setProperty("--stage-timeline-reveal-height", `${timelineResizeHandleHeight()}px`);
-    panel.classList.toggle("is-collapsed", next);
-    [panel.querySelector(".stage-timeline-toolbar"), els.viewport].filter(Boolean).forEach((element) => {
-      element.inert = next;
-      if (next) element.setAttribute("aria-hidden", "true");
-      else element.removeAttribute("aria-hidden");
-    });
-    if (save) saveUi();
-  }
-
   function clickElement(element) {
     if (element && !element.disabled) element.click();
   }
@@ -519,9 +423,6 @@
     if (next !== "timeline") cancelPendingSceneOpen();
     if (next !== "timeline") closeAudioDetails({ focus: false });
     if (next !== "timeline") pauseSilentPlayback({ update: false });
-    stopAudioPlaybackFrames();
-    bridge.clearTimelinePosition?.();
-    if (next !== "timeline") bridge.setTimelineAudioContext?.(null);
     els.tabs.forEach((button) => {
       const active = button.dataset.stageWorkspaceMode === next;
       button.classList.toggle("is-active", active);
@@ -536,7 +437,6 @@
       setStageView(target);
       applyTimelineHeight();
       renderTimeline();
-      startAudioPlaybackFrames();
     } else {
       const target = ["front", "plan", "both-front", "both-plan"].includes(ui.normalView)
         ? ui.normalView : outgoingView;
@@ -772,81 +672,6 @@
     return phased;
   }
 
-  // セクションは演目全体の時計、音源はその中に置く帯として別々に扱う。
-  // 音源の実尺でシーン・転換・キューの時計を切り詰めない。
-  function audioTimelineDuration(track) {
-    const duration = finite(track && track.durationSeconds, 0);
-    return duration > 0 ? duration : null;
-  }
-
-  function audioClip(track, start, end, fallbackTitle, sourceSceneId = null, naturalEnd = end) {
-    const safeStart = Math.max(0, finite(start, 0));
-    const safeEnd = Math.max(safeStart, finite(end, safeStart));
-    const safeNaturalEnd = Math.max(safeEnd, finite(naturalEnd, safeEnd));
-    if (!track || safeEnd <= safeStart + 1e-6) return null;
-    return {
-      trackId: track.id,
-      title: String(track.title || fallbackTitle || tx("音源")),
-      start: safeStart,
-      end: safeEnd,
-      naturalEnd: safeNaturalEnd,
-      sourceSceneId,
-      gainDb: normalizedAudioGainDb(track.gainDb),
-      fadeOut: Boolean(track.timelineFadeOut),
-    };
-  }
-
-  // 同じ音源が連続して割り当てられたシーンは、一本の帯として表示する。
-  // 次のシーンが別曲または無音なら、既存再生と同じくそこで帯も終える。
-  // 帯を動かした場合だけ、割り当て区間から独立した開始位置を持たせる。
-  function sceneAudioClips(project, segments, duration) {
-    const tracks = new Map((project.audioTracks || []).map((track) => [track.id, track]));
-    const clips = [];
-    let run = null;
-    const closeRun = () => {
-      if (!run) return;
-      const actualDuration = audioTimelineDuration(run.track);
-      const hasPlacedStart = Number.isFinite(run.audioTimelineStartSeconds);
-      const start = hasPlacedStart ? clamp(run.audioTimelineStartSeconds, 0, duration) : run.start;
-      const assignedDuration = Math.max(0, run.end - run.start);
-      const displayDuration = hasPlacedStart && actualDuration !== null ? actualDuration
-        : actualDuration === null ? assignedDuration : Math.min(assignedDuration, actualDuration);
-      const naturalEnd = Math.min(duration, start + displayDuration);
-      const hasPlacedEnd = Number.isFinite(run.audioTimelineEndSeconds);
-      const end = hasPlacedEnd
-        ? clamp(run.audioTimelineEndSeconds, Math.min(naturalEnd, start + 0.1), naturalEnd)
-        : naturalEnd;
-      const clip = audioClip(run.track, start, end, null, run.sourceSceneId, naturalEnd);
-      if (clip) clips.push(clip);
-      run = null;
-    };
-    (segments || []).forEach((segment) => {
-      const trackId = typeof segment.audioTrackId === "string" ? segment.audioTrackId : null;
-      const track = trackId && tracks.get(trackId);
-      if (!track) {
-        closeRun();
-        return;
-      }
-      const hasPlacedStart = Number.isFinite(segment.audioTimelineStartSeconds);
-      if (run && run.track.id === track.id && !hasPlacedStart && segment.start <= run.end + 1e-6) {
-        run.end = Math.max(run.end, segment.end);
-        return;
-      }
-      closeRun();
-      run = {
-        track,
-        start: segment.start,
-        end: segment.end,
-        sourceSceneId: segment.sceneId || null,
-        audioTimelineStartSeconds: hasPlacedStart ? segment.audioTimelineStartSeconds : null,
-        audioTimelineEndSeconds: Number.isFinite(segment.audioTimelineEndSeconds)
-          ? segment.audioTimelineEndSeconds : null,
-      };
-    });
-    closeRun();
-    return clips;
-  }
-
   function formationTimelines(project, section) {
     const saved = section && section.formation;
     const pkg = saved && saved.package;
@@ -878,7 +703,6 @@
           start: Math.max(0, countToSec(song.track, group.count)),
           end: Math.max(0.1, countToSec(song.track, Math.max(group.count + 0.01, endCount))),
           count: group.count,
-          audioTrackId: trackId || null,
         };
       });
       const transitions = groups.slice(1).map((group, index) => {
@@ -898,12 +722,8 @@
       });
       const plannedEnd = countToSec(song.track,
         finite(song.scenePlan && song.scenePlan.endCount, groups[groups.length - 1].count + 8));
-      const plannedDuration = Math.max(1, plannedEnd,
+      const duration = Math.max(1, finite(audioTrack && audioTrack.durationSeconds, 0), plannedEnd,
         ...segments.map((segment) => segment.end));
-      const duration = section ? sectionDurationSeconds(project, section) : plannedDuration;
-      const audioEnd = Math.min(duration, audioTimelineDuration(audioTrack) || duration);
-      const audioClips = audioTrack
-        ? [audioClip(audioTrack, 0, audioEnd, `${tx("音源")}${songIndex + 1}`)].filter(Boolean) : [];
       return {
         sectionId: section.id,
         sectionTitle: section.title || tx("無題のセクション"),
@@ -913,7 +733,6 @@
         trackId: trackId || null,
         gainDb: normalizedAudioGainDb(audioTrack && audioTrack.gainDb),
         duration,
-        audioClips,
         segments: withSceneTransitionPhases(segments, transitions),
         transitions,
         source: "formation",
@@ -936,16 +755,7 @@
       const hold = rehearsal.holdDurationSeconds == null ? 4 : Math.max(0, finite(rehearsal.holdDurationSeconds, 4));
       const travel = rehearsal.transitionToNextSeconds == null ? 0 : Math.max(0, finite(rehearsal.transitionToNextSeconds, 0));
       const duration = sceneTimelineSeconds(scene) * scale;
-      const item = {
-        id: scene.id,
-        sceneId: scene.id,
-        title: scene.title || `${tx("シーン")}${index + 1}`,
-        start: at,
-        end: at + duration,
-        audioTrackId: scene.audioTrackId || null,
-        audioTimelineStartSeconds: Number.isFinite(scene.audioTimelineStartSeconds)
-          ? scene.audioTimelineStartSeconds : null,
-      };
+      const item = { id: scene.id, sceneId: scene.id, title: scene.title || `${tx("シーン")}${index + 1}`, start: at, end: at + duration };
       if (index < scenes.length - 1) transitions.push({
         id: `${scene.id}-transition`,
         title: travel > 0 ? tx("転換") : tx("転換ポイント"),
@@ -966,8 +776,9 @@
       track: audioTrack || { countBpm: 120, firstCountSec: 0, firstSet: false, firstLocked: false, anchors: [], phrases: [{ fromCount: 1, length: 8 }] },
       trackId,
       gainDb: normalizedAudioGainDb(audioTrack && audioTrack.gainDb),
-      duration: desiredDuration,
-      audioClips: sceneAudioClips(project, segments, desiredDuration),
+      duration: trackId
+        ? Math.max(8, at, finite(audioTrack && audioTrack.durationSeconds, 0))
+        : desiredDuration,
       segments: withSceneTransitionPhases(segments, transitions),
       transitions,
       source: "fallback",
@@ -1395,7 +1206,6 @@
       .filter((cue) => cue && cue.kind === "timeline" && CUE_TYPES.includes(cue.cueType))
       .map((cue) => {
         if (cue.sectionId === timeline.sectionId) {
-          if (cue.songId && cue.songId !== timeline.songId) return null;
           return { ...cue, seconds: clamp(finite(cue.atSeconds, 0), 0, timeline.duration) };
         }
         // 直前の試作で保存したシーン相対キューも、そのシーンがこのセクション内なら表示する。
@@ -1428,37 +1238,12 @@
     });
   }
 
-  function timelineTargetMatchesElement(target, element) {
-    if (!target || !element || element.dataset.timelineSelectKind !== target.kind) return false;
-    if (target.kind === "cue" || target.kind === "scene") {
-      return element.dataset.timelineSelectId === target.id;
-    }
-    return target.kind === "audio"
-      && element.dataset.timelineSelectTrackId === target.trackId
-      && element.dataset.timelineSelectSceneId === (target.sourceSceneId || "");
-  }
-
-  function selectTimelineTarget(target, focus = null) {
-    selectedTimelineTarget = target ? { ...target } : null;
-    selectedCueId = target && target.kind === "cue" ? target.id : null;
-    syncTimelineSelection();
-    const nextFocus = focus || (target && target.returnFocus);
-    if (nextFocus && nextFocus.isConnected) nextFocus.focus({ preventScroll: true });
-  }
-
-  function syncTimelineSelection() {
-    [...panel.querySelectorAll("[data-timeline-select-kind]")].forEach((element) => {
-      element.setAttribute("aria-pressed", String(timelineTargetMatchesElement(selectedTimelineTarget, element)));
+  function syncCueSelection() {
+    Object.values(els.cueLanes).forEach((lane) => {
+      [...lane.querySelectorAll(".stage-timeline-cue")].forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.cueId === selectedCueId));
+      });
     });
-  }
-
-  function selectedTimelineTargetExists(project, audioClips) {
-    const target = selectedTimelineTarget;
-    if (!target) return true;
-    if (target.kind === "cue") return (project.cues || []).some((cue) => cue && cue.id === target.id);
-    if (target.kind === "scene") return (project.scenes || []).some((scene) => scene && scene.id === target.id);
-    return (audioClips || []).some((clip) => clip.trackId === target.trackId
-      && (clip.sourceSceneId || null) === (target.sourceSceneId || null));
   }
 
   function cancelPendingSceneOpen() {
@@ -1548,7 +1333,6 @@
     els.audioDetailBackdrop.hidden = false;
     els.audioDetailModal.hidden = false;
     setAudioGainEditorValue(track.gainDb);
-    if (els.audioFadeOut) els.audioFadeOut.checked = Boolean(track.timelineFadeOut);
     void ensureAudioGainGraph();
     els.audioGainRange.focus({ preventScroll: true });
   }
@@ -1557,9 +1341,7 @@
     if (!audioDetailTrackId || typeof bridge.setTimelineAudioGainDb !== "function") return false;
     const trackId = audioDetailTrackId;
     const gainDb = normalizedAudioGainDb(els.audioGainNumber.value);
-    if (!bridge.setTimelineAudioGainDb(trackId, gainDb, {
-      timelineFadeOut: Boolean(els.audioFadeOut && els.audioFadeOut.checked),
-    })) return false;
+    if (!bridge.setTimelineAudioGainDb(trackId, gainDb)) return false;
     closeAudioDetails({ focus: false });
     renderTimeline();
     const audioBlock = els.audioLane.querySelector(".stage-timeline-audio-block");
@@ -1569,7 +1351,6 @@
 
   function showMissingAudioState(audioBlock, title) {
     audioBlock.dataset.audioMissing = "true";
-    audioBlock.classList.remove("is-draggable", "is-dragging");
     audioBlock.classList.add("is-missing");
     audioBlock.replaceChildren();
 
@@ -1598,8 +1379,9 @@
     audioBlock.setAttribute("aria-label", `${title}。${tx("音源が見つかりません")}。${tx("読み込み直す")}`);
   }
 
-  function checkTimelineAudioAvailability(audioBlock, trackId, title, generation) {
+  function checkTimelineAudioAvailability(audioBlock, trackId, title) {
     if (typeof bridge.hasTimelineAudioFile !== "function") return;
+    const generation = ++audioAvailabilityGeneration;
     Promise.resolve(bridge.hasTimelineAudioFile(trackId)).then((available) => {
       if (available || generation !== audioAvailabilityGeneration || !audioBlock.isConnected
           || audioBlock.dataset.trackId !== trackId) return;
@@ -1611,295 +1393,10 @@
     });
   }
 
-  function timelinePositionLocked(project, kind, id) {
-    if (!project || !id) return false;
-    return kind === "cue" && Boolean((project.cues || []).find((cue) => cue && cue.kind === "timeline" && cue.id === id)?.timelinePositionLocked);
-  }
-
-  function timelineRangeLock(project, kind, id) {
-    if (!project || !id) return null;
-    if (kind === "audio") {
-      const lock = (project.audioTracks || []).find((track) => track && track.id === id)?.timelineRangeLock;
-      return lock === "start" || lock === "end" ? lock : null;
-    }
-    const scene = (project.scenes || []).find((row) => row && row.kind === "scene" && row.id === id);
-    const lock = kind === "transition" ? scene?.transitionRangeLock : scene?.timelineRangeLock;
-    if (lock === "start" || lock === "end") return lock;
-    return kind === "scene" && scene?.timelinePositionLocked ? "start" : null;
-  }
-
-  function timelineLockIcon(edge = null) {
-    const label = edge === "start" ? tx("開始固定") : edge === "end" ? tx("終了固定") : tx("時刻固定");
-    return `<span class="stage-timeline-time-lock${edge ? ` is-${edge}` : ""}" aria-hidden="true" title="${label}"><svg viewBox="0 0 16 16" focusable="false"><rect x="3.5" y="7" width="9" height="6.5" rx="1"></rect><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"></path></svg></span>`;
-  }
-
-  function closeTimelineLockMenu({ focus = false } = {}) {
-    if (!els.lockMenu || els.lockMenu.hidden) return;
-    const target = timelineLockMenuTarget && timelineLockMenuTarget.returnFocus;
-    els.lockMenu.hidden = true;
-    timelineLockMenuTarget = null;
-    if (focus && target && target.isConnected) target.focus({ preventScroll: true });
-  }
-
-  function openTimelineLockMenu(event, target) {
-    if (!target || !target.id || !els.lockMenu || !els.lockMenuStart || !els.lockMenuEnd
-        || !els.lockMenuClear || !els.lockMenuCue) return;
-    const cueTarget = target.kind === "cue";
-    if ((cueTarget && typeof bridge.setTimelinePositionLocked !== "function")
-        || (!cueTarget && typeof bridge.setTimelineRangeLock !== "function")) return;
-    event.preventDefault();
-    event.stopPropagation();
-    timelineLockMenuTarget = target;
-    els.lockMenuStart.hidden = cueTarget;
-    els.lockMenuEnd.hidden = cueTarget;
-    els.lockMenuClear.hidden = cueTarget || !target.lockedEdge;
-    els.lockMenuCue.hidden = !cueTarget;
-    els.lockMenuStart.textContent = target.lockedEdge === "start" ? tx("開始時刻を固定中") : tx("開始時刻を固定");
-    els.lockMenuEnd.textContent = target.lockedEdge === "end" ? tx("終了時刻を固定中") : tx("終了時刻を固定");
-    els.lockMenuCue.textContent = target.locked ? tx("時刻固定を解除") : tx("この時刻を固定");
-    [els.lockMenuStart, els.lockMenuEnd, els.lockMenuClear, els.lockMenuCue].forEach((button) => { button.title = target.label || tx("タイムライン"); });
-    els.lockMenu.hidden = false;
-    const rect = els.lockMenu.getBoundingClientRect();
-    const left = clamp(event.clientX, 8, Math.max(8, window.innerWidth - rect.width - 8));
-    const top = clamp(event.clientY, 8, Math.max(8, window.innerHeight - rect.height - 8));
-    els.lockMenu.style.left = `${left}px`;
-    els.lockMenu.style.top = `${top}px`;
-    (cueTarget ? els.lockMenuCue : target.lockedEdge === "end" ? els.lockMenuEnd : els.lockMenuStart).focus({ preventScroll: true });
-  }
-
-  function lockedTimelineSceneAfter(project, sourceSceneId) {
-    if (!timeline || !project || !sourceSceneId) return null;
-    const sourceAt = timeline.segments.findIndex((segment) => segment.sceneId === sourceSceneId);
-    if (sourceAt < 0) return null;
-    return timeline.segments.slice(sourceAt + 1).map((segment) => (project.scenes || [])
-      .find((scene) => scene && scene.kind === "scene" && scene.id === segment.sceneId))
-      .find((scene) => scene && (timelineRangeLock(project, "scene", scene.id)
-        || timelineRangeLock(project, "transition", scene.id))) || null;
-  }
-
-  function cueDragSeconds(event) {
-    if (!cueDrag || !timeline) return 0;
-    const delta = (event.clientX - cueDrag.startX) / Math.max(1, timelineWidth) * timeline.duration;
-    return Math.round(clamp(snappedSeconds(cueDrag.startSeconds + delta), 0, timeline.duration) * 10) / 10;
-  }
-
-  function beginCueDrag(event, cue, button) {
-    if (event.button !== undefined && event.button !== 0) return;
-    if (cue.timelinePositionLocked) {
-      els.status.textContent = tx("このキューは時刻固定中です。右クリックで解除できます。");
-      return;
-    }
-    if (!timeline || typeof bridge.updateTimelineCue !== "function") return;
-    cueDrag = {
-      pointerId: event.pointerId,
-      id: cue.id,
-      button,
-      startX: event.clientX,
-      startSeconds: cue.seconds,
-      nextSeconds: cue.seconds,
-      moved: false,
-    };
-    button.classList.add("is-dragging");
-    document.body.classList.add("is-timeline-cue-dragging");
-    try { els.viewport.setPointerCapture(event.pointerId); } catch (_) { /* 捕捉できなくても終端を拾う */ }
-  }
-
-  function continueCueDrag(event) {
-    if (!cueDrag || event.pointerId !== cueDrag.pointerId) return;
-    if (!cueDrag.moved && Math.abs(event.clientX - cueDrag.startX) < 3) return;
-    cueDrag.moved = true;
-    cueDrag.nextSeconds = cueDragSeconds(event);
-    cueDrag.button.style.left = `${clamp(pxFor(cueDrag.nextSeconds) - 4, 0, Math.max(0, timelineWidth - CUE_WIDTH))}px`;
-    event.preventDefault();
-  }
-
-  function endCueDrag(event) {
-    if (!cueDrag || event.pointerId !== cueDrag.pointerId) return;
-    const dragging = cueDrag;
-    cueDrag = null;
-    dragging.button.classList.remove("is-dragging");
-    document.body.classList.remove("is-timeline-cue-dragging");
-    try { els.viewport.releasePointerCapture(event.pointerId); } catch (_) { /* 既に解放済み */ }
-    if (!dragging.moved || Math.abs(dragging.nextSeconds - dragging.startSeconds) < 1e-9) return;
-    const scope = timeline && timeline.source === "formation" && timeline.songId
-      ? { songId: timeline.songId } : {};
-    const updated = bridge.updateTimelineCue(dragging.id, {
-      atSeconds: dragging.nextSeconds,
-      sectionId: timeline.sectionId,
-      ...scope,
-    });
-    suppressCueClickUntil = performance.now() + 400;
-    if (!updated) {
-      renderTimeline();
-      return;
-    }
-    selectedCueId = updated.id;
-    selectedTimelineTarget = { kind: "cue", id: updated.id, label: dragging.label, returnFocus: dragging.button };
-    renderTimeline();
-    event.preventDefault();
-  }
-
-  function audioTimelineCanDrag(clip) {
-    return Boolean(timeline && timeline.source === "fallback" && timeline.sectionId
-      && clip && clip.sourceSceneId && typeof bridge.setTimelineAudioStartSeconds === "function");
-  }
-
-  function audioTimelineCanTrim(clip) {
-    return Boolean(timeline && timeline.source === "fallback" && timeline.sectionId
-      && clip && clip.sourceSceneId && typeof bridge.setTimelineAudioEndSeconds === "function");
-  }
-
-  function audioDragSeconds(event) {
-    if (!audioDrag || !timeline) return 0;
-    const delta = (event.clientX - audioDrag.startX) / Math.max(1, timelineWidth) * timeline.duration;
-    const maxStart = Math.max(0, timeline.duration - audioDrag.duration);
-    return Math.round(clamp(snappedSeconds(audioDrag.startSeconds + delta), 0, maxStart) * 10) / 10;
-  }
-
-  function audioTrimEndSeconds(event) {
-    if (!audioTrimDrag || !timeline) return 0;
-    const delta = (event.clientX - audioTrimDrag.startX) / Math.max(1, timelineWidth) * timeline.duration;
-    const minEnd = Math.min(audioTrimDrag.maxEnd, audioTrimDrag.startSeconds + 0.1);
-    return Math.round(clamp(snappedSeconds(audioTrimDrag.startEnd + delta), minEnd, audioTrimDrag.maxEnd) * 10) / 10;
-  }
-
-  function rememberAudioDetailsClick(dragging) {
-    const now = performance.now();
-    const previous = audioClick;
-    audioClick = null;
-    if (previous && previous.trackId === dragging.trackId && previous.button === dragging.button
-        && now - previous.at <= 420) {
-      openAudioDetails(dragging.trackId, dragging.button);
-      return true;
-    }
-    audioClick = { trackId: dragging.trackId, button: dragging.button, at: now };
-    return false;
-  }
-
-  function beginAudioDrag(event, clip, button, audioRangeLock) {
-    if (event.button !== undefined && event.button !== 0) return;
-    if (button.dataset.audioMissing === "true") return;
-    audioDrag = {
-      pointerId: event.pointerId,
-      sectionId: timeline && timeline.sectionId,
-      sceneId: clip.sourceSceneId,
-      trackId: clip.trackId,
-      button,
-      startX: event.clientX,
-      startSeconds: clip.start,
-      nextSeconds: clip.start,
-      duration: Math.max(0.1, clip.end - clip.start),
-      canDrag: audioTimelineCanDrag(clip) && audioRangeLock !== "start",
-      audioRangeLock,
-      moved: false,
-    };
-    try { els.viewport.setPointerCapture(event.pointerId); } catch (_) { /* 捕捉できなくても終端を拾う */ }
-  }
-
-  function continueAudioDrag(event) {
-    if (!audioDrag || event.pointerId !== audioDrag.pointerId) return;
-    if (!audioDrag.moved && Math.abs(event.clientX - audioDrag.startX) < 3) return;
-    audioDrag.moved = true;
-    audioClick = null;
-    if (!audioDrag.canDrag) {
-      if (audioDrag.audioRangeLock === "start") {
-        els.status.textContent = tx("この音源は開始時刻が固定中です。右クリックで解除できます。");
-      }
-      event.preventDefault();
-      return;
-    }
-    audioDrag.button.classList.add("is-dragging");
-    document.body.classList.add("is-timeline-audio-dragging");
-    audioDrag.nextSeconds = audioDragSeconds(event);
-    audioDrag.button.style.left = `${pxFor(audioDrag.nextSeconds)}px`;
-    event.preventDefault();
-  }
-
-  function beginAudioTrim(event, clip, button, audioRangeLock) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (event.button !== undefined && event.button !== 0) return;
-    if (button.dataset.audioMissing === "true") return;
-    if (audioRangeLock === "end") {
-      els.status.textContent = tx("この音源は終了時刻が固定中です。右クリックで解除できます。");
-      return;
-    }
-    if (!audioTimelineCanTrim(clip)) return;
-    audioTrimDrag = {
-      pointerId: event.pointerId,
-      sectionId: timeline && timeline.sectionId,
-      sceneId: clip.sourceSceneId,
-      button,
-      startX: event.clientX,
-      startSeconds: clip.start,
-      startEnd: clip.end,
-      nextEnd: clip.end,
-      maxEnd: Math.max(clip.end, finite(clip.naturalEnd, clip.end)),
-      moved: false,
-    };
-    button.classList.add("is-trimming");
-    document.body.classList.add("is-timeline-audio-trimming");
-    try { els.viewport.setPointerCapture(event.pointerId); } catch (_) { /* 捕捉できなくても終端を拾う */ }
-  }
-
-  function continueAudioTrim(event) {
-    if (!audioTrimDrag || event.pointerId !== audioTrimDrag.pointerId) return;
-    if (!audioTrimDrag.moved && Math.abs(event.clientX - audioTrimDrag.startX) < 3) return;
-    audioTrimDrag.moved = true;
-    audioTrimDrag.nextEnd = audioTrimEndSeconds(event);
-    audioTrimDrag.button.style.width = `${Math.max(2, pxFor(audioTrimDrag.nextEnd) - pxFor(audioTrimDrag.startSeconds))}px`;
-    event.preventDefault();
-  }
-
-  function endAudioTrim(event) {
-    if (!audioTrimDrag || event.pointerId !== audioTrimDrag.pointerId) return;
-    const trimming = audioTrimDrag;
-    audioTrimDrag = null;
-    trimming.button.classList.remove("is-trimming");
-    document.body.classList.remove("is-timeline-audio-trimming");
-    try { els.viewport.releasePointerCapture(event.pointerId); } catch (_) { /* 既に解放済み */ }
-    if (!trimming.moved || Math.abs(trimming.nextEnd - trimming.startEnd) < 1e-9) return;
-    const updated = bridge.setTimelineAudioEndSeconds(trimming.sectionId, trimming.sceneId,
-      trimming.nextEnd, { checkpoint: true });
-    suppressAudioClickUntil = performance.now() + 400;
-    if (!updated) {
-      renderTimeline();
-      return;
-    }
-    renderTimeline();
-    event.preventDefault();
-  }
-
-  function endAudioDrag(event) {
-    if (!audioDrag || event.pointerId !== audioDrag.pointerId) return;
-    const dragging = audioDrag;
-    audioDrag = null;
-    dragging.button.classList.remove("is-dragging");
-    document.body.classList.remove("is-timeline-audio-dragging");
-    try { els.viewport.releasePointerCapture(event.pointerId); } catch (_) { /* 既に解放済み */ }
-    if (!dragging.moved) {
-      rememberAudioDetailsClick(dragging);
-      return;
-    }
-    if (!dragging.canDrag || Math.abs(dragging.nextSeconds - dragging.startSeconds) < 1e-9) return;
-    const updated = bridge.setTimelineAudioStartSeconds(dragging.sectionId, dragging.sceneId,
-      dragging.nextSeconds, { checkpoint: true });
-    suppressAudioClickUntil = performance.now() + 400;
-    if (!updated) {
-      renderTimeline();
-      return;
-    }
-    renderTimeline();
-    event.preventDefault();
-  }
-
   function renderCueBlocks(project) {
     Object.values(els.cueLanes).forEach(clearLane);
     const cues = timelineCuePresentations(project);
-    if (selectedCueId && !cues.some((cue) => cue.id === selectedCueId)) {
-      selectedCueId = null;
-      if (selectedTimelineTarget && selectedTimelineTarget.kind === "cue") selectedTimelineTarget = null;
-    }
+    if (selectedCueId && !cues.some((cue) => cue.id === selectedCueId)) selectedCueId = null;
     cues.forEach((cue) => {
       const lane = els.cueLanes[cue.cueType];
       if (!lane) return;
@@ -1908,30 +1405,16 @@
       button.className = "stage-timeline-cue";
       button.dataset.cueId = cue.id;
       button.dataset.cueType = cue.cueType;
-      button.dataset.timelineSelectKind = "cue";
-      button.dataset.timelineSelectId = cue.id;
-      const positionLocked = Boolean(cue.timelinePositionLocked);
-      if (positionLocked) button.classList.add("is-time-locked");
-      button.setAttribute("aria-pressed", String(timelineTargetMatchesElement(selectedTimelineTarget, button)));
-      const cueLabel = document.createElement("span");
-      cueLabel.className = "stage-timeline-cue-label";
-      cueLabel.textContent = cue.displayName;
-      button.append(cueLabel);
-      if (positionLocked) button.insertAdjacentHTML("beforeend", timelineLockIcon());
-      button.title = `${labelPosition(cue.seconds)}  ${cue.displayName}${positionLocked ? `（${tx("時刻固定中")}）` : `（${tx("ドラッグで位置を変更。ダブルクリックで詳細")}）`}`;
-      button.setAttribute("aria-label", button.title);
+      button.setAttribute("aria-pressed", String(cue.id === selectedCueId));
+      button.textContent = cue.displayName;
+      button.title = `${labelPosition(cue.seconds)}  ${cue.displayName}（${tx("選択してDeleteで削除")}）`;
       button.style.left = `${clamp(pxFor(cue.seconds) - 4, 0, Math.max(0, timelineWidth - CUE_WIDTH))}px`;
-      button.addEventListener("pointerdown", (event) => beginCueDrag(event, cue, button));
       button.addEventListener("click", () => {
-        if (performance.now() < suppressCueClickUntil) return;
-        selectTimelineTarget({
-          kind: "cue", id: cue.id, label: cue.displayName, returnFocus: button,
-        }, button);
+        selectedCueId = cue.id;
+        syncCueSelection();
+        button.focus();
       });
       button.addEventListener("dblclick", () => openCueDetails(cue, button));
-      button.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
-        kind: "cue", id: cue.id, locked: positionLocked, label: cue.displayName, returnFocus: button,
-      }));
       lane.append(button);
     });
   }
@@ -1942,101 +1425,51 @@
     clearLane(els.transitionsLane);
     Object.values(els.cueLanes).forEach(clearLane);
     if (!timeline) return;
-    const availabilityGeneration = ++audioAvailabilityGeneration;
-    const audioClips = Array.isArray(timeline.audioClips) ? timeline.audioClips : [];
-    if (!selectedTimelineTargetExists(project, audioClips)) {
-      selectedTimelineTarget = null;
-      selectedCueId = null;
-    }
-    if (!audioClips.length) {
-      const audioBlock = document.createElement("div");
-      audioBlock.className = "stage-timeline-audio-block is-empty";
-      audioBlock.textContent = tx("音源未設定");
-      audioBlock.title = tx("このセクションには音源がありません");
-      placeBlock(audioBlock, 0, timeline.duration);
-      els.audioLane.append(audioBlock);
-    }
-    audioClips.forEach((clip) => {
-      const audioBlock = document.createElement("button");
-      audioBlock.type = "button";
-      audioBlock.className = "stage-timeline-audio-block";
-      const audioRangeLock = timelineRangeLock(project, "audio", clip.trackId);
-      if (audioRangeLock) audioBlock.classList.add("is-time-locked", `is-time-locked-${audioRangeLock}`);
-      audioBlock.dataset.audioMissing = "false";
-      audioBlock.dataset.trackId = clip.trackId;
-      audioBlock.dataset.timelineSelectKind = "audio";
-      audioBlock.dataset.timelineSelectTrackId = clip.trackId;
-      audioBlock.dataset.timelineSelectSceneId = clip.sourceSceneId || "";
-      audioBlock.setAttribute("aria-pressed", String(timelineTargetMatchesElement(selectedTimelineTarget, audioBlock)));
-      audioBlock.textContent = clip.title;
-      const canDragAudio = audioTimelineCanDrag(clip) && audioRangeLock !== "start";
-      const canTrimAudio = audioTimelineCanTrim(clip) && audioRangeLock !== "end";
-      if (canDragAudio) audioBlock.classList.add("is-draggable");
-      if (canTrimAudio) audioBlock.classList.add("is-trimmable");
-      const dragHelp = [
-        canDragAudio ? tx("ドラッグで開始時刻を変更") : "",
-        canTrimAudio ? tx("右端をドラッグで終了を短縮") : "",
-      ].filter(Boolean).join("・");
-      audioBlock.title = `${clip.title}（${labelPosition(clip.start)}–${labelPosition(clip.end)}・${dragHelp ? `${dragHelp}・` : ""}${tx("ダブルクリックで音源情報")}）`;
-      if (audioRangeLock) audioBlock.title += `（${audioRangeLock === "start" ? tx("開始時刻固定中") : tx("終了時刻固定中")}）`;
-      audioBlock.addEventListener("pointerdown", (event) => beginAudioDrag(event, clip, audioBlock, audioRangeLock));
+    const audioBlock = document.createElement(timeline.trackId ? "button" : "div");
+    if (timeline.trackId) audioBlock.type = "button";
+    audioBlock.className = `stage-timeline-audio-block${timeline.trackId ? "" : " is-empty"}`;
+    audioBlock.dataset.audioMissing = "false";
+    audioBlock.textContent = timeline.title;
+    audioBlock.title = timeline.trackId
+      ? `${timeline.title}（${tx("ダブルクリックで音源情報")}）` : timeline.title;
+    if (timeline.trackId) {
+      audioBlock.dataset.trackId = timeline.trackId;
       audioBlock.addEventListener("click", () => {
-        if (performance.now() < suppressAudioClickUntil) return;
-        selectTimelineTarget({
-          kind: "audio", trackId: clip.trackId, sourceSceneId: clip.sourceSceneId || null,
-          sectionId: timeline.sectionId, label: clip.title, returnFocus: audioBlock,
-        }, audioBlock);
         if (audioBlock.dataset.audioMissing !== "true"
             || typeof bridge.openTimelineAudioRelinkPicker !== "function") return;
-        bridge.openTimelineAudioRelinkPicker(clip.trackId);
+        bridge.openTimelineAudioRelinkPicker(timeline.trackId);
       });
-      audioBlock.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
-        kind: "audio", id: clip.trackId, lockedEdge: audioRangeLock, label: clip.title, returnFocus: audioBlock,
-      }));
-      if (canTrimAudio) {
-        const trimHandle = document.createElement("span");
-        trimHandle.className = "stage-timeline-audio-trim-handle";
-        trimHandle.setAttribute("aria-hidden", "true");
-        trimHandle.addEventListener("pointerdown", (event) => beginAudioTrim(event, clip, audioBlock, audioRangeLock));
-        audioBlock.append(trimHandle);
-      }
-      if (audioRangeLock) audioBlock.insertAdjacentHTML("beforeend", timelineLockIcon(audioRangeLock));
-      placeBlock(audioBlock, clip.start, clip.end);
-      els.audioLane.append(audioBlock);
-      checkTimelineAudioAvailability(audioBlock, clip.trackId, clip.title, availabilityGeneration);
-    });
+      audioBlock.addEventListener("dblclick", () => {
+        if (audioBlock.dataset.audioMissing === "true") return;
+        openAudioDetails(timeline.trackId, audioBlock);
+      });
+    }
+    placeBlock(audioBlock, 0, timeline.duration);
+    els.audioLane.append(audioBlock);
+    if (timeline.trackId) {
+      checkTimelineAudioAvailability(audioBlock, timeline.trackId, timeline.title);
+    } else {
+      audioAvailabilityGeneration += 1;
+    }
 
     timeline.segments.forEach((segment, index) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "stage-timeline-scene";
       if (segment.sceneId) button.dataset.sceneId = segment.sceneId;
-      if (segment.sceneId) {
-        button.dataset.timelineSelectKind = "scene";
-        button.dataset.timelineSelectId = segment.sceneId;
-        button.setAttribute("aria-pressed", String(timelineTargetMatchesElement(selectedTimelineTarget, button)));
-      }
-      const rangeLock = timelineRangeLock(project, "scene", segment.sceneId);
-      if (rangeLock) button.classList.add("is-time-locked", `is-time-locked-${rangeLock}`);
       if (segment.sceneId === project.activeSceneId) button.classList.add("is-current");
       const label = document.createElement("span");
       label.className = "stage-timeline-block-label";
       label.textContent = `${index + 1}  ${segment.title}`;
       button.append(label);
-      if (rangeLock) button.insertAdjacentHTML("beforeend", timelineLockIcon(rangeLock));
-      button.title = `${labelPosition(segment.start)}  ${segment.title}${rangeLock ? `（${rangeLock === "start" ? tx("開始時刻固定中") : tx("終了時刻固定中")}）` : timelineContentCanResize() ? `（${tx("左右端をドラッグで長さを調整")}）` : ""}`;
-      button.setAttribute("aria-label", button.title);
+      button.title = `${labelPosition(segment.start)}  ${segment.title}${timelineContentCanResize() ? `（${tx("左右端をドラッグで長さを調整")}）` : ""}`;
       button.disabled = !segment.sceneId;
       const sceneEnd = Number.isFinite(segment.sceneEnd) ? segment.sceneEnd : segment.end;
       if (pxFor(sceneEnd) - pxFor(segment.start) < 28) button.classList.add("is-compact");
       placeBlock(button, segment.start, sceneEnd);
       button.addEventListener("click", (event) => {
         if (!segment.sceneId) return;
-        if (event.target.closest(".stage-timeline-block-resize-handle")) return;
-        selectTimelineTarget({
-          kind: "scene", id: segment.sceneId, label: segment.title, returnFocus: button,
-        }, button);
-        if (event.detail > 1) return;
+        if (event.target.closest(".stage-timeline-block-resize-handle") || event.detail > 1) return;
         scheduleTimelineSceneOpen(segment);
       });
       button.addEventListener("dblclick", (event) => {
@@ -2045,9 +1478,6 @@
         cancelPendingSceneOpen();
         if (typeof bridge.openSceneDetailsById === "function") bridge.openSceneDetailsById(segment.sceneId);
       });
-      button.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
-        kind: "scene", id: segment.sceneId, lockedEdge: rangeLock, label: segment.title, returnFocus: button,
-      }));
       if (timelineContentCanResize()) {
         const previous = timeline.segments[index - 1];
         const precedingTransition = previous && timeline.transitions.find((transition) => (
@@ -2070,41 +1500,23 @@
     timeline.transitions.forEach((transition) => {
       const block = document.createElement("div");
       block.className = "stage-timeline-transition-block";
-      const sourceIndex = timeline.segments.findIndex((segment) => segment.transitionId === transition.id);
-      const source = sourceIndex >= 0 ? timeline.segments[sourceIndex] : null;
-      const positionLockSceneId = source?.sceneId;
       const isPoint = Boolean(transition.isPoint || Math.abs(transition.end - transition.start) < 1e-6);
-      const rangeLock = positionLockSceneId && timelineRangeLock(project, "transition", positionLockSceneId);
       if (isPoint) block.classList.add("is-point");
-      if (rangeLock) block.classList.add("is-time-locked", `is-time-locked-${rangeLock}`);
       const label = document.createElement("span");
       label.className = "stage-timeline-block-label";
       label.textContent = transition.title;
       block.append(label);
       block.title = isPoint
-        ? `${labelPosition(transition.end)} ${tx("転換ポイント")}${timelineContentCanResize() ? `（${tx("右へドラッグして転換を作る")}）` : ""}`
+        ? `${labelPosition(transition.end)} ${tx("転換ポイント")}`
         : `${labelPosition(transition.start)}–${labelPosition(transition.end)} ${transition.title}${timelineContentCanResize() ? `（${tx("左右端をドラッグで長さを調整")}）` : ""}`;
-      if (rangeLock) block.title += `（${rangeLock === "start" ? tx("開始時刻固定中") : tx("終了時刻固定中")}）`;
       block.setAttribute("role", "img");
       block.setAttribute("aria-label", block.title);
       placeBlock(block, transition.start, transition.end);
-      if (!source) {
-        els.transitionsLane.append(block);
-        return;
-      }
-      if (rangeLock) block.insertAdjacentHTML("beforeend", timelineLockIcon(rangeLock));
-      block.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
-        kind: "transition", id: positionLockSceneId, lockedEdge: rangeLock, label: transition.title, returnFocus: block,
-      }));
-      if (timelineContentCanResize()) {
-        if (isPoint) {
-          block.classList.add("is-expandable-point");
-          addTimelineResizeHandle(block, "end", {
-            sceneId: source.sceneId,
-            part: "transition",
-            boundarySeconds: transition.end,
-          });
-        } else {
+      els.transitionsLane.append(block);
+
+      const source = timeline.segments.find((segment) => segment.transitionId === transition.id);
+      if (!source) return;
+      if (!isPoint && timelineContentCanResize()) {
         addTimelineResizeHandle(block, "start", {
           sceneId: source.sceneId,
           part: "hold",
@@ -2115,9 +1527,7 @@
           part: "transition",
           boundarySeconds: transition.end,
         });
-        }
       }
-      els.transitionsLane.append(block);
       const target = timeline.segments.find((segment) => (
         segment.sceneId && segment.start >= transition.end - 1e-6
       ));
@@ -2138,13 +1548,9 @@
 
   function audioMatchesTimeline() {
     if (!timeline || !timeline.trackId) return false;
-    if (typeof bridge.getAudioPlaybackState === "function") {
-      const playback = bridge.getAudioPlaybackState();
-      return playback.trackId === timeline.trackId && playback.ready;
-    }
-    // During a cache update the older host may still expose the previous bridge.
-    const project = projectDocument()?.project;
-    const active = project?.scenes.find((scene) => scene.id === project.activeSceneId);
+    const documentValue = projectDocument();
+    const project = documentValue && documentValue.project;
+    const active = project && (project.scenes || []).find((scene) => scene.id === project.activeSceneId);
     return Boolean(active && active.audioTrackId === timeline.trackId);
   }
 
@@ -2186,83 +1592,28 @@
     return documentValue && documentValue.project ? documentValue.project.activeSceneId : null;
   }
 
-  function dispatchTimelineCuePasses(fromSeconds, toSeconds, { includeStart = false } = {}) {
-    if (!timeline || !Number.isFinite(toSeconds)) return;
-    const project = projectDocument()?.project;
-    if (!project) return;
-    const lower = Number.isFinite(fromSeconds) ? fromSeconds : toSeconds;
-    if (toSeconds + 1e-6 < lower) return;
-    const cues = timelineCuePresentations(project).filter((cue) => {
-      const afterStart = includeStart ? cue.seconds >= lower - 1e-6 : cue.seconds > lower + 1e-6;
-      return afterStart && cue.seconds <= toSeconds + 1e-6;
-    });
-    if (!cues.length) return;
-    window.dispatchEvent(new CustomEvent("stage-timeline-cue-passed", {
-      detail: {
-        sectionId: timeline.sectionId,
-        songId: timeline.songId,
-        fromSeconds: lower,
-        toSeconds,
-        cues: cues.map((cue) => ({
-          id: cue.id,
-          cueType: cue.cueType,
-          displayName: cue.displayName,
-          positionLabel: labelPosition(cue.seconds),
-          memo: cue.memo || "",
-        })),
-      },
-    }));
-  }
-
-  // The transport supplies an absolute position, never a second animation clock.
-  // キューの合図も再生時だけ出す。シークして情報を確認する操作では図を点滅させない。
-  function syncTimelinePlaybackScene(seconds, { reset = false, cuePlayback = false, includeCueAtPosition = false } = {}) {
-    if (mode !== "timeline" || !timeline) return;
-    const previousPosition = playbackPosition;
+  // 通常再生では転換の開始に合わせて、本体の移動アニメーションも開始する。
+  // これにより、シーン帯の右端（転換終端）で次シーンの配置へ到着する。
+  function syncTimelinePlaybackScene(seconds, { allowTransition = false } = {}) {
     const phase = timelineTransitionAt(seconds);
-    const target = timeline.source === "formation" ? segmentAt(seconds)
-      : phase ? phase.target : segmentAt(seconds);
+    const target = phase ? phase.target : segmentAt(seconds);
+    const previous = playbackPosition;
     playbackPosition = seconds;
-    if (!target || !target.sceneId) return;
-    if (typeof bridge.setTimelinePosition === "function") {
-      bridge.setTimelinePosition({
-        sceneId: target.sceneId, sourceSceneId: phase && phase.source.sceneId,
-        progress: phase ? clamp((seconds - phase.transition.start) / Math.max(1e-6, phase.transition.end - phase.transition.start), 0, 1) : null,
-        source: timeline.source, sectionId: timeline.sectionId, songId: timeline.songId,
-        seconds, reset,
+    if (!target || !target.sceneId || activeStageSceneId() === target.sceneId) return;
+    const crossedTransitionStart = phase && allowTransition && previous !== null
+      && previous < phase.transition.start + 1e-6 && seconds >= phase.transition.start - 1e-6;
+    if (crossedTransitionStart) {
+      bridge.openSceneById(target.sceneId, {
+        transitionDurationMs: (phase.transition.end - phase.transition.start) * 1000,
       });
-    } else if (activeStageSceneId() !== target.sceneId) {
-      // Older cached hosts can still switch scenes until their update is activated.
-      bridge.openSceneById(target.sceneId);
+      return;
     }
-    if (cuePlayback) {
-      dispatchTimelineCuePasses(previousPosition, seconds, { includeStart: includeCueAtPosition });
-    }
+    bridge.openSceneById(target.sceneId);
   }
 
-  let audioPlaybackFrame = 0;
-  function stopAudioPlaybackFrames() {
-    if (audioPlaybackFrame) window.cancelAnimationFrame(audioPlaybackFrame);
-    audioPlaybackFrame = 0;
-  }
-  function startAudioPlaybackFrames() {
-    if (audioPlaybackFrame || mode !== "timeline" || !audioMatchesTimeline()
-      || els.audio.paused || els.audio.ended) return;
-    const sample = () => {
-      audioPlaybackFrame = 0;
-      if (mode !== "timeline" || !audioMatchesTimeline() || els.audio.paused || els.audio.ended) return;
-      if (ui.loop && ui.loopB > ui.loopA && els.audio.currentTime >= ui.loopB) els.audio.currentTime = ui.loopA;
-      applyAudioLevels(timeline.gainDb);
-      syncTimelinePlaybackScene(els.audio.currentTime, { cuePlayback: true });
-      updatePlayhead();
-      audioPlaybackFrame = window.requestAnimationFrame(sample);
-    };
-    audioPlaybackFrame = window.requestAnimationFrame(sample);
-  }
-
-  function syncSilentScene(seconds, { cuePlayback = false } = {}) {
+  function syncSilentScene(seconds) {
     if (!silentPlayback) return;
-    syncTimelinePlaybackScene(seconds, { cuePlayback });
+    syncTimelinePlaybackScene(seconds, { allowTransition: true });
     const segment = segmentAt(seconds);
     if (segment) silentPlayback.sceneId = segment.sceneId;
   }
@@ -2280,13 +1631,13 @@
     }
     if (next >= timeline.duration) {
       seekSeconds = timeline.duration;
-      syncSilentScene(seekSeconds, { cuePlayback: true });
+      syncSilentScene(seekSeconds);
       pauseSilentPlayback({ update: false });
       updatePlayhead();
       return;
     }
     seekSeconds = clamp(next, 0, timeline.duration);
-    syncSilentScene(seekSeconds, { cuePlayback: true });
+    syncSilentScene(seekSeconds);
     updatePlayhead();
     if (silentPlayback) silentPlayback.frame = window.requestAnimationFrame(silentPlaybackFrame);
   }
@@ -2296,8 +1647,8 @@
     if (seekSeconds >= timeline.duration - 1e-6) seekSeconds = 0;
     const target = segmentAt(seekSeconds);
     if (!target) return;
-    playbackPosition = null;
-    syncTimelinePlaybackScene(seekSeconds, { reset: true, cuePlayback: true, includeCueAtPosition: true });
+    playbackPosition = seekSeconds;
+    bridge.openSceneById(target.sceneId);
     silentPlayback = {
       startedAt: performance.now(),
       startSeconds: seekSeconds,
@@ -2324,7 +1675,7 @@
       return;
     }
     playbackPosition = null;
-    syncTimelinePlaybackScene(seekSeconds, { reset: true });
+    syncTimelinePlaybackScene(seekSeconds);
   }
 
   function updatePlayhead() {
@@ -2332,7 +1683,6 @@
     const playingThisTimeline = els.audio && audioMatchesTimeline();
     if (!silentPlayback && playingThisTimeline && Number.isFinite(els.audio.currentTime)) seekSeconds = els.audio.currentTime;
     seekSeconds = clamp(seekSeconds, 0, timeline.duration);
-    if (playingThisTimeline) applyAudioLevels(timeline.gainDb);
     els.surface.style.setProperty("--stage-timeline-playhead-x", `${pxFor(seekSeconds)}px`);
     els.position.textContent = labelPosition(seekSeconds);
     const playing = Boolean(silentPlayback
@@ -2360,16 +1710,10 @@
     if (!project || !choices.length) return;
     const scopeId = choices[0].sectionId || "show";
     const remembered = ui.songBySection[scopeId];
-    timeline = choices.find((choice) => choice.songId === remembered)
-      || choices.find((choice) => choice.segments.some((segment) => segment.sceneId === project.activeSceneId))
+    timeline = choices.find((choice) => choice.segments.some((segment) => segment.sceneId === project.activeSceneId))
+      || choices.find((choice) => choice.songId === remembered)
       || choices[0];
     ui.songBySection[scopeId] = timeline.songId;
-    activateTimelineLoopScope();
-    bridge.setTimelineAudioContext?.({
-      projectId: project.id,
-      trackId: timeline.trackId,
-      sceneIds: timeline.segments.map((segment) => segment.sceneId).filter(Boolean),
-    });
     seekSeconds = clamp(seekSeconds, 0, timeline.duration);
 
     const section = currentSection(project);
@@ -2480,7 +1824,7 @@
     const target = timeline.segments.find((segment) => seekSeconds >= segment.start && seekSeconds < segment.end && segment.sceneId)
       || timeline.segments.find((segment) => segment.sceneId);
     if (!target) return;
-    syncTimelinePlaybackScene(seekSeconds, { reset: true });
+    bridge.openSceneById(target.sceneId);
     pendingSeek = seekSeconds;
     if (els.audio.readyState >= 1 && audioMatchesTimeline()) {
       els.audio.currentTime = clamp(pendingSeek, 0, Number.isFinite(els.audio.duration) ? els.audio.duration : timeline.duration);
@@ -2507,8 +1851,7 @@
     if (!CUE_TYPES.includes(type) || typeof bridge.addTimelineCue !== "function") return;
     if (!timeline || !timeline.sectionId || !segmentAt(seekSeconds)) return;
     const cue = bridge.addTimelineCue(type, timeline.sectionId,
-      clamp(seekSeconds, 0, timeline.duration),
-      timeline.source === "formation" ? { songId: timeline.songId } : {});
+      clamp(seekSeconds, 0, timeline.duration));
     if (!cue) return;
     selectedCueId = cue.id;
     renderTimeline();
@@ -2546,68 +1889,11 @@
     return true;
   }
 
-  function closeTimelineDelete({ focus = true } = {}) {
-    if (!els.timelineDeleteModal || els.timelineDeleteModal.hidden) return;
-    els.timelineDeleteModal.hidden = true;
-    els.timelineDeleteBackdrop.hidden = true;
-    const returnFocus = pendingTimelineDeleteReturnFocus;
-    pendingTimelineDelete = null;
-    pendingTimelineDeleteReturnFocus = null;
-    if (focus && returnFocus && returnFocus.isConnected) returnFocus.focus({ preventScroll: true });
-  }
-
-  function openTimelineDelete(target = selectedTimelineTarget) {
-    if (!target) return false;
-    if (target.kind === "scene") {
-      return typeof bridge.openTimelineSceneDelete === "function"
-        && bridge.openTimelineSceneDelete(target.id, target.returnFocus || null);
-    }
-    if (target.kind === "audio" && (!target.sourceSceneId
-        || typeof bridge.removeTimelineAudioAssignment !== "function")) {
-      els.status.textContent = tx("この音源帯はここから削除できません。");
-      return false;
-    }
-    if (target.kind !== "cue" && target.kind !== "audio") return false;
-    if (!els.timelineDeleteModal || !els.timelineDeleteBackdrop) return false;
-    pendingTimelineDelete = { ...target };
-    pendingTimelineDeleteReturnFocus = target.returnFocus || null;
-    const isAudio = target.kind === "audio";
-    els.timelineDeleteTitle.textContent = tx(isAudio ? "音源帯を外しますか？" : "キューを削除しますか？");
-    els.timelineDeleteMessage.textContent = tx(isAudio
-      ? `「${target.label || "音源"}」のこの帯をタイムラインから外します。音源ファイルは端末に残ります。`
-      : `「${target.label || "キュー"}」を削除します。削除したキューは元に戻せません。`);
-    els.timelineDeleteBackdrop.hidden = false;
-    els.timelineDeleteModal.hidden = false;
-    els.timelineDeleteConfirm.focus({ preventScroll: true });
-    return true;
-  }
-
-  function confirmTimelineDelete() {
-    const target = pendingTimelineDelete;
-    if (!target) return false;
-    let removed = false;
-    if (target.kind === "cue" && typeof bridge.removeTimelineCue === "function") {
-      removed = Boolean(bridge.removeTimelineCue(target.id));
-    } else if (target.kind === "audio" && typeof bridge.removeTimelineAudioAssignment === "function") {
-      removed = Boolean(bridge.removeTimelineAudioAssignment(
-        target.sectionId, target.sourceSceneId, target.trackId,
-      ));
-    }
-    closeTimelineDelete({ focus: false });
-    if (!removed) return false;
-    selectTimelineTarget(null);
-    renderTimeline();
-    return true;
-  }
-
   function deleteCueFromDetails() {
     if (!cueDetailId) return false;
-    const target = {
-      kind: "cue", id: cueDetailId, label: els.cueDetailTitle.textContent, returnFocus: cueDetailReturnFocus,
-    };
+    selectedCueId = cueDetailId;
     closeCueDetails({ focus: false });
-    selectTimelineTarget(target);
-    return openTimelineDelete(target);
+    return removeSelectedCue();
   }
 
   function removeSelectedCue() {
@@ -2615,7 +1901,7 @@
     const removed = bridge.removeTimelineCue(selectedCueId);
     if (!removed) return false;
     if (cueDetailId === selectedCueId) closeCueDetails({ focus: false });
-    selectTimelineTarget(null);
+    selectedCueId = null;
     renderTimeline();
     return true;
   }
@@ -2632,56 +1918,20 @@
 
   function beginTimelineResize(event) {
     if (event.button !== 0) return;
-    timelineResize = {
-      pointerId: event.pointerId,
-      startY: event.clientY,
-      startHeight: ui.height,
-      collapsed: ui.collapsed,
-    };
+    timelineResize = { pointerId: event.pointerId, startY: event.clientY, startHeight: ui.height };
     els.resize.setPointerCapture(event.pointerId);
-    els.resize.focus({ preventScroll: true });
     document.body.classList.add("is-timeline-resizing");
     event.preventDefault();
   }
 
   function continueTimelineResize(event) {
     if (!timelineResize || event.pointerId !== timelineResize.pointerId) return;
-    if (timelineResize.collapsed) {
-      const handleHeight = timelineResizeHandleHeight();
-      const maximum = Math.min(timelineResize.startHeight, maxTimelineHeight());
-      const visibleHeight = clamp(handleHeight + timelineResize.startY - event.clientY, handleHeight, maximum);
-      panel.style.setProperty("--stage-timeline-reveal-height", `${visibleHeight}px`);
-      event.preventDefault();
-      return;
-    }
     applyTimelineHeight(timelineResize.startHeight + timelineResize.startY - event.clientY);
   }
 
   function endTimelineResize(event) {
     if (!timelineResize || event.pointerId !== timelineResize.pointerId) return;
-    const resizing = timelineResize;
     timelineResize = null;
-    if (resizing.collapsed) {
-      const handleHeight = timelineResizeHandleHeight();
-      const pulled = resizing.startY - event.clientY;
-      if (event.type === "pointerup" && pulled >= 3) {
-        const visibleHeight = clamp(
-          handleHeight + pulled,
-          handleHeight,
-          Math.min(resizing.startHeight, maxTimelineHeight()),
-        );
-        panel.style.setProperty("--stage-timeline-reveal-height", `${visibleHeight}px`);
-        applyTimelineHeight(visibleHeight, { save: false });
-        panel.getBoundingClientRect();
-        document.body.classList.remove("is-timeline-resizing");
-        setTimelineCollapsed(false, { save: true });
-        renderTimeline();
-        return;
-      }
-      panel.style.setProperty("--stage-timeline-reveal-height", `${handleHeight}px`);
-      document.body.classList.remove("is-timeline-resizing");
-      return;
-    }
     document.body.classList.remove("is-timeline-resizing");
     applyTimelineHeight(ui.height, { save: true });
     renderTimeline();
@@ -2724,22 +1974,6 @@
     const section = project && (project.scenes || []).find((row) => row.kind === "section" && row.id === timeline.sectionId);
     const scene = project && (project.scenes || []).find((row) => row.kind === "scene" && row.id === descriptor.sceneId);
     if (!section || !scene) return;
-    const sceneRangeLock = timelineRangeLock(project, "scene", scene.id);
-    const transitionRangeLock = timelineRangeLock(project, "transition", scene.id);
-    const ownLockedEdge = descriptor.part === "hold"
-      ? (sceneRangeLock === "end" ? "scene-end" : transitionRangeLock === "start" ? "transition-start" : null)
-      : (transitionRangeLock === "end" ? "transition-end" : null);
-    if (ownLockedEdge) {
-      els.status.textContent = ownLockedEdge === "scene-end"
-        ? `${scene.title} ${tx("の終了時刻は固定中です。右クリックで解除してください。")}`
-        : `${tx("転換の")}${ownLockedEdge === "transition-start" ? tx("開始") : tx("終了")}${tx("時刻は固定中です。右クリックで解除してください。")}`;
-      return;
-    }
-    const fixedScene = lockedTimelineSceneAfter(project, descriptor.sceneId);
-    if (fixedScene) {
-      els.status.textContent = `${fixedScene.title} ${tx("に固定された時刻があります。右クリックで解除してから前の区間を調整してください。")}`;
-      return;
-    }
     const baseDuration = derivedSectionDuration(project, section);
     const sectionDuration = sectionDurationSeconds(project, section);
     const scale = sectionDuration / Math.max(0.1, baseDuration);
@@ -2945,46 +2179,9 @@
   els.sectionDurationNumber.addEventListener("pointermove", continueDurationScrub);
   els.sectionDurationNumber.addEventListener("pointerup", endDurationScrub);
   els.sectionDurationNumber.addEventListener("pointercancel", endDurationScrub);
-  els.lockMenuCue.addEventListener("click", () => {
-    const target = timelineLockMenuTarget;
-    if (!target || target.kind !== "cue" || typeof bridge.setTimelinePositionLocked !== "function") return;
-    const updated = bridge.setTimelinePositionLocked(target.kind, target.id, !target.locked);
-    closeTimelineLockMenu();
-    if (!updated) return;
-    renderTimeline();
-  });
-  const setTimelineRangeLockFromMenu = (edge) => {
-    const target = timelineLockMenuTarget;
-    if (!target || target.kind === "cue" || typeof bridge.setTimelineRangeLock !== "function") return;
-    const updated = bridge.setTimelineRangeLock(target.kind, target.id, edge);
-    closeTimelineLockMenu();
-    if (!updated) return;
-    renderTimeline();
-  };
-  els.lockMenuStart.addEventListener("click", () => setTimelineRangeLockFromMenu("start"));
-  els.lockMenuEnd.addEventListener("click", () => setTimelineRangeLockFromMenu("end"));
-  els.lockMenuClear.addEventListener("click", () => setTimelineRangeLockFromMenu(null));
-  document.addEventListener("pointerdown", (event) => {
-    if (els.lockMenu && !els.lockMenu.hidden && !els.lockMenu.contains(event.target)) closeTimelineLockMenu();
-  });
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && els.lockMenu && !els.lockMenu.hidden) {
-      event.preventDefault();
-      closeTimelineLockMenu({ focus: true });
-    }
-  });
   els.viewport.addEventListener("pointermove", continueBlockResize);
   els.viewport.addEventListener("pointerup", endBlockResize);
   els.viewport.addEventListener("pointercancel", endBlockResize);
-  els.viewport.addEventListener("pointermove", continueCueDrag);
-  els.viewport.addEventListener("pointerup", endCueDrag);
-  els.viewport.addEventListener("pointercancel", endCueDrag);
-  els.viewport.addEventListener("pointermove", continueAudioDrag);
-  els.viewport.addEventListener("pointerup", endAudioDrag);
-  els.viewport.addEventListener("pointercancel", endAudioDrag);
-  els.viewport.addEventListener("pointermove", continueAudioTrim);
-  els.viewport.addEventListener("pointerup", endAudioTrim);
-  els.viewport.addEventListener("pointercancel", endAudioTrim);
   els.rowResizers.forEach((separator) => {
     separator.addEventListener("pointerdown", beginRowResize);
     separator.addEventListener("pointermove", continueRowResize);
@@ -3017,7 +2214,6 @@
     if (!timeline) return;
     pauseSilentPlayback({ update: false });
     ui.songBySection[timeline.sectionId] = els.songSelect.value;
-    saveUi();
     seekSeconds = 0;
     const selected = timelineChoices().choices.find((choice) => choice.songId === els.songSelect.value);
     const firstScene = selected && selected.segments.find((segment) => segment.sceneId);
@@ -3047,10 +2243,6 @@
   els.addCueButtons.forEach((button) => button.addEventListener("click", () => {
     addCueAtPlayhead(button.dataset.stageTimelineAddCue);
   }));
-  els.timelineDeleteClose.addEventListener("click", () => closeTimelineDelete());
-  els.timelineDeleteCancel.addEventListener("click", () => closeTimelineDelete());
-  els.timelineDeleteBackdrop.addEventListener("click", () => closeTimelineDelete());
-  els.timelineDeleteConfirm.addEventListener("click", confirmTimelineDelete);
   els.cueDetailClose.addEventListener("click", () => closeCueDetails());
   els.cueDetailBackdrop.addEventListener("click", () => closeCueDetails());
   els.cueDetailSave.addEventListener("click", saveCueDetails);
@@ -3072,17 +2264,14 @@
   els.loopA.addEventListener("click", () => {
     ui.loopA = seekSeconds;
     if (ui.loopB <= ui.loopA) ui.loopB = Math.min(timeline ? timeline.duration : ui.loopA, ui.loopA + 4);
-    saveTimelineLoopScope();
     renderTimeline();
   });
   els.loopB.addEventListener("click", () => {
     ui.loopB = Math.max(ui.loopA, seekSeconds);
-    saveTimelineLoopScope();
     renderTimeline();
   });
   els.loop.addEventListener("click", () => {
     ui.loop = !ui.loop;
-    saveTimelineLoopScope();
     renderTimeline();
   });
   els.grid.addEventListener("click", () => {
@@ -3136,11 +2325,6 @@
     renderTimeline();
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && els.timelineDeleteModal && !els.timelineDeleteModal.hidden) {
-      event.preventDefault();
-      closeTimelineDelete();
-      return;
-    }
     if (event.key === "Escape" && els.unitWarningModal && !els.unitWarningModal.hidden) {
       event.preventDefault();
       closeUnitWarning();
@@ -3162,13 +2346,6 @@
       return;
     }
     if (mode !== "timeline" || isTextEntry(event.target)) return;
-    if (!event.metaKey && !event.ctrlKey && !event.altKey && event.code === "KeyE") {
-      if (event.repeat || document.querySelector(".stage-modal:not([hidden])")) return;
-      event.preventDefault();
-      if (!ui.collapsed) setSettingsOpen(false);
-      setTimelineCollapsed(!ui.collapsed, { save: true });
-      return;
-    }
     if (!event.metaKey && !event.ctrlKey && !event.altKey
         && (event.code === "Space" || event.key === " ")) {
       if (!els.settingsPanel.hidden || document.querySelector(".stage-modal:not([hidden])")) return;
@@ -3177,10 +2354,9 @@
       return;
     }
     if (!event.metaKey && !event.ctrlKey && !event.altKey
-        && (event.key === "Delete" || event.key === "Backspace") && selectedTimelineTarget) {
-      if (document.querySelector(".stage-modal:not([hidden])")) return;
+        && (event.key === "Delete" || event.key === "Backspace") && selectedCueId) {
       event.preventDefault();
-      openTimelineDelete();
+      removeSelectedCue();
       return;
     }
     if (event.metaKey || event.ctrlKey || event.altKey) return;
@@ -3204,33 +2380,25 @@
     els.audio.addEventListener(name, () => {
       if (name === "play") {
         pauseSilentPlayback({ update: false });
-        if (mode === "timeline" && audioMatchesTimeline()) {
-          playbackPosition = null;
-          syncTimelinePlaybackScene(Number.isFinite(els.audio.currentTime) ? els.audio.currentTime : 0, {
-            reset: true, cuePlayback: true, includeCueAtPosition: true,
-          });
-          startAudioPlaybackFrames();
+        if (mode === "timeline" && timeline) {
+          playbackPosition = Number.isFinite(els.audio.currentTime) ? els.audio.currentTime : null;
+          syncTimelinePlaybackScene(playbackPosition || 0);
         }
-      }
-      if (name === "pause" || name === "ended") {
-        stopAudioPlaybackFrames();
-        if (mode === "timeline" && audioMatchesTimeline()) syncTimelinePlaybackScene(els.audio.currentTime);
       }
       if (name === "loadedmetadata" && pendingSeek !== null && audioMatchesTimeline()) {
         els.audio.currentTime = clamp(pendingSeek, 0, Number.isFinite(els.audio.duration) ? els.audio.duration : timeline.duration);
         pendingSeek = null;
       }
-      if (name === "seeking" && mode === "timeline" && audioMatchesTimeline() && Number.isFinite(els.audio.currentTime)) {
+      if (name === "seeking" && mode === "timeline" && timeline && Number.isFinite(els.audio.currentTime)) {
         seekSeconds = els.audio.currentTime;
         syncSceneForSeek();
       }
-      if (name === "timeupdate" && mode === "timeline" && audioMatchesTimeline() && ui.loop && ui.loopB > ui.loopA && els.audio.currentTime >= ui.loopB) {
+      if (name === "timeupdate" && ui.loop && ui.loopB > ui.loopA && els.audio.currentTime >= ui.loopB) {
         els.audio.currentTime = ui.loopA;
         playbackPosition = null;
       }
-      if (name === "timeupdate" && mode === "timeline" && audioMatchesTimeline() && Number.isFinite(els.audio.currentTime)) {
-        syncTimelinePlaybackScene(els.audio.currentTime);
-        startAudioPlaybackFrames();
+      if (name === "timeupdate" && mode === "timeline" && timeline && Number.isFinite(els.audio.currentTime)) {
+        syncTimelinePlaybackScene(els.audio.currentTime, { allowTransition: true });
       }
       updatePlayhead();
     });
@@ -3269,6 +2437,5 @@
   applyAudioLevels();
   applyRowLayout();
   applyTimelineHeight();
-  setTimelineCollapsed(ui.collapsed);
   applyMode(ui.mode, { initial: true });
 }());

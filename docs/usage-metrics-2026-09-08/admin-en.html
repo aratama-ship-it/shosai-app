@@ -1,0 +1,88 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stage Sketch · Usage</title><style nonce="4e8974a8-993d-49fc-8d7d-b51cc0073462">
+:root { --paper:#f5f1e8; --ink:#302a24; --muted:#67594c; --accent:#88432e; --light:#fffaf0; --line:#897a6a;
+ --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s6:24px; --s8:32px; --small:14px; --body:16px; --h1:30px; --h2:20px;
+ --width:1040px; --control:44px; --radius:4px; --border:1px; --focus:3px; }
+* { box-sizing:border-box; } [hidden] { display:none!important; }
+body { margin:0; color:var(--ink); background:var(--paper); font:var(--body)/1.65 system-ui,-apple-system,sans-serif; }
+main { max-width:var(--width); margin:auto; padding:var(--s8) var(--s6); }
+a { color:var(--ink); text-decoration:underline; } nav { display:flex; justify-content:space-between; gap:var(--s4); flex-wrap:wrap; }
+nav a { display:inline-flex; align-items:center; min-height:var(--control); }
+header { padding:var(--s6) 0; border-bottom:var(--border) solid var(--line); }
+h1 { font-size:var(--h1); line-height:1.3; margin:var(--s2) 0 var(--s4); } h2 { font-size:var(--h2); line-height:1.3; }
+p { max-width:70ch; } .phrase { display:inline-block; } .muted, small { color:var(--muted); } small { font-size:var(--small); }
+.controls { display:flex; align-items:center; flex-wrap:wrap; gap:var(--s4); padding:var(--s6) 0; }
+.controls label { display:flex; align-items:center; gap:var(--s2); min-height:var(--control); }
+select,button { font:inherit; min-height:var(--control); padding:var(--s2) var(--s3); border:var(--border) solid var(--line); border-radius:var(--radius); color:var(--ink); background:var(--paper); }
+button { cursor:pointer; color:var(--light); background:var(--accent); border-color:var(--accent); } button:disabled { cursor:wait; }
+input { accent-color:var(--accent); } :focus-visible { outline:var(--focus) solid var(--accent); outline-offset:var(--focus); }
+.totals { display:flex; flex-wrap:wrap; gap:var(--s4) var(--s8); margin:0 0 var(--s6); }
+.totals div { display:flex; align-items:baseline; gap:var(--s2); } .totals strong { font-size:var(--h2); }
+.table-wrap { overflow:auto; } table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+caption { text-align:left; font-weight:600; margin-bottom:var(--s3); } th,td { text-align:left; padding:var(--s4) var(--s3); border-bottom:var(--border) solid var(--line); overflow-wrap:anywhere; }
+th { font-size:var(--small); } th:first-child,td:first-child { padding-left:0; } .number { text-align:right; white-space:nowrap; }
+footer { margin-top:var(--s8); padding-top:var(--s4); border-top:var(--border) solid var(--line); font-size:var(--small); }
+#status { min-height:var(--s6); } #range { margin-top:0; }
+@media (max-width:600px) { main { padding:var(--s4); } h1 { font-size:var(--h1); }
+ thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+ table,tbody,tr,td,caption { display:block; } caption { width:100%; } tr { padding:var(--s3) 0; border-bottom:var(--border) solid var(--line); }
+ td,td:first-child { padding:var(--s1) 0; border:0; } td:first-child { font-weight:600; }
+ td[data-label] { display:flex; justify-content:space-between; gap:var(--s3); text-align:right; }
+ td[data-label]:before { content:attr(data-label); text-align:left; color:var(--muted); font-size:var(--small); } }
+</style></head><body><main><p style="border:1px solid #88432e;padding:12px;font-weight:600">LOCAL REVIEW — Synthetic test accounts only. Not production usage.</p>
+<nav><a href="index.html">Back to Stage Sketch</a><a href="admin-ja.html" lang="ja">日本語</a></nav>
+<header><small>Beta accounts · Private to the owner</small><h1><span class="phrase">Who is using</span> <span class="phrase">Stage Sketch?</span></h1><p class="muted" id="range"></p><small id="start"></small></header>
+<div class="controls"><label for="period">Period<select id="period"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option></select></label>
+<label><input id="self" type="checkbox">Include my own activity</label><button id="refresh" type="button">Refresh</button></div>
+<p role="status" id="status">Loading usage…</p><a id="sign-in" href="/sign-in?next=%2Fusage%3Flang%3Den" hidden>Sign in again</a>
+<section id="result" hidden><div class="totals" id="totals"></div><p id="empty" hidden>No recorded usage in this view. This does not prove that nobody used the app.</p>
+<div class="table-wrap"><table id="table"><caption>Usage by account</caption><thead><tr><th scope="col">Account</th><th scope="col" class="number">Days used</th><th scope="col" class="number">Active time (estimate)</th><th scope="col">Last use (JST, within 90 days)</th></tr></thead><tbody id="rows"></tbody></table></div></section>
+<footer><h2>How to read these numbers</h2><p>Days used count calendar days in Japan when the app reports an opening or foreground activity. Active time counts only a focused, visible app and up to 60 seconds after an action. Hidden tabs, long suspension and failed transmissions are excluded. Overlapping reports from the same account are not added twice. These are estimates, not attendance records.</p><p>Only records received after measurement began are available. Accounts without records are not listed. An account is not necessarily one person; shared logins are combined. Daily records expire after 90 days. Show contents and typed text are not collected.</p><small id="updated"></small></footer>
+</main><script nonce="4e8974a8-993d-49fc-8d7d-b51cc0073462">
+const snapshot = {"asOf":1788870830407,"startedAt":1788870342091,"days":30,"from":"2026-08-10","to":"2026-09-08","retentionDays":90,"rows":[{"user":"review-owner","lastSeen":1788870812887,"activeDays":1,"activeMs":84879},{"user":"review-guest","lastSeen":1788870342091,"activeDays":1,"activeMs":30000}],"enabled":true,"owner":"review-owner"};
+const t = {"lang":"en","title":"Stage Sketch · Usage","back":"Back to Stage Sketch","heading":"Who is using Stage Sketch?","intro":"Beta accounts · Private to the owner","period":"Period","periods":["7 days","30 days","90 days"],"self":"Include my own activity","refresh":"Refresh","loading":"Loading usage…","table":"Usage by account","user":"Account","days":"Days used","active":"Active time (estimate)","last":"Last use (JST, within 90 days)","empty":"No recorded usage in this view. This does not prove that nobody used the app.","fail":"Usage could not be loaded. Check your connection and owner sign-in, then refresh.","signIn":"Sign in again","disabled":"Recording is currently disabled. Previously recorded activity is shown.","note":"Days used count calendar days in Japan when the app reports an opening or foreground activity. Active time counts only a focused, visible app and up to 60 seconds after an action. Hidden tabs, long suspension and failed transmissions are excluded. Overlapping reports from the same account are not added twice. These are estimates, not attendance records.","boundary":"Only records received after measurement began are available. Accounts without records are not listed. An account is not necessarily one person; shared logins are combined. Daily records expire after 90 days. Show contents and typed text are not collected.","sampled":"Last updated","started":"Recording began","pending":"Awaiting first record","own":"(you)","people":"accounts used","totalDays":"account-days","totalTime":"total active time","zero":"0 min","short":"under 1 min","min":"min","hour":"h"};
+const el = (id) => document.getElementById(id);
+let report = null, revision = 0;
+const date = (ms) => new Intl.DateTimeFormat(t.lang === 'en' ? 'en-GB' : 'ja-JP', {timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ms));
+function duration(ms) {
+ if (!ms) return t.zero;
+ const minutes = Math.floor(ms/60000);
+ if (!minutes) return t.short;
+ return minutes < 60 ? minutes+' '+t.min : Math.floor(minutes/60)+' '+t.hour+' '+(minutes%60)+' '+t.min;
+}
+function draw() {
+ if (!report) return;
+ const rows = report.rows.filter(row => el('self').checked || row.user !== report.owner);
+ el('rows').replaceChildren(); el('totals').replaceChildren();
+ for (const [value,label] of [[rows.filter(row=>row.activeDays>0).length,t.people],[rows.reduce((n,row)=>n+row.activeDays,0),t.totalDays],[duration(rows.reduce((n,row)=>n+row.activeMs,0)),t.totalTime]]) {
+  const item=document.createElement('div'),number=document.createElement('strong'),name=document.createElement('span');
+  number.textContent=value; name.textContent=label; item.append(number,name); el('totals').append(item);
+ }
+ for (const row of rows) {
+  const tr=document.createElement('tr');
+  [row.user+(row.user===report.owner?' '+t.own:''),row.activeDays,duration(row.activeMs),date(row.lastSeen)].forEach((value,index)=>{
+   const td=document.createElement('td'); td.textContent=value;
+   if(index) td.dataset.label=[t.user,t.days,t.active,t.last][index];
+   if(index===1 || index===2) td.className='number'; tr.append(td);
+  }); el('rows').append(tr);
+ }
+ el('empty').hidden=rows.length>0; el('table').hidden=rows.length===0; el('result').hidden=false;
+ el('range').textContent=report.from+' – '+report.to+' · JST';
+ el('start').textContent=report.startedAt?t.started+': '+date(report.startedAt)+' JST':t.pending;
+ el('updated').textContent=t.sampled+': '+date(report.asOf)+' JST';
+ el('status').textContent=report.enabled?'':t.disabled;
+}
+async function load() {
+ const current=++revision; report=null; el('result').hidden=true; el('refresh').disabled=true;
+ el('status').textContent=t.loading; el('sign-in').hidden=true; el('updated').textContent=''; el('range').textContent=''; el('start').textContent='';
+ try {
+  const days=Number(el('period').value); const from=new Date((Math.floor((snapshot.asOf+32400000)/86400000)-days+1)*86400000).toISOString().slice(0,10); const response={ok:true,json:async()=>({...snapshot,days,from})};
+  if(!response.ok) throw new Error('unavailable');
+  const value=await response.json();
+  if(!Array.isArray(value.rows)) throw new Error('invalid');
+  if(current!==revision) return; report=value; draw();
+ } catch(_) { if(current===revision) {el('status').textContent=t.fail;el('sign-in').hidden=false;} }
+ finally { if(current===revision) el('refresh').disabled=false; }
+}
+el('period').addEventListener('change',load); el('self').addEventListener('change',draw); el('refresh').addEventListener('click',load); load();
+</script></body></html>

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>照明デザイン「常設イメージの仮想仕込み＋照明のあるあるを当てる」入口 — 確定版 2026-09-14</title>
+<style>
+  :root{--ink:#26221c;--paper:#f6f1e7;--line:#cfc4ae;--muted:#6e6558;--accent:#8a3b1f;--ok:#3f6b46;--hold:#8a6d1f;--card:#fffdf8;
+        --desk-2:#201b16;--desk-3:#282119;--milk:#efe7d6;--milk-dim:rgba(240,231,214,.55);--brass:#9c823f;--rust-ink:#df6433;--line-dark:#382f25;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;line-height:1.75;font-size:15px}
+  main{max-width:1040px;margin:0 auto;padding:30px 20px 90px}
+  h1{font-size:22px;margin:0 0 4px;line-height:1.4}
+  h2{font-size:17px;margin:40px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--ink)}
+  h3{font-size:15px;margin:22px 0 6px}
+  .meta{color:var(--muted);font-size:13px;margin-bottom:22px}
+  .ask{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--ok);padding:14px 18px;margin:18px 0}
+  .ask h2{margin-top:0;border:none;padding:0;font-size:16px}
+  .ask.todo{border-left-color:var(--accent)}
+  .summary{background:#ede5d3;border:1px solid var(--line);padding:12px 18px;margin:14px 0}
+  .summary li{margin:4px 0}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13.5px;background:var(--card)}
+  th,td{border:1px solid var(--line);padding:6px 9px;vertical-align:top;text-align:left}
+  th{background:#ede5d3;font-weight:600;white-space:nowrap}
+  td.num{text-align:right;white-space:nowrap}
+  .scroll{overflow:auto}
+  pre{background:#2a2620;color:#f2eadb;padding:13px 15px;border-radius:4px;font-size:12.5px;line-height:1.55;overflow:auto}
+  code{background:#ede5d3;padding:0 4px;border-radius:2px;font-size:13px}
+  .note{font-size:13px;color:var(--muted)}
+  .stop{color:var(--accent);font-weight:600}
+  .ok{color:var(--ok);font-weight:600}
+  .guess{color:var(--hold);font-weight:600}
+  ul,ol{padding-left:22px} li{margin:5px 0}
+  a{color:var(--accent)}
+  .tag{display:inline-block;font-size:11.5px;padding:0 6px;border:1px solid var(--line);border-radius:2px;background:#fff;margin-right:3px;white-space:nowrap}
+  .flow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}
+  .flow .box{border:1px solid var(--line);background:var(--card);padding:12px 14px}
+  .flow .box h4{margin:0 0 6px;font-size:14px}
+  .flow .box.new{border-color:var(--accent);border-width:2px}
+  .steps{margin:0;padding-left:18px;font-size:13.5px}
+  .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}
+  .opt{border:1px solid var(--line);background:var(--card);padding:12px 14px;font-size:13.5px}
+  .opt h4{margin:0 0 6px;font-size:14px}
+  .opt.rec{border:2px solid var(--ok);background:#fff}
+  .fig{border:1px solid var(--line);background:#0d0e10;padding:10px;margin:10px 0}
+  .fig svg{display:block;width:100%;height:auto}
+  .figcap{font-size:12.5px;color:var(--muted);margin:4px 0 0}
+  .sizetabs{display:flex;gap:6px;margin:8px 0}
+  .sizetabs button{font:inherit;font-size:13px;padding:4px 12px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  .sizetabs button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;margin:6px 0}
+  .legend i{display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:-1px;border-radius:50%}
+  .mockwrap{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+  .mock{width:305px;background:var(--desk-2);border:1px solid var(--line-dark);padding:8px;color:var(--milk);font-family:"Hiragino Sans",system-ui,sans-serif;flex:0 0 auto}
+  .mock .tabs{display:grid;grid-template-columns:1fr 1fr;height:34px;margin-bottom:6px}
+  .mock .tabs span{display:flex;align-items:center;justify-content:center;font-size:14px;border:1px solid var(--line-dark);color:var(--milk-dim)}
+  .mock .tabs span.on{color:var(--milk);border-color:var(--brass);background:rgba(156,130,63,.22)}
+  .mock .ptitle{color:var(--brass);font-size:14.5px;font-weight:600;letter-spacing:.1em;margin:0 0 6px}
+  .mock .hint{font-size:10.5px;color:var(--milk-dim);margin:0 0 6px;line-height:1.5}
+  .mock .now{display:grid;grid-template-columns:132px 132px;gap:8px;width:272px;margin-bottom:6px}
+  .mock .now span{height:28px;display:flex;align-items:center;padding:0 8px;font-size:12px;border:1px solid var(--brass);color:var(--milk);background:rgba(156,130,63,.12);white-space:nowrap;overflow:hidden}
+  .mock .now span em{font-style:normal;color:var(--rust-ink);margin-left:4px;font-size:10.5px}
+  .mock .search{height:34px;border:1px solid var(--line-dark);background:var(--desk-3);color:var(--milk-dim);font-size:14px;display:flex;align-items:center;padding:0 8px;margin-bottom:6px}
+  .mock .chips{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+  .mock .chips span{height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;border:1px solid var(--line-dark);color:var(--milk-dim);padding:0 8px}
+  .mock .chips span.on{background:var(--brass);color:#1a1409;border-color:var(--brass)}
+  .mock .grid{display:grid;grid-template-columns:132px 132px;gap:8px;width:272px}
+  .mock .cardx{width:132px;height:148px;border:1px solid var(--line-dark);background:var(--desk-2)}
+  .mock .cardx.sel{border-color:var(--brass);box-shadow:0 0 0 1px rgba(156,130,63,.5)}
+  .mock .img{width:130px;height:74px;background:#0d0e10;position:relative;overflow:hidden}
+  .mock .img::after{content:"";position:absolute;inset:0;background:var(--look)}
+  .mock .img b{position:absolute;right:4px;top:2px;font-size:10px;color:var(--brass);font-weight:600}
+  .mock .img i{position:absolute;left:4px;bottom:2px;font-size:10px;color:var(--rust-ink);font-style:normal}
+  .mock .nm{font-size:13.5px;line-height:19px;height:38px;padding:6px 6px 0;overflow:hidden;color:var(--milk)}
+  .mock .cardx.sel .nm{color:#d3ac59}
+  .mock .tg{font-size:11.5px;line-height:16px;padding:4px 6px 0;color:var(--milk-dim);white-space:nowrap;overflow:hidden}
+  .mockdesc{flex:1 1 320px;font-size:13.5px}
+  details{margin:8px 0}
+  summary{cursor:pointer;font-weight:600}
+  @media (max-width:760px){.flow,.opts{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>照明デザインモードに「常設イメージの仮想仕込み＋照明のあるあるを当てる」入口を足す — 確定版</h1>
+<p class="meta">2026-09-14 ／ Claude Code（Fable 5.1）× Codex（gpt-6-astra, effort high）3ラウンド＋本人回答を反映。<b>設計確定</b>。
+<span class="stop">2026-09-14 本人指示で変更: 明かりのカードは「重ねる」をやめて<b>切り替え式</b>（押すと前のあるあるは消えてそれだけが乗る。もう一度押すと消灯）。§3 の「重ねる」記述は旧設計。</span><br><span class="ok">実装済み（同日 03:10・試作・公開済み）</span>: 仮想仕込み3種＋あるある30件＋見本タブ（<code>prototype/light-presets.js</code>／<code>light-presets-ui.js</code>、テスト11/11、詳細は HANDOFF §5.7）。サムネイルは略図（暫定）。
+初版（本人回答前）は <a href="codex-round2.answer.md">第2ラウンド</a>まで。会議ログ: <a href="notes.md">notes.md</a>／Codex原文: <a href="codex-round1.answer.md">第1</a>・<a href="codex-round2.answer.md">第2</a>・<a href="codex-round3.answer.md">第3</a>／トークンシート: <a href="../../../design/TOKEN_SHEET_light-presets_2026-09-14.md">TOKEN_SHEET_light-presets_2026-09-14.md</a></p>
+
+<section class="ask">
+<h2>本人の決定（2026-09-14）と、それをどう反映したか</h2>
+<table>
+<tr><th style="width:34%">本人の回答</th><th>設計への反映</th></tr>
+<tr><td>仮想仕込みでよいが、<b>常設設備のイメージ</b>。無駄にバトンを張らない。</td><td>吊位置と構成を日本の劇場の常設に倣う（シーリング／フロントサイド／サスバトン／SS／ホリゾント上下／転がし）。照明バトンは<b>小2本・中3本・大3本</b>。SSのムービングは削除、転がしは小2・中大4に縮小。「バトンは全ムービング」だけは本人の最初の指定を仮想として維持（§2）。</td></tr>
+<tr><td>見本は一般的なもの。<b>地上メイン</b>でよい。</td><td>空中・客席向け・点滅は初版に入れない。30件すべて床・演者・奥壁を狙う（§4）。</td></tr>
+<tr><td><b>ストーリー性は全く不要。「一つ一つの照明のあるある」を一つずつ</b>。</td><td>完成ルック（組合せ）は作らない。1カード＝1つのあるある＝自分の配置グループだけを書く<b>部分適用（patch）が既定</b>。本人は「前明かり」＋「ホリ単色」＋「サイド低段」のように<b>重ねて</b>使う。同じ灯体の同じ属性は後勝ち。呼び名は現場の普通の呼び名＋短い説明（§3・§4）。</td></tr>
+</table>
+</section>
+<section class="ask todo">
+<h2>まだ本人に見てほしいこと（判断は急がない）</h2>
+<ul>
+<li><b>§4 の30件の呼び名と内容</b>。「これは要らない」「この定番が無い」の指摘。色違いは各カードの色選択にまとめた（青ホリ・赤ホリを別カードにしない）。</li>
+<li>「バトンは全ムービング」を仮想として残す前提でよいか。常設に寄せるなら固定灯に替える案もあるが、ムービングの方が見本の自由度が高いので現状は維持。</li>
+</ul>
+</section>
+
+<div class="summary">
+<b>要約</b>
+<ul>
+<li>入口を2本立てにする: 既存の「配置から組む」に加え、<b>「ビジュアルから作る」</b>ボタン1つで劇場サイズに合う<b>常設イメージの仮想仕込み</b>が入り、右パネルの<b>「見本」タブ</b>で「照明のあるある」を押すたびに明かりが重なる。</li>
+<li>仮想仕込みは劇場プリセット 小／中／大に1対1。<b>小34・中54・大70要素</b>（ホリゾント上下2列込み）。バトン小2・中大3本（全ムービング）、中央専用のシーリング1組、フロントサイド、SSは低段0.55m／高段2.4m、転がし、ホリ上下。</li>
+<li>あるあるは<b>配置グループ</b>（CL／FR／B1／SL／CY…）で書き、適用時に灯体IDへ確定。既定は<b>patch</b>（対象灯だけ作り直す setup／属性だけ変える attributes）。「全部消す」だけが reset（消灯のみ・設定は保持）。</li>
+<li>初版は<b>30件</b>（明かり24＋動き5＋全部消す）。名前は「前明かり・全面」「ホリ・単色」「サススポット・中央」のような現場の呼び名。</li>
+<li>カードは<b>クリック即適用・Undoで戻る</b>。上部に「いまの明かり」チップ（由来の要約・取り外せる層ではない）。サムネイルは<b>現在の明かりにそのカードを重ねた結果</b>を実描画。</li>
+<li>保留: 任意の仕込みへの縮退適用、演者への追従、空中・客席・点滅、本体統合。</li>
+</ul>
+</div>
+
+<h2>0. 設計メモ（5つの問い）</h2>
+<table>
+<tr><th style="width:26%">誰が・どの場面で</th><td>本人（ショー制作者・照明は非専門）が、演目の明かりを<b>先に絵として</b>考えたいとき。機材を1灯ずつ置く前に「照明のあるある」を重ねて画を作り、あとで照明さんに渡す。</td></tr>
+<tr><th>どんな気分に</th><td>スイッチを入れるように<b>迷わず試せる</b>。押せば図が変わる、戻せる、失敗が無い。専門用語に止められないが、現場で通じる言葉は覚えられる。</td></tr>
+<tr><th>固有の核</th><td>見本が<b>その会場・その演者・その幕・いまの明かりの上で実描画</b>されること。あるあるが一つずつ独立していて、組合せは本人が作ること。仮想仕込みを「常設のイメージ」に留め、照明さんに渡せる誠実さ。</td></tr>
+<tr><th>踏襲する／外す</th><td>踏襲: Matt Kizer の Light Lab（位置ごとに方向・色・強さ・模様を個別に試す）、照明卓のパレット（強さ／位置／色／ビームを分けて持つ）、既存の暗い作業面と真鍮の選択枠。<br>外す: 完成ルックの束、ストーリー名、千件の自動生成、万能つまみ、見本更新のキューへの自動伝播、試し表示という中間状態、取り外せる層。</td></tr>
+<tr><th>守る機能条件</th><td>PC先行（1440×900）。既存の LX cue モデル（画面＝編集中キューの中身・commitで書き戻し）を壊さない。既存rigのキューを消さない。Safari の canvas 制約。製品本体に触れない。</td></tr>
+</table>
+
+<h2>1. 入口の姿（いまの2モードとの関係）</h2>
+<div class="flow">
+<div class="box"><h4>いまある入口: 配置から組む</h4>
+<ol class="steps"><li>「よくある仕込みから選ぶ」か手で置く</li><li>照明デザインで1灯ずつ点けて狙う</li><li>LX cue に登録</li></ol>
+<p class="note">残す。触らない。</p></div>
+<div class="box new"><h4>足す入口: ビジュアルから作る</h4>
+<ol class="steps"><li>灯体パネルの<b>「ビジュアルから作る」</b>を押す → 会場プリセット（小／中／大劇場）に合う<b>仮想仕込み</b>が入る</li><li>右パネル<b>「見本」タブ</b>（明かり／動き）でカードを押す → 編集中の LX cue にそのあるあるが<b>重なる</b>（即commit・Undo可）</li><li>「調整」タブ（既存の灯体パネル）で微調整。上部の「いまの明かり」チップを押すと対象灯が選ばれて調整タブが開く</li></ol>
+<p class="note">既に rig がある照明設計で押した場合は<b>別の照明案として開始</b>（既存rigを置き換えない。既存キューの灯体IDが宙に浮くのを防ぐ）。</p></div>
+</div>
+<p>元のキューを残して見比べたいときの順序は「<b>＋新規キュー → 見本を押す</b>」。既存の〈＋新規キュー〉が「いまの明かりから始まる」仕様なので、新しい保存モデルは増やさない。</p>
+
+<h2>2. 常設イメージの仮想仕込み3種（劇場サイズ別・初期値）</h2>
+<p>常設を模すのは<b>吊位置と構成</b>。全ムービング・SS・転がしまで常設設備だとは表示しない（書き出しでは「仮想仕込み・常設の位置に倣う」と明記）。バトンは「あるあるを当てるため」に増やさない。</p>
+<table>
+<tr><th>サイズ</th><th>照明バトン</th><th>根拠</th></tr>
+<tr><td>小 8×7×6</td><td><b>2本</b>（前寄り・奥寄り）</td><td>小規模施設の2本構成に公開例（<a href="https://www.uonumahall.jp/hibiki-info/information/syouho/" target="_blank" rel="noopener">魚沼市響きの森文化会館 小ホール</a>）。萬劇場（間口7.2m）は照明用電動バトン7本を持つが、1演目で使う本数とは別（<a href="https://lasens.com/database/theater-597.html" target="_blank" rel="noopener">設備表</a>）。</td></tr>
+<tr><td>中 12×9×8</td><td><b>3本</b>（前・中・奥）</td><td>第1〜第3サスペンションの構成例（<a href="https://www.bunka758.or.jp/facility/moriyama/files/pdf/moriyama_syoumei_setubi_2025.pdf" target="_blank" rel="noopener">守山文化小劇場 設備表</a>）。施設の呼称「小劇場」とこのアプリのサイズ区分は同一視しない。</td></tr>
+<tr><td>大 18×12×12</td><td><b>3本をモデル化</b></td><td>実施設には1〜5SUSの例（<a href="https://saitama-culture.jp/sculwp/wp-content/uploads/material_stage_sakurasou_202405.pdf" target="_blank" rel="noopener">さいたま市文化センター 大ホール</a>）。前・中・奥で必要な方向を確保する設計上の省略で、「通常3本」という一般論にはしない。</td></tr>
+</table>
+<div class="sizetabs" role="tablist"><button aria-pressed="false" data-size="small">小劇場 8×7×6</button><button aria-pressed="true" data-size="mid">中劇場 12×9×8</button><button aria-pressed="false" data-size="large">大劇場 18×12×12</button></div>
+<div class="legend" id="legend"></div>
+<div class="fig"><svg id="plan" viewBox="0 0 1000 620" aria-label="平面図（真上から）"></svg></div>
+<p class="figcap">平面図（真上から）。下が舞台の手前、その先が客席。シーリング（▲中央列）とフロントサイド（▲両端）は客席側に一定距離で並べる（実距離は表の ahead）。数値は第3ラウンド案から JS で生成（表と一致）。</p>
+<div class="fig"><svg id="side" viewBox="0 0 1000 420" aria-label="側面図（下手から）"></svg></div>
+<p class="figcap">側面図（下手から見る）。左が客席、右が奥壁。シーリングは狙い点への仰角45°で高さを決める。SSは低段0.55m／高段2.4m（人体基準・劇場高に比例させない）。</p>
+
+<h3>配置グループ表（「各」は左右それぞれ）</h3>
+<div class="scroll"><table>
+<tr><th>配置グループ</th><th>灯数 小／中／大</th><th>種別</th><th>置き方（試作の mount 形式へ落とす）</th><th>広がり 小／中／大</th></tr>
+<tr><td>シーリング中央 <code>CL.center.l/r</code></td><td class="num">各1／1／1</td><td>固定</td><td>中央専用。狙い (0.5, 0.75)・高さ1.2m から左右±0.12・仰角45°で生成</td><td class="num">16／12／10°</td></tr>
+<tr><td>シーリング面 <code>CL.area.l/r</code></td><td class="num">各3／5／7</td><td>固定</td><td>面の明かり。狙い点: 小=奥列3点 v0.4／中=＋前列2点 v0.75／大=奥列5点＋前列2点</td><td class="num">28／32／36°</td></tr>
+<tr><td>フロントサイド <code>FR.l/r</code></td><td class="num">各1／2／3</td><td>固定</td><td>左 u: 小[.04]／中[.03,.09]／大[.02,.06,.10]、右は 1−u。ahead 2／2.5／3、h 5／6／8。狙いは反対側（左から u=.65、右から .35）高さ1.2m、v 小.55／中[.4,.7]／大[.3,.5,.75]</td><td class="num">24／22／20°</td></tr>
+<tr><td>バトン1 <code>B1</code></td><td class="num">6／8／10</td><td>ムービング</td><td>小 v.65／中大 v.78、u は .10〜.90 等間隔。高さ 小5.0／中6.5／大8.5</td><td class="num">18°</td></tr>
+<tr><td>バトン2 <code>B2</code></td><td class="num">6／8／10</td><td>ムービング</td><td>小 v.22（＝奥）／中大 v.50</td><td class="num">18°</td></tr>
+<tr><td>バトン3 <code>B3</code></td><td class="num">0／8／10</td><td>ムービング</td><td>中大のみ v.22</td><td class="num">18°</td></tr>
+<tr><td>低いSS <code>SL.l/r</code></td><td class="num">各2／2／3</td><td>固定</td><td>v [.32,.68]（大 [.25,.5,.75]）、h .55。狙いは同じvの中央・高さ.55</td><td class="num">14／10／8°</td></tr>
+<tr><td>高いSS <code>SH.l/r</code></td><td class="num">各2／2／3</td><td>固定</td><td>低段と同じv、h 2.4。狙いは同じvの中央・高さ1.2</td><td class="num">32／28／24°</td></tr>
+<tr><td>転がし奥 <code>FL.rear</code></td><td class="num">0／2／2</td><td>ムービング</td><td>u [.30,.70]、v 0.6m/D（中央の演技空間を空ける）</td><td class="num">12°</td></tr>
+<tr><td>転がし両端 <code>FL.edge.l/r</code></td><td class="num">各1／1／1</td><td>ムービング</td><td>u 0.5m/W・1−0.5m/W、v 0.8m/D</td><td class="num">12°</td></tr>
+<tr><td>ロアーホリ <code>CY.lower</code>／アッパーホリ <code>CY.upper</code></td><td class="num">各1列</td><td>固定</td><td>len .90、reachM 小3.6／中4.8／大7.2。灯数に数えない（実機1灯ではない）</td><td class="num">—</td></tr>
+<tr><th>合計（通常灯体＋cyc 2列）</th><td class="num"><b>32＋2＝34 ／ 52＋2＝54 ／ 68＋2＝70</b></td><td colspan="3">シーリングの高さ式: <code>h = 1.2 + √((0.12W)² + (ahead + (1−v)·D)²)</code>（仰角45°）。左右への振り角は約10〜16°（現行 <code>front.u</code> が舞台幅内に制限されるため水平45°ではない）。前明かりの考え方は ETC の解説（<a href="https://blog.etcconnect.com/stage-lighting-design-part-5" target="_blank" rel="noopener">Lighting Angles</a>）。</td></tr>
+</table></div>
+<h3>あるある用の灯体割当（バトンを増やさず既存灯を排他的な集合へ分ける）</h3>
+<table>
+<tr><th>呼び出し名</th><th>割当</th><th>灯数 小／中／大</th></tr>
+<tr><td><code>WASH</code> 地明かり用</td><td>B1 の中央寄り2灯を除いた灯＋（中大）B2 全部</td><td class="num">4／14／18</td></tr>
+<tr><td><code>SPECIAL</code> スポット用</td><td>B1 の中央寄り2灯</td><td class="num">2／2／2</td></tr>
+<tr><td><code>BACK</code> バック用</td><td>最奥のバトン全部（小 B2、中大 B3）</td><td class="num">6／8／10</td></tr>
+<tr><td><code>FL</code> 転がし</td><td>床置き全部</td><td class="num">2／4／4</td></tr>
+</table>
+<p class="note">これは灯体IDの対応表（<code>bindings.groups</code>）。<code>BACK</code> のような呼び名から任意rigの灯を推測する機能は作らない。生成時に <code>bindings.defaultAim</code>（固定灯の共通狙い）と <code>bindings.rigProfile</code> も保持。既定寸法 12×8×8 を黙って 12×9×8 に変えない（会場はプリセットIDで対応づける）。</p>
+
+<h2>3. 合成規則（あるあるを重ねる）</h2>
+<table>
+<tr><th style="width:26%">操作</th><th>何が起きるか</th></tr>
+<tr><td><b>あるあるカード（setup）</b></td><td>指定した灯体集合の明かりを、そのあるあるの状態へ<b>作り直す</b>。対象灯だけ既知属性を中立へ戻してから設定（点灯・強さ・色・狙い・広がり・ゴボ・点滅・カッター・時間）。未使用の対象灯は消灯、<b>対象外の灯には触れない</b>。例:「前明かり・中央」は CL 全体を対象にし面用を消して中央2灯を点ける。SS・FR・ホリは残る。</td></tr>
+<tr><td><b>属性だけ（attributes）</b></td><td>色・強さ・位置の動きなど列挙した属性だけ変更。カード内の色選択はこれ。消灯中のグループへ色だけ変えると消灯のまま色を保存し「色を設定・消灯中」と表示（暗黙の点灯をしない）。</td></tr>
+<tr><td><b>同じ灯体の競合</b></td><td><b>灯体ID×属性で後勝ち</b>。1灯から違う方向の光を同時に出す合成はしない。「地明かり→ゴボ木漏れ日」が同じ WASH を使えば地明かりの設定は置換される。ホリ青→ホリ赤は色の置換。</td></tr>
+<tr><td><b>動きカード</b></td><td>対象は<b>床を狙って点灯中のムービング</b>（選択があれば選択内、無ければ現在cue内）。色・強さ・広がり・ゴボは維持し、位置の軌道と同期だけ置換。対象0灯なら無変更（灯を勝手に点けない）。往復・円は1灯以上、扇・順送りは2灯以上。固定灯・空中／客席向け・強さやズームの自動変化がある灯は対象外にし、適用件数を表示。</td></tr>
+<tr><td><b>全部消す（reset）</b></td><td>全灯 <code>on=false</code> のみ。色・強さ・狙い・動きは保持。再生停止。Undo で戻る。キューやrigの削除・全属性の初期化はしない。</td></tr>
+<tr><td>由来</td><td>「いまの明かり」チップに要約表示（前明かり 全面／ホリ 単色／地明かり＋往復）。同じ枠が全面的に置換されたら古いチップは外す。一部属性が残れば「調整あり」。×ボタンは付けない（取り外せる層に見せない）。由来は <code>cueJson()</code> の外なので、キュー／下書きに対応するメタデータとして Undo・書出・再読込の経路まで含める。</td></tr>
+<tr><td><code>requires</code></td><td><code>{required:[{group,minCount,kind}], supporting:[]}</code>。判定は構成条件で、実舞台の最低設備ではない。初版の適用対象は仮想仕込み3種だけ。他の仕込みでは「この仕込みでは初版では試せません（必要: シーリング中央 左右各1）」と出し、機材不足とは言わない。</td></tr>
+<tr><td>変えないもの</td><td>固定灯の角度、バーンドア、cycの長さ・到達高さ、舞台寸法、固定灯の共通狙い。対象灯を動きの組から外すとき対象外灯の軌道・位相は変えない。未知フィールドは保持。</td></tr>
+</table>
+
+<h2>4. 照明のあるある — 初版30件（本人確認: 呼び名と抜け）</h2>
+<p>色記号: W=#f2ead6 白 ／ B=#7ab8ff 青 ／ A=#ffd27a 琥珀 ／ R=#d9483b 赤 ／ O=#ff7a5c 橙 ／ P=#9b6fd0 紫。数字は強さ。狙い C=(.5,.65) L=(.25,.65) R=(.75,.65)。「面」は床の u .15〜.85・v .30〜.75。固定灯はすべて仕込みの共通狙い。「色選択」は既定 W/B/A（ホリは W/B/R/A）。</p>
+<div class="scroll"><table>
+<tr><th>#</th><th>呼び名・短い説明</th><th>対象</th><th>既定の色／強さ</th><th>狙い</th><th>動き</th><th>タグ</th></tr>
+<tr><td>1</td><td><b>前明かり・全面</b> 演技域を前から照らす</td><td>CL 全部</td><td>W70</td><td>固定の各エリア</td><td>静止</td><td><span class="tag">前</span><span class="tag">顔</span></td></tr>
+<tr><td>2</td><td><b>前明かり・中央</b> 中央用の前明かりだけ</td><td>CL 全部、中央2灯のみ点灯</td><td>W75</td><td>中央前・高さ1.2m</td><td>静止</td><td><span class="tag">前</span><span class="tag">中央</span></td></tr>
+<tr><td>3</td><td><b>フロントサイド・クロス</b> 左右斜め前から</td><td>FR 左右</td><td>W65</td><td>固定の交差狙い</td><td>静止</td><td><span class="tag">斜め前</span><span class="tag">顔</span></td></tr>
+<tr><td>4</td><td><b>地明かり・全面</b> 床の演技域を広く覆う</td><td>WASH</td><td>W60・色選択</td><td>面</td><td>静止</td><td><span class="tag">面</span><span class="tag">床</span></td></tr>
+<tr><td>5</td><td><b>地明かり・手前</b></td><td>WASH</td><td>W60・色選択</td><td>v .65〜.80</td><td>静止</td><td><span class="tag">面</span><span class="tag">手前</span></td></tr>
+<tr><td>6</td><td><b>地明かり・奥</b></td><td>WASH</td><td>W60・色選択</td><td>v .25〜.40</td><td>静止</td><td><span class="tag">面</span><span class="tag">奥</span></td></tr>
+<tr><td>7</td><td><b>サイド・低段</b> 足元や脚を横から拾う</td><td>SL 左右</td><td>A60・色選択</td><td>固定・高さ.55m</td><td>静止</td><td><span class="tag">横</span><span class="tag">低い</span></td></tr>
+<tr><td>8</td><td><b>サイド・高段</b> 上体を横から拾う</td><td>SH 左右</td><td>W65・色選択</td><td>固定・高さ1.2m</td><td>静止</td><td><span class="tag">横</span><span class="tag">体</span></td></tr>
+<tr><td>9</td><td><b>サイド・片側</b> 片側から体の形を出す</td><td>SL/SH、既定は下手だけ</td><td>W60・上下手選択</td><td>固定</td><td>静止</td><td><span class="tag">横</span><span class="tag">片側</span></td></tr>
+<tr><td>10</td><td><b>バック</b> 奥から輪郭を拾う</td><td>BACK</td><td>W65・色選択</td><td>面の前寄り</td><td>静止</td><td><span class="tag">奥</span><span class="tag">輪郭</span></td></tr>
+<tr><td>11</td><td><b>斜めバック</b> 片側の奥から</td><td>BACK、既定は下手半分</td><td>B60・上下手選択</td><td>C</td><td>静止</td><td><span class="tag">奥</span><span class="tag">斜め</span></td></tr>
+<tr><td>12</td><td><b>ホリ・単色</b> 背景を一色で染める</td><td>CY 上下</td><td>B55・色選択</td><td>奥壁</td><td>静止</td><td><span class="tag">ホリ</span></td></tr>
+<tr><td>13</td><td><b>ホリ・上下2色</b></td><td>CY 上下</td><td>下O65／上P55</td><td>奥壁</td><td>静止</td><td><span class="tag">ホリ</span><span class="tag">2色</span></td></tr>
+<tr><td>14</td><td><b>ロアーホリのみ</b> 背景の下側から</td><td>CY、下のみ</td><td>B55</td><td>奥壁の下側</td><td>静止</td><td><span class="tag">ホリ</span><span class="tag">下</span></td></tr>
+<tr><td>15</td><td><b>サススポット・中央</b> 中央の狭い範囲</td><td>SPECIAL 1灯</td><td>W80</td><td>C</td><td>静止</td><td><span class="tag">スポット</span></td></tr>
+<tr><td>16</td><td><b>サススポット・下手</b></td><td>SPECIAL 1灯</td><td>W80</td><td>L</td><td>静止</td><td><span class="tag">スポット</span></td></tr>
+<tr><td>17</td><td><b>サススポット・上手</b></td><td>SPECIAL 1灯</td><td>W80</td><td>R</td><td>静止</td><td><span class="tag">スポット</span></td></tr>
+<tr><td>18</td><td><b>トップ・並び</b> 真下へ光だまりを並べる</td><td>WASH 4灯</td><td>W65</td><td>選んだ灯の真下</td><td>静止</td><td><span class="tag">上</span><span class="tag">並び</span></td></tr>
+<tr><td>19</td><td><b>エリア・3分割</b> 下手・中央・上手を分ける</td><td>WASH 3灯</td><td>W70</td><td>L/C/R</td><td>静止</td><td><span class="tag">エリア</span></td></tr>
+<tr><td>20</td><td><b>通り道</b> 中央線に光だまりを並べる</td><td>WASH 4灯</td><td>W65</td><td>u .5、v .25/.42/.59/.76</td><td>静止</td><td><span class="tag">床</span><span class="tag">中央線</span></td></tr>
+<tr><td>21</td><td><b>ゴボ・木漏れ日</b> 床へ葉の模様</td><td>WASH</td><td>A60</td><td>面</td><td>静止</td><td><span class="tag">模様</span></td></tr>
+<tr><td>22</td><td><b>ゴボ・窓</b> 床へ格子窓の模様</td><td>SPECIAL 1灯</td><td>W70</td><td>C</td><td>静止</td><td><span class="tag">模様</span></td></tr>
+<tr><td>23</td><td><b>ゴボ・ブレイクアップ</b> 不規則な模様で質感</td><td>WASH</td><td>W55</td><td>面</td><td>静止</td><td><span class="tag">模様</span></td></tr>
+<tr><td>24</td><td><b>転がし・逆光</b> 床置きから低い光線</td><td>FL</td><td>B60</td><td>各光源と同じu、v .65・高さ1.2m</td><td>静止</td><td><span class="tag">床置き</span><span class="tag">逆光</span></td></tr>
+<tr><td>25</td><td><b>往復</b> 床の光を左右へ</td><td>適格灯</td><td>現在値を維持</td><td>(.25,.60)↔(.75,.60)</td><td>8秒周期</td><td><span class="tag">動き</span></td></tr>
+<tr><td>26</td><td><b>扇</b> 中央から左右へ開く</td><td>適格灯2灯以上</td><td>維持</td><td>中央→u .15〜.85・v .60</td><td>8秒周期</td><td><span class="tag">動き</span></td></tr>
+<tr><td>27</td><td><b>円</b> 床の光を円形に</td><td>適格灯</td><td>維持</td><td>(.5,.60) 中心・半径1m</td><td>8秒／周</td><td><span class="tag">動き</span></td></tr>
+<tr><td>28</td><td><b>順送り</b> 往復の開始をずらす</td><td>適格灯2灯以上</td><td>維持</td><td>25と同じ</td><td>8秒周期・遅れ 8/n 秒</td><td><span class="tag">動き</span></td></tr>
+<tr><td>29</td><td><b>位置の動きを止める</b> いまの位置で止める</td><td>動作中の適格灯</td><td>維持</td><td>押した瞬間の位置</td><td>静止へ</td><td><span class="tag">動き</span><span class="tag">停止</span></td></tr>
+<tr><td>30</td><td><b>全部消す</b></td><td>全灯</td><td>on=false</td><td>設定保持</td><td>再生停止</td><td><span class="tag">消灯</span></td></tr>
+</table></div>
+<p class="note">15〜17は同じ SPECIAL 枠なので続けて押すと位置が置き換わる（3か所同時は19）。2や15を当てても他グループの明かりは消えない。追加の数値: 地明かりの広がり 小50°／中40°／大36°、サススポット10°、トップ並び12°、3分割16°、通り道20°、ゴボは木漏れ日 foliage ぼけ10・窓 window ぼけ0・ブレイクアップ break-mid ぼけ8（回転0）、木漏れ日／ブレイクアップ30°・窓24°（ゴボ3種は試作 rig-engine.js に定義あり）。サムネイル代表時刻: 静止0ms、往復1500・扇3000・円1000・順送り1000ms。動くカードも自動再生は始めない。<b>30件は制作対象であり完成確認済みではない</b>。</p>
+
+<h2>5. 右パネル「見本」タブ（UI）</h2>
+<div class="mockwrap">
+<div class="mock" aria-label="右パネルのモック（305px）">
+  <div class="tabs"><span class="on">見本</span><span>調整</span></div>
+  <p class="ptitle">いまの明かり</p>
+  <div class="now"><span>前明かり 全面</span><span>ホリ 単色<em>調整あり</em></span><span>地明かり＋往復</span><span>ほか1件</span></div>
+  <p class="hint">押すと LX cue 1-1-2 に重なります（元に戻せます）。元のキューを残すなら先に＋新規キュー。</p>
+  <div class="tabs" style="height:34px"><span class="on">明かり 24</span><span>動き 5</span></div>
+  <div class="search">名前で探す…</div>
+  <div class="chips"><span class="on">すべて</span><span>前</span><span>横</span><span>奥</span><span>床</span><span>ホリ</span><span>模様</span></div>
+  <div class="grid">
+    <div class="cardx sel"><div class="img" style="--look:radial-gradient(ellipse 90px 40px at 50% 70%, rgba(242,234,214,.75), rgba(242,234,214,.2) 60%, transparent 80%)"><b>✓ 適用中</b></div><div class="nm">前明かり・全面</div><div class="tg">演技域を前から照らす</div></div>
+    <div class="cardx"><div class="img" style="--look:linear-gradient(to top, rgba(122,184,255,.85), rgba(122,184,255,.6) 70%, rgba(122,184,255,.2)), radial-gradient(ellipse 90px 40px at 50% 70%, rgba(242,234,214,.5), transparent 80%)"><i>ホリを置換</i></div><div class="nm">ホリ・単色</div><div class="tg">背景を一色で染める</div></div>
+    <div class="cardx"><div class="img" style="--look:radial-gradient(ellipse 34px 30px at 50% 62%, rgba(242,234,214,.95), rgba(242,234,214,.25) 60%, transparent 75%), radial-gradient(ellipse 90px 40px at 50% 70%, rgba(242,234,214,.35), transparent 80%)"></div><div class="nm">サススポット・中央</div><div class="tg">中央の狭い範囲を照らす</div></div>
+    <div class="cardx"><div class="img" style="--look:radial-gradient(ellipse 60px 46px at 50% 40%, rgba(242,234,214,.7), rgba(242,234,214,.2) 55%, transparent 75%), radial-gradient(ellipse 90px 40px at 50% 70%, rgba(242,234,214,.35), transparent 80%)"></div><div class="nm">バック</div><div class="tg">奥から輪郭を拾う</div></div>
+    <div class="cardx"><div class="img" style="--look:radial-gradient(ellipse 26px 34px at 12% 60%, rgba(255,210,122,.9), transparent 70%), radial-gradient(ellipse 26px 34px at 88% 60%, rgba(255,210,122,.9), transparent 70%), radial-gradient(ellipse 90px 40px at 50% 70%, rgba(242,234,214,.35), transparent 80%)"></div><div class="nm">サイド・低段</div><div class="tg">足元や脚を横から拾う</div></div>
+    <div class="cardx"><div class="img" style="--look:repeating-radial-gradient(circle at 40% 60%, rgba(255,210,122,.6) 0 3px, transparent 3px 9px), radial-gradient(ellipse 90px 40px at 50% 70%, rgba(242,234,214,.3), transparent 80%)"></div><div class="nm">ゴボ・木漏れ日</div><div class="tg">床へ葉の模様を出す</div></div>
+  </div>
+</div>
+<div class="mockdesc">
+<p><b>寸法（未実測）</b>: パネル外幅305 → 内幅287 → 格子272px。2列、間隔8px。カード132×148（枠1＋画像74＋6＋名前38＋4＋説明16＋8）。画像130×74。名前13.5px×最大2行、説明／タグ11.5px×1行。タブ「明かり／動き」34px。「全部消す」は一覧末尾の文字付き操作。</p>
+<p><b>「いまの明かり」チップ</b>: 見本タブ上部・検索欄より上。1行2個、132×28px、間隔8px、常時最大2行4個、5個以上は「ほかn件」で展開（領域最大140pxで縦スクロール）。押すと対象灯を選択して調整タブを開く。再クリックで消灯・解除・再適用はしない。×ボタンなし。全灯消灯時は「点灯中の明かりなし」。</p>
+<p><b>カードの状態</b>: 乗っていない＝通常枠／適用中＝brass枠＋✓／由来は残るが変更済み＝「適用中・調整あり」（押すとそのカードの対象設定へ戻す）／同じ枠を使う別案＝「ホリを置換」の短い札（即置換・Undo可）／条件を満たさない＝「適用不可」と具体的理由。競合をエラー色で警告し続けず、<b>何が置き換わるかを操作前に読める</b>ようにする。確認ダイアログは挟まない。</p>
+<p><b>色の実測</b>（contrast.mjs 2026-09-14）: milk/desk-2 13.88:1、brass/desk-2 4.62:1、rust-ink/desk-2 4.89:1、#d3ac59/desk-2 7.98:1、#1a1409/brass 4.95:1。新色なし。</p>
+<p class="note">上のカード画像は説明用の色面。製品では<b>いまの明かりにそのカードを重ねた結果</b>の実描画に置き換わる（§7）。</p>
+</div>
+</div>
+
+<h2>6. データ形式（新設 <code>shosai.light-preset</code>）</h2>
+<details open><summary>あるあるカード（setup）の例「ホリ・単色」</summary>
+<pre>{
+  "schema": "shosai.light-preset", "schemaVersion": 1,
+  "id": "cyc.single", "version": 1,
+  "mode": "patch", "operation": "setup",
+  "name": "ホリ・単色", "lead": "背景を一色で染める",
+  "tags": { "place": ["cyc"], "motion": "still" },
+  "rigFamily": "theatre-house-v1",
+  "requires": { "required": [ { "group": "CY.lower", "minCount": 1, "kind": "fixed" },
+                              { "group": "CY.upper", "minCount": 1, "kind": "fixed" } ], "supporting": [] },
+  "scope": { "groups": ["CY.lower", "CY.upper"] },
+  "reset": { "scope": "targetFixtures", "profile": "light-neutral-v1", "groups": "detach-targets-preserving-others" },
+  "choices": { "color": { "default": "#7ab8ff", "options": ["#f2ead6", "#7ab8ff", "#d9483b", "#ffd27a"] } },
+  "zones": { "back": { "surface": "back", "point": { "u": 0.5, "v": 0, "hM": 0 } } },
+  "assignments": [
+    { "id": "lower", "select": { "groups": ["CY.lower"], "rule": "all", "order": ["group","no","id"] },
+      "aim": { "rule": "cyc-native", "zone": "back" },
+      "light": { "on": true, "level": 55, "color": "$color", "surface": "back", "beamDeg": null, "path": { "kind": "still", "a": { "zone": "back" } } } },
+    { "id": "upper", "select": { "groups": ["CY.upper"], "rule": "all" }, "aim": { "rule": "cyc-native", "zone": "back" },
+      "light": { "on": true, "level": 55, "color": "$color", "surface": "back", "beamDeg": null, "path": { "kind": "still", "a": { "zone": "back" } } } }
+  ],
+  "thumbnailTimeMs": 0
+}</pre>
+</details>
+<details><summary>属性だけ（attributes）の例「色を変える」／「全部消す」（reset）</summary>
+<pre>{ "mode": "patch", "operation": "attributes",
+  "scope": { "groups": ["CY.lower", "CY.upper"] },
+  "writes": ["color"], "reset": null, "activate": false }
+
+{ "id": "all.off", "name": "全部消す", "mode": "reset",
+  "reset": { "scope": "cue", "operation": "blackout", "preserveSettings": true } }</pre>
+</details>
+<details><summary>動きカードの例「往復」</summary>
+<pre>{ "id": "move.sweep", "name": "往復", "lead": "床の光を左右へ動かす",
+  "mode": "patch", "operation": "attributes",
+  "scope": { "eligible": { "kind": "moving", "on": true, "surface": "floor", "noLevelTo": true, "noBeamDegTo": true, "fromSelection": "ifAny" } },
+  "writes": ["path", "periodSec", "offsetSec", "groups"], "minTargets": 1,
+  "path": { "kind": "line", "a": { "u": 0.25, "v": 0.60, "hM": 0 }, "b": { "u": 0.75, "v": 0.60, "hM": 0 }, "start": "a", "easing": "ease" },
+  "periodSec": 8, "thumbnailTimeMs": 1500 }</pre>
+</details>
+<h3>適用関数（純関数）</h3>
+<pre>applyPreset({ preset, choices, rig, dims, bindings, scene, cue, selection, timeMs, provenance, applicationId })
+  → { status: "applied"|"noop"|"unsupported"|"unmet",
+      nextCue,          // 入力を変更しない
+      coverage,         // 必須／補助ごとの必要数・該当ID・不足数（対応判定とは別）
+      assignments,      // assignment ID・配置グループ・灯体ID・解決した狙い・実効角度
+      changes,          // 灯体/グループID・属性パス・変更前後・設定/削除（消灯・グループ離脱も含む）
+      nextProvenance }  // その属性を最後に書いた プリセットID・版・assignment ID・適用ID</pre>
+<ul>
+<li>setup の中立化 <code>light-neutral-v1</code>: 対象灯のみ off・level0・共通狙い・静止・終点なし・ゴボ／点滅なし・カッターoff・<code>periodSec=8, offsetSec=0, glare=1</code>。対象灯を動きの組から外し、対象外灯の軌道・位相は保つ。未知フィールドは保持。描画属性を増やしたら契約も更新。</li>
+<li>rig側の値（固定灯の広がり、バーンドア、cycの長さ・到達高さ）は変えない。<code>beamDeg:null</code> は rig の角度を使う意味。</li>
+<li>ID生成は <code>applicationId</code>＋assignment ID から決定（乱数・現在時刻・<code>state.seq</code> を純関数内で使わない）。UI側が現在のシーン／キューを確認して <code>nextCue</code> を入れ、<b>1回だけ commit</b>。同じ結果への再適用は履歴を増やさない。</li>
+</ul>
+
+<h2>7. サムネイルは実描画（境界を先に切る）</h2>
+<p>現行 <code>drawFront3D()</code>（試作 app.js 1767行付近）は <code>state</code>・選択・再生時刻・表示設定を直接読むので、小さい Canvas に呼ぶだけでは独立した描画にならない。2段に分ける:</p>
+<pre>buildLightingFrame(input) → frame          // 評価済みの光源・狙い・着地点・実効角度・濃度・ゴボ角・カッター
+drawFront3DFrame(ctx, frame, viewport, resources) → void   // resources＝人物描画器・ゴボ資源・中間Canvas</pre>
+<div class="scroll"><table>
+<tr><th>描画入力</th><th>いまの参照元</th><th>描画入力</th><th>いまの参照元</th></tr>
+<tr><td>dims</td><td>state.dims</td><td>seat／projection</td><td>state.seat／state.front3d</td></tr>
+<tr><td>rig</td><td>state.rig</td><td>show</td><td>state.show</td></tr>
+<tr><td>cue</td><td>scene().cue</td><td>dim（作業灯）</td><td>state.dim</td></tr>
+<tr><td>pieces</td><td>state.scenes[i].pieces</td><td>lightingVisible</td><td>state.mode==="move"</td></tr>
+<tr><td>curtains</td><td>state.curtains</td><td>selection</td><td>state.sel／selTruss</td></tr>
+<tr><td>timeMs</td><td>state.play.t</td><td>viewport</td><td>sec.cv.width/height, PAD</td></tr>
+<tr><td>levelCurve</td><td>state.levelCurve</td><td>chrome（新設）</td><td>バトン名・目盛り・上下手・視点説明（常時描画分）</td></tr>
+</table></div>
+<p>隠れた参照も外す: <code>litFactorOf/phaseOf/beamOf</code> の時刻と cue、ゴボマスク生成の <code>state.play.t</code>、<code>paintBlackout</code> の <code>state.dim</code>、<code>backlitPieces</code>／<code>borderPieces</code> の rig・pieces・cue・表示条件。</p>
+<p><b>規約（第3ラウンドで修正）</b>: サムネイルは<b>現在の cue にそのカードを適用した結果</b>を、<b>主画面と同じ描画設定</b>（作業灯・視点・表示項目）で描く。前明かりが点いた状態でホリのカードを見れば、前明かりを残した結果が出る。省くのは操作ハンドル・番号・名前・グリッド・軌道・説明文字だけ。前回案の「作業灯なしに統一」は撤回。代表時刻は <code>thumbnailTimeMs</code>。表示中カードから1枚ずつ生成し主画面の操作を優先、動くカードの同時再生はしない。キャッシュキー＝元cue・プリセット版・割当結果・寸法・演者／幕・視点・表示設定・強さカーブ・時刻・画像サイズ・描画版。古い条件の画像を更新済みとして出さない。<b>Safari を含む実時間は未測定</b>。</p>
+
+<h2>8. 選択肢と推奨（本人回答後の整理）</h2>
+<div class="opts">
+<div class="opt rec"><h4>A. 確定案</h4><p>常設イメージの仮想仕込み3種＋あるある30件＋patch既定＋即適用・Undo＋現在の明かりに重ねた実描画サムネイル。</p><p class="ok">本人の3回答（常設イメージ／一般・地上／あるある一つずつ）を全部満たし、既存モデルを壊さない。</p></div>
+<div class="opt"><h4>B. 完成ルック案（第2ラウンド）</h4><p>「青い夜に顔を残す」のような組合せ24件を置換で当てる。</p><p class="stop">本人回答③（ストーリー性不要・一つずつ）と合わないので不採用。組合せは本人が重ねて作る。</p></div>
+<div class="opt"><h4>C. 全ムービング最大リグ案（第1案）</h4><p>小42／中58／大76、SSも床置きもムービング。</p><p class="stop">本人回答①（常設イメージ・無駄なバトンなし）で不採用。バトン全ムービングだけ仮想として残す。</p></div>
+</div>
+<p><b>捨てた案</b>: 色違いを別カードにする（各カードの色選択へ）／取り外せる層（元状態と操作順の保持が必要）／試し表示という中間状態（本人の既存原則と衝突）／主画面の <code>state</code> を一時差し替えてサムネイルを描く方式／見本の更新をキューへ自動伝播（Eos の referenced palette は採らない）／「ピン」という呼び名（追従を連想させるので「サススポット」）。</p>
+
+<h2>9. 根拠・出典と不確実性</h2>
+<h3>事実（確認済み）</h3>
+<ul>
+<li>試作の現状: 2モード（配置／照明デザイン）、仕込みプリセット8種（明かりの状態は含まない）、LX cue（画面＝編集中キューの中身・commit で書き戻し）、<code>mount.type</code> 5種、cue の属性一式。仕込み選択は rig を丸ごと作り直し旧キューの灯体IDを付け替えない（app.js 3640行付近）。ゴボ foliage／window／break-mid は rig-engine.js に定義あり。</li>
+<li>会場プリセット: <code>stage-venues.js</code> の proscenium は 小8×7×6（200席）／中12×9×8（800席）／大18×12×12（1800席）。試作の既定は 12×8×8。</li>
+<li>本体の「光の動き」（<code>stage-light-motion.js</code>）の PRESETS は往復・扇・交差・円・順にの5種（点滅なし）で秒数も異なる → 言葉は揃え、データは統合しない。</li>
+<li>常設の例: 萬劇場（間口7.2m）照明用電動バトン7本・アッパーホリ1列・ボーダー1列（<a href="https://lasens.com/database/theater-597.html" target="_blank" rel="noopener">設備表</a>）／魚沼市響きの森文化会館 小ホール（<a href="https://www.uonumahall.jp/hibiki-info/information/syouho/" target="_blank" rel="noopener">公式</a>・Codex参照）／守山文化小劇場（<a href="https://www.bunka758.or.jp/facility/moriyama/files/pdf/moriyama_syoumei_setubi_2025.pdf" target="_blank" rel="noopener">設備表</a>・Codex参照）／さいたま市文化センター大ホール 1〜5SUS（<a href="https://saitama-culture.jp/sculwp/wp-content/uploads/material_stage_sakurasou_202405.pdf" target="_blank" rel="noopener">舞台資料</a>）。</li>
+<li>ETC Eos: パレットは強さ／位置／色／ビームの4種で参照データ、複数種をまとめるのはプリセット（<a href="https://www.etcconnect.com/WebDocs/Controls/EosFamilyOnlineHelp/en/Content/10_Palettes/About_Palettes.htm" target="_blank" rel="noopener">公式ヘルプ</a>）。grandMA3: selective／global／universal（<a href="https://help.malighting.com/grandMA3/2.2/HTML/presets.html" target="_blank" rel="noopener">公式</a>）。Matt Kizer の <a href="https://scenicandlighting.com/lightlab/" target="_blank" rel="noopener">Online Light Lab</a> は固定リグに位置ごとの明るさ／色スライダー＝本人構想に最も近い実在例。</li>
+<li>色のコントラストは contrast.mjs で実測（§5）。</li>
+</ul>
+<h3>推測・未検証（実装時の実測待ち）</h3>
+<ul>
+<li class="guess">仮想仕込みの座標・高さ・広がりは初期値。3サイズでの前明かり・地明かりの覆い方、スポット・ゴボの大きさは実描画で調整。</li>
+<li class="guess">バック・転がし・人物の影絵の描画が現在の近似で意図した違いに見えるか。</li>
+<li class="guess">対象灯だけのグループ再編で対象外灯の位相・軌道が変わらないこと。色変更→動き追加→別カードへ置換→消灯→Undo を連続したときの設定と由来表示の一致。</li>
+<li class="guess">保存・再読込を通した配置対応表と由来メタデータの保持。</li>
+<li class="guess">Safari を含むサムネイル生成負荷、305px幅での文字の収まり、チップ展開とスクロールの操作性。「2週間」は工数仮説。</li>
+</ul>
+
+<h2>10. 影響範囲・制約</h2>
+<ul>
+<li>製品本体（stage-sketch.js 等）には触れない。試作 <code>docs/…/prototype/</code> への追加のみ。試作は <code>docs/</code> 配下の独立物なので BETA_UPDATE_SAFETY の停止条件には当たらない（本体統合時に効く）。</li>
+<li>既存rigがある照明設計で「ビジュアルから作る」を押したときは別案として開始し、既存キューを消さない。保存形式 <code>shosai.light-design</code> にプリセット由来を足すときは古いファイルを下書き扱いで読めるようにする。</li>
+<li class="stop">運用上の事故（2026-09-14 01:34）: 別セッションの <code>git stash</code>（未追跡込み）＋rebase で、このフォルダの旧名 <code>visual-first-presets/</code> と <code>HANDOFF.md</code> 等が一時的に消えた。stash から読み出して復旧し本フォルダ名にした。その後 stash が戻され旧フォルダが古い版で復活（競合コピー「〜 2.md」含む）。旧フォルダは重複なので本人確認のうえ削除可（notes.md 事故記録）。控えは iCloud直下 <code>claude-files-archives/shosai-light-presets-2026-09-14/</code>。</li>
+</ul>
+
+<h2>11. 次の行動（実装は別セッションとの競合が解けてから）</h2>
+<table>
+<tr><th>順</th><th>作るもの</th><th>検証</th></tr>
+<tr><td>1</td><td>仮想仕込み3種の生成（RIG_PRESETS の仲間・<code>bindings</code> 付き）、WASH／SPECIAL／BACK／FL の対応表、固定灯の共通狙い、<code>applyPreset</code>（JSON＋純関数・setup／attributes／reset）</td><td>node --test で割当・中立化・changes・対象外灯の不変を単体テスト。3サイズで要素数 34/54/70</td></tr>
+<tr><td>2</td><td>性格の離れた6件（前明かり全面／ホリ単色／サイド低段／バック／サススポット中央／往復）、右パネル「見本」タブ、即commit・Undo、「いまの明かり」チップ、toast に対象キュー番号</td><td>重ねる→置換→Undo で戻る実測。既存キューが消えないこと</td></tr>
+<tr><td>3</td><td>描画入力の引数化（buildLightingFrame／drawFront3DFrame）、サムネイル生成とキャッシュ</td><td>主画面の画素が変わらないこと（差分0）。生成時間を Chromium／Safari で実測</td></tr>
+<tr><td>4</td><td>30件へ拡張、色選択・上下手選択、絞り込み・検索、書出／再読込に由来を追加</td><td>30件の実描画を目視・画素で確認。旧ファイルの読込</td></tr>
+<tr><td>5</td><td>3サイズでの比較、Safari 実機、HANDOFF.md へ追記</td><td>design-lint（コントラスト・タップ44px・aria-label）</td></tr>
+</table>
+<p class="note">夜間実行の適性: 1・3・4の単体テストと画素実測は無人で回せる。2の導線とデザインの判断は日中に本人確認。</p>
+
+<p class="meta">ファイル: <code>docs/light-rig-design-2026-09-11/visual-presets-2026-09-14/</code>（DECISION.html・notes.md・codex-prompt-round1〜3.md・codex-round1〜3.answer.md・log）／<code>design/TOKEN_SHEET_light-presets_2026-09-14.md</code>／Obsidian: <code>obsidian-vault/ideas/2026-09-14_舞台スケッチ照明_フルリグと見本ギャラリー_Claude×Codexブレスト.md</code></p>
+</main>
+<script>
+(function(){
+  const SPEC = {
+    small:{W:8,D:7,H:6,battens:[["B1",0.65],["B2",0.22]],batH:5.0,nB:6,areaAims:[[0.2,0.4],[0.5,0.4],[0.8,0.4]],ahead:{0.75:2.5,0.4:1.5},fr:{u:[0.04],ahead:2,h:5},ssV:[0.32,0.68],floorRear:0,cycReach:3.6},
+    mid:{W:12,D:9,H:8,battens:[["B1",0.78],["B2",0.50],["B3",0.22]],batH:6.5,nB:8,areaAims:[[0.2,0.75],[0.8,0.75],[0.2,0.4],[0.5,0.4],[0.8,0.4]],ahead:{0.75:3.5,0.4:2.0},fr:{u:[0.03,0.09],ahead:2.5,h:6},ssV:[0.32,0.68],floorRear:2,cycReach:4.8},
+    large:{W:18,D:12,H:12,battens:[["B1",0.78],["B2",0.50],["B3",0.22]],batH:8.5,nB:10,areaAims:[[0.2,0.75],[0.8,0.75],[0.14,0.4],[0.32,0.4],[0.5,0.4],[0.68,0.4],[0.86,0.4]],ahead:{0.75:4.5,0.4:2.5},fr:{u:[0.02,0.06,0.10],ahead:3,h:8},ssV:[0.25,0.5,0.75],floorRear:2,cycReach:7.2}
+  };
+  const COL = {front:"#ffd27a",fr:"#ffb347",B1:"#f2ead6",B2:"#d3ac59",B3:"#7ab8ff",ss:"#8be08b",floor:"#ff7a5c",cyc:"#d98cf0"};
+  const U = (n,a,b)=> n<=1?[0.5]:Array.from({length:n},(_,i)=>a+(b-a)*i/(n-1));
+  function build(s){
+    const f=[]; const W=s.W,D=s.D;
+    const front=(q)=>{ const ah=s.ahead[q[1]]; const h=1.2+Math.sqrt(Math.pow(0.12*W,2)+Math.pow(ah+(1-q[1])*D,2)); return [{g:"front",u:q[0]-0.12,ahead:ah,h},{g:"front",u:q[0]+0.12,ahead:ah,h}]; };
+    f.push(...front([0.5,0.75]).map(x=>({...x,center:true})));
+    s.areaAims.forEach(q=>f.push(...front(q)));
+    s.fr.u.forEach(u=>{f.push({g:"fr",u,ahead:s.fr.ahead,h:s.fr.h});f.push({g:"fr",u:1-u,ahead:s.fr.ahead,h:s.fr.h});});
+    s.battens.forEach(([g,v])=>U(s.nB,0.10,0.90).forEach(u=>f.push({g,u,v,h:s.batH,mv:true})));
+    s.ssV.forEach(v=>["l","r"].forEach(side=>{f.push({g:"ss",side,v,h:0.55});f.push({g:"ss",side,v,h:2.4});}));
+    if(s.floorRear) [0.30,0.70].forEach(u=>f.push({g:"floor",u,v:0.6/D,mv:true}));
+    f.push({g:"floor",u:0.5/W,v:0.8/D,mv:true},{g:"floor",u:1-0.5/W,v:0.8/D,mv:true});
+    return f;
+  }
+  function drawPlan(s,f){
+    const svg=document.getElementById("plan"); const NS="http://www.w3.org/2000/svg";
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const el=(t,a,txt)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;svg.appendChild(e);return e;};
+    const px=Math.min(560/s.W, 300/s.D); const sx=500-s.W*px/2, sy=80; const X=u=>sx+u*s.W*px, Y=v=>sy+v*s.D*px;
+    el("rect",{x:sx,y:sy,width:s.W*px,height:s.D*px,fill:"#16171a",stroke:"#9c823f","stroke-width":2});
+    el("text",{x:500,y:sy-40,fill:"#efe7d6","font-size":16,"text-anchor":"middle"},`平面図（真上から）— ${s.W}×${s.D}m・照明バトン${s.battens.length}本`);
+    el("text",{x:sx,y:sy-14,fill:"#9c823f","font-size":13},"奥の壁 → ホリゾント 下・上（各1列）");
+    el("text",{x:500,y:Y(1)+18,fill:"#9c823f","font-size":13,"text-anchor":"middle"},"舞台の手前（この先が客席）");
+    el("text",{x:sx-8,y:Y(1)+18,fill:"#9c823f","font-size":13,"text-anchor":"end"},"下手");
+    el("text",{x:X(1)+8,y:Y(1)+18,fill:"#9c823f","font-size":13},"上手");
+    el("rect",{x:X(0.05),y:Y(0.02)-3,width:s.W*px*0.9,height:6,fill:COL.cyc,opacity:.8});
+    s.battens.forEach(([g,v])=>{el("line",{x1:X(-0.02),y1:Y(v),x2:X(1.02),y2:Y(v),stroke:"rgba(156,130,63,.75)","stroke-width":3});el("text",{x:X(1.02)+6,y:Y(v)+4,fill:"#9c823f","font-size":12},`バトン${g.slice(1)} h${s.batH}m`);});
+    const FRONT_DY=52, SIDE_DX=44;
+    f.forEach(o=>{
+      let x,y,shape="c";
+      if(o.g==="front"){x=X(o.u);y=Y(1)+FRONT_DY;shape="t";}
+      else if(o.g==="fr"){x=X(o.u);y=Y(1)+FRONT_DY-22;shape="t";}
+      else if(o.g==="ss"){x=o.side==="l"?sx-SIDE_DX:X(1)+SIDE_DX;y=Y(o.v)+(o.h<1?6:-6);shape="d";}
+      else if(o.g==="floor"){x=X(o.u);y=Y(o.v);}
+      else {x=X(o.u);y=Y(o.v);shape="s";}
+      const c=COL[o.g];
+      if(o.mv) el("circle",{cx:x,cy:y,r:9,fill:"none",stroke:c,"stroke-width":1.5,opacity:.8});
+      if(shape==="c") el("circle",{cx:x,cy:y,r:5,fill:c});
+      else if(shape==="s") el("rect",{x:x-5,y:y-5,width:10,height:10,fill:c});
+      else if(shape==="t") el("path",{d:`M${x} ${y-6} L${x+6} ${y+5} L${x-6} ${y+5}Z`,fill:c,stroke:o.center?"#df6433":"none","stroke-width":2});
+      else el("path",{d:`M${x} ${y-6} L${x+6} ${y} L${x} ${y+6} L${x-6} ${y}Z`,fill:c});
+    });
+    el("text",{x:500,y:Y(1)+FRONT_DY+22,fill:COL.front,"font-size":12,"text-anchor":"middle"},"▲ シーリング（赤枠＝中央専用の1組）・両端の▲＝フロントサイド・実距離は表の ahead");
+    el("text",{x:sx-SIDE_DX,y:Y(0)-10,fill:COL.ss,"font-size":12,"text-anchor":"middle"},"SS 低/高");
+    el("text",{x:X(1)+SIDE_DX,y:Y(0)-10,fill:COL.ss,"font-size":12,"text-anchor":"middle"},"SS 低/高");
+    const counts=f.length; el("text",{x:500,y:Y(1)+FRONT_DY+44,fill:"#efe7d6","font-size":13,"text-anchor":"middle"},`通常灯体 ${counts} ＋ ホリゾント2列 ＝ ${counts+2} 要素`);
+  }
+  function drawSide(s,f){
+    const svg=document.getElementById("side"); const NS="http://www.w3.org/2000/svg";
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const el=(t,a,txt)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;svg.appendChild(e);return e;};
+    const maxAhead=Math.max(...Object.values(s.ahead), s.fr.ahead); const maxH=Math.max(s.H, ...f.filter(o=>o.g==="front").map(o=>o.h))+0.5;
+    const px=Math.min(860/(s.D+maxAhead+1), 300/maxH); const x0=70+(maxAhead+0.5)*px; const y0=360;
+    const X=y=>x0 + y*px; const Y=h=>y0 - h*px;
+    el("text",{x:500,y:26,fill:"#efe7d6","font-size":16,"text-anchor":"middle"},"側面図（下手から見る）— 左が客席、右が奥壁");
+    el("rect",{x:X(0),y:Y(s.H),width:s.D*px,height:s.H*px,fill:"#16171a",stroke:"#9c823f","stroke-width":2});
+    el("line",{x1:X(-maxAhead-0.5),y1:y0,x2:X(s.D)+2,y2:y0,stroke:"#9c823f","stroke-width":2});
+    el("text",{x:X(s.D)+8,y:Y(s.H/2),fill:"#9c823f","font-size":12},"奥壁");
+    el("text",{x:X(-maxAhead/2),y:y0+18,fill:"#9c823f","font-size":12,"text-anchor":"middle"},"客席側");
+    [0,1.2,2.4,s.batH,s.H].forEach(h=>{el("line",{x1:X(0),y1:Y(h),x2:X(s.D),y2:Y(h),stroke:"rgba(240,231,214,.12)"});el("text",{x:X(s.D)+40,y:Y(h)+4,fill:"rgba(240,231,214,.6)","font-size":11},`${h}m`);});
+    const pv=(1-0.75)*s.D; el("rect",{x:X(pv)-6,y:Y(1.7),width:12,height:1.7*px,fill:"rgba(240,231,214,.25)"}); el("text",{x:X(pv),y:y0+16,fill:"rgba(240,231,214,.7)","font-size":11,"text-anchor":"middle"},"演者(中央前)");
+    s.battens.forEach(([g,v])=>{const y=(1-v)*s.D; el("rect",{x:X(y)-5,y:Y(s.batH)-5,width:10,height:10,fill:COL[g]}); el("circle",{cx:X(y),cy:Y(s.batH),r:9,fill:"none",stroke:"#efe7d6",opacity:.6}); el("text",{x:X(y),y:Y(s.batH)-14,fill:"#9c823f","font-size":11,"text-anchor":"middle"},`バトン${g.slice(1)}`);});
+    const seen=new Set();
+    f.filter(o=>o.g==="front").forEach(o=>{const k=o.ahead+":"+o.h.toFixed(2); if(seen.has(k))return; seen.add(k); const x=X(-o.ahead), y=Y(o.h); el("path",{d:`M${x} ${y-6} L${x+6} ${y+5} L${x-6} ${y+5}Z`,fill:COL.front,stroke:o.center?"#df6433":"none","stroke-width":2}); el("text",{x:x,y:y-10,fill:COL.front,"font-size":11,"text-anchor":"middle"},`CL ahead ${o.ahead}m / h ${o.h.toFixed(1)}m`); if(o.center){ el("line",{x1:x,y1:y,x2:X(pv),y2:Y(1.2),stroke:"#df6433","stroke-dasharray":"4 4"}); }});
+    { const x=X(-s.fr.ahead), y=Y(s.fr.h); el("path",{d:`M${x} ${y-6} L${x+6} ${y+5} L${x-6} ${y+5}Z`,fill:COL.fr}); el("text",{x:x,y:y+18,fill:COL.fr,"font-size":11,"text-anchor":"middle"},`FR ahead ${s.fr.ahead}m / h ${s.fr.h}m`); }
+    el("text",{x:X(-maxAhead/2),y:Y(1.2)-4,fill:"#df6433","font-size":11,"text-anchor":"middle"},"仰角45°（中央専用）");
+    s.ssV.forEach(v=>{const y=(1-v)*s.D; [0.55,2.4].forEach(h=>{el("path",{d:`M${X(y)} ${Y(h)-6} L${X(y)+6} ${Y(h)} L${X(y)} ${Y(h)+6} L${X(y)-6} ${Y(h)}Z`,fill:COL.ss}); }); el("line",{x1:X(y),y1:y0,x2:X(y),y2:Y(2.4),stroke:COL.ss,"stroke-width":1,opacity:.5});});
+    const ssFront=(1-Math.max(...s.ssV))*s.D;
+    el("text",{x:X(ssFront)-10,y:Y(0.55)+4,fill:COL.ss,"font-size":11,"text-anchor":"end"},"SS低 0.55m");
+    el("text",{x:X(ssFront)-10,y:Y(2.4)+4,fill:COL.ss,"font-size":11,"text-anchor":"end"},"SS高 2.4m");
+    if(s.floorRear){ el("circle",{cx:X(s.D-0.6),cy:Y(0.3),r:5,fill:COL.floor}); el("circle",{cx:X(s.D-0.6),cy:Y(0.3),r:9,fill:"none",stroke:COL.floor,opacity:.8}); el("text",{x:X(s.D-0.6),y:Y(0.3)-14,fill:COL.floor,"font-size":11,"text-anchor":"middle"},"転がし（奥端）"); }
+    el("rect",{x:X(s.D)-8,y:Y(s.cycReach),width:6,height:s.cycReach*px,fill:COL.cyc,opacity:.6}); el("rect",{x:X(s.D)-8,y:Y(s.H),width:6,height:s.cycReach*px,fill:COL.cyc,opacity:.6}); el("text",{x:X(s.D)-14,y:Y(s.cycReach)-6,fill:COL.cyc,"font-size":11,"text-anchor":"end"},`ホリ 届く高さ ${s.cycReach}m`);
+  }
+  function legend(){document.getElementById("legend").innerHTML=[["front","▲ シーリング（固定）"],["fr","▲ フロントサイド（固定）"],["B1","■ バトン1"],["B2","■ バトン2"],["B3","■ バトン3（全ムービング）"],["ss","◆ SS 固定 低/高"],["floor","● 転がし（ムービング）"],["cyc","ホリゾント"]].map(([k,t])=>`<span><i style="background:${COL[k]}"></i>${t}</span>`).join("")+"<span>◎ 輪＝ムービング</span>";}
+  function render(key){const s=SPEC[key]; const f=build(s); drawPlan(s,f); drawSide(s,f); document.querySelectorAll(".sizetabs button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.size===key)));}
+  document.querySelectorAll(".sizetabs button").forEach(b=>b.onclick=()=>render(b.dataset.size));
+  legend(); render("mid");
+})();
+</script>
+</body>
+</html>

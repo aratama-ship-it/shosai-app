@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "18 shape/color combinations, numeric size, corner drag, reload and auto height preserve text and appearance",
+    "Explicit owner sharing includes the styled note in the image; source show remains unchanged",
+    "Japanese/English controls at four widths retain 44px targets, labels, text sizes and saved notes",
+    "Touch shape/color selection and corner resize work in mobile simulation"
+  ],
+  "errors": [],
+  "physicalDevice": false,
+  "url": "http://127.0.0.1:8867/study?lang=ja#78912a6f690d5fe038f6261742d990700e77ef7540f703c5"
+}

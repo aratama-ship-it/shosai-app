@@ -1,0 +1,46 @@
+{
+  "stage.html": {
+    "sha256": "919989219f4bf464b30797256cb6309ed97b0f5c3d406ad51ce02594d701eb23",
+    "mtime": 1789323858.3989332
+  },
+  "index.html": {
+    "sha256": "b408bdf78b11eb5c5fc438d69524052869b61c4a52bfd50996aec94fb2dcfd97",
+    "mtime": 1789211222.1071289
+  },
+  "stage-sketch.js": {
+    "sha256": "c153e84a087b6c87c1f1ebf6ed1d232740db604fc25ae83ce74f1047adad2a78",
+    "mtime": 1789323793.0287957
+  },
+  "stage-timeline.js": {
+    "sha256": "bf00adf0bfa7c08331c8e8004f23717ce7ff5541519a4c4d4ff67a4a70d7c63e",
+    "mtime": 1789322342.7092805
+  },
+  "style.css": {
+    "sha256": "3f9157769c6b1f1624a9f13d4a5fd12218f57152d2a850af6964d621a23d0f82",
+    "mtime": 1789323793.1099353
+  },
+  "stage-sw.js": {
+    "sha256": "54f62d798a57ce253cde94636da4e7ac63ac5dc0ec5f370f6a16404281ed0cfd",
+    "mtime": 1789323858.4735703
+  },
+  "stage-audio-store.js": {
+    "sha256": "199d30808ac9242040c4967cc7d75dbb1db98aa1717e91e019ed2a9e96fa654f",
+    "mtime": 1787420301.2033694
+  },
+  "stage-session.js": {
+    "sha256": "939723ca8c13892b4a20886c22ca274c2189ce676c59dccdc457c3e1f4d8785c",
+    "mtime": 1789303962.0015287
+  },
+  "worker.js": {
+    "sha256": "8c500fdca5161096409ffbe6bd8653d36f91c686afb8a593a75f6a98ae5f6e89",
+    "mtime": 1789213696.9375947
+  },
+  "build_stage.py": {
+    "sha256": "d1cee3430044720c89f447486645fd701277aa37478f2760537e7d9bdac3d120",
+    "mtime": 1789211279.9813392
+  },
+  "formation/prototype/record-from-video.html": {
+    "sha256": "558b9712b243884998ba619cbde3220ad3c105eac46fcb225cdc4b731a88adf8",
+    "mtime": 1789317249.8141117
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "all12SamplesMatch": true,
+      "allEnglishSegmentsMatch": true,
+      "allFieldsFit": true,
+      "noHorizontalOverflow": true,
+      "navigation": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "all12SamplesMatch": true,
+      "allEnglishSegmentsMatch": true,
+      "allFieldsFit": true,
+      "noHorizontalOverflow": true,
+      "navigation": true
+    }
+  ],
+  "exports": {
+    "txtAll12SamplesAndEdit": true,
+    "omissionDisclosure": true,
+    "jsonRetainsBaselinesAndSources": true,
+    "revisionSeparate": true,
+    "adoptionUnchanged": true
+  },
+  "focusedCurrentRevision": {
+    "sceneId": "RJ-SAMPLE-10",
+    "lineCount": 8,
+    "dialogueLineCount": 0,
+    "stageDirectionLineCount": 8,
+    "keyBeatsVisible": [
+      "Friar John carries Romeo's sealed letter audience-left",
+      "Romeo returns from audience-left toward the audience-right Capulet tomb",
+      "They cross at center without noticing or turning",
+      "The unopened letter and Romeo continue in opposite directions"
+    ],
+    "sourceDepartureDisclosed": true,
+    "directionNotebook": {
+      "sceneId": "RJ-DIR-10",
+      "onlyOnStageCharacters": [
+        "FRIAR_JOHN",
+        "ROMEO"
+      ],
+      "friarLawrenceAbsent": true,
+      "friarJohnPath": "center_to_audience_left",
+      "romeoPath": "audience_left_to_audience_right_capulet_tomb",
+      "crossingPoint": "center",
+      "mutualRecognition": false,
+      "circusExpression": {
+        "intent": "metaphorical_chase",
+        "literalPursuit": false,
+        "dramaticPursuitActing": false,
+        "proposedMechanism": "time_offset_movement_canon_with_timing_or_level_near_miss",
+        "techniqueSelection": "unresolved"
+      },
+      "globalConventionVisible": true,
+      "retainedFeedbackVisible": true,
+      "unresolvedStagingChoices": 7,
+      "checkedAt": [
+        {
+          "width": 1440,
+          "height": 900,
+          "noHorizontalOverflow": true
+        },
+        {
+          "width": 390,
+          "height": 844,
+          "noHorizontalOverflow": true
+        }
+      ]
+    },
+    "checkedAt": [
+      {
+        "width": 1440,
+        "height": 900,
+        "textareaFits": true,
+        "noHorizontalOverflow": true
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "textareaFits": true,
+        "noHorizontalOverflow": true
+      }
+    ],
+    "consoleErrorsOrWarnings": 0
+  },
+  "focusedDirectionRevision": {
+    "sceneId": "RJ-DIR-11",
+    "spatialMode": "simultaneous_split_stage",
+    "referenceFrame": "audience_view",
+    "zonesVisible": {
+      "audienceLeft": "capulet_churchyard_and_tomb",
+      "stageCenter": "non_interference_boundary",
+      "audienceRight": "separate_place_exact_location_unresolved"
+    },
+    "globalConventionOverrideVisible": true,
+    "rightSideFriarLawrenceProposalVisible": true,
+    "proposalSeparatedFromUserDirection": true,
+    "sourceArrivalPreserved": true,
+    "unresolvedStagingChoices": 7,
+    "checkedAt": [
+      {
+        "width": 1440,
+        "height": 900,
+        "noHorizontalOverflow": true
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "noHorizontalOverflow": true
+      }
+    ],
+    "consoleErrorsOrWarnings": 0
+  },
+  "browserVersion": "151.0.7922.34",
+  "pageErrors": []
+}

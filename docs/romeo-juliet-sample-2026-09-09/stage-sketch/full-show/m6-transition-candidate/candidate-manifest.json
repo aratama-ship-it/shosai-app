@@ -1,0 +1,52 @@
+{
+  "kind": "stage-sketch-transition-candidate-manifest",
+  "version": 1,
+  "status": "owner_approved_sample_candidate",
+  "generatedAt": "2026-09-12T09:00:17.471487+00:00",
+  "sourceNativeSha256": "7086d75a843a0ea7253d3dd630defe994cf491432aabcc19e7774d5000a5d780",
+  "sourceDecisionSha256": "f15c0d42cc70f4e33d840425a40297e8df5c7c6d8e512d62621e9752db0c64d9",
+  "ownerApprovalSha256": "cb81b4f5ef0c4667f95de020e7252efc4196fe023d80d05008416de71aed8334",
+  "candidateSha256": "815971b60c2604a29719784a3a84e0a7594299a4fb5066adb615260849b65735",
+  "sourceCounts": {
+    "sectionsAndScenes": 31,
+    "scenes": 28,
+    "cast": 10,
+    "sets": 13
+  },
+  "candidateCounts": {
+    "sectionsAndScenes": 34,
+    "scenes": 31,
+    "cast": 10,
+    "sets": 13
+  },
+  "insertedSceneIds": [
+    "rj-frame-rj-cond-01-b-m6-01",
+    "rj-frame-rj-cond-01-b-m6-02",
+    "rj-frame-rj-cond-01-b-m6-03"
+  ],
+  "maskCounts": {
+    "rj-frame-rj-cond-01-b-m6-01": 4,
+    "rj-frame-rj-cond-01-b-m6-02": 8,
+    "rj-frame-rj-cond-01-b-m6-03": 10,
+    "rj-frame-rj-cond-01-c-01": 10
+  },
+  "barCounts": {
+    "rj-frame-rj-cond-01-b-m6-01": 0,
+    "rj-frame-rj-cond-01-b-m6-02": 1,
+    "rj-frame-rj-cond-01-b-m6-03": 1,
+    "rj-frame-rj-cond-01-c-01": 1
+  },
+  "carrierRoles": [
+    "FRIAR_LAWRENCE",
+    "FRIAR_JOHN"
+  ],
+  "approvedChoices": {
+    "M6-C1": "A",
+    "M6-C2": "A",
+    "M6-C3": "A"
+  },
+  "unknownsPreserved": 5,
+  "productChanges": 0,
+  "sourceSampleChanges": 0,
+  "realCaseEvidence": 0
+}

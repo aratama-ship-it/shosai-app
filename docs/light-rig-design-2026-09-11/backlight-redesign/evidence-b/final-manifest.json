@@ -1,0 +1,25 @@
+{
+  "at": "2026-09-14T03:08:58.087017+00:00",
+  "scope": "local option B only; no publication",
+  "files": {
+    "prototype-b/volume-light.js": "5b94966bdd5b39d81c4fb07ccd1d34593fea6d21d6a140dc1a91ce9c0a0fa786",
+    "prototype-b/light-presets-ui.js": "3f63cc0e0e82ef92b458e34ee27ee6762927d2a245e1298b80b46af91593cbd9",
+    "prototype-b/stage-figure.js": "2b4bcc60ae38fff8fc96cde793865adb32120d6ceba7744e2f4492fe04f54fa5",
+    "prototype-b/light-presets.js": "fb83c21851b59cbedbdc14bd1cf027c8f2486542136e447c1ea231de7e4a1551",
+    "prototype-b/rig-engine.js": "659b97111380eff19d8b6757a31232c83666e759a860529d08f5afd161257999",
+    "prototype-b/app.js": "bbebd014ac6bd601c0c0d5bd87da77f08ad7eec427934873bd309f5dac732705",
+    "prototype-b/index.html": "1341c6714571b778b37da474136de607fcbadc6addeb0a02a77f4ce5f07b076e",
+    "REVIEW_B.html": "4047a5aad4fb6908282e1cbd16d3e58facfc6cb6d32d8b629818c92b06f12d95",
+    "notes.md": "958ca9b7e4b566f3b46aff945092524c7c983be03969e5d8f21cfbb8ffb786a1",
+    "TOKENS_B.md": "f47e70154489cc7fe4f5f9f0c702a29ab121bfb573ee332a0bdb39b79a9110f3"
+  },
+  "checks": {
+    "unit": 35,
+    "regression": "180 conditions across Chromium/WebKit",
+    "optimization": "90 per engine; raw buffers equal, repeated final pixels stable",
+    "storage": "both engines pass",
+    "quality": "both engines pass",
+    "nativeSafari": "front/back visibility, haze and metric toggle observed",
+    "mobile390": "viewport override did not apply; not verified"
+  }
+}

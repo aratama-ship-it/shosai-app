@@ -1,0 +1,65 @@
+{
+  "environment": "Headless Chromium; temporary isolated context; service worker blocked; synthetic data only",
+  "errors": [
+    "Cannot read properties of undefined (reading 'project')"
+  ],
+  "defaultTransitionAfter180ms": {
+    "scene": "audit-s2",
+    "u": 0.8,
+    "position": "0:00"
+  },
+  "pausedTransitionStart": {
+    "scene": "audit-s2",
+    "u": 0.8,
+    "animU": 0.2054948706369398,
+    "position": "0:01.3"
+  },
+  "pausedTransitionLater": {
+    "scene": "audit-s2",
+    "u": 0.8,
+    "animU": 0.5536767138385639,
+    "position": "0:01.3"
+  },
+  "countControls": [
+    {
+      "id": "bpm",
+      "disabled": true,
+      "hidden": false
+    },
+    {
+      "id": "auto-bpm",
+      "disabled": true,
+      "hidden": false
+    },
+    {
+      "id": "metronome",
+      "disabled": true,
+      "hidden": false
+    }
+  ],
+  "sameIdImport": {
+    "errors": [
+      "Cannot read properties of undefined (reading 'project')"
+    ],
+    "modalStillOpen": true
+  },
+  "unknownFields": {
+    "project": false,
+    "scene": false
+  },
+  "backupFailureBefore": {
+    "warning": "旧シーン構造の控えを保存できなかったため、変換後の自動保存を止めました。ファイルへ書き出してから、もう一度開いてください。",
+    "rows": [
+      "scene",
+      "scene"
+    ]
+  },
+  "backupFailureAfter": {
+    "rows": [
+      "section",
+      "scene",
+      "scene"
+    ],
+    "backupKeys": []
+  }
+}

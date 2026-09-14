@@ -1,0 +1,22 @@
+[
+  "tests/session-room.test.mjs",
+  "tests/stage-audio.test.mjs",
+  "tests/stage-formation-integration.test.mjs",
+  "tests/stage-pwa-offline-warm.test.mjs",
+  "tests/stage-pwa.test.mjs",
+  "tests/stage-session-guest-op.test.mjs",
+  "tests/stage-session-i18n.test.mjs",
+  "tests/stage-session-mac-bridge.test.mjs",
+  "tests/stage-session-polish.test.mjs",
+  "tests/stage-session-resume.test.mjs",
+  "tests/stage-session-shelve.test.mjs",
+  "tests/stage-timeline-mode.test.mjs",
+  "tests/stage-ui-batch.test.mjs",
+  "tests/storage-migration.test.mjs",
+  "tests/worker-beta-status.test.mjs",
+  "tests/worker-beta-venues.test.mjs",
+  "tests/worker-guest-accounts-verify.test.mjs",
+  "tests/worker-guest-scope.test.mjs",
+  "tests/worker-public-assets.test.mjs",
+  "tests/worker-session-login.test.mjs"
+]

@@ -1,0 +1,9 @@
+{
+  "passed": 4,
+  "checks": [
+    "Q sheet jumps to imported PDF page",
+    "Q jump focuses PDF after asynchronous page display",
+    "Q jump scrolls the highlighted anchor into view",
+    "Q jump does not perform stage GO"
+  ]
+}

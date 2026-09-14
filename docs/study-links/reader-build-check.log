@@ -1,0 +1,10 @@
+JavaScript syntax: 19 files passed
+build_stage.py syntax passed
+build_study.py syntax passed
+build_public.py syntax passed
+study-frame.html matches index.html
+stage.html は index.html と揃っています
+PASS python3 build_stage.py --check
+try.html と配信フォルダ public-dist/ は正本と揃っています
+PASS python3 build_public.py --check
+PASS git diff --check

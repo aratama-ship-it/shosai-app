@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>舞台スケッチ｜改訂を必要な担当へ届け直す仕組み — 設計研究 2026-09-11</title>
+<style>
+:root{--paper:#efe7d6;--page:#fffaf0;--ink:#2b2620;--muted:#6a604e;--desk:#201b16;--accent:#8f3e1e;--line:#9c8d73;--tint:#e6dcc4;
+--h1:32px;--h2:24px;--h3:18px;--body:16px;--small:14px;--s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px;--width:1184px;--touch:44px;--radius:4px;--stroke:1px;--rule:3px}
+*{box-sizing:border-box}
+html{scroll-behavior:auto}
+body{margin:0;background:var(--paper);color:var(--ink);font:var(--body)/1.75 "Hiragino Sans","Yu Gothic",system-ui,sans-serif}
+main{max-width:var(--width);margin:auto;padding:var(--s6)}
+h1,h2,h3,p{margin:0}
+h1{font-size:var(--h1);line-height:1.5}
+h2{font-size:var(--h2);line-height:1.5;margin-top:var(--s7);padding-top:var(--s5);border-top:var(--stroke) solid var(--line)}
+h3{font-size:var(--h3);line-height:1.5;margin-top:var(--s5)}
+p{margin-top:var(--s3)}
+.kicker{font-size:var(--small);color:var(--muted)}
+.lede{font-size:var(--h3);margin-top:var(--s4)}
+.status{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s4);font-size:var(--small)}
+.status span{border:var(--stroke) solid var(--line);padding:var(--s1) var(--s3);background:var(--page)}
+.status .warn{border-left:var(--rule) solid var(--accent)}
+.decide{margin-top:var(--s5);border:var(--stroke) solid var(--desk);background:var(--page);padding:var(--s4)}
+.decide ol{margin:var(--s3) 0 0;padding-left:1.4em}
+.decide li{margin-top:var(--s2)}
+.decide strong{color:var(--accent)}
+ul,ol{margin:var(--s3) 0 0;padding-left:1.4em}
+li{margin-top:var(--s1)}
+.note{border-left:var(--rule) solid var(--accent);padding-left:var(--s4);margin-top:var(--s4)}
+.box{background:var(--page);border:var(--stroke) solid var(--line);padding:var(--s4);margin-top:var(--s4)}
+.box.tint{background:var(--tint);border-color:var(--desk)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4);margin-top:var(--s4)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4);margin-top:var(--s4)}
+.card{background:var(--page);border:var(--stroke) solid var(--line);padding:var(--s4)}
+.card h3{margin-top:0}
+.card.pick{border:2px solid var(--desk)}
+table{width:100%;border-collapse:collapse;margin-top:var(--s4);background:var(--page);font-size:var(--small);line-height:1.6}
+th,td{border:var(--stroke) solid var(--line);padding:var(--s2) var(--s3);vertical-align:top;text-align:left}
+th{background:var(--tint)}
+caption{text-align:left;caption-side:top;font-size:var(--small);color:var(--muted);padding:0 0 var(--s2)}
+.wrap{overflow-x:auto;margin-top:var(--s4)}
+.wrap table{margin-top:0;min-width:900px}
+code{font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tint);padding:0 var(--s1);border-radius:var(--radius)}
+pre{font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--page);border:var(--stroke) solid var(--line);padding:var(--s3);overflow-x:auto;margin:var(--s3) 0 0}
+.tag{display:inline-block;border:var(--stroke) solid var(--line);padding:0 var(--s2);font-size:13px;line-height:1.6;background:var(--page);white-space:nowrap}
+.tag.syn{border-color:var(--accent);color:var(--accent)}
+.tag.field{border-color:var(--desk);background:var(--tint)}
+.controls{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s4)}
+.controls button{min-height:var(--touch);min-width:var(--touch);padding:var(--s2) var(--s4);font:inherit;font-size:var(--small);background:var(--page);color:var(--ink);border:var(--stroke) solid var(--desk);border-radius:var(--radius);cursor:pointer}
+.controls button[aria-pressed="true"]{background:var(--desk);color:var(--paper)}
+.controls button:focus-visible,a:focus-visible,summary:focus-visible{outline:var(--rule) solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.scn{margin-top:var(--s4);border:var(--stroke) solid var(--line);background:var(--page)}
+.scn summary{cursor:pointer;min-height:var(--touch);padding:var(--s2) var(--s4);display:flex;flex-wrap:wrap;gap:var(--s2) var(--s3);align-items:center;list-style:none}
+.scn summary::-webkit-details-marker{display:none}
+.scn summary::before{content:"＋";width:1.2em;color:var(--accent)}
+.scn[open] summary::before{content:"－"}
+.scn summary strong{font-size:var(--body)}
+.scn .body{padding:0 var(--s4) var(--s4);border-top:var(--stroke) solid var(--line)}
+.scn dl{display:grid;grid-template-columns:9em 1fr;gap:var(--s1) var(--s3);margin:var(--s3) 0 0;font-size:var(--small)}
+.scn dt{color:var(--muted)}
+.scn dd{margin:0}
+.scn .find{margin-top:var(--s3);border-left:var(--rule) solid var(--accent);padding-left:var(--s3)}
+.scn[hidden]{display:none}
+.count{font-size:var(--small);color:var(--muted);margin-top:var(--s2)}
+.src{font-size:var(--small);color:var(--muted)}
+footer{margin-top:var(--s7);padding-top:var(--s4);border-top:var(--stroke) solid var(--line);font-size:var(--small);color:var(--muted)}
+.files a{display:inline-block;margin:var(--s2) var(--s3) 0 0}
+.keep{white-space:nowrap}
+@media(max-width:680px){main{padding:var(--s4)}h1{font-size:var(--h2)}.grid2,.grid3{grid-template-columns:1fr}.scn dl{grid-template-columns:1fr}.scn dt{margin-top:var(--s2)}
+.stack thead{display:none}.stack tr{display:grid;grid-template-columns:1fr;border:var(--stroke) solid var(--line);margin-top:var(--s2)}.stack td{border:0;border-top:var(--stroke) solid var(--line)}.stack td::before{content:attr(data-label);display:block;color:var(--muted);font-size:13px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+@media print{body{background:#fff}main{max-width:none;padding:0}.controls{display:none}.scn{break-inside:avoid}.scn[hidden]{display:block}details{open:true}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div class="kicker">舞台スケッチ / 設計研究 / <span class="keep">2026年9月11日</span> / Claude Code Fable</div>
+<h1>改訂を、必要な担当へ正しく届け直す仕組み</h1>
+<p class="lede">シーン差替え・台本改訂・Q番号変更・道具変更・急な代役が起きたとき、<strong>何を変え、誰に再確認を求めるか</strong>。個人メモ／部門共有メモ／チーフの集約／舞台の正本を分け、閲覧・受領・実行記録・GOを混同しない設計を、方式比較と架空公演15ケースの反証で確かめました。</p>
+<div class="status">
+<span>状態: <strong>提案（採用未決）</strong></span>
+<span class="warn">結論は条件付き（進行中の設計3件と競合しうる）</span>
+<span>製品コード・schema・既存設計書・台本サンプルは未変更</span>
+<span>書込み先: docs/fable-revision-study-20260911/ のみ</span>
+<span>反証: 合成シナリオ15件（実例0件）</span>
+</div>
+<div class="decide">
+<strong>判断してほしいこと（3件）</strong>
+<ol>
+<li><strong>D1 方式</strong> — 「発行版＋受領票」（版ごとのスナップショット共有に、版ごとの変更票と本人受領を足した形）を採るか。差分承認フロー（案B）と共同編集（案C）を採らない理由は<a href="#methods">§5</a>。</li>
+<li><strong>D2 通知</strong> — 全員通知でも対象だけ通知でもなく、<strong>ハイブリッド</strong>（全員に「版Nを発行」の1行、関係者にだけ受領要求、対象を計算できない変更は舞台監督へ要確認、誰にも計算できないときだけ全員）を採るか。見落としの比較は<a href="#notify">§6</a>。</li>
+<li><strong>D3 着手</strong> — 最小機能 R1「発行版と受領票」を、製品に触れない<strong>局所試作</strong>として発注するか。発注書は<a href="WORKORDER_R1_EDITION_RECEIPT_2026-09-11.md">WORKORDER_R1</a>。製品接続は、companion／統合の決定と転換1件の実例照合の後に別途判断（<a href="#recommend">§8</a>）。</li>
+</ol>
+</div>
+</header>
+
+<section id="summary">
+<h2>1. 要約</h2>
+<ul>
+<li><strong>現状、届け直しの仕組みは製品にありません。</strong>正本（場面・人物・配置）はローカルファーストで、発行と受領の概念が入っているのは演者向け「事前学習リンク」だけ（明示公開・版番号・過去50版保持・個人メモは本人だけ）。台本・Q・転換・担当・役割別メモは docs 内の試作と契約の段階で、製品には未接続です（<a href="#survey">§2</a>）。</li>
+<li><strong>所有境界は4層に分けます。</strong>舞台の正本（演出・舞台監督が編集）／発行版（番号付き・不変・現場が読む）／部門共有メモ（部門が所有、チーフが集約）／個人メモ（本人だけ）。記録は「閲覧」「受領」「実行記録」「GO」を別物として扱い、R1 が持つのは<strong>受領だけ</strong>です（<a href="#boundary">§3</a>）。</li>
+<li><strong>変更の種類ごとに「保持するもの」と「受領を求める相手」を規則にしました。</strong>Q番号変更は意味の確認を失効させませんが、番号は舞台監督とオペの接点なので受領は必要、など「意味の確認」と「受領」を別状態にすると矛盾が消えます（<a href="#rules">§4</a>）。</li>
+<li><strong>推奨は「発行版＋受領票」。</strong>共同編集は不要です。現場が必要とするのは「共に書く」ことではなく「変わったところを自分の担当で読み、読んだと返す」ことで、既存の正本・注釈・共有セッションの契約とも矛盾しません（<a href="#methods">§5</a>）。</li>
+<li><strong>反証15件のうち矛盾が出た規則は5つ</strong>で、いずれも規則側を直して解消しました：受領は「最新」でなく版へ結ぶ／発行済み版は取り消さず戻し版を出す／差替えはIDを保つ／道具は契約に無いので未確定扱い／未確定は全員でなく舞台監督へ集約。合成データによる結果で、現場実例による確認はまだです（<a href="#scenarios">§7</a>）。</li>
+</ul>
+</section>
+
+<section id="survey">
+<h2>2. 現状調査 — 何の正本を誰が持ち、どこまで実装済みか</h2>
+<p>確認日 2026-09-11。ローカルソースと docs の設計文書を読んだ結果で、公開環境の配信状態は照合していません。作業ツリーは未コミット159行（9月9日の監査記録では77〜78行）で、複数セッションが同時に編集しています。</p>
+<div class="wrap"><table class="stack">
+<caption>保存所有者と実装範囲（読んだファイルは§11）</caption>
+<thead><tr><th>対象</th><th>正本の所有者・保存先</th><th>実装状態</th><th>版・履歴・確認の仕組み</th></tr></thead>
+<tbody>
+<tr><td data-label="対象">舞台の正本（場面・人物・セット配置・機構）</td><td data-label="正本">演出・舞台監督。ブラウザ localStorage（現在の状態と棚）、ファイル書出し v4、MCP 正本 v3（.stage-sketch-mcp/projects）、Mac 保存 v3。共有セッションは揮発でホスト権威</td><td data-label="実装">製品・公開中（v0.3.5、2026-09-10）</td><td data-label="仕組み">MCP は revision・history・lock と expectedRevision で同時編集を止める。ブラウザ側は Undo/Redo が state 全体を復元。normalizeState が既知フィールドだけ組み直すため未知キーは失われる</td></tr>
+<tr><td data-label="対象">演者向け発行版（事前学習リンク）</td><td data-label="正本">オーナーが「公開内容を更新」で明示発行。Worker の STUDY_LINKS。演者の個人メモはブラウザまたは読者アカウント。共有ボタンで送った内容だけオーナーへ</td><td data-label="実装">作業ツリーに実装済み（README 記載）。配信状態は本調査では未確認</td><td data-label="仕組み">版番号あり。以前の版を最大50版・32 MiB 保持し、上限では更新を拒否。個人メモは場面IDと図の内容で対応付け、場面ごと32件の履歴。共有は「送った内容だけ」。受領・既読の記録は無い</td></tr>
+<tr><td data-label="対象">台本 PDF・Q・紙面アンカー</td><td data-label="正本">docs/script-cues の試作が IndexedDB に単一ワークスペースを保存（PDF Blob・Q・位置）。製品とは未接続</td><td data-label="実装">試作・契約のみ。companion workflow v1 は論理モデルと fixture と validator</td><td data-label="仕組み">cueId は安定ID、番号は表示。displayRevision と semanticRevision を分け、reviews が inputRevisions を持ち、意味が変わると needs-review。PDF 差替えは旧 anchor を消さず付替え候補にする</td></tr>
+<tr><td data-label="対象">転換・担当・予定（activity）</td><td data-label="正本">docs/set-transitions の試作。保存なし（localStorage 0、IndexedDB 0）</td><td data-label="実装">契約 v1・架空例のみ。<strong>実例（転換1件）は未受領</strong></td><td data-label="仕組み">personId／assignment／activityId、時点は整数ms、未知は null。担当・意味の変更で関係する確認だけ失効。現場 GO・実行記録は範囲外と明記</td></tr>
+<tr><td data-label="対象">役割別の現場メモ・矢印・付箋</td><td data-label="正本">見る人×シーン／Q ごとにブラウザ内。fixture のみ</td><td data-label="実装">private だけ。department／team は将来候補</td><td data-label="仕組み">注釈は正本配置と別レコード、注釈単位の revision。チーフ集約は department／team だけを表示し private は出さない</td></tr>
+<tr><td data-label="対象">配布（全体・部門・個人の Q シート）</td><td data-label="正本">cueAssignments から都度導出。出力用の複製を持たない</td><td data-label="実装">fixture（print-html／csv）</td><td data-label="仕組み">受け手画面の確認欄は <code>checkPolicy.persist: false</code>。GO・共有・実行済み・他者通知として保存しない</td></tr>
+<tr><td data-label="対象">通知</td><td data-label="正本">製品内お知らせベル（UI計画 R33、リリース情報向け）</td><td data-label="実装">改訂通知の仕組みは無い</td><td data-label="仕組み">最新IDと既読を localStorage で持つ。改訂の届け直しとは別物なので流用しない</td></tr>
+<tr><td data-label="対象">受領・実行記録・GO</td><td data-label="正本">—</td><td data-label="実装">無し</td><td data-label="仕組み">契約側で「現場 GO の送受信・実行記録は範囲外」「確認欄は実行記録・GO・共有通知と分離」と繰り返し明記</td></tr>
+</tbody></table></div>
+<h3>今回の研究から除外したもの（重複・別担当）</h3>
+<ul>
+<li><strong>システム監査（docs/system-audit-2026-09-09）</strong>: コミット分割、SW の版ずれ（WO-A2）、Worker ヘッダ、テスト追加、資材一覧、stage-sketch.js 分割、i18n、CSS 分割、lint／check。いずれも届け直しと重ならないため扱いません。オフライン復帰はアプリ殻の更新（A-2）ではなく<strong>データの版と受領</strong>の問題として扱います。監査は段0で BLOCKED のまま（2026-09-09 報告）。</li>
+<li><strong>UI 修正（docs/ui-implementation-plan-2026-09-10、R01〜R36）</strong>: 表示切替・複数選択・フォルダー・お知らせベル等。触れません。</li>
+<li><strong>台本サンプル制作（docs/romeo-juliet-sample-2026-09-09）</strong>: 2026-09-11 01:00 台まで更新が続いている進行中作業。読みも書きもしていません。</li>
+<li><strong>実在のライセンス名簿・認証情報・個人メモ</strong>: 読んでいません。名簿の鍵ファイルと data.enc は対象外。</li>
+</ul>
+</section>
+
+<section id="boundary">
+<h2>3. 所有境界（4層）と、混同しない4つの記録</h2>
+<div class="grid2">
+<div class="card"><h3>層1 舞台の正本</h3><p>場面・人物・セット・Q・アンカー・予定・担当。<strong>編集できるのは演出・舞台監督（オーナー）だけ。</strong>ローカルファーストのまま。MCP／AI 編集は既存の revision・承認経路を使う。現場の担当はここを直接編集しない。</p></div>
+<div class="card"><h3>層2 発行版（edition）</h3><p>正本から明示操作で切り出す<strong>番号付きの不変スナップショット</strong>。変更票（何が・どの範囲で変わったか）と影響対象を一緒に持つ。現場が読むのはこれ。追記専用で、取り消さず「戻し版」を出す。系譜（親の版・正本ハッシュ）を持つ。</p></div>
+<div class="card"><h3>層3 部門共有メモ</h3><p>照明・音響・舞台の各部門が所有。<strong>ID（cueId・sceneId）を参照</strong>し、番号や場面名は表示時に解決する。チーフはここだけを集約して読む。発行版には入らない（版を進めない）。</p></div>
+<div class="card"><h3>層4 個人メモ</h3><p>本人の端末または本人のアカウントだけ。チーフにも代役にも見えない。渡すのは本人の明示操作。既存の事前学習リンク・注釈契約と同じ境界。</p></div>
+</div>
+<div class="wrap"><table class="stack">
+<caption>4つの記録を別物にする</caption>
+<thead><tr><th>記録</th><th>意味</th><th>R1 での扱い</th><th>混同したときに起きること</th></tr></thead>
+<tbody>
+<tr><td data-label="記録">閲覧確認</td><td data-label="意味">画面を開いた</td><td data-label="R1"><strong>記録しない</strong>。「開いた＝読んだ」ではないため</td><td data-label="混同">自動既読が受領に化け、舞台監督が「届いた」と誤認する</td></tr>
+<tr><td data-label="記録">受領</td><td data-label="意味">自分に関わる変更票を読んだ、と本人が返した</td><td data-label="R1"><strong>これだけ持つ。</strong>版に紐づく（self／proxy）。項目ごとではなく版ごと</td><td data-label="混同">—</td></tr>
+<tr><td data-label="記録">実行記録</td><td data-label="意味">卓へ反映した、稽古で通した、本番で実行した</td><td data-label="R1">持たない。契約上も範囲外</td><td data-label="混同">受領済みが「反映済み」に読まれ、未反映のQが見過ごされる</td></tr>
+<tr><td data-label="記録">GO</td><td data-label="意味">本番の合図の発信・受信</td><td data-label="R1">持たない。アプリは合図を発火しない（既存契約）</td><td data-label="混同">受領操作や台本スクロールが合図に見える</td></tr>
+</tbody></table></div>
+<div class="note"><p><strong>権限の要点:</strong> 発行できるのは層1のオーナー（複数端末は同一人物）。受領できるのは影響対象に含まれる本人。代理受領（紙で手渡した等）はチーフが「誰が」を残して記録し、本人受領とは別に表示する。部門共有メモの作成者は部門の担当、閲覧は部門とチーフ。個人メモの閲覧は本人だけ。</p></div>
+</section>
+
+<section id="rules">
+<h2>4. 変更の種類ごとに、何を変え、誰に受領を求めるか</h2>
+<p>中心の問いへの答え。規則は <code>revision-model-2026-09-11.mjs</code> に実装し、§7 の15ケースで実行しました。</p>
+<div class="wrap"><table class="stack">
+<thead><tr><th>変更</th><th>正本で変わるもの</th><th>保持するもの</th><th>受領を求める相手</th><th>未確定になる条件 → 舞台監督へ要確認</th></tr></thead>
+<tbody>
+<tr><td data-label="変更">台本改訂（紙面位置だけ・意味同じと舞台監督が確認）</td><td data-label="変わる">アンカーの位置</td><td data-label="保持">cueId・意味の確認・担当・所要</td><td data-label="相手"><strong>なし</strong>（舞台監督の位置確認だけ）。印刷物には版番号を出す</td><td data-label="未確定">「意味同じ」の確認が無い → 意味変更として扱う</td></tr>
+<tr><td data-label="変更">台本改訂（合図語・台詞・順序が変わる）</td><td data-label="変わる">アンカーの意味、semanticRevision</td><td data-label="保持">cueId・番号・幾何の確認</td><td data-label="相手">その Q の部門オペ、合図語を言う演者、その合図に依存する予定の担当</td><td data-label="未確定">Q の部門未設定／依存する予定の担当枠が null</td></tr>
+<tr><td data-label="変更">Q番号変更</td><td data-label="変わる">表示番号（displayRevision）</td><td data-label="保持">cueId・意味の確認・転換の参照・所要</td><td data-label="相手">その Q の部門オペ＋舞台監督（番号は呼ぶ側と呼ばれる側の接点）。演者には求めない</td><td data-label="未確定">Q の部門未設定</td></tr>
+<tr><td data-label="変更">シーン差替え・並替え</td><td data-label="変わる">配置・順序。<strong>sceneId は維持</strong></td><td data-label="保持">場面を指す注釈・予定の sceneRefs</td><td data-label="相手">場面にいる人物、場面を参照する予定の担当、場面に付く Q の部門</td><td data-label="未確定">ID を作り直して差し替え、旧 ID を指す注釈が残る／場面を参照する予定に未割当がある</td></tr>
+<tr><td data-label="変更">道具変更</td><td data-label="変わる">道具の種類・寸法・持ち手</td><td data-label="保持">場面・Q・担当</td><td data-label="相手">道具を運ぶ予定の担当、道具を持つ・使う人物、道具の部門</td><td data-label="未確定"><strong>現行契約に道具の実体が無い</strong> → 対応が計算できず、誰にも絞れない</td></tr>
+<tr><td data-label="変更">急な代役・担当交代</td><td data-label="変わる">assignment の personId（範囲を明示）</td><td data-label="保持">activityId・時間・意味の確認</td><td data-label="相手">交代先、交代元、同じ予定の相手（手渡し・共演）、チーフ。合図の意味が変わらなければ部門オペには求めない</td><td data-label="未確定">交代先が未定（候補のまま）</td></tr>
+<tr><td data-label="変更">発行後の取り消し（正本の Undo）</td><td data-label="変わる">正本だけ。発行済み版は不変</td><td data-label="保持">元の版と、その版の受領票</td><td data-label="相手"><strong>戻し版</strong>を発行し、元の版と同じ相手へ。戻し版は元の版を上書き（supersedes）する</td><td data-label="未確定">元の版の未確定をそのまま引き継ぐ</td></tr>
+</tbody></table></div>
+<div class="box tint"><p><strong>未確定の扱い（ハイブリッドの中核）:</strong> 相手を1人でも計算できた変更は、その相手にだけ受領を求め、未確定の理由（担当枠 null、部門未設定、参照切れ）を舞台監督の「要確認」へ集約する。<strong>誰一人計算できない変更だけ全員へ</strong>届け、「対象未確定」と明示する。これで対象だけ通知の見落とし（S04b・S05・S12）を塞ぎ、全員通知の疲弊（S12）も避ける。副作用として、未割当の予定が場面に残っていると変更のたびに要確認が付く（S04a）。これは未割当を解消する圧力として妥当と判断した。</p></div>
+</section>
+
+<section id="methods">
+<h2>5. 方式比較 — 発行版・差分承認・共同編集</h2>
+<div class="wrap"><table class="stack">
+<thead><tr><th>評価軸</th><th>A 版ごとのスナップショット共有</th><th>B 変更差分の承認と再配布</th><th>C 共同編集</th><th class="keep">推奨 A＋（受領票）</th></tr></thead>
+<tbody>
+<tr><td data-label="軸">最小の現場価値</td><td data-label="A">「いま読むべき版はどれか」が確定する。差分は版間の比較で作れる</td><td data-label="B">変更1件ごとに承認と配布ができ、精度は最も高い</td><td data-label="C">配布の遅れが無い。ただし「正本」と「読む版」の区別が消える</td><td data-label="推奨">A に「版ごとの変更票」と「本人受領」を足す。舞台監督が「版7の関係者で未受領は誰か」を答えられる</td></tr>
+<tr><td data-label="軸">オフライン・復帰</td><td data-label="A">版は不変なので、復帰後に版番号で突き合わせるだけ</td><td data-label="B">未承認差分の順序と依存が端末間でずれる</td><td data-label="C">競合解決（CRDT または手動マージ）が必須。現場で解決させられない</td><td data-label="推奨">受領票を版に結ぶ（S07）。系譜の違う正本からの発行は止める（S08）</td></tr>
+<tr><td data-label="軸">既存資産との整合</td><td data-label="A">事前学習リンクの「明示公開・版番号・過去版保持」と同型。MCP の revision／history とも整合</td><td data-label="B">AI 編集計画（plan／apply／expectedRevision）と同型だが、それは AI→本人の承認用で、本人→現場の配布には重い</td><td data-label="C">注釈契約は「同時編集は上書きせず競合」、Supabase 同期は凍結、共有セッションは揮発でホスト権威。全て C と逆向き</td><td data-label="推奨">既存契約を1つも変えずに載る</td></tr>
+<tr><td data-label="軸">誤配の型</td><td data-label="A">版単位なので関係ない変更も一緒に届く（変更票で絞る）</td><td data-label="B">承認待ちが詰まると現場が旧版のまま動く</td><td data-label="C">誰が何をいつ変えたかが現場で追えない。代役が正本を書き換えうる</td><td data-label="推奨">変更票の影響対象で絞り、未確定は要確認へ（§4）</td></tr>
+<tr><td data-label="軸">実装量（R1）</td><td data-label="A">小。版・変更票・受領票の3レコードと導出2つ</td><td data-label="B">中〜大。全実体の差分エンジンと承認 UI</td><td data-label="C">大。同期基盤と競合 UI。ライセンス・外部スクリプト禁止の制約とも衝突しやすい</td><td data-label="推奨">A と同じ規模</td></tr>
+</tbody></table></div>
+<h3>共同編集が不要な理由</h3>
+<ol>
+<li><strong>現場の要求は「共に書く」ではない。</strong>本人が確認した要件は、役割別の画面で自分の操作と前後関係を読むこと、部門メモをチーフが集約すること、確認欄を実行記録・GO と分けること（dev-preferences 2026-09-09、3件）。いずれも読む側の要求で、正本の編集権を広げる要求ではない。</li>
+<li><strong>正本の所有境界を壊す。</strong>代役や部門オペが正本を編集できると、発行版の系譜と受領の根拠が崩れる。部門メモ・矢印・付箋は既に「正本と別レコード」と決まっており、共同で書きたいものはそちらで足りる。</li>
+<li><strong>既存の決定と逆向き。</strong>注釈の同時編集は競合扱い、クラウド同期は凍結、リアルタイム共有はホスト権威で揮発。C を採るとこれらを全て再設計することになる。</li>
+</ol>
+<div class="note"><p><strong>案 B を捨てない部分:</strong> 版の中の「変更票」は B の差分の考え方そのもの。承認フローだけを外し、差分は舞台監督が発行時に分類する（自動差分は R1 では行わない）。</p></div>
+</section>
+
+<section id="notify">
+<h2>6. 通知の比較 — 全員へ通知する案と、必要な対象だけへ伝える案</h2>
+<p>架空公演の稽古1日（発行12回）を3方式で流した結果（S12）。数字は「その人に受領を求めた回数」。</p>
+<div class="wrap"><table class="stack">
+<thead><tr><th>方式</th><th>L（照明オペ）</th><th>K（裏方）</th><th>D（代役候補）</th><th>見落としの型</th><th>判定</th></tr></thead>
+<tbody>
+<tr><td data-label="方式">全員へ通知</td><td data-label="L">12件（本人に関わるのは3件）</td><td data-label="K">12件</td><td data-label="D">12件</td><td data-label="見落とし"><strong>疲弊による見落とし。</strong>関係ない9件を読むうちに、版11の合図語変更（L に関わる）を流し読みする。受領が反射的な操作になる</td><td data-label="判定">採らない。対象の誤りは起きないが、受領の意味が薄れる</td></tr>
+<tr><td data-label="方式">対象だけへ通知</td><td data-label="L">4件</td><td data-label="K">0件</td><td data-label="D">0件</td><td data-label="見落とし"><strong>対象計算の誤りによる見落とし。</strong>版9のランプ変更は担当枠が未定なので0人へ届く。道具（S05）・ID作り直しの差替え（S04b）も0人へ。モデルに無い部門（衣装等）は永久に届かない</td><td data-label="判定">採らない。静かに落ちる</td></tr>
+<tr><td data-label="方式"><strong>ハイブリッド</strong></td><td data-label="L">5件</td><td data-label="K">1件</td><td data-label="D">1件</td><td data-label="見落とし">全員に「版Nを発行」の1行（受領不要）。関係者に受領要求。未確定は舞台監督へ要確認、誰にも計算できない変更だけ全員へ「対象未確定」で届く。残る見落としは「舞台監督が要確認を放置する」場合</td><td data-label="判定"><strong>推奨。</strong>要確認の放置はチーフ画面の未解決件数で見える</td></tr>
+</tbody></table></div>
+<p class="src">数値の出典: scenario-results-2026-09-11.json（S12.counts）。全員通知の 12 は発行回数と同じ。合成データ。</p>
+</section>
+
+<section id="scenarios">
+<h2>7. 反証 — 架空の小公演『灯台と三人』で15ケースを追う</h2>
+<p><span class="tag syn">合成</span> 以下はすべて合成シナリオです（S01 と S04 を a／b に分けたため折畳は16件）。人物 S（舞台監督・チーフ）／A・B・C・D（演者、C は転換兼務）／K（裏方・端末なし）／L（照明）／M（音響）、場面5、Q8、転換2、道具2。実在の公演・人物・名簿とは無関係で、<strong>現場実例による確認は未実施</strong>です。各ケースは <code>scenarios-2026-09-11.test.mjs</code> として実行し、18件すべて通過（2026-09-11、Node 22）。</p>
+<div class="box"><strong><span class="tag field">現場で確認された要望</span> 合成ケースと分けて示す根拠</strong>
+<ul>
+<li>改訂 PDF を取り込むと作成済みの照明・音響キューが消えてやり直しになった（第三者利用者の経験。ATTACHMENT_REQUIREMENTS.md、画像の文章から。製品の不具合再現ではない）。</li>
+<li>担当交代はありえる、フレキシブルに行う可能性が高い（本人回答。HANDOFF_NEXT_2026-09-09.md）。</li>
+<li>Q だけを表で管理し CSV のように扱いたい（本人指定。Q_SHEET_PLAN.md）。</li>
+<li>役割を切り替えられる Web 画面で、舞台状況・自分の操作・前後関係を同時に確認したい。確認欄は実行記録・GO・共有通知と分ける（dev-preferences 2026-09-09）。</li>
+<li>チーフは部門が共有対象にした書き込みだけを集約し、個人メモは出さない（dev-preferences 2026-09-09）。</li>
+<li>現場 GO の送受信・実行記録は今回の範囲外（本人確認要件。HANDOFF_STAGE_TRANSITIONS_2026-09-10.md §2）。</li>
+<li>演者向け発行は明示更新・個人メモは本人だけ・共有した内容だけ届く（実装済み。README）。</li>
+</ul>
+<p class="src">転換1件の実例（作品・場面・段取り）は 2026-09-11 時点で未受領（FIELD_CASE_PREPARATION_2026-09-09.md）。</p></div>
+
+<div class="controls" role="group" aria-label="ケースの絞り込み">
+<button type="button" data-filter="all" aria-pressed="true">すべて</button>
+<button type="button" data-filter="script" aria-pressed="false">台本改訂</button>
+<button type="button" data-filter="cue" aria-pressed="false">Q番号</button>
+<button type="button" data-filter="scene" aria-pressed="false">シーン差替え</button>
+<button type="button" data-filter="prop" aria-pressed="false">道具</button>
+<button type="button" data-filter="assign" aria-pressed="false">代役・交代</button>
+<button type="button" data-filter="offline" aria-pressed="false">オフライン</button>
+<button type="button" data-filter="notes" aria-pressed="false">メモ・受領</button>
+<button type="button" data-expand="1">全部開く</button>
+</div>
+<p class="count" id="scn-count"></p>
+
+<details class="scn" data-kind="script"><summary><strong>S01</strong> 台本 v2 で合図語「扉を開けて」が次頁へ移動。意味同じと舞台監督が確認 <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>アンカー an-q7 の pageIndex と矩形。cueId q7・意味の確認は不変</dd><dt>発行</dt><dd>版1（script-position, confirmedSameMeaning）</dd><dt>影響対象</dt><dd>0人。舞台監督の位置確認だけ</dd><dt>確認状態</dt><dd>受領票なし。coverage は空</dd><dt>Undo後</dt><dd>発行前の Undo は版を作らない</dd></dl>
+<p class="find">見つかったこと: 受領は不要だが、舞台監督の印刷済みコーリング台本は旧版のまま。版番号を印刷物に必ず出す。「意味同じ」の確認が無い場合（S01b）は意味変更として L・B・A へ届く（安全側）。</p></div></details>
+
+<details class="scn" data-kind="script"><summary><strong>S02</strong> 合図語の台詞が「扉を閉めて」に変わる → 発行後に演出が Undo <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>an-q7 の意味（semanticRevision +1）</dd><dt>発行</dt><dd>版3（script-semantic q7）→ L が受領 → 正本 Undo → 版4（revert）</dd><dt>影響対象</dt><dd>版3・版4とも L・B・A</dd><dt>確認状態</dt><dd>L: 版3 受領・版4 未受領。B: 版3・版4 未受領</dd><dt>Undo後</dt><dd>版3 は残る。<code>cancelEdition</code> は拒否（append-only）</dd></dl>
+<p class="find">見つかったこと: 版3を「取消」で消す実装だと、版3を見て卓のラベルを直した L の作業根拠が消える。発行済み版は不変にし、戻し版を同じ相手へ届け直す。</p></div></details>
+
+<details class="scn" data-kind="cue"><summary><strong>S03</strong> Q番号の付け替え LX 7→LX 7A、SND 8→SND 9 <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>number（displayRevision +1）。cueId 不変</dd><dt>発行</dt><dd>版1（cue-renumber）</dd><dt>影響対象</dt><dd>L・M・S。演者には求めない</dd><dt>確認状態</dt><dd>an-q7 の semanticStatus は confirmed のまま</dd><dt>Undo後</dt><dd>戻し版で同じ3人へ</dd></dl>
+<p class="find">見つかったこと: companion 契約は「表示だけ更新・確認失効なし」。届け直しの層では番号は舞台監督とオペの接点なので受領が要る。「意味の確認」と「受領」を別状態にすると両立する。</p></div></details>
+
+<details class="scn" data-kind="scene"><summary><strong>S04a</strong> シーン4「食卓」の配置を新案に置換（sceneId 維持） <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>sc4 の placements</dd><dt>発行</dt><dd>版1（scene-replace sc4）</dd><dt>影響対象</dt><dd>A・C（場面の人物）、K・C・A（sc4 を参照する予定の担当）、L（sc4 の Q12）、＋ S（要確認）</dd><dt>確認状態</dt><dd>未解決1件: T2 ランプの担当枠が null</dd><dt>Undo後</dt><dd>戻し版で同じ相手へ</dd></dl>
+<p class="find">見つかったこと: 同じ場面を参照する未割当の予定があると、変更のたびに舞台監督へ要確認が付く。全員には広げない。初版のモデルは未解決があると全員へ倒していたため、S04a が8人へ届いた。規則を「計算できた相手＋チーフ」へ直した。</p></div></details>
+
+<details class="scn" data-kind="scene"><summary><strong>S04b</strong> シーン4を新しい ID で作り直し、旧シーンを削除 <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>sc4 削除、sc4b 追加</dd><dt>発行</dt><dd>版1（scene-replace sc4b, removed sc4）</dd><dt>影響対象</dt><dd>誰も計算できない → 全員8人へ「対象未確定」</dd><dt>確認状態</dt><dd>未解決2件: sc4b が見つからない、旧 sc4 を指す注釈1件の行先が無い</dd><dt>Undo後</dt><dd>—</dd></dl>
+<p class="find">見つかったこと: 対象だけ通知の方式では0人へ届く。差替え UI は「同じシーンとして置換」を既定にして ID を保つ。ID 作り直しは未解決として全員＋要確認へ倒す。</p></div></details>
+
+<details class="scn" data-kind="prop"><summary><strong>S05</strong> 道具変更（机→ベンチ） <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>prop-table の種類</dd><dt>発行</dt><dd>版1（prop-change）</dd><dt>影響対象</dt><dd>研究モデルに道具参照がある場合: K・C（運ぶ）、A（食卓につく）。<strong>現行契約どおり道具参照が無い場合: 計算不能 → 全員＋要確認</strong></dd><dt>確認状態</dt><dd>未解決: 道具と予定・人物の対応が無い</dd><dt>Undo後</dt><dd>—</dd></dl>
+<p class="find">見つかったこと: companion workflow v1・共通契約 v1 のどちらにも道具の実体が無い（製品側の piece・持ち物・受け渡し線は正本にある）。R1 は未確定として扱い、道具の参照は後続の契約課題に残す。対象だけ通知では見落とす。</p></div></details>
+
+<details class="scn" data-kind="assign"><summary><strong>S06</strong> 急な代役: B が出られず、今夜だけ D が「3 扉」を代演 → 翌日 B 復帰 <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>act-duet の assignment: p-b → p-d</dd><dt>発行</dt><dd>版1（assignment-change）→ 翌日 版2（revert）</dd><dt>影響対象</dt><dd>D（交代先）、B（交代元）、A（同じ予定の相手）、S（チーフ）。L には求めない（合図の意味は不変）</dd><dt>確認状態</dt><dd>D には B の個人メモ（n2「扉は左手で」）は見えない</dd><dt>Undo後</dt><dd>復帰も戻し版。同じ4人へ。1晩で版が2つ増える</dd></dl>
+<p class="find">見つかったこと: 「今夜だけ」の範囲（公演回）を版の上に持たないため版が2つ増える。許容範囲だが、公演回スコープの一時上書きは将来課題として残す。個人メモの引き継ぎは B の明示操作でだけ可能。</p></div></details>
+
+<details class="scn" data-kind="offline"><summary><strong>S07</strong> オフライン復帰: L が 14:02 に版3を受領（端末内保留）、14:10 に版4発行、15:00 復帰 <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>版3: 合図語変更（q7）／版4: 番号変更（q7）</dd><dt>発行</dt><dd>版3・版4</dd><dt>影響対象</dt><dd>版4: L・S</dd><dt>確認状態</dt><dd>復帰後、保留の受領は版3へ付く。版4は未受領のまま</dd><dt>Undo後</dt><dd>—</dd></dl>
+<p class="find">見つかったこと: 「最新版を受領」とだけ記録する素朴な実装では、復帰時に版4も受領済みに化ける（<code>naiveLatestReceipt</code> が ed-4 を返す）。受領票は editionId を持ち、端末内に保留した受領も版番号付きで送る。</p></div></details>
+
+<details class="scn" data-kind="offline"><summary><strong>S08</strong> オフライン中に iPad 側の正本が分岐し、版1を知らないまま発行しようとする <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>PC で版1（SND 8→9）発行済み。iPad は版1を取り込んでいない正本で sc4 を置換</dd><dt>発行</dt><dd>iPad からの発行は <code>lineage-mismatch</code> で拒否。版1を取り込んでからなら版2として発行できる</dd><dt>影響対象</dt><dd>版2: A・C・K・L・S</dd><dt>確認状態</dt><dd>—</dd><dt>Undo後</dt><dd>—</dd></dl>
+<p class="find">見つかったこと: 正本はローカルファーストで端末ごとに分岐しうる。発行版に parentEditionId と baseSnapshotHash（companion 契約と同じ算出）を持たせ、直前の発行版の系譜にない正本からの発行を止める。合流は既存方針どおり自動マージしない。</p></div></details>
+
+<details class="scn" data-kind="notes"><summary><strong>S09</strong> 音響の部門メモ「SND 8 は3秒でフェード」→ 番号が SND 9 に → Q が削除 <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>q8 の number、その後 q8 削除</dd><dt>発行</dt><dd>—（メモは版を進めない）</dd><dt>影響対象</dt><dd>—</dd><dt>確認状態</dt><dd>メモの表示は SND 8 → SND 9 → 「参照切れ: q8」</dd><dt>Undo後</dt><dd>削除を戻せば表示も戻る</dd></dl>
+<p class="find">見つかったこと: メモが番号文字列を持つと付け替えで嘘になる。cueId を参照し表示時に解決する。Q が消えてもメモを捨てず参照切れとして残す（注釈契約の「参照だけにする」と同じ）。</p></div></details>
+
+<details class="scn" data-kind="notes"><summary><strong>S10</strong> チーフ S の集約画面と、B の画面に見えるメモ <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>—</dd><dt>発行</dt><dd>—</dd><dt>影響対象</dt><dd>—</dd><dt>確認状態</dt><dd>S に見えるのは department の n1・n3。B の private n2 は S にも D にも見えない</dd><dt>Undo後</dt><dd>—</dd></dl>
+<p class="find">見つかったこと: 既存の注釈契約（private／department／team）と一致。代役シナリオ（S06）でも境界は保たれる。</p></div></details>
+
+<details class="scn" data-kind="notes"><summary><strong>S11</strong> L が「受領」を押す。舞台監督の画面に「L 反映済み」と出てはいけない <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>—</dd><dt>発行</dt><dd>版1（script-semantic q7）</dd><dt>影響対象</dt><dd>L・B・A</dd><dt>確認状態</dt><dd>受領票の種類は self／proxy だけ。<code>executed</code>・<code>go</code> はモデルが拒否</dd><dt>Undo後</dt><dd>—</dd></dl>
+<p class="find">見つかったこと: 受領＝「自分に関わる変更票を読んだ」だけ。卓へ反映した／GO した／開いた、は別の記録であり R1 には持たない。画面文言も「受領」で統一し「反映」「完了」を使わない。</p></div></details>
+
+<details class="scn" data-kind="notes"><summary><strong>S12</strong> 稽古1日に発行12回。全員通知・対象だけ・ハイブリッドの比較 <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>番号変更5、位置移動4、場面置換2、道具変更1（ランプ、担当未定）、合図語変更1</dd><dt>発行</dt><dd>12版</dd><dt>影響対象</dt><dd>§6 の表</dd><dt>確認状態</dt><dd>全員: L に12件。対象だけ: ランプ変更が0人。ハイブリッド: L に5件、ランプは全員＋対象未確定</dd><dt>Undo後</dt><dd>—</dd></dl>
+<p class="find">見つかったこと: 全員通知は疲弊による見落とし、対象だけ通知は計算不能による見落とし。ハイブリッドは両方を避け、残る穴は舞台監督の要確認放置だけ。</p></div></details>
+
+<details class="scn" data-kind="scene"><summary><strong>S13</strong> 版5（番号）→ 版6（場面置換）→ 正本 Undo → 版7（版6を戻す）。版5だけ受領した人の扱い <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>q12 番号、sc4 置換、置換を戻す</dd><dt>発行</dt><dd>版7 は <code>supersedes: [版6]</code></dd><dt>影響対象</dt><dd>版6・版7: A・C・K・L・S</dd><dt>確認状態</dt><dd>A（版6 受領済み）: 版7 が未受領。K（両方未受領）: 版7 を受領すれば版6 の未受領も消える（via 版7）</dd><dt>Undo後</dt><dd>版6 は残る</dd></dl>
+<p class="find">見つかったこと: 戻し版に supersedes を持たせると両方未受領の人は1件の受領で済む。版6を見て動いた A には戻し版の受領を求める。「版6を無かったことにする」実装だと A の受領根拠が消える。</p></div></details>
+
+<details class="scn" data-kind="notes"><summary><strong>S14</strong> 変更票が3項目ある版を L が受領する <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>番号・合図語・場面の3件</dd><dt>発行</dt><dd>版1（3 changes）</dd><dt>影響対象</dt><dd>L ほか</dd><dt>確認状態</dt><dd>受領は版に1回。項目ごとの部分受領は無い</dd><dt>Undo後</dt><dd>—</dd></dl>
+<p class="find">見つかったこと: R1 の割り切り。項目ごとの受領は持たない代わりに、受領前に項目数と各項目を必ず表示する。項目単位の受領は反例が出てから検討する。</p></div></details>
+
+<details class="scn" data-kind="notes"><summary><strong>S15</strong> 端末を持たない K へ紙で手渡し。チーフが代理受領を記録 <span class="tag syn">合成</span></summary><div class="body">
+<dl><dt>正本の変更</dt><dd>sc4 置換</dd><dt>発行</dt><dd>版1</dd><dt>影響対象</dt><dd>A・C・K・L・S</dd><dt>確認状態</dt><dd>K: proxy（by S）／A: self／C・L・S: none。<code>by</code> の無い代理受領は拒否</dd><dt>Undo後</dt><dd>—</dd></dl>
+<p class="find">見つかったこと: 代理受領は「誰が」を必須にし、本人受領と別の表示にする。チーフの集約画面は self／proxy／none の3値。</p></div></details>
+</section>
+
+<section id="recommend">
+<h2>8. 推奨（条件付き）</h2>
+<div class="card pick"><h3>「発行版＋受領票」を採り、R1 は製品に触れない局所試作から始める</h3>
+<ul>
+<li>層1〜4 の所有境界と、閲覧／受領／実行記録／GO の分離（§3）を先に固定する。</li>
+<li>変更の分類と影響対象の規則（§4）を発行時の舞台監督の操作にする。自動差分は後段。</li>
+<li>通知はハイブリッド（§6）。未確定はチーフの要確認へ集約し、誰にも計算できないときだけ全員。</li>
+<li>受領票は版に紐づく self／proxy の2種だけ。発行版は追記専用で、戻すときは supersedes 付きの戻し版。</li>
+</ul></div>
+<h3>条件（これが変わったら結論を見直す）</h3>
+<ol>
+<li><strong>companion workflow か本体統合か</strong>（WORKFLOW_IO_AUDIT 着手条件2）が未決。発行版は companion file と同じ「別ファイル」として置けるが、本体統合が選ばれた場合は edition／receipt の保存位置を再検討する。<strong>本研究は本体へ統合しない。</strong></li>
+<li><strong>転換1件の実例照合</strong>（HANDOFF_STAGE_TRANSITIONS §6）が未実施。実例で「受領を求める相手」の規則が現場の理解と違えば §4 を直す。</li>
+<li><strong>製品化レビュー D1〜D3</strong>（_reviews/2026-09-10、提供形態＝公演単位の仮案）が未決。公演単位の提供なら「公演回スコープの代役」（S06 の将来課題）が優先度を上げる。</li>
+<li><strong>台本試作側の保存基盤</strong>（PDF asset store、書出し bundle）が未決。発行版に PDF バイナリを含めない前提は companion 契約と同じ。</li>
+<li>UI 修正（R01〜R36）と監査（段0 BLOCKED）は並行中。R1 の局所試作はどちらにも依存しないが、製品接続はそれらの完了状態を再確認してから。</li>
+</ol>
+</section>
+
+<section id="r1">
+<h2>9. 最初に作る最小機能 R1「発行版と受領票」— 発注書の要点</h2>
+<p>全文: <a href="WORKORDER_R1_EDITION_RECEIPT_2026-09-11.md">WORKORDER_R1_EDITION_RECEIPT_2026-09-11.md</a>（Codex にそのまま渡せる形。停止条件付き）。</p>
+<div class="grid2">
+<div class="card"><h3>作るもの</h3><ul>
+<li>docs 内の局所試作 HTML 1枚＋JS: 舞台監督の「発行」画面（変更の分類→影響対象の表示→版番号の発行）、担当者の「自分宛の変更票と受領」画面、チーフの「版ごとの受領状況（self／proxy／none）と要確認」画面。役割はセレクタで切替（fixture 段階では権限の根拠にしない）。</li>
+<li>保存はブラウザ内（版・受領票・保留受領）。オフライン保留と復帰時の版番号突き合わせを模す。</li>
+<li>本研究のモデルとテスト（18件）を受け入れ試験として流用し、追加で UI 操作の確認を書く。</li>
+</ul></div>
+<div class="card"><h3>作らないもの</h3><ul>
+<li>製品コード・schema・normalizeState・MCP・Worker・SW への変更。公開・配信・外部送信。</li>
+<li>自動差分、項目単位の受領、閲覧ログ、実行記録、GO、通知の送信（メール・プッシュ）。</li>
+<li>共同編集、部門メモの共有経路（既存契約の department／team は未実装のまま）。</li>
+<li>道具の実体化（契約課題として記録だけ）、公演回スコープの一時上書き。</li>
+</ul></div>
+</div>
+<h3>受け入れ条件（抜粋）</h3>
+<ul>
+<li>S02／S13: 発行済み版を消す操作が存在しない。戻し版は元の版と同じ相手に届き、supersedes で未受領が畳まれる。</li>
+<li>S07: 受領票は editionId を持ち、保留→復帰で新しい版が受領済みにならない。</li>
+<li>S08: 直前の発行版の系譜にない正本からの発行が止まる。</li>
+<li>S04b／S05／S12: 対象を計算できない変更が0人へ届くことがない（全員＋対象未確定）。計算できた変更は関係者＋要確認に絞られる。</li>
+<li>S11／S15: 受領の種類は self／proxy だけ。画面文言に「反映」「完了」「既読」を使わない。</li>
+<li>S09／S10: メモは cueId 参照。private はチーフ・代役に出ない。</li>
+</ul>
+</section>
+
+<section id="uncertain">
+<h2>10. 不確実性・未確認</h2>
+<ul>
+<li>合成シナリオの結果は規則の整合性を示すだけで、現場の運用に合うかは未確認。転換1件の実例が入った時点で §4・§7 を再検証する。</li>
+<li>事前学習リンク（発行版の既存実装）の<strong>配信状態</strong>は未確認。README には「ローカル実装・未デプロイ」と「2026-09-10 UI 公開」の両方の記述があり、どちらの版が本番にあるかは本調査で照合していない。</li>
+<li>道具の実体は製品正本にはあるが契約には無い。製品側の piece／持ち物／受け渡し線から activity の propRefs を導出できるかは未調査。</li>
+<li>公演回（performance）というスコープはどの契約にも無い。代役を版で扱う R1 の割り切りが現場で煩雑かは実例待ち。</li>
+<li>design-lint は未実行（reports/HISTORY.csv へ書き込むため、今回の書込み範囲外）。代わりに contrast.mjs での実測とブラウザでの表示確認を行った（脚注）。</li>
+<li>本研究は 2026-09-11 01:00 台に更新中の台本サンプル制作と並行しており、同フォルダ以外の変更は見ていない。</li>
+</ul>
+</section>
+
+<section id="sources">
+<h2>11. 出典（読んだファイル・確認日 2026-09-11）</h2>
+<ul class="src">
+<li>ワークスペース規約: AGENTS.md、_claude-rules/dev-preferences.md（方針リスト、特に 2026-09-09 の現場閲覧・舞台書き込み・チーフ集約・現場配布の4行）、_claude-rules/design-policy.md、.claude/skills/design-web/SKILL.md</li>
+<li>対象内: README.md、SYNC_DESIGN.md、REALTIME_SESSION_DESIGN.md、docs/INDEX.md、docs/AI_EDITING_HANDOFF.md、mcp-server/README.md（revision・history・lock）、study-links.js（STUDY_LIMITS: historyRevisions 50・historyBytes 32 MiB）、stage-study-owner.js／-private.js／-sync.js／-continuity.js</li>
+<li>台本・Q: docs/script-cues-2026-09-09/ SPEC.md、PDF_LAYER_PLAN.md、INTEGRATION_DRAFT.md、Q_SHEET_PLAN.md、ASSIGNMENT_TRIAL_PLAN.md、PDF_IMPORT_MIGRATION_PLAN.md、WORKSPACE_LAYOUT_PLAN.md、ATTACHMENT_REQUIREMENTS.md、script-cue-storage.js、REVIEW.md（見出し）</li>
+<li>契約: docs/project-contract-2026-09-09/ PROJECT_WORKFLOW_CONTRACT、WORKFLOW_DELIVERY_CONTRACT、WORKFLOW_ANNOTATION_CONTRACT、WORKFLOW_IO_AUDIT、workflow-timeline-fixture（構造）、workflow-receiver-view（policy 参照箇所）、workflow-notes-permissions（本文）</li>
+<li>転換: docs/set-transitions-2026-09-08/ SHARED_PEOPLE_CUES_TIME_CONTRACT、HANDOFF_STAGE_TRANSITIONS_2026-09-10、CONTINUE_STAGE_TRANSITIONS_PROMPT、FIELD_CASE_PREPARATION、HANDOFF_NEXT</li>
+<li>監査・UI: docs/system-audit-2026-09-09/ START_HERE、CODEX_PROMPT、IMPLEMENTATION_REPORT、WO_*（冒頭）／docs/ui-implementation-plan-2026-09-10/HANDOFF.md／docs/romeo-juliet-sample-2026-09-09/QA.md（冒頭・読みのみ）</li>
+<li>本研究の生成物: CURRENT_STATE_2026-09-11.md（現状調査の詳細）、revision-model-2026-09-11.mjs、fixture-lighthouse-2026-09-11.json、scenarios-2026-09-11.test.mjs、scenario-results-2026-09-11.json、WORKORDER_R1_EDITION_RECEIPT_2026-09-11.md、TOKEN_SHEET.md</li>
+</ul>
+</section>
+
+<footer>
+<p>検証記録: <code>node --test scenarios-2026-09-11.test.mjs</code> 18/18 通過（Node v22.17.0、2026-09-11）。配色は design-web/tools/contrast.mjs で実測（本文 12.19:1、補助 5.03:1、強調 5.94:1 以上、詳細は TOKEN_SHEET.md）。ブラウザ表示は 1440×900 と 390×844 で確認（横あふれ・操作44px・折畳の開閉）。静的な設計資料でありローカル確認用。公開・外部共有しない。</p>
+<p class="files"><a href="CURRENT_STATE_2026-09-11.md">現状調査の詳細</a><a href="WORKORDER_R1_EDITION_RECEIPT_2026-09-11.md">発注書 R1</a><a href="scenario-results-2026-09-11.json">シナリオ結果 JSON</a><a href="fixture-lighthouse-2026-09-11.json">架空公演 fixture</a><a href="TOKEN_SHEET.md">設計メモ・トークン</a><a href="README.md">エージェント向け入口</a></p>
+</footer>
+</main>
+<script>
+(function(){
+  var buttons=document.querySelectorAll('.controls button[data-filter]');
+  var cases=document.querySelectorAll('.scn');
+  var count=document.getElementById('scn-count');
+  var groups={script:['script'],cue:['cue'],scene:['scene'],prop:['prop'],assign:['assign'],offline:['offline'],notes:['notes']};
+  function apply(key){
+    var shown=0;
+    cases.forEach(function(el){
+      var ok=key==='all'||groups[key].indexOf(el.dataset.kind)>=0;
+      el.hidden=!ok; if(ok) shown++;
+    });
+    buttons.forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.filter===key)); });
+    count.textContent=shown+' 件を表示（全 '+cases.length+' 件・すべて合成）';
+  }
+  buttons.forEach(function(b){ b.addEventListener('click', function(){ apply(b.dataset.filter); }); });
+  var expand=document.querySelector('.controls button[data-expand]');
+  expand.addEventListener('click', function(){
+    var anyClosed=Array.prototype.some.call(cases, function(el){ return !el.hidden && !el.open; });
+    cases.forEach(function(el){ if(!el.hidden) el.open=anyClosed; });
+    expand.textContent=anyClosed?'全部閉じる':'全部開く';
+  });
+  apply('all');
+})();
+</script>
+</body>
+</html>

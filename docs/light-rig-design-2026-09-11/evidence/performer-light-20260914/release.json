@@ -1,0 +1,24 @@
+{
+  "commit": "f8356deaa24e27676fd2a75cbaf3e7e38a36f432",
+  "parent": "44fe60d5688f2a3b2fe1a306d2e025f3880f3547",
+  "files": {
+    "docs/light-rig-design-2026-09-11/prototype/app.js": "382eff0ab652a56de01459f6e224857d02724ef9e0ebb4e7e61212b606510ca3",
+    "docs/light-rig-design-2026-09-11/prototype/stage-figure.js": "2b4bcc60ae38fff8fc96cde793865adb32120d6ceba7744e2f4492fe04f54fa5",
+    "docs/light-rig-design-2026-09-11/prototype/index.html": "8c2684c53a304cb8f43441122947e1e44967763b470f5b87a39a0c4b1b4b0615"
+  },
+  "live": {
+    "docs/light-rig-design-2026-09-11/prototype/app.js": {
+      "sha256": "382eff0ab652a56de01459f6e224857d02724ef9e0ebb4e7e61212b606510ca3",
+      "matches": true
+    },
+    "docs/light-rig-design-2026-09-11/prototype/stage-figure.js": {
+      "sha256": "2b4bcc60ae38fff8fc96cde793865adb32120d6ceba7744e2f4492fe04f54fa5",
+      "matches": true
+    },
+    "docs/light-rig-design-2026-09-11/prototype/index.html": {
+      "sha256": "8c2684c53a304cb8f43441122947e1e44967763b470f5b87a39a0c4b1b4b0615",
+      "matches": true
+    }
+  },
+  "pages_status": "built"
+}

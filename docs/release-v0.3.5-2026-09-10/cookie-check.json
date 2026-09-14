@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "path": "/stage?lang=en",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "path": "/stage-sketch.js?v=339",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "path": "/stage-shows.local.js",
+      "status": 403,
+      "expected": 403
+    },
+    {
+      "path": "/worker.js",
+      "status": 403,
+      "expected": 403
+    }
+  ]
+}

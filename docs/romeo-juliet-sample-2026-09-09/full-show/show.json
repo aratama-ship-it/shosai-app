@@ -1,0 +1,5041 @@
+{
+  "schema": "romeo-juliet.full-show-authoring.v1",
+  "id": "RJ-FULL-SHOW-01",
+  "revision": 1,
+  "updated": "2026-09-11",
+  "title": "ロミオとジュリエット｜通し上演稿",
+  "status": "assistant_proposal_for_user_revision",
+  "authorizationEntryId": "RJ-NOTE-0036",
+  "premise": "争う手が触れ合い、結ばれ、離れ、最後に残された人たちの手へ渡る。群衆は街、宴、秘密を見ない背中、届かない時間の川へ姿を変える。",
+  "readingPolicy": "これまでの演出を土台に、全体を止めずに読めるよう細部を補った通し案。追加のト書き・音楽・照明・転換・秒数はAI提案であり、本人の最終決定ではない。",
+  "durationPolicy": "休憩なし。各キューの仮尺に出入りと転換を含む。冒頭の乱戦3分のみ既存の目安を継承し、それ以外は今回の配分案。カーテンコール60秒は本編の外。",
+  "spatialConvention": "左右は客席から見た方向。家を表すときは左がモンタギュー、右がキャピュレット。街路・旅路は両家の陣地に分けず、終幕は左が墓所、右がロレンスの場所、中央が人の川。",
+  "musicPlan": [
+    {
+      "id": "M01",
+      "name": "街の拍",
+      "idea": "乾いた足音と低い打音。四隅は少しずれたリズム、中央は呼吸の静けさ。"
+    },
+    {
+      "id": "M02",
+      "name": "室内の宴",
+      "idea": "M01の拍を柔らかな低音と擦弦へ移す。円を描く三拍子の感触。二人の接触から短い二音の旋律が生まれる。"
+    },
+    {
+      "id": "M03",
+      "name": "二人の旋律",
+      "idea": "宴の二音を間隔の広い独奏へ。窓辺、結婚、夜明けで音数と余韻を変える。"
+    },
+    {
+      "id": "M04",
+      "name": "争いの再来",
+      "idea": "M01の拍が詰まり、呼吸を追い越す。負傷の瞬間は一打と音の空白。報復を勝利の音で飾らない。"
+    },
+    {
+      "id": "M05",
+      "name": "決意と仮死",
+      "idea": "低い持続音。瓶を受け取る時だけ二音の一方を鳴らす。葬送では宴の拍を遅くし、祝宴と弔いの違いを作る。"
+    },
+    {
+      "id": "M06",
+      "name": "届かない時間",
+      "idea": "二つの短い音型が同じ形を時間差で繰り返す。追いかけっこの軽さを経て、墓所で同じ反復が冷たく聞こえる。"
+    },
+    {
+      "id": "M07",
+      "name": "残る呼吸",
+      "idea": "二人の死で反復を止める。最後の集合は足音と呼吸。終わりに二音の旋律を一度だけ、解決を急がず置く。"
+    }
+  ],
+  "productionNotes": [
+    "音楽は選曲・制作前の方向性。曲名・録音・実音源を同梱したものではない。台詞の聞こえる音量とし、技の途中で音だけが先に進まないよう、人の動きをGOの基準にする。",
+    "照明の基本は全体、中央、右手前、左墓所、右別場所の焦点。冒頭はセンターと全体を穏やかに分ける。赤青は人物の所属色であり、毎回舞台を二色で塗り分ける意味ではない。",
+    "バーは舞台奥の中立色のカウンターと背面棚。設営は冒頭の暗転から宴の立上がりにかけて大道具担当が行い、宴の終わりに右手前へ視線を集めて撤去する。俳優10名とは別のスタッフ作業。",
+    "舞踏会では10名全員が仮面を着ける。窓辺までに仮面を外し、以後は着けない。群衆を担う時は家の色の小物を袖に預け、中立の見た目へ切り替える。",
+    "10名の担当役は固定、空いている時だけ匿名アンサンブルを兼ねる。ティボルトとマーキューシオは死後いったん袖へ出てから群衆に戻る。死んだ人物が物語へ戻った演出にはしない。",
+    "実際の殺陣、接触、倒れ方、身体の支持、器具を使うサーカス技は稽古で置き換える。ここでは見せたい形と合図を記す。高所装置を必須にせず、平舞台でも通せる案とする。",
+    "本稿で乳母役が名前のある人物として出るのは仮死発見と葬送。約束と結婚でジュリエットを探すのは、引き続き袖の大道具さん。",
+    "既存の構成図は各キュー内の瞬間。画像の人数はその瞬間の人数であり、本文の出入りすべてが同時に起きる意味ではない。舞台寸法・正確な導線は仮置き。"
+  ],
+  "props": [
+    {
+      "id": "PROP-MASK",
+      "name": "仮面10枚",
+      "track": "冒頭の暗転で着用→宴・家名で全員着用→宴の終わりに袖へ返却。二人は右手前の薄明で外して自分の衣装にしまう。"
+    },
+    {
+      "id": "PROP-BAR",
+      "name": "バー・カウンターと背面棚",
+      "track": "開演前は奥で待機→冒頭暗転・宴の立上がりで設置→宴の終わりに右手前への焦点を残して大道具担当が撤去。以後は使わない。"
+    },
+    {
+      "id": "PROP-SWORD",
+      "name": "殺陣用の剣の表現",
+      "track": "冒頭はベンとティボルト→宴までに袖へ→決闘でティボルト・マーキューシオ・ロミオ→死亡場面後に担当者と袖へ。終幕の短剣とは別管理。"
+    },
+    {
+      "id": "PROP-VIAL",
+      "name": "ジュリエットの仮死の小瓶",
+      "track": "ロレンスが示す→ジュリエットが受け取る→一人で飲む演技→身体の脇へ置く→発見時に乳母担当が引き取る。ロミオの毒とは別物。"
+    },
+    {
+      "id": "PROP-LETTER",
+      "name": "封じた手紙1通",
+      "track": "ロレンスが書いて封をする→ジョンに託す→入れ違いの間ずっとジョンが保持→右の別場所でロレンスへ返す→終幕でロレンスが示す。ロミオには渡らない。"
+    },
+    {
+      "id": "PROP-CUP",
+      "name": "ロミオの毒を示す杯",
+      "track": "墓所への再登場時にロミオが持つ。入手過程は上演上省略→ロミオが飲む演技→身体の脇→ジュリエットが気づく。仮死の小瓶と混同しない形。"
+    },
+    {
+      "id": "PROP-DAGGER",
+      "name": "終幕の短剣を示す小道具",
+      "track": "ロミオの衣装側にある記号的な小道具→ジュリエットが気づく→刃の接触を見せず、手の動きと身体が沈む形で死を示す。"
+    },
+    {
+      "id": "PROP-SEAT",
+      "name": "低い腰掛け1台",
+      "track": "薬の場面で右に準備→寝室のベッドに見立てる→葬送の退場中、客席の焦点外で大道具担当が左墓所へ移す→二人の死から終幕まで左に残す。"
+    }
+  ],
+  "adaptations": [
+    "第1場面の短い台詞は既存下訳から選ぶが、二人が剣を交える原文のト書きは採用せず、ユーザー指定の接触前の暗転を優先する。",
+    "ベンヴォーリオが追放の裁きを伝え、後にはバルサザーに代わって死の知らせを運ぶ。判決を下すのは大公で、ベンヴォーリオではない。既存の構成稿から継承した配役集約案。",
+    "追跡でロミオを見失ってからマーキューシオが現れ、ロミオ介入→負傷→即時報復へ至る順を維持する。マーキューシオはモンタギュー家の血縁ではなくロミオの友人。赤は味方側の視覚上の整理。",
+    "手紙の不達は使者とロミオの入れ違いへ簡略化する。ジョンはロミオを見つけられず戻る。薬の計画を聞く場面と、ロミオが死を信じる場面は別。",
+    "終幕では人の川で隔てた二地点を貫くため、ロレンスは二人の死まで墓所に入れない案とする。旧抜粋のジュリエットがロレンスへ『行ってください』と言う箇所を本稿では使わない。原作どおりの来訪時刻の再現ではなく、今回の左右分割から補った脚色。",
+    "二人の死は音の停止、届かない手、身体の沈みで表す。両親の和解はロレンスの真相説明と悲しみを経てから。像を建てる長い申し出は省略し、手を差し出す短い応答で閉じる。"
+  ],
+  "cues": [
+    {
+      "id": "RJ-COND-01-A",
+      "durationProposalSeconds": 180,
+      "durationBasis": "existing_user_approximation",
+      "purpose": "争いの大きさと、それを止めたいベンヴォーリオの孤立を見せる。",
+      "beats": [
+        {
+          "action": "開演。四隅に二人組が一組ずつ。奥左はロミオ／ジュリエット担当、奥右はロレンス／ジョン担当、手前左は両父親担当、手前右はマーキューシオ／乳母担当。八人は匿名の街の人々。中央のベンヴォーリオとティボルトは互いを見据え、まだ戦わない。",
+          "frameId": "RJ-COND-01-A-01",
+          "id": "RJ-COND-01-A-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "四組は押し返す、かわす、重心を奪い返す動きを少しずつ異なる拍で重ねる。派手な連続技より、相手がいるために起きる反応を見せる。中央のベンヴォーリオは周囲へ掌を見せ、ティボルトはその視線を自分へ戻そうとする。",
+          "id": "RJ-COND-01-A-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "1分55秒ごろ、奥左の二人の呼吸がそろう。奥右も手を放して退く。手前左は双方が痛みを抱えて別方向へ。手前右だけが最後まで動き、ほかの六人は散りながら戦意を失う。",
+          "id": "RJ-COND-01-A-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "最後の一組が互いの傷を認め、手を下ろす。乱闘の音が消えた空白へ、ベンヴォーリオが一歩出る。",
+          "id": "RJ-COND-01-A-FULL-B04",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "BENVOLIO",
+              "text": "争いを止めているだけだ。剣を収めろ。\n抜いたままでいるなら、私と一緒にこいつらを引き離せ。",
+              "origin": "existing_excerpt",
+              "sourceSampleId": "RJ-SAMPLE-01",
+              "sourceLineRange": [
+                6,
+                7
+              ],
+              "id": "RJ-COND-01-A-FULL-B04-D01",
+              "speaker": "ベンヴォーリオ"
+            }
+          ]
+        }
+      ],
+      "technical": {
+        "light": "全体の明かりと中央の穏やかなスポット。点滅や強い色変化は使わず、四隅が止まるほど中央が目に入る。",
+        "music": "M01。足音の密度を減らし、最後は中央二人の呼吸を残す。",
+        "body": "四隅の相互反応と、中央の静かな対峙の対比。",
+        "props": "八名の群衆には家の色を割り振らない。中央二役の剣は静止を主に扱う。"
+      },
+      "exit": "最後の一組が止まり、ベンヴォーリオが制止の一歩を出したことを確認して次の挑発へ。",
+      "number": 1,
+      "title": "四隅の乱戦",
+      "sceneId": "RJ-COND-01",
+      "sceneNumber": 1,
+      "inheritedDirection": "10名全員。四隅で四組が乱闘する。中央のベンヴォーリオは争いを止めようとし、ティーボルトはその制止を受けず見据える。約3分の既存ブロッキングを維持する。",
+      "startProposalSeconds": 0,
+      "endProposalSeconds": 180,
+      "nextCueId": "RJ-COND-01-B",
+      "frames": [
+        {
+          "id": "RJ-COND-01-A-01",
+          "sceneId": "RJ-COND-01",
+          "sceneNumber": 1,
+          "cueId": "RJ-COND-01-A",
+          "cueTitle": "四隅の乱戦",
+          "title": "四隅の乱戦／中央の制止",
+          "summary": "四隅に二人ずつ。中央のベンヴォーリオは乱闘を止めようとし、ティボルトはその制止を受けず見据える。左右で両家を分けない。",
+          "people": [
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": null,
+              "label": "1",
+              "name": "群1（ロミオ担当）",
+              "u": 0.16,
+              "v": 0.22,
+              "pose": "reach",
+              "facing": 90,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": null,
+              "label": "2",
+              "name": "群2（ジュリエット担当）",
+              "u": 0.24,
+              "v": 0.22,
+              "pose": "open",
+              "facing": 270,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": null,
+              "label": "3",
+              "name": "群3（ロレンス修道士担当）",
+              "u": 0.76,
+              "v": 0.22,
+              "pose": "open",
+              "facing": 90,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "FRIAR_JOHN",
+              "characterRoleId": null,
+              "label": "4",
+              "name": "群4（ジョン修道士担当）",
+              "u": 0.84,
+              "v": 0.22,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "MONTAGUE",
+              "characterRoleId": null,
+              "label": "5",
+              "name": "群5（モンタギュー担当）",
+              "u": 0.16,
+              "v": 0.78,
+              "pose": "reach",
+              "facing": 90,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "CAPULET",
+              "characterRoleId": null,
+              "label": "6",
+              "name": "群6（キャピュレット担当）",
+              "u": 0.24,
+              "v": 0.78,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": null,
+              "label": "7",
+              "name": "群7（マーキューシオ担当）",
+              "u": 0.76,
+              "v": 0.78,
+              "pose": "crouch",
+              "facing": 90,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "NURSE",
+              "characterRoleId": null,
+              "label": "8",
+              "name": "群8（乳母担当）",
+              "u": 0.84,
+              "v": 0.78,
+              "pose": "open",
+              "facing": 270,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": "BENVOLIO",
+              "label": "Be",
+              "name": "ベンヴォーリオ",
+              "u": 0.44,
+              "v": 0.5,
+              "pose": "open",
+              "facing": 90,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": "制止"
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": "TYBALT",
+              "label": "Ty",
+              "name": "ティボルト",
+              "u": 0.56,
+              "v": 0.5,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": "挑発"
+            }
+          ],
+          "lightPools": [
+            {
+              "u": 0.5,
+              "v": 0.5,
+              "ru": 0.17,
+              "rv": 0.2
+            }
+          ],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0023",
+            "RJ-NOTE-0024",
+            "RJ-NOTE-0026",
+            "RJ-NOTE-0034"
+          ],
+          "positionNote": "冒頭の既存ブロッキング案の座標を再使用。四隅の乱戦は約3分のイメージ。位置は稽古前の案。",
+          "scriptUrl": "../condensed-show/#RJ-COND-01",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-01-A-01",
+          "offstageRoleIds": []
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-01-B",
+      "durationProposalSeconds": 20,
+      "purpose": "平和へ向かいかけた空気を、ティボルトの一歩が断ち切る。",
+      "beats": [
+        {
+          "action": "ティボルトがベンヴォーリオの制止を受けず、間合いへ踏み込もうとする。",
+          "frameId": "RJ-COND-01-B-02",
+          "id": "RJ-COND-01-B-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "TYBALT",
+              "text": "剣を抜いておいて、平和だと？　その言葉が大嫌いだ。",
+              "origin": "existing_excerpt",
+              "sourceSampleId": "RJ-SAMPLE-01",
+              "sourceLineRange": [
+                8,
+                8
+              ],
+              "id": "RJ-COND-01-B-FULL-B01-D01",
+              "speaker": "ティボルト"
+            }
+          ]
+        },
+        {
+          "action": "剣が触れる前、挑発が見えた瞬間にブラックアウト。接触音は鳴らさない。前キューまでの約3分を、ここで切る。",
+          "id": "RJ-COND-01-B-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "暗転の間に全員が仮面を着け、四隅の形を解く。大道具担当が奥のバーを設置する。暗転が長引く場合は、人物が配置に着く前から小さく室内の音を始める。",
+          "id": "RJ-COND-01-B-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "挑発を合図に即暗転。完了報告を受けて宴の明かりへ。20秒は転換込みの案。",
+        "music": "一度無音。M01の拍をM02の宴の拍へ変え、室内の空気を先に届ける。",
+        "body": "止める手と、挑発の一歩。戦闘の見せ場には延ばさない。",
+        "props": "全員の仮面、バーを準備。冒頭の武器は袖へ。"
+      },
+      "exit": "バーと全員の仮面の準備が整い、右手前の二人が配置に着いたら宴へ。",
+      "number": 2,
+      "title": "制止への挑発と暗転",
+      "sceneId": "RJ-COND-01",
+      "sceneNumber": 1,
+      "inheritedDirection": "最後の一組が止まり、ベンヴォーリオが制止へ踏み出す。ティーボルトがその動きを決闘への挑発に変えようとした瞬間、剣が触れる前にブラックアウトする。",
+      "startProposalSeconds": 180,
+      "endProposalSeconds": 200,
+      "nextCueId": "RJ-COND-01-C",
+      "frames": [
+        {
+          "id": "RJ-COND-01-B-02",
+          "sceneId": "RJ-COND-01",
+          "sceneNumber": 1,
+          "cueId": "RJ-COND-01-B",
+          "cueTitle": "制止への挑発と暗転",
+          "title": "中央の制止と挑発",
+          "summary": "周囲の乱闘が止まった瞬間、ベンヴォーリオが制止へ踏み出す。ティボルトがそれを挑発へ変えようとした瞬間、剣が触れる前にブラックアウト。",
+          "people": [
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": null,
+              "label": "1",
+              "name": "群1（ロミオ担当）",
+              "u": 0.1,
+              "v": 0.12,
+              "pose": "walk",
+              "facing": 270,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": null,
+              "label": "2",
+              "name": "群2（ジュリエット担当）",
+              "u": 0.3,
+              "v": 0.08,
+              "pose": "walk",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": null,
+              "label": "3",
+              "name": "群3（ロレンス修道士担当）",
+              "u": 0.7,
+              "v": 0.08,
+              "pose": "walk",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "FRIAR_JOHN",
+              "characterRoleId": null,
+              "label": "4",
+              "name": "群4（ジョン修道士担当）",
+              "u": 0.9,
+              "v": 0.12,
+              "pose": "walk",
+              "facing": 90,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "MONTAGUE",
+              "characterRoleId": null,
+              "label": "5",
+              "name": "群5（モンタギュー担当）",
+              "u": 0.1,
+              "v": 0.88,
+              "pose": "crouch",
+              "facing": 270,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "CAPULET",
+              "characterRoleId": null,
+              "label": "6",
+              "name": "群6（キャピュレット担当）",
+              "u": 0.3,
+              "v": 0.92,
+              "pose": "crouch",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": null,
+              "label": "7",
+              "name": "群7（マーキューシオ担当）",
+              "u": 0.7,
+              "v": 0.92,
+              "pose": "walk",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "NURSE",
+              "characterRoleId": null,
+              "label": "8",
+              "name": "群8（乳母担当）",
+              "u": 0.9,
+              "v": 0.88,
+              "pose": "walk",
+              "facing": 90,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": "BENVOLIO",
+              "label": "Be",
+              "name": "ベンヴォーリオ",
+              "u": 0.46,
+              "v": 0.5,
+              "pose": "open",
+              "facing": 90,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": "制止"
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": "TYBALT",
+              "label": "Ty",
+              "name": "ティボルト",
+              "u": 0.54,
+              "v": 0.5,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": "挑発"
+            }
+          ],
+          "lightPools": [
+            {
+              "u": 0.5,
+              "v": 0.5,
+              "ru": 0.17,
+              "rv": 0.2
+            }
+          ],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": "ティボルトがベンヴォーリオの制止を挑発へ変えようとした直後に暗転",
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0023",
+            "RJ-NOTE-0024",
+            "RJ-NOTE-0026",
+            "RJ-NOTE-0034"
+          ],
+          "positionNote": "冒頭の既存ブロッキング案の座標を再使用。四隅の乱戦は約3分のイメージ。中央はベンヴォーリオの制止とティボルトの挑発を見せ、剣が触れる前に暗転する。位置は稽古前の案。",
+          "scriptUrl": "../condensed-show/#RJ-COND-01",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-01-B-02",
+          "offstageRoleIds": []
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-01-C",
+      "durationProposalSeconds": 150,
+      "purpose": "群れの中で、二人だけが同じ速度になる。",
+      "beats": [
+        {
+          "action": "奥にバー。10名全員が仮面。八名はカウンターに集まる、杯を掲げる、相手を替えて回るなど、室内の宴として動く。ロミオとジュリエットは客席右手前。",
+          "frameId": "RJ-COND-01-C-01",
+          "id": "RJ-COND-01-C-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "八名の輪の切れ目からロミオがジュリエットを見つける。二人は宴と同じ拍で一度すれ違い、二度目だけ歩みを止める。掌が触れそうな距離を保ち、周囲の回転から外れる。",
+          "id": "RJ-COND-01-C-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "ROMEO",
+              "text": "この不作法な手で、この聖堂を汚したのなら、\nどうか、唇に償わせてください。\nこの唇も、祈るようにあなたへ近づき、\nやさしい口づけで、手の無礼を清めたいのです。",
+              "origin": "existing_excerpt",
+              "sourceSampleId": "RJ-SAMPLE-02",
+              "sourceLineRange": [
+                2,
+                5
+              ],
+              "id": "RJ-COND-01-C-FULL-B02-D01",
+              "speaker": "ロミオ"
+            }
+          ]
+        },
+        {
+          "action": "ジュリエットが差し出された手を受け止める。二人は掌を合わせ、押す力を互いに返しながら小さく一周する。大きなリフトは使わず、相手に体重を預けかける感触を核にする。",
+          "id": "RJ-COND-01-C-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "JULIET",
+              "text": "その手を、そんなに責めないで。\nこんなにも礼を尽くして触れてくださったのに。\n聖者にも手があり、祈る人はその手に触れるもの。\n手のひらを合わせる――それで十分な口づけです。",
+              "origin": "existing_excerpt",
+              "sourceSampleId": "RJ-SAMPLE-02",
+              "sourceLineRange": [
+                6,
+                9
+              ],
+              "id": "RJ-COND-01-C-FULL-B03-D01",
+              "speaker": "ジュリエット"
+            }
+          ]
+        },
+        {
+          "action": "二人だけの回転が止まる。八名の宴は周辺で続き、注目を奪う技を加えない。",
+          "id": "RJ-COND-01-C-FULL-B04",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "ROMEO",
+              "text": "聖者にも唇はあるでしょう。祈る人にも。",
+              "origin": "existing_excerpt",
+              "sourceSampleId": "RJ-SAMPLE-02",
+              "sourceLineRange": [
+                10,
+                10
+              ],
+              "id": "RJ-COND-01-C-FULL-B04-D01",
+              "speaker": "ロミオ"
+            },
+            {
+              "speakerRoleId": "JULIET",
+              "text": "ええ。けれど、祈るための唇です。",
+              "origin": "existing_excerpt",
+              "sourceSampleId": "RJ-SAMPLE-02",
+              "sourceLineRange": [
+                11,
+                11
+              ],
+              "id": "RJ-COND-01-C-FULL-B04-D02",
+              "speaker": "ジュリエット"
+            }
+          ]
+        }
+      ],
+      "technical": {
+        "light": "右手前の二人へ柔らかいスポット。バーは室内を感じる暖かな光。八名が見える最低限の明るさを残す。",
+        "music": "M02。掌が合う時に二音の旋律。台詞中は伴奏の音数を下げる。",
+        "body": "宴は円運動、二人は小さな鏡の動き。仮面を着けたまま相手を選ぶ。",
+        "props": "バーと仮面のみで場所を示す。杯を使う案は少数に絞り、持ち替えを主役にしない。"
+      },
+      "exit": "二人の掌が合った静止へ、宴の輪が寄り、相手の家名を知る瞬間につなぐ。",
+      "number": 3,
+      "title": "仮面の宴",
+      "sceneId": "RJ-COND-01",
+      "sceneNumber": 1,
+      "inheritedDirection": "暗転の中で全員が仮面へ移行。右斜め手前にロミオとジュリエットのスポットを作り、ほかの8名は別の場所で宴を続ける。",
+      "startProposalSeconds": 200,
+      "endProposalSeconds": 350,
+      "nextCueId": "RJ-COND-01-D",
+      "frames": [
+        {
+          "id": "RJ-COND-01-C-01",
+          "sceneId": "RJ-COND-01",
+          "sceneNumber": 1,
+          "cueId": "RJ-COND-01-C",
+          "cueTitle": "仮面の宴",
+          "title": "仮面舞踏会と二人の出会い",
+          "summary": "全員が仮面を着け、舞台奥のバーを背景に宴を続ける。ロミオとジュリエットは客席右斜め手前のスポットの中。",
+          "people": [
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": null,
+              "label": "1",
+              "name": "群1（ロレンス修道士担当）",
+              "u": 0.12,
+              "v": 0.2,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": null,
+              "label": "2",
+              "name": "群2（ベンヴォーリオ担当）",
+              "u": 0.3,
+              "v": 0.18,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": null,
+              "label": "3",
+              "name": "群3（ティボルト担当）",
+              "u": 0.52,
+              "v": 0.18,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": null,
+              "label": "4",
+              "name": "群4（マーキューシオ担当）",
+              "u": 0.75,
+              "v": 0.18,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "NURSE",
+              "characterRoleId": null,
+              "label": "5",
+              "name": "群5（乳母担当）",
+              "u": 0.9,
+              "v": 0.4,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "CAPULET",
+              "characterRoleId": null,
+              "label": "6",
+              "name": "群6（キャピュレット担当）",
+              "u": 0.13,
+              "v": 0.65,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "MONTAGUE",
+              "characterRoleId": null,
+              "label": "7",
+              "name": "群7（モンタギュー担当）",
+              "u": 0.32,
+              "v": 0.63,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "FRIAR_JOHN",
+              "characterRoleId": null,
+              "label": "8",
+              "name": "群8（ジョン修道士担当）",
+              "u": 0.5,
+              "v": 0.46,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.7,
+              "v": 0.8,
+              "pose": "stand",
+              "facing": 90,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.86,
+              "v": 0.8,
+              "pose": "stand",
+              "facing": 270,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [
+            {
+              "u": 0.78,
+              "v": 0.8,
+              "ru": 0.19,
+              "rv": 0.17
+            }
+          ],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0002"
+          ],
+          "positionNote": "位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/#RJ-COND-01",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-01-C-01",
+          "offstageRoleIds": []
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-01-D",
+      "durationProposalSeconds": 45,
+      "purpose": "触れ合った相手が、敵の家の子だと知る。",
+      "beats": [
+        {
+          "action": "八名が二人を囲い込みかける。本人たちの赤と青の小物が仮面の下から見え、家を知る。周囲の人物にはまだ個別の役を割り当てない。",
+          "frameId": "RJ-COND-01-D-01",
+          "id": "RJ-COND-01-D-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "ROMEO",
+              "text": "キャピュレットの人なのか。",
+              "origin": "new_dialogue_proposal",
+              "id": "RJ-COND-01-D-FULL-B01-D01",
+              "speaker": "ロミオ"
+            },
+            {
+              "speakerRoleId": "JULIET",
+              "text": "あなたが、モンタギューのロミオ。",
+              "origin": "new_dialogue_proposal",
+              "id": "RJ-COND-01-D-FULL-B01-D02",
+              "speaker": "ジュリエット"
+            }
+          ]
+        },
+        {
+          "action": "二人の掌がいったん離れる。八名は相手を連れ戻す形で動くが、二人は右手前に残る。最後にジュリエットが自分からもう一度手を伸ばす。",
+          "id": "RJ-COND-01-D-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "八名が宴の客として袖へ消え、仮面を返す。右手前を残して奥を落とし、大道具担当がバーを撤去。二人も仮面を外し、自分の衣装にしまう。二人が顔を見せたところから、同じ場所を窓辺と読む。",
+          "id": "RJ-COND-01-D-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "室内の暖かさが消え、右手前だけを残す。幕間の暗転は挟まない。",
+        "music": "M02の宴の拍を消し、二音だけを残してM03へ。",
+        "body": "群れの引く力に対して、二人が再び手を伸ばす。",
+        "props": "バー撤去完了を窓辺へのGO条件にする。仮面は以後使わない。"
+      },
+      "exit": "八名とバーがいなくなり、二人の素顔が見えたら第2場面の窓辺へ。",
+      "number": 4,
+      "title": "敵の名",
+      "sceneId": "RJ-COND-01",
+      "sceneNumber": 1,
+      "inheritedDirection": "二人が互いの家名を知る。宴の群れが両家の世界を再び二人の間へ持ち込む。",
+      "startProposalSeconds": 350,
+      "endProposalSeconds": 395,
+      "nextCueId": "RJ-COND-02-A",
+      "frames": [
+        {
+          "id": "RJ-COND-01-D-01",
+          "sceneId": "RJ-COND-01",
+          "sceneNumber": 1,
+          "cueId": "RJ-COND-01-D",
+          "cueTitle": "敵の名",
+          "title": "相手の家名を知る",
+          "summary": "全員が仮面のまま、舞台奥のバーを背景に宴の中で相手の家名を知る。二人と周囲の隔たりを見せる配置案。",
+          "people": [
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": null,
+              "label": "1",
+              "name": "群1（ロレンス修道士担当）",
+              "u": 0.12,
+              "v": 0.2,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": null,
+              "label": "2",
+              "name": "群2（ベンヴォーリオ担当）",
+              "u": 0.3,
+              "v": 0.18,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": null,
+              "label": "3",
+              "name": "群3（ティボルト担当）",
+              "u": 0.52,
+              "v": 0.18,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": null,
+              "label": "4",
+              "name": "群4（マーキューシオ担当）",
+              "u": 0.75,
+              "v": 0.18,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "NURSE",
+              "characterRoleId": null,
+              "label": "5",
+              "name": "群5（乳母担当）",
+              "u": 0.9,
+              "v": 0.4,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "CAPULET",
+              "characterRoleId": null,
+              "label": "6",
+              "name": "群6（キャピュレット担当）",
+              "u": 0.13,
+              "v": 0.65,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "MONTAGUE",
+              "characterRoleId": null,
+              "label": "7",
+              "name": "群7（モンタギュー担当）",
+              "u": 0.32,
+              "v": 0.63,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "FRIAR_JOHN",
+              "characterRoleId": null,
+              "label": "8",
+              "name": "群8（ジョン修道士担当）",
+              "u": 0.5,
+              "v": 0.46,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "仮面"
+            },
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.7,
+              "v": 0.8,
+              "pose": "stand",
+              "facing": 90,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.86,
+              "v": 0.8,
+              "pose": "stand",
+              "facing": 270,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [
+            {
+              "u": 0.78,
+              "v": 0.8,
+              "ru": 0.19,
+              "rv": 0.17
+            }
+          ],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0002"
+          ],
+          "positionNote": "位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/#RJ-COND-01",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-01-D-01",
+          "offstageRoleIds": []
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-02-A",
+      "durationProposalSeconds": 90,
+      "purpose": "家名を知った上で、結婚を自分たちの意思として選ぶ。",
+      "beats": [
+        {
+          "action": "右手前に二人だけ。窓や高いバルコニーを建てず、ジュリエットがわずかに上体を起こし、ロミオが低い位置から手を伸ばすことで窓辺を示す。",
+          "frameId": "RJ-COND-02-A-01",
+          "id": "RJ-COND-02-A-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "JULIET",
+              "text": "ロミオ、あと少しだけ。それで、本当におやすみ。\nあなたの愛が誠実で、\n結婚するつもりがあるのなら、\n明日、私がそちらへ送る人に伝えて。\nいつ、どこで式を挙げるのか。\n私の持つものすべてを、あなたに預けます。\nどこへでも、あなたについていく。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-02-A-L02",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-03",
+                "sourceLines": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7
+                ],
+                "rawLines": [
+                  "ジュリエット　ロミオ、あと少しだけ。それで、本当におやすみ。",
+                  "　あなたの愛が誠実で、",
+                  "　結婚するつもりがあるのなら、",
+                  "　明日、私がそちらへ送る人に伝えて。",
+                  "　いつ、どこで式を挙げるのか。",
+                  "　私の持つものすべてを、あなたに預けます。",
+                  "　どこへでも、あなたについていく。"
+                ]
+              },
+              "id": "RJ-COND-02-A-FULL-B01-D01",
+              "speaker": "ジュリエット"
+            }
+          ]
+        },
+        {
+          "action": "台詞の後に掌を合わせる。宴の時よりも静かに、相手に預ける重さを一度だけ確かめる。",
+          "id": "RJ-COND-02-A-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "CREW",
+              "text": "（袖から、大声で探す）ジュリエット！　ジュリエット、どこにいるの！",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-02-A-L03",
+              "sourceProvenance": {
+                "kind": "user_directed_dialogue_draft",
+                "userDirectionEntryIds": [
+                  "RJ-NOTE-0029",
+                  "RJ-NOTE-0030"
+                ],
+                "sourceSampleId": "RJ-SAMPLE-03",
+                "adaptedFromSourceLines": [
+                  8
+                ],
+                "note": "袖から大声で探す演出と、大道具担当が発声することは本人指示。具体的な呼びかけの文言はAIによる台詞案。"
+              },
+              "id": "RJ-COND-02-A-FULL-B02-D01",
+              "speaker": "大道具さん"
+            }
+          ]
+        },
+        {
+          "action": "大道具さんの声にジュリエットが気づき、二人は手を離す。ジュリエットは客席右の袖へ、ロミオは左の暗がりへ。追いかけず、互いが消えるまで視線だけを残す。",
+          "id": "RJ-COND-02-A-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "右手前のスポットを保ち、退いた後に中央へ移す。暗転なし。",
+        "music": "M03の独奏。探す声の直前に余韻だけにし、声をはっきり聞かせる。",
+        "body": "小さな重心の預け合い→指先が離れる。高低差は平舞台の姿勢で表す案。",
+        "props": "袖の声は大道具担当。俳優を一人増やさない。"
+      },
+      "exit": "二人が別々に退いた後、中央のロレンスを見せる。",
+      "number": 5,
+      "title": "二人だけの窓辺",
+      "sceneId": "RJ-COND-02",
+      "sceneNumber": 2,
+      "inheritedDirection": "第1場面と同じ右斜め手前の位置を使う。仮面の人々は消え、ロミオとジュリエットだけが残る。約束の終わりに、舞台袖から大道具さんがジュリエットを大声で探す。人物は登場せず、その声を受けて二人は手を離し、ジュリエットは客席右の袖へ、ロミオは客席左の暗がりへ別々に退く。暗転は使わない。",
+      "startProposalSeconds": 395,
+      "endProposalSeconds": 485,
+      "nextCueId": "RJ-COND-02-B",
+      "frames": [
+        {
+          "id": "RJ-COND-02-A-01",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-02-A",
+          "cueTitle": "二人だけの窓辺",
+          "title": "窓辺の二人／大道具さんの声",
+          "summary": "仮面の人々は退場。二人だけの時間へ、袖から大道具さんの探す声が届く。手を離した二人は、別々に退く。",
+          "people": [
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.7,
+              "v": 0.8,
+              "pose": "stand",
+              "facing": 90,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.86,
+              "v": 0.8,
+              "pose": "stand",
+              "facing": 270,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [
+            {
+              "u": 0.78,
+              "v": 0.8,
+              "ru": 0.19,
+              "rv": 0.17
+            }
+          ],
+          "zones": [],
+          "offstageVoice": {
+            "label": "大道具さん",
+            "text": "「ジュリエット！」",
+            "location": "袖",
+            "side": "right",
+            "sideStatus": "drawing_assumption",
+            "staff": true
+          },
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0003",
+            "RJ-NOTE-0029",
+            "RJ-NOTE-0030",
+            "RJ-NOTE-0035"
+          ],
+          "positionNote": "二人の右斜め手前は本人指定。発声する袖は図では右に仮置き。声を受けて二人は手を離し、ジュリエットは客席右の袖へ、ロミオは客席左の暗がりへ別々に退く。暗転は使わない。大道具さんは舞台上の俳優数に含めず、声だけを示す。位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-02-A",
+          "scriptExcerpt": "ジュリエット　ロミオ、あと少しだけ。それで、本当におやすみ。\nあなたの愛が誠実で、\n結婚するつもりがあるのなら、\n明日、私がそちらへ送る人に伝えて。\nいつ、どこで式を挙げるのか。\n私の持つものすべてを、あなたに預けます。\nどこへでも、あなたについていく。",
+          "sourceFrameId": "RJ-COND-02-A-01",
+          "offstageRoleIds": [
+            "FRIAR_LAWRENCE",
+            "BENVOLIO",
+            "TYBALT",
+            "MERCUTIO",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-02-B",
+      "durationProposalSeconds": 30,
+      "purpose": "夜から翌日へ、秘密を見ていない人々の背中で場所を変える。",
+      "beats": [
+        {
+          "action": "中央にロレンスが先に立つ。夜の窓辺の姿勢を解いたロミオとジュリエットは、袖で別々に待つ。",
+          "frameId": "RJ-COND-02-B-01",
+          "id": "RJ-COND-02-B-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "ほかの七名は背中を客席へ向け、左右の暗がりから横に滑って舞台奥の一列となる。一列の間隔がそろうまで誰も振り返らない。",
+          "id": "RJ-COND-02-B-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "七名が同じ息を一度吐く。静まった時、ロレンスが両側へ掌を開き、二人を迎える。",
+          "id": "RJ-COND-02-B-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "暗転せず右手前から中央へ。色温度をわずかに変え、翌日の時間を置く。",
+        "music": "M03の二音を長く引き伸ばす。七名の呼吸が聞こえる薄さ。",
+        "body": "背中の列は物理的な壁ではなく、秘密を見ない人々。客席から中央の人物は見える。",
+        "props": "バーはすでに撤去済み。祭壇や大きな装置は追加しない。"
+      },
+      "exit": "列がそろい、ロレンスの両手が開いたことを入口の合図にする。",
+      "number": 6,
+      "title": "背中の列と中央のロレンス",
+      "sceneId": "RJ-COND-02",
+      "sceneNumber": 2,
+      "inheritedDirection": "暗転せず中央へ焦点を移す。ロレンス修道士が先に中央で待つ。ほかの7名は客席へ背中を向けたまま、左右から横に滑って舞台奥の一列をつくる。二人はまだ入らない。",
+      "startProposalSeconds": 485,
+      "endProposalSeconds": 515,
+      "nextCueId": "RJ-COND-02-C",
+      "frames": [
+        {
+          "id": "RJ-COND-02-B-01",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-02-B",
+          "cueTitle": "背中の列と中央のロレンス",
+          "title": "見ない背中と中央のロレンス",
+          "summary": "ロレンスが中央で待つ。七名は客席へ背中を向けたまま、左右から横に滑って舞台奥の一列となる。二人はまだ入らない。",
+          "people": [
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": null,
+              "label": "1",
+              "name": "群1（ベンヴォーリオ担当）",
+              "u": 0.11,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": null,
+              "label": "2",
+              "name": "群2（ティボルト担当）",
+              "u": 0.24,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": null,
+              "label": "3",
+              "name": "群3（マーキューシオ担当）",
+              "u": 0.37,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "NURSE",
+              "characterRoleId": null,
+              "label": "4",
+              "name": "群4（乳母担当）",
+              "u": 0.5,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "CAPULET",
+              "characterRoleId": null,
+              "label": "5",
+              "name": "群5（キャピュレット担当）",
+              "u": 0.63,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "MONTAGUE",
+              "characterRoleId": null,
+              "label": "6",
+              "name": "群6（モンタギュー担当）",
+              "u": 0.76,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "FRIAR_JOHN",
+              "characterRoleId": null,
+              "label": "7",
+              "name": "群7（ジョン修道士担当）",
+              "u": 0.89,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": "FRIAR_LAWRENCE",
+              "label": "Lo",
+              "name": "ロレンス修道士",
+              "u": 0.5,
+              "v": 0.57,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#556044",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [
+            {
+              "u": 0.5,
+              "v": 0.57,
+              "ru": 0.17,
+              "rv": 0.19
+            }
+          ],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0004",
+            "RJ-NOTE-0035"
+          ],
+          "positionNote": "背中の列は左右から横に滑って舞台奥の一列となる。ロレンスは中央で待つ。ロミオとジュリエットはまだ別々の暗がりにいる。位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-02-B",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-02-B-01",
+          "offstageRoleIds": [
+            "ROMEO",
+            "JULIET"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-02-C",
+      "durationProposalSeconds": 100,
+      "purpose": "二人の結婚を短い幸福の頂点とし、その手を街の争いへつなぐ。",
+      "beats": [
+        {
+          "action": "ロミオは左斜め、ジュリエットは右斜めから別々に入る。ロレンスの前で初めて向き合う。七名は結婚が終わるまで振り返らない。",
+          "frameId": "RJ-COND-02-C-01",
+          "id": "RJ-COND-02-C-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "ROMEO",
+              "text": "ジュリエット、あなたも私と同じほど喜んでいて、\nそれを私よりうまく言えるなら、\nその声で、この空気まで甘くしてほしい。\n今、二人が分かち合う幸せを、音楽のように聞かせて。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-02-C-L02",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-04",
+                "sourceLines": [
+                  1,
+                  2,
+                  3,
+                  4
+                ],
+                "rawLines": [
+                  "ロミオ　ジュリエット、あなたも私と同じほど喜んでいて、",
+                  "　それを私よりうまく言えるなら、",
+                  "　その声で、この空気まで甘くしてほしい。",
+                  "　今、二人が分かち合う幸せを、音楽のように聞かせて。"
+                ]
+              },
+              "id": "RJ-COND-02-C-FULL-B01-D01",
+              "speaker": "ロミオ"
+            },
+            {
+              "speakerRoleId": "JULIET",
+              "text": "言葉より豊かな想いは、飾りで大きく見せたりしない。\n数えられるうちは、まだ乏しいのでしょう。\n私の愛はもう、その半分さえ数えきれない。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-02-C-L03",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-04",
+                "sourceLines": [
+                  5,
+                  6,
+                  7
+                ],
+                "rawLines": [
+                  "ジュリエット　言葉より豊かな想いは、飾りで大きく見せたりしない。",
+                  "　数えられるうちは、まだ乏しいのでしょう。",
+                  "　私の愛はもう、その半分さえ数えきれない。"
+                ]
+              },
+              "id": "RJ-COND-02-C-FULL-B01-D02",
+              "speaker": "ジュリエット"
+            }
+          ]
+        },
+        {
+          "action": "ロレンスの言葉を受け、二人は彼の両側から半歩だけ近づく。",
+          "id": "RJ-COND-02-C-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "FRIAR_LAWRENCE",
+              "text": "さあ、一緒に来なさい。式を始めよう。\n教会が二人を一つに結ぶまでは、\n二人きりにしておくわけにはいかないからね。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-02-C-L04",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-04",
+                "sourceLines": [
+                  8,
+                  9,
+                  10
+                ],
+                "rawLines": [
+                  "ロレンス修道士　さあ、一緒に来なさい。式を始めよう。",
+                  "　教会が二人を一つに結ぶまでは、",
+                  "　二人きりにしておくわけにはいかないからね。"
+                ]
+              },
+              "id": "RJ-COND-02-C-FULL-B02-D01",
+              "speaker": "ロレンス修道士"
+            }
+          ]
+        },
+        {
+          "action": "ロレンスが二人の手を重ね、静止を一呼吸保つ。二人は互いを見る。祝福の大きな見得ではなく、誰にも見られていない小さな成立として扱う。",
+          "id": "RJ-COND-02-C-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "手が離れると背中の列は外端から順に袖へ解ける。ジュリエットは右、ロレンスは奥へ退く。ティボルト担当は一度袖で匿名の姿を解き、青の役として右の街路入口へ。マーキューシオ担当は反対側で赤の味方側の小物を戻して待つ。ロミオだけが中央から街へ歩み出す。",
+          "id": "RJ-COND-02-C-FULL-B04",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "中央の柔らかい光。婚姻後、広い街路の光へ静かに開く。",
+        "music": "M03の二音が初めて重なる。手が離れると和音を切り、足音のM01を薄く戻す。",
+        "body": "手を重ねる形を観客の記憶に残す。背中の列から役への復帰は袖を経由する。",
+        "props": "婚姻は手で示す。指輪を追加しなくても成立する案。"
+      },
+      "exit": "ジュリエットとロレンスが退き、ロミオだけが街を歩く。袖から役として戻ったティボルトが名を呼ぶ。",
+      "number": 7,
+      "title": "秘密の結婚",
+      "sceneId": "RJ-COND-02",
+      "sceneNumber": 2,
+      "inheritedDirection": "ロミオは客席左斜め、ジュリエットは客席右斜めから別々に中央へ入り、ロレンスの前で初めて向き合う。七名は結婚が終わるまで振り返らず、誰にも見られていない秘密を身体で示す。",
+      "startProposalSeconds": 515,
+      "endProposalSeconds": 615,
+      "nextCueId": "RJ-COND-03-A",
+      "frames": [
+        {
+          "id": "RJ-COND-02-C-01",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-02-C",
+          "cueTitle": "秘密の結婚",
+          "title": "別々の斜めから、ロレンスの前へ",
+          "summary": "ロミオは客席左斜め、ジュリエットは客席右斜めから別々に入り、中央のロレンスの前で初めて向き合う。七名は振り返らない。",
+          "people": [
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": null,
+              "label": "1",
+              "name": "群1（ベンヴォーリオ担当）",
+              "u": 0.11,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": null,
+              "label": "2",
+              "name": "群2（ティボルト担当）",
+              "u": 0.24,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": null,
+              "label": "3",
+              "name": "群3（マーキューシオ担当）",
+              "u": 0.37,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "NURSE",
+              "characterRoleId": null,
+              "label": "4",
+              "name": "群4（乳母担当）",
+              "u": 0.5,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "CAPULET",
+              "characterRoleId": null,
+              "label": "5",
+              "name": "群5（キャピュレット担当）",
+              "u": 0.63,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "MONTAGUE",
+              "characterRoleId": null,
+              "label": "6",
+              "name": "群6（モンタギュー担当）",
+              "u": 0.76,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "FRIAR_JOHN",
+              "characterRoleId": null,
+              "label": "7",
+              "name": "群7（ジョン修道士担当）",
+              "u": 0.89,
+              "v": 0.18,
+              "pose": "back",
+              "facing": 0,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "背中"
+            },
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": "FRIAR_LAWRENCE",
+              "label": "Lo",
+              "name": "ロレンス修道士",
+              "u": 0.5,
+              "v": 0.48,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#556044",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.39,
+              "v": 0.72,
+              "pose": "stand",
+              "facing": 90,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.64,
+              "v": 0.72,
+              "pose": "stand",
+              "facing": 270,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [
+            {
+              "u": 0.51,
+              "v": 0.59,
+              "ru": 0.23,
+              "rv": 0.26
+            }
+          ],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0004",
+            "RJ-NOTE-0035"
+          ],
+          "positionNote": "ロミオは客席左斜め、ジュリエットは客席右斜めから別々に入る。中央で初めて向き合う。七名は結婚が終わるまで客席へ背中を向ける。位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-02-C",
+          "scriptExcerpt": "ロミオ　ジュリエット、あなたも私と同じほど喜んでいて、\nそれを私よりうまく言えるなら、\nその声で、この空気まで甘くしてほしい。\n今、二人が分かち合う幸せを、音楽のように聞かせて。",
+          "sourceFrameId": "RJ-COND-02-C-01",
+          "offstageRoleIds": []
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-03-A",
+      "durationProposalSeconds": 45,
+      "purpose": "ロミオが争いを避けたことを、追跡の始まりとして見せる。",
+      "beats": [
+        {
+          "action": "ティボルトが街路へ現れ、中央を横切るロミオを呼び止める。ロミオは握っていた自分の手を見てから、相手へ掌を下げる。結婚した相手の身内と争うまいという動き。",
+          "frameId": "RJ-COND-03-A-01",
+          "id": "RJ-COND-03-A-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "TYBALT",
+              "text": "ロミオ。おまえを呼ぶ名は、一つしかない――悪党だ。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-03-A-L01",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-05",
+                "sourceLines": [
+                  1
+                ],
+                "rawLines": [
+                  "ティボルト　ロミオ。おまえを呼ぶ名は、一つしかない――悪党だ。"
+                ]
+              },
+              "id": "RJ-COND-03-A-FULL-B01-D01",
+              "speaker": "ティボルト"
+            }
+          ]
+        },
+        {
+          "action": "ロミオは答えず、左の暗がりへ進む。ティボルトが追う。最初は同じ経路、二度目にロミオだけが奥を回り、視線の切れる袖へ抜ける。",
+          "id": "RJ-COND-03-A-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "ティボルトが反対側まで来て足を止める。客席へ怒りを見せるより、空いた場所を確かめる。追っていた相手が消えた間を一呼吸置く。",
+          "frameId": "RJ-COND-03-A-02",
+          "id": "RJ-COND-03-A-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "一つの街路の明かり。舞台の左右を両家に分けない。",
+        "music": "足音がM04の短い反復へ。見失った所で一度止める。",
+        "body": "直線→曲線→空振りの追跡。ロミオは振り向いて戦わない。",
+        "props": "ティボルトの武器は挑発の延長として持つ。"
+      },
+      "exit": "ティボルトが無人の方向を見た後、反対側からマーキューシオが現れる。",
+      "number": 8,
+      "title": "追跡と見失い",
+      "sceneId": "RJ-COND-02",
+      "sceneNumber": 2,
+      "inheritedDirection": "ロミオはティボルトを無視して去る。ティボルトは追うが見失う。",
+      "startProposalSeconds": 615,
+      "endProposalSeconds": 660,
+      "nextCueId": "RJ-COND-03-B",
+      "frames": [
+        {
+          "id": "RJ-COND-03-A-01",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-03-A",
+          "cueTitle": "追跡と見失い",
+          "title": "ロミオを呼び止め、追う",
+          "summary": "ロミオは答えずに去る。ティボルトは追う。矢印は動きの方向の案。",
+          "people": [
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.45,
+              "v": 0.55,
+              "pose": "walk",
+              "facing": 270,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": {
+                "u": 0.05,
+                "v": 0.55
+              },
+              "state": null
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": "TYBALT",
+              "label": "Ty",
+              "name": "ティボルト",
+              "u": 0.74,
+              "v": 0.52,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": {
+                "u": 0.27,
+                "v": 0.52
+              },
+              "state": null
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0010"
+          ],
+          "positionNote": "位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-03-A",
+          "scriptExcerpt": "ティボルト　ロミオ。おまえを呼ぶ名は、一つしかない――悪党だ。",
+          "sourceFrameId": "RJ-COND-03-A-01",
+          "offstageRoleIds": [
+            "JULIET",
+            "FRIAR_LAWRENCE",
+            "BENVOLIO",
+            "MERCUTIO",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        },
+        {
+          "id": "RJ-COND-03-A-02",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-03-A",
+          "cueTitle": "追跡と見失い",
+          "title": "ロミオを見失う",
+          "summary": "ロミオは舞台から消え、ティボルトが探して足を止める。次にマーキューシオが現れる。",
+          "people": [
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": "TYBALT",
+              "label": "Ty",
+              "name": "ティボルト",
+              "u": 0.26,
+              "v": 0.53,
+              "pose": "stand",
+              "facing": 90,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0010"
+          ],
+          "positionNote": "位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-03-A",
+          "scriptExcerpt": "ティボルト　ロミオ。おまえを呼ぶ名は、一つしかない――悪党だ。",
+          "sourceFrameId": "RJ-COND-03-A-02",
+          "offstageRoleIds": [
+            "ROMEO",
+            "JULIET",
+            "FRIAR_LAWRENCE",
+            "BENVOLIO",
+            "MERCUTIO",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-03-B",
+      "durationProposalSeconds": 60,
+      "purpose": "軽い挑発が引き返せない争いへ変わる。",
+      "beats": [
+        {
+          "action": "マーキューシオはティボルトの探す身振りを一度だけ真似る。観客が彼の機転を感じた直後、相手の進路へ立つ。ロミオへの親しさと、侮辱を受け流せない性格を身体で示す。",
+          "frameId": "RJ-COND-03-B-01",
+          "id": "RJ-COND-03-B-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "ティボルトは最短の直線、マーキューシオは回り込む曲線。向き合う→避ける→再び近づく三つの応酬で、遊びの距離が狭くなる。",
+          "id": "RJ-COND-03-B-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "マーキューシオの笑いが消える。二人の剣の形が上がった所で、物音に気づいたロミオが奥へ戻り、ベンヴォーリオも別方向から近づく。",
+          "id": "RJ-COND-03-B-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "二人が見える街路の明かりを固定。殺陣の途中で見え方を切り替えない。",
+        "music": "M04。マーキューシオの曲線に跳ねる音を添え、最後に低い拍へ収束。",
+        "body": "説明台詞を足さず、機転と直情の違いを動きで出す。具体的な武器の接触は殺陣担当と組む。",
+        "props": "マーキューシオの武器をこの入口で見せる。"
+      },
+      "exit": "軽い応酬が危険な距離に変わったことをロミオが見て、制止に入る。",
+      "number": 9,
+      "title": "マーキューシオの決闘",
+      "sceneId": "RJ-COND-02",
+      "sceneNumber": 2,
+      "inheritedDirection": "そこへマーキューシオが現れ、ティボルトと戦う。台詞を絞り、追跡と戦いを行動で見せる。",
+      "startProposalSeconds": 660,
+      "endProposalSeconds": 720,
+      "nextCueId": "RJ-COND-03-C",
+      "frames": [
+        {
+          "id": "RJ-COND-03-B-01",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-03-B",
+          "cueTitle": "マーキューシオの決闘",
+          "title": "マーキューシオとティボルト",
+          "summary": "マーキューシオが現れ、二人が剣を交える。殺陣の細かな技は未設定。",
+          "people": [
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": "MERCUTIO",
+              "label": "Me",
+              "name": "マーキューシオ",
+              "u": 0.38,
+              "v": 0.55,
+              "pose": "reach",
+              "facing": 90,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": "TYBALT",
+              "label": "Ty",
+              "name": "ティボルト",
+              "u": 0.66,
+              "v": 0.55,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0009",
+            "RJ-NOTE-0010"
+          ],
+          "positionNote": "位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-03-B",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-03-B-01",
+          "offstageRoleIds": [
+            "ROMEO",
+            "JULIET",
+            "FRIAR_LAWRENCE",
+            "BENVOLIO",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-03-C",
+      "durationProposalSeconds": 60,
+      "purpose": "止めようとしたロミオの手が、報復へ変わる。",
+      "beats": [
+        {
+          "action": "ベンヴォーリオが近づく。ロミオは開いた両腕で二人の間に入り、争いを止める。ティボルトの刃が腕の下を抜け、マーキューシオに届いたと分かる身体の反応を作る。",
+          "frameId": "RJ-COND-03-C-01",
+          "id": "RJ-COND-03-C-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "MERCUTIO",
+              "text": "両家とも、疫病に呑まれろ。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-03-C-L03",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-05",
+                "sourceLines": [
+                  6
+                ],
+                "rawLines": [
+                  "マーキューシオ　両家とも、疫病に呑まれろ。"
+                ]
+              },
+              "id": "RJ-COND-03-C-FULL-B01-D01",
+              "speaker": "マーキューシオ"
+            }
+          ]
+        },
+        {
+          "action": "ベンヴォーリオが崩れる友人を受け止める。その傷を見たロミオは一瞬でティボルトへ向き直る。長い確認や遺言を挟まない。",
+          "frameId": "RJ-COND-03-C-02",
+          "id": "RJ-COND-03-C-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "ROMEO",
+              "text": "ティボルト、おまえか私か、どちらかがあいつと行く。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-03-C-L05",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-05",
+                "sourceLines": [
+                  8
+                ],
+                "rawLines": [
+                  "ロミオ　ティボルト、おまえか私か、どちらかがあいつと行く。"
+                ]
+              },
+              "id": "RJ-COND-03-C-FULL-B02-D01",
+              "speaker": "ロミオ"
+            }
+          ]
+        },
+        {
+          "action": "ロミオが間を置かず報復する。応酬は短く、ティボルトの身体が沈む。ベンヴォーリオの支えるマーキューシオも力を失う。",
+          "frameId": "RJ-COND-03-C-03",
+          "id": "RJ-COND-03-C-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "二人の身体、支えるベンヴォーリオ、立ち尽くすロミオだけが残る。ロミオは自分の手を開く。結婚で重ねた同じ手が、誰にも触れられない。",
+          "id": "RJ-COND-03-C-FULL-B04",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "負傷と報復が見える光を維持し、終わってからゆっくり焦点を絞る。",
+        "music": "負傷の一打から空白、即時の報復に短い拍。二人が倒れたら止め、勝利の盛り上がりを作らない。",
+        "body": "制止→負傷→報復→空白を明確に。死は身体の重みが抜ける形。",
+        "props": "武器はこの後の焦点移動で袖へ収める。"
+      },
+      "exit": "ロミオが二つの身体から離れたことを合図に、光と時間を裁きの後へ移す。",
+      "number": 10,
+      "title": "死と即時の報復",
+      "sceneId": "RJ-COND-02",
+      "sceneNumber": 2,
+      "inheritedDirection": "ロミオが戻って止めに入り、その腕の下からティボルトの刃がマーキューシオに届く。ロミオは傷を見た瞬間に報復する。ティボルトが倒れ、マーキューシオも力を失う。",
+      "startProposalSeconds": 720,
+      "endProposalSeconds": 780,
+      "nextCueId": "RJ-COND-03-D",
+      "frames": [
+        {
+          "id": "RJ-COND-03-C-01",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-03-C",
+          "cueTitle": "死と即時の報復",
+          "title": "ロミオが止めに入る",
+          "summary": "ロミオが戻り、二人の間へ入る。この介入の後にマーキューシオが負傷する。",
+          "people": [
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": "MERCUTIO",
+              "label": "Me",
+              "name": "マーキューシオ",
+              "u": 0.3,
+              "v": 0.5,
+              "pose": "reach",
+              "facing": 90,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.5,
+              "v": 0.53,
+              "pose": "open",
+              "facing": 180,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": "TYBALT",
+              "label": "Ty",
+              "name": "ティボルト",
+              "u": 0.72,
+              "v": 0.5,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": "BENVOLIO",
+              "label": "Be",
+              "name": "ベンヴォーリオ",
+              "u": 0.18,
+              "v": 0.76,
+              "pose": "walk",
+              "facing": 45,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0009",
+            "RJ-NOTE-0010",
+            "RJ-NOTE-0011"
+          ],
+          "positionNote": "位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-03-C",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-03-C-01",
+          "offstageRoleIds": [
+            "JULIET",
+            "FRIAR_LAWRENCE",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        },
+        {
+          "id": "RJ-COND-03-C-02",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-03-C",
+          "cueTitle": "死と即時の報復",
+          "title": "傷を見て、即座に報復",
+          "summary": "ベンヴォーリオが負傷した友を支える。その傷を見たロミオが、間を置かずティボルトへ向かう。",
+          "people": [
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": "MERCUTIO",
+              "label": "Me",
+              "name": "マーキューシオ",
+              "u": 0.28,
+              "v": 0.62,
+              "pose": "kneel",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": "負傷"
+            },
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": "BENVOLIO",
+              "label": "Be",
+              "name": "ベンヴォーリオ",
+              "u": 0.15,
+              "v": 0.69,
+              "pose": "reach",
+              "facing": 90,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.55,
+              "v": 0.5,
+              "pose": "reach",
+              "facing": 90,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": {
+                "u": 0.65,
+                "v": 0.5
+              },
+              "state": null
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": "TYBALT",
+              "label": "Ty",
+              "name": "ティボルト",
+              "u": 0.76,
+              "v": 0.5,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0009",
+            "RJ-NOTE-0010",
+            "RJ-NOTE-0011"
+          ],
+          "positionNote": "位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-03-C",
+          "scriptExcerpt": "マーキューシオ　両家とも、疫病に呑まれろ。",
+          "sourceFrameId": "RJ-COND-03-C-02",
+          "offstageRoleIds": [
+            "JULIET",
+            "FRIAR_LAWRENCE",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        },
+        {
+          "id": "RJ-COND-03-C-03",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-03-C",
+          "cueTitle": "死と即時の報復",
+          "title": "二人が倒れる",
+          "summary": "ティボルトが倒れ、マーキューシオも力を失う。死亡を知らせる別の場面は挟まない。",
+          "people": [
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": "MERCUTIO",
+              "label": "Me",
+              "name": "マーキューシオ",
+              "u": 0.28,
+              "v": 0.65,
+              "pose": "lie",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": "死"
+            },
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": "BENVOLIO",
+              "label": "Be",
+              "name": "ベンヴォーリオ",
+              "u": 0.13,
+              "v": 0.68,
+              "pose": "kneel",
+              "facing": 180,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.56,
+              "v": 0.48,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": "TYBALT",
+              "label": "Ty",
+              "name": "ティボルト",
+              "u": 0.79,
+              "v": 0.62,
+              "pose": "lie",
+              "facing": 180,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": "死"
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0009",
+            "RJ-NOTE-0010",
+            "RJ-NOTE-0011"
+          ],
+          "positionNote": "位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-03-C",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-03-C-03",
+          "offstageRoleIds": [
+            "JULIET",
+            "FRIAR_LAWRENCE",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-03-D",
+      "durationProposalSeconds": 150,
+      "purpose": "追放の意味を、妻のそばに残れば死ぬという別れに変える。",
+      "beats": [
+        {
+          "action": "左手前へロミオとベンヴォーリオの焦点を移す。残った二名は薄明の外で倒れた形を解き、武器と家の小物を持って袖へ退く。裁きの後の時間になったことを、ベンヴォーリオの言葉で示す。",
+          "frameId": "RJ-COND-03-D-01",
+          "id": "RJ-COND-03-D-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "BENVOLIO",
+              "text": "大公の裁きが出た。ロミオ、ヴェローナから追放だ。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-03-D-L02",
+              "sourceProvenance": {
+                "kind": "assistant_bridge_dialogue"
+              },
+              "id": "RJ-COND-03-D-FULL-B01-D01",
+              "speaker": "ベンヴォーリオ"
+            }
+          ]
+        },
+        {
+          "action": "ベンヴォーリオが退き、右手前にジュリエット。ロミオが密かに戻る。二人は手をつなぎ、近づき、二呼吸だけ互いの重みを受け止める。婚後に同居したのではなく、この一夜の再会。照明が夜から明け方へ変わる。",
+          "frameId": "RJ-COND-03-D-02",
+          "id": "RJ-COND-03-D-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "JULIET",
+              "text": "もう行ってしまうの？　まだ夜明けには早い。あれはヒバリではなく、夜のナイチンゲールよ。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-03-D-L04",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-06",
+                "sourceLines": [
+                  1
+                ],
+                "rawLines": [
+                  "ジュリエット　もう行ってしまうの？　まだ夜明けには早い。あれはヒバリではなく、夜のナイチンゲールよ。"
+                ]
+              },
+              "id": "RJ-COND-03-D-FULL-B02-D01",
+              "speaker": "ジュリエット"
+            },
+            {
+              "speakerRoleId": "ROMEO",
+              "text": "ヒバリだ。朝を告げる鳥の声だ。\n行けば生きられる。ここに残れば、死ぬ。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-03-D-L05",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-06",
+                "sourceLines": [
+                  2,
+                  3
+                ],
+                "rawLines": [
+                  "ロミオ　ヒバリだ。朝を告げる鳥の声だ。",
+                  "　行けば生きられる。ここに残れば、死ぬ。"
+                ]
+              },
+              "id": "RJ-COND-03-D-FULL-B02-D02",
+              "speaker": "ロミオ"
+            },
+            {
+              "speakerRoleId": "JULIET",
+              "text": "朝よ。行って。あの鳥の声が、私たちを引き離していく。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-03-D-L06",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-06",
+                "sourceLines": [
+                  4
+                ],
+                "rawLines": [
+                  "ジュリエット　朝よ。行って。あの鳥の声が、私たちを引き離していく。"
+                ]
+              },
+              "id": "RJ-COND-03-D-FULL-B02-D03",
+              "speaker": "ジュリエット"
+            },
+            {
+              "speakerRoleId": "ROMEO",
+              "text": "光が増すほど、私たちの悲しみは暗くなる。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-03-D-L07",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-06",
+                "sourceLines": [
+                  5
+                ],
+                "rawLines": [
+                  "ロミオ　光が増すほど、私たちの悲しみは暗くなる。"
+                ]
+              },
+              "id": "RJ-COND-03-D-FULL-B02-D04",
+              "speaker": "ロミオ"
+            }
+          ]
+        },
+        {
+          "action": "今度はジュリエットの方から手をほどき、ロミオを生かすため外へ送り出す。ロミオは低く身を沈める動きで窓から降りる。",
+          "id": "RJ-COND-03-D-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "JULIET",
+              "text": "窓よ、朝を入れて。代わりに、私の命を外へ出して。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-03-D-L08",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-06",
+                "sourceLines": [
+                  6
+                ],
+                "rawLines": [
+                  "ジュリエット　窓よ、朝を入れて。代わりに、私の命を外へ出して。"
+                ]
+              },
+              "id": "RJ-COND-03-D-FULL-B03-D01",
+              "speaker": "ジュリエット"
+            },
+            {
+              "speakerRoleId": "ROMEO",
+              "text": "さらば。最後に口づけを。それから降りる。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-03-D-L09",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-06",
+                "sourceLines": [
+                  7
+                ],
+                "rawLines": [
+                  "ロミオ　さらば。最後に口づけを。それから降りる。"
+                ]
+              },
+              "id": "RJ-COND-03-D-FULL-B03-D02",
+              "speaker": "ロミオ"
+            },
+            {
+              "speakerRoleId": "JULIET",
+              "text": "また会えると思う？",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-03-D-L11",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-06",
+                "sourceLines": [
+                  9
+                ],
+                "rawLines": [
+                  "ジュリエット　また会えると思う？"
+                ]
+              },
+              "id": "RJ-COND-03-D-FULL-B03-D03",
+              "speaker": "ジュリエット"
+            },
+            {
+              "speakerRoleId": "ROMEO",
+              "text": "きっと会える。今日の悲しみも、いつか昔話になる。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-03-D-L12",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-06",
+                "sourceLines": [
+                  10
+                ],
+                "rawLines": [
+                  "ロミオ　きっと会える。今日の悲しみも、いつか昔話になる。"
+                ]
+              },
+              "id": "RJ-COND-03-D-FULL-B03-D04",
+              "speaker": "ロミオ"
+            }
+          ]
+        },
+        {
+          "action": "ロミオは左へ去る。ジュリエットは右に残り、さっきまで握っていた掌を見る。",
+          "id": "RJ-COND-03-D-FULL-B04",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "JULIET",
+              "text": "嫌な予感がする。今のあなたが、墓の底にいる人のように見える。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-03-D-L13",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-06",
+                "sourceLines": [
+                  11
+                ],
+                "rawLines": [
+                  "ジュリエット　嫌な予感がする。今のあなたが、墓の底にいる人のように見える。"
+                ]
+              },
+              "id": "RJ-COND-03-D-FULL-B04-D01",
+              "speaker": "ジュリエット"
+            }
+          ]
+        }
+      ],
+      "technical": {
+        "light": "裁き→夜の右手前→夜明けの順。明るくなるほど距離が開く。",
+        "music": "M04の余韻を消しM03へ。朝を告げる短い鳥声か高音を一度。別れは旋律を途中で残す。",
+        "body": "再会は支え合う重心、別れは指先から。平舞台の低い姿勢で窓から降りる。",
+        "props": "死亡二役の武器と色小物を袖で回収。"
+      },
+      "exit": "ロミオが見えなくなった後、右のジュリエットの背後へ父だけが現れる。",
+      "number": 11,
+      "title": "追放から夜明けへ",
+      "sceneId": "RJ-COND-02",
+      "sceneNumber": 2,
+      "inheritedDirection": "判決を短い声または群れの反応で示す。光を夜明けへ移し、一夜だけ再会した二人が別れる。",
+      "startProposalSeconds": 780,
+      "endProposalSeconds": 930,
+      "nextCueId": "RJ-COND-04-A",
+      "frames": [
+        {
+          "id": "RJ-COND-03-D-01",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-03-D",
+          "cueTitle": "追放から夜明けへ",
+          "title": "追放の知らせ",
+          "summary": "二人の死の後、時間を進めてベンヴォーリオが追放の判決を伝える。",
+          "people": [
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": "BENVOLIO",
+              "label": "Be",
+              "name": "ベンヴォーリオ",
+              "u": 0.4,
+              "v": 0.57,
+              "pose": "stand",
+              "facing": 90,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.64,
+              "v": 0.57,
+              "pose": "stand",
+              "facing": 270,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0012"
+          ],
+          "positionNote": "倒れた二人が退いた後の時点。ベンヴォーリオに判決の伝達を担わせるのは台本の補筆案。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-03-D",
+          "scriptExcerpt": "ベンヴォーリオ　大公の裁きが出た。ロミオ、ヴェローナから追放だ。",
+          "sourceFrameId": "RJ-COND-03-D-01",
+          "offstageRoleIds": [
+            "JULIET",
+            "FRIAR_LAWRENCE",
+            "TYBALT",
+            "MERCUTIO",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        },
+        {
+          "id": "RJ-COND-03-D-02",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-03-D",
+          "cueTitle": "追放から夜明けへ",
+          "title": "一夜を過ごした二人の別れ",
+          "summary": "新婚の二人が密かに過ごした一夜。夜明けにロミオはマントヴァへ去り、ジュリエットが右に残る。",
+          "people": [
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.67,
+              "v": 0.8,
+              "pose": "walk",
+              "facing": 270,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": {
+                "u": 0.35,
+                "v": 0.9
+              },
+              "state": null
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.86,
+              "v": 0.8,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [
+            {
+              "u": 0.77,
+              "v": 0.8,
+              "ru": 0.22,
+              "rv": 0.19
+            }
+          ],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0012"
+          ],
+          "positionNote": "位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-03-D",
+          "scriptExcerpt": "ロミオ　行けば生きられる。ここに残れば、死ぬ。",
+          "sourceFrameId": "RJ-COND-03-D-02",
+          "offstageRoleIds": [
+            "FRIAR_LAWRENCE",
+            "BENVOLIO",
+            "TYBALT",
+            "MERCUTIO",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-04-A",
+      "durationProposalSeconds": 75,
+      "purpose": "娘の意思が聞かれない家を、二人だけの距離で示す。",
+      "beats": [
+        {
+          "action": "舞台上はジュリエットと父キャピュレットだけ。父は右奥から入り、出口に当たる方向を身体で占める。ジュリエットは今去ったロミオの方を一度見て、父へ向き直る。",
+          "frameId": "RJ-COND-04-A-01",
+          "id": "RJ-COND-04-A-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "JULIET",
+              "text": "結婚相手を選んでくれたことには感謝します。\nでも、望まない結婚を喜ぶことはできません。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-04-A-L02",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-07",
+                "sourceLines": [
+                  1,
+                  2
+                ],
+                "rawLines": [
+                  "ジュリエット　結婚相手を選んでくれたことには感謝します。",
+                  "　でも、望まない結婚を喜ぶことはできません。"
+                ]
+              },
+              "id": "RJ-COND-04-A-FULL-B01-D01",
+              "speaker": "ジュリエット"
+            },
+            {
+              "speakerRoleId": "CAPULET",
+              "text": "何だ、その理屈は。感謝するだの、誇れないだの。\n木曜日にはパリスと教会へ行け。\n嫌なら、引きずってでも連れていく。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-04-A-L03",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-07",
+                "sourceLines": [
+                  3,
+                  4,
+                  5
+                ],
+                "rawLines": [
+                  "キャピュレット　何だ、その理屈は。感謝するだの、誇れないだの。",
+                  "　木曜日にはパリスと教会へ行け。",
+                  "　嫌なら、引きずってでも連れていく。"
+                ]
+              },
+              "id": "RJ-COND-04-A-FULL-B01-D02",
+              "speaker": "キャピュレット"
+            }
+          ]
+        },
+        {
+          "action": "父が近づくたび、ジュリエットは避けていた足を止める。ひざまずいて顔を見ようとするが、父は視線を与えない。",
+          "id": "RJ-COND-04-A-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "JULIET",
+              "text": "お父さま、ひざまずいてお願いします。\nどうか落ち着いて、ひと言だけでも聞いてください。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-04-A-L04",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-07",
+                "sourceLines": [
+                  6,
+                  7
+                ],
+                "rawLines": [
+                  "ジュリエット　お父さま、ひざまずいてお願いします。",
+                  "　どうか落ち着いて、ひと言だけでも聞いてください。"
+                ]
+              },
+              "id": "RJ-COND-04-A-FULL-B02-D01",
+              "speaker": "ジュリエット"
+            },
+            {
+              "speakerRoleId": "CAPULET",
+              "text": "この聞き分けのない、親不孝者め！\n木曜に教会へ行くか、二度と私の前に顔を出すな。\n口を開くな。言い返すな。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-04-A-L05",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-07",
+                "sourceLines": [
+                  8,
+                  9,
+                  10
+                ],
+                "rawLines": [
+                  "キャピュレット　この聞き分けのない、親不孝者め！",
+                  "　木曜に教会へ行くか、二度と私の前に顔を出すな。",
+                  "　口を開くな。言い返すな。"
+                ]
+              },
+              "id": "RJ-COND-04-A-FULL-B02-D02",
+              "speaker": "キャピュレット"
+            }
+          ]
+        },
+        {
+          "action": "父は返事を待たずに退く。ジュリエットは一度、家の出口へ手を伸ばすが、父を追わず中央へ向かう。ロレンスがその足を見てから入る。",
+          "id": "RJ-COND-04-A-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "客席右の家の領域のみ。父を大きな影にするほど誇張しない。",
+        "music": "音を薄くし、足音と台詞の圧力を使う。父の退場後にM05を始める。",
+        "body": "父の直線と娘の逃げ道。人数を増やして圧力を説明しない。",
+        "props": "パリスの人物を追加しない。名前は台詞で伝える。"
+      },
+      "exit": "ジュリエットが父と反対の中央へ一歩を出し、助けを求める場面へ。",
+      "number": 12,
+      "title": "二人だけの圧力",
+      "sceneId": "RJ-COND-02",
+      "sceneNumber": 2,
+      "inheritedDirection": "ジュリエットとキャピュレットの二人だけ。客席右のキャピュレット側で、望まない結婚を迫る。",
+      "startProposalSeconds": 930,
+      "endProposalSeconds": 1005,
+      "nextCueId": "RJ-COND-04-B",
+      "frames": [
+        {
+          "id": "RJ-COND-04-A-01",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-04-A",
+          "cueTitle": "二人だけの圧力",
+          "title": "父と娘だけの対立",
+          "summary": "客席右のキャピュレット家。ジュリエットと父の二人だけで、望まない結婚を迫る場面。",
+          "people": [
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.88,
+              "v": 0.76,
+              "pose": "kneel",
+              "facing": 270,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "CAPULET",
+              "characterRoleId": "CAPULET",
+              "label": "Ca",
+              "name": "キャピュレット",
+              "u": 0.64,
+              "v": 0.66,
+              "pose": "reach",
+              "facing": 90,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [],
+          "zones": [
+            {
+              "kind": "home",
+              "u": 0.55,
+              "v": 0.12,
+              "w": 0.43,
+              "h": 0.84,
+              "label": "キャピュレット家"
+            }
+          ],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0013",
+            "RJ-NOTE-0014"
+          ],
+          "positionNote": "位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-04-A",
+          "scriptExcerpt": "ジュリエット　結婚相手を選んでくれたことには感謝します。\nでも、望まない結婚を喜ぶことはできません。",
+          "sourceFrameId": "RJ-COND-04-A-01",
+          "offstageRoleIds": [
+            "ROMEO",
+            "FRIAR_LAWRENCE",
+            "BENVOLIO",
+            "TYBALT",
+            "MERCUTIO",
+            "NURSE",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-04-B",
+      "durationProposalSeconds": 105,
+      "purpose": "死に見える眠りと、それを知らせる手紙という二つの条件を観客に渡す。",
+      "beats": [
+        {
+          "action": "中央でロレンスがジュリエットに向き合う。結婚の時に手を重ねた同じ位置で、今度は小瓶を差し出す。ジュリエットは瓶と彼の目を交互に見る。ロミオは追放先で不在。",
+          "frameId": "RJ-COND-04-B-01",
+          "id": "RJ-COND-04-B-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "FRIAR_LAWRENCE",
+              "text": "その借り物の死の姿は、四十二時間続く。\nそれから、心地よい眠りから覚めるように目を覚ます。\n朝、花婿が迎えに来たとき、皆はおまえが死んだと思う。\n晴れ着のまま、覆いもかけず棺台に乗せられ、\nキャピュレット家の眠る古い墓所へ運ばれるだろう。\nそれまでに、ロミオには手紙で計画を知らせる。\n私とロミオで目覚めを待ち、その夜、彼がマントヴァへ連れ出す。\nこれで今の苦境から抜け出せる。\nただし、気まぐれや恐れに、決意をくじかれないことだ。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-04-B-L02",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-08",
+                "sourceLines": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9
+                ],
+                "rawLines": [
+                  "ロレンス修道士　その借り物の死の姿は、四十二時間続く。",
+                  "　それから、心地よい眠りから覚めるように目を覚ます。",
+                  "　朝、花婿が迎えに来たとき、皆はおまえが死んだと思う。",
+                  "　晴れ着のまま、覆いもかけず棺台に乗せられ、",
+                  "　キャピュレット家の眠る古い墓所へ運ばれるだろう。",
+                  "　それまでに、ロミオには手紙で計画を知らせる。",
+                  "　私とロミオで目覚めを待ち、その夜、彼がマントヴァへ連れ出す。",
+                  "　これで今の苦境から抜け出せる。",
+                  "　ただし、気まぐれや恐れに、決意をくじかれないことだ。"
+                ]
+              },
+              "id": "RJ-COND-04-B-FULL-B01-D01",
+              "speaker": "ロレンス修道士"
+            },
+            {
+              "speakerRoleId": "JULIET",
+              "text": "貸して、早く！　恐れの話なんてしないで。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-04-B-L03",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-08",
+                "sourceLines": [
+                  10
+                ],
+                "rawLines": [
+                  "ジュリエット　貸して、早く！　恐れの話なんてしないで。"
+                ]
+              },
+              "id": "RJ-COND-04-B-FULL-B01-D02",
+              "speaker": "ジュリエット"
+            }
+          ]
+        },
+        {
+          "action": "ジュリエットが小瓶を受け取り、右へ退く。ロレンスは彼女が見えなくなるまで見送る。ここで二人が同じ決意でないことを、残る彼のためらいで示す。",
+          "id": "RJ-COND-04-B-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "ロレンスが手紙を書き、封じる。ジョンが中央へ来る。",
+          "frameId": "RJ-COND-04-B-02",
+          "id": "RJ-COND-04-B-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "FRIAR_LAWRENCE",
+              "text": "これをマントヴァのロミオへ。ジュリエットは死ぬのではない。目覚める時に、迎えに来るように。",
+              "origin": "new_dialogue_proposal",
+              "id": "RJ-COND-04-B-FULL-B03-D01",
+              "speaker": "ロレンス修道士"
+            }
+          ]
+        },
+        {
+          "action": "ジョンは封書を受け、胸元に確かめてから旅路へ。ロレンスは自分の空いた手を見る。右手前では次の寝室の支度が終わり、ジュリエットが一人になる。",
+          "id": "RJ-COND-04-B-FULL-B04",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "中央の瓶、次に手紙へ焦点を渡し、最後に右の部屋へ。",
+        "music": "M05。『手紙』にだけ小さな反復音を添え、後のM06へ種を置く。",
+        "body": "結婚で重ねた手が、瓶を渡す手に変わる。ロレンスのためらいは台詞を増やさず残す。",
+        "props": "仮死の小瓶→ジュリエット。封書→ジョン。低い腰掛けを右に準備。"
+      },
+      "exit": "封書を持つジョンとロレンスが退き、右にジュリエットだけを残す。",
+      "number": 13,
+      "title": "薬と計画",
+      "sceneId": "RJ-COND-02",
+      "sceneNumber": 2,
+      "inheritedDirection": "中央のロレンス修道士が仮死の薬と手紙の段取りを示す。ロミオは追放先にいて不在。",
+      "startProposalSeconds": 1005,
+      "endProposalSeconds": 1110,
+      "nextCueId": "RJ-COND-04-C",
+      "frames": [
+        {
+          "id": "RJ-COND-04-B-01",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-04-B",
+          "cueTitle": "薬と計画",
+          "title": "仮死の薬を受け取る",
+          "summary": "中央で薬と再会の計画を伝える。ロミオは追放先にいて、この相談を知らない。",
+          "people": [
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": "FRIAR_LAWRENCE",
+              "label": "Lo",
+              "name": "ロレンス修道士",
+              "u": 0.45,
+              "v": 0.53,
+              "pose": "reach",
+              "facing": 90,
+              "color": "#556044",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.67,
+              "v": 0.6,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [
+            {
+              "u": 0.55,
+              "v": 0.56,
+              "ru": 0.22,
+              "rv": 0.22
+            }
+          ],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [],
+          "positionNote": "位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-04-B",
+          "scriptExcerpt": "ロレンス修道士　その借り物の死の姿は、四十二時間続く。\nそれから、心地よい眠りから覚めるように目を覚ます。\n朝、花婿が迎えに来たとき、皆はおまえが死んだと思う。\n晴れ着のまま、覆いもかけず棺台に乗せられ、\nキャピュレット家の眠る古い墓所へ運ばれるだろう。\nそれまでに、ロミオには手紙で計画を知らせる。\n私とロミオで目覚めを待ち、その夜、彼がマントヴァへ連れ出す。\nこれで今の苦境から抜け出せる。\nただし、気まぐれや恐れに、決意をくじかれないことだ。",
+          "sourceFrameId": "RJ-COND-04-B-01",
+          "offstageRoleIds": [
+            "ROMEO",
+            "BENVOLIO",
+            "TYBALT",
+            "MERCUTIO",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        },
+        {
+          "id": "RJ-COND-04-B-02",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-04-B",
+          "cueTitle": "薬と計画",
+          "title": "計画の手紙をジョンへ",
+          "summary": "ジュリエットが去ってから、ロレンスは書いた手紙をジョンに託す。",
+          "people": [
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": "FRIAR_LAWRENCE",
+              "label": "Lo",
+              "name": "ロレンス修道士",
+              "u": 0.43,
+              "v": 0.53,
+              "pose": "reach",
+              "facing": 90,
+              "color": "#556044",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "FRIAR_JOHN",
+              "characterRoleId": "FRIAR_JOHN",
+              "label": "Jo",
+              "name": "ジョン修道士",
+              "u": 0.68,
+              "v": 0.6,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": "手紙"
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [],
+          "positionNote": "位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-04-B",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-04-B-02",
+          "offstageRoleIds": [
+            "ROMEO",
+            "JULIET",
+            "BENVOLIO",
+            "TYBALT",
+            "MERCUTIO",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-04-C",
+      "durationProposalSeconds": 105,
+      "purpose": "本人の決意が、家族とベンヴォーリオには死として見える。",
+      "beats": [
+        {
+          "action": "右の低い腰掛けを寝室のベッドと読む。ジュリエットは一人。袖へ向けて呼びかけるが、誰も入ってこない。",
+          "frameId": "RJ-COND-04-C-01",
+          "id": "RJ-COND-04-C-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "JULIET",
+              "text": "さようなら。次にいつ会えるかは、神さまだけが知っている。\n冷たい恐れが、血の中を駆け上がってくる。\n命のぬくもりまで、凍りつきそう。\n呼び戻そうか。\nそばにいてもらえば、落ち着ける。\n乳母！――でも、ここにいて何ができるの？\nこの悲しい場面は、私一人で演じなくては。\nさあ、この小瓶を。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-04-C-L01",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-09",
+                "sourceLines": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8
+                ],
+                "rawLines": [
+                  "ジュリエット　さようなら。次にいつ会えるかは、神さまだけが知っている。",
+                  "　冷たい恐れが、血の中を駆け上がってくる。",
+                  "　命のぬくもりまで、凍りつきそう。",
+                  "　呼び戻そうか。",
+                  "　そばにいてもらえば、落ち着ける。",
+                  "　乳母！――でも、ここにいて何ができるの？",
+                  "　この悲しい場面は、私一人で演じなくては。",
+                  "　さあ、この小瓶を。"
+                ]
+              },
+              "id": "RJ-COND-04-C-FULL-B01-D01",
+              "speaker": "ジュリエット"
+            },
+            {
+              "speakerRoleId": "JULIET",
+              "text": "ロミオ、ロミオ、ロミオ。あなたのために、飲みます。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-04-C-L02",
+              "sourceProvenance": {
+                "kind": "existing_japanese_excerpt",
+                "sourceSampleId": "RJ-SAMPLE-09",
+                "sourceLines": [
+                  9
+                ],
+                "rawLines": [
+                  "ジュリエット　ロミオ、ロミオ、ロミオ。あなたのために、飲みます。"
+                ]
+              },
+              "id": "RJ-COND-04-C-FULL-B01-D02",
+              "speaker": "ジュリエット"
+            }
+          ]
+        },
+        {
+          "action": "小瓶を口へ近づけて飲む演技。座り、ゆっくり身体を預け、動きを止める。小瓶を脇へ置く。光が夜を越える。",
+          "id": "RJ-COND-04-C-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "朝。乳母が式の支度に来る。呼びかける手が途中で止まり、父を迎える。父も娘に触れようとして止まる。二人には死んでいるように見える。",
+          "frameId": "RJ-COND-04-C-02",
+          "id": "RJ-COND-04-C-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "NURSE",
+              "text": "お嬢さま。……ジュリエット？",
+              "origin": "new_dialogue_proposal",
+              "id": "RJ-COND-04-C-FULL-B03-D01",
+              "speaker": "乳母"
+            }
+          ]
+        },
+        {
+          "action": "乳母が小瓶を脇へ片づけ、父とともにジュリエットを囲む。祝いに来た二人の姿勢が弔いの姿勢へ沈む。焦点を三人の上半身へ絞った中でジュリエットは二人の陰で立ち、支えられて歩く形へ移る。観客には運ばれる葬送として示す。運搬リフトを必須にしない案。",
+          "id": "RJ-COND-04-C-FULL-B04",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "ベンヴォーリオが通り、葬送を目にして足を止める。三人は奥から左の墓所へ向かう経路として袖へ。ベンヴォーリオはロミオに知らせるため、別方向へ急ぐ。暗がりで大道具担当が腰掛けを左墓所へ移す。",
+          "id": "RJ-COND-04-C-FULL-B05",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "一人の夜→発見の朝→葬送の上半身へ。大暗転を挟まず時間と場所を渡す。",
+        "music": "M05。宴の拍を遅くした形を使い、発見で一度止める。葬送に短い三拍の歩み。",
+        "body": "本人には再会への策、家族には死。葬送は支える歩行で表す。",
+        "props": "小瓶を乳母が回収。腰掛けは旅路の焦点外で左へ移す。"
+      },
+      "exit": "ジュリエットが墓所で横たわる準備の間、舞台中央へベンヴォーリオの足音を送り、ロミオの追放先を示す。",
+      "number": 14,
+      "title": "仮死と葬送",
+      "sceneId": "RJ-COND-02",
+      "sceneNumber": 2,
+      "inheritedDirection": "ジュリエットが薬を飲んで仮死状態になる。祝いへ向かう身体の配置が、発見を境に葬送へ変わる。",
+      "startProposalSeconds": 1110,
+      "endProposalSeconds": 1215,
+      "nextCueId": "RJ-COND-04-D",
+      "frames": [
+        {
+          "id": "RJ-COND-04-C-01",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-04-C",
+          "cueTitle": "仮死と葬送",
+          "title": "一人で薬を飲む",
+          "summary": "ジュリエットが一人で薬を飲む。ここから仮死状態になり、死の知らせだけが広がる。",
+          "people": [
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.82,
+              "v": 0.73,
+              "pose": "kneel",
+              "facing": 180,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": "小瓶"
+            }
+          ],
+          "lightPools": [
+            {
+              "u": 0.82,
+              "v": 0.73,
+              "ru": 0.16,
+              "rv": 0.19
+            }
+          ],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [],
+          "positionNote": "位置・距離・向きは構図を確かめるための仮置き。実寸舞台と稽古で調整する。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-04-C",
+          "scriptExcerpt": "ジュリエット　さようなら。次にいつ会えるかは、神さまだけが知っている。\n冷たい恐れが、血の中を駆け上がってくる。\n命のぬくもりまで、凍りつきそう。\n呼び戻そうか。\nそばにいてもらえば、落ち着ける。\n乳母！――でも、ここにいて何ができるの？\nこの悲しい場面は、私一人で演じなくては。\nさあ、この小瓶を。",
+          "sourceFrameId": "RJ-COND-04-C-01",
+          "offstageRoleIds": [
+            "ROMEO",
+            "FRIAR_LAWRENCE",
+            "BENVOLIO",
+            "TYBALT",
+            "MERCUTIO",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        },
+        {
+          "id": "RJ-COND-04-C-02",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-04-C",
+          "cueTitle": "仮死と葬送",
+          "title": "葬送を見かける",
+          "summary": "死んだと思い込む乳母と父。寝室から葬送の道へ場を移し、ベンヴォーリオがそれを目にする。",
+          "people": [
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.78,
+              "v": 0.63,
+              "pose": "lie",
+              "facing": 180,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": "仮死"
+            },
+            {
+              "performerRoleId": "NURSE",
+              "characterRoleId": "NURSE",
+              "label": "Nu",
+              "name": "乳母",
+              "u": 0.59,
+              "v": 0.66,
+              "pose": "kneel",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "CAPULET",
+              "characterRoleId": "CAPULET",
+              "label": "Ca",
+              "name": "キャピュレット",
+              "u": 0.88,
+              "v": 0.38,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": "BENVOLIO",
+              "label": "Be",
+              "name": "ベンヴォーリオ",
+              "u": 0.24,
+              "v": 0.68,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [],
+          "positionNote": "葬送をベンヴォーリオが目撃する流れは台本の脚色案。寝室に居合わせた配置ではなく、葬送時の位置。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-04-C",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-04-C-02",
+          "offstageRoleIds": [
+            "ROMEO",
+            "FRIAR_LAWRENCE",
+            "TYBALT",
+            "MERCUTIO",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-04-D",
+      "durationProposalSeconds": 135,
+      "purpose": "間違った知らせは届き、本当の手紙だけが届かない。",
+      "beats": [
+        {
+          "action": "マントヴァ。ロミオが家の方向とは無関係な旅路の端にいる。ベンヴォーリオが葬送を見たままの息で告げる。",
+          "frameId": "RJ-COND-04-D-01",
+          "id": "RJ-COND-04-D-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "BENVOLIO",
+              "text": "ジュリエットが亡くなった。墓所へ送られるのを見た。",
+              "origin": "existing_script",
+              "sourceLineId": "RJ-COND-04-D-L02",
+              "sourceProvenance": {
+                "kind": "assistant_bridge_dialogue"
+              },
+              "id": "RJ-COND-04-D-FULL-B01-D01",
+              "speaker": "ベンヴォーリオ"
+            }
+          ]
+        },
+        {
+          "action": "ロミオは呼吸を一度止め、聞き返さずヴェローナへ戻る方向を選ぶ。ベンヴォーリオが退き、入れ替わりに封書を持つジョンが逆側から入る。",
+          "frameId": "RJ-COND-04-D-02",
+          "id": "RJ-COND-04-D-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "一巡目は同じ曲線を時間差でたどる。二巡目は相手がいた空間へ掌を出し、すでに空いている所を抜ける。三巡目は低くくぐる身体と伸び上がる身体を重ね、あと半拍で会えるのに合わない感触をつくる。互いに目は合わせない。",
+          "id": "RJ-COND-04-D-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "サーカス案は空いた手の小さなコンタクト・ボール操作を一度だけ挟む。相手へ渡しそうな軌跡をつくるが、実際の封書はジョンのもう一方の手から離れない。技の披露で因果が見えにくくなる場合は、同じ軌跡の掌だけに置き換える。",
+          "id": "RJ-COND-04-D-FULL-B04",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "ロミオは最後に左の墓所へ急ぐ。ジョンは行く先を確かめても相手がいないため立ち止まり、届かなかった封書を持って右のロレンスへ戻る。六名の群衆担当が左右の暗がりから中央へ滑り込み、追跡の曲線を人の川へ引き継ぐ。",
+          "id": "RJ-COND-04-D-FULL-B05",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "旅路の動きが見える全体光から、左の墓所と右の修道士の場所へ開く。",
+        "music": "M06。二つの同形フレーズを半拍ずらす。最初は軽く、最後に低音だけを残す。",
+        "body": "直接相手を追う喜劇ではなく、別の目的で急ぐ二人のすれ違い。三巡までで変化をつける。",
+        "props": "封書は常にジョン。ボールを使う場合は袖から持参して同じ袖へ回収。ロミオは再登場までに墓所の杯を受け取る。"
+      },
+      "exit": "左に戻るロミオ、右へ戻るジョン、中央に集まる六名の三方向が分かれたら第3場面へ。",
+      "number": 15,
+      "title": "届かない知らせ",
+      "sceneId": "RJ-COND-02",
+      "sceneNumber": 2,
+      "inheritedDirection": "手紙を届ける人とロミオが入れ違う。追いかけっこの感触を、ジャグリングや受け渡しなどサーカス的な反復で比喩化する。",
+      "startProposalSeconds": 1215,
+      "endProposalSeconds": 1350,
+      "nextCueId": "RJ-COND-05-A",
+      "frames": [
+        {
+          "id": "RJ-COND-04-D-01",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-04-D",
+          "cueTitle": "届かない知らせ",
+          "title": "誤った死の知らせが届く",
+          "summary": "マントヴァでベンヴォーリオが伝えるのは死の知らせだけ。ロミオは仮死の計画を知らない。",
+          "people": [
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": "BENVOLIO",
+              "label": "Be",
+              "name": "ベンヴォーリオ",
+              "u": 0.33,
+              "v": 0.52,
+              "pose": "stand",
+              "facing": 90,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.58,
+              "v": 0.52,
+              "pose": "stand",
+              "facing": 270,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0015",
+            "RJ-NOTE-0016",
+            "RJ-NOTE-0017"
+          ],
+          "positionNote": "この場所はマントヴァ。舞台左をモンタギュー家と読む図ではない。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-04-D",
+          "scriptExcerpt": "ベンヴォーリオ　ジュリエットが亡くなった。墓所へ送られるのを見た。",
+          "sourceFrameId": "RJ-COND-04-D-01",
+          "offstageRoleIds": [
+            "JULIET",
+            "FRIAR_LAWRENCE",
+            "TYBALT",
+            "MERCUTIO",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        },
+        {
+          "id": "RJ-COND-04-D-02",
+          "sceneId": "RJ-COND-02",
+          "sceneNumber": 2,
+          "cueId": "RJ-COND-04-D",
+          "cueTitle": "届かない知らせ",
+          "title": "手紙とロミオの入れ違い",
+          "summary": "同じ軌跡を時間差で通るサーカスの動き。二人は気づかずに離れ、封書はジョンの手に残る。",
+          "people": [
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.36,
+              "v": 0.55,
+              "pose": "walk",
+              "facing": 90,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": {
+                "u": 0.94,
+                "v": 0.53,
+                "bu": 0.63,
+                "bv": 0.36
+              },
+              "state": null
+            },
+            {
+              "performerRoleId": "FRIAR_JOHN",
+              "characterRoleId": "FRIAR_JOHN",
+              "label": "Jo",
+              "name": "ジョン修道士",
+              "u": 0.72,
+              "v": 0.68,
+              "pose": "walk",
+              "facing": 270,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": {
+                "u": 0.08,
+                "v": 0.59,
+                "bu": 0.46,
+                "bv": 0.9
+              },
+              "state": "手紙"
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0015",
+            "RJ-NOTE-0016",
+            "RJ-NOTE-0017"
+          ],
+          "positionNote": "経路は比喩的な入れ違いの案。矢印は技の軌道や上演時間の指定ではない。次の第3場面で客席左を墓所へ切り替える。",
+          "scriptUrl": "../condensed-show/scene-02/#RJ-COND-04-D",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-04-D-02",
+          "offstageRoleIds": [
+            "JULIET",
+            "FRIAR_LAWRENCE",
+            "BENVOLIO",
+            "TYBALT",
+            "MERCUTIO",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-05-A",
+      "durationProposalSeconds": 100,
+      "purpose": "二つの場所で起こることが、見えていても互いに届かない。",
+      "beats": [
+        {
+          "action": "左の墓所に仮死のジュリエットと戻ったロミオ。右にロレンスとジョン。中央にはベンヴォーリオ、ティボルト、マーキューシオ、乳母、両父親の六担当が匿名の人の川として並ぶ。役の色小物を外し、六人は川そのものを演じる。",
+          "frameId": "RJ-COND-05-A-01",
+          "id": "RJ-COND-05-A-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "川は奥から手前へ、六人の肩→肘→手の波が時間差で流れる。端の人は列の陰を回って奥へ戻る。左右の人物を捕まえず、二地点が触れられない時間と距離を表す。ロミオとロレンスは相手を見ない。",
+          "id": "RJ-COND-05-A-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "右でジョンが封書をロレンスへ返す。",
+          "id": "RJ-COND-05-A-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "FRIAR_JOHN",
+              "text": "会えませんでした。私が着いた時には、もう戻られたと。",
+              "origin": "new_dialogue_proposal",
+              "id": "RJ-COND-05-A-FULL-B03-D01",
+              "speaker": "ジョン修道士"
+            },
+            {
+              "speakerRoleId": "FRIAR_LAWRENCE",
+              "text": "手紙を読まずに……。目覚める時刻だ。墓所へ行かねば。",
+              "origin": "new_dialogue_proposal",
+              "id": "RJ-COND-05-A-FULL-B03-D02",
+              "speaker": "ロレンス修道士"
+            }
+          ]
+        },
+        {
+          "action": "右のロレンスは急ぐ仕草を始めるが、まだその場所から出られない時間として進路を繰り返す。同時に左のロミオはジュリエットの指先へ触れる。宴と同じ手なのに、反応はない。",
+          "id": "RJ-COND-05-A-FULL-B04",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "ROMEO",
+              "text": "ジュリエット。君を置いて、もうどこへも行かない。",
+              "origin": "new_dialogue_proposal",
+              "id": "RJ-COND-05-A-FULL-B04-D01",
+              "speaker": "ロミオ"
+            }
+          ]
+        }
+      ],
+      "technical": {
+        "light": "左墓所と右別場所を同時に保つ。台詞を話す側だけ少し焦点を強める。中央の川は暗く消さず、人の流れが読める明かり。",
+        "music": "M06の反復を低く。川の呼吸を土台にし、台詞は左右で重ねない。",
+        "body": "川は人を押し返す壁ではない。左右は物語上の別の場所、中央は距離の比喩。",
+        "props": "封書はロレンスへ戻る。左の杯は毒、ジュリエットの小瓶は既に袖。"
+      },
+      "exit": "右でロレンスが急ごうとするのと同時に、左でロミオが杯を持つ。二つの動きは届かない。",
+      "number": 16,
+      "title": "同時にある二つの場所",
+      "sceneId": "RJ-COND-05",
+      "sceneNumber": 3,
+      "inheritedDirection": "舞台左に墓所、右に別の場所を作り、中央は人の身体による川として互いに干渉できない領域にする。",
+      "startProposalSeconds": 1350,
+      "endProposalSeconds": 1450,
+      "nextCueId": "RJ-COND-05-B",
+      "frames": [
+        {
+          "id": "RJ-COND-05-A-01",
+          "sceneId": "RJ-COND-05",
+          "sceneNumber": 3,
+          "cueId": "RJ-COND-05-A",
+          "cueTitle": "同時にある二つの場所",
+          "title": "墓所とロレンス側／中央は人の川",
+          "summary": "左に墓所、右に別の場所。中央の人々が川となり、二つの場所は互いに干渉できない。",
+          "people": [
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.16,
+              "v": 0.53,
+              "pose": "kneel",
+              "facing": 90,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.26,
+              "v": 0.77,
+              "pose": "lie",
+              "facing": 180,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": "仮死"
+            },
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": null,
+              "label": "1",
+              "name": "群1（ベンヴォーリオ担当）",
+              "u": 0.47,
+              "v": 0.1,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": null,
+              "label": "2",
+              "name": "群2（ティボルト担当）",
+              "u": 0.53,
+              "v": 0.26,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": null,
+              "label": "3",
+              "name": "群3（マーキューシオ担当）",
+              "u": 0.47,
+              "v": 0.42000000000000004,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "NURSE",
+              "characterRoleId": null,
+              "label": "4",
+              "name": "群4（乳母担当）",
+              "u": 0.53,
+              "v": 0.58,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "CAPULET",
+              "characterRoleId": null,
+              "label": "5",
+              "name": "群5（キャピュレット担当）",
+              "u": 0.47,
+              "v": 0.74,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "MONTAGUE",
+              "characterRoleId": null,
+              "label": "6",
+              "name": "群6（モンタギュー担当）",
+              "u": 0.53,
+              "v": 0.9,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": "FRIAR_LAWRENCE",
+              "label": "Lo",
+              "name": "ロレンス修道士",
+              "u": 0.79,
+              "v": 0.36,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#556044",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "FRIAR_JOHN",
+              "characterRoleId": "FRIAR_JOHN",
+              "label": "Jo",
+              "name": "ジョン修道士",
+              "u": 0.87,
+              "v": 0.64,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": "手紙"
+            }
+          ],
+          "lightPools": [],
+          "zones": [
+            {
+              "kind": "river",
+              "u": 0.39,
+              "v": 0.04,
+              "w": 0.22,
+              "h": 0.92,
+              "label": "人の川"
+            }
+          ],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0017",
+            "RJ-NOTE-0019"
+          ],
+          "positionNote": "川は残る六名で仮置き。右はロレンスとジョンの連絡場面の案。配置や人数は今回の図案であり、本人指定は左右の別空間と中央の身体表現。",
+          "scriptUrl": "../condensed-show/#RJ-COND-05",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-05-A-01",
+          "offstageRoleIds": []
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-05-B",
+      "durationProposalSeconds": 130,
+      "purpose": "ほんの少しの時間差で、会えたはずの二人が会えない。",
+      "beats": [
+        {
+          "action": "左のロミオがジュリエットの手を胸へ寄せ、杯を飲む演技をする。杯を脇へ置き、彼女へ伸ばす手が途中で落ちる。ロミオの身体が完全に静まるまでジュリエットは動かない。",
+          "frameId": "RJ-COND-05-B-01",
+          "id": "RJ-COND-05-B-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "川の波を二つ分だけ遅く流す。そのあとジュリエットの指がかすかに動き、目覚める。右のロレンスはまだ急ぐ時間の中にいる。二人は同じ舞台にいても会話しない。",
+          "id": "RJ-COND-05-B-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "ジュリエットは目の前のロミオへ笑いかけかけ、彼の重さに気づく。手元の杯を見つける。",
+          "id": "RJ-COND-05-B-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "JULIET",
+              "text": "何、この杯。愛しい人の手に……。\n毒なのね。それが、あなたの命を早く奪った。\nひどい人。全部飲んでしまったの？\n私が後を追える、一滴も残さずに。",
+              "origin": "existing_excerpt",
+              "sourceSampleId": "RJ-SAMPLE-11",
+              "sourceLineRange": [
+                3,
+                6
+              ],
+              "id": "RJ-COND-05-B-FULL-B03-D01",
+              "speaker": "ジュリエット"
+            }
+          ]
+        },
+        {
+          "action": "唇へ触れ、残った温かさを感じる。",
+          "id": "RJ-COND-05-B-FULL-B04",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "JULIET",
+              "text": "あなたの唇に、口づけを。\n毒が残っていれば、その薬で私も死ねるかもしれない。",
+              "origin": "existing_excerpt",
+              "sourceSampleId": "RJ-SAMPLE-11",
+              "sourceLineRange": [
+                7,
+                8
+              ],
+              "id": "RJ-COND-05-B-FULL-B04-D01",
+              "speaker": "ジュリエット"
+            },
+            {
+              "speakerRoleId": "JULIET",
+              "text": "まだ、唇が温かい！",
+              "origin": "existing_excerpt",
+              "sourceSampleId": "RJ-SAMPLE-11",
+              "sourceLineRange": [
+                10,
+                10
+              ],
+              "id": "RJ-COND-05-B-FULL-B04-D02",
+              "speaker": "ジュリエット"
+            }
+          ]
+        },
+        {
+          "action": "ロミオにまだ届きそうだった手が、返されない。ジュリエットは短剣の小道具に気づき、選ぶ。実際に身体へ当たる形を見せず、腕の動きが止まり、身体がロミオの傍らへ沈む。中央の川も止まる。",
+          "frameId": "RJ-COND-05-B-02",
+          "id": "RJ-COND-05-B-FULL-B05",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "ロミオの死の後も暗転しない。目覚めの微細な動きを見せ、ジュリエットが沈んだ後に左右の光を同じ静けさへそろえる。",
+        "music": "ロミオの杯で一方の反復が消える。目覚めは無音寄り、ジュリエットの死で最後の反復も止まる。",
+        "body": "同時に倒れない。ロミオの静止→二つの波→目覚め→認識→ジュリエットの死の順。",
+        "props": "杯と短剣は死を識別する記号。血や写実的な接触を加えない。"
+      },
+      "exit": "ジュリエットの身体が静まり、川も動かなくなってから、残る人々の時間へ移る。",
+      "number": 17,
+      "title": "時間のすれ違い",
+      "sceneId": "RJ-COND-05",
+      "sceneNumber": 3,
+      "inheritedDirection": "ロミオがジュリエットの目覚め前に死ぬ。ジュリエットが目覚め、ロミオの死を知って後を追う。",
+      "startProposalSeconds": 1450,
+      "endProposalSeconds": 1580,
+      "nextCueId": "RJ-COND-05-C",
+      "frames": [
+        {
+          "id": "RJ-COND-05-B-01",
+          "sceneId": "RJ-COND-05",
+          "sceneNumber": 3,
+          "cueId": "RJ-COND-05-B",
+          "cueTitle": "時間のすれ違い",
+          "title": "ロミオの死、ジュリエットの目覚め",
+          "summary": "ロミオが死んでからジュリエットが目覚める。右側からは間に合わない。",
+          "people": [
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.13,
+              "v": 0.54,
+              "pose": "lie",
+              "facing": 180,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": "死"
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.26,
+              "v": 0.77,
+              "pose": "kneel",
+              "facing": 180,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": "目覚め"
+            },
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": null,
+              "label": "1",
+              "name": "群1（ベンヴォーリオ担当）",
+              "u": 0.47,
+              "v": 0.1,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": null,
+              "label": "2",
+              "name": "群2（ティボルト担当）",
+              "u": 0.53,
+              "v": 0.26,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": null,
+              "label": "3",
+              "name": "群3（マーキューシオ担当）",
+              "u": 0.47,
+              "v": 0.42000000000000004,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "NURSE",
+              "characterRoleId": null,
+              "label": "4",
+              "name": "群4（乳母担当）",
+              "u": 0.53,
+              "v": 0.58,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "CAPULET",
+              "characterRoleId": null,
+              "label": "5",
+              "name": "群5（キャピュレット担当）",
+              "u": 0.47,
+              "v": 0.74,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "MONTAGUE",
+              "characterRoleId": null,
+              "label": "6",
+              "name": "群6（モンタギュー担当）",
+              "u": 0.53,
+              "v": 0.9,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": "FRIAR_LAWRENCE",
+              "label": "Lo",
+              "name": "ロレンス修道士",
+              "u": 0.79,
+              "v": 0.36,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#556044",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "FRIAR_JOHN",
+              "characterRoleId": "FRIAR_JOHN",
+              "label": "Jo",
+              "name": "ジョン修道士",
+              "u": 0.87,
+              "v": 0.64,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": "手紙"
+            }
+          ],
+          "lightPools": [],
+          "zones": [
+            {
+              "kind": "river",
+              "u": 0.39,
+              "v": 0.04,
+              "w": 0.22,
+              "h": 0.92,
+              "label": "人の川"
+            }
+          ],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0017",
+            "RJ-NOTE-0019"
+          ],
+          "positionNote": "左右の同時進行を保った図案。ロレンスの墓所への到着と境界解除のタイミングは未定。",
+          "scriptUrl": "../condensed-show/#RJ-COND-05",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-05-B-01",
+          "offstageRoleIds": []
+        },
+        {
+          "id": "RJ-COND-05-B-02",
+          "sceneId": "RJ-COND-05",
+          "sceneNumber": 3,
+          "cueId": "RJ-COND-05-B",
+          "cueTitle": "時間のすれ違い",
+          "title": "二人の死",
+          "summary": "ジュリエットがロミオの死を知って後を追う。二人の死を受け止める時間を置く。",
+          "people": [
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.13,
+              "v": 0.54,
+              "pose": "lie",
+              "facing": 180,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": "死"
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.26,
+              "v": 0.77,
+              "pose": "lie",
+              "facing": 180,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": "死"
+            },
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": null,
+              "label": "1",
+              "name": "群1（ベンヴォーリオ担当）",
+              "u": 0.47,
+              "v": 0.1,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": null,
+              "label": "2",
+              "name": "群2（ティボルト担当）",
+              "u": 0.53,
+              "v": 0.26,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": null,
+              "label": "3",
+              "name": "群3（マーキューシオ担当）",
+              "u": 0.47,
+              "v": 0.42000000000000004,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "NURSE",
+              "characterRoleId": null,
+              "label": "4",
+              "name": "群4（乳母担当）",
+              "u": 0.53,
+              "v": 0.58,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "CAPULET",
+              "characterRoleId": null,
+              "label": "5",
+              "name": "群5（キャピュレット担当）",
+              "u": 0.47,
+              "v": 0.74,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "MONTAGUE",
+              "characterRoleId": null,
+              "label": "6",
+              "name": "群6（モンタギュー担当）",
+              "u": 0.53,
+              "v": 0.9,
+              "pose": "open",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": "川"
+            },
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": "FRIAR_LAWRENCE",
+              "label": "Lo",
+              "name": "ロレンス修道士",
+              "u": 0.79,
+              "v": 0.36,
+              "pose": "reach",
+              "facing": 270,
+              "color": "#556044",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "FRIAR_JOHN",
+              "characterRoleId": "FRIAR_JOHN",
+              "label": "Jo",
+              "name": "ジョン修道士",
+              "u": 0.87,
+              "v": 0.64,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": "手紙"
+            }
+          ],
+          "lightPools": [],
+          "zones": [
+            {
+              "kind": "river",
+              "u": 0.39,
+              "v": 0.04,
+              "w": 0.22,
+              "h": 0.92,
+              "label": "人の川"
+            }
+          ],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0017",
+            "RJ-NOTE-0019"
+          ],
+          "positionNote": "左右の同時進行を保った図案。ロレンスの墓所への到着と境界解除のタイミングは未定。",
+          "scriptUrl": "../condensed-show/#RJ-COND-05",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-05-B-02",
+          "offstageRoleIds": []
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-05-C",
+      "durationProposalSeconds": 45,
+      "purpose": "隔てていた身体が、自分の意思で境界をやめる。",
+      "beats": [
+        {
+          "action": "六人の川が波を止める。二人の死を知った世界として、一人が下げた手に続き、ほかの手も時間差で下がる。",
+          "frameId": "RJ-COND-05-C-01",
+          "id": "RJ-COND-05-C-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "ロレンスが右の場所を離れ、中央へ一歩出る。誰も道を塞がない。左右の場所を分けていた照明をほどき、二つの時間が合流したことを示す。ジョンは右にいったん残る。",
+          "id": "RJ-COND-05-C-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "六人は一人ずつ列から外れ、両側へ散る。父親二役と乳母担当は袖で役の小物を戻す。ティボルトとマーキューシオ担当は中立のまま。全員で同時にロレンスを取り囲まない。",
+          "id": "RJ-COND-05-C-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "ロレンスが中央に立ち、左の二人を見て息を止める。手紙を握った手だけが上がりかけ、また下がる。",
+          "id": "RJ-COND-05-C-FULL-B04",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "中央の境界を消し、中央のロレンスと左の二人を一つの場として見せる。",
+        "music": "M07。川の足音が止まり、無音の間を残す。",
+        "body": "境界を人が解く。誰かが川を突破して解決する構図にはしない。",
+        "props": "両父親の赤青小物を戻す時間を確保。左の二人と腰掛けは移さない。"
+      },
+      "exit": "中央のロレンスが静まり、最初の一人である乳母が袖から近づく。",
+      "number": 18,
+      "title": "川がほどける",
+      "sceneId": "RJ-COND-05",
+      "sceneNumber": 3,
+      "inheritedDirection": "二人の死の後、人の川が止まり、境界を作っていた出演者が一人ずつ離れる。",
+      "startProposalSeconds": 1580,
+      "endProposalSeconds": 1625,
+      "nextCueId": "RJ-COND-05-D",
+      "frames": [
+        {
+          "id": "RJ-COND-05-C-01",
+          "sceneId": "RJ-COND-05",
+          "sceneNumber": 3,
+          "cueId": "RJ-COND-05-C",
+          "cueTitle": "川がほどける",
+          "title": "人の川がほどける",
+          "summary": "人の流れが静まり、中央が開く。ロレンスが中央へ移り、人々が集まる終幕へ。",
+          "people": [
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.12,
+              "v": 0.58,
+              "pose": "lie",
+              "facing": 180,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": "死"
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.26,
+              "v": 0.82,
+              "pose": "lie",
+              "facing": 180,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": "死"
+            },
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": "FRIAR_LAWRENCE",
+              "label": "Lo",
+              "name": "ロレンス修道士",
+              "u": 0.52,
+              "v": 0.57,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#556044",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "FRIAR_JOHN",
+              "characterRoleId": "FRIAR_JOHN",
+              "label": "Jo",
+              "name": "ジョン修道士",
+              "u": 0.85,
+              "v": 0.7,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": null,
+              "label": "1",
+              "name": "群1（ベンヴォーリオ担当）",
+              "u": 0.42,
+              "v": 0.13,
+              "pose": "walk",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": {
+                "u": 0.21,
+                "v": 0.13
+              },
+              "state": null
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": null,
+              "label": "2",
+              "name": "群2（ティボルト担当）",
+              "u": 0.62,
+              "v": 0.26,
+              "pose": "walk",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": {
+                "u": 0.88,
+                "v": 0.26
+              },
+              "state": null
+            },
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": null,
+              "label": "3",
+              "name": "群3（マーキューシオ担当）",
+              "u": 0.42,
+              "v": 0.39,
+              "pose": "walk",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": {
+                "u": 0.21,
+                "v": 0.39
+              },
+              "state": null
+            },
+            {
+              "performerRoleId": "NURSE",
+              "characterRoleId": null,
+              "label": "4",
+              "name": "群4（乳母担当）",
+              "u": 0.62,
+              "v": 0.52,
+              "pose": "walk",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": {
+                "u": 0.88,
+                "v": 0.52
+              },
+              "state": null
+            },
+            {
+              "performerRoleId": "CAPULET",
+              "characterRoleId": null,
+              "label": "5",
+              "name": "群5（キャピュレット担当）",
+              "u": 0.42,
+              "v": 0.65,
+              "pose": "walk",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": {
+                "u": 0.21,
+                "v": 0.65
+              },
+              "state": null
+            },
+            {
+              "performerRoleId": "MONTAGUE",
+              "characterRoleId": null,
+              "label": "6",
+              "name": "群6（モンタギュー担当）",
+              "u": 0.62,
+              "v": 0.78,
+              "pose": "walk",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": {
+                "u": 0.88,
+                "v": 0.78
+              },
+              "state": null
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0019",
+            "RJ-NOTE-0020",
+            "RJ-NOTE-0021"
+          ],
+          "positionNote": "中央を開く経路は今回の案。全員が一斉に走る指示ではなく、川の役割がほどける方向を描く。",
+          "scriptUrl": "../condensed-show/#RJ-COND-05",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-05-C-01",
+          "offstageRoleIds": []
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-05-D",
+      "durationProposalSeconds": 120,
+      "purpose": "悲しみが一人ずつ中央へ人を引き寄せ、真相を聞いてから手が差し出される。",
+      "beats": [
+        {
+          "action": "中央にロレンス。乳母が最初に来る。次はベンヴォーリオ、次にジョン。前の一人が止まってから次が進み、二人の遺体が客席から見える開いた弧を作る。左の二人はその場に残る。",
+          "frameId": "RJ-COND-05-D-01",
+          "id": "RJ-COND-05-D-FULL-B01",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "キャピュレットが右から、モンタギューが左から、それぞれ一人ずつ来る。最後にティボルト担当、マーキューシオ担当が匿名の街の人として集まる。死んだ二役の復活にはしない。ロレンスを含む生きた世界の八人と、左の二人が同じ舞台にいる。",
+          "frameId": "RJ-COND-05-D-02",
+          "id": "RJ-COND-05-D-FULL-B02",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        },
+        {
+          "action": "ロレンスは戻ってきた手紙を示す。弁解の演説にせず、三つの事実と自分の責任を静かに告げる。",
+          "id": "RJ-COND-05-D-FULL-B03",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "FRIAR_LAWRENCE",
+              "text": "二人は、私の前で夫婦になりました。\nジュリエットの死は、眠りの姿でした。\nその知らせは、ロミオへ届かなかった。\n私は、間に合いませんでした。",
+              "origin": "new_dialogue_proposal",
+              "id": "RJ-COND-05-D-FULL-B03-D01",
+              "speaker": "ロレンス修道士"
+            }
+          ]
+        },
+        {
+          "action": "誰もすぐに返事をしない。父たちはまず相手の子を見る。ロレンスを挟んでいた距離が縮まり、キャピュレットが掌を上へ向ける。",
+          "id": "RJ-COND-05-D-FULL-B04",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "CAPULET",
+              "text": "兄弟、モンタギュー。手を出してくれ。\nこの握手を、娘への結婚の贈り物としよう。\nもう、それ以上は望めない。",
+              "origin": "existing_excerpt",
+              "sourceSampleId": "RJ-SAMPLE-12",
+              "sourceLineRange": [
+                1,
+                3
+              ],
+              "id": "RJ-COND-05-D-FULL-B04-D01",
+              "speaker": "キャピュレット"
+            }
+          ]
+        },
+        {
+          "action": "モンタギューは差し出された手を見てから、自分の手を重ねる。",
+          "id": "RJ-COND-05-D-FULL-B05",
+          "status": "assistant_staging_proposal",
+          "dialogue": [
+            {
+              "speakerRoleId": "CAPULET",
+              "text": "二人とも、私たちの憎しみの犠牲だ。",
+              "origin": "existing_excerpt",
+              "sourceSampleId": "RJ-SAMPLE-12",
+              "sourceLineRange": [
+                10,
+                10
+              ],
+              "id": "RJ-COND-05-D-FULL-B05-D01",
+              "speaker": "キャピュレット"
+            },
+            {
+              "speakerRoleId": "MONTAGUE",
+              "text": "この手を、もう離すまい。",
+              "origin": "new_dialogue_proposal",
+              "id": "RJ-COND-05-D-FULL-B05-D02",
+              "speaker": "モンタギュー"
+            }
+          ]
+        },
+        {
+          "action": "握手を誇らしく掲げず、低い位置で保つ。周囲は手をつながなくてもよい。皆の呼吸が一度そろい、左には戻らない二人の手が残る。一呼吸の後、ゆっくり暗転。本編終了。",
+          "id": "RJ-COND-05-D-FULL-B06",
+          "status": "assistant_staging_proposal",
+          "dialogue": []
+        }
+      ],
+      "technical": {
+        "light": "中央のロレンスを軸に、近づく人が一人ずつ読める明かり。二人の遺体を消さない。最後は全体を静かにフェード。",
+        "music": "集合の途中は足音と呼吸。父親の手が重なってからM03の二音を一度だけ戻し、M07の余韻で終える。",
+        "body": "一人ずつ集まる。真相→沈黙→相手の子を見る→手を差し出す、の順で急な仲直りを避ける。",
+        "props": "戻った手紙をロレンスが保持。左の杯・短剣は見せ場の後に強調しない。"
+      },
+      "exit": "暗転を本編の終端とする。少し間を置いて別の明かりへ。カーテンコールは10名が役を解いて立ち、60秒程度の独立した案とする。",
+      "number": 19,
+      "title": "ロレンスを中心に集まる",
+      "sceneId": "RJ-COND-05",
+      "sceneNumber": 3,
+      "inheritedDirection": "ロレンス修道士を中央に置く。悲しみの中で一人ずつ人が集まり、最後に両家の父が和解する。",
+      "startProposalSeconds": 1625,
+      "endProposalSeconds": 1745,
+      "nextCueId": null,
+      "frames": [
+        {
+          "id": "RJ-COND-05-D-01",
+          "sceneId": "RJ-COND-05",
+          "sceneNumber": 3,
+          "cueId": "RJ-COND-05-D",
+          "cueTitle": "ロレンスを中心に集まる",
+          "title": "最初の一人が中央へ",
+          "summary": "中央のロレンスに乳母が最初に近づく。左の二人は動かない。",
+          "people": [
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.12,
+              "v": 0.58,
+              "pose": "lie",
+              "facing": 180,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": "死"
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.26,
+              "v": 0.82,
+              "pose": "lie",
+              "facing": 180,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": "死"
+            },
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": "FRIAR_LAWRENCE",
+              "label": "Lo",
+              "name": "ロレンス修道士",
+              "u": 0.52,
+              "v": 0.57,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#556044",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "NURSE",
+              "characterRoleId": "NURSE",
+              "label": "Nu",
+              "name": "乳母",
+              "u": 0.78,
+              "v": 0.67,
+              "pose": "walk",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": {
+                "u": 0.65,
+                "v": 0.64
+              },
+              "state": null
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0020",
+            "RJ-NOTE-0021"
+          ],
+          "positionNote": "最初の一人は乳母担当の匿名群衆として仮置き。順番・登場口は未決定。",
+          "scriptUrl": "../condensed-show/#RJ-COND-05",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-05-D-01",
+          "offstageRoleIds": [
+            "BENVOLIO",
+            "TYBALT",
+            "MERCUTIO",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ]
+        },
+        {
+          "id": "RJ-COND-05-D-02",
+          "sceneId": "RJ-COND-05",
+          "sceneNumber": 3,
+          "cueId": "RJ-COND-05-D",
+          "cueTitle": "ロレンスを中心に集まる",
+          "title": "集まった人々／和解へ",
+          "summary": "乳母、ベンヴォーリオ、ジョン、両父親、二人の匿名の街の人が一人ずつ集まった後の配置。",
+          "people": [
+            {
+              "performerRoleId": "ROMEO",
+              "characterRoleId": "ROMEO",
+              "label": "Ro",
+              "name": "ロミオ",
+              "u": 0.12,
+              "v": 0.58,
+              "pose": "lie",
+              "facing": 180,
+              "color": "#245963",
+              "roleMode": "named",
+              "route": null,
+              "state": "死"
+            },
+            {
+              "performerRoleId": "JULIET",
+              "characterRoleId": "JULIET",
+              "label": "Ju",
+              "name": "ジュリエット",
+              "u": 0.26,
+              "v": 0.82,
+              "pose": "lie",
+              "facing": 180,
+              "color": "#8f3e1e",
+              "roleMode": "named",
+              "route": null,
+              "state": "死"
+            },
+            {
+              "performerRoleId": "FRIAR_LAWRENCE",
+              "characterRoleId": "FRIAR_LAWRENCE",
+              "label": "Lo",
+              "name": "ロレンス修道士",
+              "u": 0.52,
+              "v": 0.57,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#556044",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "MONTAGUE",
+              "characterRoleId": "MONTAGUE",
+              "label": "Mo",
+              "name": "モンタギュー",
+              "u": 0.4,
+              "v": 0.63,
+              "pose": "stand",
+              "facing": 90,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "CAPULET",
+              "characterRoleId": "CAPULET",
+              "label": "Ca",
+              "name": "キャピュレット",
+              "u": 0.67,
+              "v": 0.65,
+              "pose": "stand",
+              "facing": 270,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "BENVOLIO",
+              "characterRoleId": "BENVOLIO",
+              "label": "Be",
+              "name": "ベンヴォーリオ",
+              "u": 0.3,
+              "v": 0.24,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "TYBALT",
+              "characterRoleId": null,
+              "label": "2",
+              "name": "群2（ティボルト担当）",
+              "u": 0.44,
+              "v": 0.19,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "MERCUTIO",
+              "characterRoleId": null,
+              "label": "3",
+              "name": "群3（マーキューシオ担当）",
+              "u": 0.6,
+              "v": 0.2,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "ensemble",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "NURSE",
+              "characterRoleId": "NURSE",
+              "label": "Nu",
+              "name": "乳母",
+              "u": 0.75,
+              "v": 0.26,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            },
+            {
+              "performerRoleId": "FRIAR_JOHN",
+              "characterRoleId": "FRIAR_JOHN",
+              "label": "Jo",
+              "name": "ジョン修道士",
+              "u": 0.87,
+              "v": 0.41,
+              "pose": "stand",
+              "facing": 180,
+              "color": "#655b4c",
+              "roleMode": "named",
+              "route": null,
+              "state": null
+            }
+          ],
+          "lightPools": [],
+          "zones": [],
+          "offstageVoice": null,
+          "flag": null,
+          "durationSeconds": null,
+          "layoutStatus": "assistant_full_show_proposal",
+          "userDirectionEntryIds": [
+            "RJ-NOTE-0020",
+            "RJ-NOTE-0021"
+          ],
+          "positionNote": "集合後の最終配置案。順番は未定。亡くなったティボルトとマーキューシオの担当者は匿名の人々として参加する。",
+          "scriptUrl": "../condensed-show/#RJ-COND-05",
+          "scriptExcerpt": null,
+          "sourceFrameId": "RJ-COND-05-D-02",
+          "offstageRoleIds": []
+        }
+      ]
+    }
+  ],
+  "appImportCompatible": false,
+  "appliedToStageSketch": false,
+  "durationStatus": "proposal_not_measured",
+  "performerCount": 10,
+  "roles": [
+    {
+      "id": "ROMEO",
+      "name": "ロミオ"
+    },
+    {
+      "id": "JULIET",
+      "name": "ジュリエット"
+    },
+    {
+      "id": "FRIAR_LAWRENCE",
+      "name": "ロレンス修道士"
+    },
+    {
+      "id": "BENVOLIO",
+      "name": "ベンヴォーリオ"
+    },
+    {
+      "id": "TYBALT",
+      "name": "ティボルト"
+    },
+    {
+      "id": "MERCUTIO",
+      "name": "マーキューシオ"
+    },
+    {
+      "id": "NURSE",
+      "name": "乳母"
+    },
+    {
+      "id": "CAPULET",
+      "name": "キャピュレット"
+    },
+    {
+      "id": "MONTAGUE",
+      "name": "モンタギュー"
+    },
+    {
+      "id": "FRIAR_JOHN",
+      "name": "ジョン修道士"
+    }
+  ],
+  "curtainCallProposalSeconds": 60,
+  "sourceHashes": {
+    "full-show/score.json": "2aaef2b16c5892ea8c29d0660382b0a34ccd9044edc0705dfc43986286249361",
+    "condensed-show/outline.json": "caab0f5209f61a85e49736c2c0230203a18714cda6c333d8aa13de8f221dfdb3",
+    "condensed-show/scene-02/script.json": "a1f4a73d3e41c019791efc1e26b9b85a87fdb6a4f79f10932b502ad1815e08de",
+    "scene-samples/draft.json": "c58b5f4b1f32988fab0770d23be08acf11be148294d3da477d197bb377568a23",
+    "stage-visuals/layouts.json": "561de680054fc3b6ae778747127ede263a09348657b8589d64b2568b289bac05",
+    "direction-notes/scene-notes.json": "c95c0bb3fbff81bf20fe2fadfbbad014357851458aad94d2529581d4cd6a39bf"
+  },
+  "durationProposalSeconds": 1745,
+  "scenes": [
+    {
+      "id": "RJ-COND-01",
+      "number": 1,
+      "title": "対立の街、仮面の出会い",
+      "summary": "家同士の争いしかなかった世界に、ロミオとジュリエット個人のつながりが生まれる。",
+      "cueIds": [
+        "RJ-COND-01-A",
+        "RJ-COND-01-B",
+        "RJ-COND-01-C",
+        "RJ-COND-01-D"
+      ],
+      "durationProposalSeconds": 395
+    },
+    {
+      "id": "RJ-COND-02",
+      "number": 2,
+      "title": "二人の約束から、届かない手紙へ",
+      "summary": "秘密の結婚で結ばれた二人が、決闘と追放によって引き離される。ジュリエットは再会のために仮死の策を選ぶが、手紙が届かずロミオは死を信じて墓所へ向かう。",
+      "cueIds": [
+        "RJ-COND-02-A",
+        "RJ-COND-02-B",
+        "RJ-COND-02-C",
+        "RJ-COND-03-A",
+        "RJ-COND-03-B",
+        "RJ-COND-03-C",
+        "RJ-COND-03-D",
+        "RJ-COND-04-A",
+        "RJ-COND-04-B",
+        "RJ-COND-04-C",
+        "RJ-COND-04-D"
+      ],
+      "durationProposalSeconds": 955
+    },
+    {
+      "id": "RJ-COND-05",
+      "number": 3,
+      "title": "墓所、二人の死、残された和解",
+      "summary": "再会の時間が合わず二人は死ぬ。その不在を前に、残された人々が初めて一つの場所へ集まる。",
+      "cueIds": [
+        "RJ-COND-05-A",
+        "RJ-COND-05-B",
+        "RJ-COND-05-C",
+        "RJ-COND-05-D"
+      ],
+      "durationProposalSeconds": 395
+    }
+  ]
+}

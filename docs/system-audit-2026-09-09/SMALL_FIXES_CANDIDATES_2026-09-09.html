@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>舞台スケッチ 逐次修正の候補リスト 2026-09-09（小道具・姿勢・文言・デザイン）</title>
+<style>
+  :root{--ink:#1d1a16;--sub:#5b554c;--line:#d9d2c5;--paper:#fbf8f2;--card:#fff;--hi:#b3261e;--mid:#9a6b00;--low:#2f6b4f;--info:#3c5a80;--tag:#efe9dd;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.75 -apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
+  main{max-width:1000px;margin:0 auto;padding:24px 18px 80px}
+  h1{font-size:24px;line-height:1.35;margin:0 0 6px}
+  h2{font-size:19px;margin:40px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+  h3{font-size:16px;margin:20px 0 8px}
+  .meta{color:var(--sub);font-size:14px}
+  .lead{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--info);padding:14px 16px;border-radius:8px;margin:18px 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:12px 0}
+  code{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:#f1ede4;padding:1px 5px;border-radius:4px;word-break:break-all}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+  th{background:var(--tag)}
+  .pill{font-size:12px;padding:1px 8px;border-radius:999px;background:var(--tag);color:var(--sub);white-space:nowrap}
+  .p1{color:#fff;background:var(--hi)}.p2{color:#fff;background:var(--mid)}.p3{color:#fff;background:var(--low)}
+  ul,ol{padding-left:1.3em}
+  li{margin:3px 0}
+  .note{font-size:14px;color:var(--sub)}
+  .now{color:var(--sub);font-size:14px}
+  @media (max-width:640px){table{font-size:13px}}
+</style>
+</head>
+<body>
+<main>
+<h1>逐次修正の候補リスト：小道具・姿勢・文言・デザイン</h1>
+<p class="meta">2026-09-09・Claude（Fable 5.1）。<code>stage-sketch.js</code>（PROP_SHAPES／SET_KINDS／POSES／LIGHT_PRESETS）、<code>stage-i18n.js</code>（TEXT／MAPS／SAY）、<code>manual/manual-content.js</code>、<code>design/DESIGN_LINT_FINDINGS_2026-08-30.md</code> から現物を抜き出し、それに対して候補を挙げた。<strong>「現状」は事実、「候補」は提案。</strong>採否と順番は本人が決める。1件ずつ小さく直す前提で、各候補は独立している。</p>
+
+<section class="lead">
+  <strong>使い方</strong>：気になった行の番号（例 P-07、W-03）を伝えてもらえれば、その1件だけを発注書にして進める。優先度の目安：<span class="pill p1">先に</span>＝外部利用者が毎回見る／誤解を生む、<span class="pill p2">次に</span>＝使う場面が限られる、<span class="pill p3">余裕で</span>＝あれば嬉しい。
+</section>
+
+<h2>1. 小道具の網羅（P）</h2>
+<div class="card">
+  <p class="now"><strong>現状</strong>：手に持てる小道具（<code>PROP_SHAPES</code>）は <strong>11種</strong>＝箱・傘・クラブ・ボール・リング・棒・刀・本・シルクハット・ランタン・旗。置く物（<code>SET_KINDS</code>）は台・箱／テーブル／椅子／ベンチ／スツール／壁／球／小道具（汎用）／トラピーズ／シルホイール／ディアボロ／チャイニーズポール／ティーターボード／エアリアルティシュー／綱渡り／スーツケース／トランポリン／ハンドバランス用cane／車／せり／盆／可動デッキ／幕／水面／組んだセット。形はプリミティブ（cylinder・sphere・box）の組み合わせで、1種あたり数行〜十数行で足せる（<code>docs/PROP_SHAPES_WORKORDER_2026-08-20.md</code> が前例）。</p>
+  <p>本人の希望「仮面など、舞台で使われる一般的な小道具を全部網羅したい」に沿って、<strong>用途別に一覧化</strong>した。数が多いので、まず「どの群から」を決めてもらうのがよい。命名は既存に合わせ、日本語＋英語の両方を持たせる。</p>
+
+  <h3>P-A 仮面・被り物・身につける物 <span class="pill p1">先に</span></h3>
+  <table>
+    <tr><th>#</th><th>候補</th><th>寸法の目安</th><th>備考</th></tr>
+    <tr><td>P-01</td><td>仮面（顔全体）</td><td>0.18×0.06×0.24m</td><td>握り＝縁。演者の顔に「付ける」表現は、姿勢「仮面を付ける」（Q-13）とセットで検討</td></tr>
+    <tr><td>P-02</td><td>半面（目元だけ・コメディア）</td><td>0.16×0.05×0.10m</td><td>P-01 の派生。色で区別</td></tr>
+    <tr><td>P-03</td><td>山高帽／鳥打帽／キャップ</td><td>既存シルクハットの派生</td><td>「帽子」を1種にせず、形で3種。既存 <code>hat</code> 姿勢と相性</td></tr>
+    <tr><td>P-04</td><td>スカーフ・ヴェール（布）</td><td>1.2×0.02×0.8m（垂れ）</td><td>薄い box。マニピュレーションの定番</td></tr>
+    <tr><td>P-05</td><td>マント・ケープ（手持ち）</td><td>1.4×0.02×1.2m</td><td>P-04 と同じ表現。闘牛のカポテ等</td></tr>
+  </table>
+
+  <h3>P-B 手に持つ日用品（芝居の小道具の定番） <span class="pill p1">先に</span></h3>
+  <table>
+    <tr><th>#</th><th>候補</th><th>寸法の目安</th><th>備考</th></tr>
+    <tr><td>P-06</td><td>扇子／扇</td><td>0.25×0.02×0.30m（開き）</td><td>日本の舞台の定番。閉じ／開きの2形</td></tr>
+    <tr><td>P-07</td><td>鏡（手鏡）</td><td>0.15×0.02×0.28m</td><td>tint を高くして光沢</td></tr>
+    <tr><td>P-08</td><td>ろうそく・燭台</td><td>0.06×0.06×0.30m</td><td>照明の意図（光の意図カード）と接続できる余地</td></tr>
+    <tr><td>P-09</td><td>手紙・封筒・紙</td><td>0.11×0.005×0.22m</td><td>薄い box 1個</td></tr>
+    <tr><td>P-10</td><td>花・花束</td><td>0.25×0.25×0.45m</td><td>cylinder＋sphere</td></tr>
+    <tr><td>P-11</td><td>杖（歩行用・ステッキ）</td><td>0.03×0.03×0.90m</td><td><strong>注意</strong>：既存 <code>cane</code> はハンドバランス用。名前が衝突するので新IDは <code>walkingstick</code></td></tr>
+    <tr><td>P-12</td><td>グラス・ボトル・カップ</td><td>0.08×0.08×0.25m</td><td>宴会・酒場の場面</td></tr>
+    <tr><td>P-13</td><td>鞄（ハンドバッグ・トランク小）</td><td>0.35×0.12×0.28m</td><td>スーツケース（置く物）とは別に手持ち</td></tr>
+    <tr><td>P-14</td><td>電話（受話器・スマホ）</td><td>0.07×0.01×0.15m</td><td>現代劇</td></tr>
+    <tr><td>P-15</td><td>マイク（手持ち）・マイクスタンド</td><td>0.05×0.05×0.25m／スタンド h1.5m</td><td>「歌う（マイク）」姿勢が既にある＝小道具としても持てるように</td></tr>
+    <tr><td>P-16</td><td>額縁・絵</td><td>0.6×0.03×0.8m</td><td>手持ちと壁掛けの両方</td></tr>
+    <tr><td>P-17</td><td>時計（懐中時計・目覚まし）</td><td>0.06×0.02×0.06m</td><td>小さすぎる場合は既定を2倍（ディアボロの前例）</td></tr>
+    <tr><td>P-18</td><td>ナイフ・短剣</td><td>刀の派生 0.35m</td><td>既存 <code>sword</code> のパーツ縮小</td></tr>
+    <tr><td>P-19</td><td>松明・ファイヤートーチ</td><td>0.06×0.06×0.6m</td><td>ファイヤー演目。危険区分の注記（アパラタス台帳と同じ流儀）</td></tr>
+    <tr><td>P-20</td><td>ロープ（束・縄跳び）</td><td>0.3×0.3×0.15m（束）</td><td>綱渡り（置く物）とは別</td></tr>
+  </table>
+
+  <h3>P-C 楽器 <span class="pill p2">次に</span></h3>
+  <table>
+    <tr><th>#</th><th>候補</th><th>備考</th></tr>
+    <tr><td>P-21</td><td>ギター／ウクレレ</td><td>姿勢「ギターを弾く」があるのに小道具が無い＝置いておけない</td></tr>
+    <tr><td>P-22</td><td>トランペット／サックス</td><td>同上（「トランペットを吹く」）</td></tr>
+    <tr><td>P-23</td><td>バイオリン・弓</td><td>—</td></tr>
+    <tr><td>P-24</td><td>アコーディオン</td><td>サーカス・大道芸の定番</td></tr>
+    <tr><td>P-25</td><td>太鼓・タンバリン・ドラム（置く）</td><td>置く物側</td></tr>
+    <tr><td>P-26</td><td>ピアノ（置く）</td><td>置く物側。アップライト 1.5×0.6×1.2m／グランド 1.5×2.0×1.0m</td></tr>
+  </table>
+
+  <h3>P-D サーカス・ジャグリングの道具（既存に無いもの） <span class="pill p1">先に</span></h3>
+  <table>
+    <tr><th>#</th><th>候補</th><th>備考</th></tr>
+    <tr><td>P-27</td><td>エアリアルフープ（リラ）</td><td>トラピーズ・ティシューはあるのにフープが無い。dia 0.95m・吊り</td></tr>
+    <tr><td>P-28</td><td>エアリアルストラップ</td><td>吊り。2本</td></tr>
+    <tr><td>P-29</td><td>コード・リス（吊りロープ）／ハンモック</td><td>吊り</td></tr>
+    <tr><td>P-30</td><td>フラフープ</td><td>既存「リング」は 0.4m のジャグリングリング。0.9m は別物</td></tr>
+    <tr><td>P-31</td><td>シガーボックス</td><td>0.15×0.10×0.20m ×3</td></tr>
+    <tr><td>P-32</td><td>デビルスティック・フラワースティック</td><td>棒の派生</td></tr>
+    <tr><td>P-33</td><td>ポイ</td><td>紐＋球</td></tr>
+    <tr><td>P-34</td><td>玉乗りの球</td><td>既存「球」（1.2m）で代用できるが、名前で見つからない。別名（エイリアス）で対応可</td></tr>
+    <tr><td>P-35</td><td>ローラボーラ</td><td>筒＋板</td></tr>
+    <tr><td>P-36</td><td>竹馬</td><td>姿勢とセット</td></tr>
+    <tr><td>P-37</td><td>独楽（大駒）・けん玉</td><td>日本の大道芸</td></tr>
+    <tr><td>P-38</td><td>ジャーマンホイール</td><td>置く物。dia 2.2m</td></tr>
+    <tr><td>P-39</td><td>ロシアンバー／バンキン（コリアンプランク）</td><td>置く物。長さ 4.5m／3.5m</td></tr>
+    <tr><td>P-40</td><td>ハンド・トゥ・ハンドの台（ペデスタル）</td><td>置く物</td></tr>
+    <tr><td>P-41</td><td>スラックライン</td><td>綱渡りの派生（低い）</td></tr>
+  </table>
+
+  <h3>P-E 置く物（家具・建物・情景） <span class="pill p2">次に</span></h3>
+  <table>
+    <tr><th>#</th><th>候補</th><th>備考</th></tr>
+    <tr><td>P-42</td><td>ソファ／ベッド／机（デスク）</td><td>芝居の室内。ベンチ・テーブルの派生で寸法だけ</td></tr>
+    <tr><td>P-43</td><td>梯子（立て掛け・脚立）</td><td>転換・サーカスの両方</td></tr>
+    <tr><td>P-44</td><td>階段（2〜4段）</td><td>台の派生。平台との組み合わせが多い</td></tr>
+    <tr><td>P-45</td><td>扉枠・窓枠・門</td><td>壁の派生（開口）</td></tr>
+    <tr><td>P-46</td><td>街灯・柱（装飾）</td><td>チャイニーズポールとは別に「登らない柱」</td></tr>
+    <tr><td>P-47</td><td>木・岩・切り株</td><td>屋外の情景。sphere＋cylinder</td></tr>
+    <tr><td>P-48</td><td>樽・木箱（クレート）・カゴ</td><td>箱の派生。倉庫・港の場面</td></tr>
+    <tr><td>P-49</td><td>提灯・幟（のぼり）・バナー</td><td>旗・ランタンの派生。祭りの場面</td></tr>
+    <tr><td>P-50</td><td>鏡台・姿見</td><td>—</td></tr>
+  </table>
+  <p class="note">進め方の案：1群を1発注書（5〜10種）にし、<code>PROP_SHAPES</code>／<code>PIECE_DIMS</code>／<code>stage-i18n.js</code> の <code>propShape</code>・<code>setKind</code>・<code>pieceType</code>／小道具一覧UI／<code>tools/scan-prop-render.mjs</code>（描画走査）を同時に更新。<strong>命名規則</strong>（日本語は一般名・カタカナは業界で通る語だけ・英語はブリティッシュ綴り）を先に1行決めると、以後の追加がぶれない。</p>
+</div>
+
+<h2>2. 姿勢の日本語（Q）</h2>
+<div class="card">
+  <p class="now"><strong>現状</strong>：40姿勢。日本語ラベルは <code>makePose(id, "日本語", …)</code>、英語は <code>stage-i18n.js</code> の <code>MAPS.pose</code>。</p>
+  <h3>Q-A 表現がおかしい・揃っていないもの <span class="pill p1">先に</span></h3>
+  <table>
+    <tr><th>#</th><th>現在</th><th>問題</th><th>候補</th></tr>
+    <tr><td>Q-01</td><td>「よつんばい」</td><td>ひらがな表記が浮く（他は漢字）</td><td>「四つん這い」</td></tr>
+    <tr><td>Q-02</td><td>「ヤンキー座り」</td><td>俗語。配る製品のラベルとしては軽い。英語は "Deep squat"</td><td>「深くしゃがむ」または「しゃがみ込む」</td></tr>
+    <tr><td>Q-03</td><td>「ブランコに座る」／「ぶら下がる」（trapeze_sit／trapeze_hang）</td><td>装置名は「トラピーズ」なのに姿勢は「ブランコ」。「ぶら下がる」は何にか分からない</td><td>「トラピーズに座る」／「トラピーズにぶら下がる」（英語 "Sitting on the bar" と揃う）</td></tr>
+    <tr><td>Q-04</td><td>「横向き」（sidelie）</td><td>「うつ伏せ」「仰向け」と並ぶと寝ているか分からない</td><td>「横向きに寝る」</td></tr>
+    <tr><td>Q-05</td><td>「片膝立ち」（kneel）と「膝立ち」（hizadachi）</td><td>並ぶと区別が読めない。英語は Kneel／High kneel</td><td>「片膝をつく」／「両膝立ち」</td></tr>
+    <tr><td>Q-06</td><td>「側方宙返り」（sideflip）</td><td>手を着く形なら「側転（側方倒立回転）」が正しい。着かないなら「側宙」。<strong>座標を見て判定が要る</strong></td><td>手を着く→「側転」、着かない→「側宙」</td></tr>
+    <tr><td>Q-07</td><td>「帽子をかぶる」（hat）</td><td>動作か状態か曖昧（英語は "Wearing a hat"＝状態）</td><td>「帽子に手をやる」（動作）か「帽子をかぶった立ち姿」（状態）のどちらか</td></tr>
+    <tr><td>Q-08</td><td>「歌う（マイク）」「ギターを弾く」「トランペットを吹く」</td><td>楽器が小道具として存在しないのに姿勢だけある（P-15・P-21・P-22 と対）</td><td>小道具を足すか、姿勢名から楽器名を外す</td></tr>
+    <tr><td>Q-09</td><td>「踊る・両手を斜め上へ」など踊る5種</td><td>「踊る・」の接頭が長く、一覧で読みにくい</td><td>「ダンス①〜⑤」ではなく形で呼ぶ：「両手を斜め上へ」「踏み込む」「腰を落として開く」「跳ぶ」「体をひねる」（踊りに限らず使える）</td></tr>
+    <tr><td>Q-10</td><td>「土下座」</td><td>意味が強い。芝居では「平伏」「ひれ伏す」の方が汎用</td><td>「ひれ伏す」（英語 "Prostrate"）。土下座は別名として検索に残す</td></tr>
+    <tr><td>Q-11</td><td>「体育座り」</td><td>学校語。英語 "Hug knees" と意味が合っている</td><td>「膝を抱えて座る」</td></tr>
+    <tr><td>Q-12</td><td>「両手を上げる」「両手を広げる」</td><td>問題なし。ただし「片手を上げる」が無いのが目立つ</td><td>→ Q-B</td></tr>
+  </table>
+  <h3>Q-B 無くて困りそうな姿勢 <span class="pill p2">次に</span></h3>
+  <table>
+    <tr><th>#</th><th>候補</th><th>理由</th></tr>
+    <tr><td>Q-13</td><td>お辞儀・礼（浅い／深い）</td><td>舞台の始まりと終わりに必ずある。無いのが最も目立つ</td></tr>
+    <tr><td>Q-14</td><td>片手を上げる／指さす／手を振る</td><td>導線・視線の説明で頻出</td></tr>
+    <tr><td>Q-15</td><td>腕組み／腰に手／考える（顎に手）</td><td>芝居の立ち姿の基本形</td></tr>
+    <tr><td>Q-16</td><td>驚く（両手を顔へ）／泣く（顔を覆う）／祈る（合掌）</td><td>感情の記号。場面の意図が伝わる</td></tr>
+    <tr><td>Q-17</td><td>ジャンプ（両足）／着地</td><td>「踊る・跳ぶ」はあるが汎用の跳躍が無い</td></tr>
+    <tr><td>Q-18</td><td>寄りかかる（壁・柱）</td><td>壁・柱の置く物と組む</td></tr>
+    <tr><td>Q-19</td><td>仮面を付ける／脱ぐ</td><td>P-01 と対</td></tr>
+    <tr><td>Q-20</td><td>2人組：肩車／ハンド・トゥ・ハンド／持ち上げる（リフト）／背中合わせ</td><td>アクロの基本。1体の姿勢では表現できないので「2人組の姿勢」という新しい型が要る（設計判断）</td></tr>
+    <tr><td>Q-21</td><td>装置ごとの姿勢：ティシューに巻きつく／ポールに登る／綱の上を歩く／ティーターボードで飛ぶ／フープに座る</td><td>装置はあるのに、それに乗った姿勢がトラピーズ2種しかない</td></tr>
+    <tr><td>Q-22</td><td>ブリッジ／前転／倒立前転／Y字バランス</td><td>体操・アクロの基本</td></tr>
+  </table>
+  <p class="note">姿勢を1つ足すコスト：座標セット1本（MakeHuman 実測の断面は流用）＋日英ラベル＋姿勢帯のタイル。既存の「実演由来ポーズの変換ツール」（演者モーションモデル側・E-1 でブロック中）が動けば、実演から起こせる。</p>
+</div>
+
+<h2>3. 文言・用語（W）</h2>
+<div class="card">
+  <p class="now"><strong>現状</strong>：UI文字列に同じ物を指す語が並存している（出現数は <code>stage-sketch.js</code>／<code>stage-i18n.js</code>／冊子）。</p>
+  <table>
+    <tr><th>#</th><th>ゆれ</th><th>出現数</th><th>候補</th></tr>
+    <tr><td>W-01 <span class="pill p1">先に</span></td><td>「場面」と「シーン」</td><td>場面 101／21／9、シーン 224／112／24</td><td>製品は「シーン」に統一（UIの主要語）。README・設計文書の「場面」はそのままでよい。ユーザー向け文だけ揃える</td></tr>
+    <tr><td>W-02 <span class="pill p1">先に</span></td><td>「共有セッション」「会議用セッション」「セッション」</td><td>5／7／3、0／2／0、8／17／7</td><td>「共有セッション」に統一。「会議用」は2箇所（i18n）だけなので即直せる</td></tr>
+    <tr><td>W-03</td><td>「平面図」と「平面」、「正面図」と「正面」</td><td>59／95、47／99</td><td>ボタン・タブは短い「平面」「正面」、告知文は「平面図」「正面図」と<strong>役割で分ける</strong>ルールを決めて例外を潰す（例：「動線は平面図で引きます。平面を開いてください。」は同じ文で両方使っている）</td></tr>
+    <tr><td>W-04</td><td>「明かり」と「照明」「ライト」</td><td>87／50／7</td><td>道具・図の中の物＝「明かり」、機能名・パネル名＝「照明」で分ける。「ライト」7件は置換候補</td></tr>
+    <tr><td>W-05</td><td>「装置」「舞台セット」「セット」</td><td>32／24／59</td><td>冊子の見出し「出るもの（演者・舞台セット・小道具）」に合わせ「舞台セット」を正、短縮形「セット」は文中のみ</td></tr>
+    <tr><td>W-06 <span class="pill p1">先に</span></td><td>「ハンドバランス用cane」</td><td>setKind の日本語ラベルに英字が混ざる</td><td>「ハンドバランスケイン」または「倒立用の杖」</td></tr>
+    <tr><td>W-07</td><td>「控え」「保存」「書き出し」「読み込み」「取り込み」</td><td>控え 39、取り込み 1／7</td><td>「控え」は本人の言葉で温かいが、初見のテスターには「バックアップ」が読める。冊子で一度「控え（バックアップ）」と併記して以後は「控え」で通す。「取り込み」は会場ライブラリだけの語なので「読み込み」に寄せる</td></tr>
+    <tr><td>W-08</td><td>照明プリセット「バック8台＋AC」「トップサス（1人分）」「エンカ」</td><td>専門語</td><td>ラベルはそのまま、タイルに1行説明（例「トップサス＝真上から1人を抜く明かり」）。英語版は既に説明的（"Top special (one person)"）なので日本語だけ遅れている</td></tr>
+    <tr><td>W-09</td><td>「どちらか一方は開いたままにします。」</td><td>何の話か分からない（正面／平面の表示切替の告知）</td><td>「正面と平面のどちらかは表示したままにします。」</td></tr>
+    <tr><td>W-10</td><td>「深さの上限に達するため、ここではまとめられません。」</td><td>「深さ」が内部語</td><td>「これ以上は入れ子にできません（3段まで）。」</td></tr>
+    <tr><td>W-11</td><td>「共有する舞台データが大きすぎます（NNNKB）」「このファイルは大きすぎます（N.NMB）」</td><td>KB／MB の使い分けが場当たり</td><td>1MB 未満は KB、以上は MB に統一する小さな関数を <code>announce</code> 側に</td></tr>
+    <tr><td>W-12</td><td>SAY の型 217本の全文点検</td><td>上の3件は先頭60本から拾ったもの。残り150本は未読</td><td>1回の発注で全文を読み、同種のゆれを一覧にする（判断は本人）</td></tr>
+    <tr><td>W-13</td><td>冊子の章題「PCで使う（いちばん道具が揃います）」「スマホで開く（見る係）」</td><td>語り口は良い。ただし「見る係」は身内語</td><td>「スマホで開く（見る用）」。他の章題は据え置き</td></tr>
+    <tr><td>W-14</td><td>英語のブリティッシュ綴り統一（9/5 済み）</td><td>—</td><td>新規追加分（整列7形状・利用計測）が同じ規則か点検だけ</td></tr>
+  </table>
+</div>
+
+<h2>4. デザイン（D）</h2>
+<div class="card">
+  <p class="now"><strong>現状</strong>：8/30 の design-lint で NG は解消済み。<strong>未対応として残っているもの</strong>が <code>design/DESIGN_LINT_FINDINGS_2026-08-30.md</code> に明記されている。</p>
+  <table>
+    <tr><th>#</th><th>候補</th><th>根拠</th><th>備考</th></tr>
+    <tr><td>D-01 <span class="pill p2">次に</span></td><td>タップ対象 83件（高さ26〜38px）を、クラス単位で「隣と揃うか」で判断して上げる</td><td>lint 未対応表：<code>.btn-quiet</code> 15・class無し button 8・<code>.stage-panel-head</code> 7・<code>.stage-seat</code> 5・<code>.is-icon</code> 5・<code>.stage-canvas-tool</code> 4</td><td>全部44pxにしない方針が既に書かれている。iPad で指で触るものだけ先に</td></tr>
+    <tr><td>D-02</td><td>コントラスト WARN 6件（ラスター背景）の目視</td><td>同上</td><td>自動判定不可。本人の目視1回</td></tr>
+    <tr><td>D-03</td><td>行送り 7件・書体3種 1件</td><td>同上「軽微」</td><td>—</td></tr>
+    <tr><td>D-04 <span class="pill p2">次に</span></td><td>iPad 左レールの帯アイコン（▣●☀◫◎）を歯車と同じ SVG に揃える</td><td>E-2（8/30）で歯車だけ SVG 化、他は「据え置き」</td><td>記号フォント依存を無くす。5個</td></tr>
+    <tr><td>D-05</td><td>照明プリセットのタイルに1行説明（W-08 と対）</td><td>—</td><td>文言＋余白の調整</td></tr>
+    <tr><td>D-06</td><td>小道具一覧の並びと群分け</td><td>P 群が増えると11個の平置きでは探せない</td><td>「身につける／手に持つ／楽器／サーカス／置く物」の見出し付き。P の第1群と同時に</td></tr>
+    <tr><td>D-07</td><td>姿勢帯のタイル名の長さ</td><td>Q-09 と対</td><td>短い名前に揃えれば2行折返しが減る</td></tr>
+    <tr><td>D-08</td><td>スマホ縦の告知文が2行を超えるものの点検</td><td>W-09〜W-11 の長文</td><td>390px 幅で SAY 全文を流して折返し数を数える（自動化可・夜間向き）</td></tr>
+    <tr><td>D-09</td><td>体験版（try.html）の「体験版」帯と保存されない注記の見え方</td><td>9/7 レビュー3件目は作業ツリーで実装済み・未公開</td><td>公開後に実機で1回見る</td></tr>
+  </table>
+</div>
+
+<h2>5. データ・寸法・その他（X）</h2>
+<div class="card">
+  <table>
+    <tr><th>#</th><th>候補</th><th>備考</th></tr>
+    <tr><td>X-01</td><td>髪型カタログの確定（D-5・草案あり）</td><td><code>docs/AVATAR_LOOK_CATALOG_DRAFT_2026-08-20.md</code>。現在 <code>HAIR_STYLES</code> は「なし／ショート」から始まる少数。本人が選ぶ材料は揃っている</td></tr>
+    <tr><td>X-02</td><td>実在劇場プリセットの追加（B-4 の続き）</td><td>配る相手が実際に使う劇場を1つずつ。技術仕様書から実測値で</td></tr>
+    <tr><td>X-03</td><td>ポーズ座標3件の差し替え（E-1・ブロック中）</td><td>演者モーションモデル側の変換ツール待ち</td></tr>
+    <tr><td>X-04</td><td>小道具の「実寸だと点になる」問題の一般化</td><td>ディアボロだけ既定2倍。P-17（時計）等の小物にも同じ扱いが要る＝「小物は最小表示寸法を持つ」規則にする</td></tr>
+    <tr><td>X-05</td><td>アパラタス台帳（943件・書斎側）と舞台スケッチの置く物の橋渡し</td><td>台帳は「調査草案・未統合」。P-D の追加時に台帳の寸法・危険区分を参照元にできる</td></tr>
+  </table>
+</div>
+
+<h2>先に決めてもらうと速いこと</h2>
+<ol>
+  <li><strong>小道具の第1群</strong>：P-A（仮面・被り物）か P-D（サーカス）か。本人の希望どおりなら P-A → P-B → P-D の順。</li>
+  <li><strong>命名規則の1行</strong>：日本語は一般名・カタカナは業界で通る語のみ・英語はブリティッシュ綴り、でよいか。</li>
+  <li><strong>W-01／W-02 の統一語</strong>：「シーン」「共有セッション」でよいか。</li>
+  <li><strong>Q-02／Q-10 の言い換え</strong>：「ヤンキー座り」「土下座」を残すか。</li>
+</ol>
+<p class="note">このリストは <code>docs/system-audit-2026-09-09/</code> の一部。実装の入口は <a href="START_HERE.md">START_HERE.md</a>（エージェント向け）と <a href="RUNBOOK.html">RUNBOOK.html</a>（人向け）。</p>
+</main>
+</body>
+</html>

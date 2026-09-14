@@ -1,0 +1,77 @@
+ M README.md
+ M build_public.py
+ M build_stage.py
+ M index.html
+ M mcp-server/README.md
+ M mcp-server/src/edit-plan.js
+ M mcp-server/src/project-store.js
+ M mcp-server/src/schemas.js
+ M mcp-server/src/server.js
+ M mcp-server/test/edit-plan.test.js
+ M public-beta.html
+ M public-lp/index.html
+ M stage-i18n.js
+ M stage-public.css
+ M stage-public.js
+ M stage-pwa.js
+ M stage-sketch.js
+ M stage-sw.js
+ M stage-venues.js
+ M stage.html
+ M style.css
+ M tests/stage-manual-help.test.mjs
+ M tests/stage-public-build.test.mjs
+ M tests/stage-pwa-offline-warm.test.mjs
+ M tests/stage-pwa.test.mjs
+ M tests/stage-session-shelve.test.mjs
+ M tests/stage-venue-library.test.mjs
+ M tests/worker-guest-accounts-verify.test.mjs
+ M tests/worker-session-login.test.mjs
+ M try.html
+ M worker.js
+ M wrangler.toml
+?? build_study.py
+?? design/TOKEN_SHEET_guest-login_2026-09-08.md
+?? design/TOKEN_SHEET_lineup_2026-09-09.md
+?? design/TOKEN_SHEET_public-preview_2026-09-07.md
+?? design/TOKEN_SHEET_study-links_2026-09-09.md
+?? design/TOKEN_SHEET_usage_2026-09-08.md
+?? docs/HANDOFF_LINEUP_2026-09-09.html
+?? docs/INDEX.md
+?? docs/RELEASE_FOLLOWUP_2026-09-07.html
+?? docs/SYSTEM_AUDIT_2026-09-09.html
+?? docs/WEB_ANALYTICS.md
+?? docs/beta-hidden-venues-2026-09-09/
+?? docs/guest-access-2026-09-08/
+?? docs/project-contract-2026-09-09/
+?? docs/romeo-juliet-sample-2026-09-09/
+?? docs/script-cues-2026-09-09/
+?? docs/set-transitions-2026-09-08/
+?? docs/study-links/
+?? docs/system-audit-2026-09-09/
+?? docs/usage-metrics-2026-09-08/
+?? stage-study-frame.js
+?? stage-study-owner.js
+?? stage-study-pen.js
+?? stage-study-private.js
+?? stage-study-viewer.js
+?? stage-study.css
+?? stage-usage.js
+?? study-frame.html
+?? study-links.js
+?? study.html
+?? tests/study-links.test.mjs
+?? tests/study-private.test.mjs
+?? tests/study-screen-fixture.json
+?? tests/study-screens.test.mjs
+?? tests/usage-metrics.test.mjs
+?? tests/worker-beta-venues.test.mjs
+?? tests/worker-guest-scope.test.mjs
+?? tools/study-browser-check.mjs
+?? tools/study-image-runtime-check.mjs
+?? tools/study-pen-browser-check.mjs
+?? tools/study-personal-browser-check.mjs
+?? tools/study-preview.mjs
+?? tools/study-runtime-check.mjs
+?? usage-admin-page.js
+?? usage-metrics.js

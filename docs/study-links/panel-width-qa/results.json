@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "Drag left widens the complete right column; width and private text survive reload",
+    "Arrow/Shift/Home/End resize the panel without navigating to another scene",
+    "Escape, pointer cancellation and lost capture roll back unfinished drags",
+    "JA/EN responsive limits preserve drawing space and saved width; narrow phones hide the separator",
+    "Enter/double-click reset the device preference; corrupt saved width is ignored safely",
+    "No API writes, no page errors, published snapshot and existing editor saves remain unchanged",
+    "Resizing remains usable when browser preference storage is unavailable"
+  ],
+  "url": "http://127.0.0.1:8871/study?lang=ja#2539dd032d3513254d392e2af3a635f46b203cc9471c610c",
+  "errors": [],
+  "apiWrites": []
+}

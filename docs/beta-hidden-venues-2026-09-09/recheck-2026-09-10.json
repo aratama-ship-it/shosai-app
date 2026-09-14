@@ -1,0 +1,212 @@
+{
+  "http": {
+    "checkedAt": "2026-09-10T08:37:44.358978+00:00",
+    "items": [
+      {
+        "name": "beta-venues.js",
+        "url": "https://stagesketch.pygmix.com/stage-venues.js",
+        "status": 200,
+        "bytes": 48264,
+        "sha256": "72dae715d870c6af78473a7089240af4c845aa1b455afc8c8566bb2adedba7c3"
+      },
+      {
+        "name": "beta-sw.js",
+        "url": "https://stagesketch.pygmix.com/stage-sw.js",
+        "status": 200,
+        "bytes": 6724,
+        "sha256": "91d97e438bf5bf10edfabeb39a7a93c6c4c0e838058208572915549afba46252"
+      },
+      {
+        "name": "beta-stage.html",
+        "url": "https://stagesketch.pygmix.com/stage?lang=ja",
+        "status": 200,
+        "bytes": 128120,
+        "sha256": "f2d4c8163073fc41e4d497bb3a5d32a4ae99640594603726584af80b5588c30c"
+      },
+      {
+        "name": "public-venues.js",
+        "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-venues.js",
+        "status": 200,
+        "bytes": 47749,
+        "sha256": "2694d467503551bfa21220fc1c9330fd1cd29a4740360607f13c0f450bb5a76f"
+      },
+      {
+        "name": "public-try.html",
+        "url": "https://stagesketch-try.juggler-arata.workers.dev/try",
+        "status": 200,
+        "bytes": 130812,
+        "sha256": "3c77bcfc2a50159c4156380a2bf8baaf019b24cb3626d05be6e8857308c0c2ff"
+      }
+    ]
+  },
+  "catalog": {
+    "checkedAt": "2026-09-10T08:38:04.153Z",
+    "local": {
+      "choices": [
+        {
+          "id": "proscenium",
+          "label": "プロセニアム"
+        },
+        {
+          "id": "thrust",
+          "label": "スラスト"
+        },
+        {
+          "id": "arena",
+          "label": "ビッグトップ"
+        },
+        {
+          "id": "outdoor",
+          "label": "屋外ステージ"
+        },
+        {
+          "id": "blackbox",
+          "label": "ブラックボックス"
+        },
+        {
+          "id": "chapiteau",
+          "label": "シャピトー（巡演テント）"
+        },
+        {
+          "id": "circus-theatre",
+          "label": "劇場のサーカス公演"
+        },
+        {
+          "id": "theatre-tram",
+          "label": "シアタートラム"
+        },
+        {
+          "id": "tohu",
+          "label": "TOHU"
+        },
+        {
+          "id": "cirque-dhiver",
+          "label": "シルク・ディヴェール"
+        }
+      ],
+      "v2Choices": [
+        "proscenium",
+        "thrust",
+        "arena",
+        "outdoor",
+        "blackbox",
+        "chapiteau",
+        "circus-theatre",
+        "theatre-tram",
+        "tohu",
+        "cirque-dhiver"
+      ],
+      "realVenueLookupRetained": true,
+      "filterPresent": false
+    },
+    "beta": {
+      "choices": [
+        {
+          "id": "proscenium",
+          "label": "プロセニアム"
+        },
+        {
+          "id": "thrust",
+          "label": "スラスト"
+        },
+        {
+          "id": "arena",
+          "label": "ビッグトップ"
+        },
+        {
+          "id": "outdoor",
+          "label": "屋外ステージ"
+        },
+        {
+          "id": "blackbox",
+          "label": "ブラックボックス"
+        },
+        {
+          "id": "chapiteau",
+          "label": "シャピトー（巡演テント）"
+        },
+        {
+          "id": "circus-theatre",
+          "label": "劇場のサーカス公演"
+        }
+      ],
+      "v2Choices": [
+        "proscenium",
+        "thrust",
+        "arena",
+        "outdoor",
+        "blackbox",
+        "chapiteau",
+        "circus-theatre"
+      ],
+      "realVenueLookupRetained": true,
+      "filterPresent": true
+    },
+    "public": {
+      "choices": [
+        {
+          "id": "proscenium",
+          "label": "プロセニアム"
+        },
+        {
+          "id": "thrust",
+          "label": "スラスト"
+        },
+        {
+          "id": "arena",
+          "label": "ビッグトップ"
+        },
+        {
+          "id": "outdoor",
+          "label": "屋外ステージ"
+        },
+        {
+          "id": "blackbox",
+          "label": "ブラックボックス"
+        },
+        {
+          "id": "chapiteau",
+          "label": "シャピトー（巡演テント）"
+        },
+        {
+          "id": "circus-theatre",
+          "label": "劇場のサーカス公演"
+        },
+        {
+          "id": "theatre-tram",
+          "label": "シアタートラム"
+        },
+        {
+          "id": "tohu",
+          "label": "TOHU"
+        },
+        {
+          "id": "cirque-dhiver",
+          "label": "シルク・ディヴェール"
+        }
+      ],
+      "v2Choices": [
+        "proscenium",
+        "thrust",
+        "arena",
+        "outdoor",
+        "blackbox",
+        "chapiteau",
+        "circus-theatre",
+        "theatre-tram",
+        "tohu",
+        "cirque-dhiver"
+      ],
+      "realVenueLookupRetained": true,
+      "filterPresent": false
+    },
+    "betaCacheName": "stage-sketch-pwa-v195-hide-real-venues-20260909"
+  },
+  "browser": {
+    "local": "Current browser tab on 127.0.0.1:8847 shows all 3 real-venue options. No edits or reload performed.",
+    "publicPreview": "Newly loaded public try page shows all 3 real-venue options in the venue select.",
+    "beta": "Current HTTP 200 authenticated assets checked; deployed venue catalog evaluated in isolated VM. Browser sign-in session not available."
+  },
+  "codeChanges": false,
+  "deployed": false
+}

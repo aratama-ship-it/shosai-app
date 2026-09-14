@@ -1,0 +1,44 @@
+{
+  "status": "verified",
+  "checkedAt": "2026-09-13T10:32:07.283Z",
+  "activeVersion": "433c22ac-f953-4d05-8179-d757759ff7ee",
+  "deploymentId": "5909fef0-a486-47df-9029-160caf072f18",
+  "liveSourceSha256": "b0e07f79257b6c7c85ef14a44a0936605fe785428af407570d38652a1e82cf6f",
+  "publicAssetChecks": [
+    {
+      "route": "/stage",
+      "status": 200,
+      "sha256": "0aefa90d461d478997abac33529f0456d2fef7b831eda21fcbc589a9fb741614"
+    },
+    {
+      "route": "/stage-sketch.js",
+      "status": 200,
+      "sha256": "e100e761aae60c59252f15c0f6bee9780760f874331aa0b7899a7fa4e6febfd2"
+    },
+    {
+      "route": "/stage-sw.js",
+      "status": 200,
+      "sha256": "540ec61d5022b5b7e86820de7dc525848e7fd76cdc5e865492aba02ce300255c"
+    },
+    {
+      "route": "/stage.html",
+      "status": 200,
+      "sha256": "0aefa90d461d478997abac33529f0456d2fef7b831eda21fcbc589a9fb741614"
+    },
+    {
+      "route": "/style.css",
+      "status": 200,
+      "sha256": "8ff85786faec7e1dea44330848165768afa00200c03c97b4c98d59365e28bb56"
+    }
+  ],
+  "betaActive": true,
+  "authenticatedBrowser": {
+    "regularUserWarningOnLaunch": true,
+    "closeButtonDismisses": true,
+    "backdropDismisses": true,
+    "closeTargetAtLeast44px": true,
+    "returnsOnFreshLaunch": true,
+    "guest1Exempt": true,
+    "errors": []
+  }
+}

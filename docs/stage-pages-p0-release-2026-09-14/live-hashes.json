@@ -1,0 +1,26 @@
+[
+  {
+    "file": "stage.html",
+    "live_sha256": "2013b6495d1d0b8b08f15576de717a2ec87c8582cf65cabe76fd2c2a2bf8f13f",
+    "candidate_sha256": "2013b6495d1d0b8b08f15576de717a2ec87c8582cf65cabe76fd2c2a2bf8f13f",
+    "equal": true
+  },
+  {
+    "file": "stage-sketch.js",
+    "live_sha256": "81c576de720c11ec998504ff100d227844f13cd17793e3bed330ac52496573e2",
+    "candidate_sha256": "81c576de720c11ec998504ff100d227844f13cd17793e3bed330ac52496573e2",
+    "equal": true
+  },
+  {
+    "file": "stage-timeline.js",
+    "live_sha256": "218f3f95432a96a89c623fc3442ab26d7e938ebb5d95202338959506dab5d3a8",
+    "candidate_sha256": "218f3f95432a96a89c623fc3442ab26d7e938ebb5d95202338959506dab5d3a8",
+    "equal": true
+  },
+  {
+    "file": "stage-sw.js",
+    "live_sha256": "0e074076e93d1677da14b1a66915af29210dd517d75ca1c57f1b5be512cfc256",
+    "candidate_sha256": "0e074076e93d1677da14b1a66915af29210dd517d75ca1c57f1b5be512cfc256",
+    "equal": true
+  }
+]

@@ -1,0 +1,72 @@
+TAP version 13
+# Subtest: A06: default normal transition honors the scene duration rather than 100 ms
+ok 1 - A06: default normal transition honors the scene duration rather than 100 ms
+  ---
+  duration_ms: 3502.416459
+  type: 'test'
+  ...
+# Subtest: A08: silent midpoint, backward and repeated seeks sample the same pose and stop there
+ok 2 - A08: silent midpoint, backward and repeated seeks sample the same pose and stop there
+  ---
+  duration_ms: 1442.24925
+  type: 'test'
+  ...
+# Subtest: A05: silent pause freezes the movement; resume continues from that position
+ok 3 - A05: silent pause freezes the movement; resume continues from that position
+  ---
+  duration_ms: 2007.67175
+  type: 'test'
+  ...
+# Subtest: timeline motion is visible even if normal scene animation is disabled
+ok 4 - timeline motion is visible even if normal scene animation is disabled
+  ---
+  duration_ms: 442.331875
+  type: 'test'
+  ...
+# Subtest: route control, light fades and machinery all sample the same transition progress
+ok 5 - route control, light fades and machinery all sample the same transition progress
+  ---
+  duration_ms: 575.704458
+  type: 'test'
+  ...
+# Subtest: audio currentTime drives mid-transition seek, pause and resume without drifting
+not ok 6 - audio currentTime drives mid-transition seek, pause and resume without drifting
+  ---
+  duration_ms: 10381.292666
+  type: 'test'
+  location: '/private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:130:1'
+  failureType: 'testCodeFailure'
+  error: 'page.waitForFunction: Timeout 10000ms exceeded.{"status":"音源を端末へ保存できませんでした。既存のショーは変更していません。","playback":{"trackId":null,"ready":false,"loading":false},"audio":{"ready":0},"tracks":[]}'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    addAudio (/private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:71:165)
+    async TestContext.<anonymous> (/private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:131:46)
+  ...
+# Subtest: saved canonical coordinates survive pause, shelf, reload and export/import
+ok 7 - saved canonical coordinates survive pause, shelf, reload and export/import
+  ---
+  duration_ms: 1116.703041
+  type: 'test'
+  ...
+# Subtest: Music Sync uses lead/early, curve and facing for silent seek and pause
+ok 8 - Music Sync uses lead/early, curve and facing for silent seek and pause
+  ---
+  duration_ms: 1331.424209
+  type: 'test'
+  ...
+# Subtest: A/B wrap resamples the move instead of continuing the old animation
+ok 9 - A/B wrap resamples the move instead of continuing the old animation
+  ---
+  duration_ms: 1396.57475
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 8
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 22357.701

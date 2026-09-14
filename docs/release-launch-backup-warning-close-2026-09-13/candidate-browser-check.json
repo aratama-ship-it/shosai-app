@@ -1,0 +1,28 @@
+{
+  "url": "http://127.0.0.1:8944/stage.html",
+  "checkedAt": "2026-09-13T10:30:10.178Z",
+  "result": {
+    "chromium": {
+      "regularUserLaunchWarning": true,
+      "closeButtonDismisses": true,
+      "backdropDismisses": true,
+      "closeTargetAtLeast44px": true,
+      "shownAfterFreshDocumentLaunch": true,
+      "guest1Exempt": true,
+      "unknownIdentityWarned": true,
+      "mobileViewportFits": true,
+      "errors": []
+    },
+    "webkit": {
+      "regularUserLaunchWarning": true,
+      "closeButtonDismisses": true,
+      "backdropDismisses": true,
+      "closeTargetAtLeast44px": true,
+      "shownAfterFreshDocumentLaunch": true,
+      "guest1Exempt": true,
+      "unknownIdentityWarned": true,
+      "mobileViewportFits": true,
+      "errors": []
+    }
+  }
+}

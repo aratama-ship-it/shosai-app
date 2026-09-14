@@ -1,0 +1,35 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ロミオとジュリエット — 3場面の下訳</title>
+<style>{{CSS}}
+.scene{margin-top:48px;scroll-margin-top:16px}.scene-heading{border-top:3px solid var(--accent);padding-top:24px}.speaker{font-size:24px;color:var(--ink);line-height:1.5;margin:0 0 24px}.label{font-size:14px;line-height:1.75;color:var(--muted);font-weight:600}.scene-heading h2{margin-bottom:12px}.scene-heading p{max-width:48em}.notes{padding:0;margin:0}.notes>summary{font-size:16px;padding:16px 0}.cue-table{border-collapse:collapse;width:100%;margin:24px 0}.cue-table th,.cue-table td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:16px 12px;font-size:16px;line-height:1.8}.cue-table th:first-child{white-space:nowrap}.cue-table td{overflow-wrap:anywhere}.cue-table thead th{font-size:14px}.cue-table a{line-height:1.8}#cue-section{margin-top:48px;border-top:3px solid var(--accent);padding-top:24px}.cue-intro{max-width:48em}#contents{padding:16px 0}#contents a{margin-right:24px}
+@media(max-width:800px){.speaker{font-size:22px}.cue-table th,.cue-table td{padding:12px 4px}.cue-table td{font-size:14px}.cue-table .meta{font-size:14px}.cue-table th:first-child{font-size:14px}.scene{margin-top:32px}}
+</style></head><body><main>
+<header><p class="eyebrow">舞台スケッチ · 台本サンプルのための翻訳稿</p><h1>ロミオとジュリエット<br>3場面の下訳</h1>
+<p class="meta">出会い · 窓辺と名前 · 決闘と呪い ／ <time datetime="2026-09-09">2026年9月9日</time></p>
+<p class="intro">現代の日本語で話せる語順と、劇の台詞としての張りをそろえました。原文と見比べ、ご自身の言葉に推敲できる下訳です。3場面は原作からの抜粋で、場面間には省略があります。</p>
+<p class="meta">原作：William Shakespeare ／ AI下訳・最終推敲前。34の発話と6つの独立したト書き。</p>
+<nav id="contents" aria-label="場面一覧">{{NAV}}<a class="inline-link" href="#cue-section">仮キュー8件</a></nav>
+<div class="links"><a class="inline-link" href="ai-draft-ja.txt" download>3場面の下訳を保存（TXT）</a><a class="inline-link" href="../translation-draft/">出会いの初稿</a><a class="inline-link" href="../">出典・サンプル資料</a></div>
+</header>
+<section class="toolbar" aria-label="修正稿の保存"><p>日本語欄を直接修正できます。</p><p class="meta" id="save-help">入力はこの画面だけに保持されます。再読み込み・画面を閉じる前に保存してください。元のAI下訳は各欄の下から確認できます。</p><div class="buttons"><button id="export-txt" type="button">いまの日本語を保存（TXT）</button><button id="export-json" type="button">原文・下訳・修正を保存（JSON）</button></div><p class="status" id="edit-status" role="status" aria-live="polite">40の台詞・ト書き · 入力変更なし</p><p class="status" id="save-status" role="status" aria-live="polite"></p></section>
+<noscript><p>編集した文面の保存にはJavaScriptが必要です。「3場面の下訳を保存（TXT）」からファイルを保存し、テキストエディタで修正できます。</p></noscript>
+{{SCENES}}
+<section id="cue-section"><h2>下訳に付けた仮キュー</h2><p class="cue-intro">台本キューのテストに使える、照明と音の候補です。言葉に合わせる位置と、動作を見て出す位置を分けています。対象の日本語を修正した場合は、キュー位置の確認が必要と表示されます。</p><p class="meta">すべて演出提案です。秒数・機材・PDF上の位置は未指定。各場面を原作の上演順で続ける場合は、省略部分と転換を別途組み立てます。</p>
+<table class="cue-table"><thead><tr><th scope="col">キュー</th><th scope="col">きっかけ</th><th scope="col">内容</th></tr></thead><tbody>{{CUES}}</tbody></table><div class="links"><a class="inline-link" href="cue-proposals.json" download>仮キューデータ</a><a class="inline-link" href="#contents">場面一覧へ</a></div></section>
+<footer><p>英語出典：<a class="inline-link" href="https://www.gutenberg.org/ebooks/1513">Project Gutenberg · Romeo and Juliet</a></p><p class="meta">行番号は保存した原文ファイル内の位置です。日本語の改行は発話の単位に合わせており、英語の詩行とは一対一ではありません。訳の判断は各場面の末尾にあります。</p><div class="links"><a class="inline-link" href="../sources/gutenberg-1513-original.txt">保存原文</a><a class="inline-link" href="draft.json" download>出典・下訳データ</a></div></footer>
+</main><script type="application/json" id="draft-data">{{DATA}}</script><script>
+'use strict';
+const draft=JSON.parse(document.getElementById('draft-data').textContent);
+const fields=[...document.querySelectorAll('textarea[data-id]')];
+const baseline=new Map(draft.blocks.map(b=>[b.id,b.aiDraftJa]));
+const signature=()=>JSON.stringify(fields.map(f=>f.value));
+let lastSaved=signature();
+function fit(f){f.style.height='auto';f.style.height=(f.scrollHeight+2)+'px';}
+function changedIds(){return new Set(fields.filter(f=>f.value!==baseline.get(f.dataset.id)).map(f=>f.dataset.id));}
+function update(){const ids=changedIds();for(const f of fields){f.closest('.japanese').querySelector('.row-status').textContent=ids.has(f.dataset.id)?'入力変更あり':'AI下訳';}for(const row of document.querySelectorAll('[data-cue-block]')){row.querySelector('.anchor-status').textContent=ids.has(row.dataset.cueBlock)?'本文に変更あり · キュー位置を要確認':'下訳上の位置を確認済み · 仮キュー';}document.getElementById('edit-status').textContent=`${fields.length}の台詞・ト書き · ${ids.size?ids.size+'か所に入力変更あり':'入力変更なし'}`;}
+for(const f of fields){f.setAttribute('aria-describedby','save-help');f.addEventListener('input',()=>{fit(f);update();document.getElementById('save-status').textContent='';});fit(f);}
+window.addEventListener('resize',()=>fields.forEach(fit));
+function download(content,name,type){const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);lastSaved=signature();document.getElementById('save-status').textContent=`「${name}」のダウンロードを開始しました。`;}
+document.getElementById('export-txt').addEventListener('click',()=>{const parts=[draft.title,draft.scope,'原作：William Shakespeare','AI下訳を起点とする編集画面の文面／最終推敲前',''];for(const scene of draft.scenes){parts.push('\n'+scene.title,scene.scope,'');draft.blocks.forEach((b,i)=>{if(b.sceneId===scene.id)parts.push(b.speakerJa,fields[i].value,'');});}download(parts.join('\n')+'\n','romeo-juliet-three-scenes-ja-working.txt','text/plain;charset=utf-8');});
+document.getElementById('export-json').addEventListener('click',()=>{const saved=JSON.parse(JSON.stringify(draft));const ids=changedIds();saved.exportedAt=new Date().toISOString();saved.blocks.forEach((b,i)=>{b.userRevisionJa=ids.has(b.id)?fields[i].value:null;});saved.cueProposals.cues.forEach(c=>{if(ids.has(c.go.ja.blockId)){c.anchorState='requires_review_after_revision';c.go.ja.positionStatus='requires_review';}});download(JSON.stringify(saved,null,2)+'\n','romeo-juliet-three-scenes-ja-working.json','application/json;charset=utf-8');});
+window.addEventListener('beforeunload',event=>{if(signature()!==lastSaved){event.preventDefault();event.returnValue='';}});
+</script></body></html>

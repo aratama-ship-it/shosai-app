@@ -1,0 +1,834 @@
+{
+  "format": "shosai.light-design",
+  "version": 2,
+  "migration": {
+    "migrator": "stage-light-panel-v1",
+    "version": 1,
+    "sourceProjectId": "show-original",
+    "originalDocument": {
+      "kind": "shosai-stage-sketch",
+      "version": 4,
+      "unknownTop": {
+        "keep": null
+      },
+      "venues": [],
+      "project": {
+        "id": "show-original",
+        "sectionsNested": true,
+        "title": "移行の見本（架空のショー）",
+        "venue": "proscenium",
+        "venueSize": "mid",
+        "venueDims": {
+          "width": 12,
+          "depth": 9,
+          "height": 8
+        },
+        "cast": [
+          {
+            "id": "actor",
+            "name": "演者",
+            "extra": 1
+          }
+        ],
+        "audioTracks": [
+          {
+            "id": "music-1",
+            "fileName": "original-only.wav",
+            "offset": 3
+          }
+        ],
+        "note": "残すメモ",
+        "unknownField": {
+          "keep": [
+            "all",
+            null
+          ]
+        },
+        "sets": [
+          {
+            "id": "L1",
+            "kind": "light",
+            "name": "左右の明かり",
+            "color": "#ffad66",
+            "dims": {
+              "dia": 4
+            },
+            "lightKind": "hang",
+            "lightGroup": "G1",
+            "groupLabel": "あたたかい明かり",
+            "note": "元の登録メモ",
+            "locked": true
+          },
+          {
+            "id": "L2",
+            "kind": "light",
+            "name": "消灯の控え",
+            "color": "#7799ff",
+            "dims": {
+              "dia": 2.6
+            },
+            "lightKind": "ss"
+          },
+          {
+            "id": "L3",
+            "kind": "light",
+            "name": "まだ置いていない灯",
+            "color": "#ffffff",
+            "dims": {
+              "dia": 4
+            }
+          },
+          {
+            "id": "set1",
+            "kind": "block",
+            "name": "残す台",
+            "dims": {
+              "w": 2,
+              "d": 1,
+              "h": 1
+            }
+          }
+        ],
+        "scenes": [
+          {
+            "id": "sec",
+            "kind": "section",
+            "depth": 0,
+            "title": "第一部",
+            "pieces": [],
+            "extra": "keep"
+          },
+          {
+            "id": "scene-a",
+            "kind": "scene",
+            "title": "開始",
+            "depth": 1,
+            "lightingIntent": {
+              "purpose": "顔を見せる",
+              "safetyStatus": "not-assessed"
+            },
+            "pieces": [
+              {
+                "id": "actor-a",
+                "type": "performer",
+                "castId": "actor",
+                "u": 0.5,
+                "v": 0.6
+              },
+              {
+                "id": "p1",
+                "type": "light",
+                "setId": "L1",
+                "name": "古い個別名",
+                "color": "#ffaa66",
+                "u": 0.4,
+                "v": 0.6,
+                "glow": 0.9,
+                "beam": {
+                  "u": 0.3,
+                  "v": 0.2,
+                  "h": 6,
+                  "toH": 0
+                }
+              }
+            ],
+            "stashed": {
+              "L2": {
+                "type": "light",
+                "u": 0.6,
+                "v": 0.7,
+                "glow": 0.3,
+                "beam": {
+                  "u": -0.06,
+                  "v": 0.4,
+                  "h": 1.7,
+                  "toH": 1.3
+                }
+              }
+            },
+            "audioTrackId": "music-1"
+          },
+          {
+            "id": "scene-b",
+            "kind": "scene",
+            "depth": 1,
+            "title": "別の光源位置",
+            "pieces": [
+              {
+                "id": "p2",
+                "type": "light",
+                "setId": "L1",
+                "color": "#ee9977",
+                "u": 0.7,
+                "v": 0.5,
+                "glow": 1.5,
+                "beam": {
+                  "u": 0.7,
+                  "v": 0.2,
+                  "h": 7,
+                  "toH": 2
+                }
+              },
+              {
+                "id": "anon",
+                "type": "light",
+                "name": "同じ名前",
+                "color": "#55aaff",
+                "u": 0.3,
+                "v": 0.4,
+                "glow": 1,
+                "dims": {
+                  "dia": 2
+                },
+                "beam": {
+                  "u": 0.2,
+                  "v": 1.3,
+                  "h": 10,
+                  "toH": 0
+                }
+              }
+            ],
+            "stashed": {},
+            "blackout": true,
+            "lightMotion": {
+              "mode": "example",
+              "unknown": null
+            }
+          },
+          {
+            "id": "scene-c",
+            "kind": "scene",
+            "depth": 1,
+            "title": "消灯を戻す",
+            "pieces": [
+              {
+                "id": "anon",
+                "type": "light",
+                "name": "同じ名前",
+                "color": "#55aaff",
+                "u": 0.3,
+                "v": 0.4,
+                "glow": 1,
+                "dims": {
+                  "dia": 2
+                },
+                "beam": {
+                  "u": 0.2,
+                  "v": 1.3,
+                  "h": 10,
+                  "toH": 0
+                }
+              }
+            ],
+            "stashed": {
+              "L1": {
+                "type": "light",
+                "u": 0.2,
+                "v": 0.8,
+                "glow": 0.6,
+                "beam": {
+                  "u": 0.3,
+                  "v": 0.2,
+                  "h": 6,
+                  "toH": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "originalText": "{\n  \"kind\": \"shosai-stage-sketch\",\n  \"version\": 4,\n  \"unknownTop\": {\n    \"keep\": null\n  },\n  \"venues\": [],\n  \"project\": {\n    \"id\": \"show-original\",\n    \"sectionsNested\": true,\n    \"title\": \"移行の見本（架空のショー）\",\n    \"venue\": \"proscenium\",\n    \"venueSize\": \"mid\",\n    \"venueDims\": {\n      \"width\": 12,\n      \"depth\": 9,\n      \"height\": 8\n    },\n    \"cast\": [\n      {\n        \"id\": \"actor\",\n        \"name\": \"演者\",\n        \"extra\": 1\n      }\n    ],\n    \"audioTracks\": [\n      {\n        \"id\": \"music-1\",\n        \"fileName\": \"original-only.wav\",\n        \"offset\": 3\n      }\n    ],\n    \"note\": \"残すメモ\",\n    \"unknownField\": {\n      \"keep\": [\n        \"all\",\n        null\n      ]\n    },\n    \"sets\": [\n      {\n        \"id\": \"L1\",\n        \"kind\": \"light\",\n        \"name\": \"左右の明かり\",\n        \"color\": \"#ffad66\",\n        \"dims\": {\n          \"dia\": 4\n        },\n        \"lightKind\": \"hang\",\n        \"lightGroup\": \"G1\",\n        \"groupLabel\": \"あたたかい明かり\",\n        \"note\": \"元の登録メモ\",\n        \"locked\": true\n      },\n      {\n        \"id\": \"L2\",\n        \"kind\": \"light\",\n        \"name\": \"消灯の控え\",\n        \"color\": \"#7799ff\",\n        \"dims\": {\n          \"dia\": 2.6\n        },\n        \"lightKind\": \"ss\"\n      },\n      {\n        \"id\": \"L3\",\n        \"kind\": \"light\",\n        \"name\": \"まだ置いていない灯\",\n        \"color\": \"#ffffff\",\n        \"dims\": {\n          \"dia\": 4\n        }\n      },\n      {\n        \"id\": \"set1\",\n        \"kind\": \"block\",\n        \"name\": \"残す台\",\n        \"dims\": {\n          \"w\": 2,\n          \"d\": 1,\n          \"h\": 1\n        }\n      }\n    ],\n    \"scenes\": [\n      {\n        \"id\": \"sec\",\n        \"kind\": \"section\",\n        \"depth\": 0,\n        \"title\": \"第一部\",\n        \"pieces\": [],\n        \"extra\": \"keep\"\n      },\n      {\n        \"id\": \"scene-a\",\n        \"kind\": \"scene\",\n        \"title\": \"開始\",\n        \"depth\": 1,\n        \"lightingIntent\": {\n          \"purpose\": \"顔を見せる\",\n          \"safetyStatus\": \"not-assessed\"\n        },\n        \"pieces\": [\n          {\n            \"id\": \"actor-a\",\n            \"type\": \"performer\",\n            \"castId\": \"actor\",\n            \"u\": 0.5,\n            \"v\": 0.6\n          },\n          {\n            \"id\": \"p1\",\n            \"type\": \"light\",\n            \"setId\": \"L1\",\n            \"name\": \"古い個別名\",\n            \"color\": \"#ffaa66\",\n            \"u\": 0.4,\n            \"v\": 0.6,\n            \"glow\": 0.9,\n            \"beam\": {\n              \"u\": 0.3,\n              \"v\": 0.2,\n              \"h\": 6,\n              \"toH\": 0\n            }\n          }\n        ],\n        \"stashed\": {\n          \"L2\": {\n            \"type\": \"light\",\n            \"u\": 0.6,\n            \"v\": 0.7,\n            \"glow\": 0.3,\n            \"beam\": {\n              \"u\": -0.06,\n              \"v\": 0.4,\n              \"h\": 1.7,\n              \"toH\": 1.3\n            }\n          }\n        },\n        \"audioTrackId\": \"music-1\"\n      },\n      {\n        \"id\": \"scene-b\",\n        \"kind\": \"scene\",\n        \"depth\": 1,\n        \"title\": \"別の光源位置\",\n        \"pieces\": [\n          {\n            \"id\": \"p2\",\n            \"type\": \"light\",\n            \"setId\": \"L1\",\n            \"color\": \"#ee9977\",\n            \"u\": 0.7,\n            \"v\": 0.5,\n            \"glow\": 1.5,\n            \"beam\": {\n              \"u\": 0.7,\n              \"v\": 0.2,\n              \"h\": 7,\n              \"toH\": 2\n            }\n          },\n          {\n            \"id\": \"anon\",\n            \"type\": \"light\",\n            \"name\": \"同じ名前\",\n            \"color\": \"#55aaff\",\n            \"u\": 0.3,\n            \"v\": 0.4,\n            \"glow\": 1,\n            \"dims\": {\n              \"dia\": 2\n            },\n            \"beam\": {\n              \"u\": 0.2,\n              \"v\": 1.3,\n              \"h\": 10,\n              \"toH\": 0\n            }\n          }\n        ],\n        \"stashed\": {},\n        \"blackout\": true,\n        \"lightMotion\": {\n          \"mode\": \"example\",\n          \"unknown\": null\n        }\n      },\n      {\n        \"id\": \"scene-c\",\n        \"kind\": \"scene\",\n        \"depth\": 1,\n        \"title\": \"消灯を戻す\",\n        \"pieces\": [\n          {\n            \"id\": \"anon\",\n            \"type\": \"light\",\n            \"name\": \"同じ名前\",\n            \"color\": \"#55aaff\",\n            \"u\": 0.3,\n            \"v\": 0.4,\n            \"glow\": 1,\n            \"dims\": {\n              \"dia\": 2\n            },\n            \"beam\": {\n              \"u\": 0.2,\n              \"v\": 1.3,\n              \"h\": 10,\n              \"toH\": 0\n            }\n          }\n        ],\n        \"stashed\": {\n          \"L1\": {\n            \"type\": \"light\",\n            \"u\": 0.2,\n            \"v\": 0.8,\n            \"glow\": 0.6,\n            \"beam\": {\n              \"u\": 0.3,\n              \"v\": 0.2,\n              \"h\": 6,\n              \"toH\": 0\n            }\n          }\n        }\n      }\n    ]\n  }\n}\n",
+    "mappings": [
+      {
+        "sceneId": "scene-a",
+        "sceneName": "開始",
+        "setId": "L1",
+        "pieceId": "p1",
+        "fixtureId": "legacy-fixture-1",
+        "origin": "piece"
+      },
+      {
+        "sceneId": "scene-a",
+        "sceneName": "開始",
+        "setId": "L2",
+        "pieceId": null,
+        "fixtureId": "legacy-fixture-2",
+        "origin": "stash"
+      },
+      {
+        "sceneId": "scene-b",
+        "sceneName": "別の光源位置",
+        "setId": "L1",
+        "pieceId": "p2",
+        "fixtureId": "legacy-fixture-3",
+        "origin": "piece"
+      },
+      {
+        "sceneId": "scene-b",
+        "sceneName": "別の光源位置",
+        "setId": null,
+        "pieceId": "anon",
+        "fixtureId": "legacy-fixture-4",
+        "origin": "piece"
+      },
+      {
+        "sceneId": "scene-c",
+        "sceneName": "消灯を戻す",
+        "setId": null,
+        "pieceId": "anon",
+        "fixtureId": "legacy-fixture-5",
+        "origin": "piece"
+      },
+      {
+        "sceneId": "scene-c",
+        "sceneName": "消灯を戻す",
+        "setId": "L1",
+        "pieceId": null,
+        "fixtureId": "legacy-fixture-1",
+        "origin": "stash"
+      }
+    ],
+    "report": {
+      "registeredLights": 3,
+      "scenes": 3,
+      "sections": 1,
+      "on": 4,
+      "stashed": 2,
+      "presets": 0,
+      "unconfigured": 1,
+      "splitRegistrations": 1,
+      "warnings": [
+        {
+          "code": "outside-stage",
+          "message": "舞台外・舞台高を超える座標をそのまま保持しました。図の範囲を確認してください",
+          "sceneId": "scene-b",
+          "sceneName": "別の光源位置",
+          "setId": null,
+          "pieceId": "anon"
+        },
+        {
+          "code": "unconverted-motion",
+          "message": "旧「光の動き（案）」は元ショーに保持します。新モードの動きへは自動変換していません",
+          "sceneId": "scene-b",
+          "sceneName": "別の光源位置"
+        },
+        {
+          "code": "transition-blackout",
+          "message": "場面転換の暗転は元ショーに保持します。常時消灯には変換していません",
+          "sceneId": "scene-b",
+          "sceneName": "別の光源位置"
+        },
+        {
+          "code": "outside-stage",
+          "message": "舞台外・舞台高を超える座標をそのまま保持しました。図の範囲を確認してください",
+          "sceneId": "scene-c",
+          "sceneName": "消灯を戻す",
+          "setId": null,
+          "pieceId": "anon"
+        },
+        {
+          "code": "split-position",
+          "message": "「左右の明かり」は場面ごとに光源位置が異なるため 2 配置に分けて保持しました",
+          "setId": "L1"
+        },
+        {
+          "code": "unconfigured",
+          "message": "「まだ置いていない灯」は保存された光源位置がないため、位置未設定で保持しました",
+          "setId": "L3"
+        },
+        {
+          "code": "visual-review",
+          "message": "色と座標を保持し、旧強さを0〜100へ比例換算します。光だまり・明るさの描き方が違うため、旧パネルとの見た目の比較が必要です"
+        },
+        {
+          "code": "show-context",
+          "message": "人物・大道具・音楽参照・照明意図・会場形状などは元ショーに保持します。この確認画面では照明と舞台寸法だけを表示します。音源の実ファイルは元の端末・別の控えが必要です"
+        },
+        {
+          "code": "legacy-lock",
+          "message": "旧パネルの位置ロック（錠）は控えに保持します。この確認版での移動を禁止する設定には引き継いでいません"
+        }
+      ],
+      "fixtures": 6
+    }
+  },
+  "name": "移行後の編集保存",
+  "savedAt": "2026-09-13T12:14:36.852Z",
+  "app": "照明デザインモード（試作）",
+  "stage": {
+    "W": 12,
+    "D": 9,
+    "H": 8
+  },
+  "coords": {
+    "u": "左右 0=下手 〜 1=上手",
+    "v": "奥行き 0=最奥 〜 1=最前（客席側）",
+    "hM": "床からの高さ（m）",
+    "level": "強さ 0〜100（0は消灯と同じ）",
+    "levelTo": "動きの終点の強さ（無ければ変化なし）",
+    "beamDeg": "光の広がり（度）",
+    "beamDegTo": "動きの終点の広がり（無ければ変化なし）",
+    "periodSec": "1往復（1周）の秒数",
+    "offsetSec": "何秒遅らせて始めるか"
+  },
+  "rig": {
+    "trusses": [],
+    "fixtures": [
+      {
+        "id": "legacy-fixture-1",
+        "no": 1,
+        "name": "左右の明かり",
+        "kind": "fixed",
+        "beamDeg": 31.466976293267564,
+        "mount": {
+          "type": "legacy-panel",
+          "u": 0.3,
+          "v": 0.2,
+          "h": 6
+        },
+        "legacyPanel": {
+          "sourceIdentity": "set:L1",
+          "setId": "L1",
+          "lightKind": "hang",
+          "groupLabel": "あたたかい明かり",
+          "note": "元の登録メモ",
+          "locked": true
+        }
+      },
+      {
+        "id": "legacy-fixture-2",
+        "no": 2,
+        "name": "消灯の控え",
+        "kind": "fixed",
+        "beamDeg": 17.642090255880813,
+        "mount": {
+          "type": "legacy-panel",
+          "u": -0.06,
+          "v": 0.4,
+          "h": 1.7
+        },
+        "legacyPanel": {
+          "sourceIdentity": "set:L2",
+          "setId": "L2",
+          "lightKind": "ss",
+          "groupLabel": null,
+          "note": null,
+          "locked": false
+        }
+      },
+      {
+        "id": "legacy-fixture-3",
+        "no": 3,
+        "name": "左右の明かり",
+        "kind": "fixed",
+        "beamDeg": 38.78027877088513,
+        "mount": {
+          "type": "legacy-panel",
+          "u": 0.7,
+          "v": 0.2,
+          "h": 7
+        },
+        "legacyPanel": {
+          "sourceIdentity": "set:L1",
+          "setId": "L1",
+          "lightKind": "hang",
+          "groupLabel": "あたたかい明かり",
+          "note": "元の登録メモ",
+          "locked": true
+        }
+      },
+      {
+        "id": "legacy-fixture-4",
+        "no": 4,
+        "name": "同じ名前",
+        "kind": "fixed",
+        "beamDeg": 8.8484058061343,
+        "mount": {
+          "type": "legacy-panel",
+          "u": 0.2,
+          "v": 1.3,
+          "h": 10
+        },
+        "legacyPanel": {
+          "sourceIdentity": "piece:[\"scene-b\",\"anon\"]",
+          "setId": null,
+          "lightKind": null,
+          "groupLabel": null,
+          "note": null,
+          "locked": false
+        }
+      },
+      {
+        "id": "legacy-fixture-5",
+        "no": 5,
+        "name": "同じ名前",
+        "kind": "fixed",
+        "beamDeg": 8.8484058061343,
+        "mount": {
+          "type": "legacy-panel",
+          "u": 0.2,
+          "v": 1.3,
+          "h": 10
+        },
+        "legacyPanel": {
+          "sourceIdentity": "piece:[\"scene-c\",\"anon\"]",
+          "setId": null,
+          "lightKind": null,
+          "groupLabel": null,
+          "note": null,
+          "locked": false
+        }
+      },
+      {
+        "id": "legacy-fixture-6",
+        "no": 6,
+        "name": "まだ置いていない灯",
+        "kind": "fixed",
+        "beamDeg": 24,
+        "mount": {
+          "type": "legacy-panel",
+          "u": null,
+          "v": null,
+          "h": null
+        },
+        "legacyPanel": {
+          "sourceIdentity": "set:L3",
+          "setId": "L3",
+          "lightKind": null,
+          "groupLabel": null,
+          "note": null,
+          "locked": false
+        }
+      }
+    ]
+  },
+  "scenes": [
+    {
+      "id": "scene-a",
+      "name": "開始",
+      "cue": {
+        "lights": {
+          "legacy-fixture-1": {
+            "on": true,
+            "level": 60,
+            "color": "#ffaa66",
+            "surface": "floor",
+            "path": {
+              "kind": "still",
+              "a": {
+                "u": 0.4,
+                "v": 0.6,
+                "hM": 0,
+                "coordinateMode": "legacy-panel"
+              }
+            },
+            "speed": "normal",
+            "groupId": "legacy-group-1",
+            "beamDeg": 31.466976293267564,
+            "legacyPanel": {
+              "diameter": 4,
+              "glow": 0.9,
+              "requestedBeamDeg": 31.466976293267564
+            }
+          },
+          "legacy-fixture-2": {
+            "on": true,
+            "level": 20,
+            "color": "#33bb88",
+            "surface": "air",
+            "path": {
+              "kind": "still",
+              "a": {
+                "u": 0.6,
+                "v": 0.7,
+                "hM": 1.3,
+                "coordinateMode": "legacy-panel"
+              }
+            },
+            "speed": "normal",
+            "groupId": null,
+            "beamDeg": 17.642090255880813,
+            "legacyPanel": {
+              "diameter": 2.6,
+              "glow": 0.3,
+              "requestedBeamDeg": 17.642090255880813
+            }
+          },
+          "legacy-fixture-3": {
+            "on": false,
+            "level": 66.66666666666667,
+            "color": "#ffad66",
+            "path": null,
+            "surface": "floor",
+            "speed": "normal",
+            "groupId": null
+          },
+          "legacy-fixture-4": {
+            "on": false,
+            "level": 66.66666666666667,
+            "color": "#f2ead6",
+            "path": null,
+            "surface": "floor",
+            "speed": "normal",
+            "groupId": null
+          },
+          "legacy-fixture-5": {
+            "on": false,
+            "level": 66.66666666666667,
+            "color": "#f2ead6",
+            "path": null,
+            "surface": "floor",
+            "speed": "normal",
+            "groupId": null
+          },
+          "legacy-fixture-6": {
+            "on": false,
+            "level": 66.66666666666667,
+            "color": "#ffffff",
+            "path": null,
+            "surface": "floor",
+            "speed": "normal",
+            "groupId": null
+          }
+        },
+        "groups": [
+          {
+            "id": "legacy-group-1",
+            "legacyGroupId": "G1",
+            "name": "あたたかい明かり",
+            "members": [
+              "legacy-fixture-1"
+            ],
+            "relation": "together",
+            "delayMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "scene-b",
+      "name": "別の光源位置",
+      "cue": {
+        "lights": {
+          "legacy-fixture-3": {
+            "on": true,
+            "level": 100,
+            "color": "#ee9977",
+            "surface": "air",
+            "path": {
+              "kind": "still",
+              "a": {
+                "u": 0.7,
+                "v": 0.5,
+                "hM": 2,
+                "coordinateMode": "legacy-panel"
+              }
+            },
+            "speed": "normal",
+            "groupId": "legacy-group-1",
+            "beamDeg": 38.78027877088513,
+            "legacyPanel": {
+              "diameter": 4,
+              "glow": 1.5,
+              "requestedBeamDeg": 38.78027877088513
+            }
+          },
+          "legacy-fixture-4": {
+            "on": true,
+            "level": 66.66666666666666,
+            "color": "#55aaff",
+            "surface": "floor",
+            "path": {
+              "kind": "still",
+              "a": {
+                "u": 0.3,
+                "v": 0.4,
+                "hM": 0,
+                "coordinateMode": "legacy-panel"
+              }
+            },
+            "speed": "normal",
+            "groupId": null,
+            "beamDeg": 8.8484058061343,
+            "legacyPanel": {
+              "diameter": 2,
+              "glow": 1,
+              "requestedBeamDeg": 8.8484058061343
+            }
+          },
+          "legacy-fixture-1": {
+            "on": false,
+            "level": 66.66666666666667,
+            "color": "#ffad66",
+            "path": null,
+            "surface": "floor",
+            "speed": "normal",
+            "groupId": null
+          },
+          "legacy-fixture-2": {
+            "on": false,
+            "level": 66.66666666666667,
+            "color": "#7799ff",
+            "path": null,
+            "surface": "floor",
+            "speed": "normal",
+            "groupId": null
+          },
+          "legacy-fixture-5": {
+            "on": false,
+            "level": 66.66666666666667,
+            "color": "#f2ead6",
+            "path": null,
+            "surface": "floor",
+            "speed": "normal",
+            "groupId": null
+          },
+          "legacy-fixture-6": {
+            "on": false,
+            "level": 66.66666666666667,
+            "color": "#ffffff",
+            "path": null,
+            "surface": "floor",
+            "speed": "normal",
+            "groupId": null
+          }
+        },
+        "groups": [
+          {
+            "id": "legacy-group-1",
+            "legacyGroupId": "G1",
+            "name": "あたたかい明かり",
+            "members": [
+              "legacy-fixture-3"
+            ],
+            "relation": "together",
+            "delayMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "scene-c",
+      "name": "消灯を戻す",
+      "cue": {
+        "lights": {
+          "legacy-fixture-5": {
+            "on": true,
+            "level": 66.66666666666666,
+            "color": "#55aaff",
+            "surface": "floor",
+            "path": {
+              "kind": "still",
+              "a": {
+                "u": 0.3,
+                "v": 0.4,
+                "hM": 0,
+                "coordinateMode": "legacy-panel"
+              }
+            },
+            "speed": "normal",
+            "groupId": null,
+            "beamDeg": 8.8484058061343,
+            "legacyPanel": {
+              "diameter": 2,
+              "glow": 1,
+              "requestedBeamDeg": 8.8484058061343
+            }
+          },
+          "legacy-fixture-1": {
+            "on": false,
+            "level": 40,
+            "color": "#ffad66",
+            "surface": "floor",
+            "path": {
+              "kind": "still",
+              "a": {
+                "u": 0.2,
+                "v": 0.8,
+                "hM": 0,
+                "coordinateMode": "legacy-panel"
+              }
+            },
+            "speed": "normal",
+            "groupId": "legacy-group-1",
+            "beamDeg": 27.540334985278545,
+            "legacyPanel": {
+              "diameter": 4,
+              "glow": 0.6,
+              "requestedBeamDeg": 27.540334985278545
+            }
+          },
+          "legacy-fixture-2": {
+            "on": false,
+            "level": 66.66666666666667,
+            "color": "#7799ff",
+            "path": null,
+            "surface": "floor",
+            "speed": "normal",
+            "groupId": null
+          },
+          "legacy-fixture-3": {
+            "on": false,
+            "level": 66.66666666666667,
+            "color": "#ffad66",
+            "path": null,
+            "surface": "floor",
+            "speed": "normal",
+            "groupId": null
+          },
+          "legacy-fixture-4": {
+            "on": false,
+            "level": 66.66666666666667,
+            "color": "#f2ead6",
+            "path": null,
+            "surface": "floor",
+            "speed": "normal",
+            "groupId": null
+          },
+          "legacy-fixture-6": {
+            "on": false,
+            "level": 66.66666666666667,
+            "color": "#ffffff",
+            "path": null,
+            "surface": "floor",
+            "speed": "normal",
+            "groupId": null
+          }
+        },
+        "groups": [
+          {
+            "id": "legacy-group-1",
+            "legacyGroupId": "G1",
+            "name": "あたたかい明かり",
+            "members": [
+              "legacy-fixture-1"
+            ],
+            "relation": "together",
+            "delayMs": 0
+          }
+        ]
+      }
+    }
+  ],
+  "palette": [
+    "#33bb88"
+  ],
+  "levelCurve": [
+    0,
+    0.25,
+    0.5,
+    0.75,
+    1
+  ],
+  "curtains": {
+    "borderDrop": 1.4,
+    "borderAhead": 0.04,
+    "pros": true,
+    "prosH": 6.2,
+    "legU": 0.08,
+    "perBorder": {},
+    "pieces": [],
+    "border": false
+  }
+}

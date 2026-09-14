@@ -1,0 +1,31 @@
+import fs from 'node:fs/promises';
+import vm from 'node:vm';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
+const require=createRequire(import.meta.url),M=require('../light-panel-migration.js');
+const {chromium}=require('/Users/arata/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const source=await fs.readFile('/private/tmp/stage-live-worker.js','utf8');
+const start=source.indexOf('var BETA_RELEASE_ASSETS = '),end=source.indexOf('function releaseEnv(env) {',start);
+const assets=vm.runInNewContext(source.slice(start,end)+';BETA_RELEASE_ASSETS',{}, {timeout:10000});
+const sample=await fs.readFile(path.join(root,'sample-show.json'),'utf8');
+const browser=await chromium.launch({headless:true});
+try{
+ const context=await browser.newContext({viewport:{width:1440,height:1000}}),page=await context.newPage(),errors=[],missing=[];page.on('pageerror',e=>errors.push(String(e)));
+ await page.addInitScript(()=>{localStorage.setItem('shosai-stage-lang','ja');localStorage.setItem('shosai-stage-tour-v1','done');});
+ await page.route('**/*',route=>{const u=new URL(route.request().url());if(u.pathname.endsWith('/whoami'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({user:'guest1'})});const asset=assets[u.pathname];if(asset)return route.fulfill({status:200,contentType:asset[0],body:asset[1]});missing.push(u.pathname);return route.fulfill({status:404,body:'Not in captured beta'});});
+ await page.goto('http://beta-reference.local/stage.html');
+ await page.waitForFunction(()=>window.SHOSAI_STAGE_SESSION_BRIDGE,{timeout:15000});
+ await page.locator('#stage-import-json').setInputFiles({name:'synthetic-show.json',mimeType:'application/json',buffer:Buffer.from(sample)});
+ await page.locator('#stage-import-as-new').click();
+ const canonical=await page.evaluate(()=>SHOSAI_STAGE_SESSION_BRIDGE.exportDocumentString());
+ const d=M.migrate(JSON.parse(canonical),{sourceText:canonical});d.scenes[0].cue.lights[d.rig.fixtures[0].id].color='#112233';
+ const restored=M.originalText(d);assert.equal(restored,canonical);
+ const reopened=await page.evaluate(raw=>{if(!SHOSAI_STAGE_SESSION_BRIDGE.applyDocumentString(raw))throw Error('Restored import failed');return SHOSAI_STAGE_SESSION_BRIDGE.exportDocumentString();},restored);
+ const expected=JSON.parse(canonical),actual=JSON.parse(reopened);assert.deepEqual(actual,expected);
+ await page.screenshot({path:path.join(root,'verification/beta-restored-show.png')});
+ const result={betaVersion:'433c22ac-f953-4d05-8179-d757759ff7ee',tested:'Captured beta code in isolated Chromium: open old show, export, migrate, edit new lighting, restore original, reopen through beta importer, full exported JSON equality',sceneIds:actual.project.scenes.map(s=>s.id),audioTrackIds:actual.project.audioTracks.map(t=>t.id),errors,missingAssets:missing};
+ assert.deepEqual(errors,[]);await fs.writeFile(path.join(root,'verification/beta-restore-result.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result,null,2));
+}finally{await browser.close();}

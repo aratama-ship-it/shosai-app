@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>制作の書斎 / 舞台スケッチ — 次の分離境界</title>
+<style>
+:root{--bg:#141619;--panel:#1b1e22;--ink:#eee8df;--sub:#b4bbc2;--link:#b5cdd8;--line:#87919a;--done:#b7d3bf;--next:#ead2a8;--open:#d7b6b2;--space:24px;--gap:16px;--section:40px;--tap:44px}
+*{box-sizing:border-box}html{color-scheme:dark}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 system-ui,-apple-system,"Hiragino Sans",sans-serif}main{max-width:1040px;margin:auto;padding:32px var(--space) 64px}h1,h2{font-size:24px;line-height:1.45;margin:0 0 var(--gap)}h2{margin-top:var(--section)}h3{font-size:18px;line-height:1.6;margin:0}p{margin:0 0 var(--gap)}a{color:var(--link);text-underline-offset:4px;display:inline-flex;align-items:center;min-height:var(--tap);overflow-wrap:anywhere}a:focus-visible{outline:3px solid var(--link);outline-offset:4px}.meta{font-size:14px;color:var(--sub)}.lead{border-block:1px solid var(--line);padding:var(--space) 0;margin:var(--space) 0}.lead strong{font-size:20px;display:block;margin-bottom:8px}.status{font-size:14px;font-weight:700;letter-spacing:.03em}.done{color:var(--done)}.next{color:var(--next)}.open{color:var(--open)}.flow{margin:24px 0;border-top:1px solid var(--line)}.row{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(220px,1.5fr) minmax(36px,.2fr) minmax(220px,1.5fr);gap:var(--gap);align-items:start;padding:20px 0;border-bottom:1px solid var(--line)}.arrow{color:var(--sub);text-align:center;font-weight:700}.row p{margin:0}.callout{background:var(--panel);border-left:4px solid var(--next);padding:20px 24px;margin:24px 0}.steps{padding-left:24px}.steps li{margin-bottom:12px}.links{display:flex;gap:24px;flex-wrap:wrap}.nowrap{white-space:nowrap}code{font-size:14px;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin:16px 0}th,td{text-align:left;vertical-align:top;padding:14px 12px;border-block:1px solid var(--line)}th{font-size:14px;color:var(--sub)}@media(max-width:680px){:root{--space:20px}.row{grid-template-columns:1fr;gap:8px}.arrow{text-align:left}.arrow::after{content:" 次へ"}th,td{display:block;padding-inline:0}th{border-bottom:0}td{padding-top:0}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body><main>
+<p class="meta">2026年9月12日 / ローカル判断資料 / 公開操作なし</p>
+<h1><span class="nowrap">制作の書斎</span>と<span class="nowrap">舞台スケッチ</span>の、次の分離境界</h1>
+<p>画面上の分離は完了しました。次に残るのは、配信とMac版の境界です。進行中の舞台更新と競合しないよう、この段階では境界の固定と検査だけを行います。</p>
+<div class="lead"><strong>推奨する着地点</strong><p><span class="nowrap">舞台スケッチ</span>は現在の舞台ドメインとWorkerとMac版を引き継ぐ。<span class="nowrap">制作の書斎</span>は当面ローカル専用にし、新しい公開先を推測で作らない。</p><p class="meta">これは可逆的な初期形です。制作の書斎を後で配信するときは、舞台とは別Worker・別Cookie・別配布資材にします。</p></div>
+<nav class="links" aria-label="確認リンク"><a href="../../index.html#db">制作の書斎を開く</a><a href="../../stage.html">舞台スケッチを開く</a><a href="README.md">実装順と検査方法</a><a href="TOKEN_SHEET.md">表示仕様</a></nav>
+
+<h2>決定済みと、次に変えるもの</h2>
+<div class="flow">
+  <section class="row"><div><h3>画面入口</h3><span class="status done">決定済み・反映済み</span></div><p>制作の書斎は <code>index.html</code>、舞台スケッチは <code>stage.html</code>。書斎の画面とナビから舞台を除外済み。</p><div class="arrow" aria-hidden="true">→</div><p>この境界をテストで維持する。</p></section>
+  <section class="row"><div><h3>舞台の配信</h3><span class="status next">次の実装</span></div><p><code>stagesketch.pygmix.com</code> は現在も同じWorkerからリポジトリ直下を参照し、本人認証後は書斎資材へ到達できる。</p><div class="arrow" aria-hidden="true">→</div><p>本人・ゲストとも舞台資材だけへ限定し、舞台専用の配布ディレクトリを使う。</p></section>
+  <section class="row"><div><h3>書斎の配信</h3><span class="status next">推奨・未反映</span></div><p>これまで舞台と同じWorker・ドメインの裏側に同居していた。</p><div class="arrow" aria-hidden="true">→</div><p>当面はローカル専用。必要になるまで新ドメイン、DNS、公開Workerを作らない。</p></section>
+  <section class="row"><div><h3>Mac版</h3><span class="status next">次の実装</span></div><p>舞台向けのネイティブ連携を持つが、表示名・識別子・ZIPは制作の書斎のまま。</p><div class="arrow" aria-hidden="true">→</div><p>舞台スケッチ名の新しいアプリと並行ZIPを作る。旧版は移動・削除せず、移行確認後に扱いを決める。</p></section>
+</div>
+
+<h2>競合確認</h2>
+<table><tbody>
+<tr><th>確認したこと</th><td>別の進行中タスクは <code>docs/native-music-edit-2026-09-12/</code> の設計資料を扱っており、この判断資料のフォルダとは重ならない。</td></tr>
+<tr><th>直接編集を避けた対象</th><td><code>worker.js</code>、<code>wrangler.toml</code>、<code>mac.html</code>、舞台本体には既存の未コミット変更があるため、今回は上書きしていない。</td></tr>
+<tr><th>公開状態</th><td>デプロイ、DNS変更、push、既存配布物の削除は行っていない。</td></tr>
+</tbody></table>
+
+<div class="callout"><p class="status next">次の安全な実装単位</p><p>まず舞台Workerの配布資材を専用ディレクトリへ閉じる変更だけを行い、認証・PWA・Viewer・保存データの回帰を確認します。Mac版の名称変更はその後に分けます。</p></div>
+
+<h2>実装前に残すゲート</h2>
+<ol class="steps">
+<li><strong>配信基準の取り直し:</strong> 共有変更が落ち着いた時点の <code>worker.js</code> と <code>wrangler.toml</code> を再読し、テスト数と差分を記録する。</li>
+<li><strong>ローカル検証:</strong> 本人・ゲストの両方で舞台資材だけが200、書斎資材が403になることを確認する。</li>
+<li><strong>保存データ:</strong> 同じ舞台ドメインを維持し、localStorageの移動を発生させない。Cookie変更が必要なら再ログインを明示する。</li>
+<li><strong>公開承認:</strong> ローカル検証が通っても自動デプロイしない。配信前に対象差分と残る実機確認を提示する。</li>
+</ol>
+
+<p class="meta">状態の自動確認: <code>node docs/app-separation-next-2026-09-12/check.mjs</code>。未達を終了コード2で報告し、ファイルは変更しません。</p>
+</main></body></html>

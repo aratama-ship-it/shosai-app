@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>出会い — ロミオとジュリエット 日本語下訳</title>
+  <style>
+    :root{--paper:#efe7d6;--page:#fffaf0;--ink:#2b2620;--muted:#6a604e;--accent:#8f3e1e;--line:#75664f;--space:24px}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Sans","Yu Gothic",system-ui,sans-serif;font-size:16px;line-height:1.8}
+    main{max-width:1120px;margin:auto;padding:32px;background:var(--page)}h1{font-size:32px;line-height:1.4;margin:12px 0 16px}h2{font-size:24px;line-height:1.5;margin:0 0 24px}h3,label{display:block;font-size:14px;line-height:1.75;margin:0 0 12px;color:var(--muted);font-weight:600}p{margin:0 0 16px}header{padding:16px 0 32px;border-bottom:1px solid var(--line)}.eyebrow,.meta,.source-ref{font-size:14px;line-height:1.75;color:var(--muted)}.intro{max-width:44em}
+    a{color:var(--accent);text-underline-offset:4px}a:focus-visible,button:focus-visible,summary:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:3px}a.inline-link{display:inline-flex;align-items:center;min-height:44px}.links{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:16px}.toolbar{margin:32px 0 16px}.buttons{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}button{font:inherit;font-weight:600;line-height:1.5;min-height:44px;padding:10px 16px;background:var(--page);color:var(--accent);border:1px solid var(--accent);border-radius:0;cursor:pointer}.status{font-size:14px;color:var(--muted);line-height:1.75}
+    .speech{padding:32px 0;border-top:1px solid var(--line)}.number{font-size:16px;color:var(--accent);margin-right:8px}.speaker-en{font-size:14px;letter-spacing:.04em;color:var(--muted);margin-left:8px}.columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:32px}.verse{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9}.source-ref{margin-top:16px}.japanese{min-width:0}.row-status{font-weight:400;margin-left:12px}textarea{display:block;resize:vertical;width:100%;min-height:108px;border:1px solid var(--line);border-radius:0;padding:12px 16px;font:inherit;font-size:18px;line-height:1.9;background:var(--page);color:var(--ink);overflow-y:hidden}.baseline{margin-top:8px;font-size:16px}.baseline p{padding:12px 16px;border-left:2px solid var(--line)}summary{min-height:44px;padding:8px 0;cursor:pointer;color:var(--accent);font-size:14px;line-height:1.75}.notes{border-top:1px solid var(--line);padding-top:32px;margin-top:16px}.notes ol{padding-left:24px;max-width:52em}.notes li{padding-left:4px;margin-bottom:24px}.notes li p{margin:8px 0 0}footer{margin-top:32px;padding-top:24px;border-top:1px solid var(--line)}noscript p{border:1px solid var(--line);padding:16px}
+    .meta time{white-space:nowrap}
+    @media(max-width:800px){main{padding:16px}h1{font-size:28px}.columns{grid-template-columns:1fr;gap:16px}.speech{padding:24px 0}h2{margin-bottom:16px}.english .verse{font-size:16px}textarea{font-size:18px;padding:12px}.links{gap:4px 20px}}
+    @media print{body,main{background:white}main{max-width:none;padding:0}.toolbar,.links,.baseline,footer{display:none}.speech{break-inside:avoid}.columns{grid-template-columns:1fr 1.25fr}textarea{border:0;padding:0;resize:none}header{padding-top:0}}
+  </style>
+</head>
+<body><main>
+  <header>
+    <p class="eyebrow">舞台スケッチ · 台本サンプルのための翻訳稿</p>
+    <h1>ロミオとジュリエット<br>出会い</h1>
+    <p class="meta">第1幕 第5場の抜粋 · 11の発話 · AI下訳 v1 · <time datetime="2026-09-09">2026年9月9日</time></p>
+    <p class="intro">現代の日本語で話せる言葉にしながら、舞台の台詞としての張りと比喩を残しました。巡礼と聖者に見立てた二人が、手から唇へ、言葉で距離を縮めていく場面です。</p>
+    <p class="meta">原作：William Shakespeare ／ 英語原文から直接作成したAI下訳。ご本人の改稿前・未採用。</p>
+    <nav class="links" aria-label="資料"><a class="inline-link" href="ai-draft-ja.txt" download>下訳全文を保存（TXT）</a><a class="inline-link" href="#translation-notes">訳の判断を見る</a><a class="inline-link" href="../">サンプル資料へ</a></nav>
+  </header>
+  <section class="toolbar" aria-label="修正稿の保存">
+    <p>英語と見比べながら、日本語欄を直接修正できます。</p>
+    <p class="meta" id="save-help">入力はこの画面だけに保持されます。再読み込み・画面を閉じる前に、修正稿を保存してください。最初のAI下訳は各欄の下から確認できます。</p>
+    <div class="buttons"><button id="export-txt" type="button">いまの日本語を保存（TXT）</button><button id="export-json" type="button">原文・下訳・修正を保存（JSON）</button></div>
+    <p class="status" id="edit-status" role="status" aria-live="polite">11の発話 · 入力変更なし</p>
+    <p class="status" id="save-status" role="status" aria-live="polite"></p>
+  </section>
+  <noscript><p>日本語欄への入力を保存するにはJavaScriptが必要です。「下訳全文を保存（TXT）」でファイルを保存し、テキストエディタで修正できます。</p></noscript>
+  <section aria-label="英語原文と日本語下訳">
+    <article class="speech" id="RJ-I-5-D01">
+      <h2><span class="number">01</span> ロミオ <span class="speaker-en" lang="en">ROMEO</span></h2>
+      <div class="columns">
+        <div class="english"><h3 lang="en">English original</h3><p class="verse" lang="en">[_To Juliet._] If I profane with my unworthiest hand
+This holy shrine, the gentle sin is this,
+My lips, two blushing pilgrims, ready stand
+To smooth that rough touch with a tender kiss.</p><p class="source-ref">保存原文 1300–1304 行</p></div>
+        <div class="japanese"><label for="edit-RJ-I-5-D01">日本語 <span class="row-status">AI下訳</span></label><textarea id="edit-RJ-I-5-D01" data-id="RJ-I-5-D01" rows="7" spellcheck="false">（ジュリエットに）
+この不作法な手で、この聖堂を汚したのなら、
+どうか、唇に償わせてください。
+この唇も、祈るようにあなたへ近づき、
+やさしい口づけで、手の無礼を清めたいのです。</textarea>
+          <details class="baseline"><summary>最初のAI下訳を確認</summary><p class="verse">（ジュリエットに）
+この不作法な手で、この聖堂を汚したのなら、
+どうか、唇に償わせてください。
+この唇も、祈るようにあなたへ近づき、
+やさしい口づけで、手の無礼を清めたいのです。</p></details>
+        </div>
+      </div>
+    </article>
+<article class="speech" id="RJ-I-5-D02">
+      <h2><span class="number">02</span> ジュリエット <span class="speaker-en" lang="en">JULIET</span></h2>
+      <div class="columns">
+        <div class="english"><h3 lang="en">English original</h3><p class="verse" lang="en">Good pilgrim, you do wrong your hand too much,
+Which mannerly devotion shows in this;
+For saints have hands that pilgrims’ hands do touch,
+And palm to palm is holy palmers’ kiss.</p><p class="source-ref">保存原文 1306–1310 行</p></div>
+        <div class="japanese"><label for="edit-RJ-I-5-D02">日本語 <span class="row-status">AI下訳</span></label><textarea id="edit-RJ-I-5-D02" data-id="RJ-I-5-D02" rows="6" spellcheck="false">その手を、そんなに責めないで。
+こんなにも礼を尽くして触れてくださったのに。
+聖者にも手があり、祈る人はその手に触れるもの。
+手のひらを合わせる――それで十分な口づけです。</textarea>
+          <details class="baseline"><summary>最初のAI下訳を確認</summary><p class="verse">その手を、そんなに責めないで。
+こんなにも礼を尽くして触れてくださったのに。
+聖者にも手があり、祈る人はその手に触れるもの。
+手のひらを合わせる――それで十分な口づけです。</p></details>
+        </div>
+      </div>
+    </article>
+<article class="speech" id="RJ-I-5-D03">
+      <h2><span class="number">03</span> ロミオ <span class="speaker-en" lang="en">ROMEO</span></h2>
+      <div class="columns">
+        <div class="english"><h3 lang="en">English original</h3><p class="verse" lang="en">Have not saints lips, and holy palmers too?</p><p class="source-ref">保存原文 1312–1313 行</p></div>
+        <div class="japanese"><label for="edit-RJ-I-5-D03">日本語 <span class="row-status">AI下訳</span></label><textarea id="edit-RJ-I-5-D03" data-id="RJ-I-5-D03" rows="3" spellcheck="false">聖者にも唇はあるでしょう。祈る人にも。</textarea>
+          <details class="baseline"><summary>最初のAI下訳を確認</summary><p class="verse">聖者にも唇はあるでしょう。祈る人にも。</p></details>
+        </div>
+      </div>
+    </article>
+<article class="speech" id="RJ-I-5-D04">
+      <h2><span class="number">04</span> ジュリエット <span class="speaker-en" lang="en">JULIET</span></h2>
+      <div class="columns">
+        <div class="english"><h3 lang="en">English original</h3><p class="verse" lang="en">Ay, pilgrim, lips that they must use in prayer.</p><p class="source-ref">保存原文 1315–1316 行</p></div>
+        <div class="japanese"><label for="edit-RJ-I-5-D04">日本語 <span class="row-status">AI下訳</span></label><textarea id="edit-RJ-I-5-D04" data-id="RJ-I-5-D04" rows="3" spellcheck="false">ええ。けれど、祈るための唇です。</textarea>
+          <details class="baseline"><summary>最初のAI下訳を確認</summary><p class="verse">ええ。けれど、祈るための唇です。</p></details>
+        </div>
+      </div>
+    </article>
+<article class="speech" id="RJ-I-5-D05">
+      <h2><span class="number">05</span> ロミオ <span class="speaker-en" lang="en">ROMEO</span></h2>
+      <div class="columns">
+        <div class="english"><h3 lang="en">English original</h3><p class="verse" lang="en">O, then, dear saint, let lips do what hands do:
+They pray, grant thou, lest faith turn to despair.</p><p class="source-ref">保存原文 1318–1320 行</p></div>
+        <div class="japanese"><label for="edit-RJ-I-5-D05">日本語 <span class="row-status">AI下訳</span></label><textarea id="edit-RJ-I-5-D05" data-id="RJ-I-5-D05" rows="6" spellcheck="false">ならば、私の聖者さま。
+手に許したことを、唇にもお許しください。
+唇が祈っています。どうか、聞き届けて。
+信じる心が、絶望に変わらぬように。</textarea>
+          <details class="baseline"><summary>最初のAI下訳を確認</summary><p class="verse">ならば、私の聖者さま。
+手に許したことを、唇にもお許しください。
+唇が祈っています。どうか、聞き届けて。
+信じる心が、絶望に変わらぬように。</p></details>
+        </div>
+      </div>
+    </article>
+<article class="speech" id="RJ-I-5-D06">
+      <h2><span class="number">06</span> ジュリエット <span class="speaker-en" lang="en">JULIET</span></h2>
+      <div class="columns">
+        <div class="english"><h3 lang="en">English original</h3><p class="verse" lang="en">Saints do not move, though grant for prayers’ sake.</p><p class="source-ref">保存原文 1322–1323 行</p></div>
+        <div class="japanese"><label for="edit-RJ-I-5-D06">日本語 <span class="row-status">AI下訳</span></label><textarea id="edit-RJ-I-5-D06" data-id="RJ-I-5-D06" rows="3" spellcheck="false">祈りを聞き届けても、聖者は動きません。</textarea>
+          <details class="baseline"><summary>最初のAI下訳を確認</summary><p class="verse">祈りを聞き届けても、聖者は動きません。</p></details>
+        </div>
+      </div>
+    </article>
+<article class="speech" id="RJ-I-5-D07">
+      <h2><span class="number">07</span> ロミオ <span class="speaker-en" lang="en">ROMEO</span></h2>
+      <div class="columns">
+        <div class="english"><h3 lang="en">English original</h3><p class="verse" lang="en">Then move not while my prayer’s effect I take.
+Thus from my lips, by thine my sin is purg’d.
+[_Kissing her._]</p><p class="source-ref">保存原文 1325–1328 行</p></div>
+        <div class="japanese"><label for="edit-RJ-I-5-D07">日本語 <span class="row-status">AI下訳</span></label><textarea id="edit-RJ-I-5-D07" data-id="RJ-I-5-D07" rows="6" spellcheck="false">では、そのままで。
+祈りの答えを、私が受け取ります。
+（口づけする）
+これで、あなたの唇が、私の罪をぬぐってくれた。</textarea>
+          <details class="baseline"><summary>最初のAI下訳を確認</summary><p class="verse">では、そのままで。
+祈りの答えを、私が受け取ります。
+（口づけする）
+これで、あなたの唇が、私の罪をぬぐってくれた。</p></details>
+        </div>
+      </div>
+    </article>
+<article class="speech" id="RJ-I-5-D08">
+      <h2><span class="number">08</span> ジュリエット <span class="speaker-en" lang="en">JULIET</span></h2>
+      <div class="columns">
+        <div class="english"><h3 lang="en">English original</h3><p class="verse" lang="en">Then have my lips the sin that they have took.</p><p class="source-ref">保存原文 1330–1331 行</p></div>
+        <div class="japanese"><label for="edit-RJ-I-5-D08">日本語 <span class="row-status">AI下訳</span></label><textarea id="edit-RJ-I-5-D08" data-id="RJ-I-5-D08" rows="3" spellcheck="false">では、あなたの唇の罪は、私の唇へ移ったのね。</textarea>
+          <details class="baseline"><summary>最初のAI下訳を確認</summary><p class="verse">では、あなたの唇の罪は、私の唇へ移ったのね。</p></details>
+        </div>
+      </div>
+    </article>
+<article class="speech" id="RJ-I-5-D09">
+      <h2><span class="number">09</span> ロミオ <span class="speaker-en" lang="en">ROMEO</span></h2>
+      <div class="columns">
+        <div class="english"><h3 lang="en">English original</h3><p class="verse" lang="en">Sin from my lips? O trespass sweetly urg’d!
+Give me my sin again.</p><p class="source-ref">保存原文 1333–1335 行</p></div>
+        <div class="japanese"><label for="edit-RJ-I-5-D09">日本語 <span class="row-status">AI下訳</span></label><textarea id="edit-RJ-I-5-D09" data-id="RJ-I-5-D09" rows="5" spellcheck="false">私の唇から、あなたの唇へ？
+なんて甘いおとがめでしょう。
+では、私の罪を返してください。</textarea>
+          <details class="baseline"><summary>最初のAI下訳を確認</summary><p class="verse">私の唇から、あなたの唇へ？
+なんて甘いおとがめでしょう。
+では、私の罪を返してください。</p></details>
+        </div>
+      </div>
+    </article>
+<article class="speech" id="RJ-I-5-D10">
+      <h2><span class="number">10</span> ジュリエット <span class="speaker-en" lang="en">JULIET</span></h2>
+      <div class="columns">
+        <div class="english"><h3 lang="en">English original</h3><p class="verse" lang="en">You kiss by the book.</p><p class="source-ref">保存原文 1337–1338 行</p></div>
+        <div class="japanese"><label for="edit-RJ-I-5-D10">日本語 <span class="row-status">AI下訳</span></label><textarea id="edit-RJ-I-5-D10" data-id="RJ-I-5-D10" rows="3" spellcheck="false">口づけも、お手本どおりなのね。</textarea>
+          <details class="baseline"><summary>最初のAI下訳を確認</summary><p class="verse">口づけも、お手本どおりなのね。</p></details>
+        </div>
+      </div>
+    </article>
+<article class="speech" id="RJ-I-5-D11">
+      <h2><span class="number">11</span> 乳母 <span class="speaker-en" lang="en">NURSE</span></h2>
+      <div class="columns">
+        <div class="english"><h3 lang="en">English original</h3><p class="verse" lang="en">Madam, your mother craves a word with you.</p><p class="source-ref">保存原文 1340–1341 行</p></div>
+        <div class="japanese"><label for="edit-RJ-I-5-D11">日本語 <span class="row-status">AI下訳</span></label><textarea id="edit-RJ-I-5-D11" data-id="RJ-I-5-D11" rows="3" spellcheck="false">お嬢さま。お母さまが、少し話をしたいと。</textarea>
+          <details class="baseline"><summary>最初のAI下訳を確認</summary><p class="verse">お嬢さま。お母さまが、少し話をしたいと。</p></details>
+        </div>
+      </div>
+    </article>
+  </section>
+  <section class="notes" id="translation-notes">
+    <h2>訳の判断</h2>
+    <ol><li><strong>比喩の言葉を調整</strong><p>ご本人の違和感を受け、pilgrim / palmer を日本語の呼び名として使わず、「祈る人」と行為で表す台詞へ修正しました。聖者・祈り・手から唇へ移るやり取りは残しています。修正前の下訳は wording-revision-01.json と wording-revision-02.json に保存しています。</p></li><li><strong>呼びかけの調整</strong><p>ご本人の違和感を受け、ジュリエットの呼びかけを省き、相手の言葉へ直接応じる台詞に修正しました。</p></li><li><strong>声に出せる言葉と、舞台の張り</strong><p>現代の日本語で話せる語順を使い、聖堂・祈り・罪の比喩を残しました。ロミオが近づこうとするたび、ジュリエットが同じ比喩で切り返します。日本語の改行は息と応答の単位で、英語の各詩行との一対一対応ではありません。</p></li><li><strong>手から唇へ</strong><p>palm と palmer の音の重なりは日本語では再現していません。「手のひらを合わせる」「十分な口づけ」をつなぎ、手に許された接触を唇へ広げようとするやり取りを残しました。</p></li><li><strong>冒頭の償い</strong><p>保存した英語本文は gentle sin です。英語はそのまま載せ、日本語では前後の動作に沿い、手の無礼を唇で償う申し出として訳しました。「償わせてください」は解釈を含む下訳です。</p></li><li><strong>口づけのト書き</strong><p>英語の Kissing her. は罪が清められたという台詞の後にあります。日本語では動作と台詞の順序を読み取りやすくするため、「祈りの答えを、私が受け取ります」の直後へ移しました。二度目の口づけは、この英語抜粋には明示されたト書きがないため、追加していません。</p></li><li><strong>最後の一言の余地</strong><p>「お手本どおり」は、ほめ言葉にも、手慣れた相手への軽いからかいにも聞こえる言葉として選びました。照れる、笑う、皮肉っぽく、といった演技指定は加えていません。</p></li></ol>
+  </section>
+  <footer>
+    <p>英語出典：<a class="inline-link" href="https://www.gutenberg.org/ebooks/1513">Project Gutenberg · Romeo and Juliet</a></p>
+    <p class="meta">行番号は保存したテキストファイル内の位置です。刊本の詩行番号ではありません。英語欄は保存原文の綴りとト書きを保持しています。</p>
+    <div class="links"><a class="inline-link" href="../sources/gutenberg-1513-original.txt">保存原文</a><a class="inline-link" href="draft.json" download>出典・下訳データ</a></div>
+  </footer>
+</main>
+<script type="application/json" id="draft-data">{"schema": "stage-sketch.translation-review.v1", "draftId": "romeo-juliet-I-5-meeting-ja-v1", "title": "ロミオとジュリエット｜出会い", "scope": "第1幕 第5場・最初の対話から乳母の呼びかけまで（抜粋）", "date": "2026-09-09", "status": "ai_draft_for_user_revision", "adopted": false, "styleRequest": "現代の日本語を使いながら、劇であるというニュアンスを残す。", "source": {"work": "Romeo and Juliet", "author": "William Shakespeare", "url": "https://www.gutenberg.org/ebooks/1513", "localFile": "../sources/gutenberg-1513-original.txt", "sha256": "5a2037a19e60cccb67b3f5fc93a12cb65c58694ce6a1dc61d0d67d0d2502b3b4", "lineNumberConvention": "1-based physical lines in the saved source file; not published verse numbers"}, "translationMethod": "New AI rough translation directly from the saved English excerpt. User revisions are kept separately from the AI baseline.", "translationNotes": [{"id": "pilgrim-revision", "title": "比喩の言葉を調整", "text": "ご本人の違和感を受け、pilgrim / palmer を日本語の呼び名として使わず、「祈る人」と行為で表す台詞へ修正しました。聖者・祈り・手から唇へ移るやり取りは残しています。修正前の下訳は wording-revision-01.json と wording-revision-02.json に保存しています。"}, {"id": "address-revision", "title": "呼びかけの調整", "text": "ご本人の違和感を受け、ジュリエットの呼びかけを省き、相手の言葉へ直接応じる台詞に修正しました。"}, {"id": "voice", "title": "声に出せる言葉と、舞台の張り", "text": "現代の日本語で話せる語順を使い、聖堂・祈り・罪の比喩を残しました。ロミオが近づこうとするたび、ジュリエットが同じ比喩で切り返します。日本語の改行は息と応答の単位で、英語の各詩行との一対一対応ではありません。"}, {"id": "palm", "title": "手から唇へ", "text": "palm と palmer の音の重なりは日本語では再現していません。「手のひらを合わせる」「十分な口づけ」をつなぎ、手に許された接触を唇へ広げようとするやり取りを残しました。"}, {"id": "gentle-sin", "title": "冒頭の償い", "text": "保存した英語本文は gentle sin です。英語はそのまま載せ、日本語では前後の動作に沿い、手の無礼を唇で償う申し出として訳しました。「償わせてください」は解釈を含む下訳です。"}, {"id": "direction", "title": "口づけのト書き", "text": "英語の Kissing her. は罪が清められたという台詞の後にあります。日本語では動作と台詞の順序を読み取りやすくするため、「祈りの答えを、私が受け取ります」の直後へ移しました。二度目の口づけは、この英語抜粋には明示されたト書きがないため、追加していません。"}, {"id": "by-the-book", "title": "最後の一言の余地", "text": "「お手本どおり」は、ほめ言葉にも、手慣れた相手への軽いからかいにも聞こえる言葉として選びました。照れる、笑う、皮肉っぽく、といった演技指定は加えていません。"}], "speeches": [{"id": "RJ-I-5-D01", "speaker": "ROMEO", "speakerJa": "ロミオ", "sourceLines": {"start": 1300, "end": 1304}, "englishRaw": "ROMEO.\n[_To Juliet._] If I profane with my unworthiest hand\nThis holy shrine, the gentle sin is this,\nMy lips, two blushing pilgrims, ready stand\nTo smooth that rough touch with a tender kiss.", "aiDraftJa": "（ジュリエットに）\nこの不作法な手で、この聖堂を汚したのなら、\nどうか、唇に償わせてください。\nこの唇も、祈るようにあなたへ近づき、\nやさしい口づけで、手の無礼を清めたいのです。", "userRevisionJa": null}, {"id": "RJ-I-5-D02", "speaker": "JULIET", "speakerJa": "ジュリエット", "sourceLines": {"start": 1306, "end": 1310}, "englishRaw": "JULIET.\nGood pilgrim, you do wrong your hand too much,\nWhich mannerly devotion shows in this;\nFor saints have hands that pilgrims’ hands do touch,\nAnd palm to palm is holy palmers’ kiss.", "aiDraftJa": "その手を、そんなに責めないで。\nこんなにも礼を尽くして触れてくださったのに。\n聖者にも手があり、祈る人はその手に触れるもの。\n手のひらを合わせる――それで十分な口づけです。", "userRevisionJa": null}, {"id": "RJ-I-5-D03", "speaker": "ROMEO", "speakerJa": "ロミオ", "sourceLines": {"start": 1312, "end": 1313}, "englishRaw": "ROMEO.\nHave not saints lips, and holy palmers too?", "aiDraftJa": "聖者にも唇はあるでしょう。祈る人にも。", "userRevisionJa": null}, {"id": "RJ-I-5-D04", "speaker": "JULIET", "speakerJa": "ジュリエット", "sourceLines": {"start": 1315, "end": 1316}, "englishRaw": "JULIET.\nAy, pilgrim, lips that they must use in prayer.", "aiDraftJa": "ええ。けれど、祈るための唇です。", "userRevisionJa": null}, {"id": "RJ-I-5-D05", "speaker": "ROMEO", "speakerJa": "ロミオ", "sourceLines": {"start": 1318, "end": 1320}, "englishRaw": "ROMEO.\nO, then, dear saint, let lips do what hands do:\nThey pray, grant thou, lest faith turn to despair.", "aiDraftJa": "ならば、私の聖者さま。\n手に許したことを、唇にもお許しください。\n唇が祈っています。どうか、聞き届けて。\n信じる心が、絶望に変わらぬように。", "userRevisionJa": null}, {"id": "RJ-I-5-D06", "speaker": "JULIET", "speakerJa": "ジュリエット", "sourceLines": {"start": 1322, "end": 1323}, "englishRaw": "JULIET.\nSaints do not move, though grant for prayers’ sake.", "aiDraftJa": "祈りを聞き届けても、聖者は動きません。", "userRevisionJa": null}, {"id": "RJ-I-5-D07", "speaker": "ROMEO", "speakerJa": "ロミオ", "sourceLines": {"start": 1325, "end": 1328}, "englishRaw": "ROMEO.\nThen move not while my prayer’s effect I take.\nThus from my lips, by thine my sin is purg’d.\n[_Kissing her._]", "aiDraftJa": "では、そのままで。\n祈りの答えを、私が受け取ります。\n（口づけする）\nこれで、あなたの唇が、私の罪をぬぐってくれた。", "userRevisionJa": null}, {"id": "RJ-I-5-D08", "speaker": "JULIET", "speakerJa": "ジュリエット", "sourceLines": {"start": 1330, "end": 1331}, "englishRaw": "JULIET.\nThen have my lips the sin that they have took.", "aiDraftJa": "では、あなたの唇の罪は、私の唇へ移ったのね。", "userRevisionJa": null}, {"id": "RJ-I-5-D09", "speaker": "ROMEO", "speakerJa": "ロミオ", "sourceLines": {"start": 1333, "end": 1335}, "englishRaw": "ROMEO.\nSin from my lips? O trespass sweetly urg’d!\nGive me my sin again.", "aiDraftJa": "私の唇から、あなたの唇へ？\nなんて甘いおとがめでしょう。\nでは、私の罪を返してください。", "userRevisionJa": null}, {"id": "RJ-I-5-D10", "speaker": "JULIET", "speakerJa": "ジュリエット", "sourceLines": {"start": 1337, "end": 1338}, "englishRaw": "JULIET.\nYou kiss by the book.", "aiDraftJa": "口づけも、お手本どおりなのね。", "userRevisionJa": null}, {"id": "RJ-I-5-D11", "speaker": "NURSE", "speakerJa": "乳母", "sourceLines": {"start": 1340, "end": 1341}, "englishRaw": "NURSE.\nMadam, your mother craves a word with you.", "aiDraftJa": "お嬢さま。お母さまが、少し話をしたいと。", "userRevisionJa": null}]}</script>
+<script>
+  'use strict';
+  const draft = JSON.parse(document.getElementById('draft-data').textContent);
+  const fields = [...document.querySelectorAll('textarea[data-id]')];
+  const baseline = new Map(draft.speeches.map(s => [s.id, s.aiDraftJa]));
+  let lastSaved = JSON.stringify(fields.map(f => f.value));
+  function fit(field) { field.style.height = 'auto'; field.style.height = (field.scrollHeight + 2) + 'px'; }
+  function update() {
+    let count = 0;
+    for (const field of fields) {
+      const edited = field.value !== baseline.get(field.dataset.id);
+      if (edited) count++;
+      field.closest('.japanese').querySelector('.row-status').textContent = edited ? '入力変更あり' : 'AI下訳';
+    }
+    document.getElementById('edit-status').textContent = `${fields.length}の発話 · ${count ? count + 'か所に入力変更あり' : '入力変更なし'}`;
+  }
+  for (const field of fields) {
+    field.setAttribute('aria-describedby', 'save-help');
+    field.addEventListener('input', () => { fit(field); update(); document.getElementById('save-status').textContent = ''; });
+    fit(field);
+  }
+  window.addEventListener('resize', () => fields.forEach(fit));
+  function download(content, name, type) {
+    const url = URL.createObjectURL(new Blob([content], {type}));
+    const anchor = document.createElement('a');
+    anchor.href = url; anchor.download = name; document.body.append(anchor); anchor.click(); anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    lastSaved = JSON.stringify(fields.map(f => f.value));
+    document.getElementById('save-status').textContent = `「${name}」のダウンロードを開始しました。`;
+  }
+  document.getElementById('export-txt').addEventListener('click', () => {
+    const content = [draft.title, draft.scope, '原作：William Shakespeare', 'AI下訳 v1 を起点とする編集画面の文面／未採用', '', ...draft.speeches.map((s, i) => s.speakerJa + '\n' + fields[i].value + '\n')].join('\n');
+    download(content, 'romeo-juliet-meeting-ja-working.txt', 'text/plain;charset=utf-8');
+  });
+  document.getElementById('export-json').addEventListener('click', () => {
+    const saved = JSON.parse(JSON.stringify(draft));
+    saved.exportedAt = new Date().toISOString();
+    saved.speeches.forEach((s, i) => { s.userRevisionJa = fields[i].value === s.aiDraftJa ? null : fields[i].value; });
+    download(JSON.stringify(saved, null, 2) + '\n', 'romeo-juliet-meeting-ja-working.json', 'application/json;charset=utf-8');
+  });
+  window.addEventListener('beforeunload', event => {
+    if (JSON.stringify(fields.map(f => f.value)) !== lastSaved) { event.preventDefault(); event.returnValue = ''; }
+  });
+</script>
+</body>
+</html>

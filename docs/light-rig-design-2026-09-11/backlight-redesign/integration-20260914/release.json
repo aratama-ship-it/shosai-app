@@ -1,0 +1,129 @@
+{
+  "parent": "b01f10c8228d3c7996cee3e6b77eac71b0b10660",
+  "commit": "19a6a8eca8b7767071d80400441070189253d5bf",
+  "files": [
+    {
+      "source": "docs/light-rig-design-2026-09-11/backlight-redesign/integration-20260914/candidate/app.js",
+      "path": "docs/light-rig-design-2026-09-11/prototype/app.js",
+      "sha256": "7d7a7e40858de907949fff38756b69efba3c0132155f51c54ec4e8c689fcb9dd"
+    },
+    {
+      "source": "docs/light-rig-design-2026-09-11/backlight-redesign/integration-20260914/candidate/index.html",
+      "path": "docs/light-rig-design-2026-09-11/prototype/index.html",
+      "sha256": "8d02a9445a8efd2cee0d2ff8bc15657e15934fe6c741728adc0bec6f76378efe"
+    },
+    {
+      "source": "docs/light-rig-design-2026-09-11/backlight-redesign/integration-20260914/candidate/volume-light.js",
+      "path": "docs/light-rig-design-2026-09-11/prototype/volume-light.js",
+      "sha256": "5b94966bdd5b39d81c4fb07ccd1d34593fea6d21d6a140dc1a91ce9c0a0fa786"
+    },
+    {
+      "source": "docs/light-rig-design-2026-09-11/backlight-redesign/REVIEW_B.html",
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/REVIEW_B.html",
+      "sha256": "e7b7b16c0f68e5cb6f0f7d93d19d630778650375a6149f4a8524e7204e663f5b"
+    },
+    {
+      "source": "docs/light-rig-design-2026-09-11/backlight-redesign/TOKENS_B.md",
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/TOKENS_B.md",
+      "sha256": "9678fc4391893ed3fccc8c9d8563ce96a8b755b225d6c2eb2d6c10f72f03cfff"
+    },
+    {
+      "source": "docs/light-rig-design-2026-09-11/backlight-redesign/notes.md",
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/notes.md",
+      "sha256": "def94acca95fe22cee6003e356899f6bf6f702d472320156e7280b76dd336dd7"
+    }
+  ],
+  "scope": "Existing GitHub lighting tester only; beta untouched",
+  "verifiedAt": "2026-09-14T04:00:35.092669+00:00",
+  "pagesStatus": "built",
+  "live": [
+    {
+      "source": "docs/light-rig-design-2026-09-11/backlight-redesign/integration-20260914/candidate/app.js",
+      "path": "docs/light-rig-design-2026-09-11/prototype/app.js",
+      "sha256": "7d7a7e40858de907949fff38756b69efba3c0132155f51c54ec4e8c689fcb9dd",
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/prototype/app.js",
+      "liveSha256": "7d7a7e40858de907949fff38756b69efba3c0132155f51c54ec4e8c689fcb9dd",
+      "matches": true
+    },
+    {
+      "source": "docs/light-rig-design-2026-09-11/backlight-redesign/integration-20260914/candidate/index.html",
+      "path": "docs/light-rig-design-2026-09-11/prototype/index.html",
+      "sha256": "8d02a9445a8efd2cee0d2ff8bc15657e15934fe6c741728adc0bec6f76378efe",
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/prototype/index.html",
+      "liveSha256": "8d02a9445a8efd2cee0d2ff8bc15657e15934fe6c741728adc0bec6f76378efe",
+      "matches": true
+    },
+    {
+      "source": "docs/light-rig-design-2026-09-11/backlight-redesign/integration-20260914/candidate/volume-light.js",
+      "path": "docs/light-rig-design-2026-09-11/prototype/volume-light.js",
+      "sha256": "5b94966bdd5b39d81c4fb07ccd1d34593fea6d21d6a140dc1a91ce9c0a0fa786",
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/prototype/volume-light.js",
+      "liveSha256": "5b94966bdd5b39d81c4fb07ccd1d34593fea6d21d6a140dc1a91ce9c0a0fa786",
+      "matches": true
+    },
+    {
+      "source": "docs/light-rig-design-2026-09-11/backlight-redesign/REVIEW_B.html",
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/REVIEW_B.html",
+      "sha256": "e7b7b16c0f68e5cb6f0f7d93d19d630778650375a6149f4a8524e7204e663f5b",
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/REVIEW_B.html",
+      "liveSha256": "e7b7b16c0f68e5cb6f0f7d93d19d630778650375a6149f4a8524e7204e663f5b",
+      "matches": true
+    },
+    {
+      "source": "docs/light-rig-design-2026-09-11/backlight-redesign/TOKENS_B.md",
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/TOKENS_B.md",
+      "sha256": "9678fc4391893ed3fccc8c9d8563ce96a8b755b225d6c2eb2d6c10f72f03cfff",
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/TOKENS_B.md",
+      "liveSha256": "9678fc4391893ed3fccc8c9d8563ce96a8b755b225d6c2eb2d6c10f72f03cfff",
+      "matches": true
+    },
+    {
+      "source": "docs/light-rig-design-2026-09-11/backlight-redesign/notes.md",
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/notes.md",
+      "sha256": "def94acca95fe22cee6003e356899f6bf6f702d472320156e7280b76dd336dd7",
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/notes.md",
+      "liveSha256": "def94acca95fe22cee6003e356899f6bf6f702d472320156e7280b76dd336dd7",
+      "matches": true
+    },
+    {
+      "source": "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/integration-20260914/candidate/rig-engine.js",
+      "path": "docs/light-rig-design-2026-09-11/prototype/rig-engine.js",
+      "sha256": "659b97111380eff19d8b6757a31232c83666e759a860529d08f5afd161257999",
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/prototype/rig-engine.js",
+      "liveSha256": "659b97111380eff19d8b6757a31232c83666e759a860529d08f5afd161257999",
+      "matches": true
+    },
+    {
+      "source": "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/integration-20260914/candidate/stage-figure.js",
+      "path": "docs/light-rig-design-2026-09-11/prototype/stage-figure.js",
+      "sha256": "2b4bcc60ae38fff8fc96cde793865adb32120d6ceba7744e2f4492fe04f54fa5",
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/prototype/stage-figure.js",
+      "liveSha256": "2b4bcc60ae38fff8fc96cde793865adb32120d6ceba7744e2f4492fe04f54fa5",
+      "matches": true
+    },
+    {
+      "source": "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/integration-20260914/candidate/light-presets.js",
+      "path": "docs/light-rig-design-2026-09-11/prototype/light-presets.js",
+      "sha256": "fb83c21851b59cbedbdc14bd1cf027c8f2486542136e447c1ea231de7e4a1551",
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/prototype/light-presets.js",
+      "liveSha256": "fb83c21851b59cbedbdc14bd1cf027c8f2486542136e447c1ea231de7e4a1551",
+      "matches": true
+    },
+    {
+      "source": "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/integration-20260914/candidate/light-presets-ui.js",
+      "path": "docs/light-rig-design-2026-09-11/prototype/light-presets-ui.js",
+      "sha256": "3f63cc0e0e82ef92b458e34ee27ee6762927d2a245e1298b80b46af91593cbd9",
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/prototype/light-presets-ui.js",
+      "liveSha256": "3f63cc0e0e82ef92b458e34ee27ee6762927d2a245e1298b80b46af91593cbd9",
+      "matches": true
+    }
+  ],
+  "allMatch": true,
+  "publicBrowser": {
+    "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/prototype/",
+    "defaultEntryLoaded": true,
+    "hazeControlVisible": true,
+    "fixedToMetricAndBack": true,
+    "userSavedDataNotOpenedOrWritten": true
+  }
+}

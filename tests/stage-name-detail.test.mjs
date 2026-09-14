@@ -23,30 +23,6 @@ test("図上の名前をダブルクリックすると種別ごとの詳細窓�
   assert.match(source, /function onCanvasNameDoubleClick\(event\)[\s\S]*?STUDY_READ_ONLY[\s\S]*?guestSessionActive\(\)[\s\S]*?phoneViewerActive[\s\S]*?presenting/);
   assert.match(source, /\[canvas, planCanvas\][\s\S]*?addEventListener\("dblclick", onCanvasNameDoubleClick\)/);
   assert.match(source, /nameDetailTargetAt\(point, L, el\.getContext\("2d"\)\)\) return "pointer"/);
-  assert.match(source, /function nameDetailTargetAt\(point, L, target\)[\s\S]*?tool !== "select" && tool !== "light"[\s\S]*?pieceAtSelectionBounds\(point, selectable/);
-});
-
-test("選択範囲内では名前札の外からも、最小の重なり対象を特定できる", () => {
-  const start = source.indexOf("function pieceAtSelectionBounds(");
-  assert.notEqual(start, -1, "selection-bound hit helper exists");
-  const bodyStart = source.indexOf("{", start);
-  let depth = 0;
-  let end = -1;
-  for (let i = bodyStart; i < source.length; i += 1) {
-    if (source[i] === "{") depth += 1;
-    else if (source[i] === "}" && --depth === 0) { end = i + 1; break; }
-  }
-  assert.notEqual(end, -1, "selection-bound hit helper is closed");
-  const hit = new Function(`return (${source.slice(start, end)});`)();
-  const platform = { id: "platform" };
-  const performer = { id: "performer" };
-  const bounds = new Map([
-    [platform, { x: 0, y: 0, w: 100, h: 100 }],
-    [performer, { x: 30, y: 30, w: 20, h: 40 }],
-  ]);
-  assert.equal(hit({ x: 35, y: 50 }, [platform, performer], (piece) => bounds.get(piece)), performer);
-  assert.equal(hit({ x: 0, y: 0 }, [platform], (piece) => bounds.get(piece)), platform);
-  assert.equal(hit({ x: 120, y: 120 }, [platform], (piece) => bounds.get(piece)), null);
 });
 
 test("詳細窓を開いた直後は名前全体を選択して打ち替えられる", () => {

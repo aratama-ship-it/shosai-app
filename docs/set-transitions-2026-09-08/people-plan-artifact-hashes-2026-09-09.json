@@ -1,0 +1,18 @@
+{
+  "people-plan-trial-2026-09-09.html": "cdc6a2fbdb9643f469c7197239c25e9180b25e07adbc2f8116aaaffe9d6488ff",
+  "people-plan-core-2026-09-09.mjs": "c0b5c2ebaae25bb094fa86b9d92e7db8f49563526268a2e030feaabd52e2c3dc",
+  "people-plan-ui-2026-09-09.mjs": "c178a4c63c16e76bdffe22e99a8090cf6f75428775157d5311422c2d94a833d9",
+  "people-plan-core-2026-09-09.test.mjs": "8fc20142e2058ccbb0dd049e2796e454a1722291303a86f784e39a83ce8cbe51",
+  "verify_people_plan_browser.py": "358cd17b3cd2cba4b9d9a727f721fa43f8480be2fceee48d6b0aa6508a295d72",
+  "shared-contract-fixture-2026-09-09.json": "5ed6105f7b35008a89223f038d34f807a99177a166225eae6aaa8a18ef5bb2e7",
+  "TOKEN_SHEET_people_plan_trial_2026-09-09.md": "7960712854d66d6524c02239b3eaaa5527215df025a6e1765437ed11bf39329f",
+  "PEOPLE_PLAN_TRIAL_VALIDATION_2026-09-09.md": "cc1dc30c5ddca79e701e67129c42a75e4860cd5f793785d022561608b1a5ba8c",
+  "people-plan-core-results.tap": "b04755ab4f600f25da063535d5897d661e199b8ef43064107ef65b5d3a55f93c",
+  "people-plan-browser-checks-2026-09-09.json": "6d5543a359d5aef30bfced008b8fea1f4f5c72e0b664726552eca048a9d4b130",
+  "people-plan-preservation-2026-09-09.json": "3ae40f0fb3aa7c6c7e27f284a9ad976583015973aee7e04a420569a61f6ff971",
+  "people-plan-review-request.txt": "ad42c5b30e96909b438d0b833b9c8bbe153f26681bc14f76d754e1204ad05e7d",
+  "people-plan-fable-review-status-2026-09-09.json": "de1fa0f72ddac53d406672055af22d72590930570f8d4dc5b90e4c6b7e841624",
+  "people-plan-fable-review-2026-09-09.md": "518962c44df28a377f0649d56ef0e216fd696d09a95bfa3e6fea82fab68264f8",
+  "people-plan-fable-reviewed-hashes-2026-09-09.json": "6f8c44a4b701040ee2e3320584bc868124f85831b172c8a7e47647f06b5e307e",
+  "people-plan-review-preservation-2026-09-09.json": "fa733a1a8a4a2398108b04b4d07490c614131dde345c0dd38eb2b1774aef8360"
+}

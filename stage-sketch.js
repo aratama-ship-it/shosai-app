@@ -459,6 +459,320 @@
     const motionModel = window.SHOSAI_STAGE_LIGHT_MOTION;
     return motionModel ? motionModel.normalize(raw) : null;
   };
+  /* 複数選択プリセットの準備データ。lightKind（吊り位置・光源の種類）とは混ぜず、
+     動かせる灯体かを登録側へ任意で記録する。未指定は旧ショーの保存形を変えない。
+     画面・動作・点滅をここで有効化しない。 */
+  const normalizeLightCapability = (raw) => {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    return ["fixed", "moving"].includes(raw.motion) ? { motion: raw.motion } : null;
+  };
+  /* 駒側には、実際のbeam/glow等とは別に「どの作用域のプリセットが最後に由来したか」
+     だけを任意メタデータとして持たせる。未知の将来版は読込時に作り替えず、そのまま
+     保持する。これにより、後続版の情報を旧い正規化で落とさない。 */
+  const normalizeLightBehavior = (raw) => {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    if (!Number.isInteger(raw.version) || raw.version < 1) return null;
+    if (raw.version !== 1) return jsonClone(raw);
+    const lastAppliedByScope = raw.lastAppliedByScope;
+    if (!lastAppliedByScope || typeof lastAppliedByScope !== "object" || Array.isArray(lastAppliedByScope)) {
+      return null;
+    }
+    const copied = jsonClone(raw);
+    return copied && typeof copied === "object" && !Array.isArray(copied)
+      ? copied : null;
+  };
+  // P2aではUIではなく、保存形式を後続フェーズとテストが共有できる境界だけを公開する。
+  window.SHOSAI_STAGE_LIGHT_PRESET_COMPAT = Object.freeze({
+    normalizeCapability: normalizeLightCapability,
+    normalizeBehavior: normalizeLightBehavior,
+  });
+  /* P2bは、選択中の灯へ直接適用する静止型だけ。舞台外／客席への動き、点滅、
+     DMXや照度計算はここに含めない。返り値は新しい駒の配列で、入力は変更しない。 */
+  const SELECTED_LIGHT_STATIC_PRESETS = Object.freeze([
+    { id: "aim.converge", family: "狙い", label: "一点へ集める", scope: "aim" },
+    { id: "aim.row", family: "狙い", label: "横一列へ配る", scope: "aim" },
+    { id: "aim.depth", family: "狙い", label: "奥行きへ配る", scope: "aim" },
+    { id: "aim.cross", family: "狙い", label: "左右を交差させる", scope: "aim" },
+    { id: "area.full", family: "範囲", label: "舞台全体を照らす", scope: "area" },
+    { id: "area.left", family: "範囲", label: "下手半分を照らす", scope: "area" },
+    { id: "area.right", family: "範囲", label: "上手半分を照らす", scope: "area" },
+    { id: "area.front", family: "範囲", label: "前方半分を照らす", scope: "area" },
+    { id: "area.back", family: "範囲", label: "後方半分を照らす", scope: "area" },
+    { id: "area.custom", family: "範囲", label: "指定範囲を照らす", scope: "area" },
+    { id: "value.alternate", family: "見せ方", label: "明暗を交互にする", scope: "value" },
+    { id: "value.center", family: "見せ方", label: "中央を強める", scope: "value" },
+    { id: "show.curtain", family: "見せ方", label: "ライトカーテン", scope: "show" },
+  ]);
+  const selectedLightStaticPresetById = (id) => SELECTED_LIGHT_STATIC_PRESETS
+    .find((preset) => preset.id === id) || null;
+  const staticClamp = (value, lo = 0, hi = 1) => Math.min(hi, Math.max(lo,
+    Number.isFinite(Number(value)) ? Number(value) : lo));
+  const staticTargetLine = (start, end, count, fixed, depth = false) => Array.from({ length: count }, (_, index) => {
+    const ratio = count < 2 ? 0.5 : index / (count - 1);
+    return depth ? { u: fixed, v: start + (end - start) * ratio } : { u: start + (end - start) * ratio, v: fixed };
+  });
+  const normalizeStaticRect = (raw) => {
+    if (!raw || raw.kind !== "rect") return null;
+    const values = [raw.u0, raw.u1, raw.v0, raw.v1].map(Number);
+    if (!values.every(Number.isFinite)) return null;
+    const u0 = staticClamp(Math.min(values[0], values[1]));
+    const u1 = staticClamp(Math.max(values[0], values[1]));
+    const v0 = staticClamp(Math.min(values[2], values[3]));
+    const v1 = staticClamp(Math.max(values[2], values[3]));
+    if (u1 - u0 < 0.02 || v1 - v0 < 0.02) return null;
+    return { kind: "rect", u0, v0, u1, v1 };
+  };
+  const staticRectTargets = (rect, count) => {
+    if (count < 2) return [{ u: (rect.u0 + rect.u1) / 2, v: (rect.v0 + rect.v1) / 2 }];
+    const width = rect.u1 - rect.u0;
+    const depth = rect.v1 - rect.v0;
+    const columns = Math.min(count, Math.max(1, Math.round(Math.sqrt(count * width / Math.max(depth, 0.01)))));
+    const rows = Math.ceil(count / columns);
+    return Array.from({ length: count }, (_, index) => {
+      const row = Math.floor(index / columns);
+      const column = index % columns;
+      const cellsInRow = row === rows - 1 ? count - row * columns : columns;
+      return {
+        u: rect.u0 + width * (cellsInRow < 2 ? 0.5 : column / (cellsInRow - 1)),
+        v: rect.v0 + depth * (rows < 2 ? 0.5 : row / (rows - 1)),
+      };
+    });
+  };
+  const staticBehavior = (piece, preset, region = null) => {
+    const prior = normalizeLightBehavior(piece && piece.lightBehavior);
+    const applied = prior && prior.lastAppliedByScope ? jsonClone(prior.lastAppliedByScope, {}) : {};
+    applied[preset.scope] = { id: preset.id, version: 1, ...(region ? { region } : {}) };
+    return { version: 1, lastAppliedByScope: applied };
+  };
+  const applySelectedLightStaticPresetModel = (rawPieces, presetId, options = {}) => {
+    const preset = selectedLightStaticPresetById(presetId);
+    const pieces = Array.isArray(rawPieces) ? rawPieces.filter((piece) => piece && piece.type === "light") : [];
+    if (!preset || !pieces.length) return { status: "noop", pieces: rawPieces || [], preset: null };
+    const ordered = pieces.slice().sort((a, b) => staticClamp(a.beam && a.beam.u, -0.3, 1.3)
+      - staticClamp(b.beam && b.beam.u, -0.3, 1.3) || String(a.id).localeCompare(String(b.id)));
+    const n = ordered.length;
+    const areas = {
+      "area.full": [0, 1, 0, 1], "area.left": [0, 0.5, 0, 1], "area.right": [0.5, 1, 0, 1],
+      "area.front": [0, 1, 0.5, 1], "area.back": [0, 1, 0, 0.5],
+    };
+    const customRegion = preset.id === "area.custom" ? normalizeStaticRect(options.region) : null;
+    if (preset.id === "area.custom" && !customRegion) {
+      return { status: "invalid", pieces: rawPieces || [], preset, reason: "custom-region-required" };
+    }
+    let targets = null;
+    if (preset.id === "aim.converge") targets = ordered.map(() => ({ u: 0.5, v: 0.55 }));
+    if (preset.id === "aim.row") targets = staticTargetLine(0.15, 0.85, n, 0.58);
+    if (preset.id === "aim.depth") targets = staticTargetLine(0.18, 0.84, n, 0.5, true);
+    if (preset.id === "aim.cross") targets = staticTargetLine(0.15, 0.85, n, 0.58).reverse();
+    if (areas[preset.id]) {
+      const [u0, u1, v0, v1] = areas[preset.id];
+      targets = (preset.id === "area.front" || preset.id === "area.back")
+        ? staticTargetLine(v0, v1, n, (u0 + u1) / 2, true)
+        : staticTargetLine(u0, u1, n, (v0 + v1) / 2);
+    }
+    if (customRegion) targets = staticRectTargets(customRegion, n);
+    if (preset.id === "show.curtain") targets = staticTargetLine(0.06, 0.94, n, 0.56);
+    const changedById = new Map();
+    ordered.forEach((piece, index) => {
+      const beam = { ...(piece.beam || {}) };
+      const next = { ...piece, beam, lightBehavior: staticBehavior(piece, preset, customRegion) };
+      if (targets) { beam.u = targets[index].u; beam.v = targets[index].v; }
+      if (preset.id === "value.alternate") next.glow = index % 2 ? 0.65 : 1.2;
+      if (preset.id === "value.center") {
+        const distance = Math.abs(index / Math.max(1, n - 1) - 0.5) * 2;
+        next.glow = 1.2 - distance * 0.55;
+      }
+      if (preset.id === "show.curtain") next.glow = Math.max(Number(piece.glow) || 1, 1.05);
+      changedById.set(piece.id, next);
+    });
+    const nextPieces = rawPieces.map((piece) => changedById.get(piece && piece.id) || piece);
+    const changed = JSON.stringify(nextPieces) !== JSON.stringify(rawPieces);
+    return { status: changed ? "applied" : "noop", pieces: nextPieces, preset };
+  };
+  window.SHOSAI_STAGE_SELECTED_LIGHT_STATIC_PRESETS = Object.freeze({
+    presets: SELECTED_LIGHT_STATIC_PRESETS,
+    presetById: selectedLightStaticPresetById,
+    apply: applySelectedLightStaticPresetModel,
+  });
+  /* P2d: 動く灯だけに適用する、舞台内の再現可能なワンダー。
+     経路を座標列として保存せず、seedから再生時に導くので、再読込や書出しで
+     見え方が変わらない。scene.lightMotion（場面全体の動き案）とは別物。 */
+  const SELECTED_LIGHT_MOTION_PRESETS = Object.freeze([
+    { id: "motion.wander.stage", family: "動き", label: "舞台内をランダムに巡る", scope: "motion" },
+  ]);
+  const staticUint32 = (value, fallback = 2841) => Number.isFinite(Number(value)) ? (Number(value) >>> 0) : fallback;
+  const staticMulberry32 = (seed) => {
+    let value = staticUint32(seed);
+    return () => {
+      value |= 0; value = value + 0x6D2B79F5 | 0;
+      let temp = Math.imul(value ^ value >>> 15, 1 | value);
+      temp = temp + Math.imul(temp ^ temp >>> 7, 61 | temp) ^ temp;
+      return ((temp ^ temp >>> 14) >>> 0) / 4294967296;
+    };
+  };
+  const selectedLightWanderPoint = (raw, timeMs = 0) => {
+    const motion = raw && raw.kind === "wander-stage" && raw.pathVersion === 1 ? raw : null;
+    if (!motion || !motion.region || motion.region.kind !== "rect") return null;
+    const region = normalizeStaticRect(motion.region);
+    if (!region) return null;
+    const loopSec = staticClamp(motion.loopSec, 4, 20);
+    const irregularity = staticClamp(motion.irregularity, 0, 1);
+    const phase = ((Number(timeMs) / 1000 / loopSec) + staticClamp(motion.phaseNorm)) % 1;
+    const rng = staticMulberry32(staticUint32(motion.seed) ^ Math.imul(staticUint32(motion.fixtureRank, 0) + 1, 2246822519));
+    const alpha = phase * Math.PI * 2;
+    const beta = alpha * (1.65 + rng() * 0.45) + rng() * Math.PI * 2;
+    const gamma = alpha * (2.25 + rng() * 0.55) + rng() * Math.PI * 2;
+    const x = 0.5 + Math.sin(alpha + rng() * Math.PI * 2) * (0.23 + irregularity * 0.08) + Math.sin(beta) * (0.05 + irregularity * 0.05);
+    const y = 0.5 + Math.cos(alpha * 0.93 + rng() * Math.PI * 2) * (0.22 + irregularity * 0.07) + Math.sin(gamma) * (0.04 + irregularity * 0.05);
+    return {
+      u: staticClamp(region.u0 + (region.u1 - region.u0) * staticClamp(x)),
+      v: staticClamp(region.v0 + (region.v1 - region.v0) * staticClamp(y)),
+    };
+  };
+  const applySelectedLightWanderModel = (rawPieces, rawSets, options = {}) => {
+    const pieces = Array.isArray(rawPieces) ? rawPieces.filter((piece) => piece && piece.type === "light") : [];
+    const movingSetIds = new Set((Array.isArray(rawSets) ? rawSets : [])
+      .filter((item) => item && item.kind === "light" && normalizeLightCapability(item.lightCapability)?.motion === "moving")
+      .map((item) => item.id));
+    const ordered = pieces.filter((piece) => movingSetIds.has(piece.setId)).slice().sort((a, b) => staticClamp(a.beam && a.beam.u, -0.3, 1.3)
+      - staticClamp(b.beam && b.beam.u, -0.3, 1.3) || String(a.id).localeCompare(String(b.id)));
+    if (!ordered.length) return { status: "noop", pieces: rawPieces || [], preset: SELECTED_LIGHT_MOTION_PRESETS[0], reason: "no-moving-lights" };
+    const seed = staticUint32(options.seed, 2841);
+    const loopSec = staticClamp(options.loopSec, 4, 20);
+    const irregularity = staticClamp(options.irregularity, 0, 1);
+    const region = { kind: "rect", u0: 0.06, v0: 0.08, u1: 0.94, v1: 0.92 };
+    const changedById = new Map();
+    ordered.forEach((piece, index) => {
+      const prior = normalizeLightBehavior(piece.lightBehavior) || { version: 1, lastAppliedByScope: {} };
+      const applied = jsonClone(prior.lastAppliedByScope, {});
+      const motion = { kind: "wander-stage", pathVersion: 1, seed, loopSec, irregularity, region, phaseNorm: index / ordered.length, fixtureRank: index };
+      applied.motion = { id: "motion.wander.stage", version: 1, seed, pathVersion: 1, region };
+      changedById.set(piece.id, { ...piece, lightBehavior: { ...prior, version: 1, lastAppliedByScope: applied, motion } });
+    });
+    const nextPieces = rawPieces.map((piece) => changedById.get(piece && piece.id) || piece);
+    return { status: JSON.stringify(nextPieces) === JSON.stringify(rawPieces) ? "noop" : "applied", pieces: nextPieces, preset: SELECTED_LIGHT_MOTION_PRESETS[0], skipped: pieces.filter((piece) => !movingSetIds.has(piece.setId)).map((piece) => piece.id) };
+  };
+  const adjustSelectedLightWanderModel = (rawPieces, options = {}) => {
+    const changedById = new Map();
+    (Array.isArray(rawPieces) ? rawPieces : []).forEach((piece) => {
+      const prior = normalizeLightBehavior(piece && piece.lightBehavior);
+      const priorMotion = prior && prior.motion;
+      if (!piece || piece.type !== "light" || !priorMotion || priorMotion.kind !== "wander-stage" || priorMotion.pathVersion !== 1) return;
+      const region = normalizeStaticRect(options.region || priorMotion.region);
+      if (!region) return;
+      const seed = staticUint32(options.seed, staticUint32(priorMotion.seed, 2841));
+      const loopSec = staticClamp(options.loopSec === undefined ? priorMotion.loopSec : options.loopSec, 4, 20);
+      const irregularity = staticClamp(options.irregularity === undefined ? priorMotion.irregularity : options.irregularity, 0, 1);
+      const applied = jsonClone(prior.lastAppliedByScope, {});
+      applied.motion = { id: "motion.wander.stage", version: 1, seed, pathVersion: 1, region };
+      changedById.set(piece.id, {
+        ...piece,
+        lightBehavior: { ...prior, version: 1, lastAppliedByScope: applied,
+          motion: { ...priorMotion, kind: "wander-stage", pathVersion: 1, seed, loopSec, irregularity, region } },
+      });
+    });
+    const nextPieces = (Array.isArray(rawPieces) ? rawPieces : []).map((piece) => changedById.get(piece && piece.id) || piece);
+    const changed = JSON.stringify(nextPieces) !== JSON.stringify(rawPieces || []);
+    return { status: changed ? "applied" : "noop", pieces: nextPieces, changedIds: changed ? [...changedById.keys()] : [] };
+  };
+  const stopSelectedLightWanderModel = (rawPieces) => {
+    const changedById = new Map();
+    (Array.isArray(rawPieces) ? rawPieces : []).forEach((piece) => {
+      const prior = normalizeLightBehavior(piece && piece.lightBehavior);
+      const priorMotion = prior && prior.motion;
+      if (!piece || piece.type !== "light" || !priorMotion || priorMotion.kind !== "wander-stage" || priorMotion.pathVersion !== 1) return;
+      const nextBehavior = jsonClone(prior);
+      const applied = jsonClone(nextBehavior.lastAppliedByScope, {});
+      delete applied.motion;
+      delete nextBehavior.motion;
+      nextBehavior.lastAppliedByScope = applied;
+      if (!Object.keys(applied).length) delete nextBehavior.lastAppliedByScope;
+      const next = { ...piece };
+      if (Object.keys(nextBehavior).some((key) => key !== "version")) next.lightBehavior = nextBehavior;
+      else delete next.lightBehavior;
+      changedById.set(piece.id, next);
+    });
+    const nextPieces = (Array.isArray(rawPieces) ? rawPieces : []).map((piece) => changedById.get(piece && piece.id) || piece);
+    return { status: changedById.size ? "applied" : "noop", pieces: nextPieces, changedIds: [...changedById.keys()] };
+  };
+  window.SHOSAI_STAGE_SELECTED_LIGHT_MOTION_PRESETS = Object.freeze({
+    presets: SELECTED_LIGHT_MOTION_PRESETS,
+    apply: applySelectedLightWanderModel,
+    adjust: adjustSelectedLightWanderModel,
+    stop: stopSelectedLightWanderModel,
+    positionAt: selectedLightWanderPoint,
+  });
+  /* P2f: 時間変化は座標・明るさの正本を上書きしない。描画時の明度だけを
+     合成するので、静止型やワンダーと同時に使えて、解除も独立して行える。 */
+  const SELECTED_LIGHT_TIME_EFFECT_PRESETS = Object.freeze([
+    { id: "effect.strobe.stage", family: "時間変化", label: "舞台内ストロボ" },
+    { id: "effect.curtain.chase", family: "時間変化", label: "ライトカーテンを走らせる" },
+  ]);
+  const selectedLightTimeEffectIntensity = (raw, timeMs = 0) => {
+    const behavior = raw && raw.version === 1 ? raw : null;
+    if (!behavior) return 1;
+    let intensity = 1;
+    const strobe = behavior.strobe;
+    if (strobe && strobe.kind === "stage-strobe" && strobe.version === 1) {
+      const rateHz = staticClamp(strobe.rateHz, 1, 16);
+      const duty = staticClamp(strobe.duty, 0.1, 0.9);
+      const phase = ((Number(timeMs) / 1000 * rateHz) % 1 + 1) % 1;
+      intensity *= phase < duty ? 1 : 0.04;
+    }
+    const chase = behavior.chase;
+    if (chase && chase.kind === "curtain-chase" && chase.version === 1) {
+      const loopSec = staticClamp(chase.loopSec, 1, 16);
+      const duty = staticClamp(chase.duty, 0.12, 0.9);
+      const phase = ((Number(timeMs) / 1000 / loopSec) + staticClamp(chase.phaseNorm)) % 1;
+      intensity *= phase < duty ? 1 : 0.05;
+    }
+    return staticClamp(intensity, 0, 1);
+  };
+  const applySelectedLightTimeEffectModel = (rawPieces, presetId, options = {}) => {
+    const preset = SELECTED_LIGHT_TIME_EFFECT_PRESETS.find((item) => item.id === presetId);
+    const pieces = Array.isArray(rawPieces) ? rawPieces.filter((piece) => piece && piece.type === "light") : [];
+    if (!preset || pieces.length < 2) return { status: "noop", pieces: rawPieces || [], preset, reason: "two-lights-required" };
+    const ordered = pieces.slice().sort((a, b) => staticClamp(a.beam && a.beam.u, -0.3, 1.3)
+      - staticClamp(b.beam && b.beam.u, -0.3, 1.3) || String(a.id).localeCompare(String(b.id)));
+    const scope = presetId === "effect.strobe.stage" ? "strobe" : "chase";
+    const allApplied = ordered.every((piece) => {
+      const effect = piece.lightBehavior && piece.lightBehavior[scope];
+      return effect && (scope === "strobe" ? effect.kind === "stage-strobe" : effect.kind === "curtain-chase") && effect.version === 1;
+    });
+    const changedById = new Map();
+    ordered.forEach((piece, index) => {
+      const prior = normalizeLightBehavior(piece.lightBehavior) || { version: 1, lastAppliedByScope: {} };
+      const applied = jsonClone(prior.lastAppliedByScope, {});
+      const nextBehavior = { ...prior, version: 1, lastAppliedByScope: applied };
+      if (allApplied) {
+        delete nextBehavior[scope];
+        delete applied[scope];
+        if (!Object.keys(applied).length) delete nextBehavior.lastAppliedByScope;
+      } else if (scope === "strobe") {
+        const rateHz = staticClamp(options.rateHz === undefined ? 8 : options.rateHz, 1, 16);
+        const duty = staticClamp(options.duty === undefined ? 0.32 : options.duty, 0.1, 0.9);
+        nextBehavior.strobe = { kind: "stage-strobe", version: 1, rateHz, duty };
+        applied.strobe = { id: preset.id, version: 1, rateHz, duty };
+      } else {
+        const loopSec = staticClamp(options.loopSec === undefined ? 4 : options.loopSec, 1, 16);
+        const duty = staticClamp(options.duty === undefined ? 0.38 : options.duty, 0.12, 0.9);
+        nextBehavior.chase = { kind: "curtain-chase", version: 1, loopSec, duty, phaseNorm: index / ordered.length };
+        applied.chase = { id: preset.id, version: 1, loopSec, duty };
+      }
+      const next = { ...piece };
+      if (Object.keys(nextBehavior).some((key) => key !== "version")) next.lightBehavior = nextBehavior;
+      else delete next.lightBehavior;
+      changedById.set(piece.id, next);
+    });
+    const nextPieces = (Array.isArray(rawPieces) ? rawPieces : []).map((piece) => changedById.get(piece && piece.id) || piece);
+    const changed = JSON.stringify(nextPieces) !== JSON.stringify(rawPieces || []);
+    return { status: changed ? "applied" : "noop", pieces: nextPieces, preset, cleared: allApplied };
+  };
+  window.SHOSAI_STAGE_SELECTED_LIGHT_TIME_EFFECT_PRESETS = Object.freeze({
+    presets: SELECTED_LIGHT_TIME_EFFECT_PRESETS,
+    apply: applySelectedLightTimeEffectModel,
+    intensityAt: selectedLightTimeEffectIntensity,
+  });
   const LIGHT_INTENT_LAYER_LABELS = Object.freeze({
     ja: { performer: "演者", background: "背景", space: "空間" },
     en: { performer: "Performer", background: "Backdrop", space: "Space" },
@@ -1210,17 +1524,10 @@
       durationSeconds: Number.isFinite(duration) && duration > 0 && duration <= 86400
         ? duration : null,
       gainDb: normalizeAudioGainDb(raw.gainDb),
-      timelineFadeOut: Boolean(raw.timelineFadeOut),
     };
-    const timelineRangeLock = raw.timelineRangeLock === "start" || raw.timelineRangeLock === "end"
-      ? raw.timelineRangeLock : null;
     const hasCountSync = ["countBpm", "firstCountSec", "firstSet", "firstLocked", "anchors", "phrases"]
       .some((key) => Object.prototype.hasOwnProperty.call(raw, key));
-    return {
-      ...base,
-      ...(timelineRangeLock ? { timelineRangeLock } : {}),
-      ...(hasCountSync ? normalizeAudioCountSync(raw) : {}),
-    };
+    return hasCountSync ? { ...base, ...normalizeAudioCountSync(raw) } : base;
   };
   const normalizeAudioTracks = (raw) => {
     if (!Array.isArray(raw)) return [];
@@ -3931,6 +4238,30 @@
     selectionControls: document.getElementById("stage-selection-controls"),
     selectedName: document.getElementById("stage-selected-name"),
     selectionScope: document.getElementById("stage-selection-scope"),
+    selectedLightPresetOpen: document.getElementById("stage-selected-light-preset-open"),
+    selectedLightPresetModal: document.getElementById("stage-selected-light-preset-modal"),
+    selectedLightPresetBackdrop: document.getElementById("stage-selected-light-preset-backdrop"),
+    selectedLightPresetClose: document.getElementById("stage-selected-light-preset-close"),
+    selectedLightPresetSummary: document.getElementById("stage-selected-light-preset-summary"),
+    selectedLightPresetGroups: document.getElementById("stage-selected-light-preset-groups"),
+    selectedLightWanderAdjust: document.getElementById("stage-selected-light-wander-adjust"),
+    selectedLightWanderSummary: document.getElementById("stage-selected-light-wander-summary"),
+    selectedLightWanderLoop: document.getElementById("stage-selected-light-wander-loop"),
+    selectedLightWanderIrregularity: document.getElementById("stage-selected-light-wander-irregularity"),
+    selectedLightWanderIrregularityValue: document.getElementById("stage-selected-light-wander-irregularity-value"),
+    selectedLightWanderRegion: document.getElementById("stage-selected-light-wander-region"),
+    selectedLightWanderReroll: document.getElementById("stage-selected-light-wander-reroll"),
+    selectedLightWanderStop: document.getElementById("stage-selected-light-wander-stop"),
+    selectedLightCustomRegion: document.getElementById("stage-selected-light-custom-region"),
+    selectedLightCustomCanvas: document.getElementById("stage-selected-light-custom-canvas"),
+    selectedLightCustomLeft: document.getElementById("stage-selected-light-custom-left"),
+    selectedLightCustomRight: document.getElementById("stage-selected-light-custom-right"),
+    selectedLightCustomBack: document.getElementById("stage-selected-light-custom-back"),
+    selectedLightCustomFront: document.getElementById("stage-selected-light-custom-front"),
+    selectedLightCustomApply: document.getElementById("stage-selected-light-custom-apply"),
+    selectedLightCustomBackToPresets: document.getElementById("stage-selected-light-custom-back-to-presets"),
+    selectedLightCustomTitle: document.getElementById("stage-selected-light-custom-title"),
+    selectedLightCustomIntro: document.getElementById("stage-selected-light-custom-intro"),
     fpvOpen: document.getElementById("stage-fpv-open"),
     freecamOpen: document.getElementById("stage-freecam-open"),
     dimsFromSet: document.getElementById("stage-dims-from-set"),
@@ -4321,6 +4652,8 @@
     setInfoColor: document.getElementById("stage-setinfo-color"),
     setInfoNote: document.getElementById("stage-setinfo-note"),
     setInfoKind: document.getElementById("stage-setinfo-kind"),
+    setInfoMotion: document.getElementById("stage-setinfo-motion"),
+    setInfoMotionRow: document.getElementById("stage-setinfo-motioncap"),
     setInfoPropShape: document.getElementById("stage-setinfo-prop-shape"),
     setInfoPropShapeRow: document.getElementById("stage-setinfo-propshape"),
     setInfoFlown: document.getElementById("stage-setinfo-flown"),
@@ -4922,10 +5255,6 @@
       transitionNote: "",
       // このシーンで流れている曲。再生位置や音源Blobは保存しない。
       audioTrackId: null,
-      // 音源帯を動かしたときだけの開始時刻。未設定ならシーンの開始位置を使う。
-      audioTimelineStartSeconds: null,
-      // 音源帯を短くしたときだけの終了時刻。未設定なら元の音源尺を使う。
-      audioTimelineEndSeconds: null,
       // セクション側は交換パッケージ、生成シーン側は元フォーメーションとの札を持つ。
       formation: null,
       formationLink: null,
@@ -5033,15 +5362,15 @@
 
   function defaultLayout() {
     return {
-      // 選んだものは、登録した出るものをそのまま舞台上で調整する流れに合わせて左列へ置く。
-      // 場面は絵のすぐ右に置く（順番を見ながら描くため）。
+      // 場面は絵のすぐ右に置く（順番を見ながら描くため）
       cols: {
-        project: "left", venue: "left", music: "left", cast: "left", inspector: "left", machinery: "left", rigs: "left", light: "left", background: "left",
-        study: "right", scenes: "right", save: "right", session: "right", ask: "right",
+        project: "left", venue: "left", music: "left", cast: "left", machinery: "left", rigs: "left", light: "left", background: "left",
+        study: "right", scenes: "right", inspector: "right", save: "right",
+        session: "right", ask: "right",
       },
       order: {
-        project: 0, venue: 1, music: 2, cast: 3, inspector: 4, machinery: 5, rigs: 6, light: 7, background: 8,
-        study: -1, scenes: 0, save: 1, session: 2, ask: 3,
+        project: 0, venue: 1, music: 2, cast: 3, machinery: 4, rigs: 5, light: 6, background: 7,
+        study: -1, scenes: 0, inspector: 1, save: 2, session: 3, ask: 4,
       },
       /* 共有は「会議のときだけ開く」もの。畳んだ状態から始める。
          保存の中の畳みだったころと同じ見え方にするため（開いた形で置くと、
@@ -5242,6 +5571,11 @@
     if (type === "pool") {
       normalized.water = clamp(finite(piece.water, 0.9), 0, 3);
       normalized.poolH = clamp(finite(piece.poolH, -3), -4, 0);
+    }
+    if (type === "light") {
+      const lightBehavior = normalizeLightBehavior(piece && piece.lightBehavior);
+      // 未指定の旧ショーに空のキーを書き戻さない。
+      if (lightBehavior) normalized.lightBehavior = lightBehavior;
     }
     return normalized;
   }
@@ -5525,9 +5859,6 @@
         ...base,
         sectionId,
         atSeconds: Math.round(clamp(finite(cue.atSeconds, 0), 0, 86400) * 10) / 10,
-        ...(typeof cue.songId === "string" && cue.songId && cue.songId !== "fallback"
-          ? { songId: cue.songId } : {}),
-        ...(cue.timelinePositionLocked === true ? { timelinePositionLocked: true } : {}),
       };
       const sceneId = typeof cue.sceneId === "string" ? cue.sceneId : null;
       if (!sceneId) return null;
@@ -5599,21 +5930,12 @@
       transitionNote: kind === "scene" && typeof raw.transitionNote === "string"
         ? raw.transitionNote.slice(0, 1000) : "",
       audioTrackId: normalizeAudioTrackId(kind, raw.audioTrackId),
-      audioTimelineStartSeconds: kind === "scene" ? rehearsalSeconds(raw.audioTimelineStartSeconds) : null,
-      audioTimelineEndSeconds: kind === "scene" ? rehearsalSeconds(raw.audioTimelineEndSeconds) : null,
       formation: normalizeSectionFormation(kind, raw.formation),
       formationLink: normalizeFormationLink(kind, raw.formationLink),
       lightingIntent: normalizeLightingIntent(kind, raw.lightingIntent),
       lightMotion: normalizeLightMotion(kind, raw.lightMotion),
       // 誤ってホイールへ触れても向きが変わらないよう、シーンごとに持つ
       facingLock: kind === "scene" ? Boolean(raw.facingLock) : false,
-      // 時間帯を持つシーンは開始・終了のどちらを固定するかを記録する。
-      // 以前の真偽値は開始固定として読み替えるため、既存ショーを変えずに読める。
-      ...(kind === "scene" && (raw.timelineRangeLock === "start" || raw.timelineRangeLock === "end")
-        ? { timelineRangeLock: raw.timelineRangeLock }
-        : kind === "scene" && raw.timelinePositionLocked === true ? { timelineRangeLock: "start" } : {}),
-      ...(kind === "scene" && (raw.transitionRangeLock === "start" || raw.transitionRangeLock === "end")
-        ? { transitionRangeLock: raw.transitionRangeLock } : {}),
       // 暗転で始まるシーン（転換が一度真っ暗になってから明ける）
       blackout: kind === "scene" ? Boolean(raw.blackout) : false,
       /* 舞台から下げたものの置き場所の控え（setId ごとに一つ）。
@@ -5790,23 +6112,6 @@
     return scenes;
   }
 
-  /* 階層から出す番号は表示専用で、ショーデータの場面名には保存しない。
-     自動生成JSONが同じ番号を場面名の先頭へ入れていても、読み込み後は一つの
-     番号札だけを使う。現在の構造と一致する場合に限るので、「2-2」という
-     作品固有の名称や、並び替え前の古い番号を勝手に消さない。 */
-  function mergeGeneratedSceneNumberIntoHierarchy(scenes) {
-    const numbers = sceneNumberMap(scenes);
-    scenes.forEach((scene) => {
-      const number = numbers.get(scene.id);
-      const title = typeof scene.title === "string" ? scene.title.trim() : "";
-      if (!number || !title) return;
-      const escaped = number.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const prefix = new RegExp(`^${escaped}(?:(?:[\\s\\u3000]+)|(?:[.．:：、][\\s\\u3000]*))+`);
-      const merged = title.replace(prefix, "").trim();
-      if (merged) scene.title = merged;
-    });
-  }
-
   function normalizeState(raw) {
     if (!raw || typeof raw !== "object") return baseState(true);
     const fallback = baseState(false);
@@ -5836,7 +6141,6 @@
     wrapUnsectionedSceneRuns(scenes,
       () => newScene(sectionTitle(++generatedSectionCount), false, "section", 0));
     if (!scenes.some((x) => x.kind === "scene")) scenes = addMissingSceneInsideSection(scenes);
-    mergeGeneratedSceneNumberIntoHierarchy(scenes);
     const wanted = scenes.find((x) => x.id === rawProject.activeSceneId && x.kind === "scene");
     const activeId = wanted ? wanted.id : scenes.find((x) => x.kind === "scene").id;
 
@@ -5878,7 +6182,7 @@
         sets: Array.isArray(rawProject.sets)
           ? rawProject.sets.map((t, i) => {
               const kind = SET_KINDS[t && t.kind] ? t.kind : (t && t.kind === "ring" ? "sphere" : "block");
-              return {
+              const normalizedSet = {
                 id: typeof t.id === "string" ? t.id : rid("set"),
                 kind,
                 name: typeof t.name === "string" && t.name.trim() ? t.name.slice(0, 24) : `セット ${i + 1}`,
@@ -5922,6 +6226,12 @@
                     beam: normalizeBeam(t.preset.beam, t.preset) }
                   : undefined,
               };
+              if (kind === "light") {
+                const lightCapability = normalizeLightCapability(t && t.lightCapability);
+                // 未指定の旧ショーに空のキーを書き戻さない。
+                if (lightCapability) normalizedSet.lightCapability = lightCapability;
+              }
+              return normalizedSet;
             })
           : [],
         rigs: Array.isArray(rawProject.rigs)
@@ -6019,9 +6329,6 @@
      ★黙って {} に落として書き直すと、読めなかった他のショーが
        いま開いている1本で置き換わって消える。それを防ぐための関所。 */
   let shelfCorrupt = false;
-  // A failed migration backup blocks current-show and shelf writes for this launch.
-  // Editing and JSON export remain available; restart only after preserving the draft.
-  let sectionMigrationSaveWarning = "";
 
   function markShelfCorrupt(rawText) {
     if (shelfCorrupt) return;
@@ -6072,7 +6379,7 @@
   }
 
   function pruneOrphanAudioSoon() {
-    if (sectionMigrationSaveWarning || !audioStore || typeof audioStore.pruneExcept !== "function") return;
+    if (!audioStore || typeof audioStore.pruneExcept !== "function") return;
     const liveIds = liveAudioTrackIdsForGc();
     if (!liveIds) return;
     setTimeout(() => { audioStore.pruneExcept(liveIds).catch(() => {}); }, 0);
@@ -6085,7 +6392,7 @@
   function writeShows(shows) {
     /* 棚が壊れているときは絶対に書かない。ここで書くと、読めなかったショーが
        いま開いている1本で置き換わって消える。 */
-    if (shelfCorrupt || sectionMigrationSaveWarning) return false;
+    if (shelfCorrupt) return false;
     try {
       localStorage.setItem(SHOWS_KEY, JSON.stringify(shows));
       shelfFailed = false;
@@ -6152,7 +6459,7 @@
       if (!requestedId) project.id = rid("show");
       return;
     }
-    const savedProject = existing.project || {};
+    const savedProject = existing.state.project || {};
     const importedProject = { ...project };
     const savedComparable = { ...savedProject };
     delete importedProject.id;
@@ -6199,16 +6506,6 @@
   let audioPanelSignature = "";
   let audioLoadGeneration = 0;
   let continueAudioOnNextSceneSync = false;
-  // Runtime-only transport source; never rewrite scene assignments or show JSON.
-  let timelineAudioContext = null;
-  function currentAudioTrackId() {
-    const context = timelineAudioContext;
-    if (document.body.dataset.stageWorkspaceMode === "timeline" && context
-        && context.projectId === state.project.id
-        && context.sceneIds.includes(state.project.activeSceneId)
-        && audioTrackById(context.trackId)) return context.trackId;
-    return normalizeAudioTrackId("scene", sc().audioTrackId);
-  }
   const audioPlayback = {
     trackId: null,
     objectUrl: null,
@@ -6258,7 +6555,6 @@
   }
 
   function clearAudioEngine() {
-    timelineAudioContext = null;
     audioLoadGeneration += 1;
     if (els.musicAudio) {
       els.musicAudio.pause();
@@ -6301,7 +6597,7 @@
        押せないボタンと「音なし 0:00 / 0:00」だけが並んでいても意味がなく、
        場面の情報を1段ぶん押し下げるだけだった（2026-08-28 本人指摘）。 */
     if (els.sceneMusic) els.sceneMusic.hidden = audioTracks().length === 0;
-    const assignedId = currentAudioTrackId();
+    const assignedId = normalizeAudioTrackId("scene", sc().audioTrackId);
     const track = audioTrackById(assignedId);
     const title = track ? track.title : (assignedId
       ? (tx("不明な楽曲"))
@@ -6347,7 +6643,7 @@
   }
 
   async function prepareAudioForCurrentScene(options = {}) {
-    const nextId = currentAudioTrackId();
+    const nextId = normalizeAudioTrackId("scene", sc().audioTrackId);
     const transition = audioSceneTransition(audioPlayback.trackId, nextId, options.continuePlayback);
 
     if (!options.force && nextId && audioPlayback.trackId === nextId) {
@@ -6418,8 +6714,7 @@
   }
 
   async function toggleAudioPlayback() {
-    const trackId = currentAudioTrackId();
-    if (!trackId) {
+    if (!sc().audioTrackId) {
       setAudioStatus("このシーンには曲が割り当てられていません。",
         "No track is assigned to this scene.");
       return;
@@ -6428,7 +6723,7 @@
       els.musicAudio.pause();
       return;
     }
-    if (audioPlayback.ready && audioPlayback.trackId === trackId) {
+    if (audioPlayback.ready && audioPlayback.trackId === sc().audioTrackId) {
       await tryPlayCurrentAudio();
       return;
     }
@@ -6528,7 +6823,7 @@
         "This audio cannot be played. Choose an MP3, M4A/AAC or WAV file.");
       return false;
     }
-    const track = { id: rid("track"), title: audioFileTitle(file), durationSeconds: duration, gainDb: 0, timelineFadeOut: false };
+    const track = { id: rid("track"), title: audioFileTitle(file), durationSeconds: duration, gainDb: 0 };
     setAudioStatus(`「${track.title}」を端末へ保存しています…`, `Saving “${track.title}” on this device…`);
     try {
       await audioStore.put(track.id, file);
@@ -6541,8 +6836,6 @@
     audioTracks().push(track);
     selectedAudioTrackId = track.id;
     sc().audioTrackId = track.id;
-    sc().audioTimelineStartSeconds = null;
-    sc().audioTimelineEndSeconds = null;
     audioPanelSignature = "";
     continueAudioOnNextSceneSync = false;
     renderScenes();
@@ -6593,7 +6886,7 @@
       let track = existingTrack;
       if (!track) {
         checkpoint();
-        track = { id: trackId, title: candidateTitle, durationSeconds: duration, gainDb: 0, timelineFadeOut: false };
+        track = { id: trackId, title: candidateTitle, durationSeconds: duration, gainDb: 0 };
         audioTracks().push(track);
       } else {
         track.durationSeconds = duration;
@@ -6631,8 +6924,6 @@
     const wasPlaying = affectsCurrent && els.musicAudio && !els.musicAudio.paused && audioPlayback.ready;
     checkpoint();
     scene.audioTrackId = nextId;
-    scene.audioTimelineStartSeconds = null;
-    scene.audioTimelineEndSeconds = null;
     if (nextId) selectedAudioTrackId = nextId;
     audioPanelSignature = "";
     if (affectsCurrent) continueAudioOnNextSceneSync = Boolean(wasPlaying);
@@ -6649,11 +6940,7 @@
     const wasPlaying = affected.some((scene) => scene.id === state.project.activeSceneId)
       && els.musicAudio && !els.musicAudio.paused && audioPlayback.ready;
     checkpoint();
-    affected.forEach((scene) => {
-      scene.audioTrackId = null;
-      scene.audioTimelineStartSeconds = null;
-      scene.audioTimelineEndSeconds = null;
-    });
+    affected.forEach((scene) => { scene.audioTrackId = null; });
     continueAudioOnNextSceneSync = Boolean(wasPlaying);
     audioPanelSignature = "";
     renderScenes();
@@ -6673,11 +6960,7 @@
     checkpoint();
     state.project.audioTracks = audioTracks().filter((candidate) => candidate.id !== trackId);
     state.project.scenes.forEach((scene) => {
-      if (scene.audioTrackId === trackId) {
-        scene.audioTrackId = null;
-        scene.audioTimelineStartSeconds = null;
-        scene.audioTimelineEndSeconds = null;
-      }
+      if (scene.audioTrackId === trackId) scene.audioTrackId = null;
     });
     selectedAudioTrackId = state.project.audioTracks[0]?.id || null;
     if (affectsCurrent) continueAudioOnNextSceneSync = false;
@@ -6792,7 +7075,7 @@
   }
 
   function openCurrentAudioRelinkPicker(input = els.musicRelinkFile) {
-    return openAudioRelinkPicker(currentAudioTrackId(), input);
+    return openAudioRelinkPicker(sc().audioTrackId, input);
   }
 
   function initStageAudio() {
@@ -6809,7 +7092,7 @@
     if (els.musicRelink) els.musicRelink.addEventListener("click", () => openCurrentAudioRelinkPicker());
     if (els.musicRelinkFile) els.musicRelinkFile.addEventListener("change", async () => {
       const file = els.musicRelinkFile.files && els.musicRelinkFile.files[0];
-      const trackId = els.musicRelinkFile.dataset.trackId || currentAudioTrackId();
+      const trackId = els.musicRelinkFile.dataset.trackId || sc().audioTrackId;
       els.musicRelinkFile.value = "";
       if (file) await relinkAudioFile(trackId, file);
     });
@@ -7148,7 +7431,7 @@
         trackId = rid("track");
         track = { id: trackId, title: String(entry.name || "音源").replace(/\.[^.]+$/, ""),
           durationSeconds: Number.isFinite(Number(entry.durationSeconds)) ? Number(entry.durationSeconds) : null,
-          gainDb: 0, timelineFadeOut: false };
+          gainDb: 0 };
         await audioStore.put(trackId, entry.blob);
         audioTracks().push(track);
       } else {
@@ -7369,8 +7652,6 @@
   }
 
   function syncFormationPlaybackAtTime() {
-    // Timeline samples this same formation from its own transport, including silent playback.
-    if (document.body.dataset.stageWorkspaceMode === "timeline") return false;
     const link = sc() && sc().formationLink;
     if (!link || !els.musicAudio || audioPlayback.trackId !== sc().audioTrackId) return false;
     const owner = formationOwnerByDocument(link.documentId), pkg = owner && owner.formation.package;
@@ -8374,16 +8655,8 @@
   function persistSoon() {
     if (STUDY_READ_ONLY) return;
     clearTimeout(saveTimer);
-    if (sectionMigrationSaveWarning) {
-      setSaveStatus(sectionMigrationSaveWarning, "warn");
-      return;
-    }
     setSaveStatus(tx("変更を保存しています…") || "Saving…");
     saveTimer = setTimeout(() => {
-      if (sectionMigrationSaveWarning) {
-        setSaveStatus(sectionMigrationSaveWarning, "warn");
-        return;
-      }
       try {
         localStorage.setItem(STORAGE_KEY, snapshot());
         shelveCurrent();
@@ -8417,48 +8690,6 @@
     els.live.textContent = "";
     requestAnimationFrame(() => { els.live.textContent = message; });
   }
-
-  let timelineCuePopTimer = 0;
-  function timelineCuePopDurationMs() {
-    const raw = getComputedStyle(document.documentElement)
-      .getPropertyValue("--stage-timeline-cue-pop-duration").trim();
-    return Math.max(0, Number.parseFloat(raw) || 1800);
-  }
-
-  // 実行指示ではなく、打ち合わせ用に「いま通過した記号」を図へ重ねるだけの表示。
-  function showTimelineCuePop(detail) {
-    const cues = Array.isArray(detail && detail.cues) ? detail.cues : [];
-    const cue = cues[cues.length - 1];
-    if (!cue) return;
-    const title = String(cue.displayName || "キュー");
-    const position = String(cue.positionLabel || "");
-    const memo = String(cue.memo || "").trim();
-    const overflow = cues.length > 1 ? `・ほか${cues.length - 1}件` : "";
-    const pops = [...document.querySelectorAll("[data-stage-timeline-cue-pop]")];
-    if (!pops.length) return;
-    window.clearTimeout(timelineCuePopTimer);
-    pops.forEach((pop) => {
-      pop.querySelector(".stage-timeline-cue-pop-title").textContent = title;
-      pop.querySelector(".stage-timeline-cue-pop-position").textContent = `${position}${overflow}`;
-      const memoNode = pop.querySelector(".stage-timeline-cue-pop-memo");
-      memoNode.textContent = memo;
-      memoNode.hidden = !memo;
-      pop.hidden = false;
-      pop.classList.remove("is-visible");
-      void pop.offsetWidth;
-      pop.classList.add("is-visible");
-    });
-    timelineCuePopTimer = window.setTimeout(() => {
-      pops.forEach((pop) => {
-        pop.classList.remove("is-visible");
-        pop.hidden = true;
-      });
-    }, timelineCuePopDurationMs());
-  }
-
-  window.addEventListener("stage-timeline-cue-passed", (event) => {
-    showTimelineCuePop(event.detail);
-  });
 
   function rgba(hex, alpha) {
     const value = parseInt(hex.slice(1), 16);
@@ -10475,16 +10706,32 @@
     return { x: pos.x, y: L.tilt(raiseRaw(pos.rawY, b.toH, L)) };
   }
 
+  // 選択灯ワンダーは保存したseedから描画時に狙い点を導く。駒の通常座標は書き換えず、
+  // scene.lightMotion（場面全体の動き案）にも依存しない。
+  function selectedLightMotionTarget(piece, timeMs = (typeof performance !== "undefined" ? performance.now() : Date.now())) {
+    const behavior = piece && piece.lightBehavior;
+    const model = window.SHOSAI_STAGE_SELECTED_LIGHT_MOTION_PRESETS;
+    return behavior && behavior.motion && model ? model.positionAt(behavior.motion, timeMs) : null;
+  }
+
+  function selectedLightTimeEffectActive(piece) {
+    const behavior = piece && piece.lightBehavior;
+    return Boolean(behavior && behavior.version === 1 && (
+      (behavior.strobe && behavior.strobe.kind === "stage-strobe" && behavior.strobe.version === 1)
+      || (behavior.chase && behavior.chase.kind === "curtain-chase" && behavior.chase.version === 1)
+    ));
+  }
+
   /* 光の実際の終点。灯体(高さh)→当たる点(高さtoH)の線を実寸のまま延長し、
      床（高さ0）に着く所を終点にする。床より先に袖の幕・奥や手前・天井に
      着くならそこで止める（hh>0＝幕などへの丸い当たり）。
      ★正面と平面の両方がこれを使う。片方だけだと二つの図で終点が食い違う。 */
-  function beamLanding(piece, size) {
+  function beamLanding(piece, size, targetOverride = null) {
     const b = piece.beam || normalizeBeam(null, piece);
     const su = piece.animBeamU === undefined ? b.u : piece.animBeamU;
     const sv = piece.animBeamV === undefined ? b.v : piece.animBeamV;
-    const au = pieceU(piece);
-    const av = pieceV(piece);
+    const au = targetOverride ? targetOverride.u : pieceU(piece);
+    const av = targetOverride ? targetOverride.v : pieceV(piece);
     let tEnd = Infinity;
     if (b.h > b.toH + 0.01) tEnd = b.h / (b.h - b.toH);                          // 床に着く倍率
     else if (b.toH > b.h + 0.01) tEnd = ((size.height || 8) - b.h) / (b.toH - b.h);  // 下から上は天井まで
@@ -10512,12 +10759,16 @@
   const BEAM_SOFT = 1.26;
 
   function drawLight(target, piece, pos, scale, L) {
+    const movingTarget = selectedLightMotionTarget(piece);
+    const timeEffectIntensity = selectedLightTimeEffectIntensity(piece.lightBehavior,
+      typeof performance !== "undefined" ? performance.now() : Date.now());
+    const displayPos = movingTarget ? place(movingTarget.u, movingTarget.v, L) : pos;
     // 照明の円の直径を実寸（m）で持つ。床の1m枡で広さを読めるようにするため
     const dim = pieceDims(piece);
-    const per = perMetre(pos, L);
+    const per = perMetre(displayPos, L);
     const spread = Math.max(6, ((dim && dim.dia) || 4) / 2 * per.x);
     const src = beamSource(piece, L);
-    const hit = beamTarget(piece, pos, L);
+    const hit = beamTarget(piece, displayPos, L);
     const lit = !pitchStyle && tool === "light";
     const picked = piece.id === selectedId;
     /* 光の強さ。塗りの濃さをまとめて割り増し・割り引きする。
@@ -10526,14 +10777,14 @@
     const glow = piece.animGlow !== undefined
       ? clamp(finite(piece.animGlow, 1), 0, 1.5)
       : clamp(finite(piece.glow, 1), 0.1, 1.5);
-    const ga = (a) => Math.min(1, a * glow);
+    const ga = (a) => Math.min(1, a * glow * timeEffectIntensity);
 
     if (L.plan) {
       /* 平面でも、光の落ちる円は「実際の終点」に描く（beamLanding）。
          ★以前は当たる点（toHの高さ）で円を描いていたため、SSのように途中の
            高さを狙う明かりで、正面図は反対側の幕まで光が伸びるのに、
            平面図は途中で止まる——二つの図の終点が食い違っていた（本人の指摘）。 */
-      const land = beamLanding(piece, L.size);
+      const land = beamLanding(piece, L.size, movingTarget);
       const endPos = place(land.eu, land.ev, L);
       const spreadEnd = Math.max(6, ((dim && dim.dia) || 4) / 2 * L.pxPerM * land.tEnd);
       target.save();
@@ -10589,7 +10840,7 @@
      *   体を過ぎた光は床か幕まで進んで、そこに落ちる。当たる高さで帯を切ると
      *   光の輪が宙に浮いて見える（実際にそう見えていた）。
      *   終点の計算は平面と共通（beamLanding）。二つの図で同じ場所に落とす。 */
-    const land = beamLanding(piece, L.size);
+    const land = beamLanding(piece, L.size, movingTarget);
     const endPos = place(land.eu, land.ev, L);
     const perEnd = perMetre(endPos, L);
     const end = { x: endPos.x, y: L.tilt(raiseRaw(endPos.rawY, land.hh, L)) };
@@ -13655,6 +13906,24 @@
     venueSize: () => ({ ...venueSize() }),
   });
 
+  let selectedLightMotionRaf = 0;
+  function scheduleSelectedLightMotionRender() {
+    const scene = sc();
+    const active = Boolean(!document.hidden && (state.showFront || state.showPlan)
+      && scene && scene.pieces && scene.pieces.some((piece) => selectedLightMotionTarget(piece) || selectedLightTimeEffectActive(piece)));
+    if (!active) {
+      if (selectedLightMotionRaf) cancelAnimationFrame(selectedLightMotionRaf);
+      selectedLightMotionRaf = 0;
+      return;
+    }
+    if (!selectedLightMotionRaf) {
+      selectedLightMotionRaf = requestAnimationFrame(() => {
+        selectedLightMotionRaf = 0;
+        render();
+      });
+    }
+  }
+
   function render(forceCanvases = false) {
     syncMultiSelectionControls();
     if (STUDY_READ_ONLY) {
@@ -13678,7 +13947,8 @@
       .map((type) => `${pieceTypeName(type)} ${sc().pieces.filter((piece) => piece.type === type).length}`)
       .join(tx("、"));
 
-    // 片面表示で閉じた図はCSSで枠ごと隠し、表示中の図の切替ボタンから戻せるようにする。
+    // 閉じてもバーは残す。ここから開き直せるので「見る向き」の項目は要らない。
+    // セル自体は隠さない（隠すとバーごと消え、開き直す入口が無くなる）
     if (els.frontCell) els.frontCell.hidden = false;
     if (els.planCell) els.planCell.hidden = false;
     if (els.frontInner) els.frontInner.hidden = !state.showFront;
@@ -13715,7 +13985,7 @@
     syncPropMoves();
     syncPhoneViewer();
     renderAudioPanel();
-    const wantedAudioId = currentAudioTrackId();
+    const wantedAudioId = normalizeAudioTrackId("scene", sc().audioTrackId);
     const missingAudioMetadata = Boolean(wantedAudioId && !audioTrackById(wantedAudioId));
     if (wantedAudioId !== audioPlayback.trackId || (missingAudioMetadata && !audioPlayback.missing)) {
       const shouldContinue = continueAudioOnNextSceneSync;
@@ -13728,6 +13998,7 @@
       continueAudioOnNextSceneSync = false;
       syncAudioControls();
     }
+    scheduleSelectedLightMotionRender();
   }
 
   /* 絵の上の送り。いま何場面目かを添えて、端では押せなくする。
@@ -17065,6 +17336,300 @@
     els.lightPresetBackdrop.hidden = true;
   }
 
+  /* P2b: 複数選択した灯だけへ静止型を当てる。lightGroupを展開せず、
+     既存の灯体位置・色・beamの高さは残す。 */
+  function selectedLightStaticPieces() {
+    const pieces = selectedPieces();
+    return pieces.length >= 2 && pieces.every((piece) => piece.type === "light") ? pieces : [];
+  }
+
+  function closeSelectedLightPresetModal() {
+    if (els.selectedLightPresetModal) els.selectedLightPresetModal.hidden = true;
+    if (els.selectedLightPresetBackdrop) els.selectedLightPresetBackdrop.hidden = true;
+  }
+
+  let selectedLightCustomRegion = null;
+  let selectedLightCustomDragStart = null;
+  let selectedLightCustomMode = "static";
+  const defaultSelectedLightCustomRegion = () => ({ kind: "rect", u0: 0.2, v0: 0.25, u1: 0.8, v1: 0.75 });
+  const selectedLightCustomRegionValue = () => normalizeStaticRect(selectedLightCustomRegion);
+  function drawSelectedLightCustomRegion() {
+    const canvas = els.selectedLightCustomCanvas;
+    const region = selectedLightCustomRegionValue();
+    if (!canvas || !region) return;
+    const context = canvas.getContext("2d");
+    const width = canvas.width, height = canvas.height;
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = "#17130f";
+    context.fillRect(0, 0, width, height);
+    context.strokeStyle = "rgba(239, 231, 214, 0.18)";
+    context.lineWidth = 1;
+    for (let index = 1; index < 4; index += 1) {
+      context.beginPath(); context.moveTo(width * index / 4, 0); context.lineTo(width * index / 4, height); context.stroke();
+      context.beginPath(); context.moveTo(0, height * index / 4); context.lineTo(width, height * index / 4); context.stroke();
+    }
+    const x = region.u0 * width, y = region.v0 * height;
+    const regionWidth = (region.u1 - region.u0) * width, regionHeight = (region.v1 - region.v0) * height;
+    context.fillStyle = "rgba(211, 172, 89, 0.22)";
+    context.fillRect(x, y, regionWidth, regionHeight);
+    context.strokeStyle = "#d3ac59";
+    context.lineWidth = 2;
+    context.strokeRect(x, y, regionWidth, regionHeight);
+  }
+  function syncSelectedLightCustomRegion() {
+    const region = selectedLightCustomRegionValue();
+    if (!region) {
+      if (els.selectedLightCustomApply) els.selectedLightCustomApply.disabled = true;
+      return;
+    }
+    const controls = [
+      [els.selectedLightCustomLeft, region.u0], [els.selectedLightCustomRight, region.u1],
+      [els.selectedLightCustomBack, region.v0], [els.selectedLightCustomFront, region.v1],
+    ];
+    controls.forEach(([control, value]) => { if (control) control.value = String(Math.round(value * 100)); });
+    if (els.selectedLightCustomApply) els.selectedLightCustomApply.disabled = false;
+    drawSelectedLightCustomRegion();
+  }
+  function setSelectedLightCustomRegion(raw) {
+    const values = [raw.u0, raw.u1, raw.v0, raw.v1].map(Number);
+    if (!values.every(Number.isFinite)) return;
+    selectedLightCustomRegion = {
+      kind: "rect", u0: staticClamp(Math.min(values[0], values[1])), v0: staticClamp(Math.min(values[2], values[3])),
+      u1: staticClamp(Math.max(values[0], values[1])), v1: staticClamp(Math.max(values[2], values[3])),
+    };
+    syncSelectedLightCustomRegion();
+  }
+  function openSelectedLightCustomRegion(mode = "static") {
+    if (!els.selectedLightCustomRegion || !els.selectedLightPresetGroups) return;
+    selectedLightCustomMode = mode === "motion" ? "motion" : "static";
+    const activeMotion = selectedLightWanderPieces()[0];
+    const currentRegion = activeMotion && activeMotion.lightBehavior && activeMotion.lightBehavior.motion && activeMotion.lightBehavior.motion.region;
+    selectedLightCustomRegion = selectedLightCustomMode === "motion"
+      ? (normalizeStaticRect(currentRegion) || defaultSelectedLightCustomRegion())
+      : defaultSelectedLightCustomRegion();
+    if (els.selectedLightCustomTitle) els.selectedLightCustomTitle.textContent = selectedLightCustomMode === "motion" ? "動く範囲を決める" : "照らす範囲を決める";
+    if (els.selectedLightCustomIntro) els.selectedLightCustomIntro.textContent = selectedLightCustomMode === "motion"
+      ? "舞台図をドラッグして、ワンダーが巡る矩形を決めます。客席側には広がりません。"
+      : "舞台図をドラッグして矩形を描くか、4辺を調整します。客席側には広がりません。";
+    if (els.selectedLightCustomApply) els.selectedLightCustomApply.textContent = selectedLightCustomMode === "motion" ? "この範囲で動かす" : "この範囲に適用";
+    els.selectedLightPresetGroups.hidden = true;
+    if (els.selectedLightWanderAdjust) els.selectedLightWanderAdjust.hidden = true;
+    els.selectedLightCustomRegion.hidden = false;
+    syncSelectedLightCustomRegion();
+    if (els.selectedLightCustomCanvas) els.selectedLightCustomCanvas.focus();
+  }
+  function closeSelectedLightCustomRegion() {
+    if (els.selectedLightCustomRegion) els.selectedLightCustomRegion.hidden = true;
+    if (els.selectedLightPresetGroups) els.selectedLightPresetGroups.hidden = false;
+    if (els.selectedLightWanderAdjust) renderSelectedLightWanderAdjust();
+    selectedLightCustomRegion = null;
+    selectedLightCustomDragStart = null;
+    selectedLightCustomMode = "static";
+  }
+
+  function applySelectedLightStaticPreset(presetId, options = {}) {
+    const selected = selectedLightStaticPieces();
+    const model = window.SHOSAI_STAGE_SELECTED_LIGHT_STATIC_PRESETS;
+    const result = model && model.apply(selected, presetId, options);
+    if (!result || result.status !== "applied") {
+      announce("選んだ灯へ型を適用できませんでした。");
+      return;
+    }
+    const replacements = new Map(result.pieces.map((piece) => [piece.id, piece]));
+    checkpoint();
+    sc().pieces = sc().pieces.map((piece) => replacements.get(piece.id) || piece);
+    updateInspector();
+    render();
+    persistSoon();
+    announce(`選んだ${selected.length}灯に「${result.preset.label}」を適用しました。`);
+  }
+
+  function selectedLightMovingPieces() {
+    const movingSetIds = new Set((state.project.sets || [])
+      .filter((item) => item.kind === "light" && normalizeLightCapability(item.lightCapability)?.motion === "moving")
+      .map((item) => item.id));
+    return selectedLightStaticPieces().filter((piece) => movingSetIds.has(piece.setId));
+  }
+  function selectedLightWanderPieces() {
+    return selectedLightMovingPieces().filter((piece) => {
+      const motion = piece.lightBehavior && piece.lightBehavior.motion;
+      return motion && motion.kind === "wander-stage" && motion.pathVersion === 1;
+    });
+  }
+  function renderSelectedLightWanderAdjust() {
+    const active = selectedLightWanderPieces();
+    if (!els.selectedLightWanderAdjust) return;
+    els.selectedLightWanderAdjust.hidden = !active.length;
+    if (!active.length) return;
+    const motion = active[0].lightBehavior.motion;
+    const loopSec = Math.round(staticClamp(motion.loopSec, 4, 20));
+    const irregularity = Math.round(staticClamp(motion.irregularity, 0, 1) * 100);
+    if (els.selectedLightWanderSummary) els.selectedLightWanderSummary.textContent = `選んだムービング${active.length}灯に適用中です。ここで同じ設定へそろえます。`;
+    if (els.selectedLightWanderLoop) els.selectedLightWanderLoop.value = String(loopSec);
+    if (els.selectedLightWanderIrregularity) els.selectedLightWanderIrregularity.value = String(irregularity);
+    if (els.selectedLightWanderIrregularityValue) els.selectedLightWanderIrregularityValue.textContent = `${irregularity}%`;
+  }
+  function updateSelectedLightWander(options = {}, message = "動きを調整しました。") {
+    const selected = selectedLightWanderPieces();
+    if (!selected.length) {
+      announce("舞台内ワンダーを適用したムービング灯を選ぶと、調整できます。");
+      return false;
+    }
+    const model = window.SHOSAI_STAGE_SELECTED_LIGHT_MOTION_PRESETS;
+    const result = model && model.adjust(selected, options);
+    if (!result || result.status !== "applied") return false;
+    const replacements = new Map(result.pieces.map((piece) => [piece.id, piece]));
+    checkpoint();
+    sc().pieces = sc().pieces.map((piece) => replacements.get(piece.id) || piece);
+    closeSelectedLightPresetModal();
+    updateInspector();
+    render();
+    persistSoon();
+    renderSelectedLightWanderAdjust();
+    announce(message);
+    return true;
+  }
+  function stopSelectedLightWander() {
+    const selected = selectedLightWanderPieces();
+    if (!selected.length) return;
+    const model = window.SHOSAI_STAGE_SELECTED_LIGHT_MOTION_PRESETS;
+    const result = model && model.stop(selected);
+    if (!result || result.status !== "applied") return;
+    const replacements = new Map(result.pieces.map((piece) => [piece.id, piece]));
+    checkpoint();
+    sc().pieces = sc().pieces.map((piece) => replacements.get(piece.id) || piece);
+    updateInspector();
+    render();
+    persistSoon();
+    renderSelectedLightWanderAdjust();
+    announce(`選んだ${selected.length}灯の動きを止めました。`);
+  }
+  function applySelectedLightWanderPreset() {
+    const selected = selectedLightStaticPieces();
+    const model = window.SHOSAI_STAGE_SELECTED_LIGHT_MOTION_PRESETS;
+    const result = model && model.apply(selected, state.project.sets, { seed: 2841, loopSec: 10, irregularity: 0.55 });
+    if (!result || result.status !== "applied") {
+      announce("ムービング灯を選ぶと、舞台内ワンダーを適用できます。");
+      return;
+    }
+    const replacements = new Map(result.pieces.map((piece) => [piece.id, piece]));
+    checkpoint();
+    sc().pieces = sc().pieces.map((piece) => replacements.get(piece.id) || piece);
+    closeSelectedLightPresetModal();
+    updateInspector();
+    render();
+    persistSoon();
+    const skipped = result.skipped && result.skipped.length;
+    announce(`ムービング${selected.length - skipped}灯に「${result.preset.label}」を適用しました。${skipped ? ` 固定${skipped}灯は変えていません。` : ""}`);
+  }
+  function selectedLightTimeEffectApplied(presetId) {
+    const scope = presetId === "effect.strobe.stage" ? "strobe" : "chase";
+    const expected = scope === "strobe" ? "stage-strobe" : "curtain-chase";
+    const selected = selectedLightStaticPieces();
+    return Boolean(selected.length && selected.every((piece) => {
+      const effect = piece.lightBehavior && piece.lightBehavior[scope];
+      return effect && effect.kind === expected && effect.version === 1;
+    }));
+  }
+  function applySelectedLightTimeEffect(presetId) {
+    const selected = selectedLightStaticPieces();
+    const model = window.SHOSAI_STAGE_SELECTED_LIGHT_TIME_EFFECT_PRESETS;
+    const result = model && model.apply(selected, presetId);
+    if (!result || result.status !== "applied") {
+      announce("平面図で灯を2つ以上選ぶと、時間変化を適用できます。");
+      return;
+    }
+    const replacements = new Map(result.pieces.map((piece) => [piece.id, piece]));
+    checkpoint();
+    sc().pieces = sc().pieces.map((piece) => replacements.get(piece.id) || piece);
+    closeSelectedLightPresetModal();
+    updateInspector();
+    render();
+    persistSoon();
+    announce(result.cleared ? `選んだ${selected.length}灯の「${result.preset.label}」を止めました。` : `選んだ${selected.length}灯に「${result.preset.label}」を適用しました。`);
+  }
+
+  function openSelectedLightPresetModal() {
+    const selected = selectedLightStaticPieces();
+    if (!selected.length) {
+      announce("平面図で灯を2つ以上選ぶと、型を使えます。");
+      return;
+    }
+    if (!confirmLightingVenueDependency() || !els.selectedLightPresetModal || !els.selectedLightPresetGroups) return;
+    if (els.selectedLightPresetSummary) {
+      const moving = selectedLightMovingPieces().length;
+      els.selectedLightPresetSummary.textContent = `${selected.length}灯が対象です。選んだ灯だけを変え、組全体へは広げません。ムービング灯は${moving}灯です。`;
+    }
+    els.selectedLightPresetGroups.replaceChildren();
+    closeSelectedLightCustomRegion();
+    renderSelectedLightWanderAdjust();
+    const model = window.SHOSAI_STAGE_SELECTED_LIGHT_STATIC_PRESETS;
+    const descriptions = {
+      "aim.converge": "同じ一点へ", "aim.row": "横方向へ均等に", "aim.depth": "奥行きへ均等に", "aim.cross": "左右を反転して",
+      "area.full": "舞台全域へ", "area.left": "下手側だけへ", "area.right": "上手側だけへ", "area.front": "客席寄りへ", "area.back": "奥側へ", "area.custom": "舞台内で範囲を描く",
+      "value.alternate": "明・暗を交互に", "value.center": "中央ほど明るく", "show.curtain": "幕のように連ねる",
+    };
+    ["狙い", "範囲", "見せ方"].forEach((family) => {
+      const presets = (model && model.presets || []).filter((preset) => preset.family === family);
+      if (!presets.length) return;
+      const group = document.createElement("section");
+      group.className = "stage-selected-light-preset-group";
+      const title = document.createElement("h3");
+      title.textContent = family;
+      const cards = document.createElement("div");
+      cards.className = "stage-selected-light-preset-cards";
+      presets.forEach((preset) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "stage-selected-light-preset-card";
+        card.textContent = preset.label;
+        const detail = document.createElement("span");
+        detail.textContent = descriptions[preset.id] || "選んだ灯に適用";
+        card.append(detail);
+        card.addEventListener("click", () => preset.id === "area.custom" ? openSelectedLightCustomRegion() : applySelectedLightStaticPreset(preset.id));
+        cards.append(card);
+      });
+      group.append(title, cards);
+      els.selectedLightPresetGroups.append(group);
+    });
+    const motionGroup = document.createElement("section");
+    motionGroup.className = "stage-selected-light-preset-group";
+    const motionTitle = document.createElement("h3");
+    motionTitle.textContent = "動き・時間変化";
+    const motionCards = document.createElement("div");
+    motionCards.className = "stage-selected-light-preset-cards";
+    const wanderCard = document.createElement("button");
+    wanderCard.type = "button";
+    wanderCard.className = "stage-selected-light-preset-card";
+    wanderCard.textContent = "舞台内をランダムに巡る";
+    const moving = selectedLightMovingPieces();
+    const wanderDetail = document.createElement("span");
+    wanderDetail.textContent = moving.length ? `固定seedで再現する舞台内の動き（ムービング${moving.length}灯）` : "ムービング灯を選ぶと使えます";
+    wanderCard.disabled = !moving.length;
+    wanderCard.append(wanderDetail);
+    wanderCard.addEventListener("click", applySelectedLightWanderPreset);
+    motionCards.append(wanderCard);
+    const effectModel = window.SHOSAI_STAGE_SELECTED_LIGHT_TIME_EFFECT_PRESETS;
+    (effectModel && effectModel.presets || []).forEach((preset) => {
+      const active = selectedLightTimeEffectApplied(preset.id);
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "stage-selected-light-preset-card";
+      card.textContent = active ? `${preset.label}を止める` : preset.label;
+      const detail = document.createElement("span");
+      detail.textContent = preset.id === "effect.strobe.stage"
+        ? (active ? "選んだ灯の点滅を解除" : "舞台内だけで明滅。狙いと明るさは残します")
+        : (active ? "選んだ灯の順送りを解除" : "選んだ灯を横順に明滅。舞台内の見え方だけを変えます");
+      card.append(detail);
+      card.addEventListener("click", () => applySelectedLightTimeEffect(preset.id));
+      motionCards.append(card);
+    });
+    motionGroup.append(motionTitle, motionCards);
+    els.selectedLightPresetGroups.append(motionGroup);
+    els.selectedLightPresetModal.hidden = false;
+    if (els.selectedLightPresetBackdrop) els.selectedLightPresetBackdrop.hidden = false;
+  }
+
   function buildLightPreset(key) {
     const preset = LIGHT_PRESETS[key];
     if (!preset) return;
@@ -18365,6 +18930,12 @@
       els.setInfoKindRow.hidden = item.kind !== "light";
       if (item.kind === "light" && els.setInfoKind) els.setInfoKind.value = lightKindOf(item);
     }
+    if (els.setInfoMotionRow) {
+      els.setInfoMotionRow.hidden = item.kind !== "light";
+      if (item.kind === "light" && els.setInfoMotion) {
+        els.setInfoMotion.value = normalizeLightCapability(item.lightCapability)?.motion || "fixed";
+      }
+    }
     if (els.setInfoPropShapeRow) {
       els.setInfoPropShapeRow.hidden = item.kind !== "prop";
       if (item.kind === "prop") renderPropShapeSelect(els.setInfoPropShape, item.propShape);
@@ -18797,9 +19368,9 @@
         controls.className = "stage-scene-transition-controls";
         const cueLabel = document.createElement("label");
         cueLabel.className = "stage-scene-transition-duration";
-        cueLabel.title = tx("空欄は上部のアニメ時間。旧保存値があれば互換表示します");
+        cueLabel.title = tx("空欄は上部のアニメ時間");
         const cueTitle = document.createElement("span");
-        cueTitle.textContent = tx("転換時間");
+        cueTitle.textContent = tx("転換の長さ");
         const cueValue = document.createElement("span");
         const cueInput = document.createElement("input");
         cueInput.type = "number";
@@ -18808,17 +19379,13 @@
         cueInput.step = "0.1";
         cueInput.inputMode = "decimal";
         cueInput.placeholder = "—";
-        const plannedSeconds = fromScene.rehearsal && Number(fromScene.rehearsal.transitionToNextSeconds);
-        cueInput.value = Number.isFinite(plannedSeconds) && plannedSeconds > 0
-          ? String(plannedSeconds) : toScene.cueSeconds === null ? "" : String(toScene.cueSeconds);
+        cueInput.value = toScene.cueSeconds === null ? "" : String(toScene.cueSeconds);
         cueInput.setAttribute(
           "aria-label",
-          `${tx("転換時間（秒）")}: ${fromScene.title} → ${toScene.title}。${tx("空欄は上部のアニメ時間")}`,
+          `${tx("転換の長さ（秒）")}: ${fromScene.title} → ${toScene.title}。${tx("空欄は上部のアニメ時間")}`,
         );
         cueInput.addEventListener("input", () => {
-          if (!fromScene.rehearsal) fromScene.rehearsal = normalizeSceneRehearsal(null);
-          fromScene.rehearsal.transitionToNextSeconds = normalizeCueSeconds(cueInput.value);
-          toScene.cueSeconds = null;
+          toScene.cueSeconds = normalizeCueSeconds(cueInput.value);
           persistSoon();
         });
         cueValue.append(cueInput, document.createTextNode(` ${tx("秒")}`));
@@ -18845,6 +19412,16 @@
           darkWord.textContent = tx("暗転");
           dark.append(darkBox, darkWord);
           controls.append(dark);
+        }
+
+        if ((position === "outgoing" || position === "between") && featureOn("sceneTiming")) {
+          const movement = makeRehearsalTimeInput(
+            fromScene,
+            "次のシーンへの移動時間",
+            "transitionToNextSeconds",
+          );
+          movement.className = "stage-scene-transition-movement";
+          controls.append(movement);
         }
 
         const noteLabel = document.createElement("label");
@@ -20050,12 +20627,11 @@
     return liveSpins;
   }
 
-  function beginSceneAnim(fromScene, liveSpinsIn, durationMs = null, timelineProgress = null) {
+  function beginSceneAnim(fromScene, liveSpinsIn, durationMs = null) {
     stopSceneAnim();
-    const liveSpins = timelineProgress !== null ? new Map()
-      : liveSpinsIn && liveSpinsIn.size ? liveSpinsIn : captureLiveSpins();
+    const liveSpins = liveSpinsIn && liveSpinsIn.size ? liveSpinsIn : captureLiveSpins();
     pauseSpinRun();
-    if ((!state.animateScenes && timelineProgress === null) || !fromScene) return false;
+    if (!state.animateScenes || !fromScene) return false;
     const rows = state.project.scenes.filter((row) => row.kind === "scene");
     const wasAt = rows.findIndex((row) => row.id === fromScene.id);
     const nowAt = rows.findIndex((row) => row.id === state.project.activeSceneId);
@@ -20171,20 +20747,14 @@
     const blackout = featureOn("blackout") && Boolean(sc().blackout);
     if (!pieces.length && !exits.length && !blackout) return false;
     const movers = pieces.concat(exits);
-    const sourceTransition = fromScene && fromScene.rehearsal
-      ? Number(fromScene.rehearsal.transitionToNextSeconds) : NaN;
-    const legacyArrivalTransition = sc().cueSeconds === null ? NaN : Number(sc().cueSeconds);
-    const span = durationMs != null && Number.isFinite(Number(durationMs))
+    const span = Number.isFinite(Number(durationMs))
       ? clamp(Number(durationMs), 100, 86400000)
-      : Number.isFinite(sourceTransition) && sourceTransition > 0
-        ? clamp(sourceTransition * 1000, 100, 86400000)
-        : Number.isFinite(legacyArrivalTransition) && legacyArrivalTransition > 0
-          ? clamp(legacyArrivalTransition * 1000, 100, 86400000)
-          : clamp(finite(state.sceneAnimMs, 2000), 200, 3000);
+      : sc().cueSeconds !== null
+        ? sc().cueSeconds * 1000
+        : clamp(finite(state.sceneAnimMs, 2000), 200, 3000);
     const start = performance.now();
-    // Both transports sample the same curve; only normal mode owns a wall-clock RAF.
-    const sample = (value) => {
-      const t = clamp(value, 0, 1);
+    const step = (now) => {
+      const t = clamp((now - start) / span, 0, 1);
       const e = easeInOut(t);
       if (sceneAnim) sceneAnim.progress = e;
       movers.forEach((entry) => {
@@ -20256,17 +20826,11 @@
         }
       });
       render();
-    };
-    const step = (now) => {
-      const t = clamp((now - start) / span, 0, 1);
-      sample(t);
       if (t < 1) { sceneAnim.raf = requestAnimationFrame(step); return; }
       stopSceneAnim();
       render();
     };
-    sceneAnim = { pieces, exits, blackout, progress: 0, raf: 0,
-      sample, sourceId: fromScene.id, targetId: sc().id, external: timelineProgress !== null };
-    if (timelineProgress !== null) { sample(timelineProgress); return true; }
+    sceneAnim = { pieces, exits, blackout, progress: 0, raf: 0 };
     // 切替直後に行き先の絵を一度だけ描いてから rAF を待つと、転換の始まりで別フレームが瞬く。
     // 最初の描画を同期して前シーンの座標へ戻してから、以後のフレームを予約する。
     step(start);
@@ -20321,8 +20885,7 @@
   const FIXED_KEYS = [
     ["シーンを送る", "↑ ↓ ← →"],
     ["全画面", "F"],
-    ["表示する図を切り替える（両方表示中は上下順を変更）", "T"],
-    ["全画面で正面と平面を入れ替える", "X"],
+    ["正面と平面を入れ替える", "X"],
     ["ショーを書き出す", "⌘S"],
     ["一つ戻す", "⌘Z"],
     ["やり直す", "⇧⌘Z"],
@@ -21098,24 +21661,6 @@
     else els.presentBtn.click();
   });
 
-  // Tは表示図を切り替える。片面表示なら反対の図へ、両面表示なら上下順だけを替える。
-  document.addEventListener("keydown", (event) => {
-    if (String(event.key || "").toLowerCase() !== "t" || event.defaultPrevented) return;
-    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
-    if (event.repeat || event.isComposing || event.keyCode === 229 || isTyping(event.target)) return;
-    if (phoneViewerActive || presenting || fullscreenModalOpen()) return;
-    const view = document.getElementById("view-stage");
-    if (!view || view.hidden || !els.viewSelect) return;
-    const current = els.viewSelect.value;
-    const next = current === "front" ? "plan"
-      : current === "plan" ? "front"
-        : current === "both-plan" ? "both-front" : "both-plan";
-    if (next === current) return;
-    event.preventDefault();
-    els.viewSelect.value = next;
-    els.viewSelect.dispatchEvent(new Event("change", { bubbles: true }));
-  });
-
   // 図の交換は全画面中だけ。文字入力や別の操作面へXを通す。
   document.addEventListener("keydown", (event) => {
     if (String(event.key || "").toLowerCase() !== "x" || event.defaultPrevented) return;
@@ -21484,14 +22029,9 @@ ${propsPlotHtml}
     updateInspector();
     // 転換の初期姿勢を先に書き込む。開始済みなら beginSceneAnim がその姿勢を一度だけ描く。
     // 動きが無い切替だけは、ここで通常描画する。
-    if (options.animate === false) { stopSceneAnim(); render(); }
-    else if (!beginSceneAnim(before, liveSpins, options.transitionDurationMs)) render();
+    if (!beginSceneAnim(before, liveSpins, options.transitionDurationMs)) render();
     persistSoon();
     announce(`${sc().title}を開きました。`);
-  }
-
-  function openTimelineScene(target) {
-    if (state.project.activeSceneId !== target.id) openScene(target.id, { animate: false });
   }
 
   function addScene(carryRig) {
@@ -23257,20 +23797,6 @@ ${propsPlotHtml}
   /* 拾えるものは道具で変わる。明かりは物と重なって置くのが普通なので、
    * 同じ手つきで両方を掴めるようにすると、狙ったほうが取れない。
    * 「動かす」では物だけ、「照明を動かす」では照明だけを拾う。 */
-  function pieceAtSelectionBounds(point, pieces, boundsFor) {
-    let best = null;
-    let bestArea = Infinity;
-    for (let i = pieces.length - 1; i >= 0; i -= 1) {
-      const piece = pieces[i];
-      const bounds = boundsFor(piece);
-      if (!bounds || point.x < bounds.x || point.x > bounds.x + bounds.w
-        || point.y < bounds.y || point.y > bounds.y + bounds.h) continue;
-      const area = bounds.w * bounds.h;
-      if (area < bestArea) { best = piece; bestArea = area; }
-    }
-    return best;
-  }
-
   function hitTest(point, L) {
     const wantLight = tool === "light";
     /* 動線は明かりにも引ける。灯体はその場に残したまま、
@@ -23282,17 +23808,24 @@ ${propsPlotHtml}
        ★重なっているときは、囲いの面積が小さいものを優先して掴む。
        広い台の上の演者が、台に負けて掴めないことがないように。
        同じ面積なら、上に描かれている方（並びの後ろ）を取る。 */
-    const candidates = sc().pieces.filter((piece) => {
-      if (!anyKind && (piece.type === "light") !== wantLight) return false;
-      if (anyKind && piece.heldBy) return false;
+    let best = null;
+    let bestArea = Infinity;
+    for (let i = sc().pieces.length - 1; i >= 0; i -= 1) {
+      const piece = sc().pieces[i];
+      if (!anyKind && (piece.type === "light") !== wantLight) continue;
+      if (anyKind && piece.heldBy) continue;
       // 平面図で隠している吊物は掴めない（見えないものを掴むことになるため）
-      if (L.plan && !state.showFlown && isFlown(piece)) return false;
+      if (L.plan && !state.showFlown && isFlown(piece)) continue;
       // 消している図の照明も同じ（見えないものを掴ませない）
       if (piece.type === "light"
-        && !(L.plan ? state.showLightsPlan : state.showLightsFront)) return false;
-      return !isLocked(piece);
-    });
-    return pieceAtSelectionBounds(point, candidates, (piece) => selectionBounds(piece, L));
+        && !(L.plan ? state.showLightsPlan : state.showLightsFront)) continue;
+      if (isLocked(piece)) continue;
+      const b = selectionBounds(piece, L);
+      if (point.x < b.x || point.x > b.x + b.w || point.y < b.y || point.y > b.y + b.h) continue;
+      const area = b.w * b.h;
+      if (area < bestArea) { best = piece; bestArea = area; }
+    }
+    return best;
   }
 
   // 灯体の印を掴んだか。当たる場所より先に見る（重なることがあるため）
@@ -23781,6 +24314,11 @@ ${propsPlotHtml}
     const pieces = selectedPieces();
     const multi = pieces.length > 1;
     const performers = selectedPerformerPieces();
+    const selectedLights = multi && pieces.every((item) => item.type === "light");
+    if (els.selectedLightPresetOpen) {
+      els.selectedLightPresetOpen.hidden = !selectedLights;
+      els.selectedLightPresetOpen.disabled = !selectedLights;
+    }
     if (els.facingLock) {
       const locked = Boolean(sc().facingLock);
       els.facingLock.textContent = locked ? "🔒" : "🔓";
@@ -24415,6 +24953,21 @@ ${propsPlotHtml}
      * 二つを別々に動かせないと、斜めの明かりも、下から上への明かりも作れない。 */
     if (tool === "light") {
       const fixture = fixtureAt(point, L);
+      /* 通常の選択道具は、物と重なる照明を誤って掴まないよう照明を除外している。
+       * そのため照明を動かす道具の平面図だけは、Shiftクリックで灯だけを追加／解除する。
+       * ドラッグを始めずに選択を確定するので、複数灯へ静止型を当てる入口になる。 */
+      const hit = fixture || hitTest(point, L);
+      if (view === "plan" && event.shiftKey && hit) {
+        const ids = new Set(normalizeSelectedIds());
+        if (ids.has(hit.id)) ids.delete(hit.id); else ids.add(hit.id);
+        const ordered = Array.from(ids);
+        setSelectedPieces(ordered, ids.has(hit.id) ? hit.id : ordered[ordered.length - 1]);
+        selectedNoteId = null;
+        updateInspector();
+        render();
+        announce(ids.size ? `${ids.size}灯を選択しました。` : "複数選択を解除しました。");
+        return;
+      }
       if (fixture) {
         selectedId = fixture.id;
         selectedNoteId = null;
@@ -24428,7 +24981,6 @@ ${propsPlotHtml}
         render();
         return;
       }
-      const hit = hitTest(point, L);
       selectedId = hit ? hit.id : null;
       selectedNoteId = null;
       updateInspector();
@@ -24651,18 +25203,7 @@ ${propsPlotHtml}
       const tag = pieceNameTag(target, piece, L, shown);
       if (tag && pointInsideTag(point, tag)) return { castId: piece.castId || null, piece };
     }
-    // 名前札が無い場所でも、選択道具で拾える演者・登録道具の範囲なら詳細を開ける。
-    if (tool !== "select" && tool !== "light") return null;
-    const selectable = sc().pieces.filter((piece) => {
-      if (!piece.castId && !piece.setId) return false;
-      if ((piece.type === "light") !== (tool === "light")) return false;
-      if (L.plan && !state.showFlown && isFlown(piece)) return false;
-      if (piece.type === "light"
-        && !(L.plan ? state.showLightsPlan : state.showLightsFront)) return false;
-      return !isLocked(piece);
-    });
-    const piece = pieceAtSelectionBounds(point, selectable, (item) => selectionBounds(item, L));
-    return piece ? { castId: piece.castId || null, piece } : null;
+    return null;
   }
 
   function openNameDetailTarget(target) {
@@ -25333,7 +25874,6 @@ ${propsPlotHtml}
 
   function syncSingleViewSwitches() {
     const single = state.showFront !== state.showPlan;
-    if (els.canvasStack) els.canvasStack.classList.toggle("is-single-view", single);
     document.querySelectorAll("[data-single-view-switch]").forEach((group) => {
       const owner = group.dataset.singleViewSwitch;
       const ownerShown = owner === "front" ? state.showFront : state.showPlan;
@@ -25591,9 +26131,72 @@ ${propsPlotHtml}
   if (els.lightIntentPresets) els.lightIntentPresets.addEventListener("click", () => openLightPresetModal(true));
   if (els.lightPresetClose) els.lightPresetClose.addEventListener("click", closeLightPresetModal);
   if (els.lightPresetBackdrop) els.lightPresetBackdrop.addEventListener("click", closeLightPresetModal);
+  if (els.selectedLightPresetOpen) els.selectedLightPresetOpen.addEventListener("click", openSelectedLightPresetModal);
+  if (els.selectedLightPresetClose) els.selectedLightPresetClose.addEventListener("click", closeSelectedLightPresetModal);
+  if (els.selectedLightPresetBackdrop) els.selectedLightPresetBackdrop.addEventListener("click", closeSelectedLightPresetModal);
+  if (els.selectedLightCustomBackToPresets) els.selectedLightCustomBackToPresets.addEventListener("click", closeSelectedLightCustomRegion);
+  if (els.selectedLightCustomApply) els.selectedLightCustomApply.addEventListener("click", () => {
+    const region = selectedLightCustomRegionValue();
+    if (!region) return;
+    if (selectedLightCustomMode === "motion") {
+      if (updateSelectedLightWander({ region }, "動く範囲を変更しました。")) closeSelectedLightCustomRegion();
+      return;
+    }
+    applySelectedLightStaticPreset("area.custom", { region });
+  });
+  if (els.selectedLightWanderLoop) els.selectedLightWanderLoop.addEventListener("change", () => {
+    updateSelectedLightWander({ loopSec: Number(els.selectedLightWanderLoop.value) }, "動きの周期を変更しました。");
+  });
+  if (els.selectedLightWanderIrregularity) {
+    els.selectedLightWanderIrregularity.addEventListener("input", () => {
+      if (els.selectedLightWanderIrregularityValue) els.selectedLightWanderIrregularityValue.textContent = `${els.selectedLightWanderIrregularity.value}%`;
+    });
+    els.selectedLightWanderIrregularity.addEventListener("change", () => {
+      updateSelectedLightWander({ irregularity: Number(els.selectedLightWanderIrregularity.value) / 100 }, "動きの不規則さを変更しました。");
+    });
+  }
+  if (els.selectedLightWanderRegion) els.selectedLightWanderRegion.addEventListener("click", () => openSelectedLightCustomRegion("motion"));
+  if (els.selectedLightWanderReroll) els.selectedLightWanderReroll.addEventListener("click", () => {
+    const current = selectedLightWanderPieces()[0];
+    const nextSeed = (staticUint32(current && current.lightBehavior && current.lightBehavior.motion && current.lightBehavior.motion.seed, 2841) + 1) >>> 0;
+    updateSelectedLightWander({ seed: nextSeed }, "経路を変えました。同じショーを開けば、この経路で再現します。");
+  });
+  if (els.selectedLightWanderStop) els.selectedLightWanderStop.addEventListener("click", stopSelectedLightWander);
+  [els.selectedLightCustomLeft, els.selectedLightCustomRight, els.selectedLightCustomBack, els.selectedLightCustomFront]
+    .filter(Boolean)
+    .forEach((control) => control.addEventListener("input", () => setSelectedLightCustomRegion({
+      u0: Number(els.selectedLightCustomLeft && els.selectedLightCustomLeft.value) / 100,
+      u1: Number(els.selectedLightCustomRight && els.selectedLightCustomRight.value) / 100,
+      v0: Number(els.selectedLightCustomBack && els.selectedLightCustomBack.value) / 100,
+      v1: Number(els.selectedLightCustomFront && els.selectedLightCustomFront.value) / 100,
+    })));
+  if (els.selectedLightCustomCanvas) {
+    const canvasPoint = (event) => {
+      const bounds = els.selectedLightCustomCanvas.getBoundingClientRect();
+      return { u: staticClamp((event.clientX - bounds.left) / bounds.width), v: staticClamp((event.clientY - bounds.top) / bounds.height) };
+    };
+    els.selectedLightCustomCanvas.addEventListener("pointerdown", (event) => {
+      const point = canvasPoint(event);
+      selectedLightCustomDragStart = { u: Math.min(point.u, 0.98), v: Math.min(point.v, 0.98) };
+      els.selectedLightCustomCanvas.setPointerCapture(event.pointerId);
+      setSelectedLightCustomRegion({ ...selectedLightCustomDragStart, u1: selectedLightCustomDragStart.u + 0.02, v1: selectedLightCustomDragStart.v + 0.02 });
+    });
+    els.selectedLightCustomCanvas.addEventListener("pointermove", (event) => {
+      if (!selectedLightCustomDragStart) return;
+      const point = canvasPoint(event);
+      setSelectedLightCustomRegion({ ...selectedLightCustomDragStart, u1: point.u, v1: point.v });
+    });
+    els.selectedLightCustomCanvas.addEventListener("pointerup", (event) => {
+      selectedLightCustomDragStart = null;
+      if (els.selectedLightCustomCanvas.hasPointerCapture(event.pointerId)) els.selectedLightCustomCanvas.releasePointerCapture(event.pointerId);
+    });
+  }
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && els.lightPresetModal && !els.lightPresetModal.hidden) {
       closeLightPresetModal();
+    }
+    if (event.key === "Escape" && els.selectedLightPresetModal && !els.selectedLightPresetModal.hidden) {
+      closeSelectedLightPresetModal();
     }
   });
   if (els.rosterAdd) els.rosterAdd.addEventListener("click", addFromRoster);
@@ -25807,6 +26410,18 @@ ${propsPlotHtml}
       renderLights();
       persistSoon();
       announce(`${item.name}を${lightKindName(item.lightKind)}にしました。`);
+    });
+  }
+  if (els.setInfoMotion) {
+    els.setInfoMotion.addEventListener("change", (e) => {
+      const item = currentSetItem();
+      if (!item || item.kind !== "light") return;
+      const next = e.target.value === "moving" ? "moving" : "fixed";
+      if (normalizeLightCapability(item.lightCapability)?.motion === next) return;
+      checkpoint();
+      item.lightCapability = { motion: next };
+      persistSoon();
+      announce(next === "moving" ? `${item.name}をムービング灯として登録しました。` : `${item.name}を固定灯として登録しました。`);
     });
   }
   if (els.setInfoPropShape) {
@@ -28250,19 +28865,6 @@ ${propsPlotHtml}
         state.layout = closedDefaultLayout();
       }
 
-      // Complete backup decisions before initialization can save or prune media.
-      if (loaded.sectionMigrationSource) {
-        try {
-          localStorage.setItem(`${STORAGE_KEY}-pre-section-hierarchy-v1:${state.project.id}`, loaded.sectionMigrationSource);
-        } catch (_) {
-          sectionMigrationSaveWarning = "旧シーン構造の控えを保存できなかったため、自動保存とショー一覧の更新を止めています。作業内容をファイルへ書き出してから、容量を空けてもう一度開いてください。";
-        }
-      }
-      const shelfMigration = sectionMigrationSaveWarning
-        ? { migrated: 0, safe: false } : migrateStoredShowShelf();
-      if (!shelfMigration.safe && !sectionMigrationSaveWarning) {
-        sectionMigrationSaveWarning = "ショー一覧の旧シーン構造を退避・保存できなかったため、自動保存と一覧の更新を止めています。作業内容をファイルへ書き出してから、容量を空けてもう一度開いてください。";
-      }
       initStageAskPanel();
       buildPanelHeads();
       bridgeSessionPanelOpen();
@@ -28305,12 +28907,19 @@ ${propsPlotHtml}
       catch (_) { seenTour = true; }
       renderScreenTexts();
       syncScreenTextControls();
-      if (sectionMigrationSaveWarning) {
-        setSaveStatus(sectionMigrationSaveWarning, "warn");
-      } else if (loaded.sectionMigrationSource) {
-        persistSoon();
+      if (loaded.sectionMigrationSource) {
+        const backupKey = `${STORAGE_KEY}-pre-section-hierarchy-v1:${state.project.id}`;
+        try {
+          localStorage.setItem(backupKey, loaded.sectionMigrationSource);
+          persistSoon();
+        } catch (_) {
+          setSaveStatus("旧シーン構造の控えを保存できなかったため、変換後の自動保存を止めました。ファイルへ書き出してから、もう一度開いてください。", "warn");
+        }
       }
-      if (shelfMigration.migrated) {
+      const shelfMigration = migrateStoredShowShelf();
+      if (!shelfMigration.safe) {
+        setSaveStatus("ショー一覧の旧シーン構造を退避できなかったため、一覧全体の変換保存を止めました。ファイルへ書き出すか容量を空けてから、もう一度開いてください。", "warn");
+      } else if (shelfMigration.migrated) {
         announce(`${shelfMigration.migrated}件のショーを、セクションの中にシーンを置く形式へ更新しました。`);
       }
       if (!loaded.restored) shelveSample();
@@ -28395,61 +29004,6 @@ ${propsPlotHtml}
     exportDocumentString() {
       return JSON.stringify(makeProjectExportDocument(state.project, true));
     },
-    clearTimelinePosition() {
-      stopSceneAnim();
-      clearFormationPlayback();
-      render();
-      if (document.body.dataset.stageWorkspaceMode !== "timeline" && els.musicAudio && !els.musicAudio.paused) startFormationPlayback();
-    },
-    setTimelinePosition(position) {
-      if (document.body.dataset.stageWorkspaceMode !== "timeline"
-        || document.body.classList.contains("stage-session-guest")) return false;
-      const target = state.project.scenes.find((row) => row.kind === "scene" && row.id === position.sceneId);
-      if (!target) return false;
-      if (formationPlaybackRaf) cancelAnimationFrame(formationPlaybackRaf);
-      formationPlaybackRaf = 0;
-      if (position.source === "formation") {
-        stopSceneAnim();
-        clearFormationPlayback();
-        openTimelineScene(target);
-        const section = state.project.scenes.find((row) => row.id === position.sectionId && row.kind === "section");
-        const songs = section && section.formation && section.formation.package.formation.songs;
-        const song = songs && songs.find((item) => item.id === position.songId);
-        if (song) {
-          const count = formationSecToCount(song.track, finite(position.seconds, 0));
-          (target.pieces || []).forEach((piece) => {
-            if (piece.type !== "performer" || !piece.castId) return;
-            const pose = formationPoseAt(song, piece.castId, count);
-            if (!pose) return;
-            piece.animU = pose.u; piece.animV = pose.v; piece.animFacing = pose.facing;
-            piece._formationPlayback = true;
-          });
-        }
-        render();
-        return true;
-      }
-      clearFormationPlayback();
-      openTimelineScene(target);
-      const from = state.project.scenes.find((row) => row.kind === "scene" && row.id === position.sourceSceneId);
-      if (from && from.id !== target.id && Number.isFinite(position.progress)) {
-        if (!position.reset && sceneAnim && sceneAnim.external
-          && sceneAnim.sourceId === from.id && sceneAnim.targetId === target.id) {
-          sceneAnim.sample(position.progress);
-        } else if (!beginSceneAnim(from, new Map(), null, position.progress)) render();
-      } else { stopSceneAnim(); render(); }
-      return true;
-    },
-    setTimelineAudioContext(context) {
-      timelineAudioContext = context && context.projectId === state.project.id
-        && typeof context.trackId === "string" && Array.isArray(context.sceneIds)
-        ? { projectId: context.projectId, trackId: context.trackId, sceneIds: context.sceneIds.filter((id) => typeof id === "string") }
-        : null;
-      if (currentAudioTrackId() !== audioPlayback.trackId) prepareAudioForCurrentScene();
-      else syncAudioControls();
-    },
-    getAudioPlaybackState() {
-      return { trackId: audioPlayback.trackId, ready: audioPlayback.ready, loading: audioPlayback.loading };
-    },
     openSceneById(id, options = {}) {
       const next = state.project.scenes.find((row) => row.kind === "scene" && row.id === id);
       if (!next) return false;
@@ -28473,54 +29027,17 @@ ${propsPlotHtml}
     openTimelineAudioRelinkPicker(trackId) {
       return openAudioRelinkPicker(trackId);
     },
-    setTimelineAudioGainDb(trackId, value, options = {}) {
+    setTimelineAudioGainDb(trackId, value) {
       const track = audioTrackById(trackId);
       if (!track) return false;
       const gainDb = normalizeAudioGainDb(value);
-      const timelineFadeOut = typeof options.timelineFadeOut === "boolean"
-        ? options.timelineFadeOut : Boolean(track.timelineFadeOut);
-      if (track.gainDb === gainDb && Boolean(track.timelineFadeOut) === timelineFadeOut) return true;
+      if (track.gainDb === gainDb) return true;
       checkpoint();
       track.gainDb = gainDb;
-      track.timelineFadeOut = timelineFadeOut;
       audioPanelSignature = "";
       persistSoon();
       window.dispatchEvent(new CustomEvent("stage-timeline-audio-change", {
-        detail: { trackId, gainDb, timelineFadeOut },
-      }));
-      return true;
-    },
-    setTimelineAudioStartSeconds(sectionId, sceneId, value, options = {}) {
-      const sectionIndex = state.project.scenes.findIndex((row) => row.kind === "section" && row.id === sectionId);
-      const seconds = rehearsalSeconds(value);
-      if (sectionIndex < 0 || seconds === null) return false;
-      const scene = sceneChildren(sectionIndex)
-        .find((row) => row.kind === "scene" && row.id === sceneId);
-      if (!scene || !scene.audioTrackId) return false;
-      const nextSeconds = Math.round(seconds * 10) / 10;
-      if (scene.audioTimelineStartSeconds === nextSeconds) return true;
-      if (options.checkpoint) checkpoint();
-      scene.audioTimelineStartSeconds = nextSeconds;
-      persistSoon();
-      window.dispatchEvent(new CustomEvent("stage-timeline-audio-change", {
-        detail: { sectionId, sceneId, startSeconds: nextSeconds },
-      }));
-      return true;
-    },
-    setTimelineAudioEndSeconds(sectionId, sceneId, value, options = {}) {
-      const sectionIndex = state.project.scenes.findIndex((row) => row.kind === "section" && row.id === sectionId);
-      const seconds = rehearsalSeconds(value);
-      if (sectionIndex < 0 || seconds === null) return false;
-      const scene = sceneChildren(sectionIndex)
-        .find((row) => row.kind === "scene" && row.id === sceneId);
-      if (!scene || !scene.audioTrackId) return false;
-      const nextSeconds = Math.round(seconds * 10) / 10;
-      if (scene.audioTimelineEndSeconds === nextSeconds) return true;
-      if (options.checkpoint) checkpoint();
-      scene.audioTimelineEndSeconds = nextSeconds;
-      persistSoon();
-      window.dispatchEvent(new CustomEvent("stage-timeline-audio-change", {
-        detail: { sectionId, sceneId, endSeconds: nextSeconds },
+        detail: { trackId, gainDb },
       }));
       return true;
     },
@@ -28582,17 +29099,6 @@ ${propsPlotHtml}
         ? (part === "transition" ? 0 : 4)
         : finite(scene.rehearsal[key], part === "transition" ? 0 : 4);
       const currentSectionDuration = section.timelineDurationSeconds;
-      const sectionScenes = sceneChildren(sectionIndex).filter((row) => row.kind === "scene");
-      const sourceAt = sectionScenes.findIndex((row) => row.id === scene.id);
-      const sceneRangeLock = (row) => row && (row.timelineRangeLock === "start" || row.timelineRangeLock === "end"
-        ? row.timelineRangeLock : row.timelinePositionLocked === true ? "start" : null);
-      const transitionRangeLock = (row) => row && (row.transitionRangeLock === "start" || row.transitionRangeLock === "end"
-        ? row.transitionRangeLock : null);
-      const fixedFollowingScene = sourceAt < 0 ? null
-        : sectionScenes.slice(sourceAt + 1).find((row) => sceneRangeLock(row) || transitionRangeLock(row)) || null;
-      const ownLockedEdge = part === "hold"
-        ? (sceneRangeLock(scene) === "end" || transitionRangeLock(scene) === "start")
-        : transitionRangeLock(scene) === "end";
       const timingChanged = Math.abs(current - duration) > 1e-9
         || currentSectionDuration === null || currentSectionDuration === undefined
         || Math.abs(finite(currentSectionDuration, -1) - sectionDuration) > 1e-9;
@@ -28603,8 +29109,7 @@ ${propsPlotHtml}
       const cues = Array.isArray(state.project.cues) ? state.project.cues : [];
       const cuesToShift = canRipple ? cues.filter((cue) => cue && cue.kind === "timeline"
         && cue.sectionId === section.id && cue.atSeconds !== null && cue.atSeconds !== undefined
-        && !cue.timelinePositionLocked && finite(cue.atSeconds, -1) >= rippleFrom - 1e-6) : [];
-      if (timingChanged && (fixedFollowingScene || ownLockedEdge)) return false;
+        && finite(cue.atSeconds, -1) >= rippleFrom - 1e-6) : [];
       if (!timingChanged && !cuesToShift.length) return true;
       if (options.checkpoint) checkpoint();
       scene.rehearsal[key] = duration;
@@ -28635,19 +29140,16 @@ ${propsPlotHtml}
       }));
       return true;
     },
-    addTimelineCue(type, sectionId, atSeconds, scope = {}) {
+    addTimelineCue(type, sectionId, atSeconds) {
       if (!TIMELINE_CUE_TYPES.has(type)) return null;
       const section = state.project.scenes.find((row) => row.kind === "section" && row.id === sectionId);
       if (!section) return null;
-      const songId = typeof scope.songId === "string" && scope.songId && scope.songId !== "fallback"
-        ? scope.songId : null;
       const cue = {
         id: rid("cue"),
         kind: "timeline",
         cueType: type,
         sectionId,
         atSeconds: Math.round(clamp(finite(atSeconds, 0), 0, 86400) * 10) / 10,
-        ...(songId ? { songId } : {}),
         memo: "",
       };
       checkpoint();
@@ -28661,68 +29163,13 @@ ${propsPlotHtml}
       const cues = Array.isArray(state.project.cues) ? state.project.cues : [];
       const cue = cues.find((item) => item && item.kind === "timeline" && item.id === id);
       if (!cue) return null;
-      const memo = typeof patch.memo === "string" ? patch.memo.slice(0, 2000) : String(cue.memo || "");
-      const atSeconds = Object.prototype.hasOwnProperty.call(patch, "atSeconds")
-        ? Math.round(clamp(finite(patch.atSeconds, cue.atSeconds) || 0, 0, 86400) * 10) / 10
-        : cue.atSeconds;
-      const sectionId = typeof patch.sectionId === "string" && patch.sectionId ? patch.sectionId : cue.sectionId;
-      const songId = typeof patch.songId === "string" && patch.songId ? patch.songId : cue.songId;
-      if (cue.timelinePositionLocked && (cue.atSeconds !== atSeconds || cue.sectionId !== sectionId || cue.songId !== songId)) {
-        return jsonClone(cue);
-      }
-      if (cue.memo === memo && cue.atSeconds === atSeconds && cue.sectionId === sectionId && cue.songId === songId) {
-        return jsonClone(cue);
-      }
+      const memo = typeof patch.memo === "string" ? patch.memo.slice(0, 2000) : "";
+      if (cue.memo === memo) return jsonClone(cue);
       checkpoint();
       cue.memo = memo;
-      if (Number.isFinite(atSeconds)) cue.atSeconds = atSeconds;
-      if (typeof sectionId === "string" && sectionId) cue.sectionId = sectionId;
-      if (typeof songId === "string" && songId) cue.songId = songId;
       persistSoon();
       window.dispatchEvent(new CustomEvent("stage-timeline-cues-change"));
       return jsonClone(cue);
-    },
-    setTimelinePositionLocked(kind, id, value) {
-      const locked = Boolean(value);
-      const item = kind === "cue"
-        ? (state.project.cues || []).find((cue) => cue && cue.kind === "timeline" && cue.id === id)
-        : state.project.scenes.find((scene) => scene && scene.kind === "scene" && scene.id === id);
-      if (!item) return null;
-      if (Boolean(item.timelinePositionLocked) === locked) return jsonClone(item);
-      checkpoint();
-      item.timelinePositionLocked = locked;
-      persistSoon();
-      window.dispatchEvent(new CustomEvent(kind === "cue"
-        ? "stage-timeline-cues-change" : "stage-timeline-structure-change", {
-        detail: { id: item.id, locked },
-      }));
-      return jsonClone(item);
-    },
-    setTimelineRangeLock(kind, id, value) {
-      const edge = value === "start" || value === "end" ? value : null;
-      let item = null;
-      let property = "timelineRangeLock";
-      if (kind === "audio") {
-        item = audioTrackById(id);
-      } else {
-        item = state.project.scenes.find((scene) => scene && scene.kind === "scene" && scene.id === id);
-        if (kind === "transition") property = "transitionRangeLock";
-      }
-      if (!item) return null;
-      const current = item[property] === "start" || item[property] === "end"
-        ? item[property] : kind === "scene" && item.timelinePositionLocked ? "start" : null;
-      if (current === edge) return jsonClone(item);
-      checkpoint();
-      if (edge) item[property] = edge;
-      else delete item[property];
-      // 旧版の開始固定はこの変更時にだけ新しい範囲表現へ移す。
-      if (kind === "scene") delete item.timelinePositionLocked;
-      persistSoon();
-      window.dispatchEvent(new CustomEvent(kind === "audio"
-        ? "stage-timeline-audio-change" : "stage-timeline-structure-change", {
-        detail: { id: item.id, kind, edge },
-      }));
-      return jsonClone(item);
     },
     removeTimelineCue(id) {
       const cues = Array.isArray(state.project.cues) ? state.project.cues : [];
@@ -28732,48 +29179,6 @@ ${propsPlotHtml}
       cues.splice(at, 1);
       persistSoon();
       window.dispatchEvent(new CustomEvent("stage-timeline-cues-change"));
-      return true;
-    },
-    openTimelineSceneDelete(sceneId, returnFocus = null) {
-      const scene = state.project.scenes.find((row) => row && row.kind === "scene" && row.id === sceneId);
-      return Boolean(scene && openSceneDelete(scene, returnFocus));
-    },
-    removeTimelineAudioAssignment(sectionId, sourceSceneId, trackId) {
-      const sectionIndex = state.project.scenes.findIndex((row) => row && row.kind === "section" && row.id === sectionId);
-      if (sectionIndex < 0 || typeof sourceSceneId !== "string" || typeof trackId !== "string") return false;
-      const affected = [];
-      let started = false;
-      for (const row of sceneChildren(sectionIndex)) {
-        if (!row || row.kind !== "scene") continue;
-        if (!started) {
-          if (row.id !== sourceSceneId) continue;
-          started = true;
-        } else if (Number.isFinite(Number(row.audioTimelineStartSeconds))) {
-          break;
-        }
-        if (row.audioTrackId !== trackId) break;
-        affected.push(row);
-      }
-      if (!affected.length) return false;
-      const track = audioTrackById(trackId);
-      const wasPlaying = affected.some((scene) => scene.id === state.project.activeSceneId)
-        && els.musicAudio && !els.musicAudio.paused && audioPlayback.ready;
-      checkpoint();
-      affected.forEach((scene) => {
-        scene.audioTrackId = null;
-        scene.audioTimelineStartSeconds = null;
-        scene.audioTimelineEndSeconds = null;
-      });
-      continueAudioOnNextSceneSync = Boolean(wasPlaying);
-      audioPanelSignature = "";
-      renderScenes();
-      render();
-      persistSoon();
-      setAudioStatus(`「${track ? track.title : "音源"}」を${affected.length}シーンから外しました。`,
-        `Removed “${track ? track.title : "audio"}” from ${affected.length} ${affected.length === 1 ? "scene" : "scenes"}.`);
-      window.dispatchEvent(new CustomEvent("stage-timeline-audio-change", {
-        detail: { sectionId, sourceSceneId, trackId, sceneCount: affected.length, removed: true },
-      }));
       return true;
     },
     addTimelineSceneAfter(sceneId) {

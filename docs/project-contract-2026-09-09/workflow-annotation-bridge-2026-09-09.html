@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>舞台スケッチ｜Qと注釈の接続確認</title>
+<style>
+:root{--desk:#201b16;--paper:#efe7d6;--page:#fffaf0;--ink:#2b2620;--muted:#6a604e;--line:#c7b99f;--accent:#8f3e1e;--gold:#ddc58d;--sound:#315a70;--lighting:#644565;--move:#4e5e38;--touch:44px;--panel:440px}*{box-sizing:border-box}body{min-height:100dvh;margin:0;background:var(--desk);color:var(--ink);font:15px/1.55 "Hiragino Sans","Yu Gothic",system-ui,sans-serif}button,select{font:inherit;color:inherit}button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}.workspace{width:min(1380px,calc(100% - 40px));min-height:min(920px,calc(100dvh - 40px));margin:20px auto;background:var(--page);border-top:3px solid var(--accent);box-shadow:0 14px 40px #0008}.appbar{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,340px);gap:18px;padding:16px 20px;border-bottom:1px solid var(--line)}.eyebrow{margin:0;color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.06em}.appbar h1{margin:2px 0 0;font-size:24px;line-height:1.35}.appbar .intro{max-width:760px;margin:5px 0 0;color:var(--muted);font-size:13px}.viewer{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;color:var(--muted);font-size:12px}.viewer select{min-height:var(--touch);padding:0 9px;border:1px solid var(--line);border-radius:0;background:var(--page)}.binding{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--line);background:var(--paper)}.binding article{min-height:76px;padding:11px 16px;border-right:1px solid var(--line)}.binding article:last-child{border-right:0}.binding strong,.binding span{display:block}.binding strong{font-size:13px}.binding span{margin-top:2px;color:var(--muted);font-size:11px}.binding .ok{color:var(--move);font-weight:800}.binding .pending{color:var(--accent);font-weight:800}.split{display:grid;grid-template-columns:minmax(0,1fr) var(--panel);min-height:0}.stage-panel{min-width:0;padding:18px;background:var(--paper);border-right:1px solid var(--line)}.section-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding-bottom:10px;border-bottom:1px solid var(--line)}.section-head h2{margin:0;font-size:20px;line-height:1.35}.section-head p{margin:0;color:var(--muted);font-size:12px}.scene-rail,.cue-rail{display:flex;gap:0;overflow:auto;border-bottom:1px solid var(--line)}.scene-rail{margin-top:12px;border-top:1px solid var(--line)}.scene-rail button,.cue-rail button{position:relative;flex:1 0 106px;min-height:var(--touch);padding:7px 10px;border:0;border-right:1px solid var(--line);background:transparent;text-align:left;cursor:pointer}.scene-rail button[aria-pressed="true"],.cue-rail button[aria-pressed="true"]{background:var(--page)}.scene-rail button[aria-pressed="true"]::before,.cue-rail button[aria-pressed="true"]::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)}.scene-rail strong,.cue-rail strong{display:block;font-size:13px}.scene-rail span,.cue-rail span{display:block;color:var(--muted);font-size:11px}.stage-map{position:relative;min-height:360px;margin-top:16px;overflow:hidden;border:2px solid var(--ink);background:var(--desk);color:var(--paper)}.stage-map::before{content:"";position:absolute;inset:22px 20px 18px;border:1px solid #75664f;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(25% - 1px),#75664f 25%);opacity:.78}.stage-map::after{content:"客席";position:absolute;right:20px;bottom:0;color:var(--gold);font-size:12px}.upstage{position:absolute;left:20px;top:0;color:var(--gold);font-size:12px}.piece{position:absolute;z-index:2;display:grid;place-items:center;transform:translate(-50%,-50%);border:2px solid var(--page);color:var(--page);font-size:12px;font-weight:800}.piece.performer{width:36px;height:36px;border-radius:50%;background:var(--lighting)}.piece.set{width:68px;min-height:30px;padding:3px 5px;background:var(--move)}.arrow-layer{position:absolute;z-index:3;inset:0;width:100%;height:100%;pointer-events:none}.stage-arrow{fill:none;stroke-width:3}.stage-note{position:absolute;z-index:4;max-width:148px;padding:6px 8px;border:1px solid var(--accent);background:var(--page);color:var(--ink);box-shadow:2px 2px 0 var(--desk);font-size:12px;line-height:1.5}.stage-note small{display:block;margin-top:3px;color:var(--muted);font-size:10px;line-height:1.5}.source{font-weight:800}.source-sound{color:var(--sound)}.source-lighting{color:var(--lighting)}.source-production{color:var(--accent)}.source-performers{color:var(--move)}.stage-note.source-sound{border-color:var(--sound)}.stage-note.source-lighting{border-color:var(--lighting)}.stage-note.source-production{border-color:var(--accent)}.stage-note.source-performers{border-color:var(--move)}.annotation-list{margin-top:18px;border-top:2px solid var(--ink)}.annotation-list h3{margin:9px 0;font-size:15px}.annotation-row{display:grid;grid-template-columns:154px minmax(0,1fr);gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}.annotation-row strong{font-size:12px}.annotation-row p{margin:0;color:var(--muted)}.empty{margin:0;padding:10px 0;color:var(--muted);font-size:13px}.q-panel{display:flex;min-height:0;flex-direction:column;background:var(--page)}.q-head{padding:16px 16px 0}.q-head h2{margin:2px 0 0;font-size:20px;line-height:1.35}.q-head p{margin:4px 0 0;color:var(--muted);font-size:12px}.q-body{min-height:0;overflow:auto;padding:0 16px 16px}.cue-detail,.activity,.q-notes,.boundary{padding:14px 0;border-bottom:1px solid var(--line)}.cue-detail h3,.activity h3,.q-notes h3,.boundary h3{margin:0;font-size:16px;line-height:1.4}.cue-detail p,.activity p,.q-notes p,.boundary p{margin:5px 0 0;color:var(--muted);font-size:13px}.cue-meta{display:flex;flex-wrap:wrap;gap:5px 10px;margin-top:8px;font-size:12px}.cue-meta strong{color:var(--accent)}.warning{margin-top:11px;padding:9px 10px;border-left:3px solid var(--accent);background:var(--paper);font-size:12px}.warning strong{color:var(--accent)}.assignment{display:grid;grid-template-columns:86px minmax(0,1fr);gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:12px}.assignment strong{font-variant-numeric:tabular-nums}.q-notes .annotation-row{grid-template-columns:116px minmax(0,1fr)}.boundary{margin-top:auto;border-top:2px solid var(--ink)}.boundary p{font-size:12px}.links{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px}.links a{display:inline-flex;align-items:center;min-height:var(--touch);color:var(--accent);font-size:12px;text-underline-offset:3px}.error{margin:18px;padding:12px;border-left:3px solid var(--accent);background:var(--paper)}@media(max-width:960px){.workspace{width:100%;min-height:100dvh;margin:0;border-top:0}.appbar{grid-template-columns:1fr}.binding{grid-template-columns:1fr}.binding article{border-right:0;border-bottom:1px solid var(--line)}.split{grid-template-columns:1fr}.stage-panel{border-right:0;border-bottom:1px solid var(--line)}.q-panel{min-height:620px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<main class="workspace" aria-labelledby="title">
+  <header class="appbar">
+    <div>
+      <p class="eyebrow">CONNECT / 読み取り接続の確認</p>
+      <h1 id="title">舞台の正本、Q、注釈をIDで結ぶ</h1>
+      <p class="intro">Stage Sketch v4の場面IDを正本として、companion workflowのQと別レイヤーの注釈を同じ画面に出します。実プロジェクト、既存のブラウザメモ、保存先には触れません。</p>
+    </div>
+    <label class="viewer" for="viewer"><span>見る人</span><select id="viewer" aria-label="見る人を切り替える"></select></label>
+  </header>
+  <section id="binding" class="binding" aria-label="接続の状態"></section>
+  <div class="split">
+    <section class="stage-panel" aria-labelledby="scene-title">
+      <header class="section-head"><div><p class="eyebrow">STAGE SKETCH / 正本配置</p><h2 id="scene-title">読み込み中</h2></div><p id="scene-count"></p></header>
+      <nav id="scene-rail" class="scene-rail" aria-label="シーンを選ぶ"></nav>
+      <div id="stage-map" class="stage-map" aria-label="Stage Sketchの舞台配置"></div>
+      <section class="annotation-list" aria-labelledby="scene-annotation-title"><h3 id="scene-annotation-title">このシーンに重なる書き込み</h3><div id="scene-annotations"></div></section>
+    </section>
+    <aside class="q-panel" aria-labelledby="q-title">
+      <header class="q-head"><p class="eyebrow">COMPANION WORKFLOW / Qシート</p><h2 id="q-title">読み込み中</h2><p id="q-subtitle"></p><nav id="cue-rail" class="cue-rail" aria-label="Qを選ぶ"></nav></header>
+      <div class="q-body">
+        <section class="cue-detail" aria-labelledby="cue-detail-title"><h3 id="cue-detail-title">Qの内容</h3><p id="cue-copy"></p><div id="cue-meta" class="cue-meta"></div><div id="cue-warning"></div></section>
+        <section class="activity" aria-labelledby="activity-title"><h3 id="activity-title">このシーンとの接続</h3><div id="activities"></div></section>
+        <section class="q-notes" aria-labelledby="q-notes-title"><h3 id="q-notes-title">Qシート側のメモ</h3><div id="q-annotations"></div></section>
+        <section class="boundary"><h3>この接続の境界</h3><p><strong>照合しているのは、v4のproject ID・scene ID・base snapshot hashとworkflowのcue IDです。</strong> 実保存、役割の認証、共有、GO、実行記録はまだ接続していません。</p><nav class="links" aria-label="関連資料"><a href="workflow-annotation-collaboration-2026-09-09.html?viewer=chief">チーフの共有確認</a><a href="workflow-receiver-view-2026-09-09.html?v=5">現場Qビュー</a><a href="WORKFLOW_ANNOTATION_CONTRACT_2026-09-09.md">注釈の詳細契約</a></nav></section>
+      </div>
+    </aside>
+  </div>
+  <p id="load-error" class="error" role="alert" hidden></p>
+</main>
+<script src="workflow-snapshot-canonical-2026-09-09.js"></script>
+<script src="workflow-annotation-bridge-2026-09-09.js"></script>
+<script>
+'use strict';
+(() => {
+  const bridge = window.STAGE_SKETCH_WORKFLOW_ANNOTATION_BRIDGE;
+  const byId = (id) => document.getElementById(id);
+  const make = (tag, className, text) => { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = text; return node; };
+  const params = new URLSearchParams(window.location.search);
+  const state = { viewerId: params.get('viewer') || 'chief', sceneId: params.get('scene') || null, cueId: params.get('cue') || 'cue-q12' };
+  let payload = null;
+
+  async function snapshotHash(stageExport) {
+    if (!window.crypto || !window.crypto.subtle) throw new Error('このブラウザではbase snapshot hashを計算できません。');
+    const canonical = window.STAGE_SKETCH_WORKFLOW_SNAPSHOT.canonicalBaseExportJson(stageExport);
+    const bytes = new TextEncoder().encode(canonical);
+    const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+    return `sha256:${[...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, '0')).join('')}`;
+  }
+
+  const replaceUrl = () => {
+    const next = new URL(window.location.href);
+    next.searchParams.set('viewer', state.viewerId); next.searchParams.set('scene', state.sceneId || ''); next.searchParams.set('cue', state.cueId || '');
+    window.history.replaceState(null, '', next);
+  };
+  const sourceFor = (annotation) => bridge.participantById(payload.annotations, annotation.authorParticipantId);
+  const sourceClass = (annotation) => `source-${bridge.sourceKey(sourceFor(annotation))}`;
+  const sourceText = (annotation, kind) => `${bridge.sourceLabel(sourceFor(annotation))} / ${bridge.visibilityLabel(annotation.visibility)} / ${kind}`;
+  const visibleForScreen = (model) => [...model.sceneMarkups, ...model.workflowNotes];
+
+  function renderViewerOptions(model) {
+    const select = byId('viewer');
+    select.replaceChildren(...model.participants.map((person) => new Option(`${person.label} — ${person.department}`, person.id, false, person.id === state.viewerId)));
+  }
+  function renderBinding(model) {
+    const binding = payload.workflow.projectBinding;
+    const items = [
+      ['Stage Sketch v4', `${model.project.id} / ${model.project.versionLabel}`, 'ID・v4・snapshot hashを照合'],
+      ['Companion workflow', `${binding.projectId} / workflow r${payload.workflow.workflowRevision}`, 'project IDとscene・Q参照を照合'],
+      ['注釈レイヤー', `annotation r${payload.annotations.annotationRevision} / ${visibleForScreen(model).length}件表示`, 'project・scene・Qを参照']
+    ];
+    const root = byId('binding'); root.replaceChildren();
+    items.forEach(([title, value, detail]) => { const item = make('article'); item.append(make('strong', '', title), make('span', 'ok', value), make('span', '', detail)); root.append(item); });
+  }
+  function renderSceneRail(model) {
+    const root = byId('scene-rail'); root.replaceChildren();
+    model.project.scenes.forEach((scene) => {
+      const button = make('button'); button.type = 'button'; button.setAttribute('aria-pressed', String(scene.id === state.sceneId)); button.append(make('strong', '', scene.title), make('span', '', scene.id));
+      button.addEventListener('click', () => { state.sceneId = scene.id; replaceUrl(); render(); }); root.append(button);
+    });
+  }
+  function renderStage(model) {
+    const scene = model.scene; const map = byId('stage-map'); map.replaceChildren(make('span', 'upstage', '奥'));
+    if (!scene) { map.append(make('p', 'empty', 'このsceneIdは基礎projectにありません。')); return; }
+    scene.pieces.forEach((piece) => {
+      const kind = piece.castId ? 'performer' : 'set'; const item = make('span', `piece ${kind}`, bridge.labelForPiece(piece, model.project));
+      item.style.left = `${piece.u * 100}%`; item.style.top = `${piece.v * 100}%`; item.setAttribute('aria-label', `${bridge.labelForPiece(piece, model.project)}の正本配置`); map.append(item);
+    });
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'arrow-layer'); svg.setAttribute('viewBox', '0 0 1000 1000'); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('aria-hidden', 'true');
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs'); const colors = { sound: '#315a70', lighting: '#644565', production: '#8f3e1e', performers: '#4e5e38' };
+    Object.entries(colors).forEach(([key, color]) => { const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker'); marker.setAttribute('id', `head-${key}`); marker.setAttribute('viewBox', '0 0 10 10'); marker.setAttribute('refX', '8'); marker.setAttribute('refY', '5'); marker.setAttribute('markerWidth', '6'); marker.setAttribute('markerHeight', '6'); marker.setAttribute('orient', 'auto'); const head = document.createElementNS('http://www.w3.org/2000/svg', 'path'); head.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z'); head.setAttribute('fill', color); marker.append(head); defs.append(marker); }); svg.append(defs);
+    model.sceneMarkups.filter((item) => item.kind === 'arrow').forEach((item) => { const path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); const key = bridge.sourceKey(sourceFor(item)); path.setAttribute('class', `stage-arrow ${sourceClass(item)}`); path.setAttribute('stroke', colors[key]); path.setAttribute('marker-end', `url(#head-${key})`); path.setAttribute('d', `M ${item.geometry.from[0] * 1000} ${item.geometry.from[1] * 1000} L ${item.geometry.to[0] * 1000} ${item.geometry.to[1] * 1000}`); svg.append(path); }); map.append(svg);
+    model.sceneMarkups.filter((item) => item.kind === 'note').forEach((item) => { const note = make('div', `stage-note ${sourceClass(item)}`, item.text); note.style.left = `${item.geometry.at[0] * 100}%`; note.style.top = `${item.geometry.at[1] * 100}%`; note.append(make('small', `source ${sourceClass(item)}`, sourceText(item, '舞台付箋'))); map.append(note); });
+    map.setAttribute('aria-label', `${scene.title}の正本配置。${model.viewer.label}に見える舞台書き込みは${model.sceneMarkups.length}件。`);
+  }
+  function renderAnnotationRows(root, annotations, kindFor) {
+    root.replaceChildren();
+    if (!annotations.length) { root.append(make('p', 'empty', 'この人に見えるメモはありません。')); return; }
+    annotations.forEach((annotation) => { const row = make('article', 'annotation-row'); row.append(make('strong', `source ${sourceClass(annotation)}`, sourceText(annotation, kindFor(annotation)))); const copy = make('div'); copy.append(make('p', '', annotation.text)); copy.append(make('p', '', `作成者: ${sourceFor(annotation).label}`)); row.append(copy); root.append(row); });
+  }
+  function renderCueRail(model) {
+    const root = byId('cue-rail'); root.replaceChildren();
+    payload.workflow.script.cues.forEach((cue) => { const button = make('button'); button.type = 'button'; button.setAttribute('aria-pressed', String(cue.id === state.cueId)); button.append(make('strong', '', cue.number), make('span', '', `${cue.type} / ${cue.description}`)); button.addEventListener('click', () => { state.cueId = cue.id; replaceUrl(); render(); }); root.append(button); });
+  }
+  function renderCue(model) {
+    const cue = model.cue; byId('q-title').textContent = cue ? `${cue.number} / ${cue.type}` : 'Qなし'; byId('q-subtitle').textContent = cue ? cue.description : 'このcueIdはworkflowにありません。'; byId('cue-copy').textContent = cue ? cue.description : '';
+    const meta = byId('cue-meta'); meta.replaceChildren(); if (cue) { meta.append(make('strong', '', `表示 r${cue.displayRevision}`), make('span', '', `意味 r${cue.semanticRevision}`)); }
+    const warning = byId('cue-warning'); warning.replaceChildren(); if (cue && model.cueActivities.length === 0) { const item = make('p', 'warning'); item.append(make('strong', '', '要確認: '), document.createTextNode('このQには、このシーンで確定済みのactivity参照がありません。未割当を自動で補いません。')); warning.append(item); }
+    const activities = byId('activities'); activities.replaceChildren(); if (!model.activities.length) { activities.append(make('p', 'empty', 'このシーンを参照するactivityはありません。')); } else { model.activities.forEach((activity) => { const block = make('div', 'assignment'); block.append(make('strong', '', activity.label)); const detail = make('div'); const confirmed = activity.assignments.filter((item) => item.resolution === 'confirmed').map((item) => item.personId === 'person-a' ? 'A' : item.personId === 'person-b' ? 'B' : item.personId); detail.append(make('span', '', `${activity.owner} / 担当: ${confirmed.join('・') || '未確定'}`)); if (!model.cueActivities.some((item) => item.id === activity.id)) detail.append(make('p', '', '現在選択中のQとは未接続')); block.append(detail); activities.append(block); }); }
+    renderAnnotationRows(byId('q-annotations'), model.workflowNotes, () => `${cue && cue.number || 'Q'} / Qメモ`);
+  }
+  function render() {
+    const model = bridge.buildReadModel({ ...payload, viewerId: state.viewerId, sceneId: state.sceneId, cueId: state.cueId });
+    if (!model.binding.ok) throw new Error(model.binding.errors.join(' '));
+    state.sceneId = model.scene && model.scene.id; state.cueId = model.cue && model.cue.id;
+    renderViewerOptions(model); renderBinding(model); renderSceneRail(model); renderStage(model); renderAnnotationRows(byId('scene-annotations'), model.sceneMarkups, (item) => item.kind === 'arrow' ? '矢印' : '舞台付箋'); renderCueRail(model); renderCue(model);
+    byId('scene-title').textContent = model.scene ? model.scene.title : 'sceneなし'; byId('scene-count').textContent = `${model.viewer.label}: 舞台${model.sceneMarkups.length}件 / Q${model.workflowNotes.length}件`;
+  }
+  byId('viewer').addEventListener('change', (event) => { state.viewerId = event.target.value; replaceUrl(); render(); });
+  const loadFixture = (name, message) => fetch(name, { cache: 'no-store' }).then((result) => result.ok ? result.json() : Promise.reject(new Error(message)));
+  Promise.all([
+    loadFixture('stage-sketch-v4-binding-fixture-2026-09-09.json', 'v4 fixtureを読み込めません。'),
+    loadFixture('project-workflow-fixture-2026-09-09.json', 'workflow fixtureを読み込めません。'),
+    loadFixture('workflow-annotation-binding-fixture-2026-09-09.json', 'annotation fixtureを読み込めません。'),
+  ]).then(async ([stageExport, workflow, annotations]) => { payload = { stageExport, workflow, annotations, expectedSnapshotHash: await snapshotHash(stageExport) }; render(); }).catch((error) => { const target = byId('load-error'); target.hidden = false; target.textContent = `読み込みに失敗しました: ${error.message}`; });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "date": "2026-09-09",
+  "status": "ai_draft_not_adopted",
+  "userRequest": "１０に関しては簡略化しましょう。届けに行った人と入れ違いで戻ってくるようにすればシンプルにできます",
+  "previousFiles": {
+    "selections.json": "99a80bd06f94eefac0878b872fb41d003821ffd748ad29fff37c00573df721cf",
+    "draft.json": "52585322e612c931d57ca5ea5b55c8cc0f3b7d68d92a93601e12b1c8906efb49",
+    "../direction-notes/scene-notes.json": "8894438c4663ef8ec4889ed03e00395cb4206a312c5e804a8ef38717cafb55d6"
+  },
+  "previousScene10": {
+    "lineCount": 10,
+    "speakers": ["FRIAR LAWRENCE", "FRIAR JOHN"],
+    "structure": "friar_john_reports_quarantine_and_failed_delivery"
+  },
+  "newScene10": {
+    "expectedLineCount": 8,
+    "dialogueLines": 0,
+    "stageDirectionLines": 8,
+    "onStageCharacters": ["FRIAR_JOHN", "ROMEO"],
+    "dramaticChange": [
+      "messenger_moves_toward_montague_side_with_letter",
+      "romeo_returns_toward_capulet_tomb",
+      "messenger_and_romeo_cross_without_noticing",
+      "letter_and_romeo_continue_in_opposite_directions"
+    ]
+  },
+  "sourceDifference": "The source blocks Friar John through quarantine and has him report the undelivered letter to Friar Lawrence. The stage version replaces that explanation with a visual crossing between Friar John and Romeo.",
+  "adopted": false,
+  "finalPolishingByUser": true
+}

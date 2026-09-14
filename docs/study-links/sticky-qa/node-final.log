@@ -1,0 +1,5351 @@
+TAP version 13
+# Subtest: branchOrigin は型違い・欠損・旧レコードを null に正規化する
+ok 1 - branchOrigin は型違い・欠損・旧レコードを null に正規化する
+  ---
+  duration_ms: 12.908584
+  type: 'test'
+  ...
+# Subtest: buildBranchProject は親を不変に保ち、枝へ制作状態と派生情報を深いコピーする
+ok 2 - buildBranchProject は親を不変に保ち、枝へ制作状態と派生情報を深いコピーする
+  ---
+  duration_ms: 1.401875
+  type: 'test'
+  ...
+# Subtest: branchOrigin は保存から読込まで保たれる
+ok 3 - branchOrigin は保存から読込まで保たれる
+  ---
+  duration_ms: 0.88375
+  type: 'test'
+  ...
+# Subtest: 映像演出は確定カテゴリーまたは完全一致のmedia_typeだけを入口にする
+ok 4 - 映像演出は確定カテゴリーまたは完全一致のmedia_typeだけを入口にする
+  ---
+  duration_ms: 1.58525
+  type: 'test'
+  ...
+# Subtest: ステージングは舞台系media_typeまたはカテゴリーを含め、曖昧な展示は全体に残す
+ok 5 - ステージングは舞台系media_typeまたはカテゴリーを含め、曖昧な展示は全体に残す
+  ---
+  duration_ms: 0.176458
+  type: 'test'
+  ...
+# Subtest: 将来のhybridは明示的に両入口へ置け、入口判定は正本オブジェクトを変更しない
+ok 6 - 将来のhybridは明示的に両入口へ置け、入口判定は正本オブジェクトを変更しない
+  ---
+  duration_ms: 0.132334
+  type: 'test'
+  ...
+# Subtest: 資料棚はキーボード操作できる三つの入口を持ち、入口ごとにジャンルを組み直す
+ok 7 - 資料棚はキーボード操作できる三つの入口を持ち、入口ごとにジャンルを組み直す
+  ---
+  duration_ms: 0.39625
+  type: 'test'
+  ...
+# Subtest: normalizeDeskProject は壊れたJSON・型違い・欠損フィールドを防御する
+ok 8 - normalizeDeskProject は壊れたJSON・型違い・欠損フィールドを防御する
+  ---
+  duration_ms: 14.202042
+  type: 'test'
+  ...
+# Subtest: 制作机プロジェクトは保存から読込まで placed と decisions を保つ
+ok 9 - 制作机プロジェクトは保存から読込まで placed と decisions を保つ
+  ---
+  duration_ms: 0.621417
+  type: 'test'
+  ...
+# Subtest: 問い編集では current が previous へ移り、場面の旧文は履歴に残る
+ok 10 - 問い編集では current が previous へ移り、場面の旧文は履歴に残る
+  ---
+  duration_ms: 0.478167
+  type: 'test'
+  ...
+# Subtest: 全空の scene と transformation は null になる
+ok 11 - 全空の scene と transformation は null になる
+  ---
+  duration_ms: 0.413041
+  type: 'test'
+  ...
+# Subtest: storage-migration は制作机プロジェクトの保存キーを管理対象に含める
+ok 12 - storage-migration は制作机プロジェクトの保存キーを管理対象に含める
+  ---
+  duration_ms: 0.054375
+  type: 'test'
+  ...
+# Subtest: 資料棚から人物フィルターの入口が消えている
+ok 13 - 資料棚から人物フィルターの入口が消えている
+  ---
+  duration_ms: 0.621
+  type: 'test'
+  ...
+# Subtest: app.js に人物フィルターの状態とbindが残っていない
+ok 14 - app.js に人物フィルターの状態とbindが残っていない
+  ---
+  duration_ms: 0.310125
+  type: 'test'
+  ...
+# Subtest: 資料棚の全文検索に人物名を入れない
+ok 15 - 資料棚の全文検索に人物名を入れない
+  ---
+  duration_ms: 0.177041
+  type: 'test'
+  ...
+# Subtest: 作品詳細に独立した「人（N）」セクションが出ない
+ok 16 - 作品詳細に独立した「人（N）」セクションが出ない
+  ---
+  duration_ms: 0.125875
+  type: 'test'
+  ...
+# Subtest: 調査レベルの内訳に人物数を表示しない
+ok 17 - 調査レベルの内訳に人物数を表示しない
+  ---
+  duration_ms: 0.09075
+  type: 'test'
+  ...
+# Subtest: 正本の people / persons は名簿のために残す
+ok 18 - 正本の people / persons は名簿のために残す
+  ---
+  duration_ms: 0.078083
+  type: 'test'
+  ...
+# Subtest: lighting_designer は照明に分類される
+ok 19 - lighting_designer は照明に分類される
+  ---
+  duration_ms: 0.724833
+  type: 'test'
+  ...
+# Subtest: sound_designer は音響に分類される
+ok 20 - sound_designer は音響に分類される
+  ---
+  duration_ms: 0.125625
+  type: 'test'
+  ...
+# Subtest: director だけの人物は制作・技術スタッフに掲載されない
+ok 21 - director だけの人物は制作・技術スタッフに掲載されない
+  ---
+  duration_ms: 0.795917
+  type: 'test'
+  ...
+# Subtest: performer だけの人物も掲載されない
+ok 22 - performer だけの人物も掲載されない
+  ---
+  duration_ms: 0.722417
+  type: 'test'
+  ...
+# Subtest: credit_label に舞台監督が明記されれば掲載し、元roleは書き換えない
+ok 23 - credit_label に舞台監督が明記されれば掲載し、元roleは書き換えない
+  ---
+  duration_ms: 0.12425
+  type: 'test'
+  ...
+# Subtest: 括弧内の注記は職名の明記として扱わない
+ok 24 - 括弧内の注記は職名の明記として扱わない
+  ---
+  duration_ms: 0.057708
+  type: 'test'
+  ...
+# Subtest: 同じ人物・同じ作品・同じクレジット表記は重複しない
+ok 25 - 同じ人物・同じ作品・同じクレジット表記は重複しない
+  ---
+  duration_ms: 0.080667
+  type: 'test'
+  ...
+# Subtest: 一人が複数部門に属せる
+ok 26 - 一人が複数部門に属せる
+  ---
+  duration_ms: 0.123959
+  type: 'test'
+  ...
+# Subtest: 設計と操作、舞台美術と大道具は職種表示で区別する
+ok 27 - 設計と操作、舞台美術と大道具は職種表示で区別する
+  ---
+  duration_ms: 0.042792
+  type: 'test'
+  ...
+# Subtest: confidence は日本語表示でも元値を失わない
+ok 28 - confidence は日本語表示でも元値を失わない
+  ---
+  duration_ms: 0.061334
+  type: 'test'
+  ...
+# Subtest: 担当作品リンクは資料棚の \#db/<work_id> を指す
+ok 29 - 担当作品リンクは資料棚の \#db/<work_id> を指す
+  ---
+  duration_ms: 0.029375
+  type: 'test'
+  ...
+# Subtest: 制作・技術スタッフにアーティスト名簿専用の項目が混ざらない
+ok 30 - 制作・技術スタッフにアーティスト名簿専用の項目が混ざらない
+  ---
+  duration_ms: 0.176125
+  type: 'test'
+  ...
+# Subtest: 部門ごとの人数を動的に数える
+ok 31 - 部門ごとの人数を動的に数える
+  ---
+  duration_ms: 0.077041
+  type: 'test'
+  ...
+# Subtest: 制作・技術スタッフは合言葉を要求しない
+ok 32 - 制作・技術スタッフは合言葉を要求しない
+  ---
+  duration_ms: 1.254125
+  type: 'test'
+  ...
+# Subtest: アーティスト名簿の暗号化の境界は変わっていない
+ok 33 - アーティスト名簿の暗号化の境界は変わっていない
+  ---
+  duration_ms: 0.050083
+  type: 'test'
+  ...
+# Subtest: 合言葉ゲートはアーティスト側の中だけに置く
+ok 34 - 合言葉ゲートはアーティスト側の中だけに置く
+  ---
+  duration_ms: 0.106416
+  type: 'test'
+  ...
+# Subtest: 二つの入口は合言葉ゲートより上にあり、色以外でも状態が分かる
+ok 35 - 二つの入口は合言葉ゲートより上にあり、色以外でも状態が分かる
+  ---
+  duration_ms: 0.080666
+  type: 'test'
+  ...
+# Subtest: 推奨文言と注意書きを載せる
+ok 36 - 推奨文言と注意書きを載せる
+  ---
+  duration_ms: 0.033458
+  type: 'test'
+  ...
+# Subtest: 人数の単位はアーティストが「組」、制作・技術が「人」
+ok 37 - 人数の単位はアーティストが「組」、制作・技術が「人」
+  ---
+  duration_ms: 0.034375
+  type: 'test'
+  ...
+# Subtest: 合言葉はサイトの鍵から自動解錠し、暗号化そのものは外さない
+ok 38 - 合言葉はサイトの鍵から自動解錠し、暗号化そのものは外さない
+  ---
+  duration_ms: 0.058583
+  type: 'test'
+  ...
+# Subtest: 自動解錠中だけ合言葉欄を隠し、失敗したら出す
+ok 39 - 自動解錠中だけ合言葉欄を隠し、失敗したら出す
+  ---
+  duration_ms: 0.036792
+  type: 'test'
+  ...
+# Subtest: index.html は合言葉ファイルを roster.js より先に読む
+ok 40 - index.html は合言葉ファイルを roster.js より先に読む
+  ---
+  duration_ms: 0.093833
+  type: 'test'
+  ...
+# Subtest: 合言葉が公開リポジトリへ入らないようにする
+ok 41 - 合言葉が公開リポジトリへ入らないようにする
+  ---
+  duration_ms: 8.510042
+  type: 'test'
+  ...
+# Subtest: スクリーン文字の例から黒閃を外す
+ok 42 - スクリーン文字の例から黒閃を外す
+  ---
+  duration_ms: 0.777541
+  type: 'test'
+  ...
+# Subtest: 保存済み合言葉の自動解錠はfileプロトコルだけ除外する
+ok 43 - 保存済み合言葉の自動解錠はfileプロトコルだけ除外する
+  ---
+  duration_ms: 0.076083
+  type: 'test'
+  ...
+# Subtest: 合言葉欄に送信しない表示切替ボタンを置く
+ok 44 - 合言葉欄に送信しない表示切替ボタンを置く
+  ---
+  duration_ms: 0.19
+  type: 'test'
+  ...
+# SKIP  session-room: wrangler dev (localhost:8788) が起動していないため飛ばします
+# Subtest: tests/session-room.test.mjs
+ok 6 - tests/session-room.test.mjs
+  ---
+  duration_ms: 1534.048375
+  type: 'test'
+  ...
+# Subtest: placed 旧形式はエントリ配列へ normalize される
+ok 46 - placed 旧形式はエントリ配列へ normalize される
+  ---
+  duration_ms: 16.416833
+  type: 'test'
+  ...
+# Subtest: role note at 付き placed は保存から読込まで保たれる
+ok 47 - role note at 付き placed は保存から読込まで保たれる
+  ---
+  duration_ms: 0.718125
+  type: 'test'
+  ...
+# Subtest: searchShelfWorks は AND 検索・配列一致・一致数から年順の並びを満たす
+ok 48 - searchShelfWorks は AND 検索・配列一致・一致数から年順の並びを満たす
+  ---
+  duration_ms: 0.617792
+  type: 'test'
+  ...
+# Subtest: confidenceLabel は high medium low その他を日本語へ変換する
+ok 49 - confidenceLabel は high medium low その他を日本語へ変換する
+  ---
+  duration_ms: 0.356959
+  type: 'test'
+  ...
+# Subtest: Aboutモーダルは承認済み日本語原稿を段落単位でそのまま持つ
+ok 50 - Aboutモーダルは承認済み日本語原稿を段落単位でそのまま持つ
+  ---
+  duration_ms: 0.70125
+  type: 'test'
+  ...
+# Subtest: Aboutモーダルの英訳は承認済み英語原稿と完全一致する
+ok 51 - Aboutモーダルの英訳は承認済み英語原稿と完全一致する
+  ---
+  duration_ms: 0.109666
+  type: 'test'
+  ...
+# Subtest: Aboutには独立モーダルと設定内の入口がある
+ok 52 - Aboutには独立モーダルと設定内の入口がある
+  ---
+  duration_ms: 1.997875
+  type: 'test'
+  ...
+# Subtest: 下書きは同じショーかつ同じ場面でpiecesがある場合だけ表示対象になる
+ok 53 - 下書きは同じショーかつ同じ場面でpiecesがある場合だけ表示対象になる
+  ---
+  duration_ms: 10.036292
+  type: 'test'
+  ...
+# Subtest: 下書き状態を失えば場面に一致していても表示対象は消える
+ok 54 - 下書き状態を失えば場面に一致していても表示対象は消える
+  ---
+  duration_ms: 0.559417
+  type: 'test'
+  ...
+# Subtest: 破棄・Esc・採用完了・別ショー切替は下書き状態を消し、場面切替は再描画する
+ok 55 - 破棄・Esc・採用完了・別ショー切替は下書き状態を消し、場面切替は再描画する
+  ---
+  duration_ms: 1.309583
+  type: 'test'
+  ...
+# Subtest: 下書きは通常駒の共通描画経路を0.45で使い、当たり判定の配列へ足さない
+ok 56 - 下書きは通常駒の共通描画経路を0.45で使い、当たり判定の配列へ足さない
+  ---
+  duration_ms: 0.944666
+  type: 'test'
+  ...
+# Subtest: editSummary付きJSONの差分行と警告を読み込みモーダル用文字列へ含める
+ok 57 - editSummary付きJSONの差分行と警告を読み込みモーダル用文字列へ含める
+  ---
+  duration_ms: 0.62475
+  type: 'test'
+  ...
+# Subtest: editSummaryなしのJSONではAI編集の追加節を作らない
+ok 58 - editSummaryなしのJSONではAI編集の追加節を作らない
+  ---
+  duration_ms: 0.33725
+  type: 'test'
+  ...
+# Subtest: 承認後も元のショーを棚に残し、読み込んだショーを別エントリとして増やす
+ok 59 - 承認後も元のショーを棚に残し、読み込んだショーを別エントリとして増やす
+  ---
+  duration_ms: 0.542
+  type: 'test'
+  ...
+# Subtest: スマホ閲覧モードは比較モーダルとAI差分表示を挟まない
+ok 60 - スマホ閲覧モードは比較モーダルとAI差分表示を挟まない
+  ---
+  duration_ms: 0.54325
+  type: 'test'
+  ...
+# Subtest: Macブリッジが無い環境ではAI指示sectionをDOMから取り除く
+ok 61 - Macブリッジが無い環境ではAI指示sectionをDOMから取り除く
+  ---
+  duration_ms: 10.849958
+  type: 'test'
+  ...
+# Subtest: AI指示欄はCommand+EnterとCtrl+Enterを実行ショートカットにする
+ok 62 - AI指示欄はCommand+EnterとCtrl+Enterを実行ショートカットにする
+  ---
+  duration_ms: 0.731333
+  type: 'test'
+  ...
+# Subtest: needs_clarificationの計画では採るボタンを出さない
+ok 63 - needs_clarificationの計画では採るボタンを出さない
+  ---
+  duration_ms: 0.447708
+  type: 'test'
+  ...
+# Subtest: clarificationsを持つ計画は選択肢ボタンとして描く
+ok 64 - clarificationsを持つ計画は選択肢ボタンとして描く
+  ---
+  duration_ms: 0.854334
+  type: 'test'
+  ...
+# Subtest: 全部答えるまでこの答えで作り直すを有効にしない
+ok 65 - 全部答えるまでこの答えで作り直すを有効にしない
+  ---
+  duration_ms: 0.488167
+  type: 'test'
+  ...
+# Subtest: clarificationsの無いneeds_clarification計画は従来の文字列質問表示に戻す
+ok 66 - clarificationsの無いneeds_clarification計画は従来の文字列質問表示に戻す
+  ---
+  duration_ms: 0.923
+  type: 'test'
+  ...
+# Subtest: この答えで作り直すプロンプトにはresolutions行を足す
+ok 67 - この答えで作り直すプロンプトにはresolutions行を足す
+  ---
+  duration_ms: 1.352
+  type: 'test'
+  ...
+# Subtest: AI実行権限の初回確認は承認後に一度だけ出す
+ok 68 - AI実行権限の初回確認は承認後に一度だけ出す
+  ---
+  duration_ms: 0.689333
+  type: 'test'
+  ...
+# Subtest: AI実行権限の初回確認を取り消したらエラー欄へ理由を表示する
+ok 69 - AI実行権限の初回確認を取り消したらエラー欄へ理由を表示する
+  ---
+  duration_ms: 1.06725
+  type: 'test'
+  ...
+# Subtest: 止める経路はブリッジのstopAgentを呼ぶ
+ok 70 - 止める経路はブリッジのstopAgentを呼ぶ
+  ---
+  duration_ms: 0.842292
+  type: 'test'
+  ...
+# Subtest: revision不一致はAIを起動せず、読み直しを案内する
+ok 71 - revision不一致はAIを起動せず、読み直しを案内する
+  ---
+  duration_ms: 0.57625
+  type: 'test'
+  ...
+# Subtest: revision未読は一度だけ確認し、承認時だけallowFirstSyncで再送する
+ok 72 - revision未読は一度だけ確認し、承認時だけallowFirstSyncで再送する
+  ---
+  duration_ms: 0.78675
+  type: 'test'
+  ...
+# Subtest: revision未読の確認を取り消すと再送もAI起動もしない
+ok 73 - revision未読の確認を取り消すと再送もAI起動もしない
+  ---
+  duration_ms: 0.435083
+  type: 'test'
+  ...
+# Subtest: 採用完了は元ショーを残して棚を1件増やし、castと駒を持つ新ショーへ切り替えて下書きを解除する
+ok 74 - 採用完了は元ショーを残して棚を1件増やし、castと駒を持つ新ショーへ切り替えて下書きを解除する
+  ---
+  duration_ms: 2.902125
+  type: 'test'
+  ...
+# Subtest: AI採用は元ショーを退避できなければ、下書きと現在ショーを保って中止する
+ok 75 - AI採用は元ショーを退避できなければ、下書きと現在ショーを保って中止する
+  ---
+  duration_ms: 0.391
+  type: 'test'
+  ...
+# Subtest: AI採用は次ショーを棚へ保存できなければ、下書きを解除しない
+ok 76 - AI採用は次ショーを棚へ保存できなければ、下書きを解除しない
+  ---
+  duration_ms: 0.364375
+  type: 'test'
+  ...
+# Subtest: runAgentがok:falseなら返却文を保ってAI起動エラーを表示する
+ok 77 - runAgentがok:falseなら返却文を保ってAI起動エラーを表示する
+  ---
+  duration_ms: 0.686959
+  type: 'test'
+  ...
+# Subtest: writeProjectが失敗したら書き出し箇所と原文を表示する
+ok 78 - writeProjectが失敗したら書き出し箇所と原文を表示する
+  ---
+  duration_ms: 0.388375
+  type: 'test'
+  ...
+# Subtest: latestPlanが失敗してもAIの応答を計画読込エラーと一緒に返す
+ok 79 - latestPlanが失敗してもAIの応答を計画読込エラーと一緒に返す
+  ---
+  duration_ms: 0.353167
+  type: 'test'
+  ...
+# Subtest: 計画が無い場合のAI応答は末尾2000文字を残し丸めた旨を表示する
+ok 80 - 計画が無い場合のAI応答は末尾2000文字を残し丸めた旨を表示する
+  ---
+  duration_ms: 0.328625
+  type: 'test'
+  ...
+# Subtest: 不足値は既定値で埋め、既存参照の複数候補だけ質問するようAIへ明記する
+ok 81 - 不足値は既定値で埋め、既存参照の複数候補だけ質問するようAIへ明記する
+  ---
+  duration_ms: 0.62475
+  type: 'test'
+  ...
+# Subtest: plan_editの入力検証エラーは最大3回直し、成功後はapplyせず終了する
+ok 82 - plan_editの入力検証エラーは最大3回直し、成功後はapplyせず終了する
+  ---
+  duration_ms: 1.017584
+  type: 'test'
+  ...
+# Subtest: runAgentが例外を投げてもAI起動エラーとして表示する
+ok 83 - runAgentが例外を投げてもAI起動エラーとして表示する
+  ---
+  duration_ms: 0.378458
+  type: 'test'
+  ...
+# Subtest: AI指示パネルは重複見出しを置かずsectionをaria-labelで区別する
+ok 84 - AI指示パネルは重複見出しを置かずsectionをaria-labelで区別する
+  ---
+  duration_ms: 0.233375
+  type: 'test'
+  ...
+# Subtest: AI指示パネルは既存の控えめな文字規則とボタンを使う
+ok 85 - AI指示パネルは既存の控えめな文字規則とボタンを使う
+  ---
+  duration_ms: 0.406291
+  type: 'test'
+  ...
+# Subtest: AI指示パネル下部にモデル名と推論強度を控えめに表示する
+ok 86 - AI指示パネル下部にモデル名と推論強度を控えめに表示する
+  ---
+  duration_ms: 0.490334
+  type: 'test'
+  ...
+# Subtest: agentInfoが読めない場合はモデル表示を不明にする
+ok 87 - agentInfoが読めない場合はモデル表示を不明にする
+  ---
+  duration_ms: 0.335959
+  type: 'test'
+  ...
+# Subtest: MacブリッジはagentInfoを公開しAgentModelだけを起動引数へ追加する
+ok 88 - MacブリッジはagentInfoを公開しAgentModelだけを起動引数へ追加する
+  ---
+  duration_ms: 0.090833
+  type: 'test'
+  ...
+# Subtest: 舞台技術カードは追補と収録済みの検証便を同一順序で束ねる
+ok 89 - 舞台技術カードは追補と収録済みの検証便を同一順序で束ねる
+  ---
+  duration_ms: 21.197375
+  type: 'test'
+  ...
+# Subtest: 第2・第3期は非デジタル、第4期は依存度を区別し、第5期300件を束ねる
+ok 90 - 第2・第3期は非デジタル、第4期は依存度を区別し、第5期300件を束ねる
+  ---
+  duration_ms: 0.390792
+  type: 'test'
+  ...
+# Subtest: 全カードに検索・予算・安全・出典に必要な項目がある
+ok 91 - 全カードに検索・予算・安全・出典に必要な項目がある
+  ---
+  duration_ms: 4.961834
+  type: 'test'
+  ...
+# Subtest: 第86–94便は既存との差と有効な近縁カードを保持する
+ok 92 - 第86–94便は既存との差と有効な近縁カードを保持する
+  ---
+  duration_ms: 3.642333
+  type: 'test'
+  ...
+# Subtest: 第95便は3件の固有機構と有効な近縁カードを保持する
+ok 93 - 第95便は3件の固有機構と有効な近縁カードを保持する
+  ---
+  duration_ms: 0.185541
+  type: 'test'
+  ...
+# Subtest: 専門職と予算区分は画面表示用の日本語ラベルを持つ
+ok 94 - 専門職と予算区分は画面表示用の日本語ラベルを持つ
+  ---
+  duration_ms: 15.369708
+  type: 'test'
+  ...
+# Subtest: 書斎に舞台技術タブ、検索、二つの絞り込み、詳細領域がある
+ok 95 - 書斎に舞台技術タブ、検索、二つの絞り込み、詳細領域がある
+  ---
+  duration_ms: 0.310416
+  type: 'test'
+  ...
+# Subtest: 舞台技術の詳細URLと検索・系統・予算規模の状態を扱う
+ok 96 - 舞台技術の詳細URLと検索・系統・予算規模の状態を扱う
+  ---
+  duration_ms: 0.200334
+  type: 'test'
+  ...
+# Subtest: 舞台技術カードを出典付きの種火としてスクラップブックと制作机へ渡せる
+ok 97 - 舞台技術カードを出典付きの種火としてスクラップブックと制作机へ渡せる
+  ---
+  duration_ms: 0.381292
+  type: 'test'
+  ...
+# Subtest: normalizeArrowはviewのない既存矢印を正面図へ所属させる
+ok 98 - normalizeArrowはviewのない既存矢印を正面図へ所属させる
+  ---
+  duration_ms: 0.4
+  type: 'test'
+  ...
+# Subtest: normalizeArrowは平面図の空中指定を床へ倒す
+ok 99 - normalizeArrowは平面図の空中指定を床へ倒す
+  ---
+  duration_ms: 0.14075
+  type: 'test'
+  ...
+# Subtest: drawArrowsは本体と画面上の下書きを描いた図だけへ出す
+ok 100 - drawArrowsは本体と画面上の下書きを描いた図だけへ出す
+  ---
+  duration_ms: 0.156875
+  type: 'test'
+  ...
+# Subtest: arrowAtは同じ図の矢印だけを添字を保ったまま調べる
+ok 101 - arrowAtは同じ図の矢印だけを添字を保ったまま調べる
+  ---
+  duration_ms: 0.107333
+  type: 'test'
+  ...
+# Subtest: 正面図を閉じても矢印道具を保ち、図の切替時は下書きを破棄する
+ok 102 - 正面図を閉じても矢印道具を保ち、図の切替時は下書きを破棄する
+  ---
+  duration_ms: 0.243916
+  type: 'test'
+  ...
+# Subtest: 矢印道具とポインタ処理に正面図限定ゲートを残さない
+ok 103 - 矢印道具とポインタ処理に正面図限定ゲートを残さない
+  ---
+  duration_ms: 0.59925
+  type: 'test'
+  ...
+# Subtest: arrowScreenPointsから平面図の空中矢印を潰す旧分岐を削除する
+ok 104 - arrowScreenPointsから平面図の空中矢印を潰す旧分岐を削除する
+  ---
+  duration_ms: 0.145333
+  type: 'test'
+  ...
+# Subtest: 空中ボタンは正面図が閉じたとき無効になり理由を英語でも示せる
+ok 105 - 空中ボタンは正面図が閉じたとき無効になり理由を英語でも示せる
+  ---
+  duration_ms: 0.25925
+  type: 'test'
+  ...
+# Subtest: 旧方針のコメントと正面図限定の道具説明を残さない
+ok 106 - 旧方針のコメントと正面図限定の道具説明を残さない
+  ---
+  duration_ms: 0.536875
+  type: 'test'
+  ...
+# Subtest: 楽曲メタデータを小さく正規化し、不正IDと重複を捨てる
+ok 107 - 楽曲メタデータを小さく正規化し、不正IDと重複を捨てる
+  ---
+  duration_ms: 0.732583
+  type: 'test'
+  ...
+# Subtest: sceneの割り当てIDは音源未接続でも保持し、sectionでは消す
+ok 108 - sceneの割り当てIDは音源未接続でも保持し、sectionでは消す
+  ---
+  duration_ms: 0.057834
+  type: 'test'
+  ...
+# Subtest: 同じ曲の連続シーンだけ再生位置を維持する
+ok 109 - 同じ曲の連続シーンだけ再生位置を維持する
+  ---
+  duration_ms: 0.153917
+  type: 'test'
+  ...
+# Subtest: 再接続候補は曲名と5%超の尺差を検知する
+ok 110 - 再接続候補は曲名と5%超の尺差を検知する
+  ---
+  duration_ms: 0.179125
+  type: 'test'
+  ...
+# Subtest: 新規・読込・書出しのstateへ音源参照だけを接続する
+ok 111 - 新規・読込・書出しのstateへ音源参照だけを接続する
+  ---
+  duration_ms: 0.309375
+  type: 'test'
+  ...
+# Subtest: IndexedDB helperはtrackIdを検査し、孤児回収を持つ
+ok 112 - IndexedDB helperはtrackIdを検査し、孤児回収を持つ
+  ---
+  duration_ms: 0.381542
+  type: 'test'
+  ...
+# Subtest: PCの音楽機能は一つのaudio要素で動く
+ok 113 - PCの音楽機能は一つのaudio要素で動く
+  ---
+  duration_ms: 0.497291
+  type: 'test'
+  ...
+# Subtest: タブレット・スマホに音楽UIを持ち込まない
+ok 114 - タブレット・スマホに音楽UIを持ち込まない
+  ---
+  duration_ms: 1.206458
+  type: 'test'
+  ...
+# Subtest: シーンの送りはタブレット・スマホの専用UIが持つ
+ok 115 - シーンの送りはタブレット・スマホの専用UIが持つ
+  ---
+  duration_ms: 0.42025
+  type: 'test'
+  ...
+# Subtest: 音源のローカル限定をUIで明示し、主要文言を日英で持つ
+ok 116 - 音源のローカル限定をUIで明示し、主要文言を日英で持つ
+  ---
+  duration_ms: 1.623625
+  type: 'test'
+  ...
+# Subtest: 新しい音源helperと版番号がHTML・単独版・Service Workerで一致する
+ok 117 - 新しい音源helperと版番号がHTML・単独版・Service Workerで一致する
+  ---
+  duration_ms: 0.504083
+  type: 'test'
+  ...
+# Subtest: normalizeLook は設定が無ければ null を返す
+ok 118 - normalizeLook は設定が無ければ null を返す
+  ---
+  duration_ms: 1.138417
+  type: 'test'
+  ...
+# Subtest: normalizeLook は有効な look の値を保つ
+ok 119 - normalizeLook は有効な look の値を保つ
+  ---
+  duration_ms: 0.44075
+  type: 'test'
+  ...
+# Subtest: normalizeLook は未知の種類 id を保存値として残す
+ok 120 - normalizeLook は未知の種類 id を保存値として残す
+  ---
+  duration_ms: 0.059
+  type: 'test'
+  ...
+# Subtest: normalizeLook は半透明色を既定色へ落とす
+ok 121 - normalizeLook は半透明色を既定色へ落とす
+  ---
+  duration_ms: 0.102042
+  type: 'test'
+  ...
+# Subtest: 種類の引き当ては未知 id を既定へ落とし、引数を書き換えない
+ok 122 - 種類の引き当ては未知 id を既定へ落とし、引数を書き換えない
+  ---
+  duration_ms: 0.050875
+  type: 'test'
+  ...
+# Subtest: resolveLook は cast / plain / custom / 対象外を分ける
+ok 123 - resolveLook は cast / plain / custom / 対象外を分ける
+  ---
+  duration_ms: 0.061583
+  type: 'test'
+  ...
+# Subtest: LENGTHS と SLEEVES は必須キーを持ち、t が昇順
+ok 124 - LENGTHS と SLEEVES は必須キーを持ち、t が昇順
+  ---
+  duration_ms: 0.122833
+  type: 'test'
+  ...
+# Subtest: 衣装・髪型の種類は必須キーを持つ
+ok 125 - 衣装・髪型の種類は必須キーを持つ
+  ---
+  duration_ms: 0.068709
+  type: 'test'
+  ...
+# Subtest: STASH_KEYS は lookMode と look を控える
+ok 126 - STASH_KEYS は lookMode と look を控える
+  ---
+  duration_ms: 0.373459
+  type: 'test'
+  ...
+# Subtest: D2の10種をすべて生成でき、\#2は休憩を通常シーンとして持つ
+ok 127 - D2の10種をすべて生成でき、\#2は休憩を通常シーンとして持つ
+  ---
+  duration_ms: 0.701917
+  type: 'test'
+  ...
+# Subtest: 10種すべてで役割数・エネルギー数・生成シーン数が一致し、配置が空である
+ok 128 - 10種すべてで役割数・エネルギー数・生成シーン数が一致し、配置が空である
+  ---
+  duration_ms: 0.376792
+  type: 'test'
+  ...
+# Subtest: beatはJSON往復で保持され、sectionでは常にnullになる
+ok 129 - beatはJSON往復で保持され、sectionでは常にnullになる
+  ---
+  duration_ms: 0.067791
+  type: 'test'
+  ...
+# Subtest: 描画の拡大率は描き先のcanvasから導く（書き出しは等倍のまま）
+ok 130 - 描画の拡大率は描き先のcanvasから導く（書き出しは等倍のまま）
+  ---
+  duration_ms: 0.944792
+  type: 'test'
+  ...
+# Subtest: 表示サイズに合わせて内部解像度を上げる（上限3倍）
+ok 131 - 表示サイズに合わせて内部解像度を上げる（上限3倍）
+  ---
+  duration_ms: 0.350208
+  type: 'test'
+  ...
+# Subtest: 広い画面では盤面が広がる（max-width 3000px）
+ok 132 - 広い画面では盤面が広がる（max-width 3000px）
+  ---
+  duration_ms: 0.098834
+  type: 'test'
+  ...
+# Subtest: 初回の解像度合わせはResizeObserver任せにしない（初回通知が来ない環境がある）
+ok 133 - 初回の解像度合わせはResizeObserver任せにしない（初回通知が来ない環境がある）
+  ---
+  duration_ms: 0.12
+  type: 'test'
+  ...
+# Subtest: サイズが変わる操作の後は解像度を合わせ直す（プレゼン出入り・絵の開閉）
+ok 134 - サイズが変わる操作の後は解像度を合わせ直す（プレゼン出入り・絵の開閉）
+  ---
+  duration_ms: 0.258
+  type: 'test'
+  ...
+# Subtest: 表示に要る画素数まで内部解像度を落とす（下限0.5倍）。縦横比は幅の倍率に追従する
+ok 135 - 表示に要る画素数まで内部解像度を落とす（下限0.5倍）。縦横比は幅の倍率に追従する
+  ---
+  duration_ms: 0.251042
+  type: 'test'
+  ...
+# Subtest: スマホでは奥行きの札を見出しの帯の下へ逃がす（英語で重なる）
+ok 136 - スマホでは奥行きの札を見出しの帯の下へ逃がす（英語で重なる）
+  ---
+  duration_ms: 0.134667
+  type: 'test'
+  ...
+# Subtest: 読み込み完了後にも解像度を合わせ直す（スマホの組み替え後に通知が来ない環境がある）
+ok 137 - 読み込み完了後にも解像度を合わせ直す（スマホの組み替え後に通知が来ない環境がある）
+  ---
+  duration_ms: 0.261708
+  type: 'test'
+  ...
+# Subtest: 初回描画（finishInitialStageSetup）の直後にも解像度を合わせ直す
+ok 138 - 初回描画（finishInitialStageSetup）の直後にも解像度を合わせ直す
+  ---
+  duration_ms: 0.318792
+  type: 'test'
+  ...
+# Subtest: Macブリッジが無いブラウザではリンクを押し、従来どおり成功として扱う
+ok 139 - Macブリッジが無いブラウザではリンクを押し、従来どおり成功として扱う
+  ---
+  duration_ms: 9.050208
+  type: 'test'
+  ...
+# Subtest: Macで保存先をキャンセルした結果をfalseとして返す
+ok 140 - Macで保存先をキャンセルした結果をfalseとして返す
+  ---
+  duration_ms: 0.468083
+  type: 'test'
+  ...
+# Subtest: キャンセル時はlastExportAtとeditsSinceExportを変えない
+ok 141 - キャンセル時はlastExportAtとeditsSinceExportを変えない
+  ---
+  duration_ms: 0.373583
+  type: 'test'
+  ...
+# Subtest: downloadBlobの全呼び出しは保存先の確定結果を待つ
+ok 142 - downloadBlobの全呼び出しは保存先の確定結果を待つ
+  ---
+  duration_ms: 0.483291
+  type: 'test'
+  ...
+# Subtest: Macの保存先決定は既存ブリッジ通知の形でページへ渡す
+ok 143 - Macの保存先決定は既存ブリッジ通知の形でページへ渡す
+  ---
+  duration_ms: 0.091083
+  type: 'test'
+  ...
+# Subtest: 画像書き出しのZIPヘルパーがwindowへ公開されている
+ok 144 - 画像書き出しのZIPヘルパーがwindowへ公開されている
+  ---
+  duration_ms: 0.383875
+  type: 'test'
+  ...
+# Subtest: crc32はNodeのzlib.crc32と一致する
+ok 145 - crc32はNodeのzlib.crc32と一致する
+  ---
+  duration_ms: 0.188041
+  type: 'test'
+  ...
+# Subtest: dataUrlToBytesはbase64 data URLを正しいバイト列へ戻す
+ok 146 - dataUrlToBytesはbase64 data URLを正しいバイト列へ戻す
+  ---
+  duration_ms: 0.364833
+  type: 'test'
+  ...
+# Subtest: dataUrlToBytesはtext data URL（生成条件テキスト）もUTF-8で復元する
+ok 147 - dataUrlToBytesはtext data URL（生成条件テキスト）もUTF-8で復元する
+  ---
+  duration_ms: 0.079958
+  type: 'test'
+  ...
+# Subtest: makeZipBlobは複数エントリ・日本語ファイル名・フォルダ階層を持つ正しいZIPを作る
+ok 148 - makeZipBlobは複数エントリ・日本語ファイル名・フォルダ階層を持つ正しいZIPを作る
+  ---
+  duration_ms: 0.501791
+  type: 'test'
+  ...
+# Subtest: makeZipBlobは1件でも壊れず、Node標準zlibでCRC検証できる
+ok 149 - makeZipBlobは1件でも壊れず、Node標準zlibでCRC検証できる
+  ---
+  duration_ms: 0.105
+  type: 'test'
+  ...
+# Subtest: index.htmlとstage.htmlのstage-sketch.js版数が一致している
+ok 150 - index.htmlとstage.htmlのstage-sketch.js版数が一致している
+  ---
+  duration_ms: 0.171292
+  type: 'test'
+  ...
+# Subtest: stage-sw.jsのCACHE_NAMEはstage-sketch-pwa-v<数字>の形を保っている
+ok 151 - stage-sw.jsのCACHE_NAMEはstage-sketch-pwa-v<数字>の形を保っている
+  ---
+  duration_ms: 0.074625
+  type: 'test'
+  ...
+# Subtest: ショーのJSON書き出し関数がグローバルdocumentを覆い隠す変数を持たない
+ok 152 - ショーのJSON書き出し関数がグローバルdocumentを覆い隠す変数を持たない
+  ---
+  duration_ms: 0.376333
+  type: 'test'
+  ...
+# Subtest: 画像・ピッチ書き出しの各関数はtry/catchで例外を握り、画面に見える失敗通知を出す
+ok 153 - 画像・ピッチ書き出しの各関数はtry/catchで例外を握り、画面に見える失敗通知を出す
+  ---
+  duration_ms: 0.758833
+  type: 'test'
+  ...
+# Subtest: 正規化座標の4点を客席から見た舞台ワールドへ変換する
+ok 154 - 正規化座標の4点を客席から見た舞台ワールドへ変換する
+  ---
+  duration_ms: 1.398166
+  type: 'test'
+  ...
+# Subtest: 床のワールド座標を舞台の正規化座標へ戻す
+ok 155 - 床のワールド座標を舞台の正規化座標へ戻す
+  ---
+  duration_ms: 0.1275
+  type: 'test'
+  ...
+# Subtest: 袖幅は舞台幅に比例し、小劇場と極端に広い舞台では上下限に収まる
+ok 156 - 袖幅は舞台幅に比例し、小劇場と極端に広い舞台では上下限に収まる
+  ---
+  duration_ms: 0.101
+  type: 'test'
+  ...
+# Subtest: 袖幕の中心は舞台端より0.4m外側になる
+ok 157 - 袖幕の中心は舞台端より0.4m外側になる
+  ---
+  duration_ms: 0.048875
+  type: 'test'
+  ...
+# Subtest: 袖幕の対数は舞台奥行きに応じて2組から4組に収まる
+ok 158 - 袖幕の対数は舞台奥行きに応じて2組から4組に収まる
+  ---
+  duration_ms: 0.107417
+  type: 'test'
+  ...
+# Subtest: 袖幕のz位置は指定した組数ぶん客席側から舞台奥へ単調減少する
+ok 159 - 袖幕のz位置は指定した組数ぶん客席側から舞台奥へ単調減少する
+  ---
+  duration_ms: 0.085458
+  type: 'test'
+  ...
+# Subtest: 客席の1列あたり座席数は既存式を保ち、狭い舞台でも最低8席になる
+ok 160 - 客席の1列あたり座席数は既存式を保ち、狭い舞台でも最低8席になる
+  ---
+  duration_ms: 0.092625
+  type: 'test'
+  ...
+# Subtest: 客席段床は13列で、奥へ行くほど位置と高さが一定量ずつ増える
+ok 161 - 客席段床は13列で、奥へ行くほど位置と高さが一定量ずつ増える
+  ---
+  duration_ms: 0.0975
+  type: 'test'
+  ...
+# Subtest: 客席の床は舞台の床より1m低い（Vision Proの houseFloorY と同じ）
+ok 162 - 客席の床は舞台の床より1m低い（Vision Proの houseFloorY と同じ）
+  ---
+  duration_ms: 0.234792
+  type: 'test'
+  ...
+# Subtest: 客席の人影は座った人の実寸を保つ
+ok 163 - 客席の人影は座った人の実寸を保つ
+  ---
+  duration_ms: 0.256708
+  type: 'test'
+  ...
+# Subtest: 席ごとのばらつきは何度呼んでも同じ（客席が沸き立たない）
+ok 164 - 席ごとのばらつきは何度呼んでも同じ（客席が沸き立たない）
+  ---
+  duration_ms: 0.104167
+  type: 'test'
+  ...
+# Subtest: 客席は1階・2階の全列に席が並び、座った頭の高さに人がいる
+ok 165 - 客席は1階・2階の全列に席が並び、座った頭の高さに人がいる
+  ---
+  duration_ms: 2.533333
+  type: 'test'
+  ...
+# Subtest: 2階バルコニーは1階の後方に張り出し、Vision Proと同じ寸法を持つ
+ok 166 - 2階バルコニーは1階の後方に張り出し、Vision Proと同じ寸法を持つ
+  ---
+  duration_ms: 0.089833
+  type: 'test'
+  ...
+# Subtest: 天井が低い会場には2階席を作らない（テント・小屋で天井を突き抜けない）
+ok 167 - 天井が低い会場には2階席を作らない（テント・小屋で天井を突き抜けない）
+  ---
+  duration_ms: 0.673875
+  type: 'test'
+  ...
+# Subtest: 全周会場では客席がリングになり、舞台をぐるりと囲む
+ok 168 - 全周会場では客席がリングになり、舞台をぐるりと囲む
+  ---
+  duration_ms: 6.6595
+  type: 'test'
+  ...
+# Subtest: リングの席は舞台の中心を向く
+ok 169 - リングの席は舞台の中心を向く
+  ---
+  duration_ms: 0.085292
+  type: 'test'
+  ...
+# Subtest: 3Dカメラへの会場データに客席の囲み方が渡っている
+ok 170 - 3Dカメラへの会場データに客席の囲み方が渡っている
+  ---
+  duration_ms: 9.627917
+  type: 'test'
+  ...
+# Subtest: 客席のカメラは段床の上に立つ（段に埋もれない）
+ok 171 - 客席のカメラは段床の上に立つ（段に埋もれない）
+  ---
+  duration_ms: 0.257042
+  type: 'test'
+  ...
+# Subtest: 舞台奥のカメラは舞台の内側に立つ（奥壁の裏へ出ない）
+ok 172 - 舞台奥のカメラは舞台の内側に立つ（奥壁の裏へ出ない）
+  ---
+  duration_ms: 0.121125
+  type: 'test'
+  ...
+# Subtest: 客席の入りは満席と空席の2つで、空席では誰も座らない
+ok 173 - 客席の入りは満席と空席の2つで、空席では誰も座らない
+  ---
+  duration_ms: 0.09175
+  type: 'test'
+  ...
+# Subtest: 空席では席の並びはそのままで、人だけが消える
+ok 174 - 空席では席の並びはそのままで、人だけが消える
+  ---
+  duration_ms: 1.12125
+  type: 'test'
+  ...
+# Subtest: 客席の入りの表示は日英そろっている
+ok 175 - 客席の入りの表示は日英そろっている
+  ---
+  duration_ms: 3.133
+  type: 'test'
+  ...
+# Subtest: 全周会場でも空席にできる
+ok 176 - 全周会場でも空席にできる
+  ---
+  duration_ms: 4.026709
+  type: 'test'
+  ...
+# Subtest: 席は舞台の一点を向く（端の席ほど内を向く）
+ok 177 - 席は舞台の一点を向く（端の席ほど内を向く）
+  ---
+  duration_ms: 0.08125
+  type: 'test'
+  ...
+# Subtest: 空いた椅子は背もたれの高さに描く（人の肩とは別の高さ）
+ok 178 - 空いた椅子は背もたれの高さに描く（人の肩とは別の高さ）
+  ---
+  duration_ms: 0.045667
+  type: 'test'
+  ...
+# Subtest: 客席の席の位置は何度求めても同じ（カメラを動かしても並びが変わらない）
+ok 179 - 客席の席の位置は何度求めても同じ（カメラを動かしても並びが変わらない）
+  ---
+  duration_ms: 1.265375
+  type: 'test'
+  ...
+# Subtest: 空席の判定は席ごとにばらけ、満席寄りに収まる
+ok 180 - 空席の判定は席ごとにばらけ、満席寄りに収まる
+  ---
+  duration_ms: 0.171208
+  type: 'test'
+  ...
+# Subtest: facing 0は客席向き、facing 90は上手向きになる
+ok 181 - facing 0は客席向き、facing 90は上手向きになる
+  ---
+  duration_ms: 0.037708
+  type: 'test'
+  ...
+# Subtest: 客席カメラのRIGHTはu=1側を画面右に置く
+ok 182 - 客席カメラのRIGHTはu=1側を画面右に置く
+  ---
+  duration_ms: 0.029833
+  type: 'test'
+  ...
+# Subtest: 自由カメラはWを1秒押すと視線の水平前方へ2.4m進む
+ok 183 - 自由カメラはWを1秒押すと視線の水平前方へ2.4m進む
+  ---
+  duration_ms: 0.102375
+  type: 'test'
+  ...
+# Subtest: 自由カメラの前進と右移動を同時にしても斜めだけ速くならない
+ok 184 - 自由カメラの前進と右移動を同時にしても斜めだけ速くならない
+  ---
+  duration_ms: 0.042208
+  type: 'test'
+  ...
+# Subtest: ほぼ真下を向いた自由カメラもWでは水平に進む
+ok 185 - ほぼ真下を向いた自由カメラもWでは水平に進む
+  ---
+  duration_ms: 0.0435
+  type: 'test'
+  ...
+# Subtest: 自由カメラの位置を舞台と客席を含む移動範囲へ収める
+ok 186 - 自由カメラの位置を舞台と客席を含む移動範囲へ収める
+  ---
+  duration_ms: 0.070916
+  type: 'test'
+  ...
+# Subtest: 自由カメラの客席中央と真上プリセットが指定の向きと高さを持つ
+ok 187 - 自由カメラの客席中央と真上プリセットが指定の向きと高さを持つ
+  ---
+  duration_ms: 0.064916
+  type: 'test'
+  ...
+# Subtest: 自由カメラの移動はdtが0なら位置を変えずNaNにもならない
+ok 188 - 自由カメラの移動はdtが0なら位置を変えずNaNにもならない
+  ---
+  duration_ms: 0.0405
+  type: 'test'
+  ...
+# Subtest: フレーム間隔は上限0.1秒で切り、裏に回った直後もカメラがワープしない
+ok 189 - フレーム間隔は上限0.1秒で切り、裏に回った直後もカメラがワープしない
+  ---
+  duration_ms: 0.050375
+  type: 'test'
+  ...
+# Subtest: near面より手前を捨て、跨ぐ線分を交点で切る
+ok 190 - near面より手前を捨て、跨ぐ線分を交点で切る
+  ---
+  duration_ms: 0.067708
+  type: 'test'
+  ...
+# Subtest: 姿勢と支持物から目の高さを決める
+ok 191 - 姿勢と支持物から目の高さを決める
+  ---
+  duration_ms: 0.072459
+  type: 'test'
+  ...
+# Subtest: 浮動小窓の位置と幅を画面内の制約へ収める
+ok 192 - 浮動小窓の位置と幅を画面内の制約へ収める
+  ---
+  duration_ms: 0.08475
+  type: 'test'
+  ...
+# Subtest: 転写キャンバスは元キャンバスのアスペクト比を保つ
+ok 193 - 転写キャンバスは元キャンバスのアスペクト比を保つ
+  ---
+  duration_ms: 0.034
+  type: 'test'
+  ...
+# Subtest: 浮動小窓の保存値を往復し、壊れたJSONは初期値へ戻す
+ok 194 - 浮動小窓の保存値を往復し、壊れたJSONは初期値へ戻す
+  ---
+  duration_ms: 0.256208
+  type: 'test'
+  ...
+# Subtest: 隠す・出すでvisibleとトグルチップを同期する
+ok 195 - 隠す・出すでvisibleとトグルチップを同期する
+  ---
+  duration_ms: 0.084875
+  type: 'test'
+  ...
+# Subtest: openからcloseでrAFを止め、オーバーレイを隠す
+ok 196 - openからcloseでrAFを止め、オーバーレイを隠す
+  ---
+  duration_ms: 1.529
+  type: 'test'
+  ...
+# Subtest: 転換アニメの途中値（animU/animV/animBase/animGlow）を優先して読む
+ok 197 - 転換アニメの途中値（animU/animV/animBase/animGlow）を優先して読む
+  ---
+  duration_ms: 0.064917
+  type: 'test'
+  ...
+# Subtest: 足元リングの角度: 客席側クリックで0°、上手側90°、下手側-90°、5°刻みで正規化
+ok 198 - 足元リングの角度: 客席側クリックで0°、上手側90°、下手側-90°、5°刻みで正規化
+  ---
+  duration_ms: 0.048167
+  type: 'test'
+  ...
+# Subtest: 演者のヒット判定は矩形に入った中で最も手前を選ぶ
+ok 199 - 演者のヒット判定は矩形に入った中で最も手前を選ぶ
+  ---
+  duration_ms: 0.04425
+  type: 'test'
+  ...
+# Subtest: レンズ表は3種で、既定の標準は従来の水平86度を保つ
+ok 200 - レンズ表は3種で、既定の標準は従来の水平86度を保つ
+  ---
+  duration_ms: 0.046125
+  type: 'test'
+  ...
+# Subtest: 焦点距離は超広角、広角、標準の順に長くなる
+ok 201 - 焦点距離は超広角、広角、標準の順に長くなる
+  ---
+  duration_ms: 0.024834
+  type: 'test'
+  ...
+# Subtest: 未知のレンズidと未指定値は標準へ戻る
+ok 202 - 未知のレンズidと未指定値は標準へ戻る
+  ---
+  duration_ms: 0.025625
+  type: 'test'
+  ...
+# Subtest: headroomは要求値の正負を保ち、既存のクランプ済み高さと落下半径を変えない
+ok 203 - headroomは要求値の正負を保ち、既存のクランプ済み高さと落下半径を変えない
+  ---
+  duration_ms: 1.858041
+  type: 'test'
+  ...
+# Subtest: 探り針パネルは実測JSON入口・出所・0.5m丸めの事実表示を持つ
+ok 204 - 探り針パネルは実測JSON入口・出所・0.5m丸めの事実表示を持つ
+  ---
+  duration_ms: 0.461166
+  type: 'test'
+  ...
+# Subtest: compute()経由でも要求値が二重正規化で失われない（回帰: 天井超の実測が+0.0になる）
+ok 205 - compute()経由でも要求値が二重正規化で失われない（回帰: 天井超の実測が+0.0になる）
+  ---
+  duration_ms: 14.945584
+  type: 'test'
+  ...
+# Subtest: stage.htmlの日本語テキストノードはTEXTに登録されている
+ok 206 - stage.htmlの日本語テキストノードはTEXTに登録されている
+  ---
+  duration_ms: 2.629917
+  type: 'test'
+  ...
+# Subtest: stage.htmlの日本語属性値はTEXTに登録されている
+ok 207 - stage.htmlの日本語属性値はTEXTに登録されている
+  ---
+  duration_ms: 1.180875
+  type: 'test'
+  ...
+# Subtest: stage-sketch.jsのannounce文字列はSAYに登録されている
+ok 208 - stage-sketch.jsのannounce文字列はSAYに登録されている
+  ---
+  duration_ms: 39.910583
+  type: 'test'
+  ...
+# Subtest: SAYに重複パターンと先行パターンによる遮蔽がない
+ok 209 - SAYに重複パターンと先行パターンによる遮蔽がない
+  ---
+  duration_ms: 4.784917
+  type: 'test'
+  ...
+# Subtest: normalizeStageLanguageは11入力を4言語へ正規化する
+ok 210 - normalizeStageLanguageは11入力を4言語へ正規化する
+  ---
+  duration_ms: 0.501708
+  type: 'test'
+  ...
+# Subtest: 初回言語は旧保存値を保ち、未読込パックの言語はenへ落ちる
+ok 211 - 初回言語は旧保存値を保ち、未読込パックの言語はenへ落ちる
+  ---
+  duration_ms: 0.100042
+  type: 'test'
+  ...
+# Subtest: 英語辞書は互換公開とパック公開で同じ値を共有する
+ok 212 - 英語辞書は互換公開とパック公開で同じ値を共有する
+  ---
+  duration_ms: 0.299417
+  type: 'test'
+  ...
+# Subtest: zh-Hansパックはドラフト989鍵・20群256 id・210文型を保ち、画像・印刷の2鍵を追加する
+ok 213 - zh-Hansパックはドラフト989鍵・20群256 id・210文型を保ち、画像・印刷の2鍵を追加する
+  ---
+  duration_ms: 18.157291
+  type: 'test'
+  ...
+# Subtest: zh-Hansパックの鍵・群・id・SAY sourceは英語パックの部分集合
+ok 214 - zh-Hansパックの鍵・群・id・SAY sourceは英語パックの部分集合
+  ---
+  duration_ms: 0.409459
+  type: 'test'
+  ...
+# Subtest: zh-Hansは欠落値をTEXT・MAPS・SAY・generatedの順で英語へ落とす
+ok 215 - zh-Hansは欠落値をTEXT・MAPS・SAY・generatedの順で英語へ落とす
+  ---
+  duration_ms: 1.105208
+  type: 'test'
+  ...
+# Subtest: zh-Hansは重複鍵・引用符の系統違い・同一MAPS群内の訳語衝突がない
+ok 216 - zh-Hansは重複鍵・引用符の系統違い・同一MAPS群内の訳語衝突がない
+  ---
+  duration_ms: 1.630042
+  type: 'test'
+  ...
+# Subtest: zh-Hantパックはドラフト989鍵・20群256 id・210文型を保ち、画像・印刷の2鍵を追加する
+ok 217 - zh-Hantパックはドラフト989鍵・20群256 id・210文型を保ち、画像・印刷の2鍵を追加する
+  ---
+  duration_ms: 4.614667
+  type: 'test'
+  ...
+# Subtest: zh-Hantパックの鍵・群・id・SAY sourceは英語パックの部分集合
+ok 218 - zh-Hantパックの鍵・群・id・SAY sourceは英語パックの部分集合
+  ---
+  duration_ms: 0.3325
+  type: 'test'
+  ...
+# Subtest: zh-Hantは欠落値をTEXT・MAPS・SAY・generatedの順で英語へ落とす
+ok 219 - zh-Hantは欠落値をTEXT・MAPS・SAY・generatedの順で英語へ落とす
+  ---
+  duration_ms: 1.707125
+  type: 'test'
+  ...
+# Subtest: zh-Hantは重複鍵・引用符の系統違い・同一MAPS群内の訳語衝突がない
+ok 220 - zh-Hantは重複鍵・引用符の系統違い・同一MAPS群内の訳語衝突がない
+  ---
+  duration_ms: 1.22375
+  type: 'test'
+  ...
+# Subtest: Set Builderの38語はTEXTと分けたMAPS群から引く
+ok 221 - Set Builderの38語はTEXTと分けたMAPS群から引く
+  ---
+  duration_ms: 0.587166
+  type: 'test'
+  ...
+# Subtest: TEXTに重複キーがない
+ok 222 - TEXTに重複キーがない
+  ---
+  duration_ms: 1.90075
+  type: 'test'
+  ...
+# Subtest: TEXTに空文字・言語コード・HTMLパスの鍵がない
+ok 223 - TEXTに空文字・言語コード・HTMLパスの鍵がない
+  ---
+  duration_ms: 1.194917
+  type: 'test'
+  ...
+# Subtest: stage-sketch.jsに日英二択のisEn()を残さない
+ok 224 - stage-sketch.jsに日英二択のisEn()を残さない
+  ---
+  duration_ms: 0.465
+  type: 'test'
+  ...
+# Subtest: 実行時ヘルパーは言語ごとの値と英語フォールバックを返す
+ok 225 - 実行時ヘルパーは言語ごとの値と英語フォールバックを返す
+  ---
+  duration_ms: 1.399833
+  type: 'test'
+  ...
+# Subtest: 関数型SAY replacementは代表入力を実行して文字列を返す
+ok 226 - 関数型SAY replacementは代表入力を実行して文字列を返す
+  ---
+  duration_ms: 0.492125
+  type: 'test'
+  ...
+# Subtest: 10種のテンプレ名・役割名・範囲に英訳がある
+ok 227 - 10種のテンプレ名・役割名・範囲に英訳がある
+  ---
+  duration_ms: 0.068875
+  type: 'test'
+  ...
+# Subtest: 英語の綴りはブリティッシュにそろえる（承認済み原稿も含む）
+ok 228 - 英語の綴りはブリティッシュにそろえる（承認済み原稿も含む）
+  ---
+  duration_ms: 2.033834
+  type: 'test'
+  ...
+# Subtest: 英語の約物はLPと同じ書き方にそろえる（承認済み原稿は除く）
+ok 229 - 英語の約物はLPと同じ書き方にそろえる（承認済み原稿は除く）
+  ---
+  duration_ms: 0.177833
+  type: 'test'
+  ...
+# Subtest: 同じ英語が別の意味に使われていない（太さと間口）
+ok 230 - 同じ英語が別の意味に使われていない（太さと間口）
+  ---
+  duration_ms: 0.041917
+  type: 'test'
+  ...
+# Subtest: パネルの見出しは sentence case にそろえる
+ok 231 - パネルの見出しは sentence case にそろえる
+  ---
+  duration_ms: 0.052708
+  type: 'test'
+  ...
+# Subtest: JSON読込は端末側の画面配置と表示設定を保ち、projectだけ差し替える
+ok 232 - JSON読込は端末側の画面配置と表示設定を保ち、projectだけ差し替える
+  ---
+  duration_ms: 1.737667
+  type: 'test'
+  ...
+# Subtest: 読み込んだショーは即時に棚へ保存し、別内容のID衝突では共存させる
+ok 233 - 読み込んだショーは即時に棚へ保存し、別内容のID衝突では共存させる
+  ---
+  duration_ms: 1.5065
+  type: 'test'
+  ...
+# Subtest: 光の意図を演者・空間・背景と変化へ正規化し、安全状態を固定する
+ok 234 - 光の意図を演者・空間・背景と変化へ正規化し、安全状態を固定する
+  ---
+  duration_ms: 0.441167
+  type: 'test'
+  ...
+# Subtest: 中身のないカードは保存せず、短い要約は生成AIを使わず組み立てる
+ok 235 - 中身のないカードは保存せず、短い要約は生成AIを使わず組み立てる
+  ---
+  duration_ms: 0.128666
+  type: 'test'
+  ...
+# Subtest: ブラウザ版version 4の書き出しでもlightingIntentを保持する
+ok 236 - ブラウザ版version 4の書き出しでもlightingIntentを保持する
+  ---
+  duration_ms: 0.09975
+  type: 'test'
+  ...
+# Subtest: シーンの正規化、新規シーン、履歴に光の意図が接続されている
+ok 237 - シーンの正規化、新規シーン、履歴に光の意図が接続されている
+  ---
+  duration_ms: 0.847458
+  type: 'test'
+  ...
+# Subtest: 文章入力は選択肢の再描画前にstateへ保持し、入力開始前を一度だけ履歴へ残す
+ok 238 - 文章入力は選択肢の再描画前にstateへ保持し、入力開始前を一度だけ履歴へ残す
+  ---
+  duration_ms: 0.1205
+  type: 'test'
+  ...
+# Subtest: カードはシーン説明と舞台面の間にあり、必須4項目と削除操作を持つ
+ok 239 - カードはシーン説明と舞台面の間にあり、必須4項目と削除操作を持つ
+  ---
+  duration_ms: 0.273125
+  type: 'test'
+  ...
+# Subtest: 光の意図カードの主要文言は日英を持つ
+ok 240 - 光の意図カードの主要文言は日英を持つ
+  ---
+  duration_ms: 1.373375
+  type: 'test'
+  ...
+# Subtest: 指定なしは何も描かず、7つの値を決められた作図記号へ写す
+ok 241 - 指定なしは何も描かず、7つの値を決められた作図記号へ写す
+  ---
+  duration_ms: 0.650583
+  type: 'test'
+  ...
+# Subtest: 空の意図は計画を作らない
+ok 242 - 空の意図は計画を作らない
+  ---
+  duration_ms: 0.156917
+  type: 'test'
+  ...
+# Subtest: 演者silhouetteだけなら明示レイヤー1件で、revealの副作用はない
+ok 243 - 演者silhouetteだけなら明示レイヤー1件で、revealの副作用はない
+  ---
+  duration_ms: 0.087
+  type: 'test'
+  ...
+# Subtest: 演者revealは背景と空間だけを沈める
+ok 244 - 演者revealは背景と空間だけを沈める
+  ---
+  duration_ms: 0.13875
+  type: 'test'
+  ...
+# Subtest: 重ね計画のレイヤー順は常に背景、空間、演者になる
+ok 245 - 重ね計画のレイヤー順は常に背景、空間、演者になる
+  ---
+  duration_ms: 0.106958
+  type: 'test'
+  ...
+# Subtest: DOM、ドックCSS、描画ガード、日英文言が接続されている
+ok 246 - DOM、ドックCSS、描画ガード、日英文言が接続されている
+  ---
+  duration_ms: 1.879459
+  type: 'test'
+  ...
+# Subtest: 画面状態showLightIntentを書き出しJSONへ含めない
+ok 247 - 画面状態showLightIntentを書き出しJSONへ含めない
+  ---
+  duration_ms: 0.097292
+  type: 'test'
+  ...
+# Subtest: LIGHT_PRESETSにbeamxとbeamfanがある
+ok 248 - LIGHT_PRESETSにbeamxとbeamfanがある
+  ---
+  duration_ms: 0.875291
+  type: 'test'
+  ...
+# Subtest: beamxは床置きの白ビームと赤ローホリで組まれている
+ok 249 - beamxは床置きの白ビームと赤ローホリで組まれている
+  ---
+  duration_ms: 0.452625
+  type: 'test'
+  ...
+# Subtest: サムネイルはプリセットの実データから描く
+ok 250 - サムネイルはプリセットの実データから描く
+  ---
+  duration_ms: 0.248208
+  type: 'test'
+  ...
+# Subtest: stage.htmlはselectを廃止してモーダル内にプリセットタイル一覧を持つ
+ok 251 - stage.htmlはselectを廃止してモーダル内にプリセットタイル一覧を持つ
+  ---
+  duration_ms: 0.193792
+  type: 'test'
+  ...
+# Subtest: プリセット一覧はモーダルで出す（開くボタンとモーダルがある）
+ok 252 - プリセット一覧はモーダルで出す（開くボタンとモーダルがある）
+  ---
+  duration_ms: 0.114375
+  type: 'test'
+  ...
+# Subtest: syncLocalShows: 初回はSHOSAI_STAGE_LOCAL_SHOWSの各ショーを棚へ追加する
+ok 253 - syncLocalShows: 初回はSHOSAI_STAGE_LOCAL_SHOWSの各ショーを棚へ追加する
+  ---
+  duration_ms: 1.894417
+  type: 'test'
+  ...
+# Subtest: syncLocalShows: 内容が変わっていなければ棚を書き戻さない
+ok 254 - syncLocalShows: 内容が変わっていなければ棚を書き戻さない
+  ---
+  duration_ms: 0.359
+  type: 'test'
+  ...
+# Subtest: syncLocalShows: 一度も開いていなければソース更新で新版に差し替える
+ok 255 - syncLocalShows: 一度も開いていなければソース更新で新版に差し替える
+  ---
+  duration_ms: 0.31525
+  type: 'test'
+  ...
+# Subtest: syncLocalShows: 一度開いた（savedAtが動いた）ショーはソース更新でも上書きしない
+ok 256 - syncLocalShows: 一度開いた（savedAtが動いた）ショーはソース更新でも上書きしない
+  ---
+  duration_ms: 0.338125
+  type: 'test'
+  ...
+# Subtest: syncLocalShows: 同じidの既存ショー（localHash無し=自作/見本）には触らない
+ok 257 - syncLocalShows: 同じidの既存ショー（localHash無し=自作/見本）には触らない
+  ---
+  duration_ms: 0.420125
+  type: 'test'
+  ...
+# Subtest: stage-sketch.js: syncLocalShowsが起動時に一度だけ呼ばれる
+ok 258 - stage-sketch.js: syncLocalShowsが起動時に一度だけ呼ばれる
+  ---
+  duration_ms: 0.606708
+  type: 'test'
+  ...
+# Subtest: index.html / stage.html: stage-shows.local.js はstage-sketch.jsより先に読み込む
+ok 259 - index.html / stage.html: stage-shows.local.js はstage-sketch.jsより先に読み込む
+  ---
+  duration_ms: 0.207791
+  type: 'test'
+  ...
+# Subtest: .gitignore: stage-shows.local.js は公開リポジトリに含めない
+ok 260 - .gitignore: stage-shows.local.js は公開リポジトリに含めない
+  ---
+  duration_ms: 0.086
+  type: 'test'
+  ...
+# Subtest: build_stage_shows_local.py: SCAN_GLOBSの各JSONが読め、採用project.idが一意
+ok 261 - build_stage_shows_local.py: SCAN_GLOBSの各JSONが読め、採用project.idが一意
+  ---
+  duration_ms: 63.340167
+  type: 'test'
+  ...
+# Subtest: 書斎のヘッダーからMac版のページへ行ける
+ok 262 - 書斎のヘッダーからMac版のページへ行ける
+  ---
+  duration_ms: 0.356833
+  type: 'test'
+  ...
+# Subtest: 配布する単独版にはMac版の入口が入らない
+ok 263 - 配布する単独版にはMac版の入口が入らない
+  ---
+  duration_ms: 0.143709
+  type: 'test'
+  ...
+# Subtest: 単独版の抽出開始点が index.html にひとつしかない
+ok 264 - 単独版の抽出開始点が index.html にひとつしかない
+  ---
+  duration_ms: 0.138125
+  type: 'test'
+  ...
+# Subtest: 単独版が本体と同じくらいの大きさで書き出されている
+ok 265 - 単独版が本体と同じくらいの大きさで書き出されている
+  ---
+  duration_ms: 0.043875
+  type: 'test'
+  ...
+# Subtest: Mac版のページは配布物と、動かすための条件を正しく書いている
+ok 266 - Mac版のページは配布物と、動かすための条件を正しく書いている
+  ---
+  duration_ms: 0.068166
+  type: 'test'
+  ...
+# Subtest: 配布物と受け取り口が配信対象から外れていない
+ok 267 - 配布物と受け取り口が配信対象から外れていない
+  ---
+  duration_ms: 0.071667
+  type: 'test'
+  ...
+# Subtest: 配布するzipが実在して、空でない
+ok 268 - 配布するzipが実在して、空でない
+  ---
+  duration_ms: 2.858208
+  type: 'test'
+  ...
+# Subtest: 盆の回転速度は既定0で-30〜30度/秒に正規化する
+ok 269 - 盆の回転速度は既定0で-30〜30度/秒に正規化する
+  ---
+  duration_ms: 1.164375
+  type: 'test'
+  ...
+# Subtest: 盆を控えて引き直すときspinRateを保持する
+ok 270 - 盆を控えて引き直すときspinRateを保持する
+  ---
+  duration_ms: 0.22525
+  type: 'test'
+  ...
+# Subtest: 場面転換は盆のspinRateも補間対象にする
+ok 271 - 場面転換は盆のspinRateも補間対象にする
+  ---
+  duration_ms: 0.171875
+  type: 'test'
+  ...
+# Subtest: 持続runは再生設定・転換・タブ表示状態を見て必要な時だけrAFを回す
+ok 272 - 持続runは再生設定・転換・タブ表示状態を見て必要な時だけrAFを回す
+  ---
+  duration_ms: 0.200209
+  type: 'test'
+  ...
+# Subtest: 持続runのフレーム間隔は250msでクランプする
+ok 273 - 持続runのフレーム間隔は250msでクランプする
+  ---
+  duration_ms: 0.182375
+  type: 'test'
+  ...
+# Subtest: 盆のインスペクタに日英対応の回転速度スライダーがある
+ok 274 - 盆のインスペクタに日英対応の回転速度スライダーがある
+  ---
+  duration_ms: 0.117916
+  type: 'test'
+  ...
+# Subtest: 持続runの実表示角は大きな正負の位相も-180〜180へ折り返す
+ok 275 - 持続runの実表示角は大きな正負の位相も-180〜180へ折り返す
+  ---
+  duration_ms: 0.711208
+  type: 'test'
+  ...
+# Subtest: 盆の内側の駒は盆の中心まわりに回転し、向きも追従する
+ok 276 - 盆の内側の駒は盆の中心まわりに回転し、向きも追従する
+  ---
+  duration_ms: 1.564208
+  type: 'test'
+  ...
+# Subtest: 盆のアニメ中の角度を優先し、その上の駒も途中位置と向きへ回す
+ok 277 - 盆のアニメ中の角度を優先し、その上の駒も途中位置と向きへ回す
+  ---
+  duration_ms: 0.125125
+  type: 'test'
+  ...
+# Subtest: 二重盆では最も小さい内盆だけを選び、内盆自身は外盆に追従する
+ok 278 - 二重盆では最も小さい内盆だけを選び、内盆自身は外盆に追従する
+  ---
+  duration_ms: 0.27225
+  type: 'test'
+  ...
+# Subtest: 左右開きの幕は閉じたとき全幅、全開時も両端に8%ずつ布を残す
+ok 279 - 左右開きの幕は閉じたとき全幅、全開時も両端に8%ずつ布を残す
+  ---
+  duration_ms: 0.456875
+  type: 'test'
+  ...
+# Subtest: プール床が水面より下なら水面を描き、床が0なら乾いた床だけにする
+ok 280 - プール床が水面より下なら水面を描き、床が0なら乾いた床だけにする
+  ---
+  duration_ms: 0.130084
+  type: 'test'
+  ...
+# Subtest: 負のせりは床線より下の箱として展開する
+ok 281 - 負のせりは床線より下の箱として展開する
+  ---
+  duration_ms: 0.061542
+  type: 'test'
+  ...
+# Subtest: せりの部品は保存値よりアニメ中の高さを優先する
+ok 282 - せりの部品は保存値よりアニメ中の高さを優先する
+  ---
+  duration_ms: 0.137667
+  type: 'test'
+  ...
+# Subtest: 場面転換は機構値を補間し、spinを最短弧で進めて終了時に消す
+ok 283 - 場面転換は機構値を補間し、spinを最短弧で進めて終了時に消す
+  ---
+  duration_ms: 1.684
+  type: 'test'
+  ...
+# Subtest: 場面ごとの転換秒数を正規化し、再生ボタンと行き先の尺に使う
+ok 284 - 場面ごとの転換秒数を正規化し、再生ボタンと行き先の尺に使う
+  ---
+  duration_ms: 0.779583
+  type: 'test'
+  ...
+# Subtest: 5件の内蔵プリセットは未確認の根拠メモを持ち、展開するとsetsとpiecesが増える
+ok 285 - 5件の内蔵プリセットは未確認の根拠メモを持ち、展開するとsetsとpiecesが増える
+  ---
+  duration_ms: 0.539541
+  type: 'test'
+  ...
+# Subtest: マニュアル正本は10章35節を検索に使える構造で持つ
+ok 286 - マニュアル正本は10章35節を検索に使える構造で持つ
+  ---
+  duration_ms: 0.501375
+  type: 'test'
+  ...
+# Subtest: MANUAL_FINDは全語ANDで検索し、noindex本文を除外する
+ok 287 - MANUAL_FINDは全語ANDで検索し、noindex本文を除外する
+  ---
+  duration_ms: 0.584042
+  type: 'test'
+  ...
+# Subtest: 全章・全節に英語の対訳が揃い、日本語が漏れていない
+ok 288 - 全章・全節に英語の対訳が揃い、日本語が漏れていない
+  ---
+  duration_ms: 0.74325
+  type: 'test'
+  ...
+# Subtest: MANUAL_FINDは英語モードで英語の見出し・言い換え語・本文を引く
+ok 289 - MANUAL_FINDは英語モードで英語の見出し・言い換え語・本文を引く
+  ---
+  duration_ms: 0.509
+  type: 'test'
+  ...
+# Subtest: 本文はいまのUIに追随している（地図なし・空にするはシーン欄・はじめての案内）
+ok 290 - 本文はいまのUIに追随している（地図なし・空にするはシーン欄・はじめての案内）
+  ---
+  duration_ms: 0.134417
+  type: 'test'
+  ...
+# Subtest: 冊子の会場の説明が、アプリに入っている会場を取りこぼしていない
+ok 291 - 冊子の会場の説明が、アプリに入っている会場を取りこぼしていない
+  ---
+  duration_ms: 6.3625
+  type: 'test'
+  ...
+# Subtest: 正本と単独版に検索・冊子導線と共通データが継承される
+not ok 292 - 正本と単独版に検索・冊子導線と共通データが継承される
+  ---
+  duration_ms: 0.431
+  type: 'test'
+  location: '/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/tests/stage-manual-help.test.mjs:121:1'
+  failureType: 'testCodeFailure'
+  error: '共通マニュアルデータがstage-sketch.jsより先に読み込まれる'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///Users/arata/Library/Mobile%20Documents/com%7Eapple%7ECloudDocs/claude%20code%20files/show-creative-ideas/shosai-app/tests/stage-manual-help.test.mjs:126:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Service Workerは冊子一式を最新版へキャッシュする
+ok 293 - Service Workerは冊子一式を最新版へキャッシュする
+  ---
+  duration_ms: 0.108375
+  type: 'test'
+  ...
+# Subtest: manualディレクトリは配信除外されていない
+ok 294 - manualディレクトリは配信除外されていない
+  ---
+  duration_ms: 0.293291
+  type: 'test'
+  ...
+# Subtest: 使い方検索の新ラベルは英訳表に登録されている
+ok 295 - 使い方検索の新ラベルは英訳表に登録されている
+  ---
+  duration_ms: 2.724167
+  type: 'test'
+  ...
+# Subtest: normalizeStateがmcpRevisionを正の整数だけ保持する
+ok 296 - normalizeStateがmcpRevisionを正の整数だけ保持する
+  ---
+  duration_ms: 9.32075
+  type: 'test'
+  ...
+# Subtest: makeProjectExportDocumentはstate直下のmcpRevisionを書き出さない
+ok 297 - makeProjectExportDocumentはstate直下のmcpRevisionを書き出さない
+  ---
+  duration_ms: 0.485625
+  type: 'test'
+  ...
+# Subtest: projectIoClone(state.project)はmcpRevisionを正本projectへ混ぜない
+ok 298 - projectIoClone(state.project)はmcpRevisionを正本projectへ混ぜない
+  ---
+  duration_ms: 0.346791
+  type: 'test'
+  ...
+# Subtest: AI編集結果だけappliedRevisionを保持し、通常読込と別ショー化ではnullにする
+ok 299 - AI編集結果だけappliedRevisionを保持し、通常読込と別ショー化ではnullにする
+  ---
+  duration_ms: 0.667834
+  type: 'test'
+  ...
+# Subtest: allowlistKeyはbaseを含まず、file/sceneId/pieceType/pieceName/holderNameだけで組み立てる
+ok 300 - allowlistKeyはbaseを含まず、file/sceneId/pieceType/pieceName/holderNameだけで組み立てる
+  ---
+  duration_ms: 0.365208
+  type: 'test'
+  ...
+# Subtest: allowlistKeyはファイル名のNFC/NFD差を同じ許可項目として扱う
+ok 301 - allowlistKeyはファイル名のNFC/NFD差を同じ許可項目として扱う
+  ---
+  duration_ms: 0.170625
+  type: 'test'
+  ...
+# Subtest: loadAllowlistSetは同梱の許可リストJSONを読み、2026-08-20レビュー済みの33件を持つ
+ok 302 - loadAllowlistSetは同梱の許可リストJSONを読み、2026-08-20レビュー済みの33件を持つ
+  ---
+  duration_ms: 3.850125
+  type: 'test'
+  ...
+# Subtest: partitionByAllowlistは許可リストにある組み合わせだけをknownへ振り分け、baseの違いは無視する
+ok 303 - partitionByAllowlistは許可リストにある組み合わせだけをknownへ振り分け、baseの違いは無視する
+  ---
+  duration_ms: 0.342875
+  type: 'test'
+  ...
+# Subtest: applyCanvasSizeはスマホ閲覧機の縦向きだけ960を選ぶ
+ok 304 - applyCanvasSizeはスマホ閲覧機の縦向きだけ960を選ぶ
+  ---
+  duration_ms: 1.755042
+  type: 'test'
+  ...
+# Subtest: applyCanvasSizeは4枚のcanvasを同じ高さへ張り替える
+ok 305 - applyCanvasSizeは4枚のcanvasを同じ高さへ張り替える
+  ---
+  duration_ms: 0.164292
+  type: 'test'
+  ...
+# Subtest: 初回のcanvas寸法更新は最初の描画より前に行う
+ok 306 - 初回のcanvas寸法更新は最初の描画より前に行う
+  ---
+  duration_ms: 0.18025
+  type: 'test'
+  ...
+# Subtest: スマホ向き変更はcanvas寸法をrenderより先に更新する
+ok 307 - スマホ向き変更はcanvas寸法をrenderより先に更新する
+  ---
+  duration_ms: 0.124958
+  type: 'test'
+  ...
+# Subtest: 正面図は720基準の席Y値だけをkで換算する
+ok 308 - 正面図は720基準の席Y値だけをkで換算する
+  ---
+  duration_ms: 0.365708
+  type: 'test'
+  ...
+# Subtest: 縦向きスマホのCSSだけcanvasを4:3にする
+ok 309 - 縦向きスマホのCSSだけcanvasを4:3にする
+  ---
+  duration_ms: 0.356708
+  type: 'test'
+  ...
+# Subtest: 付箋の描画と当たり判定は同じ縦座標換算を使う
+ok 310 - 付箋の描画と当たり判定は同じ縦座標換算を使う
+  ---
+  duration_ms: 0.597083
+  type: 'test'
+  ...
+# Subtest: 向きの通知が来なくてもresizeで寸法を直す保険がある
+ok 311 - 向きの通知が来なくてもresizeで寸法を直す保険がある
+  ---
+  duration_ms: 0.142708
+  type: 'test'
+  ...
+# Subtest: applyCanvasSizeは幅が縮小されていても縦横比を保つ（backing の倍率に追従）
+ok 312 - applyCanvasSizeは幅が縮小されていても縦横比を保つ（backing の倍率に追従）
+  ---
+  duration_ms: 0.343042
+  type: 'test'
+  ...
+# Subtest: 保存状態の書き込みは一本化されている
+ok 313 - 保存状態の書き込みは一本化されている
+  ---
+  duration_ms: 0.790375
+  type: 'test'
+  ...
+# Subtest: 保存の失敗と棚の異常は警告として送る
+ok 314 - 保存の失敗と棚の異常は警告として送る
+  ---
+  duration_ms: 0.232167
+  type: 'test'
+  ...
+# Subtest: 通常の保存では帯を出さず、警告のときだけ出す
+ok 315 - 通常の保存では帯を出さず、警告のときだけ出す
+  ---
+  duration_ms: 0.14025
+  type: 'test'
+  ...
+# Subtest: 閉じるのは利用者の操作だけ
+ok 316 - 閉じるのは利用者の操作だけ
+  ---
+  duration_ms: 0.094833
+  type: 'test'
+  ...
+# Subtest: 警告の隣に書き出しがある
+ok 317 - 警告の隣に書き出しがある
+  ---
+  duration_ms: 0.196167
+  type: 'test'
+  ...
+# Subtest: 読み込みの対として書き出しを置く
+ok 318 - 読み込みの対として書き出しを置く
+  ---
+  duration_ms: 0.330709
+  type: 'test'
+  ...
+# Subtest: 警告帯は盤面のgridの外へ出す
+ok 319 - 警告帯は盤面のgridの外へ出す
+  ---
+  duration_ms: 0.150209
+  type: 'test'
+  ...
+# Subtest: 警告帯のボタンは指で押せる大きさ
+ok 320 - 警告帯のボタンは指で押せる大きさ
+  ---
+  duration_ms: 0.068208
+  type: 'test'
+  ...
+# Subtest: スマホの盤面から音楽帯ぶんの行が消えている
+ok 321 - スマホの盤面から音楽帯ぶんの行が消えている
+  ---
+  duration_ms: 0.351875
+  type: 'test'
+  ...
+# Subtest: スマホ閲覧版はiPad PWAと分けて短辺600px以下のタッチ端末で起動する
+ok 322 - スマホ閲覧版はiPad PWAと分けて短辺600px以下のタッチ端末で起動する
+  ---
+  duration_ms: 0.585959
+  type: 'test'
+  ...
+# Subtest: 初回言語は外部指定、保存値、端末言語の順で決まり、明示保存したjaを守る
+ok 323 - 初回言語は外部指定、保存値、端末言語の順で決まり、明示保存したjaを守る
+  ---
+  duration_ms: 0.125125
+  type: 'test'
+  ...
+# Subtest: 端末言語を読めなくても日本語で起動する
+ok 324 - 端末言語を読めなくても日本語で起動する
+  ---
+  duration_ms: 0.077333
+  type: 'test'
+  ...
+# Subtest: スマホの操作はショー・前後シーン・情報に限定する
+ok 325 - スマホの操作はショー・前後シーン・情報に限定する
+  ---
+  duration_ms: 1.013291
+  type: 'test'
+  ...
+# Subtest: スマホの読込メニューからJSONと同梱サンプルを選べる
+ok 326 - スマホの読込メニューからJSONと同梱サンプルを選べる
+  ---
+  duration_ms: 0.381834
+  type: 'test'
+  ...
+# Subtest: スマホ閲覧機の固定文言・aria-label・placeholderはtxを通す
+ok 327 - スマホ閲覧機の固定文言・aria-label・placeholderはtxを通す
+  ---
+  duration_ms: 0.2195
+  type: 'test'
+  ...
+# Subtest: スマホ閲覧機で使う追加日本語はすべて英訳を持つ
+ok 328 - スマホ閲覧機で使う追加日本語はすべて英訳を持つ
+  ---
+  duration_ms: 0.133
+  type: 'test'
+  ...
+# Subtest: setLangはスマホ閲覧機の文言をその場で貼り直す
+ok 329 - setLangはスマホ閲覧機の文言をその場で貼り直す
+  ---
+  duration_ms: 0.58775
+  type: 'test'
+  ...
+# Subtest: 読み込んだJSONはスマホでは編集用比較モーダルを挟まず開く
+ok 330 - 読み込んだJSONはスマホでは編集用比較モーダルを挟まず開く
+  ---
+  duration_ms: 0.685875
+  type: 'test'
+  ...
+# Subtest: スマホでJSONを読み込むと描画前に正面図へ切り替え、失敗時は元へ戻す
+ok 331 - スマホでJSONを読み込むと描画前に正面図へ切り替え、失敗時は元へ戻す
+  ---
+  duration_ms: 0.467584
+  type: 'test'
+  ...
+# Subtest: 縦画面は正面図と平面図を並べ、横画面は一枚を切り替える
+ok 332 - 縦画面は正面図と平面図を並べ、横画面は一枚を切り替える
+  ---
+  duration_ms: 0.835167
+  type: 'test'
+  ...
+# Subtest: 横画面は操作を右側レールへ移し、図が縦いっぱいを使う
+ok 333 - 横画面は操作を右側レールへ移し、図が縦いっぱいを使う
+  ---
+  duration_ms: 0.414459
+  type: 'test'
+  ...
+# Subtest: 横画面の枠幅は100dvhの逆算式ではなく、実際に配られた高さから導く
+ok 334 - 横画面の枠幅は100dvhの逆算式ではなく、実際に配られた高さから導く
+  ---
+  duration_ms: 0.10075
+  type: 'test'
+  ...
+# Subtest: スマホの縦は外側を六段、canvas-stack内を図二段+メモ一段にし、横は図だけ
+ok 335 - スマホの縦は外側を六段、canvas-stack内を図二段+メモ一段にし、横は図だけ
+  ---
+  duration_ms: 0.457666
+  type: 'test'
+  ...
+# Subtest: 縦向きは情報・ショー・設定を図へ重ねず、図を下へ押し下げる
+ok 336 - 縦向きは情報・ショー・設定を図へ重ねず、図を下へ押し下げる
+  ---
+  duration_ms: 0.541
+  type: 'test'
+  ...
+# Subtest: 横向きだけは情報・ショー・設定を重ね、右レール64pxを避ける
+ok 337 - 横向きだけは情報・ショー・設定を重ね、右レール64pxを避ける
+  ---
+  duration_ms: 0.068833
+  type: 'test'
+  ...
+# Subtest: スマホの上部の題は、版とβ版をヘッダーの正本から読む
+ok 338 - スマホの上部の題は、版とβ版をヘッダーの正本から読む
+  ---
+  duration_ms: 0.79475
+  type: 'test'
+  ...
+# Subtest: 題の右端に44pxの設定入口があり、4言語と「端末による違い」だけを持つ
+ok 339 - 題の右端に44pxの設定入口があり、4言語と「端末による違い」だけを持つ
+  ---
+  duration_ms: 1.113875
+  type: 'test'
+  ...
+# Subtest: 「端末による違い」の入口はスマホからも開け、狭い画面の一段組みが表側にある
+ok 340 - 「端末による違い」の入口はスマホからも開け、狭い画面の一段組みが表側にある
+  ---
+  duration_ms: 0.425625
+  type: 'test'
+  ...
+# Subtest: シーン名は押せる入口で、一覧は段組み外の全画面スクロール面になる
+ok 341 - シーン名は押せる入口で、一覧は段組み外の全画面スクロール面になる
+  ---
+  duration_ms: 0.662833
+  type: 'test'
+  ...
+# Subtest: シーン一覧のセクション折りたたみは一時Setだけを変え、projectを変更しない
+ok 342 - シーン一覧のセクション折りたたみは一時Setだけを変え、projectを変更しない
+  ---
+  duration_ms: 0.53825
+  type: 'test'
+  ...
+# Subtest: シーン行はopenSceneを呼んでから全画面一覧を閉じる
+ok 343 - シーン行はopenSceneを呼んでから全画面一覧を閉じる
+  ---
+  duration_ms: 0.311792
+  type: 'test'
+  ...
+# Subtest: 縦画面の操作は一段に収まり、図へ重ならない
+ok 344 - 縦画面の操作は一段に収まり、図へ重ならない
+  ---
+  duration_ms: 0.080084
+  type: 'test'
+  ...
+# Subtest: スマホでは舞台要素も付箋も図上で編集できない
+ok 345 - スマホでは舞台要素も付箋も図上で編集できない
+  ---
+  duration_ms: 0.884125
+  type: 'test'
+  ...
+# Subtest: スマホ画面はスクロールせず44px操作を使う
+ok 346 - スマホ画面はスクロールせず44px操作を使う
+  ---
+  duration_ms: 0.232917
+  type: 'test'
+  ...
+# Subtest: スマホの付箋入力を外しても既存付箋の表示と図の下のメモ欄を残す
+ok 347 - スマホの付箋入力を外しても既存付箋の表示と図の下のメモ欄を残す
+  ---
+  duration_ms: 0.239792
+  type: 'test'
+  ...
+# Subtest: スマホ閲覧版では編集チュートリアルを自動起動しない
+ok 348 - スマホ閲覧版では編集チュートリアルを自動起動しない
+  ---
+  duration_ms: 0.344667
+  type: 'test'
+  ...
+# Subtest: 設定の歯車は、ブラウザ版とスマホで同じ図形を使う
+ok 349 - 設定の歯車は、ブラウザ版とスマホで同じ図形を使う
+  ---
+  duration_ms: 0.197
+  type: 'test'
+  ...
+# Subtest: 全画面のシーン一覧を閉じるのは×の絵で、読み上げ名は文字で残す
+ok 350 - 全画面のシーン一覧を閉じるのは×の絵で、読み上げ名は文字で残す
+  ---
+  duration_ms: 0.675
+  type: 'test'
+  ...
+# Subtest: 図の下のメモ欄は縦向きだけで、中身はシーンのメモそのもの
+ok 351 - 図の下のメモ欄は縦向きだけで、中身はシーンのメモそのもの
+  ---
+  duration_ms: 0.773167
+  type: 'test'
+  ...
+# Subtest: メモの段はDOM順に頼らずgrid-rowで固定する（並べ替えで押し出されないように）
+ok 352 - メモの段はDOM順に頼らずgrid-rowで固定する（並べ替えで押し出されないように）
+  ---
+  duration_ms: 0.068292
+  type: 'test'
+  ...
+# Subtest: seedFromとmulberry32は同じ入力から同じ数列を返す
+ok 353 - seedFromとmulberry32は同じ入力から同じ数列を返す
+  ---
+  duration_ms: 0.676917
+  type: 'test'
+  ...
+# Subtest: 5言語の生成条件は空行を作らず、本人の原文を改変しない
+ok 354 - 5言語の生成条件は空行を作らず、本人の原文を改変しない
+  ---
+  duration_ms: 0.563042
+  type: 'test'
+  ...
+# Subtest: lightingIntentが無い場面は例外にならず光と本人の言葉の節を落とす
+ok 355 - lightingIntentが無い場面は例外にならず光と本人の言葉の節を落とす
+  ---
+  duration_ms: 0.256083
+  type: 'test'
+  ...
+# Subtest: renderだけが参照画像の一行を末尾へ足す
+ok 356 - renderだけが参照画像の一行を末尾へ足す
+  ---
+  duration_ms: 0.296792
+  type: 'test'
+  ...
+# Subtest: 画風パラメータは4キーを持ち、未知のキーはtheatreへ落ちる
+ok 357 - 画風パラメータは4キーを持ち、未知のキーはtheatreへ落ちる
+  ---
+  duration_ms: 0.145708
+  type: 'test'
+  ...
+# Subtest: 生成条件の全語彙表は5言語で同じid集合を持つ
+ok 358 - 生成条件の全語彙表は5言語で同じid集合を持つ
+  ---
+  duration_ms: 0.423541
+  type: 'test'
+  ...
+# Subtest: 位置語彙へ左右反転を招く舞台用語が混ざっていない
+ok 359 - 位置語彙へ左右反転を招く舞台用語が混ざっていない
+  ---
+  duration_ms: 0.259083
+  type: 'test'
+  ...
+# Subtest: ピッチ用UI・読み込み順・オフライン登録・作図注記ガードが揃う
+ok 360 - ピッチ用UI・読み込み順・オフライン登録・作図注記ガードが揃う
+  ---
+  duration_ms: 1.090667
+  type: 'test'
+  ...
+# Subtest: front・none・custom想定では左右の袖が画面に収まる
+ok 361 - front・none・custom想定では左右の袖が画面に収まる
+  ---
+  duration_ms: 0.448958
+  type: 'test'
+  ...
+# Subtest: threeでは奥の袖と三方の客席が画面に収まる
+ok 362 - threeでは奥の袖と三方の客席が画面に収まる
+  ---
+  duration_ms: 0.053166
+  type: 'test'
+  ...
+# Subtest: roundでは最外周の円と文字が画面に収まる
+ok 363 - roundでは最外周の円と文字が画面に収まる
+  ---
+  duration_ms: 0.060334
+  type: 'test'
+  ...
+# Subtest: 12m×9m frontは旧計算より1.1倍以上大きい
+ok 364 - 12m×9m frontは旧計算より1.1倍以上大きい
+  ---
+  duration_ms: 0.075083
+  type: 'test'
+  ...
+# Subtest: 12m×9m frontはH=960で袖と96pxの客席帯を保ち、H=720の結果を変えない
+ok 365 - 12m×9m frontはH=960で袖と96pxの客席帯を保ち、H=720の結果を変えない
+  ---
+  duration_ms: 0.314292
+  type: 'test'
+  ...
+# Subtest: 極端な会場寸法でも各形式の必要物が画面に収まる
+ok 366 - 極端な会場寸法でも各形式の必要物が画面に収まる
+  ---
+  duration_ms: 0.198583
+  type: 'test'
+  ...
+# Subtest: 姿勢帯は正面図の内側で平面図より前にある
+ok 367 - 姿勢帯は正面図の内側で平面図より前にある
+  ---
+  duration_ms: 0.352084
+  type: 'test'
+  ...
+# Subtest: 選択更新は早期returnより前に姿勢帯を同期する
+ok 368 - 選択更新は早期returnより前に姿勢帯を同期する
+  ---
+  duration_ms: 1.072417
+  type: 'test'
+  ...
+# Subtest: 姿勢帯は乗り物を除外し、絵を描いて現在姿勢を中央へ寄せる
+ok 369 - 姿勢帯は乗り物を除外し、絵を描いて現在姿勢を中央へ寄せる
+  ---
+  duration_ms: 0.21725
+  type: 'test'
+  ...
+# Subtest: 姿勢帯の縮小タイルにCSS定義がある
+ok 370 - 姿勢帯の縮小タイルにCSS定義がある
+  ---
+  duration_ms: 0.105875
+  type: 'test'
+  ...
+# Subtest: 全画面APIが無い環境では疑似プレゼンへ入る
+ok 371 - 全画面APIが無い環境では疑似プレゼンへ入る
+  ---
+  duration_ms: 1.797334
+  type: 'test'
+  ...
+# Subtest: 全画面APIが拒否された場合も疑似プレゼンへ入る
+ok 372 - 全画面APIが拒否された場合も疑似プレゼンへ入る
+  ---
+  duration_ms: 0.280208
+  type: 'test'
+  ...
+# Subtest: 疑似プレゼンの左右ゾーンは既存のシーン送りへ配線する
+ok 373 - 疑似プレゼンの左右ゾーンは既存のシーン送りへ配線する
+  ---
+  duration_ms: 0.232792
+  type: 'test'
+  ...
+# Subtest: 疑似プレゼン中のfullscreenchangeは状態を変更しない
+ok 374 - 疑似プレゼン中のfullscreenchangeは状態を変更しない
+  ---
+  duration_ms: 0.339042
+  type: 'test'
+  ...
+# Subtest: プレゼン中は見る位置の小図を描かない（見せる相手の道具ではない）
+ok 375 - プレゼン中は見る位置の小図を描かない（見せる相手の道具ではない）
+  ---
+  duration_ms: 0.085167
+  type: 'test'
+  ...
+# Subtest: 小道具propが駒・セット・並び順・実寸・立体へ登録されている
+ok 376 - 小道具propが駒・セット・並び順・実寸・立体へ登録されている
+  ---
+  duration_ms: 1.139209
+  type: 'test'
+  ...
+# Subtest: normalizePieceは持ち手と左右を正規化する
+ok 377 - normalizePieceは持ち手と左右を正規化する
+  ---
+  duration_ms: 0.165166
+  type: 'test'
+  ...
+# Subtest: 持てる種類・寸法上限・吊物除外が一つの判定にまとまっている
+ok 378 - 持てる種類・寸法上限・吊物除外が一つの判定にまとまっている
+  ---
+  duration_ms: 0.107667
+  type: 'test'
+  ...
+# Subtest: supportUnderは持たれている駒を乗る側・支える側の両方から外す
+ok 379 - supportUnderは持たれている駒を乗る側・支える側の両方から外す
+  ---
+  duration_ms: 0.110209
+  type: 'test'
+  ...
+# Subtest: 保持中の位置・高さ同期とシーン複製時のid張り替えがある
+ok 380 - 保持中の位置・高さ同期とシーン複製時のid張り替えがある
+  ---
+  duration_ms: 0.344791
+  type: 'test'
+  ...
+# Subtest: インスペクタに持ち物・持ち手の操作があり英語名も登録されている
+ok 381 - インスペクタに持ち物・持ち手の操作があり英語名も登録されている
+  ---
+  duration_ms: 0.135084
+  type: 'test'
+  ...
+# Subtest: 本体から小道具形・DOM参照・舞台内判定を読み取れる
+ok 382 - 本体から小道具形・DOM参照・舞台内判定を読み取れる
+  ---
+  duration_ms: 1.604
+  type: 'test'
+  ...
+# Subtest: 決定的乱数は同じ種で同じ列、別の種で別の列を返す
+ok 383 - 決定的乱数は同じ種で同じ列、別の種で別の列を返す
+  ---
+  duration_ms: 0.112333
+  type: 'test'
+  ...
+# Subtest: 小道具合成は元データを変えず、全形と6状態を決定的に作る
+ok 384 - 小道具合成は元データを変えず、全形と6状態を決定的に作る
+  ---
+  duration_ms: 1.628416
+  type: 'test'
+  ...
+# Subtest: high は全形を巡回して空いた手を埋め、持ち数を演者延べ人数の7割以上にする
+ok 385 - high は全形を巡回して空いた手を埋め、持ち数を演者延べ人数の7割以上にする
+  ---
+  duration_ms: 1.351791
+  type: 'test'
+  ...
+# Subtest: 演者のいないシーンでは注入小道具を持たせない
+ok 386 - 演者のいないシーンでは注入小道具を持たせない
+  ---
+  duration_ms: 0.42325
+  type: 'test'
+  ...
+# Subtest: 元データのheldBy参照切れと同じ手の重複を分けて検出する
+ok 387 - 元データのheldBy参照切れと同じ手の重複を分けて検出する
+  ---
+  duration_ms: 0.122791
+  type: 'test'
+  ...
+# Subtest: グループ表示と香盤表の純関数が不変条件違反を返す
+ok 388 - グループ表示と香盤表の純関数が不変条件違反を返す
+  ---
+  duration_ms: 0.360042
+  type: 'test'
+  ...
+# Subtest: CLI引数は既定・matrix・明示ショーを解釈する
+ok 389 - CLI引数は既定・matrix・明示ショーを解釈する
+  ---
+  duration_ms: 0.384334
+  type: 'test'
+  ...
+# Subtest: スキャナ本体に本体由来のDOM idを固定文字列で複製していない
+ok 390 - スキャナ本体に本体由来のDOM idを固定文字列で複製していない
+  ---
+  duration_ms: 0.788333
+  type: 'test'
+  ...
+# Subtest: PROP_SHAPESは箱と10形を指定順で持ち、表示名・基準寸法・部品を定義する
+ok 391 - PROP_SHAPESは箱と10形を指定順で持ち、表示名・基準寸法・部品を定義する
+  ---
+  duration_ms: 0.767958
+  type: 'test'
+  ...
+# Subtest: 握り位置は全プリセットで基準寸法の高さ内にある
+ok 392 - 握り位置は全プリセットで基準寸法の高さ内にある
+  ---
+  duration_ms: 0.115583
+  type: 'test'
+  ...
+# Subtest: 登録と駒のpropShapeを正規化し、登録時は形の基準寸法を使う
+ok 393 - 登録と駒のpropShapeを正規化し、登録時は形の基準寸法を使う
+  ---
+  duration_ms: 0.264959
+  type: 'test'
+  ...
+# Subtest: 形の部品と握り位置は登録寸法の比率で拡縮する
+ok 394 - 形の部品と握り位置は登録寸法の比率で拡縮する
+  ---
+  duration_ms: 0.114041
+  type: 'test'
+  ...
+# Subtest: piecePartsのprop分岐はpropShapeを解決してpartBoxesへ一度だけ展開する
+ok 395 - piecePartsのprop分岐はpropShapeを解決してpartBoxesへ一度だけ展開する
+  ---
+  duration_ms: 0.308417
+  type: 'test'
+  ...
+# Subtest: openFpvはpropへpartsと拡縮済みgripを渡す
+ok 396 - openFpvはpropへpartsと拡縮済みgripを渡す
+  ---
+  duration_ms: 0.263792
+  type: 'test'
+  ...
+# Subtest: 3Dのparts分岐は握り点または外接高さ中央から保持の下駄を計算する
+ok 397 - 3Dのparts分岐は握り点または外接高さ中央から保持の下駄を計算する
+  ---
+  duration_ms: 0.11475
+  type: 'test'
+  ...
+# Subtest: 追加行と寸法窓に小道具の形selectがある
+ok 398 - 追加行と寸法窓に小道具の形selectがある
+  ---
+  duration_ms: 0.062625
+  type: 'test'
+  ...
+# Subtest: 出るものは小道具を専用グループと一覧へ分ける
+ok 399 - 出るものは小道具を専用グループと一覧へ分ける
+  ---
+  duration_ms: 0.551625
+  type: 'test'
+  ...
+# Subtest: 小道具の香盤表は既定ONの機能スイッチとして登録される
+ok 400 - 小道具の香盤表は既定ONの機能スイッチとして登録される
+  ---
+  duration_ms: 2.713584
+  type: 'test'
+  ...
+# Subtest: 受け渡し判定は登録札・持ち手・舞台内判定から状態を作る
+ok 401 - 受け渡し判定は登録札・持ち手・舞台内判定から状態を作る
+  ---
+  duration_ms: 0.308709
+  type: 'test'
+  ...
+# Subtest: 平面図の受け渡し線は香盤表の判定を再利用し、演者動線の表示に連動する
+ok 402 - 平面図の受け渡し線は香盤表の判定を再利用し、演者動線の表示に連動する
+  ---
+  duration_ms: 0.3865
+  type: 'test'
+  ...
+# Subtest: 印刷HTMLは小道具の香盤表と英語表題を生成する
+ok 403 - 印刷HTMLは小道具の香盤表と英語表題を生成する
+  ---
+  duration_ms: 0.667875
+  type: 'test'
+  ...
+# Subtest: シーン説明の直下に受け渡しの一行がある
+ok 404 - シーン説明の直下に受け渡しの一行がある
+  ---
+  duration_ms: 0.141125
+  type: 'test'
+  ...
+# Subtest: 床位置の上手下手は既存バミリと同じくuが大きい側を上手にする
+ok 405 - 床位置の上手下手は既存バミリと同じくuが大きい側を上手にする
+  ---
+  duration_ms: 0.305459
+  type: 'test'
+  ...
+# Subtest: 公開体験版はPWAにならない（SW・manifest・アイコンを持たない）
+ok 406 - 公開体験版はPWAにならない（SW・manifest・アイコンを持たない）
+  ---
+  duration_ms: 1.524
+  type: 'test'
+  ...
+# Subtest: 公開体験版は共有セッションを読み込まない（認証の無いホストで /whoami が404になる）
+ok 407 - 公開体験版は共有セッションを読み込まない（認証の無いホストで /whoami が404になる）
+  ---
+  duration_ms: 0.114417
+  type: 'test'
+  ...
+# Subtest: 公開体験版は is-public を付け、専用のCSSとJSを最後に読む
+ok 408 - 公開体験版は is-public を付け、専用のCSSとJSを最後に読む
+  ---
+  duration_ms: 0.331542
+  type: 'test'
+  ...
+# Subtest: 保存は残さない（2つの保存キーを消し、書き込みも止める）
+ok 409 - 保存は残さない（2つの保存キーを消し、書き込みも止める）
+  ---
+  duration_ms: 0.111167
+  type: 'test'
+  ...
+# Subtest: 体験版の追加文言も現在パック→enパックの順で評価する
+ok 410 - 体験版の追加文言も現在パック→enパックの順で評価する
+  ---
+  duration_ms: 0.658209
+  type: 'test'
+  ...
+# Subtest: 体験版の下地は手で組み立てず、書き出した文書を直して戻す
+ok 411 - 体験版の下地は手で組み立てず、書き出した文書を直して戻す
+  ---
+  duration_ms: 0.109666
+  type: 'test'
+  ...
+# Subtest: 自動デモは画面に見えてから再生する
+ok 412 - 自動デモは画面に見えてから再生する
+  ---
+  duration_ms: 0.06675
+  type: 'test'
+  ...
+# Subtest: 正面図のタップは左右だけ動かし、演者を宙に浮かせない
+ok 413 - 正面図のタップは左右だけ動かし、演者を宙に浮かせない
+  ---
+  duration_ms: 0.372083
+  type: 'test'
+  ...
+# Subtest: 画面を畳むのは埋め込み（LPの帯）だけ。体験版そのものは製品版と同じ画面を見せる
+ok 414 - 画面を畳むのは埋め込み（LPの帯）だけ。体験版そのものは製品版と同じ画面を見せる
+  ---
+  duration_ms: 0.384209
+  type: 'test'
+  ...
+# Subtest: 二つの図は埋め込みの広い画面で横に並ぶ（連動が同時に見えることが帯の核）
+ok 415 - 二つの図は埋め込みの広い画面で横に並ぶ（連動が同時に見えることが帯の核）
+  ---
+  duration_ms: 0.317959
+  type: 'test'
+  ...
+# Subtest: 錠は許可した操作以外へ掛ける（fail-closed）
+ok 416 - 錠は許可した操作以外へ掛ける（fail-closed）
+  ---
+  duration_ms: 0.25025
+  type: 'test'
+  ...
+# Subtest: 体験版はPCでも客席5か所からの見え方を切り替えられる
+ok 417 - 体験版はPCでも客席5か所からの見え方を切り替えられる
+  ---
+  duration_ms: 0.081291
+  type: 'test'
+  ...
+# Subtest: ★個人データは公開版へ載せない（2026-09-03 公開直前に発見）
+ok 418 - ★個人データは公開版へ載せない（2026-09-03 公開直前に発見）
+  ---
+  duration_ms: 0.07375
+  type: 'test'
+  ...
+# Subtest: ★配信フォルダは「集めたものだけを配る」形にする（許可リストに頼らない）
+ok 419 - ★配信フォルダは「集めたものだけを配る」形にする（許可リストに頼らない）
+  ---
+  duration_ms: 0.045166
+  type: 'test'
+  ...
+# Subtest: 公開ビルドの検査は、try.htmlだけでなく配信フォルダ全体の古さも止める
+ok 420 - 公開ビルドの検査は、try.htmlだけでなく配信フォルダ全体の古さも止める
+  ---
+  duration_ms: 0.05775
+  type: 'test'
+  ...
+# Subtest: 体験版の内部処理は自分の錠を踏まない
+ok 421 - 体験版の内部処理は自分の錠を踏まない
+  ---
+  duration_ms: 0.094958
+  type: 'test'
+  ...
+# Subtest: 公開版は「体験版」であることを明示し、「β版」とは名乗らない
+ok 422 - 公開版は「体験版」であることを明示し、「β版」とは名乗らない
+  ---
+  duration_ms: 0.173583
+  type: 'test'
+  ...
+# Subtest: 姿勢は5つだけ開ける（本体は46種）
+ok 423 - 姿勢は5つだけ開ける（本体は46種）
+  ---
+  duration_ms: 0.046583
+  type: 'test'
+  ...
+# Subtest: 錠の掛かった欄でも見出しを押して開け閉めできる
+ok 424 - 錠の掛かった欄でも見出しを押して開け閉めできる
+  ---
+  duration_ms: 0.120667
+  type: 'test'
+  ...
+# Subtest: 「出るもの」と「選んだもの」は体験版でも使える
+ok 425 - 「出るもの」と「選んだもの」は体験版でも使える
+  ---
+  duration_ms: 0.062166
+  type: 'test'
+  ...
+# Subtest: 体験版で置けるのは演者3人・舞台セット2つまで
+ok 426 - 体験版で置けるのは演者3人・舞台セット2つまで
+  ---
+  duration_ms: 0.078125
+  type: 'test'
+  ...
+# Subtest: 錠の掛かった欄は畳んだ状態で始める（開くことはできる）
+ok 427 - 錠の掛かった欄は畳んだ状態で始める（開くことはできる）
+  ---
+  duration_ms: 0.043625
+  type: 'test'
+  ...
+# Subtest: 製品版ベータの問い合わせは、上部から別ページへ送る
+ok 428 - 製品版ベータの問い合わせは、上部から別ページへ送る
+  ---
+  duration_ms: 0.41875
+  type: 'test'
+  ...
+# Subtest: 体験版から紹介ページ（LP）へ戻れる
+ok 429 - 体験版から紹介ページ（LP）へ戻れる
+  ---
+  duration_ms: 0.195083
+  type: 'test'
+  ...
+# Subtest: 紹介ページはβ期間中が無償であることを書き、正式版の形は未定と断る
+ok 430 - 紹介ページはβ期間中が無償であることを書き、正式版の形は未定と断る
+  ---
+  duration_ms: 0.180083
+  type: 'test'
+  ...
+# Subtest: 紹介ページは送信前後の流れを3行で示し、戻り先のラベルを正しく言う（第2弾・\#7）
+ok 431 - 紹介ページは送信前後の流れを3行で示し、戻り先のラベルを正しく言う（第2弾・\#7）
+  ---
+  duration_ms: 0.184834
+  type: 'test'
+  ...
+# Subtest: 紹介ページのコントラストとタップ対象を直す（design-lint既存NG8件・本人承認2026-09-05）
+ok 432 - 紹介ページのコントラストとタップ対象を直す（design-lint既存NG8件・本人承認2026-09-05）
+  ---
+  duration_ms: 0.298333
+  type: 'test'
+  ...
+# Subtest: 紹介ページの姿勢の数は本体の実装と一致させる（第2弾・\#11）
+ok 433 - 紹介ページの姿勢の数は本体の実装と一致させる（第2弾・\#11）
+  ---
+  duration_ms: 11.891125
+  type: 'test'
+  ...
+# Subtest: スマホの体験版では姿勢の帯を正面図の上端に出す（床の演者を隠さない）
+ok 434 - スマホの体験版では姿勢の帯を正面図の上端に出す（床の演者を隠さない）
+  ---
+  duration_ms: 0.281833
+  type: 'test'
+  ...
+# Subtest: スマホ体験版: 人を足す・客席の位置・場面の切替と転換は開け、場面の追加は閉じる
+ok 435 - スマホ体験版: 人を足す・客席の位置・場面の切替と転換は開け、場面の追加は閉じる
+  ---
+  duration_ms: 0.340458
+  type: 'test'
+  ...
+# Subtest: スマホ体験版では、帯を固定していたころの余白を残さない
+ok 436 - スマホ体験版では、帯を固定していたころの余白を残さない
+  ---
+  duration_ms: 0.186583
+  type: 'test'
+  ...
+# Subtest: 設定は開ける。中身は錠だが、言語の切替と閉じるだけ使える
+ok 437 - 設定は開ける。中身は錠だが、言語の切替と閉じるだけ使える
+  ---
+  duration_ms: 0.203208
+  type: 'test'
+  ...
+# Subtest: 言語を切り替えたら、体験版で足した札とリンクも貼り直す
+ok 438 - 言語を切り替えたら、体験版で足した札とリンクも貼り直す
+  ---
+  duration_ms: 0.071666
+  type: 'test'
+  ...
+# Subtest: スマホへ最初に出す「PCを勧める」帯は、日本語と英語を並べて出す
+ok 439 - スマホへ最初に出す「PCを勧める」帯は、日本語と英語を並べて出す
+  ---
+  duration_ms: 0.057416
+  type: 'test'
+  ...
+# Subtest: スマホ設定は 日本語 / English / ✕ の一列にし、「端末による違い」は出さない
+ok 440 - スマホ設定は 日本語 / English / ✕ の一列にし、「端末による違い」は出さない
+  ---
+  duration_ms: 0.091084
+  type: 'test'
+  ...
+# Subtest: 平面図のタップは床の矩形（本体の planFit と同じ式）で u,v に換算する
+ok 441 - 平面図のタップは床の矩形（本体の planFit と同じ式）で u,v に換算する
+  ---
+  duration_ms: 0.048583
+  type: 'test'
+  ...
+# Subtest: 正面図のタップは、駒ごとの既存の奥行き(v)での擬似パース幅で u に換算する
+ok 442 - 正面図のタップは、駒ごとの既存の奥行き(v)での擬似パース幅で u に換算する
+  ---
+  duration_ms: 0.081
+  type: 'test'
+  ...
+# Subtest: 正面図の幅の式は本体 layout() の front 枝と一致する（ずれたら換算が狂う）
+ok 443 - 正面図の幅の式は本体 layout() の front 枝と一致する（ずれたら換算が狂う）
+  ---
+  duration_ms: 5.615125
+  type: 'test'
+  ...
+# Subtest: 体験版の planFit は本体の planFit と式が一致する（ずれたら換算が狂う）
+ok 444 - 体験版の planFit は本体の planFit と式が一致する（ずれたら換算が狂う）
+  ---
+  duration_ms: 3.967
+  type: 'test'
+  ...
+# Subtest: スマホ横向きでは、リンクと道具列を出さず、右レールに ＋人・客席・設定 を置く
+ok 445 - スマホ横向きでは、リンクと道具列を出さず、右レールに ＋人・客席・設定 を置く
+  ---
+  duration_ms: 0.165417
+  type: 'test'
+  ...
+# Subtest: LPが入口、体験版は /try.html。動画も配信フォルダへ運ぶ
+ok 446 - LPが入口、体験版は /try.html。動画も配信フォルダへ運ぶ
+  ---
+  duration_ms: 0.071666
+  type: 'test'
+  ...
+# Subtest: LPは承認済みの文言を使い、詩的な見出しを足さない
+ok 447 - LPは承認済みの文言を使い、詩的な見出しを足さない
+  ---
+  duration_ms: 0.213709
+  type: 'test'
+  ...
+# Subtest: LPの最下部に連絡先として名前を出す
+ok 448 - LPの最下部に連絡先として名前を出す
+  ---
+  duration_ms: 0.044917
+  type: 'test'
+  ...
+# Subtest: LPのいちばん上に体験版とライセンスへのリンクを置く
+ok 449 - LPのいちばん上に体験版とライセンスへのリンクを置く
+  ---
+  duration_ms: 0.1135
+  type: 'test'
+  ...
+# Subtest: 13項目の折り返し地点に、小さな二入口を一度だけ置く（第2弾・\#8）
+ok 450 - 13項目の折り返し地点に、小さな二入口を一度だけ置く（第2弾・\#8）
+  ---
+  duration_ms: 0.11275
+  type: 'test'
+  ...
+# Subtest: LPの最初の画面に「何のツールか」の一文と二つの入口を置く（マーケ見直し・第1弾）
+ok 451 - LPの最初の画面に「何のツールか」の一文と二つの入口を置く（マーケ見直し・第1弾）
+  ---
+  duration_ms: 0.176834
+  type: 'test'
+  ...
+# Subtest: LPから4項目の証拠帯を外す
+ok 452 - LPから4項目の証拠帯を外す
+  ---
+  duration_ms: 0.067708
+  type: 'test'
+  ...
+# Subtest: OGP画像は専用の1200×630（第2弾・本人承認）。配信スクリプトが og:image を運ぶ
+ok 453 - OGP画像は専用の1200×630（第2弾・本人承認）。配信スクリプトが og:image を運ぶ
+  ---
+  duration_ms: 0.131834
+  type: 'test'
+  ...
+# Subtest: 英語版のSNSカードは英語の画像を使う（第3弾）
+ok 454 - 英語版のSNSカードは英語の画像を使う（第3弾）
+  ---
+  duration_ms: 0.056666
+  type: 'test'
+  ...
+# Subtest: LPの題・説明・OGPは検索と共有向け（第1弾）
+ok 455 - LPの題・説明・OGPは検索と共有向け（第1弾）
+  ---
+  duration_ms: 0.082167
+  type: 'test'
+  ...
+# Subtest: 英語版は別URL /en/ に静的に出す（クローラーはJSを実行しない）
+ok 456 - 英語版は別URL /en/ に静的に出す（クローラーはJSを実行しない）
+  ---
+  duration_ms: 0.214958
+  type: 'test'
+  ...
+# Subtest: sitemap.xml と robots.txt を配る（第3弾-3）
+ok 457 - sitemap.xml と robots.txt を配る（第3弾-3）
+  ---
+  duration_ms: 0.120625
+  type: 'test'
+  ...
+# Subtest: ヒーロー動画の構造化データ（VideoObject）を持つ
+ok 458 - ヒーロー動画の構造化データ（VideoObject）を持つ
+  ---
+  duration_ms: 0.177375
+  type: 'test'
+  ...
+# Subtest: Search Console の所有権確認タグを消さない
+ok 459 - Search Console の所有権確認タグを消さない
+  ---
+  duration_ms: 0.040334
+  type: 'test'
+  ...
+# Subtest: 所有権の確認ファイルを配れる（Search Console 用）
+ok 460 - 所有権の確認ファイルを配れる（Search Console 用）
+  ---
+  duration_ms: 0.09625
+  type: 'test'
+  ...
+# Subtest: 体験版の英語は用語集（commit 71db200）にそろえる
+ok 461 - 体験版の英語は用語集（commit 71db200）にそろえる
+  ---
+  duration_ms: 0.50875
+  type: 'test'
+  ...
+# Subtest: 体験版と紹介ページにも日本語の説明・OGPがある（第3弾）
+ok 462 - 体験版と紹介ページにも日本語の説明・OGPがある（第3弾）
+  ---
+  duration_ms: 0.200416
+  type: 'test'
+  ...
+# Subtest: LPのいちばん上で日本語と英語を切り替えられる
+ok 463 - LPのいちばん上で日本語と英語を切り替えられる
+  ---
+  duration_ms: 0.290458
+  type: 'test'
+  ...
+# Subtest: LPのいちばん上から「このアプリについて」へ飛べる
+ok 464 - LPのいちばん上から「このアプリについて」へ飛べる
+  ---
+  duration_ms: 0.234625
+  type: 'test'
+  ...
+# Subtest: LPのいちばん上に製品の名前を大きく出す
+ok 465 - LPのいちばん上に製品の名前を大きく出す
+  ---
+  duration_ms: 0.408292
+  type: 'test'
+  ...
+# Subtest: LPの名前の下に「誰が、何に使うか」を置く
+ok 466 - LPの名前の下に「誰が、何に使うか」を置く
+  ---
+  duration_ms: 0.347125
+  type: 'test'
+  ...
+# Subtest: LPの下部で13の機能を、画像つきで一つずつ紹介する
+ok 467 - LPの下部で13の機能を、画像つきで一つずつ紹介する
+  ---
+  duration_ms: 0.691667
+  type: 'test'
+  ...
+# Subtest: Mac用スタンドアローンの入れ方を書く（体験版ではなく製品版が対象）
+ok 468 - Mac用スタンドアローンの入れ方を書く（体験版ではなく製品版が対象）
+  ---
+  duration_ms: 0.1285
+  type: 'test'
+  ...
+# Subtest: 13番はiPhoneのフレームで見せる
+ok 469 - 13番はiPhoneのフレームで見せる
+  ---
+  duration_ms: 0.202542
+  type: 'test'
+  ...
+# Subtest: 13の機能の画像は列いっぱいに広げず、縦横とも66%くらいに収める
+ok 470 - 13の機能の画像は列いっぱいに広げず、縦横とも66%くらいに収める
+  ---
+  duration_ms: 0.033958
+  type: 'test'
+  ...
+# Subtest: LPの帯幅は全帯で同じ（「このアプリについて」だけ細く見えない）
+ok 471 - LPの帯幅は全帯で同じ（「このアプリについて」だけ細く見えない）
+  ---
+  duration_ms: 0.134791
+  type: 'test'
+  ...
+# Subtest: LPのCTAは、体験版と製品版を実画面で対比する二つの入口にする
+ok 472 - LPのCTAは、体験版と製品版を実画面で対比する二つの入口にする
+  ---
+  duration_ms: 0.266875
+  type: 'test'
+  ...
+# Subtest: LPのタップ対象は 44px 以上、区切り文字は本文色（design-lint C1/U1）
+ok 473 - LPのタップ対象は 44px 以上、区切り文字は本文色（design-lint C1/U1）
+  ---
+  duration_ms: 0.146959
+  type: 'test'
+  ...
+# Subtest: LPの出現アニメーションは、JSが動かなくても中身が見える形にする
+ok 474 - LPの出現アニメーションは、JSが動かなくても中身が見える形にする
+  ---
+  duration_ms: 0.060583
+  type: 'test'
+  ...
+# Subtest: LPに体験版の埋め込みデモを置かない
+ok 475 - LPに体験版の埋め込みデモを置かない
+  ---
+  duration_ms: 0.126791
+  type: 'test'
+  ...
+# Subtest: LPは日英を持ち、承認済みの英語確定稿の文言を使う
+ok 476 - LPは日英を持ち、承認済みの英語確定稿の文言を使う
+  ---
+  duration_ms: 0.094041
+  type: 'test'
+  ...
+# Subtest: LPは言語をリンクへ引き継ぐ
+ok 477 - LPは言語をリンクへ引き継ぐ
+  ---
+  duration_ms: 0.056708
+  type: 'test'
+  ...
+# Subtest: installでcache.addAll(APP_SHELL)へ戻していない
+ok 478 - installでcache.addAll(APP_SHELL)へ戻していない
+  ---
+  duration_ms: 0.509292
+  type: 'test'
+  ...
+# Subtest: installは取れたものだけ保存し、失敗しても完了する
+ok 479 - installは取れたものだけ保存し、失敗しても完了する
+  ---
+  duration_ms: 0.062417
+  type: 'test'
+  ...
+# Subtest: 途中で通信が切れた更新は、旧キャッシュを消さずオフライン起動にも戻れる
+ok 480 - 途中で通信が切れた更新は、旧キャッシュを消さずオフライン起動にも戻れる
+  ---
+  duration_ms: 11.849958
+  type: 'test'
+  ...
+# Subtest: 保存物からリダイレクトの印を剥がしている
+ok 481 - 保存物からリダイレクトの印を剥がしている
+  ---
+  duration_ms: 0.117458
+  type: 'test'
+  ...
+# Subtest: リダイレクト後の /stage も同じ画面として扱う
+ok 482 - リダイレクト後の /stage も同じ画面として扱う
+  ---
+  duration_ms: 0.054083
+  type: 'test'
+  ...
+# Subtest: navigateはnavigator.onLineで判定しない
+ok 483 - navigateはnavigator.onLineで判定しない
+  ---
+  duration_ms: 0.05875
+  type: 'test'
+  ...
+# Subtest: 画面本体はページ側が毎回入れ直す
+ok 484 - 画面本体はページ側が毎回入れ直す
+  ---
+  duration_ms: 0.048208
+  type: 'test'
+  ...
+# Subtest: Service Workerが保存先と一覧をページへ渡せる
+ok 485 - Service Workerが保存先と一覧をページへ渡せる
+  ---
+  duration_ms: 0.047792
+  type: 'test'
+  ...
+# Subtest: ページ側が登録のあとにキャッシュを補う
+ok 486 - ページ側が登録のあとにキャッシュを補う
+  ---
+  duration_ms: 0.228083
+  type: 'test'
+  ...
+# Subtest: ページ側の取得は認証が乗る形で行う
+ok 487 - ページ側の取得は認証が乗る形で行う
+  ---
+  duration_ms: 0.281041
+  type: 'test'
+  ...
+# Subtest: 充填が止まらないよう守りが入っている
+ok 488 - 充填が止まらないよう守りが入っている
+  ---
+  duration_ms: 0.098709
+  type: 'test'
+  ...
+# Subtest: APP_SHELLの版がstage.htmlの読み込みと揃っている
+ok 489 - APP_SHELLの版がstage.htmlの読み込みと揃っている
+  ---
+  duration_ms: 7.208542
+  type: 'test'
+  ...
+# Subtest: ホーム画面から舞台スケッチ単独版をstandaloneで開く
+ok 490 - ホーム画面から舞台スケッチ単独版をstandaloneで開く
+  ---
+  duration_ms: 1.16975
+  type: 'test'
+  ...
+# Subtest: iPad用メタ情報とホーム画面アイコンを単独版へ組み込む
+ok 491 - iPad用メタ情報とホーム画面アイコンを単独版へ組み込む
+  ---
+  duration_ms: 1.526459
+  type: 'test'
+  ...
+# Subtest: iPadのホーム画面版だけ上部の補足文を隠す
+ok 492 - iPadのホーム画面版だけ上部の補足文を隠す
+  ---
+  duration_ms: 0.091917
+  type: 'test'
+  ...
+# Subtest: 使い方・About・感想は上部ではなく設定内にまとめる
+ok 493 - 使い方・About・感想は上部ではなく設定内にまとめる
+  ---
+  duration_ms: 0.615042
+  type: 'test'
+  ...
+# Subtest: 使い方のまとまりは言語設定のすぐ下に置き、既定では畳んでおく
+ok 494 - 使い方のまとまりは言語設定のすぐ下に置き、既定では畳んでおく
+  ---
+  duration_ms: 0.295292
+  type: 'test'
+  ...
+# Subtest: 舞台スケッチ名の右側に小さなアプリ版番号を表示する
+ok 495 - 舞台スケッチ名の右側に小さなアプリ版番号を表示する
+  ---
+  duration_ms: 0.179916
+  type: 'test'
+  ...
+# Subtest: PWA登録はHTTP上だけで行い、舞台スケッチの保存データには触れない
+ok 496 - PWA登録はHTTP上だけで行い、舞台スケッチの保存データには触れない
+  ---
+  duration_ms: 0.263084
+  type: 'test'
+  ...
+# Subtest: 起動時にベータ版の提供状態を確認し、終了時だけゲートを表示する
+ok 497 - 起動時にベータ版の提供状態を確認し、終了時だけゲートを表示する
+  ---
+  duration_ms: 0.12425
+  type: 'test'
+  ...
+# Subtest: ベータ状態の確認が通信不能でも、保存済みPWAを閉じない
+ok 498 - ベータ状態の確認が通信不能でも、保存済みPWAを閉じない
+  ---
+  duration_ms: 4.257208
+  type: 'test'
+  ...
+# Subtest: Service Workerは資料棚など同一サイトの別画面へ介入しない
+ok 499 - Service Workerは資料棚など同一サイトの別画面へ介入しない
+  ---
+  duration_ms: 0.343959
+  type: 'test'
+  ...
+# Subtest: オフライン用CSSとJSの版は現在のHTML参照と揃う
+ok 500 - オフライン用CSSとJSの版は現在のHTML参照と揃う
+  ---
+  duration_ms: 0.74275
+  type: 'test'
+  ...
+# Subtest: iPad左レールの設定アイコンは絵文字ではなくSVG（他の帯アイコンと共有の歯車）
+ok 501 - iPad左レールの設定アイコンは絵文字ではなくSVG（他の帯アイコンと共有の歯車）
+  ---
+  duration_ms: 3.06375
+  type: 'test'
+  ...
+# Subtest: iPad PWAは縦画面で二面、横画面で単一図の専用ワークスペースを組み立てる
+ok 502 - iPad PWAは縦画面で二面、横画面で単一図の専用ワークスペースを組み立てる
+  ---
+  duration_ms: 2.3875
+  type: 'test'
+  ...
+# Subtest: PCとiPadの劇場サイズはショーメニュー内にまとめる
+ok 503 - PCとiPadの劇場サイズはショーメニュー内にまとめる
+  ---
+  duration_ms: 0.20925
+  type: 'test'
+  ...
+# Subtest: iPadの描画道具と主要操作は上部へ常設する
+ok 504 - iPadの描画道具と主要操作は上部へ常設する
+  ---
+  duration_ms: 0.362333
+  type: 'test'
+  ...
+# Subtest: iPadの正面図と平面図は各図の上部にPC版と同じ操作を残す
+ok 505 - iPadの正面図と平面図は各図の上部にPC版と同じ操作を残す
+  ---
+  duration_ms: 0.56225
+  type: 'test'
+  ...
+# Subtest: iPad PWA横画面は一個のボタンで正面図と平面図を交互に切り替える
+ok 506 - iPad PWA横画面は一個のボタンで正面図と平面図を交互に切り替える
+  ---
+  duration_ms: 1.001166
+  type: 'test'
+  ...
+# Subtest: iPad PWA縦画面は正面図と平面図を上下に隙間なく並べる
+ok 507 - iPad PWA縦画面は正面図と平面図を上下に隙間なく並べる
+  ---
+  duration_ms: 0.389875
+  type: 'test'
+  ...
+# Subtest: iPad PWAの姿勢と種類は5列で選べる
+ok 508 - iPad PWAの姿勢と種類は5列で選べる
+  ---
+  duration_ms: 0.1075
+  type: 'test'
+  ...
+# Subtest: サンプルのシーン番号を現在位置の後ろへ重ねて表示しない
+ok 509 - サンプルのシーン番号を現在位置の後ろへ重ねて表示しない
+  ---
+  duration_ms: 0.210791
+  type: 'test'
+  ...
+# Subtest: iPad PWAではブラウザのダブルタップ拡大を起こさない
+ok 510 - iPad PWAではブラウザのダブルタップ拡大を起こさない
+  ---
+  duration_ms: 0.535292
+  type: 'test'
+  ...
+# Subtest: iPad PWAはページをスクロールせず、ドロワーで図を切らずに縮める
+ok 511 - iPad PWAはページをスクロールせず、ドロワーで図を切らずに縮める
+  ---
+  duration_ms: 0.613541
+  type: 'test'
+  ...
+# Subtest: 長いiPadメニューは意味のまとまりでページ分割する
+ok 512 - 長いiPadメニューは意味のまとまりでページ分割する
+  ---
+  duration_ms: 0.248958
+  type: 'test'
+  ...
+# Subtest: 通常ブラウザ用の三列レイアウトは残す
+ok 513 - 通常ブラウザ用の三列レイアウトは残す
+  ---
+  duration_ms: 0.369833
+  type: 'test'
+  ...
+# Subtest: 標準アイコンとマスク可能アイコンを宣言する
+ok 514 - 標準アイコンとマスク可能アイコンを宣言する
+  ---
+  duration_ms: 6.6055
+  type: 'test'
+  ...
+# Subtest: 環境設定から開ける
+ok 515 - 環境設定から開ける
+  ---
+  duration_ms: 0.690167
+  type: 'test'
+  ...
+# Subtest: 窓は既存の作法に従う
+ok 516 - 窓は既存の作法に従う
+  ---
+  duration_ms: 1.905
+  type: 'test'
+  ...
+# Subtest: 窓は表が読める幅を持つ
+ok 517 - 窓は表が読める幅を持つ
+  ---
+  duration_ms: 0.36575
+  type: 'test'
+  ...
+# Subtest: 配る製品では書斎の一覧を見せない
+ok 518 - 配る製品では書斎の一覧を見せない
+  ---
+  duration_ms: 0.35425
+  type: 'test'
+  ...
+# Subtest: 表の中身は確定した内容どおり
+ok 519 - 表の中身は確定した内容どおり
+  ---
+  duration_ms: 0.21475
+  type: 'test'
+  ...
+# Subtest: 窓の中に外部参照を持ち込まない
+ok 520 - 窓の中に外部参照を持ち込まない
+  ---
+  duration_ms: 0.240125
+  type: 'test'
+  ...
+# Subtest: 上手・下手・奥・前の4点をVision Pro座標へ変換する
+ok 521 - 上手・下手・奥・前の4点をVision Pro座標へ変換する
+  ---
+  duration_ms: 2.071792
+  type: 'test'
+  ...
+# Subtest: facingを同じyawDegreesとして渡す
+ok 522 - facingを同じyawDegreesとして渡す
+  ---
+  duration_ms: 0.167792
+  type: 'test'
+  ...
+# Subtest: sectionを飛ばしsceneだけを元の順でキューにする
+ok 523 - sectionを飛ばしsceneだけを元の順でキューにする
+  ---
+  duration_ms: 0.10225
+  type: 'test'
+  ...
+# Subtest: cast・formation・cueのIDは入力IDから決定的に作る
+ok 524 - cast・formation・cueのIDは入力IDから決定的に作る
+  ---
+  duration_ms: 0.219291
+  type: 'test'
+  ...
+# Subtest: 各シーンにはその場にいる人物だけを含める
+ok 525 - 各シーンにはその場にいる人物だけを含める
+  ---
+  duration_ms: 0.142417
+  type: 'test'
+  ...
+# Subtest: 同じシーンで同じcastを2回配置すると拒否する
+ok 526 - 同じシーンで同じcastを2回配置すると拒否する
+  ---
+  duration_ms: 0.205334
+  type: 'test'
+  ...
+# Subtest: 不正数値と0以下の舞台寸法を拒否する
+ok 527 - 不正数値と0以下の舞台寸法を拒否する
+  ---
+  duration_ms: 0.0875
+  type: 'test'
+  ...
+# Subtest: proscenium以外は既定で拒否し、明示許可時だけ警告付きで変換する
+ok 528 - proscenium以外は既定で拒否し、明示許可時だけ警告付きで変換する
+  ---
+  duration_ms: 0.202
+  type: 'test'
+  ...
+# Subtest: 滞在時間は同じcue、移動時間は到着先cueへ1シーンずらす
+ok 529 - 滞在時間は同じcue、移動時間は到着先cueへ1シーンずらす
+  ---
+  duration_ms: 0.279459
+  type: 'test'
+  ...
+# Subtest: 変換前後で入力projectを変更しない
+ok 530 - 変換前後で入力projectを変更しない
+  ---
+  duration_ms: 0.321625
+  type: 'test'
+  ...
+# Subtest: サンプルは2本とも titleEn を持つ
+ok 531 - サンプルは2本とも titleEn を持つ
+  ---
+  duration_ms: 0.6625
+  type: 'test'
+  ...
+# Subtest: 八人のサーカス: 出演者・装置・照明・場面・境界のすべてに英語版がある
+ok 532 - 八人のサーカス: 出演者・装置・照明・場面・境界のすべてに英語版がある
+  ---
+  duration_ms: 0.431833
+  type: 'test'
+  ...
+# Subtest: 継ぎ目の庭: 全セクション・全32場面・名前・境界に英語版がある
+ok 533 - 継ぎ目の庭: 全セクション・全32場面・名前・境界に英語版がある
+  ---
+  duration_ms: 0.52875
+  type: 'test'
+  ...
+# Subtest: シーンの説明と前後の送りは、道具の行と絵の間の「シーンの行」に置く
+ok 534 - シーンの説明と前後の送りは、道具の行と絵の間の「シーンの行」に置く
+  ---
+  duration_ms: 0.506708
+  type: 'test'
+  ...
+# Subtest: 送りは一覧の欄の中には残さない（二重に置かない）
+ok 535 - 送りは一覧の欄の中には残さない（二重に置かない）
+  ---
+  duration_ms: 0.062875
+  type: 'test'
+  ...
+# Subtest: 説明はその場で書き直せる（読むだけの札にしない）
+ok 536 - 説明はその場で書き直せる（読むだけの札にしない）
+  ---
+  duration_ms: 0.228208
+  type: 'test'
+  ...
+# Subtest: 打っている最中の欄には書き戻さない（変換中の文字が飛ぶため）
+ok 537 - 打っている最中の欄には書き戻さない（変換中の文字が飛ぶため）
+  ---
+  duration_ms: 0.7195
+  type: 'test'
+  ...
+# Subtest: シーンの説明は日英どちらでも出る
+ok 538 - シーンの説明は日英どちらでも出る
+  ---
+  duration_ms: 1.647125
+  type: 'test'
+  ...
+# Subtest: プレゼンの説明は全画面の正面図にだけ描く（書き出す画像には焼き付けない）
+ok 539 - プレゼンの説明は全画面の正面図にだけ描く（書き出す画像には焼き付けない）
+  ---
+  duration_ms: 0.61625
+  type: 'test'
+  ...
+# Subtest: プレゼンの見出しはシーン名にする（画面の道具の名前は出さない）
+ok 540 - プレゼンの見出しはシーン名にする（画面の道具の名前は出さない）
+  ---
+  duration_ms: 0.156167
+  type: 'test'
+  ...
+# Subtest: 説明の帯は絵の拡大・移動に付き合わせない
+ok 541 - 説明の帯は絵の拡大・移動に付き合わせない
+  ---
+  duration_ms: 0.131041
+  type: 'test'
+  ...
+# Subtest: 印刷用ページはシーンの説明を見出し付きで絵の前に出す
+ok 542 - 印刷用ページはシーンの説明を見出し付きで絵の前に出す
+  ---
+  duration_ms: 0.505125
+  type: 'test'
+  ...
+# Subtest: 舞台から下げるとき、出し直すための置き場所を控える
+ok 543 - 舞台から下げるとき、出し直すための置き場所を控える
+  ---
+  duration_ms: 0.392042
+  type: 'test'
+  ...
+# Subtest: 演者の舞台上／舞台裏も同じ控えで立ち位置を保つ
+ok 544 - 演者の舞台上／舞台裏も同じ控えで立ち位置を保つ
+  ---
+  duration_ms: 0.198375
+  type: 'test'
+  ...
+# Subtest: 消す操作も控えを残す（下げるのと同じ結果にする）
+ok 545 - 消す操作も控えを残す（下げるのと同じ結果にする）
+  ---
+  duration_ms: 0.1945
+  type: 'test'
+  ...
+# Subtest: 控えの鍵は舞台セットと名簿の両方を生きているとみなす
+ok 546 - 控えの鍵は舞台セットと名簿の両方を生きているとみなす
+  ---
+  duration_ms: 0.069834
+  type: 'test'
+  ...
+# Subtest: 照明の組も同じ控えを使い、無いときだけ組んだ置き場へ戻す
+ok 547 - 照明の組も同じ控えを使い、無いときだけ組んだ置き場へ戻す
+  ---
+  duration_ms: 0.13225
+  type: 'test'
+  ...
+# Subtest: 控えるのは登録から引き直せないものだけ
+ok 548 - 控えるのは登録から引き直せないものだけ
+  ---
+  duration_ms: 0.233042
+  type: 'test'
+  ...
+# Subtest: 登録を外したら控えも捨てる
+ok 549 - 登録を外したら控えも捨てる
+  ---
+  duration_ms: 0.146834
+  type: 'test'
+  ...
+# Subtest: 行き場のない控えは読み込みのときに掃く
+ok 550 - 行き場のない控えは読み込みのときに掃く
+  ---
+  duration_ms: 0.113333
+  type: 'test'
+  ...
+# Subtest: 控えは保存にも残り、読み直しても形が揃う
+ok 551 - 控えは保存にも残り、読み直しても形が揃う
+  ---
+  duration_ms: 0.080666
+  type: 'test'
+  ...
+# Subtest: 平面図は床から高い順に重ね、演者を最後に描く
+ok 552 - 平面図は床から高い順に重ね、演者を最後に描く
+  ---
+  duration_ms: 0.169875
+  type: 'test'
+  ...
+# Subtest: シーンの時間は初期OFFの環境設定として扱う
+ok 553 - シーンの時間は初期OFFの環境設定として扱う
+  ---
+  duration_ms: 1.268084
+  type: 'test'
+  ...
+# Subtest: 時間欄は意味が分かる名前で日英表示する
+ok 554 - 時間欄は意味が分かる名前で日英表示する
+  ---
+  duration_ms: 1.998375
+  type: 'test'
+  ...
+# Subtest: OFFは時間値を削除せず表示と印刷だけを切り替える
+ok 555 - OFFは時間値を削除せず表示と印刷だけを切り替える
+  ---
+  duration_ms: 0.967084
+  type: 'test'
+  ...
+# Subtest: 読み込み用JSONは舞台スケッチversion 3として独立して開ける
+ok 556 - 読み込み用JSONは舞台スケッチversion 3として独立して開ける
+  ---
+  duration_ms: 0.321541
+  type: 'test'
+  ...
+# Subtest: JSONは8セクション／各4シーン／32シーン／3600秒を保つ
+ok 557 - JSONは8セクション／各4シーン／32シーン／3600秒を保つ
+  ---
+  duration_ms: 0.369917
+  type: 'test'
+  ...
+# Subtest: JSONは4人、装置・照明、ビート、動線、安全メモを含む
+ok 558 - JSONは4人、装置・照明、ビート、動線、安全メモを含む
+  ---
+  duration_ms: 0.134792
+  type: 'test'
+  ...
+# Subtest: 継ぎ目の庭は8セクションの各4シーンで60分になる
+ok 559 - 継ぎ目の庭は8セクションの各4シーンで60分になる
+  ---
+  duration_ms: 0.582375
+  type: 'test'
+  ...
+# Subtest: 32シーンは一意なID、ビート、E1〜E5、配置を持つ
+ok 560 - 32シーンは一意なID、ビート、E1〜E5、配置を持つ
+  ---
+  duration_ms: 0.291625
+  type: 'test'
+  ...
+# Subtest: 崩壊と共同支持の中心場面は安全境界と要検証を本文に残す
+ok 561 - 崩壊と共同支持の中心場面は安全境界と要検証を本文に残す
+  ---
+  duration_ms: 0.100208
+  type: 'test'
+  ...
+# Subtest: アプリは同梱ショーのデータ棚を先に読み、セクションとシーンへ変換する
+ok 562 - アプリは同梱ショーのデータ棚を先に読み、セクションとシーンへ変換する
+  ---
+  duration_ms: 2.772292
+  type: 'test'
+  ...
+# Subtest: スマホの読込欄はデータ棚の二つのサンプルを区別する
+ok 563 - スマホの読込欄はデータ棚の二つのサンプルを区別する
+  ---
+  duration_ms: 0.395875
+  type: 'test'
+  ...
+# Subtest: せりの縁またぎ検出は上がっているせりだけを対象にする
+ok 564 - せりの縁またぎ検出は上がっているせりだけを対象にする
+  ---
+  duration_ms: 1.326417
+  type: 'test'
+  ...
+# Subtest: せりに完全に乗っている駒は縁またぎとして警告しない
+ok 565 - せりに完全に乗っている駒は縁またぎとして警告しない
+  ---
+  duration_ms: 0.154792
+  type: 'test'
+  ...
+# Subtest: せりの縁またぎ警告は赤い破線で描く
+ok 566 - せりの縁またぎ警告は赤い破線で描く
+  ---
+  duration_ms: 0.193
+  type: 'test'
+  ...
+# Subtest: せり上がりスライダーは上げた瞬間に縁またぎをアナウンスする
+ok 567 - せり上がりスライダーは上げた瞬間に縁またぎをアナウンスする
+  ---
+  duration_ms: 0.2855
+  type: 'test'
+  ...
+# Subtest: 舞台セットの種類にせりがある
+ok 568 - 舞台セットの種類にせりがある
+  ---
+  duration_ms: 1.192292
+  type: 'test'
+  ...
+# Subtest: 舞台裏の控えにせり上がりを残す
+ok 569 - 舞台裏の控えにせり上がりを残す
+  ---
+  duration_ms: 0.184666
+  type: 'test'
+  ...
+# Subtest: せりの上面は登録寸法ではなくシーンのせり上がりから決め、床下は支持面にしない
+ok 570 - せりの上面は登録寸法ではなくシーンのせり上がりから決め、床下は支持面にしない
+  ---
+  duration_ms: 0.129791
+  type: 'test'
+  ...
+# Subtest: せりは必ず床を基準にして支えを持たない
+ok 571 - せりは必ず床を基準にして支えを持たない
+  ---
+  duration_ms: 0.129625
+  type: 'test'
+  ...
+# Subtest: 床面のせりは箱を作らず、負のせりは床下へ箱を作る
+ok 572 - 床面のせりは箱を作らず、負のせりは床下へ箱を作る
+  ---
+  duration_ms: 0.347917
+  type: 'test'
+  ...
+# Subtest: せりをドラッグし終えるとowner優先の錠を掛け直す
+ok 573 - せりをドラッグし終えるとowner優先の錠を掛け直す
+  ---
+  duration_ms: 0.261
+  type: 'test'
+  ...
+# Subtest: 後から動かしたせりの上にも乗れる（並び順を超えて支えの候補に入れる）
+ok 574 - 後から動かしたせりの上にも乗れる（並び順を超えて支えの候補に入れる）
+  ---
+  duration_ms: 0.113875
+  type: 'test'
+  ...
+# Subtest: せりの寸法表示は幅×奥行きだけ（高さを持たないのでNaNを出さない）
+ok 575 - せりの寸法表示は幅×奥行きだけ（高さを持たないのでNaNを出さない）
+  ---
+  duration_ms: 0.082042
+  type: 'test'
+  ...
+# Subtest: 受け取ったopの取り込みはリモート由来として扱う
+ok 576 - 受け取ったopの取り込みはリモート由来として扱う
+  ---
+  duration_ms: 0.535458
+  type: 'test'
+  ...
+# Subtest: メッセージ処理から直接applyGuestOpを呼ばない
+ok 577 - メッセージ処理から直接applyGuestOpを呼ばない
+  ---
+  duration_ms: 0.173458
+  type: 'test'
+  ...
+# Subtest: ホストとゲストは許可された矢印opだけを受け取る
+ok 578 - ホストとゲストは許可された矢印opだけを受け取る
+  ---
+  duration_ms: 1.234541
+  type: 'test'
+  ...
+# Subtest: ゲストは矢印だけを差分の基準にも当てる
+ok 579 - ゲストは矢印だけを差分の基準にも当てる
+  ---
+  duration_ms: 0.143584
+  type: 'test'
+  ...
+# Subtest: ホストは落ち着いてから正本を配り直す
+ok 580 - ホストは落ち着いてから正本を配り直す
+  ---
+  duration_ms: 0.209042
+  type: 'test'
+  ...
+# Subtest: サーバはopを送信者以外のゲストへも中継する
+ok 581 - サーバはopを送信者以外のゲストへも中継する
+  ---
+  duration_ms: 0.06825
+  type: 'test'
+  ...
+# Subtest: サーバーの汎用中継は変更せず、opを送れる役割も今までどおりゲストだけ
+ok 582 - サーバーの汎用中継は変更せず、opを送れる役割も今までどおりゲストだけ
+  ---
+  duration_ms: 0.133417
+  type: 'test'
+  ...
+# Subtest: docを配れるのは今もホストだけ
+ok 583 - docを配れるのは今もホストだけ
+  ---
+  duration_ms: 0.042625
+  type: 'test'
+  ...
+# Subtest: 共有docはDurable Objectの保存上限より前で拒否し、保存確認後だけ配る
+ok 584 - 共有docはDurable Objectの保存上限より前で拒否し、保存確認後だけ配る
+  ---
+  duration_ms: 0.259916
+  type: 'test'
+  ...
+# Subtest: ホストは保存確認が来るまで送信済みとして扱わず、大きすぎるdocを送らない
+ok 585 - ホストは保存確認が来るまで送信済みとして扱わず、大きすぎるdocを送らない
+  ---
+  duration_ms: 0.305542
+  type: 'test'
+  ...
+# Subtest: 共有セッションの固定文言はすべて TEXT で英語にできる
+ok 586 - 共有セッションの固定文言はすべて TEXT で英語にできる
+  ---
+  duration_ms: 2.969542
+  type: 'test'
+  ...
+# Subtest: 共有セッションの合成文（テンプレート）は SAY で英語にできる
+ok 587 - 共有セッションの合成文（テンプレート）は SAY で英語にできる
+  ---
+  duration_ms: 1.213583
+  type: 'test'
+  ...
+# Subtest: 会場エディタの寸法・観客帯の文も SAY で英語にできる
+ok 588 - 会場エディタの寸法・観客帯の文も SAY で英語にできる
+  ---
+  duration_ms: 0.304333
+  type: 'test'
+  ...
+# Subtest: 小道具の形の選択肢は TEXT で英語にできる
+ok 589 - 小道具の形の選択肢は TEXT で英語にできる
+  ---
+  duration_ms: 0.052708
+  type: 'test'
+  ...
+# Subtest: ブリッジが無いブラウザは従来どおり相対fetchでセッションを始める
+ok 590 - ブリッジが無いブラウザは従来どおり相対fetchでセッションを始める
+  ---
+  duration_ms: 4.888625
+  type: 'test'
+  ...
+# Subtest: Macブリッジは本番の招待URLを作り、open→message→closeを既存ハンドラへ渡す
+ok 591 - Macブリッジは本番の招待URLを作り、open→message→closeを既存ハンドラへ渡す
+  ---
+  duration_ms: 1.084125
+  type: 'test'
+  ...
+# Subtest: Swift中継は固定オリジン・Keychain・Basic認証とP0オリジン拒否テストを備える
+ok 592 - Swift中継は固定オリジン・Keychain・Basic認証とP0オリジン拒否テストを備える
+  ---
+  duration_ms: 0.161166
+  type: 'test'
+  ...
+# Subtest: 初回docは即時適用し、2通目以降のシーン変更だけ既存転換入口を呼ぶ
+ok 593 - 初回docは即時適用し、2通目以降のシーン変更だけ既存転換入口を呼ぶ
+  ---
+  duration_ms: 2.674
+  type: 'test'
+  ...
+# Subtest: 再接続後の最初のdocも初期同期として転換しない
+ok 594 - 再接続後の最初のdocも初期同期として転換しない
+  ---
+  duration_ms: 0.686042
+  type: 'test'
+  ...
+# Subtest: ホストは共有docの保存確認を受け取ってから送信済みにする
+ok 595 - ホストは共有docの保存確認を受け取ってから送信済みにする
+  ---
+  duration_ms: 0.759666
+  type: 'test'
+  ...
+# Subtest: 共有docの保存失敗後は同じ内容をもう一度送れる
+ok 596 - 共有docの保存失敗後は同じ内容をもう一度送れる
+  ---
+  duration_ms: 0.4745
+  type: 'test'
+  ...
+# Subtest: 上限を超える共有docはWebSocketへ送らず、ホストの作業を残したまま知らせる
+ok 597 - 上限を超える共有docはWebSocketへ送らず、ホストの作業を残したまま知らせる
+  ---
+  duration_ms: 9.755167
+  type: 'test'
+  ...
+# Subtest: ゲストは駒の差分を送らず、新しい矢印だけを送る
+ok 598 - ゲストは駒の差分を送らず、新しい矢印だけを送る
+  ---
+  duration_ms: 0.624959
+  type: 'test'
+  ...
+# Subtest: ホストとゲストは中継されたpiece.moveを無視し、矢印は採用する
+ok 599 - ホストとゲストは中継されたpiece.moveを無視し、矢印は採用する
+  ---
+  duration_ms: 0.984375
+  type: 'test'
+  ...
+# Subtest: ゲストバッジはguest役割だけで表示され、駒操作のUIと入力経路を閉じる
+ok 600 - ゲストバッジはguest役割だけで表示され、駒操作のUIと入力経路を閉じる
+  ---
+  duration_ms: 1.924791
+  type: 'test'
+  ...
+# Subtest: 新しいホストセッションは復帰に必要な利用者付き5項目を保存する
+ok 601 - 新しいホストセッションは復帰に必要な利用者付き5項目を保存する
+  ---
+  duration_ms: 2.768834
+  type: 'test'
+  ...
+# Subtest: 24時間以内かつ同じ利用者の保存だけ再開ボタンを出し、古い保存は消す
+ok 602 - 24時間以内かつ同じ利用者の保存だけ再開ボタンを出し、古い保存は消す
+  ---
+  duration_ms: 2.768375
+  type: 'test'
+  ...
+# Subtest: 再開は新規作成APIを呼ばず保存済みの部屋と鍵で接続する
+ok 603 - 再開は新規作成APIを呼ばず保存済みの部屋と鍵で接続する
+  ---
+  duration_ms: 1.322
+  type: 'test'
+  ...
+# Subtest: Macブリッジでの再開は保存時のoriginから招待URLを復元する
+ok 604 - Macブリッジでの再開は保存時のoriginから招待URLを復元する
+  ---
+  duration_ms: 0.599333
+  type: 'test'
+  ...
+# Subtest: 更新前の共有は接続前に保存を消し、新しい共有の開始を案内する
+ok 605 - 更新前の共有は接続前に保存を消し、新しい共有の開始を案内する
+  ---
+  duration_ms: 0.535083
+  type: 'test'
+  ...
+# Subtest: 別の利用者で開いたときは前のホスト鍵を消し、再開を見せない
+ok 606 - 別の利用者で開いたときは前のホスト鍵を消し、再開を見せない
+  ---
+  duration_ms: 2.217792
+  type: 'test'
+  ...
+# Subtest: 再開がbad-keyまたはfullで拒否されたら保存を消して新規開始へ戻す
+ok 607 - 再開がbad-keyまたはfullで拒否されたら保存を消して新規開始へ戻す
+  ---
+  duration_ms: 1.264875
+  type: 'test'
+  ...
+# Subtest: ゲストのwelcomeとpresenceでホスト不在帯を出し入れし、ホスト自身には出さない
+ok 608 - ゲストのwelcomeとpresenceでホスト不在帯を出し入れし、ホスト自身には出さない
+  ---
+  duration_ms: 2.83625
+  type: 'test'
+  ...
+# Subtest: pingとpongの文字列をサーバーとクライアントで正確に揃える
+ok 609 - pingとpongの文字列をサーバーとクライアントで正確に揃える
+  ---
+  duration_ms: 0.832958
+  type: 'test'
+  ...
+# Subtest: keepaliveは25秒ごとにpingし、pongをUIへ出さず、10秒途絶で閉じる
+ok 610 - keepaliveは25秒ごとにpingし、pongをUIへ出さず、10秒途絶で閉じる
+  ---
+  duration_ms: 0.750459
+  type: 'test'
+  ...
+# Subtest: 切断時はkeepaliveタイマーを止め、既存の3秒再接続へ渡す
+ok 611 - 切断時はkeepaliveタイマーを止め、既存の3秒再接続へ渡す
+  ---
+  duration_ms: 0.47225
+  type: 'test'
+  ...
+# Subtest: 最新を取り直すはゲストだけに出て、旧ソケットを閉じ、試行回数0で即時接続する
+ok 612 - 最新を取り直すはゲストだけに出て、旧ソケットを閉じ、試行回数0で即時接続する
+  ---
+  duration_ms: 0.813458
+  type: 'test'
+  ...
+# Subtest: ホスト不在帯は上部中央・読み上げ通知・操作透過である
+ok 613 - ホスト不在帯は上部中央・読み上げ通知・操作透過である
+  ---
+  duration_ms: 0.229166
+  type: 'test'
+  ...
+# Subtest: ゲスト時は共有モーダルを開き、左列へ移動しない
+ok 614 - ゲスト時は共有モーダルを開き、左列へ移動しない
+  ---
+  duration_ms: 0.353541
+  type: 'test'
+  ...
+# Subtest: stage-pwa-tablet でも共有モーダルを開ける
+ok 615 - stage-pwa-tablet でも共有モーダルを開ける
+  ---
+  duration_ms: 0.342708
+  type: 'test'
+  ...
+# Subtest: stage-phone-viewer でも共有モーダルを開ける
+ok 616 - stage-phone-viewer でも共有モーダルを開ける
+  ---
+  duration_ms: 0.718667
+  type: 'test'
+  ...
+# Subtest: ゲストの出るもの一覧はクリックとEnter・Spaceを実効的に遮断する
+ok 617 - ゲストの出るもの一覧はクリックとEnter・Spaceを実効的に遮断する
+  ---
+  duration_ms: 2.599625
+  type: 'test'
+  ...
+# Subtest: ゲスト用CSSは編集・管理パネルを隠し、classを外せば通常表示へ戻る
+ok 618 - ゲスト用CSSは編集・管理パネルを隠し、classを外せば通常表示へ戻る
+  ---
+  duration_ms: 2.368
+  type: 'test'
+  ...
+# Subtest: 追加した日本語UI文字列には英訳がある
+ok 619 - 追加した日本語UI文字列には英訳がある
+  ---
+  duration_ms: 1.505625
+  type: 'test'
+  ...
+# Subtest: shelveCurrent は棚への書き込み結果を呼び出し元へ返す
+ok 620 - shelveCurrent は棚への書き込み結果を呼び出し元へ返す
+  ---
+  duration_ms: 0.601208
+  type: 'test'
+  ...
+# Subtest: セッション bridge の shelveNow は shelveCurrent の結果を返す
+ok 621 - セッション bridge の shelveNow は shelveCurrent の結果を返す
+  ---
+  duration_ms: 0.199417
+  type: 'test'
+  ...
+# Subtest: 変更した2本のJS版とPWAキャッシュ版を正本・単独版・Service Workerで揃える
+not ok 622 - 変更した2本のJS版とPWAキャッシュ版を正本・単独版・Service Workerで揃える
+  ---
+  duration_ms: 0.294
+  type: 'test'
+  location: '/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/tests/stage-session-shelve.test.mjs:42:1'
+  failureType: 'testCodeFailure'
+  error: 'stage-sketch.js?v=321 が index.html にある'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///Users/arata/Library/Mobile%20Documents/com%7Eapple%7ECloudDocs/claude%20code%20files/show-creative-ideas/shosai-app/tests/stage-session-shelve.test.mjs:44:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: ゲスト参加は false の退避結果を失敗として扱い、role 変更前に中止する
+ok 623 - ゲスト参加は false の退避結果を失敗として扱い、role 変更前に中止する
+  ---
+  duration_ms: 0.100459
+  type: 'test'
+  ...
+# Subtest: QuotaExceededError で退避できないときはゲスト参加を開始しない
+ok 624 - QuotaExceededError で退避できないときはゲスト参加を開始しない
+  ---
+  duration_ms: 23.410333
+  type: 'test'
+  ...
+# Subtest: 現在ショーを棚へ退避できなければ、新しいショーへ切り替えない
+ok 625 - 現在ショーを棚へ退避できなければ、新しいショーへ切り替えない
+  ---
+  duration_ms: 7.046584
+  type: 'test'
+  ...
+# Subtest: 上限を超える既存ショーを読み込んでも、61件目以降を黙って切り捨てない
+ok 626 - 上限を超える既存ショーを読み込んでも、61件目以降を黙って切り捨てない
+  ---
+  duration_ms: 41.141792
+  type: 'test'
+  ...
+# Subtest: 通常の新規シーン操作は60行で止まり、既存データを変えない
+ok 627 - 通常の新規シーン操作は60行で止まり、既存データを変えない
+  ---
+  duration_ms: 4.222458
+  type: 'test'
+  ...
+# Subtest: 現在ショーは退避できても次ショーが棚へ入らなければ、現在ショーを開いたまま止める
+ok 628 - 現在ショーは退避できても次ショーが棚へ入らなければ、現在ショーを開いたまま止める
+  ---
+  duration_ms: 6.04175
+  type: 'test'
+  ...
+# Subtest: ショー棚が壊れているときは原文を保ち、新しいショーへ切り替えない
+ok 629 - ショー棚が壊れているときは原文を保ち、新しいショーへ切り替えない
+  ---
+  duration_ms: 13.765542
+  type: 'test'
+  ...
+# Subtest: Worker は Secret が全未設定の公開URLを503で停止する
+ok 630 - Worker は Secret が全未設定の公開URLを503で停止する
+  ---
+  duration_ms: 9.274292
+  type: 'test'
+  ...
+# Subtest: Worker は Secret が全未設定でもローカルホストだけ配信する
+ok 631 - Worker は Secret が全未設定でもローカルホストだけ配信する
+  ---
+  duration_ms: 1.465375
+  type: 'test'
+  ...
+# Subtest: Worker は片側だけの Secret をローカルでも必ず503にする
+ok 632 - Worker は片側だけの Secret をローカルでも必ず503にする
+  ---
+  duration_ms: 0.374666
+  type: 'test'
+  ...
+# Subtest: Worker は完全な一組と正しい Basic 認証で舞台スケッチを受け付ける
+ok 633 - Worker は完全な一組と正しい Basic 認証で舞台スケッチを受け付ける
+  ---
+  duration_ms: 19.099792
+  type: 'test'
+  ...
+# Subtest: 公開URLの ?fresh は警告だけを出し、削除せず通常初期化を続ける
+ok 634 - 公開URLの ?fresh は警告だけを出し、削除せず通常初期化を続ける
+  ---
+  duration_ms: 0.706375
+  type: 'test'
+  ...
+# Subtest: ローカルの ?fresh は日本語確認を一度出し、キャンセルなら何も消さない
+ok 635 - ローカルの ?fresh は日本語確認を一度出し、キャンセルなら何も消さない
+  ---
+  duration_ms: 0.324542
+  type: 'test'
+  ...
+# Subtest: ローカルで英語確認を承認したときだけ6キーを消し、URL指定を持ち越す
+ok 636 - ローカルで英語確認を承認したときだけ6キーを消し、URL指定を持ち越す
+  ---
+  duration_ms: 0.334416
+  type: 'test'
+  ...
+# Subtest: ?fresh の許可ホストは file と localhost 系だけに限る
+ok 637 - ?fresh の許可ホストは file と localhost 系だけに限る
+  ---
+  duration_ms: 7.332584
+  type: 'test'
+  ...
+# Subtest: normalizeModelはnullを部品0個のモデルへ直す
+ok 638 - normalizeModelはnullを部品0個のモデルへ直す
+  ---
+  duration_ms: 1.319416
+  type: 'test'
+  ...
+# Subtest: normalizePartは不正な数値を安全な範囲へ直す
+ok 639 - normalizePartは不正な数値を安全な範囲へ直す
+  ---
+  duration_ms: 0.180667
+  type: 'test'
+  ...
+# Subtest: partBoxesはbox・step・sphereを指定数の箱へ展開する
+ok 640 - partBoxesはbox・step・sphereを指定数の箱へ展開する
+  ---
+  duration_ms: 0.244375
+  type: 'test'
+  ...
+# Subtest: stepは床から立ち上がる段になり、最上段の高さと奥行きの合計が元寸法に一致する
+ok 641 - stepは床から立ち上がる段になり、最上段の高さと奥行きの合計が元寸法に一致する
+  ---
+  duration_ms: 0.1
+  type: 'test'
+  ...
+# Subtest: modelExtentは原点から離れた部品を含む外形を返す
+ok 642 - modelExtentは原点から離れた部品を含む外形を返す
+  ---
+  duration_ms: 0.462625
+  type: 'test'
+  ...
+# Subtest: parseLibraryは壊れたJSONをnullにする
+ok 643 - parseLibraryは壊れたJSONをnullにする
+  ---
+  duration_ms: 0.061959
+  type: 'test'
+  ...
+# Subtest: serializeLibraryとparseLibraryでモデルを往復できる
+ok 644 - serializeLibraryとparseLibraryでモデルを往復できる
+  ---
+  duration_ms: 0.235208
+  type: 'test'
+  ...
+# Subtest: normalizeModelは部品を64個までに切る
+ok 645 - normalizeModelは部品を64個までに切る
+  ---
+  duration_ms: 0.261417
+  type: 'test'
+  ...
+# Subtest: 壊れた棚は shelveNow で上書きされず false を返す
+ok 646 - 壊れた棚は shelveNow で上書きされず false を返す
+  ---
+  duration_ms: 25.476292
+  type: 'test'
+  ...
+# Subtest: 壊れた棚の原文を隔離キーへ退避する
+ok 647 - 壊れた棚の原文を隔離キーへ退避する
+  ---
+  duration_ms: 5.224083
+  type: 'test'
+  ...
+# Subtest: 隔離キーに既存値があれば上書きしない
+ok 648 - 隔離キーに既存値があれば上書きしない
+  ---
+  duration_ms: 5.913333
+  type: 'test'
+  ...
+# Subtest: キー無し・空文字・空オブジェクトは正常な空として保存できる
+ok 649 - キー無し・空文字・空オブジェクトは正常な空として保存できる
+  ---
+  duration_ms: 26.806834
+  type: 'test'
+  ...
+# Subtest: 配列の棚も壊れ扱いにして原文を保ち、書き込みを止める
+ok 650 - 配列の棚も壊れ扱いにして原文を保ち、書き込みを止める
+  ---
+  duration_ms: 13.004583
+  type: 'test'
+  ...
+# Subtest: 壊れた棚の警告は退避状態で分岐せず、書き出してから消すと案内する
+ok 651 - 壊れた棚の警告は退避状態で分岐せず、書き出してから消すと案内する
+  ---
+  duration_ms: 3.506875
+  type: 'test'
+  ...
+# Subtest: 作り直しは、消す前に壊れた原文をダウンロードへ流す
+ok 652 - 作り直しは、消す前に壊れた原文をダウンロードへ流す
+  ---
+  duration_ms: 12.122667
+  type: 'test'
+  ...
+# Subtest: 作り直しの確認をキャンセルすると1バイトも消さない
+ok 653 - 作り直しの確認をキャンセルすると1バイトも消さない
+  ---
+  duration_ms: 3.520625
+  type: 'test'
+  ...
+# Subtest: 作り直しの確認でOKすると両方の壊れた値を消して棚を再構築する
+ok 654 - 作り直しの確認でOKすると両方の壊れた値を消して棚を再構築する
+  ---
+  duration_ms: 11.808875
+  type: 'test'
+  ...
+# Subtest: 作り直し後に再び壊れると、2回目の原文を退避し直す
+ok 655 - 作り直し後に再び壊れると、2回目の原文を退避し直す
+  ---
+  duration_ms: 3.78175
+  type: 'test'
+  ...
+# Subtest: ?fresh をローカルで承認すると退避キーも実際に消す
+ok 656 - ?fresh をローカルで承認すると退避キーも実際に消す
+  ---
+  duration_ms: 0.741875
+  type: 'test'
+  ...
+# Subtest: deleteShow は棚へ書けない場合に削除せず、失敗を告知する
+ok 657 - deleteShow は棚へ書けない場合に削除せず、失敗を告知する
+  ---
+  duration_ms: 18.763416
+  type: 'test'
+  ...
+# Subtest: 本体は演者より設置面積が大きい非演者を演者の支持対象から外す
+ok 658 - 本体は演者より設置面積が大きい非演者を演者の支持対象から外す
+  ---
+  duration_ms: 1.320125
+  type: 'test'
+  ...
+# Subtest: 検出ツールの複製ロジックも本体と同じサイズ判定を持つ
+ok 659 - 検出ツールの複製ロジックも本体と同じサイズ判定を持つ
+  ---
+  duration_ms: 0.130709
+  type: 'test'
+  ...
+# Subtest: 本体は座る・寄りかかる家具を演者の支持対象から常に外す
+ok 660 - 本体は座る・寄りかかる家具を演者の支持対象から常に外す
+  ---
+  duration_ms: 0.104833
+  type: 'test'
+  ...
+# Subtest: 検出ツールの複製ロジックも本体と同じ家具除外を持つ
+ok 661 - 検出ツールの複製ロジックも本体と同じ家具除外を持つ
+  ---
+  duration_ms: 0.046083
+  type: 'test'
+  ...
+# Subtest: 本体のisFlownはFLOWN_ONLYを登録値に関係なく吊物として扱う
+ok 662 - 本体のisFlownはFLOWN_ONLYを登録値に関係なく吊物として扱う
+  ---
+  duration_ms: 0.177959
+  type: 'test'
+  ...
+# Subtest: 読み込みの正規化はFLOWN_ONLYの登録を必ず吊りへ直す
+ok 663 - 読み込みの正規化はFLOWN_ONLYの登録を必ず吊りへ直す
+  ---
+  duration_ms: 0.062417
+  type: 'test'
+  ...
+# Subtest: 検出ツールの複製ロジックも本体と同じFLOWN_ONLY扱いを持つ
+ok 664 - 検出ツールの複製ロジックも本体と同じFLOWN_ONLY扱いを持つ
+  ---
+  duration_ms: 0.111
+  type: 'test'
+  ...
+# Subtest: normalizePiece はティシューの掴む高さを0〜10mで持つ
+ok 665 - normalizePiece はティシューの掴む高さを0〜10mで持つ
+  ---
+  duration_ms: 1.906333
+  type: 'test'
+  ...
+# Subtest: 舞台裏の控えにティシューの掴む高さを残す
+ok 666 - 舞台裏の控えにティシューの掴む高さを残す
+  ---
+  duration_ms: 0.304792
+  type: 'test'
+  ...
+# Subtest: refreshBases はティシューの近くでTRAP_GRIP.hangを使って掴ませる
+ok 667 - refreshBases はティシューの近くでTRAP_GRIP.hangを使って掴ませる
+  ---
+  duration_ms: 0.12275
+  type: 'test'
+  ...
+# Subtest: mountKindFrom はティシューを返す（mountKindOf は委譲）
+ok 668 - mountKindFrom はティシューを返す（mountKindOf は委譲）
+  ---
+  duration_ms: 0.169208
+  type: 'test'
+  ...
+# Subtest: performerRig はティシュー上でトラピーズのぶら下がり姿勢を使う
+ok 669 - performerRig はティシュー上でトラピーズのぶら下がり姿勢を使う
+  ---
+  duration_ms: 0.192291
+  type: 'test'
+  ...
+# Subtest: 選んだものパネルにティシューの掴む高さUIがある
+ok 670 - 選んだものパネルにティシューの掴む高さUIがある
+  ---
+  duration_ms: 0.075792
+  type: 'test'
+  ...
+# Subtest: ティシューUIの日本語に英訳がある
+ok 671 - ティシューUIの日本語に英訳がある
+  ---
+  duration_ms: 0.11225
+  type: 'test'
+  ...
+# Subtest: ティシューの掴む高さから演者のbaseを計算する
+ok 672 - ティシューの掴む高さから演者のbaseを計算する
+  ---
+  duration_ms: 0.071833
+  type: 'test'
+  ...
+# Subtest: チュートリアルは舞台スケッチの表示中だけ自動起動する
+ok 673 - チュートリアルは舞台スケッチの表示中だけ自動起動する
+  ---
+  duration_ms: 2.091375
+  type: 'test'
+  ...
+# Subtest: 設定内の使い方ボタンは設定を閉じてから案内を始める
+ok 674 - 設定内の使い方ボタンは設定を閉じてから案内を始める
+  ---
+  duration_ms: 0.523166
+  type: 'test'
+  ...
+# Subtest: 操作完了後もチュートリアルは自動で次へ進まない
+ok 675 - 操作完了後もチュートリアルは自動で次へ進まない
+  ---
+  duration_ms: 0.854667
+  type: 'test'
+  ...
+# Subtest: 手前の観客帯から近似席を返し、nearはfrontまたはcenterを流用する
+ok 676 - 手前の観客帯から近似席を返し、nearはfrontまたはcenterを流用する
+  ---
+  duration_ms: 4.152416
+  type: 'test'
+  ...
+# Subtest: 左右の観客帯はsideを選び、右側だけshiftの符号を反転する
+ok 677 - 左右の観客帯はsideを選び、右側だけshiftの符号を反転する
+  ---
+  duration_ms: 1.306083
+  type: 'test'
+  ...
+# Subtest: 観客領域が0件なら空配列を返す
+ok 678 - 観客領域が0件なら空配列を返す
+  ---
+  duration_ms: 1.318125
+  type: 'test'
+  ...
+# Subtest: 返り値はapproxを持ち、balcony以外の流用元SEATSの数値と一致する
+ok 679 - 返り値はapproxを持ち、balcony以外の流用元SEATSの数値と一致する
+  ---
+  duration_ms: 1.201042
+  type: 'test'
+  ...
+# Subtest: approxFrontSeatsはSEATS本体を変異させない
+ok 680 - approxFrontSeatsはSEATS本体を変異させない
+  ---
+  duration_ms: 2.223125
+  type: 'test'
+  ...
+# Subtest: 正面図の近似バッジ要素が正本と生成HTMLに存在する
+ok 681 - 正面図の近似バッジ要素が正本と生成HTMLに存在する
+  ---
+  duration_ms: 0.119541
+  type: 'test'
+  ...
+# Subtest: stage-sketch.jsは近似正面席を参照する
+ok 682 - stage-sketch.jsは近似正面席を参照する
+  ---
+  duration_ms: 0.335625
+  type: 'test'
+  ...
+# Subtest: stage-i18n.jsに近似正面席と近似バッジの訳が存在する
+ok 683 - stage-i18n.jsに近似正面席と近似バッジの訳が存在する
+  ---
+  duration_ms: 0.167708
+  type: 'test'
+  ...
+# Subtest: 旧下書きは一度だけ会場ライブラリへ取り込み、旧キーを残す
+ok 684 - 旧下書きは一度だけ会場ライブラリへ取り込み、旧キーを残す
+  ---
+  duration_ms: 11.892125
+  type: 'test'
+  ...
+# Subtest: 会場セレクト用一覧は既存10プリセットの後ろにライブラリ会場を並べる
+ok 685 - 会場セレクト用一覧は既存10プリセットの後ろにライブラリ会場を並べる
+  ---
+  duration_ms: 1.544583
+  type: 'test'
+  ...
+# Subtest: SHOSAI_VENUES.listの先頭5プリセットは値も並びも変えない
+ok 686 - SHOSAI_VENUES.listの先頭5プリセットは値も並びも変えない
+  ---
+  duration_ms: 1.306166
+  type: 'test'
+  ...
+# Subtest: 柱・什器・扉・天井とmovableは会場ライブラリを往復する
+ok 687 - 柱・什器・扉・天井とmovableは会場ライブラリを往復する
+  ---
+  duration_ms: 3.385458
+  type: 'test'
+  ...
+# Subtest: エディタ操作で柱1本・什器1つ・扉1つと独立した天井条件をvenue-v2保存できる
+ok 688 - エディタ操作で柱1本・什器1つ・扉1つと独立した天井条件をvenue-v2保存できる
+  ---
+  duration_ms: 120.476667
+  type: 'test'
+  ...
+# Subtest: 会場ファイルはプレビュー確認まで書き込まず、確定したときだけ取り込む
+ok 689 - 会場ファイルはプレビュー確認まで書き込まず、確定したときだけ取り込む
+  ---
+  duration_ms: 12.273834
+  type: 'test'
+  ...
+# Subtest: やめる・暗幕・Escapeはいずれも会場ライブラリを変えない
+ok 690 - やめる・暗幕・Escapeはいずれも会場ライブラリを変えない
+  ---
+  duration_ms: 12.33625
+  type: 'test'
+  ...
+# Subtest: 2MB超過・壊れたJSON・壊れたvenue-v2は書き込まず理由と除外件数を出す
+ok 691 - 2MB超過・壊れたJSON・壊れたvenue-v2は書き込まず理由と除外件数を出す
+  ---
+  duration_ms: 10.953125
+  type: 'test'
+  ...
+# Subtest: 201件は先頭200件だけ候補にし、切り捨てた1件を確認前後の文言へ出す
+ok 692 - 201件は先頭200件だけ候補にし、切り捨てた1件を確認前後の文言へ出す
+  ---
+  duration_ms: 16.606917
+  type: 'test'
+  ...
+# Subtest: 201件の先頭200件がすべて壊れていても、上限で切り捨てた1件を伝える
+ok 693 - 201件の先頭200件がすべて壊れていても、上限で切り捨てた1件を伝える
+  ---
+  duration_ms: 12.543666
+  type: 'test'
+  ...
+# Subtest: 確認モーダルの静的文言は英語対訳を持つ
+ok 694 - 確認モーダルの静的文言は英語対訳を持つ
+  ---
+  duration_ms: 0.419208
+  type: 'test'
+  ...
+# Subtest: 受け入れ会場で4本の線・探り針・赤い観客重なりを即時に更新しvenueへ保存しない
+ok 695 - 受け入れ会場で4本の線・探り針・赤い観客重なりを即時に更新しvenueへ保存しない
+  ---
+  duration_ms: 401.599375
+  type: 'test'
+  ...
+# Subtest: 未知の会場IDは元IDを持つmissing会場になり、プロセニアムへ化けない
+ok 696 - 未知の会場IDは元IDを持つmissing会場になり、プロセニアムへ化けない
+  ---
+  duration_ms: 1.177917
+  type: 'test'
+  ...
+# Subtest: version 3は会場ライブラリを変更せず従来どおりprojectを読める
+ok 697 - version 3は会場ライブラリを変更せず従来どおりprojectを読める
+  ---
+  duration_ms: 1.079292
+  type: 'test'
+  ...
+# Subtest: 自作会場を参照するショーはversion 4で会場を同梱できる
+ok 698 - 自作会場を参照するショーはversion 4で会場を同梱できる
+  ---
+  duration_ms: 1.013167
+  type: 'test'
+  ...
+# Subtest: version 4読込で会場IDが重なると連番IDで追加し、ショー参照も向け直す
+ok 699 - version 4読込で会場IDが重なると連番IDで追加し、ショー参照も向け直す
+  ---
+  duration_ms: 1.026916
+  type: 'test'
+  ...
+# Subtest: 保存メタデータ既定値とinternal-onlyの3択確認UIを持つ
+ok 700 - 保存メタデータ既定値とinternal-onlyの3択確認UIを持つ
+  ---
+  duration_ms: 0.651292
+  type: 'test'
+  ...
+# Subtest: 柱・什器・扉の追加モードと、独立した天井高・吊りUIを持つ
+ok 701 - 柱・什器・扉の追加モードと、独立した天井高・吊りUIを持つ
+  ---
+  duration_ms: 0.716041
+  type: 'test'
+  ...
+# Subtest: 4本の表示トグルと、保存しない探り針の道具・到達高さUIを持つ
+ok 702 - 4本の表示トグルと、保存しない探り針の道具・到達高さUIを持つ
+  ---
+  duration_ms: 0.355
+  type: 'test'
+  ...
+# Subtest: 平面の重ね順は床・可動・可動什器・死角・見える限界・落下・会場実体の順にする
+ok 703 - 平面の重ね順は床・可動・可動什器・死角・見える限界・落下・会場実体の順にする
+  ---
+  duration_ms: 0.132292
+  type: 'test'
+  ...
+# Subtest: TOHUプリセットは公式仕様書の実測値を保つ
+ok 704 - TOHUプリセットは公式仕様書の実測値を保つ
+  ---
+  duration_ms: 1.183334
+  type: 'test'
+  ...
+# Subtest: サーカスの3形式は出典どおりの寸法を保つ
+ok 705 - サーカスの3形式は出典どおりの寸法を保つ
+  ---
+  duration_ms: 1.143292
+  type: 'test'
+  ...
+# Subtest: 既存のビッグトップは触っていない（形式の見取り図として据え置き）
+ok 706 - 既存のビッグトップは触っていない（形式の見取り図として据え置き）
+  ---
+  duration_ms: 0.897
+  type: 'test'
+  ...
+# Subtest: TOHUの表示文言は日英そろっている
+ok 707 - TOHUの表示文言は日英そろっている
+  ---
+  duration_ms: 1.439167
+  type: 'test'
+  ...
+# Subtest: 会場の説明に記法が混ざっていない（画面へ素のまま出るため）
+ok 708 - 会場の説明に記法が混ざっていない（画面へ素のまま出るため）
+  ---
+  duration_ms: 1.301917
+  type: 'test'
+  ...
+# Subtest: 形式プリセットには会場の性格を書いた一文を置かない
+ok 709 - 形式プリセットには会場の性格を書いた一文を置かない
+  ---
+  duration_ms: 1.175875
+  type: 'test'
+  ...
+# Subtest: 会場プリセットは全部が日英そろっている（追加時の訳し忘れを止める）
+ok 710 - 会場プリセットは全部が日英そろっている（追加時の訳し忘れを止める）
+  ---
+  duration_ms: 1.513125
+  type: 'test'
+  ...
+# Subtest: 会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う
+not ok 711 - 会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う
+  ---
+  duration_ms: 0.42975
+  type: 'test'
+  location: '/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/tests/stage-venue-library.test.mjs:861:1'
+  failureType: 'testCodeFailure'
+  error: 'stage-i18n.js?v=101 がindex.htmlにある'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///Users/arata/Library/Mobile%20Documents/com%7Eapple%7ECloudDocs/claude%20code%20files/show-creative-ideas/shosai-app/tests/stage-venue-library.test.mjs:873:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: lines層は仕様どおりの余白・係数・最低半径だけを定数に持つ
+ok 712 - lines層は仕様どおりの余白・係数・最低半径だけを定数に持つ
+  ---
+  duration_ms: 1.329417
+  type: 'test'
+  ...
+# Subtest: 可動範囲は壁0.5m・固定物0.5m・観客1.0m・段差縁0.3mを引く
+ok 713 - 可動範囲は壁0.5m・固定物0.5m・観客1.0m・段差縁0.3mを引く
+  ---
+  duration_ms: 0.815208
+  type: 'test'
+  ...
+# Subtest: movable:trueの什器は可動範囲から引かず、拡張範囲用の別輪郭にする
+ok 714 - movable:trueの什器は可動範囲から引かず、拡張範囲用の別輪郭にする
+  ---
+  duration_ms: 10.756333
+  type: 'test'
+  ...
+# Subtest: 落下半径は到達高さを天井で止め、係数・最低半径と吊り不可を守る
+ok 715 - 落下半径は到達高さを天井で止め、係数・最低半径と吊り不可を守る
+  ---
+  duration_ms: 0.621875
+  type: 'test'
+  ...
+# Subtest: 探り針を観客際へ寄せると落下範囲と観客の重なりを返す
+ok 716 - 探り針を観客際へ寄せると落下範囲と観客の重なりを返す
+  ---
+  duration_ms: 0.440166
+  type: 'test'
+  ...
+# Subtest: 固定柱の後ろを観客代表点からの単純遮蔽で死角にする
+ok 717 - 固定柱の後ろを観客代表点からの単純遮蔽で死角にする
+  ---
+  duration_ms: 8.007958
+  type: 'test'
+  ...
+# Subtest: 複数観客の死角は全員から見えない濃色と一部だけの薄色の2段階に限る
+ok 718 - 複数観客の死角は全員から見えない濃色と一部だけの薄色の2段階に限る
+  ---
+  duration_ms: 7.275542
+  type: 'test'
+  ...
+# Subtest: 20m・35mの見える限界は小部屋では描かず、大部屋の床内だけに出す
+ok 719 - 20m・35mの見える限界は小部屋では描かず、大部屋の床内だけに出す
+  ---
+  duration_ms: 106.861458
+  type: 'test'
+  ...
+# Subtest: 受け入れ会場で4本を導出してもvenueへlinesやprobeを書き込まない
+ok 720 - 受け入れ会場で4本を導出してもvenueへlinesやprobeを書き込まない
+  ---
+  duration_ms: 66.016708
+  type: 'test'
+  ...
+# Subtest: /whoami はクッキー認証の利用者名を no-store で返す
+ok 721 - /whoami はクッキー認証の利用者名を no-store で返す
+  ---
+  duration_ms: 23.456416
+  type: 'test'
+  ...
+# Subtest: /whoami は Basic 認証でも同じ利用者名を返す
+ok 722 - /whoami は Basic 認証でも同じ利用者名を返す
+  ---
+  duration_ms: 1.20625
+  type: 'test'
+  ...
+# Subtest: /whoami は GET と HEAD だけを受け付ける
+ok 723 - /whoami は GET と HEAD だけを受け付ける
+  ---
+  duration_ms: 2.206542
+  type: 'test'
+  ...
+# Subtest: /whoami は PWA キャッシュにも公開リストにも入れない
+ok 724 - /whoami は PWA キャッシュにも公開リストにも入れない
+  ---
+  duration_ms: 0.405083
+  type: 'test'
+  ...
+# Subtest: 認証済み配信関数は利用者名を受け取り、両認証経路から渡される
+ok 725 - 認証済み配信関数は利用者名を受け取り、両認証経路から渡される
+  ---
+  duration_ms: 0.118083
+  type: 'test'
+  ...
+# Subtest: 利用者切り替えで消す鍵は設定とツアーだけ
+ok 726 - 利用者切り替えで消す鍵は設定とツアーだけ
+  ---
+  duration_ms: 0.535667
+  type: 'test'
+  ...
+# Subtest: 利用者切り替え時は既定配置へ戻し、全パネルを閉じる
+ok 727 - 利用者切り替え時は既定配置へ戻し、全パネルを閉じる
+  ---
+  duration_ms: 0.451291
+  type: 'test'
+  ...
+# Subtest: whoami 取得失敗時は表示を hidden のままにする
+ok 728 - whoami 取得失敗時は表示を hidden のままにする
+  ---
+  duration_ms: 0.193875
+  type: 'test'
+  ...
+# Subtest: ログイン者表示は既存の小さな標しの作法と端末用の移動経路を持つ
+ok 729 - ログイン者表示は既存の小さな標しの作法と端末用の移動経路を持つ
+  ---
+  duration_ms: 0.440458
+  type: 'test'
+  ...
+# Subtest: 書き出したshosai / stageの端末データを読み込むと内容が一致する
+ok 730 - 書き出したshosai / stageの端末データを読み込むと内容が一致する
+  ---
+  duration_ms: 0.788709
+  type: 'test'
+  ...
+# Subtest: 壊れたJSONと形式の違うJSONを読み込み前に拒否する
+ok 731 - 壊れたJSONと形式の違うJSONを読み込み前に拒否する
+  ---
+  duration_ms: 0.250916
+  type: 'test'
+  ...
+# Subtest: 移行UIはブラウザとMacで同じコードを読み込み、Mac専用ブリッジへ分岐しない
+ok 732 - 移行UIはブラウザとMacで同じコードを読み込み、Mac専用ブリッジへ分岐しない
+  ---
+  duration_ms: 0.082709
+  type: 'test'
+  ...
+# Subtest: beta bearer invitation opens all scenes without Google or a reader account; manual snapshots survive restart
+ok 733 - beta bearer invitation opens all scenes without Google or a reader account; manual snapshots survive restart
+  ---
+  duration_ms: 27.205875
+  type: 'test'
+  ...
+# Subtest: anonymous access requires both explicit flags and never becomes an account permission
+ok 734 - anonymous access requires both explicit flags and never becomes an account permission
+  ---
+  duration_ms: 13.882916
+  type: 'test'
+  ...
+# Subtest: beta anonymous path exposes only exact viewer assets and target token operations
+ok 735 - beta anonymous path exposes only exact viewer assets and target token operations
+  ---
+  duration_ms: 8.136292
+  type: 'test'
+  ...
+# Subtest: explicit anonymous share retains display name as plain text and only owner can list it
+ok 736 - explicit anonymous share retains display name as plain text and only owner can list it
+  ---
+  duration_ms: 4.328875
+  type: 'test'
+  ...
+# Subtest: anonymous note validation, cross-origin protection, request bounds and rate limit remain effective
+ok 737 - anonymous note validation, cross-origin protection, request bounds and rate limit remain effective
+  ---
+  duration_ms: 8.461292
+  type: 'test'
+  ...
+# Subtest: revoked, missing and malformed tokens share the same error for viewing, status and posts
+ok 738 - revoked, missing and malformed tokens share the same error for viewing, status and posts
+  ---
+  duration_ms: 9.143166
+  type: 'test'
+  ...
+# Subtest: scene identity tolerates rename/reorder but detects pieces, venue dimensions and shared assets
+ok 739 - scene identity tolerates rename/reorder but detects pieces, venue dimensions and shared assets
+  ---
+  duration_ms: 7.532625
+  type: 'test'
+  ...
+# Subtest: old snapshots survive update/restart; deleted/added scenes remain in their correct revisions
+ok 740 - old snapshots survive update/restart; deleted/added scenes remain in their correct revisions
+  ---
+  duration_ms: 22.336792
+  type: 'test'
+  ...
+# Subtest: historical views obey revocation, strict paths, read-only methods and owner isolation
+ok 741 - historical views obey revocation, strict paths, read-only methods and owner isolation
+  ---
+  duration_ms: 10.147292
+  type: 'test'
+  ...
+# Subtest: history limits refuse the new update without dropping earlier publications or owner feedback
+ok 742 - history limits refuse the new update without dropping earlier publications or owner feedback
+  ---
+  duration_ms: 95.016959
+  type: 'test'
+  ...
+# Subtest: unchanged drawings continue; changed drawings start clean while preserving the complete old note
+ok 743 - unchanged drawings continue; changed drawings start clean while preserving the complete old note
+  ---
+  duration_ms: 1.194375
+  type: 'test'
+  ...
+# Subtest: deleted scenes stay listed and selected text/strokes copy to any current scene, keeping both originals
+ok 744 - deleted scenes stay listed and selected text/strokes copy to any current scene, keeping both originals
+  ---
+  duration_ms: 6.641334
+  type: 'test'
+  ...
+# Subtest: bounded note history rejects nested/malformed entries and overflow, preserving storage
+ok 745 - bounded note history rejects nested/malformed entries and overflow, preserving storage
+  ---
+  duration_ms: 0.671875
+  type: 'test'
+  ...
+# Subtest: verified stable notebook IDs reconnect device notes on reissue without touching the legacy key or another show
+ok 746 - verified stable notebook IDs reconnect device notes on reissue without touching the legacy key or another show
+  ---
+  duration_ms: 0.3975
+  type: 'test'
+  ...
+# Subtest: server notebook identity survives reissue and is distinct for another owner of the same show ID
+ok 747 - server notebook identity survives reissue and is distinct for another owner of the same show ID
+  ---
+  duration_ms: 6.169834
+  type: 'test'
+  ...
+# Subtest: feedback inbox accessible heading does not collide with the existing product-feedback dialog
+ok 748 - feedback inbox accessible heading does not collide with the existing product-feedback dialog
+  ---
+  duration_ms: 0.98275
+  type: 'test'
+  ...
+# Subtest: 発行時の全場面を凍結し明示更新でだけ同じリンクを変更する
+ok 749 - 発行時の全場面を凍結し明示更新でだけ同じリンクを変更する
+  ---
+  duration_ms: 33.816458
+  type: 'test'
+  ...
+# Subtest: 閲覧トークンは編集・メモ一覧・所有者の代理操作を許可しない
+ok 750 - 閲覧トークンは編集・メモ一覧・所有者の代理操作を許可しない
+  ---
+  duration_ms: 19.638416
+  type: 'test'
+  ...
+# Subtest: メモは対象場面・時刻・投稿者とともにオーナーだけへ返し更新後も保持
+ok 751 - メモは対象場面・時刻・投稿者とともにオーナーだけへ返し更新後も保持
+  ---
+  duration_ms: 10.889208
+  type: 'test'
+  ...
+# Subtest: 無効化・未知・不正トークンは同じ応答で、既存閲覧者の再取得・投稿を止める
+ok 752 - 無効化・未知・不正トークンは同じ応答で、既存閲覧者の再取得・投稿を止める
+  ---
+  duration_ms: 25.572083
+  type: 'test'
+  ...
+# Subtest: 発行上限はオーナーごとに10ショーで、別オーナーの発行枠を消費しない
+ok 753 - 発行上限はオーナーごとに10ショーで、別オーナーの発行枠を消費しない
+  ---
+  duration_ms: 13.935459
+  type: 'test'
+  ...
+# Subtest: オーナーは自分の保存済みリンクだけを一覧し、無効化後に任意のショーを削除できる
+ok 754 - オーナーは自分の保存済みリンクだけを一覧し、無効化後に任意のショーを削除できる
+  ---
+  duration_ms: 12.907334
+  type: 'test'
+  ...
+# Subtest: 全体1000件の緊急上限はオーナー枠に余裕があっても発行を止める
+ok 755 - 全体1000件の緊急上限はオーナー枠に余裕があっても発行を止める
+  ---
+  duration_ms: 1.494542
+  type: 'test'
+  ...
+# Subtest: 旧owner indexから件数を復元し、区切り文字を含む別ownerを数えない
+ok 756 - 旧owner indexから件数を復元し、区切り文字を含む別ownerを数えない
+  ---
+  duration_ms: 1.577667
+  type: 'test'
+  ...
+# Subtest: 無効化後の再発行は新しいtokenへ交換し、古い公開内容とメモを回収する
+ok 757 - 無効化後の再発行は新しいtokenへ交換し、古い公開内容とメモを回収する
+  ---
+  duration_ms: 5.72275
+  type: 'test'
+  ...
+# Subtest: オーナーだけがメモを全削除でき、連番と保存件数を分けて再投稿できる
+ok 758 - オーナーだけがメモを全削除でき、連番と保存件数を分けて再投稿できる
+  ---
+  duration_ms: 6.413916
+  type: 'test'
+  ...
+# Subtest: 失効済み保存データの削除だけが発行枠を戻し、旧tokenを残さない
+ok 759 - 失効済み保存データの削除だけが発行枠を戻し、旧tokenを残さない
+  ---
+  duration_ms: 4.290334
+  type: 'test'
+  ...
+# Subtest: メモの型・文字数・リクエスト量・場面・連投・保存上限をサーバーで検証する
+ok 760 - メモの型・文字数・リクエスト量・場面・連投・保存上限をサーバーで検証する
+  ---
+  duration_ms: 4.582417
+  type: 'test'
+  ...
+# Subtest: 公開例外は明示資源・対象token APIだけで、編集画面・棚・名簿・他ショーへ抜けない
+ok 761 - 公開例外は明示資源・対象token APIだけで、編集画面・棚・名簿・他ショーへ抜けない
+  ---
+  duration_ms: 1.597125
+  type: 'test'
+  ...
+# Subtest: APIはno-store、発行競合は一つだけ、認証境界は交換可能
+ok 762 - APIはno-store、発行競合は一つだけ、認証境界は交換可能
+  ---
+  duration_ms: 2.82825
+  type: 'test'
+  ...
+# Subtest: 描画依存と正本の生成、ローカル保存の隔離、解析と編集入口の不在
+ok 763 - 描画依存と正本の生成、ローカル保存の隔離、解析と編集入口の不在
+  ---
+  duration_ms: 4.030333
+  type: 'test'
+  ...
+# Subtest: 本家とベータの入口・SW・Worker許可がそろい、体験版へ管理入口を混ぜない
+ok 764 - 本家とベータの入口・SW・Worker許可がそろい、体験版へ管理入口を混ぜない
+  ---
+  duration_ms: 2.447916
+  type: 'test'
+  ...
+# Subtest: 共有パネルは会議用同期と演者事前学習リンクを分け、説明と管理入口を持つ
+ok 765 - 共有パネルは会議用同期と演者事前学習リンクを分け、説明と管理入口を持つ
+  ---
+  duration_ms: 1.044875
+  type: 'test'
+  ...
+# Subtest: private text and strokes survive reload with scene and token isolation; show keys untouched
+ok 766 - private text and strokes survive reload with scene and token isolation; show keys untouched
+  ---
+  duration_ms: 3.1135
+  type: 'test'
+  ...
+# Subtest: private store merges other scenes and preserves old revision for an explicit warning
+ok 767 - private store merges other scenes and preserves old revision for an explicit warning
+  ---
+  duration_ms: 0.378083
+  type: 'test'
+  ...
+# Subtest: unreadable private data is never overwritten; quota failure retains current notes in memory
+ok 768 - unreadable private data is never overwritten; quota failure retains current notes in memory
+  ---
+  duration_ms: 0.568375
+  type: 'test'
+  ...
+# Subtest: private data validation limits structure, coordinates, text and storage size
+ok 769 - private data validation limits structure, coordinates, text and storage size
+  ---
+  duration_ms: 0.416
+  type: 'test'
+  ...
+# Subtest: free login creates isolated HttpOnly sessions; anonymous, forged cookies and editor access fail
+ok 770 - free login creates isolated HttpOnly sessions; anonymous, forged cookies and editor access fail
+  ---
+  duration_ms: 31.514584
+  type: 'test'
+  ...
+# Subtest: one reader joins different owners, notes survive a new device and storage restart, other accounts cannot read them
+ok 771 - one reader joins different owners, notes survive a new device and storage restart, other accounts cannot read them
+  ---
+  duration_ms: 32.904709
+  type: 'test'
+  ...
+# Subtest: CAS protects concurrent changes and retry is idempotent; a stale device gets both versions
+ok 772 - CAS protects concurrent changes and retry is idempotent; a stale device gets both versions
+  ---
+  duration_ms: 17.830458
+  type: 'test'
+  ...
+# Subtest: explicit sharing uses verified reader display name, sends no private account permission and stays owner only
+ok 773 - explicit sharing uses verified reader display name, sends no private account permission and stays owner only
+  ---
+  duration_ms: 4.669708
+  type: 'test'
+  ...
+# Subtest: revocation blocks private notebook reads/writes, old tokens fail, reissue reconnects stable notebook
+ok 774 - revocation blocks private notebook reads/writes, old tokens fail, reissue reconnects stable notebook
+  ---
+  duration_ms: 21.108791
+  type: 'test'
+  ...
+# Subtest: logout revokes the server session; expired sessions and cross-origin writes fail closed
+ok 775 - logout revokes the server session; expired sessions and cross-origin writes fail closed
+  ---
+  duration_ms: 5.1985
+  type: 'test'
+  ...
+# Subtest: private notes enforce types, size, coordinates, scene ownership and rate limits without storing IP/UA
+ok 776 - private notes enforce types, size, coordinates, scene ownership and rate limits without storing IP/UA
+  ---
+  duration_ms: 81.859875
+  type: 'test'
+  ...
+# Subtest: Google RS256 validation rejects wrong signature, audience, issuer, nonce and expiry
+ok 777 - Google RS256 validation rejects wrong signature, audience, issuer, nonce and expiry
+  ---
+  duration_ms: 73.267917
+  type: 'test'
+  ...
+# Subtest: Google login state keeps invite server-side, binds browser and consumes once; missing config does not bypass login
+ok 778 - Google login state keeps invite server-side, binds browser and consumes once; missing config does not bypass login
+  ---
+  duration_ms: 1.332625
+  type: 'test'
+  ...
+# Subtest: an old tab cannot write its personal notes or shared screen into a newly signed-in account
+ok 779 - an old tab cannot write its personal notes or shared screen into a newly signed-in account
+  ---
+  duration_ms: 3.051792
+  type: 'test'
+  ...
+# Subtest: OAuth callback exchanges a code, validates Google signature and returns the original invite; cancel keeps it retryable
+ok 780 - OAuth callback exchanges a code, validates Google signature and returns the original invite; cancel keeps it retryable
+  ---
+  duration_ms: 195.282791
+  type: 'test'
+  ...
+# Subtest: library and notebook storage ceilings fail safely without discarding saved notes
+ok 781 - library and notebook storage ceilings fail safely without discarding saved notes
+  ---
+  duration_ms: 0.608917
+  type: 'test'
+  ...
+# Subtest: editor login does not silently replace a signed-out performer account
+ok 782 - editor login does not silently replace a signed-out performer account
+  ---
+  duration_ms: 0.801542
+  type: 'test'
+  ...
+# Subtest: pinned notes sync privately across devices, survive restart and follow normal authorization and CAS
+ok 783 - pinned notes sync privately across devices, survive restart and follow normal authorization and CAS
+  ---
+  duration_ms: 3.911958
+  type: 'test'
+  ...
+# Subtest: shared screens accept bounded JPEGs and derive dimensions from the file
+ok 784 - shared screens accept bounded JPEGs and derive dimensions from the file
+  ---
+  duration_ms: 0.976125
+  type: 'test'
+  ...
+# Subtest: only the matching owner can retrieve shared images, including after update/restart/revocation
+ok 785 - only the matching owner can retrieve shared images, including after update/restart/revocation
+  ---
+  duration_ms: 39.569292
+  type: 'test'
+  ...
+# Subtest: screen-only shares are valid; malformed images, byte quotas and request sizes are enforced
+ok 786 - screen-only shares are valid; malformed images, byte quotas and request sizes are enforced
+  ---
+  duration_ms: 6.427167
+  type: 'test'
+  ...
+# Subtest: clear, reissue and purge remove stored note-image chunks as part of the owner lifecycle
+ok 787 - clear, reissue and purge remove stored note-image chunks as part of the owner lifecycle
+  ---
+  duration_ms: 7.023417
+  type: 'test'
+  ...
+# Subtest: pinned-only notes survive reload and never replace local shows or another invite notebook
+ok 788 - pinned-only notes survive reload and never replace local shows or another invite notebook
+  ---
+  duration_ms: 2.610917
+  type: 'test'
+  ...
+# Subtest: client and server reject malformed, duplicate, oversized and off-diagram pinned notes
+ok 789 - client and server reject malformed, duplicate, oversized and off-diagram pinned notes
+  ---
+  duration_ms: 1.56
+  type: 'test'
+  ...
+# Subtest: changed and removed scenes keep pinned-only history; selected notes copy without changing the original
+ok 790 - changed and removed scenes keep pinned-only history; selected notes copy without changing the original
+  ---
+  duration_ms: 2.227042
+  type: 'test'
+  ...
+# Subtest: copy limits and unreadable pinned-note data preserve originals
+ok 791 - copy limits and unreadable pinned-note data preserve originals
+  ---
+  duration_ms: 0.652916
+  type: 'test'
+  ...
+# Subtest: anonymous, guest and forged owner headers cannot read owner reports or page
+ok 792 - anonymous, guest and forged owner headers cannot read owner reports or page
+  ---
+  duration_ms: 25.865291
+  type: 'test'
+  ...
+# Subtest: record uses authenticated identity and discards content; switch of account is rejected
+ok 793 - record uses authenticated identity and discards content; switch of account is rejected
+  ---
+  duration_ms: 5.781416
+  type: 'test'
+  ...
+# Subtest: same origin JSON, bounded payloads, periods and methods are enforced
+ok 794 - same origin JSON, bounded payloads, periods and methods are enforced
+  ---
+  duration_ms: 8.988042
+  type: 'test'
+  ...
+# Subtest: disabled, beta ended, missing or failed storage never become fake empty success
+ok 795 - disabled, beta ended, missing or failed storage never become fake empty success
+  ---
+  duration_ms: 7.441708
+  type: 'test'
+  ...
+# Subtest: duplicate IDs, concurrent overlapping tabs and restarts keep one duration
+ok 796 - duplicate IDs, concurrent overlapping tabs and restarts keep one duration
+  ---
+  duration_ms: 3.928167
+  type: 'test'
+  ...
+# Subtest: JST midnight splits time, periods include today, retention expires after 90 days
+ok 797 - JST midnight splits time, periods include today, retention expires after 90 days
+  ---
+  duration_ms: 3.938958
+  type: 'test'
+  ...
+# Subtest: opening counts a usage day without inventing active time; safe account names
+ok 798 - opening counts a usage day without inventing active time; safe account names
+  ---
+  duration_ms: 2.006334
+  type: 'test'
+  ...
+# Subtest: activity requires input and foreground, stops after 60s idle and excludes long sleep
+ok 799 - activity requires input and foreground, stops after 60s idle and excludes long sleep
+  ---
+  duration_ms: 0.729584
+  type: 'test'
+  ...
+# Subtest: public distribution excludes account metrics; beta caches only client asset, not reports
+ok 800 - public distribution excludes account metrics; beta caches only client asset, not reports
+  ---
+  duration_ms: 1.527833
+  type: 'test'
+  ...
+# Subtest: client sends actual foreground activity and disclosure; idle, background and offline stop it
+ok 801 - client sends actual foreground activity and disclosure; idle, background and offline stop it
+  ---
+  duration_ms: 4.888042
+  type: 'test'
+  ...
+# Subtest: client never records when disabled; account change stops future submissions
+ok 802 - client never records when disabled; account change stops future submissions
+  ---
+  duration_ms: 9.199916
+  type: 'test'
+  ...
+# Subtest: directions / visualMeta は型違い・欠損・旧レコードを防御する
+ok 803 - directions / visualMeta は型違い・欠損・旧レコードを防御する
+  ---
+  duration_ms: 16.737916
+  type: 'test'
+  ...
+# Subtest: visualPromptText は本人の原文を言い換えず機械結合する
+ok 804 - visualPromptText は本人の原文を言い換えず機械結合する
+  ---
+  duration_ms: 0.630792
+  type: 'test'
+  ...
+# Subtest: revealed / firstImpression は記入あり・空の両方で開示できる
+ok 805 - revealed / firstImpression は記入あり・空の両方で開示できる
+  ---
+  duration_ms: 0.376
+  type: 'test'
+  ...
+# Subtest: decisions の A/B/C キーは保存から読込まで保たれる
+ok 806 - decisions の A/B/C キーは保存から読込まで保たれる
+  ---
+  duration_ms: 0.532833
+  type: 'test'
+  ...
+# Subtest: normalizeBrief は型違い・欠損・全空を防御する
+ok 807 - normalizeBrief は型違い・欠損・全空を防御する
+  ---
+  duration_ms: 12.242833
+  type: 'test'
+  ...
+# Subtest: brief ありプロジェクトは保存から読込まで保たれる
+ok 808 - brief ありプロジェクトは保存から読込まで保たれる
+  ---
+  duration_ms: 0.886084
+  type: 'test'
+  ...
+# Subtest: briefDraftFromStudy は本人の記述を原文のまま所定項目へ写す
+ok 809 - briefDraftFromStudy は本人の記述を原文のまま所定項目へ写す
+  ---
+  duration_ms: 0.504042
+  type: 'test'
+  ...
+# Subtest: briefDraftFromStudy は scene と transformation が null でも壊れない
+ok 810 - briefDraftFromStudy は scene と transformation が null でも壊れない
+  ---
+  duration_ms: 0.355208
+  type: 'test'
+  ...
+# Subtest: 旧形式の保存データは brief キーなしでも読める
+ok 811 - 旧形式の保存データは brief キーなしでも読める
+  ---
+  duration_ms: 0.353584
+  type: 'test'
+  ...
+# Subtest: ベータ設定が未指定ならactiveを返す
+ok 812 - ベータ設定が未指定ならactiveを返す
+  ---
+  duration_ms: 11.778875
+  type: 'test'
+  ...
+# Subtest: ベータ終了時は認証なしで案内文と製品版URLを返す
+ok 813 - ベータ終了時は認証なしで案内文と製品版URLを返す
+  ---
+  duration_ms: 0.289167
+  type: 'test'
+  ...
+# Subtest: 期限切れCookieがあってもbeta-statusのactive状態は読める
+ok 814 - 期限切れCookieがあってもbeta-statusのactive状態は読める
+  ---
+  duration_ms: 4.03975
+  type: 'test'
+  ...
+# Subtest: 未認証で読めるのはbeta-statusだけ
+ok 815 - 未認証で読めるのはbeta-statusだけ
+  ---
+  duration_ms: 0.44075
+  type: 'test'
+  ...
+# Subtest: 認証設定に不備があればbeta-statusも503で止まる
+ok 816 - 認証設定に不備があればbeta-statusも503で止まる
+  ---
+  duration_ms: 0.667458
+  type: 'test'
+  ...
+# Subtest: ベータの実在3会場は選択肢から隠し、保存済みIDと認証を保持する
+ok 817 - ベータの実在3会場は選択肢から隠し、保存済みIDと認証を保持する
+  ---
+  duration_ms: 24.199875
+  type: 'test'
+  ...
+# Subtest: 環境変数が文字列でないときも止める（JSON.parse前の型を見ている）
+ok 818 - 環境変数が文字列でないときも止める（JSON.parse前の型を見ている）
+  ---
+  duration_ms: 10.992042
+  type: 'test'
+  ...
+# Subtest: 要素が配列やnullでも止める（typeof null === object の穴）
+ok 819 - 要素が配列やnullでも止める（typeof null === object の穴）
+  ---
+  duration_ms: 0.80125
+  type: 'test'
+  ...
+# Subtest: 空文字のuser/passは止める
+ok 820 - 空文字のuser/passは止める
+  ---
+  duration_ms: 0.368125
+  type: 'test'
+  ...
+# Subtest: 正しい一件が混ざっていても、不正が一件あれば全体を止める
+ok 821 - 正しい一件が混ざっていても、不正が一件あれば全体を止める
+  ---
+  duration_ms: 0.166
+  type: 'test'
+  ...
+# Subtest: labelや未知の項目があっても通る（前方互換）
+ok 822 - labelや未知の項目があっても通る（前方互換）
+  ---
+  duration_ms: 5.625666
+  type: 'test'
+  ...
+# Subtest: 旧GUEST_USERが無くGUEST_ACCOUNTSだけでも通る（移行後の姿）
+ok 823 - 旧GUEST_USERが無くGUEST_ACCOUNTSだけでも通る（移行後の姿）
+  ---
+  duration_ms: 1.612167
+  type: 'test'
+  ...
+# Subtest: ★名簿から外した人は入れなくなる（この機能の目的そのもの）
+ok 824 - ★名簿から外した人は入れなくなる（この機能の目的そのもの）
+  ---
+  duration_ms: 1.420584
+  type: 'test'
+  ...
+# Subtest: 外した人の古いクッキーも通らない
+ok 825 - 外した人の古いクッキーも通らない
+  ---
+  duration_ms: 1.55975
+  type: 'test'
+  ...
+# Subtest: 誤ったパスワードでは入れず、クッキーも配らない
+ok 826 - 誤ったパスワードでは入れず、クッキーも配らない
+  ---
+  duration_ms: 0.566291
+  type: 'test'
+  ...
+# Subtest: managed/legacy guest: Basicと既存Cookieで書斎・データ・未知の資源を配信しない
+ok 827 - managed/legacy guest: Basicと既存Cookieで書斎・データ・未知の資源を配信しない
+  ---
+  duration_ms: 53.051875
+  type: 'test'
+  ...
+# Subtest: SITE_USERは従来の書斎・資料・個人ショーを読み、HTTPキャッシュでは共有しない
+ok 828 - SITE_USERは従来の書斎・資料・個人ショーを読み、HTTPキャッシュでは共有しない
+  ---
+  duration_ms: 5.776708
+  type: 'test'
+  ...
+# Subtest: ゲストへ返す単独HTMLから個人ショーのscriptだけを外す
+ok 829 - ゲストへ返す単独HTMLから個人ショーのscriptだけを外す
+  ---
+  duration_ms: 2.6285
+  type: 'test'
+  ...
+# Subtest: 配信済みの旧HTMLも本人・ゲストの名称だけを更新し、本人のショーは保持する
+ok 830 - 配信済みの旧HTMLも本人・ゲストの名称だけを更新し、本人のショーは保持する
+  ---
+  duration_ms: 5.758375
+  type: 'test'
+  ...
+# Subtest: ゲストの舞台編集・PWA・ガイドの依存資源がすべて通る
+ok 831 - ゲストの舞台編集・PWA・ガイドの依存資源がすべて通る
+  ---
+  duration_ms: 11.098167
+  type: 'test'
+  ...
+# Subtest: 本人用のvalidator・Rangeを引き継がず、ゲスト用HTMLを必ず変換する
+ok 832 - 本人用のvalidator・Rangeを引き継がず、ゲスト用HTMLを必ず変換する
+  ---
+  duration_ms: 1.331292
+  type: 'test'
+  ...
+# Subtest: ゲストのrootとログイン戻り先は舞台へ・英語指定と招待セッションを保持
+ok 833 - ゲストのrootとログイン戻り先は舞台へ・英語指定と招待セッションを保持
+  ---
+  duration_ms: 5.233167
+  type: 'test'
+  ...
+# Subtest: 配信層の正規URL転送は許可し、書斎・外部への転送は拒否
+ok 834 - 配信層の正規URL転送は許可し、書斎・外部への転送は拒否
+  ---
+  duration_ms: 0.7045
+  type: 'test'
+  ...
+# Subtest: サインインの名称は舞台スケッチ、英語招待ではStage Sketch
+ok 835 - サインインの名称は舞台スケッチ、英語招待ではStage Sketch
+  ---
+  duration_ms: 0.50875
+  type: 'test'
+  ...
+# Subtest: 本人用と旧ゲスト用の同名設定を拒否して権限の取り違えを防ぐ
+ok 836 - 本人用と旧ゲスト用の同名設定を拒否して権限の取り違えを防ぐ
+  ---
+  duration_ms: 0.297708
+  type: 'test'
+  ...
+# Subtest: PWAの見た目に要る資源だけを認証の外で返す
+ok 837 - PWAの見た目に要る資源だけを認証の外で返す
+  ---
+  duration_ms: 9.475291
+  type: 'test'
+  ...
+# Subtest: 中身のあるファイルは決して認証の外へ出さない
+ok 838 - 中身のあるファイルは決して認証の外へ出さない
+  ---
+  duration_ms: 0.424667
+  type: 'test'
+  ...
+# Subtest: パスの細工で穴を広げられない
+ok 839 - パスの細工で穴を広げられない
+  ---
+  duration_ms: 0.146292
+  type: 'test'
+  ...
+# Subtest: 読み取り以外の方法では認証の外を通さない
+ok 840 - 読み取り以外の方法では認証の外を通さない
+  ---
+  duration_ms: 0.089833
+  type: 'test'
+  ...
+# Subtest: 401は保存させない（機内モードで再生されないように）
+ok 841 - 401は保存させない（機内モードで再生されないように）
+  ---
+  duration_ms: 0.15525
+  type: 'test'
+  ...
+# Subtest: 認証チェックより手前で例外を判定している
+ok 842 - 認証チェックより手前で例外を判定している
+  ---
+  duration_ms: 0.076333
+  type: 'test'
+  ...
+# Subtest: 正しいトークンは利用者名を返す
+ok 843 - 正しいトークンは利用者名を返す
+  ---
+  duration_ms: 5.286625
+  type: 'test'
+  ...
+# Subtest: 中身を書き換えたトークンは通さない
+ok 844 - 中身を書き換えたトークンは通さない
+  ---
+  duration_ms: 0.781792
+  type: 'test'
+  ...
+# Subtest: 期限が切れたトークンは通さない
+ok 845 - 期限が切れたトークンは通さない
+  ---
+  duration_ms: 0.4235
+  type: 'test'
+  ...
+# Subtest: パスワードを変えると、その口座のトークンだけが無効になる
+ok 846 - パスワードを変えると、その口座のトークンだけが無効になる
+  ---
+  duration_ms: 1.496375
+  type: 'test'
+  ...
+# Subtest: 知らない利用者名のトークンは通さない
+ok 847 - 知らない利用者名のトークンは通さない
+  ---
+  duration_ms: 0.448709
+  type: 'test'
+  ...
+# Subtest: 壊れた値で例外を投げず、必ず拒否する
+ok 848 - 壊れた値で例外を投げず、必ず拒否する
+  ---
+  duration_ms: 0.218042
+  type: 'test'
+  ...
+# Subtest: 戻り先は同一オリジンのパスだけ許す
+ok 849 - 戻り先は同一オリジンのパスだけ許す
+  ---
+  duration_ms: 0.112875
+  type: 'test'
+  ...
+# Subtest: 未認証の画面遷移はログイン画面へ送る
+ok 850 - 未認証の画面遷移はログイン画面へ送る
+  ---
+  duration_ms: 7.828125
+  type: 'test'
+  ...
+# Subtest: 未認証の副資源は401（HTMLを返さない）
+ok 851 - 未認証の副資源は401（HTMLを返さない）
+  ---
+  duration_ms: 0.749583
+  type: 'test'
+  ...
+# Subtest: 新しい共有セッションの応答は認証済み利用者名を返す
+ok 852 - 新しい共有セッションの応答は認証済み利用者名を返す
+  ---
+  duration_ms: 2.9595
+  type: 'test'
+  ...
+# Subtest: WebSocket中継は利用者IDをWorkerで上書きしてDurable Objectへ渡す
+ok 853 - WebSocket中継は利用者IDをWorkerで上書きしてDurable Objectへ渡す
+  ---
+  duration_ms: 0.740542
+  type: 'test'
+  ...
+# Subtest: 再開可否の照会も利用者IDをWorkerで上書きしてDurable Objectへ渡す
+ok 854 - 再開可否の照会も利用者IDをWorkerで上書きしてDurable Objectへ渡す
+  ---
+  duration_ms: 0.8855
+  type: 'test'
+  ...
+# Subtest: ログイン画面は認証なしで開ける
+ok 855 - ログイン画面は認証なしで開ける
+  ---
+  duration_ms: 0.563584
+  type: 'test'
+  ...
+# Subtest: ログイン画面は招待URLのhashをhiddenの戻り先へ一度だけ足す
+ok 856 - ログイン画面は招待URLのhashをhiddenの戻り先へ一度だけ足す
+  ---
+  duration_ms: 0.493
+  type: 'test'
+  ...
+# Subtest: ログイン画面は外部の資源を一切読まない
+ok 857 - ログイン画面は外部の資源を一切読まない
+  ---
+  duration_ms: 0.391875
+  type: 'test'
+  ...
+# Subtest: 戻り先はログイン画面の中で逃がさない
+ok 858 - 戻り先はログイン画面の中で逃がさない
+  ---
+  duration_ms: 0.345
+  type: 'test'
+  ...
+# Subtest: 名前かパスワードが違えば入れない
+ok 859 - 名前かパスワードが違えば入れない
+  ---
+  duration_ms: 0.639167
+  type: 'test'
+  ...
+# Subtest: 正しく入れるとクッキーを配り、元の場所へ戻す
+ok 860 - 正しく入れるとクッキーを配り、元の場所へ戻す
+  ---
+  duration_ms: 1.887917
+  type: 'test'
+  ...
+# Subtest: ログインPOSTは招待セッションの断片を303の戻り先に保つ
+ok 861 - ログインPOSTは招待セッションの断片を303の戻り先に保つ
+  ---
+  duration_ms: 0.867875
+  type: 'test'
+  ...
+# Subtest: ログインの戻り先も外部へは飛ばさない
+ok 862 - ログインの戻り先も外部へは飛ばさない
+  ---
+  duration_ms: 0.439791
+  type: 'test'
+  ...
+# Subtest: 有効なクッキーがあれば中身が返る
+ok 863 - 有効なクッキーがあれば中身が返る
+  ---
+  duration_ms: 0.710917
+  type: 'test'
+  ...
+# Subtest: 期限切れのクッキーは中身を返さない
+ok 864 - 期限切れのクッキーは中身を返さない
+  ---
+  duration_ms: 0.391875
+  type: 'test'
+  ...
+# Subtest: Basic認証は引き続き使えて、通ればクッキーも配る
+ok 865 - Basic認証は引き続き使えて、通ればクッキーも配る
+  ---
+  duration_ms: 0.50675
+  type: 'test'
+  ...
+# Subtest: 誤ったBasic認証は通さない
+ok 866 - 誤ったBasic認証は通さない
+  ---
+  duration_ms: 0.157625
+  type: 'test'
+  ...
+# Subtest: ゲスト口座でも入れる
+ok 867 - ゲスト口座でも入れる
+  ---
+  duration_ms: 0.692042
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSの各口座はログイン・クッキー・Basic認証で通る
+ok 868 - GUEST_ACCOUNTSの各口座はログイン・クッキー・Basic認証で通る
+  ---
+  duration_ms: 1.813208
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSの一人口座のパスワード変更は、その人のトークンだけを無効にする
+ok 869 - GUEST_ACCOUNTSの一人口座のパスワード変更は、その人のトークンだけを無効にする
+  ---
+  duration_ms: 1.631
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSが未設定または空でも旧ゲスト口座は従来どおり通る
+ok 870 - GUEST_ACCOUNTSが未設定または空でも旧ゲスト口座は従来どおり通る
+  ---
+  duration_ms: 1.520916
+  type: 'test'
+  ...
+# Subtest: 旧ゲスト口座とGUEST_ACCOUNTSが重複なしで併存すれば両方通る
+ok 871 - 旧ゲスト口座とGUEST_ACCOUNTSが重複なしで併存すれば両方通る
+  ---
+  duration_ms: 0.731833
+  type: 'test'
+  ...
+# Subtest: 出るとクッキーが消える
+ok 872 - 出るとクッキーが消える
+  ---
+  duration_ms: 0.120375
+  type: 'test'
+  ...
+# Subtest: 中身のあるファイルは、クッキーもBasicも無ければ出さない
+ok 873 - 中身のあるファイルは、クッキーもBasicも無ければ出さない
+  ---
+  duration_ms: 0.369375
+  type: 'test'
+  ...
+# Subtest: アイコンとmanifestは今までどおり認証なしで返る
+ok 874 - アイコンとmanifestは今までどおり認証なしで返る
+  ---
+  duration_ms: 0.082292
+  type: 'test'
+  ...
+# Subtest: 設定が片側だけなら止める
+ok 875 - 設定が片側だけなら止める
+  ---
+  duration_ms: 0.120292
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSがJSONとして読めなければ503で止める
+ok 876 - GUEST_ACCOUNTSがJSONとして読めなければ503で止める
+  ---
+  duration_ms: 0.147167
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSが配列でなければ503で止める
+ok 877 - GUEST_ACCOUNTSが配列でなければ503で止める
+  ---
+  duration_ms: 0.070834
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSが空配列なら503で止める
+ok 878 - GUEST_ACCOUNTSが空配列なら503で止める
+  ---
+  duration_ms: 0.060334
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSに不正な要素が一つでもあれば503で止める
+ok 879 - GUEST_ACCOUNTSに不正な要素が一つでもあれば503で止める
+  ---
+  duration_ms: 0.417792
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTS内でuserが重複すれば503で止める
+ok 880 - GUEST_ACCOUNTS内でuserが重複すれば503で止める
+  ---
+  duration_ms: 0.059958
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSのuserがSITE_USERと重複すれば503で止める
+ok 881 - GUEST_ACCOUNTSのuserがSITE_USERと重複すれば503で止める
+  ---
+  duration_ms: 0.071833
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSのuserが旧GUEST_USERと重複すれば503で止める
+ok 882 - GUEST_ACCOUNTSのuserが旧GUEST_USERと重複すれば503で止める
+  ---
+  duration_ms: 0.060083
+  type: 'test'
+  ...
+1..882
+# tests 882
+# suites 0
+# pass 879
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1551.045125

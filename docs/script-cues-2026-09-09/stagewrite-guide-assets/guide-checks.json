@@ -1,0 +1,36 @@
+[
+  {
+    "check": "画像拡大",
+    "pass": true
+  },
+  {
+    "check": "等倍と横スクロール",
+    "pass": true
+  },
+  {
+    "check": "Escapeとフォーカス復帰",
+    "pass": true
+  },
+  {
+    "check": "PC横溢れ",
+    "pass": true,
+    "width": 1440
+  },
+  {
+    "check": "スマホ横溢れ",
+    "pass": true,
+    "width": 390
+  },
+  {
+    "check": "スマホの等倍スクロール",
+    "pass": true
+  },
+  {
+    "check": "拡大中のフォーカス範囲",
+    "pass": false
+  },
+  {
+    "check": "8画面の読込み",
+    "pass": true
+  }
+]

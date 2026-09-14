@@ -1,0 +1,12 @@
+{
+  "chromium": {
+    "dragUsesQuick": true,
+    "pointerUpRestoresPrecise": true,
+    "blurRestoresPrecise": true
+  },
+  "webkit": {
+    "dragUsesQuick": true,
+    "pointerUpRestoresPrecise": true,
+    "blurRestoresPrecise": true
+  }
+}

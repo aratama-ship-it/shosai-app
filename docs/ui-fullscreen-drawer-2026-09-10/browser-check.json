@@ -1,0 +1,389 @@
+{
+  "results": [
+    {
+      "name": "desktop-ja",
+      "targets": [
+        {
+          "id": "stage-present-prev",
+          "x": 664.5,
+          "y": 942,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "前のシーンへ"
+        },
+        {
+          "id": "stage-present-next",
+          "x": 716.5,
+          "y": 942,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "次のシーンへ"
+        },
+        {
+          "id": "stage-present-drawer-toggle",
+          "x": 0,
+          "y": 478,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "パネルを開く"
+        },
+        {
+          "id": "stage-present-close",
+          "x": 1367,
+          "y": 14,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "全画面を終了"
+        }
+      ],
+      "measure": {
+        "width": 320,
+        "height": 1000,
+        "scrollWidth": 319,
+        "clientWidth": 319
+      },
+      "checks": "native/fallback, top-right exit, drawer open/close, live input, modal above full screen, F typing guard, DOM/focus restoration, repeated F/Esc exit"
+    },
+    {
+      "name": "desktop-en",
+      "targets": [
+        {
+          "id": "stage-present-prev",
+          "x": 664.5,
+          "y": 942,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "Previous scene"
+        },
+        {
+          "id": "stage-present-next",
+          "x": 716.5,
+          "y": 942,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "Next scene"
+        },
+        {
+          "id": "stage-present-drawer-toggle",
+          "x": 0,
+          "y": 478,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "Open panels"
+        },
+        {
+          "id": "stage-present-close",
+          "x": 1367,
+          "y": 14,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "Exit full screen"
+        }
+      ],
+      "measure": {
+        "width": 320,
+        "height": 1000,
+        "scrollWidth": 319,
+        "clientWidth": 319
+      },
+      "checks": "native/fallback, top-right exit, drawer open/close, live input, modal above full screen, F typing guard, DOM/focus restoration, repeated F/Esc exit"
+    },
+    {
+      "name": "desktop-zh-Hans",
+      "targets": [
+        {
+          "id": "stage-present-prev",
+          "x": 664.5,
+          "y": 942,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "上一场景"
+        },
+        {
+          "id": "stage-present-next",
+          "x": 716.5,
+          "y": 942,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "下一场景"
+        },
+        {
+          "id": "stage-present-drawer-toggle",
+          "x": 0,
+          "y": 478,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "打开面板"
+        },
+        {
+          "id": "stage-present-close",
+          "x": 1367,
+          "y": 14,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "退出全屏"
+        }
+      ],
+      "measure": {
+        "width": 320,
+        "height": 1000,
+        "scrollWidth": 319,
+        "clientWidth": 319
+      },
+      "checks": "native/fallback, top-right exit, drawer open/close, live input, modal above full screen, F typing guard, DOM/focus restoration, repeated F/Esc exit"
+    },
+    {
+      "name": "desktop-zh-Hant",
+      "targets": [
+        {
+          "id": "stage-present-prev",
+          "x": 664.5,
+          "y": 942,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "上一場景"
+        },
+        {
+          "id": "stage-present-next",
+          "x": 716.5,
+          "y": 942,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "下一場景"
+        },
+        {
+          "id": "stage-present-drawer-toggle",
+          "x": 0,
+          "y": 478,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "開啟面板"
+        },
+        {
+          "id": "stage-present-close",
+          "x": 1367,
+          "y": 14,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "離開全螢幕"
+        }
+      ],
+      "measure": {
+        "width": 320,
+        "height": 1000,
+        "scrollWidth": 319,
+        "clientWidth": 319
+      },
+      "checks": "native/fallback, top-right exit, drawer open/close, live input, modal above full screen, F typing guard, DOM/focus restoration, repeated F/Esc exit"
+    },
+    {
+      "name": "tablet-landscape",
+      "targets": [
+        {
+          "id": "stage-present-prev",
+          "x": 456.5,
+          "y": 710,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "前のシーンへ"
+        },
+        {
+          "id": "stage-present-next",
+          "x": 508.5,
+          "y": 710,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "次のシーンへ"
+        },
+        {
+          "id": "stage-present-drawer-toggle",
+          "x": 0,
+          "y": 362,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "パネルを開く"
+        },
+        {
+          "id": "stage-present-close",
+          "x": 951,
+          "y": 14,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "全画面を終了"
+        }
+      ],
+      "measure": {
+        "width": 380,
+        "height": 768,
+        "scrollWidth": 379,
+        "clientWidth": 379
+      },
+      "checks": "native/fallback, top-right exit, drawer open/close, live input, modal above full screen, F typing guard, DOM/focus restoration, repeated F/Esc exit"
+    },
+    {
+      "name": "tablet-portrait",
+      "targets": [
+        {
+          "id": "stage-present-prev",
+          "x": 328.5,
+          "y": 966,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "前のシーンへ"
+        },
+        {
+          "id": "stage-present-next",
+          "x": 380.5,
+          "y": 966,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "次のシーンへ"
+        },
+        {
+          "id": "stage-present-drawer-toggle",
+          "x": 0,
+          "y": 490,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "パネルを開く"
+        },
+        {
+          "id": "stage-present-close",
+          "x": 695,
+          "y": 14,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "全画面を終了"
+        }
+      ],
+      "measure": {
+        "width": 380,
+        "height": 1024,
+        "scrollWidth": 379,
+        "clientWidth": 379
+      },
+      "checks": "native/fallback, top-right exit, drawer open/close, live input, modal above full screen, F typing guard, DOM/focus restoration, repeated F/Esc exit"
+    },
+    {
+      "name": "no-api",
+      "targets": [
+        {
+          "id": "stage-present-prev",
+          "x": 664.5,
+          "y": 942,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "前のシーンへ"
+        },
+        {
+          "id": "stage-present-next",
+          "x": 716.5,
+          "y": 942,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "次のシーンへ"
+        },
+        {
+          "id": "stage-present-drawer-toggle",
+          "x": 0,
+          "y": 478,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "パネルを開く"
+        },
+        {
+          "id": "stage-present-close",
+          "x": 1367,
+          "y": 14,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "全画面を終了"
+        }
+      ],
+      "measure": {
+        "width": 320,
+        "height": 1000,
+        "scrollWidth": 319,
+        "clientWidth": 319
+      },
+      "checks": "native/fallback, top-right exit, drawer open/close, live input, modal above full screen, F typing guard, DOM/focus restoration, repeated F/Esc exit"
+    },
+    {
+      "name": "rejected-api",
+      "targets": [
+        {
+          "id": "stage-present-prev",
+          "x": 664.5,
+          "y": 942,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "前のシーンへ"
+        },
+        {
+          "id": "stage-present-next",
+          "x": 716.5,
+          "y": 942,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "次のシーンへ"
+        },
+        {
+          "id": "stage-present-drawer-toggle",
+          "x": 0,
+          "y": 478,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "パネルを開く"
+        },
+        {
+          "id": "stage-present-close",
+          "x": 1367,
+          "y": 14,
+          "width": 44,
+          "height": 44,
+          "visibleAtCenter": true,
+          "label": "全画面を終了"
+        }
+      ],
+      "measure": {
+        "width": 320,
+        "height": 1000,
+        "scrollWidth": 319,
+        "clientWidth": 319
+      },
+      "checks": "native/fallback, top-right exit, drawer open/close, live input, modal above full screen, F typing guard, DOM/focus restoration, repeated F/Esc exit"
+    }
+  ],
+  "errors": []
+}

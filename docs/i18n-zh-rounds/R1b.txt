@@ -1,0 +1,23 @@
+最初に "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/AGENTS.md" を読むこと。次に "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/I18N_ZH_WORKORDER_2026-09-09.md" の §5・§7.1 を読む。
+これは R1（WO-B3）の差し戻し。Claude の検証結果: 175件の除去・842テスト緑・英語 innerText 一致は確認済み。未達は次の2点だけ。この2点だけ直し、他は触らない。
+
+【未達1】言語コードや書式トークンまで TEXT の鍵にしている。次の段階（中国語パック）で tx("ja") が "ja" を返し、<html lang> や MCP の language が壊れる。
+  stage-sketch.js の次の箇所を、tx() ではなく変数 lang を使った式へ戻す（isEn() の三項演算子は使わない。テストが禁じている）:
+    9980, 10835 付近  const lang = tx("ja")            → const lang = isEn() ? … ではなく、外側の lang をそのまま使う（ローカル変数 lang の影が要るなら const code = lang;）
+    10852            ${tx("")}                         → ${lang === "ja" ? "" : " "}
+    16133            window.open(tx("manual/quick.html")…) → window.open(lang === "ja" ? "manual/quick.html" : "manual/quick-en.html", …)  ※冊子は日英のみ。日本語以外は英語版へ
+    17617, 17671     ${tx("ja")} / language: tx("ja")  → lang
+    21170, 21183     document.documentElement.lang = tx("ja") → = lang
+    21178            els.lang.textContent = tx("EN")    → lang === "en" ? "日本語" : "EN"
+    21219            setLang(tx("en"))                  → setLang(lang === "en" ? "ja" : "en")
+    21852            [tx("ja")]                         → [lang]
+  上の行番号は目安。実体は grep -n -F 'tx("ja")' 等で確定する。tx(" ／ ") tx("、") tx("・") tx("0個") tx("舞台裏：") は書式・表示なので**そのまま**。
+  stage-i18n.js の TEXT から鍵 "ja" / "en" / "EN" / "" / "manual/quick.html" の5行を削除し、i18n-prep/NEEDS_REVIEW.md の一覧からも同じ5件を消す。
+  tests/stage-i18n.test.mjs に1件追加: 評価後の TEXT に、空文字・BCP47 言語コード（/^[a-z]{2}(-[A-Za-z]+)?$/ と "EN"）・".html" で終わる鍵が無いこと。
+
+【未達2】追加した SAY 63文型が NEEDS_REVIEW.md に記録されていない。stage-i18n_backup_2026-09-09-before-b3.js と stage-i18n.js を評価して SAY の差分（追加された正規表現の source と英語テンプレ）を取り、
+  NEEDS_REVIEW.md に「## 2026-09-09 追加 SAY 文型（未訳）」として全件を列挙する（仏・簡体・繁体のドラフトには無い旨を1行添える）。
+
+制約: 編集前に読み直す。コミットしない。git add -A しない。sx / languageValue の仕組みは今回は変えない（R2 で扱う）。訳語を決めない。
+完了報告: 直した箇所の一覧（行:前→後）／削除した鍵5件／追加テストの内容と node tests/index.mjs の結果（緑・赤件数）／
+  grep -c 'isEn() *?' stage-sketch.js の値／stage.html?lang=en と ?lang=ja の innerText が R1 完了時と一致すること（同じ手順で実測。SHA-256 を併記）／NEEDS_REVIEW.md の節構成。

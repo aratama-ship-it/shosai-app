@@ -1,0 +1,21 @@
+最初に "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/AGENTS.md" を読むこと。次に "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/I18N_ZH_WORKORDER_2026-09-09.md" の §3.1（4b の取り落とし順序）・§5・§6 を読む。
+対象: "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/" の stage-sketch.js / tests/。目的: 独立レビュー（docs/i18n-zh-rounds/R4b.log 末尾の10件）のうち、Claude が採用した下記の修正。
+前提: 日本語 (?lang=ja) と英語 (?lang=en) の見え方を変えない。基準 SHA-256 は en d10ed544…6fc6（2474 bytes）／ja 7063741d…3154（3340 bytes）。訳語を新しく決めない。
+編集前に stage-sketch.js を stage-sketch_backup_2026-09-09-before-r5.js に複製する。
+
+採用した修正（番号はレビューのもの）:
+  4【最優先】stage-sketch.js 5134〜5261 付近の見本ショー生成: `isEn() && x.nameEn ? x.nameEn : x.name` 型の二択を、`languageValue(() => x.nameEn || x.name, () => x.name)` 型へ（title/titleEn・note/noteEn・boundaries/boundariesEn・name/nameEn・summary/summaryEn すべて）。
+     中国語では英語の見本が作られること（見本データは日英しか持たない）。ja/en の結果は不変。
+  5 stage-sketch.js 1424 付近の寸法ラベル: 英語だけ tm("dimBy") で他言語は日本語 DIM_LABELS になっている。全言語で tm("dimBy", id, 日本語) を通す（取り落とし順序に乗る）。
+  6 stage-sketch.js 14543 / 16135 / 17077 / 17410 / 18282 付近に残る isEn() 二択: それぞれ tx / sx / tm / languageValue の既存経路へ。左右表示（上手へ／下手へ）は既存の MAPS か TEXT に対応する鍵があるならそれを使い、無ければ英語パックへ既存英訳を移す（新訳は作らない）。
+  1〜3（保留3鍵）: 本人判断は未確定なので**英語の文言は変えない**。ただし中国語で辞書を引かずに英語へ直行している箇所は直す:
+       不明 → `lang === "en" ? "unknown" : tx("不明")`、秒 → `lang === "en" ? "s" : tx("秒")`、まだありません… → `lang === "en" ? "No screen text yet. Type a word and press Project." : tx("まだありません。言葉を入れて〈映す〉を押してください。")`。
+       セクション時間の `${n} sec` 直書き（14534 付近）も同じ形で tx("秒") を通す（英語は sec のまま）。
+  7 tests/stage-i18n.test.mjs 275 付近: ソース正規表現の検査を、stage-sketch.js を vm で評価して lang を切り替えたうえでヘルパー（tx / tm / sx / languageValue 相当の公開口があればそれ）を実値で検査する形へ。公開口が無ければ window.SHOSAI_STAGE_* の既存モデル公開に倣って最小限の口を1つ足す。
+  8 tests/stage-i18n.test.mjs 211 付近: 関数型 SAY replacement は代表的な入力で実行して戻り値を検査する（String(fn) ではなく）。
+  10 tests/stage-pwa.test.mjs の PWA 資材一覧に stage-i18n.zh-Hans.js / zh-Hant.js を追加。warm-cache 検査が APP_SHELL 不在をスキップする件は「後日」なので触らない。
+不採用（触らない）: 9（coverage テストの設計変更は別発注）。
+
+制約: コミットしない。git add -A しない。stage.html は生成物（版上げは済んでいるので、stage-sketch.js を変えたら python3 build_stage.py を再実行し --check を緑にする。?v= と CACHE_NAME はこのラウンドでは上げない＝未配信のため）。
+完了報告: 修正箇所の一覧（行:前→後）／node tests/index.mjs の緑・赤件数／build_stage.py --check の終了コード／日英 innerText の基準一致（同じ手順・SHA-256）／
+  ?lang=zh-Hant で見本ショーを新規作成したときの駒名・シーン名が英語であることの実測／かな漏れの再実測（両言語・0件）／残る isEn() 二択の件数（0が目標。残るなら行と理由）。

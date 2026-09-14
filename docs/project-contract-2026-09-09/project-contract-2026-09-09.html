@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>舞台スケッチ｜台本と転換の保存契約</title>
+<style>
+:root{--paper:#efe7d6;--page:#fffaf0;--ink:#2b2620;--muted:#6a604e;--accent:#8f3e1e;--desk:#201b16;--line:#75664f;--h1:32px;--h2:24px;--h3:18px;--body:16px;--small:14px;--s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px;--width:1184px;--touch:44px;--radius:4px}
+*{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0;background:var(--paper);color:var(--ink);font:var(--body)/1.75 "Hiragino Sans","Yu Gothic",system-ui,sans-serif}a{color:var(--accent);text-underline-offset:var(--s1)}a:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:var(--s1)}.skip{position:fixed;z-index:10;left:var(--s4);top:var(--s4);padding:var(--s2) var(--s3);background:var(--page);transform:translateY(-200%)}.skip:focus{transform:none}.shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:var(--s7);max-width:var(--width);margin:auto;padding:var(--s6)}.rail{position:sticky;top:var(--s5);align-self:start}.brand{border-top:3px solid var(--ink);padding-top:var(--s4);font-size:var(--h3);font-weight:700;margin:0}.meta,.small{font-size:var(--small);color:var(--muted)}.rail nav{display:grid;gap:var(--s1);margin-top:var(--s5)}.rail nav a{display:flex;align-items:center;min-height:var(--touch);padding:var(--s2);text-decoration:none;border-bottom:1px solid transparent}.rail nav a:hover{border-color:var(--accent)}.rail nav b{margin-right:var(--s2);font-size:var(--small)}main{min-width:0}header{border-top:3px solid var(--ink);padding:var(--s5) 0 var(--s6)}h1,h2,h3,p,figure{margin:0}h1{font-size:var(--h1);line-height:1.5}h2{font-size:var(--h2);line-height:1.5}h3{font-size:var(--h3);line-height:1.5}p{max-width:62ch;margin-top:var(--s3)}.lede{font-size:var(--h3);line-height:1.75}.decision{margin-top:var(--s5);padding:var(--s4) var(--s5);background:var(--page);border-left:4px solid var(--accent)}.decision p{max-width:none}.section{padding:var(--s6) 0;border-top:1px solid var(--line);scroll-margin-top:var(--s5)}.kicker{font-size:var(--small);font-weight:700;color:var(--accent);margin-bottom:var(--s2)}.columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s5);margin-top:var(--s5)}.columns>div{min-width:0}.rule{border-top:3px solid var(--accent);padding-top:var(--s3)}.rule p{font-size:var(--small)}.flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3);margin-top:var(--s5)}.flow-step{position:relative;min-width:0;padding:var(--s4);background:var(--page);border-top:3px solid var(--accent)}.flow-step:not(:last-child)::after{content:"→";position:absolute;right:calc(var(--s3) * -1 - 10px);top:50%;z-index:1;color:var(--accent);font-size:24px;line-height:1;transform:translateY(-50%)}.flow-step p{font-size:var(--small)}.map{display:grid;grid-template-columns:1fr 52px 1fr 52px 1fr;gap:0;align-items:stretch;margin-top:var(--s5);overflow-x:auto;background:var(--desk);padding:var(--s4)}.map-card{min-width:220px;padding:var(--s4);background:var(--paper);color:var(--ink);border-top:3px solid var(--accent)}.map-card h3{font-size:var(--body)}.map-card p{font-size:var(--small)}.map-card ul{padding-left:var(--s4);margin:var(--s3) 0 0;font-size:var(--small)}.map-arrow{display:grid;place-items:center;min-width:52px;color:var(--paper);font-size:28px}.map-caption{font-size:var(--small);color:var(--muted)}.table-wrap{overflow-x:auto;margin-top:var(--s5)}table{width:100%;border-collapse:collapse;min-width:720px}th,td{text-align:left;vertical-align:top;padding:var(--s3);border-bottom:1px solid var(--line)}th{font-size:var(--small);color:var(--muted);font-weight:700}td code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}.status{display:inline-block;font-weight:700;color:var(--accent)}.code{margin-top:var(--s4);padding:var(--s4);overflow:auto;background:var(--desk);color:var(--paper);line-height:1.6}.code code{font-size:13px}.callout{margin-top:var(--s5);padding-left:var(--s4);border-left:3px solid var(--line)}.callout strong{color:var(--accent)}.checklist{padding-left:var(--s5);margin:var(--s4) 0 0}.checklist li{margin-top:var(--s2)}details{margin-top:var(--s5);border-top:1px solid var(--line)}summary{display:list-item;min-height:var(--touch);padding:var(--s2) 0;cursor:pointer;font-weight:700}.sources{display:grid;gap:var(--s3);margin-top:var(--s4)}.sources a{display:inline-flex;align-items:center;min-height:var(--touch)}footer{padding:var(--s5) 0;border-top:3px solid var(--ink)}
+@media(max-width:900px){.shell{grid-template-columns:1fr;gap:var(--s5);padding:var(--s5)}.rail{position:static}.rail nav{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s3)}.rail nav a{border-color:var(--line)}.columns{gap:var(--s4)}}
+@media(max-width:680px){:root{--h1:28px;--h2:24px}.shell{padding:var(--s4)}.columns,.flow{grid-template-columns:1fr}.flow-step:not(:last-child)::after{right:auto;left:50%;top:auto;bottom:calc(var(--s3) * -1 - 18px);transform:translateX(-50%) rotate(90deg)}.flow-step{margin-bottom:var(--s4)}.map{grid-template-columns:240px 44px 240px 44px 240px;padding:var(--s3)}.decision{padding:var(--s4)}.table-wrap{margin-left:calc(var(--s4) * -1);margin-right:calc(var(--s4) * -1);padding:0 var(--s4)}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+@media print{body{background:white}.shell{display:block;max-width:none;padding:0}.rail,.skip{display:none}.section{padding:var(--s4) 0}.map{background:white;padding:0}.map-card{border:1px solid var(--line)}.map-arrow{color:var(--ink)}.code{white-space:pre-wrap;background:white;color:var(--ink);border:1px solid var(--line)}a{color:var(--ink)}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">本文へ移動</a>
+<div class="shell">
+<aside class="rail">
+<p class="brand">舞台スケッチ<br>保存契約</p>
+<p class="meta">台本・Q・転換をつなぐ<br>設計提案 / 2026.09.09</p>
+<nav aria-label="目次">
+<a href="#decision"><b>01</b>今回の判断</a>
+<a href="#map"><b>02</b>3つの保存境界</a>
+<a href="#model"><b>03</b>IDと参照の形</a>
+<a href="#revision"><b>04</b>改訂時に残すもの</a>
+<a href="#route"><b>05</b>統合までの順序</a>
+<a href="#evidence"><b>06</b>根拠と未確認</a>
+</nav>
+</aside>
+<main id="main">
+<header>
+<p class="kicker">台本PDF / Qシート / 舞台転換 / 人物・時間</p>
+<h1>台本と転換を、<br>同じショーとして安全に残す。</h1>
+<p class="lede">平面図は既存projectの正本に置いたまま、台本の位置・Q・人物の予定・転換をIDで結びます。PDFを差し替えても、紙面上の位置だけの変更で時間や担当を勝手に作り直しません。</p>
+<div class="decision" id="decision">
+<strong>今回の判断:</strong>
+<p><strong>今は既存のv4 project exportへ新しい保存項目を混ぜません。</strong>現行の正規化処理には未知のproject項目を保持する保証がないためです。まずは対応する <code>workflow</code> companion file を定義し、全ての読書き経路を監査した後にだけ本体へ統合します。</p>
+</div>
+</header>
+
+<section class="section">
+<h2>この契約が防ぐこと</h2>
+<div class="columns">
+<div class="rule"><h3>PDF差替えでQを失わない</h3><p>新しいPDFは新しいdocumentとして追加します。旧anchorは残し、意味が確認できるまで「要付替え」として扱います。</p></div>
+<div class="rule"><h3>紙面位置から予定を捏造しない</h3><p>anchorはcueまたはsceneを指します。activity、担当、所要、GOは明示的な参照を追加した時だけ接続します。</p></div>
+<div class="rule"><h3>端末ごとのPDF欠損を隠さない</h3><p>PDFのBlobはJSONへ埋め込みません。別端末で見つからなければ位置とQを残し、「再接続が必要」と表示します。</p></div>
+<div class="rule"><h3>古い保存経路で情報を落とさない</h3><p>workflow対応前のbrowser、MCP、Mac、sessionは、workflowを含む書込みを正規化前に止めます。</p></div>
+</div>
+</section>
+
+<section class="section" id="map">
+<h2>3つの保存境界</h2>
+<p>同じショーを扱っても、平面図の正本、進行のmetadata、端末内assetは役割が違います。矢印はID参照であり、内容の複製ではありません。</p>
+<div class="map" role="group" aria-label="既存project、workflow、端末内assetの関係図">
+<article class="map-card"><h3>既存 Stage Sketch project</h3><ul><li>sceneId / castId / setId</li><li>平面図・動線・装置</li><li>既存のv4書出し</li></ul><p>workflowは座標やrouteを複製しない。</p></article>
+<div class="map-arrow" aria-hidden="true">↔</div>
+<article class="map-card"><h3>workflow metadata</h3><ul><li>cueId / anchorId</li><li>activityId / personId</li><li>時間式・確認revision</li></ul><p>project bindingが一致した時だけ有効にする。</p></article>
+<div class="map-arrow" aria-hidden="true">↔</div>
+<article class="map-card"><h3>端末内 asset store</h3><ul><li>PDF Blob</li><li>ページ描画の一時cache</li><li>assetIdだけをmetadataへ返す</li></ul><p>別端末で欠けてもmetadataを消さない。</p></article>
+</div>
+<p class="map-caption">現行の音源と同じく、重いバイナリはmetadataと分離します。ただしPDF用の実store名・移行コードは、製品統合時に共同監査して決めます。</p>
+</section>
+
+<section class="section" id="model">
+<h2>workflowに入れる、最小の関係</h2>
+<p>一つの紙面ラベルは一つのcueまたはsceneを対象にします。同じQを複数箇所へ置く場合はanchorを分け、同じ転換作業を台本・転換表・人物表で見る場合は同じactivityを参照します。</p>
+<div class="flow" aria-label="Qから紙面位置と転換活動へつなぐ流れ">
+<article class="flow-step"><h3>1. cue</h3><p><code>cue-q12</code><br>Q番号、種別、内容。表示名と意味の改訂を分ける。</p></article>
+<article class="flow-step"><h3>2. script anchor</h3><p><code>anchor-q12-page-1</code><br>PDF版、頁、正規化矩形、引用断片、cueへの参照。</p></article>
+<article class="flow-step"><h3>3. activity</h3><p><code>activity-carry-table</code><br>担当、所要、開始/完了の時点、転換枠。anchorから自動生成しない。</p></article>
+</div>
+<div class="table-wrap"><table><thead><tr><th>領域</th><th>正本として持つもの</th><th>参照だけにするもの</th></tr></thead><tbody>
+<tr><th>script</th><td>PDF版metadata、Q定義、anchor</td><td>scene、activity、asset</td></tr>
+<tr><th>coordination</th><td>人物、activity、planContext、point、estimate、window</td><td>cue、scene、anchor</td></tr>
+<tr><th>reviews</th><td>確認対象と入力revision、確認状態</td><td>計算済み時刻を別コピーしない</td></tr>
+<tr><th>assets</th><td>assetId、ファイルmetadata、端末内の可用状態</td><td>Blob、Data URL、canvas、PDF.js cacheをJSONへ入れない</td></tr>
+</tbody></table></div>
+<pre class="code"><code>{
+  "kind": "shosai-stage-workflow",
+  "version": 1,
+  "projectBinding": {
+    "projectId": "proj-…",
+    "baseExportVersion": 4,
+    "baseSnapshotHash": "sha256:…"
+  },
+  "workflowRevision": 1
+}</code></pre>
+<p class="small">実行可能な製品JSONではありません。架空fixtureには、PDF Blobを除いた一巡分の関係を入れています。</p>
+</section>
+
+<section class="section" id="revision">
+<h2>改訂時に、何を残して何を見直すか</h2>
+<div class="table-wrap"><table><thead><tr><th>変更</th><th>残す</th><th>要確認へ戻す範囲</th></tr></thead><tbody>
+<tr><th>Q番号・人物名・PDFの表示名</th><td>ID、意味、時間条件</td><td>なし。表示だけ更新</td></tr>
+<tr><th>紙面位置だけを動かし、意味が同じ</th><td>cue、activity、時間条件</td><td>紙面位置の確認だけ</td></tr>
+<tr><th>PDF版を追加</th><td>旧document、旧anchor、Q</td><td>新しい版への付替え候補</td></tr>
+<tr><th>cueの意味・主GO・予定の開始/完了</th><td>元データ、過去review</td><td>依存する予定、時間枠、担当確認</td></tr>
+<tr><th>PDFがこの端末にない</th><td>anchor、Q、activity、所要</td><td><span class="status">再接続が必要</span>。0秒や空きへ変更しない</td></tr>
+<tr><th>base projectのhashが違う</th><td>companion workflow全体</td><td><span class="status">要照合</span>。自動マージしない</td></tr>
+</tbody></table></div>
+<p class="callout"><strong>確認済み</strong>は、表示名ではなく意味・時点・所要・担当など判定に効く入力revisionに結びます。計算結果と人が確認した条件を一つの状態に混ぜません。</p>
+</section>
+
+<section class="section" id="route">
+<h2>本体へ統合するまでの順序</h2>
+<ol class="checklist">
+<li><strong>入出力監査:</strong> browser normalizer、show shelf、ファイル読込・書出し、Mac、session、MCPが未知情報をどう扱うかを固定する。</li>
+<li><strong>validatorとfixture:</strong> ID重複、参照切れ、頁/矩形、asset非埋込み、review revisionを検証する。</li>
+<li><strong>読み取り専用表示:</strong> Q → 紙面 → activity → 転換表をたどれるようにする。この時点では製品保存を有効にしない。</li>
+<li><strong>同一端末保存:</strong> metadata更新とasset参照追加の失敗時に以前の状態を残し、asset欠損を明示する。</li>
+<li><strong>外部version更新:</strong> 全経路が対応した後に <code>requiredFeatures:["workflow-v1"]</code> を持つ新しいexport versionへ進む。</li>
+</ol>
+<details><summary>この順序を採る理由</summary><p>現行browser exportはv4、MCP exportは別のv3経路であり、現行のbrowser normalizerは既知fieldを再構成します。新フィールドを先に入れると、ある経路で読めても別の経路が保存時に落とす危険があります。先に検証可能な同伴ファイルとして関係を固定すれば、既存projectを壊さずに入出力監査を進められます。</p></details>
+</section>
+
+<section class="section" id="evidence">
+<h2>根拠と、まだ決めないこと</h2>
+<div class="columns">
+<div><h3>確認した根拠</h3><ul class="checklist"><li>台本試作はPDF Blob・Q・anchorを端末内復元できるが、本体project schemaとは未統合。</li><li>人物・合図・時間の共通契約は、activityの所有元とID参照、改訂時の限定的な再確認を定義済み。</li><li>Stage Sketchの音源はmetadataと端末内Blobを分離している。PDFも同じ境界を採る。</li><li>現行browser export v4とMCP export v3、未知fieldを落とし得るnormalizerを確認した。</li></ul></div>
+<div><h3>この資料で決めないこと</h3><ul class="checklist"><li>実際のIndexedDB store名、assetの上限、zip package、クラウド同期。</li><li>実iPad、他端末、共同編集、競合アプリ独自形式、OCR。</li><li>GO送信、転換所要の自動見積り、PDF座標からの人物・時間推定。</li><li>製品の外部version番号と移行コード。これは全読書き経路の監査後に決める。</li></ul></div>
+</div>
+<div class="sources"><a href="PROJECT_WORKFLOW_CONTRACT_2026-09-09.md">詳細な保存契約と受入条件</a><a href="workflow-io-audit-2026-09-09.html">workflow 読書き経路監査</a><a href="WORKFLOW_IO_AUDIT_2026-09-09.md">監査の詳細 Markdown</a><a href="workflow-view-2026-09-09.html">Q → 台本位置 → 転換の閲覧画面</a><a href="workflow-annotation-bridge-2026-09-09.html?viewer=chief&amp;cue=cue-q12">v4・Q・注釈の接続確認</a><a href="project-workflow-fixture-2026-09-09.json">架空のworkflow fixture</a><a href="validate-project-workflow-contract.mjs">fixture validator</a><a href="TOKEN_SHEET_project_contract_2026-09-09.md">資料用デザイントークン</a><a href="../set-transitions-2026-09-08/SHARED_PEOPLE_CUES_TIME_CONTRACT_2026-09-09.md">人物・合図・時間の共通契約 v1</a><a href="../script-cues-2026-09-09/PDF_IMPORT_MIGRATION_PLAN.md">PDF・Q・位置アンカーの保存境界</a></div>
+<p class="small">参照の採用: 既存の共通契約資料から、紙面トークン、表、狭幅時に図だけを横スクロールする構成を継承。StageWrite操作ガイドから、PDF版の追加と手動付替えを別操作として扱う観点を継承した。どちらも画面・文言・素材を複製していない。外部公開はしていない。</p>
+</section>
+
+<footer><p class="small">設計資料。製品コード、既存project export、Mac、MCP、共有セッションは変更していません。</p></footer>
+</main>
+</div>
+</body>
+</html>

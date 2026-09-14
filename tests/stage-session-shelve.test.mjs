@@ -40,13 +40,13 @@ test("セッション bridge の shelveNow は shelveCurrent の結果を返す"
 });
 
 test("変更したJS版とPWAキャッシュ版を正本・単独版・Service Workerで揃える", () => {
-  for (const reference of ["stage-sketch.js?v=479", "stage-timeline.js?v=57", "stage-session.js?v=19"]) {
+  for (const reference of ["stage-sketch.js?v=483", "stage-timeline.js?v=59", "stage-session.js?v=19"]) {
     assert.ok(indexSource.includes(reference), `${reference} が stage.html にある`);
     assert.ok(stageHtml.includes(reference), `${reference} が stage.html にある`);
     assert.ok(serviceWorkerSource.includes(`./${reference}`), `${reference} が stage-sw.js にある`);
   }
   // 版は上げるたびにここも更新する（2026-08-26: 発注書Hのゲスト画面変更で v144 → v145）
-  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v483";/);
+  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v489";/);
 });
 
 test("ゲスト参加は false の退避結果を失敗として扱い、role 変更前に中止する", () => {
@@ -361,41 +361,6 @@ test("上限を超える既存ショーを読み込んでも、61件目以降を
   assert.equal(sceneRows[0].screenTexts.length, 13);
   assert.equal(doc.project.cast.length, 61);
   assert.equal(doc.project.sets.length, 61);
-});
-
-test("既存JSONの自動生成番号は、現在の階層番号と一致するときだけ場面名へ一体化する", () => {
-  const fixture = createSessionContext();
-  fixture.storage.setItem("shosai-stage-sketch-v1", JSON.stringify({
-    project: {
-      id: "numbered-import", title: "番号付きショー", sectionsNested: true, activeSceneId: "scene-2-2",
-      scenes: [
-        { id: "section-1", kind: "section", depth: 0, title: "1. 展示前の身体" },
-        { id: "scene-1-1", kind: "scene", depth: 1, title: "1-1 背面の展示" },
-        { id: "scene-1-2", kind: "scene", depth: 1, title: "1-2. 八動作の校正" },
-        { id: "section-2", kind: "section", depth: 0, title: "2：空白の受領" },
-        { id: "scene-2-1", kind: "scene", depth: 1, title: "2-1 空白の検査" },
-        { id: "scene-2-2", kind: "scene", depth: 1, title: "2-2 枠の向こうの手" },
-        { id: "scene-2-3", kind: "scene", depth: 1, title: "1-3 並び替え前の番号は残す" },
-        { id: "scene-2-4", kind: "scene", depth: 1, title: "2-4" },
-      ],
-    },
-  }));
-  vm.runInNewContext(stageSource, fixture.context, { filename: "stage-sketch.js" });
-
-  const project = JSON.parse(fixture.context.window.SHOSAI_STAGE_SESSION_BRIDGE.exportDocumentString()).project;
-  assert.deepEqual(
-    project.scenes.map((scene) => [scene.id, scene.title]),
-    [
-      ["section-1", "展示前の身体"],
-      ["scene-1-1", "背面の展示"],
-      ["scene-1-2", "八動作の校正"],
-      ["section-2", "空白の受領"],
-      ["scene-2-1", "空白の検査"],
-      ["scene-2-2", "枠の向こうの手"],
-      ["scene-2-3", "1-3 並び替え前の番号は残す"],
-      ["scene-2-4", "2-4"],
-    ],
-  );
 });
 
 test("通常の新規シーン操作は60行で止まり、既存データを変えない", () => {

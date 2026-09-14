@@ -1,0 +1,57 @@
+#!/bin/zsh
+# shosai-app 検査を1コマンドで回す（草案 2026-09-09・WO-B8）。
+# 使い方:  ./check.sh            … デプロイ前ゲート（未コミットがあれば赤）
+#          ./check.sh --allow-dirty … ローカル検証（未コミットを許す）
+# 置き場所: shosai-app/check.sh（chmod +x）。node は ~/.zshrc の PATH を前提にする。
+set -u
+setopt null_glob
+# CHECK_ROOT を与えれば別の場所からも回せる（草案の試走用）。通常は shosai-app/check.sh として置き、引数なしで使う。
+cd "${CHECK_ROOT:-$(dirname "$0")}" || exit 1
+[ -f ~/.zshrc ] && source ~/.zshrc >/dev/null 2>&1
+fail=0
+step() { printf '\n== %s ==\n' "$1"; }
+bad()  { printf '  ✗ %s\n' "$1"; fail=1; }
+good() { printf '  ✓ %s\n' "$1"; }
+
+step "0 未コミットの変更"
+if [ "${1:-}" = "--allow-dirty" ]; then
+  good "（--allow-dirty）確認を省略"
+elif [ -n "$(git status --porcelain)" ]; then
+  git status --short | head -20
+  bad "未コミットの変更があります。先にコミットしてください（A-1 の分割案: docs/system-audit-2026-09-09/A1_commit_split_plan.md）"
+else
+  good "作業ツリーはコミット済み"
+fi
+
+step "1 構文（node --check）"
+syntax_bad=0
+for f in *.js mcp-server/src/*.js tests/*.mjs; do
+  case "$f" in *_backup_*|db.js|stage-apparatus-data.js|stage-shows.local.js) continue;; esac
+  node --check "$f" 2>/dev/null || { echo "  構文エラー: $f"; syntax_bad=1; }
+done
+[ $syntax_bad = 0 ] && good "全ファイル通過" || bad "構文エラーあり"
+
+step "2 stage.html が index.html と揃っているか"
+python3 build_stage.py --check && good "揃っている" || bad "python3 build_stage.py で作り直す"
+
+step "3 体験版の生成物（public-dist）"
+python3 build_public.py --check && good "最新" || bad "python3 build_public.py で作り直す"
+
+step "4 tests/（node:test）"
+out=$(node tests/index.mjs 2>&1)
+echo "$out" | grep -E '^# (tests|pass|fail) ' | sed 's/^/  /'
+echo "$out" | grep -q '^# fail 0' && good "失敗0" || bad "失敗あり（node tests/index.mjs で詳細）"
+
+step "5 mcp-server（npm test）"
+out=$(cd mcp-server && npm test 2>&1)
+echo "$out" | grep -E '^# (tests|pass|fail) ' | sed 's/^/  /'
+echo "$out" | grep -q '^# fail 0' && good "失敗0" || bad "失敗あり（cd mcp-server && npm test）"
+
+if [ -f eslint.config.mjs ]; then
+  step "6 ESLint（no-undef / no-unused-vars / no-dupe-keys）"
+  npx eslint . >/tmp/shosai-eslint.log 2>&1 && good "指摘なし" || { tail -5 /tmp/shosai-eslint.log; bad "指摘あり（/tmp/shosai-eslint.log）"; }
+fi
+
+printf '\n'
+if [ $fail = 0 ]; then echo "配ってよい状態です（npx wrangler deploy）"; else echo "配ってはいけません。赤の項目を先に。"; fi
+exit $fail

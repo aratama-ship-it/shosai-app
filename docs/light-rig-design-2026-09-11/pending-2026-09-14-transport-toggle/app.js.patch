@@ -1,0 +1,42 @@
+--- prototype/app_backup_2026-09-14-before-transport-toggle.js	2026-09-14 01:17:00
++++ /tmp/app-mine.js	2026-09-14 01:29:20
+@@ -714,7 +714,15 @@
+   function stop(reason) { if (!state.play.on) return; state.play.on = false; cancelAnimationFrame(state.play.raf); if (reason) toast(reason); renderTransport(); draw(); }
+   function home() { stop(); state.play.t = 0; renderTransport(); draw(); }
+   function tick(ts) { if (!state.play.on) return; if (!state.play.last) state.play.last = ts; state.play.t += ts - state.play.last; state.play.last = ts; renderTransport(); draw(); state.play.raf = requestAnimationFrame(tick); }
+-  function renderTransport() { $("t-time").textContent = `${(state.play.t / 1000).toFixed(1)}秒`; $("t-playing").hidden = !state.play.on; $("t-play").disabled = state.play.on; }
++  function togglePlay() { state.play.on ? stop() : play(); }
++  /* 2026-09-14 本人要望: 操作は再生／停止のトグル1個だけ。秒数と「再生中」の札は出さない。
++     文字は押したら何が起きるかを出す（停止中＝再生・再生中＝停止）。状態はボタンの色でも示す。 */
++  function renderTransport() {
++    const b = $("t-play"); if (!b) return;
++    b.textContent = state.play.on ? "停止" : "再生";
++    b.title = state.play.on ? "動きを止める（Space）" : "動きを再生する（Space）";
++    b.classList.toggle("playing", state.play.on);
++  }
+ 
+   /* ---------- 描画: 平面図 ---------- */
+   const isSel = (fid) => state.sel.has(fid);
+@@ -2080,7 +2088,9 @@
+     if (ev.key === "Escape" && !$("dialog").hidden) { $("dialog").hidden = true; return; }
+     if (ev.key === "Escape") { if (state.drag) { const dg = state.drag; state.drag = null; restore(dg.before); state.dirty = true; } else if (state.tool) { state.tool = null; renderAll(); } else if (state.sel.size) { state.sel.clear(); renderAll(); } return; }
+     if (typing) return;
+-    if (ev.key === " ") { ev.preventDefault(); state.play.on ? stop() : play(); }
++    /* Space = 再生／停止。再生ボタン自身にフォーカスがあるときは何もしない——
++       ボタンの既定の動作（click）が同じトグルを呼ぶので、ここで拾うと2回走る。 */
++    if (ev.key === " ") { if (document.activeElement !== $("t-play")) { ev.preventDefault(); togglePlay(); } }
+     if ((ev.key === "Delete" || ev.key === "Backspace") && state.mode === "place" && state.sel.size) { ev.preventDefault(); removeSelected(); }
+     if ((ev.key === "d" || ev.key === "D") && state.mode === "place" && state.sel.size) duplicateSelected();
+     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? redo() : undo(); }
+@@ -3407,7 +3417,10 @@
+      セクションをまたぐときは上のセクション送り、全体から選ぶときは〈すべての場面を見る〉。 */
+   $("scene-prev").onclick = () => lxStepScene(-1);
+   $("scene-next").onclick = () => lxStepScene(1);
+-  $("t-home").onclick = home; $("t-play").onclick = play; $("t-stop").onclick = () => stop();
++  /* マウスで押した後はフォーカスを外す（ボタンが押されたまま残ると、次のSpaceで
++     ボタン発火とキーボード処理の両方が走り、トグルが2回で元へ戻る）。
++     キーボードで押したとき（ev.detail === 0）は外さない。Tabで辿った位置を奪わないため。 */
++  $("t-play").onclick = (ev) => { togglePlay(); if (ev.detail > 0) ev.currentTarget.blur(); };
+   $("undo").onclick = undo; $("redo").onclick = redo;
+   $("mirror").onclick = mirrorSelected;
+   document.querySelectorAll("#filters button").forEach((b) => { b.onclick = () => { state.filter = b.dataset.filter; renderAll(); }; });

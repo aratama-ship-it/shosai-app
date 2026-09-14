@@ -1,0 +1,19 @@
+{
+  "changed": [
+    "build_study.py",
+    "design/TOKEN_SHEET_study-links_2026-09-09.md",
+    "stage-study-owner.js",
+    "stage-study-viewer.js",
+    "stage-study.css",
+    "study-frame.html",
+    "study.html",
+    "tests/study-links.test.mjs",
+    "index.html",
+    "stage-sw.js",
+    "stage.html",
+    "tests/stage-manual-help.test.mjs",
+    "tests/stage-session-shelve.test.mjs"
+  ],
+  "unchanged": 1822,
+  "missing": []
+}

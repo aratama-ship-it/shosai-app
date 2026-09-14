@@ -1,0 +1,233 @@
+{
+  "kind": "shosai-stage-sketch",
+  "version": 4,
+  "unknownTop": {
+    "keep": null
+  },
+  "venues": [],
+  "project": {
+    "id": "show-original",
+    "sectionsNested": true,
+    "title": "移行の見本（架空のショー）",
+    "venue": "proscenium",
+    "venueSize": "mid",
+    "venueDims": {
+      "width": 12,
+      "depth": 9,
+      "height": 8
+    },
+    "cast": [
+      {
+        "id": "actor",
+        "name": "演者",
+        "extra": 1
+      }
+    ],
+    "audioTracks": [
+      {
+        "id": "music-1",
+        "fileName": "original-only.wav",
+        "offset": 3
+      }
+    ],
+    "note": "残すメモ",
+    "unknownField": {
+      "keep": [
+        "all",
+        null
+      ]
+    },
+    "sets": [
+      {
+        "id": "L1",
+        "kind": "light",
+        "name": "左右の明かり",
+        "color": "#ffad66",
+        "dims": {
+          "dia": 4
+        },
+        "lightKind": "hang",
+        "lightGroup": "G1",
+        "groupLabel": "あたたかい明かり",
+        "note": "元の登録メモ",
+        "locked": true
+      },
+      {
+        "id": "L2",
+        "kind": "light",
+        "name": "消灯の控え",
+        "color": "#7799ff",
+        "dims": {
+          "dia": 2.6
+        },
+        "lightKind": "ss"
+      },
+      {
+        "id": "L3",
+        "kind": "light",
+        "name": "まだ置いていない灯",
+        "color": "#ffffff",
+        "dims": {
+          "dia": 4
+        }
+      },
+      {
+        "id": "set1",
+        "kind": "block",
+        "name": "残す台",
+        "dims": {
+          "w": 2,
+          "d": 1,
+          "h": 1
+        }
+      }
+    ],
+    "scenes": [
+      {
+        "id": "sec",
+        "kind": "section",
+        "depth": 0,
+        "title": "第一部",
+        "pieces": [],
+        "extra": "keep"
+      },
+      {
+        "id": "scene-a",
+        "kind": "scene",
+        "title": "開始",
+        "depth": 1,
+        "lightingIntent": {
+          "purpose": "顔を見せる",
+          "safetyStatus": "not-assessed"
+        },
+        "pieces": [
+          {
+            "id": "actor-a",
+            "type": "performer",
+            "castId": "actor",
+            "u": 0.5,
+            "v": 0.6
+          },
+          {
+            "id": "p1",
+            "type": "light",
+            "setId": "L1",
+            "name": "古い個別名",
+            "color": "#ffaa66",
+            "u": 0.4,
+            "v": 0.6,
+            "glow": 0.9,
+            "beam": {
+              "u": 0.3,
+              "v": 0.2,
+              "h": 6,
+              "toH": 0
+            }
+          }
+        ],
+        "stashed": {
+          "L2": {
+            "type": "light",
+            "u": 0.6,
+            "v": 0.7,
+            "glow": 0.3,
+            "beam": {
+              "u": -0.06,
+              "v": 0.4,
+              "h": 1.7,
+              "toH": 1.3
+            }
+          }
+        },
+        "audioTrackId": "music-1"
+      },
+      {
+        "id": "scene-b",
+        "kind": "scene",
+        "depth": 1,
+        "title": "別の光源位置",
+        "pieces": [
+          {
+            "id": "p2",
+            "type": "light",
+            "setId": "L1",
+            "color": "#ee9977",
+            "u": 0.7,
+            "v": 0.5,
+            "glow": 1.5,
+            "beam": {
+              "u": 0.7,
+              "v": 0.2,
+              "h": 7,
+              "toH": 2
+            }
+          },
+          {
+            "id": "anon",
+            "type": "light",
+            "name": "同じ名前",
+            "color": "#55aaff",
+            "u": 0.3,
+            "v": 0.4,
+            "glow": 1,
+            "dims": {
+              "dia": 2
+            },
+            "beam": {
+              "u": 0.2,
+              "v": 1.3,
+              "h": 10,
+              "toH": 0
+            }
+          }
+        ],
+        "stashed": {},
+        "blackout": true,
+        "lightMotion": {
+          "mode": "example",
+          "unknown": null
+        }
+      },
+      {
+        "id": "scene-c",
+        "kind": "scene",
+        "depth": 1,
+        "title": "消灯を戻す",
+        "pieces": [
+          {
+            "id": "anon",
+            "type": "light",
+            "name": "同じ名前",
+            "color": "#55aaff",
+            "u": 0.3,
+            "v": 0.4,
+            "glow": 1,
+            "dims": {
+              "dia": 2
+            },
+            "beam": {
+              "u": 0.2,
+              "v": 1.3,
+              "h": 10,
+              "toH": 0
+            }
+          }
+        ],
+        "stashed": {
+          "L1": {
+            "type": "light",
+            "u": 0.2,
+            "v": 0.8,
+            "glow": 0.6,
+            "beam": {
+              "u": 0.3,
+              "v": 0.2,
+              "h": 6,
+              "toH": 0
+            }
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "parent": "5bf35eadf2a47524f6be971d91b870f8c75dee51",
+  "files": {
+    "index.html": "8c2684c53a304cb8f43441122947e1e44967763b470f5b87a39a0c4b1b4b0615",
+    "app.js": "382eff0ab652a56de01459f6e224857d02724ef9e0ebb4e7e61212b606510ca3",
+    "rig-engine.js": "659b97111380eff19d8b6757a31232c83666e759a860529d08f5afd161257999",
+    "stage-figure.js": "2b4bcc60ae38fff8fc96cde793865adb32120d6ceba7744e2f4492fe04f54fa5",
+    "light-presets.js": "fb83c21851b59cbedbdc14bd1cf027c8f2486542136e447c1ea231de7e4a1551",
+    "light-presets-ui.js": "3f63cc0e0e82ef92b458e34ee27ee6762927d2a245e1298b80b46af91593cbd9"
+  }
+}

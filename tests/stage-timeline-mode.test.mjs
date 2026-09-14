@@ -87,12 +87,14 @@ test("同じセクションのシーン間には0秒でも転換ポイントを�
   assert.match(css, /\.stage-timeline-scene-transition-marker\.is-point::after,[\s\S]*?rotate\(45deg\)/);
 });
 
-test("タイムライン再生は絶対位置を本体へ渡し、音源時計を描画ごとに読む", () => {
-  assert.match(sketch, /setTimelinePosition\(position\)/);
+test("再生中は転換開始で動かし、転換の長さで次シーンへ到着する", () => {
+  assert.match(sketch, /function beginSceneAnim\(fromScene, liveSpinsIn, durationMs = null\)/);
+  assert.match(sketch, /transitionDurationMs/);
+  assert.match(sketch, /openSceneById\(id, options = \{\}\)[\s\S]*?openScene\(next\.id, options\)/);
   assert.match(timeline, /function timelineTransitionAt\(seconds\)/);
-  assert.match(timeline, /bridge\.setTimelinePosition\(\{/);
-  assert.match(timeline, /syncTimelinePlaybackScene\(els\.audio\.currentTime\)/);
-  // Timing, pause, backward seek and curve behavior are exercised in stage-timeline-transport.browser.mjs.
+  assert.match(timeline, /function syncTimelinePlaybackScene\(seconds, \{ allowTransition = false \} = \{\}\)/);
+  assert.match(timeline, /previous < phase\.transition\.start[\s\S]*?transitionDurationMs: \(phase\.transition\.end - phase\.transition\.start\) \* 1000/);
+  assert.match(timeline, /name === "timeupdate"[\s\S]*?syncTimelinePlaybackScene\(els\.audio\.currentTime, \{ allowTransition: true \}\)/);
 });
 
 test("シーンと転換の左右端をドラッグして長さを変え、後続のキューも追従させる", () => {
@@ -110,42 +112,9 @@ test("シーンと転換の左右端をドラッグして長さを変え、後�
   assert.match(css, /\.stage-timeline-resize-delta \{[\s\S]*?position: fixed;[\s\S]*?pointer-events: none;/);
 });
 
-test("0秒転換も右側の広いドラッグ域から転換時間を作れる", () => {
-  assert.match(timeline, /if \(isPoint\) \{[\s\S]*?block\.classList\.add\("is-expandable-point"\)[\s\S]*?addTimelineResizeHandle\(block, "end", \{[\s\S]*?part: "transition"/);
-  assert.match(timeline, /転換ポイント[\s\S]*?右へドラッグして転換を作る/);
-  assert.match(css, /\.stage-timeline-transition-block\.is-point\.is-expandable-point \.stage-timeline-block-resize-handle\.is-end \{[\s\S]*?width: 24px/);
-  assert.match(css, /is-expandable-point \.stage-timeline-block-resize-handle\.is-end::before \{[\s\S]*?content: "\+"/);
-  assert.match(timeline, /function beginBlockResize\(event, descriptor\)[\s\S]*?lockedTimelineSceneAfter/);
-});
-
-test("時間帯は開始・終了を選んで固定し、キューは一点を固定する", () => {
-  for (const id of ["stage-timeline-lock-menu", "stage-timeline-lock-menu-start", "stage-timeline-lock-menu-end", "stage-timeline-lock-menu-clear", "stage-timeline-lock-menu-cue"]) {
-    assert.match(html, new RegExp(`id="${id}"`));
-  }
-  assert.match(timeline, /button\.addEventListener\("contextmenu", \(event\) => openTimelineLockMenu\(event, \{/);
-  assert.match(timeline, /block\.addEventListener\("contextmenu", \(event\) => openTimelineLockMenu/);
-  assert.match(timeline, /開始時刻を固定/);
-  assert.match(timeline, /終了時刻を固定/);
-  assert.match(timeline, /固定を解除/);
-  assert.match(timeline, /この時刻を固定/);
-  assert.match(timeline, /時刻固定を解除/);
-  assert.match(timeline, /if \(cue\.timelinePositionLocked\)[\s\S]*?右クリックで解除できます/);
-  assert.match(timeline, /function timelineRangeLock\(project, kind, id\)/);
-  assert.match(timeline, /kind: "audio", id: clip\.trackId, lockedEdge: audioRangeLock/);
-  assert.match(timeline, /kind: "transition", id: positionLockSceneId, lockedEdge: rangeLock/);
-  assert.match(sketch, /raw\.timelineRangeLock === "start" \|\| raw\.timelineRangeLock === "end"/);
-  assert.match(sketch, /raw\.timelinePositionLocked === true \? \{ timelineRangeLock: "start" \} : \{\}/);
-  assert.match(sketch, /setTimelinePositionLocked\(kind, id, value\)[\s\S]*?item\.timelinePositionLocked = locked/);
-  assert.match(sketch, /setTimelineRangeLock\(kind, id, value\)[\s\S]*?transitionRangeLock/);
-  assert.match(sketch, /!cue\.timelinePositionLocked[\s\S]*?finite\(cue\.atSeconds, -1\) >= rippleFrom/);
-  assert.match(sketch, /if \(timingChanged && \(fixedFollowingScene \|\| ownLockedEdge\)\) return false/);
-  assert.match(css, /\.stage-timeline-lock-menu \{[\s\S]*?min-width: 184px/);
-  assert.match(css, /\.stage-timeline-time-lock \{[\s\S]*?width: 13px/);
-});
-
 test("転換の最初の描画は前シーンの位置から始め、行き先を一瞬だけ描かない", () => {
-  assert.match(sketch, /sceneAnim = \{ pieces, exits, blackout, progress: 0, raf: 0,[\s\S]*?step\(start\);/);
-  assert.match(sketch, /function beginSceneAnim\(fromScene, liveSpinsIn, durationMs = null, timelineProgress = null\)[\s\S]*?return true;/);
+  assert.match(sketch, /sceneAnim = \{ pieces, exits, blackout, progress: 0, raf: 0 \};[\s\S]*?step\(start\);/);
+  assert.match(sketch, /function beginSceneAnim\(fromScene, liveSpinsIn, durationMs = null\)[\s\S]*?return true;/);
   assert.match(sketch, /updateInspector\(\);[\s\S]*?if \(!beginSceneAnim\(before, liveSpins, options\.transitionDurationMs\)\) render\(\);/);
 });
 
@@ -174,7 +143,7 @@ test("テンポ・カウント合わせ操作はカウント式だけで表示�
 });
 
 test("シーク位置へ移動すると該当シーンを平面図・正面図へ同期する", () => {
-  assert.match(timeline, /function syncSceneForSeek\(\)[\s\S]*?syncTimelinePlaybackScene\(seekSeconds, \{ reset: true \}\)/);
+  assert.match(timeline, /function syncSceneForSeek\(\)[\s\S]*?syncTimelinePlaybackScene\(seekSeconds\)/);
   assert.match(timeline, /function seekFromPointer\(event\)[\s\S]*?syncSceneForSeek\(\)/);
   assert.match(timeline, /if \(event\.shiftKey\)[\s\S]*?syncSceneForSeek\(\)/);
   assert.match(timeline, /name === "seeking"[\s\S]*?seekSeconds = els\.audio\.currentTime;[\s\S]*?syncSceneForSeek\(\)/);
@@ -264,22 +233,7 @@ test("音源なしでもセクション時間を内部時計として再生す�
   assert.match(timeline, /syncSilentScene\(seekSeconds\)/);
   assert.match(timeline, /els\.play\.disabled = !timeline\.segments\.some/);
   assert.match(timeline, /const desiredDuration = section \? sectionDurationSeconds\(project, section\) : baseDuration/);
-  assert.match(timeline, /duration: desiredDuration/);
-});
-
-test("セクション時間を全体幅にし、音源は実尺の帯として複数置ける", () => {
-  assert.match(timeline, /function sceneAudioClips\(project, segments, duration\)[\s\S]*?audioTimelineDuration\(run\.track\)/);
-  assert.match(timeline, /audioTimelineStartSeconds[\s\S]*?audioTimelineEndSeconds[\s\S]*?sourceSceneId/);
-  assert.match(timeline, /const hasPlacedStart = Number\.isFinite\(run\.audioTimelineStartSeconds\)[\s\S]*?const hasPlacedEnd = Number\.isFinite\(run\.audioTimelineEndSeconds\)[\s\S]*?naturalEnd/);
-  assert.match(timeline, /const duration = section \? sectionDurationSeconds\(project, section\) : plannedDuration/);
-  assert.match(timeline, /audioClips: sceneAudioClips\(project, segments, desiredDuration\)/);
-  assert.match(timeline, /const audioClips = Array\.isArray\(timeline\.audioClips\) \? timeline\.audioClips : \[\]/);
-  assert.match(timeline, /placeBlock\(audioBlock, clip\.start, clip\.end\)/);
-  assert.match(timeline, /function beginAudioDrag\(event, clip, button, audioRangeLock\)[\s\S]*?setTimelineAudioStartSeconds/);
-  assert.match(timeline, /audioBlock\.addEventListener\("pointerdown", \(event\) => beginAudioDrag\(event, clip, audioBlock, audioRangeLock\)\)/);
-  assert.match(css, /--stage-timeline-audio-block-inset-y: 0px;/);
-  assert.match(css, /button\.stage-timeline-audio-block\.is-draggable \{ cursor: grab/);
-  assert.doesNotMatch(timeline, /function capTimelineToAudio\(/);
+  assert.match(timeline, /duration: trackId[\s\S]*?: desiredDuration/);
 });
 
 test("各編集レーンの追加操作を左ラベルへ揃え、キューをシーン単位で連番表示する", () => {
@@ -298,7 +252,7 @@ test("各編集レーンの追加操作を左ラベルへ揃え、キューを�
   assert.equal((html.match(/class="stage-timeline-row-add"/g) || []).length, 6);
   assert.match(sketch, /cues: \[\]/);
   assert.match(sketch, /cues: normalizeProjectCues\(rawProject\.cues\)/);
-  assert.match(sketch, /addTimelineCue\(type, sectionId, atSeconds, scope = \{\}\)[\s\S]*?kind: "timeline"[\s\S]*?cueType: type[\s\S]*?sectionId[\s\S]*?atSeconds[\s\S]*?memo: ""/);
+  assert.match(sketch, /addTimelineCue\(type, sectionId, atSeconds\)[\s\S]*?kind: "timeline"[\s\S]*?cueType: type[\s\S]*?sectionId[\s\S]*?atSeconds[\s\S]*?memo: ""/);
   assert.match(sketch, /removeTimelineCue\(id\)[\s\S]*?checkpoint\(\)[\s\S]*?cues\.splice/);
   assert.match(sketch, /addTimelineSceneAfter\(sceneId\)[\s\S]*?addScene\(false\)/);
   assert.match(sketch, /addTimelineTransition\(sceneId, seconds = 4\)[\s\S]*?transitionToNextSeconds = duration/);
@@ -324,31 +278,12 @@ test("キューはダブルクリックで詳細とメモを開き、詳細ま�
     "stage-timeline-cue-detail-save", "stage-timeline-cue-detail-delete",
   ]) assert.match(html, new RegExp(`id="${id}"`));
   assert.match(html, /id="stage-timeline-cue-detail-note" maxlength="2000"/);
-  assert.match(timeline, /button\.addEventListener\("pointerdown", \(event\) => beginCueDrag\(event, cue, button\)\)/);
-  assert.match(timeline, /function cueDragSeconds\(event\)[\s\S]*?snappedSeconds/);
-  assert.match(timeline, /function endCueDrag\(event\)[\s\S]*?bridge\.updateTimelineCue\(dragging\.id, \{[\s\S]*?atSeconds: dragging\.nextSeconds/);
   assert.match(timeline, /button\.addEventListener\("dblclick", \(\) => openCueDetails/);
   assert.match(timeline, /bridge\.updateTimelineCue\(cueDetailId, \{ memo: els\.cueDetailNote\.value \}\)/);
-  assert.match(timeline, /function deleteCueFromDetails\(\)[\s\S]*?openTimelineDelete\(target\)/);
-  assert.match(sketch, /const memo = typeof patch\.memo === "string" \? patch\.memo\.slice\(0, 2000\) : String\(cue\.memo \|\| ""\)/);
-  assert.match(sketch, /updateTimelineCue\(id, patch = \{\}\)[\s\S]*?cue\.atSeconds = atSeconds/);
-  assert.match(html, /id="stage-timeline-cue-detail-delete"[\s\S]*?class="btn-quiet" id="stage-timeline-cue-detail-save"/);
-  assert.match(css, /\.stage-timeline-cue-detail-modal \.stage-timeline-cue-detail-actions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(css, /\.stage-timeline-cue-detail-modal \.stage-timeline-cue-detail-actions button \{[\s\S]*?justify-content: center;[\s\S]*?font-size: 14px/);
+  assert.match(timeline, /function deleteCueFromDetails\(\)[\s\S]*?removeSelectedCue\(\)/);
+  assert.match(sketch, /memo: typeof cue\.memo === "string" \? cue\.memo\.slice\(0, 2000\) : ""/);
+  assert.match(sketch, /updateTimelineCue\(id, patch = \{\}\)[\s\S]*?cue\.memo = memo/);
   assert.match(css, /\.stage-modal\.stage-timeline-cue-detail-modal \{ width: min\(440px/);
-});
-
-test("再生で通過したキューは、機器を実行せず舞台図へ一時表示する", () => {
-  assert.equal((html.match(/data-stage-timeline-cue-pop/g) || []).length, 2);
-  assert.match(html, /data-stage-timeline-cue-pop role="status"[\s\S]*?aria-live="polite"/);
-  assert.match(html, /data-stage-timeline-cue-pop aria-hidden="true"/);
-  assert.match(timeline, /function dispatchTimelineCuePasses[\s\S]*?new CustomEvent\("stage-timeline-cue-passed"/);
-  assert.match(timeline, /syncTimelinePlaybackScene\(els\.audio\.currentTime, \{ cuePlayback: true \}\)/);
-  assert.match(timeline, /syncTimelinePlaybackScene\(seekSeconds, \{ reset: true, cuePlayback: true, includeCueAtPosition: true \}\)/);
-  assert.match(sketch, /window\.addEventListener\("stage-timeline-cue-passed"[\s\S]*?showTimelineCuePop/);
-  assert.match(sketch, /実行指示ではなく、打ち合わせ用/);
-  assert.match(css, /\.stage-timeline-cue-pop \{[\s\S]*?pointer-events: none;/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.stage-timeline-cue-pop\.is-visible/);
 });
 
 test("ミュージックシンクの操作列を二段で並べ、未接続の編集操作は無効で示す", () => {
@@ -360,11 +295,11 @@ test("ミュージックシンクの操作列を二段で並べ、未接続の�
     "stage-timeline-clear-anchors", "stage-timeline-loop-a", "stage-timeline-loop-b",
     "stage-timeline-loop", "stage-timeline-bpm", "stage-timeline-auto-bpm", "stage-timeline-mark-one",
     "stage-timeline-grid", "stage-timeline-zoom-out", "stage-timeline-zoom-in",
-    "stage-timeline-split",
+    "stage-timeline-split", "stage-timeline-record", "stage-timeline-record-next",
     "stage-timeline-add-scene", "stage-timeline-add-transition",
     "stage-timeline-add-light-cue", "stage-timeline-add-music-cue", "stage-timeline-add-dialogue-cue",
   ]) assert.match(html, new RegExp(`id="${id}"`));
-  assert.doesNotMatch(html, /id="stage-timeline-(?:save|load|record(?:-next)?)"/);
+  assert.doesNotMatch(html, /id="stage-timeline-(?:save|load)"/);
   assert.doesNotMatch(timeline, /stage-timeline-(?:save|load)|els\.(?:save|load)/);
   assert.doesNotMatch(html, /id="stage-timeline-(?:undo|redo)"/);
   assert.doesNotMatch(timeline, /stage-timeline-(?:undo|redo)|els\.(?:undo|redo|stageUndo|stageRedo)/);
@@ -398,44 +333,30 @@ test("タイムラインモードのSpaceは入力欄を除いて再生と一時
   assert.match(timeline, /document\.querySelector\("\.stage-modal:not\(\[hidden\]\)"\)/);
 });
 
-test("音源ブロックのダブルクリックでゲインとフェードアウトを編集して保存する", () => {
+test("音源ブロックのダブルクリックで音源別ゲインを編集して保存する", () => {
   for (const id of [
     "stage-timeline-audio-detail-backdrop", "stage-timeline-audio-detail-modal",
     "stage-timeline-audio-detail-name", "stage-timeline-audio-detail-duration",
     "stage-timeline-audio-gain-range", "stage-timeline-audio-gain-number",
-    "stage-timeline-audio-fade-out",
     "stage-timeline-audio-detail-cancel", "stage-timeline-audio-detail-save",
   ]) assert.match(html, new RegExp(`id="${id}"`));
   assert.match(html, /id="stage-timeline-audio-gain-range" min="-24" max="12" step="0\.5"/);
-  assert.match(timeline, /const audioClips = Array\.isArray\(timeline\.audioClips\)/);
-  assert.match(timeline, /function rememberAudioDetailsClick\(dragging\)[\s\S]*?openAudioDetails\(dragging\.trackId, dragging\.button\)/);
-  assert.match(timeline, /if \(!dragging\.moved\) \{[\s\S]*?rememberAudioDetailsClick\(dragging\)/);
-  assert.doesNotMatch(timeline, /audioBlock\.addEventListener\("dblclick"/);
-  assert.match(html, /終了時にフェードアウト[\s\S]*?終端1秒前から音量を下げます/);
-  assert.match(timeline, /function timelineAudioFadeMultiplier\(\)[\s\S]*?clip\.fadeOut[\s\S]*?clip\.end - clip\.start/);
-  assert.match(timeline, /const factor = 10 \*\* \(normalizedAudioGainDb\(gainDb\) \/ 20\) \* timelineAudioFadeMultiplier\(\)/);
+  assert.match(timeline, /document\.createElement\(timeline\.trackId \? "button" : "div"\)/);
+  assert.match(timeline, /audioBlock\.addEventListener\("dblclick", \(\) => \{[\s\S]*?openAudioDetails\(timeline\.trackId, audioBlock\)/);
+  assert.match(timeline, /const factor = 10 \*\* \(normalizedAudioGainDb\(gainDb\) \/ 20\)/);
   assert.match(timeline, /createMediaElementSource\(els\.audio\)[\s\S]*?createGain\(\)[\s\S]*?gain\.connect\(context\.destination\)/);
-  assert.match(timeline, /bridge\.setTimelineAudioGainDb\(trackId, gainDb, \{[\s\S]*?timelineFadeOut/);
-  assert.match(sketch, /setTimelineAudioGainDb\(trackId, value, options = \{\}\)[\s\S]*?track\.timelineFadeOut = timelineFadeOut/);
+  assert.match(timeline, /bridge\.setTimelineAudioGainDb\(trackId, gainDb\)/);
+  assert.match(sketch, /setTimelineAudioGainDb\(trackId, value\)[\s\S]*?track\.gainDb = gainDb/);
   assert.match(css, /\.stage-modal\.stage-timeline-audio-detail-modal \{ width: min\(440px/);
-});
-
-test("音源帯の右端は元の実尺を越えず、終了位置だけを短く保存する", () => {
-  assert.match(timeline, /function audioTimelineCanTrim\(clip\)[\s\S]*?setTimelineAudioEndSeconds/);
-  assert.match(timeline, /function audioTrimEndSeconds\(event\)[\s\S]*?audioTrimDrag\.maxEnd/);
-  assert.match(timeline, /function endAudioTrim\(event\)[\s\S]*?bridge\.setTimelineAudioEndSeconds\(trimming\.sectionId, trimming\.sceneId/);
-  assert.match(timeline, /stage-timeline-audio-trim-handle[\s\S]*?beginAudioTrim/);
-  assert.match(css, /\.stage-timeline-audio-trim-handle \{[\s\S]*?cursor: ew-resize/);
-  assert.match(sketch, /setTimelineAudioEndSeconds\(sectionId, sceneId, value, options = \{\}\)[\s\S]*?scene\.audioTimelineEndSeconds = nextSeconds/);
 });
 
 test("端末内の音源が欠落したら同じ音源枠から再接続し、タイムライン情報を作り直さない", () => {
   assert.match(sketch, /hasTimelineAudioFile\(trackId\)[\s\S]*?audioStore\.get\(normalizedTrackId\)/);
   assert.match(sketch, /openTimelineAudioRelinkPicker\(trackId\)[\s\S]*?openAudioRelinkPicker\(trackId\)/);
   assert.match(sketch, /audioStore\.put\(trackId, file\)[\s\S]*?stage-timeline-audio-change[\s\S]*?reconnected: true/);
-  assert.match(timeline, /function checkTimelineAudioAvailability\(audioBlock, trackId, title, generation\)/);
+  assert.match(timeline, /function checkTimelineAudioAvailability\(audioBlock, trackId, title\)/);
   assert.match(timeline, /showMissingAudioState\(audioBlock, title\)/);
-  assert.match(timeline, /audioBlock\.dataset\.audioMissing !== "true"[\s\S]*?bridge\.openTimelineAudioRelinkPicker\(clip\.trackId\)/);
+  assert.match(timeline, /audioBlock\.dataset\.audioMissing !== "true"[\s\S]*?bridge\.openTimelineAudioRelinkPicker\(timeline\.trackId\)/);
   assert.match(timeline, /音源が見つかりません/);
   assert.match(timeline, /読み込み直す/);
   assert.match(css, /\.stage-timeline-audio-block\.is-missing \{[\s\S]*?border-style: dashed/);
@@ -482,22 +403,6 @@ test("タイムラインは上端のドラッグとキーで高さを変え、�
   assert.match(timeline, /setPointerCapture/);
   assert.match(timeline, /event\.key === "ArrowUp" \? 24 : -24/);
   assert.match(css, /\.stage-timeline-resize[\s\S]*?cursor: row-resize/);
-});
-
-test("Eでタイムラインをしまい、上端のドラッグで開き直せる", () => {
-  assert.match(html, /id="stage-timeline-resize"[\s\S]*?aria-keyshortcuts="E"/);
-  assert.match(timeline, /ui\.collapsed = Boolean\(ui\.collapsed\)/);
-  assert.match(timeline, /function setTimelineCollapsed\(collapsed[\s\S]*?panel\.classList\.toggle\("is-collapsed", next\)[\s\S]*?element\.inert = next/);
-  assert.match(timeline, /mode !== "timeline" \|\| isTextEntry\(event\.target\)[\s\S]*?event\.code === "KeyE"[\s\S]*?setTimelineCollapsed\(!ui\.collapsed, \{ save: true \}\)/);
-  assert.match(timeline, /function continueTimelineResize\(event\)[\s\S]*?timelineResize\.collapsed[\s\S]*?startY - event\.clientY[\s\S]*?stage-timeline-reveal-height/);
-  assert.match(timeline, /applyTimelineHeight\(visibleHeight, \{ save: false \}\);/);
-  assert.match(timeline, /setTimelineCollapsed\(false, \{ save: true \}\);/);
-  assert.match(timeline, /getComputedStyle\(root\)\.getPropertyValue\("--stage-timeline-collapse-handle-height"\)/);
-  assert.match(css, /--stage-timeline-collapse-handle-width: 112px;[\s\S]*?--stage-timeline-collapse-handle-height: 44px;/);
-  assert.match(css, /\.stage-timeline-panel\.is-collapsed \{[\s\S]*?transform: translateY\(calc\(100% - var\(--stage-timeline-reveal-height\)\)\)[\s\S]*?pointer-events: none;/);
-  assert.match(css, /\.stage-timeline-panel\.is-collapsed \.stage-timeline-resize \{[\s\S]*?align-self: center;[\s\S]*?width: var\(--stage-timeline-collapse-handle-width\);[\s\S]*?height: var\(--stage-timeline-collapse-handle-height\);[\s\S]*?pointer-events: auto;/);
-  assert.match(css, /\.stage-timeline-panel\.is-collapsed \.stage-timeline-resize::before \{ inset: 0; \}/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.stage-timeline-panel \{ transition: none; \}/);
 });
 
 test("吸着単位は数値だけでなくスナップ名を付けて表示する", () => {
@@ -549,26 +454,4 @@ test("追加資源は本体・PWA・ゲスト許可で同じ版を読む", () =>
     assert.match(sw, new RegExp(`\\./${escaped}\\?v=${version}`));
   }
   assert.match(worker, /"\/stage-timeline\.js"/);
-});
-
-
-test("キュー・音源帯・シーン帯はクリックで選び、Deleteで確認してから削除する", () => {
-  for (const id of [
-    "stage-timeline-delete-backdrop", "stage-timeline-delete-modal",
-    "stage-timeline-delete-title", "stage-timeline-delete-message",
-    "stage-timeline-delete-cancel", "stage-timeline-delete-confirm",
-  ]) assert.match(html, new RegExp(`id="${id}"`));
-  assert.match(timeline, /function selectTimelineTarget\(target, focus = null\)/);
-  assert.match(timeline, /data-timeline-select-kind/);
-  assert.match(timeline, /kind: "audio", trackId: clip\.trackId, sourceSceneId: clip\.sourceSceneId/);
-  assert.match(timeline, /kind: "scene", id: segment\.sceneId, label: segment\.title/);
-  assert.match(timeline, /function openTimelineDelete\(target = selectedTimelineTarget\)/);
-  assert.match(timeline, /bridge\.openTimelineSceneDelete\(target\.id/);
-  assert.match(timeline, /bridge\.removeTimelineAudioAssignment\([\s\S]*?target\.sectionId, target\.sourceSceneId, target\.trackId/);
-  assert.match(timeline, /event\.key === "Delete" \|\| event\.key === "Backspace"[\s\S]*?openTimelineDelete\(\)/);
-  assert.match(sketch, /openTimelineSceneDelete\(sceneId, returnFocus = null\)[\s\S]*?openSceneDelete\(scene, returnFocus\)/);
-  assert.match(sketch, /removeTimelineAudioAssignment\(sectionId, sourceSceneId, trackId\)[\s\S]*?scene\.audioTrackId = null/);
-  assert.match(sketch, /audioTimelineStartSeconds = null;[\s\S]*?audioTimelineEndSeconds = null/);
-  assert.match(css, /button\.stage-timeline-audio-block\[aria-pressed="true"\],[\s\S]*?\.stage-timeline-scene\[aria-pressed="true"\]/);
-  assert.match(css, /\.stage-modal\.stage-timeline-delete-modal \{ width: min\(440px/);
 });

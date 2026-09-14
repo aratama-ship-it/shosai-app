@@ -1,0 +1,14 @@
+{
+  "product": {
+    "checked": 11,
+    "changed": []
+  },
+  "handoff": {
+    "checked": 3,
+    "changed": []
+  },
+  "root_start": {
+    "checked": 111,
+    "changed": []
+  }
+}

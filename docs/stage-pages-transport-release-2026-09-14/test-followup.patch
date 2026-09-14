@@ -1,0 +1,17 @@
+diff --git a/tests/stage-timeline-transport.browser.mjs b/tests/stage-timeline-transport.browser.mjs
+index 38fbaef..6e5e770 100644
+--- a/tests/stage-timeline-transport.browser.mjs
++++ b/tests/stage-timeline-transport.browser.mjs
+@@ -200,7 +200,11 @@ test('Music Sync audio playback and seek have a single pose writer',async t=>{
+   assert.ok(trackId);project.scenes[0].formation.audioTrackBySong['song-one']=trackId;
+   await p.evaluate(({state,project,CURRENT})=>localStorage.setItem(CURRENT,JSON.stringify({...state,project})),{state,project,CURRENT});
+   await p.reload();await p.locator('#stage-launch-backup-close').click();
+-  await p.waitForFunction(()=>SHOSAI_STAGE_SESSION_BRIDGE.getAudioPlaybackState().ready);
++  // Exercise the user action after reload; browsers may defer media preparation until play.
++  await p.locator('#stage-timeline-play').click();
++  await p.waitForFunction(()=>SHOSAI_STAGE_SESSION_BRIDGE.getAudioPlaybackState().ready
++    && !document.querySelector('#stage-music-audio').paused);
++  await p.locator('#stage-timeline-play').click();
+   await p.evaluate(()=>document.querySelector('#stage-music-audio').currentTime=1.5);
+   await p.waitForTimeout(120);let current=await pose(p);near(u(current),.5);near(current.pieces[0].animV,.3);
+   await p.locator('#stage-timeline-play').click();await p.waitForTimeout(180);

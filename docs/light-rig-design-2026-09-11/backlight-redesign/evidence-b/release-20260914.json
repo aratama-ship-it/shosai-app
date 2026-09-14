@@ -1,0 +1,194 @@
+{
+  "parent": "f8356deaa24e27676fd2a75cbaf3e7e38a36f432",
+  "commit": "5bf35eadf2a47524f6be971d91b870f8c75dee51",
+  "files": [
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/REVIEW_B.html",
+      "sha256": "5a77a98dbad432d998e688c0177467dd153552f41f84a94a242e4de20bcef39e",
+      "size": 9652,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/REVIEW_B.html",
+      "liveSha256": "5a77a98dbad432d998e688c0177467dd153552f41f84a94a242e4de20bcef39e",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/TOKENS_B.md",
+      "sha256": "5ba9e8c7fad4548c70db98eafffbc46762c156f246674fa2fbe966bc5156f384",
+      "size": 2274,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/TOKENS_B.md",
+      "liveSha256": "5ba9e8c7fad4548c70db98eafffbc46762c156f246674fa2fbe966bc5156f384",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/notes.md",
+      "sha256": "ee082bfbe83200d706ee68179462c3512f071c6c5b98bf2a0d3cbc4cbd195646",
+      "size": 29693,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/notes.md",
+      "liveSha256": "ee082bfbe83200d706ee68179462c3512f071c6c5b98bf2a0d3cbc4cbd195646",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/DECISION.html",
+      "sha256": "10620726117bdff3ff0fe1f816b2f808b82af9240b65d30deb88dd463c7d1f58",
+      "size": 60725,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/DECISION.html",
+      "liveSha256": "10620726117bdff3ff0fe1f816b2f808b82af9240b65d30deb88dd463c7d1f58",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/index.html",
+      "sha256": "69de4b22313149f9d103ddcd8711bf4fa49e2c785d373dd2d315cc05d6c958b5",
+      "size": 65584,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/index.html",
+      "liveSha256": "69de4b22313149f9d103ddcd8711bf4fa49e2c785d373dd2d315cc05d6c958b5",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/app.js",
+      "sha256": "bbebd014ac6bd601c0c0d5bd87da77f08ad7eec427934873bd309f5dac732705",
+      "size": 354583,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/app.js",
+      "liveSha256": "bbebd014ac6bd601c0c0d5bd87da77f08ad7eec427934873bd309f5dac732705",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/volume-light.js",
+      "sha256": "5b94966bdd5b39d81c4fb07ccd1d34593fea6d21d6a140dc1a91ce9c0a0fa786",
+      "size": 7048,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/volume-light.js",
+      "liveSha256": "5b94966bdd5b39d81c4fb07ccd1d34593fea6d21d6a140dc1a91ce9c0a0fa786",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/rig-engine.js",
+      "sha256": "659b97111380eff19d8b6757a31232c83666e759a860529d08f5afd161257999",
+      "size": 62287,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/rig-engine.js",
+      "liveSha256": "659b97111380eff19d8b6757a31232c83666e759a860529d08f5afd161257999",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/stage-figure.js",
+      "sha256": "2b4bcc60ae38fff8fc96cde793865adb32120d6ceba7744e2f4492fe04f54fa5",
+      "size": 64846,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/stage-figure.js",
+      "liveSha256": "2b4bcc60ae38fff8fc96cde793865adb32120d6ceba7744e2f4492fe04f54fa5",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/light-presets.js",
+      "sha256": "fb83c21851b59cbedbdc14bd1cf027c8f2486542136e447c1ea231de7e4a1551",
+      "size": 32680,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/light-presets.js",
+      "liveSha256": "fb83c21851b59cbedbdc14bd1cf027c8f2486542136e447c1ea231de7e4a1551",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/light-presets-ui.js",
+      "sha256": "3f63cc0e0e82ef92b458e34ee27ee6762927d2a245e1298b80b46af91593cbd9",
+      "size": 23571,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/prototype-b/light-presets-ui.js",
+      "liveSha256": "3f63cc0e0e82ef92b458e34ee27ee6762927d2a245e1298b80b46af91593cbd9",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/baseline-mixed35-front.png",
+      "sha256": "9c8961b53827aa03c4fe48ae19877665d45ec8b696fb4932e70b7f375dacd137",
+      "size": 653764,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/baseline-mixed35-front.png",
+      "liveSha256": "9c8961b53827aa03c4fe48ae19877665d45ec8b696fb4932e70b7f375dacd137",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/candidate-mixed0-front.png",
+      "sha256": "7e6c519a1ce1bfc0d80e568fb3cdc042649999dd3348a1b0dceed06357a3772f",
+      "size": 516309,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/candidate-mixed0-front.png",
+      "liveSha256": "7e6c519a1ce1bfc0d80e568fb3cdc042649999dd3348a1b0dceed06357a3772f",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/candidate-mixed35-front.png",
+      "sha256": "36af6e814fc69f651a032d5bbf37a086db3a6d159af2a238df485e3aa44061bb",
+      "size": 528278,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/candidate-mixed35-front.png",
+      "liveSha256": "36af6e814fc69f651a032d5bbf37a086db3a6d159af2a238df485e3aa44061bb",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/candidate-mixed70-front.png",
+      "sha256": "582c8d808f49782e1659ce430154e1451adc5fa30b1651754fe6a23b07a9e1df",
+      "size": 555839,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/candidate-mixed70-front.png",
+      "liveSha256": "582c8d808f49782e1659ce430154e1451adc5fa30b1651754fe6a23b07a9e1df",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/distance-fixed.png",
+      "sha256": "32695cbe3b16f5b3f7c4a4c5094f307c2726990c231280316f1bc11b58645188",
+      "size": 220487,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/distance-fixed.png",
+      "liveSha256": "32695cbe3b16f5b3f7c4a4c5094f307c2726990c231280316f1bc11b58645188",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/distance-metric.png",
+      "sha256": "4e8da4cb256f67274bdd6532019ce40ba7f7e8f4187ff06a312ab77defb3e956",
+      "size": 222082,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/distance-metric.png",
+      "liveSha256": "4e8da4cb256f67274bdd6532019ce40ba7f7e8f4187ff06a312ab77defb3e956",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/storage.json",
+      "sha256": "06d52b0f42fcfb71bfa9659165e78b84917cc2800523537870b75d24f285ec26",
+      "size": 672,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/storage.json",
+      "liveSha256": "06d52b0f42fcfb71bfa9659165e78b84917cc2800523537870b75d24f285ec26",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/results.json",
+      "sha256": "26fc68e63fcfa4fc49dc04b77ecceaa1c62c062a98aae6b518448515352797c2",
+      "size": 10241,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/results.json",
+      "liveSha256": "26fc68e63fcfa4fc49dc04b77ecceaa1c62c062a98aae6b518448515352797c2",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/interaction.json",
+      "sha256": "7ad0c239c2b7204fdf89cb23a5a5d9a9efd8cdb3ca4eedd9e927d3ba102ac23e",
+      "size": 584,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/interaction.json",
+      "liveSha256": "7ad0c239c2b7204fdf89cb23a5a5d9a9efd8cdb3ca4eedd9e927d3ba102ac23e",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/performance-final.json",
+      "sha256": "45e86fe705bdfbd883196a309eabd4b2c071d6f32b3d95e7b3d4af7c14bb8bbb",
+      "size": 1012,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/performance-final.json",
+      "liveSha256": "45e86fe705bdfbd883196a309eabd4b2c071d6f32b3d95e7b3d4af7c14bb8bbb",
+      "matches": true
+    },
+    {
+      "path": "docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/optimization.json",
+      "sha256": "d1cd2b877e313f757b55b02d806f26f0bb6a06c8ab96d59365447630a0be53c6",
+      "size": 331752,
+      "url": "https://aratama-ship-it.github.io/shosai-app/docs/light-rig-design-2026-09-11/backlight-redesign/evidence-b/optimization.json",
+      "liveSha256": "d1cd2b877e313f757b55b02d806f26f0bb6a06c8ab96d59365447630a0be53c6",
+      "matches": true
+    }
+  ],
+  "verifiedAt": "2026-09-14T03:38:57.257551+00:00",
+  "pagesStatus": "built",
+  "allMatch": true,
+  "browserCheck": {
+    "reportPublicStatus": true,
+    "reportHaze35to70": true,
+    "trialLoadedMixedExample": true,
+    "trialHaze35to70": true,
+    "trialFixedToMetric12m": true,
+    "frontLitPerformersVisible": true,
+    "responsiveLayoutNotAssessed": true
+  }
+}

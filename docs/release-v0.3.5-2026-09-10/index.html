@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>舞台スケッチ v0.3.5 公開記録</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page: #0d1115;
+      --panel: #151b21;
+      --panel-2: #1a222a;
+      --line: #34414c;
+      --text: #eef2f5;
+      --muted: #aab6c0;
+      --accent: #9eb9cc;
+      --good: #9bc7a7;
+      --hold: #d7bb77;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 80% 0%, #18232c 0, var(--page) 42rem);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+      line-height: 1.7;
+    }
+    main { width: min(1080px, calc(100% - 32px)); margin: 0 auto; padding: 54px 0 80px; }
+    h1 { margin: 8px 0 12px; font-size: clamp(2rem, 5vw, 4.6rem); line-height: 1.05; letter-spacing: -.04em; }
+    h2 { margin: 0 0 16px; font-size: 1.35rem; }
+    p { margin: 0 0 12px; }
+    a { color: #c3d9e8; }
+    code { color: #dbe7ee; }
+    .eyebrow { color: var(--accent); font-size: .8rem; font-weight: 750; letter-spacing: .16em; }
+    .lead { max-width: 760px; color: #d7e0e6; font-size: 1.08rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+    .actions a { padding: 10px 14px; border: 1px solid var(--line); border-radius: 9px; background: #172029; text-decoration: none; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 34px; }
+    .card { padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: rgba(21,27,33,.92); }
+    .wide { grid-column: 1 / -1; }
+    .status { display: inline-flex; align-items: center; gap: 7px; padding: 3px 9px; border-radius: 999px; font-size: .82rem; font-weight: 720; }
+    .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .live { color: var(--good); background: #16251d; }
+    .pending { color: var(--hold); background: #292217; }
+    ul { margin: 10px 0 0; padding-left: 1.2em; }
+    li + li { margin-top: 6px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 11px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: .82rem; letter-spacing: .05em; }
+    .checks { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 15px; }
+    .check { min-width: 0; padding: 14px 10px; border-radius: 10px; background: var(--panel-2); text-align: center; }
+    .check strong { display: block; color: var(--good); font-size: 1.55rem; line-height: 1.2; }
+    .check span { color: var(--muted); font-size: .74rem; }
+    pre { margin: 14px 0 0; padding: 18px; overflow: auto; white-space: pre-wrap; border: 1px solid var(--line); border-radius: 10px; background: #0b0f13; color: #edf3f7; font: inherit; line-height: 1.75; }
+    .note { color: var(--muted); font-size: .9rem; }
+    .decision { border-color: #6b5934; }
+    @media (max-width: 760px) {
+      main { width: min(100% - 22px, 1080px); padding-top: 32px; }
+      .grid { grid-template-columns: 1fr; }
+      .wide { grid-column: auto; }
+      .checks { grid-template-columns: repeat(2, 1fr); }
+      table, tbody, tr, th, td { display: block; }
+      thead { display: none; }
+      td { padding-left: 0; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">STAGE SKETCH / RELEASE RECORD / 2026-09-10</p>
+    <h1>v0.3.5</h1>
+    <p class="lead">今回のUIと小道具の更新は、公開中のベータ版と登録不要の体験版へ反映済みです。将来の製品版が使う共通アプリ本体にも入っています。</p>
+    <nav class="actions" aria-label="公開ページ">
+      <a href="https://stagesketch.pygmix.com/stage?lang=ja">ベータ版を開く</a>
+      <a href="https://stagesketch-try.juggler-arata.workers.dev/try?lang=ja">体験版を開く</a>
+      <a href="twitter-draft.md">Twitter文案</a>
+    </nav>
+  </header>
+
+  <div class="grid">
+    <section class="card wide">
+      <h2>版ごとの反映状況</h2>
+      <table>
+        <thead><tr><th>版</th><th>状態</th><th>今回の反映</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>公開ベータ版</strong></td>
+            <td><span class="status live">公開済み</span></td>
+            <td>v0.3.5のフル機能。既存の認証、保存、共有セッションを維持したまま更新。</td>
+          </tr>
+          <tr>
+            <td><strong>公開体験版</strong></td>
+            <td><span class="status live">公開済み</span></td>
+            <td>新小道具、仮面の装着、2色のスキン、全画面、画像・印刷、7種類の整列を試せる。3場面、未保存、共有なしの境界は継続。</td>
+          </tr>
+          <tr>
+            <td><strong>将来の製品版</strong></td>
+            <td><span class="status pending">共通本体へ反映済み・サービス公開待ち</span></td>
+            <td>今回の描画とUIは共通ソースへ収録済み。正式サービスに必要な認証・7日試用・契約・団体権限・製品URLが未確定または未実装のため、製品版としての公開先はまだない。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>小道具と表示</h2>
+      <ul>
+        <li>ドラムセットと大太鼓を追加し、輪郭と立体感を滑らかに調整。</li>
+        <li>マスク（仮面）を追加。左右の手に持たせるほか、演者の顔へ装着できる。</li>
+        <li>小道具の既存の色入力から、各小道具の色を変更できる。</li>
+        <li>赤みの黒と、暗く淡い青みの黒を設定から切替。青みの黒では正面図・平面図の舞台面も連動。</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>操作まわり</h2>
+      <ul>
+        <li>全画面表示、正面図・平面図の入替と補助表示。</li>
+        <li>左右パネル幅の調整、シーン説明、シーン操作の整理。</li>
+        <li>画像書き出しと印刷・PDFの選択画面を整理。</li>
+        <li>横・縦・斜め2種・円・V字・逆V字の7種類で演者を整列。</li>
+      </ul>
+    </section>
+
+    <section class="card wide">
+      <h2>検証結果</h2>
+      <div class="checks">
+        <div class="check"><strong>895</strong><span>本体テスト成功</span></div>
+        <div class="check"><strong>42</strong><span>MCPテスト成功</span></div>
+        <div class="check"><strong>82</strong><span>配信境界チェック</span></div>
+        <div class="check"><strong>70/70</strong><span>公開データ一致</span></div>
+        <div class="check"><strong>4/4</strong><span>認証境界チェック</span></div>
+      </div>
+      <p style="margin-top:16px">公開画面では、v0.3.5表記、青みの黒、新3小道具の追加、仮面の顔装着、7種類の整列、全画面、画像・印刷の表示を実操作で確認しました。</p>
+      <p class="note">公開データ一致は、ベータ版と体験版から取得した70応答をSHA-256で確定ビルドと照合した結果です。詳細: <a href="live-check.json">live-check.json</a> / <a href="release-checks.json">release-checks.json</a> / <a href="cookie-check.json">cookie-check.json</a> / <a href="manifest.json">manifest.json</a></p>
+    </section>
+
+    <section class="card wide">
+      <h2>PWA更新処理の位置づけ</h2>
+      <p>この修正は、ベータ版や将来のWeb製品版をインストールして使う端末で、新しいファイルへ確実に切り替えるための処理です。共有セッションを演者へ送る機能とは別です。登録不要の体験版はPWAを配信していないため、この更新処理の直接の対象ではありません。</p>
+    </section>
+
+    <section class="card wide decision">
+      <h2>製品版を公開する前に決める一点</h2>
+      <p>現在の正式提供仕様は、Googleまたはメール認証、7日試用、Normal・Company Pass・Enterpriseの契約、作品数・編集席の上限、団体と作品オーナーの権限を含みます。これらを実装して専用URLで出す案と、現在の認証付きフル版を無料の正式版として先に出す案は、公開物の意味が異なります。</p>
+      <p><strong>推奨:</strong> v0.3.5のベータ版と体験版を今回の公開版とし、製品版は既存仕様どおりに認証・契約・製品URLを決めてから別環境へ公開します。</p>
+    </section>
+
+    <section class="card wide">
+      <h2>Twitter / X 文案</h2>
+      <pre>舞台スケッチを v0.3.5 に更新しました。
+
+・ドラムセット／大太鼓／マスク（仮面）を追加
+・仮面は手に持つほか、演者の顔にも装着可能
+・新しい「青みの黒」スキンを追加。正面図・平面図の舞台色も連動
+・全画面表示、パネル幅、シーン操作、画像・印刷まわりを改善
+
+登録不要の体験版：
+https://stagesketch-try.juggler-arata.workers.dev/try?lang=ja
+
+#舞台スケッチ #StageSketch</pre>
+      <p class="note">本文226文字。投稿操作は行っていません。</p>
+    </section>
+  </div>
+</main>
+</body>
+</html>

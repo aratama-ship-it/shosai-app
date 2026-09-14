@@ -1,0 +1,22 @@
+{
+  "baseline": "people-trial-start-hashes-2026-09-09.json",
+  "checked": 193,
+  "changesDetectedBeforeReviewIntegration": [
+    "stage-sw.js",
+    "stage.html",
+    "stage-sketch.js",
+    "stage-i18n.js",
+    "index.html",
+    "style.css"
+  ],
+  "changesNow": [
+    "stage-sw.js",
+    "stage.html",
+    "stage-sketch.js",
+    "stage-i18n.js",
+    "index.html",
+    "style.css"
+  ],
+  "handling": "Product-side concurrent changes retained; this turn wrote only inside docs/set-transitions-2026-09-08.",
+  "priorDesignFilesChanged": []
+}

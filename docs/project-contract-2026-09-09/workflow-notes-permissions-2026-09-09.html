@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>舞台スケッチ｜メモと舞台書き込みの保存範囲</title>
+<style>
+:root{--desk:#201b16;--paper:#efe7d6;--page:#fffaf0;--ink:#2b2620;--muted:#6a604e;--line:#c7b99f;--accent:#8f3e1e;--touch:44px}*{box-sizing:border-box}body{margin:0;background:var(--desk);color:var(--ink);font:15px/1.65 "Hiragino Sans","Yu Gothic",system-ui,sans-serif}a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}.page{width:min(980px,calc(100% - 32px));margin:24px auto 48px;background:var(--page);border-top:3px solid var(--accent);box-shadow:0 14px 40px #0008}.head{padding:26px 28px 20px;border-bottom:1px solid var(--line)}.eyebrow{margin:0;color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.06em}.head h1{margin:4px 0 0;font-size:28px;line-height:1.35}.head p:last-child{max-width:720px;margin:10px 0 0;color:var(--muted)}.body{padding:22px 28px 30px}.state{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}.state strong{color:var(--accent)}.state p{margin:0}.state p+ p{margin-top:4px;color:var(--muted);font-size:13px}h2{margin:28px 0 10px;font-size:20px;border-top:2px solid var(--ink);padding-top:10px}table{width:100%;border-collapse:collapse}th,td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}th{color:var(--muted);font-size:12px}code{font:12px/1.4 ui-monospace,SFMono-Regular,monospace}pre{overflow:auto;margin:10px 0;padding:12px;background:var(--paper);font-size:12px;line-height:1.5}.next{margin-top:22px;padding:14px;border-left:3px solid var(--accent);background:var(--paper)}.next p{margin:0}.links{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:20px}.links a{display:inline-flex;align-items:center;min-height:var(--touch);color:var(--accent);text-underline-offset:3px}@media(max-width:640px){.page{width:100%;margin:0;min-height:100dvh}.head,.body{padding-left:16px;padding-right:16px}.head h1{font-size:24px}.state{grid-template-columns:1fr;gap:3px}table{font-size:13px}th,td{min-width:110px}}
+</style>
+</head>
+<body>
+<main class="page">
+<header class="head"><p class="eyebrow">WORKFLOW / 保存と公開範囲</p><h1>メモは「誰の、どの場所か」を残す</h1><p>現場ビューで使えるメモと舞台書き込みの保存範囲です。現在のHTMLで動く範囲と、製品へ接続するときの設計を分けています。</p></header>
+<div class="body">
+<section aria-labelledby="now"><h2 id="now">現在動く範囲</h2><div class="state"><strong>シーンメモ</strong><div><p>見る人 × シーン</p><p>同じシーン内のQを移動しても残るブラウザ内メモ。</p></div></div><div class="state"><strong>Qメモ</strong><div><p>見る人 × Q</p><p>Qごとに分かれるブラウザ内メモ。</p></div></div><div class="state"><strong>矢印・付箋</strong><div><p>見る人 × シーンの配置レイヤー</p><p>人物・大道具の正本配置の上に重ねる。共有やGOにはならない。</p></div></div></section>
+<section aria-labelledby="future"><h2 id="future">製品へ接続する保存形式</h2><p>配置書き込みは、正本の舞台配置とは別レコードにします。</p><pre>{
+  "projectId": "…", "sceneId": "…", "authorParticipantId": "…",
+  "visibility": "private", "kind": "arrow | note",
+  "geometry": {"from": [x,y], "to": [x,y]}, "text": "…", "revision": 1
+}</pre></section>
+<section aria-labelledby="permissions"><h2 id="permissions">公開範囲の既定</h2><table><thead><tr><th>範囲</th><th>閲覧</th><th>編集</th><th>実装状態</th></tr></thead><tbody><tr><td><code>private</code></td><td>自分</td><td>自分</td><td>現在のHTMLはここだけ</td></tr><tr><td><code>department</code></td><td>指定部門</td><td>作成者・明示的な共同編集者</td><td>将来の共有候補</td></tr><tr><td><code>team</code></td><td>参加者全体</td><td>作成者・明示的な共同編集者</td><td>将来の共有候補</td></tr></tbody></table><div class="next"><p><strong>接続前の境界:</strong> privateのメモはCSV・印刷・全体Qシートへ混ぜない。公開範囲を変えるときは、見える相手を明示してから確定する。</p></div></section>
+<nav class="links" aria-label="関連資料"><a href="workflow-receiver-view-2026-09-09.html?v=5">現場Qビュー</a><a href="workflow-annotation-collaboration-2026-09-09.html">共有範囲を試す</a><a href="WORKFLOW_ANNOTATION_CONTRACT_2026-09-09.md">詳細契約</a><a href="workflow-delivery-hub-2026-09-09.html">配布ハブ</a></nav>
+</div>
+</main>
+</body>
+</html>

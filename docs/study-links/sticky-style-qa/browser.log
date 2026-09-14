@@ -1,0 +1,4 @@
+PASS 18 shape/color combinations, numeric size, corner drag, reload and auto height preserve text and appearance
+PASS Explicit owner sharing includes the styled note in the image; source show remains unchanged
+PASS Japanese/English controls at four widths retain 44px targets, labels, text sizes and saved notes
+PASS Touch shape/color selection and corner resize work in mobile simulation

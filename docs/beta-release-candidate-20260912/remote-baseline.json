@@ -1,0 +1,60 @@
+{
+  "scriptName": "shosai-app",
+  "activeVersion": "cc2c485a-b83f-47b4-ac6d-453ba20f18bb",
+  "activeDeploymentId": "726ae91c-5c4c-4a58-8db4-58d0b1dfea90",
+  "recordedAt": "2026-09-12T11:38:53.782Z",
+  "uploadBytes": 5409618,
+  "uploadSha256": "f35972256aabe87e3b77f4d5221245cb380d12c5ea24b886fd66ba0e478af252",
+  "retainedBindings": [
+    {
+      "name": "ASSETS",
+      "type": "assets",
+      "class_name": null
+    },
+    {
+      "name": "GUEST_ACCOUNTS",
+      "type": "secret_text",
+      "class_name": null
+    },
+    {
+      "name": "SESSION_ROOM",
+      "type": "durable_object_namespace",
+      "class_name": "SessionRoom"
+    },
+    {
+      "name": "SITE_PASS",
+      "type": "secret_text",
+      "class_name": null
+    },
+    {
+      "name": "SITE_USER",
+      "type": "secret_text",
+      "class_name": null
+    },
+    {
+      "name": "STAGE_BETA_ACTIVE",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STAGE_RELEASE_SCOPE",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STAGE_USAGE_ENABLED",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STUDY_ALLOW_ANONYMOUS",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STUDY_LINKS",
+      "type": "durable_object_namespace",
+      "class_name": "StudyLinks"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "date": "2026-09-09",
+  "sourceFiles": 2,
+  "scenes": 3,
+  "cues": 8,
+  "nonGoAnnotations": 2,
+  "pdfs": [
+    {
+      "path": "output/pdf/romeo-juliet-excerpts-ja-v1.pdf",
+      "pages": 3,
+      "sha256": "0726a4701e40312d7add18cbd13712b85df9cc9e11534f425168c73bb593ce46",
+      "textExtractionMatchesEveryBlock": true,
+      "fontGlyphCoverage": true,
+      "layout": [
+        {
+          "page": 1,
+          "lowestBodyBaseline": 265,
+          "bodyCharacters": 539
+        },
+        {
+          "page": 2,
+          "lowestBodyBaseline": 326,
+          "bodyCharacters": 660
+        },
+        {
+          "page": 3,
+          "lowestBodyBaseline": 184,
+          "bodyCharacters": 692
+        }
+      ]
+    },
+    {
+      "path": "output/pdf/romeo-juliet-excerpts-en-v1.pdf",
+      "pages": 3,
+      "sha256": "4bb8a8c07c8131462725be6bdbbf7f86caab37942630f5d72566928bd465a43c",
+      "textExtractionMatchesEveryBlock": true,
+      "fontGlyphCoverage": true,
+      "layout": [
+        {
+          "page": 1,
+          "lowestBodyBaseline": 275,
+          "bodyCharacters": 942
+        },
+        {
+          "page": 2,
+          "lowestBodyBaseline": 208,
+          "bodyCharacters": 1390
+        },
+        {
+          "page": 3,
+          "lowestBodyBaseline": 145,
+          "bodyCharacters": 1277
+        }
+      ]
+    }
+  ],
+  "uniqueCueIds": true,
+  "everyAnchorResolved": true,
+  "repeatedPhraseAnchorsSeparated": true,
+  "browserImportTest": "not_performed",
+  "pdfVisualCheck": "see QA.md"
+}

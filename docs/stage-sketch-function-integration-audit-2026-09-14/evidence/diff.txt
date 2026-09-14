@@ -1,0 +1,10 @@
+D	PUBLISH_RULES.md
+D	docs/light-rig-design-2026-09-11/HANDOFF.md
+D	docs/light-rig-design-2026-09-11/evidence/barn-shutter-2026-09-14-d-after-review.png
+D	docs/light-rig-design-2026-09-11/evidence/barn-shutter-2026-09-14-e-after-review.png
+D	docs/light-rig-design-2026-09-11/evidence/barn-shutter-2026-09-14-f-rotation.png
+D	docs/light-rig-design-2026-09-11/evidence/barn-shutter-2026-09-14-g-panel-2x2.png
+D	docs/light-rig-design-2026-09-11/patches/2026-09-14-barn-shutter-apply.py
+D	docs/light-rig-design-2026-09-11/prototype/light-presets-ui.js
+D	docs/light-rig-design-2026-09-11/prototype/light-presets.js
+D	tests/light-presets.test.mjs

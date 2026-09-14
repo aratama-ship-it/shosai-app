@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>フィードバック管理とメモの引き継ぎ — Stage Sketch 設計案</title>
+<link rel="stylesheet" href="../../style.css">
+<style>
+:root { --review-width: 920px; --review-space: 24px; --review-small: 14px; --review-body: 15px; --review-heading: 18px; --review-title: 24px; }
+body { font: var(--review-body)/1.75 var(--sans); }
+body::before { display:none; }
+main { position:relative; max-width:var(--review-width); padding:32px var(--review-space) 64px; margin:auto; }
+header, section { padding-block:var(--review-space); border-bottom:1px solid var(--line-dark); }
+h1 { font:600 var(--review-title)/1.5 var(--sans); margin:8px 0 16px; }
+h2 { font:600 var(--review-heading)/1.6 var(--sans); margin-bottom:12px; }
+p { max-width:48em; margin:0 0 12px; }
+ul, ol { padding-left:24px; } li { margin-bottom:8px; }
+.meta { color:var(--ink-soft-sm); font-size:var(--review-small); }
+.lead { color:var(--paper); }
+.table-wrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; font-size:var(--review-small); }
+th, td { border-bottom:1px solid var(--line-dark); padding:12px 8px; text-align:left; vertical-align:top; }
+th { color:var(--paper); font-weight:600; }
+th:first-child { width:25%; }
+a { color:var(--paper); text-decoration:underline; text-underline-offset:3px; }
+a, summary { min-height:44px; display:inline-flex; align-items:center; padding-block:8px; }
+summary { cursor:pointer; color:var(--paper); }
+:focus-visible { outline:2px solid var(--brass); outline-offset:3px; }
+details p { margin-top:12px; }
+@media(max-width:600px) { main { padding-inline:16px; } th:first-child { width:30%; } }
+@media(prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+</style>
+</head>
+<body><main>
+<header>
+<p class="meta">Stage Sketch · システム設計案 · 2026年9月10日 · 機能は未実装</p>
+<h1>公開内容を更新しても、演者のメモを残す</h1>
+<p class="lead">提案する方針：公開ショー・自分用メモ・オーナーに送ったフィードバックを別々に保存し、過去のメモから必要なものだけ新しい場面へコピーする。</p>
+<p>確認したい判断は、共有モーダルから開く受信一覧と、更新時の「そのまま継続／選んで引き継ぐ／過去として残す」という扱いです。このページは設計資料であり、製品画面のモックではありません。</p>
+</header>
+<section>
+<h2>1. 現在できること・不足していること</h2>
+<ul>
+<li><strong>実装済み：</strong>現在のショーへの受信メモ一覧。表示名・対象場面・日時・公開版・本文・共有画像をオーナーだけが確認できます。</li>
+<li><strong>実装済み：</strong>同じリンクを「公開内容を更新」しても受信メモは残ります。演者の端末メモも、同じリンク・同じ場面IDなら再表示されます。</li>
+<li><strong>未実装：</strong>全ショーを横断する受信管理、削除された場面のメモ一覧、任意のメモ・線の別場面への引き継ぎ、注釈時の舞台図との比較。</li>
+<li><strong>注意：</strong>ベータの匿名メモはブラウザ内保存。別端末や新しいトークンには自動で引き継がれません。アカウント方式は同じ所有者・ショーへの接続を保つ実装がありますが、削除場面の救済UIはありません。</li>
+</ul>
+</section>
+<section>
+<h2>2. オーナーの「演者からのフィードバック」</h2>
+<p>入口は既存の<strong>共有 → 演者事前学習リンク → フィードバックを見る</strong>。読むときは十分な幅を持つ専用の一覧へ進み、現在のショーを初期表示にします。</p>
+<p>ショー・場面・投稿者で絞り込み、表示名、送信日時、送信時の公開版、文章、正面図・平面図を確認します。全ショーへの切り替えも用意します。必要なら「未確認／確認済み」はオーナーの整理用として追加できます。</p>
+<p>受け取った画像や文章は送信時の記録として保持します。演者が個人メモを後で直しても過去の送信内容は書き換えません。自分用の未共有メモはオーナーの一覧へ出しません。</p>
+</section>
+<section>
+<h2>3. 場面の変化に合わせた引き継ぎ</h2>
+<p>通常の更新は<strong>同じURL</strong>を使います。場面は名前や並び順ではなく、維持される固有IDで対応付けます。名前が同じ別場面への自動移動はしません。</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">公開内容の変更</th><th scope="col">推奨する扱い（追加実装）</th></tr></thead>
+<tbody>
+<tr><th scope="row">場面名・順番だけ変更</th><td>同じ場面のメモとして継続。場面名・番号が変わっても失いません。</td></tr>
+<tr><th scope="row">場面を追加</th><td>追加場面は空のノート。既存場面のノートは維持します。</td></tr>
+<tr><th scope="row">配置・舞台寸法を変更</th><td>以前のメモとして保持。線の指す位置が変わりうるため、旧図と新図を確認して選んだ線だけ引き継ぎます。</td></tr>
+<tr><th scope="row">場面を削除</th><td>「以前の場面のメモ」に残す。現在の場面を選び、文章や線をコピーできます。</td></tr>
+<tr><th scope="row">場面を分割・統合</th><td>複数の移行先から本人が選択。原本を残し、同じメモを複数の場面へコピーできます。</td></tr>
+<tr><th scope="row">別ショー・新規リンク</th><td>自動では混ぜません。同じショーの新しい招待なら、権限確認後に以前のメモを引き継ぐ入口を用意します。</td></tr>
+</tbody></table></div>
+<p class="meta">「引き継ぐ」は過去の原本を消す移動ではなくコピー。選ばなかったものも過去のメモとして残します。</p>
+</section>
+<section>
+<h2>4. 演者が更新を受け取る流れ</h2>
+<ol>
+<li>同じリンクを開くと「公開版が更新されました」と、変更・追加・削除された場面を表示。</li>
+<li>「以前のメモを確認」から対象場面と旧メモを開く。</li>
+<li>文章、線全体、または個々の線を選び、移行先の場面で位置をプレビューする。文章の一部分も編集してコピー可能にする。</li>
+<li>「選んだ内容を引き継ぐ」で個人ノートへ保存。選択や引き継ぎだけでオーナーには送らない。</li>
+<li>必要なときだけ「この画面をオーナーへ共有」で、新しいフィードバックを送る。</li>
+</ol>
+</section>
+<section>
+<h2>5. 保存設計の変更点</h2>
+<p>公開ショーのID、公開版、場面ID、メモID、線IDを分け、メモには作成時の場面・公開版と引き継ぎ元を記録します。現在は場面ごとに本文と線の配列を保存する方式なので、個別選択と履歴のためにこの識別情報が必要です。</p>
+<p>以前の線を正しく確認するため、注釈対象になった場面の旧図または描画データを、保存上限・保持期間を決めて残す案を推奨します。現在の公開スナップショットは最新のみのため、今まで保存されなかった旧図を後から復元できるとは約束しません。</p>
+<p>同じショーであることはサーバーが確認します。別オーナーのメモ・履歴は混ぜず、無効化されたリンクから過去の舞台図を取得できる抜け道も作りません。公開の更新・無効化と、保存データの完全削除は別の操作です。</p>
+<p>ベータの同一ブラウザ内の引き継ぎはログインなしでも実装可能です。PCとスマホの同期は、本人を識別できる無料演者アカウントの運用開始と分けて扱います。</p>
+</section>
+<section>
+<h2>6. 本家の見た目を基準にする</h2>
+<p>現在の演者画面には独自の <code>system-ui</code> 指定があり、本家の書体指定と一致していません。色だけを似せるのではなく、本文・見出し・ボタン・入力欄で本家の共通トークンと部品を利用する方針に修正します。</p>
+<p>共有する最小限の書体・配色CSSを作れば、編集画面全体を匿名公開せずに見た目を統一できます。PCの正面図と平面図の全幅・縦並び、スマホの44px操作域は継承します。</p>
+<details><summary>参照した数値と確認範囲</summary>
+<p>本家 <code>style.css</code> の <code>--sans</code> は Hiragino Kaku Gothic ProN → Hiragino Sans → Yu Gothic → Noto Sans JP → sans-serif。この資料も同じCSSを読み、書体を継承します。</p>
+<p>資料用トークン：本文15px／補助14px／小見出し18px／タイトル24px、行送り1.75／見出し1.5–1.6、外枠920px、余白16・24・32px、罫線1px、フォーカス2px＋3px、リンク操作域44px、アニメーションなし。製品の文字サイズを一律に変える指定ではありません。</p>
+<p>本家の背景 #191512、本文の合成色 約#d0c8b9（10.93:1）、補助 #93856c（5.02:1）、リンク #efe7d6（14.75:1）、フォーカス #9c823f（4.91:1）。design-web の contrast.mjs で実測。</p>
+<p>検討基準：演者の稽古前確認とオーナーの受信整理／過去の書き込みを失わない安心／場面に結び付く文章・図／本家の部品を継承し専用の装飾を増やさない／日英・スマホ・権限分離を維持。共有モーダル内に全履歴を詰める案より、入口だけモーダルに置く案を推奨します。</p>
+</details>
+</section>
+<footer>
+<p class="meta">今回：実装を読んで設計上の不足を確認。個人メモ・演者アカウントの既存テスト17件は成功。製品コード、保存データ、公開環境の変更は行っていません。新しい引き継ぎ機能・実機操作は未検証です。</p>
+<p>次の実装単位：①共通書体と受信一覧　②更新差分・削除場面の保持と選択引き継ぎ。無料アカウントによる端末間同期の運用は別途進めます。</p>
+</footer>
+</main></body></html>

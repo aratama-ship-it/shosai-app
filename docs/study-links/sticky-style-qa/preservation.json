@@ -1,0 +1,32 @@
+{
+  "changedExistingFiles": [
+    "build_study.py",
+    "design/TOKEN_SHEET_fullscreen_2026-09-10.md",
+    "design/TOKEN_SHEET_study-links_2026-09-09.md",
+    "stage-i18n.zh-Hans.js",
+    "stage-i18n.zh-Hant.js",
+    "stage-study-private.js",
+    "stage-study-sticky.js",
+    "stage-study-viewer.js",
+    "stage-study.css",
+    "study-frame.html",
+    "study-reader-account.js",
+    "study.html",
+    "tests/study-sticky.test.mjs",
+    "tools/study-reader-runtime-check.mjs",
+    "index.html",
+    "stage-first-person.js",
+    "stage-i18n.js",
+    "stage-sketch.js",
+    "stage-sw.js",
+    "stage.html",
+    "style.css",
+    "tests/stage-i18n.test.mjs",
+    "tests/stage-manual-help.test.mjs",
+    "tests/stage-prop-shapes.test.mjs",
+    "tests/stage-scene-desc-stash.test.mjs",
+    "tests/stage-session-shelve.test.mjs"
+  ],
+  "missing": [],
+  "note": "Other writers are changing main editor, translations and generated files. This task edited only the study files listed in the linked report."
+}

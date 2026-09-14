@@ -1,0 +1,126 @@
+{
+  "scope": "Standalone fictional handoff trial only",
+  "checks": [
+    {
+      "check": "版を照合して操作を有効化",
+      "passed": true
+    },
+    {
+      "check": "未割当の人を作業終了と表示しない",
+      "passed": true
+    },
+    {
+      "check": "3秒では担当を外さず机を置いている",
+      "passed": true
+    },
+    {
+      "check": "準備前の合図は進めなかった履歴を残す",
+      "passed": true
+    },
+    {
+      "check": "5秒でAは残りBだけ別作業へ",
+      "passed": true
+    },
+    {
+      "check": "10秒で準備完了しても早い合図では再開しない",
+      "passed": true
+    },
+    {
+      "check": "全体停止は時計と合図と人別表示を止める",
+      "passed": true
+    },
+    {
+      "check": "再開時に終点へ飛ばない",
+      "passed": true
+    },
+    {
+      "check": "通常例は15秒で全作業が終了",
+      "passed": true
+    },
+    {
+      "check": "リセットで通過履歴を消す",
+      "passed": true
+    },
+    {
+      "check": "Cが遅れてもBは別作業を終える",
+      "passed": true
+    },
+    {
+      "check": "二重割当は両対象を表示し自動で順序付けしない",
+      "passed": true
+    },
+    {
+      "check": "循環を示しつつ机を置くところまでは進める",
+      "passed": true
+    },
+    {
+      "check": "未定担当を消さず不成立として表示",
+      "passed": true
+    },
+    {
+      "check": "候補は自動配員せず区間表にも未確定を残す",
+      "passed": true
+    },
+    {
+      "check": "印刷に候補と表示範囲と他作業条件を残す",
+      "passed": true
+    },
+    {
+      "check": "印刷後に区間表の開閉状態を戻す",
+      "passed": true
+    },
+    {
+      "check": "Bが別作業から戻る例が動く",
+      "passed": true
+    },
+    {
+      "check": "全員交代でA/Bがともに離れる",
+      "passed": true
+    },
+    {
+      "check": "手渡し中はA/B/Cが同時に関わる",
+      "passed": true
+    },
+    {
+      "check": "受渡し終了後にBが離れる",
+      "passed": true
+    },
+    {
+      "check": "区間担当の編集で設定と試しを同期する",
+      "passed": true
+    },
+    {
+      "check": "設定の取消しで前案へ戻せる",
+      "passed": true
+    },
+    {
+      "check": "空欄を0秒とせず工程を止める",
+      "passed": true
+    },
+    {
+      "check": "所要範囲外は入力エラーで進行操作を止める",
+      "passed": true
+    },
+    {
+      "check": "担当別で表示を絞り、元の工程条件を残す",
+      "passed": true
+    },
+    {
+      "check": "携帯幅で本文の横はみ出しなし",
+      "passed": true
+    },
+    {
+      "check": "再読込みは初期例と0秒に戻す",
+      "passed": true
+    },
+    {
+      "check": "ブラウザ実行エラーなし",
+      "passed": true
+    },
+    {
+      "check": "古い外部JSが混ざると操作を有効にしない",
+      "passed": true
+    }
+  ],
+  "page_errors": []
+}

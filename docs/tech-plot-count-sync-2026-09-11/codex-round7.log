@@ -1,0 +1,319 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+model: gpt-5.6-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a08c2c-fa64-7922-b9bf-88eb558afda7
+--------
+user
+第7ラウンド。フォーメーション記録アプリ（試作は完成に近い）の、記録フォーマットの設計相談です。
+
+これまでの経緯:
+- 時間の扱いは完成。`track = { name, countBpm, firstCountSec, firstSet, anchors:[{count,sec,locked}], meters:[{fromCount,beatsPerBar,beatUnit}] }`。
+  anchors は「合わせ直しの点」で、点の間を線形按分して カウント⇄秒 を決める（曲はぴったり一定テンポではないため）。拍子は4/4のみ記録。
+- 配置は `frames: [{ id, count, poses:{dancerId:{u,v}}, note, travel }]`。count=カウント（1始まり・0.25刻み可）、
+  poses=正規化座標、travel=「何カウント前から動き始めるか」（それまで前の位置で待つ）。
+- 舞台スケッチ（導入先）の場面は `scene = { id, title, pieces:[駒], cueSeconds(転換の長さ), note, 機構, 照明, audioTrackId, ... }`
+  で、第3ラウンドでは「場面内キーフレーム `scene.motion.keyframes=[{count,poses}]`」を推奨とした（1曲＝1場面の前提）。
+
+**本人の新しい指摘（これが今回の主題）**:
+「フォーメーションごとに、状況によっては舞台スケッチのシーンがそれぞれに当てはまる可能性があるので、その可能性を考慮した上でのフォーマットにしたい」
+＝ 1曲の中の各フォーメーションが、舞台スケッチの「場面」に1対1で対応することもあれば、1場面の中のキーフレームに過ぎないこともある。両方を1つの形式で扱いたい。
+
+依頼（2,000字以内・見出し付き）:
+1. フォーマット案。frames に何を足せば両方を表現できるか（例: asScene フラグ／sceneRef／グループ化）。
+   「どのフォーメーションを場面にするか」を後から変えられること、変えても記録が壊れないことを重視。案を2つ比較して推奨を。
+2. 場面の切れ目と時間の関係。舞台スケッチの `cueSeconds`（場面の転換の長さ）と、こちらの `travel`（何カウント前から動き始めるか）をどう対応させるか。
+   場面をまたぐ移動と、場面内の移動で扱いが変わるか。
+3. 場面にしたときに要る付随情報（タイトル、メモ、照明や機構の有無）。フォーメーション側で持つべきか、取り込み時に舞台スケッチ側で足すべきか。
+4. 書き出し（JSON）の形。舞台スケッチへ渡すときの構造と、再取込（同じ曲を作り直したとき）に既存の場面と対応づける鍵。
+5. この設計で見落としやすい落とし穴を3つ。
+6. 本人へ聞くべき質問を最大2つ（答えで設計が変わるものだけ）。
+warning: This session was recorded with model `gpt-5.6-luna` but is resuming with `gpt-5.6-sol`. Consider switching back to `gpt-5.6-luna` as it may affect Codex performance.
+codex
+今回は、配置データと「舞台スケッチ上の場面への切り方」を別レイヤーにする案を軸に詰めます。再取込で照明・機構を壊さない所有境界まで含むため、Sol向きの設計判断です。ファイル変更やGit操作は行いません。
+exec
+/bin/zsh -lc "rg -n 'Stage Sketch set-transition|sceneAnimMs|cueSeconds|project.cues|canonical stage layout|正本|再取込' /Users/arata/.codex/memories/MEMORY.md" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+ succeeded in 0ms:
+122:# Task Group: Stage Sketch set-transition design and field-rule discovery
+135:- Stage Sketch, set transition, sceneAnimMs, cueSeconds, rehearsal.transitionToNextSeconds, route, twinOf, beginSceneAnim, Claude Code Fable, field-case-2026-09-09.html
+145:- script-cues-2026-09-09, project.cues, TextQuoteSelector, TextPositionSelector, stage-workflow-store.js, stage-workflow-panel.js, openScene, SHOSAI_STAGE_SESSION_BRIDGE, stage-sketch-pwa-v199, 57 pass
+153:- Keep the canonical stage layout separate from local workflow notes/arrows; do not imply sharing, GO, or execution history where it does not exist. [Task 2]
+157:- `sceneAnimMs` is display playback speed, not rehearsal duration. Keep arrival-scene `cueSeconds` distinct from departure-scene `rehearsal.transitionToNextSeconds`. `route` describes movement geometry, not responsibility, cue, order, parallelism, waiting, or handoff. [Task 1]
+160:- Use `project.cues[]` as the shared cue source: the script owns position, transitions own work/waiting/geometry/assignee, and reverse lists are derived. Anchor script text by ID + character range + context; do not make page, line, or displayed Q number canonical. A lost anchor becomes 「位置を選び直す」/「要確認」, never a cue deletion. [Task 2]
+3339:- Stage Sketch version 3 is the production source of truth; Vision Pro reads a derived `StageDocument schemaVersion 2` JSON through iCloud Drive/file selection. Never directly co-edit the web and Swift representations. Convert coordinates as `x=(0.5-u)*widthMeters`, `z=(0.5-v)*depthMeters`, `y=0`, `yawDegrees=facing`; lock four corner/direction tests. `sceneAnimMs` is UI speed, not rehearsal timing. [Task 2]
+
+exec
+/bin/zsh -lc "sed -n '122,160p' /Users/arata/.codex/memories/MEMORY.md" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+ succeeded in 0ms:
+# Task Group: Stage Sketch set-transition design and field-rule discovery
+
+scope: Define set-transition data/rules before product UI by covering both spatial transition playback and who/when/what operating procedures.
+applies_to: cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app; reuse_rule=reuse for Stage Sketch transition design after rechecking current data contracts and active worktree ownership; do not promote provisional field data into product rules.
+
+## Task 1: セット転換の要件・検証準備
+
+### rollout_summary_files
+
+- rollout_summaries/2026-09-08T14-34-27-Pbg8-stage_sketch_set_transition_design_discovery.md (cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app, rollout_path=/Users/arata/.codex/archived_sessions/rollout-2026-09-08T23-34-27-01a08171-17c8-7f53-b301-4199a9d42c7c.jsonl, updated_at=2026-09-09T04:46:47+00:00, thread_id=01a08171-17c8-7f53-b301-4199a9d42c7c, partial: design/field sheet only; no product implementation)
+
+### keywords
+
+- Stage Sketch, set transition, sceneAnimMs, cueSeconds, rehearsal.transitionToNextSeconds, route, twinOf, beginSceneAnim, Claude Code Fable, field-case-2026-09-09.html
+
+## Task 2: 台本・キュー設計と現場Qビューのローカル実装
+
+### rollout_summary_files
+
+- rollout_summaries/2026-09-08T16-43-50-PtCH-stage_sketch_script_cues_and_workflow_scene_navigation.md (cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas, rollout_path=/Users/arata/.codex/sessions/2026/09/09/rollout-2026-09-09T01-43-50-01a081e7-8b69-79e2-8b58-320aaab6b84b.jsonl, updated_at=2026-09-09T11:51:34+00:00, thread_id=01a081e7-8b69-79e2-8b58-320aaab6b84b, success: local Q timeline/scene navigation verified; no push/deploy/share)
+
+### keywords
+
+- script-cues-2026-09-09, project.cues, TextQuoteSelector, TextPositionSelector, stage-workflow-store.js, stage-workflow-panel.js, openScene, SHOSAI_STAGE_SESSION_BRIDGE, stage-sketch-pwa-v199, 57 pass
+
+## User preferences
+
+- When the user says 「１２ともにです」 -> treat transition playback/placement and the who-when-what procedure as one minimal design entrance, not mutually exclusive features. [Task 1]
+- When the user confirms 「UIやUXに関しては後でやる」 -> specify input fields and warning conditions now, but defer polished production UI/UX until field rules, data, and playback semantics are settled. [Task 1]
+- When the user specifies Claude Code Fable and 「codex側はastraで」 -> preserve the named model/role split; clarify ambiguous agent names before beginning. [Task 1]
+- When the user asks for 「台本とキューを割り当てやすい形」 that tolerates changes -> center revised-script impact review, reassignment, and Undo rather than a mere entry form; keep input format explicitly undecided until attachments arrive. [Task 2]
+- Keep the canonical stage layout separate from local workflow notes/arrows; do not imply sharing, GO, or execution history where it does not exist. [Task 2]
+
+## Reusable knowledge
+
+- `sceneAnimMs` is display playback speed, not rehearsal duration. Keep arrival-scene `cueSeconds` distinct from departure-scene `rehearsal.transitionToNextSeconds`. `route` describes movement geometry, not responsibility, cue, order, parallelism, waiting, or handoff. [Task 1]
+- Use stable identity: `twinOf` matches `castId`/`setId`, then `originId`/`id`; copied scenes change piece IDs. Difference-derived candidate steps are always review-required because duplicate sets, reset, waiting, return movement, carrying, and personnel handoffs break automatic certainty. [Task 1]
+- Collect work/scene, object, person, cue, waiting/handoff, planned/actual duration, completion, missing/duplicate/overrun conditions in the provisional field sheet. It tested cleanly at 390/1440px, but that is not evidence of real troupe requirements. [Task 1]
+- Use `project.cues[]` as the shared cue source: the script owns position, transitions own work/waiting/geometry/assignee, and reverse lists are derived. Anchor script text by ID + character range + context; do not make page, line, or displayed Q number canonical. A lost anchor becomes 「位置を選び直す」/「要確認」, never a cue deletion. [Task 2]
+
+exec
+/bin/zsh -lc "rg -n 'cueSeconds|sceneAnimMs|arrival|destination|transitionToNextSeconds|twinOf' /Users/arata/.codex/memories/rollout_summaries/2026-09-08T14-34-27-Pbg8-stage_sketch_set_transition_design_discovery.md" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+ succeeded in 0ms:
+22:- 既存コードと文書を読み、`beginSceneAnim`、`cueSeconds`、`rehearsal.transitionToNextSeconds`、`route`、`twinOf`、舞台機構補間の現状を確認した。
+38:- Stage Sketchの正本はversion 3のWeb側データ。`sceneAnimMs` は表示再生速度であり、稽古上の転換時間ではない。`cueSeconds` は到着場面側の表示転換尺、`rehearsal.transitionToNextSeconds` は出発場面側の稽古時間で、混同しない。
+39:- 場面間の同一物照合は、登録があれば`castId`/`setId`、なければ`originId`/`id`を使う` twinOf` に依存する。場面複製でpiece IDは変わるため、転換手順の参照は安定IDを使う必要がある。
+46:- `shosai-app/stage-sketch.js`: `twinOf`、`beginSceneAnim`、`deriveRoutes`、`applyRoutes`、`cueSeconds`、`rehearsal.transitionToNextSeconds`
+
+exec
+/bin/zsh -lc "sed -n '1,45p' /Users/arata/.codex/memories/rollout_summaries/2026-09-08T14-34-27-Pbg8-stage_sketch_set_transition_design_discovery.md" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+ succeeded in 0ms:
+thread_id: 01a08171-17c8-7f53-b301-4199a9d42c7c
+updated_at: 2026-09-09T04:46:47+00:00
+rollout_path: /Users/arata/.codex/archived_sessions/rollout-2026-09-08T23-34-27-01a08171-17c8-7f53-b301-4199a9d42c7c.jsonl
+cwd: /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas
+
+# 舞台スケッチのセット転換設計を、実装前の現場ルール確認から進めた
+
+Rollout context: `/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app`。ユーザーは劇団関係者から高評価の舞台スケッチについて、セット転換機能を強化したいと依頼した。転換途中の配置・動きの確認と、誰が・いつ・何を動かすかの手順整理の両方を求めた。Claude Code Fableとの相談を希望し、Codex側モデルはAstraと指定した。
+
+## Task 1: セット転換機能の設計方針整理
+
+Outcome: partial
+
+Preference signals:
+
+- ユーザーは「１２ともにです」と回答し、配置・転換途中の動きと、担当・時系列の手順整理を同時に重視している -> 今後はどちらか一方に決め打ちせず、最小入口で両方を扱う設計を優先する。
+- ユーザーはClaude Code Fableとの協働を明示し、Codex側は「astraで」と指定した -> 重要な設計判断では、指定モデル・役割分担を勝手に変更しない。
+- 最後に「UIやUXに関しては後でやると言うことであってますか？」と確認し、仮画面と本番UIを分離する方針を確認した -> 先に現場ルール・データ・判定・再生仕様を固め、本番UI/UXの作り込みは後段に回す。ただし入力項目と警告条件は仕様に関わるため先に定義する。
+
+Key steps:
+
+- 既存コードと文書を読み、`beginSceneAnim`、`cueSeconds`、`rehearsal.transitionToNextSeconds`、`route`、`twinOf`、舞台機構補間の現状を確認した。
+- 既存機能は場面間の配置差分、演者の入り・はけ、動線、照明・舞台機構の補間を持つが、通常セットの搬出入・担当者・順序・待機・交代を一体の転換手順として保存する仕組みは未確定と整理した。
+- Fableレビュー用の読み取り限定依頼を作成し、既存コード・ワークオーダー・データ契約・検討案の反証を求めた。通常環境では一度未ログインだったが、権限付き確認ではClaude Codeがログイン済みと確認された。
+- 実装はせず、`docs/set-transitions-2026-09-08/` に設計検討・レビュー依頼・準備資料を置く方向で進めた。
+- 実例確認用の仮HTML `field-case-2026-09-09.html` を用意し、作品・場面、担当、合図、待機、交代、締切、予定/実測時間を記録できるようにした。これは本番UIではなく、現場情報を集めるための確認シート。
+- 仮シートは390px/1440pxで横溢れなし、29項目の操作確認、design-lint NG/WARN 0件などを確認したが、実際の劇団の転換事例は未入力である。
+
+Failures and how to do differently:
+
+- 初動で「Codexといっしょに」の意味を誤解したが、ユーザー訂正後にClaude Code Fableとの相談へ切り替えた。今後はモデル/エージェント名が曖昧な場合、作業開始前に短く確認する。
+- Claude Codeの通常チェックは一度 `loggedIn: false` だった。認証結果を確認せずレビュー内容を捏造せず、権限付き再確認でログイン状態を確認してから進めた。
+- 既存ワークツリーは多数の未コミット変更を含むため、製品コードを勝手に編集せず、設計資料・仮シートを専用ディレクトリに隔離するのが安全。
+- 実例がないまま担当・所要・現場ルールを創作しない。仮データを実例や製品仕様へ昇格させず、ユーザーから作品・場面・短い段取りを受け取ってから照合する。
+
+Reusable knowledge:
+
+- Stage Sketchの正本はversion 3のWeb側データ。`sceneAnimMs` は表示再生速度であり、稽古上の転換時間ではない。`cueSeconds` は到着場面側の表示転換尺、`rehearsal.transitionToNextSeconds` は出発場面側の稽古時間で、混同しない。
+- 場面間の同一物照合は、登録があれば`castId`/`setId`、なければ`originId`/`id`を使う` twinOf` に依存する。場面複製でpiece IDは変わるため、転換手順の参照は安定IDを使う必要がある。
+- 現在の`route`は主に場面間の二次曲線経路であり、担当者、合図、並行/順序、待機、交代を表すものではない。
+- 初期設計では、隣接場面A→Bの差分から候補を生成し、順序付き手順表へ落とす案が検討された。ただし差分生成は、同種セット複数、仕込み直し、途中待機、往復、手運び、担当交代で破綻し得るため、候補は確定手順ではなく要確認状態として扱う。
+- 本番UI/UXを後段にする場合でも、先に「入力対象」「完了条件」「不足・重複・時間超過の判定」「未確認の扱い」を仕様として固定する。
+
+References:
+
+
+exec
+/bin/zsh -lc "nl -ba /Users/arata/.codex/memories/MEMORY.md | sed -n '151,158p'
+nl -ba /Users/arata/.codex/memories/rollout_summaries/2026-09-08T14-34-27-Pbg8-stage_sketch_set_transition_design_discovery.md | sed -n '36,41p'" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+ succeeded in 0ms:
+   151	- When the user specifies Claude Code Fable and 「codex側はastraで」 -> preserve the named model/role split; clarify ambiguous agent names before beginning. [Task 1]
+   152	- When the user asks for 「台本とキューを割り当てやすい形」 that tolerates changes -> center revised-script impact review, reassignment, and Undo rather than a mere entry form; keep input format explicitly undecided until attachments arrive. [Task 2]
+   153	- Keep the canonical stage layout separate from local workflow notes/arrows; do not imply sharing, GO, or execution history where it does not exist. [Task 2]
+   154	
+   155	## Reusable knowledge
+   156	
+   157	- `sceneAnimMs` is display playback speed, not rehearsal duration. Keep arrival-scene `cueSeconds` distinct from departure-scene `rehearsal.transitionToNextSeconds`. `route` describes movement geometry, not responsibility, cue, order, parallelism, waiting, or handoff. [Task 1]
+   158	- Use stable identity: `twinOf` matches `castId`/`setId`, then `originId`/`id`; copied scenes change piece IDs. Difference-derived candidate steps are always review-required because duplicate sets, reset, waiting, return movement, carrying, and personnel handoffs break automatic certainty. [Task 1]
+    36	Reusable knowledge:
+    37	
+    38	- Stage Sketchの正本はversion 3のWeb側データ。`sceneAnimMs` は表示再生速度であり、稽古上の転換時間ではない。`cueSeconds` は到着場面側の表示転換尺、`rehearsal.transitionToNextSeconds` は出発場面側の稽古時間で、混同しない。
+    39	- 場面間の同一物照合は、登録があれば`castId`/`setId`、なければ`originId`/`id`を使う` twinOf` に依存する。場面複製でpiece IDは変わるため、転換手順の参照は安定IDを使う必要がある。
+    40	- 現在の`route`は主に場面間の二次曲線経路であり、担当者、合図、並行/順序、待機、交代を表すものではない。
+    41	- 初期設計では、隣接場面A→Bの差分から候補を生成し、順序付き手順表へ落とす案が検討された。ただし差分生成は、同種セット複数、仕込み直し、途中待機、往復、手運び、担当交代で破綻し得るため、候補は確定手順ではなく要確認状態として扱う。
+
+codex
+## 1. フォーマット案
+
+**案A：各frameに`asScene / sceneRef`を持たせる。** 実装は軽いものの、場面指定を別frameへ移すたびにタイトルや対応IDも移す必要があり、再取込で別場面と誤認しやすいです。
+
+**案B：framesを純粋な配置記録として保ち、別に場面区分を持つ。**
+
+```js
+scenePlan: {
+  segments: [{
+    id,                 // 永続ID
+    sceneFrameId,       // この場面を代表する到達配置
+    heroFrameId,
+    title,
+    choreographyNote,
+    boundaryReasons: ["formation", "lighting"]
+  }]
+}
+```
+
+あるsegmentは`sceneFrameId`から次segment直前までのframesを含みます。segmentが先頭に一つだけなら一曲＝一場面、全frameをsegment化すれば全フォーメーション＝各場面です。
+
+**案Bを推奨します。** 区切り変更は`sceneFrameId`だけを変え、framesとsegmentの`id`を維持できます。分割時は新ID、統合時は残す側のIDを明示選択します。
+
+## 2. 場面の切れ目と時間
+
+到達frameを`F`、`count=C`、`travel=T`とします。
+
+- 同じsegment内：`travel`をそのまま`motion.keyframes`へ渡す。
+- `F`が次segmentの先頭：到着場面の転換として扱い、`cueStartCount=C-T`、`arrivalCount=C`とする。
+- `cueSeconds=countToSec(C)-countToSec(C-T)`。BPMによる単純換算はせず、anchorsの按分を使う。
+
+推奨する意味は、**移動開始時に次場面へGOし、`C`で到着する**です。`cueSeconds`は書出し時の派生値で、正本は`count / travel / anchors`です。`travel=0`はsnap、既存の0.2〜10秒外なら丸めず要確認にします。
+
+## 3. 付随情報の所有者
+
+フォーメーション側は、タイトル、振付メモ、代表frame、場面化した理由だけを持ちます。照明・機構の実データと舞台全体の`scene.note`は舞台スケッチ側で追加します。
+
+`boundaryReasons`は「照明変化もある」という手掛かりに留め、実際の照明値が存在するとはみなしません。再取込でも照明・機構・舞台側メモを上書きしません。
+
+## 4. Stage Sketch向けJSON
+
+```js
+{
+  format: "stage-sketch-formation",
+  source: { formationId, revision },
+  track,
+  castMap: { dancerId: castId },
+  scenes: [{
+    sourceSegmentId,
+    sourceFrameId,
+    title, arrivalCount, cueStartCount, cueSeconds,
+    pieces,
+    motion: {
+      heroFrameId,
+      keyframes: [{ sourceFrameId, trackCount, poses, travel }]
+    }
+  }]
+}
+```
+
+再取込の鍵は`formationId + sourceSegmentId`、各配置更新は`sourceFrameId`です。タイトル・順番・countでは照合しません。舞台スケッチ側に`lastImportedRevision`を残し、更新対象をmotionと対応演者の配置に限定して差分確認します。
+
+## 5. 落とし穴
+
+1. `travel`が前frameとの間隔を超えると、二つの移動が時間上重なる。保存時に検出する。
+2. anchorsの修正で同じtravelの秒数が変わる。再書出し時に`cueSeconds`差分を示す。
+3. 演者の追加・削除・再配役や舞台側の位置修正を、再取込で黙って上書きしない。
+
+## 6. 次に聞く二問
+
+1. 場面GOは「移動開始時」でよいか、それとも「到着時」か。  
+2. 取込後の演者位置はフォーメーションを正本にするか、舞台スケッチ側でも独立編集を許すか。
+
+
+tokens used
+127,344
+## 1. フォーマット案
+
+**案A：各frameに`asScene / sceneRef`を持たせる。** 実装は軽いものの、場面指定を別frameへ移すたびにタイトルや対応IDも移す必要があり、再取込で別場面と誤認しやすいです。
+
+**案B：framesを純粋な配置記録として保ち、別に場面区分を持つ。**
+
+```js
+scenePlan: {
+  segments: [{
+    id,                 // 永続ID
+    sceneFrameId,       // この場面を代表する到達配置
+    heroFrameId,
+    title,
+    choreographyNote,
+    boundaryReasons: ["formation", "lighting"]
+  }]
+}
+```
+
+あるsegmentは`sceneFrameId`から次segment直前までのframesを含みます。segmentが先頭に一つだけなら一曲＝一場面、全frameをsegment化すれば全フォーメーション＝各場面です。
+
+**案Bを推奨します。** 区切り変更は`sceneFrameId`だけを変え、framesとsegmentの`id`を維持できます。分割時は新ID、統合時は残す側のIDを明示選択します。
+
+## 2. 場面の切れ目と時間
+
+到達frameを`F`、`count=C`、`travel=T`とします。
+
+- 同じsegment内：`travel`をそのまま`motion.keyframes`へ渡す。
+- `F`が次segmentの先頭：到着場面の転換として扱い、`cueStartCount=C-T`、`arrivalCount=C`とする。
+- `cueSeconds=countToSec(C)-countToSec(C-T)`。BPMによる単純換算はせず、anchorsの按分を使う。
+
+推奨する意味は、**移動開始時に次場面へGOし、`C`で到着する**です。`cueSeconds`は書出し時の派生値で、正本は`count / travel / anchors`です。`travel=0`はsnap、既存の0.2〜10秒外なら丸めず要確認にします。
+
+## 3. 付随情報の所有者
+
+フォーメーション側は、タイトル、振付メモ、代表frame、場面化した理由だけを持ちます。照明・機構の実データと舞台全体の`scene.note`は舞台スケッチ側で追加します。
+
+`boundaryReasons`は「照明変化もある」という手掛かりに留め、実際の照明値が存在するとはみなしません。再取込でも照明・機構・舞台側メモを上書きしません。
+
+## 4. Stage Sketch向けJSON
+
+```js
+{
+  format: "stage-sketch-formation",
+  source: { formationId, revision },
+  track,
+  castMap: { dancerId: castId },
+  scenes: [{
+    sourceSegmentId,
+    sourceFrameId,
+    title, arrivalCount, cueStartCount, cueSeconds,
+    pieces,
+    motion: {
+      heroFrameId,
+      keyframes: [{ sourceFrameId, trackCount, poses, travel }]
+    }
+  }]
+}
+```
+
+再取込の鍵は`formationId + sourceSegmentId`、各配置更新は`sourceFrameId`です。タイトル・順番・countでは照合しません。舞台スケッチ側に`lastImportedRevision`を残し、更新対象をmotionと対応演者の配置に限定して差分確認します。
+
+## 5. 落とし穴
+
+1. `travel`が前frameとの間隔を超えると、二つの移動が時間上重なる。保存時に検出する。
+2. anchorsの修正で同じtravelの秒数が変わる。再書出し時に`cueSeconds`差分を示す。
+3. 演者の追加・削除・再配役や舞台側の位置修正を、再取込で黙って上書きしない。
+
+## 6. 次に聞く二問
+
+1. 場面GOは「移動開始時」でよいか、それとも「到着時」か。  
+2. 取込後の演者位置はフォーメーションを正本にするか、舞台スケッチ側でも独立編集を許すか。
+
+

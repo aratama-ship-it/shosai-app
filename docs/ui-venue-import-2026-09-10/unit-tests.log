@@ -1,0 +1,832 @@
+TAP version 13
+# Subtest: マニュアル正本は10章35節を検索に使える構造で持つ
+ok 1 - マニュアル正本は10章35節を検索に使える構造で持つ
+  ---
+  duration_ms: 0.490458
+  type: 'test'
+  ...
+# Subtest: MANUAL_FINDは全語ANDで検索し、noindex本文を除外する
+ok 2 - MANUAL_FINDは全語ANDで検索し、noindex本文を除外する
+  ---
+  duration_ms: 0.563583
+  type: 'test'
+  ...
+# Subtest: 全章・全節に英語の対訳が揃い、日本語が漏れていない
+ok 3 - 全章・全節に英語の対訳が揃い、日本語が漏れていない
+  ---
+  duration_ms: 0.53825
+  type: 'test'
+  ...
+# Subtest: MANUAL_FINDは英語モードで英語の見出し・言い換え語・本文を引く
+ok 4 - MANUAL_FINDは英語モードで英語の見出し・言い換え語・本文を引く
+  ---
+  duration_ms: 0.416083
+  type: 'test'
+  ...
+# Subtest: 本文はいまのUIに追随している（地図なし・空にするはシーン欄・はじめての案内）
+ok 5 - 本文はいまのUIに追随している（地図なし・空にするはシーン欄・はじめての案内）
+  ---
+  duration_ms: 0.106625
+  type: 'test'
+  ...
+# Subtest: 冊子の会場の説明が、アプリに入っている会場を取りこぼしていない
+ok 6 - 冊子の会場の説明が、アプリに入っている会場を取りこぼしていない
+  ---
+  duration_ms: 4.415042
+  type: 'test'
+  ...
+# Subtest: 正本と単独版に検索・冊子導線と共通データが継承される
+ok 7 - 正本と単独版に検索・冊子導線と共通データが継承される
+  ---
+  duration_ms: 0.3515
+  type: 'test'
+  ...
+# Subtest: Service Workerは冊子一式を最新版へキャッシュする
+ok 8 - Service Workerは冊子一式を最新版へキャッシュする
+  ---
+  duration_ms: 0.087916
+  type: 'test'
+  ...
+# Subtest: manualディレクトリは配信除外されていない
+ok 9 - manualディレクトリは配信除外されていない
+  ---
+  duration_ms: 0.361375
+  type: 'test'
+  ...
+# Subtest: 使い方検索の新ラベルは英訳表に登録されている
+ok 10 - 使い方検索の新ラベルは英訳表に登録されている
+  ---
+  duration_ms: 1.638958
+  type: 'test'
+  ...
+# Subtest: 公開体験版はPWAにならない（SW・manifest・アイコンを持たない）
+ok 11 - 公開体験版はPWAにならない（SW・manifest・アイコンを持たない）
+  ---
+  duration_ms: 1.060958
+  type: 'test'
+  ...
+# Subtest: 公開体験版は共有セッションを読み込まない（認証の無いホストで /whoami が404になる）
+ok 12 - 公開体験版は共有セッションを読み込まない（認証の無いホストで /whoami が404になる）
+  ---
+  duration_ms: 0.090708
+  type: 'test'
+  ...
+# Subtest: 公開体験版は is-public を付け、専用のCSSとJSを最後に読む
+ok 13 - 公開体験版は is-public を付け、専用のCSSとJSを最後に読む
+  ---
+  duration_ms: 0.246875
+  type: 'test'
+  ...
+# Subtest: 保存は残さない（2つの保存キーを消し、書き込みも止める）
+ok 14 - 保存は残さない（2つの保存キーを消し、書き込みも止める）
+  ---
+  duration_ms: 0.046916
+  type: 'test'
+  ...
+# Subtest: 体験版の追加文言も現在パック→enパックの順で評価する
+ok 15 - 体験版の追加文言も現在パック→enパックの順で評価する
+  ---
+  duration_ms: 0.5625
+  type: 'test'
+  ...
+# Subtest: 体験版の下地は手で組み立てず、書き出した文書を直して戻す
+ok 16 - 体験版の下地は手で組み立てず、書き出した文書を直して戻す
+  ---
+  duration_ms: 0.085459
+  type: 'test'
+  ...
+# Subtest: 自動デモは画面に見えてから再生する
+ok 17 - 自動デモは画面に見えてから再生する
+  ---
+  duration_ms: 0.060125
+  type: 'test'
+  ...
+# Subtest: 正面図のタップは左右だけ動かし、演者を宙に浮かせない
+ok 18 - 正面図のタップは左右だけ動かし、演者を宙に浮かせない
+  ---
+  duration_ms: 0.05275
+  type: 'test'
+  ...
+# Subtest: 画面を畳むのは埋め込み（LPの帯）だけ。体験版そのものは製品版と同じ画面を見せる
+ok 19 - 画面を畳むのは埋め込み（LPの帯）だけ。体験版そのものは製品版と同じ画面を見せる
+  ---
+  duration_ms: 0.334291
+  type: 'test'
+  ...
+# Subtest: 二つの図は埋め込みの広い画面で横に並ぶ（連動が同時に見えることが帯の核）
+ok 20 - 二つの図は埋め込みの広い画面で横に並ぶ（連動が同時に見えることが帯の核）
+  ---
+  duration_ms: 0.381417
+  type: 'test'
+  ...
+# Subtest: 錠は許可した操作以外へ掛ける（fail-closed）
+ok 21 - 錠は許可した操作以外へ掛ける（fail-closed）
+  ---
+  duration_ms: 0.268834
+  type: 'test'
+  ...
+# Subtest: 体験版はPCでも客席5か所からの見え方を切り替えられる
+ok 22 - 体験版はPCでも客席5か所からの見え方を切り替えられる
+  ---
+  duration_ms: 0.080791
+  type: 'test'
+  ...
+# Subtest: ★個人データは公開版へ載せない（2026-09-03 公開直前に発見）
+ok 23 - ★個人データは公開版へ載せない（2026-09-03 公開直前に発見）
+  ---
+  duration_ms: 0.072417
+  type: 'test'
+  ...
+# Subtest: ★配信フォルダは「集めたものだけを配る」形にする（許可リストに頼らない）
+ok 24 - ★配信フォルダは「集めたものだけを配る」形にする（許可リストに頼らない）
+  ---
+  duration_ms: 0.042958
+  type: 'test'
+  ...
+# Subtest: 公開ビルドの検査は、try.htmlだけでなく配信フォルダ全体の古さも止める
+ok 25 - 公開ビルドの検査は、try.htmlだけでなく配信フォルダ全体の古さも止める
+  ---
+  duration_ms: 0.053459
+  type: 'test'
+  ...
+# Subtest: 体験版の内部処理は自分の錠を踏まない
+ok 26 - 体験版の内部処理は自分の錠を踏まない
+  ---
+  duration_ms: 0.09225
+  type: 'test'
+  ...
+# Subtest: 公開版は「体験版」であることを明示し、「β版」とは名乗らない
+ok 27 - 公開版は「体験版」であることを明示し、「β版」とは名乗らない
+  ---
+  duration_ms: 0.166542
+  type: 'test'
+  ...
+# Subtest: 姿勢は5つだけ開ける（本体は46種）
+ok 28 - 姿勢は5つだけ開ける（本体は46種）
+  ---
+  duration_ms: 0.043584
+  type: 'test'
+  ...
+# Subtest: 錠の掛かった欄でも見出しを押して開け閉めできる
+ok 29 - 錠の掛かった欄でも見出しを押して開け閉めできる
+  ---
+  duration_ms: 0.113708
+  type: 'test'
+  ...
+# Subtest: 「出るもの」と「選んだもの」は体験版でも使える
+ok 30 - 「出るもの」と「選んだもの」は体験版でも使える
+  ---
+  duration_ms: 0.059083
+  type: 'test'
+  ...
+# Subtest: 体験版で置けるのは演者3人・舞台セット2つまで
+ok 31 - 体験版で置けるのは演者3人・舞台セット2つまで
+  ---
+  duration_ms: 0.063583
+  type: 'test'
+  ...
+# Subtest: 錠の掛かった欄は畳んだ状態で始める（開くことはできる）
+ok 32 - 錠の掛かった欄は畳んだ状態で始める（開くことはできる）
+  ---
+  duration_ms: 0.037
+  type: 'test'
+  ...
+# Subtest: 製品版ベータの問い合わせは、上部から別ページへ送る
+ok 33 - 製品版ベータの問い合わせは、上部から別ページへ送る
+  ---
+  duration_ms: 0.083333
+  type: 'test'
+  ...
+# Subtest: 体験版から紹介ページ（LP）へ戻れる
+ok 34 - 体験版から紹介ページ（LP）へ戻れる
+  ---
+  duration_ms: 0.046292
+  type: 'test'
+  ...
+# Subtest: 紹介ページはβ期間中が無償であることを書き、正式版の形は未定と断る
+ok 35 - 紹介ページはβ期間中が無償であることを書き、正式版の形は未定と断る
+  ---
+  duration_ms: 0.056833
+  type: 'test'
+  ...
+# Subtest: 紹介ページは送信前後の流れを3行で示し、戻り先のラベルを正しく言う（第2弾・\#7）
+ok 36 - 紹介ページは送信前後の流れを3行で示し、戻り先のラベルを正しく言う（第2弾・\#7）
+  ---
+  duration_ms: 0.0685
+  type: 'test'
+  ...
+# Subtest: 紹介ページのコントラストとタップ対象を直す（design-lint既存NG8件・本人承認2026-09-05）
+ok 37 - 紹介ページのコントラストとタップ対象を直す（design-lint既存NG8件・本人承認2026-09-05）
+  ---
+  duration_ms: 0.054167
+  type: 'test'
+  ...
+# Subtest: 紹介ページの姿勢の数は本体の実装と一致させる（第2弾・\#11）
+ok 38 - 紹介ページの姿勢の数は本体の実装と一致させる（第2弾・\#11）
+  ---
+  duration_ms: 7.9545
+  type: 'test'
+  ...
+# Subtest: スマホの体験版では姿勢の帯を正面図の上端に出す（床の演者を隠さない）
+ok 39 - スマホの体験版では姿勢の帯を正面図の上端に出す（床の演者を隠さない）
+  ---
+  duration_ms: 0.096583
+  type: 'test'
+  ...
+# Subtest: スマホ体験版: 人を足す・客席の位置・場面の切替と転換は開け、場面の追加は閉じる
+ok 40 - スマホ体験版: 人を足す・客席の位置・場面の切替と転換は開け、場面の追加は閉じる
+  ---
+  duration_ms: 0.145959
+  type: 'test'
+  ...
+# Subtest: スマホ体験版では、帯を固定していたころの余白を残さない
+ok 41 - スマホ体験版では、帯を固定していたころの余白を残さない
+  ---
+  duration_ms: 0.058
+  type: 'test'
+  ...
+# Subtest: 設定は開ける。中身は錠だが、言語の切替と閉じるだけ使える
+ok 42 - 設定は開ける。中身は錠だが、言語の切替と閉じるだけ使える
+  ---
+  duration_ms: 0.06925
+  type: 'test'
+  ...
+# Subtest: 言語を切り替えたら、体験版で足した札とリンクも貼り直す
+ok 43 - 言語を切り替えたら、体験版で足した札とリンクも貼り直す
+  ---
+  duration_ms: 0.053667
+  type: 'test'
+  ...
+# Subtest: スマホへ最初に出す「PCを勧める」帯は、日本語と英語を並べて出す
+ok 44 - スマホへ最初に出す「PCを勧める」帯は、日本語と英語を並べて出す
+  ---
+  duration_ms: 0.050375
+  type: 'test'
+  ...
+# Subtest: スマホ設定は 日本語 / English / ✕ の一列にし、「端末による違い」は出さない
+ok 45 - スマホ設定は 日本語 / English / ✕ の一列にし、「端末による違い」は出さない
+  ---
+  duration_ms: 0.064084
+  type: 'test'
+  ...
+# Subtest: 平面図のタップは床の矩形（本体の planFit と同じ式）で u,v に換算する
+ok 46 - 平面図のタップは床の矩形（本体の planFit と同じ式）で u,v に換算する
+  ---
+  duration_ms: 0.044125
+  type: 'test'
+  ...
+# Subtest: 正面図のタップは、駒ごとの既存の奥行き(v)での擬似パース幅で u に換算する
+ok 47 - 正面図のタップは、駒ごとの既存の奥行き(v)での擬似パース幅で u に換算する
+  ---
+  duration_ms: 0.076834
+  type: 'test'
+  ...
+# Subtest: 正面図の幅の式は本体 layout() の front 枝と一致する（ずれたら換算が狂う）
+ok 48 - 正面図の幅の式は本体 layout() の front 枝と一致する（ずれたら換算が狂う）
+  ---
+  duration_ms: 3.422583
+  type: 'test'
+  ...
+# Subtest: 体験版の planFit は本体の planFit と式が一致する（ずれたら換算が狂う）
+ok 49 - 体験版の planFit は本体の planFit と式が一致する（ずれたら換算が狂う）
+  ---
+  duration_ms: 2.426541
+  type: 'test'
+  ...
+# Subtest: スマホ横向きでは、リンクと道具列を出さず、右レールに ＋人・客席・設定 を置く
+ok 50 - スマホ横向きでは、リンクと道具列を出さず、右レールに ＋人・客席・設定 を置く
+  ---
+  duration_ms: 0.143333
+  type: 'test'
+  ...
+# Subtest: LPが入口、体験版は /try.html。動画も配信フォルダへ運ぶ
+ok 51 - LPが入口、体験版は /try.html。動画も配信フォルダへ運ぶ
+  ---
+  duration_ms: 0.067792
+  type: 'test'
+  ...
+# Subtest: LPは承認済みの文言を使い、詩的な見出しを足さない
+ok 52 - LPは承認済みの文言を使い、詩的な見出しを足さない
+  ---
+  duration_ms: 0.208
+  type: 'test'
+  ...
+# Subtest: LPの最下部に連絡先として名前を出す
+ok 53 - LPの最下部に連絡先として名前を出す
+  ---
+  duration_ms: 0.0445
+  type: 'test'
+  ...
+# Subtest: LPのいちばん上に体験版とライセンスへのリンクを置く
+ok 54 - LPのいちばん上に体験版とライセンスへのリンクを置く
+  ---
+  duration_ms: 0.112208
+  type: 'test'
+  ...
+# Subtest: 13項目の折り返し地点に、小さな二入口を一度だけ置く（第2弾・\#8）
+ok 55 - 13項目の折り返し地点に、小さな二入口を一度だけ置く（第2弾・\#8）
+  ---
+  duration_ms: 0.103459
+  type: 'test'
+  ...
+# Subtest: LPの最初の画面に「何のツールか」の一文と二つの入口を置く（マーケ見直し・第1弾）
+ok 56 - LPの最初の画面に「何のツールか」の一文と二つの入口を置く（マーケ見直し・第1弾）
+  ---
+  duration_ms: 0.173041
+  type: 'test'
+  ...
+# Subtest: LPから4項目の証拠帯を外す
+ok 57 - LPから4項目の証拠帯を外す
+  ---
+  duration_ms: 0.064041
+  type: 'test'
+  ...
+# Subtest: OGP画像は専用の1200×630（第2弾・本人承認）。配信スクリプトが og:image を運ぶ
+ok 58 - OGP画像は専用の1200×630（第2弾・本人承認）。配信スクリプトが og:image を運ぶ
+  ---
+  duration_ms: 0.119667
+  type: 'test'
+  ...
+# Subtest: 英語版のSNSカードは英語の画像を使う（第3弾）
+ok 59 - 英語版のSNSカードは英語の画像を使う（第3弾）
+  ---
+  duration_ms: 0.053833
+  type: 'test'
+  ...
+# Subtest: LPの題・説明・OGPは検索と共有向け（第1弾）
+ok 60 - LPの題・説明・OGPは検索と共有向け（第1弾）
+  ---
+  duration_ms: 0.077375
+  type: 'test'
+  ...
+# Subtest: 英語版は別URL /en/ に静的に出す（クローラーはJSを実行しない）
+ok 61 - 英語版は別URL /en/ に静的に出す（クローラーはJSを実行しない）
+  ---
+  duration_ms: 0.203625
+  type: 'test'
+  ...
+# Subtest: sitemap.xml と robots.txt を配る（第3弾-3）
+ok 62 - sitemap.xml と robots.txt を配る（第3弾-3）
+  ---
+  duration_ms: 0.101333
+  type: 'test'
+  ...
+# Subtest: ヒーロー動画の構造化データ（VideoObject）を持つ
+ok 63 - ヒーロー動画の構造化データ（VideoObject）を持つ
+  ---
+  duration_ms: 0.1335
+  type: 'test'
+  ...
+# Subtest: Search Console の所有権確認タグを消さない
+ok 64 - Search Console の所有権確認タグを消さない
+  ---
+  duration_ms: 0.032375
+  type: 'test'
+  ...
+# Subtest: 所有権の確認ファイルを配れる（Search Console 用）
+ok 65 - 所有権の確認ファイルを配れる（Search Console 用）
+  ---
+  duration_ms: 0.088875
+  type: 'test'
+  ...
+# Subtest: 体験版の英語は用語集（commit 71db200）にそろえる
+ok 66 - 体験版の英語は用語集（commit 71db200）にそろえる
+  ---
+  duration_ms: 0.334542
+  type: 'test'
+  ...
+# Subtest: 体験版と紹介ページにも日本語の説明・OGPがある（第3弾）
+ok 67 - 体験版と紹介ページにも日本語の説明・OGPがある（第3弾）
+  ---
+  duration_ms: 0.037292
+  type: 'test'
+  ...
+# Subtest: LPのいちばん上で日本語と英語を切り替えられる
+ok 68 - LPのいちばん上で日本語と英語を切り替えられる
+  ---
+  duration_ms: 0.073167
+  type: 'test'
+  ...
+# Subtest: LPのいちばん上から「このアプリについて」へ飛べる
+ok 69 - LPのいちばん上から「このアプリについて」へ飛べる
+  ---
+  duration_ms: 0.090708
+  type: 'test'
+  ...
+# Subtest: LPのいちばん上に製品の名前を大きく出す
+ok 70 - LPのいちばん上に製品の名前を大きく出す
+  ---
+  duration_ms: 0.158958
+  type: 'test'
+  ...
+# Subtest: LPの名前の下に「誰が、何に使うか」を置く
+ok 71 - LPの名前の下に「誰が、何に使うか」を置く
+  ---
+  duration_ms: 0.122625
+  type: 'test'
+  ...
+# Subtest: LPの下部で13の機能を、画像つきで一つずつ紹介する
+ok 72 - LPの下部で13の機能を、画像つきで一つずつ紹介する
+  ---
+  duration_ms: 0.431333
+  type: 'test'
+  ...
+# Subtest: Mac用スタンドアローンの入れ方を書く（体験版ではなく製品版が対象）
+ok 73 - Mac用スタンドアローンの入れ方を書く（体験版ではなく製品版が対象）
+  ---
+  duration_ms: 0.092917
+  type: 'test'
+  ...
+# Subtest: 13番はiPhoneのフレームで見せる
+ok 74 - 13番はiPhoneのフレームで見せる
+  ---
+  duration_ms: 0.178083
+  type: 'test'
+  ...
+# Subtest: 13の機能の画像は列いっぱいに広げず、縦横とも66%くらいに収める
+ok 75 - 13の機能の画像は列いっぱいに広げず、縦横とも66%くらいに収める
+  ---
+  duration_ms: 0.025958
+  type: 'test'
+  ...
+# Subtest: LPの帯幅は全帯で同じ（「このアプリについて」だけ細く見えない）
+ok 76 - LPの帯幅は全帯で同じ（「このアプリについて」だけ細く見えない）
+  ---
+  duration_ms: 0.122083
+  type: 'test'
+  ...
+# Subtest: LPのCTAは、体験版と製品版を実画面で対比する二つの入口にする
+ok 77 - LPのCTAは、体験版と製品版を実画面で対比する二つの入口にする
+  ---
+  duration_ms: 0.153208
+  type: 'test'
+  ...
+# Subtest: LPのタップ対象は 44px 以上、区切り文字は本文色（design-lint C1/U1）
+ok 78 - LPのタップ対象は 44px 以上、区切り文字は本文色（design-lint C1/U1）
+  ---
+  duration_ms: 0.102875
+  type: 'test'
+  ...
+# Subtest: LPの出現アニメーションは、JSが動かなくても中身が見える形にする
+ok 79 - LPの出現アニメーションは、JSが動かなくても中身が見える形にする
+  ---
+  duration_ms: 0.050583
+  type: 'test'
+  ...
+# Subtest: LPに体験版の埋め込みデモを置かない
+ok 80 - LPに体験版の埋め込みデモを置かない
+  ---
+  duration_ms: 0.116959
+  type: 'test'
+  ...
+# Subtest: LPは日英を持ち、承認済みの英語確定稿の文言を使う
+ok 81 - LPは日英を持ち、承認済みの英語確定稿の文言を使う
+  ---
+  duration_ms: 0.091792
+  type: 'test'
+  ...
+# Subtest: LPは言語をリンクへ引き継ぐ
+ok 82 - LPは言語をリンクへ引き継ぐ
+  ---
+  duration_ms: 0.044167
+  type: 'test'
+  ...
+# Subtest: ホーム画面から舞台スケッチ単独版をstandaloneで開く
+ok 83 - ホーム画面から舞台スケッチ単独版をstandaloneで開く
+  ---
+  duration_ms: 0.478292
+  type: 'test'
+  ...
+# Subtest: iPad用メタ情報とホーム画面アイコンを単独版へ組み込む
+ok 84 - iPad用メタ情報とホーム画面アイコンを単独版へ組み込む
+  ---
+  duration_ms: 1.420917
+  type: 'test'
+  ...
+# Subtest: iPadのホーム画面版だけ上部の補足文を隠す
+ok 85 - iPadのホーム画面版だけ上部の補足文を隠す
+  ---
+  duration_ms: 0.082334
+  type: 'test'
+  ...
+# Subtest: 使い方・About・感想は上部ではなく設定内にまとめる
+ok 86 - 使い方・About・感想は上部ではなく設定内にまとめる
+  ---
+  duration_ms: 0.389209
+  type: 'test'
+  ...
+# Subtest: 使い方のまとまりは言語設定のすぐ下に置き、既定では畳んでおく
+ok 87 - 使い方のまとまりは言語設定のすぐ下に置き、既定では畳んでおく
+  ---
+  duration_ms: 0.17675
+  type: 'test'
+  ...
+# Subtest: 舞台スケッチ名の右側に小さなアプリ版番号を表示する
+ok 88 - 舞台スケッチ名の右側に小さなアプリ版番号を表示する
+  ---
+  duration_ms: 0.092084
+  type: 'test'
+  ...
+# Subtest: PWA登録はHTTP上だけで行い、舞台スケッチの保存データには触れない
+ok 89 - PWA登録はHTTP上だけで行い、舞台スケッチの保存データには触れない
+  ---
+  duration_ms: 0.125625
+  type: 'test'
+  ...
+# Subtest: 起動時にベータ版の提供状態を確認し、終了時だけゲートを表示する
+ok 90 - 起動時にベータ版の提供状態を確認し、終了時だけゲートを表示する
+  ---
+  duration_ms: 0.0535
+  type: 'test'
+  ...
+# Subtest: ベータ状態の確認が通信不能でも、保存済みPWAを閉じない
+ok 91 - ベータ状態の確認が通信不能でも、保存済みPWAを閉じない
+  ---
+  duration_ms: 3.21325
+  type: 'test'
+  ...
+# Subtest: Service Workerは資料棚など同一サイトの別画面へ介入しない
+ok 92 - Service Workerは資料棚など同一サイトの別画面へ介入しない
+  ---
+  duration_ms: 0.291292
+  type: 'test'
+  ...
+# Subtest: オフライン用CSSとJSの版は現在のHTML参照と揃う
+ok 93 - オフライン用CSSとJSの版は現在のHTML参照と揃う
+  ---
+  duration_ms: 0.827333
+  type: 'test'
+  ...
+# Subtest: iPad左レールの設定アイコンは絵文字ではなくSVG（他の帯アイコンと共有の歯車）
+ok 94 - iPad左レールの設定アイコンは絵文字ではなくSVG（他の帯アイコンと共有の歯車）
+  ---
+  duration_ms: 1.954625
+  type: 'test'
+  ...
+# Subtest: iPad PWAは縦画面で二面、横画面で単一図の専用ワークスペースを組み立てる
+ok 95 - iPad PWAは縦画面で二面、横画面で単一図の専用ワークスペースを組み立てる
+  ---
+  duration_ms: 2.393792
+  type: 'test'
+  ...
+# Subtest: PCとiPadの劇場サイズはショーメニュー内にまとめる
+ok 96 - PCとiPadの劇場サイズはショーメニュー内にまとめる
+  ---
+  duration_ms: 0.198833
+  type: 'test'
+  ...
+# Subtest: iPadの描画道具と主要操作は上部へ常設する
+ok 97 - iPadの描画道具と主要操作は上部へ常設する
+  ---
+  duration_ms: 0.355541
+  type: 'test'
+  ...
+# Subtest: iPadの正面図と平面図は各図の上部にPC版と同じ操作を残す
+ok 98 - iPadの正面図と平面図は各図の上部にPC版と同じ操作を残す
+  ---
+  duration_ms: 0.606083
+  type: 'test'
+  ...
+# Subtest: iPad PWA横画面は一個のボタンで正面図と平面図を交互に切り替える
+ok 99 - iPad PWA横画面は一個のボタンで正面図と平面図を交互に切り替える
+  ---
+  duration_ms: 1.04475
+  type: 'test'
+  ...
+# Subtest: iPad PWA縦画面は正面図と平面図を上下に隙間なく並べる
+ok 100 - iPad PWA縦画面は正面図と平面図を上下に隙間なく並べる
+  ---
+  duration_ms: 0.400334
+  type: 'test'
+  ...
+# Subtest: iPad PWAの姿勢と種類は5列で選べる
+ok 101 - iPad PWAの姿勢と種類は5列で選べる
+  ---
+  duration_ms: 0.106334
+  type: 'test'
+  ...
+# Subtest: サンプルのシーン番号を現在位置の後ろへ重ねて表示しない
+ok 102 - サンプルのシーン番号を現在位置の後ろへ重ねて表示しない
+  ---
+  duration_ms: 0.217166
+  type: 'test'
+  ...
+# Subtest: iPad PWAではブラウザのダブルタップ拡大を起こさない
+ok 103 - iPad PWAではブラウザのダブルタップ拡大を起こさない
+  ---
+  duration_ms: 0.662917
+  type: 'test'
+  ...
+# Subtest: iPad PWAはページをスクロールせず、ドロワーで図を切らずに縮める
+ok 104 - iPad PWAはページをスクロールせず、ドロワーで図を切らずに縮める
+  ---
+  duration_ms: 0.643667
+  type: 'test'
+  ...
+# Subtest: 長いiPadメニューは意味のまとまりでページ分割する
+ok 105 - 長いiPadメニューは意味のまとまりでページ分割する
+  ---
+  duration_ms: 0.252333
+  type: 'test'
+  ...
+# Subtest: 通常ブラウザ用の三列レイアウトは残す
+ok 106 - 通常ブラウザ用の三列レイアウトは残す
+  ---
+  duration_ms: 0.386458
+  type: 'test'
+  ...
+# Subtest: 標準アイコンとマスク可能アイコンを宣言する
+ok 107 - 標準アイコンとマスク可能アイコンを宣言する
+  ---
+  duration_ms: 2.793791
+  type: 'test'
+  ...
+# Subtest: 旧下書きは一度だけ会場ライブラリへ取り込み、旧キーを残す
+ok 108 - 旧下書きは一度だけ会場ライブラリへ取り込み、旧キーを残す
+  ---
+  duration_ms: 11.774167
+  type: 'test'
+  ...
+# Subtest: 会場セレクト用一覧は汎用7形式の後ろに読み込み済み会場を並べる
+ok 109 - 会場セレクト用一覧は汎用7形式の後ろに読み込み済み会場を並べる
+  ---
+  duration_ms: 1.447625
+  type: 'test'
+  ...
+# Subtest: 実在劇場は初期一覧に出さず、読み込んだデータと旧ショーのIDは使える
+ok 110 - 実在劇場は初期一覧に出さず、読み込んだデータと旧ショーのIDは使える
+  ---
+  duration_ms: 11.584542
+  type: 'test'
+  ...
+# Subtest: SHOSAI_VENUES.listの先頭5プリセットは値も並びも変えない
+ok 111 - SHOSAI_VENUES.listの先頭5プリセットは値も並びも変えない
+  ---
+  duration_ms: 1.312125
+  type: 'test'
+  ...
+# Subtest: 柱・什器・扉・天井とmovableは会場ライブラリを往復する
+ok 112 - 柱・什器・扉・天井とmovableは会場ライブラリを往復する
+  ---
+  duration_ms: 2.735667
+  type: 'test'
+  ...
+# Subtest: エディタ操作で柱1本・什器1つ・扉1つと独立した天井条件をvenue-v2保存できる
+ok 113 - エディタ操作で柱1本・什器1つ・扉1つと独立した天井条件をvenue-v2保存できる
+  ---
+  duration_ms: 96.552083
+  type: 'test'
+  ...
+# Subtest: 会場ファイルはプレビュー確認まで書き込まず、確定したときだけ取り込む
+ok 114 - 会場ファイルはプレビュー確認まで書き込まず、確定したときだけ取り込む
+  ---
+  duration_ms: 10.43575
+  type: 'test'
+  ...
+# Subtest: やめる・暗幕・Escapeはいずれも会場ライブラリを変えない
+ok 115 - やめる・暗幕・Escapeはいずれも会場ライブラリを変えない
+  ---
+  duration_ms: 9.939041
+  type: 'test'
+  ...
+# Subtest: 2MB超過・壊れたJSON・壊れたvenue-v2は書き込まず理由と除外件数を出す
+ok 116 - 2MB超過・壊れたJSON・壊れたvenue-v2は書き込まず理由と除外件数を出す
+  ---
+  duration_ms: 10.517083
+  type: 'test'
+  ...
+# Subtest: 201件は先頭200件だけ候補にし、切り捨てた1件を確認前後の文言へ出す
+ok 117 - 201件は先頭200件だけ候補にし、切り捨てた1件を確認前後の文言へ出す
+  ---
+  duration_ms: 15.473167
+  type: 'test'
+  ...
+# Subtest: 201件の先頭200件がすべて壊れていても、上限で切り捨てた1件を伝える
+ok 118 - 201件の先頭200件がすべて壊れていても、上限で切り捨てた1件を伝える
+  ---
+  duration_ms: 11.494125
+  type: 'test'
+  ...
+# Subtest: 確認モーダルの静的文言は英語対訳を持つ
+ok 119 - 確認モーダルの静的文言は英語対訳を持つ
+  ---
+  duration_ms: 0.375417
+  type: 'test'
+  ...
+# Subtest: 受け入れ会場で4本の線・探り針・赤い観客重なりを即時に更新しvenueへ保存しない
+ok 120 - 受け入れ会場で4本の線・探り針・赤い観客重なりを即時に更新しvenueへ保存しない
+  ---
+  duration_ms: 402.69925
+  type: 'test'
+  ...
+# Subtest: 未知の会場IDは元IDを持つmissing会場になり、プロセニアムへ化けない
+ok 121 - 未知の会場IDは元IDを持つmissing会場になり、プロセニアムへ化けない
+  ---
+  duration_ms: 1.075833
+  type: 'test'
+  ...
+# Subtest: version 3は会場ライブラリを変更せず従来どおりprojectを読める
+ok 122 - version 3は会場ライブラリを変更せず従来どおりprojectを読める
+  ---
+  duration_ms: 0.916708
+  type: 'test'
+  ...
+# Subtest: 自作会場を参照するショーはversion 4で会場を同梱できる
+ok 123 - 自作会場を参照するショーはversion 4で会場を同梱できる
+  ---
+  duration_ms: 0.910166
+  type: 'test'
+  ...
+# Subtest: version 4読込で会場IDが重なると連番IDで追加し、ショー参照も向け直す
+ok 124 - version 4読込で会場IDが重なると連番IDで追加し、ショー参照も向け直す
+  ---
+  duration_ms: 0.948
+  type: 'test'
+  ...
+# Subtest: 保存メタデータ既定値とinternal-onlyの3択確認UIを持つ
+ok 125 - 保存メタデータ既定値とinternal-onlyの3択確認UIを持つ
+  ---
+  duration_ms: 0.716042
+  type: 'test'
+  ...
+# Subtest: 柱・什器・扉の追加モードと、独立した天井高・吊りUIを持つ
+ok 126 - 柱・什器・扉の追加モードと、独立した天井高・吊りUIを持つ
+  ---
+  duration_ms: 0.69625
+  type: 'test'
+  ...
+# Subtest: 4本の表示トグルと、保存しない探り針の道具・到達高さUIを持つ
+ok 127 - 4本の表示トグルと、保存しない探り針の道具・到達高さUIを持つ
+  ---
+  duration_ms: 0.356083
+  type: 'test'
+  ...
+# Subtest: 平面の重ね順は床・可動・可動什器・死角・見える限界・落下・会場実体の順にする
+ok 128 - 平面の重ね順は床・可動・可動什器・死角・見える限界・落下・会場実体の順にする
+  ---
+  duration_ms: 0.114291
+  type: 'test'
+  ...
+# Subtest: TOHUプリセットは公式仕様書の実測値を保つ
+ok 129 - TOHUプリセットは公式仕様書の実測値を保つ
+  ---
+  duration_ms: 1.036875
+  type: 'test'
+  ...
+# Subtest: サーカスの3形式は出典どおりの寸法を保つ
+ok 130 - サーカスの3形式は出典どおりの寸法を保つ
+  ---
+  duration_ms: 1.00675
+  type: 'test'
+  ...
+# Subtest: 既存のビッグトップは触っていない（形式の見取り図として据え置き）
+ok 131 - 既存のビッグトップは触っていない（形式の見取り図として据え置き）
+  ---
+  duration_ms: 0.817458
+  type: 'test'
+  ...
+# Subtest: TOHUの表示文言は日英そろっている
+ok 132 - TOHUの表示文言は日英そろっている
+  ---
+  duration_ms: 1.325875
+  type: 'test'
+  ...
+# Subtest: 会場の説明に記法が混ざっていない（画面へ素のまま出るため）
+ok 133 - 会場の説明に記法が混ざっていない（画面へ素のまま出るため）
+  ---
+  duration_ms: 1.260083
+  type: 'test'
+  ...
+# Subtest: 形式プリセットには会場の性格を書いた一文を置かない
+ok 134 - 形式プリセットには会場の性格を書いた一文を置かない
+  ---
+  duration_ms: 1.461042
+  type: 'test'
+  ...
+# Subtest: 会場プリセットは全部が日英そろっている（追加時の訳し忘れを止める）
+ok 135 - 会場プリセットは全部が日英そろっている（追加時の訳し忘れを止める）
+  ---
+  duration_ms: 2.504792
+  type: 'test'
+  ...
+# Subtest: 会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う
+ok 136 - 会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う
+  ---
+  duration_ms: 0.89325
+  type: 'test'
+  ...
+# Subtest: ベータの実在3会場は選択肢から隠し、保存済みIDと認証を保持する
+ok 137 - ベータの実在3会場は選択肢から隠し、保存済みIDと認証を保持する
+  ---
+  duration_ms: 26.504958
+  type: 'test'
+  ...
+1..137
+# tests 137
+# suites 0
+# pass 137
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 649.308708

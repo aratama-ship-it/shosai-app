@@ -1,0 +1,9 @@
+{
+  "worker.js": "ee44e6fe6826429845480659ec747c026efb8de534253e32d93e98e1774ce928",
+  "build_stage.py": "0ee4c3cada82f5da97261fbc8e5d322fec268fcb78bbcad5e3a0591ff2a80d3b",
+  "stage.html": "daf156358d35caa96326202046d049d2df3ca81d41e785f05e0877279fd2aa5b",
+  "tests/worker-session-login.test.mjs": "01971b94f2d8ed78b131d10f138745230708322dcd6b27e3b3e56de2418257f7",
+  "tests/worker-guest-accounts-verify.test.mjs": "e6abb8ac1d2387d1439af9511733a15a14c9c4d0eedf4ce68649d4a135357863",
+  "tests/stage-session-shelve.test.mjs": "d59809bb573e7aef4939396f24922458932c60f52fbf82d13aabae392b7b3dd0",
+  "tests/worker-guest-scope.test.mjs": "d4763db41e1ebb2813f9ba65f315ade6190f191a54e7d633818dab7967149f2a"
+}

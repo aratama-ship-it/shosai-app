@@ -1,0 +1,13 @@
+最初に "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/AGENTS.md" を読むこと。
+対象: "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/" の index.html / stage-sw.js / build_stage.py の実行。
+目的: docs/I18N_ZH_WORKORDER_2026-09-09.md §3.3 の版上げと生成。他のファイルは触らない。
+完了報告: 変えた ?v= の一覧（前→後）／CACHE_NAME／APP_SHELL の追加行／python3 build_stage.py --check の結果／node tests/index.mjs の結果。
+補足:
+  - 対象の現在値（R3e 完了時）: index.html は stage-sketch.js?v=320 / stage-i18n.js?v=99 / stage-prompt-i18n.js?v=2 / stage-set-builder.js?v=1 / style.css?v=230、stage-public.js は現行値。新規 stage-i18n.zh-Hans.js / stage-i18n.zh-Hant.js は ?v=1 で読み込み済みか確認し、無ければ付ける。
+    stage-sw.js は CACHE_NAME "stage-sketch-pwa-v201"。APP_SHELL に上記の ?v= を同値で揃え、新規2本を追加する。
+  - 発注書 §3.3 の値: stage-sketch.js?v=321 / stage-i18n.js?v=100 / stage-prompt-i18n.js?v=3 / stage-set-builder.js?v=2 / style.css?v=231 / stage-public.js は +1 / CACHE_NAME v202。
+  - stage-sw.js には作業開始前から他セッションの未コミット変更がある。編集前に読み直し、版と APP_SHELL の行だけを変える。index.html / stage-sw.js を <name>_backup_2026-09-09-before-bump.<ext> に複製してから触る。
+  - python3 build_stage.py を実行して stage.html を再生成し、python3 build_stage.py --check が終了コード0であること。build_public.py は触らない（public-dist が古いのは既知・別件）。
+  - tests/stage-pwa.test.mjs 等の版ピンテストがあれば緑にする。node tests/index.mjs 全件緑。
+  - コミットしない。git add -A しない。
+完了報告: 変えた ?v= の一覧（前→後・ファイル別）／CACHE_NAME／APP_SHELL の追加・変更行／build_stage.py --check の終了コード／node tests/index.mjs の緑・赤件数／index.html と APP_SHELL の ?v= が全件同値であることの照合結果。

@@ -1,0 +1,129 @@
+{
+  "results": [
+    {
+      "name": "desktop-ja",
+      "measure": {
+        "width": 59.640625,
+        "height": 38,
+        "fits": true,
+        "icon": "⛶"
+      },
+      "entered": {
+        "native": "stage-canvas",
+        "pseudo": false,
+        "pressed": "true"
+      },
+      "checks": "button enters, F exits/enters, repeat ignored, Esc exits, no scene content changes, arrows change scenes"
+    },
+    {
+      "name": "shortcut-guards",
+      "checks": "modifiers, composition, key repeat, input/textarea/select/contenteditable, settings dialog, feature off, hidden/disabled/aria-disabled/public lock, guest, hidden stage"
+    },
+    {
+      "name": "desktop-en",
+      "measure": {
+        "width": 92.609375,
+        "height": 38,
+        "fits": true,
+        "icon": "⛶"
+      },
+      "entered": {
+        "native": "stage-canvas",
+        "pseudo": false,
+        "pressed": "true"
+      },
+      "checks": "button enters, F exits/enters, repeat ignored, Esc exits, no scene content changes, arrows change scenes"
+    },
+    {
+      "name": "desktop-zh-Hans",
+      "measure": {
+        "width": 47.765625,
+        "height": 38,
+        "fits": true,
+        "icon": "⛶"
+      },
+      "entered": {
+        "native": "stage-canvas",
+        "pseudo": false,
+        "pressed": "true"
+      },
+      "checks": "button enters, F exits/enters, repeat ignored, Esc exits, no scene content changes, arrows change scenes"
+    },
+    {
+      "name": "desktop-zh-Hant",
+      "measure": {
+        "width": 59.640625,
+        "height": 38,
+        "fits": true,
+        "icon": "⛶"
+      },
+      "entered": {
+        "native": "stage-canvas",
+        "pseudo": false,
+        "pressed": "true"
+      },
+      "checks": "button enters, F exits/enters, repeat ignored, Esc exits, no scene content changes, arrows change scenes"
+    },
+    {
+      "name": "tablet-landscape",
+      "measure": {
+        "width": 44,
+        "height": 44,
+        "fits": true,
+        "icon": "⛶"
+      },
+      "entered": {
+        "native": "stage-canvas",
+        "pseudo": false,
+        "pressed": "true"
+      },
+      "checks": "button enters, F exits/enters, repeat ignored, Esc exits, no scene content changes, arrows change scenes"
+    },
+    {
+      "name": "tablet-portrait",
+      "measure": {
+        "width": 44,
+        "height": 44,
+        "fits": true,
+        "icon": "⛶"
+      },
+      "entered": {
+        "native": "stage-canvas",
+        "pseudo": false,
+        "pressed": "true"
+      },
+      "checks": "button enters, F exits/enters, repeat ignored, Esc exits, no scene content changes, arrows change scenes"
+    },
+    {
+      "name": "no-api",
+      "measure": {
+        "width": 59.640625,
+        "height": 38,
+        "fits": true,
+        "icon": "⛶"
+      },
+      "entered": {
+        "native": null,
+        "pseudo": true,
+        "pressed": "true"
+      },
+      "checks": "button enters, F exits/enters, repeat ignored, Esc exits, no scene content changes, close button exits"
+    },
+    {
+      "name": "rejected-api",
+      "measure": {
+        "width": 59.640625,
+        "height": 38,
+        "fits": true,
+        "icon": "⛶"
+      },
+      "entered": {
+        "native": null,
+        "pseudo": true,
+        "pressed": "true"
+      },
+      "checks": "button enters, F exits/enters, repeat ignored, Esc exits, no scene content changes, close button exits"
+    }
+  ],
+  "errors": []
+}

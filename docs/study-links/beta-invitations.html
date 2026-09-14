@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ベータの招待リンク — ローカル確認</title><link rel="stylesheet" href="../../stage-study.css?v=5">
+<body class="study"><main class="study-shell">
+<header class="study-header"><div><p>Stage Sketch · ローカル確認 · 2026-09-10</p><h1>招待リンクから、すぐに舞台図を見る</h1><p>確認すること：ログインを挟まず、場面・舞台図・自分用メモへ進めること。未デプロイです。</p></div></header>
+<p><a class="study-action" href="http://127.0.0.1:8802/study?lang=ja#9b58a1484cce7abda749738a2d1d51b566ae6fa2dd4b75f8">ログインなしの確認画面を開く</a></p>
+<h2>今回の変更</h2>
+<ul><li>ベータ用設定が有効なら、招待トークンだけで、その公開ショーを閲覧できます。</li>
+<li>個人メモ・ペンはそのブラウザに保存。別端末へは同期しません。共有時の表示名も同じブラウザに保存します。</li>
+<li>「この画面をオーナーへ共有」を押したときだけ、表示名・対象場面・メモ・現在の舞台図と線を送ります。</li>
+<li>認証済み演者のアカウント同期と、本家のアカウント必須設定は維持。匿名閲覧はGoogle未設定でも利用できます。</li></ul>
+<h2>保存と権限</h2>
+<p>閲覧スナップショット・共有メモは既存のStudyLinks Durable Object。個人用の端末メモはショー本体と異なるlocalStorageキーです。既存ショーを上書きしません。公開の明示更新・無効化・メモ管理には認証済み作成者の一致が必要です。</p>
+<p>公開資源は既存の明示一覧を継承。編集画面、資料棚、名簿、アカウントのノート、他オーナーの管理APIは匿名閲覧の権限では開けません。無効化後はオンライン確認時に図を閉じ、再取得・投稿を拒否します。</p>
+<h2>検証結果</h2>
+<ul><li><a href="qa/beta-casual/node-tests.log">関連Nodeテスト：804 / 804合格</a>。新規の匿名権限・スナップショット・送信名・入力制限・レート制限・失効テストを含みます。</li>
+<li><a href="qa/beta-casual/account-runtime.log">実SQLiteのアカウント回帰：14 / 14合格</a>。再起動、競合、アカウント分離、失効を検証。</li>
+<li><a href="qa/beta-casual/browser.log">Chrome実画面：7項目合格、JavaScript例外0</a>。未ログイン閲覧、正面/平面へのマウス描画、保存・再読込・共有、他の受取人の分離、公開更新、無効化、保存失敗。</li>
+<li>日英 × 390×844、844×390、768×1024、1440×1000。横溢れなし、操作対象44px以上を確認。色・文字サイズ・余白は既存トークンと以前の測定値を継承。</li>
+<li>JS構文検査、build_stage.py --check、build_public.py --check、git diff --check合格。stage.htmlはindex.htmlから生成。公開体験版public-distも再生成済み。</li></ul>
+<h2>画面</h2>
+<p><a class="study-action" href="qa/beta-casual/personal-ja-1440.png">PC全幅・縦並び</a> <a class="study-action" href="qa/beta-casual/personal-ja-390.png">スマホ縦</a> <a class="study-action" href="qa/beta-casual/personal-en-844.png">英語・スマホ横</a> <a class="study-action" href="qa/beta-casual/personal-owner-shared.png">オーナー受信画面</a></p>
+<h2>本番適用時</h2>
+<p>wrangler.tomlにSTAGE_BETA_ACTIVE="true"とSTUDY_ALLOW_ANONYMOUS="true"を記載済み。両方が有効な場合だけ匿名閲覧できます。今回追加するmigrationはありません。従来のv3-study-links、v4-study-reader-accountsとbindingsの未適用分を確認して適用します。Googleの登録・シークレット設定はリンクだけのベータ利用には不要です。ローカル用ログインフラグは本番へ設定しません。</p>
+<p>実機iPhone/iPad/Android、Safari、実際のペン、公開後の配信・権限確認は未実施。公開作業、commit、push、Cloudflare設定登録、外部送信は行っていません。</p>
+<h2>変更と保護</h2>
+<p><a href="qa/beta-casual/changes.json">今回の変更ファイルと開始時差分の保護結果</a>。無関係な既存変更は巻き戻していません。配布物は現在の正本を使って再生成しています。</p>
+<p><a href="../../design/TOKEN_SHEET_study-links_2026-09-09.md">既存デザイントークンと今回の表示方針</a></p>
+<h2>起動方法</h2><p>shosai-appで実行（このMacの既存Miniflareを利用）：</p>
+<pre style="white-space:pre-wrap;overflow-wrap:anywhere">STUDY_ALLOW_ANONYMOUS=true STUDY_PORT=8802 STUDY_PERSIST=/tmp/study-casual-local-20260910 STUDY_MINIFLARE=/Users/arata/.npm/_npx/32026684e21afda6/node_modules/miniflare/dist/src/index.js node tools/study-preview.mjs</pre>
+<p>確認用のオーナーは study-owner / local-study-owner。確認リンクとデータはこのMacのローカル専用です。</p>
+</main></body></html>

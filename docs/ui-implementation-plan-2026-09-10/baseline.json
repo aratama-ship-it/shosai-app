@@ -1,0 +1,31 @@
+{
+  "capturedAt": "2026-09-11T18:26:31.417Z",
+  "note": "資料生成時点のソース識別用。各要件の検証時刻・公開反映の証明ではない。",
+  "gitHead": "427b5303323d35561e16da92e1f1ed42fb2bc8e9",
+  "dirty": true,
+  "hashes": {
+    "index.html": "94e7187ce73359060f070468b1c7a2d29ee24c6bc6844057f3d1e7deacf121f8",
+    "stage-venue-editor.js": "6f57dc1ba3e4b03c939e0fbf69a7e04c2ebc9397d750bded00363d52398ef311",
+    "stage-sketch.js": "dfd706bc0b0f58de4921b301794ce8161738e2f9840ebf39e140df1d99834c29",
+    "style.css": "7f5eb0d4598b1d9ee7d9c6753a56b7a829a7f9f812c0608bed766127adef260b",
+    "stage-i18n.js": "ae752c4b3fce49931c84bab8a48f97c21e839b4f03d0946772ca7f150ddfbff9",
+    "stage-i18n.zh-Hans.js": "227bb4cf2e37f75d32f550759f011f6ccde472c90378580e103add0c477be36f",
+    "stage-i18n.zh-Hant.js": "561421f8f2480f4e059d4114e96c95128a9655068859d618ca1b4a29b20a0fdc",
+    "tests/stage-undo-redo-placement.test.mjs": "c7ed2e18155771c250b6967ddf2a975b641537a0ef30e058d6024c083655402a",
+    "tests/stage-pwa.test.mjs": "110ae7fa17f696fa5adc05274972a867ccf68f618b9b00ebe4e067ffe6f4eaae",
+    "../../web-projects/pygmix-home/assets/pygmy-ojisan/WEB_PLACEMENTS.md": "c4fb140898322bc8f6a05ff3871d742da754231b1d93440ebbd2c0a767e163b1",
+    "stage-pwa.js": "eacac218248160f4068894e6cd445d98e1cf043be5cf38eb0f0f395aaa789a08",
+    "docs/ui-scene-panel-information-architecture-2026-09-10.html": "cc78da5096ad95e0e2acff3147627a1bcfe91f08522ebe03d5cc99f0e8d1a53a",
+    "stage-venues.js": "2547a9b3a9526c5c06673098328d9aeb374b61390941641821c294f049142e06",
+    "stage-set-builder.js": "7a3653f0ec5d8faf3da49dbfe07587396e702a6bdc3e0942fcb3e7d67bf525c5",
+    "stage-set-model.js": "12d9afb4185eef66d4aa5951de53a6f86837bb0110893bd300d221d8dffc21c7",
+    "stage-first-person.js": "cacb9c931b8bcb88c605b5f55d0c0511c771dc852e97b401212437455b2ba824",
+    "tests/stage-about.test.mjs": "33e34e43da57a989439495835274b656d1bee923989803bb971b653bc58947ca",
+    "tests/stage-prefs-planned.test.mjs": "72340591cd95b36e064198717a88bdcacbdb4d1c41200c0296690a023b74e3ec",
+    "tests/stage-release-history.test.mjs": "8a186ba7981514408870ec5afe90224ce8c132a59a0125d562d9d9aeeb37931e",
+    "tests/stage-export-cancel.test.mjs": "762700a7626ef9622459abec6038464a0afa5da1a4f4416879f050f44e5ce228",
+    "tests/stage-project-settings-modal.test.mjs": "3dfe65763fe0563eca61affa485318eb0b668262945f0dbc56db192e12aff6be",
+    "tests/stage-view-select.test.mjs": "f719b861144a52752e389287eb8f3c43c3cb92d1673658329b483eb502614064",
+    "tests/stage-ui-batch.test.mjs": "65408eb6ecd4e864d25a1486036edc7a4d249b3fd2f662e47a9c7b6093766259"
+  }
+}

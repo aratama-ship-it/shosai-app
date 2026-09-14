@@ -1,0 +1,21 @@
+{
+  "390": {
+    "viewport": 390,
+    "document": 390,
+    "cards": 32,
+    "brokenAnchors": []
+  },
+  "1440": {
+    "viewport": 1440,
+    "document": 1440,
+    "cards": 32,
+    "brokenAnchors": []
+  },
+  "p0Visible": 3,
+  "empty": true,
+  "oldSpecsVisible": 1,
+  "hashRevealsFiltered": true,
+  "evidenceDetails": "",
+  "brokenSourceRefs": [],
+  "errors": []
+}

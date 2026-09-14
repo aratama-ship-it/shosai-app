@@ -1,0 +1,12 @@
+Command: python3 build_stage.py --check
+study-frame.html matches index.html
+stage.html は index.html と揃っています
+Exit: 0
+Command: python3 build_public.py --check
+！公開用の生成物が古いです。python3 build_public.py で作り直してください
+  - 内容が古い: stage-i18n.js
+  - 内容が古い: stage-set-builder.js
+  - 内容が古い: stage-sketch.js
+Exit: 1
+Command: git diff --check
+Exit: 0

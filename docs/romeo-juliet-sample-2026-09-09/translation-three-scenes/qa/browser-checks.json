@@ -1,0 +1,37 @@
+{
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "noHorizontalOverflow": true,
+      "allFieldsFit": true,
+      "allEnglishAndJapaneseMatchData": true,
+      "sceneNavigationAndNotes": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "noHorizontalOverflow": true,
+      "allFieldsFit": true,
+      "allEnglishAndJapaneseMatchData": true,
+      "sceneNavigationAndNotes": true
+    }
+  ],
+  "repeatedCurseAnchors": {
+    "sceneOccurrences": 3,
+    "cueOccurrences": [
+      1,
+      2
+    ]
+  },
+  "revisionWorkflow": {
+    "jsonPreservesBaselineAndEnglish": true,
+    "txtIncludesAllThreeScenesAndRevision": true,
+    "onlyAffectedCueRequiresReview": true,
+    "restoringBaselineRestoresAnchorState": true,
+    "adoptionUnchanged": true
+  },
+  "browserVersion": "151.0.7922.34",
+  "pageErrors": [],
+  "draftSha256": "6fed8aaab04814b1ff4ca814b4dbb9e816210f9fd1e8791819c7ad4fa3ed8559"
+}

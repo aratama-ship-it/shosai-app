@@ -1,0 +1,35 @@
+{
+  "frames": 28,
+  "views": 2,
+  "sourceHashesUnchanged": true,
+  "cueCoverage": 19,
+  "actorConstraints": "passed",
+  "viewports": [
+    {
+      "viewport": [
+        1440,
+        1000
+      ],
+      "framesChecked": 28,
+      "overflow": false,
+      "sceneAndFrameSelection": "passed",
+      "viewSwitchAndZoom": "passed"
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "framesChecked": 28,
+      "overflow": false,
+      "sceneAndFrameSelection": "passed",
+      "viewSwitchAndZoom": "passed"
+    }
+  ],
+  "pngExport": "passed",
+  "embeddedImages": {
+    "overview": 3,
+    "scene2": 11
+  },
+  "errors": []
+}

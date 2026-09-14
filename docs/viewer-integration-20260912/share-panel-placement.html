@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>舞台スケッチ本体 — 演者用ビューアーの入口</title>
+  <style>
+    :root {
+      --desk: #191512;
+      --panel: #211c18;
+      --panel-deep: #171311;
+      --line: #5b5047;
+      --line-soft: #3d3630;
+      --milk: #f3eadc;
+      --milk-dim: #c9bfb0;
+      --blue: #81bfd4;
+      --blue-deep: #1c272c;
+      --rust: #c6663e;
+      --rust-bg: rgba(168, 75, 38, .19);
+      --sans: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      --serif: "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      margin: 0;
+      color: var(--milk);
+      background:
+        linear-gradient(rgba(25, 21, 18, .84), rgba(25, 21, 18, .94)),
+        repeating-linear-gradient(135deg, rgba(255,255,255,.018) 0 1px, transparent 1px 6px),
+        var(--desk);
+      font-family: var(--sans);
+    }
+
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .page { width: min(1080px, calc(100% - 32px)); margin: 36px auto 52px; }
+    .page-head { display: flex; align-items: end; justify-content: space-between; gap: 22px; margin-bottom: 18px; }
+    .eyebrow { margin: 0 0 6px; color: var(--blue); font-size: 11px; font-weight: 700; letter-spacing: .13em; }
+    h1 { margin: 0; font: 500 clamp(23px, 4vw, 34px)/1.25 var(--serif); letter-spacing: .035em; white-space: nowrap; }
+    .purpose { max-width: 440px; margin: 0; color: var(--milk-dim); font-size: 13px; line-height: 1.6; }
+
+    .local-notice {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 18px;
+      padding: 10px 12px;
+      border: 1px solid #766a53;
+      background: rgba(99, 84, 52, .18);
+      color: #efe2b7;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .local-notice strong { color: #fff0c3; }
+
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 274px; gap: 18px; align-items: start; }
+    .app-shell { overflow: hidden; border: 1px solid var(--line); background: var(--panel-deep); }
+    .app-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 74px; padding: 9px 12px 9px 17px; border-bottom: 1px solid var(--line); background: #1c272c; }
+    .app-brand { display: grid; gap: 2px; }
+    .app-brand small { color: var(--blue); font-size: 9px; font-weight: 700; letter-spacing: .14em; }
+    .app-brand b { color: var(--milk); font: 500 18px/1.2 var(--serif); letter-spacing: .06em; }
+    .app-brand span { color: var(--milk-dim); font-size: 10px; }
+    .header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+    .header-action, .viewer-open, .modal-close, .minor-button, .study-button {
+      min-height: 44px;
+      border-radius: 0;
+      border: 1px solid var(--line);
+      color: var(--milk);
+      background: transparent;
+      font-weight: 650;
+    }
+    .header-action { padding: 0 10px; color: var(--milk-dim); font-size: 11px; }
+    .viewer-open { position: relative; min-width: 112px; padding: 0 12px; border-color: var(--blue); color: #e0f5fc; background: rgba(129,191,212,.13); }
+    .viewer-open::after { content: "入口"; position: absolute; top: -10px; right: -1px; padding: 1px 5px; color: var(--blue-deep); background: var(--blue); font-size: 9px; font-weight: 800; letter-spacing: .08em; }
+    .app-canvas { position: relative; min-height: 690px; padding: 24px; background: linear-gradient(135deg, #211c18, #171311); }
+    .editor-context { display: grid; grid-template-columns: 150px minmax(0, 1fr) 140px; gap: 10px; min-height: 630px; opacity: .66; }
+    .tool-column { display: grid; align-content: start; gap: 8px; }
+    .ghost-panel { border: 1px solid var(--line-soft); background: rgba(33,28,24,.82); }
+    .ghost-panel h3 { margin: 0; padding: 9px; border-bottom: 1px solid var(--line-soft); color: var(--milk); font-size: 11px; }
+    .ghost-panel p { margin: 0; padding: 9px; color: var(--milk-dim); font-size: 10px; line-height: 1.5; }
+    .drawing-column { display: grid; grid-template-rows: 1fr 1fr; gap: 10px; }
+    .stage-drawing { position: relative; min-height: 238px; border: 1px solid #66574b; background: linear-gradient(180deg, rgba(129,191,212,.08), transparent 34%), #251f1a; }
+    .stage-drawing::before { content: attr(data-title); position: absolute; top: 9px; left: 10px; color: #b9dce7; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+    .stage-line { position: absolute; inset: 48px 28px 28px; border: 1px solid #7e6a5c; }
+    .stage-line::before, .stage-line::after { content: ""; position: absolute; border: 1px solid rgba(129,191,212,.6); border-radius: 50%; width: 20px; height: 20px; }
+    .stage-line::before { left: 26%; top: 40%; }
+    .stage-line::after { right: 28%; top: 28%; }
+    .modal-layer { position: absolute; inset: 0; display: grid; place-items: start center; padding: 26px 15px; background: rgba(0,0,0,.52); }
+    .modal { width: min(510px, 100%); border: 1px solid #75685d; background: var(--panel); }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; min-height: 54px; padding: 0 10px 0 16px; border-bottom: 1px solid var(--line); }
+    .modal-header h2 { margin: 0; font: 500 20px/1.25 var(--serif); letter-spacing: .04em; }
+    .modal-close { width: 44px; padding: 0; border-color: transparent; color: var(--milk-dim); font-size: 17px; }
+    .modal-body { display: grid; gap: 15px; padding: 17px 16px 18px; }
+    .panel-hint { margin: 0; color: var(--milk-dim); font-size: 12px; line-height: 1.62; }
+    .destination { margin: 0; padding: 9px 10px; border-left: 2px solid var(--blue); color: #cae7f0; background: var(--blue-deep); font-size: 11px; line-height: 1.55; }
+    .channel { display: grid; gap: 9px; }
+    .channel + .channel { padding-top: 15px; border-top: 1px solid var(--line); }
+    .channel-head { display: grid; gap: 3px; }
+    .channel-label { margin: 0; color: var(--blue); font-size: 10px; font-weight: 750; letter-spacing: .11em; }
+    .channel h3 { margin: 0; font-size: 14px; line-height: 1.38; }
+    .channel-head > p { margin: 0; color: var(--milk-dim); font-size: 12px; line-height: 1.55; }
+    .live-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; border: 1px solid var(--line-soft); background: rgba(255,255,255,.018); color: var(--milk-dim); font-size: 11px; line-height: 1.45; }
+    .live-summary span { color: #d6c299; font-size: 10px; white-space: nowrap; }
+    .study-area { display: grid; gap: 10px; }
+    .snapshot { display: grid; gap: 4px; padding: 10px; border-left: 2px solid var(--blue); background: rgba(129,191,212,.06); }
+    .snapshot strong { font-size: 12px; }
+    .snapshot p { margin: 0; color: var(--milk-dim); font-size: 11px; line-height: 1.55; }
+    .study-meta { display: flex; justify-content: space-between; gap: 12px; color: var(--milk-dim); font-size: 11px; }
+    .status { color: #e5d59e; }
+    .study-button { width: 100%; padding: 8px 14px; border-color: var(--rust); background: var(--rust-bg); color: #ffe4d6; }
+    .study-button:hover { background: rgba(168,75,38,.31); }
+    .issued { display: none; gap: 10px; padding-top: 1px; }
+    .issued.is-visible { display: grid; }
+    .url-label { margin: 0 0 4px; color: var(--milk-dim); font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+    .url-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+    .url-row input { min-width: 0; min-height: 44px; padding: 0 9px; border: 1px solid var(--line); border-radius: 0; color: #d5e9f0; background: #171311; font-size: 11px; }
+    .minor-button { padding: 7px 10px; color: var(--milk-dim); font-size: 12px; }
+    .issued-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .issued-actions .minor-button { flex: 1 1 135px; }
+    .fake-result { display: none; margin: 0; color: #bfdde8; font-size: 11px; line-height: 1.5; }
+    .fake-result.is-visible { display: block; }
+    details { border-top: 1px solid var(--line-soft); padding-top: 9px; }
+    summary { color: var(--milk-dim); font-size: 11px; cursor: pointer; }
+    .owner-only { display: grid; gap: 7px; padding-top: 10px; }
+    .owner-only p { margin: 0; color: var(--milk-dim); font-size: 11px; line-height: 1.5; }
+    .owner-only .minor-button { text-align: left; }
+
+    .placement-note { border: 1px solid var(--line); background: rgba(33,28,24,.78); }
+    .placement-note h2 { margin: 0; padding: 13px 14px; border-bottom: 1px solid var(--line); color: var(--blue); font-size: 13px; }
+    .placement-note ol { display: grid; gap: 12px; margin: 0; padding: 15px 16px 17px 33px; color: var(--milk-dim); font-size: 12px; line-height: 1.55; }
+    .placement-note li::marker { color: var(--blue); font-weight: 750; }
+    .placement-note strong { color: var(--milk); }
+    .code-place { margin: 0 14px 14px; padding: 9px; border-left: 2px solid var(--blue); color: #c8dfe6; background: var(--blue-deep); font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+    .review-action { display: block; width: calc(100% - 28px); margin: 0 14px 14px; }
+    .hidden { display: none !important; }
+
+    @media (max-width: 760px) {
+      .page { width: min(100% - 20px, 560px); margin: calc(20px + env(safe-area-inset-top)) auto 32px; }
+      .page-head { display: block; }
+      h1 { white-space: normal; }
+      .purpose { margin-top: 10px; }
+      .layout { grid-template-columns: 1fr; }
+      .placement-note { order: -1; }
+      .placement-note ol { gap: 7px; }
+      .placement-note li:nth-child(n+3) { display: none; }
+      .code-place { display: none; }
+      .review-action { display: none; }
+      .app-topbar { align-items: flex-start; }
+      .header-action { display: none; }
+      .viewer-open { min-width: 104px; }
+      .app-canvas { min-height: 608px; padding: 0; }
+      .editor-context { display: none; }
+      .modal-layer { padding: 0; place-items: stretch; background: rgba(0,0,0,.22); }
+      .modal { width: 100%; min-height: 100%; border-width: 0; }
+      .modal-body { padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="page-head">
+      <div>
+        <p class="eyebrow">STAGE SKETCH β · LOCAL REVIEW</p>
+        <h1>舞台スケッチ本体の入口</h1>
+      </div>
+      <p class="purpose">舞台スケッチでショーを作っている人が、右上の入口から演者用ビューアーのリンクを発行します。</p>
+    </header>
+
+    <p class="local-notice"><strong>ローカル確認用</strong> この画面ではリンクの発行・コピー・送信は行いません。発行後の見え方だけを確認できます。</p>
+
+    <div class="layout">
+      <section class="app-shell" aria-label="舞台スケッチ本体の編集画面にある演者用ビューアー入口の配置例">
+        <header class="app-topbar">
+          <div class="app-brand"><small>STAGE IMAGE STUDY</small><b>舞台スケッチ</b><span>v0.3.5 · β版</span></div>
+          <div class="header-actions">
+            <button class="header-action" type="button">感想を送る</button>
+            <button class="header-action" type="button" aria-label="設定">⚙</button>
+            <button class="header-action" type="button">全画面</button>
+            <button class="header-action" type="button">画像・印刷</button>
+            <button class="header-action" type="button">共有</button>
+            <button class="viewer-open" id="viewer-open" type="button">演者用リンク</button>
+          </div>
+        </header>
+        <div class="app-canvas">
+          <div class="editor-context" aria-hidden="true">
+            <div class="tool-column">
+              <section class="ghost-panel"><h3>ショー</h3><p>春のショー · v7<br>詳細設定</p></section>
+              <section class="ghost-panel"><h3>出るもの</h3><p>演者A<br>演者B<br>円形ステージ</p></section>
+              <section class="ghost-panel"><h3>照明</h3><p>前明かり<br>フォロー</p></section>
+            </div>
+            <div class="drawing-column">
+              <div class="stage-drawing" data-title="正面図"><div class="stage-line"></div></div>
+              <div class="stage-drawing" data-title="平面図"><div class="stage-line"></div></div>
+            </div>
+            <div class="tool-column">
+              <section class="ghost-panel"><h3>シーン</h3><p>1. オープニング<br>2. デュオ<br>3. フィナーレ</p></section>
+              <section class="ghost-panel"><h3>選んだもの</h3><p>位置・寸法・色</p></section>
+            </div>
+          </div>
+          <div class="modal-layer" id="modal-layer">
+            <section class="modal" role="dialog" aria-modal="true" aria-labelledby="viewer-title">
+              <header class="modal-header">
+                <h2 id="viewer-title">演者用リンク</h2>
+                <button class="modal-close" id="viewer-close" type="button" aria-label="閉じる">×</button>
+              </header>
+              <div class="modal-body">
+                <p class="panel-hint">このショーを、演者がスマートフォンやiPadの専用ビューアーで確認できるリンクにします。</p>
+                <p class="destination"><strong>リンクを受け取った演者</strong><br>Stage Sketch Viewerで正面図・平面図・視点を切り替えて確認できます。</p>
+                <section class="channel" aria-labelledby="study-title">
+                  <div class="channel-head">
+                    <p class="channel-label">舞台スケッチ本体から発行</p>
+                    <h3 id="study-title">演者用ビューアーのリンク</h3>
+                    <p>発行した時点のショーを閲覧専用で渡します。演者が舞台スケッチ本体を編集することはありません。</p>
+                  </div>
+
+                  <div class="study-area">
+                    <div class="snapshot">
+                      <strong>春のショー · v7</strong>
+                      <p>発行・更新した時点の全場面を公開します。編集中の変更は、次に「公開内容を更新」するまで届きません。</p>
+                    </div>
+                    <div class="study-meta"><span>公開状態</span><strong class="status" id="status">未発行</strong></div>
+                    <button class="study-button" id="issue-button" type="button">現在のショーからリンクを発行</button>
+
+                    <div class="issued" id="issued">
+                      <div>
+                        <p class="url-label">演者用ビューアーの閲覧リンク（この画面ではサンプル）</p>
+                        <div class="url-row">
+                          <input id="sample-url" readonly value="https://stagesketch.example/study#sample-only">
+                          <button class="minor-button" id="copy-button" type="button">コピー</button>
+                        </div>
+                      </div>
+                      <div class="issued-actions">
+                        <button class="minor-button" type="button" data-feedback="ビューアーは、この確認用ページでは開きません。">ビューアーで確認</button>
+                        <button class="minor-button" type="button" data-feedback="公開内容の更新は、この確認用ページでは行いません。">公開内容を更新</button>
+                      </div>
+                      <details>
+                        <summary>発行済みリンクの管理（オーナーのみ）</summary>
+                        <div class="owner-only">
+                          <button class="minor-button" type="button" data-feedback="フィードバック一覧は、この確認用ページでは開きません。">フィードバックを見る</button>
+                          <p>演者のメモは、演者が送信を選んだものだけを確認できます。</p>
+                          <button class="minor-button" type="button" data-feedback="無効化は、この確認用ページでは行いません。">リンクを無効化</button>
+                        </div>
+                      </details>
+                    </div>
+                    <p class="fake-result" id="fake-result" aria-live="polite"></p>
+                  </div>
+                </section>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <aside class="placement-note" aria-label="配置メモ">
+        <h2>配置メモ</h2>
+        <ol>
+          <li><strong>入口:</strong> 舞台スケッチ編集画面の右上に「演者用リンク」を独立して置く。</li>
+          <li><strong>役割:</strong> 押すと、演者用ビューアーのリンク発行パネルが開く。</li>
+          <li><strong>発行後:</strong> URLをコピーするか、作成者自身が「ビューアーで確認」を押せる。</li>
+          <li><strong>演者側:</strong> 受け取ったリンクからViewerを開き、編集なしで舞台を確認する。</li>
+        </ol>
+        <p class="code-place">舞台スケッチ本体<br>&nbsp;└ 右上「演者用リンク」<br>&nbsp;&nbsp;&nbsp;└ 発行パネル<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└ Stage Sketch Viewer</p>
+        <button class="minor-button review-action" id="reset-button" type="button">未発行の状態に戻す</button>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const layer = document.querySelector('#modal-layer');
+      const issue = document.querySelector('#issue-button');
+      const issued = document.querySelector('#issued');
+      const status = document.querySelector('#status');
+      const result = document.querySelector('#fake-result');
+      const reset = document.querySelector('#reset-button');
+
+      const showResult = (message) => {
+        result.textContent = message;
+        result.classList.add('is-visible');
+      };
+      const setUnissued = () => {
+        issued.classList.remove('is-visible');
+        issue.classList.remove('hidden');
+        status.textContent = '未発行';
+        result.classList.remove('is-visible');
+      };
+
+      issue.addEventListener('click', () => {
+        issued.classList.add('is-visible');
+        issue.classList.add('hidden');
+        status.textContent = '発行後の表示例';
+        showResult('表示確認用のサンプルです。実際のリンクは発行していません。');
+      });
+      reset.addEventListener('click', setUnissued);
+      document.querySelector('#copy-button').addEventListener('click', () => showResult('サンプルURLのため、実際のコピーはしていません。'));
+      document.querySelectorAll('[data-feedback]').forEach((button) => button.addEventListener('click', () => showResult(button.dataset.feedback)));
+      document.querySelector('#viewer-close').addEventListener('click', () => layer.classList.add('hidden'));
+      document.querySelector('#viewer-open').addEventListener('click', () => layer.classList.remove('hidden'));
+    })();
+  </script>
+</body>
+</html>

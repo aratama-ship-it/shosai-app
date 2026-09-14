@@ -1,0 +1,21 @@
+{
+  "time": "2026-09-09T19:39:16.558220+09:00",
+  "preexisting_files_checked": 1057,
+  "changed_or_missing_preexisting_files": [
+    "README.md",
+    "docs/romeo-juliet-sample-2026-09-09/direction-notes/scene-01-blocking-plan.json",
+    "docs/romeo-juliet-sample-2026-09-09/direction-notes/scene-notes.json",
+    "docs/romeo-juliet-sample-2026-09-09/qa/check_scene_01_plan.cjs",
+    "docs/romeo-juliet-sample-2026-09-09/script-book/build_script.py",
+    "docs/romeo-juliet-sample-2026-09-09/script-book/cast.json",
+    "docs/romeo-juliet-sample-2026-09-09/stage-sketch/build_scene_01.py",
+    "docs/romeo-juliet-sample-2026-09-09/stage-sketch/validate_scene_01.mjs"
+  ],
+  "head_unchanged": true,
+  "status_unchanged": false,
+  "final_status_lines": 78,
+  "staged_files": [],
+  "implementation_commits": 0,
+  "report_missing_links": [],
+  "source_preservation_passed": false
+}

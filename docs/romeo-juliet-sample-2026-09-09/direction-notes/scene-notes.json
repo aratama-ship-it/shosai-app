@@ -1,0 +1,2570 @@
+{
+  "schema": "stage-sketch.direction-notebook.v1",
+  "title": "ロミオとジュリエット｜演出ノート",
+  "updated": "2026-09-11",
+  "appImportCompatible": false,
+  "appliedToStageSketch": false,
+  "purpose": "会話で出た演出を場面ごとに蓄積し、本人が読めるノートと、後の舞台スケッチ場面生成用の指示を同じ記録から作る。",
+  "recordingPolicy": {
+    "userWords": "原文をentriesへ追記して保持する。",
+    "organizedNotes": "ユーザー指定の演出を整理し、原作の出来事と分ける。",
+    "missingDetails": "未指定はnullまたは未定のまま残す。",
+    "futureRevisions": "修正も新しいentryとして追記し、supersedesで過去のentryを参照する。",
+    "aiProposals": "追加案を作る場合はai_proposalとして別記し、本人指定へ混ぜない。"
+  },
+  "stagingConventions": [
+    {
+      "id": "RJ-CONVENTION-01",
+      "title": "両家の舞台上の基本位置",
+      "status": "user_direction_recorded",
+      "entryIds": [
+        "RJ-NOTE-0014"
+      ],
+      "appliesTo": "モンタギュー家またはキャピュレット家を舞台上の領域として示す場面",
+      "referenceFrame": "audience_view",
+      "text": "客席から舞台を向いて、左側をモンタギュー家、右側をキャピュレット家の基本領域とする。",
+      "assignments": [
+        {
+          "house": "MONTAGUE",
+          "labelJa": "モンタギュー家",
+          "region": "audience_left"
+        },
+        {
+          "house": "CAPULET",
+          "labelJa": "キャピュレット家",
+          "region": "audience_right"
+        }
+      ],
+      "overridePolicy": "場面固有の演出で別の位置が明示された場合は、その場面の指示を優先する。"
+    },
+    {
+      "id": "RJ-CONVENTION-02",
+      "title": "上演人数とアンサンブル兼任",
+      "status": "user_direction_recorded",
+      "entryIds": [
+        "RJ-NOTE-0022"
+      ],
+      "appliesTo": "12場面のショー全体",
+      "text": "上演人数は10名とする。10名が現在の名前のある10役を一役ずつ担当し、その場面で名前のある役を演じていない人がアンサンブルを兼任する。俳優名と役の割当は未決定。",
+      "performerCount": 10,
+      "namedRoleCount": 10,
+      "dedicatedEnsembleCount": 0,
+      "namedRoleDoublingRequired": false,
+      "ensembleDuty": "named_role_performers_rotate_into_ensemble_when_available",
+      "overridePolicy": "場面ごとの出演条件と死亡した人物の扱いを守り、誰がアンサンブルへ回るかは配役決定後に確定する。"
+    }
+  ],
+  "entries": [
+    {
+      "id": "RJ-NOTE-0001",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-01",
+      "kind": "user_direction",
+      "rawText": "まず1番目2つの家2つの群れのところでは、舞台を2つに割って、ストリートファイトのような形で全員が戦うと言う演技全員を出します。で、その中でど真ん中にベンヴォーリオとティーボルト両方がいてSpotlightが当たって、その2人だけは立ち向かって向き合っていると言う状況にします。他は乱戦のような形にします。",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0002",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-02",
+      "kind": "user_direction",
+      "rawText": "2つ目のシーンについての演出を考えます。今回はロミオとジュリエットがメインになるので、その2人が舞台の右斜め手前にスポットライトがあったりいる状態になります。他の人たちは他の場所で仮面をしてパーティーをしていると言う程にします。",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0003",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-03",
+      "kind": "user_direction",
+      "rawText": "3番目も基本的には同じで良いですが、仮面の人たちだけがいないと言うような状況にしようと思います",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0004",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-04",
+      "kind": "user_direction",
+      "rawText": "第4の場面では、ロレンス修道士が中央によりロミオとジュリエットが後から現れると言うシーンにしたいと思いますこの際他のアーティストたちは全員背中だけを見せて並んでいると言う方向性にしようと思います。皆には見られていない秘密であると言うことを暗喩する方法です。",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0005",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-05",
+      "kind": "story_question",
+      "rawText": "しーん5で既にmaruki-sioが死んでいると言うシーンになっていますがこの伏線は事前の場所で貼っておきたいので何とかしたいです。ストーリーからするとどこで死ぬのが正しいでしょうか？",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0006",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-05",
+      "kind": "user_direction",
+      "rawText": "なるほど、この件は全て一応出したいです。文章として出す必要ないかもしれないんですが、このシーンは非常に重要だと思うので、簡易的でもいいのでもしくは陰融的に表現しましょう。",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0007",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-05",
+      "kind": "story_question",
+      "rawText": "現実の問題では、これはかなり素早く行われていくものなのでしょうか。それともその間に合間に何かしらがあったりするでしょうか",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0008",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-05",
+      "kind": "user_direction",
+      "rawText": "それも踏まえて、この場面のセリフをちょっと増えることになると思うので、それをちょっとやってください",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0009",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-05",
+      "kind": "user_direction",
+      "rawText": "ここまですると、第5場面はちょっと長すぎる気がするので、セリフはちょっとヘアーしてある程度行動でセリフは減らして行動増やそうと思います。",
+      "supersedes": [
+        "RJ-NOTE-0008"
+      ]
+    },
+    {
+      "id": "RJ-NOTE-0010",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-05",
+      "kind": "user_direction",
+      "rawText": "一度ロミオが無視してティボルトが追いかけてみるものの見失う、そこにマルキー塩が現れ戦うというながれにしましょう",
+      "normalizedCharacterNames": {
+        "マルキー塩": "マーキューシオ"
+      },
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0011",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-05",
+      "kind": "user_direction",
+      "rawText": "それでいいとおもいます。むしろその瞬間にロミオが報復してもいいと思います",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0012",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-06",
+      "kind": "content_feedback",
+      "rawText": "追放と夜明けの別れのシーンでは何が描かれていますか。内容が薄く感じます。",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0013",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-07",
+      "kind": "user_direction",
+      "rawText": "なるほど7番シーンに行きます。7番がすごく短いと思いますがどうでしょうか出てくる2人だけしか基本的には関係ないと思いますが、それ以外の人物は無しにしましょう。",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0014",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "GLOBAL",
+      "kind": "global_direction",
+      "rawText": "また改めてなんですが、基本的に各キャピュレット家、モンテュ家のシーンに関しては、舞台左側を向かって左側をモンテギュ〜、右側をキャプレット家とするようにしましょう。",
+      "normalizedNames": {
+        "モンテュ家": "モンタギュー家",
+        "モンテギュ〜": "モンタギュー家",
+        "キャプレット家": "キャピュレット家"
+      },
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0015",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-10",
+      "kind": "user_direction",
+      "rawText": "１０に関しては簡略化しましょう。届けに行った人と入れ違いで戻ってくるようにすればシンプルにできます",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0016",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-10",
+      "kind": "user_direction",
+      "rawText": "このシーンでは、追いかけっこみたいなニュアンスを作りたいと思います。これは劇的な表現ではなく、少し比喩的にサーカスの技術を使ってできたらいいなと思います。",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0017",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-11",
+      "kind": "user_direction",
+      "rawText": "このシーンではいろいろなことが行われているので、シアター左側にボッチを作り、真ん中は干渉できない地域として舞台左と右でそれぞれ別の場所として作って別の2箇所が同時に行われていると言う表現をしましょう",
+      "interpretationNotes": [
+        "「ボッチ」は直前の墓所の文脈から「墓地・墓所」として整理する。",
+        "「シアター左側」は既存ノートの基準に合わせ、客席から見て舞台左側として記録する。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0018",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-11",
+      "kind": "research_request",
+      "rawText": "ちょっと今やることではないかもしれないですが、この非干渉領域というのをうまく表現したいですが、何かしら良いアイディアはあったりしますかもしくは今まで行われてきた舞台のシステムとしてそういうものがあれば参考にしたいです。その辺から拾ってきてもいいですし、私の書斎アプリの中にそういうアイディアがあればそこから拾ってきてください。",
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0019",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-11",
+      "kind": "user_direction",
+      "rawText": "出来る限り人で表現したいと思っているので、それらのロック案をうまく人で表現できたりしないでしょうか？例えば川のようなダンスというか、そういうインプロゼイションのような形でその2つを愛入れないものであることを表現したいです。",
+      "interpretationNotes": [
+        "「愛入れない」は文脈から「相容れない」と整理する。",
+        "「ロック案」は意味を確定せず、直前に提示した複数の参考案を指すものとして扱う。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0020",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-12",
+      "kind": "user_direction",
+      "rawText": "ふたりの死で悲しみロレンスを中心に人が集まってくるというながれにしましょう",
+      "interpretationNotes": [
+        "「ふたり」は直前の場面と会話の文脈から、ロミオとジュリエットを指すものとして整理する。",
+        "集まる人々の正確な人物構成、登場順、経路はまだ決めない。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0021",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-12",
+      "kind": "user_direction",
+      "rawText": "ロレンスを中央に、一人ずつ集まってくるイメージです",
+      "interpretationNotes": [
+        "「中央」は舞台中央として記録する。",
+        "一人ずつ集まる順番と、それぞれの登場口・経路はまだ決めない。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0022",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": null,
+      "kind": "user_direction",
+      "rawText": "じゃあ１０名でやりましょう",
+      "interpretationNotes": [
+        "12場面のショー全体の出演者数を10名として記録する。",
+        "名前のある役が10役あるため、一人一役を基本とし、各場面のアンサンブルはその場面で名前のある役を演じていない出演者が兼任する。俳優名と役の割当はまだ決めない。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0023",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-01",
+      "kind": "user_direction",
+      "rawText": "これは４すみでそれぞれ乱闘を起こしているイメージです。なのでここは乱戦で、左右で両家をあらわしません。中央の二人は基本的に見つめ合っているようなイメージです。全員の乱闘が止まった瞬間に二人が戦うというコントラストで。スポットライトはセンターと全体で棲み分けるイメージ。基本的には大きすぎず小さすぎず、照明はこのシーンでは大げさなことはしない。尺は３分くらいをイメージ。皆はいい感じで和解したり、両方がダメージをおったりして、ばらばらになるなか、中央の二人で戦いが始まった瞬間にブラックアウト、次のシーンへ",
+      "interpretationNotes": [
+        "既存の10名全員出演、中央のベンヴォーリオとティーボルト、中央へのスポットライトは維持する。",
+        "第1場面では共通の左右配置ルールを上書きし、左右で両家を表さない。",
+        "中央以外の8名と四隅という指定から、各隅2名の四組として整理する。出演者名の割当は決めない。",
+        "「3分くらい」は正確なキュー時刻ではなく、約180秒の目安として記録する。",
+        "中央の戦いは、開始が見えた瞬間にブラックアウトするため、長い打ち合いとして扱わない。"
+      ],
+      "supersedes": [
+        "RJ-NOTE-0001"
+      ]
+    },
+    {
+      "id": "RJ-NOTE-0024",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-01",
+      "kind": "user_direction",
+      "rawText": "１はキャラクター設定をまもりつつ決めてください。そのごに2から３で",
+      "interpretationNotes": [
+        "直前に提示した次の一手の1、2、3を順に進める指示として記録する。",
+        "1は、中央以外の8名を四隅の四組へ割り当て、各組の結末をキャラクター設定と矛盾しない形で決めること。",
+        "2は、基準舞台寸法と具体的な立ち位置を決めること。",
+        "3は、その決定を現在のStage Sketch形式へ変換すること。",
+        "俳優名と身体条件は未提供のため、名前のある役を担当する俳優の枠として割り当てる。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0025",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-01",
+      "kind": "user_direction",
+      "rawText": "ここでちょっと提案なのですが、量が多すぎるのでもっとハイライトのように短くしたいと思います",
+      "interpretationNotes": [
+        "第1場面の四隅4組と中央2名という核を保ち、上演尺と常時見える説明量を短くする指示として記録する。",
+        "約3分から約90秒のハイライト版へ圧縮する。",
+        "四組の人物設定に沿った組分けと結末は保持し、各組を長く順番に見せず、同時進行と短い連鎖で示す。",
+        "通し台本では舞台図と三つの進行だけを常時表示し、四組の詳細と座標は折りたたむ。"
+      ],
+      "supersedes": [
+        "RJ-NOTE-0023",
+        "RJ-NOTE-0024"
+      ]
+    },
+    {
+      "id": "RJ-NOTE-0026",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-01",
+      "kind": "user_correction",
+      "rawText": "１場面あたりを減らすというよりはシーンの数を削れるだけ削ってまとめ上げたいというイメーじです",
+      "interpretationNotes": [
+        "短くする対象は一場面ごとの尺ではなく、全体の場面数である。",
+        "RJ-NOTE-0025で行った第1場面の約90秒化は誤解だったため、ユーザー指定の約3分へ戻す。",
+        "既存12場面の台詞・演出メモを原資料として保持し、因果関係と演出を残せる最小の統合案を別成果物として作る。",
+        "5場面構成はAIによる推奨案で、本人確認前として扱う。"
+      ],
+      "supersedes": [
+        "RJ-NOTE-0025"
+      ]
+    },
+    {
+      "id": "RJ-NOTE-0027",
+      "date": "2026-09-09",
+      "source": "user_message",
+      "sceneId": null,
+      "kind": "user_structure_direction",
+      "rawText": "5場面統合案ですが、1と234でまとめましょう",
+      "interpretationNotes": [
+        "前の5場面案の1を残し、2・3・4を一つにまとめる。指定にない5は終幕として残し、全3場面に整理する。",
+        "番号は前の5場面案を指すものとして整理。3場面の見出しと内部のつなぎ方はAIによる整理案。",
+        "前回AIが提示した5場面という下限は撤回し、各場面の尺は変更しない。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0028",
+      "date": "2026-09-10",
+      "source": "user_message",
+      "sceneId": null,
+      "condensedSceneId": "RJ-COND-02",
+      "kind": "user_request_to_develop_condensed_scene",
+      "rawText": "第2場面行きましょう",
+      "interpretationNotes": [
+        "現在の3場面統合構成の第2場面（元の12場面の3〜10）を進める指示として扱う。",
+        "既存の下訳をつないだ構成稿を作成。追加した台詞、使者の役割の移し替え、つなぎの動きはAI案であり、採用済みの本人指示とは区別する。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0029",
+      "date": "2026-09-10",
+      "source": "user_message",
+      "sceneId": null,
+      "condensedSceneId": "RJ-COND-02",
+      "phaseId": "RJ-PHASE-PROMISE",
+      "kind": "user_direction_revision",
+      "rawText": "乳母の役割が必要ない気がするので一度約束と結婚ではいらないです。むしろこれは劇場袖から大声で探しているようなニュアンスにしましょう",
+      "interpretationNotes": [
+        "約束と結婚では乳母という人物を出さず、舞台袖から大声でジュリエットを探す匿名の声へ置き換える。",
+        "具体的な呼び声と二人の反応はAI整理案。発声担当は既存10名のうち当該キューで舞台に出ていない出演者から選ぶ。",
+        "変更の範囲は約束と結婚。後半の服薬・葬送と、元の12場面の下訳はこの指示では変更しない。"
+      ],
+      "replacesScriptLineIds": [
+        "RJ-COND-02-A-L03"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0030",
+      "date": "2026-09-10",
+      "source": "user_message",
+      "sceneId": null,
+      "condensedSceneId": "RJ-COND-02",
+      "phaseId": "RJ-PHASE-PROMISE",
+      "kind": "user_voice_assignment",
+      "rawText": "せっかくなので大道具さんにしましょう",
+      "interpretationNotes": [
+        "舞台袖から大声でジュリエットを探す声を、大道具担当に割り当てる。",
+        "具体的な担当者は未指定。前回AIが仮置きした「既存出演者の中から選ぶ」は、この指定に置き換える。",
+        "袖からの声、姿は見せないこと、呼びかけの文言と二人の反応は引き継ぐ。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0031",
+      "date": "2026-09-10",
+      "source": "user_message",
+      "sceneId": null,
+      "kind": "user_request_for_stage_visuals",
+      "rawText": "現在別途のセッションでこのように画像で先にステージの構成をつくっているのでそれももう各シーンに作ってビジュアル化していきたいです",
+      "attachment": "スクリーンショット 2026-09-10 16.14.18.png",
+      "interpretationNotes": [
+        "3つの統合場面と、それぞれの内部キューに対応する舞台構成図を作る。",
+        "添付の斜め図の見せ方を参照し、平面図も併用する。細かな座標、舞台寸法、動線は検討案。",
+        "台本と図の間を移動できるようにし、図と対応する位置データを保存する。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0032",
+      "date": "2026-09-10",
+      "source": "user_message",
+      "sceneId": null,
+      "kind": "user_direction_revision",
+      "rawText": "個人的な部分なんですが、ロミオの一家の方を赤色にしてジュリエット一家を青色にしてくれますか",
+      "interpretationNotes": [
+        "構成図では、名前のあるロミオ側（ロミオ、ベンヴォーリオ、マーキューシオ、モンタギュー）を赤にする。",
+        "名前のあるジュリエット側（ジュリエット、ティボルト、乳母、キャピュレット）を青にする。",
+        "ロレンス修道士、ジョン修道士、匿名の群衆は中立色のままにする。冒頭の四隅の乱戦は、左右の家を色で示さない既存指定を維持する。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0033",
+      "date": "2026-09-10",
+      "source": "user_message",
+      "sceneId": null,
+      "condensedSceneId": "RJ-COND-01",
+      "phaseId": "RJ-COND-01-C",
+      "kind": "user_direction_revision",
+      "rawText": "仮面舞踏会のシーンでは、全員が仮面をしますが、雰囲気は室内っぽい雰囲気にしたいので、バーのようなセットを出したいです",
+      "interpretationNotes": [
+        "仮面舞踏会と家名を知る瞬間では、ロミオとジュリエットを含む舞台上の全員が仮面を着ける。",
+        "舞台奥に中立のバー・カウンターと背面棚を置き、室内の宴として見立てる。二人の客席右手前のスポットと他の人物の宴は維持する。",
+        "具体的な大道具寸法、持ち物、転換、照明の色温度は未決定。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0034",
+      "date": "2026-09-11",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-01",
+      "condensedSceneId": "RJ-COND-01",
+      "phaseId": "RJ-COND-01-B",
+      "kind": "user_direction_adoption",
+      "rawText": "次の一手ですがそうしましょう",
+      "interpretationNotes": [
+        "中央の対峙は、ベンヴォーリオが乱闘を止めようとし、ティボルトがそれを決闘へ変えようとする関係として見せる。",
+        "四隅の乱戦、中央へのスポット、約3分、ティボルトの挑発が見えた瞬間のブラックアウトは維持する。",
+        "実際の斬り合いと接触は見せず、剣が触れる前の挑発を暗転の引き金にする。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0035",
+      "date": "2026-09-11",
+      "source": "user_message",
+      "sceneId": "RJ-DIR-04",
+      "condensedSceneId": "RJ-COND-02",
+      "phaseId": "RJ-COND-02-B",
+      "kind": "user_direction_adoption",
+      "rawText": "次の一手しましょう",
+      "interpretationNotes": [
+        "窓辺の終わりでは、二人がつないだ手を離し、ジュリエットは大道具さんの声がする客席右の袖へ、ロミオは客席左の暗がりへ別々に退く。暗転は使わない。",
+        "中央ではロレンス修道士が先に待ち、ほかの7名は客席へ背中を向けたまま、左右から横に滑って舞台奥の一列をつくる。",
+        "ロミオは客席左斜め、ジュリエットは客席右斜めから別々に中央へ入り、ロレンスの前で初めて向き合う。背中の列は振り返らない。"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "RJ-NOTE-0036",
+      "date": "2026-09-11",
+      "source": "user_message",
+      "sceneId": null,
+      "kind": "full_show_drafting_authorization",
+      "rawText": "だいぶ私としてはもう満足な所まで来ているので細かい転換などはあとでまたわたしがみて修正します。一度細かいところまでアイデアをいれてショー全体をつないでくれますか",
+      "interpretationNotes": [
+        "既存の3場面・10名と本人指定の演出を軸に、細かな転換・出入り・台詞のつなぎ・音楽・照明・小道具の案まで補った通し上演稿を作る。",
+        "追加案はAI提案としてfull-show/score.jsonへ分けて記録し、既決定の演出に格上げしない。本人の最終推敲は後から行う。",
+        "通し稿と全体の構成図を単体HTMLで閲覧できる形に残す。実音源の制作や舞台スケッチへの実取り込みはこの作業に含めない。"
+      ],
+      "supersedes": []
+    }
+  ],
+  "scenes": [
+    {
+      "id": "RJ-DIR-01",
+      "outlineId": 1,
+      "scriptSampleId": "RJ-SAMPLE-01",
+      "title": "二つの家、二つの群れ",
+      "sourceActScene": "第1幕 第1場",
+      "storyContext": {
+        "text": "モンタギュー家とキャピュレット家の対立。街の争いに大公が警告する。",
+        "source": "../scene-outline/outline.json",
+        "status": "existing_outline_context"
+      },
+      "status": "user_direction_recorded",
+      "entryIds": [
+        "RJ-NOTE-0001",
+        "RJ-NOTE-0023",
+        "RJ-NOTE-0024",
+        "RJ-NOTE-0025",
+        "RJ-NOTE-0026",
+        "RJ-NOTE-0034"
+      ],
+      "summary": "10名全員が登場する。中央のベンヴォーリオとティーボルトだけは名前のある役として向き合い、ほかの8名は匿名の群衆役を兼ねて四隅の四組となる。ベンヴォーリオは乱闘を止めようとし、ティボルトはその制止を決闘へ変えようとする。三組が順に和解または双方の負傷で退き、最後の一組が止まる瞬間にティボルトの挑発が見え、剣が触れる前に即ブラックアウトする。12m×9mの基準舞台で約3分。次は同じ大場面内の仮面の宴へ移る統合案を検討する。",
+      "directionItems": [
+        {
+          "label": "出演",
+          "text": "10名全員が舞台に出る。ベンヴォーリオとティーボルトだけは名前のある役として中央に立つ。ほかの8名は、各役を担当する俳優がこの場面だけ匿名の街の群衆役を兼ねる。"
+        },
+        {
+          "label": "舞台空間",
+          "text": "基準舞台は間口12m×奥行9m。四隅と中央の五領域を使う。この場面では左右で両家を表さず、物理的な境界も設けない。実会場に合わせた変換は後で行う。"
+        },
+        {
+          "label": "奥・客席左",
+          "text": "ロミオ役とジュリエット役の俳優が匿名の若い群衆を演じる。激しい応酬が鏡写しの動きへ変わり、1:55ごろに呼吸がそろって和解する。"
+        },
+        {
+          "label": "奥・客席右",
+          "text": "ロレンス修道士役とジョン修道士役の俳優が匿名の争いを止めたい群衆を演じる。同じ目的に気づき、2:08ごろに互いを立たせて和解する。"
+        },
+        {
+          "label": "手前・客席左",
+          "text": "モンタギュー役とキャピュレット役の俳優が匿名の年長の従者を演じる。重く頑固に押し合い、2:23ごろに双方が同時に体勢を崩して外側へ退く。"
+        },
+        {
+          "label": "手前・客席右",
+          "text": "マーキューシオ役と乳母役の俳優が匿名の群衆を演じる。素早い挑発と低い防御が衝突し、双方がダメージを負う。この組だけが3:00まで動く。"
+        },
+      {
+        "label": "中央の二人",
+        "text": "ベンヴォーリオはu=0.44、ティーボルトはu=0.56、二人ともv=0.50。約1.44m離れて向き合う。ベンヴォーリオは四隅の争いを止めるために手を広げ、ティーボルトはその制止を受けず、約0.96mまで詰めて剣先を向ける。"
+      },
+      {
+        "label": "対比のキュー",
+        "text": "先に収束した三組の六人がばらばらに退き、最後の手前右が止まる。その静止と同時に、ベンヴォーリオが制止へ踏み出し、ティーボルトがそれを挑発へ反転させる。"
+        },
+        {
+          "label": "照明",
+          "text": "四隅を含む抑えた全体照明と、中央二人への中程度のスポットを併用する。大げさな変化や細かなキューは増やさない。"
+        },
+      {
+        "label": "台本との接続",
+        "text": "ベンヴォーリオの「争いを止めているだけだ。剣を収めろ。」から、ティボルトの平和を嫌う言葉へ接続する。剣を交える前の挑発を、暗転の引き金にする。"
+      },
+      {
+        "label": "終わり",
+        "text": "ティボルトがベンヴォーリオの制止を決闘へ変えようとする動きが見えた瞬間に即ブラックアウトする。長い打ち合いも実際の接触も見せない。統合案では、この暗転を独立した場面転換ではなく、仮面の宴へ移る内部キューとして使う。"
+      },
+      {
+        "label": "尺",
+        "text": "約3分。0:00〜1:55は四組の乱闘と中央の制止、1:55〜2:35は三組が順に収束、2:35〜3:00は六人の散開と最後の一組、3:00で中央の制止への挑発と即ブラックアウト。すべて未稽古の仮配分。"
+        }
+      ],
+      "unresolved": [
+        "10名の俳優名、身長、利き側、身体能力と、役の担当者をこの仮配置へ割り当てたときの調整。",
+        "実会場の寸法、袖、客席からの見切れを踏まえた座標と退場経路の変換。",
+        "接触しない距離を含む四組の殺陣、中央の制止と挑発の身体表現、武器や道具の有無と安全手順。",
+        "スポットライトの灯数・色・照度・正確な径と、全体照明とのバランス。",
+        "音楽・効果音と、約3分の収束時刻を稽古で確定すること。"
+      ],
+      "stageSketchHandoff": {
+        "kind": "scene_generation_brief",
+        "globalConventionIds": [
+          "RJ-CONVENTION-02"
+        ],
+        "overriddenGlobalConventionIds": [
+          "RJ-CONVENTION-01"
+        ],
+        "targetSource": "../../../stage-sketch.js#newScene",
+        "verifiedDate": "2026-09-11",
+        "title": "二つの家、二つの群れ",
+        "note": "10名全員が登場する。中央のベンヴォーリオとティーボルトだけは名前のある役として向き合い、ほかの8名は匿名の群衆役を兼ねて四隅の四組となる。ベンヴォーリオは乱闘を止めようとし、ティボルトはその制止を決闘へ変えようとする。三組が順に和解または双方の負傷で退き、最後の一組が止まる瞬間にティボルトの挑発が見え、剣が触れる前に即ブラックアウトする。12m×9mの基準舞台で約3分。次は同じ大場面内の仮面の宴へ移る統合案を検討する。",
+        "placementConstraints": [
+          {
+            "subject": "full_cast",
+            "onStage": true,
+            "count": 10,
+            "namedCharacters": [
+              "BENVOLIO",
+              "TYBALT"
+            ],
+            "ensembleRoleHolders": [
+              "ROMEO",
+              "JULIET",
+              "FRIAR_LAWRENCE",
+              "FRIAR_JOHN",
+              "MONTAGUE",
+              "CAPULET",
+              "MERCUTIO",
+              "NURSE"
+            ]
+          },
+          {
+            "subject": "stage",
+            "regions": [
+              "upstage_left_corner",
+              "upstage_right_corner",
+              "downstage_left_corner",
+              "downstage_right_corner",
+              "stage_center"
+            ],
+            "referenceFrame": "audience_view",
+            "houseSideEncoding": false,
+            "physicalDivider": false,
+            "exactDimensions": {
+              "widthM": 12,
+              "depthM": 9,
+              "heightM": 8,
+              "status": "reference_assumption_pending_actual_venue"
+            }
+          },
+          {
+            "subject": [
+              "BENVOLIO",
+              "TYBALT"
+            ],
+            "region": "stage_center",
+        "relation": "benvolio_attempts_to_stop_brawl_while_tybalt_sustains_a_challenge_until_last_corner_brawl_stops",
+        "finalAction": "last_corner_pair_stops_benvolio_steps_to_stop_tybalt_turns_the_gesture_into_a_challenge_and_blackout_before_contact",
+            "coordinates": {
+              "start": [
+                {
+                  "roleId": "BENVOLIO",
+                  "u": 0.44,
+                  "v": 0.5
+                },
+                {
+                  "roleId": "TYBALT",
+                  "u": 0.56,
+                  "v": 0.5
+                }
+              ],
+              "challengeApproach": [
+                {
+                  "roleId": "BENVOLIO",
+                  "u": 0.46,
+                  "v": 0.5
+                },
+                {
+                  "roleId": "TYBALT",
+                  "u": 0.54,
+                  "v": 0.5
+                }
+              ]
+            }
+          },
+          {
+            "subject": "remaining_performers",
+            "count": 8,
+            "characterStatus": "anonymous_street_crowd",
+            "formation": "four_pairs",
+            "performersPerPair": 2,
+            "pairAssignments": [
+              {
+                "id": "PAIR-UL",
+                "region": "upstage_left_corner",
+                "roleHolders": [
+                  "ROMEO",
+                  "JULIET"
+                ],
+                "outcome": "reconcile",
+                "endAtSeconds": 115
+              },
+              {
+                "id": "PAIR-UR",
+                "region": "upstage_right_corner",
+                "roleHolders": [
+                  "FRIAR_LAWRENCE",
+                  "FRIAR_JOHN"
+                ],
+                "outcome": "reconcile",
+                "endAtSeconds": 128
+              },
+              {
+                "id": "PAIR-DL",
+                "region": "downstage_left_corner",
+                "roleHolders": [
+                  "MONTAGUE",
+                  "CAPULET"
+                ],
+                "outcome": "both_damaged",
+                "endAtSeconds": 143
+              },
+              {
+                "id": "PAIR-DR",
+                "region": "downstage_right_corner",
+                "roleHolders": [
+                  "MERCUTIO",
+                  "NURSE"
+                ],
+                "outcome": "both_damaged",
+                "endAtSeconds": 180
+              }
+            ],
+            "coordinatesRef": "scene-01-blocking-plan.json#cueSnapshots"
+          }
+        ],
+        "stagingSequence": [
+          {
+            "order": 1,
+            "fromSeconds": 0,
+            "toSeconds": 115,
+            "action": "four_corner_brawls_while_benvolio_attempts_to_stop_and_tybalt_refuses"
+          },
+          {
+            "order": 2,
+            "fromSeconds": 115,
+            "toSeconds": 155,
+            "action": "three_pairs_resolve_in_sequence"
+          },
+          {
+            "order": 3,
+            "fromSeconds": 155,
+            "toSeconds": 180,
+            "action": "six_disperse_while_final_pair_continues"
+          },
+      {
+        "order": 4,
+        "atSeconds": 180,
+        "action": "final_corner_pair_stops_benvolio_attempts_to_stop_tybalt_challenges_and_immediate_blackout_before_contact"
+          }
+        ],
+        "lightingBrief": {
+          "approach": "restrained_zone_separation",
+          "zones": [
+            {
+              "region": "stage_center",
+              "type": "spotlight",
+              "targets": [
+                "BENVOLIO",
+                "TYBALT"
+              ],
+              "size": "medium",
+              "exactDiameter": null,
+              "fixtureCount": null,
+              "color": null,
+              "intensity": null
+            },
+            {
+              "region": "full_stage_with_four_corners",
+              "type": "general_light",
+              "purpose": "four_corner_brawls",
+              "color": null,
+              "intensity": null
+            }
+          ],
+          "exaggeratedEffects": false,
+      "finalCue": {
+        "trigger": "tybalt_turns_benvolios_stop_gesture_into_a_challenge",
+        "action": "blackout"
+          }
+        },
+        "characterAliases": {
+          "BENVOLIO": [
+            "ベンヴォーリオ"
+          ],
+          "TYBALT": [
+            "ティーボルト",
+            "ティボルト"
+          ]
+        },
+        "scriptLink": {
+          "sampleId": "RJ-SAMPLE-01",
+          "scope": "scene",
+          "exactCueAnchor": "RJ-SAMPLE-01-P07",
+      "cueSummaryJa": "ベンヴォーリオの制止とティボルトの挑発を中央で見せ、剣が触れる前の動きが見えた瞬間にブラックアウトする。"
+        },
+        "durationSeconds": 180,
+        "durationStatus": "approximate_user_target",
+        "audio": null,
+        "props": null,
+        "transition": {
+      "trigger": "tybalt_turns_benvolios_stop_gesture_into_a_challenge",
+          "action": "blackout",
+          "nextSceneId": "RJ-DIR-02"
+        },
+        "generationNotes": [
+          "A validated Stage Sketch version 3 draft is stored at ../stage-sketch/scene-01-stage-sketch-v3.json; it has not been imported into the browser app.",
+          "Only Benvolio and Tybalt are named characters in this scene. The other eight identifiers name role-holders who temporarily perform anonymous street-crowd functions.",
+          "Use a 12 m by 9 m proscenium as a reference assumption and transform the normalized coordinates for the actual venue later.",
+          "Do not encode the two houses as audience-left and audience-right in this scene; this scene overrides the global house-side convention.",
+          "Use four Stage Sketch cues: simultaneous brawls with Benvolio's stopping gesture, three sequential resolutions, dispersal toward the final challenge, and a zero-duration challenge/blackout marker before contact.",
+          "Treat 180 seconds and all subdivisions as approximate, unrehearsed timing.",
+          "The stored routes are blocking proposals and do not guarantee collision avoidance or performer safety.",
+          "Do not infer actor identity, body measurements, fight choreography, fixture levels, sound, props, or venue adaptation from this draft."
+        ],
+        "blockingPlanRef": "scene-01-blocking-plan.json",
+        "artifact": {
+          "path": "../stage-sketch/scene-01-stage-sketch-v3.json",
+          "version": 3,
+          "status": "generated_validated_not_imported"
+        }
+      }
+    },
+    {
+      "id": "RJ-DIR-02",
+      "outlineId": 2,
+      "scriptSampleId": "RJ-SAMPLE-02",
+      "title": "仮面の宴と出会い",
+      "sourceActScene": "第1幕 第2〜5場",
+      "storyContext": {
+        "text": "ロミオが宴に入り、ジュリエットと恋に落ちる。その後、互いが敵の家の人間だと知る。",
+        "source": "../scene-outline/outline.json",
+        "status": "existing_outline_context"
+      },
+      "status": "user_direction_recorded",
+      "entryIds": [
+        "RJ-NOTE-0002"
+      ],
+      "summary": "ロミオとジュリエットを客席から見て舞台の右斜め手前に置き、スポットライトを当てる。二人を場面の中心として見せながら、ほかの出演者は舞台上の別の場所で仮面をつけ、パーティーを続けている。",
+      "directionItems": [
+        {
+          "label": "主役",
+          "text": "この場面の中心はロミオとジュリエット。二人を一組の焦点として見せる。"
+        },
+        {
+          "label": "二人の位置",
+          "text": "ロミオとジュリエットは、客席から見て舞台の右斜め手前にいる。正確な位置は未指定。"
+        },
+        {
+          "label": "照明",
+          "text": "客席から見て舞台の右斜め手前にいるロミオとジュリエットへスポットライトを当てる。"
+        },
+        {
+          "label": "周囲の出演者",
+          "text": "ロミオとジュリエット以外の8名は舞台上の別の場所にいて、仮面をつけてパーティーを演じる。二人の場面と同時に続いている。"
+        }
+      ],
+      "unresolved": [
+        "ロミオとジュリエットの距離・向き・姿勢と、二人がそこへ移動する経路。",
+        "8名のパーティー側での役割分担、舞台上の範囲、群舞や会話などの具体的な演技。",
+        "仮面の形・色と、誰がどの時点まで身につけるか。",
+        "スポットライトの灯数・色・照度・点灯タイミングと、パーティー側の明るさ。",
+        "音楽・効果音、場面の尺、口づけや台詞との同期、次の場面への転換。"
+      ],
+      "stageSketchHandoff": {
+        "kind": "scene_generation_brief",
+        "globalConventionIds": [
+          "RJ-CONVENTION-01"
+        ],
+        "targetSource": "../../../stage-sketch.js#newScene",
+        "verifiedDate": "2026-09-09",
+        "title": "仮面の宴と出会い",
+        "note": "ロミオとジュリエットを客席から見て舞台の右斜め手前に置き、スポットライトを当てる。二人を場面の中心として見せながら、ほかの出演者は舞台上の別の場所で仮面をつけ、パーティーを続けている。",
+        "placementConstraints": [
+          {
+            "subject": [
+              "ROMEO",
+              "JULIET"
+            ],
+            "region": "stage_right_downstage",
+            "referenceFrame": "audience_view",
+            "relation": "shared_focus",
+            "coordinates": null
+          },
+          {
+            "subject": "other_performers",
+            "onStage": true,
+            "region": "elsewhere_on_stage",
+            "count": 8,
+            "costume": "masks",
+            "action": "party",
+            "simultaneousWith": "romeo_and_juliet_in_spotlight"
+          }
+        ],
+        "lightingBrief": {
+          "type": "spotlight",
+          "targets": [
+            "ROMEO",
+            "JULIET"
+          ],
+          "region": "stage_right_downstage",
+          "referenceFrame": "audience_view",
+          "fixtureCount": null,
+          "color": null,
+          "intensity": null,
+          "surroundingLight": null,
+          "trigger": null
+        },
+        "characterAliases": {
+          "ROMEO": [
+            "ロミオ"
+          ],
+          "JULIET": [
+            "ジュリエット"
+          ]
+        },
+        "scriptLink": {
+          "sampleId": "RJ-SAMPLE-02",
+          "scope": "scene",
+          "exactCueAnchor": null
+        },
+        "durationSeconds": null,
+        "audio": null,
+        "props": null,
+        "transition": null,
+        "generationNotes": [
+          "This is a brief, not a directly importable app project.",
+          "Map title/note to the app scene title/note after rechecking its current schema.",
+          "Use the audience-view reference frame when converting the right-downstage region to coordinates.",
+          "Do not infer the pair's facing, distance, pose, movement path, or kiss timing.",
+          "Keep the masked party active at the same time as the pair's spotlighted action.",
+          "Do not infer a blackout, freeze, party choreography, mask design, music, or cue offset."
+        ]
+      }
+    },
+    {
+      "id": "RJ-DIR-03",
+      "outlineId": 3,
+      "scriptSampleId": "RJ-SAMPLE-03",
+      "title": "窓辺の約束",
+      "sourceActScene": "第2幕 第1〜2場",
+      "storyContext": {
+        "text": "家名を越えて愛を確かめ、結婚を約束する。",
+        "source": "../scene-outline/outline.json",
+        "status": "existing_outline_context"
+      },
+      "status": "user_direction_recorded",
+      "entryIds": [
+        "RJ-NOTE-0003"
+      ],
+      "summary": "第2場面と同じく、ロミオとジュリエットを客席から見て舞台の右斜め手前に置き、スポットライトを当てる。第2場面で仮面をつけてパーティーをしていた人々は、この場面にはいない。窓辺の終わりに二人は手を離し、ジュリエットは客席右の袖へ、ロミオは客席左の暗がりへ別々に退く。暗転せず、そのまま秘密の結婚へ移る。",
+      "directionItems": [
+        {
+          "label": "第2場面から継続",
+          "text": "ロミオとジュリエットを場面の中心として見せる構図、二人の位置、スポットライトを第2場面から引き継ぐ。"
+        },
+        {
+          "label": "二人の位置",
+          "text": "ロミオとジュリエットは、客席から見て舞台の右斜め手前にいる。正確な位置は未指定。"
+        },
+        {
+          "label": "照明",
+          "text": "客席から見て舞台の右斜め手前にいるロミオとジュリエットへスポットライトを当てる。"
+        },
+        {
+          "label": "第2場面との違い",
+          "text": "第2場面で仮面をつけてパーティーをしていた人々は、この場面にはいない。"
+        },
+        {
+          "label": "秘密の結婚への転換",
+          "text": "大道具さんの探す声を受け、二人はつないだ手を離す。ジュリエットは客席右の袖へ、ロミオは客席左の暗がりへ別々に退く。暗転は使わず、中央のロレンスと背中の列へ焦点を移す。"
+        }
+      ],
+      "unresolved": [
+        "二人が手を離してから退くまでの歩数、速度、間。",
+        "ロミオとジュリエットの距離・向き・姿勢と、窓辺の高低差を使うかどうか。",
+        "仮面の人々が退場する動きと、窓辺へ切り替わるタイミング。",
+        "仮面の人々以外の登場人物がいるかどうか。",
+        "スポットライトの仕様、音楽・効果音、場面の尺、台詞との同期。"
+      ],
+      "stageSketchHandoff": {
+        "kind": "scene_generation_brief",
+        "globalConventionIds": [
+          "RJ-CONVENTION-01"
+        ],
+        "targetSource": "../../../stage-sketch.js#newScene",
+        "verifiedDate": "2026-09-11",
+        "title": "窓辺の約束",
+        "note": "第2場面と同じく、ロミオとジュリエットを客席から見て舞台の右斜め手前に置き、スポットライトを当てる。第2場面で仮面をつけてパーティーをしていた人々は、この場面にはいない。終わりに二人は手を離し、ジュリエットは客席右の袖へ、ロミオは客席左の暗がりへ別々に退く。暗転せず、秘密の結婚へ移る。",
+        "inheritsFromSceneId": "RJ-DIR-02",
+        "inheritance": {
+          "keep": [
+            "romeo_and_juliet_as_shared_focus",
+            "romeo_and_juliet_stage_right_downstage",
+            "spotlight_on_romeo_and_juliet"
+          ],
+          "remove": [
+            "masked_party_performers"
+          ]
+        },
+        "placementConstraints": [
+          {
+            "subject": [
+              "ROMEO",
+              "JULIET"
+            ],
+            "region": "stage_right_downstage",
+            "referenceFrame": "audience_view",
+            "relation": "shared_focus",
+            "coordinates": null
+          },
+          {
+            "subject": "masked_party_performers",
+            "onStage": false,
+            "changeFromSceneId": "RJ-DIR-02"
+          }
+        ],
+        "lightingBrief": {
+          "type": "spotlight",
+          "targets": [
+            "ROMEO",
+            "JULIET"
+          ],
+          "region": "stage_right_downstage",
+          "referenceFrame": "audience_view",
+          "fixtureCount": null,
+          "color": null,
+          "intensity": null,
+          "surroundingLight": null,
+          "trigger": null
+        },
+        "characterAliases": {
+          "ROMEO": [
+            "ロミオ"
+          ],
+          "JULIET": [
+            "ジュリエット"
+          ]
+        },
+        "scriptLink": {
+          "sampleId": "RJ-SAMPLE-03",
+          "scope": "scene",
+          "exactCueAnchor": null
+        },
+        "durationSeconds": null,
+        "audio": null,
+        "props": null,
+        "transition": {
+          "trigger": "大道具さんが袖からジュリエットを探す声",
+          "action": "二人は手を離し、ジュリエットは客席右の袖へ、ロミオは客席左の暗がりへ別々に退く。暗転は使わず、中央のロレンスと背中の列へ焦点を移す。",
+          "nextSceneId": "RJ-DIR-04"
+        },
+        "generationNotes": [
+          "This is a brief, not a directly importable app project.",
+          "Apply the inheritance as an explicit scene-to-scene difference, keeping scene 2 unchanged.",
+          "Remove the masked party performers from this scene; do not infer that every other possible character is absent.",
+          "Use the audience-view reference frame when converting the right-downstage region to coordinates.",
+          "Use the adopted separate exits: Juliet toward audience-right wing and Romeo toward audience-left darkness, without a blackout. Exact steps, speed, music, and cue offset remain unresolved."
+        ]
+      }
+    },
+    {
+      "id": "RJ-DIR-04",
+      "outlineId": 4,
+      "scriptSampleId": "RJ-SAMPLE-04",
+      "title": "秘密の結婚",
+      "sourceActScene": "第2幕 第3〜6場",
+      "storyContext": {
+        "text": "乳母とロレンス修道士の助けを得て、二人は密かに結婚する。",
+        "source": "../scene-outline/outline.json",
+        "status": "existing_outline_context"
+      },
+      "status": "user_direction_recorded",
+      "entryIds": [
+        "RJ-NOTE-0004",
+        "RJ-NOTE-0035"
+      ],
+      "summary": "ロレンス修道士が舞台中央にいるところへ、ロミオとジュリエットが別々の斜めから後から現れる。ほかの7名は客席へ背中だけを見せたまま、左右から横に滑って舞台奥の一列となる。二人はロレンスの前で初めて向き合い、列は振り返らない。周囲の人々には二人の秘密が見られていないことを、この後ろ姿で暗喩する。",
+      "directionItems": [
+        {
+          "label": "場面の始まり",
+          "text": "ロレンス修道士が舞台の中央にいる。ほかの7名は客席へ背中を向けたまま、左右から横に滑って舞台奥の一列をつくる。"
+        },
+        {
+          "label": "二人の登場",
+          "text": "ロミオは客席左斜め、ジュリエットは客席右斜めから、並んでは来ず別々に入る。二人はロレンスの前で初めて向き合う。"
+        },
+        {
+          "label": "ほかのアーティスト",
+          "text": "ロレンス修道士、ロミオ、ジュリエット以外の7名は全員、客席へ背中だけを見せ、舞台奥に横一列で並ぶ。結婚が終わるまで振り返らない。"
+        },
+        {
+          "label": "暗喩",
+          "text": "並んだアーティストの後ろ姿で、ロミオとジュリエットの秘密が周囲の人々には見られていないことを表す。"
+        }
+      ],
+      "unresolved": [
+        "7名の列の実寸の間隔、歩幅、横移動の順番。",
+        "ロミオとジュリエットの実際の登場口、斜めの経路、歩数、登場の合図。",
+        "登場後の二人とロレンス修道士の位置関係、結婚式の動き。",
+        "照明、音楽・効果音、衣装・道具、場面の尺と台詞との同期。",
+        "この場面の終わり方と、第5場面への転換。"
+      ],
+      "stageSketchHandoff": {
+        "kind": "scene_generation_brief",
+        "targetSource": "../../../stage-sketch.js#newScene",
+        "verifiedDate": "2026-09-11",
+        "title": "秘密の結婚",
+        "note": "ロレンス修道士が舞台中央にいるところへ、ロミオとジュリエットが客席左・右の別々の斜めから後から現れる。ほかの7名は客席へ背中だけを見せたまま、左右から横に滑って舞台奥の一列となる。二人はロレンスの前で初めて向き合い、列は振り返らない。",
+        "stagingSequence": [
+          {
+            "order": 1,
+            "label": "最初の像",
+            "action": "ロレンス修道士が舞台中央にいる。ほかの7名は客席へ背中を向け、左右から横に滑って舞台奥の一列をつくる。"
+          },
+          {
+            "order": 2,
+            "label": "二人の登場",
+            "action": "ロミオは客席左斜め、ジュリエットは客席右斜めから別々に入り、ロレンスの前で初めて向き合う。"
+          }
+        ],
+        "placementConstraints": [
+          {
+            "subject": "FRIAR_LAWRENCE",
+            "region": "stage_center",
+            "onStageAtStart": true,
+            "coordinates": null
+          },
+          {
+            "subject": [
+              "ROMEO",
+              "JULIET"
+            ],
+            "onStageAtStart": false,
+            "entranceOrder": "separate_same_beat",
+            "entrancePath": {
+              "ROMEO": "audience_left_diagonal",
+              "JULIET": "audience_right_diagonal"
+            },
+            "finalCoordinates": {
+              "ROMEO": {"u": 0.39, "v": 0.72},
+              "JULIET": {"u": 0.64, "v": 0.72}
+            }
+          },
+          {
+            "subject": "all_other_artists",
+            "onStage": true,
+            "formation": "line",
+            "visibleAspect": "backs_only",
+            "facingTarget": "audience",
+            "coordinates": null,
+            "count": 7
+          }
+        ],
+        "symbolicIntent": {
+          "image": "all_other_artists_showing_only_their_backs",
+          "meaning": "romeo_and_juliets_secret_is_unseen_by_others",
+          "source": "user_direction"
+        },
+        "lightingBrief": null,
+        "characterAliases": {
+          "FRIAR_LAWRENCE": [
+            "ロレンス修道士"
+          ],
+          "ROMEO": [
+            "ロミオ"
+          ],
+          "JULIET": [
+            "ジュリエット"
+          ]
+        },
+        "scriptLink": {
+          "sampleId": "RJ-SAMPLE-04",
+          "scope": "scene",
+          "exactCueAnchor": null
+        },
+        "durationSeconds": null,
+        "audio": null,
+        "props": null,
+        "transition": null,
+        "generationNotes": [
+          "This is a brief, not a directly importable app project.",
+          "Preserve the opening image and the later entrance as two temporal states when preparing the Stage Sketch draft.",
+          "Keep the unseen-secret meaning identified as the user's symbolic intent, separate from the source story context.",
+          "Keep the seven-person row facing away from the audience and do not let it turn during the ceremony.",
+          "Use the adopted separate diagonal entrances. Do not infer a platform, altar, costume, lighting state, music, exact spacing, or cue offset."
+        ]
+      }
+    },
+    {
+      "id": "RJ-DIR-05",
+      "outlineId": 5,
+      "scriptSampleId": "RJ-SAMPLE-05",
+      "title": "決闘と復讐",
+      "sourceActScene": "第3幕 第1場",
+      "storyContext": {
+        "text": "ティボルトがマーキューシオを殺し、怒ったロミオがティボルトを殺す。",
+        "source": "../scene-outline/outline.json",
+        "status": "existing_outline_context"
+      },
+      "status": "user_direction_recorded",
+      "noteType": "story_development",
+      "entryIds": [
+        "RJ-NOTE-0005",
+        "RJ-NOTE-0006",
+        "RJ-NOTE-0007",
+        "RJ-NOTE-0008",
+        "RJ-NOTE-0009",
+        "RJ-NOTE-0010",
+        "RJ-NOTE-0011"
+      ],
+      "summary": "ティーボルトの挑発をロミオが無視して去り、ティーボルトが追うが見失う。そこへマーキューシオが現れて決闘する。ロミオはマーキューシオの負傷を見た瞬間、死の報告を待たずティーボルトへ報復する。",
+      "directionItems": [
+        {
+          "label": "原作で死ぬ場所",
+          "text": "第3幕第1場。この12場面構成では、第5場面「決闘と復讐」の途中に当たる。"
+        },
+        {
+          "label": "原作での順序",
+          "text": "ロミオが決闘を避ける。マーキューシオが代わりにティーボルトと戦う。ロミオが止めに入り、その腕の下から刺される。マーキューシオが両家を呪って退場し、死の知らせが届く。その後、ロミオがティーボルトへ復讐する。"
+        },
+        {
+          "label": "現在の短い台詞",
+          "text": "第5場面は10行。台詞3行・ト書き7行で、追跡と見失い、マーキューシオの登場と負傷、その瞬間のロミオの報復までを行動中心でつないでいる。"
+        },
+        {
+          "label": "前振りの候補",
+          "text": "第2場面「仮面の宴と出会い」で、マーキューシオをロミオの親しい友人として先に見せる。原作でも第1幕第4場で宴へ向かうロミオに踊るよう促し、仮面をつけて同行する。"
+        },
+        {
+          "label": "採用する舞台上の流れ",
+          "text": "ティーボルトが挑発する。ロミオは無視して去る。ティーボルトが追うが見失う。そこへマーキューシオが現れ、ティーボルトと戦う。ロミオが戻って介入し、マーキューシオが負傷する。ロミオはその傷を見た瞬間、ティーボルトへ報復する。"
+        },
+        {
+          "label": "表現方法",
+          "text": "すべてを文章や台詞で説明する必要はない。簡易な身体表現、または暗喩的な表現で構成してよい。ただし出来事の順序と因果関係は省かない。"
+        },
+        {
+          "label": "原作のテンポと間",
+          "text": "同じ場所・同じ場面の中で連続して進むため、物語上は速い。ただし戦いが途切れず続くのではない。最初の決闘後、負傷したマーキューシオの台詞と退場、ロミオの自責、ベンヴォーリオによる死の報告を挟み、その後ティーボルトが戻って二度目の決闘になる。"
+        },
+        {
+          "label": "台詞と行動の再調整",
+          "text": "18行版は長いため、台詞を減らす。負傷と死の報告はト書きの行動に置き換え、出来事の順序は残す。"
+        },
+        {
+          "label": "冒頭の追跡",
+          "text": "ロミオはティーボルトへ返事をせずに去る。ティーボルトは追いかけるが途中で見失う。その直後にマーキューシオが現れ、ティーボルトとの決闘が始まる。"
+        },
+        {
+          "label": "原作との違い",
+          "text": "原作ではロミオが言葉で決闘を断り、マーキューシオも初めからその場にいる。また、マーキューシオの死が報告され、ティーボルトが戻った後にロミオが復讐する。追跡、マーキューシオの後からの登場、負傷直後の報復は、この舞台版で採用した改変。"
+        },
+        {
+          "label": "報復のタイミング",
+          "text": "ロミオはマーキューシオの死の報告を待たない。マーキューシオの負傷を見た瞬間にティーボルトへ向き直り、そのまま斬りかかる。"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "source": "../sources/gutenberg-1513-original.txt",
+          "physicalLines": [
+            2666,
+            2800
+          ],
+          "finding": "ティーボルトの挑発、ロミオの拒絶、マーキューシオの決闘・負傷・退場、死の報告、ティーボルトの帰還、ロミオの復讐がこの順で続く。"
+        },
+        {
+          "source": "../sources/gutenberg-1513-original.txt",
+          "physicalLines": [
+            961,
+            1014
+          ],
+          "finding": "マーキューシオは宴へ向かうロミオと同行し、踊るよう促して仮面をつける。"
+        }
+      ],
+      "unresolved": [
+        "第2場面の仮面のパーティーに、マーキューシオを明示的に加えるか。",
+        "一つの第5場面を、何枚の舞台スケッチまたは動きの段階に分けるか。",
+        "マーキューシオの人物像を、台詞・身体表現・サーカス技のどれで前振りするか。",
+        "決闘、負傷、死を舞台上でどう安全に表現するか。",
+        "死と復讐を示す暗喩に、身体・照明・道具・音のどれを使うか。"
+      ],
+      "stageSketchHandoff": {
+        "kind": "scene_generation_brief",
+        "targetSource": "../../../stage-sketch.js#newScene",
+        "verifiedDate": "2026-09-09",
+        "title": "決闘と復讐",
+        "note": "ティーボルトの挑発をロミオが無視して去り、ティーボルトが追うが見失う。そこへマーキューシオが現れて決闘する。ロミオはマーキューシオの負傷を見た瞬間、死の報告を待たずティーボルトへ報復する。",
+        "requiredNarrativeBeats": [
+          "tybalt_challenges_romeo",
+          "romeo_ignores_tybalt_and_leaves",
+          "tybalt_chases_and_loses_romeo",
+          "mercutio_appears",
+          "mercutio_fights_tybalt",
+          "romeo_returns_and_intervenes_and_mercutio_is_wounded",
+          "romeo_immediately_retaliates",
+          "romeo_fights_and_kills_tybalt",
+          "mercutio_dies_during_or_after_retaliation"
+        ],
+        "stagingSequence": [
+          {
+            "order": 1,
+            "label": "挑発",
+            "action": "ティーボルトがロミオへ決闘を挑む。"
+          },
+          {
+            "order": 2,
+            "label": "無視して去る",
+            "action": "ロミオは返事をせず、ティーボルトを残して立ち去る。"
+          },
+          {
+            "order": 3,
+            "label": "追跡と見失い",
+            "action": "ティーボルトがロミオを追うが、舞台の反対側で見失う。"
+          },
+          {
+            "order": 4,
+            "label": "マーキューシオ登場",
+            "action": "ロミオを探すティーボルトの前にマーキューシオが現れ、二人が向き合う。"
+          },
+          {
+            "order": 5,
+            "label": "第一の決闘",
+            "action": "マーキューシオとティーボルトが戦う。"
+          },
+          {
+            "order": 6,
+            "label": "帰還・介入・負傷",
+            "action": "ロミオが戻って止めに入り、その介入の中でマーキューシオが致命傷を負う。"
+          },
+          {
+            "order": 7,
+            "label": "傷を見た瞬間",
+            "action": "ベンヴォーリオがマーキューシオを支える。ロミオは傷を見た瞬間にティーボルトへ向き直る。"
+          },
+          {
+            "order": 8,
+            "label": "即時の報復",
+            "action": "ロミオが間を置かずティーボルトへ斬りかかる。"
+          },
+          {
+            "order": 9,
+            "label": "二人の結末",
+            "action": "ティーボルトが倒れる。マーキューシオもベンヴォーリオの腕の中で力を失う。"
+          }
+        ],
+        "expressionMode": {
+          "dialogueRequiredForEveryBeat": false,
+          "acceptableApproaches": [
+            "simple_physical_expression",
+            "metaphorical_expression"
+          ],
+          "selectedApproach": null,
+          "constraint": "show_every_required_narrative_beat_and_its_causal_order"
+        },
+        "adaptationFromSource": {
+          "status": "user_direction_recorded",
+          "sourceSequence": "Romeo verbally refuses Tybalt while Mercutio is already present. After Mercutio exits and Benvolio reports his death, Tybalt returns and Romeo takes revenge.",
+          "stageSequence": "Romeo ignores Tybalt and leaves; Tybalt chases and loses him; Mercutio then appears. Romeo retaliates immediately when Mercutio is wounded.",
+          "mustRemainDisclosed": true
+        },
+        "timingStructure": {
+          "sourceFact": {
+            "continuousActScene": true,
+            "locationChange": false,
+            "firstFightEndsBeforeDeathSpeech": true,
+            "tybaltExitsAndReenters": true,
+            "mercutioExitsBeforeDeathIsReported": true,
+            "romeoVerballyRefusesTybalt": true,
+            "mercutioAlreadyPresent": true
+          },
+          "dramaticIntervals": [
+            {
+              "after": "tybalt_chases_and_loses_romeo",
+              "content": "mercutio_appears_and_the_first_fight_begins"
+            },
+            {
+              "after": "mercutio_is_wounded",
+              "content": "mercutio_curses_both_houses_as_benvolio_supports_him_and_romeo_immediately_turns_on_tybalt"
+            }
+          ],
+          "stagingInterpretation": {
+            "status": "user_direction_recorded",
+            "text": "マーキューシオの負傷からロミオの報復開始までは間を置かない。死の報告やティーボルトの再登場は挟まない。",
+            "exactDurationSeconds": null
+          }
+        },
+        "placementConstraints": [],
+        "lightingBrief": null,
+        "characterAliases": {
+          "ROMEO": [
+            "ロミオ"
+          ],
+          "TYBALT": [
+            "ティーボルト",
+            "ティボルト"
+          ],
+          "MERCUTIO": [
+            "マーキューシオ",
+            "maruki-sio",
+            "マルキーシオ"
+          ]
+        },
+        "scriptLink": {
+          "sampleId": "RJ-SAMPLE-05",
+          "scope": "immediate_revenge_user_adaptation",
+          "exactCueAnchor": null,
+          "stagingMustSupplyEarlierBeats": false,
+          "textCoverage": "user_directed_chase_and_immediate_revenge_included_via_stage_directions",
+          "dialogueLines": 3,
+          "stageDirectionLines": 7
+        },
+        "durationSeconds": null,
+        "audio": null,
+        "props": null,
+        "transition": null,
+        "generationNotes": [
+          "This is a brief, not a directly importable app project.",
+          "Do not omit or reorder any required narrative beat when creating the Stage Sketch draft.",
+          "The action-weighted short script uses three dialogue lines and seven stage directions.",
+          "The chase, lost-Romeo beat, Mercutio's later entrance, and revenge immediately after wounding are user-directed departures from the source and must remain disclosed.",
+          "Keep the literal-versus-metaphorical staging choice open and reviewable.",
+          "Do not infer weapons, direct body contact, blood, falls, lighting, music, circus vocabulary, or cue timing.",
+          "Any later fight choreography requires a separate safety review and performer-specific rehearsal decisions."
+        ]
+      }
+    },
+    {
+      "id": "RJ-DIR-06",
+      "outlineId": 6,
+      "scriptSampleId": "RJ-SAMPLE-06",
+      "title": "追放と夜明けの別れ",
+      "sourceActScene": "第3幕 第1〜3場・第5場",
+      "storyContext": {
+        "text": "ロミオに追放が言い渡される。二人は一夜をともにし、夜明けに別れる。",
+        "source": "../scene-outline/outline.json",
+        "status": "existing_outline_context"
+      },
+      "status": "content_feedback_recorded",
+      "noteType": "story_development",
+      "entryIds": [
+        "RJ-NOTE-0012"
+      ],
+      "summary": "夜明けを否定していた二人が、追放という現実を受け入れて別れる。ロミオが窓から降り、再会への希望を語る一方、ジュリエットは彼を墓の底にいる人のように見て、二人の死を予感する。",
+      "directionItems": [
+        {
+          "label": "描かれていること",
+          "text": "秘密の結婚後の一夜が終わり、追放されたロミオが夜明けとともに去らなければならない。"
+        },
+        {
+          "label": "場面の変化",
+          "text": "夜明けの否定から、別れの受容、身体的な離別、再会への希望、死の予感へ進む。"
+        },
+        {
+          "label": "以前の抜粋が薄く見えた理由",
+          "text": "鳥の声を夜か朝かと言い合う冒頭だけで終わり、ロミオが実際に降りる動作と、再会への問い、墓の予感が含まれていなかった。"
+        },
+        {
+          "label": "更新した短い台詞",
+          "text": "11行の中に、夜明けの受容、最後の口づけ、ロミオの下降、再会への問い、墓所を先取りする不吉な像までを含めた。"
+        },
+        {
+          "label": "追放の扱い",
+          "text": "追放の言い渡し自体は第3幕の前の場面で起きる。この抜粋では、追放の結果として二人が別れざるを得ない状況を描く。"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "source": "../sources/gutenberg-1513-original.txt",
+          "physicalLines": [
+            3454,
+            3553
+          ],
+          "finding": "二人が夜明けを否定した後、現実を受け入れ、ロミオが窓から降り、再会を語り、ジュリエットが墓の底にいる姿を予感する。"
+        }
+      ],
+      "unresolved": [
+        "二人の最初の位置と距離。",
+        "同じ動きを続けながら二人の位置だけが離れていく、という構成案の動きを何にするか。",
+        "窓や高低差を実際の装置で見せるか、身体や照明で象徴するか。",
+        "最後の口づけと下降をどの程度具体的に見せるか。",
+        "夜から朝へ変わる照明・音・時間の設計。",
+        "墓の予感を台詞だけで残すか、舞台上の像として先取りするか。"
+      ],
+      "stageSketchHandoff": null
+    },
+    {
+      "id": "RJ-DIR-07",
+      "outlineId": 7,
+      "scriptSampleId": "RJ-SAMPLE-07",
+      "title": "望まない結婚",
+      "sourceActScene": "第3幕 第4〜5場・第4幕 第1場冒頭",
+      "storyContext": {
+        "text": "ジュリエットはパリスとの結婚を迫られ、家族の理解も得られず、修道士を頼る。",
+        "source": "../scene-outline/outline.json",
+        "status": "existing_outline_context"
+      },
+      "status": "user_direction_recorded",
+      "entryIds": [
+        "RJ-NOTE-0013"
+      ],
+      "summary": "ジュリエットと父キャピュレットの二人だけが登場する。ほかの人物は出さない。キャピュレット家の場面として、客席から見て舞台右側を基本領域にし、望まない結婚をめぐる父娘の対立を見せる。",
+      "directionItems": [
+        {
+          "label": "場面の長さ",
+          "text": "短い台詞は10行で、ほかの場面と大きな差はない。以前はジュリエットが拒絶した後から始まり、父の台詞が8行を占めていたため、対立の始まりが見えにくかった。"
+        },
+        {
+          "label": "更新した短い台詞",
+          "text": "10行のまま、ジュリエットの拒絶、父の命令、ジュリエットの懇願、父の勘当の宣告までが見える二人の応酬へ組み替えた。"
+        },
+        {
+          "label": "登場人物",
+          "text": "ジュリエットと父キャピュレットの二人だけ。"
+        },
+        {
+          "label": "出さない人物",
+          "text": "母キャピュレット、乳母、パリス、そのほかの人物やアンサンブルは舞台に出さない。"
+        },
+        {
+          "label": "舞台上の基本位置",
+          "text": "キャピュレット家の場面として、客席から舞台を向いて右側を基本領域とする。"
+        },
+        {
+          "label": "場面の対立",
+          "text": "ジュリエットは望まない結婚を拒む。父キャピュレットは木曜の結婚に従うか、家から切り離されるかを迫る。"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "source": "../sources/gutenberg-1513-original.txt",
+          "physicalLines": [
+            3703,
+            3730
+          ],
+          "finding": "ジュリエットが結婚を喜べないと伝え、父キャピュレットが教会へ行くよう命じる。ジュリエットがひざまずいて話を聞くよう求めても、父は勘当を示して発言を封じる。原作では途中に母キャピュレットの制止が入る。"
+        }
+      ],
+      "unresolved": [
+        "舞台右側の中での二人の正確な位置、距離、向き。",
+        "父が圧力を強めるにつれて、二人が近づくか離れるか。",
+        "ジュリエットがひざまずく動作をそのまま見せるか、別の身体表現へ置き換えるか。",
+        "パリスとの結婚を命じられた経緯を、前場面からつなぐか、この場面の最初に示すか。",
+        "照明、音、場面の尺と台詞との同期。",
+        "二人だけの場面から、ジュリエットがロレンス修道士を頼る次の場面への転換。"
+      ],
+      "stageSketchHandoff": {
+        "kind": "scene_generation_brief",
+        "targetSource": "../../../stage-sketch.js#newScene",
+        "verifiedDate": "2026-09-09",
+        "globalConventionIds": [
+          "RJ-CONVENTION-01"
+        ],
+        "title": "望まない結婚",
+        "note": "ジュリエットと父キャピュレットの二人だけが、客席から見て舞台右側にいる。ジュリエットが望まない結婚を拒み、父は服従か勘当かを迫る。",
+        "requiredNarrativeBeats": [
+          "juliet_rejects_the_marriage",
+          "capulet_orders_her_to_marry_paris",
+          "juliet_pleads_to_be_heard",
+          "capulet_threatens_disownment"
+        ],
+        "placementConstraints": [
+          {
+            "subject": [
+              "JULIET",
+              "CAPULET"
+            ],
+            "onStage": true,
+            "region": "audience_right",
+            "referenceFrame": "audience_view",
+            "coordinates": null
+          },
+          {
+            "subject": [
+              "LADY_CAPULET",
+              "NURSE",
+              "PARIS",
+              "OTHER_PERFORMERS"
+            ],
+            "onStage": false
+          }
+        ],
+        "adaptationFromSource": {
+          "status": "user_direction_recorded",
+          "sourceSceneIncludes": [
+            "LADY_CAPULET",
+            "NURSE"
+          ],
+          "stageVersionUsesOnly": [
+            "JULIET",
+            "CAPULET"
+          ],
+          "mustRemainDisclosed": true
+        },
+        "characterAliases": {
+          "JULIET": [
+            "ジュリエット"
+          ],
+          "CAPULET": [
+            "キャピュレット",
+            "父キャピュレット"
+          ]
+        },
+        "scriptLink": {
+          "sampleId": "RJ-SAMPLE-07",
+          "scope": "direct_father_daughter_confrontation",
+          "exactCueAnchor": null,
+          "dialogueLines": 10
+        },
+        "durationSeconds": null,
+        "audio": null,
+        "props": null,
+        "lightingBrief": null,
+        "transition": null,
+        "generationNotes": [
+          "This is a brief, not a directly importable app project.",
+          "Keep Juliet and Capulet as the only on-stage characters.",
+          "Place the two characters in the audience-right Capulet region while leaving exact coordinates unresolved.",
+          "Do not add Lady Capulet, the Nurse, Paris, or ensemble performers.",
+          "Preserve the four required beats in order.",
+          "Do not infer blocking, contact, kneeling, lighting, music, props, or cue timing."
+        ]
+      }
+    },
+    {
+      "id": "RJ-DIR-08",
+      "outlineId": 8,
+      "scriptSampleId": "RJ-SAMPLE-08",
+      "title": "死を装う計画",
+      "sourceActScene": "第4幕 第1〜2場",
+      "storyContext": {
+        "text": "修道士が薬で仮死状態になる策を示し、ロミオへ手紙を送る段取りを立てる。",
+        "source": "../scene-outline/outline.json",
+        "status": "existing_outline_context"
+      },
+      "status": "not_yet_noted",
+      "entryIds": [],
+      "summary": null,
+      "directionItems": [],
+      "unresolved": [],
+      "stageSketchHandoff": null
+    },
+    {
+      "id": "RJ-DIR-09",
+      "outlineId": 9,
+      "scriptSampleId": "RJ-SAMPLE-09",
+      "title": "薬を飲む夜、葬送の朝",
+      "sourceActScene": "第4幕 第3〜5場",
+      "storyContext": {
+        "text": "ジュリエットが薬を飲む。家族は死んだと思い込み、婚礼の準備が葬送へ変わる。",
+        "source": "../scene-outline/outline.json",
+        "status": "existing_outline_context"
+      },
+      "status": "not_yet_noted",
+      "entryIds": [],
+      "summary": null,
+      "directionItems": [],
+      "unresolved": [],
+      "stageSketchHandoff": null
+    },
+    {
+      "id": "RJ-DIR-10",
+      "outlineId": 10,
+      "scriptSampleId": "RJ-SAMPLE-10",
+      "title": "届かない手紙",
+      "sourceActScene": "第5幕 第1〜2場",
+      "storyContext": {
+        "text": "計画を伝える手紙が届かず、ジュリエットの死の知らせだけが届く。ロミオは墓所へ向かう。",
+        "source": "../scene-outline/outline.json",
+        "status": "existing_outline_context"
+      },
+      "status": "user_direction_recorded",
+      "entryIds": [
+        "RJ-NOTE-0015",
+        "RJ-NOTE-0016"
+      ],
+      "summary": "ジョン修道士とロミオが舞台中央ですれ違う流れを、比喩的な追いかけっことして見せる。二人が直接追い合う芝居にはせず、サーカスの移動フレーズを時間差で重ね、届きそうで届かない関係を身体で表す。",
+      "directionItems": [
+        {
+          "label": "簡略化した流れ",
+          "text": "手紙が届かなかった理由を台詞で説明せず、届けに向かう人物と戻ってくるロミオの入れ違いで示す。"
+        },
+        {
+          "label": "登場人物",
+          "text": "ジョン修道士とロミオ。ロレンス修道士はこの短い場面には出さない。"
+        },
+        {
+          "label": "ジョン修道士の動き",
+          "text": "ロミオ宛ての封書を持ち、客席から見て左側のモンタギュー家側へ急ぐ。"
+        },
+        {
+          "label": "ロミオの動き",
+          "text": "左側から現れ、右側にあるキャピュレット家の墓所へ戻る。ジュリエットが死んだという知らせだけを信じている。"
+        },
+        {
+          "label": "すれ違い",
+          "text": "二人は舞台中央で入れ違う。互いに気づかず、振り返らない。手紙とロミオは反対方向へ離れていく。"
+        },
+        {
+          "label": "追いかけっこのニュアンス",
+          "text": "人が人を文字どおり追うのではなく、二人の動きが互いの直前の軌跡を追うように見せる。観客には、もう少しで届きそうなのに常に半歩ずれる感覚を残す。"
+        },
+        {
+          "label": "提案：動きの組み方",
+          "text": "短いサーカスの移動フレーズを、二人が少し時間をずらして行う。先に動いた人の形を次の人が追うカノンにし、中央の同じ地点へ別の瞬間または別の高さで入る。"
+        },
+        {
+          "label": "サーカス技術の役割",
+          "text": "技の難度や成功を見せ場の中心にせず、軌道、反復、時間差、高低差によって『届かない』を見せる表現技法として使う。"
+        },
+        {
+          "label": "演技の温度",
+          "text": "劇的な追跡や慌てた芝居にはしない。二人は相手を追っている意識を持たず、視線を交わさないまま、それぞれの目的へ進む。"
+        },
+        {
+          "label": "技術候補（未決定）",
+          "text": "床を使う移動技、輪や円運動を使う技、封書を焦点にした道具操作などが候補。出演者の技能、舞台寸法、床と装置に合わせて後で一つを選ぶ。"
+        },
+        {
+          "label": "原作との違い",
+          "text": "原作では感染を疑われたためジョン修道士がマントヴァへ出発できず、ロレンス修道士へ未配達を報告する。この舞台版では、その説明を二人の視覚的なすれ違いへ置き換える。"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "source": "../sources/gutenberg-1513-original.txt",
+          "physicalLines": [
+            4634,
+            4777
+          ],
+          "finding": "ロミオは修道士からの手紙を受け取らないままジュリエットの墓へ向かう。ジョン修道士は感染対策で足止めされ、手紙を届けられなかったとロレンス修道士へ報告する。二人が舞台上ですれ違う動きは、この舞台版の簡略化。"
+        }
+      ],
+      "unresolved": [
+        "床の移動技、輪や円運動、道具操作のどれを中心にするか。",
+        "二人が共有する移動フレーズと、開始をずらす間隔。",
+        "中央のすれ違いを時間差で見せるか、高低差で見せるか、その両方を使うか。",
+        "封書を観客にどの程度はっきり見せるか。",
+        "使用する技と、出演者の技能・舞台寸法・床・装置との適合。",
+        "照明、音、場面の尺とカノンのリズムの同期。",
+        "ロミオがそのまま第11場面の墓所へ進む転換方法。"
+      ],
+      "stageSketchHandoff": {
+        "kind": "scene_generation_brief",
+        "targetSource": "../../../stage-sketch.js#newScene",
+        "verifiedDate": "2026-09-09",
+        "globalConventionIds": [
+          "RJ-CONVENTION-01"
+        ],
+        "title": "届かない手紙",
+        "note": "手紙を届けに向かうジョン修道士と、ジュリエットの死の知らせだけを信じて戻るロミオが、サーカスの移動フレーズを時間差で重ねる。直接追跡する芝居にはせず、動きが動きを追う比喩的な追いかけっこの中で中央をすれ違い、反対方向へ離れる。",
+        "requiredNarrativeBeats": [
+          "friar_john_carries_letter_toward_montague_side",
+          "romeo_returns_toward_capulet_tomb",
+          "circus_movement_phrase_creates_metaphorical_chase",
+          "friar_john_and_romeo_cross_without_noticing",
+          "letter_and_romeo_move_apart"
+        ],
+        "stagingSequence": [
+          {
+            "order": 1,
+            "action": "ジョン修道士が封書を持ち、短いサーカスの移動フレーズで舞台中央から客席左へ進む。"
+          },
+          {
+            "order": 2,
+            "action": "ロミオが左側から現れ、少し遅れて相似する移動フレーズを始め、客席右のキャピュレット家の墓所へ向かう。"
+          },
+          {
+            "order": 3,
+            "action": "二人の軌跡を一時的に重ね、先行する動きを後発の動きが追うカノンによって、比喩的な追いかけっこを作る。"
+          },
+          {
+            "order": 4,
+            "action": "二人が中央の同じ地点へ別の瞬間または別の高さで入り、互いに気づかず入れ違う。"
+          },
+          {
+            "order": 5,
+            "action": "ジョン修道士は手紙を持ったまま左へ退場し、ロミオは右へ進む。"
+          }
+        ],
+        "placementConstraints": [
+          {
+            "subject": "FRIAR_JOHN",
+            "path": "center_to_audience_left",
+            "referenceFrame": "audience_view",
+            "carries": "sealed_letter_for_romeo",
+            "coordinates": null
+          },
+          {
+            "subject": "ROMEO",
+            "path": "audience_left_to_audience_right_capulet_tomb",
+            "referenceFrame": "audience_view",
+            "coordinates": null
+          },
+          {
+            "subjects": [
+              "FRIAR_JOHN",
+              "ROMEO"
+            ],
+            "relation": "cross_without_noticing",
+            "region": "stage_center",
+            "coordinates": null
+          }
+        ],
+        "circusExpression": {
+          "status": "user_direction_recorded",
+          "intent": "metaphorical_chase",
+          "literalPursuit": false,
+          "dramaticPursuitActing": false,
+          "eyeContact": false,
+          "proposedMechanism": {
+            "status": "assistant_staging_proposal",
+            "pattern": "time_offset_movement_canon",
+            "description": "二人が相似する短い移動フレーズを時間差で始め、次の動きが直前の軌跡を追うように見せる。中央では時間差または高低差によって接触を避ける。"
+          },
+          "candidateTechniqueFamilies": [
+            {
+              "id": "traveling_floor_acrobatics",
+              "label": "床を使う移動技",
+              "status": "unselected"
+            },
+            {
+              "id": "circular_apparatus_movement",
+              "label": "輪や円運動を使う技",
+              "status": "unselected"
+            },
+            {
+              "id": "letter_focused_object_manipulation",
+              "label": "封書を焦点にした道具操作",
+              "status": "unselected"
+            }
+          ],
+          "selectionDependsOn": [
+            "performer_skills",
+            "stage_dimensions",
+            "floor_and_apparatus_conditions"
+          ],
+          "constraints": [
+            "The circus technique must carry the chase rhythm and failed connection rather than become an isolated trick display.",
+            "The performers do not literally pursue one another or acknowledge each other."
+          ]
+        },
+        "adaptationFromSource": {
+          "status": "user_direction_recorded",
+          "sourceCause": "Friar John is prevented from leaving because of quarantine and reports the undelivered letter to Friar Lawrence.",
+          "stageCause": "Friar John and Romeo pass each other while traveling in opposite directions.",
+          "mustRemainDisclosed": true
+        },
+        "characterAliases": {
+          "FRIAR_JOHN": [
+            "ジョン修道士",
+            "手紙を届ける人物"
+          ],
+          "ROMEO": [
+            "ロミオ"
+          ]
+        },
+        "scriptLink": {
+          "sampleId": "RJ-SAMPLE-10",
+          "scope": "silent_crossing_user_adaptation",
+          "exactCueAnchor": null,
+          "dialogueLines": 0,
+          "stageDirectionLines": 8
+        },
+        "durationSeconds": null,
+        "audio": null,
+        "props": [
+          "sealed_letter_for_romeo"
+        ],
+        "lightingBrief": null,
+        "transition": null,
+        "generationNotes": [
+          "This is a brief, not a directly importable app project.",
+          "Preserve the crossing and opposite travel directions as one continuous visual beat.",
+          "Create the chase-like quality through a time-offset circus movement phrase, not literal pursuit or dramatic chase acting.",
+          "Treat the exact circus discipline and trick vocabulary as unresolved until performer and stage conditions are known.",
+          "Keep the original quarantine cause separate from the user-directed stage simplification.",
+          "Do not add an exchange of dialogue or let Friar John and Romeo notice each other.",
+          "Use the audience-view house convention for left and right.",
+          "Do not infer exact coordinates, speed, lighting, music, or cue timing."
+        ]
+      }
+    },
+    {
+      "id": "RJ-DIR-11",
+      "outlineId": 11,
+      "scriptSampleId": "RJ-SAMPLE-11",
+      "title": "墓所でのすれ違い",
+      "sourceActScene": "第5幕 第3場",
+      "storyContext": {
+        "text": "ロミオはジュリエットが目覚める前に命を絶つ。目覚めたジュリエットも、その死を知って命を絶つ。",
+        "source": "../scene-outline/outline.json",
+        "status": "existing_outline_context"
+      },
+      "status": "user_direction_recorded",
+      "entryIds": [
+        "RJ-NOTE-0017",
+        "RJ-NOTE-0018",
+        "RJ-NOTE-0019"
+      ],
+      "summary": "客席から見て舞台左側に墓地・墓所、右側に別の場所を置き、二つの出来事を同時に進める。中央では複数のアーティストが川の流れのようなダンスとインプロビゼーションを続け、その人の流れによって左右を相容れない二つの岸として隔てる。",
+      "directionItems": [
+        {
+          "label": "舞台全体",
+          "text": "舞台を左・中央・右の三領域に分ける。左と右は別々の場所として同時に進行し、中央は両側が干渉できない領域にする。"
+        },
+        {
+          "label": "左側の場所",
+          "text": "客席から見て舞台左側に、キャピュレット家の墓地・墓所を作る。ロミオとジュリエットに関わる墓所の出来事は、この領域で進む。"
+        },
+        {
+          "label": "中央の領域",
+          "text": "中央は複数のアーティストが身体で作る川。二つの場所が同時に存在している間、ロミオ側とロレンス修道士側の人物はこの川を横切らず、互いに触れず、物を渡さず、直接応答しない。"
+        },
+        {
+          "label": "人で表現する境界",
+          "text": "できる限り幕、映像、回り舞台などの装置を主表現にせず、中央にいるアーティストの連続する身体、呼吸、方向転換、密度の変化で、左右が相容れないことを見せる。"
+        },
+        {
+          "label": "川のインプロビゼーション",
+          "text": "完成形の振付を一つに固定せず、一人の動きを次の人が受け取り、少し変えて次へ渡す。流れは途切れないが、毎回まったく同じ形である必要はない。"
+        },
+        {
+          "label": "即興で固定する規則",
+          "text": "『流れる』『受け止める』『向きを変える』『岸へ返す』を共通の動詞にする。左右の主役を対岸へ運ばない、中央で留めない、流れを完全には止めないという三つの禁止を守る。"
+        },
+        {
+          "label": "両岸との関係",
+          "text": "左右の人物が中央へ届こうとしたとき、川のアーティストはその進行や身振りを受け取り、横方向や斜め方向の流れへ変えて元の岸へ返す。人物同士は近づいても、互いの身体には直接届かない。"
+        },
+        {
+          "label": "提案：川が道へ変わる瞬間",
+          "text": "ロレンス修道士が実際に墓所へ到着する瞬間には、人の流れが初めて静まり、中央のアーティストが二列に分かれる、床へ低くなる、または同じ方向を向くことで通路を開く。具体的な解除動作は未決定。"
+        },
+        {
+          "label": "同時進行",
+          "text": "観客は舞台左と右で進む別々の出来事を同時に見る。一方の行動が進んでも、もう一方からは止められない構図にする。"
+        },
+        {
+          "label": "提案：右側の場所",
+          "text": "直前に整理したロレンス修道士の遅れを見せる場所として、舞台右側を修道士の部屋、準備場所、または墓所へ向かう途中にする。正確な場所は未決定。"
+        },
+        {
+          "label": "提案：左右で見せる因果",
+          "text": "左ではロミオが墓所へ入り、右ではロレンス修道士が手紙の失敗を知って準備し、墓所へ向かおうとする。中央の境界があるため、右側の行動は左側の破局へ間に合わない。"
+        },
+        {
+          "label": "共通配置との関係",
+          "text": "通常は客席左をモンタギュー家、客席右をキャピュレット家とするが、この場面では墓所を客席左へ置く場面固有の指定を優先する。"
+        },
+        {
+          "label": "原作との関係",
+          "text": "原作ではロミオが先に墓所へ到着し、ロレンス修道士は遅れて同じ墓所へ来る。二つの場所を同時に見せ、中央を干渉できない領域にする構図は、この舞台版の表現。"
+        }
+      ],
+      "referenceRecommendation": {
+        "status": "user_direction_recorded_with_assistant_structure",
+        "title": "中央を「人の川」にする",
+        "text": "中央のアーティストが、前の人の動きを受け取りながら流れ続ける。左右の人物が伸ばした手、視線、歩みは川に受け止められ、方向を変えられて元の岸へ戻る。左右の主役は近づいても直接は触れられない。ロレンス修道士が墓所へ到着する時だけ流れが静まり、人々が分かれて道を開く案を残す。光と音は身体を補助する場合だけ使い、中央の幅、人数、流れの方向、接触方法、解除動作は未決定。",
+        "optionIds": [
+          "RJ-NI-01",
+          "RJ-NI-02",
+          "RJ-NI-06"
+        ]
+      },
+      "referenceOptions": [
+        {
+          "id": "RJ-NI-01",
+          "title": "約束でつくる「見えない帯」",
+          "load": "低",
+          "status": "assistant_research_option_unselected",
+          "system": "舞台上に実物があっても、観客と演者が共有する約束によって『存在しないもの』として扱う方法。歌舞伎の黒衣は、黒を見えないものとする約束の実例。",
+          "transfer": "中央帯を空け、左右の人物は境界越しに視線、返事、接触を交わさない。必要なら黒衣役のアーティストだけが中央で物や身体の進路を静かに戻し、登場人物からは認識されない存在として扱う。",
+          "watch": "黒い衣裳だけではルールは伝わらない。場面の早い段階で、視線や物が中央で届かない短い反復を一度見せる。歌舞伎の表層的な再現ではなく、観客との約束という原理を借りる。",
+          "sourceRefs": [
+            "RJ-REF-KUROGO",
+            "RJ-REF-SPLIT-STAGE"
+          ]
+        },
+        {
+          "id": "RJ-NI-02",
+          "title": "光と音を二つだけ変える帯",
+          "load": "低〜中",
+          "status": "assistant_research_option_unselected",
+          "system": "制作の書斎にある『境界では二つの感覚だけを変える』という演出カードを、場所の分離へ応用する方法。",
+          "transfer": "中央だけ照明の方向を変え、足音や残響など音の質も左右から切り離す。左右の場所は同時に見せたまま、身体上の非干渉ルールと床の境界も併用する。",
+          "watch": "色だけに意味を負わせない。照明か音の片方を使えない会場でも、演者の行動と床面で境界が読める状態を残す。",
+          "sourceRefs": [
+            "RJ-REF-SHOSAI-BOUNDARY",
+            "RJ-REF-SPLIT-STAGE"
+          ]
+        },
+        {
+          "id": "RJ-NI-03",
+          "title": "中央に細い紗幕を置く",
+          "load": "中",
+          "status": "assistant_research_option_unselected",
+          "system": "シャークトゥース・スクリムなどの紗幕は、前と後ろの照明条件によって不透明な面にも、奥が見える面にもできる。",
+          "transfer": "中央に客席正面を向く細幅の紗幕を置き、左右の人物の身体は通さず、影や気配だけをその面へ残す。到着の瞬間だけ見え方を変える案にもつなげられる。",
+          "watch": "見え方は照明角度、背後への光漏れ、客席の視線で変わる。実際の会場でテストし、防炎仕様や吊り方は舞台技術者が確認する。",
+          "sourceRefs": [
+            "RJ-REF-SCRIM"
+          ]
+        },
+        {
+          "id": "RJ-NI-04",
+          "title": "身体ではなく影・残像だけが届く",
+          "load": "中〜高",
+          "status": "assistant_research_option_unselected",
+          "system": "制作の書斎にある『映像を物理空間の規則へ結びつける』というカードを使い、中央に入れるものを影や映像だけに限定する方法。",
+          "transfer": "左のロミオと右のロレンス修道士の影、または少し遅れた輪郭だけを中央へ送り、二人の実体は中央に入れない。ロレンス修道士が届こうとする対象を、生身ではなく直前の残像にする。",
+          "watch": "精密同期へ依存しすぎると失敗時に意味が崩れる。映像が止まっても、固定された影や床の線だけで非干渉が成立する代替状態を用意する。",
+          "sourceRefs": [
+            "RJ-REF-SHOSAI-PROJECTION",
+            "RJ-REF-LATERNA-MAGIKA"
+          ]
+        },
+        {
+          "id": "RJ-NI-05",
+          "title": "二つの場所を動かし、中心だけを止める",
+          "load": "高",
+          "status": "assistant_research_option_unselected",
+          "system": "回り舞台は、一つの舞台上で場所を切り替えたり、場所そのものを移動させたりできる。舞台スケッチには二重盆のプリセットもある。",
+          "transfer": "墓所とロレンス修道士側の場所を互いに異なる動きでずらし、人物が近づいているのに中央の固定された空白だけは越えられない構図にする。",
+          "watch": "今回の左右二面には、既存の同心円型二重盆をそのまま当てはめられるとは限らない。会場設備、騒音、運転、稽古、安全管理の負担が大きいため、大規模版の候補として保留する。",
+          "sourceRefs": [
+            "RJ-REF-STAGE-SKETCH-REVOLVE",
+            "RJ-REF-NATIONAL-THEATRE-REVOLVE"
+          ]
+        },
+        {
+          "id": "RJ-NI-06",
+          "title": "解除キューで空白を「橋」に変える",
+          "load": "低〜中",
+          "status": "assistant_research_option_unselected",
+          "system": "能の橋掛りは、出入りの通路であると同時に、現実世界と霊的世界を結ぶ道として扱われる。空間の意味を共有する舞台上の規則の実例。",
+          "transfer": "非干渉中は中央を空白として扱い、ロレンス修道士の到着時にだけ床の線、細い布、光の道のいずれかを一動作で現す。その瞬間から中央は通過できる橋になり、左右同時進行を同じ墓所へ収束させる。",
+          "watch": "橋掛りそのものの再現ではなく、空間の意味が一つの合図で変わる原理を借りる。境界が解除された時刻を照明・音・演者の動きで一致させる。",
+          "sourceRefs": [
+            "RJ-REF-NOH-HASHIGAKARI",
+            "RJ-REF-SHOSAI-THRESHOLD"
+          ]
+        }
+      ],
+      "humanBoundaryScore": {
+        "id": "RJ-HUMAN-BOUNDARY-01",
+        "status": "user_direction_recorded_with_assistant_structure",
+        "title": "相容れない二つの岸を隔てる人の川",
+        "metaphor": "river_between_two_incompatible_banks",
+        "performers": {
+          "role": "central_river_ensemble",
+          "count": null,
+          "exactCast": null
+        },
+        "fixedRules": [
+          "Keep the central human flow continuous while the two locations coexist.",
+          "Receive each preceding movement offer and transform it rather than cancel it.",
+          "Redirect approaches, gestures, and momentum back toward the originating bank.",
+          "Never carry a principal character, prop, or direct response from one bank to the other.",
+          "Do not let the human river become the sole visual focus for the entire scene."
+        ],
+        "improvisationVariables": [
+          "individual body shape",
+          "level",
+          "distance between ensemble members",
+          "speed within an agreed range",
+          "whether the received movement continues as a ripple, turn, fold, or rebound"
+        ],
+        "proposedPhases": [
+          {
+            "order": 1,
+            "name": "current_established",
+            "action": "中央のアーティストが、一人ずつ前の動きを受け取って変形し、途切れない流れを作る。",
+            "status": "assistant_structure_for_user_direction"
+          },
+          {
+            "order": 2,
+            "name": "banks_attempt_contact",
+            "action": "左右の人物が近づくたび、川が歩みや身振りを吸収し、対岸ではなく元の岸へ返す。",
+            "status": "assistant_structure_for_user_direction"
+          },
+          {
+            "order": 3,
+            "name": "fatal_asymmetry",
+            "action": "左の出来事が破局へ進む一方、右から届こうとする力は中央で横方向の流れへ変えられ、時間差が広がる。",
+            "status": "assistant_structure_for_user_direction"
+          },
+          {
+            "order": 4,
+            "name": "river_becomes_path",
+            "action": "ロレンス修道士の到着時に、人の流れが静まり、分かれて通路を作る。",
+            "status": "assistant_proposal_unselected"
+          }
+        ],
+        "focusRule": "左右の物語の焦点を失わないよう、川の動きの密度と速度は場面の重要な台詞や行動に合わせて下げられる。",
+        "openVariables": [
+          "performer count",
+          "floor width",
+          "current direction",
+          "speed range",
+          "contact and weight-bearing level",
+          "boundary release action",
+          "lighting and sound support"
+        ],
+        "sourceRefs": [
+          "RJ-REF-SKILL-IMPRO",
+          "RJ-REF-SHOSAI-BOUNDARY",
+          "RJ-REF-SHOSAI-THRESHOLD"
+        ]
+      },
+      "researchSources": [
+        {
+          "id": "RJ-REF-SKILL-IMPRO",
+          "label": "技能書ライブラリ：共同創作・稽古の原則",
+          "kind": "internal_practitioner_book_extract",
+          "path": "skill-library/E_performance.md#共同創作・稽古の原則（インプロ）",
+          "checked": "2026-09-09",
+          "finding": "相手のオファーを受け取って加えること、フォーカスは人だけでなく場所にも置けること、二つの話の同時進行では焦点がぶれやすいことを扱う。"
+        },
+        {
+          "id": "RJ-REF-SPLIT-STAGE",
+          "label": "University of Illinois『The Post Office』上演案内",
+          "kind": "university_production_record",
+          "url": "https://publish.illinois.edu/sumanmukhopadhyay2023/the-post-office/",
+          "checked": "2026-09-09",
+          "finding": "ワルシャワ・ゲットーとインドの村の家を、スプリットステージ上の二つの領域として置く上演例。"
+        },
+        {
+          "id": "RJ-REF-KUROGO",
+          "label": "日本芸術文化振興会『黒衣』",
+          "kind": "official_cultural_reference",
+          "url": "https://www2.ntj.jac.go.jp/unesco/kabuki/jp/production/performance7.html",
+          "checked": "2026-09-09",
+          "finding": "歌舞伎では黒を見えないものとする約束があり、黒衣は舞台上にいても見えない存在として扱われる。"
+        },
+        {
+          "id": "RJ-REF-SCRIM",
+          "label": "Rose Brand『Theatrical Scrim』",
+          "kind": "manufacturer_technical_reference",
+          "url": "https://www.rosebrand.com/products/fabric/scenic-fabrics/scrim",
+          "checked": "2026-09-09",
+          "finding": "紗幕は前面を斜めから照らすと不透明に見え、前面を落として背後を照らすと奥が現れる。"
+        },
+        {
+          "id": "RJ-REF-NATIONAL-THEATRE-REVOLVE",
+          "label": "National Theatre『Small Island Rehearsal Diaries』",
+          "kind": "official_production_record",
+          "url": "https://images.nationaltheatre.org.uk/uploads/2023/06/small-island-rehearsaldiaries.pdf",
+          "checked": "2026-09-09",
+          "finding": "オリヴィエ劇場の回り舞台を、同じ家の異なる場所の間を移るために試した制作記録。"
+        },
+        {
+          "id": "RJ-REF-NOH-HASHIGAKARI",
+          "label": "日本芸術文化振興会『能舞台の構造』",
+          "kind": "official_cultural_reference",
+          "url": "https://www2.ntj.jac.go.jp/unesco/noh/en/stage/stage1.html",
+          "checked": "2026-09-09",
+          "finding": "橋掛りは出入りの通路であり、現実世界と霊的世界を結ぶ道も表す。"
+        },
+        {
+          "id": "RJ-REF-SHOSAI-BOUNDARY",
+          "label": "制作の書斎：章の境界では二つの感覚だけを変える",
+          "kind": "internal_direction_knowledge",
+          "path": "direction-knowledge/cards/batch2_priority50.json#dk_chapter_boundary_changes_two_senses",
+          "checked": "2026-09-09",
+          "finding": "色と音、距離と速度など二つの感覚変数で境界を示し、使えない感覚があっても成立するようにする。"
+        },
+        {
+          "id": "RJ-REF-SHOSAI-PROJECTION",
+          "label": "制作の書斎：映像を物理空間の規則へ結びつける",
+          "kind": "internal_direction_knowledge",
+          "path": "direction-knowledge/curated_cards.json#dk_projection_on_physical_rule",
+          "checked": "2026-09-09",
+          "finding": "物理側の入力と映像側の反応を一つずつ決め、同期が外れても成立する静止状態を用意する。"
+        },
+        {
+          "id": "RJ-REF-LATERNA-MAGIKA",
+          "label": "制作の書斎：自身の映像との共演",
+          "kind": "internal_show_reference",
+          "path": "show-reference/data/element_index.json#el_laterna_magika_live_film_duet",
+          "checked": "2026-09-09",
+          "finding": "生身の演者と事前収録映像の共演は成立するが、精密な同期が演者の裁量を狭めるという制約も記録されている。"
+        },
+        {
+          "id": "RJ-REF-STAGE-SKETCH-REVOLVE",
+          "label": "舞台スケッチ：回り舞台（二重盆）プリセット",
+          "kind": "internal_stage_sketch_feature",
+          "path": "shosai-app/stage-machinery.js#double-revolve",
+          "checked": "2026-09-09",
+          "finding": "外盆と内盆を持つ二重回り舞台のプリセットが既にある。"
+        },
+        {
+          "id": "RJ-REF-SHOSAI-THRESHOLD",
+          "label": "制作の書斎：日常から異世界への境目を一つの行為で越える",
+          "kind": "internal_direction_knowledge",
+          "path": "direction-knowledge/curated_cards.json#dk_everyday_to_fantasy_threshold",
+          "checked": "2026-09-09",
+          "finding": "一つの物、音、身体動作で空間の規則が変わったことを観客に伝える。"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "source": "../sources/gutenberg-1513-original.txt",
+          "physicalLines": [
+            4778,
+            5066
+          ],
+          "finding": "ロミオはパリスとの争いと服毒を経て墓所で死ぬ。ロレンス修道士は遅れて到着し、その後ジュリエットが目覚める。左右二面の同時進行と中央の非干渉領域は舞台版の構成。"
+        }
+      ],
+      "unresolved": [
+        "舞台右側をロレンス修道士の部屋、準備場所、墓所へ向かう途中のどれにするか。",
+        "左側でパリスとの争い、ロミオの服毒、ジュリエットの目覚めのどこまで見せるか。",
+        "左右の出来事をどの時点からどの時点まで同時に進めるか。",
+        "ロレンス修道士が墓所へ到着するとき、中央の非干渉状態を解除するか、照明転換や再登場で場所を移すか。",
+        "中央の川を作るアーティストの人数、舞台上の幅、流れの基本方向。",
+        "即興に委ねる身体の形・高さ・間隔と、毎回再現する開始・返流・解除のキュー。",
+        "左右の人物と川のアーティストが接触するか。接触する場合の支持・荷重・戻し方。",
+        "観客へ『川は越えられない』と最初に理解してもらう短い行動。",
+        "身体だけで十分に読めるか。必要な場合に限り、照明と音をどの程度補助へ使うか。",
+        "パリス、バルサザー、従者、見張りを登場させるか。"
+      ],
+      "stageSketchHandoff": {
+        "kind": "scene_generation_brief",
+        "targetSource": "../../../stage-sketch.js#newScene",
+        "verifiedDate": "2026-09-09",
+        "globalConventionIds": [
+          "RJ-CONVENTION-01"
+        ],
+        "title": "墓所でのすれ違い",
+        "note": "舞台左の墓地・墓所と舞台右の別の場所を同時に進行させ、中央を互いに干渉できない領域にする。左の破局と、間に合おうとする右側の行動を並べ、同じ舞台上で届かない時間を見せる。",
+        "spatialMode": "simultaneous_split_stage",
+        "referenceFrame": "audience_view",
+        "sceneSpecificOverrides": [
+          {
+            "conventionId": "RJ-CONVENTION-01",
+            "subject": "CAPULET_CHURCHYARD_AND_TOMB",
+            "defaultRegion": "audience_right",
+            "sceneRegion": "audience_left",
+            "reason": "user_scene_specific_direction"
+          }
+        ],
+        "zones": [
+          {
+            "id": "RJ-DIR-11-ZONE-LEFT",
+            "region": "audience_left",
+            "place": "capulet_churchyard_and_tomb",
+            "status": "user_direction_recorded",
+            "contains": [
+              "tomb_events"
+            ]
+          },
+          {
+            "id": "RJ-DIR-11-ZONE-CENTER",
+            "region": "stage_center",
+            "place": "non_interference_boundary",
+            "status": "user_direction_recorded",
+            "primaryExpression": "human_river_ensemble",
+            "humanBoundaryScoreId": "RJ-HUMAN-BOUNDARY-01",
+            "prohibitedWhileActive": [
+              "crossing",
+              "touching",
+              "object_transfer",
+              "direct_response"
+            ]
+          },
+          {
+            "id": "RJ-DIR-11-ZONE-RIGHT",
+            "region": "audience_right",
+            "place": "friar_lawrence_preparation_or_route",
+            "status": "assistant_staging_proposal",
+            "exactPlace": null
+          }
+        ],
+        "requiredNarrativeBeats": [
+          "left_and_right_locations_exist_simultaneously",
+          "center_prevents_interference_between_locations",
+          "romeo_reaches_tomb_before_friar_lawrence",
+          "friar_lawrence_cannot_prevent_romeos_death",
+          "juliet_wakes_after_romeos_death"
+        ],
+        "parallelTimeline": [
+          {
+            "order": 1,
+            "left": "ロミオが墓所へ戻り、内部へ向かう。",
+            "right": "ロレンス修道士が手紙の失敗を知り、墓所へ向かう準備をする。",
+            "status": "assistant_staging_proposal"
+          },
+          {
+            "order": 2,
+            "left": "ロミオの側では、止められない出来事が先へ進む。",
+            "right": "ロレンス修道士は間に合おうとするが、中央の非干渉領域を越えて左側へ働きかけられない。",
+            "status": "assistant_staging_proposal"
+          },
+          {
+            "order": 3,
+            "left": "ロミオの死後、ジュリエットの目覚めへ進む。",
+            "right": "ロレンス修道士の到着をどのように左側へ接続するかは未決定。",
+            "status": "partially_unresolved"
+          }
+        ],
+        "interactionRules": [
+          "Keep the left and right locations visibly active at the same time.",
+          "Do not allow characters, props, or direct responses to cross the center boundary while the split-stage state is active.",
+          "Show that action on the right cannot interrupt the fatal sequence on the left.",
+          "Do not decide Friar Lawrence's eventual arrival transition until the boundary-release method is chosen."
+        ],
+        "nonInterferenceResearch": {
+          "status": "human_expression_selected_support_options_unselected",
+          "selectedDirectionId": "RJ-HUMAN-BOUNDARY-01",
+          "supportOptionIds": [
+            "RJ-NI-01",
+            "RJ-NI-02",
+            "RJ-NI-06"
+          ],
+          "allOptionIds": [
+            "RJ-NI-01",
+            "RJ-NI-02",
+            "RJ-NI-03",
+            "RJ-NI-04",
+            "RJ-NI-05",
+            "RJ-NI-06"
+          ],
+          "selectionRequiredBeforeGeneration": false,
+          "unresolvedBeforeDetailedBlocking": [
+            "performer_count",
+            "floor_width",
+            "current_direction",
+            "contact_level",
+            "boundary_release_action"
+          ]
+        },
+        "sourcePlot": {
+          "status": "verified_against_saved_source",
+          "romeoArrival": "before_friar_lawrence",
+          "friarLawrenceArrival": "after_romeos_death",
+          "friarLawrencePresentWhenJulietWakes": true
+        },
+        "characterAliases": {
+          "ROMEO": [
+            "ロミオ"
+          ],
+          "JULIET": [
+            "ジュリエット"
+          ],
+          "FRIAR_LAWRENCE": [
+            "ロレンス修道士"
+          ]
+        },
+        "scriptLink": {
+          "sampleId": "RJ-SAMPLE-11",
+          "scope": "juliet_after_waking_excerpt_only",
+          "exactCueAnchor": null,
+          "dialogueAndStageDirectionLines": 10
+        },
+        "durationSeconds": null,
+        "audio": null,
+        "props": null,
+        "lightingBrief": null,
+        "transition": null,
+        "generationNotes": [
+          "This is a brief, not a directly importable app project.",
+          "Treat the audience-left tomb as a scene-specific override to the global house-side convention.",
+          "Keep the user-confirmed split-stage structure separate from the proposed Friar Lawrence location and parallel actions.",
+          "Use performers as the primary expression of the central boundary; the scrim, projection, revolve, lighting, and sound options remain unselected supports or alternatives.",
+          "The human river receives and redirects movement back toward its originating bank; it never transfers a principal character, prop, or direct response across the center while the two-location state is active.",
+          "Keep exact choreography improvised within the fixed movement verbs and prohibitions in RJ-HUMAN-BOUNDARY-01.",
+          "Preserve the source fact that Friar Lawrence eventually reaches the tomb and is present when Juliet wakes.",
+          "Do not infer exact coordinates, boundary width, lighting, sound, timing, or additional characters."
+        ]
+      }
+    },
+    {
+      "id": "RJ-DIR-12",
+      "outlineId": 12,
+      "scriptSampleId": "RJ-SAMPLE-12",
+      "title": "残された人々と和解",
+      "sourceActScene": "第5幕 第3場",
+      "storyContext": {
+        "text": "真相が明らかになり、両家が憎しみを終わらせる。",
+        "source": "../scene-outline/outline.json",
+        "status": "existing_outline_context"
+      },
+      "status": "user_direction_recorded",
+      "entryIds": [
+        "RJ-NOTE-0020",
+        "RJ-NOTE-0021"
+      ],
+      "summary": "ロレンス修道士を舞台中央に置く。ロミオとジュリエットの死を知った人々が悲しみながら一人ずつ現れ、ロレンスの周囲へ加わっていく。まず喪失を共有し、ロレンスから真相を聞く形を作ってから、両家の和解へ進む。",
+      "directionItems": [
+        {
+          "label": "場面の始まり",
+          "text": "ロミオとジュリエットの死が明らかになった直後から始める。二人の死と、それを前にした人々の悲しみを先に見せる。"
+        },
+        {
+          "label": "ロレンス修道士",
+          "text": "ロレンス修道士を舞台中央に置き、この人物を中心として人々の集まりを作る。中央の正確な座標と姿勢は未指定。"
+        },
+        {
+          "label": "人々の集まり方",
+          "text": "人々は二人の死を知って悲しみながら、一人ずつロレンス修道士の周囲へ加わっていく。人物の順番、登場口、経路は未決定。"
+        },
+        {
+          "label": "感情の流れ",
+          "text": "突然握手して仲直りするのではなく、二人の死による喪失が人々を同じ場所へ集め、真相を聞く状態を作る。"
+        },
+        {
+          "label": "和解への接続",
+          "text": "ロレンス修道士を囲んで真相を受け止めた後に、キャピュレットとモンタギューが手を差し出す短い台詞へつなぐ。"
+        },
+        {
+          "label": "原作との関係",
+          "text": "原作では墓所に大公、両家、見張りらが集まり、ロレンス修道士の説明とロミオの手紙による確認を経て、両家の父が和解する。この演出では、その説明へ向かう人々の悲しみと集合を身体の流れとして見せる。"
+        }
+      ],
+      "unresolved": [
+        "ロレンス修道士の周囲へ集まる人物とアーティストの正確な構成。",
+        "ロミオとジュリエットを舞台上にどのような姿と位置で残すか。",
+        "舞台中央にいるロレンス修道士の正確な座標、向き、姿勢。",
+        "一人ずつ加わる人物の順番と、それぞれの登場口・経路。",
+        "真相の説明を台詞でどこまで出すか、身体表現やト書きでどこまで補うか。",
+        "人々の集まりが、キャピュレットとモンタギューの握手へ変化する合図。",
+        "第11場面の人の川を、そのまま悲しむ群衆へ変化させるか。",
+        "照明、音、場面の尺、接触、台詞との同期。"
+      ],
+      "stageSketchHandoff": {
+        "kind": "scene_generation_brief",
+        "targetSource": "../../../stage-sketch.js#newScene",
+        "verifiedDate": "2026-09-09",
+        "title": "残された人々と和解",
+        "note": "ロレンス修道士を舞台中央に置く。ロミオとジュリエットの死を知った人々が悲しみながら一人ずつ現れ、その周囲へ加わる。喪失と真相の共有を経てから、両家の和解へ進む。",
+        "stagingSequence": [
+          {
+            "order": 1,
+            "label": "二人の死",
+            "action": "ロミオとジュリエットの死が明らかになり、その喪失を場面の最初に置く。"
+          },
+          {
+            "order": 2,
+            "label": "悲しむ人々",
+            "action": "ロレンス修道士が舞台中央にいる。人々が悲しみながら一人ずつ現れ、その周囲へ加わる。"
+          },
+          {
+            "order": 3,
+            "label": "真相を聞く形",
+            "action": "ロレンス修道士を中心に、人々が二人の死に至った真相を受け止める。"
+          },
+          {
+            "order": 4,
+            "label": "遅すぎた和解",
+            "action": "真相を聞いた後で、キャピュレットとモンタギューが手を差し出す。"
+          }
+        ],
+        "placementConstraints": [
+          {
+            "subject": "FRIAR_LAWRENCE",
+            "role": "center_of_gathering",
+            "region": "stage_center",
+            "coordinates": null
+          },
+          {
+            "subject": [
+              "ROMEO",
+              "JULIET"
+            ],
+            "state": "dead",
+            "onStage": true,
+            "coordinates": null
+          },
+          {
+            "subject": "surviving_people_and_artists",
+            "entrance": "one_by_one_gathering",
+            "simultaneousEntranceAllowed": false,
+            "destination": "around_friar_lawrence",
+            "exactCast": null,
+            "characterOrder": null,
+            "paths": null
+          }
+        ],
+        "emotionalIntent": {
+          "movement": "grief_draws_separated_people_toward_a_shared_center",
+          "result": "truth_precedes_reconciliation",
+          "source": "user_direction"
+        },
+        "characterAliases": {
+          "FRIAR_LAWRENCE": [
+            "ロレンス修道士"
+          ],
+          "ROMEO": [
+            "ロミオ"
+          ],
+          "JULIET": [
+            "ジュリエット"
+          ],
+          "CAPULET": [
+            "キャピュレット"
+          ],
+          "MONTAGUE": [
+            "モンタギュー"
+          ]
+        },
+        "scriptLink": {
+          "sampleId": "RJ-SAMPLE-12",
+          "scope": "final_handshake_excerpt_after_truth_is_known",
+          "exactCueAnchor": null,
+          "dialogueLines": 10
+        },
+        "durationSeconds": null,
+        "audio": null,
+        "props": null,
+        "lightingBrief": null,
+        "transition": null,
+        "generationNotes": [
+          "This is a brief, not a directly importable app project.",
+          "Begin with the shared grief caused by Romeo and Juliet's deaths; do not begin directly with the fathers' handshake.",
+          "Place Friar Lawrence at stage center and bring the surviving people into the gathering one at a time.",
+          "Treat the existing ten-line script sample as the final handshake excerpt after the omitted discovery and explanation.",
+          "Keep the exact cast, character order, entrances, routes, spacing, and contact unresolved.",
+          "Do not infer dialogue additions, exact coordinates, timing, lighting, sound, or a specific transition from the Scene 11 human river."
+        ]
+      }
+    }
+  ],
+  "structureProposal": {
+    "id": "RJ-STRUCTURE-03",
+    "status": "user_direction_recorded",
+    "sourceEntryIds": [
+      "RJ-NOTE-0026",
+      "RJ-NOTE-0027"
+    ],
+    "sourceSceneCount": 12,
+    "previousSceneCount": 5,
+    "proposedSceneCount": 3,
+    "path": "../condensed-show/outline.json",
+    "groupingInterpretation": "前の5場面案の1を残し、2・3・4を一つにまとめる。指定にない5は終幕として残し、全3場面に整理する。",
+    "previousProposalPath": "../condensed-show/outline-5-scenes-v1.json"
+  },
+  "condensedScriptDrafts": [
+    {
+      "sceneId": "RJ-COND-02",
+      "sourceEntryIds": [
+        "RJ-NOTE-0028",
+        "RJ-NOTE-0029",
+        "RJ-NOTE-0030"
+      ],
+      "html": "../condensed-show/scene-02/",
+      "data": "../condensed-show/scene-02/script.json",
+      "status": "assistant_composition_draft_for_user_revision"
+    }
+  ],
+  "fullShowDraft": {
+    "html": "../full-show/",
+    "authoringSource": "../full-show/score.json",
+    "compiledData": "../full-show/show.json",
+    "status": "assistant_proposal_for_user_revision",
+    "authorizationEntryId": "RJ-NOTE-0036"
+  },
+  "stageVisuals": {
+    "html": "../stage-visuals/",
+    "data": "../stage-visuals/layouts.json",
+    "status": "assistant_layout_draft_based_on_user_directions",
+    "sourceEntryIds": [
+      "RJ-NOTE-0031",
+      "RJ-NOTE-0032",
+      "RJ-NOTE-0033",
+      "RJ-NOTE-0034",
+      "RJ-NOTE-0035"
+    ]
+  }
+}

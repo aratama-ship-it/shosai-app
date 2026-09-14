@@ -1,0 +1,25 @@
+{
+  "count": 18,
+  "checks": [
+    "holding only previews; state and undo unchanged",
+    "single drop changes anchor but preserves ID and linked cue",
+    "one undo restores complete old state",
+    "outside drop is a no-op",
+    "Escape cancels preview with no edit",
+    "window blur cancels with no edit",
+    "pointer cancellation leaves data unchanged",
+    "lost pointer capture cancels with no edit",
+    "changing view controls cancels active drag",
+    "simple click still selects without editing",
+    "group drop applies one delta in one undo step",
+    "dragged group can be explicitly reviewed",
+    "group undo returns all annotations together",
+    "group out of bounds rejects all members",
+    "revision comparison old page is read-only",
+    "emulated touch drag reattaches annotation",
+    "background remains available for native touch pan",
+    "no JavaScript errors"
+  ],
+  "errors": [],
+  "scope": "fixed HTML mouse and Chromium emulated touch; not real PDF, physical tablet, cross-page drag, new annotation assignment or label-only movement"
+}

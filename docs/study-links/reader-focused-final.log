@@ -1,0 +1,718 @@
+TAP version 13
+# Subtest: 発行時の全場面を凍結し明示更新でだけ同じリンクを変更する
+ok 1 - 発行時の全場面を凍結し明示更新でだけ同じリンクを変更する
+  ---
+  duration_ms: 22.715042
+  type: 'test'
+  ...
+# Subtest: 閲覧トークンは編集・メモ一覧・所有者の代理操作を許可しない
+ok 2 - 閲覧トークンは編集・メモ一覧・所有者の代理操作を許可しない
+  ---
+  duration_ms: 7.609166
+  type: 'test'
+  ...
+# Subtest: メモは対象場面・時刻・投稿者とともにオーナーだけへ返し更新後も保持
+ok 3 - メモは対象場面・時刻・投稿者とともにオーナーだけへ返し更新後も保持
+  ---
+  duration_ms: 4.38825
+  type: 'test'
+  ...
+# Subtest: 無効化・未知・不正トークンは同じ応答で、既存閲覧者の再取得・投稿を止める
+ok 4 - 無効化・未知・不正トークンは同じ応答で、既存閲覧者の再取得・投稿を止める
+  ---
+  duration_ms: 12.899833
+  type: 'test'
+  ...
+# Subtest: 発行上限はオーナーごとに10ショーで、別オーナーの発行枠を消費しない
+ok 5 - 発行上限はオーナーごとに10ショーで、別オーナーの発行枠を消費しない
+  ---
+  duration_ms: 4.817084
+  type: 'test'
+  ...
+# Subtest: 全体1000件の緊急上限はオーナー枠に余裕があっても発行を止める
+ok 6 - 全体1000件の緊急上限はオーナー枠に余裕があっても発行を止める
+  ---
+  duration_ms: 0.596084
+  type: 'test'
+  ...
+# Subtest: 旧owner indexから件数を復元し、区切り文字を含む別ownerを数えない
+ok 7 - 旧owner indexから件数を復元し、区切り文字を含む別ownerを数えない
+  ---
+  duration_ms: 1.572291
+  type: 'test'
+  ...
+# Subtest: 無効化後の再発行は新しいtokenへ交換し、古い公開内容とメモを回収する
+ok 8 - 無効化後の再発行は新しいtokenへ交換し、古い公開内容とメモを回収する
+  ---
+  duration_ms: 2.441958
+  type: 'test'
+  ...
+# Subtest: オーナーだけがメモを全削除でき、連番と保存件数を分けて再投稿できる
+ok 9 - オーナーだけがメモを全削除でき、連番と保存件数を分けて再投稿できる
+  ---
+  duration_ms: 2.155417
+  type: 'test'
+  ...
+# Subtest: 失効済み保存データの削除だけが発行枠を戻し、旧tokenを残さない
+ok 10 - 失効済み保存データの削除だけが発行枠を戻し、旧tokenを残さない
+  ---
+  duration_ms: 2.104125
+  type: 'test'
+  ...
+# Subtest: メモの型・文字数・リクエスト量・場面・連投・保存上限をサーバーで検証する
+ok 11 - メモの型・文字数・リクエスト量・場面・連投・保存上限をサーバーで検証する
+  ---
+  duration_ms: 3.077959
+  type: 'test'
+  ...
+# Subtest: 公開例外は明示資源・対象token APIだけで、編集画面・棚・名簿・他ショーへ抜けない
+ok 12 - 公開例外は明示資源・対象token APIだけで、編集画面・棚・名簿・他ショーへ抜けない
+  ---
+  duration_ms: 1.941375
+  type: 'test'
+  ...
+# Subtest: APIはno-store、発行競合は一つだけ、認証境界は交換可能
+ok 13 - APIはno-store、発行競合は一つだけ、認証境界は交換可能
+  ---
+  duration_ms: 1.341125
+  type: 'test'
+  ...
+# Subtest: 描画依存と正本の生成、ローカル保存の隔離、解析と編集入口の不在
+ok 14 - 描画依存と正本の生成、ローカル保存の隔離、解析と編集入口の不在
+  ---
+  duration_ms: 1.624042
+  type: 'test'
+  ...
+# Subtest: 本家とベータの入口・SW・Worker許可がそろい、体験版へ管理入口を混ぜない
+ok 15 - 本家とベータの入口・SW・Worker許可がそろい、体験版へ管理入口を混ぜない
+  ---
+  duration_ms: 1.6635
+  type: 'test'
+  ...
+# Subtest: private text and strokes survive reload with scene and token isolation; show keys untouched
+ok 16 - private text and strokes survive reload with scene and token isolation; show keys untouched
+  ---
+  duration_ms: 3.2255
+  type: 'test'
+  ...
+# Subtest: private store merges other scenes and preserves old revision for an explicit warning
+ok 17 - private store merges other scenes and preserves old revision for an explicit warning
+  ---
+  duration_ms: 0.422291
+  type: 'test'
+  ...
+# Subtest: unreadable private data is never overwritten; quota failure retains current notes in memory
+ok 18 - unreadable private data is never overwritten; quota failure retains current notes in memory
+  ---
+  duration_ms: 0.57325
+  type: 'test'
+  ...
+# Subtest: private data validation limits structure, coordinates, text and storage size
+ok 19 - private data validation limits structure, coordinates, text and storage size
+  ---
+  duration_ms: 0.372208
+  type: 'test'
+  ...
+# Subtest: free login creates isolated HttpOnly sessions; anonymous, forged cookies and editor access fail
+ok 20 - free login creates isolated HttpOnly sessions; anonymous, forged cookies and editor access fail
+  ---
+  duration_ms: 25.10825
+  type: 'test'
+  ...
+# Subtest: one reader joins different owners, notes survive a new device and storage restart, other accounts cannot read them
+ok 21 - one reader joins different owners, notes survive a new device and storage restart, other accounts cannot read them
+  ---
+  duration_ms: 19.002833
+  type: 'test'
+  ...
+# Subtest: CAS protects concurrent changes and retry is idempotent; a stale device gets both versions
+ok 22 - CAS protects concurrent changes and retry is idempotent; a stale device gets both versions
+  ---
+  duration_ms: 5.596917
+  type: 'test'
+  ...
+# Subtest: explicit sharing uses verified reader display name, sends no private account permission and stays owner only
+ok 23 - explicit sharing uses verified reader display name, sends no private account permission and stays owner only
+  ---
+  duration_ms: 2.745833
+  type: 'test'
+  ...
+# Subtest: revocation blocks private notebook reads/writes, old tokens fail, reissue reconnects stable notebook
+ok 24 - revocation blocks private notebook reads/writes, old tokens fail, reissue reconnects stable notebook
+  ---
+  duration_ms: 5.152125
+  type: 'test'
+  ...
+# Subtest: logout revokes the server session; expired sessions and cross-origin writes fail closed
+ok 25 - logout revokes the server session; expired sessions and cross-origin writes fail closed
+  ---
+  duration_ms: 1.850417
+  type: 'test'
+  ...
+# Subtest: private notes enforce types, size, coordinates, scene ownership and rate limits without storing IP/UA
+ok 26 - private notes enforce types, size, coordinates, scene ownership and rate limits without storing IP/UA
+  ---
+  duration_ms: 50.814125
+  type: 'test'
+  ...
+# Subtest: Google RS256 validation rejects wrong signature, audience, issuer, nonce and expiry
+ok 27 - Google RS256 validation rejects wrong signature, audience, issuer, nonce and expiry
+  ---
+  duration_ms: 137.317209
+  type: 'test'
+  ...
+# Subtest: Google login state keeps invite server-side, binds browser and consumes once; missing config does not bypass login
+ok 28 - Google login state keeps invite server-side, binds browser and consumes once; missing config does not bypass login
+  ---
+  duration_ms: 1.039875
+  type: 'test'
+  ...
+# Subtest: an old tab cannot write its personal notes or shared screen into a newly signed-in account
+ok 29 - an old tab cannot write its personal notes or shared screen into a newly signed-in account
+  ---
+  duration_ms: 1.909917
+  type: 'test'
+  ...
+# Subtest: OAuth callback exchanges a code, validates Google signature and returns the original invite; cancel keeps it retryable
+ok 30 - OAuth callback exchanges a code, validates Google signature and returns the original invite; cancel keeps it retryable
+  ---
+  duration_ms: 126.26775
+  type: 'test'
+  ...
+# Subtest: library and notebook storage ceilings fail safely without discarding saved notes
+ok 31 - library and notebook storage ceilings fail safely without discarding saved notes
+  ---
+  duration_ms: 0.740625
+  type: 'test'
+  ...
+# Subtest: editor login does not silently replace a signed-out performer account
+ok 32 - editor login does not silently replace a signed-out performer account
+  ---
+  duration_ms: 0.898916
+  type: 'test'
+  ...
+# Subtest: shared screens accept bounded JPEGs and derive dimensions from the file
+ok 33 - shared screens accept bounded JPEGs and derive dimensions from the file
+  ---
+  duration_ms: 0.9515
+  type: 'test'
+  ...
+# Subtest: only the matching owner can retrieve shared images, including after update/restart/revocation
+ok 34 - only the matching owner can retrieve shared images, including after update/restart/revocation
+  ---
+  duration_ms: 25.003541
+  type: 'test'
+  ...
+# Subtest: screen-only shares are valid; malformed images, byte quotas and request sizes are enforced
+ok 35 - screen-only shares are valid; malformed images, byte quotas and request sizes are enforced
+  ---
+  duration_ms: 4.267083
+  type: 'test'
+  ...
+# Subtest: clear, reissue and purge remove stored note-image chunks as part of the owner lifecycle
+ok 36 - clear, reissue and purge remove stored note-image chunks as part of the owner lifecycle
+  ---
+  duration_ms: 5.365458
+  type: 'test'
+  ...
+# Subtest: anonymous, guest and forged owner headers cannot read owner reports or page
+ok 37 - anonymous, guest and forged owner headers cannot read owner reports or page
+  ---
+  duration_ms: 20.983667
+  type: 'test'
+  ...
+# Subtest: record uses authenticated identity and discards content; switch of account is rejected
+ok 38 - record uses authenticated identity and discards content; switch of account is rejected
+  ---
+  duration_ms: 3.025208
+  type: 'test'
+  ...
+# Subtest: same origin JSON, bounded payloads, periods and methods are enforced
+ok 39 - same origin JSON, bounded payloads, periods and methods are enforced
+  ---
+  duration_ms: 6.335958
+  type: 'test'
+  ...
+# Subtest: disabled, beta ended, missing or failed storage never become fake empty success
+ok 40 - disabled, beta ended, missing or failed storage never become fake empty success
+  ---
+  duration_ms: 4.457
+  type: 'test'
+  ...
+# Subtest: duplicate IDs, concurrent overlapping tabs and restarts keep one duration
+ok 41 - duplicate IDs, concurrent overlapping tabs and restarts keep one duration
+  ---
+  duration_ms: 2.169583
+  type: 'test'
+  ...
+# Subtest: JST midnight splits time, periods include today, retention expires after 90 days
+ok 42 - JST midnight splits time, periods include today, retention expires after 90 days
+  ---
+  duration_ms: 2.361167
+  type: 'test'
+  ...
+# Subtest: opening counts a usage day without inventing active time; safe account names
+ok 43 - opening counts a usage day without inventing active time; safe account names
+  ---
+  duration_ms: 2.674958
+  type: 'test'
+  ...
+# Subtest: activity requires input and foreground, stops after 60s idle and excludes long sleep
+ok 44 - activity requires input and foreground, stops after 60s idle and excludes long sleep
+  ---
+  duration_ms: 0.739416
+  type: 'test'
+  ...
+# Subtest: public distribution excludes account metrics; beta caches only client asset, not reports
+ok 45 - public distribution excludes account metrics; beta caches only client asset, not reports
+  ---
+  duration_ms: 1.321083
+  type: 'test'
+  ...
+# Subtest: client sends actual foreground activity and disclosure; idle, background and offline stop it
+ok 46 - client sends actual foreground activity and disclosure; idle, background and offline stop it
+  ---
+  duration_ms: 2.539792
+  type: 'test'
+  ...
+# Subtest: client never records when disabled; account change stops future submissions
+ok 47 - client never records when disabled; account change stops future submissions
+  ---
+  duration_ms: 1.319583
+  type: 'test'
+  ...
+# Subtest: ベータ設定が未指定ならactiveを返す
+ok 48 - ベータ設定が未指定ならactiveを返す
+  ---
+  duration_ms: 11.653125
+  type: 'test'
+  ...
+# Subtest: ベータ終了時は認証なしで案内文と製品版URLを返す
+ok 49 - ベータ終了時は認証なしで案内文と製品版URLを返す
+  ---
+  duration_ms: 0.308625
+  type: 'test'
+  ...
+# Subtest: 期限切れCookieがあってもbeta-statusのactive状態は読める
+ok 50 - 期限切れCookieがあってもbeta-statusのactive状態は読める
+  ---
+  duration_ms: 3.721875
+  type: 'test'
+  ...
+# Subtest: 未認証で読めるのはbeta-statusだけ
+ok 51 - 未認証で読めるのはbeta-statusだけ
+  ---
+  duration_ms: 0.460125
+  type: 'test'
+  ...
+# Subtest: 認証設定に不備があればbeta-statusも503で止まる
+ok 52 - 認証設定に不備があればbeta-statusも503で止まる
+  ---
+  duration_ms: 0.290667
+  type: 'test'
+  ...
+# Subtest: ベータの実在3会場は選択肢から隠し、保存済みIDと認証を保持する
+ok 53 - ベータの実在3会場は選択肢から隠し、保存済みIDと認証を保持する
+  ---
+  duration_ms: 21.454292
+  type: 'test'
+  ...
+# Subtest: 環境変数が文字列でないときも止める（JSON.parse前の型を見ている）
+ok 54 - 環境変数が文字列でないときも止める（JSON.parse前の型を見ている）
+  ---
+  duration_ms: 10.911208
+  type: 'test'
+  ...
+# Subtest: 要素が配列やnullでも止める（typeof null === object の穴）
+ok 55 - 要素が配列やnullでも止める（typeof null === object の穴）
+  ---
+  duration_ms: 0.838166
+  type: 'test'
+  ...
+# Subtest: 空文字のuser/passは止める
+ok 56 - 空文字のuser/passは止める
+  ---
+  duration_ms: 0.367042
+  type: 'test'
+  ...
+# Subtest: 正しい一件が混ざっていても、不正が一件あれば全体を止める
+ok 57 - 正しい一件が混ざっていても、不正が一件あれば全体を止める
+  ---
+  duration_ms: 0.164958
+  type: 'test'
+  ...
+# Subtest: labelや未知の項目があっても通る（前方互換）
+ok 58 - labelや未知の項目があっても通る（前方互換）
+  ---
+  duration_ms: 5.734833
+  type: 'test'
+  ...
+# Subtest: 旧GUEST_USERが無くGUEST_ACCOUNTSだけでも通る（移行後の姿）
+ok 59 - 旧GUEST_USERが無くGUEST_ACCOUNTSだけでも通る（移行後の姿）
+  ---
+  duration_ms: 1.14075
+  type: 'test'
+  ...
+# Subtest: ★名簿から外した人は入れなくなる（この機能の目的そのもの）
+ok 60 - ★名簿から外した人は入れなくなる（この機能の目的そのもの）
+  ---
+  duration_ms: 1.047292
+  type: 'test'
+  ...
+# Subtest: 外した人の古いクッキーも通らない
+ok 61 - 外した人の古いクッキーも通らない
+  ---
+  duration_ms: 1.403208
+  type: 'test'
+  ...
+# Subtest: 誤ったパスワードでは入れず、クッキーも配らない
+ok 62 - 誤ったパスワードでは入れず、クッキーも配らない
+  ---
+  duration_ms: 0.515166
+  type: 'test'
+  ...
+# Subtest: managed/legacy guest: Basicと既存Cookieで書斎・データ・未知の資源を配信しない
+ok 63 - managed/legacy guest: Basicと既存Cookieで書斎・データ・未知の資源を配信しない
+  ---
+  duration_ms: 59.354417
+  type: 'test'
+  ...
+# Subtest: SITE_USERは従来の書斎・資料・個人ショーを読み、HTTPキャッシュでは共有しない
+ok 64 - SITE_USERは従来の書斎・資料・個人ショーを読み、HTTPキャッシュでは共有しない
+  ---
+  duration_ms: 5.638667
+  type: 'test'
+  ...
+# Subtest: ゲストへ返す単独HTMLから個人ショーのscriptだけを外す
+ok 65 - ゲストへ返す単独HTMLから個人ショーのscriptだけを外す
+  ---
+  duration_ms: 3.035875
+  type: 'test'
+  ...
+# Subtest: 配信済みの旧HTMLも本人・ゲストの名称だけを更新し、本人のショーは保持する
+ok 66 - 配信済みの旧HTMLも本人・ゲストの名称だけを更新し、本人のショーは保持する
+  ---
+  duration_ms: 5.305958
+  type: 'test'
+  ...
+# Subtest: ゲストの舞台編集・PWA・ガイドの依存資源がすべて通る
+ok 67 - ゲストの舞台編集・PWA・ガイドの依存資源がすべて通る
+  ---
+  duration_ms: 13.5055
+  type: 'test'
+  ...
+# Subtest: 本人用のvalidator・Rangeを引き継がず、ゲスト用HTMLを必ず変換する
+ok 68 - 本人用のvalidator・Rangeを引き継がず、ゲスト用HTMLを必ず変換する
+  ---
+  duration_ms: 1.335667
+  type: 'test'
+  ...
+# Subtest: ゲストのrootとログイン戻り先は舞台へ・英語指定と招待セッションを保持
+ok 69 - ゲストのrootとログイン戻り先は舞台へ・英語指定と招待セッションを保持
+  ---
+  duration_ms: 3.624
+  type: 'test'
+  ...
+# Subtest: 配信層の正規URL転送は許可し、書斎・外部への転送は拒否
+ok 70 - 配信層の正規URL転送は許可し、書斎・外部への転送は拒否
+  ---
+  duration_ms: 0.568375
+  type: 'test'
+  ...
+# Subtest: サインインの名称は舞台スケッチ、英語招待ではStage Sketch
+ok 71 - サインインの名称は舞台スケッチ、英語招待ではStage Sketch
+  ---
+  duration_ms: 0.467542
+  type: 'test'
+  ...
+# Subtest: 本人用と旧ゲスト用の同名設定を拒否して権限の取り違えを防ぐ
+ok 72 - 本人用と旧ゲスト用の同名設定を拒否して権限の取り違えを防ぐ
+  ---
+  duration_ms: 0.293125
+  type: 'test'
+  ...
+# Subtest: PWAの見た目に要る資源だけを認証の外で返す
+ok 73 - PWAの見た目に要る資源だけを認証の外で返す
+  ---
+  duration_ms: 8.67175
+  type: 'test'
+  ...
+# Subtest: 中身のあるファイルは決して認証の外へ出さない
+ok 74 - 中身のあるファイルは決して認証の外へ出さない
+  ---
+  duration_ms: 0.403583
+  type: 'test'
+  ...
+# Subtest: パスの細工で穴を広げられない
+ok 75 - パスの細工で穴を広げられない
+  ---
+  duration_ms: 0.142709
+  type: 'test'
+  ...
+# Subtest: 読み取り以外の方法では認証の外を通さない
+ok 76 - 読み取り以外の方法では認証の外を通さない
+  ---
+  duration_ms: 0.089083
+  type: 'test'
+  ...
+# Subtest: 401は保存させない（機内モードで再生されないように）
+ok 77 - 401は保存させない（機内モードで再生されないように）
+  ---
+  duration_ms: 0.147334
+  type: 'test'
+  ...
+# Subtest: 認証チェックより手前で例外を判定している
+ok 78 - 認証チェックより手前で例外を判定している
+  ---
+  duration_ms: 0.076042
+  type: 'test'
+  ...
+# Subtest: 正しいトークンは利用者名を返す
+ok 79 - 正しいトークンは利用者名を返す
+  ---
+  duration_ms: 7.412125
+  type: 'test'
+  ...
+# Subtest: 中身を書き換えたトークンは通さない
+ok 80 - 中身を書き換えたトークンは通さない
+  ---
+  duration_ms: 0.771208
+  type: 'test'
+  ...
+# Subtest: 期限が切れたトークンは通さない
+ok 81 - 期限が切れたトークンは通さない
+  ---
+  duration_ms: 0.25275
+  type: 'test'
+  ...
+# Subtest: パスワードを変えると、その口座のトークンだけが無効になる
+ok 82 - パスワードを変えると、その口座のトークンだけが無効になる
+  ---
+  duration_ms: 1.189166
+  type: 'test'
+  ...
+# Subtest: 知らない利用者名のトークンは通さない
+ok 83 - 知らない利用者名のトークンは通さない
+  ---
+  duration_ms: 0.611625
+  type: 'test'
+  ...
+# Subtest: 壊れた値で例外を投げず、必ず拒否する
+ok 84 - 壊れた値で例外を投げず、必ず拒否する
+  ---
+  duration_ms: 0.211958
+  type: 'test'
+  ...
+# Subtest: 戻り先は同一オリジンのパスだけ許す
+ok 85 - 戻り先は同一オリジンのパスだけ許す
+  ---
+  duration_ms: 0.111
+  type: 'test'
+  ...
+# Subtest: 未認証の画面遷移はログイン画面へ送る
+ok 86 - 未認証の画面遷移はログイン画面へ送る
+  ---
+  duration_ms: 8.893542
+  type: 'test'
+  ...
+# Subtest: 未認証の副資源は401（HTMLを返さない）
+ok 87 - 未認証の副資源は401（HTMLを返さない）
+  ---
+  duration_ms: 0.789125
+  type: 'test'
+  ...
+# Subtest: 新しい共有セッションの応答は認証済み利用者名を返す
+ok 88 - 新しい共有セッションの応答は認証済み利用者名を返す
+  ---
+  duration_ms: 2.648417
+  type: 'test'
+  ...
+# Subtest: WebSocket中継は利用者IDをWorkerで上書きしてDurable Objectへ渡す
+ok 89 - WebSocket中継は利用者IDをWorkerで上書きしてDurable Objectへ渡す
+  ---
+  duration_ms: 1.416416
+  type: 'test'
+  ...
+# Subtest: 再開可否の照会も利用者IDをWorkerで上書きしてDurable Objectへ渡す
+ok 90 - 再開可否の照会も利用者IDをWorkerで上書きしてDurable Objectへ渡す
+  ---
+  duration_ms: 0.886083
+  type: 'test'
+  ...
+# Subtest: ログイン画面は認証なしで開ける
+ok 91 - ログイン画面は認証なしで開ける
+  ---
+  duration_ms: 0.511666
+  type: 'test'
+  ...
+# Subtest: ログイン画面は招待URLのhashをhiddenの戻り先へ一度だけ足す
+ok 92 - ログイン画面は招待URLのhashをhiddenの戻り先へ一度だけ足す
+  ---
+  duration_ms: 0.362834
+  type: 'test'
+  ...
+# Subtest: ログイン画面は外部の資源を一切読まない
+ok 93 - ログイン画面は外部の資源を一切読まない
+  ---
+  duration_ms: 0.315375
+  type: 'test'
+  ...
+# Subtest: 戻り先はログイン画面の中で逃がさない
+ok 94 - 戻り先はログイン画面の中で逃がさない
+  ---
+  duration_ms: 0.310916
+  type: 'test'
+  ...
+# Subtest: 名前かパスワードが違えば入れない
+ok 95 - 名前かパスワードが違えば入れない
+  ---
+  duration_ms: 0.636958
+  type: 'test'
+  ...
+# Subtest: 正しく入れるとクッキーを配り、元の場所へ戻す
+ok 96 - 正しく入れるとクッキーを配り、元の場所へ戻す
+  ---
+  duration_ms: 1.5965
+  type: 'test'
+  ...
+# Subtest: ログインPOSTは招待セッションの断片を303の戻り先に保つ
+ok 97 - ログインPOSTは招待セッションの断片を303の戻り先に保つ
+  ---
+  duration_ms: 0.664542
+  type: 'test'
+  ...
+# Subtest: ログインの戻り先も外部へは飛ばさない
+ok 98 - ログインの戻り先も外部へは飛ばさない
+  ---
+  duration_ms: 0.922209
+  type: 'test'
+  ...
+# Subtest: 有効なクッキーがあれば中身が返る
+ok 99 - 有効なクッキーがあれば中身が返る
+  ---
+  duration_ms: 0.650083
+  type: 'test'
+  ...
+# Subtest: 期限切れのクッキーは中身を返さない
+ok 100 - 期限切れのクッキーは中身を返さない
+  ---
+  duration_ms: 0.308666
+  type: 'test'
+  ...
+# Subtest: Basic認証は引き続き使えて、通ればクッキーも配る
+ok 101 - Basic認証は引き続き使えて、通ればクッキーも配る
+  ---
+  duration_ms: 0.52825
+  type: 'test'
+  ...
+# Subtest: 誤ったBasic認証は通さない
+ok 102 - 誤ったBasic認証は通さない
+  ---
+  duration_ms: 0.11575
+  type: 'test'
+  ...
+# Subtest: ゲスト口座でも入れる
+ok 103 - ゲスト口座でも入れる
+  ---
+  duration_ms: 0.59875
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSの各口座はログイン・クッキー・Basic認証で通る
+ok 104 - GUEST_ACCOUNTSの各口座はログイン・クッキー・Basic認証で通る
+  ---
+  duration_ms: 2.753833
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSの一人口座のパスワード変更は、その人のトークンだけを無効にする
+ok 105 - GUEST_ACCOUNTSの一人口座のパスワード変更は、その人のトークンだけを無効にする
+  ---
+  duration_ms: 1.295458
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSが未設定または空でも旧ゲスト口座は従来どおり通る
+ok 106 - GUEST_ACCOUNTSが未設定または空でも旧ゲスト口座は従来どおり通る
+  ---
+  duration_ms: 2.116959
+  type: 'test'
+  ...
+# Subtest: 旧ゲスト口座とGUEST_ACCOUNTSが重複なしで併存すれば両方通る
+ok 107 - 旧ゲスト口座とGUEST_ACCOUNTSが重複なしで併存すれば両方通る
+  ---
+  duration_ms: 0.796791
+  type: 'test'
+  ...
+# Subtest: 出るとクッキーが消える
+ok 108 - 出るとクッキーが消える
+  ---
+  duration_ms: 0.132125
+  type: 'test'
+  ...
+# Subtest: 中身のあるファイルは、クッキーもBasicも無ければ出さない
+ok 109 - 中身のあるファイルは、クッキーもBasicも無ければ出さない
+  ---
+  duration_ms: 0.375416
+  type: 'test'
+  ...
+# Subtest: アイコンとmanifestは今までどおり認証なしで返る
+ok 110 - アイコンとmanifestは今までどおり認証なしで返る
+  ---
+  duration_ms: 0.081166
+  type: 'test'
+  ...
+# Subtest: 設定が片側だけなら止める
+ok 111 - 設定が片側だけなら止める
+  ---
+  duration_ms: 0.085292
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSがJSONとして読めなければ503で止める
+ok 112 - GUEST_ACCOUNTSがJSONとして読めなければ503で止める
+  ---
+  duration_ms: 0.102125
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSが配列でなければ503で止める
+ok 113 - GUEST_ACCOUNTSが配列でなければ503で止める
+  ---
+  duration_ms: 0.061458
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSが空配列なら503で止める
+ok 114 - GUEST_ACCOUNTSが空配列なら503で止める
+  ---
+  duration_ms: 0.060625
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSに不正な要素が一つでもあれば503で止める
+ok 115 - GUEST_ACCOUNTSに不正な要素が一つでもあれば503で止める
+  ---
+  duration_ms: 0.37025
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTS内でuserが重複すれば503で止める
+ok 116 - GUEST_ACCOUNTS内でuserが重複すれば503で止める
+  ---
+  duration_ms: 0.056291
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSのuserがSITE_USERと重複すれば503で止める
+ok 117 - GUEST_ACCOUNTSのuserがSITE_USERと重複すれば503で止める
+  ---
+  duration_ms: 0.06325
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSのuserが旧GUEST_USERと重複すれば503で止める
+ok 118 - GUEST_ACCOUNTSのuserが旧GUEST_USERと重複すれば503で止める
+  ---
+  duration_ms: 0.056042
+  type: 'test'
+  ...
+1..118
+# tests 118
+# suites 0
+# pass 118
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 423.553708

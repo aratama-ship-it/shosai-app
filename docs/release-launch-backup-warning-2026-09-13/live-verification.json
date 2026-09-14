@@ -1,0 +1,47 @@
+{
+  "status": "verified",
+  "checkedAt": "2026-09-13T09:18:51.230Z",
+  "activeVersion": "92ba680c-6849-40f5-91a7-74264444e30f",
+  "deploymentId": "8dda9328-989d-4784-81f9-ac891f7a6f65",
+  "liveSourceSha256": "1ae389cca1067e8f239e3fe437fa789d9439f1ad5199f991f8bebb37ff5100d5",
+  "publicAssetChecks": [
+    {
+      "route": "/stage",
+      "status": 200,
+      "sha256": "48b3a5f7fd0861cdd38db1b373ea4e75b27358f892792e7991c38a8b2db819a5"
+    },
+    {
+      "route": "/stage-i18n.js",
+      "status": 200,
+      "sha256": "4c7cf84c0bc3ed9b478b4a84b2dcb5b1d9904c3b83a7d0b94c5f98b71b95d252"
+    },
+    {
+      "route": "/stage-sketch.js",
+      "status": 200,
+      "sha256": "6a39fba029788d7517c34db0c2b57dd2a78e44a4de09472635288af6aabe6b11"
+    },
+    {
+      "route": "/stage-sw.js",
+      "status": 200,
+      "sha256": "44de71b4cc2b0ea88e8beffd86afdb87e9d456df523fc2cb131f580e97866cd1"
+    },
+    {
+      "route": "/stage.html",
+      "status": 200,
+      "sha256": "48b3a5f7fd0861cdd38db1b373ea4e75b27358f892792e7991c38a8b2db819a5"
+    },
+    {
+      "route": "/style.css",
+      "status": 200,
+      "sha256": "43bde1de83d33677071cca5e7e21825aec5ef50c23b8f9ef133d8730cc7c148c"
+    }
+  ],
+  "betaActive": true,
+  "authenticatedBrowser": {
+    "regularUserWarningOnLaunch": true,
+    "staysClosedDuringRunningDocument": true,
+    "returnsOnFreshLaunch": true,
+    "guest1Exempt": true,
+    "errors": []
+  }
+}

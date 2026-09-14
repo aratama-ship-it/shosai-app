@@ -1,0 +1,76 @@
+# Cloudflare Workers（静的アセット付き）としてデプロイするための設定。
+#
+# 当初は Cloudflare Pages（wrangler pages deploy + functions/_middleware.js）で
+# 組んだが、このCloudflareアカウントではPagesプロジェクトも内部的にWorkers化
+# されており、静的アセットの配信がWorkerコードより先に処理され、Basic認証の
+# ミドルウェアが一度も実行されなかった（2026-08-19に実機で確認）。
+# run_worker_first を明示できるのはこちらの形式だけなので、こちらへ移行する。
+
+name = "shosai-app"
+main = "viewer-beta-worker.js"
+compatibility_date = "2026-08-19"
+
+# 配る先の正式なURL（2026-08-28 本人決定）。
+# ★workers.dev の旧URLもしばらく併存させる（消していない）。
+#   舞台スケッチはショーを localStorage に持ち、これはドメインごとに分かれるため、
+#   旧URLのPWA・ブラウザに入れた作業は新URLへ自動では移らない。
+#   旧URLを止めるのは、移したい作業の書き出し／読み込みが済んでからにすること。
+# ★apex（pygmix.com）では別のサイトが動いている。ここで指定するのは
+#   stagesketch のホスト名だけ。apex や www に触れないこと。
+# ★routes を書くと workers.dev は既定で無効になる（2026-08-28にこれで旧URLを
+#   一時的に落とした）。旧URLを併存させたいので明示的に有効へ戻す。
+#   ★この行は [[routes]] より前（トップレベル）に置くこと。routesブロックの
+#     後ろに書くと routes の一部と解釈されて設定エラーになる。
+#   旧URLを本当に止めるときは、ここを false にしてデプロイする。
+workers_dev = true
+
+[[routes]]
+pattern = "stagesketch.pygmix.com"
+custom_domain = true
+
+[assets]
+directory = "../../.."
+binding = "ASSETS"
+# 静的ファイルより先に必ず worker.js を通す。これが無いと、資料棚などの
+# 既存ファイルへのアクセスがBasic認証をすり抜けてしまう。
+run_worker_first = true
+
+[durable_objects]
+bindings = [
+  { name = "SESSION_ROOM", class_name = "SessionRoom" },
+  { name = "USAGE_METRICS", class_name = "UsageMetrics" },
+  { name = "STUDY_LINKS", class_name = "StudyLinks" },
+  { name = "STUDY_READER_AUTH", class_name = "StudyReaderAuth" },
+  { name = "STUDY_READER_ACCOUNTS", class_name = "StudyReaderAccount" }
+]
+
+[[migrations]]
+tag = "v1-session-room"
+new_sqlite_classes = ["SessionRoom"]
+
+[[migrations]]
+tag = "v2-usage-metrics"
+new_sqlite_classes = ["UsageMetrics"]
+
+[[migrations]]
+tag = "v3-study-links"
+new_sqlite_classes = ["StudyLinks"]
+
+[[migrations]]
+tag = "v4-study-reader-accounts"
+new_sqlite_classes = ["StudyReaderAuth", "StudyReaderAccount"]
+
+# Reader Google OAuth configuration (register only when authorized):
+# STUDY_GOOGLE_CLIENT_ID, STUDY_GOOGLE_REDIRECT_URI: environment variables.
+# STUDY_GOOGLE_CLIENT_SECRET: Worker secret. Never enable local login in production.
+
+# 舞台スケッチのベータ提供スイッチ（2026-08-30 追加）。
+# 製品版を出したら STAGE_BETA_ACTIVE を "false" にして wrangler deploy し直す。
+# STAGE_BETA_PRODUCT_URL に製品版のURLを入れておくと、締め出し画面にリンクが出る
+# （空でもよい。その場合はリンクなしのメッセージだけになる）。
+[vars]
+STAGE_BETA_ACTIVE = "true"
+# Beta invitation links open without reader login. Other pages and management APIs stay protected.
+STUDY_ALLOW_ANONYMOUS = "true"
+# β版のみ。falseで新規計測を停止する（記録済み集計は管理者のみ閲覧可）。
+STAGE_USAGE_ENABLED = "true"

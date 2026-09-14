@@ -1,0 +1,635 @@
+--- a/stage-sketch.js
++++ b/stage-sketch.js
+@@ -5978,6 +5978,9 @@
+      ★黙って {} に落として書き直すと、読めなかった他のショーが
+        いま開いている1本で置き換わって消える。それを防ぐための関所。 */
+   let shelfCorrupt = false;
++  // A failed migration backup blocks current-show and shelf writes for this launch.
++  // Editing and JSON export remain available; restart only after preserving the draft.
++  let sectionMigrationSaveWarning = "";
+ 
+   function markShelfCorrupt(rawText) {
+     if (shelfCorrupt) return;
+@@ -6028,7 +6031,7 @@
+   }
+ 
+   function pruneOrphanAudioSoon() {
+-    if (!audioStore || typeof audioStore.pruneExcept !== "function") return;
++    if (sectionMigrationSaveWarning || !audioStore || typeof audioStore.pruneExcept !== "function") return;
+     const liveIds = liveAudioTrackIdsForGc();
+     if (!liveIds) return;
+     setTimeout(() => { audioStore.pruneExcept(liveIds).catch(() => {}); }, 0);
+@@ -6041,7 +6044,7 @@
+   function writeShows(shows) {
+     /* 棚が壊れているときは絶対に書かない。ここで書くと、読めなかったショーが
+        いま開いている1本で置き換わって消える。 */
+-    if (shelfCorrupt) return false;
++    if (shelfCorrupt || sectionMigrationSaveWarning) return false;
+     try {
+       localStorage.setItem(SHOWS_KEY, JSON.stringify(shows));
+       shelfFailed = false;
+@@ -6108,7 +6111,7 @@
+       if (!requestedId) project.id = rid("show");
+       return;
+     }
+-    const savedProject = existing.state.project || {};
++    const savedProject = existing.project || {};
+     const importedProject = { ...project };
+     const savedComparable = { ...savedProject };
+     delete importedProject.id;
+@@ -6155,6 +6158,16 @@
+   let audioPanelSignature = "";
+   let audioLoadGeneration = 0;
+   let continueAudioOnNextSceneSync = false;
++  // Runtime-only transport source; never rewrite scene assignments or show JSON.
++  let timelineAudioContext = null;
++  function currentAudioTrackId() {
++    const context = timelineAudioContext;
++    if (document.body.dataset.stageWorkspaceMode === "timeline" && context
++        && context.projectId === state.project.id
++        && context.sceneIds.includes(state.project.activeSceneId)
++        && audioTrackById(context.trackId)) return context.trackId;
++    return normalizeAudioTrackId("scene", sc().audioTrackId);
++  }
+   const audioPlayback = {
+     trackId: null,
+     objectUrl: null,
+@@ -6204,6 +6217,7 @@
+   }
+ 
+   function clearAudioEngine() {
++    timelineAudioContext = null;
+     audioLoadGeneration += 1;
+     if (els.musicAudio) {
+       els.musicAudio.pause();
+@@ -6246,7 +6260,7 @@
+        押せないボタンと「音なし 0:00 / 0:00」だけが並んでいても意味がなく、
+        場面の情報を1段ぶん押し下げるだけだった（2026-08-28 本人指摘）。 */
+     if (els.sceneMusic) els.sceneMusic.hidden = audioTracks().length === 0;
+-    const assignedId = normalizeAudioTrackId("scene", sc().audioTrackId);
++    const assignedId = currentAudioTrackId();
+     const track = audioTrackById(assignedId);
+     const title = track ? track.title : (assignedId
+       ? (tx("不明な楽曲"))
+@@ -6292,7 +6306,7 @@
+   }
+ 
+   async function prepareAudioForCurrentScene(options = {}) {
+-    const nextId = normalizeAudioTrackId("scene", sc().audioTrackId);
++    const nextId = currentAudioTrackId();
+     const transition = audioSceneTransition(audioPlayback.trackId, nextId, options.continuePlayback);
+ 
+     if (!options.force && nextId && audioPlayback.trackId === nextId) {
+@@ -6363,7 +6377,8 @@
+   }
+ 
+   async function toggleAudioPlayback() {
+-    if (!sc().audioTrackId) {
++    const trackId = currentAudioTrackId();
++    if (!trackId) {
+       setAudioStatus("このシーンには曲が割り当てられていません。",
+         "No track is assigned to this scene.");
+       return;
+@@ -6372,7 +6387,7 @@
+       els.musicAudio.pause();
+       return;
+     }
+-    if (audioPlayback.ready && audioPlayback.trackId === sc().audioTrackId) {
++    if (audioPlayback.ready && audioPlayback.trackId === trackId) {
+       await tryPlayCurrentAudio();
+       return;
+     }
+@@ -6724,7 +6739,7 @@
+   }
+ 
+   function openCurrentAudioRelinkPicker(input = els.musicRelinkFile) {
+-    return openAudioRelinkPicker(sc().audioTrackId, input);
++    return openAudioRelinkPicker(currentAudioTrackId(), input);
+   }
+ 
+   function initStageAudio() {
+@@ -6741,7 +6756,7 @@
+     if (els.musicRelink) els.musicRelink.addEventListener("click", () => openCurrentAudioRelinkPicker());
+     if (els.musicRelinkFile) els.musicRelinkFile.addEventListener("change", async () => {
+       const file = els.musicRelinkFile.files && els.musicRelinkFile.files[0];
+-      const trackId = els.musicRelinkFile.dataset.trackId || sc().audioTrackId;
++      const trackId = els.musicRelinkFile.dataset.trackId || currentAudioTrackId();
+       els.musicRelinkFile.value = "";
+       if (file) await relinkAudioFile(trackId, file);
+     });
+@@ -8304,8 +8319,16 @@
+   function persistSoon() {
+     if (STUDY_READ_ONLY) return;
+     clearTimeout(saveTimer);
++    if (sectionMigrationSaveWarning) {
++      setSaveStatus(sectionMigrationSaveWarning, "warn");
++      return;
++    }
+     setSaveStatus(tx("変更を保存しています…") || "Saving…");
+     saveTimer = setTimeout(() => {
++      if (sectionMigrationSaveWarning) {
++        setSaveStatus(sectionMigrationSaveWarning, "warn");
++        return;
++      }
+       try {
+         localStorage.setItem(STORAGE_KEY, snapshot());
+         shelveCurrent();
+@@ -13596,7 +13619,7 @@
+     syncPropMoves();
+     syncPhoneViewer();
+     renderAudioPanel();
+-    const wantedAudioId = normalizeAudioTrackId("scene", sc().audioTrackId);
++    const wantedAudioId = currentAudioTrackId();
+     const missingAudioMetadata = Boolean(wantedAudioId && !audioTrackById(wantedAudioId));
+     if (wantedAudioId !== audioPlayback.trackId || (missingAudioMetadata && !audioPlayback.missing)) {
+       const shouldContinue = continueAudioOnNextSceneSync;
+@@ -28081,6 +28104,19 @@
+         state.layout = closedDefaultLayout();
+       }
+ 
++      // Complete backup decisions before initialization can save or prune media.
++      if (loaded.sectionMigrationSource) {
++        try {
++          localStorage.setItem(`${STORAGE_KEY}-pre-section-hierarchy-v1:${state.project.id}`, loaded.sectionMigrationSource);
++        } catch (_) {
++          sectionMigrationSaveWarning = "旧シーン構造の控えを保存できなかったため、自動保存とショー一覧の更新を止めています。作業内容をファイルへ書き出してから、容量を空けてもう一度開いてください。";
++        }
++      }
++      const shelfMigration = sectionMigrationSaveWarning
++        ? { migrated: 0, safe: false } : migrateStoredShowShelf();
++      if (!shelfMigration.safe && !sectionMigrationSaveWarning) {
++        sectionMigrationSaveWarning = "ショー一覧の旧シーン構造を退避・保存できなかったため、自動保存と一覧の更新を止めています。作業内容をファイルへ書き出してから、容量を空けてもう一度開いてください。";
++      }
+       initStageAskPanel();
+       buildPanelHeads();
+       bridgeSessionPanelOpen();
+@@ -28123,19 +28159,12 @@
+       catch (_) { seenTour = true; }
+       renderScreenTexts();
+       syncScreenTextControls();
+-      if (loaded.sectionMigrationSource) {
+-        const backupKey = `${STORAGE_KEY}-pre-section-hierarchy-v1:${state.project.id}`;
+-        try {
+-          localStorage.setItem(backupKey, loaded.sectionMigrationSource);
+-          persistSoon();
+-        } catch (_) {
+-          setSaveStatus("旧シーン構造の控えを保存できなかったため、変換後の自動保存を止めました。ファイルへ書き出してから、もう一度開いてください。", "warn");
+-        }
++      if (sectionMigrationSaveWarning) {
++        setSaveStatus(sectionMigrationSaveWarning, "warn");
++      } else if (loaded.sectionMigrationSource) {
++        persistSoon();
+       }
+-      const shelfMigration = migrateStoredShowShelf();
+-      if (!shelfMigration.safe) {
+-        setSaveStatus("ショー一覧の旧シーン構造を退避できなかったため、一覧全体の変換保存を止めました。ファイルへ書き出すか容量を空けてから、もう一度開いてください。", "warn");
+-      } else if (shelfMigration.migrated) {
++      if (shelfMigration.migrated) {
+         announce(`${shelfMigration.migrated}件のショーを、セクションの中にシーンを置く形式へ更新しました。`);
+       }
+       if (!loaded.restored) shelveSample();
+@@ -28219,6 +28248,17 @@
+   window.SHOSAI_STAGE_SESSION_BRIDGE = Object.freeze({
+     exportDocumentString() {
+       return JSON.stringify(makeProjectExportDocument(state.project, true));
++    },
++    setTimelineAudioContext(context) {
++      timelineAudioContext = context && context.projectId === state.project.id
++        && typeof context.trackId === "string" && Array.isArray(context.sceneIds)
++        ? { projectId: context.projectId, trackId: context.trackId, sceneIds: context.sceneIds.filter((id) => typeof id === "string") }
++        : null;
++      if (currentAudioTrackId() !== audioPlayback.trackId) prepareAudioForCurrentScene();
++      else syncAudioControls();
++    },
++    getAudioPlaybackState() {
++      return { trackId: audioPlayback.trackId, ready: audioPlayback.ready, loading: audioPlayback.loading };
+     },
+     openSceneById(id, options = {}) {
+       const next = state.project.scenes.find((row) => row.kind === "scene" && row.id === id);
+--- a/stage-timeline.js
++++ b/stage-timeline.js
+@@ -423,6 +423,7 @@
+     if (next !== "timeline") cancelPendingSceneOpen();
+     if (next !== "timeline") closeAudioDetails({ focus: false });
+     if (next !== "timeline") pauseSilentPlayback({ update: false });
++    if (next !== "timeline") bridge.setTimelineAudioContext?.(null);
+     els.tabs.forEach((button) => {
+       const active = button.dataset.stageWorkspaceMode === next;
+       button.classList.toggle("is-active", active);
+@@ -1548,9 +1549,13 @@
+ 
+   function audioMatchesTimeline() {
+     if (!timeline || !timeline.trackId) return false;
+-    const documentValue = projectDocument();
+-    const project = documentValue && documentValue.project;
+-    const active = project && (project.scenes || []).find((scene) => scene.id === project.activeSceneId);
++    if (typeof bridge.getAudioPlaybackState === "function") {
++      const playback = bridge.getAudioPlaybackState();
++      return playback.trackId === timeline.trackId && playback.ready;
++    }
++    // During a cache update the older host may still expose the previous bridge.
++    const project = projectDocument()?.project;
++    const active = project?.scenes.find((scene) => scene.id === project.activeSceneId);
+     return Boolean(active && active.audioTrackId === timeline.trackId);
+   }
+ 
+@@ -1714,6 +1719,11 @@
+       || choices.find((choice) => choice.songId === remembered)
+       || choices[0];
+     ui.songBySection[scopeId] = timeline.songId;
++    bridge.setTimelineAudioContext?.({
++      projectId: project.id,
++      trackId: timeline.trackId,
++      sceneIds: timeline.segments.map((segment) => segment.sceneId).filter(Boolean),
++    });
+     seekSeconds = clamp(seekSeconds, 0, timeline.duration);
+ 
+     const section = currentSection(project);
+--- a/stage.html
++++ b/stage.html
+@@ -2721,8 +2721,8 @@
+ <script src="stage-light-motion.js?v=1"></script>
+ <script src="manual/manual-content.js?v=12"></script>
+ <script src="stage-pwa.js?v=9"></script>
+-  <script src="stage-sketch.js?v=470"></script>
+-<script src="stage-timeline.js?v=43"></script>
++  <script src="stage-sketch.js?v=471"></script>
++<script src="stage-timeline.js?v=44"></script>
+ <script src="stage-session.js?v=19"></script>
+ <script src="stage-study-owner.js?v=23"></script>
+ <script src="stage-usage.js?v=2"></script>
+--- a/stage-sw.js
++++ b/stage-sw.js
+@@ -1,4 +1,4 @@
+-const CACHE_NAME = "stage-sketch-pwa-v465";
++const CACHE_NAME = "stage-sketch-pwa-v466";
+ const APP_SHELL = [
+   "./stage.html",
+   "./style.css?v=358",
+@@ -21,8 +21,8 @@
+   "./manual/manual.html",
+   "./manual/quick.html",
+   "./manual/quick-en.html",
+-  "./stage-sketch.js?v=470",
+-  "./stage-timeline.js?v=43",
++  "./stage-sketch.js?v=471",
++  "./stage-timeline.js?v=44",
+   "./stage-session.js?v=19",
+   "./stage-study-owner.js?v=23",
+   "./stage-study.css?v=21",
+--- a/tests/stage-formation-integration.test.mjs
++++ b/tests/stage-formation-integration.test.mjs
+@@ -211,6 +211,6 @@
+ test("認証済みゲストの必要資源だけを許可し、PWAへ試作用音源を入れない", () => {
+   assert.match(worker, /"\/formation\/prototype\/record-from-video\.html"/);
+   assert.doesNotMatch(sw, /gensan-extend|formation\/prototype\/sample/);
+-  for (const html of [index, stage]) assert.match(html, /stage-sketch\.js\?v=470/);
+-  assert.match(sw, /\.\/stage-sketch\.js\?v=470/);
+-});
++  for (const html of [index, stage]) assert.match(html, /stage-sketch\.js\?v=471/);
++  assert.match(sw, /\.\/stage-sketch\.js\?v=471/);
++});
+--- a/tests/stage-session-shelve.test.mjs
++++ b/tests/stage-session-shelve.test.mjs
+@@ -40,13 +40,13 @@
+ });
+ 
+ test("変更したJS版とPWAキャッシュ版を正本・単独版・Service Workerで揃える", () => {
+-  for (const reference of ["stage-sketch.js?v=470", "stage-timeline.js?v=43", "stage-session.js?v=19"]) {
++  for (const reference of ["stage-sketch.js?v=471", "stage-timeline.js?v=44", "stage-session.js?v=19"]) {
+     assert.ok(indexSource.includes(reference), `${reference} が stage.html にある`);
+     assert.ok(stageHtml.includes(reference), `${reference} が stage.html にある`);
+     assert.ok(serviceWorkerSource.includes(`./${reference}`), `${reference} が stage-sw.js にある`);
+   }
+   // 版は上げるたびにここも更新する（2026-08-26: 発注書Hのゲスト画面変更で v144 → v145）
+-  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v465";/);
++  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v466";/);
+ });
+ 
+ test("ゲスト参加は false の退避結果を失敗として扱い、role 変更前に中止する", () => {
+--- /dev/null
++++ b/tests/stage-pages-p0.browser.mjs
+@@ -0,0 +1,160 @@
++// Run: PLAYWRIGHT_MODULE=/path/to/playwright node --test tests/stage-pages-p0.browser.mjs
++// A local HTTP server and fresh browser contexts isolate all synthetic storage.
++import test, { before, after } from 'node:test';
++import assert from 'node:assert/strict';
++import { createRequire } from 'node:module';
++import { readFile } from 'node:fs/promises';
++import { createServer } from 'node:http';
++import path from 'node:path';
++import { fileURLToPath } from 'node:url';
++const require = createRequire(import.meta.url);
++const playwright = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
++const browserType = playwright[process.env.STAGE_TEST_BROWSER || 'chromium'];
++const root = process.env.STAGE_TEST_ROOT || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const fixture = JSON.parse(await readFile(new URL('./fixtures/stage-pages-p0.json', import.meta.url), 'utf8'));
++const CURRENT = 'shosai-stage-sketch-v1', SHELF = 'shosai-stage-shows-v1';
++let server, browser, url;
++before(async () => {
++  server = createServer(async (req, res) => {
++    const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
++    const file = path.resolve(root, '.' + pathname);
++    if (!file.startsWith(root + path.sep)) { res.writeHead(403); res.end(); return; }
++    try {
++      const body = await readFile(file);
++      res.setHeader('Content-Type', ({'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.svg':'image/svg+xml','.png':'image/png'})[path.extname(file)] || 'application/octet-stream');
++      res.end(body);
++    } catch { res.writeHead(404); res.end(); }
++  });
++  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
++  url = `http://127.0.0.1:${server.address().port}/stage.html`;
++  browser = await browserType.launch({ headless:true });
++});
++after(async () => { await browser?.close(); await new Promise(resolve => server?.close(resolve)); });
++async function pageFor(t, { state=fixture, shows={}, mode='normal', fail='', legacyBridge=false }={}) {
++  const context = await browser.newContext({ serviceWorkers:'block', locale:'ja-JP', viewport:{width:1440,height:1000} });
++  t.after(() => context.close());
++  await context.addInitScript(({state, shows, mode, fail, legacyBridge, CURRENT, SHELF}) => {
++    if (legacyBridge) {
++      let value;
++      Object.defineProperty(window, "SHOSAI_STAGE_SESSION_BRIDGE", { configurable:true, get:()=>value, set:bridge=>{ const {setTimelineAudioContext,getAudioPlaybackState,...rest}=bridge; value=Object.freeze(rest); } });
++    }
++    if (!localStorage.getItem('p0-test-seeded')) {
++      localStorage.setItem(CURRENT, JSON.stringify(state));
++      localStorage.setItem(SHELF, JSON.stringify(shows));
++      localStorage.setItem('shosai-stage-tour-v1', 'done');
++      localStorage.setItem('shosai-stage-prefs-v1',JSON.stringify({panelMusic:true}));
++      localStorage.setItem('shosai-stage-timeline-ui-v1', JSON.stringify({mode, volume:0}));
++      localStorage.setItem('p0-test-seeded', '1');
++    }
++    if (fail) {
++      const original = Storage.prototype.setItem;
++      Storage.prototype.setItem = function(key, value) {
++        if ((fail === 'current' && key.startsWith(CURRENT+'-pre-section-hierarchy')) ||
++            (fail === 'shelf' && key.startsWith(SHELF+'-pre-section-hierarchy'))) {
++          throw new DOMException('Synthetic backup write failure', 'QuotaExceededError');
++        }
++        return original.call(this, key, value);
++      };
++    }
++  }, {state,shows,mode,fail,legacyBridge,CURRENT,SHELF});
++  const p = await context.newPage();
++  p.setDefaultTimeout(10000);
++  const errors=[];p.on('pageerror',e=>errors.push(e.message));
++  t.after(()=>assert.deepEqual(errors, [], 'no uncaught browser exceptions'));
++  await p.goto(url);
++  await p.locator('#stage-launch-backup-close').click();
++  return p;
++}
++const doc = p => p.evaluate(()=>JSON.parse(SHOSAI_STAGE_SESSION_BRIDGE.exportDocumentString()));
++const oldState = () => { const f=structuredClone(fixture);f.project.scenes=f.project.scenes.filter(s=>s.kind==='scene').map(s=>({...s,depth:0}));return f; };
++for (const failure of ['current','shelf']) {
++  test(`A01: ${failure} backup failure preserves both originals after edit, shelf and import attempts`, async t => {
++    const state=oldState(), shows={[state.project.id]:{state}};
++    const p=await pageFor(t,{state,shows,fail:failure});
++    await p.evaluate(()=>SHOSAI_STAGE_SESSION_BRIDGE.openSceneById('audit-s2'));
++    assert.equal(await p.evaluate(()=>SHOSAI_STAGE_SESSION_BRIDGE.shelveNow()), false);
++    const exported=await doc(p);
++    assert.equal(exported.project.activeSceneId,'audit-s2','draft editing still works');
++    await p.locator('#stage-import-json').setInputFiles({name:'copy.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(exported))});
++    await p.locator('#stage-import-as-new').click();
++    await p.waitForTimeout(350);
++    const raw=await p.evaluate(({CURRENT,SHELF})=>[localStorage.getItem(CURRENT),localStorage.getItem(SHELF)],{CURRENT,SHELF});
++    assert.deepEqual(raw,[JSON.stringify(state),JSON.stringify(shows)]);
++    assert.equal((await doc(p)).project.id,state.project.id,'failed preservation prevents show switch');
++  });
++}
++test('A01: successful backups allow migration, editing and persistence', async t => {
++  const state=oldState(), shows={[state.project.id]:{state}};
++  const p=await pageFor(t,{state,shows});
++  await p.evaluate(()=>SHOSAI_STAGE_SESSION_BRIDGE.openSceneById('audit-s2'));
++  await p.waitForTimeout(350);
++  const data=await p.evaluate(({CURRENT,SHELF,id})=>({current:JSON.parse(localStorage.getItem(CURRENT)),source:localStorage.getItem(CURRENT+'-pre-section-hierarchy-v1:'+id),shelf:localStorage.getItem(SHELF+'-pre-section-hierarchy-v1')}),{CURRENT,SHELF,id:state.project.id});
++  assert.equal(data.source,JSON.stringify(state));assert.equal(data.shelf,JSON.stringify(shows));
++  assert.equal(data.current.project.scenes[0].kind,'section');assert.equal(data.current.project.activeSceneId,'audit-s2');
++});
++for (const changed of [false,true]) {
++  test(`A02: same ID import ${changed?'with changed content preserves the previous show':'round-trips without an exception'}`, async t => {
++    const p=await pageFor(t);
++    assert.equal(await p.evaluate(()=>SHOSAI_STAGE_SESSION_BRIDGE.shelveNow()),true);
++    const incoming=await doc(p), prior=structuredClone(incoming.project);
++    if(changed)incoming.project.title='changed synthetic show';
++    await p.locator('#stage-import-json').setInputFiles({name:'same-id.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(incoming))});
++    await p.locator('#stage-import-replace').click();
++    await p.waitForTimeout(250);
++    assert.equal(await p.locator('#stage-import-modal').isVisible(),false);
++    const result=await doc(p);
++    if(changed)assert.notEqual(result.project.id,prior.id);else assert.equal(result.project.id,prior.id);
++    assert.equal(result.project.title,incoming.project.title);
++    const shelf=await p.evaluate(key=>JSON.parse(localStorage.getItem(key)),SHELF);
++    assert.equal(shelf[prior.id].state.project.title,prior.title);
++    await p.reload();await p.locator('#stage-launch-backup-close').click();
++    assert.deepEqual((await doc(p)).project,result.project,'reload keeps the imported show');
++  });
++}
++function silentWav(seconds=8){const wav=Buffer.alloc(44+8000*seconds*2);wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(8000,24);wav.writeUInt32LE(16000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(wav.length-44,40);return wav;}
++async function addAudio(p){await p.locator('#stage-music-file').setInputFiles({name:'synthetic-silence.wav',mimeType:'audio/wav',buffer:silentWav()});try { await p.waitForFunction(()=>(SHOSAI_STAGE_SESSION_BRIDGE.getAudioPlaybackState?.().ready || document.querySelector('#stage-music-audio').readyState>=1)); } catch(error) { error.message += JSON.stringify(await p.evaluate(()=>({status:document.getElementById('stage-music-status').textContent, playback:SHOSAI_STAGE_SESSION_BRIDGE.getAudioPlaybackState?.(), audio: { ready:document.getElementById('stage-music-audio').readyState, error:document.getElementById('stage-music-audio').error?.message }, tracks:JSON.parse(SHOSAI_STAGE_SESSION_BRIDGE.exportDocumentString()).project.audioTracks}))); throw error; }}
++const transport=p=>p.evaluate(()=>{const a=document.querySelector('#stage-music-audio');return{time:a.currentTime,paused:a.paused,src:a.getAttribute('src'),scene:JSON.parse(SHOSAI_STAGE_SESSION_BRIDGE.exportDocumentString()).project.activeSceneId}});
++test('A04: one assigned track continues across an unassigned scene; pause/resume/seek/reload keep assignments',async t=>{
++  const p=await pageFor(t,{mode:'timeline'});await addAudio(p);
++  const assigned=(await doc(p)).project.scenes.map(s=>s.audioTrackId);
++  await p.locator('#stage-timeline-play').click();
++  await p.waitForFunction(()=>document.querySelector('#stage-music-audio').currentTime>1.3);
++  let a=await transport(p);assert.equal(a.paused,false);assert.equal(a.scene,'audit-s2');
++  await p.locator('#stage-timeline-play').click();a=await transport(p);assert.equal(a.paused,true);
++  await p.locator('#stage-timeline-play').click();await p.waitForFunction(()=>!document.querySelector('#stage-music-audio').paused);
++  await p.evaluate(()=>document.querySelector('#stage-music-audio').currentTime=3.5);
++  await p.waitForTimeout(400);a=await transport(p);assert.ok(a.time>=3.5);assert.equal(a.paused,false);assert.equal(a.scene,'audit-s2');
++  assert.deepEqual((await doc(p)).project.scenes.map(s=>s.audioTrackId),assigned);
++  await p.locator('#stage-timeline-play').click();await p.waitForTimeout(250);
++  await p.reload();await p.locator('#stage-launch-backup-close').click();
++  await p.waitForFunction(()=>(SHOSAI_STAGE_SESSION_BRIDGE.getAudioPlaybackState?.().ready || document.querySelector('#stage-music-audio').readyState>=1));
++  assert.deepEqual((await doc(p)).project.scenes.map(s=>s.audioTrackId),assigned);
++  await p.locator('#stage-workspace-normal').click();
++  await p.evaluate(()=>SHOSAI_STAGE_SESSION_BRIDGE.openSceneById('audit-s2'));
++  await p.waitForTimeout(200);a=await transport(p);assert.equal(a.paused,true);assert.equal(a.src,null,'normal mode still treats an unassigned scene as silent');
++});
++test('normal mode retains same-track playback across assigned scenes',async t=>{
++  const p=await pageFor(t);await addAudio(p);const before=await doc(p);
++  const track=before.project.scenes.find(s=>s.id==='audit-s1').audioTrackId;
++  await p.evaluate(()=>SHOSAI_STAGE_SESSION_BRIDGE.openSceneById('audit-s2'));
++  if (!(await p.locator('#stage-scene-audio-track').isVisible())) await p.locator('[data-panel-head="music"]').click();
++  await p.locator('#stage-scene-audio-track').selectOption(track);
++  await p.waitForFunction(()=>(SHOSAI_STAGE_SESSION_BRIDGE.getAudioPlaybackState?.().ready || document.querySelector('#stage-music-audio').readyState>=1));
++  await p.locator('#stage-music-toggle').click();
++  await p.waitForFunction(()=>document.querySelector('#stage-music-audio').currentTime>.3);
++  const a=await transport(p);await p.evaluate(()=>SHOSAI_STAGE_SESSION_BRIDGE.openSceneById('audit-s1'));
++  await p.waitForTimeout(200);const b=await transport(p);assert.equal(b.paused,false);assert.equal(a.src,b.src);assert.ok(b.time>=a.time);
++});
++test('audio-free timeline still advances the selected scene',async t=>{
++  const p=await pageFor(t,{mode:'timeline'});await p.locator('#stage-timeline-play').click();
++  await p.waitForFunction(()=>JSON.parse(SHOSAI_STAGE_SESSION_BRIDGE.exportDocumentString()).project.activeSceneId==='audit-s2');
++  assert.equal((await doc(p)).project.audioTracks.length,0);
++});
++
++test('mixed cache: timeline tolerates a host exposing the previous bridge',async t=>{
++  const p=await pageFor(t,{mode:'timeline',legacyBridge:true});
++  assert.equal(await p.locator('#stage-timeline-panel').isVisible(),true);
++  await p.locator('#stage-workspace-normal').click();
++  await p.locator('#stage-workspace-timeline').click();
++  assert.equal(await p.locator('#stage-timeline-panel').isVisible(),true);
++});
+--- /dev/null
++++ b/tests/fixtures/stage-pages-p0.json
+@@ -0,0 +1,160 @@
++{
++  "version": 3,
++  "project": {
++    "id": "audit-project",
++    "title": "監査用合成ショー",
++    "versionLabel": "v1",
++    "parentVersionId": null,
++    "branchReason": "",
++    "createdAt": "2026-09-14T02:56:05.761Z",
++    "venue": "proscenium",
++    "venueSize": "mid",
++    "rehearsal": {
++      "version": 1,
++      "primaryMode": "ordered",
++      "soundtrack": null
++    },
++    "audioTracks": [],
++    "cues": [],
++    "cast": [
++      {
++        "id": "stage-sample-cast-1",
++        "name": "演者A",
++        "color": "#a84b26",
++        "heightCm": 165,
++        "note": "",
++        "locked": false
++      }
++    ],
++    "sets": [],
++    "rigs": [],
++    "photos": {},
++    "sectionsNested": true,
++    "scenes": [
++      {
++        "id": "audit-section",
++        "kind": "section",
++        "depth": 0,
++        "color": null,
++        "title": "監査用セクション",
++        "note": "",
++        "background": "#40362d",
++        "notes": [],
++        "pieces": [],
++        "strokes": [],
++        "arrows": [],
++        "beat": null,
++        "rehearsal": null,
++        "timelineDurationSeconds": 5,
++        "timelineUnit": "time",
++        "cueSeconds": null,
++        "transitionNote": "",
++        "audioTrackId": null,
++        "formation": null,
++        "formationLink": null,
++        "lightingIntent": null,
++        "lightMotion": null,
++        "facingLock": false
++      },
++      {
++        "id": "audit-s1",
++        "kind": "scene",
++        "depth": 1,
++        "color": null,
++        "title": "監査シーン1",
++        "note": "",
++        "background": "#40362d",
++        "notes": [],
++        "pieces": [
++          {
++            "id": "audit-piece",
++            "type": "performer",
++            "castId": "stage-sample-cast-1",
++            "u": 0.2,
++            "v": 0.5,
++            "size": 105,
++            "color": "#a84b26",
++            "name": "",
++            "base": 0,
++            "supportId": null,
++            "originId": "audit-piece",
++            "facing": 0,
++            "pose": "stand",
++            "route": null
++          }
++        ],
++        "strokes": [],
++        "arrows": [],
++        "beat": {
++          "role": ""
++        },
++        "rehearsal": {
++          "holdDurationSeconds": 1,
++          "transitionToNextSeconds": 2
++        },
++        "timelineDurationSeconds": null,
++        "timelineUnit": null,
++        "cueSeconds": 2,
++        "transitionNote": "",
++        "audioTrackId": null,
++        "formation": null,
++        "formationLink": null,
++        "lightingIntent": null,
++        "lightMotion": null,
++        "facingLock": false
++      },
++      {
++        "id": "audit-s2",
++        "kind": "scene",
++        "depth": 1,
++        "color": null,
++        "title": "監査シーン2",
++        "note": "",
++        "background": "#40362d",
++        "notes": [],
++        "pieces": [
++          {
++            "id": "audit-piece2",
++            "type": "performer",
++            "castId": "stage-sample-cast-1",
++            "u": 0.8,
++            "v": 0.5,
++            "size": 105,
++            "color": "#a84b26",
++            "name": "",
++            "base": 0,
++            "supportId": null,
++            "originId": "audit-piece",
++            "facing": 0,
++            "pose": "stand",
++            "route": null
++          }
++        ],
++        "strokes": [],
++        "arrows": [],
++        "beat": {
++          "role": ""
++        },
++        "rehearsal": {
++          "holdDurationSeconds": 2,
++          "transitionToNextSeconds": 0
++        },
++        "timelineDurationSeconds": null,
++        "timelineUnit": null,
++        "cueSeconds": 2,
++        "transitionNote": "",
++        "audioTrackId": null,
++        "formation": null,
++        "formationLink": null,
++        "lightingIntent": null,
++        "lightMotion": null,
++        "facingLock": false
++      }
++    ],
++    "activeSceneId": "audit-s1"
++  },
++  "animateScenes": true,
++  "sceneAnimMs": 2000,
++  "showFront": true,
++  "showPlan": true
++}

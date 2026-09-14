@@ -1,0 +1,46 @@
+try.html を書き出しました（110420 文字）
+窓: 40枚 / 参照する id: 453個
+足りない id はありません
+配信フォルダ public-dist/ を作りました（42件）
+  - index.html（LP本体（public-lp/index.html の写し））
+  - en/index.html（英語版・meta英語／本文は共通）
+  - try.html（体験版）
+  - en/try.html（英語版・meta英語／本文は共通）
+  - beta.html（製品版ベータの紹介（public-beta.html の写し））
+  - en/beta.html（英語版・meta英語／本文は共通）
+  - sitemap.xml（6件・hreflang付き）
+  - robots.txt（sitemap の場所を知らせる）
+  - media/hero-ja.mp4
+  - media/hero-ja.webm
+  - media/hero-poster.jpg
+  - media/og-1200x630-en.jpg（og:image）
+  - media/og-1200x630.jpg（og:image）
+  - media/features/01-both.jpg
+  - media/features/02-seats.jpg
+  - media/features/03-scenes.jpg
+  - media/features/04-routes.jpg
+  - media/features/05-venues.jpg
+  - media/features/06-set-builder.jpg
+  - media/features/07-kinds.jpg
+  - media/features/08-poses.jpg
+  - media/features/09-lights.jpg
+  - media/features/10-3d.jpg
+  - media/features/11-export.jpg
+  - media/features/12-session.jpg
+  - media/features/13-phone-a.jpg
+  - media/features/13-phone-b.jpg
+  - media/features/cta-preview.jpg
+  - style.css
+  - stage-public.css
+  - stage-venues.js
+  - stage-venue-lines.js
+  - stage-i18n.js
+  - stage-rehearsal-export.js
+  - stage-samples/index.js
+  - stage-set-model.js
+  - stage-set-builder.js
+  - stage-machinery.js
+  - stage-sketch.js
+  - stage-public.js
+  - icons/stage-sketch-192.png
+  - icons/stage-sketch-180.png

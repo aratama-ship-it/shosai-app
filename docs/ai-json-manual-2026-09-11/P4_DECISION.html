@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P4 判断: AI生成JSONの「黙った変形」をどこで止めるか（2026-09-11）</title>
+<!-- デザイントークン: index.html と同一（紙 #f6f2ea / 本文 #1f1a16 / 弱 #6b6258 / 罫 #ded6c8 / 朱 #b4502a / 事実 #2f5f8a / 推測 #7a5a9a / 仮案 #a8802a / 良 #5f7d6b）。本文16px/1.8、見出し28/22/18、余白8の倍数、最大幅1040px -->
+<style>
+  :root{--paper:#f6f2ea;--ink:#1f1a16;--muted:#6b6258;--line:#ded6c8;--accent:#b4502a;--hi:#b4502a;--mid:#a8802a;--lo:#5f7d6b;--fact:#2f5f8a;--guess:#7a5a9a;--draft:#a8802a;--card:#fffdf9}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif;font-size:16px;line-height:1.8}
+  main{max-width:1040px;margin:0 auto;padding:32px 24px 96px}
+  h1{font-size:28px;line-height:1.35;margin:0 0 8px}
+  h2{font-size:22px;margin:48px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:18px;margin:24px 0 8px}
+  p{margin:0 0 12px}
+  .lead{color:var(--muted);font-size:14px;margin-bottom:24px}
+  .decide{background:var(--card);border:2px solid var(--accent);border-radius:8px;padding:16px 20px;margin:16px 0}
+  .decide h2{margin:0 0 8px;border:0;padding:0;font-size:20px;color:var(--accent)}
+  .decide ol{margin:0;padding-left:22px} .decide li{margin-bottom:10px}
+  .rec{font-weight:700;color:var(--accent)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px} .card h3{margin-top:0}
+  .tag{display:inline-block;font-size:13px;line-height:1;padding:5px 8px;border-radius:4px;color:#fff;margin-right:6px;vertical-align:middle}
+  .t-hi{background:var(--hi)} .t-mid{background:var(--mid)} .t-lo{background:var(--lo)} .t-fact{background:var(--fact)} .t-guess{background:var(--guess)} .t-draft{background:var(--draft)} .t-ok{background:#4d7a4a}
+  table{width:100%;border-collapse:collapse;background:var(--card);font-size:15px;margin:12px 0 20px}
+  th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top} th{background:#efe8dc;font-weight:700}
+  ul{margin:0 0 12px;padding-left:22px} li{margin-bottom:6px}
+  .good{border-left:4px solid var(--lo);padding-left:14px} .bad{border-left:4px solid var(--hi);padding-left:14px}
+  .shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+  figure{margin:0} figure img{width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:#111} figcaption{font-size:13px;color:var(--muted);margin-top:6px}
+  .small{font-size:13px;color:var(--muted)} a{color:var(--fact)} code{font-size:14px;background:#efe8dc;padding:1px 5px;border-radius:3px}
+  @media (max-width:640px){main{padding:20px 16px 64px} h1{font-size:24px} table{font-size:14px} th,td{padding:8px}}
+</style>
+</head>
+<body>
+<main>
+<p class="lead">舞台スケッチ／AI作成マニュアル P4 ／ 作成 2026-09-11 ／ 設計: Claude Fable 5.1 ／ 根拠: 本番P2 5本＋模擬2本の実測 ／ 状態: <span class="tag t-draft">本人判断待ち</span></p>
+<h1>P4 判断 — AI生成JSONの「黙った変形」を、どこで・どの強さで止めるか</h1>
+<p>P2 で分かったこと: 外部AI（ChatGPT・Claude.ai・Gemini）が作ったJSONは、5本中5本が舞台スケッチで「開けた」。しかし5本中2本は、開けたまま<strong>意図と違う図</strong>になった（参照切れ→別人物、色の書式ミス→全員が既定色）。ブラウザは警告を出さない。開発用の検査器 <code>tools/ai-json-check.mjs</code> なら一発で捕まり、その出力をAIに貼れば1回で直った。問題は、<strong>一般ユーザーは検査器を使えない</strong>こと。</p>
+
+<section class="decide">
+  <h2>判断してほしいこと（4件）</h2>
+  <ol>
+    <li><strong>P4-1 点検をどこに置くか。</strong>
+      (A) アプリの読み込み比較画面に「点検結果」を追加（正規化の前に生JSONを検査）
+      (B) 公開ページに独立の「AI JSON点検」ページ（ブラウザ内で完結。JSONを選ぶと結果と修正依頼文が出る。アプリ本体は変更しない）
+      (C) Bを先に出し、Aは後で。<span class="rec">推奨: C。</span>理由: 本体 <code>stage-sketch.js</code> は別セッションが編集中（光の動きスケッチ）で、いま触ると衝突する。Bは本体非改変で今夜 Codex に出せ、P3 の公開ページに同居できる。</li>
+    <li><strong>P4-2 点検の強さ。</strong>
+      (A) 警告だけ（読み込みは通す）
+      (B) 警告＋「AIに貼る修正依頼文をコピー」ボタン
+      (C) 参照切れ・色書式はブロック。<span class="rec">推奨: B。</span>理由: P2 で「NG本文をそのまま貼る→1回で修正」が3AI全部で成立した。ブロックすると既存ユーザーの手書きJSONや古い書き出しまで止める恐れがある。</li>
+    <li><strong>P4-3 検査の正本を一つにするか。</strong>
+      (A) <code>tools/ai-json-check.mjs</code> の判定関数を ESM に切り出し、node（開発）とブラウザ（公開ページ）で同じ関数を使う。enum（姿勢46・種類27・会場と規模）はビルド時に <code>stage-sketch.js</code> から抽出して埋め込む
+      (B) 公開ページ用に別実装。<span class="rec">推奨: A。</span>理由: 二重実装は必ず食い違う（P0 で契約書とコードが食い違った実例）。</li>
+    <li><strong>P4-4 点検項目の範囲（初版）。</strong>
+      (A) 「黙った変形」を起こす4点だけ: 参照切れ／色の書式／会場と規模の不一致／未知の姿勢・種類
+      (B) 検査器と同じ全項目（構文・外枠・未知キー・上限・安全注記・任意項目の追加…）。<span class="rec">推奨: B（全項目）。</span>理由: 判定関数を共有するなら範囲を狭める理由がない。表示は「図が変わる」「読み込みは通るが規約違反」の2段に分けて出す。</li>
+  </ol>
+</section>
+
+<h2>証拠（実測・2026-09-11）</h2>
+<table>
+<tr><th>AI</th><th>課題</th><th>初回の検査器</th><th>そのまま読み込むと</th><th>NG本文を貼った後</th></tr>
+<tr><td>ChatGPT 無料</td><td>1 欠落入力</td><td>NG 6件（castId の綴り違い <code>cast-capulete</code>）</td><td><span class="tag t-hi">黙った変形</span>キャピュレットが舞台裏扱い、名無しの「演者」が舞台上に出る</td><td>1回で修正・全合格</td></tr>
+<tr><td>ChatGPT 無料</td><td>2 全指定</td><td>OK</td><td>全合格</td><td>—</td></tr>
+<tr><td>Claude.ai Sonnet 5</td><td>1 欠落入力</td><td>OK</td><td>全合格</td><td>—</td></tr>
+<tr><td>Gemini Flash</td><td>1 欠落入力</td><td>NG 39件（全 color の先頭に空白、安全注記2件）</td><td><span class="tag t-hi">黙った変形</span>演者4人・セット4つが全部既定色（演者は全員 #a84b26）</td><td>1回で修正・全合格</td></tr>
+<tr><td>Gemini Flash</td><td>2 全指定</td><td>OK</td><td>全合格</td><td>—</td></tr>
+</table>
+<div class="shots">
+  <figure><img src="qa/chatgpt-1-1-scene-2.png" alt="ChatGPT NG版: 参照切れの演者が名無しで舞台上に出ている"><figcaption>ChatGPT NG版・第2場面。左の一覧では「キャピュレット」が舞台裏なのに、舞台上に名無しの「演者」が立つ。</figcaption></figure>
+  <figure><img src="qa/gemini-1-1-scene-1.png" alt="Gemini NG版: 全員が同じ既定色"><figcaption>Gemini NG版・第1場面。色の先頭空白で全員が既定色に化けている（修正版 qa/gemini-1-2-scene-1.png と見比べ）。</figcaption></figure>
+</div>
+<p class="small">生成物は <code>p2-runs/</code>（NG版と修正版を両方保存）。台帳は <a href="P2_LEDGER.md">P2_LEDGER.md</a>。</p>
+
+<h2>案の比較</h2>
+<table>
+<tr><th style="width:18%">観点</th><th>A 読み込み画面に点検</th><th>B 独立の点検ページ</th><th>C B先行→A後追い（推奨）</th></tr>
+<tr><td>本体の変更</td><td>あり（比較モーダルに節を追加）。別セッションの編集と衝突しうる</td><td>なし</td><td>Bはなし。Aは光の動きスケッチの M4 完了後</td></tr>
+<tr><td>ユーザーの手数</td><td>最少（読み込み時に自動）</td><td>1手増える（点検ページにJSONを置く）</td><td>短期はB、長期はA</td></tr>
+<tr><td>実装量</td><td>Codex 1本＋回帰確認（読み込み経路全体）</td><td>Codex 1本（静的HTML＋共有判定関数）</td><td>B今夜、A後日</td></tr>
+<tr><td>P3（公開ページ）との関係</td><td>独立</td><td>同居できる（本文コピー・見本DL・点検の3点セット）</td><td>P3とBを1発注にまとめられる</td></tr>
+<tr><td>リスク</td><td>読み込み経路の回帰・スマホ経路（比較画面なし）の扱い</td><td>使われない可能性（導線次第）</td><td>Bの導線をマニュアルの「受け取り手順」に書く</td></tr>
+</table>
+
+<h2>採用時の設計（P4-1=C・P4-2=B・P4-3=A・P4-4=B の場合）</h2>
+<div class="grid">
+  <div class="card good"><h3>B: 独立の点検ページ（P3と同居）</h3>
+    <ul>
+      <li>1ページ内に「AIに貼る本文（コピー）」「見本2本（DL）」「JSON点検（ファイル選択 or 貼り付け）」</li>
+      <li>点検結果は2段: <strong>図が変わる</strong>（参照切れ・色書式・規模不一致・未知の姿勢/種類）と <strong>規約違反</strong>（未知キー・上限・安全注記・任意項目の追加）</li>
+      <li>「AIに貼る修正依頼文をコピー」（検査器の NG 本文と同じ書式）</li>
+      <li>判定関数は <code>tools/ai-json-check.mjs</code> から切り出した ESM を共有。enum はビルド時に埋め込み、対応アプリ版を表示</li>
+      <li>外部送信なし。ブラウザ内で完結</li>
+    </ul></div>
+  <div class="card"><h3>A: 読み込み画面に点検（後追い）</h3>
+    <ul>
+      <li>比較モーダル（renderImportSummary）に「点検」節を追加。生JSONを normalizeState の前に検査</li>
+      <li>スマホ経路は比較画面が無いので、警告があるときだけ確認を挟む</li>
+      <li>着手条件: 光の動きスケッチ側の編集が落ち着き、`?v=` と CACHE_NAME の上げを同時にできるとき</li>
+    </ul></div>
+</div>
+
+<h2>リスク・未確認</h2>
+<ul>
+  <li><span class="tag t-mid">中</span>点検ページの導線が弱いと使われない。マニュアルの「受け取り手順」に「読み込む前に点検ページへ」を必ず書く</li>
+  <li><span class="tag t-mid">中</span>Claude.ai 課題2 は未実施（ログアウト）。6/6 にする価値はあるが、判断を変える結果にはなりにくい</li>
+  <li><span class="tag t-lo">低</span>色の先頭空白のような書式ミスは、点検側で自動補正（trim）してから読み込む案もある。初版は警告＋修正依頼に留め、P2 の再発頻度で判断</li>
+</ul>
+
+<h2>次の行動</h2>
+<ol>
+  <li>本人が P4-1〜P4-4 を判断（「推奨どおり」で可）</li>
+  <li>Claude が P3＋P4B の発注書（公開ページ1枚＋共有判定関数＋点検UI。停止条件・検証手順つき）を作成</li>
+  <li>Codex（gpt-5.6-terra・medium）へ夜間委譲。本体 <code>stage-sketch.js</code> は触らない</li>
+</ol>
+<p class="small">本文書はローカル確認用。公開・外部共有しない。</p>
+</main>
+</body>
+</html>

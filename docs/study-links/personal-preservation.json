@@ -1,0 +1,31 @@
+{
+  "unrelatedOriginalDirtyFiles": {
+    "mcp-server/README.md": true,
+    "mcp-server/src/edit-plan.js": true,
+    "mcp-server/src/project-store.js": true,
+    "mcp-server/src/schemas.js": true,
+    "mcp-server/src/server.js": true,
+    "mcp-server/test/edit-plan.test.js": true,
+    "public-beta.html": true,
+    "public-lp/index.html": true,
+    "stage-i18n.js": true,
+    "stage-public.css": true,
+    "stage-public.js": true,
+    "stage-pwa.js": true,
+    "style.css": true,
+    "tests/stage-public-build.test.mjs": true,
+    "tests/stage-pwa-offline-warm.test.mjs": true,
+    "tests/stage-pwa.test.mjs": true,
+    "tests/worker-guest-accounts-verify.test.mjs": true,
+    "tests/worker-session-login.test.mjs": true
+  },
+  "allOriginalUnrelatedFilesUnchanged": true,
+  "concurrentWorkDetected": [
+    "study-links.js",
+    "stage-study-owner.js",
+    "tests/study-links.test.mjs",
+    "tools/study-browser-check.mjs",
+    "tools/study-runtime-check.mjs"
+  ],
+  "response": "Stopped additional edits to overlapping files; used new independent tests and a temporary browser-test copy. Did not revert concurrent changes."
+}

@@ -1,0 +1,36 @@
+{
+  "owner": {
+    "viewport": 390,
+    "left": 19,
+    "right": 356,
+    "width": 337,
+    "overflow": false,
+    "controls": [
+      {
+        "name": "Close",
+        "width": 66.90625,
+        "height": 44
+      },
+      {
+        "name": "Create a link for this show",
+        "width": 223.984375,
+        "height": 44
+      },
+      {
+        "name": "Refresh status and notes",
+        "width": 206.390625,
+        "height": 44
+      }
+    ],
+    "focus": {
+      "visible": true,
+      "style": "solid",
+      "width": "2px"
+    }
+  },
+  "report": {
+    "title": "事前学習用リンク — ローカル実装の確認 | Stage Sketch",
+    "overflow": false,
+    "brokenImages": []
+  }
+}

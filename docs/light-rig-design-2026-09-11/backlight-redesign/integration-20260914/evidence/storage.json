@@ -1,0 +1,30 @@
+{
+  "chromium": {
+    "invalidImports": 5,
+    "rendererRollback": true,
+    "zeroAndUnknown": {
+      "haze": 0,
+      "unknown": "retain"
+    },
+    "callerIsolated": true,
+    "corruptStoreProtected": true,
+    "fileExportAvailable": true,
+    "reloadRoundtrip": true,
+    "quotaPreservesStore": true,
+    "legacyUntouched": true
+  },
+  "webkit": {
+    "invalidImports": 5,
+    "rendererRollback": true,
+    "zeroAndUnknown": {
+      "haze": 0,
+      "unknown": "retain"
+    },
+    "callerIsolated": true,
+    "corruptStoreProtected": true,
+    "fileExportAvailable": true,
+    "reloadRoundtrip": true,
+    "quotaPreservesStore": true,
+    "legacyUntouched": true
+  }
+}

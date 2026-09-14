@@ -1,0 +1,180 @@
+{
+  "kind": "stage-sketch-ai-change-manifest",
+  "version": 1,
+  "systemName": "AI showwright for StageSketch",
+  "status": "isolated_ai_revision_with_owner_review_required",
+  "generatedAt": "2026-09-13T00:00:00+09:00",
+  "generatedAtPolicy": "deterministic artifact version timestamp; actual validation time is recorded in qa reports",
+  "scope": "Romeo and Juliet full-show sample only; no production source changes",
+  "sources": {
+    "showwrightCore": {
+      "path": "romeo-juliet.showwright.json",
+      "sha256": "e0b995dca81a8b274b09bcdc4930040084700f3e4a48463d520de0d681e05a14",
+      "schemaVersion": "1.0.0"
+    },
+    "sourceNative": {
+      "path": "../romeo-juliet-full-show.stage-sketch.json",
+      "sha256": "7086d75a843a0ea7253d3dd630defe994cf491432aabcc19e7774d5000a5d780"
+    },
+    "aiInput": {
+      "path": "../m6-transition-candidate/ai-input.json",
+      "sha256": "8d566e2c1abe30edeb6a2aeae9df0d4cd10259c30eb5e00418345c620d04ec39"
+    },
+    "aiProposal": {
+      "path": "../m6-transition-candidate/ai-proposal.json",
+      "sha256": "4f08d32c113e5a37796ef7bcf9d1265464a509a9808518554989824d41100364"
+    },
+    "ownerApproval": {
+      "path": "../m6-transition-candidate/owner-approval-2026-09-12.json",
+      "sha256": "cb81b4f5ef0c4667f95de020e7252efc4196fe023d80d05008416de71aed8334"
+    }
+  },
+  "output": {
+    "path": "romeo-juliet-full-show-ai-revised.stage-sketch.json",
+    "sha256": "61ebe9a074b98715ef66e10bfdfd8001e94778eb3d4a7e00af59ffdc7cfdbdc3"
+  },
+  "compatibilityEvidence": {
+    "policy": "Product hashes are recorded in QA reports, not pinned in deterministic generated artifacts.",
+    "structureReport": "qa/structure-checks.json",
+    "browserReport": "qa/browser-checks.json"
+  },
+  "counts": {
+    "sourceScenes": 28,
+    "revisedScenes": 31,
+    "insertedM6TechnicalScenes": 3,
+    "sourceSets": 13,
+    "revisedSets": 12,
+    "removedShelfAssets": 1,
+    "sourceIdenticalRoleLightingObjectives": 28,
+    "revisedIdenticalRoleLightingObjectives": 0,
+    "coreScenes": 28,
+    "coreTransitions": 1,
+    "coreDecisions": 11,
+    "coreConstraints": 13
+  },
+  "confirmed": [
+    "M6のAI配置案をサンプル候補として採用する。",
+    "ロレンス修道士担当とジョン修道士担当が役を離れ、右袖から一体型バーを二人で押して固定する。",
+    "全員が暗転前から仮面を携帯し、バー担当二名はバー固定後に装着する。",
+    "暗転中の技術確認図は3枚とする。",
+    "M6の所要時間と転換締切は未計測として保持する。",
+    "舞台監督が5条件を手動確認して再照明し、バー遅延時は暗転を維持して遅延を記録する。",
+    "バーは二人で右袖から押して運ぶキャスター付き一体型とする。",
+    "場面の役割と照明目的を分離し、同文を機械的に複製しない。"
+  ],
+  "aiProposals": [
+    "各場面のlighting.intent文はAIによる意味修正案で、本人の照明確定ではない。",
+    "バーを現行Stage Sketchの既存counter形状へ割り当てる。2.4×0.6×1.1mはシステム既定値で実測値ではない。",
+    "携帯中の仮面をStage Sketch上でholdMode=handと表示する。実際の手の使い方を確定しない。",
+    "人物位置とバー搬入経路はStage Sketch用のAI配置案。"
+  ],
+  "unconfirmed": [
+    "バーの正確な幅、奥行、高さ、意匠、キャスター仕様は未確認。",
+    "固定の背面棚を置くかどうかは未確認。",
+    "実会場の袖幅、搬入経路、バミリ、床条件、二名での取扱安全性。",
+    "M6各工程の実行可能性と、仮面携帯・バー運搬時の実際の手の使い方。"
+  ],
+  "changes": [
+    {
+      "path": "project.id/title/versionLabel/parentVersionId/branchReason",
+      "reason": "元ショーと区別できる隔離改訂"
+    },
+    {
+      "path": "project.sets[rj-set-bar]",
+      "before": {
+        "kind": "block",
+        "dims": {
+          "w": 10.08,
+          "d": 0.65,
+          "h": 1.0
+        }
+      },
+      "after": {
+        "kind": "prop",
+        "propShape": "counter",
+        "dims": {
+          "w": 2.4,
+          "d": 0.6,
+          "h": 1.1
+        }
+      },
+      "reason": "元生成スクリプトの型・寸法指定を現行Stage Sketch既存形状へ修正"
+    },
+    {
+      "path": "project.sets[rj-set-bar-shelf]",
+      "before": "10.08m wall",
+      "after": null,
+      "reason": "移動バーと無条件に一体運用しない"
+    },
+    {
+      "path": "Q02→Q03",
+      "after": "暗転中技術確認図3枚、10枚の仮面状態、右袖からのバー搬入、手動再照明条件"
+    },
+    {
+      "path": "Q02.rehearsal + inserted M6 rehearsal",
+      "after": {
+        "holdDurationSeconds": null,
+        "transitionToNextSeconds": null
+      }
+    },
+    {
+      "path": "all scene lightingIntent.objective",
+      "after": "照明が何を見せるかを記述し、beat.roleとの同文重複を解消"
+    }
+  ],
+  "barDisplayCorrection": {
+    "classification": "source-generator mapping correction",
+    "ownerShapeDecisionRequired": false,
+    "stageSketchKind": "prop",
+    "stageSketchPropShape": "counter",
+    "systemDefaultDims": {
+      "w": 2.4,
+      "d": 0.6,
+      "h": 1.1
+    },
+    "actualDimensionsConfirmed": false
+  },
+  "approvalEvidence": {
+    "kind": "stage-sketch-transition-owner-approval",
+    "version": 1,
+    "status": "owner_approved_for_sample",
+    "recordedDate": "2026-09-12",
+    "subject": "M6 乱戦のブラックアウトから仮面舞踏会とバーセットへの転換",
+    "sourceCandidateSha256": "34a0e7a8357b2481fea346913899925d09647d41beff5ac70187cb2862634ed3",
+    "decisions": [
+      {
+        "id": "M6-C1",
+        "label": "配置案の扱い",
+        "choice": "A",
+        "answer": "サンプル候補としてこの配置を採用する"
+      },
+      {
+        "id": "M6-C2",
+        "label": "バー担当2枠の仮面",
+        "choice": "A",
+        "answer": "現案どおり、バー固定後に着けてバー係の位置へ移る"
+      },
+      {
+        "id": "M6-C3",
+        "label": "暗転中の技術図",
+        "choice": "A",
+        "answer": "現案どおり3枚で進める"
+      }
+    ],
+    "effect": {
+      "sampleConfigurationApproved": true,
+      "productImplementationApproved": false,
+      "realStageValidationCompleted": false,
+      "productionUseApproved": false
+    }
+  },
+  "coreValidation": {
+    "path": "qa/core-checks.json",
+    "schema": "showwright-core.schema.json"
+  },
+  "fieldChanges": {
+    "path": "ai-field-changes.json",
+    "count": 91,
+    "format": "ID-addressed audit; by-id and order are audit paths, not JSON Patch"
+  }
+}

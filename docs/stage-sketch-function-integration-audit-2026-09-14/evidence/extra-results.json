@@ -1,0 +1,39 @@
+{
+  "standaloneBefore": {
+    "format": "stage-sketch-formation",
+    "scenes": 1,
+    "poses": [
+      8
+    ],
+    "cast": 8
+  },
+  "standaloneAfter": {
+    "scenes": [
+      {
+        "title": "シーン1",
+        "pieces": 0,
+        "hasMotion": false
+      }
+    ],
+    "cast": 8
+  },
+  "audioBefore": {
+    "ready": 4,
+    "duration": 5,
+    "paused": true,
+    "status": "「audit-silent」を再生できます。"
+  },
+  "audio500": {
+    "time": 0.317247,
+    "paused": false,
+    "active": "audit-s1"
+  },
+  "audio1500": {
+    "time": 0,
+    "paused": true,
+    "src": "blob:http://127.0.0.1:8947/03d51c4d-a73e-4485-aa9a-36e4fef1dc12",
+    "active": "audit-s1",
+    "status": "「audit-silent」を再生できます。"
+  },
+  "errors": []
+}

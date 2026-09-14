@@ -1,0 +1,11 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Viewerの文字サイズ調整</title><link rel="stylesheet" href="../../style.css"><style>body{font:14px/1.75 var(--sans)}main{max-width:960px;margin:auto;padding:24px}h1{font:500 24px/1.5 var(--serif)}h2{font-size:16px;margin-top:24px}a{color:var(--paper);text-decoration:underline}table{width:100%;border-collapse:collapse}th,td{text-align:left;border-bottom:1px solid var(--line-dark);padding:12px}img{width:100%;height:auto}summary{min-height:44px;cursor:pointer}details:not([open])>:not(summary){display:none}:focus-visible{outline:2px solid var(--brass);outline-offset:3px}</style></head><body><main>
+<h1>Viewerの文字を、本家の密度へ</h1><p>2026年9月10日・ローカル反映。道具・説明・入力項目の大きさを本家の実画面と照合し、Viewerだけ調整しました。</p>
+<table><thead><tr><th>用途</th><th>以前</th><th>調整後</th></tr></thead><tbody><tr><td>本文・道具</td><td>14px</td><td>11.5px</td></tr><tr><td>説明・状態</td><td>14px</td><td>10.5px</td></tr><tr><td>区画見出し</td><td>14px</td><td>9.5px</td></tr><tr><td>入力項目名</td><td>14px</td><td>9px</td></tr><tr><td>ショー名</td><td>18px</td><td>13px</td></tr></tbody></table>
+<p>本家の道具「メモ」は10.5px、場面操作11px、入力11.5px、保存の区画見出し9.5pxでした。書体は共通sans / serifを継承。ボタンの44px操作域とフォーカス表示を保ち、タッチ端末の入力は16pxにしています。図上の付箋15pxと、最上部のViewer名24pxは維持しています。</p>
+<h2>確認結果</h2><p>関連Nodeテスト59件成功。stage.html / study-frame.htmlと正本の一致、git diff --checkも成功。日本語・英語、PC・タブレット・縦横スマートフォン相当の確認結果は下記の測定記録に保存しています。iPhone Safari実機は未確認です。</p>
+<p>design-lint：NG0・WARN0・測定不可0、本文の最悪コントラスト4.91:1、44px未満の操作0件。</p>
+<p><a href="typography-qa/results.json">日英8画面幅の結果</a> · <a href="typography-qa/design-lint/report.md">コントラスト・行間・操作域</a> · <a href="../../design/TOKEN_SHEET_study-links_2026-09-09.md">更新したトークンシート</a></p>
+<details><summary>調整後のデスクトップ</summary><img src="typography-qa/ja-1440.png" alt="文字サイズを本家へ揃えた演者Viewer"></details><details><summary>タッチ端末の入力欄</summary><img src="typography-qa/ja-390-input.png" alt="説明文字は小さく、メモの入力は16pxを保った画面"></details>
+<p>製品コードの変更はstage-study.cssのViewer内指定と、study.htmlのCSS参照版だけです。オーナーの共有モーダル、API、保存データ、正本の舞台図には変更を加えていません。作業中に他のファイルへ入った変更を保持し、commit・push・公開・デプロイは行っていません。</p>
+<p><a href="http://127.0.0.1:8802/study?lang=ja#a0ec8f4b764141f11ee0b14b579cd41cfcb18c5ea5e3fa9a">調整後のViewerを開く</a></p>
+</main></body></html>

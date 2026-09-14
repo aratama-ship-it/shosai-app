@@ -1,0 +1,43 @@
+PASS actual SQLite create
+PASS chunked Japanese snapshot roundtrip
+PASS other owner GET denied
+PASS other owner PUT denied
+PASS other owner DELETE denied
+PASS authenticated reader note accepted
+PASS explicit update
+PASS snapshot survives process restart
+PASS earlier drawing survives SQLite restart
+PASS earlier drawing is unchanged
+PASS old notes survive update and restart
+PASS other recipients cannot list notes
+PASS revoke
+PASS historical drawing denied after revoke
+PASS view denied after revoke
+PASS post denied after revoke
+PASS owner retains notes after revoke
+PASS reissue after revoke
+PASS reissue rotates token
+PASS reissue deletes old owner record
+PASS reissue starts without old notes
+PASS new token accepts notes
+PASS owner clears notes
+PASS cleared note list stays empty
+PASS posting resumes after clear
+PASS active saved data cannot be purged
+PASS revoked saved data can be purged
+PASS purged token remains unavailable
+PASS  session-room: session/new 5af3hap8
+PASS  session-room: bad hostKey rejected 
+PASS  session-room: host welcome 
+PASS  session-room: guest welcome carries doc 
+PASS  session-room: presence 2 participants 
+PASS  session-room: doc relayed to guest 
+PASS  session-room: doc not echoed to host 
+PASS  session-room: guest op relayed to host 
+PASS  session-room: guest invalid op denied 
+PASS  session-room: guest doc denied 
+PASS  session-room: pointer relayed 
+PASS  session-room: pointer not echoed 
+PASS  session-room: out-of-range pointer dropped 
+session-room: 13/13 passed
+Study SQLite runtime: 28/28 passed. Existing realtime integration was run unchanged except for its port.

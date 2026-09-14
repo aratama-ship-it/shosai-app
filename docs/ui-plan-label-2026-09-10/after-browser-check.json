@@ -1,0 +1,221 @@
+{
+  "results": [
+    {
+      "name": "desktop-ja",
+      "normal": {
+        "text": "間口 12m",
+        "x": 640,
+        "y": 12,
+        "top": 6.576499938964844,
+        "bottom": 17.860501289367676,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.592968761920929,
+        "width": 759,
+        "height": 427
+      },
+      "full": {
+        "text": "間口 12m",
+        "x": 640,
+        "y": 12,
+        "top": 6.576499938964844,
+        "bottom": 17.860501289367676,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 1.125,
+        "width": 1440,
+        "height": 810
+      },
+      "mini": {
+        "text": "間口 12m",
+        "x": 640,
+        "y": 12,
+        "top": 6.576499938964844,
+        "bottom": 17.860501289367676,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.5,
+        "width": 640,
+        "height": 360
+      }
+    },
+    {
+      "name": "desktop-en",
+      "normal": {
+        "text": "Width 12m",
+        "x": 640,
+        "y": 12,
+        "top": 6.7845001220703125,
+        "bottom": 16.989500999450684,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.592968761920929,
+        "width": 759,
+        "height": 427
+      },
+      "full": {
+        "text": "Width 12m",
+        "x": 640,
+        "y": 12,
+        "top": 6.7845001220703125,
+        "bottom": 16.989500999450684,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 1.125,
+        "width": 1440,
+        "height": 810
+      },
+      "mini": {
+        "text": "Width 12m",
+        "x": 640,
+        "y": 12,
+        "top": 6.7845001220703125,
+        "bottom": 16.989500999450684,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.5,
+        "width": 640,
+        "height": 360
+      }
+    },
+    {
+      "name": "desktop-zh-Hans",
+      "normal": {
+        "text": "台口宽度 12m",
+        "x": 640,
+        "y": 12,
+        "top": 5.991499900817871,
+        "bottom": 18.22450065612793,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.592968761920929,
+        "width": 759,
+        "height": 427
+      },
+      "full": {
+        "text": "台口宽度 12m",
+        "x": 640,
+        "y": 12,
+        "top": 5.991499900817871,
+        "bottom": 18.22450065612793,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 1.125,
+        "width": 1440,
+        "height": 810
+      },
+      "mini": {
+        "text": "台口宽度 12m",
+        "x": 640,
+        "y": 12,
+        "top": 5.991499900817871,
+        "bottom": 18.22450065612793,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.5,
+        "width": 640,
+        "height": 360
+      }
+    },
+    {
+      "name": "desktop-zh-Hant",
+      "normal": {
+        "text": "開口寬度 12m",
+        "x": 640,
+        "y": 12,
+        "top": 5.991499900817871,
+        "bottom": 17.938501358032227,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.592968761920929,
+        "width": 759,
+        "height": 427
+      },
+      "full": {
+        "text": "開口寬度 12m",
+        "x": 640,
+        "y": 12,
+        "top": 5.991499900817871,
+        "bottom": 17.938501358032227,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 1.125,
+        "width": 1440,
+        "height": 810
+      },
+      "mini": {
+        "text": "開口寬度 12m",
+        "x": 640,
+        "y": 12,
+        "top": 5.991499900817871,
+        "bottom": 17.938501358032227,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.5,
+        "width": 640,
+        "height": 360
+      }
+    },
+    {
+      "name": "tablet-landscape",
+      "normal": {
+        "text": "間口 12m",
+        "x": 640,
+        "y": 12,
+        "top": 6.576499938964844,
+        "bottom": 17.860501289367676,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.725781261920929,
+        "width": 929,
+        "height": 523
+      },
+      "full": {
+        "text": "間口 12m",
+        "x": 640,
+        "y": 12,
+        "top": 6.576499938964844,
+        "bottom": 17.860501289367676,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.725781261920929,
+        "width": 929,
+        "height": 523
+      },
+      "mini": {
+        "text": "間口 12m",
+        "x": 640,
+        "y": 12,
+        "top": 6.576499938964844,
+        "bottom": 17.860501289367676,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.5,
+        "width": 640,
+        "height": 360
+      }
+    },
+    {
+      "name": "tablet-portrait",
+      "normal": {
+        "text": "間口 12m",
+        "x": 640,
+        "y": 12,
+        "top": 6.576499938964844,
+        "bottom": 17.860501289367676,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.5289062261581421,
+        "width": 677,
+        "height": 381
+      },
+      "full": {
+        "text": "間口 12m",
+        "x": 640,
+        "y": 12,
+        "top": 6.576499938964844,
+        "bottom": 17.860501289367676,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.5289062261581421,
+        "width": 677,
+        "height": 381
+      },
+      "mini": {
+        "text": "間口 12m",
+        "x": 640,
+        "y": 12,
+        "top": 6.576499938964844,
+        "bottom": 17.860501289367676,
+        "font": "13px \"Hiragino Kaku Gothic ProN\", sans-serif",
+        "scale": 0.5289062261581421,
+        "width": 677,
+        "height": 381
+      }
+    }
+  ],
+  "errors": []
+}

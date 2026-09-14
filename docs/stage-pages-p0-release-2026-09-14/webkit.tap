@@ -1,0 +1,80 @@
+TAP version 13
+# Subtest: A01: current backup failure preserves both originals after edit, shelf and import attempts
+ok 1 - A01: current backup failure preserves both originals after edit, shelf and import attempts
+  ---
+  duration_ms: 1029.8025
+  type: 'test'
+  ...
+# Subtest: A01: shelf backup failure preserves both originals after edit, shelf and import attempts
+ok 2 - A01: shelf backup failure preserves both originals after edit, shelf and import attempts
+  ---
+  duration_ms: 773.173458
+  type: 'test'
+  ...
+# Subtest: A01: successful backups allow migration, editing and persistence
+ok 3 - A01: successful backups allow migration, editing and persistence
+  ---
+  duration_ms: 721.729542
+  type: 'test'
+  ...
+# Subtest: A02: same ID import round-trips without an exception
+ok 4 - A02: same ID import round-trips without an exception
+  ---
+  duration_ms: 827.6385
+  type: 'test'
+  ...
+# Subtest: A02: same ID import with changed content preserves the previous show
+ok 5 - A02: same ID import with changed content preserves the previous show
+  ---
+  duration_ms: 833.892541
+  type: 'test'
+  ...
+# Subtest: A04: one assigned track continues across an unassigned scene; pause/resume/seek/reload keep assignments
+not ok 6 - A04: one assigned track continues across an unassigned scene; pause/resume/seek/reload keep assignments
+  ---
+  duration_ms: 10352.647209
+  type: 'test'
+  location: '/private/tmp/stage-pages-p0-20260914/tests/stage-pages-p0.browser.mjs:117:1'
+  failureType: 'testCodeFailure'
+  error: 'page.waitForFunction: Timeout 10000ms exceeded.'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    addAudio (/private/tmp/stage-pages-p0-20260914/tests/stage-pages-p0.browser.mjs:115:159)
+    async TestContext.<anonymous> (/private/tmp/stage-pages-p0-20260914/tests/stage-pages-p0.browser.mjs:118:46)
+  ...
+# Subtest: normal mode retains same-track playback across assigned scenes
+not ok 7 - normal mode retains same-track playback across assigned scenes
+  ---
+  duration_ms: 10362.091458
+  type: 'test'
+  location: '/private/tmp/stage-pages-p0-20260914/tests/stage-pages-p0.browser.mjs:136:1'
+  failureType: 'testCodeFailure'
+  error: 'page.waitForFunction: Timeout 10000ms exceeded.'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    addAudio (/private/tmp/stage-pages-p0-20260914/tests/stage-pages-p0.browser.mjs:115:159)
+    async TestContext.<anonymous> (/private/tmp/stage-pages-p0-20260914/tests/stage-pages-p0.browser.mjs:137:28)
+  ...
+# Subtest: audio-free timeline still advances the selected scene
+ok 8 - audio-free timeline still advances the selected scene
+  ---
+  duration_ms: 3100.836792
+  type: 'test'
+  ...
+# Subtest: mixed cache: timeline tolerates a host exposing the previous bridge
+ok 9 - mixed cache: timeline tolerates a host exposing the previous bridge
+  ---
+  duration_ms: 428.296917
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 7
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 28571.469917

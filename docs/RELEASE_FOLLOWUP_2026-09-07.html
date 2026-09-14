@@ -1,0 +1,48 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>舞台スケッチ 追加レビュー 2026-09-07</title><style>
+  :root{--ink:#1f1c18;--muted:#5a544c;--paper:#faf7f1;--card:#ffffff;--line:#d9d2c5;
+        --ok:#2f6b3a;--ok-bg:#e6f2e8;--warn:#8a5a12;--warn-bg:#fbefd9;--info:#365a7a;--info-bg:#e5eef6;
+        --stop:#9b2f2f;--stop-bg:#f8e3e3;--accent:#a84b26}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;line-height:1.7;font-size:16px}
+  main{max-width:920px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:1.5rem;margin:0 0 4px;letter-spacing:.02em}
+  h2{font-size:1.15rem;margin:40px 0 12px;padding-left:12px;border-left:4px solid var(--accent)}
+  h3{font-size:1rem;margin:22px 0 8px}
+  .meta{color:var(--muted);font-size:.9rem;margin-bottom:24px}
+  .ask{background:var(--card);border:2px solid var(--accent);border-radius:12px;padding:18px 20px;margin:20px 0}
+  .ask p{margin:6px 0}
+  .verdict{display:flex;gap:14px;align-items:flex-start;background:var(--ok-bg);border:1px solid var(--ok);border-radius:12px;padding:16px 18px;margin:16px 0}
+  .verdict .mark{font-size:1.6rem;line-height:1}
+  table{width:100%;border-collapse:collapse;background:var(--card);font-size:.93rem;margin:10px 0}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#f1ece2;font-weight:600}
+  .tag{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.8rem;font-weight:600;white-space:nowrap}
+  .ok{background:var(--ok-bg);color:var(--ok)} .warn{background:var(--warn-bg);color:var(--warn)}
+  .info{background:var(--info-bg);color:var(--info)} .stop{background:var(--stop-bg);color:var(--stop)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:12px 0}
+  .card h3{margin-top:0}
+  .card .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .card dl{margin:8px 0 0;display:grid;grid-template-columns:7em 1fr;gap:4px 10px}
+  .card dt{color:var(--muted);font-size:.88rem}
+  .card dd{margin:0}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.88em;background:#f1ece2;padding:1px 5px;border-radius:4px}
+  pre{background:#2b2723;color:#f3eee4;padding:12px 14px;border-radius:8px;overflow-x:auto;font-size:.85rem}
+  ol.steps li{margin:8px 0}
+  .small{font-size:.88rem;color:var(--muted)}
+  @media (max-width:600px){ .card dl{grid-template-columns:1fr} th,td{padding:6px 8px;font-size:.88rem} }
+</style></head><body><main><h1>舞台スケッチ：配信後の追加レビュー</h1>
+<p class="meta">2026-09-07・Codex。対象は既存PWA更新、体験版、問い合わせ導線。アプリ修正・追加配信は行っていません。</p>
+<section class="ask"><strong>判断点：まずPWA更新失敗への対処と、英語の問い合わせリンクを直すことを勧めます。</strong><p>前回の3件は配信済みですが、下記の別条件で問題が残っています。「改善点なし」とはまだ言えません。</p></section>
+<h2>優先して直す2件</h2>
+<article class="card"><h3>1. PWA更新の通信失敗で、旧オフライン版が消える</h3><p><span class="tag stop">優先度：高</span> <span class="tag info">処理の再現済み／実機未確認</span></p>
+<p>新しいService Workerを取得した後、アプリ資材のダウンロードが全件失敗しても更新が有効になり、旧キャッシュが削除されます。ページ側の補充も通信できなければ、次回のオフライン起動に必要なファイルが残りません。</p>
+<dl><dt>根拠</dt><dd><a href="../stage-sw.js">stage-sw.js</a> 68–92行。installはPromise.allSettledの後にskipWaiting、activateは旧キャッシュを無条件削除。</dd><dt>再現</dt><dd>実ソースをNode vmで実行。旧キャッシュにstage.htmlを用意し、fetchを失敗させてinstall→activateを実行。skipWaiting=true、旧キャッシュ保持=false、新キャッシュの件数=0。</dd><dt>改善案</dt><dd>必須資材が揃うまで動作済みの旧版を保持し、補充後に切り替える。旧HTMLと対応するJS/CSSがセットで残ることを検証する。単純にaddAllへ戻すと過去の認証・リダイレクト問題が再発するため避ける。</dd></dl></article>
+<article class="card"><h3>2. 英語ページから問い合わせても日本語フォームになる</h3><p><span class="tag warn">優先度：中</span> <span class="tag ok">本番表示を確認済み</span></p>
+<p>カテゴリと件名は引き継がれますが、英語側のリンクにlang=enがありません。問い合わせページは指定がなければ日本語を選びます。</p>
+<dl><dt>根拠</dt><dd><a href="../public-beta.html">public-beta.html</a> 188行、<a href="../public-lp/index.html">public-lp/index.html</a> 752行。PYGMIX app/contact/page.tsxのlang判定も確認。</dd><dt>確認</dt><dd><a href="https://pygmix.com/contact?category=tool&amp;subject=Stage%20Sketch">現在の英語側リンク</a>で、見出し・入力ラベルが日本語、件名はStage Sketchになることを本番ブラウザで確認。送信はしていません。</dd><dt>改善案</dt><dd>英語側の問い合わせリンクへlang=enを付ける。LP→体験版→ベータ案内→フォームの言語を通しで確認する。</dd></dl></article>
+<h2>使いやすさの提案</h2>
+<article class="card"><h3>3. 体験版の操作画面にも「保存されません」を表示する</h3><p><span class="tag info">提案／未実装</span></p><p>LPには保存されない旨がありますが、体験版に直接入る人は読めません。stage-public.jsは保存を止め、再読込で見本を初期化します。操作画面の「体験版」の近くへ「3場面まで・再読み込みでリセット」を短く添えると、試した配置を失う驚きを減らせます。</p><p>保存機能を追加する提案ではなく、現在の仕様を操作前に伝える提案です。根拠：stage-public.js 4–17行・resetPreview、public-lp/index.html 498行。</p></article>
+<h2>今回の確認範囲と残り</h2>
+<ul><li>build_stage.py --check と build_public.py --check は成功。生成物と配信フォルダの整合は現在も取れています。</li><li>PWA失敗条件のNode再現と、本番問い合わせ画面を確認しました。全機能の再監査ではありません。</li><li>実端末での更新→再起動→オフライン起動、保存済みショーの保持は未確認です。</li></ul>
+<p><strong>次の順序：</strong>1の修正と回帰テスト → 2のリンク修正 → 実機PWA確認。3は表示方針を確認してから追加します。</p>
+<p><a href="https://stagesketch-try.juggler-arata.workers.dev/try">配信中の体験版を開く</a></p></main></body></html>

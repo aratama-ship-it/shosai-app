@@ -1,0 +1,42 @@
+{
+  "status": "prepared-locally-not-deployed",
+  "release": "selected-five-viewer-share-ui-20260912",
+  "baseVersion": "cc2c485a-b83f-47b4-ac6d-453ba20f18bb",
+  "baseSha256": "bb0fb178657ca00a88c4890b8229fb90ae708960716cbaa9cd312cfa287958e8",
+  "frozenSnapshotSha256": "41b46d114839072cf35b48a6880933dbabeb5fef23a57b63a1bc5b06caea808e",
+  "patchedRoutes": [
+    {
+      "route": "/stage",
+      "source": "stage.html",
+      "bytes": 151331,
+      "sha256": "bca3a41e85be8c1e5b00a2813c10296f0ab555bdf9184a1ed518b7ab5dbd20b0"
+    },
+    {
+      "route": "/stage.html",
+      "source": "stage.html",
+      "bytes": 151331,
+      "sha256": "bca3a41e85be8c1e5b00a2813c10296f0ab555bdf9184a1ed518b7ab5dbd20b0"
+    },
+    {
+      "route": "/stage-study-owner.js",
+      "source": "stage-study-owner.js",
+      "bytes": 28298,
+      "sha256": "962a53874cfda536b894af398f1bda9743b7740906f7b57e68f0065fec287729"
+    },
+    {
+      "route": "/stage-study.css",
+      "source": "stage-study.css",
+      "bytes": 32188,
+      "sha256": "750240601379c5e19f386577cf022bac99db72cfe3cfe79027aed437eb386f72"
+    },
+    {
+      "route": "/stage-sw.js",
+      "source": "stage-sw.js",
+      "bytes": 9506,
+      "sha256": "398d128864319e28f0e6152436e3897a03ee539be4823519c1384cf3c78a4c90"
+    }
+  ],
+  "uploadBytes": 5409618,
+  "uploadSha256": "f35972256aabe87e3b77f4d5221245cb380d12c5ea24b886fd66ba0e478af252",
+  "excludedConcurrentChange": "stage-sketch.js modified after the selected-five beta deployment and is not included in this patch."
+}

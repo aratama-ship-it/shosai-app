@@ -1,0 +1,1806 @@
+{
+  "chromium": {
+    "before": {
+      "front/back": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 2344869281,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/mixed": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 1803587597,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/side": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 3254117757,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/miss": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 2122429673,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/off": {
+        "head": 43,
+        "chest": 43,
+        "body": [
+          43,
+          43,
+          43,
+          43,
+          43
+        ],
+        "hash": 73682165,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/head": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 2170933500,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/work": {
+        "head": 677,
+        "chest": 762,
+        "body": [
+          755,
+          762,
+          762,
+          762,
+          708
+        ],
+        "hash": 1223009175,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/no-people": {
+        "head": 382,
+        "chest": 750,
+        "body": [
+          717,
+          750,
+          750,
+          750,
+          520
+        ],
+        "hash": 1936237264,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/back": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 2882630232,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/mixed": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 1400766408,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/side": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 576576200,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/miss": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 3824815712,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/off": {
+        "head": 43,
+        "chest": 43,
+        "body": [
+          43,
+          43,
+          43,
+          43,
+          43
+        ],
+        "hash": 1952392591,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/head": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 3944331416,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/work": {
+        "head": 684,
+        "chest": 685,
+        "body": [
+          682,
+          683,
+          685,
+          683,
+          682
+        ],
+        "hash": 1193949025,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/no-people": {
+        "head": 418,
+        "chest": 424,
+        "body": [
+          416,
+          423,
+          424,
+          422,
+          414
+        ],
+        "hash": 1689377131,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "shimote/back": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          111
+        ],
+        "hash": 2415649262,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/mixed": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          127
+        ],
+        "hash": 1384361790,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/side": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          113
+        ],
+        "hash": 2125576245,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/miss": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          111
+        ],
+        "hash": 1819546058,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/off": {
+        "head": 43,
+        "chest": 43,
+        "body": [
+          43,
+          43,
+          43,
+          43,
+          43
+        ],
+        "hash": 2196794917,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/head": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          111
+        ],
+        "hash": 2361488139,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/work": {
+        "head": 613,
+        "chest": 685,
+        "body": [
+          658,
+          666,
+          685,
+          666,
+          540
+        ],
+        "hash": 3520605802,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/no-people": {
+        "head": 100,
+        "chest": 421,
+        "body": [
+          300,
+          343,
+          421,
+          343,
+          178
+        ],
+        "hash": 3654933053,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/back": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          111
+        ],
+        "hash": 983442690,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/mixed": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          127
+        ],
+        "hash": 1175177503,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/side": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          119
+        ],
+        "hash": 1969582846,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/miss": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          111
+        ],
+        "hash": 203910490,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/off": {
+        "head": 43,
+        "chest": 43,
+        "body": [
+          43,
+          43,
+          43,
+          43,
+          43
+        ],
+        "hash": 86392933,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/head": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          111
+        ],
+        "hash": 2774092904,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/work": {
+        "head": 613,
+        "chest": 685,
+        "body": [
+          658,
+          666,
+          685,
+          666,
+          540
+        ],
+        "hash": 2677066238,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/no-people": {
+        "head": 100,
+        "chest": 545,
+        "body": [
+          303,
+          343,
+          545,
+          342,
+          175
+        ],
+        "hash": 1073259565,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      }
+    },
+    "after": {
+      "front/back": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 331356247,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/mixed": {
+        "head": 523,
+        "chest": 523,
+        "body": [
+          511,
+          518,
+          523,
+          517,
+          509
+        ],
+        "hash": 1060683150,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/side": {
+        "head": 69,
+        "chest": 50,
+        "body": [
+          36,
+          33,
+          50,
+          181,
+          344
+        ],
+        "hash": 860920869,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/miss": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 563883887,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/off": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 3849724368,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/head": {
+        "head": 521,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 149080271,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/work": {
+        "head": 677,
+        "chest": 762,
+        "body": [
+          755,
+          762,
+          762,
+          762,
+          708
+        ],
+        "hash": 1223009175,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/no-people": {
+        "head": 382,
+        "chest": 750,
+        "body": [
+          717,
+          750,
+          750,
+          750,
+          520
+        ],
+        "hash": 1936237264,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/back": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 3777082501,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/mixed": {
+        "head": 523,
+        "chest": 526,
+        "body": [
+          509,
+          518,
+          526,
+          515,
+          506
+        ],
+        "hash": 1479122536,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/side": {
+        "head": 89,
+        "chest": 62,
+        "body": [
+          33,
+          33,
+          62,
+          215,
+          368
+        ],
+        "hash": 347542503,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/miss": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 266810805,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/off": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 839941931,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/head": {
+        "head": 521,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 540221219,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/work": {
+        "head": 684,
+        "chest": 685,
+        "body": [
+          682,
+          683,
+          685,
+          683,
+          682
+        ],
+        "hash": 1193949025,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/no-people": {
+        "head": 418,
+        "chest": 424,
+        "body": [
+          416,
+          423,
+          424,
+          422,
+          414
+        ],
+        "hash": 1689377131,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "shimote/back": {
+        "head": 135,
+        "chest": 360,
+        "body": [
+          51,
+          60,
+          360,
+          236,
+          380
+        ],
+        "hash": 3694933604,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/mixed": {
+        "head": 162,
+        "chest": 360,
+        "body": [
+          344,
+          130,
+          360,
+          257,
+          398
+        ],
+        "hash": 1807267066,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/side": {
+        "head": 535,
+        "chest": 561,
+        "body": [
+          510,
+          523,
+          561,
+          547,
+          542
+        ],
+        "hash": 1264860335,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/miss": {
+        "head": 135,
+        "chest": 360,
+        "body": [
+          51,
+          60,
+          360,
+          236,
+          380
+        ],
+        "hash": 3996669216,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/off": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          37
+        ],
+        "hash": 3430580195,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/head": {
+        "head": 135,
+        "chest": 360,
+        "body": [
+          51,
+          60,
+          360,
+          236,
+          380
+        ],
+        "hash": 4277636337,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/work": {
+        "head": 613,
+        "chest": 685,
+        "body": [
+          658,
+          666,
+          685,
+          666,
+          540
+        ],
+        "hash": 3520605802,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/no-people": {
+        "head": 100,
+        "chest": 421,
+        "body": [
+          300,
+          343,
+          421,
+          343,
+          178
+        ],
+        "hash": 3654933053,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/back": {
+        "head": 97,
+        "chest": 274,
+        "body": [
+          338,
+          220,
+          274,
+          49,
+          121
+        ],
+        "hash": 3840773697,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/mixed": {
+        "head": 162,
+        "chest": 278,
+        "body": [
+          344,
+          244,
+          278,
+          216,
+          398
+        ],
+        "hash": 3148493094,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/side": {
+        "head": 97,
+        "chest": 274,
+        "body": [
+          338,
+          220,
+          274,
+          49,
+          128
+        ],
+        "hash": 57699548,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/miss": {
+        "head": 97,
+        "chest": 274,
+        "body": [
+          338,
+          220,
+          274,
+          49,
+          121
+        ],
+        "hash": 1515699485,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/off": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          37
+        ],
+        "hash": 4068164398,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/head": {
+        "head": 133,
+        "chest": 274,
+        "body": [
+          338,
+          220,
+          274,
+          49,
+          121
+        ],
+        "hash": 1425722062,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/work": {
+        "head": 613,
+        "chest": 685,
+        "body": [
+          658,
+          666,
+          685,
+          666,
+          540
+        ],
+        "hash": 2677066238,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/no-people": {
+        "head": 100,
+        "chest": 545,
+        "body": [
+          303,
+          343,
+          545,
+          342,
+          175
+        ],
+        "hash": 1073259565,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      }
+    }
+  },
+  "webkit": {
+    "before": {
+      "front/back": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 2292908278,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/mixed": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 3432216352,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/side": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 1755786085,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/miss": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 1318430181,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/off": {
+        "head": 43,
+        "chest": 43,
+        "body": [
+          43,
+          43,
+          43,
+          43,
+          43
+        ],
+        "hash": 73682165,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/head": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 2040506278,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/work": {
+        "head": 677,
+        "chest": 762,
+        "body": [
+          755,
+          762,
+          762,
+          762,
+          730
+        ],
+        "hash": 4286441436,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/no-people": {
+        "head": 384,
+        "chest": 750,
+        "body": [
+          720,
+          750,
+          750,
+          750,
+          608
+        ],
+        "hash": 1878406407,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/back": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 1596649638,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/mixed": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 3489764417,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/side": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 3095504456,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/miss": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 10196160,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/off": {
+        "head": 43,
+        "chest": 43,
+        "body": [
+          43,
+          43,
+          43,
+          43,
+          43
+        ],
+        "hash": 3707880422,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/head": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 600671672,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/work": {
+        "head": 684,
+        "chest": 683,
+        "body": [
+          681,
+          682,
+          683,
+          681,
+          680
+        ],
+        "hash": 53969044,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/no-people": {
+        "head": 418,
+        "chest": 423,
+        "body": [
+          414,
+          420,
+          423,
+          418,
+          410
+        ],
+        "hash": 1037726655,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "shimote/back": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          104
+        ],
+        "hash": 3999667839,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/mixed": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          119
+        ],
+        "hash": 3069993700,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/side": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          107
+        ],
+        "hash": 1859739746,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/miss": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          104
+        ],
+        "hash": 3880095645,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/off": {
+        "head": 43,
+        "chest": 43,
+        "body": [
+          43,
+          43,
+          43,
+          43,
+          43
+        ],
+        "hash": 3724630605,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/head": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          104
+        ],
+        "hash": 1254909380,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/work": {
+        "head": 613,
+        "chest": 688,
+        "body": [
+          661,
+          670,
+          688,
+          669,
+          574
+        ],
+        "hash": 3300372635,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/no-people": {
+        "head": 102,
+        "chest": 428,
+        "body": [
+          310,
+          344,
+          428,
+          343,
+          224
+        ],
+        "hash": 3077388713,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/back": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          104
+        ],
+        "hash": 3142382364,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/mixed": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          119
+        ],
+        "hash": 2548717468,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/side": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          114
+        ],
+        "hash": 4290715451,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/miss": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          104
+        ],
+        "hash": 4190905064,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/off": {
+        "head": 43,
+        "chest": 43,
+        "body": [
+          43,
+          43,
+          43,
+          43,
+          43
+        ],
+        "hash": 86392933,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/head": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          104
+        ],
+        "hash": 2933431760,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/work": {
+        "head": 613,
+        "chest": 687,
+        "body": [
+          660,
+          671,
+          687,
+          670,
+          576
+        ],
+        "hash": 1039404616,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/no-people": {
+        "head": 102,
+        "chest": 550,
+        "body": [
+          307,
+          347,
+          550,
+          344,
+          223
+        ],
+        "hash": 4195984387,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      }
+    },
+    "after": {
+      "front/back": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 2103552862,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/mixed": {
+        "head": 523,
+        "chest": 526,
+        "body": [
+          509,
+          520,
+          526,
+          517,
+          509
+        ],
+        "hash": 158960372,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/side": {
+        "head": 69,
+        "chest": 53,
+        "body": [
+          33,
+          36,
+          53,
+          182,
+          344
+        ],
+        "hash": 1485451211,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/miss": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 1413728209,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/off": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 1872437128,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/head": {
+        "head": 521,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 4236797131,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/work": {
+        "head": 677,
+        "chest": 762,
+        "body": [
+          755,
+          762,
+          762,
+          762,
+          730
+        ],
+        "hash": 4286441436,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front/no-people": {
+        "head": 384,
+        "chest": 750,
+        "body": [
+          720,
+          750,
+          750,
+          750,
+          608
+        ],
+        "hash": 1878406407,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/back": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 2640283592,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/mixed": {
+        "head": 523,
+        "chest": 526,
+        "body": [
+          509,
+          518,
+          526,
+          515,
+          506
+        ],
+        "hash": 1851352782,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/side": {
+        "head": 89,
+        "chest": 62,
+        "body": [
+          33,
+          36,
+          62,
+          215,
+          367
+        ],
+        "hash": 1706781947,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/miss": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 3988196665,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/off": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 3458789666,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/head": {
+        "head": 521,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          33
+        ],
+        "hash": 594605619,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/work": {
+        "head": 684,
+        "chest": 683,
+        "body": [
+          681,
+          682,
+          683,
+          681,
+          680
+        ],
+        "hash": 53969044,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "front3d/no-people": {
+        "head": 418,
+        "chest": 423,
+        "body": [
+          414,
+          420,
+          423,
+          418,
+          410
+        ],
+        "hash": 1037726655,
+        "savedUnchanged": true,
+        "canvas": "secF"
+      },
+      "shimote/back": {
+        "head": 136,
+        "chest": 360,
+        "body": [
+          50,
+          60,
+          360,
+          237,
+          380
+        ],
+        "hash": 3219775482,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/mixed": {
+        "head": 163,
+        "chest": 360,
+        "body": [
+          344,
+          130,
+          360,
+          258,
+          396
+        ],
+        "hash": 1847903406,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/side": {
+        "head": 536,
+        "chest": 561,
+        "body": [
+          509,
+          525,
+          561,
+          547,
+          549
+        ],
+        "hash": 3308873971,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/miss": {
+        "head": 136,
+        "chest": 360,
+        "body": [
+          50,
+          60,
+          360,
+          237,
+          380
+        ],
+        "hash": 312735720,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/off": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          34
+        ],
+        "hash": 2391737185,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/head": {
+        "head": 136,
+        "chest": 360,
+        "body": [
+          50,
+          60,
+          360,
+          237,
+          380
+        ],
+        "hash": 2348474698,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/work": {
+        "head": 613,
+        "chest": 688,
+        "body": [
+          661,
+          670,
+          688,
+          669,
+          574
+        ],
+        "hash": 3300372635,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "shimote/no-people": {
+        "head": 102,
+        "chest": 428,
+        "body": [
+          310,
+          344,
+          428,
+          343,
+          224
+        ],
+        "hash": 3077388713,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/back": {
+        "head": 98,
+        "chest": 275,
+        "body": [
+          336,
+          222,
+          275,
+          50,
+          111
+        ],
+        "hash": 705515465,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/mixed": {
+        "head": 162,
+        "chest": 279,
+        "body": [
+          344,
+          245,
+          279,
+          218,
+          397
+        ],
+        "hash": 3320497737,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/side": {
+        "head": 98,
+        "chest": 275,
+        "body": [
+          336,
+          222,
+          275,
+          50,
+          121
+        ],
+        "hash": 710563825,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/miss": {
+        "head": 98,
+        "chest": 275,
+        "body": [
+          336,
+          222,
+          275,
+          50,
+          111
+        ],
+        "hash": 568911317,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/off": {
+        "head": 33,
+        "chest": 33,
+        "body": [
+          33,
+          33,
+          33,
+          33,
+          34
+        ],
+        "hash": 1126526604,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/head": {
+        "head": 135,
+        "chest": 275,
+        "body": [
+          336,
+          222,
+          275,
+          50,
+          111
+        ],
+        "hash": 1746294060,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/work": {
+        "head": 613,
+        "chest": 687,
+        "body": [
+          660,
+          671,
+          687,
+          670,
+          576
+        ],
+        "hash": 1039404616,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      },
+      "kamite/no-people": {
+        "head": 102,
+        "chest": 550,
+        "body": [
+          307,
+          347,
+          550,
+          344,
+          223
+        ],
+        "hash": 4195984387,
+        "savedUnchanged": true,
+        "canvas": "secL"
+      }
+    }
+  }
+}

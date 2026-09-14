@@ -1,0 +1,20 @@
+{
+  "status": "pass",
+  "nativeSchemaValid": true,
+  "sections": 3,
+  "frames": 28,
+  "cast": 10,
+  "sets": 13,
+  "durationProposalSeconds": 1745,
+  "speechPreserved": 47,
+  "actionBlocksPreserved": 74,
+  "routeWarnings": [
+    "Q08.1｜ロミオを呼び止め、追う: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q10.2｜傷を見て、即座に報復: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q11.2｜一夜を過ごした二人の別れ: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q15.2｜手紙とロミオの入れ違い: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q18｜人の川がほどける: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q19.1｜最初の一人が中央へ: 動線は演出検討用で、衝突しないことを保証しません。"
+  ],
+  "scope": "Reference validator plus sample semantics. Browser UI import/export is checked separately in check_sample.py."
+}

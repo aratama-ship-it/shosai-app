@@ -1,0 +1,29 @@
+{
+  "date": "2026-09-09",
+  "status": "ai_draft_not_adopted",
+  "userRequest": "なるほど7番シーンに行きます。7番がすごく短いと思いますがどうでしょうか出てくる2人だけしか基本的には関係ないと思いますが、それ以外の人物は無しにしましょう。",
+  "diagnosis": "The previous excerpt already had 10 lines, but it began after Juliet's refusal and devoted eight lines to Capulet, so the dramatic trigger and exchange were hard to see.",
+  "previousFiles": {
+    "selections.json": "05d3910e6ff4a18ba44a300ad04d659c47d41a131fdb717e05eb7c01dc4bb390",
+    "draft.json": "4076f459ebd6f325c740f08c50a45d90f53f068c349188025a4b7a425fe7208a",
+    "../direction-notes/scene-notes.json": "e6341b5e90453e6adaa25d3d523bd4695890d7e728b79560428a16d61934f138"
+  },
+  "previousScene7": {
+    "lineCount": 10,
+    "speakers": ["JULIET", "CAPULET"],
+    "structure": "juliet_pleads_then_capulet_denounces"
+  },
+  "newScene7": {
+    "expectedLineCount": 10,
+    "onStageCharacters": ["JULIET", "CAPULET"],
+    "dramaticChange": [
+      "juliet_rejects_the_marriage",
+      "capulet_orders_compliance",
+      "juliet_pleads_to_be_heard",
+      "capulet_threatens_disownment"
+    ]
+  },
+  "sourceDifference": "Lady Capulet and the Nurse are present in the source scene but are omitted from this two-person stage version and disclosed in the page note.",
+  "adopted": false,
+  "finalPolishingByUser": true
+}

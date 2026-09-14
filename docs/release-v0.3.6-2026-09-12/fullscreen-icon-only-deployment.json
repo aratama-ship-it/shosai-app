@@ -1,0 +1,28 @@
+{
+  "status": "deployed",
+  "release": "v0.3.6-fullscreen-icon-only-20260912",
+  "baselineVersion": "e945c90d-5e88-4601-8266-fa664d37247e",
+  "deployedVersion": "b8c7e1bb-f730-469e-92da-8b989ec2a53b",
+  "deploymentId": "b502715e-af84-46a3-a1ce-a36a2c419115",
+  "deployedAt": "2026-09-12T13:59:54.005Z",
+  "sourceSha256": "1b74f5d60d0f215470a417268e00a5eed24067fa8d984ab4a08d3fbfaa76701f",
+  "baselineSourceSha256": "5d4d78c93f1bda934c106c9274026be7c60cad89e16f8b4f52c407bbb7ab6c12",
+  "changedRoutes": [
+    "/stage",
+    "/stage-sw.js",
+    "/stage.html",
+    "/style.css"
+  ],
+  "baselineRouteHashes": {
+    "/stage": "e5b6b2fe9ede294acdd1a25241672d1e511342170585d693a576c9565d801632",
+    "/stage-sw.js": "59456d10d27406356a35102b880cd09042ae06c3434f91d42aa4a3cb647083e2",
+    "/stage.html": "e5b6b2fe9ede294acdd1a25241672d1e511342170585d693a576c9565d801632",
+    "/style.css": "aa7dd138fa1829003d0537f82d8ebe7dc499b4214ec0184009a705573f48a45d"
+  },
+  "deployedRouteHashes": {
+    "/stage": "ed5e9c46f0e9c23c4bc9a2aa533ceca6579bec370cca05f772ef95fa0446039f",
+    "/stage-sw.js": "68bf10fca711a6298324f4f55cad30c51462cd3b536e6b241ee27179684cc836",
+    "/stage.html": "ed5e9c46f0e9c23c4bc9a2aa533ceca6579bec370cca05f772ef95fa0446039f",
+    "/style.css": "719366b46b6ea5abdf67795f5aa3e8e34eb5382e2c4e2ef143d8dbc49ca98ed6"
+  }
+}

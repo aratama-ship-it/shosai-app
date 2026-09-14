@@ -1,0 +1,20 @@
+{
+  "candidate_sha256": "df03c4228c1fb3c9ff1bc8a9703e62dba3e80e6c29d5a8e6d8fb1a5b6ff9f10d",
+  "current_beta_reference": "Cloudflare active version b8c7e1bb-f730-469e-92da-8b989ec2a53b, deployment b502715e-af84-46a3-a1ce-a36a2c419115, downloaded Worker SHA-256 1b74f5d60d0f215470a417268e00a5eed24067fa8d984ab4a08d3fbfaa76701f",
+  "warning_presented": true,
+  "checks": {
+    "existing_features": true,
+    "project_roundtrip": true,
+    "audio_continuity": true,
+    "storage_failure_safety": true,
+    "update_and_rollback": true,
+    "target_browsers": true
+  },
+  "unresolved_risks": [],
+  "evidence": [
+    {
+      "path": "verification.md",
+      "sha256": "0732e19e2bd1a27b49d29ab620facfda1c46dd69276cd618c2447bff5fd7a2f7"
+    }
+  ]
+}

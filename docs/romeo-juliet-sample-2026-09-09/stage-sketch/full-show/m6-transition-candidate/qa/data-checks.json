@@ -1,0 +1,51 @@
+{
+  "status": "pass",
+  "nativeSchemaValid": true,
+  "sourceSha256": "7086d75a843a0ea7253d3dd630defe994cf491432aabcc19e7774d5000a5d780",
+  "candidateSha256": "815971b60c2604a29719784a3a84e0a7594299a4fb5066adb615260849b65735",
+  "ownerApprovalSha256": "cb81b4f5ef0c4667f95de020e7252efc4196fe023d80d05008416de71aed8334",
+  "approvalStatus": "owner_approved_for_sample",
+  "approvedChoices": {
+    "M6-C1": "A",
+    "M6-C2": "A",
+    "M6-C3": "A"
+  },
+  "sections": 3,
+  "sourceScenes": 28,
+  "candidateScenes": 31,
+  "insertedTechnicalFrames": 3,
+  "cast": 10,
+  "sets": 13,
+  "maskProgression": [
+    4,
+    8,
+    10,
+    10
+  ],
+  "barProgression": [
+    0,
+    1,
+    1,
+    1
+  ],
+  "carrierRoles": [
+    "FRIAR_LAWRENCE",
+    "FRIAR_JOHN"
+  ],
+  "nullTimingFrames": 4,
+  "decisionGroups": 3,
+  "unknownsPreserved": 5,
+  "productChanges": 0,
+  "sourceSampleChanges": 0,
+  "realCaseEvidence": 0,
+  "warnings": [
+    "Q02.1｜暗転・第一波（サンプル採用）: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q02.2｜バー搬入（サンプル採用）: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q08.1｜ロミオを呼び止め、追う: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q10.2｜傷を見て、即座に報復: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q11.2｜一夜を過ごした二人の別れ: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q15.2｜手紙とロミオの入れ違い: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q18｜人の川がほどける: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q19.1｜最初の一人が中央へ: 動線は演出検討用で、衝突しないことを保証しません。"
+  ]
+}

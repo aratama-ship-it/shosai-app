@@ -1,0 +1,1463 @@
+{
+  "schema": "romeo-juliet.condensed-script-draft.v1",
+  "id": "RJ-COND-02-SCRIPT",
+  "sceneId": "RJ-COND-02",
+  "sceneNumber": 2,
+  "title": "二人の約束から、届かない手紙へ",
+  "updated": "2026-09-11",
+  "status": "assistant_composition_draft_for_user_revision",
+  "sourceScenes": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "sourceEntryIds": [
+    "RJ-NOTE-0027",
+    "RJ-NOTE-0028",
+    "RJ-NOTE-0029",
+    "RJ-NOTE-0030",
+    "RJ-NOTE-0035"
+  ],
+  "sourceScript": "../../scene-samples/draft.json",
+  "sourceScriptSha256": "c58b5f4b1f32988fab0770d23be08acf11be148294d3da477d197bb377568a23",
+  "sourceDirections": "../../direction-notes/scene-notes.json",
+  "sourceStructure": "../outline.json",
+  "performerCount": 10,
+  "roles": [
+    {
+      "id": "ROMEO",
+      "name": "ロミオ"
+    },
+    {
+      "id": "JULIET",
+      "name": "ジュリエット"
+    },
+    {
+      "id": "FRIAR_LAWRENCE",
+      "name": "ロレンス修道士"
+    },
+    {
+      "id": "BENVOLIO",
+      "name": "ベンヴォーリオ"
+    },
+    {
+      "id": "TYBALT",
+      "name": "ティボルト"
+    },
+    {
+      "id": "MERCUTIO",
+      "name": "マーキューシオ"
+    },
+    {
+      "id": "NURSE",
+      "name": "乳母"
+    },
+    {
+      "id": "CAPULET",
+      "name": "キャピュレット"
+    },
+    {
+      "id": "MONTAGUE",
+      "name": "モンタギュー"
+    },
+    {
+      "id": "FRIAR_JOHN",
+      "name": "ジョン修道士"
+    }
+  ],
+  "appImportCompatible": false,
+  "appliedToStageSketch": false,
+  "durationSeconds": null,
+  "editorialPolicy": "既存の日本語下訳を台詞のまとまりとして再掲し、行動でつなぐ構成稿。新しい台詞とト書きは脚色・演出案であり、原文との一対一の全訳ではない。本人の最終推敲前。",
+  "premise": "約束で重ねた手が、争いで離れ、届くはずの手紙もすれ違う。三つの流れを、一つの大場面として続ける。",
+  "spatialConvention": "左右は客席から見た方向。家の場所は左＝モンタギュー、右＝キャピュレット。街路・マントヴァ・旅路を両家の陣地と同一視しない。次の第3場面では客席左が墓所になる。",
+  "phaseGroups": [
+    {
+      "id": "RJ-PHASE-PROMISE",
+      "title": "約束と結婚",
+      "summary": "右斜め手前の二人が別れて中央のロレンスへ。背を向けた人々の前で、秘密の結婚を結ぶ。",
+      "cueIds": [
+        "RJ-COND-02-A",
+        "RJ-COND-02-B",
+        "RJ-COND-02-C"
+      ],
+      "transitionOut": "結婚を終えた二人の焦点を解き、ティボルトがロミオを呼び止める動きへ移る。"
+    },
+    {
+      "id": "RJ-PHASE-SEPARATION",
+      "title": "決闘と別れ",
+      "summary": "追跡と決闘、マーキューシオの負傷、その瞬間の報復。追放を受けたロミオは、夜明けにジュリエットと別れる。",
+      "cueIds": [
+        "RJ-COND-03-A",
+        "RJ-COND-03-B",
+        "RJ-COND-03-C",
+        "RJ-COND-03-D"
+      ],
+      "transitionOut": "ロミオが去った後、ジュリエットを客席右に残し、父キャピュレットとの対立へつなぐ。"
+    },
+    {
+      "id": "RJ-PHASE-LETTER",
+      "title": "仮死と届かない手紙",
+      "summary": "父の結婚要求、ロレンスの計画、服薬と葬送を続ける。使者とロミオの入れ違いをサーカス的な追いかけっこで見せる。",
+      "cueIds": [
+        "RJ-COND-04-A",
+        "RJ-COND-04-B",
+        "RJ-COND-04-C",
+        "RJ-COND-04-D"
+      ],
+      "transitionOut": "手紙を持つ使者とロミオが離れ、次の大場面の墓所へつなぐ。"
+    }
+  ],
+  "cues": [
+    {
+      "id": "RJ-COND-02-A",
+      "title": "二人だけの窓辺",
+      "sourceScenes": [
+        3
+      ],
+      "place": "夜。客席から見て右斜め手前／ジュリエットの窓辺",
+      "trigger": "宴の人々が退場し、二人だけが残る。",
+      "nextTrigger": "探す声を受け、二人は手を離す。ジュリエットは客席右の袖へ、ロミオは客席左の暗がりへ別々に退き、暗転せず中央のロレンスへ焦点を移す。",
+      "durationSeconds": null,
+      "namedRoleIds": [
+        "ROMEO",
+        "JULIET"
+      ],
+      "ensemblePerformerRoleIds": [],
+      "offstageVoiceRoleIds": [],
+      "castMeaning": "このキュー内で登場する役の一覧。登退場はト書きに従い、全員が同時にいるとは限らない。",
+      "userDirectionEntryIds": [
+        "RJ-NOTE-0003",
+        "RJ-NOTE-0029",
+        "RJ-NOTE-0030",
+        "RJ-NOTE-0035"
+      ],
+      "lines": [
+        {
+          "kind": "action",
+          "text": "仮面の人々はもういない。右斜め手前、ロミオとジュリエットだけに焦点が残る。二人の距離は近い。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": [
+              "RJ-NOTE-0002",
+              "RJ-NOTE-0003"
+            ]
+          },
+          "id": "RJ-COND-02-A-L01"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ジュリエット",
+          "speakerRoleId": "JULIET",
+          "text": "ロミオ、あと少しだけ。それで、本当におやすみ。\nあなたの愛が誠実で、\n結婚するつもりがあるのなら、\n明日、私がそちらへ送る人に伝えて。\nいつ、どこで式を挙げるのか。\n私の持つものすべてを、あなたに預けます。\nどこへでも、あなたについていく。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-03",
+            "sourceLines": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "rawLines": [
+              "ジュリエット　ロミオ、あと少しだけ。それで、本当におやすみ。",
+              "　あなたの愛が誠実で、",
+              "　結婚するつもりがあるのなら、",
+              "　明日、私がそちらへ送る人に伝えて。",
+              "　いつ、どこで式を挙げるのか。",
+              "　私の持つものすべてを、あなたに預けます。",
+              "　どこへでも、あなたについていく。"
+            ]
+          },
+          "id": "RJ-COND-02-A-L02"
+        },
+        {
+          "id": "RJ-COND-02-A-L03",
+          "kind": "dialogue",
+          "speaker": "大道具さん",
+          "speakerRoleId": null,
+          "voiceId": "RJ-VOICE-SEARCH",
+          "text": "（袖から、大声で探す）ジュリエット！　ジュリエット、どこにいるの！",
+          "delivery": "offstage",
+          "provenance": {
+            "kind": "user_directed_dialogue_draft",
+            "userDirectionEntryIds": [
+              "RJ-NOTE-0029",
+              "RJ-NOTE-0030"
+            ],
+            "sourceSampleId": "RJ-SAMPLE-03",
+            "adaptedFromSourceLines": [
+              8
+            ],
+            "note": "袖から大声で探す演出と、大道具担当が発声することは本人指示。具体的な呼びかけの文言はAIによる台詞案。"
+          }
+        },
+        {
+          "kind": "action",
+          "text": "自分を探す声にジュリエットが気づく。二人はつないだ手を一度だけ離し、互いを見たまま、ジュリエットは声のする客席右の袖へ、ロミオは客席左の暗がりへ別々に退く。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": [
+              "RJ-NOTE-0029",
+              "RJ-NOTE-0035"
+            ]
+          },
+          "id": "RJ-COND-02-A-L04"
+        }
+      ],
+      "directorNote": "大道具さんが舞台袖から大声でジュリエットを探す。姿は見せず、二人を見つけた声にはしない。静かな二人の時間へ、その声が届く。二人は手を離し、ジュリエットは客席右の袖、ロミオは客席左の暗がりへ別々に退く。暗転は使わない。発声は大道具担当とし、具体的な担当者は未定。台詞の文言と、歩数・速度は案。",
+      "offstageVoices": [
+        {
+          "id": "RJ-VOICE-SEARCH",
+          "label": "大道具さん（袖）",
+          "characterRoleId": null,
+          "performerRoleId": null,
+          "performerPoolRoleIds": [],
+          "additionalPerformerRequired": false,
+          "location": "舞台袖",
+          "delivery": "大声でジュリエットを探す。姿は見せず、二人を見つけた声にはしない。",
+          "performerCategory": "crew",
+          "crewDepartment": "大道具",
+          "assignmentNote": "発声は大道具担当。具体的な担当者は未定。",
+          "sourceEntryIds": [
+            "RJ-NOTE-0030"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RJ-COND-02-B",
+      "title": "背中の列と中央のロレンス",
+      "sourceScenes": [
+        3,
+        4
+      ],
+      "place": "翌日。中央／ロレンスのもと",
+      "trigger": "二人が手を離して別々に退いた後、ロレンスが中央で待つ。",
+      "nextTrigger": "七名の背中の列が舞台奥で整い、ロミオとジュリエットが別々の斜めからロレンスのもとへ入る。",
+      "durationSeconds": null,
+      "namedRoleIds": [
+        "FRIAR_LAWRENCE"
+      ],
+      "ensemblePerformerRoleIds": [
+        "BENVOLIO",
+        "TYBALT",
+        "MERCUTIO",
+        "NURSE",
+        "CAPULET",
+        "MONTAGUE",
+        "FRIAR_JOHN"
+      ],
+      "offstageVoiceRoleIds": [],
+      "castMeaning": "このキュー内で登場する役の一覧。登退場はト書きに従い、全員が同時にいるとは限らない。",
+      "userDirectionEntryIds": [
+        "RJ-NOTE-0004",
+        "RJ-NOTE-0035"
+      ],
+      "lines": [
+        {
+          "kind": "action",
+          "text": "右斜め手前の光を静かに落とし、暗転せず中央のロレンスへ移す。一夜を越え、翌日の時間になる。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": [
+              "RJ-NOTE-0004",
+              "RJ-NOTE-0035"
+            ]
+          },
+          "id": "RJ-COND-02-B-L01"
+        },
+        {
+          "kind": "action",
+          "text": "ほかの七名が客席へ背中を向けたまま左右から横に滑り、ロレンスの奥で舞台奥の一列となる。ロミオとジュリエットはまだ入らない。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": [
+              "RJ-NOTE-0004",
+              "RJ-NOTE-0035"
+            ]
+          },
+          "id": "RJ-COND-02-B-L02"
+        }
+      ],
+      "directorNote": "暗転で場を切らず、光と出入りで翌日へ進める。ロレンスを先に置き、七名は客席に背中を向けたまま左右から横に滑って一列となる。七名は役名の人物ではなく、「見ていない人々」を担う。歩数・速度・光の変化量は未設定。",
+      "ensembleDisplayNote": "背を向ける七名：ロミオ・ジュリエット・ロレンスの担当以外の出演者。ここでは匿名の人々として並ぶ。"
+    },
+    {
+      "id": "RJ-COND-02-C",
+      "title": "秘密の結婚",
+      "sourceScenes": [
+        4
+      ],
+      "place": "中央／秘密の結婚",
+      "trigger": "ロレンスと背中の列を先に置き、ロミオは客席左斜め、ジュリエットは客席右斜めから別々に現れる。",
+      "nextTrigger": "街を行くロミオに、ティボルトが声をかける。",
+      "durationSeconds": null,
+      "namedRoleIds": [
+        "ROMEO",
+        "JULIET",
+        "FRIAR_LAWRENCE"
+      ],
+      "ensemblePerformerRoleIds": [
+        "BENVOLIO",
+        "TYBALT",
+        "MERCUTIO",
+        "NURSE",
+        "CAPULET",
+        "MONTAGUE",
+        "FRIAR_JOHN"
+      ],
+      "offstageVoiceRoleIds": [],
+      "castMeaning": "このキュー内で登場する役の一覧。登退場はト書きに従い、全員が同時にいるとは限らない。",
+      "userDirectionEntryIds": [
+        "RJ-NOTE-0004",
+        "RJ-NOTE-0035"
+      ],
+      "lines": [
+        {
+          "kind": "action",
+          "text": "ロミオは客席左斜め、ジュリエットは客席右斜めから別々に中央へ入る。二人はロレンスの前で初めて向き合う。七名は背を向けたまま、二人を見ない。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": [
+              "RJ-NOTE-0004",
+              "RJ-NOTE-0035"
+            ]
+          },
+          "id": "RJ-COND-02-C-L01"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ロミオ",
+          "speakerRoleId": "ROMEO",
+          "text": "ジュリエット、あなたも私と同じほど喜んでいて、\nそれを私よりうまく言えるなら、\nその声で、この空気まで甘くしてほしい。\n今、二人が分かち合う幸せを、音楽のように聞かせて。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-04",
+            "sourceLines": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "rawLines": [
+              "ロミオ　ジュリエット、あなたも私と同じほど喜んでいて、",
+              "　それを私よりうまく言えるなら、",
+              "　その声で、この空気まで甘くしてほしい。",
+              "　今、二人が分かち合う幸せを、音楽のように聞かせて。"
+            ]
+          },
+          "id": "RJ-COND-02-C-L02"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ジュリエット",
+          "speakerRoleId": "JULIET",
+          "text": "言葉より豊かな想いは、飾りで大きく見せたりしない。\n数えられるうちは、まだ乏しいのでしょう。\n私の愛はもう、その半分さえ数えきれない。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-04",
+            "sourceLines": [
+              5,
+              6,
+              7
+            ],
+            "rawLines": [
+              "ジュリエット　言葉より豊かな想いは、飾りで大きく見せたりしない。",
+              "　数えられるうちは、まだ乏しいのでしょう。",
+              "　私の愛はもう、その半分さえ数えきれない。"
+            ]
+          },
+          "id": "RJ-COND-02-C-L03"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ロレンス修道士",
+          "speakerRoleId": "FRIAR_LAWRENCE",
+          "text": "さあ、一緒に来なさい。式を始めよう。\n教会が二人を一つに結ぶまでは、\n二人きりにしておくわけにはいかないからね。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-04",
+            "sourceLines": [
+              8,
+              9,
+              10
+            ],
+            "rawLines": [
+              "ロレンス修道士　さあ、一緒に来なさい。式を始めよう。",
+              "　教会が二人を一つに結ぶまでは、",
+              "　二人きりにしておくわけにはいかないからね。"
+            ]
+          },
+          "id": "RJ-COND-02-C-L04"
+        },
+        {
+          "kind": "action",
+          "text": "ロレンスが二人の手を重ね、結婚を結ぶ。二人は一度だけ互いの顔を見る。背中の列は、その瞬間も振り返らない。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": [
+              "RJ-NOTE-0004",
+              "RJ-NOTE-0035"
+            ]
+          },
+          "id": "RJ-COND-02-C-L05"
+        },
+        {
+          "kind": "action",
+          "text": "二人の手が離れると、背中の列も端からほどけて退場する。ジュリエットとロレンスが去り、ロミオは街へ。ティボルト役とマーキューシオ役は群衆の役を解いてから、次の動きへ入る。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-02-C-L06"
+        }
+      ],
+      "directorNote": "ロミオとジュリエットは別々の斜めから入り、ロレンスの前で初めて向き合う。七名は結婚が終わるまで振り返らず、式を目撃したことにはしない。手を重ねて婚姻の成立を示す動きと、列がほどける順番は今回のつなぎ案。",
+      "ensembleDisplayNote": "背を向ける七名：ロミオ・ジュリエット・ロレンスの担当以外の出演者。ここでは匿名の人々として並ぶ。"
+    },
+    {
+      "id": "RJ-COND-03-A",
+      "title": "追跡と見失い",
+      "sourceScenes": [
+        5
+      ],
+      "place": "結婚後の街路／左右を両家の陣地として分けない",
+      "trigger": "ティボルトの呼び止め。",
+      "nextTrigger": "ティボルトがロミオを見失い、足を止める。",
+      "durationSeconds": null,
+      "namedRoleIds": [
+        "ROMEO",
+        "TYBALT"
+      ],
+      "ensemblePerformerRoleIds": [],
+      "offstageVoiceRoleIds": [],
+      "castMeaning": "このキュー内で登場する役の一覧。登退場はト書きに従い、全員が同時にいるとは限らない。",
+      "userDirectionEntryIds": [
+        "RJ-NOTE-0010"
+      ],
+      "lines": [
+        {
+          "kind": "dialogue",
+          "speaker": "ティボルト",
+          "speakerRoleId": "TYBALT",
+          "text": "ロミオ。おまえを呼ぶ名は、一つしかない――悪党だ。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-05",
+            "sourceLines": [
+              1
+            ],
+            "rawLines": [
+              "ティボルト　ロミオ。おまえを呼ぶ名は、一つしかない――悪党だ。"
+            ]
+          },
+          "id": "RJ-COND-03-A-L01"
+        },
+        {
+          "kind": "action",
+          "text": "ロミオは答えずに立ち去る。ティボルトが追うが、舞台の反対側で見失う",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-05",
+            "sourceLines": [
+              2
+            ],
+            "rawLines": [
+              "（ロミオは答えずに立ち去る。ティボルトが追うが、舞台の反対側で見失う）"
+            ]
+          },
+          "id": "RJ-COND-03-A-L02"
+        }
+      ],
+      "directorNote": "結婚したロミオが争いを避けることを、答えずに離れる行動で見せる。"
+    },
+    {
+      "id": "RJ-COND-03-B",
+      "title": "マーキューシオの決闘",
+      "sourceScenes": [
+        5
+      ],
+      "place": "同じ街路",
+      "trigger": "探すティボルトの前にマーキューシオが現れる。",
+      "nextTrigger": "戦いを見てロミオが戻り、二人の間へ入る。",
+      "durationSeconds": null,
+      "namedRoleIds": [
+        "MERCUTIO",
+        "TYBALT"
+      ],
+      "ensemblePerformerRoleIds": [],
+      "offstageVoiceRoleIds": [],
+      "castMeaning": "このキュー内で登場する役の一覧。登退場はト書きに従い、全員が同時にいるとは限らない。",
+      "userDirectionEntryIds": [
+        "RJ-NOTE-0009",
+        "RJ-NOTE-0010"
+      ],
+      "lines": [
+        {
+          "kind": "action",
+          "text": "ティボルトがなお周囲を探していると、マーキューシオが現れる。二人は向き合い、剣を抜く",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-05",
+            "sourceLines": [
+              3
+            ],
+            "rawLines": [
+              "（ティボルトがなお周囲を探していると、マーキューシオが現れる。二人は向き合い、剣を抜く）"
+            ]
+          },
+          "id": "RJ-COND-03-B-L01"
+        },
+        {
+          "kind": "action",
+          "text": "マーキューシオとティボルト、激しく剣を交える",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-05",
+            "sourceLines": [
+              4
+            ],
+            "rawLines": [
+              "（マーキューシオとティボルト、激しく剣を交える）"
+            ]
+          },
+          "id": "RJ-COND-03-B-L02"
+        }
+      ],
+      "directorNote": "追跡の動きが止まってから、新しい対面が生まれる。実際の技や殺陣の長さは未設定。"
+    },
+    {
+      "id": "RJ-COND-03-C",
+      "title": "死と即時の報復",
+      "sourceScenes": [
+        5
+      ],
+      "place": "同じ街路",
+      "trigger": "ロミオが止めに入る。",
+      "nextTrigger": "ティボルトが倒れ、マーキューシオの身体から力が抜ける。",
+      "durationSeconds": null,
+      "namedRoleIds": [
+        "ROMEO",
+        "MERCUTIO",
+        "TYBALT",
+        "BENVOLIO"
+      ],
+      "ensemblePerformerRoleIds": [],
+      "offstageVoiceRoleIds": [],
+      "castMeaning": "このキュー内で登場する役の一覧。登退場はト書きに従い、全員が同時にいるとは限らない。",
+      "userDirectionEntryIds": [
+        "RJ-NOTE-0009",
+        "RJ-NOTE-0010",
+        "RJ-NOTE-0011"
+      ],
+      "lines": [
+        {
+          "kind": "action",
+          "text": "ベンヴォーリオが争いに気づいて近づく。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-03-C-L01"
+        },
+        {
+          "kind": "action",
+          "text": "ロミオが戻り、二人の間へ入る。その腕の下からティボルトの刃がマーキューシオに届く",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-05",
+            "sourceLines": [
+              5
+            ],
+            "rawLines": [
+              "（ロミオが戻り、二人の間へ入る。その腕の下からティボルトの刃がマーキューシオに届く）"
+            ]
+          },
+          "id": "RJ-COND-03-C-L02"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "マーキューシオ",
+          "speakerRoleId": "MERCUTIO",
+          "text": "両家とも、疫病に呑まれろ。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-05",
+            "sourceLines": [
+              6
+            ],
+            "rawLines": [
+              "マーキューシオ　両家とも、疫病に呑まれろ。"
+            ]
+          },
+          "id": "RJ-COND-03-C-L03"
+        },
+        {
+          "kind": "action",
+          "text": "ベンヴォーリオが崩れるマーキューシオを支える。ロミオはその傷を見た瞬間、ティボルトへ向き直る",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-05",
+            "sourceLines": [
+              7
+            ],
+            "rawLines": [
+              "（ベンヴォーリオが崩れるマーキューシオを支える。ロミオはその傷を見た瞬間、ティボルトへ向き直る）"
+            ]
+          },
+          "id": "RJ-COND-03-C-L04"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ロミオ",
+          "speakerRoleId": "ROMEO",
+          "text": "ティボルト、おまえか私か、どちらかがあいつと行く。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-05",
+            "sourceLines": [
+              8
+            ],
+            "rawLines": [
+              "ロミオ　ティボルト、おまえか私か、どちらかがあいつと行く。"
+            ]
+          },
+          "id": "RJ-COND-03-C-L05"
+        },
+        {
+          "kind": "action",
+          "text": "ロミオ、間を置かずティボルトへ斬りかかる。二人、剣を交える",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-05",
+            "sourceLines": [
+              9
+            ],
+            "rawLines": [
+              "（ロミオ、間を置かずティボルトへ斬りかかる。二人、剣を交える）"
+            ]
+          },
+          "id": "RJ-COND-03-C-L06"
+        },
+        {
+          "kind": "action",
+          "text": "ティボルトが倒れる。ベンヴォーリオの腕の中で、マーキューシオも力を失う",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-05",
+            "sourceLines": [
+              10
+            ],
+            "rawLines": [
+              "（ティボルトが倒れる。ベンヴォーリオの腕の中で、マーキューシオも力を失う）"
+            ]
+          },
+          "id": "RJ-COND-03-C-L07"
+        }
+      ],
+      "directorNote": "順序は「ロミオの介入 → 負傷 → 傷を見て即時の報復」。死亡の報告を待つ間や、ティボルトが再登場する間は置かない。元の下訳にあるこの順序へ統合構成の要約も合わせる。"
+    },
+    {
+      "id": "RJ-COND-03-D",
+      "title": "追放から夜明けへ",
+      "sourceScenes": [
+        6
+      ],
+      "place": "街路 → その夜のジュリエットの部屋 → 夜明け",
+      "trigger": "二人の死の後、裁きが下った時間へ進む。",
+      "nextTrigger": "ロミオの退場を見届けてから、父キャピュレットが入る。",
+      "durationSeconds": null,
+      "namedRoleIds": [
+        "ROMEO",
+        "JULIET",
+        "BENVOLIO",
+        "MERCUTIO",
+        "TYBALT"
+      ],
+      "ensemblePerformerRoleIds": [],
+      "offstageVoiceRoleIds": [],
+      "castMeaning": "このキュー内で登場する役の一覧。登退場はト書きに従い、全員が同時にいるとは限らない。",
+      "userDirectionEntryIds": [
+        "RJ-NOTE-0012"
+      ],
+      "lines": [
+        {
+          "kind": "action",
+          "text": "二つの身体とロミオに短い静止。ロミオが離れたところで焦点を移し、倒れた二人は見せ場を終えて退場する。ベンヴォーリオが、裁きの知らせを受けた時間としてロミオに向き直る。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-03-D-L01"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ベンヴォーリオ",
+          "speakerRoleId": "BENVOLIO",
+          "delivery": "onstage",
+          "text": "大公の裁きが出た。ロミオ、ヴェローナから追放だ。",
+          "provenance": {
+            "kind": "assistant_bridge_dialogue"
+          },
+          "id": "RJ-COND-03-D-L02"
+        },
+        {
+          "kind": "action",
+          "text": "ベンヴォーリオが去る。右斜め手前にジュリエットが現れ、ロミオが密かに戻って手を取る。一度抱き合い、光が夜から明け方へ静かに移る。この間に、新婚の二人が共に過ごす一夜を置く。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-03-D-L03"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ジュリエット",
+          "speakerRoleId": "JULIET",
+          "text": "もう行ってしまうの？　まだ夜明けには早い。あれはヒバリではなく、夜のナイチンゲールよ。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-06",
+            "sourceLines": [
+              1
+            ],
+            "rawLines": [
+              "ジュリエット　もう行ってしまうの？　まだ夜明けには早い。あれはヒバリではなく、夜のナイチンゲールよ。"
+            ]
+          },
+          "id": "RJ-COND-03-D-L04"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ロミオ",
+          "speakerRoleId": "ROMEO",
+          "text": "ヒバリだ。朝を告げる鳥の声だ。\n行けば生きられる。ここに残れば、死ぬ。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-06",
+            "sourceLines": [
+              2,
+              3
+            ],
+            "rawLines": [
+              "ロミオ　ヒバリだ。朝を告げる鳥の声だ。",
+              "　行けば生きられる。ここに残れば、死ぬ。"
+            ]
+          },
+          "id": "RJ-COND-03-D-L05"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ジュリエット",
+          "speakerRoleId": "JULIET",
+          "text": "朝よ。行って。あの鳥の声が、私たちを引き離していく。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-06",
+            "sourceLines": [
+              4
+            ],
+            "rawLines": [
+              "ジュリエット　朝よ。行って。あの鳥の声が、私たちを引き離していく。"
+            ]
+          },
+          "id": "RJ-COND-03-D-L06"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ロミオ",
+          "speakerRoleId": "ROMEO",
+          "text": "光が増すほど、私たちの悲しみは暗くなる。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-06",
+            "sourceLines": [
+              5
+            ],
+            "rawLines": [
+              "ロミオ　光が増すほど、私たちの悲しみは暗くなる。"
+            ]
+          },
+          "id": "RJ-COND-03-D-L07"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ジュリエット",
+          "speakerRoleId": "JULIET",
+          "text": "窓よ、朝を入れて。代わりに、私の命を外へ出して。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-06",
+            "sourceLines": [
+              6
+            ],
+            "rawLines": [
+              "ジュリエット　窓よ、朝を入れて。代わりに、私の命を外へ出して。"
+            ]
+          },
+          "id": "RJ-COND-03-D-L08"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ロミオ",
+          "speakerRoleId": "ROMEO",
+          "text": "さらば。最後に口づけを。それから降りる。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-06",
+            "sourceLines": [
+              7
+            ],
+            "rawLines": [
+              "ロミオ　さらば。最後に口づけを。それから降りる。"
+            ]
+          },
+          "id": "RJ-COND-03-D-L09"
+        },
+        {
+          "kind": "action",
+          "text": "ロミオ、窓から下へ降りる",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-06",
+            "sourceLines": [
+              8
+            ],
+            "rawLines": [
+              "（ロミオ、窓から下へ降りる）"
+            ]
+          },
+          "id": "RJ-COND-03-D-L10"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ジュリエット",
+          "speakerRoleId": "JULIET",
+          "text": "また会えると思う？",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-06",
+            "sourceLines": [
+              9
+            ],
+            "rawLines": [
+              "ジュリエット　また会えると思う？"
+            ]
+          },
+          "id": "RJ-COND-03-D-L11"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ロミオ",
+          "speakerRoleId": "ROMEO",
+          "text": "きっと会える。今日の悲しみも、いつか昔話になる。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-06",
+            "sourceLines": [
+              10
+            ],
+            "rawLines": [
+              "ロミオ　きっと会える。今日の悲しみも、いつか昔話になる。"
+            ]
+          },
+          "id": "RJ-COND-03-D-L12"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ジュリエット",
+          "speakerRoleId": "JULIET",
+          "text": "嫌な予感がする。今のあなたが、墓の底にいる人のように見える。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-06",
+            "sourceLines": [
+              11
+            ],
+            "rawLines": [
+              "ジュリエット　嫌な予感がする。今のあなたが、墓の底にいる人のように見える。"
+            ]
+          },
+          "id": "RJ-COND-03-D-L13"
+        },
+        {
+          "kind": "action",
+          "text": "ロミオはジュリエットから離れ、追放先のマントヴァへ去る。ジュリエットだけが客席右に残る。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-03-D-L14"
+        }
+      ],
+      "directorNote": "追放の一言は今回の補筆。ベンヴォーリオは判決を伝える役で、裁く人物ではない。二人が同居している描写ではなく、追放前の一夜。窓の高低差を実物で作るかは未定。"
+    },
+    {
+      "id": "RJ-COND-04-A",
+      "title": "二人だけの圧力",
+      "sourceScenes": [
+        7
+      ],
+      "place": "その朝。客席右／キャピュレット家",
+      "trigger": "父がジュリエットへ近づく。",
+      "nextTrigger": "父が退場してから、中央にロレンスが現れる。",
+      "durationSeconds": null,
+      "namedRoleIds": [
+        "JULIET",
+        "CAPULET"
+      ],
+      "ensemblePerformerRoleIds": [],
+      "offstageVoiceRoleIds": [],
+      "castMeaning": "このキュー内で登場する役の一覧。登退場はト書きに従い、全員が同時にいるとは限らない。",
+      "userDirectionEntryIds": [
+        "RJ-NOTE-0013",
+        "RJ-NOTE-0014"
+      ],
+      "lines": [
+        {
+          "kind": "action",
+          "text": "舞台にいるのはジュリエットと父キャピュレットだけ。父が近づくほど、彼女の逃げ道が狭くなる。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": [
+              "RJ-NOTE-0013",
+              "RJ-NOTE-0014"
+            ]
+          },
+          "id": "RJ-COND-04-A-L01"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ジュリエット",
+          "speakerRoleId": "JULIET",
+          "text": "結婚相手を選んでくれたことには感謝します。\nでも、望まない結婚を喜ぶことはできません。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-07",
+            "sourceLines": [
+              1,
+              2
+            ],
+            "rawLines": [
+              "ジュリエット　結婚相手を選んでくれたことには感謝します。",
+              "　でも、望まない結婚を喜ぶことはできません。"
+            ]
+          },
+          "id": "RJ-COND-04-A-L02"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "キャピュレット",
+          "speakerRoleId": "CAPULET",
+          "text": "何だ、その理屈は。感謝するだの、誇れないだの。\n木曜日にはパリスと教会へ行け。\n嫌なら、引きずってでも連れていく。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-07",
+            "sourceLines": [
+              3,
+              4,
+              5
+            ],
+            "rawLines": [
+              "キャピュレット　何だ、その理屈は。感謝するだの、誇れないだの。",
+              "　木曜日にはパリスと教会へ行け。",
+              "　嫌なら、引きずってでも連れていく。"
+            ]
+          },
+          "id": "RJ-COND-04-A-L03"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ジュリエット",
+          "speakerRoleId": "JULIET",
+          "text": "お父さま、ひざまずいてお願いします。\nどうか落ち着いて、ひと言だけでも聞いてください。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-07",
+            "sourceLines": [
+              6,
+              7
+            ],
+            "rawLines": [
+              "ジュリエット　お父さま、ひざまずいてお願いします。",
+              "　どうか落ち着いて、ひと言だけでも聞いてください。"
+            ]
+          },
+          "id": "RJ-COND-04-A-L04"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "キャピュレット",
+          "speakerRoleId": "CAPULET",
+          "text": "この聞き分けのない、親不孝者め！\n木曜に教会へ行くか、二度と私の前に顔を出すな。\n口を開くな。言い返すな。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-07",
+            "sourceLines": [
+              8,
+              9,
+              10
+            ],
+            "rawLines": [
+              "キャピュレット　この聞き分けのない、親不孝者め！",
+              "　木曜に教会へ行くか、二度と私の前に顔を出すな。",
+              "　口を開くな。言い返すな。"
+            ]
+          },
+          "id": "RJ-COND-04-A-L05"
+        },
+        {
+          "kind": "action",
+          "text": "父は返事を待たずに去る。ジュリエットは、父が消えた方ではなく、中央のロレンスの場所へ向かう。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-04-A-L06"
+        }
+      ],
+      "directorNote": "乳母や群衆をこの対立に加えない。パリスは名前だけ。父が距離を詰める動きは今回の案。"
+    },
+    {
+      "id": "RJ-COND-04-B",
+      "title": "薬と計画",
+      "sourceScenes": [
+        8
+      ],
+      "place": "中央／ロレンスのもと。ロミオはマントヴァにいる",
+      "trigger": "ジュリエットがロレンスへ助けを求める。",
+      "nextTrigger": "ジョンの出発を見せてから、右のジュリエットへ焦点を戻す。",
+      "durationSeconds": null,
+      "namedRoleIds": [
+        "JULIET",
+        "FRIAR_LAWRENCE",
+        "FRIAR_JOHN"
+      ],
+      "ensemblePerformerRoleIds": [],
+      "offstageVoiceRoleIds": [],
+      "castMeaning": "このキュー内で登場する役の一覧。登退場はト書きに従い、全員が同時にいるとは限らない。",
+      "userDirectionEntryIds": [],
+      "lines": [
+        {
+          "kind": "action",
+          "text": "ロレンスが小瓶を示す。ジュリエットはその瓶と、彼の目を交互に見る。ロミオはここにはいない。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-04-B-L01"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ロレンス修道士",
+          "speakerRoleId": "FRIAR_LAWRENCE",
+          "text": "その借り物の死の姿は、四十二時間続く。\nそれから、心地よい眠りから覚めるように目を覚ます。\n朝、花婿が迎えに来たとき、皆はおまえが死んだと思う。\n晴れ着のまま、覆いもかけず棺台に乗せられ、\nキャピュレット家の眠る古い墓所へ運ばれるだろう。\nそれまでに、ロミオには手紙で計画を知らせる。\n私とロミオで目覚めを待ち、その夜、彼がマントヴァへ連れ出す。\nこれで今の苦境から抜け出せる。\nただし、気まぐれや恐れに、決意をくじかれないことだ。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-08",
+            "sourceLines": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "rawLines": [
+              "ロレンス修道士　その借り物の死の姿は、四十二時間続く。",
+              "　それから、心地よい眠りから覚めるように目を覚ます。",
+              "　朝、花婿が迎えに来たとき、皆はおまえが死んだと思う。",
+              "　晴れ着のまま、覆いもかけず棺台に乗せられ、",
+              "　キャピュレット家の眠る古い墓所へ運ばれるだろう。",
+              "　それまでに、ロミオには手紙で計画を知らせる。",
+              "　私とロミオで目覚めを待ち、その夜、彼がマントヴァへ連れ出す。",
+              "　これで今の苦境から抜け出せる。",
+              "　ただし、気まぐれや恐れに、決意をくじかれないことだ。"
+            ]
+          },
+          "id": "RJ-COND-04-B-L02"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ジュリエット",
+          "speakerRoleId": "JULIET",
+          "text": "貸して、早く！　恐れの話なんてしないで。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-08",
+            "sourceLines": [
+              10
+            ],
+            "rawLines": [
+              "ジュリエット　貸して、早く！　恐れの話なんてしないで。"
+            ]
+          },
+          "id": "RJ-COND-04-B-L03"
+        },
+        {
+          "kind": "action",
+          "text": "ジュリエットが小瓶を受け取り、客席右の部屋へ戻る。彼女が去ってからロレンスは手紙を書き、ジョンに託す。ジョンは封を開かず、旅へ向かう。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-04-B-L04"
+        }
+      ],
+      "directorNote": "手紙の受け渡しを観客に見せ、後の入れ違いで「あの計画の手紙」と分かるようにする案。四十二時間は物語上の時間で、上演尺ではない。"
+    },
+    {
+      "id": "RJ-COND-04-C",
+      "title": "仮死と葬送",
+      "sourceScenes": [
+        9
+      ],
+      "place": "客席右の寝室 → 翌朝 → 葬送",
+      "trigger": "ジュリエットが一人、小瓶を手にする。",
+      "nextTrigger": "葬送が去り、知らせを運ぶベンヴォーリオの動きへつなぐ。",
+      "durationSeconds": null,
+      "namedRoleIds": [
+        "JULIET",
+        "NURSE",
+        "CAPULET",
+        "BENVOLIO"
+      ],
+      "ensemblePerformerRoleIds": [],
+      "offstageVoiceRoleIds": [],
+      "castMeaning": "このキュー内で登場する役の一覧。登退場はト書きに従い、全員が同時にいるとは限らない。",
+      "userDirectionEntryIds": [],
+      "lines": [
+        {
+          "kind": "dialogue",
+          "speaker": "ジュリエット",
+          "speakerRoleId": "JULIET",
+          "text": "さようなら。次にいつ会えるかは、神さまだけが知っている。\n冷たい恐れが、血の中を駆け上がってくる。\n命のぬくもりまで、凍りつきそう。\n呼び戻そうか。\nそばにいてもらえば、落ち着ける。\n乳母！――でも、ここにいて何ができるの？\nこの悲しい場面は、私一人で演じなくては。\nさあ、この小瓶を。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-09",
+            "sourceLines": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "rawLines": [
+              "ジュリエット　さようなら。次にいつ会えるかは、神さまだけが知っている。",
+              "　冷たい恐れが、血の中を駆け上がってくる。",
+              "　命のぬくもりまで、凍りつきそう。",
+              "　呼び戻そうか。",
+              "　そばにいてもらえば、落ち着ける。",
+              "　乳母！――でも、ここにいて何ができるの？",
+              "　この悲しい場面は、私一人で演じなくては。",
+              "　さあ、この小瓶を。"
+            ]
+          },
+          "id": "RJ-COND-04-C-L01"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ジュリエット",
+          "speakerRoleId": "JULIET",
+          "text": "ロミオ、ロミオ、ロミオ。あなたのために、飲みます。",
+          "delivery": "onstage",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-09",
+            "sourceLines": [
+              9
+            ],
+            "rawLines": [
+              "ジュリエット　ロミオ、ロミオ、ロミオ。あなたのために、飲みます。"
+            ]
+          },
+          "id": "RJ-COND-04-C-L02"
+        },
+        {
+          "kind": "action",
+          "text": "ベッドに身を投げる",
+          "provenance": {
+            "kind": "existing_japanese_excerpt",
+            "sourceSampleId": "RJ-SAMPLE-09",
+            "sourceLines": [
+              10
+            ],
+            "rawLines": [
+              "（ベッドに身を投げる）"
+            ]
+          },
+          "id": "RJ-COND-04-C-L03"
+        },
+        {
+          "kind": "action",
+          "text": "ジュリエットは動かなくなる。光で一夜を越す。朝、乳母が呼びかけても反応がなく、父も入って立ち止まる。二人は死んだと思い込む。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-04-C-L04"
+        },
+        {
+          "kind": "action",
+          "text": "乳母と父はジュリエットの傍らで身体を沈め、葬送の形へ変わる。ここからは寝室ではなく、墓所へ送る道。ベンヴォーリオがその葬送を見かけ、離れていく。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-04-C-L05"
+        },
+        {
+          "kind": "action",
+          "text": "弔う二人がジュリエットを囲み、三人の姿が袖へ消える。身体を支える方法は稽古で決める。墓所そのものは次の大場面で現れる。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-04-C-L06"
+        }
+      ],
+      "directorNote": "発見・葬送と、ベンヴォーリオがそれを目にする動きは今回の補足案。観客には仮死と分かっているが、家族は計画を知らない。ベンヴォーリオが見るのは寝室ではなく葬送。"
+    },
+    {
+      "id": "RJ-COND-04-D",
+      "title": "届かない知らせ",
+      "sourceScenes": [
+        10
+      ],
+      "place": "マントヴァ → 互いにすれ違う旅路",
+      "trigger": "誤った死の知らせが、計画の手紙より先に届く。",
+      "nextTrigger": "第3場面：客席左の墓所を立ち上げ、そこへロミオが到着する。",
+      "durationSeconds": null,
+      "namedRoleIds": [
+        "ROMEO",
+        "BENVOLIO",
+        "FRIAR_JOHN"
+      ],
+      "ensemblePerformerRoleIds": [],
+      "offstageVoiceRoleIds": [],
+      "castMeaning": "このキュー内で登場する役の一覧。登退場はト書きに従い、全員が同時にいるとは限らない。",
+      "userDirectionEntryIds": [
+        "RJ-NOTE-0015",
+        "RJ-NOTE-0016",
+        "RJ-NOTE-0017"
+      ],
+      "lines": [
+        {
+          "kind": "action",
+          "text": "旅路を進んだベンヴォーリオが、追放先のロミオに会う。ここはヴェローナの家ではなく、マントヴァ。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-04-D-L01"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "ベンヴォーリオ",
+          "speakerRoleId": "BENVOLIO",
+          "delivery": "onstage",
+          "text": "ジュリエットが亡くなった。墓所へ送られるのを見た。",
+          "provenance": {
+            "kind": "assistant_bridge_dialogue"
+          },
+          "id": "RJ-COND-04-D-L02"
+        },
+        {
+          "kind": "action",
+          "text": "ベンヴォーリオは去る。ロミオは一度、息を止める。それからヴェローナへ引き返す。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-04-D-L03"
+        },
+        {
+          "kind": "action",
+          "text": "封書を持ったジョンが、逆方向から同じ旅路へ入る。一人が進んだ軌跡を、もう一人が少し遅れてなぞる。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": [
+              "RJ-NOTE-0015",
+              "RJ-NOTE-0016"
+            ]
+          },
+          "id": "RJ-COND-04-D-L04"
+        },
+        {
+          "kind": "action",
+          "text": "同じ場所に手が伸びる。だが、その手前で相手の身体はすでに抜けている。回る・くぐる・すり抜ける動きをずらして重ね、「あと少しで届く」を繰り返す。封書はずっとジョンの手にある。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": [
+              "RJ-NOTE-0016"
+            ]
+          },
+          "id": "RJ-COND-04-D-L05"
+        },
+        {
+          "kind": "action",
+          "text": "二人は一度も目を合わせない。互いを追っているのではなく、別々の目的で急いでいる。最後にジョンは手紙を抱えたまま進み、ロミオは反対へ抜ける。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": [
+              "RJ-NOTE-0015",
+              "RJ-NOTE-0016"
+            ]
+          },
+          "id": "RJ-COND-04-D-L06"
+        },
+        {
+          "kind": "action",
+          "text": "二つの動きが離れ切ったところで、第2場面を閉じる。ロミオは仮死の計画を知らず、本当に死んだと信じたまま墓所へ向かう。",
+          "provenance": {
+            "kind": "assistant_staging_draft",
+            "userDirectionEntryIds": []
+          },
+          "id": "RJ-COND-04-D-L07"
+        }
+      ],
+      "directorNote": "死の知らせをベンヴォーリオに託すのは、10名の既存配役で因果を見せるための今回の脚色案。原作の使者バルサザーの役割をここだけ兼ねる。サーカスの種目・回数は未設定。旅路の左右は両家を表さず、第3場面で客席左＝墓所へ場所を切り替える。"
+    }
+  ],
+  "newProposals": [
+    "結婚の手を重ねた後、背中の列をほどく順序。",
+    "ベンヴォーリオが追放の判決を一言で伝える。判決を下すのは大公。",
+    "ベンヴォーリオが葬送を目にしてマントヴァへ死の知らせを運ぶ。原作のバルサザーの役割を既存配役へ移す脚色。",
+    "サーカスの入れ違いは、同じ軌跡を時間差で通る身体表現として仮置き。手紙の受け渡しは成功しない。"
+  ],
+  "continuityCorrections": [
+    "統合構成の決闘要約を、元の下訳の「ロミオ介入→負傷→即時報復」に修正。",
+    "旧第10場面の「右の墓所」へ向かう表記は引き継がず、第3場面の客席左の墓所へつながる旅路として再構成。"
+  ],
+  "pending": [
+    "本人による台詞と追加案の推敲",
+    "殺陣とサーカスの具体的な動き",
+    "各キューと第2場面全体の尺",
+    "舞台寸法、照明の数値、Stage Sketchへの実データ化"
+  ],
+  "revision": 4,
+  "directionUpdates": [
+    {
+      "sourceEntryId": "RJ-NOTE-0030",
+      "scope": "RJ-PHASE-PROMISE",
+      "direction": "約束と結婚では、乳母の代わりに大道具さんが舞台袖から大声でジュリエットを探す。姿は見せない。",
+      "draftNote": "声の担当部門は大道具に決定。具体的な担当者は未定。呼びかけの文言と二人の反応はAI案。",
+      "sourceEntryIds": [
+        "RJ-NOTE-0029",
+        "RJ-NOTE-0030"
+      ]
+    },
+    {
+      "sourceEntryId": "RJ-NOTE-0035",
+      "scope": "RJ-PHASE-PROMISE",
+      "direction": "窓辺から秘密の結婚へは暗転せず移る。二人は手を離して別々に退き、ロレンスと背中の列が先に中央をつくる。ロミオは客席左斜め、ジュリエットは客席右斜めから別々に入る。",
+      "draftNote": "手を離すタイミング、七名の横移動、二人の別々の斜めからの入口は本人が採用した構成。実際の歩数・速度・灯りは未決定。",
+      "sourceEntryIds": [
+        "RJ-NOTE-0004",
+        "RJ-NOTE-0035"
+      ]
+    }
+  ],
+  "revisionHistory": [
+    {
+      "revision": 2,
+      "date": "2026-09-10",
+      "sourceEntryId": "RJ-NOTE-0029",
+      "change": "約束と結婚の乳母の呼びかけを、袖から探す匿名の声に変更。",
+      "replacedLine": {
+        "kind": "dialogue",
+        "speaker": "乳母",
+        "speakerRoleId": "NURSE",
+        "text": "（家の中から）お嬢さま。",
+        "delivery": "offstage",
+        "provenance": {
+          "kind": "existing_japanese_excerpt",
+          "sourceSampleId": "RJ-SAMPLE-03",
+          "sourceLines": [
+            8
+          ],
+          "rawLines": [
+            "乳母　（家の中から）お嬢さま。"
+          ]
+        },
+        "id": "RJ-COND-02-A-L03"
+      }
+    },
+    {
+      "revision": 3,
+      "date": "2026-09-10",
+      "sourceEntryId": "RJ-NOTE-0030",
+      "change": "袖から探す声の発声担当を大道具さんに変更。出演者から選ぶという前回のAI案を置き換える。",
+      "replacedVoiceAssignment": {
+        "id": "RJ-VOICE-SEARCH",
+        "label": "袖の声",
+        "characterRoleId": null,
+        "performerRoleId": null,
+        "performerPoolRoleIds": [
+          "FRIAR_LAWRENCE",
+          "BENVOLIO",
+          "TYBALT",
+          "MERCUTIO",
+          "NURSE",
+          "CAPULET",
+          "MONTAGUE",
+          "FRIAR_JOHN"
+        ],
+        "additionalPerformerRequired": false,
+        "location": "舞台袖",
+        "delivery": "大声でジュリエットを探す。姿は見せず、二人を見つけた声にはしない。"
+      },
+      "replacedSpeaker": "袖の声"
+    },
+    {
+      "revision": 4,
+      "date": "2026-09-11",
+      "sourceEntryId": "RJ-NOTE-0035",
+      "change": "窓辺から秘密の結婚への身体の転換を、暗転なし・別々の退出・背中の列・別々の斜めからの入場として確定。",
+      "affectedCueIds": [
+        "RJ-COND-02-A",
+        "RJ-COND-02-B",
+        "RJ-COND-02-C"
+      ]
+    }
+  ],
+  "voiceAssignmentScope": "俳優の配役は既存の10名。袖から探す声は大道具担当が受け持ち、named rolesとは別のスタッフによる発声として記録する。具体的な担当者やスタッフ総数は未設定。"
+}

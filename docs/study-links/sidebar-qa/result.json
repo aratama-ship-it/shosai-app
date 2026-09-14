@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "SVG pen draws on both diagrams; cancel clear, undo and reload preserve private notes without sharing",
+    "Sidebar scene navigation restores each note; explicit sharing sends the name, text and two drawings only to the owner",
+    "JA/EN at four viewport sizes: side placement, no horizontal overflow, SVGs survive relabelling, 44px controls",
+    "Single-view proportions, keyboard focus, SVG history toggle and read-only/local-show boundaries retained"
+  ],
+  "errors": [],
+  "url": "http://127.0.0.1:8849/study?lang=ja#9d4cbeb2451acf5b1791adc7a457c38971b6707862876681"
+}

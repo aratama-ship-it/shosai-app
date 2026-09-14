@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>舞台スケッチ システム監査 2026-09-09 — リファクタ候補・不備・不足</title>
+<style>
+  :root{--ink:#1d1a16;--sub:#5b554c;--line:#d9d2c5;--paper:#fbf8f2;--card:#fff;--hi:#b3261e;--mid:#9a6b00;--low:#2f6b4f;--info:#3c5a80;--tag:#efe9dd;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.75 -apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
+  main{max-width:980px;margin:0 auto;padding:24px 18px 80px}
+  h1{font-size:24px;line-height:1.35;margin:0 0 6px}
+  h2{font-size:19px;margin:44px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+  h3{font-size:16px;margin:22px 0 8px}
+  p{margin:8px 0}
+  .meta{color:var(--sub);font-size:14px}
+  .lead{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--info);padding:14px 16px;border-radius:8px;margin:18px 0}
+  .lead h2{border:0;margin:0 0 8px;font-size:17px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:14px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .stat b{display:block;font-size:22px;line-height:1.2}
+  .stat span{color:var(--sub);font-size:13px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:12px 0}
+  .card h3{margin:0 0 6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .sev{font-size:12px;padding:1px 8px;border-radius:999px;color:#fff;white-space:nowrap}
+  .hi{background:var(--hi)}.mid{background:var(--mid)}.low{background:var(--low)}.info{background:var(--info)}
+  .kind{font-size:12px;padding:1px 8px;border-radius:999px;background:var(--tag);color:var(--sub);white-space:nowrap}
+  dl{margin:6px 0 0;display:grid;grid-template-columns:5.5em 1fr;gap:4px 10px;font-size:15px}
+  dt{color:var(--sub)}
+  dd{margin:0}
+  code{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:#f1ede4;padding:1px 5px;border-radius:4px;word-break:break-all}
+  pre{background:#1f1c18;color:#f3efe6;padding:10px 12px;border-radius:8px;overflow:auto;font-size:13px}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+  th{background:var(--tag)}
+  ul{padding-left:1.3em}
+  li{margin:3px 0}
+  .ok{color:var(--low)}.ng{color:var(--hi)}
+  .note{font-size:14px;color:var(--sub)}
+  @media (max-width:600px){dl{grid-template-columns:1fr}dt{margin-top:6px}}
+</style>
+</head>
+<body>
+<main>
+<h1>舞台スケッチ システム監査：リファクタリング候補・不備・不足</h1>
+<p class="meta">2026-09-09・Claude（Fable 5.1）・対象 <code>show-creative-ideas/shosai-app</code>（git HEAD <code>6e4ba1d</code> 2026-09-06 ＋ 未コミット30ファイル）。コード・設定・生成物・テストを読み、テストとビルド検査を実行した。<strong>アプリの修正・デプロイは行っていない。</strong>実機・本番の動作確認は範囲外。</p>
+
+<section class="lead">
+  <h2>判断してほしいこと（3件）</h2>
+  <ol>
+    <li><strong>本番が「未コミットの作業ツリー」から配信されている状態を、いつ・どう解消するか。</strong>ゲストアクセス改修は 9/8 に本番デプロイ済みの記録があるが、git HEAD は 9/6 のまま。推奨：Codex の現在作業（SW更新修正）と切り分けて、<em>今日中に2回に分けてコミット</em>（①ゲストアクセス＋サインイン ②利用計測＋DO移行＋SW修正）。</li>
+    <li><strong>SW更新修正（進行中）に「新HTMLと旧JSの版ずれ」対策を含めるか。</strong>いまの差分では、通信復帰時に新 <code>stage.html</code> だけが新キャッシュへ入り、対応するJSが揃わないままオフラインになる経路が残る（A-2）。<strong>2026-09-09 に Node vm で再現を実施：</strong>キャッシュの列挙順が「新が先」の場合にだけ起動不能を再現、「作成順（旧が先）」では旧版が整合して起動できる＝<em>現状では顕在化しにくいが列挙順に依存した設計</em>。推奨：今の作業に含め、再現手順をそのままテスト化する（発注書 <a href="system-audit-2026-09-09/WO_A2_sw_update_consistency.md">WO-A2</a>）。</li>
+    <li><strong><code>stage-sketch.js</code>（22,728行・1.06MB）の分割を始めるか、いつ始めるか。</strong>推奨：分割そのものより先に <em>B-2「資材一覧の一元化」</em>を片付ける。分割は資材一覧を5箇所手で直す現状では事故が増える。順序は B-2 → B-1(a)。</li>
+  </ol>
+</section>
+
+<h2>要約</h2>
+<div class="grid">
+  <div class="stat"><b class="ok">804 / 804</b><span>tests/ 合格（node 22.17、1.6秒）</span></div>
+  <div class="stat"><b class="ok">42 / 42</b><span>mcp-server テスト合格（npm test）</span></div>
+  <div class="stat"><b class="ok">揃っている</b><span>build_stage.py --check</span></div>
+  <div class="stat"><b class="ng">古い（5件）</b><span>build_public.py --check：public-dist が最新でない</span></div>
+  <div class="stat"><b>30 ファイル</b><span>未コミット（+680 / −157行）。最終コミット 9/6</span></div>
+  <div class="stat"><b>22,728 行</b><span>stage-sketch.js（gzip 295KB・関数609・単一IIFE）</span></div>
+  <div class="stat"><b>106 MB</b><span>.git（loose 2,760個。pack本体は4.3MB）</span></div>
+  <div class="stat"><b>0 件</b><span>innerHTML へのテンプレート補間（XSS経路なし・良い）</span></div>
+</div>
+<p>全体として <strong>テスト基盤とデータ損失対策は厚い</strong>（保存失敗の可視化、棚破損ガード、fail-closed のゲスト名簿、timing-safe 比較、redirected 応答の除去など、過去事故の再発防止がコードに刻まれている）。弱点は逆に、<strong>「手で揃える箇所が多い運用」と「1ファイルへの集中」</strong>に集まっている。以下、A 不備（直すべきもの）／B リファクタ候補／C 不足（無いもの）に分けた。各項目に <span class="kind">事実</span>／<span class="kind">解釈</span>／<span class="kind">提案</span> を分けて書く。</p>
+
+<h2>A. 不備・リスク（直す候補）</h2>
+
+<div class="card">
+  <h3><span class="sev hi">高</span> A-1 本番Workerが未コミットのコードで動いている <span class="kind">事実</span></h3>
+  <dl>
+    <dt>根拠</dt><dd><code>docs/guest-access-2026-09-08/deployment-proof.json</code>：Worker <code>shosai-app</code> を 2026-09-08 10:59Z にデプロイ（"Approved Stage Sketch guest access…"）。一方 <code>git log</code> の最終コミットは 9/6 00:57、<code>git status</code> で <code>worker.js</code>（+123行）・<code>wrangler.toml</code>・<code>stage-sw.js</code> ほか30ファイルが未コミット。利用計測（<code>docs/usage-metrics-2026-09-08/IMPLEMENTATION.md</code>）は「実装済み・未コミット・未公開」と明記。</dd>
+    <dt>影響</dt><dd>別Mac や別エージェントが HEAD から <code>wrangler deploy</code> すると<strong>ゲストアクセスが巻き戻る</strong>。iCloud同期の作業ツリーで3日間ダーティなまま複数セッションが編集しており、競合コピーや部分同期で失う危険もある（過去に「〜 2.js」問題あり）。</dd>
+    <dt>提案</dt><dd>①今日中にコミット（デプロイ済み分と未デプロイ分を分ける。DO移行 <code>v2-usage-metrics</code> を含む <code>wrangler.toml</code> は未デプロイ側）。②再発防止として、デプロイ前に <code>git status --porcelain</code> が空でなければ止める1行を運用手順（または B-8 の check スクリプト）に入れる。</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h3><span class="sev mid">中</span> A-2 SW更新修正に「新HTML＋旧JS」の版ずれ経路が残る <span class="kind">事実（再現済み・条件付き）</span></h3>
+  <dl>
+    <dt>根拠</dt><dd><code>stage-sw.js</code>（未コミット差分）。install は shell が揃った時だけ <code>skipWaiting</code>、activate は <code>removePreviousCachesWhenReady</code> で旧キャッシュを温存——ここは 9/7 レビュー1件目の対処として妥当。ただし fetch の navigate 分岐は <strong>オンラインで取れた <code>stage.html</code> を無条件に新 <code>CACHE_NAME</code> へ put</strong> する。新shellの JS（<code>?v=319</code>）が未取得のまま次にオフラインになると、<code>cachedAppShellResponse</code> は新キャッシュの stage.html を返し、その中の <code>stage-sketch.js?v=319</code> は全キャッシュに無い（旧は <code>?v=318</code> のみ）。<code>caches.keys()</code> の順序保証も無い。</dd>
+    <dt>再現</dt><dd><code>docs/system-audit-2026-09-09/repro-a2-sw-mixed-version.mjs</code>（stage-sw.js の実ソースを Node vm で実行）。<code>caches.keys()</code> が作成順＝旧が先: 旧HTML＋旧JSで整合（起動可）。新が先: <strong>新HTML＋JS欠落＝起動不能</strong>。仕様上 keys() は作成順なので現状のブラウザでは顕在化しにくいが、「揃っているキャッシュ」を選ばず列挙順に頼る設計は脆い。高→中に下げた。</dd>
+    <dt>備考</dt><dd>9/7 の追加レビュー（<code>RELEASE_FOLLOWUP_2026-09-07.html</code>）自身が「旧HTMLと対応するJS/CSSがセットで残ることを検証する」と書いている。今の差分にその検証は無い。</dd>
+    <dt>提案</dt><dd>①navigate での put を「shell が揃っている時だけ」または「揃うまでは旧キャッシュ側へ」に変える。②<code>cachedAppShellResponse</code> で stage.html を返す時は「揃っているキャッシュ」を優先。③9/7 と同じ Node vm で「旧完備＋新不完備＋オンライン1回→オフライン」の再現テストを <code>tests/stage-pwa-offline-warm.test.mjs</code> に追加。</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h3><span class="sev mid">中</span> A-3 公開体験版の生成物が古い（検査が赤） <span class="kind">事実</span></h3>
+  <dl>
+    <dt>根拠</dt><dd><code>python3 build_public.py --check</code> → exit 1。古い：<code>try.html</code>／<code>en/try.html</code>／<code>stage-i18n.js</code>／<code>stage-sketch.js</code>／<code>style.css</code>。</dd>
+    <dt>解釈</dt><dd>β本体の編集に体験版側の再生成が追随していない。配信中の体験版が古い public-dist 由来なら実害は「整列の新形状などが体験版に無い」程度。ただし検査が赤のままだと、次に誰かが public-dist をそのまま配る事故を検知できない。</dd>
+    <dt>提案</dt><dd>コミット前に <code>python3 build_public.py</code> を回して緑に戻す。B-8 の check に含める。</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h3><span class="sev mid">中</span> A-4 サインインに試行制限が無い <span class="kind">事実＋提案</span></h3>
+  <dl>
+    <dt>根拠</dt><dd><code>worker.js</code> <code>handleSignIn</code>：<code>timingSafeEqual</code> で比較し誤り時は再表示。試行回数・遅延・ロックの実装は無い（<code>attempt</code>/<code>429</code>/<code>lock</code> を検索して0件）。Cloudflare 側の Rate Limiting ルールの有無は未確認。</dd>
+    <dt>解釈</dt><dd>βのゲスト口座は人が覚えやすい合言葉になりがちで、総当たりに弱い。名簿（個人情報）はゲストにも見える設計なので、ここが唯一の防壁。</dd>
+    <dt>提案</dt><dd>コードを増やさない案：Cloudflare ダッシュボードで <code>/sign-in</code> POST に Rate Limiting ルール（例：同一IP 10回/分）。コード案：Durable Object にIP別の失敗回数を持ち、閾値超えで 429＋待機。<strong>どちらも本人判断。</strong></dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h3><span class="sev mid">中</span> A-5 認証内サイトにフレーム埋め込み防止・CSPが無い <span class="kind">事実＋提案</span></h3>
+  <dl>
+    <dt>根拠</dt><dd><code>worker.js</code> で <code>X-Content-Type-Options</code> はサインインページのみ。<code>Content-Security-Policy</code>／<code>X-Frame-Options</code>／<code>Permissions-Policy</code> は0件。アプリは外部スクリプトを持ち込まない方針（README）なので CSP は導入しやすい条件。</dd>
+    <dt>提案</dt><dd>まず低リスクの <code>X-Frame-Options: DENY</code>（＝<code>frame-ancestors 'none'</code>）を認証内の全応答に。CSP 本体はインラインstyle・blob・wss の使用箇所を洗ってから段階導入（Report-Only で1週間観察→強制）。</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h3><span class="sev low">低</span> A-6 iCloud競合コピー <code>SHOWS_INVENTORY 2.md</code> <span class="kind">事実</span></h3>
+  <p><code>diff</code> で本体と完全一致。gitignore・assetsignore 両方で除外済みなので配信・履歴への影響なし。<strong>削除はしていない</strong>（4段階フローに従い報告のみ）。</p>
+</div>
+
+<div class="card">
+  <h3><span class="sev low">低</span> A-7 <code>.git</code> が 106MB（loose 2,760個） <span class="kind">事実</span></h3>
+  <p>README 自身が「索引再生成後は <code>git gc</code>」と書いている状態。pack は 4.3MB なので <code>git gc</code> で戻る見込み。iCloud 同期対象なので放置するほど同期コストが増える。より根本の対策（<code>--separate-git-dir</code> で <code>~/git-repos/</code> へ退避）は既存メモリの手順があるが、複数Mac運用への影響があるため<strong>本人判断</strong>。</p>
+</div>
+
+<div class="card">
+  <h3><span class="sev low">低</span> A-8 作業フォルダ内の退避コピー・ログの重さ <span class="kind">事実</span></h3>
+  <table>
+    <tr><th>場所</th><th>大きさ</th><th>備考</th></tr>
+    <tr><td><code>*_backup_*</code>（48ファイル）</td><td>23MB</td><td>gitignore済み。iCloud同期・grep・エージェントの読み取り対象になり続ける</td></tr>
+    <tr><td><code>docs/</code>（110エントリ）</td><td>78MB</td><td>設計HTMLのスクリーンショット多数。索引無し（C-4）</td></tr>
+    <tr><td><code>overnight-runs/</code></td><td>51MB</td><td>夜間ログ。8/28 にコミット済み分を含む</td></tr>
+  </table>
+  <p class="note">提案：8月中の <code>*_backup_*</code> は git 履歴に同内容があるため、<code>claude-files-archives/shosai-snapshots/</code> へ退避（SHA256照合→稼働確認→承認→削除の4段階）。</p>
+</div>
+
+<div class="card">
+  <h3><span class="sev low">低</span> A-9 テストが参照していない実装 <span class="kind">事実</span></h3>
+  <p class="note">2026-09-09追記：整列は追加4種類・合計7形状。一括反映対象として <a href="HANDOFF_LINEUP_2026-09-09.html">仕様・対象ファイル・実施済み検証・残作業</a> を記録した。関連103テストと一時fixture28ケースは確認済み、専用の永続テストはA-9で扱う。</p>
+  <ul>
+    <li><code>usage-admin-page.js</code>（118行・新規・管理者ページ）— <code>tests/</code> に参照なし（<code>usage-metrics.js</code> 側は11件のテストあり）</li>
+    <li><code>desk-media.js</code>（85行）— 書斎側。参照なし</li>
+    <li>未コミットの整列7形状（<code>lineupPerformers</code>）— 実装は <code>n&lt;2</code> ガード・英訳（TEXT/SAY）とも揃っているが、<code>tests/</code> に <code>lineup</code>／<code>整列</code> を含むテストが1本も無い</li>
+  </ul>
+  <p class="note">他の製品JSはすべて何らかのテストから参照されている。網羅率は高い。</p>
+</div>
+
+<div class="card">
+  <h3><span class="sev low">低</span> A-10 古い stash と作業ブランチ <span class="kind">事実</span></h3>
+  <p><code>stash@{0}</code>（2026-08-23「FF前の作業ツリー退避」）が残存。リモートに <code>agent/db-shelf-split</code> ブランチ。どちらも不要なら整理候補（削除は本人操作で）。</p>
+</div>
+
+<div class="card">
+  <h3><span class="sev info">情報</span> A-11 README.md が現状と乖離 <span class="kind">事実</span></h3>
+  <p>「未着手：このアプリについて」（About モーダルは 9/5 に英語校閲まで完了）、「iPad実機QA未実施」（8/24〜28 に QA 実施）、Cloudflare Worker／ゲスト口座／テストの回し方／<code>build_public.py</code>／体験版の記述なし。別マシンのエージェントが単体で読む入口として古い。C-5 で扱う。</p>
+</div>
+
+<h2>B. リファクタリング候補（効果／危険度の順）</h2>
+
+<div class="card">
+  <h3><span class="sev hi">効果大</span> B-1 <code>stage-sketch.js</code> の分割（ただし B-2 の後に） <span class="kind">提案</span></h3>
+  <dl>
+    <dt>現状</dt><dd>22,728行・1.06MB（gzip 295KB）。単一IIFE、関数609、300行超3本（<code>drawFrontVenue</code> 546・<code>renderScenes</code> 338・<code>initPhoneViewerWorkspace</code> 323）、<code>getElementById</code> 461箇所、<code>render()</code> 呼び出し170箇所、<code>addEventListener</code> 403箇所。既に <code>window.SHOSAI_STAGE_*_MODEL</code> を12個外へ貸し出しており、テストはそこを掴んでいる＝<strong>分割線はすでに引かれている</strong>。</dd>
+    <dt>候補</dt><dd>
+      <table>
+        <tr><th>切り出し</th><th>目安</th><th>結合の低さ</th></tr>
+        <tr><td>(a) 会場描画 <code>drawFrontVenue</code>/<code>drawPlanVenue</code>/<code>drawStage</code></td><td>約900行</td><td>高（入力は venue と ctx）</td></tr>
+        <tr><td>(b) スマホ閲覧機・iPad PWA 作業面 <code>initPhoneViewerWorkspace</code>/<code>initTabletPwaWorkspace</code></td><td>約460行</td><td>中</td></tr>
+        <tr><td>(c) 印刷・ピッチ書き出し <code>openPrintPage</code>/<code>runPitchExport</code></td><td>約285行</td><td>高（既に <code>PITCH_EXPORT_MODEL</code> がある）</td></tr>
+        <tr><td>(d) 体モデル <code>SHOSAI_STAGE_BODY</code>（<code>pieceParts</code>/<code>buildRig</code>/<code>drawPerformer</code>）</td><td>約600行</td><td>中（FPVが既に借用）</td></tr>
+      </table>
+    </dd>
+    <dt>注意</dt><dd>バンドラ無し構成なので、1ファイル増やすごとに <strong>index.html の script タグ・<code>?v=</code>・stage-sw.js の APP_SHELL・worker.js の <code>GUEST_STAGE_ASSETS</code>・build_public.py の一覧</strong> の5箇所を手で足す。これが B-2 を先に置く理由。</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h3><span class="sev hi">効果大</span> B-2 配信資材の一覧と版番号を一元化する <span class="kind">提案</span></h3>
+  <dl>
+    <dt>現状</dt><dd>同じ「舞台スケッチが読むファイル一覧」が5箇所に手書き：①<code>index.html</code>（<code>?v=</code>）②<code>stage-sw.js</code>（<code>CACHE_NAME</code>＋<code>APP_SHELL</code> の <code>?v=</code>）③<code>worker.js</code> <code>GUEST_STAGE_ASSETS</code> ④<code>build_public.py</code> のコピー一覧 ⑤<code>build_stage.py</code>（これは index.html から自動で拾う）。版ピンのテスト4本が食い違いを見張っているが、メモリには「APP_SHELL を忘れた」「先に版を上げて旧内容をプリキャッシュした」事故が複数記録されている。</dd>
+    <dt>提案</dt><dd><code>build_stage.py</code> を拡張し、index.html の並びから <strong>stage-sw.js の APP_SHELL ブロックも生成</strong>（<code>CACHE_NAME</code> は資材の <code>?v=</code> 合計や内容ハッシュから決める）。worker.js の許可リストと build_public.py の一覧も同じ元から <code>--check</code> で照合。手で直す場所を index.html の1箇所にする。Codex 向きの仕様確定済み作業。</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h3><span class="sev mid">効果中</span> B-3 i18n：<code>isEn() ? "…" : "…"</code> の三項演算子114箇所を辞書へ寄せる <span class="kind">事実＋提案</span></h3>
+  <dl>
+    <dt>現状</dt><dd><code>stage-i18n.js</code>（TEXT 989鍵・SAY 210本）と <code>announce()</code> の型変換表が本線だが、<code>stage-sketch.js</code> には <code>isEn()</code> 三項演算子が114箇所残る（他ファイルは <code>stage-set-builder.js</code> の4箇所のみ）。言語判定が「英語か否か」の二値。</dd>
+    <dt>解釈</dt><dd>仏・簡体・繁体の辞書ドラフトが <code>i18n-prep/</code> に完備している。第3言語を足す時、二値の <code>isEn()</code> は全滅する。今のうちに <code>lang</code> の値域＋辞書参照へ寄せておくと、多言語化の着手コストが「辞書を差す」だけになる。</dd>
+    <dt>提案</dt><dd>114箇所を TEXT/SAY 鍵へ機械的に置換（Codex 向き。<code>stage-i18n-coverage</code> テストが守り）。UIの見え方は変えない。</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h3><span class="sev mid">効果中</span> B-4 <code>style.css</code> を舞台スケッチ／書斎で分ける <span class="kind">事実＋提案</span></h3>
+  <dl>
+    <dt>現状</dt><dd>12,804行・318KB（gzip 68KB）。セレクタ1,921種のうち舞台系 1,041。重複定義19セレクタ（余分な規則20ブロック。例 <code>.stage-canvas-bar .stage-canvas-caption</code> が3回）、<code>!important</code> 26、<code>@media</code> 34。体験版 <code>public-dist</code> にも書斎分を含む全量を配っている。</dd>
+    <dt>提案</dt><dd>①重複19件の統合（機械的・低リスク）。②<code>stage-*.css</code> を切り出し、<code>stage.html</code>／体験版はそれだけを読む。書斎は両方読む。効果は配信量の約半減の見込み（要実測）。</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h3><span class="sev low">効果小</span> B-5 <code>worker.js</code> のモジュール分割 <span class="kind">提案</span></h3>
+  <p>884行に認証・ゲスト許可・β状態・セッション経路・サインインHTMLテンプレートが同居。Workers は ES modules を扱えるので <code>auth.js</code>／<code>guest-assets.js</code>／<code>sign-in-page.js</code> に分けられる。テスト（<code>worker-*.test.mjs</code> 5本）は既に責務ごとに分かれている。急がないが、A-4／A-5 を入れる時に一緒にやると安い。</p>
+</div>
+
+<div class="card">
+  <h3><span class="sev low">効果小</span> B-6 同名関数の重複確認 <span class="kind">事実（要精査）</span></h3>
+  <p><code>stage-sketch.js</code> と <code>stage-first-person.js</code> に <code>drawPerformer</code>／<code>onKeyDown</code>／<code>onPointerDown</code>／<code>onPointerMove</code>、<code>stage-venue-editor.js</code> に <code>render</code>／<code>finishPointer</code> が同名で存在。体モデルは <code>SHOSAI_STAGE_BODY</code> で共有済みなので<strong>名前が同じだけで中身は別の可能性が高い</strong>。触る前に diff で中身を比べる。優先度は低い。</p>
+</div>
+
+<div class="card">
+  <h3><span class="sev low">効果小</span> B-7 Lint／整形の設定が無い <span class="kind">事実＋提案</span></h3>
+  <p><code>.eslintrc*</code>／<code>eslint.config.*</code>／<code>.prettierrc*</code>／<code>.editorconfig</code> なし。Claude・Codex・複数セッションが同じツリーを編集するので、<code>no-undef</code>／<code>no-unused-vars</code>／<code>no-dupe-keys</code> 程度の最小 ESLint だけでも、テストが拾わない typo と未使用の残骸を早く見つけられる。<code>tests/index.mjs</code> の前に <code>node --check</code> を全JSへ回すだけでも構文事故は防げる。</p>
+</div>
+
+<div class="card">
+  <h3><span class="sev mid">効果中</span> B-8 検査を1コマンドにまとめる（デプロイ前ゲート） <span class="kind">提案</span></h3>
+  <p>現在は4系統に分かれている：<code>node tests/index.mjs</code>／<code>mcp-server</code> で <code>npm test</code>／<code>python3 build_stage.py --check</code>／<code>python3 build_public.py --check</code>。加えて A-1 の「未コミットで配らない」確認。これを <code>check.sh</code>（または root の <code>package.json</code> scripts）に束ね、<code>wrangler deploy</code> の直前に必ず回す運用にする。夜間タスク化にも向く（判断を含まない）。</p>
+<pre>#!/bin/zsh
+set -e
+cd "$(dirname "$0")"
+[ -z "$(git status --porcelain)" ] || { echo "未コミットの変更があります。先にコミットしてください"; exit 1; }
+python3 build_stage.py --check
+python3 build_public.py --check
+node tests/index.mjs | tail -8
+(cd mcp-server && npm test 2>&1 | grep '^# \(pass\|fail\)')</pre>
+</div>
+
+<h2>C. 不足しているもの（無いことが分かったもの）</h2>
+
+<div class="card">
+  <h3><span class="sev mid">中</span> C-1 クライアント側の異常を知る手段が無い <span class="kind">事実＋提案</span></h3>
+  <p><code>window.onerror</code>／<code>unhandledrejection</code> のフックは0件。利用計測（実装中）は「使われ方」で、「壊れ方」は届かない。βの利用者からの連絡は Google フォームのみ。提案：β限定・本人承認の上で、例外の種類とスタック先頭だけを Worker へ送る最小のビーコン（個人情報・ショー内容は送らない）。<strong>プライバシー方針を含むので本人判断。</strong></p>
+</div>
+
+<div class="card">
+  <h3><span class="sev mid">中</span> C-2 SW修正の実機確認が未実施 <span class="kind">事実</span></h3>
+  <p>9/7 の追加レビューも「実端末での更新→再起動→オフライン起動、保存済みショーの保持は未確認」。A-2 を直した後、iPad（ホーム画面追加）で「更新中に機内モード→再起動」を1回通す必要がある。これはコードを読んでも代替できない（メモリ <em>verify-on-real-device-not-by-reasoning</em>）。</p>
+</div>
+
+<div class="card">
+  <h3><span class="sev low">低</span> C-3 localStorage 容量の逼迫対策（既知・先送り確定） <span class="kind">事実</span></h3>
+  <p>60分ショー1本≈280KB。4案（null省略／差分保存／gzip／IndexedDB）は <code>IDEA_BACKLOG_2026-08-27.md</code> C-1 に整理済み・リリース後と本人確定。B-1 の分割と同時に触らないこと（範囲が重なる）。</p>
+</div>
+
+<div class="card">
+  <h3><span class="sev low">低</span> C-4 <code>docs/</code>（110エントリ・発注書66本）に索引が無い <span class="kind">事実＋提案</span></h3>
+  <p>README も INDEX も無く、どの発注書が完了・却下・進行中かはメモリと工程表に散在。提案：<code>docs/INDEX.md</code> を日付・種別（発注書／仕様／QA／レビューHTML／設計フォルダ）で自動生成する小スクリプト。判断を含まないので夜間タスク向き。</p>
+</div>
+
+<div class="card">
+  <h3><span class="sev low">低</span> C-5 README.md の更新 <span class="kind">提案</span></h3>
+  <p>A-11 の乖離を直し、「配信構成（Worker／β／体験版）」「検査の回し方（B-8）」「版上げの3点セット」「stage.html は生成物」を冒頭に置く。別マシンのエージェントが単体で読んで動ける状態にする（workspace-icloud 方針）。</p>
+</div>
+
+<h2>今回確認できたこと・できなかったこと</h2>
+<table>
+  <tr><th>確認した</th><th>結果</th></tr>
+  <tr><td>tests/（85ファイル・自動発見）</td><td class="ok">804/804 合格</td></tr>
+  <tr><td>mcp-server テスト</td><td class="ok">42/42 合格</td></tr>
+  <tr><td>build_stage.py --check</td><td class="ok">index.html と揃っている</td></tr>
+  <tr><td>build_public.py --check</td><td class="ng">5件が古い（A-3）</td></tr>
+  <tr><td>版番号の整合（index.html／stage.html／stage-sw.js）</td><td class="ok">全資材で一致（stage-sketch.js v319・style.css v230・CACHE v199）</td></tr>
+  <tr><td>XSS 経路（innerHTML へのテンプレート補間）</td><td class="ok">0件。DOM生成で組み立てている</td></tr>
+  <tr><td>保存失敗時の扱い</td><td class="ok">setSaveStatus 経由で必ず可視化・書き出しへ誘導。棚破損・容量不足を分けて伝える</td></tr>
+  <tr><td>セッション部屋の上限</td><td class="ok">接続20・文書1.8MB・op 64KB・所有者名128字を検証</td></tr>
+  <tr><td>9/7 追加レビューの2件目・3件目</td><td class="ok">作業ツリーで対応済み（<code>lang=en</code> 付与・体験版の保存されない注記）。未コミット</td></tr>
+  <tr><td>整列7形状（未コミット）</td><td class="ok">n&lt;2 ガード・日英辞書あり。テストは無い（A-9）</td></tr>
+</table>
+<p class="note"><strong>確認していない：</strong>本番・実機の動作、Cloudflare ダッシュボード側の設定（Rate Limiting・WAF）、体験版の配信中バージョン、Codex が進行中の設計作業（台本キュー／転換の担当交代。製品コード未変更と各 REVIEW に明記）の妥当性。A-2 は Node での再現を行っておらず、コード読解による推測。</p>
+
+<h2>進める順序（推奨）</h2>
+<ol>
+  <li><strong>A-1</strong> コミット2回（今日）。→ <strong>A-3</strong> public-dist 再生成で検査を緑に。</li>
+  <li><strong>A-2</strong> を Codex の SW 作業に含め、再現テストを1本追加 → <strong>C-2</strong> iPad 実機で1回通す → デプロイ。</li>
+  <li><strong>B-8</strong> check スクリプト（判断なし・Codex向き）→ 以後のデプロイの前提にする。</li>
+  <li><strong>B-2</strong> 資材一覧の一元化 → その後に <strong>B-1(a)</strong> 会場描画の切り出しから分割開始。</li>
+  <li>並行して判断だけ先に：<strong>A-4</strong>（試行制限の方式）、<strong>A-5</strong>（frame-ancestors だけ先行してよいか）、<strong>C-1</strong>（エラー送信の可否）。</li>
+</ol>
+<h2>実装時にまとめて行うための準備物（2026-09-09 追記・コードは未変更）</h2>
+<p>入口 <a href="system-audit-2026-09-09/START_HERE.md"><strong>START_HERE.md</strong></a>（次回セッションが最初に読む）／手順書 <a href="system-audit-2026-09-09/RUNBOOK.html"><strong>RUNBOOK.html</strong></a>（順番・コマンド・判断点）／逐次修正の候補 <a href="system-audit-2026-09-09/SMALL_FIXES_CANDIDATES_2026-09-09.html"><strong>SMALL_FIXES_CANDIDATES_2026-09-09.html</strong></a>（小道具50・姿勢22・文言14・デザイン9）。発注書と材料は <code>docs/system-audit-2026-09-09/</code>：</p>
+<ul>
+  <li><a href="system-audit-2026-09-09/A1_commit_split_plan.md">A1 コミット分割計画</a>（パッチ①は index に当たることを一時クローンで検証済み。②は混在のため一括）</li>
+  <li><a href="system-audit-2026-09-09/WO_A2_sw_update_consistency.md">WO-A2 SW版ずれ</a>／<a href="system-audit-2026-09-09/repro-a2-sw-mixed-version.mjs">再現スクリプト</a>／<a href="system-audit-2026-09-09/C2_ipad_pwa_update_checklist.md">C2 iPad実機チェックリスト</a></li>
+  <li><a href="system-audit-2026-09-09/WO_A4_A5_worker_hardening.md">WO-A4/A5 サインイン試行制限・frame-ancestors・CSP棚卸し</a>（判断D1〜D4を含む）</li>
+  <li><a href="system-audit-2026-09-09/WO_A9_tests_lineup_admin.md">WO-A9 整列・管理者ページのテスト</a></li>
+  <li><a href="system-audit-2026-09-09/WO_B2_asset_manifest.md">WO-B2 資材一覧の一元化</a> → <a href="system-audit-2026-09-09/WO_B1_split_stage_sketch.md">WO-B1 分割（第1段＝体モデル）</a>／<a href="system-audit-2026-09-09/B1_split_dependency_map.md">依存マップ</a>（会場描画は外部参照63で最も重い＝監査時の見立てを訂正）</li>
+  <li><a href="system-audit-2026-09-09/WO_B3_i18n_ternaries.md">WO-B3 i18n三項演算子</a>／<a href="system-audit-2026-09-09/B3_isEn_ternary_sites.md">154件の対訳表</a></li>
+  <li><a href="system-audit-2026-09-09/WO_B4_css_split.md">WO-B4 CSS重複統合・分離</a>／<a href="system-audit-2026-09-09/B4_css_duplicate_selectors.md">重複19件の行番号</a></li>
+  <li><a href="system-audit-2026-09-09/B6_same_name_functions.md">B6 同名関数の比較</a>：<strong>7組すべて別物（一致率 ≤0.12）＝統合対象なし。B-6 は取り下げ</strong></li>
+  <li><a href="system-audit-2026-09-09/WO_B7_B8_lint_and_check.md">WO-B7/B8 Lint と検査1コマンド</a>／<a href="system-audit-2026-09-09/check.sh.draft">check.sh 草案</a>（試走済み：public-dist の古さを正しく赤にした）／<a href="system-audit-2026-09-09/eslint.config.mjs.draft">eslint 設定草案</a></li>
+  <li><a href="system-audit-2026-09-09/A8_backup_files_ledger.md">A8 退避コピー台帳</a>（48件・SHA256付き・削除未実行）</li>
+  <li><a href="system-audit-2026-09-09/C1_error_beacon_options.md">C1 エラー把握の選択肢</a>（推奨＝端末内ログ欄）／<a href="system-audit-2026-09-09/README_DRAFT_2026-09-09.md">C5 README 改訂草案</a>／<a href="INDEX.md">docs/INDEX.md</a>（生成器 <code>make_docs_index.py</code>）</li>
+</ul>
+<p class="note">関連文書：<code>docs/RELEASE_FOLLOWUP_2026-09-07.html</code>（前回レビュー）／<code>docs/IDEA_BACKLOG_2026-08-27.md</code>（既知バックログ）／<code>docs/usage-metrics-2026-09-08/IMPLEMENTATION.md</code>／<code>docs/guest-access-2026-09-08/deployment-proof.json</code>。この文書は <code>docs/</code> 配下のため配信対象外（<code>.assetsignore</code>）。</p>
+</main>
+</body>
+</html>

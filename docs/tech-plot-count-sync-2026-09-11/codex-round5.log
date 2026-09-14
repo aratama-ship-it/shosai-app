@@ -1,0 +1,439 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+model: gpt-6-astra
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a08c2c-fa64-7922-b9bf-88eb558afda7
+--------
+user
+第5ラウンド。主題の修正です。本人の訂正: 映像面（スクリーン）は別案件。ここでやりたいのは
+**「時間・音楽に合わせてダンスのフォーメーションを作るアプリ」を構築し、それを舞台スケッチへ導入するまでの流れ**。
+つまり第3ラウンドの「場面内キーフレーム（B案）」を、いきなり舞台スケッチ本体へ足すのではなく、
+まずフォーメーション制作アプリとして成立させ、その後に舞台スケッチへ取り込む、という順路を計画したい。
+
+既知の事実:
+- 舞台スケッチは vanilla JS＋canvas のPWA（iPad対応・オフライン）。正規化座標u,v、演者駒（castId・facing・pose）、場面ごとの楽曲（IndexedDB）、共有セッション（ホスト→ゲスト）、演者ビューア（スマホ）がある。
+- 本人のVision Pro版（apps/visionpro/show-staging-planner の StageCore・Swift）には「稽古タイムライン」の設計がある（音源の消費時刻を主時計にする／第一段階は順序のみ／BPM・小節・台詞・タイムコードは将来のアンカー）。Web版とは別実装。
+- Choreographic（月550円）: 3D・音楽同期・ダンサー経路（曲線・多点）・0.01秒遷移・共同編集・オフライン。
+- 本人の設計方針: 「どのサービスにも見えるUI」を第一案にしない。固有性は情報設計・操作・言葉・素材から出す。
+
+依頼（2,200字以内・見出し付き）:
+1. 構築の形の比較と推奨: (a) 完全に独立した別アプリ（別リポジトリ・別データ形式）／(b) shosai-app 配下の**別入口**（例 formation.html）で、座標規約・演者駒・音源保存・描画モジュールを舞台スケッチと共有し、データは第3ラウンドの `scene.motion.keyframes` そのもの／(c) 舞台スケッチ本体の中のモードとして最初から作る。導入の手間・単体での使いやすさ・別セッションが本体を編集中という事情・iPad、の観点で。
+2. 推奨案でのフォーメーション制作アプリ v0.1 の範囲（入れるもの／入れないもの）。ダンサー、舞台の寸法、カウント格子（BPM＋第1カウント秒）、キーフレーム、直線経路、音楽再生と同期、サムネイル、保存・読込、iPadのタッチ操作。Web Audio の時計と描画の同期の要点。
+3. 単体アプリとしての固有性: Choreographicの複製にならない核を2〜3個（例: 客席からの見え方、会場を替える、8カウントの「言葉」で指示が出る、など）。本人はサーカス出身で演出家向け。
+4. 舞台スケッチへの導入の流れ: フォーメーション1本＝場面1つの motion か、曲のセクション＝複数場面か。取り込み時の対応付け（ダンサー→演者駒 castId、舞台寸法→会場、曲→楽曲ID）。導入後に単体アプリを残すか。
+5. ロードマップ（M1〜M4程度・S/M/L）と、早い段階で実際のダンサー／振付師に確かめること。
+6. 本人へ聞く質問を最大3つ（答えで設計が変わるものだけ）。
+codex
+主題をフォーメーション制作アプリへ切り替えます。単体で制作が完結することを先に置き、舞台スケッチへ取り込む際のデータ対応と、本体を並行編集中でも進められる境界を検討します。
+web search: 
+exec
+/bin/zsh -lc "cat '/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/_claude-rules/design-policy.md'" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+ succeeded in 0ms:
+# UI・Web・アプリのデザイン方針（詳細版）
+
+`CLAUDE.md` の「デザイン方針」節の詳細。**UI・Webサイト・アプリ・資料・ビジュアルの設計に入る前に、
+このファイルを読むこと。** 併せて `skill-library/A_design.md`（蔵書から抽出した本文根拠付きの原則集）と
+`web-projects/design-references/`（実装コードまで分解した参照ライブラリ）も参照する。
+
+## 前提
+
+ユーザーは、AIエージェントが大量生成する「今風だが、どのサービスにも見えるUI」や、
+ありふれた簡易デザインを第一案として出すことを望んでいない。
+**最初の案を作る前の考察を従来より一段深くし、第一案から固有性と完成度を持たせること。**
+
+## 第一案の前に整理すること
+
+実装や作図へ入る前に、少なくとも次を整理する。
+
+1. 誰が、どの場面で、何を達成するために使うのか。
+2. 使っている間と使い終えた後に、どんな気分になってほしいか。
+3. 題材、事業、本人の表現、文化的背景のどこに、このプロジェクト固有の核があるか。
+4. 同種サービスにありがちな見た目・情報構造・言葉遣いのうち、何を踏襲し、何を意図的に外すか。
+5. ユーザビリティ、アクセシビリティ、速度、端末、実装コストなど、守るべき機能条件は何か。
+
+必要に応じて内部で方向性の異なる2〜3案を比較してから、最も理由のある一案を第一案として作る。
+ユーザーから複数案を求められていない場合、未整理の案を大量に並べるより、
+選んだ方向を深く仕上げて提示する。
+
+## 避けること
+
+- 根拠なく、青紫のグラデーション、発光、ガラス風カード、丸いカードの反復、ピル型ラベル、
+  Bento風グリッド、大きな抽象コピーなどを組み合わせた「AI生成らしい今風UI」に寄せること。
+- テンプレートへ内容を流し込んだだけで、別のサービス名に置き換えても成立する画面を出すこと。
+- ワイヤーフレームに色を付けた程度のものを、完成デザインの第一案として扱うこと。
+- 「斬新さ」を優先するあまり、操作の理解、可読性、アクセシビリティ、性能を損なうこと。
+
+上記の表現自体を禁止するわけではない。プロジェクトの核や体験に必要な場合は使ってよいが、
+「流行しているから」ではなく、その選択が何を感じさせ、何を分かりやすくするかを説明できること。
+
+## 第一案に求める完成度
+
+- 情報階層、タイポグラフィ、余白、密度、色、素材感、写真・図版、動き、フィードバック、文言を
+  一体で設計する。
+- 機能が正しく動くだけでなく、触ったときの反応、視線の流れ、待ち時間、達成感などの
+  「気持ちよさ」を重視する。
+- MVPでは機能や画面数を削ってよいが、中心となる体験まで無難・粗雑にしない。
+  時間が限られる場合は、広さよりも核となる1画面・1動作の深さと完成度を優先する。
+- 斬新さは装飾の奇抜さだけで作らず、構成、操作、時間変化、言葉、素材、余白、
+  情報の見せ方からも生み出す。
+- 第一案を見せる前に「これは別のAI生成サービスにもそのまま使える見た目ではないか」を自問し、
+  答えが「はい」に近ければ、固有の核が画面へ現れるまで見直す。
+
+ユーザビリティと機能性は前提であり、その上で、使う人の感情、没入感、記憶に残る体験まで設計対象とする。
+
+## 固有性と定番の両立（2026-09-03統合・Claude Code／Codex共通）
+
+「固有性」と「定番の尊重」は矛盾しない。両者を次のように扱う。
+
+- **固有性は情報設計・操作・時間変化・言葉・素材・余白から出す。** 見た目の新規性、「前回と違うこと」、
+  本人の好みそのものを目的にしない。定番パターンや既存デザインシステムが最適なら、違いを出すためだけに変えない。
+- **方向性が開いている案件は、実在の優れた参照から入る。** 用途・利用者・文脈・端末・内容・制約に合う実在の
+  プロダクト、公式デザインシステム、隣接分野、編集・展示などの参照を実際に開いて確認し、各参照の
+  「何が優れているか／何を採用し何を外すか／その理由」を記録してから統合する。1件を模倣せず、
+  レイアウト・トレードドレス・文言・コード・図版を複製しない。手順は `reference-led-ui-design` スキル
+  （`.agents/skills/reference-led-ui-design/`、Claude側は `.claude/skills/` にリンク）。
+- **UIの文言は機能的な内容として扱う。** 詩的な見出し、抽象的なスローガン、雰囲気だけのヒーローコピーを
+  既定要素として足さない。本人の明示指定、既存ブランド原稿、作品内容などの根拠がある場合だけ使う。
+- **既存の確立したUI内の狭い変更では、そのシステムを保つ。** 開いている判断だけを調べ、周囲を再設計しない。
+- 「AI生成らしい今風UI」を避けるのは、固有性のためであって奇抜さのためではない。可読性・操作の理解・
+  アクセシビリティ・性能を損なう「斬新さ」は採らない。
+
+## 多言語前提のUI表現はアイコン基本（2026-08-28追加）
+
+日本語・英語（場合により中国語等）で**同一のUIを使い回す**前提のプロジェクトが多い。
+言語ごとのUI変更や翻訳によるレイアウト崩れを避けるため、
+**機能の表示はテキストラベルよりアイコンを基本**にする（本人の明示的な方針）。
+
+- 意味が広く通じる定番アイコン（再生・設定・検索・閉じる・共有 等）はアイコンのみでよい。
+- 曖昧な操作や独自概念をアイコンだけで押し切らない。分かりやすさを犠牲にしない範囲で
+  短いテキスト併記や初回のみのラベル表示を検討する。
+- アイコンのみのボタンにも必ず `aria-label` を付ける（翻訳対象になるがレイアウトに影響しない）。
+
+## 実装・実装計画の標準手順（design-webスキル・2026-08-28追加）
+
+UI・Webの実装や実装計画に入るときは、`.claude/skills/design-web/SKILL.md` の手順
+（参照 → 設計メモ → トークンシート → 実装 → セルフ監査 → 提出）に従う。
+
+- **デザイントークンシート**（配色・タイポグラフィ・余白・形状・モーションの数値一覧。様式は
+  `.claude/skills/design-web/TOKEN_SHEET_TEMPLATE.md`）を**実装計画の必須成果物**とし、
+  形容詞だけで実装に入らない。シートが正であり、値を変えるときはコードより先にシートを直す。
+- 配色のコントラスト比は `.claude/skills/design-web/tools/contrast.mjs` で**実測してから**確定する
+  （WCAG 2.x AA: 本文 4.5:1 以上、大きな文字・UI部品 3:1 以上）。
+
+exec
+/bin/zsh -lc "rg -n 'StageCore|show-staging-planner|フォーメーション|稽古タイムライン|正本と|shared.*schema' /Users/arata/.codex/memories/MEMORY.md" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+ succeeded in 0ms:
+3277:applies_to: cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/app-dev/visionpro/show-staging-planner or cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app; reuse_rule=recheck Xcode/device state and schema before device or converter work.
+3297:- StageDocument, schemaVersion 2, Project > Scene > Piece, VISION_PRO_REHEARSAL_EXTENSION_HANDOFF.md, coordinate-conversion, holdDurationSeconds, transitionToNextSeconds, iCloud Drive, StageCore
+3307:- Handoff: `show-creative-ideas/shosai-app/docs/VISION_PRO_REHEARSAL_EXTENSION_HANDOFF.md`. `npm test` passed 6/6 and StageCore passed 24/24 using `/tmp` cache/scratch paths; converter and physical/device/audio integration remain unimplemented. [Task 2]
+3519:- 身体表現ラボ, obsidian-vault/ideas/2026-07-13_身体表現ラボ_ポートフォリオ構想.md, juggling-trajectory-analyzer, group-photo-assistant, installation-ideas, arata-portfolio-night, Vision Pro, StageCore, RealityKit, PlaneDetectionProvider, stageRoot
+3530:- Vision Pro material concerns `app-dev/visionpro/show-staging-planner`: use the stated coordinate convention (1 unit = 1m; origin = stage center/floor; +Y up, +X stage right, -Z audience), keep macOS camera outside `stageRoot`, and treat lighting/calibration numbers and state transitions as initial design material rather than adopted specification. [Task 1]
+3586:- routine-debugger, Android PWA, Vision Pro, show-staging-planner, PROJECT_NOTES, README, Miguel, Santi, voice recognition
+3599:- Vision Pro status must be checked across README, `PROJECT_NOTES`, source, and build results: `show-staging-planner` had Phase 0 plus macOS and visionOS build success, but Vision Pro device run/physical-scale validation remained uncompleted; `juggling-spatial` was planning only. [Task 2]
+
+exec
+/bin/zsh -lc "rg -n -m 12 'AudioContext|createMediaElementSource|currentTime|requestAnimationFrame|function pieceDims|function normalizeAudioTracks|indexedDB.open|function beginSceneAnim' stage-sketch.js" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+ succeeded in 0ms:
+4136:  function pieceDims(piece) {
+4774:   * audio要素は一つだけ。シーンを送っても同じtrackIdならsrc/currentTimeへ触れず、
+4855:    const current = audio && Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+5364:      els.musicAudio.currentTime = 0;
+5370:      if (Number.isFinite(next)) els.musicAudio.currentTime = next;
+6366:    requestAnimationFrame(() => { els.live.textContent = message; });
+11833:        if (!ui.frame) ui.frame = requestAnimationFrame(() => { ui.frame = 0; syncPanelWidths(); });
+12059:    requestAnimationFrame(() => {
+12854:      requestAnimationFrame(() => {
+12970:    requestAnimationFrame(() => {
+16068:      if (at < jobs.length) sceneGridFrame = requestAnimationFrame(drawChunk);
+16071:    if (jobs.length) sceneGridFrame = requestAnimationFrame(drawChunk);
+
+web search: https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/getOutputTimestamp
+2026-09-10T17:43:03.696072Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://developers.openai.com/mcp?source=codex)")))
+web search: 
+exec
+/bin/zsh -lc "rg -n '音源|時計|順序|BPM|タイムコード|消費' docs/VISION_PRO_REHEARSAL_EXTENSION_HANDOFF.md" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+ succeeded in 0ms:
+96:- BPM、拍、小節、タイムコードを持つ稽古タイムライン
+97:- 作品へ関連付けた音源の受け渡し
+123:- 内蔵音源 `River Train Blues` の音程維持再生
+156:- 音源はアプリ同梱の固定ファイルで、読み込んだJSONに音源情報はない。
+167:| 音源との関連 | 舞台スケッチへ新設 | バイナリ配送は別工程 |
+351:BPM、小節、台詞キュー、Qシートはこの領域を将来拡張するが、第一段階では`ordered`だけにする。
+353:## 7. 音源の扱い
+360:- 再生中は音源の消費時刻を舞台タイムラインの主時計にする。
+361:- JSONは音源ファイル名や参照を持たない。
+366:音源は「内蔵デモを使う／音なし」の明示選択とし、舞台スケッチのJSONへ
+371:任意音源を渡す場合は、単一JSONではなく次のような移送単位を設計する。
+386:- 音源がタイムラインより短い場合に、停止、無音継続、ループのどれにするか
+388:- 音源差し替え時のrevisionとキャッシュ無効化
+390:これらを決めるまで、音源バイナリを舞台スケッチのlocalStorageやversion 3 JSONへ埋め込まない。
+462:- BPM／小節／台詞／タイムコードのアンカー
+463:- 任意音源パッケージ
+576:3. 初回は固定音源または音なしでJSON連携を完成させ、任意音源パッケージを第二段階へ分けてよいか。
+
+exec
+/bin/zsh -lc "sed -n '1,20p' stage-sketch.js
+sed -n '4770,4835p' stage-sketch.js
+sed -n '3283,3313p' /Users/arata/.codex/memories/MEMORY.md" in /Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app
+ succeeded in 0ms:
+/* 舞台スケッチ — 2Dの構図・色・距離感を試すためのローカル制作道具。
+   技術図面や3D舞台設計とは分離し、状態はこのブラウザ内だけに保存する。
+
+   劇場形式（プロセニアム／スラスト／ビッグトップ／屋外／ブラックボックス）を
+   切り替えられる。形式ごとに客席の位置が変わり、それが構図の条件になる。
+
+   座標は正規化して持つ（u: 左右 0-1、v: 奥行き 0-1）。形式や規模を変えても
+   配置が保たれ、同じ配置を別の劇場で見直せるようにするため。
+
+   規模は「舞台を画面いっぱいに描き、人の大きさを舞台に対する比率で決める」形で
+   表す。18mの舞台では人が小さく見える。寸法そのものは編集させない（設計計画書 8.5節）。 */
+
+(function () {
+  "use strict";
+
+  const STUDY_READ_ONLY = document.documentElement?.hasAttribute?.("data-study-renderer") === true;
+  // Shadow only this module's storage. The renderer additionally runs in an opaque-origin sandbox.
+  const localStorage = STUDY_READ_ONLY
+    ? Object.freeze({ getItem: () => null, setItem() {}, removeItem() {}, key: () => null, length: 0 })
+    : (window.localStorage || globalThis.localStorage);
+  let saveTimer = null;
+  let controlBefore = null;
+
+  /* ---------- シーンの音楽 ----------
+   * audio要素は一つだけ。シーンを送っても同じtrackIdならsrc/currentTimeへ触れず、
+   * 曲が変わる時だけIndexedDBからBlobを取り直す。再生位置は保存・Undoしない。 */
+  const audioStore = window.SHOSAI_STAGE_AUDIO_STORE || null;
+  let selectedAudioTrackId = (state.project.audioTracks[0] && state.project.audioTracks[0].id) || null;
+  let audioPanelSignature = "";
+  let audioLoadGeneration = 0;
+  let continueAudioOnNextSceneSync = false;
+  const audioPlayback = {
+    trackId: null,
+    objectUrl: null,
+    ready: false,
+    loading: false,
+    missing: false,
+    playAfterLoad: false,
+  };
+
+  function audioTracks() {
+    if (!Array.isArray(state.project.audioTracks)) state.project.audioTracks = [];
+    return state.project.audioTracks;
+  }
+
+  function audioTrackById(id) {
+    return audioTracks().find((track) => track.id === id) || null;
+  }
+
+  function currentSceneAudioTrack() {
+    return audioTrackById(sc().audioTrackId);
+  }
+
+  function audioFileTitle(file) {
+    const name = String((file && file.name) || "").trim();
+    const withoutExt = name.replace(/\.(mp3|m4a|wav|aac)$/i, "").trim();
+    return (withoutExt || (tx("楽曲"))).slice(0, 80);
+  }
+
+  function formatAudioTime(value) {
+    const seconds = Number.isFinite(Number(value)) && Number(value) > 0 ? Math.floor(Number(value)) : 0;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const rest = seconds % 60;
+    return hours
+      ? `${hours}:${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`
+      : `${minutes}:${String(rest).padStart(2, "0")}`;
+  }
+
+  function setAudioStatus(ja, en) {
+    if (els.musicStatus) els.musicStatus.textContent = languageValue(() => (en || ja), () => (ja));
+  }
+
+  function revokeAudioObjectUrl() {
+    if (!audioPlayback.objectUrl) return;
+    try { window.URL.revokeObjectURL(audioPlayback.objectUrl); } catch (_) { /* 破棄済みでも続ける */ }
+    audioPlayback.objectUrl = null;
+  }
+
+  function clearAudioEngine() {
+    audioLoadGeneration += 1;
+    if (els.musicAudio) {
+      els.musicAudio.pause();
+      els.musicAudio.removeAttribute("src");
+      try { els.musicAudio.load(); } catch (_) { /* srcなしでも続ける */ }
+    }
+- rollout_summaries/2026-07-19T04-20-12-dZcr-visionpro_device_hub_and_stage_sketch_integration_handoff.md (cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files, rollout_path=/Users/arata/.codex/archived_sessions/rollout-2026-07-19T13-20-12-019f789a-657f-7471-ac88-e59542410a3f.jsonl, updated_at=2026-07-30T09:46:44+00:00, thread_id=019f789a-657f-7471-ac88-e59542410a3f, partial: Vision Pro remains unpaired)
+
+### keywords
+
+- Vision Pro, Xcode 26.6, Device Hub, Manage Devices, Pair Nearby Device, Personal Team, Remote Devices, IPv6, devicectl
+
+## Task 2: Stage Sketch to Vision Pro rehearsal JSON contract
+
+### rollout_summary_files
+
+- rollout_summaries/2026-07-19T04-20-12-dZcr-visionpro_device_hub_and_stage_sketch_integration_handoff.md (cwd=/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files, rollout_path=/Users/arata/.codex/archived_sessions/rollout-2026-07-19T13-20-12-019f789a-657f-7471-ac88-e59542410a3f.jsonl, updated_at=2026-07-30T09:46:44+00:00, thread_id=019f789a-657f-7471-ac88-e59542410a3f, success: handoff document and tests)
+
+### keywords
+
+- StageDocument, schemaVersion 2, Project > Scene > Piece, VISION_PRO_REHEARSAL_EXTENSION_HANDOFF.md, coordinate-conversion, holdDurationSeconds, transitionToNextSeconds, iCloud Drive, StageCore
+
+## User preferences
+
+- When the user says "device hubがないです" with a screenshot -> match the installed Xcode UI, not an older menu name. [Task 1]
+
+## Reusable knowledge
+
+- For Xcode 26.6, use `Xcode > Open Developer Tool > Device Hub` or run-destination `Manage Devices…`; sequence Apple Account → Personal Team/automatic signing → `+ > Pair Nearby Device…` → Vision Pro `設定 > 一般 > リモートデバイス` PIN → Developer Mode/restart → Run. Same Wi-Fi and IPv6 are required; this device was unpaired and Team unset. [Task 1]
+- Stage Sketch version 3 is the production source of truth; Vision Pro reads a derived `StageDocument schemaVersion 2` JSON through iCloud Drive/file selection. Never directly co-edit the web and Swift representations. Convert coordinates as `x=(0.5-u)*widthMeters`, `z=(0.5-v)*depthMeters`, `y=0`, `yawDegrees=facing`; lock four corner/direction tests. `sceneAnimMs` is UI speed, not rehearsal timing. [Task 2]
+- Handoff: `show-creative-ideas/shosai-app/docs/VISION_PRO_REHEARSAL_EXTENSION_HANDOFF.md`. `npm test` passed 6/6 and StageCore passed 24/24 using `/tmp` cache/scratch paths; converter and physical/device/audio integration remain unimplemented. [Task 2]
+
+## Failures and how to do differently
+
+- CoreDevice/CoreSimulator and cache errors make CLI device state unreliable; check GUI Device Hub plus headset settings first. Do not call an unsigned build, docs, or test success a physical validation. [Task 1][Task 2]
+- When Swift cache paths are denied, set `SWIFTPM_MODULECACHE_OVERRIDE` and `CLANG_MODULE_CACHE_PATH` plus `swift test --scratch-path /tmp/show-staging-stagecore-build`; keep proposed fields and unverified device/audio behavior explicitly separate. [Task 2]
+
+
+web search: 'getOutputTimestamp() method'
+codex
+### 1. 推奨は(b)の段階採用
+
+**単体で制作を完結できる別入口を作り、データ規約を先に共有、本体への接続を後にします。**
+
+| 形 | 評価 |
+|---|---|
+| (a) 完全独立 | 本体の並行編集と干渉しにくい。反面、保存変換・描画・iPad対応を二重に保守する |
+| (b) 別入口 | 制作画面を絞れ、導入時も同じ動きデータを使える。ただし共通コードの変更は本体担当との調整が必要 |
+| (c) 本体内モード | 導入処理は少ないが、単体アプリの検証と本体改修が絡み、今回の順路に合わない |
+
+(b)でも「既存機能を全部すぐ共有できる」とは置きません。本体JSには初期化と機能がまとまっています。まず専用ディレクトリで進め、座標・演者識別・動き評価の契約を固定。描画の切出し、音源保存API、PWAのキャッシュ・保存領域は本体担当と調整します。
+
+保存は`schemaVersion / dancers / stage / track / scene`を持つ単体用の包みを用意し、**`scene.motion`は導入先と同じ仕様**にします。キーフレームだけでは演者・寸法・音源を復元できません。
+
+### 2. v0.1の範囲
+
+**入れるもの**
+
+- 名前・色・向きを持つダンサー、舞台の幅・奥行き、正規化座標。
+- 一作品一曲、固定`countBpm`＋`firstCountSec`、8カウント格子。
+- 先頭配置、配置点の追加・複製・移動・削除、Undo／Redo、床上の直線補間。
+- 再生・停止・任意位置再開・区間反復、`heroCount`による代表画像。
+- 自動保存、版付きJSON保存・読込、音源の別添／再選択。音源未接続でも配置編集は可能。
+- iPadの駒ドラッグ、複数選択、拡大縮小、数値での時点編集。
+- ホスト音源＋無音ゲスト追従。編集・再生操作はホストのみ。
+
+**後回し**は曲線経路、テンポ変化、空中動作、身体の振付、同時共同編集、各端末での音声同期です。
+
+Web Audio再生では、開始時刻と音源オフセットから音楽位置を求め、描画時に位置を評価します。`requestAnimationFrame`の回数で時間を積算しません。出力時刻との対応には`getOutputTimestamp()`を利用し、停止・シーク時に基準を更新します。[W3C仕様](https://www.w3.org/TR/webaudio/#dom-audiocontext-getoutputtimestamp)  
+Vision Pro版とは時計の原則を合わせ、Swift実装の移植は前提にしません。
+
+### 3. 単体での固有性
+
+- **「この瞬間、客席にどう見せるか」から作る。** 平面編集と客席側プレビューを並べ、代表配置から動きを組み立てる。
+- **同じ作品を違う広さで試す。** 相対配置は保ち、人の寸法は伸縮させず、間隔や移動距離の変化を見直す。
+- **8カウントと演出意図を一緒に残す。** 「第3エイト・1で中央を空ける」のように、時点と短い指示を結ぶ。
+
+競合にないと断定する機能一覧ではなく、演出家の制作手順を中心に据える差別化です。
+
+### 4. 舞台スケッチへの導入
+
+初期は**フォーメーション一本＝場面一つのmotion**。曲のセクションは内部の目印とし、照明・セット・演出上の区切りが必要な場合だけ複数場面へ分けます。
+
+取込時には次を対応付けます。
+
+- ダンサーID→`castId`と配置駒ID。名前一致だけで確定しない。
+- 元舞台寸法→対象会場。`u,v`を保持した結果をプレビューする。
+- 音源参照→既存／新規の楽曲ID。別編集版の曲を誤対応させない。
+
+取込は一括Undo可能な操作にし、元作品ID・改訂を保持。再取込は差分確認を挟みます。導入後も別入口を専用編集画面として残し、同じデータを両画面から同時に書き換えない契約にします。
+
+### 5. ロードマップ
+
+- **M1〔S〕**：実際の一曲・配置メモを収集し、座標・カウント・保存契約を決める。
+- **M2〔L〕**：単体で配置作成→音楽再生→修正→保存まで完成。実iPadで検証。
+- **M3〔L〕**：客席プレビュー、無音ゲスト追従、オフライン・復帰を検証しv0.1成立。
+- **M4〔L〕**：本体担当と共通化・取込・演者ビューアを接続。
+
+早期検証は「半拍や待ちをどう書くか」「配置を直す頻度」「曲差替え」「指とペンの操作」「共有の遅れが稽古を妨げるか」です。
+
+### 6. 次に聞く三問
+
+1. 最初は、振付を新しく考える用途と、完成済み振付を記録する用途のどちらが中心ですか。
+2. 最初の対象人数・曲の長さと、共有する端末数はどの程度ですか。
+3. 共有稽古は同じ部屋が中心ですか、離れた場所からの参加も初期に必要ですか。
+
+
+tokens used
+23,075
+### 1. 推奨は(b)の段階採用
+
+**単体で制作を完結できる別入口を作り、データ規約を先に共有、本体への接続を後にします。**
+
+| 形 | 評価 |
+|---|---|
+| (a) 完全独立 | 本体の並行編集と干渉しにくい。反面、保存変換・描画・iPad対応を二重に保守する |
+| (b) 別入口 | 制作画面を絞れ、導入時も同じ動きデータを使える。ただし共通コードの変更は本体担当との調整が必要 |
+| (c) 本体内モード | 導入処理は少ないが、単体アプリの検証と本体改修が絡み、今回の順路に合わない |
+
+(b)でも「既存機能を全部すぐ共有できる」とは置きません。本体JSには初期化と機能がまとまっています。まず専用ディレクトリで進め、座標・演者識別・動き評価の契約を固定。描画の切出し、音源保存API、PWAのキャッシュ・保存領域は本体担当と調整します。
+
+保存は`schemaVersion / dancers / stage / track / scene`を持つ単体用の包みを用意し、**`scene.motion`は導入先と同じ仕様**にします。キーフレームだけでは演者・寸法・音源を復元できません。
+
+### 2. v0.1の範囲
+
+**入れるもの**
+
+- 名前・色・向きを持つダンサー、舞台の幅・奥行き、正規化座標。
+- 一作品一曲、固定`countBpm`＋`firstCountSec`、8カウント格子。
+- 先頭配置、配置点の追加・複製・移動・削除、Undo／Redo、床上の直線補間。
+- 再生・停止・任意位置再開・区間反復、`heroCount`による代表画像。
+- 自動保存、版付きJSON保存・読込、音源の別添／再選択。音源未接続でも配置編集は可能。
+- iPadの駒ドラッグ、複数選択、拡大縮小、数値での時点編集。
+- ホスト音源＋無音ゲスト追従。編集・再生操作はホストのみ。
+
+**後回し**は曲線経路、テンポ変化、空中動作、身体の振付、同時共同編集、各端末での音声同期です。
+
+Web Audio再生では、開始時刻と音源オフセットから音楽位置を求め、描画時に位置を評価します。`requestAnimationFrame`の回数で時間を積算しません。出力時刻との対応には`getOutputTimestamp()`を利用し、停止・シーク時に基準を更新します。[W3C仕様](https://www.w3.org/TR/webaudio/#dom-audiocontext-getoutputtimestamp)  
+Vision Pro版とは時計の原則を合わせ、Swift実装の移植は前提にしません。
+
+### 3. 単体での固有性
+
+- **「この瞬間、客席にどう見せるか」から作る。** 平面編集と客席側プレビューを並べ、代表配置から動きを組み立てる。
+- **同じ作品を違う広さで試す。** 相対配置は保ち、人の寸法は伸縮させず、間隔や移動距離の変化を見直す。
+- **8カウントと演出意図を一緒に残す。** 「第3エイト・1で中央を空ける」のように、時点と短い指示を結ぶ。
+
+競合にないと断定する機能一覧ではなく、演出家の制作手順を中心に据える差別化です。
+
+### 4. 舞台スケッチへの導入
+
+初期は**フォーメーション一本＝場面一つのmotion**。曲のセクションは内部の目印とし、照明・セット・演出上の区切りが必要な場合だけ複数場面へ分けます。
+
+取込時には次を対応付けます。
+
+- ダンサーID→`castId`と配置駒ID。名前一致だけで確定しない。
+- 元舞台寸法→対象会場。`u,v`を保持した結果をプレビューする。
+- 音源参照→既存／新規の楽曲ID。別編集版の曲を誤対応させない。
+
+取込は一括Undo可能な操作にし、元作品ID・改訂を保持。再取込は差分確認を挟みます。導入後も別入口を専用編集画面として残し、同じデータを両画面から同時に書き換えない契約にします。
+
+### 5. ロードマップ
+
+- **M1〔S〕**：実際の一曲・配置メモを収集し、座標・カウント・保存契約を決める。
+- **M2〔L〕**：単体で配置作成→音楽再生→修正→保存まで完成。実iPadで検証。
+- **M3〔L〕**：客席プレビュー、無音ゲスト追従、オフライン・復帰を検証しv0.1成立。
+- **M4〔L〕**：本体担当と共通化・取込・演者ビューアを接続。
+
+早期検証は「半拍や待ちをどう書くか」「配置を直す頻度」「曲差替え」「指とペンの操作」「共有の遅れが稽古を妨げるか」です。
+
+### 6. 次に聞く三問
+
+1. 最初は、振付を新しく考える用途と、完成済み振付を記録する用途のどちらが中心ですか。
+2. 最初の対象人数・曲の長さと、共有する端末数はどの程度ですか。
+3. 共有稽古は同じ部屋が中心ですか、離れた場所からの参加も初期に必要ですか。
+
+

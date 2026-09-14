@@ -1,0 +1,28 @@
+{
+  "date": "2026-09-09",
+  "status": "ai_draft_not_adopted",
+  "userRequest": "一度ロミオが無視してティボルトが追いかけてみるものの見失う、そこにマルキー塩が現れ戦うというながれにしましょう",
+  "normalizedCharacterName": "マーキューシオ",
+  "previousFiles": {
+    "selections.json": "207496587b0418ffbe2415f524ce120c597099d5194f040c745ff67b0bf10a7a",
+    "draft.json": "c5211a57c6c78d1c220680d37f14cc513b483b79b52b16b12961cb9cbe2382ae",
+    "../direction-notes/scene-notes.json": "f4f862b58c58d8c93f0ba5a5baaaf2f4afa1422ca14b70dfeee98545a35dce77"
+  },
+  "previousScene5": {
+    "scope": "action_weighted_causal_excerpt",
+    "lineCount": 12,
+    "dialogueLines": 5,
+    "stageDirectionLines": 7,
+    "jaDraft": "ティボルト　ロミオ。おまえを呼ぶ名は、一つしかない――悪党だ。\nロミオ　ティボルト、私にはあなたを憎めない理由がある。ここは収めてくれ。\n（マーキューシオがロミオの前へ出て、ティボルトへ剣を向ける）\n（マーキューシオが剣を抜く。ティボルトも応じ、二人は激しく打ち合う）\nロミオ　やめろ！　二人とも剣を収めろ！\n（ロミオが二人の間へ入る。その腕の下からティボルトの刃がマーキューシオに届く。ティボルトは退く）\nマーキューシオ　両家とも、疫病に呑まれろ。ベンヴォーリオ、連れていってくれ。\n（マーキューシオとベンヴォーリオ、退場）\n（ベンヴォーリオ、一人で戻る。首を横に振る。ロミオはマーキューシオの死を悟る）\n（ティボルト、戻る。ロミオは振り向き、剣を抜く）\nロミオ　ティボルト、おまえか私か、どちらかがあいつと行く。\n（ロミオとティボルト、剣を交える。ティボルトが倒れる）"
+  },
+  "newScene5": {
+    "scope": "action_weighted_user_adaptation",
+    "expectedLineCount": 11,
+    "dialogueLines": 3,
+    "stageDirectionLines": 8,
+    "sourceDifference": "Romeo ignores Tybalt and leaves; Tybalt chases and loses him; Mercutio then appears.",
+    "allLaterRequiredNarrativeBeatsRetained": true
+  },
+  "adopted": false,
+  "finalPolishingByUser": true
+}

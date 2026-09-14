@@ -1,0 +1,98 @@
+{
+  "scriptName": "shosai-app",
+  "preparedAt": "2026-09-13T09:11:47.209Z",
+  "baselineVersion": "b8c7e1bb-f730-469e-92da-8b989ec2a53b",
+  "baselineDeploymentId": "b502715e-af84-46a3-a1ce-a36a2c419115",
+  "baselineSourceSha256": "1b74f5d60d0f215470a417268e00a5eed24067fa8d984ab4a08d3fbfaa76701f",
+  "candidateSourceSha256": "1ae389cca1067e8f239e3fe437fa789d9439f1ad5199f991f8bebb37ff5100d5",
+  "changedRoutes": [
+    "/stage",
+    "/stage-i18n.js",
+    "/stage-sketch.js",
+    "/stage-sw.js",
+    "/stage.html",
+    "/style.css"
+  ],
+  "baselineRouteHashes": {
+    "/stage": "ed5e9c46f0e9c23c4bc9a2aa533ceca6579bec370cca05f772ef95fa0446039f",
+    "/stage-i18n.js": "0a4d1c1ca2e662aa51eba0eee22dd5de6b82f2252d5cfe71ff06e94849ed19df",
+    "/stage-sketch.js": "eab050f260b75c2e7100209d3f72c91e13713c923c71670e3a43bc9e9e422743",
+    "/stage-sw.js": "68bf10fca711a6298324f4f55cad30c51462cd3b536e6b241ee27179684cc836",
+    "/stage.html": "ed5e9c46f0e9c23c4bc9a2aa533ceca6579bec370cca05f772ef95fa0446039f",
+    "/style.css": "719366b46b6ea5abdf67795f5aa3e8e34eb5382e2c4e2ef143d8dbc49ca98ed6"
+  },
+  "candidateRouteHashes": {
+    "/stage": "48b3a5f7fd0861cdd38db1b373ea4e75b27358f892792e7991c38a8b2db819a5",
+    "/stage-i18n.js": "4c7cf84c0bc3ed9b478b4a84b2dcb5b1d9904c3b83a7d0b94c5f98b71b95d252",
+    "/stage-sketch.js": "6a39fba029788d7517c34db0c2b57dd2a78e44a4de09472635288af6aabe6b11",
+    "/stage-sw.js": "44de71b4cc2b0ea88e8beffd86afdb87e9d456df523fc2cb131f580e97866cd1",
+    "/stage.html": "48b3a5f7fd0861cdd38db1b373ea4e75b27358f892792e7991c38a8b2db819a5",
+    "/style.css": "43bde1de83d33677071cca5e7e21825aec5ef50c23b8f9ef133d8730cc7c148c"
+  },
+  "revision": {
+    "style": "291 -> 292",
+    "i18n": "147 -> 148",
+    "sketch": "415 -> 416",
+    "cache": "343 -> 344"
+  },
+  "insertedBlockHashes": {
+    "warningHtml": "e678442e45d5b3ad3fa789ed8c4d8eeb8ebf134856d70eb6decb451710599aae",
+    "warningCss": "b388aa3d31c878a86ae26f509841ca313d5bcd65675b79090e84b7a25b1546ff",
+    "warningElements": "31e4063e5525283d505272a4c19e24ea1f24da5eeada0dd5620bcdb58d2dc8e2",
+    "warningBehavior": "5cc494882a9096a299a71c18f921ca5f1140558c309bc96f3bd1b070f002a46b",
+    "warningLaunch": "ad246455e5718744810a1c685077d1c8755d9c1f7d943dcafac1be2e4a102088",
+    "warningI18n": "9cd93bae583f07a88dabecafda4f8383670511d88302c01529c5447bf37a556b"
+  },
+  "retainedBindings": [
+    {
+      "name": "ASSETS",
+      "type": "assets",
+      "class_name": null
+    },
+    {
+      "name": "GUEST_ACCOUNTS",
+      "type": "secret_text",
+      "class_name": null
+    },
+    {
+      "name": "SESSION_ROOM",
+      "type": "durable_object_namespace",
+      "class_name": "SessionRoom"
+    },
+    {
+      "name": "SITE_PASS",
+      "type": "secret_text",
+      "class_name": null
+    },
+    {
+      "name": "SITE_USER",
+      "type": "secret_text",
+      "class_name": null
+    },
+    {
+      "name": "STAGE_BETA_ACTIVE",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STAGE_RELEASE_SCOPE",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STAGE_USAGE_ENABLED",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STUDY_ALLOW_ANONYMOUS",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STUDY_LINKS",
+      "type": "durable_object_namespace",
+      "class_name": "StudyLinks"
+    }
+  ]
+}

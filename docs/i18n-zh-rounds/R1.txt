@@ -1,0 +1,13 @@
+最初に "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/AGENTS.md" を読むこと。
+次に "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/system-audit-2026-09-09/WO_B3_i18n_ternaries.md" を読み、その仕様・テスト・制約のとおりに実装する。
+併せて "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/I18N_ZH_WORKORDER_2026-09-09.md" の §1・§5・§7.1 を読む（この作業は同発注の R1）。
+補足（本発注固有）:
+  - 目的は後続の中国語UI（I18N_ZH_WORKORDER §3）の土台。isEn() の値域拡張はしない。
+  - 編集前に stage-sketch.js / stage-set-builder.js / stage-i18n.js を <name>_backup_2026-09-09-before-b3.js の名で複製してから触る。
+  - 同じ鍵で英語が食い違う場合は置換せず、鍵・行番号・両方の英語を表にして報告する。
+  - 作業ツリーには未コミットの他セッションの変更がある。編集前に読み直し、巻き戻さない。コミットしない。git add -A しない。
+  - 文字列の検査はソースの正規表現ではなく評価後の値で行う。
+  - ローカルHTTPでの innerText 比較は "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/guest-access-2026-09-08/verify-local-http.mjs" に近い手順で行い、ブラウザが使えない環境なら node の vm で stage-i18n.js を評価して TEXT の鍵集合比較で代替し、その旨を報告に書く。
+完了報告（この順で）: 変更ファイル一覧／置換件数（154+9 のうち何件）／保留件数と表／node tests/index.mjs の結果（緑・赤の件数）／
+  grep -c 'isEn() *?' stage-sketch.js の値／stage.html?lang=en の innerText 差分（空であること。代替手段ならその内容）／
+  追加した TEXT 鍵の一覧（i18n-prep/NEEDS_REVIEW.md に「2026-09-09 追加鍵（未訳）」として追記済みであること）。

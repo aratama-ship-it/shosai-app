@@ -1,0 +1,42 @@
+{
+  "chromium": {
+    "candidate": {
+      "timings": {
+        "drawImage": 8.299999993294477,
+        "putImageData": 1.3999999947845936,
+        "volume": 340.8999999985099,
+        "people": 10.199999999254942
+      },
+      "medianMs": 22.199999999254942,
+      "p95Ms": 29.099999997764826,
+      "lamps": 8,
+      "people": 8,
+      "haze": 70,
+      "viewport": [
+        1800,
+        1300
+      ],
+      "dpr": 1
+    }
+  },
+  "webkit": {
+    "candidate": {
+      "timings": {
+        "drawImage": 1,
+        "putImageData": 0,
+        "volume": 539,
+        "people": 14
+      },
+      "medianMs": 31,
+      "p95Ms": 62,
+      "lamps": 8,
+      "people": 8,
+      "haze": 70,
+      "viewport": [
+        1800,
+        1300
+      ],
+      "dpr": 1
+    }
+  }
+}

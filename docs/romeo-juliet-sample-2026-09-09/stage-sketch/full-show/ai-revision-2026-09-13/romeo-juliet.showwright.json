@@ -1,0 +1,2416 @@
+{
+  "kind": "showwright-core",
+  "schemaVersion": "1.0.0",
+  "id": "romeo-juliet-full-show-ai-revision",
+  "title": "ロミオとジュリエット｜全編サンプル",
+  "status": "ai-proposal",
+  "notes": "Stage Sketch非依存の演出内容。座標、製品部品型、読込UI、描画値を持たない。",
+  "provenance": {
+    "sources": [
+      {
+        "id": "source-native",
+        "kind": "document",
+        "path": "../romeo-juliet-full-show.stage-sketch.json",
+        "sha256": "7086d75a843a0ea7253d3dd630defe994cf491432aabcc19e7774d5000a5d780",
+        "description": "元のStage Sketchサンプル"
+      },
+      {
+        "id": "source-ai-input",
+        "kind": "document",
+        "path": "../m6-transition-candidate/ai-input.json",
+        "sha256": "8d566e2c1abe30edeb6a2aeae9df0d4cd10259c30eb5e00418345c620d04ec39"
+      },
+      {
+        "id": "source-ai-proposal",
+        "kind": "ai-output",
+        "path": "../m6-transition-candidate/ai-proposal.json",
+        "sha256": "4f08d32c113e5a37796ef7bcf9d1265464a509a9808518554989824d41100364"
+      },
+      {
+        "id": "source-owner-approval",
+        "kind": "owner-statement",
+        "path": "../m6-transition-candidate/owner-approval-2026-09-12.json",
+        "sha256": "cb81b4f5ef0c4667f95de020e7252efc4196fe023d80d05008416de71aed8334"
+      },
+      {
+        "id": "source-owner-handoff",
+        "kind": "owner-statement",
+        "path": "conversation://romeo-juliet-handoff-2026-09-13",
+        "locator": "M6確定条件とJSON修正方針"
+      },
+      {
+        "id": "source-ai-revision",
+        "kind": "ai-output",
+        "path": "conversation://ai-showwright-revision-2026-09-13",
+        "locator": "照明目的とコア分離案"
+      }
+    ],
+    "note": "ファイル出典は内容ハッシュで固定。会話出典は安定した識別子で参照する。"
+  },
+  "sections": [
+    {
+      "id": "rj-section-rj-cond-01",
+      "title": "第1場面｜対立の街、仮面の出会い",
+      "sceneIds": [
+        "rj-frame-rj-cond-01-a-01",
+        "rj-frame-rj-cond-01-b-02",
+        "rj-frame-rj-cond-01-c-01",
+        "rj-frame-rj-cond-01-d-01"
+      ],
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "rj-section-rj-cond-02",
+      "title": "第2場面｜二人の約束から、届かない手紙へ",
+      "sceneIds": [
+        "rj-frame-rj-cond-02-a-01",
+        "rj-frame-rj-cond-02-b-01",
+        "rj-frame-rj-cond-02-c-01",
+        "rj-frame-rj-cond-03-a-01",
+        "rj-frame-rj-cond-03-a-02",
+        "rj-frame-rj-cond-03-b-01",
+        "rj-frame-rj-cond-03-c-01",
+        "rj-frame-rj-cond-03-c-02",
+        "rj-frame-rj-cond-03-c-03",
+        "rj-frame-rj-cond-03-d-01",
+        "rj-frame-rj-cond-03-d-02",
+        "rj-frame-rj-cond-04-a-01",
+        "rj-frame-rj-cond-04-b-01",
+        "rj-frame-rj-cond-04-b-02",
+        "rj-frame-rj-cond-04-c-01",
+        "rj-frame-rj-cond-04-c-02",
+        "rj-frame-rj-cond-04-d-01",
+        "rj-frame-rj-cond-04-d-02"
+      ],
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "rj-section-rj-cond-05",
+      "title": "第3場面｜墓所、二人の死、残された和解",
+      "sceneIds": [
+        "rj-frame-rj-cond-05-a-01",
+        "rj-frame-rj-cond-05-b-01",
+        "rj-frame-rj-cond-05-b-02",
+        "rj-frame-rj-cond-05-c-01",
+        "rj-frame-rj-cond-05-d-01",
+        "rj-frame-rj-cond-05-d-02"
+      ],
+      "sourceRefs": [
+        "source-native"
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "id": "rj-frame-rj-cond-01-a-01",
+      "title": "Q01｜四隅の乱戦／中央の制止",
+      "sectionId": "rj-section-rj-cond-01",
+      "dramaticRole": "争いの大きさと、それを止めたいベンヴォーリオの孤立を見せる。",
+      "roleIds": [
+        "ROMEO",
+        "JULIET",
+        "FRIAR_LAWRENCE",
+        "FRIAR_JOHN",
+        "MONTAGUE",
+        "CAPULET",
+        "MERCUTIO",
+        "NURSE",
+        "BENVOLIO",
+        "TYBALT"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 180,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "舞台全体の明かりを保ちながら中央へ穏やかなスポットを置き、制止する人物を見せる。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-01-b-02",
+      "title": "Q02｜中央の制止と挑発",
+      "sectionId": "rj-section-rj-cond-01",
+      "dramaticRole": "平和へ向かいかけた空気を、ティボルトの一歩が断ち切る。",
+      "roleIds": [
+        "ROMEO",
+        "JULIET",
+        "FRIAR_LAWRENCE",
+        "FRIAR_JOHN",
+        "MONTAGUE",
+        "CAPULET",
+        "MERCUTIO",
+        "NURSE",
+        "BENVOLIO",
+        "TYBALT"
+      ],
+      "assetIds": [
+        "asset-mask"
+      ],
+      "timing": {
+        "duration": {
+          "value": null,
+          "status": "unmeasured",
+          "sourceRefs": [
+            "source-owner-handoff"
+          ]
+        },
+        "transitionDeadline": {
+          "value": null,
+          "status": "unmeasured",
+          "sourceRefs": [
+            "source-owner-handoff"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "挑発を合図に即時ブラックアウトし、舞台監督の再照明指示まで暗転を維持する。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-01-c-01",
+      "title": "Q03｜仮面舞踏会と二人の出会い",
+      "sectionId": "rj-section-rj-cond-01",
+      "dramaticRole": "群れの中で、二人だけが同じ速度になる。",
+      "roleIds": [
+        "FRIAR_LAWRENCE",
+        "BENVOLIO",
+        "TYBALT",
+        "MERCUTIO",
+        "NURSE",
+        "CAPULET",
+        "MONTAGUE",
+        "FRIAR_JOHN",
+        "ROMEO",
+        "JULIET"
+      ],
+      "assetIds": [
+        "asset-rolling-bar",
+        "asset-mask"
+      ],
+      "timing": {
+        "duration": {
+          "value": 150,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "客席右手前の二人を柔らかく照らし、バーを暖色で見せながら、残る八名にも最低限の明るさを残す。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": [
+        "decision-lighting-separation"
+      ]
+    },
+    {
+      "id": "rj-frame-rj-cond-01-d-01",
+      "title": "Q04｜相手の家名を知る",
+      "sectionId": "rj-section-rj-cond-01",
+      "dramaticRole": "触れ合った相手が、敵の家の子だと知る。",
+      "roleIds": [
+        "FRIAR_LAWRENCE",
+        "BENVOLIO",
+        "TYBALT",
+        "MERCUTIO",
+        "NURSE",
+        "CAPULET",
+        "MONTAGUE",
+        "FRIAR_JOHN",
+        "ROMEO",
+        "JULIET"
+      ],
+      "assetIds": [
+        "asset-rolling-bar",
+        "asset-mask"
+      ],
+      "timing": {
+        "duration": {
+          "value": 45,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "室内の暖かな光を消し、客席右手前の二人だけを残す。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-02-a-01",
+      "title": "Q05｜窓辺の二人／大道具さんの声",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "家名を知った上で、結婚を自分たちの意思として選ぶ。",
+      "roleIds": [
+        "ROMEO",
+        "JULIET"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 90,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "客席右手前の二人を保ち、退場後に焦点を中央へ移す。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-02-b-01",
+      "title": "Q06｜見ない背中と中央のロレンス",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "夜から翌日へ、秘密を見ていない人々の背中で場所を変える。",
+      "roleIds": [
+        "BENVOLIO",
+        "TYBALT",
+        "MERCUTIO",
+        "NURSE",
+        "CAPULET",
+        "MONTAGUE",
+        "FRIAR_JOHN",
+        "FRIAR_LAWRENCE"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 30,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "暗転せず客席右手前から中央へ焦点を移し、色温度で翌日を示す。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-02-c-01",
+      "title": "Q07｜別々の斜めから、ロレンスの前へ",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "二人の結婚を短い幸福の頂点とし、その手を街の争いへつなぐ。",
+      "roleIds": [
+        "BENVOLIO",
+        "TYBALT",
+        "MERCUTIO",
+        "NURSE",
+        "CAPULET",
+        "MONTAGUE",
+        "FRIAR_JOHN",
+        "FRIAR_LAWRENCE",
+        "ROMEO",
+        "JULIET"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 100,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "中央を柔らかく照らし、婚姻後に街路全体へ静かに明かりを開く。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-03-a-01",
+      "title": "Q08.1｜ロミオを呼び止め、追う",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "ロミオが争いを避けたことを、追跡の始まりとして見せる。",
+      "roleIds": [
+        "ROMEO",
+        "TYBALT"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 30,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "舞台全体を一つの街路として照らし、左右を家ごとの色に分けない。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-03-a-02",
+      "title": "Q08.2｜ロミオを見失う",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "ロミオが争いを避けたことを、追跡の始まりとして見せる。",
+      "roleIds": [
+        "TYBALT"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 15,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "舞台全体を一つの街路として照らし、左右を家ごとの色に分けない。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-03-b-01",
+      "title": "Q09｜マーキューシオとティボルト",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "軽い挑発が引き返せない争いへ変わる。",
+      "roleIds": [
+        "MERCUTIO",
+        "TYBALT"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 60,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "二人の殺陣が見える街路の明かりを固定し、途中で見え方を切り替えない。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-03-c-01",
+      "title": "Q10.1｜ロミオが止めに入る",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "止めようとしたロミオの手が、報復へ変わる。",
+      "roleIds": [
+        "MERCUTIO",
+        "ROMEO",
+        "TYBALT",
+        "BENVOLIO"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 15,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "負傷と報復が見える明かりを保ち、決着後に焦点をゆっくり絞る。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-03-c-02",
+      "title": "Q10.2｜傷を見て、即座に報復",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "止めようとしたロミオの手が、報復へ変わる。",
+      "roleIds": [
+        "MERCUTIO",
+        "BENVOLIO",
+        "ROMEO",
+        "TYBALT"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 15,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "負傷と報復が見える明かりを保ち、決着後に焦点をゆっくり絞る。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-03-c-03",
+      "title": "Q10.3｜二人が倒れる",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "止めようとしたロミオの手が、報復へ変わる。",
+      "roleIds": [
+        "MERCUTIO",
+        "BENVOLIO",
+        "ROMEO",
+        "TYBALT"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 30,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "負傷と報復が見える明かりを保ち、決着後に焦点をゆっくり絞る。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-03-d-01",
+      "title": "Q11.1｜追放の知らせ",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "追放の意味を、妻のそばに残れば死ぬという別れに変える。",
+      "roleIds": [
+        "BENVOLIO",
+        "ROMEO"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 38,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "裁きから客席右手前の夜、夜明けへ光を移し、明るさとともに二人の距離を見せる。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-03-d-02",
+      "title": "Q11.2｜一夜を過ごした二人の別れ",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "追放の意味を、妻のそばに残れば死ぬという別れに変える。",
+      "roleIds": [
+        "ROMEO",
+        "JULIET"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 112,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "裁きから客席右手前の夜、夜明けへ光を移し、明るさとともに二人の距離を見せる。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-04-a-01",
+      "title": "Q12｜父と娘だけの対立",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "娘の意思が聞かれない家を、二人だけの距離で示す。",
+      "roleIds": [
+        "JULIET",
+        "CAPULET"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 75,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "客席右の家の領域を照らし、父娘の距離を誇張しすぎず見せる。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-04-b-01",
+      "title": "Q13.1｜仮死の薬を受け取る",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "死に見える眠りと、それを知らせる手紙という二つの条件を観客に渡す。",
+      "roleIds": [
+        "FRIAR_LAWRENCE",
+        "JULIET"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 52,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "中央の瓶から手紙へ焦点を渡し、最後に客席右の部屋を照らす。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-04-b-02",
+      "title": "Q13.2｜計画の手紙をジョンへ",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "死に見える眠りと、それを知らせる手紙という二つの条件を観客に渡す。",
+      "roleIds": [
+        "FRIAR_LAWRENCE",
+        "FRIAR_JOHN"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 53,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "中央の瓶から手紙へ焦点を渡し、最後に客席右の部屋を照らす。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-04-c-01",
+      "title": "Q14.1｜一人で薬を飲む",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "本人の決意が、家族とベンヴォーリオには死として見える。",
+      "roleIds": [
+        "JULIET"
+      ],
+      "assetIds": [
+        "asset-low-seat"
+      ],
+      "timing": {
+        "duration": {
+          "value": 42,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "一人の夜、発見の朝、葬送へ暗転なしで光を移し、時間と場所を見せる。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-04-c-02",
+      "title": "Q14.2｜葬送を見かける",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "本人の決意が、家族とベンヴォーリオには死として見える。",
+      "roleIds": [
+        "JULIET",
+        "NURSE",
+        "CAPULET",
+        "BENVOLIO"
+      ],
+      "assetIds": [
+        "asset-low-seat"
+      ],
+      "timing": {
+        "duration": {
+          "value": 63,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "一人の夜、発見の朝、葬送へ暗転なしで光を移し、時間と場所を見せる。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-04-d-01",
+      "title": "Q15.1｜誤った死の知らせが届く",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "間違った知らせは届き、本当の手紙だけが届かない。",
+      "roleIds": [
+        "BENVOLIO",
+        "ROMEO"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 27,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "舞台全体の旅路から、左の墓所と右の修道士の場所へ光を分けて開く。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-04-d-02",
+      "title": "Q15.2｜手紙とロミオの入れ違い",
+      "sectionId": "rj-section-rj-cond-02",
+      "dramaticRole": "間違った知らせは届き、本当の手紙だけが届かない。",
+      "roleIds": [
+        "ROMEO",
+        "FRIAR_JOHN"
+      ],
+      "assetIds": [],
+      "timing": {
+        "duration": {
+          "value": 108,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "舞台全体の旅路から、左の墓所と右の修道士の場所へ光を分けて開く。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-05-a-01",
+      "title": "Q16｜墓所とロレンス側／中央は人の川",
+      "sectionId": "rj-section-rj-cond-05",
+      "dramaticRole": "二つの場所で起こることが、見えていても互いに届かない。",
+      "roleIds": [
+        "ROMEO",
+        "JULIET",
+        "BENVOLIO",
+        "TYBALT",
+        "MERCUTIO",
+        "NURSE",
+        "CAPULET",
+        "MONTAGUE",
+        "FRIAR_LAWRENCE",
+        "FRIAR_JOHN"
+      ],
+      "assetIds": [
+        "asset-low-seat"
+      ],
+      "timing": {
+        "duration": {
+          "value": 100,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "左の墓所と右の別場所を同時に照らし、中央の人の流れも読める明るさを残す。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-05-b-01",
+      "title": "Q17.1｜ロミオの死、ジュリエットの目覚め",
+      "sectionId": "rj-section-rj-cond-05",
+      "dramaticRole": "ほんの少しの時間差で、会えたはずの二人が会えない。",
+      "roleIds": [
+        "ROMEO",
+        "JULIET",
+        "BENVOLIO",
+        "TYBALT",
+        "MERCUTIO",
+        "NURSE",
+        "CAPULET",
+        "MONTAGUE",
+        "FRIAR_LAWRENCE",
+        "FRIAR_JOHN"
+      ],
+      "assetIds": [
+        "asset-low-seat"
+      ],
+      "timing": {
+        "duration": {
+          "value": 104,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "暗転せず目覚めの微細な動きを見せ、二人が静まった後に左右の光をそろえる。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-05-b-02",
+      "title": "Q17.2｜二人の死",
+      "sectionId": "rj-section-rj-cond-05",
+      "dramaticRole": "ほんの少しの時間差で、会えたはずの二人が会えない。",
+      "roleIds": [
+        "ROMEO",
+        "JULIET",
+        "BENVOLIO",
+        "TYBALT",
+        "MERCUTIO",
+        "NURSE",
+        "CAPULET",
+        "MONTAGUE",
+        "FRIAR_LAWRENCE",
+        "FRIAR_JOHN"
+      ],
+      "assetIds": [
+        "asset-low-seat"
+      ],
+      "timing": {
+        "duration": {
+          "value": 26,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "暗転せず目覚めの微細な動きを見せ、二人が静まった後に左右の光をそろえる。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-05-c-01",
+      "title": "Q18｜人の川がほどける",
+      "sectionId": "rj-section-rj-cond-05",
+      "dramaticRole": "隔てていた身体が、自分の意思で境界をやめる。",
+      "roleIds": [
+        "ROMEO",
+        "JULIET",
+        "FRIAR_LAWRENCE",
+        "FRIAR_JOHN",
+        "BENVOLIO",
+        "TYBALT",
+        "MERCUTIO",
+        "NURSE",
+        "CAPULET",
+        "MONTAGUE"
+      ],
+      "assetIds": [
+        "asset-low-seat"
+      ],
+      "timing": {
+        "duration": {
+          "value": 45,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "中央の境界を光で消し、中央のロレンスと左の二人を一つの場として見せる。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-05-d-01",
+      "title": "Q19.1｜最初の一人が中央へ",
+      "sectionId": "rj-section-rj-cond-05",
+      "dramaticRole": "悲しみが一人ずつ中央へ人を引き寄せ、真相を聞いてから手が差し出される。",
+      "roleIds": [
+        "ROMEO",
+        "JULIET",
+        "FRIAR_LAWRENCE",
+        "NURSE"
+      ],
+      "assetIds": [
+        "asset-low-seat"
+      ],
+      "timing": {
+        "duration": {
+          "value": 20,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "中央のロレンスと一人ずつ近づく人を照らし、二人の遺体を残して最後に全体をフェードする。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    },
+    {
+      "id": "rj-frame-rj-cond-05-d-02",
+      "title": "Q19.2｜集まった人々／和解へ",
+      "sectionId": "rj-section-rj-cond-05",
+      "dramaticRole": "悲しみが一人ずつ中央へ人を引き寄せ、真相を聞いてから手が差し出される。",
+      "roleIds": [
+        "ROMEO",
+        "JULIET",
+        "FRIAR_LAWRENCE",
+        "MONTAGUE",
+        "CAPULET",
+        "BENVOLIO",
+        "TYBALT",
+        "MERCUTIO",
+        "NURSE",
+        "FRIAR_JOHN"
+      ],
+      "assetIds": [
+        "asset-low-seat"
+      ],
+      "timing": {
+        "duration": {
+          "value": 100,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        },
+        "transitionDeadline": {
+          "value": 0,
+          "status": "specified",
+          "sourceRefs": [
+            "source-native"
+          ]
+        }
+      },
+      "lighting": {
+        "intent": "中央のロレンスと一人ずつ近づく人を照らし、二人の遺体を残して最後に全体をフェードする。",
+        "focus": "",
+        "change": "",
+        "status": "ai-proposal",
+        "sourceRefs": [
+          "source-ai-revision"
+        ],
+        "decisionIds": [
+          "decision-lighting-objectives"
+        ]
+      },
+      "sourceRefs": [
+        "source-native"
+      ],
+      "decisionIds": []
+    }
+  ],
+  "cast": [
+    {
+      "id": "rj-cast-romeo",
+      "name": "01 ロミオ担当",
+      "roleIds": [
+        "ROMEO"
+      ],
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "rj-cast-juliet",
+      "name": "02 ジュリエット担当",
+      "roleIds": [
+        "JULIET"
+      ],
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "rj-cast-friar-lawrence",
+      "name": "03 ロレンス修道士担当",
+      "roleIds": [
+        "FRIAR_LAWRENCE"
+      ],
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "rj-cast-benvolio",
+      "name": "04 ベンヴォーリオ担当",
+      "roleIds": [
+        "BENVOLIO"
+      ],
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "rj-cast-tybalt",
+      "name": "05 ティボルト担当",
+      "roleIds": [
+        "TYBALT"
+      ],
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "rj-cast-mercutio",
+      "name": "06 マーキューシオ担当",
+      "roleIds": [
+        "MERCUTIO"
+      ],
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "rj-cast-nurse",
+      "name": "07 乳母担当",
+      "roleIds": [
+        "NURSE"
+      ],
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "rj-cast-capulet",
+      "name": "08 キャピュレット担当",
+      "roleIds": [
+        "CAPULET"
+      ],
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "rj-cast-montague",
+      "name": "09 モンタギュー担当",
+      "roleIds": [
+        "MONTAGUE"
+      ],
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "rj-cast-friar-john",
+      "name": "10 ジョン修道士担当",
+      "roleIds": [
+        "FRIAR_JOHN"
+      ],
+      "sourceRefs": [
+        "source-native"
+      ]
+    }
+  ],
+  "roles": [
+    {
+      "id": "ROMEO",
+      "title": "ロミオ",
+      "kind": "character",
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "JULIET",
+      "title": "ジュリエット",
+      "kind": "character",
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "FRIAR_LAWRENCE",
+      "title": "ロレンス修道士",
+      "kind": "character",
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "BENVOLIO",
+      "title": "ベンヴォーリオ",
+      "kind": "character",
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "TYBALT",
+      "title": "ティボルト",
+      "kind": "character",
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "MERCUTIO",
+      "title": "マーキューシオ",
+      "kind": "character",
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "NURSE",
+      "title": "乳母",
+      "kind": "character",
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "CAPULET",
+      "title": "キャピュレット",
+      "kind": "character",
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "MONTAGUE",
+      "title": "モンタギュー",
+      "kind": "character",
+      "sourceRefs": [
+        "source-native"
+      ]
+    },
+    {
+      "id": "FRIAR_JOHN",
+      "title": "ジョン修道士",
+      "kind": "character",
+      "sourceRefs": [
+        "source-native"
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "id": "asset-rolling-bar",
+      "title": "キャスター付き一体型バー",
+      "category": "set",
+      "intent": "二人で客席から見て右袖から押して搬入し固定する。",
+      "status": "confirmed",
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "decisionIds": [
+        "decision-bar-concept",
+        "decision-bar-physical-spec",
+        "decision-fixed-shelf"
+      ],
+      "notes": "正確な寸法、意匠、キャスター仕様、固定背面棚の有無は未確認。"
+    },
+    {
+      "id": "asset-mask",
+      "title": "仮面",
+      "category": "costume",
+      "intent": "10名が暗転前から各1枚携帯し、暗転中に装着する。",
+      "status": "confirmed",
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "decisionIds": [
+        "decision-m6-mask-timing"
+      ],
+      "notes": "携帯方法とバー運搬中の手の使い方は未確認。"
+    },
+    {
+      "id": "asset-low-seat",
+      "title": "低い腰掛け／墓所",
+      "category": "set",
+      "status": "ai-proposal",
+      "sourceRefs": [
+        "source-native"
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "id": "transition-m6-blackout-to-masquerade",
+      "title": "M6｜乱戦のブラックアウトから仮面舞踏会とバーセットへ",
+      "fromSceneId": "rj-frame-rj-cond-01-b-02",
+      "toSceneId": "rj-frame-rj-cond-01-c-01",
+      "intent": "暗転中に10名が仮面を装着し、担当2名が途中でバーを搬入・固定してバー係へ移る。",
+      "timing": {
+        "duration": {
+          "value": null,
+          "status": "unmeasured",
+          "sourceRefs": [
+            "source-owner-handoff"
+          ],
+          "decisionIds": [
+            "decision-m6-null-timing"
+          ]
+        },
+        "transitionDeadline": {
+          "value": null,
+          "status": "unmeasured",
+          "sourceRefs": [
+            "source-owner-handoff"
+          ],
+          "decisionIds": [
+            "decision-m6-null-timing"
+          ]
+        }
+      },
+      "responsibleRoleIds": [
+        "FRIAR_LAWRENCE",
+        "FRIAR_JOHN"
+      ],
+      "preBlackoutCarriedRoleIds": [
+        "ROMEO",
+        "JULIET",
+        "FRIAR_LAWRENCE",
+        "BENVOLIO",
+        "TYBALT",
+        "MERCUTIO",
+        "NURSE",
+        "CAPULET",
+        "MONTAGUE",
+        "FRIAR_JOHN"
+      ],
+      "destinationMaskedRoleIds": [
+        "ROMEO",
+        "JULIET",
+        "FRIAR_LAWRENCE",
+        "BENVOLIO",
+        "TYBALT",
+        "MERCUTIO",
+        "NURSE",
+        "CAPULET",
+        "MONTAGUE",
+        "FRIAR_JOHN"
+      ],
+      "technicalFrames": [
+        {
+          "id": "rj-frame-rj-cond-01-b-m6-01",
+          "title": "Q02.1｜暗転・第一波（AI仮案）",
+          "intent": "暗転直後に人物移動と仮面装着を始め、バー担当二名が右袖側へ寄る。",
+          "maskedRoleIds": [
+            "ROMEO",
+            "JULIET",
+            "MONTAGUE",
+            "CAPULET"
+          ],
+          "assetStates": [
+            {
+              "assetId": "asset-rolling-bar",
+              "state": "offstage"
+            },
+            {
+              "assetId": "asset-mask",
+              "state": "unspecified",
+              "notes": "4名が装着"
+            }
+          ],
+          "blocking": "暗転直後に人物移動と仮面装着を始め、バー担当二名が右袖側へ寄る。",
+          "visibility": "blackout",
+          "timing": {
+            "duration": {
+              "value": null,
+              "status": "unmeasured",
+              "sourceRefs": [
+                "source-owner-handoff"
+              ],
+              "decisionIds": [
+                "decision-m6-null-timing"
+              ]
+            },
+            "transitionDeadline": {
+              "value": null,
+              "status": "unmeasured",
+              "sourceRefs": [
+                "source-owner-handoff"
+              ],
+              "decisionIds": [
+                "decision-m6-null-timing"
+              ]
+            }
+          },
+          "status": "ai-proposal",
+          "sourceRefs": [
+            "source-ai-proposal",
+            "source-owner-approval"
+          ],
+          "decisionIds": [
+            "decision-m6-sample-configuration",
+            "decision-m6-frame-count"
+          ],
+          "notes": "【本人確定＋AI配置案・客席へ見せない技術図】人物移動と4名の仮面装着を開始。バーはまだ出さない。担当2名は右袖側へ寄る。順序・座標は未稽古。"
+        },
+        {
+          "id": "rj-frame-rj-cond-01-b-m6-02",
+          "title": "Q02.2｜バー搬入（AI仮案）",
+          "intent": "複数の変化の途中で、二名が右袖から一体型バーを押し入れる。",
+          "maskedRoleIds": [
+            "ROMEO",
+            "JULIET",
+            "MONTAGUE",
+            "CAPULET",
+            "BENVOLIO",
+            "TYBALT",
+            "MERCUTIO",
+            "NURSE"
+          ],
+          "assetStates": [
+            {
+              "assetId": "asset-rolling-bar",
+              "state": "entering"
+            },
+            {
+              "assetId": "asset-mask",
+              "state": "unspecified",
+              "notes": "8名が装着"
+            }
+          ],
+          "blocking": "複数の変化の途中で、二名が右袖から一体型バーを押し入れる。",
+          "visibility": "blackout",
+          "timing": {
+            "duration": {
+              "value": null,
+              "status": "unmeasured",
+              "sourceRefs": [
+                "source-owner-handoff"
+              ],
+              "decisionIds": [
+                "decision-m6-null-timing"
+              ]
+            },
+            "transitionDeadline": {
+              "value": null,
+              "status": "unmeasured",
+              "sourceRefs": [
+                "source-owner-handoff"
+              ],
+              "decisionIds": [
+                "decision-m6-null-timing"
+              ]
+            }
+          },
+          "status": "ai-proposal",
+          "sourceRefs": [
+            "source-ai-proposal",
+            "source-owner-approval"
+          ],
+          "decisionIds": [
+            "decision-m6-sample-configuration",
+            "decision-m6-frame-count"
+          ],
+          "notes": "【本人確定＋AI配置案・客席へ見せない技術図】途中で二名が客席から見て右袖から一体型バーを押す。バー寸法・経路・視界・手の使い方は未確認。"
+        },
+        {
+          "id": "rj-frame-rj-cond-01-b-m6-03",
+          "title": "Q02.3｜固定後の最終変化（AI仮案）",
+          "intent": "バー固定後、担当二名も仮面を着けてバー係位置へ移り、再照明確認を待つ。",
+          "maskedRoleIds": [
+            "ROMEO",
+            "JULIET",
+            "FRIAR_LAWRENCE",
+            "BENVOLIO",
+            "TYBALT",
+            "MERCUTIO",
+            "NURSE",
+            "CAPULET",
+            "MONTAGUE",
+            "FRIAR_JOHN"
+          ],
+          "assetStates": [
+            {
+              "assetId": "asset-rolling-bar",
+              "state": "onstage"
+            },
+            {
+              "assetId": "asset-mask",
+              "state": "unspecified",
+              "notes": "10名が装着"
+            }
+          ],
+          "blocking": "バー固定後、担当二名も仮面を着けてバー係位置へ移り、再照明確認を待つ。",
+          "visibility": "blackout",
+          "timing": {
+            "duration": {
+              "value": null,
+              "status": "unmeasured",
+              "sourceRefs": [
+                "source-owner-handoff"
+              ],
+              "decisionIds": [
+                "decision-m6-null-timing"
+              ]
+            },
+            "transitionDeadline": {
+              "value": null,
+              "status": "unmeasured",
+              "sourceRefs": [
+                "source-owner-handoff"
+              ],
+              "decisionIds": [
+                "decision-m6-null-timing"
+              ]
+            }
+          },
+          "status": "ai-proposal",
+          "sourceRefs": [
+            "source-ai-proposal",
+            "source-owner-approval"
+          ],
+          "decisionIds": [
+            "decision-m6-sample-configuration",
+            "decision-m6-frame-count"
+          ],
+          "notes": "【本人確定＋AI配置案・客席へ見せない技術図】バー固定後、担当2名も仮面を着けてバー係位置へ移る。舞台監督の5条件確認まで暗転を維持。"
+        }
+      ],
+      "relightConditions": [
+        "バー固定",
+        "通路クリア",
+        "10人の位置",
+        "全員の仮面",
+        "照明準備"
+      ],
+      "relightMode": "manual",
+      "delayPolicy": "maintain-blackout",
+      "delayRecordRequired": true,
+      "status": "confirmed",
+      "sourceRefs": [
+        "source-owner-handoff",
+        "source-owner-approval"
+      ],
+      "decisionIds": [
+        "decision-m6-sample-configuration",
+        "decision-m6-carriers",
+        "decision-m6-mask-timing",
+        "decision-m6-frame-count",
+        "decision-m6-null-timing",
+        "decision-m6-relight"
+      ],
+      "notes": "再照明は舞台監督が手動指示。バーが間に合わない場合は設置完了まで待ち、遅延を記録する。"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "decision-m6-sample-configuration",
+      "status": "confirmed",
+      "text": "M6のAI配置案をサンプル候補として採用する。",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "sourceRefs": [
+        "source-owner-approval"
+      ],
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      }
+    },
+    {
+      "id": "decision-m6-carriers",
+      "status": "confirmed",
+      "text": "ロレンス修道士担当とジョン修道士担当が役を離れ、右袖から一体型バーを二人で押して固定する。",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade",
+        "asset-rolling-bar"
+      ],
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      }
+    },
+    {
+      "id": "decision-m6-mask-timing",
+      "status": "confirmed",
+      "text": "全員が暗転前から仮面を携帯し、バー担当二名はバー固定後に装着する。",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade",
+        "asset-mask"
+      ],
+      "sourceRefs": [
+        "source-owner-handoff",
+        "source-owner-approval"
+      ],
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      }
+    },
+    {
+      "id": "decision-m6-frame-count",
+      "status": "confirmed",
+      "text": "暗転中の技術確認図は3枚とする。",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "sourceRefs": [
+        "source-owner-handoff",
+        "source-owner-approval"
+      ],
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      }
+    },
+    {
+      "id": "decision-m6-null-timing",
+      "status": "confirmed",
+      "text": "M6の所要時間と転換締切は未計測として保持する。",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      }
+    },
+    {
+      "id": "decision-m6-relight",
+      "status": "confirmed",
+      "text": "舞台監督が5条件を手動確認して再照明し、バー遅延時は暗転を維持して遅延を記録する。",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      }
+    },
+    {
+      "id": "decision-bar-concept",
+      "status": "confirmed",
+      "text": "バーは二人で右袖から押して運ぶキャスター付き一体型とする。",
+      "subjectIds": [
+        "asset-rolling-bar"
+      ],
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      }
+    },
+    {
+      "id": "decision-bar-physical-spec",
+      "status": "unconfirmed",
+      "text": "バーの正確な幅、奥行、高さ、意匠、キャスター仕様は未確認。",
+      "subjectIds": [
+        "asset-rolling-bar"
+      ],
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "governance": {
+        "authorship": "mixed",
+        "sampleAdoption": "unconfirmed",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      }
+    },
+    {
+      "id": "decision-fixed-shelf",
+      "status": "unconfirmed",
+      "text": "固定の背面棚を置くかどうかは未確認。",
+      "subjectIds": [
+        "asset-rolling-bar"
+      ],
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "governance": {
+        "authorship": "mixed",
+        "sampleAdoption": "unconfirmed",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      }
+    },
+    {
+      "id": "decision-lighting-separation",
+      "status": "confirmed",
+      "text": "場面の役割と照明目的を分離し、同文を機械的に複製しない。",
+      "subjectIds": [
+        "rj-frame-rj-cond-01-c-01"
+      ],
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      }
+    },
+    {
+      "id": "decision-lighting-objectives",
+      "status": "ai-proposal",
+      "text": "各場面のlighting.intent文はAIによる意味修正案で、本人の照明確定ではない。",
+      "subjectIds": [
+        "rj-frame-rj-cond-01-a-01",
+        "rj-frame-rj-cond-01-b-02",
+        "rj-frame-rj-cond-01-c-01",
+        "rj-frame-rj-cond-01-d-01",
+        "rj-frame-rj-cond-02-a-01",
+        "rj-frame-rj-cond-02-b-01",
+        "rj-frame-rj-cond-02-c-01",
+        "rj-frame-rj-cond-03-a-01",
+        "rj-frame-rj-cond-03-a-02",
+        "rj-frame-rj-cond-03-b-01",
+        "rj-frame-rj-cond-03-c-01",
+        "rj-frame-rj-cond-03-c-02",
+        "rj-frame-rj-cond-03-c-03",
+        "rj-frame-rj-cond-03-d-01",
+        "rj-frame-rj-cond-03-d-02",
+        "rj-frame-rj-cond-04-a-01",
+        "rj-frame-rj-cond-04-b-01",
+        "rj-frame-rj-cond-04-b-02",
+        "rj-frame-rj-cond-04-c-01",
+        "rj-frame-rj-cond-04-c-02",
+        "rj-frame-rj-cond-04-d-01",
+        "rj-frame-rj-cond-04-d-02",
+        "rj-frame-rj-cond-05-a-01",
+        "rj-frame-rj-cond-05-b-01",
+        "rj-frame-rj-cond-05-b-02",
+        "rj-frame-rj-cond-05-c-01",
+        "rj-frame-rj-cond-05-d-01",
+        "rj-frame-rj-cond-05-d-02"
+      ],
+      "sourceRefs": [
+        "source-ai-revision"
+      ],
+      "governance": {
+        "authorship": "ai",
+        "sampleAdoption": "proposed",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "id": "constraint-m6-frame-count",
+      "title": "技術確認図は3枚",
+      "rule": "count-equals",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "field": "technicalFrames",
+      "expected": 3,
+      "severity": "error",
+      "sourceRefs": [
+        "source-owner-approval"
+      ],
+      "decisionIds": [
+        "decision-m6-frame-count"
+      ]
+    },
+    {
+      "id": "constraint-m6-carriers",
+      "title": "バー担当は指定2役",
+      "rule": "set-equals",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "field": "responsibleRoleIds",
+      "expected": [
+        "FRIAR_LAWRENCE",
+        "FRIAR_JOHN"
+      ],
+      "severity": "error",
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "decisionIds": [
+        "decision-m6-carriers"
+      ]
+    },
+    {
+      "id": "constraint-m6-bar-sequence",
+      "title": "バーは2枚目で初登場し以後残る",
+      "rule": "equals",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "field": "technicalFrames.asset-rolling-bar.state",
+      "expected": [
+        "offstage",
+        "entering",
+        "onstage"
+      ],
+      "severity": "error",
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "decisionIds": [
+        "decision-m6-carriers"
+      ]
+    },
+    {
+      "id": "constraint-m6-mask-progression",
+      "title": "仮面装着は0→4→8→10→10",
+      "rule": "equals",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "field": "maskProgressionBeforeFramesDestination",
+      "expected": [
+        0,
+        4,
+        8,
+        10,
+        10
+      ],
+      "severity": "error",
+      "sourceRefs": [
+        "source-owner-handoff",
+        "source-owner-approval"
+      ],
+      "decisionIds": [
+        "decision-m6-mask-timing"
+      ]
+    },
+    {
+      "id": "constraint-m6-preblackout-masks",
+      "title": "暗転前に10名が仮面を携帯",
+      "rule": "count-equals",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "field": "preBlackoutCarriedRoleIds",
+      "expected": 10,
+      "severity": "error",
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "decisionIds": [
+        "decision-m6-mask-timing"
+      ]
+    },
+    {
+      "id": "constraint-m6-carrier-mask-timing",
+      "title": "バー担当二名は固定後に仮面を装着",
+      "rule": "equals",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "field": "responsibleRoleMaskCountsByFrame",
+      "expected": [
+        0,
+        0,
+        2
+      ],
+      "severity": "error",
+      "sourceRefs": [
+        "source-owner-handoff",
+        "source-owner-approval"
+      ],
+      "decisionIds": [
+        "decision-m6-mask-timing"
+      ]
+    },
+    {
+      "id": "constraint-m6-duration-null",
+      "title": "M6所要時間は未計測",
+      "rule": "is-null",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "field": "timing.duration.value",
+      "expected": null,
+      "severity": "error",
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "decisionIds": [
+        "decision-m6-null-timing"
+      ]
+    },
+    {
+      "id": "constraint-m6-deadline-null",
+      "title": "M6転換締切は未計測",
+      "rule": "is-null",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "field": "timing.transitionDeadline.value",
+      "expected": null,
+      "severity": "error",
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "decisionIds": [
+        "decision-m6-null-timing"
+      ]
+    },
+    {
+      "id": "constraint-m6-relight-count",
+      "title": "再照明の手動確認は指定5条件",
+      "rule": "set-equals",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "field": "relightConditions",
+      "expected": [
+        "バー固定",
+        "通路クリア",
+        "10人の位置",
+        "全員の仮面",
+        "照明準備"
+      ],
+      "severity": "error",
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "decisionIds": [
+        "decision-m6-relight"
+      ]
+    },
+    {
+      "id": "constraint-m6-relight-mode",
+      "title": "再照明は舞台監督の手動指示",
+      "rule": "equals",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "field": "relightMode",
+      "expected": "manual",
+      "severity": "error",
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "decisionIds": [
+        "decision-m6-relight"
+      ]
+    },
+    {
+      "id": "constraint-m6-delay-policy",
+      "title": "未完了時は暗転維持",
+      "rule": "equals",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "field": "delayPolicy",
+      "expected": "maintain-blackout",
+      "severity": "error",
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "decisionIds": [
+        "decision-m6-relight"
+      ]
+    },
+    {
+      "id": "constraint-m6-delay-record",
+      "title": "遅延を記録する",
+      "rule": "equals",
+      "subjectIds": [
+        "transition-m6-blackout-to-masquerade"
+      ],
+      "field": "delayRecordRequired",
+      "expected": true,
+      "severity": "error",
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "decisionIds": [
+        "decision-m6-relight"
+      ]
+    },
+    {
+      "id": "constraint-role-light-duplicates",
+      "title": "場面役割と照明目的の同文重複なし",
+      "rule": "count-equals",
+      "subjectIds": [
+        "rj-frame-rj-cond-01-a-01",
+        "rj-frame-rj-cond-01-b-02",
+        "rj-frame-rj-cond-01-c-01",
+        "rj-frame-rj-cond-01-d-01",
+        "rj-frame-rj-cond-02-a-01",
+        "rj-frame-rj-cond-02-b-01",
+        "rj-frame-rj-cond-02-c-01",
+        "rj-frame-rj-cond-03-a-01",
+        "rj-frame-rj-cond-03-a-02",
+        "rj-frame-rj-cond-03-b-01",
+        "rj-frame-rj-cond-03-c-01",
+        "rj-frame-rj-cond-03-c-02",
+        "rj-frame-rj-cond-03-c-03",
+        "rj-frame-rj-cond-03-d-01",
+        "rj-frame-rj-cond-03-d-02",
+        "rj-frame-rj-cond-04-a-01",
+        "rj-frame-rj-cond-04-b-01",
+        "rj-frame-rj-cond-04-b-02",
+        "rj-frame-rj-cond-04-c-01",
+        "rj-frame-rj-cond-04-c-02",
+        "rj-frame-rj-cond-04-d-01",
+        "rj-frame-rj-cond-04-d-02",
+        "rj-frame-rj-cond-05-a-01",
+        "rj-frame-rj-cond-05-b-01",
+        "rj-frame-rj-cond-05-b-02",
+        "rj-frame-rj-cond-05-c-01",
+        "rj-frame-rj-cond-05-d-01",
+        "rj-frame-rj-cond-05-d-02"
+      ],
+      "field": "dramaticRoleEqualsLightingIntent",
+      "expected": 0,
+      "severity": "error",
+      "sourceRefs": [
+        "source-owner-handoff"
+      ],
+      "decisionIds": [
+        "decision-lighting-separation"
+      ]
+    }
+  ]
+}

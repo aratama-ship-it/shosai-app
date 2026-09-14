@@ -1,0 +1,205 @@
+{
+  "environment": "Local workerd, synthetic credentials and private-data fixtures only",
+  "checks": [
+    {
+      "name": "anonymous programmatic fetch is refused",
+      "path": "/stage.html?lang=en",
+      "status": 401
+    },
+    {
+      "name": "English sign-in title",
+      "path": "/sign-in?next=%2Fstage.html%3Flang%3Den",
+      "status": 200
+    },
+    {
+      "name": "guest sign-in preserves English and fragment",
+      "path": "/sign-in",
+      "status": 303
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/index.html",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/index",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/db.js",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/%64b.js",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/roster-key.local.js",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/stage-shows.local.js",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/manual/new-private.html",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/stage.html%2f..%2fdb.js",
+      "status": 403
+    },
+    {
+      "name": "guest root opens English stage",
+      "path": "/?lang=en",
+      "status": 303
+    },
+    {
+      "name": "real asset canonical redirect preserves query",
+      "path": "/stage.html?lang=en",
+      "status": 307
+    },
+    {
+      "name": "guest stage HTML is complete and contains no private script",
+      "path": "/stage?lang=en",
+      "status": 200
+    },
+    {
+      "name": "guest app dependency",
+      "path": "/stage-sketch.js",
+      "status": 200
+    },
+    {
+      "name": "guest app dependency",
+      "path": "/stage-sw.js",
+      "status": 200
+    },
+    {
+      "name": "guest app dependency",
+      "path": "/manual/manual-content.js",
+      "status": 200
+    },
+    {
+      "name": "guest app dependency",
+      "path": "/manual/quick-en",
+      "status": 200
+    },
+    {
+      "name": "guest app dependency",
+      "path": "/manual/QuickGuide_2026-08-28.pdf",
+      "status": 200
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/index.html",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/index",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/db.js",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/%64b.js",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/roster-key.local.js",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/stage-shows.local.js",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/manual/new-private.html",
+      "status": 403
+    },
+    {
+      "name": "guest cannot read private resource",
+      "path": "/stage.html%2f..%2fdb.js",
+      "status": 403
+    },
+    {
+      "name": "guest root opens English stage",
+      "path": "/?lang=en",
+      "status": 303
+    },
+    {
+      "name": "real asset canonical redirect preserves query",
+      "path": "/stage.html?lang=en",
+      "status": 307
+    },
+    {
+      "name": "guest stage HTML is complete and contains no private script",
+      "path": "/stage?lang=en",
+      "status": 200
+    },
+    {
+      "name": "guest app dependency",
+      "path": "/stage-sketch.js",
+      "status": 200
+    },
+    {
+      "name": "guest app dependency",
+      "path": "/stage-sw.js",
+      "status": 200
+    },
+    {
+      "name": "guest app dependency",
+      "path": "/manual/manual-content.js",
+      "status": 200
+    },
+    {
+      "name": "guest app dependency",
+      "path": "/manual/quick-en",
+      "status": 200
+    },
+    {
+      "name": "guest app dependency",
+      "path": "/manual/QuickGuide_2026-08-28.pdf",
+      "status": 200
+    },
+    {
+      "name": "guest whoami",
+      "path": "/whoami",
+      "status": 200
+    },
+    {
+      "name": "guest can create local shared session",
+      "path": "/session/new",
+      "status": 200
+    },
+    {
+      "name": "owner study remains accessible",
+      "path": "/",
+      "status": 200
+    },
+    {
+      "name": "owner data remains accessible",
+      "path": "/db.js",
+      "status": 200
+    },
+    {
+      "name": "owner shows remain accessible",
+      "path": "/stage-shows.local.js",
+      "status": 200
+    }
+  ]
+}

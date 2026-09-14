@@ -1,0 +1,320 @@
+{
+  "status": "deployed",
+  "release": "v0.3.6-timeline-fullscreen-20260912",
+  "baselineVersion": "a8345dc5-cc26-46d1-a04a-8bcda204baf9",
+  "deployedVersion": "252cc4f8-d07b-4464-bdcb-2df7a983f281",
+  "deploymentId": "21cd871e-13a0-4beb-8351-8b99151f806c",
+  "deployedAt": "2026-09-12T13:44:13.410Z",
+  "sourceSha256": "e1ba1baafe643331c714825f241162b3bd1af245af9d0714bd5b8d27e153032a",
+  "assets": [
+    {
+      "path": "stage.html",
+      "routes": [
+        "/stage",
+        "/stage.html"
+      ],
+      "bytes": 155697,
+      "sha256": "9347cf4a0bc94559cff49a9f0e675cc08ea2ba75c174519c658adf65bad55f01"
+    },
+    {
+      "path": "style.css",
+      "routes": [
+        "/style.css"
+      ],
+      "bytes": 371041,
+      "sha256": "ce4db448b9463dc2e0167c18a79c6d4a710801f6a14a86f2f9b3cf0416608b65"
+    },
+    {
+      "path": "stage-venues.js",
+      "routes": [
+        "/stage-venues.js"
+      ],
+      "bytes": 54431,
+      "sha256": "45c6eb62ca32b854d63420cd46cda4316334fa799e4a90f87759a7d75556d601"
+    },
+    {
+      "path": "stage-venue-lines.js",
+      "routes": [
+        "/stage-venue-lines.js"
+      ],
+      "bytes": 26728,
+      "sha256": "e1acf9544394a226c17c35f2edd9ef3189592947bf4477ed878a68ebe0438976"
+    },
+    {
+      "path": "stage-i18n.js",
+      "routes": [
+        "/stage-i18n.js"
+      ],
+      "bytes": 151416,
+      "sha256": "39d6447a2427ef19c16e9900808add1e3e0a7a88734116d10172f5167d1a21ad"
+    },
+    {
+      "path": "stage-i18n.zh-Hans.js",
+      "routes": [
+        "/stage-i18n.zh-Hans.js"
+      ],
+      "bytes": 121329,
+      "sha256": "381302e200d9080554273604a7d821cb5f42b3c63d3ef8dc84aef1903c926247"
+    },
+    {
+      "path": "stage-i18n.zh-Hant.js",
+      "routes": [
+        "/stage-i18n.zh-Hant.js"
+      ],
+      "bytes": 121955,
+      "sha256": "4cdcb7e9d0771c299aca3ed53f99dc1236a84773226d5e4b19720b483e02068d"
+    },
+    {
+      "path": "stage-prompt-i18n.js",
+      "routes": [
+        "/stage-prompt-i18n.js"
+      ],
+      "bytes": 33380,
+      "sha256": "be955fd3a6ed256d2f442924bdfef81eafcd165b05cabdec508309beef8b1dda"
+    },
+    {
+      "path": "stage-rehearsal-export.js",
+      "routes": [
+        "/stage-rehearsal-export.js"
+      ],
+      "bytes": 11909,
+      "sha256": "d5c022663e853619b7adec53db5d14bc386192a0f1dcc2ea8a6fd264dda1b8c3"
+    },
+    {
+      "path": "stage-samples/index.js",
+      "routes": [
+        "/stage-samples/index.js"
+      ],
+      "bytes": 42893,
+      "sha256": "8d1d38f759410697deb464364c6f01d8caa98376e8f0d84d8a7618014976ad5a"
+    },
+    {
+      "path": "stage-set-model.js",
+      "routes": [
+        "/stage-set-model.js"
+      ],
+      "bytes": 6008,
+      "sha256": "12d9afb4185eef66d4aa5951de53a6f86837bb0110893bd300d221d8dffc21c7"
+    },
+    {
+      "path": "stage-set-builder.js",
+      "routes": [
+        "/stage-set-builder.js"
+      ],
+      "bytes": 21586,
+      "sha256": "7a3653f0ec5d8faf3da49dbfe07587396e702a6bdc3e0942fcb3e7d67bf525c5"
+    },
+    {
+      "path": "stage-machinery.js",
+      "routes": [
+        "/stage-machinery.js"
+      ],
+      "bytes": 10541,
+      "sha256": "1e5b2a519dfd1535da1baeea2c965ee73b8c8e98e08deca6639cfb907a678598"
+    },
+    {
+      "path": "stage-first-person.js",
+      "routes": [
+        "/stage-first-person.js"
+      ],
+      "bytes": 142801,
+      "sha256": "b9ec7c708d578cdc1630308f38df91fb8831979f59ad4cb9598605d9b761effb"
+    },
+    {
+      "path": "stage-audio-store.js",
+      "routes": [
+        "/stage-audio-store.js"
+      ],
+      "bytes": 4996,
+      "sha256": "199d30808ac9242040c4967cc7d75dbb1db98aa1717e91e019ed2a9e96fa654f"
+    },
+    {
+      "path": "stage-light-motion.js",
+      "routes": [
+        "/stage-light-motion.js"
+      ],
+      "bytes": 15229,
+      "sha256": "2fd807d457e5754e95e9a7ce70b530a978939190d97103486aacf6df964110e5"
+    },
+    {
+      "path": "manual/manual-content.js",
+      "routes": [
+        "/manual/manual-content.js"
+      ],
+      "bytes": 46889,
+      "sha256": "de2f3db34ba6e482052c7930260a4be62c26200f6ee5666984834bb62810db44"
+    },
+    {
+      "path": "manual/manual.html",
+      "routes": [
+        "/manual/manual.html",
+        "/manual/manual"
+      ],
+      "bytes": 18267,
+      "sha256": "6b9aca1a05c3132da62ed54f111fc60545e356a93cd03651e0a3f2a12579d728"
+    },
+    {
+      "path": "manual/quick.html",
+      "routes": [
+        "/manual/quick.html",
+        "/manual/quick"
+      ],
+      "bytes": 18895,
+      "sha256": "f12905755d8a010943771d18dd5824256139a435e8d8801fd32a6d1cff7f76a3"
+    },
+    {
+      "path": "manual/quick-en.html",
+      "routes": [
+        "/manual/quick-en.html",
+        "/manual/quick-en"
+      ],
+      "bytes": 19296,
+      "sha256": "5446472a4f67aa31bb287fad38614e83e2adec9583c67b305950b026eb381656"
+    },
+    {
+      "path": "stage-sketch.js",
+      "routes": [
+        "/stage-sketch.js"
+      ],
+      "bytes": 1291707,
+      "sha256": "4d7991d7524d91d04961b20d77425b99d54bb830aee8befcdadce279255664c6"
+    },
+    {
+      "path": "stage-timeline.js",
+      "routes": [
+        "/stage-timeline.js"
+      ],
+      "bytes": 26415,
+      "sha256": "07b5aa389749880a2a60d9f4973f53dd708902c55ab70e8f59d1d7ac5ab68635"
+    },
+    {
+      "path": "stage-session.js",
+      "routes": [
+        "/stage-session.js"
+      ],
+      "bytes": 51636,
+      "sha256": "0857e5710019644882552e4a2cbd4e6bd586774b184f8c0dc5d534d7050db5ec"
+    },
+    {
+      "path": "stage-study-owner.js",
+      "routes": [
+        "/stage-study-owner.js"
+      ],
+      "bytes": 28298,
+      "sha256": "962a53874cfda536b894af398f1bda9743b7740906f7b57e68f0065fec287729"
+    },
+    {
+      "path": "stage-study.css",
+      "routes": [
+        "/stage-study.css"
+      ],
+      "bytes": 32188,
+      "sha256": "750240601379c5e19f386577cf022bac99db72cfe3cfe79027aed437eb386f72"
+    },
+    {
+      "path": "stage-usage.js",
+      "routes": [
+        "/stage-usage.js"
+      ],
+      "bytes": 7502,
+      "sha256": "b831234817a4c16e2b9d01be04453ccce603d53ea641903d4b504e7ada57673f"
+    },
+    {
+      "path": "stage-venue-editor.js",
+      "routes": [
+        "/stage-venue-editor.js"
+      ],
+      "bytes": 77805,
+      "sha256": "991722b91d60f2ca5a0aea7a401bb05b1468fbb239f84a31ee338a51a5061c7e"
+    },
+    {
+      "path": "stage-pwa.js",
+      "routes": [
+        "/stage-pwa.js"
+      ],
+      "bytes": 8559,
+      "sha256": "eacac218248160f4068894e6cd445d98e1cf043be5cf38eb0f0f395aaa789a08"
+    },
+    {
+      "path": "stage-sketch.webmanifest",
+      "routes": [
+        "/stage-sketch.webmanifest"
+      ],
+      "bytes": 856,
+      "sha256": "f3efdba2a9259f538f0a0df5dc12eb3e5f67d265ef9957aeaaf6ba625591a83e"
+    },
+    {
+      "path": "stage-sw.js",
+      "routes": [
+        "/stage-sw.js"
+      ],
+      "bytes": 9535,
+      "sha256": "f67942927d29b5d9dfc30c0e0ac8a335c7c6f594a39bc96e00856cb0deb3ad5c"
+    },
+    {
+      "path": "study-frame.html",
+      "routes": [
+        "/study-frame",
+        "/study-frame.html"
+      ],
+      "bytes": 154887,
+      "sha256": "b661ab49c3746774d664a0e0ab316f294f8c89c7c393068ee857c05ecc4c5169"
+    }
+  ],
+  "supersedes": {
+    "version": "a8345dc5-cc26-46d1-a04a-8bcda204baf9",
+    "deploymentId": "3fad46cb-2789-4246-8ad9-2d9fd2d97003"
+  },
+  "retainedBindings": [
+    {
+      "name": "ASSETS",
+      "type": "assets",
+      "class_name": null
+    },
+    {
+      "name": "GUEST_ACCOUNTS",
+      "type": "secret_text",
+      "class_name": null
+    },
+    {
+      "name": "SESSION_ROOM",
+      "type": "durable_object_namespace",
+      "class_name": "SessionRoom"
+    },
+    {
+      "name": "SITE_PASS",
+      "type": "secret_text",
+      "class_name": null
+    },
+    {
+      "name": "SITE_USER",
+      "type": "secret_text",
+      "class_name": null
+    },
+    {
+      "name": "STAGE_BETA_ACTIVE",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STAGE_RELEASE_SCOPE",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STAGE_USAGE_ENABLED",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STUDY_ALLOW_ANONYMOUS",
+      "type": "plain_text",
+      "class_name": null
+    },
+    {
+      "name": "STUDY_LINKS",
+      "type": "durable_object_namespace",
+      "class_name": "StudyLinks"
+    }
+  ]
+}

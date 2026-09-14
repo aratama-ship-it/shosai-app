@@ -1,0 +1,14 @@
+{
+  "stage": {
+    "exitCode": 0,
+    "output": "study-frame.html matches index.html\nstage.html は index.html と揃っています\n"
+  },
+  "public": {
+    "exitCode": 1,
+    "output": "！公開用の生成物が古いです。python3 build_public.py で作り直してください\n  - try.html が古い\n  - 内容が古い: en/try.html\n  - 内容が古い: stage-i18n.js\n  - 内容が古い: stage-i18n.zh-Hans.js\n  - 内容が古い: stage-i18n.zh-Hant.js\n  - 内容が古い: stage-sketch.js\n  - 内容が古い: style.css\n  - 内容が古い: try.html\n"
+  },
+  "diff": {
+    "exitCode": 0,
+    "output": ""
+  }
+}

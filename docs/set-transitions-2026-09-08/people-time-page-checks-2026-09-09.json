@@ -1,0 +1,32 @@
+{
+  "scope": "Static future-design document only; no scheduler implementation tested",
+  "viewports": [
+    {
+      "width": 1280,
+      "height": 1000,
+      "body_overflow": false
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "body_overflow": false
+    }
+  ],
+  "live_source_sha256": "a817cd0f052f89e8743d115935b65aa717706e60433a63b60c0b7ca815c65d85",
+  "local_links": {
+    "handoff-2026-09-09.html": 200,
+    "PEOPLE_TIME_PLAN_2026-09-09.md": 200,
+    "TOKEN_SHEET_people_time_2026-09-09.md": 200
+  },
+  "page_errors": [],
+  "product_baseline_checked": 11,
+  "product_baseline_drift": [],
+  "handoff_hash_record": {
+    "handoff-2026-09-09.html": "32289eb6e688316c5234cafafd0316eff01cc49563e984d53ae7727fc5bd9e7a",
+    "handoff-core-2026-09-09.mjs": "8693c64dd666079459868039872368fd351e0a765e64546c39fe29f69b95a24d",
+    "handoff-ui-2026-09-09.mjs": "94feb8fd15437d39400dca1aff20e967f240b8bcdbd72901fdeeeac884a4b908"
+  },
+  "handoff_hash_checked": 3,
+  "handoff_hash_drift": [],
+  "design_lint_report": "people-time-design-lint-2026-09-09/report.md"
+}

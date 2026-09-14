@@ -1,0 +1,54 @@
+{
+  "chromium": {
+    "baseline": {
+      "medianMs": 33,
+      "p95Ms": 33.30000000074506,
+      "lamps": 8,
+      "people": 8,
+      "haze": 70,
+      "viewport": [
+        1800,
+        1300
+      ],
+      "dpr": 1
+    },
+    "candidate": {
+      "medianMs": 135.5,
+      "p95Ms": 136.89999999850988,
+      "lamps": 8,
+      "people": 8,
+      "haze": 70,
+      "viewport": [
+        1800,
+        1300
+      ],
+      "dpr": 1
+    }
+  },
+  "webkit": {
+    "baseline": {
+      "medianMs": 2,
+      "p95Ms": 3,
+      "lamps": 8,
+      "people": 8,
+      "haze": 70,
+      "viewport": [
+        1800,
+        1300
+      ],
+      "dpr": 1
+    },
+    "candidate": {
+      "medianMs": 90,
+      "p95Ms": 101,
+      "lamps": 8,
+      "people": 8,
+      "haze": 70,
+      "viewport": [
+        1800,
+        1300
+      ],
+      "dpr": 1
+    }
+  }
+}

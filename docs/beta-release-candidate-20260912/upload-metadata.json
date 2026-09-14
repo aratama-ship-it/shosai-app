@@ -1,0 +1,60 @@
+{
+  "main_module": "beta-overlay-upload.js",
+  "compatibility_date": "2026-08-19",
+  "compatibility_flags": [],
+  "bindings": [
+    {
+      "name": "ASSETS",
+      "type": "inherit"
+    },
+    {
+      "name": "GUEST_ACCOUNTS",
+      "type": "inherit"
+    },
+    {
+      "name": "SESSION_ROOM",
+      "type": "inherit"
+    },
+    {
+      "name": "SITE_PASS",
+      "type": "inherit"
+    },
+    {
+      "name": "SITE_USER",
+      "type": "inherit"
+    },
+    {
+      "name": "STAGE_BETA_ACTIVE",
+      "type": "inherit"
+    },
+    {
+      "name": "STUDY_LINKS",
+      "type": "inherit"
+    },
+    {
+      "name": "STAGE_RELEASE_SCOPE",
+      "type": "plain_text",
+      "text": "beta-20260912"
+    },
+    {
+      "name": "STAGE_USAGE_ENABLED",
+      "type": "plain_text",
+      "text": "false"
+    },
+    {
+      "name": "STUDY_ALLOW_ANONYMOUS",
+      "type": "plain_text",
+      "text": "true"
+    }
+  ],
+  "keep_assets": true,
+  "assets": {
+    "config": {
+      "run_worker_first": true
+    }
+  },
+  "annotations": {
+    "workers/message": "Stage Sketch beta: integrate performer link into Share",
+    "workers/tag": "selected-five-viewer-share-ui-20260912"
+  }
+}

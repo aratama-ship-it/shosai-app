@@ -1,0 +1,58 @@
+{
+  "date": "2026-09-09",
+  "sourceFile": "output/pdf/stagewrite-production-export-2026-09-09.pdf",
+  "downloadEventReceived": false,
+  "actualDownloadFileFound": true,
+  "importPages": [
+    {
+      "alt": "版1：stagewrite-production-export-2026-09-09.pdf 1頁",
+      "height": 1687,
+      "loaded": true,
+      "width": 1187
+    },
+    {
+      "alt": "版1：stagewrite-production-export-2026-09-09.pdf 2頁",
+      "height": 1687,
+      "loaded": true,
+      "width": 1187
+    }
+  ],
+  "qSheetAfterImport": {
+    "count": 1,
+    "number": "LX 12",
+    "content": "照明を落とす",
+    "assigned": false
+  },
+  "guideDesktop": {
+    "documentWidth": 857,
+    "heading": "PDFは読み込める。編集情報は別に持ち込む。",
+    "width": 872
+  },
+  "guideMobile": {
+    "documentWidth": 375,
+    "tableContainerWidth": 343,
+    "tableWidth": 600,
+    "width": 390
+  },
+  "portraitZoom": {
+    "loaded": true,
+    "naturalWidth": 985,
+    "open": true,
+    "renderWidth": 985
+  },
+  "scope": "既存試作へ実PDFを読込み、2頁を目視。製品保存・Q自動変換・実iPadは未検証。",
+  "offlineEvidenceImages": [
+    {
+      "embedded": true,
+      "loaded": true,
+      "naturalWidth": 985
+    },
+    {
+      "embedded": true,
+      "loaded": true,
+      "naturalWidth": 1265
+    }
+  ],
+  "offlinePortraitZoomVerified": true,
+  "finalGuide": "stagewrite-guide.html#migration-check"
+}

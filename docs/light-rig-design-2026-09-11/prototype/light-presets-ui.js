@@ -79,7 +79,7 @@
   const panel = $("panel-insp"), insphead = $("insphead"), selacts = $("selacts"), insp = $("insp"), conflicts = $("conflicts");
   const tabs = el("div", "lpTabs");
   const tabSample = el("button"), tabAdjust = el("button");
-  tabSample.type = tabAdjust.type = "button"; tabSample.textContent = "簡単プリセット"; tabAdjust.textContent = "単体設定";
+  tabSample.type = tabAdjust.type = "button"; tabSample.textContent = "見本"; tabAdjust.textContent = "調整";
   tabSample.onclick = () => { ui.tab = "sample"; refresh(); }; tabAdjust.onclick = () => { ui.tab = "adjust"; refresh(); };
   tabs.append(tabSample, tabAdjust);
   const pane = el("div", "lpPane"); pane.id = "lpPane"; pane.hidden = true;
@@ -220,7 +220,7 @@
     shown.forEach((ch) => {
       const b = el("button"); b.type = "button"; b.append(Object.assign(document.createElement("span"), { textContent: ch.label, style: "overflow:hidden;text-overflow:ellipsis" }));
       if (ch.adjusted) b.append(el("em", "", "調整あり"));
-      b.title = `${ch.ids.length}灯。押すとその灯を選んで「単体設定」を開きます`;
+      b.title = `${ch.ids.length}灯。押すとその灯を選んで「調整」を開きます`;
       b.onclick = () => { state.sel = new Set(ch.ids); ui.tab = "adjust"; H.renderAll(); };
       now.append(b);
     });

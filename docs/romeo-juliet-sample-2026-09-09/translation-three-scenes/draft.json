@@ -1,0 +1,1044 @@
+{
+  "schema": "stage-sketch.translation-review.v2",
+  "draftId": "romeo-juliet-three-scenes-ja-v1",
+  "title": "ロミオとジュリエット｜3場面の下訳",
+  "scope": "出会い／窓辺と名前／決闘と呪い・3場面の抜粋",
+  "date": "2026-09-09",
+  "status": "ai_draft_for_user_revision",
+  "adopted": false,
+  "styleRequest": "現代の日本語を使いながら、劇であるというニュアンスを残す。",
+  "userDirection": "現在の台詞の方向性で下訳を続ける。最終的な推敲は本人が行う。",
+  "source": {
+    "work": "Romeo and Juliet",
+    "author": "William Shakespeare",
+    "url": "https://www.gutenberg.org/ebooks/1513",
+    "localFile": "../sources/gutenberg-1513-original.txt",
+    "sha256": "5a2037a19e60cccb67b3f5fc93a12cb65c58694ce6a1dc61d0d67d0d2502b3b4",
+    "lineNumberConvention": "1-based physical lines in the saved source file; not published verse numbers"
+  },
+  "baselineProvenance": {
+    "firstMeetingDraft": "../translation-draft/draft.json",
+    "sha256": "551fb095225f61afa07ffb28c9be487bc15fbb243c336b05f153caebac64eeb7"
+  },
+  "scenes": [
+    {
+      "id": "RJ-I-5",
+      "title": "出会い",
+      "scope": "第1幕 第5場・最初の対話から乳母の呼びかけまで（抜粋）",
+      "sourceRange": [
+        1300,
+        1341
+      ],
+      "description": "二人が祈りと聖者の比喩を交わす出会い。ご本人が方向性を確認した初稿を収録しています。",
+      "translationNotes": [
+        {
+          "id": "pilgrim-revision",
+          "title": "比喩の言葉を調整",
+          "text": "ご本人の違和感を受け、pilgrim / palmer を日本語の呼び名として使わず、「祈る人」と行為で表す台詞へ修正しました。聖者・祈り・手から唇へ移るやり取りは残しています。修正前の下訳は wording-revision-01.json と wording-revision-02.json に保存しています。"
+        },
+        {
+          "id": "address-revision",
+          "title": "呼びかけの調整",
+          "text": "ご本人の違和感を受け、ジュリエットの呼びかけを省き、相手の言葉へ直接応じる台詞に修正しました。"
+        },
+        {
+          "id": "voice",
+          "title": "声に出せる言葉と、舞台の張り",
+          "text": "現代の日本語で話せる語順を使い、聖堂・祈り・罪の比喩を残しました。ロミオが近づこうとするたび、ジュリエットが同じ比喩で切り返します。日本語の改行は息と応答の単位で、英語の各詩行との一対一対応ではありません。"
+        },
+        {
+          "id": "palm",
+          "title": "手から唇へ",
+          "text": "palm と palmer の音の重なりは日本語では再現していません。「手のひらを合わせる」「十分な口づけ」をつなぎ、手に許された接触を唇へ広げようとするやり取りを残しました。"
+        },
+        {
+          "id": "gentle-sin",
+          "title": "冒頭の償い",
+          "text": "保存した英語本文は gentle sin です。英語はそのまま載せ、日本語では前後の動作に沿い、手の無礼を唇で償う申し出として訳しました。「償わせてください」は解釈を含む下訳です。"
+        },
+        {
+          "id": "direction",
+          "title": "口づけのト書き",
+          "text": "英語の Kissing her. は罪が清められたという台詞の後にあります。日本語では動作と台詞の順序を読み取りやすくするため、「祈りの答えを、私が受け取ります」の直後へ移しました。二度目の口づけは、この英語抜粋には明示されたト書きがないため、追加していません。"
+        },
+        {
+          "id": "by-the-book",
+          "title": "最後の一言の余地",
+          "text": "「お手本どおり」は、ほめ言葉にも、手慣れた相手への軽いからかいにも聞こえる言葉として選びました。照れる、笑う、皮肉っぽく、といった演技指定は加えていません。"
+        }
+      ]
+    },
+    {
+      "id": "RJ-II-2",
+      "title": "窓辺と名前",
+      "scope": "第2幕 第2場・ロミオの登場から、名前を捨てるという応答まで（抜粋）",
+      "sourceRange": [
+        1525,
+        1615
+      ],
+      "referenceSampleRange": [
+        1525,
+        1568
+      ],
+      "description": "ロミオが窓辺の姿を見つめる独白から、二人が互いの声を確かめる対話へ。最初のテスト用抜粋を、名前をめぐるやり取りまで延長しました。",
+      "translationNotes": [
+        {
+          "title": "窓と視線",
+          "text": "保存原文のト書きは『上方の窓』です。舞台装置を決める前の下訳として窓辺と訳し、バルコニーの形状や高さは指定していません。原文で一続きのロミオの発話を、ジュリエットが現れるト書きの前後で分けました。"
+        },
+        {
+          "title": "光と月の比喩",
+          "text": "kill the envious moon は、太陽が月を見えなくする光の比喩として『月を打ち消してくれ』と訳しました。vestal livery は『清らかさを守るその衣』とし、衣を捨てる呼びかけは台詞に残しました。実際に衣装を脱ぐというト書きは追加していません。"
+        },
+        {
+          "title": "独白から、応答へ",
+          "text": "ロミオの長い発話は、光を見つける、瞳に応えようとする、手袋になりたいと願う、という動きを改行で追います。ジュリエットがロミオを認めるまでの声量や立ち位置は、演技の判断に残しています。"
+        },
+        {
+          "title": "どうしてロミオなの",
+          "text": "wherefore はここでは名前を持つ理由への問いとして訳しました。後続する父、家名、バラの名のやり取りにつなげています。ロミオの『聖者さま』を出会いの場面とそろえ、洗礼の比喩も残しました。"
+        }
+      ]
+    },
+    {
+      "id": "RJ-III-1",
+      "title": "決闘と呪い",
+      "scope": "第3幕 第1場・ティボルトの抜刀から、マーキューシオとベンヴォーリオの退場まで（抜粋）",
+      "sourceRange": [
+        2701,
+        2756
+      ],
+      "referenceSampleRange": [
+        2700,
+        2756
+      ],
+      "description": "剣を交える二人と、止めようとするロミオ。負傷したマーキューシオの言葉は、軽口から両家への呪いへ傾いていきます。",
+      "translationNotes": [
+        {
+          "title": "言葉の荒さ",
+          "text": "ロミオの制止は、友への頼みから命令へ変えています。マーキューシオは『俺』『おまえ』を使い、冗談、怒り、助けを求める声が同じ人物の中で続くようにしました。"
+        },
+        {
+          "title": "三度の同じ呪い",
+          "text": "A plague o’ both your houses. は三か所とも『両家とも、疫病に呑まれろ！』にそろえました。繰り返す言葉の調子は俳優に残し、台本キューでは一度目・二度目・三度目を別々に特定できるようにしています。"
+        },
+        {
+          "title": "墓の冗談",
+          "text": "grave man の言葉遊びは、『神妙な男』と『墓の中』を並べて受け渡しました。英語の一語を日本語では二つの言葉へ広げた箇所です。passado は技名の音写を避け、挑発として『お得意の突き』としています。"
+        },
+        {
+          "title": "負傷の瞬間",
+          "text": "この保存原文には、二人が戦うト書きはありますが、刺される瞬間を独立して記したト書きはありません。負傷はマーキューシオの台詞から伝わる形を保ちました。具体的な殺陣、負傷動作や効果音の追加は演出案として扱います。"
+        }
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": "RJ-I-5-D01",
+      "speaker": "ROMEO",
+      "speakerJa": "ロミオ",
+      "sourceLines": {
+        "start": 1300,
+        "end": 1304
+      },
+      "englishRaw": "ROMEO.\n[_To Juliet._] If I profane with my unworthiest hand\nThis holy shrine, the gentle sin is this,\nMy lips, two blushing pilgrims, ready stand\nTo smooth that rough touch with a tender kiss.",
+      "aiDraftJa": "（ジュリエットに）\nこの不作法な手で、この聖堂を汚したのなら、\nどうか、唇に償わせてください。\nこの唇も、祈るようにあなたへ近づき、\nやさしい口づけで、手の無礼を清めたいのです。",
+      "userRevisionJa": null,
+      "sceneId": "RJ-I-5",
+      "kind": "speech",
+      "englishDisplay": "[_To Juliet._] If I profane with my unworthiest hand\nThis holy shrine, the gentle sin is this,\nMy lips, two blushing pilgrims, ready stand\nTo smooth that rough touch with a tender kiss."
+    },
+    {
+      "id": "RJ-I-5-D02",
+      "speaker": "JULIET",
+      "speakerJa": "ジュリエット",
+      "sourceLines": {
+        "start": 1306,
+        "end": 1310
+      },
+      "englishRaw": "JULIET.\nGood pilgrim, you do wrong your hand too much,\nWhich mannerly devotion shows in this;\nFor saints have hands that pilgrims’ hands do touch,\nAnd palm to palm is holy palmers’ kiss.",
+      "aiDraftJa": "その手を、そんなに責めないで。\nこんなにも礼を尽くして触れてくださったのに。\n聖者にも手があり、祈る人はその手に触れるもの。\n手のひらを合わせる――それで十分な口づけです。",
+      "userRevisionJa": null,
+      "sceneId": "RJ-I-5",
+      "kind": "speech",
+      "englishDisplay": "Good pilgrim, you do wrong your hand too much,\nWhich mannerly devotion shows in this;\nFor saints have hands that pilgrims’ hands do touch,\nAnd palm to palm is holy palmers’ kiss."
+    },
+    {
+      "id": "RJ-I-5-D03",
+      "speaker": "ROMEO",
+      "speakerJa": "ロミオ",
+      "sourceLines": {
+        "start": 1312,
+        "end": 1313
+      },
+      "englishRaw": "ROMEO.\nHave not saints lips, and holy palmers too?",
+      "aiDraftJa": "聖者にも唇はあるでしょう。祈る人にも。",
+      "userRevisionJa": null,
+      "sceneId": "RJ-I-5",
+      "kind": "speech",
+      "englishDisplay": "Have not saints lips, and holy palmers too?"
+    },
+    {
+      "id": "RJ-I-5-D04",
+      "speaker": "JULIET",
+      "speakerJa": "ジュリエット",
+      "sourceLines": {
+        "start": 1315,
+        "end": 1316
+      },
+      "englishRaw": "JULIET.\nAy, pilgrim, lips that they must use in prayer.",
+      "aiDraftJa": "ええ。けれど、祈るための唇です。",
+      "userRevisionJa": null,
+      "sceneId": "RJ-I-5",
+      "kind": "speech",
+      "englishDisplay": "Ay, pilgrim, lips that they must use in prayer."
+    },
+    {
+      "id": "RJ-I-5-D05",
+      "speaker": "ROMEO",
+      "speakerJa": "ロミオ",
+      "sourceLines": {
+        "start": 1318,
+        "end": 1320
+      },
+      "englishRaw": "ROMEO.\nO, then, dear saint, let lips do what hands do:\nThey pray, grant thou, lest faith turn to despair.",
+      "aiDraftJa": "ならば、私の聖者さま。\n手に許したことを、唇にもお許しください。\n唇が祈っています。どうか、聞き届けて。\n信じる心が、絶望に変わらぬように。",
+      "userRevisionJa": null,
+      "sceneId": "RJ-I-5",
+      "kind": "speech",
+      "englishDisplay": "O, then, dear saint, let lips do what hands do:\nThey pray, grant thou, lest faith turn to despair."
+    },
+    {
+      "id": "RJ-I-5-D06",
+      "speaker": "JULIET",
+      "speakerJa": "ジュリエット",
+      "sourceLines": {
+        "start": 1322,
+        "end": 1323
+      },
+      "englishRaw": "JULIET.\nSaints do not move, though grant for prayers’ sake.",
+      "aiDraftJa": "祈りを聞き届けても、聖者は動きません。",
+      "userRevisionJa": null,
+      "sceneId": "RJ-I-5",
+      "kind": "speech",
+      "englishDisplay": "Saints do not move, though grant for prayers’ sake."
+    },
+    {
+      "id": "RJ-I-5-D07",
+      "speaker": "ROMEO",
+      "speakerJa": "ロミオ",
+      "sourceLines": {
+        "start": 1325,
+        "end": 1328
+      },
+      "englishRaw": "ROMEO.\nThen move not while my prayer’s effect I take.\nThus from my lips, by thine my sin is purg’d.\n[_Kissing her._]",
+      "aiDraftJa": "では、そのままで。\n祈りの答えを、私が受け取ります。\n（口づけする）\nこれで、あなたの唇が、私の罪をぬぐってくれた。",
+      "userRevisionJa": null,
+      "sceneId": "RJ-I-5",
+      "kind": "speech",
+      "englishDisplay": "Then move not while my prayer’s effect I take.\nThus from my lips, by thine my sin is purg’d.\n[_Kissing her._]"
+    },
+    {
+      "id": "RJ-I-5-D08",
+      "speaker": "JULIET",
+      "speakerJa": "ジュリエット",
+      "sourceLines": {
+        "start": 1330,
+        "end": 1331
+      },
+      "englishRaw": "JULIET.\nThen have my lips the sin that they have took.",
+      "aiDraftJa": "では、あなたの唇の罪は、私の唇へ移ったのね。",
+      "userRevisionJa": null,
+      "sceneId": "RJ-I-5",
+      "kind": "speech",
+      "englishDisplay": "Then have my lips the sin that they have took."
+    },
+    {
+      "id": "RJ-I-5-D09",
+      "speaker": "ROMEO",
+      "speakerJa": "ロミオ",
+      "sourceLines": {
+        "start": 1333,
+        "end": 1335
+      },
+      "englishRaw": "ROMEO.\nSin from my lips? O trespass sweetly urg’d!\nGive me my sin again.",
+      "aiDraftJa": "私の唇から、あなたの唇へ？\nなんて甘いおとがめでしょう。\nでは、私の罪を返してください。",
+      "userRevisionJa": null,
+      "sceneId": "RJ-I-5",
+      "kind": "speech",
+      "englishDisplay": "Sin from my lips? O trespass sweetly urg’d!\nGive me my sin again."
+    },
+    {
+      "id": "RJ-I-5-D10",
+      "speaker": "JULIET",
+      "speakerJa": "ジュリエット",
+      "sourceLines": {
+        "start": 1337,
+        "end": 1338
+      },
+      "englishRaw": "JULIET.\nYou kiss by the book.",
+      "aiDraftJa": "口づけも、お手本どおりなのね。",
+      "userRevisionJa": null,
+      "sceneId": "RJ-I-5",
+      "kind": "speech",
+      "englishDisplay": "You kiss by the book."
+    },
+    {
+      "id": "RJ-I-5-D11",
+      "speaker": "NURSE",
+      "speakerJa": "乳母",
+      "sourceLines": {
+        "start": 1340,
+        "end": 1341
+      },
+      "englishRaw": "NURSE.\nMadam, your mother craves a word with you.",
+      "aiDraftJa": "お嬢さま。お母さまが、少し話をしたいと。",
+      "userRevisionJa": null,
+      "sceneId": "RJ-I-5",
+      "kind": "speech",
+      "englishDisplay": "Madam, your mother craves a word with you."
+    },
+    {
+      "id": "RJ-II-2-T01",
+      "kind": "stage_direction",
+      "sourceLines": {
+        "start": 1525,
+        "end": 1525
+      },
+      "aiDraftJa": "（ロミオ、登場）",
+      "sceneId": "RJ-II-2",
+      "englishRaw": " Enter Romeo.",
+      "userRevisionJa": null,
+      "speaker": "",
+      "speakerJa": "ト書き",
+      "englishDisplay": "Enter Romeo."
+    },
+    {
+      "id": "RJ-II-2-D01",
+      "speaker": "ROMEO",
+      "sourceLines": {
+        "start": 1527,
+        "end": 1528
+      },
+      "aiDraftJa": "傷を負ったこともない奴は、人の傷痕を笑えるんだ。",
+      "sceneId": "RJ-II-2",
+      "kind": "speech",
+      "englishRaw": "ROMEO.\nHe jests at scars that never felt a wound.",
+      "userRevisionJa": null,
+      "speakerJa": "ロミオ",
+      "englishDisplay": "He jests at scars that never felt a wound."
+    },
+    {
+      "id": "RJ-II-2-T02",
+      "kind": "stage_direction",
+      "sourceLines": {
+        "start": 1530,
+        "end": 1530
+      },
+      "aiDraftJa": "（上方の窓辺に、ジュリエットが姿を見せる）",
+      "sceneId": "RJ-II-2",
+      "englishRaw": " Juliet appears above at a window.",
+      "userRevisionJa": null,
+      "speaker": "",
+      "speakerJa": "ト書き",
+      "englishDisplay": "Juliet appears above at a window."
+    },
+    {
+      "id": "RJ-II-2-D02",
+      "speaker": "ROMEO",
+      "continuedSpeech": true,
+      "sourceLines": {
+        "start": 1532,
+        "end": 1555
+      },
+      "aiDraftJa": "待て。あの窓から差す光は？\nあそこが東、ジュリエットは太陽だ！\n昇れ、美しい太陽。嫉妬深い月を打ち消してくれ。\nあの月は、自分に仕えるあなたのほうが美しいと知って、\n悔しさに病み、青ざめている。\nそんな嫉妬深い月に、仕えていることはない。\n清らかさを守るその衣は、病んだような青緑色。\nあんなものを着るのは愚か者だけだ。脱ぎ捨ててしまえ。\nあの方だ。私の愛する人だ！\nこの想いを、あの人が知っていてくれたら。\n何か話している。でも、声は聞こえない。\nそれが何だ。あの目が語っている。応えよう。\nいや、思い上がりだ。私に向けた言葉じゃない。\n天にある、とびきり美しい二つの星が、少し留守にするあいだ、\nあの瞳に、自分たちの場所で輝いてほしいと頼んだのか。\nもし瞳が空へ上がり、星があの顔に収まったら？\n頬の輝きに、星は顔を伏せるだろう。\n昼の光の中の、ともしびのように。\n空へ上がった瞳は、夜の大気を隅々まで照らして、\n鳥たちまで、もう夜ではないと思って歌い出すだろう。\nああ、手に頬を預けている。\nあの手の手袋になれたら。\nそうすれば、あの頬に触れられるのに。",
+      "sceneId": "RJ-II-2",
+      "kind": "speech",
+      "englishRaw": "But soft, what light through yonder window breaks?\nIt is the east, and Juliet is the sun!\nArise fair sun and kill the envious moon,\nWho is already sick and pale with grief,\nThat thou her maid art far more fair than she.\nBe not her maid since she is envious;\nHer vestal livery is but sick and green,\nAnd none but fools do wear it; cast it off.\nIt is my lady, O it is my love!\nO, that she knew she were!\nShe speaks, yet she says nothing. What of that?\nHer eye discourses, I will answer it.\nI am too bold, ’tis not to me she speaks.\nTwo of the fairest stars in all the heaven,\nHaving some business, do entreat her eyes\nTo twinkle in their spheres till they return.\nWhat if her eyes were there, they in her head?\nThe brightness of her cheek would shame those stars,\nAs daylight doth a lamp; her eyes in heaven\nWould through the airy region stream so bright\nThat birds would sing and think it were not night.\nSee how she leans her cheek upon her hand.\nO that I were a glove upon that hand,\nThat I might touch that cheek.",
+      "userRevisionJa": null,
+      "speakerJa": "ロミオ",
+      "englishDisplay": "But soft, what light through yonder window breaks?\nIt is the east, and Juliet is the sun!\nArise fair sun and kill the envious moon,\nWho is already sick and pale with grief,\nThat thou her maid art far more fair than she.\nBe not her maid since she is envious;\nHer vestal livery is but sick and green,\nAnd none but fools do wear it; cast it off.\nIt is my lady, O it is my love!\nO, that she knew she were!\nShe speaks, yet she says nothing. What of that?\nHer eye discourses, I will answer it.\nI am too bold, ’tis not to me she speaks.\nTwo of the fairest stars in all the heaven,\nHaving some business, do entreat her eyes\nTo twinkle in their spheres till they return.\nWhat if her eyes were there, they in her head?\nThe brightness of her cheek would shame those stars,\nAs daylight doth a lamp; her eyes in heaven\nWould through the airy region stream so bright\nThat birds would sing and think it were not night.\nSee how she leans her cheek upon her hand.\nO that I were a glove upon that hand,\nThat I might touch that cheek."
+    },
+    {
+      "id": "RJ-II-2-D03",
+      "speaker": "JULIET",
+      "sourceLines": {
+        "start": 1557,
+        "end": 1558
+      },
+      "aiDraftJa": "ああ……。",
+      "sceneId": "RJ-II-2",
+      "kind": "speech",
+      "englishRaw": "JULIET.\nAy me.",
+      "userRevisionJa": null,
+      "speakerJa": "ジュリエット",
+      "englishDisplay": "Ay me."
+    },
+    {
+      "id": "RJ-II-2-D04",
+      "speaker": "ROMEO",
+      "sourceLines": {
+        "start": 1560,
+        "end": 1568
+      },
+      "aiDraftJa": "声が。\nもう一度、話して。輝く天使。\nこの夜、私の頭上にいるあなたは、\n翼ある天の使いのようにまぶしい。\n人は驚きに目を見開き、身を反らしてその姿を仰ぐ。\n使いはゆるやかに膨らむ雲をまたぎ、\n大空の胸を渡っていく。",
+      "sceneId": "RJ-II-2",
+      "kind": "speech",
+      "englishRaw": "ROMEO.\nShe speaks.\nO speak again bright angel, for thou art\nAs glorious to this night, being o’er my head,\nAs is a winged messenger of heaven\nUnto the white-upturned wondering eyes\nOf mortals that fall back to gaze on him\nWhen he bestrides the lazy-puffing clouds\nAnd sails upon the bosom of the air.",
+      "userRevisionJa": null,
+      "speakerJa": "ロミオ",
+      "englishDisplay": "She speaks.\nO speak again bright angel, for thou art\nAs glorious to this night, being o’er my head,\nAs is a winged messenger of heaven\nUnto the white-upturned wondering eyes\nOf mortals that fall back to gaze on him\nWhen he bestrides the lazy-puffing clouds\nAnd sails upon the bosom of the air."
+    },
+    {
+      "id": "RJ-II-2-D05",
+      "speaker": "JULIET",
+      "sourceLines": {
+        "start": 1570,
+        "end": 1574
+      },
+      "aiDraftJa": "ロミオ、ロミオ。どうして、あなたはロミオなの。\nお父さまと縁を切り、その名を捨てて。\nそれができないなら、私を愛すると誓って。\nそうすれば、私がキャピュレットであることをやめる。",
+      "sceneId": "RJ-II-2",
+      "kind": "speech",
+      "englishRaw": "JULIET.\nO Romeo, Romeo, wherefore art thou Romeo?\nDeny thy father and refuse thy name.\nOr if thou wilt not, be but sworn my love,\nAnd I’ll no longer be a Capulet.",
+      "userRevisionJa": null,
+      "speakerJa": "ジュリエット",
+      "englishDisplay": "O Romeo, Romeo, wherefore art thou Romeo?\nDeny thy father and refuse thy name.\nOr if thou wilt not, be but sworn my love,\nAnd I’ll no longer be a Capulet."
+    },
+    {
+      "id": "RJ-II-2-D06",
+      "speaker": "ROMEO",
+      "sourceLines": {
+        "start": 1576,
+        "end": 1577
+      },
+      "aiDraftJa": "（傍白）\nもう少し聞こうか。それとも、今、声をかけようか。",
+      "sceneId": "RJ-II-2",
+      "kind": "speech",
+      "englishRaw": "ROMEO.\n[_Aside._] Shall I hear more, or shall I speak at this?",
+      "userRevisionJa": null,
+      "speakerJa": "ロミオ",
+      "englishDisplay": "[_Aside._] Shall I hear more, or shall I speak at this?"
+    },
+    {
+      "id": "RJ-II-2-D07",
+      "speaker": "JULIET",
+      "sourceLines": {
+        "start": 1579,
+        "end": 1591
+      },
+      "aiDraftJa": "私の敵は、あなたの名前だけ。\nモンタギューでなくなっても、あなたはあなた。\nモンタギューって何？　手でも足でも、\n腕でも顔でもない。人の体の、どこにもない。\nああ、別の名前でいてくれたら。\n名前に、何があるというの？\nバラと呼ぶあの花は、どんな名で呼んでも、同じように甘く香る。\nロミオだって、ロミオと呼ばれなくなっても、\nあの人のすばらしさは、そのまま残る。\nロミオ、その名前を脱ぎ捨てて。\nあなたの体の一部でもない、その名前の代わりに、\n私のすべてを受け取って。",
+      "sceneId": "RJ-II-2",
+      "kind": "speech",
+      "englishRaw": "JULIET.\n’Tis but thy name that is my enemy;\nThou art thyself, though not a Montague.\nWhat’s Montague? It is nor hand nor foot,\nNor arm, nor face, nor any other part\nBelonging to a man. O be some other name.\nWhat’s in a name? That which we call a rose\nBy any other name would smell as sweet;\nSo Romeo would, were he not Romeo call’d,\nRetain that dear perfection which he owes\nWithout that title. Romeo, doff thy name,\nAnd for thy name, which is no part of thee,\nTake all myself.",
+      "userRevisionJa": null,
+      "speakerJa": "ジュリエット",
+      "englishDisplay": "’Tis but thy name that is my enemy;\nThou art thyself, though not a Montague.\nWhat’s Montague? It is nor hand nor foot,\nNor arm, nor face, nor any other part\nBelonging to a man. O be some other name.\nWhat’s in a name? That which we call a rose\nBy any other name would smell as sweet;\nSo Romeo would, were he not Romeo call’d,\nRetain that dear perfection which he owes\nWithout that title. Romeo, doff thy name,\nAnd for thy name, which is no part of thee,\nTake all myself."
+    },
+    {
+      "id": "RJ-II-2-D08",
+      "speaker": "ROMEO",
+      "sourceLines": {
+        "start": 1593,
+        "end": 1596
+      },
+      "aiDraftJa": "その言葉、受け取りました。\nただ『愛しい人』と呼んでください。その呼び名で、洗礼を受け直しましょう。\n今から、私はロミオではありません。",
+      "sceneId": "RJ-II-2",
+      "kind": "speech",
+      "englishRaw": "ROMEO.\nI take thee at thy word.\nCall me but love, and I’ll be new baptis’d;\nHenceforth I never will be Romeo.",
+      "userRevisionJa": null,
+      "speakerJa": "ロミオ",
+      "englishDisplay": "I take thee at thy word.\nCall me but love, and I’ll be new baptis’d;\nHenceforth I never will be Romeo."
+    },
+    {
+      "id": "RJ-II-2-D09",
+      "speaker": "JULIET",
+      "sourceLines": {
+        "start": 1598,
+        "end": 1600
+      },
+      "aiDraftJa": "誰なの？　夜の陰に隠れて、\n私の胸の内へ、いきなり踏み込んでくるあなたは。",
+      "sceneId": "RJ-II-2",
+      "kind": "speech",
+      "englishRaw": "JULIET.\nWhat man art thou that, thus bescreen’d in night\nSo stumblest on my counsel?",
+      "userRevisionJa": null,
+      "speakerJa": "ジュリエット",
+      "englishDisplay": "What man art thou that, thus bescreen’d in night\nSo stumblest on my counsel?"
+    },
+    {
+      "id": "RJ-II-2-D10",
+      "speaker": "ROMEO",
+      "sourceLines": {
+        "start": 1602,
+        "end": 1607
+      },
+      "aiDraftJa": "名前で、自分が誰かを伝えることができません。\n私の聖者さま。私も、この名が憎い。\nあなたの敵になる名前だから。\n紙に書いてあれば、今ここで引き裂いてしまうのに。",
+      "sceneId": "RJ-II-2",
+      "kind": "speech",
+      "englishRaw": "ROMEO.\nBy a name\nI know not how to tell thee who I am:\nMy name, dear saint, is hateful to myself,\nBecause it is an enemy to thee.\nHad I it written, I would tear the word.",
+      "userRevisionJa": null,
+      "speakerJa": "ロミオ",
+      "englishDisplay": "By a name\nI know not how to tell thee who I am:\nMy name, dear saint, is hateful to myself,\nBecause it is an enemy to thee.\nHad I it written, I would tear the word."
+    },
+    {
+      "id": "RJ-II-2-D11",
+      "speaker": "JULIET",
+      "sourceLines": {
+        "start": 1609,
+        "end": 1612
+      },
+      "aiDraftJa": "まだ、あなたの声で百の言葉も聞いていないのに、\nその響きはわかる。\nあなたはロミオでしょう。モンタギューの。",
+      "sceneId": "RJ-II-2",
+      "kind": "speech",
+      "englishRaw": "JULIET.\nMy ears have yet not drunk a hundred words\nOf thy tongue’s utterance, yet I know the sound.\nArt thou not Romeo, and a Montague?",
+      "userRevisionJa": null,
+      "speakerJa": "ジュリエット",
+      "englishDisplay": "My ears have yet not drunk a hundred words\nOf thy tongue’s utterance, yet I know the sound.\nArt thou not Romeo, and a Montague?"
+    },
+    {
+      "id": "RJ-II-2-D12",
+      "speaker": "ROMEO",
+      "sourceLines": {
+        "start": 1614,
+        "end": 1615
+      },
+      "aiDraftJa": "あなたが嫌うなら、どちらでもありません。",
+      "sceneId": "RJ-II-2",
+      "kind": "speech",
+      "englishRaw": "ROMEO.\nNeither, fair maid, if either thee dislike.",
+      "userRevisionJa": null,
+      "speakerJa": "ロミオ",
+      "englishDisplay": "Neither, fair maid, if either thee dislike."
+    },
+    {
+      "id": "RJ-III-1-D01",
+      "speaker": "TYBALT",
+      "sourceLines": {
+        "start": 2701,
+        "end": 2702
+      },
+      "aiDraftJa": "（剣を抜く）\n相手になろう。",
+      "sceneId": "RJ-III-1",
+      "kind": "speech",
+      "englishRaw": "TYBALT.\n[_Drawing._] I am for you.",
+      "userRevisionJa": null,
+      "speakerJa": "ティボルト",
+      "englishDisplay": "[_Drawing._] I am for you."
+    },
+    {
+      "id": "RJ-III-1-D02",
+      "speaker": "ROMEO",
+      "sourceLines": {
+        "start": 2704,
+        "end": 2705
+      },
+      "aiDraftJa": "頼む、マーキューシオ。その剣を収めてくれ。",
+      "sceneId": "RJ-III-1",
+      "kind": "speech",
+      "englishRaw": "ROMEO.\nGentle Mercutio, put thy rapier up.",
+      "userRevisionJa": null,
+      "speakerJa": "ロミオ",
+      "englishDisplay": "Gentle Mercutio, put thy rapier up."
+    },
+    {
+      "id": "RJ-III-1-D03",
+      "speaker": "MERCUTIO",
+      "sourceLines": {
+        "start": 2707,
+        "end": 2708
+      },
+      "aiDraftJa": "さあ、どうした。お得意の突きを見せてみろ。",
+      "sceneId": "RJ-III-1",
+      "kind": "speech",
+      "englishRaw": "MERCUTIO.\nCome, sir, your passado.",
+      "userRevisionJa": null,
+      "speakerJa": "マーキューシオ",
+      "englishDisplay": "Come, sir, your passado."
+    },
+    {
+      "id": "RJ-III-1-T01",
+      "kind": "stage_direction",
+      "sourceLines": {
+        "start": 2710,
+        "end": 2710
+      },
+      "aiDraftJa": "（二人、剣を交える）",
+      "sceneId": "RJ-III-1",
+      "englishRaw": " [_They fight._]",
+      "userRevisionJa": null,
+      "speaker": "",
+      "speakerJa": "ト書き",
+      "englishDisplay": "[_They fight._]"
+    },
+    {
+      "id": "RJ-III-1-D04",
+      "speaker": "ROMEO",
+      "sourceLines": {
+        "start": 2712,
+        "end": 2717
+      },
+      "aiDraftJa": "ベンヴォーリオ、剣を抜け！　二人の武器を打ち落とせ！\n二人とも、恥を知れ！　こんなまねはやめるんだ。\nティボルト、マーキューシオ。大公は、ヴェローナの街中で\n剣を交えることを、はっきり禁じたはずだ！\nやめろ、ティボルト！　頼む、マーキューシオ！",
+      "sceneId": "RJ-III-1",
+      "kind": "speech",
+      "englishRaw": "ROMEO.\nDraw, Benvolio; beat down their weapons.\nGentlemen, for shame, forbear this outrage,\nTybalt, Mercutio, the Prince expressly hath\nForbid this bandying in Verona streets.\nHold, Tybalt! Good Mercutio!",
+      "userRevisionJa": null,
+      "speakerJa": "ロミオ",
+      "englishDisplay": "Draw, Benvolio; beat down their weapons.\nGentlemen, for shame, forbear this outrage,\nTybalt, Mercutio, the Prince expressly hath\nForbid this bandying in Verona streets.\nHold, Tybalt! Good Mercutio!"
+    },
+    {
+      "id": "RJ-III-1-T02",
+      "kind": "stage_direction",
+      "sourceLines": {
+        "start": 2719,
+        "end": 2719
+      },
+      "aiDraftJa": "（ティボルト、一味とともに退場）",
+      "sceneId": "RJ-III-1",
+      "englishRaw": " [_Exeunt Tybalt with his Partizans._]",
+      "userRevisionJa": null,
+      "speaker": "",
+      "speakerJa": "ト書き",
+      "englishDisplay": "[_Exeunt Tybalt with his Partizans._]"
+    },
+    {
+      "id": "RJ-III-1-D05",
+      "speaker": "MERCUTIO",
+      "sourceLines": {
+        "start": 2721,
+        "end": 2724
+      },
+      "aiDraftJa": "やられた。\n両家とも、疫病に呑まれろ！　俺はもうだめだ。\nあいつは行ったのか？　かすり傷ひとつなく？",
+      "sceneId": "RJ-III-1",
+      "kind": "speech",
+      "englishRaw": "MERCUTIO.\nI am hurt.\nA plague o’ both your houses. I am sped.\nIs he gone, and hath nothing?",
+      "userRevisionJa": null,
+      "speakerJa": "マーキューシオ",
+      "englishDisplay": "I am hurt.\nA plague o’ both your houses. I am sped.\nIs he gone, and hath nothing?"
+    },
+    {
+      "id": "RJ-III-1-D06",
+      "speaker": "BENVOLIO",
+      "sourceLines": {
+        "start": 2726,
+        "end": 2727
+      },
+      "aiDraftJa": "何？　やられたのか？",
+      "sceneId": "RJ-III-1",
+      "kind": "speech",
+      "englishRaw": "BENVOLIO.\nWhat, art thou hurt?",
+      "userRevisionJa": null,
+      "speakerJa": "ベンヴォーリオ",
+      "englishDisplay": "What, art thou hurt?"
+    },
+    {
+      "id": "RJ-III-1-D07",
+      "speaker": "MERCUTIO",
+      "sourceLines": {
+        "start": 2729,
+        "end": 2731
+      },
+      "aiDraftJa": "ああ、ああ、かすり傷だ、かすり傷。\nまったく、これで十分さ。\n小姓はどこだ？　おい、さっさと外科医を呼んでこい。",
+      "sceneId": "RJ-III-1",
+      "kind": "speech",
+      "englishRaw": "MERCUTIO.\nAy, ay, a scratch, a scratch. Marry, ’tis enough.\nWhere is my page? Go villain, fetch a surgeon.",
+      "userRevisionJa": null,
+      "speakerJa": "マーキューシオ",
+      "englishDisplay": "Ay, ay, a scratch, a scratch. Marry, ’tis enough.\nWhere is my page? Go villain, fetch a surgeon."
+    },
+    {
+      "id": "RJ-III-1-T03",
+      "kind": "stage_direction",
+      "sourceLines": {
+        "start": 2733,
+        "end": 2733
+      },
+      "aiDraftJa": "（小姓、退場）",
+      "sceneId": "RJ-III-1",
+      "englishRaw": " [_Exit Page._]",
+      "userRevisionJa": null,
+      "speaker": "",
+      "speakerJa": "ト書き",
+      "englishDisplay": "[_Exit Page._]"
+    },
+    {
+      "id": "RJ-III-1-D08",
+      "speaker": "ROMEO",
+      "sourceLines": {
+        "start": 2735,
+        "end": 2736
+      },
+      "aiDraftJa": "しっかりしろ。大した傷じゃないはずだ。",
+      "sceneId": "RJ-III-1",
+      "kind": "speech",
+      "englishRaw": "ROMEO.\nCourage, man; the hurt cannot be much.",
+      "userRevisionJa": null,
+      "speakerJa": "ロミオ",
+      "englishDisplay": "Courage, man; the hurt cannot be much."
+    },
+    {
+      "id": "RJ-III-1-D09",
+      "speaker": "MERCUTIO",
+      "sourceLines": {
+        "start": 2738,
+        "end": 2745
+      },
+      "aiDraftJa": "そうさ。井戸ほど深くもなけりゃ、教会の戸口ほど広くもない。\nだが十分だ。立派に役目を果たす。\n明日、俺に会いに来い。神妙な男になってるぞ――墓の中でな。\n俺のこの世の務めは、これでおしまいだ。間違いない。\n両家とも、疫病に呑まれろ！\n畜生、犬、どぶ鼠、はつか鼠、猫ごときが、人間を引っかき殺しやがる。\nほら吹き、ならず者、悪党め。計算帳どおりに剣を振るいやがって！\nおい、何だって二人の間に割って入った？\nおまえの腕の下で刺されたんだぞ。",
+      "sceneId": "RJ-III-1",
+      "kind": "speech",
+      "englishRaw": "MERCUTIO.\nNo, ’tis not so deep as a well, nor so wide as a church door, but ’tis\nenough, ’twill serve. Ask for me tomorrow, and you shall find me a\ngrave man. I am peppered, I warrant, for this world. A plague o’ both\nyour houses. Zounds, a dog, a rat, a mouse, a cat, to scratch a man to\ndeath. A braggart, a rogue, a villain, that fights by the book of\narithmetic!—Why the devil came you between us? I was hurt under your\narm.",
+      "userRevisionJa": null,
+      "speakerJa": "マーキューシオ",
+      "englishDisplay": "No, ’tis not so deep as a well, nor so wide as a church door, but ’tis\nenough, ’twill serve. Ask for me tomorrow, and you shall find me a\ngrave man. I am peppered, I warrant, for this world. A plague o’ both\nyour houses. Zounds, a dog, a rat, a mouse, a cat, to scratch a man to\ndeath. A braggart, a rogue, a villain, that fights by the book of\narithmetic!—Why the devil came you between us? I was hurt under your\narm."
+    },
+    {
+      "id": "RJ-III-1-D10",
+      "speaker": "ROMEO",
+      "sourceLines": {
+        "start": 2747,
+        "end": 2748
+      },
+      "aiDraftJa": "よかれと思って……。",
+      "sceneId": "RJ-III-1",
+      "kind": "speech",
+      "englishRaw": "ROMEO.\nI thought all for the best.",
+      "userRevisionJa": null,
+      "speakerJa": "ロミオ",
+      "englishDisplay": "I thought all for the best."
+    },
+    {
+      "id": "RJ-III-1-D11",
+      "speaker": "MERCUTIO",
+      "sourceLines": {
+        "start": 2750,
+        "end": 2754
+      },
+      "aiDraftJa": "ベンヴォーリオ、どこかの家へ連れていってくれ。\nこのままじゃ、気を失う。\n両家とも、疫病に呑まれろ！\n俺を蛆虫の餌にしやがった。\nやられたよ。見事にやられた。\nおまえたちの両家が！",
+      "sceneId": "RJ-III-1",
+      "kind": "speech",
+      "englishRaw": "MERCUTIO.\nHelp me into some house, Benvolio,\nOr I shall faint. A plague o’ both your houses.\nThey have made worms’ meat of me.\nI have it, and soundly too. Your houses!",
+      "userRevisionJa": null,
+      "speakerJa": "マーキューシオ",
+      "englishDisplay": "Help me into some house, Benvolio,\nOr I shall faint. A plague o’ both your houses.\nThey have made worms’ meat of me.\nI have it, and soundly too. Your houses!"
+    },
+    {
+      "id": "RJ-III-1-T04",
+      "kind": "stage_direction",
+      "sourceLines": {
+        "start": 2756,
+        "end": 2756
+      },
+      "aiDraftJa": "（マーキューシオとベンヴォーリオ、退場）",
+      "sceneId": "RJ-III-1",
+      "englishRaw": " [_Exeunt Mercutio and Benvolio._]",
+      "userRevisionJa": null,
+      "speaker": "",
+      "speakerJa": "ト書き",
+      "englishDisplay": "[_Exeunt Mercutio and Benvolio._]"
+    }
+  ],
+  "cueProposals": {
+    "schema": "stage-sketch.translation-cue-proposals.v1",
+    "appImportCompatible": false,
+    "draftId": "romeo-juliet-three-scenes-ja-v1",
+    "adoption": "proposal",
+    "cues": [
+      {
+        "cueId": "rj-modern-lx-11",
+        "basedOnCueId": "rj-cue-lx-11",
+        "number": "LX 11",
+        "kind": "lighting",
+        "sceneId": "RJ-I-5",
+        "adoption": "proposal",
+        "contentJa": "二人の手元へ光の中心を移す",
+        "triggerEdge": "after_quote",
+        "go": {
+          "ja": {
+            "blockId": "RJ-I-5-D01",
+            "quote": "この不作法な手",
+            "characterOffsetUtf16": 10,
+            "prefix": "（ジュリエットに）\n",
+            "suffix": "で、この聖堂を汚したのなら、\nどうか、唇に償わせてください。\nこ",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 1,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          },
+          "en": {
+            "blockId": "RJ-I-5-D01",
+            "quote": "If I profane",
+            "characterOffsetUtf16": 22,
+            "prefix": "ROMEO.\n[_To Juliet._] ",
+            "suffix": " with my unworthiest hand\nThis h",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 1,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          }
+        },
+        "anchorState": "baseline_verified",
+        "timeSeconds": null,
+        "stageActionRefs": []
+      },
+      {
+        "cueId": "rj-modern-sd-11",
+        "basedOnCueId": "rj-cue-sd-11",
+        "number": "SD 11",
+        "kind": "sound",
+        "sceneId": "RJ-I-5",
+        "adoption": "proposal",
+        "contentJa": "周囲の音を引き、接触の瞬間に余白を作る",
+        "triggerEdge": "after_quote",
+        "go": {
+          "ja": {
+            "blockId": "RJ-I-5-D02",
+            "quote": "十分な口づけ",
+            "characterOffsetUtf16": 77,
+            "prefix": "あり、祈る人はその手に触れるもの。\n手のひらを合わせる――それで",
+            "suffix": "です。",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 1,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          },
+          "en": {
+            "blockId": "RJ-I-5-D02",
+            "quote": "palmers’ kiss",
+            "characterOffsetUtf16": 172,
+            "prefix": "touch,\nAnd palm to palm is holy ",
+            "suffix": ".",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 1,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          }
+        },
+        "anchorState": "baseline_verified",
+        "timeSeconds": null,
+        "stageActionRefs": []
+      },
+      {
+        "cueId": "rj-modern-lx-12",
+        "basedOnCueId": "rj-cue-lx-12",
+        "number": "LX 12",
+        "kind": "lighting",
+        "sceneId": "RJ-I-5",
+        "adoption": "proposal",
+        "contentJa": "二人だけの光から周囲の人々へ戻す",
+        "triggerEdge": "after_quote",
+        "go": {
+          "ja": {
+            "blockId": "RJ-I-5-D11",
+            "quote": "お母さまが",
+            "characterOffsetUtf16": 5,
+            "prefix": "お嬢さま。",
+            "suffix": "、少し話をしたいと。",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 1,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          },
+          "en": {
+            "blockId": "RJ-I-5-D11",
+            "quote": "your mother craves",
+            "characterOffsetUtf16": 14,
+            "prefix": "NURSE.\nMadam, ",
+            "suffix": " a word with you.",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 1,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          }
+        },
+        "anchorState": "baseline_verified",
+        "timeSeconds": null,
+        "stageActionRefs": []
+      },
+      {
+        "cueId": "rj-modern-lx-21",
+        "basedOnCueId": "rj-cue-lx-21",
+        "number": "LX 21",
+        "kind": "lighting",
+        "sceneId": "RJ-II-2",
+        "adoption": "proposal",
+        "contentJa": "窓側の光を入れる",
+        "triggerEdge": "observed_action_start",
+        "go": {
+          "ja": {
+            "blockId": "RJ-II-2-T02",
+            "quote": "ジュリエットが姿を見せる",
+            "characterOffsetUtf16": 8,
+            "prefix": "（上方の窓辺に、",
+            "suffix": "）",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 1,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          },
+          "en": {
+            "blockId": "RJ-II-2-T02",
+            "quote": "Juliet appears above",
+            "characterOffsetUtf16": 1,
+            "prefix": " ",
+            "suffix": " at a window.",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 1,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          }
+        },
+        "anchorState": "baseline_verified",
+        "timeSeconds": null,
+        "stageActionRefs": []
+      },
+      {
+        "cueId": "rj-modern-sd-21",
+        "basedOnCueId": "rj-cue-sd-21",
+        "number": "SD 21",
+        "kind": "sound",
+        "sceneId": "RJ-II-2",
+        "adoption": "proposal",
+        "contentJa": "二人の声を残す薄い持続音へ移る",
+        "triggerEdge": "after_quote",
+        "go": {
+          "ja": {
+            "blockId": "RJ-II-2-D02",
+            "quote": "ジュリエットは太陽だ",
+            "characterOffsetUtf16": 20,
+            "prefix": "待て。あの窓から差す光は？\nあそこが東、",
+            "suffix": "！\n昇れ、美しい太陽。嫉妬深い月を打ち消してくれ。\nあの月は、自",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 1,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          },
+          "en": {
+            "blockId": "RJ-II-2-D02",
+            "quote": "Juliet is the sun",
+            "characterOffsetUtf16": 71,
+            "prefix": "dow breaks?\nIt is the east, and ",
+            "suffix": "!\nArise fair sun and kill the en",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 1,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          }
+        },
+        "anchorState": "baseline_verified",
+        "timeSeconds": null,
+        "stageActionRefs": []
+      },
+      {
+        "cueId": "rj-modern-sd-31",
+        "basedOnCueId": "rj-cue-sd-31",
+        "number": "SD 31",
+        "kind": "sound",
+        "sceneId": "RJ-III-1",
+        "adoption": "proposal",
+        "contentJa": "決闘の動作開始を見て打楽器の層を入れる",
+        "triggerEdge": "observed_action_start",
+        "go": {
+          "ja": {
+            "blockId": "RJ-III-1-T01",
+            "quote": "二人、剣を交える",
+            "characterOffsetUtf16": 1,
+            "prefix": "（",
+            "suffix": "）",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 1,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          },
+          "en": {
+            "blockId": "RJ-III-1-T01",
+            "quote": "They fight.",
+            "characterOffsetUtf16": 3,
+            "prefix": " [_",
+            "suffix": "_]",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 1,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          }
+        },
+        "anchorState": "baseline_verified",
+        "timeSeconds": null,
+        "stageActionRefs": []
+      },
+      {
+        "cueId": "rj-modern-lx-31",
+        "basedOnCueId": "rj-cue-lx-31",
+        "number": "LX 31",
+        "kind": "lighting",
+        "sceneId": "RJ-III-1",
+        "adoption": "proposal",
+        "contentJa": "最初の呪いの台詞で群像の光を切り分ける",
+        "triggerEdge": "after_quote",
+        "go": {
+          "ja": {
+            "blockId": "RJ-III-1-D05",
+            "quote": "両家とも、疫病に呑まれろ！",
+            "characterOffsetUtf16": 6,
+            "prefix": "やられた。\n",
+            "suffix": "　俺はもうだめだ。\nあいつは行ったのか？　かすり傷ひとつなく？",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 3,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          },
+          "en": {
+            "blockId": "RJ-III-1-D05",
+            "quote": "A plague o’ both",
+            "characterOffsetUtf16": 21,
+            "prefix": "MERCUTIO.\nI am hurt.\n",
+            "suffix": " your houses. I am sped.\nIs he g",
+            "occurrenceWithinScene": 1,
+            "matchingOccurrencesInScene": 3,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          }
+        },
+        "anchorState": "baseline_verified",
+        "timeSeconds": null,
+        "stageActionRefs": []
+      },
+      {
+        "cueId": "rj-modern-sd-32",
+        "basedOnCueId": "rj-cue-sd-32",
+        "number": "SD 32",
+        "kind": "sound",
+        "sceneId": "RJ-III-1",
+        "adoption": "proposal",
+        "contentJa": "二度目の同じ言葉で打楽器を止める",
+        "triggerEdge": "after_quote",
+        "go": {
+          "ja": {
+            "blockId": "RJ-III-1-D09",
+            "quote": "両家とも、疫病に呑まれろ！",
+            "characterOffsetUtf16": 103,
+            "prefix": "の中でな。\n俺のこの世の務めは、これでおしまいだ。間違いない。\n",
+            "suffix": "\n畜生、犬、どぶ鼠、はつか鼠、猫ごときが、人間を引っかき殺しやが",
+            "occurrenceWithinScene": 2,
+            "matchingOccurrencesInScene": 3,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          },
+          "en": {
+            "blockId": "RJ-III-1-D09",
+            "quote": "A plague o’ both",
+            "characterOffsetUtf16": 201,
+            "prefix": "red, I warrant, for this world. ",
+            "suffix": "\nyour houses. Zounds, a dog, a r",
+            "occurrenceWithinScene": 2,
+            "matchingOccurrencesInScene": 3,
+            "positionStatus": "proposed",
+            "pdfRectangle": null
+          }
+        },
+        "anchorState": "baseline_verified",
+        "timeSeconds": null,
+        "stageActionRefs": []
+      }
+    ],
+    "note": "本文の推敲後はキュー位置を再確認する。舞台機材・動作・秒数・PDF座標は未指定。"
+  }
+}

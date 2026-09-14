@@ -1,0 +1,25 @@
+{
+  "ourEditedExistingFiles": [
+    "design/TOKEN_SHEET_study-links_2026-09-09.md",
+    "stage-study.css",
+    "study.html"
+  ],
+  "concurrentChangesOutsideOurFiles": [
+    "docs/romeo-juliet-sample-2026-09-09/condensed-show/QA.md",
+    "docs/romeo-juliet-sample-2026-09-09/condensed-show/README.md",
+    "index.html",
+    "manual/manual-content.js",
+    "stage-i18n.js",
+    "stage-i18n.zh-Hans.js",
+    "stage-i18n.zh-Hant.js",
+    "stage-sketch.js",
+    "stage-sw.js",
+    "stage.html",
+    "study-frame.html",
+    "tests/stage-i18n.test.mjs",
+    "tests/stage-manual-help.test.mjs",
+    "tests/stage-prop-shapes.test.mjs",
+    "tests/stage-session-shelve.test.mjs"
+  ],
+  "missing": []
+}

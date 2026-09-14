@@ -1,0 +1,32 @@
+{
+  "sentName": "表示名確認・演者A",
+  "ownerDisplayedName": "表示名確認・演者A",
+  "otherRecipientListStatus": 404,
+  "dimensions": [
+    {
+      "lang": "ja",
+      "width": 390,
+      "height": 844,
+      "overflow": false
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "height": 1000,
+      "overflow": false
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "height": 844,
+      "overflow": false
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "height": 1000,
+      "overflow": false
+    }
+  ],
+  "errors": []
+}

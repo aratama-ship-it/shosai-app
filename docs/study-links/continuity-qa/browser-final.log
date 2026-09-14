@@ -1,0 +1,8 @@
+PASS Owner issues through the share modal; working document and saved shows unchanged
+PASS Working edits remain private; explicit rename/reorder keeps the same link and notes
+PASS Changed diagrams start clean; old/new previews support partial text and individual stroke copying without sending
+PASS Deleted-scene notes remain discoverable; copying to an added scene survives reload without replacing saved shows
+PASS Owner feedback inbox safely displays name, revision and both screenshots; show/sender filters work across shows
+PASS Japanese/English browser layouts at 390x844, 844x390, 768x1024 and 1440x1000: original font, no horizontal overflow, 44px actions
+PASS Other recipients see no private notes/inbox; public routes stay narrow; revocation removes current and historical frames
+Browser continuity: 7 checks passed

@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-09",
+  "status": "ai_draft_not_adopted",
+  "userRequest": "それも踏まえて、この場面のセリフをちょっと増えることになると思うので、それをちょっとやってください",
+  "previousFiles": {
+    "selections.json": "971c04f27c314c41e333e72cbe82c0582ad194bb38555b017712021abb9fcead",
+    "draft.json": "882ae7b19f84cc8451791744aebaa11e9e5d1f966d73ba555d11f5b1fd2c7af6",
+    "../direction-notes/scene-notes.json": "687ae443deceb50fcf054fca0e497279944da90f8ef8456d17ca9e544d5203c3"
+  },
+  "previousScene5": {
+    "scope": "revenge_excerpt_only",
+    "sourceRanges": [[2783, 2791], [2793, 2795], [2797, 2798], [2800, 2800]],
+    "lineCount": 10,
+    "jaDraft": "ロミオ　マーキューシオは死んだのに、勝ち誇って戻ってきたのか。\n　思いやりなど、天へ帰れ。今は怒りが私を導け！\n　ティボルト、さっき私に浴びせた『悪党』という言葉を返す。\n　マーキューシオの魂は、まだ私たちのすぐ上にいる。\n　おまえが来るのを待っているんだ。\n　おまえか私か、それとも二人とも、あいつと行く。\nティボルト　あいつとつるんでいた小僧が。\n　あの世でも、一緒にしてやる。\nロミオ　それは、この剣が決める。\n（剣を交え、ティボルトが倒れる）"
+  },
+  "newScene5": {
+    "scope": "expanded_causal_excerpt",
+    "expectedLineCount": 18,
+    "coveredSequence": [
+      "tybalt_challenges_romeo",
+      "romeo_refuses_to_fight",
+      "mercutio_steps_in",
+      "mercutio_is_wounded_and_exits",
+      "benvolio_reports_mercutios_death",
+      "tybalt_returns",
+      "romeo_fights_and_kills_tybalt"
+    ]
+  },
+  "adopted": false,
+  "finalPolishingByUser": true
+}

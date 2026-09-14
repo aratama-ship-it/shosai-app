@@ -1,0 +1,44 @@
+{
+  "kind": "stage-sketch-transition-ai-input",
+  "version": 1,
+  "status": "ready_for_isolated_proposal",
+  "purpose": "ロミオとジュリエット全体サンプルのQ02からQ03の間に、暗転中の段階的なセット転換を示す技術確認図を3枚提案する",
+  "source": {
+    "nativeFile": "../romeo-juliet-full-show.stage-sketch.json",
+    "nativeSha256": "7086d75a843a0ea7253d3dd630defe994cf491432aabcc19e7774d5000a5d780",
+    "fromSceneId": "rj-frame-rj-cond-01-b-02",
+    "toSceneId": "rj-frame-rj-cond-01-c-01",
+    "decisionFile": "../../../../../../../research/stage-sketch-overnight-2026-09-10/p5/m6-sample-a-decisions-result.json",
+    "decisionSha256": "f15c0d42cc70f4e33d840425a40297e8df5c7c6d8e512d62621e9752db0c64d9"
+  },
+  "ownerConfirmed": {
+    "carrierSlots": ["FRIAR_LAWRENCE", "FRIAR_JOHN"],
+    "origin": "客席から見て右袖",
+    "bar": "キャスター付き一体型を2人で押して固定",
+    "sequence": "人物移動や仮面装着を段階的に重ね、バーは最初でも最後でもない時点で出す",
+    "masks": "全員が暗転前から携帯し、暗転中に着ける",
+    "afterInstall": "2人ともバー係として残り、Q03の位置を変更する",
+    "timing": "工程時間と締切は未確認。0秒にしない",
+    "ready": ["バー固定", "通路クリア", "10人の位置", "全員の仮面", "照明準備"],
+    "late": "完了までブラックアウトを維持し、遅延を記録する"
+  },
+  "sourceConflicts": [
+    "既存の通し稿はバーを俳優10名とは別のスタッフが設置するとしている",
+    "既存の通し稿は転換込み20秒という仮尺を置いている",
+    "既存データはバーと背面棚を別の駒で描くが、本人判断では一体型である"
+  ],
+  "proposalAllowed": [
+    "ロレンス修道士担当とジョン修道士担当のサンプル内座標",
+    "3枚の技術確認図における他8名の補間位置",
+    "仮面を着ける段階の順序",
+    "一体型バーを画面上のバーと背面棚の2駒で同期表示する方法"
+  ],
+  "mustRemainUnknown": [
+    "実在のpersonId",
+    "実会場の袖経路・幅・段差・見切れ",
+    "実物の寸法・重量・固定方法・キャスターロック数",
+    "工程別の見積り・稽古実測・転換締切",
+    "安全性と実施可否"
+  ],
+  "outputBoundary": "元の全体サンプルと製品コードを変更せず、完全な別ショーJSONとして書き出す。提案座標は採用済みと表現しない。"
+}

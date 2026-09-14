@@ -1,0 +1,17 @@
+{
+  "isolatedSingleFile": true,
+  "networkDisabled": true,
+  "frames": 28,
+  "views": 2,
+  "viewports": [
+    1440,
+    390
+  ],
+  "embeddedDocuments": 2,
+  "pngExport": true,
+  "svgExport": true,
+  "jsonExport": true,
+  "externalRequests": [],
+  "pageErrors": [],
+  "bytes": 969943
+}

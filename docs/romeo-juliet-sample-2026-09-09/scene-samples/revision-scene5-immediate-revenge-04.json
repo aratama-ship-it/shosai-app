@@ -1,0 +1,29 @@
+{
+  "date": "2026-09-09",
+  "status": "ai_draft_not_adopted",
+  "userRequest": "それでいいとおもいます。むしろその瞬間にロミオが報復してもいいと思います",
+  "interpretation": "ロミオはマーキューシオの死の報告を待たず、負傷を見た瞬間にティボルトへ報復する。",
+  "previousFiles": {
+    "selections.json": "3642c45cedff88482f455e7f979c5374c2317e466f27a773ac9088136ca24045",
+    "draft.json": "d255593427b3699684154a406531d86866ffc8a9000e0b0ef15f8903b353b533",
+    "../direction-notes/scene-notes.json": "a0824db9587de99c3dd7e65f68e87476d43c5f3f4b1ac5fc26850ff2c92479fa"
+  },
+  "previousScene5": {
+    "scope": "action_weighted_user_adaptation",
+    "lineCount": 11,
+    "dialogueLines": 3,
+    "stageDirectionLines": 8,
+    "revengeTrigger": "mercutio_death_signal"
+  },
+  "newScene5": {
+    "scope": "immediate_revenge_user_adaptation",
+    "expectedLineCount": 10,
+    "dialogueLines": 3,
+    "stageDirectionLines": 7,
+    "revengeTrigger": "mercutio_wounding_seen_by_romeo",
+    "sourceDifference": "Romeo retaliates immediately after Mercutio is wounded, before Mercutio's death is confirmed.",
+    "allRequiredNarrativeBeatsRetained": true
+  },
+  "adopted": false,
+  "finalPolishingByUser": true
+}

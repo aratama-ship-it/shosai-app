@@ -1,0 +1,15 @@
+{
+  "base": "5bf35eadf2a47524f6be971d91b870f8c75dee51",
+  "files": {
+    "stage-sketch.js": "81c576de720c11ec998504ff100d227844f13cd17793e3bed330ac52496573e2",
+    "stage-timeline.js": "218f3f95432a96a89c623fc3442ab26d7e938ebb5d95202338959506dab5d3a8",
+    "stage.html": "2013b6495d1d0b8b08f15576de717a2ec87c8582cf65cabe76fd2c2a2bf8f13f",
+    "stage-sw.js": "0e074076e93d1677da14b1a66915af29210dd517d75ca1c57f1b5be512cfc256",
+    "tests/stage-formation-integration.test.mjs": "adab37b203a7b40d75d4fbdbd9811d6b9e384944f04fd07a1c40e51e61d99a9c",
+    "tests/stage-session-shelve.test.mjs": "216e7a410fbb855750c08fc3f5760f7b45677fb327b61c3212776797407a3b88",
+    "tests/stage-pages-p0.browser.mjs": "6ea6d1fcfd23f7659d91c64bcdf724008e448c15cadb49580cbf09d8f3feafee",
+    "tests/fixtures/stage-pages-p0.json": "8d1967c60efd5dec434fc656f69532a45ee5a3cd4541534d43b843773d19aa55"
+  },
+  "target": "GitHub Pages only",
+  "cloudflare": "No changes or deployment"
+}

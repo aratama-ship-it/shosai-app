@@ -1,0 +1,555 @@
+--- a/worker.js
++++ b/worker.js
+@@ -2,7 +2,7 @@
+ 
+ export { SessionRoom };
+ 
+-// サイト全体をBasic認証で保護する（制作の書斎、全タブ共通）。
++// サイト全体を認証で保護する。SITE_USERは書斎全体、ゲストは舞台スケッチだけ。
+ //
+ // wrangler.toml の run_worker_first により、静的アセットより必ず先にここを通る。
+ // 正しければ env.ASSETS.fetch(request) で通常の静的ファイル配信へ渡す。
+@@ -178,6 +178,101 @@
+   });
+ }
+ 
++/* ゲストへ渡す静的ファイルは明示する。stage-*.js / manual/* のような広い許可は
++   個人ショーや将来追加する内部資料まで通すので使わない。
++   tests/worker-guest-scope.test.mjs が単独ページ・PWA・ガイドの依存との整合を検査する。 */
++const GUEST_STAGE_DOCUMENTS = new Set(["/stage.html", "/stage"]);
++const GUEST_STAGE_ASSETS = new Set([
++  ...GUEST_STAGE_DOCUMENTS,
++  "/style.css", "/stage-sw.js", "/stage-pwa.js", "/stage-sketch.js",
++  "/stage-venues.js", "/stage-venue-lines.js", "/stage-i18n.js",
++  "/stage-prompt-i18n.js", "/stage-rehearsal-export.js", "/stage-samples/index.js",
++  "/stage-set-model.js", "/stage-set-builder.js", "/stage-machinery.js",
++  "/stage-first-person.js", "/stage-audio-store.js", "/stage-session.js",
++  "/stage-venue-editor.js", "/stage-sketch.webmanifest",
++  "/manual/manual-content.js", "/manual/manual.html", "/manual/manual",
++  "/manual/quick.html", "/manual/quick", "/manual/quick-en.html", "/manual/quick-en",
++  "/manual/QuickGuide_2026-08-28.pdf", "/manual/GuideBooklet_2026-08-29.pdf",
++  "/manual/クイックガイド_2026-08-28.pdf", "/manual/使いかたの冊子_2026-08-29.pdf",
++  ...["cover-trapeze", "duo-front", "duo-plan", "cast-poses-props", "scene-map"]
++    .flatMap((name) => [`/manual/img/${name}.png`, `/manual/img/${name}-en.png`]),
++].map((path) => encodeURI(path)));
++
++function isGuestAccount(user, env) {
++  // null は認証を設定していないローカル開発だけ。ゲストの名簿labelは権限に使わない。
++  return user !== null && user !== env.SITE_USER;
++}
++
++function isGuestStageAsset(request) {
++  if (request.method !== "GET" && request.method !== "HEAD") return false;
++  return GUEST_STAGE_ASSETS.has(new URL(request.url).pathname);
++}
++
++function guestStageEntry(value) {
++  const url = new URL(safeNextPath(value), "https://stage.invalid");
++  if (GUEST_STAGE_DOCUMENTS.has(url.pathname)) return url.pathname + url.search + url.hash;
++  // 書斎や未知の戻り先からは舞台へ。言語だけ引き継ぎ、書斎のhash等は持ち込まない。
++  const lang = url.searchParams.get("lang");
++  return "/stage.html" + (lang === "en" || lang === "ja" ? `?lang=${lang}` : "");
++}
++
++function guestForbidden() {
++  return new Response("このアカウントでは舞台スケッチのみ利用できます。\nThis account can access Stage Sketch only.", {
++    status: 403,
++    headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
++  });
++}
++
++function stageAssetRequest(request) {
++  if (!GUEST_STAGE_DOCUMENTS.has(new URL(request.url).pathname)) return request;
++  // 既存HTMLのvalidatorやRangeで304/206を返すと、名称・ゲスト用の変換を飛ばしてしまう。
++  const headers = new Headers(request.headers);
++  for (const name of ["If-None-Match", "If-Modified-Since", "If-Match", "If-Unmodified-Since", "If-Range", "Range"]) headers.delete(name);
++  return new Request(request, { headers });
++}
++
++async function authenticatedAssetResponse(response, request, guest = false) {
++  const headers = new Headers(response.headers);
++  // 本人用・ゲスト用の応答をHTTPキャッシュで混ぜない。PWAは安全なshellを明示保存する。
++  headers.set("Cache-Control", "private, no-store");
++  headers.set("Vary", "Cookie, Authorization");
++  if (request.method === "GET" && response.status === 200
++    && GUEST_STAGE_DOCUMENTS.has(new URL(request.url).pathname)
++    && (headers.get("Content-Type") || "").includes("text/html")) {
++    // 既存の配信素材を維持するWorker単独更新でも、単独ページの名称をそろえる。
++    let html = (await response.text()).replace(/<title>[^<]*<\/title>/, "<title>舞台スケッチ | Stage Sketch</title>");
++    if (guest) {
++      // build_stage.pyの既知のscriptタグだけ外す。実データURLへの直接アクセスも別途拒否する。
++      html = html.replace(/<script\s+src="stage-shows\.local\.js(?:\?[^"<>]*)?"\s*>\s*<\/script>/g, "");
++    }
++    for (const name of ["Content-Length", "Content-Encoding", "ETag", "Last-Modified"]) headers.delete(name);
++    return new Response(html, { status: 200, headers });
++  }
++  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
++}
++
++async function serveStageGuestAsset(request, env) {
++  const url = new URL(request.url);
++  if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/") {
++    return new Response(null, {
++      status: 303,
++      headers: { "Location": guestStageEntry(url.pathname + url.search), "Cache-Control": "no-store" },
++    });
++  }
++  if (!isGuestStageAsset(request)) return guestForbidden();
++
++  const response = await env.ASSETS.fetch(stageAssetRequest(request));
++  const location = response.headers.get("Location");
++  if (location) {
++    const destination = new URL(location, request.url);
++    if (destination.origin !== url.origin
++      || !(GUEST_STAGE_ASSETS.has(destination.pathname) || isPublicAppShellAsset(new Request(destination)))) {
++      return guestForbidden();
++    }
++  }
++  return authenticatedAssetResponse(response, request, true);
++}
++
+ async function serveAuthenticatedRequest(request, env, user) {
+   const whoamiResponse = handleWhoamiRequest(request, user);
+   if (whoamiResponse) return whoamiResponse;
+@@ -185,7 +280,8 @@
+   if (betaStatusResponse) return betaStatusResponse;
+   const sessionResponse = await handleSessionRequest(request, env, user);
+   if (sessionResponse) return sessionResponse;
+-  return env.ASSETS.fetch(request);
++  if (isGuestAccount(user, env)) return serveStageGuestAsset(request, env);
++  return authenticatedAssetResponse(await env.ASSETS.fetch(stageAssetRequest(request)), request);
+ }
+ 
+ /* ホーム画面へ追加したPWAの見た目に必要な、中身を持たない静的資源だけを認証の外へ出す。
+@@ -322,6 +418,8 @@
+ export function safeNextPath(value) {
+   if (typeof value !== "string" || !value.startsWith("/")) return "/";
+   if (value.startsWith("//")) return "/";
++  // URLパーサーはバックスラッシュを/として解釈する。外部ホストや不正URLにしない。
++  if (value.includes("\\")) return "/";
+   if (/[\u0000-\u001f\u007f]/.test(value)) return "/";
+   return value;
+ }
+@@ -354,13 +452,15 @@
+ };
+ 
+ function signInPage({ next = "/", error = "" } = {}) {
++  const english = new URL(safeNextPath(next), "https://stage.invalid").searchParams.get("lang") === "en";
++  const title = english ? "Stage Sketch" : "舞台スケッチ";
+   return `<!DOCTYPE html>
+ <html lang="ja">
+ <head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+ <meta name="robots" content="noindex, nofollow">
+-<title>制作の書斎</title>
++<title>${title}</title>
+ <link rel="icon" href="/icons/stage-sketch-192.png" sizes="192x192" type="image/png">
+ <style>
+   :root {
+@@ -479,7 +579,7 @@
+   .en { color: var(--ink-soft); font-weight: normal; }
+   .lede .en { display: block; font-size: 11px; letter-spacing: 0.04em; margin-top: 3px; }
+   label .en { font-size: 10px; margin-left: 7px; letter-spacing: 0.05em; }
+-  button[type="submit"] .en { font-size: 11px; margin-left: 8px; opacity: 0.75; }
++  button[type="submit"] .en { font-size: 11px; margin-left: 8px; color: inherit; opacity: 1; }
+   .note .en { display: block; margin-top: 4px; }
+   .alert .en { display: block; margin-top: 3px; font-size: 10.5px; }
+   .note {
+@@ -512,8 +612,8 @@
+   <main class="stand">
+     <form class="sheet" method="POST" action="${escapeHtml(SIGN_IN_PATH)}">
+       <img class="mark" src="/icons/stage-sketch-192.png" alt="" width="54" height="54">
+-      <h1>制作の書斎</h1>
+-      <p class="lede">舞台をつくるための机と、資料棚。<span class="en">A desk and a shelf for building stage work.</span></p>
++      <h1>${title}</h1>
++      <p class="lede">舞台スケッチへログイン<span class="en">Sign in to Stage Sketch.</span></p>
+       <hr class="rule">
+       ${error ? `<p class="alert" role="alert">${escapeHtml(error)}${
+         SIGN_IN_ERROR_EN[error] ? `<span class="en">${escapeHtml(SIGN_IN_ERROR_EN[error])}</span>` : ""
+@@ -558,7 +658,7 @@
+   });
+ }
+ 
+-async function handleSignIn(request, url, accounts) {
++async function handleSignIn(request, url, accounts, env) {
+   if (request.method === "GET" || request.method === "HEAD") {
+     return htmlResponse(signInPage({ next: safeNextPath(url.searchParams.get("next")) }));
+   }
+@@ -592,7 +692,7 @@
+   return new Response(null, {
+     status: 303,
+     headers: {
+-      "Location": next,
++      "Location": isGuestAccount(matched[0], env) ? guestStageEntry(next) : next,
+       "Set-Cookie": sessionCookie(token),
+       "Cache-Control": "no-store",
+     },
+@@ -684,6 +784,7 @@
+     );
+     // 片方だけ入っている組は設定ミス。両方空（＝その入口を使わない）は正常。
+     const misconfigured = pairs.some(([u, p]) => Boolean(u) !== Boolean(p))
++      || Boolean(env.SITE_USER && env.GUEST_USER && env.SITE_USER === env.GUEST_USER)
+       || guestConfig.misconfigured;
+     const accounts = [
+       ...pairs.filter(([u, p]) => u && p),
+@@ -727,7 +828,7 @@
+ 
+     // ログイン画面そのものは認証の外に置く（でないと入る手段が無くなる）。
+     if (url.pathname === SIGN_IN_PATH) {
+-      return handleSignIn(request, url, accounts);
++      return handleSignIn(request, url, accounts, env);
+     }
+ 
+     // ① クッキー。アプリの再起動をまたいで残り、Service Workerの取得にも付く。
+--- a/build_stage.py
++++ b/build_stage.py
+@@ -58,7 +58,7 @@
+ <head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+-<title>舞台スケッチ — 制作の書斎</title>
++<title>舞台スケッチ | Stage Sketch</title>
+ <meta name="theme-color" content="#191512">
+ <meta name="apple-mobile-web-app-capable" content="yes">
+ <meta name="apple-mobile-web-app-status-bar-style" content="black">
+--- a/stage.html
++++ b/stage.html
+@@ -3,7 +3,7 @@
+ <head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+-<title>舞台スケッチ — 制作の書斎</title>
++<title>舞台スケッチ | Stage Sketch</title>
+ <meta name="theme-color" content="#191512">
+ <meta name="apple-mobile-web-app-capable" content="yes">
+ <meta name="apple-mobile-web-app-status-bar-style" content="black">
+--- a/tests/worker-session-login.test.mjs
++++ b/tests/worker-session-login.test.mjs
+@@ -63,7 +63,7 @@
+ });
+ 
+ async function signIn(account, targetEnv) {
+-  const body = new URLSearchParams({ user: account[0], pass: account[1], next: "/db.js" });
++  const body = new URLSearchParams({ user: account[0], pass: account[1], next: "/stage.html" });
+   return worker.fetch(
+     new Request("https://shosai.example/sign-in", { method: "POST", body }), targetEnv, {},
+   );
+@@ -134,6 +134,8 @@
+   assert.equal(safeNextPath("/stage.html?x=1#y"), "/stage.html?x=1#y");
+   for (const bad of [
+     "//evil.example/steal",        // protocol-relative で外部へ飛べる
++    "/\\evil.example/steal",       // URLパーサーが外部ホストへ解釈する
++    "/\\[",                        // 言語・戻り先の解析で例外にしない
+     "https://evil.example",
+     "http://evil.example",
+     "evil.example",
+@@ -258,7 +260,7 @@
+   assert.match(response.headers.get("Content-Type") || "", /text\/html/);
+   assert.equal(response.headers.get("Cache-Control"), "no-store");
+   const html = await response.text();
+-  assert.match(html, /制作の書斎/);
++  assert.match(html, /舞台スケッチ/);
+   assert.match(html, /name="user"/);
+   assert.match(html, /name="pass"/);
+   assert.match(html, /中へ入る/);
+@@ -394,13 +396,13 @@
+ 
+     const token = cookieFrom(login);
+     const cookieResponse = await worker.fetch(
+-      get("/db.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${token}` }),
++      get("/stage-sketch.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${token}` }),
+       managedEnv,
+       {},
+     );
+     assert.equal(cookieResponse.status, 200, `${account[0]} のクッキーは通る`);
+ 
+-    const basicResponse = await worker.fetch(get("/db.js", basicHeader(account)), managedEnv, {});
++    const basicResponse = await worker.fetch(get("/stage-sketch.js", basicHeader(account)), managedEnv, {});
+     assert.equal(basicResponse.status, 200, `${account[0]} のBasic認証は通る`);
+   }
+ });
+@@ -414,14 +416,14 @@
+   const changedEnv = withGuestAccounts(changedEntries);
+ 
+   const firstResponse = await worker.fetch(
+-    get("/db.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${firstToken}` }),
++    get("/stage-sketch.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${firstToken}` }),
+     changedEnv,
+     {},
+   );
+   assert.equal(firstResponse.status, 401, "変更した人の旧トークンは無効");
+ 
+   const secondResponse = await worker.fetch(
+-    get("/db.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${secondToken}` }),
++    get("/stage-sketch.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${secondToken}` }),
+     changedEnv,
+     {},
+   );
+@@ -434,13 +436,13 @@
+     assert.equal(login.status, 303);
+     const token = cookieFrom(login);
+     const cookieResponse = await worker.fetch(
+-      get("/db.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${token}` }),
++      get("/stage-sketch.js", { ...SUBRESOURCE, Cookie: `__Host-shosai-session=${token}` }),
+       legacyEnv,
+       {},
+     );
+     assert.equal(cookieResponse.status, 200);
+     assert.equal(
+-      (await worker.fetch(get("/db.js", basicHeader(GUEST)), legacyEnv, {})).status,
++      (await worker.fetch(get("/stage-sketch.js", basicHeader(GUEST)), legacyEnv, {})).status,
+       200,
+     );
+   }
+@@ -449,7 +451,7 @@
+ test("旧ゲスト口座とGUEST_ACCOUNTSが重複なしで併存すれば両方通る", async () => {
+   const combinedEnv = withGuestAccounts(managedGuestEntries());
+   for (const account of [GUEST, ...MANAGED_GUESTS]) {
+-    const response = await worker.fetch(get("/db.js", basicHeader(account)), combinedEnv, {});
++    const response = await worker.fetch(get("/stage-sketch.js", basicHeader(account)), combinedEnv, {});
+     assert.equal(response.status, 200, `${account[0]} は通る`);
+   }
+ });
+--- a/tests/worker-guest-accounts-verify.test.mjs
++++ b/tests/worker-guest-accounts-verify.test.mjs
+@@ -23,7 +23,7 @@
+   new Request(`${origin}${path}`, { method: "GET", headers });
+ const basic = (user, pass) => ({ Authorization: `Basic ${btoa(`${user}:${pass}`)}` });
+ 
+-async function status(env, headers = NAV, path = "/") {
++async function status(env, headers = NAV, path = "/stage.html") {
+   return (await worker.fetch(req(path, headers), env, {})).status;
+ }
+ 
+@@ -101,7 +101,7 @@
+ 
+   const after = list([{ user: "g1", pass: "p1" }]);
+   const r = await worker.fetch(
+-    new Request("https://shosai.example/db.js", { headers: { Cookie: `shosai_session=${cookie}` } }),
++    new Request("https://shosai.example/db.js", { headers: { Cookie: `__Host-shosai-session=${cookie}` } }),
+     after, {},
+   );
+   assert.equal(r.status, 401, "名簿から消えた人のトークンは通らない");
+--- a/tests/stage-session-shelve.test.mjs
++++ b/tests/stage-session-shelve.test.mjs
+@@ -471,13 +471,13 @@
+   }
+ });
+ 
+-test("Worker は完全な一組と正しい Basic 認証を従来どおり受け付ける", async () => {
++test("Worker は完全な一組と正しい Basic 認証で舞台スケッチを受け付ける", async () => {
+   for (const [secrets, credential] of [
+     [{ SITE_USER: "owner", SITE_PASS: "owner-pass" }, "owner:owner-pass"],
+     [{ GUEST_USER: "guest", GUEST_PASS: "guest-pass" }, "guest:guest-pass"],
+   ]) {
+     const fixture = workerEnv(secrets);
+-    const request = new Request("https://example.com/index.html", {
++    const request = new Request("https://example.com/stage.html", {
+       headers: { Authorization: `Basic ${btoa(credential)}` },
+     });
+     const response = await worker.fetch(request, fixture.env, {});
+--- /dev/null
++++ b/tests/worker-guest-scope.test.mjs
+@@ -0,0 +1,201 @@
++import assert from "node:assert/strict";
++import { readFile } from "node:fs/promises";
++import test from "node:test";
++import vm from "node:vm";
++import worker, { createSessionToken } from "../worker.js";
++
++const root = new URL("../", import.meta.url);
++const stageHtml = await readFile(new URL("stage.html", root), "utf8");
++const origin = "https://stage.example";
++const OWNER = ["owner", "synthetic-owner-pass"];
++const GUESTS = [["legacy", "synthetic-legacy-pass"], ["guest4", "synthetic-guest-pass"]];
++const basic = ([user, pass]) => ({ Authorization: `Basic ${btoa(`${user}:${pass}`)}` });
++function environment() {
++  const fetched = [];
++  return {
++    fetched,
++    SITE_USER: OWNER[0], SITE_PASS: OWNER[1],
++    GUEST_USER: GUESTS[0][0], GUEST_PASS: GUESTS[0][1],
++    GUEST_ACCOUNTS: JSON.stringify([{ user: GUESTS[1][0], pass: GUESTS[1][1], label: "owner", role: "owner" }]),
++    ASSETS: {
++      async fetch(request) {
++        const path = new URL(request.url).pathname;
++        fetched.push(path);
++        const html = path === "/stage" || path === "/stage.html";
++        return new Response(request.method === "HEAD" ? null : (html ? stageHtml : `asset:${path}`), {
++          headers: { "Content-Type": html ? "text/html; charset=utf-8" : "text/plain", "ETag": "original", "Cache-Control": "public, max-age=86400" },
++        });
++      },
++    },
++  };
++}
++const get = (path, headers, method = "GET") => new Request(origin + path, { method, headers });
++async function credentials(account) {
++  // 修正前と同じ形式の発行済みCookieも、認可は毎回サーバー側で判定する。
++  const token = await createSessionToken(account[0], account[1], Math.floor(Date.now() / 1000) - 3600);
++  return [basic(account), { Cookie: `__Host-shosai-session=${token}` }];
++}
++
++test("managed/legacy guest: Basicと既存Cookieで書斎・データ・未知の資源を配信しない", async () => {
++  const blocked = [
++    "/index", "/index.html", "/db.js", "/data.js", "/book-seeds.js", "/app.js",
++    "/roster.js", "/roster-crew.js", "/roster-key.local.js", "/stage-shows.local.js?v=1",
++    "/worker.js", "/stage-sketch_backup_old.js", "/stage-new-private.js",
++    "/public-dist/index.html", "/public-lp/index.html", "/downloads/shosai-desk-mac.zip",
++    "/manual/new-private.html", "/stage-samples/README.md", "/data/private.json",
++    "/%64b.js", "/stage.html%2f..%2fdb.js", "/stage.html%252f..%252fdb.js",
++    "/manual/%2e%2e/db.js", "/stage.html/../db.js", "/stage.html/", "/stage.html;private",
++    "/stage.html%00", "/stage.html%5c..%5cdb.js", "/stage.html%3f/../db.js",
++  ];
++  for (const account of GUESTS) for (const auth of await credentials(account)) {
++    const env = environment();
++    for (const method of ["GET", "HEAD"]) for (const path of blocked) {
++      const response = await worker.fetch(get(path, { ...auth, "X-Shosai-Session-Owner": OWNER[0] }, method), env, {});
++      assert.equal(response.status, 403, `${account[0]} ${method} ${path}`);
++      assert.equal(response.headers.get("Cache-Control"), "no-store");
++    }
++    assert.deepEqual(env.fetched, [], "拒否対象をASSETSへ渡さない");
++    for (const path of ["/style.css", "/stage.html"]) {
++      assert.equal((await worker.fetch(get(path, auth, "POST"), env, {})).status, 403);
++    }
++  }
++});
++
++test("SITE_USERは従来の書斎・資料・個人ショーを読み、HTTPキャッシュでは共有しない", async () => {
++  for (const auth of await credentials(OWNER)) {
++    const env = environment();
++    for (const path of ["/", "/index.html", "/db.js", "/roster-key.local.js", "/stage-shows.local.js"]) {
++      const response = await worker.fetch(get(path, auth), env, {});
++      assert.equal(response.status, 200, path);
++      assert.equal(await response.text(), `asset:${path}`);
++      assert.equal(response.headers.get("Cache-Control"), "private, no-store");
++    }
++    const ownerStage = await worker.fetch(get("/stage.html", auth), env, {});
++    assert.equal(await ownerStage.text(), stageHtml, "本人の単独ページと自動ショー読込を保持");
++  }
++});
++
++test("ゲストへ返す単独HTMLから個人ショーのscriptだけを外す", async () => {
++  for (const path of ["/stage.html?lang=en", "/stage?lang=ja"]) {
++    const response = await worker.fetch(get(path, basic(GUESTS[1])), environment(), {});
++    assert.equal(response.status, 200);
++    const html = await response.text();
++    assert.doesNotMatch(html, /<script[^>]+stage-shows\.local\.js/);
++    assert.match(html, /<script src="stage-sketch\.js/);
++    assert.match(html, /id="view-stage"/);
++    assert.equal(response.headers.get("ETag"), null, "書換前のvalidatorを使わない");
++    assert.equal(response.headers.get("Vary"), "Cookie, Authorization");
++  }
++});
++
++test("配信済みの旧HTMLも本人・ゲストの名称だけを更新し、本人のショーは保持する", async () => {
++  const oldHtml = stageHtml.replace("<title>舞台スケッチ | Stage Sketch</title>", "<title>舞台スケッチ — 制作の書斎</title>");
++  assert.notEqual(oldHtml, stageHtml);
++  for (const account of [OWNER, GUESTS[1]]) for (const path of ["/stage.html", "/stage?lang=en"]) {
++    const env = environment();
++    env.ASSETS.fetch = async (request) => {
++      assert.equal(request.headers.get("If-None-Match"), null);
++      assert.equal(request.headers.get("Range"), null);
++      return new Response(oldHtml, { headers: { "Content-Type": "text/html", ETag: "old-title" } });
++    };
++    const response = await worker.fetch(get(path, { ...basic(account), "If-None-Match": "old-title", Range: "bytes=0-500" }), env, {});
++    const actual = await response.text();
++    const expected = account === OWNER ? stageHtml : stageHtml.replace(/<script\s+src="stage-shows\.local\.js(?:\?[^"<>]*)?"\s*>\s*<\/script>/g, "");
++    assert.equal(actual, expected, "名称とゲストの個人ショー参照以外は変更しない");
++    assert.equal(response.status, 200);
++    assert.equal(response.headers.get("ETag"), null);
++  }
++});
++
++test("ゲストの舞台編集・PWA・ガイドの依存資源がすべて通る", async () => {
++  const sandbox = { URL, self: { location: { href: origin + "/stage-sw.js" }, addEventListener() {} } };
++  vm.runInNewContext((await readFile(new URL("stage-sw.js", root), "utf8")) + "\nglobalThis.shell = APP_SHELL;", sandbox);
++  const paths = new Set([...sandbox.shell, "./stage-sw.js"]);
++  const servedHtml = await (await worker.fetch(get("/stage.html", basic(GUESTS[1])), environment(), {})).text();
++  for (const m of servedHtml.matchAll(/(?:src|href)="([^"]+)"/g)) paths.add(m[1]);
++  for (const name of ["manual/manual.html", "manual/quick.html", "manual/quick-en.html"]) {
++    const html = await readFile(new URL(name, root), "utf8");
++    for (const m of html.matchAll(/(?:src|href)="([^"]+)"/g)) {
++      const url = new URL(m[1], origin + "/" + name);
++      if (url.origin === origin) paths.add(url.pathname);
++    }
++  }
++  paths.add("/manual/QuickGuide_2026-08-28.pdf");
++  paths.add(encodeURI("/manual/クイックガイド_2026-08-28.pdf"));
++  for (const path of paths) {
++    const url = new URL(path, origin + "/");
++    if (url.origin !== origin || url.hash && !url.pathname) continue;
++    const response = await worker.fetch(new Request(url, { headers: basic(GUESTS[1]) }), environment(), {});
++    assert.equal(response.status, 200, `${url.pathname} がゲストの依存から抜けている`);
++  }
++  for (const path of ["/stage", "/manual/manual", "/manual/quick", "/manual/quick-en"]) {
++    assert.equal((await worker.fetch(get(path, basic(GUESTS[1]), "HEAD"), environment(), {})).status, 200, path);
++  }
++});
++
++test("本人用のvalidator・Rangeを引き継がず、ゲスト用HTMLを必ず変換する", async () => {
++  const env = environment();
++  const originalFetch = env.ASSETS.fetch;
++  env.ASSETS.fetch = async (request) => {
++    for (const name of ["If-None-Match", "If-Modified-Since", "If-Match", "If-Unmodified-Since", "If-Range", "Range"]) {
++      assert.equal(request.headers.get(name), null, name);
++    }
++    return originalFetch(request);
++  };
++  const response = await worker.fetch(get("/stage.html", {
++    ...basic(GUESTS[1]), "If-None-Match": "owner-etag", "If-Modified-Since": "Tue, 08 Sep 2026 00:00:00 GMT",
++    Range: "bytes=0-500", "If-Range": "owner-etag", "If-Match": "owner-etag", "If-Unmodified-Since": "Tue, 08 Sep 2026 00:00:00 GMT",
++  }), env, {});
++  assert.equal(response.status, 200);
++  assert.doesNotMatch(await response.text(), /<script[^>]+stage-shows\.local\.js/);
++});
++
++test("ゲストのrootとログイン戻り先は舞台へ・英語指定と招待セッションを保持", async () => {
++  for (const account of GUESTS) {
++    const env = environment();
++    const home = await worker.fetch(get("/?lang=en", basic(account)), env, {});
++    assert.equal(home.status, 303);
++    assert.equal(home.headers.get("Location"), "/stage.html?lang=en");
++    const cases = [
++      ["/db.js", "/stage.html"], ["/index.html?lang=en#desk", "/stage.html?lang=en"],
++      ["/stage.html?lang=en#session=abc", "/stage.html?lang=en#session=abc"],
++      ["/stage?lang=ja#session=abc", "/stage?lang=ja#session=abc"],
++      ["/stage.html/../db.js", "/stage.html"], ["/\\evil.example", "/stage.html"],
++      ["//evil.example/stage.html", "/stage.html"],
++    ];
++    for (const [next, expected] of cases) {
++      const body = new URLSearchParams({ user: account[0], pass: account[1], next });
++      const response = await worker.fetch(new Request(origin + "/sign-in", { method: "POST", body }), env, {});
++      assert.equal(response.status, 303);
++      assert.equal(response.headers.get("Location"), expected);
++      assert.match(response.headers.get("Set-Cookie"), /^__Host-shosai-session=/);
++    }
++  }
++});
++
++test("配信層の正規URL転送は許可し、書斎・外部への転送は拒否", async () => {
++  for (const [location, expected] of [["/stage?lang=en", 307], ["/index.html", 403], ["https://evil.example/stage", 403]]) {
++    const env = environment();
++    env.ASSETS.fetch = async () => new Response(null, { status: 307, headers: { Location: location } });
++    const response = await worker.fetch(get("/stage.html?lang=en", basic(GUESTS[1])), env, {});
++    assert.equal(response.status, expected, location);
++  }
++});
++
++test("サインインの名称は舞台スケッチ、英語招待ではStage Sketch", async () => {
++  for (const [next, title] of [["/stage.html", "舞台スケッチ"], ["/stage.html?lang=en", "Stage Sketch"]]) {
++    const response = await worker.fetch(get(`/sign-in?next=${encodeURIComponent(next)}`, {}), environment(), {});
++    const html = await response.text();
++    assert.match(html, new RegExp(`<h1>${title}</h1>`));
++    assert.match(html, new RegExp(`<title>${title}</title>`));
++    assert.match(html, /Sign in to Stage Sketch/);
++    assert.doesNotMatch(html, /制作の書斎|A desk and a shelf/);
++  }
++});
++
++test("本人用と旧ゲスト用の同名設定を拒否して権限の取り違えを防ぐ", async () => {
++  const env = { ...environment(), GUEST_USER: OWNER[0], GUEST_PASS: "different-pass" };
++  const response = await worker.fetch(get("/db.js", basic([OWNER[0], "different-pass"])), env, {});
++  assert.equal(response.status, 503);
++  assert.deepEqual(env.fetched, []);
++});

@@ -1,0 +1,16 @@
+TAP version 13
+# Subtest: A08: silent midpoint, backward and repeated seeks sample the same pose and stop there
+ok 1 - A08: silent midpoint, backward and repeated seeks sample the same pose and stop there
+  ---
+  duration_ms: 1611.235791
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1773.903584

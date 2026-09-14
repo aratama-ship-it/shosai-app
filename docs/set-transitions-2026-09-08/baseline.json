@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-09-08T14:40:07.277277+00:00",
+  "gitHead": "6e4ba1dc97f1c629243e2f5609d45960d3a2dc98",
+  "status": " M build_public.py\n M build_stage.py\n M index.html\n M mcp-server/README.md\n M mcp-server/src/edit-plan.js\n M mcp-server/src/project-store.js\n M mcp-server/src/schemas.js\n M mcp-server/src/server.js\n M mcp-server/test/edit-plan.test.js\n M public-beta.html\n M public-lp/index.html\n M stage-public.css\n M stage-public.js\n M stage-pwa.js\n M stage-sw.js\n M stage.html\n M tests/stage-manual-help.test.mjs\n M tests/stage-public-build.test.mjs\n M tests/stage-pwa-offline-warm.test.mjs\n M tests/stage-pwa.test.mjs\n M tests/stage-session-shelve.test.mjs\n M tests/stage-venue-library.test.mjs\n M tests/worker-guest-accounts-verify.test.mjs\n M tests/worker-session-login.test.mjs\n M try.html\n M worker.js\n M wrangler.toml\n?? design/TOKEN_SHEET_guest-login_2026-09-08.md\n?? design/TOKEN_SHEET_public-preview_2026-09-07.md\n?? design/TOKEN_SHEET_usage_2026-09-08.md\n?? docs/RELEASE_FOLLOWUP_2026-09-07.html\n?? docs/WEB_ANALYTICS.md\n?? docs/guest-access-2026-09-08/\n?? docs/set-transitions-2026-09-08/\n?? docs/usage-metrics-2026-09-08/\n?? stage-usage.js\n?? tests/usage-metrics.test.mjs\n?? tests/worker-guest-scope.test.mjs\n?? usage-admin-page.js\n?? usage-metrics.js\n",
+  "files": {
+    "stage-sketch.js": "635777dcb21de00d22ec2f0f4a58d859889250239b03020b0a45ff7231cf7c32",
+    "stage-machinery.js": "e268e6aa01a6bbf931edb932b7ce83c2c11e6798d69b9136b4934c13df9299de",
+    "stage-first-person.js": "75453407e6777a6e43aba85576152e571f3bb4e01573d3d279d0e53f03de4c52",
+    "style.css": "3e8c40d33b0d81862fea9c7aaf1ed3a995f14957a1da4ea651dc10f85fcd11d3",
+    "index.html": "e094fa75aebc14f1848bde66b2785e0b25fd71380dcef3057627affdd3633fa3",
+    "stage.html": "ee9611a85d5fc740d8aa0e1a164df56c3df5b2d1e17829693c4650c06a5a6b9e",
+    "mcp-server/src/project-store.js": "9f88381f96060f9f6e6bc115208e891abed575e06d108e756eb1152b3e603505",
+    "mcp-server/src/schemas.js": "6d99f3844aa05c0d161b994439d1c40e0ead5841af4f9894ef266b192cf39c63",
+    "mcp-server/src/edit-plan.js": "3a986a7122a7586fc3fb16cf44c669bbdf6d60e63013a81f6f2fe972b1987138",
+    "build_stage.py": "0ee4c3cada82f5da97261fbc8e5d322fec268fcb78bbcad5e3a0591ff2a80d3b",
+    "build_public.py": "45fc1de1ae6f183af6b4fe56e0b0b1072cbb94ea28c8bd2556de2619529f11f3"
+  }
+}

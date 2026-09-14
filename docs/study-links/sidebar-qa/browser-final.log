@@ -1,0 +1,5 @@
+PASS SVG pen draws on both diagrams; cancel clear, undo and reload preserve private notes without sharing
+PASS Sidebar scene navigation restores each note; explicit sharing sends the name, text and two drawings only to the owner
+PASS JA/EN at four viewport sizes: side placement, no horizontal overflow, SVGs survive relabelling, 44px controls
+PASS Single-view proportions, keyboard focus, SVG history toggle and read-only/local-show boundaries retained
+Browser: 4 groups passed; page errors 0

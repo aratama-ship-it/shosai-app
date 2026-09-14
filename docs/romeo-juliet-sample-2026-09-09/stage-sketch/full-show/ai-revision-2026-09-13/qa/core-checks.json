@@ -1,0 +1,364 @@
+{
+  "status": "pass",
+  "schemaVersion": "1.0.0",
+  "schemaIssues": [],
+  "errors": [],
+  "warnings": [
+    "decision-bar-physical-spec: unconfirmed",
+    "decision-fixed-shelf: unconfirmed",
+    "decision-lighting-objectives: ai-proposal"
+  ],
+  "provenanceChecks": [
+    {
+      "sourceId": "source-native",
+      "status": "pass",
+      "expectedSha256": "7086d75a843a0ea7253d3dd630defe994cf491432aabcc19e7774d5000a5d780",
+      "actualSha256": "7086d75a843a0ea7253d3dd630defe994cf491432aabcc19e7774d5000a5d780"
+    },
+    {
+      "sourceId": "source-ai-input",
+      "status": "pass",
+      "expectedSha256": "8d566e2c1abe30edeb6a2aeae9df0d4cd10259c30eb5e00418345c620d04ec39",
+      "actualSha256": "8d566e2c1abe30edeb6a2aeae9df0d4cd10259c30eb5e00418345c620d04ec39"
+    },
+    {
+      "sourceId": "source-ai-proposal",
+      "status": "pass",
+      "expectedSha256": "4f08d32c113e5a37796ef7bcf9d1265464a509a9808518554989824d41100364",
+      "actualSha256": "4f08d32c113e5a37796ef7bcf9d1265464a509a9808518554989824d41100364"
+    },
+    {
+      "sourceId": "source-owner-approval",
+      "status": "pass",
+      "expectedSha256": "cb81b4f5ef0c4667f95de020e7252efc4196fe023d80d05008416de71aed8334",
+      "actualSha256": "cb81b4f5ef0c4667f95de020e7252efc4196fe023d80d05008416de71aed8334"
+    },
+    {
+      "sourceId": "source-owner-handoff",
+      "status": "referenced",
+      "locator": "M6確定条件とJSON修正方針"
+    },
+    {
+      "sourceId": "source-ai-revision",
+      "status": "referenced",
+      "locator": "照明目的とコア分離案"
+    }
+  ],
+  "decisionLedger": [
+    {
+      "id": "decision-m6-sample-configuration",
+      "status": "confirmed",
+      "text": "M6のAI配置案をサンプル候補として採用する。",
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      },
+      "sourceRefs": [
+        "source-owner-approval"
+      ]
+    },
+    {
+      "id": "decision-m6-carriers",
+      "status": "confirmed",
+      "text": "ロレンス修道士担当とジョン修道士担当が役を離れ、右袖から一体型バーを二人で押して固定する。",
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      },
+      "sourceRefs": [
+        "source-owner-handoff"
+      ]
+    },
+    {
+      "id": "decision-m6-mask-timing",
+      "status": "confirmed",
+      "text": "全員が暗転前から仮面を携帯し、バー担当二名はバー固定後に装着する。",
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      },
+      "sourceRefs": [
+        "source-owner-handoff",
+        "source-owner-approval"
+      ]
+    },
+    {
+      "id": "decision-m6-frame-count",
+      "status": "confirmed",
+      "text": "暗転中の技術確認図は3枚とする。",
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      },
+      "sourceRefs": [
+        "source-owner-handoff",
+        "source-owner-approval"
+      ]
+    },
+    {
+      "id": "decision-m6-null-timing",
+      "status": "confirmed",
+      "text": "M6の所要時間と転換締切は未計測として保持する。",
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      },
+      "sourceRefs": [
+        "source-owner-handoff"
+      ]
+    },
+    {
+      "id": "decision-m6-relight",
+      "status": "confirmed",
+      "text": "舞台監督が5条件を手動確認して再照明し、バー遅延時は暗転を維持して遅延を記録する。",
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      },
+      "sourceRefs": [
+        "source-owner-handoff"
+      ]
+    },
+    {
+      "id": "decision-bar-concept",
+      "status": "confirmed",
+      "text": "バーは二人で右袖から押して運ぶキャスター付き一体型とする。",
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      },
+      "sourceRefs": [
+        "source-owner-handoff"
+      ]
+    },
+    {
+      "id": "decision-bar-physical-spec",
+      "status": "unconfirmed",
+      "text": "バーの正確な幅、奥行、高さ、意匠、キャスター仕様は未確認。",
+      "governance": {
+        "authorship": "mixed",
+        "sampleAdoption": "unconfirmed",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      },
+      "sourceRefs": [
+        "source-owner-handoff"
+      ]
+    },
+    {
+      "id": "decision-fixed-shelf",
+      "status": "unconfirmed",
+      "text": "固定の背面棚を置くかどうかは未確認。",
+      "governance": {
+        "authorship": "mixed",
+        "sampleAdoption": "unconfirmed",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      },
+      "sourceRefs": [
+        "source-owner-handoff"
+      ]
+    },
+    {
+      "id": "decision-lighting-separation",
+      "status": "confirmed",
+      "text": "場面の役割と照明目的を分離し、同文を機械的に複製しない。",
+      "governance": {
+        "authorship": "owner",
+        "sampleAdoption": "adopted",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      },
+      "sourceRefs": [
+        "source-owner-handoff"
+      ]
+    },
+    {
+      "id": "decision-lighting-objectives",
+      "status": "ai-proposal",
+      "text": "各場面のlighting.intent文はAIによる意味修正案で、本人の照明確定ではない。",
+      "governance": {
+        "authorship": "ai",
+        "sampleAdoption": "proposed",
+        "realStageValidation": "not-assessed",
+        "productionApproval": "not-approved"
+      },
+      "sourceRefs": [
+        "source-ai-revision"
+      ]
+    }
+  ],
+  "constraintResults": [
+    {
+      "id": "constraint-m6-frame-count",
+      "status": "pass",
+      "severity": "error",
+      "expected": 3,
+      "actual": 3
+    },
+    {
+      "id": "constraint-m6-carriers",
+      "status": "pass",
+      "severity": "error",
+      "expected": [
+        "FRIAR_LAWRENCE",
+        "FRIAR_JOHN"
+      ],
+      "actual": [
+        "FRIAR_LAWRENCE",
+        "FRIAR_JOHN"
+      ]
+    },
+    {
+      "id": "constraint-m6-bar-sequence",
+      "status": "pass",
+      "severity": "error",
+      "expected": [
+        "offstage",
+        "entering",
+        "onstage"
+      ],
+      "actual": [
+        "offstage",
+        "entering",
+        "onstage"
+      ]
+    },
+    {
+      "id": "constraint-m6-mask-progression",
+      "status": "pass",
+      "severity": "error",
+      "expected": [
+        0,
+        4,
+        8,
+        10,
+        10
+      ],
+      "actual": [
+        0,
+        4,
+        8,
+        10,
+        10
+      ]
+    },
+    {
+      "id": "constraint-m6-preblackout-masks",
+      "status": "pass",
+      "severity": "error",
+      "expected": 10,
+      "actual": 10
+    },
+    {
+      "id": "constraint-m6-carrier-mask-timing",
+      "status": "pass",
+      "severity": "error",
+      "expected": [
+        0,
+        0,
+        2
+      ],
+      "actual": [
+        0,
+        0,
+        2
+      ]
+    },
+    {
+      "id": "constraint-m6-duration-null",
+      "status": "pass",
+      "severity": "error",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "id": "constraint-m6-deadline-null",
+      "status": "pass",
+      "severity": "error",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "id": "constraint-m6-relight-count",
+      "status": "pass",
+      "severity": "error",
+      "expected": [
+        "バー固定",
+        "通路クリア",
+        "10人の位置",
+        "全員の仮面",
+        "照明準備"
+      ],
+      "actual": [
+        "バー固定",
+        "通路クリア",
+        "10人の位置",
+        "全員の仮面",
+        "照明準備"
+      ]
+    },
+    {
+      "id": "constraint-m6-relight-mode",
+      "status": "pass",
+      "severity": "error",
+      "expected": "manual",
+      "actual": "manual"
+    },
+    {
+      "id": "constraint-m6-delay-policy",
+      "status": "pass",
+      "severity": "error",
+      "expected": "maintain-blackout",
+      "actual": "maintain-blackout"
+    },
+    {
+      "id": "constraint-m6-delay-record",
+      "status": "pass",
+      "severity": "error",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "id": "constraint-role-light-duplicates",
+      "status": "pass",
+      "severity": "error",
+      "expected": 0,
+      "actual": 0
+    }
+  ],
+  "counts": {
+    "sections": 3,
+    "scenes": 28,
+    "cast": 10,
+    "roles": 10,
+    "assets": 3,
+    "transitions": 1,
+    "technicalFrames": 3,
+    "decisions": 11,
+    "constraints": 13,
+    "constraintsPassed": 13,
+    "confirmedDecisions": 8,
+    "aiProposals": 1,
+    "unconfirmedDecisions": 2
+  },
+  "checkedAt": "2026-09-13T03:21:24.384720+00:00",
+  "source": "romeo-juliet.showwright.json",
+  "sha256": "e0b995dca81a8b274b09bcdc4930040084700f3e4a48463d520de0d681e05a14",
+  "validator": "showwright_core.py + showwright-core.schema.json",
+  "scope": "Product-independent structure, provenance, references, governance and declared semantic constraints."
+}

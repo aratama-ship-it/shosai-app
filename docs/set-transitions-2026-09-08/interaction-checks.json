@@ -1,0 +1,18 @@
+{
+  "checks": [
+    "HTTP 200 and unique page title",
+    "scrub at 3 seconds moves table halfway; later group remains still",
+    "duration 6 to 10 changes estimate 13 to 17 and later start to 10",
+    "real playback stops at manual cue before group 2",
+    "cue release finishes at 13 seconds, platform target and screen 90 degrees",
+    "pause freezes time",
+    "assignee filter preserves predecessor condition",
+    "keyboard Home/End seek",
+    "reduced-motion uses step states, preserving manual gate",
+    "no body overflow at 390, 1024, and 1440 pixels",
+    "print stylesheet shows figure and table and hides proposal controls",
+    "no JavaScript page errors"
+  ],
+  "passed": 12,
+  "pageErrors": []
+}

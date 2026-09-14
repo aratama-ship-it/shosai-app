@@ -1,0 +1,26 @@
+{
+  "changedBaselineFiles": [
+    "README.md",
+    "build_study.py",
+    "design/TOKEN_SHEET_study-links_2026-09-09.md",
+    "index.html",
+    "stage-study-owner.js",
+    "stage-study-private.js",
+    "stage-study-sync.js",
+    "stage-study-viewer.js",
+    "stage-study.css",
+    "stage-sw.js",
+    "stage.html",
+    "study-frame.html",
+    "study-links.js",
+    "study-reader-account.js",
+    "study.html",
+    "tests/stage-manual-help.test.mjs",
+    "tests/stage-session-shelve.test.mjs",
+    "tests/study-links.test.mjs",
+    "tools/study-reader-runtime-check.mjs",
+    "tools/study-runtime-check.mjs"
+  ],
+  "missingBaselineFiles": [],
+  "unchangedCount": 1765
+}

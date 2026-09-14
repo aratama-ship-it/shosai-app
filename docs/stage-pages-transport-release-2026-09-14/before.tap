@@ -1,0 +1,178 @@
+TAP version 13
+# Subtest: A06: default normal transition honors the scene duration rather than 100 ms
+not ok 1 - A06: default normal transition honors the scene duration rather than 100 ms
+  ---
+  duration_ms: 521.093833
+  type: 'test'
+  location: '/private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:87:1'
+  failureType: 'testCodeFailure'
+  error: '{"scene":"audit-s2","pieces":[{"id":"audit-piece2","type":"performer","u":0.8,"v":0.5,"size":105,"color":"#a84b26","name":"","castId":"stage-sample-cast-1","lookMode":"cast","look":null,"setId":null,"originId":"audit-piece","facing":0,"dims":null,"propShape":null,"poleSide":"R","poleH":2.5,"heldBy":null,"holdSide":"R","holdMode":"hand","tissueH":4,"trapMode":"sit","diaboloMode":"lay","pose":"stand","route":null,"base":0,"supportId":null,"beam":{"u":0.8,"v":0.5,"h":6,"toH":0},"glow":1,"locked":false}],"position":"0:00"}'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:90:60)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: A08: silent midpoint, backward and repeated seeks sample the same pose and stop there
+not ok 2 - A08: silent midpoint, backward and repeated seeks sample the same pose and stop there
+  ---
+  duration_ms: 277.228292
+  type: 'test'
+  location: '/private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:93:1'
+  failureType: 'testCodeFailure'
+  error: '0.5427874999273795 should be near 0.5'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    near (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:86:36)
+    TestContext.<anonymous> (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:95:19)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: A05: silent pause freezes the movement; resume continues from that position
+not ok 3 - A05: silent pause freezes the movement; resume continues from that position
+  ---
+  duration_ms: 1853.770292
+  type: 'test'
+  location: '/private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:102:1'
+  failureType: 'testCodeFailure'
+  error: 'false == true'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:111:58)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: timeline motion is visible even if normal scene animation is disabled
+not ok 4 - timeline motion is visible even if normal scene animation is disabled
+  ---
+  duration_ms: 294.309125
+  type: 'test'
+  location: '/private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:113:1'
+  failureType: 'testCodeFailure'
+  error: '0.8 should be near 0.5'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    near (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:86:36)
+    TestContext.<anonymous> (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:115:68)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: route control, light fades and machinery all sample the same transition progress
+not ok 5 - route control, light fades and machinery all sample the same transition progress
+  ---
+  duration_ms: 285.102625
+  type: 'test'
+  location: '/private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:117:1'
+  failureType: 'testCodeFailure'
+  error: '0.5427875000726208 should be near 0.5'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    near (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:86:36)
+    TestContext.<anonymous> (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:126:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: audio currentTime drives mid-transition seek, pause and resume without drifting
+not ok 6 - audio currentTime drives mid-transition seek, pause and resume without drifting
+  ---
+  duration_ms: 459.6505
+  type: 'test'
+  location: '/private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:130:1'
+  failureType: 'testCodeFailure'
+  error: '0.8 should be near 0.5'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    near (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:86:36)
+    TestContext.<anonymous> (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:133:31)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: saved canonical coordinates survive pause, shelf, reload and export/import
+not ok 7 - saved canonical coordinates survive pause, shelf, reload and export/import
+  ---
+  duration_ms: 728.445875
+  type: 'test'
+  location: '/private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:140:1'
+  failureType: 'testCodeFailure'
+  error: '0.8 should be near 0.5'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    near (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:86:36)
+    TestContext.<anonymous> (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:152:19)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Music Sync uses lead/early, curve and facing for silent seek and pause
+not ok 8 - Music Sync uses lead/early, curve and facing for silent seek and pause
+  ---
+  duration_ms: 293.792833
+  type: 'test'
+  location: '/private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:167:1'
+  failureType: 'testCodeFailure'
+  error: '0.5444085823999999 should be near 0.5'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    near (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:86:36)
+    TestContext.<anonymous> (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:169:47)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: A/B wrap resamples the move instead of continuing the old animation
+not ok 9 - A/B wrap resamples the move instead of continuing the old animation
+  ---
+  duration_ms: 845.572084
+  type: 'test'
+  location: '/private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:177:1'
+  failureType: 'testCodeFailure'
+  error: '{"scene":"audit-s2","pieces":[{"id":"audit-piece2","type":"performer","u":0.8,"v":0.5,"size":105,"color":"#a84b26","name":"","castId":"stage-sample-cast-1","lookMode":"cast","look":null,"setId":null,"originId":"audit-piece","facing":0,"dims":null,"propShape":null,"poleSide":"R","poleH":2.5,"heldBy":null,"holdSide":"R","holdMode":"hand","tissueH":4,"trapMode":"sit","diaboloMode":"lay","pose":"stand","route":null,"base":0,"supportId":null,"beam":{"u":0.8,"v":0.5,"h":6,"toH":0},"glow":1,"locked":false}],"position":"0:01.7"}'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/stage-pages-transport-20260914/tests/stage-timeline-transport.browser.mjs:184:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 0
+# fail 9
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5725.585583

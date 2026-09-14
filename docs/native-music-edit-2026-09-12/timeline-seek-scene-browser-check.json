@@ -1,0 +1,11 @@
+{
+  "url": "http://127.0.0.1:8950/stage.html?seam-sample&timeline-seek-scene-check=1",
+  "checkedAt": "2026-09-13T15:26:30.384Z",
+  "firstSceneId": "seam-scene-1-1",
+  "secondSceneId": "seam-scene-1-2",
+  "activeSceneId": "seam-scene-1-2",
+  "currentBandSceneId": "seam-scene-1-2",
+  "sceneNow": "2 / 32　1-2 八動作の校正",
+  "viewMode": "plan",
+  "screenshot": "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/native-music-edit-2026-09-12/timeline-seek-scene-1440x1000.png"
+}

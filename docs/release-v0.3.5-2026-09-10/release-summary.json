@@ -1,0 +1,36 @@
+{
+  "release": "v0.3.5",
+  "date": "2026-09-10",
+  "beta": {
+    "status": "published",
+    "url": "https://stagesketch.pygmix.com/stage?lang=ja",
+    "deploymentId": "9a99c6fd-c990-4dbe-b9b0-677f9a289b6f",
+    "versionId": "6d887586-67c0-49cb-b4bd-d903a71288ad",
+    "percentage": 100
+  },
+  "preview": {
+    "status": "published",
+    "url": "https://stagesketch-try.juggler-arata.workers.dev/try?lang=ja",
+    "versionId": "9b6f23fc-3e1e-4918-9dd3-bebca0e38932"
+  },
+  "product": {
+    "status": "shared-source-updated-service-not-published",
+    "reason": "Formal authentication, trial, licensing, organization permissions and product URL remain unresolved or unimplemented."
+  },
+  "verification": {
+    "appTests": { "passed": 895, "failed": 0 },
+    "mcpTests": { "passed": 42, "failed": 0 },
+    "releaseBoundaryChecks": { "passed": 82, "failed": 0 },
+    "liveByteMatches": { "passed": 70, "failed": 0 },
+    "authBoundaryChecks": { "passed": 4, "failed": 0 },
+    "manualBrowser": [
+      "v0.3.5 label",
+      "muted blue-black skin and stage surfaces",
+      "drum set, taiko and mask creation",
+      "mask worn on performer face",
+      "seven line-up choices",
+      "fullscreen mode",
+      "image and print dialog"
+    ]
+  }
+}

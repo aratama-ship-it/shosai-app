@@ -1,0 +1,10 @@
+{
+  "sha": "19a6a8eca8b7767071d80400441070189253d5bf",
+  "sharedHead": "5fc1473bae251b478ff01a1996e05c789a0736d4",
+  "sharedHashes": {
+    "stage-sketch.js": "c153e84a087b6c87c1f1ebf6ed1d232740db604fc25ae83ce74f1047adad2a78",
+    "stage-timeline.js": "bf00adf0bfa7c08331c8e8004f23717ce7ff5541519a4c4d4ff67a4a70d7c63e",
+    "stage.html": "919989219f4bf464b30797256cb6309ed97b0f5c3d406ad51ce02594d701eb23",
+    "stage-sw.js": "54f62d798a57ce253cde94636da4e7ac63ac5dc0ec5f370f6a16404281ed0cfd"
+  }
+}

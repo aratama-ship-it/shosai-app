@@ -1,0 +1,19 @@
+{
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "noHorizontalOverflow": true,
+      "dateOnOneLine": true,
+      "japaneseFieldFocusable": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "noHorizontalOverflow": true,
+      "dateOnOneLine": true,
+      "japaneseFieldFocusable": true
+    }
+  ],
+  "indexSha256": "63bf3b30b541e359727420ff7cc4e8bd117747c8b87477311c6b0b48bd01a310"
+}

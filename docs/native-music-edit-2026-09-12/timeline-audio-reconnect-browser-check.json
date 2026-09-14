@@ -1,0 +1,19 @@
+{
+  "url": "http://127.0.0.1:8950/stage.html?seam-sample&timeline-audio-reconnect-check=1",
+  "checkedAt": "2026-09-13T14:19:15.508Z",
+  "presentation": {
+    "text": "音源が見つかりませんgensan-extend読み込み直す",
+    "ariaLabel": "gensan-extend。音源が見つかりません。読み込み直す",
+    "borderStyle": "dashed",
+    "actionInside": true,
+    "actionVisible": true,
+    "copyBeforeAction": true
+  },
+  "preserved": {
+    "sceneCount": 40,
+    "cueCount": 0,
+    "activeSceneId": "seam-scene-1-1",
+    "trackId": "timeline-audio-missing-check",
+    "gainDb": 3
+  }
+}

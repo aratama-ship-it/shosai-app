@@ -1,0 +1,22 @@
+{
+  "url": "http://127.0.0.1:8957/stage.html?releaseScope=beta-20260912&beta-audio-final=1",
+  "checkedAt": "2026-09-13T12:23:56.744Z",
+  "noteText": "ベータ版ではMP3またはM4A/AAC（1ファイル50MBまで）を使用してください。WAVは容量が大きくなりやすく、ブラウザの保存領域を圧迫して読み込み失敗につながるため使用できません。",
+  "accept": "audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,.mp3,.m4a,.aac",
+  "policy": {
+    "betaWav": "beta-wav",
+    "betaOversizeMp3": "beta-size",
+    "betaSmallMp3": ""
+  },
+  "rejectionText": "ベータ版ではWAV音源を読み込めません。MP3またはM4A/AACへ変換してください。",
+  "nativeState": {
+    "nativeAppRuntime": true,
+    "betaBrowserRestricted": false,
+    "betaWavPolicy": "",
+    "warningHidden": true,
+    "accept": "audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,.mp3,.m4a,.wav,.aac"
+  },
+  "nativeErrors": [],
+  "targetErrors": [],
+  "unrelatedErrors": []
+}

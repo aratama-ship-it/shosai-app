@@ -1,0 +1,57 @@
+{
+  "main_module": "stage-warning-upload.js",
+  "compatibility_date": "2026-08-19",
+  "compatibility_flags": [],
+  "bindings": [
+    {
+      "name": "ASSETS",
+      "type": "inherit"
+    },
+    {
+      "name": "GUEST_ACCOUNTS",
+      "type": "inherit"
+    },
+    {
+      "name": "SESSION_ROOM",
+      "type": "inherit"
+    },
+    {
+      "name": "SITE_PASS",
+      "type": "inherit"
+    },
+    {
+      "name": "SITE_USER",
+      "type": "inherit"
+    },
+    {
+      "name": "STAGE_BETA_ACTIVE",
+      "type": "inherit"
+    },
+    {
+      "name": "STAGE_RELEASE_SCOPE",
+      "type": "inherit"
+    },
+    {
+      "name": "STAGE_USAGE_ENABLED",
+      "type": "inherit"
+    },
+    {
+      "name": "STUDY_ALLOW_ANONYMOUS",
+      "type": "inherit"
+    },
+    {
+      "name": "STUDY_LINKS",
+      "type": "inherit"
+    }
+  ],
+  "keep_assets": true,
+  "assets": {
+    "config": {
+      "run_worker_first": true
+    }
+  },
+  "annotations": {
+    "workers/message": "Stage Sketch beta: launch backup warning only",
+    "workers/tag": "launch-backup-warning-20260913"
+  }
+}

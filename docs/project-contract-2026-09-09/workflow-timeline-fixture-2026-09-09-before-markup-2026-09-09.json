@@ -1,0 +1,136 @@
+{
+  "kind": "shosai-stage-workflow-fixture",
+  "contractVersion": 1,
+  "scope": "Qシート・タイムラインの説明用架空データ。製品読込不可。PDF Blob、Data URL、Object URL、描画キャッシュは含めない。",
+  "projectBinding": {
+    "projectId": "project-fixture-2026-09-09",
+    "baseExportKind": "shosai-stage-sketch",
+    "baseExportVersion": 4,
+    "baseSnapshotHash": "fixture:base-v4-revision-7"
+  },
+  "workflowRevision": 1,
+  "capabilities": ["workflow-v1", "workflow-delivery-v1", "workflow-web-view-v1"],
+  "timeline": {
+    "focusCueId": "cue-q12",
+    "label": "架空の転換枠",
+    "note": "Q10からQ14までを連続して確認する表示用の並び。実時間や実演の記録ではない。"
+  },
+  "assets": [{
+    "id": "asset-script-v1",
+    "kind": "script-pdf",
+    "fileName": "fictional-script-v1.pdf",
+    "mimeType": "application/pdf",
+    "byteLength": 320000,
+    "pageCount": 2,
+    "localStatus": "available",
+    "revision": 1
+  }],
+  "script": {
+    "documents": [{
+      "id": "document-v1",
+      "assetId": "asset-script-v1",
+      "label": "架空台本 v1",
+      "pageCount": 2,
+      "status": "current",
+      "revision": 1
+    }],
+    "cues": [
+      {"id":"cue-q10","number":"Q10","type":"照明","description":"客席を暗くする","displayRevision":1,"semanticRevision":1},
+      {"id":"cue-q11","number":"Q11","type":"転換","description":"机を袖から出す","displayRevision":1,"semanticRevision":1},
+      {"id":"cue-q12","number":"Q12","type":"照明","description":"暗転を開始","displayRevision":1,"semanticRevision":1},
+      {"id":"cue-q13","number":"Q13","type":"音響","description":"音を立ち上げる","displayRevision":1,"semanticRevision":1},
+      {"id":"cue-q14","number":"Q14","type":"進行","description":"転換完了を確認","displayRevision":1,"semanticRevision":1}
+    ],
+    "anchors": [
+      {"id":"anchor-q10-page-1","documentId":"document-v1","pageIndex":0,"rect":[0.14,0.18,0.70,0.23],"quote":"客席を暗くする","target":{"kind":"cue","id":"cue-q10"},"activityRefs":["activity-close-house"],"semanticStatus":"confirmed","revision":1},
+      {"id":"anchor-q11-page-1","documentId":"document-v1","pageIndex":0,"rect":[0.14,0.29,0.72,0.34],"quote":"机を袖から出す","target":{"kind":"cue","id":"cue-q11"},"activityRefs":["activity-roll-table-in"],"semanticStatus":"confirmed","revision":1},
+      {"id":"anchor-q12-page-1","documentId":"document-v1","pageIndex":0,"rect":[0.14,0.38,0.82,0.43],"quote":"暗転を開始する","target":{"kind":"cue","id":"cue-q12"},"activityRefs":["activity-carry-table"],"semanticStatus":"confirmed","revision":1},
+      {"id":"anchor-q14-page-1","documentId":"document-v1","pageIndex":0,"rect":[0.14,0.55,0.78,0.60],"quote":"転換完了を確認する","target":{"kind":"cue","id":"cue-q14"},"activityRefs":["activity-check-stage"],"semanticStatus":"confirmed","revision":1}
+    ]
+  },
+  "coordination": {
+    "people": [
+      {"id":"person-a","label":"A","roles":["performer","backstage"],"revision":1},
+      {"id":"person-b","label":"B","roles":["backstage"],"revision":1},
+      {"id":"person-c","label":"C","roles":["stage-manager"],"revision":1},
+      {"id":"person-lx-1","label":"照明オペ","roles":["lighting"],"revision":1},
+      {"id":"person-sd-1","label":"音響オペ","roles":["sound"],"revision":1}
+    ],
+    "planContexts": [{"id":"plan-context-main","label":"架空の転換案","revision":1}],
+    "origins": [
+      {"id":"origin-q10","planContextId":"plan-context-main","cueId":"cue-q10","offsetFromBaseMs":0,"revision":1},
+      {"id":"origin-q11","planContextId":"plan-context-main","cueId":"cue-q11","offsetFromBaseMs":1500,"revision":1},
+      {"id":"origin-q12","planContextId":"plan-context-main","cueId":"cue-q12","offsetFromBaseMs":3500,"revision":1},
+      {"id":"origin-q13","planContextId":"plan-context-main","cueId":"cue-q13","offsetFromBaseMs":6500,"revision":1},
+      {"id":"origin-q14","planContextId":"plan-context-main","cueId":"cue-q14","offsetFromBaseMs":8500,"revision":1}
+    ],
+    "estimates": [
+      {"id":"estimate-close-house","durationMs":1500,"source":"fictional-manual-estimate","conditions":"Cが客席側の確認を終えた架空例","revision":1},
+      {"id":"estimate-roll-table-in","durationMs":2000,"source":"fictional-manual-estimate","conditions":"Bが袖で机を保持している架空例","revision":1},
+      {"id":"estimate-carry-table","durationMs":3000,"source":"fictional-manual-estimate","conditions":"AとBが開始位置に準備済みの架空例","revision":1},
+      {"id":"estimate-check-stage","durationMs":1000,"source":"fictional-manual-estimate","conditions":"Cが舞台面を確認する架空例","revision":1}
+    ],
+    "points": [
+      {"id":"point-q10","planContextId":"plan-context-main","expression":{"kind":"anchor","originId":"origin-q10","offsetMs":0},"revision":1},
+      {"id":"point-close-house-end","planContextId":"plan-context-main","expression":{"kind":"after","pointId":"point-q10","estimateId":"estimate-close-house"},"revision":1},
+      {"id":"point-q11","planContextId":"plan-context-main","expression":{"kind":"anchor","originId":"origin-q11","offsetMs":0},"revision":1},
+      {"id":"point-roll-table-end","planContextId":"plan-context-main","expression":{"kind":"after","pointId":"point-q11","estimateId":"estimate-roll-table-in"},"revision":1},
+      {"id":"point-q12","planContextId":"plan-context-main","expression":{"kind":"anchor","originId":"origin-q12","offsetMs":0},"revision":1},
+      {"id":"point-carry-end","planContextId":"plan-context-main","expression":{"kind":"after","pointId":"point-q12","estimateId":"estimate-carry-table"},"revision":1},
+      {"id":"point-q13","planContextId":"plan-context-main","expression":{"kind":"anchor","originId":"origin-q13","offsetMs":0},"revision":1},
+      {"id":"point-q14","planContextId":"plan-context-main","expression":{"kind":"anchor","originId":"origin-q14","offsetMs":0},"revision":1},
+      {"id":"point-check-stage-end","planContextId":"plan-context-main","expression":{"kind":"after","pointId":"point-q14","estimateId":"estimate-check-stage"},"revision":1}
+    ],
+    "activities": [
+      {"id":"activity-close-house","owner":"transition","label":"客席側を閉じる","assignments":[{"slotId":"house-check","personId":"person-c","resolution":"confirmed"}],"startPointId":"point-q10","endPointId":"point-close-house-end","sceneRefs":["scene-fixture-4"],"revision":1},
+      {"id":"activity-roll-table-in","owner":"transition","label":"机を出す","assignments":[{"slotId":"table-guide","personId":"person-b","resolution":"confirmed"}],"startPointId":"point-q11","endPointId":"point-roll-table-end","sceneRefs":["scene-fixture-4"],"revision":1},
+      {"id":"activity-carry-table","owner":"transition","label":"机を運ぶ","assignments":[{"slotId":"carry-left","personId":"person-a","resolution":"confirmed"},{"slotId":"carry-right","personId":"person-b","resolution":"confirmed"}],"startPointId":"point-q12","endPointId":"point-carry-end","sceneRefs":["scene-fixture-4"],"revision":1},
+      {"id":"activity-check-stage","owner":"transition","label":"舞台面を確認","assignments":[{"slotId":"stage-check","personId":"person-c","resolution":"confirmed"}],"startPointId":"point-q14","endPointId":"point-check-stage-end","sceneRefs":["scene-fixture-4"],"revision":1}
+    ],
+    "windows": [{"id":"window-transition-main","planContextId":"plan-context-main","startPointId":"point-q10","deadlinePointId":"point-check-stage-end","completionActivityIds":["activity-close-house","activity-roll-table-in","activity-carry-table","activity-check-stage"],"revision":1}]
+  },
+  "distribution": {
+    "version": 1,
+    "scope": "説明用の配布モデル。全体・部門・個人は同じcueAssignmentsから導出し、出力だけの複製データを持たない。",
+    "recipients": [
+      {"id":"recipient-overview","kind":"overview","label":"全体タイムライン","subtitle":"全Qと転換枠","formats":["print-html","csv"]},
+      {"id":"recipient-lighting","kind":"department","label":"照明","subtitle":"照明Qと前後関係","formats":["print-html","csv"]},
+      {"id":"recipient-sound","kind":"department","label":"音響","subtitle":"音響Qと未割当警告","formats":["print-html","csv"]},
+      {"id":"recipient-performers","kind":"department","label":"演者","subtitle":"自分たちの動きとGO前後","formats":["print-html","csv"]},
+      {"id":"recipient-stage-management","kind":"department","label":"進行","subtitle":"全体確認と完了確認","formats":["print-html","csv"]},
+      {"id":"recipient-person-a","kind":"person","personId":"person-a","label":"A","subtitle":"演者Aの動き","formats":["print-html","csv"]},
+      {"id":"recipient-person-b","kind":"person","personId":"person-b","label":"B","subtitle":"演者B・転換の動き","formats":["print-html","csv"]},
+      {"id":"recipient-person-c","kind":"person","personId":"person-c","label":"C","subtitle":"舞台監督の確認","formats":["print-html","csv"]},
+      {"id":"recipient-person-lx-1","kind":"person","personId":"person-lx-1","label":"照明オペ","subtitle":"照明GO","formats":["print-html","csv"]},
+      {"id":"recipient-person-sd-1","kind":"person","personId":"person-sd-1","label":"音響オペ","subtitle":"音響GOと未割当警告","formats":["print-html","csv"]}
+    ],
+    "cueAssignments": [
+      {"cueId":"cue-q10","recipientRefs":["recipient-overview","recipient-lighting","recipient-stage-management","recipient-person-lx-1","recipient-person-c"],"instruction":"客席側を暗くする"},
+      {"cueId":"cue-q11","recipientRefs":["recipient-overview","recipient-performers","recipient-person-a","recipient-person-b"],"instruction":"机を袖から出す準備をする"},
+      {"cueId":"cue-q12","recipientRefs":["recipient-overview","recipient-lighting","recipient-performers","recipient-person-a","recipient-person-b","recipient-person-lx-1"],"instruction":"暗転と机の移動を合わせる"},
+      {"cueId":"cue-q13","recipientRefs":["recipient-overview","recipient-sound","recipient-person-sd-1"],"instruction":"音を立ち上げる。紙面位置は要確認"},
+      {"cueId":"cue-q14","recipientRefs":["recipient-overview","recipient-stage-management","recipient-person-c"],"instruction":"転換完了を確認する"}
+    ],
+    "contextPolicy": {"includeAdjacentCues": true, "showUnassignedWarning": true, "note":"個別用は操作Qに前後Qを参考として併記する。未割当の情報は空欄のまま警告する。"}
+  },
+  "webViewer": {
+    "version": 1,
+    "scope": "説明用の受け手画面。実演中のGO送信・共有状態・実カメラ映像ではない。",
+    "focusCueId": "cue-q13",
+    "stageStates": [
+      {"cueId":"cue-q10","sceneRef":"scene-fixture-4","sceneLabel":"シーン4 / 転換開始","status":"客席側を閉じる","stageNote":"AとBは袖で机の準備へ。Cが客席側を確認する。","pieces":[{"id":"performer-a","label":"A","kind":"performer","u":0.14,"v":0.68},{"id":"performer-b","label":"B","kind":"performer","u":0.84,"v":0.68},{"id":"table","label":"机","kind":"set","u":0.86,"v":0.54}]},
+      {"cueId":"cue-q11","sceneRef":"scene-fixture-4","sceneLabel":"シーン4 / 袖から出す","status":"机を袖から出す","stageNote":"Bが机を袖口へ。Aは受け渡し位置へ向かう。","pieces":[{"id":"performer-a","label":"A","kind":"performer","u":0.34,"v":0.63},{"id":"performer-b","label":"B","kind":"performer","u":0.76,"v":0.60},{"id":"table","label":"机","kind":"set","u":0.72,"v":0.54}]},
+      {"cueId":"cue-q12","sceneRef":"scene-fixture-4","sceneLabel":"シーン4 / 暗転","status":"暗転を開始","stageNote":"暗転中にAとBが机を中央へ運ぶ。","pieces":[{"id":"performer-a","label":"A","kind":"performer","u":0.40,"v":0.60},{"id":"performer-b","label":"B","kind":"performer","u":0.62,"v":0.58},{"id":"table","label":"机","kind":"set","u":0.51,"v":0.55}]},
+      {"cueId":"cue-q13","sceneRef":"scene-fixture-4","sceneLabel":"シーン4 / 暗転中","status":"音を立ち上げる","stageNote":"暗転を保ち、机は中央へ移動中。AとBの進路を確保する。","pieces":[{"id":"performer-a","label":"A","kind":"performer","u":0.43,"v":0.59},{"id":"performer-b","label":"B","kind":"performer","u":0.59,"v":0.57},{"id":"table","label":"机","kind":"set","u":0.51,"v":0.54}]},
+      {"cueId":"cue-q14","sceneRef":"scene-fixture-4","sceneLabel":"シーン4 / 完了確認","status":"転換完了を確認","stageNote":"机は中央へ。Cが舞台面を確認して次の明かりを待つ。","pieces":[{"id":"performer-a","label":"A","kind":"performer","u":0.38,"v":0.62},{"id":"performer-b","label":"B","kind":"performer","u":0.64,"v":0.62},{"id":"table","label":"机","kind":"set","u":0.51,"v":0.54}]}
+    ],
+    "checkPolicy": {"persist": false, "note":"この画面の確認欄は閲覧補助で、GO済み・実行済み・他者への通知を記録しない。"},
+    "notePolicy": {"storage":"browser-local","scope":"recipient-scene-and-cue","sharing":"none","note":"メモは見る人・シーン・Qごとにこのブラウザへ保存する。共有・実行記録・GOではない。"}
+  },
+  "reviews": [
+    {"id":"review-q10-house","scope":"cue-to-transition","status":"confirmed","subjectRefs":["cue-q10","anchor-q10-page-1","activity-close-house"],"inputRevisions":{"cue-q10":1,"anchor-q10-page-1":1,"activity-close-house":1}},
+    {"id":"review-q11-table","scope":"cue-to-transition","status":"confirmed","subjectRefs":["cue-q11","anchor-q11-page-1","activity-roll-table-in"],"inputRevisions":{"cue-q11":1,"anchor-q11-page-1":1,"activity-roll-table-in":1}},
+    {"id":"review-q12-carry","scope":"cue-to-transition","status":"confirmed","subjectRefs":["cue-q12","anchor-q12-page-1","activity-carry-table"],"inputRevisions":{"cue-q12":1,"anchor-q12-page-1":1,"activity-carry-table":1}},
+    {"id":"review-q14-stage","scope":"cue-to-transition","status":"confirmed","subjectRefs":["cue-q14","anchor-q14-page-1","activity-check-stage"],"inputRevisions":{"cue-q14":1,"anchor-q14-page-1":1,"activity-check-stage":1}}
+  ]
+}

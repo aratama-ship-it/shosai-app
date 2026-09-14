@@ -1,0 +1,12 @@
+完了しました。AI JSON 点検ページ、共有判定core、CLI分割、生成ビルド、file:// Playwright検証、報告書を追加済みです。
+
+- 検証: 見本2本 exit 0、既存fixture 9本 exit 1、P2修正版5本 0件、ビルド再実行差分なし。
+- 未決: ゲスト公開には `worker.js` allowlist変更が必要なため、禁止対象として未変更です。
+- Gemini NGは実測39件中、色37件を「図が変わる」、安全注記2件を「規約違反」に分類しました。
+
+確認先: [公開ページ](</Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/public/ai-json/index.html>)、[実行報告](</Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/ai-json-manual-2026-09-11/P3_P4B_REPORT.md>)、[スクリーンショット](</Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/docs/ai-json-manual-2026-09-11/qa-p3>)
+
+🔜 **次の一手**: ゲスト向け公開パスを許可するか判断後、worker変更を別発注する  
+🧠 **おすすめモデル**: Terra（限定的な配信設定の実装・検証）
+
+

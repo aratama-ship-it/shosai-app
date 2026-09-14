@@ -1,0 +1,781 @@
+--- a/worker.js
++++ b/worker.js
+@@ -1,6 +1,8 @@
+ import { SessionRoom } from "./session-room.js";
++import { handleUsageRequest } from "./usage-metrics.js";
+ 
+ export { SessionRoom };
++export { UsageMetrics } from "./usage-metrics.js";
+ 
+ // サイト全体を認証で保護する。SITE_USERは書斎全体、ゲストは舞台スケッチだけ。
+ //
+@@ -188,7 +190,7 @@
+   "/stage-venues.js", "/stage-venue-lines.js", "/stage-i18n.js",
+   "/stage-prompt-i18n.js", "/stage-rehearsal-export.js", "/stage-samples/index.js",
+   "/stage-set-model.js", "/stage-set-builder.js", "/stage-machinery.js",
+-  "/stage-first-person.js", "/stage-audio-store.js", "/stage-session.js",
++  "/stage-first-person.js", "/stage-audio-store.js", "/stage-session.js", "/stage-usage.js",
+   "/stage-venue-editor.js", "/stage-sketch.webmanifest",
+   "/manual/manual-content.js", "/manual/manual.html", "/manual/manual",
+   "/manual/quick.html", "/manual/quick", "/manual/quick-en.html", "/manual/quick-en",
+@@ -274,6 +276,8 @@
+ }
+ 
+ async function serveAuthenticatedRequest(request, env, user) {
++  const usageResponse = await handleUsageRequest(request, env, user);
++  if (usageResponse) return usageResponse;
+   const whoamiResponse = handleWhoamiRequest(request, user);
+   if (whoamiResponse) return whoamiResponse;
+   const betaStatusResponse = handleBetaStatusRequest(request, env);
+--- a/wrangler.toml
++++ b/wrangler.toml
+@@ -37,12 +37,17 @@
+ 
+ [durable_objects]
+ bindings = [
+-  { name = "SESSION_ROOM", class_name = "SessionRoom" }
++  { name = "SESSION_ROOM", class_name = "SessionRoom" },
++  { name = "USAGE_METRICS", class_name = "UsageMetrics" }
+ ]
+ 
+ [[migrations]]
+ tag = "v1-session-room"
+ new_sqlite_classes = ["SessionRoom"]
++
++[[migrations]]
++tag = "v2-usage-metrics"
++new_sqlite_classes = ["UsageMetrics"]
+ 
+ # 舞台スケッチのベータ提供スイッチ（2026-08-30 追加）。
+ # 製品版を出したら STAGE_BETA_ACTIVE を "false" にして wrangler deploy し直す。
+@@ -50,3 +55,5 @@
+ # （空でもよい。その場合はリンクなしのメッセージだけになる）。
+ [vars]
+ STAGE_BETA_ACTIVE = "true"
++# β版のみ。falseで新規計測を停止する（記録済み集計は管理者のみ閲覧可）。
++STAGE_USAGE_ENABLED = "true"
+--- a/index.html
++++ b/index.html
+@@ -2299,6 +2299,7 @@
+ <script src="manual/manual-content.js?v=3"></script>
+ <script src="stage-sketch.js?v=318"></script>
+ <script src="stage-session.js?v=14"></script>
++<script src="stage-usage.js?v=2"></script>
+ <script src="stage-venue-editor.js?v=7"></script>
+ <!-- 名簿の合言葉。.gitignore済み・Cloudflareへのみ配信。無ければ合言葉欄が出る（roster-key.example.js 参照） -->
+ <script src="roster-key.local.js?v=1"></script>
+--- a/stage.html
++++ b/stage.html
+@@ -1849,6 +1849,7 @@
+ <script src="stage-pwa.js?v=9"></script>
+ <script src="stage-sketch.js?v=318"></script>
+ <script src="stage-session.js?v=14"></script>
++<script src="stage-usage.js?v=2"></script>
+ <script src="stage-venue-editor.js?v=7"></script>
+ </body>
+ </html>
+--- a/stage-sw.js
++++ b/stage-sw.js
+@@ -1,4 +1,4 @@
+-const CACHE_NAME = "stage-sketch-pwa-v196";
++const CACHE_NAME = "stage-sketch-pwa-v198";
+ const APP_SHELL = [
+   "./stage.html",
+   "./style.css?v=229",
+@@ -20,6 +20,7 @@
+   "./manual/quick-en.html",
+   "./stage-sketch.js?v=318",
+   "./stage-session.js?v=14",
++  "./stage-usage.js?v=2",
+   "./stage-venue-editor.js?v=7",
+   "./stage-pwa.js?v=9",
+   "./stage-sketch.webmanifest",
+--- a/build_public.py
++++ b/build_public.py
+@@ -33,6 +33,7 @@
+ # 読み込み自体を止める。
+ PUBLIC_SKIP_JS = {
+     "stage-session.js",
++    "stage-usage.js",  # 個別アカウントの計測は認証付きβ本体だけ。
+     # ★個人用ショーの同梱データ（618KB・実制作のショー）。認証の内側だから積めていた。
+     #   公開版に載せると全部読める。2026-09-03 に公開直前で発見。絶対に外すこと。
+     "stage-shows.local.js",
+--- a/tests/stage-manual-help.test.mjs
++++ b/tests/stage-manual-help.test.mjs
+@@ -131,7 +131,7 @@
+ });
+ 
+ test("Service Workerは冊子一式を最新版へキャッシュする", () => {
+-  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v196";/);
++  assert.match(swSource, /const CACHE_NAME = "stage-sketch-pwa-v198";/);
+   for (const entry of [
+     "./manual/manual-content.js?v=3",
+     "./manual/manual-content.js",
+--- a/tests/stage-session-shelve.test.mjs
++++ b/tests/stage-session-shelve.test.mjs
+@@ -46,7 +46,7 @@
+     assert.ok(serviceWorkerSource.includes(`./${reference}`), `${reference} が stage-sw.js にある`);
+   }
+   // 版は上げるたびにここも更新する（2026-08-26: 発注書Hのゲスト画面変更で v144 → v145）
+-  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v196";/);
++  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v198";/);
+ });
+ 
+ test("ゲスト参加は false の退避結果を失敗として扱い、role 変更前に中止する", () => {
+--- /dev/null
++++ b/usage-metrics.js
+@@ -0,0 +1,157 @@
++import { usageAdminResponse } from "./usage-admin-page.js";
++
++export const DAY_MS = 86400000;
++export const RETENTION_DAYS = 90;
++const JST_MS = 9 * 3600000;
++const MAX_ACTIVE_MS = 30000;
++export const dayNumber = (now) => Math.floor((now + JST_MS) / DAY_MS);
++const dateLabel = (day) => new Date(day * DAY_MS).toISOString().slice(0, 10);
++const json = (value, status = 200) => new Response(JSON.stringify(value), {
++  status,
++  headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, no-store",
++    "Vary": "Cookie, Authorization", "X-Content-Type-Options": "nosniff" },
++});
++const enabled = (env) => env.STAGE_USAGE_ENABLED === "true" && env.STAGE_BETA_ACTIVE !== "false" && !!env.USAGE_METRICS;
++
++// クライアントは量だけを申告する。誰の記録かは認証済みのWorkerが決める。
++async function smallJson(request) {
++  if ((request.headers.get("Content-Type") || "").split(";")[0].trim() !== "application/json") return null;
++  const reader = request.body?.getReader();
++  if (!reader) return null;
++  let size = 0;
++  const chunks = [];
++  for (;;) {
++    const { done, value } = await reader.read();
++    if (done) break;
++    size += value.length;
++    if (size > 2048) { await reader.cancel(); return null; }
++    chunks.push(value);
++  }
++  const bytes = new Uint8Array(size);
++  let offset = 0;
++  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
++  try { return JSON.parse(new TextDecoder().decode(bytes)); } catch (_) { return null; }
++}
++
++function validEvent(event) {
++  return event && event.v === 1 && ["open", "active"].includes(event.kind)
++    && typeof event.id === "string" && /^[a-zA-Z0-9-]{16,64}$/.test(event.id)
++    && Number.isInteger(event.activeMs) && event.activeMs >= 0 && event.activeMs <= MAX_ACTIVE_MS
++    && (event.kind === "open" ? event.activeMs === 0 : event.activeMs > 0);
++}
++
++export async function handleUsageRequest(request, env, user) {
++  const url = new URL(request.url);
++  if (url.pathname !== "/usage" && !url.pathname.startsWith("/usage/")) return null;
++  if (!user) return json({ error: "authentication-required" }, 401);
++  const canAdmin = user === env.SITE_USER;
++  if (url.pathname === "/usage/config" && request.method === "GET") {
++    return json({ enabled: enabled(env), user, canAdmin, retentionDays: RETENTION_DAYS });
++  }
++  if (url.pathname === "/usage" || url.pathname === "/usage/report") {
++    if (!canAdmin) return json({ error: "owner-only" }, 403);
++    if (request.method !== "GET") return json({ error: "method-not-allowed" }, 405);
++    if (url.pathname === "/usage") return usageAdminResponse(url.searchParams.get("lang") === "en");
++    const days = Number(url.searchParams.get("days") || 30);
++    if (![7, 30, 90].includes(days)) return json({ error: "invalid-period" }, 400);
++    if (!env.USAGE_METRICS) return json({ error: "storage-unavailable" }, 503);
++    try {
++      const room = env.USAGE_METRICS.get(env.USAGE_METRICS.idFromName("beta-usage-v1"));
++      const response = await room.fetch(`https://usage/report?days=${days}`);
++      if (!response.ok) return json({ error: "storage-unavailable" }, 503);
++      return json({ ...await response.json(), enabled: enabled(env), owner: user });
++    } catch (_) { return json({ error: "storage-unavailable" }, 503); }
++  }
++  if (url.pathname !== "/usage/event") return json({ error: "not-found" }, 404);
++  if (request.method !== "POST") return json({ error: "method-not-allowed" }, 405);
++  if (request.headers.get("Origin") !== url.origin
++    || request.headers.get("Sec-Fetch-Site") === "cross-site") return json({ error: "same-origin-required" }, 403);
++  if (!enabled(env)) return json({ error: "measurement-disabled" }, 503);
++  let event;
++  try { event = await smallJson(request); } catch (_) { return json({ error: "invalid-event" }, 400); }
++  if (!validEvent(event)) return json({ error: "invalid-event" }, 400);
++  // 古いタブで計測中に別口座へログインしても、旧利用分を新口座へ足さない。
++  if (event.user !== user) return json({ error: "account-changed" }, 409);
++  try {
++    const room = env.USAGE_METRICS.get(env.USAGE_METRICS.idFromName("beta-usage-v1"));
++    const response = await room.fetch("https://usage/record", {
++      method: "POST", body: JSON.stringify({ user, v: 1, kind: event.kind, id: event.id, activeMs: event.activeMs }),
++    });
++    return response.ok ? json({ ok: true }) : json({ error: "storage-unavailable" }, 503);
++  } catch (_) { return json({ error: "storage-unavailable" }, 503); }
++}
++
++// β規模の専用Durable Object。作品・共有セッションの領域には触れない。
++export class UsageMetrics {
++  constructor(ctx) { this.ctx = ctx; }
++
++  async fetch(request, init) {
++    if (!(request instanceof Request)) request = new Request(request, init);
++    const url = new URL(request.url);
++    const now = Date.now();
++    if (url.pathname === "/record" && request.method === "POST") {
++      const event = await request.json();
++      if (!validEvent(event) || typeof event.user !== "string" || !event.user || event.user.length > 256) {
++        return json({ error: "invalid-event" }, 400);
++      }
++      await this.ctx.storage.transaction(async (txn) => {
++        const key = `user:${event.user}`;
++        const previous = await txn.get(key);
++        const record = previous || { user: event.user, lastSeen: 0, coveredUntil: 0, days: {}, recent: [] };
++        if (record.recent.includes(event.id)) return;
++        const today = dayNumber(now);
++        for (const day of Object.keys(record.days)) if (Number(day) < today - RETENTION_DAYS + 1) delete record.days[day];
++        record.days[today] ??= { activeMs: 0 };
++        // 受信時刻で末尾をそろえる概算。並行タブ・端末の重なる時間を二重加算しない。
++        // 遅延到着の細かい時系列は復元しない。クライアントの時計は信用しない。
++        const start = Math.max(now - event.activeMs, record.coveredUntil);
++        for (let cursor = start; cursor < now;) {
++          const day = dayNumber(cursor);
++          const end = Math.min(now, (day + 1) * DAY_MS - JST_MS);
++          record.days[day] ??= { activeMs: 0 };
++          record.days[day].activeMs += end - cursor;
++          cursor = end;
++        }
++        if (event.activeMs > 0) record.coveredUntil = Math.max(record.coveredUntil, now);
++        record.lastSeen = Math.max(record.lastSeen, now);
++        record.recent = [...record.recent, event.id].slice(-64);
++        await txn.put(key, record);
++        if (!await txn.get("startedAt")) await txn.put("startedAt", now);
++      });
++      if (!await this.ctx.storage.getAlarm()) await this.ctx.storage.setAlarm(now + DAY_MS);
++      return json({ ok: true });
++    }
++    if (url.pathname === "/report" && request.method === "GET") {
++      const days = Number(url.searchParams.get("days") || 30);
++      if (![7, 30, 90].includes(days)) return json({ error: "invalid-period" }, 400);
++      const today = dayNumber(now);
++      const since = today - days + 1;
++      const records = await this.ctx.storage.list({ prefix: "user:" });
++      const rows = [];
++      for (const record of records.values()) {
++        if (dayNumber(record.lastSeen) < today - RETENTION_DAYS + 1) continue;
++        const entries = Object.entries(record.days).filter(([day]) => Number(day) >= since && Number(day) <= today);
++        rows.push({ user: record.user, lastSeen: record.lastSeen, activeDays: entries.length,
++          activeMs: entries.reduce((sum, [, day]) => sum + day.activeMs, 0) });
++      }
++      rows.sort((a, b) => b.lastSeen - a.lastSeen || a.user.localeCompare(b.user));
++      return json({ asOf: now, startedAt: await this.ctx.storage.get("startedAt") || null,
++        days, from: dateLabel(since), to: dateLabel(today), retentionDays: RETENTION_DAYS, rows });
++    }
++    return json({ error: "not-found" }, 404);
++  }
++
++  async alarm() {
++    const cutoff = dayNumber(Date.now()) - RETENTION_DAYS + 1;
++    await this.ctx.storage.transaction(async (txn) => {
++      const records = await txn.list({ prefix: "user:" });
++      for (const [key, record] of records) {
++        if (dayNumber(record.lastSeen) < cutoff) { await txn.delete(key); continue; }
++        let changed = false;
++        for (const day of Object.keys(record.days)) if (Number(day) < cutoff) { delete record.days[day]; changed = true; }
++        if (changed) await txn.put(key, record);
++      }
++    });
++    if ((await this.ctx.storage.list({ prefix: "user:", limit: 1 })).size) await this.ctx.storage.setAlarm(Date.now() + DAY_MS);
++  }
++}
+--- /dev/null
++++ b/usage-admin-page.js
+@@ -0,0 +1,118 @@
++export function usageAdminResponse(english = false) {
++  const t = english ? {
++    lang: "en", title: "Stage Sketch · Usage", back: "Back to Stage Sketch", heading: "Who is using Stage Sketch?",
++    intro: "Beta accounts · Private to the owner", period: "Period", periods: ["7 days", "30 days", "90 days"],
++    self: "Include my own activity", refresh: "Refresh", loading: "Loading usage…", table: "Usage by account",
++    user: "Account", days: "Days used", active: "Active time (estimate)", last: "Last use (JST, within 90 days)",
++    empty: "No recorded usage in this view. This does not prove that nobody used the app.",
++    fail: "Usage could not be loaded. Check your connection and owner sign-in, then refresh.",
++    signIn: "Sign in again", disabled: "Recording is currently disabled. Previously recorded activity is shown.",
++    note: "Days used count calendar days in Japan when the app reports an opening or foreground activity. Active time counts only a focused, visible app and up to 60 seconds after an action. Hidden tabs, long suspension and failed transmissions are excluded. Overlapping reports from the same account are not added twice. These are estimates, not attendance records.",
++    boundary: "Only records received after measurement began are available. Accounts without records are not listed. An account is not necessarily one person; shared logins are combined. Daily records expire after 90 days. Show contents and typed text are not collected.",
++    sampled: "Last updated", started: "Recording began", pending: "Awaiting first record", own: "(you)",
++    people: "accounts used", totalDays: "account-days", totalTime: "total active time", zero: "0 min", short: "under 1 min", min: "min", hour: "h",
++  } : {
++    lang: "ja", title: "舞台スケッチ · 利用状況", back: "舞台スケッチへ戻る", heading: "誰が、どれくらい使っているか",
++    intro: "β版のアカウント別集計 · 管理者だけに表示", period: "集計期間", periods: ["7日間", "30日間", "90日間"],
++    self: "自分の利用を含める", refresh: "更新する", loading: "利用状況を読み込んでいます…", table: "アカウントごとの利用状況",
++    user: "アカウント", days: "利用日数", active: "操作時間（概算）", last: "最終利用（JST・90日以内）",
++    empty: "表示対象の利用記録はまだありません。利用されていないことを示すものではありません。",
++    fail: "利用状況を取得できませんでした。通信と管理者のログインを確認してから更新してください。",
++    signIn: "ログインし直す", disabled: "現在は計測を停止しています。記録済みの利用状況を表示しています。",
++    note: "利用日数は、画面の起動または手前での操作が届いた日数です（日本時間）。操作時間は、画面が手前にあり、最後の操作から60秒以内の時間を概算します。別タブ・長い休止・送信失敗分は含みません。同じアカウントの重なる時間は二重加算しません。出欠や勤務時間を示す数値ではありません。",
++    boundary: "計測開始後に届いた記録だけを表示します。記録がないアカウントは一覧に出ません。共用アカウントの利用はひとまとめになり、実人数とは一致しません。日別記録は90日後に失効します。作品や入力した文章は収集しません。",
++    sampled: "取得日時", started: "計測開始", pending: "最初の記録を待っています", own: "（自分）",
++    people: "利用アカウント", totalDays: "延べ利用日数", totalTime: "合計操作時間", zero: "0分", short: "1分未満", min: "分", hour: "時間",
++  };
++  const nonce = crypto.randomUUID();
++  const html = `<!doctype html><html lang="${t.lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
++<title>${t.title}</title><style nonce="${nonce}">
++:root { --paper:#f5f1e8; --ink:#302a24; --muted:#67594c; --accent:#88432e; --light:#fffaf0; --line:#897a6a;
++ --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s6:24px; --s8:32px; --small:14px; --body:16px; --h1:30px; --h2:20px;
++ --width:1040px; --control:44px; --radius:4px; --border:1px; --focus:3px; }
++* { box-sizing:border-box; } [hidden] { display:none!important; }
++body { margin:0; color:var(--ink); background:var(--paper); font:var(--body)/1.65 system-ui,-apple-system,sans-serif; }
++main { max-width:var(--width); margin:auto; padding:var(--s8) var(--s6); }
++a { color:var(--ink); text-decoration:underline; } nav { display:flex; justify-content:space-between; gap:var(--s4); flex-wrap:wrap; }
++nav a { display:inline-flex; align-items:center; min-height:var(--control); }
++header { padding:var(--s6) 0; border-bottom:var(--border) solid var(--line); }
++h1 { font-size:var(--h1); line-height:1.3; margin:var(--s2) 0 var(--s4); } h2 { font-size:var(--h2); line-height:1.3; }
++p { max-width:70ch; } .phrase { display:inline-block; } .muted, small { color:var(--muted); } small { font-size:var(--small); }
++.controls { display:flex; align-items:center; flex-wrap:wrap; gap:var(--s4); padding:var(--s6) 0; }
++.controls label { display:flex; align-items:center; gap:var(--s2); min-height:var(--control); }
++select,button { font:inherit; min-height:var(--control); padding:var(--s2) var(--s3); border:var(--border) solid var(--line); border-radius:var(--radius); color:var(--ink); background:var(--paper); }
++button { cursor:pointer; color:var(--light); background:var(--accent); border-color:var(--accent); } button:disabled { cursor:wait; }
++input { accent-color:var(--accent); } :focus-visible { outline:var(--focus) solid var(--accent); outline-offset:var(--focus); }
++.totals { display:flex; flex-wrap:wrap; gap:var(--s4) var(--s8); margin:0 0 var(--s6); }
++.totals div { display:flex; align-items:baseline; gap:var(--s2); } .totals strong { font-size:var(--h2); }
++.table-wrap { overflow:auto; } table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
++caption { text-align:left; font-weight:600; margin-bottom:var(--s3); } th,td { text-align:left; padding:var(--s4) var(--s3); border-bottom:var(--border) solid var(--line); overflow-wrap:anywhere; }
++th { font-size:var(--small); } th:first-child,td:first-child { padding-left:0; } .number { text-align:right; white-space:nowrap; }
++footer { margin-top:var(--s8); padding-top:var(--s4); border-top:var(--border) solid var(--line); font-size:var(--small); }
++#status { min-height:var(--s6); } #range { margin-top:0; }
++@media (max-width:600px) { main { padding:var(--s4); } h1 { font-size:var(--h1); }
++ thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
++ table,tbody,tr,td,caption { display:block; } caption { width:100%; } tr { padding:var(--s3) 0; border-bottom:var(--border) solid var(--line); }
++ td,td:first-child { padding:var(--s1) 0; border:0; } td:first-child { font-weight:600; }
++ td[data-label] { display:flex; justify-content:space-between; gap:var(--s3); text-align:right; }
++ td[data-label]:before { content:attr(data-label); text-align:left; color:var(--muted); font-size:var(--small); } }
++</style></head><body><main>
++<nav><a href="/stage.html${english ? "?lang=en" : ""}">${t.back}</a><a href="/usage${english ? "" : "?lang=en"}" lang="${english ? "ja" : "en"}">${english ? "日本語" : "English"}</a></nav>
++<header><small>${t.intro}</small><h1>${(english ? ["Who is using", "Stage Sketch?"] : ["誰が、", "どれくらい", "使っているか"]).map(phrase => `<span class="phrase">${phrase}</span>`).join(english ? " " : "")}</h1><p class="muted" id="range"></p><small id="start"></small></header>
++<div class="controls"><label for="period">${t.period}<select id="period"><option value="7">${t.periods[0]}</option><option value="30" selected>${t.periods[1]}</option><option value="90">${t.periods[2]}</option></select></label>
++<label><input id="self" type="checkbox">${t.self}</label><button id="refresh" type="button">${t.refresh}</button></div>
++<p role="status" id="status">${t.loading}</p><a id="sign-in" href="/sign-in?next=${encodeURIComponent(english ? "/usage?lang=en" : "/usage")}" hidden>${t.signIn}</a>
++<section id="result" hidden><div class="totals" id="totals"></div><p id="empty" hidden>${t.empty}</p>
++<div class="table-wrap"><table id="table"><caption>${t.table}</caption><thead><tr><th scope="col">${t.user}</th><th scope="col" class="number">${t.days}</th><th scope="col" class="number">${t.active}</th><th scope="col">${t.last}</th></tr></thead><tbody id="rows"></tbody></table></div></section>
++<footer><h2>${english ? "How to read these numbers" : "数字の読み方"}</h2><p>${t.note}</p><p>${t.boundary}</p><small id="updated"></small></footer>
++</main><script nonce="${nonce}">
++const t = ${JSON.stringify(t)};
++const el = (id) => document.getElementById(id);
++let report = null, revision = 0;
++const date = (ms) => new Intl.DateTimeFormat(t.lang === 'en' ? 'en-GB' : 'ja-JP', {timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ms));
++function duration(ms) {
++ if (!ms) return t.zero;
++ const minutes = Math.floor(ms/60000);
++ if (!minutes) return t.short;
++ return minutes < 60 ? minutes+' '+t.min : Math.floor(minutes/60)+' '+t.hour+' '+(minutes%60)+' '+t.min;
++}
++function draw() {
++ if (!report) return;
++ const rows = report.rows.filter(row => el('self').checked || row.user !== report.owner);
++ el('rows').replaceChildren(); el('totals').replaceChildren();
++ for (const [value,label] of [[rows.filter(row=>row.activeDays>0).length,t.people],[rows.reduce((n,row)=>n+row.activeDays,0),t.totalDays],[duration(rows.reduce((n,row)=>n+row.activeMs,0)),t.totalTime]]) {
++  const item=document.createElement('div'),number=document.createElement('strong'),name=document.createElement('span');
++  number.textContent=value; name.textContent=label; item.append(number,name); el('totals').append(item);
++ }
++ for (const row of rows) {
++  const tr=document.createElement('tr');
++  [row.user+(row.user===report.owner?' '+t.own:''),row.activeDays,duration(row.activeMs),date(row.lastSeen)].forEach((value,index)=>{
++   const td=document.createElement('td'); td.textContent=value;
++   if(index) td.dataset.label=[t.user,t.days,t.active,t.last][index];
++   if(index===1 || index===2) td.className='number'; tr.append(td);
++  }); el('rows').append(tr);
++ }
++ el('empty').hidden=rows.length>0; el('table').hidden=rows.length===0; el('result').hidden=false;
++ el('range').textContent=report.from+' – '+report.to+' · JST';
++ el('start').textContent=report.startedAt?t.started+': '+date(report.startedAt)+' JST':t.pending;
++ el('updated').textContent=t.sampled+': '+date(report.asOf)+' JST';
++ el('status').textContent=report.enabled?'':t.disabled;
++}
++async function load() {
++ const current=++revision; report=null; el('result').hidden=true; el('refresh').disabled=true;
++ el('status').textContent=t.loading; el('sign-in').hidden=true; el('updated').textContent=''; el('range').textContent=''; el('start').textContent='';
++ try {
++  const response=await fetch('/usage/report?days='+el('period').value,{credentials:'same-origin',cache:'no-store',redirect:'error'});
++  if(!response.ok) throw new Error('unavailable');
++  const value=await response.json();
++  if(!Array.isArray(value.rows)) throw new Error('invalid');
++  if(current!==revision) return; report=value; draw();
++ } catch(_) { if(current===revision) {el('status').textContent=t.fail;el('sign-in').hidden=false;} }
++ finally { if(current===revision) el('refresh').disabled=false; }
++}
++el('period').addEventListener('change',load); el('self').addEventListener('change',draw); el('refresh').addEventListener('click',load); load();
++</script></body></html>`;
++  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8",
++    "Cache-Control": "private, no-store", "Vary": "Cookie, Authorization", "X-Content-Type-Options": "nosniff",
++    "Referrer-Policy": "same-origin", "Content-Security-Policy": `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'` } });
++}
+--- /dev/null
++++ b/stage-usage.js
+@@ -0,0 +1,133 @@
++/* βの利用状況。入力内容や作品は参照しない。通信不能でも編集を止めない。 */
++(function () {
++  "use strict";
++  const IDLE_MS = 60000;
++  const SAMPLE_MS = 5000;
++  const REPORT_MS = 30000;
++
++  function createActivityMeter(now = 0) {
++    let last = now, lastInput = -Infinity, eligible = false, pending = 0;
++    function sample(time, visible) {
++      const gap = time - last;
++      if (eligible && visible && gap > 0 && gap <= SAMPLE_MS * 2) {
++        pending += Math.max(0, Math.min(time, lastInput + IDLE_MS) - last);
++      }
++      last = time;
++      eligible = visible;
++    }
++    return {
++      sample,
++      input(time, visible) { sample(time, visible); if (visible) lastInput = time; },
++      take() { const value = Math.min(REPORT_MS, Math.floor(pending)); pending = 0; return value; },
++      reset(time) { last = time; lastInput = -Infinity; eligible = false; pending = 0; },
++    };
++  }
++  window.SHOSAI_STAGE_USAGE_MODEL = Object.freeze({ createActivityMeter });
++  const root = document.getElementById("view-stage");
++  if (!root || !/^https?:$/.test(location.protocol) || document.body.classList.contains("is-public")) return;
++  if (!window.fetch || !window.crypto?.randomUUID) return;
++  const meter = createActivityMeter(performance.now());
++  let config = null, opened = false, stopped = false, configuring = false;
++  let lastReport = performance.now();
++  const isVisible = () => !root.hidden && document.visibilityState === "visible" && document.hasFocus() && navigator.onLine !== false;
++  const en = () => document.documentElement.lang.startsWith("en");
++  async function request(url, options) {
++    const controller = new AbortController();
++    const timeout = setTimeout(() => controller.abort(), 10000);
++    try { return await fetch(url, { ...options, signal: controller.signal }); }
++    finally { clearTimeout(timeout); }
++  }
++
++  const style = document.createElement("style");
++  style.textContent = `
++    .stage-usage-notice { --usage-paper:#f5f1e8; --usage-ink:#302a24; --usage-muted:#67594c;
++      font:14px/1.65 system-ui,-apple-system,sans-serif; color:var(--usage-ink); background:var(--usage-paper);
++      margin:16px 0 0; padding:8px 12px; border:1px solid #897a6a; border-radius:4px; }
++    .stage-usage-notice[hidden] { display:none; }
++    .stage-usage-notice summary { min-height:44px; align-content:center; cursor:pointer; }
++    .stage-usage-notice p { margin:8px 0; color:var(--usage-muted); max-width:65ch; }
++    .stage-usage-notice a { display:inline-flex; align-items:center; min-height:44px; color:var(--usage-ink); text-decoration:underline; }
++    .stage-usage-notice :focus-visible { outline:3px solid #88432e; outline-offset:3px; }
++  `;
++  const notice = document.createElement("details");
++  notice.className = "stage-usage-notice";
++  notice.hidden = true;
++  const summary = document.createElement("summary"), description = document.createElement("p"), admin = document.createElement("a");
++  notice.append(summary, description, admin);
++  document.head.append(style);
++  root.append(notice);
++  function renderNotice() {
++    if (!config?.enabled) { notice.hidden = true; return; }
++    notice.hidden = false;
++    summary.textContent = en() ? "Usage recording: account, days used and active time" : "利用状況を記録：アカウント・利用日・操作時間";
++    description.textContent = en()
++      ? "The developer can review your account name, last use, days used and estimated active time. Daily records are kept for 90 days. Only foreground activity and up to 60 seconds after an action count; hidden tabs and failed transmissions are excluded. Show contents and typed text are not sent."
++      : "開発者がアカウント名・最終利用日時・利用日数・操作時間の概算を確認できます。日別記録は90日間保持します。画面が手前にあり、最後の操作から60秒以内を計測します。別タブや送信に失敗した分は集計されません。作品や入力した文章は送りません。";
++    admin.hidden = !config.canAdmin;
++    admin.textContent = en() ? "View usage (owner)" : "利用状況を見る（管理者）";
++    admin.href = en() ? "/usage?lang=en" : "/usage";
++  }
++  new MutationObserver(renderNotice).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
++
++  async function configure() {
++    if (config || stopped || configuring) return;
++    configuring = true;
++    try {
++      const response = await request("/usage/config", { credentials: "same-origin", cache: "no-store", redirect: "error" });
++      if (response.status === 401 || response.status === 403) { stopped = true; return; }
++      if (!response.ok) return;
++      const value = await response.json();
++      if (typeof value.enabled !== "boolean" || typeof value.user !== "string" || !value.user) return;
++      config = value;
++      meter.reset(performance.now());
++      renderNotice();
++    } catch (_) { /* オフライン初回起動は次の周期に設定確認だけ再試行する */ }
++    finally { configuring = false; }
++  }
++  async function send(kind, activeMs) {
++    if (!config?.enabled || stopped) return;
++    const payload = { v: 1, user: config.user, id: crypto.randomUUID(), kind, activeMs };
++    try {
++      const response = await request("/usage/event", { method: "POST", credentials: "same-origin", cache: "no-store",
++        redirect: "error", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
++      if ([401, 403, 409].includes(response.status)) { stopped = true; meter.reset(performance.now()); }
++      // 未送信の時刻を後日へずらさない。失敗時の再送・ローカル永続保存はしない。
++    } catch (_) { /* 記録の失敗を制作画面へ伝播させない */ }
++  }
++  function flush() {
++    const activeMs = meter.take();
++    if (activeMs) void send("active", activeMs);
++  }
++  function boundary() {
++    const now = performance.now();
++    meter.sample(now, isVisible());
++    if (!isVisible()) flush();
++  }
++  function input(event) {
++    if (!event.isTrusted || !config?.enabled || stopped) return;
++    if (event.type === "pointermove" && !event.buttons) return;
++    meter.input(performance.now(), isVisible());
++  }
++  for (const name of ["pointerdown", "pointermove", "keydown", "wheel", "touchmove"])
++    document.addEventListener(name, input, { capture: true, passive: true });
++  document.addEventListener("visibilitychange", boundary);
++  window.addEventListener("blur", boundary);
++  window.addEventListener("focus", boundary);
++  window.addEventListener("offline", () => { meter.reset(performance.now()); });
++  window.addEventListener("online", () => { meter.reset(performance.now()); void configure(); });
++  window.addEventListener("pagehide", () => { meter.sample(performance.now(), isVisible()); flush(); meter.reset(performance.now()); });
++  window.addEventListener("pageshow", () => meter.reset(performance.now()));
++  new MutationObserver(boundary).observe(root, { attributes: true, attributeFilter: ["hidden"] });
++  setInterval(() => {
++    const now = performance.now();
++    if (!config || !config.enabled || stopped) {
++      meter.reset(now);
++      if (now - lastReport >= REPORT_MS) { lastReport = now; void configure(); }
++      return;
++    }
++    meter.sample(now, isVisible());
++    if (!opened && isVisible()) { opened = true; void send("open", 0); }
++    if (now - lastReport >= REPORT_MS) { lastReport = now; flush(); }
++  }, SAMPLE_MS);
++  void configure();
++})();
+--- /dev/null
++++ b/tests/usage-metrics.test.mjs
+@@ -0,0 +1,237 @@
++import test from "node:test";
++import assert from "node:assert/strict";
++import { readFile } from "node:fs/promises";
++import vm from "node:vm";
++import worker, { createSessionToken } from "../worker.js";
++import { UsageMetrics, DAY_MS, dayNumber } from "../usage-metrics.js";
++
++const origin = "https://stage.example";
++const owner = ["owner", "test-owner-password"];
++const guest = ["guest", "test-guest-password"];
++const basic = ([user, pass]) => ({ Authorization: `Basic ${btoa(`${user}:${pass}`)}` });
++let sequence = 0;
++const event = (props = {}) => ({ v: 1, user: guest[0], kind: "active", id: `event-${String(++sequence).padStart(16, "0")}`, activeMs: 30000, ...props });
++function storage() {
++  const values = new Map();
++  let alarm = null, queue = Promise.resolve();
++  const api = {
++    async get(key) { return structuredClone(values.get(key)); },
++    async put(key, value) { values.set(key, structuredClone(value)); },
++    async delete(key) { values.delete(key); },
++    async list({ prefix = "", limit = Infinity } = {}) {
++      return new Map([...values].filter(([key]) => key.startsWith(prefix)).slice(0, limit).map(([key, value]) => [key, structuredClone(value)]));
++    },
++    async getAlarm() { return alarm; },
++    async setAlarm(value) { alarm = value; },
++    transaction(fn) { const task = queue.then(() => fn(api)); queue = task.catch(() => {}); return task; },
++  };
++  return api;
++}
++function setup() {
++  const stored = storage();
++  const room = new UsageMetrics({ storage: stored });
++  const requests = [], assets = [];
++  const env = {
++    SITE_USER: owner[0], SITE_PASS: owner[1], GUEST_USER: guest[0], GUEST_PASS: guest[1],
++    STAGE_BETA_ACTIVE: "true", STAGE_USAGE_ENABLED: "true",
++    USAGE_METRICS: { idFromName: (name) => name, get: () => ({ fetch: async (url, init) => {
++      requests.push(init?.body ? JSON.parse(init.body) : String(url)); return room.fetch(url, init);
++    } }) },
++    ASSETS: { async fetch(request) { assets.push(request.url); return new Response("asset"); } },
++  };
++  const call = (path, account = guest, init = {}) => worker.fetch(new Request(origin + path, {
++    ...init, headers: { ...(account ? basic(account) : {}), ...init.headers },
++  }), env, {});
++  const post = (payload, account = guest, headers = {}) => call("/usage/event", account, {
++    method: "POST", headers: { Origin: origin, "Content-Type": "application/json", ...headers }, body: JSON.stringify(payload),
++  });
++  return { stored, env, room, call, post, requests, assets };
++}
++
++test("anonymous, guest and forged owner headers cannot read owner reports or page", async () => {
++  const s = setup();
++  for (const path of ["/usage", "/usage?lang=en", "/usage/report", "/usage/report?days=7"]) {
++    assert.equal((await s.call(path, null)).status, 401);
++    assert.equal((await s.call(path, guest, { headers: { "X-Shosai-Session-Owner": owner[0] } })).status, 403);
++  }
++  assert.equal(s.requests.length, 0);
++  assert.equal(s.assets.length, 0);
++  const cookie = await createSessionToken(guest[0], guest[1], Math.floor(Date.now()/1000));
++  assert.equal((await s.call("/usage/report", null, { headers: {Cookie: `__Host-shosai-session=${cookie}`} })).status, 403);
++  for (const path of ["/usage", "/usage?lang=en", "/usage/report"]) {
++    const response = await s.call(path, owner);
++    assert.equal(response.status, 200);
++    assert.match(response.headers.get("Cache-Control"), /no-store/);
++    assert.match(response.headers.get("Vary"), /Cookie/);
++  }
++});
++
++test("record uses authenticated identity and discards content; switch of account is rejected", async () => {
++  const s = setup();
++  assert.equal((await s.post(event({ user: owner[0] }))).status, 409);
++  assert.equal((await s.post(event(), null)).status, 401);
++  assert.equal((await s.post(event({ show: "PRIVATE SHOW", text: "PRIVATE TEXT" }))).status, 200);
++  assert.deepEqual(Object.keys(s.requests[0]).sort(), ["activeMs", "id", "kind", "user", "v"]);
++  assert.equal(s.requests[0].user, guest[0]);
++  const response = await s.call("/usage/report", owner);
++  const report = await response.json();
++  assert.equal(report.rows[0].activeDays, 1);
++  assert.equal(report.rows[0].activeMs, 30000);
++  assert.doesNotMatch(JSON.stringify([...(await s.stored.list()).values()]), /PRIVATE/);
++});
++
++test("same origin JSON, bounded payloads, periods and methods are enforced", async () => {
++  const s = setup();
++  for (const headers of [{Origin:"https://evil.example"},{Origin:"null"},{"Sec-Fetch-Site":"cross-site"}])
++    assert.equal((await s.post(event(), guest, headers)).status, 403);
++  assert.equal((await s.post(event(), guest, {"Content-Type":"text/plain"})).status, 400);
++  for (const props of [{activeMs:30001},{activeMs:-1},{activeMs:1.5},{activeMs:0},{kind:"open",activeMs:1},{id:"bad"},{v:2},{kind:"save"}])
++    assert.equal((await s.post(event(props))).status, 400);
++  assert.equal((await s.post(event({text:"a".repeat(3000)}))).status, 400);
++  assert.equal((await s.call("/usage/event")).status, 405);
++  assert.equal((await s.call("/usage/report?days=365", owner)).status, 400);
++  assert.equal((await s.call("/usage/report", owner, {method:"POST"})).status, 405);
++  assert.equal((await s.call("/usage/unknown", owner)).status, 404);
++  assert.equal(s.requests.length, 0);
++});
++
++test("disabled, beta ended, missing or failed storage never become fake empty success", async () => {
++  for (const overrides of [{STAGE_USAGE_ENABLED:"false"},{STAGE_BETA_ACTIVE:"false"},{USAGE_METRICS:undefined}]) {
++    const s = setup(); Object.assign(s.env, overrides);
++    assert.equal((await (await s.call("/usage/config")).json()).enabled, false);
++    assert.equal((await s.post(event())).status, 503);
++    assert.equal((await s.call("/stage.html")).status, 200);
++  }
++  const s = setup(); s.env.USAGE_METRICS.get = () => { throw new Error("storage failure"); };
++  assert.equal((await s.post(event())).status, 503);
++  assert.equal((await s.call("/usage/report", owner)).status, 503);
++  const local = setup(); delete local.env.SITE_USER; delete local.env.SITE_PASS; delete local.env.GUEST_USER; delete local.env.GUEST_PASS;
++  assert.equal((await worker.fetch(new Request("http://localhost/usage/report"), local.env, {})).status, 401);
++});
++
++test("duplicate IDs, concurrent overlapping tabs and restarts keep one duration", async (t) => {
++  let now = Date.parse("2026-09-08T03:00:00Z");
++  t.mock.method(Date, "now", () => now);
++  const s = setup(), payload = event();
++  await s.post(payload);
++  now += 15000;
++  await s.post(payload); // retry must not move last use or add time
++  assert.equal((await s.stored.get("user:guest")).lastSeen, now - 15000);
++  await Promise.all([s.post(event()),s.post(event())]);
++  let report = await (await s.call("/usage/report", owner)).json();
++  assert.equal(report.rows[0].activeMs,45000);
++  const restarted = new UsageMetrics({storage:s.stored});
++  report = await (await restarted.fetch("https://usage/report?days=7")).json();
++  assert.equal(report.rows[0].activeMs,45000);
++  assert.ok(await s.stored.getAlarm());
++});
++
++test("JST midnight splits time, periods include today, retention expires after 90 days", async (t) => {
++  let now = Date.parse("2026-09-08T15:00:10Z"); // JST Sep 9 00:00:10
++  t.mock.method(Date,"now",()=>now);
++  const s = setup();
++  await s.post(event());
++  let record=await s.stored.get("user:guest");
++  assert.equal(record.days[dayNumber(now)-1].activeMs,20000);
++  assert.equal(record.days[dayNumber(now)].activeMs,10000);
++  let report=await (await s.call("/usage/report?days=7",owner)).json();
++  assert.equal(report.to,"2026-09-09"); assert.equal(report.from,"2026-09-03");
++  assert.equal(report.rows[0].activeDays,2);
++  now+=DAY_MS*7;
++  report=await (await s.call("/usage/report?days=7",owner)).json();
++  assert.equal(report.rows[0].activeDays,0); assert.equal(report.rows[0].activeMs,0);
++  now+=DAY_MS*83;
++  report=await (await s.call("/usage/report?days=90",owner)).json();
++  assert.deepEqual(report.rows,[]);
++  await s.room.alarm(); assert.equal(await s.stored.get("user:guest"),undefined);
++});
++
++test("opening counts a usage day without inventing active time; safe account names", async () => {
++  const s=setup(); await s.post(event({kind:"open",activeMs:0}));
++  const report=await (await s.call("/usage/report",owner)).json();
++  assert.equal(report.rows[0].activeMs,0); assert.equal(report.rows[0].activeDays,1);
++  const html=await (await s.call("/usage",owner)).text();
++  assert.match(html,/td.textContent=value/); assert.doesNotMatch(html,/innerHTML/);
++  assert.match(html,/frame-ancestors|操作時間/);
++});
++
++const source=await readFile(new URL("../stage-usage.js",import.meta.url),"utf8");
++function meter() {
++  const context={window:{},document:{getElementById:()=>null}};
++  vm.runInNewContext(source,context);
++  return context.window.SHOSAI_STAGE_USAGE_MODEL.createActivityMeter(0);
++}
++test("activity requires input and foreground, stops after 60s idle and excludes long sleep",()=>{
++  const m=meter();
++  m.sample(0,true); m.sample(5000,true); assert.equal(m.take(),0);
++  m.input(5000,true); m.sample(10020,true); assert.equal(m.take(),5020); // real timer jitter
++  m.sample(15000,false); m.sample(20000,false); assert.equal(m.take(),0);
++  m.sample(20000,true);
++  for(let now=25000;now<=70000;now+=5000) m.sample(now,true);
++  assert.equal(m.take(),30000); // batch capped, long unflushed batches are not deferred
++  m.sample(75000,true); assert.equal(m.take(),0);
++  m.input(75000,true); m.sample(3600000,true); assert.equal(m.take(),0);
++  m.reset(3600000); m.sample(3605000,true); assert.equal(m.take(),0);
++});
++
++test("public distribution excludes account metrics; beta caches only client asset, not reports",async()=>{
++  const root=new URL("../",import.meta.url);
++  const [stage,preview,sw,build]=await Promise.all(["stage.html","try.html","stage-sw.js","build_public.py"].map(file=>readFile(new URL(file,root),"utf8")));
++  assert.match(stage,/stage-usage\.js\?v=2/); assert.doesNotMatch(preview,/stage-usage\.js/);
++  assert.match(build,/"stage-usage\.js",/); assert.match(sw,/"\.\/stage-usage\.js\?v=2"/);
++  const shell=sw.match(/const APP_SHELL = \[([\s\S]*?)\];/)[1];
++  assert.doesNotMatch(shell,/\/usage/);
++});
++
++async function browserHarness({enabled=true,focused=true}={}) {
++  let now=0,tick;
++  const nodes=[],handlers=new Map(),sent=[];
++  const node=()=>({hidden:false,children:[],append(...items){this.children.push(...items);},classList:{contains:()=>false}});
++  const root=node(),head=node();
++  const listen=(name,fn)=>handlers.set(name,fn);
++  const document={getElementById:()=>root,createElement:()=>{const value=node();nodes.push(value);return value;},head,
++    body:node(),documentElement:{lang:"ja"},visibilityState:"visible",hasFocus:()=>focused,addEventListener:listen};
++  let responseStatus=200;
++  const context={document,location:{protocol:"https:"},navigator:{onLine:true},performance:{now:()=>now},
++    MutationObserver:class {observe(){}},AbortController,crypto:globalThis.crypto,setTimeout:()=>1,clearTimeout(){},setInterval:fn=>{tick=fn;},
++    async fetch(url,options){
++      if(url==="/usage/config") return {ok:true,status:200,json:async()=>({enabled,user:"guest",canAdmin:false})};
++      sent.push(JSON.parse(options.body));return {ok:responseStatus===200,status:responseStatus};
++    },
++  };
++  context.window={crypto:context.crypto,fetch:context.fetch,addEventListener:listen};
++  vm.runInNewContext(source,context);
++  const settle=()=>new Promise(resolve=>setImmediate(resolve));
++  await settle();
++  return {sent,nodes,root,document,context,
++    async at(time){now=time;tick();await settle();},
++    input(time){now=time;handlers.get("pointerdown")({isTrusted:true,type:"pointerdown"});},
++    async hide(){focused=false;handlers.get("blur")();await settle();},
++    status(value){responseStatus=value;},
++    offline(){context.navigator.onLine=false;handlers.get("offline")();},
++    online(){context.navigator.onLine=true;handlers.get("online")();},
++  };
++}
++test("client sends actual foreground activity and disclosure; idle, background and offline stop it",async()=>{
++  const s=await browserHarness();
++  assert.equal(s.root.children[0].hidden,false);
++  assert.match(s.root.children[0].children[0].textContent,/利用状況を記録/);
++  assert.equal(s.root.children[0].children[2].hidden,true,"guest never sees admin link");
++  await s.at(5000);assert.equal(s.sent[0].kind,"open");
++  s.input(6000);
++  for(let time=10000;time<=90000;time+=5000) await s.at(time);
++  assert.equal(s.sent.filter(e=>e.kind==="active").reduce((n,e)=>n+e.activeMs,0),60000);
++  const before=s.sent.length;
++  await s.hide();s.input(91000);await s.at(95000);await s.at(120000);
++  assert.equal(s.sent.length,before);
++  s.offline();s.input(120100);await s.at(125000);s.online();await s.at(130000);
++  assert.equal(s.sent.length,before);
++  for(const payload of s.sent) assert.deepEqual(Object.keys(payload).sort(),["activeMs","id","kind","user","v"]);
++});
++test("client never records when disabled; account change stops future submissions",async()=>{
++  const disabled=await browserHarness({enabled:false});disabled.input(1000);await disabled.at(30000);
++  assert.equal(disabled.sent.length,0);assert.equal(disabled.root.children[0].hidden,true);
++  const s=await browserHarness();await s.at(5000);s.status(409);s.input(6000);
++  for(let time=10000;time<=60000;time+=5000) await s.at(time);
++  assert.equal(s.sent.length,2); // first opening + first active report, then stop
++});

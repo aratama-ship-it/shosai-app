@@ -1,0 +1,34 @@
+{
+  "kind": "stage-sketch-transition-owner-approval",
+  "version": 1,
+  "status": "owner_approved_for_sample",
+  "recordedDate": "2026-09-12",
+  "subject": "M6 乱戦のブラックアウトから仮面舞踏会とバーセットへの転換",
+  "sourceCandidateSha256": "34a0e7a8357b2481fea346913899925d09647d41beff5ac70187cb2862634ed3",
+  "decisions": [
+    {
+      "id": "M6-C1",
+      "label": "配置案の扱い",
+      "choice": "A",
+      "answer": "サンプル候補としてこの配置を採用する"
+    },
+    {
+      "id": "M6-C2",
+      "label": "バー担当2枠の仮面",
+      "choice": "A",
+      "answer": "現案どおり、バー固定後に着けてバー係の位置へ移る"
+    },
+    {
+      "id": "M6-C3",
+      "label": "暗転中の技術図",
+      "choice": "A",
+      "answer": "現案どおり3枚で進める"
+    }
+  ],
+  "effect": {
+    "sampleConfigurationApproved": true,
+    "productImplementationApproved": false,
+    "realStageValidationCompleted": false,
+    "productionUseApproved": false
+  }
+}

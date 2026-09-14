@@ -1,0 +1,103 @@
+{
+  "scope": "standalone fixed-example document; not product integration",
+  "browser": "Playwright Chromium",
+  "checks": [
+    {
+      "check": "初期状態で合図と時刻進行が無効",
+      "passed": true
+    },
+    {
+      "check": "早い合図を予約せず3秒で机が待機し平台が半分進む",
+      "passed": true
+    },
+    {
+      "check": "6秒でも机は待ち平台だけ到着する",
+      "passed": true
+    },
+    {
+      "check": "待機中も担当2人の表示と担当継続が残る",
+      "passed": true
+    },
+    {
+      "check": "全体停止中は時計も合図も止まり表に停止を示す",
+      "passed": true
+    },
+    {
+      "check": "合図を想定した瞬間に終点へ飛ばない",
+      "passed": true
+    },
+    {
+      "check": "連打で同じ待機の通過時刻を更新しない",
+      "passed": true
+    },
+    {
+      "check": "6秒で合図を想定した回は11秒で両方が到着",
+      "passed": true
+    },
+    {
+      "check": "試し時間が変わっても未定の見積もりを確定値にしない",
+      "passed": true
+    },
+    {
+      "check": "最初に戻すと同じ合図を改めて待つ",
+      "passed": true
+    },
+    {
+      "check": "待ち方の編集で時刻と通過状態を戻す",
+      "passed": true
+    },
+    {
+      "check": "固定秒待ちは到着時点から数える",
+      "passed": true
+    },
+    {
+      "check": "秒待ち中は対象がその場にとどまる",
+      "passed": true
+    },
+    {
+      "check": "固定2秒待ちでは10秒で終了し見積もりも10秒",
+      "passed": true
+    },
+    {
+      "check": "同じ人の同時作業を名前と2対象付きで知らせる",
+      "passed": true
+    },
+    {
+      "check": "同じ作業の2枠に同じ人を入れたことを知らせる",
+      "passed": true
+    },
+    {
+      "check": "担当未定を残し位置の試しを許す",
+      "passed": true
+    },
+    {
+      "check": "合図の呼び名編集で表示を揃え試しを戻す",
+      "passed": true
+    },
+    {
+      "check": "担当で絞っても開始合図と他作業の完了条件を残す",
+      "passed": true
+    },
+    {
+      "check": "印刷で担当未定と表示範囲と次条件を残す",
+      "passed": true
+    },
+    {
+      "check": "担当重複も印刷から落とさない",
+      "passed": true
+    },
+    {
+      "check": "携帯幅で本文はみ出しなし",
+      "passed": true
+    },
+    {
+      "check": "再読込みで担当と合図と時計を初期例へ戻す",
+      "passed": true
+    },
+    {
+      "check": "ブラウザ実行エラーなし",
+      "passed": true
+    }
+  ],
+  "page_errors": []
+}

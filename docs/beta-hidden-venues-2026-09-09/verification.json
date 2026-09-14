@@ -1,0 +1,129 @@
+{
+  "request": "Temporarily hide theatre-tram, tohu and cirque-dhiver from the beta venue choices",
+  "url": "https://stagesketch.pygmix.com/stage",
+  "deployment": {
+    "id": "16779147-65e0-495c-b556-dbecbdc42aaf",
+    "source": "api",
+    "strategy": "percentage",
+    "author_email": "circusarata@gmail.com",
+    "annotations": {
+      "workers/message": "User requested emergency hide of three real venue presets from beta",
+      "workers/triggered_by": "deployment"
+    },
+    "versions": [
+      {
+        "version_id": "5e4103ce-b487-483f-b40c-378e9af6648f",
+        "percentage": 100
+      }
+    ],
+    "created_on": "2026-09-09T07:57:56.381783Z"
+  },
+  "deployedWorkerSha256": "7d7f78d10b5256014adfe9439be658938666a288f4e8cf4acaaa08d68409149b",
+  "preserved": "All deployed assets and bindings inherited. Only authenticated stage-venues.js and stage-sw.js responses transformed. byId remains available for saved projects. Public preview unchanged.",
+  "validation": {
+    "existingTestsPassed": 78,
+    "newRegressionTestsPassed": 1,
+    "exactProductionWorkerFixtureCasesPassed": 2,
+    "browser": {
+      "url": "https://stagesketch.pygmix.com/stage?lang=ja",
+      "title": "舞台スケッチ | Stage Sketch",
+      "visibleOptions": [
+        {
+          "id": "proscenium",
+          "label": "プロセニアム（額縁舞台）"
+        },
+        {
+          "id": "thrust",
+          "label": "スラスト（張り出し舞台）"
+        },
+        {
+          "id": "arena",
+          "label": "ビッグトップ（円形・全周）"
+        },
+        {
+          "id": "outdoor",
+          "label": "屋外ステージ（仮設・野外）"
+        },
+        {
+          "id": "blackbox",
+          "label": "ブラックボックス（可変）"
+        },
+        {
+          "id": "chapiteau",
+          "label": "シャピトー（巡演テント）（テント・全周）"
+        },
+        {
+          "id": "circus-theatre",
+          "label": "劇場のサーカス公演（額縁・吊りあり）"
+        }
+      ],
+      "passed": true
+    },
+    "beforeAssets": [
+      {
+        "path": "stage-venues.js",
+        "sha256": "2694d467503551bfa21220fc1c9330fd1cd29a4740360607f13c0f450bb5a76f",
+        "bytes": 47749
+      },
+      {
+        "path": "stage-sw.js",
+        "sha256": "531f6323f175ff8d906cfcb8266fc30f7e22fbde197958eb599de569c335c1b2",
+        "bytes": 6698
+      },
+      {
+        "path": "stage-sketch.js",
+        "sha256": "635777dcb21de00d22ec2f0f4a58d859889250239b03020b0a45ff7231cf7c32",
+        "bytes": 1061996
+      },
+      {
+        "path": "stage.html",
+        "sha256": "39139cb0613d896280d440960e23bfb3cb1a0d9bae25a1aec2ba2ca51857859d",
+        "bytes": 128487
+      },
+      {
+        "path": "stage-i18n.js",
+        "sha256": "4ef5dc59393f806a7074b9a4567ec1906ffed6f7975fa8020341f023ef018dd5",
+        "bytes": 112650
+      },
+      {
+        "path": "style.css",
+        "sha256": "3e8c40d33b0d81862fea9c7aaf1ed3a995f14957a1da4ea651dc10f85fcd11d3",
+        "bytes": 318341
+      }
+    ],
+    "afterAssets": [
+      {
+        "path": "stage-venues.js",
+        "sha256": "72dae715d870c6af78473a7089240af4c845aa1b455afc8c8566bb2adedba7c3",
+        "bytes": 48264
+      },
+      {
+        "path": "stage-sw.js",
+        "sha256": "91d97e438bf5bf10edfabeb39a7a93c6c4c0e838058208572915549afba46252",
+        "bytes": 6724
+      },
+      {
+        "path": "stage-sketch.js",
+        "sha256": "635777dcb21de00d22ec2f0f4a58d859889250239b03020b0a45ff7231cf7c32",
+        "bytes": 1061996
+      },
+      {
+        "path": "stage.html",
+        "sha256": "39139cb0613d896280d440960e23bfb3cb1a0d9bae25a1aec2ba2ca51857859d",
+        "bytes": 128487
+      },
+      {
+        "path": "stage-i18n.js",
+        "sha256": "4ef5dc59393f806a7074b9a4567ec1906ffed6f7975fa8020341f023ef018dd5",
+        "bytes": 112650
+      },
+      {
+        "path": "style.css",
+        "sha256": "3e8c40d33b0d81862fea9c7aaf1ed3a995f14957a1da4ea651dc10f85fcd11d3",
+        "bytes": 318341
+      }
+    ]
+  },
+  "restore": "Remove the scoped beta response transformation from authenticatedAssetResponse and its two JS paths from stageAssetRequest; validate and deploy only after approval. Cache suffix changes again when the filter is removed.",
+  "notChecked": "Existing physical-device PWA update flow; already-open clients must reload."
+}

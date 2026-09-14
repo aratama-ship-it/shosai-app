@@ -1,0 +1,102 @@
+{
+  "retrieved": "2026-09-09",
+  "rightsScope": "Japan for Japanese text/translation; USA catalog statement for English plus Japan text assessment; other distribution territories not individually reviewed",
+  "sources": [
+    {
+      "id": "ja",
+      "url": "https://www.aozora.gr.jp/cards/000264/files/42773_ruby_38390.zip",
+      "catalog": "https://www.aozora.gr.jp/cards/000264/card42773.html",
+      "sourceFile": "sources/aozora-42773-original.zip",
+      "sha256": "5333a0dd69219c08139ab8ca1a33a985496746ae8cc73e86393de1db968c6b75",
+      "author": "William Shakespeare (d. 1616)",
+      "translator": "坪内逍遙 (1859-1935)",
+      "edition": "新修シェークスピヤ全集 第二十五卷、中央公論社、1933-10-30",
+      "credits": "入力 osawa / 校正 土屋隆 / 作成2010-07-23 / 修正2010-11-09",
+      "rightsAssessment": "Public domain text and translation in Japan; conclusion from dates and Japanese term rules. This is not a clearance of modern adaptations or third-party media.",
+      "metadataLicense": "Bibliographic data attributed to 青空文庫, CC BY 4.0; the underlying public-domain play is a separate layer.",
+      "transformations": [
+        "ZIP retained unchanged",
+        "Full text decoded Shift_JIS to UTF-8 with ruby and provenance retained",
+        "PDF excerpts remove ruby and layout annotations; old spelling unchanged; four gaiji descriptions mapped to Unicode; mapping recorded separately"
+      ]
+    },
+    {
+      "id": "en",
+      "url": "https://www.gutenberg.org/cache/epub/1513/pg1513.txt",
+      "catalog": "https://www.gutenberg.org/ebooks/1513",
+      "sourceFile": "sources/gutenberg-1513-original.txt",
+      "sha256": "5a2037a19e60cccb67b3f5fc93a12cb65c58694ce6a1dc61d0d67d0d2502b3b4",
+      "author": "William Shakespeare (1564-1616)",
+      "edition": "eBook #1513; file header Last Updated September 18, 2025",
+      "credits": "the PG Shakespeare Team",
+      "rightsAssessment": "Catalog marks Public domain in the USA. Shakespeare text is also out of copyright in Japan.",
+      "transformations": [
+        "Original download retained with full license",
+        "Body-only UTF-8 copy removes the ebook wrapper and license, retained separately in original",
+        "PDF is a newly typeset excerpt with source acknowledgement; not branded as a Project Gutenberg edition"
+      ]
+    }
+  ],
+  "rules": [
+    "https://www.aozora.gr.jp/guide/kijyunn.html",
+    "https://www.bunka.go.jp/seisaku/chosakuken/hokaisei/kantaiheiyo_chosakuken/1411890.html",
+    "https://www.gutenberg.org/policy/license.html"
+  ],
+  "pdfs": [
+    {
+      "path": "output/pdf/romeo-juliet-excerpts-ja-v1.pdf",
+      "pages": 3,
+      "sha256": "0726a4701e40312d7add18cbd13712b85df9cc9e11534f425168c73bb593ce46",
+      "textExtractionMatchesEveryBlock": true,
+      "fontGlyphCoverage": true,
+      "layout": [
+        {
+          "page": 1,
+          "lowestBodyBaseline": 265,
+          "bodyCharacters": 539
+        },
+        {
+          "page": 2,
+          "lowestBodyBaseline": 326,
+          "bodyCharacters": 660
+        },
+        {
+          "page": 3,
+          "lowestBodyBaseline": 184,
+          "bodyCharacters": 692
+        }
+      ]
+    },
+    {
+      "path": "output/pdf/romeo-juliet-excerpts-en-v1.pdf",
+      "pages": 3,
+      "sha256": "4bb8a8c07c8131462725be6bdbbf7f86caab37942630f5d72566928bd465a43c",
+      "textExtractionMatchesEveryBlock": true,
+      "fontGlyphCoverage": true,
+      "layout": [
+        {
+          "page": 1,
+          "lowestBodyBaseline": 275,
+          "bodyCharacters": 942
+        },
+        {
+          "page": 2,
+          "lowestBodyBaseline": 208,
+          "bodyCharacters": 1390
+        },
+        {
+          "page": 3,
+          "lowestBodyBaseline": 145,
+          "bodyCharacters": 1277
+        }
+      ]
+    }
+  ],
+  "gaijiMappingInDerivedExcerpts": {
+    "濁点付き片仮名ヲ、1-7-85": "ヺ",
+    "濁点付き片仮名ヱ、1-7-84": "ヹ",
+    "「廴＋囘」、第4水準2-12-11": "廻",
+    "「鼬」の「由」に代えて「奚」、第4水準2-94-69": "鼷"
+  },
+  "sourceIntegrityNote": "SHA-256 pins local downloaded bytes; it is not proof of textual accuracy against a print facsimile."
+}

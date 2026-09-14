@@ -97,7 +97,7 @@ test("場面ごとの転換秒数を正規化し、再生ボタンと行き先�
   assert.match(sketchSource,
     /function normalizeCueSeconds[\s\S]*?value === null[\s\S]*?clamp\(seconds, 0\.2, 10\)/);
   assert.match(sketchSource, /cueSeconds: kind === "scene" \? normalizeCueSeconds\(raw\.cueSeconds\) : null/);
-  assert.match(sketchSource, /const span = durationMs != null && Number\.isFinite\(Number\(durationMs\)\)[\s\S]*?sc\(\)\.cueSeconds \* 1000/);
+  assert.match(sketchSource, /const span = Number\.isFinite\(Number\(durationMs\)\)[\s\S]*?sc\(\)\.cueSeconds \* 1000/);
   assert.match(indexSource, /id="stage-scene-replay"/);
   assert.match(sketchSource, /sceneReplay\.disabled = index <= 0 \|\| !state\.animateScenes/);
   assert.match(sketchSource, /beginSceneAnim\(fromScene\)/);

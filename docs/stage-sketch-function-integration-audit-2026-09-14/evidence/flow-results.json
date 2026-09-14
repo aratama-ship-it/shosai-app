@@ -1,0 +1,56 @@
+{
+  "audioAssignment": [
+    {
+      "id": "audit-section",
+      "track": null
+    },
+    {
+      "id": "audit-s1",
+      "track": "track-mu0nkhj2-4ci"
+    },
+    {
+      "id": "audit-s2",
+      "track": null
+    }
+  ],
+  "audioAfterBoundary": {
+    "active": "audit-s1",
+    "paused": true,
+    "src": "blob:http://127.0.0.1:8947/ae0e425c-8cbb-45f2-bd2f-6575ea6416d2",
+    "position": "0:00.0"
+  },
+  "cueSong0": 1,
+  "cueSong1": 1,
+  "cueData": [
+    {
+      "id": "cue-mu0nkjlu-8ofx",
+      "kind": "timeline",
+      "cueType": "light",
+      "sectionId": "audit-section",
+      "atSeconds": 0,
+      "memo": ""
+    }
+  ],
+  "formationBeforeAdd": {
+    "blocks": 1,
+    "scenes": 3
+  },
+  "formationAfterAdd": {
+    "blocks": 1,
+    "scenes": 4
+  },
+  "sectionDurationBefore": {
+    "x": 156,
+    "y": 759,
+    "width": 1269,
+    "height": 31
+  },
+  "sectionDurationAfter": {
+    "x": 156,
+    "y": 759,
+    "width": 1269,
+    "height": 31
+  },
+  "sectionDurationStored": 40,
+  "errors": []
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "tablet": false,
+    "passed": true,
+    "checks": "viewport filled, keyboard focus contained, external fullscreen exit restores original canvas and open tablet group"
+  },
+  {
+    "tablet": true,
+    "passed": true,
+    "checks": "viewport filled, keyboard focus contained, external fullscreen exit restores original canvas and open tablet group"
+  }
+]

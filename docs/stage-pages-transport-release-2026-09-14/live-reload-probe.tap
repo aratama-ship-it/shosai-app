@@ -1,0 +1,23 @@
+TAP version 13
+# reload-audio {
+#   playback: { trackId: 'track-mu0r1jqj-g43d', ready: true, loading: false },
+#   src: 'blob:https://aratama-ship-it.github.io/fac03685-dba7-4316-b4b7-8b86b9c44f2b',
+#   ready: 4,
+#   network: 1,
+#   error: undefined
+# }
+# Subtest: Music Sync audio playback and seek have a single pose writer
+ok 1 - Music Sync audio playback and seek have a single pose writer
+  ---
+  duration_ms: 4509.720583
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4676.311542

@@ -80,7 +80,10 @@ test("legitimate controls, uppercase colors, boundaries, repeated IDs across sce
   assert.equal(validate(d, enums).status, "ok");
 });
 test("all nine original negative fixtures stay negative", () => {
-  const files = readdirSync(path.join(root, "tools/ai-json-check.fixtures")).filter(f => f.endsWith(".json"));
+  // iCloud may retain conflict copies as "name 2.json". They are ignored by
+  // Git, so the contract remains the nine versioned fixtures only.
+  const files = readdirSync(path.join(root, "tools/ai-json-check.fixtures"))
+    .filter(f => f.endsWith(".json") && !/ 2\.json$/.test(f));
   assert.equal(files.length, 9);
   for (const file of files) assert.notEqual(checkJsonText(read("tools/ai-json-check.fixtures/" + file), enums).status, "ok", file);
 });

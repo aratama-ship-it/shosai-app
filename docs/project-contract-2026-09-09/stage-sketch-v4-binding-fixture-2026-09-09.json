@@ -1,0 +1,45 @@
+{
+  "kind": "shosai-stage-sketch",
+  "version": 4,
+  "scope": "説明用の最小v4書き出し形。製品へ読み込ませるデータでも、実ユーザーデータでもない。",
+  "project": {
+    "id": "project-fixture-2026-09-09",
+    "title": "架空の舞台転換",
+    "versionLabel": "v7",
+    "venue": "proscenium",
+    "venueSize": "mid",
+    "activeSceneId": "scene-fixture-4",
+    "cast": [
+      { "id": "cast-a", "name": "A", "color": "#644565" },
+      { "id": "cast-b", "name": "B", "color": "#644565" }
+    ],
+    "sets": [
+      { "id": "set-table", "name": "机", "color": "#4e5e38" }
+    ],
+    "scenes": [
+      {
+        "id": "scene-fixture-3",
+        "kind": "scene",
+        "title": "シーン3 / 転換前",
+        "background": "#40362d",
+        "pieces": [
+          { "id": "piece-a-3", "type": "performer", "castId": "cast-a", "u": 0.32, "v": 0.44 },
+          { "id": "piece-b-3", "type": "performer", "castId": "cast-b", "u": 0.54, "v": 0.56 },
+          { "id": "piece-table-3", "type": "block", "setId": "set-table", "u": 0.72, "v": 0.49 }
+        ]
+      },
+      {
+        "id": "scene-fixture-4",
+        "kind": "scene",
+        "title": "シーン4 / 暗転中",
+        "background": "#40362d",
+        "pieces": [
+          { "id": "piece-a-4", "type": "performer", "castId": "cast-a", "u": 0.32, "v": 0.43 },
+          { "id": "piece-b-4", "type": "performer", "castId": "cast-b", "u": 0.52, "v": 0.56 },
+          { "id": "piece-table-4", "type": "block", "setId": "set-table", "u": 0.63, "v": 0.50 }
+        ]
+      }
+    ]
+  },
+  "venues": []
+}

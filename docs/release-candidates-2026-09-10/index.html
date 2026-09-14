@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>舞台スケッチ — 次回の反映候補</title>
+<style>
+:root{--bg:#141619;--panel:#1b1e22;--ink:#eee8df;--sub:#b4bbc2;--link:#b5cdd8;--line:#87919a;--space:24px;--gap:16px;--section:40px;--radius:3px;--tap:44px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 system-ui,-apple-system,"Hiragino Sans",sans-serif}main{max-width:1040px;margin:auto;padding:32px var(--space) 64px}h1,h2{font-size:24px;line-height:1.5;margin:0 0 var(--gap)}h2{margin-top:var(--section)}p{margin:0 0 var(--gap)}small,.meta{font-size:14px;color:var(--sub)}a{color:var(--link);text-underline-offset:4px;display:inline-flex;align-items:center;min-height:var(--tap);overflow-wrap:anywhere}a:focus-visible,button:focus-visible{outline:3px solid var(--link);outline-offset:4px}.lead{border-block:1px solid var(--line);padding:var(--space) 0;margin:var(--space) 0}.lead strong{font-size:20px;display:block;margin-bottom:8px}.filters{display:flex;gap:8px;flex-wrap:wrap;margin:var(--space) 0}button{font:inherit;min-height:var(--tap);padding:6px 16px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius);cursor:pointer}button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}.item{display:grid;grid-template-columns:minmax(170px,1fr) minmax(0,2fr) minmax(0,1.4fr);gap:var(--gap);padding:20px 0;border-top:1px solid var(--line)}.item h3{font-size:18px;line-height:1.75;margin:0}.item p{margin:0}.status{font-size:14px;color:var(--sub);display:block}.notes{padding-left:24px}.notes li{margin-bottom:12px}code{font-size:14px;overflow-wrap:anywhere}details{border-top:1px solid var(--line);margin-top:24px}summary{cursor:pointer;min-height:var(--tap);padding:8px 0}nav{display:flex;gap:24px;flex-wrap:wrap}[hidden]{display:none!important}@media(max-width:650px){:root{--space:20px}.item{grid-template-columns:1fr;gap:8px}main{padding-top:24px}.item h3{font-size:18px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+<main>
+<p class="meta">舞台スケッチ / 2026年9月10日 17:41 JST 時点 / ローカル確認資料</p>
+<h1>次回の反映候補</h1>
+<p>今回は候補の確認まで。公開・ベータ配信、製品コードの修正は行っていません。</p>
+<div class="lead"><strong>最初の候補：小道具・スキン ＋ 完成済みの画面改善 ＋ 整列</strong>
+<p>まずベータ版でまとめて確認する構成を勧めます。操作と見た目を改善する変更が中心です。</p>
+<p class="meta">実装済みの候補です。最新の全体テストには失敗があり、現時点で「そのまま公開できる」とは判定していません。</p></div>
+<nav aria-label="参照"><a href="../../stage.html?lang=ja&amp;verify=release-candidates-20260910">現在のローカル版を開く</a><a href="#checks">公開前に残る確認</a><a href="#sources">根拠と対象</a></nav>
+<div class="filters" role="group" aria-label="候補の絞り込み"><button data-filter="all" aria-pressed="true">すべて</button><button data-filter="first" aria-pressed="false">最初の反映候補</button><button data-filter="later" aria-pressed="false">別途確認が必要</button></div>
+<section data-group="first"><h2>このセッションで作ったもの</h2>
+<article class="item"><div><h3>ドラムセット・大太鼓</h3><span class="status">実装・表示確認済み</span></div><p>小道具として追加。曲面の分割を増やし、輪郭の角ばりも軽減。</p><p>ベータ版の候補。体験版でも小道具追加の動作を確認すれば候補にできる。</p></article>
+<article class="item"><div><h3>マスク（仮面）</h3><span class="status">実装・表示確認済み</span></div><p>手に持つ、顔につける、外す操作。正面・平面・3Dと保存データに対応。</p><p>ベータ版の候補。体験版では装着操作の制限との整合確認が必要。</p></article>
+<article class="item"><div><h3>画面のスキン</h3><span class="status">配色は本人確認済み</span></div><p>従来の赤みのある黒と、青を抑えた暗い黒を設定から切替。端末に選択を保存。</p><p>正面図・平面図の標準背景、床、客席なども連動。文字色と個別の小道具色は維持。</p></article>
+<p class="meta">小道具の色変更は元からある機能です。今回は新機能として数えていません。</p></section>
+<section data-group="first"><h2>別セッションの完成済み候補</h2>
+<article class="item"><div><h3>全画面表示の改善</h3><span class="status">ローカル実装・表示確認済み</span></div><p>Fで切替、Escで終了。引き出し式パネル、反対側の図の縮小表示、クリック・Xキーによる正面／平面の入替。</p><p>ベータ版向け。公開体験版は現在、全画面機能を制限している。</p></article>
+<article class="item"><div><h3>パネル幅・説明欄</h3><span class="status">ローカル実装・表示確認済み</span></div><p>左右パネルと全画面の引き出しの幅を調整・記憶。長いシーン説明を別の行に表示。間口ラベルの見切れも修正。</p><p>幅調整に関連する既存テストの更新・確認が残る。</p></article>
+<article class="item"><div><h3>印刷・シーン操作の整理</h3><span class="status">ローカル実装・表示確認済み</span></div><p>「画像・印刷」へ入口を集約。シーン操作6ボタンをまとまりとして配置。「構成テンプレートから作る」の入口を非表示。</p><p>ベータ版向け。体験版では従来どおり印刷を制限する前提。</p></article>
+<article class="item"><div><h3>整列を7形状へ</h3><span class="status">追加4種類・一括反映待ち</span></div><p>逆V字、縦1列、斜め1列（／）、斜め1列（＼）を追加。従来の横1列・円・V字を継続。</p><p>次回の統合対象として記録済み。統合後の動作確認が必要。</p></article>
+</section>
+<section data-group="later"><h2>実装はあるが、<span style="white-space:nowrap">別途確認が必要</span></h2>
+<article class="item"><div><h3>PWA更新の保全処理</h3><span class="status">条件付き・利用者向け新機能ではない</span></div><p>ホーム画面へ追加した舞台スケッチなどで、新しい資材の取得に失敗しても動作済みの旧オフライン版を残す。</p><p>セッション共有とは別の処理。ベータ版をオフライン利用しない間の優先度は低い。PWAとして配るときに実機で更新・再起動・オフライン起動を確認する。</p></article>
+<article class="item"><div><h3>中国語UI</h3><span class="status">簡体字・繁体字の実装済み</span></div><p>言語パック、設定の言語切替、英語へのフォールバック。日英を含む4言語の仕組み。</p><p>保留の訳語とネイティブ確認が残る。まず翻訳確認用のベータ候補。マニュアル・LPの中国語化は含まない。</p></article>
+<article class="item"><div><h3>ベータ利用状況の集計</h3><span class="status">ローカル検証済み・未配信の記録</span></div><p>アカウント別の利用日・最終利用・操作時間の推定。管理者が7／30／90日で確認。</p><p>サーバー保存領域の追加、認証・受信・管理画面の配信確認が必要。公開体験版のアクセス解析とは別。</p></article>
+<article class="item"><div><h3>事前学習リンク・Viewer</h3><span class="status">ローカル実装あり・別セッションで調整中</span></div><p>配置のスナップショットを閲覧。個人メモ、ペン、付箋、明示操作での共有、版の継続。</p><p>保存・共有・失効とサーバーの仕組みを含む。Google連携は別設定が必要。独立したベータ検証へ分ける。</p></article>
+<article class="item"><div><h3>台本Q・担当割当</h3><span class="status">独立した作業コピーでの試作</span></div><p>担当者、Q一覧、時系列、該当シーンへ移動。</p><p>本体への統合と実アカウントの権限・複数端末確認が未完了。公開版の完成機能には含めない。</p></article>
+<article class="item"><div><h3>ショー・台本サンプル</h3><span class="status">演出検討用の資料</span></div><p>アリーナの6楽曲シーン、小道具・ブランコ・奈落の案、ロミオとジュリエットの台本と舞台構成図。</p><p>独立したHTML・JSON・図版が中心。製品の見本として採用・組込みする作業が必要。</p></article>
+<article class="item"><div><h3>AI編集計画の根拠パック</h3><span class="status">ローカルMCP機能</span></div><p>出典、観察、解釈、舞台案を分けて編集計画に保存。</p><p>ローカルのAI連携に属する変更。Web版へ配信するだけで利用可能になる機能ではない。</p></article>
+</section>
+<section><h2>すでに公開された変更</h2>
+<p>ゲストのアクセス範囲の制限・サインイン画面、公開体験版のアクセス解析と保存されない旨の表示は、新規候補に重ねて数えません。</p>
+<p>実在会場3件のベータ選択肢からの一時非表示も配信済みです。9月10日の別タスクのHTTP再確認記録があります。既存ショー内の会場情報を壊さない仕様を維持する必要があります。</p>
+</section>
+<section id="checks"><h2>公開前に残る確認</h2>
+<ul class="notes">
+<li><strong>全体テスト：</strong><code>node tests/index.mjs</code>は116件を通過後、<code>stageSkin</code>の非同期エラーで終了コード1。最後まで完走していません。</li>
+<li><strong>ファイル別の再確認：</strong>90テストファイルを個別のテストプロセスで実行した集計は863成功／22失敗。テスト用DOMに<code>dataset</code>がない問題と、全画面・幅変更前のソース表記を期待する検査などが見つかりました。実ブラウザの22個の不具合を意味する数字ではありません。修正・再検証が必要です。</li>
+<li><strong>ベータの生成整合：</strong><code>build_stage.py --check</code>は成功。<code>stage.html</code>と<code>study-frame.html</code>は正本と一致しています。</li>
+<li><strong>体験版の生成：</strong><code>build_public.py --check</code>は失敗。HTML、スキン・描画・言語関連の配信資材が古く、再生成が必要です。スキン選択は現在の体験版ロック規則では有効になりません。</li>
+<li><strong>並行作業：</strong>同じ本体ファイルに完成済みUIと調整中のViewerなどが重なっています。配信時は対象変更を固定した作業コピーで統合確認します。</li>
+</ul>
+<p>今回は確認のみの指定に従い、失敗箇所の修正・再生成・配信は行っていません。</p>
+</section>
+<section id="sources"><h2>根拠と確認範囲</h2>
+<p>製品ソース、検証記録、関連タスクの完了報告を照合しました。公開体験版は実ブラウザで読み込み、スキン選択なし・整列3形状・印刷／全画面制限ありを確認。資産はstyle v229／stage-sketch v318でした。</p>
+<p>ベータのURLはサインイン画面まで確認。本タスクではログイン後の全機能を再確認していません。配信済み項目は保存された配信記録と、別タスクの当日再確認記録に基づきます。</p>
+<details><summary>検証記録と引き継ぎ資料</summary><nav>
+<a href="../../design/TOKEN_SHEET_drums_2026-09-10.md">打楽器</a>
+<a href="../../design/TOKEN_SHEET_mask_2026-09-10.md">仮面</a>
+<a href="../../design/TOKEN_SHEET_skin_2026-09-10.md">スキン</a>
+<a href="../../design/TOKEN_SHEET_fullscreen_2026-09-10.md">全画面</a>
+<a href="../../design/TOKEN_SHEET_export-print_2026-09-10.md">画像・印刷</a>
+<a href="../HANDOFF_LINEUP_2026-09-09.html">整列の引き継ぎ</a>
+<a href="../I18N_ZH_WORKORDER_2026-09-09.md">中国語の確認事項</a>
+<a href="../usage-metrics-2026-09-08/IMPLEMENTATION.md">利用状況集計</a>
+<a href="../beta-hidden-venues-2026-09-09/recheck-2026-09-10.json">会場の当日確認記録</a>
+<a href="../system-audit-2026-09-09/A1_commit_split_plan.md">既存の統合整理記録</a>
+<a href="checks.json">今回の検査結果</a>
+<a href="TOKEN_SHEET.md">この資料の表示仕様</a></nav></details>
+<p class="meta">参照した主なタスク：ドラムセットと大太鼓を追加／印刷用ページの配置を確認／Add Stage Sketch pre-learning links／実装 2026-09-09システム監査／舞台スケッチの台本キュー設計／サンプルショー制作／ロミオとジュリエット台本サンプル。各資料の完成時点は異なります。</p>
+</section>
+<p id="filter-status" class="meta" role="status" aria-live="polite">すべての候補を表示しています。</p>
+</main><script>
+document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{
+const filter=button.dataset.filter;
+document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+document.querySelectorAll('[data-group]').forEach(section=>section.hidden=filter!=='all'&&section.dataset.group!==filter);
+document.querySelector('#filter-status').textContent=button.textContent+'を表示しています。表示の絞り込みのみで、採用・公開の操作ではありません。';
+}));
+</script></html>

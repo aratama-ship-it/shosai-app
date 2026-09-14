@@ -1,0 +1,304 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:showwright:core:schema:1.0.0",
+  "title": "AI showwright core 1.0.0",
+  "description": "Product-independent show authorship. Identifiers survive renaming and reordering. Structural validation does not establish factual approval, physical feasibility, referential integrity, or satisfaction of dramatic constraints; the core semantic validator handles those separately.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "schemaVersion", "id", "title", "provenance", "sections", "scenes", "cast", "roles", "assets", "transitions", "decisions", "constraints"],
+  "properties": {
+    "kind": {"const": "showwright-core"},
+    "schemaVersion": {"const": "1.0.0"},
+    "id": {"$ref": "#/$defs/id"},
+    "title": {"$ref": "#/$defs/text"},
+    "status": {"$ref": "#/$defs/status"},
+    "notes": {"type": "string"},
+    "provenance": {"$ref": "#/$defs/provenance"},
+    "sections": {"type": "array", "items": {"$ref": "#/$defs/section"}},
+    "scenes": {"type": "array", "items": {"$ref": "#/$defs/scene"}},
+    "cast": {"type": "array", "items": {"$ref": "#/$defs/castMember"}},
+    "roles": {"type": "array", "items": {"$ref": "#/$defs/role"}},
+    "assets": {"type": "array", "items": {"$ref": "#/$defs/asset"}},
+    "transitions": {"type": "array", "items": {"$ref": "#/$defs/transition"}},
+    "decisions": {"type": "array", "items": {"$ref": "#/$defs/decision"}},
+    "constraints": {"type": "array", "items": {"$ref": "#/$defs/constraint"}}
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Stable opaque identifier, never regenerated from a mutable title or array index. Entity IDs are globally unique within a show; source IDs occupy their own namespace."
+    },
+    "text": {"type": "string", "minLength": 1},
+    "refs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/id"}
+    },
+    "status": {
+      "enum": ["confirmed", "ai-proposal", "unconfirmed"],
+      "description": "confirmed means explicit owner confirmation supported by provenance. Extraction, passing validation, and use in a draft do not promote this state."
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "path"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "kind": {"enum": ["document", "code", "owner-statement", "ai-output", "artifact"]},
+        "path": {"$ref": "#/$defs/text", "description": "Source reference only. Relative paths resolve against the core file; a conversation reference may use a stable URI. It is never executable."},
+        "locator": {"$ref": "#/$defs/text", "description": "Section, JSON pointer, line range, or message identifier locating the evidence."},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "description": {"type": "string"}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sources"],
+      "properties": {
+        "sources": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/source"}},
+        "note": {"type": "string"}
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "status"],
+      "properties": {
+        "value": {"type": ["number", "null"], "minimum": 0},
+        "status": {"enum": ["specified", "estimated", "unmeasured"]},
+        "sourceRefs": {"$ref": "#/$defs/refs"},
+        "decisionIds": {"$ref": "#/$defs/refs"},
+        "notes": {"type": "string"}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "unmeasured"}}}, "then": {"properties": {"value": {"type": "null"}}}},
+        {"if": {"properties": {"status": {"enum": ["specified", "estimated"]}}}, "then": {"properties": {"value": {"type": "number", "minimum": 0}}}}
+      ]
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["duration", "transitionDeadline"],
+      "description": "Show-domain timing. An unmeasured value is null, never fabricated as zero. Adapters decide how these meanings map to a product.",
+      "properties": {
+        "duration": {"$ref": "#/$defs/measurement"},
+        "transitionDeadline": {"$ref": "#/$defs/measurement"},
+        "notes": {"type": "string"}
+      }
+    },
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "sceneIds"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "title": {"$ref": "#/$defs/text"},
+        "sceneIds": {"$ref": "#/$defs/refs", "description": "Canonical order of scenes within this section."},
+        "intent": {"type": "string"},
+        "status": {"$ref": "#/$defs/status"},
+        "sourceRefs": {"$ref": "#/$defs/refs"},
+        "decisionIds": {"$ref": "#/$defs/refs"},
+        "notes": {"type": "string"}
+      }
+    },
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "sectionId", "dramaticRole", "roleIds", "assetIds", "timing", "lighting"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "title": {"$ref": "#/$defs/text"},
+        "sectionId": {"$ref": "#/$defs/id"},
+        "dramaticRole": {"$ref": "#/$defs/text"},
+        "intent": {"type": "string"},
+        "roleIds": {"$ref": "#/$defs/refs", "description": "Dramatic roles participating in this scene, independent of casting."},
+        "castIds": {"$ref": "#/$defs/refs"},
+        "assetIds": {"$ref": "#/$defs/refs"},
+        "blocking": {"type": "string", "description": "Abstract staging, relationships and movement intentions in words; no renderer coordinates."},
+        "visibility": {"enum": ["lit", "blackout", "unspecified"]},
+        "timing": {"$ref": "#/$defs/timing"},
+        "lighting": {"$ref": "#/$defs/lighting"},
+        "status": {"$ref": "#/$defs/status"},
+        "sourceRefs": {"$ref": "#/$defs/refs"},
+        "decisionIds": {"$ref": "#/$defs/refs"},
+        "notes": {"type": "string"}
+      }
+    },
+    "lighting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intent", "focus", "change", "sourceRefs", "decisionIds"],
+      "properties": {
+        "intent": {"type": "string", "description": "Why the light exists in the story; empty when the source has not specified it."},
+        "focus": {"type": "string"},
+        "change": {"type": "string"},
+        "status": {"$ref": "#/$defs/status"},
+        "sourceRefs": {"$ref": "#/$defs/refs"},
+        "decisionIds": {"$ref": "#/$defs/refs"},
+        "notes": {"type": "string"}
+      }
+    },
+    "castMember": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "roleIds"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"$ref": "#/$defs/text"},
+        "roleIds": {"$ref": "#/$defs/refs"},
+        "status": {"$ref": "#/$defs/status"},
+        "sourceRefs": {"$ref": "#/$defs/refs"},
+        "decisionIds": {"$ref": "#/$defs/refs"},
+        "notes": {"type": "string"}
+      }
+    },
+    "role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "title": {"$ref": "#/$defs/text"},
+        "kind": {"enum": ["character", "performer", "crew", "unspecified"]},
+        "status": {"$ref": "#/$defs/status"},
+        "sourceRefs": {"$ref": "#/$defs/refs"},
+        "decisionIds": {"$ref": "#/$defs/refs"},
+        "notes": {"type": "string"}
+      }
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "category"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "title": {"$ref": "#/$defs/text"},
+        "category": {"enum": ["set", "prop", "costume", "audio", "document", "other"]},
+        "intent": {"type": "string"},
+        "status": {"$ref": "#/$defs/status"},
+        "sourceRefs": {"$ref": "#/$defs/refs"},
+        "decisionIds": {"$ref": "#/$defs/refs"},
+        "notes": {"type": "string"}
+      }
+    },
+    "assetState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetId", "state"],
+      "properties": {
+        "assetId": {"$ref": "#/$defs/id"},
+        "state": {"enum": ["offstage", "entering", "onstage", "exiting", "held", "worn", "unspecified"]},
+        "notes": {"type": "string"}
+      }
+    },
+    "technicalFrame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "intent", "maskedRoleIds", "assetStates"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "title": {"$ref": "#/$defs/text"},
+        "intent": {"$ref": "#/$defs/text"},
+        "castIds": {"$ref": "#/$defs/refs"},
+        "maskedRoleIds": {"$ref": "#/$defs/refs"},
+        "assetStates": {"type": "array", "items": {"$ref": "#/$defs/assetState"}},
+        "blocking": {"type": "string"},
+        "visibility": {"enum": ["lit", "blackout", "unspecified"]},
+        "timing": {"$ref": "#/$defs/timing"},
+        "status": {"$ref": "#/$defs/status"},
+        "sourceRefs": {"$ref": "#/$defs/refs"},
+        "decisionIds": {"$ref": "#/$defs/refs"},
+        "notes": {"type": "string"}
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fromSceneId", "toSceneId", "intent", "timing"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "title": {"$ref": "#/$defs/text"},
+        "fromSceneId": {"$ref": "#/$defs/id"},
+        "toSceneId": {"$ref": "#/$defs/id"},
+        "intent": {"type": "string"},
+        "timing": {"$ref": "#/$defs/timing"},
+        "responsibleRoleIds": {"$ref": "#/$defs/refs"},
+        "preBlackoutCarriedRoleIds": {"$ref": "#/$defs/refs"},
+        "destinationMaskedRoleIds": {"$ref": "#/$defs/refs"},
+        "technicalFrames": {"type": "array", "items": {"$ref": "#/$defs/technicalFrame"}, "description": "Ordered technical states. These describe show meaning, not pictures or execution records."},
+        "relightConditions": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/text"}},
+        "relightMode": {"enum": ["manual", "automatic", "unspecified"]},
+        "delayPolicy": {"enum": ["maintain-blackout", "hold-current-state", "unspecified"]},
+        "delayRecordRequired": {"type": "boolean"},
+        "status": {"$ref": "#/$defs/status"},
+        "sourceRefs": {"$ref": "#/$defs/refs"},
+        "decisionIds": {"$ref": "#/$defs/refs"},
+        "notes": {"type": "string"}
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "text", "subjectIds", "sourceRefs", "governance"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "status": {"$ref": "#/$defs/status"},
+        "text": {"$ref": "#/$defs/text"},
+        "subjectIds": {"$ref": "#/$defs/refs", "minItems": 1},
+        "sourceRefs": {"$ref": "#/$defs/refs"},
+        "governance": {"$ref": "#/$defs/governance"},
+        "rationale": {"type": "string"},
+        "supersedesDecisionIds": {"$ref": "#/$defs/refs"},
+        "notes": {"type": "string"}
+      },
+      "allOf": [{
+        "if": {"properties": {"status": {"const": "confirmed"}}},
+        "then": {"properties": {"sourceRefs": {"minItems": 1}}}
+      }]
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorship", "sampleAdoption", "realStageValidation", "productionApproval"],
+      "properties": {
+        "authorship": {"enum": ["owner", "ai", "source-derived", "mixed"]},
+        "sampleAdoption": {"enum": ["adopted", "proposed", "rejected", "unconfirmed"]},
+        "realStageValidation": {"enum": ["not-assessed", "validated", "failed"]},
+        "productionApproval": {"enum": ["not-approved", "approved"]}
+      },
+      "description": "Separate authorship, sample use, physical validation and production approval. Inclusion in an artifact changes none of these axes."
+    },
+    "constraint": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Declarative assertion over named entities. field denotes a semantic field path, never executable code. The semantic validator must reject unsupported assertions instead of silently passing them.",
+      "required": ["id", "title", "rule", "subjectIds", "field", "expected", "severity", "sourceRefs", "decisionIds"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "title": {"$ref": "#/$defs/text"},
+        "rule": {"enum": ["count-equals", "equals", "contains-all", "set-equals", "is-null", "precedes"]},
+        "subjectIds": {"$ref": "#/$defs/refs", "minItems": 1},
+        "field": {"$ref": "#/$defs/text"},
+        "expected": {"oneOf": [
+          {"type": ["string", "number", "boolean", "null"]},
+          {"type": "array", "items": {"type": ["string", "number", "boolean", "null"]}}
+        ]},
+        "severity": {"enum": ["error", "warning"]},
+        "status": {"$ref": "#/$defs/status"},
+        "sourceRefs": {"$ref": "#/$defs/refs"},
+        "decisionIds": {"$ref": "#/$defs/refs"},
+        "notes": {"type": "string"}
+      },
+      "allOf": [
+        {"if": {"properties": {"rule": {"const": "count-equals"}}}, "then": {"properties": {"expected": {"type": "integer", "minimum": 0}}}},
+        {"if": {"properties": {"rule": {"const": "is-null"}}}, "then": {"properties": {"expected": {"type": "null"}}}},
+        {"if": {"properties": {"rule": {"enum": ["contains-all", "set-equals"]}}}, "then": {"properties": {"expected": {"type": "array", "uniqueItems": true}}}},
+        {"if": {"properties": {"rule": {"const": "precedes"}}}, "then": {"properties": {"subjectIds": {"minItems": 2, "maxItems": 2}, "expected": {"const": true}}}}
+      ]
+    }
+  }
+}

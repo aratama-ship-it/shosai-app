@@ -1,0 +1,187 @@
+{
+  "status": "pass",
+  "checkedAt": "2026-09-13T03:21:24.786Z",
+  "validator": "mcp-server/src/stage-model.js validateDocument",
+  "nativeSchemaValid": true,
+  "nativeWarnings": [
+    "Q02.1｜暗転・第一波（AI仮案）: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q02.2｜バー搬入（AI仮案）: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q08.1｜ロミオを呼び止め、追う: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q10.2｜傷を見て、即座に報復: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q11.2｜一夜を過ごした二人の別れ: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q15.2｜手紙とロミオの入れ違い: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q18｜人の川がほどける: 動線は演出検討用で、衝突しないことを保証しません。",
+    "Q19.1｜最初の一人が中央へ: 動線は演出検討用で、衝突しないことを保証しません。"
+  ],
+  "sha256": "61ebe9a074b98715ef66e10bfdfd8001e94778eb3d4a7e00af59ffdc7cfdbdc3",
+  "counts": {
+    "sections": 3,
+    "scenes": 31,
+    "cast": 10,
+    "sets": 12,
+    "pieces": 252,
+    "heldReferences": 60,
+    "danglingReferences": 0,
+    "identicalRoleLightingObjectives": 0,
+    "m6TechnicalScenes": 3,
+    "removedShelfReferences": 0
+  },
+  "m6": {
+    "q02Timing": {
+      "holdDurationSeconds": null,
+      "transitionToNextSeconds": null
+    },
+    "technicalTiming": [
+      {
+        "sceneId": "rj-frame-rj-cond-01-b-m6-01",
+        "holdDurationSeconds": null,
+        "transitionToNextSeconds": null
+      },
+      {
+        "sceneId": "rj-frame-rj-cond-01-b-m6-02",
+        "holdDurationSeconds": null,
+        "transitionToNextSeconds": null
+      },
+      {
+        "sceneId": "rj-frame-rj-cond-01-b-m6-03",
+        "holdDurationSeconds": null,
+        "transitionToNextSeconds": null
+      }
+    ],
+    "maskStates": [
+      {
+        "sceneId": "rj-frame-rj-cond-01-b-02",
+        "total": 10,
+        "face": 0,
+        "hand": 10
+      },
+      {
+        "sceneId": "rj-frame-rj-cond-01-b-m6-01",
+        "total": 10,
+        "face": 4,
+        "hand": 6
+      },
+      {
+        "sceneId": "rj-frame-rj-cond-01-b-m6-02",
+        "total": 10,
+        "face": 8,
+        "hand": 2
+      },
+      {
+        "sceneId": "rj-frame-rj-cond-01-b-m6-03",
+        "total": 10,
+        "face": 10,
+        "hand": 0
+      },
+      {
+        "sceneId": "rj-frame-rj-cond-01-c-01",
+        "total": 10,
+        "face": 10,
+        "hand": 0
+      }
+    ],
+    "barPresence": [
+      {
+        "sceneId": "rj-frame-rj-cond-01-b-m6-01",
+        "count": 0
+      },
+      {
+        "sceneId": "rj-frame-rj-cond-01-b-m6-02",
+        "count": 1
+      },
+      {
+        "sceneId": "rj-frame-rj-cond-01-b-m6-03",
+        "count": 1
+      }
+    ],
+    "barAsset": {
+      "kind": "prop",
+      "propShape": "counter",
+      "dims": {
+        "w": 2.4,
+        "d": 0.6,
+        "h": 1.1
+      },
+      "confidence": "unverified"
+    }
+  },
+  "sources": {
+    "showwrightCore": {
+      "expected": "e0b995dca81a8b274b09bcdc4930040084700f3e4a48463d520de0d681e05a14",
+      "actual": "e0b995dca81a8b274b09bcdc4930040084700f3e4a48463d520de0d681e05a14",
+      "unchangedSinceBuild": true
+    },
+    "sourceNative": {
+      "expected": "7086d75a843a0ea7253d3dd630defe994cf491432aabcc19e7774d5000a5d780",
+      "actual": "7086d75a843a0ea7253d3dd630defe994cf491432aabcc19e7774d5000a5d780",
+      "unchangedSinceBuild": true
+    },
+    "aiInput": {
+      "expected": "8d566e2c1abe30edeb6a2aeae9df0d4cd10259c30eb5e00418345c620d04ec39",
+      "actual": "8d566e2c1abe30edeb6a2aeae9df0d4cd10259c30eb5e00418345c620d04ec39",
+      "unchangedSinceBuild": true
+    },
+    "aiProposal": {
+      "expected": "4f08d32c113e5a37796ef7bcf9d1265464a509a9808518554989824d41100364",
+      "actual": "4f08d32c113e5a37796ef7bcf9d1265464a509a9808518554989824d41100364",
+      "unchangedSinceBuild": true
+    },
+    "ownerApproval": {
+      "expected": "cb81b4f5ef0c4667f95de020e7252efc4196fe023d80d05008416de71aed8334",
+      "actual": "cb81b4f5ef0c4667f95de020e7252efc4196fe023d80d05008416de71aed8334",
+      "unchangedSinceBuild": true
+    }
+  },
+  "compatibilityPolicy": "Product hashes are recorded in QA reports, not pinned in deterministic generated artifacts.",
+  "scope": "Native schema and isolated sample semantics. Browser import/export and rendered UI are checked separately.",
+  "productFiles": {
+    "index.html": "b408bdf78b11eb5c5fc438d69524052869b61c4a52bfd50996aec94fb2dcfd97",
+    "mcp-server/src/edit-plan.js": "3a986a7122a7586fc3fb16cf44c669bbdf6d60e63013a81f6f2fe972b1987138",
+    "mcp-server/src/project-store.js": "9f88381f96060f9f6e6bc115208e891abed575e06d108e756eb1152b3e603505",
+    "mcp-server/src/schemas.js": "8790183dd06bd6e4b4cef4da7793513db105a63d00bf7f6fe577ba430531de5b",
+    "mcp-server/src/server.js": "cbb4809bd4db0cd28f2bd2747381b3951af937a1297473cfca36db6551243848",
+    "mcp-server/src/stage-model.js": "2c7cec8b4fe8ed66ae95e95b19005801b78e3c5018eb49b6582df0a50230d6b7",
+    "stage-apparatus-data.js": "7387b764049a6e7e5f360d56511b8d52033ecb1b0a6cac8c6db0adefb41853e1",
+    "stage-audio-store.js": "199d30808ac9242040c4967cc7d75dbb1db98aa1717e91e019ed2a9e96fa654f",
+    "stage-first-person.js": "b9ec7c708d578cdc1630308f38df91fb8831979f59ad4cb9598605d9b761effb",
+    "stage-house-view.js": "28998b4c330553264a3725ab9149073178bd3595bf3d6b416fe6d59ace980d28",
+    "stage-i18n.js": "cee223039c7942d838307efe1a8e0750a2e91d620f5d3a98f622be901c3ffaf3",
+    "stage-i18n.zh-Hans.js": "22df9882617c1fb190ec51a52c58a48486bcf132783a0bd9a7493698a60504d5",
+    "stage-i18n.zh-Hant.js": "b6cd98c33920d31785b2121a18bc74a11b918ce5bb0583ed51b63ceaaeb0d49b",
+    "stage-light-motion.js": "2fd807d457e5754e95e9a7ce70b530a978939190d97103486aacf6df964110e5",
+    "stage-light-rig.js": "328e6306ef38a34a41e98adafe579e13bda191f6c7f52241face9039dc31fe8c",
+    "stage-machinery.js": "1e5b2a519dfd1535da1baeea2c965ee73b8c8e98e08deca6639cfb907a678598",
+    "stage-prompt-i18n.js": "be955fd3a6ed256d2f442924bdfef81eafcd165b05cabdec508309beef8b1dda",
+    "stage-public.css": "017293c546a85038104e0d444deedfd6b236e57f1689a4fc12289177adc706ad",
+    "stage-public.js": "0c2c3c425c89490d56383fffd67a5bfa229778fa9c1138cd9e0660fe71d75123",
+    "stage-pwa.js": "eacac218248160f4068894e6cd445d98e1cf043be5cf38eb0f0f395aaa789a08",
+    "stage-rehearsal-export.js": "d5c022663e853619b7adec53db5d14bc386192a0f1dcc2ea8a6fd264dda1b8c3",
+    "stage-scene-study-data.js": "df843c97ca3b3c35112e2ad6f52679a76205a71581bf0e081d1440c39dd4dab9",
+    "stage-session.js": "0857e5710019644882552e4a2cbd4e6bd586774b184f8c0dc5d534d7050db5ec",
+    "stage-set-builder.js": "7a3653f0ec5d8faf3da49dbfe07587396e702a6bdc3e0942fcb3e7d67bf525c5",
+    "stage-set-model.js": "12d9afb4185eef66d4aa5951de53a6f86837bb0110893bd300d221d8dffc21c7",
+    "stage-shows.local.js": "adc86fb2ebc709e0e9aca6dc543c4c5b0fa80dc00b12b4d2dcde20d61c9cdcb9",
+    "stage-sketch.js": "21e79a701c4f2b25cc934e17b7c312727bba237f7d426681855dced76c943b91",
+    "stage-study-continuity.js": "1d284ec83d56e27bda6e262ebf540ac75f732a13d517ff4b5adbb4b580db71e3",
+    "stage-study-frame.js": "992c6fe4f93e132dcb7d2d05aa5dadba3c90953fccc8b5609ae283b13e9d5e2e",
+    "stage-study-navigation.css": "3f9918f31cae4760f23ae4366d3b54e1db51255e4c70acf906fc1807328fde1f",
+    "stage-study-navigation.js": "5e20a6de48d4f70287cba2655da96cc66d69f7d20d65859f2ece97947b7ed6c0",
+    "stage-study-owner.js": "962a53874cfda536b894af398f1bda9743b7740906f7b57e68f0065fec287729",
+    "stage-study-pen.js": "556c0ee93c076c8507afa9f6de267514ff2c03818bec6629b1400ed65c1a414f",
+    "stage-study-phone.css": "e69d639b82673c0f220a2aff5db7e437fb8b1f8d2e87264c6dc0f4c248f5cade",
+    "stage-study-phone.js": "db40bede4b17a7383da4ec05f01434e7ceecf0abbb83bd31e21a4d8db45b1713",
+    "stage-study-private.js": "b8cca456054d69bf166dca5954aba5f209d9291a67560a5663cd30a020cfc3e0",
+    "stage-study-sticky.js": "214b5c346faeb87ae7291f9cf3231dae7554a39e74c9eab6d5e0962b9dd26511",
+    "stage-study-sync.js": "b5b07eea195e6b6c18549af592480a8e2599eca339fdd89dac862931cdf12452",
+    "stage-study-viewer.js": "1b98d32bc986c74c51f0bf8cff0b3e7fda038be3aaaa1e700324f88a28c6921e",
+    "stage-study.css": "750240601379c5e19f386577cf022bac99db72cfe3cfe79027aed437eb386f72",
+    "stage-sw.js": "e9a34e34513eb5bcc166d4f20cd058db7d9f7867b14f150f7cf27ee09d6093a0",
+    "stage-timeline.js": "fb62dc923e3954b4aaba94895a39a2075728be23a80623d0f754d0740a543d05",
+    "stage-usage.js": "b831234817a4c16e2b9d01be04453ccce603d53ea641903d4b504e7ada57673f",
+    "stage-venue-editor.js": "70a7587191133c46d1ad468812306f7f96f684fd9fad41a5d73f0b5315132630",
+    "stage-venue-lines.js": "e1acf9544394a226c17c35f2edd9ef3189592947bf4477ed878a68ebe0438976",
+    "stage-venues.js": "2cdb04de800f0193b909ed3356303319b98bb16e38b9ce9cd007fcc4731d2fe4",
+    "stage.html": "390131c96d6c2c96dc3584ed127bd20fe4c10b68541a28f737d005adf6710770",
+    "style.css": "dc02e915d2aa197ba970c1d0fd8634fe7bcb540970119fc9edf3011b9d981430"
+  }
+}

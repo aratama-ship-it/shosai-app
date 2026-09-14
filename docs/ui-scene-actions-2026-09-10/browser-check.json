@@ -1,0 +1,197 @@
+{
+  "results": [
+    {
+      "name": "desktop-ja",
+      "measures": [
+        {
+          "id": "stage-scene-add",
+          "width": 78.21875,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-add-rig",
+          "width": 63.984375,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-dup",
+          "width": 52.546875,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-section",
+          "width": 86.859375,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-del",
+          "width": 44.890625,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-clear",
+          "width": 102.09375,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        }
+      ],
+      "operations": "duplicate, clear, undo, delete, carry set, add, keyboard add, section, duplicate section, add inside section"
+    },
+    {
+      "name": "desktop-en",
+      "measures": [
+        {
+          "id": "stage-scene-add",
+          "width": 85.078125,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-add-rig",
+          "width": 49.125,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-dup",
+          "width": 44.34375,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-section",
+          "width": 73.53125,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-del",
+          "width": 59.25,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-clear",
+          "width": 111.953125,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        }
+      ],
+      "operations": "duplicate, clear, undo, delete, carry set, add, keyboard add, section, duplicate section, add inside section"
+    },
+    {
+      "name": "tablet-landscape",
+      "measures": [
+        {
+          "id": "stage-scene-add",
+          "width": 78.21875,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-add-rig",
+          "width": 63.984375,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-dup",
+          "width": 52.546875,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-section",
+          "width": 86.859375,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-del",
+          "width": 44.890625,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-clear",
+          "width": 102.09375,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        }
+      ],
+      "operations": "duplicate, clear, undo, delete, carry set, add, keyboard add, section, duplicate section, add inside section"
+    },
+    {
+      "name": "tablet-portrait",
+      "measures": [
+        {
+          "id": "stage-scene-add",
+          "width": 78.21875,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-add-rig",
+          "width": 63.984375,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-dup",
+          "width": 52.546875,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-section",
+          "width": 86.859375,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-scene-del",
+          "width": 44.890625,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        },
+        {
+          "id": "stage-clear",
+          "width": 102.09375,
+          "height": 44,
+          "fits": true,
+          "textFits": true
+        }
+      ],
+      "operations": "duplicate, clear, undo, delete, carry set, add, keyboard add, section, duplicate section, add inside section"
+    }
+  ],
+  "errors": []
+}

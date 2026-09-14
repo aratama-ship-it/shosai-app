@@ -1,0 +1,22 @@
+{
+  "chromium": {
+    "oldSaveLoadedFromSameList": true,
+    "loadIsReadOnly": true,
+    "oldCueAndRigPreserved": true,
+    "hazeZeroPersists": true,
+    "fileRoundtrip": true,
+    "priorVersionReadsNewData": true,
+    "backupExactAndReadable": true,
+    "backupFailureStopsWrite": true
+  },
+  "webkit": {
+    "oldSaveLoadedFromSameList": true,
+    "loadIsReadOnly": true,
+    "oldCueAndRigPreserved": true,
+    "hazeZeroPersists": true,
+    "fileRoundtrip": true,
+    "priorVersionReadsNewData": true,
+    "backupExactAndReadable": true,
+    "backupFailureStopsWrite": true
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "bookSha256": "8bd2169798532ec250631eac1284cee867e450ea3cc706002ef829ff8a47376e",
+  "visualBookSha256": "84097b660444c53333674f157e209e707944773cbd4725968f38426fd014736e",
+  "viewports": [
+    {
+      "width": 1440,
+      "cues": 19,
+      "beats": 74,
+      "dialogues": 47,
+      "pairedDiagrams": 28,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "cues": 19,
+      "beats": 74,
+      "dialogues": 47,
+      "pairedDiagrams": 28,
+      "overflow": false
+    }
+  ],
+  "networkDisabled": true,
+  "externalRequests": [],
+  "jsErrors": [],
+  "fullShowJsonExport": "passed",
+  "embeddedFullShow": "passed",
+  "legacy56Diagrams": "passed",
+  "printScriptVisibility": "passed"
+}

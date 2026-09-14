@@ -1,0 +1,777 @@
+{
+  "results": [
+    {
+      "language": "ja",
+      "width": 1440,
+      "height": 1000,
+      "view": "both",
+      "main": {
+        "width": 1408,
+        "frameWidth": 1408,
+        "frameHeight": 1584,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 1406,
+          "height": 787,
+          "x": 0,
+          "y": 0,
+          "penWidth": 1399.109375,
+          "penHeight": 787
+        },
+        {
+          "width": 1406,
+          "height": 787,
+          "x": 0,
+          "y": 795,
+          "penWidth": 1399.109375,
+          "penHeight": 787
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 1440,
+      "height": 1000,
+      "view": "front",
+      "main": {
+        "width": 1408,
+        "frameWidth": 1408,
+        "frameHeight": 792,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 1406,
+          "height": 790,
+          "x": 0,
+          "y": 0,
+          "penWidth": 1404.4375,
+          "penHeight": 790
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 1440,
+      "height": 1000,
+      "view": "plan",
+      "main": {
+        "width": 1408,
+        "frameWidth": 1408,
+        "frameHeight": 792,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 1406,
+          "height": 790,
+          "x": 0,
+          "y": 0,
+          "penWidth": 1404.4375,
+          "penHeight": 790
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 1920,
+      "height": 1080,
+      "view": "both",
+      "main": {
+        "width": 1888,
+        "frameWidth": 1888,
+        "frameHeight": 2124,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 1886,
+          "height": 1057,
+          "x": 0,
+          "y": 0,
+          "penWidth": 1878.875,
+          "penHeight": 1057
+        },
+        {
+          "width": 1886,
+          "height": 1057,
+          "x": 0,
+          "y": 1065,
+          "penWidth": 1878.875,
+          "penHeight": 1057
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 1920,
+      "height": 1080,
+      "view": "front",
+      "main": {
+        "width": 1888,
+        "frameWidth": 1888,
+        "frameHeight": 1062,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 1886,
+          "height": 1060,
+          "x": 0,
+          "y": 0,
+          "penWidth": 1884.21875,
+          "penHeight": 1060
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 1920,
+      "height": 1080,
+      "view": "plan",
+      "main": {
+        "width": 1888,
+        "frameWidth": 1888,
+        "frameHeight": 1062,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 1886,
+          "height": 1060,
+          "x": 0,
+          "y": 0,
+          "penWidth": 1884.21875,
+          "penHeight": 1060
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 1024,
+      "height": 768,
+      "view": "both",
+      "main": {
+        "width": 992,
+        "frameWidth": 992,
+        "frameHeight": 1116,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 990,
+          "height": 553,
+          "x": 0,
+          "y": 0,
+          "penWidth": 982.875,
+          "penHeight": 553
+        },
+        {
+          "width": 990,
+          "height": 553,
+          "x": 0,
+          "y": 561,
+          "penWidth": 982.875,
+          "penHeight": 553
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 1024,
+      "height": 768,
+      "view": "front",
+      "main": {
+        "width": 992,
+        "frameWidth": 992,
+        "frameHeight": 558,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 990,
+          "height": 556,
+          "x": 0,
+          "y": 0,
+          "penWidth": 988.21875,
+          "penHeight": 556
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 1024,
+      "height": 768,
+      "view": "plan",
+      "main": {
+        "width": 992,
+        "frameWidth": 992,
+        "frameHeight": 558,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 990,
+          "height": 556,
+          "x": 0,
+          "y": 0,
+          "penWidth": 988.21875,
+          "penHeight": 556
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 390,
+      "height": 844,
+      "view": "both",
+      "main": {
+        "width": 358,
+        "frameWidth": 358,
+        "frameHeight": 500,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 341,
+          "height": 245,
+          "x": 0,
+          "y": 0,
+          "penWidth": 341,
+          "penHeight": 191.8125
+        },
+        {
+          "width": 341,
+          "height": 245,
+          "x": 0,
+          "y": 253,
+          "penWidth": 341,
+          "penHeight": 191.8125
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 390,
+      "height": 844,
+      "view": "front",
+      "main": {
+        "width": 358,
+        "frameWidth": 358,
+        "frameHeight": 500,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 341,
+          "height": 498,
+          "x": 0,
+          "y": 0,
+          "penWidth": 341,
+          "penHeight": 191.8125
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 390,
+      "height": 844,
+      "view": "plan",
+      "main": {
+        "width": 358,
+        "frameWidth": 358,
+        "frameHeight": 500,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 341,
+          "height": 498,
+          "x": 0,
+          "y": 0,
+          "penWidth": 341,
+          "penHeight": 191.8125
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 844,
+      "height": 390,
+      "view": "both",
+      "main": {
+        "width": 812,
+        "frameWidth": 812,
+        "frameHeight": 273,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 393.5,
+          "height": 271,
+          "x": 0,
+          "y": 0,
+          "penWidth": 393.5,
+          "penHeight": 221.34375
+        },
+        {
+          "width": 393.5,
+          "height": 271,
+          "x": 401.5,
+          "y": 0,
+          "penWidth": 393.5,
+          "penHeight": 221.34375
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 844,
+      "height": 390,
+      "view": "front",
+      "main": {
+        "width": 812,
+        "frameWidth": 812,
+        "frameHeight": 273,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 795,
+          "height": 271,
+          "x": 0,
+          "y": 0,
+          "penWidth": 481.765625,
+          "penHeight": 271
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "width": 844,
+      "height": 390,
+      "view": "plan",
+      "main": {
+        "width": 812,
+        "frameWidth": 812,
+        "frameHeight": 273,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 795,
+          "height": 271,
+          "x": 0,
+          "y": 0,
+          "penWidth": 481.765625,
+          "penHeight": 271
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 1440,
+      "height": 1000,
+      "view": "both",
+      "main": {
+        "width": 1408,
+        "frameWidth": 1408,
+        "frameHeight": 1584,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 1406,
+          "height": 787,
+          "x": 0,
+          "y": 0,
+          "penWidth": 1398.875,
+          "penHeight": 787
+        },
+        {
+          "width": 1406,
+          "height": 787,
+          "x": 0,
+          "y": 795,
+          "penWidth": 1398.875,
+          "penHeight": 787
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 1440,
+      "height": 1000,
+      "view": "front",
+      "main": {
+        "width": 1408,
+        "frameWidth": 1408,
+        "frameHeight": 792,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 1406,
+          "height": 790,
+          "x": 0,
+          "y": 0,
+          "penWidth": 1404.21875,
+          "penHeight": 790
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 1440,
+      "height": 1000,
+      "view": "plan",
+      "main": {
+        "width": 1408,
+        "frameWidth": 1408,
+        "frameHeight": 792,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 1406,
+          "height": 790,
+          "x": 0,
+          "y": 0,
+          "penWidth": 1404.21875,
+          "penHeight": 790
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 1920,
+      "height": 1080,
+      "view": "both",
+      "main": {
+        "width": 1888,
+        "frameWidth": 1888,
+        "frameHeight": 2124,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 1886,
+          "height": 1057,
+          "x": 0,
+          "y": 0,
+          "penWidth": 1878.875,
+          "penHeight": 1057
+        },
+        {
+          "width": 1886,
+          "height": 1057,
+          "x": 0,
+          "y": 1065,
+          "penWidth": 1878.875,
+          "penHeight": 1057
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 1920,
+      "height": 1080,
+      "view": "front",
+      "main": {
+        "width": 1888,
+        "frameWidth": 1888,
+        "frameHeight": 1062,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 1886,
+          "height": 1060,
+          "x": 0,
+          "y": 0,
+          "penWidth": 1884.21875,
+          "penHeight": 1060
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 1920,
+      "height": 1080,
+      "view": "plan",
+      "main": {
+        "width": 1888,
+        "frameWidth": 1888,
+        "frameHeight": 1062,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 1886,
+          "height": 1060,
+          "x": 0,
+          "y": 0,
+          "penWidth": 1884.21875,
+          "penHeight": 1060
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 1024,
+      "height": 768,
+      "view": "both",
+      "main": {
+        "width": 992,
+        "frameWidth": 992,
+        "frameHeight": 1116,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 990,
+          "height": 553,
+          "x": 0,
+          "y": 0,
+          "penWidth": 982.875,
+          "penHeight": 553
+        },
+        {
+          "width": 990,
+          "height": 553,
+          "x": 0,
+          "y": 561,
+          "penWidth": 982.875,
+          "penHeight": 553
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 1024,
+      "height": 768,
+      "view": "front",
+      "main": {
+        "width": 992,
+        "frameWidth": 992,
+        "frameHeight": 558,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 990,
+          "height": 556,
+          "x": 0,
+          "y": 0,
+          "penWidth": 988.21875,
+          "penHeight": 556
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 1024,
+      "height": 768,
+      "view": "plan",
+      "main": {
+        "width": 992,
+        "frameWidth": 992,
+        "frameHeight": 558,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 990,
+          "height": 556,
+          "x": 0,
+          "y": 0,
+          "penWidth": 988.21875,
+          "penHeight": 556
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 390,
+      "height": 844,
+      "view": "both",
+      "main": {
+        "width": 358,
+        "frameWidth": 358,
+        "frameHeight": 500,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 341,
+          "height": 245,
+          "x": 0,
+          "y": 0,
+          "penWidth": 341,
+          "penHeight": 191.8125
+        },
+        {
+          "width": 341,
+          "height": 245,
+          "x": 0,
+          "y": 253,
+          "penWidth": 341,
+          "penHeight": 191.8125
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 390,
+      "height": 844,
+      "view": "front",
+      "main": {
+        "width": 358,
+        "frameWidth": 358,
+        "frameHeight": 500,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 341,
+          "height": 498,
+          "x": 0,
+          "y": 0,
+          "penWidth": 341,
+          "penHeight": 191.8125
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 390,
+      "height": 844,
+      "view": "plan",
+      "main": {
+        "width": 358,
+        "frameWidth": 358,
+        "frameHeight": 500,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 341,
+          "height": 498,
+          "x": 0,
+          "y": 0,
+          "penWidth": 341,
+          "penHeight": 191.8125
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 844,
+      "height": 390,
+      "view": "both",
+      "main": {
+        "width": 812,
+        "frameWidth": 812,
+        "frameHeight": 273,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 393.5,
+          "height": 271,
+          "x": 0,
+          "y": 0,
+          "penWidth": 393.5,
+          "penHeight": 221.34375
+        },
+        {
+          "width": 393.5,
+          "height": 271,
+          "x": 401.5,
+          "y": 0,
+          "penWidth": 393.5,
+          "penHeight": 221.34375
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 844,
+      "height": 390,
+      "view": "front",
+      "main": {
+        "width": 812,
+        "frameWidth": 812,
+        "frameHeight": 273,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 795,
+          "height": 271,
+          "x": 0,
+          "y": 0,
+          "penWidth": 481.765625,
+          "penHeight": 271
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "width": 844,
+      "height": 390,
+      "view": "plan",
+      "main": {
+        "width": 812,
+        "frameWidth": 812,
+        "frameHeight": 273,
+        "memoBelow": true,
+        "overflow": false
+      },
+      "drawings": [
+        {
+          "width": 795,
+          "height": 271,
+          "x": 0,
+          "y": 0,
+          "penWidth": 481.765625,
+          "penHeight": 271
+        }
+      ]
+    }
+  ],
+  "pen": "front and plan strokes succeeded",
+  "focus": "visible",
+  "errors": []
+}

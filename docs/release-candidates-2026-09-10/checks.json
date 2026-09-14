@@ -1,0 +1,59 @@
+{
+  "checkedAt": "2026-09-10T08:41:37Z",
+  "scope": "候補確認のみ。製品コード・配信変更なし",
+  "aggregate": {
+    "command": "node tests/index.mjs",
+    "exit": 1,
+    "passBeforeAborting": 116,
+    "error": "TypeError: Cannot set properties of undefined (setting 'stageSkin')",
+    "fullRunCompleted": false
+  },
+  "separate": {
+    "command": "node --test tests/*.test.mjs",
+    "exit": 1,
+    "files": 90,
+    "total": 885,
+    "pass": 863,
+    "fail": 22
+  },
+  "stageBuildCheck": {
+    "exit": 0
+  },
+  "publicBuildCheck": {
+    "exit": 1,
+    "stale": [
+      "try.html",
+      "en/try.html",
+      "stage-i18n.js",
+      "stage-i18n.zh-Hans.js",
+      "stage-i18n.zh-Hant.js",
+      "stage-sketch.js",
+      "style.css"
+    ]
+  },
+  "publicBrowser": {
+    "url": "https://stagesketch-try.juggler-arata.workers.dev/try?lang=ja",
+    "styleVersion": 229,
+    "stageSketchVersion": 318,
+    "skinButtons": 0,
+    "lineupShapes": 3
+  },
+  "betaBrowser": {
+    "url": "https://stagesketch.pygmix.com/sign-in?next=%2Fstage.html",
+    "authenticatedUIVerified": false
+  },
+  "reportReview": {
+    "desktopWidth": 1280,
+    "mobileWidth": 390,
+    "horizontalOverflow": false,
+    "filterStatesChecked": [
+      "all",
+      "first",
+      "later"
+    ],
+    "filterButtonMinHeight": 44,
+    "localLinks": 15,
+    "brokenLocalLinks": 0,
+    "physicalDeviceChecked": false
+  }
+}

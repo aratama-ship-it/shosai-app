@@ -1,0 +1,62 @@
+{
+  "source": "Stage Write: Production - PDF 2026/9/9 12:28:50",
+  "file": "stagewrite-production-export-2026-09-09.pdf",
+  "bytes": 307138,
+  "sha256": "df669b0b6642dc2532825adfa105447a5c2e7c32e0a893c8ea93e6a3f0603b22",
+  "page_count": 2,
+  "pages": [
+    {
+      "page": 1,
+      "size": [
+        596.0,
+        847.3333
+      ],
+      "rotation": 0,
+      "text": "LX 12 · \u0000\u0000\u0000\u0000\u0000\nPage No: 1",
+      "annotations": [],
+      "fonts": [
+        {
+          "name": "/F2",
+          "base_font": "/BUAXEQ+LiberationSans",
+          "subtype": "/Type0"
+        },
+        {
+          "name": "/F3",
+          "base_font": "/PGIWHN+SourceSansPro-Regular",
+          "subtype": "/Type0"
+        }
+      ],
+      "images": [
+        {
+          "name": "I1.png",
+          "width": 1928,
+          "height": 2731
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "size": [
+        596.0,
+        847.3333
+      ],
+      "rotation": 0,
+      "text": "Page No: 2",
+      "annotations": [],
+      "fonts": [
+        {
+          "name": "/F2",
+          "base_font": "/GYBTYH+SourceSansPro-Regular",
+          "subtype": "/Type0"
+        }
+      ],
+      "images": [
+        {
+          "name": "I1.png",
+          "width": 1928,
+          "height": 2731
+        }
+      ]
+    }
+  ]
+}

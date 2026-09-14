@@ -1,0 +1,247 @@
+{
+  "schema": "romeo-juliet.user-decisions.v1",
+  "work": {
+    "title": "ロミオとジュリエット",
+    "purpose": "Stage Sketch show sample"
+  },
+  "generatedAt": "2026-09-10T17:17:20.621Z",
+  "source": {
+    "generatedOn": "2026-09-11",
+    "show": {
+      "path": "../full-show/show.json",
+      "sha256": "34d9339a3c5d59c8095ee6d909b912a081b88359eecf7551e5eaddd7e256f1f6"
+    },
+    "notes": {
+      "path": "../direction-notes/scene-notes.json",
+      "sha256": "c95c0bb3fbff81bf20fe2fadfbbad014357851458aad94d2529581d4cd6a39bf"
+    },
+    "handoff": {
+      "path": "../stage-sketch/full-show/romeo-juliet-full-show.handoff.json",
+      "sha256": "66e7996fca6d295a5d4de59e44518901e471c7022ff6593f6834d8badcc795ec"
+    }
+  },
+  "applicationStatus": "decisions_only_not_applied",
+  "progress": {
+    "answered": 21,
+    "total": 21,
+    "complete": true
+  },
+  "decisions": [
+    {
+      "id": "RJ-DEC-01",
+      "group": "overall",
+      "question": "本編の目標尺をどこに置きますか？",
+      "status": "answered",
+      "selectedOptionId": "compress-25",
+      "selectedOptionLabel": "約25分へ圧縮する",
+      "selectionKind": "alternative",
+      "note": "尺は稽古後に再計測"
+    },
+    {
+      "id": "RJ-DEC-02",
+      "group": "overall",
+      "question": "Stage Sketch上の場面とキューの階層をどうしますか？",
+      "status": "answered",
+      "selectedOptionId": "three-19-28",
+      "selectedOptionLabel": "3大場面＋19キュー＋28構成図",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-03",
+      "group": "overall",
+      "question": "セリフの密度をどこに置きますか？",
+      "status": "answered",
+      "selectedOptionId": "current-action-led",
+      "selectedOptionLabel": "現在の部分訳＋行動中心",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-04",
+      "group": "overall",
+      "question": "演劇とサーカスの比率をどうしますか？",
+      "status": "answered",
+      "selectedOptionId": "theatre-with-circus-turns",
+      "selectedOptionLabel": "演劇を軸に、転機だけサーカス",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-05",
+      "group": "overall",
+      "question": "場面転換をどの言語で統一しますか？",
+      "status": "answered",
+      "selectedOptionId": "visible-performer-transitions",
+      "selectedOptionLabel": "出演者が見えるまま転換する",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-06",
+      "group": "overall",
+      "question": "音楽と生音の基本構成をどうしますか？",
+      "status": "answered",
+      "selectedOptionId": "score-plus-body",
+      "selectedOptionLabel": "7モチーフの音源＋足音・呼吸・身体音",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-07",
+      "group": "design",
+      "question": "衣裳の時代と基本形をどうしますか？",
+      "status": "answered",
+      "selectedOptionId": "contemporary-neutral",
+      "selectedOptionLabel": "現代的な中立色＋着脱式の赤・青",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-08",
+      "group": "design",
+      "question": "仮面舞踏会の仮面をどう揃えますか？",
+      "status": "answered",
+      "selectedOptionId": "same-neutral-masks",
+      "selectedOptionLabel": "全員ほぼ同じ中立色の仮面",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-09",
+      "group": "design",
+      "question": "舞台装置の量と素材感をどうしますか？",
+      "status": "answered",
+      "selectedOptionId": "bar-and-bench",
+      "selectedOptionLabel": "中立的なバー＋一台の低い台",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-10",
+      "group": "design",
+      "question": "小道具はどの程度具体的に見せますか？",
+      "status": "answered",
+      "selectedOptionId": "small-symbolic-props",
+      "selectedOptionLabel": "小さく明確な象徴的小道具",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-11",
+      "group": "design",
+      "question": "照明の基本パレットをどうしますか？",
+      "status": "answered",
+      "selectedOptionId": "warm-neutral-local-color",
+      "selectedOptionLabel": "暖かい中立色＋局所的な焦点と色",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-12",
+      "group": "scenes",
+      "question": "決闘の接触レベルをどうしますか？",
+      "status": "answered",
+      "selectedOptionId": "body-symbolic-weapons",
+      "selectedOptionLabel": "身体中心＋象徴的な武器、刃同士は接触させない",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-13",
+      "group": "scenes",
+      "question": "マルキーシオとティボルトの死をどう対にしますか？",
+      "status": "answered",
+      "selectedOptionId": "matched-counterweight",
+      "selectedOptionLabel": "均衡が崩れる同型の動き＋落下後の静止",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-14",
+      "group": "scenes",
+      "question": "追放後の夜明けの別れをどう厚くしますか？",
+      "status": "answered",
+      "selectedOptionId": "duet-dawn-separation",
+      "selectedOptionLabel": "二人だけで、明かり・呼吸・手の離れ方を描く",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-15",
+      "group": "scenes",
+      "question": "仮死から葬送・墓所への変化をどう見せますか？",
+      "status": "answered",
+      "selectedOptionId": "visible-bench-transform",
+      "selectedOptionLabel": "低い台を寝台→棺台→墓へ見えるまま変える",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-16",
+      "group": "scenes",
+      "question": "手紙のすれ違いを、どのサーカス言語で見せますか？",
+      "status": "answered",
+      "selectedOptionId": "human-time-canon",
+      "selectedOptionLabel": "人だけで時間差のカノンを作る",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-17",
+      "group": "scenes",
+      "question": "中央の「人の川」はどの接触レベルにしますか？",
+      "status": "answered",
+      "selectedOptionId": "wave-canon-low-contact",
+      "selectedOptionLabel": "波とカノン、低接触で流れの向きを変える",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-18",
+      "group": "scenes",
+      "question": "墓所でジュリエットが目覚める間をどうしますか？",
+      "status": "answered",
+      "selectedOptionId": "two-river-waves",
+      "selectedOptionLabel": "ロミオの死後、人の川が二波動いてから目覚める",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-19",
+      "group": "scenes",
+      "question": "両家の和解をどの身体像で終えますか？",
+      "status": "answered",
+      "selectedOptionId": "restrained-low-handshake",
+      "selectedOptionLabel": "低い姿勢で、ためらいのある握手",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-20",
+      "group": "scenes",
+      "question": "本編の終わりからカーテンコールへどう移りますか？",
+      "status": "answered",
+      "selectedOptionId": "eight-second-blackout-bow",
+      "selectedOptionLabel": "8秒の静止・暗転後、約60秒の別枠カーテンコール",
+      "selectionKind": "recommended",
+      "note": ""
+    },
+    {
+      "id": "RJ-DEC-21",
+      "group": "apply",
+      "question": "回答後、どの資料まで反映しますか？",
+      "status": "answered",
+      "selectedOptionId": "apply-all-with-history",
+      "selectedOptionLabel": "通し稿・Stage Sketchサンプル・引継ぎJSONへ反映",
+      "selectionKind": "recommended",
+      "note": ""
+    }
+  ],
+  "productionInputs": {
+    "venue": "会場未定、寸法は後日実測",
+    "cast": "",
+    "skills": "",
+    "resources": ""
+  }
+}

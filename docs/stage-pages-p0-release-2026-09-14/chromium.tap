@@ -1,0 +1,64 @@
+TAP version 13
+# Subtest: A01: current backup failure preserves both originals after edit, shelf and import attempts
+ok 1 - A01: current backup failure preserves both originals after edit, shelf and import attempts
+  ---
+  duration_ms: 707.908208
+  type: 'test'
+  ...
+# Subtest: A01: shelf backup failure preserves both originals after edit, shelf and import attempts
+ok 2 - A01: shelf backup failure preserves both originals after edit, shelf and import attempts
+  ---
+  duration_ms: 616.635209
+  type: 'test'
+  ...
+# Subtest: A01: successful backups allow migration, editing and persistence
+ok 3 - A01: successful backups allow migration, editing and persistence
+  ---
+  duration_ms: 547.783917
+  type: 'test'
+  ...
+# Subtest: A02: same ID import round-trips without an exception
+ok 4 - A02: same ID import round-trips without an exception
+  ---
+  duration_ms: 699.366834
+  type: 'test'
+  ...
+# Subtest: A02: same ID import with changed content preserves the previous show
+ok 5 - A02: same ID import with changed content preserves the previous show
+  ---
+  duration_ms: 675.585167
+  type: 'test'
+  ...
+# Subtest: A04: one assigned track continues across an unassigned scene; pause/resume/seek/reload keep assignments
+ok 6 - A04: one assigned track continues across an unassigned scene; pause/resume/seek/reload keep assignments
+  ---
+  duration_ms: 2913.833792
+  type: 'test'
+  ...
+# Subtest: normal mode retains same-track playback across assigned scenes
+ok 7 - normal mode retains same-track playback across assigned scenes
+  ---
+  duration_ms: 988.257667
+  type: 'test'
+  ...
+# Subtest: audio-free timeline still advances the selected scene
+ok 8 - audio-free timeline still advances the selected scene
+  ---
+  duration_ms: 1264.241791
+  type: 'test'
+  ...
+# Subtest: mixed cache: timeline tolerates a host exposing the previous bridge
+ok 9 - mixed cache: timeline tolerates a host exposing the previous bridge
+  ---
+  duration_ms: 297.486333
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10624.173125

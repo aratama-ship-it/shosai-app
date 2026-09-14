@@ -1,0 +1,35 @@
+{
+  "url": "http://127.0.0.1:18743/condensed-show/scene-02/?v=1",
+  "viewports": [
+    {
+      "viewport": [
+        1440,
+        900
+      ],
+      "http": 200,
+      "movements": 3,
+      "cues": 11,
+      "spokenTurns": 27,
+      "addedSpokenTurns": 2,
+      "overflow": false,
+      "allNotesToggle": "passed",
+      "printScriptVisibility": "passed"
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "http": 200,
+      "movements": 3,
+      "cues": 11,
+      "spokenTurns": 27,
+      "addedSpokenTurns": 2,
+      "overflow": false,
+      "allNotesToggle": "passed",
+      "printScriptVisibility": "passed"
+    }
+  ],
+  "navigationTargets": "passed",
+  "errors": []
+}

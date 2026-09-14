@@ -1,0 +1,4 @@
+PASS Native slider controls 0/50/100% background transparency; text and other style fields stay intact, and shared JPEG pixels match alpha blending
+PASS A 1% increment, reload and double-click inline editing preserve opacity and text without extra owner sharing
+PASS Japanese/English labels and values fit four viewport widths with at least 44px controls and no horizontal overflow
+PASS Plan and front notes keep independent transparency settings and stay private until explicit sharing

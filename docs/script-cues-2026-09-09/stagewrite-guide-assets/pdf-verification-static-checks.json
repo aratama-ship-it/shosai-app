@@ -1,0 +1,22 @@
+{
+  "stagewrite-guide.html": {
+    "missingLocalReferences": [],
+    "duplicateIds": 0,
+    "bodyImageCount": 10,
+    "bytes": 31771
+  },
+  "stagewrite-guide-offline.html": {
+    "missingLocalReferences": [],
+    "duplicateIds": 0,
+    "bodyImageCount": 10,
+    "bytes": 1721895
+  },
+  "migration-guide.html": {
+    "missingLocalReferences": [],
+    "duplicateIds": 0,
+    "bodyImageCount": 0,
+    "bytes": 9765
+  },
+  "allEmbeddedImagesMatchSource": true,
+  "scriptsMatch": true
+}

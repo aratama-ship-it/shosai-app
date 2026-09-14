@@ -1,0 +1,91 @@
+{
+  "kind": "shosai-stage-workflow-annotations-fixture",
+  "version": 1,
+  "scope": "説明用の注釈レイヤー。製品保存・送信・共同編集・GO・実行記録を行わない。",
+  "projectId": "project-fixture-2026-09-09",
+  "annotationRevision": 3,
+  "participants": [
+    { "id": "chief", "label": "チーフ", "department": "制作", "chief": true },
+    { "id": "sound", "label": "音響オペ", "department": "音響" },
+    { "id": "lighting", "label": "照明オペ", "department": "照明" },
+    { "id": "stage-manager", "label": "舞台監督", "department": "制作" },
+    { "id": "performer-a", "label": "演者 A", "department": "演者" }
+  ],
+  "sceneMarkups": [
+    {
+      "id": "markup-sound-private",
+      "projectId": "project-fixture-2026-09-09",
+      "sceneId": "scene-fixture-4",
+      "authorParticipantId": "sound",
+      "visibility": "private",
+      "kind": "note",
+      "geometry": { "at": [0.24, 0.70] },
+      "text": "開場音の確認位置",
+      "revision": 1
+    },
+    {
+      "id": "markup-sound-route",
+      "projectId": "project-fixture-2026-09-09",
+      "sceneId": "scene-fixture-4",
+      "authorParticipantId": "sound",
+      "visibility": "department",
+      "kind": "arrow",
+      "geometry": { "from": [0.50, 0.72], "to": [0.67, 0.43] },
+      "text": "Bの進路と被らないケーブル位置",
+      "revision": 1
+    },
+    {
+      "id": "markup-team-table",
+      "projectId": "project-fixture-2026-09-09",
+      "sceneId": "scene-fixture-4",
+      "authorParticipantId": "stage-manager",
+      "visibility": "team",
+      "kind": "note",
+      "geometry": { "at": [0.57, 0.26] },
+      "text": "Q14前に机移動を確認",
+      "revision": 1
+    },
+    {
+      "id": "markup-lighting-direction",
+      "projectId": "project-fixture-2026-09-09",
+      "sceneId": "scene-fixture-4",
+      "authorParticipantId": "lighting",
+      "visibility": "department",
+      "kind": "arrow",
+      "geometry": { "from": [0.78, 0.30], "to": [0.62, 0.50] },
+      "text": "照明の確認方向",
+      "revision": 1
+    },
+    {
+      "id": "markup-performer-private",
+      "projectId": "project-fixture-2026-09-09",
+      "sceneId": "scene-fixture-4",
+      "authorParticipantId": "performer-a",
+      "visibility": "private",
+      "kind": "note",
+      "geometry": { "at": [0.35, 0.38] },
+      "text": "自分の待機位置",
+      "revision": 1
+    }
+  ],
+  "workflowNotes": [
+    {
+      "id": "note-sound-q13",
+      "projectId": "project-fixture-2026-09-09",
+      "cueId": "cue-q13",
+      "authorParticipantId": "sound",
+      "visibility": "department",
+      "text": "フェード開始はBの通過後。机の影を確認する",
+      "revision": 1
+    },
+    {
+      "id": "note-lighting-q12",
+      "projectId": "project-fixture-2026-09-09",
+      "cueId": "cue-q12",
+      "authorParticipantId": "lighting",
+      "visibility": "department",
+      "text": "暗転は舞台中央を残さず、机の移動を見届ける",
+      "revision": 1
+    }
+  ]
+}

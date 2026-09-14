@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "dedicated page served",
+    "move preserved cue and linked task",
+    "undo restored position",
+    "redo restored moved position",
+    "editing exposes old quote and review",
+    "explicit meaning confirmation",
+    "revision preserves orphan cue",
+    "orphan can be repaired",
+    "repair undo restores orphan",
+    "revision undo restores script and cue",
+    "repeated add preserves distinct cues",
+    "undo addition leaves selected surviving cue",
+    "row focus preserved after keyboard selection",
+    "no page overflow 1440",
+    "no page overflow 1024",
+    "no page overflow 768",
+    "no page overflow 390",
+    "no javascript errors"
+  ],
+  "count": 18,
+  "errors": [],
+  "scope": "local fixed example; no product save or real PDF/device tests"
+}

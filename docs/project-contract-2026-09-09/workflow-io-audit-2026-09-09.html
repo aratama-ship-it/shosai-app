@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>舞台スケッチ｜workflow 読書き経路監査</title>
+<style>
+:root{--paper:#efe7d6;--page:#fffaf0;--ink:#2b2620;--muted:#6a604e;--accent:#8f3e1e;--line:#75664f;--width:1184px;--touch:44px}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.75 "Hiragino Sans","Yu Gothic",system-ui,sans-serif}a{color:var(--accent);text-underline-offset:4px}a:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:4px}.shell{max-width:var(--width);margin:auto;padding:32px}.head{border-top:3px solid var(--ink);padding:24px 0 32px}.eyebrow,.meta{font-size:14px;color:var(--muted)}.eyebrow{font-weight:700;color:var(--accent)}h1,h2,h3,p{margin:0}h1{font-size:32px;line-height:1.45}h2{font-size:24px;line-height:1.5}h3{font-size:18px;line-height:1.5}p{max-width:70ch;margin-top:12px}.decision{margin-top:24px;padding:16px 24px;background:var(--page);border-left:4px solid var(--accent)}.section{border-top:1px solid var(--line);padding:32px 0}.table-wrap{overflow-x:auto;margin-top:24px}table{border-collapse:collapse;width:100%;min-width:900px;background:var(--page)}th,td{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font-size:14px;color:var(--muted)}td strong{color:var(--accent)}code{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}.list{padding-left:24px;margin:16px 0 0}.list li{margin:8px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:24px}.rule{padding:16px;background:var(--page);border-top:3px solid var(--accent)}.links{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:16px}.links a{display:inline-flex;align-items:center;min-height:var(--touch)}footer{border-top:3px solid var(--ink);padding:24px 0}.skip{position:fixed;left:16px;top:16px;padding:8px 12px;background:var(--page);transform:translateY(-200%)}.skip:focus{transform:none}@media(max-width:680px){.shell{padding:16px}h1{font-size:28px}.grid{grid-template-columns:1fr}.table-wrap{margin-left:-16px;margin-right:-16px}.table-wrap table{min-width:760px}.decision{padding:16px}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">本文へ移動</a>
+<main class="shell" id="main">
+<header class="head">
+<p class="eyebrow">台本 / Q / 転換を統合する前の確認</p>
+<h1>workflow v1 を、<br>いまの保存経路へ入れてよいか。</h1>
+<p>本体のproject、台本キュー試作、MCP、Mac、共有セッションの読み書き経路を、未知のworkflow情報を失わないかという観点で読んだ監査です。製品コードと保存データは変更していません。</p>
+<div class="decision"><strong>判定: 現時点では入れない。</strong><p>browserの状態正規化が既知のproject fieldを再構成するため、未知の <code>project.workflow</code> を失います。全経路が同じfeature gateとround-trip試験を持つまで、workflowは companion file として扱います。</p></div>
+</header>
+
+<section class="section">
+<h2>経路ごとの判定</h2>
+<div class="table-wrap"><table><thead><tr><th>経路</th><th>現状</th><th>判定</th><th>統合前に必要なこと</th></tr></thead><tbody>
+<tr><th>Browser current state</th><td><code>STORAGE_KEY</code> と <code>normalizeState()</code> を通る。</td><td><strong>不可</strong><br>未知fieldを保持しない。</td><td>workflow schema、feature gate、未対応入力の安全な拒否。</td></tr>
+<tr><th>Browser show shelf</th><td><code>SHOWS_KEY</code> でもstateを保存し、復元時にnormalizerを通す。</td><td><strong>不可</strong><br>current stateと同じ理由で失う。</td><td>current stateとshelfを同じmigrationとround-trip試験へ。</td></tr>
+<tr><th>File export / import</th><td>browser exportはv4。importはproject clone後にstate normalizerへ渡す。</td><td><strong>不可</strong><br>v4はworkflow対応の印ではない。</td><td>新version、<code>requiredFeatures:["workflow-v1"]</code>、asset packageとの整合。</td></tr>
+<tr><th>AI / MCP import</th><td>browserのAI importは <code>shosai-stage-sketch</code> v3を明示要求する。</td><td><strong>不可</strong><br>workflow validatorがない。</td><td>新versionを検証するか、workflow入力を明示的に止める。</td></tr>
+<tr><th>Shared session</th><td>session bridgeはbrowser export / importを利用する。</td><td><strong>不可</strong><br>同じnormalizerへ戻る。</td><td>protocolのfeature交渉、原子的適用、未対応guestの拒否。</td></tr>
+<tr><th>MCP canonical store</th><td>validatorとcanonical documentはv3。history / export / mutationがある。</td><td><strong>未対応</strong><br>workflow schemaもv4受理もない。</td><td>新version validatorと全mutation / history / exportを同じcontractへ。</td></tr>
+<tr><th>Mac project store</th><td>v3 JSON objectをrevision付きで保存する。</td><td><strong>採用不可</strong><br>未知keyは明示検証せず、v4は拒否。</td><td>新version検証とproject / workflow / asset metadataの一貫したconflict処理。</td></tr>
+<tr><th>Local asset store</th><td>音源Blobは <code>shosai-stage-audio</code> IndexedDB、projectにはmetadataだけ。</td><td><strong>参照例</strong><br>PDF用storeは未実装。</td><td>PDF assetId、欠損時の再接続、容量・削除・書出し方針。</td></tr>
+<tr><th>台本キュー試作</th><td>PDF File / Q / anchor / 割当を <code>stage-sketch-script-cues</code> IndexedDBへ端末内保存する。</td><td><strong>製品外試作</strong><br>project bindingや同期はない。</td><td>試作形式を流用せず、companion contractのID / revision / asset境界で実装する。</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="section">
+<h2>ここからの実装順</h2>
+<div class="grid">
+<article class="rule"><h3>先にできること</h3><p>fixtureからQ、台本位置、転換activityを読むだけの画面を作る。保存も既存projectへの書込みも行わない。</p></article>
+<article class="rule"><h3>統合前に止めること</h3><p>未対応のbrowser / MCP / Mac / sessionへworkflowを含むprojectを書き込ませない。たまたま未知keyが残る経路を互換性とは呼ばない。</p></article>
+</div>
+<ol class="list"><li>全経路に同じfeature gateとround-trip testを用意する。</li><li>project内へ統合するか、companion workflowを第一級保存単位にするかを一つに決める。</li><li>PDF Blobをmetadataから分け、欠損してもQ・anchor・activity・reviewを残す。</li><li>古いprojectを自動変更せず、互換性のない入力は明示して新しい版として保存する。</li></ol>
+</section>
+
+<section class="section">
+<h2>確認した根拠と限界</h2>
+<div class="grid"><div><h3>確認したソース</h3><ul class="list"><li><code>stage-sketch.js</code>: export v4、import、state normalizer、session bridge。</li><li><code>stage-session.js</code>: bridgeのexport / apply。</li><li><code>mcp-server/src/stage-model.js</code>: v3 validator。</li><li><code>mac-app/Sources/StageSketchProjectStore.swift</code>: v3 project store。</li><li><code>stage-audio-store.js</code>: binary assetの分離。</li><li><code>docs/script-cues-2026-09-09/script-cue-storage.js</code>: 試作の端末内PDF保存。</li></ul></div><div><h3>まだ行っていないこと</h3><ul class="list"><li>workflowを混ぜて現行projectへ書込む試験。既存保存を危険にさらさないため行わない。</li><li>iPad、共同編集、外部公開済み環境、未作成のPDF asset store。</li><li>PDF package、端末間同期、GO送信、所要時間の自動推定。</li></ul></div></div>
+<p class="meta">Mac / MCPで未知keyが現状通過し得ても、意味・version・参照整合を検証しないため、workflowを安全に保存できる証拠にはなりません。</p>
+<div class="links"><a href="WORKFLOW_IO_AUDIT_2026-09-09.md">監査の詳細 Markdown</a><a href="workflow-view-2026-09-09.html">Q → 台本位置 → 転換の閲覧画面</a><a href="project-contract-2026-09-09.html">保存契約の全体資料</a><a href="project-workflow-fixture-2026-09-09.json">架空fixture</a></div>
+</section>
+<footer><p class="meta">2026-09-09 / 読み取り専用監査。製品の保存方式を変更していない。</p></footer>
+</main>
+</body>
+</html>

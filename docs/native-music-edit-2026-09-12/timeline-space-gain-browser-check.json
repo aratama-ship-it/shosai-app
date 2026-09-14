@@ -1,0 +1,16 @@
+{
+  "url": "http://127.0.0.1:8942/stage.html?seam-sample&timeline-controls=26",
+  "checkedAt": "2026-09-13T07:35:38.306Z",
+  "gain": {
+    "saved": 6,
+    "undone": 0
+  },
+  "playback": {
+    "before": "0:00.0",
+    "during": "0:00.3"
+  },
+  "targetErrors": [],
+  "unrelatedErrors": [
+    "ReferenceError: syncRosterPropShape is not defined"
+  ]
+}

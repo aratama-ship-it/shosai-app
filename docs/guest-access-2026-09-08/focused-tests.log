@@ -1,0 +1,364 @@
+TAP version 13
+# Subtest: 環境変数が文字列でないときも止める（JSON.parse前の型を見ている）
+ok 1 - 環境変数が文字列でないときも止める（JSON.parse前の型を見ている）
+  ---
+  duration_ms: 10.844958
+  type: 'test'
+  ...
+# Subtest: 要素が配列やnullでも止める（typeof null === object の穴）
+ok 2 - 要素が配列やnullでも止める（typeof null === object の穴）
+  ---
+  duration_ms: 1.228708
+  type: 'test'
+  ...
+# Subtest: 空文字のuser/passは止める
+ok 3 - 空文字のuser/passは止める
+  ---
+  duration_ms: 0.400791
+  type: 'test'
+  ...
+# Subtest: 正しい一件が混ざっていても、不正が一件あれば全体を止める
+ok 4 - 正しい一件が混ざっていても、不正が一件あれば全体を止める
+  ---
+  duration_ms: 0.175208
+  type: 'test'
+  ...
+# Subtest: labelや未知の項目があっても通る（前方互換）
+ok 5 - labelや未知の項目があっても通る（前方互換）
+  ---
+  duration_ms: 4.713333
+  type: 'test'
+  ...
+# Subtest: 旧GUEST_USERが無くGUEST_ACCOUNTSだけでも通る（移行後の姿）
+ok 6 - 旧GUEST_USERが無くGUEST_ACCOUNTSだけでも通る（移行後の姿）
+  ---
+  duration_ms: 0.961667
+  type: 'test'
+  ...
+# Subtest: ★名簿から外した人は入れなくなる（この機能の目的そのもの）
+ok 7 - ★名簿から外した人は入れなくなる（この機能の目的そのもの）
+  ---
+  duration_ms: 0.963333
+  type: 'test'
+  ...
+# Subtest: 外した人の古いクッキーも通らない
+ok 8 - 外した人の古いクッキーも通らない
+  ---
+  duration_ms: 1.42175
+  type: 'test'
+  ...
+# Subtest: 誤ったパスワードでは入れず、クッキーも配らない
+ok 9 - 誤ったパスワードでは入れず、クッキーも配らない
+  ---
+  duration_ms: 0.545333
+  type: 'test'
+  ...
+# Subtest: managed/legacy guest: Basicと既存Cookieで書斎・データ・未知の資源を配信しない
+ok 10 - managed/legacy guest: Basicと既存Cookieで書斎・データ・未知の資源を配信しない
+  ---
+  duration_ms: 43.302291
+  type: 'test'
+  ...
+# Subtest: SITE_USERは従来の書斎・資料・個人ショーを読み、HTTPキャッシュでは共有しない
+ok 11 - SITE_USERは従来の書斎・資料・個人ショーを読み、HTTPキャッシュでは共有しない
+  ---
+  duration_ms: 5.827125
+  type: 'test'
+  ...
+# Subtest: ゲストへ返す単独HTMLから個人ショーのscriptだけを外す
+ok 12 - ゲストへ返す単独HTMLから個人ショーのscriptだけを外す
+  ---
+  duration_ms: 2.817375
+  type: 'test'
+  ...
+# Subtest: 配信済みの旧HTMLも本人・ゲストの名称だけを更新し、本人のショーは保持する
+ok 13 - 配信済みの旧HTMLも本人・ゲストの名称だけを更新し、本人のショーは保持する
+  ---
+  duration_ms: 4.408875
+  type: 'test'
+  ...
+# Subtest: ゲストの舞台編集・PWA・ガイドの依存資源がすべて通る
+ok 14 - ゲストの舞台編集・PWA・ガイドの依存資源がすべて通る
+  ---
+  duration_ms: 10.111583
+  type: 'test'
+  ...
+# Subtest: 本人用のvalidator・Rangeを引き継がず、ゲスト用HTMLを必ず変換する
+ok 15 - 本人用のvalidator・Rangeを引き継がず、ゲスト用HTMLを必ず変換する
+  ---
+  duration_ms: 1.145208
+  type: 'test'
+  ...
+# Subtest: ゲストのrootとログイン戻り先は舞台へ・英語指定と招待セッションを保持
+ok 16 - ゲストのrootとログイン戻り先は舞台へ・英語指定と招待セッションを保持
+  ---
+  duration_ms: 3.143084
+  type: 'test'
+  ...
+# Subtest: 配信層の正規URL転送は許可し、書斎・外部への転送は拒否
+ok 17 - 配信層の正規URL転送は許可し、書斎・外部への転送は拒否
+  ---
+  duration_ms: 0.565333
+  type: 'test'
+  ...
+# Subtest: サインインの名称は舞台スケッチ、英語招待ではStage Sketch
+ok 18 - サインインの名称は舞台スケッチ、英語招待ではStage Sketch
+  ---
+  duration_ms: 0.509916
+  type: 'test'
+  ...
+# Subtest: 本人用と旧ゲスト用の同名設定を拒否して権限の取り違えを防ぐ
+ok 19 - 本人用と旧ゲスト用の同名設定を拒否して権限の取り違えを防ぐ
+  ---
+  duration_ms: 0.321708
+  type: 'test'
+  ...
+# Subtest: 正しいトークンは利用者名を返す
+ok 20 - 正しいトークンは利用者名を返す
+  ---
+  duration_ms: 4.938375
+  type: 'test'
+  ...
+# Subtest: 中身を書き換えたトークンは通さない
+ok 21 - 中身を書き換えたトークンは通さない
+  ---
+  duration_ms: 0.641791
+  type: 'test'
+  ...
+# Subtest: 期限が切れたトークンは通さない
+ok 22 - 期限が切れたトークンは通さない
+  ---
+  duration_ms: 0.296334
+  type: 'test'
+  ...
+# Subtest: パスワードを変えると、その口座のトークンだけが無効になる
+ok 23 - パスワードを変えると、その口座のトークンだけが無効になる
+  ---
+  duration_ms: 0.827
+  type: 'test'
+  ...
+# Subtest: 知らない利用者名のトークンは通さない
+ok 24 - 知らない利用者名のトークンは通さない
+  ---
+  duration_ms: 0.294459
+  type: 'test'
+  ...
+# Subtest: 壊れた値で例外を投げず、必ず拒否する
+ok 25 - 壊れた値で例外を投げず、必ず拒否する
+  ---
+  duration_ms: 0.180625
+  type: 'test'
+  ...
+# Subtest: 戻り先は同一オリジンのパスだけ許す
+ok 26 - 戻り先は同一オリジンのパスだけ許す
+  ---
+  duration_ms: 0.12975
+  type: 'test'
+  ...
+# Subtest: 未認証の画面遷移はログイン画面へ送る
+ok 27 - 未認証の画面遷移はログイン画面へ送る
+  ---
+  duration_ms: 8.54675
+  type: 'test'
+  ...
+# Subtest: 未認証の副資源は401（HTMLを返さない）
+ok 28 - 未認証の副資源は401（HTMLを返さない）
+  ---
+  duration_ms: 0.715042
+  type: 'test'
+  ...
+# Subtest: 新しい共有セッションの応答は認証済み利用者名を返す
+ok 29 - 新しい共有セッションの応答は認証済み利用者名を返す
+  ---
+  duration_ms: 2.251709
+  type: 'test'
+  ...
+# Subtest: WebSocket中継は利用者IDをWorkerで上書きしてDurable Objectへ渡す
+ok 30 - WebSocket中継は利用者IDをWorkerで上書きしてDurable Objectへ渡す
+  ---
+  duration_ms: 0.625333
+  type: 'test'
+  ...
+# Subtest: 再開可否の照会も利用者IDをWorkerで上書きしてDurable Objectへ渡す
+ok 31 - 再開可否の照会も利用者IDをWorkerで上書きしてDurable Objectへ渡す
+  ---
+  duration_ms: 0.8605
+  type: 'test'
+  ...
+# Subtest: ログイン画面は認証なしで開ける
+ok 32 - ログイン画面は認証なしで開ける
+  ---
+  duration_ms: 0.50125
+  type: 'test'
+  ...
+# Subtest: ログイン画面は招待URLのhashをhiddenの戻り先へ一度だけ足す
+ok 33 - ログイン画面は招待URLのhashをhiddenの戻り先へ一度だけ足す
+  ---
+  duration_ms: 0.360167
+  type: 'test'
+  ...
+# Subtest: ログイン画面は外部の資源を一切読まない
+ok 34 - ログイン画面は外部の資源を一切読まない
+  ---
+  duration_ms: 0.315625
+  type: 'test'
+  ...
+# Subtest: 戻り先はログイン画面の中で逃がさない
+ok 35 - 戻り先はログイン画面の中で逃がさない
+  ---
+  duration_ms: 0.322291
+  type: 'test'
+  ...
+# Subtest: 名前かパスワードが違えば入れない
+ok 36 - 名前かパスワードが違えば入れない
+  ---
+  duration_ms: 1.08525
+  type: 'test'
+  ...
+# Subtest: 正しく入れるとクッキーを配り、元の場所へ戻す
+ok 37 - 正しく入れるとクッキーを配り、元の場所へ戻す
+  ---
+  duration_ms: 1.5545
+  type: 'test'
+  ...
+# Subtest: ログインPOSTは招待セッションの断片を303の戻り先に保つ
+ok 38 - ログインPOSTは招待セッションの断片を303の戻り先に保つ
+  ---
+  duration_ms: 0.648209
+  type: 'test'
+  ...
+# Subtest: ログインの戻り先も外部へは飛ばさない
+ok 39 - ログインの戻り先も外部へは飛ばさない
+  ---
+  duration_ms: 0.52425
+  type: 'test'
+  ...
+# Subtest: 有効なクッキーがあれば中身が返る
+ok 40 - 有効なクッキーがあれば中身が返る
+  ---
+  duration_ms: 0.768833
+  type: 'test'
+  ...
+# Subtest: 期限切れのクッキーは中身を返さない
+ok 41 - 期限切れのクッキーは中身を返さない
+  ---
+  duration_ms: 0.354417
+  type: 'test'
+  ...
+# Subtest: Basic認証は引き続き使えて、通ればクッキーも配る
+ok 42 - Basic認証は引き続き使えて、通ればクッキーも配る
+  ---
+  duration_ms: 0.525708
+  type: 'test'
+  ...
+# Subtest: 誤ったBasic認証は通さない
+ok 43 - 誤ったBasic認証は通さない
+  ---
+  duration_ms: 0.150417
+  type: 'test'
+  ...
+# Subtest: ゲスト口座でも入れる
+ok 44 - ゲスト口座でも入れる
+  ---
+  duration_ms: 0.991792
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSの各口座はログイン・クッキー・Basic認証で通る
+ok 45 - GUEST_ACCOUNTSの各口座はログイン・クッキー・Basic認証で通る
+  ---
+  duration_ms: 1.552917
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSの一人口座のパスワード変更は、その人のトークンだけを無効にする
+ok 46 - GUEST_ACCOUNTSの一人口座のパスワード変更は、その人のトークンだけを無効にする
+  ---
+  duration_ms: 0.869125
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSが未設定または空でも旧ゲスト口座は従来どおり通る
+ok 47 - GUEST_ACCOUNTSが未設定または空でも旧ゲスト口座は従来どおり通る
+  ---
+  duration_ms: 1.249292
+  type: 'test'
+  ...
+# Subtest: 旧ゲスト口座とGUEST_ACCOUNTSが重複なしで併存すれば両方通る
+ok 48 - 旧ゲスト口座とGUEST_ACCOUNTSが重複なしで併存すれば両方通る
+  ---
+  duration_ms: 0.915125
+  type: 'test'
+  ...
+# Subtest: 出るとクッキーが消える
+ok 49 - 出るとクッキーが消える
+  ---
+  duration_ms: 0.101292
+  type: 'test'
+  ...
+# Subtest: 中身のあるファイルは、クッキーもBasicも無ければ出さない
+ok 50 - 中身のあるファイルは、クッキーもBasicも無ければ出さない
+  ---
+  duration_ms: 0.247125
+  type: 'test'
+  ...
+# Subtest: アイコンとmanifestは今までどおり認証なしで返る
+ok 51 - アイコンとmanifestは今までどおり認証なしで返る
+  ---
+  duration_ms: 0.068667
+  type: 'test'
+  ...
+# Subtest: 設定が片側だけなら止める
+ok 52 - 設定が片側だけなら止める
+  ---
+  duration_ms: 0.096125
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSがJSONとして読めなければ503で止める
+ok 53 - GUEST_ACCOUNTSがJSONとして読めなければ503で止める
+  ---
+  duration_ms: 0.104875
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSが配列でなければ503で止める
+ok 54 - GUEST_ACCOUNTSが配列でなければ503で止める
+  ---
+  duration_ms: 0.060708
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSが空配列なら503で止める
+ok 55 - GUEST_ACCOUNTSが空配列なら503で止める
+  ---
+  duration_ms: 0.072041
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSに不正な要素が一つでもあれば503で止める
+ok 56 - GUEST_ACCOUNTSに不正な要素が一つでもあれば503で止める
+  ---
+  duration_ms: 0.404958
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTS内でuserが重複すれば503で止める
+ok 57 - GUEST_ACCOUNTS内でuserが重複すれば503で止める
+  ---
+  duration_ms: 0.06025
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSのuserがSITE_USERと重複すれば503で止める
+ok 58 - GUEST_ACCOUNTSのuserがSITE_USERと重複すれば503で止める
+  ---
+  duration_ms: 0.067833
+  type: 'test'
+  ...
+# Subtest: GUEST_ACCOUNTSのuserが旧GUEST_USERと重複すれば503で止める
+ok 59 - GUEST_ACCOUNTSのuserが旧GUEST_USERと重複すれば503で止める
+  ---
+  duration_ms: 0.051542
+  type: 'test'
+  ...
+1..59
+# tests 59
+# suites 0
+# pass 59
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 109.034291

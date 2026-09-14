@@ -1,0 +1,305 @@
+{
+  "schema": "stage-sketch.translation-cue-proposals.v1",
+  "appImportCompatible": false,
+  "draftId": "romeo-juliet-three-scenes-ja-v1",
+  "adoption": "proposal",
+  "cues": [
+    {
+      "cueId": "rj-modern-lx-11",
+      "basedOnCueId": "rj-cue-lx-11",
+      "number": "LX 11",
+      "kind": "lighting",
+      "sceneId": "RJ-I-5",
+      "adoption": "proposal",
+      "contentJa": "二人の手元へ光の中心を移す",
+      "triggerEdge": "after_quote",
+      "go": {
+        "ja": {
+          "blockId": "RJ-I-5-D01",
+          "quote": "この不作法な手",
+          "characterOffsetUtf16": 10,
+          "prefix": "（ジュリエットに）\n",
+          "suffix": "で、この聖堂を汚したのなら、\nどうか、唇に償わせてください。\nこ",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 1,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        },
+        "en": {
+          "blockId": "RJ-I-5-D01",
+          "quote": "If I profane",
+          "characterOffsetUtf16": 22,
+          "prefix": "ROMEO.\n[_To Juliet._] ",
+          "suffix": " with my unworthiest hand\nThis h",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 1,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        }
+      },
+      "anchorState": "baseline_verified",
+      "timeSeconds": null,
+      "stageActionRefs": []
+    },
+    {
+      "cueId": "rj-modern-sd-11",
+      "basedOnCueId": "rj-cue-sd-11",
+      "number": "SD 11",
+      "kind": "sound",
+      "sceneId": "RJ-I-5",
+      "adoption": "proposal",
+      "contentJa": "周囲の音を引き、接触の瞬間に余白を作る",
+      "triggerEdge": "after_quote",
+      "go": {
+        "ja": {
+          "blockId": "RJ-I-5-D02",
+          "quote": "十分な口づけ",
+          "characterOffsetUtf16": 77,
+          "prefix": "あり、祈る人はその手に触れるもの。\n手のひらを合わせる――それで",
+          "suffix": "です。",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 1,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        },
+        "en": {
+          "blockId": "RJ-I-5-D02",
+          "quote": "palmers’ kiss",
+          "characterOffsetUtf16": 172,
+          "prefix": "touch,\nAnd palm to palm is holy ",
+          "suffix": ".",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 1,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        }
+      },
+      "anchorState": "baseline_verified",
+      "timeSeconds": null,
+      "stageActionRefs": []
+    },
+    {
+      "cueId": "rj-modern-lx-12",
+      "basedOnCueId": "rj-cue-lx-12",
+      "number": "LX 12",
+      "kind": "lighting",
+      "sceneId": "RJ-I-5",
+      "adoption": "proposal",
+      "contentJa": "二人だけの光から周囲の人々へ戻す",
+      "triggerEdge": "after_quote",
+      "go": {
+        "ja": {
+          "blockId": "RJ-I-5-D11",
+          "quote": "お母さまが",
+          "characterOffsetUtf16": 5,
+          "prefix": "お嬢さま。",
+          "suffix": "、少し話をしたいと。",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 1,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        },
+        "en": {
+          "blockId": "RJ-I-5-D11",
+          "quote": "your mother craves",
+          "characterOffsetUtf16": 14,
+          "prefix": "NURSE.\nMadam, ",
+          "suffix": " a word with you.",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 1,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        }
+      },
+      "anchorState": "baseline_verified",
+      "timeSeconds": null,
+      "stageActionRefs": []
+    },
+    {
+      "cueId": "rj-modern-lx-21",
+      "basedOnCueId": "rj-cue-lx-21",
+      "number": "LX 21",
+      "kind": "lighting",
+      "sceneId": "RJ-II-2",
+      "adoption": "proposal",
+      "contentJa": "窓側の光を入れる",
+      "triggerEdge": "observed_action_start",
+      "go": {
+        "ja": {
+          "blockId": "RJ-II-2-T02",
+          "quote": "ジュリエットが姿を見せる",
+          "characterOffsetUtf16": 8,
+          "prefix": "（上方の窓辺に、",
+          "suffix": "）",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 1,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        },
+        "en": {
+          "blockId": "RJ-II-2-T02",
+          "quote": "Juliet appears above",
+          "characterOffsetUtf16": 1,
+          "prefix": " ",
+          "suffix": " at a window.",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 1,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        }
+      },
+      "anchorState": "baseline_verified",
+      "timeSeconds": null,
+      "stageActionRefs": []
+    },
+    {
+      "cueId": "rj-modern-sd-21",
+      "basedOnCueId": "rj-cue-sd-21",
+      "number": "SD 21",
+      "kind": "sound",
+      "sceneId": "RJ-II-2",
+      "adoption": "proposal",
+      "contentJa": "二人の声を残す薄い持続音へ移る",
+      "triggerEdge": "after_quote",
+      "go": {
+        "ja": {
+          "blockId": "RJ-II-2-D02",
+          "quote": "ジュリエットは太陽だ",
+          "characterOffsetUtf16": 20,
+          "prefix": "待て。あの窓から差す光は？\nあそこが東、",
+          "suffix": "！\n昇れ、美しい太陽。嫉妬深い月を打ち消してくれ。\nあの月は、自",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 1,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        },
+        "en": {
+          "blockId": "RJ-II-2-D02",
+          "quote": "Juliet is the sun",
+          "characterOffsetUtf16": 71,
+          "prefix": "dow breaks?\nIt is the east, and ",
+          "suffix": "!\nArise fair sun and kill the en",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 1,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        }
+      },
+      "anchorState": "baseline_verified",
+      "timeSeconds": null,
+      "stageActionRefs": []
+    },
+    {
+      "cueId": "rj-modern-sd-31",
+      "basedOnCueId": "rj-cue-sd-31",
+      "number": "SD 31",
+      "kind": "sound",
+      "sceneId": "RJ-III-1",
+      "adoption": "proposal",
+      "contentJa": "決闘の動作開始を見て打楽器の層を入れる",
+      "triggerEdge": "observed_action_start",
+      "go": {
+        "ja": {
+          "blockId": "RJ-III-1-T01",
+          "quote": "二人、剣を交える",
+          "characterOffsetUtf16": 1,
+          "prefix": "（",
+          "suffix": "）",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 1,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        },
+        "en": {
+          "blockId": "RJ-III-1-T01",
+          "quote": "They fight.",
+          "characterOffsetUtf16": 3,
+          "prefix": " [_",
+          "suffix": "_]",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 1,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        }
+      },
+      "anchorState": "baseline_verified",
+      "timeSeconds": null,
+      "stageActionRefs": []
+    },
+    {
+      "cueId": "rj-modern-lx-31",
+      "basedOnCueId": "rj-cue-lx-31",
+      "number": "LX 31",
+      "kind": "lighting",
+      "sceneId": "RJ-III-1",
+      "adoption": "proposal",
+      "contentJa": "最初の呪いの台詞で群像の光を切り分ける",
+      "triggerEdge": "after_quote",
+      "go": {
+        "ja": {
+          "blockId": "RJ-III-1-D05",
+          "quote": "両家とも、疫病に呑まれろ！",
+          "characterOffsetUtf16": 6,
+          "prefix": "やられた。\n",
+          "suffix": "　俺はもうだめだ。\nあいつは行ったのか？　かすり傷ひとつなく？",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 3,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        },
+        "en": {
+          "blockId": "RJ-III-1-D05",
+          "quote": "A plague o’ both",
+          "characterOffsetUtf16": 21,
+          "prefix": "MERCUTIO.\nI am hurt.\n",
+          "suffix": " your houses. I am sped.\nIs he g",
+          "occurrenceWithinScene": 1,
+          "matchingOccurrencesInScene": 3,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        }
+      },
+      "anchorState": "baseline_verified",
+      "timeSeconds": null,
+      "stageActionRefs": []
+    },
+    {
+      "cueId": "rj-modern-sd-32",
+      "basedOnCueId": "rj-cue-sd-32",
+      "number": "SD 32",
+      "kind": "sound",
+      "sceneId": "RJ-III-1",
+      "adoption": "proposal",
+      "contentJa": "二度目の同じ言葉で打楽器を止める",
+      "triggerEdge": "after_quote",
+      "go": {
+        "ja": {
+          "blockId": "RJ-III-1-D09",
+          "quote": "両家とも、疫病に呑まれろ！",
+          "characterOffsetUtf16": 103,
+          "prefix": "の中でな。\n俺のこの世の務めは、これでおしまいだ。間違いない。\n",
+          "suffix": "\n畜生、犬、どぶ鼠、はつか鼠、猫ごときが、人間を引っかき殺しやが",
+          "occurrenceWithinScene": 2,
+          "matchingOccurrencesInScene": 3,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        },
+        "en": {
+          "blockId": "RJ-III-1-D09",
+          "quote": "A plague o’ both",
+          "characterOffsetUtf16": 201,
+          "prefix": "red, I warrant, for this world. ",
+          "suffix": "\nyour houses. Zounds, a dog, a r",
+          "occurrenceWithinScene": 2,
+          "matchingOccurrencesInScene": 3,
+          "positionStatus": "proposed",
+          "pdfRectangle": null
+        }
+      },
+      "anchorState": "baseline_verified",
+      "timeSeconds": null,
+      "stageActionRefs": []
+    }
+  ],
+  "note": "本文の推敲後はキュー位置を再確認する。舞台機材・動作・秒数・PDF座標は未指定。"
+}

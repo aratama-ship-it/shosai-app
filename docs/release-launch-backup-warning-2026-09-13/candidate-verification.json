@@ -1,0 +1,29 @@
+{
+  "status": "verified",
+  "checkedAt": "2026-09-13T09:12:20.557Z",
+  "baselineVersion": "b8c7e1bb-f730-469e-92da-8b989ec2a53b",
+  "baselineSourceSha256": "1b74f5d60d0f215470a417268e00a5eed24067fa8d984ab4a08d3fbfaa76701f",
+  "candidateSourceSha256": "1ae389cca1067e8f239e3fe437fa789d9439f1ad5199f991f8bebb37ff5100d5",
+  "changedRoutes": [
+    "/stage",
+    "/stage-i18n.js",
+    "/stage-sketch.js",
+    "/stage-sw.js",
+    "/stage.html",
+    "/style.css"
+  ],
+  "unchangedRouteCount": 47,
+  "warning": {
+    "exactJapaneseCopy": true,
+    "guest1OnlyExemption": true,
+    "invokedOnceDuringDocumentInitialization": true,
+    "noPersistenceOrTimer": true
+  },
+  "compatibility": {
+    "existingFeatures": "47 unchanged effective routes; changed routes restore byte-for-byte after removing warning blocks and cache reference bumps",
+    "projectRoundtrip": "project serialization, import, export, autosave, and migration code is byte-identical to the active beta outside the warning block",
+    "audioContinuity": "audio code and assets are byte-identical to the active beta",
+    "storageFailureSafety": "storage and recovery code is byte-identical; warning block does not write browser storage",
+    "updateAndRollback": "active Worker source preserved with SHA-256; candidate service worker keeps existing complete-shell update safeguards"
+  }
+}

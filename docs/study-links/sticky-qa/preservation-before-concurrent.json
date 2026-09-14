@@ -1,0 +1,27 @@
+{
+  "changed": [
+    "build_study.py",
+    "design/TOKEN_SHEET_study-links_2026-09-09.md",
+    "stage-study-continuity.js",
+    "stage-study-frame.js",
+    "stage-study-owner.js",
+    "stage-study-pen.js",
+    "stage-study-private.js",
+    "stage-study-viewer.js",
+    "stage-study.css",
+    "study-frame.html",
+    "study-links.js",
+    "study-reader-account.js",
+    "study.html",
+    "tests/study-links.test.mjs",
+    "tests/study-reader-account.test.mjs",
+    "tools/study-reader-runtime-check.mjs",
+    "index.html",
+    "stage-sw.js",
+    "stage.html",
+    "tests/stage-manual-help.test.mjs",
+    "tests/stage-session-shelve.test.mjs"
+  ],
+  "unchanged": 1827,
+  "missing": []
+}

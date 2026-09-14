@@ -1,0 +1,732 @@
+{
+  "checkedAt": "2026-09-10T09:05:06.653348+00:00",
+  "results": [
+    {
+      "scope": "beta",
+      "path": "stage.html",
+      "url": "https://stagesketch.pygmix.com/stage.html",
+      "status": 200,
+      "bytes": 132560,
+      "sha256": "5d224d70a5542ff5182990695a19e4d74b6558f2b2313fc5441bfdfefc876e70",
+      "expectedSha256": "5d224d70a5542ff5182990695a19e4d74b6558f2b2313fc5441bfdfefc876e70",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-sw.js",
+      "url": "https://stagesketch.pygmix.com/stage-sw.js",
+      "status": 200,
+      "bytes": 9268,
+      "sha256": "8627d0082385a72a5bb74f8d2594e327e31b51a92e7c96fb3079fdaef590850e",
+      "expectedSha256": "8627d0082385a72a5bb74f8d2594e327e31b51a92e7c96fb3079fdaef590850e",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "style.css",
+      "url": "https://stagesketch.pygmix.com/style.css",
+      "status": 200,
+      "bytes": 329699,
+      "sha256": "299dcc789811fe9d9ad775513d8991de1bcd6bacc2fa2d63bf98ebbd645c7001",
+      "expectedSha256": "299dcc789811fe9d9ad775513d8991de1bcd6bacc2fa2d63bf98ebbd645c7001",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-venues.js",
+      "url": "https://stagesketch.pygmix.com/stage-venues.js",
+      "status": 200,
+      "bytes": 48364,
+      "sha256": "4bf2563625799e78ea7ba3dc6ceff723a388557543fa108f12ed34b8c446ee2f",
+      "expectedSha256": "4bf2563625799e78ea7ba3dc6ceff723a388557543fa108f12ed34b8c446ee2f",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-venue-lines.js",
+      "url": "https://stagesketch.pygmix.com/stage-venue-lines.js",
+      "status": 200,
+      "bytes": 20527,
+      "sha256": "bd90b40b603463d5c1ef950fa99c37a36fabc728b14280bfb545f920950676f4",
+      "expectedSha256": "bd90b40b603463d5c1ef950fa99c37a36fabc728b14280bfb545f920950676f4",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-i18n.js",
+      "url": "https://stagesketch.pygmix.com/stage-i18n.js",
+      "status": 200,
+      "bytes": 131749,
+      "sha256": "193f1015dea19e80edbe7fb845feebc12660612d0108c224ad1a9a5c44aecebb",
+      "expectedSha256": "193f1015dea19e80edbe7fb845feebc12660612d0108c224ad1a9a5c44aecebb",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-i18n.zh-Hans.js",
+      "url": "https://stagesketch.pygmix.com/stage-i18n.zh-Hans.js",
+      "status": 200,
+      "bytes": 105582,
+      "sha256": "92384780706bc80fadcdcd27b67e95c8d92bdc2d6c1588eb1084b8ed5548c3f4",
+      "expectedSha256": "92384780706bc80fadcdcd27b67e95c8d92bdc2d6c1588eb1084b8ed5548c3f4",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-i18n.zh-Hant.js",
+      "url": "https://stagesketch.pygmix.com/stage-i18n.zh-Hant.js",
+      "status": 200,
+      "bytes": 106189,
+      "sha256": "d3904e89c6283663252fcb650e7a0879af372e0117286f17083f438e7344d211",
+      "expectedSha256": "d3904e89c6283663252fcb650e7a0879af372e0117286f17083f438e7344d211",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-prompt-i18n.js",
+      "url": "https://stagesketch.pygmix.com/stage-prompt-i18n.js",
+      "status": 200,
+      "bytes": 33380,
+      "sha256": "be955fd3a6ed256d2f442924bdfef81eafcd165b05cabdec508309beef8b1dda",
+      "expectedSha256": "be955fd3a6ed256d2f442924bdfef81eafcd165b05cabdec508309beef8b1dda",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-rehearsal-export.js",
+      "url": "https://stagesketch.pygmix.com/stage-rehearsal-export.js",
+      "status": 200,
+      "bytes": 11909,
+      "sha256": "d5c022663e853619b7adec53db5d14bc386192a0f1dcc2ea8a6fd264dda1b8c3",
+      "expectedSha256": "d5c022663e853619b7adec53db5d14bc386192a0f1dcc2ea8a6fd264dda1b8c3",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-samples/index.js",
+      "url": "https://stagesketch.pygmix.com/stage-samples/index.js",
+      "status": 200,
+      "bytes": 42893,
+      "sha256": "8d1d38f759410697deb464364c6f01d8caa98376e8f0d84d8a7618014976ad5a",
+      "expectedSha256": "8d1d38f759410697deb464364c6f01d8caa98376e8f0d84d8a7618014976ad5a",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-set-model.js",
+      "url": "https://stagesketch.pygmix.com/stage-set-model.js",
+      "status": 200,
+      "bytes": 6008,
+      "sha256": "12d9afb4185eef66d4aa5951de53a6f86837bb0110893bd300d221d8dffc21c7",
+      "expectedSha256": "12d9afb4185eef66d4aa5951de53a6f86837bb0110893bd300d221d8dffc21c7",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-set-builder.js",
+      "url": "https://stagesketch.pygmix.com/stage-set-builder.js",
+      "status": 200,
+      "bytes": 21586,
+      "sha256": "7a3653f0ec5d8faf3da49dbfe07587396e702a6bdc3e0942fcb3e7d67bf525c5",
+      "expectedSha256": "7a3653f0ec5d8faf3da49dbfe07587396e702a6bdc3e0942fcb3e7d67bf525c5",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-machinery.js",
+      "url": "https://stagesketch.pygmix.com/stage-machinery.js",
+      "status": 200,
+      "bytes": 10541,
+      "sha256": "e268e6aa01a6bbf931edb932b7ce83c2c11e6798d69b9136b4934c13df9299de",
+      "expectedSha256": "e268e6aa01a6bbf931edb932b7ce83c2c11e6798d69b9136b4934c13df9299de",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-first-person.js",
+      "url": "https://stagesketch.pygmix.com/stage-first-person.js",
+      "status": 200,
+      "bytes": 127971,
+      "sha256": "cacb9c931b8bcb88c605b5f55d0c0511c771dc852e97b401212437455b2ba824",
+      "expectedSha256": "cacb9c931b8bcb88c605b5f55d0c0511c771dc852e97b401212437455b2ba824",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-audio-store.js",
+      "url": "https://stagesketch.pygmix.com/stage-audio-store.js",
+      "status": 200,
+      "bytes": 4996,
+      "sha256": "199d30808ac9242040c4967cc7d75dbb1db98aa1717e91e019ed2a9e96fa654f",
+      "expectedSha256": "199d30808ac9242040c4967cc7d75dbb1db98aa1717e91e019ed2a9e96fa654f",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "manual/manual-content.js",
+      "url": "https://stagesketch.pygmix.com/manual/manual-content.js",
+      "status": 200,
+      "bytes": 45899,
+      "sha256": "6bf57562ba6fd28135f8fcb1b829b006d9a6dd043d6db8af40197a779ae13bfd",
+      "expectedSha256": "6bf57562ba6fd28135f8fcb1b829b006d9a6dd043d6db8af40197a779ae13bfd",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-pwa.js",
+      "url": "https://stagesketch.pygmix.com/stage-pwa.js",
+      "status": 200,
+      "bytes": 8559,
+      "sha256": "eacac218248160f4068894e6cd445d98e1cf043be5cf38eb0f0f395aaa789a08",
+      "expectedSha256": "eacac218248160f4068894e6cd445d98e1cf043be5cf38eb0f0f395aaa789a08",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-sketch.js",
+      "url": "https://stagesketch.pygmix.com/stage-sketch.js",
+      "status": 200,
+      "bytes": 1105948,
+      "sha256": "a4081a41040495f6df90cbaf9291a857de96fb050e0e5352f7925d4c14ea5fa5",
+      "expectedSha256": "a4081a41040495f6df90cbaf9291a857de96fb050e0e5352f7925d4c14ea5fa5",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-session.js",
+      "url": "https://stagesketch.pygmix.com/stage-session.js",
+      "status": 200,
+      "bytes": 51460,
+      "sha256": "ad094c6d7debf3a7fdf5bbf8f51a97934380aec924645bd6c41e2d806fef9559",
+      "expectedSha256": "ad094c6d7debf3a7fdf5bbf8f51a97934380aec924645bd6c41e2d806fef9559",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-venue-editor.js",
+      "url": "https://stagesketch.pygmix.com/stage-venue-editor.js",
+      "status": 200,
+      "bytes": 78643,
+      "sha256": "47cc1c00c888f53ec71e96d46078b04a9ebde8241cc51eacdd6a7134328c6c34",
+      "expectedSha256": "47cc1c00c888f53ec71e96d46078b04a9ebde8241cc51eacdd6a7134328c6c34",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "manual/manual.html",
+      "url": "https://stagesketch.pygmix.com/manual/manual.html",
+      "status": 200,
+      "bytes": 18267,
+      "sha256": "6b9aca1a05c3132da62ed54f111fc60545e356a93cd03651e0a3f2a12579d728",
+      "expectedSha256": "6b9aca1a05c3132da62ed54f111fc60545e356a93cd03651e0a3f2a12579d728",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "manual/quick.html",
+      "url": "https://stagesketch.pygmix.com/manual/quick.html",
+      "status": 200,
+      "bytes": 18895,
+      "sha256": "f12905755d8a010943771d18dd5824256139a435e8d8801fd32a6d1cff7f76a3",
+      "expectedSha256": "f12905755d8a010943771d18dd5824256139a435e8d8801fd32a6d1cff7f76a3",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "manual/quick-en.html",
+      "url": "https://stagesketch.pygmix.com/manual/quick-en.html",
+      "status": 200,
+      "bytes": 19296,
+      "sha256": "5446472a4f67aa31bb287fad38614e83e2adec9583c67b305950b026eb381656",
+      "expectedSha256": "5446472a4f67aa31bb287fad38614e83e2adec9583c67b305950b026eb381656",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-ja",
+      "url": "https://stagesketch.pygmix.com/stage?lang=ja",
+      "status": 200,
+      "bytes": 132560,
+      "sha256": "5d224d70a5542ff5182990695a19e4d74b6558f2b2313fc5441bfdfefc876e70",
+      "expectedSha256": "5d224d70a5542ff5182990695a19e4d74b6558f2b2313fc5441bfdfefc876e70",
+      "matches": true
+    },
+    {
+      "scope": "beta",
+      "path": "stage-en",
+      "url": "https://stagesketch.pygmix.com/stage?lang=en",
+      "status": 200,
+      "bytes": 132560,
+      "sha256": "5d224d70a5542ff5182990695a19e4d74b6558f2b2313fc5441bfdfefc876e70",
+      "expectedSha256": "5d224d70a5542ff5182990695a19e4d74b6558f2b2313fc5441bfdfefc876e70",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "beta.html",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/beta",
+      "status": 200,
+      "bytes": 14984,
+      "sha256": "2eac74d0c30ba1161dee55b240360ae561f8fe1fd49a2bc3f95d221d02afa7ff",
+      "expectedSha256": "2eac74d0c30ba1161dee55b240360ae561f8fe1fd49a2bc3f95d221d02afa7ff",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "en/beta.html",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/en/beta",
+      "status": 200,
+      "bytes": 14721,
+      "sha256": "65eba2da5339702a61d2dc65187eef1f144d610511fcb050477f41f8e9c96d6f",
+      "expectedSha256": "65eba2da5339702a61d2dc65187eef1f144d610511fcb050477f41f8e9c96d6f",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "en/index.html",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/en/",
+      "status": 200,
+      "bytes": 60066,
+      "sha256": "6a079e02bb7640cc620e2c28758b9fa71954f2386a27f410d8d1db1cd5d19983",
+      "expectedSha256": "6a079e02bb7640cc620e2c28758b9fa71954f2386a27f410d8d1db1cd5d19983",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "en/try.html",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/en/try",
+      "status": 200,
+      "bytes": 136167,
+      "sha256": "e37bfea2708e4388dec43707d616e2fce98d266d89931510d127f74efc8a7c95",
+      "expectedSha256": "e37bfea2708e4388dec43707d616e2fce98d266d89931510d127f74efc8a7c95",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "icons/stage-sketch-180.png",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/icons/stage-sketch-180.png",
+      "status": 200,
+      "bytes": 38028,
+      "sha256": "1a88d30afee485267b3a4e7368c0413bf34028d0f3d78155af72c2c927eb063e",
+      "expectedSha256": "1a88d30afee485267b3a4e7368c0413bf34028d0f3d78155af72c2c927eb063e",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "icons/stage-sketch-192.png",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/icons/stage-sketch-192.png",
+      "status": 200,
+      "bytes": 42992,
+      "sha256": "f82a9fddf4d5c1df40a650068cbddfe3dd98d9b8f8c26c47e321d087c07b141a",
+      "expectedSha256": "f82a9fddf4d5c1df40a650068cbddfe3dd98d9b8f8c26c47e321d087c07b141a",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "index.html",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/",
+      "status": 200,
+      "bytes": 60756,
+      "sha256": "dd0a28207813458b659cbf1cbeb18751eb6027685cf984d450fa32a530ee9414",
+      "expectedSha256": "dd0a28207813458b659cbf1cbeb18751eb6027685cf984d450fa32a530ee9414",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/01-both.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/01-both.jpg",
+      "status": 200,
+      "bytes": 106763,
+      "sha256": "ba023333b452850649807c9ccacc06294bbf1538c4bf481b58e1105492c6433e",
+      "expectedSha256": "ba023333b452850649807c9ccacc06294bbf1538c4bf481b58e1105492c6433e",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/02-seats.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/02-seats.jpg",
+      "status": 200,
+      "bytes": 133102,
+      "sha256": "18f9f72962d56d7753d6196535e4457cb989bc67dd258656a7042543064374ba",
+      "expectedSha256": "18f9f72962d56d7753d6196535e4457cb989bc67dd258656a7042543064374ba",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/03-scenes.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/03-scenes.jpg",
+      "status": 200,
+      "bytes": 52380,
+      "sha256": "f85902fdd3f04d0d9c3dfc8052ea62c6ffd307ec23818dc541fe19ffcd2ffd3f",
+      "expectedSha256": "f85902fdd3f04d0d9c3dfc8052ea62c6ffd307ec23818dc541fe19ffcd2ffd3f",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/04-routes.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/04-routes.jpg",
+      "status": 200,
+      "bytes": 28648,
+      "sha256": "d1a401c7d19a32283463f26ba26253546d6cb4444e49d14afb54f010b3d66dde",
+      "expectedSha256": "d1a401c7d19a32283463f26ba26253546d6cb4444e49d14afb54f010b3d66dde",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/05-venues.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/05-venues.jpg",
+      "status": 200,
+      "bytes": 68238,
+      "sha256": "5559112c78905ec05eaab57cf59d65fa90f6dbde3c51c36a426542904f026899",
+      "expectedSha256": "5559112c78905ec05eaab57cf59d65fa90f6dbde3c51c36a426542904f026899",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/06-set-builder.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/06-set-builder.jpg",
+      "status": 200,
+      "bytes": 55015,
+      "sha256": "7f15fcfcc63fd8d25f8559ad8422b878fe18e9d16314b4d0f333590f31a214f0",
+      "expectedSha256": "7f15fcfcc63fd8d25f8559ad8422b878fe18e9d16314b4d0f333590f31a214f0",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/07-kinds.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/07-kinds.jpg",
+      "status": 200,
+      "bytes": 44528,
+      "sha256": "1389a849aa9a1bd059d72d5f296b4b0c29d14cce9f8a9d88ab35676547e21bb5",
+      "expectedSha256": "1389a849aa9a1bd059d72d5f296b4b0c29d14cce9f8a9d88ab35676547e21bb5",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/08-poses.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/08-poses.jpg",
+      "status": 200,
+      "bytes": 59861,
+      "sha256": "c0533b6b35828bcf57d28056bd969433227ea15818ed6511ac8e9334d37d4ef7",
+      "expectedSha256": "c0533b6b35828bcf57d28056bd969433227ea15818ed6511ac8e9334d37d4ef7",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/09-lights.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/09-lights.jpg",
+      "status": 200,
+      "bytes": 46743,
+      "sha256": "260dbd5fba4f07742413011fb951c536e52b658b3a83f1f125d4cc734847491c",
+      "expectedSha256": "260dbd5fba4f07742413011fb951c536e52b658b3a83f1f125d4cc734847491c",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/10-3d.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/10-3d.jpg",
+      "status": 200,
+      "bytes": 166370,
+      "sha256": "698b18f5f1bc631c3d97953c4aa6d6d75ab4230adf4314b4c9c4e9cdbfcc7205",
+      "expectedSha256": "698b18f5f1bc631c3d97953c4aa6d6d75ab4230adf4314b4c9c4e9cdbfcc7205",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/11-export.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/11-export.jpg",
+      "status": 200,
+      "bytes": 41880,
+      "sha256": "12bcd2b3edb5b9116050b0116b95c092d7e438dc3e977eea0fa26a522cf0dd69",
+      "expectedSha256": "12bcd2b3edb5b9116050b0116b95c092d7e438dc3e977eea0fa26a522cf0dd69",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/12-session.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/12-session.jpg",
+      "status": 200,
+      "bytes": 4752,
+      "sha256": "2c4b0e030d4ad94f035d3734f9628960833a3864a4b078b7e6ee19ea67330a3f",
+      "expectedSha256": "2c4b0e030d4ad94f035d3734f9628960833a3864a4b078b7e6ee19ea67330a3f",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/13-phone-a.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/13-phone-a.jpg",
+      "status": 200,
+      "bytes": 67680,
+      "sha256": "937b32dd6aa04fc1f5530e633f3fe9b369e23a11b841f68433bc8b0ee77043cc",
+      "expectedSha256": "937b32dd6aa04fc1f5530e633f3fe9b369e23a11b841f68433bc8b0ee77043cc",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/13-phone-b.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/13-phone-b.jpg",
+      "status": 200,
+      "bytes": 67848,
+      "sha256": "f75bd1443827083a838d1789cd708aa67c4c8aaae14233cbb30efe322c24eac4",
+      "expectedSha256": "f75bd1443827083a838d1789cd708aa67c4c8aaae14233cbb30efe322c24eac4",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/features/cta-preview.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/features/cta-preview.jpg",
+      "status": 200,
+      "bytes": 171096,
+      "sha256": "ef3d71d39b442b3b9d8a1bb73da1b334bcc5ef6b4aefc3176c65abda44f2c704",
+      "expectedSha256": "ef3d71d39b442b3b9d8a1bb73da1b334bcc5ef6b4aefc3176c65abda44f2c704",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/hero-ja.mp4",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/hero-ja.mp4",
+      "status": 200,
+      "bytes": 1613083,
+      "sha256": "ffa569e1e34d694b7326afc918ed836a13138877143c78487049a5b9816e751f",
+      "expectedSha256": "ffa569e1e34d694b7326afc918ed836a13138877143c78487049a5b9816e751f",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/hero-ja.webm",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/hero-ja.webm",
+      "status": 200,
+      "bytes": 1409752,
+      "sha256": "0f3b84d4d1472cc538d0d230041503982ca7270a120fc003cbc0790a1a807c70",
+      "expectedSha256": "0f3b84d4d1472cc538d0d230041503982ca7270a120fc003cbc0790a1a807c70",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/hero-poster.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/hero-poster.jpg",
+      "status": 200,
+      "bytes": 78405,
+      "sha256": "c08f447ca4cfb1b1094365e086881ce463ab123a5754ad2e31a978e31b0ab7d2",
+      "expectedSha256": "c08f447ca4cfb1b1094365e086881ce463ab123a5754ad2e31a978e31b0ab7d2",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/og-1200x630-en.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/og-1200x630-en.jpg",
+      "status": 200,
+      "bytes": 217645,
+      "sha256": "dc8e1a5c44b70059a7402698b7be823121c7e70647fb3cabb6816290d1a99430",
+      "expectedSha256": "dc8e1a5c44b70059a7402698b7be823121c7e70647fb3cabb6816290d1a99430",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "media/og-1200x630.jpg",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/media/og-1200x630.jpg",
+      "status": 200,
+      "bytes": 218524,
+      "sha256": "6571b14f7f8468d5eaaed5c3455b11c92994469d7d4d6e9ab76b83376589c0f6",
+      "expectedSha256": "6571b14f7f8468d5eaaed5c3455b11c92994469d7d4d6e9ab76b83376589c0f6",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "robots.txt",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/robots.txt",
+      "status": 200,
+      "bytes": 95,
+      "sha256": "0c9894c4f6c1c1f5c6df660f8dccbf6d55990eec4a76a86af4a836cff677d9de",
+      "expectedSha256": "0c9894c4f6c1c1f5c6df660f8dccbf6d55990eec4a76a86af4a836cff677d9de",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "sitemap.xml",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/sitemap.xml",
+      "status": 200,
+      "bytes": 2692,
+      "sha256": "efc55fa02f073f4b339b7be3c33cf019dc56c6ea8ea1da85c47e67bddf0fe046",
+      "expectedSha256": "efc55fa02f073f4b339b7be3c33cf019dc56c6ea8ea1da85c47e67bddf0fe046",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "stage-i18n.js",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-i18n.js",
+      "status": 200,
+      "bytes": 131749,
+      "sha256": "193f1015dea19e80edbe7fb845feebc12660612d0108c224ad1a9a5c44aecebb",
+      "expectedSha256": "193f1015dea19e80edbe7fb845feebc12660612d0108c224ad1a9a5c44aecebb",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "stage-i18n.zh-Hans.js",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-i18n.zh-Hans.js",
+      "status": 200,
+      "bytes": 105582,
+      "sha256": "92384780706bc80fadcdcd27b67e95c8d92bdc2d6c1588eb1084b8ed5548c3f4",
+      "expectedSha256": "92384780706bc80fadcdcd27b67e95c8d92bdc2d6c1588eb1084b8ed5548c3f4",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "stage-i18n.zh-Hant.js",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-i18n.zh-Hant.js",
+      "status": 200,
+      "bytes": 106189,
+      "sha256": "d3904e89c6283663252fcb650e7a0879af372e0117286f17083f438e7344d211",
+      "expectedSha256": "d3904e89c6283663252fcb650e7a0879af372e0117286f17083f438e7344d211",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "stage-machinery.js",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-machinery.js",
+      "status": 200,
+      "bytes": 10541,
+      "sha256": "e268e6aa01a6bbf931edb932b7ce83c2c11e6798d69b9136b4934c13df9299de",
+      "expectedSha256": "e268e6aa01a6bbf931edb932b7ce83c2c11e6798d69b9136b4934c13df9299de",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "stage-public.css",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-public.css",
+      "status": 200,
+      "bytes": 17451,
+      "sha256": "ee1525da0ad6ff08ec610d7a317aed8db860ec5199fc213f7e719c84d4d885d2",
+      "expectedSha256": "ee1525da0ad6ff08ec610d7a317aed8db860ec5199fc213f7e719c84d4d885d2",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "stage-public.js",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-public.js",
+      "status": 200,
+      "bytes": 62364,
+      "sha256": "20e9cac0c6fc85ff2cda1945b9ebcd8c54ce0bbb829e423811713cf80a4a52d4",
+      "expectedSha256": "20e9cac0c6fc85ff2cda1945b9ebcd8c54ce0bbb829e423811713cf80a4a52d4",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "stage-rehearsal-export.js",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-rehearsal-export.js",
+      "status": 200,
+      "bytes": 11909,
+      "sha256": "d5c022663e853619b7adec53db5d14bc386192a0f1dcc2ea8a6fd264dda1b8c3",
+      "expectedSha256": "d5c022663e853619b7adec53db5d14bc386192a0f1dcc2ea8a6fd264dda1b8c3",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "stage-samples/index.js",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-samples/index.js",
+      "status": 200,
+      "bytes": 42893,
+      "sha256": "8d1d38f759410697deb464364c6f01d8caa98376e8f0d84d8a7618014976ad5a",
+      "expectedSha256": "8d1d38f759410697deb464364c6f01d8caa98376e8f0d84d8a7618014976ad5a",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "stage-set-builder.js",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-set-builder.js",
+      "status": 200,
+      "bytes": 21586,
+      "sha256": "7a3653f0ec5d8faf3da49dbfe07587396e702a6bdc3e0942fcb3e7d67bf525c5",
+      "expectedSha256": "7a3653f0ec5d8faf3da49dbfe07587396e702a6bdc3e0942fcb3e7d67bf525c5",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "stage-set-model.js",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-set-model.js",
+      "status": 200,
+      "bytes": 6008,
+      "sha256": "12d9afb4185eef66d4aa5951de53a6f86837bb0110893bd300d221d8dffc21c7",
+      "expectedSha256": "12d9afb4185eef66d4aa5951de53a6f86837bb0110893bd300d221d8dffc21c7",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "stage-sketch.js",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-sketch.js",
+      "status": 200,
+      "bytes": 1105948,
+      "sha256": "a4081a41040495f6df90cbaf9291a857de96fb050e0e5352f7925d4c14ea5fa5",
+      "expectedSha256": "a4081a41040495f6df90cbaf9291a857de96fb050e0e5352f7925d4c14ea5fa5",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "stage-venue-lines.js",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-venue-lines.js",
+      "status": 200,
+      "bytes": 20527,
+      "sha256": "bd90b40b603463d5c1ef950fa99c37a36fabc728b14280bfb545f920950676f4",
+      "expectedSha256": "bd90b40b603463d5c1ef950fa99c37a36fabc728b14280bfb545f920950676f4",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "stage-venues.js",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/stage-venues.js",
+      "status": 200,
+      "bytes": 48364,
+      "sha256": "4bf2563625799e78ea7ba3dc6ceff723a388557543fa108f12ed34b8c446ee2f",
+      "expectedSha256": "4bf2563625799e78ea7ba3dc6ceff723a388557543fa108f12ed34b8c446ee2f",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "style.css",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/style.css",
+      "status": 200,
+      "bytes": 329699,
+      "sha256": "299dcc789811fe9d9ad775513d8991de1bcd6bacc2fa2d63bf98ebbd645c7001",
+      "expectedSha256": "299dcc789811fe9d9ad775513d8991de1bcd6bacc2fa2d63bf98ebbd645c7001",
+      "matches": true
+    },
+    {
+      "scope": "public",
+      "path": "try.html",
+      "url": "https://stagesketch-try.juggler-arata.workers.dev/try",
+      "status": 200,
+      "bytes": 135713,
+      "sha256": "bdffaab0572b7b31185da7b6ac3c490d955777876b7e05aa4205bdbe9efd1a57",
+      "expectedSha256": "bdffaab0572b7b31185da7b6ac3c490d955777876b7e05aa4205bdbe9efd1a57",
+      "matches": true
+    }
+  ],
+  "guards": [
+    {
+      "path": "/stage-sketch.js",
+      "authenticated": false,
+      "status": 401,
+      "expected": 401
+    },
+    {
+      "path": "/stage-shows.local.js",
+      "authenticated": true,
+      "status": 403,
+      "expected": 403
+    },
+    {
+      "path": "/worker.js",
+      "authenticated": true,
+      "status": 403,
+      "expected": 403
+    },
+    {
+      "path": "/icons/stage-sketch-192.png",
+      "authenticated": false,
+      "status": 200,
+      "expected": 200
+    }
+  ],
+  "allMatch": true
+}

@@ -1,0 +1,414 @@
+TAP version 13
+# Subtest: shelveCurrent は棚への書き込み結果を呼び出し元へ返す
+ok 1 - shelveCurrent は棚への書き込み結果を呼び出し元へ返す
+  ---
+  duration_ms: 0.592458
+  type: 'test'
+  ...
+# Subtest: セッション bridge の shelveNow は shelveCurrent の結果を返す
+ok 2 - セッション bridge の shelveNow は shelveCurrent の結果を返す
+  ---
+  duration_ms: 0.147208
+  type: 'test'
+  ...
+# Subtest: 変更した2本のJS版とPWAキャッシュ版を正本・単独版・Service Workerで揃える
+not ok 3 - 変更した2本のJS版とPWAキャッシュ版を正本・単独版・Service Workerで揃える
+  ---
+  duration_ms: 0.279083
+  type: 'test'
+  location: '/private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:44:1'
+  failureType: 'testCodeFailure'
+  error: 'stage-sketch.js?v=334 が index.html にある'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:46:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: ゲスト参加は false の退避結果を失敗として扱い、role 変更前に中止する
+ok 4 - ゲスト参加は false の退避結果を失敗として扱い、role 変更前に中止する
+  ---
+  duration_ms: 0.097042
+  type: 'test'
+  ...
+# Subtest: QuotaExceededError で退避できないときはゲスト参加を開始しない
+not ok 5 - QuotaExceededError で退避できないときはゲスト参加を開始しない
+  ---
+  duration_ms: 10.691875
+  type: 'test'
+  location: '/private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:297:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot set properties of undefined (setting 'stageSkin')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    applyUiSkin (stage-sketch.js:3178:60)
+    stage-sketch.js:3188:3
+    stage-sketch.js:23358:3
+    Script.runInContext (node:vm:149:12)
+    Script.runInNewContext (node:vm:154:17)
+    Object.runInNewContext (node:vm:310:38)
+    TestContext.<anonymous> (file:///private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:299:6)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+  ...
+# Subtest: 現在ショーを棚へ退避できなければ、新しいショーへ切り替えない
+not ok 6 - 現在ショーを棚へ退避できなければ、新しいショーへ切り替えない
+  ---
+  duration_ms: 2.484584
+  type: 'test'
+  location: '/private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:321:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot set properties of undefined (setting 'stageSkin')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    applyUiSkin (stage-sketch.js:3178:60)
+    stage-sketch.js:3188:3
+    stage-sketch.js:23358:3
+    Script.runInContext (node:vm:149:12)
+    Script.runInNewContext (node:vm:154:17)
+    Object.runInNewContext (node:vm:310:38)
+    TestContext.<anonymous> (file:///private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:323:6)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+  ...
+# Subtest: 上限を超える既存ショーを読み込んでも、61件目以降を黙って切り捨てない
+not ok 7 - 上限を超える既存ショーを読み込んでも、61件目以降を黙って切り捨てない
+  ---
+  duration_ms: 2.126459
+  type: 'test'
+  location: '/private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:338:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot set properties of undefined (setting 'stageSkin')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    applyUiSkin (stage-sketch.js:3178:60)
+    stage-sketch.js:3188:3
+    stage-sketch.js:23358:3
+    Script.runInContext (node:vm:149:12)
+    Script.runInNewContext (node:vm:154:17)
+    Object.runInNewContext (node:vm:310:38)
+    TestContext.<anonymous> (file:///private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:354:6)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+  ...
+# Subtest: 通常の新規シーン操作は60行で止まり、既存データを変えない
+not ok 8 - 通常の新規シーン操作は60行で止まり、既存データを変えない
+  ---
+  duration_ms: 2.314625
+  type: 'test'
+  location: '/private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:366:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot set properties of undefined (setting 'stageSkin')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    applyUiSkin (stage-sketch.js:3178:60)
+    stage-sketch.js:3188:3
+    stage-sketch.js:23358:3
+    Script.runInContext (node:vm:149:12)
+    Script.runInNewContext (node:vm:154:17)
+    Object.runInNewContext (node:vm:310:38)
+    TestContext.<anonymous> (file:///private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:374:6)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+  ...
+# Subtest: 現在ショーは退避できても次ショーが棚へ入らなければ、現在ショーを開いたまま止める
+not ok 9 - 現在ショーは退避できても次ショーが棚へ入らなければ、現在ショーを開いたまま止める
+  ---
+  duration_ms: 1.684791
+  type: 'test'
+  location: '/private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:384:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot set properties of undefined (setting 'stageSkin')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    applyUiSkin (stage-sketch.js:3178:60)
+    stage-sketch.js:3188:3
+    stage-sketch.js:23358:3
+    Script.runInContext (node:vm:149:12)
+    Script.runInNewContext (node:vm:154:17)
+    Object.runInNewContext (node:vm:310:38)
+    TestContext.<anonymous> (file:///private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:386:6)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+  ...
+# Subtest: ショー棚が壊れているときは原文を保ち、新しいショーへ切り替えない
+not ok 10 - ショー棚が壊れているときは原文を保ち、新しいショーへ切り替えない
+  ---
+  duration_ms: 2.91
+  type: 'test'
+  location: '/private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:403:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot set properties of undefined (setting 'stageSkin')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    applyUiSkin (stage-sketch.js:3178:60)
+    stage-sketch.js:3188:3
+    stage-sketch.js:23358:3
+    Script.runInContext (node:vm:149:12)
+    Script.runInNewContext (node:vm:154:17)
+    Object.runInNewContext (node:vm:310:38)
+    TestContext.<anonymous> (file:///private/tmp/stage-plan-label-baseline/stage-session-shelve.test.mjs:406:6)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+  ...
+# Subtest: Worker は Secret が全未設定の公開URLを503で停止する
+ok 11 - Worker は Secret が全未設定の公開URLを503で停止する
+  ---
+  duration_ms: 9.064959
+  type: 'test'
+  ...
+# Subtest: Worker は Secret が全未設定でもローカルホストだけ配信する
+ok 12 - Worker は Secret が全未設定でもローカルホストだけ配信する
+  ---
+  duration_ms: 1.641166
+  type: 'test'
+  ...
+# Subtest: Worker は片側だけの Secret をローカルでも必ず503にする
+ok 13 - Worker は片側だけの Secret をローカルでも必ず503にする
+  ---
+  duration_ms: 0.388792
+  type: 'test'
+  ...
+# Subtest: Worker は完全な一組と正しい Basic 認証で舞台スケッチを受け付ける
+ok 14 - Worker は完全な一組と正しい Basic 認証で舞台スケッチを受け付ける
+  ---
+  duration_ms: 6.3485
+  type: 'test'
+  ...
+# Subtest: 公開URLの ?fresh は警告だけを出し、削除せず通常初期化を続ける
+ok 15 - 公開URLの ?fresh は警告だけを出し、削除せず通常初期化を続ける
+  ---
+  duration_ms: 0.8035
+  type: 'test'
+  ...
+# Subtest: ローカルの ?fresh は日本語確認を一度出し、キャンセルなら何も消さない
+ok 16 - ローカルの ?fresh は日本語確認を一度出し、キャンセルなら何も消さない
+  ---
+  duration_ms: 0.541208
+  type: 'test'
+  ...
+# Subtest: ローカルで英語確認を承認したときだけ6キーを消し、URL指定を持ち越す
+ok 17 - ローカルで英語確認を承認したときだけ6キーを消し、URL指定を持ち越す
+  ---
+  duration_ms: 0.508334
+  type: 'test'
+  ...
+# Subtest: ?fresh の許可ホストは file と localhost 系だけに限る
+ok 18 - ?fresh の許可ホストは file と localhost 系だけに限る
+  ---
+  duration_ms: 1.6845
+  type: 'test'
+  ...
+# Subtest: 旧下書きは一度だけ会場ライブラリへ取り込み、旧キーを残す
+ok 19 - 旧下書きは一度だけ会場ライブラリへ取り込み、旧キーを残す
+  ---
+  duration_ms: 11.581584
+  type: 'test'
+  ...
+# Subtest: 会場セレクト用一覧は既存10プリセットの後ろにライブラリ会場を並べる
+ok 20 - 会場セレクト用一覧は既存10プリセットの後ろにライブラリ会場を並べる
+  ---
+  duration_ms: 1.447291
+  type: 'test'
+  ...
+# Subtest: SHOSAI_VENUES.listの先頭5プリセットは値も並びも変えない
+ok 21 - SHOSAI_VENUES.listの先頭5プリセットは値も並びも変えない
+  ---
+  duration_ms: 1.227458
+  type: 'test'
+  ...
+# Subtest: 柱・什器・扉・天井とmovableは会場ライブラリを往復する
+ok 22 - 柱・什器・扉・天井とmovableは会場ライブラリを往復する
+  ---
+  duration_ms: 2.301209
+  type: 'test'
+  ...
+# Subtest: エディタ操作で柱1本・什器1つ・扉1つと独立した天井条件をvenue-v2保存できる
+ok 23 - エディタ操作で柱1本・什器1つ・扉1つと独立した天井条件をvenue-v2保存できる
+  ---
+  duration_ms: 95.125709
+  type: 'test'
+  ...
+# Subtest: 会場ファイルはプレビュー確認まで書き込まず、確定したときだけ取り込む
+ok 24 - 会場ファイルはプレビュー確認まで書き込まず、確定したときだけ取り込む
+  ---
+  duration_ms: 11.107666
+  type: 'test'
+  ...
+# Subtest: やめる・暗幕・Escapeはいずれも会場ライブラリを変えない
+ok 25 - やめる・暗幕・Escapeはいずれも会場ライブラリを変えない
+  ---
+  duration_ms: 10.791125
+  type: 'test'
+  ...
+# Subtest: 2MB超過・壊れたJSON・壊れたvenue-v2は書き込まず理由と除外件数を出す
+ok 26 - 2MB超過・壊れたJSON・壊れたvenue-v2は書き込まず理由と除外件数を出す
+  ---
+  duration_ms: 10.736875
+  type: 'test'
+  ...
+# Subtest: 201件は先頭200件だけ候補にし、切り捨てた1件を確認前後の文言へ出す
+ok 27 - 201件は先頭200件だけ候補にし、切り捨てた1件を確認前後の文言へ出す
+  ---
+  duration_ms: 15.391
+  type: 'test'
+  ...
+# Subtest: 201件の先頭200件がすべて壊れていても、上限で切り捨てた1件を伝える
+ok 28 - 201件の先頭200件がすべて壊れていても、上限で切り捨てた1件を伝える
+  ---
+  duration_ms: 11.91825
+  type: 'test'
+  ...
+# Subtest: 確認モーダルの静的文言は英語対訳を持つ
+ok 29 - 確認モーダルの静的文言は英語対訳を持つ
+  ---
+  duration_ms: 0.447
+  type: 'test'
+  ...
+# Subtest: 受け入れ会場で4本の線・探り針・赤い観客重なりを即時に更新しvenueへ保存しない
+ok 30 - 受け入れ会場で4本の線・探り針・赤い観客重なりを即時に更新しvenueへ保存しない
+  ---
+  duration_ms: 390.547291
+  type: 'test'
+  ...
+# Subtest: 未知の会場IDは元IDを持つmissing会場になり、プロセニアムへ化けない
+ok 31 - 未知の会場IDは元IDを持つmissing会場になり、プロセニアムへ化けない
+  ---
+  duration_ms: 1.047709
+  type: 'test'
+  ...
+# Subtest: version 3は会場ライブラリを変更せず従来どおりprojectを読める
+ok 32 - version 3は会場ライブラリを変更せず従来どおりprojectを読める
+  ---
+  duration_ms: 0.954583
+  type: 'test'
+  ...
+# Subtest: 自作会場を参照するショーはversion 4で会場を同梱できる
+ok 33 - 自作会場を参照するショーはversion 4で会場を同梱できる
+  ---
+  duration_ms: 0.916042
+  type: 'test'
+  ...
+# Subtest: version 4読込で会場IDが重なると連番IDで追加し、ショー参照も向け直す
+ok 34 - version 4読込で会場IDが重なると連番IDで追加し、ショー参照も向け直す
+  ---
+  duration_ms: 0.948208
+  type: 'test'
+  ...
+# Subtest: 保存メタデータ既定値とinternal-onlyの3択確認UIを持つ
+ok 35 - 保存メタデータ既定値とinternal-onlyの3択確認UIを持つ
+  ---
+  duration_ms: 0.710875
+  type: 'test'
+  ...
+# Subtest: 柱・什器・扉の追加モードと、独立した天井高・吊りUIを持つ
+ok 36 - 柱・什器・扉の追加モードと、独立した天井高・吊りUIを持つ
+  ---
+  duration_ms: 0.680041
+  type: 'test'
+  ...
+# Subtest: 4本の表示トグルと、保存しない探り針の道具・到達高さUIを持つ
+ok 37 - 4本の表示トグルと、保存しない探り針の道具・到達高さUIを持つ
+  ---
+  duration_ms: 0.357625
+  type: 'test'
+  ...
+# Subtest: 平面の重ね順は床・可動・可動什器・死角・見える限界・落下・会場実体の順にする
+ok 38 - 平面の重ね順は床・可動・可動什器・死角・見える限界・落下・会場実体の順にする
+  ---
+  duration_ms: 0.114
+  type: 'test'
+  ...
+# Subtest: TOHUプリセットは公式仕様書の実測値を保つ
+ok 39 - TOHUプリセットは公式仕様書の実測値を保つ
+  ---
+  duration_ms: 1.264041
+  type: 'test'
+  ...
+# Subtest: サーカスの3形式は出典どおりの寸法を保つ
+ok 40 - サーカスの3形式は出典どおりの寸法を保つ
+  ---
+  duration_ms: 1.046792
+  type: 'test'
+  ...
+# Subtest: 既存のビッグトップは触っていない（形式の見取り図として据え置き）
+ok 41 - 既存のビッグトップは触っていない（形式の見取り図として据え置き）
+  ---
+  duration_ms: 0.834166
+  type: 'test'
+  ...
+# Subtest: TOHUの表示文言は日英そろっている
+ok 42 - TOHUの表示文言は日英そろっている
+  ---
+  duration_ms: 1.346458
+  type: 'test'
+  ...
+# Subtest: 会場の説明に記法が混ざっていない（画面へ素のまま出るため）
+ok 43 - 会場の説明に記法が混ざっていない（画面へ素のまま出るため）
+  ---
+  duration_ms: 1.207916
+  type: 'test'
+  ...
+# Subtest: 形式プリセットには会場の性格を書いた一文を置かない
+ok 44 - 形式プリセットには会場の性格を書いた一文を置かない
+  ---
+  duration_ms: 1.123792
+  type: 'test'
+  ...
+# Subtest: 会場プリセットは全部が日英そろっている（追加時の訳し忘れを止める）
+ok 45 - 会場プリセットは全部が日英そろっている（追加時の訳し忘れを止める）
+  ---
+  duration_ms: 1.864625
+  type: 'test'
+  ...
+# Subtest: 会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う
+not ok 46 - 会場ライブラリはfresh対象で、変更JSの版とPWAキャッシュ版が揃う
+  ---
+  duration_ms: 0.485042
+  type: 'test'
+  location: '/private/tmp/stage-plan-label-baseline/stage-venue-library.test.mjs:863:1'
+  failureType: 'testCodeFailure'
+  error: 'stage-i18n.js?v=101 がindex.htmlにある'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/stage-plan-label-baseline/stage-venue-library.test.mjs:875:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..46
+# tests 46
+# suites 0
+# pass 38
+# fail 8
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 624.6905

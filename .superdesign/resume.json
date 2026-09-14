@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "targets": {
+    "timeline-lane-visibility": {
+      "targetKind": "existing-ui",
+      "projectId": "c72d645d-56c8-409b-b3b2-a3c137ffb50d",
+      "baselineDraftId": "e11465bf-a2ca-4213-bcd8-da320704b97c",
+      "activeDraftId": "e11465bf-a2ca-4213-bcd8-da320704b97c",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [],
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "stage.html:1:120",
+        "stage.html:940:1210",
+        "style.css:1760:1840",
+        "style.css:9920:10090",
+        "style.css:14780:16097",
+        "stage-timeline.js:1:1909",
+        "stage-sketch.js:1128:1225",
+        "stage-sketch.js:27720:27835",
+        "design/TOKEN_SHEET_timeline_scene_duration_2026-09-13.md:147:170"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "87d0e25df04a6410badba0bb1f4b877dfb2f93010b103d50cbfcc7e5dd0c485e",
+        "stage.html": "95ece3894634722cc6ba07b7ea560a3d64684811f78f5606cd304a4a850adf9e",
+        "style.css": "76dd1706679eb224ae35f748776349b56bde3b41db4030b785b84890026abb0a",
+        "stage-timeline.js": "e6287bfae0458bf18c2b049fd75dab41ba1bac49c24d44d8fe7cb436010f9ed4",
+        "stage-sketch.js": "ca4bdffc3083e5fe06bc4e168b43a0f75119985d3183cf861a5d9766c6950c0b",
+        "design/TOKEN_SHEET_timeline_scene_duration_2026-09-13.md": "7c80f9f46d086514a6471f1afb10d49132f0810044eb6eb000a4ea047f190791"
+      },
+      "drafts": {
+        "e11465bf-a2ca-4213-bcd8-da320704b97c": {
+          "title": "Timeline lane visibility settings",
+          "visualDirection": "existing Stage Sketch dark desk with compact anchored preferences",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-09-13T09:36:12Z"
+    }
+  }
+}

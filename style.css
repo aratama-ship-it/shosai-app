@@ -28,13 +28,6 @@
   --brass: #9c823f;
   --moss: #77865f;
   --slate: #8b98a1;
-  --stage-timeline-cue-pop-width: 340px;
-  --stage-timeline-cue-pop-offset: 12px;
-  --stage-timeline-cue-pop-padding-y: 8px;
-  --stage-timeline-cue-pop-padding-x: 10px;
-  --stage-timeline-cue-pop-radius: 3px;
-  --stage-timeline-cue-pop-duration: 1800ms;
-  --stage-timeline-cue-pop-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
   --serif: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
   --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
 }
@@ -8173,8 +8166,7 @@ html.stage-phone-viewer .stage-single-view-switch { display: none; }
 
 .stage-panel.stage-venue-panel .stage-venue-custom-open {
   width: 100%;
-  /* 劇場パネルでは設定窓を開くだけの入口。側パネルの標準操作高にそろえる。 */
-  min-height: 38px;
+  min-height: 44px;
   margin: 0;
   text-align: center;
 }
@@ -8981,15 +8973,60 @@ body.is-panel-dragging {
   --scene-desc-preferred-width: 300px;
   flex: 1 1 var(--scene-desc-preferred-width);
   min-width: min(100%, var(--scene-desc-preferred-width));
-  align-self: center;
-  align-items: center;
+  align-self: flex-start;
+  align-items: flex-start;
   padding: 0;
   border-bottom: 0;
   margin-bottom: 0;
 }
 
-.stage-scene-bar .stage-scene-desc-text { align-self: center; }
-.stage-scene-bar .stage-scene-desc-label { padding-top: 0; }
+.stage-scene-bar .stage-scene-desc-text { align-self: flex-start; }
+.stage-scene-bar .stage-scene-desc-label { padding-top: 2px; }
+
+/* 現在のシーンの曲。音源そのものはIndexedDBへ置き、この帯は一つのaudioを
+   全シーンで使い回す。シークは残り幅を取り、狭ければ曲名と一緒に次行へ送る。 */
+.stage-scene-music {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1 1 420px;
+  min-width: 260px;
+}
+
+.stage-scene-music .btn-quiet {
+  flex: 0 0 30px;
+  width: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 4px 0;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.stage-music-current {
+  flex: 0 1 150px;
+  min-width: 58px;
+  overflow: hidden;
+  color: var(--milk);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-music-seek {
+  flex: 1 1 150px;
+  min-width: 72px;
+  margin: 0;
+}
+
+.stage-music-time {
+  flex: 0 0 auto;
+  min-width: 74px;
+  color: var(--milk-dim);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
 
 .stage-music-engine {
   position: fixed;
@@ -10402,52 +10439,6 @@ body.is-roster-list-resizing { cursor: ns-resize; user-select: none; -webkit-use
    バーを常設したので、フレーム基準のままだと見出しと重なる。 */
 .stage-canvas-wrap { position: relative; }
 
-/* 再生中に通過したキューを、図を見たまま読める短いコール札として出す。 */
-.stage-timeline-cue-pop {
-  position: absolute;
-  z-index: 6;
-  top: var(--stage-timeline-cue-pop-offset);
-  left: 50%;
-  display: grid;
-  gap: 2px;
-  width: min(var(--stage-timeline-cue-pop-width), calc(100% - var(--stage-timeline-cue-pop-offset) * 2));
-  padding: var(--stage-timeline-cue-pop-padding-y) var(--stage-timeline-cue-pop-padding-x);
-  border: 1px solid var(--brass);
-  border-radius: var(--stage-timeline-cue-pop-radius);
-  background: rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.94);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.38);
-  color: var(--paper);
-  font-family: var(--sans);
-  line-height: 1.3;
-  pointer-events: none;
-  transform: translate(-50%, -8px) scale(0.97);
-  opacity: 0;
-}
-
-.stage-timeline-cue-pop.is-visible {
-  animation: stage-timeline-cue-pop var(--stage-timeline-cue-pop-duration) var(--stage-timeline-cue-pop-ease) both;
-}
-
-.stage-timeline-cue-pop-title { font-size: 14px; font-variant-numeric: tabular-nums; }
-.stage-timeline-cue-pop-position { color: var(--paper-2); font-size: 11px; font-variant-numeric: tabular-nums; }
-.stage-timeline-cue-pop-memo {
-  overflow: hidden;
-  color: var(--milk);
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-@keyframes stage-timeline-cue-pop {
-  0% { transform: translate(-50%, -8px) scale(0.97); opacity: 0; }
-  10%, 78% { transform: translate(-50%, 0) scale(1); opacity: 1; }
-  100% { transform: translate(-50%, 2px) scale(1); opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .stage-timeline-cue-pop.is-visible { animation: none; opacity: 1; transform: translate(-50%, 0); }
-}
-
 /* ===== 演者プロフィール ===== */
 
 /* ★案内の暗幕（59）より上に置く。下に置くと、姿勢の窓のように
@@ -10491,6 +10482,57 @@ body.is-roster-list-resizing { cursor: ns-resize; user-select: none; -webkit-use
 /* 照明プリセットの見本は、光の重なりと角度を読むための絵。
    380pxの窓に3列だと1枚100px弱しかなく、灯体の数も色の違いも潰れる。 */
 .stage-modal#stage-light-preset-modal { width: min(820px, calc(100vw - 40px)); }
+.stage-modal.stage-selected-light-preset-modal { width: min(760px, calc(100vw - 40px)); }
+.stage-selected-light-preset-open { width: 100%; margin: 2px 0 6px; text-align: left; }
+.stage-selected-light-preset-summary,
+.stage-selected-light-preset-note { margin: 0; color: var(--milk-dim); line-height: 1.6; }
+.stage-selected-light-preset-summary { color: var(--milk); }
+.stage-selected-light-preset-groups { display: grid; gap: 14px; margin: 16px 0; }
+.stage-selected-light-preset-group { display: grid; gap: 7px; }
+.stage-selected-light-preset-group h3 { margin: 0; color: var(--brass); font-size: 13px; letter-spacing: 0.05em; }
+.stage-selected-light-preset-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stage-selected-light-preset-card {
+  min-height: 62px; padding: 9px 10px; border: 1px solid var(--line-dark); background: var(--desk-1);
+  color: var(--milk); cursor: pointer; font: inherit; text-align: left;
+}
+.stage-selected-light-preset-card:hover,
+.stage-selected-light-preset-card:focus-visible { border-color: var(--brass); background: rgba(211, 172, 89, 0.08); }
+.stage-selected-light-preset-card span { display: block; color: var(--milk-dim); font-size: 11px; line-height: 1.45; margin-top: 3px; }
+.stage-selected-light-wander-adjust { display: grid; gap: 11px; margin: 16px 0; padding: 12px; border: 1px solid rgba(211, 172, 89, 0.38); background: rgba(211, 172, 89, 0.055); }
+.stage-selected-light-wander-heading h3 { margin: 0; color: var(--brass); font-size: 14px; letter-spacing: 0.05em; }
+.stage-selected-light-wander-heading p { margin: 3px 0 0; color: var(--milk-dim); font-size: 11px; line-height: 1.5; }
+.stage-selected-light-wander-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.stage-selected-light-wander-controls label { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 7px; color: var(--milk-dim); font-size: 11px; }
+.stage-selected-light-wander-controls input { min-width: 0; accent-color: var(--brass); }
+.stage-selected-light-wander-controls input[type="number"] { width: 100%; border: 1px solid var(--line-dark); background: var(--desk-1); color: var(--milk); padding: 5px 6px; font: inherit; }
+.stage-selected-light-wander-controls em,
+.stage-selected-light-wander-controls output { color: var(--milk); font-size: 11px; font-style: normal; white-space: nowrap; }
+.stage-selected-light-wander-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stage-selected-light-wander-actions .stage-minor-action { width: auto; margin: 0; min-height: 34px; }
+.stage-selected-light-wander-actions .is-danger { color: #e19a8a; border-color: rgba(192, 57, 43, 0.56); }
+.stage-selected-light-wander-actions .is-danger:hover,
+.stage-selected-light-wander-actions .is-danger:focus-visible { color: var(--paper); border-color: #c0392b; background: rgba(192, 57, 43, 0.16); }
+.stage-selected-light-custom-region { display: grid; gap: 14px; margin: 16px 0; }
+.stage-selected-light-custom-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.stage-selected-light-custom-heading h3 { margin: 0; color: var(--brass); font-size: 14px; letter-spacing: 0.05em; }
+.stage-selected-light-custom-heading p { margin: 4px 0 0; color: var(--milk-dim); font-size: 12px; line-height: 1.55; }
+.stage-selected-light-custom-heading .stage-minor-action { flex: 0 0 auto; }
+.stage-selected-light-custom-canvas {
+  display: block; width: 100%; aspect-ratio: 2 / 1; touch-action: none; cursor: crosshair;
+  border: 1px solid var(--line-dark); background: var(--desk-1);
+}
+.stage-selected-light-custom-canvas:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.stage-selected-light-custom-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+.stage-selected-light-custom-controls label { display: grid; grid-template-columns: 4.5em minmax(0, 1fr); align-items: center; gap: 8px; color: var(--milk-dim); font-size: 12px; }
+.stage-selected-light-custom-controls input { min-width: 0; accent-color: var(--brass); }
+.stage-selected-light-custom-actions { display: flex; justify-content: flex-end; }
+@media (max-width: 620px) {
+  .stage-selected-light-preset-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stage-selected-light-wander-controls,
+  .stage-selected-light-wander-actions { grid-template-columns: 1fr; }
+  .stage-selected-light-custom-heading { display: grid; }
+  .stage-selected-light-custom-heading .stage-minor-action { justify-self: start; }
+}
 .stage-modal.stage-shows-modal { width: min(520px, calc(100vw - 40px)); }
 .stage-modal.stage-beat-template-modal { width: min(780px, calc(100vw - 40px)); }
 .stage-modal.stage-export-modal { width: min(520px, calc(100vw - 40px)); }
@@ -10502,9 +10544,6 @@ body.is-roster-list-resizing { cursor: ns-resize; user-select: none; -webkit-use
 .stage-modal.stage-scene-delete-modal { width: min(440px, calc(100vw - 40px)); }
 .stage-modal.stage-timeline-cue-detail-modal { width: min(440px, calc(100vw - 40px)); }
 .stage-modal.stage-timeline-audio-detail-modal { width: min(440px, calc(100vw - 40px)); }
-.stage-modal.stage-timeline-delete-modal { width: min(440px, calc(100vw - 40px)); }
-.stage-timeline-delete-body { display: grid; gap: 16px; }
-.stage-timeline-delete-body > p { margin: 0; color: var(--milk-dim); line-height: 1.7; }
 .stage-modal.stage-timeline-unit-warning-modal { width: min(480px, calc(100vw - 40px)); }
 .stage-timeline-unit-warning-body { display: grid; gap: 14px; }
 .stage-timeline-unit-warning-body > p { margin: 0; color: var(--milk-dim); line-height: 1.7; }
@@ -10695,34 +10734,6 @@ body.stage-modal-open .stage-tour { display: none !important; }
   margin-top: 0;
   white-space: nowrap;
 }
-.stage-timeline-cue-detail-modal .stage-timeline-cue-detail-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: stretch;
-  justify-content: stretch;
-  gap: 10px;
-  width: 100%;
-}
-.stage-timeline-cue-detail-modal .stage-timeline-cue-detail-actions #stage-timeline-cue-detail-delete {
-  margin-right: 0;
-  color: var(--milk);
-}
-.stage-timeline-cue-detail-modal .stage-timeline-cue-detail-actions button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-width: 0;
-  min-height: 48px;
-  margin: 0;
-  padding: 8px 12px;
-  font-family: var(--sans);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
-  text-align: center;
-}
 
 .stage-timeline-audio-detail-body { display: grid; gap: 16px; }
 
@@ -10778,30 +10789,6 @@ body.stage-modal-open .stage-tour { display: none !important; }
 
 .stage-timeline-audio-gain > p {
   grid-column: 1 / -1;
-  margin: 0;
-  color: var(--milk-dim);
-  font-size: 10px;
-  line-height: 1.6;
-}
-
-.stage-timeline-audio-fade {
-  display: grid;
-  gap: 7px;
-  padding: 12px;
-  border: 1px solid var(--line-dark);
-  border-radius: 3px;
-}
-.stage-timeline-audio-fade label {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 32px;
-  color: var(--milk);
-  font-size: 13px;
-  font-weight: 700;
-}
-.stage-timeline-audio-fade input { width: 18px; height: 18px; accent-color: var(--rust); }
-.stage-timeline-audio-fade p {
   margin: 0;
   color: var(--milk-dim);
   font-size: 10px;
@@ -15600,17 +15587,11 @@ body.is-panel-resizing .stage-sketch-grid { transition: none; }
   --stage-timeline-height: 360px;
   --stage-timeline-toolbar-height: 104px;
   --stage-timeline-resize-hit: 12px;
-  --stage-timeline-collapse-handle-width: 112px;
-  --stage-timeline-collapse-handle-height: 44px;
-  --stage-timeline-collapse-grip-width: 64px;
-  --stage-timeline-collapse-grip-height: 6px;
   --stage-timeline-label-width: 156px;
   --stage-timeline-panel: #29231e;
   --stage-timeline-text: #efe7d6;
   --stage-timeline-muted: #cbbba4;
   --stage-timeline-accent: #d3ac59;
-  --stage-timeline-audio-block-inset-y: 0px;
-  --stage-timeline-audio-drag-opacity: 0.82;
   --stage-timeline-transition: #a8bf8a;
   --stage-timeline-line: #786956;
   --stage-timeline-cue-light: #d3ac59;
@@ -15714,39 +15695,7 @@ body.stage-timeline-mode .stage-canvas-close { display: none; }
   background: var(--stage-timeline-panel);
   border-top: 1px solid var(--stage-timeline-accent);
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.24);
-  transition: transform 180ms ease;
 }
-
-.stage-timeline-panel.is-collapsed {
-  --stage-timeline-reveal-height: var(--stage-timeline-collapse-handle-height);
-  transform: translateY(calc(100% - var(--stage-timeline-reveal-height)));
-  background: transparent;
-  border-top-color: transparent;
-  box-shadow: none;
-  pointer-events: none;
-}
-
-.stage-timeline-panel.is-collapsed .stage-timeline-resize {
-  align-self: center;
-  width: var(--stage-timeline-collapse-handle-width);
-  flex-basis: var(--stage-timeline-collapse-handle-height);
-  height: var(--stage-timeline-collapse-handle-height);
-  background: var(--stage-timeline-panel);
-  border: 1px solid var(--stage-timeline-accent);
-  border-bottom: 0;
-  border-radius: 10px 10px 0 0;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.24);
-  pointer-events: auto;
-}
-
-.stage-timeline-panel.is-collapsed .stage-timeline-resize::before { inset: 0; }
-
-.stage-timeline-panel.is-collapsed .stage-timeline-resize span {
-  width: var(--stage-timeline-collapse-grip-width);
-  height: var(--stage-timeline-collapse-grip-height);
-}
-
-body.is-timeline-resizing .stage-timeline-panel { transition: none; }
 
 .stage-timeline-resize {
   position: relative;
@@ -16055,6 +16004,7 @@ body.is-timeline-resizing { cursor: row-resize; user-select: none; -webkit-user-
 }
 
 .stage-timeline-tempo span { flex: 0 0 auto; }
+.stage-timeline-record { color: #fff4e8 !important; background: var(--rust-ink); border-color: var(--rust-ink) !important; }
 .stage-timeline-toolbar output {
   flex: 0 0 72px;
   color: var(--stage-timeline-text);
@@ -16345,8 +16295,8 @@ body.is-timeline-resizing { cursor: row-resize; user-select: none; -webkit-user-
 .stage-timeline-audio-block {
   display: flex;
   align-items: center;
-  top: var(--stage-timeline-audio-block-inset-y);
-  height: calc(100% - (var(--stage-timeline-audio-block-inset-y) * 2));
+  top: 5px;
+  height: calc(100% - 10px);
   padding: 3px 10px;
   color: var(--stage-timeline-text);
   background: rgba(211, 172, 89, 0.18);
@@ -16357,43 +16307,9 @@ body.is-timeline-resizing { cursor: row-resize; user-select: none; -webkit-user-
 }
 
 button.stage-timeline-audio-block { cursor: pointer; font-family: inherit; }
-button.stage-timeline-audio-block.is-draggable { cursor: grab; touch-action: none; }
-button.stage-timeline-audio-block.is-draggable:active,
-body.is-timeline-audio-dragging,
-body.is-timeline-audio-trimming { cursor: grabbing; user-select: none; -webkit-user-select: none; }
-.stage-timeline-audio-block.is-dragging {
-  z-index: 6;
-  opacity: var(--stage-timeline-audio-drag-opacity);
-  box-shadow: inset 0 0 0 1px var(--stage-timeline-accent);
-}
-.stage-timeline-audio-block.is-trimming {
-  z-index: 6;
-  box-shadow: inset 0 0 0 1px var(--stage-timeline-accent);
-}
-.stage-timeline-audio-trim-handle {
-  position: absolute;
-  z-index: 1;
-  top: 0;
-  right: 0;
-  width: 16px;
-  height: 100%;
-  border-left: 1px solid rgba(211, 172, 89, 0.75);
-  cursor: ew-resize;
-  touch-action: none;
-}
-.stage-timeline-audio-block.is-trimmable:hover .stage-timeline-audio-trim-handle,
-.stage-timeline-audio-block.is-trimming .stage-timeline-audio-trim-handle {
-  background: rgba(211, 172, 89, 0.18);
-}
 button.stage-timeline-audio-block:focus-visible {
   outline: 2px solid var(--stage-timeline-accent);
   outline-offset: 1px;
-}
-
-button.stage-timeline-audio-block[aria-pressed="true"],
-.stage-timeline-scene[aria-pressed="true"] {
-  border-color: var(--stage-timeline-accent);
-  box-shadow: inset 0 -3px var(--stage-timeline-text);
 }
 
 .stage-timeline-audio-block.is-empty {
@@ -16635,34 +16551,6 @@ body.is-timeline-block-resizing { cursor: ew-resize; user-select: none; -webkit-
 
 .stage-timeline-transition-block.is-point .stage-timeline-block-label { display: none; }
 
-/* 0秒でも点の右側24pxを掴める。菱形と＋印は「この点から転換を広げる」目印。 */
-.stage-timeline-transition-block.is-point.is-expandable-point { overflow: visible; }
-.stage-timeline-transition-block.is-point.is-expandable-point .stage-timeline-block-resize-handle.is-end {
-  right: -11px;
-  width: 24px;
-}
-.stage-timeline-transition-block.is-point.is-expandable-point .stage-timeline-block-resize-handle.is-end::after {
-  right: 11px;
-  opacity: 1;
-}
-.stage-timeline-transition-block.is-point.is-expandable-point .stage-timeline-block-resize-handle.is-end::before {
-  content: "+";
-  position: absolute;
-  top: 50%;
-  left: 10px;
-  width: 14px;
-  height: 14px;
-  transform: translateY(-50%);
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--stage-timeline-accent);
-  background: var(--stage-timeline-panel);
-  color: var(--stage-timeline-accent);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-}
-
 .stage-timeline-cue {
   display: flex;
   align-items: center;
@@ -16688,54 +16576,6 @@ body.is-timeline-block-resizing { cursor: ew-resize; user-select: none; -webkit-
 .stage-timeline-cue[data-cue-type="dialogue"] { border-color: var(--stage-timeline-cue-dialogue); }
 .stage-timeline-cue:hover { background: rgba(239, 231, 214, 0.08); }
 .stage-timeline-cue[aria-pressed="true"] { box-shadow: inset 0 -3px var(--stage-timeline-text); }
-.stage-timeline-cue { touch-action: none; }
-.stage-timeline-cue-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.stage-timeline-time-lock {
-  display: inline-grid;
-  flex: 0 0 13px;
-  place-items: center;
-  width: 13px;
-  height: 13px;
-  margin-inline-start: 5px;
-  color: var(--stage-timeline-accent);
-  pointer-events: none;
-}
-.stage-timeline-time-lock svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.5; }
-.stage-timeline-scene.is-time-locked,
-.stage-timeline-transition-block.is-time-locked,
-.stage-timeline-cue.is-time-locked { box-shadow: inset 0 2px var(--stage-timeline-accent); }
-.stage-timeline-cue.is-time-locked { cursor: default; }
-.stage-timeline-cue.is-dragging { cursor: grabbing; opacity: 0.86; }
-body.is-timeline-cue-dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; }
-
-.stage-timeline-lock-menu {
-  position: fixed;
-  z-index: 120;
-  min-width: 184px;
-  border: 1px solid var(--stage-timeline-line);
-  background: var(--stage-timeline-panel);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
-}
-.stage-timeline-lock-menu button {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 44px;
-  padding: 9px 12px;
-  border: 0;
-  background: transparent;
-  color: var(--stage-timeline-text);
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-align: left;
-}
-.stage-timeline-lock-menu button:hover,
-.stage-timeline-lock-menu button:focus-visible {
-  background: rgba(211, 172, 89, 0.15);
-  outline: none;
-}
 
 .stage-timeline-playhead {
   position: absolute;
@@ -16778,73 +16618,6 @@ html[data-study-renderer] .stage-header-volume { display: none !important; }
 
 @media (prefers-reduced-motion: reduce) {
   .stage-workspace-tab,
-  .stage-timeline-playhead,
-  .stage-timeline-panel { transition: none; }
+  .stage-timeline-playhead { transition: none; }
   .stage-timeline-loop-range.is-active { animation: none; }
-}
-
-
-/* 片面表示では全幅の見出し帯を外し、席と図の操作だけを絵の隅へ重ねる。
-   図の高さを確保しながら、帯にあった操作はそのまま使える。 */
-html:not(.stage-phone-viewer) #stage-canvas-stack.is-single-view .stage-board-frame:not(.is-closed) > .stage-canvas-bar {
-  display: contents;
-}
-
-html:not(.stage-phone-viewer) #stage-canvas-stack.is-single-view .stage-board-frame:not(.is-closed) > .stage-canvas-bar > .stage-canvas-caption,
-html:not(.stage-phone-viewer) #stage-canvas-stack.is-single-view .stage-board-frame:not(.is-closed) > .stage-canvas-bar > .stage-profile-hint,
-html:not(.stage-phone-viewer) #stage-canvas-stack.is-single-view .stage-board-frame:not(.is-closed) > .stage-canvas-bar > .stage-canvas-tools > .stage-canvas-close {
-  display: none;
-}
-
-html:not(.stage-phone-viewer) #stage-canvas-stack.is-single-view .stage-board-frame:not(.is-closed) > .stage-canvas-bar > .stage-canvas-tools {
-  position: absolute;
-  z-index: 7;
-  top: 8px;
-  right: 8px;
-  display: flex;
-  flex: 0 1 auto;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  width: auto;
-  max-width: calc(100% - 16px);
-  min-width: 0;
-  margin: 0;
-  padding: 4px;
-  border: 1px solid rgba(240, 231, 214, 0.3);
-  background: rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.9);
-  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.28);
-}
-
-html:not(.stage-phone-viewer) #stage-canvas-stack.is-single-view .stage-board-frame:not(.is-closed) > .stage-canvas-bar > .stage-seat-list {
-  position: absolute;
-  z-index: 7;
-  top: 8px;
-  left: 8px;
-  flex: 0 1 auto;
-  width: min(42%, 320px);
-  max-width: calc(100% - 280px);
-  padding: 4px;
-  border: 1px solid rgba(240, 231, 214, 0.3);
-  background: rgba(var(--stage-ui-recess-rgb, 13, 12, 11), 0.9);
-}
-
-@media (max-width: 600px) {
-  html:not(.stage-phone-viewer) #stage-canvas-stack.is-single-view .stage-board-frame:not(.is-closed) > .stage-canvas-bar > .stage-canvas-tools {
-    top: 44px;
-    right: 8px;
-    left: 8px;
-    justify-content: flex-start;
-    max-width: none;
-  }
-
-  html:not(.stage-phone-viewer) #stage-canvas-stack.is-single-view .stage-board-frame:not(.is-closed) > .stage-canvas-bar > .stage-seat-list {
-    right: 8px;
-    width: auto;
-    max-width: none;
-  }
-}
-
-/* 片面表示では閉じた側のバーも枠ごと隠す。反対の図へは表示中の図の切替ボタンから戻れる。 */
-#stage-canvas-stack.is-single-view > .stage-board-frame.is-closed {
-  display: none;
 }

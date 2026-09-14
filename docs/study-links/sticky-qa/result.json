@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "Front click placement, plan addition, XSS-safe editing, drag, keyboard movement, scene switching, reload and cancel removal retain private notes",
+    "Pen and sticky tools are exclusive; explicit owner sharing includes both views while other readers and source show remain unchanged",
+    "Japanese and English at desktop, tablet, portrait and landscape widths retain 44px tools, readable note editing and no page overflow",
+    "Removed-scene notes survive publication; selecting one sticky copies only it to a current scene, original and local shows retained, confirmed removal affects only the copy"
+  ],
+  "errors": [],
+  "url": "http://127.0.0.1:8857/study?lang=ja#62fbc8d4bcbc4c2e0f530b2c3bc8f895757dd5d2d23bac84"
+}

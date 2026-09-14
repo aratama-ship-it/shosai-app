@@ -1,0 +1,28 @@
+{
+  "status": "deployed",
+  "release": "launch-backup-warning-close-20260913",
+  "baselineVersion": "92ba680c-6849-40f5-91a7-74264444e30f",
+  "deployedVersion": "433c22ac-f953-4d05-8179-d757759ff7ee",
+  "deploymentId": "5909fef0-a486-47df-9029-160caf072f18",
+  "deployedAt": "2026-09-13T10:31:39.493Z",
+  "candidateSourceSha256": "b0e07f79257b6c7c85ef14a44a0936605fe785428af407570d38652a1e82cf6f",
+  "changedRoutes": [
+    "/stage",
+    "/stage-sketch.js",
+    "/stage-sw.js",
+    "/stage.html",
+    "/style.css"
+  ],
+  "retainedBindings": [
+    "ASSETS",
+    "GUEST_ACCOUNTS",
+    "SESSION_ROOM",
+    "SITE_PASS",
+    "SITE_USER",
+    "STAGE_BETA_ACTIVE",
+    "STAGE_RELEASE_SCOPE",
+    "STAGE_USAGE_ENABLED",
+    "STUDY_ALLOW_ANONYMOUS",
+    "STUDY_LINKS"
+  ]
+}

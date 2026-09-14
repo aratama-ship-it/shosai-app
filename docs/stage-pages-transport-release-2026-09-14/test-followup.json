@@ -1,0 +1,6 @@
+{
+  "parent": "1f7e99a2d5a89b76ca5a705ebf93001ca6816c69",
+  "commit": "de62944b68362a287b55a8d5a8f2731c0fff5f96",
+  "file": "tests/stage-timeline-transport.browser.mjs",
+  "blob": "6e5e7705b75bccc927b717e0a6248830b59e3dd6"
+}

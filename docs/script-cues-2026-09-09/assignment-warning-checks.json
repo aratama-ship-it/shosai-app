@@ -1,0 +1,33 @@
+{
+  "passed": 26,
+  "checks": [
+    "visual order is stage then tools then script",
+    "tools directly touch script without stage between",
+    "DOM reading order matches stage tools script",
+    "initial warning covers both unassigned items",
+    "warning includes off-page targets",
+    "warning opens actionable filtered tools",
+    "warning remains unchanged during drag preview",
+    "successful drop reduces warning and filtered list",
+    "warning and drop never switch the stage",
+    "all assigned clears warning but keeps explicit completion count",
+    "empty filtered view has recovery to all items",
+    "undo restores the missing warning and exact item",
+    "revision distinguishes missing from stale assignments",
+    "folding script does not hide warning",
+    "without-script mode pauses warning and retains data",
+    "return restores same missing and stale counts",
+    "reattachment clears only stale count",
+    "phone warning opens missing item in tools pane",
+    "phone carries warning target to script",
+    "keyboard assignment clears final phone warning",
+    "whole page fits width 1440",
+    "whole page fits width 1024",
+    "whole page fits width 820",
+    "whole page fits width 390",
+    "whole page fits width 844",
+    "no JavaScript errors"
+  ],
+  "errors": [],
+  "scope": "fixed fixture, Chromium, no production save or physical device"
+}

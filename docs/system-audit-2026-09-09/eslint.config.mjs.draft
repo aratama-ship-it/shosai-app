@@ -1,0 +1,51 @@
+// ESLint flat config 草案（2026-09-09・WO-B7）。置き場所: shosai-app/eslint.config.mjs
+// ルールは3つだけ。整形は扱わない（複数エージェントが同じツリーを触るため差分ノイズを増やさない）。
+// SHOSAI_GLOBALS は `grep -o 'window\.SHOSAI_[A-Z_]*' *.js | sort -u` の結果から作る。実装時に再取得して更新すること。
+import globals from "globals";
+
+const SHOSAI_GLOBALS = Object.fromEntries([
+  "SHOSAI_CREW", "SHOSAI_SCENE_STUDIES", "SHOSAI_SHELVES", "SHOSAI_STAGE_AI_EDIT_IMPORT_MODEL", "SHOSAI_STAGE_AI_PANEL_MODEL",
+  "SHOSAI_STAGE_AUDIO_MODEL", "SHOSAI_STAGE_AUDIO_STORE", "SHOSAI_STAGE_BEAT_TEMPLATE_MODEL", "SHOSAI_STAGE_BODY",
+  "SHOSAI_STAGE_BUILDER", "SHOSAI_STAGE_DOWNLOAD_MODEL", "SHOSAI_STAGE_EXPORT_MODEL", "SHOSAI_STAGE_FPV",
+  "SHOSAI_STAGE_LIGHT_INTENT_MODEL", "SHOSAI_STAGE_LIGHT_INTENT_OVERLAY", "SHOSAI_STAGE_LOCAL_SHOWS", "SHOSAI_STAGE_MACHINERY",
+  "SHOSAI_STAGE_MODELS", "SHOSAI_STAGE_PHONE_VIEWER_MODEL", "SHOSAI_STAGE_PITCH_EXPORT_MODEL", "SHOSAI_STAGE_PROJECT_IO",
+  "SHOSAI_STAGE_PUBLIC", "SHOSAI_STAGE_SESSION_BRIDGE", "SHOSAI_STAGE_SESSION_HOOKS", "SHOSAI_STAGE_USAGE_MODEL",
+  "SHOSAI_STORAGE_MIGRATION", "SHOSAI_TABLET_PWA", "SHOSAI_VENUES", "SHOSAI_VENUE_EDITOR", "SHOSAI_VENUE_LINES",
+  "SHOSAI_ROSTER_KEY", "stageSketchBridge",
+].map((name) => [name, "readonly"]));
+
+const rules = {
+  "no-undef": "error",
+  "no-unused-vars": ["warn", { args: "none", caughtErrors: "none", varsIgnorePattern: "^_" }],
+  "no-dupe-keys": "error",
+};
+
+export default [
+  {
+    ignores: [
+      "**/*_backup_*", "public-dist/**", "node_modules/**", "mcp-server/node_modules/**", "mac-app/**",
+      "db.js", "stage-apparatus-data.js", "stage-shows.local.js", "book-seeds.js", "data.js", "docs/**", "overnight-runs/**",
+    ],
+  },
+  { // ブラウザで動く製品JS（IIFE・非module）
+    files: ["*.js", "stage-samples/**/*.js", "manual/**/*.js"],
+    ignores: ["worker.js", "session-room.js", "usage-metrics.js", "usage-admin-page.js", "stage-sw.js"],
+    languageOptions: { ecmaVersion: 2023, sourceType: "script", globals: { ...globals.browser, ...SHOSAI_GLOBALS, module: "readonly" } },
+    rules,
+  },
+  { // Service Worker
+    files: ["stage-sw.js"],
+    languageOptions: { ecmaVersion: 2023, sourceType: "script", globals: { ...globals.serviceworker } },
+    rules,
+  },
+  { // Cloudflare Workers（ES modules）
+    files: ["worker.js", "session-room.js", "usage-metrics.js", "usage-admin-page.js"],
+    languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { ...globals.worker, WebSocketPair: "readonly", DurableObject: "readonly" } },
+    rules,
+  },
+  { // テストと MCP サーバー（Node）
+    files: ["tests/**/*.mjs", "mcp-server/src/**/*.js", "mcp-server/test/**/*.js", "tools/**/*.mjs"],
+    languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { ...globals.node } },
+    rules,
+  },
+];

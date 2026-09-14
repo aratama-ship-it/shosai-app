@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>順0 動画書き出しテスト — 光の動き（案）</title>
+<style>
+  body{margin:0;background:#191512;color:#efe7d6;font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans",sans-serif;font-size:14px;line-height:1.6}
+  main{max-width:720px;margin:0 auto;padding:16px}
+  h1{font-size:16px;margin:0 0 6px;color:#9c823f;letter-spacing:.12em}
+  canvas{width:100%;max-width:640px;background:#0d0e10;border:1px solid #382f25;display:block}
+  .row{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+  button{min-height:44px;padding:8px 16px;background:#201b16;color:#efe7d6;border:1px solid #382f25;border-radius:1px;font-size:14px}
+  button.on{border-color:#9c823f}
+  button:disabled{opacity:.4}
+  #log{white-space:pre-wrap;background:#201b16;border:1px solid #382f25;padding:8px;font-size:12px;min-height:80px;max-height:220px;overflow:auto}
+  video{width:100%;max-width:640px;border:1px solid #382f25;display:block;margin-top:8px}
+  .note{color:rgba(240,231,214,.55);font-size:12px}
+  a{color:#df6433}
+</style>
+</head>
+<body>
+<main>
+<h1>順0 書き出しテスト</h1>
+<p class="note">光の動き（案）の再生→動画化→保存→共有（LINE等）→別端末で再生、が通るかだけを確かめるページ。製品コードとは無関係。</p>
+<canvas id="c" width="960" height="540"></canvas>
+<div class="row">
+  <button id="play">▶ 再生</button>
+  <button id="stop">■ 停止</button>
+  <button id="rec">● 4秒録画</button>
+  <button id="share" disabled>共有（LINE等）</button>
+  <a id="dl" hidden download>ダウンロード</a>
+</div>
+<div class="row">
+  <label><input type="checkbox" id="two" checked> 2本が交差</label>
+  <label><input type="checkbox" id="flash"> 点滅あり（プレビューは自動再生しない）</label>
+</div>
+<div id="log"></div>
+<video id="v" controls playsinline hidden></video>
+<script>
+(() => {
+  const c = document.getElementById('c'); const g = c.getContext('2d');
+  const log = (m) => { const el = document.getElementById('log'); el.textContent += m + '\n'; el.scrollTop = el.scrollHeight; };
+  const ua = navigator.userAgent; log('UA: ' + ua);
+  log('MediaRecorder: ' + (typeof MediaRecorder !== 'undefined'));
+  log('captureStream: ' + (typeof c.captureStream === 'function'));
+  const types = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+  const supported = (typeof MediaRecorder !== 'undefined') ? types.filter(t => MediaRecorder.isTypeSupported(t)) : [];
+  log('isTypeSupported: ' + (supported.join(', ') || 'なし'));
+  log('navigator.share: ' + (typeof navigator.share === 'function') + ' / canShare(files): ' + (navigator.canShare ? navigator.canShare({ files: [new File([''], 'x.mp4', { type: 'video/mp4' })] }) : 'n/a'));
+
+  // 光の動き: 1周期 = 左端→右端→左端（2.0s = 普通）。出どころは図の仮位置（奥壁上）
+  const CYCLE = 2000; let t0 = 0, raf = 0, playing = false;
+  const phase = (ms) => { const p = (ms % CYCLE) / CYCLE; return p < 0.5 ? p * 2 : 2 - p * 2; }; // 0→1→0
+  function drawStage() {
+    g.fillStyle = '#0d0e10'; g.fillRect(0, 0, 960, 540);
+    g.fillStyle = '#15171a'; g.fillRect(0, 380, 960, 160);        // 床
+    g.strokeStyle = '#31353a'; g.lineWidth = 1; g.strokeRect(80, 60, 800, 320); // 奥壁
+    g.fillStyle = '#efe7d6'; g.beginPath(); g.arc(480, 300, 12, 0, Math.PI * 2); g.fill(); // 演者の頭
+    g.fillRect(468, 312, 24, 70);
+  }
+  function drawBeam(x0, y0, x1, y1, alpha) {
+    const grad = g.createLinearGradient(x0, y0, x1, y1);
+    grad.addColorStop(0, `rgba(242,234,214,${0.85 * alpha})`); grad.addColorStop(1, `rgba(242,234,214,${0.05 * alpha})`);
+    g.strokeStyle = grad; g.lineWidth = 26; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+  }
+  function frame(ms) {
+    drawStage();
+    const two = document.getElementById('two').checked;
+    const flash = document.getElementById('flash').checked;
+    const fl = flash ? (Math.floor(ms / 125) % 2 === 0 ? 1 : 0.15) : 1;   // 普通=4Hz相当
+    const p = phase(ms);
+    drawBeam(200, 60, 160 + p * 640, 380, fl);
+    if (two) drawBeam(760, 60, 800 - p * 640, 380, fl);
+    g.setLineDash([6, 4]); g.strokeStyle = 'rgba(223,100,51,.7)'; g.lineWidth = 1.5;
+    g.strokeRect(150, 370, 660, 14); g.setLineDash([]);           // 動く範囲
+    g.fillStyle = '#df6433'; g.font = '600 20px "Hiragino Kaku Gothic ProN", sans-serif';
+    g.fillText('光の動き・案', 90, 40);
+    g.fillStyle = 'rgba(240,231,214,.75)'; g.font = '19px "Hiragino Kaku Gothic ProN", sans-serif';
+    g.fillText('灯体位置・DMX・安全性は示しません　シーン04　v0.1　2026-09-11', 90, 520);
+  }
+  function loop(now) { if (!t0) t0 = now; frame(now - t0); raf = requestAnimationFrame(loop); }
+  const play = () => { if (playing) return; playing = true; t0 = 0; raf = requestAnimationFrame(loop); };
+  const stop = () => { playing = false; cancelAnimationFrame(raf); raf = 0; };
+  document.getElementById('play').onclick = play;
+  document.getElementById('stop').onclick = stop;
+  frame(0);
+
+  let lastFile = null; let frames = 0;
+  // 録画は rAF に頼らない（隠れたタブ・iOSの省電力で止まる）。手動フレーム供給 captureStream(0)+requestFrame を setInterval で回す
+  async function recordWith(mime, seconds) {
+    stop(); frames = 0;
+    const stream = c.captureStream(0); const track = stream.getVideoTracks()[0];
+    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4_000_000 });
+    const chunks = []; rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    const done = new Promise((res) => { rec.onstop = res; rec.onerror = (e) => { log('recorder error: ' + (e.error && e.error.message || e)); res(); }; });
+    const start = performance.now();
+    const timer = setInterval(() => { frame(performance.now() - start); frames += 1; if (track.requestFrame) track.requestFrame(); }, 33);
+    rec.start(250); log('録画開始: ' + mime + ' (requestFrame=' + (typeof track.requestFrame === 'function') + ')');
+    await new Promise((r) => setTimeout(r, seconds * 1000)); clearInterval(timer); rec.stop(); await done;
+    log(`  frames=${frames} chunks=${chunks.length} state=${rec.state}`);
+    return chunks.length ? new Blob(chunks, { type: mime.split(';')[0] }) : null;
+  }
+  document.getElementById('rec').onclick = async () => {
+    if (!supported.length) { log('録画: この環境では MediaRecorder の対応形式なし'); return; }
+    document.getElementById('rec').classList.add('on');
+    try {
+      let blob = null, used = '';
+      for (const mime of supported) { blob = await recordWith(mime, 4); if (blob) { used = mime; break; } log('  → 0バイト。次の形式を試す'); }
+      document.getElementById('rec').classList.remove('on');
+      if (!blob) { log('録画失敗: 全形式で0バイト'); return; }
+      const ext = used.startsWith('video/mp4') ? 'mp4' : 'webm';
+      lastFile = new File([blob], `light-motion-test.${ext}`, { type: blob.type });
+      log(`録画完了: ${(blob.size / 1024).toFixed(0)} KB, ${blob.type}`);
+      const url = URL.createObjectURL(blob);
+      const v = document.getElementById('v'); v.src = url; v.hidden = false;
+      v.onloadedmetadata = () => log(`再生確認: duration=${v.duration.toFixed(2)}s (Infinity なら duration 未設定=要修正) size=${v.videoWidth}x${v.videoHeight}`);
+      v.onerror = () => log('再生エラー: この端末では再生不可');
+      const dl = document.getElementById('dl'); dl.href = url; dl.download = lastFile.name; dl.hidden = false;
+      const share = document.getElementById('share');
+      share.disabled = !(navigator.canShare && navigator.canShare({ files: [lastFile] }));
+      log('共有ボタン: ' + (share.disabled ? '不可（canShare=false）' : '可'));
+    } catch (e) { log('録画失敗: ' + (e && e.message || e)); stop(); document.getElementById('rec').classList.remove('on'); }
+  };
+  document.getElementById('share').onclick = async () => {
+    try { await navigator.share({ files: [lastFile], title: '光の動き（案）' }); log('共有: 完了（送信先での再生確認は本人）'); }
+    catch (e) { log('共有: ' + (e && e.message || e)); }
+  };
+})();
+</script>
+</main>
+</body>
+</html>

@@ -1,0 +1,176 @@
+{
+  "kind": "shosai-stage-workflow-fixture",
+  "contractVersion": 1,
+  "scope": "説明用の架空データ。製品読込不可。PDF Blob、Data URL、Object URL、描画キャッシュは含めない。",
+  "projectBinding": {
+    "projectId": "project-fixture-2026-09-09",
+    "baseExportKind": "shosai-stage-sketch",
+    "baseExportVersion": 4,
+    "baseSnapshotHash": "sha256:e676c495a1ddd9621978fa0b08c411782c430ff06127e5f15d50b9e07892d016"
+  },
+  "workflowRevision": 1,
+  "capabilities": [
+    "workflow-v1"
+  ],
+  "assets": [
+    {
+      "id": "asset-script-v1",
+      "kind": "script-pdf",
+      "fileName": "fictional-script-v1.pdf",
+      "mimeType": "application/pdf",
+      "byteLength": 320000,
+      "pageCount": 2,
+      "localStatus": "available",
+      "revision": 1
+    }
+  ],
+  "script": {
+    "documents": [
+      {
+        "id": "document-v1",
+        "assetId": "asset-script-v1",
+        "label": "架空台本 v1",
+        "pageCount": 2,
+        "status": "current",
+        "revision": 1
+      }
+    ],
+    "cues": [
+      {
+        "id": "cue-q12",
+        "number": "Q12",
+        "type": "照明",
+        "description": "暗転を開始",
+        "displayRevision": 1,
+        "semanticRevision": 1
+      },
+      {
+        "id": "cue-q13",
+        "number": "Q13",
+        "type": "音響",
+        "description": "音を立ち上げる",
+        "displayRevision": 1,
+        "semanticRevision": 1
+      }
+    ],
+    "anchors": [
+      {
+        "id": "anchor-q12-page-1",
+        "documentId": "document-v1",
+        "pageIndex": 0,
+        "rect": [0.14, 0.38, 0.82, 0.43],
+        "quote": "暗転を開始する",
+        "target": {
+          "kind": "cue",
+          "id": "cue-q12"
+        },
+        "activityRefs": [
+          "activity-carry-table"
+        ],
+        "semanticStatus": "confirmed",
+        "revision": 1
+      }
+    ]
+  },
+  "coordination": {
+    "people": [
+      {
+        "id": "person-a",
+        "label": "A",
+        "roles": ["performer", "backstage"],
+        "revision": 1
+      },
+      {
+        "id": "person-b",
+        "label": "B",
+        "roles": ["backstage"],
+        "revision": 1
+      }
+    ],
+    "planContexts": [
+      {
+        "id": "plan-context-main",
+        "label": "架空の転換案",
+        "revision": 1
+      }
+    ],
+    "origins": [
+      {
+        "id": "origin-q12",
+        "planContextId": "plan-context-main",
+        "cueId": "cue-q12",
+        "offsetFromBaseMs": 0,
+        "revision": 1
+      }
+    ],
+    "estimates": [
+      {
+        "id": "estimate-carry-table",
+        "durationMs": 3000,
+        "source": "fictional-manual-estimate",
+        "conditions": "AとBが開始位置に準備済みの架空例",
+        "revision": 1
+      }
+    ],
+    "points": [
+      {
+        "id": "point-q12",
+        "planContextId": "plan-context-main",
+        "expression": {
+          "kind": "anchor",
+          "originId": "origin-q12",
+          "offsetMs": 0
+        },
+        "revision": 1
+      },
+      {
+        "id": "point-carry-end",
+        "planContextId": "plan-context-main",
+        "expression": {
+          "kind": "after",
+          "pointId": "point-q12",
+          "estimateId": "estimate-carry-table"
+        },
+        "revision": 1
+      }
+    ],
+    "activities": [
+      {
+        "id": "activity-carry-table",
+        "owner": "transition",
+        "label": "机を運ぶ",
+        "assignments": [
+          {"slotId": "carry-left", "personId": "person-a", "resolution": "confirmed"},
+          {"slotId": "carry-right", "personId": "person-b", "resolution": "confirmed"}
+        ],
+        "startPointId": "point-q12",
+        "endPointId": "point-carry-end",
+        "sceneRefs": ["scene-fixture-4"],
+        "revision": 1
+      }
+    ],
+    "windows": [
+      {
+        "id": "window-transition-main",
+        "planContextId": "plan-context-main",
+        "startPointId": "point-q12",
+        "deadlinePointId": "point-carry-end",
+        "completionActivityIds": ["activity-carry-table"],
+        "revision": 1
+      }
+    ]
+  },
+  "reviews": [
+    {
+      "id": "review-q12-carry",
+      "scope": "cue-to-transition",
+      "status": "confirmed",
+      "subjectRefs": ["cue-q12", "anchor-q12-page-1", "activity-carry-table"],
+      "inputRevisions": {
+        "cue-q12": 1,
+        "anchor-q12-page-1": 1,
+        "activity-carry-table": 1
+      }
+    }
+  ]
+}

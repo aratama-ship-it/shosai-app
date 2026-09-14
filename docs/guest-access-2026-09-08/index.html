@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>舞台スケッチ — ゲスト権限の修正確認</title>
+<style>
+:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#efe7d6;color:#2b2620;font:16px/1.75 system-ui,sans-serif}main{max-width:960px;margin:auto;padding:40px 24px}h1{font-size:clamp(24px,4vw,36px);line-height:1.35}h2{font-size:22px;margin-top:36px}a{color:#713117;text-underline-offset:3px}a:focus-visible{outline:3px solid #a84b26;outline-offset:4px}.status{border-left:5px solid #a84b26;padding:16px 20px;background:#fffaf0}.caption{color:#6a604e}table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:top;padding:12px 8px;border-bottom:1px solid #c1b398}code{overflow-wrap:anywhere}.shots{display:grid;grid-template-columns:1fr 1fr;gap:20px}figure{margin:0}img{width:100%;height:auto}summary{cursor:pointer;padding:12px 0}li{margin:8px 0}@media(max-width:650px){.shots{grid-template-columns:1fr}main{padding:24px 16px}th,td{font-size:14px}}
+</style>
+<main>
+<p class="caption">2026年9月8日 19:59 JST · 本番反映済み · 本番HTTP確認114件合格</p>
+<h1>ゲストを舞台スケッチだけに限定</h1>
+<div class="status"><strong>本番へ反映し、配布対象のguest3・guest4でも利用範囲を確認しました。</strong><br>既存ID・パスワードとURLをそのまま使えます。ログイン画面は「舞台スケッチ」、英語指定リンクでは「Stage Sketch」と表示します。</div>
+<p><a href="https://stagesketch.pygmix.com/stage.html">舞台スケッチを開く</a> ／ <a href="https://stagesketch.pygmix.com/stage.html?lang=en">Open Stage Sketch in English</a></p>
+<h2>変わる利用範囲</h2>
+<table><thead><tr><th>開くもの</th><th>テスター用ID</th><th>本人用ID（SITE_USER）</th></tr></thead><tbody>
+<tr><td>舞台編集・3D・PWA・マニュアル</td><td>利用可</td><td>利用可</td></tr>
+<tr><td>共有セッション・利用者名の確認</td><td>従来どおり利用可</td><td>従来どおり利用可</td></tr>
+<tr><td>書斎ページ・資料・名簿関連ファイル</td><td>403で拒否</td><td>従来どおり利用可</td></tr>
+<tr><td>本人用ショーの自動読み込み</td><td>HTMLから参照を除去。データURLも403</td><td>保持</td></tr>
+<tr><td>サイトの最上位URL</td><td>舞台スケッチへ移動</td><td>書斎を表示</td></tr>
+</tbody></table>
+<p>権限はサーバー側で毎回確認します。古いCookieとBasic認証にも同じ制限が効きます。名簿の「渡した相手」「label」「role」は本人権限の根拠に使いません。guest1もゲスト口座である限り制限対象です。</p>
+<h2>検証結果</h2>
+<ul>
+<li><strong>全体テスト793件、重点テスト59件が合格。</strong>修正前にゲストで200だった書斎・資料・本人ショーが、修正後はCookie/Basic・新旧ゲストとも拒否されることを再現。旧HTMLの名称だけを更新し、本人のショー参照を保持する追加テストも合格。</li>
+<li><strong>本番HTTP確認114件が合格。</strong>guest1・guest3・guest4について、Basic/Cookie認証、英語指定を保った転送、本人向け資料の拒否、条件付きリクエストの保護を確認。</li>
+<li><strong>本番素材21件のSHA-256が反映前と一致。</strong>舞台HTMLは名称とゲストの本人ショー参照だけが変わったことを全文比較。本番で使われていた47件の依存資源も、修正版の許可リストを通ることをローカルで確認。</li>
+<li><strong>配信中のWorkerを再取得し、検証済みアップロードと完全一致。</strong>6件の既存設定・秘密情報の参照・共有セッションの名前空間IDは維持。新バージョンは100%へ反映済み。</li>
+<li><strong>Workers実行環境でHTTP確認40件が合格。</strong>ダミーIDと非公開データのダミーを使用。ゲスト拒否、本人アクセス、英語リンクの正規URL転送、共有セッション作成を確認。</li>
+<li><strong>アプリ内ブラウザで確認。</strong>ローカルでは英語の舞台画面と「Signed in as test-guest」が表示され、書斎URLへ移動すると拒否表示。本番の英語リンクからも「Stage Sketch」のログイン画面へ移ることを確認。</li>
+<li><strong>日本語・英語を390×844と1440×900で表示。</strong>見出し・入力・ボタンに見切れや被覆なし。最小コントラスト5.03:1、入力44px・ボタン48px。</li>
+<li><code>node --check worker.js</code>、<code>python3 build_stage.py --check</code>、<code>python3 build_public.py --check</code>、<code>git diff --check</code> 合格。</li>
+</ul>
+<p>対象外の既存変更は基準ハッシュと一致。変更が重なる3ファイルも、今回の限定変更を除くと基準と一致しています。</p>
+<p>今回は既存の本番素材を保持する<a href="https://developers.cloudflare.com/workers/configuration/multipart-upload-metadata/">Cloudflareのkeep_assets設定</a>を使ってWorkerだけを更新しました。作業フォルダにある別件の未公開変更は配信していません。単独HTMLの名称は配信時にもそろえるため、素材全体を再アップロードする必要はありません。</p>
+<h2>ログイン画面</h2>
+<div class="shots">
+<figure><a href="lint-ja/full_390x844.png"><img src="lint-ja/full_390x844.png" alt="日本語ログイン画面。見出しは舞台スケッチ" loading="lazy"></a><figcaption>日本語・390px</figcaption></figure>
+<figure><a href="lint-en/full_1440x900.png"><img src="lint-en/full_1440x900.png" alt="英語指定のログイン画面。見出しはStage Sketch" loading="lazy"></a><figcaption>英語指定・1440px。入力欄と案内は日英併記</figcaption></figure>
+</div>
+<p><a href="http://127.0.0.1:18396/sign-in?next=%2Fstage.html">日本語のローカル画面</a> ／ <a href="http://127.0.0.1:18396/sign-in?next=%2Fstage.html%3Flang%3Den">英語指定のローカル画面</a>（このMacで検証サーバーが起動中のみ）</p>
+<h2>残っていること・確認の限界</h2>
+<ul>
+<li>本人用SITE_USERの実パスワードを使った本番ログイン操作は未実施。本人の利用範囲は自動テスト・本番HTMLを使った変換比較で確認し、本番の認証設定が変わっていないことも照合済みです。</li>
+<li>今後のサーバー応答を保護する修正です。修正前に相手の端末へ取得・保存されたデータを回収するものではありません。実際に過去の取得があったかは未確認です。</li>
+<li>iPad実機のPWA確認は未実施。PWAの既存テストと必要資源の配信確認は合格。</li>
+<li>design-lintの既存指摘：ボタンの150msホバーに動きを減らす設定の分岐がないため、各言語でNG2件。今回の名称・権限制限で新設した動きではなく、変更範囲外として保持。行送りのnormal指定4要素は機械計測不可で、画面を目視確認。</li>
+<li>サブエージェントは使わず、別の確認パスでURL表現・条件付きリクエスト・配信転送・本人利用の回帰を点検しました。</li>
+</ul>
+<details><summary>変更ファイルと再検証の資料</summary>
+<ul>
+<li><a href="../../worker.js">worker.js</a>：許可リスト、権限分離、本人ショー参照除去、HTTPキャッシュ分離、戻り先検証、ログイン画面。</li>
+<li><a href="../../build_stage.py">build_stage.py</a> と生成物 stage.html：タブ名を「舞台スケッチ | Stage Sketch」に統一。</li>
+<li>tests/worker-guest-scope.test.mjsを追加。worker-session-login、worker-guest-accounts-verify、stage-session-shelveのテストを新しい境界へ整合。</li>
+<li><a href="../../design/TOKEN_SHEET_guest-login_2026-09-08.md">トークンシート</a></li>
+<li><a href="guest-access.patch">今回のソース・テストだけのパッチ</a> ／ <a href="source-hashes.json">検証対象ハッシュ</a></li>
+<li><a href="deployment-proof.json">本番反映と設定維持の記録</a> ／ <a href="live-checks.json">本番HTTP確認114件</a> ／ <a href="production-fixture-checks.json">本番素材を使った依存・名称変換確認</a></li>
+<li><a href="all-tests.log">全体テスト結果</a> ／ <a href="focused-tests.log">重点テスト結果</a> ／ <a href="native-checks.json">実HTTP確認40件</a></li>
+<li><a href="verify-local-http.mjs">実HTTP確認スクリプト</a>（127.0.0.1:18396・ダミーID専用）</li>
+<li><a href="lint-ja/report.md">日本語の表示測定</a> ／ <a href="lint-en/report.md">英語の表示測定</a></li>
+</ul>
+<p>再検証：shosai-appで <code>node --test tests/index.mjs</code>。実HTTP確認には、このMacの <code>/tmp/stage-guest-scope-preview-20260908</code> のダミー環境とWrangler 4.129.1（workerd 1.20260907.1）を使用。</p>
+</details>
+</main>
+</html>

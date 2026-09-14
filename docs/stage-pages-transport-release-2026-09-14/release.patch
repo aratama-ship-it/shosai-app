@@ -1,0 +1,629 @@
+diff --git a/stage-sketch.js b/stage-sketch.js
+index 4d99f7e..a7a87b3 100644
+--- a/stage-sketch.js
++++ b/stage-sketch.js
+@@ -7316,6 +7316,8 @@
+   }
+ 
+   function syncFormationPlaybackAtTime() {
++    // Timeline samples this same formation from its own transport, including silent playback.
++    if (document.body.dataset.stageWorkspaceMode === "timeline") return false;
+     const link = sc() && sc().formationLink;
+     if (!link || !els.musicAudio || audioPlayback.trackId !== sc().audioTrackId) return false;
+     const owner = formationOwnerByDocument(link.documentId), pkg = owner && owner.formation.package;
+@@ -19960,11 +19962,12 @@
+     return liveSpins;
+   }
+ 
+-  function beginSceneAnim(fromScene, liveSpinsIn, durationMs = null) {
++  function beginSceneAnim(fromScene, liveSpinsIn, durationMs = null, timelineProgress = null) {
+     stopSceneAnim();
+-    const liveSpins = liveSpinsIn && liveSpinsIn.size ? liveSpinsIn : captureLiveSpins();
++    const liveSpins = timelineProgress !== null ? new Map()
++      : liveSpinsIn && liveSpinsIn.size ? liveSpinsIn : captureLiveSpins();
+     pauseSpinRun();
+-    if (!state.animateScenes || !fromScene) return false;
++    if ((!state.animateScenes && timelineProgress === null) || !fromScene) return false;
+     const rows = state.project.scenes.filter((row) => row.kind === "scene");
+     const wasAt = rows.findIndex((row) => row.id === fromScene.id);
+     const nowAt = rows.findIndex((row) => row.id === state.project.activeSceneId);
+@@ -20080,14 +20083,15 @@
+     const blackout = featureOn("blackout") && Boolean(sc().blackout);
+     if (!pieces.length && !exits.length && !blackout) return false;
+     const movers = pieces.concat(exits);
+-    const span = Number.isFinite(Number(durationMs))
++    const span = durationMs != null && Number.isFinite(Number(durationMs))
+       ? clamp(Number(durationMs), 100, 86400000)
+       : sc().cueSeconds !== null
+         ? sc().cueSeconds * 1000
+         : clamp(finite(state.sceneAnimMs, 2000), 200, 3000);
+     const start = performance.now();
+-    const step = (now) => {
+-      const t = clamp((now - start) / span, 0, 1);
++    // Both transports sample the same curve; only normal mode owns a wall-clock RAF.
++    const sample = (value) => {
++      const t = clamp(value, 0, 1);
+       const e = easeInOut(t);
+       if (sceneAnim) sceneAnim.progress = e;
+       movers.forEach((entry) => {
+@@ -20159,11 +20163,17 @@
+         }
+       });
+       render();
++    };
++    const step = (now) => {
++      const t = clamp((now - start) / span, 0, 1);
++      sample(t);
+       if (t < 1) { sceneAnim.raf = requestAnimationFrame(step); return; }
+       stopSceneAnim();
+       render();
+     };
+-    sceneAnim = { pieces, exits, blackout, progress: 0, raf: 0 };
++    sceneAnim = { pieces, exits, blackout, progress: 0, raf: 0,
++      sample, sourceId: fromScene.id, targetId: sc().id, external: timelineProgress !== null };
++    if (timelineProgress !== null) { sample(timelineProgress); return true; }
+     // 切替直後に行き先の絵を一度だけ描いてから rAF を待つと、転換の始まりで別フレームが瞬く。
+     // 最初の描画を同期して前シーンの座標へ戻してから、以後のフレームを予約する。
+     step(start);
+@@ -21362,11 +21372,16 @@ ${propsPlotHtml}
+     updateInspector();
+     // 転換の初期姿勢を先に書き込む。開始済みなら beginSceneAnim がその姿勢を一度だけ描く。
+     // 動きが無い切替だけは、ここで通常描画する。
+-    if (!beginSceneAnim(before, liveSpins, options.transitionDurationMs)) render();
++    if (options.animate === false) { stopSceneAnim(); render(); }
++    else if (!beginSceneAnim(before, liveSpins, options.transitionDurationMs)) render();
+     persistSoon();
+     announce(`${sc().title}を開きました。`);
+   }
+ 
++  function openTimelineScene(target) {
++    if (state.project.activeSceneId !== target.id) openScene(target.id, { animate: false });
++  }
++
+   function addScene(carryRig) {
+     const p = state.project;
+     const carried = carryRig ? currentRigPieces().map(copyPiece) : [];
+@@ -28249,6 +28264,50 @@ ${propsPlotHtml}
+     exportDocumentString() {
+       return JSON.stringify(makeProjectExportDocument(state.project, true));
+     },
++    clearTimelinePosition() {
++      stopSceneAnim();
++      clearFormationPlayback();
++      render();
++      if (document.body.dataset.stageWorkspaceMode !== "timeline" && els.musicAudio && !els.musicAudio.paused) startFormationPlayback();
++    },
++    setTimelinePosition(position) {
++      if (document.body.dataset.stageWorkspaceMode !== "timeline"
++        || document.body.classList.contains("stage-session-guest")) return false;
++      const target = state.project.scenes.find((row) => row.kind === "scene" && row.id === position.sceneId);
++      if (!target) return false;
++      if (formationPlaybackRaf) cancelAnimationFrame(formationPlaybackRaf);
++      formationPlaybackRaf = 0;
++      if (position.source === "formation") {
++        stopSceneAnim();
++        clearFormationPlayback();
++        openTimelineScene(target);
++        const section = state.project.scenes.find((row) => row.id === position.sectionId && row.kind === "section");
++        const songs = section && section.formation && section.formation.package.formation.songs;
++        const song = songs && songs.find((item) => item.id === position.songId);
++        if (song) {
++          const count = formationSecToCount(song.track, finite(position.seconds, 0));
++          (target.pieces || []).forEach((piece) => {
++            if (piece.type !== "performer" || !piece.castId) return;
++            const pose = formationPoseAt(song, piece.castId, count);
++            if (!pose) return;
++            piece.animU = pose.u; piece.animV = pose.v; piece.animFacing = pose.facing;
++            piece._formationPlayback = true;
++          });
++        }
++        render();
++        return true;
++      }
++      clearFormationPlayback();
++      openTimelineScene(target);
++      const from = state.project.scenes.find((row) => row.kind === "scene" && row.id === position.sourceSceneId);
++      if (from && from.id !== target.id && Number.isFinite(position.progress)) {
++        if (!position.reset && sceneAnim && sceneAnim.external
++          && sceneAnim.sourceId === from.id && sceneAnim.targetId === target.id) {
++          sceneAnim.sample(position.progress);
++        } else if (!beginSceneAnim(from, new Map(), null, position.progress)) render();
++      } else { stopSceneAnim(); render(); }
++      return true;
++    },
+     setTimelineAudioContext(context) {
+       timelineAudioContext = context && context.projectId === state.project.id
+         && typeof context.trackId === "string" && Array.isArray(context.sceneIds)
+diff --git a/stage-sw.js b/stage-sw.js
+index 3cd62ec..c3f9575 100644
+--- a/stage-sw.js
++++ b/stage-sw.js
+@@ -1,4 +1,4 @@
+-const CACHE_NAME = "stage-sketch-pwa-v466";
++const CACHE_NAME = "stage-sketch-pwa-v467";
+ const APP_SHELL = [
+   "./stage.html",
+   "./style.css?v=358",
+@@ -21,8 +21,8 @@ const APP_SHELL = [
+   "./manual/manual.html",
+   "./manual/quick.html",
+   "./manual/quick-en.html",
+-  "./stage-sketch.js?v=471",
+-  "./stage-timeline.js?v=44",
++  "./stage-sketch.js?v=472",
++  "./stage-timeline.js?v=45",
+   "./stage-session.js?v=19",
+   "./stage-study-owner.js?v=23",
+   "./stage-study.css?v=21",
+diff --git a/stage-timeline.js b/stage-timeline.js
+index 4ba16f2..3a5c953 100644
+--- a/stage-timeline.js
++++ b/stage-timeline.js
+@@ -423,6 +423,8 @@
+     if (next !== "timeline") cancelPendingSceneOpen();
+     if (next !== "timeline") closeAudioDetails({ focus: false });
+     if (next !== "timeline") pauseSilentPlayback({ update: false });
++    stopAudioPlaybackFrames();
++    bridge.clearTimelinePosition?.();
+     if (next !== "timeline") bridge.setTimelineAudioContext?.(null);
+     els.tabs.forEach((button) => {
+       const active = button.dataset.stageWorkspaceMode === next;
+@@ -438,6 +440,7 @@
+       setStageView(target);
+       applyTimelineHeight();
+       renderTimeline();
++      startAudioPlaybackFrames();
+     } else {
+       const target = ["front", "plan", "both-front", "both-plan"].includes(ui.normalView)
+         ? ui.normalView : outgoingView;
+@@ -1597,28 +1600,49 @@
+     return documentValue && documentValue.project ? documentValue.project.activeSceneId : null;
+   }
+ 
+-  // 通常再生では転換の開始に合わせて、本体の移動アニメーションも開始する。
+-  // これにより、シーン帯の右端（転換終端）で次シーンの配置へ到着する。
+-  function syncTimelinePlaybackScene(seconds, { allowTransition = false } = {}) {
++  // The transport supplies an absolute position, never a second animation clock.
++  function syncTimelinePlaybackScene(seconds, { reset = false } = {}) {
++    if (mode !== "timeline" || !timeline) return;
+     const phase = timelineTransitionAt(seconds);
+-    const target = phase ? phase.target : segmentAt(seconds);
+-    const previous = playbackPosition;
++    const target = timeline.source === "formation" ? segmentAt(seconds)
++      : phase ? phase.target : segmentAt(seconds);
+     playbackPosition = seconds;
+-    if (!target || !target.sceneId || activeStageSceneId() === target.sceneId) return;
+-    const crossedTransitionStart = phase && allowTransition && previous !== null
+-      && previous < phase.transition.start + 1e-6 && seconds >= phase.transition.start - 1e-6;
+-    if (crossedTransitionStart) {
+-      bridge.openSceneById(target.sceneId, {
+-        transitionDurationMs: (phase.transition.end - phase.transition.start) * 1000,
++    if (!target || !target.sceneId) return;
++    if (typeof bridge.setTimelinePosition === "function") {
++      bridge.setTimelinePosition({
++        sceneId: target.sceneId, sourceSceneId: phase && phase.source.sceneId,
++        progress: phase ? clamp((seconds - phase.transition.start) / Math.max(1e-6, phase.transition.end - phase.transition.start), 0, 1) : null,
++        source: timeline.source, sectionId: timeline.sectionId, songId: timeline.songId,
++        seconds, reset,
+       });
+-      return;
++    } else if (activeStageSceneId() !== target.sceneId) {
++      // Older cached hosts can still switch scenes until their update is activated.
++      bridge.openSceneById(target.sceneId);
+     }
+-    bridge.openSceneById(target.sceneId);
++  }
++
++  let audioPlaybackFrame = 0;
++  function stopAudioPlaybackFrames() {
++    if (audioPlaybackFrame) window.cancelAnimationFrame(audioPlaybackFrame);
++    audioPlaybackFrame = 0;
++  }
++  function startAudioPlaybackFrames() {
++    if (audioPlaybackFrame || mode !== "timeline" || !audioMatchesTimeline()
++      || els.audio.paused || els.audio.ended) return;
++    const sample = () => {
++      audioPlaybackFrame = 0;
++      if (mode !== "timeline" || !audioMatchesTimeline() || els.audio.paused || els.audio.ended) return;
++      if (ui.loop && ui.loopB > ui.loopA && els.audio.currentTime >= ui.loopB) els.audio.currentTime = ui.loopA;
++      syncTimelinePlaybackScene(els.audio.currentTime);
++      updatePlayhead();
++      audioPlaybackFrame = window.requestAnimationFrame(sample);
++    };
++    audioPlaybackFrame = window.requestAnimationFrame(sample);
+   }
+ 
+   function syncSilentScene(seconds) {
+     if (!silentPlayback) return;
+-    syncTimelinePlaybackScene(seconds, { allowTransition: true });
++    syncTimelinePlaybackScene(seconds);
+     const segment = segmentAt(seconds);
+     if (segment) silentPlayback.sceneId = segment.sceneId;
+   }
+@@ -1653,7 +1677,7 @@
+     const target = segmentAt(seekSeconds);
+     if (!target) return;
+     playbackPosition = seekSeconds;
+-    bridge.openSceneById(target.sceneId);
++    syncTimelinePlaybackScene(seekSeconds, { reset: true });
+     silentPlayback = {
+       startedAt: performance.now(),
+       startSeconds: seekSeconds,
+@@ -1680,7 +1704,7 @@
+       return;
+     }
+     playbackPosition = null;
+-    syncTimelinePlaybackScene(seekSeconds);
++    syncTimelinePlaybackScene(seekSeconds, { reset: true });
+   }
+ 
+   function updatePlayhead() {
+@@ -1834,7 +1858,7 @@
+     const target = timeline.segments.find((segment) => seekSeconds >= segment.start && seekSeconds < segment.end && segment.sceneId)
+       || timeline.segments.find((segment) => segment.sceneId);
+     if (!target) return;
+-    bridge.openSceneById(target.sceneId);
++    syncTimelinePlaybackScene(seekSeconds, { reset: true });
+     pendingSeek = seekSeconds;
+     if (els.audio.readyState >= 1 && audioMatchesTimeline()) {
+       els.audio.currentTime = clamp(pendingSeek, 0, Number.isFinite(els.audio.duration) ? els.audio.duration : timeline.duration);
+@@ -2390,25 +2414,31 @@
+     els.audio.addEventListener(name, () => {
+       if (name === "play") {
+         pauseSilentPlayback({ update: false });
+-        if (mode === "timeline" && timeline) {
++        if (mode === "timeline" && audioMatchesTimeline()) {
+           playbackPosition = Number.isFinite(els.audio.currentTime) ? els.audio.currentTime : null;
+-          syncTimelinePlaybackScene(playbackPosition || 0);
++          syncTimelinePlaybackScene(playbackPosition || 0, { reset: true });
++          startAudioPlaybackFrames();
+         }
+       }
++      if (name === "pause" || name === "ended") {
++        stopAudioPlaybackFrames();
++        if (mode === "timeline" && audioMatchesTimeline()) syncTimelinePlaybackScene(els.audio.currentTime);
++      }
+       if (name === "loadedmetadata" && pendingSeek !== null && audioMatchesTimeline()) {
+         els.audio.currentTime = clamp(pendingSeek, 0, Number.isFinite(els.audio.duration) ? els.audio.duration : timeline.duration);
+         pendingSeek = null;
+       }
+-      if (name === "seeking" && mode === "timeline" && timeline && Number.isFinite(els.audio.currentTime)) {
++      if (name === "seeking" && mode === "timeline" && audioMatchesTimeline() && Number.isFinite(els.audio.currentTime)) {
+         seekSeconds = els.audio.currentTime;
+         syncSceneForSeek();
+       }
+-      if (name === "timeupdate" && ui.loop && ui.loopB > ui.loopA && els.audio.currentTime >= ui.loopB) {
++      if (name === "timeupdate" && mode === "timeline" && audioMatchesTimeline() && ui.loop && ui.loopB > ui.loopA && els.audio.currentTime >= ui.loopB) {
+         els.audio.currentTime = ui.loopA;
+         playbackPosition = null;
+       }
+-      if (name === "timeupdate" && mode === "timeline" && timeline && Number.isFinite(els.audio.currentTime)) {
+-        syncTimelinePlaybackScene(els.audio.currentTime, { allowTransition: true });
++      if (name === "timeupdate" && mode === "timeline" && audioMatchesTimeline() && Number.isFinite(els.audio.currentTime)) {
++        syncTimelinePlaybackScene(els.audio.currentTime);
++        startAudioPlaybackFrames();
+       }
+       updatePlayhead();
+     });
+diff --git a/stage.html b/stage.html
+index 7157297..7f458d3 100644
+--- a/stage.html
++++ b/stage.html
+@@ -2721,8 +2721,8 @@
+ <script src="stage-light-motion.js?v=1"></script>
+ <script src="manual/manual-content.js?v=12"></script>
+ <script src="stage-pwa.js?v=9"></script>
+-  <script src="stage-sketch.js?v=471"></script>
+-<script src="stage-timeline.js?v=44"></script>
++  <script src="stage-sketch.js?v=472"></script>
++<script src="stage-timeline.js?v=45"></script>
+ <script src="stage-session.js?v=19"></script>
+ <script src="stage-study-owner.js?v=23"></script>
+ <script src="stage-usage.js?v=2"></script>
+diff --git a/tests/stage-formation-integration.test.mjs b/tests/stage-formation-integration.test.mjs
+index 1baf0f1..5048508 100644
+--- a/tests/stage-formation-integration.test.mjs
++++ b/tests/stage-formation-integration.test.mjs
+@@ -211,6 +211,6 @@ test("音量は音源と同じ上段に置き、低頻度の補助操作は隠
+ test("認証済みゲストの必要資源だけを許可し、PWAへ試作用音源を入れない", () => {
+   assert.match(worker, /"\/formation\/prototype\/record-from-video\.html"/);
+   assert.doesNotMatch(sw, /gensan-extend|formation\/prototype\/sample/);
+-  for (const html of [index, stage]) assert.match(html, /stage-sketch\.js\?v=471/);
+-  assert.match(sw, /\.\/stage-sketch\.js\?v=471/);
++  for (const html of [index, stage]) assert.match(html, /stage-sketch\.js\?v=472/);
++  assert.match(sw, /\.\/stage-sketch\.js\?v=472/);
+ });
+diff --git a/tests/stage-machinery.test.mjs b/tests/stage-machinery.test.mjs
+index 8f751ac..04194a5 100644
+--- a/tests/stage-machinery.test.mjs
++++ b/tests/stage-machinery.test.mjs
+@@ -97,7 +97,7 @@ test("場面ごとの転換秒数を正規化し、再生ボタンと行き先
+   assert.match(sketchSource,
+     /function normalizeCueSeconds[\s\S]*?value === null[\s\S]*?clamp\(seconds, 0\.2, 10\)/);
+   assert.match(sketchSource, /cueSeconds: kind === "scene" \? normalizeCueSeconds\(raw\.cueSeconds\) : null/);
+-  assert.match(sketchSource, /const span = Number\.isFinite\(Number\(durationMs\)\)[\s\S]*?sc\(\)\.cueSeconds \* 1000/);
++  assert.match(sketchSource, /const span = durationMs != null && Number\.isFinite\(Number\(durationMs\)\)[\s\S]*?sc\(\)\.cueSeconds \* 1000/);
+   assert.match(indexSource, /id="stage-scene-replay"/);
+   assert.match(sketchSource, /sceneReplay\.disabled = index <= 0 \|\| !state\.animateScenes/);
+   assert.match(sketchSource, /beginSceneAnim\(fromScene\)/);
+diff --git a/tests/stage-session-shelve.test.mjs b/tests/stage-session-shelve.test.mjs
+index 5d0fa15..79f1b6a 100644
+--- a/tests/stage-session-shelve.test.mjs
++++ b/tests/stage-session-shelve.test.mjs
+@@ -40,13 +40,13 @@ test("セッション bridge の shelveNow は shelveCurrent の結果を返す"
+ });
+ 
+ test("変更したJS版とPWAキャッシュ版を正本・単独版・Service Workerで揃える", () => {
+-  for (const reference of ["stage-sketch.js?v=471", "stage-timeline.js?v=44", "stage-session.js?v=19"]) {
++  for (const reference of ["stage-sketch.js?v=472", "stage-timeline.js?v=45", "stage-session.js?v=19"]) {
+     assert.ok(indexSource.includes(reference), `${reference} が stage.html にある`);
+     assert.ok(stageHtml.includes(reference), `${reference} が stage.html にある`);
+     assert.ok(serviceWorkerSource.includes(`./${reference}`), `${reference} が stage-sw.js にある`);
+   }
+   // 版は上げるたびにここも更新する（2026-08-26: 発注書Hのゲスト画面変更で v144 → v145）
+-  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v466";/);
++  assert.match(serviceWorkerSource, /const CACHE_NAME = "stage-sketch-pwa-v467";/);
+ });
+ 
+ test("ゲスト参加は false の退避結果を失敗として扱い、role 変更前に中止する", () => {
+diff --git a/tests/stage-timeline-mode.test.mjs b/tests/stage-timeline-mode.test.mjs
+index 50b9993..ee7eadf 100644
+--- a/tests/stage-timeline-mode.test.mjs
++++ b/tests/stage-timeline-mode.test.mjs
+@@ -87,14 +87,12 @@ test("同じセクションのシーン間には0秒でも転換ポイントを
+   assert.match(css, /\.stage-timeline-scene-transition-marker\.is-point::after,[\s\S]*?rotate\(45deg\)/);
+ });
+ 
+-test("再生中は転換開始で動かし、転換の長さで次シーンへ到着する", () => {
+-  assert.match(sketch, /function beginSceneAnim\(fromScene, liveSpinsIn, durationMs = null\)/);
+-  assert.match(sketch, /transitionDurationMs/);
+-  assert.match(sketch, /openSceneById\(id, options = \{\}\)[\s\S]*?openScene\(next\.id, options\)/);
++test("タイムライン再生は絶対位置を本体へ渡し、音源時計を描画ごとに読む", () => {
++  assert.match(sketch, /setTimelinePosition\(position\)/);
+   assert.match(timeline, /function timelineTransitionAt\(seconds\)/);
+-  assert.match(timeline, /function syncTimelinePlaybackScene\(seconds, \{ allowTransition = false \} = \{\}\)/);
+-  assert.match(timeline, /previous < phase\.transition\.start[\s\S]*?transitionDurationMs: \(phase\.transition\.end - phase\.transition\.start\) \* 1000/);
+-  assert.match(timeline, /name === "timeupdate"[\s\S]*?syncTimelinePlaybackScene\(els\.audio\.currentTime, \{ allowTransition: true \}\)/);
++  assert.match(timeline, /bridge\.setTimelinePosition\(\{/);
++  assert.match(timeline, /syncTimelinePlaybackScene\(els\.audio\.currentTime\)/);
++  // Timing, pause, backward seek and curve behavior are exercised in stage-timeline-transport.browser.mjs.
+ });
+ 
+ test("シーンと転換の左右端をドラッグして長さを変え、後続のキューも追従させる", () => {
+@@ -113,8 +111,8 @@ test("シーンと転換の左右端をドラッグして長さを変え、後
+ });
+ 
+ test("転換の最初の描画は前シーンの位置から始め、行き先を一瞬だけ描かない", () => {
+-  assert.match(sketch, /sceneAnim = \{ pieces, exits, blackout, progress: 0, raf: 0 \};[\s\S]*?step\(start\);/);
+-  assert.match(sketch, /function beginSceneAnim\(fromScene, liveSpinsIn, durationMs = null\)[\s\S]*?return true;/);
++  assert.match(sketch, /sceneAnim = \{ pieces, exits, blackout, progress: 0, raf: 0,[\s\S]*?step\(start\);/);
++  assert.match(sketch, /function beginSceneAnim\(fromScene, liveSpinsIn, durationMs = null, timelineProgress = null\)[\s\S]*?return true;/);
+   assert.match(sketch, /updateInspector\(\);[\s\S]*?if \(!beginSceneAnim\(before, liveSpins, options\.transitionDurationMs\)\) render\(\);/);
+ });
+ 
+@@ -143,7 +141,7 @@ test("テンポ・カウント合わせ操作はカウント式だけで表示
+ });
+ 
+ test("シーク位置へ移動すると該当シーンを平面図・正面図へ同期する", () => {
+-  assert.match(timeline, /function syncSceneForSeek\(\)[\s\S]*?syncTimelinePlaybackScene\(seekSeconds\)/);
++  assert.match(timeline, /function syncSceneForSeek\(\)[\s\S]*?syncTimelinePlaybackScene\(seekSeconds, \{ reset: true \}\)/);
+   assert.match(timeline, /function seekFromPointer\(event\)[\s\S]*?syncSceneForSeek\(\)/);
+   assert.match(timeline, /if \(event\.shiftKey\)[\s\S]*?syncSceneForSeek\(\)/);
+   assert.match(timeline, /name === "seeking"[\s\S]*?seekSeconds = els\.audio\.currentTime;[\s\S]*?syncSceneForSeek\(\)/);
+diff --git a/tests/stage-timeline-transport.browser.mjs b/tests/stage-timeline-transport.browser.mjs
+new file mode 100644
+index 0000000..38fbaef
+--- /dev/null
++++ b/tests/stage-timeline-transport.browser.mjs
+@@ -0,0 +1,211 @@
++// Run: PLAYWRIGHT_MODULE=/path/to/playwright node --test tests/stage-pages-p0.browser.mjs
++// A local HTTP server and fresh browser contexts isolate all synthetic storage.
++import test, { before, after } from 'node:test';
++import assert from 'node:assert/strict';
++import { createRequire } from 'node:module';
++import { readFile } from 'node:fs/promises';
++import { createServer } from 'node:http';
++import path from 'node:path';
++import { fileURLToPath } from 'node:url';
++const require = createRequire(import.meta.url);
++const playwright = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
++const browserType = playwright[process.env.STAGE_TEST_BROWSER || 'chromium'];
++const root = process.env.STAGE_TEST_ROOT || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const fixture = JSON.parse(await readFile(new URL('./fixtures/stage-pages-p0.json', import.meta.url), 'utf8'));
++const CURRENT = 'shosai-stage-sketch-v1', SHELF = 'shosai-stage-shows-v1';
++let server, browser, url;
++before(async () => {
++  server = createServer(async (req, res) => {
++    const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
++    const file = path.resolve(root, '.' + pathname);
++    if (!file.startsWith(root + path.sep)) { res.writeHead(403); res.end(); return; }
++    try {
++      const body = await readFile(file);
++      res.setHeader('Content-Type', ({'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.svg':'image/svg+xml','.png':'image/png'})[path.extname(file)] || 'application/octet-stream');
++      res.end(body);
++    } catch { res.writeHead(404); res.end(); }
++  });
++  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
++  url = process.env.STAGE_TEST_URL || `http://127.0.0.1:${server.address().port}/stage.html`;
++  browser = await browserType.launch({ headless:true });
++});
++after(async () => { await browser?.close(); await new Promise(resolve => server?.close(resolve)); });
++async function pageFor(t, { state=fixture, shows={}, mode='normal', fail='', legacyBridge=false }={}) {
++  const context = await browser.newContext({ serviceWorkers:'block', locale:'ja-JP', viewport:{width:1440,height:1000} });
++  t.after(() => context.close());
++  await context.addInitScript(({state, shows, mode, fail, legacyBridge, CURRENT, SHELF}) => {
++    if (legacyBridge) {
++      let value;
++      Object.defineProperty(window, "SHOSAI_STAGE_SESSION_BRIDGE", { configurable:true, get:()=>value, set:bridge=>{ const {setTimelineAudioContext,getAudioPlaybackState,...rest}=bridge; value=Object.freeze(rest); } });
++    }
++    if (!localStorage.getItem('p0-test-seeded')) {
++      localStorage.setItem(CURRENT, JSON.stringify(state));
++      localStorage.setItem(SHELF, JSON.stringify(shows));
++      localStorage.setItem('shosai-stage-tour-v1', 'done');
++      localStorage.setItem('shosai-stage-prefs-v1',JSON.stringify({panelMusic:true}));
++      localStorage.setItem('shosai-stage-timeline-ui-v1', JSON.stringify({mode, volume:0}));
++      localStorage.setItem('p0-test-seeded', '1');
++    }
++    if (fail) {
++      const original = Storage.prototype.setItem;
++      Storage.prototype.setItem = function(key, value) {
++        if ((fail === 'current' && key.startsWith(CURRENT+'-pre-section-hierarchy')) ||
++            (fail === 'shelf' && key.startsWith(SHELF+'-pre-section-hierarchy'))) {
++          throw new DOMException('Synthetic backup write failure', 'QuotaExceededError');
++        }
++        return original.call(this, key, value);
++      };
++    }
++  }, {state,shows,mode,fail,legacyBridge,CURRENT,SHELF});
++  const p = await context.newPage();
++  p.setDefaultTimeout(10000);
++  const errors=[];p.on('pageerror',e=>errors.push(e.message));
++  t.after(()=>assert.deepEqual(errors, [], 'no uncaught browser exceptions'));
++  await p.goto(url);
++  await p.locator('#stage-launch-backup-close').click();
++  return p;
++}
++const doc = p => p.evaluate(()=>JSON.parse(SHOSAI_STAGE_SESSION_BRIDGE.exportDocumentString()));
++const oldState = () => { const f=structuredClone(fixture);f.project.scenes=f.project.scenes.filter(s=>s.kind==='scene').map(s=>({...s,depth:0}));return f; };
++function silentWav(seconds=8){const wav=Buffer.alloc(44+8000*seconds*2);wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(8000,24);wav.writeUInt32LE(16000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(wav.length-44,40);return wav;}
++async function addAudio(p){await p.locator('#stage-music-file').setInputFiles({name:'synthetic-silence.wav',mimeType:'audio/wav',buffer:silentWav()});try { await p.waitForFunction(()=>(SHOSAI_STAGE_SESSION_BRIDGE.getAudioPlaybackState?.().ready || document.querySelector('#stage-music-audio').readyState>=1)); } catch(error) { error.message += JSON.stringify(await p.evaluate(()=>({status:document.getElementById('stage-music-status').textContent, playback:SHOSAI_STAGE_SESSION_BRIDGE.getAudioPlaybackState?.(), audio: { ready:document.getElementById('stage-music-audio').readyState, error:document.getElementById('stage-music-audio').error?.message }, tracks:JSON.parse(SHOSAI_STAGE_SESSION_BRIDGE.exportDocumentString()).project.audioTracks}))); throw error; }}
++const pose = p => p.evaluate(()=>{
++  const project=JSON.parse(SHOSAI_STAGE_SESSION_BRIDGE.exportDocumentString()).project;
++  const scene=project.scenes.find(s=>s.id===project.activeSceneId);
++  return {scene:scene.id,pieces:scene.pieces,position:document.querySelector('#stage-timeline-position').textContent};
++});
++const u = snapshot => snapshot.pieces.find(p=>p.type==='performer').animU ?? snapshot.pieces.find(p=>p.type==='performer').u;
++async function seek(p, seconds, duration=5){
++  await p.locator('#stage-timeline-ruler').evaluate((el,{seconds,duration})=>{
++    const r=el.getBoundingClientRect();
++    el.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:r.left+r.width*seconds/duration,clientY:r.top+8,button:0}));
++    window.dispatchEvent(new PointerEvent('pointerup',{bubbles:true}));
++  },{seconds,duration});
++  await p.waitForTimeout(60);
++}
++function near(a,b,eps=.025){assert.ok(Math.abs(a-b)<eps,`${a} should be near ${b}`);}
++test('A06: default normal transition honors the scene duration rather than 100 ms',async t=>{
++  const p=await pageFor(t);
++  await p.evaluate(()=>SHOSAI_STAGE_SESSION_BRIDGE.openSceneById('audit-s2'));
++  await p.waitForTimeout(220);const a=await pose(p);assert.ok(u(a)<.5,JSON.stringify(a));
++  await p.waitForTimeout(2000);near(u(await pose(p)),.8);
++});
++test('A08: silent midpoint, backward and repeated seeks sample the same pose and stop there',async t=>{
++  const p=await pageFor(t,{mode:'timeline'});
++  await seek(p,2);near(u(await pose(p)),.5);
++  if(process.env.STAGE_TEST_EVIDENCE){
++    await p.locator('#stage-view-select').selectOption('both-plan');
++    await p.screenshot({path:process.env.STAGE_TEST_EVIDENCE+'/timeline-midpoint.png'});
++    await p.locator('#stage-view-select').selectOption('front');
++    await p.screenshot({path:process.env.STAGE_TEST_EVIDENCE+'/front-midpoint.png'});
++  }
++  await p.waitForTimeout(700);near(u(await pose(p)),.5);
++  await seek(p,.5);near(u(await pose(p)),.2);
++  await seek(p,2.5);assert.ok(u(await pose(p))>.65);
++  await seek(p,2);near(u(await pose(p)),.5);
++  await seek(p,3);near(u(await pose(p)),.8);
++});
++test('A05: silent pause freezes the movement; resume continues from that position',async t=>{
++  const p=await pageFor(t,{mode:'timeline'});
++  await seek(p,1.5);const before=await pose(p);
++  await p.locator('#stage-timeline-play').click();await p.waitForTimeout(300);
++  await p.locator('#stage-timeline-play').click();await p.waitForTimeout(100);const frozen=await pose(p);
++  assert.ok(u(frozen)>u(before));await p.waitForTimeout(700);
++  near(u(await pose(p)),u(frozen),.001);
++  assert.equal((await pose(p)).position,frozen.position);
++  await p.locator('#stage-timeline-play').click();await p.waitForTimeout(300);
++  await p.locator('#stage-timeline-play').click();assert.ok(u(await pose(p))>u(frozen));
++});
++test('timeline motion is visible even if normal scene animation is disabled',async t=>{
++  const state=structuredClone(fixture);state.animateScenes=false;
++  const p=await pageFor(t,{state,mode:'timeline'});await seek(p,2);near(u(await pose(p)),.5);
++});
++test('route control, light fades and machinery all sample the same transition progress',async t=>{
++  const state=structuredClone(fixture),[a,b]=state.project.scenes.filter(s=>s.kind==='scene');
++  a.pieces[0].route={u:.8,v:.5,bu:.5,bv:.1};
++  for (const [scene,n] of [[a,0],[b,1]]){
++    scene.pieces.push({id:'light-'+n,originId:'light-x',type:'light',u:.4,v:.5,glow:n?.8:.2,beam:{u:.5,v:.5}});
++    scene.pieces.push({id:'deck-'+n,originId:'deck-x',type:'deck',u:.6,v:.6,tilt:n?30:0,deckH:0});
++  }
++  const p=await pageFor(t,{state,mode:'timeline'});await seek(p,2);const mid=await pose(p);
++  near(mid.pieces[0].animV,.3);
++  near(mid.pieces.find(x=>x.type==='light').animGlow,.5);
++  near(mid.pieces.find(x=>x.type==='deck').animMech.tilt,15);
++  await seek(p,.5);await seek(p,2);near((await pose(p)).pieces[0].animV,.3);
++});
++test('audio currentTime drives mid-transition seek, pause and resume without drifting',async t=>{
++  const p=await pageFor(t,{mode:'timeline'});await addAudio(p);
++  await p.evaluate(()=>document.querySelector('#stage-music-audio').currentTime=2);
++  await p.waitForTimeout(200);near(u(await pose(p)),.5);
++  await p.locator('#stage-timeline-play').click();await p.waitForTimeout(220);
++  await p.locator('#stage-timeline-play').click();await p.waitForTimeout(100);const frozen=await pose(p);
++  await p.waitForTimeout(500);near(u(await pose(p)),u(frozen),.002);
++  await p.evaluate(()=>document.querySelector('#stage-music-audio').currentTime=1.5);
++  await p.waitForTimeout(120);assert.ok(u(await pose(p))<u(frozen));
++});
++test('saved canonical coordinates survive pause, shelf, reload and export/import',async t=>{
++  const p=await pageFor(t,{mode:'timeline'}),before=(await doc(p)).project;
++  await seek(p,2);near(u(await pose(p)),.5);
++  assert.equal(await p.evaluate(()=>SHOSAI_STAGE_SESSION_BRIDGE.shelveNow()),true);
++  const mid=await doc(p);
++  const canonical=project=>project.scenes.map(s=>({id:s.id,pieces:s.pieces.map(x=>({id:x.id,u:x.u,v:x.v,route:x.route})),rehearsal:s.rehearsal}));
++  assert.deepEqual(canonical(mid.project),canonical(before));
++  await p.reload();await p.locator('#stage-launch-backup-close').click();
++  assert.deepEqual(canonical((await doc(p)).project),canonical(before));
++  await p.locator('#stage-import-json').setInputFiles({name:'motion.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(mid))});
++  await p.locator('#stage-import-replace').click();
++  await p.waitForTimeout(150);assert.deepEqual(canonical((await doc(p)).project),canonical(before));
++  await seek(p,2);near(u(await pose(p)),.5);
++  await p.locator('#stage-workspace-normal').click();await p.waitForTimeout(150);
++  const normal=await pose(p);assert.equal(normal.pieces[0].animU,undefined);
++});
++function formationFixture(){
++  const state=structuredClone(fixture),[section,a,b]=state.project.scenes;
++  const castId=a.pieces[0].castId;
++  section.formation={version:1,audioTrackBySong:{},package:{format:'formation-exchange',sync:{documentId:'synthetic-formation'},formation:{songs:[{
++    id:'song-one',track:{countBpm:120,firstCountSec:0,anchors:[]},
++    frames:[{id:'f1',count:1,poses:{[castId]:{u:.2,v:.5,facing:350}}},{id:'f2',count:7,travel:4,poses:{[castId]:{u:.8,v:.5,facing:10,cu:.5,cv:.1,lead:1,early:1}}}],
++    scenePlan:{segments:[{id:'g1',fromFrameId:'f1'},{id:'g2',fromFrameId:'f2'}],endCount:11}
++  }]}}};
++  for(const [scene,n] of [[a,1],[b,2]])scene.formationLink={documentId:'synthetic-formation',songId:'song-one',sourceSegmentId:'g'+n,sourceFrameId:'f'+n,startCount:n===1?1:7};
++  return state;
++}
++test('Music Sync uses lead/early, curve and facing for silent seek and pause',async t=>{
++  const p=await pageFor(t,{state:formationFixture(),mode:'timeline'});
++  await seek(p,1.5);let current=await pose(p);near(u(current),.5);near(current.pieces[0].animV,.3);
++  near(current.pieces[0].animFacing,0);assert.equal(current.scene,'audit-s1');
++  await p.locator('#stage-timeline-play').click();await p.waitForTimeout(150);
++  await p.locator('#stage-timeline-play').click();const frozen=await pose(p);
++  await p.waitForTimeout(500);near(u(await pose(p)),u(frozen),.001);
++  await seek(p,3);assert.equal((await pose(p)).scene,'audit-s2');near(u(await pose(p)),.8);
++  await seek(p,1.5);near(u(await pose(p)),.5);
++});
++test('A/B wrap resamples the move instead of continuing the old animation',async t=>{
++  const p=await pageFor(t,{mode:'timeline'});
++  await seek(p,1.5);await p.locator('#stage-timeline-loop-a').click();
++  await seek(p,2);await p.locator('#stage-timeline-loop-b').click();
++  if(await p.locator('#stage-timeline-loop').getAttribute('aria-pressed')==='false')await p.locator('#stage-timeline-loop').click();
++  await seek(p,1.9);await p.locator('#stage-timeline-play').click();await p.waitForTimeout(250);
++  await p.locator('#stage-timeline-play').click();const wrapped=await pose(p);
++  assert.ok(u(wrapped)<.5,JSON.stringify(wrapped));await p.waitForTimeout(400);near(u(await pose(p)),u(wrapped),.001);
++});
++test('A06: null scene duration uses the configured global animation duration',async t=>{
++  const state=structuredClone(fixture);state.project.scenes[2].cueSeconds=null;
++  const p=await pageFor(t,{state});await p.evaluate(()=>SHOSAI_STAGE_SESSION_BRIDGE.openSceneById('audit-s2'));
++  await p.waitForTimeout(220);assert.ok(u(await pose(p))<.5);
++});
++test('Music Sync audio playback and seek have a single pose writer',async t=>{
++  const state=formationFixture(),p=await pageFor(t,{state,mode:'timeline'});await addAudio(p);
++  const project=(await doc(p)).project,trackId=project.scenes[1].audioTrackId;
++  assert.ok(trackId);project.scenes[0].formation.audioTrackBySong['song-one']=trackId;
++  await p.evaluate(({state,project,CURRENT})=>localStorage.setItem(CURRENT,JSON.stringify({...state,project})),{state,project,CURRENT});
++  await p.reload();await p.locator('#stage-launch-backup-close').click();
++  await p.waitForFunction(()=>SHOSAI_STAGE_SESSION_BRIDGE.getAudioPlaybackState().ready);
++  await p.evaluate(()=>document.querySelector('#stage-music-audio').currentTime=1.5);
++  await p.waitForTimeout(120);let current=await pose(p);near(u(current),.5);near(current.pieces[0].animV,.3);
++  await p.locator('#stage-timeline-play').click();await p.waitForTimeout(180);
++  await p.locator('#stage-timeline-play').click();await p.waitForTimeout(100);const frozen=await pose(p);
++  await p.waitForTimeout(400);near(u(await pose(p)),u(frozen),.002);
++  await p.evaluate(()=>document.querySelector('#stage-music-audio').currentTime=1.5);
++  await p.waitForTimeout(120);near(u(await pose(p)),.5);
++});

@@ -1,0 +1,17 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>舞台スケッチ — 利用計測の実装確認</title>
+<style>:root{--paper:#f5f1e8;--ink:#302a24;--muted:#67594c;--accent:#88432e;--line:#897a6a}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.65 system-ui,-apple-system,sans-serif}main{max-width:1040px;margin:auto;padding:32px 24px}h1{font-size:30px;line-height:1.3}h2{font-size:20px}p{max-width:70ch}a{color:var(--ink);text-decoration:underline}a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}.status{padding:16px;border:1px solid var(--accent);font-weight:600}.links{display:flex;flex-wrap:wrap;gap:16px}.links a{display:inline-flex;align-items:center;min-height:44px;padding:8px 16px;border:1px solid var(--line);border-radius:4px}section{padding:24px 0;border-bottom:1px solid var(--line)}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:12px 8px;border-bottom:1px solid var(--line)}small{font-size:14px;color:var(--muted)}img{max-width:100%;height:auto;border:1px solid var(--line)}li{margin:8px 0}code{overflow-wrap:anywhere}@media(max-width:600px){main{padding:16px}h1{font-size:30px}td,th{padding:8px 4px}}.phrase{display:inline-block}</style></head><body><main>
+<small>2026年9月8日 · β版の利用計測</small><h1><span class="phrase">ユーザー別の利用状況を</span><span class="phrase">確認できます</span></h1>
+<p class="status">実装・ローカル検証済み。本番への反映と実ユーザーの計測開始は未実施です。</p>
+<p>本番へ反映する前に、管理画面と記録する項目を確認できます。画面の数字は架空アカウントによるローカル検証値で、本番の実績ではありません。</p>
+<div class="links"><a href="admin-ja.html">日本語の管理画面を開く</a><a href="admin-en.html">English preview</a></div>
+<section><h2>確認できること</h2><table><thead><tr><th>項目</th><th>集計条件</th></tr></thead><tbody>
+<tr><td>最終利用日時</td><td>90日以内で、最後に起動・操作の報告が届いた日時</td></tr>
+<tr><td>利用日数</td><td>直近7・30・90日、日本時間の日付で集計</td></tr>
+<tr><td>操作時間</td><td>手前の画面で、最後の操作から60秒以内の時間を概算</td></tr>
+</tbody></table><p>管理者自身の利用は既定で除外し、チェックを付けると確認できます。作品や入力した文章は送信しません。利用者の画面下にも記録内容を表示します。</p></section>
+<section><h2>確認した範囲</h2><ul><li>全体テスト1609件成功。認証・日またぎ・重複送信・放置・通信停止などを検証。</li><li>ローカルのCloudflare実行環境に実際に保存でき、管理者以外は集計を読めないことを確認。</li><li>ブラウザでの操作時間が集計に届くこと、日英画面と期間切替を確認。</li><li>日英それぞれ390px・1440px幅の自動点検でNG・WARN・測定不可ともに0。見た目も確認。</li><li>公開体験版の配信物は変更なし。作業開始前の既存変更を保持。</li></ul>
+<p>未確認：Safari・実機iPad・本番Workerでの動作。記録がない人は一覧に出ず、共用アカウントの利用は区別できません。過去の未計測期間は復元できません。</p></section>
+<section><h2>本番へ反映すると</h2><p>ログイン付きβ本体で計測が始まり、管理者は舞台画面下の「利用状況を見る」から一覧を開けます。日別データの保持期間は90日です。共有セッションとは別の保存領域を使います。</p><p>公開承認後に、既存の未公開変更が混ざらないよう反映対象を照合し、本番の認証・PWA更新・集計受信を確認します。</p></section>
+<section><h2>画面の見本</h2><a href="admin-ja.html"><img src="design-lint/stage-usage-ja/full_1440x900.png" alt="架空の検証アカウントによる日本語の管理画面"></a></section>
+<section><h2>実装と検証の記録</h2><p><a href="IMPLEMENTATION.md">仕様・API・再確認手順</a> ／ <a href="TOKEN_SHEET.md">デザイントークン</a> ／ <a href="code-changes.patch">今回のコード差分</a></p><p><a href="design-lint/stage-usage-ja/report.md">日本語の画面点検</a> ／ <a href="design-lint/stage-usage-en/report.md">英語の画面点検</a></p><p>保存領域は<a href="https://developers.cloudflare.com/durable-objects/best-practices/access-durable-objects-storage/">Cloudflareの公式仕様</a>を確認して実装しました。</p></section>
+</main></body></html>

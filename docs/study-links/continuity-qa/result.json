@@ -1,0 +1,15 @@
+{
+  "base": "http://127.0.0.1:8837",
+  "checks": [
+    "Owner issues through the share modal; working document and saved shows unchanged",
+    "Working edits remain private; explicit rename/reorder keeps the same link and notes",
+    "Changed diagrams start clean; old/new previews support partial text and individual stroke copying without sending",
+    "Deleted-scene notes remain discoverable; copying to an added scene survives reload without replacing saved shows",
+    "Owner feedback inbox safely displays name, revision and both screenshots; show/sender filters work across shows",
+    "Japanese/English browser layouts at 390x844, 844x390, 768x1024 and 1440x1000: original font, no horizontal overflow, 44px actions",
+    "Other recipients see no private notes/inbox; public routes stay narrow; revocation removes current and historical frames"
+  ],
+  "errors": [],
+  "reviewUrl": "http://127.0.0.1:8837/study?lang=ja#2282cacfd6afd4586716a622225a622953610bfef056d37f",
+  "ownerUrl": "http://127.0.0.1:8837/stage.html?lang=ja"
+}

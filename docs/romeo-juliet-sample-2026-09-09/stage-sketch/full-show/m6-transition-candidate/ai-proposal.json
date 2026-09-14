@@ -1,0 +1,59 @@
+{
+  "kind": "stage-sketch-transition-proposal",
+  "version": 1,
+  "status": "ai_proposal_not_adopted",
+  "sourceNativeSha256": "7086d75a843a0ea7253d3dd630defe994cf491432aabcc19e7774d5000a5d780",
+  "sourceDecisionSha256": "f15c0d42cc70f4e33d840425a40297e8df5c7c6d8e512d62621e9752db0c64d9",
+  "carrierRoles": ["FRIAR_LAWRENCE", "FRIAR_JOHN"],
+  "preBlackoutPositions": {
+    "FRIAR_LAWRENCE": {"u": 0.82, "v": 0.08},
+    "FRIAR_JOHN": {"u": 0.96, "v": 0.12}
+  },
+  "barStaffPositions": {
+    "FRIAR_LAWRENCE": {"u": 0.22, "v": 0.22},
+    "FRIAR_JOHN": {"u": 0.78, "v": 0.22}
+  },
+  "frames": [
+    {
+      "id": "rj-frame-rj-cond-01-b-m6-01",
+      "title": "Q02.1｜暗転・第一波（AI仮案）",
+      "progress": 0.32,
+      "maskRoles": ["ROMEO", "JULIET", "MONTAGUE", "CAPULET"],
+      "bar": null,
+      "carrierPositions": {
+        "FRIAR_LAWRENCE": {"u": 0.91, "v": 0.10},
+        "FRIAR_JOHN": {"u": 0.97, "v": 0.18}
+      },
+      "note": "【AI仮案・客席へ見せない技術図】暗転後、人物移動と4名の仮面装着を先に始める。バーはまだ出さない。担当2枠は右袖へ寄る。順序は未稽古。"
+    },
+    {
+      "id": "rj-frame-rj-cond-01-b-m6-02",
+      "title": "Q02.2｜バー搬入（AI仮案）",
+      "progress": 0.63,
+      "maskRoles": ["ROMEO", "JULIET", "MONTAGUE", "CAPULET", "BENVOLIO", "TYBALT", "MERCUTIO", "NURSE"],
+      "bar": {"u": 0.88, "v": 0.12, "targetU": 0.50, "targetV": 0.12},
+      "carrierPositions": {
+        "FRIAR_LAWRENCE": {"u": 0.83, "v": 0.16},
+        "FRIAR_JOHN": {"u": 0.96, "v": 0.20}
+      },
+      "note": "【AI仮案・客席へ見せない技術図】変化の途中で、担当2枠が右袖から一体型バーを押す。画面上はバーと背面棚の2駒を同期表示。時間・経路・視界は未確認。"
+    },
+    {
+      "id": "rj-frame-rj-cond-01-b-m6-03",
+      "title": "Q02.3｜固定後の最終変化（AI仮案）",
+      "progress": 0.86,
+      "maskRoles": ["ROMEO", "JULIET", "FRIAR_LAWRENCE", "BENVOLIO", "TYBALT", "MERCUTIO", "NURSE", "CAPULET", "MONTAGUE", "FRIAR_JOHN"],
+      "bar": {"u": 0.50, "v": 0.12, "targetU": 0.50, "targetV": 0.12},
+      "carrierPositions": {
+        "FRIAR_LAWRENCE": {"u": 0.22, "v": 0.22},
+        "FRIAR_JOHN": {"u": 0.78, "v": 0.22}
+      },
+      "note": "【AI仮案・客席へ見せない技術図】バー固定後、担当2枠も仮面を着けてバー係の位置へ残る。ほかの人物はQ03への最後の変化を続ける。"
+    }
+  ],
+  "proposalNotes": [
+    "仮面の順はバー担当2枠を最後にした候補で、本人決定ではない",
+    "事前位置とバー係位置は図を成立させるための候補座標で、実会場のバミリではない",
+    "3枚は暗転中の工程を読む技術図で、客席向け自動再生シーンではない"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "existing 8796 invitation now requires free sign-in",
+    "existing snapshot remains available after restart",
+    "desktop full-width drawings",
+    "390px language selector is not clipped",
+    "owner guidance present on main index and beta stage"
+  ],
+  "errors": [],
+  "url": "http://127.0.0.1:8796/study?lang=ja#f3a432a35b25355bd1df62632509cd560caf0a873212b35f"
+}

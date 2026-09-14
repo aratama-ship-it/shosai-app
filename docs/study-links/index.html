@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>事前学習用リンク — ローカル実装の確認 | Stage Sketch</title>
+<style>
+:root{color-scheme:dark;--bg:#211d19;--panel:#302923;--ink:#eee6d6;--muted:#baae9c;--accent:#d4ad76}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}main{max-width:1080px;margin:auto;padding:32px 24px 72px}h1{font-size:32px;line-height:1.5;margin:12px 0}h2{font-size:24px;margin:0 0 16px}h3{font-size:18px;margin:16px 0 8px}p{max-width:72ch}a{color:var(--accent);text-underline-offset:3px;overflow-wrap:anywhere}a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}small,.muted{color:var(--muted)}section{border-top:1px solid var(--muted);padding:24px 0;margin-top:24px}.actions{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.actions a{display:inline-flex;align-items:center;min-height:44px;padding:8px 16px;border:1px solid var(--accent);border-radius:6px}.actions a:first-child{color:var(--bg);background:var(--accent)}.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}.facts strong{display:block;font-size:24px}.facts p{margin:8px 0}.notice{border-left:3px solid var(--accent);padding:4px 16px;background:var(--panel)}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border-bottom:1px solid var(--muted);text-align:left;padding:12px 8px;vertical-align:top}th{color:var(--muted);font-weight:600}code{font-size:14px;overflow-wrap:anywhere}pre{background:var(--panel);padding:16px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}ul,ol{padding-left:24px}li{margin:8px 0}summary{cursor:pointer;padding:12px 0;min-height:44px}details{border-bottom:1px solid var(--muted)}figure{margin:16px 0 24px}img{display:block;max-width:100%;height:auto;border:1px solid var(--muted)}figcaption{font-size:14px;color:var(--muted);margin-top:8px}.pair{display:grid;grid-template-columns:1fr 1fr;gap:24px}.mobile{max-height:720px;width:auto;max-width:100%}.scroll{overflow-x:auto}@media(max-width:650px){main{padding:24px 16px 48px}h1{font-size:26px}.facts,.pair{grid-template-columns:1fr}.facts{gap:8px}}
+</style>
+<main data-review="stage-study-local-20260909">
+<header>
+<small>STAGE SKETCH / 2026-09-09 / ローカル実装・未デプロイ</small>
+<h1>事前に渡す、一つのショー。</h1>
+<p>発行時点の全場面を閲覧用に保存し、オーナーが「公開内容を更新」した時だけ同じリンクを更新します。受取人は舞台図の確認と場面に紐づくメモ送信を行えます。</p>
+<p class="notice"><strong>次に確認すること：</strong>下の閲覧リンクで、場面移動、正面・平面の読みやすさ、メモの送りやすさを確認してください。合成した3場面のショーです。自分の端末の既存ショーは読み込まず、上書きしません。</p>
+<nav class="actions" aria-label="ローカル確認入口">
+<a href="http://127.0.0.1:8814/study?lang=ja#2011ff3df8853e65cc7f5ab9ea712d09a05a84482dfe1634">日本語で閲覧する</a>
+<a href="http://127.0.0.1:8814/study?lang=en#2011ff3df8853e65cc7f5ab9ea712d09a05a84482dfe1634" lang="en">Open English viewer</a>
+<a href="http://127.0.0.1:8814/stage.html?lang=ja">ベータのオーナー画面</a>
+<a href="http://127.0.0.1:8814/index.html?lang=en#stage">本体のオーナー画面</a>
+</nav>
+<p class="muted">このMacの 127.0.0.1:8814 で起動中。ログイン不要の閲覧リンクです。オーナー画面はローカル検証専用の ID <code>study-owner</code> / パスワード <code>local-study-owner</code>。本番アカウントではありません。</p>
+<div class="facts"><p><strong>768 / 768</strong>関連 Node・Worker テスト</p><p><strong>25 + 16 + 13</strong>実 SQLite 検証 + 画像検証 + 既存共有通信検証</p><p><strong>日本語・英語 × 4画面幅</strong>Chrome で閲覧・操作・保存隔離を確認</p></div>
+</header>
+
+<section>
+<h2>実装した体験</h2>
+<div class="pair"><div><h3>オーナー</h3><p>現在のショーから発行し、同じリンクを明示的に更新。日時の表示、コピー、無効化の画面内確認、投稿者・対象場面・投稿日時・本文を含むメモ一覧を独立したダイアログにまとめました。公開内容を更新・無効化した後も、以前のメモを確認できます。</p><p>メモと添付画像の全削除、失効後の新トークン再発行、失効済み公開データの完全削除を、取り消せない内容を示す画面内確認から実行できます。完全削除すると10ショーの保存枠が1件戻ります。</p></div><div><h3>受取人</h3><p>「事前確認用・閲覧のみ」と明示した専用画面。全場面の切替、正面図・平面図、既存の移動再生・停止と、現在場面へのメモ送信だけを使えます。編集画面へのリンクや保存・書き出しはありません。</p><p>認証済みなら検証済みログイン名、匿名なら初回入力した表示名を使います。端末保存は表示名と自分用の下書きのみ。他の受取人のメモは返しません。</p></div></div>
+<p><strong>適用範囲：</strong>本体 <code>index.html</code> と単独ベータ <code>stage.html</code>。公開体験版 <code>try.html</code> には管理入口を入れていません。課金、プラン制限、Googleログインは実装していません。</p>
+<p><strong>共有に含まれないもの：</strong>端末内の音源と、ショーJSONに含まれない独自立体モデル。オーナー画面で明示し、閲覧側もローカル音源を再生しません。図の再生は視覚的な確認用です。</p>
+<figure><img src="qa/viewer-en-1440.png" alt="英語の閲覧ページ。左に正面図と平面図、右に場面に紐づくメモ入力。" loading="lazy"><figcaption>デスクトップ：編集用のツールを除いた専用の閲覧画面。</figcaption></figure>
+<div class="pair"><figure><img class="mobile" src="qa/viewer-ja-390.png" alt="日本語のスマートフォン縦画面。舞台図の下にメモ欄。" loading="lazy"><figcaption>390×844：日本語・縦向き。</figcaption></figure><figure><img src="qa/viewer-ja-844.png" alt="日本語のスマートフォン横画面。正面図と平面図を横並びに表示。" loading="lazy"><figcaption>844×390：横向きでは舞台図を並べて表示。</figcaption></figure></div>
+<details><summary>オーナーの主要状態を見る</summary><div class="pair">
+<figure><img src="qa/owner-unissued.png" alt="未発行と発行操作" loading="lazy"><figcaption>未発行・共有できない項目の説明</figcaption></figure>
+<figure><img src="qa/owner-notes.png" alt="投稿者と対象場面付きのメモ一覧" loading="lazy"><figcaption>メモあり・プレーンテキスト表示</figcaption></figure>
+<figure><img src="qa/owner-updating.png" alt="公開内容の更新中" loading="lazy"><figcaption>明示的な公開内容の更新</figcaption></figure>
+<figure><img src="qa/owner-confirm-revoke.png" alt="無効化を確定する画面内の操作" loading="lazy"><figcaption>無効化の確認</figcaption></figure>
+</div><p>その他の証拠：<a href="qa/owner-confirm-clear-notes.png">メモ全削除の確認</a> / <a href="qa/owner-confirm-reissue.png">再発行の確認</a> / <a href="qa/owner-confirm-purge.png">完全削除の確認</a> / <a href="qa/owner-copy-success.png">コピー成功</a> / <a href="qa/owner-copy-failed.png">コピー失敗</a> / <a href="qa/owner-network-error.png">通信エラー</a> / <a href="qa/viewer-revoked.png">無効化後</a> / <a href="qa/viewer-offline.png">オフライン時</a> / <a href="qa/owner-main-en-390.png">本体・英語・縦画面</a></p></details>
+</section>
+
+<section>
+<h2>追加：正面図・平面図のペン</h2>
+<p>「ペン」を有効にすると、舞台図の上へ黄色い線を描けます。正面図と平面図を分け、場面ごとに線を保持。「線を1本戻す」と確認付きの「線を消す」を使えます。再生中は線を隠し、「停止」で再表示します。</p>
+<p class="notice"><strong>線は受取人の下書きです。</strong>自分用の端末データとして場面ごとに保存し、メモ送信時だけ正面図・平面図のJPEGとしてオーナーへ共有します。オーナーはメモと一緒に画像を確認できます。元のショーは変更しません。</p>
+<p>Chromeでマウス・タッチ相当入力、日英×4画面寸法、場面切替、1本戻す、消去の確認、元ショーとローカル保存の不変性を検証。実機のSafariやApple Pencilは未確認です。<a href="qa/pen-result.json">操作検証結果</a> / <a href="qa/pen-ja-390.png">スマートフォン縦向き</a> / <a href="qa/pen-ja-844.png">横向き</a></p>
+<figure><img src="qa/pen-ja-1440.png" alt="正面図と平面図に黄色い注釈線を重ねた閲覧画面" loading="lazy"><figcaption>元のcanvasを変更せず、図の表示位置と縦横比に追従する独立した線。</figcaption></figure>
+<p>追加・変更：<code>stage-study-pen.js</code>、<code>stage-study-frame.js</code>、<code>stage-study-viewer.js</code>、<code>study.html</code>、<code>stage-study.css</code>、<code>build_study.py</code> と生成物 <code>study-frame.html</code>、<code>study-links.js</code> の明示資源許可、<code>tools/study-pen-browser-check.mjs</code>、既存トークンシート。この追加による新しいbinding・migrationはありません。</p>
+</section>
+<section>
+<h2>保存と認可の境界</h2>
+<p>既存の <code>SessionRoom</code> とは別の <code>StudyLinks</code> Durable Object を追加。SQLiteバックエンドのストレージにスナップショット、所有者との対応、メモを永続化します。大きなスナップショットは分割保存し、発行・更新・投稿・無効化はトランザクションで直列化します。プロセス再起動後の復元も実Runtimeで確認しました。</p>
+<div class="scroll"><table><thead><tr><th>対象</th><th>実装</th></tr></thead><tbody>
+<tr><td>所有者</td><td><code>studyPrincipal(authenticatedUser)</code> を交換可能な境界に集約。現在の既存認証が検証したアカウントIDと、保存された作成者IDをサーバーで照合。クライアントの自己申告IDは採用しません。</td></tr>
+<tr><td>閲覧権限</td><td>暗号学的乱数192ビットのトークン。URLのfragmentにトークンだけを持たせ、JSON・メモ・管理鍵は含めません。存在しない、無効化済み、不正なトークンは共通404。</td></tr>
+<tr><td>公開例外</td><td><code>/study</code>、専用描画ページ、明示した15経路の必要資源、対象トークンの閲覧・状態確認・メモ投稿API。JSは専用alias経由。<code>stage-*.js</code> のワイルドカード公開はありません。</td></tr>
+<tr><td>描画と端末保存</td><td>同一オリジン権限を与えない sandbox iframe と CSP で隔離。描画コードも閲覧モードではlocalStorageを使わず、編集・リアルタイム共有のbridgeを公開しません。既存の舞台描画関数を再利用します。</td></tr>
+<tr><td>失効</td><td>サーバーは無効化直後から閲覧・投稿を拒否。表示中のページはオンラインで約5秒ごとに確認し、失効・通信断で描画を破棄。再表示・復帰時も再検証します。取得済み情報を端末外まで回収する仕組みではありません。</td></tr>
+<tr><td>メモ</td><td>本文2000文字、表示名60文字、リクエスト384KiB。HTMLとして挿入しません。現在の公開revisionと場面をサーバー側で照合。添付画像は検証済みJPEGだけを保存し、オーナー専用経路から返します。</td></tr>
+<tr><td>過剰投稿と保存量</td><td>送信元ごと5件/分（短期メモリのみ）、リンク全体30件/分、最大500メモ/リンク。1アカウント10ショー、全体1000リンクをサーバーで強制。メモ削除、失効後の再発行、失効済みデータ削除で枠を回復できます。IP・User-Agentは永続保存しません。</td></tr>
+<tr><td>キャッシュ・分析</td><td>全共有APIは <code>private, no-store</code>。専用ページ・APIはService Workerキャッシュを迂回。閲覧ページに利用状況計測や公開解析を入れず、ショーとメモの内容を送信しません。</td></tr>
+</tbody></table></div>
+<details><summary>APIと将来の認証接続</summary><pre>POST /study/api/owner/shows/:showId     発行
+GET  /study/api/owner/shows/:showId     自分のショーのリンク状態
+GET / PUT / DELETE /study/api/owner/links/:token
+GET / DELETE /study/api/owner/links/:token/notes
+DELETE /study/api/owner/shows/:showId    失効済み保存データの完全削除
+
+GET  /study/api/view/:token             公開スナップショット
+GET  /study/api/view/:token/status      公開revision・日時
+POST /study/api/view/:token/notes       オーナー宛てメモ</pre><p>将来ログインを変更するときは、検証済み利用者から不変のsubjectを返すadapterに置き換えます。現在の <code>account:利用者ID</code> との対応を移行する必要があります。現状はアカウント名の変更や再利用を、所有権の移転として自動解釈しません。</p><p>同一ショーを再発行できるのは無効化後だけです。新しい192ビットtokenを発行し、旧スナップショット・メモ・添付画像・旧tokenレコードを同じトランザクションで削除します。</p></details>
+</section>
+
+<section>
+<h2>検証結果と残る実機確認</h2>
+<div class="scroll"><table><thead><tr><th>検証</th><th>結果・証拠</th></tr></thead><tbody>
+<tr><td>関連Node・Worker</td><td>768件成功、失敗0、skip0。1アカウント10ショー、別オーナー分離、全体上限、旧キー移行、再発行、メモ全削除、失効済みデータ削除を含む。<a href="node-tests.log">ログ</a></td></tr>
+<tr><td>実 workerd / SQLite</td><td>通常ライフサイクル25件、画像ライフサイクル16件が成功。旧token回収、全削除後の再投稿、添付画像チャンク削除、稼働中の完全削除拒否、失効後の完全削除を確認。既存リアルタイムのWebSocket検証13件成功。<a href="runtime-tests.log">通常ログ</a> / <a href="image-runtime-tests.log">画像ログ</a></td></tr>
+<tr><td>実Chrome</td><td>発行・明示更新・メモと画像・保存隔離に加え、確認付き全削除、削除後の再投稿、新token再発行、旧token拒否、失効済みデータ削除を操作。pageerror 0。<a href="qa/result.json">結果</a></td></tr>
+<tr><td>日英・画面寸法</td><td>390×844 / 844×390 / 768×1024 / 1440×1000。閲覧画面の横はみ出し0、操作領域44px以上。オーナーはベータ日本語・本体英語も確認。</td></tr>
+<tr><td>デザイン検査</td><td>日英それぞれ390×844 / 1440×900でNG0、WARN0。閲覧ページ外側DOMの最低コントラスト7.67:1。図内の可読性はスクリーンショットで確認。<a href="design-lint-final/study-ja/report.md">日本語</a> / <a href="design-lint-final/study-en/report.md">英語</a></td></tr>
+<tr><td>生成・構文</td><td>関連JSのNode構文検査、Python構文検査、<code>build_stage.py --check</code>、<code>build_public.py --check</code>、<code>git diff --check</code> 成功。stage.html と study-frame.html は index.html から生成。<a href="public-build.log">公開ビルド検査</a></td></tr>
+</tbody></table></div>
+<p class="notice"><strong>未確認：</strong>iPhone / iPad / Android実機、Safari、VoiceOver/TalkBack、ソフトウェアキーボード表示時、実際の回線切替、複雑なショーでの舞台図の読みやすさ。Chromeの画面寸法変更は、これらの実機確認を代替しません。本番の認証・DNS・Cloudflare配信は変更も検証もしていません。</p>
+<details><summary>ユーザー指定の16項目と検証の対応</summary><ol>
+<li>現在のショーから発行：実Chromeのオーナー操作 + API。</li><li>作業中・保存内容の不変性：発行前後のsnapshotとlocalStorageを比較。</li><li>全場面の閲覧：3場面のfixtureと場面切替。</li><li>明示更新まで凍結：編集後の未反映、更新後の同一URL反映を確認。</li><li>編集不能：隔離frame、ドラッグ・Delete・Undo、編集bridge不在、直接PUT/DELETE/PATCH/POSTの拒否。</li><li>メモ送信とオーナー一覧：実Chrome + API。</li><li>受取人の一覧取得拒否：匿名GETと閲覧JSONにメモがないことを確認。</li><li>別所有者拒否：一覧・更新・無効化をAPIと実Runtimeで検証。</li><li>無効・失効・総当たり形式：共通404、64候補の拒否。</li><li>XSS・過大・型・連投：型/サイズ/保存数/レート検査、危険な文字列をHTMLにせず表示。</li><li>ベータ認証境界：編集・棚・名簿・一般stage資源・管理APIへの匿名到達を拒否。</li><li>受取人の既存ショー保持：storageへsentinelを置いて閲覧・投稿・場面移動後も一致。</li><li>日英・主要状態：各画面幅と状態のスクリーンショット、翻訳の実装。</li><li>本体・ベータの資源：両入口、SW、Worker明示許可、専用ページの絶対参照をテスト。</li><li>生成物一致：stage.html・study-frame.htmlの生成チェック。</li><li>既存共有・ゲスト回帰：関連Nodeと実WebSocketテストが成功。</li>
+</ol></details>
+</section>
+
+<section>
+<h2>再開・再検証する手順</h2>
+<p>今動いている確認サーバーを使う場合は、冒頭のリンクを開くだけです。再起動時は次を実行します。インストール済みのMiniflareを使い、新しい依存や秘密情報を登録していません。</p>
+<pre>cd '/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app'
+STUDY_PORT=8814 STUDY_PERSIST=/tmp/stage-study-fix-preview-8814 STUDY_MINIFLARE=/Users/arata/.npm/_npx/32026684e21afda6/node_modules/miniflare/dist/src/index.js node tools/study-preview.mjs</pre>
+<p>現在の検証サーバーはポート8814、保存先 <code>/tmp/stage-study-fix-preview-8814</code>。再起動後も残りますが、OSの一時領域清掃後の保持は保証しません。ポート変更は <code>STUDY_PORT</code>、保存先変更は <code>STUDY_PERSIST</code>。Miniflareを通常のnode_modulesに導入済みの環境では環境変数を省略できます。</p>
+<ol><li>ベータ画面にローカル検証アカウントでログイン。</li><li><a href="synthetic-review-show.json" download>合成ショーJSON</a>を読み込み、既存の確認画面で「別のショーとして開く」を選択。元のショーを置き換えないでください。</li><li>ショー名付近の「事前学習用リンク」を開く。レビュー用リンクの発行済み状態と、受取人が送ったメモを確認できます。</li><li>場面を変更し、公開内容は変わらないことを閲覧側で確認。「公開内容を更新」して反映を確認します。</li></ol>
+<details><summary>テスト再実行コマンド</summary><pre>node --test tests/stage-*.test.mjs tests/worker-*.test.mjs tests/usage-metrics.test.mjs tests/study-*.test.mjs
+STUDY_MINIFLARE=/Users/arata/.npm/_npx/32026684e21afda6/node_modules/miniflare/dist/src/index.js node tools/study-runtime-check.mjs
+STUDY_MINIFLARE=/Users/arata/.npm/_npx/32026684e21afda6/node_modules/miniflare/dist/src/index.js node tools/study-image-runtime-check.mjs
+STUDY_PLAYWRIGHT=/Users/arata/.npm/_npx/9833c18b2d85bc59/node_modules/playwright/index.js node tools/study-browser-check.mjs
+python3 build_stage.py --check
+python3 build_public.py --check
+git diff --check</pre><p>Chromeテストは <code>STUDY_BASE</code> で指定したローカルサーバーと、一時的な独立ブラウザプロファイルを使います。実行ごとに新しい合成リンクを作り、結果は <code>qa/result.json</code> へ保存します。このHTML内のリンクを再利用したい場合は、テスト出力の新しいURLとfixtureに合わせてください。</p></details>
+</section>
+
+<section>
+<h2>本番適用に必要な作業</h2>
+<p><strong>本番適用は実施していません。</strong>承認後、既存の別作業とまとめて差分をレビューしてから、対象Workerへ次の設定を適用する必要があります。</p>
+<ol><li><code>STUDY_LINKS → StudyLinks</code> binding、<code>worker.js</code> のclass export、<code>v3-study-links</code> の <code>new_sqlite_classes = ["StudyLinks"]</code> を適用。</li><li>既存の <code>SESSION_ROOM</code> と <code>USAGE_METRICS</code> binding、およびv1/v2 migrationを保持。v2は着手前から存在した別作業です。本番で適用済みかは今回照会していないため、migration履歴を照合して順序を確認。</li><li><code>assets.run_worker_first = true</code> を維持。生成した専用ページ・新規JS/CSSを含めて配信。本体を別Workerで運用する場合、そのWorkerにも同じAPI・binding・migrationが必要です。静的HTMLだけでは永続共有は動きません。</li><li>デプロイ後は、実アカウントA/Bの分離、匿名経路、メモ保持、無効化、実際の配信資源と生成物の一致を改めて確認。</li></ol>
+<p>新規の秘密情報は不要です。SQLite Durable Objectのmigration方式は<a href="https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/">Cloudflare公式ドキュメント</a>を参照。今回のローカル検証は本番migrationの適用証明ではありません。</p>
+</section>
+
+<section>
+<h2>変更ファイルと共有作業の保護</h2>
+<div class="scroll"><table><thead><tr><th>領域</th><th>ファイル</th></tr></thead><tbody>
+<tr><td>API・保存・配信</td><td><code>study-links.js</code>（新規）、<code>worker.js</code>、<code>wrangler.toml</code></td></tr>
+<tr><td>利用者画面</td><td><code>stage-study-owner.js</code>、<code>stage-study-viewer.js</code>、<code>stage-study-frame.js</code>、<code>stage-study.css</code>、<code>study.html</code>（新規）</td></tr>
+<tr><td>既存描画との接続</td><td><code>index.html</code>、<code>stage-sketch.js</code>、<code>stage-venues.js</code>、<code>stage-sw.js</code></td></tr>
+<tr><td>生成</td><td><code>build_study.py</code>（新規）、<code>build_stage.py</code>、<code>build_public.py</code>。生成物：<code>study-frame.html</code>（新規）、<code>stage.html</code>、<code>try.html</code></td></tr>
+<tr><td>テスト</td><td><code>tests/study-links.test.mjs</code>、<code>tools/study-preview.mjs</code>、<code>tools/study-browser-check.mjs</code>、<code>tools/study-runtime-check.mjs</code>（新規）。既存3テストは資源version番号の期待値を更新。</td></tr>
+<tr><td>説明と証拠</td><td><code>README.md</code>、<code>design/TOKEN_SHEET_study-links_2026-09-09.md</code>、この <code>docs/study-links/</code></td></tr>
+</tbody></table></div>
+<p>着手前の30件の追跡済み未コミット差分を保存し、編集直前にもstatus・対象diff・内容hashを確認。今回変更した追跡済み14ファイル以外に、予期しない変更はありません。対象外の既存差分18ファイルは着手時とバイト一致。対象を共有するファイルでも、以前からあった差分を残して機能を追加しています。既存の未追跡資料には触れていません。</p>
+<p><a href="preservation.json">保全検査</a>。着手前の内容とpatchは <code>/tmp/stage-study-baseline-20260909</code> に保存。commit、push、Cloudflareへのデプロイ、公開、外部送信、秘密情報の登録は行っていません。</p>
+</section>
+</main>
+</html>

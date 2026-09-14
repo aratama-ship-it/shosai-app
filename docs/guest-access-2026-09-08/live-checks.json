@@ -1,0 +1,532 @@
+{
+  "origin": "https://stagesketch.pygmix.com",
+  "passed": 114,
+  "failed": 0,
+  "unchangedAssetCount": 21,
+  "checkedAccounts": [
+    "guest1",
+    "guest3",
+    "guest4"
+  ],
+  "checks": [
+    {
+      "check": "login label ja",
+      "passed": true
+    },
+    {
+      "check": "login label en",
+      "passed": true
+    },
+    {
+      "check": "anonymous English navigation",
+      "passed": true,
+      "status": 302
+    },
+    {
+      "check": "anonymous protected /stage",
+      "passed": true,
+      "status": 401
+    },
+    {
+      "check": "anonymous protected /index.html",
+      "passed": true,
+      "status": 401
+    },
+    {
+      "check": "anonymous protected /db.js",
+      "passed": true,
+      "status": 401
+    },
+    {
+      "check": "anonymous protected /stage-shows.local.js",
+      "passed": true,
+      "status": 401
+    },
+    {
+      "check": "guest1 English login redirect",
+      "passed": true,
+      "status": 303
+    },
+    {
+      "check": "guest1 cookie flags",
+      "passed": true
+    },
+    {
+      "check": "guest1 Basic stage exact scoped HTML",
+      "passed": true,
+      "status": 200
+    },
+    {
+      "check": "guest1 Basic English redirect preserved",
+      "passed": true
+    },
+    {
+      "check": "guest1 Basic private cache",
+      "passed": true
+    },
+    {
+      "check": "guest1 Basic identity",
+      "passed": true
+    },
+    {
+      "check": "guest1 Basic home routes to Stage Sketch",
+      "passed": true
+    },
+    {
+      "check": "guest1 Basic denied /index.html",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Basic denied /index",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Basic denied /db.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Basic denied /data.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Basic denied /roster-key.local.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Basic denied /stage-shows.local.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Basic denied /%64b.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Basic denied /manual/%2e%2e/db.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Cookie stage exact scoped HTML",
+      "passed": true,
+      "status": 200
+    },
+    {
+      "check": "guest1 Cookie English redirect preserved",
+      "passed": true
+    },
+    {
+      "check": "guest1 Cookie private cache",
+      "passed": true
+    },
+    {
+      "check": "guest1 Cookie identity",
+      "passed": true
+    },
+    {
+      "check": "guest1 Cookie home routes to Stage Sketch",
+      "passed": true
+    },
+    {
+      "check": "guest1 Cookie denied /index.html",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Cookie denied /index",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Cookie denied /db.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Cookie denied /data.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Cookie denied /roster-key.local.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Cookie denied /stage-shows.local.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Cookie denied /%64b.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest1 Cookie denied /manual/%2e%2e/db.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 English login redirect",
+      "passed": true,
+      "status": 303
+    },
+    {
+      "check": "guest3 cookie flags",
+      "passed": true
+    },
+    {
+      "check": "guest3 Basic stage exact scoped HTML",
+      "passed": true,
+      "status": 200
+    },
+    {
+      "check": "guest3 Basic English redirect preserved",
+      "passed": true
+    },
+    {
+      "check": "guest3 Basic private cache",
+      "passed": true
+    },
+    {
+      "check": "guest3 Basic identity",
+      "passed": true
+    },
+    {
+      "check": "guest3 Basic home routes to Stage Sketch",
+      "passed": true
+    },
+    {
+      "check": "guest3 Basic denied /index.html",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Basic denied /index",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Basic denied /db.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Basic denied /data.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Basic denied /roster-key.local.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Basic denied /stage-shows.local.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Basic denied /%64b.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Basic denied /manual/%2e%2e/db.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Cookie stage exact scoped HTML",
+      "passed": true,
+      "status": 200
+    },
+    {
+      "check": "guest3 Cookie English redirect preserved",
+      "passed": true
+    },
+    {
+      "check": "guest3 Cookie private cache",
+      "passed": true
+    },
+    {
+      "check": "guest3 Cookie identity",
+      "passed": true
+    },
+    {
+      "check": "guest3 Cookie home routes to Stage Sketch",
+      "passed": true
+    },
+    {
+      "check": "guest3 Cookie denied /index.html",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Cookie denied /index",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Cookie denied /db.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Cookie denied /data.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Cookie denied /roster-key.local.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Cookie denied /stage-shows.local.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Cookie denied /%64b.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest3 Cookie denied /manual/%2e%2e/db.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 English login redirect",
+      "passed": true,
+      "status": 303
+    },
+    {
+      "check": "guest4 cookie flags",
+      "passed": true
+    },
+    {
+      "check": "guest4 Basic stage exact scoped HTML",
+      "passed": true,
+      "status": 200
+    },
+    {
+      "check": "guest4 Basic English redirect preserved",
+      "passed": true
+    },
+    {
+      "check": "guest4 Basic private cache",
+      "passed": true
+    },
+    {
+      "check": "guest4 Basic identity",
+      "passed": true
+    },
+    {
+      "check": "guest4 Basic home routes to Stage Sketch",
+      "passed": true
+    },
+    {
+      "check": "guest4 Basic denied /index.html",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Basic denied /index",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Basic denied /db.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Basic denied /data.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Basic denied /roster-key.local.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Basic denied /stage-shows.local.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Basic denied /%64b.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Basic denied /manual/%2e%2e/db.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Cookie stage exact scoped HTML",
+      "passed": true,
+      "status": 200
+    },
+    {
+      "check": "guest4 Cookie English redirect preserved",
+      "passed": true
+    },
+    {
+      "check": "guest4 Cookie private cache",
+      "passed": true
+    },
+    {
+      "check": "guest4 Cookie identity",
+      "passed": true
+    },
+    {
+      "check": "guest4 Cookie home routes to Stage Sketch",
+      "passed": true
+    },
+    {
+      "check": "guest4 Cookie denied /index.html",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Cookie denied /index",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Cookie denied /db.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Cookie denied /data.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Cookie denied /roster-key.local.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Cookie denied /stage-shows.local.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Cookie denied /%64b.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "guest4 Cookie denied /manual/%2e%2e/db.js",
+      "passed": true,
+      "status": 403
+    },
+    {
+      "check": "preserved production asset /icons/stage-sketch-180.png",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /icons/stage-sketch-192.png",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /manual/manual-content.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-audio-store.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-first-person.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-i18n.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-machinery.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-prompt-i18n.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-pwa.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-rehearsal-export.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-samples/index.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-session.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-set-builder.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-set-model.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-sketch.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-sketch.webmanifest",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-sw.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-venue-editor.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-venue-lines.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /stage-venues.js",
+      "passed": true
+    },
+    {
+      "check": "preserved production asset /style.css",
+      "passed": true
+    },
+    {
+      "check": "conditional/Range cannot bypass transformation",
+      "passed": true,
+      "status": 200
+    },
+    {
+      "check": "beta status unchanged",
+      "passed": true
+    }
+  ]
+}

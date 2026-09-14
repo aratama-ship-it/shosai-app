@@ -1,0 +1,48 @@
+{
+  "revision": "timeline-only",
+  "errors": [],
+  "removedCustomUI": true,
+  "viewOptions": [
+    "front",
+    "plan"
+  ],
+  "oneViewAtATime": true,
+  "nativeGeometryUnchanged": {
+    ".stage-sketch-head": {
+      "x": 68,
+      "width": 1333,
+      "font": "15px",
+      "display": "flex"
+    },
+    "#stage-col-left": {
+      "x": 68,
+      "width": 268,
+      "font": "15px",
+      "display": "block"
+    },
+    "#stage-col-right": {
+      "x": 1133,
+      "width": 268,
+      "font": "15px",
+      "display": "block"
+    },
+    ".stage-center-bar": {
+      "x": 354,
+      "width": 761,
+      "font": "15px",
+      "display": "flex"
+    },
+    "#stage-plan-canvas": {
+      "x": 355,
+      "width": 759,
+      "font": "15px",
+      "display": "block"
+    }
+  },
+  "gridWidth": 1333,
+  "viewports": [
+    "1440x1000",
+    "1440x900",
+    "1024x768"
+  ]
+}

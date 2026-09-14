@@ -1,0 +1,14 @@
+[
+  {
+    "browser": "chromium",
+    "checks": "cancel, import, undo/redo, saved OFF aim, edit, store, reload, export/reimport, exact original recovery, invalid version, storage quota, unknown source, escaped labels, corrupt store preservation, tablet bounds",
+    "errors": [],
+    "externalRequests": []
+  },
+  {
+    "browser": "webkit",
+    "checks": "cancel, import, undo/redo, saved OFF aim, edit, store, reload, export/reimport, exact original recovery, invalid version, storage quota, unknown source, escaped labels, corrupt store preservation, tablet bounds",
+    "errors": [],
+    "externalRequests": []
+  }
+]

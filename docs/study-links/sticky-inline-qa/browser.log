@@ -1,0 +1,6 @@
+PASS Double-click opens inline textarea without sidebar focus jumps; Japanese/newline input mirrors sidebar, preserves shape/color/position, and Esc completes
+PASS Rapid typing, native text undo/redo, simulated IME commit, plain-text HTML and 200-character limit work; Ctrl/Cmd+Enter finishes
+PASS Scene switch/reload retain text; only the personal input accepts typing, source show/local shows stay intact and explicit sharing exports the latest note
+PASS Inline editor and Done control fit both drawings at desktop/tablet/portrait/landscape widths; Japanese/English labels and 44px target verified
+PASS Dragging/resizing still work after inline editing; a read-only history renderer refuses the same double-click
+PASS Plan-view inline editing uses 16px input and a tappable Done button in mobile simulation

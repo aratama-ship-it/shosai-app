@@ -1,0 +1,510 @@
+{
+  "releaseCandidate": "stage-sketch-beta-selected-five-viewer-20260912",
+  "status": "local-candidate-not-deployed",
+  "purpose": "本人が選んだ本体5項目と演者向けViewerを、新旧が混在しない一つの依存閉包として固定する。",
+  "selectedFeatures": [
+    "パネル配置、折りたたみ、表示バランスの改善",
+    "正面図・平面図・客席視点の切替",
+    "シーン作成・複製、プロジェクト・背景設定",
+    "Undo／Redo、複数選択・整列",
+    "会場・客席・広い会場への対応",
+    "演者向けViewerリンク"
+  ],
+  "deploymentBoundary": {
+    "include": [
+      "選択済みの本体5項目",
+      "演者向けViewer",
+      "Viewerに必要なWorker経路"
+    ],
+    "disabledForThisCandidate": [
+      "照明モーションの新規作成入口",
+      "ミュージックシンクの入口",
+      "マスク小道具の新規作成入口",
+      "利用状況計測"
+    ],
+    "excluded": [
+      "公開体験版・LP",
+      "MCPサーバー",
+      "device-preview",
+      "docs内の判断資料"
+    ]
+  },
+  "dependencyNote": "stage-sketch.js、style.css、worker.jsは複数機能を含むため、未選択機能の互換コードも依存物として同梱する。ただしSTAGE_RELEASE_SCOPEとSTAGE_USAGE_ENABLEDで利用者向け入口と計測を無効化する。",
+  "requiredLiveConfiguration": {
+    "STAGE_BETA_ACTIVE": "true",
+    "STAGE_RELEASE_SCOPE": "beta-20260912",
+    "STUDY_ALLOW_ANONYMOUS": "true",
+    "STAGE_USAGE_ENABLED": "false",
+    "durableObjects": [
+      "SESSION_ROOMS",
+      "STUDY_LINKS"
+    ],
+    "migrationRule": "既に適用済みのSTUDY_LINKS移行を再利用し、UsageMetricsとReaderAccountの新規移行はこの便に含めない。"
+  },
+  "safeguards": [
+    "stage.html が参照するAPP_SHELLを全件同じ候補へ含める",
+    "study.htmlとstudy-frame.htmlのローカル参照漏れを生成時に停止する",
+    "配信前後に各ファイルのSHA-256を比較する",
+    "配信HTMLへbeta-20260912スコープが注入され、未選択の入口が表示されないことを確認する",
+    "オーナーとゲストの実ログイン確認が終わるまで公開しない"
+  ],
+  "counts": {
+    "browserAssets": 61,
+    "workerModules": 8,
+    "ownerOnlyRetainedAssets": 1,
+    "totalInputs": 70
+  },
+  "aggregateSha256": "975428d14c7261d4f5a4a5cc1ecd99b33dce888f84df9e2425fb5ad8b79a6df9",
+  "virtualRoutes": [
+    {
+      "route": "/study-assets/style.css",
+      "source": "style.css"
+    },
+    {
+      "route": "/study-assets/stage-venues.js",
+      "source": "stage-venues.js"
+    },
+    {
+      "route": "/study-assets/stage-venue-lines.js",
+      "source": "stage-venue-lines.js"
+    },
+    {
+      "route": "/study-assets/stage-i18n.js",
+      "source": "stage-i18n.js"
+    },
+    {
+      "route": "/study-assets/stage-set-model.js",
+      "source": "stage-set-model.js"
+    },
+    {
+      "route": "/study-assets/stage-machinery.js",
+      "source": "stage-machinery.js"
+    },
+    {
+      "route": "/study-assets/stage-sketch.js",
+      "source": "stage-sketch.js"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "icons/stage-sketch-180.png",
+      "role": "browser-asset",
+      "bytes": 38028,
+      "sha256": "1a88d30afee485267b3a4e7368c0413bf34028d0f3d78155af72c2c927eb063e"
+    },
+    {
+      "path": "icons/stage-sketch-192.png",
+      "role": "browser-asset",
+      "bytes": 42992,
+      "sha256": "f82a9fddf4d5c1df40a650068cbddfe3dd98d9b8f8c26c47e321d087c07b141a"
+    },
+    {
+      "path": "icons/stage-sketch-512.png",
+      "role": "browser-asset",
+      "bytes": 273433,
+      "sha256": "26a05e4deb4a9e4b3d9977e31d45ea139e482037f54d0e034d8cf704962d452f"
+    },
+    {
+      "path": "icons/stage-sketch-maskable-512.png",
+      "role": "browser-asset",
+      "bytes": 273433,
+      "sha256": "26a05e4deb4a9e4b3d9977e31d45ea139e482037f54d0e034d8cf704962d452f"
+    },
+    {
+      "path": "index.html",
+      "role": "browser-asset",
+      "bytes": 27044,
+      "sha256": "b408bdf78b11eb5c5fc438d69524052869b61c4a52bfd50996aec94fb2dcfd97"
+    },
+    {
+      "path": "manual/GuideBooklet_2026-08-29.pdf",
+      "role": "browser-asset",
+      "bytes": 248045,
+      "sha256": "fd7f6021557da6dcc223b3cdb926ab1ab6f867f393e1cfdb6f4d84cb62ba6138"
+    },
+    {
+      "path": "manual/QuickGuide_2026-08-28.pdf",
+      "role": "browser-asset",
+      "bytes": 922251,
+      "sha256": "87507a0410ab47c4dbc9aebe052b1c3e9438275f613f208084f64758a12a54fa"
+    },
+    {
+      "path": "manual/img/cast-poses-props-en.png",
+      "role": "browser-asset",
+      "bytes": 481507,
+      "sha256": "82cb748ce20c3c47226489c7aaa4b0460ec834b64a46fcad8d00af81415dd075"
+    },
+    {
+      "path": "manual/img/cast-poses-props.png",
+      "role": "browser-asset",
+      "bytes": 482520,
+      "sha256": "9c0f203fea6349a9628fbc94099781ff77332af1b8c85e405c771577a54f7eee"
+    },
+    {
+      "path": "manual/img/cover-trapeze-en.png",
+      "role": "browser-asset",
+      "bytes": 543518,
+      "sha256": "71486e7b6ce10a46365d3d2b4d73f0f3c6df7c20e0200a18329c9aae8a45c2f9"
+    },
+    {
+      "path": "manual/img/cover-trapeze.png",
+      "role": "browser-asset",
+      "bytes": 560343,
+      "sha256": "d33e5b74dce842626657b297c160550d8d768208d312716231aa04551ad9f1ee"
+    },
+    {
+      "path": "manual/img/duo-front-en.png",
+      "role": "browser-asset",
+      "bytes": 707802,
+      "sha256": "a8987eddde73b7cbbcd9298a3934a53f14ffc4e9cb0649e0cddbf043684f8367"
+    },
+    {
+      "path": "manual/img/duo-front.png",
+      "role": "browser-asset",
+      "bytes": 708060,
+      "sha256": "5e5485396ac4510ec90b78be016abba2400a13e17e5d3eb215c821d1837a54a8"
+    },
+    {
+      "path": "manual/img/duo-plan-en.png",
+      "role": "browser-asset",
+      "bytes": 696212,
+      "sha256": "c4e289a6863a6674aa4d79bcd307bfc0456b2cc8284e9a2107a2df742e11dd7d"
+    },
+    {
+      "path": "manual/img/duo-plan.png",
+      "role": "browser-asset",
+      "bytes": 684183,
+      "sha256": "875c61979dafcc927b59fa28551fbcf95f283d9c1d9655e460a80552a6693fa5"
+    },
+    {
+      "path": "manual/img/scene-map-en.png",
+      "role": "browser-asset",
+      "bytes": 11368,
+      "sha256": "b68712867fb02b234615522a2011c8bf0e05efbe9d7536a1cb50dc306c0dd97d"
+    },
+    {
+      "path": "manual/img/scene-map.png",
+      "role": "browser-asset",
+      "bytes": 11473,
+      "sha256": "e593ca20d2ba5bbffceedc262f3c77a3a8bf15edeed9042b9894a0b4b65a5966"
+    },
+    {
+      "path": "manual/manual-content.js",
+      "role": "browser-asset",
+      "bytes": 46889,
+      "sha256": "de2f3db34ba6e482052c7930260a4be62c26200f6ee5666984834bb62810db44"
+    },
+    {
+      "path": "manual/manual.html",
+      "role": "browser-asset",
+      "bytes": 18267,
+      "sha256": "6b9aca1a05c3132da62ed54f111fc60545e356a93cd03651e0a3f2a12579d728"
+    },
+    {
+      "path": "manual/quick-en.html",
+      "role": "browser-asset",
+      "bytes": 19296,
+      "sha256": "5446472a4f67aa31bb287fad38614e83e2adec9583c67b305950b026eb381656"
+    },
+    {
+      "path": "manual/quick.html",
+      "role": "browser-asset",
+      "bytes": 18895,
+      "sha256": "f12905755d8a010943771d18dd5824256139a435e8d8801fd32a6d1cff7f76a3"
+    },
+    {
+      "path": "manual/クイックガイド_2026-08-28.pdf",
+      "role": "browser-asset",
+      "bytes": 1377710,
+      "sha256": "a7eddc8826161f4d58aa0f68ea1d2c808a85448c099bf90fbe120a31c70a09df"
+    },
+    {
+      "path": "manual/使いかたの冊子_2026-08-29.pdf",
+      "role": "browser-asset",
+      "bytes": 880559,
+      "sha256": "dabd384f286d46fbea5743b633b618097fb531de20966d710a8a8f32349b6960"
+    },
+    {
+      "path": "session-room.js",
+      "role": "worker-module",
+      "bytes": 11749,
+      "sha256": "63788a4f5a7406d4cc60d14230a6c303457b8bc47baf62bfc06ed74547e7aca4"
+    },
+    {
+      "path": "stage-audio-store.js",
+      "role": "browser-asset",
+      "bytes": 4996,
+      "sha256": "199d30808ac9242040c4967cc7d75dbb1db98aa1717e91e019ed2a9e96fa654f"
+    },
+    {
+      "path": "stage-first-person.js",
+      "role": "browser-asset",
+      "bytes": 142801,
+      "sha256": "b9ec7c708d578cdc1630308f38df91fb8831979f59ad4cb9598605d9b761effb"
+    },
+    {
+      "path": "stage-i18n.js",
+      "role": "browser-asset",
+      "bytes": 149482,
+      "sha256": "2af1080e6a13697b939b36f5a8c84faa21ac1321abf8cd9808beacf9ffa39393"
+    },
+    {
+      "path": "stage-i18n.zh-Hans.js",
+      "role": "browser-asset",
+      "bytes": 119432,
+      "sha256": "d0289b0ff0e30e9877dc73f2e9297e9b548546a9d740d3029251808c05863785"
+    },
+    {
+      "path": "stage-i18n.zh-Hant.js",
+      "role": "browser-asset",
+      "bytes": 120052,
+      "sha256": "57c072ac1434a1f01f0f33043eb0863a17ad5fb8c0f3aedd1f93c8c6c7afceb3"
+    },
+    {
+      "path": "stage-light-motion.js",
+      "role": "browser-asset",
+      "bytes": 15229,
+      "sha256": "2fd807d457e5754e95e9a7ce70b530a978939190d97103486aacf6df964110e5"
+    },
+    {
+      "path": "stage-machinery.js",
+      "role": "browser-asset",
+      "bytes": 10541,
+      "sha256": "1e5b2a519dfd1535da1baeea2c965ee73b8c8e98e08deca6639cfb907a678598"
+    },
+    {
+      "path": "stage-prompt-i18n.js",
+      "role": "browser-asset",
+      "bytes": 33380,
+      "sha256": "be955fd3a6ed256d2f442924bdfef81eafcd165b05cabdec508309beef8b1dda"
+    },
+    {
+      "path": "stage-pwa.js",
+      "role": "browser-asset",
+      "bytes": 8559,
+      "sha256": "eacac218248160f4068894e6cd445d98e1cf043be5cf38eb0f0f395aaa789a08"
+    },
+    {
+      "path": "stage-rehearsal-export.js",
+      "role": "browser-asset",
+      "bytes": 11909,
+      "sha256": "d5c022663e853619b7adec53db5d14bc386192a0f1dcc2ea8a6fd264dda1b8c3"
+    },
+    {
+      "path": "stage-samples/index.js",
+      "role": "browser-asset",
+      "bytes": 42893,
+      "sha256": "8d1d38f759410697deb464364c6f01d8caa98376e8f0d84d8a7618014976ad5a"
+    },
+    {
+      "path": "stage-session.js",
+      "role": "browser-asset",
+      "bytes": 51636,
+      "sha256": "0857e5710019644882552e4a2cbd4e6bd586774b184f8c0dc5d534d7050db5ec"
+    },
+    {
+      "path": "stage-set-builder.js",
+      "role": "browser-asset",
+      "bytes": 21586,
+      "sha256": "7a3653f0ec5d8faf3da49dbfe07587396e702a6bdc3e0942fcb3e7d67bf525c5"
+    },
+    {
+      "path": "stage-set-model.js",
+      "role": "browser-asset",
+      "bytes": 6008,
+      "sha256": "12d9afb4185eef66d4aa5951de53a6f86837bb0110893bd300d221d8dffc21c7"
+    },
+    {
+      "path": "stage-shows.local.js",
+      "role": "owner-only-retained-asset",
+      "bytes": 618202,
+      "sha256": "adc86fb2ebc709e0e9aca6dc543c4c5b0fa80dc00b12b4d2dcde20d61c9cdcb9"
+    },
+    {
+      "path": "stage-sketch.js",
+      "role": "browser-asset",
+      "bytes": 1291471,
+      "sha256": "77b239b38cfc52b52e3aca2997cfc4ebb1f0ee57e04585b5f7292ccd9956f4b4"
+    },
+    {
+      "path": "stage-sketch.webmanifest",
+      "role": "browser-asset",
+      "bytes": 856,
+      "sha256": "f3efdba2a9259f538f0a0df5dc12eb3e5f67d265ef9957aeaaf6ba625591a83e"
+    },
+    {
+      "path": "stage-study-continuity.js",
+      "role": "browser-asset",
+      "bytes": 12710,
+      "sha256": "1d284ec83d56e27bda6e262ebf540ac75f732a13d517ff4b5adbb4b580db71e3"
+    },
+    {
+      "path": "stage-study-frame.js",
+      "role": "browser-asset",
+      "bytes": 6920,
+      "sha256": "992c6fe4f93e132dcb7d2d05aa5dadba3c90953fccc8b5609ae283b13e9d5e2e"
+    },
+    {
+      "path": "stage-study-navigation.css",
+      "role": "browser-asset",
+      "bytes": 1951,
+      "sha256": "3f9918f31cae4760f23ae4366d3b54e1db51255e4c70acf906fc1807328fde1f"
+    },
+    {
+      "path": "stage-study-navigation.js",
+      "role": "browser-asset",
+      "bytes": 7715,
+      "sha256": "5e20a6de48d4f70287cba2655da96cc66d69f7d20d65859f2ece97947b7ed6c0"
+    },
+    {
+      "path": "stage-study-owner.js",
+      "role": "browser-asset",
+      "bytes": 28298,
+      "sha256": "962a53874cfda536b894af398f1bda9743b7740906f7b57e68f0065fec287729"
+    },
+    {
+      "path": "stage-study-pen.js",
+      "role": "browser-asset",
+      "bytes": 7306,
+      "sha256": "556c0ee93c076c8507afa9f6de267514ff2c03818bec6629b1400ed65c1a414f"
+    },
+    {
+      "path": "stage-study-phone.css",
+      "role": "browser-asset",
+      "bytes": 7979,
+      "sha256": "e69d639b82673c0f220a2aff5db7e437fb8b1f8d2e87264c6dc0f4c248f5cade"
+    },
+    {
+      "path": "stage-study-phone.js",
+      "role": "browser-asset",
+      "bytes": 10035,
+      "sha256": "db40bede4b17a7383da4ec05f01434e7ceecf0abbb83bd31e21a4d8db45b1713"
+    },
+    {
+      "path": "stage-study-private.js",
+      "role": "browser-asset",
+      "bytes": 4694,
+      "sha256": "b8cca456054d69bf166dca5954aba5f209d9291a67560a5663cd30a020cfc3e0"
+    },
+    {
+      "path": "stage-study-sticky.js",
+      "role": "browser-asset",
+      "bytes": 20766,
+      "sha256": "214b5c346faeb87ae7291f9cf3231dae7554a39e74c9eab6d5e0962b9dd26511"
+    },
+    {
+      "path": "stage-study-sync.js",
+      "role": "browser-asset",
+      "bytes": 5662,
+      "sha256": "b5b07eea195e6b6c18549af592480a8e2599eca339fdd89dac862931cdf12452"
+    },
+    {
+      "path": "stage-study-viewer.js",
+      "role": "browser-asset",
+      "bytes": 50375,
+      "sha256": "1b98d32bc986c74c51f0bf8cff0b3e7fda038be3aaaa1e700324f88a28c6921e"
+    },
+    {
+      "path": "stage-study.css",
+      "role": "browser-asset",
+      "bytes": 32188,
+      "sha256": "750240601379c5e19f386577cf022bac99db72cfe3cfe79027aed437eb386f72"
+    },
+    {
+      "path": "stage-sw.js",
+      "role": "browser-asset",
+      "bytes": 9506,
+      "sha256": "398d128864319e28f0e6152436e3897a03ee539be4823519c1384cf3c78a4c90"
+    },
+    {
+      "path": "stage-usage.js",
+      "role": "browser-asset",
+      "bytes": 7502,
+      "sha256": "b831234817a4c16e2b9d01be04453ccce603d53ea641903d4b504e7ada57673f"
+    },
+    {
+      "path": "stage-venue-editor.js",
+      "role": "browser-asset",
+      "bytes": 77805,
+      "sha256": "991722b91d60f2ca5a0aea7a401bb05b1468fbb239f84a31ee338a51a5061c7e"
+    },
+    {
+      "path": "stage-venue-lines.js",
+      "role": "browser-asset",
+      "bytes": 26728,
+      "sha256": "e1acf9544394a226c17c35f2edd9ef3189592947bf4477ed878a68ebe0438976"
+    },
+    {
+      "path": "stage-venues.js",
+      "role": "browser-asset",
+      "bytes": 54431,
+      "sha256": "45c6eb62ca32b854d63420cd46cda4316334fa799e4a90f87759a7d75556d601"
+    },
+    {
+      "path": "stage.html",
+      "role": "browser-asset",
+      "bytes": 151331,
+      "sha256": "bca3a41e85be8c1e5b00a2813c10296f0ab555bdf9184a1ed518b7ab5dbd20b0"
+    },
+    {
+      "path": "study-frame.html",
+      "role": "browser-asset",
+      "bytes": 150567,
+      "sha256": "da86b54015efc23e466ede3cef6993912d190514f1d2cdef91be13b8f7fbefc7"
+    },
+    {
+      "path": "study-links.js",
+      "role": "worker-module",
+      "bytes": 29364,
+      "sha256": "8635662b46f088a8fe624beff6c1c322701e6a143bda125f0479574434ed6b9c"
+    },
+    {
+      "path": "study-reader-account.js",
+      "role": "worker-module",
+      "bytes": 11671,
+      "sha256": "d0d24d4ec8beabad837753b387d74afa1edefd5c6a2e2449be7945e57ae51c3c"
+    },
+    {
+      "path": "study-reader-api.js",
+      "role": "worker-module",
+      "bytes": 4660,
+      "sha256": "37d7ac79f752acf216b7585c1669cd0878c97113564bd23e96137dd91e3b1bf2"
+    },
+    {
+      "path": "study-reader-auth.js",
+      "role": "worker-module",
+      "bytes": 12498,
+      "sha256": "9e4d82cdf33d4dabb8668e63620ad8e290a1acc29c90dcc4edc7a6f37c6c8e5a"
+    },
+    {
+      "path": "study.html",
+      "role": "browser-asset",
+      "bytes": 21392,
+      "sha256": "9070f9622c56deca42fb0d9ac12431645438c3a072eaab42ad05c620e9b1a079"
+    },
+    {
+      "path": "style.css",
+      "role": "browser-asset",
+      "bytes": 361317,
+      "sha256": "aa7dd138fa1829003d0537f82d8ebe7dc499b4214ec0184009a705573f48a45d"
+    },
+    {
+      "path": "usage-admin-page.js",
+      "role": "worker-module",
+      "bytes": 12249,
+      "sha256": "9f18c736f5b0c52683d346d1331a5833a90323182f03c9c5d6937cfd84fed197"
+    },
+    {
+      "path": "usage-metrics.js",
+      "role": "worker-module",
+      "bytes": 8545,
+      "sha256": "4e3ab44c9c7e8c12c9d9c5912bcd7c7c96406a3b7319a7a7fb921a172357347c"
+    },
+    {
+      "path": "worker.js",
+      "role": "worker-module",
+      "bytes": 40787,
+      "sha256": "5943e9d6880716338f6a7638bd0b6bbc99b464e02e8ed59ea868cef4f1e35504"
+    }
+  ]
+}

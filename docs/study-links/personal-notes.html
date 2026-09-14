@@ -1,0 +1,46 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stage Sketch 自分用メモ・画面共有 — ローカル確認</title><style>
+:root{color-scheme:dark;font:16px/1.7 system-ui,sans-serif;background:#211d19;color:#eee6d6}body{max-width:1040px;margin:auto;padding:24px}h1{font-size:28px}h2{font-size:21px;margin-top:36px}a{color:#ffdc73}a:focus-visible,summary:focus-visible{outline:3px solid #d4ad76;outline-offset:3px}nav{display:flex;gap:12px;flex-wrap:wrap}nav a,summary{display:inline-block;min-height:44px;box-sizing:border-box;padding:8px 12px;border:1px solid #baae9c;border-radius:6px}pre{overflow:auto;background:#302923;padding:16px}code{overflow-wrap:anywhere}table{border-collapse:collapse;width:100%}td,th{padding:12px;border:1px solid #baae9c;text-align:left;vertical-align:top}.muted{color:#baae9c}.notice{border-left:4px solid #d4ad76;padding-left:16px}img{max-width:100%;height:auto}.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}@media(max-width:700px){body{padding:16px}.shots{grid-template-columns:1fr}}
+</style></head><body><p class="notice">このページは端末専用メモの実装時点の記録です。最新は <a href="reader-accounts.html">無料演者アカウント・端末間同期の確認</a> を参照してください。</p>
+<h1>自分用メモを残し、必要な画面だけオーナーへ共有</h1>
+<p>2026-09-09 ローカル実装・確認。従来の「画面内だけの一時ペン」「入力後すぐ送信するメモ」を、この仕様へ更新しました。以前の<a href="index.html">事前学習リンク確認資料</a>のメモ・ペンの説明より、本ページが新しい内容です。</p>
+<nav><a href="http://127.0.0.1:8796/study?lang=ja#f3a432a35b25355bd1df62632509cd560caf0a873212b35f">日本語で確認</a><a href="http://127.0.0.1:8796/study?lang=en#f3a432a35b25355bd1df62632509cd560caf0a873212b35f">English</a><a href="http://127.0.0.1:8796/stage.html?lang=ja">ベータのオーナー画面</a></nav>
+<p class="muted">合成ショーを使う、このMac専用の確認リンクです。既に開いている画面は再読み込みしてください。試用用オーナーは study-owner / local-study-owner。本番の認証情報ではありません。</p>
+<h2>実装した利用者体験</h2>
+<p><strong>PC表示の更新：</strong>幅901px以上では正面図と平面図をそれぞれ全幅で上下に並べ、メモを下へ配置します。図の16:9比率を保って縦にスクロールする構成です。日英・5画面サイズ・3表示モードの30ケース、両図のペン、フォーカス表示を確認。関連Nodeテスト23件と生成物・公開ビルド検査が成功しています。<a href="qa/desktop-full-ja-1440.png">現在のPC画面</a>・<a href="desktop-layout-result.json">寸法と操作の結果</a>・<a href="design-lint-desktop-ja/report.md">日本語design-lint</a>・<a href="design-lint-desktop-en/report.md">英語design-lint</a>。下の個人メモ追加時の画像は以前の配置です。</p>
+<ol><li>「自分用メモ」へ文章を入力すると、現在の場面ごとに端末内へ自動保存します。表示名を入れなくても個人メモは書けます。</li><li>「ペン」を有効にして、正面図・平面図へ線を描けます。線も場面ごとに保存され、再読み込み後に戻ります。1本戻す・確認してすべて消す操作があります。</li><li>「この画面をオーナーへ共有」を押したときだけ、表示中の舞台図と線の画像、現在の個人メモ、表示名、対象場面を送信します。表示切替が正面図なら正面図のみ、両方なら2枚です。文章なしの画面共有もできます。</li><li>共有後も個人メモと線は残ります。共有後の追記が自動送信されることはありません。オーナーの一覧には、表示名・対象場面・日時・本文・「共有された画面を見る」が表示されます。</li><li>公開版が更新されても同じ場面IDの個人メモを残し、古い公開版で書いた線の位置確認を促します。受信済み画像は共有した時点のものを保持します。</li></ol>
+<p class="notice">個人メモはこのブラウザ・端末だけに保存します。端末間同期はありません。端末の保存領域を消すと個人メモも失われます。保存失敗は画面内に表示し、保存できたと誤表示しません。削除された場面の個人メモは保存データ内に残りますが、現在の場面一覧には出ません。</p>
+<h2>保存・認可</h2>
+<p>個人メモは専用の <code>stage-study-private-v1:&lt;閲覧トークン&gt;</code> キーで、ショー編集用の保存領域と分離します。文章最大2,000文字、線64本・一筆512点、座標0〜1、最大500場面・シリアライズ後2Mi文字に制限。不正な既存データを上書きしません。個人メモの編集だけではネットワーク投稿は発生しません。</p>
+<p>明示的に共有した画像は、既存の <code>StudyLinks</code> SQLite Durable Objectに分割保存します。画像そのものの取得にもWorkerの認証済み所有者一致が必要です。メモ一覧には画像の種別・寸法だけを返し、オーナーが開いたときに取得します。閲覧トークンだけ、別オーナー、別受取人には画像を返しません。</p>
+<p>JPEG限定、最大2枚、画像データURL180,000文字/枚、1,280px以内・921,600画素以内、投稿全体384KiB、リンクあたり画像データ16MiBをサーバーで制限します。寸法はJPEGヘッダーから読みます。画像取得は <code>private, no-store</code> と <code>nosniff</code> を付けます。本文は引き続きプレーンテキスト、投稿者名は認証済み名を優先。解析への送信はありません。</p>
+<h2>テストと実画面</h2>
+<table><tr><th>確認</th><th>結果・証拠</th></tr>
+<tr><td>関連Node / Workerテスト</td><td>765 / 765 成功。<a href="personal-node-tests.log">ログ</a></td></tr>
+<tr><td>個人保存・画像の追加単体テスト</td><td>7 / 7。端末・場面・トークン分離、保存失敗、不正データ、画像形式・寸法・量・認可。上の765件に含む。<a href="personal-unit-tests.log">ログ</a></td></tr>
+<tr><td>実SQLite画像保存</td><td>11 / 11。分割画像のバイト一致、プロセス再起動、別所有者拒否、失効後オーナー保持。<a href="personal-image-runtime.log">ログ</a></td></tr>
+<tr><td>既存Runtime回帰</td><td>25 / 25、既存リアルタイム共有13 / 13。別タスクによるライフサイクル修正を含む現在のコードで実行。<a href="personal-full-runtime.log">ログ</a></td></tr>
+<tr><td>個人メモから画像共有まで</td><td>端末再読み込み、共有しない間の投稿ゼロ、両図の線・表示名付き共有、オーナー画像表示、他受取人の非表示、共有失敗時保持、画面だけの共有、更新後保持。JS例外0件。<a href="qa/personal-result.json">結果</a></td></tr>
+<tr><td>マウス・タッチのペン</td><td>正面図マウス・平面図タッチ、取り消し・消去、各場面の保持、元のショーが不変。JS例外0件。<a href="personal-pen-browser.log">結果</a></td></tr>
+<tr><td>元の画面操作回帰</td><td>発行・コピー成功/失敗・通信エラー・明示更新・失効まで完了。JS例外0件。別タスク編集中のテストは上書きせず、一時コピーで今回の文言と画像表示の期待値だけを更新。<a href="personal-full-browser.log">結果</a></td></tr>
+<tr><td>日英・レスポンシブ</td><td>390×844、844×390、768×1024、1440×1000。はみ出しなし、操作領域44px以上。<a href="design-lint-personal-ja/report.md">日本語lint</a>・<a href="design-lint-personal-en/report.md">英語lint</a>はNG/WARN/測定不可すべて0。文字コントラスト最小7.67:1。</td></tr>
+<tr><td>生成・構文</td><td>JS構文検査、<code>python3 build_stage.py --check</code>、<code>python3 build_public.py --check</code>、<code>git diff --check</code> 成功。本家index.htmlとベータstage.htmlの資源版、Workerの明示許可、SWを反映。</td></tr></table>
+<p class="notice">未確認：iPhone / iPad / Android実機、Safari、Apple Pencil、実際の指での描き心地、ソフトウェアキーボード、VoiceOver / TalkBack。本番Cloudflareの配信・実アカウントは検証していません。</p>
+<details><summary>確認した画面</summary><div class="shots"><figure><img src="qa/personal-ja-390.png" alt="スマートフォン縦向きの日本語個人メモ画面"><figcaption>日本語・縦向き</figcaption></figure><figure><img src="qa/personal-en-844.png" alt="横向き英語個人メモ画面"><figcaption>英語・横向き</figcaption></figure><figure><img src="qa/personal-ja-1440.png" alt="デスクトップ日本語個人メモ"><figcaption>舞台図の隣に自分用メモ</figcaption></figure><figure><img src="qa/personal-owner-shared.png" alt="オーナーが表示名と共有画像を開いた画面"><figcaption>オーナーの受信画面</figcaption></figure></div></details>
+<h2>今回変更したファイル</h2>
+<p>実装：<code>stage-study-private.js</code>（新規）、<code>stage-study-viewer.js</code>、<code>stage-study-pen.js</code>、<code>stage-study-frame.js</code>、<code>stage-study-owner.js</code>、<code>study-links.js</code>、<code>study.html</code>、<code>stage-study.css</code>。生成・資源版：<code>build_study.py</code>、<code>index.html</code>、<code>stage-sw.js</code>、生成物<code>study-frame.html</code> / <code>stage.html</code> / <code>try.html</code>。</p>
+<p>テスト：<code>tests/study-private.test.mjs</code>、<code>tests/study-screens.test.mjs</code>、<code>tests/study-screen-fixture.json</code>、<code>tools/study-personal-browser-check.mjs</code>、<code>tools/study-image-runtime-check.mjs</code>。資源版の期待値更新：<code>tests/study-links.test.mjs</code>、<code>tests/stage-manual-help.test.mjs</code>、<code>tests/stage-session-shelve.test.mjs</code>。資料：デザイントークンシート、本ページ、ログ・画面証拠。</p>
+<h2>共有作業・本番適用</h2>
+<p>別タスク「舞台スケッチの料金体系を検討」が同じAPI・オーナー画面・関連テストを修正していることを検出しました。検出後は重なるファイルの追加編集を止め、別ファイルでテストを追加しています。上限・削除・再発行に関する並行作業はこの追加機能の成果には含めていません。既存の未コミット差分を戻したり上書きしたりせず、対象外の18ファイルは元の着手時とバイト一致です。<a href="personal-preservation.json">保護確認</a></p>
+<p><strong>push、commit、デプロイ、公開、外部送信、秘密情報の登録は実施していません。</strong>今回の画像追加で新しいbinding・migrationは不要です。事前学習リンク全体の初回適用には、既存設定の <code>STUDY_LINKS → StudyLinks</code> と <code>v3-study-links: new_sqlite_classes = ["StudyLinks"]</code> が必要です。既存v1/v2 migrationとbindingを保持し、本番履歴を照合してから適用してください。<code>run_worker_first = true</code> と事前学習ページ・明示資源の同梱が必要。本家が別WorkerならそのWorkerにもAPI・bindingが必要です。配信手順の詳細は<a href="index.html">元の確認資料</a>にあります。</p>
+<h2>起動と再検証</h2>
+<pre>cd '/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app'
+STUDY_MINIFLARE=/Users/arata/.npm/_npx/32026684e21afda6/node_modules/miniflare/dist/src/index.js node tools/study-preview.mjs</pre>
+<p>確認サーバーは127.0.0.1:8796で起動中。個人メモを試すときはページを再読み込みし、文章と線を残して再読み込み、次に表示名を入れて「この画面をオーナーへ共有」を押してください。オーナー側は<a href="synthetic-review-show.json">合成ショー</a>を別のショーとして読み込み、「事前学習用リンク」から確認できます。</p>
+<pre>node --test tests/stage-*.test.mjs tests/worker-*.test.mjs tests/usage-metrics.test.mjs tests/study-*.test.mjs
+STUDY_MINIFLARE=/Users/arata/.npm/_npx/32026684e21afda6/node_modules/miniflare/dist/src/index.js node tools/study-image-runtime-check.mjs
+STUDY_BASE=http://127.0.0.1:8798 STUDY_PLAYWRIGHT=/Users/arata/.npm/_npx/9833c18b2d85bc59/node_modules/playwright/index.js node tools/study-personal-browser-check.mjs
+python3 build_stage.py --check
+python3 build_public.py --check
+git diff --check</pre>
+<p>ブラウザテスト用サーバーは <code>STUDY_PORT=8798 STUDY_PERSIST=/tmp/study-personal-test-sqlite-20260909</code> を付けて起動します。検証は専用プロファイルと合成データで行い、使用中のブラウザに保存されたショーへは触れません。</p>
+</body></html>

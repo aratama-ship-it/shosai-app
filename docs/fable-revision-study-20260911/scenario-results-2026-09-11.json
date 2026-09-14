@@ -1,0 +1,299 @@
+{
+  "generatedAt": "2026-09-11",
+  "synthetic": true,
+  "results": [
+    {
+      "id": "S01",
+      "kind": "script-position",
+      "synthetic": true,
+      "impact": {
+        "resolved": [],
+        "unresolved": [],
+        "routeToAll": false
+      },
+      "receiptsRequired": 0,
+      "finding": "受領を求める相手は0人。ただし舞台監督の手元の印刷済みコーリング台本は旧版のままなので、版番号の表示だけは必要。"
+    },
+    {
+      "id": "S01b",
+      "kind": "script-position",
+      "synthetic": true,
+      "impact": {
+        "resolved": [
+          "p-l",
+          "p-b",
+          "p-a"
+        ],
+        "unresolved": [],
+        "routeToAll": false,
+        "needsChiefReview": false
+      },
+      "finding": "確認が無ければ安全側に倒れて L・B・A へ届く。"
+    },
+    {
+      "id": "S02",
+      "kind": "script-semantic",
+      "synthetic": true,
+      "impact": {
+        "resolved": [
+          "p-l",
+          "p-b",
+          "p-a"
+        ],
+        "unresolved": [],
+        "routeToAll": false
+      },
+      "receiptsRequired": 3,
+      "afterUndo": "Undoは正本だけを戻す。発行済み版3は残り、戻し版4を同じ対象へ届け直す。L は版3を受領済みでも版4は未受領。",
+      "finding": "Lは版3を見て卓のラベルを直しているかもしれない。版3を「取消」で消す実装は、Lの作業根拠を消す。"
+    },
+    {
+      "id": "S03",
+      "kind": "cue-renumber",
+      "synthetic": true,
+      "impact": {
+        "resolved": [
+          "p-l",
+          "p-m",
+          "p-s"
+        ],
+        "unresolved": [],
+        "routeToAll": false
+      },
+      "receiptsRequired": 3,
+      "finding": "契約では「表示だけ更新・確認失効なし」。届け直しの層では、番号は舞台監督とオペの接点なので受領は必要。「意味の確認」と「受領」は別の状態として両立する。"
+    },
+    {
+      "id": "S04a",
+      "kind": "scene-replace",
+      "synthetic": true,
+      "impact": {
+        "resolved": [
+          "p-a",
+          "p-c",
+          "p-k",
+          "p-l",
+          "p-s"
+        ],
+        "unresolved": [
+          "activity act-lamp の担当枠 slot-1 が未確定"
+        ],
+        "routeToAll": false
+      },
+      "receiptsRequired": 5,
+      "finding": "場面の人物（A・C）、場面を参照する予定の担当（K・C・A）、場面に付くQの部門（L）へ絞れる。同じ場面を参照する未割当の予定（T2ランプ）があるため、舞台監督へ「担当未確定」の要確認が付く。全員へは広げない。"
+    },
+    {
+      "id": "S04b",
+      "kind": "scene-replace",
+      "synthetic": true,
+      "impact": {
+        "resolved": [
+          "p-s",
+          "p-a",
+          "p-b",
+          "p-c",
+          "p-d",
+          "p-k",
+          "p-l",
+          "p-m"
+        ],
+        "unresolved": [
+          "scene sc4b が見つからない（IDを変えて差し替えた可能性）",
+          "旧 scene sc4 を指す注釈 1 件の行先が無い"
+        ],
+        "routeToAll": true
+      },
+      "targetedWouldReach": [],
+      "finding": "「差替え」をIDの作り直しで行うと注釈の行先が消え、対象だけ通知では誰にも届かない。UIは「同じシーンとして置換」を既定にし、未解決は全員＋要確認へ倒す。"
+    },
+    {
+      "id": "S05",
+      "kind": "prop-change",
+      "synthetic": true,
+      "impact": {
+        "resolved": [
+          "p-k",
+          "p-c",
+          "p-a"
+        ],
+        "unresolved": [],
+        "routeToAll": false,
+        "needsChiefReview": false
+      },
+      "impactWithoutPropModel": {
+        "resolved": [
+          "p-s",
+          "p-a",
+          "p-b",
+          "p-c",
+          "p-d",
+          "p-k",
+          "p-l",
+          "p-m"
+        ],
+        "unresolved": [
+          "道具 prop-table と予定・人物の対応が無い（契約に道具の参照が無い）"
+        ],
+        "routeToAll": true,
+        "needsChiefReview": true
+      },
+      "targetedWouldReach": [],
+      "finding": "現行の companion workflow 契約と共通契約v1には道具の実体が無い。道具変更の対象は計算できず、対象だけ通知では見落とす。R1は「未解決→全員＋要確認」で埋め、道具の参照は後続の契約課題に残す。"
+    },
+    {
+      "id": "S06",
+      "kind": "assignment-change",
+      "synthetic": true,
+      "impact": {
+        "resolved": [
+          "p-d",
+          "p-b",
+          "p-a",
+          "p-s"
+        ],
+        "unresolved": [],
+        "routeToAll": false
+      },
+      "receiptsRequired": 4,
+      "afterUndo": "翌日の復帰も戻し版として発行し、同じ4人へ届け直す。1晩の代役で版が2つ増える。",
+      "finding": "「今夜だけ」の範囲（公演回）を版の上に持たないため版が2つ増える。許容できるが、公演回スコープの一時上書きは将来課題。Bの個人メモはDへ自動で渡らない（渡すのはBの明示操作）。"
+    },
+    {
+      "id": "S07",
+      "kind": "offline",
+      "synthetic": true,
+      "impact": {
+        "resolved": [
+          "p-l",
+          "p-s"
+        ],
+        "unresolved": [],
+        "routeToAll": false
+      },
+      "receiptsRequired": 3,
+      "finding": "受領票に editionId を持たせないと、オフライン中に発行された版4が受領済みに化ける。受領は「最新」ではなく版番号へ結び付ける。"
+    },
+    {
+      "id": "S08",
+      "kind": "offline",
+      "synthetic": true,
+      "impact": {
+        "resolved": [
+          "p-a",
+          "p-c",
+          "p-k",
+          "p-l",
+          "p-s"
+        ],
+        "unresolved": [
+          "activity act-lamp の担当枠 slot-1 が未確定"
+        ],
+        "routeToAll": false
+      },
+      "finding": "正本はローカルファーストで端末ごとに分岐しうる。発行版に parentEditionId と baseSnapshotHash を持たせ、直前の発行版の系譜にない正本からの発行を止める。合流は既存方針どおり自動マージしない。"
+    },
+    {
+      "id": "S09",
+      "kind": "notes",
+      "synthetic": true,
+      "finding": "メモが番号文字列を持つと付け替えで嘘になる。IDを参照し、表示時に解決する。Qが消えてもメモを捨てず参照切れとして残す。"
+    },
+    {
+      "id": "S10",
+      "kind": "notes",
+      "synthetic": true,
+      "finding": "既存の注釈契約（private/department/team）と一致。代役Dにも B の private は出ない（S06）。"
+    },
+    {
+      "id": "S11",
+      "kind": "receipt",
+      "synthetic": true,
+      "finding": "受領＝「自分に関わる変更を読んだ」だけ。卓へ反映した／GOした／閲覧した、は別の記録であり R1 には持たない。"
+    },
+    {
+      "id": "S12",
+      "kind": "notification",
+      "synthetic": true,
+      "counts": {
+        "all": {
+          "p-s": 12,
+          "p-a": 12,
+          "p-b": 12,
+          "p-c": 12,
+          "p-d": 12,
+          "p-k": 12,
+          "p-l": 12,
+          "p-m": 12
+        },
+        "targeted": {
+          "p-s": 4,
+          "p-a": 3,
+          "p-b": 2,
+          "p-c": 1,
+          "p-d": 0,
+          "p-k": 0,
+          "p-l": 4,
+          "p-m": 3
+        },
+        "hybrid": {
+          "p-s": 5,
+          "p-a": 4,
+          "p-b": 3,
+          "p-c": 2,
+          "p-d": 1,
+          "p-k": 1,
+          "p-l": 5,
+          "p-m": 4
+        }
+      },
+      "finding": "全員通知: Lに12件（関係3件）。対象だけ: 担当未確定の道具変更が0人へ。ハイブリッド: Lに5件、未確定は全員＋要確認。"
+    },
+    {
+      "id": "S13",
+      "kind": "revert",
+      "synthetic": true,
+      "finding": "戻し版に supersedes を持たせると、両方未受領の人は戻し版1件の受領で済む。版6を見て動いた人（A）には戻し版7の受領を求める。「版6を無かったことにする」実装だと A の受領根拠が消える。"
+    },
+    {
+      "id": "S14",
+      "kind": "receipt",
+      "synthetic": true,
+      "changeCount": 3,
+      "finding": "受領は版に1回。項目ごとの受領は持たない代わりに、受領前に項目数と各項目を必ず表示する。項目単位の受領は反例が出てから。"
+    },
+    {
+      "id": "S15",
+      "kind": "receipt",
+      "synthetic": true,
+      "coverage": [
+        {
+          "personId": "p-a",
+          "status": "self",
+          "via": null
+        },
+        {
+          "personId": "p-c",
+          "status": "none",
+          "via": null
+        },
+        {
+          "personId": "p-k",
+          "status": "proxy",
+          "via": null
+        },
+        {
+          "personId": "p-l",
+          "status": "none",
+          "via": null
+        },
+        {
+          "personId": "p-s",
+          "status": "none",
+          "via": null
+        }
+      ],
+      "finding": "紙で手渡した相手は「代理受領（誰が）」として本人受領と区別。チーフの集約画面は self / proxy / none の3値で見せる。"
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+{
+  "release": "ui-20260910",
+  "assets": [
+    {
+      "path": "stage.html",
+      "bytes": 132608,
+      "sha256": "f227f8bb37befb37c73a71f2d61eb87cb12d43ebb003619a3e8ce3b4a459d662"
+    },
+    {
+      "path": "stage-sw.js",
+      "bytes": 9268,
+      "sha256": "8627d0082385a72a5bb74f8d2594e327e31b51a92e7c96fb3079fdaef590850e"
+    },
+    {
+      "path": "style.css",
+      "bytes": 329699,
+      "sha256": "299dcc789811fe9d9ad775513d8991de1bcd6bacc2fa2d63bf98ebbd645c7001"
+    },
+    {
+      "path": "stage-venues.js",
+      "bytes": 48364,
+      "sha256": "4bf2563625799e78ea7ba3dc6ceff723a388557543fa108f12ed34b8c446ee2f"
+    },
+    {
+      "path": "stage-venue-lines.js",
+      "bytes": 20527,
+      "sha256": "bd90b40b603463d5c1ef950fa99c37a36fabc728b14280bfb545f920950676f4"
+    },
+    {
+      "path": "stage-i18n.js",
+      "bytes": 131749,
+      "sha256": "193f1015dea19e80edbe7fb845feebc12660612d0108c224ad1a9a5c44aecebb"
+    },
+    {
+      "path": "stage-i18n.zh-Hans.js",
+      "bytes": 105582,
+      "sha256": "92384780706bc80fadcdcd27b67e95c8d92bdc2d6c1588eb1084b8ed5548c3f4"
+    },
+    {
+      "path": "stage-i18n.zh-Hant.js",
+      "bytes": 106189,
+      "sha256": "d3904e89c6283663252fcb650e7a0879af372e0117286f17083f438e7344d211"
+    },
+    {
+      "path": "stage-prompt-i18n.js",
+      "bytes": 33380,
+      "sha256": "be955fd3a6ed256d2f442924bdfef81eafcd165b05cabdec508309beef8b1dda"
+    },
+    {
+      "path": "stage-rehearsal-export.js",
+      "bytes": 11909,
+      "sha256": "d5c022663e853619b7adec53db5d14bc386192a0f1dcc2ea8a6fd264dda1b8c3"
+    },
+    {
+      "path": "stage-samples/index.js",
+      "bytes": 42893,
+      "sha256": "8d1d38f759410697deb464364c6f01d8caa98376e8f0d84d8a7618014976ad5a"
+    },
+    {
+      "path": "stage-set-model.js",
+      "bytes": 6008,
+      "sha256": "12d9afb4185eef66d4aa5951de53a6f86837bb0110893bd300d221d8dffc21c7"
+    },
+    {
+      "path": "stage-set-builder.js",
+      "bytes": 21586,
+      "sha256": "7a3653f0ec5d8faf3da49dbfe07587396e702a6bdc3e0942fcb3e7d67bf525c5"
+    },
+    {
+      "path": "stage-machinery.js",
+      "bytes": 10541,
+      "sha256": "e268e6aa01a6bbf931edb932b7ce83c2c11e6798d69b9136b4934c13df9299de"
+    },
+    {
+      "path": "stage-first-person.js",
+      "bytes": 127971,
+      "sha256": "cacb9c931b8bcb88c605b5f55d0c0511c771dc852e97b401212437455b2ba824"
+    },
+    {
+      "path": "stage-audio-store.js",
+      "bytes": 4996,
+      "sha256": "199d30808ac9242040c4967cc7d75dbb1db98aa1717e91e019ed2a9e96fa654f"
+    },
+    {
+      "path": "manual/manual-content.js",
+      "bytes": 45899,
+      "sha256": "6bf57562ba6fd28135f8fcb1b829b006d9a6dd043d6db8af40197a779ae13bfd"
+    },
+    {
+      "path": "stage-pwa.js",
+      "bytes": 8559,
+      "sha256": "eacac218248160f4068894e6cd445d98e1cf043be5cf38eb0f0f395aaa789a08"
+    },
+    {
+      "path": "stage-sketch.js",
+      "bytes": 1105948,
+      "sha256": "a4081a41040495f6df90cbaf9291a857de96fb050e0e5352f7925d4c14ea5fa5"
+    },
+    {
+      "path": "stage-session.js",
+      "bytes": 51460,
+      "sha256": "ad094c6d7debf3a7fdf5bbf8f51a97934380aec924645bd6c41e2d806fef9559"
+    },
+    {
+      "path": "stage-venue-editor.js",
+      "bytes": 78643,
+      "sha256": "47cc1c00c888f53ec71e96d46078b04a9ebde8241cc51eacdd6a7134328c6c34"
+    },
+    {
+      "path": "manual/manual.html",
+      "bytes": 18267,
+      "sha256": "6b9aca1a05c3132da62ed54f111fc60545e356a93cd03651e0a3f2a12579d728"
+    },
+    {
+      "path": "manual/quick.html",
+      "bytes": 18895,
+      "sha256": "f12905755d8a010943771d18dd5824256139a435e8d8801fd32a6d1cff7f76a3"
+    },
+    {
+      "path": "manual/quick-en.html",
+      "bytes": 19296,
+      "sha256": "5446472a4f67aa31bb287fad38614e83e2adec9583c67b305950b026eb381656"
+    }
+  ],
+  "excludedUnreleasedFeatures": [
+    "study-owner backend UI",
+    "usage telemetry"
+  ],
+  "preserved": "Current production Worker auth, SessionRoom, secrets and complete existing static asset set",
+  "bundleBytes": 2832857,
+  "bundleGzipBytes": 734534,
+  "bundleSha256": "92c44568c4edc7609479839a5b0f10a3c2359dc9059daab16f5cebd3973e8d36"
+}

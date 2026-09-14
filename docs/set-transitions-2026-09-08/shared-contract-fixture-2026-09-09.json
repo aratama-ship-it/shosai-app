@@ -1,0 +1,855 @@
+{
+  "kind": "stage-people-time-contract-fixture",
+  "contractVersion": 1,
+  "projectId": "fictional-project",
+  "scope": "説明用。製品読込不可。確認済みは架空の明示対応を意味し現場確認ではない。 expectedは検証期待値であり、製品や人物表へ保存する計算結果の正本ではない。",
+  "planContext": {
+    "id": "plan-demo-1",
+    "revision": 1,
+    "baseOriginId": "origin-q12",
+    "unit": "integer-ms"
+  },
+  "people": [
+    {
+      "id": "person-A",
+      "name": "A",
+      "roles": [
+        "performer",
+        "backstage"
+      ],
+      "revision": 1
+    },
+    {
+      "id": "person-B",
+      "name": "B",
+      "roles": [
+        "backstage"
+      ],
+      "revision": 1
+    },
+    {
+      "id": "person-C",
+      "name": "C",
+      "roles": [
+        "backstage"
+      ],
+      "revision": 1
+    }
+  ],
+  "cues": [
+    {
+      "id": "cue-Q12",
+      "label": "Q12",
+      "revision": 1
+    },
+    {
+      "id": "cue-Q13",
+      "label": "Q13",
+      "revision": 1
+    }
+  ],
+  "origins": [
+    {
+      "id": "origin-q12",
+      "cueId": "cue-Q12",
+      "planContextId": "plan-demo-1",
+      "offsetFromBaseMs": 0,
+      "status": "adopted-plan-input",
+      "revision": 1
+    },
+    {
+      "id": "origin-q13",
+      "cueId": "cue-Q13",
+      "planContextId": "plan-demo-1",
+      "offsetFromBaseMs": 10000,
+      "status": "adopted-plan-input",
+      "revision": 1
+    }
+  ],
+  "estimates": [
+    {
+      "id": "estimate-walk-A-end",
+      "ownerRef": "walk-A",
+      "planContextId": "plan-demo-1",
+      "durationMs": 2000,
+      "source": "fictional-manual-estimate",
+      "conditions": "架空例の担当・経路・手順を仮定",
+      "revision": 1
+    },
+    {
+      "id": "estimate-carry-end",
+      "ownerRef": "carry",
+      "planContextId": "plan-demo-1",
+      "durationMs": 3000,
+      "source": "fictional-manual-estimate",
+      "conditions": "架空例の担当・経路・手順を仮定",
+      "revision": 1
+    },
+    {
+      "id": "estimate-put-end",
+      "ownerRef": "put",
+      "planContextId": "plan-demo-1",
+      "durationMs": 2000,
+      "source": "fictional-manual-estimate",
+      "conditions": "架空例の担当・経路・手順を仮定",
+      "revision": 1
+    },
+    {
+      "id": "estimate-platform-end",
+      "ownerRef": "platform",
+      "planContextId": "plan-demo-1",
+      "durationMs": 6000,
+      "source": "fictional-manual-estimate",
+      "conditions": "架空例の担当・経路・手順を仮定",
+      "revision": 1
+    },
+    {
+      "id": "estimate-walk-C-end",
+      "ownerRef": "walk-C",
+      "planContextId": "plan-demo-1",
+      "durationMs": 2000,
+      "source": "fictional-manual-estimate",
+      "conditions": "架空例の担当・経路・手順を仮定",
+      "revision": 1
+    },
+    {
+      "id": "estimate-pickup-end",
+      "ownerRef": "pickup",
+      "planContextId": "plan-demo-1",
+      "durationMs": 2000,
+      "source": "fictional-manual-estimate",
+      "conditions": "架空例の担当・経路・手順を仮定",
+      "revision": 1
+    },
+    {
+      "id": "estimate-exit-end",
+      "ownerRef": "exit",
+      "planContextId": "plan-demo-1",
+      "durationMs": 5000,
+      "source": "fictional-manual-estimate",
+      "conditions": "架空例の担当・経路・手順を仮定",
+      "revision": 1
+    },
+    {
+      "id": "estimate-walk-B-end",
+      "ownerRef": "walk-B",
+      "planContextId": "plan-demo-1",
+      "durationMs": 1000,
+      "source": "fictional-manual-estimate",
+      "conditions": "架空例の担当・経路・手順を仮定",
+      "revision": 1
+    },
+    {
+      "id": "estimate-job-B-end",
+      "ownerRef": "job-B",
+      "planContextId": "plan-demo-1",
+      "durationMs": 4000,
+      "source": "fictional-manual-estimate",
+      "conditions": "架空例の担当・経路・手順を仮定",
+      "revision": 1
+    }
+  ],
+  "points": [
+    {
+      "id": "q12",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "origin-q12",
+      "expression": {
+        "kind": "anchor",
+        "originId": "origin-q12",
+        "offsetMs": 0
+      },
+      "revision": 1
+    },
+    {
+      "id": "q13",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "origin-q13",
+      "expression": {
+        "kind": "anchor",
+        "originId": "origin-q13",
+        "offsetMs": 0
+      },
+      "revision": 1
+    },
+    {
+      "id": "appearance-start",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "appearance-A",
+      "expression": {
+        "kind": "anchor",
+        "originId": "origin-q12",
+        "offsetMs": -4000
+      },
+      "revision": 1
+    },
+    {
+      "id": "appearance-end",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "appearance-A",
+      "expression": {
+        "kind": "anchor",
+        "originId": "origin-q12",
+        "offsetMs": 0
+      },
+      "revision": 1
+    },
+    {
+      "id": "walk-A-end",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "walk-A",
+      "expression": {
+        "kind": "after",
+        "pointId": "appearance-end",
+        "estimateId": "estimate-walk-A-end"
+      },
+      "revision": 1
+    },
+    {
+      "id": "carry-start",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "carry",
+      "expression": {
+        "kind": "latest",
+        "pointIds": [
+          "q12",
+          "walk-A-end"
+        ]
+      },
+      "revision": 1
+    },
+    {
+      "id": "carry-end",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "carry",
+      "expression": {
+        "kind": "after",
+        "pointId": "carry-start",
+        "estimateId": "estimate-carry-end"
+      },
+      "revision": 1
+    },
+    {
+      "id": "put-end",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "put",
+      "expression": {
+        "kind": "after",
+        "pointId": "carry-end",
+        "estimateId": "estimate-put-end"
+      },
+      "revision": 1
+    },
+    {
+      "id": "platform-end",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "platform",
+      "expression": {
+        "kind": "after",
+        "pointId": "q12",
+        "estimateId": "estimate-platform-end"
+      },
+      "revision": 1
+    },
+    {
+      "id": "walk-C-end",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "walk-C",
+      "expression": {
+        "kind": "after",
+        "pointId": "platform-end",
+        "estimateId": "estimate-walk-C-end"
+      },
+      "revision": 1
+    },
+    {
+      "id": "pickup-start",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "pickup",
+      "expression": {
+        "kind": "latest",
+        "pointIds": [
+          "put-end",
+          "walk-C-end"
+        ]
+      },
+      "revision": 1
+    },
+    {
+      "id": "pickup-end",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "pickup",
+      "expression": {
+        "kind": "after",
+        "pointId": "pickup-start",
+        "estimateId": "estimate-pickup-end"
+      },
+      "revision": 1
+    },
+    {
+      "id": "exit-start",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "exit",
+      "expression": {
+        "kind": "latest",
+        "pointIds": [
+          "pickup-end",
+          "q13"
+        ]
+      },
+      "revision": 1
+    },
+    {
+      "id": "exit-end",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "exit",
+      "expression": {
+        "kind": "after",
+        "pointId": "exit-start",
+        "estimateId": "estimate-exit-end"
+      },
+      "revision": 1
+    },
+    {
+      "id": "walk-B-end",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "walk-B",
+      "expression": {
+        "kind": "after",
+        "pointId": "put-end",
+        "estimateId": "estimate-walk-B-end"
+      },
+      "revision": 1
+    },
+    {
+      "id": "job-B-end",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "job-B",
+      "expression": {
+        "kind": "after",
+        "pointId": "walk-B-end",
+        "estimateId": "estimate-job-B-end"
+      },
+      "revision": 1
+    },
+    {
+      "id": "deadline",
+      "planContextId": "plan-demo-1",
+      "ownerRef": "window-demo",
+      "expression": {
+        "kind": "anchor",
+        "originId": "origin-q12",
+        "offsetMs": 15000
+      },
+      "revision": 1
+    }
+  ],
+  "activities": [
+    {
+      "id": "appearance-A",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "script",
+        "ownerId": "script-demo",
+        "sourceUnitId": "appearance-A"
+      },
+      "kind": "appearance",
+      "label": "Aの出番",
+      "startPointId": "appearance-start",
+      "endPointId": "appearance-end",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "appearance-A-slot-1",
+          "personId": "person-A",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-role",
+            "id": "appearance-A-source-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "walk-A",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "personal",
+        "ownerId": "personal-demo",
+        "sourceUnitId": "walk-A"
+      },
+      "kind": "travel",
+      "label": "Aが机へ歩く",
+      "startPointId": "appearance-end",
+      "endPointId": "walk-A-end",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "walk-A-slot-1",
+          "personId": "person-A",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "walk-A-source-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "carry",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "transition",
+        "ownerId": "transition-demo",
+        "sourceUnitId": "carry"
+      },
+      "kind": "carry",
+      "label": "A/Bで机を運ぶ",
+      "startPointId": "carry-start",
+      "endPointId": "carry-end",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "carry-slot-1",
+          "personId": "person-A",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "carry-source-1"
+          }
+        },
+        {
+          "slotId": "carry-slot-2",
+          "personId": "person-B",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "carry-source-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "put",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "transition",
+        "ownerId": "transition-demo",
+        "sourceUnitId": "put"
+      },
+      "kind": "set-down",
+      "label": "A/Bで机を置く",
+      "startPointId": "carry-end",
+      "endPointId": "put-end",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "put-slot-1",
+          "personId": "person-A",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "put-source-1"
+          }
+        },
+        {
+          "slotId": "put-slot-2",
+          "personId": "person-B",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "put-source-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "hold-A",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "transition",
+        "ownerId": "transition-demo",
+        "sourceUnitId": "hold-A"
+      },
+      "kind": "wait",
+      "label": "Aは机の担当を続けてCを待つ",
+      "startPointId": "put-end",
+      "endPointId": "pickup-start",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "hold-A-slot-1",
+          "personId": "person-A",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "hold-A-source-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "platform",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "transition",
+        "ownerId": "transition-demo",
+        "sourceUnitId": "platform"
+      },
+      "kind": "set-down",
+      "label": "Cが平台を置く",
+      "startPointId": "q12",
+      "endPointId": "platform-end",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "platform-slot-1",
+          "personId": "person-C",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "platform-source-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "walk-C",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "transition",
+        "ownerId": "transition-demo",
+        "sourceUnitId": "walk-C"
+      },
+      "kind": "travel",
+      "label": "Cが机へ歩く",
+      "startPointId": "platform-end",
+      "endPointId": "walk-C-end",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "walk-C-slot-1",
+          "personId": "person-C",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "walk-C-source-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pickup",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "transition",
+        "ownerId": "transition-demo",
+        "sourceUnitId": "pickup"
+      },
+      "kind": "pickup",
+      "label": "A/Cで机を持ち直す",
+      "startPointId": "pickup-start",
+      "endPointId": "pickup-end",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "pickup-slot-1",
+          "personId": "person-A",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "pickup-source-1"
+          }
+        },
+        {
+          "slotId": "pickup-slot-2",
+          "personId": "person-C",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "pickup-source-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cue-wait",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "transition",
+        "ownerId": "transition-demo",
+        "sourceUnitId": "cue-wait"
+      },
+      "kind": "wait",
+      "label": "A/CがQ13を待つ",
+      "startPointId": "pickup-end",
+      "endPointId": "exit-start",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "cue-wait-slot-1",
+          "personId": "person-A",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "cue-wait-source-1"
+          }
+        },
+        {
+          "slotId": "cue-wait-slot-2",
+          "personId": "person-C",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "cue-wait-source-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "exit",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "transition",
+        "ownerId": "transition-demo",
+        "sourceUnitId": "exit"
+      },
+      "kind": "carry",
+      "label": "A/Cで机を搬出",
+      "startPointId": "exit-start",
+      "endPointId": "exit-end",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "exit-slot-1",
+          "personId": "person-A",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "exit-source-1"
+          }
+        },
+        {
+          "slotId": "exit-slot-2",
+          "personId": "person-C",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "exit-source-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "walk-B",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "personal",
+        "ownerId": "personal-demo",
+        "sourceUnitId": "walk-B"
+      },
+      "kind": "travel",
+      "label": "Bが別作業へ歩く",
+      "startPointId": "put-end",
+      "endPointId": "walk-B-end",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "walk-B-slot-1",
+          "personId": "person-B",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "walk-B-source-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "job-B",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "personal",
+        "ownerId": "personal-demo",
+        "sourceUnitId": "job-B"
+      },
+      "kind": "work",
+      "label": "Bの別作業",
+      "startPointId": "walk-B-end",
+      "endPointId": "job-B-end",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "job-B-slot-1",
+          "personId": "person-B",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "job-B-source-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "wait-C",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "transition",
+        "ownerId": "transition-demo",
+        "sourceUnitId": "wait-C"
+      },
+      "kind": "wait",
+      "label": "Cは机で合流を待つ",
+      "startPointId": "walk-C-end",
+      "endPointId": "pickup-start",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "wait-C-slot-1",
+          "personId": "person-C",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "wait-C-source-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "wait-B",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "transition",
+        "ownerId": "transition-demo",
+        "sourceUnitId": "wait-B"
+      },
+      "kind": "wait",
+      "label": "Bは運搬開始を待つ",
+      "startPointId": "q12",
+      "endPointId": "carry-start",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "wait-B-slot-1",
+          "personId": "person-B",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "wait-B-source-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "wait-A",
+      "revision": 1,
+      "planContextId": "plan-demo-1",
+      "owner": {
+        "kind": "transition",
+        "ownerId": "transition-demo",
+        "sourceUnitId": "wait-A"
+      },
+      "kind": "wait",
+      "label": "Aは机で運搬開始を待つ",
+      "startPointId": "walk-A-end",
+      "endPointId": "carry-start",
+      "resourceMode": "exclusive",
+      "assignments": [
+        {
+          "slotId": "wait-A-slot-1",
+          "personId": "person-A",
+          "resolution": "confirmed",
+          "sourceRef": {
+            "kind": "fictional-slot",
+            "id": "wait-A-source-1"
+          }
+        }
+      ]
+    }
+  ],
+  "annotations": [
+    {
+      "id": "annotation-demo-1",
+      "activityRef": "appearance-A",
+      "locationStatus": "unassigned"
+    },
+    {
+      "id": "annotation-demo-2",
+      "activityRef": "appearance-A",
+      "locationStatus": "unassigned"
+    },
+    {
+      "id": "annotation-demo-3",
+      "activityRef": "pickup",
+      "locationStatus": "unassigned"
+    }
+  ],
+  "windows": [
+    {
+      "id": "window-demo",
+      "startPointId": "q12",
+      "deadlinePointId": "deadline",
+      "completionPointIds": [
+        "exit-end"
+      ],
+      "reserveMs": null,
+      "completionMeaning": "机の搬出完了。全担当の退避は含まない。",
+      "revision": 1
+    }
+  ],
+  "availabilityAssumptions": [
+    {
+      "personId": "person-A",
+      "planContextId": "plan-demo-1",
+      "scope": "図示した予定の比較範囲",
+      "status": "assumed",
+      "note": "図示したもの以外に仕事がないという架空例の仮定。実地確認なし。"
+    },
+    {
+      "personId": "person-B",
+      "planContextId": "plan-demo-1",
+      "scope": "図示した予定の比較範囲",
+      "status": "assumed",
+      "note": "図示したもの以外に仕事がないという架空例の仮定。実地確認なし。"
+    },
+    {
+      "personId": "person-C",
+      "planContextId": "plan-demo-1",
+      "scope": "図示した予定の比較範囲",
+      "status": "assumed",
+      "note": "図示したもの以外に仕事がないという架空例の仮定。実地確認なし。"
+    }
+  ],
+  "expected": [
+    {
+      "case": "normal",
+      "exitEndMs": 15000,
+      "shortfallMs": 0,
+      "slackMs": 0
+    },
+    {
+      "case": "appearance-end-at-4000",
+      "exitEndMs": 18000,
+      "shortfallMs": 3000
+    },
+    {
+      "case": "q13-offset-null",
+      "exitEndMs": null,
+      "shortfallMs": null
+    }
+  ]
+}

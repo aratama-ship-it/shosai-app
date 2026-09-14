@@ -1,0 +1,15 @@
+{
+  "status": "pass",
+  "baseUrl": "http://127.0.0.1:18759",
+  "isolatedBrowserStorage": true,
+  "userBrowserStorageModified": false,
+  "inputSha256": "7086d75a843a0ea7253d3dd630defe994cf491432aabcc19e7774d5000a5d780",
+  "checks": [
+    "UI file picker → compare → open as separate show; stable scene/cast/set IDs, all placements, masks, timing, notes and light intent retained",
+    "All 28 snapshots opened through scene UI and descriptions verified",
+    "Description edit and restore stays below the native 200-character limit",
+    "UI JSON export through supported download fallback and reimport succeeded; OS save picker not tested",
+    "Relocated offline HTML at 1440/390px: no overflow, all 28 full script notes, both download bytes identical"
+  ],
+  "pageErrors": []
+}

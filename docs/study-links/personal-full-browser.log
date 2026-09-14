@@ -1,0 +1,9 @@
+BROWSER Failed to load resource: the server responded with a status of 401 (Unauthorized)
+BROWSER Failed to load resource: the server responded with a status of 404 (Not Found)
+{
+  "viewerUrl": "http://127.0.0.1:8798/study?lang=ja#d96c5f6228d2671557aad98c7a9e2f122df40fee46e2b1db",
+  "englishUrl": "http://127.0.0.1:8798/study?lang=en#d96c5f6228d2671557aad98c7a9e2f122df40fee46e2b1db",
+  "ownerUrl": "http://127.0.0.1:8798/stage.html?lang=ja",
+  "testedRevokedToken": "a30b002217fe9692426563a4f605c913d2ba1241212da054",
+  "errors": []
+}

@@ -1,0 +1,17 @@
+{
+  "id": "5eb46dca-7050-46ba-9e43-75810a08eefc",
+  "source": "api",
+  "strategy": "percentage",
+  "author_email": "circusarata@gmail.com",
+  "annotations": {
+    "workers/message": "User requested publication of all completed UI changes to beta and public preview",
+    "workers/triggered_by": "deployment"
+  },
+  "versions": [
+    {
+      "version_id": "67415b62-fdb0-42a3-bcd3-091f4c3abb80",
+      "percentage": 100
+    }
+  ],
+  "created_on": "2026-09-10T09:03:29.964461Z"
+}

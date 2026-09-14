@@ -1,0 +1,59 @@
+{
+  "results": [
+    {
+      "name": "desktop-ja",
+      "initial": 268,
+      "expanded": 338,
+      "savedWidth": 328,
+      "fullDefault": 320,
+      "fullWidth": 420,
+      "checks": "drag, touch on tablet, arrow keys, Home/End/Enter, persistence, project unchanged, normal/fullscreen independent, drawer toggle follows edge"
+    },
+    {
+      "name": "desktop-en",
+      "initial": 268,
+      "expanded": 338,
+      "savedWidth": 328,
+      "fullDefault": 320,
+      "fullWidth": 420,
+      "checks": "drag, touch on tablet, arrow keys, Home/End/Enter, persistence, project unchanged, normal/fullscreen independent, drawer toggle follows edge"
+    },
+    {
+      "name": "desktop-zh-Hans",
+      "initial": 268,
+      "expanded": 338,
+      "savedWidth": 328,
+      "fullDefault": 320,
+      "fullWidth": 420,
+      "checks": "drag, touch on tablet, arrow keys, Home/End/Enter, persistence, project unchanged, normal/fullscreen independent, drawer toggle follows edge"
+    },
+    {
+      "name": "desktop-zh-Hant",
+      "initial": 268,
+      "expanded": 338,
+      "savedWidth": 328,
+      "fullDefault": 320,
+      "fullWidth": 420,
+      "checks": "drag, touch on tablet, arrow keys, Home/End/Enter, persistence, project unchanged, normal/fullscreen independent, drawer toggle follows edge"
+    },
+    {
+      "name": "tablet-landscape",
+      "initial": 328,
+      "expanded": 398,
+      "savedWidth": 388,
+      "fullDefault": 380,
+      "fullWidth": 480,
+      "checks": "drag, touch on tablet, arrow keys, Home/End/Enter, persistence, project unchanged, normal/fullscreen independent, drawer toggle follows edge"
+    },
+    {
+      "name": "tablet-portrait",
+      "initial": 320,
+      "expanded": 390,
+      "savedWidth": 380,
+      "fullDefault": 380,
+      "fullWidth": 480,
+      "checks": "drag, touch on tablet, arrow keys, Home/End/Enter, persistence, project unchanged, normal/fullscreen independent, drawer toggle follows edge"
+    }
+  ],
+  "errors": []
+}

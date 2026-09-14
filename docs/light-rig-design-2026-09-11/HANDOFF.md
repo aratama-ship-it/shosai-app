@@ -432,7 +432,25 @@ LX cueは照明デザインの中ではなく別のパネル。
 実測（1灯・未選択）: バトン吊りは側面図で `dim:true`、SSの灯は `mine:true` で `dim:false`。
 **直すなら**側面図の `dim` を他の図と同じ「選択中で自分が非選択」だけにする（本人判断待ち）。
 
-### 逆光のとき演者を影絵で出す（2026-09-13 本人要望）
+### 前・横の光が当たっても影絵になる不具合（2026-09-14 公開済み）
+当初はこの不具合のみ実装。その後、本人が見え方を確認し「承認します」と回答。
+人物修正の公開と案Bの実装を承認済み。Q5aの実寸比較後の最終確定条件は継続。
+人物修正の公開コミットは `f8356deaa24e27676fd2a75cbaf3e7e38a36f432`。Pages built、配信3ファイルのSHA-256一致。
+証拠は `evidence/performer-light-20260914/release.json`。
+旧 `backlitPieces()` の「奥に点灯灯があるだけ」判定を廃止し、頭・胴・手足の受光を
+光源位置、狙い、広がり、現在の強さ（調光カーブ・ストロボ含む）、色、カッター／バーンドアから評価する。
+暗幕の後に不透明な人物を受光色で重ねるので、前明かりを逆光の黒で上書きせず、横光には左右の明暗差が出る。
+正面2D・3D・左右の側面に共通。作業灯を消さない通常表示、床・壁の光だまりの計算、保存値は変更しない。
+
+- 変更: `prototype/app.js`、`prototype/stage-figure.js`、`prototype/index.html` のJS版番号。
+- テスト: `node --test tests/light-rig-performer-light.test.mjs tests/stage-light-rig.test.mjs tests/light-rig-proto-frame.test.mjs` → 28 pass。
+- 描画: Chromium / Playwright WebKit、128描画ケース（修正前後64組）。前＋後／横＋後／逆光のみ／外れた前明かり／全消灯／顔だけ／作業灯あり／人物なし。
+  比較した全ビューで人物なし・作業灯ありの画素が前後一致。描画による照明・人物設定の変更なし。
+- [比較画像と結果](evidence/performer-light-20260914/index.html)、[数値結果](evidence/performer-light-20260914/results.json)。
+- 限界: 部位と法線の少数サンプルによる表示近似。精密な照度、細かいゴボの身体への投影、物体間の遮光、間接光は未対応。
+  見え方は本人確認済み、公開と配信確認も完了。Safariアプリ実機検証は未実施。リムライト専用表現は第2段階のまま。
+
+### 旧方式の記録: 逆光のとき演者を影絵で出す（2026-09-13・上の修正で廃止）
 **作業灯を消したときだけ**、演者より<b>奥</b>にある灯が点いていれば、その演者を黒い影絵で描き直す
 （`backlitPieces()` が対象を集め、`drawPiecesUp(..., {silhouette:Set})` で**作業灯の暗幕より後に**重ねる）。
 光の上へあとから黒を置くので、体で光が遮られたように見える。影絵の回は影と名前を描かない。
@@ -540,3 +558,39 @@ LX cueは照明デザインの中ではなく別のパネル。
 （2026-09-14 02:10 追記）本人回答を反映して**確定版**へ更新。常設イメージ＝照明バトン小2／中大3（全ムービングだけ仮想維持）、SSムービング削除、
 転がし小2／中大4、合計 小34／中54／大70要素。「照明のあるある」30件（明かり24＋動き5＋全部消す）を **patch 既定で重ねる**（灯体ID×属性で後勝ち）。
 サムネイルは現在の明かりに重ねた結果を主画面と同じ描画設定で描く。詳細は DECISION.html（v2）。
+
+## 5.7 「照明のあるある」実装（2026-09-14 03:10・本人指示「30件は全部実装。増減はあとで」）
+設計は `visual-presets-2026-09-14/DECISION.html`（確定版）。実装は**新規ファイル中心**で、app.js への変更は接続点2か所だけ。
+- 新規 `prototype/light-presets.js`（純関数）: 仮想仕込み3種 `buildHouseRig(size, deps)`（小34／中54／大70要素・bindings.groups と固定灯の共通狙い）、
+  `PRESETS` 30件（明かり24＝setup／動き5＝attributes／全部消す＝reset）、`applyPreset({preset, choices, rig, dims, cue, selection, timeMs, E, groupId})`
+  → `{status, nextCue, changes, targets, reason}`（入力を変えない）、`nowChips`／`cardState`。由来は `light.src={p,h}`（hが今の中身と違えば「調整あり」）、動きは `light.srcm={m}`。
+- 新規 `prototype/light-presets-ui.js`（DOM）: 右パネルに「見本／調整」タブ、見本タブ＝「いまの明かり」チップ→明かり／動き→検索→絞り込み→カード格子（132×148・2列）→「全部消す」。
+  灯体パネルに入口「ビジュアルから作る」（サイズ選択ダイアログ→仮想仕込みを入れて見本タブへ）。CSSは同ファイルが `<style>` を注入。
+- app.js の接続点（**別セッションが app.js を書き直すときは残すこと**）: ① `window.__RIG.hooks = { cue, scene, setLight, ensureOn, commit, uid, lightOf, fixtureById, toast, dialog, undo, label, renderAll, draw, stop, home, lxEditingQ, lxNo, defaultAim, COLORS }`
+  ② `renderAll()` の `renderFixedConflicts();` の直後に `if (window.LIGHT_PRESETS_UI) window.LIGHT_PRESETS_UI.refresh();`。index.html は app.js の後に2本の `<script>`。
+- 検証: `node --test tests/light-presets.test.mjs` **11/11**（要素数・対応表・重ね・後勝ち・調整あり・動きの適格判定・全部消す・未対応・30件×3サイズ）。
+  ブラウザ（Chromium 1440×900・localhost:8791）: 中劇場54要素→前明かり全面12灯→ホリ単色で14灯→Undoで12→エリア3分割→扇で組1・チップ「エリア・3分割＋扇」。カード格子2列・132×148 実測。コンソールエラー0。
+- 暫定: サムネイルは「どこが点くか」の略図（平面）。実描画（現在の明かりに重ねた結果）は DECISION §7 の描画入力の引数化が先。
+- 落とし穴: **別セッションが同時に app.js を書いていた**（02:58 に一時 41KB まで縮んだ＝書き込み途中）。編集は md5 で一致を確認→読み書きを1回の python で。バックアップ `app_backup_2026-09-14-before-presets.js` / `index_backup_2026-09-14-before-presets.html`。
+- 未公開（GitHub Pages への反映は本人の指示待ち。HANDOFF §2 の一時インデックス手順で app.js / index.html / light-presets.js / light-presets-ui.js の4本＋tests）。
+- **公開済み（2026-09-14 03:5x）**: パネル操作担当セッションが本人の直接指示を受けて経路Aで公開。コミット `ae8aff0`（親 1cda6ac）、`?v=1789323922`、Pages built。
+  こちらの live 実測: presets 2本 200・engine はローカルと同一・hooks/refresh 各1・仮想仕込み54→前明かり→ホリ→エリア3分割→扇（組1・チップ「エリア・3分割＋扇」）→Undo で組0。コンソールエラー0。
+  次に直すときは fetch 直後の `ae8aff0` 以降を親に経路Aで。小さな既知点: 見本タブの格子は 2×132px 固定なのでパネルが極端に狭いと横スクロールが出る（1440では2列で問題なし）。
+
+- **2026-09-14 04:0x 切り替え式に変更（本人指示）**: 明かりのカードは押すと全灯を中立化してそのあるあるだけを点ける（動きの組も外す）。同じカードをもう一度押すと消灯。色・上下手の選び直しはトグルしない。
+  変更は light-presets.js（setup 分岐・cardState）と light-presets-ui.js（applyCard の toggle・文言）だけ。app.js/index.html は `?v=` のみ。tests/light-presets.test.mjs 12/12。
+
+## 案Bの隔離試作（2026-09-14・Astra実装）
+本人の「承認します」を受け、backlight-redesign/prototype-b/ へ基準版を複製して実装。
+共有 prototype/app.js は追加変更していない。入口 backlight-redesign/REVIEW_B.html。
+光条は世界座標の円錐を視線方向の層でサンプルし、人物深度を層境界へ追加。面・人物・光源glareを分離。
+もやは cue.environment.haze、cueJson は未知フィールドも保持。保存領域は shosai.lightDesigns.optionB.v1。
+固定帯/実寸12mの比較、平面/側面の距離ドラッグ、Undo。Q2優先のため側面dim統一は混在時のみ。
+Q5a最終確定、Q5bを床壁のみまで広げるかの条件整合、Safariの操作負荷は未確定。
+案Bの公開標準版切替と製品統合はしていない。人物修正の公開は上記f8356deで完了。
+数値は backlight-redesign/TOKENS_B.md。検証は同フォルダ verify-b.cjs / verify-b-interaction.cjs / benchmark-b*.cjs。
+結果は evidence-b/。単体35 pass、ブラウザ180条件。静止時192列18層、操作中96列12層。
+
+### 案B 継続改善（2026-09-14・外出中の本人依頼）
+隔離版だけを更新。計算領域限定＋層別CanvasでWebKitの揺れを修正。操作中72列10層、静止時192列18層。交差8灯8人の中央値 Chromium11.4ms／WebKit25ms（performance-final.json）。保存破損・容量不足・不正import・描画失敗時の保持を検証。Safariアプリで人物の前面／逆光シルエット、もや、実寸切替を確認。
+結果は backlight-redesign/REVIEW_B.html / notes.md §6。Q5aとQ2/Q5bの境界は本人待ち、製品統合・標準版切替・公開は未実施。

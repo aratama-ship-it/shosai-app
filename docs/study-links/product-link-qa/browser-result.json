@@ -1,0 +1,180 @@
+{
+  "checks": [
+    {
+      "lang": "ja",
+      "width": 320,
+      "height": 740,
+      "layout": {
+        "overflow": false,
+        "w": 208.890625,
+        "h": 44,
+        "x": 12,
+        "right": 220.890625,
+        "bottom": 262.09375,
+        "overlap": false,
+        "titleVisible": true,
+        "svg": 1
+      }
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "height": 844,
+      "layout": {
+        "overflow": false,
+        "w": 208.890625,
+        "h": 44,
+        "x": 12,
+        "right": 220.890625,
+        "bottom": 262.09375,
+        "overlap": false,
+        "titleVisible": true,
+        "svg": 1
+      }
+    },
+    {
+      "lang": "ja",
+      "width": 844,
+      "height": 390,
+      "layout": {
+        "overflow": false,
+        "w": 208.890625,
+        "h": 44,
+        "x": 492.109375,
+        "right": 701,
+        "bottom": 60,
+        "overlap": false,
+        "titleVisible": true,
+        "svg": 1
+      }
+    },
+    {
+      "lang": "ja",
+      "width": 768,
+      "height": 1024,
+      "layout": {
+        "overflow": false,
+        "w": 208.890625,
+        "h": 44,
+        "x": 16,
+        "right": 224.890625,
+        "bottom": 237.59375,
+        "overlap": false,
+        "titleVisible": true,
+        "svg": 1
+      }
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "height": 900,
+      "layout": {
+        "overflow": false,
+        "w": 208.890625,
+        "h": 44,
+        "x": 1088.109375,
+        "right": 1297,
+        "bottom": 60,
+        "overlap": false,
+        "titleVisible": true,
+        "svg": 1
+      }
+    },
+    {
+      "lang": "ja",
+      "popup": "https://stagesketch-try.juggler-arata.workers.dev/beta",
+      "title": "製品版ベータについて — 舞台スケッチ",
+      "noReferrer": true,
+      "noOpener": true
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "height": 740,
+      "layout": {
+        "overflow": false,
+        "w": 280.171875,
+        "h": 44,
+        "x": 12,
+        "right": 292.171875,
+        "bottom": 286.59375,
+        "overlap": false,
+        "titleVisible": true,
+        "svg": 1
+      }
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "height": 844,
+      "layout": {
+        "overflow": false,
+        "w": 280.171875,
+        "h": 44,
+        "x": 12,
+        "right": 292.171875,
+        "bottom": 262.09375,
+        "overlap": false,
+        "titleVisible": true,
+        "svg": 1
+      }
+    },
+    {
+      "lang": "en",
+      "width": 844,
+      "height": 390,
+      "layout": {
+        "overflow": false,
+        "w": 280.171875,
+        "h": 44,
+        "x": 16,
+        "right": 296.171875,
+        "bottom": 237.59375,
+        "overlap": false,
+        "titleVisible": true,
+        "svg": 1
+      }
+    },
+    {
+      "lang": "en",
+      "width": 768,
+      "height": 1024,
+      "layout": {
+        "overflow": false,
+        "w": 280.171875,
+        "h": 44,
+        "x": 16,
+        "right": 296.171875,
+        "bottom": 237.59375,
+        "overlap": false,
+        "titleVisible": true,
+        "svg": 1
+      }
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "height": 900,
+      "layout": {
+        "overflow": false,
+        "w": 280.171875,
+        "h": 44,
+        "x": 1016.828125,
+        "right": 1297,
+        "bottom": 60,
+        "overlap": false,
+        "titleVisible": true,
+        "svg": 1
+      }
+    },
+    {
+      "lang": "en",
+      "popup": "https://stagesketch-try.juggler-arata.workers.dev/en/beta",
+      "title": "About the full beta — Stage Sketch",
+      "noReferrer": true,
+      "noOpener": true
+    }
+  ],
+  "errors": [],
+  "viewerStateUnchanged": true
+}

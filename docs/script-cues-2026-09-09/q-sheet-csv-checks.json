@@ -1,0 +1,29 @@
+{
+  "passed": 24,
+  "checks": [
+    "text roundtrip \"日本語, \\\"引用\\\"\\n二行目\"",
+    "text roundtrip \"=1+1\"",
+    "text roundtrip \" +2\"",
+    "text roundtrip \"-3\"",
+    "text roundtrip \"@SUM(A1)\"",
+    "text roundtrip \"\\t文字\"",
+    "text roundtrip \"'literal\"",
+    "text roundtrip \"\\r\\n=x\"",
+    "embedded CRLF and doubled quote parsing",
+    "unlisted existing cue survives partial import",
+    "generic apostrophe is literal",
+    "reject unterminated quote",
+    "reject character after closing quote",
+    "reject missing required header",
+    "reject extra header",
+    "reject duplicate IDs",
+    "reject duplicate numbers",
+    "reject bad type",
+    "reject bad order",
+    "reject duplicate order",
+    "reject ragged row",
+    "reject too many rows",
+    "number alone never merges existing cue",
+    "oversized export cannot create an unreadable own CSV"
+  ]
+}

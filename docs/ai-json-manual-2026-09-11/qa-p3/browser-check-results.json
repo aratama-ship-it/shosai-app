@@ -1,0 +1,42 @@
+[
+  {
+    "name": "本文コピー対象は正本と一致",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "chatgpt の図が変わる分類",
+    "ok": true,
+    "detail": "6/6; 規約違反 0"
+  },
+  {
+    "name": "修正依頼文は共通関数と一致",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "gemini の図が変わる分類",
+    "ok": true,
+    "detail": "37/37; 規約違反 2"
+  },
+  {
+    "name": "見本は点検OK",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "構文エラーは行・列を表示",
+    "ok": true,
+    "detail": "JSON構文エラー: Unexpected end of JSON input（行 2、列 8）"
+  },
+  {
+    "name": "pc ページエラーなし",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 ページエラーなし",
+    "ok": true,
+    "detail": ""
+  }
+]

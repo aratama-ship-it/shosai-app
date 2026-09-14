@@ -1,0 +1,62 @@
+[
+  {
+    "path": "worker.js",
+    "before": "ee44e6fe6826429845480659ec747c026efb8de534253e32d93e98e1774ce928",
+    "after": "8b835d9ded84c159d2f98954f46f7790971cb8661c748fba8b5c6110a6a79b1f"
+  },
+  {
+    "path": "wrangler.toml",
+    "before": "41140347418d7d736b92b948f9b8629ab2546b8d13bd0b30cc119d114272847e",
+    "after": "104093e4d45064c0ff8d0aa57ee781dcf8ab41ef90f33eaf8283fac12e22d44b"
+  },
+  {
+    "path": "index.html",
+    "before": "b5c01d1c1bd53014c831a60db130806a6063424a25d691e2963d2f66953dbfb7",
+    "after": "e094fa75aebc14f1848bde66b2785e0b25fd71380dcef3057627affdd3633fa3"
+  },
+  {
+    "path": "stage.html",
+    "before": "daf156358d35caa96326202046d049d2df3ca81d41e785f05e0877279fd2aa5b",
+    "after": "ee9611a85d5fc740d8aa0e1a164df56c3df5b2d1e17829693c4650c06a5a6b9e"
+  },
+  {
+    "path": "stage-sw.js",
+    "before": "92aa1d2c94db7134771ccd2e1605150cc85340ed2d6419beb7acdbc6b266c27c",
+    "after": "56cd329091d41364872dcfcc5389aa43c72e1d15dea3a0a265211bf920c07050"
+  },
+  {
+    "path": "build_public.py",
+    "before": "e1ad3d26570773c56088bba781f7763dfe16ea6959a02c441a3c8e30d995b5c2",
+    "after": "45fc1de1ae6f183af6b4fe56e0b0b1072cbb94ea28c8bd2556de2619529f11f3"
+  },
+  {
+    "path": "tests/stage-manual-help.test.mjs",
+    "before": "c570eac4f8773c1d57787630e3628e7043b23a824a858d71099247d5c1708673",
+    "after": "5882aff8530f538552eb74475f89810e25cbc048a12cc801ecbc6b297565aae5"
+  },
+  {
+    "path": "tests/stage-session-shelve.test.mjs",
+    "before": "d59809bb573e7aef4939396f24922458932c60f52fbf82d13aabae392b7b3dd0",
+    "after": "ad1b027e0f55c44c5768cb1f2257343e311272533e3ff175daadd12564357967"
+  },
+  {
+    "path": "usage-metrics.js",
+    "before": null,
+    "after": "4e3ab44c9c7e8c12c9d9c5912bcd7c7c96406a3b7319a7a7fb921a172357347c"
+  },
+  {
+    "path": "usage-admin-page.js",
+    "before": null,
+    "after": "9f18c736f5b0c52683d346d1331a5833a90323182f03c9c5d6937cfd84fed197"
+  },
+  {
+    "path": "stage-usage.js",
+    "before": null,
+    "after": "b831234817a4c16e2b9d01be04453ccce603d53ea641903d4b504e7ada57673f"
+  },
+  {
+    "path": "tests/usage-metrics.test.mjs",
+    "before": null,
+    "after": "fa661c7b613abe65bc59557d9a5fb189a66f29c0e9b3da0cc0883867b2c5864f"
+  }
+]

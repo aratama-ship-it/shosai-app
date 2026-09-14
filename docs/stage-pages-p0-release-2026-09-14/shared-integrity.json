@@ -1,0 +1,8 @@
+{
+  "stage-sketch.js": true,
+  "stage-timeline.js": true,
+  "stage.html": true,
+  "stage-sw.js": true,
+  "worker.js": true,
+  "wrangler.toml": true
+}

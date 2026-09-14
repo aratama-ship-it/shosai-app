@@ -1,0 +1,292 @@
+TAP version 13
+# Subtest: 公開している一式
+ok 1 - 公開している一式
+  ---
+  duration_ms: 0.530041
+  type: 'test'
+  ...
+# Subtest: 仮想仕込み3種の要素数は 小34／中54／大70（cyc上下2列込み）
+ok 2 - 仮想仕込み3種の要素数は 小34／中54／大70（cyc上下2列込み）
+  ---
+  duration_ms: 1.219875
+  type: 'test'
+  ...
+# Subtest: 配置グループの対応表（WASH/SPECIAL/BACK/FL）と固定灯の共通狙い
+ok 3 - 配置グループの対応表（WASH/SPECIAL/BACK/FL）と固定灯の共通狙い
+  ---
+  duration_ms: 0.379291
+  type: 'test'
+  ...
+# Subtest: 切り替え式: 別のあるあるを押すと前のは消え、常に1枚だけが乗る（2026-09-14 本人指示）
+ok 4 - 切り替え式: 別のあるあるを押すと前のは消え、常に1枚だけが乗る（2026-09-14 本人指示）
+  ---
+  duration_ms: 1.48875
+  type: 'test'
+  ...
+# Subtest: 同じグループの別案（ホリ単色→ホリ上下2色）も切り替え。上下2色の色が入る
+ok 5 - 同じグループの別案（ホリ単色→ホリ上下2色）も切り替え。上下2色の色が入る
+  ---
+  duration_ms: 0.412041
+  type: 'test'
+  ...
+# Subtest: 切り替えは動きの組も外す（前のあるあるに乗せた扇は残らない）
+ok 6 - 切り替えは動きの組も外す（前のあるあるに乗せた扇は残らない）
+  ---
+  duration_ms: 0.632708
+  type: 'test'
+  ...
+# Subtest: 前明かり・中央は CL 全体を対象にして面用を消す。色選択は choices で効く
+ok 7 - 前明かり・中央は CL 全体を対象にして面用を消す。色選択は choices で効く
+  ---
+  duration_ms: 0.8315
+  type: 'test'
+  ...
+# Subtest: 手で触った灯は「調整あり」
+ok 8 - 手で触った灯は「調整あり」
+  ---
+  duration_ms: 0.246792
+  type: 'test'
+  ...
+# Subtest: 動き: 床を狙って点いているムービングだけ。固定灯・消灯・空中は対象外。組は対象灯だけ組み替える
+ok 9 - 動き: 床を狙って点いているムービングだけ。固定灯・消灯・空中は対象外。組は対象灯だけ組み替える
+  ---
+  duration_ms: 1.9725
+  type: 'test'
+  ...
+# Subtest: 全部消す: 消灯のみで設定は残る
+ok 10 - 全部消す: 消灯のみで設定は残る
+  ---
+  duration_ms: 0.568458
+  type: 'test'
+  ...
+# Subtest: 仮想仕込みでない rig では未対応（機材不足とは言わない）
+ok 11 - 仮想仕込みでない rig では未対応（機材不足とは言わない）
+  ---
+  duration_ms: 0.144583
+  type: 'test'
+  ...
+# Subtest: 30件すべてが3サイズで適用できる（unsupported/例外なし）
+ok 12 - 30件すべてが3サイズで適用できる（unsupported/例外なし）
+  ---
+  duration_ms: 11.782042
+  type: 'test'
+  ...
+# Subtest: 前明かりと逆光の同時点灯で、見えている前面を黒く上書きしない
+ok 13 - 前明かりと逆光の同時点灯で、見えている前面を黒く上書きしない
+  ---
+  duration_ms: 0.80225
+  type: 'test'
+  ...
+# Subtest: 横からの光はその側を照らす。反対側へ回ったビューでは照らされた面が変わる
+ok 14 - 横からの光はその側を照らす。反対側へ回ったビューでは照らされた面が変わる
+  ---
+  duration_ms: 0.5485
+  type: 'test'
+  ...
+# Subtest: 前に灯があるだけでは照らさない: 外れた狙い・頭上通過・光源の後方
+ok 15 - 前に灯があるだけでは照らさない: 外れた狙い・頭上通過・光源の後方
+  ---
+  duration_ms: 0.08125
+  type: 'test'
+  ...
+# Subtest: 狙い点は空中の終端ではない。光軸を延長した先の身体も照らす
+ok 16 - 狙い点は空中の終端ではない。光軸を延長した先の身体も照らす
+  ---
+  duration_ms: 0.049375
+  type: 'test'
+  ...
+# Subtest: 消灯・強さ0・ストロボの消灯位相は暗く、弱い前明かりは段階的に明るくなる
+ok 17 - 消灯・強さ0・ストロボの消灯位相は暗く、弱い前明かりは段階的に明るくなる
+  ---
+  duration_ms: 0.181334
+  type: 'test'
+  ...
+# Subtest: 照明色を反映し、入力の照明・人物設定は変更しない
+ok 18 - 照明色を反映し、入力の照明・人物設定は変更しない
+  ---
+  duration_ms: 0.071375
+  type: 'test'
+  ...
+# Subtest: カッターで遮った前明かりは、逆光の影絵を解除しない
+ok 19 - カッターで遮った前明かりは、逆光の影絵を解除しない
+  ---
+  duration_ms: 0.1085
+  type: 'test'
+  ...
+# Subtest: 光源と狙い点が一致してもNaNを描画色へ渡さない
+ok 20 - 光源と狙い点が一致してもNaNを描画色へ渡さない
+  ---
+  duration_ms: 0.038333
+  type: 'test'
+  ...
+# Subtest: 公開している一式
+ok 21 - 公開している一式
+  ---
+  duration_ms: 0.601625
+  type: 'test'
+  ...
+# Subtest: バーンドアは固定灯だけ・値は0〜1に丸める・未設定は全部0
+ok 22 - バーンドアは固定灯だけ・値は0〜1に丸める・未設定は全部0
+  ---
+  duration_ms: 0.179667
+  type: 'test'
+  ...
+# Subtest: frameDoors: バーンドアは閉めた方向だけ、軸は床(y)と奥の壁(z)で変わる
+ok 23 - frameDoors: バーンドアは閉めた方向だけ、軸は床(y)と奥の壁(z)で変わる
+  ---
+  duration_ms: 0.223833
+  type: 'test'
+  ...
+# Subtest: frameDoors: カッターは4本の硬い線。1.0で内接正方形、√2以上はその向きを切らない
+ok 24 - frameDoors: カッターは4本の硬い線。1.0で内接正方形、√2以上はその向きを切らない
+  ---
+  duration_ms: 0.113375
+  type: 'test'
+  ...
+# Subtest: バーンドア＋カッターは両方の線が並ぶ（固定灯）
+ok 25 - バーンドア＋カッターは両方の線が並ぶ（固定灯）
+  ---
+  duration_ms: 0.55125
+  type: 'test'
+  ...
+# Subtest: doorCutInEllipse: 真下の円では向きそのまま・距離は1−f。面に垂直な軸は切れない
+ok 26 - doorCutInEllipse: 真下の円では向きそのまま・距離は1−f。面に垂直な軸は切れない
+  ---
+  duration_ms: 0.209709
+  type: 'test'
+  ...
+# Subtest: doorCutInEllipse: 斜めの楕円でも、世界座標の手前側が切られる
+ok 27 - doorCutInEllipse: 斜めの楕円でも、世界座標の手前側が切られる
+  ---
+  duration_ms: 0.155792
+  type: 'test'
+  ...
+# Subtest: カッターの回転: 90°で左右の線が奥⇄手前の軸へ回る（バーンドアは回らない）
+ok 28 - カッターの回転: 90°で左右の線が奥⇄手前の軸へ回る（バーンドアは回らない）
+  ---
+  duration_ms: 0.251
+  type: 'test'
+  ...
+# Subtest: aim is retained; zero length axis is rejected
+ok 29 - aim is retained; zero length axis is rejected
+  ---
+  duration_ms: 0.388166
+  type: 'test'
+  ...
+# Subtest: cone extends past target, rejects behind and outside, has continuous soft edge
+ok 30 - cone extends past target, rejects behind and outside, has continuous soft edge
+  ---
+  duration_ms: 0.12325
+  type: 'test'
+  ...
+# Subtest: shutter cuts only its side in cone coordinates
+ok 31 - shutter cuts only its side in cone coordinates
+  ---
+  duration_ms: 0.077083
+  type: 'test'
+  ...
+# Subtest: finite floor and back intersections do not invent a pool outside stage
+ok 32 - finite floor and back intersections do not invent a pool outside stage
+  ---
+  duration_ms: 0.070625
+  type: 'test'
+  ...
+# Subtest: haze defaults are read-only and explicit zero is preserved
+ok 33 - haze defaults are read-only and explicit zero is preserved
+  ---
+  duration_ms: 0.056583
+  type: 'test'
+  ...
+# Subtest: view depth follows camera axis and glare follows source direction
+ok 34 - view depth follows camera axis and glare follows source direction
+  ---
+  duration_ms: 0.112084
+  type: 'test'
+  ...
+# Subtest: view-plane optimization never clips lit cone samples
+ok 35 - view-plane optimization never clips lit cone samples
+  ---
+  duration_ms: 16.424542
+  type: 'test'
+  ...
+# Subtest: モジュールが期待どおりの一式を公開する
+ok 36 - モジュールが期待どおりの一式を公開する
+  ---
+  duration_ms: 0.704792
+  type: 'test'
+  ...
+# Subtest: 灯体の既定はムービング。固定は明示したときだけ
+ok 37 - 灯体の既定はムービング。固定は明示したときだけ
+  ---
+  duration_ms: 0.088417
+  type: 'test'
+  ...
+# Subtest: 取り付け方ごとに世界座標が決まる（吊り・転がし・SS・前明かり）
+ok 38 - 取り付け方ごとに世界座標が決まる（吊り・転がし・SS・前明かり）
+  ---
+  duration_ms: 0.196
+  type: 'test'
+  ...
+# Subtest: 反対側へコピーは配置だけを左右へ写す
+ok 39 - 反対側へコピーは配置だけを左右へ写す
+  ---
+  duration_ms: 0.083375
+  type: 'test'
+  ...
+# Subtest: 往復は「ゆるめる」が既定で、端で減速する。「一定」は等速
+ok 40 - 往復は「ゆるめる」が既定で、端で減速する。「一定」は等速
+  ---
+  duration_ms: 0.29325
+  type: 'test'
+  ...
+# Subtest: 1往復の秒数は直に決められ、オフセットは灯ごとに動きを遅らせる
+ok 41 - 1往復の秒数は直に決められ、オフセットは灯ごとに動きを遅らせる
+  ---
+  duration_ms: 0.133
+  type: 'test'
+  ...
+# Subtest: 円は2軸で楕円にでき、傾きで面の中を回せる
+ok 42 - 円は2軸で楕円にでき、傾きで面の中を回せる
+  ---
+  duration_ms: 0.201708
+  type: 'test'
+  ...
+# Subtest: 8の字は1周で2軸目が2往復する（∞の形）
+ok 43 - 8の字は1周で2軸目が2往復する（∞の形）
+  ---
+  duration_ms: 0.103917
+  type: 'test'
+  ...
+# Subtest: 光は狙った点で止まらない。床か奥の壁まで進み、当たらなければ抜ける
+ok 44 - 光は狙った点で止まらない。床か奥の壁まで進み、当たらなければ抜ける
+  ---
+  duration_ms: 0.260417
+  type: 'test'
+  ...
+# Subtest: 光の広がりは距離に比例して開く。ムービングだけシーンでズームできる
+ok 45 - 光の広がりは距離に比例して開く。ムービングだけシーンでズームできる
+  ---
+  duration_ms: 0.289333
+  type: 'test'
+  ...
+# Subtest: 取り付けの説明は本体の照明パネルと同じ語彙で出す
+ok 46 - 取り付けの説明は本体の照明パネルと同じ語彙で出す
+  ---
+  duration_ms: 0.568542
+  type: 'test'
+  ...
+# Subtest: 図の投影は縮尺どおり（真上・正面・側面）
+ok 47 - 図の投影は縮尺どおり（真上・正面・側面）
+  ---
+  duration_ms: 0.112333
+  type: 'test'
+  ...
+1..47
+# tests 47
+# suites 0
+# pass 47
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 72.193666

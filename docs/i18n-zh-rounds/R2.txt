@@ -1,0 +1,15 @@
+最初に "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/AGENTS.md" を読むこと。
+対象: "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/" の stage-sketch.js / stage-i18n.js / stage-set-builder.js / stage-public.js / tests/。
+目的: 実装。docs/I18N_ZH_WORKORDER_2026-09-09.md の §3.1 を、§5 の制約で、§6 R2 の完了条件まで。
+確定仕様: §3.1 の1〜5。日英の見え方を一切変えない（innerText 一致が条件）。window.SHOSAI_I18N は残す。
+未決事項: なし（判断が要る箇所が出たら止めて報告）。
+制約: §5 のとおり。isEn() を新規に増やさない。stage.html を手で触らない。
+完了報告: 変更ファイル／normalizeStageLanguage の表と対応テスト／innerText 一致の実測手順と結果／node tests/index.mjs の結果／触らなかった isEn() の残件数と内訳（分岐・書式）。
+補足（R1/R1b の実績を引き継ぐ）:
+  - 編集前に stage-sketch.js / stage-i18n.js / stage-set-builder.js / stage-public.js を <name>_backup_2026-09-09-before-i18n-packs.js の名で複製する。
+  - §3.1 には R1 の成果物（sx / languageValue）の扱いが追記されている。必ず読む。
+  - innerText の基準値（R1b 完了時・ローカルHTTP 127.0.0.1:18431＋隔離した新規 Chrome プロファイル、document.body.innerText の SHA-256）:
+      ?lang=en → d10ed544fa5093bec741ec4490312aa1cf99564928b291374647de66852a6fc6（2474 bytes）
+      ?lang=ja → 7063741df129ce2a8192510c638c250228760339ad541a5b6b65623a8d8c3154（3340 bytes）
+    R2 完了後に同じ手順で両方が一致すること。加えて ?lang=zh-Hant と ?lang=zh-TW で開いたときの innerText が ?lang=en と一致すること（パック未読込の言語は en へ落ちる仕様）。
+  - コミットしない。git add -A しない。作業ツリーには他セッションの未コミット変更がある。

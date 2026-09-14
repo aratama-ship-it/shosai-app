@@ -1,0 +1,123 @@
+{
+  "version": "field-case-2026-09-09-r1",
+  "scope": "UI verification with fictional test-only input; no real rehearsal validation",
+  "checks": [
+    {
+      "check": "page marker",
+      "pass": true
+    },
+    {
+      "check": "all fields initially empty",
+      "pass": true
+    },
+    {
+      "check": "all unknowns retained",
+      "pass": true
+    },
+    {
+      "check": "initial case remains pending",
+      "pass": true
+    },
+    {
+      "check": "memo keeps multiline notes",
+      "pass": true
+    },
+    {
+      "check": "unfilled fields stay unknown",
+      "pass": true
+    },
+    {
+      "check": "user markup is literal",
+      "pass": true
+    },
+    {
+      "check": "copy builds latest memo",
+      "pass": true
+    },
+    {
+      "check": "copy fallback offers manual action",
+      "pass": true
+    },
+    {
+      "check": "fallback selects fresh memo",
+      "pass": true
+    },
+    {
+      "check": "download filename",
+      "pass": true
+    },
+    {
+      "check": "download builds latest memo",
+      "pass": true
+    },
+    {
+      "check": "no local storage",
+      "pass": true
+    },
+    {
+      "check": "no IndexedDB",
+      "pass": true
+    },
+    {
+      "check": "reload clears fields",
+      "pass": true
+    },
+    {
+      "check": "reload returns to unconfirmed",
+      "pass": true
+    },
+    {
+      "check": "1440 no overflow",
+      "pass": true
+    },
+    {
+      "check": "1440 control heights",
+      "pass": true
+    },
+    {
+      "check": "1440 link heights",
+      "pass": true
+    },
+    {
+      "check": "1440 local link people-plan-trial-2026-09-09.html?v=people-plan-2026-09-09-r2",
+      "pass": true
+    },
+    {
+      "check": "1440 local link FIELD_CASE_PREPARATION_2026-09-09.md",
+      "pass": true
+    },
+    {
+      "check": "1440 local link TOKEN_SHEET_field_case_2026-09-09.md",
+      "pass": true
+    },
+    {
+      "check": "390 no overflow",
+      "pass": true
+    },
+    {
+      "check": "390 control heights",
+      "pass": true
+    },
+    {
+      "check": "390 link heights",
+      "pass": true
+    },
+    {
+      "check": "390 local link people-plan-trial-2026-09-09.html?v=people-plan-2026-09-09-r2",
+      "pass": true
+    },
+    {
+      "check": "390 local link FIELD_CASE_PREPARATION_2026-09-09.md",
+      "pass": true
+    },
+    {
+      "check": "390 local link TOKEN_SHEET_field_case_2026-09-09.md",
+      "pass": true
+    },
+    {
+      "check": "no runtime errors",
+      "pass": true
+    }
+  ],
+  "runtimeErrors": []
+}

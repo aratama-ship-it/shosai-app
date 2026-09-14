@@ -1,0 +1,27 @@
+{
+  "date": "2026-09-09",
+  "status": "ai_draft_not_adopted",
+  "userRequest": "ここまですると、第5場面はちょっと長すぎる気がするので、セリフはちょっとヘアーしてある程度行動でセリフは減らして行動増やそうと思います。",
+  "interpretation": "第5場面の台詞を減らし、出来事の一部をト書きの行動へ置き換える。",
+  "previousFiles": {
+    "selections.json": "a0884d74197b68e8f1986bd864eda0278ab2045b0023c44e54b82a313c458d49",
+    "draft.json": "229af340665563e642c0b228385f26930615a2de8d297f287ac35148c4373a7a",
+    "../direction-notes/scene-notes.json": "db570fe66ee87eb3c8c3720c76e381102e87e4763fd26e260f6780e30f20a0f4"
+  },
+  "previousScene5": {
+    "scope": "expanded_causal_excerpt",
+    "lineCount": 18,
+    "dialogueLines": 12,
+    "stageDirectionLines": 6,
+    "jaDraft": "ティボルト　ロミオ。おまえを呼ぶ名は、一つしかない――悪党だ。\nロミオ　ティボルト、私にはあなたを憎めない理由がある。悪党ではない。ここは収めてくれ。\nマーキューシオ　そんな屈辱的な服従があるか。ティボルト、今度は私が相手だ。\n（マーキューシオとティボルト、剣を交える）\nロミオ　やめろ！　大公は街中の決闘を禁じたはずだ！　二人とも剣を収めろ！\n（ティボルト、一味とともに退場）\nマーキューシオ　やられた。両家とも、疫病に呑まれろ。俺はもうだめだ。\nマーキューシオ　明日、俺に会いに来い。墓の中の男になっているぞ。なぜ間に入った？　おまえの腕の下で刺されたんだ。\nマーキューシオ　ベンヴォーリオ、連れていってくれ。両家とも、疫病に呑まれろ！\n（マーキューシオとベンヴォーリオ、退場）\nロミオ　親友が、私のために致命傷を負った。\n（ベンヴォーリオ、戻る）\nベンヴォーリオ　ロミオ、勇敢なマーキューシオは死んだ。\nロミオ　今日の黒い運命は、ここから始まる。\n（ティボルト、戻る）\nロミオ　マーキューシオは死んだのに、勝ち誇って戻ったのか。\n　ティボルト、おまえか私か、どちらかがあいつと行く。\n（ロミオとティボルト、剣を交える。ティボルトが倒れる）"
+  },
+  "newScene5": {
+    "scope": "action_weighted_causal_excerpt",
+    "expectedLineCount": 12,
+    "dialogueLines": 5,
+    "stageDirectionLines": 7,
+    "allRequiredNarrativeBeatsRetained": true
+  },
+  "adopted": false,
+  "finalPolishingByUser": true
+}

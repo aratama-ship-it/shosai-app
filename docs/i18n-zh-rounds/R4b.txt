@@ -1,0 +1,5 @@
+最初に "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/AGENTS.md" を読むこと。
+対象: "/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app/" の未コミット差分（git diff）。読むだけ。編集しない。
+目的: docs/I18N_ZH_WORKORDER_2026-09-09.md の §3・§5・§6 に対する独立レビュー。結論を誘導しないので、合否ではなく「観察した事実→仕様のどの行に反するか」を番号付きで全件挙げる。
+特に見る: (1) 日英の見え方が変わる差分 (2) 訳語・訳文への変更 (3) 未読込パック・旧保存値・navigator 各経路の落ち先 (4) data-no-i18n の抜け (5) SW/版の不整合 (6) テストがソース正規表現で検査している箇所（評価後の値で検査すべきもの）。
+報告: 番号／ファイル:行／観察／反する仕様の節／重大度（配信を止める・直してから配信・後日）。

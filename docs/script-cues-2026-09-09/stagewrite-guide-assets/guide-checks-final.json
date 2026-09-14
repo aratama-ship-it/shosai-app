@@ -1,0 +1,56 @@
+{
+  "initial": [
+    {
+      "check": "画像拡大",
+      "pass": true
+    },
+    {
+      "check": "等倍と横スクロール",
+      "pass": true
+    },
+    {
+      "check": "Escapeとフォーカス復帰",
+      "pass": true
+    },
+    {
+      "check": "PC横溢れ",
+      "pass": true,
+      "width": 1440
+    },
+    {
+      "check": "スマホ横溢れ",
+      "pass": true,
+      "width": 390
+    },
+    {
+      "check": "スマホの等倍スクロール",
+      "pass": true
+    },
+    {
+      "check": "拡大中のフォーカス範囲",
+      "pass": false
+    },
+    {
+      "check": "8画面の読込み",
+      "pass": true
+    }
+  ],
+  "fixVerification": [
+    {
+      "activeId": "viewer-scale",
+      "check": "フォーカス循環 修正後",
+      "inlineZoom": true,
+      "pass": true
+    },
+    {
+      "check": "390px フォーカス循環 修正後",
+      "pass": true
+    },
+    {
+      "check": "目次をたどった単体HTMLの8画像",
+      "noOverflow": true,
+      "pass": true
+    }
+  ],
+  "notes": "初回フォーカス循環の不合格はTab/Shift+Tab処理を追加し再確認。単体HTMLの初期未読込み画像はloading=lazyによるもので、目次から各節へ移動して全8枚を確認。フルdesign-lintはCUAのNodeFilter未提供で測定不能。"
+}

@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-09-09",
+  "baseUrl": "http://127.0.0.1:18743",
+  "results": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "status": 200,
+      "sceneCount": 3,
+      "horizontalOverflow": false,
+      "pageErrors": [],
+      "consoleErrors": []
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "status": 200,
+      "sceneCount": 3,
+      "horizontalOverflow": false,
+      "pageErrors": [],
+      "consoleErrors": []
+    }
+  ],
+  "sourceCoverage": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "proposalStatus": "user_direction_recorded"
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>メモの引き継ぎ・受信一覧 — Stage Sketch 確認記録</title>
+<link rel="stylesheet" href="../../style.css">
+<style>
+body{font:15px/1.75 var(--sans)}body::before{display:none}main{max-width:960px;margin:auto;padding:32px 24px 64px}header,section{padding:24px 0;border-bottom:1px solid var(--line-dark)}h1{font:600 24px/1.5 var(--sans);margin:8px 0 16px}h2{font:600 18px/1.6 var(--sans);margin-bottom:12px}p{margin-bottom:12px}a{color:var(--paper);text-decoration:underline;min-height:44px;display:inline-flex;align-items:center}ul,ol{padding-left:24px}li{margin:8px 0}pre{padding:16px;background:var(--desk-2);border:1px solid var(--line-dark);white-space:pre-wrap;overflow-wrap:anywhere}small,.muted{color:var(--ink-soft-sm)}img{max-width:100%;height:auto;border:1px solid var(--line-dark)}summary{cursor:pointer;min-height:44px;display:flex;align-items:center}details:not([open])>:not(summary){display:none}:focus-visible{outline:2px solid var(--brass);outline-offset:3px}code{overflow-wrap:anywhere}@media(max-width:600px){main{padding:16px}}
+</style></head><body><main>
+<header><p class="muted">2026年9月10日 · ローカル実装・確認済み · 本番未デプロイ</p><h1>更新後も、演者のメモを残す</h1><p>共有モーダルから開く受信一覧と、過去の文章・線を選んで引き継ぐ画面を実装。本家の共通書体・配色を使用します。</p></header>
+<section><h2>実装した利用者体験</h2>
+<ul>
+<li>オーナー：共有 → 演者事前学習リンク → <strong>フィードバックを見る</strong>。全ショー／ショー／場面／表示名で絞り込み、投稿者名・場面・日時・公開版・本文・送信時の正面図と平面図を確認できます。</li>
+<li>演者：通常の公開更新は同じリンク。場面IDと図の内容が同じならメモを継続。名前や順番では別場面へ自動で移しません。</li>
+<li>図の変更時は以前の文章・線を残し、新しい図への誤った重ね合わせを避けます。削除された場面のメモも「以前の場面のメモ・引き継ぎ」から開けます。</li>
+<li>旧図と引き継ぎ先を比較し、文章の一部分と線1本ずつを選んでコピー。原本と、コピー先にあった内容も履歴へ残します。追加・分割・統合した場面へも任意にコピーできます。</li>
+<li>引き継ぎは個人メモの操作。オーナーへ届くのは「この画面をオーナーへ共有」を押した内容だけです。</li>
+<li>同じショーへの新しい招待では、サーバーが確認したノートIDで再接続。従来のtoken別の端末保存は消さずに移行します。別オーナーの同名ショーは混ぜません。</li>
+</ul><p>本体index.htmlと生成される単独ベータstage.htmlの双方に搭載。公開体験版try.htmlにはオーナー管理を追加していません。</p></section>
+<section><h2>保存・認可・上限</h2>
+<p>既存のStudyLinks Durable Objectに過去の公開JSONをチャンク保存し、公開更新と同じトランザクションで確定します。過去版のGETも現在の有効な閲覧トークンを検証し、無効化後は最新・旧版とも共通404。更新・メモ一覧・画像・無効化は従来どおりサーバーで作成者一致を検証します。受信一覧は既存のオーナーAPIを使用し、未共有ノートAPIを呼びません。</p>
+<p>匿名ベータの個人メモはブラウザ内。アカウント方式では本人専用StudyReaderAccountへ履歴とコピー元も同期します。保存版内の線の順番で個別に選択し、履歴にはID・場面ID・公開版・日時を保持。保存上限で原本を自動削除しません。</p>
+<ul><li>過去の公開版：1リンク50版・32 MiB。上限では次の更新を拒否し、公開内容とメモを維持。</li><li>個人履歴：1場面32件。本文2000字・線64本・1本512点。端末／アカウントの既存保存サイズ上限も継続。</li><li>閲覧・過去版・メモAPI：private, no-store。IP・UAの永続保存、ショーやメモの外部解析送信は追加していません。</li></ul>
+<p>以前の舞台図も招待リンクの受取人が見られることを発行側へ明示しています。今回より前に上書きされ、保存されていなかった旧図は復元できません。メモに旧図の識別情報がない場合も、原本を残して選択による引き継ぎにします。</p>
+<p>通常の更新には「公開内容を更新」を使います。無効化・再発行・完全削除は別操作です。再発行時に受信メモを削除する既存の確認動作は変えていません。無効化した旧トークンから旧図を取得することもできません。</p></section>
+<section><h2>テストと結果</h2>
+<ul><li>関連Node・Worker・ゲスト権限・リアルタイム共有を含む全Nodeテスト：<strong>877 / 877成功</strong>。</li><li>実SQLiteの公開内容・旧版・共有メモ・再起動：28 / 28成功。</li><li>既存リアルタイム共有の実Worker接続：13 / 13成功。</li><li>実SQLiteの演者アカウント・履歴・競合・認可：15 / 15成功。</li><li>Chromeで発行→描画→共有→更新→履歴コピー→受信一覧→無効化：7グループ成功、pageerror 0。</li><li>JS14ファイルの構文、build_stage.py --check、build_public.py --check、git diff --check：成功。</li><li>design-lint（390×844 / 1440×900）：NG0 / WARN0 / 測定不可0。本文最悪5.02:1、44px未満0。</li></ul>
+<p>新規テストでは削除場面、部分コピー、履歴上限、旧図の読み取り専用性、無効化、所有者分離、再発行後のノート対応、読み上げ用IDの衝突を検証しています。</p>
+<details><summary>実行コマンド</summary><pre>node --test tests/*.test.mjs
+STUDY_MINIFLARE=/Users/arata/.npm/_npx/32026684e21afda6/node_modules/miniflare/dist/src/index.js node tools/study-runtime-check.mjs
+STUDY_MINIFLARE=/Users/arata/.npm/_npx/32026684e21afda6/node_modules/miniflare/dist/src/index.js node tools/study-reader-runtime-check.mjs
+STUDY_BASE=http://127.0.0.1:8837 STUDY_PLAYWRIGHT=/Users/arata/.npm/_npx/e41f203b7505f1fb/node_modules/playwright/index.mjs node tools/study-continuity-browser-check.mjs
+python3 build_stage.py --check
+python3 build_public.py --check
+git diff --check</pre></details>
+<p><a href="continuity-qa/node-final.log">Nodeログ</a> · <a href="continuity-qa/worker-runtime.log">Workerログ</a> · <a href="continuity-qa/reader-runtime.log">同期ログ</a> · <a href="continuity-qa/result.json">ブラウザ結果</a> · <a href="continuity-qa/design-lint.md">デザイン実測</a></p>
+<p class="muted">ブラウザテストは合成リンクを発行します。繰り返す際は専用の新しいポート・保存先を使い、利用者の保存先を使わないでください。初期試行のfailure.pngは診断用で、最終判定はresult.jsonと成功ログです。</p></section>
+<section><h2>ローカル画面で確認した状態</h2>
+<p>日本語・英語の演者画面を390×844、844×390、768×1024、1440×1000で確認。PCの舞台図全幅・縦並び、44px操作域、文字入力、旧図と新図、コピー後の再読み込み、横はみ出しなしを確認しました。オーナーの英語版もCodex内ブラウザで受信一覧を開き、読み上げ名・Tab移動・2pxフォーカス・最小44pxを確認しています。</p>
+<p>元の8802リンクをCodex内ブラウザで再読み込みし、「無題のショー」「公開版1」と履歴欄の空状態を確認。サーバー再起動前後で公開JSONのSHA-256・公開版・更新日時が一致しました。</p>
+<details><summary>旧図と引き継ぎ先の比較</summary><img src="continuity-qa/history-desktop.png" alt="旧図の線から正面図の1本を選び、新しい配置と比較する画面"></details>
+<details><summary>オーナーの受信一覧</summary><img src="continuity-qa/feedback-desktop.png" alt="表示名、公開版、本文と共有された正面図・平面図を確認する一覧"></details>
+<details><summary>スマートフォン相当の縦画面</summary><img src="continuity-qa/phone-ja.png" alt="390px幅で文章と履歴選択が縦に並ぶ画面"></details></section>
+<section><h2>未確認の実機項目</h2><ul><li>iPhone Safari／iPad Safari実機での指・ペンの書き味、回転、画面キーボードとの干渉、バックグラウンド復帰。</li><li>実ネットワークでの端末間同期・Googleログイン・本番Cloudflareの動作。ベータ匿名メモは端末間同期しません。</li></ul></section>
+<section><h2>変更したファイル</h2><p>この継続作業で編集した既存20ファイルと、新規の実装・テスト3ファイル：</p><ul><li><code>README.md</code></li><li><code>build_study.py</code></li><li><code>design/TOKEN_SHEET_study-links_2026-09-09.md</code></li><li><code>index.html</code></li><li><code>stage-study-owner.js</code></li><li><code>stage-study-private.js</code></li><li><code>stage-study-sync.js</code></li><li><code>stage-study-viewer.js</code></li><li><code>stage-study.css</code></li><li><code>stage-sw.js</code></li><li><code>stage.html</code></li><li><code>study-frame.html</code></li><li><code>study-links.js</code></li><li><code>study-reader-account.js</code></li><li><code>study.html</code></li><li><code>tests/stage-manual-help.test.mjs</code></li><li><code>tests/stage-session-shelve.test.mjs</code></li><li><code>tests/study-links.test.mjs</code></li><li><code>tools/study-reader-runtime-check.mjs</code></li><li><code>tools/study-runtime-check.mjs</code></li><li><code>stage-study-continuity.js</code></li><li><code>tests/study-continuity.test.mjs</code></li><li><code>tools/study-continuity-browser-check.mjs</code></li></ul>
+<p>加えて、この確認記録とcontinuity-qa/の検証資料を追加。index.htmlを正本としてstage.htmlとstudy-frame.htmlを生成しました。</p>
+<p>着手時の1785ファイルと照合し、上の対象以外の1765ファイルはハッシュ一致、消えたファイルは0。元からあったstyle.css・stage-sketch.js・worker.js・wrangler.toml等の差分は保持しました。無関係な作業の巻き戻し・上書きは行っていません。<a href="continuity-qa/preservation.json">照合結果</a></p></section>
+<section><h2>本番適用に必要な設定</h2>
+<p>今回の継続機能による新しいDurable Object／migration追加はありません。事前学習機能を初めて適用する環境には、既存wrangler.tomlのSTUDY_LINKS / v3-study-linksと、STUDY_READER_AUTH・STUDY_READER_ACCOUNTS / v4-study-reader-accountsが必要です。本番の適用状況は未確認です。</p>
+<ol><li>index.htmlからの生成と公開ビルド検査を通し、新しいstage-study-continuity.jsを含めて配布資源を用意する。Workerの公開許可は明示ファイルだけ。</li><li>既存DO・migration・認証設定を保ったままCloudflare設定を確認する。ベータの匿名閲覧はSTAGE_BETA_ACTIVE=trueとSTUDY_ALLOW_ANONYMOUS=true。本番でローカル演者ログインを有効化しない。</li><li>本人の公開承認を得てからデプロイし、実際の別利用者・失効・旧版・端末保存を本番で確認する。</li></ol>
+<p><strong>commit・push・Cloudflareデプロイ・公開・外部送信・秘密情報登録はしていません。</strong></p></section>
+<section><h2>直接確認する</h2>
+<p><a href="http://127.0.0.1:8802/study?lang=ja#a0ec8f4b764141f11ee0b14b579cd41cfcb18c5ea5e3fa9a">元の演者確認リンクを開く</a></p>
+<p><a href="http://127.0.0.1:8802/stage.html?lang=ja">編集画面を開く</a> → 画像を書き出す隣の「共有」 → 演者事前学習リンク → 「フィードバックを見る」。編集画面は再読み込みすると最新UIになります。</p>
+<p>8802は同じ保存先で起動中。停止した場合だけ次のコマンドを使ってください。ローカル確認用のオーナーはstudy-owner / local-study-ownerです。</p><pre>cd &quot;/Users/arata/Library/Mobile Documents/com~apple~CloudDocs/claude code files/show-creative-ideas/shosai-app&quot;
+STUDY_ALLOW_ANONYMOUS=true STUDY_PORT=8802 STUDY_PERSIST=/tmp/study-casual-local-20260910 STUDY_MINIFLARE=/Users/arata/.npm/_npx/32026684e21afda6/node_modules/miniflare/dist/src/index.js node tools/study-preview.mjs</pre>
+<p class="muted">この認証情報は合成ローカル確認用。本番アカウントや秘密情報の登録ではありません。</p></section>
+</main></body></html>

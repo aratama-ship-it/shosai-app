@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>出会い — ロミオとジュリエット 日本語下訳</title>
+  <style>
+    :root{--paper:#efe7d6;--page:#fffaf0;--ink:#2b2620;--muted:#6a604e;--accent:#8f3e1e;--line:#75664f;--space:24px}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Sans","Yu Gothic",system-ui,sans-serif;font-size:16px;line-height:1.8}
+    main{max-width:1120px;margin:auto;padding:32px;background:var(--page)}h1{font-size:32px;line-height:1.4;margin:12px 0 16px}h2{font-size:24px;line-height:1.5;margin:0 0 24px}h3,label{display:block;font-size:14px;line-height:1.75;margin:0 0 12px;color:var(--muted);font-weight:600}p{margin:0 0 16px}header{padding:16px 0 32px;border-bottom:1px solid var(--line)}.eyebrow,.meta,.source-ref{font-size:14px;line-height:1.75;color:var(--muted)}.intro{max-width:44em}
+    a{color:var(--accent);text-underline-offset:4px}a:focus-visible,button:focus-visible,summary:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:3px}a.inline-link{display:inline-flex;align-items:center;min-height:44px}.links{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:16px}.toolbar{margin:32px 0 16px}.buttons{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}button{font:inherit;font-weight:600;line-height:1.5;min-height:44px;padding:10px 16px;background:var(--page);color:var(--accent);border:1px solid var(--accent);border-radius:0;cursor:pointer}.status{font-size:14px;color:var(--muted);line-height:1.75}
+    .speech{padding:32px 0;border-top:1px solid var(--line)}.number{font-size:16px;color:var(--accent);margin-right:8px}.speaker-en{font-size:14px;letter-spacing:.04em;color:var(--muted);margin-left:8px}.columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:32px}.verse{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9}.source-ref{margin-top:16px}.japanese{min-width:0}.row-status{font-weight:400;margin-left:12px}textarea{display:block;resize:vertical;width:100%;min-height:108px;border:1px solid var(--line);border-radius:0;padding:12px 16px;font:inherit;font-size:18px;line-height:1.9;background:var(--page);color:var(--ink);overflow-y:hidden}.baseline{margin-top:8px;font-size:16px}.baseline p{padding:12px 16px;border-left:2px solid var(--line)}summary{min-height:44px;padding:8px 0;cursor:pointer;color:var(--accent);font-size:14px;line-height:1.75}.notes{border-top:1px solid var(--line);padding-top:32px;margin-top:16px}.notes ol{padding-left:24px;max-width:52em}.notes li{padding-left:4px;margin-bottom:24px}.notes li p{margin:8px 0 0}footer{margin-top:32px;padding-top:24px;border-top:1px solid var(--line)}noscript p{border:1px solid var(--line);padding:16px}
+    .meta time{white-space:nowrap}
+    @media(max-width:800px){main{padding:16px}h1{font-size:28px}.columns{grid-template-columns:1fr;gap:16px}.speech{padding:24px 0}h2{margin-bottom:16px}.english .verse{font-size:16px}textarea{font-size:18px;padding:12px}.links{gap:4px 20px}}
+    @media print{body,main{background:white}main{max-width:none;padding:0}.toolbar,.links,.baseline,footer{display:none}.speech{break-inside:avoid}.columns{grid-template-columns:1fr 1.25fr}textarea{border:0;padding:0;resize:none}header{padding-top:0}}
+  </style>
+</head>
+<body><main>
+  <header>
+    <p class="eyebrow">舞台スケッチ · 台本サンプルのための翻訳稿</p>
+    <h1>ロミオとジュリエット<br>出会い</h1>
+    <p class="meta">第1幕 第5場の抜粋 · 11の発話 · AI下訳 v1 · <time datetime="2026-09-09">2026年9月9日</time></p>
+    <p class="intro">現代の日本語で話せる言葉にしながら、舞台の台詞としての張りと比喩を残しました。巡礼と聖者に見立てた二人が、手から唇へ、言葉で距離を縮めていく場面です。</p>
+    <p class="meta">原作：William Shakespeare ／ 英語原文から直接作成したAI下訳。ご本人の改稿前・未採用。</p>
+    <nav class="links" aria-label="資料"><a class="inline-link" href="ai-draft-ja.txt" download>下訳全文を保存（TXT）</a><a class="inline-link" href="#translation-notes">訳の判断を見る</a><a class="inline-link" href="../">サンプル資料へ</a></nav>
+  </header>
+  <section class="toolbar" aria-label="修正稿の保存">
+    <p>英語と見比べながら、日本語欄を直接修正できます。</p>
+    <p class="meta" id="save-help">入力はこの画面だけに保持されます。再読み込み・画面を閉じる前に、修正稿を保存してください。最初のAI下訳は各欄の下から確認できます。</p>
+    <div class="buttons"><button id="export-txt" type="button">いまの日本語を保存（TXT）</button><button id="export-json" type="button">原文・下訳・修正を保存（JSON）</button></div>
+    <p class="status" id="edit-status" role="status" aria-live="polite">11の発話 · 入力変更なし</p>
+    <p class="status" id="save-status" role="status" aria-live="polite"></p>
+  </section>
+  <noscript><p>日本語欄への入力を保存するにはJavaScriptが必要です。「下訳全文を保存（TXT）」でファイルを保存し、テキストエディタで修正できます。</p></noscript>
+  <section aria-label="英語原文と日本語下訳">
+    {{SPEECHES}}
+  </section>
+  <section class="notes" id="translation-notes">
+    <h2>訳の判断</h2>
+    <ol>{{NOTES}}</ol>
+  </section>
+  <footer>
+    <p>英語出典：<a class="inline-link" href="https://www.gutenberg.org/ebooks/1513">Project Gutenberg · Romeo and Juliet</a></p>
+    <p class="meta">行番号は保存したテキストファイル内の位置です。刊本の詩行番号ではありません。英語欄は保存原文の綴りとト書きを保持しています。</p>
+    <div class="links"><a class="inline-link" href="../sources/gutenberg-1513-original.txt">保存原文</a><a class="inline-link" href="draft.json" download>出典・下訳データ</a></div>
+  </footer>
+</main>
+<script type="application/json" id="draft-data">{{DATA}}</script>
+<script>
+  'use strict';
+  const draft = JSON.parse(document.getElementById('draft-data').textContent);
+  const fields = [...document.querySelectorAll('textarea[data-id]')];
+  const baseline = new Map(draft.speeches.map(s => [s.id, s.aiDraftJa]));
+  let lastSaved = JSON.stringify(fields.map(f => f.value));
+  function fit(field) { field.style.height = 'auto'; field.style.height = (field.scrollHeight + 2) + 'px'; }
+  function update() {
+    let count = 0;
+    for (const field of fields) {
+      const edited = field.value !== baseline.get(field.dataset.id);
+      if (edited) count++;
+      field.closest('.japanese').querySelector('.row-status').textContent = edited ? '入力変更あり' : 'AI下訳';
+    }
+    document.getElementById('edit-status').textContent = `${fields.length}の発話 · ${count ? count + 'か所に入力変更あり' : '入力変更なし'}`;
+  }
+  for (const field of fields) {
+    field.setAttribute('aria-describedby', 'save-help');
+    field.addEventListener('input', () => { fit(field); update(); document.getElementById('save-status').textContent = ''; });
+    fit(field);
+  }
+  window.addEventListener('resize', () => fields.forEach(fit));
+  function download(content, name, type) {
+    const url = URL.createObjectURL(new Blob([content], {type}));
+    const anchor = document.createElement('a');
+    anchor.href = url; anchor.download = name; document.body.append(anchor); anchor.click(); anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    lastSaved = JSON.stringify(fields.map(f => f.value));
+    document.getElementById('save-status').textContent = `「${name}」のダウンロードを開始しました。`;
+  }
+  document.getElementById('export-txt').addEventListener('click', () => {
+    const content = [draft.title, draft.scope, '原作：William Shakespeare', 'AI下訳 v1 を起点とする編集画面の文面／未採用', '', ...draft.speeches.map((s, i) => s.speakerJa + '\n' + fields[i].value + '\n')].join('\n');
+    download(content, 'romeo-juliet-meeting-ja-working.txt', 'text/plain;charset=utf-8');
+  });
+  document.getElementById('export-json').addEventListener('click', () => {
+    const saved = JSON.parse(JSON.stringify(draft));
+    saved.exportedAt = new Date().toISOString();
+    saved.speeches.forEach((s, i) => { s.userRevisionJa = fields[i].value === s.aiDraftJa ? null : fields[i].value; });
+    download(JSON.stringify(saved, null, 2) + '\n', 'romeo-juliet-meeting-ja-working.json', 'application/json;charset=utf-8');
+  });
+  window.addEventListener('beforeunload', event => {
+    if (JSON.stringify(fields.map(f => f.value)) !== lastSaved) { event.preventDefault(); event.returnValue = ''; }
+  });
+</script>
+</body>
+</html>

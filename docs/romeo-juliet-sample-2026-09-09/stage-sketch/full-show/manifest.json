@@ -1,0 +1,17 @@
+{
+  "sampleId": "RJ-STAGE-SAMPLE-FULL-01",
+  "revision": 1,
+  "entrypoint": "index.html",
+  "nativeImport": "romeo-juliet-full-show.stage-sketch.json",
+  "files": {
+    "romeo-juliet-full-show.stage-sketch.json": "7086d75a843a0ea7253d3dd630defe994cf491432aabcc19e7774d5000a5d780",
+    "romeo-juliet-full-show.handoff.json": "66e7996fca6d295a5d4de59e44518901e471c7022ff6593f6834d8badcc795ec",
+    "index.html": "8c4ab2cf0b256787aceeabfd6e51374e41351e94adca8b792ea929e70af412ee",
+    "README.md": "90404e5ae927c275f772d6f4807fd05964a7175d85332475c0ea3df3499de17c",
+    "QA.md": "0e4bd05ce3b5d648ca9306017c1c5bafd45a21654fba47d7a429d1c8438c1a1b",
+    "qa/data-checks.json": "2ab7dcf0c6370d5ed6dbaf2eb471bd3282f984181b4e912d4d65bf6e54855a7e",
+    "qa/browser-checks.json": "87c1a0606c9ef28795f7480153f8faed40bb2a950478ac7055c577b963b9143c"
+  },
+  "generatorLocation": "shosai-app/docs/romeo-juliet-sample-2026-09-09/stage-sketch/full-show/build_sample.py",
+  "regenerationRequiresWorkspaceSources": true
+}

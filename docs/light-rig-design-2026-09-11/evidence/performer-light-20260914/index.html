@@ -1,0 +1,12 @@
+<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>前・横の光とシルエット — 修正前後の確認</title>
+<style>body{margin:0;background:#191512;color:#efe7d6;font:16px/1.7 system-ui,sans-serif}main{max-width:1050px;margin:auto;padding:28px 20px}h1{font-size:25px}h2{font-size:19px;margin-top:32px}a{color:#e5bc71}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}figure{margin:0;background:#0d0e10;border:1px solid #57462b;padding:12px}svg{width:100%;display:block}figcaption{font-weight:600}.note{color:#c9bdab}li{margin:.35em 0}@media(max-width:520px){.pair{grid-template-columns:1fr}}</style>
+<main><p class="note">2026-09-14 · ローカル修正・未公開</p><h1>前・横から当たる光を、人物の明るさに反映</h1>
+<p>奥に点灯中の灯があっても、前明かりを黒いシルエットで上書きしないよう修正しました。横からの光は、その側を明るく描きます。</p>
+<p>以下は同じ照明・人物設定を、修正前後の実コードで描いた確認シーンです。添付スクリーンショットの保存データそのものを再生した結果ではありません。</p>
+<h2>逆光＋前明かり</h2><div class="pair"><figure><figcaption>修正前：前明かりがあっても黒い</figcaption><svg viewBox="565 645 330 300"><image href="before-mixed.png" width="1460" height="944"/></svg></figure><figure><figcaption>修正後：顔・胴が見える</figcaption><svg viewBox="565 645 330 300"><image href="after-mixed.png" width="1460" height="944"/></svg></figure></div>
+<h2>逆光＋横からの光</h2><div class="pair"><figure><figcaption>修正前：両側とも黒い</figcaption><svg viewBox="565 645 330 300"><image href="before-side.png" width="1460" height="944"/></svg></figure><figure><figcaption>修正後：光が来る側が明るい</figcaption><svg viewBox="565 645 330 300"><image href="after-side.png" width="1460" height="944"/></svg></figure></div>
+<h2>暗いままにする条件も確認</h2><div class="pair"><figure><figcaption>逆光のみ：前面はシルエット</figcaption><svg viewBox="565 645 330 300"><image href="after-back.png" width="1460" height="944"/></svg></figure><figure><figcaption>顔だけを狙う：胴まで明るくしない</figcaption><svg viewBox="565 645 330 300"><image href="after-head.png" width="1460" height="944"/></svg></figure></div>
+<h2>確認した範囲</h2><ul><li>関連テスト28件成功。Chromium・Playwright WebKitで128描画ケース、修正前後64組を確認。</li><li>正面2D・3D・左右の側面を確認。人物なし・作業灯ありの比較シーンでは、修正前後の画素が一致。</li><li>照明・人物の保存値は描画で変わらないことを確認。</li><li>22灯・8人の描画時間は中央値105.3→106.3ms、p95は107.1→107.3ms（このMacのChromium、1800×1300、30回）。絶対的な速度保証ではありません。</li></ul>
+<p class="note">部位ごとの少数サンプルによる表示近似です。細かいゴボの身体への投影・物体間の遮光・間接光は未対応。Safariアプリでの本人確認と公開は未実施です。案B全体や、後回しにしたリムライト専用表現は実装していません。</p>
+<p><a href="http://127.0.0.1:8796/">修正した照明試作を開く</a> · <a href="results.json">描画の数値結果</a> · <a href="performance.json">描画時間</a></p></main></html>

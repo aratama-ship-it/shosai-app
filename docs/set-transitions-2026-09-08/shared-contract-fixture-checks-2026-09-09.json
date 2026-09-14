@@ -1,0 +1,15 @@
+{
+  "scope": "Standalone contract fixture references and arithmetic; not a product scheduler test",
+  "activities": 15,
+  "points": 17,
+  "normal_exit_ms": 15000,
+  "late_exit_ms": 18000,
+  "late_shortfall_ms": 3000,
+  "late_C_wait_ms": 3000,
+  "unknown_exit_ms": null,
+  "known_put_ms_with_unknown_q13": 7000,
+  "numeric_18_vs_12_shortfall_ms": 6000,
+  "owners_and_participants_resolved": true,
+  "normal_and_late_occupancy_overlaps": [],
+  "fixture_sha256": "5ed6105f7b35008a89223f038d34f807a99177a166225eae6aaa8a18ef5bb2e7"
+}

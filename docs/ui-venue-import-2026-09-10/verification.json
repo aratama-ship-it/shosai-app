@@ -1,0 +1,14 @@
+{
+  "unitTestsPassed": 137,
+  "buildStageCheck": "pass",
+  "buildPublicCheck": "pass",
+  "browser": {
+    "url": "http://127.0.0.1:18847/stage.html?lang=ja&verify=venue-import-20260910",
+    "initialChoices": 7,
+    "fileImport": "theatre-tram.venue.json: confirmation, added choice, selection, saved reload passed",
+    "legacyShow": "TOHU original ID: selected name visible; switching to generic venue removes TOHU choice",
+    "publicPreview": "http://localhost:18847/try.html?lang=ja&verify=venue-import-20260910: 7 initial choices",
+    "errors": []
+  },
+  "deployed": false
+}
