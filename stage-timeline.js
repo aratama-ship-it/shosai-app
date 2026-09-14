@@ -197,6 +197,8 @@
   let rowResize = null;
   let rowReorder = null;
   let anchorDrag = null;
+  let cueDrag = null;
+  let suppressCueClickUntil = 0;
   let suppressAnchorClick = false;
 
   function saveUi() {
@@ -1433,6 +1435,63 @@
     });
   }
 
+  function cueDragSeconds(event) {
+    if (!cueDrag || !timeline) return 0;
+    const delta = (event.clientX - cueDrag.startX) / Math.max(1, timelineWidth) * timeline.duration;
+    return Math.round(clamp(snappedSeconds(cueDrag.startSeconds + delta), 0, timeline.duration) * 10) / 10;
+  }
+
+  function beginCueDrag(event, cue, button) {
+    if (event.button !== undefined && event.button !== 0) return;
+    if (!timeline || typeof bridge.updateTimelineCue !== "function") return;
+    cueDrag = {
+      pointerId: event.pointerId,
+      id: cue.id,
+      button,
+      startX: event.clientX,
+      startSeconds: cue.seconds,
+      nextSeconds: cue.seconds,
+      moved: false,
+    };
+    button.classList.add("is-dragging");
+    document.body.classList.add("is-timeline-cue-dragging");
+    try { els.viewport.setPointerCapture(event.pointerId); } catch (_) { /* 捕捉できなくても終端を拾う */ }
+  }
+
+  function continueCueDrag(event) {
+    if (!cueDrag || event.pointerId !== cueDrag.pointerId) return;
+    if (!cueDrag.moved && Math.abs(event.clientX - cueDrag.startX) < 3) return;
+    cueDrag.moved = true;
+    cueDrag.nextSeconds = cueDragSeconds(event);
+    cueDrag.button.style.left = `${clamp(pxFor(cueDrag.nextSeconds) - 4, 0, Math.max(0, timelineWidth - CUE_WIDTH))}px`;
+    event.preventDefault();
+  }
+
+  function endCueDrag(event) {
+    if (!cueDrag || event.pointerId !== cueDrag.pointerId) return;
+    const dragging = cueDrag;
+    cueDrag = null;
+    dragging.button.classList.remove("is-dragging");
+    document.body.classList.remove("is-timeline-cue-dragging");
+    try { els.viewport.releasePointerCapture(event.pointerId); } catch (_) { /* 既に解放済み */ }
+    if (!dragging.moved || Math.abs(dragging.nextSeconds - dragging.startSeconds) < 1e-9) return;
+    const scope = timeline && timeline.source === "formation" && timeline.songId
+      ? { songId: timeline.songId } : {};
+    const updated = bridge.updateTimelineCue(dragging.id, {
+      atSeconds: dragging.nextSeconds,
+      sectionId: timeline.sectionId,
+      ...scope,
+    });
+    suppressCueClickUntil = performance.now() + 400;
+    if (!updated) {
+      renderTimeline();
+      return;
+    }
+    selectedCueId = updated.id;
+    renderTimeline();
+    event.preventDefault();
+  }
+
   function renderCueBlocks(project) {
     Object.values(els.cueLanes).forEach(clearLane);
     const cues = timelineCuePresentations(project);
@@ -1447,9 +1506,11 @@
       button.dataset.cueType = cue.cueType;
       button.setAttribute("aria-pressed", String(cue.id === selectedCueId));
       button.textContent = cue.displayName;
-      button.title = `${labelPosition(cue.seconds)}  ${cue.displayName}（${tx("選択してDeleteで削除")}）`;
+      button.title = `${labelPosition(cue.seconds)}  ${cue.displayName}（${tx("ドラッグで位置を変更。ダブルクリックで詳細")}）`;
       button.style.left = `${clamp(pxFor(cue.seconds) - 4, 0, Math.max(0, timelineWidth - CUE_WIDTH))}px`;
+      button.addEventListener("pointerdown", (event) => beginCueDrag(event, cue, button));
       button.addEventListener("click", () => {
+        if (performance.now() < suppressCueClickUntil) return;
         selectedCueId = cue.id;
         syncCueSelection();
         button.focus();
@@ -2287,6 +2348,9 @@
   els.viewport.addEventListener("pointermove", continueBlockResize);
   els.viewport.addEventListener("pointerup", endBlockResize);
   els.viewport.addEventListener("pointercancel", endBlockResize);
+  els.viewport.addEventListener("pointermove", continueCueDrag);
+  els.viewport.addEventListener("pointerup", endCueDrag);
+  els.viewport.addEventListener("pointercancel", endCueDrag);
   els.rowResizers.forEach((separator) => {
     separator.addEventListener("pointerdown", beginRowResize);
     separator.addEventListener("pointermove", continueRowResize);

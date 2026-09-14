@@ -28542,10 +28542,20 @@ ${propsPlotHtml}
       const cues = Array.isArray(state.project.cues) ? state.project.cues : [];
       const cue = cues.find((item) => item && item.kind === "timeline" && item.id === id);
       if (!cue) return null;
-      const memo = typeof patch.memo === "string" ? patch.memo.slice(0, 2000) : "";
-      if (cue.memo === memo) return jsonClone(cue);
+      const memo = typeof patch.memo === "string" ? patch.memo.slice(0, 2000) : String(cue.memo || "");
+      const atSeconds = Object.prototype.hasOwnProperty.call(patch, "atSeconds")
+        ? Math.round(clamp(finite(patch.atSeconds, cue.atSeconds) || 0, 0, 86400) * 10) / 10
+        : cue.atSeconds;
+      const sectionId = typeof patch.sectionId === "string" && patch.sectionId ? patch.sectionId : cue.sectionId;
+      const songId = typeof patch.songId === "string" && patch.songId ? patch.songId : cue.songId;
+      if (cue.memo === memo && cue.atSeconds === atSeconds && cue.sectionId === sectionId && cue.songId === songId) {
+        return jsonClone(cue);
+      }
       checkpoint();
       cue.memo = memo;
+      if (Number.isFinite(atSeconds)) cue.atSeconds = atSeconds;
+      if (typeof sectionId === "string" && sectionId) cue.sectionId = sectionId;
+      if (typeof songId === "string" && songId) cue.songId = songId;
       persistSoon();
       window.dispatchEvent(new CustomEvent("stage-timeline-cues-change"));
       return jsonClone(cue);

@@ -276,11 +276,17 @@ test("キューはダブルクリックで詳細とメモを開き、詳細ま�
     "stage-timeline-cue-detail-save", "stage-timeline-cue-detail-delete",
   ]) assert.match(html, new RegExp(`id="${id}"`));
   assert.match(html, /id="stage-timeline-cue-detail-note" maxlength="2000"/);
+  assert.match(timeline, /button\.addEventListener\("pointerdown", \(event\) => beginCueDrag\(event, cue, button\)\)/);
+  assert.match(timeline, /function cueDragSeconds\(event\)[\s\S]*?snappedSeconds/);
+  assert.match(timeline, /function endCueDrag\(event\)[\s\S]*?bridge\.updateTimelineCue\(dragging\.id, \{[\s\S]*?atSeconds: dragging\.nextSeconds/);
   assert.match(timeline, /button\.addEventListener\("dblclick", \(\) => openCueDetails/);
   assert.match(timeline, /bridge\.updateTimelineCue\(cueDetailId, \{ memo: els\.cueDetailNote\.value \}\)/);
   assert.match(timeline, /function deleteCueFromDetails\(\)[\s\S]*?removeSelectedCue\(\)/);
-  assert.match(sketch, /memo: typeof cue\.memo === "string" \? cue\.memo\.slice\(0, 2000\) : ""/);
-  assert.match(sketch, /updateTimelineCue\(id, patch = \{\}\)[\s\S]*?cue\.memo = memo/);
+  assert.match(sketch, /const memo = typeof patch\.memo === "string" \? patch\.memo\.slice\(0, 2000\) : String\(cue\.memo \|\| ""\)/);
+  assert.match(sketch, /updateTimelineCue\(id, patch = \{\}\)[\s\S]*?cue\.atSeconds = atSeconds/);
+  assert.match(html, /id="stage-timeline-cue-detail-delete"[\s\S]*?class="btn-quiet" id="stage-timeline-cue-detail-save"/);
+  assert.match(css, /\.stage-timeline-cue-detail-modal \.stage-timeline-cue-detail-actions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.stage-timeline-cue-detail-modal \.stage-timeline-cue-detail-actions button \{[\s\S]*?justify-content: center;[\s\S]*?font-size: 14px/);
   assert.match(css, /\.stage-modal\.stage-timeline-cue-detail-modal \{ width: min\(440px/);
 });
 
