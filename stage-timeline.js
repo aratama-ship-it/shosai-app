@@ -719,6 +719,34 @@
     return phased;
   }
 
+  // 音源があるタイムラインは、実ファイルの終了より先へ伸ばさない。
+  // シーン計画や拍の見積りが長くても、再生できない余白を表示しないための上限。
+  function audioTimelineDuration(track) {
+    const duration = finite(track && track.durationSeconds, 0);
+    return duration > 0 ? duration : null;
+  }
+
+  function capTimelineItemsToDuration(items, duration) {
+    return (items || []).flatMap((item) => {
+      const start = clamp(finite(item && item.start, 0), 0, duration);
+      const end = clamp(finite(item && item.end, start), 0, duration);
+      return end > start + 1e-6 ? [{ ...item, start, end }] : [];
+    });
+  }
+
+  function capTimelineToAudio(timelineValue, audioTrack) {
+    const duration = audioTimelineDuration(audioTrack);
+    if (duration === null) return timelineValue;
+    const segments = capTimelineItemsToDuration(timelineValue.segments, duration);
+    const transitions = capTimelineItemsToDuration(timelineValue.transitions, duration);
+    return {
+      ...timelineValue,
+      duration,
+      segments: withSceneTransitionPhases(segments, transitions),
+      transitions,
+    };
+  }
+
   function formationTimelines(project, section) {
     const saved = section && section.formation;
     const pkg = saved && saved.package;
@@ -769,9 +797,9 @@
       });
       const plannedEnd = countToSec(song.track,
         finite(song.scenePlan && song.scenePlan.endCount, groups[groups.length - 1].count + 8));
-      const duration = Math.max(1, finite(audioTrack && audioTrack.durationSeconds, 0), plannedEnd,
+      const duration = Math.max(1, plannedEnd,
         ...segments.map((segment) => segment.end));
-      return {
+      return capTimelineToAudio({
         sectionId: section.id,
         sectionTitle: section.title || tx("無題のセクション"),
         songId: song.id,
@@ -783,7 +811,7 @@
         segments: withSceneTransitionPhases(segments, transitions),
         transitions,
         source: "formation",
-      };
+      }, audioTrack);
     }).filter(Boolean);
   }
 
@@ -815,7 +843,7 @@
       at += duration;
       return item;
     });
-    return {
+    return capTimelineToAudio({
       sectionId: section && section.id || null,
       sectionTitle: section && section.title || project.title || tx("ショー全体"),
       songId: "fallback",
@@ -823,13 +851,11 @@
       track: audioTrack || { countBpm: 120, firstCountSec: 0, firstSet: false, firstLocked: false, anchors: [], phrases: [{ fromCount: 1, length: 8 }] },
       trackId,
       gainDb: normalizedAudioGainDb(audioTrack && audioTrack.gainDb),
-      duration: trackId
-        ? Math.max(8, at, finite(audioTrack && audioTrack.durationSeconds, 0))
-        : desiredDuration,
+      duration: desiredDuration,
       segments: withSceneTransitionPhases(segments, transitions),
       transitions,
       source: "fallback",
-    };
+    }, audioTrack);
   }
 
   function timelineChoices() {

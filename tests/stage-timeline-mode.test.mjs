@@ -264,7 +264,15 @@ test("音源なしでもセクション時間を内部時計として再生す�
   assert.match(timeline, /syncSilentScene\(seekSeconds\)/);
   assert.match(timeline, /els\.play\.disabled = !timeline\.segments\.some/);
   assert.match(timeline, /const desiredDuration = section \? sectionDurationSeconds\(project, section\) : baseDuration/);
-  assert.match(timeline, /duration: trackId[\s\S]*?: desiredDuration/);
+  assert.match(timeline, /duration: desiredDuration/);
+});
+
+test("音源があるタイムラインは実ファイルの終端を越えて表示しない", () => {
+  assert.match(timeline, /function audioTimelineDuration\(track\)[\s\S]*?duration > 0 \? duration : null/);
+  assert.match(timeline, /function capTimelineItemsToDuration\(items, duration\)[\s\S]*?end > start \+ 1e-6/);
+  assert.match(timeline, /function capTimelineToAudio\(timelineValue, audioTrack\)[\s\S]*?duration,[\s\S]*?withSceneTransitionPhases\(segments, transitions\)/);
+  assert.match(timeline, /return capTimelineToAudio\(\{[\s\S]*?source: "formation",[\s\S]*?\}, audioTrack\)/);
+  assert.match(timeline, /return capTimelineToAudio\(\{[\s\S]*?source: "fallback",[\s\S]*?\}, audioTrack\)/);
 });
 
 test("各編集レーンの追加操作を左ラベルへ揃え、キューをシーン単位で連番表示する", () => {
