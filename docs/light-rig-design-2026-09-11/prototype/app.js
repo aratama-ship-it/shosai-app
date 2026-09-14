@@ -260,6 +260,8 @@
     lxScene: 0,
     slOpen: { search: false, group: false },
     exporting: false,
+    // 描画負荷の表示専用。照明データ・Undo・保存形式には入れない。
+    runtime: { drawMs: 0, averageMs: 0, lastStatusAt: 0 },
   };
   const SPEED_SEC = { slow: 4, normal: 2, fast: 1 };
   E.SPEED_PERIOD_MS && Object.assign(E.SPEED_PERIOD_MS, {}); // 参照のみ
@@ -750,7 +752,7 @@
   const groupName = (g) => ({ together: "一緒に動く", mirror: "鏡のように動く", sequential: "順番に動く" }[g.relation] || "") + (g.compose === "fan" ? "（扇）" : g.compose === "cross" ? "（交差）" : "");
 
   /* ---------- 再生 ---------- */
-  function play() { if (state.play.on) return; state.play.on = true; state.play.last = 0; state.play.raf = requestAnimationFrame(tick); renderTransport(); }
+  function play() { if (state.play.on) return; state.play.on = true; state.play.last = 0; state.play.raf = requestAnimationFrame(tick); renderTransport(); renderRuntimeStatus(); }
   function stop(reason) { if (!state.play.on) return; state.play.on = false; cancelAnimationFrame(state.play.raf); if (reason) toast(reason); renderTransport(); draw(); }
   function home() { stop(); state.play.t = 0; renderTransport(); draw(); }
   function tick(ts) { if (!state.play.on) return; if (!state.play.last) state.play.last = ts; state.play.t += ts - state.play.last; state.play.last = ts; renderTransport(); draw(); state.play.raf = requestAnimationFrame(tick); }
@@ -763,6 +765,23 @@
     b.title = state.play.on ? "動きを止める（Space）" : "動きを再生する（Space）";
     b.classList.toggle("playing", state.play.on);
     renderXfer();
+  }
+
+  /* ---------- 描画負荷と再描画 ---------- */
+  function renderRuntimeStatus(force = false) {
+    const node = $("runtime-status"); if (!node) return;
+    const now = performance.now(), runtime = state.runtime;
+    if (!force && runtime.lastStatusAt && now - runtime.lastStatusAt < 250) return;
+    runtime.lastStatusAt = now;
+    const ms = runtime.averageMs > 0 ? `${runtime.averageMs.toFixed(1)}ms` : "計測中";
+    node.textContent = `描画 ${ms}／回 ・ ${state.play.on ? "再生中" : "停止"} ・ もや 0（固定）`;
+    node.title = "このブラウザでの直近の4図描画時間です。CPU・メモリの使用量そのものではありません。";
+  }
+  function resetRuntime() {
+    if (state.play.on) { state.play.on = false; cancelAnimationFrame(state.play.raf); }
+    state.play.t = 0; state.play.last = 0; spatialQuick = false;
+    renderTransport(); draw(); renderRuntimeStatus(true);
+    toast("描画をリセットしました（照明・配置はそのままです）");
   }
 
   /* ---------- 設定のコピー＆ペースト（2026-09-14 本人要望） ----------
@@ -2059,7 +2078,14 @@
     fctx.fillText(`${L.seat.label}から見た形（舞台スケッチの正面図と同じ描き方）`, 8, h - 24);
   }
 
-  function draw() { drawPlan(); SECS.forEach((sec) => (sec.kind === "front" ? (state.front3d ? drawFront3D(sec) : drawFront(sec)) : drawSide(sec))); }
+  function draw() {
+    const started = performance.now();
+    drawPlan(); SECS.forEach((sec) => (sec.kind === "front" ? (state.front3d ? drawFront3D(sec) : drawFront(sec)) : drawSide(sec)));
+    const elapsed = performance.now() - started, runtime = state.runtime;
+    runtime.drawMs = elapsed;
+    runtime.averageMs = runtime.averageMs ? runtime.averageMs * 0.8 + elapsed * 0.2 : elapsed;
+    renderRuntimeStatus();
+  }
 
   /* ---------- 当たり判定 ---------- */
   const pointSegmentDistance = (p, a, b) => {
@@ -3458,11 +3484,11 @@
     const ids = [...state.sel];
     if (state.mode === 'move') {
       const box=el('div','pbox option-b-controls');
-      box.append(el('p','kicker','もや · このLX cue'));
-      const hazeControl=range(0,100,1,V.haze(cue()),v=>`${v}%`,v=>{cue().environment={...(cue().environment||{}),haze:v};draw();},()=>commit());
-      hazeControl.querySelectorAll('input').forEach(i=>i.setAttribute('aria-label',i.type==='range'?'このLX cueのもや':'このLX cueのもや（数値）'));box.append(hazeControl);
-      const row=el('div','row'); for(const [name,value] of [['なし',0],['うっすら',35],['濃い',70]]) row.append(btn(name,()=>{cue().environment={...(cue().environment||{}),haze:value};commit();},'small'));
-      box.append(row);box.append(el('p','note','空中・客席向けの光条に反映します。'));
+      box.append(el('p','kicker','もや'));
+      const hazeControl=range(0,100,1,0,v=>`${v}%`,()=>{},()=>{});
+      hazeControl.querySelectorAll('input').forEach(i=>{i.disabled=true;i.setAttribute('aria-label',i.type==='range'?'もや（現在は使えません）':'もやの数値（現在は使えません）');});box.append(hazeControl);
+      const row=el('div','row'); for(const name of ['なし','うっすら','濃い']) { const b=btn(name,()=>{},'small'); b.disabled=true; row.append(b); }
+      box.append(row);box.append(el('p','note','軽量化のため、もやは0で固定しています。'));
       host.append(box);
     }
     syncLightToggle(ids);
@@ -3958,6 +3984,7 @@
   $("t-copy").onclick = (ev) => { copySettings(); if (ev.detail > 0) ev.currentTarget.blur(); };
   $("t-paste").onclick = (ev) => { pasteSettings(); if (ev.detail > 0) ev.currentTarget.blur(); };
   $("undo").onclick = undo; $("redo").onclick = redo;
+  $("runtime-reset").onclick = resetRuntime;
   $("mirror").onclick = mirrorSelected;
   document.querySelectorAll("#filters button").forEach((b) => { b.onclick = () => { state.filter = b.dataset.filter; renderAll(); }; });
   $("dup").onclick = duplicateSelected; $("del").onclick = removeSelected; $("spread").onclick = spreadSelected;

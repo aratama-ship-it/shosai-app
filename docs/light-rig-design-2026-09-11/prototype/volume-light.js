@@ -7,7 +7,9 @@ const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z});
 const unit=a=>{const n=Math.hypot(a.x,a.y,a.z);return n>1e-8?{x:a.x/n,y:a.y/n,z:a.z/n}:null;};
 const cross=(a,b)=>({x:a.y*b.z-a.z*b.y,y:a.z*b.x-a.x*b.z,z:a.x*b.y-a.y*b.x});
 const rgb=s=>{const n=parseInt((s||'#ffffff').slice(1),16);return [n>>16&255,n>>8&255,n&255];};
-const haze=cue=>clamp(Number.isFinite(cue?.environment?.haze)?cue.environment.haze:35,0,100);
+// 負荷対策中は、保存済みの値を読まず常に0として描く。値自体は消さないため、
+// 後日もやを戻しても既存LX cueの設定を失わない。
+const haze=_cue=>0;
 function compile(b){
  const axis=unit(sub(b.T,b.S));if(!axis)return null;
  const right=unit(cross(Math.abs(axis.z)<.95?{x:0,y:0,z:1}:{x:0,y:1,z:0},axis));
