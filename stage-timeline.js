@@ -113,6 +113,7 @@
     audioGainRange: document.getElementById("stage-timeline-audio-gain-range"),
     audioGainNumber: document.getElementById("stage-timeline-audio-gain-number"),
     audioGainValue: document.getElementById("stage-timeline-audio-gain-value"),
+    audioFadeOut: document.getElementById("stage-timeline-audio-fade-out"),
     audioDetailClose: document.getElementById("stage-timeline-audio-detail-close"),
     audioDetailCancel: document.getElementById("stage-timeline-audio-detail-cancel"),
     audioDetailSave: document.getElementById("stage-timeline-audio-detail-save"),
@@ -204,6 +205,7 @@
   let anchorDrag = null;
   let cueDrag = null;
   let audioDrag = null;
+  let audioTrimDrag = null;
   let audioClick = null;
   let suppressCueClickUntil = 0;
   let suppressAudioClickUntil = 0;
@@ -268,7 +270,7 @@
   function applyAudioLevels(gainDb = activeAudioGainDb()) {
     if (!els.audio) return;
     const master = clamp(ui.volume / 100, 0, 1);
-    const factor = 10 ** (normalizedAudioGainDb(gainDb) / 20);
+    const factor = 10 ** (normalizedAudioGainDb(gainDb) / 20) * timelineAudioFadeMultiplier();
     if (audioGraph) {
       els.audio.volume = master;
       audioGraph.gain.gain.value = factor;
@@ -276,6 +278,22 @@
       // Web Audio非対応時も減衰は維持する。増幅はブラウザのvolume上限まで。
       els.audio.volume = clamp(master * factor, 0, 1);
     }
+  }
+
+  function timelineAudioFadeMultiplier() {
+    if (!timeline || !els.audio || !audioMatchesTimeline()) return 1;
+    const current = finite(els.audio.currentTime, seekSeconds);
+    const clips = (timeline.audioClips || []).filter((clip) => clip.trackId === timeline.trackId);
+    const clip = clips.find((item) => current >= item.start - 1e-6 && current <= item.end + 1e-6);
+    if (!clip) {
+      const last = [...clips].reverse().find((item) => current > item.end + 1e-6);
+      return last && last.fadeOut ? 0 : 1;
+    }
+    if (!clip.fadeOut) return 1;
+    const fadeSeconds = Math.min(1, Math.max(0.1, clip.end - clip.start));
+    if (current >= clip.end) return 0;
+    if (current <= clip.end - fadeSeconds) return 1;
+    return clamp((clip.end - current) / fadeSeconds, 0, 1);
   }
 
   async function ensureAudioGainGraph() {
@@ -729,17 +747,20 @@
     return duration > 0 ? duration : null;
   }
 
-  function audioClip(track, start, end, fallbackTitle, sourceSceneId = null) {
+  function audioClip(track, start, end, fallbackTitle, sourceSceneId = null, naturalEnd = end) {
     const safeStart = Math.max(0, finite(start, 0));
     const safeEnd = Math.max(safeStart, finite(end, safeStart));
+    const safeNaturalEnd = Math.max(safeEnd, finite(naturalEnd, safeEnd));
     if (!track || safeEnd <= safeStart + 1e-6) return null;
     return {
       trackId: track.id,
       title: String(track.title || fallbackTitle || tx("音源")),
       start: safeStart,
       end: safeEnd,
+      naturalEnd: safeNaturalEnd,
       sourceSceneId,
       gainDb: normalizedAudioGainDb(track.gainDb),
+      fadeOut: Boolean(track.timelineFadeOut),
     };
   }
 
@@ -758,7 +779,12 @@
       const assignedDuration = Math.max(0, run.end - run.start);
       const displayDuration = hasPlacedStart && actualDuration !== null ? actualDuration
         : actualDuration === null ? assignedDuration : Math.min(assignedDuration, actualDuration);
-      const clip = audioClip(run.track, start, Math.min(duration, start + displayDuration), null, run.sourceSceneId);
+      const naturalEnd = Math.min(duration, start + displayDuration);
+      const hasPlacedEnd = Number.isFinite(run.audioTimelineEndSeconds);
+      const end = hasPlacedEnd
+        ? clamp(run.audioTimelineEndSeconds, Math.min(naturalEnd, start + 0.1), naturalEnd)
+        : naturalEnd;
+      const clip = audioClip(run.track, start, end, null, run.sourceSceneId, naturalEnd);
       if (clip) clips.push(clip);
       run = null;
     };
@@ -781,6 +807,8 @@
         end: segment.end,
         sourceSceneId: segment.sceneId || null,
         audioTimelineStartSeconds: hasPlacedStart ? segment.audioTimelineStartSeconds : null,
+        audioTimelineEndSeconds: Number.isFinite(segment.audioTimelineEndSeconds)
+          ? segment.audioTimelineEndSeconds : null,
       };
     });
     closeRun();
@@ -1463,6 +1491,7 @@
     els.audioDetailBackdrop.hidden = false;
     els.audioDetailModal.hidden = false;
     setAudioGainEditorValue(track.gainDb);
+    if (els.audioFadeOut) els.audioFadeOut.checked = Boolean(track.timelineFadeOut);
     void ensureAudioGainGraph();
     els.audioGainRange.focus({ preventScroll: true });
   }
@@ -1471,7 +1500,9 @@
     if (!audioDetailTrackId || typeof bridge.setTimelineAudioGainDb !== "function") return false;
     const trackId = audioDetailTrackId;
     const gainDb = normalizedAudioGainDb(els.audioGainNumber.value);
-    if (!bridge.setTimelineAudioGainDb(trackId, gainDb)) return false;
+    if (!bridge.setTimelineAudioGainDb(trackId, gainDb, {
+      timelineFadeOut: Boolean(els.audioFadeOut && els.audioFadeOut.checked),
+    })) return false;
     closeAudioDetails({ focus: false });
     renderTimeline();
     const audioBlock = els.audioLane.querySelector(".stage-timeline-audio-block");
@@ -1655,11 +1686,23 @@
       && clip && clip.sourceSceneId && typeof bridge.setTimelineAudioStartSeconds === "function");
   }
 
+  function audioTimelineCanTrim(clip) {
+    return Boolean(timeline && timeline.source === "fallback" && timeline.sectionId
+      && clip && clip.sourceSceneId && typeof bridge.setTimelineAudioEndSeconds === "function");
+  }
+
   function audioDragSeconds(event) {
     if (!audioDrag || !timeline) return 0;
     const delta = (event.clientX - audioDrag.startX) / Math.max(1, timelineWidth) * timeline.duration;
     const maxStart = Math.max(0, timeline.duration - audioDrag.duration);
     return Math.round(clamp(snappedSeconds(audioDrag.startSeconds + delta), 0, maxStart) * 10) / 10;
+  }
+
+  function audioTrimEndSeconds(event) {
+    if (!audioTrimDrag || !timeline) return 0;
+    const delta = (event.clientX - audioTrimDrag.startX) / Math.max(1, timelineWidth) * timeline.duration;
+    const minEnd = Math.min(audioTrimDrag.maxEnd, audioTrimDrag.startSeconds + 0.1);
+    return Math.round(clamp(snappedSeconds(audioTrimDrag.startEnd + delta), minEnd, audioTrimDrag.maxEnd) * 10) / 10;
   }
 
   function rememberAudioDetailsClick(dragging) {
@@ -1688,7 +1731,7 @@
       startSeconds: clip.start,
       nextSeconds: clip.start,
       duration: Math.max(0.1, clip.end - clip.start),
-      canDrag: audioTimelineCanDrag(clip) && !audioRangeLock,
+      canDrag: audioTimelineCanDrag(clip) && audioRangeLock !== "start",
       audioRangeLock,
       moved: false,
     };
@@ -1701,8 +1744,8 @@
     audioDrag.moved = true;
     audioClick = null;
     if (!audioDrag.canDrag) {
-      if (audioDrag.audioRangeLock) {
-        els.status.textContent = tx("この音源は開始または終了が固定中です。右クリックで解除できます。");
+      if (audioDrag.audioRangeLock === "start") {
+        els.status.textContent = tx("この音源は開始時刻が固定中です。右クリックで解除できます。");
       }
       event.preventDefault();
       return;
@@ -1711,6 +1754,61 @@
     document.body.classList.add("is-timeline-audio-dragging");
     audioDrag.nextSeconds = audioDragSeconds(event);
     audioDrag.button.style.left = `${pxFor(audioDrag.nextSeconds)}px`;
+    event.preventDefault();
+  }
+
+  function beginAudioTrim(event, clip, button, audioRangeLock) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.button !== undefined && event.button !== 0) return;
+    if (button.dataset.audioMissing === "true") return;
+    if (audioRangeLock === "end") {
+      els.status.textContent = tx("この音源は終了時刻が固定中です。右クリックで解除できます。");
+      return;
+    }
+    if (!audioTimelineCanTrim(clip)) return;
+    audioTrimDrag = {
+      pointerId: event.pointerId,
+      sectionId: timeline && timeline.sectionId,
+      sceneId: clip.sourceSceneId,
+      button,
+      startX: event.clientX,
+      startSeconds: clip.start,
+      startEnd: clip.end,
+      nextEnd: clip.end,
+      maxEnd: Math.max(clip.end, finite(clip.naturalEnd, clip.end)),
+      moved: false,
+    };
+    button.classList.add("is-trimming");
+    document.body.classList.add("is-timeline-audio-trimming");
+    try { els.viewport.setPointerCapture(event.pointerId); } catch (_) { /* 捕捉できなくても終端を拾う */ }
+  }
+
+  function continueAudioTrim(event) {
+    if (!audioTrimDrag || event.pointerId !== audioTrimDrag.pointerId) return;
+    if (!audioTrimDrag.moved && Math.abs(event.clientX - audioTrimDrag.startX) < 3) return;
+    audioTrimDrag.moved = true;
+    audioTrimDrag.nextEnd = audioTrimEndSeconds(event);
+    audioTrimDrag.button.style.width = `${Math.max(2, pxFor(audioTrimDrag.nextEnd) - pxFor(audioTrimDrag.startSeconds))}px`;
+    event.preventDefault();
+  }
+
+  function endAudioTrim(event) {
+    if (!audioTrimDrag || event.pointerId !== audioTrimDrag.pointerId) return;
+    const trimming = audioTrimDrag;
+    audioTrimDrag = null;
+    trimming.button.classList.remove("is-trimming");
+    document.body.classList.remove("is-timeline-audio-trimming");
+    try { els.viewport.releasePointerCapture(event.pointerId); } catch (_) { /* 既に解放済み */ }
+    if (!trimming.moved || Math.abs(trimming.nextEnd - trimming.startEnd) < 1e-9) return;
+    const updated = bridge.setTimelineAudioEndSeconds(trimming.sectionId, trimming.sceneId,
+      trimming.nextEnd, { checkpoint: true });
+    suppressAudioClickUntil = performance.now() + 400;
+    if (!updated) {
+      renderTimeline();
+      return;
+    }
+    renderTimeline();
     event.preventDefault();
   }
 
@@ -1800,9 +1898,15 @@
       audioBlock.dataset.audioMissing = "false";
       audioBlock.dataset.trackId = clip.trackId;
       audioBlock.textContent = clip.title;
-      const canDragAudio = audioTimelineCanDrag(clip) && !audioRangeLock;
+      const canDragAudio = audioTimelineCanDrag(clip) && audioRangeLock !== "start";
+      const canTrimAudio = audioTimelineCanTrim(clip) && audioRangeLock !== "end";
       if (canDragAudio) audioBlock.classList.add("is-draggable");
-      audioBlock.title = `${clip.title}（${labelPosition(clip.start)}–${labelPosition(clip.end)}・${canDragAudio ? tx("ドラッグで開始時刻を変更・") : ""}${tx("ダブルクリックで音源情報")}）`;
+      if (canTrimAudio) audioBlock.classList.add("is-trimmable");
+      const dragHelp = [
+        canDragAudio ? tx("ドラッグで開始時刻を変更") : "",
+        canTrimAudio ? tx("右端をドラッグで終了を短縮") : "",
+      ].filter(Boolean).join("・");
+      audioBlock.title = `${clip.title}（${labelPosition(clip.start)}–${labelPosition(clip.end)}・${dragHelp ? `${dragHelp}・` : ""}${tx("ダブルクリックで音源情報")}）`;
       if (audioRangeLock) audioBlock.title += `（${audioRangeLock === "start" ? tx("開始時刻固定中") : tx("終了時刻固定中")}）`;
       audioBlock.addEventListener("pointerdown", (event) => beginAudioDrag(event, clip, audioBlock, audioRangeLock));
       audioBlock.addEventListener("click", () => {
@@ -1814,6 +1918,13 @@
       audioBlock.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
         kind: "audio", id: clip.trackId, lockedEdge: audioRangeLock, label: clip.title, returnFocus: audioBlock,
       }));
+      if (canTrimAudio) {
+        const trimHandle = document.createElement("span");
+        trimHandle.className = "stage-timeline-audio-trim-handle";
+        trimHandle.setAttribute("aria-hidden", "true");
+        trimHandle.addEventListener("pointerdown", (event) => beginAudioTrim(event, clip, audioBlock, audioRangeLock));
+        audioBlock.append(trimHandle);
+      }
       if (audioRangeLock) audioBlock.insertAdjacentHTML("beforeend", timelineLockIcon(audioRangeLock));
       placeBlock(audioBlock, clip.start, clip.end);
       els.audioLane.append(audioBlock);
@@ -2057,6 +2168,7 @@
       audioPlaybackFrame = 0;
       if (mode !== "timeline" || !audioMatchesTimeline() || els.audio.paused || els.audio.ended) return;
       if (ui.loop && ui.loopB > ui.loopA && els.audio.currentTime >= ui.loopB) els.audio.currentTime = ui.loopA;
+      applyAudioLevels(timeline.gainDb);
       syncTimelinePlaybackScene(els.audio.currentTime, { cuePlayback: true });
       updatePlayhead();
       audioPlaybackFrame = window.requestAnimationFrame(sample);
@@ -2136,6 +2248,7 @@
     const playingThisTimeline = els.audio && audioMatchesTimeline();
     if (!silentPlayback && playingThisTimeline && Number.isFinite(els.audio.currentTime)) seekSeconds = els.audio.currentTime;
     seekSeconds = clamp(seekSeconds, 0, timeline.duration);
+    if (playingThisTimeline) applyAudioLevels(timeline.gainDb);
     els.surface.style.setProperty("--stage-timeline-playhead-x", `${pxFor(seekSeconds)}px`);
     els.position.textContent = labelPosition(seekSeconds);
     const playing = Boolean(silentPlayback
@@ -2692,6 +2805,9 @@
   els.viewport.addEventListener("pointermove", continueAudioDrag);
   els.viewport.addEventListener("pointerup", endAudioDrag);
   els.viewport.addEventListener("pointercancel", endAudioDrag);
+  els.viewport.addEventListener("pointermove", continueAudioTrim);
+  els.viewport.addEventListener("pointerup", endAudioTrim);
+  els.viewport.addEventListener("pointercancel", endAudioTrim);
   els.rowResizers.forEach((separator) => {
     separator.addEventListener("pointerdown", beginRowResize);
     separator.addEventListener("pointermove", continueRowResize);

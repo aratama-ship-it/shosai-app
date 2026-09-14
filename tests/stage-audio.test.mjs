@@ -28,8 +28,8 @@ test("楽曲メタデータを小さく正規化し、不正IDと重複を捨て
     { id: "track-two", title: "", durationSeconds: -1 },
   ]));
   assert.deepEqual(normalized, [
-    { id: "track-one", title: "Opening", durationSeconds: 91.25, gainDb: 0 },
-    { id: "track-two", title: "楽曲 4", durationSeconds: null, gainDb: 0 },
+    { id: "track-one", title: "Opening", durationSeconds: 91.25, gainDb: 0, timelineFadeOut: false },
+    { id: "track-two", title: "楽曲 4", durationSeconds: null, gainDb: 0, timelineFadeOut: false },
   ]);
   assert.equal(model.trackLimit, 24);
   assert.equal(model.fileMaxBytes, 150 * 1024 * 1024);
@@ -104,12 +104,13 @@ test("再接続候補は曲名と5%超の尺差を検知する", () => {
 
 test("新規・読込・書出しのstateへ音源参照だけを接続する", () => {
   assert.match(stageSource, /audioTracks: \[\],/);
-  assert.match(stageSource, /audioTrackId: null,[\s\S]*?audioTimelineStartSeconds: null,/);
+  assert.match(stageSource, /audioTrackId: null,[\s\S]*?audioTimelineStartSeconds: null,[\s\S]*?audioTimelineEndSeconds: null,/);
   assert.match(stageSource, /audioTracks: normalizeAudioTracks\(rawProject\.audioTracks\)/);
   assert.match(stageSource, /audioTrackId: normalizeAudioTrackId\(kind, raw\.audioTrackId\),[\s\S]*?audioTimelineStartSeconds: kind === "scene" \? rehearsalSeconds\(raw\.audioTimelineStartSeconds\) : null/);
   assert.match(stageSource, /setTimelineAudioStartSeconds\(sectionId, sceneId, value, options = \{\}\)[\s\S]*?scene\.audioTimelineStartSeconds = nextSeconds/);
+  assert.match(stageSource, /setTimelineAudioEndSeconds\(sectionId, sceneId, value, options = \{\}\)[\s\S]*?scene\.audioTimelineEndSeconds = nextSeconds/);
   assert.match(stageSource, /audioStore\.put\(track\.id, file\)[\s\S]*?audioTracks\(\)\.push\(track\)/);
-  assert.match(stageSource, /setTimelineAudioGainDb\(trackId, value\)[\s\S]*?checkpoint\(\)[\s\S]*?track\.gainDb = gainDb/);
+  assert.match(stageSource, /setTimelineAudioGainDb\(trackId, value, options = \{\}\)[\s\S]*?timelineFadeOut[\s\S]*?track\.gainDb = gainDb[\s\S]*?track\.timelineFadeOut = timelineFadeOut/);
   assert.doesNotMatch(storeSource, /localStorage\.(?:get|set|remove)Item|data:audio|FileReader/);
 });
 

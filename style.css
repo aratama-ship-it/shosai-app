@@ -10826,6 +10826,30 @@ body.stage-modal-open .stage-tour { display: none !important; }
   line-height: 1.6;
 }
 
+.stage-timeline-audio-fade {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid var(--line-dark);
+  border-radius: 3px;
+}
+.stage-timeline-audio-fade label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 32px;
+  color: var(--milk);
+  font-size: 13px;
+  font-weight: 700;
+}
+.stage-timeline-audio-fade input { width: 18px; height: 18px; accent-color: var(--rust); }
+.stage-timeline-audio-fade p {
+  margin: 0;
+  color: var(--milk-dim);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
 /* 背景は常設パネルに細かな操作を詰めず、一つの編集窓へまとめる。
    描画と素材を二列で見渡せる幅を取り、狭い画面では一列へ戻す。 */
 .stage-background-open { width: 100%; }
@@ -16341,11 +16365,31 @@ body.is-timeline-resizing { cursor: row-resize; user-select: none; -webkit-user-
 button.stage-timeline-audio-block { cursor: pointer; font-family: inherit; }
 button.stage-timeline-audio-block.is-draggable { cursor: grab; touch-action: none; }
 button.stage-timeline-audio-block.is-draggable:active,
-body.is-timeline-audio-dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+body.is-timeline-audio-dragging,
+body.is-timeline-audio-trimming { cursor: grabbing; user-select: none; -webkit-user-select: none; }
 .stage-timeline-audio-block.is-dragging {
   z-index: 6;
   opacity: var(--stage-timeline-audio-drag-opacity);
   box-shadow: inset 0 0 0 1px var(--stage-timeline-accent);
+}
+.stage-timeline-audio-block.is-trimming {
+  z-index: 6;
+  box-shadow: inset 0 0 0 1px var(--stage-timeline-accent);
+}
+.stage-timeline-audio-trim-handle {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  width: 16px;
+  height: 100%;
+  border-left: 1px solid rgba(211, 172, 89, 0.75);
+  cursor: ew-resize;
+  touch-action: none;
+}
+.stage-timeline-audio-block.is-trimmable:hover .stage-timeline-audio-trim-handle,
+.stage-timeline-audio-block.is-trimming .stage-timeline-audio-trim-handle {
+  background: rgba(211, 172, 89, 0.18);
 }
 button.stage-timeline-audio-block:focus-visible {
   outline: 2px solid var(--stage-timeline-accent);

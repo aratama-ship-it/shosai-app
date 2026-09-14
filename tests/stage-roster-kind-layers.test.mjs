@@ -148,5 +148,5 @@ test("PWAキャッシュは現在の分類UI資産と揃う", async () => {
     assert.ok(html.includes(reference), `${reference} が正本にある`);
     assert.ok(sw.includes(`./${reference}`), `${reference} がPWAキャッシュにある`);
   }
-  assert.match(sw, /stage-sketch-pwa-v481/);
+  assert.match(sw, /stage-sketch-pwa-v482/);
 });

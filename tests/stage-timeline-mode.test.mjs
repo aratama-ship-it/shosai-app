@@ -269,8 +269,8 @@ test("音源なしでもセクション時間を内部時計として再生す�
 
 test("セクション時間を全体幅にし、音源は実尺の帯として複数置ける", () => {
   assert.match(timeline, /function sceneAudioClips\(project, segments, duration\)[\s\S]*?audioTimelineDuration\(run\.track\)/);
-  assert.match(timeline, /audioTimelineStartSeconds[\s\S]*?sourceSceneId/);
-  assert.match(timeline, /const hasPlacedStart = Number\.isFinite\(run\.audioTimelineStartSeconds\)[\s\S]*?start \+ displayDuration/);
+  assert.match(timeline, /audioTimelineStartSeconds[\s\S]*?audioTimelineEndSeconds[\s\S]*?sourceSceneId/);
+  assert.match(timeline, /const hasPlacedStart = Number\.isFinite\(run\.audioTimelineStartSeconds\)[\s\S]*?const hasPlacedEnd = Number\.isFinite\(run\.audioTimelineEndSeconds\)[\s\S]*?naturalEnd/);
   assert.match(timeline, /const duration = section \? sectionDurationSeconds\(project, section\) : plannedDuration/);
   assert.match(timeline, /audioClips: sceneAudioClips\(project, segments, desiredDuration\)/);
   assert.match(timeline, /const audioClips = Array\.isArray\(timeline\.audioClips\) \? timeline\.audioClips : \[\]/);
@@ -398,11 +398,12 @@ test("タイムラインモードのSpaceは入力欄を除いて再生と一時
   assert.match(timeline, /document\.querySelector\("\.stage-modal:not\(\[hidden\]\)"\)/);
 });
 
-test("音源ブロックのダブルクリックで音源別ゲインを編集して保存する", () => {
+test("音源ブロックのダブルクリックでゲインとフェードアウトを編集して保存する", () => {
   for (const id of [
     "stage-timeline-audio-detail-backdrop", "stage-timeline-audio-detail-modal",
     "stage-timeline-audio-detail-name", "stage-timeline-audio-detail-duration",
     "stage-timeline-audio-gain-range", "stage-timeline-audio-gain-number",
+    "stage-timeline-audio-fade-out",
     "stage-timeline-audio-detail-cancel", "stage-timeline-audio-detail-save",
   ]) assert.match(html, new RegExp(`id="${id}"`));
   assert.match(html, /id="stage-timeline-audio-gain-range" min="-24" max="12" step="0\.5"/);
@@ -410,11 +411,22 @@ test("音源ブロックのダブルクリックで音源別ゲインを編集�
   assert.match(timeline, /function rememberAudioDetailsClick\(dragging\)[\s\S]*?openAudioDetails\(dragging\.trackId, dragging\.button\)/);
   assert.match(timeline, /if \(!dragging\.moved\) \{[\s\S]*?rememberAudioDetailsClick\(dragging\)/);
   assert.doesNotMatch(timeline, /audioBlock\.addEventListener\("dblclick"/);
-  assert.match(timeline, /const factor = 10 \*\* \(normalizedAudioGainDb\(gainDb\) \/ 20\)/);
+  assert.match(html, /終了時にフェードアウト[\s\S]*?終端1秒前から音量を下げます/);
+  assert.match(timeline, /function timelineAudioFadeMultiplier\(\)[\s\S]*?clip\.fadeOut[\s\S]*?clip\.end - clip\.start/);
+  assert.match(timeline, /const factor = 10 \*\* \(normalizedAudioGainDb\(gainDb\) \/ 20\) \* timelineAudioFadeMultiplier\(\)/);
   assert.match(timeline, /createMediaElementSource\(els\.audio\)[\s\S]*?createGain\(\)[\s\S]*?gain\.connect\(context\.destination\)/);
-  assert.match(timeline, /bridge\.setTimelineAudioGainDb\(trackId, gainDb\)/);
-  assert.match(sketch, /setTimelineAudioGainDb\(trackId, value\)[\s\S]*?track\.gainDb = gainDb/);
+  assert.match(timeline, /bridge\.setTimelineAudioGainDb\(trackId, gainDb, \{[\s\S]*?timelineFadeOut/);
+  assert.match(sketch, /setTimelineAudioGainDb\(trackId, value, options = \{\}\)[\s\S]*?track\.timelineFadeOut = timelineFadeOut/);
   assert.match(css, /\.stage-modal\.stage-timeline-audio-detail-modal \{ width: min\(440px/);
+});
+
+test("音源帯の右端は元の実尺を越えず、終了位置だけを短く保存する", () => {
+  assert.match(timeline, /function audioTimelineCanTrim\(clip\)[\s\S]*?setTimelineAudioEndSeconds/);
+  assert.match(timeline, /function audioTrimEndSeconds\(event\)[\s\S]*?audioTrimDrag\.maxEnd/);
+  assert.match(timeline, /function endAudioTrim\(event\)[\s\S]*?bridge\.setTimelineAudioEndSeconds\(trimming\.sectionId, trimming\.sceneId/);
+  assert.match(timeline, /stage-timeline-audio-trim-handle[\s\S]*?beginAudioTrim/);
+  assert.match(css, /\.stage-timeline-audio-trim-handle \{[\s\S]*?cursor: ew-resize/);
+  assert.match(sketch, /setTimelineAudioEndSeconds\(sectionId, sceneId, value, options = \{\}\)[\s\S]*?scene\.audioTimelineEndSeconds = nextSeconds/);
 });
 
 test("端末内の音源が欠落したら同じ音源枠から再接続し、タイムライン情報を作り直さない", () => {

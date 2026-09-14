@@ -65,7 +65,7 @@ test("正本・PWAキャッシュの版を更新する", async () => {
   assert.match(html, /style\.css\?v=363/);
   assert.match(html, /stage-sketch\.js\?v=478/);
   assert.match(html, /stage-i18n\.js\?v=175/);
-  assert.match(sw, /stage-sketch-pwa-v481/);
+  assert.match(sw, /stage-sketch-pwa-v482/);
   assert.match(sw, /style\.css\?v=363/);
   assert.match(sw, /stage-sketch\.js\?v=478/);
   assert.match(sw, /stage-i18n\.js\?v=175/);

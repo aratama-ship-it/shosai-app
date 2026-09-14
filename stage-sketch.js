@@ -1210,6 +1210,7 @@
       durationSeconds: Number.isFinite(duration) && duration > 0 && duration <= 86400
         ? duration : null,
       gainDb: normalizeAudioGainDb(raw.gainDb),
+      timelineFadeOut: Boolean(raw.timelineFadeOut),
     };
     const timelineRangeLock = raw.timelineRangeLock === "start" || raw.timelineRangeLock === "end"
       ? raw.timelineRangeLock : null;
@@ -4923,6 +4924,8 @@
       audioTrackId: null,
       // 音源帯を動かしたときだけの開始時刻。未設定ならシーンの開始位置を使う。
       audioTimelineStartSeconds: null,
+      // 音源帯を短くしたときだけの終了時刻。未設定なら元の音源尺を使う。
+      audioTimelineEndSeconds: null,
       // セクション側は交換パッケージ、生成シーン側は元フォーメーションとの札を持つ。
       formation: null,
       formationLink: null,
@@ -5597,6 +5600,7 @@
         ? raw.transitionNote.slice(0, 1000) : "",
       audioTrackId: normalizeAudioTrackId(kind, raw.audioTrackId),
       audioTimelineStartSeconds: kind === "scene" ? rehearsalSeconds(raw.audioTimelineStartSeconds) : null,
+      audioTimelineEndSeconds: kind === "scene" ? rehearsalSeconds(raw.audioTimelineEndSeconds) : null,
       formation: normalizeSectionFormation(kind, raw.formation),
       formationLink: normalizeFormationLink(kind, raw.formationLink),
       lightingIntent: normalizeLightingIntent(kind, raw.lightingIntent),
@@ -6524,7 +6528,7 @@
         "This audio cannot be played. Choose an MP3, M4A/AAC or WAV file.");
       return false;
     }
-    const track = { id: rid("track"), title: audioFileTitle(file), durationSeconds: duration, gainDb: 0 };
+    const track = { id: rid("track"), title: audioFileTitle(file), durationSeconds: duration, gainDb: 0, timelineFadeOut: false };
     setAudioStatus(`「${track.title}」を端末へ保存しています…`, `Saving “${track.title}” on this device…`);
     try {
       await audioStore.put(track.id, file);
@@ -6538,6 +6542,7 @@
     selectedAudioTrackId = track.id;
     sc().audioTrackId = track.id;
     sc().audioTimelineStartSeconds = null;
+    sc().audioTimelineEndSeconds = null;
     audioPanelSignature = "";
     continueAudioOnNextSceneSync = false;
     renderScenes();
@@ -6588,7 +6593,7 @@
       let track = existingTrack;
       if (!track) {
         checkpoint();
-        track = { id: trackId, title: candidateTitle, durationSeconds: duration, gainDb: 0 };
+        track = { id: trackId, title: candidateTitle, durationSeconds: duration, gainDb: 0, timelineFadeOut: false };
         audioTracks().push(track);
       } else {
         track.durationSeconds = duration;
@@ -6627,6 +6632,7 @@
     checkpoint();
     scene.audioTrackId = nextId;
     scene.audioTimelineStartSeconds = null;
+    scene.audioTimelineEndSeconds = null;
     if (nextId) selectedAudioTrackId = nextId;
     audioPanelSignature = "";
     if (affectsCurrent) continueAudioOnNextSceneSync = Boolean(wasPlaying);
@@ -6643,7 +6649,11 @@
     const wasPlaying = affected.some((scene) => scene.id === state.project.activeSceneId)
       && els.musicAudio && !els.musicAudio.paused && audioPlayback.ready;
     checkpoint();
-    affected.forEach((scene) => { scene.audioTrackId = null; scene.audioTimelineStartSeconds = null; });
+    affected.forEach((scene) => {
+      scene.audioTrackId = null;
+      scene.audioTimelineStartSeconds = null;
+      scene.audioTimelineEndSeconds = null;
+    });
     continueAudioOnNextSceneSync = Boolean(wasPlaying);
     audioPanelSignature = "";
     renderScenes();
@@ -6666,6 +6676,7 @@
       if (scene.audioTrackId === trackId) {
         scene.audioTrackId = null;
         scene.audioTimelineStartSeconds = null;
+        scene.audioTimelineEndSeconds = null;
       }
     });
     selectedAudioTrackId = state.project.audioTracks[0]?.id || null;
@@ -7137,7 +7148,7 @@
         trackId = rid("track");
         track = { id: trackId, title: String(entry.name || "音源").replace(/\.[^.]+$/, ""),
           durationSeconds: Number.isFinite(Number(entry.durationSeconds)) ? Number(entry.durationSeconds) : null,
-          gainDb: 0 };
+          gainDb: 0, timelineFadeOut: false };
         await audioStore.put(trackId, entry.blob);
         audioTracks().push(track);
       } else {
@@ -28425,17 +28436,20 @@ ${propsPlotHtml}
     openTimelineAudioRelinkPicker(trackId) {
       return openAudioRelinkPicker(trackId);
     },
-    setTimelineAudioGainDb(trackId, value) {
+    setTimelineAudioGainDb(trackId, value, options = {}) {
       const track = audioTrackById(trackId);
       if (!track) return false;
       const gainDb = normalizeAudioGainDb(value);
-      if (track.gainDb === gainDb) return true;
+      const timelineFadeOut = typeof options.timelineFadeOut === "boolean"
+        ? options.timelineFadeOut : Boolean(track.timelineFadeOut);
+      if (track.gainDb === gainDb && Boolean(track.timelineFadeOut) === timelineFadeOut) return true;
       checkpoint();
       track.gainDb = gainDb;
+      track.timelineFadeOut = timelineFadeOut;
       audioPanelSignature = "";
       persistSoon();
       window.dispatchEvent(new CustomEvent("stage-timeline-audio-change", {
-        detail: { trackId, gainDb },
+        detail: { trackId, gainDb, timelineFadeOut },
       }));
       return true;
     },
@@ -28453,6 +28467,23 @@ ${propsPlotHtml}
       persistSoon();
       window.dispatchEvent(new CustomEvent("stage-timeline-audio-change", {
         detail: { sectionId, sceneId, startSeconds: nextSeconds },
+      }));
+      return true;
+    },
+    setTimelineAudioEndSeconds(sectionId, sceneId, value, options = {}) {
+      const sectionIndex = state.project.scenes.findIndex((row) => row.kind === "section" && row.id === sectionId);
+      const seconds = rehearsalSeconds(value);
+      if (sectionIndex < 0 || seconds === null) return false;
+      const scene = sceneChildren(sectionIndex)
+        .find((row) => row.kind === "scene" && row.id === sceneId);
+      if (!scene || !scene.audioTrackId) return false;
+      const nextSeconds = Math.round(seconds * 10) / 10;
+      if (scene.audioTimelineEndSeconds === nextSeconds) return true;
+      if (options.checkpoint) checkpoint();
+      scene.audioTimelineEndSeconds = nextSeconds;
+      persistSoon();
+      window.dispatchEvent(new CustomEvent("stage-timeline-audio-change", {
+        detail: { sectionId, sceneId, endSeconds: nextSeconds },
       }));
       return true;
     },
