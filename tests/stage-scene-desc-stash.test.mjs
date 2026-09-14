@@ -24,6 +24,10 @@ test("シーンの説明と前後の送りは、道具の行と絵の間の「�
   assert.match(row, /<label class="stage-scene-desc-label"/);
 });
 
+test("現在のシーン表示はタイトルが読み取りやすく、目に留まる文字サイズにする", () => {
+  assert.match(styleSource, /\.stage-scene-now \{[\s\S]*?font-size: clamp\(13px, 1\.1vw, 16px\);[\s\S]*?font-weight: 700;[\s\S]*?color: var\(--paper\);/);
+});
+
 test("送りは一覧の欄の中には残さない（二重に置かない）", () => {
   const panel = stageHtml.slice(stageHtml.indexOf('data-panel="scenes"'));
   const body = panel.slice(0, panel.indexOf('id="stage-scene-list"'));
