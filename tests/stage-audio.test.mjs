@@ -28,8 +28,8 @@ test("楽曲メタデータを小さく正規化し、不正IDと重複を捨て
     { id: "track-two", title: "", durationSeconds: -1 },
   ]));
   assert.deepEqual(normalized, [
-    { id: "track-one", title: "Opening", durationSeconds: 91.25, gainDb: 0 },
-    { id: "track-two", title: "楽曲 4", durationSeconds: null, gainDb: 0 },
+    { id: "track-one", title: "Opening", durationSeconds: 91.25, gainDb: 0, timelineLockEdge: null },
+    { id: "track-two", title: "楽曲 4", durationSeconds: null, gainDb: 0, timelineLockEdge: null },
   ]);
   assert.equal(model.trackLimit, 24);
   assert.equal(model.fileMaxBytes, 150 * 1024 * 1024);
@@ -43,11 +43,13 @@ test("楽曲メタデータを小さく正規化し、不正IDと重複を捨て
 test("音源に追加したカウント合わせ情報を小さく正規化して保持する", () => {
   const normalized = plain(model.normalizeTrack({
     id: "track-sync", title: "Sync", durationSeconds: 60,
+    timelineLockEdge: "end",
     countBpm: 128, firstCountSec: 0.75, firstSet: true, firstLocked: true,
     anchors: [{ count: 9, sec: 4.5, locked: false }],
     phrases: [{ fromCount: 1, length: 8 }],
   }));
   assert.equal(normalized.countBpm, 128);
+  assert.equal(normalized.timelineLockEdge, "end");
   assert.equal(normalized.firstCountSec, 0.75);
   assert.deepEqual(normalized.anchors, [{ count: 9, sec: 4.5, locked: false }]);
   assert.deepEqual(normalized.phrases, [{ fromCount: 1, length: 8 }]);

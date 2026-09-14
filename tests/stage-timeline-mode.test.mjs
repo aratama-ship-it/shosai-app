@@ -107,9 +107,31 @@ test("シーンと転換の左右端をドラッグして長さを変え、後�
   assert.match(timeline, /rippleFromSeconds: resizing\.descriptor\.boundarySeconds/);
   assert.match(sketch, /setTimelineScenePartDuration\(sectionId, sceneId, part, value, sectionDurationValue, options = \{\}\)/);
   assert.match(sketch, /cue\.sectionId === section\.id[\s\S]*?cue\.atSeconds = Math\.max\(0/);
+  assert.match(sketch, /cuesToShift\.some\(\(cue\) => cue\.locked\)\) return false/);
   assert.match(css, /\.stage-timeline-block-resize-handle \{[\s\S]*?cursor: ew-resize/);
   assert.match(timeline, /function updateBlockResizeIndicator\(event, deltaSeconds\)[\s\S]*?toFixed\(1\).*?秒/);
   assert.match(css, /\.stage-timeline-resize-delta \{[\s\S]*?position: fixed;[\s\S]*?pointer-events: none;/);
+});
+
+test("シーン・音源・転換の固定端とキュー点ロックを保存し、タイムラインに色分けして示す", () => {
+  assert.match(sketch, /timelineLockEdge: raw && \(raw\.timelineLockEdge === "start" \|\| raw\.timelineLockEdge === "end"\)/);
+  assert.match(sketch, /transitionLockEdge: raw && \(raw\.transitionLockEdge === "start" \|\| raw\.transitionLockEdge === "end"\)/);
+  assert.match(sketch, /timelineLockEdge: raw\.timelineLockEdge === "start" \|\| raw\.timelineLockEdge === "end"/);
+  assert.match(sketch, /identity\.target === "audio"[\s\S]*?track\.timelineLockEdge = next/);
+  assert.match(sketch, /setTimelineLock\(identity = \{\}, value = \{\}\)[\s\S]*?cue\.locked = locked[\s\S]*?scene\.rehearsal\[key\] = next/);
+  assert.match(timeline, /function openTimelineLockMenu\(event, identity, currentEdge\)[\s\S]*?tx\("開始時刻を固定"\)[\s\S]*?tx\("終了時刻を固定"\)/);
+  assert.match(timeline, /button\.addEventListener\("contextmenu", \(event\) => \{[\s\S]*?target: "scene"/);
+  assert.match(timeline, /audioBlock\.addEventListener\("contextmenu"[\s\S]*?target: "audio"/);
+  assert.match(timeline, /if \(segment\.timelineLockEdge === "start"\) button\.append\(lockIndicator\("start"\)\)/);
+  assert.match(timeline, /if \(segment\.timelineLockEdge === "end"\) button\.append\(lockIndicator\("end"\)\)/);
+  assert.match(timeline, /function rippleHitsLockedTime\(boundarySeconds\)[\s\S]*?seconds >= boundary - 1e-6/);
+  assert.match(timeline, /function syncSectionDurationControls\(project\)[\s\S]*?lockedTimelinePositions\.some\(\(seconds\) => seconds > 1e-6\)/);
+  assert.match(sketch, /setSectionTimelineDurationSeconds\(id, value, options = \{\}\)[\s\S]*?if \(sceneLock \|\| cueLock \|\| audioEndLock\) return false/);
+  assert.match(css, /\.stage-timeline-lock-indicator\.is-start \{[^}]*\}/);
+  assert.match(css, /\.stage-timeline-lock-indicator\.is-end \{[^}]*var\(--stage-timeline-transition\)/);
+  assert.match(timeline, /stage-timeline-lock-change/);
+  assert.match(html, /stage-timeline.js\?v=60/);
+  assert.match(sw, /stage-timeline.js\?v=60/);
 });
 
 test("転換の最初の描画は前シーンの位置から始め、行き先を一瞬だけ描かない", () => {

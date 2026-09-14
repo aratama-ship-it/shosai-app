@@ -1524,6 +1524,8 @@
       durationSeconds: Number.isFinite(duration) && duration > 0 && duration <= 86400
         ? duration : null,
       gainDb: normalizeAudioGainDb(raw.gainDb),
+      timelineLockEdge: raw.timelineLockEdge === "start" || raw.timelineLockEdge === "end"
+        ? raw.timelineLockEdge : null,
     };
     const hasCountSync = ["countBpm", "firstCountSec", "firstSet", "firstLocked", "anchors", "phrases"]
       .some((key) => Object.prototype.hasOwnProperty.call(raw, key));
@@ -5098,6 +5100,10 @@
   const normalizeSceneRehearsal = (raw) => ({
     holdDurationSeconds: rehearsalSeconds(raw && raw.holdDurationSeconds),
     transitionToNextSeconds: rehearsalSeconds(raw && raw.transitionToNextSeconds),
+    timelineLockEdge: raw && (raw.timelineLockEdge === "start" || raw.timelineLockEdge === "end")
+      ? raw.timelineLockEdge : null,
+    transitionLockEdge: raw && (raw.transitionLockEdge === "start" || raw.transitionLockEdge === "end")
+      ? raw.transitionLockEdge : null,
   });
 
   let idCounter = 0;
@@ -5851,6 +5857,7 @@
         kind: "timeline",
         cueType,
         memo: typeof cue.memo === "string" ? cue.memo.slice(0, 2000) : "",
+        locked: Boolean(cue.locked),
       };
       // 現行形はセクション全体の絶対秒。直前の試作で保存した
       // sceneId + offsetSeconds も捨てず、読める互換形として残す。
@@ -29075,6 +29082,27 @@ ${propsPlotHtml}
       if (!section || seconds === null) return false;
       const current = section.timelineDurationSeconds;
       if (current !== seconds) {
+        const sectionIndex = state.project.scenes.indexOf(section);
+        const scenes = sceneChildren(sectionIndex).filter((row) => row.kind === "scene");
+        const sceneIds = new Set(scenes.map((row) => row.id));
+        const firstSceneId = scenes[0] && scenes[0].id;
+        const sceneLock = scenes.some((row, index) => {
+          const rehearsal = row.rehearsal || {};
+          return Boolean(rehearsal.transitionLockEdge)
+            || Boolean(rehearsal.timelineLockEdge && !(index === 0 && rehearsal.timelineLockEdge === "start"));
+        });
+        const cueLock = (state.project.cues || []).some((cue) => cue && cue.kind === "timeline" && cue.locked
+          && ((cue.sectionId === section.id && finite(cue.atSeconds, 0) > 1e-6)
+            || (cue.sceneId && sceneIds.has(cue.sceneId)
+              && (cue.sceneId !== firstSceneId || finite(cue.offsetSeconds, 0) > 1e-6))));
+        const trackIds = new Set(scenes.map((row) => row.audioTrackId).filter(Boolean));
+        Object.values(section.formation && section.formation.audioTrackBySong || {}).forEach((trackId) => trackIds.add(trackId));
+        const audioEndLock = (state.project.audioTracks || []).some((track) => (
+          track && trackIds.has(track.id) && track.timelineLockEdge === "end"
+        ));
+        if (sceneLock || cueLock || audioEndLock) return false;
+      }
+      if (current !== seconds) {
         if (options.checkpoint) checkpoint();
         section.timelineDurationSeconds = seconds;
         persistSoon();
@@ -29110,6 +29138,7 @@ ${propsPlotHtml}
       const cuesToShift = canRipple ? cues.filter((cue) => cue && cue.kind === "timeline"
         && cue.sectionId === section.id && cue.atSeconds !== null && cue.atSeconds !== undefined
         && finite(cue.atSeconds, -1) >= rippleFrom - 1e-6) : [];
+      if (cuesToShift.some((cue) => cue.locked)) return false;
       if (!timingChanged && !cuesToShift.length) return true;
       if (options.checkpoint) checkpoint();
       scene.rehearsal[key] = duration;
@@ -29125,6 +29154,51 @@ ${propsPlotHtml}
           detail: { sectionId: section.id, sceneId: scene.id, part },
         }));
       }
+      return true;
+    },
+    setTimelineLock(identity = {}, value = {}) {
+      const locked = Boolean(value.locked);
+      if (identity.target === "cue") {
+        const cue = (Array.isArray(state.project.cues) ? state.project.cues : [])
+          .find((item) => item && item.kind === "timeline" && item.id === identity.cueId);
+        if (!cue) return false;
+        if (cue.locked === locked) return true;
+        checkpoint();
+        cue.locked = locked;
+        persistSoon();
+        window.dispatchEvent(new CustomEvent("stage-timeline-lock-change"));
+        return true;
+      }
+      if (value.edge !== null && value.edge !== "start" && value.edge !== "end") return false;
+      if (identity.target === "audio") {
+        const track = audioTrackById(identity.trackId);
+        if (!track) return false;
+        const next = locked ? value.edge : null;
+        if ((track.timelineLockEdge || null) === next) return true;
+        checkpoint();
+        track.timelineLockEdge = next;
+        persistSoon();
+        window.dispatchEvent(new CustomEvent("stage-timeline-lock-change", {
+          detail: { target: "audio", trackId: track.id, edge: next },
+        }));
+        return true;
+      }
+      if (identity.target !== "scene" && identity.target !== "transition") return false;
+      const section = state.project.scenes.find((row) => row.kind === "section" && row.id === identity.sectionId);
+      const scene = state.project.scenes.find((row) => row.kind === "scene" && row.id === identity.sceneId);
+      if (!section || !scene || !sceneChildren(state.project.scenes.indexOf(section)).some((row) => row.id === scene.id)) {
+        return false;
+      }
+      if (!scene.rehearsal) scene.rehearsal = normalizeSceneRehearsal(null);
+      const key = identity.target === "transition" ? "transitionLockEdge" : "timelineLockEdge";
+      const next = locked ? value.edge : null;
+      if (scene.rehearsal[key] === next) return true;
+      checkpoint();
+      scene.rehearsal[key] = next;
+      persistSoon();
+      window.dispatchEvent(new CustomEvent("stage-timeline-lock-change", {
+        detail: { sectionId: section.id, sceneId: scene.id, target: identity.target, edge: next },
+      }));
       return true;
     },
     setSectionTimelineUnit(id, value) {

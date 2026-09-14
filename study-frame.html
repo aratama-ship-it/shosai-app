@@ -4,7 +4,7 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
 <title>Stage Sketch — read-only drawings</title>
-<link rel="stylesheet" href="/study-assets/style.css?v=358"><link rel="stylesheet" href="/stage-study.css?v=25"><link rel="stylesheet" href="/stage-study-navigation.css?v=1">
+<link rel="stylesheet" href="/study-assets/style.css?v=373"><link rel="stylesheet" href="/stage-study.css?v=25"><link rel="stylesheet" href="/stage-study-navigation.css?v=1">
 <script src="/stage-study-sticky.js?v=5"></script><script src="/stage-study-pen.js?v=4"></script><script src="/stage-study-navigation.js?v=1"></script><script src="/stage-study-frame.js?v=6"></script></head>
 <body class="study-frame" data-view="both">
 <div class="study-drawings"><div class="study-drawing study-front"></div><div class="study-drawing study-plan"></div></div>
@@ -429,16 +429,6 @@
               <input type="checkbox" id="stage-show-light-names" checked>
               <span>照明名</span>
             </label>
-            <div class="stage-anim-control" id="stage-anim-control">
-              <label class="stage-toggle stage-anim-toggle" title="次のシーンへ進むとき、動線に沿って動かして見せます">
-                <input type="checkbox" id="stage-anim-scenes" checked>
-                <span>アニメ</span>
-              </label>
-              <label class="stage-anim-speed" title="転換にかける時間">
-                <input type="range" id="stage-anim-ms" min="0.2" max="3" step="0.05" value="2">
-                <span id="stage-anim-ms-value">2.0秒</span>
-              </label>
-            </div>
           </div>
           <div class="stage-work-area" id="stage-work-area">
             <details class="stage-light-intent" id="stage-light-intent">
@@ -2068,7 +2058,7 @@
    </div>
    <!-- 左に設定、右にショートカット一覧。二列にするため、左側は一枚にまとめる -->
    <div class="stage-prefs-main">
-    <p class="stage-profile-hint">この端末だけの設定です。ショーのデータには入らず、書き出しや共有にも混ざりません。</p>
+    <p class="stage-profile-hint">設定には、この端末に保存されるものと、現在のショーに保存されるものがあります。</p>
     <!-- 言語は歯車の中へ。上部は道具の列なので、めったに触らないものは置かない。
          その中では一番上に置く——読める言葉になっていないと、下の項目名が読めない。 -->
     <div class="stage-pref-row stage-pref-lang-row">
@@ -2110,6 +2100,23 @@
         <button type="button" class="stage-about-link" id="stage-feedback" title="使ってみた感想を送る">感想を送る</button>
       </div>
     </details>
+    <section class="stage-pref-group stage-transition-animation-group" aria-labelledby="stage-transition-animation-group-title">
+      <h3 class="stage-pref-group-title" id="stage-transition-animation-group-title">ショーごとの設定</h3>
+      <div class="stage-pref-row stage-transition-animation-pref">
+        <div class="stage-transition-animation-copy">
+          <label class="stage-toggle stage-transition-animation-toggle">
+            <input type="checkbox" id="stage-anim-scenes" checked>
+            <span>転換アニメーション</span>
+          </label>
+          <p class="stage-pref-hint">シーンを切り替えるとき、演者を動線に沿って動かして表示します。ON/OFFと転換時間は現在のショーに保存されます。</p>
+        </div>
+        <label class="stage-transition-animation-speed">
+          <span>転換時間</span>
+          <input type="range" id="stage-anim-ms" min="0.2" max="3" step="0.05" value="2" aria-label="転換時間">
+          <span id="stage-anim-ms-value">2.0秒</span>
+        </label>
+      </div>
+    </section>
     <div id="stage-prefs-list"></div>
     <!-- 幅が要る機能一覧は環境設定から既存の窓として開く。
          書斎のブロックは単独配布版では隠す（stage-sketch.js が制御）。 -->
@@ -2727,7 +2734,7 @@
 </div></div>
 <script src="/study-assets/stage-venues.js?v=30"></script>
 <script src="/study-assets/stage-venue-lines.js?v=6"></script>
-<script src="/study-assets/stage-i18n.js?v=175"></script>
+<script src="/study-assets/stage-i18n.js?v=180"></script>
 <script src="/study-assets/stage-set-model.js?v=1"></script>
 <script src="/study-assets/stage-machinery.js?v=2"></script>
 <script src="/study-assets/stage-sketch.js"></script>

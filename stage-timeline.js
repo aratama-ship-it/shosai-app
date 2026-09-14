@@ -169,6 +169,9 @@
 
   let mode = "normal";
   let timeline = null;
+  let lockedTimelinePositions = [];
+  let timelineLockMenu = null;
+  let timelineLockMenuOutsideHandler = null;
   let timelineWidth = 960;
   let audioAvailabilityGeneration = 0;
   let seekSeconds = 0;
@@ -361,9 +364,12 @@
 
   function syncSectionDurationControls(project) {
     const section = currentSection(project);
-    const disabled = !section || typeof bridge.setSectionTimelineDurationSeconds !== "function";
+    const hasFixedTime = Boolean(section && timeline && timeline.sectionId === section.id
+      && timeline.source === "fallback" && lockedTimelinePositions.some((seconds) => seconds > 1e-6));
+    const disabled = !section || typeof bridge.setSectionTimelineDurationSeconds !== "function" || hasFixedTime;
     els.sectionDurationNumber.disabled = disabled;
-    if (disabled) return;
+    els.sectionDurationNumber.title = hasFixedTime ? tx("固定された時刻に影響するため調整できません") : "";
+    if (!section || typeof bridge.setSectionTimelineDurationSeconds !== "function") return;
     const seconds = Math.round(sectionDurationSeconds(project, section) * 10) / 10;
     els.sectionDurationNumber.value = String(seconds);
   }
@@ -377,7 +383,9 @@
     const documentValue = projectDocument();
     const section = documentValue && currentSection(documentValue.project);
     const seconds = normalizedSectionDuration(value);
-    if (!section || seconds === null || typeof bridge.setSectionTimelineDurationSeconds !== "function") {
+    const hasFixedTime = Boolean(section && timeline && timeline.sectionId === section.id
+      && timeline.source === "fallback" && lockedTimelinePositions.some((lockedSeconds) => lockedSeconds > 1e-6));
+    if (!section || seconds === null || typeof bridge.setSectionTimelineDurationSeconds !== "function" || hasFixedTime) {
       if (finalize && documentValue) syncSectionDurationControls(documentValue.project);
       return false;
     }
@@ -703,6 +711,7 @@
           start: Math.max(0, countToSec(song.track, group.count)),
           end: Math.max(0.1, countToSec(song.track, Math.max(group.count + 0.01, endCount))),
           count: group.count,
+          timelineLockEdge: scene && scene.rehearsal && scene.rehearsal.timelineLockEdge || null,
         };
       });
       const transitions = groups.slice(1).map((group, index) => {
@@ -711,6 +720,7 @@
         const travel = Math.max(0, finite(frame.travel, 4));
         const startCount = Math.min(...poses.map((pose) => group.count - travel - finite(pose && pose.lead, 0)), group.count - travel);
         const endCount = Math.max(...poses.map((pose) => group.count - finite(pose && pose.early, 0)), group.count);
+        const sourceScene = children.find((scene) => scene.id === (segments[index] && segments[index].sceneId));
         return {
           id: `${group.id}-transition`,
           title: `${tx("転換")} ${index + 1}`,
@@ -718,6 +728,7 @@
           end: Math.max(0, countToSec(song.track, Math.max(startCount + 0.01, endCount))),
           sourceSceneId: segments[index] && segments[index].sceneId,
           targetSceneId: segments[index + 1] && segments[index + 1].sceneId,
+          timelineLockEdge: sourceScene && sourceScene.rehearsal && sourceScene.rehearsal.transitionLockEdge || null,
         };
       });
       const plannedEnd = countToSec(song.track,
@@ -755,7 +766,11 @@
       const hold = rehearsal.holdDurationSeconds == null ? 4 : Math.max(0, finite(rehearsal.holdDurationSeconds, 4));
       const travel = rehearsal.transitionToNextSeconds == null ? 0 : Math.max(0, finite(rehearsal.transitionToNextSeconds, 0));
       const duration = sceneTimelineSeconds(scene) * scale;
-      const item = { id: scene.id, sceneId: scene.id, title: scene.title || `${tx("シーン")}${index + 1}`, start: at, end: at + duration };
+      const item = {
+        id: scene.id, sceneId: scene.id, title: scene.title || `${tx("シーン")}${index + 1}`,
+        start: at, end: at + duration,
+        timelineLockEdge: rehearsal.timelineLockEdge || null,
+      };
       if (index < scenes.length - 1) transitions.push({
         id: `${scene.id}-transition`,
         title: travel > 0 ? tx("転換") : tx("転換ポイント"),
@@ -763,6 +778,7 @@
         end: at + duration,
         sourceSceneId: scene.id,
         targetSceneId: scenes[index + 1].id,
+        timelineLockEdge: rehearsal.transitionLockEdge || null,
         isPoint: travel <= 0,
       });
       at += duration;
@@ -1112,10 +1128,17 @@
     const handle = document.createElement("span");
     handle.className = `stage-timeline-block-resize-handle is-${edge}`;
     handle.setAttribute("aria-hidden", "true");
-    handle.title = edge === "start"
-      ? tx("左端をドラッグして前の区間を調整")
-      : tx("右端をドラッグしてこの区間を調整");
-    handle.addEventListener("pointerdown", (event) => beginBlockResize(event, descriptor));
+    const locked = rippleHitsLockedTime(descriptor.boundarySeconds);
+    if (locked) {
+      handle.classList.add("is-time-locked");
+      handle.setAttribute("aria-disabled", "true");
+      handle.title = tx("固定された時刻に影響するため調整できません");
+    } else {
+      handle.title = edge === "start"
+        ? tx("左端をドラッグして前の区間を調整")
+        : tx("右端をドラッグしてこの区間を調整");
+      handle.addEventListener("pointerdown", (event) => beginBlockResize(event, descriptor));
+    }
     handle.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); });
     element.append(handle);
   }
@@ -1236,6 +1259,90 @@
         displayName: `${cuePrefix(cue.cueType)} ${sceneNumber}-${ordinal}`,
       };
     });
+  }
+
+  function closeTimelineLockMenu() {
+    if (timelineLockMenuOutsideHandler) {
+      document.removeEventListener("pointerdown", timelineLockMenuOutsideHandler, true);
+      timelineLockMenuOutsideHandler = null;
+    }
+    if (timelineLockMenu) timelineLockMenu.remove();
+    timelineLockMenu = null;
+  }
+
+  function openTimelineLockMenu(event, identity, currentEdge) {
+    if (typeof bridge.setTimelineLock !== "function") return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeTimelineLockMenu();
+    const menu = document.createElement("div");
+    const isCue = identity.target === "cue";
+    menu.className = "stage-timeline-lock-menu";
+    menu.setAttribute("role", "menu");
+    menu.setAttribute("aria-label", tx(isCue ? "キューポイントの固定" : "時刻の固定"));
+    const options = isCue
+      ? [{ edge: null, locked: false, label: tx("固定しない") },
+        { edge: "point", locked: true, label: tx("キューポイントを固定") }]
+      : [{ edge: null, locked: false, label: tx("固定しない") },
+        { edge: "start", locked: true, label: tx("開始時刻を固定") },
+        { edge: "end", locked: true, label: tx("終了時刻を固定") }];
+    options.forEach((option) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "stage-timeline-lock-menu-option";
+      button.setAttribute("role", "menuitemradio");
+      button.setAttribute("aria-checked", String(isCue ? option.locked === Boolean(currentEdge) : option.edge === currentEdge));
+      button.textContent = option.label;
+      button.addEventListener("click", () => {
+        const accepted = bridge.setTimelineLock(identity, { edge: option.edge, locked: option.locked });
+        if (accepted) closeTimelineLockMenu();
+      });
+      menu.append(button);
+    });
+    document.body.append(menu);
+    const left = clamp(event.clientX, 4, Math.max(4, window.innerWidth - menu.offsetWidth - 4));
+    const top = clamp(event.clientY, 4, Math.max(4, window.innerHeight - menu.offsetHeight - 4));
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    timelineLockMenu = menu;
+    timelineLockMenuOutsideHandler = (outsideEvent) => {
+      if (!menu.contains(outsideEvent.target)) closeTimelineLockMenu();
+    };
+    document.addEventListener("pointerdown", timelineLockMenuOutsideHandler, true);
+    menu.querySelector("button")?.focus({ preventScroll: true });
+  }
+
+  function lockIndicator(edge, cue = false) {
+    const wrap = document.createElement("span");
+    wrap.className = `stage-timeline-lock-indicator${cue ? " is-cue" : ` is-${edge}`}`;
+    wrap.setAttribute("aria-hidden", "true");
+    wrap.title = tx(cue ? "キューポイントを固定" : edge === "start" ? "開始時刻を固定" : "終了時刻を固定");
+    wrap.innerHTML = '<svg viewBox="0 0 16 16" focusable="false"><path d="M5 7V4.8a3 3 0 0 1 6 0V7"></path><rect x="3.5" y="7" width="9" height="7.2" rx="1.2"></rect><circle cx="8" cy="10.4" r=".65"></circle></svg>';
+    return wrap;
+  }
+
+  function refreshLockedTimelinePositions(project) {
+    const positions = [];
+    (timeline && timeline.segments || []).forEach((segment) => {
+      if (segment.timelineLockEdge === "start") positions.push(segment.start);
+      if (segment.timelineLockEdge === "end") {
+        positions.push(Number.isFinite(segment.sceneEnd) ? segment.sceneEnd : segment.end);
+      }
+    });
+    (timeline && timeline.transitions || []).forEach((transition) => {
+      if (transition.timelineLockEdge === "start") positions.push(transition.start);
+      if (transition.timelineLockEdge === "end") positions.push(transition.end);
+    });
+    const audioTrack = timeline && timeline.trackId
+      && (project.audioTracks || []).find((track) => track.id === timeline.trackId);
+    if (audioTrack && audioTrack.timelineLockEdge === "end") positions.push(timeline.duration);
+    timelineCues(project).forEach((cue) => { if (cue.locked) positions.push(cue.seconds); });
+    lockedTimelinePositions = positions.filter(Number.isFinite).sort((a, b) => a - b);
+  }
+
+  function rippleHitsLockedTime(boundarySeconds) {
+    const boundary = finite(boundarySeconds, 0);
+    return lockedTimelinePositions.some((seconds) => seconds >= boundary - 1e-6);
   }
 
   function syncCueSelection() {
@@ -1406,8 +1513,12 @@
       button.dataset.cueId = cue.id;
       button.dataset.cueType = cue.cueType;
       button.setAttribute("aria-pressed", String(cue.id === selectedCueId));
-      button.textContent = cue.displayName;
-      button.title = `${labelPosition(cue.seconds)}  ${cue.displayName}（${tx("選択してDeleteで削除")}）`;
+      if (cue.locked) button.append(lockIndicator(null, true));
+      const label = document.createElement("span");
+      label.className = "stage-timeline-cue-label";
+      label.textContent = cue.displayName;
+      button.append(label);
+      button.title = `${labelPosition(cue.seconds)}  ${cue.displayName}（${cue.locked ? tx("キューポイントを固定") : tx("選択してDeleteで削除")}）`;
       button.style.left = `${clamp(pxFor(cue.seconds) - 4, 0, Math.max(0, timelineWidth - CUE_WIDTH))}px`;
       button.addEventListener("click", () => {
         selectedCueId = cue.id;
@@ -1415,6 +1526,9 @@
         button.focus();
       });
       button.addEventListener("dblclick", () => openCueDetails(cue, button));
+      button.addEventListener("contextmenu", (event) => openTimelineLockMenu(
+        event, { target: "cue", cueId: cue.id }, cue.locked,
+      ));
       lane.append(button);
     });
   }
@@ -1425,13 +1539,20 @@
     clearLane(els.transitionsLane);
     Object.values(els.cueLanes).forEach(clearLane);
     if (!timeline) return;
+    refreshLockedTimelinePositions(project);
     const audioBlock = document.createElement(timeline.trackId ? "button" : "div");
     if (timeline.trackId) audioBlock.type = "button";
     audioBlock.className = `stage-timeline-audio-block${timeline.trackId ? "" : " is-empty"}`;
     audioBlock.dataset.audioMissing = "false";
-    audioBlock.textContent = timeline.title;
+    const audioTrack = timeline.trackId && (project.audioTracks || []).find((track) => track.id === timeline.trackId);
+    if (audioTrack && audioTrack.timelineLockEdge === "start") audioBlock.append(lockIndicator("start"));
+    const audioLabel = document.createElement("span");
+    audioLabel.className = "stage-timeline-audio-label";
+    audioLabel.textContent = timeline.title;
+    audioBlock.append(audioLabel);
+    if (audioTrack && audioTrack.timelineLockEdge === "end") audioBlock.append(lockIndicator("end"));
     audioBlock.title = timeline.trackId
-      ? `${timeline.title}（${tx("ダブルクリックで音源情報")}）` : timeline.title;
+      ? `${timeline.title}（${tx("ダブルクリックで音源情報")}）${audioTrack && audioTrack.timelineLockEdge ? ` — ${tx(audioTrack.timelineLockEdge === "start" ? "開始時刻を固定" : "終了時刻を固定")}` : ""}` : timeline.title;
     if (timeline.trackId) {
       audioBlock.dataset.trackId = timeline.trackId;
       audioBlock.addEventListener("click", () => {
@@ -1443,6 +1564,9 @@
         if (audioBlock.dataset.audioMissing === "true") return;
         openAudioDetails(timeline.trackId, audioBlock);
       });
+      audioBlock.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
+        target: "audio", trackId: timeline.trackId,
+      }, audioTrack && audioTrack.timelineLockEdge));
     }
     placeBlock(audioBlock, 0, timeline.duration);
     els.audioLane.append(audioBlock);
@@ -1458,11 +1582,13 @@
       button.className = "stage-timeline-scene";
       if (segment.sceneId) button.dataset.sceneId = segment.sceneId;
       if (segment.sceneId === project.activeSceneId) button.classList.add("is-current");
+      if (segment.timelineLockEdge === "start") button.append(lockIndicator("start"));
       const label = document.createElement("span");
       label.className = "stage-timeline-block-label";
       label.textContent = `${index + 1}  ${segment.title}`;
       button.append(label);
-      button.title = `${labelPosition(segment.start)}  ${segment.title}${timelineContentCanResize() ? `（${tx("左右端をドラッグで長さを調整")}）` : ""}`;
+      if (segment.timelineLockEdge === "end") button.append(lockIndicator("end"));
+      button.title = `${labelPosition(segment.start)}  ${segment.title}${segment.timelineLockEdge ? `（${tx(segment.timelineLockEdge === "start" ? "開始時刻を固定" : "終了時刻を固定")}）` : timelineContentCanResize() ? `（${tx("左右端をドラッグで長さを調整")}）` : ""}`;
       button.disabled = !segment.sceneId;
       const sceneEnd = Number.isFinite(segment.sceneEnd) ? segment.sceneEnd : segment.end;
       if (pxFor(sceneEnd) - pxFor(segment.start) < 28) button.classList.add("is-compact");
@@ -1477,6 +1603,12 @@
         event.preventDefault();
         cancelPendingSceneOpen();
         if (typeof bridge.openSceneDetailsById === "function") bridge.openSceneDetailsById(segment.sceneId);
+      });
+      button.addEventListener("contextmenu", (event) => {
+        if (!segment.sceneId) return;
+        openTimelineLockMenu(event, {
+          target: "scene", sectionId: timeline.sectionId, sceneId: segment.sceneId,
+        }, segment.timelineLockEdge);
       });
       if (timelineContentCanResize()) {
         const previous = timeline.segments[index - 1];
@@ -1505,7 +1637,9 @@
       const label = document.createElement("span");
       label.className = "stage-timeline-block-label";
       label.textContent = transition.title;
+      if (transition.timelineLockEdge === "start") block.append(lockIndicator("start"));
       block.append(label);
+      if (transition.timelineLockEdge === "end") block.append(lockIndicator("end"));
       block.title = isPoint
         ? `${labelPosition(transition.end)} ${tx("転換ポイント")}`
         : `${labelPosition(transition.start)}–${labelPosition(transition.end)} ${transition.title}${timelineContentCanResize() ? `（${tx("左右端をドラッグで長さを調整")}）` : ""}`;
@@ -1516,6 +1650,9 @@
 
       const source = timeline.segments.find((segment) => segment.transitionId === transition.id);
       if (!source) return;
+      block.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
+        target: "transition", sectionId: timeline.sectionId, sceneId: source.sceneId,
+      }, transition.timelineLockEdge));
       if (!isPoint && timelineContentCanResize()) {
         addTimelineResizeHandle(block, "start", {
           sceneId: source.sceneId,
@@ -1706,6 +1843,7 @@
 
   function renderTimeline() {
     if (mode !== "timeline") return;
+    closeTimelineLockMenu();
     const { project, choices } = timelineChoices();
     if (!project || !choices.length) return;
     const scopeId = choices[0].sectionId || "show";
@@ -1715,6 +1853,7 @@
       || choices[0];
     ui.songBySection[scopeId] = timeline.songId;
     seekSeconds = clamp(seekSeconds, 0, timeline.duration);
+    refreshLockedTimelinePositions(project);
 
     const section = currentSection(project);
     ui.unit = sectionTimelineUnit(section);
@@ -1969,6 +2108,7 @@
   function beginBlockResize(event, descriptor) {
     if (event.button !== undefined && event.button !== 0) return;
     if (!timelineContentCanResize() || !descriptor || !descriptor.sceneId) return;
+    if (rippleHitsLockedTime(descriptor.boundarySeconds)) return;
     const documentValue = projectDocument();
     const project = documentValue && documentValue.project;
     const section = project && (project.scenes || []).find((row) => row.kind === "section" && row.id === timeline.sectionId);
@@ -2325,6 +2465,12 @@
     renderTimeline();
   });
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && timelineLockMenu) {
+      event.preventDefault();
+      closeTimelineLockMenu();
+      return;
+    }
+    if (timelineLockMenu && timelineLockMenu.contains(event.target)) return;
     if (event.key === "Escape" && els.unitWarningModal && !els.unitWarningModal.hidden) {
       event.preventDefault();
       closeUnitWarning();
@@ -2410,6 +2556,9 @@
     }).observe(els.sceneList, { childList: true, subtree: false });
   }
   window.addEventListener("stage-timeline-cues-change", () => {
+    if (mode === "timeline") renderTimeline();
+  });
+  window.addEventListener("stage-timeline-lock-change", () => {
     if (mode === "timeline") renderTimeline();
   });
   window.addEventListener("stage-timeline-audio-change", () => {
