@@ -2814,7 +2814,7 @@
     const host = $("place-tools"); host.innerHTML = "";
     PLACE_TOOLS.forEach(([k, t]) => {
       const b = document.createElement("button"); b.type = "button";
-      b.textContent = state.tool === k ? (k === "border" || k === "masking" ? "閉じる" : "置くのを終える") : t;
+      b.textContent = t;
       b.title = { truss: "灯体を吊るバトンを渡す", fixture: "選んだバトンに灯体を吊る", front: "客席の上（シーリング・フロントサイド）に灯体を置く", floor: "灯体を床に転がす", side: "灯体を袖（上手／下手）に立てる", border: "一文字幕をバトンごとに設置・調整する", masking: "前一文字と袖幕を調整する" }[k];
       b.setAttribute("aria-pressed", String(state.tool === k));
       b.disabled = k === "fixture" && !state.selTruss;
@@ -2840,7 +2840,7 @@
     $("place-note").textContent =
       state.tool === "truss" ? "平面図をクリックすると、その奥行きにバトンを渡します。"
       : state.tool === "fixture" ? "平面図の選んだバトンの上をクリックすると灯体を吊れます。"
-      : state.tool === "front" ? "平面図の舞台より手前（客席側の帯）をクリックすると置けます。舞台前からの距離と高さは右で直せます。"
+      : state.tool === "front" ? ""
       : state.tool === "floor" ? "平面図の舞台の中をクリックすると転がせます。"
       : state.tool === "side" ? "下手を見る図・上手を見る図をクリックすると、その側の袖に立てられます。"
       : state.tool === "border" ? "右のパネルで、バトンごとの一文字幕を設置・調整します。"
@@ -3566,7 +3566,7 @@
     if (state.mode === "place") {
       if (state.tool === "border") { renderBorderBox(host); return; }
       if (state.tool === "masking") { renderMaskingBox(host); return; }
-      // 見出しは静的な「選んだ灯体」／下の層の「配置（ショー共通）」が持つので、ここでは出さない
+      // 見出しは静的な「灯体情報」／下の層の「機材設置」が持つので、ここでは出さない
       if (!state.sel.size && !state.selTruss) host.append(el("p", "hint", "図か一覧で灯体やバトンを選ぶと、ここに設定が出ます。配置はすべてのシーンで共通です。"));
       const t = E.trussById(state.rig, state.selTruss);
       if (t && !ids.length) {
@@ -3590,7 +3590,6 @@
           host.append(field("横位置", range(0, 1, 0.01, m.u, acrossText, (v) => { m.u = v; draw(); }, () => commit(), numAcross())));
           host.append(field("舞台前から", range(1, 20, 0.5, m.ahead, (v) => `約${mmText(v)}`, (v) => { m.ahead = v; draw(); }, () => commit(), numMm(1, 20, 0.5, "舞台前からの距離(mm)"))));
           host.append(field("高さ", range(1, 16, 0.1, m.h, (v) => `約${mmText(v)}`, (v) => { m.h = v; draw(); }, () => commit(), numMm(1, 16, 0.1, "前明かりの高さ(mm)"))));
-          host.append(el("p", "note", "客席の上（シーリング）や客席横の壁（フロントサイド）に当たる位置です。平面図では客席側の帯に並べて描き、本当の距離はここの数値が正です。"));
         }
         if (m.type !== "cyc") {
           // ムービングかどうか（動きを付けられるのはムービングだけ）。ホリゾントライトは常に固定
