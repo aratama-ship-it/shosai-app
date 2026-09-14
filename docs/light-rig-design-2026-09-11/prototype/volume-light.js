@@ -53,7 +53,7 @@ function planeBounds(beam,f,o,ax,ay,bx,by,width,height,cw,ch){
  return [clamp(Math.floor((x-rx)*width/cw)-1,0,width),clamp(Math.floor((y-ry)*height/ch)-1,0,height),clamp(Math.ceil((x+rx)*width/cw)+1,0,width),clamp(Math.ceil((y+ry)*height/ch)+1,0,height)];
 }
 const canvases=new WeakMap();
-function render(ctx,P,dims,kind,beams,people,paintPerson,hazeValue,quick=false){
+function render(ctx,P,dims,kind,beams,people,paintPerson,hazeValue,quick=false,gain=1){
  const steps=quick?10:18,width=quick?72:192,height=Math.max(32,Math.round(width*ctx.canvas.height/ctx.canvas.width));
  let buffers=canvases.get(ctx.canvas);if(!buffers){buffers=[];canvases.set(ctx.canvas,buffers);}
 
@@ -62,7 +62,7 @@ function render(ctx,P,dims,kind,beams,people,paintPerson,hazeValue,quick=false){
  const ps=people.map(p=>({p,t:depth({x:(p.u-.5)*dims.W,y:p.v*dims.D,z:0},kind)})).sort((a,b)=>a.t-b.t);
  const cuts=Array.from({length:steps+1},(_,i)=>lo+(hi-lo)*i/steps).concat(ps.map(p=>p.t).filter(t=>t>lo&&t<hi)).sort((a,b)=>a-b).filter((v,i,a)=>!i||v-a[i-1]>1e-7);
  buffers.length=cuts.length-1;
- const sigma=.10*Math.pow(clamp(hazeValue,0,100)/100,1.4)*(kind==='front'?.65:1);
+ const sigma=.10*Math.pow(clamp(hazeValue,0,100)/100,1.4)*(kind==='front'?.65:1)*clamp(gain,.6,1.8);
  let pi=0;
  for(let k=1;k<cuts.length;k++){
   const start=cuts[k-1],end=cuts[k],t=(start+end)/2,ds=end-start;

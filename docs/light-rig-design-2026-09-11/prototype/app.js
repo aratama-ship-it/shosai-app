@@ -7,6 +7,20 @@
   "use strict";
   const E = window.RIG_ENGINE, V = window.VOLUME_LIGHT;
   let distanceMetric = false, spatialQuick = false;
+  /* 図の見え方だけをまとめて強める倍率。灯の強さやLX cueには入れず、ブラウザごとの表示設定として持つ。
+     そのため、同じ照明データを開いても保存済みのキューや他の利用者の見え方は変わらない。 */
+  const VISUAL_GAIN_KEY = "shosai.lightVisualGain.v1", DEFAULT_VISUAL_GAIN = 1.4;
+  let visualGain = (() => {
+    try {
+      const stored = window.localStorage.getItem(VISUAL_GAIN_KEY);
+      if (stored == null) return DEFAULT_VISUAL_GAIN;
+      const value = Number(stored);
+      return Number.isFinite(value) ? E.clamp(value, 0.6, 1.8) : DEFAULT_VISUAL_GAIN;
+    } catch (_) { return DEFAULT_VISUAL_GAIN; }
+  })();
+  const visualAlpha = (value) => E.clamp(E.finite(value, 0) * visualGain, 0, 1);
+  const setVisualGain = (value) => { visualGain = E.clamp(E.finite(value, DEFAULT_VISUAL_GAIN), 0.6, 1.8); draw(); };
+  const saveVisualGain = () => { try { window.localStorage.setItem(VISUAL_GAIN_KEY, String(visualGain)); } catch (_) {} };
   const $ = (id) => document.getElementById(id);
 
   /* ---------- 状態 ---------- */
@@ -1078,7 +1092,7 @@
     });
     const yawDeg = kind === "shimote" ? -90 : kind === "kamite" ? 90 : 0;
     const people = kind === "plan" || !showOn("pieces") ? [] : piecesOf().filter(p=>p.kind==="performer");
-    V.render(ctx,P,state.dims,kind,beams,people,p=>drawPiecesUp(ctx,P,k,{...options,yawDeg,only:p.id,relight:showOn("blackout"),beams:all}),V.haze(cue()),Boolean(state.drag||state.play.on||spatialQuick));
+    V.render(ctx,P,state.dims,kind,beams,people,p=>drawPiecesUp(ctx,P,k,{...options,yawDeg,only:p.id,relight:showOn("blackout"),beams:all}),V.haze(cue()),Boolean(state.drag||state.play.on||spatialQuick),visualGain);
     for (const b of beams) {
       const q=P(b.S), w=V.glareWeight(b,kind);
       if(w>0) drawGlare(ctx,q.X,q.Y,k*.8*glareMul(b.l),b.color,b.level*w,false);
@@ -1110,7 +1124,7 @@
       if (!(level > 0) || !S || !T) return [];
       const end = beamEnd(l, S, T), frame = frameOf(f, l);
       const axis = end.surface === "back" ? "z" : end.surface === "floor" ? "y" : frame ? frame.axis : "y";
-      return [{ S, T, level, deg: beamOf(f), color: l.color, doors: frame ? E.frameDoors(f, l, axis) : [] }];
+      return [{ S, T, level: level * visualGain, deg: beamOf(f), color: l.color, doors: frame ? E.frameDoors(f, l, axis) : [] }];
     });
   }
   function drawPiecesUp(ctx, P, pxPerM, opts) {
@@ -1222,7 +1236,7 @@
       const l = lightOf(f.id); if (!isLit(l)) return;
       const lv = litFactorOf(f, l);
       const dim = state.sel.size && !isSel(f.id);
-      const a = (dim ? 0.32 : 1) * E.clamp(E.finite(lv, 1), 0, 1);
+      const a = visualAlpha((dim ? 0.32 : 1) * E.clamp(E.finite(lv, 1), 0, 1));
       const quads = cycWashQuads(f, l, P, dims);
       if (!quads) return;
       drawCycWash(ctx, quads, l.color, a);
@@ -1283,7 +1297,7 @@
     const ret = () => ({ r: rPx, toX: pool.cx, toY: pool.cy, landX: to.X, landY: to.Y, halfW, ry, lying, asLine, noPool, pool, corners, cuts, onlyPool });
     /* 濃さ＝（選んでいない灯を沈める係数）×（その灯の強さ）。強さは0〜1へ通したあとの値で、
        灯ごとの数値0〜100%を state.levelCurve で曲げたもの（2026-09-13 本人要望）。 */
-    const a = (dim ? 0.32 : 1) * E.clamp(E.finite(lv, 1), 0, 1);
+    const a = visualAlpha((dim ? 0.32 : 1) * E.clamp(E.finite(lv, 1), 0, 1));
     const bx = to.X - from.X, by = to.Y - from.Y, blen = Math.hypot(bx, by) || 1;
     const nx = (-by / blen) * halfW, ny = (bx / blen) * halfW;
     /* バーンドア／カッター（2026-09-14 本人要望）。「切る線」を2つの形へ写す:
@@ -1334,7 +1348,7 @@
       /* 真上から見る図では光の帯を三角に開かない（2026-09-11 本人指定）。
          真上から見ているぶん、開き具合は床の光だまりの大きさとして既に出ている。
          出どころが狙い先の真上にあるときは線が点になるので引かない（本体と同じ）。 */
-      if (blen > 6) { ctx.strokeStyle = hexA(color, (dim ? 0.22 : 0.55) * E.clamp(E.finite(lv, 1), 0, 1)); ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(from.X, from.Y); ctx.lineTo(to.X, to.Y); ctx.stroke(); ctx.setLineDash([]); }
+      if (blen > 6) { ctx.strokeStyle = hexA(color, (dim ? 0.22 : 0.55) * visualAlpha(E.clamp(E.finite(lv, 1), 0, 1))); ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(from.X, from.Y); ctx.lineTo(to.X, to.Y); ctx.stroke(); ctx.setLineDash([]); }
     } else {
       const prof = gobo ? goboProfile(gobo) : null;
       /* 縁の柔らかさ（BEAM_EDGE）を t=0〜1 で引けるようにしたもの。 */
@@ -1778,7 +1792,7 @@
   const glareMul = (l) => E.clamp(E.finite(l && l.glare, 1), 0.2, 3);
   function drawGlare(ctx, X, Y, R, color, lv, dim) {
     if (!(lv > 0) || !(R > 0)) return;
-    const a = (dim ? 0.3 : 1) * E.clamp(lv, 0, 1);
+    const a = visualAlpha((dim ? 0.3 : 1) * E.clamp(lv, 0, 1));
     ctx.save(); ctx.globalCompositeOperation = "screen";
     const g = ctx.createRadialGradient(X, Y, 0, X, Y, R);
     g.addColorStop(0, hexA(color, 0.5 * a)); g.addColorStop(0.3, hexA(color, 0.2 * a)); g.addColorStop(0.7, hexA(color, 0.06 * a)); g.addColorStop(1, hexA(color, 0));
@@ -3336,6 +3350,14 @@
     const host = $("insp"); host.innerHTML = "";
     const ids = [...state.sel];
     if (state.mode === 'move') {
+      const displayBox=el('div','pbox option-b-controls');
+      displayBox.append(el('p','kicker','表現の明るさ · 全灯'));
+      const gainControl=range(60,180,1,Math.round(visualGain*100),v=>`${Math.round(v)}%`,v=>setVisualGain(v/100),()=>saveVisualGain());
+      gainControl.querySelectorAll('input').forEach(i=>i.setAttribute('aria-label',i.type==='range'?'全灯の表現の明るさ':'全灯の表現の明るさ（数値）'));displayBox.append(gainControl);
+      const gainRow=el('div','row'); for(const [name,value] of [['基準',100],['強め',140],['際立たせる',180]]) gainRow.append(btn(name,()=>{setVisualGain(value/100);saveVisualGain();renderInspector();},'small'));
+      displayBox.append(gainRow);
+      displayBox.append(el('p','note','光条・光だまり・まぶしさ・演者への見え方をまとめて調整します。灯の強さ・LX cue・保存データは変えません。'));
+      host.append(displayBox);
       const box=el('div','pbox option-b-controls');
       box.append(el('p','kicker','もや · このLX cue'));
       const hazeControl=range(0,100,1,V.haze(cue()),v=>`${v}%`,v=>{cue().environment={...(cue().environment||{}),haze:v};draw();},()=>commit());
