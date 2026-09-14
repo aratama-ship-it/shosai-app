@@ -423,6 +423,8 @@
     if (next !== "timeline") cancelPendingSceneOpen();
     if (next !== "timeline") closeAudioDetails({ focus: false });
     if (next !== "timeline") pauseSilentPlayback({ update: false });
+    stopAudioPlaybackFrames();
+    bridge.clearTimelinePosition?.();
     if (next !== "timeline") bridge.setTimelineAudioContext?.(null);
     els.tabs.forEach((button) => {
       const active = button.dataset.stageWorkspaceMode === next;
@@ -438,6 +440,7 @@
       setStageView(target);
       applyTimelineHeight();
       renderTimeline();
+      startAudioPlaybackFrames();
     } else {
       const target = ["front", "plan", "both-front", "both-plan"].includes(ui.normalView)
         ? ui.normalView : outgoingView;
@@ -1597,28 +1600,49 @@
     return documentValue && documentValue.project ? documentValue.project.activeSceneId : null;
   }
 
-  // 通常再生では転換の開始に合わせて、本体の移動アニメーションも開始する。
-  // これにより、シーン帯の右端（転換終端）で次シーンの配置へ到着する。
-  function syncTimelinePlaybackScene(seconds, { allowTransition = false } = {}) {
+  // The transport supplies an absolute position, never a second animation clock.
+  function syncTimelinePlaybackScene(seconds, { reset = false } = {}) {
+    if (mode !== "timeline" || !timeline) return;
     const phase = timelineTransitionAt(seconds);
-    const target = phase ? phase.target : segmentAt(seconds);
-    const previous = playbackPosition;
+    const target = timeline.source === "formation" ? segmentAt(seconds)
+      : phase ? phase.target : segmentAt(seconds);
     playbackPosition = seconds;
-    if (!target || !target.sceneId || activeStageSceneId() === target.sceneId) return;
-    const crossedTransitionStart = phase && allowTransition && previous !== null
-      && previous < phase.transition.start + 1e-6 && seconds >= phase.transition.start - 1e-6;
-    if (crossedTransitionStart) {
-      bridge.openSceneById(target.sceneId, {
-        transitionDurationMs: (phase.transition.end - phase.transition.start) * 1000,
+    if (!target || !target.sceneId) return;
+    if (typeof bridge.setTimelinePosition === "function") {
+      bridge.setTimelinePosition({
+        sceneId: target.sceneId, sourceSceneId: phase && phase.source.sceneId,
+        progress: phase ? clamp((seconds - phase.transition.start) / Math.max(1e-6, phase.transition.end - phase.transition.start), 0, 1) : null,
+        source: timeline.source, sectionId: timeline.sectionId, songId: timeline.songId,
+        seconds, reset,
       });
-      return;
+    } else if (activeStageSceneId() !== target.sceneId) {
+      // Older cached hosts can still switch scenes until their update is activated.
+      bridge.openSceneById(target.sceneId);
     }
-    bridge.openSceneById(target.sceneId);
+  }
+
+  let audioPlaybackFrame = 0;
+  function stopAudioPlaybackFrames() {
+    if (audioPlaybackFrame) window.cancelAnimationFrame(audioPlaybackFrame);
+    audioPlaybackFrame = 0;
+  }
+  function startAudioPlaybackFrames() {
+    if (audioPlaybackFrame || mode !== "timeline" || !audioMatchesTimeline()
+      || els.audio.paused || els.audio.ended) return;
+    const sample = () => {
+      audioPlaybackFrame = 0;
+      if (mode !== "timeline" || !audioMatchesTimeline() || els.audio.paused || els.audio.ended) return;
+      if (ui.loop && ui.loopB > ui.loopA && els.audio.currentTime >= ui.loopB) els.audio.currentTime = ui.loopA;
+      syncTimelinePlaybackScene(els.audio.currentTime);
+      updatePlayhead();
+      audioPlaybackFrame = window.requestAnimationFrame(sample);
+    };
+    audioPlaybackFrame = window.requestAnimationFrame(sample);
   }
 
   function syncSilentScene(seconds) {
     if (!silentPlayback) return;
-    syncTimelinePlaybackScene(seconds, { allowTransition: true });
+    syncTimelinePlaybackScene(seconds);
     const segment = segmentAt(seconds);
     if (segment) silentPlayback.sceneId = segment.sceneId;
   }
@@ -1653,7 +1677,7 @@
     const target = segmentAt(seekSeconds);
     if (!target) return;
     playbackPosition = seekSeconds;
-    bridge.openSceneById(target.sceneId);
+    syncTimelinePlaybackScene(seekSeconds, { reset: true });
     silentPlayback = {
       startedAt: performance.now(),
       startSeconds: seekSeconds,
@@ -1680,7 +1704,7 @@
       return;
     }
     playbackPosition = null;
-    syncTimelinePlaybackScene(seekSeconds);
+    syncTimelinePlaybackScene(seekSeconds, { reset: true });
   }
 
   function updatePlayhead() {
@@ -1834,7 +1858,7 @@
     const target = timeline.segments.find((segment) => seekSeconds >= segment.start && seekSeconds < segment.end && segment.sceneId)
       || timeline.segments.find((segment) => segment.sceneId);
     if (!target) return;
-    bridge.openSceneById(target.sceneId);
+    syncTimelinePlaybackScene(seekSeconds, { reset: true });
     pendingSeek = seekSeconds;
     if (els.audio.readyState >= 1 && audioMatchesTimeline()) {
       els.audio.currentTime = clamp(pendingSeek, 0, Number.isFinite(els.audio.duration) ? els.audio.duration : timeline.duration);
@@ -2390,25 +2414,31 @@
     els.audio.addEventListener(name, () => {
       if (name === "play") {
         pauseSilentPlayback({ update: false });
-        if (mode === "timeline" && timeline) {
+        if (mode === "timeline" && audioMatchesTimeline()) {
           playbackPosition = Number.isFinite(els.audio.currentTime) ? els.audio.currentTime : null;
-          syncTimelinePlaybackScene(playbackPosition || 0);
+          syncTimelinePlaybackScene(playbackPosition || 0, { reset: true });
+          startAudioPlaybackFrames();
         }
+      }
+      if (name === "pause" || name === "ended") {
+        stopAudioPlaybackFrames();
+        if (mode === "timeline" && audioMatchesTimeline()) syncTimelinePlaybackScene(els.audio.currentTime);
       }
       if (name === "loadedmetadata" && pendingSeek !== null && audioMatchesTimeline()) {
         els.audio.currentTime = clamp(pendingSeek, 0, Number.isFinite(els.audio.duration) ? els.audio.duration : timeline.duration);
         pendingSeek = null;
       }
-      if (name === "seeking" && mode === "timeline" && timeline && Number.isFinite(els.audio.currentTime)) {
+      if (name === "seeking" && mode === "timeline" && audioMatchesTimeline() && Number.isFinite(els.audio.currentTime)) {
         seekSeconds = els.audio.currentTime;
         syncSceneForSeek();
       }
-      if (name === "timeupdate" && ui.loop && ui.loopB > ui.loopA && els.audio.currentTime >= ui.loopB) {
+      if (name === "timeupdate" && mode === "timeline" && audioMatchesTimeline() && ui.loop && ui.loopB > ui.loopA && els.audio.currentTime >= ui.loopB) {
         els.audio.currentTime = ui.loopA;
         playbackPosition = null;
       }
-      if (name === "timeupdate" && mode === "timeline" && timeline && Number.isFinite(els.audio.currentTime)) {
-        syncTimelinePlaybackScene(els.audio.currentTime, { allowTransition: true });
+      if (name === "timeupdate" && mode === "timeline" && audioMatchesTimeline() && Number.isFinite(els.audio.currentTime)) {
+        syncTimelinePlaybackScene(els.audio.currentTime);
+        startAudioPlaybackFrames();
       }
       updatePlayhead();
     });

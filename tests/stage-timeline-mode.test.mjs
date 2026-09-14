@@ -87,14 +87,12 @@ test("同じセクションのシーン間には0秒でも転換ポイントを�
   assert.match(css, /\.stage-timeline-scene-transition-marker\.is-point::after,[\s\S]*?rotate\(45deg\)/);
 });
 
-test("再生中は転換開始で動かし、転換の長さで次シーンへ到着する", () => {
-  assert.match(sketch, /function beginSceneAnim\(fromScene, liveSpinsIn, durationMs = null\)/);
-  assert.match(sketch, /transitionDurationMs/);
-  assert.match(sketch, /openSceneById\(id, options = \{\}\)[\s\S]*?openScene\(next\.id, options\)/);
+test("タイムライン再生は絶対位置を本体へ渡し、音源時計を描画ごとに読む", () => {
+  assert.match(sketch, /setTimelinePosition\(position\)/);
   assert.match(timeline, /function timelineTransitionAt\(seconds\)/);
-  assert.match(timeline, /function syncTimelinePlaybackScene\(seconds, \{ allowTransition = false \} = \{\}\)/);
-  assert.match(timeline, /previous < phase\.transition\.start[\s\S]*?transitionDurationMs: \(phase\.transition\.end - phase\.transition\.start\) \* 1000/);
-  assert.match(timeline, /name === "timeupdate"[\s\S]*?syncTimelinePlaybackScene\(els\.audio\.currentTime, \{ allowTransition: true \}\)/);
+  assert.match(timeline, /bridge\.setTimelinePosition\(\{/);
+  assert.match(timeline, /syncTimelinePlaybackScene\(els\.audio\.currentTime\)/);
+  // Timing, pause, backward seek and curve behavior are exercised in stage-timeline-transport.browser.mjs.
 });
 
 test("シーンと転換の左右端をドラッグして長さを変え、後続のキューも追従させる", () => {
@@ -113,8 +111,8 @@ test("シーンと転換の左右端をドラッグして長さを変え、後�
 });
 
 test("転換の最初の描画は前シーンの位置から始め、行き先を一瞬だけ描かない", () => {
-  assert.match(sketch, /sceneAnim = \{ pieces, exits, blackout, progress: 0, raf: 0 \};[\s\S]*?step\(start\);/);
-  assert.match(sketch, /function beginSceneAnim\(fromScene, liveSpinsIn, durationMs = null\)[\s\S]*?return true;/);
+  assert.match(sketch, /sceneAnim = \{ pieces, exits, blackout, progress: 0, raf: 0,[\s\S]*?step\(start\);/);
+  assert.match(sketch, /function beginSceneAnim\(fromScene, liveSpinsIn, durationMs = null, timelineProgress = null\)[\s\S]*?return true;/);
   assert.match(sketch, /updateInspector\(\);[\s\S]*?if \(!beginSceneAnim\(before, liveSpins, options\.transitionDurationMs\)\) render\(\);/);
 });
 
@@ -143,7 +141,7 @@ test("テンポ・カウント合わせ操作はカウント式だけで表示�
 });
 
 test("シーク位置へ移動すると該当シーンを平面図・正面図へ同期する", () => {
-  assert.match(timeline, /function syncSceneForSeek\(\)[\s\S]*?syncTimelinePlaybackScene\(seekSeconds\)/);
+  assert.match(timeline, /function syncSceneForSeek\(\)[\s\S]*?syncTimelinePlaybackScene\(seekSeconds, \{ reset: true \}\)/);
   assert.match(timeline, /function seekFromPointer\(event\)[\s\S]*?syncSceneForSeek\(\)/);
   assert.match(timeline, /if \(event\.shiftKey\)[\s\S]*?syncSceneForSeek\(\)/);
   assert.match(timeline, /name === "seeking"[\s\S]*?seekSeconds = els\.audio\.currentTime;[\s\S]*?syncSceneForSeek\(\)/);

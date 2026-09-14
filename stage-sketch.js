@@ -7316,6 +7316,8 @@
   }
 
   function syncFormationPlaybackAtTime() {
+    // Timeline samples this same formation from its own transport, including silent playback.
+    if (document.body.dataset.stageWorkspaceMode === "timeline") return false;
     const link = sc() && sc().formationLink;
     if (!link || !els.musicAudio || audioPlayback.trackId !== sc().audioTrackId) return false;
     const owner = formationOwnerByDocument(link.documentId), pkg = owner && owner.formation.package;
@@ -19960,11 +19962,12 @@
     return liveSpins;
   }
 
-  function beginSceneAnim(fromScene, liveSpinsIn, durationMs = null) {
+  function beginSceneAnim(fromScene, liveSpinsIn, durationMs = null, timelineProgress = null) {
     stopSceneAnim();
-    const liveSpins = liveSpinsIn && liveSpinsIn.size ? liveSpinsIn : captureLiveSpins();
+    const liveSpins = timelineProgress !== null ? new Map()
+      : liveSpinsIn && liveSpinsIn.size ? liveSpinsIn : captureLiveSpins();
     pauseSpinRun();
-    if (!state.animateScenes || !fromScene) return false;
+    if ((!state.animateScenes && timelineProgress === null) || !fromScene) return false;
     const rows = state.project.scenes.filter((row) => row.kind === "scene");
     const wasAt = rows.findIndex((row) => row.id === fromScene.id);
     const nowAt = rows.findIndex((row) => row.id === state.project.activeSceneId);
@@ -20080,14 +20083,15 @@
     const blackout = featureOn("blackout") && Boolean(sc().blackout);
     if (!pieces.length && !exits.length && !blackout) return false;
     const movers = pieces.concat(exits);
-    const span = Number.isFinite(Number(durationMs))
+    const span = durationMs != null && Number.isFinite(Number(durationMs))
       ? clamp(Number(durationMs), 100, 86400000)
       : sc().cueSeconds !== null
         ? sc().cueSeconds * 1000
         : clamp(finite(state.sceneAnimMs, 2000), 200, 3000);
     const start = performance.now();
-    const step = (now) => {
-      const t = clamp((now - start) / span, 0, 1);
+    // Both transports sample the same curve; only normal mode owns a wall-clock RAF.
+    const sample = (value) => {
+      const t = clamp(value, 0, 1);
       const e = easeInOut(t);
       if (sceneAnim) sceneAnim.progress = e;
       movers.forEach((entry) => {
@@ -20159,11 +20163,17 @@
         }
       });
       render();
+    };
+    const step = (now) => {
+      const t = clamp((now - start) / span, 0, 1);
+      sample(t);
       if (t < 1) { sceneAnim.raf = requestAnimationFrame(step); return; }
       stopSceneAnim();
       render();
     };
-    sceneAnim = { pieces, exits, blackout, progress: 0, raf: 0 };
+    sceneAnim = { pieces, exits, blackout, progress: 0, raf: 0,
+      sample, sourceId: fromScene.id, targetId: sc().id, external: timelineProgress !== null };
+    if (timelineProgress !== null) { sample(timelineProgress); return true; }
     // 切替直後に行き先の絵を一度だけ描いてから rAF を待つと、転換の始まりで別フレームが瞬く。
     // 最初の描画を同期して前シーンの座標へ戻してから、以後のフレームを予約する。
     step(start);
@@ -21362,9 +21372,14 @@ ${propsPlotHtml}
     updateInspector();
     // 転換の初期姿勢を先に書き込む。開始済みなら beginSceneAnim がその姿勢を一度だけ描く。
     // 動きが無い切替だけは、ここで通常描画する。
-    if (!beginSceneAnim(before, liveSpins, options.transitionDurationMs)) render();
+    if (options.animate === false) { stopSceneAnim(); render(); }
+    else if (!beginSceneAnim(before, liveSpins, options.transitionDurationMs)) render();
     persistSoon();
     announce(`${sc().title}を開きました。`);
+  }
+
+  function openTimelineScene(target) {
+    if (state.project.activeSceneId !== target.id) openScene(target.id, { animate: false });
   }
 
   function addScene(carryRig) {
@@ -28248,6 +28263,50 @@ ${propsPlotHtml}
   window.SHOSAI_STAGE_SESSION_BRIDGE = Object.freeze({
     exportDocumentString() {
       return JSON.stringify(makeProjectExportDocument(state.project, true));
+    },
+    clearTimelinePosition() {
+      stopSceneAnim();
+      clearFormationPlayback();
+      render();
+      if (document.body.dataset.stageWorkspaceMode !== "timeline" && els.musicAudio && !els.musicAudio.paused) startFormationPlayback();
+    },
+    setTimelinePosition(position) {
+      if (document.body.dataset.stageWorkspaceMode !== "timeline"
+        || document.body.classList.contains("stage-session-guest")) return false;
+      const target = state.project.scenes.find((row) => row.kind === "scene" && row.id === position.sceneId);
+      if (!target) return false;
+      if (formationPlaybackRaf) cancelAnimationFrame(formationPlaybackRaf);
+      formationPlaybackRaf = 0;
+      if (position.source === "formation") {
+        stopSceneAnim();
+        clearFormationPlayback();
+        openTimelineScene(target);
+        const section = state.project.scenes.find((row) => row.id === position.sectionId && row.kind === "section");
+        const songs = section && section.formation && section.formation.package.formation.songs;
+        const song = songs && songs.find((item) => item.id === position.songId);
+        if (song) {
+          const count = formationSecToCount(song.track, finite(position.seconds, 0));
+          (target.pieces || []).forEach((piece) => {
+            if (piece.type !== "performer" || !piece.castId) return;
+            const pose = formationPoseAt(song, piece.castId, count);
+            if (!pose) return;
+            piece.animU = pose.u; piece.animV = pose.v; piece.animFacing = pose.facing;
+            piece._formationPlayback = true;
+          });
+        }
+        render();
+        return true;
+      }
+      clearFormationPlayback();
+      openTimelineScene(target);
+      const from = state.project.scenes.find((row) => row.kind === "scene" && row.id === position.sourceSceneId);
+      if (from && from.id !== target.id && Number.isFinite(position.progress)) {
+        if (!position.reset && sceneAnim && sceneAnim.external
+          && sceneAnim.sourceId === from.id && sceneAnim.targetId === target.id) {
+          sceneAnim.sample(position.progress);
+        } else if (!beginSceneAnim(from, new Map(), null, position.progress)) render();
+      } else { stopSceneAnim(); render(); }
+      return true;
     },
     setTimelineAudioContext(context) {
       timelineAudioContext = context && context.projectId === state.project.id
