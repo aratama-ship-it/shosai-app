@@ -269,11 +269,16 @@ test("音源なしでもセクション時間を内部時計として再生す�
 
 test("セクション時間を全体幅にし、音源は実尺の帯として複数置ける", () => {
   assert.match(timeline, /function sceneAudioClips\(project, segments, duration\)[\s\S]*?audioTimelineDuration\(run\.track\)/);
-  assert.match(timeline, /const end = Math\.min\(duration, run\.end,[\s\S]*?run\.start \+ actualDuration\)/);
+  assert.match(timeline, /audioTimelineStartSeconds[\s\S]*?sourceSceneId/);
+  assert.match(timeline, /const hasPlacedStart = Number\.isFinite\(run\.audioTimelineStartSeconds\)[\s\S]*?start \+ displayDuration/);
   assert.match(timeline, /const duration = section \? sectionDurationSeconds\(project, section\) : plannedDuration/);
   assert.match(timeline, /audioClips: sceneAudioClips\(project, segments, desiredDuration\)/);
   assert.match(timeline, /const audioClips = Array\.isArray\(timeline\.audioClips\) \? timeline\.audioClips : \[\]/);
   assert.match(timeline, /placeBlock\(audioBlock, clip\.start, clip\.end\)/);
+  assert.match(timeline, /function beginAudioDrag\(event, clip, button, audioRangeLock\)[\s\S]*?setTimelineAudioStartSeconds/);
+  assert.match(timeline, /audioBlock\.addEventListener\("pointerdown", \(event\) => beginAudioDrag\(event, clip, audioBlock, audioRangeLock\)\)/);
+  assert.match(css, /--stage-timeline-audio-block-inset-y: 0px;/);
+  assert.match(css, /button\.stage-timeline-audio-block\.is-draggable \{ cursor: grab/);
   assert.doesNotMatch(timeline, /function capTimelineToAudio\(/);
 });
 

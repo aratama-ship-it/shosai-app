@@ -104,9 +104,10 @@ test("再接続候補は曲名と5%超の尺差を検知する", () => {
 
 test("新規・読込・書出しのstateへ音源参照だけを接続する", () => {
   assert.match(stageSource, /audioTracks: \[\],/);
-  assert.match(stageSource, /audioTrackId: null,/);
+  assert.match(stageSource, /audioTrackId: null,[\s\S]*?audioTimelineStartSeconds: null,/);
   assert.match(stageSource, /audioTracks: normalizeAudioTracks\(rawProject\.audioTracks\)/);
-  assert.match(stageSource, /audioTrackId: normalizeAudioTrackId\(kind, raw\.audioTrackId\)/);
+  assert.match(stageSource, /audioTrackId: normalizeAudioTrackId\(kind, raw\.audioTrackId\),[\s\S]*?audioTimelineStartSeconds: kind === "scene" \? rehearsalSeconds\(raw\.audioTimelineStartSeconds\) : null/);
+  assert.match(stageSource, /setTimelineAudioStartSeconds\(sectionId, sceneId, value, options = \{\}\)[\s\S]*?scene\.audioTimelineStartSeconds = nextSeconds/);
   assert.match(stageSource, /audioStore\.put\(track\.id, file\)[\s\S]*?audioTracks\(\)\.push\(track\)/);
   assert.match(stageSource, /setTimelineAudioGainDb\(trackId, value\)[\s\S]*?checkpoint\(\)[\s\S]*?track\.gainDb = gainDb/);
   assert.doesNotMatch(storeSource, /localStorage\.(?:get|set|remove)Item|data:audio|FileReader/);

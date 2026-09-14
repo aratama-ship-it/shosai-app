@@ -21,7 +21,7 @@ test("AI showwrightへの入口は感想ボタンの隣から新しいタブで�
 test("AIリンクは既存ヘッダーとタブレットの操作寸法を使う", () => {
   assert.match(css, /\.stage-history-actions \.stage-ai-link \{[\s\S]*?display: inline-flex;[\s\S]*?align-items: center;[\s\S]*?justify-content: center;/);
   assert.match(css, /html\.stage-pwa-tablet \.stage-tablet-top-controls \.stage-ai-link \{[\s\S]*?width: 44px;[\s\S]*?min-height: 44px;/);
-  assert.match(stage, /style\.css\?v=362/);
-  assert.match(serviceWorker, /stage-sketch-pwa-v479/);
-  assert.match(serviceWorker, /\.\/style\.css\?v=362/);
+  assert.match(stage, /style\.css\?v=363/);
+  assert.match(serviceWorker, /stage-sketch-pwa-v480/);
+  assert.match(serviceWorker, /\.\/style\.css\?v=363/);
 });

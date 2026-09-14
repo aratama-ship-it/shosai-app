@@ -203,7 +203,9 @@
   let rowReorder = null;
   let anchorDrag = null;
   let cueDrag = null;
+  let audioDrag = null;
   let suppressCueClickUntil = 0;
+  let suppressAudioClickUntil = 0;
   let timelineLockMenuTarget = null;
   let suppressAnchorClick = false;
 
@@ -726,7 +728,7 @@
     return duration > 0 ? duration : null;
   }
 
-  function audioClip(track, start, end, fallbackTitle) {
+  function audioClip(track, start, end, fallbackTitle, sourceSceneId = null) {
     const safeStart = Math.max(0, finite(start, 0));
     const safeEnd = Math.max(safeStart, finite(end, safeStart));
     if (!track || safeEnd <= safeStart + 1e-6) return null;
@@ -735,12 +737,14 @@
       title: String(track.title || fallbackTitle || tx("音源")),
       start: safeStart,
       end: safeEnd,
+      sourceSceneId,
       gainDb: normalizedAudioGainDb(track.gainDb),
     };
   }
 
   // 同じ音源が連続して割り当てられたシーンは、一本の帯として表示する。
   // 次のシーンが別曲または無音なら、既存再生と同じくそこで帯も終える。
+  // 帯を動かした場合だけ、割り当て区間から独立した開始位置を持たせる。
   function sceneAudioClips(project, segments, duration) {
     const tracks = new Map((project.audioTracks || []).map((track) => [track.id, track]));
     const clips = [];
@@ -748,9 +752,12 @@
     const closeRun = () => {
       if (!run) return;
       const actualDuration = audioTimelineDuration(run.track);
-      const end = Math.min(duration, run.end,
-        actualDuration === null ? run.end : run.start + actualDuration);
-      const clip = audioClip(run.track, run.start, end);
+      const hasPlacedStart = Number.isFinite(run.audioTimelineStartSeconds);
+      const start = hasPlacedStart ? clamp(run.audioTimelineStartSeconds, 0, duration) : run.start;
+      const assignedDuration = Math.max(0, run.end - run.start);
+      const displayDuration = hasPlacedStart && actualDuration !== null ? actualDuration
+        : actualDuration === null ? assignedDuration : Math.min(assignedDuration, actualDuration);
+      const clip = audioClip(run.track, start, Math.min(duration, start + displayDuration), null, run.sourceSceneId);
       if (clip) clips.push(clip);
       run = null;
     };
@@ -761,12 +768,19 @@
         closeRun();
         return;
       }
-      if (run && run.track.id === track.id && segment.start <= run.end + 1e-6) {
+      const hasPlacedStart = Number.isFinite(segment.audioTimelineStartSeconds);
+      if (run && run.track.id === track.id && !hasPlacedStart && segment.start <= run.end + 1e-6) {
         run.end = Math.max(run.end, segment.end);
         return;
       }
       closeRun();
-      run = { track, start: segment.start, end: segment.end };
+      run = {
+        track,
+        start: segment.start,
+        end: segment.end,
+        sourceSceneId: segment.sceneId || null,
+        audioTimelineStartSeconds: hasPlacedStart ? segment.audioTimelineStartSeconds : null,
+      };
     });
     closeRun();
     return clips;
@@ -868,6 +882,8 @@
         start: at,
         end: at + duration,
         audioTrackId: scene.audioTrackId || null,
+        audioTimelineStartSeconds: Number.isFinite(scene.audioTimelineStartSeconds)
+          ? scene.audioTimelineStartSeconds : null,
       };
       if (index < scenes.length - 1) transitions.push({
         id: `${scene.id}-transition`,
@@ -1464,6 +1480,7 @@
 
   function showMissingAudioState(audioBlock, title) {
     audioBlock.dataset.audioMissing = "true";
+    audioBlock.classList.remove("is-draggable", "is-dragging");
     audioBlock.classList.add("is-missing");
     audioBlock.replaceChildren();
 
@@ -1632,6 +1649,69 @@
     event.preventDefault();
   }
 
+  function audioTimelineCanDrag(clip) {
+    return Boolean(timeline && timeline.source === "fallback" && timeline.sectionId
+      && clip && clip.sourceSceneId && typeof bridge.setTimelineAudioStartSeconds === "function");
+  }
+
+  function audioDragSeconds(event) {
+    if (!audioDrag || !timeline) return 0;
+    const delta = (event.clientX - audioDrag.startX) / Math.max(1, timelineWidth) * timeline.duration;
+    const maxStart = Math.max(0, timeline.duration - audioDrag.duration);
+    return Math.round(clamp(snappedSeconds(audioDrag.startSeconds + delta), 0, maxStart) * 10) / 10;
+  }
+
+  function beginAudioDrag(event, clip, button, audioRangeLock) {
+    if (event.button !== undefined && event.button !== 0) return;
+    if (audioRangeLock) {
+      els.status.textContent = tx("この音源は開始または終了が固定中です。右クリックで解除できます。");
+      return;
+    }
+    if (!audioTimelineCanDrag(clip) || button.dataset.audioMissing === "true") return;
+    audioDrag = {
+      pointerId: event.pointerId,
+      sectionId: timeline.sectionId,
+      sceneId: clip.sourceSceneId,
+      button,
+      startX: event.clientX,
+      startSeconds: clip.start,
+      nextSeconds: clip.start,
+      duration: Math.max(0.1, clip.end - clip.start),
+      moved: false,
+    };
+    button.classList.add("is-dragging");
+    document.body.classList.add("is-timeline-audio-dragging");
+    try { els.viewport.setPointerCapture(event.pointerId); } catch (_) { /* 捕捉できなくても終端を拾う */ }
+  }
+
+  function continueAudioDrag(event) {
+    if (!audioDrag || event.pointerId !== audioDrag.pointerId) return;
+    if (!audioDrag.moved && Math.abs(event.clientX - audioDrag.startX) < 3) return;
+    audioDrag.moved = true;
+    audioDrag.nextSeconds = audioDragSeconds(event);
+    audioDrag.button.style.left = `${pxFor(audioDrag.nextSeconds)}px`;
+    event.preventDefault();
+  }
+
+  function endAudioDrag(event) {
+    if (!audioDrag || event.pointerId !== audioDrag.pointerId) return;
+    const dragging = audioDrag;
+    audioDrag = null;
+    dragging.button.classList.remove("is-dragging");
+    document.body.classList.remove("is-timeline-audio-dragging");
+    try { els.viewport.releasePointerCapture(event.pointerId); } catch (_) { /* 既に解放済み */ }
+    if (!dragging.moved || Math.abs(dragging.nextSeconds - dragging.startSeconds) < 1e-9) return;
+    const updated = bridge.setTimelineAudioStartSeconds(dragging.sectionId, dragging.sceneId,
+      dragging.nextSeconds, { checkpoint: true });
+    suppressAudioClickUntil = performance.now() + 400;
+    if (!updated) {
+      renderTimeline();
+      return;
+    }
+    renderTimeline();
+    event.preventDefault();
+  }
+
   function renderCueBlocks(project) {
     Object.values(els.cueLanes).forEach(clearLane);
     const cues = timelineCuePresentations(project);
@@ -1695,9 +1775,13 @@
       audioBlock.dataset.audioMissing = "false";
       audioBlock.dataset.trackId = clip.trackId;
       audioBlock.textContent = clip.title;
-      audioBlock.title = `${clip.title}（${labelPosition(clip.start)}–${labelPosition(clip.end)}・${tx("ダブルクリックで音源情報")}）`;
+      const canDragAudio = audioTimelineCanDrag(clip) && !audioRangeLock;
+      if (canDragAudio) audioBlock.classList.add("is-draggable");
+      audioBlock.title = `${clip.title}（${labelPosition(clip.start)}–${labelPosition(clip.end)}・${canDragAudio ? tx("ドラッグで開始時刻を変更・") : ""}${tx("ダブルクリックで音源情報")}）`;
       if (audioRangeLock) audioBlock.title += `（${audioRangeLock === "start" ? tx("開始時刻固定中") : tx("終了時刻固定中")}）`;
+      audioBlock.addEventListener("pointerdown", (event) => beginAudioDrag(event, clip, audioBlock, audioRangeLock));
       audioBlock.addEventListener("click", () => {
+        if (performance.now() < suppressAudioClickUntil) return;
         if (audioBlock.dataset.audioMissing !== "true"
             || typeof bridge.openTimelineAudioRelinkPicker !== "function") return;
         bridge.openTimelineAudioRelinkPicker(clip.trackId);
@@ -2584,6 +2668,9 @@
   els.viewport.addEventListener("pointermove", continueCueDrag);
   els.viewport.addEventListener("pointerup", endCueDrag);
   els.viewport.addEventListener("pointercancel", endCueDrag);
+  els.viewport.addEventListener("pointermove", continueAudioDrag);
+  els.viewport.addEventListener("pointerup", endAudioDrag);
+  els.viewport.addEventListener("pointercancel", endAudioDrag);
   els.rowResizers.forEach((separator) => {
     separator.addEventListener("pointerdown", beginRowResize);
     separator.addEventListener("pointermove", continueRowResize);
