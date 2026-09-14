@@ -1814,10 +1814,10 @@
     if (!(t > 0.02)) return null;
     return { x: S.x + (T.x - S.x) * t, y: D, z: S.z + (T.z - S.z) * t };
   };
-  /* 正面図では帯を舞台の手前端で切っているので、狙い点の赤い丸もそこへ寄せる
-     （そのまま置くと帯の倍くらい先にあって掴みにくい。2026-09-14 本人指摘）。
-     描くときと掴むときで同じ変換を通すので、見えている場所＝掴める場所になる。 */
-  const houseHandleProj = (P, S, D) => (w) => P(w && w.y > D + 1e-6 && S ? (houseCutAtFront(S, w, D) || w) : w);
+  /* 客席内の狙い点は、正面図では奥行きだけ舞台前へ畳んで描く。
+     左右と高さは実際の狙い点を保つので、平面図と正面図の赤い丸が同じ位置を示す。 */
+  const houseAimOnFront = (w, D) => w && w.y > D + 1e-6 ? { ...w, y: D } : w;
+  const houseHandleProj = (P, _S, D) => (w) => P(houseAimOnFront(w, D));
   const houseCapY = (S, W, yMax) => {
     const dy = W.y - S.y;
     if (!(dy > 0) || W.y <= yMax) return W;
@@ -1896,6 +1896,19 @@
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(X, Y, R, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
   const glareHole = (X, Y, R, lv) => ({ fromX: X, fromY: Y, landX: X, landY: Y, toX: X, toY: Y, r: R, halfW: 0.5, ry: 0.5, lying: false, asLine: false, noPool: false, pool: { cx: X, cy: Y, ax: R, ay: 0, bx: 0, by: R }, lv });
+  /* 客席向きは幅のある三角ではなく、光がどちらへ抜けるかだけを中心線で示す。
+     まぶしさの丸だけだと、床置き灯から赤い狙い点へ向かう経路が読めなかったため。 */
+  function drawHouseDirectionLine(ctx, from, to, color, lv, dim) {
+    if (!from || !to || !(lv > 0)) return;
+    const a = (dim ? 0.24 : 0.58) * Math.min(1, 0.35 + lv * 0.65);
+    const g = ctx.createLinearGradient(from.X, from.Y, to.X, to.Y);
+    g.addColorStop(0, hexA(color, a * 0.34));
+    g.addColorStop(0.18, hexA(color, a));
+    g.addColorStop(0.82, hexA(color, a));
+    g.addColorStop(1, hexA(color, a * 0.38));
+    ctx.save(); ctx.strokeStyle = g; ctx.lineWidth = dim ? 1.25 : 2.25; ctx.setLineDash([9, 7]);
+    ctx.beginPath(); ctx.moveTo(from.X, from.Y); ctx.lineTo(to.X, to.Y); ctx.stroke(); ctx.restore();
+  }
   function drawHandles(ctx, P, l, fid) {
     const p = l.path || {}; const d = state.dims;
     const hp = (pt, txt, filled) => { const q = P(E.pointWorld(pt, d)); ctx.beginPath(); ctx.arc(q.X, q.Y, 12, 0, Math.PI * 2); ctx.fillStyle = filled ? "#df6433" : "#201b16"; ctx.strokeStyle = "#df6433"; ctx.lineWidth = 3; ctx.fill(); ctx.stroke(); if (txt) { ctx.fillStyle = "#efe7d6"; ctx.font = "600 16px sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "center"; ctx.fillText(txt, q.X, q.Y + 1); ctx.textAlign = "left"; } return q; };
@@ -1937,12 +1950,14 @@
           /* 正面図では<b>帯（三角）を描かない</b>（2026-09-14 本人指摘「三角形が見えて違和感」）。
              こちらへ向かってくる光なので、奥行きを畳んだこの図では断面の形に意味がなく、
              三角が出ると別の方向へ走っているように見えてしまう。
-             客席から見えるとおり、光源のまぶしさと、手前端を通るあたりの滲みだけで表す。 */
-          const cut = houseCutAtFront(S, T, d.D);
+             客席から見えるとおり、光源のまぶしさと、手前端を通るあたりの滲みで表す。
+             ただし経路が消えないよう、光軸の中心線だけは残す。 */
+          const cut = houseCutAtFront(S, T, d.D), aim = houseAimOnFront(T, d.D), e2 = P(aim);
           const gY = isFront(f) ? Math.max(20, s.Y) : s.Y, R = (B.w / d.W) * (0.9 + 2.4 * lv) * glareMul(l);
           drawGlare(fctx, s.X, gY, R, l.color, lv, dim); litSpotsF.push(glareHole(s.X, gY, R, lv));
-          if (cut) { const e2 = P(cut), R2 = Math.max(E.spotRadiusM(S, cut, beamOf(f)) * (B.w / d.W) * 1.2, 20) * glareMul(l);
-            drawGlare(fctx, e2.X, e2.Y, R2, l.color, lv * 0.75, dim); litSpotsF.push(glareHole(e2.X, e2.Y, R2, lv * 0.75)); }
+          drawHouseDirectionLine(fctx, { X: s.X, Y: gY }, e2, l.color, lv, dim);
+          const sample = cut || T, R2 = Math.max(E.spotRadiusM(S, sample, beamOf(f)) * (B.w / d.W) * 1.2, 20) * glareMul(l);
+          drawGlare(fctx, e2.X, e2.Y, R2, l.color, lv * 0.75, dim); litSpotsF.push(glareHole(e2.X, e2.Y, R2, lv * 0.75));
         } else { const be = beamEnd(l, S, T), e2 = P(be.world);
           const sp = drawBeam(fctx, s, e2, { S, T: be.world }, l.color, beamOf(f), dim, B.w / d.W, squashFor("front", be.surface || "air"), false, !be.surface, lv, l, be.surface, P, frameOf(f, l));
           litSpotsF.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); } }
@@ -2076,15 +2091,16 @@
         /* 3Dでは床の潰れ方を式から出せる。奥行き1mで画面が縦に動く量 ÷ その奥行きでの横1m。
            これが床に落ちた丸の「縦／横」の比になる。壁と空中は客席に正対するので潰さない。 */
         /* 客席へ向けた光は3Dでも帯を描かない（理由は2Dの正面図と同じ）。
-           光源のまぶしさと、手前端を通るあたりの滲みだけで表す（2026-09-14 本人指摘）。 */
+           光源のまぶしさと、手前端を通るあたりの滲みに、方向を読むための中心線だけを足す。 */
         if (l.surface === "house") {
-          const cut = houseCutAtFront(S, T, d.D);
+          const cut = houseCutAtFront(S, T, d.D), aim = houseAimOnFront(T, d.D), e3 = P(aim);
           const gY0 = isFront(f) ? Math.max(20, s0.Y) : s0.Y;
           const Rg = L.pxPerM * Math.max(0.05, s0.scale || 1) * (0.9 + 2.4 * lv) * glareMul(l);
           drawGlare(fctx, s0.X, gY0, Rg, l.color, lv, dim); litSpots3D.push(glareHole(s0.X, gY0, Rg, lv));
-          if (cut) { const e3 = P(cut);
-            const R3 = Math.max(E.spotRadiusM(S, cut, beamOf(f)) * L.pxPerM * Math.max(0.05, e3.scale || 1) * 1.2, 18) * glareMul(l);
-            drawGlare(fctx, e3.X, e3.Y, R3, l.color, lv * 0.75, dim); litSpots3D.push(glareHole(e3.X, e3.Y, R3, lv * 0.75)); }
+          drawHouseDirectionLine(fctx, { X: s0.X, Y: gY0 }, e3, l.color, lv, dim);
+          const sample = cut || T;
+          const R3 = Math.max(E.spotRadiusM(S, sample, beamOf(f)) * L.pxPerM * Math.max(0.05, e3.scale || 1) * 1.2, 18) * glareMul(l);
+          drawGlare(fctx, e3.X, e3.Y, R3, l.color, lv * 0.75, dim); litSpots3D.push(glareHole(e3.X, e3.Y, R3, lv * 0.75));
           if (isSel(f.id)) drawHandles(fctx, houseHandleProj(P, S, d.D), l, f.id);
           return;
         }
@@ -2155,23 +2171,7 @@
     }
     return null;
   }
-  /* 手前端の通過点（画面で掴んでいる位置）から、狙い点の u・高さへ戻す。
-     通過点は光源と狙い点を t:1 で内分した点なので、その逆をたどる。 */
-  function houseAimFromCut(fid, uh) {
-    const l = lightOf(fid), d = state.dims;
-    if (!l || l.surface !== "house") return { u: uh.u, h: uh.h };
-    const f = fixtureById(fid), S = f && fixtureWorld(f);
-    const p = l.path || {}; const pt = p.kind === "circle" || p.kind === "eight" ? p.c : (p.a || E.newPoint());
-    const T = E.pointWorld(pt, d);
-    if (!S || !(T.y - S.y > 1e-6) || S.y >= d.D - 1e-6) return { u: uh.u, h: uh.h };
-    const t = (d.D - S.y) / (T.y - S.y);
-    if (!(t > 0.02)) return { u: uh.u, h: uh.h };
-    const cutX = (uh.u - 0.5) * d.W;
-    const aimX = S.x + (cutX - S.x) / t;
-    const aimZ = S.z + (uh.h - S.z) / t;
-    return { u: E.clamp(aimX / d.W + 0.5, 0, 1), h: E.clamp(aimZ, 0, d.H) };
-  }
-  /* 断面図で使う、灯ごとの投影。正面図の客席向けの灯だけ、狙い点を手前端へ寄せる。 */
+  /* 断面図で使う灯ごとの投影。客席内の奥行きだけ正面図の舞台前へ畳む。 */
   const secHandleProj = (P, kind) => (fid) => {
     const l = lightOf(fid); if (!l || l.surface !== "house" || kind !== "front") return P;
     const f = fixtureById(fid); const S = f && fixtureWorld(f);
@@ -2439,11 +2439,7 @@
         const uh = (side === "front" && state.front3d)
           ? E.frontPerspToUH(state.dims, B, state.seat, pt.X, pt.Y, cur)
           : E.frontToUH(state.dims, B, pt.X, pt.Y);
-        /* 客席へ向けた灯は、赤い丸を「舞台の手前端を通る点」に出している。
-           指の位置はその通過点なので、狙い点（もっと先）へ引き伸ばしてから渡す。
-           これをしないと丸が指より鈍く動く（2026-09-14）。 */
-        const adj = houseAimFromCut(dg.fid, uh);
-        applyHandleDrag(dg, { u: snapU(adj.u), hM: snapH(adj.h) }, "uh");
+        applyHandleDrag(dg, { u: snapU(uh.u), hM: snapH(uh.h) }, "uh");
       }
       else if (dg.kind === "handle" && dg.axis === "vh") { dg.lock = ev.shiftKey; const vh = E.sideToVH(state.dims, B, side, pt.X, pt.Y); applyHandleDrag(dg, { v: snapV(vh.v), hM: snapH(vh.h), aheadM:distanceMetric?((side==="shimote"?1-(pt.X-B.x)/B.w:(pt.X-B.x)/B.w)-1)*state.dims.D:undefined }, "vh"); }
       draw(); if (dg.kind !== "handle") renderInspector();
@@ -3691,7 +3687,7 @@
           commit();
         }), true));
         if (l.surface === "house") {
-          b.append(el("p", "hint", "空中の光条と光源のまぶしさを分けて表示します。正面図の赤い丸は舞台手前の通過点です。高さは舞台の床から。距離表示を実寸にすると、平面・側面のドラッグで舞台前からの距離も動かせます。"));
+          b.append(el("p", "hint", "空中の光条と光源のまぶしさを分けて表示します。平面図と正面図の赤い丸は、同じ客席内の狙い位置です。高さは舞台の床から。距離表示を実寸にすると、平面・側面のドラッグで舞台前からの距離も動かせます。"));
         }
         if (l.surface === "house" || l.surface === "air") {
           /* まぶしさ（光源から丸く広がるほう）の大きさ。光の帯とは別のレイヤーなので別に決める。 */
