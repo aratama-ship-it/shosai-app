@@ -78,20 +78,19 @@
   /* ---------- DOM の差し込み ---------- */
   const panel = $("panel-insp"), insphead = $("insphead"), selacts = $("selacts"), insp = $("insp"), conflicts = $("conflicts");
   const tabs = el("div", "lpTabs");
-  const tabSample = el("button"), tabAdjust = el("button");
-  tabSample.type = tabAdjust.type = "button"; tabSample.textContent = "見本"; tabAdjust.textContent = "調整";
-  tabSample.onclick = () => { ui.tab = "sample"; refresh(); }; tabAdjust.onclick = () => { ui.tab = "adjust"; refresh(); };
-  tabs.append(tabSample, tabAdjust);
+  const tabAdjust = el("button");
+  tabAdjust.type = "button"; tabAdjust.textContent = "調整";
+  tabAdjust.onclick = () => { ui.tab = "adjust"; refresh(); };
+  tabs.append(tabAdjust);
   const pane = el("div", "lpPane"); pane.id = "lpPane"; pane.hidden = true;
   insphead.after(tabs); tabs.after(pane);
 
   // 入口: 灯体パネルの「よくある仕込みから選ぶ」の直下
-  const entry = el("button", "btn small", "ビジュアルから作る"); entry.type = "button"; entry.id = "lpEntry";
+  const entry = el("button", "btn small", "ビジュアルから作る"); entry.type = "button"; entry.id = "lpEntry"; entry.hidden = true;
   entry.title = "劇場サイズに合う仮想仕込みを入れ、右の「見本」タブから照明のあるあるを当てていきます";
   const presetsBtn = $("presets"); if (presetsBtn) presetsBtn.after(entry);
   entry.onclick = openEntry;
-  const emptyBtn = $("empty-presets");
-  if (emptyBtn) { const b = el("button", "btn", "ビジュアルから作る"); b.type = "button"; b.onclick = openEntry; emptyBtn.after(b); }
+  // 「見本」から仮想仕込みを入れる入口も、現段階では画面に出さない。
 
   function openEntry() {
     const cur = LP.sizeForDims(state.dims);
@@ -112,7 +111,7 @@
     state.scenes.forEach((sc) => { sc.cue = { lights: {}, groups: [] }; });   // 旧rigの灯体IDを指す明かりは残せない（別案として開始）
     state.sel.clear(); state.selTruss = r.trusses[0] ? r.trusses[0].id : null; state.mode = "move"; state.tool = null;
     state.collapsed = new Set([...r.trusses.map((t) => `t:${t.id}`), "front", "floor", "cyc", "shimote", "kamite"]);
-    ui.tab = "sample";
+    ui.tab = "adjust";
     H.commit(`「${LP.HOUSE_RIGS[size].name}」の仮想仕込み ${r.fixtures.length} 要素を入れました`);
   }
 
@@ -265,14 +264,12 @@
   function refresh() {
     const inMove = state.mode === "move";
     tabs.hidden = !inMove;
-    const sample = inMove && ui.tab === "sample";
-    tabSample.setAttribute("aria-pressed", String(sample)); tabAdjust.setAttribute("aria-pressed", String(!sample));
-    pane.hidden = !sample;
+    tabAdjust.setAttribute("aria-pressed", "true");
+    pane.hidden = true;
     // 複製・左右コピー・等間隔・削除は、配置モードのための操作。
     // 「調整」タブでも照明デザイン中に再表示してはいけない。
-    if (selacts) selacts.hidden = inMove || sample;
-    insp.hidden = sample; if (conflicts) conflicts.hidden = sample;
-    if (sample) renderPane();
+    if (selacts) selacts.hidden = inMove;
+    insp.hidden = false; if (conflicts) conflicts.hidden = false;
   }
   window.LIGHT_PRESETS_UI = { refresh, ui, applyCard, installHouseRig, openEntry };
   refresh();

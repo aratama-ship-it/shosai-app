@@ -157,7 +157,7 @@
   /* 前後の LX cue へ。中央の表示の左右に置く（2026-09-13 本人要望）。 */
   .qnav{min-height:30px;padding:2px 10px;font-size:15px;line-height:1}
   .scenebox{align-items:center}
-  /* 再生（.transport）は照明デザインパネルの見出し行、オン・オフの左に置く（2026-09-13 本人要望）。 */
+  /* 再生はシーン全体の操作なので図上バー右端。コピー／ペーストだけを灯体情報に残す。 */
   .transport{display:flex;align-items:center;gap:5px}
   .scenebar .btn.small{min-height:24px;padding:2px 8px;font-size:12px}
   .transport .btn.small{min-height:26px;padding:3px 9px;font-size:14px}
@@ -233,6 +233,7 @@
      ヘッダー（.head）と同じ 1fr auto 1fr の3分割にして、右は空列（対称にするための余白）。
      再生（いまは再生／停止のトグル1個）は同日の要望でパネル側の見出し行へ移した。 */
   .figbar{flex:0 0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px 14px;min-height:26px;padding-bottom:5px;margin:0 auto;border-bottom:1px solid var(--line-dark);width:min(100%,var(--band))}
+  .sceneplay{justify-self:end}
   .fb{display:flex;align-items:center;gap:8px;min-width:0}
   .fb>b{color:var(--brass);font-size:11px;font-weight:600;letter-spacing:.14em;white-space:nowrap}
   .fb #legend-r{color:var(--milk-dim);font-size:11.5px}
@@ -308,8 +309,17 @@
   .ontoggle .sw{width:30px;height:16px;border:1px solid var(--line-dark);background:#14110e;position:relative;border-radius:9px}
   .ontoggle .sw::after{content:"";position:absolute;top:1px;left:1px;width:12px;height:12px;border-radius:50%;background:var(--milk-dim)}
   .ontoggle[aria-pressed="true"]{color:var(--milk);border-color:var(--brass);background:rgba(156,130,63,.22)}
+  #lighttoggle{width:max-content;min-width:0;padding:4px 8px}
+  .laser-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+  .laser-cards button{min-height:34px;padding:5px 7px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk-dim);font:12px/1.25 var(--sans);cursor:pointer}
+  .laser-cards button[aria-pressed="true"]{border-color:var(--brass);background:rgba(156,130,63,.2);color:var(--milk)}
+  .laser-warning{margin:7px 0 0;color:var(--rust);font-size:11px;line-height:1.45}
   .ontoggle[aria-pressed="true"] .sw{background:rgba(156,130,63,.45);border-color:var(--brass)}
   .ontoggle[aria-pressed="true"] .sw::after{left:15px;background:var(--brass)}
+  /* 項目用スイッチは中身に合わせた幅にし、見出しの隣へまとめる。状態の語は出さない。 */
+  .pbox .pboxhead{justify-content:flex-start}
+  .ontoggle.fieldswitch{flex:0 0 auto;width:max-content;max-width:100%;justify-content:flex-start;gap:12px}
+  .ontoggle.fieldswitch .swlab{margin-right:0}
   .field{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px;align-items:center;min-height:34px;font-size:12.5px;color:var(--milk-dim)}
   .field.wide{grid-template-columns:1fr}
   .seg{display:inline-flex;flex-wrap:wrap}
@@ -385,6 +395,10 @@
   /* サーチライト（複数ムービングを一撃で組む）。まとまりが見えるよう枠で囲う */
   .slbox{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;align-content:start;border:1px solid var(--line-dark);background:var(--recess);padding:8px;margin-bottom:2px}
   .slbox>*{grid-column:1/-1;min-width:0}
+  .slbox>.bulk-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .slbox>.bulk-head>.kicker{margin:0}
+  .slbox .bulk-actions{display:flex;flex:0 0 auto;gap:4px}
+  .slbox .bulk-actions .btn{width:auto;min-height:27px;padding:3px 8px;font-size:12px;white-space:nowrap}
   .slbox>.field{grid-column:auto}
   .slbox>.field.wide{grid-column:1/-1}
   .slbox .kicker{margin:0}
@@ -471,6 +485,9 @@
   .rangewrap .numin{flex:0 0 auto;width:64px;min-height:26px;border:1px solid var(--line-dark);background:var(--desk-2);color:var(--milk);font:13px var(--sans);padding:1px 4px;text-align:right;font-variant-numeric:tabular-nums}
   .rangewrap .numin:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
   .val{color:var(--brass);font-variant-numeric:tabular-nums}
+  /* 照明デザインでは、数値入力欄と重複するスライダー横の補助値を表示しない。
+     配置モードでは位置・高さの目安として残す。 */
+  #insphead:not([hidden])~#insp .rangewrap>.val{display:none}
   /* .panel は overflow:hidden なので、選択中スウォッチの outline（枠の外側にはみ出す）が
      左端で切れていた（2026-09-13 本人指摘）。余白を持たせて逃がす。 */
   /* 選んだ色の輪（outline 2px + offset 1px＝3px 外へ出る）ぶんを左に空ける。
@@ -588,14 +605,14 @@
               <button type="button" data-show="path" aria-pressed="true">動く範囲</button>
               <button type="button" data-show="grid" aria-pressed="true" title="1000mmごとの目盛りを図に出す">グリッド</button>
               <button type="button" data-show="pieces" aria-pressed="true" title="舞台スケッチ側で置いてある演者・セットを下敷きに出す">演者・セット</button>
-              <button type="button" data-show="names" aria-pressed="true" title="演者・セットの名前を図に出す（影絵は残す）">演者・セット名</button>
+              <button type="button" data-show="names" aria-pressed="true" title="演者・セットの名前を図に出す（影絵は残す）">名前</button>
               <button type="button" data-show="border" aria-pressed="false" title="バトンの手前に吊って灯体を客席から隠す短い幕。出すと、客席から灯体が見えていないかを確かめられます">一文字幕</button>
             </span>
             <!-- 「光」と「作業灯を消す」は照明デザインタブだけのもの。近い働きなので、
                  ほかの「図に出すもの」から離して右端に2つ並べる（2026-09-13 本人要望）。
                  消し具合は全消しだけでなく割合で決められる（同要望）。 -->
             <span class="showtoggles lightgroup" id="lighttoggles" role="group" aria-label="光の見せ方" hidden>
-              <button type="button" data-show="blackout" aria-pressed="false" title="光が当たっていないところを暗くする">作業灯を消す</button>
+              <button type="button" data-show="blackout" aria-pressed="false" title="光が当たっていないところを暗くする（G）">作業灯を消す</button>
               <span class="dimwrap" id="dimwrap" hidden>
                 <input type="range" id="dim" min="0" max="100" step="5" value="100" aria-label="作業灯をどれだけ消すか">
                 <input type="number" id="dimnum" min="0" max="100" step="5" value="100" aria-label="作業灯をどれだけ消すか（％）">
@@ -612,6 +629,9 @@
             <button type="button" class="btn small quiet qnav" id="q-prev">〈</button>
             <span class="qnow" id="qnow"></span>
             <button type="button" class="btn small quiet qnav" id="q-next">〉</button>
+          </span>
+          <span class="transport sceneplay" id="transport" hidden>
+            <button type="button" class="btn small" id="t-play">再生</button>
           </span>
         </div>
         <!-- 凸の形: 上＝平面図（真上から）、下段＝下手｜客席から（正面）｜上手。
@@ -683,22 +703,21 @@
           <section class="panel insp" id="panel-insp">
             <!-- 照明デザインの見出し行: 左＝パネル名、右＝シーン送り・再生とオン・オフ。
                  2026-09-13 本人要望で図の上の帯から移設し、シーン名の表示はやめた
-                 （パネル名「照明デザイン」がわかれば足りる）。配置タブでは丸ごと隠す
+                 （パネル名「灯体情報」がわかれば足りる）。配置タブでは丸ごと隠す
                  （配置モードは選んだ灯体／配置(ショー共通)という別の静的見出しを使う）。 -->
             <div class="insphead" id="insphead" hidden>
-              <p class="ptitle">照明デザイン</p>
+              <p class="ptitle">灯体情報</p>
               <div class="panelhead-actions" id="panelhead-actions">
                 <!-- 2026-09-14 本人要望: 最初へ／停止／秒数／再生中の表示をやめ、再生と停止の
                      トグル1個だけにした。文字は「押すと何が起きるか」を出す（停止中＝再生、
                      再生中＝停止）。時刻の頭出しは場面を選び直したときに内部で行う（home()）。 -->
                 <!-- 2026-09-14 本人要望: 再生の左隣にコピー／ペースト。
                      同じ種類の灯体どうし（ムービング↔ムービング／固定↔固定／cyc↔cyc）だけ通す。 -->
-                <span class="transport" id="transport" hidden>
+                <span class="transport">
                   <button type="button" class="btn small xfer" id="t-copy" disabled>コピー</button>
                   <button type="button" class="btn small xfer" id="t-paste" disabled>ペースト</button>
-                  <button type="button" class="btn small" id="t-play">再生</button>
                 </span>
-                <button type="button" class="ontoggle" id="lighttoggle" hidden aria-pressed="false"><span class="sw"></span><b>オフ</b></button>
+                <button type="button" class="ontoggle" id="lighttoggle" hidden aria-pressed="false" aria-label="灯体の点灯を切り替える"><span class="sw" aria-hidden="true"></span></button>
               </div>
             </div>
             <div id="selacts" hidden>
@@ -775,11 +794,13 @@
 <script src="rig-engine.js?v=20260915-3"></script>
 <script src="stage-figure.js?v=20260915-1"></script>
 <script src="volume-light.js?v=20260915-2"></script>
-<script src="app.js?v=20260915-8"></script>
+<script src="laser-effects.js?v=20260915-1-core"></script>
+<script src="laser-effects-ui.js?v=20260915-1-panel"></script>
+<script src="app.js?v=20260915-27-laser-effects"></script>
 <script src="light-presets.js?v=1789357787"></script>
-<script src="light-presets-ui.js?v=20260915-1"></script>
+<script src="light-presets-ui.js?v=20260915-2-type-panel"></script>
 <!-- 選択灯「型」P1: 本体ではなく、この試作だけへ隔離接続する。 -->
 <script src="../selected-light-presets-2026-09-14/selected-light-presets-engine.js?v=1789412300"></script>
-<script src="../selected-light-presets-2026-09-14/selected-light-presets-ui.js?v=1789412320"></script>
+<script src="../selected-light-presets-2026-09-14/selected-light-presets-ui.js?v=20260915-5-laser-filter"></script>
 </body>
 </html>

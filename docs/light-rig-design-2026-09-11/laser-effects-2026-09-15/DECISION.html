@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>照明デザインに「レーザー演出」を足せるか — 可否と設計計画 2026-09-15</title>
+<style>
+  :root{--ink:#26221c;--paper:#f6f1e7;--line:#cfc4ae;--muted:#6e6558;--accent:#8a3b1f;--ok:#3f6b46;--hold:#8a6d1f;--card:#fffdf8;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;line-height:1.75;font-size:15px}
+  main{max-width:1040px;margin:0 auto;padding:30px 20px 90px}
+  h1{font-size:22px;margin:0 0 4px;line-height:1.4}
+  h2{font-size:17px;margin:40px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--ink)}
+  h3{font-size:15px;margin:22px 0 6px}
+  .meta{color:var(--muted);font-size:13px;margin-bottom:22px}
+  .ask{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--ok);padding:14px 18px;margin:18px 0}
+  .ask h2{margin-top:0;border:none;padding:0;font-size:16px}
+  .ask.todo{border-left-color:var(--accent)}
+  .summary{background:#ede5d3;border:1px solid var(--line);padding:12px 18px;margin:14px 0}
+  .summary li{margin:4px 0}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13.5px;background:var(--card)}
+  th,td{border:1px solid var(--line);padding:6px 9px;vertical-align:top;text-align:left}
+  th{background:#ede5d3;font-weight:600;white-space:nowrap}
+  td.num{text-align:right;white-space:nowrap}
+  pre{background:#2a2620;color:#f2eadb;padding:13px 15px;border-radius:4px;font-size:12.5px;line-height:1.55;overflow:auto}
+  code{background:#ede5d3;padding:0 4px;border-radius:2px;font-size:13px}
+  .note{font-size:13px;color:var(--muted)}
+  .stop{color:var(--accent);font-weight:600}
+  .ok{color:var(--ok);font-weight:600}
+  .guess{color:var(--hold);font-weight:600}
+  ul,ol{padding-left:22px} li{margin:5px 0}
+  a{color:var(--accent)}
+  .tag{display:inline-block;font-size:11.5px;padding:0 6px;border:1px solid var(--line);border-radius:2px;background:#fff;margin-right:3px;white-space:nowrap}
+  .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}
+  .opt{border:1px solid var(--line);background:var(--card);padding:12px 14px;font-size:13.5px}
+  .opt h4{margin:0 0 6px;font-size:14px}
+  .opt.rec{border:2px solid var(--ok);background:#fff}
+  .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+  .gallery figure{margin:0;border:1px solid var(--line);background:#0d0e10;padding:4px}
+  .gallery img{display:block;width:100%;height:auto}
+  .gallery figcaption{font-size:12.5px;color:#efe7d6;padding:4px 4px 2px}
+  .mock{background:#201b16;color:#efe7d6;border:1px solid #382f25;padding:12px;width:320px;font-size:13px}
+  .mock .t{color:#9c823f;font-size:13px;letter-spacing:.1em;margin:0 0 8px}
+  .mock .cards{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+  .mock .c{border:1px solid #382f25;height:56px;display:flex;align-items:flex-end;padding:6px;background:linear-gradient(135deg,#0d0e10,#1a1712)}
+  .mock .c.on{border-color:#9c823f;box-shadow:0 0 0 1px rgba(156,130,63,.5);color:#d3ac59}
+  .mock .row{display:flex;justify-content:space-between;align-items:center;height:28px;border-bottom:1px solid #2a231c;color:rgba(240,231,214,.75)}
+  .mock .row b{color:#efe7d6;font-weight:500}
+  .mock .warn{color:#df6433;font-size:12px;margin-top:8px;line-height:1.5}
+  .mockwrap{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+  .mockdesc{flex:1 1 320px;font-size:13.5px}
+  @media (max-width:760px){.opts,.gallery{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>照明デザインモードに「レーザー演出」を足せるか — 可否の確認と設計計画</h1>
+<p class="meta" style="background:#ede5d3;border-left:4px solid #3f6b46;padding:8px 12px"><b>2026-09-15、独立試作へ実装しました。</b>
+設計から実装へ渡した指示は <a href="HANDOFF_PROMPT.md">HANDOFF_PROMPT.md</a> に残しています。</p>
+<p class="meta">2026-09-15 ／ Claude Code（初版はFable 5.1、詰めの追記はSonnet 5）。後続セッションで独立試作へ実装。
+このドキュメントはデータ設計・幾何関数の入出力・UI文言・テスト観点の正本。
+前提は本人の追加指示「細かい調整はできなくていい。雰囲気がつかめればOK」（2026-09-15）。
+記録: <a href="notes.md">notes.md</a>／数値: <a href="../../../design/TOKEN_SHEET_laser-effects_2026-09-15.md">トークンシート</a>／
+描画試験（使い捨て・1台〜8台）: <a href="spike/index.html">spike/index.html</a>／
+4図確認（使い捨て・3か所の置き場所）: <a href="spike/multiview.html">spike/multiview.html</a>／証拠画像: <code>evidence/</code></p>
+
+<section class="ask">
+<h2>判断してほしいこと <span class="ok">→ 2026-09-15 本人「OK」により推奨案で確定</span></h2>
+<ol>
+  <li><b>方式</b>: レーザーは「もや（体積光）」ではなく<b>線と面の幾何</b>として描く。細かい調整は持たず、6種の見本カード＋3つのつまみ（色・広がり・速さ）だけ。<b class="ok">→ 確定</b></li>
+  <li><b>客席スキャンのカード</b>: 入れる。「案」ラベル固定・安全判定なし。<b class="ok">→ 確定</b></li>
+  <li><b>置ける場所</b>: トラス（奥・中・手前いずれの高さも可）・転がし（床）・前（FOH＝前明かりと同じ位置）の3か所。SS（横）とホリゾントは対象外。<b class="ok">→ 確定</b></li>
+</ol>
+<p class="note">この節から下は<b>実装の根拠となった設計</b>。§1.5 に4図での確認、§5.5 に確定UI文言、§8.5 にテスト観点を記録（2026-09-15）。</p>
+</section>
+
+<div class="summary">
+<b>結論: できる。</b>
+<ul>
+  <li>既存の試作（照明デザインモード）の投影 <code>P(world)</code>・狙い点・往復／円の動き・再生時計をそのまま使い、灯体の種類に「レーザー」を1つ足すだけで、ビーム／ファン／シート／トンネル／リキッドスカイ／客席スキャンの6種を4図（平面・側面・正面2D・正面3D）に描ける。</li>
+  <li>負荷は既存の「もや」（体積光。負荷で0固定中）とは別物で軽い。使い捨ての描画試験で、<b>4台同時でも1コマ0.1ms前後・約50fps</b>（ヘッドレスChromium・GPUなし）。6種×8台＝線608本の負荷試験でも約25fps。実運用（1〜2台・1種）なら既存描画のほうが重い。</li>
+  <li>本人指示どおり「雰囲気」に絞る。機材のモデル化（出力W・スキャナ角・DMX）はしない＝照明UIの既定方針と同じ。</li>
+  <li>影響範囲は <code>docs/</code> 配下の試作だけ。ベータ配布物・保存形式・音楽パネルには触れない（AGENTS.md の停止条件に該当しない。本体統合は別途）。</li>
+</ul>
+</div>
+
+<h2>1. 6種の演出と、スケッチでの表し方</h2>
+<p>定義はレーザー機器メーカーの解説（Pangolin、出典は§8）をもとに一般語として整理した。どれも<b>1台の投射機から出る線の集合</b>で、違いは「線の並べ方」と「時間の動き」だけ。これが「1種類の灯体＋6つの見本」で済む根拠。</p>
+<table>
+<tr><th>見本</th><th>実物</th><th>線の並べ方（中心方向＝既存の狙い点）</th><th>時間の動き</th><th>線の本数</th></tr>
+<tr><td>ビーム</td><td>1本の細い光線</td><td>中心方向そのもの</td><td>既存の往復／円で振る</td><td class="num">1</td></tr>
+<tr><td>ファン</td><td>扇状に並んだ線の束</td><td>水平に ±広がり/2 で等間隔</td><td>束全体をゆっくり左右、各線が小さく上下</td><td class="num">12</td></tr>
+<tr><td>シート</td><td>薄い光の面（天井のように）</td><td>水平に密に並べ、多角形で薄く塗る＋縁2本＋中の筋</td><td>面の高さがゆっくり上下</td><td class="num">40点／描くのは約10本</td></tr>
+<tr><td>トンネル</td><td>円錐の面（客席から見ると輪）</td><td>中心方向のまわりに半頂角で円周に並べる</td><td>輪がゆっくり回る</td><td class="num">36</td></tr>
+<tr><td>リキッドスカイ</td><td>波打つ光の天井</td><td>シートの各点の仰角を正弦で揺らす</td><td>2つの波（周期の違う正弦）</td><td class="num">48点／描くのは約12本</td></tr>
+<tr><td>客席スキャン（案）</td><td>客席へ向けて振る扇</td><td>ファンを客席へ・下向き</td><td>左右に振る</td><td class="num">10</td></tr>
+</table>
+
+<h3>描画試験の結果（雰囲気の確認）</h3>
+<div class="gallery">
+  <figure><img src="evidence/laser-spike-fan.png" alt="ファン"><figcaption>ファン×4台</figcaption></figure>
+  <figure><img src="evidence/laser-spike-sheet.png" alt="シート"><figcaption>シート×4台</figcaption></figure>
+  <figure><img src="evidence/laser-spike-tunnel.png" alt="トンネル"><figcaption>トンネル×4台</figcaption></figure>
+  <figure><img src="evidence/laser-spike-liquid.png" alt="リキッドスカイ"><figcaption>リキッドスカイ×4台</figcaption></figure>
+  <figure><img src="evidence/laser-spike-audience.png" alt="客席スキャン"><figcaption>客席スキャン（案）×4台</figcaption></figure>
+  <figure><img src="evidence/laser-spike-stress-6x8.png" alt="負荷試験"><figcaption>負荷試験 6種×8台（線608本）</figcaption></figure>
+</div>
+<p class="note">試験は使い捨ての単独HTML（製品コード・試作本体に手を入れていない）。透視は正面図3Dと同じ考え方の簡易版。演者はシルエットの板で代用。
+試験で見えた直すべき点: ①線が会場の天井を突き抜けて図の外へ出る → 製品では会場の高さ <code>dims.H</code> で止める。
+②演者の手前を通る線が体の上に乗る → 製品では「レーザーは演者より先に描く」（奥バトンからの投射が主なので近似として十分。§4）。</p>
+
+<h3>1.5. 4図（平面・側面・正面2D・正面3D）＋3か所の置き場所で確認（2026-09-15追記）</h3>
+<p>「置ける場所」の推奨3案（トラス／床／前）それぞれで軸の向きだけ変え、線の生成ロジックは共通にできるかを
+<a href="spike/multiview.html">別の使い捨て試験（4図同時表示）</a>で確認した。結果: <b>できる</b>。</p>
+<div class="gallery">
+  <figure><img src="evidence/laser-4view-truss-fan.png" alt="トラス×ファン 4図"><figcaption>トラス（奥バトン）×ファン</figcaption></figure>
+  <figure><img src="evidence/laser-4view-floor-tunnel.png" alt="床×トンネル 4図"><figcaption>床（転がし・上向き）×トンネル</figcaption></figure>
+  <figure><img src="evidence/laser-4view-front-audience.png" alt="前×客席スキャン 4図"><figcaption>前（FOH）×客席スキャン（案）</figcaption></figure>
+</div>
+<p class="note">床置きは光の中心方向がほぼ鉛直になる（トンネルが縦に立つ）。この軸に対して法線方向（左右・上下の基準）を作る計算は、
+真上を向くと定義が壊れる特異点を持つ——<code>volume-light.js</code> の <code>compile()</code> がすでに同じ手当て
+（軸がほぼ鉛直なら参照ベクトルを切り替える）を実装済みなので、レーザーの基底計算もそこへ合わせればよい（新規の考案は不要）。</p>
+<p class="stop">この試験中に見つけた不具合（設計を裏付ける発見）: 光源が客席側（FOHの前明かり位置・<code>v&gt;1</code>）にあるときに
+「客席側へ向かう光は正面図の舞台手前端で切る」処理をそのまま当てはめると、<b>切る基準点まで光源自体が動いてしまい正面図が空白になった</b>。
+本体の <code>houseCutAtFront</code> にはこのガード（<code>S.y &gt;= D なら切らない</code>）が最初から入っている。
+→ <b>この処理は新規に書き直さず、本体の <code>houseCutAtFront</code>／<code>houseFarPoint</code> をレーザーからもそのまま呼ぶ</b>
+（§4の方針を再確認・格上げ。呼び出し方の実例として試験のフォークを残す価値は無い＝この不具合は試験側だけの再実装ミスで、方式そのものの欠陥ではない）。</p>
+
+<h2>2. 方式の比較（3案）</h2>
+<div class="opts">
+  <div class="opt rec"><h4>A. 線と面の幾何で描く（推奨）</h4>
+    <p>各線を「にじみ（太・薄）＋芯（細・濃）」の2ストローク、合成は <code>lighter</code>（光は足し算）。面は多角形の薄塗り。
+    既存の投影 <code>P</code> をそのまま使う。</p>
+    <p class="ok">軽い（実測済み）・4図で同じ関数・既存の狙い点と動きを流用。</p>
+    <p class="note">弱点: 演者による遮蔽は描き順の近似（§4）。もやの濃さは表せないので「見え方」のつまみで代用。</p></div>
+  <div class="opt"><h4>B. 既存の体積光（volume-light.js）に細い円錐として載せる</h4>
+    <p>レーザーを広がり1°の円錐として既存のスライス描画へ渡す。</p>
+    <p class="stop">不採用。</p>
+    <p class="note">体積光は負荷のため現在もや0で停止中（トークン§21）。ファン12本・トンネル36本を円錐で通すと数十倍の負荷。線が細すぎてスライス解像度（幅192px）では消える。</p></div>
+  <div class="opt"><h4>C. 既存の光の帯（drawBeam）を細くして流用</h4>
+    <p><code>asLine</code> 相当で描く。</p>
+    <p class="stop">不採用。</p>
+    <p class="note">drawBeam は「面に着地して光だまりを作る」前提で、暗転の穴・バーンドア・ゴボの分岐を全部通る。レーザーは光だまりを作らないので、通す意味がなく複雑さだけ残る。§4-8 の本人指摘「レーザーが1本出ているようなニュアンス」を逆手に取る形で、別関数にしたほうが読みやすい。</p></div>
+</div>
+
+<h2>3. データ設計（試作の2層に沿う）</h2>
+<p>既存: <code>state.rig.fixtures[]</code>（ショー共通の配置）／<code>scene.cue.lights[fid]</code>（シーンごとの点灯・色・狙い点・動き）。ここに「レーザー」を足す。</p>
+<pre>// 配置（ショー共通）: 灯体に kind を1つ足す。mount は既存のまま
+fixture = { id, kind: "laser",                       // 既存の灯体は kind 未設定＝従来どおり
+            mount: { type: "truss"|"floor"|"front", ... } }
+
+// シーンごと（LX cue）: 既存の light に laser を1つ足す。狙い点・動きは既存を流用
+cue.lights[fid] = {
+  on, level, color,                                  // 既存。color は既定を緑 #38e04a に
+  surface: "air"|"floor"|"back"|"house",             // 既存。中心方向＝S→狙い点
+  path: { kind:"still"|"line"|"circle", ... },       // 既存。往復／円で束ごと振る
+  periodSec,                                         // 既存。振る速さ
+  laser: { effect: "beam"|"fan"|"sheet"|"tunnel"|"liquid"|"audience",
+           spanDeg: 60,                              // 広がり（10〜120）。トンネルは半頂角×2
+           vis: 60 }                                 // 見え方 0〜100（もやの代わり。表示用）
+}</pre>
+<ul>
+  <li><b>中心方向と動きは新設しない。</b>既存の狙い点（3D点 {u,v,hM}・面ごとの制約）とパス（往復・円・鏡・組）がそのまま効く。これで「組にして鏡のように動く」「順に」も無料で付いてくる。</li>
+  <li><b>既存の灯体に無い項目は <code>laser</code> の1鍵だけ。</b>読み込み時に <code>kind</code> が無い灯体は従来どおり。保存済みの設計（照明テスターの書き出し）は壊れない。</li>
+  <li>細かい調整はしない（本人指示）: 線の本数・にじみ幅・波の周期は見本ごとの定数（トークンシート§3）。UIには出さない。</li>
+</ul>
+
+<h2>4. 幾何と描画</h2>
+<h3>幾何（rig-engine.js・純関数・テスト対象）</h3>
+<pre>E.laserRays(effect, S, axis, spanDeg, phase, dims) → [{ d:{x,y,z} }]   // 中心方向 axis のまわりに方向ベクトルを並べる
+E.laserLanding(S, d, dims, reach) → { world, on:"floor"|"back"|"ceil"|null } // 床・奥壁・天井(H)で止める。抜けるなら reach 先</pre>
+<ul>
+  <li>phase は <code>state.play.t / periodMs</code>（既存の再生時計）。停止中は t=0 の形＝静止画でも扇や輪に見える。</li>
+  <li>天井で止めるのは新規（既存の <code>beamLanding</code> は床・奥壁のみ）。客席方向へ抜ける線は既存の <code>houseFarPoint</code> と同じく「図の外まで伸ばす」。</li>
+</ul>
+<h3>描画（app.js・4図共通の1関数）</h3>
+<pre>drawLaser(ctx, P, f, l, t, opts)   // 線: にじみ lineWidth 9 α0.10 ＋ 芯 1.6 α0.85、面: fill α0.16、合成 lighter
+</pre>
+<table>
+<tr><th>図</th><th>描き方</th><th>既存規則との整合</th></tr>
+<tr><td>平面図</td><td>線をそのまま投影。シート／リキッドは多角形。客席向けは枠の外まで</td><td>「客席へ向かう光は横に開く帯」（§4-x, 2026-09-14）と同じ扱い</td></tr>
+<tr><td>側面図（下手／上手）</td><td>同上。面は横から見ると線に潰れるので縁2本＋薄い帯</td><td>—</td></tr>
+<tr><td>正面図2D</td><td>客席向けは舞台の手前端で切り、光源のまぶしさで表す</td><td>2026-09-14 本人指摘「斜めに降りて見える」対策をそのまま適用</td></tr>
+<tr><td>正面図3D</td><td>全部描く。目より手前は NEAR で打ち切る（膨らみ防止）</td><td>試験の <code>clipNear</code> と同じ</td></tr>
+</table>
+<ul>
+  <li><b>描き順</b>: ホリゾント → レーザー → 演者・セット → 通常の光 → 暗転マスク → <b>レーザーをもう一度薄く（α×0.35）</b>。暗転（室内灯を消す）でレーザーが消えるのは変なので、マスクの上に薄く重ねる。演者の遮蔽は「演者が手前」の近似。</li>
+  <li><b>暗転の穴は作らない</b>（光だまりが無い）。<code>litSpots</code> へは何も積まない。</li>
+  <li><b>光源のまぶしさ</b>: 既存の <code>drawGlare</code> を level×0.6 で流用（レーザーの点光源は強い）。</li>
+  <li>Safari: <code>lighter</code> 合成は使える（<code>ctx.filter</code> は使わないので既知の不具合に当たらない）。</li>
+</ul>
+
+<h2>5. UI（見本カード＋3つのつまみ）</h2>
+<div class="mockwrap">
+<div class="mock">
+  <p class="t">レーザー（案）</p>
+  <div class="cards">
+    <div class="c on">ファン</div><div class="c">ビーム</div>
+    <div class="c">シート</div><div class="c">トンネル</div>
+    <div class="c">リキッドスカイ</div><div class="c">客席スキャン（案）</div>
+  </div>
+  <div class="row"><span>色</span><b>■ 緑 ／ 赤 ／ 青 ／ 黄 ／ 白</b></div>
+  <div class="row"><span>広がり</span><b>60°</b></div>
+  <div class="row"><span>速さ</span><b>ゆっくり ／ 普通 ／ 速い</b></div>
+  <div class="row"><span>見え方（もやの代わり）</span><b>60</b></div>
+  <p class="warn">客席スキャンは案の表示だけです。実施には専門の安全管理（JIS C 6802 の実演の項）が要ります。</p>
+</div>
+<div class="mockdesc">
+<ul>
+  <li><b>入口</b>: 配置パネルの「置く」に「レーザー」を1つ追加（トラス・床・前に置ける）。置くと灯体情報パネルの「動きの型」の上に上のカード群が出る。</li>
+  <li><b>カードは切り替え式</b>（押すとそれだけになる。2026-09-14 の「あるある」と同じ方針）。</li>
+  <li><b>狙い点と動き</b>は既存UI（当てる場所・A/B・円・組）をそのまま使う。レーザーだけの動きUIは作らない。</li>
+  <li>色は5色のチップ（レーザーは単色光なので任意色ピッカーにしない。白は3色合成）。</li>
+  <li>「見え方」は表示用のつまみ。数値の意味は「濃さ」だけで、もやの量を測るものではないと注記。</li>
+  <li>一覧の印は既存の <code>drawFixtureMark</code> に形 <code>laser</code>（◇）を足す。未設定／消灯／点灯の文字区別は既存どおり。</li>
+</ul>
+</div>
+</div>
+
+<h3>5.5. UI文言（確定・実装セッションはこのまま使う）</h3>
+<p>本人確認が必要なのはこの文言だけ（DECISION §判断済み事項の対象外だったため個別に確認する）。
+既定案のまま進めてよければ、実装セッションでの再確認は不要。</p>
+<table>
+<tr><th>場所</th><th>文言</th><th>備考</th></tr>
+<tr><td>置く入口</td><td>レーザー</td><td>配置パネルの「置く」一覧。既存の4種（吊り／SS／前明かり／転がし）と横並び</td></tr>
+<tr><td>カード見出し</td><td>レーザー（案）</td><td>灯体情報パネル。「案」を必ず付ける（機材の実仕様ではない旨）</td></tr>
+<tr><td>カード6枚</td><td>ビーム／ファン／シート／トンネル／リキッドスカイ／客席スキャン（案）</td><td>客席スキャンだけ名前にも「（案）」を重ねて付ける（一覧だけ見ても分かるように）</td></tr>
+<tr><td>色つまみ</td><td>色</td><td>選択肢: 緑（既定）／赤／青／黄／白</td></tr>
+<tr><td>広がりつまみ</td><td>広がり</td><td>単位は既存の <code>beamDeg</code> と同じ「°」表示</td></tr>
+<tr><td>速さつまみ</td><td>速さ</td><td>選択肢は既存の3段をそのまま流用（ゆっくり／普通／速い）</td></tr>
+<tr><td>見え方つまみ</td><td>見え方</td><td>0〜100。ホバー説明: 「もやの量ではなく、線の見やすさの目安です」</td></tr>
+<tr><td>客席スキャンの注意文</td><td>客席スキャンは案の表示だけです。実施には専門の安全管理が要ります。</td><td>常時表示・閉じるボタンなし（§6と同じ理由）。数値は書かない</td></tr>
+<tr><td>一覧の「未設定」表記</td><td>未設定のレーザー</td><td>既存の「未設定の灯」と同じ言い回しに揃える</td></tr>
+</table>
+<p class="note">i18n（仏・簡体・繁体）は現行どおり <code>shosai-app/i18n-prep/</code> の運用に合わせ、この試作段階では日本語のみで進める（試作は多言語化の対象外。HANDOFF §1参照）。</p>
+
+<h2>6. 安全の扱い（判定はしない・ラベルだけ）</h2>
+<ul>
+  <li>アプリは安全判定をしない（照明UIの既定方針＝点滅と同じ扱い）。客席スキャンのカードだけ常時「案」ラベルと一文の注意を出す。</li>
+  <li>根拠（一次情報）: JIS C 6802:2014 附属書 JA.3.4「レーザーの実演，ディスプレイ及び展示」は、管理されていない区域ではクラス1・2・可視3Rだけを用いることが望ましく、それ以外はリスク評価と訓練を受けた操作員の管理下で観客がMPE超えの被ばくから保護されている場合に限る、としている（LASA安全講習テキスト2025に引用。§8）。同テキストは「レーザーディスプレイでは観客に対しては10秒、関係者に対しては0.25秒」の露光時間を適用すると記す。</li>
+  <li>注意文はこの範囲に留め、数値（距離・出力）は書かない。数値を書くと「アプリが安全を判定した」ように読まれる。</li>
+</ul>
+
+<h2>7. 既存への影響と検証</h2>
+<table>
+<tr><th>対象</th><th>影響</th><th>検証</th></tr>
+<tr><td>ベータ配布物・保存形式・音楽パネル</td><td class="ok">なし（docs/ の試作のみ）</td><td>AGENTS.md の停止条件に該当しない。本体統合時に改めて警告・検証</td></tr>
+<tr><td>試作の保存データ（照明テスターの書き出し）</td><td>鍵の追加のみ（<code>fixture.kind</code>・<code>light.laser</code>）</td><td>旧データ読み込みで全灯が従来どおり描けること（テスト）</td></tr>
+<tr><td>既存の描画（drawBeam・暗転・バーンドア）</td><td class="ok">触らない（別関数）</td><td>既存テスト 12/12・7/7 が通ること。8人のサーカスの見本で4図の目視</td></tr>
+<tr><td>負荷</td><td>線100〜300本／コマ増</td><td>上部の「描画 ms／回」表示で、レーザー2台追加前後を比べる（目安: +1ms以内）</td></tr>
+<tr><td>並行編集</td><td class="stop">app.js／index.html は別セッションが同時編集中</td><td>着手前に mtime・md5 確認、編集は1回の読み書き、節目で控え（HANDOFF §2）</td></tr>
+</table>
+
+<h2>8. 実装計画（別セッション・合同）</h2>
+<table>
+<tr><th>順</th><th>作業</th><th>成果物</th><th>目安</th></tr>
+<tr><td>1</td><td>幾何: <code>laserRays</code>／<code>laserLanding</code>（天井止め）＋テスト（6種の本数・対称性・天井/床/奥壁の着地）</td><td>rig-engine.js、tests/light-rig-laser.test.mjs</td><td class="num">2h</td></tr>
+<tr><td>2</td><td>描画: <code>drawLaser</code> を4図へ。描き順・暗転の上の薄重ね・まぶしさ</td><td>app.js</td><td class="num">3h</td></tr>
+<tr><td>3</td><td>UI: 置く「レーザー」・カード6枚・つまみ3つ＋見え方・一覧の印・注意文</td><td>app.js、index.html</td><td class="num">3h</td></tr>
+<tr><td>4</td><td>見本: 8人のサーカスの1場面にレーザー2台（奥バトン中央にファン、床にトンネル）を入れる</td><td>app.js の見本データ</td><td class="num">0.5h</td></tr>
+<tr><td>5</td><td>検証: 4図の証拠画像（Playwright）・描画msの前後比較・旧データ読み込み</td><td>evidence/、notes.md</td><td class="num">1h</td></tr>
+<tr><td>6</td><td>記録: 設計正本 §4-21・トークンシート・HANDOFF・公開は経路A（rebase禁止）</td><td>docs</td><td class="num">0.5h</td></tr>
+</table>
+<p>合計およそ<b>1.5日</b>。1〜2は仕様が決まっているので Sonnet 向き。3のカードの並びと注意文の言い回しだけ本人確認を挟むとよい。</p>
+
+<h3>8.5. テスト観点（<code>tests/light-rig-laser.test.mjs</code>・実装セッションはこの一覧をそのままケース化）</h3>
+<table>
+<tr><th>関数</th><th>ケース</th><th>期待</th></tr>
+<tr><td><code>laserRays</code></td><td>fan, spanDeg=60, N=12</td><td>本数12。両端の方向ベクトルが中心方向から±30°（span/2）。左右対称</td></tr>
+<tr><td></td><td>tunnel, 半頂角=12°</td><td>各方向が中心軸から一定の12°を保つ（内積 = cos12°）。円周上に等間隔</td></tr>
+<tr><td></td><td>beam</td><td>本数1、方向＝中心方向そのもの</td></tr>
+<tr><td></td><td>periodSec 反映</td><td><code>t=0</code> と <code>t=periodSec</code> で同じ形（1周期で元に戻る）</td></tr>
+<tr><td><code>laserLanding</code></td><td>真下向き・床あり</td><td><code>on:"floor"</code>、着地z=0</td></tr>
+<tr><td></td><td>真上向き（床置き上向き）</td><td><code>on:"ceil"</code>、着地z=dims.H（新規。既存 <code>beamLanding</code> には無い分岐）</td></tr>
+<tr><td></td><td>奥壁方向</td><td><code>on:"back"</code>、着地y=0</td></tr>
+<tr><td></td><td>どこにも当たらない角度（客席スキャンで下向きが浅い等）</td><td><code>on:null</code>、<code>reach</code> 先まで伸びる</td></tr>
+<tr><td>基底（縮退対策）</td><td>中心方向がほぼ鉛直（floor mount）</td><td>ローカル基底の右・上ベクトルが有限（NaN・ゼロ除算にならない）。<code>volume-light.js compile()</code> と同じ参照ベクトル切替を通ること</td></tr>
+<tr><td>houseCutAtFront 流用</td><td>光源が客席側（<code>S.y&gt;=D</code>）で客席スキャン</td><td>切られない（正面図が空にならない）。§1.5で見つけた不具合の再発防止テスト</td></tr>
+<tr><td>旧データ互換</td><td><code>fixture.kind</code> 未設定の既存灯体を読み込む</td><td>従来どおり描画される（laser分岐に入らない）</td></tr>
+</table>
+
+<h2>9. 確定事項（旧: 未決事項・2026-09-15 本人「OK」で確定）</h2>
+<ul>
+  <li>客席スキャンのカード: <b>入れる</b>。舞台からの見え方を演出家が知りたいのは客席向けの光でも同じ（既存の「客席へ」と同じ理由）。安全は判定せずラベルで示す。</li>
+  <li>置ける場所: <b>トラス・床・前</b> の3か所。SSは実物でも稀、ホリゾントは灯体の性質が違う。</li>
+  <li>白の扱い: <b>5色に白を含める</b>（RGB合成機は白が出せる）。色ピッカーは出さない。</li>
+  <li>本体（stage-sketch.js）への統合時期は今回の範囲外。試作で雰囲気が確認できてから。</li>
+</ul>
+<p class="note">「OK」は上の3問への回答として扱った（本人が個別に選び直した場合はそちらを優先）。UI文言（§5.5）だけは
+別途の確認事項として残る。</p>
+
+<h2>10. 根拠と信頼度</h2>
+<table>
+<tr><th>事項</th><th>根拠</th><th>信頼度</th></tr>
+<tr><td>6種の定義</td><td><a href="https://pangolin.com/blogs/education/types-of-laser-shows">Pangolin: Types of Laser Shows & Effects</a>、<a href="https://lasershowprojector.com/pages/laser-beam-and-aerial-effects">Pangolin/KVANT: Laser beam and aerial effects</a>（メーカー解説。2026-09-15閲覧）</td><td>高（一般に通用する語）</td></tr>
+<tr><td>空中の線はもやが要る</td><td>同上（"haze is crucial to an aerial laser show"）</td><td>高</td></tr>
+<tr><td>安全の枠組み（JIS C 6802 JA.3.4・観客10秒）</td><td><a href="https://www.lasa-info.jp/content/files/about_lasa/LASA%20Safety%20Training%20Textbook%202025.pdf">LASA安全講習テキスト2025（PDF）</a>、<a href="https://webdesk.jsa.or.jp/books/W11M0090/index/?bunsyo_id=JIS+C+6802%3A2025">JIS C 6802:2025（日本規格協会）</a></td><td>中（JIS本文は未購読。テキストの引用文で確認）</td></tr>
+<tr><td>負荷の実測</td><td>spike/measure.cjs（ヘッドレスChromium 1000×660・GPUなし・2秒平均）。本文§1</td><td>中（実機のGPU環境では速い側に振れる。試作本体に載せた値は未計測）</td></tr>
+<tr><td>既存コードの流用可否</td><td>app.js の <code>drawFront3D</code>／<code>spatialLight</code>／<code>houseFarPoint</code>／<code>houseCutAtFront</code>、rig-engine.js の <code>newLightCue</code>／<code>constrainPointToSurface</code> を読んで確認。<code>houseCutAtFront</code> のガード漏れは§1.5の試験で実際に不具合を再現して確認</td><td>高</td></tr>
+<tr><td>広がり角度 `spanDeg` の既定値（ファン60°等）</td><td><a href="https://pangolin.com/blogs/news/understanding-scan-angles">Pangolin: Understanding Scan Angles</a>（「エンタメ用の実効スキャン角はおおむね40〜60°」という一般論のみ）</td><td>低（効果ごとの一次資料なし。トークンシート§3に「推測」と明記。UIのつまみで変更可能なので実害は小さい）</td></tr>
+<tr><td>4図×3か所（トラス／床／前）で描けること</td><td>spike/multiview.html＋evidence/laser-4view-*.png（本文§1.5）。ヘッドレスChromiumでの目視のみ</td><td>中（実際の本体描画関数を通した確認ではない。簡易透視の近似）</td></tr>
+</table>
+<p class="note">推測と明示した箇所: 6種の <code>spanDeg</code> 既定値（ファンの60°のみ一般論の範囲内、他は見た目基準の推測）。
+演者の遮蔽の近似で違和感が出ないか（要目視）。実機GPUでの描画ms。試作本体へ載せたときの合計ms。</p>
+</main>
+</body>
+</html>

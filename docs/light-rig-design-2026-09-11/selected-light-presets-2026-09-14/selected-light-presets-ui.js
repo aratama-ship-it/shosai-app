@@ -48,14 +48,16 @@
   };
   const FAMILIES = ["all", "aim", "area", "motion", "value", "show", "flash"];
   const FAMILY_LABEL = { all: "すべて", aim: "狙い", area: "範囲", motion: "動き", value: "配り方", show: "演出", flash: "点滅" };
-  const ui = { family: "all", query: "", selectedId: "aim.converge", panel: "adjust", recent: ["show.curtainOpen", "motion.wander.stage"], seed: 173204, order: "physical", alignIntensity: true, custom: { shape: "rect", u0: 0.2, v0: 0.2, u1: 0.8, v1: 0.8, u: 0.5, v: 0.5, r: 0.3 }, irregularity: 0.65, loopSec: 11, rateHz: 2, phaseOffset: 0, appliedDetail: null };
+  const ui = { family: "all", query: "", sort: "recommended", selectedId: "aim.converge", panel: "adjust", seed: 173204, order: "physical", alignIntensity: true, custom: { shape: "rect", u0: 0.2, v0: 0.2, u1: 0.8, v1: 0.8, u: 0.5, v: 0.5, r: 0.3 }, irregularity: 0.65, loopSec: 11, rateHz: 2, phaseOffset: 0, appliedDetail: null };
 
   const style = document.createElement("style");
   style.textContent = `
-    .lpTabs{grid-template-columns:repeat(3,1fr)!important;height:44px!important}.lpTabs button{min-height:44px!important}.lpTabs .slp-tab:disabled{opacity:.42;cursor:default}
+    .lpTabs{grid-template-columns:repeat(2,1fr)!important;height:34px!important}.lpTabs button{min-height:34px!important}.lpTabs .slp-tab:disabled{opacity:.42;cursor:default}
     .slp-entry{width:100%;min-height:44px;text-align:left;border-color:var(--brass);background:rgba(156,130,63,.11)}
     .slp-entry small{display:block;color:var(--milk-dim);font-size:11px;margin-top:2px}
     .slp-pane{display:flex;flex-direction:column;gap:7px;min-height:0;overflow:auto;padding-bottom:6px}.slp-pane .ptitle{margin:0}.slp-pane .hint{margin:0}
+    .slp-selected{display:grid;grid-template-columns:88px minmax(0,1fr);gap:8px;padding:8px;border:1px solid var(--brass);background:rgba(156,130,63,.08)}.slp-selected .slp-diagram{width:88px;height:58px;border:1px solid var(--line-dark);background:#0d0e10}.slp-selected-info{min-width:0}.slp-selected-info h3{margin:0;color:var(--brass);font-size:15px}.slp-selected-info p{margin:3px 0 0;color:var(--milk-dim);font-size:11px;line-height:1.45}.slp-selected-wide{grid-column:1/-1;display:grid;gap:7px}.slp-selected-wide .slp-scope{margin:0;font-size:11px}.slp-selected-wide .slp-actions{margin:0}.slp-selected-wide .slp-actions .btn{min-height:38px}
+    .slp-list-tools{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:6px}.slp-list-tools input,.slp-list-tools select{min-height:32px;width:100%;border:1px solid var(--line-dark);background:var(--desk-2);color:var(--milk);padding:4px 7px;font:12px var(--sans)}.slp-families.inline{gap:3px}.slp-families.inline button{min-height:26px;padding:3px 6px;font-size:11px}.slp-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-content:start}.slp-list .slp-card{min-height:96px;padding:0 6px 6px}.slp-list .slp-card svg{width:calc(100% + 12px);height:36px;margin:0 -6px 5px}.slp-list .slp-card b{font-size:12px}.slp-list .slp-card small{font-size:10px;margin-top:3px}.slp-list-empty{grid-column:1/-1;margin:0;color:var(--milk-dim);font-size:12px}
     .slp-summary{min-height:44px;display:grid;align-content:center;border-bottom:1px solid var(--line-dark);font-size:12px;color:var(--milk-dim)}.slp-summary b{color:var(--milk);font-size:14px;font-weight:500}
     .slp-current{border:1px solid var(--brass);background:rgba(156,130,63,.08)}.slp-current-head{display:flex;justify-content:space-between;gap:8px;padding:7px 8px 5px;color:var(--milk-dim);font-size:11px}.slp-current-head b{color:var(--brass);font-size:12px;font-weight:600}.slp-current-list{display:grid;gap:1px}.slp-current-item{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:44px;padding:6px 8px;border:0;border-top:1px solid var(--line-dark);background:transparent;color:var(--milk);font:inherit;text-align:left;cursor:pointer}.slp-current-item:hover,.slp-current-item:focus-visible{background:rgba(156,130,63,.18);outline:none}.slp-current-item small{display:block;color:var(--milk-dim);font-size:10.5px}.slp-current-item b{display:block;font-size:12.5px;font-weight:500}.slp-current-item em{color:var(--rust-ink);font-size:10.5px;font-style:normal}.slp-current-action{flex:0 0 auto;display:grid;justify-items:end;gap:1px;color:var(--brass);font-size:11px;line-height:1.25}.slp-current-adjusted{color:var(--rust-ink);font-style:normal}
     .slp-recent{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.slp-quick{min-height:104px;padding:6px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk);text-align:left;cursor:pointer;font-family:inherit}.slp-quick:hover,.slp-quick:focus-visible{border-color:var(--brass)}.slp-quick:disabled{opacity:.42;cursor:not-allowed}.slp-quick svg{display:block;width:100%;height:46px;background:#0d0e10;border-bottom:1px solid var(--line-dark);margin-bottom:5px}.slp-quick b{display:block;font-size:12.5px;line-height:1.25}.slp-quick small{display:block;color:var(--milk-dim);font-size:10.5px;margin-top:3px}
@@ -72,7 +74,10 @@
   `;
   document.head.append(style);
 
-  const selectedIds = () => [...state.sel].filter((id) => H.fixtureById(id));
+  const selectedIds = () => [...state.sel].filter((id) => {
+    const fixture = H.fixtureById(id);
+    return fixture && fixture.kind !== "laser";
+  });
   const movingCount = () => selectedIds().filter((id) => H.fixtureById(id).kind === "moving").length;
   const currentPreset = () => X.presetById(ui.selectedId) || X.PRESETS[0];
   const stageRegions = () => ({ stage: { kind: "rect", u0: 0, v0: 0, u1: 1, v1: 1 } });
@@ -152,7 +157,7 @@
   }
   function appliedCustomRegion() {
     const ids = selectedIds();
-    if (state.mode !== "move" || ids.length < 2) return null;
+    if (state.mode !== "move" || !ids.length) return null;
     const regions = ids.map((id) => {
       const light = H.cue().lights && H.cue().lights[id];
       const applied = light && light.presetMeta && light.presetMeta.lastAppliedByScope && light.presetMeta.lastAppliedByScope.area;
@@ -162,7 +167,7 @@
   }
   function sharedAppliedPresets() {
     const ids = selectedIds();
-    if (state.mode !== "move" || ids.length < 2) return [];
+    if (state.mode !== "move" || !ids.length) return [];
     const lights = H.cue().lights || {};
     const appliedByLight = ids.map((id) => {
       const meta = lights[id] && lights[id].presetMeta;
@@ -185,7 +190,7 @@
     if (!item) return;
     if (item.id === "area.custom" && !loadAppliedRegion(item.region)) return;
     ui.selectedId = item.id; ui.family = item.preset.family; ui.appliedDetail = item.adjusted ? item : null;
-    openModal();
+    ui.panel = "type"; refresh();
   }
   function adjustmentDetail(item) {
     if (!item || !item.adjustedCount) return "";
@@ -209,7 +214,7 @@
     document.body.append(rangeHud);
     rangeEdit = document.createElement("button"); rangeEdit.type = "button"; rangeEdit.className = "slp-applied-range-edit"; rangeEdit.hidden = true;
     rangeEdit.innerHTML = `<b>指定範囲</b> を再編集`;
-    rangeEdit.onclick = () => { if (loadAppliedRegion(appliedCustomRegion())) openModal(); };
+    rangeEdit.onclick = () => { if (loadAppliedRegion(appliedCustomRegion())) { ui.panel = "type"; refresh(); } };
     document.body.append(rangeEdit);
     return rangeOverlay;
   }
@@ -251,7 +256,6 @@
   }
   function armRangeDraw() {
     if (!plan || !R.planBox) { H.toast("この画面では平面図を使えません"); return; }
-    $("dialog").hidden = true;
     rangeDraw = { shape: ui.custom.shape, pointerId: null, start: null, end: null };
     plan.style.cursor = "crosshair"; plan.setAttribute("data-slp-range-draw", "true"); showRangeHud(); drawRangeOverlay();
     H.toast(`平面図で${ui.custom.shape === "circle" ? "丸" : "四角"}の範囲をドラッグしてください。Escで中止できます`);
@@ -262,7 +266,7 @@
     if (tooSmall) { H.toast("範囲が小さすぎます。もう一度、舞台内をドラッグしてください"); return; }
     if (region.kind === "circle") Object.assign(ui.custom, { shape: "circle", u: region.u, v: region.v, r: region.r });
     else Object.assign(ui.custom, { shape: "rect", u0: region.u0, v0: region.v0, u1: region.u1, v1: region.v1 });
-    openModal();
+    ui.panel = "type"; refresh();
   }
   if (plan) {
     plan.addEventListener("pointerdown", (ev) => {
@@ -294,40 +298,41 @@
     }, true);
   }
 
-  function recentPresets() {
-    const fallback = ["show.curtainOpen", "motion.wander.stage"];
-    return [...ui.recent, ...fallback].filter((id, index, list) => list.indexOf(id) === index).map((id) => X.presetById(id)).filter(Boolean).slice(0, 2);
-  }
   function renderTypePane() {
-    const count = selectedIds().length;
-    typePane.innerHTML = `<div class="slp-summary"><b>${count}灯に型を当てる</b><span>型は値を書き込みます。後から「調整」で個別に変えられます。</span></div><p class="ptitle">最近使った型</p>`;
-    const applied = sharedAppliedPresets();
-    if (applied.length) {
-      const current = document.createElement("section"); current.className = "slp-current"; current.setAttribute("aria-label", "現在の型");
-      current.innerHTML = `<div class="slp-current-head"><b>現在の型</b><span>全${count}灯で共通</span></div><div class="slp-current-list"></div>`;
-      const list = current.querySelector(".slp-current-list");
-      applied.forEach((item) => {
-        const info = INFO[item.id], shape = item.region ? ` <em>／ ${item.region.kind === "circle" ? "丸" : "四角"}</em>` : "";
-        const button = document.createElement("button"); button.type = "button"; button.className = "slp-current-item";
-        button.innerHTML = `<span><small>${esc(info[1])}</small><b>${esc(info[0])}${shape}</b></span><span class="slp-current-action">${item.adjusted ? '<i class="slp-current-adjusted">調整あり</i>' : ""}<span>再調整</span></span>`;
-        button.onclick = () => openAppliedPreset(item);
-        list.append(button);
-      });
-      typePane.insertBefore(current, typePane.querySelector(".ptitle"));
-    }
-    const cards = document.createElement("div"); cards.className = "slp-recent";
-    recentPresets().forEach((preset) => {
-      const info = INFO[preset.id] || [preset.id, preset.family, ""];
-      const button = document.createElement("button"); button.type = "button"; button.className = "slp-quick"; button.disabled = !canUse(preset);
-      button.innerHTML = `${diagram(preset)}<b>${esc(info[0])}</b><small>${esc(scopeText(preset).changes)}</small>`;
-      button.title = button.disabled ? (preset.id === "motion.wander.stageAudience" ? "客席マスクが未設定です" : "ムービング灯を選ぶと使えます") : `${info[0]}の詳細を開く`;
-      button.onclick = () => { ui.selectedId = preset.id; ui.appliedDetail = null; openModal(); };
-      cards.append(button);
+    const ids = selectedIds(), count = ids.length, selected = currentPreset();
+    const info = INFO[selected.id] || [selected.id, selected.family, ""];
+    const scope = scopeText(selected);
+    const applied = sharedAppliedPresets().find((item) => item.id === selected.id);
+    const detail = applied && applied.adjusted ? adjustmentDetail(applied) : "";
+    const unavailable = selected.id === "motion.wander.stageAudience";
+    const noMoving = selected.movingOnly && !movingCount();
+    const skipped = selected.movingOnly && count > movingCount() ? `ムービング ${movingCount()}灯に適用・固定${count - movingCount()}灯はそのまま` : `${count}灯に適用`;
+    const cards = cardList();
+    const list = cards.map((preset) => {
+      const text = INFO[preset.id] || [preset.id, preset.family, ""];
+      const disabled = !canUse(preset);
+      const suffix = preset.id === "motion.wander.stageAudience" ? "客席マスク待ち" : (preset.movingOnly ? `ムービング ${movingCount()}灯` : text[1]);
+      return `<button type="button" class="slp-card ${preset.id === selected.id ? "sel" : ""}" data-slp-preset="${preset.id}" ${disabled ? "disabled" : ""}>${diagram(preset)}<b>${esc(text[0])}</b><small>${esc(scopeText(preset).changes)} ／ ${esc(suffix)}</small></button>`;
+    }).join("") || `<p class="slp-list-empty">該当する型はありません。</p>`;
+    const flashNotice = selected.family === "flash" ? `<p class="slp-note slp-warn">点滅はまだ始まりません。ここで速度・位相を決めてから「この型を適用」を押します。画面上の適用値は最大3Hzです。</p>` : "";
+    typePane.innerHTML = `<section class="slp-selected" aria-label="選んだ型の情報">${diagram(selected, "slp-diagram")}<div class="slp-selected-info"><p>${esc(info[1])}</p><h3>${esc(info[0])}</h3></div><div class="slp-selected-wide">${detail}<p class="slp-scope"><b>変えるもの:</b> ${esc(scope.changes)}<br><b>保つもの:</b> ${esc(scope.keeps)}</p><p class="slp-meta">対象: ${esc(skipped)}　／　点灯状態は保ちます</p><div class="slp-controls">${controlsFor(selected, { concise: true })}</div>${flashNotice}${unavailable ? `<p class="slp-note slp-warn">客席側は会場ごとのマスクを指定してから使います。この試作では適用できません。</p>` : ""}${noMoving ? `<p class="slp-note slp-warn">ムービングを1灯以上選ぶと使えます。</p>` : ""}<div class="slp-actions"><button type="button" class="btn primary" data-slp-action="apply" ${(!canUse(selected) || !count) ? "disabled" : ""}>この型を適用</button></div></div></section><div class="slp-list-tools"><input data-slp="query" type="search" placeholder="型を検索" value="${esc(ui.query)}" aria-label="型を検索"><select data-slp="sort" aria-label="型の並び替え"><option value="recommended" ${ui.sort === "recommended" ? "selected" : ""}>おすすめ順</option><option value="name" ${ui.sort === "name" ? "selected" : ""}>名前順</option><option value="family" ${ui.sort === "family" ? "selected" : ""}>種類順</option></select></div><div class="slp-families inline">${FAMILIES.map((family) => `<button type="button" data-slp-family="${family}" aria-pressed="${String(ui.family === family)}">${FAMILY_LABEL[family]}</button>`).join("")}</div><p class="ptitle">型の一覧（${cards.length}）</p><div class="slp-list">${list}</div>`;
+    typePane.querySelectorAll("[data-slp-preset]").forEach((button) => { button.onclick = () => { ui.selectedId = button.dataset.slpPreset; ui.appliedDetail = null; renderTypePane(); }; });
+    typePane.querySelectorAll("[data-slp-family]").forEach((button) => { button.onclick = () => { ui.family = button.dataset.slpFamily; renderTypePane(); }; });
+    typePane.querySelectorAll("[data-slp]").forEach((input) => {
+      input.oninput = () => {
+        const key = input.dataset.slp, value = input.type === "checkbox" ? input.checked : (input.type === "number" || input.type === "range" ? Number(input.value) : input.value);
+        if (key === "custom.shape") { ui.custom.shape = value; renderTypePane(); return; }
+        if (key === "query" || key === "sort") { ui[key] = value; renderTypePane(); return; }
+        if (key.startsWith("custom.")) ui.custom[key.slice(7)] = value; else ui[key] = value;
+      };
+      input.onchange = input.oninput;
     });
-    typePane.append(cards);
-    const all = document.createElement("button"); all.type = "button"; all.className = "btn"; all.style.minHeight = "44px"; all.textContent = "すべての型を見る（32）";
-    all.onclick = openModal; typePane.append(all);
-    const note = document.createElement("p"); note.className = "hint"; note.textContent = "狙い・範囲・動き・配り方・演出・点滅。非対応の灯は適用前に理由を示します。"; typePane.append(note);
+    const reroll = typePane.querySelector('[data-slp-action="reroll"]');
+    if (reroll) reroll.onclick = () => { ui.seed = X.deriveRerollSeed(ui.seed); renderTypePane(); };
+    const drawRange = typePane.querySelector('[data-slp-action="draw-range"]');
+    if (drawRange) drawRange.onclick = armRangeDraw;
+    const apply = typePane.querySelector('[data-slp-action="apply"]');
+    if (apply) apply.onclick = applyPreset;
   }
   function ensureTypeTab() {
     const tabs = document.querySelector(".lpTabs"); if (!tabs) return null;
@@ -335,7 +340,7 @@
     if (!tab) {
       tab = document.createElement("button"); tab.type = "button"; tab.id = "slp-tab"; tab.className = "slp-tab"; tab.textContent = "型";
       const adjust = [...tabs.querySelectorAll("button")].find((button) => button.textContent.trim() === "調整"); tabs.insertBefore(tab, adjust || null);
-      tab.onclick = () => { if (selectedIds().length < 2) { H.toast("2灯以上を選ぶと型を使えます"); return; } ui.panel = "type"; refresh(); };
+      tab.onclick = () => { if (!selectedIds().length) return; ui.panel = "type"; refresh(); };
     }
     /* 見本／調整は既存UIが内部で直ちに再描画するため、親要素のbubbleではなく各ボタンのcaptureで先に型表示を外す。 */
     [...tabs.querySelectorAll("button")].filter((button) => button !== tab && !button.dataset.slpReset).forEach((button) => {
@@ -347,12 +352,17 @@
 
   function cardList() {
     const query = ui.query.trim().toLowerCase();
+    const order = new Map(X.PRESETS.map((preset, index) => [preset.id, index]));
     return X.PRESETS.filter((preset) => {
       const info = INFO[preset.id] || [preset.id, preset.family, ""];
       return (ui.family === "all" || preset.family === ui.family) && (!query || `${preset.id} ${info.join(" ")}`.toLowerCase().includes(query));
+    }).sort((a, b) => {
+      if (ui.sort === "name") return (INFO[a.id] || [a.id])[0].localeCompare((INFO[b.id] || [b.id])[0], "ja");
+      if (ui.sort === "family") return `${FAMILY_LABEL[a.family]}:${(INFO[a.id] || [a.id])[0]}`.localeCompare(`${FAMILY_LABEL[b.family]}:${(INFO[b.id] || [b.id])[0]}`, "ja");
+      return order.get(a.id) - order.get(b.id);
     });
   }
-  function controlsFor(preset) {
+  function controlsFor(preset, { concise = false } = {}) {
     let html = `<div class="slp-control"><span>灯の並び順</span><select data-slp="order"><option value="physical" ${ui.order === "physical" ? "selected" : ""}>仕込み順（推奨）</option><option value="selection" ${ui.order === "selection" ? "selected" : ""}>選んだ順</option></select></div>`;
     if (preset.family === "area") html += `<label class="slp-control"><span>強さもそろえる</span><input data-slp="alignIntensity" type="checkbox" ${ui.alignIntensity === false ? "" : "checked"}></label>`;
     if (preset.id === "area.custom") {
@@ -360,10 +370,10 @@
       html += ui.custom.shape === "circle"
         ? [["u", "中心X"], ["v", "中心Y"], ["r", "半径"]].map(([key, label]) => `<label class="slp-control"><span>${label}（0〜1）</span><input data-slp="custom.${key}" type="number" min="0" max="1" step="0.05" value="${ui.custom[key]}"></label>`).join("")
         : [["u0", "左端X"], ["v0", "奥端Y"], ["u1", "右端X"], ["v1", "手前端Y"]].map(([key, label]) => `<label class="slp-control"><span>${label}（0〜1）</span><input data-slp="custom.${key}" type="number" min="0" max="1" step="0.05" value="${ui.custom[key]}"></label>`).join("");
-      html += `<button type="button" class="btn" data-slp-action="draw-range">平面図で${ui.custom.shape === "circle" ? "丸" : "四角"}を描く</button><p class="slp-note">${ui.custom.shape === "circle" ? "中心から外周まで" : "対角どうし"}をドラッグします。描いたあとも数値で微調整でき、適用するまでキューは変わりません。</p>`;
+      html += `<button type="button" class="btn" data-slp-action="draw-range">平面図で${ui.custom.shape === "circle" ? "丸" : "四角"}を描く</button>${concise ? "" : `<p class="slp-note">${ui.custom.shape === "circle" ? "中心から外周まで" : "対角どうし"}をドラッグします。描いたあとも数値で微調整でき、適用するまでキューは変わりません。</p>`}`;
     }
     if (preset.id === "motion.wander.stage" || preset.id === "flash.sparkle") html += `<label class="slp-control"><span>seed（再現用）</span><input data-slp="seed" type="number" min="0" step="1" value="${ui.seed}"></label><button type="button" class="btn small" data-slp-action="reroll">別の動きにする</button>`;
-    if (preset.id === "motion.wander.stage") html += `<label class="slp-control"><span>不規則さ</span><input data-slp="irregularity" type="range" min="0.2" max="1" step="0.05" value="${ui.irregularity}"></label><label class="slp-control"><span>1周の秒数</span><input data-slp="loopSec" type="number" min="4" max="30" step="1" value="${ui.loopSec}"></label><p class="slp-note">舞台の範囲だけを巡ります。同じseedなら、同じ動きを再現します。</p>`;
+    if (preset.id === "motion.wander.stage") html += `<label class="slp-control"><span>不規則さ</span><input data-slp="irregularity" type="range" min="0.2" max="1" step="0.05" value="${ui.irregularity}"></label><label class="slp-control"><span>1周の秒数</span><input data-slp="loopSec" type="number" min="4" max="30" step="1" value="${ui.loopSec}"></label>${concise ? "" : `<p class="slp-note">舞台の範囲だけを巡ります。同じseedなら、同じ動きを再現します。</p>`}`;
     if (preset.family === "flash") html += `<label class="slp-control"><span>点滅（Hz）</span><input data-slp="rateHz" type="number" min="0.5" max="3" step="0.25" value="${ui.rateHz}"></label><label class="slp-control"><span>全体の位相</span><input data-slp="phaseOffset" type="range" min="0" max="1" step="0.05" value="${ui.phaseOffset}"></label>`;
     return html;
   }
@@ -410,23 +420,20 @@
     const c = H.cue();
     c.lights = result.nextCue.lights;
     c.groups = result.nextCue.groups || c.groups;
-    $("dialog").hidden = true;
-    ui.recent = [preset.id, ...ui.recent.filter((id) => id !== preset.id)].slice(0, 2);
     const skipped = result.skipped.length ? `・${result.skipped.length}灯はそのまま` : "";
     H.commit(`「${(INFO[preset.id] || [preset.id])[0]}」を${result.targets.length}灯に適用しました${skipped}。一つ戻すで戻せます`);
     refresh();
   }
   function openModal() {
-    if (selectedIds().length < 2) { H.toast("2灯以上を選ぶと型を使えます"); return; }
-    H.dialog('<div class="slp" aria-label="選択灯の型を選ぶ"></div>', [["閉じる", null, "quiet"]]);
-    renderModal();
+    if (!selectedIds().length) return;
+    ui.panel = "type"; refresh();
   }
   function refresh() {
     const host = $("insp");
     const old = $("slp-entry"); if (old) old.remove();
     const ids = selectedIds();
     const tab = ensureTypeTab();
-    const eligible = state.mode === "move" && ids.length >= 2;
+    const eligible = state.mode === "move" && ids.length > 0;
     if (tab) { tab.disabled = !eligible; tab.setAttribute("aria-pressed", String(eligible && ui.panel === "type")); }
     const active = eligible && ui.panel === "type";
     if (typePane.parentElement) typePane.hidden = !active;
@@ -442,7 +449,7 @@
     if (!host || !eligible || host.hidden) { drawRangeOverlay(); return; }
     const entry = document.createElement("button");
     entry.type = "button"; entry.id = "slp-entry"; entry.className = "btn slp-entry";
-    entry.innerHTML = `型から選ぶ（32）<small>${ids.length}灯へ、狙い・範囲・動き・カーテン・点滅をまとめて適用</small>`;
+    entry.textContent = "型から選ぶ（32）";
     entry.onclick = () => { ui.panel = "type"; refresh(); };
     host.prepend(entry);
     drawRangeOverlay();

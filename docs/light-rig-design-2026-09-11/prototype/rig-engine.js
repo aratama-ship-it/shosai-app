@@ -59,12 +59,13 @@
      既定はムービング。fixed の灯には往復・円を付けさせない（2026-09-11 本人要望）。 */
   const newFixture = (id, no, mount, name, kind, beamDeg) => ({
     id, no, name: name || "", mount,
-    kind: kind === "fixed" ? "fixed" : "moving",
+    kind: kind === "laser" ? "laser" : kind === "fixed" ? "fixed" : "moving",
     // 光の広がり（度）。ムービングのズーム範囲は実機で 7°〜50°（PLUTO600 PROFILE MK2）。
     // 固定灯はランプ／レンズで決まり、ショー中は変えられない（PARは玉を替えるしかない）。
     beamDeg: clamp(finite(beamDeg, 16), 4, 70),
   });
-  const isMoving = (fixture) => (fixture && fixture.kind) !== "fixed";
+  const isMoving = (fixture) => Boolean(fixture) && fixture.kind !== "fixed" && fixture.kind !== "laser";
+  const isLaser = (fixture) => Boolean(fixture) && fixture.kind === "laser";
   /* いま実際に出ている広がり。ムービングだけ、このシーンのズーム（light.beamDeg）で上書きできる。
      固定灯は仕込みの値（fixture.beamDeg）のまま。 */
   const beamDegOf = (fixture, light) => {
@@ -807,7 +808,7 @@
     const zoom = fixture && isMoving(fixture) && light.beamDegTo != null
       && Math.round(light.beamDegTo) !== Math.round(beamDegOf(fixture, light))
       ? `。広がりは${Math.round(beamDegOf(fixture, light))}°→${Math.round(light.beamDegTo)}°` : "";
-    const face = light.surface === "back" ? "奥壁" : light.surface === "air" ? "空中" : light.surface === "house" ? "客席（目眩まし）" : "床";
+    const face = light.surface === "back" ? "ホリゾント" : light.surface === "air" ? "空中" : light.surface === "house" ? "客席（目眩まし）" : "床";
     const sp = { slow: "ゆっくり", normal: "普通の速さ", fast: "速く" }[light.speed] || "普通の速さ";
     const path = light.path || {};
     if (path.kind === "line") {
@@ -902,7 +903,7 @@
   root.RIG_ENGINE = Object.freeze({
     DEFAULT_DIMS, FLOOR_FIXTURE_Z, SIDE_OFFSET_M, CYC_MOUNT_V, CYC_REACH_MAX, HOUSE_AHEAD_MAX, cycBarSpan, SPEED_PERIOD_MS, PLANE_VALUES, PLANE_LABEL,
     clamp, finite,
-    newTruss, newFixture, isMoving, beamDegOf, spotRadiusM, spotEllipse, spotFalloff, beamLanding, trussById, trussRow, fixtureWorld,
+    newTruss, newFixture, isMoving, isLaser, beamDegOf, spotRadiusM, spotEllipse, spotFalloff, beamLanding, trussById, trussRow, fixtureWorld,
     newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, strobeMul, paramPhase, mountSpot, GOBOS, goboById, goboAngleAt, constrainPointToSurface, periodMs, groupEffect,
     pointWorld, planeVec, circleOffset, eightOffset, targetAt, pathGuide, mirrorMount, mirrorAimCompatible, mirrorAimPoint, mirrorAimPath,
     FRONT_SEATS, frontPerspSetup, makeFrontPerspProjector, frontPerspToUH,

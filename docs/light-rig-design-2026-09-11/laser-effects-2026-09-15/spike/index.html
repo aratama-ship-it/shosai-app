@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>レーザー演出 描画試験（使い捨て・2026-09-15）</title>
+<style>
+  body{margin:0;background:#201b16;color:#efe7d6;font-family:"Hiragino Sans",system-ui,sans-serif;font-size:14px}
+  header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid #382f25}
+  header b{color:#9c823f;letter-spacing:.08em;margin-right:8px}
+  button{font:inherit;font-size:13px;height:28px;padding:0 10px;border:1px solid #382f25;background:#282119;color:#efe7d6;cursor:pointer}
+  button[aria-pressed="true"]{background:#9c823f;color:#1a1409;border-color:#9c823f}
+  label{display:inline-flex;align-items:center;gap:6px;margin-left:10px;color:rgba(240,231,214,.7)}
+  canvas{display:block;width:960px;height:540px;background:#0d0e10;margin:10px}
+  #stat{padding:0 12px 10px;color:rgba(240,231,214,.7)}
+  #stat span{color:#efe7d6}
+  .warn{color:#df6433}
+</style>
+</head>
+<body>
+<header>
+  <b>レーザー演出 描画試験</b>
+  <span id="fx"></span>
+  <label>台数 <select id="n"><option>1</option><option>2</option><option selected>4</option><option>8</option></select></label>
+  <label>見え方（もやの代わり） <input id="vis" type="range" min="0" max="100" value="60"> <span id="visv">60</span></label>
+  <label><input id="all" type="checkbox"> 6種を同時に（負荷試験）</label>
+</header>
+<canvas id="cv" width="1920" height="1080"></canvas>
+<p id="stat">描画 <span id="ms">–</span> ms／コマ（直近60コマの平均）・線の本数 <span id="lines">–</span>・<span class="warn">客席向けは「案」ラベルのみ。安全判定はしない。</span></p>
+<script>
+(() => {
+  'use strict';
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const W = 12, D = 9, H = 8;                       // 中ホール（本体プリセット）
+  const EYE = { x: 0, y: D + 10, z: 3.2 };          // 客席中段あたりの目
+  const F = 1500, CX = cv.width / 2, CY = cv.height * 0.42, NEAR = 0.6;
+  // 単純な透視投影。試作本体は E.frontPerspSetup / secProj の P(world) を使う（同じ役割）。
+  const P = (w) => { const dist = Math.max(NEAR, EYE.y - w.y); return { X: CX + F * (w.x - EYE.x) / dist, Y: CY - F * (w.z - EYE.z) / dist, dist }; };
+  // 目より手前へ来る線は NEAR で打ち切る（客席向けの線が画面いっぱいに膨らむのを防ぐ）
+  const clipNear = (a, b) => { const ya = EYE.y - a.y, yb = EYE.y - b.y; if (yb >= NEAR) return b; const t = (ya - NEAR) / (ya - yb); return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, z: a.z + (b.z - a.z) * t }; };
+  // 線を「床・奥壁・天井（H）・客席の遠方」のどれかで止める
+  const REACH = 40;
+  const landing = (S, d) => {
+    let t = REACH;
+    if (d.z < -1e-6) t = Math.min(t, -S.z / d.z);                         // 床
+    if (d.z > 1e-6) t = Math.min(t, (H - S.z) / d.z);                     // 天井（試験では舞台の高さで代用）
+    if (d.y < -1e-6) t = Math.min(t, -S.y / d.y);                         // 奥壁
+    return { x: S.x + d.x * t, y: S.y + d.y * t, z: S.z + d.z * t };
+  };
+  const dirFrom = (az, el) => ({ x: Math.sin(az) * Math.cos(el), y: Math.cos(az) * Math.cos(el), z: Math.sin(el) });   // az: 0=客席へ, el: 仰角
+  const rgb = (h) => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+  const col = (h, a) => { const [r, g, b] = rgb(h); return `rgba(${r},${g},${b},${a})`; };
+
+  const EFFECTS = [
+    { id: 'beam', name: 'ビーム', color: '#38e04a' },
+    { id: 'fan', name: 'ファン', color: '#ff2a6d' },
+    { id: 'sheet', name: 'シート', color: '#2ad3ff' },
+    { id: 'tunnel', name: 'トンネル', color: '#ffe14a' },
+    { id: 'liquid', name: 'リキッドスカイ', color: '#2ad3ff' },
+    { id: 'audience', name: '客席スキャン（案）', color: '#ff2a6d' },
+  ];
+  let cur = 'fan', lineCount = 0;
+  const fxBox = document.getElementById('fx');
+  EFFECTS.forEach((e) => { const b = document.createElement('button'); b.textContent = e.name; b.setAttribute('aria-pressed', String(e.id === cur)); b.onclick = () => { cur = e.id; fxBox.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }; fxBox.append(b); });
+  const $n = document.getElementById('n'), $vis = document.getElementById('vis'), $all = document.getElementById('all');
+  $vis.oninput = () => (document.getElementById('visv').textContent = $vis.value);
+
+  // 線1本＝にじみ（太・薄）＋芯（細・濃）の2ストローク。合成は lighter（光は足し算）。
+  function ray(S, d, color, gain) {
+    const E2 = clipNear(S, landing(S, d)); const a = P(S), b = P(E2);
+    ctx.lineWidth = 9; ctx.strokeStyle = col(color, 0.10 * gain); ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
+    ctx.lineWidth = 1.6; ctx.strokeStyle = col(color, 0.85 * gain); ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
+    lineCount++;
+  }
+  // 面（シート）＝遠端の点列で閉じた多角形を薄く塗り、両端だけ線で縁取る
+  function sheet(S, dirs, color, gain) {
+    const pts = dirs.map((d) => P(clipNear(S, landing(S, d)))); const s = P(S);
+    ctx.fillStyle = col(color, 0.16 * gain); ctx.beginPath(); ctx.moveTo(s.X, s.Y); pts.forEach((p) => ctx.lineTo(p.X, p.Y)); ctx.closePath(); ctx.fill();
+    ray(S, dirs[0], color, gain * 0.7); ray(S, dirs[dirs.length - 1], color, gain * 0.7);
+    for (let i = 3; i < dirs.length - 3; i += 6) ray(S, dirs[i], color, gain * 0.25);   // 面の中の薄い筋
+  }
+  function drawEffect(id, S, t, color, gain, phase) {
+    const az0 = Math.sin(t * 0.35 + phase) * 0.25;                  // ゆっくり左右へ振る
+    if (id === 'beam') { ray(S, dirFrom(az0 * 2, -0.10 + Math.sin(t * 0.8 + phase) * 0.12), color, gain); return; }
+    if (id === 'fan') { const N = 12, span = 1.05; for (let i = 0; i < N; i++) ray(S, dirFrom(az0 + (i / (N - 1) - 0.5) * span, -0.06 + Math.sin(t * 1.2 + i * 0.4 + phase) * 0.05), color, gain); return; }
+    if (id === 'sheet') { const N = 40, span = 1.6, el = -0.02 + Math.sin(t * 0.5 + phase) * 0.06; sheet(S, Array.from({ length: N }, (_, i) => dirFrom(az0 * 0.3 + (i / (N - 1) - 0.5) * span, el)), color, gain); return; }
+    if (id === 'liquid') { const N = 48, span = 1.7; sheet(S, Array.from({ length: N }, (_, i) => dirFrom((i / (N - 1) - 0.5) * span, -0.03 + 0.09 * Math.sin(i * 0.45 + t * 2.2 + phase) + 0.04 * Math.sin(i * 0.17 - t * 1.3))), color, gain); return; }
+    if (id === 'tunnel') { const N = 36, half = 0.20, ax = dirFrom(az0 * 0.5, -0.05); const up = { x: 0, y: 0, z: 1 }; const rt = { x: ax.y * up.z - ax.z * up.y, y: ax.z * up.x - ax.x * up.z, z: ax.x * up.y - ax.y * up.x }; const u2 = { x: rt.y * ax.z - rt.z * ax.y, y: rt.z * ax.x - rt.x * ax.z, z: rt.x * ax.y - rt.y * ax.x };
+      for (let i = 0; i < N; i++) { const th = i / N * Math.PI * 2 + t * 0.9; const c = Math.cos(th) * half, s2 = Math.sin(th) * half; ray(S, { x: ax.x + rt.x * c + u2.x * s2, y: ax.y + rt.y * c + u2.y * s2, z: ax.z + rt.z * c + u2.z * s2 }, color, gain * 0.7); } return; }
+    if (id === 'audience') { const N = 10, span = 0.9; for (let i = 0; i < N; i++) ray(S, dirFrom(az0 + (i / (N - 1) - 0.5) * span, -0.16 - Math.abs(Math.sin(t * 1.6 + i * 0.5 + phase)) * 0.08), color, gain); return; }
+  }
+  function stage() {
+    const at = (u, v, h) => P({ x: (u - 0.5) * W, y: v * D, z: h });
+    const bl = at(0, 0, 0), br = at(1, 0, 0), fl = at(0, 1, 0), fr = at(1, 1, 0), tl = at(0, 0, H), tr = at(1, 0, H);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.beginPath(); ctx.moveTo(bl.X, bl.Y); ctx.lineTo(br.X, br.Y); ctx.lineTo(fr.X, fr.Y); ctx.lineTo(fl.X, fl.Y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.beginPath(); ctx.moveTo(bl.X, bl.Y); ctx.lineTo(br.X, br.Y); ctx.lineTo(tr.X, tr.Y); ctx.lineTo(tl.X, tl.Y); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(239,231,214,0.25)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = 'rgba(156,130,63,0.05)'; ctx.fillRect(0, Math.min(fl.Y, fr.Y), cv.width, cv.height);
+    // 演者のシルエット3人（遮蔽の見え方の確認用）
+    [[0.3, 0.5], [0.5, 0.7], [0.7, 0.4]].forEach(([u, v]) => { const f = at(u, v, 0), h = at(u, v, 1.7); const s = 0.22 * (F / (EYE.y - v * D)); ctx.fillStyle = 'rgba(239,231,214,0.55)'; ctx.fillRect(f.X - s, h.Y, s * 2, f.Y - h.Y); });
+    const a = at(0, 0.06, 6.5), b = at(1, 0.06, 6.5); ctx.strokeStyle = 'rgba(156,130,63,0.75)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
+    ctx.fillStyle = 'rgba(240,231,214,0.4)'; ctx.font = '22px sans-serif'; ctx.fillText('奥バトン 高さ6500mm に据えた想定（正面図3Dと同じ考え方の透視）', b.X - 700, b.Y - 12);
+  }
+  const times = []; let t0 = performance.now();
+  function frame(ts) {
+    const t = (ts - t0) / 1000, tStart = performance.now();
+    ctx.clearRect(0, 0, cv.width, cv.height); ctx.fillStyle = '#0d0e10'; ctx.fillRect(0, 0, cv.width, cv.height);
+    stage(); lineCount = 0;
+    const gain = Number($vis.value) / 100, n = Number($n.value);
+    ctx.globalCompositeOperation = 'lighter';
+    const ids = $all.checked ? EFFECTS.map((e) => e.id) : [cur];
+    ids.forEach((id, k) => { const color = EFFECTS.find((e) => e.id === id).color;
+      for (let i = 0; i < n; i++) { const S = { x: ((i + 0.5) / n - 0.5) * W * 0.8, y: 0.06 * D, z: 6.5 }; drawEffect(id, S, t, color, gain, i * 0.9 + k); } });
+    ctx.globalCompositeOperation = 'source-over';
+    // 灯体の印
+    for (let i = 0; i < n; i++) { const p = P({ x: ((i + 0.5) / n - 0.5) * W * 0.8, y: 0.06 * D, z: 6.5 }); ctx.fillStyle = '#efe7d6'; ctx.fillRect(p.X - 9, p.Y - 9, 18, 18); }
+    times.push(performance.now() - tStart); if (times.length > 60) times.shift();
+    document.getElementById('ms').textContent = (times.reduce((a, b) => a + b, 0) / times.length).toFixed(2);
+    document.getElementById('lines').textContent = lineCount;
+    window.__SPIKE = { ms: Number(document.getElementById('ms').textContent), lines: lineCount, effect: cur, n, all: $all.checked };
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

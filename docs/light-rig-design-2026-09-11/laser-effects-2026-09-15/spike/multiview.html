@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>レーザー演出 4図確認（使い捨て・2026-09-15）</title>
+<style>
+  body{margin:0;background:#201b16;color:#efe7d6;font-family:"Hiragino Sans",system-ui,sans-serif;font-size:14px}
+  header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid #382f25}
+  header b{color:#9c823f;letter-spacing:.08em;margin-right:8px}
+  button{font:inherit;font-size:13px;height:28px;padding:0 10px;border:1px solid #382f25;background:#282119;color:#efe7d6;cursor:pointer}
+  button[aria-pressed="true"]{background:#9c823f;color:#1a1409;border-color:#9c823f}
+  label{display:inline-flex;align-items:center;gap:6px;margin-left:10px;color:rgba(240,231,214,.7)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px}
+  .cell{position:relative;background:#0d0e10;border:1px solid #382f25}
+  .cell span{position:absolute;left:6px;top:4px;font-size:12px;color:rgba(240,231,214,.55);pointer-events:none}
+  canvas{display:block;width:100%;height:auto}
+  #stat{padding:0 12px 10px;color:rgba(240,231,214,.7)}
+</style>
+</head>
+<body>
+<header>
+  <b>4図確認</b>
+  <span id="fx"></span>
+  <label>置き場所
+    <select id="mount"><option value="truss">トラス（奥バトン）</option><option value="floor">床（転がし・上向き）</option><option value="front">前（FOH）</option></select>
+  </label>
+  <label>見え方 <input id="vis" type="range" min="0" max="100" value="60"><span id="visv">60</span></label>
+</header>
+<div class="grid">
+  <div class="cell"><span>平面図</span><canvas id="cvPlan" width="960" height="620"></canvas></div>
+  <div class="cell"><span>側面図（下手を見る）</span><canvas id="cvSide" width="960" height="620"></canvas></div>
+  <div class="cell"><span>正面図2D</span><canvas id="cvFront2d" width="960" height="620"></canvas></div>
+  <div class="cell"><span>正面図3D</span><canvas id="cvFront3d" width="960" height="620"></canvas></div>
+</div>
+<p id="stat">置き場所ごとに基準の向きだけ変え、効果の生成ロジックは共通。客席向けの線は正面図だけ舞台の手前端(D)で切る。安全判定はしない。</p>
+<script>
+(() => {
+  'use strict';
+  const W = 12, D = 9, H = 8;
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+  const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z});
+  const add=(a,v)=>({x:a.x+v.x,y:a.y+v.y,z:a.z+v.z});
+  const scl=(a,k)=>({x:a.x*k,y:a.y*k,z:a.z*k});
+  const unit=a=>{const n=Math.hypot(a.x,a.y,a.z);return n>1e-8?{x:a.x/n,y:a.y/n,z:a.z/n}:{x:0,y:1,z:0};};
+  const cross=(a,b)=>({x:a.y*b.z-a.z*b.y,y:a.z*b.x-a.x*b.z,z:a.x*b.y-a.y*b.x});
+  const rgb=s=>{const n=parseInt(s.slice(1),16);return [n>>16&255,n>>8&255,n&255];};
+  const col=(h,a)=>{const[r,g,b]=rgb(h);return `rgba(${r},${g},${b},${a})`;};
+
+  // 置き場所ごとの光源位置と「中心方向」（既存の狙い点に相当）。地図の(x,y,z)=(左右,奥行き,高さ)。
+  const MOUNTS = {
+    truss: { S:{x:0,y:0.06*D,z:6.5}, axis:(eff)=>unit({x:0,y:0.55,z:-0.85}) },                     // 奥バトンから客席側・斜め下へ
+    floor: { S:{x:0,y:0.5*D,z:0.12}, axis:()=>unit({x:0,y:0.1,z:0.995}) },                          // 転がしから真上へ（トンネルの縦置き確認）
+    front: { S:{x:0,y:1.32*D,z:7.6}, axis:(eff)=>eff==='audience'?unit({x:0,y:0.97,z:-0.22}):unit({x:0,y:-0.32,z:-0.94}) }, // 客席スキャンは客席へ、それ以外は舞台へ
+  };
+  // 軸のまわりのローカル基底。軸がほぼ鉛直（floor）でも縮退しないよう参照ベクトルを切り替える（volume-light.js の compile と同じ手当て）。
+  const basisOf = (axis) => { const ref = Math.abs(axis.z) < 0.95 ? {x:0,y:0,z:1} : {x:0,y:1,z:0}; const right = unit(cross(ref, axis)); const up = cross(axis, right); return {axis,right,up}; };
+  const around = (b, az, el) => unit({ x: b.axis.x + Math.tan(az)*b.right.x + Math.tan(el)*b.up.x, y: b.axis.y + Math.tan(az)*b.right.y + Math.tan(el)*b.up.y, z: b.axis.z + Math.tan(az)*b.right.z + Math.tan(el)*b.up.z });
+
+  function raysFor(effect, S, basis, t, phase=0) {
+    const az0 = Math.sin(t*0.35+phase)*0.22;
+    if (effect==='beam') return [around(basis, az0*2, Math.sin(t*0.8+phase)*0.12)];
+    if (effect==='fan') { const N=12,span=1.0; return Array.from({length:N},(_,i)=>around(basis, az0+(i/(N-1)-0.5)*span, Math.sin(t*1.2+i*0.4+phase)*0.05)); }
+    if (effect==='sheet') { const N=28,span=1.5,el=Math.sin(t*0.5+phase)*0.06; return Array.from({length:N},(_,i)=>around(basis, az0*0.3+(i/(N-1)-0.5)*span, el)); }
+    if (effect==='liquid') { const N=36,span=1.6; return Array.from({length:N},(_,i)=>around(basis, (i/(N-1)-0.5)*span, 0.09*Math.sin(i*0.45+t*2.2+phase)+0.04*Math.sin(i*0.17-t*1.3))); }
+    if (effect==='tunnel') { const N=28,half=0.22,ax=around(basis, az0*0.4, 0); const rb=basisOf(ax); return Array.from({length:N},(_,i)=>{const th=i/N*Math.PI*2+t*0.9; return unit(add(ax, add(scl(rb.right,Math.cos(th)*half), scl(rb.up,Math.sin(th)*half))));}); }
+    if (effect==='audience') { const N=10,span=0.85; return Array.from({length:N},(_,i)=>around(basis, az0+(i/(N-1)-0.5)*span, -0.1-Math.abs(Math.sin(t*1.6+i*0.5+phase))*0.06)); }
+    return [];
+  }
+  // 床・奥壁・天井のどれかで止める。抜ける方向はREACHまで伸ばす。
+  const REACH=40;
+  function landing(S,d){ let tt=REACH,surf=null;
+    if(d.z<-1e-6){const tf=-S.z/d.z; if(tf<tt){tt=tf;surf='floor';}}
+    if(d.z>1e-6){const tc=(H-S.z)/d.z; if(tc<tt){tt=tc;surf='ceil';}}
+    if(d.y<-1e-6){const tb=-S.y/d.y; if(tb<tt){tt=tb;surf='back';}}
+    return {E:add(S,scl(d,tt)),surf};
+  }
+  // 正面図（2D/3D）だけ、客席側(y>D)へ向かう線を手前端で切る（本体の houseCutAtFront と同じ理由）。
+  // ★光源自体が客席側(S.y>=D、例: FOHの前明かり位置)にある場合は切らない（本体のガードと同じ。
+  //   これを付け忘れると光源が客席にある客席スキャンの正面図が空になる＝2026-09-15に本試験で実際に踏んだ）。
+  function frontCut(S,E){ if(S.y>=D-1e-6) return E; if(E.y<=D+1e-6) return E; const dy=E.y-S.y; if(!(dy>1e-6)) return E; const tt=(D-S.y)/dy; return add(S,scl(sub(E,S),tt)); }
+
+  function drawRayList(ctx,P,S,rays,color,gain,cut){
+    const s=P(S);
+    ctx.globalCompositeOperation='lighter';
+    rays.forEach(d=>{ let {E}=landing(S,d); if(cut) E=frontCut(S,E); const e=P(E);
+      ctx.lineWidth=7; ctx.strokeStyle=col(color,0.10*gain); ctx.beginPath(); ctx.moveTo(s.X,s.Y); ctx.lineTo(e.X,e.Y); ctx.stroke();
+      ctx.lineWidth=1.4; ctx.strokeStyle=col(color,0.85*gain); ctx.beginPath(); ctx.moveTo(s.X,s.Y); ctx.lineTo(e.X,e.Y); ctx.stroke(); });
+    ctx.globalCompositeOperation='source-over';
+  }
+
+  // ---- 4つの投影 ----
+  function projPlan(cv){ const pad=60,sx=(cv.width-2*pad)/W,sy=(cv.height-2*pad)/(D+8); return w=>({X:pad+(w.x+W/2)*sx, Y:pad+w.y*sy}); }
+  function projSide(cv){ const pad=60,sy=(cv.width-2*pad)/(D+8),sz=(cv.height-2*pad)/H; return w=>({X:pad+w.y*sy, Y:cv.height-pad-w.z*sz}); }
+  function projFront2d(cv){ const pad=60,sx=(cv.width-2*pad)/W,sz=(cv.height-2*pad)/H; return w=>({X:cv.width/2+w.x*sx, Y:cv.height-pad-w.z*sz}); }
+  function projFront3d(cv){ const EYE={x:0,y:D+10,z:3.2},F=1500,CX=cv.width/2,CY=cv.height*0.42,NEAR=0.6;
+    return w=>{const dist=Math.max(NEAR,EYE.y-w.y); return {X:CX+F*(w.x-EYE.x)/dist, Y:CY-F*(w.z-EYE.z)/dist};}; }
+
+  function stageOutline(ctx,P,cv,kind){
+    ctx.fillStyle='rgba(255,255,255,0.05)';
+    if(kind==='plan'){ const a=P({x:-W/2,y:0,z:0}),b=P({x:W/2,y:0,z:0}),c=P({x:W/2,y:D,z:0}),d=P({x:-W/2,y:D,z:0});
+      ctx.beginPath();ctx.moveTo(a.X,a.Y);ctx.lineTo(b.X,b.Y);ctx.lineTo(c.X,c.Y);ctx.lineTo(d.X,d.Y);ctx.closePath();ctx.fill();
+      ctx.fillStyle='rgba(156,130,63,0.06)'; const e=P({x:-W/2,y:D+8,z:0}),f=P({x:W/2,y:D+8,z:0}); ctx.beginPath();ctx.moveTo(d.X,d.Y);ctx.lineTo(c.X,c.Y);ctx.lineTo(f.X,f.Y);ctx.lineTo(e.X,e.Y);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(239,231,214,0.25)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(a.X,a.Y);ctx.lineTo(b.X,b.Y);ctx.lineTo(c.X,c.Y);ctx.lineTo(d.X,d.Y);ctx.closePath();ctx.stroke();
+      return; }
+    if(kind==='side'){ const a=P({x:0,y:0,z:0}),b=P({x:0,y:D,z:0}),c=P({x:0,y:D,z:H}),d=P({x:0,y:0,z:H});
+      ctx.beginPath();ctx.moveTo(a.X,a.Y);ctx.lineTo(b.X,b.Y);ctx.lineTo(c.X,c.Y);ctx.lineTo(d.X,d.Y);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(239,231,214,0.25)';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='rgba(156,130,63,0.06)'; const e=P({x:0,y:D+8,z:0}); ctx.fillRect(b.X,Math.min(b.Y,c.Y),e.X-b.X,cv.height-Math.min(b.Y,c.Y));
+      return; }
+    if(kind==='front2d'){ const a=P({x:-W/2,y:0,z:0}),b=P({x:W/2,y:0,z:0}),c=P({x:W/2,y:0,z:H}),d=P({x:-W/2,y:0,z:H});
+      ctx.beginPath();ctx.moveTo(a.X,a.Y);ctx.lineTo(b.X,b.Y);ctx.lineTo(c.X,c.Y);ctx.lineTo(d.X,d.Y);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(239,231,214,0.25)';ctx.lineWidth=2;ctx.stroke(); return; }
+    const bl=P({x:-W/2,y:0,z:0}),br=P({x:W/2,y:0,z:0}),fl=P({x:-W/2,y:D,z:0}),fr=P({x:W/2,y:D,z:0}),tl=P({x:-W/2,y:0,z:H}),tr=P({x:W/2,y:0,z:H});
+    ctx.beginPath();ctx.moveTo(bl.X,bl.Y);ctx.lineTo(br.X,br.Y);ctx.lineTo(fr.X,fr.Y);ctx.lineTo(fl.X,fl.Y);ctx.closePath();ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.03)';ctx.beginPath();ctx.moveTo(bl.X,bl.Y);ctx.lineTo(br.X,br.Y);ctx.lineTo(tr.X,tr.Y);ctx.lineTo(tl.X,tl.Y);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='rgba(239,231,214,0.25)';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='rgba(156,130,63,0.05)';ctx.fillRect(0,Math.min(fl.Y,fr.Y),cv.width,cv.height-Math.min(fl.Y,fr.Y));
+  }
+
+  const EFFECTS=[['beam','ビーム','#38e04a'],['fan','ファン','#ff2a6d'],['sheet','シート','#2ad3ff'],['tunnel','トンネル','#ffe14a'],['liquid','リキッドスカイ','#2ad3ff'],['audience','客席スキャン（案）','#ff2a6d']];
+  let cur='fan';
+  const fxBox=document.getElementById('fx');
+  EFFECTS.forEach(([id,name])=>{const b=document.createElement('button');b.textContent=name;b.setAttribute('aria-pressed',String(id===cur));b.onclick=()=>{cur=id;fxBox.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));};fxBox.append(b);});
+  const $mount=document.getElementById('mount'),$vis=document.getElementById('vis');
+  $vis.oninput=()=>document.getElementById('visv').textContent=$vis.value;
+
+  const views=[['cvPlan','plan',projPlan],['cvSide','side',projSide],['cvFront2d','front2d',projFront2d],['cvFront3d','front3d',projFront3d]];
+  const t0=performance.now();
+  function frame(ts){
+    const t=(ts-t0)/1000, gain=Number($vis.value)/100;
+    const m=MOUNTS[$mount.value]; const axis=m.axis(cur); const basis=basisOf(axis); const rays=raysFor(cur,m.S,basis,t);
+    const color=EFFECTS.find(e=>e[0]===cur)[2];
+    views.forEach(([id,kind,mk])=>{ const cv=document.getElementById(id),ctx=cv.getContext('2d'); const P=mk(cv);
+      ctx.clearRect(0,0,cv.width,cv.height); ctx.fillStyle='#0d0e10'; ctx.fillRect(0,0,cv.width,cv.height);
+      stageOutline(ctx,P,cv,kind);
+      // 灯体位置の目印
+      const sp=P(m.S); ctx.fillStyle='#efe7d6'; ctx.fillRect(sp.X-6,sp.Y-6,12,12);
+      drawRayList(ctx,P,m.S,rays,color,gain, kind==='front2d'||kind==='front3d');
+    });
+    window.__SPIKE4={effect:cur,mount:$mount.value,lines:rays.length};
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
