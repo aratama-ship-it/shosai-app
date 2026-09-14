@@ -30,23 +30,20 @@
      置き方に合わせる（2026-09-13 本人要望）。v をわずかに手前へ取るのは、壁ぴったり(v=0)だと
      幕の板と重なって描画が競合するのを避けるため——実機でも幕を焼かないよう少し離して置く。
      2026-09-13 本人指摘で作り直し: 個別に並べるものではなく「もとから一列のバー」で、
-     壁全体を染める前提。持つ値は 長さ(len, 0〜1)・置き方(rung: floor=床から上向き
-     ／top=上部から下向き)・届く高さ(reachM, m)。横位置は中央固定（同日の指摘「中央しか
-     ありえない」）。fixtureWorld は選択やアイコンの基準になる「バーの中心点」を返し、
-     実際の帯（左右の端・登る高さ）は cycBarSpan で別に持つ。 */
+     壁全体を染める前提。幅は常に舞台幅100%で、利用者が長さを変える値は持たない。
+     置き方は rung（floor=床から上向き／top=上部から下向き）だけ。fixtureWorld は選択や
+     アイコンの基準になる「バーの中心点」を返し、実際の左右端は cycBarSpan で別に持つ。 */
   const CYC_MOUNT_V = 0.02;
   const CYC_REACH_MAX = 10;     // 届く高さの上限(m)。2026-09-13 本人指定
   /* 客席へ向けた光（surface: "house"）の狙い点は舞台の手前端(v=1)から aheadM(m) だけ客席側。
      前明かりの ahead と同じ考え方で、上限も同じ20m（2026-09-13 本人要望「当てる場所に客席方面」）。 */
   const HOUSE_AHEAD_MAX = 20;
-  /* バーの世界座標での帯。xL/xR＝左右の端、y＝奥行き、z0＝光源の高さ（床=0／上部=dims.H）、
-     reach＝壁を登る／降りる高さ(m)。以前は広がり(度)から割合で出していたが、
-     「10mまで出せるように」との指定（2026-09-13）で実寸のまま持つことにした。
-     壁より高くは出しても見えないので、描くときに壁の高さで止める。 */
+  /* バーの世界座標での帯。xL/xRは常に舞台の左右端、y＝奥行き、z0＝光源の高さ
+     （床=0／上部=dims.H）、reach＝既定の壁面ウォッシュ高。壁より高くは出しても
+     見えないので、描くときに壁の高さで止める。 */
   const cycBarSpan = (fixture, dims) => {
     const m = (fixture && fixture.mount) || {};
-    const len = clamp(finite(m.len, 0.9), 0.05, 1);
-    const half = (len * dims.W) / 2;
+    const half = dims.W / 2;
     const top = m.rung === "top";
     const reach = clamp(finite(m.reachM, 4), 0.3, CYC_REACH_MAX);
     return { xL: -half, xR: half, y: CYC_MOUNT_V * dims.D, z0: top ? dims.H : 0, top, reach };
@@ -65,13 +62,13 @@
     kind: kind === "fixed" ? "fixed" : "moving",
     // 光の広がり（度）。ムービングのズーム範囲は実機で 7°〜50°（PLUTO600 PROFILE MK2）。
     // 固定灯はランプ／レンズで決まり、ショー中は変えられない（PARは玉を替えるしかない）。
-    beamDeg: clamp(finite(beamDeg, kind === "fixed" ? 24 : 15), 4, 70),
+    beamDeg: clamp(finite(beamDeg, 16), 4, 70),
   });
   const isMoving = (fixture) => (fixture && fixture.kind) !== "fixed";
   /* いま実際に出ている広がり。ムービングだけ、このシーンのズーム（light.beamDeg）で上書きできる。
      固定灯は仕込みの値（fixture.beamDeg）のまま。 */
   const beamDegOf = (fixture, light) => {
-    const base = clamp(finite(fixture && fixture.beamDeg, 18), 4, 70);
+    const base = clamp(finite(fixture && fixture.beamDeg, 16), 4, 70);
     if (!isMoving(fixture) || !light || light.beamDeg == null) return base;
     return clamp(finite(light.beamDeg, base), 4, 70);
   };
@@ -172,10 +169,9 @@
      バーンドア: 固定灯だけの装備。四方（床・空中なら 奥・手前・下手・上手／奥の壁・客席なら 上・下・下手・上手）
        から光の縁を切る。fixture.barn = { back, front, left, right } 各 0〜1（0＝開いている、1＝中心まで閉める）。
        仕込みで決める値なので全シーン共通（fixture.beamDeg と同じ層）。ムービングには付けない（本人指定）。
-     カッター: 円形の光を4枚の刃で切る。light.shutter = { on, w, h }。このシーンの値（ゴボと同じ層）。
-       w/h の1.0までは「光の輪に内接する正方形の辺」を1とした比。1.0を超えたら刃が円周へ退き、
-       1.4でその向きの刃が光の輪から完全に抜ける。したがって幅・高さを上げるほど四隅に円弧が戻り、
-       両方1.4なら元の円になる（2026-09-14 本人指摘）。
+     カッター: 光を四角にする。light.shutter = { on, w, h }。このシーンの値（ゴボと同じ層）。
+       w/h は「光の輪に内接する正方形の辺」を1とした比。1.4（≒√2）まで上げるとその向きは輪の外まで開き、
+       もう一方だけが効いた「帯」になる。細かい調整はしない（本人指定「四角形、異なるサイズの四角形」）。
      どちらも「切る線」の集まりに直してから描く: 世界座標の向き n（外向き）と、中心からの距離（光の半径＝1）。
      縁の柔らかさ soft も半径に対する比。バーンドアは柔らかく、カッターは硬い。 */
   const BARN_KEYS = Object.freeze(["back", "front", "left", "right"]);
@@ -191,16 +187,6 @@
   };
   const barnActive = (fixture) => Boolean(fixture) && !isMoving(fixture) && BARN_KEYS.some((k) => barnOf(fixture)[k] > 0);
   const shutterActive = (light) => Boolean(light && light.shutter && light.shutter.on);
-  /* カッター刃の中心からの距離（光の半径=1）。
-     1.0では円に内接する四角なので 1/√2。そこから最大値までは刃を円周へ戻す。
-     UIの最大値1.4は√2の丸め値だが、0.01だけ刃が残る旧計算では最大でも平らな辺が見えたため、
-     表示上の最大値を物理的な「刃が完全に抜けた状態」へ正規化する。 */
-  const shutterEdgeDistance = (value) => {
-    const v = clamp(finite(value, 1), SHUTTER_MIN, SHUTTER_MAX);
-    if (v <= 1) return v / Math.SQRT2;
-    const reopen = (v - 1) / (SHUTTER_MAX - 1);
-    return Math.SQRT1_2 + (1 - Math.SQRT1_2) * reopen;
-  };
   /* 切る線（世界座標）。vert = "y"（床・空中: 奥⇄手前が y 軸、奥＝−y）／"z"（奥の壁・客席: 上⇄下が z 軸、上＝+z）。
      返り値 [{ key, n:{x,y,z}, f, soft }]。f は中心までを1とした閉め具合。 */
   const frameDoors = (fixture, light, vert) => {
@@ -213,15 +199,15 @@
     }
     if (shutterActive(light)) {
       const s = light.shutter;
-      const fw = 1 - shutterEdgeDistance(s.w);
-      const fh = 1 - shutterEdgeDistance(s.h);
+      const fw = 1 - clamp(finite(s.w, 1), SHUTTER_MIN, SHUTTER_MAX + 0.1) / Math.SQRT2;
+      const fh = 1 - clamp(finite(s.h, 1), SHUTTER_MIN, SHUTTER_MAX + 0.1) / Math.SQRT2;
       /* 回転（2026-09-14 本人要望）: 面の中（x と up が張る面）で四角を回す。バーンドアは回さない（舞台軸に固定）。
          正の角で、床なら真上から見て時計回り（x → 奥 の向き）、奥の壁なら客席から見て反時計回り（x → 上）。 */
       const th = (clamp(finite(s.rot, 0), -180, 180) * Math.PI) / 180, cs = Math.cos(th), sn = Math.sin(th);
       const rx = { x: cs, y: sn * up.y, z: sn * up.z }, ru = { x: -sn, y: cs * up.y, z: cs * up.z };
       const neg = (v) => ({ x: -v.x, y: -v.y, z: -v.z });
-      if (fw > 1e-9) { out.push({ key: "left", n: neg(rx), f: fw, soft: SHUTTER_SOFT }); out.push({ key: "right", n: rx, f: fw, soft: SHUTTER_SOFT }); }
-      if (fh > 1e-9) { out.push({ key: "back", n: ru, f: fh, soft: SHUTTER_SOFT }); out.push({ key: "front", n: neg(ru), f: fh, soft: SHUTTER_SOFT }); }
+      if (fw > 0) { out.push({ key: "left", n: neg(rx), f: fw, soft: SHUTTER_SOFT }); out.push({ key: "right", n: rx, f: fw, soft: SHUTTER_SOFT }); }
+      if (fh > 0) { out.push({ key: "back", n: ru, f: fh, soft: SHUTTER_SOFT }); out.push({ key: "front", n: neg(ru), f: fh, soft: SHUTTER_SOFT }); }
     }
     return out;
   };
@@ -583,16 +569,17 @@
 
   const describeMount = (fixture, rig) => {
     const m = fixture.mount || {};
+    const mm = (metres) => `${Math.round(finite(metres, 0) * 1000)}mm`;
     const lr = (u) => (u < 0.4 ? "下手寄り" : u > 0.6 ? "上手寄り" : "中央");
     if (m.type === "truss") {
       const t = trussById(rig, m.trussId);
       const row = trussRow(rig, m.trussId);
-      return t ? `吊り・奥から${row}列目のバトン（高さ約${Math.round(t.h)}m）・${lr(m.u)}` : "吊り（バトン不明）";
+      return t ? `吊り・奥から${row}列目のバトン（高さ約${mm(t.h)}）・${lr(m.u)}` : "吊り（バトン不明）";
     }
     if (m.type === "floor") return `転がし・${lr(m.u)}・${m.v < 0.4 ? "奥" : m.v > 0.6 ? "手前" : "中ほど"}`;
-    if (m.type === "front") return `前明かり・${lr(m.u)}・舞台前から約${Math.round(finite(m.ahead, 5))}m・高さ約${Math.round(finite(m.h, 7))}m`;
-    if (m.type === "side") return `SS・${m.side === "shimote" ? "下手" : "上手"}の袖（高さ約${Math.round(m.h)}m）・${m.v < 0.4 ? "奥寄り" : m.v > 0.6 ? "手前寄り" : "中ほど"}`;
-    if (m.type === "cyc") return `ホリゾントライト（${m.rung === "top" ? "上" : "床"}）・幅約${Math.round(clamp(finite(m.len, 0.9), 0.05, 1) * 100)}%`;
+    if (m.type === "front") return `前明かり・${lr(m.u)}・舞台前から約${mm(finite(m.ahead, 5))}・高さ約${mm(finite(m.h, 7))}`;
+    if (m.type === "side") return `SS・${m.side === "shimote" ? "下手" : "上手"}の袖（高さ約${mm(m.h)}）・${m.v < 0.4 ? "奥寄り" : m.v > 0.6 ? "手前寄り" : "中ほど"}`;
+    if (m.type === "cyc") return `ホリゾントライト（${m.rung === "top" ? "上" : "床"}）・舞台幅100%`;
     return "取り付け未設定";
   };
 
@@ -610,8 +597,8 @@
   };
 
   const posWord = (p) => (finite(p && p.aheadM, 0) > 0
-    ? `${p.u < 0.4 ? "下手" : p.u > 0.6 ? "上手" : "中央"}・舞台前から約${finite(p.aheadM, 0).toFixed(1)}m${p.hM > 0.05 ? `・高さ約${p.hM.toFixed(1)}m` : ""}`
-    : `${p.u < 0.4 ? "下手" : p.u > 0.6 ? "上手" : "中央"}・奥から${(p.v * 100).toFixed(0)}%${p.hM > 0.05 ? `・高さ約${p.hM.toFixed(1)}m` : ""}`);
+    ? `${p.u < 0.4 ? "下手" : p.u > 0.6 ? "上手" : "中央"}・舞台前から約${Math.round(finite(p.aheadM, 0) * 1000)}mm${p.hM > 0.05 ? `・高さ約${Math.round(p.hM * 1000)}mm` : ""}`
+    : `${p.u < 0.4 ? "下手" : p.u > 0.6 ? "上手" : "中央"}・奥から${(p.v * 100).toFixed(0)}%${p.hM > 0.05 ? `・高さ約${Math.round(p.hM * 1000)}mm` : ""}`);
   const PLANE_LABEL = { horizontal: "水平の円", frontVertical: "客席側から見た縦の円", sideVertical: "舞台横から見た縦の円" };
 
   /* 強さ（調光）。未設定の灯は 100 とみなす＝これまでの「点いていれば全開」と同じ見え方になる。
@@ -827,7 +814,7 @@
       const diag = Math.abs((path.a.hM || 0) - (path.b.hM || 0)) > 0.15 ? "（斜めの軌道）" : "";
       return `${strength}${face}の${posWord(path.a)}〜${posWord(path.b)}を往復${diag}（${sp}）。${path.start === "b" ? posWord(path.b) : posWord(path.a)}から開始${zoom}${goboText}`;
     }
-    if (path.kind === "circle") return `${strength}${face}の${posWord(path.c)}を中心に半径約${Math.round(path.r * 10) / 10}mで${PLANE_LABEL[path.plane] || "水平の円"}・${path.dir === "ccw" ? "反時計回り" : "時計回り"}（${sp}）${zoom}${goboText}`;
+    if (path.kind === "circle") return `${strength}${face}の${posWord(path.c)}を中心に半径約${Math.round(path.r * 1000)}mmで${PLANE_LABEL[path.plane] || "水平の円"}・${path.dir === "ccw" ? "反時計回り" : "時計回り"}（${sp}）${zoom}${goboText}`;
     return `${strength}${face}の${posWord(path.a || newPoint())}を静止で当てる${zoom}${goboText}`;
   };
 
@@ -887,6 +874,6 @@
     makePlanProjector, makeFrontProjector, makeSideProjector, planToUV, frontToUH, sideToVH,
     describeMount, describeCue,
     CURTAIN_KINDS, curtainKindLabel, curtainParts,
-    BARN_KEYS, SHUTTER_MIN, SHUTTER_MAX, SHUTTER_ROT_MAX, newShutter, barnOf, barnActive, shutterActive, shutterEdgeDistance, frameDoors, doorCutInEllipse,
+    BARN_KEYS, SHUTTER_MIN, SHUTTER_MAX, SHUTTER_ROT_MAX, newShutter, barnOf, barnActive, shutterActive, frameDoors, doorCutInEllipse,
   });
 })(typeof window !== "undefined" ? window : globalThis);

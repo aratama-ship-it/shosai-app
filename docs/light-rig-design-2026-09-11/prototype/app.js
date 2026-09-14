@@ -6,20 +6,11 @@
 (function () {
   "use strict";
   const E = window.RIG_ENGINE, V = window.VOLUME_LIGHT;
-  let distanceMetric = false, spatialQuick = false, frontFocus = false;
+  let distanceMetric = false, spatialQuick = false;
   /* 光条・光だまり・まぶしさ・人物の受光を、全図で同じ見え方へ固定する。
      灯の強さやLX cueには入れないので、保存済みの照明データは変わらない。 */
   const VISUAL_GAIN = 1.8;
-  const VISUAL_KNEE = 1 / VISUAL_GAIN;
-  const VISUAL_TOP = 1.45; // 最大値では中域の飽和後にも明るさを約45%上積みする
-  const displayLevel = (value) => {
-    const v = E.clamp(E.finite(value, 0), 0, 1);
-    return v <= VISUAL_KNEE ? v : VISUAL_KNEE + ((v - VISUAL_KNEE) / (1 - VISUAL_KNEE)) * (VISUAL_TOP - VISUAL_KNEE);
-  };
-  const visualAlpha = (value) => {
-    const v = E.clamp(E.finite(value, 0), 0, 1);
-    return v <= VISUAL_KNEE ? v * VISUAL_GAIN : 1 + ((v - VISUAL_KNEE) / (1 - VISUAL_KNEE)) * (VISUAL_TOP - 1);
-  };
+  const visualAlpha = (value) => E.clamp(E.finite(value, 0) * VISUAL_GAIN, 0, 1);
   const $ = (id) => document.getElementById(id);
 
   /* ---------- 状態 ---------- */
@@ -233,7 +224,7 @@
     collapsed: new Set(), filter: "all",   // 一覧: 取り付け場所ごとの折り畳みと絞り込み（20灯以上向け）
     snap: false,                           // 1mのグリッドに合わせて置く・動かす（本人要望 2026-09-11）
     placeOpen: false,                      // 左パネル上部の「配置」を開いているか（既定は畳む）
-    show: { no: true, fixtures: true, beam: true, path: true, grid: true, pieces: true, names: true, border: false, blackout: false },
+    show: { no: true, fixtures: true, beam: true, path: true, grid: true, pieces: true, names: true, border: false, blackout: true },
     /* 作業灯をどれだけ消すか（0〜100%）。100で真っ暗、0で消さないのと同じ
        （2026-09-13 本人要望「押したら全部消えてしまうので、どれくらい消すか決めたい」）。
        図の見え方の設定なので show と同じくUndoの対象にはしない。 */
@@ -258,7 +249,7 @@
        ここに持つのは「次に当てる値」で、当てた結果は各灯の light に入る（2026-09-12 本人要望）。 */
     /* 狙う高さ hM は未指定なら取り付け方から決める（吊り・前明かり・SS＝床／転がし＝天井際）。
        vv は狙う奥行き（0=最奥・1=最前）。どちらも当てたあとに直せる＝それが軌道の変え方になる。 */
-    sl: { form: "sweep", span: 0.8, hM: null, vv: 0.4, periodSec: 6, beamDeg: 8, stepSec: 0.5, easing: "linear" },
+    sl: { form: "sweep", span: 0.8, hM: null, vv: 0.4, periodSec: 6, beamDeg: 16, stepSec: 0.5, easing: "linear" },
     slLive: "",         // 直近にサーチライトを当てた灯の並び（同じ顔ぶれの間はつまみが即反映される）
     slGrad: { from: "#7ab8ff", to: "#ff7a5c" },   // 1灯ずつ色をずらす（グラデーション）の2色（2026-09-12 本人要望）
     /* 「動きの型」欄はアコーディオンで畳んでおく（2026-09-13 本人要望）。
@@ -278,6 +269,13 @@
   const hexToRgb = (hex) => { const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || "") || []; return [1, 2, 3].map((i) => parseInt(m[i] || "ff", 16)); };
   const rgbToHex = (rgb) => "#" + rgb.map((v) => Math.round(E.clamp(v, 0, 255)).toString(16).padStart(2, "0")).join("");
   const lerpColor = (a, b, t) => { const A = hexToRgb(a), B = hexToRgb(b); return rgbToHex(A.map((v, i) => v + (B[i] - v) * t)); };
+  const isHexColor = (c) => /^#[0-9a-f]{6}$/i.test(c || "");
+  // ホリゾントは1本の器具でも、横に並ぶ複数の灯と同じように左右へ色を配れる。
+  // 既存の color は単色に戻したときの色と、古い保存データの互換用に残す。
+  const cycGradientOf = (light) => {
+    const g = light && light.cycGradient;
+    return g && isHexColor(g.from) && isHexColor(g.to) ? { from: g.from, to: g.to } : null;
+  };
 
   /* 1mグリッドへの吸着。u・vは正規化座標なので、いったん実寸(m)へ直して丸め、また割合へ戻す。
      舞台の幅・奥行きが整数mでない場合も、端を越えないようにクランプする。 */
@@ -362,6 +360,14 @@
     SIDE.kind = state.sideView;
     document.querySelectorAll("#sidemode button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.side === state.sideView)));
   }
+  function syncDistanceMetric() {
+    const b = $("distance-mode"); if (!b) return;
+    b.textContent = distanceMetric ? "距離：実寸" : "距離：固定帯";
+    b.setAttribute("aria-pressed", String(distanceMetric));
+    b.title = distanceMetric
+      ? "客席方向の距離を実寸で表示します。押すと固定帯へ戻します"
+      : "客席方向を固定帯で表示します。押すと実寸へ切り替えます";
+  }
   const secOf = (kind) => SECS.find((x) => x.kind === kind);
   /* 舞台の矩形（内部px）。キャンバスの実寸から毎回計算するので、
      モーダルを広げても袖・客席の帯の比率が保たれる。 */
@@ -444,12 +450,6 @@
     syncFigureSizes();   // 先に各図の表示高さを決めてから内部解像度を合わせる
     const fit = (c) => { const r = c.getBoundingClientRect(); if (!r.width) return; const W = Math.max(300, Math.round(r.width * 2)), H = Math.max(160, Math.round(r.height * 2)); if (c.width !== W || c.height !== H) { c.width = W; c.height = H; } };
     [plan, secL, secF].forEach(fit);
-  }
-  function setFrontFocus(on) {
-    frontFocus = Boolean(on);
-    document.body.classList.toggle("front-focus", frontFocus);
-    // 表示領域が切り替わった後の実寸で内部キャンバスも作り直す。
-    requestAnimationFrame(renderAll);
   }
   const secProj = (sec) => (sec.kind === "front"
     ? (state.front3d
@@ -563,7 +563,8 @@
       commit(`ホリゾントライト（${rung === "top" ? "上" : "床"}）を外しました`);
       return;
     }
-    const f = E.newFixture(uid("f"), state.nextNo++, { type: "cyc", len: 0.9, rung, reachM: 4 }, "", "fixed");
+    // ホリゾントライトは舞台幅いっぱいの既製バー。長さは持たせず、常に100%で描く。
+    const f = E.newFixture(uid("f"), state.nextNo++, { type: "cyc", rung, reachM: 4 }, "", "fixed");
     state.rig.fixtures.push(f);
     state.sel = new Set([f.id]);
     commit(`ホリゾントライト（${rung === "top" ? "上" : "床"}）を置きました`);
@@ -870,7 +871,7 @@
     pctx.fillStyle = "rgba(240,231,214,0.45)"; pctx.font = "20px sans-serif"; pctx.textBaseline = "top";
     pctx.fillText("奥（奥壁）", B.x + 8, B.y - 30); pctx.fillText("舞台の手前 ── この先が客席 ▼", B.x + B.w / 2 - 190, B.y + B.h + 8);
     pctx.fillText("下手", 30, B.y + B.h / 2 - 10); pctx.fillText("上手", B.x + B.w + 30, B.y + B.h / 2 - 10);
-    pctx.fillText(`${d.W}m × ${d.D}m`, B.x + B.w - 120, B.y - 30);
+    pctx.fillText(`${d.W * 1000}mm × ${d.D * 1000}mm`, B.x + B.w - 170, B.y - 30);
 
     const litSpots = [];   // 作業灯を消す（ブラックアウト）用。光の当たっている場所だけ集める
     drawCycWashes(pctx, P, state.dims, litSpots);   // 壁の色。演者・セットより先に塗る
@@ -884,7 +885,7 @@
       pctx.beginPath(); pctx.moveTo(B.x - 24, Y); pctx.lineTo(B.x + B.w + 24, Y); pctx.stroke();
       /* 印の上端（ムービングの輪で Y-23）より上へ逃がす。舞台の外へはみ出す時だけ内側へ寄せる。
          袖にいるSSの印（B.x-44）を板で隠さないよう、書き出しは舞台の中から。 */
-      planLabels.push({ text: `${t.label || "バトン"}　奥から${E.trussRow(state.rig, t.id)}列目・奥行き${(t.v * state.dims.D).toFixed(1)}m・高さ約${t.h.toFixed(1)}m${t.tentative ? "（仮の高さ）" : ""}`,
+      planLabels.push({ text: `${t.label || "バトン"}　奥から${E.trussRow(state.rig, t.id)}列目・奥行き${mmText(t.v * state.dims.D)}・高さ約${mmText(t.h)}${t.tentative ? "（仮の高さ）" : ""}`,
         x: B.x + 6, y: Math.max(B.y + 2, Y - 52), color: sel ? "#d3ac59" : "rgba(214,182,110,0.95)" });
     });
     // 予告（ゴースト）
@@ -895,7 +896,7 @@
       const gv = snapV(E.clamp((hv.Y - B.y) / B.h, 0, 1)); const Y = B.y + gv * B.h;
       pctx.strokeStyle = "rgba(211,172,89,0.45)"; pctx.setLineDash([12, 8]); pctx.lineWidth = 4;
       pctx.beginPath(); pctx.moveTo(B.x - 24, Y); pctx.lineTo(B.x + B.w + 24, Y); pctx.stroke(); pctx.setLineDash([]);
-      planLabels.push({ text: `ここにバトンを渡す（クリック）　奥行き${(gv * state.dims.D).toFixed(1)}m`, x: B.x + B.w / 2 - 160, y: Math.max(B.y + 2, Y - 52), color: "rgba(240,231,214,0.9)" });
+      planLabels.push({ text: `ここにバトンを渡す（クリック）　奥行き${mmText(gv * state.dims.D)}`, x: B.x + B.w / 2 - 175, y: Math.max(B.y + 2, Y - 52), color: "rgba(240,231,214,0.9)" });
     }
     if (state.tool === "fixture" && hv && hv.canvas === "plan") {
       const t = E.trussById(state.rig, state.selTruss);
@@ -930,7 +931,7 @@
             pctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.7); pctx.lineWidth = 3; pctx.beginPath();
             pctx.moveTo(tp.X - 16, tp.Y - 16); pctx.lineTo(tp.X + 16, tp.Y + 16); pctx.moveTo(tp.X + 16, tp.Y - 16); pctx.lineTo(tp.X - 16, tp.Y + 16); pctx.stroke();
             pctx.beginPath(); pctx.arc(tp.X, tp.Y, 22, 0, Math.PI * 2); pctx.stroke();
-            if (!dim) { pctx.fillStyle = hexA(l.color, 0.9); pctx.font = "17px sans-serif"; pctx.textBaseline = "bottom"; pctx.fillText(`空中 ${T.z.toFixed(1)}m`, tp.X + 26, tp.Y - 8); }
+            if (!dim) { pctx.fillStyle = hexA(l.color, 0.9); pctx.font = "17px sans-serif"; pctx.textBaseline = "bottom"; pctx.fillText(`空中 ${mmText(T.z)}`, tp.X + 26, tp.Y - 8); }
           } // 床の輪は drawBeam が広がりから描く
         } else if (l.surface === "house") {
           /* 客席へ向けた光。狙い点は客席帯に置き（実距離は数値）、光だまりは描かない——
@@ -948,7 +949,7 @@
             litSpots.push({ fromX: s.X, fromY: s.Y, ...sp, lv });
             const R = Math.max(sp.halfW * 0.9, 26) * glareMul(l); drawGlare(pctx, th0.X, th0.Y, R, l.color, lv, dim); litSpots.push(glareHole(th0.X, th0.Y, R, lv));
           }
-          if (!dim) { pctx.fillStyle = hexA(l.color, 0.9); pctx.font = "15px sans-serif"; pctx.textBaseline = "middle"; pctx.fillText(`客席へ 舞台前から${Math.max(0, T.y - state.dims.D).toFixed(1)}m・高さ${T.z.toFixed(1)}m（目眩まし）`, th0.X + 22, th0.Y); }
+          if (!dim) { pctx.fillStyle = hexA(l.color, 0.9); pctx.font = "15px sans-serif"; pctx.textBaseline = "middle"; pctx.fillText(`客席へ 舞台前から${mmText(Math.max(0, T.y - state.dims.D))}・高さ${mmText(T.z)}（目眩まし）`, th0.X + 22, th0.Y); }
         } else if (showOn("beam")) { const sp = drawBeam(pctx, s, { X: s.X, Y: B.y }, { S, T }, l.color, beamOf(f), dim, B.w / state.dims.W, squashFor("plan", l.surface), true, false, lv, l, null, P, frameOf(f, l)); litSpots.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); }
         // ハンドル（選択灯のみ・床・空中・客席は平面図で位置を動かす）
         if (sel && l.surface !== "back") drawHandles(pctx, PH, l, f.id);
@@ -961,7 +962,11 @@
       const S = fixtureWorld(f); if (!S) return; const p = P(S);
       const X = f.mount.type === "side" ? (f.mount.side === "shimote" ? B.x - SIDE_DX : B.x + B.w + SIDE_DX) : p.X;
       const Y = isFront(f) ? B.y + B.h + FRONT_DY : p.Y;     // 前明かりは客席帯に並べる（実距離は数値で）
-      if (showOn("fixtures")) drawFixtureMark(pctx, X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
+      if (showOn("fixtures")) {
+        const o = { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) };
+        if (f.mount.type === "cyc") o.bar = cycFixtureBar(P, f);
+        drawFixtureMark(pctx, X, Y, shapeOf(f.mount), o);
+      }
     });
     // バトンの名前と予告（印の上に重ねて、暗い板の上に書く）
     planLabels.forEach((L) => plateText(pctx, L.text, L.x, L.y, { color: L.color }));
@@ -977,7 +982,7 @@
       pctx.fillRect(x, y, mw, mh); pctx.strokeRect(x, y, mw, mh); pctx.restore();
     }
     // 状態
-    const st = state.tool === "truss" ? "バトンを渡す" : state.tool === "fixture" ? "吊り 配置中" : state.tool === "floor" ? "転がし 配置中" : state.tool === "side" ? "SS 配置中" : state.drag ? "ドラッグ調整中" : state.sel.size > 1 ? `${state.sel.size}灯を選択中` : "選択";
+    const st = state.tool === "truss" ? "バトンを渡す" : state.tool === "fixture" ? "吊り 配置中" : state.tool === "floor" ? "転がし 配置中" : state.tool === "side" ? "SS 配置中" : state.tool === "border" ? "一文字幕を調整中" : state.tool === "masking" ? "前一文字・袖幕を調整中" : state.drag ? "ドラッグ調整中" : state.sel.size > 1 ? `${state.sel.size}灯を選択中` : "選択";
     $("statebadge").textContent = st;
   }
   const inBox = (p, B) => p.X >= B.x && p.X <= B.x + B.w && p.Y >= B.y && p.Y <= B.y + B.h;
@@ -1104,8 +1109,7 @@
     const all = performerBeams(), beams = state.rig.fixtures.flatMap(f => {
       const l = lightOf(f.id); if (!isLit(l) || !["air", "house"].includes(l.surface) || f.mount.type === "cyc") return [];
       const S = fixtureWorld(f), T = targetAt(f.id, state.play.t);
-      const beamLevel = litFactorOf(f, l) * (state.sel.size && !isSel(f.id) ? 0.32 : 1);
-      const b = V.compile({S,T,deg:beamOf(f),level:displayLevel(beamLevel),color:l.color,doors:E.frameDoors(f,l,l.surface==='house'?'z':'y'),profile:goboProfile(l),f,l});
+      const b = V.compile({S,T,deg:beamOf(f),level:litFactorOf(f,l)*(state.sel.size&&!isSel(f.id)?.32:1),color:l.color,doors:E.frameDoors(f,l,l.surface==='house'?'z':'y'),profile:goboProfile(l),f,l});
       return b ? [b] : [];
     });
     const yawDeg = kind === "shimote" ? -90 : kind === "kamite" ? 90 : 0;
@@ -1128,7 +1132,7 @@
     if(distanceMetric && !kind.startsWith('front')) {
       ctx.save();ctx.font='16px sans-serif';ctx.fillStyle='#efe7d6';
       for(const m of [0,3,6,9,12]){const q=P({x:0,y:state.dims.D+m,z:0});
-        if(kind==='plan') plateText(ctx,`${m}m`,planBox().x-42,q.Y); else plateText(ctx,`${m}m`,q.X-12,ctx.canvas.height-24);
+        if(kind==='plan') plateText(ctx,`${m * 1000}mm`,planBox().x-52,q.Y); else plateText(ctx,`${m * 1000}mm`,q.X-22,ctx.canvas.height-24);
       }ctx.restore();
     }
     if(kind!=="plan") drawBordersUp(ctx,P,state.dims);
@@ -1207,7 +1211,7 @@
      （1本の勾配だけだと3D側で帯の左右が歪んだときに追従できない）。
      平面図のように高さが映らない図では、短冊の近い辺と遠い辺が同じ点に潰れる。
      そのときは面として塗らず、太い線として塗る（＝その一帯が光っていることだけを示す）。 */
-  const CYC_WASH_SEGMENTS = 10;
+  const CYC_WASH_SEGMENTS = 32;
   function cycWashQuads(f, l, P, dims) {
     const span = E.cycBarSpan(f, dims);
     const zFar = span.top ? Math.max(0, span.z0 - span.reach) : Math.min(dims.H, span.z0 + span.reach);
@@ -1223,20 +1227,25 @@
     return quads;
   }
   const cycQuadFlat = (q) => Math.abs(q.nearL.Y - q.farL.Y) < 2 && Math.abs(q.nearR.Y - q.farR.Y) < 2 && Math.abs(q.nearL.X - q.farL.X) < 2 && Math.abs(q.nearR.X - q.farR.X) < 2;
-  function drawCycWash(ctx, quads, color, a) {
+  function drawCycWash(ctx, quads, color, a, gradient) {
     if (!quads || !quads.length) return;
+    const at = (t) => gradient ? lerpColor(gradient.from, gradient.to, t) : color;
     ctx.save(); ctx.globalCompositeOperation = "screen";
-    quads.forEach((q) => {
+    quads.forEach((q, i) => {
+      const t0 = i / quads.length, t1 = (i + 1) / quads.length, tm = (t0 + t1) / 2;
       if (cycQuadFlat(q)) {
         // 高さが映らない図（真上から）。「この一帯が光っている」ことだけ太い線で示す
-        ctx.strokeStyle = hexA(color, 0.5 * a); ctx.lineWidth = 6;
+        const g = ctx.createLinearGradient(q.nearL.X, q.nearL.Y, q.nearR.X, q.nearR.Y);
+        g.addColorStop(0, hexA(at(t0), 0.5 * a)); g.addColorStop(1, hexA(at(t1), 0.5 * a));
+        ctx.strokeStyle = g; ctx.lineWidth = 6;
         ctx.beginPath(); ctx.moveTo(q.nearL.X, q.nearL.Y); ctx.lineTo(q.nearR.X, q.nearR.Y); ctx.stroke();
         return;
       }
+      const segmentColor = at(tm);
       const g = ctx.createLinearGradient(q.nearL.X, q.nearL.Y, q.farL.X, q.farL.Y);
-      g.addColorStop(0, hexA(color, 0.55 * a));
-      g.addColorStop(0.55, hexA(color, 0.22 * a));
-      g.addColorStop(1, hexA(color, 0));
+      g.addColorStop(0, hexA(segmentColor, 0.55 * a));
+      g.addColorStop(0.55, hexA(segmentColor, 0.22 * a));
+      g.addColorStop(1, hexA(segmentColor, 0));
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.moveTo(q.nearL.X, q.nearL.Y); ctx.lineTo(q.nearR.X, q.nearR.Y); ctx.lineTo(q.farR.X, q.farR.Y); ctx.lineTo(q.farL.X, q.farL.Y); ctx.closePath();
@@ -1257,7 +1266,7 @@
       const a = visualAlpha((dim ? 0.32 : 1) * E.clamp(E.finite(lv, 1), 0, 1));
       const quads = cycWashQuads(f, l, P, dims);
       if (!quads) return;
-      drawCycWash(ctx, quads, l.color, a);
+      drawCycWash(ctx, quads, l.color, a, cycGradientOf(l));
       if (sink) sink.push({ cycQuads: quads, lv });
     });
   }
@@ -1786,21 +1795,39 @@
     ctx.restore();
     return w;
   }
+  // ホリゾントライトは中心の小印ではなく、舞台幅100%の器具そのものを記号にする。
+  // 正面図・平面図とも同じ世界座標の左右端を投影するので、舞台寸法が変わっても追従する。
+  function cycFixtureBar(P, f) {
+    const span = E.cycBarSpan(f, state.dims);
+    return {
+      a: P({ x: span.xL, y: span.y, z: span.z0 }),
+      b: P({ x: span.xR, y: span.y, z: span.z0 }),
+    };
+  }
   function drawFixtureMark(ctx, X, Y, shape, o) {
     const s = 15; ctx.save();
     const fill = o.ghost ? "rgba(240,231,214,0.35)" : o.st === "unset" ? "rgba(13,14,16,1)" : o.st === "off" ? "#2a2520" : (o.color || "#f2ead6");
     ctx.fillStyle = fill; ctx.strokeStyle = o.sel ? "#d3ac59" : o.ghost ? "rgba(240,231,214,0.5)" : "rgba(240,231,214,0.7)"; ctx.lineWidth = o.sel ? 5 : 2;
+    const bar = shape === "bar" && o.bar && o.bar.a && o.bar.b ? o.bar : null;
+    let markX = X, markY = Y, markSize = s;
     ctx.beginPath();
     if (shape === "square") ctx.rect(X - s, Y - s, s * 2, s * 2);
     else if (shape === "circle") ctx.arc(X, Y, s, 0, Math.PI * 2);
     else if (shape === "tri") { ctx.moveTo(X, Y + s * 1.15); ctx.lineTo(X + s * 1.15, Y - s * 0.9); ctx.lineTo(X - s * 1.15, Y - s * 0.9); ctx.closePath(); }
-    else if (shape === "bar") { const w = s * 1.5, h = s * 0.6; ctx.rect(X - w, Y - h, w * 2, h * 2); }   // ホリゾントライト＝地面に並ぶ横長の器具
+    else if (bar) {
+      const dx = bar.b.X - bar.a.X, dy = bar.b.Y - bar.a.Y, len = Math.hypot(dx, dy) || 1;
+      const h = 7, nx = -dy / len * h, ny = dx / len * h;
+      ctx.moveTo(bar.a.X + nx, bar.a.Y + ny); ctx.lineTo(bar.b.X + nx, bar.b.Y + ny);
+      ctx.lineTo(bar.b.X - nx, bar.b.Y - ny); ctx.lineTo(bar.a.X - nx, bar.a.Y - ny); ctx.closePath();
+      markX = (bar.a.X + bar.b.X) / 2; markY = (bar.a.Y + bar.b.Y) / 2; markSize = h;
+    }
+    else if (shape === "bar") { const w = s * 1.5, h = s * 0.6; ctx.rect(X - w, Y - h, w * 2, h * 2); }   // 側面・3Dでは簡略記号
     else { ctx.moveTo(X, Y - s * 1.2); ctx.lineTo(X + s * 1.2, Y); ctx.lineTo(X, Y + s * 1.2); ctx.lineTo(X - s * 1.2, Y); ctx.closePath(); }
     ctx.fill(); ctx.stroke();
     // ムービングは輪をひとつ足す（形＝仕込み位置、輪＝動かせるかどうか）
     if (o.moving && !o.ghost) { ctx.strokeStyle = o.sel ? "#d3ac59" : "rgba(240,231,214,0.55)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y, s * 1.55, 0, Math.PI * 2); ctx.stroke(); }
-    if (o.st === "off") { ctx.strokeStyle = "rgba(240,231,214,0.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X - s, Y + s); ctx.lineTo(X + s, Y - s); ctx.stroke(); }
-    if (o.no) { ctx.fillStyle = o.sel ? "#1a1409" : "rgba(240,231,214,0.95)"; if (o.sel) { ctx.fillStyle = "#d3ac59"; ctx.fillRect(X - 22, Y + s + 4, 44, 22); ctx.fillStyle = "#1a1409"; } ctx.font = "600 16px sans-serif"; ctx.textBaseline = "top"; ctx.textAlign = "center"; ctx.fillText(o.no, X, Y + s + 6); ctx.textAlign = "left"; }
+    if (o.st === "off") { ctx.strokeStyle = "rgba(240,231,214,0.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(markX - markSize, markY + markSize); ctx.lineTo(markX + markSize, markY - markSize); ctx.stroke(); }
+    if (o.no) { ctx.fillStyle = o.sel ? "#1a1409" : "rgba(240,231,214,0.95)"; if (o.sel) { ctx.fillStyle = "#d3ac59"; ctx.fillRect(markX - 22, markY + markSize + 4, 44, 22); ctx.fillStyle = "#1a1409"; } ctx.font = "600 16px sans-serif"; ctx.textBaseline = "top"; ctx.textAlign = "center"; ctx.fillText(o.no, markX, markY + markSize + 6); ctx.textAlign = "left"; }
     ctx.restore();
   }
   /* 客席へ向けた光の「目眩まし」。輪郭のある光だまりではなく、点のまわりにふわっと滲む光として描く。
@@ -1826,7 +1853,7 @@
     } else if (p.kind === "circle" || p.kind === "eight") {
       const c = hp(p.c, "", false); const rq = P(circleRadiusWorld(p.c, p.r, p.plane, d, p.tilt));
       ctx.beginPath(); ctx.arc(rq.X, rq.Y, 10, 0, Math.PI * 2); ctx.fillStyle = "#201b16"; ctx.strokeStyle = "#df6433"; ctx.lineWidth = 3; ctx.fill(); ctx.stroke();
-      ctx.fillStyle = "rgba(240,231,214,0.8)"; ctx.font = "15px sans-serif"; ctx.fillText(`半径 ${p.r.toFixed(1)}m`, rq.X + 14, rq.Y - 8);
+      ctx.fillStyle = "rgba(240,231,214,0.8)"; ctx.font = "15px sans-serif"; ctx.fillText(`半径 ${mmText(p.r)}`, rq.X + 14, rq.Y - 8);
       ctx.fillText(p.dir === "ccw" ? "反時計回り" : "時計回り", c.X + 14, c.Y - 22);
     } else hp(p.a || { u: 0.5, v: 0.6 }, "", true);
   }
@@ -1841,14 +1868,14 @@
     fctx.strokeStyle = "rgba(239,231,214,0.25)"; fctx.strokeRect(B.x, B.y, B.w, B.h);
     fctx.fillStyle = "rgba(255,255,255,0.05)"; fctx.fillRect(0, B.y + B.h, w, h - B.y - B.h); // 床
     fctx.fillStyle = "rgba(240,231,214,0.45)"; fctx.font = "16px sans-serif"; fctx.textBaseline = "middle";
-    [2, 4, 6, 8].filter((m) => m <= d.H).forEach((m) => { const Y = B.y + B.h - m / d.H * B.h; fctx.fillText(`${m}m`, B.x - 40, Y); fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.beginPath(); fctx.moveTo(B.x, Y); fctx.lineTo(B.x + B.w, Y); fctx.stroke(); });
+    [2, 4, 6, 8].filter((m) => m <= d.H).forEach((m) => { const Y = B.y + B.h - m / d.H * B.h; fctx.fillText(`${m * 1000}mm`, B.x - 64, Y); fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.beginPath(); fctx.moveTo(B.x, Y); fctx.lineTo(B.x + B.w, Y); fctx.stroke(); });
     fctx.fillText("床", B.x - 40, B.y + B.h); fctx.fillText("下手", 30, B.y + 14); fctx.fillText("上手", B.x + B.w + 30, B.y + 14);
     const litSpotsF = [];   // 作業灯を消す（ブラックアウト）用
     drawCycWashes(fctx, P, d, litSpotsF);   // 壁の色。演者・セットより先に塗る
     drawPiecesUp(fctx, P, B.w / d.W, { yawDeg: 0 });
     // トラス
     state.rig.trusses.forEach((t) => { const Y = B.y + B.h - t.h / d.H * B.h; const sel = state.selTruss === t.id && state.mode === "place"; fctx.strokeStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.lineWidth = sel ? 5 : 3; fctx.beginPath(); fctx.moveTo(B.x - 16, Y); fctx.lineTo(B.x + B.w + 16, Y); fctx.stroke();
-      if (sel) { fctx.fillStyle = "#d3ac59"; fctx.fillRect(B.x + B.w + 16, Y - 12, 22, 24); fctx.fillStyle = "#1a1409"; fctx.font = "600 14px sans-serif"; fctx.fillText("↕", B.x + B.w + 20, Y); fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${t.h.toFixed(1)}m（ドラッグ）`, B.x + B.w + 44, Y); } });
+      if (sel) { fctx.fillStyle = "#d3ac59"; fctx.fillRect(B.x + B.w + 16, Y - 12, 22, 24); fctx.fillStyle = "#1a1409"; fctx.font = "600 14px sans-serif"; fctx.fillText("↕", B.x + B.w + 20, Y); fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${mmText(t.h)}（ドラッグ）`, B.x + B.w + 44, Y); } });
     // 光線（ホリゾントライトの帯は上で先に塗ってある）
     if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; if (f.mount.type === "cyc") return; const lv = litFactorOf(f, l);
       const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = state.sel.size && !isSel(f.id);
@@ -1869,7 +1896,7 @@
           litSpotsF.push({ fromX: s.X, fromY: s.Y, ...sp, lv }); } }
       if (l.surface === "air") { const floorY = B.y + B.h; fctx.save(); fctx.setLineDash([5, 6]); fctx.strokeStyle = hexA(l.color, dim ? 0.15 : 0.45); fctx.lineWidth = 2; fctx.beginPath(); fctx.moveTo(tp.X, tp.Y); fctx.lineTo(tp.X, floorY); fctx.stroke(); fctx.restore();
         fctx.strokeStyle = hexA(l.color, dim ? 0.2 : 0.8); fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(tp.X - 12, tp.Y - 12); fctx.lineTo(tp.X + 12, tp.Y + 12); fctx.moveTo(tp.X + 12, tp.Y - 12); fctx.lineTo(tp.X - 12, tp.Y + 12); fctx.stroke(); fctx.beginPath(); fctx.arc(tp.X, tp.Y, 16, 0, Math.PI * 2); fctx.stroke();
-        if (!dim) { fctx.fillStyle = hexA(l.color, 0.9); fctx.font = "15px sans-serif"; fctx.textBaseline = "bottom"; fctx.fillText(`${T.z.toFixed(1)}m`, tp.X + 20, tp.Y - 6); } }
+        if (!dim) { fctx.fillStyle = hexA(l.color, 0.9); fctx.font = "15px sans-serif"; fctx.textBaseline = "bottom"; fctx.fillText(mmText(T.z), tp.X + 20, tp.Y - 6); } }
       if (l.surface === "back" || l.surface === "air" || l.surface === "house") {
         const g = showOn("path") ? E.pathGuide(l, d) : null;
         if (g && g.kind === "line") { fctx.save(); fctx.setLineDash([8, 6]); fctx.strokeStyle = "rgba(223,100,51,0.7)"; fctx.lineWidth = 2; const a = P(g.a), b = P(g.b); fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke(); fctx.restore(); }
@@ -1878,8 +1905,11 @@
       }
     });
     // 灯体
-    state.rig.fixtures.forEach((f) => { if (!showOn("fixtures")) return; const S = fixtureWorld(f); if (!S) return; const p = P(S); const Y = isFront(f) ? Math.max(20, p.Y) : p.Y; drawFixtureMark(fctx, p.X, Y, shapeOf(f.mount), { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) });
-      if (f.mount.type === "side" && isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${f.mount.h.toFixed(1)}m（ドラッグ）`, p.X + (f.mount.side === "shimote" ? -180 : 26), p.Y - 26); } });
+    state.rig.fixtures.forEach((f) => { if (!showOn("fixtures")) return; const S = fixtureWorld(f); if (!S) return; const p = P(S); const Y = isFront(f) ? Math.max(20, p.Y) : p.Y;
+      const o = { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "", moving: E.isMoving(f) };
+      if (f.mount.type === "cyc") o.bar = cycFixtureBar(P, f);
+      drawFixtureMark(fctx, p.X, Y, shapeOf(f.mount), o);
+      if (f.mount.type === "side" && isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${mmText(f.mount.h)}（ドラッグ）`, p.X + (f.mount.side === "shimote" ? -180 : 26), p.Y - 26); } });
     drawBordersUp(fctx, P, d);
     if (state.mode === "move" && showOn("blackout")) { paintBlackout(fctx, front, litSpotsF);
       drawPiecesUp(fctx, P, B.w / d.W, { yawDeg: 0, relight: true }); }
@@ -1898,7 +1928,7 @@
     fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.lineWidth = 1;
     if (showOn("grid")) for (let m = 1; m < d.D; m++) { const X = P({ x: 0, y: m, z: 0 }).X; fctx.beginPath(); fctx.moveTo(X, B.y); fctx.lineTo(X, B.y + B.h); fctx.stroke(); }
     fctx.fillStyle = "rgba(240,231,214,0.45)"; fctx.font = "16px sans-serif"; fctx.textBaseline = "middle";
-    [2, 4, 6, 8].filter((m) => m <= d.H).forEach((m) => { const Y = B.y + B.h - m / d.H * B.h; fctx.fillText(`${m}m`, B.x - 40, Y); fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.beginPath(); fctx.moveTo(B.x, Y); fctx.lineTo(B.x + B.w, Y); fctx.stroke(); });
+    [2, 4, 6, 8].filter((m) => m <= d.H).forEach((m) => { const Y = B.y + B.h - m / d.H * B.h; fctx.fillText(`${m * 1000}mm`, B.x - 64, Y); fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.beginPath(); fctx.moveTo(B.x, Y); fctx.lineTo(B.x + B.w, Y); fctx.stroke(); });
     fctx.fillText("床", B.x - 40, B.y + B.h);
     fctx.fillText("客席 ▶", side === "shimote" ? 30 : B.x + B.w + 20, B.y + 14); fctx.fillText("奥壁", side === "shimote" ? B.x + B.w + 20 : 30, B.y + 14);
     fctx.fillText(`${side === "shimote" ? "下手" : "上手"}側のスタンド・ブーム（舞台中央から見る）`, B.x + 10, B.y - 18);
@@ -1929,7 +1959,7 @@
     state.rig.fixtures.forEach((f) => { const S = fixtureWorld(f); if (!S) return; const q = P(S);
       if (f.mount.type === "side" && f.mount.side === side) { fctx.strokeStyle = "rgba(240,231,214,0.5)"; fctx.lineWidth = 3; fctx.beginPath(); fctx.moveTo(q.X, B.y + B.h); fctx.lineTo(q.X, q.Y); fctx.stroke(); fctx.beginPath(); fctx.moveTo(q.X - 14, B.y + B.h); fctx.lineTo(q.X + 14, B.y + B.h); fctx.stroke();
         if (showOn("fixtures")) drawFixtureMark(fctx, q.X, q.Y, "diamond", { sel: isSel(f.id), st: lightState(f.id), color: (lightOf(f.id) || {}).color, no: showOn("no") ? label(f.id) : "" });
-        if (isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${f.mount.h.toFixed(1)}m・${f.mount.v < 0.4 ? "奥寄り" : f.mount.v > 0.6 ? "手前寄り" : "中ほど"}（ドラッグで奥行きと高さ）`, q.X + 22, q.Y - 26); } }
+        if (isSel(f.id) && state.mode === "place") { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${mmText(f.mount.h)}・${f.mount.v < 0.4 ? "奥寄り" : f.mount.v > 0.6 ? "手前寄り" : "中ほど"}（ドラッグで奥行きと高さ）`, q.X + 22, q.Y - 26); } }
       else if (f.mount.type !== "side") {
         // 前明かりは舞台より手前（客席側）。側面図では手前端の外に一定距離で並べ、高さは実尺で描く
         const frontX = side === "shimote" ? B.x + B.w + FRONT_DX_SEC : B.x - FRONT_DX_SEC;
@@ -1943,7 +1973,7 @@
     // 予告
     const hv = state.hover;
     if (state.tool === "side" && hv && hv.canvas === side) { const q = { X: E.clamp(hv.X, B.x, B.x + B.w), Y: E.clamp(hv.Y, B.y, B.y + B.h) }; fctx.strokeStyle = "rgba(240,231,214,0.3)"; fctx.setLineDash([6, 6]); fctx.beginPath(); fctx.moveTo(q.X, B.y + B.h); fctx.lineTo(q.X, q.Y); fctx.stroke(); fctx.setLineDash([]); drawFixtureMark(fctx, q.X, q.Y, "diamond", { ghost: true }); fctx.fillStyle = "rgba(240,231,214,0.85)"; fctx.font = "16px sans-serif"; fctx.fillText(`${side === "shimote" ? "下手" : "上手"}の袖に立てる（クリック）`, q.X + 22, q.Y - 26); }
-    if (state.mode === "place" && !state.rig.fixtures.some((f) => f.mount.type === "side" && f.mount.side === side) && state.tool !== "side") { fctx.fillStyle = "rgba(240,231,214,0.45)"; fctx.font = "16px sans-serif"; fctx.fillText(`${side === "shimote" ? "下手" : "上手"}側にスタンド灯はまだありません。右の「SS（袖から横切って）」でこの図をクリックすると立てられます。`, B.x + 10, B.y + B.h / 2); }
+    if (!state.rig.fixtures.some((f) => f.mount.type === "side" && f.mount.side === side) && state.tool !== "side") { fctx.fillStyle = "rgba(240,231,214,0.45)"; fctx.font = "16px sans-serif"; fctx.fillText(`${side === "shimote" ? "下手" : "上手"}側にスタンド灯はまだありません。右の「SS（袖から横切って）」でこの図をクリックすると立てられます。`, B.x + 10, B.y + B.h / 2); }
   }
   /* ---------- 描画: 正面図（3D・擬似パース） ----------
      舞台スケッチ本体の正面図と同じ式（rig-engine の makeFrontPerspProjector）で描く。
@@ -1973,7 +2003,7 @@
     fctx.strokeStyle = "rgba(239,231,214,0.25)"; fctx.stroke();
     // 高さの目盛り（奥の壁の左）
     fctx.fillStyle = "rgba(240,231,214,0.45)"; fctx.font = "16px sans-serif"; fctx.textBaseline = "middle";
-    [2, 4, 6, 8].filter((m) => m <= d.H).forEach((m) => { const q = at(0, 0, m); fctx.fillText(`${m}m`, q.X - 42, q.Y); fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.beginPath(); fctx.moveTo(q.X, q.Y); fctx.lineTo(at(1, 0, m).X, at(1, 0, m).Y); fctx.stroke(); });
+    [2, 4, 6, 8].filter((m) => m <= d.H).forEach((m) => { const q = at(0, 0, m); fctx.fillText(`${m * 1000}mm`, q.X - 66, q.Y); fctx.strokeStyle = "rgba(239,231,214,0.07)"; fctx.beginPath(); fctx.moveTo(q.X, q.Y); fctx.lineTo(at(1, 0, m).X, at(1, 0, m).Y); fctx.stroke(); });
     fctx.fillText("下手", Math.max(6, bl.X - 42), fl.Y - 18); fctx.fillText("上手", Math.min(w - 40, br.X + 8), fr.Y - 18);
     const litSpots3D = [];   // 作業灯を消す（ブラックアウト）用
     drawCycWashes(fctx, P, d, litSpots3D);   // 壁の色。演者・セットより先に塗る
@@ -1981,7 +2011,7 @@
     // バトン（奥行きのある横線）
     state.rig.trusses.forEach((t) => { const a = at(0, t.v, t.h), b = at(1, t.v, t.h); const sel = state.selTruss === t.id && state.mode === "place";
       fctx.strokeStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.lineWidth = sel ? 5 : 3; fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke();
-      fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.7)"; fctx.font = "15px sans-serif"; fctx.fillText(`${t.label || "バトン"} 高さ${t.h.toFixed(1)}m`, b.X + 10, b.Y); });
+      fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.7)"; fctx.font = "15px sans-serif"; fctx.fillText(`${t.label || "バトン"} 高さ${mmText(t.h)}`, b.X + 10, b.Y); });
     // 光（ホリゾントライトの帯は上で先に塗ってある）
     if (state.mode === "move") state.rig.fixtures.forEach((f) => {
       const l = lightOf(f.id); if (!isLit(l)) return;
@@ -2032,10 +2062,15 @@
   function draw() { drawPlan(); SECS.forEach((sec) => (sec.kind === "front" ? (state.front3d ? drawFront3D(sec) : drawFront(sec)) : drawSide(sec))); }
 
   /* ---------- 当たり判定 ---------- */
+  const pointSegmentDistance = (p, a, b) => {
+    const dx = b.X - a.X, dy = b.Y - a.Y, den = dx * dx + dy * dy || 1;
+    const t = E.clamp(((p.X - a.X) * dx + (p.Y - a.Y) * dy) / den, 0, 1);
+    return Math.hypot(p.X - (a.X + dx * t), p.Y - (a.Y + dy * t));
+  };
   // 灯体の平面図上の画面座標。当たり判定と範囲選択（マーキー）の両方で使う共通の式。
   function fixturePlanXY(f, P, B) { const S = fixtureWorld(f); if (!S) return null; const p = P(S); const X = f.mount.type === "side" ? (f.mount.side === "shimote" ? B.x - SIDE_DX : B.x + B.w + SIDE_DX) : p.X; const Y = isFront(f) ? B.y + B.h + FRONT_DY : p.Y; return { X, Y }; }
-  function hitFixturePlan(pt) { const P = planProj(), B = planBox(); let best = null; state.rig.fixtures.forEach((f) => { const xy = fixturePlanXY(f, P, B); if (!xy) return; if (Math.hypot(pt.X - xy.X, pt.Y - xy.Y) < 22) best = f; }); return best; }
-  function hitFixtureSec(sec, pt) { const P = secProj(sec); let best = null; state.rig.fixtures.forEach((f) => { if (sec.kind !== "front" && !(f.mount.type === "side" && f.mount.side === sec.kind)) return; const S = fixtureWorld(f); if (!S) return; const p = P(S); if (Math.hypot(pt.X - p.X, pt.Y - p.Y) < 22) best = f; }); return best; }
+  function hitFixturePlan(pt) { const P = planProj(), B = planBox(); let best = null; state.rig.fixtures.forEach((f) => { const xy = fixturePlanXY(f, P, B); if (!xy) return; if (f.mount.type === "cyc") { const bar = cycFixtureBar(P, f); if (pointSegmentDistance(pt, bar.a, bar.b) < 18) best = f; } else if (Math.hypot(pt.X - xy.X, pt.Y - xy.Y) < 22) best = f; }); return best; }
+  function hitFixtureSec(sec, pt) { const P = secProj(sec); let best = null; state.rig.fixtures.forEach((f) => { if (sec.kind !== "front" && !(f.mount.type === "side" && f.mount.side === sec.kind)) return; const S = fixtureWorld(f); if (!S) return; if (sec.kind === "front" && f.mount.type === "cyc") { const bar = cycFixtureBar(P, f); if (pointSegmentDistance(pt, bar.a, bar.b) < 18) best = f; } else { const p = P(S); if (Math.hypot(pt.X - p.X, pt.Y - p.Y) < 22) best = f; } }); return best; }
   function hitTrussPlan(pt) { const B = planBox(); return state.rig.trusses.find((t) => Math.abs(pt.Y - (B.y + t.v * B.h)) < 14 && pt.X > B.x - 30 && pt.X < B.x + B.w + 30) || null; }
   // 円の半径ハンドルの世界座標。面ごとに「その面が本当の円として見える図」の軸へオフセットする
   // （水平＝平面図でu方向、正面に垂直＝正面図でu方向、側面に垂直＝側面図でv方向）
@@ -2132,12 +2167,13 @@
   /* ---------- ポインタ操作: 平面図 ---------- */
   plan.addEventListener("pointerdown", (ev) => {
     const pt = canvasPoint(plan, ev); const B = planBox(); try { plan.setPointerCapture(ev.pointerId); } catch (_) { /* 合成イベント等 */ } plan.focus && plan.focus();
+    if (state.tool === "border" || state.tool === "masking") return;
     if (state.tool === "truss") { addTruss(snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1))); return; }   // addTruss内で灯体配置モードへ移る
     if (state.tool === "fixture") { const t = E.trussById(state.rig, state.selTruss); if (!t) return; const Y = B.y + t.v * B.h; if (Math.abs(pt.Y - Y) < 60 && inBox({ X: pt.X, Y }, B)) { addFixture({ type: "truss", trussId: t.id, u: snapU((pt.X - B.x) / B.w) }); toast(`${label([...state.sel][0])}を奥から${E.trussRow(state.rig, t.id)}列目に置きました`, "元に戻す", undo); } return; }
     if (state.tool === "floor") { if (inBox(pt, B)) { addFixture({ type: "floor", u: snapU((pt.X - B.x) / B.w), v: snapV((pt.Y - B.y) / B.h) }); toast(`${label([...state.sel][0])}を床に置きました`, "元に戻す", undo); } return; }
     if (state.tool === "side") { const side = pt.X < B.x ? "shimote" : pt.X > B.x + B.w ? "kamite" : null; if (side) { addFixture({ type: "side", side, v: snapV(E.clamp((pt.Y - B.y) / B.h, 0, 1)), h: 2 }); toast(`${label([...state.sel][0])}を${side === "shimote" ? "下手" : "上手"}の袖に立てました`, "元に戻す", undo); } return; }
     if (state.tool === "front") {
-      if (pt.Y > B.y + B.h) { addFixture({ type: "front", u: snapU(E.clamp((pt.X - B.x) / B.w, 0, 1)), ahead: 5, h: 7 }, "fixed"); toast(`${label([...state.sel][0])}を前明かりに置きました（舞台前から約5m・高さ約7m）`, "元に戻す", undo); }
+      if (pt.Y > B.y + B.h) { addFixture({ type: "front", u: snapU(E.clamp((pt.X - B.x) / B.w, 0, 1)), ahead: 5, h: 7 }, "fixed"); toast(`${label([...state.sel][0])}を前明かりに置きました（舞台前から約5000mm・高さ約7000mm）`, "元に戻す", undo); }
       else toast("舞台より手前（客席側の帯）をクリックしてください");
       return;
     }
@@ -2279,6 +2315,7 @@
       const side = sec.kind;   // "front" | "shimote" | "kamite"。切り替えるので都度読む
       const pt = canvasPoint(cv, ev); const B = secBox(cv, side); const P = secProj(sec);
       try { cv.setPointerCapture(ev.pointerId); } catch (_) { /* 合成イベント等 */ }
+      if (state.tool === "border" || state.tool === "masking") return;
       if (side !== "front") {
         if (state.tool === "side") { const vh = E.sideToVH(state.dims, B, side, pt.X, pt.Y); addFixture({ type: "side", side, v: snapV(vh.v), h: Math.max(0.3, snapH(vh.h)) }); toast(`${label([...state.sel][0])}を${side === "shimote" ? "下手" : "上手"}の袖に立てました`, "元に戻す", undo); return; }
         if (state.mode === "move") { const hh = hitHandle(pt, P, distanceMetric ? ["air","house"] : ["air"]); if (hh) { startHandleDrag(hh, "vh", sec); return; } }
@@ -2330,6 +2367,7 @@
   document.querySelectorAll("#sidemode button").forEach((b) => {
     b.onclick = () => { applySideView(b.dataset.side); renderAll(); };
   });
+  if ($("distance-mode")) $("distance-mode").onclick = () => { distanceMetric = !distanceMetric; syncCanvasSize(); renderAll(); };
   // 正面図の描き方（平面／3D）。3Dは本体の正面図と同じ擬似パース（2026-09-11 本人要望）
   document.querySelectorAll("#frontmode button").forEach((b) => {
     b.onclick = () => { state.front3d = b.dataset.front === "3d"; renderAll(); };
@@ -2355,11 +2393,11 @@
     if ($("dimnum")) $("dimnum").addEventListener("input", () => setDim(Number($("dimnum").value), "num"));
   }
   if ($("search")) $("search").addEventListener("input", () => { state.search = $("search").value.trim(); renderList(); });
-  // 舞台の大きさ: 図の縮尺と1m吸着の基準が変わるので、動かすたびに描き直す
-  [["dimW", "W", "m"], ["dimD", "D", "m"], ["dimH", "H", "m"]].forEach(([id, key]) => {
+  // 舞台の大きさ: 内部値はmのまま、画面ではmmで見せる。図の縮尺と1000mm吸着の基準が変わるので、動かすたびに描き直す
+  [["dimW", "W"], ["dimD", "D"], ["dimH", "H"]].forEach(([id, key]) => {
     const el = $(id); if (!el) return;
     el.value = state.dims[key];
-    const sync = () => { $(id + "v").textContent = `${state.dims[key]}m`; };
+    const sync = () => { $(id + "v").textContent = `${Math.round(state.dims[key] * 1000)}mm`; };
     sync();
     el.addEventListener("input", () => { state.dims[key] = Number(el.value); sync(); draw(); renderInspector(); });
     el.addEventListener("change", () => { state.dirty = true; renderAll(); });
@@ -2369,17 +2407,8 @@
   document.addEventListener("keydown", (ev) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName);
     if (ev.key === "Escape" && !$("dialog").hidden) { $("dialog").hidden = true; return; }
-    if (typing) return;
-    /* 正面図を大きく表示している間も Space は再生／停止へ渡す。
-       Space 以外の操作キーは、編集画面へ戻るためだけに使う。 */
-    if (frontFocus) {
-      if (ev.key === " ") { if (document.activeElement !== $("t-play")) { ev.preventDefault(); togglePlay(); } return; }
-      if (!/^(Shift|Control|Alt|Meta|CapsLock)$/.test(ev.key)) { ev.preventDefault(); setFrontFocus(false); }
-      return;
-    }
     if (ev.key === "Escape") { if (state.drag) { const dg = state.drag; state.drag = null; restore(dg.before); state.dirty = true; } else if (state.tool) { state.tool = null; renderAll(); } else if (state.sel.size) { state.sel.clear(); renderAll(); } return; }
-    if ((ev.key === "f" || ev.key === "F") && !ev.metaKey && !ev.ctrlKey && !ev.altKey) { ev.preventDefault(); setFrontFocus(true); return; }
-    if ((ev.key === "g" || ev.key === "G") && !ev.metaKey && !ev.ctrlKey && !ev.altKey && state.mode === "move") { ev.preventDefault(); $("lighttoggles").querySelector('[data-show="blackout"]').click(); return; }
+    if (typing) return;
     /* Space = 再生／停止。再生ボタン自身にフォーカスがあるときは何もしない——
        ボタンの既定の動作（click）が同じトグルを呼ぶので、ここで拾うと2回走る。 */
     if (ev.key === " ") { if (document.activeElement !== $("t-play")) { ev.preventDefault(); togglePlay(); } }
@@ -2490,11 +2519,11 @@
   /* lab に null / "" を渡すとラベルを出さない（2026-09-14 本人要望。箱の見出しと同じ言葉が
      二重に出るのをやめるため）。空の <span> を残すと .field の1列目・.field.wide の1行目が
      空き枠として残るので、要素ごと作らない。 */
-  const field = (lab, node, wide) => { const f = document.createElement("div"); const hasRange = Boolean(node && node.classList && node.classList.contains("rangewrap")); f.className = "field" + (wide ? " wide" : "") + (lab ? "" : " nolabel") + (hasRange ? " rangefield" : ""); if (lab) { const l = document.createElement("span"); l.textContent = lab; f.append(l); } f.append(node); return f; };
+  const field = (lab, node, wide) => { const f = document.createElement("div"); f.className = "field" + (wide ? " wide" : "") + (lab ? "" : " nolabel"); if (lab) { const l = document.createElement("span"); l.textContent = lab; f.append(l); } f.append(node); return f; };
   const btn = (t, fn, cls, title) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = t; if (title) b.title = title; b.onclick = fn; return b; };
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
   /* つまみ。つまんで動かすほかに、隣の欄へ数値を打ち込んでも決められる（2026-09-13 本人要望）。
-     num を渡すと、数値欄だけ別の単位で扱える——中の値は0〜1のまま、欄はメートル、という使い方。
+     num を渡すと、数値欄だけ別の単位で扱える——中の値は0〜1やmのまま、欄はmm、という使い方。
        num = { min, max, step, to(中の値)→欄の数値, from(欄の数値)→中の値, title }
      打っている途中（"1"→"12"）で勝手に丸めないよう、範囲内の値になったときだけ図へ反映し、
      Enter／欄を離れたときに刻みへそろえて確定する。確定は1回の「元に戻す」にまとまる。 */
@@ -2540,12 +2569,15 @@
     w.append(i, n, v);
     return w;
   };
-  /* 0〜1で持っている位置を、数値欄ではメートルで扱うための対応表。
-     舞台の寸法は後から変わるので、作るたびに今の寸法で組む。 */
-  const numDepth = () => ({ min: 0, max: state.dims.D, step: 0.1, to: (v) => v * state.dims.D, from: (m) => m / state.dims.D, title: "奥の壁からの距離(m)" });
-  const numAcross = () => ({ min: -state.dims.W / 2, max: state.dims.W / 2, step: 0.1, to: (v) => (v - 0.5) * state.dims.W, from: (m) => m / state.dims.W + 0.5, title: "センターからの距離(m)。マイナスが下手" });
-  const depthText = (v) => `奥から${(v * state.dims.D).toFixed(1)}m`;
-  const acrossText = (v) => { const x = (v - 0.5) * state.dims.W; return Math.abs(x) < 0.05 ? "中央" : `${x < 0 ? "下手" : "上手"}${Math.abs(x).toFixed(1)}m`; };
+  /* 保存・計算は従来どおりm。操作と表示だけをmmへ統一する。
+     舞台の寸法は後から変わるので、正規化座標の対応表は作るたびに今の寸法で組む。 */
+  const mmValue = (metres) => Math.round(E.finite(metres, 0) * 1000);
+  const mmText = (metres) => `${mmValue(metres)}mm`;
+  const numMm = (min, max, step, title = "長さ(mm)") => ({ min: mmValue(min), max: mmValue(max), step: Math.max(1, mmValue(step)), to: mmValue, from: (value) => E.finite(value, 0) / 1000, title });
+  const numDepth = () => ({ min: 0, max: mmValue(state.dims.D), step: 100, to: (v) => mmValue(v * state.dims.D), from: (value) => E.finite(value, 0) / (state.dims.D * 1000), title: "奥の壁からの距離(mm)" });
+  const numAcross = () => ({ min: mmValue(-state.dims.W / 2), max: mmValue(state.dims.W / 2), step: 100, to: (v) => mmValue((v - 0.5) * state.dims.W), from: (value) => E.finite(value, 0) / (state.dims.W * 1000) + 0.5, title: "センターからの距離(mm)。マイナスが下手" });
+  const depthText = (v) => `奥から${mmText(v * state.dims.D)}`;
+  const acrossText = (v) => { const x = (v - 0.5) * state.dims.W; return Math.abs(x) < 0.05 ? "中央" : `${x < 0 ? "下手" : "上手"}${mmText(Math.abs(x))}`; };
 
   /* 模様（ゴボ）の選び方。13個をいつも並べるとパネルが埋まるので、
      いまの模様だけを見せ、押したときだけ一覧を開く（2026-09-13 本人要望「クリックしたらプルダウン」）。
@@ -2626,18 +2658,13 @@
   /* T字の下の帯。置く操作と選んだ灯体の操作を、図のすぐ下に置く（2026-09-11 本人要望で右欄・左欄から移動）。
      動きモードでは置くことがないので帯ごと隠し、そのぶん図を大きくする。 */
   // 表記は本体の照明パネルに合わせる（吊り／SS／転がし・吊るのはバトン）。2026-09-11 本人指摘
-  const PLACE_TOOLS = [["truss", "バトンを渡す"], ["fixture", "吊り（バトンから真下へ）"], ["front", "前明かり（客席の上から顔へ）"], ["side", "SS（袖から横切って）"], ["floor", "転がし（床置きから体へ）"]];
-  /* 幕の調整（2026-09-13 本人要望）。客席から光源が見えない状態を作れるように、
-     開口の高さ・一文字幕の丈・袖幕の入り込みを数値で決める。配置タブにだけ出す。 */
-  function renderCurtainBox(host) {
+  const PLACE_TOOLS = [["truss", "バトンを渡す"], ["fixture", "吊り（バトンから真下へ）"], ["front", "前明かり（客席の上から顔へ）"], ["side", "SS（袖から横切って）"], ["floor", "転がし（床置きから体へ）"], ["border", "一文字幕を設置"], ["masking", "前一文字・袖幕"]];
+  /* 幕は灯体の共通設定ではない。配置の道具から開く二つの独立パネルに分け、
+     選んだ灯体の右欄を幕の設定で埋めない。 */
+  function renderBorderBox(host) {
     if (!host) return;
     const c = state.curtains, d = state.dims;
-    host = (() => { const b = el("div", "pbox"); b.append(el("p", "kicker", "幕（客席から灯体を隠す）")); host.append(b); return b; })();
-    host.append(field("前一文字", seg([["on", "出す"], ["off", "出さない"]], c.pros === false ? "off" : "on", (v) => { c.pros = v === "on"; commit(); }), true));
-    if (c.pros !== false) {
-      host.append(field("開口の高さ", range(1, d.H, 0.1, E.clamp(E.finite(c.prosH, 6.2), 1, d.H), (v) => `${v.toFixed(1)}m（これより上は客席から見えない）`,
-        (v) => { c.prosH = v; draw(); }, () => commit()), true));
-    }
+    host = (() => { const b = el("div", "pbox"); b.append(el("p", "kicker", "一文字幕（バトンごと）")); host.append(b); return b; })();
     /* 一文字幕はバトンごとに1枚ずつ決める（2026-09-13 本人要望）。
        実際の舞台でも、客席の視線に合わせて前の一文字ほど低く吊る。 */
     if (state.rig.trusses.length) {
@@ -2645,23 +2672,32 @@
       state.rig.trusses.forEach((t) => {
         const b = borderSetting(t);
         const nm = `奥から${E.trussRow(state.rig, t.id)}列目${t.label ? "・" + t.label : ""}`;
-        host.append(el("p", "hint", `${nm}（バトン 約${E.finite(t.h, 6).toFixed(1)}m)${b.既定のまま ? "" : "・個別に調整"}`));
-        host.append(field("下端の高さ", range(0, d.H, 0.1, b.bottom, (v) => `${v.toFixed(1)}m${v >= E.finite(t.h, 6) ? "（バトンより上）" : ""}`,
-          (v) => { setBorder(t, { bottomM: v }); draw(); }, () => commit()), true));
-        host.append(field("丈", range(0.3, 6, 0.1, b.drop, (v) => `${v.toFixed(1)}m`,
-          (v) => { setBorder(t, { dropM: v }); draw(); }, () => commit()), true));
+        host.append(el("p", "hint", `${nm}（バトン 約${mmText(E.finite(t.h, 6))})${b.既定のまま ? "" : "・個別に調整"}`));
+        host.append(field("下端の高さ", range(0, d.H, 0.1, b.bottom, (v) => `${mmText(v)}${v >= E.finite(t.h, 6) ? "（バトンより上）" : ""}`,
+          (v) => { setBorder(t, { bottomM: v }); draw(); }, () => commit(), numMm(0, d.H, 0.1, "下端の高さ(mm)")), true));
+        host.append(field("丈", range(0.3, 6, 0.1, b.drop, mmText,
+          (v) => { setBorder(t, { dropM: v }); draw(); }, () => commit(), numMm(0.3, 6, 0.1, "丈(mm)")), true));
       });
       const acts = el("div", "seg");
       acts.append(btn("バトンに合わせ直す", () => { state.curtains.perBorder = {}; commit("一文字幕をバトンの高さに合わせ直しました"); }, "small quiet"));
       host.append(field("まとめて", acts, true));
-      host.append(field("バトンの手前へ", range(0, 0.2, 0.01, E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.2), (v) => `${(v * d.D).toFixed(1)}m（全部）`, 
+      host.append(field("バトンの手前へ", range(0, 0.2, 0.01, E.clamp(E.finite(c.borderAhead, 0.04), 0, 0.2), (v) => `${mmText(v * d.D)}（全部）`,
         (v) => { c.borderAhead = v; draw(); }, () => commit(),
-        { min: 0, max: 0.2 * d.D, step: 0.1, to: (v) => v * d.D, from: (m) => m / d.D, title: "バトンより手前に吊る距離(m)" }), true));
-    }
-    host.append(field("袖幕の入り", range(0, 0.35, 0.01, E.clamp(E.finite(c.legU, 0.08), 0, 0.35), (v) => `両端から${(v * d.W).toFixed(1)}m`,
+        { min: 0, max: mmValue(0.2 * d.D), step: 100, to: (v) => mmValue(v * d.D), from: (value) => E.finite(value, 0) / (d.D * 1000), title: "バトンより手前に吊る距離(mm)" }), true));
+    } else host.append(el("p", "hint", "先に「バトンを渡す」でバトンを置くと、ここで一枚ずつ調整できます。"));
+    host.append(el("p", "note", "一文字幕は「図に出すもの」の〈一文字幕〉で出し入れします。"));
+  }
+
+  function renderMaskingBox(host) {
+    if (!host) return;
+    const c = state.curtains, d = state.dims;
+    host = (() => { const b = el("div", "pbox"); b.append(el("p", "kicker", "前一文字・袖幕")); host.append(b); return b; })();
+    host.append(field("前一文字", seg([["on", "出す"], ["off", "出さない"]], c.pros === false ? "off" : "on", (v) => { c.pros = v === "on"; commit(); }), true));
+    if (c.pros !== false) host.append(field("開口の高さ", range(1, d.H, 0.1, E.clamp(E.finite(c.prosH, 6.2), 1, d.H), mmText,
+      (v) => { c.prosH = v; draw(); }, () => commit(), numMm(1, d.H, 0.1, "開口の高さ(mm)")), true));
+    host.append(field("袖幕の入り", range(0, 0.35, 0.01, E.clamp(E.finite(c.legU, 0.08), 0, 0.35), (v) => `両端から${mmText(v * d.W)}`,
       (v) => { c.legU = v; draw(); }, () => commit(),
-      { min: 0, max: 0.35 * d.W, step: 0.1, to: (v) => v * d.W, from: (m) => m / d.W, title: "舞台の端から内側へ入れる量(m)" }), true));
-    host.append(el("p", "note", "一文字幕は「図に出すもの」の〈一文字幕〉で出し入れします。作業灯を消すと合わせると、客席から灯体が見えていないかを確かめられます。"));
+      { min: 0, max: mmValue(0.35 * d.W), step: 100, to: (v) => mmValue(v * d.W), from: (value) => E.finite(value, 0) / (d.W * 1000), title: "舞台の端から内側へ入れる量(mm)" }), true));
   }
 
   function renderToolStrip() {
@@ -2682,8 +2718,8 @@
     const host = $("place-tools"); host.innerHTML = "";
     PLACE_TOOLS.forEach(([k, t]) => {
       const b = document.createElement("button"); b.type = "button";
-      b.textContent = state.tool === k ? "置くのを終える（Esc）" : t;
-      b.title = { truss: "灯体を吊るバトンを渡す", fixture: "選んだバトンに灯体を吊る", front: "客席の上（シーリング・フロントサイド）に灯体を置く", floor: "灯体を床に転がす", side: "灯体を袖（上手／下手）に立てる" }[k];
+      b.textContent = state.tool === k ? (k === "border" || k === "masking" ? "閉じる（Esc）" : "置くのを終える（Esc）") : t;
+      b.title = { truss: "灯体を吊るバトンを渡す", fixture: "選んだバトンに灯体を吊る", front: "客席の上（シーリング・フロントサイド）に灯体を置く", floor: "灯体を床に転がす", side: "灯体を袖（上手／下手）に立てる", border: "一文字幕をバトンごとに設置・調整する", masking: "前一文字と袖幕を調整する" }[k];
       b.setAttribute("aria-pressed", String(state.tool === k));
       b.disabled = k === "fixture" && !state.selTruss;
       b.onclick = () => { state.tool = state.tool === k ? null : k; renderAll(); };
@@ -2711,6 +2747,8 @@
       : state.tool === "front" ? "平面図の舞台より手前（客席側の帯）をクリックすると置けます。舞台前からの距離と高さは右で直せます。"
       : state.tool === "floor" ? "平面図の舞台の中をクリックすると転がせます。"
       : state.tool === "side" ? "下手を見る図・上手を見る図をクリックすると、その側の袖に立てられます。"
+      : state.tool === "border" ? "右のパネルで、バトンごとの一文字幕を設置・調整します。"
+      : state.tool === "masking" ? "右のパネルで、前一文字と袖幕を調整します。"
       : !state.selTruss ? "バトンを選ぶと「吊り」が使えます。" : "";
   }
 
@@ -2841,10 +2879,46 @@
     sync();
   }
 
-  function appendHazeControl(box) {
-    const hazeControl = range(0, 100, 1, V.haze(cue()), (v) => `${v}%`, (v) => { cue().environment = { ...(cue().environment || {}), haze: v }; draw(); }, () => commit());
-    hazeControl.querySelectorAll("input").forEach((i) => i.setAttribute("aria-label", i.type === "range" ? "このLX cueのもや" : "このLX cueのもや（数値）"));
-    box.append(field("もや", hazeControl));
+  /* ホリゾントライトは1本のバーだが、舞台の左端から右端へ並ぶ灯の列として色を配る。
+     通常の複数灯グラデーションとは異なり、順番ではなく画面の左→右で固定する。 */
+  function openCycGradientDialog(fid) {
+    const l = lightOf(fid); if (!l) return;
+    const current = cycGradientOf(l) || { from: isHexColor(l.color) ? l.color : "#f2ead6", to: isHexColor(l.color) ? l.color : "#f2ead6" };
+    const pickState = { from: current.from, to: current.to, next: "from" };
+    const chips = [...COLORS, ...state.palette];
+    dialog(
+      `<p class="ptitle">ホリゾントライトのグラデーション</p>
+       <p class="hint">色を2つ、順に押してください。画面の<b>左端</b>が最初の色、<b>右端</b>が最後の色になります。</p>
+       <div class="gradslots" id="gslots">
+         <button type="button" class="gradslot" data-k="from"><span class="chip" id="gchip-from"></span><span><b>左端の色</b><span>画面の左</span></span></button>
+         <button type="button" class="gradslot" data-k="to"><span class="chip" id="gchip-to"></span><span><b>右端の色</b><span>画面の右</span></span></button>
+       </div>
+       <div class="swatches" id="gsw"></div>
+       <p class="kicker" style="margin-top:12px">こうなります</p>
+       <div class="gradprev" id="gprev"></div>`,
+      [["やめる", null, "quiet"],
+       ["左から右へ配る", () => {
+         setLight(fid, { color: pickState.from, cycGradient: { from: pickState.from, to: pickState.to } });
+         commit("ホリゾントライトの色を左から右へグラデーションにしました");
+       }, "primary"]]
+    );
+    const sync = () => {
+      ["from", "to"].forEach((k) => {
+        const chip = document.getElementById("gchip-" + k);
+        if (chip) { chip.style.background = pickState[k]; chip.classList.remove("empty"); }
+      });
+      document.querySelectorAll("#gslots .gradslot").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === pickState.next)));
+      const prev = document.getElementById("gprev"); if (!prev) return;
+      prev.innerHTML = "";
+      for (let i = 0; i < 20; i++) { const s = document.createElement("i"); s.style.background = lerpColor(pickState.from, pickState.to, i / 19); prev.append(s); }
+    };
+    const take = (c) => { pickState[pickState.next] = c; pickState.next = pickState.next === "from" ? "to" : "from"; sync(); };
+    const sw = document.getElementById("gsw");
+    chips.forEach((c) => { const b = document.createElement("button"); b.type = "button"; b.style.background = c; b.title = c; b.onclick = () => take(c); sw.append(b); });
+    const pick = document.createElement("input"); pick.type = "color"; pick.className = "mkcolor"; pick.value = pickState.next === "from" ? pickState.from : pickState.to;
+    pick.title = "色を作る"; pick.onchange = () => take(pick.value); sw.append(pick);
+    document.querySelectorAll("#gslots .gradslot").forEach((b) => { b.onclick = () => { pickState.next = b.dataset.k; sync(); }; });
+    sync();
   }
 
   function renderBulk(host, ids) {
@@ -2868,12 +2942,11 @@
     const add = (n) => box.append(n);
     add(el("p", "kicker", `まとめて変更（${ids.length}灯）`));
     /* 欄の並びは単灯と同じ箱構成にそろえる（2026-09-13 本人要望）:
-       ①光の色 → ②狙い（軌道を含む） → ③光の強さ → ④光の広がり。
+       ①光の色 → ②当てる場所・動き → ③光の強さ → ④光の広がり → ⑤動かす。
        オン・オフだけは単灯と違って右上のボタンが使えないので、箱の前に置く。 */
-    let aimPanel = null;
     const sub = (title) => { const b = el("div", "pbox"); if (title) b.append(el("p", "kicker", title)); add(b); return b; };
     /* 単灯と同じで、オートメーションは項目ごとに見る（2026-09-13 本人指定）。
-       狙い＝軌道が「動きなし」以外／強さ＝levelTo がある／広がり＝beamDegTo がある。 */
+       位置＝軌道が「動きなし」以外／強さ＝levelTo がある／広がり＝beamDegTo がある。 */
     const litLight = (fid) => { const l = lightOf(fid); return l && l.on === true ? l : null; };
     const posMovers = movers.filter((fid) => { const l = litLight(fid); return l && (l.path || {}).kind !== "still"; });
     const lvMovers = movers.filter((fid) => { const l = litLight(fid); return l && l.levelTo != null; });
@@ -2926,9 +2999,9 @@
       b.append(sw);
     }
 
-    // ② 狙い（当てる面、狙い点、オートメーションをまとめる）
+    // ② 当てる場所（軌道は⑤「位置」へ移した）
     {
-      const b = aimPanel = sub("狙い");
+      const b = sub("当てる場所");
       const surs = new Set(lit.map((fid) => lightOf(fid).surface || "floor"));
       b.append(field(surs.size > 1 ? "バラバラ" : null,
         seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], surs.size === 1 ? [...surs][0] : null, (v) => {
@@ -2936,7 +3009,7 @@
             setLight(fid, { surface: v }); restyleToSurface(fid);
             const l2 = lightOf(fid); if (l2.path && (l2.path.kind === "circle" || l2.path.kind === "eight")) l2.path.plane = (v === "back" || v === "house") ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
           });
-          commit(`${ids.length}灯の狙いを変えました`);
+          commit(`${ids.length}灯の当てる場所を変えました`);
         }), true));
     }
 
@@ -3059,11 +3132,10 @@
       const ons = lit.map((fid) => E.shutterActive(lightOf(fid)));
       const allOn = ons.length > 0 && ons.every(Boolean), anyOn = ons.some(Boolean);
       const head = el("div", "pboxhead"); head.append(el("p", "kicker", "カッター"));
-      head.append(switchBtn(allOn,
-        allOn ? "押すと全灯のカッターをオフにします" : anyOn ? "一部だけオンです。押すと全灯をオンにします" : "押すと全灯のカッターをオンにします", () => {
-          if (allOn) { bulkEach(ids, (f, l) => { if (l.shutter) l.shutter = { ...l.shutter, on: false }; }); commit(`${ids.length}灯のカッターをオフにしました`); }
-          else { bulkEach(ids, (f, l) => { l.shutter = E.newShutter(l.shutter ? { ...l.shutter, on: true } : {}); }); commit(`${ids.length}灯のカッターをオンにしました`); }
-        }, ""));
+      head.append(switchBtn(allOn, allOn ? "押すと全灯のカッターを外します" : anyOn ? "一部だけ切っています。押すと全灯そろえて切ります" : "押すと全灯を四角に切ります", () => {
+        if (allOn) { bulkEach(ids, (f, l) => { if (l.shutter) l.shutter = { ...l.shutter, on: false }; }); commit(`${ids.length}灯のカッターを外しました`); }
+        else { bulkEach(ids, (f, l) => { l.shutter = E.newShutter(l.shutter ? { ...l.shutter, on: true } : {}); }); commit(`${ids.length}灯を四角に切りました`); }
+      }, "四角に切る"));
       b.append(head);
       if (anyOn) {
         const on = lit.filter((fid) => E.shutterActive(lightOf(fid)));
@@ -3079,11 +3151,6 @@
           (v) => { bulkEach(on, (f, l) => { l.shutter.rot = v; }); draw(); }, () => commit(`${on.length}灯のカッターの回転を変えました`)), true));
       }
     }
-    // もやは灯体ではなくLX cue全体の空気の状態。光の広がりから分け、カッターの直下へ置く（2026-09-14 本人指定）。
-    {
-      const b = sub(null);
-      appendHazeControl(b);
-    }
     {
       const fixed = ids.map(fixtureById).filter((f) => f && !E.isMoving(f) && f.mount.type !== "cyc");
       if (fixed.length) {
@@ -3096,22 +3163,23 @@
       }
     }
 
-    /* 狙いのオートメーション（ムービングを選んでいるときだけ）。
-       強さ・広がりはそれぞれのスイッチで独立し、運び方（時間・ずらす刻み）は共通にする。 */
+    /* ⑤ 位置（ムービングを選んでいるときだけ）。単灯と同じで、ここは<b>位置だけ</b>を入り切りする。
+       強さ・広がりは③④のスイッチが持つ（2026-09-13 本人指定）。
+       運び方（時間・ずらす刻み）は3つで共通なので、どれかが動いていれば下に出す。 */
     if (movers.length) {
-      const b = aimPanel;
-      const head = el("div", "pboxhead aim-subhead"); head.append(el("p", "kicker", `オートメーション（ムービング${movers.length}灯）`));
+      const b = sub(null);
+      const head = el("div", "pboxhead"); head.append(el("p", "kicker", `位置（ムービング${movers.length}灯）`));
       head.append(switchBtn(allPos,
-        allPos ? "狙いが動いています。押すと全灯を現在の狙いで止めます"
-          : posMovers.length ? "一部の狙いが動いています。押すと全灯のオートメーションをオンにします"
-          : "押すと全灯の狙いに始点と終点を設定して動かします",
+        allPos ? "位置が動いています。押すと全灯を止めます（いまの位置で止まります）"
+          : posMovers.length ? "一部だけ動いています。押すと全灯そろって動かします"
+          : "押すと全灯の位置に始点と終点を置きます",
         () => {
           if (allPos) {
             bulkEach(movers, (f, l) => { const pt = currentPoint(l); l.path = { kind: "still", a: { ...pt } }; });
-            commit(`${movers.length}灯の狙いオートメーションをオフにしました`);
+            commit(`${movers.length}灯の位置の動きを止めました（いまの位置で止まっています）`);
           } else {
             bulkEach(movers, (f, l, i, fid) => { if (((lightOf(fid) || {}).path || {}).kind === "still") setKind(fid, "line"); });
-            commit(`${movers.length}灯の狙いオートメーションをオンにしました`);
+            commit(`${movers.length}灯の位置に始点と終点を置きました`);
           }
         }));
       b.append(head);
@@ -3126,7 +3194,7 @@
           }), true));
       }
       if (someMoving) {
-        b.append(el("p", "kicker sub2", "動きの時間（狙い・強さ・広がりで共通）"));
+        b.append(el("p", "kicker sub2", "動きの時間（位置・強さ・広がりで共通）"));
         // 1往復（1周）の時間とオフセットの刻み。動きを持つムービングだけに入る
         b.append(field("1往復の時間", range(1, 30, 0.5, sp.periodSec, (v) => `${v.toFixed(1)}秒`, (v) => { sp.periodSec = v; bulkEach(movers, (f, l) => { l.periodSec = v; }); draw(); }, () => commit())));
         b.append(field("ずらす刻み", range(0, 3, 0.1, sp.stepSec, (v) => (v < 0.05 ? "ずらさない（全灯そろう）" : `${v.toFixed(1)}秒ずつ`), (v) => {
@@ -3134,8 +3202,8 @@
         }, () => commit())));
       }
 
-      const addP = (n) => b.append(n);   // 狙いのオートメーション設定も同じパネルに置く
-      /* --- 動きの型と組の動きを1つにまとめ、⑤狙いオートメーションの中へ入れた（2026-09-14 本人要望）---
+      const addP = (n) => b.append(n);   // ここから下は⑤位置の箱の中へ入れる
+      /* --- 動きの型と組の動きを1つにまとめ、⑤位置の中へ入れた（2026-09-14 本人要望）---
          どちらも「複数のムービングをどう連携させるか」なので、別々のアコーディオンに分けず
          1つにした。対象はムービングだけ。既定は畳んだまま（2026-09-13 本人要望）。
          組の状態（編集中かどうか）も見出しに出したいので、gs / same は開く前に読む。 */
@@ -3157,10 +3225,10 @@
         const open = accHead(`動きの型・組の動き（ムービング${movers.length}灯）${live() ? "　当たっています" : same ? "　組を編集中" : ""}`, "search");
         if (open) {
           addP(field("連携", seg(SL_FORMS, sp.form, (v) => { sp.form = v; if (live()) applySearchlight(movers); else renderAll(); }), true));
-          addP(field(sp.form === "cone" ? "散らす幅" : "振り幅", range(0.2, 1, 0.05, sp.span, (v) => `舞台幅の${Math.round(v * 100)}%（約${(v * d.W).toFixed(1)}m）`, (v) => { sp.span = v; touch(); }, settle)));
+          addP(field(sp.form === "cone" ? "散らす幅" : "振り幅", range(0.2, 1, 0.05, sp.span, (v) => `舞台幅の${Math.round(v * 100)}%（約${mmText(v * d.W)}）`, (v) => { sp.span = v; touch(); }, settle)));
           /* 高さ0＝床を舐める。バトンに吊ったムービングは下にしか振れないので、これが既定（2026-09-12 本人指摘）。 */
-          addP(field("高さ", range(0, d.H, 0.1, hNow, (v) => (v <= 0.05 ? "0m" : `${v.toFixed(1)}m（空中）`), (v) => { sp.hM = v; touch(); }, settle)));
-          addP(field("奥行き", range(0, 1, 0.05, slDepth(), (v) => `${(v * d.D).toFixed(1)}m（${v < 0.3 ? "奥" : v > 0.7 ? "前" : "中ほど"}）`, (v) => { sp.vv = v; touch(); }, settle)));
+          addP(field("高さ", range(0, d.H, 0.1, hNow, (v) => (v <= 0.05 ? "0mm" : `${mmText(v)}（空中）`), (v) => { sp.hM = v; touch(); }, settle, numMm(0, d.H, 0.1, "高さ(mm)"))));
+          addP(field("奥行き", range(0, 1, 0.05, slDepth(), (v) => `${mmText(v * d.D)}（${v < 0.3 ? "奥" : v > 0.7 ? "前" : "中ほど"}）`, (v) => { sp.vv = v; touch(); }, settle, numDepth())));
           if (sp.form !== "cone") addP(field("切り返し", seg([["linear", "リニア"], ["ease", "イーズ"]], sp.easing, (v) => { sp.easing = v; if (live()) applySearchlight(movers); else renderAll(); })));
           addP(btn(live() ? `${movers.length}灯に当て直す` : `${movers.length}灯にこの型を当てる`, () => applySearchlight(movers), "primary"));
           /* ここから組の動き。軌道はそのままに、灯どうしの関係だけ足す
@@ -3190,7 +3258,7 @@
   /* パネル右上のオン・オフ。1灯を選んでいるときだけ出す。
      押すたびに切り替わる1つのボタンにした（2026-09-13 本人要望）——未設定と消灯を分けて見せず、
      「いま光っているか」だけを示す。未設定の灯を押したら、その場で点いた状態から始める。 */
-  /* 右上のオン・オフと同じ見た目の切り替え（狙い・強さ・広がりのオートメーションで使う）。
+  /* 右上のオン・オフと同じ見た目の切り替え（位置・強さ・広がりのオートメーションで使う）。
      「オン／オフ」だけだと何の入り切りか分からないので、必ず対象の名前を添える
      （2026-09-13 本人指摘）。既定は「オートメーション」。 */
   function switchBtn(on, title, onToggle, word) {
@@ -3387,27 +3455,29 @@
 
   function renderInspector() {
     const host = $("insp"); host.innerHTML = "";
-    const distanceControl = $("distance-control"), distanceButton = $("distance-mode");
-    if (distanceControl) distanceControl.hidden = state.mode !== "move";
-    if (distanceButton) {
-      distanceButton.textContent = distanceMetric ? "距離：実寸" : "距離：固定帯";
-      distanceButton.title = distanceMetric ? "距離表示：実寸（12mまで）" : "距離表示：固定帯";
-      distanceButton.setAttribute("aria-label", distanceButton.title);
-      distanceButton.setAttribute("aria-pressed", String(distanceMetric));
-      distanceButton.onclick = () => { distanceMetric = !distanceMetric; syncCanvasSize(); renderAll(); };
-    }
     const ids = [...state.sel];
+    if (state.mode === 'move') {
+      const box=el('div','pbox option-b-controls');
+      box.append(el('p','kicker','もや · このLX cue'));
+      const hazeControl=range(0,100,1,V.haze(cue()),v=>`${v}%`,v=>{cue().environment={...(cue().environment||{}),haze:v};draw();},()=>commit());
+      hazeControl.querySelectorAll('input').forEach(i=>i.setAttribute('aria-label',i.type==='range'?'このLX cueのもや':'このLX cueのもや（数値）'));box.append(hazeControl);
+      const row=el('div','row'); for(const [name,value] of [['なし',0],['うっすら',35],['濃い',70]]) row.append(btn(name,()=>{cue().environment={...(cue().environment||{}),haze:value};commit();},'small'));
+      box.append(row);box.append(el('p','note','空中・客席向けの光条に反映します。'));
+      host.append(box);
+    }
     syncLightToggle(ids);
     renderXfer();   // コピー／ペーストの可否は選択で変わる。選択だけを更新する経路でも追従させる
     if (state.mode === "place") {
+      if (state.tool === "border") { renderBorderBox(host); return; }
+      if (state.tool === "masking") { renderMaskingBox(host); return; }
       // 見出しは静的な「選んだ灯体」／下の層の「配置（ショー共通）」が持つので、ここでは出さない
       if (!state.sel.size && !state.selTruss) host.append(el("p", "hint", "図か一覧で灯体やバトンを選ぶと、ここに設定が出ます。配置はすべてのシーンで共通です。"));
       const t = E.trussById(state.rig, state.selTruss);
       if (t && !ids.length) {
-        host.append(el("p", "kicker", `バトン（奥から${E.trussRow(state.rig, t.id)}列目・奥行き${(t.v * state.dims.D).toFixed(1)}m）`));
+        host.append(el("p", "kicker", `バトン（奥から${E.trussRow(state.rig, t.id)}列目・奥行き${mmText(t.v * state.dims.D)}）`));
         const name = document.createElement("input"); name.type = "text"; name.value = t.label; name.placeholder = "名前（任意）"; name.onchange = () => { t.label = name.value.slice(0, 16); commit(); }; host.append(field("名前", name));
         host.append(field("奥行き", range(0, 1, 0.01, t.v, depthText, (v) => { t.v = v; draw(); }, () => commit(), numDepth())));
-        host.append(field("高さ", range(2, state.dims.H, 0.1, t.h, (v) => `約${v.toFixed(1)}m${t.tentative ? "（仮の高さ）" : ""}`, (v) => { t.h = v; t.tentative = false; draw(); }, () => commit())));
+        host.append(field("高さ", range(2, state.dims.H, 0.1, t.h, (v) => `約${mmText(v)}${t.tentative ? "（仮の高さ）" : ""}`, (v) => { t.h = v; t.tentative = false; draw(); }, () => commit(), numMm(2, state.dims.H, 0.1, "バトンの高さ(mm)"))));
         host.append(btn("このバトンに灯体を吊る", () => { state.tool = "fixture"; renderAll(); }, "primary"));
         host.append(btn("バトンを削除", () => { const n = state.rig.fixtures.filter((f) => f.mount.trussId === t.id).length; const go = () => { state.rig.fixtures = state.rig.fixtures.filter((f) => f.mount.trussId !== t.id); state.rig.trusses = state.rig.trusses.filter((x) => x.id !== t.id); state.selTruss = null; state.sel.clear(); commit("バトンを削除しました"); }; n ? dialog(`<p>このバトンには${n}灯が吊ってあります。灯体ごと削除しますか？</p>`, [["やめる", null, "quiet"], ["灯体ごと削除", go, "primary"]]) : go(); }, "quiet"));
       }
@@ -3417,30 +3487,18 @@
         const name = document.createElement("input"); name.type = "text"; name.value = f.name; name.placeholder = "例: 中央ムービング"; name.onchange = () => { f.name = name.value.slice(0, 20); commit(); }; host.append(field("名前", name));
         if (m.type === "truss") { const sel = document.createElement("select"); state.rig.trusses.forEach((tt) => { const o = document.createElement("option"); o.value = tt.id; o.textContent = `奥から${E.trussRow(state.rig, tt.id)}列目${tt.label ? "・" + tt.label : ""}`; o.selected = tt.id === m.trussId; sel.append(o); }); sel.onchange = () => { m.trussId = sel.value; state.selTruss = sel.value; commit(); }; host.append(field("吊るバトン", sel));
           host.append(field("横位置", range(0, 1, 0.01, m.u, acrossText, (v) => { m.u = v; draw(); }, () => commit(), numAcross())));
-          const tt = E.trussById(state.rig, m.trussId); host.append(field("高さ", el("span", "val", `約${tt ? tt.h.toFixed(1) : "?"}m（バトンから継承）`))); }
+          const tt = E.trussById(state.rig, m.trussId); host.append(field("高さ", el("span", "val", `約${tt ? mmText(tt.h) : "?"}（バトンから継承）`))); }
         if (m.type === "floor") { host.append(field("横位置", range(0, 1, 0.01, m.u, acrossText, (v) => { m.u = v; draw(); }, () => commit(), numAcross()))); host.append(field("奥行き", range(0, 1, 0.01, m.v, depthText, (v) => { m.v = v; draw(); }, () => commit(), numDepth()))); host.append(field("高さ", el("span", "val", "転がし（床）"))); }
-        if (m.type === "side") { host.append(field("取り付け", seg([["shimote", "下手側"], ["kamite", "上手側"]], m.side, (v) => { m.side = v; commit(); }))); host.append(field("奥行き", range(0, 1, 0.01, m.v, depthText, (v) => { m.v = v; draw(); }, () => commit(), numDepth()))); host.append(field("高さ", range(0.3, state.dims.H, 0.1, m.h, (v) => `約${v.toFixed(1)}m`, (v) => { m.h = v; draw(); }, () => commit()))); }
+        if (m.type === "side") { host.append(field("取り付け", seg([["shimote", "下手側"], ["kamite", "上手側"]], m.side, (v) => { m.side = v; commit(); }))); host.append(field("奥行き", range(0, 1, 0.01, m.v, depthText, (v) => { m.v = v; draw(); }, () => commit(), numDepth()))); host.append(field("高さ", range(0.3, state.dims.H, 0.1, m.h, (v) => `約${mmText(v)}`, (v) => { m.h = v; draw(); }, () => commit(), numMm(0.3, state.dims.H, 0.1, "SSの高さ(mm)")))); }
         if (m.type === "front") {
           host.append(field("横位置", range(0, 1, 0.01, m.u, acrossText, (v) => { m.u = v; draw(); }, () => commit(), numAcross())));
-          host.append(field("舞台前から", range(1, 20, 0.5, m.ahead, (v) => `約${v.toFixed(1)}m`, (v) => { m.ahead = v; draw(); }, () => commit())));
-          host.append(field("高さ", range(1, 16, 0.1, m.h, (v) => `約${v.toFixed(1)}m`, (v) => { m.h = v; draw(); }, () => commit())));
+          host.append(field("舞台前から", range(1, 20, 0.5, m.ahead, (v) => `約${mmText(v)}`, (v) => { m.ahead = v; draw(); }, () => commit(), numMm(1, 20, 0.5, "舞台前からの距離(mm)"))));
+          host.append(field("高さ", range(1, 16, 0.1, m.h, (v) => `約${mmText(v)}`, (v) => { m.h = v; draw(); }, () => commit(), numMm(1, 16, 0.1, "前明かりの高さ(mm)"))));
           host.append(el("p", "note", "客席の上（シーリング）や客席横の壁（フロントサイド）に当たる位置です。平面図では客席側の帯に並べて描き、本当の距離はここの数値が正です。"));
         }
-        if (m.type === "cyc") {
-          /* 置き場所（奥の壁ぎわ・中央）と段（床／上）は配置パネルの「あり／なし」で決まる。
-             ここで直せるのは長さだけにした（2026-09-13 本人指定）。 */
-          host.append(field("長さ", range(0.05, 1, 0.01, E.clamp(E.finite(m.len, 0.9), 0.05, 1), (v) => `幅の${Math.round(v * 100)}%`, (v) => { m.len = v; draw(); }, () => commit()), true));
-          host.append(el("p", "note", `奥の壁（ホリゾント幕）のすぐ手前・中央に置く、横に長い一列の器具です。${m.rung === "top" ? "上から下向き" : "床から上向き"}に壁を染めます。置く・外すは上の「ホリゾントライト」で切り替えます。`));
-        } else {
+        if (m.type !== "cyc") {
           // ムービングかどうか（動きを付けられるのはムービングだけ）。ホリゾントライトは常に固定
-          host.append(field("種類", seg([["moving", "ムービング"], ["fixed", "固定"]], E.isMoving(f) ? "moving" : "fixed", (v) => { f.kind = v; if (v === "fixed") { const l = lightOf(f.id); if (l && l.path && l.path.kind !== "still") { l.path = { kind: "still", a: l.path.a || l.path.c || E.newPoint() }; } } commit(); })));
-        }
-        if (m.type === "cyc") {
-          host.append(field(m.rung === "top" ? "壁を降りる高さ" : "壁を登る高さ", range(0.5, E.CYC_REACH_MAX, 0.5, E.clamp(E.finite(m.reachM, 4), 0.5, E.CYC_REACH_MAX), (v) => `${v.toFixed(1)}m`, (v) => { m.reachM = v; draw(); }, () => commit()), true));
-          host.append(el("p", "note", `固定灯なので、ショー中はここで決めた高さのまま変わりません。舞台の高さ（いま${state.dims.H}m）より上は壁がないので出ません。`));
-        } else {
-          host.append(field("光の広がり", range(4, 70, 1, f.beamDeg == null ? 18 : f.beamDeg, (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`, (v) => { f.beamDeg = v; draw(); }, () => commit())));
-          host.append(el("p", "note", E.isMoving(f) ? "仕込みの広がりです。ムービングはシーンごとに「灯体情報」でズームできます（実機のズーム範囲はおおむね7〜50°）。" : "固定灯はレンズ／ランプで決まる値で、ショー中は変えられません（PARは玉を替えるしかありません）。"));
+          host.append(field("種類", seg([["moving", "ムービング"], ["fixed", "スポット"]], E.isMoving(f) ? "moving" : "fixed", (v) => { f.kind = v; if (v === "fixed") { const l = lightOf(f.id); if (l && l.path && l.path.kind !== "still") { l.path = { kind: "still", a: l.path.a || l.path.c || E.newPoint() }; } } commit(); })));
         }
         // 複製・反対側へコピー・削除は図の下の帯へ移した（同じ操作を2か所に置かない）
       } else if (ids.length > 1) {
@@ -3448,13 +3506,11 @@
         if (!canSpread()) host.append(el("p", "note", "「等間隔に並べる」は同じバトンの3灯以上を選ぶと使えます。"));
         host.append(el("p", "note", "「反対側へコピー」は配置（取り付け位置）だけを下手⇄上手で左右対称に写します（吊り・転がしは左右反転、SSは上手／下手を入れ替え）。オン・オフや動きは「照明デザイン」タブで設定してください。"));
       }
-      // 幕の寸法は選んだものに依らずいつも出す（ショー共通の値なので）
-      renderCurtainBox(host);
       return;
     }
     // ---- 動きモード ----
     // パネル名「照明デザイン」は静的HTML(#insphead)へ移した。ここでは繰り返さない。
-    if (!ids.length) { host.append(hazePanel()); host.append(el("p", "hint", "灯体を選んでください。")); return; }
+    if (!ids.length) { host.append(el("p", "hint", "灯体を選んでください。")); return; }
     if (ids.length === 1) {
       const fid = ids[0]; const f = fixtureById(fid); const l = lightOf(fid);
       host.append(el("p", "kicker", `${label(fid)}（${E.isMoving(f) ? "ムービング" : "固定"}）　${f.name || ""}`));
@@ -3463,41 +3519,44 @@
       /* オン・オフはパネル右上のボタンへ集約した（2026-09-13 本人要望）。
          本文からは2択の欄を外し、消えている灯ではそこへ誘導するだけにする。 */
       if (!l || l.on !== true) {
-        host.append(hazePanel());
-        host.append(el("p", "hint", "この灯はいま消えています。右上の〈オフ〉を押して点けると、色・狙い・強さ・広がりを決められます。"));
+        host.append(el("p", "hint", "この灯はいま消えています。右上の〈オフ〉を押して点けると、色・当てる場所・強さ・広がりを決められます。"));
         return;
       }
       /* ---- 欄の構成（2026-09-13 本人要望で作り直し） ----
-         ①光の色 → ②狙い（狙い点とオートメーションを含む） → ③光の強さ → ④光の広がり → ⑤動きの時間。
-         **オートメーション（自動で動かす）は項目ごとに持つ**。狙いを動かしても、
+         ①光の色 → ②当てる場所 → ③光の強さ → ④光の広がり → ⑤位置 → ⑥動きの時間。
+         **オートメーション（自動で動かす）は項目ごとに持つ**。位置を動かしても、
          光の強さ・光の広がりは勝手にはオンにならない（同日 本人指定）。
          旗は別に持たず、これまでどおりデータから決める:
-           狙い ＝ 軌道が「動きなし」以外／強さ ＝ levelTo がある／広がり ＝ beamDegTo がある。
+           位置 ＝ 軌道が「動きなし」以外／強さ ＝ levelTo がある／広がり ＝ beamDegTo がある。
          運び方（時間・切り返し・遅れ）は3つで共通なので、どれかが動いていれば⑥に出す。 */
       const p = l.path || { kind: "still" };
       const mover = E.isMoving(f);
-      const autoPos = mover && p.kind !== "still";          // 狙いのオートメーション
+      const autoPos = mover && p.kind !== "still";          // 位置のオートメーション
       const autoLevel = mover && l.levelTo != null;          // 光の強さのオートメーション
       const autoSpread = mover && l.beamDegTo != null;       // 光の広がりのオートメーション
       const anyAuto = autoPos || autoLevel || autoSpread;
       const box = (title) => { const b = el("div", "pbox"); if (title) b.append(el("p", "kicker", title)); host.append(b); return b; };
-      let aimPanel = null;
       const heightField = (b, label2, point) => {
         if (l.surface === "floor") return; // 床は高さ0固定。UIに出さない
         // 客席: 手前端からどれだけ客席側か。前明かりの「舞台前から」と同じ尺度
-        if (l.surface === "house") b.append(field(label2.replace("高さ", "舞台前から"), range(0.5, E.HOUSE_AHEAD_MAX, 0.5, point.aheadM || 6, (v) => `約${v.toFixed(1)}m`, (v) => { point.aheadM = v; draw(); }, () => commit())));
-        b.append(field(label2, range(0, state.dims.H, 0.1, point.hM || 0, (v) => `約${v.toFixed(1)}m`, (v) => { point.hM = v; draw(); }, () => commit())));
+        if (l.surface === "house") b.append(field(label2.replace("高さ", "舞台前から"), range(0.5, E.HOUSE_AHEAD_MAX, 0.5, point.aheadM || 6, (v) => `約${mmText(v)}`, (v) => { point.aheadM = v; draw(); }, () => commit(), numMm(0.5, E.HOUSE_AHEAD_MAX, 0.5, "舞台前からの距離(mm)"))));
+        b.append(field(label2, range(0, state.dims.H, 0.1, point.hM || 0, (v) => `約${mmText(v)}`, (v) => { point.hM = v; draw(); }, () => commit(), numMm(0, state.dims.H, 0.1, "高さ(mm)"))));
       };
 
       /* ① 光の色。よく使う6色＋自分で作った色（ショー共通）。作った色はそのまま並ぶので、
          別の灯からもワンタッチで選べる（2026-09-11 本人要望）。 */
       {
         const b = box("光の色");
+        const isCyc = f.mount.type === "cyc";
+        const setSolidColor = (c, quiet) => {
+          setLight(fid, isCyc ? { color: c, cycGradient: null } : { color: c });
+          quiet ? draw() : commit();
+        };
         const swatch = (c, custom) => {
           const sb = document.createElement("button"); sb.type = "button"; sb.className = custom ? "custom" : "";
           sb.style.background = c; sb.title = custom ? `作った色 ${c}` : c;
-          sb.setAttribute("aria-pressed", String((l.color || "").toLowerCase() === c.toLowerCase()));
-          sb.onclick = () => { setLight(fid, { color: c }); commit(); };
+          sb.setAttribute("aria-pressed", String(!cycGradientOf(l) && (l.color || "").toLowerCase() === c.toLowerCase()));
+          sb.onclick = () => setSolidColor(c);
           return sb;
         };
         const sw = el("div", "swatches");
@@ -3506,15 +3565,16 @@
         const pick = document.createElement("input"); pick.type = "color"; pick.className = "mkcolor";
         pick.value = /^#[0-9a-f]{6}$/i.test(l.color || "") ? l.color : "#ffd27a";
         pick.title = "色を作る（作った色はショー全体で使えます）";
-        pick.oninput = () => { setLight(fid, { color: pick.value }); draw(); };
+        pick.oninput = () => setSolidColor(pick.value, true);
         pick.onchange = () => {
           const c = pick.value.toLowerCase();
           if (!COLORS.some((x) => x.toLowerCase() === c) && !state.palette.some((x) => x.toLowerCase() === c)) {
             state.palette.push(c); if (state.palette.length > 12) state.palette.shift();
           }
-          setLight(fid, { color: c }); commit(`色 ${c} を作りました（ほかの灯からも選べます）`);
+          setLight(fid, isCyc ? { color: c, cycGradient: null } : { color: c }); commit(`色 ${c} を作りました（ほかの灯からも選べます）`);
         };
         sw.append(pick);
+        if (isCyc) sw.append(btn("グラデーション", () => openCycGradientDialog(fid), "gradbtn", "画面の左端から右端へ色を配る"));
         b.append(sw);
         const cur = (l.color || "").toLowerCase();
         if (state.palette.some((x) => x.toLowerCase() === cur)) {
@@ -3522,35 +3582,41 @@
         }
       }
 
-      /* ② 狙い。どの面を狙うかと狙い点、狙いのオートメーションをまとめる。
-         ムービングのオートメーション設定は、この箱の中に区切って置く。
+      /* ② 当てる場所。どの面を狙うかと、動かさないときの狙い先だけを持つ。
+         軌道（往復・円・8の字）とその寸法は⑤「位置」へ移した（2026-09-13 本人指摘
+         「軌道は動きの位置の方に置くべきもの」）。
          ホリゾントライトは狙い点を持たない帯（つねに奥の壁を染める）ので、この箱ごと出さない
          （2026-09-13 本人指摘「もとから一列のバー」。横位置・長さ・床/上部は配置パネルへ）。 */
       if (f.mount.type !== "cyc") {
-        const b = aimPanel = box("狙い");
+        const b = box("当てる場所");
         b.append(field(null, seg([["floor", "床"], ["air", "空中"], ["back", "奥の壁"], ["house", "客席"]], l.surface, (v) => {
           setLight(fid, { surface: v }); restyleToSurface(fid);
           const l2 = lightOf(fid); if (l2.path && l2.path.kind === "circle") l2.path.plane = (v === "back" || v === "house") ? "frontVertical" : v === "floor" ? "horizontal" : (l2.path.plane || "horizontal");
           commit();
         }), true));
+        if (l.surface === "house") {
+          b.append(el("p", "hint", "空中の光条と光源のまぶしさを分けて表示します。正面図の赤い丸は舞台手前の通過点です。高さは舞台の床から。距離表示を実寸にすると、平面・側面のドラッグで舞台前からの距離も動かせます。"));
+        }
         if (l.surface === "house" || l.surface === "air") {
           /* まぶしさ（光源から丸く広がるほう）の大きさ。光の帯とは別のレイヤーなので別に決める。 */
           b.append(field("まぶしさ", range(0.2, 3, 0.1, glareMul(l),
             (v) => `${v.toFixed(1)}倍（${v < 0.6 ? "小さく締まる" : v > 1.6 ? "視界が飛ぶ" : "普通"}）`,
-            (v) => { l.glare = v; draw(); }, () => commit())));
+            (v) => { l.glare = v; draw(); }, () => commit()), true));
         }
         if (!autoPos) {
           heightField(b, "高さ", p.a || E.newPoint());
           if (!mover && p.kind !== "still") b.append(el("p", "warn", "⚠ この灯には動きが付いたままです。固定灯なので実際には動きません。"));
+        } else {
+          b.append(el("p", "hint", "狙い先は下の〈位置〉で決めます（軌道・始点・終点）。"));
         }
       }
 
       /* ③ 光の強さ。0まで下げると消灯と同じ扱いになり、図から消える（2026-09-13 本人決定）。
-         動かしているときは始点と終点を持ち、狙いと同じ位相で往復する。効き方（カーブ）は環境設定。 */
+         動かしているときは始点と終点を持ち、位置と同じ位相で往復する。効き方（カーブ）は環境設定。 */
       {
         const b = box(mover ? null : "光の強さ");
         const fmtLv = (v) => (v <= 0 ? "0%（消灯）" : `${Math.round(v)}%（${LEVEL_WORD(v)}）`);
-        /* 強さだけのオートメーション。狙いを動かしていても、ここを入れるまで強さは変わらない。 */
+        /* 強さだけのオートメーション。位置を動かしていても、ここを入れるまで強さは変わらない。 */
         if (mover) {
           const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光の強さ"));
           head.append(switchBtn(autoLevel, autoLevel ? "強さが動いています。押すと止めます（始点の値で止まります）" : "押すと強さに始点と終点を置いて動かします", () => {
@@ -3597,13 +3663,13 @@
            （2026-09-13 本人指定で最大10m）。仕込みの値なのでシーンごとには変わらない。 */
         const b = box("光の届く高さ");
         const top = f.mount.rung === "top";
-        b.append(field(top ? "壁を降りる高さ" : "壁を登る高さ", range(0.5, E.CYC_REACH_MAX, 0.5, E.clamp(E.finite(f.mount.reachM, 4), 0.5, E.CYC_REACH_MAX), (v) => `${v.toFixed(1)}m`, (v) => { f.mount.reachM = v; draw(); }, () => commit()), true));
+        b.append(field(top ? "壁を降りる高さ" : "壁を登る高さ", range(0.5, E.CYC_REACH_MAX, 0.5, E.clamp(E.finite(f.mount.reachM, 4), 0.5, E.CYC_REACH_MAX), mmText, (v) => { f.mount.reachM = v; draw(); }, () => commit(), numMm(0.5, E.CYC_REACH_MAX, 0.5, "壁に届く高さ(mm)")), true));
         b.append(el("p", "note", `${top ? "上の器具から下向きに" : "床の器具から上向きに"}、壁のどこまで光が届くかです。長さは配置パネル、置く・外すは配置パネルの「ホリゾントライト」で切り替えます。`));
       } else {
         const b = box(mover ? null : "光の広がり");
         const fmtDeg = (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`;
         if (mover) {
-          /* 広がりだけのオートメーション。狙い・強さとは独立に入り切りする。 */
+          /* 広がりだけのオートメーション。位置・強さとは独立に入り切りする。 */
           const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光の広がり"));
           head.append(switchBtn(autoSpread, autoSpread ? "広がりが動いています。押すと止めます（始点の値で止まります）" : "押すと広がりに始点と終点を置いて動かします", () => {
             const l2 = lightOf(fid);
@@ -3612,13 +3678,13 @@
           }));
           b.append(head);
         }
-        b.append(el("p", "hint beam-scroll-help", "平面図の赤い丸の上でスクロールしても変えられます（下へ回すと広がる・上へ回すと絞る）。"));
+        b.append(el("p", "hint", "平面図の赤い丸の上でスクロールしても変えられます（下へ回すと広がる・上へ回すと絞る）。"));
         if (mover) {
           b.append(field(autoSpread ? "始点" : null, range(5, 55, 1, E.beamDegOf(f, l), fmtDeg, (v) => { l.beamDeg = v; draw(); }, () => commit()), true));
           if (autoSpread) b.append(field("終点", range(5, 55, 1, E.clamp(E.finite(l.beamDegTo, E.beamDegOf(f, l)), 5, 55), fmtDeg, (v) => { l.beamDegTo = v; draw(); }, () => commit()), true));
-          if (l.beamDeg != null) b.append(btn(`仕込みの広がり（${Math.round(f.beamDeg == null ? 18 : f.beamDeg)}°）に戻す`, () => { delete l.beamDeg; if (l.beamDegTo != null) l.beamDegTo = E.beamDegOf(f, l); commit(); }, "small quiet"));
+          if (l.beamDeg != null) b.append(btn(`仕込みの広がり（${Math.round(f.beamDeg == null ? 16 : f.beamDeg)}°）に戻す`, () => { delete l.beamDeg; if (l.beamDegTo != null) l.beamDegTo = E.beamDegOf(f, l); commit(); }, "small quiet"));
         } else {
-          b.append(field(null, range(4, 70, 1, f.beamDeg == null ? 24 : f.beamDeg, fmtDeg, (v) => { f.beamDeg = v; draw(); }, () => commit()), true));
+          b.append(field(null, range(4, 70, 1, f.beamDeg == null ? 16 : f.beamDeg, fmtDeg, (v) => { f.beamDeg = v; draw(); }, () => commit()), true));
         }
       }
 
@@ -3652,11 +3718,11 @@
         const b = box(null);
         const sh = E.shutterActive(l) ? l.shutter : null;
         const head = el("div", "pboxhead"); head.append(el("p", "kicker", "カッター"));
-        head.append(switchBtn(Boolean(sh), sh ? "押すとカッターをオフにします" : "押すとカッターをオンにします", () => {
+        head.append(switchBtn(Boolean(sh), sh ? "光を四角に切っています。押すと丸に戻します（形は覚えておきます）" : "押すと光を四角に切ります（幅と奥行きを決められます）", () => {
           const l2 = lightOf(fid);
-          if (E.shutterActive(l2)) { l2.shutter = { ...l2.shutter, on: false }; commit("カッターをオフにしました"); }
-          else { l2.shutter = E.newShutter(l2.shutter ? { ...l2.shutter, on: true } : {}); commit("カッターをオンにしました"); }
-        }, ""));
+          if (E.shutterActive(l2)) { l2.shutter = { ...l2.shutter, on: false }; commit("カッターを外しました"); }
+          else { l2.shutter = E.newShutter(l2.shutter ? { ...l2.shutter, on: true } : {}); commit("カッターで四角に切りました"); }
+        }, "四角に切る"));
         b.append(head);
         if (sh) {
           const AX = frameAxisLabels(l.surface);
@@ -3665,11 +3731,6 @@
           b.append(field("回転", range(-E.SHUTTER_ROT_MAX, E.SHUTTER_ROT_MAX, 5, rotOf(sh), rotText, (v) => { l.shutter.rot = v; draw(); }, () => commit()), true));
         }
       }
-      // もやはLX cueごとの空気の状態なので、灯体の光の広がりとは分けてカッターの直下へ置く。
-      {
-        const b = box(null);
-        appendHazeControl(b);
-      }
       if (!mover && f.mount.type !== "cyc") {
         const b = box("バーンドア（四方から切る）");
         const bd = E.barnOf(f), LB = barnLabels(l.surface);
@@ -3677,24 +3738,26 @@
         if (E.barnActive(f)) b.append(btn("全部開く", () => { delete f.barn; commit(`${label(fid)}のバーンドアを開きました`); }, "small quiet"));
       }
 
-      /* 狙いのオートメーション（ムービングのみ）。ここだけを入り切りし、
-         光の強さ・光の広がりはオフのまま、それぞれの欄で個別に設定する。 */
+      /* ⑤ 位置（ムービングのみ）。スイッチは<b>位置だけ</b>を入り切りする——
+         ここを入れても光の強さ・光の広がりはオフのままで、それぞれの箱で別に入れる
+         （2026-09-13 本人指定「それぞれの項目がオートメーションのONOFFを持つイメージ」）。 */
       if (mover) {
-        const b = aimPanel;
-        const head = el("div", "pboxhead aim-subhead"); head.append(el("p", "kicker", "オートメーション"));
-        head.append(switchBtn(autoPos, autoPos ? "狙いが動いています。押すと現在の狙いで止めます" : "押すと始点と終点を設定し、狙いを動かします", () => {
+        const b = box(null);
+        const head = el("div", "pboxhead"); head.append(el("p", "kicker", "位置"));
+        head.append(switchBtn(autoPos, autoPos ? "位置が動いています。押すと止めます（いまの位置で止まります）" : "押すと始点と終点を置いて位置を動かします", () => {
           if (autoPos) {
             const a = currentPoint(l);
             setLight(fid, { path: { kind: "still", a: { ...a } } });
-            commit("狙いのオートメーションをオフにしました");
+            commit("位置の動きを止めました（いまの位置で止まっています）");
           } else {
             setKind(fid, "line");
-            commit("狙いのオートメーションをオンにしました");
+            commit("位置に始点と終点を置きました。②で軌道の形と高さを決められます");
           }
         }));
         b.append(head);
         if (autoPos) {
-          /* 軌道の形と寸法。停止／開始は上のオートメーションスイッチで切り替える。 */
+          /* 軌道の形とその寸法。止める／動かすは上のスイッチが持つので「動きなし」は置かない。
+             ②から移設（2026-09-13 本人指摘「軌道は位置の方に置くべきもの」）。 */
           b.append(field("軌道", seg([["line", "往復"], ["circle", "円"], ["eight", "8の字"]], p.kind, (v) => { setKind(fid, v); commit(); }), true));
           if (p.kind === "line") {
             b.append(field("始め方", seg([["a", "始点 → 終点"], ["b", "終点 → 始点"]], p.start || "a", (v) => { p.start = v; commit(); })));
@@ -3706,31 +3769,33 @@
             /* 円は2軸で持つ＝楕円にできる（2026-09-11 本人要望）。軸の呼び名は面で変わる。 */
             const AXIS = { horizontal: ["左右のふくらみ", "奥行きのふくらみ"], frontVertical: ["左右のふくらみ", "高さのふくらみ"], sideVertical: ["奥行きのふくらみ", "高さのふくらみ"] }[p.plane || "horizontal"];
             const lim = Math.max(state.dims.W, state.dims.H) / 2;
-            b.append(field(AXIS[0], range(0.3, lim, 0.1, p.r, (v) => `約${v.toFixed(1)}m`, (v) => { p.r = v; draw(); }, () => commit())));
-            b.append(field(AXIS[1], range(0.3, lim, 0.1, p.r2 == null ? p.r : p.r2, (v) => `約${v.toFixed(1)}m`, (v) => { p.r2 = v; draw(); }, () => commit())));
+            b.append(field(AXIS[0], range(0.3, lim, 0.1, p.r, (v) => `約${mmText(v)}`, (v) => { p.r = v; draw(); }, () => commit(), numMm(0.3, lim, 0.1, `${AXIS[0]}(mm)`))));
+            b.append(field(AXIS[1], range(0.3, lim, 0.1, p.r2 == null ? p.r : p.r2, (v) => `約${mmText(v)}`, (v) => { p.r2 = v; draw(); }, () => commit(), numMm(0.3, lim, 0.1, `${AXIS[1]}(mm)`))));
             b.append(field("傾き", range(-90, 90, 5, p.tilt == null ? 0 : p.tilt, (v) => (Math.round(v) === 0 ? "まっすぐ" : `${Math.round(v)}°`), (v) => { p.tilt = v; draw(); }, () => commit())));
             { const rr = p.r2 == null ? p.r : p.r2, tl = Math.round(p.tilt || 0);
               if (Math.abs(rr - p.r) >= 0.05 || tl) b.append(btn(p.kind === "eight" ? "傾きと形をそろえる" : "まん丸・まっすぐに戻す", () => { p.r2 = p.r; p.tilt = 0; commit(); }, "small quiet")); }
             heightField(b, "中心の高さ", p.c);
-            b.append(field("開始角度", range(0, 1, 0.05, p.start || 0, (v) => `${Math.round(v * 360)}°`, (v) => { p.start = v; draw(); }, () => commit())));
+            b.append(field("始める位置", range(0, 1, 0.05, p.start || 0, (v) => `${Math.round(v * 360)}°`, (v) => { p.start = v; draw(); }, () => commit())));
           }
+        } else {
+          b.append(el("p", "hint", "位置は止まったままです。光の強さ・光の広がりだけを動かすこともできます。"));
         }
       }
 
-      /* ⑥ 動きの時間。狙い・強さ・広がりで<b>共通</b>の運び方なので、どれか1つでも
+      /* ⑥ 動きの時間。位置・強さ・広がりで<b>共通</b>の運び方なので、どれか1つでも
          動いていれば出す（2026-09-13 本人要望のオートメーション化に合わせて別の箱に分けた）。 */
       if (mover) {
         const b = anyAuto || (state.copiedPath && state.copiedPath.from !== fid) ? box(null) : null;
         if (b && anyAuto) {
-          b.append(el("p", "kicker", "動きの時間（狙い・強さ・広がりで共通）"));
+          b.append(el("p", "kicker", "動きの時間（位置・強さ・広がりで共通）"));
           const kind = (lightOf(fid).path || {}).kind;
-          // 端での運び方（2026-09-12 本人指定で「切り返し」＝リニア／イーズ）。狙い・強さ・広がりに共通
+          // 端での運び方（2026-09-12 本人指定で「切り返し」＝リニア／イーズ）。位置・強さ・広がりに共通
           b.append(field("切り返し", seg([["linear", "リニア"], ["ease", "イーズ"]], p.easing || "ease", (v) => { p.easing = v; commit(); })));
-          const label1 = kind === "circle" || kind === "eight" ? "1周の時間" : "1往復の時間";
+          const label1 = kind === "line" ? "1往復の時間" : kind === "still" ? "変化の1往復の時間" : "1周の時間";
+          b.append(field(label1, seg([["slow", "ゆっくり 4秒"], ["normal", "普通 2秒"], ["fast", "速い 1秒"]], l.periodSec == null ? l.speed : null, (v) => { setLight(fid, { speed: v, periodSec: null }); commit(); }), true));
           const secNow = l.periodSec == null ? E.SPEED_PERIOD_MS[l.speed] / 1000 : l.periodSec;
-          const periodField = field(label1, range(0.4, 30, 0.1, secNow, (v) => `${v.toFixed(1)}秒`, (v) => { l.periodSec = v; draw(); }, () => commit()), true);
-          periodField.classList.add("periodfield");
-          b.append(periodField);
+          b.append(field("秒で決める", range(0.4, 30, 0.1, secNow, (v) => `${v.toFixed(1)}秒${l.periodSec == null ? "（未使用）" : ""}`, (v) => { l.periodSec = v; draw(); }, () => commit())));
+          if (l.periodSec != null) b.append(btn("秒の指定をやめて3段に戻す", () => { delete l.periodSec; commit(); }, "small quiet"));
           /* 何秒遅れて始めるか。組の「順番に動く」とは別に、一灯ずつずらせる（2026-09-12 本人要望）。 */
           b.append(field("オフセット", range(-10, 10, 0.1, E.finite(l.offsetSec, 0), (v) => (Math.abs(v) < 0.05 ? "なし" : `${v > 0 ? "+" : ""}${v.toFixed(1)}秒`), (v) => { l.offsetSec = v; draw(); }, () => commit())));
           const acts = el("div", "seg");
@@ -3760,6 +3825,7 @@
   /* ---------- 全体 ---------- */
   function renderAll() {
     $("mode-place").setAttribute("aria-pressed", String(state.mode === "place")); $("mode-move").setAttribute("aria-pressed", String(state.mode === "move"));
+    syncDistanceMetric();
     /* 配置はシーン共通なので、シーン送りと再生は照明デザインのときだけ出す（2026-09-11 本人指摘）。
        2026-09-13 本人要望でパネル右上へ移した（シーン名の表示はやめた）。 */
     /* 配置はシーン共通なので、シーン送りも再生も照明デザインのときだけ出す（2026-09-11 本人指摘）。
@@ -3821,23 +3887,24 @@
     syncCanvasSize();
     document.querySelectorAll("#showtoggles button, #lighttoggles button").forEach((b) => b.setAttribute("aria-pressed", String(showOn(b.dataset.show))));
     document.querySelectorAll("#frontmode button").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.front === "3d") === Boolean(state.front3d))));
-  // 3Dの席は平面時にも表示して、切替欄の幅と高さを固定する。
-  // 平面では席の選択は意味を持たないため、欄をグレーアウトする。
-  const seat = $("seat");
-  seat.hidden = false;
-  seat.disabled = !state.front3d;
-  seat.setAttribute("aria-disabled", String(!state.front3d));
+    $("seat").hidden = !state.front3d;
     $("filters").hidden = state.mode !== "move";
     document.querySelectorAll("#filters button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filter === state.filter)));
     renderLxq(); renderList(); renderInspector(); renderFixedConflicts();
     if (window.LIGHT_PRESETS_UI) window.LIGHT_PRESETS_UI.refresh();   // 右パネルの「見本」タブ（light-presets-ui.js）
-    if (window.SELECTED_LIGHT_PRESETS_UI) window.SELECTED_LIGHT_PRESETS_UI.refresh(); // 選択灯「型」タブ
+    if (window.SELECTED_LIGHT_PRESETS_UI) window.SELECTED_LIGHT_PRESETS_UI.refresh(); // 選択灯「型」P1（隔離試作）
     renderTransport(); draw();
   }
 
   /* ---------- ヘッダ・空状態・書き出し ---------- */
   $("mode-place").onclick = () => { state.mode = "place"; stop(); renderAll(); };
-  $("mode-move").onclick = () => { state.mode = "move"; state.tool = null; renderAll(); };
+  $("mode-move").onclick = () => {
+    state.mode = "move";
+    state.tool = null;
+    // 照明デザインに入る瞬間は、常に灯の見え方から始める（2026-09-14 本人指定）。
+    state.show.blackout = true;
+    renderAll();
+  };
   /* 連動を切った瞬間は「いま見ているシーン」に固定する（見えているものが動かない）。 */
   if ($("lxlink")) $("lxlink").onclick = () => { if (state.lxLink) { state.lxScene = state.sceneIndex; state.lxLink = false; } else { state.lxLink = true; } renderAll(); };
   $("sec-prev").onclick = () => lxStepSection(-1);
@@ -4029,13 +4096,12 @@
   ];
   const addTrussAt = (v, h, lbl) => { const t = E.newTruss(uid("t"), v, h, lbl); state.rig.trusses.push(t); return t; };
   const pushFix = (mount, kind, deg) => state.rig.fixtures.push(E.newFixture(uid("f"), state.nextNo++, mount, "", kind, deg));
-  /* 既定の広がり: 前明かりは遠いので細め、バトンの灯は中くらい、SSは横から抜くので細め、転がしは広め。
-     ムービングは中間（実機のズームは7〜50°）。 */
-  const putHang = (t, u, kind, deg) => pushFix({ type: "truss", trussId: t.id, u }, kind, deg || (kind === "moving" ? 14 : 24));
-  const putFront = (u, ahead, h, deg) => pushFix({ type: "front", u, ahead, h }, "fixed", deg || 14);
-  const putSS = (side, v, h, kind, deg) => pushFix({ type: "side", side, v, h }, kind, deg || (kind === "moving" ? 12 : 20));
-  const putFloor = (u, v, kind, deg) => pushFix({ type: "floor", u, v }, kind, deg || (kind === "moving" ? 12 : 30));
-  const putCyc = (len, rung, reachM) => pushFix({ type: "cyc", len, rung, reachM: reachM || 4 }, "fixed", 24);
+  /* 既定の広がりは、取り付け方を問わず16°にそろえる。個別の仕込みで角度を渡した場合だけ上書きする。 */
+  const putHang = (t, u, kind, deg) => pushFix({ type: "truss", trussId: t.id, u }, kind, deg || 16);
+  const putFront = (u, ahead, h, deg) => pushFix({ type: "front", u, ahead, h }, "fixed", deg || 16);
+  const putSS = (side, v, h, kind, deg) => pushFix({ type: "side", side, v, h }, kind, deg || 16);
+  const putFloor = (u, v, kind, deg) => pushFix({ type: "floor", u, v }, kind, deg || 16);
+  const putCyc = (len, rung, reachM) => pushFix({ type: "cyc", len, rung, reachM: reachM || 4 }, "fixed", 16);
 
   /* ---------- 強さの効き方（ベロシティカーブ） ----------
      アプリ全体で1本だけ持つ共通の設定（2026-09-13 本人決定）。灯ごとの「強さ」の数値は
@@ -4150,7 +4216,7 @@
     state.rig.trusses.push(t);
     [0.2, 0.4, 0.6, 0.8].forEach((u) => state.rig.fixtures.push(E.newFixture(uid("f"), state.nextNo++, { type: "truss", trussId: t.id, u }, "")));
     state.selTruss = t.id; state.sel.clear();
-    commit("奥バトン1本（高さ約6m）＋ムービング4灯を吊りました");   // toastの「元に戻す」で取り消せる
+    commit("奥バトン1本（高さ約6000mm）＋ムービング4灯を吊りました");   // toastの「元に戻す」で取り消せる
   };
   $("apply").onclick = () => { state.dirty = false; state.history.length = 0; state.future.length = 0; baseline = snapshot(); renderAll(); $("dirty").textContent = "ショーへ適用しました"; setTimeout(() => renderAll(), 2500); toast("ショーへ適用しました（試作なので画面は残ります）"); };
   $("close").onclick = () => { if (state.dirty) dialog("<p>変更がまだ適用されていません。</p>", [["編集に戻る", null, "quiet"], ["破棄して閉じる", () => toast("破棄しました（試作なので画面は残ります）"), "quiet"], ["適用して閉じる", () => $("apply").onclick(), "primary"]]); else toast("閉じました（試作なので画面は残ります）"); };
@@ -4368,10 +4434,10 @@
     state.rig={trusses:[{id:'example-back',v:.15,h:6}],fixtures:[]};
     scene().cue={lights:{},groups:[],environment:{haze:35}};
     for(let i=0;i<4;i++){const id='example-r'+i,u=.2+i*.2;
-      state.rig.fixtures.push(E.newFixture(id,i+1,{type:'truss',trussId:'example-back',u},'逆光','moving',18));
+      state.rig.fixtures.push(E.newFixture(id,i+1,{type:'truss',trussId:'example-back',u},'逆光','moving',16));
       cue().lights[id]=E.newLightCue({on:true,surface:'house',color:'#f2ead6',path:{kind:'still',a:{u,v:1,aheadM:6,hM:2}}});}
     for(let i=0;i<2;i++){const id='example-f'+i,u=.3+i*.4;
-      state.rig.fixtures.push(E.newFixture(id,i+5,{type:'front',u,ahead:4,h:4},'前明かり','fixed',55));
+      state.rig.fixtures.push(E.newFixture(id,i+5,{type:'front',u,ahead:4,h:4},'前明かり','fixed',16));
       cue().lights[id]=E.newLightCue({on:frontOn,surface:'air',color:'#f2ead6',path:{kind:'still',a:{u,v:.65,hM:1.2}}});}
     state.mode='move';state.show.blackout=true;state.dim=100;state.sel=new Set(['example-r1']);
     state.history=[];state.future=[];baseline=snapshot();

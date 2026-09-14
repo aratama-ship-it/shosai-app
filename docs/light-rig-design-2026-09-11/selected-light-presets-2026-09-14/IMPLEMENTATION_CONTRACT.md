@@ -2,7 +2,7 @@
 
 Status: **proposal only**. これは選択灯プリセットの試作・実装判断をそろえるための契約であり、舞台スケッチ本体、保存済みプロジェクト、ベータ、公開物を変更する許可ではない。
 
-関連する画面提案: [DECISION.html](./DECISION.html)<br>
+関連する画面提案: [DECISION.html](./DECISION.html)
 人が読む版: [IMPLEMENTATION_CONTRACT.html](./IMPLEMENTATION_CONTRACT.html)
 
 ## 0. 接続しない既存機能

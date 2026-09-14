@@ -63,11 +63,10 @@
   .body{display:flex;flex-direction:column;gap:5px;padding:5px 10px 7px;min-height:0}
   .col{min-height:0;display:flex;flex-direction:column;gap:8px}
   .box{border:1px solid var(--line-dark);background:rgba(25,21,18,.45);padding:10px}
-  .kicker{color:var(--brass);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin:0 0 6px}
+  .kicker{color:var(--brass);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:none;margin:0 0 6px}
   /* パネルの見出し（灯体・選んだ灯体・配置・灯体情報）。小さすぎて読めないという本人指摘で一段大きく（2026-09-12） */
   .ptitle{color:var(--brass);font-size:14.5px;font-weight:600;letter-spacing:.1em;margin:0 0 6px;line-height:1.35}
   .hint{color:var(--milk-dim);font-size:12px;line-height:1.6;margin:0}
-  .beam-scroll-help{display:none}
   /* いま当たっている状態の案内。つまみが生きていることを色で示す */
   .hint.live{color:var(--milk);border-left:2px solid var(--brass);padding-left:7px}
   .warn{color:var(--rust-ink);font-size:11.5px;line-height:1.6;margin:0;border-left:2px solid var(--rust-ink);padding-left:7px}
@@ -182,16 +181,6 @@
   /* 上段は残りの高さいっぱい。図は上に貼り付け、余ったぶんは左右のパネル（一覧・設定）が使う。
      窓が縦に大きいほど一覧が長く見えるようになる（2026-09-11 本人要望） */
   .figgrid{flex:1;min-height:0;display:grid;grid-template-columns:auto auto auto;grid-template-rows:minmax(0,1fr) auto;gap:8px 8px;justify-content:center;align-content:stretch;justify-items:center}
-  /* 正面図だけを見る表示。Fで入り、Spaceは再生／停止のまま、ほかのキーで編集画面へ戻る。
-     ブラウザの全画面APIは使わず、試作の窓の中を図へ明け渡すので戻る操作を一手に保つ。 */
-  body.front-focus{display:block;padding:0}
-  .front-focus .proto-note,.front-focus .head,.front-focus .figbar,.front-focus .leftcol,.front-focus .planwrap,.front-focus .panel.insp,.front-focus .sec.side,.front-focus .foot{display:none}
-  .front-focus .modal{width:100vw;height:100vh;border:0;box-shadow:none;grid-template-rows:minmax(0,1fr)}
-  .front-focus .body,.front-focus .canvases{gap:0;padding:0}
-  .front-focus .figgrid{display:flex;width:100%;height:100%;align-items:stretch;justify-content:stretch}
-  .front-focus .sec.front{display:flex;flex:1 1 auto;width:100% !important;height:100%;padding:12px;gap:6px}
-  .front-focus .sec.front .sechead{flex:0 0 24px}
-  .front-focus .sec.front canvas{flex:1 1 auto;width:100% !important;height:0 !important;min-height:0}
   .planwrap{align-self:start}
   .planwrap{position:relative;display:flex;flex-direction:column;gap:2px;min-width:0;grid-row:1;grid-column:2}
   .sec{display:flex;flex-direction:column;gap:2px;min-width:0;grid-row:2}
@@ -229,24 +218,14 @@
   /* 正面図のパネルだけ、見出しの中央に「平面／3D」の切り替えを置く（2026-09-11 本人要望） */
   .sec.front .sechead{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center}
   .sec.front .sechead .viewnote{text-align:right}
-  /* 正面図の見方は、平面／3D／3Dの席を常に1行で並べる。
-     3Dへ切り替えた瞬間に席の欄を足して折り返さないよう、平面時も席を表示する。 */
-  .fmode{display:flex;align-items:center;gap:0;justify-self:center;white-space:nowrap}
-  .sec.front #frontmode{display:flex;flex:0 0 auto;flex-wrap:nowrap}
-  .sec.front #frontmode button,.sec.front .seatsel{box-sizing:border-box;min-height:24px;height:24px;font:10.5px var(--sans)}
-.sec.front #frontmode button{width:39px;padding:2px 0;text-align:center}
-.sec.front .seatsel{width:106px;margin-left:-1px;padding:1px 22px 1px 8px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk);border-radius:0;color-scheme:dark}
-.sec.front .seatsel option{background:var(--desk-2);color:var(--milk)}
-.sec.front .seatsel:disabled{background:var(--desk-3);color:var(--milk-dim);border-color:var(--line-dark);opacity:1;cursor:not-allowed}
+  .fmode{display:flex;align-items:center;gap:5px;justify-self:center}
   .sechead .viewtitle{font-size:11px;letter-spacing:.08em}
-  /* 側面図の操作は横一列を基本にし、幅が足りないときは距離表示を次の行へ送る。
-     ボタンは文字が切れない幅を確保し、非常に狭い時だけ見方ボタン同士を折り返す。 */
-  .sec.side .sechead{flex-wrap:wrap;overflow:visible;align-content:flex-start}
-  .sec.side .sidemode{display:flex;align-items:stretch;flex:1 1 124px;flex-wrap:wrap;min-width:0;height:auto;min-height:24px}
-  .sec.side .sidemode button{box-sizing:border-box;flex:1 1 62px;width:auto;min-width:min(62px,100%);min-height:24px;height:24px;font-size:10px;letter-spacing:0;padding:2px 4px;white-space:nowrap}
-  .sec.side .distancecontrol{display:inline-flex;align-items:stretch;flex:0 0 auto;height:24px;margin-left:0;padding-left:6px;border-left:1px solid var(--line-dark)}
-  .distancecontrol[hidden]{display:none}
-  .sec.side .distancecontrol .btn.small{box-sizing:border-box;min-height:24px;height:24px;padding:2px 2px;font-size:10px;letter-spacing:0;white-space:nowrap}
+  /* 側面図の向きは言葉の幅だけを使う。親の余り幅をボタンが取らず、下手／上手が
+     横へ伸びることもない（2026-09-14 本人指摘）。 */
+  .sidemode{display:inline-flex;flex:0 0 auto;flex-wrap:nowrap;width:max-content}
+  .sidemode.showtoggles button{flex:0 0 auto;width:auto;font-size:10px;letter-spacing:0;padding:2px 6px;min-height:20px}
+  .side-sep{width:1px;height:20px;flex:0 0 auto;background:var(--line-dark);margin:0 6px}
+  .sidedistance{flex:0 0 auto;min-height:20px;padding:2px 6px;font-size:10px;white-space:nowrap}
   .sechead .viewnote{font-size:8.5px}
   /* 図の上の横並びバー: 左＝図に出すもの、中央＝シーン送り。
      シーン送りは帯の中身に対してではなく<b>窓の幅そのもの</b>の中央に置く（2026-09-13 本人要望）。
@@ -332,10 +311,6 @@
   .ontoggle[aria-pressed="true"] .sw::after{left:15px;background:var(--brass)}
   .field{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px;align-items:center;min-height:34px;font-size:12.5px;color:var(--milk-dim)}
   .field.wide{grid-template-columns:1fr}
-  /* フェーダーは見出しの下へ落とさず、狙い欄と同じ一行にそろえる。 */
-  .field.rangefield.wide{grid-template-columns:72px minmax(0,1fr)}
-  .field.rangefield.wide.nolabel{grid-template-columns:minmax(0,1fr)}
-  .slbox>.field.rangefield{grid-column:1/-1}
   .seg{display:inline-flex;flex-wrap:wrap}
   .seg button{min-height:32px;padding:4px 6px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk-dim);font-size:12.5px;cursor:pointer}
   .seg button+button{margin-left:-1px}
@@ -362,13 +337,12 @@
   .seg.col.grouplist{flex-direction:row;flex-wrap:wrap;align-items:flex-start;max-height:150px;overflow-y:auto}
   .seg.col.grouplist button{text-align:center;white-space:nowrap;flex:0 0 auto}
   .seg.col.grouplist button+button{margin-left:-1px;margin-top:0}
-  /* 照明デザイン（単灯）の箱。色／狙い（位置を含む）／強さ／広がり／動かす を1箱ずつ
+  /* 照明デザイン（単灯）の箱。色／当てる場所・動き／強さ／広がり／動かす を1箱ずつ
      （2026-09-13 本人要望）。中は縦積み。見出し(.kicker)は箱の中で余白を持たない。 */
   .pbox{border:1px solid var(--line-dark);background:var(--recess);padding:8px;display:grid;gap:7px}
   .pbox>.kicker{margin:0}
   .pbox .pboxhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .pbox .pboxhead .kicker{margin:0}
-  .pbox .pboxhead.aim-subhead{margin-top:1px;padding-top:7px;border-top:1px solid var(--line-dark)}
   .pbox .swatches{padding:3px}
   /* ゴボ（模様）の選び方。丸い窓の中に形を見せるので、見本も円で切る。 */
   /* 模様（ゴボ）はプルダウンで選ぶ（2026-09-13 本人要望）。右欄は縦スクロールする枠なので
@@ -483,11 +457,6 @@
   .rangewrap .numin{flex:0 0 auto;width:64px;min-height:26px;border:1px solid var(--line-dark);background:var(--desk-2);color:var(--milk);font:13px var(--sans);padding:1px 4px;text-align:right;font-variant-numeric:tabular-nums}
   .rangewrap .numin:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
   .val{color:var(--brass);font-variant-numeric:tabular-nums}
-  .panel.insp .rangewrap .val{display:none}
-  /* 往復時間は数値とスライダーを一列で見比べて調整する。狭い設定欄でも横にはみ出さない。 */
-  .panel.insp .field.rangefield.periodfield .rangewrap{flex-wrap:nowrap;gap:4px}
-  .panel.insp .field.rangefield.periodfield .rangewrap input[type=range]{flex:1 1 44px;min-width:44px}
-  .panel.insp .field.rangefield.periodfield .rangewrap .numin{width:50px}
   /* .panel は overflow:hidden なので、選択中スウォッチの outline（枠の外側にはみ出す）が
      左端で切れていた（2026-09-13 本人指摘）。余白を持たせて逃がす。 */
   /* 選んだ色の輪（outline 2px + offset 1px＝3px 外へ出る）ぶんを左に空ける。
@@ -601,16 +570,16 @@
               <button type="button" data-show="fixtures" aria-pressed="true" title="灯体の印（吊り・SS・転がしなどの記号）を図に出す">機材</button>
               <button type="button" data-show="no" aria-pressed="true">番号</button>
               <button type="button" data-show="path" aria-pressed="true">動く範囲</button>
-              <button type="button" data-show="grid" aria-pressed="true" title="1mごとの目盛りを図に出す">グリッド</button>
+              <button type="button" data-show="grid" aria-pressed="true" title="1000mmごとの目盛りを図に出す">グリッド</button>
               <button type="button" data-show="pieces" aria-pressed="true" title="舞台スケッチ側で置いてある演者・セットを下敷きに出す">演者・セット</button>
-              <button type="button" data-show="names" aria-pressed="true" title="演者・セットの名前を図に出す（影絵は残す）">名前</button>
+              <button type="button" data-show="names" aria-pressed="true" title="演者・セットの名前を図に出す（影絵は残す）">演者・セット名</button>
               <button type="button" data-show="border" aria-pressed="false" title="バトンの手前に吊って灯体を客席から隠す短い幕。出すと、客席から灯体が見えていないかを確かめられます">一文字幕</button>
             </span>
             <!-- 「光」と「作業灯を消す」は照明デザインタブだけのもの。近い働きなので、
                  ほかの「図に出すもの」から離して右端に2つ並べる（2026-09-13 本人要望）。
                  消し具合は全消しだけでなく割合で決められる（同要望）。 -->
             <span class="showtoggles lightgroup" id="lighttoggles" role="group" aria-label="光の見せ方" hidden>
-              <button type="button" data-show="blackout" aria-pressed="false" title="光が当たっていないところを暗くする（G）">作業灯を消す</button>
+              <button type="button" data-show="blackout" aria-pressed="false" title="光が当たっていないところを暗くする">作業灯を消す</button>
               <span class="dimwrap" id="dimwrap" hidden>
                 <input type="range" id="dim" min="0" max="100" step="5" value="100" aria-label="作業灯をどれだけ消すか">
                 <input type="number" id="dimnum" min="0" max="100" step="5" value="100" aria-label="作業灯をどれだけ消すか（％）">
@@ -689,7 +658,7 @@
           <div class="planwrap">
             <div class="viewhead">
               <span class="viewtitle">平面図（真上から）</span>
-              <label class="snap" title="1mのグリッドに合わせて置く・動かす"><input type="checkbox" id="snap"><span>1mでそろえる</span></label>
+              <label class="snap" title="1000mmのグリッドに合わせて置く・動かす"><input type="checkbox" id="snap"><span>1000mmでそろえる</span></label>
             </div>
             <span class="statebadge" id="statebadge">選択</span>
             <canvas id="plan" width="1090" height="760"></canvas>
@@ -737,9 +706,8 @@
                 <button type="button" data-side="shimote" aria-pressed="true">下手を見る</button>
                 <button type="button" data-side="kamite" aria-pressed="false">上手を見る</button>
               </span>
-              <span class="distancecontrol" id="distance-control" role="group" aria-label="距離表示" hidden>
-                <button type="button" class="btn small" id="distance-mode" aria-label="距離表示：固定帯" title="距離表示：固定帯" aria-pressed="false">距離：固定帯</button>
-              </span>
+              <span class="side-sep" aria-hidden="true"></span>
+              <button type="button" class="btn small quiet sidedistance" id="distance-mode" aria-pressed="false">距離：固定帯</button>
             </div>
             <canvas id="secL" width="520" height="520"></canvas>
           </div>
@@ -751,7 +719,7 @@
                   <button type="button" data-front="flat" aria-pressed="true">平面</button>
                   <button type="button" data-front="3d" aria-pressed="false">3D</button>
                 </span>
-                <select id="seat" class="seatsel" aria-label="3Dでどの席から見るか" title="3Dで見る席を選ぶ">
+                <select id="seat" class="seatsel" aria-label="どの席から見るか" hidden>
                   <option value="front">1階 前方</option>
                   <option value="center">1階 中央</option>
                   <option value="rear">1階 後方</option>
@@ -777,24 +745,25 @@
          単体で使う場合だけ出す想定（2026-09-11 本人判断） -->
     <div class="box" id="venuebox" hidden>
       <p class="ptitle">舞台の大きさ</p>
-      <label class="vrow"><span>間口（幅）</span><input type="range" id="dimW" min="6" max="24" step="1" value="12"><span class="val" id="dimWv">12m</span></label>
-      <label class="vrow"><span>奥行き</span><input type="range" id="dimD" min="4" max="18" step="1" value="8"><span class="val" id="dimDv">8m</span></label>
-      <label class="vrow"><span>高さ</span><input type="range" id="dimH" min="4" max="16" step="1" value="8"><span class="val" id="dimHv">8m</span></label>
-      <p class="note">4つの図と1mの線は、この寸法に合わせて描き直します。</p>
+      <label class="vrow"><span>間口（幅）</span><input type="range" id="dimW" min="6" max="24" step="1" value="12"><span class="val" id="dimWv">12000mm</span></label>
+      <label class="vrow"><span>奥行き</span><input type="range" id="dimD" min="4" max="18" step="1" value="8"><span class="val" id="dimDv">8000mm</span></label>
+      <label class="vrow"><span>高さ</span><input type="range" id="dimH" min="4" max="16" step="1" value="8"><span class="val" id="dimHv">8000mm</span></label>
+      <p class="note">4つの図と1000mmの線は、この寸法に合わせて描き直します。</p>
     </div>
-    <p class="foot">選択 <b>クリック</b>　複数 <b>Shift</b>　解除 <b>Esc</b>　再生 <b>Space</b>　作業灯を消す <b>G</b>　正面図を大きく <b>F</b>　設定をコピー <b>⌘C</b>　貼る <b>⌘P</b>　狙い点を縦横だけに動かす <b>Shift+ドラッグ</b>　／　灯体の位置と動きを伝えるための案です。機種・回路・DMX・照度・設置の安全性は示しません。</p>
+    <p class="foot">選択 <b>クリック</b>　複数 <b>Shift</b>　解除 <b>Esc</b>　再生 <b>Space</b>　設定をコピー <b>⌘C</b>　貼る <b>⌘P</b>　狙い点を縦横だけに動かす <b>Shift+ドラッグ</b>　／　灯体の位置と動きを伝えるための案です。機種・回路・DMX・照度・設置の安全性は示しません。</p>
   </div>
   <div class="dialog" id="dialog" hidden></div>
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=1789420001"></script>
-<script src="stage-figure.js?v=1789420001"></script>
+<script src="rig-engine.js?v=20260915-1"></script>
+<script src="stage-figure.js?v=20260915-1"></script>
 <script src="volume-light.js?v=1789396700"></script>
-<script src="app.js?v=1789420001"></script>
+<script src="app.js?v=20260915-1"></script>
 <script src="light-presets.js?v=1789357787"></script>
 <script src="light-presets-ui.js?v=1789397300"></script>
-<script src="../selected-light-presets-2026-09-14/selected-light-presets-engine.js?v=1789418301"></script>
-<script src="../selected-light-presets-2026-09-14/selected-light-presets-ui.js?v=1789418301"></script>
+<!-- 選択灯「型」P1: 本体ではなく、この試作だけへ隔離接続する。 -->
+<script src="../selected-light-presets-2026-09-14/selected-light-presets-engine.js?v=1789412300"></script>
+<script src="../selected-light-presets-2026-09-14/selected-light-presets-ui.js?v=1789412320"></script>
 </body>
 </html>
