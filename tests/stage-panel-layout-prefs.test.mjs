@@ -21,6 +21,13 @@ test("パネル表示は1列用の順番を2列のショー配置から分離す
   assert.match(source, /stage-panels-single/);
 });
 
+test("初期配置では選んだものを出るものの直下の左列に置く", () => {
+  assert.match(source, /const PANELS = \["project", "venue", "music", "cast", "machinery", "rigs", "light", "background", "study", "scenes", "inspector", "save", "session", "ask"\]/);
+  assert.match(source, /cast: "left", inspector: "left", machinery: "left"/);
+  assert.match(source, /cast: 3, inspector: 4, machinery: 5/);
+  assert.match(source, /const base = defaultLayout\(\);[\s\S]*?cols\[id\] = c === "left" \|\| c === "right" \? c : base\.cols\[id\];/);
+});
+
 test("環境設定は各編集モードごとに2列・1列左・1列右を一つの選択肢で扱う", () => {
   assert.match(source, /function panelLayoutPrefsGroup\(\)/);
   assert.match(source, /const workspaceModeDefinitions = \(\) =>/);

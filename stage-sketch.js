@@ -5022,15 +5022,15 @@
 
   function defaultLayout() {
     return {
-      // 場面は絵のすぐ右に置く（順番を見ながら描くため）
+      // 選んだものは、登録した出るものをそのまま舞台上で調整する流れに合わせて左列へ置く。
+      // 場面は絵のすぐ右に置く（順番を見ながら描くため）。
       cols: {
-        project: "left", venue: "left", music: "left", cast: "left", machinery: "left", rigs: "left", light: "left", background: "left",
-        study: "right", scenes: "right", inspector: "right", save: "right",
-        session: "right", ask: "right",
+        project: "left", venue: "left", music: "left", cast: "left", inspector: "left", machinery: "left", rigs: "left", light: "left", background: "left",
+        study: "right", scenes: "right", save: "right", session: "right", ask: "right",
       },
       order: {
-        project: 0, venue: 1, music: 2, cast: 3, machinery: 4, rigs: 5, light: 6, background: 7,
-        study: -1, scenes: 0, inspector: 1, save: 2, session: 3, ask: 4,
+        project: 0, venue: 1, music: 2, cast: 3, inspector: 4, machinery: 5, rigs: 6, light: 7, background: 8,
+        study: -1, scenes: 0, save: 1, session: 2, ask: 3,
       },
       /* 共有は「会議のときだけ開く」もの。畳んだ状態から始める。
          保存の中の畳みだったころと同じ見え方にするため（開いた形で置くと、
