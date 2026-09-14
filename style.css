@@ -2385,6 +2385,7 @@ html.stage-pwa-tablet .stage-sketch-kicker { display: none; }
 
 /* 次の場面を作る入口と、この場面を消す操作を一組にする。 */
 .stage-scene-next-row {
+  --stage-scene-next-row-action-height: 31px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 44px;
   gap: 6px;
@@ -2392,14 +2393,15 @@ html.stage-pwa-tablet .stage-sketch-kicker { display: none; }
 }
 
 .stage-panel .stage-scene-next-row .stage-scene-apply {
-  min-height: 44px;
+  height: var(--stage-scene-next-row-action-height);
+  min-height: var(--stage-scene-next-row-action-height);
   margin: 0;
   font-size: 0.76rem;
 }
 
 .stage-panel .stage-scene-next-row .stage-scene-row-delete {
-  height: 31px;
-  min-height: 31px;
+  height: var(--stage-scene-next-row-action-height);
+  min-height: var(--stage-scene-next-row-action-height);
   align-self: center;
   margin: 0;
   font-size: 0.76rem;
