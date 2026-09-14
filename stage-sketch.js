@@ -4482,7 +4482,6 @@
     sceneAdd: document.getElementById("stage-scene-add"),
     scenePrev: document.getElementById("stage-scene-prev"),
     sceneNext: document.getElementById("stage-scene-next"),
-    sceneReplay: document.getElementById("stage-scene-replay"),
     sceneNow: document.getElementById("stage-scene-now"),
     animScenes: document.getElementById("stage-anim-scenes"),
     animMs: document.getElementById("stage-anim-ms"),
@@ -14016,7 +14015,6 @@
     const index = Math.max(0, scenes.findIndex((row) => row.id === state.project.activeSceneId));
     if (els.scenePrev) els.scenePrev.disabled = index <= 0;
     if (els.sceneNext) els.sceneNext.disabled = index >= scenes.length - 1;
-    if (els.sceneReplay) els.sceneReplay.disabled = index <= 0 || !state.animateScenes;
     if (els.sceneNow) {
       const scene = scenes[index] || sc();
       els.sceneNow.textContent = scene
@@ -26636,7 +26634,6 @@ ${propsPlotHtml}
   }
   if (els.scenePrev) els.scenePrev.addEventListener("click", () => stepScene(-1));
   if (els.sceneNext) els.sceneNext.addEventListener("click", () => stepScene(1));
-  if (els.sceneReplay) els.sceneReplay.addEventListener("click", replaySceneTransition);
   if (els.presentPrev) els.presentPrev.addEventListener("click", () => stepScene(-1));
   if (els.presentNext) els.presentNext.addEventListener("click", () => stepScene(1));
   if (els.presentClose) els.presentClose.addEventListener("click", toggleStageFullscreen);

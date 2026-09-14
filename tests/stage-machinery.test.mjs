@@ -93,13 +93,13 @@ test("場面転換は機構値を補間し、spinを最短弧で進めて終了�
   assert.match(source, /function effectivePlacement[\s\S]*?mechVal\(revolve, "spin"/);
 });
 
-test("場面ごとの転換秒数を正規化し、再生ボタンと行き先の尺に使う", () => {
+test("場面ごとの転換秒数を正規化し、シーン切替時の動きに使う", () => {
   assert.match(sketchSource,
     /function normalizeCueSeconds[\s\S]*?value === null[\s\S]*?clamp\(seconds, 0\.2, 10\)/);
   assert.match(sketchSource, /cueSeconds: kind === "scene" \? normalizeCueSeconds\(raw\.cueSeconds\) : null/);
   assert.match(sketchSource, /const span = Number\.isFinite\(Number\(durationMs\)\)[\s\S]*?sc\(\)\.cueSeconds \* 1000/);
-  assert.match(indexSource, /id="stage-scene-replay"/);
-  assert.match(sketchSource, /sceneReplay\.disabled = index <= 0 \|\| !state\.animateScenes/);
+  assert.doesNotMatch(indexSource, /id="stage-scene-replay"/);
+  assert.doesNotMatch(sketchSource, /sceneReplay/);
   assert.match(sketchSource, /beginSceneAnim\(fromScene\)/);
 });
 
