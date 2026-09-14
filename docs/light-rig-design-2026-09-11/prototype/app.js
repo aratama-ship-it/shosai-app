@@ -3341,15 +3341,22 @@
 
   function renderInspector() {
     const host = $("insp"); host.innerHTML = "";
+    const distanceControl = $("distance-control"), distanceButton = $("distance-mode");
+    if (distanceControl) distanceControl.hidden = state.mode !== "move";
+    if (distanceButton) {
+      distanceButton.textContent = distanceMetric ? "距離：実寸" : "距離：固定帯";
+      distanceButton.title = distanceMetric ? "距離表示：実寸（12mまで）" : "距離表示：固定帯";
+      distanceButton.setAttribute("aria-label", distanceButton.title);
+      distanceButton.setAttribute("aria-pressed", String(distanceMetric));
+      distanceButton.onclick = () => { distanceMetric = !distanceMetric; syncCanvasSize(); renderAll(); };
+    }
     const ids = [...state.sel];
     if (state.mode === 'move') {
       const box=el('div','pbox option-b-controls');
-      box.append(el('p','kicker','もや · このLX cue'));
+      box.append(el('p','kicker','もや'));
       const hazeControl=range(0,100,1,V.haze(cue()),v=>`${v}%`,v=>{cue().environment={...(cue().environment||{}),haze:v};draw();},()=>commit());
       hazeControl.querySelectorAll('input').forEach(i=>i.setAttribute('aria-label',i.type==='range'?'このLX cueのもや':'このLX cueのもや（数値）'));box.append(hazeControl);
-      const row=el('div','row'); for(const [name,value] of [['なし',0],['うっすら',35],['濃い',70]]) row.append(btn(name,()=>{cue().environment={...(cue().environment||{}),haze:value};commit();},'small'));
-      box.append(row);box.append(el('p','note','空中・客席向けの光条に反映します。'));
-      box.append(btn(distanceMetric?'距離表示：実寸（12mまで）':'距離表示：固定帯',()=>{distanceMetric=!distanceMetric;syncCanvasSize();renderAll();},'small'));
+      box.append(el('p','note','空中・客席向けの光条に反映します。'));
       host.append(box);
     }
     syncLightToggle(ids);
