@@ -9784,30 +9784,45 @@ html[data-release-scope="beta-20260912"] .stage-light-motion-open { display: non
   align-items: center;
 }
 
-/* Undo／Redoは作図の履歴なので、ページ全体の操作から中央の作図道具へ移す。
-   アイコンだけでも意味が失われないよう、ボタン名はaria-labelに残す。 */
-.stage-center-bar .stage-undo-redo {
+/* Undo／Redoは音量バーの隣に置き、ヘッダーの操作寸法に揃える。 */
+.stage-history-actions .stage-undo-redo {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
+  gap: 4px;
 }
 
-.stage-center-bar .stage-undo-redo button {
-  width: 40px;
-  min-width: 40px;
-  padding-left: 0;
-  padding-right: 0;
-  border: 1px solid var(--line-dark);
-  color: var(--milk-dim);
+.stage-history-actions .stage-undo-redo button {
   display: inline-flex;
+  flex: 0 0 var(--stage-history-action-height);
   align-items: center;
   justify-content: center;
+  width: var(--stage-history-action-height);
+  height: var(--stage-history-action-height);
+  min-width: var(--stage-history-action-height);
+  min-height: var(--stage-history-action-height);
+  padding: 0;
 }
 
-.stage-center-bar .stage-undo-redo button + button { border-left: 0; }
-.stage-center-bar .stage-undo-redo button:hover:not(:disabled) { color: var(--milk); border-color: var(--brass); }
-.stage-center-bar .stage-undo-redo button:disabled { opacity: 0.28; cursor: default; }
-.stage-center-bar .stage-history-icon svg { display: block; width: 16px; height: 16px; }
+.stage-history-actions .stage-undo-redo button + button {
+  border-left: 1px solid var(--line-dark);
+}
+
+.stage-history-actions .stage-history-icon svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+
+.stage-history-actions .stage-undo-redo button:hover:not(:disabled) {
+  color: var(--milk);
+  border-color: var(--brass);
+}
+
+.stage-history-actions .stage-undo-redo button:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
 
 /* 名前の入り切りから右は、絵の見え方の設定。道具の列とは役目が違うので右へ寄せる
    （実際の指定は .stage-name-toggle の margin リセットより後ろにある） */

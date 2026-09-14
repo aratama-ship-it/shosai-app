@@ -247,9 +247,9 @@ test("PCとiPadでショーの次に劇場パネルを分け、プリセット�
 
 test("iPadの描画道具と主要操作は上部へ常設する", () => {
   assert.match(stageSource, /className = "stage-tablet-top-controls"/);
-  assert.match(stageSource, /if \(undoRedo\) topControls\.append\(undoRedo\)/);
   assert.match(stageSource, /if \(toolGrid\) topControls\.append\(toolGrid\)/);
   assert.match(stageSource, /if \(historyActions\) topControls\.append\(historyActions\)/);
+  assert.match(indexSource, /class="stage-history-actions"[\s\S]*?id="stage-undo"[\s\S]*?id="stage-redo"[\s\S]*?id="stage-feedback-open"/);
   assert.match(styleSource, /html\.stage-pwa-tablet \.stage-tablet-top-controls button \{[\s\S]*?min-height: 44px;/);
   ["stage-undo", "stage-redo", "stage-prefs-btn", "stage-present-btn", "stage-lang"].forEach((id) => {
     assert.match(indexSource, new RegExp(`id="${id}"`));

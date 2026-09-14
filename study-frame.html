@@ -4,7 +4,7 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
 <title>Stage Sketch — read-only drawings</title>
-<link rel="stylesheet" href="/study-assets/style.css?v=374"><link rel="stylesheet" href="/stage-study.css?v=25"><link rel="stylesheet" href="/stage-study-navigation.css?v=1">
+<link rel="stylesheet" href="/study-assets/style.css?v=375"><link rel="stylesheet" href="/stage-study.css?v=25"><link rel="stylesheet" href="/stage-study-navigation.css?v=1">
 <script src="/stage-study-sticky.js?v=5"></script><script src="/stage-study-pen.js?v=4"></script><script src="/stage-study-navigation.js?v=1"></script><script src="/stage-study-frame.js?v=6"></script></head>
 <body class="study-frame" data-view="both">
 <div class="study-drawings"><div class="study-drawing study-front"></div><div class="study-drawing study-plan"></div></div>
@@ -36,6 +36,16 @@
             <span>音量</span>
             <input type="range" id="stage-timeline-volume" min="0" max="100" step="1" value="100" aria-label="音量">
           </label>
+          <div class="stage-undo-redo">
+            <button type="button" class="stage-history-icon" id="stage-undo" data-tablet-icon="↶"
+                    aria-label="一つ戻す" title="⌘Z（WindowsはCtrl+Z）" disabled>
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4.2H2.7V.9"/><path d="M2.9 4.1A5.4 5.4 0 1 1 2.8 11"/></svg>
+            </button>
+            <button type="button" class="stage-history-icon" id="stage-redo" data-tablet-icon="↷"
+                    aria-label="やり直す" title="⇧⌘Z（WindowsはCtrl+Shift+Z）" disabled>
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.2h3.3V.9"/><path d="M13.1 4.1A5.4 5.4 0 1 0 13.2 11"/></svg>
+            </button>
+          </div>
           <!-- 感想・改善点を送る窓。β利用者が画面を離れずに書けるよう、上部に置く（2026-09-03 本人指示） -->
           <button type="button" class="stage-lang" id="stage-feedback-open" data-tablet-icon="✎" title="使ってみた感想を送る">感想を送る</button>
           <a class="stage-lang stage-ai-link" id="stage-ai-showwright-link"
@@ -388,16 +398,6 @@
           </div>
 
           <div class="stage-center-bar">
-            <div class="stage-undo-redo">
-              <button type="button" class="stage-history-icon" id="stage-undo" data-tablet-icon="↶"
-                      aria-label="一つ戻す" title="⌘Z（WindowsはCtrl+Z）" disabled>
-                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4.2H2.7V.9"/><path d="M2.9 4.1A5.4 5.4 0 1 1 2.8 11"/></svg>
-              </button>
-              <button type="button" class="stage-history-icon" id="stage-redo" data-tablet-icon="↷"
-                      aria-label="やり直す" title="⇧⌘Z（WindowsはCtrl+Shift+Z）" disabled>
-                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.2h3.3V.9"/><path d="M13.1 4.1A5.4 5.4 0 1 0 13.2 11"/></svg>
-              </button>
-            </div>
             <!-- 作図中に繰り返す三つだけを常設する。背景の描画は背景モーダルから始める。 -->
             <div class="stage-tool-grid" role="group" aria-label="操作を選ぶ">
               <button type="button" data-stage-tool="select" data-tablet-icon="↔" data-tool-key="V" class="is-icon" aria-label="ものを動かす" aria-pressed="true"><span class="stage-tool-icon" aria-hidden="true"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.4v11.2M2.4 8h11.2"/><path d="M6.3 4.1 8 2.4l1.7 1.7M6.3 11.9 8 13.6l1.7-1.7"/><path d="M4.1 6.3 2.4 8l1.7 1.7M11.9 6.3 13.6 8l-1.7 1.7"/></svg></span><span class="stage-tool-label">ものを動かす</span></button>
