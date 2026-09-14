@@ -28697,6 +28697,48 @@ ${propsPlotHtml}
       window.dispatchEvent(new CustomEvent("stage-timeline-cues-change"));
       return true;
     },
+    openTimelineSceneDelete(sceneId, returnFocus = null) {
+      const scene = state.project.scenes.find((row) => row && row.kind === "scene" && row.id === sceneId);
+      return Boolean(scene && openSceneDelete(scene, returnFocus));
+    },
+    removeTimelineAudioAssignment(sectionId, sourceSceneId, trackId) {
+      const sectionIndex = state.project.scenes.findIndex((row) => row && row.kind === "section" && row.id === sectionId);
+      if (sectionIndex < 0 || typeof sourceSceneId !== "string" || typeof trackId !== "string") return false;
+      const affected = [];
+      let started = false;
+      for (const row of sceneChildren(sectionIndex)) {
+        if (!row || row.kind !== "scene") continue;
+        if (!started) {
+          if (row.id !== sourceSceneId) continue;
+          started = true;
+        } else if (Number.isFinite(Number(row.audioTimelineStartSeconds))) {
+          break;
+        }
+        if (row.audioTrackId !== trackId) break;
+        affected.push(row);
+      }
+      if (!affected.length) return false;
+      const track = audioTrackById(trackId);
+      const wasPlaying = affected.some((scene) => scene.id === state.project.activeSceneId)
+        && els.musicAudio && !els.musicAudio.paused && audioPlayback.ready;
+      checkpoint();
+      affected.forEach((scene) => {
+        scene.audioTrackId = null;
+        scene.audioTimelineStartSeconds = null;
+        scene.audioTimelineEndSeconds = null;
+      });
+      continueAudioOnNextSceneSync = Boolean(wasPlaying);
+      audioPanelSignature = "";
+      renderScenes();
+      render();
+      persistSoon();
+      setAudioStatus(`「${track ? track.title : "音源"}」を${affected.length}シーンから外しました。`,
+        `Removed “${track ? track.title : "audio"}” from ${affected.length} ${affected.length === 1 ? "scene" : "scenes"}.`);
+      window.dispatchEvent(new CustomEvent("stage-timeline-audio-change", {
+        detail: { sectionId, sourceSceneId, trackId, sceneCount: affected.length, removed: true },
+      }));
+      return true;
+    },
     addTimelineSceneAfter(sceneId) {
       const scene = state.project.scenes.find((row) => row.kind === "scene" && row.id === sceneId);
       if (!scene) return null;

@@ -8981,60 +8981,15 @@ body.is-panel-dragging {
   --scene-desc-preferred-width: 300px;
   flex: 1 1 var(--scene-desc-preferred-width);
   min-width: min(100%, var(--scene-desc-preferred-width));
-  align-self: flex-start;
-  align-items: flex-start;
+  align-self: center;
+  align-items: center;
   padding: 0;
   border-bottom: 0;
   margin-bottom: 0;
 }
 
-.stage-scene-bar .stage-scene-desc-text { align-self: flex-start; }
-.stage-scene-bar .stage-scene-desc-label { padding-top: 2px; }
-
-/* 現在のシーンの曲。音源そのものはIndexedDBへ置き、この帯は一つのaudioを
-   全シーンで使い回す。シークは残り幅を取り、狭ければ曲名と一緒に次行へ送る。 */
-.stage-scene-music {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex: 1 1 420px;
-  min-width: 260px;
-}
-
-.stage-scene-music .btn-quiet {
-  flex: 0 0 30px;
-  width: 30px;
-  min-width: 30px;
-  min-height: 30px;
-  padding: 4px 0;
-  font-size: 13px;
-  letter-spacing: 0;
-}
-
-.stage-music-current {
-  flex: 0 1 150px;
-  min-width: 58px;
-  overflow: hidden;
-  color: var(--milk);
-  font-size: 10.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stage-music-seek {
-  flex: 1 1 150px;
-  min-width: 72px;
-  margin: 0;
-}
-
-.stage-music-time {
-  flex: 0 0 auto;
-  min-width: 74px;
-  color: var(--milk-dim);
-  font-size: 9.5px;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
+.stage-scene-bar .stage-scene-desc-text { align-self: center; }
+.stage-scene-bar .stage-scene-desc-label { padding-top: 0; }
 
 .stage-music-engine {
   position: fixed;
@@ -10547,6 +10502,9 @@ body.is-roster-list-resizing { cursor: ns-resize; user-select: none; -webkit-use
 .stage-modal.stage-scene-delete-modal { width: min(440px, calc(100vw - 40px)); }
 .stage-modal.stage-timeline-cue-detail-modal { width: min(440px, calc(100vw - 40px)); }
 .stage-modal.stage-timeline-audio-detail-modal { width: min(440px, calc(100vw - 40px)); }
+.stage-modal.stage-timeline-delete-modal { width: min(440px, calc(100vw - 40px)); }
+.stage-timeline-delete-body { display: grid; gap: 16px; }
+.stage-timeline-delete-body > p { margin: 0; color: var(--milk-dim); line-height: 1.7; }
 .stage-modal.stage-timeline-unit-warning-modal { width: min(480px, calc(100vw - 40px)); }
 .stage-timeline-unit-warning-body { display: grid; gap: 14px; }
 .stage-timeline-unit-warning-body > p { margin: 0; color: var(--milk-dim); line-height: 1.7; }
@@ -16394,6 +16352,12 @@ body.is-timeline-audio-trimming { cursor: grabbing; user-select: none; -webkit-u
 button.stage-timeline-audio-block:focus-visible {
   outline: 2px solid var(--stage-timeline-accent);
   outline-offset: 1px;
+}
+
+button.stage-timeline-audio-block[aria-pressed="true"],
+.stage-timeline-scene[aria-pressed="true"] {
+  border-color: var(--stage-timeline-accent);
+  box-shadow: inset 0 -3px var(--stage-timeline-text);
 }
 
 .stage-timeline-audio-block.is-empty {

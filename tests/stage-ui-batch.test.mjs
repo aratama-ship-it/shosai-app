@@ -171,3 +171,10 @@ test("保存パネルはPCとiPadの操作一覧から非表示にする", () =>
   assert.match(source, /label: "共有・設定", panels: \["session"\], special: "display"/);
   assert.doesNotMatch(source, /panels: \[[^\]]*"save"[^\]]*\]/);
 });
+
+test("シーン帯は音源情報を置かず、一行の説明を縦中央へ揃える", () => {
+  const bar = between(html, '<div class="stage-scene-bar" id="stage-scene-bar">', '<div class="stage-center-bar">');
+  assert.doesNotMatch(bar, /id="stage-scene-music"/);
+  assert.match(css, /\.stage-scene-bar \.stage-scene-desc \{[\s\S]*?align-self: center;[\s\S]*?align-items: center;/);
+  assert.match(css, /\.stage-scene-bar \.stage-scene-desc-text \{ align-self: center; \}/);
+});

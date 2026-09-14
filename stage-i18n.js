@@ -879,6 +879,7 @@
     "このシーンを削除": "Delete this scene",
     "次から引く": "Draw from next",
     "シーンを削除": "Delete scene",
+    "削除しますか？": "Delete?",
     "削除したものは元に戻せません。": "Deleted content cannot be restored.",
     "削除することを確認しました": "I confirm that I want to delete it",
     "削除する": "Delete",

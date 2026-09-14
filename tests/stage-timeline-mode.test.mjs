@@ -329,7 +329,7 @@ test("キューはダブルクリックで詳細とメモを開き、詳細ま�
   assert.match(timeline, /function endCueDrag\(event\)[\s\S]*?bridge\.updateTimelineCue\(dragging\.id, \{[\s\S]*?atSeconds: dragging\.nextSeconds/);
   assert.match(timeline, /button\.addEventListener\("dblclick", \(\) => openCueDetails/);
   assert.match(timeline, /bridge\.updateTimelineCue\(cueDetailId, \{ memo: els\.cueDetailNote\.value \}\)/);
-  assert.match(timeline, /function deleteCueFromDetails\(\)[\s\S]*?removeSelectedCue\(\)/);
+  assert.match(timeline, /function deleteCueFromDetails\(\)[\s\S]*?openTimelineDelete\(target\)/);
   assert.match(sketch, /const memo = typeof patch\.memo === "string" \? patch\.memo\.slice\(0, 2000\) : String\(cue\.memo \|\| ""\)/);
   assert.match(sketch, /updateTimelineCue\(id, patch = \{\}\)[\s\S]*?cue\.atSeconds = atSeconds/);
   assert.match(html, /id="stage-timeline-cue-detail-delete"[\s\S]*?class="btn-quiet" id="stage-timeline-cue-detail-save"/);
@@ -533,4 +533,26 @@ test("追加資源は本体・PWA・ゲスト許可で同じ版を読む", () =>
     assert.match(sw, new RegExp(`\\./${escaped}\\?v=${version}`));
   }
   assert.match(worker, /"\/stage-timeline\.js"/);
+});
+
+
+test("キュー・音源帯・シーン帯はクリックで選び、Deleteで確認してから削除する", () => {
+  for (const id of [
+    "stage-timeline-delete-backdrop", "stage-timeline-delete-modal",
+    "stage-timeline-delete-title", "stage-timeline-delete-message",
+    "stage-timeline-delete-cancel", "stage-timeline-delete-confirm",
+  ]) assert.match(html, new RegExp(`id="${id}"`));
+  assert.match(timeline, /function selectTimelineTarget\(target, focus = null\)/);
+  assert.match(timeline, /data-timeline-select-kind/);
+  assert.match(timeline, /kind: "audio", trackId: clip\.trackId, sourceSceneId: clip\.sourceSceneId/);
+  assert.match(timeline, /kind: "scene", id: segment\.sceneId, label: segment\.title/);
+  assert.match(timeline, /function openTimelineDelete\(target = selectedTimelineTarget\)/);
+  assert.match(timeline, /bridge\.openTimelineSceneDelete\(target\.id/);
+  assert.match(timeline, /bridge\.removeTimelineAudioAssignment\([\s\S]*?target\.sectionId, target\.sourceSceneId, target\.trackId/);
+  assert.match(timeline, /event\.key === "Delete" \|\| event\.key === "Backspace"[\s\S]*?openTimelineDelete\(\)/);
+  assert.match(sketch, /openTimelineSceneDelete\(sceneId, returnFocus = null\)[\s\S]*?openSceneDelete\(scene, returnFocus\)/);
+  assert.match(sketch, /removeTimelineAudioAssignment\(sectionId, sourceSceneId, trackId\)[\s\S]*?scene\.audioTrackId = null/);
+  assert.match(sketch, /audioTimelineStartSeconds = null;[\s\S]*?audioTimelineEndSeconds = null/);
+  assert.match(css, /button\.stage-timeline-audio-block\[aria-pressed="true"\],[\s\S]*?\.stage-timeline-scene\[aria-pressed="true"\]/);
+  assert.match(css, /\.stage-modal\.stage-timeline-delete-modal \{ width: min\(440px/);
 });

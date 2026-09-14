@@ -91,6 +91,13 @@
       dialogue: document.getElementById("stage-timeline-dialogue-cues"),
     },
     addCueButtons: [...panel.querySelectorAll("[data-stage-timeline-add-cue]")],
+    timelineDeleteBackdrop: document.getElementById("stage-timeline-delete-backdrop"),
+    timelineDeleteModal: document.getElementById("stage-timeline-delete-modal"),
+    timelineDeleteTitle: document.getElementById("stage-timeline-delete-title"),
+    timelineDeleteMessage: document.getElementById("stage-timeline-delete-message"),
+    timelineDeleteClose: document.getElementById("stage-timeline-delete-close"),
+    timelineDeleteCancel: document.getElementById("stage-timeline-delete-cancel"),
+    timelineDeleteConfirm: document.getElementById("stage-timeline-delete-confirm"),
     cueDetailBackdrop: document.getElementById("stage-timeline-cue-detail-backdrop"),
     cueDetailModal: document.getElementById("stage-timeline-cue-detail-modal"),
     cueDetailTitle: document.getElementById("stage-timeline-cue-detail-title"),
@@ -186,6 +193,9 @@
   let pendingUnitChange = null;
   let unitWarningReturnFocus = null;
   let selectedCueId = null;
+  let selectedTimelineTarget = null;
+  let pendingTimelineDelete = null;
+  let pendingTimelineDeleteReturnFocus = null;
   let pendingSceneOpenTimer = 0;
   let cueDetailId = null;
   let cueDetailReturnFocus = null;
@@ -1396,12 +1406,37 @@
     });
   }
 
-  function syncCueSelection() {
-    Object.values(els.cueLanes).forEach((lane) => {
-      [...lane.querySelectorAll(".stage-timeline-cue")].forEach((button) => {
-        button.setAttribute("aria-pressed", String(button.dataset.cueId === selectedCueId));
-      });
+  function timelineTargetMatchesElement(target, element) {
+    if (!target || !element || element.dataset.timelineSelectKind !== target.kind) return false;
+    if (target.kind === "cue" || target.kind === "scene") {
+      return element.dataset.timelineSelectId === target.id;
+    }
+    return target.kind === "audio"
+      && element.dataset.timelineSelectTrackId === target.trackId
+      && element.dataset.timelineSelectSceneId === (target.sourceSceneId || "");
+  }
+
+  function selectTimelineTarget(target, focus = null) {
+    selectedTimelineTarget = target ? { ...target } : null;
+    selectedCueId = target && target.kind === "cue" ? target.id : null;
+    syncTimelineSelection();
+    const nextFocus = focus || (target && target.returnFocus);
+    if (nextFocus && nextFocus.isConnected) nextFocus.focus({ preventScroll: true });
+  }
+
+  function syncTimelineSelection() {
+    [...panel.querySelectorAll("[data-timeline-select-kind]")].forEach((element) => {
+      element.setAttribute("aria-pressed", String(timelineTargetMatchesElement(selectedTimelineTarget, element)));
     });
+  }
+
+  function selectedTimelineTargetExists(project, audioClips) {
+    const target = selectedTimelineTarget;
+    if (!target) return true;
+    if (target.kind === "cue") return (project.cues || []).some((cue) => cue && cue.id === target.id);
+    if (target.kind === "scene") return (project.scenes || []).some((scene) => scene && scene.id === target.id);
+    return (audioClips || []).some((clip) => clip.trackId === target.trackId
+      && (clip.sourceSceneId || null) === (target.sourceSceneId || null));
   }
 
   function cancelPendingSceneOpen() {
@@ -1677,6 +1712,7 @@
       return;
     }
     selectedCueId = updated.id;
+    selectedTimelineTarget = { kind: "cue", id: updated.id, label: dragging.label, returnFocus: dragging.button };
     renderTimeline();
     event.preventDefault();
   }
@@ -1838,7 +1874,10 @@
   function renderCueBlocks(project) {
     Object.values(els.cueLanes).forEach(clearLane);
     const cues = timelineCuePresentations(project);
-    if (selectedCueId && !cues.some((cue) => cue.id === selectedCueId)) selectedCueId = null;
+    if (selectedCueId && !cues.some((cue) => cue.id === selectedCueId)) {
+      selectedCueId = null;
+      if (selectedTimelineTarget && selectedTimelineTarget.kind === "cue") selectedTimelineTarget = null;
+    }
     cues.forEach((cue) => {
       const lane = els.cueLanes[cue.cueType];
       if (!lane) return;
@@ -1847,9 +1886,11 @@
       button.className = "stage-timeline-cue";
       button.dataset.cueId = cue.id;
       button.dataset.cueType = cue.cueType;
+      button.dataset.timelineSelectKind = "cue";
+      button.dataset.timelineSelectId = cue.id;
       const positionLocked = Boolean(cue.timelinePositionLocked);
       if (positionLocked) button.classList.add("is-time-locked");
-      button.setAttribute("aria-pressed", String(cue.id === selectedCueId));
+      button.setAttribute("aria-pressed", String(timelineTargetMatchesElement(selectedTimelineTarget, button)));
       const cueLabel = document.createElement("span");
       cueLabel.className = "stage-timeline-cue-label";
       cueLabel.textContent = cue.displayName;
@@ -1861,9 +1902,9 @@
       button.addEventListener("pointerdown", (event) => beginCueDrag(event, cue, button));
       button.addEventListener("click", () => {
         if (performance.now() < suppressCueClickUntil) return;
-        selectedCueId = cue.id;
-        syncCueSelection();
-        button.focus();
+        selectTimelineTarget({
+          kind: "cue", id: cue.id, label: cue.displayName, returnFocus: button,
+        }, button);
       });
       button.addEventListener("dblclick", () => openCueDetails(cue, button));
       button.addEventListener("contextmenu", (event) => openTimelineLockMenu(event, {
@@ -1881,6 +1922,10 @@
     if (!timeline) return;
     const availabilityGeneration = ++audioAvailabilityGeneration;
     const audioClips = Array.isArray(timeline.audioClips) ? timeline.audioClips : [];
+    if (!selectedTimelineTargetExists(project, audioClips)) {
+      selectedTimelineTarget = null;
+      selectedCueId = null;
+    }
     if (!audioClips.length) {
       const audioBlock = document.createElement("div");
       audioBlock.className = "stage-timeline-audio-block is-empty";
@@ -1897,6 +1942,10 @@
       if (audioRangeLock) audioBlock.classList.add("is-time-locked", `is-time-locked-${audioRangeLock}`);
       audioBlock.dataset.audioMissing = "false";
       audioBlock.dataset.trackId = clip.trackId;
+      audioBlock.dataset.timelineSelectKind = "audio";
+      audioBlock.dataset.timelineSelectTrackId = clip.trackId;
+      audioBlock.dataset.timelineSelectSceneId = clip.sourceSceneId || "";
+      audioBlock.setAttribute("aria-pressed", String(timelineTargetMatchesElement(selectedTimelineTarget, audioBlock)));
       audioBlock.textContent = clip.title;
       const canDragAudio = audioTimelineCanDrag(clip) && audioRangeLock !== "start";
       const canTrimAudio = audioTimelineCanTrim(clip) && audioRangeLock !== "end";
@@ -1911,6 +1960,10 @@
       audioBlock.addEventListener("pointerdown", (event) => beginAudioDrag(event, clip, audioBlock, audioRangeLock));
       audioBlock.addEventListener("click", () => {
         if (performance.now() < suppressAudioClickUntil) return;
+        selectTimelineTarget({
+          kind: "audio", trackId: clip.trackId, sourceSceneId: clip.sourceSceneId || null,
+          sectionId: timeline.sectionId, label: clip.title, returnFocus: audioBlock,
+        }, audioBlock);
         if (audioBlock.dataset.audioMissing !== "true"
             || typeof bridge.openTimelineAudioRelinkPicker !== "function") return;
         bridge.openTimelineAudioRelinkPicker(clip.trackId);
@@ -1936,6 +1989,11 @@
       button.type = "button";
       button.className = "stage-timeline-scene";
       if (segment.sceneId) button.dataset.sceneId = segment.sceneId;
+      if (segment.sceneId) {
+        button.dataset.timelineSelectKind = "scene";
+        button.dataset.timelineSelectId = segment.sceneId;
+        button.setAttribute("aria-pressed", String(timelineTargetMatchesElement(selectedTimelineTarget, button)));
+      }
       const rangeLock = timelineRangeLock(project, "scene", segment.sceneId);
       if (rangeLock) button.classList.add("is-time-locked", `is-time-locked-${rangeLock}`);
       if (segment.sceneId === project.activeSceneId) button.classList.add("is-current");
@@ -1952,7 +2010,11 @@
       placeBlock(button, segment.start, sceneEnd);
       button.addEventListener("click", (event) => {
         if (!segment.sceneId) return;
-        if (event.target.closest(".stage-timeline-block-resize-handle") || event.detail > 1) return;
+        if (event.target.closest(".stage-timeline-block-resize-handle")) return;
+        selectTimelineTarget({
+          kind: "scene", id: segment.sceneId, label: segment.title, returnFocus: button,
+        }, button);
+        if (event.detail > 1) return;
         scheduleTimelineSceneOpen(segment);
       });
       button.addEventListener("dblclick", (event) => {
@@ -2462,11 +2524,68 @@
     return true;
   }
 
+  function closeTimelineDelete({ focus = true } = {}) {
+    if (!els.timelineDeleteModal || els.timelineDeleteModal.hidden) return;
+    els.timelineDeleteModal.hidden = true;
+    els.timelineDeleteBackdrop.hidden = true;
+    const returnFocus = pendingTimelineDeleteReturnFocus;
+    pendingTimelineDelete = null;
+    pendingTimelineDeleteReturnFocus = null;
+    if (focus && returnFocus && returnFocus.isConnected) returnFocus.focus({ preventScroll: true });
+  }
+
+  function openTimelineDelete(target = selectedTimelineTarget) {
+    if (!target) return false;
+    if (target.kind === "scene") {
+      return typeof bridge.openTimelineSceneDelete === "function"
+        && bridge.openTimelineSceneDelete(target.id, target.returnFocus || null);
+    }
+    if (target.kind === "audio" && (!target.sourceSceneId
+        || typeof bridge.removeTimelineAudioAssignment !== "function")) {
+      els.status.textContent = tx("この音源帯はここから削除できません。");
+      return false;
+    }
+    if (target.kind !== "cue" && target.kind !== "audio") return false;
+    if (!els.timelineDeleteModal || !els.timelineDeleteBackdrop) return false;
+    pendingTimelineDelete = { ...target };
+    pendingTimelineDeleteReturnFocus = target.returnFocus || null;
+    const isAudio = target.kind === "audio";
+    els.timelineDeleteTitle.textContent = tx(isAudio ? "音源帯を外しますか？" : "キューを削除しますか？");
+    els.timelineDeleteMessage.textContent = tx(isAudio
+      ? `「${target.label || "音源"}」のこの帯をタイムラインから外します。音源ファイルは端末に残ります。`
+      : `「${target.label || "キュー"}」を削除します。削除したキューは元に戻せません。`);
+    els.timelineDeleteBackdrop.hidden = false;
+    els.timelineDeleteModal.hidden = false;
+    els.timelineDeleteConfirm.focus({ preventScroll: true });
+    return true;
+  }
+
+  function confirmTimelineDelete() {
+    const target = pendingTimelineDelete;
+    if (!target) return false;
+    let removed = false;
+    if (target.kind === "cue" && typeof bridge.removeTimelineCue === "function") {
+      removed = Boolean(bridge.removeTimelineCue(target.id));
+    } else if (target.kind === "audio" && typeof bridge.removeTimelineAudioAssignment === "function") {
+      removed = Boolean(bridge.removeTimelineAudioAssignment(
+        target.sectionId, target.sourceSceneId, target.trackId,
+      ));
+    }
+    closeTimelineDelete({ focus: false });
+    if (!removed) return false;
+    selectTimelineTarget(null);
+    renderTimeline();
+    return true;
+  }
+
   function deleteCueFromDetails() {
     if (!cueDetailId) return false;
-    selectedCueId = cueDetailId;
+    const target = {
+      kind: "cue", id: cueDetailId, label: els.cueDetailTitle.textContent, returnFocus: cueDetailReturnFocus,
+    };
     closeCueDetails({ focus: false });
-    return removeSelectedCue();
+    selectTimelineTarget(target);
+    return openTimelineDelete(target);
   }
 
   function removeSelectedCue() {
@@ -2474,7 +2593,7 @@
     const removed = bridge.removeTimelineCue(selectedCueId);
     if (!removed) return false;
     if (cueDetailId === selectedCueId) closeCueDetails({ focus: false });
-    selectedCueId = null;
+    selectTimelineTarget(null);
     renderTimeline();
     return true;
   }
@@ -2870,6 +2989,10 @@
   els.addCueButtons.forEach((button) => button.addEventListener("click", () => {
     addCueAtPlayhead(button.dataset.stageTimelineAddCue);
   }));
+  els.timelineDeleteClose.addEventListener("click", () => closeTimelineDelete());
+  els.timelineDeleteCancel.addEventListener("click", () => closeTimelineDelete());
+  els.timelineDeleteBackdrop.addEventListener("click", () => closeTimelineDelete());
+  els.timelineDeleteConfirm.addEventListener("click", confirmTimelineDelete);
   els.cueDetailClose.addEventListener("click", () => closeCueDetails());
   els.cueDetailBackdrop.addEventListener("click", () => closeCueDetails());
   els.cueDetailSave.addEventListener("click", saveCueDetails);
@@ -2955,6 +3078,11 @@
     renderTimeline();
   });
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && els.timelineDeleteModal && !els.timelineDeleteModal.hidden) {
+      event.preventDefault();
+      closeTimelineDelete();
+      return;
+    }
     if (event.key === "Escape" && els.unitWarningModal && !els.unitWarningModal.hidden) {
       event.preventDefault();
       closeUnitWarning();
@@ -2984,9 +3112,10 @@
       return;
     }
     if (!event.metaKey && !event.ctrlKey && !event.altKey
-        && (event.key === "Delete" || event.key === "Backspace") && selectedCueId) {
+        && (event.key === "Delete" || event.key === "Backspace") && selectedTimelineTarget) {
+      if (document.querySelector(".stage-modal:not([hidden])")) return;
       event.preventDefault();
-      removeSelectedCue();
+      openTimelineDelete();
       return;
     }
     if (event.metaKey || event.ctrlKey || event.altKey) return;
