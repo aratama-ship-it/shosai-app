@@ -2819,7 +2819,6 @@
     hazeControl.querySelectorAll("input").forEach((i) => i.setAttribute("aria-label", i.type === "range" ? "このLX cueのもや" : "このLX cueのもや（数値）"));
     box.append(field("もや", hazeControl));
   }
-  const hazePanel = () => { const b = el("div", "pbox"); b.append(el("p", "kicker", "光の広がり")); appendHazeControl(b); return b; };
 
   function renderBulk(host, ids) {
     if (ids.length < 2) return;
@@ -2980,7 +2979,6 @@
         }));
         b.append(head);
       }
-      appendHazeControl(b);
       const fmtDeg = (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`;
       const degs = ids.map((fid) => Math.round(E.beamDegOf(fixtureById(fid), lightOf(fid) || {})));
       const same = allSame(degs);
@@ -3053,6 +3051,11 @@
         b.append(field(sameR ? "回転" : "回転（バラバラ）", range(-E.SHUTTER_ROT_MAX, E.SHUTTER_ROT_MAX, 5, sameR ? [...rots][0] : 0, rotText,
           (v) => { bulkEach(on, (f, l) => { l.shutter.rot = v; }); draw(); }, () => commit(`${on.length}灯のカッターの回転を変えました`)), true));
       }
+    }
+    // もやは灯体ではなくLX cue全体の空気の状態。光の広がりから分け、カッターの直下へ置く（2026-09-14 本人指定）。
+    {
+      const b = sub(null);
+      appendHazeControl(b);
     }
     {
       const fixed = ids.map(fixtureById).filter((f) => f && !E.isMoving(f) && f.mount.type !== "cyc");
@@ -3569,7 +3572,6 @@
         const top = f.mount.rung === "top";
         b.append(field(top ? "壁を降りる高さ" : "壁を登る高さ", range(0.5, E.CYC_REACH_MAX, 0.5, E.clamp(E.finite(f.mount.reachM, 4), 0.5, E.CYC_REACH_MAX), (v) => `${v.toFixed(1)}m`, (v) => { f.mount.reachM = v; draw(); }, () => commit()), true));
         b.append(el("p", "note", `${top ? "上の器具から下向きに" : "床の器具から上向きに"}、壁のどこまで光が届くかです。長さは配置パネル、置く・外すは配置パネルの「ホリゾントライト」で切り替えます。`));
-        const spread = box("光の広がり"); appendHazeControl(spread);
       } else {
         const b = box(mover ? null : "光の広がり");
         const fmtDeg = (v) => `${Math.round(v)}°（${v < 12 ? "細い" : v < 26 ? "普通" : v < 45 ? "広い" : "とても広い"}）`;
@@ -3583,7 +3585,6 @@
           }));
           b.append(head);
         }
-        appendHazeControl(b);
         b.append(el("p", "hint beam-scroll-help", "平面図の赤い丸の上でスクロールしても変えられます（下へ回すと広がる・上へ回すと絞る）。"));
         if (mover) {
           b.append(field(autoSpread ? "始点" : null, range(5, 55, 1, E.beamDegOf(f, l), fmtDeg, (v) => { l.beamDeg = v; draw(); }, () => commit()), true));
@@ -3636,6 +3637,11 @@
           b.append(field(AX.h, range(E.SHUTTER_MIN, E.SHUTTER_MAX, 0.05, E.clamp(E.finite(sh.h, 1), E.SHUTTER_MIN, E.SHUTTER_MAX), shutterText, (v) => { l.shutter.h = v; draw(); }, () => commit(), numShutter), true));
           b.append(field("回転", range(-E.SHUTTER_ROT_MAX, E.SHUTTER_ROT_MAX, 5, rotOf(sh), rotText, (v) => { l.shutter.rot = v; draw(); }, () => commit()), true));
         }
+      }
+      // もやはLX cueごとの空気の状態なので、灯体の光の広がりとは分けてカッターの直下へ置く。
+      {
+        const b = box(null);
+        appendHazeControl(b);
       }
       if (!mover && f.mount.type !== "cyc") {
         const b = box("バーンドア（四方から切る）");
