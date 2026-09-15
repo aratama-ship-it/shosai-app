@@ -9,7 +9,7 @@
  *   ・サムネイルは実描画（現在の明かりに重ねた結果）を予定。初版は「どこが点くか」の略図（平面）を描く
  *     — 描画入力の引数化（buildLightingFrame）が済むまでの暫定。宣材風の画像は使わない。
  * app.js との接続は window.__RIG.hooks（cue/setLight/commit/uid/…）だけ。app.js 側は renderAll の末尾で refresh() を呼ぶ。
- * 寸法はトークンシート design/TOKEN_SHEET_light-presets_2026-09-14.md（カード132×148・画像130×74・チップ132×28）。
+ * カードは縦長・4列を基本にし、図解を先に読めるようにする。
  */
 (function () {
   "use strict";
@@ -40,24 +40,27 @@
   .lpChips{display:flex;flex-wrap:wrap;gap:6px;flex:0 0 auto}
   .lpChips button{height:26px;padding:0 8px;font-size:12px;border:1px solid var(--line-dark);background:var(--recess);color:var(--milk-dim);cursor:pointer;font-family:inherit}
   .lpChips button[aria-pressed="true"]{background:var(--brass);color:#1a1409;border-color:var(--brass)}
-  .lpGrid{display:grid;grid-template-columns:repeat(2,132px);gap:8px;justify-content:start;overflow-y:auto;min-height:0;flex:1 1 auto;padding-bottom:6px;align-content:start}
-  .lpCard{width:132px;min-height:148px;border:1px solid var(--line-dark);background:var(--desk-2);padding:0;cursor:pointer;text-align:left;color:var(--milk);font-family:inherit;display:flex;flex-direction:column;position:relative}
+  .lpGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;overflow-y:auto;overflow-x:hidden;min-height:0;flex:1 1 auto;padding-bottom:6px;align-content:start}
+  .lpCard{width:100%;min-width:0;min-height:204px;border:1px solid var(--line-dark);background:var(--desk-2);padding:0;cursor:pointer;text-align:left;color:var(--milk);font-family:inherit;display:flex;flex-direction:column;position:relative}
   .lpCard:hover{border-color:var(--brass)}
   .lpCard[data-state="on"],.lpCard[data-state="adjusted"]{border-color:var(--brass);box-shadow:0 0 0 1px rgba(156,130,63,.5)}
   .lpCard[data-state="on"] .nm,.lpCard[data-state="adjusted"] .nm{color:#d3ac59}
   .lpCard[data-state="unsupported"],.lpCard[data-state="disabled"]{opacity:.55;cursor:not-allowed}
   .lpCard[data-state="unsupported"] .img{background-image:repeating-linear-gradient(135deg,rgba(240,231,214,.12) 0 2px,transparent 2px 9px)}
-  .lpCard .img{width:130px;height:74px;background:#0d0e10;position:relative;flex:0 0 auto}
-  .lpCard .img svg{display:block;width:130px;height:74px}
+  .lpCard .img{width:100%;aspect-ratio:1.35/1;background:#0d0e10;position:relative;flex:0 0 auto}
+  .lpCard .img svg{display:block;width:100%;height:100%}
   .lpCard .img b{position:absolute;right:4px;top:2px;font-size:10px;color:var(--brass);font-weight:600}
-  .lpCard .img i{position:absolute;left:4px;bottom:2px;font-size:10px;color:var(--rust-ink);font-style:normal;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .lpCard .nm{font-size:13.5px;line-height:19px;min-height:38px;padding:6px 6px 0;overflow:hidden}
-  .lpCard .tg{font-size:11.5px;line-height:16px;padding:4px 6px 8px;color:var(--milk-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lpCard .img i{position:absolute;left:4px;bottom:2px;font-size:10px;color:var(--rust-ink);font-style:normal;max-width:calc(100% - 8px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lpCard .nm{font-size:13px;line-height:1.35;min-height:36px;padding:7px 7px 0;overflow-wrap:anywhere}
+  .lpCard .tg{font-size:11px;line-height:1.45;padding:5px 7px 9px;color:var(--milk-dim);white-space:normal;overflow-wrap:anywhere}
   .lpCard .opts{display:flex;gap:4px;padding:0 6px 6px;flex-wrap:wrap}
   .lpCard .opts span{width:18px;height:18px;border:1px solid var(--line-dark);cursor:pointer;box-sizing:border-box}
   .lpCard .opts span[aria-pressed="true"]{border:2px solid var(--milk)}
   .lpCard .opts b{font-size:10.5px;padding:0 6px;height:18px;line-height:16px;border:1px solid var(--line-dark);color:var(--milk-dim);font-weight:400;cursor:pointer}
   .lpCard .opts b[aria-pressed="true"]{color:#1a1409;background:var(--brass);border-color:var(--brass)}
+  @media (max-width:1180px){.lpGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media (max-width:920px){.lpGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width:560px){.lpGrid{grid-template-columns:1fr}.lpCard{min-height:190px}}
   .lpOff{width:100%;min-height:34px;border:1px solid var(--line-dark);background:none;color:var(--milk);font-size:14px;cursor:pointer;font-family:inherit;margin-top:6px}
   .lpOff:hover{border-color:var(--brass)}
   .lpOff:disabled{opacity:.5;cursor:not-allowed}

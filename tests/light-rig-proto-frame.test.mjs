@@ -15,9 +15,22 @@ const fixed = (barn) => ({ ...E.newFixture("f1", 1, { type: "truss", trussId: "t
 const mover = (barn) => ({ ...E.newFixture("f2", 2, { type: "truss", trussId: "t", u: 0.5 }, "", "moving", 15), barn });
 
 test("公開している一式", () => {
-  ["BARN_KEYS", "SHUTTER_ROT_MAX", "newShutter", "barnOf", "barnActive", "shutterActive", "frameDoors", "doorCutInEllipse", "cycBarSpan"].forEach((k) => assert.ok(k in E, `${k} が無い`));
+  ["BARN_KEYS", "SHUTTER_ROT_MAX", "newShutter", "barnOf", "barnActive", "shutterActive", "frameDoors", "doorCutInEllipse", "cycBarSpan", "FRONT_FAR_CAMERA_M", "makeFrontFarProjector", "frontFarToUH"].forEach((k) => assert.ok(k in E, `${k} が無い`));
   assert.deepEqual(plain([...E.BARN_KEYS]), ["back", "front", "left", "right"]);
   assert.equal(E.newShutter().rot, 0);
+});
+
+test("正面図の遠方カメラは前方200mで奥ほど小さく、操作の逆算が一致する", () => {
+  const dims = { W: 12, D: 8, H: 8 }, box = { x: 0, y: 0, w: 1200, h: 800 };
+  assert.equal(E.FRONT_FAR_CAMERA_M, 200);
+  const P = E.makeFrontFarProjector(dims, box);
+  const front = P({ x: 6, y: 8, z: 4 }), back = P({ x: 6, y: 0, z: 4 });
+  assert.ok(front.X > back.X, "手前ほど同じ横幅が大きく見える");
+  assert.ok(front.scale > back.scale, "奥行きに応じて縮尺が変わる");
+  const world = { x: 1.8, y: 3.2, z: 5.1 }, q = P(world);
+  const unprojected = E.frontFarToUH(dims, box, q.X, q.Y, world.y / dims.D);
+  assert.ok(near(unprojected.u, world.x / dims.W + 0.5), "左右の逆算");
+  assert.ok(near(unprojected.h, world.z), "高さの逆算");
 });
 
 test("ホリゾントライトのバーは古い長さ指定が残っていても舞台幅100%", () => {

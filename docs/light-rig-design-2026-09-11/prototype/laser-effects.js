@@ -83,26 +83,30 @@
     /* vis は旧呼び出しとの互換引数。見え方と強さは統合し、明るさは level だけで決める。 */
     const alphaScale = finite(options.alphaScale, 1), a = clamp(level, 0, 1) * alphaScale;
     if (!(a > 0)) return;
+    const colors = (Array.isArray(color) ? color : [color]).filter((c) => typeof c === "string" && c.length) || COLORS;
+    const colorAt = (i) => colors[i % Math.max(1, colors.length)] || COLORS[0];
     const lines = rays.filter((ray) => ray && ray.origin && ray.end).map((ray) => ({ a: P(ray.origin), b: P(ray.end) })).filter((q) => q.a && q.b && Number.isFinite(q.a.X + q.a.Y + q.b.X + q.b.Y));
     if (!lines.length) return;
     ctx.save(); ctx.globalCompositeOperation = "lighter";
     if (options.surface && lines.length > 1) {
       /* シートは放射状の線を描かず、光源と左右端で囲んだ一枚の面として描く。 */
-      ctx.fillStyle = rgba(color, 0.22 * a); ctx.shadowColor = rgba(color, 0.28 * a); ctx.shadowBlur = 12;
+      const g = ctx.createLinearGradient(lines[0].a.X, lines[0].a.Y, lines.at(-1).b.X, lines.at(-1).b.Y);
+      colors.forEach((c, i) => g.addColorStop(colors.length === 1 ? 0 : i / (colors.length - 1), rgba(c, 0.22 * a)));
+      ctx.fillStyle = g; ctx.shadowColor = rgba(colorAt(0), 0.28 * a); ctx.shadowBlur = 12;
       ctx.beginPath(); ctx.moveTo(lines[0].a.X, lines[0].a.Y);
       lines.forEach((q) => ctx.lineTo(q.b.X, q.b.Y)); ctx.closePath(); ctx.fill();
-      ctx.shadowBlur = 0; ctx.strokeStyle = rgba(color, 0.28 * a); ctx.lineWidth = 1;
+      ctx.shadowBlur = 0; ctx.strokeStyle = rgba(colorAt(0), 0.28 * a); ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(lines[0].b.X, lines[0].b.Y); ctx.lineTo(lines.at(-1).b.X, lines.at(-1).b.Y); ctx.stroke();
       ctx.restore(); return;
     }
     if (options.fill && lines.length > 1) {
-      ctx.fillStyle = rgba(color, 0.16 * a); ctx.beginPath(); ctx.moveTo(lines[0].a.X, lines[0].a.Y);
+      ctx.fillStyle = rgba(colorAt(0), 0.16 * a); ctx.beginPath(); ctx.moveTo(lines[0].a.X, lines[0].a.Y);
       lines.forEach((q) => ctx.lineTo(q.b.X, q.b.Y)); ctx.closePath(); ctx.fill();
     }
-    ctx.strokeStyle = rgba(color, 0.10 * a); ctx.lineWidth = 9; ctx.lineCap = "round";
-    lines.forEach((q) => { ctx.beginPath(); ctx.moveTo(q.a.X, q.a.Y); ctx.lineTo(q.b.X, q.b.Y); ctx.stroke(); });
-    ctx.strokeStyle = rgba(color, 0.85 * a); ctx.lineWidth = 1.6;
-    lines.forEach((q) => { ctx.beginPath(); ctx.moveTo(q.a.X, q.a.Y); ctx.lineTo(q.b.X, q.b.Y); ctx.stroke(); });
+    ctx.lineWidth = 9; ctx.lineCap = "round";
+    lines.forEach((q, i) => { ctx.strokeStyle = rgba(colorAt(i), 0.10 * a); ctx.beginPath(); ctx.moveTo(q.a.X, q.a.Y); ctx.lineTo(q.b.X, q.b.Y); ctx.stroke(); });
+    ctx.lineWidth = 1.6;
+    lines.forEach((q, i) => { ctx.strokeStyle = rgba(colorAt(i), 0.85 * a); ctx.beginPath(); ctx.moveTo(q.a.X, q.a.Y); ctx.lineTo(q.b.X, q.b.Y); ctx.stroke(); });
     ctx.restore();
   }
   function compile(effect, S, axis, spanDeg, phase, dims, reach, rollDeg) {

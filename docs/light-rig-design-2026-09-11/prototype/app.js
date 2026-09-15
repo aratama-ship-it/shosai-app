@@ -245,6 +245,8 @@
        灯の当たり先を確かめる最初の1枚に向く（製品 stage-sketch.js の既定は "center"）。
        選択肢の既定（index.html の selected）と必ずそろえること。 */
     seat: "balcony",
+    // ソロは照明デザイン中だけの一時的な見え方。保存・Undo・灯体設定には含めない。
+    solo: false,
     search: "",
     copiedPath: null,   // 動きのコピー（灯から灯へ写す。2026-09-12 本人要望）
     /* サーチライト＝複数のムービングを空へ振る定番の見せ方。選んで、数値を決めて、一撃で当てる。
@@ -269,6 +271,24 @@
   E.SPEED_PERIOD_MS && Object.assign(E.SPEED_PERIOD_MS, {}); // 参照のみ
   const periodMs = (light) => (SPEED_SEC[light && light.speed] || 2) * 1000;
   const COLORS = ["#f2ead6", "#ffd27a", "#ff7a5c", "#7ab8ff", "#8be08b", "#d98cf0"];
+  /* レーザーの色は通常灯の共通パレットから分離する。複色は静止した色分けとして描き、
+     ここでは時間変化を持ち込まない（色以外の設定を変えないため）。 */
+  const LASER_COLOR_PRESETS = Object.freeze([
+    { id: "red", name: "レッド", colors: ["#ff304d"] },
+    { id: "green", name: "グリーン", colors: ["#38e04a"] },
+    { id: "blue", name: "ブルー", colors: ["#2a7dff"] },
+    { id: "cyan", name: "シアン", colors: ["#2ad3ff"] },
+    { id: "magenta", name: "マゼンタ", colors: ["#ea4cff"] },
+    { id: "yellow", name: "イエロー", colors: ["#ffe14a"] },
+    { id: "white", name: "ホワイト", colors: ["#f2f2f2"] },
+    { id: "rgb", name: "RGB", colors: ["#ff304d", "#38e04a", "#2a7dff"] },
+    { id: "red-blue", name: "レッド＋ブルー", colors: ["#ff304d", "#2a7dff"] },
+    { id: "green-blue", name: "グリーン＋ブルー", colors: ["#38e04a", "#2a7dff"] },
+    { id: "red-green", name: "レッド＋グリーン", colors: ["#ff304d", "#38e04a"] },
+    { id: "rainbow", name: "レインボー", colors: ["#ff304d", "#ffe14a", "#38e04a", "#2ad3ff", "#2a7dff", "#ea4cff"] },
+  ]);
+  const laserColorPreset = (id) => LASER_COLOR_PRESETS.find((p) => p.id === id) || null;
+  const laserColorsOf = (l) => (laserColorPreset(l && l.laserColorPreset) || { colors: [(l && l.color) || (LE && LE.COLORS[0]) || "#38e04a"] }).colors;
   // 色の補間（1灯ずつ色をずらす＝グラデーション用。2026-09-12 本人要望）。16進 → rgb → 線形補間 → 16進
   const hexToRgb = (hex) => { const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || "") || []; return [1, 2, 3].map((i) => parseInt(m[i] || "ff", 16)); };
   const rgbToHex = (rgb) => "#" + rgb.map((v) => Math.round(E.clamp(v, 0, 255)).toString(16).padStart(2, "0")).join("");
@@ -495,6 +515,8 @@
      一覧の「オン／オフ」も実際に光っているかで出し分ける（数字が0なのにオンと出ると読めないため）。 */
   const levelOf = (l) => E.levelOf(l);
   const isLit = (l) => E.isLit(l);
+  const soloMuted = (fid) => state.mode === "move" && state.solo && !state.sel.has(fid);
+  const visibleLight = (f, l) => Boolean(f) && !soloMuted(f.id) && isLit(l);
   /* カーブは「動かせる点」で持つ（2026-09-13 本人要望「一点を動かしたら滑らかな弧になるように」）。
      0%・25%・50%・75%・100% の5点。横位置は固定で、縦だけドラッグして決める。
      以前はなぞった跡を33目盛りそのまま覚えていたので、線がガタついた。 */
@@ -541,7 +563,7 @@
   /* 一覧や絞り込みに出す状態。未設定と消灯は分けず、どちらも「オフ」として見せる
      （2026-09-13 本人要望「つけるという表現はなしに／最初から全部オフに」）。
      データの上では未設定（on:null）のままなので、まとめて変更が「未設定は点けてから」を判断できる。 */
-  const lightState = (fid) => { const l = lightOf(fid); if (!l || l.on !== true || levelOf(l) <= 0) return "off"; return (l.path && l.path.kind !== "still") ? "move" : "on"; };
+  const lightState = (fid) => { const l = lightOf(fid); if (soloMuted(fid) || !l || l.on !== true || levelOf(l) <= 0) return "off"; return (l.path && l.path.kind !== "still") ? "move" : "on"; };
   const STATE_LABEL = { off: "オフ", on: "オン", move: "動き" };
 
   /* ---------- 配置の操作 ---------- */
@@ -963,7 +985,7 @@
     if (!LE || state.mode !== "move" || !showOn("beam")) return;
     state.rig.fixtures.forEach((f) => {
       if (!(E.isLaser && E.isLaser(f))) return;
-      const l = lightOf(f.id); if (!isLit(l)) return;
+      const l = lightOf(f.id); if (!visibleLight(f, l)) return;
       const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return;
       const laser = l.laser || {};
       /* 旧 beam はファンの広がり0として読む。保存済みデータは書き換えない。 */
@@ -982,7 +1004,7 @@
       if (l.surface === "air") rays.forEach((ray) => { ray.end = LE.extendedRayPoint(S, ray.dir, reach * 6); });
       else if (l.surface === "house") rays.forEach((ray) => { ray.end = LE.houseFarPoint(S, ray.dir, state.dims, reach * 6); });
       const level = litFactorOf(f, l);
-      LE.drawProjected(ctx, P, rays, l.color || LE.COLORS[0], level, 100, { alphaScale, fill: Boolean(LE.EFFECTS[effect].fill), surface: Boolean(LE.EFFECTS[effect].surface) });
+      LE.drawProjected(ctx, P, rays, laserColorsOf(l), level, 100, { alphaScale, fill: Boolean(LE.EFFECTS[effect].fill), surface: Boolean(LE.EFFECTS[effect].surface) });
       if (alphaScale === 1 && isSel(f.id) && l.surface !== "house") drawHandles(ctx, P, l, f.id);
     });
   }
@@ -1049,7 +1071,7 @@
     if (state.mode === "move") {
       const PH = houseProjPlan(P, B);   // 客席へ向けた狙い点だけ客席帯へ
       state.rig.fixtures.forEach((f) => {
-        const l = lightOf(f.id); if (!isLit(l)) return;   // 消灯・強さ0は図に出さない
+        const l = lightOf(f.id); if (!visibleLight(f, l)) return;   // 消灯・強さ0は図に出さない
         if (E.isLaser && E.isLaser(f)) return;
         if (f.mount.type === "cyc") return;
         const lv = litFactorOf(f, l);
@@ -1231,7 +1253,7 @@
   }
   /* 人物を塗り直すための実際の照射。選択による帯のdimは人物の受光へ混ぜない。
      cycは壁を照らす専用灯なので、人物への直射としては数えない。 */
-  const spatialScene = () => state.mode === "move" && state.rig.fixtures.some(f => { const l = lightOf(f.id); return isLit(l) && ["air", "house"].includes(l.surface); });
+  const spatialScene = () => state.mode === "move" && state.rig.fixtures.some(f => { const l = lightOf(f.id); return visibleLight(f, l) && ["air", "house"].includes(l.surface); });
   function spatialLight(ctx, P, k, kind, f, spots) {
     const l = lightOf(f.id);
     /* 客席向きは各図の専用分岐で描く。空中光は体積光へ渡すだけだと、もや0の現在は
@@ -1254,7 +1276,7 @@
   function compositeSpatial(ctx, P, k, kind, options = {}) {
     if (!spatialScene() || !showOn("beam")) return;
     const all = performerBeams(), beams = state.rig.fixtures.flatMap(f => {
-      const l = lightOf(f.id); if (!isLit(l) || !["air", "house"].includes(l.surface) || f.mount.type === "cyc") return [];
+      const l = lightOf(f.id); if (!visibleLight(f, l) || !["air", "house"].includes(l.surface) || f.mount.type === "cyc") return [];
       const S = fixtureWorld(f), T = targetAt(f.id, state.play.t);
       const b = V.compile({S,T,deg:beamOf(f),level:litFactorOf(f,l),color:l.color,doors:E.frameDoors(f,l,l.surface==='house'?'z':'y'),profile:goboProfile(l),f,l});
       return b ? [b] : [];
@@ -1290,7 +1312,7 @@
   function performerBeams() {
     return state.rig.fixtures.flatMap((f) => {
       const l = lightOf(f.id);
-      if (!isLit(l) || f.mount.type === "cyc") return [];
+      if (!visibleLight(f, l) || f.mount.type === "cyc") return [];
       const level = litFactorOf(f, l), S = fixtureWorld(f), T = targetAt(f.id, state.play.t);
       if (!(level > 0) || !S || !T) return [];
       const end = beamEnd(l, S, T), frame = frameOf(f, l);
@@ -1414,7 +1436,7 @@
     if (state.mode !== "move" || !showOn("beam")) return;
     state.rig.fixtures.forEach((f) => {
       if (f.mount.type !== "cyc") return;
-      const l = lightOf(f.id); if (!isLit(l)) return;
+      const l = lightOf(f.id); if (!visibleLight(f, l)) return;
       const lv = litFactorOf(f, l);
       const a = visualAlpha(E.clamp(E.finite(lv, 1), 0, 1));
       const quads = cycWashQuads(f, l, P, dims);
@@ -2072,7 +2094,7 @@
     state.rig.trusses.forEach((t) => { const a = P({ x: -d.W / 2, y: t.v * d.D, z: t.h }), b = P({ x: d.W / 2, y: t.v * d.D, z: t.h }); const sel = state.selTruss === t.id && state.mode === "place"; fctx.strokeStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.lineWidth = sel ? 5 : 3; fctx.beginPath(); fctx.moveTo(a.X, a.Y); fctx.lineTo(b.X, b.Y); fctx.stroke();
       if (sel) { fctx.fillStyle = "#d3ac59"; fctx.font = "15px sans-serif"; fctx.fillText(`高さ ${mmText(t.h)}（ドラッグ）`, b.X + 14, b.Y - 12); } });
     // 光線（ホリゾントライトの帯は上で先に塗ってある）
-    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; if (f.mount.type === "cyc" || (E.isLaser && E.isLaser(f))) return; const lv = litFactorOf(f, l);
+    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!visibleLight(f, l)) return; if (f.mount.type === "cyc" || (E.isLaser && E.isLaser(f))) return; const lv = litFactorOf(f, l);
       const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s = P(S), tp = P(T); const dim = false;
       if (spatialLight(fctx, P, B.w / d.W, "front", f, litSpotsF)) return;
       if (showOn("beam")) {
@@ -2136,7 +2158,7 @@
     state.rig.trusses.forEach((t) => { const q = P({ x: 0, y: t.v * d.D, z: t.h }); const sel = state.selTruss === t.id && state.mode === "place"; fctx.beginPath(); fctx.arc(q.X, q.Y, sel ? 10 : 7, 0, Math.PI * 2); fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.75)"; fctx.fill(); fctx.fillStyle = "rgba(156,130,63,0.9)"; fctx.font = "14px sans-serif"; fctx.fillText(`奥から${E.trussRow(state.rig, t.id)}列目`, q.X + 12, q.Y - 14); });
     // 光線（この側の灯は濃く、他は薄く）
     const litSpotsSide = [];   // 作業灯を消す（ブラックアウト）用
-    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!isLit(l)) return; if (f.mount.type === "cyc" || (E.isLaser && E.isLaser(f))) return;   // 帯は側面図では出さない（アイコンだけ下の輪で示す）
+    if (state.mode === "move") state.rig.fixtures.forEach((f) => { const l = lightOf(f.id); if (!visibleLight(f, l)) return; if (f.mount.type === "cyc" || (E.isLaser && E.isLaser(f))) return;   // 帯は側面図では出さない（アイコンだけ下の輪で示す）
       const lv = litFactorOf(f, l); const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return; const s0 = P(S), tp = P(T); const mine = f.mount.type === "side" && f.mount.side === side; const air = l.surface === "air"; const dim = !mine && !air;
       if (spatialLight(fctx, P, B.w / d.D, side, f, litSpotsSide)) return;
       if (showOn("beam")) { const be = beamEnd(l, S, T);
@@ -2220,7 +2242,7 @@
       fctx.fillStyle = sel ? "#d3ac59" : "rgba(156,130,63,0.7)"; fctx.font = "15px sans-serif"; fctx.fillText(`${t.label || "バトン"} 高さ${mmText(t.h)}`, b.X + 10, b.Y); });
     // 光（ホリゾントライトの帯は上で先に塗ってある）
     if (state.mode === "move") state.rig.fixtures.forEach((f) => {
-      const l = lightOf(f.id); if (!isLit(l)) return;
+      const l = lightOf(f.id); if (!visibleLight(f, l)) return;
       if (f.mount.type === "cyc" || (E.isLaser && E.isLaser(f))) return;
       const lv = litFactorOf(f, l);
       const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return;
@@ -2696,6 +2718,7 @@
     if (ev.key === "Escape") { if (state.drag) { const dg = state.drag; state.drag = null; restore(dg.before); state.dirty = true; } else if (state.tool) { state.tool = null; renderAll(); } else if (state.sel.size || state.selEquipment) { state.sel.clear(); state.selEquipment = null; renderAll(); } return; }
     if (typing) return;
     if ((ev.key === "g" || ev.key === "G") && !ev.metaKey && !ev.ctrlKey && !ev.altKey && state.mode === "move") { ev.preventDefault(); $("lighttoggles").querySelector('[data-show="blackout"]').click(); return; }
+    if ((ev.key === "s" || ev.key === "S") && !ev.metaKey && !ev.ctrlKey && !ev.altKey && state.mode === "move") { ev.preventDefault(); toggleSolo(); return; }
     /* Space = 再生／停止。再生ボタン自身にフォーカスがあるときは何もしない——
        ボタンの既定の動作（click）が同じトグルを呼ぶので、ここで拾うと2回走る。 */
     if (ev.key === " ") { if (document.activeElement !== $("t-play")) { ev.preventDefault(); togglePlay(); } }
@@ -2708,7 +2731,6 @@
       if (k === "p" || k === "v") { ev.preventDefault(); pasteSettings(); return; }
     }
     if ((ev.key === "Delete" || ev.key === "Backspace") && state.mode === "place" && state.sel.size) { ev.preventDefault(); removeSelected(); }
-    if ((ev.key === "d" || ev.key === "D") && state.mode === "place" && state.sel.size) duplicateSelected();
     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? redo() : undo(); }
   });
 
@@ -2743,7 +2765,7 @@
        半分幅では2列にすると1枠70px前後になり、名前もオン・オフも読めない（2026-09-13）。 */
     host.classList.toggle("cols2", host.clientWidth >= 230);
     const c = cue(); const grouped = new Set(c.groups.flatMap((g) => g.members));
-    const row = (f, idx) => { const r = document.createElement("div"); r.className = "row" + (isSel(f.id) ? " sel" : ""); const st = lightState(f.id);
+    const row = (f, idx) => { const r = document.createElement("div"); r.className = "row" + (isSel(f.id) ? " sel" : "") + (state.mode === "place" && f.mount.type !== "cyc" ? " with-delete" : ""); const st = lightState(f.id);
       r.innerHTML = `<span class="no">${idx !== undefined ? idx + 1 + "." : ""}${label(f.id)}</span><span class="nm">${f.name || "名前なし"}<small>${E.describeMount(f, state.rig).replace(/（高さ約\dm）/, "")}</small></span>`;
       // 状態の欄はそのまま押せるオン／オフにする（2026-09-11 本人要望。一覧から直接切り替えたい）
       const stCell = document.createElement(state.mode === "move" ? "button" : "span");
@@ -2759,6 +2781,13 @@
         stCell.onclick = (ev) => { ev.stopPropagation(); const l = lightOf(f.id); if (isLit(l)) setLight(f.id, { on: false }); else turnOn(f.id); commit(); };
       }
       r.append(stCell);
+      // 配置中は灯体だけを一覧から外せる。バトン・幕などの構造物とホリゾントバーは対象にしない。
+      if (state.mode === "place" && f.mount.type !== "cyc") {
+        const remove = document.createElement("button"); remove.type = "button"; remove.className = "delete-fixture"; remove.textContent = "×";
+        remove.title = `${label(f.id)}を削除`; remove.setAttribute("aria-label", `${label(f.id)}を削除`);
+        remove.onclick = (ev) => { ev.stopPropagation(); state.sel = new Set([f.id]); state.selEquipment = null; state.aimMirror = null; removeSelected(); };
+        r.append(remove);
+      }
       r.onclick = (ev) => {
         let selectionChanged = false;
         state.selEquipment = null;
@@ -2815,7 +2844,7 @@
       $("sel-count").textContent = state.sel.size > 1 ? `${state.sel.size}灯を選択中` : "";
       const cycOnly = state.sel.size > 0 && [...state.sel].every((id) => { const ff = fixtureById(id); return ff && ff.mount.type === "cyc"; });
       // ホリゾントライトは床・上それぞれ1本。複製・削除は配置パネルの「あり／なし」に任せる
-      $("dup").disabled = !state.sel.size || cycOnly; $("del").disabled = !state.sel.size || cycOnly; $("spread").disabled = !canSpread();
+      $("del").disabled = !state.sel.size || cycOnly; $("spread").disabled = !canSpread();
       $("mirror").disabled = !canMirror();
       $("spread").title = canSpread() ? (state.sel.size === 1 ? "1灯だけなので位置は変えません" : "選んだ灯体だけを現在の両端の間へ均等に並べます") : "同じバトンの灯体を選ぶと使えます";
       $("mirror").title = canMirror() ? "下手⇄上手へ配置だけを写します" : "SS（袖）の灯を選ぶと使えます";
@@ -2837,7 +2866,7 @@
     if (!rest.length && state.rig.fixtures.length) host.append(el("p", "hint", "この絞り込みに当てはまる灯体はありません。"));
     if (!state.rig.fixtures.length) host.innerHTML = '<p class="hint" style="padding:6px">灯体はまだありません。</p>';
     $("sel-count").textContent = state.sel.size > 1 ? `${state.sel.size}灯を選択中` : "";
-    $("dup").disabled = true; $("del").disabled = true; $("spread").disabled = true; $("mirror").disabled = true;
+    $("del").disabled = true; $("spread").disabled = true; $("mirror").disabled = true;
   }
 
   /* ---------- 右: 設定欄 ---------- */
@@ -3590,7 +3619,7 @@
   function renderLaserInspector(host, ids) {
     if (!LE || !LUI || !ids.length) return;
     const active = ids.filter((id) => { const f = fixtureById(id); return f && E.isLaser && E.isLaser(f); });
-    if (active.length !== ids.length) { host.append(el("p", "warn", "レーザーと通常照明は別々に選ぶと設定できます。")); return; }
+    if (active.length !== ids.length) { host.append(el("p", "warn", "レーザー機材のみを選択してください")); return; }
     const lights = active.map((id) => lightOf(id) || E.newLightCue({ on: false, color: LE.COLORS[0], laser: { effect: "fan", spanDeg: 0, rollDeg: 0 } })), same = (get, fallback) => {
       const values = lights.map((l) => get(l) == null ? fallback : get(l));
       return values.every((v) => v === values[0]) ? values[0] : null;
@@ -3610,10 +3639,26 @@
         commit(`${active.length}台のレーザーを${LE.EFFECTS[id].name}にしました`);
       }; cards.append(b); });
     const kindBox = el("div", "pbox"); kindBox.append(el("p", "kicker", "形"), cards); host.append(kindBox);
-    const colorBox = el("div", "pbox"); colorBox.append(el("p", "kicker", "色"));
-    const sw = el("div", "swatches"), currentColor = same((l) => l.color, LE.COLORS[0]);
-    LE.COLORS.forEach((color) => { const b = document.createElement("button"); b.type = "button"; b.style.background = color; b.title = color; b.setAttribute("aria-pressed", String(currentColor === color)); b.onclick = () => { active.forEach((id) => setLight(id, { color })); commit(`${active.length}台のレーザーの色を変えました`); }; sw.append(b); });
-    colorBox.append(sw); host.append(colorBox);
+    const colorBox = el("div", "pbox"); colorBox.append(el("p", "kicker", "レーザーカラープリセット"));
+    const currentPreset = same((l) => l.laserColorPreset, null);
+    const presets = el("div", "laser-color-presets");
+    LASER_COLOR_PRESETS.forEach((preset) => {
+      const b = document.createElement("button"); b.type = "button";
+      b.style.setProperty("--laser-colors", preset.colors.join(", "));
+      b.setAttribute("aria-pressed", String(currentPreset === preset.id));
+      b.title = `${preset.name}を選ぶ`;
+      b.innerHTML = `<i aria-hidden="true"></i><span>${preset.name}</span>`;
+      b.onclick = () => {
+        active.forEach((id) => {
+          const l = lightOf(id);
+          if (l) { l.color = preset.colors[0]; l.laserColorPreset = preset.id; }
+          else cue().lights[id] = E.newLightCue({ on: false, color: preset.colors[0], laserColorPreset: preset.id });
+        });
+        commit(`${active.length}台のレーザーを${preset.name}にしました`);
+      };
+      presets.append(b);
+    });
+    colorBox.append(presets, el("p", "laser-warning", "複色は静止した色分けです。色以外の設定や動きは変えません。")); host.append(colorBox);
     const aimBox = el("div", "pbox"); aimBox.append(el("p", "kicker", "狙い"));
     const surface = same((l) => l.surface, "air");
     aimBox.append(field(surface == null ? "バラバラ" : null, seg([["floor", "床"], ["back", "ホリゾント"], ["house", "客席"], ["air", "空中"]], surface, (v) => {
@@ -3692,6 +3737,18 @@
     tgl.setAttribute("aria-label", on ? `${label(fid)}を消す` : `${label(fid)}を点ける`);
     tgl.title = on ? `${label(fid)}は点いています。押すと消えます` : `${label(fid)}は消えています。押すと点きます`;
     tgl.onclick = () => { if (isLit(lightOf(fid))) setLight(fid, { on: false }); else turnOn(fid); commit(); };
+  }
+
+  function toggleSolo() {
+    if (state.mode !== "move") return;
+    if (!state.sel.size) {
+      state.solo = false;
+      toast("灯体を選ぶとソロにできます");
+      renderAll();
+      return;
+    }
+    state.solo = !state.solo;
+    renderAll();
   }
 
   /* ---------- LX cue（本番で読み上げる番号） ----------
@@ -4235,6 +4292,9 @@
     /* 配置はシーン共通なので、シーン送りも再生も照明デザインのときだけ出す（2026-09-11 本人指摘）。
        シーン送りは図の上の帯（場所は残して中身だけ隠す）、再生はパネルの見出し行（丸ごと隠す）。 */
     const inMove = state.mode === "move";
+    if (!inMove || !state.sel.size) state.solo = false;
+    const solo = $("solo");
+    if (solo) { solo.hidden = !inMove; solo.disabled = !state.sel.size; solo.setAttribute("aria-pressed", String(Boolean(state.solo))); solo.title = state.solo ? "ソロを解除（S）" : "選択中の灯体をソロ表示（S）"; }
     const listTitle = $("fixture-list-title"); if (listTitle) listTitle.textContent = inMove ? "灯体一覧" : "機材一覧";
     const selectedTitle = $("selacts-title"); if (selectedTitle) selectedTitle.textContent = inMove ? "選んだ灯体" : "選んだ機材";
     const search = $("search"); if (search) {
@@ -4383,7 +4443,8 @@
   $("mirror-placement").onclick = () => { state.mirrorPlacement = !state.mirrorPlacement; renderAll(); };
   $("mirror").onclick = mirrorSelected;
   document.querySelectorAll("#filters button").forEach((b) => { b.onclick = () => { state.filter = b.dataset.filter; renderAll(); }; });
-  $("dup").onclick = duplicateSelected; $("del").onclick = removeSelected; $("spread").onclick = spreadSelected;
+  $("del").onclick = removeSelected; $("spread").onclick = spreadSelected;
+  $("solo").onclick = (ev) => { toggleSolo(); if (ev.detail > 0) ev.currentTarget.blur(); };
   $("presets").onclick = openPresets;
   $("prefs").onclick = openPrefs;        // 環境設定（歯車）
   $("save").onclick = openDesigns;       // 照明デザインを名前を付けて保存
@@ -4437,16 +4498,22 @@
       },
     },
     {
-      key: "live", name: "ライブ・コンサート", count: 24,
+      key: "live", name: "ライブ・コンサート", count: 26,
       lead: "音楽のライブ。動く光が主役で、前明かりは最小限。",
-      detail: "バトン1にムービング8／バトン3にムービング6／床置き ムービング6／SS 下手2・上手2（固定）。ムービング20・固定4。",
-      why: "ライブはトラス吊りのムービングと床置き（転がし）で画を作り、顔を平らに見せる前明かりは絞る。",
+      detail: "前バトンにムービング8／後バトンにムービング6＋レーザー1／床置き ムービング6＋レーザー1／SS 下手2・上手2（固定）。ムービング20・レーザー2・固定4。",
+      why: "ライブはトラス吊りのムービングと床置き（転がし）で画を作り、レーザーは空中の面を足す。顔を平らに見せる前明かりは絞る。",
       build: () => {
         const b1 = addTrussAt(0.55, 6.5, "前バトン"), b3 = addTrussAt(0.15, 6.5, "後バトン");
         spreadU(8).forEach((u) => putHang(b1, u, "moving"));
         spreadU(6).forEach((u) => putHang(b3, u, "moving"));
         spreadU(6, 0.15, 0.85).forEach((u) => putFloor(u, 0.12, "moving"));
         [0.4, 0.65].forEach((v) => { putSS("shimote", v, 2, "fixed"); putSS("kamite", v, 2, "fixed"); });
+        // ライブの既定は「転がし」と「レーザー」までを含めた完成した仕込みにする。
+        // 保存済みデザインを読むときはこの build を通らないため、既存データは書き換えない。
+        const hangLaser = putHang(b3, 0.1, "laser", 1); hangLaser.name = "レーザー・ファン";
+        const floorLaser = putFloor(0.88, 0.82, "laser", 1); floorLaser.name = "レーザー・シート";
+        cue().lights[hangLaser.id] = E.newLightCue({ on: true, level: 75, surface: "air", color: "#38e04a", laserColorPreset: "green", path: { kind: "still", a: { u: 0.48, v: 0.82, hM: 2.2 } }, laser: { effect: "fan", spanDeg: 60, vis: 60 }, speed: "normal" });
+        cue().lights[floorLaser.id] = E.newLightCue({ on: true, level: 70, surface: "air", color: "#2ad3ff", laserColorPreset: "cyan", path: { kind: "still", a: { u: 0.58, v: 0.35, hM: 3.4 } }, laser: { effect: "sheet", spanDeg: 40, vis: 60 }, speed: "slow" });
       },
     },
     {
@@ -4518,7 +4585,7 @@
     },
   ];
   const addTrussAt = (v, h, lbl) => { const t = E.newTruss(uid("t"), v, h, lbl); state.rig.trusses.push(t); return t; };
-  const pushFix = (mount, kind, deg) => state.rig.fixtures.push(E.newFixture(uid("f"), state.nextNo++, mount, "", kind, deg));
+  const pushFix = (mount, kind, deg) => { const f = E.newFixture(uid("f"), state.nextNo++, mount, "", kind, deg); state.rig.fixtures.push(f); return f; };
   /* 既定の広がりは、取り付け方を問わず16°にそろえる。個別の仕込みで角度を渡した場合だけ上書きする。 */
   const putHang = (t, u, kind, deg) => pushFix({ type: "truss", trussId: t.id, u }, kind, deg || 16);
   const putFront = (u, ahead, h, deg) => pushFix({ type: "front", u, ahead, h }, "fixed", deg || 16);
@@ -4836,29 +4903,17 @@
 
   function download(blob, name) { if (!blob) return; const u = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = u; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); }
 
-  /* 「8人のサーカス」を既定の起点にする（2026-09-13 本人要望「デフォルトで読み込んでほしい」）。
-     演者・配置・姿勢は state.scenes 側にすでに実在の見本（stage-samples/index.js の eightCircus）
-     として入っている。ここで足すのはライトの仕込み（トラス・灯体）だけ——「サーカス・空中芸」
-     プリセット（22灯）をそのまま使う。点灯・色・動きはあえて未設定のまま渡す（灯体情報タブで
-     ご本人に触ってもらう）。他のプリセットを試したいときは「よくある仕込みから選ぶ」でいつでも
-     組み直せる（この既定の読み込みを打ち消すわけではなく、単に灯体を選び直すだけ）。 */
-  function loadCircus8Demo() {
-    const circus = RIG_PRESETS.find((p) => p.key === "circus");
-    if (!circus) return;
-    circus.build();
-    const back = state.rig.trusses[0];
-    if (back) {
-      const fan = E.newFixture("laser-demo-fan", state.nextNo++, { type: "truss", trussId: back.id, u: 0.1 }, "レーザー・ファン", "laser", 1);
-      const tunnel = E.newFixture("laser-demo-tunnel", state.nextNo++, { type: "floor", u: 0.88, v: 0.82 }, "レーザー・トンネル", "laser", 1);
-      state.rig.fixtures.push(fan, tunnel);
-      cue().lights[fan.id] = E.newLightCue({ on: true, level: 75, surface: "air", color: "#38e04a", path: { kind: "still", a: { u: 0.48, v: 0.82, hM: 2.2 } }, laser: { effect: "fan", spanDeg: 60, vis: 60 }, speed: "normal" });
-      cue().lights[tunnel.id] = E.newLightCue({ on: true, level: 70, surface: "air", color: "#2ad3ff", path: { kind: "still", a: { u: 0.58, v: 0.35, hM: 3.4 } }, laser: { effect: "tunnel", spanDeg: 24, vis: 60 }, speed: "slow" });
-    }
+  /* GitHub Pages の初期表示も「ライブ・コンサート」の定義そのものから作る。
+     保存済みデザインの読み込みは applyDesign 経由なので、この既定値で上書きしない。 */
+  function loadLiveConcertDemo() {
+    const live = RIG_PRESETS.find((p) => p.key === "live");
+    if (!live) return;
+    live.build();
     state.selTruss = state.rig.trusses[0] ? state.rig.trusses[0].id : null;
     state.history = []; state.future = []; state.dirty = false;   // 見本の状態を「元に戻す」の起点にする
     baseline = snapshot();                                        // 控えも見本の状態にそろえる
   }
-  loadCircus8Demo();
+  loadLiveConcertDemo();
   // Explicit comparison link: synthetic rig only; does not load or save user data.
   if(new URLSearchParams(location.search).has('example')) {
     const frontOn=new URLSearchParams(location.search).get('example')==='mixed';
