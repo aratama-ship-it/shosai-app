@@ -568,6 +568,38 @@
     };
   };
 
+  /* ---------- 正面図の遠方カメラ ----------
+     通常の正面図は、舞台前方200mの中央から舞台中心を見たときの控えめな透視投影。
+     座標や保存値を変えず、表示だけで奥の物ほどわずかに小さくする。舞台の奥行きが
+     8mなら前後差は約4%なので、作図として読めるまま実際の見え方に寄せられる。 */
+  const FRONT_FAR_CAMERA_M = 200;
+  const frontFarSetup = (dims, box, distanceM = FRONT_FAR_CAMERA_M) => {
+    const distance = Math.max(1, finite(distanceM, FRONT_FAR_CAMERA_M));
+    const pxPerM = Math.min((box.w / dims.W) * 0.96, (box.h / dims.H) * 0.96);
+    return { distance, pxPerM, centerX: box.x + box.w / 2, centerY: box.y + box.h / 2, eyeZ: dims.H / 2 };
+  };
+  const makeFrontFarProjector = (dims, box, distanceM = FRONT_FAR_CAMERA_M) => {
+    const L = frontFarSetup(dims, box, distanceM);
+    return (p) => {
+      const y = finite(p && p.y, 0), depth = Math.max(1e-6, L.distance + dims.D - y);
+      const scale = L.distance / depth;
+      return {
+        X: L.centerX + finite(p && p.x, 0) * L.pxPerM * scale,
+        Y: L.centerY + (L.eyeZ - finite(p && p.z, 0)) * L.pxPerM * scale,
+        scale,
+      };
+    };
+  };
+  const frontFarToUH = (dims, box, X, Y, v, distanceM = FRONT_FAR_CAMERA_M) => {
+    const L = frontFarSetup(dims, box, distanceM);
+    const vv = clamp(finite(v, 0.5), 0, 1), y = vv * dims.D;
+    const scale = L.distance / Math.max(1e-6, L.distance + dims.D - y);
+    return {
+      u: clamp((X - L.centerX) / (L.pxPerM * scale) / dims.W + 0.5, 0, 1),
+      h: clamp(L.eyeZ - (Y - L.centerY) / (L.pxPerM * scale), 0, dims.H),
+    };
+  };
+
   const describeMount = (fixture, rig) => {
     const m = fixture.mount || {};
     const mm = (metres) => `${Math.round(finite(metres, 0) * 1000)}mm`;
@@ -907,6 +939,7 @@
     newPoint, newLightCue, levelOf, isLit, levelAt, beamDegAt, strobeMul, paramPhase, mountSpot, GOBOS, goboById, goboAngleAt, constrainPointToSurface, periodMs, groupEffect,
     pointWorld, planeVec, circleOffset, eightOffset, targetAt, pathGuide, mirrorMount, mirrorAimCompatible, mirrorAimPoint, mirrorAimPath,
     FRONT_SEATS, frontPerspSetup, makeFrontPerspProjector, frontPerspToUH,
+    FRONT_FAR_CAMERA_M, frontFarSetup, makeFrontFarProjector, frontFarToUH,
     makePlanProjector, makeFrontProjector, makeSideProjector, planToUV, frontToUH, sideToVH,
     describeMount, describeCue,
     CURTAIN_KINDS, curtainKindLabel, curtainParts,

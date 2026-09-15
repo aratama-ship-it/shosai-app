@@ -187,7 +187,13 @@
   .planwrap{align-self:start}
   .planwrap{position:relative;display:flex;flex-direction:column;gap:2px;min-width:0;grid-row:1;grid-column:2}
   .sec{display:flex;flex-direction:column;gap:2px;min-width:0;grid-row:2}
-  .sec.side.l{grid-column:1} .sec.front{grid-column:2}
+  .sec.side.l{grid-column:1} .sec.front{grid-column:2} .sec.side.r{grid-column:3;display:none}
+  /* 配置は下手・正面・上手を同時に読む展開図。照明デザインへ戻れば従来どおり左下の切替1面だけに戻す。 */
+  .figgrid.placement-unfolded .sec.side.r{display:flex}
+  .figgrid.placement-unfolded .panel.insp{grid-column:3;grid-row:1}
+  .placement-side-title{display:none;font-size:11px;letter-spacing:.08em;color:var(--milk-dim)}
+  .figgrid.placement-unfolded .placement-side-title{display:inline}
+  .figgrid.placement-unfolded #sidemode{display:none}
   /* 上段の左右＝灯体パネル／設定パネル。幅は下の側面図とそろえる（app.jsが設定） */
   .panel{grid-row:1;min-width:0;min-height:0;overflow:hidden;border:1px solid var(--line-dark);background:rgba(25,21,18,.45);padding:8px;display:flex;flex-direction:column;gap:7px;align-self:stretch}
   /* 左の枠は1枠ぶんのまま。その中で灯体（左）とLX cue（右）が<b>横幅を半分ずつ</b>分け合う
@@ -750,6 +756,7 @@
                空いた右下を照明デザインパネルが使う（2026-09-13 本人要望）。 -->
           <div class="sec side l">
             <div class="sechead">
+              <span class="placement-side-title">下手側</span>
               <span class="showtoggles sidemode" id="sidemode" role="group" aria-label="どちら側を見るか">
                 <button type="button" data-side="shimote" aria-pressed="true">下手を見る</button>
                 <button type="button" data-side="kamite" aria-pressed="false">上手を見る</button>
@@ -776,6 +783,10 @@
               </span>
             </div>
             <canvas id="secF" width="780" height="520"></canvas>
+          </div>
+          <div class="sec side r">
+            <div class="sechead"><span class="placement-side-title">上手側</span></div>
+            <canvas id="secR" width="520" height="520"></canvas>
           </div>
         </div>
         <div class="empty" id="empty" hidden>
@@ -804,12 +815,12 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="rig-engine.js?v=20260915-3"></script>
+<script src="rig-engine.js?v=20260915-4-front-far"></script>
 <script src="stage-figure.js?v=20260915-1"></script>
 <script src="volume-light.js?v=20260915-2"></script>
 <script src="laser-effects.js?v=20260915-4-sheet-max40"></script>
 <script src="laser-effects-ui.js?v=20260915-3-supported-shapes"></script>
-<script src="app.js?v=20260915-45-light-quantity"></script>
+<script src="app.js?v=20260915-46-placement-unfold"></script>
 <script src="light-presets.js?v=1789357787"></script>
 <script src="light-presets-ui.js?v=20260915-2-type-panel"></script>
 <!-- 選択灯「型」P1: 本体ではなく、この試作だけへ隔離接続する。 -->
