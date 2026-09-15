@@ -319,8 +319,17 @@
 
   function setRowHeight(key, value, { save = false } = {}) {
     if (!ROW_KEYS.includes(key)) return;
-    ui.rowHeights[key] = clamp(Math.round(finite(value, DEFAULT_ROW_HEIGHTS[key])), rowMinimumHeight(key), ROW_MAX_HEIGHT);
-    applyRowLayout({ save });
+    const height = clamp(Math.round(finite(value, DEFAULT_ROW_HEIGHTS[key])), rowMinimumHeight(key), ROW_MAX_HEIGHT);
+    ui.rowHeights[key] = height;
+    // 高さドラッグ中はここだけを更新する。applyRowLayout は行の並べ替えと表示設定まで
+    // 全行に適用するため、pointermove ごとに呼ぶとレイアウト計算が積み重なってしまう。
+    const row = els.rows.find((candidate) => candidate.dataset.stageTimelineRow === key);
+    if (row) {
+      row.style.setProperty("--stage-timeline-row-height", `${height}px`);
+      const separator = row.querySelector(".stage-timeline-row-resize");
+      if (separator) separator.setAttribute("aria-valuenow", String(height));
+    }
+    if (save) saveUi();
   }
 
   function moveRowByKeyboard(key, direction) {
@@ -2388,22 +2397,37 @@
       startY: event.clientY,
       startHeight: ui.rowHeights[key],
       handle: event.currentTarget,
+      pendingHeight: ui.rowHeights[key],
+      frame: 0,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
+    document.body.classList.add("is-timeline-row-resizing");
     event.preventDefault();
   }
 
   function continueRowResize(event) {
     if (!rowResize || event.pointerId !== rowResize.pointerId) return;
-    setRowHeight(rowResize.key, rowResize.startHeight + event.clientY - rowResize.startY);
+    rowResize.pendingHeight = rowResize.startHeight + event.clientY - rowResize.startY;
+    if (!rowResize.frame) {
+      rowResize.frame = window.requestAnimationFrame(() => {
+        if (!rowResize) return;
+        rowResize.frame = 0;
+        setRowHeight(rowResize.key, rowResize.pendingHeight);
+      });
+    }
     event.preventDefault();
   }
 
   function endRowResize(event) {
     if (!rowResize || event.pointerId !== rowResize.pointerId) return;
-    const key = rowResize.key;
+    const resizing = rowResize;
     rowResize = null;
-    setRowHeight(key, ui.rowHeights[key], { save: true });
+    if (resizing.frame) window.cancelAnimationFrame(resizing.frame);
+    document.body.classList.remove("is-timeline-row-resizing");
+    try { resizing.handle.releasePointerCapture(event.pointerId); } catch (_) { /* 既に解放済み */ }
+    const finalHeight = event.type === "pointercancel"
+      ? resizing.pendingHeight : resizing.startHeight + event.clientY - resizing.startY;
+    setRowHeight(resizing.key, finalHeight, { save: true });
   }
 
   function beginRowReorder(event) {

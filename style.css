@@ -16208,6 +16208,7 @@ body.is-timeline-resizing { cursor: row-resize; user-select: none; -webkit-user-
 
 .stage-timeline-row-label .stage-timeline-row-resize:hover::after,
 .stage-timeline-row-label .stage-timeline-row-resize:focus-visible::after { background: var(--stage-timeline-accent); }
+body.is-timeline-row-resizing { cursor: ns-resize; user-select: none; -webkit-user-select: none; }
 
 .stage-timeline-row-content {
   position: relative;

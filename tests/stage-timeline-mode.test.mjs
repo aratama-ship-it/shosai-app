@@ -138,8 +138,8 @@ test("シーン・音源・転換の固定端とキュー点ロックを保存�
   assert.match(css, /\.stage-timeline-lock-indicator\.is-start \{[^}]*\}/);
   assert.match(css, /\.stage-timeline-lock-indicator\.is-end \{[^}]*var\(--stage-timeline-transition\)/);
   assert.match(timeline, /stage-timeline-lock-change/);
-  assert.match(html, /stage-timeline.js\?v=63/);
-  assert.match(sw, /stage-timeline.js\?v=63/);
+  assert.match(html, /stage-timeline.js\?v=64/);
+  assert.match(sw, /stage-timeline.js\?v=64/);
 });
 
 test("転換の最初の描画は前シーンの位置から始め、行き先を一瞬だけ描かない", () => {
@@ -224,6 +224,16 @@ test("8レーンは左ハンドルで並べ替え、左のレーン名端で高�
   assert.match(html, /class="stage-timeline-row-label"[\s\S]*?class="stage-timeline-row-resize"[\s\S]*?<\/div>[\s\S]*?class="stage-timeline-row-content"/);
   assert.match(css, /\.stage-timeline-row-label \.stage-timeline-row-resize \{[\s\S]*?cursor: ns-resize/);
   assert.match(css, /\.stage-timeline-row-label \.stage-timeline-row-resize::after \{[\s\S]*?right: 8px;[\s\S]*?left: 8px;/);
+});
+
+test("レーン高のドラッグは高さだけをフレームごとに更新し、全レーンの再配置を繰り返さない", () => {
+  assert.match(timeline, /function setRowHeight\(key, value, \{ save = false \} = \{\}\) \{[\s\S]*?row\.style\.setProperty\("--stage-timeline-row-height"/);
+  const drag = timeline.match(/function continueRowResize\(event\) \{[\s\S]*?\n  \}/)?.[0] || "";
+  assert.match(drag, /rowResize\.pendingHeight = rowResize\.startHeight \+ event\.clientY - rowResize\.startY/);
+  assert.match(drag, /window\.requestAnimationFrame/);
+  assert.doesNotMatch(drag, /applyRowLayout/);
+  assert.match(timeline, /function endRowResize\(event\) \{[\s\S]*?window\.cancelAnimationFrame[\s\S]*?setRowHeight\(resizing\.key, finalHeight, \{ save: true \}\)/);
+  assert.match(css, /body\.is-timeline-row-resizing \{ cursor: ns-resize; user-select: none;/);
 });
 
 test("右上の表示設定から8レーンを個別に隠し、端末内へ保存する", () => {
