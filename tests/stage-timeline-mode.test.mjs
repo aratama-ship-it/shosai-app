@@ -20,6 +20,13 @@ test("通常・タイムライン・3Dは舞台編集画面の上で同列に選
   assert.match(timeline, /panel\.hidden = next !== "timeline"/);
 });
 
+test("タイムラインモードでは通常モード用のシーン再生帯を隠し、下部の再生操作だけを使う", () => {
+  assert.match(html, /id="stage-scene-music"/);
+  assert.match(css, /body\.stage-timeline-mode #stage-scene-music \{ display: none; \}/);
+  assert.match(timeline, /document\.body\.classList\.toggle\("stage-timeline-mode", next === "timeline"\)/);
+  assert.match(html, /id="stage-timeline-play"/);
+});
+
 test("3Dモードは既存カメラを開き、閉じると直前の2Dモード表示へ戻る", () => {
   const centre = html.match(/<div class="stage-center-bar">[\s\S]*?<p class="stage-tool-hint"/)?.[0] || "";
   assert.doesNotMatch(centre, /id="stage-freecam-open"/);
