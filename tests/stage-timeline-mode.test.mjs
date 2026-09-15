@@ -11,27 +11,27 @@ const sketch = await readFile(new URL("stage-sketch.js", root), "utf8");
 const worker = await readFile(new URL("worker.js", root), "utf8");
 const sw = await readFile(new URL("stage-sw.js", root), "utf8");
 
-test("通常・タイムライン・3Dは舞台編集画面の上で同列に選べる", () => {
-  assert.match(html, /id="stage-workspace-normal"[\s\S]*?>通常モード<\/button>/);
-  assert.match(html, /id="stage-workspace-timeline"[\s\S]*?>タイムラインモード<\/button>/);
+test("2D舞台画面は常時一つで、タイムラインは下部ドロワーとして初期は収納する", () => {
+  assert.match(html, /id="stage-workspace-normal"[\s\S]*?hidden>通常モード<\/button>/);
+  assert.doesNotMatch(html, /id="stage-workspace-timeline"/);
   assert.match(html, /id="stage-freecam-open"[\s\S]*?data-stage-workspace-launch="3d"[\s\S]*?>3Dモード<\/button>/);
   assert.match(html, /id="stage-timeline-panel"[\s\S]*?hidden/);
-  assert.match(timeline, /document\.body\.classList\.toggle\("stage-timeline-mode"/);
-  assert.match(timeline, /panel\.hidden = next !== "timeline"/);
+  assert.match(timeline, /ui\.timelineDrawerVersion !== 1[\s\S]*?ui\.collapsed = true/);
+  assert.match(timeline, /function initializeTimelineDrawer\(\)[\s\S]*?panel\.hidden = false[\s\S]*?setTimelineCollapsed\(ui\.collapsed\)/);
+  assert.doesNotMatch(timeline, /stage-timeline-mode/);
 });
 
-test("タイムラインモードでは通常モード用のシーン再生帯を隠し、下部の再生操作だけを使う", () => {
+test("通常用のシーン再生帯はPCでは常時隠し、下部の再生操作だけを使う", () => {
   assert.match(html, /id="stage-scene-music"/);
-  assert.match(css, /body\.stage-timeline-mode #stage-scene-music \{ display: none; \}/);
-  assert.match(timeline, /document\.body\.classList\.toggle\("stage-timeline-mode", next === "timeline"\)/);
+  assert.match(css, /html:not\(\.stage-pwa-tablet\):not\(\.stage-phone-viewer\) body\.stage-timeline-ready #stage-scene-music \{ display: none; \}/);
   assert.match(html, /id="stage-timeline-play"/);
 });
 
 test("Eでタイムラインをしまい、上端のドラッグで復元できる", () => {
   assert.match(html, /id="stage-timeline-resize"[\s\S]*?aria-keyshortcuts="E"/);
-  assert.match(timeline, /ui\.collapsed = Boolean\(ui\.collapsed\)/);
+  assert.match(html, /data-stage-tool="erase" data-tool-key="Shift\+E"/);
   assert.match(timeline, /function setTimelineCollapsed\(collapsed[\s\S]*?panel\.classList\.toggle\("is-collapsed", next\)[\s\S]*?element\.inert = next/);
-  assert.match(timeline, /mode !== "timeline" \|\| isTextEntry\(event\.target\)[\s\S]*?event\.code !== "KeyE"[\s\S]*?setTimelineCollapsed\(!ui\.collapsed, \{ save: true \}\)/);
+  assert.match(timeline, /isTextEntry\(event\.target\)[\s\S]*?event\.code !== "KeyE"[\s\S]*?setTimelineCollapsed\(!ui\.collapsed, \{ save: true \}\)/);
   assert.match(timeline, /function continueTimelineResize\(event\)[\s\S]*?timelineResize\.collapsed[\s\S]*?startY - event\.clientY[\s\S]*?stage-timeline-reveal-height/);
   assert.match(timeline, /applyTimelineHeight\(visibleHeight, \{ save: false \}\);/);
   assert.match(timeline, /setTimelineCollapsed\(false, \{ save: true \}\);/);
@@ -39,15 +39,18 @@ test("Eでタイムラインをしまい、上端のドラッグで復元でき�
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.stage-timeline-panel \{ transition: none; \}/);
 });
 
-test("3Dモードは既存カメラを開き、閉じると直前の2Dモード表示へ戻る", () => {
+test("3D表示は既存カメラを開き、閉じると同じ2D舞台画面へ戻る", () => {
   const centre = html.match(/<div class="stage-center-bar">[\s\S]*?<p class="stage-tool-hint"/)?.[0] || "";
   assert.doesNotMatch(centre, /id="stage-freecam-open"/);
   assert.match(sketch, /function setFreecamWorkspaceActive\(active\)/);
   assert.match(sketch, /openFpv\(undefined, "free", els\.freecamOpen, true\)/);
   assert.match(sketch, /if \(workspace3d\) setFreecamWorkspaceActive\(false\)/);
+  assert.match(sketch, /stage-fpv-visibility/);
+  assert.match(timeline, /function syncTimelineAvailability\(\)[\s\S]*?panel\.classList\.toggle\("is-suspended", blocked\)/);
+  assert.match(css, /\.stage-timeline-panel\.is-suspended,[\s\S]*?display: none/);
 });
 
-test("モード切替は舞台スケッチの題と同じヘッダー行に置く", () => {
+test("3D表示は舞台スケッチの題と同じヘッダー行に置く", () => {
   const stageHeader = html.match(/<header class="stage-sketch-head">[\s\S]*?<\/header>/)?.[0] || "";
   assert.match(stageHeader, /class="stage-brand-row"[\s\S]*?id="stage-sketch-title"[\s\S]*?id="stage-workspace-tabs"[\s\S]*?<\/div>/);
   assert.doesNotMatch(stageHeader, /<\/header>[\s\S]*?<nav class="stage-workspace-tabs"/);
@@ -55,27 +58,23 @@ test("モード切替は舞台スケッチの題と同じヘッダー行に置�
   assert.match(css, /\.stage-workspace-tabs \{[\s\S]*?margin-left: 16px;/);
 });
 
-test("パネルは複製せず、モードごとの一列・二列設定で同じDOMを並べ直す", () => {
+test("タイムラインの開閉はパネルを複製・並べ替えせず、通常画面の配置を保つ", () => {
   assert.doesNotMatch(timeline, /cloneNode|state\.layout|panelSingleOrder|applyDocumentString/);
-  assert.match(timeline, /同じDOMを保ったまま/);
+  assert.match(timeline, /同じ舞台画面から/);
   assert.match(html, /data-stage-workspace-mode="normal" data-stage-panel-layout-default="split"/);
-  assert.match(html, /data-stage-workspace-mode="timeline" data-stage-panel-layout-default="single"/);
+  assert.doesNotMatch(html, /data-stage-workspace-mode="timeline"/);
   assert.match(sketch, /const workspaceModeDefinitions = \(\) =>/);
   assert.match(sketch, /prefs\.panelLayoutByWorkspace/);
   assert.match(sketch, /select\.dataset\.stageWorkspacePanelLayout = definition\.key/);
-  assert.match(timeline, /stage-workspace-mode-change/);
-  assert.match(sketch, /addEventListener\("stage-workspace-mode-change"[\s\S]*?applyLayout\(\)/);
+  assert.doesNotMatch(timeline, /stage-workspace-mode-change/);
 });
 
-test("タイムラインモードは平面を初期値にし、正面・平面・両方を選べる", () => {
+test("タイムラインを開閉しても正面・平面・両方の選択は変えない", () => {
   assert.doesNotMatch(timeline, /restrictViewOptions|option\.hidden|option\.disabled/);
-  assert.match(timeline, /ui\.normalView = outgoingView/);
-  assert.match(timeline, /\["front", "plan", "both-front", "both-plan"\]\.includes\(ui\.timelineView\)[\s\S]*?: "plan"/);
-  assert.match(timeline, /if \(mode === "timeline"\) ui\.timelineView = value/);
-  assert.match(timeline, /setStageView\(target\)/);
+  assert.doesNotMatch(timeline, /timelineView|normalView|setStageView/);
   assert.match(html, /option value="both-front"/);
   assert.match(html, /option value="both-plan"/);
-  assert.match(css, /body\.stage-timeline-mode \.stage-canvas-close \{ display: none; \}/);
+  assert.match(css, /body\.stage-timeline-expanded:not\(\.stage-fullscreen\) #view-stage/);
 });
 
 test("保存済みミュージックシンクの複数楽曲・シーン・転換を時間軸へ読む", () => {
@@ -150,8 +149,8 @@ test("シーン・音源・転換の固定端とキュー点ロックを保存�
   assert.match(css, /\.stage-timeline-lock-indicator\.is-start \{[^}]*\}/);
   assert.match(css, /\.stage-timeline-lock-indicator\.is-end \{[^}]*var\(--stage-timeline-transition\)/);
   assert.match(timeline, /stage-timeline-lock-change/);
-  assert.match(html, /stage-timeline.js\?v=65/);
-  assert.match(sw, /stage-timeline.js\?v=65/);
+  assert.match(html, /stage-timeline.js\?v=66/);
+  assert.match(sw, /stage-timeline.js\?v=66/);
 });
 
 test("転換の最初の描画は前シーンの位置から始め、行き先を一瞬だけ描かない", () => {
@@ -380,9 +379,9 @@ test("音量フェーダーはタイムラインから外し、感想ボタン�
   assert.match(timeline, /els\.volume\.value = String\(ui\.volume\);[\s\S]*?applyAudioLevels\(\)/);
 });
 
-test("タイムラインモードのSpaceは入力欄を除いて再生と一時停止を切り替える", () => {
+test("展開中のタイムラインは、入力欄・3D表示中を除いてSpaceで再生と一時停止を切り替える", () => {
   assert.match(timeline, /event\.code === "Space" \|\| event\.key === " "/);
-  assert.match(timeline, /mode !== "timeline" \|\| isTextEntry\(event\.target\)/);
+  assert.match(timeline, /ui\.collapsed \|\| timelineInteractionIsBlocked\(\) \|\| isTextEntry\(event\.target\)/);
   assert.match(timeline, /event\.preventDefault\(\);[\s\S]*?if \(!event\.repeat\) void toggleTimelinePlayback\(\)/);
   assert.match(timeline, /document\.querySelector\("\.stage-modal:not\(\[hidden\]\)"\)/);
 });

@@ -25798,19 +25798,20 @@ ${propsPlotHtml}
   window.addEventListener("scroll", () => { if (toolTipFor) hideToolTip(); }, { passive: true });
   window.addEventListener("resize", () => { if (toolTipFor) hideToolTip(); });
 
-  /* 道具のショートカット。V=動かす、L=照明、A=矢印、P=塗る、E=消す、R=動線、N=メモ。
+  /* 道具のショートカット。V=動かす、L=照明、A=矢印、P=塗る、Shift+E=消す、R=動線、N=メモ。
      打ち込み中と修飾キー付きは素通し（⌘Zなどを取らない）。
      ★setTool を直に呼ばず、その札を押す。動線とメモは「もう一度押すと戻る」
        作りなので、直に呼ぶとキーでは切れなくなる。
      ★メモの札は正面と平面の両方にあるので、いま出ている方を押す。 */
   document.addEventListener("keydown", (event) => {
-    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
     if (event.defaultPrevented || phoneViewerActive) return;
     if (isTyping(event.target)) return;
     const view = document.getElementById("view-stage");
     if (view && view.hidden) return;
-    const key = String(event.key || "").toUpperCase();
-    if (key.length !== 1) return;
+    const rawKey = String(event.key || "").toUpperCase();
+    if (rawKey.length !== 1) return;
+    const key = event.shiftKey ? `SHIFT+${rawKey}` : rawKey;
     const matches = [...document.querySelectorAll("[data-tool-key]")]
       .filter((b) => (b.dataset.toolKey || "").toUpperCase() === key);
     if (!matches.length) return;
@@ -26719,6 +26720,7 @@ ${propsPlotHtml}
       button.classList.toggle("is-active", selected);
       button.setAttribute("aria-pressed", String(selected));
     });
+    window.dispatchEvent(new CustomEvent("stage-fpv-visibility", { detail: { active: Boolean(active) } }));
   }
 
   function openFpv(initialPieceId, initialView, returnFocus, workspace3d = false) {
@@ -26865,10 +26867,14 @@ ${propsPlotHtml}
       drawPosePreview: (canvas, poseId, color) => drawPosePreview(canvas, poseId, color),
       facingLabel,
       onClose: () => {
+        window.dispatchEvent(new CustomEvent("stage-fpv-visibility", { detail: { active: false } }));
         if (workspace3d) setFreecamWorkspaceActive(false);
         if (returnFocus) returnFocus.focus();
       },
     });
+    if (opened) {
+      window.dispatchEvent(new CustomEvent("stage-fpv-visibility", { detail: { active: true } }));
+    }
     if (!opened && workspace3d) setFreecamWorkspaceActive(false);
     return Boolean(opened);
   }

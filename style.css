@@ -15620,9 +15620,9 @@ body.is-panel-resizing .stage-sketch-grid { transition: none; }
   .stage-panel-width-handle:is([data-panel-width="left"], [data-panel-width="right"]) { display: none; }
 }
 
-/* ============ 舞台編集 / タイムライン表示モード ============
-   同じ舞台編集DOMを二つのモードで共有する。パネルを複製しないため、左右位置・
-   順番・開閉は stage-sketch.js の既存レイアウト状態をそのまま継承する。 */
+/* ============ 舞台編集の下部タイムライン ============
+   タイムラインは舞台画面の下から引き出す。図と左右パネルは一つだけを常に使い、
+   展開しても配置・面の選択を切り替えない。 */
 :root {
   --stage-timeline-height: 360px;
   --stage-timeline-toolbar-height: 104px;
@@ -15706,11 +15706,11 @@ body.is-panel-resizing .stage-sketch-grid { transition: none; }
   }
 }
 
-body.stage-timeline-mode:not(.stage-fullscreen) {
+body.stage-timeline-expanded:not(.stage-fullscreen) {
   overflow: hidden;
 }
 
-body.stage-timeline-mode:not(.stage-fullscreen) #view-stage {
+body.stage-timeline-expanded:not(.stage-fullscreen) #view-stage {
   height: calc(100dvh - var(--stage-timeline-height));
   min-height: 0;
   overflow: auto;
@@ -15718,13 +15718,12 @@ body.stage-timeline-mode:not(.stage-fullscreen) #view-stage {
   padding-bottom: 32px;
 }
 
-body.stage-timeline-mode.stage-timeline-collapsed:not(.stage-fullscreen) #view-stage {
+body.stage-timeline-collapsed:not(.stage-fullscreen) #view-stage {
   height: calc(100dvh - var(--stage-timeline-resize-hit));
 }
 
-body.stage-timeline-mode .stage-canvas-close { display: none; }
-/* タイムライン再生は下部の操作列に集約する。通常モード用のシーン再生帯は重ねない。 */
-body.stage-timeline-mode #stage-scene-music { display: none; }
+/* 再生は下部タイムラインへ一元化する。タブレット／スマホの既存画面は変えない。 */
+html:not(.stage-pwa-tablet):not(.stage-phone-viewer) body.stage-timeline-ready #stage-scene-music { display: none; }
 
 .stage-timeline-panel {
   position: fixed;
@@ -15748,6 +15747,10 @@ body.stage-timeline-mode #stage-scene-music { display: none; }
   --stage-timeline-reveal-height: var(--stage-timeline-resize-hit);
   transform: translateY(calc(100% - var(--stage-timeline-reveal-height)));
 }
+
+/* 3D・全画面では下部の操作面を外す。再生と同期の処理はJavaScript側で続く。 */
+.stage-timeline-panel.is-suspended,
+body.stage-fullscreen .stage-timeline-panel { display: none; }
 
 body.is-timeline-resizing .stage-timeline-panel { transition: none; }
 

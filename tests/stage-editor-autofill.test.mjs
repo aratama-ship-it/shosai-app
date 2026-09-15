@@ -41,11 +41,11 @@ test("動的に作る名前欄も自動入力の対象から外す", () => {
 test("入力欄修正のJavaScriptは新しいPWAキャッシュ参照で配る", () => {
   for (const asset of [
     "stage-set-builder.js?v=3",
-    "stage-sketch.js?v=492",
+    "stage-sketch.js?v=493",
     "stage-session.js?v=19",
   ]) {
     assert.ok(html.includes(asset), `${asset} が画面から参照される`);
     assert.ok(serviceWorker.includes(`./${asset}`), `${asset} がPWAキャッシュと一致する`);
   }
-  assert.match(serviceWorker, /stage-sketch-pwa-v509/);
+  assert.match(serviceWorker, /stage-sketch-pwa-v510/);
 });

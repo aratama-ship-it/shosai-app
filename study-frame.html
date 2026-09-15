@@ -4,7 +4,7 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
 <title>Stage Sketch — read-only drawings</title>
-<link rel="stylesheet" href="/study-assets/style.css?v=377"><link rel="stylesheet" href="/stage-study.css?v=25"><link rel="stylesheet" href="/stage-study-navigation.css?v=1">
+<link rel="stylesheet" href="/study-assets/style.css?v=384"><link rel="stylesheet" href="/stage-study.css?v=25"><link rel="stylesheet" href="/stage-study-navigation.css?v=1">
 <script src="/stage-study-sticky.js?v=5"></script><script src="/stage-study-pen.js?v=4"></script><script src="/stage-study-navigation.js?v=1"></script><script src="/stage-study-frame.js?v=6"></script></head>
 <body class="study-frame" data-view="both">
 <div class="study-drawings"><div class="study-drawing study-front"></div><div class="study-drawing study-plan"></div></div>
@@ -16,14 +16,11 @@
           <p class="stage-sketch-kicker">STAGE IMAGE STUDY</p>
           <div class="stage-brand-row">
             <h1 id="stage-sketch-title">舞台スケッチ<span class="stage-app-version">v0.3.6</span><span class="stage-beta">β版</span><button type="button" class="stage-release-open" id="stage-release-open" aria-haspopup="dialog" aria-controls="stage-release-modal" aria-label="アップデート履歴" title="アップデート履歴"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button><span class="stage-session-guest-badge" id="stage-session-guest-badge" role="status" hidden>ゲスト（閲覧＋矢印）</span><span class="stage-session-whoami" id="stage-session-whoami" role="status" hidden></span></h1>
-            <nav class="stage-workspace-tabs" id="stage-workspace-tabs" aria-label="編集モード">
+            <nav class="stage-workspace-tabs" id="stage-workspace-tabs" aria-label="表示">
+              <!-- 通常画面は常時表示する。旧版の端末別パネル配置を読み続けるための内部札で、操作には出さない。 -->
               <button type="button" class="stage-workspace-tab is-active" id="stage-workspace-normal"
                       data-stage-workspace-mode="normal" data-stage-panel-layout-default="split"
-                      aria-pressed="true">通常モード</button>
-              <button type="button" class="stage-workspace-tab" id="stage-workspace-timeline"
-                      data-stage-workspace-mode="timeline" data-stage-panel-layout-default="single"
-                      aria-pressed="false"
-                      aria-controls="stage-timeline-panel">タイムラインモード</button>
+                      aria-pressed="true" hidden>通常モード</button>
               <button type="button" class="stage-workspace-tab" id="stage-freecam-open"
                       data-stage-workspace-launch="3d"
                       aria-pressed="false"
@@ -250,7 +247,7 @@
                 <div class="stage-background-tool-actions">
                   <button type="button" class="btn-quiet" data-stage-tool="paint" data-tool-key="P"
                           aria-label="背景を塗る" aria-pressed="false">背景を塗る</button>
-                  <button type="button" class="btn-quiet" data-stage-tool="erase" data-tool-key="E"
+                  <button type="button" class="btn-quiet" data-stage-tool="erase" data-tool-key="Shift+E"
                           aria-label="背景を消す" aria-pressed="false">背景を消す</button>
                 </div>
             <label class="stage-control-label" for="stage-bg-color">地の色</label>
@@ -408,8 +405,9 @@
             <p class="stage-tool-hint" id="stage-tool-hint" hidden>演者や物を選び、舞台の上で動かします。</p>
             <label class="stage-view-select stage-bar-right">
               <select id="stage-view-select"
-                      aria-label="表示する図。両方①は正面が上、両方②は平面が上"
-                      title="表示する図。両方①は正面が上、両方②は平面が上">
+                      aria-label="表示する図。Tで切替。両方①は正面が上、両方②は平面が上"
+                      aria-keyshortcuts="T"
+                      title="表示する図。Tで切替。両方①は正面が上、両方②は平面が上">
                 <option value="front">正面</option>
                 <option value="plan">平面</option>
                 <option value="both-front">両方①</option>
@@ -979,11 +977,10 @@
       <!-- 再生要素は一つだけを使い回す。複数作るとiOSの再生許可と位置が分裂する。 -->
       <audio id="stage-music-audio" class="stage-music-engine" preload="metadata"></audio>
 
-      <section class="stage-timeline-panel" id="stage-timeline-panel"
-               aria-labelledby="stage-workspace-timeline" hidden>
+      <section class="stage-timeline-panel" id="stage-timeline-panel" aria-label="タイムライン" hidden>
         <div class="stage-timeline-resize" id="stage-timeline-resize" role="separator"
              aria-orientation="horizontal" aria-label="タイムラインの高さ"
-             aria-valuemin="260" aria-valuemax="600" aria-valuenow="360" tabindex="0"
+             aria-valuemin="260" aria-valuemax="600" aria-valuenow="360" aria-keyshortcuts="E" aria-expanded="true" tabindex="0"
              title="上へドラッグするとタイムラインが広がります。上下キーで調整、ダブルクリックで元の高さに戻します"><span aria-hidden="true"></span></div>
         <header class="stage-timeline-toolbar">
           <div class="stage-timeline-menu-strip is-source" aria-label="音源">
@@ -1006,18 +1003,6 @@
                       aria-label="タイムラインの単位を切り替える"
                       title="カウント式と時間式を切り替える">時間式</button>
             </div>
-            <label class="stage-timeline-song" id="stage-timeline-song-label">
-              <span>音源</span>
-              <select id="stage-timeline-song-select" aria-label="タイムラインの音源"></select>
-            </label>
-            <button type="button" class="stage-timeline-square" id="stage-timeline-song-delete"
-                    aria-label="この楽曲を削除" title="この楽曲を削除">
-              <svg class="stage-timeline-close-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"
-                   fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                <path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"></path>
-              </svg>
-            </button>
-            <span class="stage-timeline-track-name" id="stage-timeline-track-name">音源なし</span>
             <span class="stage-timeline-menu-spacer" aria-hidden="true"></span>
             <div class="stage-timeline-settings">
               <button type="button" class="stage-timeline-square stage-timeline-settings-trigger"
@@ -1251,6 +1236,13 @@
       </label>
       <p>0 dB が元の音量です。ヘッダーの音量とは別に、この音源だけへ適用されます。</p>
     </div>
+    <section class="stage-timeline-audio-replace" aria-label="音源を入れ替える">
+      <div>
+        <h3>音源を入れ替える</h3>
+        <p>このシーンに割り当てる音源を、ライブラリまたは新しいファイルから選びます。</p>
+      </div>
+      <button type="button" class="btn-quiet" id="stage-timeline-audio-replace">入れ替える</button>
+    </section>
     <footer class="stage-timeline-cue-detail-actions">
       <button type="button" class="btn-quiet" id="stage-timeline-audio-detail-cancel">キャンセル</button>
       <button type="button" class="stage-minor-action" id="stage-timeline-audio-detail-save">保存する</button>
@@ -1258,6 +1250,30 @@
   </div>
 </div>
 
+<div class="stage-modal-backdrop" id="stage-timeline-audio-source-backdrop" hidden></div>
+<div class="stage-modal stage-timeline-audio-source-modal" id="stage-timeline-audio-source-modal"
+     role="dialog" aria-modal="true" aria-labelledby="stage-timeline-audio-source-title"
+     aria-describedby="stage-timeline-audio-source-copy" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-timeline-audio-source-title">音源を追加</h2>
+    <button type="button" class="stage-modal-close" id="stage-timeline-audio-source-close"
+            aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body stage-timeline-audio-source-body">
+    <p id="stage-timeline-audio-source-copy">このシーンに割り当てる音源を選びます。</p>
+    <div class="stage-timeline-audio-source-actions" id="stage-timeline-audio-source-actions">
+      <button type="button" class="btn-quiet" id="stage-timeline-audio-source-library">ライブラリから選ぶ</button>
+      <button type="button" class="stage-minor-action" id="stage-timeline-audio-source-upload">新しく読み込む</button>
+    </div>
+    <section class="stage-timeline-audio-source-library" id="stage-timeline-audio-source-library-panel" hidden>
+      <div class="stage-timeline-audio-source-library-head">
+        <strong>登録済みの音源</strong>
+        <button type="button" class="btn-quiet" id="stage-timeline-audio-source-library-back">戻る</button>
+      </div>
+      <div id="stage-timeline-audio-source-library-list"></div>
+    </section>
+  </div>
+</div>
 <div class="stage-modal-backdrop" id="stage-timeline-unit-warning-backdrop" hidden></div>
 <div class="stage-modal stage-timeline-unit-warning-modal" id="stage-timeline-unit-warning-modal"
      role="dialog" aria-modal="true" aria-labelledby="stage-timeline-unit-warning-title"
@@ -2733,7 +2749,7 @@
 </div></div>
 <script src="/study-assets/stage-venues.js?v=30"></script>
 <script src="/study-assets/stage-venue-lines.js?v=6"></script>
-<script src="/study-assets/stage-i18n.js?v=180"></script>
+<script src="/study-assets/stage-i18n.js?v=182"></script>
 <script src="/study-assets/stage-set-model.js?v=1"></script>
 <script src="/study-assets/stage-machinery.js?v=2"></script>
 <script src="/study-assets/stage-sketch.js"></script>

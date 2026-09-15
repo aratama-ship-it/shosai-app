@@ -28,7 +28,7 @@ await page.addInitScript(() => {
   localStorage.setItem("shosai-stage-tour-v1", "done");
 });
 await page.goto(baseUrl, { waitUntil: "networkidle" });
-await page.locator("#stage-workspace-timeline").click();
+await page.keyboard.press("E");
 await page.locator("#stage-timeline-panel").waitFor({ state: "visible" });
 
 const trackId = await page.evaluate(() => {

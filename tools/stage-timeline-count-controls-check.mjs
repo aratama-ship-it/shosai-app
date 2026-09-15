@@ -33,7 +33,7 @@ await page.goto(baseUrl, { waitUntil: "networkidle" });
 const launchBackupContinue = page.locator("#stage-launch-backup-continue");
 if (await launchBackupContinue.isVisible()) await launchBackupContinue.click();
 
-await page.locator("#stage-workspace-timeline").click();
+await page.keyboard.press("E");
 await page.locator("#stage-timeline-panel").waitFor({ state: "visible" });
 
 const controlIds = [

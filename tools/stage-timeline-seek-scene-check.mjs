@@ -33,7 +33,7 @@ await page.goto(baseUrl, { waitUntil: "networkidle" });
 const launchBackupContinue = page.locator("#stage-launch-backup-continue");
 if (await launchBackupContinue.isVisible()) await launchBackupContinue.click();
 
-await page.locator("#stage-workspace-timeline").click();
+await page.keyboard.press("E");
 await page.locator("#stage-timeline-panel").waitFor({ state: "visible" });
 const scenes = page.locator(".stage-timeline-scene:not([disabled])");
 assert.ok(await scenes.count() >= 2, "シーク同期確認には2シーン以上必要です");

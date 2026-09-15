@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=383">
+<link rel="stylesheet" href="style.css?v=384">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -48,14 +48,11 @@
           <p class="stage-sketch-kicker">STAGE IMAGE STUDY</p>
           <div class="stage-brand-row">
             <h1 id="stage-sketch-title">舞台スケッチ<span class="stage-app-version">v0.3.6</span><span class="stage-beta">β版</span><button type="button" class="stage-release-open" id="stage-release-open" aria-haspopup="dialog" aria-controls="stage-release-modal" aria-label="アップデート履歴" title="アップデート履歴"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button><span class="stage-session-guest-badge" id="stage-session-guest-badge" role="status" hidden>ゲスト（閲覧＋矢印）</span><span class="stage-session-whoami" id="stage-session-whoami" role="status" hidden></span></h1>
-            <nav class="stage-workspace-tabs" id="stage-workspace-tabs" aria-label="編集モード">
+            <nav class="stage-workspace-tabs" id="stage-workspace-tabs" aria-label="表示">
+              <!-- 通常画面は常時表示する。旧版の端末別パネル配置を読み続けるための内部札で、操作には出さない。 -->
               <button type="button" class="stage-workspace-tab is-active" id="stage-workspace-normal"
                       data-stage-workspace-mode="normal" data-stage-panel-layout-default="split"
-                      aria-pressed="true">通常モード</button>
-              <button type="button" class="stage-workspace-tab" id="stage-workspace-timeline"
-                      data-stage-workspace-mode="timeline" data-stage-panel-layout-default="single"
-                      aria-pressed="false"
-                      aria-controls="stage-timeline-panel">タイムラインモード</button>
+                      aria-pressed="true" hidden>通常モード</button>
               <button type="button" class="stage-workspace-tab" id="stage-freecam-open"
                       data-stage-workspace-launch="3d"
                       aria-pressed="false"
@@ -283,7 +280,7 @@
                 <div class="stage-background-tool-actions">
                   <button type="button" class="btn-quiet" data-stage-tool="paint" data-tool-key="P"
                           aria-label="背景を塗る" aria-pressed="false">背景を塗る</button>
-                  <button type="button" class="btn-quiet" data-stage-tool="erase" data-tool-key="E"
+                  <button type="button" class="btn-quiet" data-stage-tool="erase" data-tool-key="Shift+E"
                           aria-label="背景を消す" aria-pressed="false">背景を消す</button>
                 </div>
             <label class="stage-control-label" for="stage-bg-color">地の色</label>
@@ -1013,8 +1010,7 @@
       <!-- 再生要素は一つだけを使い回す。複数作るとiOSの再生許可と位置が分裂する。 -->
       <audio id="stage-music-audio" class="stage-music-engine" preload="metadata"></audio>
 
-      <section class="stage-timeline-panel" id="stage-timeline-panel"
-               aria-labelledby="stage-workspace-timeline" hidden>
+      <section class="stage-timeline-panel" id="stage-timeline-panel" aria-label="タイムライン" hidden>
         <div class="stage-timeline-resize" id="stage-timeline-resize" role="separator"
              aria-orientation="horizontal" aria-label="タイムラインの高さ"
              aria-valuemin="260" aria-valuemax="600" aria-valuenow="360" aria-keyshortcuts="E" aria-expanded="true" tabindex="0"
@@ -2812,8 +2808,8 @@
 <script src="stage-light-motion.js?v=1"></script>
 <script src="manual/manual-content.js?v=12"></script>
 <script src="stage-pwa.js?v=9"></script>
-  <script src="stage-sketch.js?v=492"></script>
-<script src="stage-timeline.js?v=65"></script>
+<script src="stage-sketch.js?v=493"></script>
+<script src="stage-timeline.js?v=66"></script>
 <script src="stage-session.js?v=19"></script>
 <script src="stage-study-owner.js?v=23"></script>
 <script src="stage-usage.js?v=2"></script>

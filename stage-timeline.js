@@ -1,16 +1,14 @@
-/* 舞台スケッチの表示モードと下部タイムライン。
- * 舞台・シーン・パネルは stage-sketch.js が正本。このファイルは同じDOMを保ったまま
- * 表示モードだけを切り替え、セクションに保存済みのミュージックシンクを時間軸へ読む。 */
+/* 舞台スケッチの下部タイムライン。
+ * 舞台・シーン・パネルは stage-sketch.js が正本。タイムラインは同じ舞台画面から
+ * 引き出す表示部品で、セクションに保存済みのミュージックシンクを時間軸へ読む。 */
 (function () {
   "use strict";
 
   const root = document.documentElement;
   const bridge = window.SHOSAI_STAGE_SESSION_BRIDGE;
-  const tabs = document.getElementById("stage-workspace-tabs");
   const panel = document.getElementById("stage-timeline-panel");
-  if (!tabs || !panel || !bridge || root.hasAttribute("data-study-renderer")
+  if (!panel || !bridge || root.hasAttribute("data-study-renderer")
       || root.classList.contains("stage-phone-viewer") || root.classList.contains("stage-pwa-tablet")) {
-    if (tabs) tabs.hidden = true;
     if (panel) panel.hidden = true;
     return;
   }
@@ -36,7 +34,6 @@
   const AUDIO_WAVEFORM_MAX_BYTES = 16 * 1024 * 1024;
   const AUDIO_WAVEFORM_POINT_COUNT = 96;
   const els = {
-    tabs: [...tabs.querySelectorAll("[data-stage-workspace-mode]")],
     viewSelect: document.getElementById("stage-view-select"),
     play: document.getElementById("stage-timeline-play"),
     section: document.getElementById("stage-timeline-section"),
@@ -147,7 +144,12 @@
     } catch (_) { return {}; }
   };
   const ui = readUi();
-  ui.mode = ui.mode === "timeline" ? "timeline" : "normal";
+  // 旧normal/timelineは別モードだった。初回だけ全員を収納状態へ寄せ、ショーJSONには触れない。
+  if (ui.timelineDrawerVersion !== 1) {
+    ui.collapsed = true;
+    ui.timelineDrawerVersion = 1;
+  }
+  ui.mode = "normal";
   ui.unit = ui.unit === "count" ? "count" : "time";
   ui.zoom = clamp(finite(ui.zoom, 1), ZOOM_MIN, ZOOM_MAX);
   ui.height = finite(ui.height, DEFAULT_HEIGHT);
@@ -178,7 +180,6 @@
     ui.rowVisibility[key] = ui.rowVisibility[key] !== false;
   });
 
-  let mode = "normal";
   let timeline = null;
   let lockedTimelinePositions = [];
   let timelineLockMenu = null;
@@ -369,10 +370,20 @@
       els.resize.focus({ preventScroll: true });
     }
     ui.collapsed = next;
+    if (next) {
+      setSettingsOpen(false);
+      cancelPendingSceneOpen();
+      closeCueDetails({ focus: false });
+      closeAudioDetails({ focus: false });
+      closeAudioSourceChooser({ focus: false });
+      closeUnitWarning({ focus: false });
+      closeTimelineLockMenu();
+    }
     if (next) panel.style.setProperty("--stage-timeline-reveal-height", `${timelineResizeHandleHeight()}px`);
     else panel.style.removeProperty("--stage-timeline-reveal-height");
     panel.classList.toggle("is-collapsed", next);
-    document.body.classList.toggle("stage-timeline-collapsed", next && mode === "timeline");
+    document.body.classList.toggle("stage-timeline-collapsed", next);
+    document.body.classList.toggle("stage-timeline-expanded", !next);
     els.resize.setAttribute("aria-expanded", String(!next));
     [panel.querySelector(".stage-timeline-toolbar"), els.viewport].filter(Boolean).forEach((element) => {
       element.inert = next;
@@ -453,56 +464,32 @@
     durationEditSectionId = null;
   }
 
-  function currentViewValue() {
-    const value = els.viewSelect && els.viewSelect.value;
-    return ["front", "plan", "both-front", "both-plan"].includes(value) ? value : "front";
-  }
-
-  function setStageView(value) {
-    if (!els.viewSelect || els.viewSelect.value === value) return;
-    els.viewSelect.value = value;
-    els.viewSelect.dispatchEvent(new Event("change", { bubbles: true }));
-  }
-
-  function applyMode(nextMode, { initial = false } = {}) {
-    const next = nextMode === "timeline" ? "timeline" : "normal";
-    if (!initial && next === mode) return;
-    const outgoingView = currentViewValue();
-    if (mode === "normal") ui.normalView = outgoingView;
-    else ui.timelineView = outgoingView;
-
-    mode = next;
-    ui.mode = next;
-    document.body.dataset.stageWorkspaceMode = next;
-    document.body.classList.toggle("stage-timeline-mode", next === "timeline");
-    panel.hidden = next !== "timeline";
-    if (next !== "timeline") setSettingsOpen(false);
-    if (next !== "timeline") cancelPendingSceneOpen();
-    if (next !== "timeline") closeAudioDetails({ focus: false });
-    if (next !== "timeline") closeAudioSourceChooser({ focus: false });
-    if (next !== "timeline") pauseSilentPlayback({ update: false });
-    els.tabs.forEach((button) => {
-      const active = button.dataset.stageWorkspaceMode === next;
-      button.classList.toggle("is-active", active);
-      button.setAttribute("aria-pressed", String(active));
-    });
-    window.dispatchEvent(new CustomEvent("stage-workspace-mode-change", { detail: { mode: next } }));
-
-    if (next === "timeline") {
-      const target = ["front", "plan", "both-front", "both-plan"].includes(ui.timelineView)
-        ? ui.timelineView : "plan";
-      ui.timelineView = target;
-      setStageView(target);
-      applyTimelineHeight();
-      setTimelineCollapsed(ui.collapsed);
-      renderTimeline();
-    } else {
-      document.body.classList.remove("stage-timeline-collapsed");
-      const target = ["front", "plan", "both-front", "both-plan"].includes(ui.normalView)
-        ? ui.normalView : outgoingView;
-      setStageView(target);
-    }
+  function initializeTimelineDrawer() {
+    document.body.dataset.stageWorkspaceMode = "normal";
+    panel.hidden = false;
+    document.body.classList.add("stage-timeline-ready");
+    applyTimelineHeight();
+    setTimelineCollapsed(ui.collapsed);
+    syncTimelineAvailability();
+    renderTimeline();
     saveUi();
+  }
+
+  // 3D／全画面の間は、舞台画面の上にタイムラインを残さない。再生時計と
+  // シーン同期は止めず、戻った時点のドロワー状態だけをそのまま復元する。
+  function timelineOverlayIsOpen() {
+    const overlay = document.getElementById("stage-fpv-overlay");
+    return Boolean(overlay && !overlay.hidden);
+  }
+
+  function timelineInteractionIsBlocked() {
+    return document.body.classList.contains("stage-fullscreen") || timelineOverlayIsOpen();
+  }
+
+  function syncTimelineAvailability() {
+    const blocked = timelineInteractionIsBlocked();
+    panel.classList.toggle("is-suspended", blocked);
+    panel.inert = blocked;
   }
 
   function childScenes(project, section) {
@@ -867,7 +854,7 @@
   }
 
   function zoomBy(factor, clientX = null) {
-    if (!timeline || mode !== "timeline") return;
+    if (!timeline || ui.collapsed) return;
     const rect = els.viewport.getBoundingClientRect();
     const labelWidth = finite(getComputedStyle(root).getPropertyValue("--stage-timeline-label-width"), 156);
     const anchorX = Number.isFinite(clientX) ? clientX : rect.left + rect.width / 2;
@@ -1232,7 +1219,7 @@
       audioWaveformCache.set(trackId, []);
     } finally {
       audioWaveformPending.delete(trackId);
-      if (mode === "timeline") renderTimeline();
+      renderTimeline();
     }
   }
 
@@ -2049,7 +2036,6 @@
   }
 
   function renderTimeline() {
-    if (mode !== "timeline") return;
     closeTimelineLockMenu();
     const { project, choices } = timelineChoices();
     if (!project || !choices.length) return;
@@ -2525,7 +2511,6 @@
     if (moved) saveUi();
   }
 
-  els.tabs.forEach((button) => button.addEventListener("click", () => applyMode(button.dataset.stageWorkspaceMode)));
   els.settingsTrigger.addEventListener("click", () => {
     const open = els.settingsPanel.hidden;
     setSettingsOpen(open, { focus: open });
@@ -2669,7 +2654,7 @@
       zoomBy(event.deltaY < 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR, event.clientX);
       return;
     }
-    if (!timeline || mode !== "timeline") return;
+    if (!timeline || ui.collapsed) return;
     const rawDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
     const delta = event.deltaMode === 1 ? rawDelta * 16 : rawDelta;
     if (!delta) return;
@@ -2711,16 +2696,17 @@
     applyTimelineHeight(next, { save: true });
     renderTimeline();
   });
-  // Eはタイムラインモードの折りたたみに割り当てる。消去ツールのショートカットより先に処理する。
+  // Eは舞台画面のタイムラインを開閉する。背景消去のShift+Eより先に処理する。
   document.addEventListener("keydown", (event) => {
-    if (mode !== "timeline" || isTextEntry(event.target)) return;
+    if (isTextEntry(event.target)) return;
     if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || event.code !== "KeyE") return;
     event.preventDefault();
     event.stopImmediatePropagation();
     if (event.repeat) return;
-    if (document.querySelector(".stage-modal:not([hidden])")) return;
-    if (!ui.collapsed) setSettingsOpen(false);
+    if (timelineInteractionIsBlocked()
+        || document.querySelector(".stage-modal:not([hidden])")) return;
     setTimelineCollapsed(!ui.collapsed, { save: true });
+    if (!ui.collapsed) renderTimeline();
   }, true);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && timelineLockMenu) {
@@ -2754,7 +2740,7 @@
       setSettingsOpen(false, { focus: true });
       return;
     }
-    if (mode !== "timeline" || isTextEntry(event.target)) return;
+    if (ui.collapsed || timelineInteractionIsBlocked() || isTextEntry(event.target)) return;
     if (!event.metaKey && !event.ctrlKey && !event.altKey
         && (event.code === "Space" || event.key === " ")) {
       if (!els.settingsPanel.hidden || document.querySelector(".stage-modal:not([hidden])")) return;
@@ -2778,18 +2764,11 @@
         || els.settingsPanel.contains(event.target)) return;
     setSettingsOpen(false);
   });
-  els.viewSelect.addEventListener("change", () => {
-    const value = currentViewValue();
-    if (mode === "timeline") ui.timelineView = value;
-    else ui.normalView = value;
-    saveUi();
-  });
-
   ["loadedmetadata", "durationchange", "timeupdate", "play", "pause", "ended", "seeking"].forEach((name) => {
     els.audio.addEventListener(name, () => {
       if (name === "play") {
         pauseSilentPlayback({ update: false });
-        if (mode === "timeline" && timeline) {
+        if (timeline) {
           playbackPosition = Number.isFinite(els.audio.currentTime) ? els.audio.currentTime : null;
           syncTimelinePlaybackScene(playbackPosition || 0);
         }
@@ -2798,7 +2777,7 @@
         els.audio.currentTime = clamp(pendingSeek, 0, Number.isFinite(els.audio.duration) ? els.audio.duration : timeline.duration);
         pendingSeek = null;
       }
-      if (name === "seeking" && mode === "timeline" && timeline && Number.isFinite(els.audio.currentTime)) {
+      if (name === "seeking" && timeline && Number.isFinite(els.audio.currentTime)) {
         seekSeconds = els.audio.currentTime;
         syncSceneForSeek();
       }
@@ -2806,7 +2785,7 @@
         els.audio.currentTime = ui.loopA;
         playbackPosition = null;
       }
-      if (name === "timeupdate" && mode === "timeline" && timeline && Number.isFinite(els.audio.currentTime)) {
+      if (name === "timeupdate" && timeline && Number.isFinite(els.audio.currentTime)) {
         syncTimelinePlaybackScene(els.audio.currentTime, { allowTransition: true });
       }
       updatePlayhead();
@@ -2815,30 +2794,36 @@
 
   if (els.sceneList) {
     new MutationObserver(() => {
-      if (mode === "timeline") renderTimeline();
+      renderTimeline();
     }).observe(els.sceneList, { childList: true, subtree: false });
   }
   window.addEventListener("stage-timeline-cues-change", () => {
-    if (mode === "timeline") renderTimeline();
+    renderTimeline();
   });
   window.addEventListener("stage-timeline-lock-change", () => {
-    if (mode === "timeline") renderTimeline();
+    renderTimeline();
   });
   window.addEventListener("stage-timeline-audio-change", (event) => {
     const trackId = event && event.detail && event.detail.trackId;
     if (trackId && event.detail && event.detail.reconnected) audioWaveformCache.delete(trackId);
-    if (mode === "timeline") renderTimeline();
-    else applyAudioLevels();
+    renderTimeline();
+    applyAudioLevels();
   });
   window.addEventListener("stage-timeline-structure-change", () => {
-    if (mode === "timeline") renderTimeline();
+    renderTimeline();
   });
   window.addEventListener("stage-timeline-count-sync-change", () => {
-    if (mode === "timeline") renderTimeline();
+    renderTimeline();
   });
   window.addEventListener("stage-timeline-unit-change", () => {
-    if (mode === "timeline") renderTimeline();
+    renderTimeline();
   });
+  window.addEventListener("stage-fpv-visibility", () => {
+    syncTimelineAvailability();
+  });
+  new MutationObserver(() => {
+    syncTimelineAvailability();
+  }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(() => {
@@ -2850,6 +2835,5 @@
   els.volume.value = String(ui.volume);
   applyAudioLevels();
   applyRowLayout();
-  applyTimelineHeight();
-  applyMode(ui.mode, { initial: true });
+  initializeTimelineDrawer();
 }());

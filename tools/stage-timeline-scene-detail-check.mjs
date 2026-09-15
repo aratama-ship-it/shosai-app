@@ -53,7 +53,7 @@ const seeded = await page.evaluate(() => {
   }
 });
 
-await page.locator("#stage-workspace-timeline").click();
+await page.keyboard.press("E");
 await page.locator("#stage-timeline-panel").waitFor({ state: "visible" });
 const target = page.locator(`.stage-timeline-scene[data-scene-id="${seeded.targetId}"]`);
 await target.waitFor();
@@ -107,7 +107,7 @@ const legacyEnergy = await page.evaluate((targetId) => {
 assert.equal(legacyEnergy, 4, "旧版のenergy値は非表示のまま往復保持する");
 
 console.log("timeline detail saved");
-await page.locator("#stage-workspace-normal").click();
+await page.keyboard.press("E");
 const panelScene = page.locator(`.stage-scene-row[data-scene-id="${seeded.targetId}"] .stage-scene-chip`);
 await panelScene.waitFor();
 console.log("panel scene located");
@@ -136,7 +136,7 @@ console.log("panel detail checked");
 await page.keyboard.press("Escape");
 await modal.waitFor({ state: "hidden" });
 
-await page.locator("#stage-workspace-timeline").click();
+await page.keyboard.press("E");
 await target.click();
 await page.waitForFunction((sceneId) => {
   const documentValue = JSON.parse(window.SHOSAI_STAGE_SESSION_BRIDGE.exportDocumentString());
