@@ -698,7 +698,7 @@
     if (f.kind === next) return;
     f.kind = next;
     const l = lightOf(fid);
-    if (next === "laser" && l && !l.laser) l.laser = { effect: "beam", spanDeg: 0, vis: 60 };
+    if (next === "laser" && l && !l.laser) l.laser = { effect: "fan", spanDeg: 0, rollDeg: 0 };
     if (next === "fixed" && l && l.path && l.path.kind !== "still") {
       l.path = { kind: "still", a: l.path.a || l.path.c || E.newPoint() };
     }
@@ -729,7 +729,7 @@
     const laser = E.isLaser && E.isLaser(fixtureById(fid));
     setLight(fid, { on: true, surface: a.surface, path: { kind: "still", a: a.a }, speed: "normal",
       color: (l && l.color) || (laser && LE ? LE.COLORS[0] : COLORS[0]),
-      ...(laser ? { laser: { effect: "beam", spanDeg: 0, vis: 60 } } : {}) });
+      ...(laser ? { laser: { effect: "fan", spanDeg: 0, rollDeg: 0 } } : {}) });
   }
   function currentPoint(l) { const p = l.path || {}; return (p.kind === "circle" || p.kind === "eight") ? p.c : (p.a || E.newPoint()); }
   // 「当てる場所」を切り替えた直後、いまの狙い点を新しい制約（床=高さ0／奥壁=奥行き0／空中=自由）へ合わせる
@@ -958,13 +958,24 @@
       if (!(E.isLaser && E.isLaser(f))) return;
       const l = lightOf(f.id); if (!isLit(l)) return;
       const S = fixtureWorld(f), T = targetAt(f.id, state.play.t); if (!S || !T) return;
-      const laser = l.laser || {}, effect = LE.EFFECTS[laser.effect] ? laser.effect : "beam";
-      const period = Math.max(200, E.periodMs ? E.periodMs(l) : 3000), phase = (state.play.t % period) / period;
+      const laser = l.laser || {};
+      /* 旧 beam はファンの広がり0として読む。保存済みデータは書き換えない。 */
+      const effect = laser.effect === "beam" ? "fan" : LUI.EFFECT_ORDER.includes(laser.effect) ? laser.effect : "fan";
+      const spanMin = effect === "tunnel" ? 6 : 0, spanMax = LE.finite(LE.EFFECTS[effect].max, effect === "tunnel" ? 60 : 120);
+      const baseSpan = LE.clamp(LE.finite(laser.spanDeg, laser.effect === "beam" ? 0 : LE.EFFECTS[effect].span), spanMin, spanMax);
+      const periodSec = l.periodSec == null ? Math.max(0.4, (E.periodMs ? E.periodMs(l) : 3000) / 1000) : l.periodSec;
+      const swing = laser.spanDegTo == null ? 0 : LE.swingPhase(state.play.t, periodSec, l.offsetSec, laser.easing);
+      const endSpan = LE.clamp(LE.finite(laser.spanDegTo, baseSpan), spanMin, spanMax);
+      const spanNow = baseSpan + (endSpan - baseSpan) * swing;
       const axis = LE.axisBetween(S, T), reach = Math.max(18, state.dims.W + state.dims.D + state.dims.H);
-      const rays = LE.compile(effect, S, axis, laser.spanDeg == null ? LE.EFFECTS[effect].span : laser.spanDeg, phase, state.dims, reach);
-      if (l.surface === "house") rays.forEach((ray) => { ray.end = LE.houseFarPoint(S, ray.dir, state.dims, reach); });
+      /* 模様そのものは回転させず、オートメーションは広がりの往復だけにする。 */
+      const rays = LE.compile(effect, S, axis, spanNow, 0, state.dims, reach, laser.rollDeg);
+      /* 空中は狙い点を通過して、床・天井・奥壁に当たったことで見かけ上切れないよう図の外まで伸ばす。
+         客席も同様に舞台の外へ抜けさせる。床・ホリゾントだけは実際の面で止める。 */
+      if (l.surface === "air") rays.forEach((ray) => { ray.end = LE.extendedRayPoint(S, ray.dir, reach * 6); });
+      else if (l.surface === "house") rays.forEach((ray) => { ray.end = LE.houseFarPoint(S, ray.dir, state.dims, reach * 6); });
       const dim = state.sel.size && !isSel(f.id), level = litFactorOf(f, l) * (dim ? 0.32 : 1);
-      LE.drawProjected(ctx, P, rays, l.color || LE.COLORS[0], level, LE.clamp(LE.finite(laser.vis, 60), 0, 100), { alphaScale, fill: Boolean(LE.EFFECTS[effect].fill) });
+      LE.drawProjected(ctx, P, rays, l.color || LE.COLORS[0], level, 100, { alphaScale, fill: Boolean(LE.EFFECTS[effect].fill), surface: Boolean(LE.EFFECTS[effect].surface) });
       if (alphaScale === 1 && isSel(f.id) && l.surface !== "house") drawHandles(ctx, P, l, f.id);
     });
   }
@@ -3311,15 +3322,15 @@
     /* ③ 光の強さ。0は消灯と同じ（2026-09-13 本人決定）。目盛りはリニアのままで、
        見える明るさへの効き方だけを環境設定のカーブで決める。 */
     {
-      const b = sub(movers.length ? null : "光の強さ");
+      const b = sub(movers.length ? null : "光量");
       if (movers.length) {
-        const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光の強さ"));
-        head.append(switchBtn(allLv, allLv ? "強さが動いています。押すと全灯止めます" : lvMovers.length ? "一部だけ動いています。押すと全灯そろえます" : "押すと全灯の強さに始点と終点を置きます", () => {
-          if (allLv) { bulkEach(movers, (f, l) => { delete l.levelTo; if (l.strobe) l.strobe = { ...l.strobe, on: false }; }); commit(`${movers.length}灯の強さの動きを止めました`); }
+        const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光量"));
+        head.append(switchBtn(allLv, allLv ? "光量が動いています。押すと全灯止めます" : lvMovers.length ? "一部だけ動いています。押すと全灯そろえます" : "押すと全灯の光量に始点と終点を置きます", () => {
+          if (allLv) { bulkEach(movers, (f, l) => { delete l.levelTo; if (l.strobe) l.strobe = { ...l.strobe, on: false }; }); commit(`${movers.length}灯の光量の動きを止めました`); }
           else {
             /* 明滅は強さのオートメーションの中身（2026-09-13 本人要望）。既定は点滅しない設定で入れる。 */
             bulkEach(movers, (f, l) => { l.levelTo = levelOf(l); const st = l.strobe || {}; l.strobe = { on: true, kind: st.kind || "soft", hz: E.finite(st.hz, 6), duty: E.finite(st.duty, 50), depth: E.finite(st.depth, 0) }; });
-            commit(`${movers.length}灯の強さに始点と終点を置きました`);
+            commit(`${movers.length}灯の光量に始点と終点を置きました`);
           }
         }));
         b.append(head);
@@ -3331,14 +3342,14 @@
       b.append(field(lvMovers.length ? (same ? "始点" : "始点（バラバラ）") : (same ? null : "バラバラ"),
         range(0, 100, 1, cur, fmtLv,
           (v) => { bulkEach(ids, (f, l) => { l.level = v; }); draw(); },
-          () => commit(`${ids.length}灯の強さを変えました`)), true));
+          () => commit(`${ids.length}灯の光量を変えました`)), true));
       if (lvMovers.length) {
         const tos = new Set(lvMovers.map((fid) => Math.round(E.clamp(E.finite((lightOf(fid) || {}).levelTo, levelOf(lightOf(fid))), 0, 100))));
         const sameTo = tos.size <= 1, curTo = sameTo && tos.size === 1 ? [...tos][0] : 100;
         b.append(field(sameTo ? "終点" : "終点（バラバラ）",
           range(0, 100, 1, curTo, fmtLv,
             (v) => { lvMovers.forEach((fid) => { const l = lightOf(fid); if (l) l.levelTo = v; }); draw(); },
-            () => commit(`${lvMovers.length}灯の終点の強さを変えました`)), true));
+            () => commit(`${lvMovers.length}灯の終点の光量を変えました`)), true));
       }
       /* 明滅（旧「ストロボ」）は強さのオートメーションの中身。入れている灯があるときだけ出す。
          種類は〈ストロボ〉＝旧「くっきり」／〈やわらかい〉の2択（2026-09-13 本人指定）。 */
@@ -3495,7 +3506,7 @@
           }), true));
       }
       if (someMoving) {
-        b.append(el("p", "kicker sub2", "動きの時間（位置・強さ・広がりで共通）"));
+        b.append(el("p", "kicker sub2", "動きの時間（位置・光量・広がりで共通）"));
         // 1往復（1周）の時間とオフセットの刻み。動きを持つムービングだけに入る
         b.append(field("秒で決める", range(1, 30, 0.5, sp.periodSec, (v) => `${v.toFixed(1)}秒`, (v) => { sp.periodSec = v; bulkEach(movers, (f, l) => { l.periodSec = v; }); draw(); }, () => commit())));
         b.append(field("ずらす刻み", range(0, 3, 0.1, sp.stepSec, (v) => (v < 0.05 ? "ずらさない（全灯そろう）" : `${v.toFixed(1)}秒ずつ`), (v) => {
@@ -3558,16 +3569,24 @@
     if (!LE || !LUI || !ids.length) return;
     const active = ids.filter((id) => { const f = fixtureById(id); return f && E.isLaser && E.isLaser(f); });
     if (active.length !== ids.length) { host.append(el("p", "warn", "レーザーと通常照明は別々に選ぶと設定できます。")); return; }
-    const lights = active.map((id) => lightOf(id) || E.newLightCue({ on: false, color: LE.COLORS[0], laser: { effect: "beam", spanDeg: 0, vis: 60 } })), same = (get, fallback) => {
+    const lights = active.map((id) => lightOf(id) || E.newLightCue({ on: false, color: LE.COLORS[0], laser: { effect: "fan", spanDeg: 0, rollDeg: 0 } })), same = (get, fallback) => {
       const values = lights.map((l) => get(l) == null ? fallback : get(l));
       return values.every((v) => v === values[0]) ? values[0] : null;
     };
-    const patchLaser = (patch) => active.forEach((id) => { if (!lightOf(id)) ensureOn(id); const l = lightOf(id); l.laser = { effect: "beam", spanDeg: 0, vis: 60, ...(l.laser || {}), ...patch }; });
+    const patchLaser = (patch) => active.forEach((id) => { if (!lightOf(id)) ensureOn(id); const l = lightOf(id); l.laser = { effect: "fan", spanDeg: 0, rollDeg: 0, ...(l.laser || {}), ...patch }; });
     host.append(el("p", "kicker", `${LUI.heading}${active.length > 1 ? `　${active.length}台` : `　${label(active[0])}`}`));
-    const effect = same((l) => (l.laser || {}).effect, "beam") || "beam";
+    const canonicalEffect = (id) => id === "beam" ? "fan" : LUI.EFFECT_ORDER.includes(id) ? id : "fan";
+    const effect = same((l) => canonicalEffect((l.laser || {}).effect), "fan") || "fan";
     const cards = el("div", "laser-cards");
     LUI.EFFECT_ORDER.forEach((id) => { const b = document.createElement("button"); b.type = "button"; b.textContent = LE.EFFECTS[id].name; b.setAttribute("aria-pressed", String(effect === id));
-      b.onclick = () => { patchLaser({ effect: id, spanDeg: LE.EFFECTS[id].span }); commit(`${active.length}台のレーザーを${LE.EFFECTS[id].name}にしました`); }; cards.append(b); });
+      b.onclick = () => {
+        const currentSpan = same((l) => LE.finite((l.laser || {}).spanDeg, 0), 0);
+        const start = id === "fan" && effect === "fan" && currentSpan != null ? currentSpan : LE.EFFECTS[id].span;
+        const patch = { effect: id, spanDeg: start };
+        if (autoCount) patch.spanDegTo = id === "tunnel" ? 6 : 0;
+        patchLaser(patch);
+        commit(`${active.length}台のレーザーを${LE.EFFECTS[id].name}にしました`);
+      }; cards.append(b); });
     const kindBox = el("div", "pbox"); kindBox.append(el("p", "kicker", "形"), cards); host.append(kindBox);
     const colorBox = el("div", "pbox"); colorBox.append(el("p", "kicker", "色"));
     const sw = el("div", "swatches"), currentColor = same((l) => l.color, LE.COLORS[0]);
@@ -3578,20 +3597,54 @@
     aimBox.append(field(surface == null ? "バラバラ" : null, seg([["floor", "床"], ["back", "ホリゾント"], ["house", "客席"], ["air", "空中"]], surface, (v) => {
       active.forEach((fid) => { setLight(fid, { surface: v }); restyleToSurface(fid); }); commit(`${active.length}台のレーザーの狙いを変えました`);
     }), true)); host.append(aimBox);
-    const settings = el("div", "pbox"); settings.append(el("p", "kicker", "見え方"));
+    const settings = el("div", "pbox");
+    const autoCount = lights.filter((l) => (l.laser || {}).spanDegTo != null).length;
+    const autoOn = autoCount === lights.length;
+    const settingsHead = el("div", "pboxhead"); settingsHead.append(el("p", "kicker", "見え方"));
+    settingsHead.append(switchBtn(autoOn,
+      autoOn ? "広がりが往復しています。押すと止めます" : autoCount ? "一部だけ動いています。押すと全部そろえて往復させます" : "押すと広がりを往復させます",
+      () => {
+        if (autoOn) active.forEach((id) => { const l = lightOf(id); if (l && l.laser) delete l.laser.spanDegTo; });
+        else active.forEach((id) => {
+          if (!lightOf(id)) ensureOn(id);
+          const l = lightOf(id), laser = l.laser || {};
+          const autoMin = effect === "tunnel" ? 6 : 0, autoMax = LE.finite(LE.EFFECTS[effect].max, effect === "tunnel" ? 60 : 120);
+          const start = LE.clamp(LE.finite(laser.spanDeg, 0), autoMin, autoMax);
+          l.laser = { effect: "fan", rollDeg: 0, ...laser, spanDegTo: start <= autoMin ? LE.EFFECTS[effect].span : autoMin, easing: laser.easing || "ease" };
+        });
+        commit(`${active.length}台のレーザーの広がり${autoOn ? "を止めました" : "を往復させました"}`);
+      }));
+    settings.append(settingsHead);
     const span = same((l) => (l.laser || {}).spanDeg, LE.EFFECTS[effect].span);
-    if (effect !== "beam") {
-      const lo = effect === "tunnel" ? 6 : 10, hi = effect === "tunnel" ? 60 : 120;
-      settings.append(field("広がり", range(lo, hi, 5, span == null ? LE.EFFECTS[effect].span : span, (v) => `${Math.round(v)}°`, (v) => { patchLaser({ spanDeg: v }); draw(); }, () => commit()), true));
+    const lo = effect === "tunnel" ? 6 : 0, hi = LE.finite(LE.EFFECTS[effect].max, effect === "tunnel" ? 60 : 120);
+    const spanLabel = autoCount ? (span == null ? "始点（バラバラ）" : "始点") : (span == null ? "広がり（バラバラ）" : "広がり");
+    settings.append(field(spanLabel, range(lo, hi, 5, LE.clamp(span == null ? LE.EFFECTS[effect].span : span, lo, hi),
+      (v) => v <= 0 ? "0°（ビーム）" : `${Math.round(v)}°`, (v) => { patchLaser({ spanDeg: v, effect }); draw(); }, () => commit()), true));
+    if (autoCount) {
+      const spanTo = same((l) => (l.laser || {}).spanDegTo, lo);
+      settings.append(field(spanTo == null ? "終点（バラバラ）" : "終点", range(lo, hi, 5, LE.clamp(spanTo == null ? LE.EFFECTS[effect].span : spanTo, lo, hi),
+        (v) => v <= 0 ? "0°（ビーム）" : `${Math.round(v)}°`, (v) => { patchLaser({ spanDegTo: v }); draw(); }, () => commit()), true));
     }
-    const speed = same((l) => l.speed, "normal") || "normal";
-    settings.append(field("速さ", seg(LUI.SPEEDS, speed, (v) => { active.forEach((id) => setLight(id, { speed: v })); commit(); }), true));
-    const vis = same((l) => (l.laser || {}).vis, 60);
-    settings.append(field("見え方", range(0, 100, 5, vis == null ? 60 : vis, (v) => `${Math.round(v)}%`, (v) => { patchLaser({ vis: v }); draw(); }, () => commit(), null), true));
-    settings.lastChild.title = LUI.visibilityHelp;
-    settings.append(field("強さ", range(0, 100, 1, same((l) => levelOf(l), 100) ?? 100, (v) => `${Math.round(v)}%`, (v) => { active.forEach((id) => { const l = lightOf(id); l.level = v; }); draw(); }, () => commit()), true));
+    const roll = same((l) => (l.laser || {}).rollDeg, 0);
+    settings.append(field(roll == null ? "面の角度（バラバラ）" : "面の角度", range(-90, 90, 5, roll == null ? 0 : roll,
+      (v) => `${Math.round(v)}°`, (v) => { patchLaser({ rollDeg: v }); draw(); }, () => commit()), true));
+    if (autoCount) {
+      const easing = same((l) => (l.laser || {}).easing, "ease") || "ease";
+      settings.append(field("切り返し", seg([["linear", "リニア"], ["ease", "イーズ"]], easing, (v) => { patchLaser({ easing: v }); commit(); }), true));
+      const seconds = same((l) => l.periodSec == null ? Math.max(0.4, E.periodMs(l) / 1000) : l.periodSec, 3);
+      settings.append(field("秒で決める", range(0.4, 30, 0.1, seconds == null ? 3 : seconds, (v) => `${v.toFixed(1)}秒`,
+        (v) => { active.forEach((id) => { const l = lightOf(id); l.periodSec = v; }); draw(); }, () => commit()), true));
+      const offset = same((l) => E.finite(l.offsetSec, 0), 0);
+      settings.append(field("オフセット", range(-10, 10, 0.1, offset == null ? 0 : offset,
+        (v) => Math.abs(v) < 0.05 ? "なし" : `${v > 0 ? "+" : ""}${v.toFixed(1)}秒`,
+        (v) => { active.forEach((id) => { const l = lightOf(id); l.offsetSec = v; }); draw(); }, () => commit()), true));
+    }
     host.append(settings);
-    if (effect === "audience") host.append(el("p", "laser-warning", LUI.warning));
+    const strength = el("div", "pbox"); strength.append(el("p", "kicker", "光量"));
+    const level = same((l) => levelOf(l), 100);
+    strength.append(field(level == null ? "バラバラ" : null, range(0, 100, 1, level == null ? 100 : level,
+      (v) => `${Math.round(v)}%`, (v) => { active.forEach((id) => { const l = lightOf(id); l.level = v; }); draw(); }, () => commit()), true));
+    host.append(strength);
   }
 
   /* パネル右上のオン・オフ。1灯を選んでいるときだけ出す。
@@ -3937,14 +3990,14 @@
       /* ③ 光の強さ。0まで下げると消灯と同じ扱いになり、図から消える（2026-09-13 本人決定）。
          動かしているときは始点と終点を持ち、位置と同じ位相で往復する。効き方（カーブ）は環境設定。 */
       {
-        const b = box(mover ? null : "光の強さ");
+        const b = box(mover ? null : "光量");
         const fmtLv = (v) => (v <= 0 ? "0%（消灯）" : `${Math.round(v)}%（${LEVEL_WORD(v)}）`);
         /* 強さだけのオートメーション。位置を動かしていても、ここを入れるまで強さは変わらない。 */
         if (mover) {
-          const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光の強さ"));
-          head.append(switchBtn(autoLevel, autoLevel ? "強さが動いています。押すと止めます（始点の値で止まります）" : "押すと強さに始点と終点を置いて動かします", () => {
+          const head = el("div", "pboxhead"); head.append(el("p", "kicker", "光量"));
+          head.append(switchBtn(autoLevel, autoLevel ? "光量が動いています。押すと止めます（始点の値で止まります）" : "押すと光量に始点と終点を置いて動かします", () => {
             const l2 = lightOf(fid);
-            if (autoLevel) { delete l2.levelTo; if (l2.strobe) l2.strobe = { ...l2.strobe, on: false }; commit("強さの動きを止めました"); }
+            if (autoLevel) { delete l2.levelTo; if (l2.strobe) l2.strobe = { ...l2.strobe, on: false }; commit("光量の動きを止めました"); }
             else {
               l2.levelTo = levelOf(l2);
               /* 明滅（旧・ストロボ箱）は強さのオートメーションの中身にした（2026-09-13 本人要望）。
@@ -3952,7 +4005,7 @@
                  種類を〈ストロボ〉にする、または沈む深さを上げると点滅が出る。 */
               const st0 = l2.strobe || {};
               l2.strobe = { on: true, kind: st0.kind || "soft", hz: E.finite(st0.hz, 6), duty: E.finite(st0.duty, 50), depth: E.finite(st0.depth, 0) };
-              commit("強さに始点と終点を置きました");
+              commit("光量に始点と終点を置きました");
             }
           }));
           b.append(head);
@@ -4107,7 +4160,7 @@
       if (mover) {
         const b = anyAuto || (state.copiedPath && state.copiedPath.from !== fid) ? box(null) : null;
         if (b && anyAuto) {
-          b.append(el("p", "kicker", "動きの時間（位置・強さ・広がりで共通）"));
+          b.append(el("p", "kicker", "動きの時間（位置・光量・広がりで共通）"));
           // 端での運び方（2026-09-12 本人指定で「切り返し」＝リニア／イーズ）。位置・強さ・広がりに共通
           b.append(field("切り返し", seg([["linear", "リニア"], ["ease", "イーズ"]], p.easing || "ease", (v) => { p.easing = v; commit(); })));
           const secNow = l.periodSec == null ? E.SPEED_PERIOD_MS[l.speed] / 1000 : l.periodSec;
@@ -4229,7 +4282,9 @@
     syncCanvasSize();
     document.querySelectorAll("#showtoggles button, #lighttoggles button").forEach((b) => b.setAttribute("aria-pressed", String(showOn(b.dataset.show))));
     document.querySelectorAll("#frontmode button").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.front === "3d") === Boolean(state.front3d))));
-    $("seat").hidden = !state.front3d;
+    $("seat").hidden = false;
+    $("seat").disabled = !state.front3d;
+    $("seat").setAttribute("aria-disabled", String(!state.front3d));
     $("filters").hidden = state.mode !== "move";
     document.querySelectorAll("#filters button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filter === state.filter)));
     renderLxq(); renderList(); renderInspector(); renderFixedConflicts();

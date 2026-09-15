@@ -221,7 +221,11 @@
   /* 正面図のパネルだけ、見出しの中央に「平面／3D」の切り替えを置く（2026-09-11 本人要望） */
   .sec.front .sechead{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center}
   .sec.front .sechead .viewnote{text-align:right}
-  .fmode{display:flex;align-items:center;gap:5px;justify-self:center}
+  .fmode{display:flex;align-items:center;gap:5px;justify-self:center;flex-wrap:nowrap;min-width:0}
+  #frontmode{display:inline-flex;flex:0 0 auto;flex-wrap:nowrap;width:max-content}
+  #frontmode button{flex:0 0 auto}
+  .seatsel{width:132px;min-width:132px;flex:0 0 132px}
+  .seatsel:disabled{opacity:.42;color:var(--milk-dim);cursor:not-allowed}
   .sechead .viewtitle{font-size:11px;letter-spacing:.08em}
   /* 側面図の向きは言葉の幅だけを使う。親の余り幅をボタンが取らず、下手／上手が
      横へ伸びることもない（2026-09-14 本人指摘）。 */
@@ -803,9 +807,9 @@
 <script src="rig-engine.js?v=20260915-3"></script>
 <script src="stage-figure.js?v=20260915-1"></script>
 <script src="volume-light.js?v=20260915-2"></script>
-<script src="laser-effects.js?v=20260915-1-core"></script>
-<script src="laser-effects-ui.js?v=20260915-1-panel"></script>
-<script src="app.js?v=20260915-39-equipment-list"></script>
+<script src="laser-effects.js?v=20260915-4-sheet-max40"></script>
+<script src="laser-effects-ui.js?v=20260915-3-supported-shapes"></script>
+<script src="app.js?v=20260915-45-light-quantity"></script>
 <script src="light-presets.js?v=1789357787"></script>
 <script src="light-presets-ui.js?v=20260915-2-type-panel"></script>
 <!-- 選択灯「型」P1: 本体ではなく、この試作だけへ隔離接続する。 -->
