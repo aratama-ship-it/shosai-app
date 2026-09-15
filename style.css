@@ -15718,6 +15718,10 @@ body.stage-timeline-mode:not(.stage-fullscreen) #view-stage {
   padding-bottom: 32px;
 }
 
+body.stage-timeline-mode.stage-timeline-collapsed:not(.stage-fullscreen) #view-stage {
+  height: calc(100dvh - var(--stage-timeline-resize-hit));
+}
+
 body.stage-timeline-mode .stage-canvas-close { display: none; }
 /* タイムライン再生は下部の操作列に集約する。通常モード用のシーン再生帯は重ねない。 */
 body.stage-timeline-mode #stage-scene-music { display: none; }
@@ -15737,7 +15741,15 @@ body.stage-timeline-mode #stage-scene-music { display: none; }
   background: var(--stage-timeline-panel);
   border-top: 1px solid var(--stage-timeline-accent);
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.24);
+  transition: transform 180ms ease;
 }
+
+.stage-timeline-panel.is-collapsed {
+  --stage-timeline-reveal-height: var(--stage-timeline-resize-hit);
+  transform: translateY(calc(100% - var(--stage-timeline-reveal-height)));
+}
+
+body.is-timeline-resizing .stage-timeline-panel { transition: none; }
 
 .stage-timeline-resize {
   position: relative;
@@ -16742,6 +16754,7 @@ html[data-study-renderer] .stage-header-volume { display: none !important; }
 
 @media (prefers-reduced-motion: reduce) {
   .stage-workspace-tab,
-  .stage-timeline-playhead { transition: none; }
+  .stage-timeline-playhead,
+  .stage-timeline-panel { transition: none; }
   .stage-timeline-loop-range.is-active { animation: none; }
 }

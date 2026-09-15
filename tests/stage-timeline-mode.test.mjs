@@ -27,6 +27,18 @@ test("タイムラインモードでは通常モード用のシーン再生帯�
   assert.match(html, /id="stage-timeline-play"/);
 });
 
+test("Eでタイムラインをしまい、上端のドラッグで復元できる", () => {
+  assert.match(html, /id="stage-timeline-resize"[\s\S]*?aria-keyshortcuts="E"/);
+  assert.match(timeline, /ui\.collapsed = Boolean\(ui\.collapsed\)/);
+  assert.match(timeline, /function setTimelineCollapsed\(collapsed[\s\S]*?panel\.classList\.toggle\("is-collapsed", next\)[\s\S]*?element\.inert = next/);
+  assert.match(timeline, /mode !== "timeline" \|\| isTextEntry\(event\.target\)[\s\S]*?event\.code !== "KeyE"[\s\S]*?setTimelineCollapsed\(!ui\.collapsed, \{ save: true \}\)/);
+  assert.match(timeline, /function continueTimelineResize\(event\)[\s\S]*?timelineResize\.collapsed[\s\S]*?startY - event\.clientY[\s\S]*?stage-timeline-reveal-height/);
+  assert.match(timeline, /applyTimelineHeight\(visibleHeight, \{ save: false \}\);/);
+  assert.match(timeline, /setTimelineCollapsed\(false, \{ save: true \}\);/);
+  assert.match(css, /\.stage-timeline-panel\.is-collapsed \{[\s\S]*?transform: translateY\(calc\(100% - var\(--stage-timeline-reveal-height\)\)\)/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.stage-timeline-panel \{ transition: none; \}/);
+});
+
 test("3Dモードは既存カメラを開き、閉じると直前の2Dモード表示へ戻る", () => {
   const centre = html.match(/<div class="stage-center-bar">[\s\S]*?<p class="stage-tool-hint"/)?.[0] || "";
   assert.doesNotMatch(centre, /id="stage-freecam-open"/);
@@ -138,8 +150,8 @@ test("シーン・音源・転換の固定端とキュー点ロックを保存�
   assert.match(css, /\.stage-timeline-lock-indicator\.is-start \{[^}]*\}/);
   assert.match(css, /\.stage-timeline-lock-indicator\.is-end \{[^}]*var\(--stage-timeline-transition\)/);
   assert.match(timeline, /stage-timeline-lock-change/);
-  assert.match(html, /stage-timeline.js\?v=64/);
-  assert.match(sw, /stage-timeline.js\?v=64/);
+  assert.match(html, /stage-timeline.js\?v=65/);
+  assert.match(sw, /stage-timeline.js\?v=65/);
 });
 
 test("転換の最初の描画は前シーンの位置から始め、行き先を一瞬だけ描かない", () => {

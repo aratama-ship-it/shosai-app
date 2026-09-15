@@ -151,6 +151,7 @@
   ui.unit = ui.unit === "count" ? "count" : "time";
   ui.zoom = clamp(finite(ui.zoom, 1), ZOOM_MIN, ZOOM_MAX);
   ui.height = finite(ui.height, DEFAULT_HEIGHT);
+  ui.collapsed = Boolean(ui.collapsed);
   ui.volume = clamp(finite(ui.volume, 100), 0, 100);
   ui.grid = [0.25, 0.5, 1].includes(finite(ui.grid, 0.25)) ? finite(ui.grid, 0.25) : 0.25;
   ui.loopA = Math.max(0, finite(ui.loopA, 0));
@@ -357,6 +358,30 @@
     if (save) saveUi();
   }
 
+  function timelineResizeHandleHeight() {
+    const height = Number.parseFloat(getComputedStyle(root).getPropertyValue("--stage-timeline-resize-hit"));
+    return Number.isFinite(height) && height > 0 ? height : 1;
+  }
+
+  function setTimelineCollapsed(collapsed, { save = false } = {}) {
+    const next = Boolean(collapsed);
+    if (next && panel.contains(document.activeElement) && document.activeElement !== els.resize) {
+      els.resize.focus({ preventScroll: true });
+    }
+    ui.collapsed = next;
+    if (next) panel.style.setProperty("--stage-timeline-reveal-height", `${timelineResizeHandleHeight()}px`);
+    else panel.style.removeProperty("--stage-timeline-reveal-height");
+    panel.classList.toggle("is-collapsed", next);
+    document.body.classList.toggle("stage-timeline-collapsed", next && mode === "timeline");
+    els.resize.setAttribute("aria-expanded", String(!next));
+    [panel.querySelector(".stage-timeline-toolbar"), els.viewport].filter(Boolean).forEach((element) => {
+      element.inert = next;
+      if (next) element.setAttribute("aria-hidden", "true");
+      else element.removeAttribute("aria-hidden");
+    });
+    if (save) saveUi();
+  }
+
   function clickElement(element) {
     if (element && !element.disabled) element.click();
   }
@@ -469,8 +494,10 @@
       ui.timelineView = target;
       setStageView(target);
       applyTimelineHeight();
+      setTimelineCollapsed(ui.collapsed);
       renderTimeline();
     } else {
+      document.body.classList.remove("stage-timeline-collapsed");
       const target = ["front", "plan", "both-front", "both-plan"].includes(ui.normalView)
         ? ui.normalView : outgoingView;
       setStageView(target);
@@ -2211,7 +2238,12 @@
 
   function beginTimelineResize(event) {
     if (event.button !== 0) return;
-    timelineResize = { pointerId: event.pointerId, startY: event.clientY, startHeight: ui.height };
+    timelineResize = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startHeight: ui.height,
+      collapsed: ui.collapsed,
+    };
     els.resize.setPointerCapture(event.pointerId);
     document.body.classList.add("is-timeline-resizing");
     event.preventDefault();
@@ -2219,12 +2251,42 @@
 
   function continueTimelineResize(event) {
     if (!timelineResize || event.pointerId !== timelineResize.pointerId) return;
+    if (timelineResize.collapsed) {
+      const handleHeight = timelineResizeHandleHeight();
+      const maximum = Math.min(timelineResize.startHeight, maxTimelineHeight());
+      const visibleHeight = clamp(handleHeight + timelineResize.startY - event.clientY, handleHeight, maximum);
+      panel.style.setProperty("--stage-timeline-reveal-height", `${visibleHeight}px`);
+      event.preventDefault();
+      return;
+    }
     applyTimelineHeight(timelineResize.startHeight + timelineResize.startY - event.clientY);
   }
 
   function endTimelineResize(event) {
     if (!timelineResize || event.pointerId !== timelineResize.pointerId) return;
+    const resizing = timelineResize;
     timelineResize = null;
+    if (resizing.collapsed) {
+      const handleHeight = timelineResizeHandleHeight();
+      const pulled = resizing.startY - event.clientY;
+      if (event.type === "pointerup" && pulled >= 3) {
+        const visibleHeight = clamp(
+          handleHeight + pulled,
+          handleHeight,
+          Math.min(resizing.startHeight, maxTimelineHeight()),
+        );
+        panel.style.setProperty("--stage-timeline-reveal-height", `${visibleHeight}px`);
+        applyTimelineHeight(visibleHeight, { save: false });
+        panel.getBoundingClientRect();
+        document.body.classList.remove("is-timeline-resizing");
+        setTimelineCollapsed(false, { save: true });
+        renderTimeline();
+        return;
+      }
+      panel.style.setProperty("--stage-timeline-reveal-height", `${handleHeight}px`);
+      document.body.classList.remove("is-timeline-resizing");
+      return;
+    }
     document.body.classList.remove("is-timeline-resizing");
     applyTimelineHeight(ui.height, { save: true });
     renderTimeline();
@@ -2634,6 +2696,11 @@
   els.resize.addEventListener("pointerup", endTimelineResize);
   els.resize.addEventListener("pointercancel", endTimelineResize);
   els.resize.addEventListener("dblclick", () => {
+    if (ui.collapsed) {
+      setTimelineCollapsed(false, { save: true });
+      renderTimeline();
+      return;
+    }
     applyTimelineHeight(DEFAULT_HEIGHT, { save: true });
     renderTimeline();
   });
@@ -2644,6 +2711,17 @@
     applyTimelineHeight(next, { save: true });
     renderTimeline();
   });
+  // Eはタイムラインモードの折りたたみに割り当てる。消去ツールのショートカットより先に処理する。
+  document.addEventListener("keydown", (event) => {
+    if (mode !== "timeline" || isTextEntry(event.target)) return;
+    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || event.code !== "KeyE") return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (event.repeat) return;
+    if (document.querySelector(".stage-modal:not([hidden])")) return;
+    if (!ui.collapsed) setSettingsOpen(false);
+    setTimelineCollapsed(!ui.collapsed, { save: true });
+  }, true);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && timelineLockMenu) {
       event.preventDefault();
