@@ -64,8 +64,8 @@ test("保存済みミュージックシンクの複数楽曲・シーン・転�
   assert.match(timeline, /saved\.audioTrackBySong && saved\.audioTrackBySong\[song\.id\]/);
   assert.match(timeline, /scene\.formationLink\.sourceSegmentId === group\.id/);
   assert.match(timeline, /const transitions = groups\.slice\(1\)/);
-  assert.match(timeline, /ui\.songBySection/);
-  assert.match(html, /id="stage-timeline-song-select"/);
+  assert.match(timeline, /timeline = choices\.find\(\(choice\) => choice\.segments\.some\(\(segment\) => segment\.sceneId === project\.activeSceneId\)\)/);
+  assert.doesNotMatch(html, /id="stage-timeline-song-select"/);
 });
 
 test("転換は次シーンに入る前の区間としてシーン行にも示す", () => {
@@ -131,8 +131,8 @@ test("シーン・音源・転換の固定端とキュー点ロックを保存�
   assert.match(css, /\.stage-timeline-lock-indicator\.is-start \{[^}]*\}/);
   assert.match(css, /\.stage-timeline-lock-indicator\.is-end \{[^}]*var\(--stage-timeline-transition\)/);
   assert.match(timeline, /stage-timeline-lock-change/);
-  assert.match(html, /stage-timeline.js\?v=61/);
-  assert.match(sw, /stage-timeline.js\?v=61/);
+  assert.match(html, /stage-timeline.js\?v=62/);
+  assert.match(sw, /stage-timeline.js\?v=62/);
 });
 
 test("転換の最初の描画は前シーンの位置から始め、行き先を一瞬だけ描かない", () => {
@@ -312,7 +312,6 @@ test("キューはダブルクリックで詳細とメモを開き、詳細ま�
 
 test("ミュージックシンクの操作列を二段で並べ、未接続の編集操作は無効で示す", () => {
   for (const id of [
-    "stage-timeline-song-select", "stage-timeline-song-delete",
     "stage-timeline-add-audio", "stage-timeline-volume",
     "stage-timeline-prev", "stage-timeline-play",
     "stage-timeline-next", "stage-timeline-metronome", "stage-timeline-head", "stage-timeline-anchor",
@@ -365,6 +364,9 @@ test("音源ブロックのダブルクリックで音源別ゲインを編集�
     "stage-timeline-audio-detail-name", "stage-timeline-audio-detail-duration",
     "stage-timeline-audio-gain-range", "stage-timeline-audio-gain-number",
     "stage-timeline-audio-detail-cancel", "stage-timeline-audio-detail-save",
+    "stage-timeline-audio-replace", "stage-timeline-audio-source-modal",
+    "stage-timeline-audio-source-library", "stage-timeline-audio-source-upload",
+    "stage-timeline-audio-import-file",
   ]) assert.match(html, new RegExp(`id="${id}"`));
   assert.match(html, /id="stage-timeline-audio-gain-range" min="-24" max="12" step="0\.5"/);
   assert.match(timeline, /document\.createElement\(timeline\.trackId \? "button" : "div"\)/);
@@ -372,8 +374,13 @@ test("音源ブロックのダブルクリックで音源別ゲインを編集�
   assert.match(timeline, /const factor = 10 \*\* \(normalizedAudioGainDb\(gainDb\) \/ 20\)/);
   assert.match(timeline, /createMediaElementSource\(els\.audio\)[\s\S]*?createGain\(\)[\s\S]*?gain\.connect\(context\.destination\)/);
   assert.match(timeline, /bridge\.setTimelineAudioGainDb\(trackId, gainDb\)/);
+  assert.match(timeline, /function openAudioSourceChooser\(/);
+  assert.match(timeline, /bridge\.setTimelineSceneAudioTrack\(audioSourceSceneId, track\.id\)/);
+  assert.match(timeline, /bridge\.openTimelineAudioImportPicker\(audioSourceSceneId\)/);
+  assert.match(sketch, /openTimelineAudioImportPicker\(sceneId\)[\s\S]*?timelineAudioImportFile/);
+  assert.match(sketch, /setTimelineSceneAudioTrack\(sceneId, trackId\)[\s\S]*?setSceneAudioTrack\(scene, normalizedTrackId\)/);
   assert.match(sketch, /setTimelineAudioGainDb\(trackId, value\)[\s\S]*?track\.gainDb = gainDb/);
-  assert.match(css, /\.stage-modal\.stage-timeline-audio-detail-modal \{ width: min\(440px/);
+  assert.match(css, /\.stage-modal\.stage-timeline-audio-detail-modal,[\s\S]*?\.stage-modal\.stage-timeline-audio-source-modal \{ width: min\(440px/);
 });
 
 test("音源ブロックの終端は実音源の長さまでで、セクション終端を超えない", () => {
@@ -404,7 +411,7 @@ test("端末内の音源が欠落したら同じ音源枠から再接続し、�
 });
 
 test("再生は単独三角形、前後は縦棒付き、先頭は矢印として44px枠へ揃える", () => {
-  assert.match(html, /id="stage-timeline-song-delete"[\s\S]*?aria-label="この楽曲を削除"[\s\S]*?class="stage-timeline-close-icon"[\s\S]*?<path d="M4\.4 4\.4l7\.2 7\.2M11\.6 4\.4l-7\.2 7\.2"/);
+  assert.doesNotMatch(html, /stage-timeline-song-(?:select|delete)|stage-timeline-track-name/);
   assert.match(html, /id="stage-timeline-head"[\s\S]*?<path d="M5 5v14M19 12H9M13 8l-4 4 4 4"/);
   assert.match(html, /id="stage-timeline-prev"[\s\S]*?<path d="M6 5v14"[\s\S]*?<path class="stage-timeline-solid" d="M9 12l9-6v12z"/);
   assert.match(html, /id="stage-timeline-play"[\s\S]*?<path class="stage-timeline-solid stage-timeline-play-glyph" d="M8 5\.5 19 12 8 18\.5z"/);
@@ -417,7 +424,6 @@ test("再生は単独三角形、前後は縦棒付き、先頭は矢印とし�
   assert.match(css, /\.stage-timeline-play \{[\s\S]*?min-width: 44px/);
   assert.match(css, /\.stage-timeline-transport-button \{[\s\S]*?display: inline-grid;[\s\S]*?place-items: center;[\s\S]*?line-height: 0;/);
   assert.match(css, /#stage-timeline-metronome \.stage-timeline-metronome-icon \{[\s\S]*?width: 28px;[\s\S]*?height: 28px;/);
-  assert.match(css, /#stage-timeline-song-delete \{[\s\S]*?display: inline-grid;[\s\S]*?place-items: center;[\s\S]*?line-height: 0;/);
 });
 
 test("拡大縮小は0.05倍まで全体を見渡せる倍率範囲・既存の刻み・入力を使う", () => {

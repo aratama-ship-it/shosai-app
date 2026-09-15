@@ -38,10 +38,6 @@
     section: document.getElementById("stage-timeline-section"),
     status: document.getElementById("stage-timeline-status"),
     sectionDurationNumber: document.getElementById("stage-timeline-section-duration-number"),
-    songLabel: document.getElementById("stage-timeline-song-label"),
-    songSelect: document.getElementById("stage-timeline-song-select"),
-    songDelete: document.getElementById("stage-timeline-song-delete"),
-    trackName: document.getElementById("stage-timeline-track-name"),
     addAudio: document.getElementById("stage-timeline-add-audio"),
     addScene: document.getElementById("stage-timeline-add-scene"),
     addTransition: document.getElementById("stage-timeline-add-transition"),
@@ -111,6 +107,18 @@
     audioDetailClose: document.getElementById("stage-timeline-audio-detail-close"),
     audioDetailCancel: document.getElementById("stage-timeline-audio-detail-cancel"),
     audioDetailSave: document.getElementById("stage-timeline-audio-detail-save"),
+    audioReplace: document.getElementById("stage-timeline-audio-replace"),
+    audioSourceBackdrop: document.getElementById("stage-timeline-audio-source-backdrop"),
+    audioSourceModal: document.getElementById("stage-timeline-audio-source-modal"),
+    audioSourceTitle: document.getElementById("stage-timeline-audio-source-title"),
+    audioSourceCopy: document.getElementById("stage-timeline-audio-source-copy"),
+    audioSourceActions: document.getElementById("stage-timeline-audio-source-actions"),
+    audioSourceLibrary: document.getElementById("stage-timeline-audio-source-library"),
+    audioSourceUpload: document.getElementById("stage-timeline-audio-source-upload"),
+    audioSourceLibraryPanel: document.getElementById("stage-timeline-audio-source-library-panel"),
+    audioSourceLibraryBack: document.getElementById("stage-timeline-audio-source-library-back"),
+    audioSourceLibraryList: document.getElementById("stage-timeline-audio-source-library-list"),
+    audioSourceClose: document.getElementById("stage-timeline-audio-source-close"),
     playhead: document.getElementById("stage-timeline-playhead"),
     audio: document.getElementById("stage-music-audio"),
     musicFile: document.getElementById("stage-music-file"),
@@ -144,8 +152,6 @@
   ui.loopA = Math.max(0, finite(ui.loopA, 0));
   ui.loopB = Math.max(0, finite(ui.loopB, 0));
   ui.loop = Boolean(ui.loop);
-  ui.songBySection = ui.songBySection && typeof ui.songBySection === "object"
-    ? ui.songBySection : {};
   if (Array.isArray(ui.rowOrder)) {
     ui.rowOrder = [...new Set(ui.rowOrder.filter((key) => ROW_KEYS.includes(key)))];
     if (ui.anchorLaneOrderVersion !== 1) {
@@ -185,6 +191,9 @@
   let audioDetailTrackId = null;
   let audioDetailReturnFocus = null;
   let audioDetailPreviewGainDb = null;
+  let audioSourceSceneId = null;
+  let audioSourceReturnFocus = null;
+  let audioSourceMode = "add";
   let audioGraph = null;
   let audioGraphFailed = false;
   let pendingSeek = null;
@@ -430,6 +439,7 @@
     if (next !== "timeline") setSettingsOpen(false);
     if (next !== "timeline") cancelPendingSceneOpen();
     if (next !== "timeline") closeAudioDetails({ focus: false });
+    if (next !== "timeline") closeAudioSourceChooser({ focus: false });
     if (next !== "timeline") pauseSilentPlayback({ update: false });
     els.tabs.forEach((button) => {
       const active = button.dataset.stageWorkspaceMode === next;
@@ -1464,6 +1474,83 @@
     return true;
   }
 
+  function timelineAudioTargetSceneId() {
+    const documentValue = projectDocument();
+    const project = documentValue && documentValue.project;
+    if (!project) return null;
+    const active = (project.scenes || []).find((scene) => scene && scene.kind === "scene"
+      && scene.id === project.activeSceneId);
+    if (active && (!timeline || timeline.segments.some((segment) => segment.sceneId === active.id))) return active.id;
+    const segment = timeline && segmentAt(seekSeconds);
+    return segment && segment.sceneId || null;
+  }
+
+  function closeAudioSourceChooser({ focus = true } = {}) {
+    if (!els.audioSourceModal || els.audioSourceModal.hidden) return;
+    els.audioSourceModal.hidden = true;
+    els.audioSourceBackdrop.hidden = true;
+    els.audioSourceActions.hidden = false;
+    els.audioSourceLibraryPanel.hidden = true;
+    const target = audioSourceReturnFocus;
+    audioSourceSceneId = null;
+    audioSourceReturnFocus = null;
+    if (focus && target && target.isConnected) target.focus({ preventScroll: true });
+  }
+
+  function showAudioSourceLibrary() {
+    const documentValue = projectDocument();
+    const tracks = documentValue && documentValue.project && Array.isArray(documentValue.project.audioTracks)
+      ? documentValue.project.audioTracks : [];
+    clearLane(els.audioSourceLibraryList);
+    if (!tracks.length) {
+      const empty = document.createElement("p");
+      empty.className = "stage-timeline-audio-source-empty";
+      empty.textContent = tx("登録済みの音源はありません。新しく読み込んでください。");
+      els.audioSourceLibraryList.append(empty);
+    } else {
+      tracks.forEach((track) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "stage-timeline-audio-source-track";
+        const title = document.createElement("strong");
+        title.textContent = track.title || tx("名称未設定の音源");
+        const detail = document.createElement("span");
+        detail.textContent = Number.isFinite(Number(track.durationSeconds))
+          ? formatTime(track.durationSeconds, true) : "—";
+        button.append(title, detail);
+        button.addEventListener("click", () => {
+          if (!audioSourceSceneId || typeof bridge.setTimelineSceneAudioTrack !== "function") return;
+          if (!bridge.setTimelineSceneAudioTrack(audioSourceSceneId, track.id)) return;
+          closeAudioSourceChooser({ focus: false });
+          renderTimeline();
+        });
+        els.audioSourceLibraryList.append(button);
+      });
+    }
+    els.audioSourceActions.hidden = true;
+    els.audioSourceLibraryPanel.hidden = false;
+    els.audioSourceLibraryBack.focus({ preventScroll: true });
+  }
+
+  function openAudioSourceChooser({ sceneId = null, mode: nextMode = "add", returnFocus = null } = {}) {
+    const targetSceneId = sceneId || timelineAudioTargetSceneId();
+    if (!targetSceneId || !els.audioSourceModal) return false;
+    audioSourceSceneId = targetSceneId;
+    audioSourceReturnFocus = returnFocus || null;
+    audioSourceMode = nextMode === "replace" ? "replace" : "add";
+    const replacement = audioSourceMode === "replace";
+    els.audioSourceTitle.textContent = tx(replacement ? "音源を入れ替える" : "音源を追加");
+    els.audioSourceCopy.textContent = tx(replacement
+      ? "このシーンに割り当てる音源を選びます。元の音源はライブラリに残ります。"
+      : "このシーンに割り当てる音源を選びます。");
+    els.audioSourceActions.hidden = false;
+    els.audioSourceLibraryPanel.hidden = true;
+    els.audioSourceBackdrop.hidden = false;
+    els.audioSourceModal.hidden = false;
+    els.audioSourceLibrary.focus({ preventScroll: true });
+    return true;
+  }
+
   function showMissingAudioState(audioBlock, title) {
     audioBlock.dataset.audioMissing = "true";
     audioBlock.classList.add("is-missing");
@@ -1854,12 +1941,8 @@
     closeTimelineLockMenu();
     const { project, choices } = timelineChoices();
     if (!project || !choices.length) return;
-    const scopeId = choices[0].sectionId || "show";
-    const remembered = ui.songBySection[scopeId];
     timeline = choices.find((choice) => choice.segments.some((segment) => segment.sceneId === project.activeSceneId))
-      || choices.find((choice) => choice.songId === remembered)
       || choices[0];
-    ui.songBySection[scopeId] = timeline.songId;
     seekSeconds = clamp(seekSeconds, 0, timeline.duration);
     refreshLockedTimelinePositions(project);
 
@@ -1879,16 +1962,13 @@
     els.addScene.disabled = typeof bridge.addTimelineSceneAfter !== "function" || !activeSegment;
     els.addTransition.disabled = typeof bridge.addTimelineTransition !== "function"
       || activeSegmentIndex < 0 || activeSegmentIndex >= timeline.segments.length - 1;
-    els.addAudio.disabled = !els.musicFile;
+    els.addAudio.disabled = !timelineAudioTargetSceneId()
+      || (typeof bridge.openTimelineAudioImportPicker !== "function"
+        && typeof bridge.setTimelineSceneAudioTrack !== "function");
     els.addCueButtons.forEach((button) => {
       button.disabled = typeof bridge.addTimelineCue !== "function"
         || !timeline.sectionId || !timeline.segments.some((segment) => segment.sceneId);
     });
-    els.songLabel.hidden = false;
-    els.songSelect.disabled = choices.length <= 1;
-    els.songDelete.disabled = !timeline.trackId;
-    els.trackName.textContent = timeline.title || tx("音源なし");
-    els.trackName.title = els.trackName.textContent;
     els.bpm.value = String(Math.round(finite(timeline.track && timeline.track.countBpm, 120)));
     els.realTempo.textContent = effectiveTempo(timeline.track, secToCount(timeline.track, seekSeconds)).toFixed(1);
     els.volume.value = String(ui.volume);
@@ -1899,15 +1979,6 @@
     els.loopB.setAttribute("aria-pressed", String(hasLoopRange));
     const snapLabel = ui.grid === 1 ? "1" : ui.grid === 0.5 ? "1/2" : "1/4";
     els.grid.textContent = `${tx("スナップ")} ${snapLabel}`;
-    clearLane(els.songSelect);
-    choices.forEach((choice) => {
-      const option = document.createElement("option");
-      option.value = choice.songId;
-      option.textContent = choice.title;
-      option.selected = choice.songId === timeline.songId;
-      els.songSelect.append(option);
-    });
-
     const labelWidth = finite(getComputedStyle(root).getPropertyValue("--stage-timeline-label-width"), 156);
     const available = Math.max(640, els.viewport.clientWidth - labelWidth);
     const baseWidth = ui.unit === "time"
@@ -2051,16 +2122,6 @@
     selectedCueId = null;
     renderTimeline();
     return true;
-  }
-
-  function removeCurrentTrack() {
-    if (!timeline || !timeline.trackId) return;
-    const documentValue = projectDocument();
-    const tracks = documentValue && Array.isArray(documentValue.project.audioTracks)
-      ? documentValue.project.audioTracks : [];
-    const index = tracks.findIndex((track) => track.id === timeline.trackId);
-    const buttons = [...document.querySelectorAll(".stage-music-track-remove")];
-    if (index >= 0 && buttons[index]) buttons[index].click();
   }
 
   function beginTimelineResize(event) {
@@ -2358,20 +2419,31 @@
       moveRowByKeyboard(key, event.key === "ArrowUp" ? -1 : 1);
     });
   });
-  els.songSelect.addEventListener("change", () => {
-    if (!timeline) return;
-    pauseSilentPlayback({ update: false });
-    ui.songBySection[timeline.sectionId] = els.songSelect.value;
-    seekSeconds = 0;
-    const selected = timelineChoices().choices.find((choice) => choice.songId === els.songSelect.value);
-    const firstScene = selected && selected.segments.find((segment) => segment.sceneId);
-    if (firstScene) bridge.openSceneById(firstScene.sceneId);
-    renderTimeline();
+  els.addAudio.addEventListener("click", () => {
+    openAudioSourceChooser({ mode: "add", returnFocus: els.addAudio });
   });
-  els.addAudio.addEventListener("click", () => clickElement(els.musicFile));
   els.addScene.addEventListener("click", addSceneAtPlayhead);
   els.addTransition.addEventListener("click", addTransitionAtPlayhead);
-  els.songDelete.addEventListener("click", removeCurrentTrack);
+  els.audioReplace.addEventListener("click", () => {
+    const sceneId = timelineAudioTargetSceneId();
+    if (!sceneId) return;
+    const returnFocus = audioDetailReturnFocus || els.addAudio;
+    closeAudioDetails({ focus: false });
+    openAudioSourceChooser({ sceneId, mode: "replace", returnFocus });
+  });
+  els.audioSourceClose.addEventListener("click", () => closeAudioSourceChooser());
+  els.audioSourceBackdrop.addEventListener("click", () => closeAudioSourceChooser());
+  els.audioSourceLibrary.addEventListener("click", showAudioSourceLibrary);
+  els.audioSourceLibraryBack.addEventListener("click", () => {
+    els.audioSourceLibraryPanel.hidden = true;
+    els.audioSourceActions.hidden = false;
+    els.audioSourceLibrary.focus({ preventScroll: true });
+  });
+  els.audioSourceUpload.addEventListener("click", () => {
+    if (!audioSourceSceneId || typeof bridge.openTimelineAudioImportPicker !== "function") return;
+    if (!bridge.openTimelineAudioImportPicker(audioSourceSceneId)) return;
+    closeAudioSourceChooser({ focus: false });
+  });
   els.volume.addEventListener("input", () => {
     ui.volume = clamp(finite(els.volume.value, 100), 0, 100);
     applyAudioLevels();
@@ -2482,6 +2554,11 @@
     if (event.key === "Escape" && els.unitWarningModal && !els.unitWarningModal.hidden) {
       event.preventDefault();
       closeUnitWarning();
+      return;
+    }
+    if (event.key === "Escape" && els.audioSourceModal && !els.audioSourceModal.hidden) {
+      event.preventDefault();
+      closeAudioSourceChooser();
       return;
     }
     if (event.key === "Escape" && els.audioDetailModal && !els.audioDetailModal.hidden) {

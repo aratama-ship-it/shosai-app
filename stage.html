@@ -11,7 +11,7 @@
 <link rel="manifest" href="stage-sketch.webmanifest">
 <link rel="apple-touch-icon" href="icons/stage-sketch-180.png">
 <link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="style.css?v=377">
+<link rel="stylesheet" href="style.css?v=378">
 <style>
   /* 単独ページでは、他の画面へ行く帯を持たない。
      その代わり上の余白だけ詰めて、絵が早く出るようにする。 */
@@ -1039,18 +1039,6 @@
                       aria-label="タイムラインの単位を切り替える"
                       title="カウント式と時間式を切り替える">時間式</button>
             </div>
-            <label class="stage-timeline-song" id="stage-timeline-song-label">
-              <span>音源</span>
-              <select id="stage-timeline-song-select" aria-label="タイムラインの音源"></select>
-            </label>
-            <button type="button" class="stage-timeline-square" id="stage-timeline-song-delete"
-                    aria-label="この楽曲を削除" title="この楽曲を削除">
-              <svg class="stage-timeline-close-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"
-                   fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                <path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"></path>
-              </svg>
-            </button>
-            <span class="stage-timeline-track-name" id="stage-timeline-track-name">音源なし</span>
             <span class="stage-timeline-menu-spacer" aria-hidden="true"></span>
             <div class="stage-timeline-settings">
               <button type="button" class="stage-timeline-square stage-timeline-settings-trigger"
@@ -1268,12 +1256,46 @@
       </label>
       <p>0 dB が元の音量です。ヘッダーの音量とは別に、この音源だけへ適用されます。</p>
     </div>
+    <section class="stage-timeline-audio-replace" aria-label="音源を入れ替える">
+      <div>
+        <h3>音源を入れ替える</h3>
+        <p>このシーンに割り当てる音源を、ライブラリまたは新しいファイルから選びます。</p>
+      </div>
+      <button type="button" class="btn-quiet" id="stage-timeline-audio-replace">入れ替える</button>
+    </section>
     <footer class="stage-timeline-cue-detail-actions">
       <button type="button" class="btn-quiet" id="stage-timeline-audio-detail-cancel">キャンセル</button>
       <button type="button" class="stage-minor-action" id="stage-timeline-audio-detail-save">保存する</button>
     </footer>
   </div>
 </div>
+
+<div class="stage-modal-backdrop" id="stage-timeline-audio-source-backdrop" hidden></div>
+<div class="stage-modal stage-timeline-audio-source-modal" id="stage-timeline-audio-source-modal"
+     role="dialog" aria-modal="true" aria-labelledby="stage-timeline-audio-source-title"
+     aria-describedby="stage-timeline-audio-source-copy" hidden>
+  <header class="stage-modal-head">
+    <h2 id="stage-timeline-audio-source-title">音源を追加</h2>
+    <button type="button" class="stage-modal-close" id="stage-timeline-audio-source-close"
+            aria-label="閉じる">✕</button>
+  </header>
+  <div class="stage-modal-body stage-timeline-audio-source-body">
+    <p id="stage-timeline-audio-source-copy">このシーンに割り当てる音源を選びます。</p>
+    <div class="stage-timeline-audio-source-actions" id="stage-timeline-audio-source-actions">
+      <button type="button" class="btn-quiet" id="stage-timeline-audio-source-library">ライブラリから選ぶ</button>
+      <button type="button" class="stage-minor-action" id="stage-timeline-audio-source-upload">新しく読み込む</button>
+    </div>
+    <section class="stage-timeline-audio-source-library" id="stage-timeline-audio-source-library-panel" hidden>
+      <div class="stage-timeline-audio-source-library-head">
+        <strong>登録済みの音源</strong>
+        <button type="button" class="btn-quiet" id="stage-timeline-audio-source-library-back">戻る</button>
+      </div>
+      <div id="stage-timeline-audio-source-library-list"></div>
+    </section>
+  </div>
+</div>
+<input type="file" id="stage-timeline-audio-import-file"
+       accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,.mp3,.m4a,.wav,.aac" hidden>
 
 <div class="stage-modal-backdrop" id="stage-timeline-unit-warning-backdrop" hidden></div>
 <div class="stage-modal stage-timeline-unit-warning-modal" id="stage-timeline-unit-warning-modal"
@@ -2774,9 +2796,9 @@
 
 <script src="stage-venues.js?v=30"></script>
 <script src="stage-venue-lines.js?v=6"></script>
-<script src="stage-i18n.js?v=180"></script>
-<script src="stage-i18n.zh-Hans.js?v=69"></script>
-<script src="stage-i18n.zh-Hant.js?v=69"></script>
+<script src="stage-i18n.js?v=181"></script>
+<script src="stage-i18n.zh-Hans.js?v=70"></script>
+<script src="stage-i18n.zh-Hant.js?v=70"></script>
 <script src="stage-prompt-i18n.js?v=3"></script>
 <script src="stage-rehearsal-export.js?v=1"></script>
 <script src="stage-samples/index.js?v=3"></script>
@@ -2789,8 +2811,8 @@
 <script src="stage-light-motion.js?v=1"></script>
 <script src="manual/manual-content.js?v=12"></script>
 <script src="stage-pwa.js?v=9"></script>
-  <script src="stage-sketch.js?v=489"></script>
-<script src="stage-timeline.js?v=61"></script>
+  <script src="stage-sketch.js?v=490"></script>
+<script src="stage-timeline.js?v=62"></script>
 <script src="stage-session.js?v=19"></script>
 <script src="stage-study-owner.js?v=23"></script>
 <script src="stage-usage.js?v=2"></script>

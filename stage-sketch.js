@@ -4315,6 +4315,7 @@
     backupHint: document.getElementById("stage-backup-hint"),
     backupExport: document.getElementById("stage-backup-export"),
     musicFile: document.getElementById("stage-music-file"),
+    timelineAudioImportFile: document.getElementById("stage-timeline-audio-import-file"),
     musicBetaNote: document.getElementById("stage-music-beta-note"),
     musicStatus: document.getElementById("stage-music-status"),
     musicLibrary: document.getElementById("stage-music-library"),
@@ -6803,7 +6804,7 @@
     }
   }
 
-  async function importAudioFile(file) {
+  async function importAudioFile(file, options = {}) {
     const invalid = validAudioFile(file);
     if (invalid) { setAudioStatus(invalid, invalid); return false; }
     if (audioTracks().length >= STAGE_AUDIO_TRACK_LIMIT) {
@@ -6838,18 +6839,23 @@
         "The audio could not be stored. The show was not changed.");
       return false;
     }
+    const requestedScene = typeof options.sceneId === "string"
+      ? state.project.scenes.find((scene) => scene && scene.kind === "scene" && scene.id === options.sceneId)
+      : null;
+    const targetScene = requestedScene || sc();
+    if (!targetScene || targetScene.kind !== "scene") return false;
     checkpoint();
     audioTracks().push(track);
     selectedAudioTrackId = track.id;
-    sc().audioTrackId = track.id;
+    targetScene.audioTrackId = track.id;
     audioPanelSignature = "";
     continueAudioOnNextSceneSync = false;
     renderScenes();
     render();
     persistSoon();
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (_) { /* 任意 */ }
-    setAudioStatus(`「${track.title}」を読み込み、現在のシーンへ割り当てました。`,
-      `Loaded “${track.title}” and assigned it to the current scene.`);
+    setAudioStatus(`「${track.title}」を読み込み、選んだシーンへ割り当てました。`,
+      `Loaded “${track.title}” and assigned it to the selected scene.`);
     return true;
   }
 
@@ -7090,6 +7096,13 @@
       const file = els.musicFile.files && els.musicFile.files[0];
       els.musicFile.value = "";
       if (file) await importAudioFile(file);
+    });
+    if (els.timelineAudioImportFile) els.timelineAudioImportFile.addEventListener("change", async () => {
+      const file = els.timelineAudioImportFile.files && els.timelineAudioImportFile.files[0];
+      const sceneId = els.timelineAudioImportFile.dataset.sceneId || null;
+      els.timelineAudioImportFile.value = "";
+      delete els.timelineAudioImportFile.dataset.sceneId;
+      if (file) await importAudioFile(file, { sceneId });
     });
     if (els.sceneAudioTrack) els.sceneAudioTrack.addEventListener("change", () => {
       setSceneAudioTrack(sc(), els.sceneAudioTrack.value || null);
@@ -29054,6 +29067,20 @@ ${propsPlotHtml}
     },
     openTimelineAudioRelinkPicker(trackId) {
       return openAudioRelinkPicker(trackId);
+    },
+    openTimelineAudioImportPicker(sceneId) {
+      const scene = state.project.scenes.find((row) => row && row.kind === "scene" && row.id === sceneId);
+      if (!scene || !els.timelineAudioImportFile) return false;
+      els.timelineAudioImportFile.dataset.sceneId = scene.id;
+      els.timelineAudioImportFile.click();
+      return true;
+    },
+    setTimelineSceneAudioTrack(sceneId, trackId) {
+      const scene = state.project.scenes.find((row) => row && row.kind === "scene" && row.id === sceneId);
+      const normalizedTrackId = normalizeAudioTrackId("scene", trackId);
+      if (!scene || !normalizedTrackId || !audioTrackById(normalizedTrackId)) return false;
+      setSceneAudioTrack(scene, normalizedTrackId);
+      return scene.audioTrackId === normalizedTrackId;
     },
     setTimelineAudioGainDb(trackId, value) {
       const track = audioTrackById(trackId);
