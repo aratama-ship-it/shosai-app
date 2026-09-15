@@ -82,7 +82,8 @@
   .row{display:grid;grid-template-columns:34px 1fr auto;gap:6px;align-items:center;min-height:38px;padding:2px 6px;border:1px solid transparent;cursor:pointer;color:var(--milk-dim)}
   .row:hover{border-color:var(--line-dark)}
   .row.sel{border-color:var(--brass);background:rgba(156,130,63,.16);color:var(--milk)}
-  .row .no{font:600 13px/1 var(--sans);color:var(--milk);background:var(--desk-3);padding:5px 0;text-align:center;border:1px solid var(--line-dark)}
+  /* 一覧の灯体記号（M01 / ◆07 など）は、枠からはみ出さないよう少し小さく軽くする。 */
+  .row .no{font:500 11.5px/1 var(--sans);color:var(--milk);background:var(--desk-3);padding:4px 1px;text-align:center;border:1px solid var(--line-dark);min-width:0;overflow:hidden;white-space:nowrap}
   .row.sel .no{background:var(--brass);color:#1a1409;border-color:var(--brass)}
   .row .nm{font-size:11px;line-height:1.25;overflow:hidden}
   .row .nm small{display:block;font-size:9px;color:var(--milk-dim)}
@@ -110,7 +111,7 @@
   .grp span{cursor:pointer} .grp small{cursor:pointer;text-decoration:underline}
   /* 灯体が多いときの1行表示（.compact）。番号と名前だけを出し、取り付け場所は見出しで分かる */
   .list.compact .row{min-height:25px;grid-template-columns:30px 1fr auto;gap:5px;padding:0 5px}
-  .list.compact .row .no{font-size:12px;padding:3px 0}
+  .list.compact .row .no{font-size:11px;padding:2px 1px}
   .list.compact .row .nm{font-size:10px;white-space:nowrap;text-overflow:ellipsis}
   .list.compact .row .nm small{display:none}
   .list.compact .grp{margin:5px 0 1px}
@@ -118,12 +119,13 @@
   .list.cols2{display:grid;grid-template-columns:1fr 1fr;gap:2px 6px;align-content:start}
   .list.cols2 .grp{grid-column:1/-1}
   .list.cols2 .row{grid-template-columns:30px 1fr auto;gap:4px;padding:0 4px;min-height:26px}
+  .list.cols2 .row .no{font-size:11px;padding:2px 1px}
   .list.cols2 .row .nm{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .list.cols2 .row .nm small{display:none}
   .list.cols2 button.st{min-width:34px;padding:1px 4px}
-  /* シーン送り。窓の中央に置き、配置タブでは中身だけ隠す（場所は残して図の位置をそろえる）。 */
+  /* 図の上の中央。照明デザインではLX cue、配置では現在のシーンを出す。 */
   .scenebox{grid-column:2;justify-self:center;gap:12px}
-  .scenebox.off>*{visibility:hidden}
+  .place-scene{min-height:30px;max-width:360px;padding:3px 12px;font:600 16px/1.2 var(--sans);color:var(--milk);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .scenebar{display:flex;align-items:center;gap:4px;min-width:0}
   .scenebar .name{font-family:var(--serif);font-size:13px;color:var(--milk);flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
   /* 場面の2段（LX cueパネルの上）。セクション／シーンを同じ形の1行で切り替える。 */
@@ -457,16 +459,24 @@
   .panel .sub{flex:0 0 auto;margin-top:6px;padding-top:7px;border-top:1px solid var(--line-dark);background:var(--recess);margin-left:-8px;margin-right:-8px;margin-bottom:-8px;padding-left:8px;padding-right:8px;padding-bottom:8px}
   /* パネルの<b>上</b>に置く層（配置）。罫線と余白を下向きに付け替える。 */
   .panel .sub.subtop{margin-top:-8px;margin-bottom:6px;padding-top:8px;padding-bottom:8px;border-top:0;border-bottom:1px solid var(--line-dark)}
-  /* 配置は最初から見せる。入口2つ／置く道具／ホリゾントをそれぞれ一行の役割にして、
-     仕込み中でも灯体一覧の高さを残す（2026-09-15 本人要望）。 */
+  /* 配置は最初から見せる。プリセット／仕込み4操作／灯体設置4操作／ホリゾント2操作を
+     行ごとに分け、仕込み中でも灯体一覧の高さを残す。 */
   #placebox:not(.folded){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 5px;align-items:center}
-  #placebox .ptitle{grid-column:1/-1;margin:0}
+  #placebox .place-head{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+  #placebox .place-head .ptitle{margin:0;min-width:0}
+  #placebox .place-mirror{flex:0 0 auto;min-height:26px;padding:3px 7px;font-size:11px;letter-spacing:.04em;gap:5px;white-space:nowrap}
+  #placebox .place-mirror .sw{width:24px;height:13px}
+  #placebox .place-mirror .sw::after{width:9px;height:9px}
+  #placebox .place-mirror[aria-pressed="true"] .sw::after{left:13px}
   #placebox #presets,#placebox #lpEntry{grid-column:span 2;width:auto !important;margin:0 !important;min-height:28px;padding:3px 5px;font-size:11.5px;line-height:1.2;white-space:normal}
-  #placebox #place-tools{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}
+  #placebox #presets{border:2px solid rgba(240,231,214,.55);color:var(--milk);background:rgba(240,231,214,.06)}
+  #placebox #presets:hover{border-color:var(--milk)}
+  /* プリセットと個別の設置操作を区切る。線は4列ぶんの幅で引く。 */
+  #placebox #place-tools{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;border-top:1px solid var(--line-dark);padding-top:4px}
   #placebox #place-tools button{min-height:28px;margin:0 !important;padding:3px 4px;text-align:center !important;font-size:11px;line-height:1.2;white-space:normal}
-  #placebox .cyckicker{grid-column:1;margin:0;align-self:center;white-space:nowrap;font-size:11px;letter-spacing:.06em}
-  #placebox #cyc-tools{grid-column:2/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}
-  #placebox #cyc-tools button{min-height:28px;margin:0 !important;padding:3px 4px;text-align:center;font-size:11px;line-height:1.2;white-space:normal}
+  /* ホリゾント床／上も、他の設置項目と同じ1枠ぶんの幅に揃える。 */
+  #placebox #cyc-tools{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}
+  #placebox #cyc-tools button{width:100%;min-height:28px;margin:0 !important;padding:3px 4px;text-align:center;font-size:11px;line-height:1.2;white-space:normal}
   #placebox #place-note{grid-column:1/-1;margin:0;font-size:10.5px;line-height:1.35}
   /* 畳んだときは見出しだけ残す（中身は隠して一覧に高さを渡す） */
   .panel .sub.folded>*:not(.ptitle){display:none}
@@ -620,15 +630,13 @@
               </span>
             </span>
           </span>
-          <!-- シーン送りは「照明デザイン」のときだけ中身を出す。
-               配置では隠すが場所は残す（図の位置が両ページでずれないように・2026-09-11 本人指摘）。
-               再生（いまは再生／停止のトグル1個）は 2026-09-13 本人要望でパネル側へ移した。 -->
-          <!-- 中央は「いま画面に出ているデザインがどのキューか」。シーン送りはLX cueパネルの上へ移した
-               （2026-09-13 本人要望「もっと大きく」）。中身は app.js が入れる。 -->
+          <!-- 中央は、照明デザインでは編集中のLX cue、配置では現在のシーン名。
+               配置のシーン名を押すと場面一覧を開く。 -->
           <span class="fb scenebox" id="scenerow">
             <button type="button" class="btn small quiet qnav" id="q-prev">〈</button>
             <span class="qnow" id="qnow"></span>
             <button type="button" class="btn small quiet qnav" id="q-next">〉</button>
+            <button type="button" class="btn quiet place-scene" id="place-scene" hidden aria-haspopup="dialog" title="場面の一覧を開く"></button>
           </span>
           <span class="transport sceneplay" id="transport" hidden>
             <button type="button" class="btn small" id="t-play">再生</button>
@@ -646,16 +654,17 @@
             <!-- 置く操作は灯体の一覧の上（2026-09-13 本人要望で右パネルから移動）。
                  「置く→一覧に増える」が同じ列で続くので、視線が左右に飛ばない。 -->
             <div class="sub subtop" id="placebox">
-              <p class="ptitle">機材設置</p>
+              <div class="place-head">
+                <p class="ptitle">機材設置</p>
+                <button type="button" class="ontoggle place-mirror" id="mirror-placement" aria-pressed="false" title="灯体を下手／上手または舞台中央線の左右へ同時に置きます"><span class="sw" aria-hidden="true"></span><b>左右対称設置</b></button>
+              </div>
               <button type="button" class="btn small" id="presets" style="width:100%;margin-bottom:5px">プリセット</button>
               <div class="seg col" id="place-tools"></div>
-              <!-- ホリゾントライトは置き場所が決まっている（奥の壁ぎわ・中央）ので、
-                   クリックして置く道具ではなく「あり／なし」の2択にした（2026-09-13 本人指定）。 -->
-              <p class="kicker cyckicker">ホリゾントライト</p>
+              <!-- ホリゾントライトは置き場所が決まっているので、床／上の2択にする。 -->
               <div class="seg col" id="cyc-tools"></div>
               <p class="note" id="place-note"></p>
             </div>
-            <p class="ptitle">灯体一覧</p>
+            <p class="ptitle" id="fixture-list-title">灯体一覧</p>
             <input type="search" id="search" class="search" placeholder="番号・名前で探す" aria-label="灯体を探す">
             <div class="filters" id="filters" role="group" aria-label="絞り込み">
               <button type="button" data-filter="all" aria-pressed="true">すべて</button>
@@ -699,7 +708,7 @@
             <span class="statebadge" id="statebadge">選択</span>
             <canvas id="plan" width="1090" height="760"></canvas>
           </div>
-          <!-- 上段右＝選んだ灯体（メイン）と配置（サブ・下の層）。2026-09-11 本人要望 -->
+          <!-- 上段右＝選んだ機材／灯体（メイン）と配置（サブ・下の層）。2026-09-11 本人要望 -->
           <section class="panel insp" id="panel-insp">
             <!-- 照明デザインの見出し行: 左＝パネル名、右＝シーン送り・再生とオン・オフ。
                  2026-09-13 本人要望で図の上の帯から移設し、シーン名の表示はやめた
@@ -721,7 +730,7 @@
               </div>
             </div>
             <div id="selacts" hidden>
-              <p class="ptitle">選んだ灯体</p>
+              <p class="ptitle" id="selacts-title">選んだ灯体</p>
               <div class="tsbtns">
                 <button type="button" class="btn quiet" id="dup" disabled>複製</button>
                 <button type="button" class="btn quiet" id="mirror" disabled>反対側へコピー</button>
@@ -796,11 +805,11 @@
 <script src="volume-light.js?v=20260915-2"></script>
 <script src="laser-effects.js?v=20260915-1-core"></script>
 <script src="laser-effects-ui.js?v=20260915-1-panel"></script>
-<script src="app.js?v=20260915-27-laser-effects"></script>
+<script src="app.js?v=20260915-39-equipment-list"></script>
 <script src="light-presets.js?v=1789357787"></script>
 <script src="light-presets-ui.js?v=20260915-2-type-panel"></script>
 <!-- 選択灯「型」P1: 本体ではなく、この試作だけへ隔離接続する。 -->
 <script src="../selected-light-presets-2026-09-14/selected-light-presets-engine.js?v=1789412300"></script>
-<script src="../selected-light-presets-2026-09-14/selected-light-presets-ui.js?v=20260915-5-laser-filter"></script>
+<script src="../selected-light-presets-2026-09-14/selected-light-presets-ui.js?v=20260915-6-no-inline-type-entry"></script>
 </body>
 </html>

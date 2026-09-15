@@ -53,8 +53,6 @@
   const style = document.createElement("style");
   style.textContent = `
     .lpTabs{grid-template-columns:repeat(2,1fr)!important;height:34px!important}.lpTabs button{min-height:34px!important}.lpTabs .slp-tab:disabled{opacity:.42;cursor:default}
-    .slp-entry{width:100%;min-height:44px;text-align:left;border-color:var(--brass);background:rgba(156,130,63,.11)}
-    .slp-entry small{display:block;color:var(--milk-dim);font-size:11px;margin-top:2px}
     .slp-pane{display:flex;flex-direction:column;gap:7px;min-height:0;overflow:auto;padding-bottom:6px}.slp-pane .ptitle{margin:0}.slp-pane .hint{margin:0}
     .slp-selected{display:grid;grid-template-columns:88px minmax(0,1fr);gap:8px;padding:8px;border:1px solid var(--brass);background:rgba(156,130,63,.08)}.slp-selected .slp-diagram{width:88px;height:58px;border:1px solid var(--line-dark);background:#0d0e10}.slp-selected-info{min-width:0}.slp-selected-info h3{margin:0;color:var(--brass);font-size:15px}.slp-selected-info p{margin:3px 0 0;color:var(--milk-dim);font-size:11px;line-height:1.45}.slp-selected-wide{grid-column:1/-1;display:grid;gap:7px}.slp-selected-wide .slp-scope{margin:0;font-size:11px}.slp-selected-wide .slp-actions{margin:0}.slp-selected-wide .slp-actions .btn{min-height:38px}
     .slp-list-tools{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:6px}.slp-list-tools input,.slp-list-tools select{min-height:32px;width:100%;border:1px solid var(--line-dark);background:var(--desk-2);color:var(--milk);padding:4px 7px;font:12px var(--sans)}.slp-families.inline{gap:3px}.slp-families.inline button{min-height:26px;padding:3px 6px;font-size:11px}.slp-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-content:start}.slp-list .slp-card{min-height:96px;padding:0 6px 6px}.slp-list .slp-card svg{width:calc(100% + 12px);height:36px;margin:0 -6px 5px}.slp-list .slp-card b{font-size:12px}.slp-list .slp-card small{font-size:10px;margin-top:3px}.slp-list-empty{grid-column:1/-1;margin:0;color:var(--milk-dim);font-size:12px}
@@ -446,12 +444,6 @@
       drawRangeOverlay();
       return;
     }
-    if (!host || !eligible || host.hidden) { drawRangeOverlay(); return; }
-    const entry = document.createElement("button");
-    entry.type = "button"; entry.id = "slp-entry"; entry.className = "btn slp-entry";
-    entry.textContent = "型から選ぶ（32）";
-    entry.onclick = () => { ui.panel = "type"; refresh(); };
-    host.prepend(entry);
     drawRangeOverlay();
   }
   window.SELECTED_LIGHT_PRESETS_UI = { refresh, openModal };
