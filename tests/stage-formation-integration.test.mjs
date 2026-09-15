@@ -211,7 +211,7 @@ test("音量は音源と同じ上段に置き、低頻度の補助操作は隠�
 test("認証済みゲストの必要資源だけを許可し、PWAへ試作用音源を入れない", () => {
   assert.match(worker, /"\/formation\/prototype\/record-from-video\.html"/);
   assert.doesNotMatch(sw, /gensan-extend|formation\/prototype\/sample/);
-  assert.match(index, /stage-sketch\.js\?v=490/);
-  assert.match(stage, /stage-sketch\.js\?v=490/);
-  assert.match(sw, /\.\/stage-sketch\.js\?v=490/);
+  assert.match(index, /stage-sketch\.js\?v=491/);
+  assert.match(stage, /stage-sketch\.js\?v=491/);
+  assert.match(sw, /\.\/stage-sketch\.js\?v=491/);
 });

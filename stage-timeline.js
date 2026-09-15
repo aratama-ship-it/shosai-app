@@ -31,6 +31,10 @@
   const CUE_WIDTH = 104;
   const AUDIO_GAIN_MIN_DB = -24;
   const AUDIO_GAIN_MAX_DB = 12;
+  // ブラウザで音源を丸ごとデコードするため、長大なファイルは波形を省略する。
+  // 波形は目安の表示だけで、音源・ショーデータには保存しない。
+  const AUDIO_WAVEFORM_MAX_BYTES = 16 * 1024 * 1024;
+  const AUDIO_WAVEFORM_POINT_COUNT = 96;
   const els = {
     tabs: [...tabs.querySelectorAll("[data-stage-workspace-mode]")],
     viewSelect: document.getElementById("stage-view-select"),
@@ -196,6 +200,8 @@
   let audioSourceMode = "add";
   let audioGraph = null;
   let audioGraphFailed = false;
+  const audioWaveformCache = new Map();
+  const audioWaveformPending = new Set();
   let pendingSeek = null;
   let resizeTimer = 0;
   let timelineResize = null;
@@ -1126,6 +1132,74 @@
       : sectionEnd;
   }
 
+  function sampleAudioWaveform(buffer, pointCount = AUDIO_WAVEFORM_POINT_COUNT) {
+    if (!buffer || !Number.isFinite(buffer.length) || buffer.length <= 0
+        || !Number.isFinite(buffer.numberOfChannels) || buffer.numberOfChannels <= 0) return [];
+    const points = Math.max(8, Math.round(pointCount));
+    const channels = Array.from({ length: buffer.numberOfChannels }, (_, index) => buffer.getChannelData(index));
+    return Array.from({ length: points }, (_, index) => {
+      const from = Math.floor(index * buffer.length / points);
+      const to = Math.max(from + 1, Math.floor((index + 1) * buffer.length / points));
+      const step = Math.max(1, Math.floor((to - from) / 256));
+      let peak = 0;
+      for (let frame = from; frame < to; frame += step) {
+        channels.forEach((channel) => { peak = Math.max(peak, Math.abs(channel[frame] || 0)); });
+      }
+      // 小さな音も読めるよう平方根で少し持ち上げる。上限は元波形と同じ1のままにする。
+      return Math.min(1, Math.sqrt(peak));
+    });
+  }
+
+  function audioWaveformPath(points) {
+    if (!Array.isArray(points) || !points.length) return "";
+    return points.map((amplitude, index) => {
+      const x = ((index + 0.5) / points.length) * 1000;
+      const halfHeight = Math.max(2, clamp(finite(amplitude, 0) * 42, 0, 42));
+      return `M${x.toFixed(1)} ${(50 - halfHeight).toFixed(1)}V${(50 + halfHeight).toFixed(1)}`;
+    }).join("");
+  }
+
+  function appendAudioWaveform(audioBlock, trackId) {
+    if (!trackId || !audioWaveformCache.has(trackId)) return;
+    const path = audioWaveformPath(audioWaveformCache.get(trackId));
+    if (!path) return;
+    const waveform = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    waveform.classList.add("stage-timeline-audio-waveform");
+    waveform.setAttribute("viewBox", "0 0 1000 100");
+    waveform.setAttribute("preserveAspectRatio", "none");
+    waveform.setAttribute("aria-hidden", "true");
+    const shape = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    shape.setAttribute("d", path);
+    waveform.append(shape);
+    audioBlock.append(waveform);
+  }
+
+  async function loadAudioWaveform(trackId) {
+    if (!trackId || audioWaveformCache.has(trackId) || audioWaveformPending.has(trackId)
+        || typeof bridge.getTimelineAudioBlob !== "function") return;
+    audioWaveformPending.add(trackId);
+    try {
+      const blob = await bridge.getTimelineAudioBlob(trackId);
+      if (!(blob instanceof Blob) || blob.size <= 0 || blob.size > AUDIO_WAVEFORM_MAX_BYTES) {
+        audioWaveformCache.set(trackId, []);
+        return;
+      }
+      const graph = await ensureAudioGainGraph();
+      if (!graph || !graph.context || typeof graph.context.decodeAudioData !== "function") {
+        audioWaveformCache.set(trackId, []);
+        return;
+      }
+      const decoded = await graph.context.decodeAudioData(await blob.arrayBuffer());
+      audioWaveformCache.set(trackId, sampleAudioWaveform(decoded));
+    } catch (_) {
+      // ブラウザの対応形式や端末容量により解析できなくても、通常の音源再生は継続する。
+      audioWaveformCache.set(trackId, []);
+    } finally {
+      audioWaveformPending.delete(trackId);
+      if (mode === "timeline") renderTimeline();
+    }
+  }
+
   // 舞台スケッチ自身の秒ベース時間軸だけをここで編集する。Music Sync から
   // 読んだ拍ベースの区間は、元アプリ側のデータを黙って書き換えないため表示専用にする。
   function timelineContentCanResize() {
@@ -1640,6 +1714,7 @@
     audioBlock.className = `stage-timeline-audio-block${timeline.trackId ? "" : " is-empty"}`;
     audioBlock.dataset.audioMissing = "false";
     const audioTrack = timeline.trackId && (project.audioTracks || []).find((track) => track.id === timeline.trackId);
+    if (timeline.trackId) appendAudioWaveform(audioBlock, timeline.trackId);
     if (audioTrack && audioTrack.timelineLockEdge === "start") audioBlock.append(lockIndicator("start"));
     const audioLabel = document.createElement("span");
     audioLabel.className = "stage-timeline-audio-label";
@@ -1667,6 +1742,7 @@
     els.audioLane.append(audioBlock);
     if (timeline.trackId) {
       checkTimelineAudioAvailability(audioBlock, timeline.trackId, timeline.title);
+      loadAudioWaveform(timeline.trackId);
     } else {
       audioAvailabilityGeneration += 1;
     }
@@ -2646,7 +2722,9 @@
   window.addEventListener("stage-timeline-lock-change", () => {
     if (mode === "timeline") renderTimeline();
   });
-  window.addEventListener("stage-timeline-audio-change", () => {
+  window.addEventListener("stage-timeline-audio-change", (event) => {
+    const trackId = event && event.detail && event.detail.trackId;
+    if (trackId && event.detail && event.detail.reconnected) audioWaveformCache.delete(trackId);
     if (mode === "timeline") renderTimeline();
     else applyAudioLevels();
   });

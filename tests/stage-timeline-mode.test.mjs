@@ -131,8 +131,8 @@ test("シーン・音源・転換の固定端とキュー点ロックを保存�
   assert.match(css, /\.stage-timeline-lock-indicator\.is-start \{[^}]*\}/);
   assert.match(css, /\.stage-timeline-lock-indicator\.is-end \{[^}]*var\(--stage-timeline-transition\)/);
   assert.match(timeline, /stage-timeline-lock-change/);
-  assert.match(html, /stage-timeline.js\?v=62/);
-  assert.match(sw, /stage-timeline.js\?v=62/);
+  assert.match(html, /stage-timeline.js\?v=63/);
+  assert.match(sw, /stage-timeline.js\?v=63/);
 });
 
 test("転換の最初の描画は前シーンの位置から始め、行き先を一瞬だけ描かない", () => {
@@ -395,6 +395,17 @@ test("音源ブロックの終端は実音源の長さまでで、セクショ�
   assert.equal(end({ duration: 30 }, { durationSeconds: 42 }), 30);
   assert.equal(end({ duration: 180 }, { durationSeconds: null }), 180);
   assert.match(timeline, /placeBlock\(audioBlock, 0, audioBlockEndSeconds\(timeline, audioTrack\)\)/);
+});
+
+test("音源ブロックは狭いレーンでも中央に収まり、端末内の音源から薄い波形を表示する", () => {
+  assert.match(css, /\.stage-timeline-audio-block \{[\s\S]*?inset-block: clamp\(1px, 10%, 5px\);[\s\S]*?height: auto;/);
+  assert.match(css, /\.stage-timeline-audio-waveform \{[\s\S]*?pointer-events: none;[\s\S]*?opacity: 0\.46;/);
+  assert.match(css, /\.stage-timeline-audio-waveform path \{[\s\S]*?vector-effect: non-scaling-stroke;/);
+  assert.match(timeline, /const AUDIO_WAVEFORM_MAX_BYTES = 16 \* 1024 \* 1024;/);
+  assert.match(timeline, /function sampleAudioWaveform\(buffer, pointCount = AUDIO_WAVEFORM_POINT_COUNT\)/);
+  assert.match(timeline, /bridge\.getTimelineAudioBlob\(trackId\)/);
+  assert.match(timeline, /appendAudioWaveform\(audioBlock, timeline\.trackId\);[\s\S]*?loadAudioWaveform\(timeline\.trackId\);/);
+  assert.match(sketch, /getTimelineAudioBlob\(trackId\)[\s\S]*?audioStore\.get\(normalizedTrackId\)/);
 });
 
 test("端末内の音源が欠落したら同じ音源枠から再接続し、タイムライン情報を作り直さない", () => {

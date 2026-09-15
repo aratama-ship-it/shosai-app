@@ -29065,6 +29065,14 @@ ${propsPlotHtml}
       return audioStore.get(normalizedTrackId)
         .then((blob) => Boolean(blob instanceof Blob && blob.size > 0), () => false);
     },
+    getTimelineAudioBlob(trackId) {
+      const normalizedTrackId = normalizeAudioTrackId("scene", trackId);
+      if (!normalizedTrackId || !audioStore || typeof audioStore.get !== "function") {
+        return Promise.resolve(null);
+      }
+      return audioStore.get(normalizedTrackId)
+        .then((blob) => blob instanceof Blob && blob.size > 0 ? blob : null, () => null);
+    },
     openTimelineAudioRelinkPicker(trackId) {
       return openAudioRelinkPicker(trackId);
     },

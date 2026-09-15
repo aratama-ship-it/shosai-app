@@ -16309,9 +16309,10 @@ body.is-timeline-resizing { cursor: row-resize; user-select: none; -webkit-user-
 .stage-timeline-audio-block {
   display: flex;
   align-items: center;
-  top: 5px;
-  height: calc(100% - 10px);
-  padding: 3px 10px;
+  /* 最小レーン高32pxでも文字と枠が中心に収まるよう、余白を高さに追従させる。 */
+  inset-block: clamp(1px, 10%, 5px);
+  height: auto;
+  padding: 0 10px;
   color: var(--stage-timeline-text);
   background: rgba(211, 172, 89, 0.18);
   border: 1px solid rgba(211, 172, 89, 0.6);
@@ -16319,6 +16320,24 @@ body.is-timeline-resizing { cursor: row-resize; user-select: none; -webkit-user-
   line-height: 20px;
   text-align: left;
 }
+.stage-timeline-audio-waveform {
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+  overflow: hidden;
+  pointer-events: none;
+  color: rgba(239, 231, 214, 0.6);
+  opacity: 0.46;
+}
+.stage-timeline-audio-waveform path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+.stage-timeline-audio-block > :not(.stage-timeline-audio-waveform) { position: relative; z-index: 1; }
 .stage-timeline-audio-label {
   flex: 1 1 auto;
   min-width: 0;
