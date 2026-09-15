@@ -20,6 +20,7 @@ test("正面・平面の表示は上下順を含む4択プルダウンにまと�
     ["both-plan", "両方②"],
   ]);
   assert.doesNotMatch(html, /data-show-view|stage-swap-center/);
+  assert.match(select, /aria-keyshortcuts="T"/);
 });
 
 test("両方①と両方②は既存の中央表示順へ接続する", () => {
@@ -40,6 +41,25 @@ test("1枚表示では表示中パネルの右下に正面・平面の切り替�
   assert.match(css, /\.stage-single-view-switch button\[aria-pressed="true"\]/);
 });
 
+test("片面表示では閉じた側を枠ごと隠し、表示中の図へ操作を重ねる", () => {
+  assert.match(source, /canvasStack\.classList\.toggle\("is-single-view", single\)/);
+  assert.match(css, /#stage-canvas-stack\.is-single-view > \.stage-board-frame\.is-closed \{\s*display: none;/);
+  assert.match(css, /#stage-canvas-stack\.is-single-view[\s\S]*?\.stage-canvas-bar \{\s*display: contents;/);
+  assert.match(css, /#stage-canvas-stack\.is-single-view[\s\S]*?\.stage-canvas-tools \{[\s\S]*?position: absolute;[\s\S]*?top: 8px;[\s\S]*?right: 8px;/);
+  assert.match(css, /#stage-canvas-stack\.is-single-view[\s\S]*?\.stage-seat-list \{[\s\S]*?position: absolute;/);
+});
+
+test("Tで片面図を切り替え、両面表示中は上下順を替える", () => {
+  assert.match(source, /表示する図を切り替える（両方表示中は上下順を変更）", "T"/);
+  assert.match(source, /toLowerCase\(\) !== "t"/);
+  assert.match(source, /current === "front" \? "plan"[\s\S]*current === "plan" \? "front"[\s\S]*current === "both-plan" \? "both-front" : "both-plan"/);
+  assert.match(source, /els\.viewSelect\.dispatchEvent\(new Event\("change", \{ bubbles: true \}\)\)/);
+  for (const dictionary of [en, zhHans, zhHant]) {
+    assert.match(dictionary, /"表示する図を切り替える（両方表示中は上下順を変更）":/);
+    assert.match(dictionary, /"全画面で正面と平面を入れ替える":/);
+  }
+});
+
 test("中央バーの表示プルダウンはコンパクトな幅と高さを使う", () => {
   assert.match(css, /\.stage-view-select select \{[\s\S]*width: 88px;[\s\S]*min-height: 30px;/);
   assert.match(css, /\.stage-center-bar \.stage-view-select select \{ min-height: 27px; \}/);
@@ -49,6 +69,6 @@ test("4択と上下順の説明を英語・簡体字・繁体字でも表示で�
   for (const dictionary of [en, zhHans, zhHant]) {
     assert.match(dictionary, /"両方①":/);
     assert.match(dictionary, /"両方②":/);
-    assert.match(dictionary, /"表示する図。両方①は正面が上、両方②は平面が上":/);
+    assert.match(dictionary, /"表示する図。Tで切替。両方①は正面が上、両方②は平面が上":/);
   }
 });
